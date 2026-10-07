@@ -58,6 +58,8 @@ export class LayerCanvas {
     const X = x + this.ox, Y = y + this.oy;
     if (X < 0 || Y < 0 || X >= this.w || Y >= this.h) return;
     const i = Y * this.w + X;
+    // una pieza de atrás nunca tapa a una de adelante, sin importar el orden de dibujo
+    if (this.layer[i] > layer) return;
     this.color[i] = p.color;
     this.dark[i] = p.dark;
     this.mat[i] = p.mat;

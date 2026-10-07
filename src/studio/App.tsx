@@ -1,18 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Engine } from './client';
-import { translator, type Lang, type Key } from './i18n';
+import { translator, animLabel, type Lang, type Key } from './i18n';
 import type { AnalyzeParams, AnalyzeResult, FrameSet } from './protocol';
 import { ImageStage, ZONE_COLORS } from './components/ImageStage';
 import { Preview, type PreviewBg } from './components/Preview';
+import { Seg, Select, Toggle, type T } from './components/ui';
+import { StyleStep } from './steps/StyleStep';
+import { EditorStep } from './steps/EditorStep';
+import { ExportStep } from './steps/ExportStep';
+import { loadGallery, saveGallery, upsert, type GalleryItem } from './gallery';
+import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, safeName } from './util';
 import {
-  type HumanFicha as Ficha, type CellSize, type HeadSpec, type Point, type Zone, type QAReport, type ColorSlot,
-  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, BASE,
+  type Ficha, type HumanFicha, type CellSize, type HeadSpec, type Point, type Zone, type QAReport, type ColorSlot, type AnimalColorSlot,
+  type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim,
+  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES,
 } from '../engine/index';
 
-const STEPS = ['image', 'bg', 'zones', 'head', 'style', 'preview', 'export'] as const;
-type Step = (typeof STEPS)[number];
+type Step = 'image' | 'bg' | 'zones' | 'head' | 'style' | 'animate' | 'editor' | 'export';
+const HUMAN_STEPS: Step[] = ['image', 'bg', 'zones', 'head', 'style', 'animate', 'editor', 'export'];
+const ANIMAL_STEPS: Step[] = ['image', 'bg', 'style', 'animate', 'export'];
 const EDIT_ZONES: Zone[] = ['hair', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'];
-const SAMPLES = ['sofi', 'gabo', 'papa'];
+const SAMPLES: { name: string; kind: 'human' | 'animal'; species?: Species }[] = [
+  { name: 'gabo', kind: 'human' }, { name: 'portero', kind: 'human' }, { name: 'sofi', kind: 'human' }, { name: 'nena', kind: 'human' },
+  { name: 'mama', kind: 'human' }, { name: 'papa', kind: 'human' }, { name: 'thor', kind: 'animal', species: 'boxer' },
+];
+const ARTIFACT = !!import.meta.env.VITE_ARTIFACT;
 
 function storedLang(): Lang {
   try {
@@ -22,48 +34,44 @@ function storedLang(): Lang {
   return navigator.language?.startsWith('en') ? 'en' : 'es';
 }
 
-function download(name: string, bytes: Uint8Array | string, mime: string) {
-  const blob = new Blob([bytes as BlobPart], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+interface Overrides {
+  outfit: Partial<HumanFicha['outfit']>;
+  face: Partial<HumanFicha['face']>;
+  colors: Partial<Record<ColorSlot | AnimalColorSlot, string>>;
+  proportions?: Proportions;
+  customAnims: CustomAnim[];
 }
-
-async function fileToRequest(file: Blob): Promise<{ png?: Uint8Array; rgba?: Uint8ClampedArray; w?: number; h?: number }> {
-  const buf = new Uint8Array(await file.arrayBuffer());
-  // PNG: se decodifica con el mismo código que la línea de comandos (mismos pixeles)
-  if (buf[0] === 0x89 && buf[1] === 0x50) return { png: buf };
-  const bmp = await createImageBitmap(file);
-  const c = new OffscreenCanvas(bmp.width, bmp.height);
-  const ctx = c.getContext('2d')!;
-  ctx.drawImage(bmp, 0, 0);
-  const d = ctx.getImageData(0, 0, bmp.width, bmp.height);
-  return { rgba: d.data, w: d.width, h: d.height };
-}
+const emptyOverrides = (): Overrides => ({ outfit: {}, face: {}, colors: {}, customAnims: [] });
 
 export function App() {
   const engine = useMemo(() => new Engine(), []);
   const [lang, setLang] = useState<Lang>(storedLang);
   const t = useMemo(() => translator(lang), [lang]);
   const [step, setStep] = useState<Step>('image');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  const [kind, setKind] = useState<'human' | 'animal'>('human');
+  const [species, setSpecies] = useState<Species>('boxer');
   const [loaded, setLoaded] = useState(false);
   const [name, setName] = useState('personaje');
-
   const [params, setParams] = useState<AnalyzeParams>({ bgTolerance: DEFAULT_BG_TOLERANCE, bgStrokes: [], zoneEdits: [] });
   const [analysis, setAnalysis] = useState<AnalyzeResult | null>(null);
   const [ficha, setFicha] = useState<Ficha | null>(null);
+  const [extraLoaded, setExtraLoaded] = useState({ side: false, back: false });
+  const [buildTick, setBuildTick] = useState(0);
+  const overrides = useRef<Overrides>(emptyOverrides());
+
   const [cell, setCell] = useState<CellSize>(48);
-  const [clips, setClips] = useState<FrameSet[]>([]);
-  const [qa, setQa] = useState<QAReport[]>([]);
   const [anim, setAnim] = useState('walk');
+  const [view, setView] = useState<ViewName>('side');
   const [bg, setBg] = useState<PreviewBg>('pitch');
+  const [props, setProps] = useState(true);
+  const [clip, setClip] = useState<FrameSet | null>(null);
+  const [qa, setQa] = useState<QAReport | null>(null);
+  const [variants, setVariants] = useState<{ variants: Variant[]; thumbs: Uint8ClampedArray[] } | null>(null);
+  const [gallery, setGallery] = useState<GalleryItem[]>(loadGallery);
+  const [savedMsg, setSavedMsg] = useState(false);
 
   const [bgBrush, setBgBrush] = useState<'fg' | 'bg'>('fg');
   const [brushR, setBrushR] = useState(6);
@@ -72,25 +80,27 @@ export function App() {
   const [headTool, setHeadTool] = useState<'box' | 'eyes'>('box');
   const [dragBox, setDragBox] = useState<HeadSpec | null>(null);
   const pendingEye = useRef<Point | null>(null);
-  /** lo que el usuario cambió a mano en ropa, cara y colores: sobrevive a reconstruir la ficha */
-  const overrides = useRef<{ outfit: Partial<Ficha['outfit']>; face: Partial<Ficha['face']>; colors: Partial<Record<ColorSlot, string>> }>({ outfit: {}, face: {}, colors: {} });
 
   useEffect(() => {
     try { localStorage.setItem('pf.lang', lang); } catch { /* sin almacenamiento */ }
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const run = useCallback(async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
-    setBusy(true);
+  const run = useCallback(async <R,>(fn: () => Promise<R>): Promise<R | undefined> => {
+    setBusy((b) => b + 1);
     setError(null);
     try {
       return await fn();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setBusy(false);
+      setBusy((b) => b - 1);
     }
   }, []);
+
+  const steps = kind === 'human' ? HUMAN_STEPS : ANIMAL_STEPS;
+  const stepIdx = steps.indexOf(step);
+  const needsFicha = step === 'style' || step === 'animate' || step === 'editor' || step === 'export';
 
   // análisis: cada vez que cambian fondo, cabeza o zonas
   useEffect(() => {
@@ -105,97 +115,184 @@ export function App() {
   }, [loaded, params, engine, run]);
 
   const applyOverrides = useCallback((f: Ficha): Ficha => {
-    let out: Ficha = { ...f, outfit: { ...f.outfit, ...overrides.current.outfit }, face: { ...f.face, ...overrides.current.face } };
-    for (const [slot, hex] of Object.entries(overrides.current.colors)) out = recolor(out, slot as ColorSlot, hex!);
+    const o = overrides.current;
+    let out: Ficha = f;
+    if (isHuman(out)) {
+      out = { ...out, outfit: { ...out.outfit, ...o.outfit }, face: { ...out.face, ...o.face }, customAnims: o.customAnims.length ? o.customAnims : out.customAnims };
+      if (o.proportions) out = { ...out, body: { ...out.body, proportions: o.proportions } } as HumanFicha;
+    }
+    for (const [slot, hex] of Object.entries(o.colors)) out = recolor(out, slot as ColorSlot, hex!);
     return out;
   }, []);
 
-  // ficha: se reconstruye desde la imagen al llegar a estilo y cuando cambian los parámetros de imagen
-  const needsFicha = step === 'style' || step === 'preview' || step === 'export';
+  // ficha: se reconstruye desde la imagen al pasar a estilo y cuando cambia algo de la imagen o las proporciones
   useEffect(() => {
     if (!loaded || !needsFicha) return;
     const id = setTimeout(() => {
       run(async () => {
-        const r = await engine.call<'built'>({ type: 'build', params, name, outfit: overrides.current.outfit, face: overrides.current.face });
+        const r = kind === 'human'
+          ? await engine.call<'built'>({ type: 'build', params, name, outfit: overrides.current.outfit, face: overrides.current.face, proportions: overrides.current.proportions })
+          : await engine.call<'built'>({ type: 'buildAnimal', name, species, bgTolerance: params.bgTolerance, bgStrokes: params.bgStrokes });
         if (r) setFicha(applyOverrides(r.ficha));
       });
     }, 150);
     return () => clearTimeout(id);
-  }, [loaded, needsFicha, params, engine, run, applyOverrides]);
+    // el nombre y la especie se aplican sin reconstruir
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, needsFicha, params, engine, run, applyOverrides, kind, buildTick]);
 
-  // render: cada vez que cambia la ficha o el tamaño
+  // animación de la vista previa
+  const animList = useMemo(() => (ficha ? animsFor(ficha) : []), [ficha]);
   useEffect(() => {
-    if (!ficha || !needsFicha) return;
+    if (ficha && animList.length && !animList.some((a) => a.name === anim)) setAnim(animList.some((a) => a.name === 'walk') ? 'walk' : animList[0].name);
+  }, [animList, anim, ficha]);
+  useEffect(() => {
+    if (!ficha || !needsFicha || step === 'editor' || !animList.some((a) => a.name === anim)) return;
     run(async () => {
-      const r = await engine.call<'rendered'>({ type: 'render', ficha, cell });
-      if (r) { setClips(r.clips); setQa(r.qa); }
+      const r = await engine.call<'rendered'>({ type: 'render', ficha, cell, anim, view: isHuman(ficha) ? view : 'side', props });
+      if (r) { setClip(r.clip); setQa(r.qa); }
     });
-  }, [ficha, cell, needsFicha, engine, run]);
+  }, [ficha, cell, anim, view, props, needsFicha, step, engine, run, animList]);
 
-  const loadFile = (file: Blob, fileName: string) =>
+  // ---------- carga ----------
+  const loadFile = (file: Blob, fileName: string, k: 'human' | 'animal' = kind, sp: Species = species) =>
     run(async () => {
-      const req = await fileToRequest(file);
-      const transfer = [req.png?.buffer, req.rgba?.buffer].filter(Boolean) as Transferable[];
-      await engine.call<'loaded'>({ type: 'load', ...req }, transfer);
-      overrides.current = { outfit: {}, face: {}, colors: {} };
-      setName(fileName.replace(/\.[a-z]+$/i, '').replace(/[^\w-]+/g, '_') || 'personaje');
+      const payload = await fileToPayload(file);
+      await engine.call<'loaded'>({ type: 'load', ...payload }, payloadTransfer(payload));
+      overrides.current = emptyOverrides();
+      setKind(k);
+      setSpecies(sp);
+      setName(safeName(fileName.replace(/\.[a-z]+$/i, '')));
       setFicha(null);
+      setClip(null);
+      setVariants(null);
+      setExtraLoaded({ side: false, back: false });
       setParams({ bgTolerance: DEFAULT_BG_TOLERANCE, bgStrokes: [], zoneEdits: [] });
       setLoaded(true);
       setStep('bg');
     });
 
-  const loadSample = (n: string) =>
+  const loadSample = (s: (typeof SAMPLES)[number]) =>
     run(async () => {
-      const res = await fetch(`./samples/${n}.png`);
-      await loadFile(await res.blob(), n);
+      const res = await fetch(`./samples/${s.name}.png`);
+      await loadFile(await res.blob(), s.name, s.kind, s.species ?? species);
     });
 
-  const openFicha = (file: File) =>
+  const openFicha = (f: Ficha) => {
+    overrides.current = { ...emptyOverrides(), customAnims: isHuman(f) ? f.customAnims ?? [] : [] };
+    setLoaded(false);
+    setAnalysis(null);
+    setKind(isHuman(f) ? 'human' : 'animal');
+    setFicha(f);
+    setName(f.name);
+    setVariants(null);
+    setStep('animate');
+  };
+  const openFichaFile = (file: File) =>
     run(async () => {
-      const f = JSON.parse(await file.text());
-      const errs = validateFicha(f);
+      const raw = JSON.parse(await file.text());
+      const errs = validateFicha(raw);
       if (errs.length) throw new Error(errs.join('. '));
-      setLoaded(false);
-      setAnalysis(null);
-      setFicha(migrateFicha(f));
-      setName(f.name);
-      setStep('preview');
+      openFicha(migrateFicha(raw));
     });
 
+  const loadExtra = (v: 'side' | 'back', file: File | null) =>
+    run(async () => {
+      if (!file) {
+        await engine.call<'loaded'>({ type: 'clearExtra', view: v });
+        setExtraLoaded((e) => ({ ...e, [v]: false }));
+      } else {
+        const payload = await fileToPayload(file);
+        await engine.call<'loaded'>({ type: 'loadExtra', view: v, ...payload }, payloadTransfer(payload));
+        setExtraLoaded((e) => ({ ...e, [v]: true }));
+      }
+      setBuildTick((n) => n + 1);
+    });
+
+  // ---------- cambios de estilo ----------
   const updateFicha = (fn: (f: Ficha) => Ficha) => setFicha((f) => (f ? fn(f) : f));
-  const setOutfit = <K extends keyof Ficha['outfit']>(k: K, v: Ficha['outfit'][K]) => {
+  const setOutfit = <K extends keyof HumanFicha['outfit']>(k: K, v: HumanFicha['outfit'][K]) => {
     overrides.current.outfit[k] = v;
-    updateFicha((f) => ({ ...f, outfit: { ...f.outfit, [k]: v } }));
+    updateFicha((f) => (isHuman(f) ? { ...f, outfit: { ...f.outfit, [k]: v } } : f));
   };
-  const setFace = <K extends keyof Ficha['face']>(k: K, v: Ficha['face'][K]) => {
+  const setFace = <K extends keyof HumanFicha['face']>(k: K, v: HumanFicha['face'][K]) => {
     overrides.current.face[k] = v;
-    updateFicha((f) => ({ ...f, face: { ...f.face, [k]: v } }));
+    updateFicha((f) => (isHuman(f) ? { ...f, face: { ...f.face, [k]: v } } : f));
   };
-  const setColor = (slot: ColorSlot, hex: string) => {
+  const setColor = (slot: ColorSlot | AnimalColorSlot, hex: string) => {
     overrides.current.colors[slot] = hex;
     updateFicha((f) => recolor(f, slot, hex));
   };
-
-  const doExport = (kind: 'sheet' | 'ffgg' | 'gif') =>
-    run(async () => {
-      if (!ficha) return;
-      const f = { ...ficha, name };
-      const r = await engine.call<'exported'>({ type: 'export', ficha: f, cell: kind === 'ffgg' ? 48 : cell, kind, anim });
-      r?.files.forEach((x) => download(x.name, x.bytes, x.mime));
+  const setProportions = (p: Proportions) => {
+    overrides.current.proportions = p;
+    if (loaded) setBuildTick((n) => n + 1); // la cabeza se vuelve a pixelar al tamaño nuevo
+    else updateFicha((f) => (isHuman(f) ? { ...f, body: { ...f.body, proportions: p } } : f));
+  };
+  const setAnimal = (patch: { species?: Species; collar?: boolean; markings?: { chest: boolean; paws: boolean; mask: boolean } }) => {
+    if (patch.species) setSpecies(patch.species);
+    updateFicha((f) => {
+      if (isHuman(f)) return f;
+      const out = structuredClone(f);
+      if (patch.species) out.body.species = patch.species;
+      if (patch.markings) out.markings = patch.markings;
+      if (patch.collar !== undefined) out.palette.collar = patch.collar ? out.palette.collar ?? makeRamp('#1f5fd6') : null;
+      return out;
     });
+  };
+  const askVariants = () =>
+    run(async () => {
+      if (!ficha || !isHuman(ficha)) return;
+      const r = await engine.call<'variants'>({ type: 'variants', ficha, params: loaded ? params : null, seed: Date.now() % 100000, n: 6 });
+      if (r) setVariants({ variants: r.variants, thumbs: r.thumbs });
+    });
+  const pickVariant = (v: Variant) => {
+    overrides.current.face = { ...overrides.current.face, ...v.face };
+    setProportions(v.proportions);
+    updateFicha((f) => (isHuman(f) ? { ...f, face: { ...f.face, ...v.face } } : f));
+  };
+  const saveCustom = (a: CustomAnim) => {
+    overrides.current.customAnims = [...overrides.current.customAnims.filter((c) => c.name !== a.name), a];
+    updateFicha((f) => (isHuman(f) ? { ...f, customAnims: overrides.current.customAnims } : f));
+  };
 
-  const qaErrors = qa.some((q) => !q.ok);
-  const stepIdx = STEPS.indexOf(step);
-  const canGo = (s: Step) => (s === 'image' ? true : ficha && !loaded ? ['style', 'preview', 'export'].includes(s) : loaded);
-  const stepKey = (s: Step) => `step_${s}` as Key;
-  const currentClip = clips.find((c) => c.name === anim) ?? clips[0];
+  // ---------- galería y exportar ----------
+  const saveToGallery = () => {
+    if (!ficha || !clip) return;
+    const item: GalleryItem = { id: `${Date.now()}`, name, date: new Date().toISOString().slice(0, 10), thumb: thumbnail(clip.frames[0], clip.cell), ficha: { ...ficha, name } };
+    const next = upsert(gallery, item);
+    if (saveGallery(next)) {
+      setGallery(next);
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 2000);
+    } else setError(lang === 'es' ? 'No se pudo guardar en este navegador (almacenamiento lleno o bloqueado). Exporta la ficha.' : 'Could not save in this browser (storage full or blocked). Export the character file.');
+  };
+  const removeFromGallery = (id: string) => {
+    const next = gallery.filter((g) => g.id !== id);
+    saveGallery(next);
+    setGallery(next);
+  };
+  const qaPlan = useCallback(async (plan: ExportPlan) => {
+    if (!ficha) return null;
+    const r = await engine.call<'qa'>({ type: 'qa', ficha, plan });
+    return r ? { reports: r.reports, missing: r.missing } : null;
+  }, [ficha, engine]);
+  const doExport = async (k: ExportKind, plan: ExportPlan, force: boolean) => {
+    await run(async () => {
+      if (!ficha) return;
+      const r = await engine.call<'exported'>({ type: 'export', ficha: { ...ficha, name }, kind: k, plan, force });
+      if (r) downloadFiles(r.files, `${safeName(name)}_${k}.zip`);
+    });
+  };
+
+  const canGo = (s: Step) => s === 'image' || (loaded && steps.includes(s)) || (!!ficha && ['style', 'animate', 'editor', 'export'].includes(s) && steps.includes(s));
   const zoom = cell === 32 ? 9 : cell === 48 ? 6 : 5;
 
   // ---------- interacción con la imagen ----------
   const stroke = (p: Point) => setParams((q) => ({ ...q, bgStrokes: [...q.bgStrokes, { x: p.x, y: p.y, r: brushR, mode: bgBrush }] }));
   const zoneEdit = (p: Point, mode: 'wand' | 'brush') => setParams((q) => ({ ...q, zoneEdits: [...q.zoneEdits, { mode, x: p.x, y: p.y, r: brushR, zone: zoneSel }] }));
   const shownHead = dragBox ?? params.head ?? analysis?.head;
+  const packOpts = useMemo(() => [...new Set(animList.map((a) => a.pack))], [animList]);
+  const curPack = animList.find((a) => a.name === anim)?.pack ?? packOpts[0];
 
   return (
     <div className="app">
@@ -208,8 +305,8 @@ export function App() {
           </div>
         </div>
         <div className="top-right">
-          {busy && <span className="busy" role="status">{t('working')}</span>}
-          <div className="lang" role="group" aria-label="idioma">
+          {busy > 0 && <span className="busy" role="status">{t('working')}</span>}
+          <div className="lang" role="group" aria-label="idioma / language">
             {(['es', 'en'] as Lang[]).map((l) => (
               <button key={l} className={l === lang ? 'on' : ''} onClick={() => setLang(l)}>{l.toUpperCase()}</button>
             ))}
@@ -217,10 +314,10 @@ export function App() {
         </div>
       </header>
 
-      <nav className="steps" aria-label="pasos">
-        {STEPS.map((s, i) => (
+      <nav className="steps" aria-label={lang === 'es' ? 'pasos' : 'steps'}>
+        {steps.map((s, i) => (
           <button key={s} className={`${s === step ? 'on' : ''} ${i < stepIdx ? 'done' : ''}`} disabled={!canGo(s)} onClick={() => setStep(s)} data-testid={`step-${s}`}>
-            <span className="num">{i + 1}</span> {t(stepKey(s))}
+            <span className="num">{i + 1}</span> {t(`step_${s}` as Key)}
           </button>
         ))}
       </nav>
@@ -230,14 +327,14 @@ export function App() {
       <main className="work">
         {step === 'image' && (
           <section className="panel wide">
+            <div className="row">
+              <Seg label={t('kind')} value={kind} set={(v) => setKind(v as 'human' | 'animal')} opts={[['human', t('kind_human')], ['animal', t('kind_animal')]]} />
+              {kind === 'animal' && <Select label={t('species')} value={species} set={(v) => setSpecies(v as Species)} opts={SPECIES.map((s) => [s, t(`species_${s}` as Key)])} />}
+            </div>
             <label
               className="drop"
               onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const f = e.dataTransfer.files[0];
-                if (f) loadFile(f, f.name);
-              }}
+              onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) loadFile(f, f.name); }}
             >
               <input type="file" accept="image/*" data-testid="file" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f, f.name); }} />
               <strong>{t('upload')}</strong>
@@ -245,16 +342,32 @@ export function App() {
             </label>
             <p className="muted">{t('orTry')}</p>
             <div className="samples">
-              {SAMPLES.map((n) => (
-                <button key={n} onClick={() => loadSample(n)} data-testid={`sample-${n}`}>
-                  <img src={`./samples/${n}.png`} alt={n} />
-                  <span>{n}</span>
+              {SAMPLES.map((s) => (
+                <button key={s.name} onClick={() => loadSample(s)} data-testid={`sample-${s.name}`}>
+                  <img src={`./samples/${s.name}.png`} alt={s.name} />
+                  <span>{s.name}</span>
                 </button>
               ))}
             </div>
+            <h2 className="h2">{t('gallery')}</h2>
+            {gallery.length ? (
+              <div className="gallery" data-testid="gallery">
+                {gallery.map((g) => (
+                  <div key={g.id} className="g-item">
+                    <img src={g.thumb} alt={g.name} className="pixel" />
+                    <span>{g.name}</span>
+                    <small className="muted">{g.date}</small>
+                    <div className="row">
+                      <button className="btn ghost sm" onClick={() => openFicha(migrateFicha(g.ficha))}>{t('open')}</button>
+                      <button className="btn ghost sm" onClick={() => removeFromGallery(g.id)}>{t('remove')}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="muted small">{t('galleryEmpty')}</p>}
             <label className="btn ghost file-btn">
               {t('openFicha')}
-              <input type="file" accept="application/json,.json" onChange={(e) => { const f = e.target.files?.[0]; if (f) openFicha(f); }} />
+              <input type="file" accept="application/json,.json" onChange={(e) => { const f = e.target.files?.[0]; if (f) openFichaFile(f); }} />
             </label>
             <p className="muted small">{t('privacy')}</p>
           </section>
@@ -355,65 +468,43 @@ export function App() {
           </>
         )}
 
-        {(step === 'style' || step === 'preview' || step === 'export') && (
+        {step === 'editor' && ficha && (isHuman(ficha)
+          ? <EditorStep t={t} lang={lang} ficha={ficha} cell={cell} onSave={saveCustom} />
+          : <section className="panel wide"><p>{t('ed_animalNo')}</p></section>)}
+
+        {(step === 'style' || step === 'animate' || step === 'export') && (
           <>
             <section className="panel stage-wrap preview-wrap">
-              {currentClip ? (
-                <Preview clip={currentClip} bg={bg} zoom={zoom} labels={{ real: t('realSize'), zoomed: t('zoomed') }} />
-              ) : (
-                <p className="muted">{t('working')}</p>
-              )}
+              {clip ? <Preview clip={clip} bg={bg} zoom={zoom} labels={{ real: t('realSize'), zoomed: t('zoomed') }} /> : <p className="muted">{t('working')}</p>}
               <div className="row center">
-                <Seg label={t('anim')} value={anim} set={setAnim} opts={clips.map((c) => [c.name, t(`anim_${c.name}` as Key)])} />
+                <Select label={t('pack')} value={curPack ?? ''} set={(p) => { const first = animList.find((a) => a.pack === p); if (first) setAnim(first.name); }} opts={packOpts.map((p) => [p, t(`pack_${p}` as Key)])} testid="pack" />
+                <Select label={t('anim')} value={anim} set={setAnim} opts={animList.filter((a) => a.pack === curPack).map((a) => [a.name, animLabel(a.name, lang)])} testid="anim" />
+              </div>
+              <div className="row center">
+                {ficha && isHuman(ficha) && <Seg label={t('view')} value={view} set={(v) => setView(v as ViewName)} opts={(['side', 'left', 'front', 'back'] as ViewName[]).map((v) => [v, t(`view_${v}` as Key)])} testid="view" />}
                 <Seg label={t('size')} value={String(cell)} set={(v) => setCell(+v as CellSize)} opts={[['32', '32'], ['48', '48'], ['64', '64']]} />
                 <Seg label={t('background')} value={bg} set={(v) => setBg(v as PreviewBg)} opts={[['pitch', t('bg_pitch')], ['grass', t('bg_grass')], ['plain', t('bg_plain')]]} />
+                {ficha && isHuman(ficha) && <Toggle label={t('props')} on={props} set={setProps} />}
               </div>
             </section>
             <aside className="panel side">
               {step === 'style' && ficha && (
+                <StyleStep
+                  t={t} ficha={ficha} name={name} setName={(s) => setName(safeName(s))}
+                  setOutfit={setOutfit} setFace={setFace} setColor={setColor} setProportions={setProportions} setAnimal={setAnimal}
+                  variants={variants} askVariants={askVariants} pickVariant={pickVariant}
+                  canExtra={loaded && kind === 'human'} extraLoaded={extraLoaded} loadExtra={loadExtra}
+                />
+              )}
+              {step === 'animate' && (
                 <>
-                  <label className="field">
-                    {t('name')}
-                    <input value={name} onChange={(e) => setName(e.target.value.replace(/[^\w-]+/g, '_'))} />
-                  </label>
-                  <Seg label={t('sleeves')} value={ficha.outfit.sleeves} set={(v) => setOutfit('sleeves', v as Ficha['outfit']['sleeves'])} opts={(['none', 'short', 'long'] as const).map((v) => [v, t(`sleeves_${v}`)])} />
-                  <Seg label={t('bottom')} value={ficha.outfit.bottom} set={(v) => setOutfit('bottom', v as Ficha['outfit']['bottom'])} opts={(['shorts', 'pants', 'skirt'] as const).map((v) => [v, t(`bottom_${v}`)])} />
-                  <Seg label={t('socks')} value={ficha.outfit.socks} set={(v) => setOutfit('socks', v as Ficha['outfit']['socks'])} opts={(['none', 'low', 'knee'] as const).map((v) => [v, t(`socks_${v}`)])} />
-                  <Seg label={t('eyes')} value={ficha.face.eyes} set={(v) => setFace('eyes', v as Ficha['face']['eyes'])} opts={(['round', 'big', 'small'] as const).map((v) => [v, t(`eyes_${v}`)])} />
-                  <Seg label={t('mouth')} value={ficha.face.mouth} set={(v) => setFace('mouth', v as Ficha['face']['mouth'])} opts={(['smile', 'line', 'open'] as const).map((v) => [v, t(`mouth_${v}`)])} />
-                  <div className="row">
-                    <Toggle label={t('blush')} on={ficha.face.blush} set={(v) => setFace('blush', v)} />
-                    <Toggle label={t('brows')} on={ficha.face.brows} set={(v) => setFace('brows', v)} />
-                    <Toggle label={t('glasses')} on={!!ficha.face.glasses} set={(v) => setFace('glasses', v ? ficha.face.glasses || '#1d3c78' : null)} />
-                  </div>
-                  <fieldset className="colors">
-                    <legend>{t('colors')}</legend>
-                    {(['skin', 'hair', 'eyes', 'top', 'bottom', 'socks', 'shoes'] as ColorSlot[]).map((slot) => (
-                      <label key={slot} className="swatch">
-                        <input
-                          type="color"
-                          value={slot === 'eyes' ? ficha.palette.eyes : ficha.palette[slot][BASE]}
-                          onChange={(e) => setColor(slot, e.target.value)}
-                        />
-                        {t(`color_${slot}` as Key)}
-                      </label>
-                    ))}
-                  </fieldset>
+                  {qa && <QATable qa={qa} t={t} />}
+                  <button className="btn" onClick={saveToGallery} disabled={!ficha || !clip} data-testid="save-gallery">{t('saveGallery')}</button>
+                  {savedMsg && <p className="ok small">{t('saved')}</p>}
+                  <button className="btn ghost" disabled={!ficha} onClick={() => ficha && download(`${safeName(name)}.ficha.json`, JSON.stringify({ ...ficha, name }, null, 2), 'application/json')}>{t('exportFicha')}</button>
                 </>
               )}
-              {(step === 'preview' || step === 'export') && <QATable qa={qa} t={t} />}
-              {step === 'export' && (
-                <div className="exports">
-                  <p className="muted small">{t('exportHelp')}</p>
-                  {qaErrors && <p className="error">{t('qaBlocked')}</p>}
-                  <button className="btn" disabled={!ficha || qaErrors} onClick={() => doExport('sheet')} data-testid="export-sheet">{t('exportSheet')} · {cell}px</button>
-                  <button className="btn" disabled={!ficha || qaErrors} onClick={() => doExport('ffgg')} data-testid="export-ffgg">{t('exportFfgg')}</button>
-                  <button className="btn" disabled={!ficha || qaErrors} onClick={() => doExport('gif')} data-testid="export-gif">{t('exportGif')} · {t(`anim_${anim}` as Key)}</button>
-                  <button className="btn ghost" disabled={!ficha} onClick={() => ficha && download(`${name}.ficha.json`, JSON.stringify({ ...ficha, name }, null, 2), 'application/json')} data-testid="export-ficha">{t('exportFicha')}</button>
-                  {import.meta.env.VITE_ARTIFACT && <p className="error">{t('noDownloads')}</p>}
-                  <p className="muted small">{t('phase0')}</p>
-                </div>
-              )}
+              {step === 'export' && ficha && <ExportStep t={t} ficha={ficha} cell={cell} qa={qaPlan} doExport={doExport} artifact={ARTIFACT} />}
             </aside>
           </>
         )}
@@ -421,9 +512,9 @@ export function App() {
 
       {step !== 'image' && (
         <footer className="nav">
-          <button className="btn ghost" onClick={() => setStep(STEPS[Math.max(0, stepIdx - 1)])}>{t('back')}</button>
-          {stepIdx < STEPS.length - 1 && (
-            <button className="btn" disabled={!canGo(STEPS[stepIdx + 1])} onClick={() => setStep(STEPS[stepIdx + 1])} data-testid="next">{t('next')}</button>
+          <button className="btn ghost" onClick={() => setStep(steps[Math.max(0, stepIdx - 1)])}>{t('back')}</button>
+          {stepIdx < steps.length - 1 && (
+            <button className="btn" disabled={!canGo(steps[stepIdx + 1])} onClick={() => setStep(steps[stepIdx + 1])} data-testid="next">{t('next')}</button>
           )}
         </footer>
       )}
@@ -431,29 +522,7 @@ export function App() {
   );
 }
 
-function Seg({ label, value, set, opts }: { label: string; value: string; set: (v: string) => void; opts: [string, string][] }) {
-  return (
-    <div className="field">
-      <span>{label}</span>
-      <div className="seg">
-        {opts.map(([v, l]) => (
-          <button key={v} className={v === value ? 'on' : ''} onClick={() => set(v)}>{l}</button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Toggle({ label, on, set }: { label: string; on: boolean; set: (v: boolean) => void }) {
-  return (
-    <label className="toggle">
-      <input type="checkbox" checked={on} onChange={(e) => set(e.target.checked)} />
-      {label}
-    </label>
-  );
-}
-
-function BrushSize({ t, r, set }: { t: (k: Key) => string; r: number; set: (v: number) => void }) {
+function BrushSize({ t, r, set }: { t: T; r: number; set: (v: number) => void }) {
   return (
     <label className="field">
       {t('brushSize')} <output>{r}</output>
@@ -462,31 +531,18 @@ function BrushSize({ t, r, set }: { t: (k: Key) => string; r: number; set: (v: n
   );
 }
 
-function QATable({ qa, t }: { qa: QAReport[]; t: (k: Key) => string }) {
-  if (!qa.length) return null;
-  const checks = qa[0].items.map((i) => i.check);
+function QATable({ qa, t }: { qa: QAReport; t: T }) {
   return (
     <div className="qa">
       <h3>{t('qa')}</h3>
       <table data-testid="qa">
-        <thead>
-          <tr>
-            <th />
-            {qa.map((q) => <th key={q.clip}>{t(`anim_${q.clip}` as Key)}</th>)}
-          </tr>
-        </thead>
         <tbody>
-          {checks.map((c) => (
-            <tr key={c}>
-              <th>{t(`qa_${c}` as Key)}</th>
-              {qa.map((q) => {
-                const it = q.items.find((i) => i.check === c)!;
-                return (
-                  <td key={q.clip} className={it.severity} title={it.where}>
-                    {it.severity === 'ok' ? '✓' : it.severity === 'warn' ? '!' : '✗'} {it.value}
-                  </td>
-                );
-              })}
+          {qa.items.map((it) => (
+            <tr key={it.check}>
+              <th>{t(`qa_${it.check}` as Key)}</th>
+              <td className={it.severity} title={it.where}>
+                {it.severity === 'ok' ? '✓' : it.severity === 'warn' ? '!' : '✗'} {it.value}{it.where ? ` · ${it.where}` : ''}
+              </td>
             </tr>
           ))}
         </tbody>

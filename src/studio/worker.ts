@@ -1,13 +1,17 @@
 /// <reference lib="webworker" />
 import {
-  decodePng, makeWorkImage, removeBackground, proposeZones, applyZoneEdits, buildFicha, renderClip, runQA, packSheet,
-  encodePng, encodeGif, toFfgg, type Raster, type WorkImage, type Analysis,
+  decodePng, makeWorkImage, removeBackground, proposeZones, applyZoneEdits, buildFicha, buildAnimalFicha, renderClip, runQA,
+  exportFiles, renderPlan, surprise, isHuman,
+  type Raster, type WorkImage, type Analysis, type HumanFicha,
 } from '../engine/index';
-import type { AnalyzeParams, Request, Response } from './protocol';
+import type { AnalyzeParams, ImagePayload, Request, Response } from './protocol';
 
 /** El motor corre aquí, lejos de la pantalla, para que generar no la congele. */
 let source: Raster | null = null;
 let work: WorkImage | null = null;
+const extra: { side?: Raster; back?: Raster } = {};
+
+const toRaster = (p: ImagePayload): Raster => (p.png ? decodePng(p.png) : { w: p.w!, h: p.h!, data: p.rgba! });
 
 function analyze(p: AnalyzeParams): Analysis {
   if (!source || !work) throw new Error('No hay imagen cargada');
@@ -25,9 +29,21 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
   try {
     switch (req.type) {
       case 'load': {
-        source = req.png ? decodePng(req.png) : { w: req.w!, h: req.h!, data: req.rgba! };
+        source = toRaster(req);
         work = makeWorkImage(source);
+        delete extra.side;
+        delete extra.back;
         reply({ type: 'loaded', w: work.raster.w, h: work.raster.h });
+        break;
+      }
+      case 'loadExtra': {
+        extra[req.view] = toRaster(req);
+        reply({ type: 'loaded', w: extra[req.view]!.w, h: extra[req.view]!.h });
+        break;
+      }
+      case 'clearExtra': {
+        delete extra[req.view];
+        reply({ type: 'loaded', w: 0, h: 0 });
         break;
       }
       case 'analyze': {
@@ -41,35 +57,46 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
       }
       case 'build': {
         const a = analyze(req.params);
-        const { ficha, report } = buildFicha(source!, { name: req.name, head: req.params.head, outfit: req.outfit, face: req.face }, a);
+        const { ficha, report } = buildFicha(source!, { name: req.name, head: req.params.head, outfit: req.outfit, face: req.face, proportions: req.proportions, extra }, a);
         reply({ type: 'built', ficha, report });
         break;
       }
+      case 'buildAnimal': {
+        if (!source) throw new Error('No hay imagen cargada');
+        const { ficha } = buildAnimalFicha(source, { name: req.name, species: req.species, bgTolerance: req.bgTolerance, bgStrokes: req.bgStrokes });
+        reply({ type: 'built', ficha });
+        break;
+      }
       case 'render': {
-        const clips = ['idle', 'walk'].map((n) => renderClip(req.ficha, req.cell, n));
-        const qa = clips.map((c) => runQA(req.ficha, c));
-        const sets = clips.map((c) => ({ name: c.name, fps: c.fps, cell: c.cell, frames: c.frames.map((f) => f.data) }));
-        reply({ type: 'rendered', clips: sets, qa }, sets.flatMap((s) => s.frames.map((f) => f.buffer)));
+        const c = renderClip(req.ficha, req.cell, req.anim, req.view, { props: req.props });
+        const qa = runQA(req.ficha, c);
+        const frames = c.frames.map((f) => f.data);
+        reply({ type: 'rendered', clip: { name: c.name, fps: c.fps, cell: c.cell, view: c.view, frames }, qa }, frames.map((f) => f.buffer));
+        break;
+      }
+      case 'variants': {
+        const base = req.ficha.body.proportions;
+        const canRebuild = !!req.params && !!source;
+        const variants = surprise(req.seed, req.n, base, !canRebuild);
+        const a = canRebuild ? analyze(req.params!) : null;
+        const thumbs = variants.map((v) => {
+          let f: HumanFicha;
+          if (a) f = buildFicha(source!, { name: 'v', head: req.params!.head, sizes: [48], proportions: v.proportions, outfit: req.ficha.outfit, face: { ...req.ficha.face, ...v.face }, extra }, a).ficha;
+          else f = { ...req.ficha, body: { ...req.ficha.body, proportions: v.proportions }, face: { ...req.ficha.face, ...v.face } };
+          f = { ...f, palette: req.ficha.palette };
+          return renderClip(f, 48, 'idle').frames[0].data;
+        });
+        reply({ type: 'variants', variants, thumbs }, thumbs.map((t) => t.buffer));
+        break;
+      }
+      case 'qa': {
+        const { qa, missing } = renderPlan(req.ficha, req.plan);
+        reply({ type: 'qa', reports: qa, missing });
         break;
       }
       case 'export': {
-        const f = req.ficha;
-        const clips = ['idle', 'walk'].map((n) => renderClip(f, req.cell, n));
-        const blocked = clips.map((c) => runQA(f, c)).filter((q) => !q.ok);
-        if (blocked.length) throw new Error(`Control de calidad: ${blocked.map((b) => `${b.clip} ${b.cell}px`).join(', ')}`);
-        const base = `${f.name || 'personaje'}_${req.cell}`;
-        const files: { name: string; bytes: Uint8Array; mime: string }[] = [];
-        const enc = new TextEncoder();
-        if (req.kind === 'sheet' || req.kind === 'ffgg') {
-          const { png, json } = packSheet(clips, `${base}.png`);
-          files.push({ name: `${base}.png`, bytes: encodePng(png), mime: 'image/png' });
-          if (req.kind === 'sheet') files.push({ name: `${base}.json`, bytes: enc.encode(JSON.stringify(json, null, 2)), mime: 'application/json' });
-          else files.push({ name: `${f.name || 'personaje'}_ffgg.json`, bytes: enc.encode(JSON.stringify(toFfgg(json).json, null, 2)), mime: 'application/json' });
-        } else {
-          const c = clips.find((x) => x.name === req.anim) ?? clips[0];
-          files.push({ name: `${base}_${c.name}.gif`, bytes: encodeGif(c.frames, c.fps, { scale: Math.max(2, Math.round(192 / req.cell)) }), mime: 'image/gif' });
-        }
-        reply({ type: 'exported', files });
+        const files = exportFiles(req.ficha, req.kind, req.plan, { force: req.force });
+        reply({ type: 'exported', files }, files.map((f) => f.bytes.buffer as ArrayBuffer));
         break;
       }
     }
@@ -77,3 +104,5 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
     reply({ type: 'error', message: e instanceof Error ? e.message : String(e) });
   }
 };
+
+void isHuman;

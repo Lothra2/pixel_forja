@@ -1,4 +1,7 @@
-import type { BrushStroke, HeadSpec, ZoneEdit, Ficha, CellSize, QAReport, BuildReport } from '../engine/index';
+import type {
+  BrushStroke, HeadSpec, ZoneEdit, Ficha, HumanFicha, CellSize, QAReport, BuildReport, Species, Proportions, ViewName,
+  ExportKind, ExportPlan, Variant,
+} from '../engine/index';
 
 export interface AnalyzeParams {
   bgTolerance: number;
@@ -21,20 +24,30 @@ export interface FrameSet {
   name: string;
   fps: number;
   cell: CellSize;
+  view: ViewName;
   frames: Uint8ClampedArray[];
 }
 
+export type ImagePayload = { png?: Uint8Array; rgba?: Uint8ClampedArray; w?: number; h?: number };
+
 export type Request =
-  | { type: 'load'; png?: Uint8Array; rgba?: Uint8ClampedArray; w?: number; h?: number }
+  | ({ type: 'load' } & ImagePayload)
+  | ({ type: 'loadExtra'; view: 'side' | 'back' } & ImagePayload)
+  | { type: 'clearExtra'; view: 'side' | 'back' }
   | { type: 'analyze'; params: AnalyzeParams }
-  | { type: 'build'; params: AnalyzeParams; name: string; outfit?: Partial<Ficha['outfit']>; face?: Partial<Ficha['face']> }
-  | { type: 'render'; ficha: Ficha; cell: CellSize }
-  | { type: 'export'; ficha: Ficha; cell: CellSize; kind: 'sheet' | 'ffgg' | 'gif'; anim?: string };
+  | { type: 'build'; params: AnalyzeParams; name: string; outfit?: Partial<HumanFicha['outfit']>; face?: Partial<HumanFicha['face']>; proportions?: Proportions }
+  | { type: 'buildAnimal'; name: string; species: Species; bgTolerance: number; bgStrokes: BrushStroke[] }
+  | { type: 'render'; ficha: Ficha; cell: CellSize; anim: string; view: ViewName; props: boolean }
+  | { type: 'variants'; ficha: HumanFicha; params: AnalyzeParams | null; seed: number; n: number }
+  | { type: 'export'; ficha: Ficha; kind: ExportKind; plan: ExportPlan; force: boolean }
+  | { type: 'qa'; ficha: Ficha; plan: ExportPlan };
 
 export type Response =
   | { type: 'loaded'; w: number; h: number }
   | { type: 'analyzed'; result: AnalyzeResult }
-  | { type: 'built'; ficha: Ficha; report: BuildReport }
-  | { type: 'rendered'; clips: FrameSet[]; qa: QAReport[] }
+  | { type: 'built'; ficha: Ficha; report?: BuildReport }
+  | { type: 'rendered'; clip: FrameSet; qa: QAReport }
+  | { type: 'variants'; variants: Variant[]; thumbs: Uint8ClampedArray[] }
   | { type: 'exported'; files: { name: string; bytes: Uint8Array; mime: string }[] }
+  | { type: 'qa'; reports: QAReport[]; missing: string[] }
   | { type: 'error'; message: string };

@@ -28,7 +28,12 @@ export interface BigFrame {
   groundRow: number;
   /** caja del cuerpo sin implementos (un balón puede salirse del cuadro, el cuerpo no) */
   body: { x0: number; y0: number; x1: number; y1: number } | null;
+  /** articulaciones en coordenadas del cuadro grande (para el editor de poses) */
+  joints?: Joints;
 }
+
+export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 'shoulderNear' | 'shoulderFar' | 'handNear' | 'handFar' | 'neck' | 'head';
+export type Joints = Record<JointName, [number, number]>;
 
 /** Caja de lo que no es implemento, ya en coordenadas del cuadro grande. */
 export function bodyBox(c: LayerCanvas, dx: number, dy: number): BigFrame['body'] {
@@ -110,7 +115,16 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     const sx = side ? (far ? tx0 - 1 : tx1 + 1) : (far ? tx0 - 1 : tx1 + 1) * sign;
     const root = local(sx, shoulderU);
     const r = Math.PI / 180;
-    const sp = (a.spread ?? 0) * r;
+    // chibi: los brazos no superan la cabeza. Un brazo alzado se abre hacia el costado (de frente)
+    // o se adelanta (de lado), así la mano asoma junto a la cabeza en vez de esconderse detrás
+    let shoulder = a.shoulder, spreadDeg = a.spread ?? 0;
+    const chibi = d.headW > 1.5 * (d.armUpper + d.armLower);
+    const up = ((shoulder % 360) + 360) % 360;
+    if (chibi && up > 115 && up < 245) {
+      if (side) shoulder = 115 + (up - 115) * 0.25 + (shoulder - up);
+      else spreadDeg = Math.max(spreadDeg, 50 + (Math.min(up, 180) - 115) * 0.2);
+    }
+    const sp = spreadDeg * r;
     const seg = (ang: number, len: number) => {
       const fwd = Math.sin(ang * r) * Math.cos(sp) * len, down = Math.cos(ang * r) * Math.cos(sp) * len, out = Math.sin(sp) * len;
       if (side) return local(fwd, -down);
@@ -118,8 +132,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
       const outSign = (far ? -1 : 1) * sign;
       return rot([out * outSign, down + fwd * P], theta);
     };
-    const mid = add(root, seg(a.shoulder, d.armUpper));
-    const end = add(mid, seg(a.shoulder + a.elbow, d.armLower));
+    const mid = add(root, seg(shoulder, d.armUpper));
+    const end = add(mid, seg(shoulder + a.elbow, d.armLower));
     return { root, mid, end };
   };
 
@@ -194,7 +208,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
         if (topRow && (rr < tx0 + 0.5 || rr > tx1 - 0.5)) continue;
         const isPants = u < d.pantsRows + 0.5;
         const mat = isPants ? 'bottom' : 'top';
-        const slot = !isPants && topRow ? LIGHT : side && rr > tx1 - 0.5 && !isPants ? LIGHT : BASE;
+        const slot = !isPants && topRow ? LIGHT : BASE;
         part.set(x, y, mat, slot);
       }
     // número de camiseta, de frente o de espalda (contorno de la camisa)
@@ -277,8 +291,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
       const ang = pr.angle !== undefined && side ? pr.angle : auto;
       if (isBall(pr.kind)) drawBall(part, pr.kind, p, d.u);
       else drawHeld(part, pr.kind, p, ang, d.u);
-      const handUp = !!limb && limb === arms.near && side && limb.end[1] < local(0, d.torsoH)[1] + 1;
-      const pointsUp = !isBall(pr.kind) && side && Math.sin((ang * Math.PI) / 180) < -0.3;
+      const handUp = !!limb && view !== 'back' && (side ? limb === arms.near : true) && limb.end[1] < local(0, d.torsoH)[1] + 1;
+      const pointsUp = !isBall(pr.kind) && view !== 'back' && Math.sin((ang * Math.PI) / 180) < -0.3;
       commit(part, behind ? Layer.Behind : (handUp || pointsUp) && !isBall(pr.kind) ? Layer.ArmUp : Layer.Prop, false, false);
     }
   };
@@ -297,12 +311,11 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   drawSkirt();
   drawTorso();
   drawHead();
-  if (side) {
-    // si la mano queda más arriba que la barbilla, el brazo va detrás de la cabeza
-    const chinY = local(0, d.torsoH)[1];
-    drawArm(false, arms.near.end[1] < chinY + 1 ? Layer.ArmUp : Layer.NearArm);
-  }
-  else if (view === 'front') { drawArm(true, L_FAR_ARM); drawArm(false, L_NEAR_ARM); }
+  // si la mano queda más arriba que la barbilla, el brazo va detrás de la cabeza
+  const chinY = local(0, d.torsoH)[1];
+  const upLayer = (p: { end: [number, number] }, normal: number) => (p.end[1] < chinY + 1 ? Layer.ArmUp : normal);
+  if (side) drawArm(false, upLayer(arms.near, Layer.NearArm));
+  else if (view === 'front') { drawArm(true, upLayer(arms.far, L_FAR_ARM)); drawArm(false, upLayer(arms.near, L_NEAR_ARM)); }
   drawAttached(false);
 
   // ---------- piso: el punto más bajo toca el suelo (o queda a `air` pixeles) ----------
@@ -329,7 +342,14 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   const groundRow = C + d.groundY;
   const dy = groundRow - groundCanvas;
   const dx = Math.round(pose.x * (side ? 1 : sign));
-  return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body: bodyBox(canvas, dx, dy) };
+  const J = (p: [number, number]): [number, number] => [p[0] + canvas.ox + dx, p[1] + canvas.oy + dy];
+  const neck = local(side ? Math.max(1, Math.round(d.u * 1.2)) : 0, d.torsoH);
+  const joints: Joints = {
+    hip: J([0, 0]), hipNear: J(legs.near.root), hipFar: J(legs.far.root), footNear: J(legs.near.end), footFar: J(legs.far.end),
+    shoulderNear: J(arms.near.root), shoulderFar: J(arms.far.root), handNear: J(arms.near.end), handFar: J(arms.far.end),
+    neck: J(neck), head: J(add(neck, local(0, d.headW * 0.5))),
+  };
+  return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body: bodyBox(canvas, dx, dy), joints };
 }
 
 /** Distancia del hombro a la cadera y ángulos del brazo para llegar a un punto (para manubrios, barras). */

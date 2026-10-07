@@ -32,3 +32,5 @@ export * from './export/plan';
 export * from './export/aseprite';
 export * from './export/engines';
 export * from './export/bundle';
+export * from './render/editor';
+export * from './sheet/variants';
