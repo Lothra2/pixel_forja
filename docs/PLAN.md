@@ -1,85 +1,95 @@
-# PixelForja: plan, crítica y estado
+# PixelForja: plan, decisiones y estado
 
-Documento vivo. Aquí queda lo que decidimos, lo que cambiaría del plan original y en qué va cada fase.
+## Estado
 
-## Qué cambiaría del plan
+Todas las fases están construidas y probadas con imágenes de prueba de la familia y del fútbol.
+Las imágenes las hice yo en SVG (`samples/src`) porque no recibí imágenes reales. Antes de dar el
+criterio de aceptación por cumplido hay que pasar las imágenes reales por el estudio.
 
-**1. Reordenar fases para que tu juego tenga valor antes.**
-El plan completo es de meses: más de 80 animaciones, seis exportadores, editor de poses, animales y vista de arriba. Si Fútbol Familia GG es de vista lateral, propongo que la Fase 2 sea el paquete de fútbol completo con las 33 animaciones del preajuste. Después vendrían la vista de arriba en 4 direcciones, los animales y lo demás. Así cada fase termina con algo que usas en el juego.
+| Fase | Qué incluye | Estado |
+|---|---|---|
+| 0 | Plan, crítica y prototipo del flujo completo | Hecho |
+| 1 | Humano chibi 3/4: reposo, caminar, correr, saltar en partes, patear, festejo. 32, 48 y 64 px. PNG + JSON, GIF, control de calidad, estudio en español e inglés | Hecho |
+| 2 (adelantada) | Paquete de fútbol completo: las 33 animaciones de Fútbol Familia GG más portero | Hecho |
+| 3 | Vista desde arriba en 4 direcciones, preajustes juvenil y realista, controles finos, vistas extra subidas | Hecho |
+| 4 | Animales: cuadrúpedo con boxer (Thor), perro, mapache y gato | Hecho |
+| 5 | Paquetes de básquet, vóley, tenis, béisbol, natación, atletismo, artes marciales, skate, bici y RPG, con implementos dibujados con código | Hecho |
+| 6 | Editor de poses con línea de tiempo, papel cebolla e interpolación | Hecho |
+| 7 | Exportadores Aseprite, Godot, Unity, zip de cuadros, paquete de personaje. Galería y "sorpréndeme" | Hecho |
+| Netlify | `netlify.toml` listo | Falta conectar tu cuenta |
 
-**2. Corregir a mano es el camino principal, no el plan B.**
-Sin IA, la detección de zonas funciona bien con ilustraciones de colores planos y línea negra, como las de prueba. Con dibujos muy sombreados, texturas o fotos de juguetes se va a equivocar más. Por eso el estudio adivina todo pero cada paso se corrige con uno o dos toques: varita, pincel, recuadro y ojos.
+## Decisiones que tomé sin preguntarte
 
-**3. Los dos ojos no sirven como escala.**
-La distancia entre ojos cambia mucho entre estilos. En un dibujo realista los ojos están juntos y en un chibi separados, así que escalar por ojos da cabezas de tamaños distintos. Uso el recuadro de la cabeza para la escala y los ojos para centrar la plantilla y ubicar los sellos. Además el motor adivina recuadro y ojos, y tú solo corriges si hace falta.
+- **Fútbol Familia GG** se trata como juego de vista lateral, con hoja estilo Phaser. El punto [24, 46]
+  es la planta del pie: la fila 46 es la del contorno de abajo del zapato.
+- **El preajuste del juego exporta sin balón.** Supuse que el juego dibuja su propio balón. En la vista
+  previa el balón sí se ve, y en los demás exportadores se elige con un interruptor.
+- **Aseprite**: exporto los dos. El `.aseprite` de verdad, con una etiqueta por animación, y el JSON que
+  saca Aseprite, que Phaser carga con `load.aseprite`.
+- **Godot 4**: un `SpriteFrames` (`.tres`) que recorta la hoja. **Unity**: el `.meta` del PNG en modo
+  múltiple, con filtro Point, sin compresión y un recorte por cuadro. Lo armé para Unity 2022.3 o más nuevo.
 
-**4. Los lentes también se diseñan, no se reducen.**
-Pasó lo mismo que con los ojos: reducidos se rompían en pedazos sueltos. El motor detecta un accesorio alrededor de los dos ojos, saca su color y los dibuja con un sello. Propongo extender la idea a gorras, cintillos y el número de la camiseta.
+## Lo que cambié del plan original y por qué
 
-**5. El control de calidad no debe bloquear todo.**
-Bloquear la exportación por "temblor" o "cantidad de colores" frena sin necesidad. Lo dejé en dos niveles: errores que bloquean (altura, pies en el piso, se sale del cuadro, pixeles sueltos) y avisos que no bloquean (colores, temblor de la cabeza, cara legible).
+1. **Fútbol antes que vista de arriba y animales.** Así lo primero que sirve es tu juego.
+2. **Corregir a mano es el camino principal.** Sin IA la detección de zonas acierta en dibujos de
+   colores planos con línea, que es lo común en avatares e ilustraciones. Con sombreado fuerte, texturas
+   o fotos se equivoca más. Por eso cada paso trae varita, pincel, recuadro y ojos.
+3. **La escala la da el recuadro de la cabeza, no los ojos.** La distancia entre ojos cambia demasiado
+   entre estilos.
+4. **Lentes, ojos y boca se diseñan con sellos.** Reducidos se rompen.
+5. **El control de calidad tiene dos niveles.** Bloquean: se sale del cuadro, pies en el piso,
+   pixeles sueltos y altura en animaciones de pie. Solo avisan: colores, temblor y cara legible.
+   La altura no se exige en animaciones donde agacharse es parte del movimiento, como la barrida o el
+   portero. Al exportar se puede forzar, pero queda dicho qué falló y en qué cuadro.
+6. **Brazos del chibi.** Con cabeza grande y brazos cortos, un brazo alzado nunca supera la cabeza.
+   El render los abre hacia el costado (de frente) o los adelanta (de lado) para que las manos asomen.
+   Es la convención del pixel art chibi.
+7. **El encuadre lo decide el cuerpo.** Un balón que sale disparado se recorta. Si un salto choca con
+   el techo de la celda, ese cuadro se baja solo lo justo, porque el juego igual mueve el sprite al saltar.
 
-**6. La ficha debería poder guardar la imagen de origen.**
-Si la ficha solo guarda la cabeza ya pixelada, cuando mejore el motor una ficha vieja queda congelada. Propongo un campo opcional con la imagen de trabajo para regenerarla. Ojo con la privacidad: una ficha con la imagen adentro se comparte con la imagen.
+## Cómo funciona
 
-**7. Hay exportadores ambiguos.**
-"Aseprite" puede ser el archivo .aseprite o el JSON que exporta Aseprite, que es casi igual al de Phaser. Unity cambia el formato de los recortes según la versión. Necesito saber qué versiones usas antes de la Fase 6.
+- **Ficha** (`src/engine/sheet/ficha.ts`): JSON versionado (v2). Guarda el cuerpo, las proporciones,
+  las paletas, la ropa, la cara, las cabezas pixeladas por tamaño y vista, y tus animaciones propias.
+  Una ficha v1 se migra sola.
+- **De imagen a ficha**: quitar fondo (relleno desde los bordes más el fondo encerrado), zonas por
+  k-means en OKLab más la posición de cada pieza, cabeza adivinada desde la pieza de piel de la cara,
+  ojos como huecos dentro de la cara, pixelado por zona (moda, no promedio), sellos y rampas de color.
+- **Pose única para tres vistas**: la pose se piensa de lado y el render la proyecta de frente o de
+  espalda. La izquierda es el espejo de la derecha. Una animación escrita una vez sirve para cualquier
+  personaje del mismo esqueleto.
+- **Movimiento**: caminar, correr y los andares de animales son ciclos con fórmulas que dependen del
+  largo de la pierna y la contextura. Lo demás son poses clave interpoladas. El pelo largo tiene vaivén
+  propio y la cabeza llega un cuadro tarde.
+- **Render**: lienzo por capas con pincel de grosor fijo, contorno selectivo y pies al piso. Lo único
+  que se rota es la cabeza, y con RotSprite.
+- **Determinista**: la misma ficha da los mismos pixeles en el navegador, en el worker y en Node.
 
-**8. Determinismo de verdad.**
-El motor no dibuja con Canvas. Dibuja en memoria con su propio código, así que la misma ficha da los mismos pixeles en el navegador, en el worker y en Node. Eso es lo que hace útiles las imágenes doradas. El PNG se decodifica con el mismo código en los dos lados. JPG y WebP los decodifica el navegador y pueden variar un poco, por eso la línea de comandos solo acepta PNG.
+## Pruebas
 
-**9. React para el estudio.**
-Lo conoces por React Native. El motor no depende de React, así que se puede cambiar sin tocar nada del motor.
+- **Vitest, 45 pruebas.** Cubren el control de calidad de las 75 animaciones humanas con los 6
+  personajes a 48 px, el preajuste del juego a 32 y 64, los preajustes juvenil y realista en 3 tamaños,
+  RPG en 4 direcciones y Thor en 3 tamaños. También que cada exportador abra bien (Aseprite se parsea
+  cuadro por cuadro, Godot, Unity, zip y GIF), la migración v1 a v2 y las imágenes doradas.
+- **Playwright, 6 pruebas**, en computadora y teléfono. Recorren el flujo completo de persona y de
+  animal, el editor de poses, la galería y las descargas.
+- `npm run entregables` revisó 604 clips sin errores de calidad. La tabla está en `docs/final/calidad.md`.
 
-## Estructura
+## Lo que falta o no quedó perfecto
 
-```
-src/engine/          motor puro en TypeScript, sin DOM. Corre en navegador, worker y Node
-  core/              imagen en memoria, RNG determinista
-  color/             OKLab, rampas de 4 tonos con giro de tono, k-means
-  analyze/           imagen de trabajo, quitar fondo, zonas, adivinar cabeza y ojos
-  head/              pixelado de cabeza por zona y librería de sellos
-  sheet/             la ficha (JSON versionado), construir ficha desde imagen, recolor
-  rig/               medidas por tamaño, pose, IK
-  anim/              animaciones procedurales
-  render/            lienzo por capas, pincel fijo, contorno selectivo, pies al piso
-  qa/                control de calidad
-  export/            PNG, hoja + JSON, preajuste Fútbol Familia GG, GIF propio
-  __tests__/         Vitest
-src/studio/          el estudio en React, con el motor en un Web Worker
-cli/forja.ts         generar en lote con el mismo motor
-e2e/                 Playwright en computadora y teléfono
-samples/             imágenes de prueba sintéticas y su SVG
-golden/              imágenes doradas
-scripts/             generar muestras y entregables
-docs/fase0/          entregables de la Fase 0
-```
-
-## Fase 0: estado
-
-Hecho y probado:
-
-- Flujo completo real: imagen, fondo, zonas, cabeza, estilo, vista previa y exportar.
-- Animaciones: reposo con parpadeo y caminar de 8 cuadros, en 32, 48 y 64 px.
-- Exporta hoja PNG + JSON tipo Phaser, el preajuste de Fútbol Familia GG, GIF y la ficha.
-- Control de calidad en verde para los 3 personajes de prueba, en los 3 tamaños.
-- 30 pruebas de Vitest y 4 de Playwright en verde.
-
-Lo que falta o no salió:
-
-- **Las imágenes son sintéticas.** Las hice yo en SVG para probar. El criterio de aceptación de la Fase 1 es con tus tres imágenes.
-- **Colores:** salen entre 18 y 27 por personaje. El piloto que gustó usaba 25 a 30. En la Fase 1 sumo tonos en ropa y pelo.
-- **Pelo con vaivén propio:** por ahora la cabeza entera llega un cuadro tarde. El pelo largo todavía no se mueve aparte.
-- **Vista 3/4:** es la cabeza de frente corrida un pixel con la cara girada. En chibi se ve bien, pero no es un 3/4 real.
-- **Escalones dobles en el borde de la cabeza:** todavía no se limpian.
-- **Lentes a 32 px:** se ven pesados, ocupan casi toda la cara.
-- **Zonas de colores parecidos** pueden confundirse, por ejemplo pantalón gris con zapatos grises. Se corrige con la varita.
-- **Netlify:** no lo pude publicar porque necesito acceso a tu cuenta. El repo ya trae `netlify.toml`. Lo conectas en Netlify en dos minutos o me pasas un token.
-- **Galería y botón "sorpréndeme":** quedaron para la Fase 1.
-
-## Preguntas abiertas
-
-1. ¿Me pasas las tres imágenes de prueba reales?
-2. Fútbol Familia GG: ¿es de vista lateral? ¿Qué motor usa? ¿El punto [24, 46] es la planta del pie?
-3. ¿Te parece bien adelantar el paquete de fútbol antes que la vista de arriba y los animales?
-4. Para la Fase 6: ¿qué versión de Unity y de Godot usas? ¿"Aseprite" es el archivo .aseprite o su JSON?
+- **Imágenes reales.** Todo está probado con dibujos sintéticos. Con tus imágenes van a aparecer casos
+  nuevos, sobre todo en zonas y cabeza.
+- **Exportadores sin abrir en su programa.** No tengo Aseprite, Godot ni Unity aquí. Los archivos siguen
+  el formato publicado y las pruebas los leen de vuelta, pero no los abrí en cada programa.
+- **El 3/4 lateral no es un 3/4 real de la cabeza.** Es la cabeza de frente con la cara corrida.
+  Si subes una imagen de lado, esa vista mejora.
+- **Peinados asimétricos.** Una cola de caballo a un lado queda del lado de la cara en la vista lateral.
+- **Animales sin vista de arriba.** Salen solo de lado (y su espejo), con forma de plantilla. De la
+  imagen se toman solo los colores.
+- **Lentes a 32 px** ocupan casi toda la cara.
+- **Unas medias blancas sobre fondo blanco** pueden confundirse con fondo. Se corrige con el pincel.
+- **Galería en el navegador.** Si se borran los datos del navegador se pierde. La ficha exportada es el
+  respaldo de verdad.
+- **Netlify**: falta conectar el repo a tu cuenta (Netlify > Add new site > Import from Git > este repo).
+  El build y la carpeta ya están configurados.
