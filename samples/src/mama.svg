@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="860" viewBox="0 0 400 860">
+  <rect width="400" height="860" fill="#fdf3e6"/>
+  <g stroke="#2a1d1a" stroke-width="4" stroke-linejoin="round">
+    <!-- cola de caballo detrás -->
+    <path d="M250 110 Q330 130 310 300 Q300 340 280 300 Q290 200 240 150 Z" fill="#2b1a12"/>
+    <!-- piernas -->
+    <rect x="168" y="560" width="28" height="220" rx="10" fill="#e8b48c"/>
+    <rect x="206" y="560" width="28" height="220" rx="10" fill="#e8b48c"/>
+    <!-- sandalias -->
+    <path d="M150 778 L198 778 L198 800 L146 800 Z" fill="#c0392b"/>
+    <path d="M204 778 L252 778 L256 800 L204 800 Z" fill="#c0392b"/>
+    <!-- vestido (falda acampanada) -->
+    <path d="M150 300 L250 300 L262 440 L300 620 L100 620 L138 440 Z" fill="#2e8b7a"/>
+    <path d="M155 320 L148 610" stroke="#226b5e" stroke-width="10"/>
+    <!-- brazos -->
+    <rect x="114" y="310" width="28" height="200" rx="12" fill="#e8b48c"/>
+    <rect x="258" y="310" width="28" height="200" rx="12" fill="#e8b48c"/>
+    <circle cx="128" cy="514" r="17" fill="#e8b48c"/>
+    <circle cx="272" cy="514" r="17" fill="#e8b48c"/>
+    <path d="M140 300 L260 300 L292 330 L290 370 L258 370 L258 330 L142 330 L142 370 L110 370 L108 330 Z" fill="#2e8b7a"/>
+    <!-- cuello y cara -->
+    <rect x="184" y="230" width="32" height="80" fill="#e8b48c"/>
+    <ellipse cx="200" cy="165" rx="72" ry="85" fill="#e8b48c"/>
+    <path d="M128 170 Q120 80 200 72 Q282 80 272 170 Q262 118 205 108 Q150 118 128 170 Z" fill="#2b1a12"/>
+    <ellipse cx="173" cy="172" rx="9" ry="12" fill="#3b2216"/>
+    <ellipse cx="227" cy="172" rx="9" ry="12" fill="#3b2216"/>
+    <circle cx="176" cy="168" r="3" fill="#fff" stroke="none"/>
+    <circle cx="230" cy="168" r="3" fill="#fff" stroke="none"/>
+    <path d="M182 210 Q200 222 218 210" fill="none" stroke="#b03a48" stroke-width="5"/>
+    <circle cx="134" cy="190" r="6" fill="#f2c94c"/>
+    <circle cx="266" cy="190" r="6" fill="#f2c94c"/>
+  </g>
+</svg>

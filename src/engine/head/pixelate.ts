@@ -7,7 +7,7 @@ import { type Lab, labToHex, deltaE } from '../color/oklab';
 import { type Ramp, SHADOW, BASE, LIGHT } from '../color/ramp';
 import { type HeadBitmap, type HeadZone, PIXEL_CHARS } from '../sheet/ficha';
 import { EYES } from './stamps';
-import type { CellSize } from '../sheet/ficha';
+import { stampClass } from '../rig/dims';
 
 const HEAD_ZONES: HeadZone[] = ['hair', 'skin', 'accessory'];
 const TONES: Record<HeadZone, number> = { hair: 4, skin: 3, accessory: 3 };
@@ -26,7 +26,6 @@ export function pixelateHead(
   mask: Mask,
   head: HeadSpec,
   headW: number,
-  cell: CellSize,
   skinRamp: Ramp,
 ): HeadBitmap {
   const { w: W, h: H } = img.raster;
@@ -218,7 +217,7 @@ export function pixelateHead(
 
   const eyeY = Math.round(((e1.y + e2.y) / 2 - top) / k) - minY;
   const cxHead = halfCols - minX; // el punto medio de los ojos cae entre cxHead-1 y cxHead
-  const eyeW = EYES[cell].round[0].length;
+  const eyeW = EYES[stampClass(headW)].round[0].length;
   let half = ((e2.x - e1.x) / k) / 2;
   half = Math.max(half, eyeW + 0.5);
   const ex1 = Math.round(cxHead - half - 0.5);

@@ -1,7 +1,6 @@
 import type { Raster } from '../core/raster';
 import type { RenderedClip } from '../render/clip';
-import { dimsFor } from '../rig/dims';
-import type { Ficha } from '../sheet/ficha';
+import { type Ficha, isHuman } from '../sheet/ficha';
 import { hexToLab } from '../color/oklab';
 
 export type Severity = 'error' | 'warn' | 'ok';
@@ -56,20 +55,21 @@ export function uniqueColors(frames: Raster[]): number {
 
 /** Corre todas las medidas sobre una animación ya dibujada. */
 export function runQA(f: Ficha, clip: RenderedClip): QAReport {
-  const d = dimsFor(clip.cell, f.body.proportions);
+  const groundY = clip.cell - 2;
   const items: QAItem[] = [];
   const b = clip.frames.map(bounds);
-  // altura: igual en todos los cuadros en el piso (±1)
+  // altura: igual en todos los cuadros en el piso (±1). Solo en animaciones de pie (agacharse cambia la altura a propósito)
   const grounded = b.filter((_, i) => !clip.airborne[i]);
   const heights = grounded.map((x) => x.y1 - x.y0 + 1);
   const hr = heights.length ? Math.max(...heights) - Math.min(...heights) : 0;
   items.push({
     check: 'height',
-    severity: hr > 1 ? 'error' : 'ok',
-    value: heights.length ? `${Math.min(...heights)}-${Math.max(...heights)} px` : 'n/a',
+    // de frente o de espalda la perspectiva sube y baja los pies: se tolera un pixel más
+    severity: clip.steady && hr > (clip.view === 'front' || clip.view === 'back' ? 2 : 1) ? 'error' : 'ok',
+    value: heights.length ? `${Math.min(...heights)}-${Math.max(...heights)} px${clip.steady ? '' : ' *'}` : 'n/a',
   });
   // que nada se salga del cuadro
-  const clipped = b.map((x, i) => ({ i, x })).filter(({ x }) => x.y0 <= 0 || x.x0 <= 0 || x.x1 >= clip.cell - 1);
+  const clipped = clip.fits ? [] : b.map((x, i) => ({ i, x }));
   items.push({
     check: 'fit',
     severity: clipped.length ? 'error' : 'ok',
@@ -77,11 +77,11 @@ export function runQA(f: Ficha, clip: RenderedClip): QAReport {
     where: clipped.length ? `#${clipped.map((x) => x.i).join(', #')}` : undefined,
   });
   // pies en el piso
-  const off = b.map((x, i) => ({ i, y1: x.y1 })).filter((x) => !clip.airborne[x.i] && x.y1 !== d.groundY);
+  const off = b.map((x, i) => ({ i, y1: x.y1 })).filter((x) => !clip.airborne[x.i] && x.y1 !== groundY);
   items.push({
     check: 'ground',
     severity: off.length ? 'error' : 'ok',
-    value: off.length ? `${off.length}/${b.length}` : `y=${d.groundY}`,
+    value: off.length ? `${off.length}/${b.length}` : `y=${groundY}`,
     where: off.length ? `#${off.map((x) => x.i).join(', #')}` : undefined,
   });
   // pixeles sueltos
@@ -106,8 +106,13 @@ export function runQA(f: Ficha, clip: RenderedClip): QAReport {
     const dj = Math.max(Math.abs(b[i].y0 - b[j].y0), Math.abs(headCenterX(clip.frames[i], b[i].y0) - headCenterX(clip.frames[j], b[j].y0)));
     if (dj > maxJ) { maxJ = dj; worst = i; }
   }
-  items.push({ check: 'jitter', severity: maxJ > 1 ? 'warn' : 'ok', value: `${maxJ} px`, where: maxJ > 1 ? `#${worst} > #${(worst + 1) % b.length}` : undefined });
+  if (clip.steady) items.push({ check: 'jitter', severity: maxJ > 1 ? 'warn' : 'ok', value: `${maxJ} px`, where: maxJ > 1 ? `#${worst} > #${(worst + 1) % b.length}` : undefined });
+  else items.push({ check: 'jitter', severity: 'ok', value: 'n/a' });
   // la cara se lee: contraste entre ojo y piel
+  if (!isHuman(f)) {
+    items.push({ check: 'face', severity: 'ok', value: 'n/a' });
+    return { clip: clip.name, cell: clip.cell, items, ok: !items.some((x) => x.severity === 'error') };
+  }
   const skin = hexToLab(f.palette.skin[2]);
   const eye = hexToLab(f.palette.eyes);
   const darkEye = Math.min(0.24, eye[0] * 0.45);

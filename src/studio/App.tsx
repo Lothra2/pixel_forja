@@ -5,7 +5,7 @@ import type { AnalyzeParams, AnalyzeResult, FrameSet } from './protocol';
 import { ImageStage, ZONE_COLORS } from './components/ImageStage';
 import { Preview, type PreviewBg } from './components/Preview';
 import {
-  type Ficha, type CellSize, type HeadSpec, type Point, type Zone, type QAReport, type ColorSlot,
+  type HumanFicha as Ficha, type CellSize, type HeadSpec, type Point, type Zone, type QAReport, type ColorSlot,
   DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, BASE,
 } from '../engine/index';
 

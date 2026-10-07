@@ -70,6 +70,26 @@ export function removeBackground(img: WorkImage, opt: BackgroundOptions): Mask {
       // contra el vecino: paso a paso, permite degradados suaves. Contra la semilla: evita colarse en el personaje.
       for (const j of nb) if (j >= 0 && seedOf[j] === -1 && close(j, i, tol * 0.5) && close(j, seed, tol * 2)) push(j, seed);
     }
+    // Fondo encerrado (entre una cola de caballo y el cuello, o entre el brazo y el cuerpo):
+    // regiones del color casi exacto del fondo, en la parte alta de la figura. Abajo no se toca,
+    // porque unas medias blancas sobre fondo blanco son indistinguibles: para eso está el pincel.
+    if (bgCenters.length) {
+      const bb = maskBBox(mask, w, h);
+      const cand = new Uint8Array(w * h);
+      for (let i = 0; i < w * h; i++) {
+        if (!mask[i]) continue;
+        const p: Lab = [lab[i * 3], lab[i * 3 + 1], lab[i * 3 + 2]];
+        if (bgCenters.some((c) => deltaE(p, c) <= Math.min(0.015, tol * 0.5))) cand[i] = 1;
+      }
+      const comp = components(cand, w, h, 1);
+      const sy = new Float64Array(comp.sizes.length);
+      for (let i = 0; i < w * h; i++) if (cand[i]) sy[comp.labels[i]] += (i / w) | 0;
+      const limit = bb.y0 + (bb.y1 - bb.y0) * 0.6;
+      for (let i = 0; i < w * h; i++) {
+        const l = comp.labels[i];
+        if (cand[i] && comp.sizes[l] >= w * h * 0.0006 && sy[l] / comp.sizes[l] < limit) mask[i] = 0;
+      }
+    }
   }
   for (const s of opt.strokes ?? []) {
     const r2 = s.r * s.r;

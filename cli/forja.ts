@@ -1,19 +1,22 @@
 /**
  * forja: genera personajes en lote con el mismo motor del estudio.
  *
- *   npx tsx cli/forja.ts build samples/sofi.png --out out/sofi
+ *   npx tsx cli/forja.ts build samples/gabo.png --out out/gabo
  *   npx tsx cli/forja.ts build img.png --head 120,90,180,200 --eyes 160,250,240,250 --sizes 48
- *   npx tsx cli/forja.ts render ficha.json --out out/x
+ *   npx tsx cli/forja.ts build samples/thor.png --animal boxer --out out/thor
+ *   npx tsx cli/forja.ts render out/gabo/gabo.ficha.json --out out/x --anims ffgg --export sheet,godot,unity,aseprite,gif
  *
+ * Opciones: --preset chibi|juvenil|realista  --anims all|ffgg|<pack>|idle,walk  --views side,front,back,left
+ *           --export sheet,ffgg,aseprite,godot,unity,frames,gif,ficha  --props on|off
  * Si existe `<imagen>.head.json` al lado de la imagen ({ box, eyes } en pixeles de la imagen original),
  * se usa como si el usuario hubiera marcado la cabeza.
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { basename, join, dirname } from 'node:path';
 import {
-  decodePng, encodePng, buildFicha, renderClip, ANIM_NAMES, runQA, packSheet, encodeGif, toFfgg,
-  upscaleNearest, createRaster, blit, fill, ZONES, validateFicha,
-  type Ficha, type CellSize, type HeadSpec, type QAReport, type Raster, type Analysis, CELL_SIZES,
+  decodePng, encodePng, buildFicha, buildAnimalFicha, migrateFicha, validateFicha, exportFiles, renderPlan, animsFor,
+  createRaster, ZONES, FFGG_ANIMS, isHuman, CELL_SIZES, DEFAULT_PROPORTIONS, QAError,
+  type Ficha, type CellSize, type HeadSpec, type QAReport, type Raster, type Analysis, type ViewName, type ExportKind, type Species, type PresetName,
 } from '../src/engine/index.ts';
 
 function arg(name: string): string | undefined {
@@ -34,81 +37,81 @@ export function zoneOverlay(a: Analysis): Raster {
     const c = ZONE_COLORS[ZONES[a.zone[i]]];
     out.data.set([c[0], c[1], c[2], 255], i * 4);
   }
-  // recuadro de cabeza y ojos
-  const { box, eyes } = a.zones.head;
-  const mark = (x: number, y: number, c: [number, number, number]) => {
-    if (x >= 0 && y >= 0 && x < w && y < h) out.data.set([...c, 255], (Math.round(y) * w + Math.round(x)) * 4);
-  };
-  for (let x = box.x; x < box.x + box.w; x++) { mark(x, box.y, [255, 0, 0]); mark(x, box.y + box.h, [255, 0, 0]); }
-  for (let y = box.y; y < box.y + box.h; y++) { mark(box.x, y, [255, 0, 0]); mark(box.x + box.w, y, [255, 0, 0]); }
-  for (const e of eyes) for (let d = -4; d <= 4; d++) { mark(e.x + d, e.y, [0, 255, 0]); mark(e.x, e.y + d, [0, 255, 0]); }
   return out;
 }
 
-function onBg(r: Raster, bg: [number, number, number]): Raster {
-  const out = createRaster(r.w, r.h);
-  fill(out, [...bg, 255]);
-  blit(out, r, 0, 0);
-  return out;
-}
-
-function qaTable(reports: QAReport[]): string {
-  const lines = ['| anim | px | altura | piso | sueltos | colores | temblor | cara |', '|---|---|---|---|---|---|---|---|'];
+export function qaTable(reports: QAReport[]): string {
+  const lines = ['| anim | px | altura | cabe | piso | sueltos | colores | temblor | cara |', '|---|---|---|---|---|---|---|---|---|'];
   for (const r of reports) {
     const g = (c: string) => {
       const it = r.items.find((x) => x.check === c)!;
       const icon = it.severity === 'ok' ? 'OK' : it.severity === 'warn' ? 'AVISO' : 'FALLA';
       return `${icon} ${it.value}${it.where ? ` (${it.where})` : ''}`;
     };
-    lines.push(`| ${r.clip} | ${r.cell} | ${g('height')} | ${g('ground')} | ${g('orphans')} | ${g('colors')} | ${g('jitter')} | ${g('face')} |`);
+    lines.push(`| ${r.clip} | ${r.cell} | ${g('height')} | ${g('fit')} | ${g('ground')} | ${g('orphans')} | ${g('colors')} | ${g('jitter')} | ${g('face')} |`);
   }
   return lines.join('\n');
+}
+
+function animList(f: Ficha, spec: string | undefined): string[] {
+  const all = animsFor(f);
+  if (!spec || spec === 'all') return all.map((a) => a.name);
+  if (spec === 'ffgg') return [...FFGG_ANIMS];
+  const packs = new Set(all.map((a) => a.pack as string));
+  return spec.split(',').flatMap((s) => (packs.has(s) ? all.filter((a) => a.pack === s).map((a) => a.name) : [s]));
 }
 
 function writeOutputs(ficha: Ficha, out: string, sizes: CellSize[]) {
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, `${ficha.name}.ficha.json`), JSON.stringify(ficha, null, 2));
+  const anims = animList(ficha, arg('anims') ?? (ficha.body.skeleton === 'human' ? 'ffgg' : 'all'));
+  const views = (arg('views')?.split(',') ?? ['side']) as ViewName[];
+  const props = arg('props') !== 'off';
+  const kinds = (arg('export')?.split(',') ?? ['sheet', 'gif']) as ExportKind[];
   const reports: QAReport[] = [];
   for (const cell of sizes) {
-    const clips = ANIM_NAMES.map((n) => renderClip(ficha, cell, n));
-    for (const c of clips) {
-      reports.push(runQA(ficha, c));
-      writeFileSync(join(out, `${ficha.name}_${c.name}_${cell}.gif`), encodeGif(c.frames, c.fps, { scale: Math.round(192 / cell), background: [196, 226, 160] }));
-    }
-    const { png, json } = packSheet(clips, `${ficha.name}_${cell}.png`);
-    writeFileSync(join(out, `${ficha.name}_${cell}.png`), encodePng(png));
-    writeFileSync(join(out, `${ficha.name}_${cell}.json`), JSON.stringify(json, null, 2));
-    writeFileSync(join(out, `${ficha.name}_${cell}_x6.png`), encodePng(upscaleNearest(onBg(png, [196, 226, 160]), 6)));
-    if (cell === 48) {
-      const ff = toFfgg(json);
-      writeFileSync(join(out, `${ficha.name}_ffgg.json`), JSON.stringify(ff.json, null, 2));
-      console.log(`FFGG: ${Object.keys(ff.json.anims).length} animaciones listas, faltan ${ff.missing.length}`);
+    const plan = { cell, anims, views, props };
+    reports.push(...renderPlan(ficha, plan).qa);
+    for (const k of kinds) {
+      if (k === 'ffgg' && cell !== 48) continue;
+      try {
+        for (const file of exportFiles(ficha, k, plan, { force: true })) writeFileSync(join(out, file.name), file.bytes);
+      } catch (e) {
+        console.error(e instanceof QAError ? e.message : e);
+      }
     }
   }
   const table = qaTable(reports);
   writeFileSync(join(out, 'qa.md'), table + '\n');
-  console.log(table);
+  const bad = reports.filter((r) => !r.ok);
+  console.log(`${reports.length} clips, ${bad.length} con errores de calidad${bad.length ? ': ' + bad.map((b) => `${b.clip}@${b.cell}`).join(', ') : ''}`);
 }
 
 async function main() {
   const cmd = process.argv[2];
   const file = process.argv[3];
   if (!cmd || !file) {
-    console.log('uso: forja build <imagen.png> [--out dir] [--sizes 32,48,64] [--head x,y,w,h --eyes x1,y1,x2,y2]\n     forja render <ficha.json> [--out dir]');
+    console.log('uso: forja build <imagen.png> [--out dir] [--sizes 32,48,64] [--animal boxer] [--preset chibi] [--head x,y,w,h --eyes x1,y1,x2,y2]\n     forja render <ficha.json> [--out dir]');
     process.exit(1);
   }
   const sizes = (arg('sizes')?.split(',').map(Number) ?? CELL_SIZES) as CellSize[];
   if (cmd === 'render') {
-    const ficha = JSON.parse(readFileSync(file, 'utf8')) as Ficha;
-    const errs = validateFicha(ficha);
+    const raw = JSON.parse(readFileSync(file, 'utf8'));
+    const errs = validateFicha(raw);
     if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
-    writeOutputs(ficha, arg('out') ?? join('out', ficha.name), sizes.filter((s) => ficha.heads[`${s}`]));
+    const ficha = migrateFicha(raw);
+    writeOutputs(ficha, arg('out') ?? join('out', ficha.name), isHuman(ficha) ? sizes.filter((s) => ficha.heads[`${s}`]) : sizes);
     return;
   }
   const img = decodePng(readFileSync(file));
   const name = basename(file).replace(/\.png$/i, '');
   const out = arg('out') ?? join('out', name);
-  // la cabeza se marca en pixeles de la imagen original; el motor trabaja en la imagen reducida
+  mkdirSync(out, { recursive: true });
+  if (arg('animal')) {
+    const { ficha } = buildAnimalFicha(img, { name, species: arg('animal') as Species });
+    writeOutputs(ficha, out, sizes);
+    return;
+  }
   let head: HeadSpec | undefined;
   const sidecar = join(dirname(file), `${name}.head.json`);
   const raw = arg('head') && arg('eyes')
@@ -126,10 +129,10 @@ async function main() {
     };
   }
   const t0 = Date.now();
-  const { ficha, analysis, report } = buildFicha(img, { name, head, sizes });
+  const proportions = { ...DEFAULT_PROPORTIONS, preset: (arg('preset') ?? 'chibi') as PresetName };
+  const { ficha, analysis, report } = buildFicha(img, { name, head, sizes, proportions });
   console.log(`ficha en ${Date.now() - t0} ms. cabeza adivinada: ${report.headGuessed}. zonas sin encontrar: ${report.missingZones.join(', ') || 'ninguna'}`);
-  console.log('ropa:', JSON.stringify(ficha.outfit));
-  mkdirSync(out, { recursive: true });
+  console.log('ropa:', JSON.stringify(ficha.outfit), 'lentes:', ficha.face.glasses ?? 'no');
   writeFileSync(join(out, `${name}_zonas.png`), encodePng(zoneOverlay(analysis)));
   writeOutputs(ficha, out, sizes);
 }

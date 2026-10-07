@@ -7,7 +7,7 @@ import { makeRamp } from '../color/ramp';
 import { pixelateHead } from '../head/pixelate';
 import { dimsFor } from '../rig/dims';
 import {
-  type Ficha, type CellSize, CELL_SIZES, FICHA_FORMAT, FICHA_VERSION, DEFAULT_PROPORTIONS,
+  type HumanFicha as Ficha, type CellSize, type Proportions, type HeadBitmap, CELL_SIZES, FICHA_FORMAT, FICHA_VERSION, DEFAULT_PROPORTIONS,
 } from './ficha';
 
 export interface BuildInput {
@@ -20,6 +20,10 @@ export interface BuildInput {
   outfit?: Partial<Ficha['outfit']>;
   face?: Partial<Ficha['face']>;
   sizes?: CellSize[];
+  proportions?: Proportions;
+  /** vistas extra subidas por el usuario (imagen de lado mirando a la derecha, y de espalda) */
+  extra?: { side?: Raster; back?: Raster };
+  palette?: Partial<Ficha['palette']>;
 }
 
 export interface Analysis {
@@ -127,7 +131,16 @@ export function inferOutfit(a: Analysis): Ficha['outfit'] {
     const socksHigh = count(0.6, 0.78, 'socks');
     socks = socksHigh > socksPx * 0.3 ? 'knee' : 'low';
   }
-  return { sleeves, bottom, socks };
+  // vestido: no hay prenda de abajo aparte y la camisa baja hasta las piernas
+  const dress = count(0.35, 0.8, 'bottom') < count(0.35, 0.8, 'top') * 0.15 && count(0.45, 0.7, 'top') > count(0.45, 0.7, 'skin') * 0.6;
+  if (dress) bottom = 'skirt';
+  // guantes: accesorio a los costados, a la altura de las manos
+  let hx0 = w, hx1 = 0;
+  const handRow = Math.round(bodyTop + 0.42 * bodyH);
+  for (let x = 0; x < w; x++) if (a.mask[handRow * w + x]) { hx0 = Math.min(hx0, x); hx1 = Math.max(hx1, x); }
+  const sideH = (x: number) => x < hx0 + (hx1 - hx0) * 0.22 || x > hx1 - (hx1 - hx0) * 0.22;
+  const gloves = count(0.3, 0.55, 'accessory', sideH) > Math.max(30, count(0.3, 0.55, 'skin', sideH) * 0.8);
+  return { sleeves, bottom, socks, ...(gloves ? { gloves: true } : {}), ...(dress ? { dress: true } : {}) } as Ficha['outfit'];
 }
 
 /**
@@ -194,6 +207,9 @@ export function buildFicha(image: Raster, input: BuildInput, analysis?: Analysis
     accessory: makeRamp(color('accessory')),
   };
   const guessed = inferOutfit(a);
+  const isDress = (guessed as { dress?: boolean }).dress;
+  delete (guessed as { dress?: boolean }).dress;
+  if (isDress && !input.palette?.bottom) palette.bottom = palette.top;
   const outfit = { ...guessed, ...input.outfit };
   if (missing.includes('socks') && !input.outfit?.socks) outfit.socks = 'none';
   const ficha: Ficha = {
@@ -210,9 +226,27 @@ export function buildFicha(image: Raster, input: BuildInput, analysis?: Analysis
   const glasses = input.face?.glasses === null ? null : detectGlasses(a);
   if (glasses && input.face?.glasses === undefined) ficha.face.glasses = glasses.color;
   const headZone = glasses && ficha.face.glasses ? glasses.zone : a.zone;
+  if (input.proportions) ficha.body.proportions = { ...input.proportions };
+  const extra = {
+    side: input.extra?.side ? analyzeImage(input.extra.side, {}) : null,
+    back: input.extra?.back ? analyzeImage(input.extra.back, {}) : null,
+  };
   for (const cell of input.sizes ?? CELL_SIZES) {
     const d = dimsFor(cell, ficha.body.proportions);
-    ficha.heads[`${cell}`] = pixelateHead(a.work, headZone, a.mask, a.zones.head, d.headW, cell, palette.skin);
+    const front = pixelateHead(a.work, headZone, a.mask, a.zones.head, d.headW, palette.skin);
+    const set: { front: HeadBitmap; side?: HeadBitmap; back?: HeadBitmap } = { front };
+    if (extra.side) {
+      const e = extra.side;
+      const hb = pixelateHead(e.work, e.zone, e.mask, e.zones.head, d.headW, palette.skin);
+      // de lado se ve un ojo: el que queda más adelante
+      const eye = hb.eyes[1];
+      set.side = { ...hb, eyes: [{ ...eye }, { ...eye }] };
+    }
+    if (extra.back) {
+      const e = extra.back;
+      set.back = pixelateHead(e.work, e.zone, e.mask, e.zones.head, d.headW, palette.skin);
+    }
+    ficha.heads[`${cell}`] = set;
   }
   return { ficha, analysis: a, report: { headGuessed: a.zones.headGuessed && !input.head, missingZones: missing, outfitGuessed: guessed } };
 }

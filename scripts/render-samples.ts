@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const dir = join(import.meta.dirname, '..', 'samples');
-const names = ['sofi', 'gabo', 'papa'];
+const names = ['sofi', 'gabo', 'papa', 'mama', 'nena', 'portero', 'thor'];
 const browser = await chromium.launch();
 const page = await browser.newPage();
 for (const n of names) {

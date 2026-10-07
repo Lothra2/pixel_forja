@@ -57,8 +57,11 @@ describe('zonas en las imágenes de prueba', () => {
     expect(bb.y1 - bb.y0).toBeGreaterThan(500);
   });
 
-  it('detecta ropa y lentes', () => {
+  it('detecta ropa, vestido, guantes y lentes', () => {
     expect(sampleFicha('gabo').outfit).toEqual({ sleeves: 'short', bottom: 'shorts', socks: 'knee' });
+    expect(sampleFicha('mama').outfit.bottom).toBe('skirt');
+    expect(sampleFicha('nena').outfit.bottom).toBe('skirt');
+    expect(sampleFicha('portero').outfit.gloves).toBe(true);
     expect(sampleFicha('papa').outfit).toMatchObject({ sleeves: 'long', bottom: 'pants' });
     expect(sampleFicha('papa').face.glasses).toBeTruthy();
     expect(sampleFicha('sofi').face.glasses).toBeNull();

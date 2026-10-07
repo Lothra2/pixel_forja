@@ -17,14 +17,18 @@ export interface Paint {
 
 export const enum Layer {
   HairBack = 1,
-  FarArm = 2,
-  FarLeg = 3,
-  NearLeg = 4,
-  Skirt = 5,
-  Torso = 6,
-  Head = 7,
-  NearArm = 8,
-  Prop = 9,
+  Behind = 2,
+  FarArm = 3,
+  FarLeg = 4,
+  PropMid = 5,
+  NearLeg = 6,
+  Skirt = 7,
+  Torso = 8,
+  /** brazo levantado: pasa detrás de la cabeza (los brazos del chibi no llegan por encima de ella) */
+  ArmUp = 9,
+  Head = 10,
+  NearArm = 11,
+  Prop = 12,
 }
 
 const colorCache = new Map<string, number>();

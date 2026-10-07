@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import {
   decodePng, makeWorkImage, removeBackground, proposeZones, applyZoneEdits, buildFicha, renderClip, runQA, packSheet,
-  encodePng, encodeGif, toFfgg, ANIM_NAMES, type Raster, type WorkImage, type Analysis, type HumanAnimName,
+  encodePng, encodeGif, toFfgg, type Raster, type WorkImage, type Analysis,
 } from '../engine/index';
 import type { AnalyzeParams, Request, Response } from './protocol';
 
@@ -46,7 +46,7 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
         break;
       }
       case 'render': {
-        const clips = ANIM_NAMES.map((n) => renderClip(req.ficha, req.cell, n));
+        const clips = ['idle', 'walk'].map((n) => renderClip(req.ficha, req.cell, n));
         const qa = clips.map((c) => runQA(req.ficha, c));
         const sets = clips.map((c) => ({ name: c.name, fps: c.fps, cell: c.cell, frames: c.frames.map((f) => f.data) }));
         reply({ type: 'rendered', clips: sets, qa }, sets.flatMap((s) => s.frames.map((f) => f.buffer)));
@@ -54,7 +54,7 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
       }
       case 'export': {
         const f = req.ficha;
-        const clips = ANIM_NAMES.map((n) => renderClip(f, req.cell, n));
+        const clips = ['idle', 'walk'].map((n) => renderClip(f, req.cell, n));
         const blocked = clips.map((c) => runQA(f, c)).filter((q) => !q.ok);
         if (blocked.length) throw new Error(`Control de calidad: ${blocked.map((b) => `${b.clip} ${b.cell}px`).join(', ')}`);
         const base = `${f.name || 'personaje'}_${req.cell}`;
@@ -66,7 +66,7 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
           if (req.kind === 'sheet') files.push({ name: `${base}.json`, bytes: enc.encode(JSON.stringify(json, null, 2)), mime: 'application/json' });
           else files.push({ name: `${f.name || 'personaje'}_ffgg.json`, bytes: enc.encode(JSON.stringify(toFfgg(json).json, null, 2)), mime: 'application/json' });
         } else {
-          const c = clips.find((x) => x.name === (req.anim as HumanAnimName)) ?? clips[0];
+          const c = clips.find((x) => x.name === req.anim) ?? clips[0];
           files.push({ name: `${base}_${c.name}.gif`, bytes: encodeGif(c.frames, c.fps, { scale: Math.max(2, Math.round(192 / req.cell)) }), mime: 'image/gif' });
         }
         reply({ type: 'exported', files });
