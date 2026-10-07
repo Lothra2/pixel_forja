@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="800" viewBox="0 0 400 800">
+  <rect width="400" height="800" fill="#ffffff"/>
+  <g stroke="#2a1d1a" stroke-width="4" stroke-linejoin="round">
+    <!-- pelo largo de atrás -->
+    <path d="M95 230 Q90 120 200 105 Q310 120 305 230 L318 430 Q260 450 200 440 Q140 450 82 430 Z" fill="#6b3f22"/>
+    <path d="M110 300 L100 420 M290 300 L300 420" stroke="#4f2c16" stroke-width="6" fill="none"/>
+    <!-- piernas -->
+    <rect x="160" y="560" width="34" height="170" rx="12" fill="#f3c9a8"/>
+    <rect x="206" y="560" width="34" height="170" rx="12" fill="#f3c9a8"/>
+    <!-- medias -->
+    <rect x="158" y="640" width="38" height="90" rx="8" fill="#f4f4f4"/>
+    <rect x="204" y="640" width="38" height="90" rx="8" fill="#f4f4f4"/>
+    <!-- zapatos -->
+    <ellipse cx="172" cy="740" rx="32" ry="20" fill="#e8558a"/>
+    <ellipse cx="228" cy="740" rx="32" ry="20" fill="#e8558a"/>
+    <!-- short -->
+    <path d="M148 495 L252 495 L256 590 L206 590 L200 560 L194 590 L144 590 Z" fill="#3d6db5"/>
+    <!-- brazos -->
+    <rect x="114" y="400" width="30" height="150" rx="14" fill="#f3c9a8"/>
+    <rect x="256" y="400" width="30" height="150" rx="14" fill="#f3c9a8"/>
+    <circle cx="129" cy="555" r="18" fill="#f3c9a8"/>
+    <circle cx="271" cy="555" r="18" fill="#f3c9a8"/>
+    <!-- camisa con mangas cortas -->
+    <path d="M150 350 L250 350 L292 380 L292 445 L256 445 L256 510 L144 510 L144 445 L108 445 L108 380 Z" fill="#8a4fc7"/>
+    <path d="M150 360 L150 505" stroke="#6f3aa6" stroke-width="10" fill="none"/>
+    <!-- cuello -->
+    <rect x="182" y="320" width="36" height="40" fill="#f3c9a8"/>
+    <!-- cara -->
+    <ellipse cx="200" cy="235" rx="102" ry="105" fill="#f3c9a8"/>
+    <!-- flequillo -->
+    <path d="M98 230 Q95 115 200 110 Q305 115 302 230 Q285 175 250 165 Q240 200 210 205 Q215 175 200 165 Q170 200 130 200 Q140 175 145 165 Q110 190 98 230 Z" fill="#6b3f22"/>
+    <path d="M160 140 Q190 125 230 135" stroke="#9a643c" stroke-width="7" fill="none"/>
+    <!-- cintillo -->
+    <path d="M108 170 Q200 85 292 170" stroke="#ff6fa5" stroke-width="14" fill="none"/>
+    <!-- ojos -->
+    <ellipse cx="160" cy="255" rx="13" ry="19" fill="#3a2418"/>
+    <ellipse cx="240" cy="255" rx="13" ry="19" fill="#3a2418"/>
+    <circle cx="165" cy="248" r="5" fill="#ffffff" stroke="none"/>
+    <circle cx="245" cy="248" r="5" fill="#ffffff" stroke="none"/>
+    <!-- cejas y boca -->
+    <path d="M145 222 Q160 214 175 222 M225 222 Q240 214 255 222" fill="none" stroke-width="5"/>
+    <path d="M185 300 Q200 312 215 300" fill="none" stroke-width="5"/>
+    <ellipse cx="140" cy="285" rx="14" ry="7" fill="#f59aa5" stroke="none"/>
+    <ellipse cx="260" cy="285" rx="14" ry="7" fill="#f59aa5" stroke="none"/>
+  </g>
+</svg>
