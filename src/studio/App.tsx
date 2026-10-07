@@ -410,6 +410,7 @@ export function App() {
                   <button className="btn" disabled={!ficha || qaErrors} onClick={() => doExport('ffgg')} data-testid="export-ffgg">{t('exportFfgg')}</button>
                   <button className="btn" disabled={!ficha || qaErrors} onClick={() => doExport('gif')} data-testid="export-gif">{t('exportGif')} · {t(`anim_${anim}` as Key)}</button>
                   <button className="btn ghost" disabled={!ficha} onClick={() => ficha && download(`${name}.ficha.json`, JSON.stringify({ ...ficha, name }, null, 2), 'application/json')} data-testid="export-ficha">{t('exportFicha')}</button>
+                  {import.meta.env.VITE_ARTIFACT && <p className="error">{t('noDownloads')}</p>}
                   <p className="muted small">{t('phase0')}</p>
                 </div>
               )}

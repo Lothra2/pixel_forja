@@ -98,6 +98,7 @@ const es = {
   exportFicha: 'Ficha del personaje (.json)',
   exportHelp: 'La hoja trae 8 cuadros por fila, una animación por fila. El JSON sirve directo en Phaser.',
   phase0: 'Fase 0: prototipo. Solo reposo y caminar.',
+  noDownloads: 'En esta vista publicada las descargas están bloqueadas. Para exportar usa la versión local (npm run dev) o la de Netlify.',
   error: 'Algo falló',
 };
 
@@ -201,6 +202,7 @@ const en: Dict = {
   exportFicha: 'Character file (.json)',
   exportHelp: 'The sheet has 8 frames per row, one animation per row. The JSON loads straight into Phaser.',
   phase0: 'Phase 0: prototype. Idle and walk only.',
+  noDownloads: 'Downloads are blocked in this published view. To export, use the local version (npm run dev) or the Netlify one.',
   error: 'Something failed',
 };
 

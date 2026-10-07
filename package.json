@@ -11,7 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "forja": "tsx cli/forja.ts"
+    "forja": "tsx cli/forja.ts",
+    "samples": "tsx scripts/render-samples.ts",
+    "entregables": "tsx scripts/deliverables.ts"
   },
   "dependencies": {
     "fast-png": "^8.0.0",
