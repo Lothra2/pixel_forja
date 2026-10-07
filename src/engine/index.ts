@@ -19,3 +19,4 @@ export * from './export/png';
 export * from './export/sheet';
 export * from './export/ffgg';
 export * from './export/gif';
+export * from './sheet/recolor';

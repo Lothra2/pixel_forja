@@ -66,23 +66,23 @@ export function runQA(f: Ficha, clip: RenderedClip): QAReport {
   items.push({
     check: 'height',
     severity: hr > 1 ? 'error' : 'ok',
-    value: heights.length ? `${Math.min(...heights)}-${Math.max(...heights)} px (rango ${hr})` : 'n/a',
+    value: heights.length ? `${Math.min(...heights)}-${Math.max(...heights)} px` : 'n/a',
   });
   // que nada se salga del cuadro
   const clipped = b.map((x, i) => ({ i, x })).filter(({ x }) => x.y0 <= 0 || x.x0 <= 0 || x.x1 >= clip.cell - 1);
   items.push({
     check: 'fit',
     severity: clipped.length ? 'error' : 'ok',
-    value: clipped.length ? `${clipped.length} cuadro(s) cortados` : 'cabe',
-    where: clipped.length ? `cuadros ${clipped.map((x) => x.i).join(', ')}` : undefined,
+    value: clipped.length ? `${clipped.length}/${b.length}` : `${clip.cell}px`,
+    where: clipped.length ? `#${clipped.map((x) => x.i).join(', #')}` : undefined,
   });
   // pies en el piso
   const off = b.map((x, i) => ({ i, y1: x.y1 })).filter((x) => !clip.airborne[x.i] && x.y1 !== d.groundY);
   items.push({
     check: 'ground',
     severity: off.length ? 'error' : 'ok',
-    value: off.length ? `${off.length} cuadro(s) sin pisar` : `todos en y=${d.groundY}`,
-    where: off.length ? `cuadros ${off.map((x) => x.i).join(', ')}` : undefined,
+    value: off.length ? `${off.length}/${b.length}` : `y=${d.groundY}`,
+    where: off.length ? `#${off.map((x) => x.i).join(', #')}` : undefined,
   });
   // pixeles sueltos
   const orphans = clip.frames.map(countOrphans);
@@ -92,7 +92,7 @@ export function runQA(f: Ficha, clip: RenderedClip): QAReport {
     check: 'orphans',
     severity: total ? 'error' : 'ok',
     value: `${total}`,
-    where: firstBad >= 0 ? `cuadro ${firstBad} en (${orphans[firstBad].at[0].join(', ')})` : undefined,
+    where: firstBad >= 0 ? `#${firstBad} (${orphans[firstBad].at[0].join(', ')})` : undefined,
   });
   // colores
   const nColors = uniqueColors(clip.frames);
@@ -106,13 +106,13 @@ export function runQA(f: Ficha, clip: RenderedClip): QAReport {
     const dj = Math.max(Math.abs(b[i].y0 - b[j].y0), Math.abs(headCenterX(clip.frames[i], b[i].y0) - headCenterX(clip.frames[j], b[j].y0)));
     if (dj > maxJ) { maxJ = dj; worst = i; }
   }
-  items.push({ check: 'jitter', severity: maxJ > 1 ? 'warn' : 'ok', value: `${maxJ} px`, where: maxJ > 1 ? `cuadro ${worst} a ${(worst + 1) % b.length}` : undefined });
+  items.push({ check: 'jitter', severity: maxJ > 1 ? 'warn' : 'ok', value: `${maxJ} px`, where: maxJ > 1 ? `#${worst} > #${(worst + 1) % b.length}` : undefined });
   // la cara se lee: contraste entre ojo y piel
   const skin = hexToLab(f.palette.skin[2]);
   const eye = hexToLab(f.palette.eyes);
   const darkEye = Math.min(0.24, eye[0] * 0.45);
   const contrast = skin[0] - darkEye;
-  items.push({ check: 'face', severity: contrast < 0.3 ? 'warn' : 'ok', value: `contraste ojo/piel ${contrast.toFixed(2)}` });
+  items.push({ check: 'face', severity: contrast < 0.3 ? 'warn' : 'ok', value: `ΔL ${contrast.toFixed(2)}` });
   return { clip: clip.name, cell: clip.cell, items, ok: !items.some((x) => x.severity === 'error') };
 }
 
