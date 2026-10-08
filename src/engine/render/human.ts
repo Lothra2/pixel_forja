@@ -62,10 +62,17 @@ const DIGITS: Record<string, string[]> = {
 };
 
 const P_FRONT = 0.3;
+/** vistas en diagonal (isométrica, tipo Diablo): lo que va hacia adelante se ve corrido a la derecha y un poco más abajo */
+const DIAG_X = 0.7, DIAG_Z = 0.7, DIAG_LEAN = 0.6;
+/** se = de frente mirando abajo a la derecha, ne = de espalda mirando arriba a la derecha (las otras dos son espejos) */
+export type RenderView = View | 'se' | 'ne';
 /** giro de la cabeza en la vista lateral: 3/4 tirando a perfil */
 export const SIDE_YAW = 62;
 
-export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: View, opt: RenderOptions = {}): BigFrame {
+export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: RenderView, opt: RenderOptions = {}): BigFrame {
+  // en diagonal se arma como de frente (o de espalda) y lo que va hacia adelante se proyecta hacia la derecha
+  const diag = viewIn === 'se' || viewIn === 'ne';
+  const view: View = viewIn === 'se' ? 'front' : viewIn === 'ne' ? 'back' : viewIn;
   const d = dimsFor(cell, f.body.proportions);
   const avatarHead = usesAvatar(f);
   const set = f.heads[`${cell}`];
@@ -88,7 +95,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   const side = view === 'side';
   const sign = view === 'back' ? -1 : 1; // de espalda, lo "cercano" queda a la izquierda
   // en vista lateral el torso se inclina. De frente o espalda, `torso` no rota (se ve igual) y `roll` sí
-  const rawTheta = side ? pose.torso : pose.roll ?? 0;
+  const rawTheta = side ? pose.torso : diag ? (pose.roll ? pose.roll : pose.torso * DIAG_LEAN) : pose.roll ?? 0;
   // inclinación chica: no se rota (quedaría dentado), se corren las filas de arriba (como en el piloto)
   const SMALL = 12;
   const shear = Math.abs(rawTheta) < SMALL ? Math.tan((rawTheta * Math.PI) / 180) : 0;
@@ -123,7 +130,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     const P = view === 'front' ? P_FRONT : -P_FRONT;
     const z = (foot.z ?? 0) * (far ? -1 : 1) * sign;
     const proj = (p: [number, number], k: number): [number, number] => {
-      const v = rot([z * k, p[1] + p[0] * P], theta);
+      const v = rot(diag ? [z * k * DIAG_Z + p[0] * DIAG_X, p[1] + p[0] * P * DIAG_Z] : [z * k, p[1] + p[0] * P], theta);
       return add(root, v);
     };
     return { root, mid: proj(ik.mid, 0.5), end: proj(ik.end, 1), foot };
@@ -148,7 +155,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
       if (side) return local(fwd, -down);
       const P = view === 'front' ? P_FRONT : -P_FRONT;
       const outSign = (far ? -1 : 1) * sign;
-      return rot([out * outSign, down + fwd * P], theta);
+      return rot(diag ? [out * outSign * DIAG_Z + fwd * DIAG_X, down + fwd * P * DIAG_Z] : [out * outSign, down + fwd * P], theta);
     };
     const mid = add(root, seg(shoulder, d.armUpper));
     const end = add(mid, seg(shoulder + a.elbow, d.armLower));
@@ -172,7 +179,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     stroke(part, p.root, p.mid, d.armT, (t) => (sleeve === 'long' || (sleeve === 'short' && t < 0.6) ? sm : 'skin'));
     stroke(part, p.mid, p.end, d.armT, () => (sleeve === 'long' ? sm : 'skin'));
     blob(part, p.end, d.hand + (f.outfit.gloves ? 1 : 0), handMat);
-    commit(part, layer, side && far);
+    commit(part, layer, (side && far) || (diag && !far));
   };
 
   const drawLeg = (far: boolean, layer: number) => {
@@ -188,7 +195,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     const toe = p.foot?.toe ?? 0;
     if (!side) {
       // zapato visto de frente o de atrás: un bloque bajo el tobillo
-      const fw = d.legT + (d.footLen > 3 ? 1 : 0);
+      const fw = d.legT + (d.footLen > 3 ? 1 : 0) + (diag ? Math.max(1, Math.round(d.footLen / 3)) : 0);
       const x0 = an[0] - off - (fw > d.legT ? (far ? 1 : 0) * sign : 0);
       const yb = an[1] + (d.legT - 1 - off);
       for (let r = 0; r < d.footH; r++) for (let x = x0; x < x0 + fw; x++) part.set(x, yb - r, shoeMat, r === 0 && d.footH >= 2 ? SHADOW : BASE);
@@ -212,7 +219,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
       const tip = rot([d.footLen - 1, 0], ang);
       stroke(part, an, [an[0] + tip[0], an[1] + tip[1]], Math.max(d.footH, d.legT - 1), () => shoeMat);
     }
-    commit(part, layer, side && far);
+    commit(part, layer, (side && far) || (diag && !far));
   };
 
   const drawTorso = () => {
@@ -323,11 +330,11 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     const av = f.avatar;
     const useLpc = lpcBox;
     const hi: HeadImage & { pal: { dark?: string }[] } = useLpc
-      ? lpcHead(av!.lpc!, view, { skin: f.palette.skin[BASE], hair: f.palette.hair[BASE], eyes: f.palette.eyes, beard: av!.beard.color, glasses: av!.glasses.color }, pose.face.eyes, pose.face.mouth ?? f.face.mouth) as HeadImage & { pal: { dark?: string }[] }
+      ? lpcHead(av!.lpc!, viewIn === 'se' ? 'front34' : view, { skin: f.palette.skin[BASE], hair: f.palette.hair[BASE], eyes: f.palette.eyes, beard: av!.beard.color, glasses: av!.glasses.color }, pose.face.eyes, pose.face.mouth ?? f.face.mouth) as HeadImage & { pal: { dark?: string }[] }
       : avatarHead && style
       ? renderHeadModel(modelFromAvatar(f.avatar!), {
           width: d.headW, style,
-          yaw: view === 'front' ? 0 : view === 'back' ? 180 : SIDE_YAW - (pose.head.yaw ?? 0),
+          yaw: viewIn === 'se' ? 34 : viewIn === 'ne' ? 146 : view === 'front' ? 0 : view === 'back' ? 180 : SIDE_YAW - (pose.head.yaw ?? 0),
           eyes: pose.face.eyes, mouth: pose.face.mouth ?? (f.face.mouth === 'open' ? 'line' : f.face.mouth),
           skin: f.palette.skin[BASE], hair: f.palette.hair[BASE],
         }) as HeadImage & { pal: { dark?: string }[] }
@@ -339,7 +346,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
       const r = rotSprite(hi.img, angle, hi.anchor.x + 0.5, hi.anchor.y + 0.5);
       img = r.img; px = r.px - 0.5; py = r.py - 0.5;
     }
-    const ox = Math.round(neck[0] - px + pose.head.dx), oy = Math.round(neck[1] - py + pose.head.dy);
+    // en diagonal la cabeza de frente o de espalda se corre un poco hacia donde mira
+    const lean = diag ? Math.max(1, Math.round(d.u * 1.5)) : 0;
+    const ox = Math.round(neck[0] - px + pose.head.dx + lean), oy = Math.round(neck[1] - py + pose.head.dy);
     const hair = pose.hair ?? { dx: 0, dy: 0 };
     for (let y = 0; y < img.h; y++)
       for (let x = 0; x < img.w; x++) {
@@ -362,7 +371,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
       const part = new Part();
       const anchor: [number, number] =
         pr.at === 'handNear' ? arms.near.end : pr.at === 'handFar' ? arms.far.end : pr.at === 'footNear' ? legs.near.end : pr.at === 'footFar' ? legs.far.end : local(0, d.torsoH / 2);
-      const p: [number, number] = [anchor[0] + (pr.x ?? 0) * (side ? 1 : sign), anchor[1] + (pr.y ?? 0)];
+      const p: [number, number] = [anchor[0] + (pr.x ?? 0) * (side ? 1 : diag ? DIAG_X : sign), anchor[1] + (pr.y ?? 0)];
       // sin ángulo dado, el implemento sigue al antebrazo
       const limb = pr.at === 'handFar' ? arms.far : pr.at === 'handNear' ? arms.near : null;
       const auto = limb ? (Math.atan2(limb.end[1] - limb.mid[1], limb.end[0] - limb.mid[0]) * 180) / Math.PI : 0;
@@ -381,6 +390,11 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     drawArm(true, L_FAR_ARM);
     drawLeg(true, L_FAR_LEG);
     drawLeg(false, Layer.NearLeg);
+  } else if (diag) {
+    // en diagonal el brazo y la pierna "far" quedan del lado de la cámara
+    drawLeg(false, Layer.FarLeg);
+    drawLeg(true, Layer.NearLeg);
+    drawArm(false, Layer.FarArm);
   } else {
     drawLeg(true, L_FAR_LEG);
     drawLeg(false, Layer.NearLeg);
@@ -393,6 +407,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   const chinY = local(0, d.torsoH)[1];
   const upLayer = (p: { end: [number, number] }, normal: number) => (p.end[1] < chinY + 1 ? Layer.ArmUp : normal);
   if (side) drawArm(false, upLayer(arms.near, Layer.NearArm));
+  else if (diag) drawArm(true, upLayer(arms.far, Layer.NearArm));
   else if (view === 'front') { drawArm(true, upLayer(arms.far, L_FAR_ARM)); drawArm(false, upLayer(arms.near, L_NEAR_ARM)); }
   drawAttached(false);
 
@@ -403,7 +418,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   for (const pr of props) {
     if (pr.at !== 'ground') continue;
     const part = new Part();
-    const gx = Math.round((pr.x ?? 0) * (side ? 1 : sign));
+    const gx = Math.round((pr.x ?? 0) * (side ? 1 : diag ? DIAG_X : sign));
     const gy = groundCanvas - canvas.oy;
     if (isBall(pr.kind)) {
       const s = ballSize(pr.kind, d.u);
@@ -422,7 +437,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
 
   const groundRow = C + d.groundY;
   const dy = groundRow - groundCanvas;
-  const dx = Math.round(pose.x * (side ? 1 : sign));
+  const dx = Math.round(pose.x * (side ? 1 : diag ? DIAG_X : sign));
   const J = (p: [number, number]): [number, number] => [p[0] + canvas.ox + dx, p[1] + canvas.oy + dy];
   const neck = local(side ? Math.max(1, Math.round(d.u * 1.2)) : 0, d.torsoH);
   const joints: Joints = {

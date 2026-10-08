@@ -72,6 +72,36 @@ Este componente no está probado en un teléfono todavía: está escrito para la
 - **Godot 4:** formato Godot. Trae un `SpriteFrames` (`.tres`) con cada animación.
 - **Aseprite:** el `.aseprite` con una etiqueta por animación, más el JSON que Phaser lee con `load.aseprite`.
 
+## 4b. RPG isométrico de 8 direcciones (tipo Diablo)
+
+En Exportar toca **Isométrica 8 direcciones** (o en la terminal `--views iso`). Cada animación sale ocho veces con estos nombres:
+
+| dirección | sufijo |
+|---|---|
+| abajo | `_down` |
+| abajo a la izquierda | `_down_left` |
+| izquierda | `_left` |
+| arriba a la izquierda | `_up_left` |
+| arriba | `_up` |
+| arriba a la derecha | `_up_right` |
+| derecha | `_right` |
+| abajo a la derecha | `_down_right` |
+
+En Phaser, elige la animación según el ángulo del movimiento:
+
+```js
+const DIRS = ['right', 'down_right', 'down', 'down_left', 'left', 'up_left', 'up', 'up_right'];
+function dirFrom(vx, vy) {
+  const a = Math.atan2(vy, vx);                       // y crece hacia abajo
+  return DIRS[(Math.round(a / (Math.PI / 4)) + 8) % 8];
+}
+player.anims.play(`walk_${dirFrom(vx, vy)}`, true);
+```
+
+Las diagonales son de verdad: piernas y brazos se proyectan en 3/4 y la cara se gira hacia donde mira.
+Con piezas LPC la cabeza en diagonal es la de frente con los rasgos corridos (LPC no trae diagonales dibujadas).
+Con el kit Volumen la cabeza se gira en 3/4 real.
+
 ## 5. Créditos
 
 Si usas piezas dibujadas (LPC), cada exportación incluye `CREDITOS.txt`. Las licencias piden mostrar esos

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   lpcHead, lpcCredits, LPC_HAIRS, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HEADS, DEFAULT_LPC, defaultAvatar, fichaFromAvatar,
-  renderPlan, FFGG_PLAN, exportFiles, hexToLab, bodyProportions, type LpcColors, type BodyType, type HumanFicha,
+  renderPlan, FFGG_PLAN, exportFiles, hexToLab, bodyProportions, renderClip, mirror, EIGHT_VIEWS,
+  type LpcColors, type BodyType, type HumanFicha, type ViewName,
 } from '../index';
 
 const colors: LpcColors = { skin: '#d79d78', hair: '#2a1d16', eyes: '#3a2418', beard: '#4a3a33', glasses: '#1d1d24' };
@@ -80,4 +81,31 @@ describe('piezas dibujadas LPC', () => {
       expect(bad).toEqual([]);
     }
   }, 180000);
+});
+
+describe('vista isométrica de 8 direcciones', () => {
+  const f = fichaFromAvatar('rick', { ...defaultAvatar(), lpc: { ...DEFAULT_LPC, hair: 'swept_back', beard: 'medium', glasses: 'secretary' } });
+  it('las diagonales existen, se diferencian de frente y de lado, y las de la izquierda son espejo', () => {
+    const key = (v: ViewName) => Buffer.from(renderClip(f, 48, 'walk', v).frames[1].data).toString('base64');
+    const se = key('se'), front = key('front'), side = key('side');
+    expect(se).not.toBe(front);
+    expect(se).not.toBe(side);
+    expect(key('ne')).not.toBe(key('back'));
+    const a = renderClip(f, 48, 'idle', 'se').frames[0], b = renderClip(f, 48, 'idle', 'sw').frames[0];
+    expect(Buffer.from(mirror(a).data).equals(Buffer.from(b.data))).toBe(true);
+  });
+  it('la cabeza de frente girada corre la cara hacia donde mira', () => {
+    const a = lpcHead(DEFAULT_LPC, 'front', colors), b = lpcHead(DEFAULT_LPC, 'front34', colors);
+    expect(Buffer.from(a.img.idx.buffer).equals(Buffer.from(b.img.idx.buffer))).toBe(false);
+    expect(b.img.w).toBe(a.img.w);
+  });
+  it('un juego RPG isométrico: 8 direcciones con nombres y control de calidad en verde', () => {
+    const plan = { cell: 48 as const, anims: ['idle', 'walk', 'run', 'attack', 'hit', 'die'], views: EIGHT_VIEWS, props: true };
+    const { clips, qa } = renderPlan(f, plan);
+    expect(clips.length).toBe(6 * 8);
+    expect(clips.map((c) => c.name)).toContain('walk_down_right');
+    expect(clips.map((c) => c.name)).toContain('attack_up_left');
+    const bad = qa.filter((r) => !r.ok).map((r) => `${r.clip}: ${r.items.filter((i) => i.severity === 'error').map((i) => `${i.check} ${i.where ?? ''}`).join(',')}`);
+    expect(bad).toEqual([]);
+  }, 120000);
 });

@@ -578,7 +578,7 @@ export function App() {
                 <Select label={t('anim')} value={anim} set={setAnim} opts={animList.filter((a) => a.pack === curPack).map((a) => [a.name, animLabel(a.name, lang)])} testid="anim" />
               </div>
               <div className="row center">
-                {ficha && isHuman(ficha) && <Seg label={t('view')} value={view} set={(v) => setView(v as ViewName)} opts={(['side', 'left', 'front', 'back'] as ViewName[]).map((v) => [v, t(`view_${v}` as Key)])} testid="view" />}
+                {ficha && isHuman(ficha) && <Seg label={t('view')} value={view} set={(v) => setView(v as ViewName)} opts={(['side', 'left', 'front', 'back', 'se', 'sw', 'ne', 'nw'] as ViewName[]).map((v) => [v, t(`view_${v}` as Key)])} testid="view" />}
                 <Seg label={t('size')} value={String(cell)} set={(v) => setCell(+v as CellSize)} opts={[['32', '32'], ['48', '48'], ['64', '64']]} />
                 <Seg label={t('background')} value={bg} set={(v) => setBg(v as PreviewBg)} opts={[['pitch', t('bg_pitch')], ['grass', t('bg_grass')], ['plain', t('bg_plain')]]} />
                 {ficha && isHuman(ficha) && <Toggle label={t('props')} on={props} set={setProps} />}

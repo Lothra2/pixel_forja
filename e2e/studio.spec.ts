@@ -156,5 +156,15 @@ test('crear desde cero: avatar por piezas y animar', async ({ page }, info) => {
   await idle(page);
   await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
   await page.screenshot({ path: `${shots}/${tag}_21_avatar_animar.png`, fullPage: true });
+  // isométrica: diagonal abajo a la derecha, sin errores de calidad
+  await page.getByTestId('view').getByRole('button', { name: 'Diagonal ↘' }).click();
+  await idle(page);
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  await page.screenshot({ path: `${shots}/${tag}_22_isometrica.png`, fullPage: true });
+  // exportar en 8 direcciones
+  await page.getByTestId('step-export').click();
+  await page.getByTestId('views-eight').click();
+  await page.getByTestId('fmt-sheet').check();
+  await expect(page.getByTestId('qa-summary')).toBeVisible({ timeout: 60000 });
   expect(errors).toEqual([]);
 });

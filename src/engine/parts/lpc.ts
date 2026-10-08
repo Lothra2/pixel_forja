@@ -123,13 +123,17 @@ const MAX_HAIR_DROP = 8;
 
 /**
  * Cabeza armada con piezas LPC para una vista. side mira a la derecha (la izquierda la espeja el clip).
+ * front34 es la de frente girada un poco a la derecha (vista isométrica): ojos, nariz, cejas, bigote, lentes
+ * y boca se corren un pixel hacia donde mira, como lo haría un pixel artista. LPC no trae diagonales.
  * El ancla es el cuello: centro de la barbilla de la pieza de la cabeza.
  */
-export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back', colors: LpcColors, eyes: EyeExpr = 'open', mouth?: MouthExpr): ModelHeadImage {
+export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front34', colors: LpcColors, eyes: EyeExpr = 'open', mouth?: MouthExpr): ModelHeadImage {
   const key = JSON.stringify([look, view, colors, eyes, mouth]);
   const hit = cache.get(key);
   if (hit) return hit;
-  const dir: LpcDir = view === 'front' ? 'down' : view === 'side' ? 'right' : 'up';
+  const dir: LpcDir = view === 'front' || view === 'front34' ? 'down' : view === 'side' ? 'right' : 'up';
+  const turn = view === 'front34' ? 1 : 0;
+  const turns = (k: string) => turn > 0 && /^(face|nose|brows|mustache|glasses)\//.test(k);
   const sex = look.head.startsWith('female') ? 'female' : 'male';
   const headPart = DATA.parts[`head/${look.head}`] ?? DATA.parts['head/male'];
   const headDir = headPart.dirs[dir]!;
@@ -180,19 +184,25 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back', colors: 
     if (i === undefined) { i = pal.length; pal.push({ hex, mat, back, dark: '#1e1418' }); palIdx.set(k, i); }
     return i;
   };
+  // al girar, la cara se corre: donde estaba queda piel (sin los ojos de la pieza de la cabeza)
+  const faceDir = turn ? used.find((u) => u.l.key.startsWith('face/'))?.d : undefined;
+  const inFace = (fx: number, fy: number) => !!faceDir && fx >= faceDir.x && fx < faceDir.x + faceDir.w && fy >= faceDir.y && fy < faceDir.y + faceDir.h;
   for (const { l, d } of used) {
     const px = decode(d.px);
+    const sh = turns(l.key) ? turn : 0;
     const mapped = d.colors.map((c) => l.map(c, d));
     for (let yy = 0; yy < d.h; yy++)
       for (let xx = 0; xx < d.w; xx++) {
         const v = px[yy * d.w + xx];
         if (!v) continue;
-        const fx = d.x + xx, fy = d.y + yy;
+        const fx = d.x + xx + sh, fy = d.y + yy;
+        if (fx >= x1) continue;
         // pelo larguísimo: en un sprite de juego se corta a la altura de la espalda (si no, barre el piso y no cabe)
         if (l.mat === 'hair' && fy > chinY + MAX_HAIR_DROP) continue;
         // el pelo que baja más que la barbilla va detrás del cuerpo (salvo de espalda)
         const back = l.mat === 'hair' && dir !== 'up' && fy > chinY;
-        idx[(fy - y0) * w + (fx - x0)] = entry(mapped[v - 1], l.mat, back);
+        const hex = l.key.startsWith('head/') && inFace(fx, fy) ? skin(skinBase) : mapped[v - 1];
+        idx[(fy - y0) * w + (fx - x0)] = entry(hex, l.mat, back);
       }
   }
   // boca: las caras LPC no traen boca. Se dibuja a mano, con el tono oscuro de la piel, debajo de la nariz
@@ -205,7 +215,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back', colors: 
       idx[i] = entry(hex, 'face', false);
     };
     if (dir === 'down') {
-      const c0 = Math.round(headDir.x + headDir.w / 2) - 2; // cuatro columnas: c0..c0+3
+      const c0 = Math.round(headDir.x + headDir.w / 2) - 2 + turn; // cuatro columnas: c0..c0+3
       const shapes: Record<string, [string, string]> = {
         smile: ['l..l', '.ll.'], grin: ['lttl', '.ll.'], open: ['.dd.', '.dd.'], o: ['.dd.', '....'], frown: ['.ll.', 'l..l'],
       };

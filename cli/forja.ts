@@ -6,7 +6,7 @@
  *   npx tsx cli/forja.ts build samples/thor.png --animal boxer --out out/thor
  *   npx tsx cli/forja.ts render out/gabo/gabo.ficha.json --out out/x --anims ffgg --export sheet,godot,unity,aseprite,gif
  *
- * Opciones: --preset chibi|juvenil|realista  --anims all|ffgg|<pack>|idle,walk  --views side,front,back,left
+ * Opciones: --preset chibi|juvenil|realista  --anims all|ffgg|<pack>|idle,walk  --views side,front,back,left|iso (8 direcciones)
  *           --export sheet,ffgg,aseprite,godot,unity,frames,gif,ficha  --props on|off  --scale 1|2|4 (hoja agrandada)
  * Si existe `<imagen>.head.json` al lado de la imagen ({ box, eyes } en pixeles de la imagen original),
  * se usa como si el usuario hubiera marcado la cabeza.
@@ -15,7 +15,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { basename, join, dirname } from 'node:path';
 import {
   decodePng, encodePng, buildFicha, buildAnimalFicha, migrateFicha, validateFicha, exportFiles, renderPlan, animsFor,
-  createRaster, ZONES, FFGG_ANIMS, isHuman, CELL_SIZES, DEFAULT_PROPORTIONS, QAError,
+  createRaster, ZONES, FFGG_ANIMS, EIGHT_VIEWS, isHuman, CELL_SIZES, DEFAULT_PROPORTIONS, QAError,
   type Ficha, type CellSize, type HeadSpec, type QAReport, type Raster, type Analysis, type ViewName, type ExportKind, type Species, type PresetName,
 } from '../src/engine/index.ts';
 
@@ -65,7 +65,7 @@ function writeOutputs(ficha: Ficha, out: string, sizes: CellSize[]) {
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, `${ficha.name}.ficha.json`), JSON.stringify(ficha, null, 2));
   const anims = animList(ficha, arg('anims') ?? (ficha.body.skeleton === 'human' ? 'ffgg' : 'all'));
-  const views = (arg('views')?.split(',') ?? ['side']) as ViewName[];
+  const views = (arg('views') === 'iso' ? EIGHT_VIEWS : arg('views')?.split(',') ?? ['side']) as ViewName[];
   const props = arg('props') !== 'off';
   const kinds = (arg('export')?.split(',') ?? ['sheet', 'gif']) as ExportKind[];
   const reports: QAReport[] = [];

@@ -5,15 +5,25 @@ import { animalDims } from '../rig/animal';
 import { makeCtx, type AnimDef } from '../anim/types';
 import { humanAnim, animalAnim, customToDef } from '../anim/registry';
 import type { Pose } from '../rig/pose';
-import { renderHuman, type BigFrame, type RenderOptions } from './human';
+import { renderHuman, type BigFrame, type RenderOptions, type RenderView } from './human';
 import { renderAnimal } from './animal';
 import type { View } from './head';
 
-/** side = mirando a la derecha, left = espejo, front = hacia abajo (de frente), back = hacia arriba (de espalda) */
-export type ViewName = 'side' | 'left' | 'front' | 'back';
-export const VIEW_NAMES: ViewName[] = ['side', 'left', 'front', 'back'];
-/** sufijo de exportación para 4 direcciones tipo RPG */
-export const VIEW_SUFFIX: Record<ViewName, string> = { side: 'right', left: 'left', front: 'down', back: 'up' };
+/**
+ * side = mirando a la derecha, left = espejo, front = hacia abajo (de frente), back = hacia arriba (de espalda).
+ * Diagonales (isométrica, 8 direcciones tipo Diablo): se = abajo a la derecha, sw = abajo a la izquierda,
+ * ne = arriba a la derecha, nw = arriba a la izquierda. sw y nw son espejos de se y ne.
+ */
+export type ViewName = 'side' | 'left' | 'front' | 'back' | 'se' | 'sw' | 'ne' | 'nw';
+export const VIEW_NAMES: ViewName[] = ['side', 'left', 'front', 'back', 'se', 'sw', 'ne', 'nw'];
+export const DIAG_VIEWS: ViewName[] = ['se', 'sw', 'ne', 'nw'];
+/** las 8 direcciones en el orden de las agujas del reloj desde abajo (como se ordenan en motores isométricos) */
+export const EIGHT_VIEWS: ViewName[] = ['front', 'sw', 'left', 'nw', 'back', 'ne', 'side', 'se'];
+/** sufijo de exportación para 4 u 8 direcciones */
+export const VIEW_SUFFIX: Record<ViewName, string> = {
+  side: 'right', left: 'left', front: 'down', back: 'up', se: 'down_right', sw: 'down_left', ne: 'up_right', nw: 'up_left',
+};
+const MIRRORED: Partial<Record<ViewName, RenderView>> = { left: 'side', sw: 'se', nw: 'ne' };
 
 export interface RenderedClip {
   name: string;
@@ -59,12 +69,14 @@ export function posesFor(f: Ficha, cell: CellSize, name: string, view: View = 's
 }
 
 export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewName = 'side', opt: RenderOptions = {}): RenderedClip {
-  const base: View = view === 'left' ? 'side' : view;
+  const base: RenderView = MIRRORED[view] ?? (view as RenderView);
+  // las diagonales usan las poses pensadas de lado (adelante = hacia la derecha)
+  const poseView: View = base === 'se' || base === 'ne' ? 'side' : base;
   let big: BigFrame[], fps: number, loop: boolean, steady: boolean, airborne: boolean[];
   if (isHuman(f)) {
     const def = humanDef(f, name);
     if (!def) throw new Error(`No existe la animación ${name}`);
-    const poses = posesFor(f, cell, name, base);
+    const poses = posesFor(f, cell, name, poseView);
     big = poses.map((p) => renderHuman(f, cell, p, base, opt));
     // salto que choca con el techo de la celda: se baja solo ese cuadro lo justo
     big = big.map((b, i) => {
@@ -85,7 +97,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
     airborne = poses.map((p) => p.air > 0);
   }
   const { frames, fits } = cropClip(big, cell);
-  return { name, fps, loop, cell, view, frames: view === 'left' ? frames.map(mirror) : frames, airborne, steady, fits };
+  return { name, fps, loop, cell, view, frames: MIRRORED[view] ? frames.map(mirror) : frames, airborne, steady, fits };
 }
 
 /**

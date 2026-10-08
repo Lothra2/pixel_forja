@@ -64,8 +64,8 @@ export function runQA(f: Ficha, clip: RenderedClip): QAReport {
   const hr = heights.length ? Math.max(...heights) - Math.min(...heights) : 0;
   items.push({
     check: 'height',
-    // de frente o de espalda la perspectiva sube y baja los pies: se tolera un pixel más
-    severity: clip.steady && hr > (clip.view === 'front' || clip.view === 'back' ? 2 : 1) ? 'error' : 'ok',
+    // de frente, de espalda o en diagonal la perspectiva sube y baja los pies: se tolera un pixel más
+    severity: clip.steady && hr > (clip.view === 'side' || clip.view === 'left' ? 1 : 2) ? 'error' : 'ok',
     value: heights.length ? `${Math.min(...heights)}-${Math.max(...heights)} px${clip.steady ? '' : ' *'}` : 'n/a',
   });
   // que nada se salga del cuadro

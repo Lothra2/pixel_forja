@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { type Ficha, type CellSize, type ExportKind, type ExportPlan, type ViewName, type QAReport, animsFor, isHuman, VIEW_NAMES } from '../../engine/index';
+import { type Ficha, type CellSize, type ExportKind, type ExportPlan, type ViewName, type QAReport, animsFor, isHuman, VIEW_NAMES, EIGHT_VIEWS } from '../../engine/index';
 import type { Key } from '../i18n';
 import { Seg, Toggle, type T } from '../components/ui';
 
@@ -75,6 +75,8 @@ export function ExportStep({ t, ficha, cell: cell0, qa, doExport, artifact }: Pr
                 {VIEW_NAMES.map((v) => (
                   <button key={v} className={`chip ${views.has(v) ? 'on' : ''}`} onClick={() => setViews(toggle(views, v))}>{t(`view_${v}` as Key)}</button>
                 ))}
+                <button className="chip" data-testid="views-four" onClick={() => setViews(new Set(['side', 'left', 'front', 'back']))}>{t('views4')}</button>
+                <button className="chip" data-testid="views-eight" onClick={() => setViews(new Set(EIGHT_VIEWS))}>{t('views8')}</button>
               </div>
             </div>
           )}
