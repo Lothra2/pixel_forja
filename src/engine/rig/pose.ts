@@ -27,7 +27,17 @@ export interface Arm {
 
 export type PropKind =
   | 'soccer' | 'basketball' | 'volleyball' | 'tennisball' | 'baseball'
-  | 'racket' | 'bat' | 'skate' | 'bike' | 'sword' | 'shield' | 'potion' | 'glove' | 'hurdle';
+  | 'racket' | 'bat' | 'skate' | 'bike' | 'sword' | 'shield' | 'potion' | 'glove' | 'hurdle'
+  | WeaponKind | OffhandKind | 'arrow';
+
+/** Armas de mano (RPG). */
+export type WeaponKind =
+  | 'sword' | 'dagger' | 'greatsword' | 'axe' | 'mace' | 'hammer' | 'spear' | 'scythe'
+  | 'staff' | 'wand' | 'bow' | 'claws' | 'club';
+/** Mano libre: escudos, orbe mágico, libro de hechizos. */
+export type OffhandKind = 'shield' | 'shield_round' | 'shield_kite' | 'shield_tower' | 'orb' | 'tome';
+export const WEAPON_KINDS: WeaponKind[] = ['sword', 'dagger', 'greatsword', 'axe', 'mace', 'hammer', 'spear', 'scythe', 'staff', 'wand', 'bow', 'claws', 'club'];
+export const OFFHAND_KINDS: OffhandKind[] = ['shield', 'shield_round', 'shield_kite', 'shield_tower', 'orb', 'tome'];
 
 export interface PropState {
   kind: PropKind;

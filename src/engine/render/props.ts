@@ -56,7 +56,7 @@ export function drawBall(part: Part, kind: PropKind, c: [number, number], u: num
  * Implementos que se sostienen: el ángulo dice hacia dónde apunta (0 = derecha, 90 = abajo).
  * at = punto de agarre (mano).
  */
-export function drawHeld(part: Part, kind: PropKind, at: [number, number], angle: number, u: number) {
+export function drawHeld(part: Part, kind: PropKind, at: [number, number], angle: number, u: number, rest = false) {
   const dir = (len: number): [number, number] => {
     const [x, y] = rot([len, 0], angle);
     return [at[0] + x, at[1] + y];
@@ -91,7 +91,7 @@ export function drawHeld(part: Part, kind: PropKind, at: [number, number], angle
     const pts: [number, number][] = [
       [at[0] - w / 2, at[1] - h / 2], [at[0] + w / 2, at[1] - h / 2], [at[0] + w / 2, at[1] + h * 0.15], [at[0], at[1] + h / 2], [at[0] - w / 2, at[1] + h * 0.15],
     ];
-    polygon(part, pts, 'p_blue', BASE);
+    polygon(part, pts, 'p_shieldc', BASE);
     stroke(part, [at[0], at[1] - h / 2 + 1], [at[0], at[1] + h / 2 - 1], 1, () => 'p_gold');
   } else if (kind === 'potion') {
     const s = Math.max(3, Math.round(4 * u));
@@ -100,6 +100,102 @@ export function drawHeld(part: Part, kind: PropKind, at: [number, number], angle
     part.set(Math.round(at[0]), Math.round(at[1] - 2 - s / 2), 'p_brown');
   } else if (kind === 'glove') {
     blob(part, at, Math.max(3, Math.round(4 * u)), 'p_brown');
+  } else drawWeapon(part, kind, at, angle, u, dir, t, rest);
+}
+
+/** Armas y mano libre del RPG. dir(len) = punto a lo largo del arma desde la mano. */
+function drawWeapon(part: Part, kind: PropKind, at: [number, number], angle: number, u: number, dir: (len: number) => [number, number], t: number, rest: boolean) {
+  const side = (p: [number, number], d: number): [number, number] => { const [x, y] = rot([0, d], angle); return [p[0] + x, p[1] + y]; };
+  const n = (v: number) => Math.max(1, Math.round(v * u));
+  if (kind === 'dagger') {
+    stroke(part, dir(-1), dir(1), t, () => 'p_leather');
+    stroke(part, side(dir(1), -1), side(dir(1), 1), 1, () => 'p_gold');
+    stroke(part, dir(2), dir(n(6)), t, () => 'p_steel', LIGHT);
+  } else if (kind === 'greatsword') {
+    const len = n(17);
+    stroke(part, dir(-3), dir(1), t, () => 'p_leather');
+    stroke(part, side(dir(1), -n(3)), side(dir(1), n(3)), t, () => 'p_gold');
+    stroke(part, dir(2), dir(len), t + 1, () => 'p_steel', BASE);
+    stroke(part, dir(3), dir(len - 1), 1, () => 'p_steel', LIGHT);
+  } else if (kind === 'axe' || kind === 'scythe') {
+    const len = n(kind === 'scythe' ? (rest ? 24 : 16) : 11);
+    stroke(part, dir(-2), dir(len), t, () => 'p_wood', SHADOW);
+    if (kind === 'axe') {
+      // hoja en media luna hacia un lado
+      const h = dir(len - n(2));
+      polygon(part, [side(h, -n(1)), side(dir(len - n(5)), -n(5)), side(dir(len + n(1)), -n(5)), side(dir(len), -n(1))], 'p_steel', BASE);
+      stroke(part, side(dir(len - n(5)), -n(5)), side(dir(len + n(1)), -n(5)), 1, () => 'p_steel', LIGHT);
+    } else {
+      // hoja curva de la guadaña, hacia atrás
+      const tip = dir(len);
+      const pts: [number, number][] = [];
+      for (let k = 0; k <= 6; k++) { const a = (k / 6) * 1.6; pts.push(side(dir(len - Math.sin(a) * n(4)), -Math.cos(a - 0.2) * n(8) + n(1))); }
+      for (let k = 0; k < pts.length - 1; k++) stroke(part, pts[k], pts[k + 1], t, () => 'p_bone', LIGHT);
+      part.set(Math.round(tip[0]), Math.round(tip[1]), 'p_iron');
+    }
+  } else if (kind === 'mace' || kind === 'club') {
+    const len = n(kind === 'club' ? 9 : 8);
+    stroke(part, dir(-1), dir(len), t, () => (kind === 'club' ? 'p_wood' : 'p_iron'));
+    const c = dir(len + n(1.5));
+    blob(part, c, n(kind === 'club' ? 4 : 4), kind === 'club' ? 'p_wood' : 'p_steel');
+    if (kind === 'mace') for (const [dx, dy] of [[0, -1], [0, 1], [1, 0], [-1, 0]]) part.set(Math.round(c[0] + dx * n(2.5)), Math.round(c[1] + dy * n(2.5)), 'p_iron');
+  } else if (kind === 'hammer') {
+    const len = n(11);
+    stroke(part, dir(-2), dir(len), t, () => 'p_wood', SHADOW);
+    const h = dir(len);
+    polygon(part, [side(dir(len - n(2)), -n(3)), side(dir(len - n(2)), n(3)), side(dir(len + n(2)), n(3)), side(dir(len + n(2)), -n(3))], 'p_iron', BASE);
+    stroke(part, side(h, -n(3)), side(h, n(3)), 1, () => 'p_steel', LIGHT);
+  } else if (kind === 'spear') {
+    const len = n(rest ? 23 : 16);
+    stroke(part, dir(-n(6)), dir(len), t, () => 'p_wood', SHADOW);
+    polygon(part, [side(dir(len), -n(1.5)), dir(len + n(5)), side(dir(len), n(1.5))], 'p_steel', LIGHT);
+  } else if (kind === 'staff') {
+    const len = n(rest ? 23 : 13);
+    stroke(part, dir(-n(7)), dir(len), t, () => 'p_wood', SHADOW);
+    // cabeza del báculo: horquilla con una gema que brilla
+    stroke(part, side(dir(len), -n(2)), side(dir(len + n(2)), -n(2)), 1, () => 'p_wood');
+    stroke(part, side(dir(len), n(2)), side(dir(len + n(2)), n(2)), 1, () => 'p_wood');
+    blob(part, dir(len + n(2)), n(3), 'p_glow', LIGHT);
+  } else if (kind === 'wand') {
+    stroke(part, dir(-1), dir(n(6)), t, () => 'p_leather');
+    blob(part, dir(n(7)), n(2) + 1, 'p_glow', LIGHT);
+  } else if (kind === 'bow') {
+    // arco vertical respecto al brazo: la cuerda pasa por la mano
+    const R = n(8);
+    const pts: [number, number][] = [];
+    for (let k = 0; k <= 8; k++) { const a = -1.15 + (k / 8) * 2.3; pts.push(side(dir(Math.cos(a) * n(3)), Math.sin(a) * R)); }
+    for (let k = 0; k < pts.length - 1; k++) stroke(part, pts[k], pts[k + 1], t, () => 'p_wood', k === 4 ? LIGHT : BASE);
+    stroke(part, pts[0], pts[pts.length - 1], 1, () => 'p_white', SHADOW);
+  } else if (kind === 'arrow') {
+    stroke(part, dir(-n(4)), dir(n(6)), 1, () => 'p_wood');
+    part.set(Math.round(dir(n(7))[0]), Math.round(dir(n(7))[1]), 'p_steel', LIGHT);
+    part.set(Math.round(side(dir(-n(4)), 1)[0]), Math.round(side(dir(-n(4)), 1)[1]), 'p_white');
+  } else if (kind === 'claws') {
+    for (const d of [-1, 0, 1]) stroke(part, side(dir(1), d * n(1.2)), side(dir(n(6)), d * n(1.6)), 1, () => 'p_steel', LIGHT);
+    blob(part, at, n(3), 'p_iron');
+  } else if (kind === 'orb') {
+    const c: [number, number] = [at[0], at[1] - n(3)];
+    blob(part, c, n(5), 'p_glow', BASE);
+    part.set(Math.round(c[0] - n(1)), Math.round(c[1] - n(1)), 'p_white');
+  } else if (kind === 'tome') {
+    const w = n(5), h = n(6);
+    polygon(part, [[at[0] - w / 2, at[1] - h / 2], [at[0] + w / 2, at[1] - h / 2], [at[0] + w / 2, at[1] + h / 2], [at[0] - w / 2, at[1] + h / 2]], 'p_purple', BASE);
+    stroke(part, [at[0] - w / 2 + 1, at[1] - h / 2], [at[0] - w / 2 + 1, at[1] + h / 2], 1, () => 'p_gold');
+  } else if (kind === 'shield_round') {
+    const s = n(8);
+    blob(part, at, s, 'p_wood', BASE);
+    blob(part, at, Math.max(2, s - 4), 'p_shieldc', BASE);
+    blob(part, at, n(2), 'p_steel', LIGHT);
+  } else if (kind === 'shield_kite') {
+    const w = n(7), h = n(11);
+    polygon(part, [[at[0] - w / 2, at[1] - h / 2], [at[0] + w / 2, at[1] - h / 2], [at[0] + w / 2, at[1]], [at[0], at[1] + h / 2], [at[0] - w / 2, at[1]]], 'p_shieldc', BASE);
+    stroke(part, [at[0], at[1] - h / 2 + 1], [at[0], at[1] + h / 2 - 2], 1, () => 'p_gold');
+    stroke(part, [at[0] - w / 2 + 1, at[1] - h / 4], [at[0] + w / 2 - 1, at[1] - h / 4], 1, () => 'p_gold');
+  } else if (kind === 'shield_tower') {
+    const w = n(8), h = n(13);
+    polygon(part, [[at[0] - w / 2, at[1] - h / 2], [at[0] + w / 2, at[1] - h / 2], [at[0] + w / 2, at[1] + h / 2], [at[0] - w / 2, at[1] + h / 2]], 'p_iron', BASE);
+    polygon(part, [[at[0] - w / 2 + 1, at[1] - h / 2 + 1], [at[0] + w / 2 - 1, at[1] - h / 2 + 1], [at[0] + w / 2 - 1, at[1] + h / 2 - 1], [at[0] - w / 2 + 1, at[1] + h / 2 - 1]], 'p_shieldc', BASE);
+    blob(part, at, n(2), 'p_gold', LIGHT);
   }
 }
 

@@ -1,5 +1,6 @@
 import type { Ramp } from '../color/ramp';
 import type { Avatar } from '../head3d/avatar';
+import type { WeaponKind, OffhandKind } from '../rig/pose';
 
 /**
  * La ficha del personaje: todo sale de aquí. JSON versionado, editable a mano.
@@ -71,6 +72,9 @@ interface FichaBase {
   customAnims?: CustomAnim[];
 }
 
+/** main: arma (null = a mano limpia). off: escudo, orbe o libro (null = nada). glow: brillo mágico. shield: color del escudo */
+export interface Gear { main?: WeaponKind | null; off?: OffhandKind | null; glow?: string; shield?: string }
+
 /** cuero (pícaro, bárbaro), malla (guerrero), placas (paladín), túnica (mago, nigromante) */
 export type ArmorKind = 'cuero' | 'malla' | 'placas' | 'tunica';
 export const ARMOR_KINDS: ArmorKind[] = ['cuero', 'malla', 'placas', 'tunica'];
@@ -123,6 +127,8 @@ export interface HumanFicha extends FichaBase {
   };
   /** glasses: color del marco si tiene lentes (se dibujan con sello, no se reducen) */
   face: { eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean };
+  /** equipo de RPG: arma en la mano y algo en la otra (escudo, orbe, libro). Reemplaza la espada y el escudo de las animaciones */
+  gear?: Gear;
   /** cabezas ya pixeladas, por tamaño */
   heads: Partial<Record<`${CellSize}`, HeadSet>>;
   /**

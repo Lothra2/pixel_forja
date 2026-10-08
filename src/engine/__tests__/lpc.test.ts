@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   lpcHead, lpcCredits, LPC_HAIRS, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HEADS, DEFAULT_LPC, defaultAvatar, fichaFromAvatar,
-  renderPlan, FFGG_PLAN, exportFiles, hexToLab, bodyProportions, renderClip, mirror, EIGHT_VIEWS, LPC_MONSTERS, LPC_EARS, lpcSkinOf, withLpc,
+  renderPlan, FFGG_PLAN, exportFiles, hexToLab, bodyProportions, renderClip, mirror, EIGHT_VIEWS, LPC_MONSTERS, LPC_EARS, lpcSkinOf, withLpc, WEAPON_KINDS, OFFHAND_KINDS,
   type LpcColors, type BodyType, type HumanFicha, type ViewName,
 } from '../index';
 
@@ -141,4 +141,22 @@ describe('enemigos: cabezas de monstruo, orejas y cuernos', () => {
       expect(qa.filter((r) => !r.ok).map((r) => r.clip), id).toEqual([]);
     }
   }, 120000);
+});
+
+describe('armas y armaduras del RPG', () => {
+  it('cada arma y cada mano libre se dibujan y cambian el cuadro de ataque', () => {
+    const base = fichaFromAvatar('h', defaultAvatar(), { armor: 'placas', cape: '#2a4fa0', pauldrons: true, belt: '#5a3a22', trim: '#e2b74a' });
+    const key = (f: HumanFicha) => Buffer.from(renderClip(f, 48, 'attack', 'side').frames[3].data).toString('base64');
+    const seen = new Set<string>();
+    for (const main of WEAPON_KINDS) seen.add(key({ ...base, gear: { main, off: null } } as HumanFicha));
+    expect(seen.size).toBe(WEAPON_KINDS.length);
+    for (const off of OFFHAND_KINDS) expect(renderClip({ ...base, gear: { main: 'sword', off } } as HumanFicha, 48, 'block_shield', 'front').frames.length).toBeGreaterThan(0);
+  });
+  it('el héroe con equipo pasa el control de calidad en 8 direcciones con cada armadura', () => {
+    for (const armor of ['cuero', 'malla', 'placas', 'tunica'] as const) {
+      const f = { ...fichaFromAvatar('h', defaultAvatar(), { armor, cape: '#7a1f2b' }), gear: { main: armor === 'tunica' ? 'staff' : 'axe', off: 'shield_round' } } as HumanFicha;
+      const { qa } = renderPlan(f, { cell: 48, anims: ['idle', 'walk', 'attack', 'hit'], views: EIGHT_VIEWS, props: true });
+      expect(qa.filter((r) => !r.ok).map((r) => `${armor} ${r.clip}`)).toEqual([]);
+    }
+  }, 180000);
 });

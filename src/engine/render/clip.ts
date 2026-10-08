@@ -56,7 +56,17 @@ export function posesFor(f: Ficha, cell: CellSize, name: string, view: View = 's
   const def = humanDef(f, name);
   if (!def) throw new Error(`No existe la animación ${name}`);
   const d = dimsFor(cell, f.body.proportions);
-  const poses = def.build(makeCtx(d, f.body.proportions.build, view));
+  let poses = def.build(makeCtx(d, f.body.proportions.build, view));
+  // con equipo de RPG, el héroe lleva el arma (y el escudo) también al caminar, correr, recibir golpes...
+  const g = f.gear;
+  if (g && (def.pack === 'basic' || def.pack === 'rpg' || def.pack === 'skills')) {
+    poses = poses.map((p) => {
+      const props = [...(p.props ?? [])];
+      if (g.main && !props.some((q) => q.at === 'handNear')) props.push({ kind: 'sword', at: 'handNear' });
+      if (g.off && !props.some((q) => q.at === 'handFar')) props.push({ kind: 'shield', at: 'handFar' });
+      return { ...p, props };
+    });
+  }
   // vaivén del pelo: llega tarde al subir y bajar, y se va hacia atrás al correr
   const lag = f.physics.hairLag;
   return poses.map((p, i) => {

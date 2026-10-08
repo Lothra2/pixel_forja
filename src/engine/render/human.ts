@@ -1,7 +1,9 @@
 import { type Raster } from '../core/raster';
 import { type HumanFicha, type CellSize, usesAvatar, ARMOR_DEFAULT_COLOR } from '../sheet/ficha';
 import { dimsFor, type Dims } from '../rig/dims';
-import { type Pose, type Arm, type Foot, solveTwoBone } from '../rig/pose';
+import { type Pose, type Arm, type Foot, type PropKind, solveTwoBone, WEAPON_KINDS } from '../rig/pose';
+
+const WEAPON_SET = new Set<PropKind>(WEAPON_KINDS);
 import { type Ramp, SHADOW, BASE, LIGHT, makeRamp } from '../color/ramp';
 import { LayerCanvas, Layer, finalizeOutlines, toRaster, packHex } from './canvas';
 import { Materials } from './materials';
@@ -97,6 +99,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   if (fo.trim) mats.add('trim', ink(makeRamp(fo.trim)));
   if (fo.cape) mats.add('cape', ink(makeRamp(fo.cape)));
   if (fo.belt) mats.add('belt', ink(makeRamp(fo.belt)));
+  if (f.gear?.glow) mats.add('p_glow', makeRamp(f.gear.glow));
+  if (f.gear?.shield) mats.add('p_shieldc', makeRamp(f.gear.shield));
   const shoeMat = armor === 'placas' ? 'armor' : fo.shoes === 'descalzo' ? 'skin' : 'shoes';
   const side = view === 'side';
   const sign = view === 'back' ? -1 : 1; // de espalda, lo "cercano" queda a la izquierda
@@ -410,9 +414,16 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
 
   // ---------- implementos en manos y pies ----------
   const props = opt.props === false ? [] : pose.props ?? [];
+  // el equipo de la ficha reemplaza la espada y el escudo de las animaciones
+  const gear = f.gear;
+  const gearKind = (k: PropKind): PropKind | null =>
+    k === 'sword' && gear && gear.main !== undefined ? gear.main : k === 'shield' && gear && gear.off !== undefined ? gear.off : k;
   const drawAttached = (behind: boolean) => {
-    for (const pr of props) {
-      if (pr.at === 'ground' || !!pr.behind !== behind) continue;
+    for (const raw of props) {
+      if (raw.at === 'ground' || !!raw.behind !== behind) continue;
+      const kind = gearKind(raw.kind);
+      if (!kind) continue;
+      const pr = { ...raw, kind };
       const part = new Part();
       const anchor: [number, number] =
         pr.at === 'handNear' ? arms.near.end : pr.at === 'handFar' ? arms.far.end : pr.at === 'footNear' ? legs.near.end : pr.at === 'footFar' ? legs.far.end : local(0, d.torsoH / 2);
@@ -420,12 +431,29 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
       // sin ángulo dado, el implemento sigue al antebrazo
       const limb = pr.at === 'handFar' ? arms.far : pr.at === 'handNear' ? arms.near : null;
       const auto = limb ? (Math.atan2(limb.end[1] - limb.mid[1], limb.end[0] - limb.mid[0]) * 180) / Math.PI : 0;
-      const ang = pr.angle !== undefined && side ? pr.angle : auto;
+      let ang = pr.angle !== undefined && side ? pr.angle : auto;
+      // armas largas con el brazo colgando: el báculo y la lanza van parados, el arco vertical
+      const down = Math.sin((auto * Math.PI) / 180) > 0.5;
+      const rest = pr.angle === undefined && down && (kind === 'staff' || kind === 'spear' || kind === 'scythe');
+      if (rest) {
+        // parado al costado y más largo que el cuerpo, la punta asoma por encima de la cabeza
+        ang = side ? -62 : -90;
+        // la altura del arma no sigue el vaivén de la mano (la mano se desliza por el asta): así no "salta" al caminar
+        p[1] = local(0, Math.round(d.torsoH * 0.25))[1];
+        if (!side) { const cx = local(0, d.torsoH / 2)[0]; p[0] += Math.sign(p[0] - cx || 1) * Math.round(3 * d.u); }
+      }
+      if (pr.angle === undefined && down && kind === 'bow') ang = 0;
+      // armas cortas con el brazo colgando: hacia adelante y abajo, sin tocar el piso
+      const hangs = !rest && pr.angle === undefined && down && limb && WEAPON_SET.has(kind) && kind !== 'bow';
+      if (hangs) {
+        if (side) ang = 28;
+        else { const cx = local(0, d.torsoH / 2)[0]; ang = p[0] >= cx ? (view === 'back' ? 12 : 32) : (view === 'back' ? 168 : 148); }
+      }
       if (isBall(pr.kind)) drawBall(part, pr.kind, p, d.u);
-      else drawHeld(part, pr.kind, p, ang, d.u);
+      else drawHeld(part, pr.kind, p, ang, d.u, rest);
       const handUp = !!limb && view !== 'back' && (side ? limb === arms.near : true) && limb.end[1] < local(0, d.torsoH)[1] + 1;
       const pointsUp = !isBall(pr.kind) && view !== 'back' && Math.sin((ang * Math.PI) / 180) < -0.3;
-      commit(part, behind ? Layer.Behind : (handUp || pointsUp) && !isBall(pr.kind) ? Layer.ArmUp : Layer.Prop, false, false);
+      commit(part, behind ? Layer.Behind : rest && view !== 'back' ? Layer.Prop : (handUp || pointsUp) && !isBall(pr.kind) ? Layer.ArmUp : Layer.Prop, false, false);
     }
   };
 
@@ -458,7 +486,10 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   drawAttached(false);
 
   // ---------- piso: el punto más bajo toca el suelo (o queda a `air` pixeles) ----------
-  const bb = canvas.bbox();
+  // el piso lo toca el cuerpo: un hacha o un báculo que cuelgan más abajo que los pies no levantan al personaje
+  const bbAll = canvas.bbox();
+  const bbBody = gear ? bodyBox(canvas, 0, 0) : null;
+  const bb = bbBody ? { y1: bbBody.y1 } : bbAll;
   const hipH = pose.hipH;
   const groundCanvas = hipH !== undefined ? canvas.oy + Math.round(hipH) : (bb ? bb.y1 + 1 : canvas.oy) + Math.round(pose.air);
   for (const pr of props) {

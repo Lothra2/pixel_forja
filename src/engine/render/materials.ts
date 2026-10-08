@@ -6,6 +6,11 @@ export const PROP_COLORS = {
   white: '#f2f2ee', black: '#2a2a32', orange: '#e8742a', yellow: '#f2c94c', blue: '#3d6fd6', red: '#d23c3c',
   wood: '#c8904e', metal: '#c9d3df', lime: '#cfe83a', grey: '#8a8f99', pink: '#e0466a', glass: '#bfe8ff',
   brown: '#8a5a2b', green: '#4caf50', navy: '#24305e', gold: '#e2b23c',
+  steel: '#b4bfcc', iron: '#6f7782', bone: '#e6dcc2', leather: '#6e4326', purple: '#8a4fd6',
+  /** brillo mágico de báculos, varitas y orbes (la ficha puede cambiarlo) */
+  glow: '#5fe0ff',
+  /** color del escudo (la ficha puede cambiarlo) */
+  shieldc: '#2f5fb8',
 } as const;
 export type PropColor = keyof typeof PROP_COLORS;
 
