@@ -6,7 +6,8 @@ import { type Ramp, SHADOW, BASE, LIGHT } from '../color/ramp';
 import { LayerCanvas, Layer, finalizeOutlines, toRaster, packHex } from './canvas';
 import { Materials } from './materials';
 import { Part, stroke, blob, rot } from './part';
-import { buildHeadImage, type View } from './head';
+import { buildHeadImage, type View, type HeadImage } from './head';
+import { renderHeadModel, HEAD_STYLES } from '../head3d/render';
 import { rotSprite } from './rotsprite';
 import { drawBall, drawHeld, drawGround, isBall, ballSize } from './props';
 
@@ -55,6 +56,8 @@ const DIGITS: Record<string, string[]> = {
 };
 
 const P_FRONT = 0.3;
+/** giro de la cabeza en la vista lateral: 3/4 tirando a perfil */
+export const SIDE_YAW = 62;
 
 export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: View, opt: RenderOptions = {}): BigFrame {
   const d = dimsFor(cell, f.body.proportions);
@@ -63,9 +66,12 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   const C = cell;
   const W = C * 3, H = C * 2;
   const canvas = new LayerCanvas(W, H, Math.round(1.5 * C), C);
+  const style = f.head3d ? HEAD_STYLES[f.head3d.style] ?? HEAD_STYLES.stardew : null;
+  // estilo Megaman: todo el contorno negro
+  const ink = (r: Ramp): Ramp => (style?.outline === 'black' ? ['#16121c', r[1], r[2], r[3]] : r);
   const mats = new Materials({
-    skin: f.palette.skin, hair: f.palette.hair, top: f.palette.top, bottom: f.palette.bottom, socks: f.palette.socks,
-    shoes: f.palette.shoes, accessory: f.palette.accessory, face: f.palette.skin,
+    skin: ink(f.palette.skin), hair: ink(f.palette.hair), top: ink(f.palette.top), bottom: ink(f.palette.bottom), socks: ink(f.palette.socks),
+    shoes: ink(f.palette.shoes), accessory: ink(f.palette.accessory), face: ink(f.palette.skin),
   } as Record<string, Ramp>);
   const side = view === 'side';
   const sign = view === 'back' ? -1 : 1; // de espalda, lo "cercano" queda a la izquierda
@@ -269,9 +275,16 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
 
   // ---------- cabeza ----------
   const drawHead = () => {
-    const forward = side ? Math.max(1, Math.round(d.u * 1.2)) : 0;
+    const forward = side && !style ? Math.max(1, Math.round(d.u * 1.2)) : 0;
     const neck = local(forward, d.torsoH);
-    const hi = buildHeadImage(f, set, view, pose.face.eyes, pose.face.mouth);
+    const hi: HeadImage & { pal: { dark?: string }[] } = f.head3d && style
+      ? renderHeadModel(f.head3d.model, {
+          width: d.headW, style,
+          yaw: view === 'front' ? 0 : view === 'back' ? 180 : SIDE_YAW - (pose.head.yaw ?? 0),
+          eyes: pose.face.eyes, mouth: pose.face.mouth ?? (f.face.mouth === 'smile' ? 'smile' : 'line'),
+          skin: f.palette.skin[BASE], hair: f.palette.hair[BASE],
+        }) as HeadImage & { pal: { dark?: string }[] }
+      : buildHeadImage(f, set, view, pose.face.eyes, pose.face.mouth);
     const angle = Math.round(rawTheta * (Math.abs(rawTheta) > 45 ? 1 : 0.6) + pose.head.tilt);
     let img = hi.img, px = hi.anchor.x, py = hi.anchor.y;
     if (Math.abs(angle) >= 8) {
@@ -286,7 +299,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
         if (i < 0) continue;
         const e = hi.pal[i];
         const matName = e.mat === 'face' ? 'skin' : e.mat === 'beard' ? 'hair' : e.mat;
-        const paint = mats.custom(e.hex, matName);
+        const dk = hi.pal[i].dark;
+        const paint = dk ? { color: packHex(e.hex), dark: packHex(dk), mat: mats.id(matName) } : mats.custom(e.hex, matName);
         if (e.back) canvas.put(ox + x + Math.round(hair.dx), oy + y + Math.round(hair.dy), Layer.HairBack, paint);
         else canvas.put(ox + x, oy + y, Layer.Head, paint);
       }

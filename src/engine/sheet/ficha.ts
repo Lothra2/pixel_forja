@@ -1,4 +1,5 @@
 import type { Ramp } from '../color/ramp';
+import type { HeadModel } from '../head3d/model';
 
 /**
  * La ficha del personaje: todo sale de aquí. JSON versionado, editable a mano.
@@ -98,6 +99,11 @@ export interface HumanFicha extends FichaBase {
   face: { eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean };
   /** cabezas ya pixeladas, por tamaño */
   heads: Partial<Record<`${CellSize}`, HeadSet>>;
+  /**
+   * cabeza por medidas: si está, se dibuja en cada cuadro desde el modelo (gira de verdad de lado y de espalda).
+   * style: stardew, fiel, megaman o caricatura
+   */
+  head3d?: { model: HeadModel; style: string };
   physics: { hairLag: number };
 }
 

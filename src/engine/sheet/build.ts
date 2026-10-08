@@ -7,6 +7,8 @@ import { proposeZones, applyZoneEdits, ZONE_ID, type HeadSpec, type ZoneEdit, ty
 import { type Lab, labToHex, deltaE } from '../color/oklab';
 import { makeRamp } from '../color/ramp';
 import { pixelateHead } from '../head/pixelate';
+import { measureHead } from '../head3d/measure';
+import { stylizeSkin, liftHair } from '../head3d/render';
 import { dimsFor } from '../rig/dims';
 import {
   type HumanFicha as Ficha, type CellSize, type Proportions, type HeadBitmap, CELL_SIZES, FICHA_FORMAT, FICHA_VERSION, DEFAULT_PROPORTIONS,
@@ -28,6 +30,8 @@ export interface BuildInput {
   /** vistas extra subidas por el usuario (imagen de lado mirando a la derecha, y de espalda) */
   extra?: { side?: Raster; back?: Raster };
   palette?: Partial<Ficha['palette']>;
+  /** estilo de la cabeza por medidas (fotos): stardew, fiel, megaman, caricatura */
+  headStyle?: string;
 }
 
 export type ImageMode = 'full' | 'bust';
@@ -311,6 +315,17 @@ export function buildFicha(image: Raster, input: BuildInput, analysis?: Analysis
       set.back = pixelateHead(e.work, e.zone, e.mask, e.zones.head, d.headW, palette.skin);
     }
     ficha.heads[`${cell}`] = set;
+  }
+  // fotos: la cabeza se dibuja desde las medidas, así se parece y gira de verdad
+  if (bust || input.headStyle) {
+    try {
+      const model = measureHead({ work: a.work, zone: headZone, mask: a.mask, head: a.zones.head });
+      ficha.head3d = { model, style: input.headStyle ?? 'stardew' };
+      if (!input.palette?.skin) ficha.palette.skin = makeRamp(stylizeSkin(model.colors.skin));
+      if (!input.palette?.hair) ficha.palette.hair = makeRamp(liftHair(model.colors.hair));
+    } catch {
+      // si no se pudo medir, queda la cabeza pixelada
+    }
   }
   return { ficha, analysis: a, report: { headGuessed: a.zones.headGuessed && !input.head, missingZones: missing, outfitGuessed: guessed } };
 }

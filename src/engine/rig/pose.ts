@@ -46,7 +46,8 @@ export interface Pose {
   x: number;
   /** inclinación del torso en grados: + hacia adelante. 90 = acostado boca abajo hacia adelante */
   torso: number;
-  head: { dx: number; dy: number; tilt: number };
+  /** yaw: giro extra de la cabeza en grados (+ hacia la cámara de lado, para mirar al frente) */
+  head: { dx: number; dy: number; tilt: number; yaw?: number };
   legs: { near: Foot; far: Foot };
   arms: { near: Arm; far: Arm };
   face: { eyes: EyeExpr; mouth?: MouthExpr };
