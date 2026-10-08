@@ -397,3 +397,25 @@ p.ok { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Taller RPG ---------- */
+.rpg-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tile.enemy { align-items: center; text-align: center; padding: 10px 8px 12px; }
+.enemy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.enemy-stage {
+  width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 12px;
+  background: radial-gradient(60% 50% at 50% 70%, rgba(255, 79, 109, 0.14), transparent 70%), repeating-conic-gradient(var(--stage) 0 25%, var(--stage-cell) 0 50%) 0 0 / 12px 12px;
+}
+.fx-stage {
+  width: 100%; display: grid; place-items: center; padding: 18px; border-radius: 14px; border: 1px solid var(--line);
+  background: radial-gradient(60% 55% at 50% 60%, rgba(143, 123, 255, 0.12), transparent 70%), #0e0c18;
+}
+.fx-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; width: 100%; }
+.fx-thumb {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; border-radius: 12px; border: 1px solid var(--line);
+  background: #0e0c18; color: var(--muted); font-size: 12px; cursor: pointer;
+}
+.fx-thumb.on { border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 1px var(--accent) inset; }
+.item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 6px; }
+.item-cell { display: grid; place-items: center; padding: 2px; }
+@media (max-width: 900px) { .rpg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

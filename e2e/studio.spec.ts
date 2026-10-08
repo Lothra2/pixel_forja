@@ -168,3 +168,51 @@ test('crear desde cero: avatar por piezas y animar', async ({ page }, info) => {
   await expect(page.getByTestId('qa-summary')).toBeVisible({ timeout: 60000 });
   expect(errors).toEqual([]);
 });
+
+test('taller RPG: héroe con clase, enemigos, poderes y objetos', async ({ page }, info) => {
+  test.setTimeout(180000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  // héroe: entra vestido de paladín, se cambia a hechicera y se anima en diagonal
+  await page.getByTestId('rpg-hero').click();
+  await expect(page.getByTestId('rpg-gear')).toBeVisible({ timeout: 30000 });
+  await page.getByTestId('class-hechicera').click();
+  await idle(page);
+  await expect(page.getByTestId('rpg-weapon')).toHaveValue('staff');
+  await page.getByTestId('step-animate').click();
+  await page.getByTestId('pack').selectOption('skills');
+  await page.getByTestId('anim').selectOption('cast');
+  await page.getByTestId('view').getByRole('button', { name: 'Diagonal ↘' }).click();
+  await idle(page);
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  await page.screenshot({ path: `${shots}/${tag}_30_heroe_rpg.png`, fullPage: true });
+  // enemigos
+  await page.getByTestId('step-image').click();
+  await page.getByTestId('rpg-enemies').click();
+  await page.getByTestId('enemy-esqueleto').click();
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  await page.screenshot({ path: `${shots}/${tag}_31_enemigo.png`, fullPage: true });
+  // poderes: exportar
+  await page.getByTestId('step-image').click();
+  await page.getByTestId('rpg-fx').click();
+  await page.getByTestId('fx-el-hielo').click();
+  await page.getByTestId('fx-kind-nova').click();
+  await expect(page.getByTestId('fx-preview')).toBeVisible();
+  await page.screenshot({ path: `${shots}/${tag}_32_poderes.png`, fullPage: true });
+  let dl = page.waitForEvent('download');
+  await page.getByTestId('fx-export').click();
+  expect((await dl).suggestedFilename()).toBe('poderes.zip');
+  // objetos: exportar
+  await page.getByTestId('tool-home').click();
+  await page.getByTestId('rpg-items').click();
+  await expect(page.getByTestId('items-grid').locator('canvas')).toHaveCount(45);
+  await page.screenshot({ path: `${shots}/${tag}_33_objetos.png`, fullPage: true });
+  dl = page.waitForEvent('download');
+  await page.getByTestId('items-export').click();
+  expect((await dl).suggestedFilename()).toBe('objetos.zip');
+  expect(errors).toEqual([]);
+});

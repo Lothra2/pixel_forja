@@ -102,6 +102,30 @@ Las diagonales son de verdad: piernas y brazos se proyectan en 3/4 y la cara se 
 Con piezas LPC la cabeza en diagonal es la de frente con los rasgos corridos (LPC no trae diagonales dibujadas).
 Con el kit Volumen la cabeza se gira en 3/4 real.
 
+## 4c. Taller RPG (héroes, enemigos, poderes y objetos)
+
+Desde la portada, sección **Taller RPG**:
+
+- **Héroe con clase:** arma tu personaje y vístelo con una clase de un toque (bárbaro, paladín, hechicera, amazona,
+  nigromante, druida, asesina). En Estilo, el grupo **Equipo RPG** cambia armadura (cuero, malla, placas, túnica),
+  capa, hombreras, cinturón, ribetes, arma (13) y mano libre (escudos, orbe, libro). El arma se ve en todas las
+  animaciones de RPG, habilidades, caminar y correr.
+- **Habilidades:** paquete *Habilidades* en Animar: hechizo, nova, canalizar, torbellino (gira por las 8 direcciones),
+  salto de ataque, carga, esquivar, arco, invocar, grito de guerra, golpe pesado y estocada. Todas en el sitio: el juego
+  mueve al personaje.
+- **Enemigos:** 13 listos (esqueleto, esqueleto mago, zombi, orco, goblin arquero, vampiro, hombre lobo, minotauro,
+  hombre lagarto, demonio, hombre rata, calabaza, trol), con animaciones de enemigo (caminar de zombi, zarpazo,
+  embestida, levantarse del piso). El minotauro es jefe y va en celdas de 64 px.
+- **Poderes:** 8 elementos por 10 tipos de efecto (proyectil en 8 direcciones, impacto, nova, aura, golpe del cielo,
+  curación, escudo, círculo, mejora, tajo). Se exportan como hoja PNG + JSON con `anims`, igual que los personajes.
+  En Phaser se cargan con `load.atlas` y se reproducen como cualquier animación, encima o debajo del personaje.
+- **Objetos:** 45 íconos (pociones, anillos, amuletos, gemas, runas, pergaminos, llaves, oro, equipo) con rareza
+  normal, mágica, rara, de set o única. Atlas PNG + JSON Hash con el nombre de cada ícono (`potion_health_large`,
+  `gem_ruby_perfect`, `w_axe_unique`).
+
+Para un RPG tipo Diablo: héroes y enemigos en **Isométrica 8 direcciones**, poderes con los proyectiles en 8 direcciones
+y los íconos de objetos en 32 px para el inventario (64 px si tu interfaz es grande).
+
 ## 5. Créditos
 
 Si usas piezas dibujadas (LPC), cada exportación incluye `CREDITOS.txt`. Las licencias piden mostrar esos

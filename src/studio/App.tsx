@@ -11,15 +11,20 @@ import { StyleStep } from './steps/StyleStep';
 import { EditorStep } from './steps/EditorStep';
 import { ExportStep } from './steps/ExportStep';
 import { AvatarStep } from './steps/AvatarStep';
+import { EnemiesStep, FxStep, ItemsStep } from './steps/RpgTools';
 import { loadGallery, saveGallery, upsert, type GalleryItem } from './gallery';
 import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, safeName } from './util';
 import {
   type Ficha, type HumanFicha, type CellSize, type HeadSpec, type Point, type Zone, type QAReport, type ColorSlot, type AnimalColorSlot,
   type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim, type Avatar, type AvatarPart,
   DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
+  applyClass, CLASS_KITS, enemyFicha, enemyCell, enemyAnims, type Gear, type HeroClass, type EnemyId,
 } from '../engine/index';
 
-type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export';
+type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export' | ToolStep;
+/** herramientas del Taller RPG: páginas sueltas, fuera de los pasos */
+type ToolStep = 'enemies' | 'fx' | 'items';
+const TOOLS: Step[] = ['enemies', 'fx', 'items'];
 const HUMAN_STEPS: Step[] = ['image', 'bg', 'zones', 'head', 'avatar', 'style', 'animate', 'editor', 'export'];
 const ANIMAL_STEPS: Step[] = ['image', 'bg', 'style', 'animate', 'export'];
 const EDIT_ZONES: Zone[] = ['hair', 'beard', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'];
@@ -51,6 +56,8 @@ interface Overrides {
   /** el avatar editado en el creador (pisa al que propone la imagen) */
   avatar?: Avatar;
   headMode?: 'avatar' | 'image';
+  /** equipo de RPG (arma y mano libre) */
+  gear?: Gear;
 }
 const emptyOverrides = (): Overrides => ({ outfit: {}, face: {}, colors: {}, customAnims: [] });
 
@@ -162,6 +169,7 @@ export function App() {
       if (o.proportions) out = { ...out, body: { ...out.body, proportions: o.proportions } } as HumanFicha;
       if (o.avatar) out = withAvatar(out, o.avatar);
       if (o.headMode && out.avatar) out = { ...out, headMode: o.headMode };
+      if (o.gear) out = { ...out, gear: o.gear } as HumanFicha;
     }
     for (const [slot, hex] of Object.entries(o.colors)) out = recolor(out, slot as ColorSlot, hex!);
     return out;
@@ -289,6 +297,23 @@ export function App() {
     if (!overrides.current.headMode) overrides.current.headMode = 'avatar';
     updateFicha((f) => (isHuman(f) ? { ...withAvatar(f, av), headMode: overrides.current.headMode } : f));
   };
+  const setGear = (g: Gear) => {
+    overrides.current.gear = g;
+    updateFicha((f) => (isHuman(f) ? { ...f, gear: g } : f));
+  };
+  /** clase de RPG de un toque: armadura, capa, armas y gorro (la cara y el pelo quedan) */
+  const setHeroClass = (c: HeroClass | null) => {
+    updateFicha((f) => {
+      if (!isHuman(f)) return f;
+      const nf: HumanFicha = c ? applyClass(f, c) : { ...f, outfit: { ...f.outfit, armor: null, trim: null, cape: null, pauldrons: false, belt: null }, gear: undefined };
+      const o = overrides.current;
+      o.outfit = { ...nf.outfit };
+      o.gear = nf.gear;
+      if (c) { for (const [slot, hex] of Object.entries(CLASS_KITS[c].colors ?? {})) o.colors[slot as ColorSlot] = hex; }
+      if (nf.avatar) o.avatar = nf.avatar;
+      return nf;
+    });
+  };
   const setHeadMode = (m: 'avatar' | 'image') => {
     overrides.current.headMode = m;
     updateFicha((f) => (isHuman(f) ? { ...f, headMode: m } : f));
@@ -327,6 +352,16 @@ export function App() {
     overrides.current.avatar = av;
     setFicha(fichaFromAvatar('personaje', av));
     setStep('avatar');
+  };
+  const renderEnemy = useCallback(async (id: EnemyId) => {
+    const r = await engine.call<'rendered'>({ type: 'render', key: `enemy-${id}`, ficha: enemyFicha(id), cell: enemyCell(id), anim: 'idle', view: 'se', props: true }).catch(() => null);
+    return r ? r.clip : null;
+  }, [engine]);
+  const openEnemy = (id: EnemyId) => {
+    openFicha(enemyFicha(id));
+    setCell(enemyCell(id));
+    setView('se');
+    setAnim(enemyAnims(id)[1] ?? 'walk');
   };
   const askVariants = () =>
     run(async () => {
@@ -481,6 +516,33 @@ export function App() {
                 <span>{t('dropHint')}</span>
               </label>
             )}
+            {kind === 'human' && (
+              <>
+                <div className="section-h"><h3>{t('rpg_workshop')}</h3><span className="muted small">{t('rpg_workshopHelp')}</span></div>
+                <div className="home-grid rpg-grid">
+                  <button className="tile" onClick={() => { startFromScratch(); setHeroClass('paladin'); setStep('style'); }} data-testid="rpg-hero">
+                    <span className="ico" aria-hidden>⚔️</span>
+                    <strong>{t('rpg_hero')}</strong>
+                    <span>{t('rpg_heroHelp')}</span>
+                  </button>
+                  <button className="tile" onClick={() => setStep('enemies')} data-testid="rpg-enemies">
+                    <span className="ico" aria-hidden>💀</span>
+                    <strong>{t('rpg_enemies')}</strong>
+                    <span>{t('rpg_enemiesTile')}</span>
+                  </button>
+                  <button className="tile" onClick={() => setStep('fx')} data-testid="rpg-fx">
+                    <span className="ico" aria-hidden>🔥</span>
+                    <strong>{t('rpg_fx')}</strong>
+                    <span>{t('rpg_fxTile')}</span>
+                  </button>
+                  <button className="tile" onClick={() => setStep('items')} data-testid="rpg-items">
+                    <span className="ico" aria-hidden>💎</span>
+                    <strong>{t('rpg_items')}</strong>
+                    <span>{t('rpg_itemsTile')}</span>
+                  </button>
+                </div>
+              </>
+            )}
             <div className="section-h"><h3>{t('gallery')}</h3></div>
             {gallery.length ? (
               <div className="gallery" data-testid="gallery">
@@ -614,6 +676,10 @@ export function App() {
           </>
         )}
 
+        {step === 'enemies' && <EnemiesStep t={t} render={renderEnemy} open={openEnemy} />}
+        {step === 'fx' && <FxStep t={t} />}
+        {step === 'items' && <ItemsStep t={t} />}
+
         {step === 'editor' && ficha && (isHuman(ficha)
           ? <EditorStep t={t} lang={lang} ficha={ficha} cell={cell} onSave={saveCustom} />
           : <section className="panel wide"><p>{t('ed_animalNo')}</p></section>)}
@@ -655,6 +721,7 @@ export function App() {
                 <StyleStep
                   t={t} ficha={ficha} name={name} setName={(s) => setName(safeName(s))}
                   setOutfit={setOutfit} setFace={setFace} setColor={setColor} setProportions={setProportions} setAnimal={setAnimal}
+                  setGear={setGear} setHeroClass={setHeroClass}
                   variants={variants} askVariants={askVariants} pickVariant={pickVariant}
                   canExtra={loaded && kind === 'human'} extraLoaded={extraLoaded} loadExtra={loadExtra}
                 />
@@ -673,7 +740,12 @@ export function App() {
         )}
       </main>
 
-      {step !== 'image' && (
+      {TOOLS.includes(step) && (
+        <footer className="nav">
+          <button className="btn ghost" onClick={() => setStep('image')} data-testid="tool-home">{t('home')}</button>
+        </footer>
+      )}
+      {step !== 'image' && !TOOLS.includes(step) && (
         <footer className="nav">
           <button className="btn ghost" onClick={() => setStep(steps[Math.max(0, stepIdx - 1)])}>{t('back')}</button>
           {stepIdx < steps.length - 1 && (

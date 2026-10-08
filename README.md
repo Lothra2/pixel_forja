@@ -12,6 +12,7 @@ de una foto. Sin IA y sin servidor: todo corre en tu equipo.
 - 10 animaciones de animal (boxer, perro, mapache, gato).
 - Vista lateral y 4 direcciones tipo RPG. Tamaños de 32, 48 y 64 px. Cuerpo chibi, juvenil o realista.
 - Modo busto para selfies y fotos: cara, barba, cejas, camisa y estampado. El resto del cuerpo va por defecto.
+- Taller RPG estilo Diablo: clases de héroe, armaduras, 13 armas, 12 habilidades, 13 enemigos, poderes de 8 elementos y 45 objetos con rarezas.
 - Creador de avatar con 86 peinados y piezas dibujadas a mano del proyecto LPC (con créditos automáticos al exportar).
 - Editor de poses, galería, "sorpréndeme" y estudio en español e inglés.
 - Exporta hoja PNG + JSON (Phaser), preajuste de Fútbol Familia GG, Aseprite, Godot 4, Unity,
