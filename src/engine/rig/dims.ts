@@ -75,3 +75,36 @@ export type StampClass = 32 | 48 | 64;
 export function stampClass(headW: number): StampClass {
   return headW >= 24 ? 64 : headW >= 17 ? 48 : 32;
 }
+
+// ---------- cuerpos por edad y contextura (para el creador de avatar) ----------
+
+export type BodyAge = 'nino' | 'adolescente' | 'adulto' | 'mayor';
+export type BodyBuild = 'delgado' | 'medio' | 'robusto';
+export type BodyShape = 'recto' | 'curvas';
+export interface BodyType { age: BodyAge; build: BodyBuild; shape: BodyShape }
+export const DEFAULT_BODY: BodyType = { age: 'adulto', build: 'medio', shape: 'recto' };
+
+type Mult = Partial<Omit<Proportions, 'preset'>>;
+const AGE: Record<BodyAge, Mult> = {
+  nino: { height: 0.75, legs: 0.82, arms: 0.85, shoulders: 0.85, hips: 0.9, build: 0.9, head: 1.05 },
+  adolescente: { height: 0.9, legs: 0.95, arms: 0.95, shoulders: 0.92, build: 0.92 },
+  adulto: {},
+  mayor: { height: 0.96, shoulders: 0.95, build: 1.05 },
+};
+const BUILD: Record<BodyBuild, Mult> = {
+  delgado: { build: 0.85, shoulders: 0.95, hips: 0.95 },
+  medio: {},
+  robusto: { build: 1.22, shoulders: 1.08, hips: 1.08 },
+};
+const SHAPE: Record<BodyShape, Mult> = { recto: {}, curvas: { hips: 1.14, shoulders: 0.94 } };
+
+/** Proporciones de un tipo de cuerpo, dentro de los límites de los controles finos. */
+export function bodyProportions(preset: PresetName, b: BodyType): Proportions {
+  const keys = ['height', 'build', 'legs', 'arms', 'head', 'shoulders', 'hips'] as const;
+  const out = { preset } as Proportions;
+  for (const k of keys) {
+    const v = (AGE[b.age][k] ?? 1) * (BUILD[b.build][k] ?? 1) * (SHAPE[b.shape][k] ?? 1);
+    out[k] = k === 'head' ? Math.max(0.85, Math.min(1.15, v)) : Math.max(0.75, Math.min(1.35, v));
+  }
+  return out;
+}

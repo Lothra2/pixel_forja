@@ -101,6 +101,24 @@ export function StyleStep(p: Props) {
         <summary>{t('step_style')}</summary>
         <Seg label={t('sleeves')} value={h.outfit.sleeves} set={(v) => p.setOutfit('sleeves', v as HumanFicha['outfit']['sleeves'])} opts={(['none', 'short', 'long'] as const).map((v) => [v, t(`sleeves_${v}`)])} />
         <Seg label={t('bottom')} value={h.outfit.bottom} set={(v) => p.setOutfit('bottom', v as HumanFicha['outfit']['bottom'])} opts={(['shorts', 'pants', 'skirt'] as const).map((v) => [v, t(`bottom_${v}`)])} />
+        <Seg label={t('pattern')} value={h.outfit.pattern ?? 'liso'} set={(v) => p.setOutfit('pattern', v as HumanFicha['outfit']['pattern'])} opts={(['liso', 'rayas', 'rayas_h', 'banda', 'mitades', 'cuadros'] as const).map((v) => [v, t(`pattern_${v}`)])} testid="pattern" />
+        {h.outfit.pattern && h.outfit.pattern !== 'liso' && (
+          <label className="swatch">
+            <input type="color" value={h.outfit.pattern2 ?? '#f2f2f2'} onChange={(e) => p.setOutfit('pattern2', e.target.value)} />
+            {t('pattern2')}
+          </label>
+        )}
+        <Seg label={t('neck')} value={h.outfit.collar ?? 'redondo'} set={(v) => p.setOutfit('collar', v as HumanFicha['outfit']['collar'])} opts={(['redondo', 'v', 'polo'] as const).map((v) => [v, t(`collar_${v}`)])} />
+        <div className="row">
+          <Toggle label={t('jacket')} on={!!h.outfit.jacket} set={(v) => p.setOutfit('jacket', v ? '#3b3f4a' : null)} />
+          {h.outfit.jacket && (
+            <label className="swatch">
+              <input type="color" value={h.outfit.jacket} onChange={(e) => p.setOutfit('jacket', e.target.value)} />
+              {t('jacketColor')}
+            </label>
+          )}
+        </div>
+        <Seg label={t('shoesKind')} value={h.outfit.shoes ?? 'tenis'} set={(v) => p.setOutfit('shoes', v as HumanFicha['outfit']['shoes'])} opts={(['tenis', 'guayos', 'botas', 'descalzo'] as const).map((v) => [v, t(`shoes_${v}`)])} />
         <Seg label={t('socks')} value={h.outfit.socks} set={(v) => p.setOutfit('socks', v as HumanFicha['outfit']['socks'])} opts={(['none', 'low', 'knee'] as const).map((v) => [v, t(`socks_${v}`)])} />
         <div className="row">
           <label className="field narrow">

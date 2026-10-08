@@ -103,6 +103,22 @@ def main():
         add(f'mustache/{m}', f'{S}beards/mustache/{m}/idle.png')
     for g in ['glasses', 'nerd', 'round', 'halfmoon', 'secretary', 'shades', 'sunglasses']:
         add(f'glasses/{g}', f'{S}facial/glasses/{g}/adult/idle.png')
+    # gorros, sombreros y cascos (para el RPG también)
+    HATS = {
+        'bandana': 'cloth/bandana/adult', 'bandana2': 'cloth/bandana2/adult', 'hood': 'cloth/hood/adult', 'leather_cap': 'cloth/leather_cap/adult',
+        'bowler': 'formal/bowler/adult', 'crown': 'formal/crown/adult', 'tiara': 'formal/tiara/adult', 'tophat': 'formal/tophat/adult',
+        'hairtie': 'headband/hairtie/adult', 'headband': 'headband/thick/adult', 'headband_tied': 'headband/tied/adult',
+        'barbarian': 'helmet/barbarian/adult', 'viking': 'helmet/barbarian_viking/adult', 'horned': 'helmet/horned/adult', 'kettle': 'helmet/kettle/adult',
+        'nasal': 'helmet/nasal/adult', 'norman': 'helmet/norman/adult', 'spangenhelm': 'helmet/spangenhelm/adult', 'pointed': 'helmet/pointed/adult',
+        'legion': 'helmet/legion/adult', 'mail': 'helmet/mail/adult', 'maximus': 'helmet/maximus/adult', 'close': 'helmet/close/male',
+        'greathelm': 'helmet/greathelm/male', 'armet': 'helmet/armet/adult', 'bascinet': 'helmet/bascinet/adult',
+        'santa': 'holiday/santa/adult', 'elf': 'holiday/elf/adult', 'christmas': 'holiday/christmas/adult',
+        'wizard': 'magic/wizard/base/adult', 'celestial': 'magic/celestial/adult',
+        'pirate_bandana': 'pirate/bandana/adult', 'tricorne': 'pirate/tricorne/basic/adult', 'cavalier': 'pirate/cavalier/adult',
+        'bonnie': 'pirate/bonnie/adult', 'kerchief': 'pirate/kerchief/adult',
+    }
+    for k, v in HATS.items():
+        add(f'hat/{k}', f'{S}hat/{v}/idle.png')
     # peinados: los de adulto; algunos traen capa de atrás (bg) y de adelante (fg)
     files = [k for k in cred if k.startswith('hair/') and k.endswith('/idle.png') and '/adult/' in k and not k.startswith('hair/extensions')]
     for f in sorted(files):

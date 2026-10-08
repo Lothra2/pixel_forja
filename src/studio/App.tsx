@@ -14,7 +14,7 @@ import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, saf
 import {
   type Ficha, type HumanFicha, type CellSize, type HeadSpec, type Point, type Zone, type QAReport, type ColorSlot, type AnimalColorSlot,
   type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim, type Avatar, type AvatarPart,
-  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar,
+  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
 } from '../engine/index';
 
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export';
@@ -23,7 +23,7 @@ const ANIMAL_STEPS: Step[] = ['image', 'bg', 'style', 'animate', 'export'];
 const EDIT_ZONES: Zone[] = ['hair', 'beard', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'];
 const SAMPLES: { name: string; kind: 'human' | 'animal'; species?: Species }[] = [
   { name: 'gabo', kind: 'human' }, { name: 'portero', kind: 'human' }, { name: 'sofi', kind: 'human' }, { name: 'nena', kind: 'human' },
-  { name: 'mama', kind: 'human' }, { name: 'papa', kind: 'human' }, { name: 'selfie', kind: 'human' }, { name: 'thor', kind: 'animal', species: 'boxer' },
+  { name: 'mama', kind: 'human' }, { name: 'papa', kind: 'human' }, { name: 'thor', kind: 'animal', species: 'boxer' },
 ];
 const ARTIFACT = !!import.meta.env.VITE_ARTIFACT;
 
@@ -272,7 +272,18 @@ export function App() {
     const r = await engine.call<'avatarThumbs'>({ type: 'avatarThumbs', key: part, avatar: av, part });
     return r ? r.thumbs : null;
   }, [engine]);
-  const startFromScratch = () => {
+  /** Colores de una foto (piel, pelo, ojos, barba). Las formas no: eso lo elige la persona. */
+  const photoColors = (file: File) =>
+    run(async () => {
+      const payload = await fileToPayload(file);
+      const r = await engine.call<'photoColors'>({ type: 'photoColors', ...payload }, payloadTransfer(payload));
+      return r?.colors;
+    });
+  const startFromPhoto = async (file: File) => {
+    const c = await photoColors(file);
+    if (c) startFromScratch(applyPhotoColors(defaultAvatar(), c));
+  };
+  const startFromScratch = (base?: Avatar) => {
     overrides.current = emptyOverrides();
     fittedAvatar.current = null;
     setLoaded(false);
@@ -283,7 +294,9 @@ export function App() {
     setClip(null);
     setView('front');
     setAnim('idle');
-    setFicha(fichaFromAvatar('personaje', randomAvatar(Date.now() % 100000)));
+    const av = base ?? defaultAvatar();
+    overrides.current.avatar = av;
+    setFicha(fichaFromAvatar('personaje', av));
     setStep('avatar');
   };
   const askVariants = () =>
@@ -378,20 +391,42 @@ export function App() {
               <Seg label={t('kind')} value={kind} set={(v) => setKind(v as 'human' | 'animal')} opts={[['human', t('kind_human')], ['animal', t('kind_animal')]]} />
               {kind === 'animal' && <Select label={t('species')} value={species} set={(v) => setSpecies(v as Species)} opts={SPECIES.map((s) => [s, t(`species_${s}` as Key)])} />}
             </div>
-            <label
-              className="drop"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) loadFile(f, f.name); }}
-            >
-              <input type="file" accept="image/*" data-testid="file" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f, f.name); }} />
-              <strong>{t('upload')}</strong>
-              <span>{t('dropHint')}</span>
-            </label>
-            {kind === 'human' && (
-              <div className="scratch">
-                <button className="btn" onClick={startFromScratch} data-testid="from-scratch">{t('fromScratch')}</button>
-                <span className="muted small">{t('fromScratchHelp')}</span>
-              </div>
+            {kind === 'human' ? (
+              <>
+                <div className="start">
+                  <button className="btn big" onClick={() => startFromScratch()} data-testid="from-scratch">{t('fromScratch')}</button>
+                  <p className="muted small">{t('fromScratchHelp')}</p>
+                </div>
+                <div className="start-alt">
+                  <label className="btn ghost file-btn">
+                    {t('fromPhotoColors')}
+                    <input type="file" accept="image/*" data-testid="photo-colors" onChange={(e) => { const f = e.target.files?.[0]; if (f) startFromPhoto(f); }} />
+                  </label>
+                  <span className="muted small">{t('fromPhotoColorsHelp')}</span>
+                </div>
+                <details className="group">
+                  <summary>{t('fromDrawing')}</summary>
+                  <label
+                    className="drop"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) loadFile(f, f.name); }}
+                  >
+                    <input type="file" accept="image/*" data-testid="file" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f, f.name); }} />
+                    <strong>{t('upload')}</strong>
+                    <span>{t('dropHint')}</span>
+                  </label>
+                </details>
+              </>
+            ) : (
+              <label
+                className="drop"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) loadFile(f, f.name); }}
+              >
+                <input type="file" accept="image/*" data-testid="file" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f, f.name); }} />
+                <strong>{t('upload')}</strong>
+                <span>{t('dropHint')}</span>
+              </label>
             )}
             <p className="muted">{t('orTry')}</p>
             <div className="samples">
@@ -556,6 +591,12 @@ export function App() {
                   canChooseHead={Object.keys(ficha.heads).length > 0} headMode={ficha.headMode ?? 'avatar'} setHeadMode={setHeadMode}
                   canReset={!!fittedAvatar.current} reset={resetAvatar} random={() => setAvatar(randomAvatar(Date.now() % 100000))}
                   loadThumbs={loadThumbs}
+                  setBody={(b: BodyType) => {
+                    const av = { ...ficha.avatar!, body: b };
+                    setAvatar(av);
+                    setProportions(bodyProportions(ficha.body.proportions.preset, b));
+                  }}
+                  photoColors={async (file) => { const c = await photoColors(file); if (c && isHuman(ficha) && ficha.avatar) setAvatar(applyPhotoColors(ficha.avatar, c)); }}
                 />
               )}
               {step === 'avatar' && ficha && isHuman(ficha) && !ficha.avatar && <p className="muted">{t('working')}</p>}

@@ -10,6 +10,8 @@ export interface ExportPlan {
   views: ViewName[];
   /** balones e implementos. Para un juego que dibuja su propio balón, apagado */
   props: boolean;
+  /** escala entera de la hoja PNG (para React Native y pantallas donde no se controla el filtrado). 1 por defecto */
+  scale?: number;
 }
 
 export const FFGG_PLAN: ExportPlan = { cell: 48, anims: [...FFGG_ANIMS], views: ['side'], props: false };

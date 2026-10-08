@@ -1,8 +1,9 @@
 # PixelForja
 
-Convierte una imagen de cuerpo entero (un dibujo, una ilustración, un avatar o un pixel art) en un
-personaje de pixel art animado y listo para juegos. Funciona con personas y con animales de cuatro
-patas. Sin IA y sin servidor: la imagen nunca sale del equipo.
+Creador de personajes de pixel art animados y listos para juegos. Armas el personaje pieza por pieza
+(cuerpo, edad, cara, 85 peinados dibujados a mano, barba, lentes, gorros, ropa y colores) y sale animado
+con 75 movimientos en cuatro direcciones. También convierte dibujos de cuerpo entero y toma los colores
+de una foto. Sin IA y sin servidor: todo corre en tu equipo.
 
 ![Antes y después](docs/final/comparacion_familia_futbol.png)
 
@@ -16,7 +17,7 @@ patas. Sin IA y sin servidor: la imagen nunca sale del equipo.
 - Exporta hoja PNG + JSON (Phaser), preajuste de Fútbol Familia GG, Aseprite, Godot 4, Unity,
   PNG por cuadro, GIF y la ficha del personaje.
 
-Detalle, decisiones y estado: [docs/PLAN.md](docs/PLAN.md).
+Detalle, decisiones y estado: [docs/PLAN.md](docs/PLAN.md). Cómo usar los sprites en Phaser, Expo, Unity y Godot: [docs/USO.md](docs/USO.md).
 
 ## Correr el estudio
 

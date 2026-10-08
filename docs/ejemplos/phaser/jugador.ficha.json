@@ -1,0 +1,145 @@
+{
+  "format": "pixelforja.ficha",
+  "version": 2,
+  "name": "jugador",
+  "body": {
+    "skeleton": "human",
+    "proportions": {
+      "preset": "chibi",
+      "height": 1,
+      "build": 1,
+      "legs": 1,
+      "arms": 1,
+      "head": 1,
+      "shoulders": 1,
+      "hips": 1
+    }
+  },
+  "palette": {
+    "skin": [
+      "#673c2d",
+      "#c98e73",
+      "#e8b48f",
+      "#fcd1aa"
+    ],
+    "hair": [
+      "#190200",
+      "#3e1b0d",
+      "#5a3a24",
+      "#6d523a"
+    ],
+    "eyes": "#3a2418",
+    "top": [
+      "#19146b",
+      "#2b44b1",
+      "#1f6fd0",
+      "#2a8edf"
+    ],
+    "bottom": [
+      "#01000d",
+      "#0b0d28",
+      "#1d2a44",
+      "#394b62"
+    ],
+    "socks": [
+      "#19146b",
+      "#2b44b1",
+      "#1f6fd0",
+      "#2a8edf"
+    ],
+    "shoes": [
+      "#020203",
+      "#09090f",
+      "#222228",
+      "#404046"
+    ],
+    "accessory": [
+      "#6e4602",
+      "#de9d02",
+      "#f2c94c",
+      "#fee894"
+    ]
+  },
+  "outfit": {
+    "sleeves": "short",
+    "bottom": "shorts",
+    "socks": "knee",
+    "pattern": "rayas",
+    "pattern2": "#f2f2f2",
+    "number": "9",
+    "shoes": "guayos"
+  },
+  "face": {
+    "eyes": "round",
+    "mouth": "smile",
+    "blush": false,
+    "brows": true,
+    "glasses": null
+  },
+  "heads": {},
+  "avatar": {
+    "version": 1,
+    "look": "stardew",
+    "skin": "#e8b48f",
+    "face": {
+      "dome": 1.12,
+      "forehead": 0.58,
+      "eyeNose": 0.6,
+      "noseMouth": 0.3,
+      "mouthChin": 0.52,
+      "cheek": 0.97,
+      "jaw": 0.84,
+      "chin": 2.6,
+      "eyeX": 0.42,
+      "ears": 0.18,
+      "mouth": 0.3
+    },
+    "hair": {
+      "style": "corto",
+      "color": "#5a3a24",
+      "params": {
+        "top": 0.22,
+        "side": 0.08,
+        "back": 0.1,
+        "recede": 0,
+        "length": 1,
+        "fringe": 0,
+        "part": 0,
+        "sweep": 0.3,
+        "curl": 0,
+        "tail": "none"
+      }
+    },
+    "eyes": {
+      "style": "brillo",
+      "color": "#3a2418"
+    },
+    "brows": {
+      "style": "normal"
+    },
+    "nose": "normal",
+    "beard": {
+      "style": "ninguna",
+      "color": "#5a3a24",
+      "gray": 0
+    },
+    "glasses": {
+      "style": "ninguno",
+      "color": "#1d1d24"
+    },
+    "kit": "lpc",
+    "lpc": {
+      "head": "male",
+      "hair": "messy2",
+      "brows": "thin",
+      "nose": null,
+      "beard": null,
+      "mustache": null,
+      "glasses": null
+    }
+  },
+  "headMode": "avatar",
+  "physics": {
+    "hairLag": 1
+  }
+}

@@ -195,3 +195,6 @@ p.ok { margin: 0; }
   .preview-wrap { position: sticky; top: 10px; align-self: start; }
 }
 .thumbs { max-height: 470px; overflow-y: auto; padding-right: 2px; }
+.start { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 6px 0 14px; }
+.btn.big { font-size: 18px; padding: 14px 22px; }
+.start-alt { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }

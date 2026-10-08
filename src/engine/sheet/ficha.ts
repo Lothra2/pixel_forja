@@ -94,6 +94,15 @@ export interface HumanFicha extends FichaBase {
     gloves?: boolean;
     /** estampado chillón en el pecho (un detalle de color, la letra no cabe) */
     print?: string | null;
+    /** diseño de la camiseta, con un segundo color (camisetas de equipo) */
+    pattern?: 'liso' | 'rayas' | 'rayas_h' | 'banda' | 'mitades' | 'cuadros';
+    pattern2?: string;
+    /** cuello de la camiseta */
+    collar?: 'redondo' | 'v' | 'polo';
+    /** chaqueta abierta encima (color); null o sin valor, no hay */
+    jacket?: string | null;
+    /** calzado */
+    shoes?: 'tenis' | 'guayos' | 'botas' | 'descalzo';
   };
   /** glasses: color del marco si tiene lentes (se dibujan con sello, no se reducen) */
   face: { eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean };

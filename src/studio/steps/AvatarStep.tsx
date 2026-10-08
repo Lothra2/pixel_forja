@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   type Avatar, type AvatarPart, type HairParams, type FaceParams,
-  SKIN_SWATCHES, HAIR_SWATCHES, EYE_SWATCHES, GLASSES_SWATCHES, withHairStyle, lpcValue, withLpc, DEFAULT_LPC,
+  SKIN_SWATCHES, HAIR_SWATCHES, EYE_SWATCHES, GLASSES_SWATCHES, withHairStyle, lpcValue, withLpc, DEFAULT_LPC, DEFAULT_BODY,
+  type BodyType,
 } from '../../engine/index';
 import type { Key } from '../i18n';
 import type { Thumb } from '../protocol';
@@ -19,7 +20,13 @@ interface Props {
   reset: () => void;
   random: () => void;
   loadThumbs: (a: Avatar, part: AvatarPart) => Promise<Thumb[] | null>;
+  /** toma piel, pelo, ojos y barba de una foto */
+  photoColors: (f: File) => void;
+  /** cambia edad, contextura y figura (y las proporciones de la ficha) */
+  setBody: (b: BodyType) => void;
 }
+
+const HAT_SWATCHES = ['#8a5a32', '#3b3f4a', '#c9d3df', '#e2b23c', '#b0283a', '#2f5aa8', '#2f9b5b', '#5a3a9a', '#f2f2ee'];
 
 /** Nombre visible de cada opción. Las piezas LPC traen nombres en inglés del proyecto original. */
 const VOLUME_KEY: Partial<Record<AvatarPart, (id: string) => Key>> = {
@@ -35,6 +42,7 @@ const isLpc = (part: AvatarPart) => part.startsWith('lpc');
 function label(t: T, part: AvatarPart, id: string): string {
   if (id === 'none') return t('none');
   if (part === 'lpcHead') return t(`head_${id}` as Key);
+  if (part === 'lpcHat') return t((`hat_${id}`) as Key) === `hat_${id}` ? id.replace(/_/g, ' ') : t(`hat_${id}` as Key);
   if (part === 'lpcBrows') return t(id === 'thick' ? 'brows_gruesa' : 'brows_fina');
   const k = VOLUME_KEY[part];
   if (k) return t(k(id));
@@ -148,6 +156,15 @@ export function AvatarStep(p: Props) {
     </details>
   );
 
+  const b = a.body ?? DEFAULT_BODY;
+  const body = (
+    <details className="group" open>
+      <summary>{t('av_body')}</summary>
+      <Seg label={t('b_age')} value={b.age} set={(v) => p.setBody({ ...b, age: v as BodyType['age'] })} opts={(['nino', 'adolescente', 'adulto', 'mayor'] as const).map((v) => [v, t(`age_${v}`)])} testid="b-age" />
+      <Seg label={t('b_build')} value={b.build} set={(v) => p.setBody({ ...b, build: v as BodyType['build'] })} opts={(['delgado', 'medio', 'robusto'] as const).map((v) => [v, t(`build_${v}`)])} />
+      <Seg label={t('b_shape')} value={b.shape} set={(v) => p.setBody({ ...b, shape: v as BodyType['shape'] })} opts={(['recto', 'curvas'] as const).map((v) => [v, t(`shape_${v}`)])} />
+    </details>
+  );
   const setFace = (k: keyof FaceParams, v: number) => p.setAvatar({ ...a, face: { ...a.face, [k]: v } });
   const setHair = (k: keyof HairParams, v: number) => p.setAvatar({ ...a, hair: { ...a.hair, params: { ...a.hair.params, [k]: v } } });
 
@@ -160,11 +177,16 @@ export function AvatarStep(p: Props) {
       <div className="row">
         <button className="btn ghost" onClick={p.random} data-testid="av-random">{t('av_random')}</button>
         {p.canReset && <button className="btn ghost" onClick={p.reset}>{t('av_reset')}</button>}
+        <label className="btn ghost file-btn">
+          {t('fromPhotoColors')}
+          <input type="file" accept="image/*" data-testid="av-photo-colors" onChange={(e) => { const f = e.target.files?.[0]; if (f) p.photoColors(f); e.target.value = ''; }} />
+        </label>
       </div>
       <Seg label={t('av_kit')} value={lpc ? 'lpc' : 'volumen'} set={(v) => p.setAvatar({ ...a, kit: v as 'lpc' | 'volumen', lpc: a.lpc ?? { ...DEFAULT_LPC } })} opts={[['lpc', t('kit_lpc')], ['volumen', t('kit_volumen')]]} testid="av-kit" />
       {lpc ? (
         <>
           <p className="muted small">{t('kit_lpcHelp')}</p>
+          {body}
           {section('lpcHead', 'av_headType')}
           {section('lpcHair', 'av_hair', <Swatches label={t('av_hairColor')} colors={HAIR_SWATCHES} value={a.hair.color} set={(c) => p.setAvatar({ ...a, hair: { ...a.hair, color: c } })} testid="av-hair-color" />)}
           <details className="group" open>
@@ -177,9 +199,16 @@ export function AvatarStep(p: Props) {
           {section('lpcBeard', 'av_beard', <Swatches label={t('av_beardColor')} colors={HAIR_SWATCHES} value={a.beard.color} set={(c) => p.setAvatar({ ...a, beard: { ...a.beard, color: c } })} />)}
           {section('lpcMustache', 'av_mustache')}
           {section('lpcGlasses', 'av_glasses', <Swatches label={t('av_glassesColor')} colors={GLASSES_SWATCHES} value={a.glasses.color} set={(c) => p.setAvatar({ ...a, glasses: { ...a.glasses, color: c } })} />)}
+          {section('lpcHat', 'av_hat', (
+            <>
+              <Swatches label={t('av_hatColor')} colors={HAT_SWATCHES} value={a.lpc?.hatColor ?? '#8a5a32'} set={(c) => p.setAvatar({ ...a, lpc: { ...(a.lpc ?? DEFAULT_LPC), hatColor: c } })} />
+              <button className="btn ghost sm" onClick={() => p.setAvatar({ ...a, lpc: { ...(a.lpc ?? DEFAULT_LPC), hatColor: null } })}>{t('hat_original')}</button>
+            </>
+          ))}
         </>
       ) : (
         <>
+      {body}
       {section('look', 'av_look')}
       {section('hair', 'av_hair', <Swatches label={t('av_hairColor')} colors={HAIR_SWATCHES} value={a.hair.color} set={(c) => p.setAvatar({ ...a, hair: { ...a.hair, color: c } })} testid="av-hair-color" />)}
       <details className="group" open>

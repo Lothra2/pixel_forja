@@ -2,6 +2,7 @@ import type { Ficha } from '../sheet/ficha';
 import { renderPlan, FFGG_PLAN, type ExportPlan } from './plan';
 import { packSheet } from './sheet';
 import { encodePng } from './png';
+import { upscaleNearest } from '../core/raster';
 import { toFfgg } from './ffgg';
 import { encodeGif } from './gif';
 import { encodeAseprite, asepriteJson } from './aseprite';
@@ -68,8 +69,23 @@ function exportFilesRaw(f: Ficha, kind: ExportKind, plan: ExportPlan, opt: { for
   const { png, json: sheet } = packSheet(clips, `${tag}.png`);
   const pngFile = { name: `${tag}.png`, bytes: encodePng(png), mime: 'image/png' };
   switch (kind) {
-    case 'sheet':
-      return [pngFile, { name: `${tag}.json`, bytes: json(sheet), mime: 'application/json' }];
+    case 'sheet': {
+      const k = Math.max(1, Math.round(p.scale ?? 1));
+      if (k === 1) return [pngFile, { name: `${tag}.json`, bytes: json(sheet), mime: 'application/json' }];
+      // hoja agrandada sin filtrar: cada pixel pasa a k x k, y el JSON se escala igual
+      const big = upscaleNearest(png, k);
+      const name = `${tag}_x${k}`;
+      const sj = structuredClone(sheet);
+      for (const fr of Object.values(sj.frames)) {
+        fr.frame = { x: fr.frame.x * k, y: fr.frame.y * k, w: fr.frame.w * k, h: fr.frame.h * k };
+        fr.spriteSourceSize = { x: 0, y: 0, w: fr.spriteSourceSize.w * k, h: fr.spriteSourceSize.h * k };
+        fr.sourceSize = { w: fr.sourceSize.w * k, h: fr.sourceSize.h * k };
+      }
+      sj.cell = [sj.cell[0] * k, sj.cell[1] * k];
+      sj.pivot = [sj.pivot[0] * k, sj.pivot[1] * k];
+      sj.meta = { ...sj.meta, image: `${name}.png`, size: { w: big.w, h: big.h }, scale: String(k) as '1' };
+      return [{ name: `${name}.png`, bytes: encodePng(big), mime: 'image/png' }, { name: `${name}.json`, bytes: json(sj), mime: 'application/json' }];
+    }
     case 'ffgg':
       return [pngFile, { name: `${base}_ffgg.json`, bytes: json(toFfgg(sheet).json), mime: 'application/json' }];
     case 'aseprite':

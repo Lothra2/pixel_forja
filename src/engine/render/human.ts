@@ -2,7 +2,7 @@ import { type Raster } from '../core/raster';
 import { type HumanFicha, type CellSize, usesAvatar } from '../sheet/ficha';
 import { dimsFor, type Dims } from '../rig/dims';
 import { type Pose, type Arm, type Foot, solveTwoBone } from '../rig/pose';
-import { type Ramp, SHADOW, BASE, LIGHT } from '../color/ramp';
+import { type Ramp, SHADOW, BASE, LIGHT, makeRamp } from '../color/ramp';
 import { LayerCanvas, Layer, finalizeOutlines, toRaster, packHex } from './canvas';
 import { Materials } from './materials';
 import { Part, stroke, blob, rot } from './part';
@@ -79,6 +79,10 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     skin: ink(f.palette.skin), hair: ink(f.palette.hair), top: ink(f.palette.top), bottom: ink(f.palette.bottom), socks: ink(f.palette.socks),
     shoes: ink(f.palette.shoes), accessory: ink(f.palette.accessory), face: ink(f.palette.skin),
   } as Record<string, Ramp>);
+  const fo = f.outfit;
+  if (fo.pattern && fo.pattern !== 'liso') mats.add('top2', ink(makeRamp(fo.pattern2 ?? '#f2f2f2')));
+  if (fo.jacket) mats.add('jacket', ink(makeRamp(fo.jacket)));
+  const shoeMat = fo.shoes === 'descalzo' ? 'skin' : 'shoes';
   const side = view === 'side';
   const sign = view === 'back' ? -1 : 1; // de espalda, lo "cercano" queda a la izquierda
   // en vista lateral el torso se inclina. De frente o espalda, `torso` no rota (se ve igual) y `roll` sí
@@ -161,9 +165,10 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   const drawArm = (far: boolean, layer: number) => {
     const p = far ? arms.far : arms.near;
     const part = new Part();
-    const sleeve = f.outfit.sleeves;
-    stroke(part, p.root, p.mid, d.armT, (t) => (sleeve === 'long' || (sleeve === 'short' && t < 0.6) ? 'top' : 'skin'));
-    stroke(part, p.mid, p.end, d.armT, () => (sleeve === 'long' ? 'top' : 'skin'));
+    const sleeve = fo.jacket ? 'long' : f.outfit.sleeves;
+    const sm = fo.jacket ? 'jacket' : 'top';
+    stroke(part, p.root, p.mid, d.armT, (t) => (sleeve === 'long' || (sleeve === 'short' && t < 0.6) ? sm : 'skin'));
+    stroke(part, p.mid, p.end, d.armT, () => (sleeve === 'long' ? sm : 'skin'));
     blob(part, p.end, d.hand + (f.outfit.gloves ? 1 : 0), handMat);
     commit(part, layer, side && far);
   };
@@ -174,7 +179,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     const bottom = f.outfit.bottom, socks = f.outfit.socks;
     stroke(part, p.root, p.mid, d.legT, () => (bottom === 'skirt' ? 'skin' : 'bottom'));
     const socksFrom = socks === 'knee' ? 0.2 : socks === 'low' ? 0.8 : 2;
-    stroke(part, p.mid, p.end, d.legT, (t) => (bottom === 'pants' ? 'bottom' : bottom === 'shorts' && t < 0.2 ? 'bottom' : t >= socksFrom ? 'socks' : 'skin'));
+    const boots = fo.shoes === 'botas';
+    stroke(part, p.mid, p.end, d.legT, (t) => (boots && t >= 0.6 ? 'shoes' : bottom === 'pants' ? 'bottom' : bottom === 'shorts' && t < 0.2 ? 'bottom' : t >= socksFrom ? 'socks' : 'skin'));
     const an: [number, number] = [Math.round(p.end[0]), Math.round(p.end[1])];
     const off = Math.floor((d.legT - 1) / 2);
     const toe = p.foot?.toe ?? 0;
@@ -183,7 +189,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
       const fw = d.legT + (d.footLen > 3 ? 1 : 0);
       const x0 = an[0] - off - (fw > d.legT ? (far ? 1 : 0) * sign : 0);
       const yb = an[1] + (d.legT - 1 - off);
-      for (let r = 0; r < d.footH; r++) for (let x = x0; x < x0 + fw; x++) part.set(x, yb - r, 'shoes', r === 0 && d.footH >= 2 ? SHADOW : BASE);
+      for (let r = 0; r < d.footH; r++) for (let x = x0; x < x0 + fw; x++) part.set(x, yb - r, shoeMat, r === 0 && d.footH >= 2 ? SHADOW : BASE);
     } else if (Math.abs(toe) < 30 && Math.abs(theta) < 30) {
       // zapato plano: punta hacia adelante, esquina de arriba redondeada
       const fx0 = an[0] - off;
@@ -192,15 +198,17 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
         const y = fyBottom - r;
         const len = r === d.footH - 1 && d.footH > 1 ? d.footLen - 1 : d.footLen;
         for (let x = fx0; x < fx0 + len; x++) {
-          const slot = d.footH >= 3 && r === 0 ? SHADOW : r === d.footH - 1 && x === fx0 + len - 1 ? LIGHT : BASE;
-          part.set(x, y, 'shoes', slot);
+          let slot = d.footH >= 3 && r === 0 ? SHADOW : r === d.footH - 1 && x === fx0 + len - 1 ? LIGHT : BASE;
+          // guayos: tacos oscuros en la suela
+          if (fo.shoes === 'guayos' && r === 0 && (x - fx0) % 2 === 1) slot = SHADOW;
+          part.set(x, y, shoeMat, slot);
         }
       }
     } else {
       // pie en punta o cuerpo rotado: el zapato es un trazo en la dirección de la punta
       const ang = toe + theta;
       const tip = rot([d.footLen - 1, 0], ang);
-      stroke(part, an, [an[0] + tip[0], an[1] + tip[1]], Math.max(d.footH, d.legT - 1), () => 'shoes');
+      stroke(part, an, [an[0] + tip[0], an[1] + tip[1]], Math.max(d.footH, d.legT - 1), () => shoeMat);
     }
     commit(part, layer, side && far);
   };
@@ -219,8 +227,35 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
         const topRow = u > d.torsoH - 0.5;
         if (topRow && (rr < tx0 + 0.5 || rr > tx1 - 0.5)) continue;
         const isPants = u < d.pantsRows + 0.5;
-        const mat = isPants ? 'bottom' : 'top';
-        const slot = !isPants && topRow ? LIGHT : BASE;
+        let mat = isPants ? 'bottom' : 'top';
+        let slot = !isPants && topRow ? LIGHT : BASE;
+        if (!isPants) {
+          const col = Math.round(rr - tx0), row = Math.round(d.torsoH - u);
+          const shirtRows = Math.max(1, d.torsoH - d.pantsRows);
+          const mid = (d.torsoW - 1) / 2;
+          const pat = fo.pattern ?? 'liso';
+          const on =
+            pat === 'rayas' ? (col >> 1) % 2 === 1
+            : pat === 'rayas_h' ? (row >> 1) % 2 === 1 && row < shirtRows
+            : pat === 'banda' ? !side && Math.abs(col - (row * (d.torsoW - 1)) / shirtRows) <= 1
+            : pat === 'mitades' ? !side && col < d.torsoW / 2
+            : pat === 'cuadros' ? ((col >> 1) + (row >> 1)) % 2 === 1
+            : false;
+          if (on) mat = 'top2';
+          // chaqueta abierta: de frente se ve la camiseta al medio; de lado y de espalda, casi toda chaqueta
+          if (fo.jacket) {
+            const open = view === 'front' ? Math.abs(col - mid) < d.torsoW * 0.22 : side ? rr > tx1 - 1.5 : false;
+            if (!open) mat = 'jacket';
+          }
+          // cuello en V (piel) o de polo (puntas claras y la tapeta)
+          if (view === 'front' && !fo.jacket) {
+            if (fo.collar === 'v' && ((row === 0 && Math.abs(col - mid) <= 1) || (row === 1 && Math.abs(col - mid) < 0.6))) mat = 'skin';
+            if (fo.collar === 'polo') {
+              if (row === 0 && Math.abs(Math.abs(col - mid) - 1.5) <= 0.6) { mat = 'top'; slot = LIGHT; }
+              if (row >= 1 && row <= 2 && Math.abs(col - mid) < 0.6) { mat = 'top'; slot = SHADOW; }
+            }
+          }
+        }
         part.set(x, y, mat, slot);
       }
     // número de camiseta, de frente o de espalda (contorno de la camisa)
@@ -236,7 +271,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
         DIGITS[ch].forEach((row, j) =>
           [...row].forEach((c, i) => {
             const px = x0 + k * 4 + i, py = y0 + j;
-            if (c === '#' && part.get(px, py)?.mat === 'top') numPx.add(Part.key(px, py));
+            if (c === '#' && (part.get(px, py)?.mat === 'top' || part.get(px, py)?.mat === 'top2')) numPx.add(Part.key(px, py));
           }),
         ),
       );

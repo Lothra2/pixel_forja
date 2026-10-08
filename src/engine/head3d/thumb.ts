@@ -2,7 +2,7 @@ import { createRaster, type Raster } from '../core/raster';
 import { hexToRgb } from '../color/oklab';
 import { makeRamp, OUTLINE } from '../color/ramp';
 import { renderHeadModel, HEAD_STYLES, type ModelHeadImage } from './render';
-import { lpcHead, LPC_HEADS, LPC_HAIRS, LPC_BROWS, LPC_NOSES, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, DEFAULT_LPC, type LpcLook } from '../parts/lpc';
+import { lpcHead, LPC_HEADS, LPC_HAIRS, LPC_BROWS, LPC_NOSES, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HATS, DEFAULT_LPC, type LpcLook } from '../parts/lpc';
 import {
   modelFromAvatar, withHairStyle, HAIR_STYLE_IDS, EYE_STYLE_IDS, BROW_STYLE_IDS, BEARD_STYLE_IDS, GLASSES_STYLE_IDS, NOSE_IDS, LOOK_IDS,
   GLASSES_SWATCHES, type Avatar,
@@ -30,11 +30,11 @@ export function headThumb(a: Avatar, yaw = 30, width = 20): Raster {
 }
 
 export type AvatarPart = 'look' | 'hair' | 'eyes' | 'brows' | 'nose' | 'beard' | 'glasses'
-  | 'lpcHead' | 'lpcHair' | 'lpcBrows' | 'lpcNose' | 'lpcBeard' | 'lpcMustache' | 'lpcGlasses';
+  | 'lpcHead' | 'lpcHair' | 'lpcBrows' | 'lpcNose' | 'lpcBeard' | 'lpcMustache' | 'lpcGlasses' | 'lpcHat';
 
-const LPC_FIELD: Record<string, keyof LpcLook> = { lpcHead: 'head', lpcHair: 'hair', lpcBrows: 'brows', lpcNose: 'nose', lpcBeard: 'beard', lpcMustache: 'mustache', lpcGlasses: 'glasses' };
+const LPC_FIELD: Record<string, keyof LpcLook> = { lpcHead: 'head', lpcHair: 'hair', lpcBrows: 'brows', lpcNose: 'nose', lpcBeard: 'beard', lpcMustache: 'mustache', lpcGlasses: 'glasses', lpcHat: 'hat' };
 const LPC_LIST: Record<string, (string | null)[]> = {
-  lpcHead: LPC_HEADS, lpcHair: LPC_HAIRS, lpcBrows: [...LPC_BROWS, null], lpcNose: [null, ...LPC_NOSES], lpcBeard: [null, ...LPC_BEARDS], lpcMustache: [null, ...LPC_MUSTACHES], lpcGlasses: [null, ...LPC_GLASSES],
+  lpcHead: LPC_HEADS, lpcHair: LPC_HAIRS, lpcBrows: [...LPC_BROWS, null], lpcNose: [null, ...LPC_NOSES], lpcBeard: [null, ...LPC_BEARDS], lpcMustache: [null, ...LPC_MUSTACHES], lpcGlasses: [null, ...LPC_GLASSES], lpcHat: [null, ...LPC_HATS],
 };
 
 /** Valor actual de una pieza LPC ('none' si no lleva). */

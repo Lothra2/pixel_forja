@@ -1,6 +1,7 @@
 import type { HeadModel, HeadRow, HairBlob, EyeStyleId, BrowStyleId, BeardStyleId, GlassesStyleId } from './model';
 import { hexToLab, labToHex, labToLch, lchToLab } from '../color/oklab';
 import { rng } from '../core/rng';
+import type { BodyType } from '../rig/dims';
 import { stylizeSkin, liftHair } from './render';
 import { DEFAULT_LPC, LPC_HAIRS, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_NOSES, LPC_HEADS, type LpcLook } from '../parts/lpc';
 
@@ -72,6 +73,8 @@ export interface Avatar {
    */
   kit?: 'lpc' | 'volumen';
   lpc?: LpcLook;
+  /** edad, contextura y figura del cuerpo (se traducen a proporciones de la ficha) */
+  body?: BodyType;
 }
 
 // ---------- catálogos ----------

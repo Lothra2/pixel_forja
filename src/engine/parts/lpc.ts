@@ -26,6 +26,7 @@ export const LPC_MUSTACHES: string[] = keysOf('mustache/');
 export const LPC_GLASSES: string[] = keysOf('glasses/');
 export const LPC_NOSES: string[] = keysOf('nose/');
 export const LPC_BROWS: string[] = keysOf('brows/');
+export const LPC_HATS: string[] = keysOf('hat/');
 
 export interface LpcLook {
   head: LpcHeadId;
@@ -35,6 +36,10 @@ export interface LpcLook {
   beard: string | null;
   mustache: string | null;
   glasses: string | null;
+  /** gorro, sombrero o casco */
+  hat?: string | null;
+  /** color del gorro (sin color se deja el del artista: metal, cuero, tela) */
+  hatColor?: string | null;
 }
 
 export const DEFAULT_LPC: LpcLook = { head: 'male', hair: 'parted', brows: 'thin', nose: null, beard: null, mustache: null, glasses: null };
@@ -153,6 +158,11 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back', colors: 
       map: (c, d) => (labToLch(hexToLab(c))[0] > 0.8 && d.colors.length > 1 ? c : relative(c, baseColor(d), colors.glasses, 0.6)),
     });
   }
+  if (look.hat) {
+    const hc = look.hatColor;
+    // el gorro cuenta como pelo para el encuadre: un ala ancha puede recortarse en el borde en poses extremas
+    layers.push({ key: `hat/${look.hat}`, mat: 'hair', map: (c, d) => (hc ? relative(c, baseColor(d), hc, 0.9) : c) });
+  }
 
   // caja común en coordenadas del cuadro LPC de 64x64
   const used = layers.map((l) => ({ l, d: DATA.parts[l.key]?.dirs[dir] })).filter((u): u is { l: Layer; d: PartDir } => !!u.d);
@@ -196,7 +206,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back', colors: 
 export function lpcCredits(look: LpcLook): string[] {
   const keys = [`head/${look.head}`, `face/${look.head.startsWith('female') ? 'female' : 'male'}/neutral`];
   if (look.hair) keys.push(`hair/${look.hair}`, `hairbg/${look.hair}`);
-  for (const [p, v] of [['brows', look.brows], ['nose', look.nose], ['beard', look.beard], ['mustache', look.mustache], ['glasses', look.glasses]] as const) if (v) keys.push(`${p}/${v}`);
+  for (const [p, v] of [['brows', look.brows], ['nose', look.nose], ['beard', look.beard], ['mustache', look.mustache], ['glasses', look.glasses], ['hat', look.hat]] as const) if (v) keys.push(`${p}/${v}`);
   const lines: string[] = [];
   for (const k of keys) {
     const part = DATA.parts[k];

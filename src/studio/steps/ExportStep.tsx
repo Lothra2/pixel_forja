@@ -24,10 +24,11 @@ export function ExportStep({ t, ficha, cell: cell0, qa, doExport, artifact }: Pr
   const [props, setProps] = useState(true);
   const [kind, setKind] = useState<ExportKind>(human ? 'sheet' : 'sheet');
   const [force, setForce] = useState(false);
+  const [scale, setScale] = useState(1);
   const [report, setReport] = useState<{ reports: QAReport[]; missing: string[] } | null>(null);
   const plan: ExportPlan = useMemo(
-    () => ({ cell, anims: all.filter((a) => sel.has(a.pack)).map((a) => a.name), views: human ? VIEW_NAMES.filter((v) => views.has(v)) : ['side'], props }),
-    [cell, all, sel, views, props, human],
+    () => ({ cell, anims: all.filter((a) => sel.has(a.pack)).map((a) => a.name), views: human ? VIEW_NAMES.filter((v) => views.has(v)) : ['side'], props, scale: kind === 'sheet' ? scale : 1 }),
+    [cell, all, sel, views, props, human, kind, scale],
   );
   const usesPlan = kind !== 'ffgg' && kind !== 'ficha';
 
@@ -78,6 +79,7 @@ export function ExportStep({ t, ficha, cell: cell0, qa, doExport, artifact }: Pr
             </div>
           )}
           <Seg label={t('size')} value={String(cell)} set={(v) => setCell(+v as CellSize)} opts={[['32', '32'], ['48', '48'], ['64', '64']]} />
+          {kind === 'sheet' && <Seg label={t('sheetScale')} value={String(scale)} set={(v) => setScale(+v)} opts={[['1', '1x'], ['2', '2x'], ['4', '4x']]} testid="sheet-scale" />}
           {human && <Toggle label={t('props')} on={props} set={setProps} />}
           <div className="qa-sum" data-testid="qa-summary">
             <strong>{t('qaSummary')}:</strong>{' '}

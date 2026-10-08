@@ -7,7 +7,7 @@
  *   npx tsx cli/forja.ts render out/gabo/gabo.ficha.json --out out/x --anims ffgg --export sheet,godot,unity,aseprite,gif
  *
  * Opciones: --preset chibi|juvenil|realista  --anims all|ffgg|<pack>|idle,walk  --views side,front,back,left
- *           --export sheet,ffgg,aseprite,godot,unity,frames,gif,ficha  --props on|off
+ *           --export sheet,ffgg,aseprite,godot,unity,frames,gif,ficha  --props on|off  --scale 1|2|4 (hoja agrandada)
  * Si existe `<imagen>.head.json` al lado de la imagen ({ box, eyes } en pixeles de la imagen original),
  * se usa como si el usuario hubiera marcado la cabeza.
  */
@@ -70,7 +70,7 @@ function writeOutputs(ficha: Ficha, out: string, sizes: CellSize[]) {
   const kinds = (arg('export')?.split(',') ?? ['sheet', 'gif']) as ExportKind[];
   const reports: QAReport[] = [];
   for (const cell of sizes) {
-    const plan = { cell, anims, views, props };
+    const plan = { cell, anims, views, props, scale: Number(arg('scale') ?? 1) };
     reports.push(...renderPlan(ficha, plan).qa);
     for (const k of kinds) {
       if (k === 'ffgg' && cell !== 48) continue;

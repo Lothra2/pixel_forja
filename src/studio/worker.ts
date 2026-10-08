@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import {
   decodePng, makeWorkImage, analyzeImage, buildFicha, buildAnimalFicha, renderClip, runQA,
-  exportFiles, renderPlan, surprise, isHuman, headThumb, avatarOptions,
+  exportFiles, renderPlan, surprise, isHuman, headThumb, avatarOptions, colorsFromPhoto,
   type Raster, type WorkImage, type Analysis, type HumanFicha,
 } from '../engine/index';
 import type { AnalyzeParams, ImagePayload, Request, Response } from './protocol';
@@ -89,6 +89,10 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
       case 'qa': {
         const { qa, missing } = renderPlan(req.ficha, req.plan);
         reply({ type: 'qa', reports: qa, missing });
+        break;
+      }
+      case 'photoColors': {
+        reply({ type: 'photoColors', colors: colorsFromPhoto(toRaster(req)) });
         break;
       }
       case 'avatarThumbs': {

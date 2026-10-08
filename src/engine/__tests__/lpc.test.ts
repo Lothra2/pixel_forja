@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   lpcHead, lpcCredits, LPC_HAIRS, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HEADS, DEFAULT_LPC, defaultAvatar, fichaFromAvatar,
-  renderPlan, FFGG_PLAN, exportFiles, hexToLab, type LpcColors,
+  renderPlan, FFGG_PLAN, exportFiles, hexToLab, bodyProportions, type LpcColors, type BodyType, type HumanFicha,
 } from '../index';
 
 const colors: LpcColors = { skin: '#d79d78', hair: '#2a1d16', eyes: '#3a2418', beard: '#4a3a33', glasses: '#1d1d24' };
@@ -46,4 +46,21 @@ describe('piezas dibujadas LPC', () => {
       expect(bad).toEqual([]);
     }
   }, 120000);
+
+  it('edades, contexturas, ropa y gorros pasan el control de calidad del juego', () => {
+    const cases: { body: BodyType; lpc: Record<string, unknown>; outfit: Partial<HumanFicha['outfit']> }[] = [
+      { body: { age: 'nino', build: 'medio', shape: 'recto' }, lpc: { head: 'female', hair: 'pigtails' }, outfit: { bottom: 'skirt' } },
+      { body: { age: 'nino', build: 'robusto', shape: 'recto' }, lpc: { hair: 'curly_short' }, outfit: { pattern: 'cuadros', pattern2: '#f2c94c', shoes: 'descalzo', socks: 'none' } },
+      { body: { age: 'adolescente', build: 'delgado', shape: 'recto' }, lpc: { hair: 'messy2' }, outfit: { pattern: 'rayas', pattern2: '#ffffff', number: '10', shoes: 'guayos' } },
+      { body: { age: 'adulto', build: 'robusto', shape: 'recto' }, lpc: { hair: 'buzzcut', hat: 'leather_cap' }, outfit: { jacket: '#3b3f4a', bottom: 'pants', shoes: 'botas' } },
+      { body: { age: 'adulto', build: 'medio', shape: 'curvas' }, lpc: { head: 'female', hair: 'ponytail', hat: 'wizard' }, outfit: { collar: 'v' } },
+      { body: { age: 'mayor', build: 'medio', shape: 'recto' }, lpc: { head: 'male_elderly', hair: 'balding', hat: 'viking' }, outfit: { pattern: 'banda', collar: 'polo' } },
+    ];
+    for (const c of cases) {
+      let f = fichaFromAvatar('x', { ...defaultAvatar(), body: c.body, lpc: { ...DEFAULT_LPC, ...c.lpc } }, c.outfit);
+      f = { ...f, body: { ...f.body, proportions: bodyProportions('chibi', c.body) } };
+      const bad = renderPlan(f, FFGG_PLAN).qa.filter((r) => !r.ok).map((r) => `${c.body.age}/${String(c.lpc.hair)}: ${r.clip} ${r.items.filter((i) => i.severity === 'error').map((i) => `${i.check} ${i.where ?? ''}`).join(',')}`);
+      expect(bad).toEqual([]);
+    }
+  }, 180000);
 });
