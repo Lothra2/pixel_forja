@@ -38,6 +38,8 @@ export interface RenderedClip {
   steady: boolean;
   /** false si el clip no cabe en la celda ni corriéndolo */
   fits: boolean;
+  /** por cuadro, alto del cuerpo sin implementos (arriba y abajo, en la celda): el control de calidad mide con esto */
+  bodies?: ({ y0: number; y1: number } | null)[];
 }
 
 function humanDef(f: Ficha, name: string): AnimDef | undefined {
@@ -87,13 +89,25 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
     const def = humanDef(f, name);
     if (!def) throw new Error(`No existe la animación ${name}`);
     const poses = posesFor(f, cell, name, poseView);
-    big = poses.map((p) => renderHuman(f, cell, p, base, opt));
+    // giro (torbellino): cada cuadro en la dirección siguiente, en el sentido de las agujas del reloj
+    const ring = EIGHT_VIEWS;
+    const start = Math.max(0, ring.indexOf(view));
+    const frameView = (i: number): ViewName => (def.spin ? ring[(start + i) % ring.length] : view);
+    const renderAt = (p: Pose, i: number): BigFrame => {
+      const v = frameView(i);
+      if (!def.spin || v === view) return renderHuman(f, cell, p, base, opt);
+      const b = MIRRORED[v] ?? (v as RenderView);
+      const fr = renderHuman(f, cell, p, b, opt);
+      // la vista final se espeja entera al final si view es espejo: se compensa aquí
+      return !!MIRRORED[v] !== !!MIRRORED[view] ? mirrorBig(fr) : fr;
+    };
+    big = poses.map((p, i) => renderAt(p, i));
     // salto que choca con el techo de la celda: se baja solo ese cuadro lo justo
     big = big.map((b, i) => {
       const top = b.groundRow - (cell - 2) + 1;
       if (!b.body || b.body.y0 >= top || poses[i].air <= 0) return b;
       poses[i] = { ...poses[i], air: Math.max(0, poses[i].air - (top - b.body.y0)) };
-      return renderHuman(f, cell, poses[i], base, opt);
+      return renderAt(poses[i], i);
     });
     fps = def.fps; loop = def.loop; steady = !!def.steady;
     airborne = poses.map((p) => p.air > 0 || p.hipH !== undefined);
@@ -106,15 +120,19 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
     fps = def.fps; loop = def.loop; steady = !!def.steady;
     airborne = poses.map((p) => p.air > 0);
   }
-  const { frames, fits } = cropClip(big, cell);
-  return { name, fps, loop, cell, view, frames: MIRRORED[view] ? frames.map(mirror) : frames, airborne, steady, fits };
+  const { frames, fits, top } = cropClip(big, cell);
+  // el cuerpo sin armas ni balones (con el pelo y el contorno): un hacha colgando no cuenta como pie
+  // solo con equipo de RPG: sin equipo el piso lo marca todo lo dibujado (balones, raquetas) y se mide igual
+  const useBodies = isHuman(f) && !!f.gear;
+  const bodies = big.map((b) => (useBodies && b.full ? { y0: b.full.y0 - top, y1: b.full.y1 - top } : null));
+  return { name, fps, loop, cell, view, frames: MIRRORED[view] ? frames.map(mirror) : frames, airborne, steady, fits, bodies: bodies.some(Boolean) ? bodies : undefined };
 }
 
 /**
  * Recorta la celda alrededor del pie de apoyo. Si una pose se sale por un lado, corre TODO el clip
  * lo mismo (así no salta entre cuadros). Si no cabe ni así, avisa.
  */
-function cropClip(big: BigFrame[], cell: CellSize): { frames: Raster[]; fits: boolean } {
+function cropClip(big: BigFrame[], cell: CellSize): { frames: Raster[]; fits: boolean; top: number } {
   // solo el cuerpo decide el encuadre: un balón que sale disparado se recorta.
   // Si el cuerpo con el pelo cabe, se encuadra con el pelo (así no se corta la cabeza al caer acostado)
   const union = (full: boolean) => {
@@ -157,7 +175,14 @@ function cropClip(big: BigFrame[], cell: CellSize): { frames: Raster[]; fits: bo
       }
     return out;
   });
-  return { frames, fits };
+  return { frames, fits, top };
+}
+
+/** Espeja un cuadro grande sobre su eje (el pie de apoyo queda en el centro). */
+function mirrorBig(b: BigFrame): BigFrame {
+  const W = b.raster.w;
+  const fx = (box: BigFrame['body']) => (box ? { x0: W - 1 - box.x1, x1: W - 1 - box.x0, y0: box.y0, y1: box.y1 } : box);
+  return { ...b, raster: mirror(b.raster), pivotX: W - b.pivotX, body: fx(b.body), full: b.full === undefined ? undefined : fx(b.full), joints: undefined };
 }
 
 export function mirror(r: Raster): Raster {

@@ -19,6 +19,7 @@ if (img.endsWith('.json')) {
   const spec = JSON.parse(readFileSync(img, 'utf8'));
   ficha = fichaFromAvatar(spec.name ?? name, spec.avatar, spec.outfit);
   for (const [slot, hex] of Object.entries(spec.colors ?? {})) ficha = recolor(ficha, slot as ColorSlot, hex as string) as HumanFicha;
+  if (spec.gear) ficha = { ...ficha, gear: spec.gear } as typeof ficha;
 } else {
   src = decodePng(readFileSync(img));
   const r = buildFicha(src, { name });

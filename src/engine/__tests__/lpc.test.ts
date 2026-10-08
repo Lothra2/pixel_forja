@@ -160,3 +160,15 @@ describe('armas y armaduras del RPG', () => {
     }
   }, 180000);
 });
+
+describe('habilidades y enemigos', () => {
+  it('el torbellino gira por las 8 direcciones y todas las habilidades pasan el control en diagonal', () => {
+    const f = { ...fichaFromAvatar('h', defaultAvatar(), { armor: 'placas', cape: '#2a4fa0' }), gear: { main: 'sword', off: 'shield_kite' } } as HumanFicha;
+    const spin = renderClip(f, 48, 'whirlwind', 'side').frames.map((fr) => Buffer.from(fr.data).toString('base64'));
+    expect(new Set(spin).size).toBeGreaterThanOrEqual(6);
+    const names = ['cast', 'nova', 'channel', 'whirlwind', 'leap', 'charge', 'dodge', 'shoot_bow', 'summon', 'warcry', 'attack_heavy', 'attack_thrust', 'zombie_walk', 'claw', 'lunge', 'rise'];
+    const { qa, missing } = renderPlan(f, { cell: 48, anims: names, views: ['se', 'ne', 'side'], props: true });
+    expect(missing).toEqual([]);
+    expect(qa.filter((r) => !r.ok).map((r) => r.clip)).toEqual([]);
+  }, 180000);
+});

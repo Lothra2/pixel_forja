@@ -15,6 +15,7 @@ if (input.endsWith('.json')) {
   const spec = JSON.parse(readFileSync(input, 'utf8'));
   ficha = fichaFromAvatar(spec.name ?? 'x', spec.avatar, spec.outfit);
   for (const [slot, hex] of Object.entries(spec.colors ?? {})) ficha = recolor(ficha, slot as ColorSlot, hex as string);
+  if (spec.gear) ficha = { ...ficha, gear: spec.gear } as typeof ficha;
 } else ficha = buildFicha(decodePng(readFileSync(input)), { name: 'x', sizes: [cell] }).ficha;
 const k = 4, maxF = 8;
 const rows: Raster[] = [];

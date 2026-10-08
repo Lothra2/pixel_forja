@@ -57,7 +57,11 @@ export function uniqueColors(frames: Raster[]): number {
 export function runQA(f: Ficha, clip: RenderedClip): QAReport {
   const groundY = clip.cell - 2;
   const items: QAItem[] = [];
-  const b = clip.frames.map(bounds);
+  // con el alto del cuerpo (sin armas ni balones) cuando el render lo da
+  const b = clip.frames.map((fr, i) => {
+    const bb = bounds(fr), body = clip.bodies?.[i];
+    return body && isFinite(bb.y1) ? { ...bb, y0: body.y0, y1: body.y1 } : bb;
+  });
   // altura: igual en todos los cuadros en el piso (±1). Solo en animaciones de pie (agacharse cambia la altura a propósito)
   const grounded = b.filter((_, i) => !clip.airborne[i]);
   const heights = grounded.map((x) => x.y1 - x.y0 + 1);

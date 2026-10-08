@@ -6,7 +6,7 @@ export type Pack =
   | 'basic' | 'football' | 'keeper' | 'basket' | 'volley' | 'tennis' | 'baseball'
   | 'swim' | 'athletics' | 'martial' | 'skate' | 'bike' | 'rpg' | 'skills' | 'enemy' | 'animal' | 'custom';
 
-export const PACKS: Pack[] = ['basic', 'football', 'keeper', 'basket', 'volley', 'tennis', 'baseball', 'swim', 'athletics', 'martial', 'skate', 'bike', 'rpg'];
+export const PACKS: Pack[] = ['basic', 'football', 'keeper', 'basket', 'volley', 'tennis', 'baseball', 'swim', 'athletics', 'martial', 'skate', 'bike', 'rpg', 'skills', 'enemy'];
 
 export interface Ctx {
   d: Dims;
@@ -32,6 +32,8 @@ export interface AnimDef {
   views?: View[];
   /** el pelo largo se va hacia atrás (correr) */
   hairTrail?: number;
+  /** giro: cada cuadro mira a la dirección siguiente de las 8 (torbellino) */
+  spin?: boolean;
   build: (c: Ctx) => Pose[];
 }
 
