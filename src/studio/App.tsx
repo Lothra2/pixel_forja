@@ -4,7 +4,9 @@ import { translator, animLabel, type Lang, type Key } from './i18n';
 import type { AnalyzeParams, AnalyzeResult, FrameSet } from './protocol';
 import { ImageStage, ZONE_COLORS } from './components/ImageStage';
 import { Preview, type PreviewBg } from './components/Preview';
-import { Seg, Select, Toggle, type T } from './components/ui';
+import { Showcase, SHOW_DIRS } from './components/Showcase';
+import { demoCast } from './showcase';
+import { Seg, Select, Toggle, DirPad, Logo, type T } from './components/ui';
 import { StyleStep } from './steps/StyleStep';
 import { EditorStep } from './steps/EditorStep';
 import { ExportStep } from './steps/ExportStep';
@@ -76,7 +78,34 @@ export function App() {
   const [cell, setCell] = useState<CellSize>(48);
   const [anim, setAnim] = useState('walk');
   const [view, setView] = useState<ViewName>('side');
-  const [bg, setBg] = useState<PreviewBg>('pitch');
+  const [bg, setBg] = useState<PreviewBg>('studio');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try { return localStorage.getItem('pf.theme') === 'light' ? 'light' : 'dark'; } catch { return 'dark'; }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem('pf.theme', theme); } catch { /* sin almacenamiento */ }
+  }, [theme]);
+  // vitrina de la portada: tres personajes de muestra en las 8 direcciones
+  const [showcase, setShowcase] = useState<(FrameSet | undefined)[][]>([]);
+  const showcaseStarted = useRef(false);
+  useEffect(() => {
+    if (step !== 'image' || showcaseStarted.current) return;
+    showcaseStarted.current = true;
+    (async () => {
+      const cast = demoCast();
+      const out: (FrameSet | undefined)[][] = cast.map(() => []);
+      // primero una dirección por personaje para que aparezcan rápido, después el resto
+      for (const round of [[7], [0, 1, 2, 3, 4, 5, 6]])
+        for (const di of round)
+          for (let k = 0; k < cast.length; k++) {
+            const r = await engine.call<'rendered'>({ type: 'render', key: `show${k}`, ficha: cast[k], cell: 48, anim: 'walk', view: SHOW_DIRS[di], props: false }).catch(() => null);
+            if (r) out[k][di] = r.clip;
+            if (round.length === 1 && k === cast.length - 1) setShowcase(out.map((d) => [...d]));
+          }
+      setShowcase(out.map((d) => [...d]));
+    })();
+  }, [step, engine]);
   const [props, setProps] = useState(true);
   const [clip, setClip] = useState<FrameSet | null>(null);
   const [qa, setQa] = useState<QAReport | null>(null);
@@ -358,14 +387,18 @@ export function App() {
     <div className="app">
       <header className="top">
         <div className="brand">
-          <span className="logo" aria-hidden>▚</span>
+          <span className="logo" aria-hidden><Logo /></span>
           <div>
-            <h1>PixelForja</h1>
+            <h1>Pixel<b>Forja</b></h1>
             <p>{t('appTagline')}</p>
           </div>
         </div>
         <div className="top-right">
           {busy > 0 && <span className="busy" role="status">{t('working')}</span>}
+          <div className="theme" role="group" aria-label={t('theme')}>
+            <button className={theme === 'dark' ? 'on' : ''} onClick={() => setTheme('dark')} aria-label={t('themeDark')} aria-pressed={theme === 'dark'}>☾</button>
+            <button className={theme === 'light' ? 'on' : ''} onClick={() => setTheme('light')} aria-label={t('themeLight')} aria-pressed={theme === 'light'}>☀</button>
+          </div>
           <div className="lang" role="group" aria-label="idioma / language">
             {(['es', 'en'] as Lang[]).map((l) => (
               <button key={l} className={l === lang ? 'on' : ''} onClick={() => setLang(l)}>{l.toUpperCase()}</button>
@@ -386,37 +419,57 @@ export function App() {
 
       <main className="work">
         {step === 'image' && (
-          <section className="panel wide">
-            <div className="row">
-              <Seg label={t('kind')} value={kind} set={(v) => setKind(v as 'human' | 'animal')} opts={[['human', t('kind_human')], ['animal', t('kind_animal')]]} />
-              {kind === 'animal' && <Select label={t('species')} value={species} set={(v) => setSpecies(v as Species)} opts={SPECIES.map((s) => [s, t(`species_${s}` as Key)])} />}
-            </div>
+          <section className="panel wide home">
             {kind === 'human' ? (
-              <>
-                <div className="start">
-                  <button className="btn big" onClick={() => startFromScratch()} data-testid="from-scratch">{t('fromScratch')}</button>
-                  <p className="muted small">{t('fromScratchHelp')}</p>
+              <div className="hero">
+                <div>
+                  <span className="eyebrow">{t('heroEyebrow')}</span>
+                  <h2>{t('heroTitleA')} <em>{t('heroTitleB')}</em></h2>
+                  <p className="lead">{t('heroLead')}</p>
+                  <div className="cta">
+                    <button className="btn big" onClick={() => startFromScratch()} data-testid="from-scratch">{t('fromScratch')}</button>
+                    <Seg value={kind} set={(v) => setKind(v as 'human' | 'animal')} opts={[['human', t('kind_human')], ['animal', t('kind_animal')]]} />
+                  </div>
+                  <div className="badges">
+                    <span className="badge"><i />{t('badgeLocal')}</span>
+                    <span className="badge"><b>75</b> {t('badgeAnims')}</span>
+                    <span className="badge"><b>8</b> {t('badgeDirs')}</span>
+                    <span className="badge">Phaser · Godot · Unity · Aseprite</span>
+                  </div>
                 </div>
-                <div className="start-alt">
-                  <label className="btn ghost file-btn">
-                    {t('fromPhotoColors')}
-                    <input type="file" accept="image/*" data-testid="photo-colors" onChange={(e) => { const f = e.target.files?.[0]; if (f) startFromPhoto(f); }} />
-                  </label>
-                  <span className="muted small">{t('fromPhotoColorsHelp')}</span>
-                </div>
-                <details className="group">
-                  <summary>{t('fromDrawing')}</summary>
-                  <label
-                    className="drop"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) loadFile(f, f.name); }}
-                  >
-                    <input type="file" accept="image/*" data-testid="file" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f, f.name); }} />
-                    <strong>{t('upload')}</strong>
-                    <span>{t('dropHint')}</span>
-                  </label>
-                </details>
-              </>
+                <Showcase cast={showcase} label={t('showcaseLabel')} />
+              </div>
+            ) : (
+              <div className="row">
+                <Seg label={t('kind')} value={kind} set={(v) => setKind(v as 'human' | 'animal')} opts={[['human', t('kind_human')], ['animal', t('kind_animal')]]} />
+                <Select label={t('species')} value={species} set={(v) => setSpecies(v as Species)} opts={SPECIES.map((s) => [s, t(`species_${s}` as Key)])} />
+              </div>
+            )}
+            {kind === 'human' ? (
+              <div className="home-grid">
+                <label className="tile">
+                  <span className="ico" aria-hidden>🎨</span>
+                  <strong>{t('fromPhotoColors')}</strong>
+                  <span>{t('fromPhotoColorsHelp')}</span>
+                  <input type="file" accept="image/*" data-testid="photo-colors" onChange={(e) => { const f = e.target.files?.[0]; if (f) startFromPhoto(f); }} />
+                </label>
+                <label
+                  className="tile"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) loadFile(f, f.name); }}
+                >
+                  <span className="ico" aria-hidden>✏️</span>
+                  <strong>{t('fromDrawing')}</strong>
+                  <span>{t('dropHint')}</span>
+                  <input type="file" accept="image/*" data-testid="file" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f, f.name); }} />
+                </label>
+                <label className="tile">
+                  <span className="ico" aria-hidden>📂</span>
+                  <strong>{t('openFicha')}</strong>
+                  <span>{t('openFichaHelp')}</span>
+                  <input type="file" accept="application/json,.json" onChange={(e) => { const f = e.target.files?.[0]; if (f) openFichaFile(f); }} />
+                </label>
+              </div>
             ) : (
               <label
                 className="drop"
@@ -428,16 +481,7 @@ export function App() {
                 <span>{t('dropHint')}</span>
               </label>
             )}
-            <p className="muted">{t('orTry')}</p>
-            <div className="samples">
-              {SAMPLES.map((s) => (
-                <button key={s.name} onClick={() => loadSample(s)} data-testid={`sample-${s.name}`}>
-                  <img src={`./samples/${s.name}.png`} alt={s.name} />
-                  <span>{s.name}</span>
-                </button>
-              ))}
-            </div>
-            <h2 className="h2">{t('gallery')}</h2>
+            <div className="section-h"><h3>{t('gallery')}</h3></div>
             {gallery.length ? (
               <div className="gallery" data-testid="gallery">
                 {gallery.map((g) => (
@@ -453,10 +497,15 @@ export function App() {
                 ))}
               </div>
             ) : <p className="muted small">{t('galleryEmpty')}</p>}
-            <label className="btn ghost file-btn">
-              {t('openFicha')}
-              <input type="file" accept="application/json,.json" onChange={(e) => { const f = e.target.files?.[0]; if (f) openFichaFile(f); }} />
-            </label>
+            <div className="section-h"><h3>{t('orTry')}</h3></div>
+            <div className="samples">
+              {SAMPLES.map((s) => (
+                <button key={s.name} onClick={() => loadSample(s)} data-testid={`sample-${s.name}`}>
+                  <img src={`./samples/${s.name}.png`} alt={s.name} />
+                  <span>{s.name}</span>
+                </button>
+              ))}
+            </div>
             <p className="muted small">{t('privacy')}</p>
           </section>
         )}
@@ -573,14 +622,14 @@ export function App() {
           <>
             <section className="panel stage-wrap preview-wrap">
               {clip ? <Preview clip={clip} bg={bg} zoom={zoom} labels={{ real: t('realSize'), zoomed: t('zoomed') }} /> : <p className="muted">{t('working')}</p>}
-              <div className="row center">
+              <div className="controls">
                 <Select label={t('pack')} value={curPack ?? ''} set={(p) => { const first = animList.find((a) => a.pack === p); if (first) setAnim(first.name); }} opts={packOpts.map((p) => [p, t(`pack_${p}` as Key)])} testid="pack" />
                 <Select label={t('anim')} value={anim} set={setAnim} opts={animList.filter((a) => a.pack === curPack).map((a) => [a.name, animLabel(a.name, lang)])} testid="anim" />
               </div>
-              <div className="row center">
-                {ficha && isHuman(ficha) && <Seg label={t('view')} value={view} set={(v) => setView(v as ViewName)} opts={(['side', 'left', 'front', 'back', 'se', 'sw', 'ne', 'nw'] as ViewName[]).map((v) => [v, t(`view_${v}` as Key)])} testid="view" />}
+              <div className="controls">
+                {ficha && isHuman(ficha) && <DirPad label={t('view')} value={view} set={setView} name={(v) => t(`view_${v}` as Key)} />}
                 <Seg label={t('size')} value={String(cell)} set={(v) => setCell(+v as CellSize)} opts={[['32', '32'], ['48', '48'], ['64', '64']]} />
-                <Seg label={t('background')} value={bg} set={(v) => setBg(v as PreviewBg)} opts={[['pitch', t('bg_pitch')], ['grass', t('bg_grass')], ['plain', t('bg_plain')]]} />
+                <Seg label={t('background')} value={bg} set={(v) => setBg(v as PreviewBg)} opts={[['studio', t('bg_studio')], ['pitch', t('bg_pitch')], ['grass', t('bg_grass')], ['plain', t('bg_plain')]]} />
                 {ficha && isHuman(ficha) && <Toggle label={t('props')} on={props} set={setProps} />}
               </div>
             </section>

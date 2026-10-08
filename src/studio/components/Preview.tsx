@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import type { FrameSet } from '../protocol';
 
-export type PreviewBg = 'pitch' | 'grass' | 'plain';
+export type PreviewBg = 'studio' | 'pitch' | 'grass' | 'plain';
 
 /** Fondo de prueba dibujado con código, al tamaño real del cuadro. */
 export function backgroundPixels(kind: PreviewBg, cell: number): Uint8ClampedArray {
   const d = new Uint8ClampedArray(cell * cell * 4);
+  // estudio: transparente, se ve el fondo del escenario
+  if (kind === 'studio') return d;
   for (let y = 0; y < cell; y++)
     for (let x = 0; x < cell; x++) {
       let c: [number, number, number];
@@ -43,6 +45,7 @@ export function Preview({ clip, bg, zoom, labels }: Props) {
     const frames = clip.frames.map((f) => {
       const out = new Uint8ClampedArray(back);
       for (let i = 0; i < cell * cell; i++) if (f[i * 4 + 3]) out.set(f.subarray(i * 4, i * 4 + 4), i * 4);
+      // con fondo transparente hay que borrar el cuadro anterior: putImageData reemplaza todo, así que alcanza
       return new ImageData(out, cell, cell);
     });
     const canvases = [big.current, small.current, small2.current].filter(Boolean) as HTMLCanvasElement[];

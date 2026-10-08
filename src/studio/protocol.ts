@@ -40,7 +40,7 @@ export type Request =
   | { type: 'analyze'; params: AnalyzeParams }
   | { type: 'build'; params: AnalyzeParams; name: string; outfit?: Partial<HumanFicha['outfit']>; face?: Partial<HumanFicha['face']>; proportions?: Proportions }
   | { type: 'buildAnimal'; name: string; species: Species; bgTolerance: number; bgStrokes: BrushStroke[] }
-  | { type: 'render'; ficha: Ficha; cell: CellSize; anim: string; view: ViewName; props: boolean }
+  | { type: 'render'; ficha: Ficha; cell: CellSize; anim: string; view: ViewName; props: boolean; key?: string }
   | { type: 'variants'; ficha: HumanFicha; params: AnalyzeParams | null; seed: number; n: number }
   | { type: 'export'; ficha: Ficha; kind: ExportKind; plan: ExportPlan; force: boolean }
   | { type: 'qa'; ficha: Ficha; plan: ExportPlan }
