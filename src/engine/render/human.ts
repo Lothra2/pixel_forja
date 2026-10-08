@@ -9,6 +9,7 @@ import { Part, stroke, blob, rot } from './part';
 import { buildHeadImage, type View, type HeadImage } from './head';
 import { renderHeadModel, HEAD_STYLES } from '../head3d/render';
 import { modelFromAvatar } from '../head3d/avatar';
+import { lpcHead } from '../parts/lpc';
 import { rotSprite } from './rotsprite';
 import { drawBall, drawHeld, drawGround, isBall, ballSize } from './props';
 
@@ -38,12 +39,14 @@ export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 
 export type Joints = Record<JointName, [number, number]>;
 
 /** Caja de lo que no es implemento, ya en coordenadas del cuadro grande. */
-export function bodyBox(c: LayerCanvas, dx: number, dy: number): BigFrame['body'] {
+export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99): BigFrame['body'] {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let y = 0; y < c.h; y++)
     for (let x = 0; x < c.w; x++) {
       const l = c.layer[y * c.w + x];
-      if (!l || l === Layer.Prop || l === Layer.PropMid || l === Layer.Behind) continue;
+      if (c.mat[y * c.w + x] === softMat) continue;
+      // el pelo largo que cuelga detrás puede recortarse en el borde, como un balón
+      if (!l || l === Layer.Prop || l === Layer.PropMid || l === Layer.Behind || l === Layer.HairBack) continue;
       if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
     }
   return isFinite(x0) ? { x0: x0 + dx, y0: y0 + dy, x1: x1 + dx, y1: y1 + dy } : null;
@@ -69,6 +72,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   const W = C * 3, H = C * 2;
   const canvas = new LayerCanvas(W, H, Math.round(1.5 * C), C);
   const style = avatarHead ? HEAD_STYLES[f.avatar!.look] ?? HEAD_STYLES.stardew : null;
+  const lpcBox = avatarHead && f.avatar?.kit === 'lpc' && !!f.avatar.lpc && cell >= 48;
   // estilo Megaman: todo el contorno negro
   const ink = (r: Ramp): Ramp => (style?.outline === 'black' ? ['#16121c', r[1], r[2], r[3]] : r);
   const mats = new Materials({
@@ -279,7 +283,11 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   const drawHead = () => {
     const forward = side && !style ? Math.max(1, Math.round(d.u * 1.2)) : 0;
     const neck = local(forward, d.torsoH);
-    const hi: HeadImage & { pal: { dark?: string }[] } = avatarHead && style
+    const av = f.avatar;
+    const useLpc = lpcBox;
+    const hi: HeadImage & { pal: { dark?: string }[] } = useLpc
+      ? lpcHead(av!.lpc!, view, { skin: f.palette.skin[BASE], hair: f.palette.hair[BASE], eyes: f.palette.eyes, beard: av!.beard.color, glasses: av!.glasses.color }, pose.face.eyes, pose.face.mouth) as HeadImage & { pal: { dark?: string }[] }
+      : avatarHead && style
       ? renderHeadModel(modelFromAvatar(f.avatar!), {
           width: d.headW, style,
           yaw: view === 'front' ? 0 : view === 'back' ? 180 : SIDE_YAW - (pose.head.yaw ?? 0),
@@ -366,6 +374,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     commit(part, pr.behind ? Layer.Behind : pr.kind === 'bike' || pr.kind === 'skate' ? Layer.PropMid : Layer.Prop, false, false);
   }
 
+  // con piezas dibujadas, el pelo (colitas, melenas) puede recortarse en el borde de la celda en poses extremas:
+  // la caja que decide el encuadre es la del cuerpo y la cara, más el contorno
+  const soft = lpcBox ? bodyBox(canvas, 0, 0, mats.id('hair')) : null;
   if (!opt.noOutline)
     finalizeOutlines(canvas, {
       fused: [[Layer.FarLeg, Layer.Torso], [Layer.NearLeg, Layer.Torso], [Layer.Skirt, Layer.Torso]],
@@ -381,7 +392,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     shoulderNear: J(arms.near.root), shoulderFar: J(arms.far.root), handNear: J(arms.near.end), handFar: J(arms.far.end),
     neck: J(neck), head: J(add(neck, local(0, d.headW * 0.5))),
   };
-  return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body: bodyBox(canvas, dx, dy), joints };
+  const body = soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : bodyBox(canvas, dx, dy);
+  return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, joints };
 }
 
 /** Distancia del hombro a la cadera y ángulos del brazo para llegar a un punto (para manubrios, barras). */

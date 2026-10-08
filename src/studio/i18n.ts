@@ -244,6 +244,14 @@ const es = {
   hp_top: 'Volumen arriba', hp_side: 'Volumen a los lados', hp_length: 'Largo', hp_recede: 'Entradas', hp_fringe: 'Flequillo', hp_sweep: 'Copete',
   av_random: 'Sorpréndeme',
   av_reset: 'Volver a lo de la foto',
+  av_kit: 'Tipo de dibujo',
+  kit_lpc: 'Dibujado a mano',
+  kit_volumen: 'Volumen',
+  kit_lpcHelp: 'Piezas dibujadas por artistas del proyecto LPC. Al exportar va un CREDITOS.txt con sus autores: muéstralos en tu juego. A 32 px se usa la versión en volumen.',
+  av_headType: 'Tipo de cara',
+  head_male: 'Hombre', head_female: 'Mujer', head_male_plump: 'Hombre robusto', head_male_gaunt: 'Hombre delgado', head_male_elderly: 'Señor mayor', head_female_elderly: 'Señora mayor',
+  av_mustache: 'Bigote',
+  none: 'Ninguno',
   error: 'Algo falló',
 };
 
@@ -493,6 +501,14 @@ const en: Dict = {
   hp_top: 'Volume on top', hp_side: 'Volume on the sides', hp_length: 'Length', hp_recede: 'Receding hairline', hp_fringe: 'Bangs', hp_sweep: 'Quiff',
   av_random: 'Surprise me',
   av_reset: 'Back to the photo',
+  av_kit: 'Art kit',
+  kit_lpc: 'Hand drawn',
+  kit_volumen: 'Volume',
+  kit_lpcHelp: 'Pieces drawn by artists of the LPC project. Exports include a CREDITOS.txt with their authors: show them in your game. At 32 px the volume version is used.',
+  av_headType: 'Face type',
+  head_male: 'Man', head_female: 'Woman', head_male_plump: 'Stocky man', head_male_gaunt: 'Thin man', head_male_elderly: 'Older man', head_female_elderly: 'Older woman',
+  av_mustache: 'Mustache',
+  none: 'None',
   error: 'Something failed',
 };
 

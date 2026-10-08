@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   type Avatar, type AvatarPart, type HairParams, type FaceParams,
-  SKIN_SWATCHES, HAIR_SWATCHES, EYE_SWATCHES, GLASSES_SWATCHES, withHairStyle,
+  SKIN_SWATCHES, HAIR_SWATCHES, EYE_SWATCHES, GLASSES_SWATCHES, withHairStyle, lpcValue, withLpc, DEFAULT_LPC,
 } from '../../engine/index';
 import type { Key } from '../i18n';
 import type { Thumb } from '../protocol';
@@ -21,8 +21,8 @@ interface Props {
   loadThumbs: (a: Avatar, part: AvatarPart) => Promise<Thumb[] | null>;
 }
 
-/** Ids de cada opción, en el orden en que llegan las miniaturas. */
-const OPTION_KEY: Record<AvatarPart, (id: string) => Key> = {
+/** Nombre visible de cada opción. Las piezas LPC traen nombres en inglés del proyecto original. */
+const VOLUME_KEY: Partial<Record<AvatarPart, (id: string) => Key>> = {
   look: (id) => `look_${id}` as Key,
   hair: (id) => `hair_${id}` as Key,
   eyes: (id) => `eyes_${id}` as Key,
@@ -31,8 +31,18 @@ const OPTION_KEY: Record<AvatarPart, (id: string) => Key> = {
   beard: (id) => `beard_${id}` as Key,
   glasses: (id) => `glasses_${id}` as Key,
 };
+const isLpc = (part: AvatarPart) => part.startsWith('lpc');
+function label(t: T, part: AvatarPart, id: string): string {
+  if (id === 'none') return t('none');
+  if (part === 'lpcHead') return t(`head_${id}` as Key);
+  if (part === 'lpcBrows') return t(id === 'thick' ? 'brows_gruesa' : 'brows_fina');
+  const k = VOLUME_KEY[part];
+  if (k) return t(k(id));
+  return id.replace(/_/g, ' ');
+}
 
 function current(a: Avatar, part: AvatarPart): string {
+  if (isLpc(part)) return lpcValue(a, part);
   switch (part) {
     case 'look': return a.look;
     case 'hair': return a.hair.style;
@@ -40,11 +50,12 @@ function current(a: Avatar, part: AvatarPart): string {
     case 'brows': return a.brows.style;
     case 'nose': return a.nose;
     case 'beard': return a.beard.style;
-    case 'glasses': return a.glasses.style;
+    default: return a.glasses.style;
   }
 }
 
 function apply(a: Avatar, part: AvatarPart, id: string): Avatar {
+  if (isLpc(part)) return withLpc(a, part, id);
   switch (part) {
     case 'look': return { ...a, look: id as Avatar['look'] };
     case 'hair': return withHairStyle(a, id as Avatar['hair']['style']);
@@ -52,7 +63,7 @@ function apply(a: Avatar, part: AvatarPart, id: string): Avatar {
     case 'brows': return { ...a, brows: { style: id as Avatar['brows']['style'] } };
     case 'nose': return { ...a, nose: id as Avatar['nose'] };
     case 'beard': return { ...a, beard: { ...a.beard, style: id as Avatar['beard']['style'] } };
-    case 'glasses': return { ...a, glasses: { ...a.glasses, style: id as Avatar['glasses']['style'] } };
+    default: return { ...a, glasses: { ...a.glasses, style: id as Avatar['glasses']['style'] } };
   }
 }
 
@@ -85,7 +96,8 @@ function Swatches({ label, colors, value, set, testid }: { label: string; colors
 
 export function AvatarStep(p: Props) {
   const { t, avatar: a } = p;
-  const [open, setOpen] = useState<Set<AvatarPart>>(() => new Set<AvatarPart>(['look', 'hair']));
+  const lpc = a.kit === 'lpc';
+  const [open, setOpen] = useState<Set<AvatarPart>>(() => new Set<AvatarPart>(['look', 'hair', 'lpcHair', 'lpcHead']));
   const [thumbs, setThumbs] = useState<Partial<Record<AvatarPart, Thumb[]>>>({});
 
   // miniaturas: solo de las secciones abiertas, y un rato después del último cambio
@@ -121,7 +133,7 @@ export function AvatarStep(p: Props) {
         {list.map((th) => (
           <button key={th.id} className={th.id === cur ? 'on' : ''} onClick={() => p.setAvatar(apply(a, part, th.id))} aria-pressed={th.id === cur} data-testid={`av-${part}-${th.id}`}>
             <ThumbCanvas th={th} />
-            <span>{t(OPTION_KEY[part](th.id))}</span>
+            <span>{label(t, part, th.id)}</span>
           </button>
         ))}
       </div>
@@ -149,6 +161,25 @@ export function AvatarStep(p: Props) {
         <button className="btn ghost" onClick={p.random} data-testid="av-random">{t('av_random')}</button>
         {p.canReset && <button className="btn ghost" onClick={p.reset}>{t('av_reset')}</button>}
       </div>
+      <Seg label={t('av_kit')} value={lpc ? 'lpc' : 'volumen'} set={(v) => p.setAvatar({ ...a, kit: v as 'lpc' | 'volumen', lpc: a.lpc ?? { ...DEFAULT_LPC } })} opts={[['lpc', t('kit_lpc')], ['volumen', t('kit_volumen')]]} testid="av-kit" />
+      {lpc ? (
+        <>
+          <p className="muted small">{t('kit_lpcHelp')}</p>
+          {section('lpcHead', 'av_headType')}
+          {section('lpcHair', 'av_hair', <Swatches label={t('av_hairColor')} colors={HAIR_SWATCHES} value={a.hair.color} set={(c) => p.setAvatar({ ...a, hair: { ...a.hair, color: c } })} testid="av-hair-color" />)}
+          <details className="group" open>
+            <summary>{t('av_skin')}</summary>
+            <Swatches label={t('av_skin')} colors={SKIN_SWATCHES} value={a.skin} set={(c) => p.setAvatar({ ...a, skin: c })} testid="av-skin" />
+            <Swatches label={t('av_eyeColor')} colors={EYE_SWATCHES} value={a.eyes.color} set={(c) => p.setAvatar({ ...a, eyes: { ...a.eyes, color: c } })} />
+          </details>
+          {section('lpcBrows', 'av_brows')}
+          {section('lpcNose', 'av_nose')}
+          {section('lpcBeard', 'av_beard', <Swatches label={t('av_beardColor')} colors={HAIR_SWATCHES} value={a.beard.color} set={(c) => p.setAvatar({ ...a, beard: { ...a.beard, color: c } })} />)}
+          {section('lpcMustache', 'av_mustache')}
+          {section('lpcGlasses', 'av_glasses', <Swatches label={t('av_glassesColor')} colors={GLASSES_SWATCHES} value={a.glasses.color} set={(c) => p.setAvatar({ ...a, glasses: { ...a.glasses, color: c } })} />)}
+        </>
+      ) : (
+        <>
       {section('look', 'av_look')}
       {section('hair', 'av_hair', <Swatches label={t('av_hairColor')} colors={HAIR_SWATCHES} value={a.hair.color} set={(c) => p.setAvatar({ ...a, hair: { ...a.hair, color: c } })} testid="av-hair-color" />)}
       <details className="group" open>
@@ -165,7 +196,9 @@ export function AvatarStep(p: Props) {
         </>
       ))}
       {section('glasses', 'av_glasses', <Swatches label={t('av_glassesColor')} colors={GLASSES_SWATCHES} value={a.glasses.color} set={(c) => p.setAvatar({ ...a, glasses: { ...a.glasses, color: c } })} />)}
-      <details className="group">
+        </>
+      )}
+      {!lpc && <details className="group">
         <summary>{t('av_face')}</summary>
         <div className="sliders">
           <Slider label={t('f_jaw')} value={a.face.jaw} min={0.7} max={1} step={0.02} fmt={(v) => `${Math.round(v * 100)}%`} set={(v) => setFace('jaw', v)} />
@@ -175,8 +208,8 @@ export function AvatarStep(p: Props) {
           <Slider label={t('f_mouthChin')} value={a.face.mouthChin} min={0.4} max={0.75} step={0.02} fmt={(v) => v.toFixed(2)} set={(v) => setFace('mouthChin', v)} />
           <Slider label={t('f_ears')} value={a.face.ears} min={0.1} max={0.3} step={0.02} fmt={(v) => v.toFixed(2)} set={(v) => setFace('ears', v)} />
         </div>
-      </details>
-      <details className="group">
+      </details>}
+      {!lpc && <details className="group">
         <summary>{t('av_hairFine')}</summary>
         <div className="sliders">
           <Slider label={t('hp_top')} value={a.hair.params.top} min={0} max={0.7} step={0.02} fmt={(v) => v.toFixed(2)} set={(v) => setHair('top', v)} />
@@ -186,7 +219,7 @@ export function AvatarStep(p: Props) {
           <Slider label={t('hp_fringe')} value={a.hair.params.fringe} min={0} max={1} step={0.05} fmt={(v) => `${Math.round(v * 100)}%`} set={(v) => setHair('fringe', v)} />
           <Slider label={t('hp_sweep')} value={a.hair.params.sweep} min={0} max={1} step={0.05} fmt={(v) => `${Math.round(v * 100)}%`} set={(v) => setHair('sweep', v)} />
         </div>
-      </details>
+      </details>}
     </div>
   );
 }

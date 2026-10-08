@@ -194,3 +194,4 @@ p.ok { margin: 0; }
 @media (min-width: 900px) {
   .preview-wrap { position: sticky; top: 10px; align-self: start; }
 }
+.thumbs { max-height: 470px; overflow-y: auto; padding-right: 2px; }

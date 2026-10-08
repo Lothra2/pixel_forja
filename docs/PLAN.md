@@ -49,6 +49,22 @@ criterio de aceptación por cumplido hay que pasar las imágenes reales por el e
 7. **El encuadre lo decide el cuerpo.** Un balón que sale disparado se recorta. Si un salto choca con
    el techo de la celda, ese cuadro se baja solo lo justo, porque el juego igual mueve el sprite al saltar.
 
+## Piezas dibujadas (LPC) en el creador de avatar
+
+Investigué quién hace mejor esto. Hay tres caminos:
+
+1. **Piezas dibujadas a mano por artistas**, armadas por capas y recoloreadas. Así lo hacen Stardew Valley y el
+   Universal LPC Spritesheet Character Generator: arte libre con 85 peinados, 5 barbas, 8 bigotes, 7 lentes, narices,
+   cejas y caras con expresiones, todo en cuatro direcciones.
+2. **IA generativa** (PixelLab, InstantID con SDXL): mejor parecido desde una foto, pero cuesta por uso, la foto sale del
+   equipo y rompe la regla de no usar IA.
+3. **Algoritmos de pixelado** (Gerstner 2012, superpíxeles con paleta): buenos para retratos grandes, no para cabezas de 20 px.
+
+Elegí el 1 y lo repliqué: el creador ahora trae por defecto las piezas LPC sobre nuestro cuerpo y nuestras
+animaciones. Se recolorean de forma relativa (cada tono guarda su distancia al tono base del artista), así el sombreado
+original se conserva con cualquier color. Las piezas en volumen siguen disponibles, y a 32 px se usan siempre porque
+las piezas LPC están dibujadas para cabezas de unos 22 px. Licencias y créditos: [ARTE-LPC.md](../ARTE-LPC.md).
+
 ## Modo busto (fotos y selfies)
 
 El spec pedía dibujos, no fotos. Igual mandaste tu selfie, así que agregué un camino aparte para fotos de

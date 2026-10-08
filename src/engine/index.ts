@@ -40,3 +40,4 @@ export * from './head3d/avatar';
 export * from './head3d/render';
 export * from './head3d/measure';
 export * from './head3d/thumb';
+export * from './parts/lpc';

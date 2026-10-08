@@ -11,6 +11,7 @@ patas. Sin IA y sin servidor: la imagen nunca sale del equipo.
 - 10 animaciones de animal (boxer, perro, mapache, gato).
 - Vista lateral y 4 direcciones tipo RPG. Tamaños de 32, 48 y 64 px. Cuerpo chibi, juvenil o realista.
 - Modo busto para selfies y fotos: cara, barba, cejas, camisa y estampado. El resto del cuerpo va por defecto.
+- Creador de avatar con 85 peinados y piezas dibujadas a mano del proyecto LPC (con créditos automáticos al exportar).
 - Editor de poses, galería, "sorpréndeme" y estudio en español e inglés.
 - Exporta hoja PNG + JSON (Phaser), preajuste de Fútbol Familia GG, Aseprite, Godot 4, Unity,
   PNG por cuadro, GIF y la ficha del personaje.

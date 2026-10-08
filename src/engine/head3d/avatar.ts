@@ -2,6 +2,7 @@ import type { HeadModel, HeadRow, HairBlob, EyeStyleId, BrowStyleId, BeardStyleI
 import { hexToLab, labToHex, labToLch, lchToLab } from '../color/oklab';
 import { rng } from '../core/rng';
 import { stylizeSkin, liftHair } from './render';
+import { DEFAULT_LPC, LPC_HAIRS, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_NOSES, LPC_HEADS, type LpcLook } from '../parts/lpc';
 
 /**
  * Avatar: la cabeza armada por piezas. Cada pieza es un parámetro, no un dibujo, así sirve en cualquier
@@ -65,6 +66,12 @@ export interface Avatar {
   nose: NoseId;
   beard: { style: BeardStyleId; color: string; gray: number };
   glasses: { style: GlassesStyleId; color: string };
+  /**
+   * kit de dibujo: 'lpc' = piezas dibujadas a mano (LPC), 'volumen' = piezas generadas en 3D por el motor.
+   * Las piezas LPC se usan desde 48 px; a 32 px se dibuja la versión en volumen.
+   */
+  kit?: 'lpc' | 'volumen';
+  lpc?: LpcLook;
 }
 
 // ---------- catálogos ----------
@@ -118,6 +125,8 @@ export function defaultAvatar(): Avatar {
     nose: 'normal',
     beard: { style: 'ninguna', color: HAIR_SWATCHES[1], gray: 0 },
     glasses: { style: 'ninguno', color: GLASSES_SWATCHES[0] },
+    kit: 'lpc',
+    lpc: { ...DEFAULT_LPC },
   };
 }
 
@@ -143,6 +152,16 @@ export function randomAvatar(seed: number): Avatar {
     nose: pick(NOSE_IDS),
     beard: r() < 0.35 ? { style: pick(BEARD_STYLE_IDS.slice(1)), color: hairColor, gray: r() < 0.3 ? 0.6 : 0 } : a.beard,
     glasses: r() < 0.25 ? { style: pick(GLASSES_STYLE_IDS.slice(1)), color: pick(GLASSES_SWATCHES) } : a.glasses,
+    kit: 'lpc',
+    lpc: {
+      head: pick(LPC_HEADS.slice(0, 4)),
+      hair: pick(LPC_HAIRS),
+      brows: pick(['thin', 'thick', null]),
+      nose: pick([null, null, ...LPC_NOSES.filter((n) => n !== 'elderly')]),
+      beard: r() < 0.3 ? pick(LPC_BEARDS) : null,
+      mustache: r() < 0.15 ? pick(LPC_MUSTACHES) : null,
+      glasses: r() < 0.2 ? pick(LPC_GLASSES) : null,
+    },
   };
 }
 
@@ -365,8 +384,21 @@ export function fitAvatar(m: HeadModel): Avatar {
       gray: clamp((lightAvg - 0.15) * 1.6, 0, 1),
     };
   }
+  // piezas dibujadas equivalentes
+  const lpcBeard: Record<string, string | null> = { ninguna: null, sombra: '5oclock_shadow', bigote: null, candado: null, corta: 'trimmed', completa: 'basic', larga: 'medium' };
+  const lpc: LpcLook = {
+    head: 'male',
+    hair: style === 'largo' ? 'long' : style === 'rapado' ? 'buzzcut' : 'parted2',
+    brows: m.brows.t > 0.15 ? 'thick' : 'thin',
+    nose: 'straight',
+    beard: lpcBeard[beard.style] ?? null,
+    mustache: beard.style === 'bigote' || beard.style === 'candado' ? 'basic' : null,
+    glasses: null,
+  };
   return {
     ...a,
+    kit: 'lpc',
+    lpc,
     skin: stylizeSkin(m.colors.skin),
     face: { ...a.face, forehead, eyeNose, noseMouth, mouthChin, jaw, eyeX: clamp(m.eyes.x, 0.34, 0.5), ears: m.ears ? clamp(m.ears.size, 0.1, 0.28) : 0.16 },
     hair: { style, color: liftHair(m.colors.hair), params },

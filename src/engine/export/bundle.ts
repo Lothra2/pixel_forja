@@ -7,6 +7,8 @@ import { encodeGif } from './gif';
 import { encodeAseprite, asepriteJson } from './aseprite';
 import { godotSpriteFrames, unityMeta, framesZip } from './engines';
 import type { QAReport } from '../qa/checks';
+import { isHuman } from '../sheet/ficha';
+import { lpcCredits, LPC_SOURCE } from '../parts/lpc';
 
 export type ExportKind = 'sheet' | 'ffgg' | 'aseprite' | 'godot' | 'unity' | 'frames' | 'gif' | 'ficha';
 export const EXPORT_KINDS: ExportKind[] = ['sheet', 'ffgg', 'aseprite', 'godot', 'unity', 'frames', 'gif', 'ficha'];
@@ -27,6 +29,31 @@ const json = (v: unknown) => enc.encode(JSON.stringify(v, null, 2));
  * (salvo force) y dice qué animación y qué cuadro fallan.
  */
 export function exportFiles(f: Ficha, kind: ExportKind, plan: ExportPlan, opt: { force?: boolean; gifScale?: number } = {}): ExportFile[] {
+  const files = exportFilesRaw(f, kind, plan, opt);
+  const credits = creditsFor(f);
+  if (credits) files.push({ name: 'CREDITOS.txt', bytes: enc.encode(credits), mime: 'text/plain' });
+  return files;
+}
+
+/**
+ * Créditos obligatorios cuando el personaje usa piezas dibujadas de LPC. Cada pieza trae sus autores y
+ * licencias (CC-BY-SA, GPL, OGA-BY o CC0): hay que mostrarlos en el juego, por ejemplo en la pantalla de créditos.
+ */
+export function creditsFor(f: Ficha): string | null {
+  if (!isHuman(f) || !f.avatar || f.avatar.kit !== 'lpc' || !f.avatar.lpc || f.headMode === 'image') return null;
+  const lines = lpcCredits(f.avatar.lpc);
+  if (!lines.length) return null;
+  return [
+    'Arte del personaje: piezas del proyecto LPC (Liberated Pixel Cup), recoloreadas y armadas con PixelForja.',
+    `Fuente: ${LPC_SOURCE}`,
+    'Estas piezas exigen dar crédito a sus autores. Si las modificas y las compartes, respeta su licencia (CC-BY-SA o GPL comparten igual).',
+    '',
+    ...lines,
+    '',
+  ].join('\n');
+}
+
+function exportFilesRaw(f: Ficha, kind: ExportKind, plan: ExportPlan, opt: { force?: boolean; gifScale?: number }): ExportFile[] {
   const base = (f.name || 'personaje').replace(/[^\w-]+/g, '_');
   if (kind === 'ficha') return [{ name: `${base}.ficha.json`, bytes: json(f), mime: 'application/json' }];
   const p = kind === 'ffgg' ? FFGG_PLAN : plan;

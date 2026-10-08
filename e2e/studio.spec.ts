@@ -140,15 +140,22 @@ test('crear desde cero: avatar por piezas y animar', async ({ page }, info) => {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
   await page.getByTestId('from-scratch').click();
-  await expect(page.getByTestId('av-hair')).toBeVisible({ timeout: 30000 });
-  await expect(page.getByTestId('av-hair').locator('button')).toHaveCount(13, { timeout: 30000 });
-  await page.getByTestId('av-hair-colitas').click();
+  // piezas dibujadas (LPC): 85 peinados con miniatura
+  await expect(page.getByTestId('av-lpcHair').locator('button')).toHaveCount(85, { timeout: 30000 });
+  await page.getByTestId('av-lpcHair-pigtails').click();
   await idle(page);
-  await expect(page.getByTestId('av-hair-colitas')).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
+  await expect(page.getByTestId('av-lpcHair-pigtails')).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
   await page.getByTestId('av-skin').locator('button').nth(4).click();
   await page.getByText('Lentes', { exact: true }).click();
-  await expect(page.getByTestId('av-glasses').locator('button')).toHaveCount(4, { timeout: 30000 });
-  await page.getByTestId('av-glasses-redondos').click();
+  await expect(page.getByTestId('av-lpcGlasses').locator('button')).toHaveCount(8, { timeout: 30000 });
+  await page.getByTestId('av-lpcGlasses-round').click();
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  await page.screenshot({ path: `${shots}/${tag}_19_avatar_lpc.png`, fullPage: true });
+  // volumen: las piezas generadas siguen disponibles
+  await page.getByTestId('av-kit').getByRole('button', { name: 'Volumen' }).click();
+  await expect(page.getByTestId('av-hair').locator('button')).toHaveCount(13, { timeout: 30000 });
+  await page.getByTestId('av-hair-colitas').click();
   await idle(page);
   await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
   await page.screenshot({ path: `${shots}/${tag}_20_avatar.png`, fullPage: true });
