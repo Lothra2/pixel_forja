@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   lpcHead, lpcCredits, LPC_HAIRS, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HEADS, DEFAULT_LPC, defaultAvatar, fichaFromAvatar,
-  renderPlan, FFGG_PLAN, exportFiles, hexToLab, bodyProportions, renderClip, mirror, EIGHT_VIEWS,
+  renderPlan, FFGG_PLAN, exportFiles, hexToLab, bodyProportions, renderClip, mirror, EIGHT_VIEWS, LPC_MONSTERS, LPC_EARS, lpcSkinOf, withLpc,
   type LpcColors, type BodyType, type HumanFicha, type ViewName,
 } from '../index';
 
@@ -107,5 +107,38 @@ describe('vista isométrica de 8 direcciones', () => {
     expect(clips.map((c) => c.name)).toContain('attack_up_left');
     const bad = qa.filter((r) => !r.ok).map((r) => `${r.clip}: ${r.items.filter((i) => i.severity === 'error').map((i) => `${i.check} ${i.where ?? ''}`).join(',')}`);
     expect(bad).toEqual([]);
+  }, 120000);
+});
+
+describe('enemigos: cabezas de monstruo, orejas y cuernos', () => {
+  it('cada monstruo se arma en las tres vistas con sus colores y el cuerpo toma su piel', () => {
+    expect(LPC_MONSTERS.length).toBeGreaterThanOrEqual(12);
+    for (const id of LPC_MONSTERS) {
+      const av = withLpc(defaultAvatar(), 'lpcMonster', id);
+      expect(av.skin, id).toBe(lpcSkinOf(id));
+      expect(hexToLab(av.skin)[0], `${id} piel no es el contorno`).toBeGreaterThan(0.3);
+      for (const v of ['front', 'side', 'back'] as const) {
+        const h = lpcHead(av.lpc!, v, { ...colors, skin: av.skin });
+        expect([...h.img.idx].filter((i) => i >= 0).length, `${id} ${v}`).toBeGreaterThan(150);
+      }
+    }
+    // de vuelta a una cabeza humana, piel humana
+    const back = withLpc(withLpc(defaultAvatar(), 'lpcMonster', 'orc'), 'lpcHead', 'male');
+    expect(lpcSkinOf('male')).toBeNull();
+    expect(back.skin).not.toBe(lpcSkinOf('orc'));
+  });
+  it('orejas y cuernos cambian la cabeza y dan crédito', () => {
+    const base = lpcHead(DEFAULT_LPC, 'front', colors);
+    for (const ears of LPC_EARS) expect(lpcHead({ ...DEFAULT_LPC, ears }, 'front', colors).img.idx.length + 1).toBeGreaterThan(1);
+    const elf = lpcHead({ ...DEFAULT_LPC, ears: 'elven' }, 'front', colors);
+    expect(elf.img.w).toBeGreaterThan(base.img.w);
+    expect(lpcCredits({ ...DEFAULT_LPC, horns: 'curled', ears: 'elven' }).length).toBeGreaterThanOrEqual(4);
+  });
+  it('un esqueleto y un orco pasan el control de calidad del RPG en 8 direcciones', () => {
+    for (const id of ['skeleton', 'orc']) {
+      const f = fichaFromAvatar(id, withLpc(defaultAvatar(), 'lpcMonster', id));
+      const { qa } = renderPlan(f, { cell: 48, anims: ['idle', 'walk', 'attack', 'die'], views: EIGHT_VIEWS, props: true });
+      expect(qa.filter((r) => !r.ok).map((r) => r.clip), id).toEqual([]);
+    }
   }, 120000);
 });

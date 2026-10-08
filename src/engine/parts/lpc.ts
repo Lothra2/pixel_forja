@@ -16,8 +16,10 @@ interface Credit { authors: string; licenses: string; urls: string }
 const DATA = data as unknown as { source: string; parts: Record<string, Part>; credits: Record<string, Credit> };
 
 export type LpcDir = 'down' | 'right' | 'up';
-export type LpcHeadId = 'male' | 'female' | 'male_elderly' | 'female_elderly' | 'male_plump' | 'male_gaunt';
+export type LpcHeadId = string;
 export const LPC_HEADS: LpcHeadId[] = ['male', 'female', 'male_plump', 'male_gaunt', 'male_elderly', 'female_elderly'];
+/** cabezas de monstruo para enemigos: traen sus propios ojos y colores (no se recolorean como piel humana) */
+
 
 const keysOf = (prefix: string) => Object.keys(DATA.parts).filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length));
 export const LPC_HAIRS: string[] = keysOf('hair/');
@@ -27,6 +29,11 @@ export const LPC_GLASSES: string[] = keysOf('glasses/');
 export const LPC_NOSES: string[] = keysOf('nose/');
 export const LPC_BROWS: string[] = keysOf('brows/');
 export const LPC_HATS: string[] = keysOf('hat/');
+/** cabezas de monstruo para enemigos: traen sus propios ojos y colores (no se recolorean como piel humana) */
+export const LPC_MONSTERS: LpcHeadId[] = keysOf('head/').filter((k) => !LPC_HEADS.includes(k));
+export const isMonsterHead = (head: string) => !LPC_HEADS.includes(head);
+export const LPC_EARS: string[] = keysOf('ears/');
+export const LPC_HORNS: string[] = keysOf('horns/');
 
 export interface LpcLook {
   head: LpcHeadId;
@@ -40,6 +47,10 @@ export interface LpcLook {
   hat?: string | null;
   /** color del gorro (sin color se deja el del artista: metal, cuero, tela) */
   hatColor?: string | null;
+  /** orejas de elfo, de bestia, de dragón */
+  ears?: string | null;
+  /** cuernos (demonios, bestias) */
+  horns?: string | null;
 }
 
 export const DEFAULT_LPC: LpcLook = { head: 'male', hair: 'parted', brows: 'thin', nose: null, beard: null, mustache: null, glasses: null };
@@ -72,6 +83,8 @@ function modeColor(d: PartDir): string {
   const px = decode(d.px);
   const n = new Array(d.colors.length).fill(0);
   for (const v of px) if (v) n[v - 1]++;
+  // el contorno casi negro no cuenta (en cabezas chicas de monstruo puede ser lo más repetido)
+  d.colors.forEach((c, i) => { if (hexToLab(c)[0] < 0.3) n[i] = 0; });
   return d.colors[n.indexOf(Math.max(...n))];
 }
 
@@ -111,6 +124,13 @@ const isIris = (hex: string) => {
   return C > 0.035 && deg > 190 && deg < 270 && L < 0.85;
 };
 
+/** Color de piel de una cabeza de monstruo (para pintar el cuerpo igual). null en cabezas humanas. */
+export function lpcSkinOf(head: string): string | null {
+  if (!isMonsterHead(head)) return null;
+  const d = DATA.parts[`head/${head}`]?.dirs.down;
+  return d ? modeColor(d) : null;
+}
+
 // ---------- armado ----------
 
 const EXPR: Record<EyeExpr, string> = { open: 'neutral', closed: 'closed', happy: 'happy', sad: 'sad', angry: 'anger', wide: 'shock', hurt: 'sad' };
@@ -140,7 +160,10 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
   const skinBase = modeColor(headDir);
   const headColors = new Set(headDir.colors);
   const irisBase = '#5686ae';
-  const skin = (c: string) => relative(c, skinBase, colors.skin);
+  const monster = isMonsterHead(look.head);
+  // monstruo: con su color de siempre queda igual; con otro color se tiñe (un esqueleto verde, un orco gris)
+  const keepOwn = monster && colors.skin.toLowerCase() === (lpcSkinOf(look.head) ?? '').toLowerCase();
+  const skin = (c: string) => (keepOwn ? c : relative(c, skinBase, colors.skin));
   // blanco del ojo: frío y casi sin color. Los tonos claros de la piel (cálidos) se recolorean como piel
   const eyeWhite = (c: string) => { const [L, C, h] = labToLch(hexToLab(c)); const deg = ((h * 180) / Math.PI + 360) % 360; return L > 0.9 && (C < 0.012 || (deg > 150 && deg < 280)); };
   const faceMap = (c: string) => (isIris(c) ? relative(c, irisBase, colors.eyes, 1, 0) : eyeWhite(c) ? c : headColors.has(c) || labToLch(hexToLab(c))[1] > 0.03 ? skin(c) : c);
@@ -150,13 +173,24 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
   const exprName = mouth === 'o' && eyes === 'open' ? 'shock' : (mouth === 'grin' || mouth === 'open') && eyes === 'open' ? 'happy' : EXPR[eyes];
   const layers: Layer[] = [];
   if (look.hair) layers.push({ key: `hairbg/${look.hair}`, mat: 'hair', map: tinted(colors.hair) });
-  layers.push({ key: `head/${look.head}`, mat: 'skin', map: (c) => (isIris(c) ? relative(c, irisBase, colors.eyes, 1, 0) : eyeWhite(c) ? c : skin(c)) });
-  if (dir !== 'up') layers.push({ key: `face/${sex}/${exprName}`, mat: 'face', map: faceMap });
-  if (look.nose && dir !== 'up') layers.push({ key: `nose/${look.nose}`, mat: 'skin', map: skin });
-  if (look.brows && dir !== 'up') layers.push({ key: `brows/${look.brows}`, mat: 'hair', map: tinted(brow, 0.8) });
-  if (look.beard) layers.push({ key: `beard/${look.beard}`, mat: 'beard', map: tinted(colors.beard) });
-  if (look.mustache && dir !== 'up') layers.push({ key: `mustache/${look.mustache}`, mat: 'beard', map: tinted(colors.beard) });
+  const earMap = look.ears === 'cat' || look.ears === 'wolf' ? tinted(colors.hair) : skin;
+  if (look.ears) layers.push({ key: `earsbg/${look.ears}`, mat: 'skin', map: earMap });
+  if (look.horns) layers.push({ key: `hornsbg/${look.horns}`, mat: 'accessory', map: (c) => c });
+  layers.push({
+    key: `head/${look.head}`, mat: 'skin',
+    map: monster ? (c) => (eyeWhite(c) || isIris(c) ? c : skin(c)) : (c) => (isIris(c) ? relative(c, irisBase, colors.eyes, 1, 0) : eyeWhite(c) ? c : skin(c)),
+  });
+  // las caras, narices, cejas y barbas humanas no calzan en una cabeza de monstruo
+  if (!monster) {
+    if (dir !== 'up') layers.push({ key: `face/${sex}/${exprName}`, mat: 'face', map: faceMap });
+    if (look.nose && dir !== 'up') layers.push({ key: `nose/${look.nose}`, mat: 'skin', map: skin });
+    if (look.brows && dir !== 'up') layers.push({ key: `brows/${look.brows}`, mat: 'hair', map: tinted(brow, 0.8) });
+    if (look.beard) layers.push({ key: `beard/${look.beard}`, mat: 'beard', map: tinted(colors.beard) });
+    if (look.mustache && dir !== 'up') layers.push({ key: `mustache/${look.mustache}`, mat: 'beard', map: tinted(colors.beard) });
+  }
+  if (look.ears) layers.push({ key: `ears/${look.ears}`, mat: 'skin', map: earMap });
   if (look.hair) layers.push({ key: `hair/${look.hair}`, mat: 'hair', map: tinted(colors.hair) });
+  if (look.horns) layers.push({ key: `horns/${look.horns}`, mat: 'accessory', map: (c) => c });
   if (look.glasses && dir !== 'up') {
     layers.push({
       key: `glasses/${look.glasses}`, mat: 'accessory',
@@ -206,7 +240,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
       }
   }
   // boca: las caras LPC no traen boca. Se dibuja a mano, con el tono oscuro de la piel, debajo de la nariz
-  if (mouth && mouth !== 'line' && dir !== 'up') {
+  if (mouth && mouth !== 'line' && dir !== 'up' && !monster) {
     const lip = skin('#99423c'), dark = '#5a1f26', teeth = '#f4f1ea';
     const r1 = chinY - 3, r2 = chinY - 2;
     const put = (fx: number, fy: number, hex: string) => {
@@ -242,7 +276,10 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
 
 /** Créditos de las piezas usadas (obligatorios para usar el arte LPC). */
 export function lpcCredits(look: LpcLook): string[] {
-  const keys = [`head/${look.head}`, `face/${look.head.startsWith('female') ? 'female' : 'male'}/neutral`];
+  const keys = [`head/${look.head}`];
+  if (!isMonsterHead(look.head)) keys.push(`face/${look.head.startsWith('female') ? 'female' : 'male'}/neutral`);
+  if (look.ears) keys.push(`ears/${look.ears}`, `earsbg/${look.ears}`);
+  if (look.horns) keys.push(`horns/${look.horns}`, `hornsbg/${look.horns}`);
   if (look.hair) keys.push(`hair/${look.hair}`, `hairbg/${look.hair}`);
   for (const [p, v] of [['brows', look.brows], ['nose', look.nose], ['beard', look.beard], ['mustache', look.mustache], ['glasses', look.glasses], ['hat', look.hat]] as const) if (v) keys.push(`${p}/${v}`);
   const lines: string[] = [];

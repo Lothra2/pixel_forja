@@ -2,7 +2,7 @@ import { createRaster, type Raster } from '../core/raster';
 import { hexToRgb } from '../color/oklab';
 import { makeRamp, OUTLINE } from '../color/ramp';
 import { renderHeadModel, HEAD_STYLES, type ModelHeadImage } from './render';
-import { lpcHead, LPC_HEADS, LPC_HAIRS, LPC_BROWS, LPC_NOSES, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HATS, DEFAULT_LPC, type LpcLook } from '../parts/lpc';
+import { lpcHead, LPC_HEADS, LPC_HAIRS, LPC_BROWS, LPC_NOSES, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HATS, LPC_MONSTERS, LPC_EARS, LPC_HORNS, DEFAULT_LPC, isMonsterHead, lpcSkinOf, type LpcLook } from '../parts/lpc';
 import {
   modelFromAvatar, withHairStyle, HAIR_STYLE_IDS, EYE_STYLE_IDS, BROW_STYLE_IDS, BEARD_STYLE_IDS, GLASSES_STYLE_IDS, NOSE_IDS, LOOK_IDS,
   GLASSES_SWATCHES, type Avatar,
@@ -30,12 +30,19 @@ export function headThumb(a: Avatar, yaw = 30, width = 20): Raster {
 }
 
 export type AvatarPart = 'look' | 'hair' | 'eyes' | 'brows' | 'nose' | 'beard' | 'glasses'
-  | 'lpcHead' | 'lpcHair' | 'lpcBrows' | 'lpcNose' | 'lpcBeard' | 'lpcMustache' | 'lpcGlasses' | 'lpcHat';
+  | 'lpcHead' | 'lpcHair' | 'lpcBrows' | 'lpcNose' | 'lpcBeard' | 'lpcMustache' | 'lpcGlasses' | 'lpcHat'
+  | 'lpcMonster' | 'lpcEars' | 'lpcHorns';
 
-const LPC_FIELD: Record<string, keyof LpcLook> = { lpcHead: 'head', lpcHair: 'hair', lpcBrows: 'brows', lpcNose: 'nose', lpcBeard: 'beard', lpcMustache: 'mustache', lpcGlasses: 'glasses', lpcHat: 'hat' };
+const LPC_FIELD: Record<string, keyof LpcLook> = {
+  lpcHead: 'head', lpcHair: 'hair', lpcBrows: 'brows', lpcNose: 'nose', lpcBeard: 'beard', lpcMustache: 'mustache', lpcGlasses: 'glasses', lpcHat: 'hat',
+  lpcMonster: 'head', lpcEars: 'ears', lpcHorns: 'horns',
+};
 const LPC_LIST: Record<string, (string | null)[]> = {
   lpcHead: LPC_HEADS, lpcHair: LPC_HAIRS, lpcBrows: [...LPC_BROWS, null], lpcNose: [null, ...LPC_NOSES], lpcBeard: [null, ...LPC_BEARDS], lpcMustache: [null, ...LPC_MUSTACHES], lpcGlasses: [null, ...LPC_GLASSES], lpcHat: [null, ...LPC_HATS],
+  lpcMonster: LPC_MONSTERS, lpcEars: [null, ...LPC_EARS], lpcHorns: [null, ...LPC_HORNS],
 };
+/** piel humana por defecto al volver de una cabeza de monstruo */
+const HUMAN_SKIN = '#e0ac8a';
 
 /** Valor actual de una pieza LPC ('none' si no lleva). */
 export function lpcValue(a: Avatar, part: AvatarPart): string {
@@ -43,7 +50,15 @@ export function lpcValue(a: Avatar, part: AvatarPart): string {
 }
 /** Aplica una pieza LPC al avatar. */
 export function withLpc(a: Avatar, part: AvatarPart, id: string): Avatar {
-  return { ...a, kit: 'lpc', lpc: { ...(a.lpc ?? DEFAULT_LPC), [LPC_FIELD[part]]: id === 'none' ? null : id } };
+  const out: Avatar = { ...a, kit: 'lpc', lpc: { ...(a.lpc ?? DEFAULT_LPC), [LPC_FIELD[part]]: id === 'none' ? null : id } };
+  // cabeza de monstruo: el cuerpo toma su color. De vuelta a una humana, piel humana
+  if (part === 'lpcMonster' || part === 'lpcHead') {
+    const was = isMonsterHead(a.lpc?.head ?? 'male');
+    const m = lpcSkinOf(id);
+    if (m) out.skin = m;
+    else if (was) out.skin = HUMAN_SKIN;
+  }
+  return out;
 }
 
 /** Las opciones de una pieza aplicadas al avatar actual (así cada miniatura muestra TU cara con esa opción). */

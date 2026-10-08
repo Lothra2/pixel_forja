@@ -44,7 +44,8 @@ const VOLUME_KEY: Partial<Record<AvatarPart, (id: string) => Key>> = {
 const isLpc = (part: AvatarPart) => part.startsWith('lpc');
 function label(t: T, part: AvatarPart, id: string): string {
   if (id === 'none') return t('none');
-  if (part === 'lpcHead') return t(`head_${id}` as Key);
+  if (part === 'lpcHead' || part === 'lpcMonster') return t(`head_${id}` as Key);
+  if (part === 'lpcEars' || part === 'lpcHorns') return t(`${part === 'lpcEars' ? 'ears' : 'horns'}_${id}` as Key);
   if (part === 'lpcHat') return t((`hat_${id}`) as Key) === `hat_${id}` ? id.replace(/_/g, ' ') : t(`hat_${id}` as Key);
   if (part === 'lpcBrows') return t(id === 'thick' ? 'brows_gruesa' : 'brows_fina');
   const k = VOLUME_KEY[part];
@@ -192,6 +193,7 @@ export function AvatarStep(p: Props) {
           {body}
           <Seg label={t('av_expr')} value={p.mouth === 'open' ? 'line' : p.mouth} set={(v) => p.setMouth(v as 'line' | 'smile' | 'grin')} opts={[['line', t('expr_line')], ['smile', t('expr_smile')], ['grin', t('expr_grin')]]} testid="av-expr" />
           {section('lpcHead', 'av_headType')}
+          {section('lpcMonster', 'av_monster')}
           {section('lpcHair', 'av_hair', <Swatches label={t('av_hairColor')} colors={HAIR_SWATCHES} value={a.hair.color} set={(c) => p.setAvatar({ ...a, hair: { ...a.hair, color: c } })} testid="av-hair-color" />)}
           <details className="group" open>
             <summary>{t('av_skin')}</summary>
@@ -209,6 +211,8 @@ export function AvatarStep(p: Props) {
               <button className="btn ghost sm" onClick={() => p.setAvatar({ ...a, lpc: { ...(a.lpc ?? DEFAULT_LPC), hatColor: null } })}>{t('hat_original')}</button>
             </>
           ))}
+          {section('lpcEars', 'av_ears')}
+          {section('lpcHorns', 'av_horns')}
         </>
       ) : (
         <>

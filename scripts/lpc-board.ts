@@ -3,11 +3,11 @@
  *   npx tsx scripts/lpc-board.ts <salida.png> <hair|beard|mustache|glasses|head|nose> [ids,separados,por,coma] [json con base]
  */
 import { writeFileSync, readFileSync } from 'node:fs';
-import { encodePng, createRaster, hexToRgb, lpcHead, LPC_HAIRS, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HEADS, LPC_NOSES, DEFAULT_LPC, type LpcLook, type LpcColors, type ModelHeadImage, type Raster } from '../src/engine/index.ts';
+import { encodePng, createRaster, hexToRgb, lpcHead, LPC_HAIRS, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HEADS, LPC_NOSES, LPC_EARS, LPC_HORNS, DEFAULT_LPC, type LpcLook, type LpcColors, type ModelHeadImage, type Raster } from '../src/engine/index.ts';
 
 const [, , out, what, idsArg, baseArg] = process.argv;
 const base: { look: LpcLook; colors: LpcColors } = baseArg ? JSON.parse(readFileSync(baseArg, 'utf8')) : { look: DEFAULT_LPC, colors: { skin: '#e0ac8a', hair: '#3a2d26', eyes: '#3a2418', beard: '#4a3a33', glasses: '#1d1d24' } };
-const all: Record<string, string[]> = { hair: LPC_HAIRS, beard: LPC_BEARDS, mustache: LPC_MUSTACHES, glasses: LPC_GLASSES, head: LPC_HEADS, nose: LPC_NOSES };
+const all: Record<string, string[]> = { hair: LPC_HAIRS, beard: LPC_BEARDS, mustache: LPC_MUSTACHES, glasses: LPC_GLASSES, head: LPC_HEADS, nose: LPC_NOSES, ears: LPC_EARS, horns: LPC_HORNS };
 const ids = idsArg && idsArg !== 'all' ? idsArg.split(',') : all[what];
 function outlined(h: ModelHeadImage): Raster {
   const { w, h: H, idx } = h.img;

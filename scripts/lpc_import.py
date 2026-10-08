@@ -89,6 +89,24 @@ def main():
     S = 'spritesheets/'
     for h in ['male', 'female', 'male_elderly', 'female_elderly', 'male_plump', 'male_gaunt']:
         add(f'head/{h}', f'{S}head/heads/human/{h}/idle.png')
+    # cabezas de monstruo (traen sus propios ojos y colores): enemigos para el RPG
+    MONSTERS = {
+        'orc': 'orc/male', 'orc_female': 'orc/female', 'goblin': 'goblin/adult', 'skeleton': 'skeleton/adult', 'zombie': 'zombie/adult',
+        'troll': 'troll/adult', 'vampire': 'vampire/adult', 'wolf': 'wolf/male', 'lizard': 'lizard/male', 'minotaur': 'minotaur/male',
+        'boarman': 'boarman/adult', 'frankenstein': 'frankenstein/adult', 'jack': 'jack/adult', 'rat': 'rat/adult',
+        'wartotaur': 'wartotaur/adult', 'alien': 'alien/adult',
+    }
+    for k, v in MONSTERS.items():
+        add(f'head/{k}', f'{S}head/heads/{v}/idle.png')
+    # orejas y cuernos: elfos, demonios, bestias
+    for e in ['elven', 'long', 'big', 'medium', 'down', 'hang', 'dragon']:
+        add(f'ears/{e}', f'{S}head/ears/{e}/adult/idle.png')
+    for e in ['cat', 'wolf']:
+        add(f'ears/{e}', f'{S}head/ears/{e}/adult/fg/idle.png')
+        add(f'earsbg/{e}', f'{S}head/ears/{e}/adult/bg/idle.png')
+    add('horns/curled', f'{S}head/horns/curled/adult/idle.png')
+    add('horns/backwards', f'{S}head/horns/backwards/adult/fg/idle.png')
+    add('hornsbg/backwards', f'{S}head/horns/backwards/adult/bg/idle.png')
     for sex in ['male', 'female']:
         for e in ['neutral', 'happy', 'closed', 'anger', 'sad', 'shock', 'blush']:
             add(f'face/{sex}/{e}', f'{S}head/faces/{sex}/{e}/idle.png')
