@@ -22,12 +22,13 @@ export class Engine {
   /** Devuelve null si mientras tanto llegó un pedido más nuevo del mismo tipo. */
   async call<T extends Response['type']>(req: Request, transfer: Transferable[] = []): Promise<Extract<Response, { type: T }> | null> {
     const id = ++this.seq;
-    this.latest.set(req.type, id);
+    const k = req.type + ('key' in req ? `:${req.key}` : '');
+    this.latest.set(k, id);
     const res = await new Promise<Response>((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
       this.worker.postMessage({ ...req, id }, transfer);
     });
-    if (this.latest.get(req.type) !== id && req.type !== 'export' && req.type !== 'load') return null;
+    if (this.latest.get(k) !== id && req.type !== 'export' && req.type !== 'load') return null;
     return res as Extract<Response, { type: T }>;
   }
 }

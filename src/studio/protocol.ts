@@ -1,6 +1,6 @@
 import type {
   BrushStroke, HeadSpec, ZoneEdit, Ficha, HumanFicha, CellSize, QAReport, BuildReport, Species, Proportions, ViewName,
-  ExportKind, ExportPlan, Variant, ImageMode,
+  ExportKind, ExportPlan, Variant, ImageMode, Avatar, AvatarPart,
 } from '../engine/index';
 
 export interface AnalyzeParams {
@@ -43,7 +43,10 @@ export type Request =
   | { type: 'render'; ficha: Ficha; cell: CellSize; anim: string; view: ViewName; props: boolean }
   | { type: 'variants'; ficha: HumanFicha; params: AnalyzeParams | null; seed: number; n: number }
   | { type: 'export'; ficha: Ficha; kind: ExportKind; plan: ExportPlan; force: boolean }
-  | { type: 'qa'; ficha: Ficha; plan: ExportPlan };
+  | { type: 'qa'; ficha: Ficha; plan: ExportPlan }
+  | { type: 'avatarThumbs'; key: string; avatar: Avatar; part: AvatarPart };
+
+export interface Thumb { id: string; w: number; h: number; rgba: Uint8ClampedArray }
 
 export type Response =
   | { type: 'loaded'; w: number; h: number }
@@ -53,4 +56,5 @@ export type Response =
   | { type: 'variants'; variants: Variant[]; thumbs: Uint8ClampedArray[] }
   | { type: 'exported'; files: { name: string; bytes: Uint8Array; mime: string }[] }
   | { type: 'qa'; reports: QAReport[]; missing: string[] }
+  | { type: 'avatarThumbs'; part: AvatarPart; thumbs: Thumb[] }
   | { type: 'error'; message: string };

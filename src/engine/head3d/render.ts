@@ -301,15 +301,27 @@ function render(m: HeadModel, o: ModelHeadOpts): ModelHeadImage {
   let cells = rc.get(rkey) as (Cell | null)[] | undefined;
   if (!cells) {
   const samples: (Px | null)[] = new Array(Wimg * Hout * SS * SS).fill(null);
-  const step = 0.02;
+  const step = 0.035;
   for (let row = 0; row < Hout; row++)
     for (let j = 0; j < SS; j++) {
       const y = yOf(row + (j + 0.5) / SS);
+      // radio máximo de la cabeza en esta fila: los rayos que pasan más lejos no tocan nada
+      const rw = geo.row(y);
+      let rmax = Math.max(rw.wl, rw.wr, geo.zf(y), geo.zb(y)) * 1.12;
+      if (y > m.marks.eye - 0.1 && y < m.marks.nose + 0.1) rmax = Math.max(rmax, geo.zf(y) + geo.noseLen + 0.05);
+      if (m.ears && y > m.ears.y0 - 0.2 && y < m.ears.y1 + 0.2) rmax = Math.max(rmax, Math.max(rw.wl, rw.wr) + m.ears.size + 0.15);
+      for (const b of m.extras ?? []) {
+        const ylo = Math.min(b.a[1], (b.b ?? b.a)[1]) - b.r, yhi = Math.max(b.a[1], (b.b ?? b.a)[1]) + b.r;
+        if (y >= ylo && y <= yhi) rmax = Math.max(rmax, ...[b.a, b.b ?? b.a].map((p) => Math.hypot(p[0], p[2]) + b.r));
+      }
+      rmax += 0.04;
       for (let col = 0; col < Wimg; col++)
         for (let i = 0; i < SS; i++) {
           const X = (col + (i + 0.5) / SS - cx) / k;
-          let prev = ext + 0.2;
-          for (let zv = ext + 0.2; zv >= -ext - 0.2;) {
+          if (Math.abs(X) > rmax) continue;
+          const zStart = Math.sqrt(Math.max(0, rmax * rmax - X * X)) + 0.02;
+          let prev = zStart;
+          for (let zv = zStart; zv >= -zStart;) {
             const x = X * cs - zv * sn, z = X * sn + zv * cs;
             const fv = geo.field(x, y, z)[0];
             if (fv <= 0) {

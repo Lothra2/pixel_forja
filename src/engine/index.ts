@@ -39,3 +39,4 @@ export * from './head3d/model';
 export * from './head3d/avatar';
 export * from './head3d/render';
 export * from './head3d/measure';
+export * from './head3d/thumb';

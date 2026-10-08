@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import {
   decodePng, makeWorkImage, analyzeImage, buildFicha, buildAnimalFicha, renderClip, runQA,
-  exportFiles, renderPlan, surprise, isHuman,
+  exportFiles, renderPlan, surprise, isHuman, headThumb, avatarOptions,
   type Raster, type WorkImage, type Analysis, type HumanFicha,
 } from '../engine/index';
 import type { AnalyzeParams, ImagePayload, Request, Response } from './protocol';
@@ -89,6 +89,14 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
       case 'qa': {
         const { qa, missing } = renderPlan(req.ficha, req.plan);
         reply({ type: 'qa', reports: qa, missing });
+        break;
+      }
+      case 'avatarThumbs': {
+        const thumbs = avatarOptions(req.avatar, req.part).map((o) => {
+          const r = headThumb(o.avatar, o.yaw);
+          return { id: o.id, w: r.w, h: r.h, rgba: new Uint8ClampedArray(r.data) };
+        });
+        reply({ type: 'avatarThumbs', part: req.part, thumbs }, thumbs.map((t) => t.rgba.buffer));
         break;
       }
       case 'export': {

@@ -8,16 +8,17 @@ import { Seg, Select, Toggle, type T } from './components/ui';
 import { StyleStep } from './steps/StyleStep';
 import { EditorStep } from './steps/EditorStep';
 import { ExportStep } from './steps/ExportStep';
+import { AvatarStep } from './steps/AvatarStep';
 import { loadGallery, saveGallery, upsert, type GalleryItem } from './gallery';
 import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, safeName } from './util';
 import {
   type Ficha, type HumanFicha, type CellSize, type HeadSpec, type Point, type Zone, type QAReport, type ColorSlot, type AnimalColorSlot,
-  type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim,
-  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES,
+  type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim, type Avatar, type AvatarPart,
+  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar,
 } from '../engine/index';
 
-type Step = 'image' | 'bg' | 'zones' | 'head' | 'style' | 'animate' | 'editor' | 'export';
-const HUMAN_STEPS: Step[] = ['image', 'bg', 'zones', 'head', 'style', 'animate', 'editor', 'export'];
+type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export';
+const HUMAN_STEPS: Step[] = ['image', 'bg', 'zones', 'head', 'avatar', 'style', 'animate', 'editor', 'export'];
 const ANIMAL_STEPS: Step[] = ['image', 'bg', 'style', 'animate', 'export'];
 const EDIT_ZONES: Zone[] = ['hair', 'beard', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'];
 const SAMPLES: { name: string; kind: 'human' | 'animal'; species?: Species }[] = [
@@ -25,6 +26,11 @@ const SAMPLES: { name: string; kind: 'human' | 'animal'; species?: Species }[] =
   { name: 'mama', kind: 'human' }, { name: 'papa', kind: 'human' }, { name: 'selfie', kind: 'human' }, { name: 'thor', kind: 'animal', species: 'boxer' },
 ];
 const ARTIFACT = !!import.meta.env.VITE_ARTIFACT;
+
+/** Pone el avatar en la ficha y sincroniza los colores del cuerpo (piel, pelo, ojos). */
+function withAvatar(f: HumanFicha, av: Avatar): HumanFicha {
+  return { ...f, avatar: av, palette: { ...f.palette, skin: makeRamp(av.skin), hair: makeRamp(av.hair.color), eyes: av.eyes.color } };
+}
 
 function storedLang(): Lang {
   try {
@@ -40,6 +46,9 @@ interface Overrides {
   colors: Partial<Record<ColorSlot | AnimalColorSlot, string>>;
   proportions?: Proportions;
   customAnims: CustomAnim[];
+  /** el avatar editado en el creador (pisa al que propone la imagen) */
+  avatar?: Avatar;
+  headMode?: 'avatar' | 'image';
 }
 const emptyOverrides = (): Overrides => ({ outfit: {}, face: {}, colors: {}, customAnims: [] });
 
@@ -61,6 +70,8 @@ export function App() {
   const [extraLoaded, setExtraLoaded] = useState({ side: false, back: false });
   const [buildTick, setBuildTick] = useState(0);
   const overrides = useRef<Overrides>(emptyOverrides());
+  /** el avatar que propuso la imagen, para volver a él */
+  const fittedAvatar = useRef<Avatar | null>(null);
 
   const [cell, setCell] = useState<CellSize>(48);
   const [anim, setAnim] = useState('walk');
@@ -100,7 +111,7 @@ export function App() {
 
   const steps = kind === 'human' ? HUMAN_STEPS : ANIMAL_STEPS;
   const stepIdx = steps.indexOf(step);
-  const needsFicha = step === 'style' || step === 'animate' || step === 'editor' || step === 'export';
+  const needsFicha = step === 'avatar' || step === 'style' || step === 'animate' || step === 'editor' || step === 'export';
 
   // análisis: cada vez que cambian fondo, cabeza o zonas
   useEffect(() => {
@@ -120,6 +131,8 @@ export function App() {
     if (isHuman(out)) {
       out = { ...out, outfit: { ...out.outfit, ...o.outfit }, face: { ...out.face, ...o.face }, customAnims: o.customAnims.length ? o.customAnims : out.customAnims };
       if (o.proportions) out = { ...out, body: { ...out.body, proportions: o.proportions } } as HumanFicha;
+      if (o.avatar) out = withAvatar(out, o.avatar);
+      if (o.headMode && out.avatar) out = { ...out, headMode: o.headMode };
     }
     for (const [slot, hex] of Object.entries(o.colors)) out = recolor(out, slot as ColorSlot, hex!);
     return out;
@@ -133,7 +146,10 @@ export function App() {
         const r = kind === 'human'
           ? await engine.call<'built'>({ type: 'build', params, name, outfit: overrides.current.outfit, face: overrides.current.face, proportions: overrides.current.proportions })
           : await engine.call<'built'>({ type: 'buildAnimal', name, species, bgTolerance: params.bgTolerance, bgStrokes: params.bgStrokes });
-        if (r) setFicha(applyOverrides(r.ficha));
+        if (r) {
+          fittedAvatar.current = isHuman(r.ficha) ? r.ficha.avatar ?? null : null;
+          setFicha(applyOverrides(r.ficha));
+        }
       });
     }, 150);
     return () => clearTimeout(id);
@@ -239,6 +255,37 @@ export function App() {
       return out;
     });
   };
+  const setAvatar = (av: Avatar) => {
+    overrides.current.avatar = av;
+    if (!overrides.current.headMode) overrides.current.headMode = 'avatar';
+    updateFicha((f) => (isHuman(f) ? { ...withAvatar(f, av), headMode: overrides.current.headMode } : f));
+  };
+  const setHeadMode = (m: 'avatar' | 'image') => {
+    overrides.current.headMode = m;
+    updateFicha((f) => (isHuman(f) ? { ...f, headMode: m } : f));
+  };
+  const resetAvatar = () => {
+    if (!fittedAvatar.current) return;
+    setAvatar(fittedAvatar.current);
+  };
+  const loadThumbs = useCallback(async (av: Avatar, part: AvatarPart) => {
+    const r = await engine.call<'avatarThumbs'>({ type: 'avatarThumbs', key: part, avatar: av, part });
+    return r ? r.thumbs : null;
+  }, [engine]);
+  const startFromScratch = () => {
+    overrides.current = emptyOverrides();
+    fittedAvatar.current = null;
+    setLoaded(false);
+    setAnalysis(null);
+    setKind('human');
+    setName('personaje');
+    setVariants(null);
+    setClip(null);
+    setView('front');
+    setAnim('idle');
+    setFicha(fichaFromAvatar('personaje', randomAvatar(Date.now() % 100000)));
+    setStep('avatar');
+  };
   const askVariants = () =>
     run(async () => {
       if (!ficha || !isHuman(ficha)) return;
@@ -284,7 +331,7 @@ export function App() {
     });
   };
 
-  const canGo = (s: Step) => s === 'image' || (loaded && steps.includes(s)) || (!!ficha && ['style', 'animate', 'editor', 'export'].includes(s) && steps.includes(s));
+  const canGo = (s: Step) => s === 'image' || (loaded && steps.includes(s)) || (!!ficha && ['avatar', 'style', 'animate', 'editor', 'export'].includes(s) && steps.includes(s));
   const zoom = cell === 32 ? 9 : cell === 48 ? 6 : 5;
 
   // ---------- interacción con la imagen ----------
@@ -340,6 +387,12 @@ export function App() {
               <strong>{t('upload')}</strong>
               <span>{t('dropHint')}</span>
             </label>
+            {kind === 'human' && (
+              <div className="scratch">
+                <button className="btn" onClick={startFromScratch} data-testid="from-scratch">{t('fromScratch')}</button>
+                <span className="muted small">{t('fromScratchHelp')}</span>
+              </div>
+            )}
             <p className="muted">{t('orTry')}</p>
             <div className="samples">
               {SAMPLES.map((s) => (
@@ -481,7 +534,7 @@ export function App() {
           ? <EditorStep t={t} lang={lang} ficha={ficha} cell={cell} onSave={saveCustom} />
           : <section className="panel wide"><p>{t('ed_animalNo')}</p></section>)}
 
-        {(step === 'style' || step === 'animate' || step === 'export') && (
+        {(step === 'avatar' || step === 'style' || step === 'animate' || step === 'export') && (
           <>
             <section className="panel stage-wrap preview-wrap">
               {clip ? <Preview clip={clip} bg={bg} zoom={zoom} labels={{ real: t('realSize'), zoomed: t('zoomed') }} /> : <p className="muted">{t('working')}</p>}
@@ -497,6 +550,15 @@ export function App() {
               </div>
             </section>
             <aside className="panel side">
+              {step === 'avatar' && ficha && isHuman(ficha) && ficha.avatar && (
+                <AvatarStep
+                  t={t} avatar={ficha.avatar} setAvatar={setAvatar}
+                  canChooseHead={Object.keys(ficha.heads).length > 0} headMode={ficha.headMode ?? 'avatar'} setHeadMode={setHeadMode}
+                  canReset={!!fittedAvatar.current} reset={resetAvatar} random={() => setAvatar(randomAvatar(Date.now() % 100000))}
+                  loadThumbs={loadThumbs}
+                />
+              )}
+              {step === 'avatar' && ficha && isHuman(ficha) && !ficha.avatar && <p className="muted">{t('working')}</p>}
               {step === 'style' && ficha && (
                 <StyleStep
                   t={t} ficha={ficha} name={name} setName={(s) => setName(safeName(s))}

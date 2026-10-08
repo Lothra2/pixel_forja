@@ -27,6 +27,9 @@ test('persona: imagen, fondo, zonas, cabeza, estilo, animar, galería, editor y 
   await page.getByTestId('next').click();
   await page.screenshot({ path: `${shots}/${tag}_4_cabeza.png`, fullPage: true });
 
+  // avatar: el dibujo trae su cabeza, el avatar queda como opción
+  await page.getByTestId('next').click();
+  await expect(page.getByTestId('head-mode')).toBeVisible({ timeout: 30000 });
   // estilo: número de camiseta y sorpréndeme
   await page.getByTestId('next').click();
   await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
@@ -128,4 +131,30 @@ test('foto de busto: detecta el modo, la barba y arma el personaje', async ({ pa
   await idle(page);
   await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
   await page.screenshot({ path: `${shots}/${tag}_12_busto_animar.png`, fullPage: true });
+});
+
+test('crear desde cero: avatar por piezas y animar', async ({ page }, info) => {
+  test.setTimeout(180000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('from-scratch').click();
+  await expect(page.getByTestId('av-hair')).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId('av-hair').locator('button')).toHaveCount(13, { timeout: 30000 });
+  await page.getByTestId('av-hair-colitas').click();
+  await idle(page);
+  await expect(page.getByTestId('av-hair-colitas')).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
+  await page.getByTestId('av-skin').locator('button').nth(4).click();
+  await page.getByText('Lentes', { exact: true }).click();
+  await expect(page.getByTestId('av-glasses').locator('button')).toHaveCount(4, { timeout: 30000 });
+  await page.getByTestId('av-glasses-redondos').click();
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  await page.screenshot({ path: `${shots}/${tag}_20_avatar.png`, fullPage: true });
+  await page.getByTestId('step-animate').click();
+  await idle(page);
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  await page.screenshot({ path: `${shots}/${tag}_21_avatar_animar.png`, fullPage: true });
+  expect(errors).toEqual([]);
 });
