@@ -1,5 +1,5 @@
 import type { Ramp } from '../color/ramp';
-import type { HeadModel } from '../head3d/model';
+import type { Avatar } from '../head3d/avatar';
 
 /**
  * La ficha del personaje: todo sale de aquí. JSON versionado, editable a mano.
@@ -100,10 +100,11 @@ export interface HumanFicha extends FichaBase {
   /** cabezas ya pixeladas, por tamaño */
   heads: Partial<Record<`${CellSize}`, HeadSet>>;
   /**
-   * cabeza por medidas: si está, se dibuja en cada cuadro desde el modelo (gira de verdad de lado y de espalda).
-   * style: stardew, fiel, megaman o caricatura
+   * avatar: la cabeza armada por piezas (pelo, ojos, barba, lentes...). Se dibuja en cada cuadro y gira
+   * de verdad de lado y de espalda. headMode dice qué cabeza usar: la del avatar o la pixelada de la imagen.
    */
-  head3d?: { model: HeadModel; style: string };
+  avatar?: Avatar;
+  headMode?: 'avatar' | 'image';
   physics: { hairLag: number };
 }
 
@@ -132,6 +133,11 @@ export function isHuman(f: Ficha): f is HumanFicha {
   return f.body.skeleton === 'human';
 }
 
+/** ¿Esta ficha dibuja la cabeza desde el avatar? */
+export function usesAvatar(f: HumanFicha): boolean {
+  return !!f.avatar && (f.headMode === 'avatar' || Object.keys(f.heads).length === 0);
+}
+
 export const DEFAULT_PROPORTIONS: Proportions = { preset: 'chibi', height: 1, build: 1, legs: 1, arms: 1, head: 1, shoulders: 1, hips: 1 };
 
 /** Valida lo mínimo para no reventar al abrir una ficha editada a mano. */
@@ -144,7 +150,8 @@ export function validateFicha(f: unknown): string[] {
   if (!o.palette) errs.push('falta palette');
   if (!o.body) errs.push('falta body');
   if (o.body?.skeleton === 'quadruped') return errs;
-  if (!o.heads || Object.keys(o.heads).length === 0) errs.push('falta al menos una cabeza en heads');
+  const hasAvatar = !!(o as { avatar?: unknown }).avatar;
+  if (!hasAvatar && (!o.heads || Object.keys(o.heads).length === 0)) errs.push('falta al menos una cabeza en heads (o un avatar)');
   for (const [k, hs] of Object.entries(o.heads ?? {})) {
     if (!hs) continue;
     const set = (hs as HeadSet).front ? (hs as HeadSet) : { front: hs as unknown as HeadBitmap };

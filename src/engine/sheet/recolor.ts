@@ -16,8 +16,11 @@ export function recolor(f: Ficha, slot: ColorSlot | AnimalColorSlot, hex: string
   const s = slot as ColorSlot;
   if (s === 'eyes') {
     out.palette.eyes = hex;
+    if (out.avatar) out.avatar.eyes.color = hex;
     return out;
   }
+  if (out.avatar && s === 'skin') out.avatar.skin = hex;
+  if (out.avatar && s === 'hair') out.avatar.hair.color = hex;
   const old = f.palette[s];
   const ramp = makeRamp(hex);
   out.palette[s] = ramp;

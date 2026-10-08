@@ -8,7 +8,7 @@ import { type Lab, labToHex, deltaE } from '../color/oklab';
 import { makeRamp } from '../color/ramp';
 import { pixelateHead } from '../head/pixelate';
 import { measureHead } from '../head3d/measure';
-import { stylizeSkin, liftHair } from '../head3d/render';
+import { fitAvatar, defaultAvatar, type Avatar } from '../head3d/avatar';
 import { dimsFor } from '../rig/dims';
 import {
   type HumanFicha as Ficha, type CellSize, type Proportions, type HeadBitmap, CELL_SIZES, FICHA_FORMAT, FICHA_VERSION, DEFAULT_PROPORTIONS,
@@ -316,16 +316,46 @@ export function buildFicha(image: Raster, input: BuildInput, analysis?: Analysis
     }
     ficha.heads[`${cell}`] = set;
   }
-  // fotos: la cabeza se dibuja desde las medidas, así se parece y gira de verdad
-  if (bust || input.headStyle) {
-    try {
-      const model = measureHead({ work: a.work, zone: headZone, mask: a.mask, head: a.zones.head });
-      ficha.head3d = { model, style: input.headStyle ?? 'stardew' };
-      if (!input.palette?.skin) ficha.palette.skin = makeRamp(stylizeSkin(model.colors.skin));
-      if (!input.palette?.hair) ficha.palette.hair = makeRamp(liftHair(model.colors.hair));
-    } catch {
-      // si no se pudo medir, queda la cabeza pixelada
+  // avatar propuesto desde la imagen. En fotos manda el avatar (se parece y gira de verdad);
+  // en dibujos queda disponible pero se usa la cabeza pixelada del dibujo
+  try {
+    const model = measureHead({ work: a.work, zone: headZone, mask: a.mask, head: a.zones.head });
+    const av = fitAvatar(model);
+    if (input.headStyle) av.look = input.headStyle as Avatar['look'];
+    ficha.avatar = av;
+    ficha.headMode = bust ? 'avatar' : 'image';
+    if (bust) {
+      if (!input.palette?.skin) ficha.palette.skin = makeRamp(av.skin);
+      if (!input.palette?.hair) ficha.palette.hair = makeRamp(av.hair.color);
     }
+  } catch {
+    // si no se pudo medir, queda solo la cabeza pixelada
   }
   return { ficha, analysis: a, report: { headGuessed: a.zones.headGuessed && !input.head, missingZones: missing, outfitGuessed: guessed } };
+}
+
+/** Personaje desde cero: solo el avatar, sin imagen. Ropa deportiva por defecto. */
+export function fichaFromAvatar(name: string, avatar: Avatar = defaultAvatar(), outfit?: Partial<Ficha['outfit']>): Ficha {
+  return {
+    format: FICHA_FORMAT,
+    version: FICHA_VERSION,
+    name,
+    body: { skeleton: 'human', proportions: { ...DEFAULT_PROPORTIONS } },
+    palette: {
+      skin: makeRamp(avatar.skin),
+      hair: makeRamp(avatar.hair.color),
+      eyes: avatar.eyes.color,
+      top: makeRamp('#2f6fd6'),
+      bottom: makeRamp(BUST_DEFAULTS.bottom),
+      socks: makeRamp(BUST_DEFAULTS.socks),
+      shoes: makeRamp(BUST_DEFAULTS.shoes),
+      accessory: makeRamp('#f2c94c'),
+    },
+    outfit: { sleeves: 'short', bottom: 'shorts', socks: 'low', ...outfit },
+    face: { eyes: 'round', mouth: avatar.beard.style === 'ninguna' ? 'smile' : 'line', blush: false, brows: true, glasses: null },
+    heads: {},
+    avatar,
+    headMode: 'avatar',
+    physics: { hairLag: 1 },
+  };
 }

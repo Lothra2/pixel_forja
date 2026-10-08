@@ -35,7 +35,9 @@ const deg = (r: number) => ((r * 180) / Math.PI + 360) % 360;
 function skinLike(work: WorkImage, i: number): boolean {
   const [L, C, h] = lch(work, i);
   const hue = deg(h);
-  return L > 0.35 && L < 0.9 && C > 0.025 && C < 0.15 && hue > 20 && hue < 85;
+  // las paredes blancas con luz cálida tienen tono de piel pero muy poco croma y mucha luz
+  const minC = 0.042 + Math.max(0, L - 0.72) * 0.25;
+  return L > 0.3 && L < 0.9 && C > minC && C < 0.14 && hue > 26 && hue < 70;
 }
 
 function median(xs: number[]): number {
@@ -50,14 +52,29 @@ export function analyzePortrait(work: WorkImage, given?: HeadSpec): { zones: Zon
   const skin = new Uint8Array(N);
   for (let i = 0; i < N; i++) if (skinLike(work, i)) skin[i] = 1;
   const comp = components(skin, w, h, 1);
-  const cx = new Float64Array(comp.sizes.length), cy = new Float64Array(comp.sizes.length);
-  for (let i = 0; i < N; i++) { const l = comp.labels[i]; if (l >= 0) { cx[l] += i % w; cy[l] += (i / w) | 0; } }
+  const nC = comp.sizes.length;
+  const cx = new Float64Array(nC), cy = new Float64Array(nC);
+  const bx0 = new Int32Array(nC).fill(w), bx1 = new Int32Array(nC).fill(-1), by0 = new Int32Array(nC).fill(h), by1 = new Int32Array(nC).fill(-1);
+  for (let i = 0; i < N; i++) {
+    const l = comp.labels[i];
+    if (l < 0) continue;
+    const x = i % w, y = (i / w) | 0;
+    cx[l] += x; cy[l] += y;
+    if (x < bx0[l]) bx0[l] = x; if (x > bx1[l]) bx1[l] = x; if (y < by0[l]) by0[l] = y; if (y > by1[l]) by1[l] = y;
+  }
   let face = -1, best = 0;
   comp.sizes.forEach((s, l) => {
     const mx = cx[l] / s, my = cy[l] / s;
     const central = 1 - Math.min(1, Math.abs(mx - w / 2) / (w / 2));
     const upper = my < h * 0.75 ? 1 : 0.3;
-    const score = s * central * central * upper;
+    // una pared o un mueble con luz cálida también parece piel: casi siempre toca el borde de arriba
+    // o de los lados y no tiene forma de cara
+    const bw = bx1[l] - bx0[l] + 1, bh = by1[l] - by0[l] + 1;
+    const touchTop = by0[l] === 0 ? 0.05 : 1;
+    const touchSide = bx0[l] === 0 || bx1[l] === w - 1 ? 0.3 : 1;
+    const aspect = bw / bh > 0.45 && bw / bh < 1.5 ? 1 : 0.3;
+    const fill = s / (bw * bh) > 0.35 ? 1 : 0.4;
+    const score = s * central * central * upper * touchTop * touchSide * aspect * fill;
     if (score > best) { best = score; face = l; }
   });
   if (face < 0) throw new Error('No encontré una cara en la imagen. Prueba con la imagen de cuerpo entero o marca la cabeza a mano.');
@@ -105,9 +122,17 @@ export function analyzePortrait(work: WorkImage, given?: HeadSpec): { zones: Zon
   };
   const L = side(-1), R = side(1);
   if (typeof process !== 'undefined' && process.env?.PF_DEBUG) console.log('W', W, 'skinL', skinL.toFixed(2), 'ojos', L.eye?.y, R.eye?.y, 'cejas', L.brow?.x1, L.brow?.x0, R.brow?.x1, R.brow?.x0);
-  let eyes: [Point, Point] = L.eye && R.eye
-    ? [{ x: L.eye.x, y: L.eye.y }, { x: R.eye.x, y: R.eye.y }]
-    : [{ x: fcx - W * 0.2, y: fy0 + (fy1 - fy0) * 0.42 }, { x: fcx + W * 0.2, y: fy0 + (fy1 - fy0) * 0.42 }];
+  // un par de ojos creíble: a la misma altura más o menos y a una distancia normal.
+  // Si un lado falla (lentes, reflejo), se espeja el otro sobre el centro de la cara
+  const okPair = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.abs(a.y - b.y) < W * 0.12 && b.x - a.x > W * 0.22 && b.x - a.x < W * 0.7;
+  let eyes: [Point, Point];
+  if (L.eye && R.eye && okPair(L.eye, R.eye)) eyes = [{ x: L.eye.x, y: L.eye.y }, { x: R.eye.x, y: R.eye.y }];
+  else {
+    const one = [L.eye, R.eye].filter((e): e is NonNullable<typeof e> => !!e && e.y < fy0 + (fy1 - fy0) * 0.6).sort((p, q) => q.size - p.size)[0];
+    eyes = one
+      ? [{ x: Math.min(one.x, 2 * fcx - one.x), y: one.y }, { x: Math.max(one.x, 2 * fcx - one.x), y: one.y }]
+      : [{ x: fcx - W * 0.2, y: fy0 + (fy1 - fy0) * 0.42 }, { x: fcx + W * 0.2, y: fy0 + (fy1 - fy0) * 0.42 }];
+  }
   const browW = (b: (typeof big)[number] | null) => (b ? b.x1 - b.x0 : 0);
   const brows = !!L.brow && !!R.brow && (browW(L.brow) + browW(R.brow)) / 2 > W * 0.14;
   if (given) eyes = given.eyes;

@@ -6,22 +6,32 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   decodePng, encodePng, buildFicha, renderClip, encodeGif, exportFiles, FFGG_PLAN, renderPlan, packSheet,
-  createRaster, blit, fill, upscaleNearest, downscaleForAnalysis, CELL_SIZES, type Raster, type ViewName,
+  createRaster, blit, fill, upscaleNearest, downscaleForAnalysis, CELL_SIZES, fichaFromAvatar, recolor, type Raster, type ViewName, type HumanFicha, type ColorSlot,
 } from '../src/engine/index.ts';
 
 const [, , img, dir, nameArg] = process.argv;
 const name = nameArg ?? 'personaje';
 mkdirSync(dir, { recursive: true });
-const src = decodePng(readFileSync(img));
-const { ficha, analysis } = buildFicha(src, { name });
-console.log('modo', analysis.mode, JSON.stringify(analysis.portrait ?? {}), JSON.stringify(ficha.outfit));
+// la entrada puede ser una imagen o una receta de avatar en JSON: { name, avatar, outfit, colors }
+let ficha: HumanFicha;
+let src: Raster | null = null;
+if (img.endsWith('.json')) {
+  const spec = JSON.parse(readFileSync(img, 'utf8'));
+  ficha = fichaFromAvatar(spec.name ?? name, spec.avatar, spec.outfit);
+  for (const [slot, hex] of Object.entries(spec.colors ?? {})) ficha = recolor(ficha, slot as ColorSlot, hex as string) as HumanFicha;
+} else {
+  src = decodePng(readFileSync(img));
+  const r = buildFicha(src, { name });
+  ficha = r.ficha;
+  console.log('modo', r.analysis.mode, JSON.stringify(r.analysis.portrait ?? {}), JSON.stringify(ficha.outfit));
+}
 writeFileSync(join(dir, `${name}.ficha.json`), JSON.stringify(ficha, null, 2));
 const BG: [number, number, number, number] = [196, 226, 160, 255];
 const onBg = (r: Raster) => { const o = createRaster(r.w, r.h); fill(o, BG); blit(o, r, 0, 0); return o; };
 
 // comparación: foto | reposo x8 de frente y de lado | caminar x3 | tamaño real
 const H = 420;
-const orig = downscaleForAnalysis(src, Math.round((H * Math.max(src.w, src.h)) / src.h)).raster;
+const orig = src ? downscaleForAnalysis(src, Math.round((H * Math.max(src.w, src.h)) / src.h)).raster : createRaster(1, H);
 const front = upscaleNearest(onBg(renderClip(ficha, 48, 'idle', 'front').frames[0]), 8);
 const sideBig = upscaleNearest(onBg(renderClip(ficha, 48, 'idle', 'side').frames[0]), 8);
 const walk = renderClip(ficha, 48, 'walk');

@@ -4,7 +4,7 @@
  * se dibuja la cabeza en cualquier ángulo.
  *
  * Unidades: R = media anchura de la cabeza a la altura de los ojos. `y` va de 0 (tope del pelo)
- * a `height` (barbilla, o punta de la barba), en unidades de R, creciendo hacia abajo.
+ * a `height` (lo más bajo: barbilla, barba o pelo largo), en unidades de R, creciendo hacia abajo.
  * Cada fila guarda la media anchura de la silueta vista de frente y desde qué ángulo hay pelo o barba.
  * Ángulo φ: 0 = frente, 90 = costado, 180 = nuca.
  */
@@ -20,6 +20,30 @@ export interface HeadRow {
   beardTo: number;
   /** claridad de la barba en esta fila: 0 oscura, 1 canosa */
   beardLight: number;
+  /** también hay pelo de 0 hasta este ángulo (el mechón del centro cuando hay entradas) */
+  peak?: number;
+  /** fila sin piel (debajo de la barbilla): solo pelo largo o barba */
+  hollow?: boolean;
+}
+
+export type EyeStyleId = 'punto' | 'brillo' | 'grandes' | 'pestanas' | 'serios';
+export type BrowStyleId = 'ninguna' | 'fina' | 'normal' | 'gruesa' | 'arqueada';
+export type BeardStyleId = 'ninguna' | 'sombra' | 'bigote' | 'candado' | 'corta' | 'completa' | 'larga';
+export type GlassesStyleId = 'ninguno' | 'cuadrados' | 'redondos' | 'sol';
+
+/** Rasgos que se dibujan con reglas de pixel art (no salen del volumen). */
+export interface HeadLook {
+  eyes: EyeStyleId;
+  brows: BrowStyleId;
+  glasses: { style: Exclude<GlassesStyleId, 'ninguno'>; color: string } | null;
+  beard: BeardStyleId;
+}
+
+/** Pieza extra de pelo: esfera (sin b) o cápsula de a hasta b. Coordenadas de la cabeza: x derecha, y abajo, z adelante. */
+export interface HairBlob {
+  a: [number, number, number];
+  b?: [number, number, number];
+  r: number;
 }
 
 export interface HeadModel {
@@ -39,6 +63,18 @@ export interface HeadModel {
   beardLen: number;
   /** pelo largo que cuelga detrás */
   hairLong: boolean;
+  /** hasta dónde llega el pelo por detrás */
+  nape?: number;
+  /** volumen extra del pelo hacia adelante (copete) y hacia atrás */
+  depth?: { front: number; back: number };
+  /** flequillo: de y0 a y1, más largo del lado de la raya (part -1 izquierda, 1 derecha) */
+  fringe?: { y0: number; y1: number; part: number };
+  extras?: HairBlob[];
+  /** copete: el pelo de arriba sube y sale hacia adelante */
+  quiff?: number;
+  /** rulos: 0 liso, 1 crespo */
+  curl?: number;
+  look?: HeadLook;
 }
 
 export function rowAt(m: HeadModel, y: number): HeadRow {
@@ -54,5 +90,6 @@ export function rowAt(m: HeadModel, y: number): HeadRow {
     hairL: near.hairL, hairR: near.hairR,
     beardFrom: near.beardFrom, beardTo: near.beardTo,
     beardLight: l(a.beardLight, b.beardLight),
+    peak: near.peak, hollow: near.hollow,
   };
 }

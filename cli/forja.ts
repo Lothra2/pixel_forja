@@ -100,7 +100,7 @@ async function main() {
     const errs = validateFicha(raw);
     if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
     const ficha = migrateFicha(raw);
-    const usable = isHuman(ficha) ? sizes.filter((s) => ficha.heads[`${s}`]) : sizes;
+    const usable = isHuman(ficha) && !ficha.avatar ? sizes.filter((s) => ficha.heads[`${s}`]) : sizes;
     const missing = sizes.filter((s) => !usable.includes(s));
     if (missing.length) console.warn(`La ficha no tiene cabeza para ${missing.join(', ')} px: vuelve a generarla desde la imagen con esos tamaños.`);
     writeOutputs(ficha, arg('out') ?? join('out', ficha.name), usable);

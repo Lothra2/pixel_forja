@@ -1,5 +1,5 @@
 import { type Raster } from '../core/raster';
-import { type HumanFicha, type CellSize } from '../sheet/ficha';
+import { type HumanFicha, type CellSize, usesAvatar } from '../sheet/ficha';
 import { dimsFor, type Dims } from '../rig/dims';
 import { type Pose, type Arm, type Foot, solveTwoBone } from '../rig/pose';
 import { type Ramp, SHADOW, BASE, LIGHT } from '../color/ramp';
@@ -8,6 +8,7 @@ import { Materials } from './materials';
 import { Part, stroke, blob, rot } from './part';
 import { buildHeadImage, type View, type HeadImage } from './head';
 import { renderHeadModel, HEAD_STYLES } from '../head3d/render';
+import { modelFromAvatar } from '../head3d/avatar';
 import { rotSprite } from './rotsprite';
 import { drawBall, drawHeld, drawGround, isBall, ballSize } from './props';
 
@@ -61,12 +62,13 @@ export const SIDE_YAW = 62;
 
 export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: View, opt: RenderOptions = {}): BigFrame {
   const d = dimsFor(cell, f.body.proportions);
+  const avatarHead = usesAvatar(f);
   const set = f.heads[`${cell}`];
-  if (!set) throw new Error(`La ficha no tiene cabeza para ${cell}px`);
+  if (!set && !avatarHead) throw new Error(`La ficha no tiene cabeza para ${cell}px`);
   const C = cell;
   const W = C * 3, H = C * 2;
   const canvas = new LayerCanvas(W, H, Math.round(1.5 * C), C);
-  const style = f.head3d ? HEAD_STYLES[f.head3d.style] ?? HEAD_STYLES.stardew : null;
+  const style = avatarHead ? HEAD_STYLES[f.avatar!.look] ?? HEAD_STYLES.stardew : null;
   // estilo Megaman: todo el contorno negro
   const ink = (r: Ramp): Ramp => (style?.outline === 'black' ? ['#16121c', r[1], r[2], r[3]] : r);
   const mats = new Materials({
@@ -277,14 +279,14 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
   const drawHead = () => {
     const forward = side && !style ? Math.max(1, Math.round(d.u * 1.2)) : 0;
     const neck = local(forward, d.torsoH);
-    const hi: HeadImage & { pal: { dark?: string }[] } = f.head3d && style
-      ? renderHeadModel(f.head3d.model, {
+    const hi: HeadImage & { pal: { dark?: string }[] } = avatarHead && style
+      ? renderHeadModel(modelFromAvatar(f.avatar!), {
           width: d.headW, style,
           yaw: view === 'front' ? 0 : view === 'back' ? 180 : SIDE_YAW - (pose.head.yaw ?? 0),
           eyes: pose.face.eyes, mouth: pose.face.mouth ?? (f.face.mouth === 'smile' ? 'smile' : 'line'),
           skin: f.palette.skin[BASE], hair: f.palette.hair[BASE],
         }) as HeadImage & { pal: { dark?: string }[] }
-      : buildHeadImage(f, set, view, pose.face.eyes, pose.face.mouth);
+      : buildHeadImage(f, set!, view, pose.face.eyes, pose.face.mouth);
     const angle = Math.round(rawTheta * (Math.abs(rawTheta) > 45 ? 1 : 0.6) + pose.head.tilt);
     let img = hi.img, px = hi.anchor.x, py = hi.anchor.y;
     if (Math.abs(angle) >= 8) {
