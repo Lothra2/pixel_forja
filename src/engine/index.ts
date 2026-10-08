@@ -43,3 +43,4 @@ export * from './head3d/thumb';
 export * from './parts/lpc';
 export * from './head3d/photo';
 export * from './fx/fx';
+export * from './items/items';
