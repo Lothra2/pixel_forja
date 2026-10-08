@@ -168,10 +168,13 @@ export const celebrate: AnimDef = {
       out.push(P(c, {
         air,
         legs: air ? { near: { x: 0.2 * c.L, y: 0.85 * c.L, toe: 30 }, far: { x: -0.15 * c.L, y: 0.8 * c.L, toe: 40 } } : feet(c, 0.25),
-        arms: {
-          near: { shoulder: up ? 170 : 150, elbow: up ? 5 : 40, spread: 20 },
-          far: { shoulder: up ? 160 : 170, elbow: up ? 40 : 5, spread: 20 },
-        },
+        // de lado los brazos arriba quedan tapados por la cabeza: puño al frente, que se lee mejor
+        arms: c.view === 'side'
+          ? { near: { shoulder: up ? 95 : 70, elbow: up ? 80 : 95 }, far: { shoulder: up ? -25 : -10, elbow: 40 } }
+          : {
+            near: { shoulder: up ? 170 : 150, elbow: up ? 5 : 40, spread: 20 },
+            far: { shoulder: up ? 160 : 170, elbow: up ? 40 : 5, spread: 20 },
+          },
         face: { eyes: 'happy', mouth: 'grin' },
       }));
     }
@@ -193,18 +196,19 @@ export const sad: AnimDef = {
 export const crawl: AnimDef = {
   name: 'crawl', pack: 'basic', fps: 8, loop: true,
   build: (c) => {
-    const L = c.L, A = c.A;
+    const L = c.L;
     const out: Pose[] = [];
     for (let i = 0; i < 8; i++) {
       const s = Math.sin((i / 8) * TAU);
+      const lift = (v: number) => Math.max(0, v) * 0.12 * L;
+      // a gatas: rodillas y manos en el piso, la cabeza derecha mirando al frente
       out.push(P(c, {
-        torso: 72,
-        x: -0.4 * L,
-        head: { tilt: -40 },
-        legs: { near: { x: -0.1 * L + s * 0.15 * L, y: 0.55 * L, toe: 70 }, far: { x: -0.1 * L - s * 0.15 * L, y: 0.55 * L, toe: 70 } },
-        arms: { near: { shoulder: -72 + 22 * s, elbow: 0 }, far: { shoulder: -72 - 22 * s, elbow: 0 } },
+        torso: 62,
+        x: -0.6 * L,
+        head: { tilt: -56 },
+        legs: { near: { x: -0.15 * L + s * 0.14 * L, y: 0.5 * L - lift(-s), toe: 75 }, far: { x: -0.15 * L - s * 0.14 * L, y: 0.5 * L - lift(s), toe: 75 } },
+        arms: { near: { shoulder: 66 + 16 * s, elbow: -8 }, far: { shoulder: 66 - 16 * s, elbow: -8 } },
       }));
-      void A;
     }
     return out;
   },

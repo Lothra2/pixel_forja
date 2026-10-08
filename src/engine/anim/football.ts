@@ -86,11 +86,15 @@ export const header: AnimDef = {
     const top = Math.max(2, Math.round(4 * u));
     const crouch = P(c, { torso: 10, legs: feet(c, 0.7, 0.2), arms: { near: { shoulder: -30, elbow: 20 }, far: { shoulder: -20, elbow: 20 } } });
     const cock = P(c, { air: top, torso: -14, head: { tilt: -12 }, legs: { near: { x: 0, y: 0.75 * L, toe: 40 }, far: { x: -0.25 * L, y: 0.7 * L, toe: 50 } }, arms: { near: { shoulder: 70, elbow: 50, spread: 40 }, far: { shoulder: 60, elbow: 50, spread: 40 } }, face: { eyes: 'angry', mouth: 'line' } });
-    const snap = P(c, { air: top, torso: 16, head: { tilt: 14, dx: 1 }, legs: { near: { x: -0.1 * L, y: 0.8 * L, toe: 50 }, far: { x: -0.3 * L, y: 0.75 * L, toe: 50 } }, arms: { near: { shoulder: 20, elbow: 50, spread: 40 }, far: { shoulder: 10, elbow: 50, spread: 40 } }, face: { eyes: 'closed', mouth: 'line' } });
+    const snap = P(c, { air: top, torso: 16, head: { tilt: 6 }, legs: { near: { x: -0.1 * L, y: 0.8 * L, toe: 50 }, far: { x: -0.3 * L, y: 0.75 * L, toe: 50 } }, arms: { near: { shoulder: 20, elbow: 50, spread: 40 }, far: { shoulder: 10, elbow: 50, spread: 40 } }, face: { eyes: 'closed', mouth: 'line' } });
     const down = P(c, { air: Math.round(top / 2), torso: 8, legs: { near: { x: 0.1 * L, y: 0.9 * L }, far: { x: -0.1 * L, y: 0.9 * L } }, arms: { near: { shoulder: 30, elbow: 30 }, far: { shoulder: 20, elbow: 30 } } });
     const seq = [crouch, cock, cock, snap, down, P(c, { legs: feet(c, 0.4) })];
-    const bx = [2.0, 1.5, 1.0, 0.8, 1.5, 2.0].map((k) => k * L);
-    const by = [16, 15, 15, 14, 17, 20].map((k) => k * u);
+    // la pelota llega a la frente: altura y adelanto salen de las medidas del cuerpo, no de números fijos
+    const d = c.d;
+    const brow = d.footH + L + d.torsoH + 0.55 * d.headW;
+    const front = 0.5 * d.headW + 2 * u;
+    const bx = [front + 0.9 * L, front + 0.6 * L, front + 0.3 * L, front, front + 0.5 * L, front + 0.9 * L];
+    const by = [brow + 3 * u, brow + top, brow + top, brow + top - 2 * u, brow + 2 * u, brow + 5 * u];
     return seq.map((p, i) => ({ ...p, props: [ball(bx[i], by[i])] }));
   },
 };

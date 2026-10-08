@@ -31,6 +31,8 @@ export interface BigFrame {
   groundRow: number;
   /** caja del cuerpo sin implementos (un balón puede salirse del cuadro, el cuerpo no) */
   body: { x0: number; y0: number; x1: number; y1: number } | null;
+  /** caja con el pelo incluido: se prefiere para encuadrar si cabe en la celda */
+  full?: { x0: number; y0: number; x1: number; y1: number } | null;
   /** articulaciones en coordenadas del cuadro grande (para el editor de poses) */
   joints?: Joints;
 }
@@ -330,7 +332,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
           skin: f.palette.skin[BASE], hair: f.palette.hair[BASE],
         }) as HeadImage & { pal: { dark?: string }[] }
       : buildHeadImage(f, set!, view, pose.face.eyes, pose.face.mouth);
-    const angle = Math.round(rawTheta * (Math.abs(rawTheta) > 45 ? 1 : 0.6) + pose.head.tilt);
+    // tilt es cabeceo (se piensa de lado): de frente o de espalda no gira la cabeza, solo le da un toque de vida
+    const angle = Math.round(rawTheta * (Math.abs(rawTheta) > 45 ? 1 : 0.6) + (side ? pose.head.tilt : Math.max(-6, Math.min(6, pose.head.tilt * 0.15))));
     let img = hi.img, px = hi.anchor.x, py = hi.anchor.y;
     if (Math.abs(angle) >= 8) {
       const r = rotSprite(hi.img, angle, hi.anchor.x + 0.5, hi.anchor.y + 0.5);
@@ -428,7 +431,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     neck: J(neck), head: J(add(neck, local(0, d.headW * 0.5))),
   };
   const body = soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : bodyBox(canvas, dx, dy);
-  return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, joints };
+  const full = soft ? bodyBox(canvas, dx, dy) : body;
+  return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, joints };
 }
 
 /** Distancia del hombro a la cadera y ángulos del brazo para llegar a un punto (para manubrios, barras). */

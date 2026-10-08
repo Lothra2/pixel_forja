@@ -93,19 +93,33 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
  * lo mismo (así no salta entre cuadros). Si no cabe ni así, avisa.
  */
 function cropClip(big: BigFrame[], cell: CellSize): { frames: Raster[]; fits: boolean } {
-  // solo el cuerpo decide el encuadre: un balón que sale disparado se recorta
-  let x0 = Infinity, x1 = -Infinity, y0 = Infinity;
-  for (const b of big) {
-    if (!b.body) continue;
-    x0 = Math.min(x0, b.body.x0); x1 = Math.max(x1, b.body.x1); y0 = Math.min(y0, b.body.y0);
-  }
+  // solo el cuerpo decide el encuadre: un balón que sale disparado se recorta.
+  // Si el cuerpo con el pelo cabe, se encuadra con el pelo (así no se corta la cabeza al caer acostado)
+  const union = (full: boolean) => {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity;
+    for (const b of big) {
+      const box = full ? b.full ?? b.body : b.body;
+      if (!box) continue;
+      x0 = Math.min(x0, box.x0); x1 = Math.max(x1, box.x1); y0 = Math.min(y0, b.body?.y0 ?? box.y0);
+    }
+    return { x0, x1, y0 };
+  };
+  const withHair = union(true);
+  const { x0, x1, y0 } = union(false);
   const pivotX = big[0].pivotX, groundRow = big[0].groundRow;
   let left = pivotX - cell / 2;
   const top = groundRow - (cell - 2);
   let fits = true;
   if (isFinite(x0)) {
     if (x1 - x0 + 1 > cell - 2) fits = false;
-    if (x0 < left + 1) left = x0 - 1;
+    if (withHair.x1 - withHair.x0 + 1 <= cell - 2) {
+      if (withHair.x0 < left + 1) left = withHair.x0 - 1;
+      else if (withHair.x1 > left + cell - 2) left = withHair.x1 - cell + 2;
+    } else if (fits) {
+      // el pelo no cabe entero: se centra lo que hay, sin sacar el cuerpo del cuadro
+      if (withHair.x0 < left + 1 || withHair.x1 > left + cell - 2) left = Math.round((withHair.x0 + withHair.x1 + 1) / 2 - cell / 2);
+      left = Math.min(x0 - 1, Math.max(x1 - cell + 2, left));
+    } else if (x0 < left + 1) left = x0 - 1;
     else if (x1 > left + cell - 2) left = x1 - cell + 2;
     if (y0 < top + 1) fits = false;
   }

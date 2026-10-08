@@ -58,7 +58,8 @@ export const die: AnimDef = {
     const L = c.L;
     const hurt = P(c, { torso: -12, head: { tilt: -10 }, arms: { near: { shoulder: 40, elbow: 40, spread: 30 }, far: { shoulder: 50, elbow: 30, spread: 30 } }, face: { eyes: 'hurt', mouth: 'o' } });
     const kneel = P(c, { torso: 20, roll: 20, legs: { near: { x: 0.3 * L, y: 0.55 * L }, far: { x: -0.5 * L, y: 0.45 * L, toe: 60 } }, arms: { near: { shoulder: 0, elbow: 10 }, far: { shoulder: 0, elbow: 10 } }, face: { eyes: 'hurt', mouth: 'frown' } });
-    const down = P(c, { torso: 88, roll: 90, legs: { near: { x: -0.9 * L, y: 0.05 * L, toe: 80 }, far: { x: -0.85 * L, y: 0.2 * L, toe: 80 } }, arms: { near: { shoulder: 150, elbow: 20 }, far: { shoulder: 170, elbow: 10 } }, face: { eyes: 'closed', mouth: 'line' } });
+    // acostado: se corre para que cuerpo y cabeza queden dentro del cuadro (de espalda el eje x va al revés)
+    const down = P(c, { torso: 88, roll: 90, x: (c.view === 'back' ? 1 : -1) * 1.1 * L, legs: { near: { x: -0.9 * L, y: 0.05 * L, toe: 80 }, far: { x: -0.85 * L, y: 0.2 * L, toe: 80 } }, arms: { near: { shoulder: 150, elbow: 20 }, far: { shoulder: 170, elbow: 10 } }, face: { eyes: 'closed', mouth: 'line' } });
     return [P(c), hurt, hurt, kneel, kneel, down, down, down];
   },
 };
