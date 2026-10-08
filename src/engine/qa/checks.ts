@@ -81,7 +81,9 @@ export function runQA(f: Ficha, clip: RenderedClip): QAReport {
     where: clipped.length ? `#${clipped.map((x) => x.i).join(', #')}` : undefined,
   });
   // pies en el piso
-  const off = b.map((x, i) => ({ i, y1: x.y1 })).filter((x) => !clip.airborne[x.i] && x.y1 !== groundY);
+  // midiendo el cuerpo sin armas, un arma apoyada debajo puede tapar la fila del contorno: se acepta un pixel
+  const touches = (y1: number) => y1 === groundY || (!!clip.bodies && y1 === groundY - 1);
+  const off = b.map((x, i) => ({ i, y1: x.y1 })).filter((x) => !clip.airborne[x.i] && !touches(x.y1));
   items.push({
     check: 'ground',
     severity: off.length ? 'error' : 'ok',
