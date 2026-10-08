@@ -71,6 +71,11 @@ interface FichaBase {
   customAnims?: CustomAnim[];
 }
 
+/** cuero (pícaro, bárbaro), malla (guerrero), placas (paladín), túnica (mago, nigromante) */
+export type ArmorKind = 'cuero' | 'malla' | 'placas' | 'tunica';
+export const ARMOR_KINDS: ArmorKind[] = ['cuero', 'malla', 'placas', 'tunica'];
+export const ARMOR_DEFAULT_COLOR: Record<ArmorKind, string> = { cuero: '#7a4a2a', malla: '#8f98a3', placas: '#aeb8c4', tunica: '#4b3a8c' };
+
 export interface HumanFicha extends FichaBase {
   body: { skeleton: 'human'; proportions: Proportions };
   palette: {
@@ -103,6 +108,18 @@ export interface HumanFicha extends FichaBase {
     jacket?: string | null;
     /** calzado */
     shoes?: 'tenis' | 'guayos' | 'botas' | 'descalzo';
+    /** armadura o traje de RPG encima de la ropa */
+    armor?: ArmorKind | null;
+    /** color de la armadura: metal, cuero o tela */
+    armorColor?: string;
+    /** ribetes y detalles (dorado, plateado) */
+    trim?: string | null;
+    /** capa (color); null o sin valor, no hay */
+    cape?: string | null;
+    /** hombreras */
+    pauldrons?: boolean;
+    /** cinturón (color) */
+    belt?: string | null;
   };
   /** glasses: color del marco si tiene lentes (se dibujan con sello, no se reducen) */
   face: { eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean };

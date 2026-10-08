@@ -1,11 +1,11 @@
 import { type Raster } from '../core/raster';
-import { type HumanFicha, type CellSize, usesAvatar } from '../sheet/ficha';
+import { type HumanFicha, type CellSize, usesAvatar, ARMOR_DEFAULT_COLOR } from '../sheet/ficha';
 import { dimsFor, type Dims } from '../rig/dims';
 import { type Pose, type Arm, type Foot, solveTwoBone } from '../rig/pose';
 import { type Ramp, SHADOW, BASE, LIGHT, makeRamp } from '../color/ramp';
 import { LayerCanvas, Layer, finalizeOutlines, toRaster, packHex } from './canvas';
 import { Materials } from './materials';
-import { Part, stroke, blob, rot } from './part';
+import { Part, stroke, blob, rot, polygon } from './part';
 import { buildHeadImage, type View, type HeadImage } from './head';
 import { renderHeadModel, HEAD_STYLES } from '../head3d/render';
 import { modelFromAvatar } from '../head3d/avatar';
@@ -91,7 +91,13 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const fo = f.outfit;
   if (fo.pattern && fo.pattern !== 'liso') mats.add('top2', ink(makeRamp(fo.pattern2 ?? '#f2f2f2')));
   if (fo.jacket) mats.add('jacket', ink(makeRamp(fo.jacket)));
-  const shoeMat = fo.shoes === 'descalzo' ? 'skin' : 'shoes';
+  // armaduras y trajes de RPG
+  const armor = fo.armor ?? null;
+  if (armor) mats.add('armor', ink(makeRamp(fo.armorColor ?? ARMOR_DEFAULT_COLOR[armor])));
+  if (fo.trim) mats.add('trim', ink(makeRamp(fo.trim)));
+  if (fo.cape) mats.add('cape', ink(makeRamp(fo.cape)));
+  if (fo.belt) mats.add('belt', ink(makeRamp(fo.belt)));
+  const shoeMat = armor === 'placas' ? 'armor' : fo.shoes === 'descalzo' ? 'skin' : 'shoes';
   const side = view === 'side';
   const sign = view === 'back' ? -1 : 1; // de espalda, lo "cercano" queda a la izquierda
   // en vista lateral el torso se inclina. De frente o espalda, `torso` no rota (se ve igual) y `roll` sí
@@ -174,11 +180,14 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const drawArm = (far: boolean, layer: number) => {
     const p = far ? arms.far : arms.near;
     const part = new Part();
-    const sleeve = fo.jacket ? 'long' : f.outfit.sleeves;
-    const sm = fo.jacket ? 'jacket' : 'top';
-    stroke(part, p.root, p.mid, d.armT, (t) => (sleeve === 'long' || (sleeve === 'short' && t < 0.6) ? sm : 'skin'));
-    stroke(part, p.mid, p.end, d.armT, () => (sleeve === 'long' ? sm : 'skin'));
-    blob(part, p.end, d.hand + (f.outfit.gloves ? 1 : 0), handMat);
+    const sleeve = fo.jacket || armor === 'tunica' ? 'long' : f.outfit.sleeves;
+    const sm = fo.jacket ? 'jacket' : armor === 'tunica' ? 'armor' : 'top';
+    // malla y placas cubren el brazo; con placas también el antebrazo y la mano (guantelete)
+    const metalUp = armor === 'malla' || armor === 'placas', metalLow = armor === 'placas';
+    stroke(part, p.root, p.mid, d.armT, (t) => (metalUp ? 'armor' : sleeve === 'long' || (sleeve === 'short' && t < 0.6) ? sm : 'skin'));
+    stroke(part, p.mid, p.end, d.armT, () => (metalLow ? 'armor' : sleeve === 'long' ? sm : 'skin'));
+    blob(part, p.end, d.hand + (f.outfit.gloves || metalLow ? 1 : 0), metalLow ? 'armor' : handMat);
+    if (fo.pauldrons && armor) blob(part, [p.root[0], p.root[1] - 0.5], d.armT + 2, fo.trim ? 'trim' : 'armor', BASE);
     commit(part, layer, (side && far) || (diag && !far));
   };
 
@@ -189,7 +198,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     stroke(part, p.root, p.mid, d.legT, () => (bottom === 'skirt' ? 'skin' : 'bottom'));
     const socksFrom = socks === 'knee' ? 0.2 : socks === 'low' ? 0.8 : 2;
     const boots = fo.shoes === 'botas';
-    stroke(part, p.mid, p.end, d.legT, (t) => (boots && t >= 0.6 ? 'shoes' : bottom === 'pants' ? 'bottom' : bottom === 'shorts' && t < 0.2 ? 'bottom' : t >= socksFrom ? 'socks' : 'skin'));
+    stroke(part, p.mid, p.end, d.legT, (t) => (armor === 'placas' && t >= 0.3 ? 'armor' : boots && t >= 0.6 ? 'shoes' : bottom === 'pants' ? 'bottom' : bottom === 'shorts' && t < 0.2 ? 'bottom' : t >= socksFrom ? 'socks' : 'skin'));
     const an: [number, number] = [Math.round(p.end[0]), Math.round(p.end[1])];
     const off = Math.floor((d.legT - 1) / 2);
     const toe = p.foot?.toe ?? 0;
@@ -256,8 +265,20 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
             const open = view === 'front' ? Math.abs(col - mid) < d.torsoW * 0.22 : side ? rr > tx1 - 1.5 : false;
             if (!open) mat = 'jacket';
           }
+          // armadura encima: cuero con correa cruzada, malla tejida, placas con juntas, túnica con ribete al centro
+          if (armor) {
+            if (armor === 'cuero') {
+              mat = 'armor';
+              // sin mangas: chaleco abierto (el pecho del bárbaro)
+              if (f.outfit.sleeves === 'none' && view === 'front' && Math.abs(col - mid) < d.torsoW * 0.2) mat = 'skin';
+              if (!side && Math.abs(col - (row * (d.torsoW - 1)) / shirtRows) <= 0.5) { mat = 'armor'; slot = SHADOW; }
+            } else if (armor === 'malla') { mat = 'armor'; slot = topRow ? LIGHT : (col + row) % 2 ? SHADOW : BASE; }
+            else if (armor === 'placas') { mat = 'armor'; slot = topRow ? LIGHT : row % 3 === 2 ? SHADOW : !side && Math.abs(col - mid) < 0.6 ? LIGHT : BASE; }
+            else { mat = 'armor'; if (fo.trim && view === 'front' && Math.abs(col - mid) < 0.6) mat = 'trim'; }
+            if (fo.trim && topRow && armor !== 'tunica') mat = 'trim';
+          }
           // cuello en V (piel) o de polo (puntas claras y la tapeta)
-          if (view === 'front' && !fo.jacket) {
+          if (view === 'front' && !fo.jacket && !armor) {
             if (fo.collar === 'v' && ((row === 0 && Math.abs(col - mid) <= 1) || (row === 1 && Math.abs(col - mid) < 0.6))) mat = 'skin';
             if (fo.collar === 'polo') {
               if (row === 0 && Math.abs(Math.abs(col - mid) - 1.5) <= 0.6) { mat = 'top'; slot = LIGHT; }
@@ -265,11 +286,18 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
             }
           }
         }
+        if (isPants && armor === 'tunica') mat = 'armor';
+        // cinturón: la fila de arriba del pantalón, con hebilla al centro de frente
+        if (isPants && fo.belt && u > d.pantsRows - 0.5) {
+          const col = Math.round(rr - tx0), mid = (d.torsoW - 1) / 2;
+          mat = view === 'front' && Math.abs(col - mid) < 0.6 ? (fo.trim ? 'trim' : 'belt') : 'belt';
+          slot = view === 'front' && Math.abs(col - mid) < 0.6 ? LIGHT : BASE;
+        }
         part.set(x, y, mat, slot);
       }
     // número de camiseta, de frente o de espalda (contorno de la camisa)
     const numPx = new Set<number>();
-    const num = f.outfit.number;
+    const num = armor ? undefined : f.outfit.number;
     if (num && !side && d.torsoW >= 9 && Math.abs(theta) < 20) {
       const digits = num.slice(0, 2).split('').filter((ch) => DIGITS[ch]);
       const wNum = digits.length * 4 - 1;
@@ -309,15 +337,32 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     }
   };
 
-  const drawSkirt = () => {
-    if (f.outfit.bottom !== 'skirt') return;
+  // capa: detrás del cuerpo; de espalda va encima del torso. Se va hacia atrás con el movimiento (como el pelo)
+  const drawCape = () => {
+    if (!fo.cape) return;
     const part = new Part();
-    const len = Math.max(2, Math.round(d.legUpper * 0.9));
+    const bot = -(d.legUpper + Math.round(d.legLower * 0.6));
+    const sway = Math.round((pose.hair?.dx ?? 0) * 2);
+    const top = d.torsoH - 1;
+    const pts: [number, number][] = side
+      ? [[tx0 - 1, top], [tx0 + 3, top], [tx0 + 1 + sway, bot], [tx0 - 4 + sway, bot]]
+      : [[tx0, top], [tx1, top], [tx1 + 2, bot], [tx0 - 2, bot]];
+    polygon(part, pts.map(([r, uu]) => local(side ? r : r * sign, uu)), 'cape');
+    commit(part, view === 'back' ? Layer.ArmUp : Layer.Behind);
+  };
+
+  const drawSkirt = () => {
+    const robe = armor === 'tunica';
+    if (f.outfit.bottom !== 'skirt' && !robe) return;
+    const part = new Part();
+    // túnica: larga hasta los tobillos, del color de la armadura y con ribete abajo
+    const len = robe ? d.legUpper + d.legLower - 1 : Math.max(2, Math.round(d.legUpper * 0.9));
     for (let v = -d.pantsRows; v <= len; v++) {
       const grow = v > 0 ? Math.min(2, Math.ceil((v / len) * 2)) : 0;
       for (let r = tx0 - grow; r <= tx1 + grow; r++) {
         const [x, y] = local(side ? r : r * sign, -v);
-        part.set(Math.round(x), Math.round(y), 'bottom', v === len ? SHADOW : BASE);
+        if (robe) part.set(Math.round(x), Math.round(y), v === len && fo.trim ? 'trim' : 'armor', v === len && !fo.trim ? SHADOW : BASE);
+        else part.set(Math.round(x), Math.round(y), 'bottom', v === len ? SHADOW : BASE);
       }
     }
     commit(part, Layer.Skirt);
@@ -400,6 +445,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     drawLeg(false, Layer.NearLeg);
     if (view === 'back') { drawArm(true, L_FAR_ARM); drawArm(false, L_NEAR_ARM); }
   }
+  drawCape();
   drawSkirt();
   drawTorso();
   drawHead();
