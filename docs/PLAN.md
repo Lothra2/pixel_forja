@@ -16,6 +16,7 @@ criterio de aceptación por cumplido hay que pasar las imágenes reales por el e
 | 5 | Paquetes de básquet, vóley, tenis, béisbol, natación, atletismo, artes marciales, skate, bici y RPG, con implementos dibujados con código | Hecho |
 | 6 | Editor de poses con línea de tiempo, papel cebolla e interpolación | Hecho |
 | 7 | Exportadores Aseprite, Godot, Unity, zip de cuadros, paquete de personaje. Galería y "sorpréndeme" | Hecho |
+| Fotos | Modo busto para selfies: cara, ojos, cejas, pelo, barba, camisa y estampado. Lo de abajo se completa con ropa por defecto | Hecho |
 | Netlify | `netlify.toml` listo | Falta conectar tu cuenta |
 
 ## Decisiones que tomé sin preguntarte
@@ -48,6 +49,22 @@ criterio de aceptación por cumplido hay que pasar las imágenes reales por el e
 7. **El encuadre lo decide el cuerpo.** Un balón que sale disparado se recorta. Si un salto choca con
    el techo de la celda, ese cuadro se baja solo lo justo, porque el juego igual mueve el sprite al saltar.
 
+## Modo busto (fotos y selfies)
+
+El spec pedía dibujos, no fotos. Igual mandaste tu selfie, así que agregué un camino aparte para fotos de
+busto. Se activa solo cuando el borde de la imagen es muy variado (un fondo real) o cuando la imagen corta
+el cuerpo abajo. También se elige a mano en el paso de fondo.
+
+- La cara es la mancha de piel más grande del centro. Su ancho da la escala de todo lo demás.
+- Ojos y cejas se buscan por separado a cada lado, así una cabeza inclinada no los cruza.
+- La barba se detecta por textura: piel con menos croma o más oscura que la frente pasa a barba.
+- La camisa crece desde abajo al centro. Un estampado de color fuerte pasa al pecho del personaje como
+  un parche de ese color. El texto no se puede leer a ese tamaño.
+- La cabeza de una foto es más alargada que la de un chibi. Se comprime hasta 1.12 de alto por ancho.
+- Piernas, short, medias y zapatos no salen en la foto: van por defecto y se cambian en Estilo.
+
+`scripts/personaje.ts` arma de una vez el paquete de un personaje: comparación, GIF, hoja del juego y ficha.
+
 ## Cómo funciona
 
 - **Ficha** (`src/engine/sheet/ficha.ts`): JSON versionado (v2). Guarda el cuerpo, las proporciones,
@@ -68,18 +85,19 @@ criterio de aceptación por cumplido hay que pasar las imágenes reales por el e
 
 ## Pruebas
 
-- **Vitest, 45 pruebas.** Cubren el control de calidad de las 75 animaciones humanas con los 6
+- **Vitest, 47 pruebas.** Cubren el control de calidad de las 75 animaciones humanas con los 6
   personajes a 48 px, el preajuste del juego a 32 y 64, los preajustes juvenil y realista en 3 tamaños,
   RPG en 4 direcciones y Thor en 3 tamaños. También que cada exportador abra bien (Aseprite se parsea
   cuadro por cuadro, Godot, Unity, zip y GIF), la migración v1 a v2 y las imágenes doradas.
-- **Playwright, 6 pruebas**, en computadora y teléfono. Recorren el flujo completo de persona y de
-  animal, el editor de poses, la galería y las descargas.
+- **Playwright, 8 pruebas**, en computadora y teléfono. Recorren el flujo completo de persona y de
+  animal, el editor de poses, la galería, las descargas y una selfie de busto.
 - `npm run entregables` revisó 604 clips sin errores de calidad. La tabla está en `docs/final/calidad.md`.
 
 ## Lo que falta o no quedó perfecto
 
-- **Imágenes reales.** Todo está probado con dibujos sintéticos. Con tus imágenes van a aparecer casos
-  nuevos, sobre todo en zonas y cabeza.
+- **Imágenes reales.** Los dibujos están probados con imágenes sintéticas. Fotos reales probé una sola,
+  tu selfie. Con otras fotos van a salir casos nuevos: luz dura, gorra, pelo largo o cara de lado.
+- **Tono de piel en fotos.** Sale un poco rosado. Se ajusta en Estilo.
 - **Exportadores sin abrir en su programa.** No tengo Aseprite, Godot ni Unity aquí. Los archivos siguen
   el formato publicado y las pruebas los leen de vuelta, pero no los abrí en cada programa.
 - **El 3/4 lateral no es un 3/4 real de la cabeza.** Es la cabeza de frente con la cara corrida.

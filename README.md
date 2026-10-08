@@ -10,6 +10,7 @@ patas. Sin IA y sin servidor: la imagen nunca sale del equipo.
   béisbol, natación, atletismo, artes marciales, skate, bici y RPG.
 - 10 animaciones de animal (boxer, perro, mapache, gato).
 - Vista lateral y 4 direcciones tipo RPG. Tamaños de 32, 48 y 64 px. Cuerpo chibi, juvenil o realista.
+- Modo busto para selfies y fotos: cara, barba, cejas, camisa y estampado. El resto del cuerpo va por defecto.
 - Editor de poses, galería, "sorpréndeme" y estudio en español e inglés.
 - Exporta hoja PNG + JSON (Phaser), preajuste de Fútbol Familia GG, Aseprite, Godot 4, Unity,
   PNG por cuadro, GIF y la ficha del personaje.
@@ -30,6 +31,7 @@ npm run forja -- build samples/gabo.png --out out/gabo --export sheet,ffgg,godot
 npm run forja -- build samples/thor.png --animal boxer --out out/thor
 npm run forja -- build mi_dibujo.png --preset juvenil --anims football,rpg --views side,front,back,left
 npm run forja -- render out/gabo/gabo.ficha.json --out out/gabo2 --anims all
+npx tsx scripts/personaje.ts samples/selfie.png out/selfie selfie   # comparación, GIF, hoja del juego y ficha
 ```
 
 ## Pruebas

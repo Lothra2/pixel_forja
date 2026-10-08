@@ -1,9 +1,11 @@
 import type {
   BrushStroke, HeadSpec, ZoneEdit, Ficha, HumanFicha, CellSize, QAReport, BuildReport, Species, Proportions, ViewName,
-  ExportKind, ExportPlan, Variant,
+  ExportKind, ExportPlan, Variant, ImageMode,
 } from '../engine/index';
 
 export interface AnalyzeParams {
+  /** cuerpo entero o busto; sin valor, lo detecta el motor */
+  mode?: ImageMode;
   bgTolerance: number;
   bgStrokes: BrushStroke[];
   head?: HeadSpec;
@@ -18,6 +20,7 @@ export interface AnalyzeResult {
   zone: Uint8Array;
   head: HeadSpec;
   headGuessed: boolean;
+  mode: ImageMode;
 }
 
 export interface FrameSet {

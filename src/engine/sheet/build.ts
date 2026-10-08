@@ -1,8 +1,10 @@
 import type { Raster } from '../core/raster';
 import { makeWorkImage, labAt, type WorkImage } from '../analyze/work';
-import { removeBackground, maskBBox, type BrushStroke, type Mask } from '../analyze/background';
+import { removeBackground, maskBBox, hasTransparency, type BrushStroke, type Mask } from '../analyze/background';
+import { analyzePortrait, type PortraitInfo } from '../analyze/portrait';
+import { kmeans } from '../color/kmeans';
 import { proposeZones, applyZoneEdits, ZONE_ID, type HeadSpec, type ZoneEdit, type ZoneAnalysis, type Zone } from '../analyze/zones';
-import { type Lab, labToHex } from '../color/oklab';
+import { type Lab, labToHex, deltaE } from '../color/oklab';
 import { makeRamp } from '../color/ramp';
 import { pixelateHead } from '../head/pixelate';
 import { dimsFor } from '../rig/dims';
@@ -21,10 +23,14 @@ export interface BuildInput {
   face?: Partial<Ficha['face']>;
   sizes?: CellSize[];
   proportions?: Proportions;
+  /** forzar cuerpo entero o busto (si no, se detecta) */
+  mode?: ImageMode;
   /** vistas extra subidas por el usuario (imagen de lado mirando a la derecha, y de espalda) */
   extra?: { side?: Raster; back?: Raster };
   palette?: Partial<Ficha['palette']>;
 }
+
+export type ImageMode = 'full' | 'bust';
 
 export interface Analysis {
   work: WorkImage;
@@ -32,17 +38,63 @@ export interface Analysis {
   zones: ZoneAnalysis;
   /** zona final por pixel, con las correcciones del usuario */
   zone: Uint8Array;
+  /** cuerpo entero (dibujo) o busto (foto o retrato) */
+  mode: ImageMode;
+  portrait?: PortraitInfo;
+}
+
+/**
+ * ¿Cuerpo entero o busto? Un dibujo de cuerpo entero tiene un borde casi de un solo color.
+ * Una foto tiene un borde variado, y un busto además queda cortado por el borde de abajo.
+ */
+export function detectMode(work: WorkImage): ImageMode {
+  if (hasTransparency(work)) return 'full';
+  const { w, h } = work.raster;
+  const lab = work.lab;
+  const at = (i: number): Lab => [lab[i * 3], lab[i * 3 + 1], lab[i * 3 + 2]];
+  const border: number[] = [];
+  for (let x = 0; x < w; x++) border.push(x, (h - 1) * w + x);
+  for (let y = 1; y < h - 1; y++) border.push(y * w, y * w + w - 1);
+  const km = kmeans(border.map(at), 4, 3);
+  const top = Math.max(...km.counts);
+  const uniform = top / border.length;
+  if (uniform < 0.55) return 'bust';
+  const main = km.centers[km.counts.indexOf(top)];
+  let cut = 0;
+  for (let x = 0; x < w; x++) if (deltaE(at((h - 1) * w + x), main) > 0.1) cut++;
+  return cut > w * 0.6 ? 'bust' : 'full';
 }
 
 export const DEFAULT_BG_TOLERANCE = 0.06;
 
-export function analyzeImage(image: Raster, input: Pick<BuildInput, 'bgTolerance' | 'bgStrokes' | 'head' | 'zoneEdits'>): Analysis {
-  const work = makeWorkImage(image);
+export function analyzeImage(image: Raster, input: Pick<BuildInput, 'bgTolerance' | 'bgStrokes' | 'head' | 'zoneEdits' | 'mode'>, work0?: WorkImage): Analysis {
+  const work = work0 ?? makeWorkImage(image);
+  const mode = input.mode ?? detectMode(work);
+  if (mode === 'bust') {
+    const p = analyzePortrait(work, input.head);
+    const mask = p.mask;
+    for (const st of input.bgStrokes ?? []) applyStroke(mask, p.zones.zone, work.raster.w, work.raster.h, st);
+    const zone = applyZoneEdits(p.zones, mask, input.zoneEdits ?? []);
+    return { work, mask, zones: p.zones, zone, mode, portrait: p.info };
+  }
   const mask = removeBackground(work, { tolerance: input.bgTolerance ?? DEFAULT_BG_TOLERANCE, strokes: input.bgStrokes });
   const zones = proposeZones(work, mask, input.head);
   const zone = applyZoneEdits(zones, mask, input.zoneEdits ?? []);
-  return { work, mask, zones, zone };
+  return { work, mask, zones, zone, mode };
 }
+
+/** Pincel de fondo en modo busto: "es fondo" borra, "es personaje" agrega como piel/ropa según la altura. */
+function applyStroke(mask: Mask, zone: Uint8Array, w: number, h: number, st: BrushStroke) {
+  for (let y = Math.max(0, Math.floor(st.y - st.r)); y <= Math.min(h - 1, st.y + st.r); y++)
+    for (let x = Math.max(0, Math.floor(st.x - st.r)); x <= Math.min(w - 1, st.x + st.r); x++) {
+      if ((x - st.x) ** 2 + (y - st.y) ** 2 > st.r * st.r) continue;
+      const i = y * w + x;
+      if (st.mode === 'bg') { mask[i] = 0; zone[i] = 0; }
+      else if (!mask[i]) { mask[i] = 1; zone[i] = ZONE_ID.skin; }
+    }
+}
+
+const BUST_DEFAULTS = { bottom: '#2f3440', socks: '#f2f2f2', shoes: '#e8e8ec' };
 
 const FALLBACK: Record<string, string> = {
   skin: '#f1c7a5', hair: '#4a3020', top: '#4a7bd0', bottom: '#2d3a5a', socks: '#f2f2f2', shoes: '#3a3a44', accessory: '#e04a6a',
@@ -206,7 +258,19 @@ export function buildFicha(image: Raster, input: BuildInput, analysis?: Analysis
     shoes: makeRamp(color('shoes')),
     accessory: makeRamp(color('accessory')),
   };
-  const guessed = inferOutfit(a);
+  const bust = a.mode === 'bust';
+  if (bust) {
+    // en un busto no se ven las piernas: ropa deportiva por defecto, se cambia en el estudio
+    for (const z of ['bottom', 'socks', 'shoes'] as Zone[]) {
+      const i = missing.indexOf(z);
+      if (i >= 0) missing.splice(i, 1);
+    }
+    palette.bottom = makeRamp(BUST_DEFAULTS.bottom);
+    palette.socks = makeRamp(BUST_DEFAULTS.socks);
+    palette.shoes = makeRamp(BUST_DEFAULTS.shoes);
+    if (a.portrait?.print) palette.accessory = makeRamp(a.portrait.print);
+  }
+  const guessed: Ficha['outfit'] = bust ? { sleeves: 'short', bottom: 'shorts', socks: 'low', ...(a.portrait?.print ? { print: a.portrait.print } : {}) } : inferOutfit(a);
   const isDress = (guessed as { dress?: boolean }).dress;
   delete (guessed as { dress?: boolean }).dress;
   if (isDress && !input.palette?.bottom) palette.bottom = palette.top;
@@ -219,11 +283,11 @@ export function buildFicha(image: Raster, input: BuildInput, analysis?: Analysis
     body: { skeleton: 'human', proportions: { ...DEFAULT_PROPORTIONS } },
     palette,
     outfit,
-    face: { eyes: 'round', mouth: 'smile', blush: true, brows: false, glasses: null, ...input.face },
+    face: { eyes: 'round', mouth: bust ? 'line' : 'smile', blush: !a.portrait?.beard, brows: !!a.portrait?.brows, thickBrows: !!a.portrait?.brows, glasses: null, ...input.face },
     heads: {},
     physics: { hairLag: 1 },
   };
-  const glasses = input.face?.glasses === null ? null : detectGlasses(a);
+  const glasses = input.face?.glasses === null || bust ? null : detectGlasses(a);
   if (glasses && input.face?.glasses === undefined) ficha.face.glasses = glasses.color;
   const headZone = glasses && ficha.face.glasses ? glasses.zone : a.zone;
   if (input.proportions) ficha.body.proportions = { ...input.proportions };

@@ -229,11 +229,27 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
         ),
       );
     }
+    // estampado del pecho: un parche de color (la letra no cabe), de frente y de lado
+    const print = f.outfit.print;
+    if (print && view !== 'back' && Math.abs(theta) < 20 && d.torsoW >= 7) {
+      const pw = d.torsoW >= 12 ? 3 : 2, ph = d.torsoH - d.pantsRows >= 7 ? 3 : 2;
+      const x0 = side ? tx1 - pw : tx1 - pw - 1;
+      const y0 = -d.torsoH + 2;
+      for (let j = 0; j < ph; j++)
+        for (let i = 0; i < pw; i++) {
+          const px = x0 + i + Math.round(shear * (d.torsoH - 2 - j)), py = y0 + j;
+          // un patrón de letras: pixeles alternos en la fila del medio
+          if (j === 1 && i % 2 === 1 && ph >= 3) continue;
+          if (part.get(px, py)?.mat === 'top') numPx.add(Part.key(px, py) + 0.5);
+        }
+    }
     const numPaint = { color: packHex(f.outfit.numberColor ?? '#ffffff'), dark: mats.paint('top', 0).dark, mat: mats.id('top') };
+    const printPaint = print ? { color: packHex(print), dark: mats.paint('top', 0).dark, mat: mats.id('top') } : numPaint;
     for (const [x, y, p] of part.entries()) {
       let slot = p.slot;
       if (!part.has(x - 1, y) && slot >= BASE) slot = SHADOW;
-      canvas.put(x, y, Layer.Torso, numPx.has(Part.key(x, y)) ? numPaint : mats.paint(p.mat, slot));
+      const k = Part.key(x, y);
+      canvas.put(x, y, Layer.Torso, numPx.has(k) ? numPaint : numPx.has(k + 0.5) ? printPaint : mats.paint(p.mat, slot));
     }
   };
 
@@ -269,7 +285,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
         const i = img.idx[y * img.w + x];
         if (i < 0) continue;
         const e = hi.pal[i];
-        const matName = e.mat === 'face' ? 'skin' : e.mat;
+        const matName = e.mat === 'face' ? 'skin' : e.mat === 'beard' ? 'hair' : e.mat;
         const paint = mats.custom(e.hex, matName);
         if (e.back) canvas.put(ox + x + Math.round(hair.dx), oy + y + Math.round(hair.dy), Layer.HairBack, paint);
         else canvas.put(ox + x, oy + y, Layer.Head, paint);

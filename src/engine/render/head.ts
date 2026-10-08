@@ -2,7 +2,7 @@ import { type HumanFicha, type HeadBitmap, type HeadSet, PIXEL_CHARS } from '../
 import { OUTLINE, BASE } from '../color/ramp';
 import { hexToLab, labToHex } from '../color/oklab';
 import { stampClass } from '../rig/dims';
-import { EYES, MOUTHS, BLUSH, BROW, BROW_ANGRY, BROW_SAD, stampOrigin, mirrorStamp, type Stamp, type EyeExpr, type MouthExpr } from '../head/stamps';
+import { EYES, MOUTHS, BLUSH, BROW, BROW_THICK, BROW_ANGRY, BROW_SAD, stampOrigin, mirrorStamp, type Stamp, type EyeExpr, type MouthExpr } from '../head/stamps';
 import type { IndexImage } from './rotsprite';
 
 export type View = 'side' | 'front' | 'back';
@@ -10,7 +10,7 @@ export type View = 'side' | 'front' | 'back';
 export interface HeadPal {
   hex: string;
   /** material para el contorno (hair, skin, accessory, face) */
-  mat: 'hair' | 'skin' | 'accessory' | 'face';
+  mat: 'hair' | 'skin' | 'accessory' | 'face' | 'beard';
   /** pelo largo que cuelga detrás del cuerpo */
   back: boolean;
 }
@@ -95,8 +95,10 @@ function stampFace(
   const skinLab = hexToLab(f.palette.skin[BASE]);
   const blushLab = hexToLab('#ff5a78');
   const blush = labToHex([skinLab[0] * 0.7 + blushLab[0] * 0.3 - 0.03, skinLab[1] * 0.5 + blushLab[1] * 0.5, skinLab[2] * 0.6 + blushLab[2] * 0.4]);
+  // con barba la línea de la boca se pierde: se dibuja color labio
+  const bearded = hb.palette.some((e) => e.zone === 'beard');
   const colors: Record<string, string> = {
-    o: darkEye, i: iris, w: '#ffffff', m: f.palette.skin[OUTLINE], r: '#b8323f', b: blush, h: f.palette.hair[OUTLINE],
+    o: darkEye, i: iris, w: '#ffffff', m: bearded ? '#7a3b3b' : f.palette.skin[OUTLINE], r: '#b8323f', b: blush, h: f.palette.hair[OUTLINE],
     g: f.face.glasses || '#1d3c78',
   };
   const shift = view === 'side' && !fromImage ? (cls >= 48 ? 1 : 0) : 0;
@@ -119,7 +121,7 @@ function stampFace(
   const rx = r.x - Math.ceil((ew - 1) / 2) + shift;
   const ey0 = eyeY - Math.floor((eh - 1) / 2);
   if (f.face.brows || eyesExpr === 'angry' || eyesExpr === 'sad') {
-    const b = eyesExpr === 'angry' ? BROW_ANGRY[cls] : eyesExpr === 'sad' ? BROW_SAD[cls] : BROW[cls];
+    const b = eyesExpr === 'angry' ? BROW_ANGRY[cls] : eyesExpr === 'sad' ? BROW_SAD[cls] : f.face.thickBrows ? BROW_THICK[cls] : BROW[cls];
     const by = ey0 - 1 - b.length;
     put(b, lx, by);
     if (!single) put(mirrorStamp(b), rx + ew - b[0].length, by);

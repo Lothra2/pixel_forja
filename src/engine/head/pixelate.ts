@@ -9,8 +9,10 @@ import { type HeadBitmap, type HeadZone, PIXEL_CHARS } from '../sheet/ficha';
 import { EYES } from './stamps';
 import { stampClass } from '../rig/dims';
 
-const HEAD_ZONES: HeadZone[] = ['hair', 'skin', 'accessory'];
-const TONES: Record<HeadZone, number> = { hair: 4, skin: 3, accessory: 3 };
+const HEAD_ZONES: HeadZone[] = ['hair', 'skin', 'accessory', 'beard'];
+/** alto máximo de la cabeza respecto al ancho, en pixeles de destino */
+const MAX_ASPECT = 1.12;
+const TONES: Record<HeadZone, number> = { hair: 4, skin: 3, accessory: 3, beard: 3 };
 
 /**
  * Pixela la cabeza zona por zona:
@@ -31,6 +33,9 @@ export function pixelateHead(
   const { w: W, h: H } = img.raster;
   const { box } = head;
   const k = box.w / headW;
+  // estilo de juego: una cabeza muy alta (foto, dibujo realista) se achata hacia lo redondo.
+  // ky > k = cada pixel de destino toma más filas de la imagen
+  const ky = box.h / box.w > MAX_ASPECT ? box.h / (headW * MAX_ASPECT) : k;
   const [e1, e2] = head.eyes[0].x <= head.eyes[1].x ? head.eyes : [head.eyes[1], head.eyes[0]];
   const mx = (e1.x + e2.x) / 2;
 
@@ -40,11 +45,11 @@ export function pixelateHead(
   const top = box.y;
   const cols = halfCols * 2;
   // pelo largo: se extiende hacia abajo mientras haya pelo en el ancho de la cabeza
-  let rows = Math.ceil(box.h / k);
-  const maxRows = Math.ceil((box.h * 1.8) / k);
+  let rows = Math.ceil(box.h / ky);
+  const maxRows = Math.ceil((box.h * 1.8) / ky);
   while (rows < maxRows) {
     let hair = 0, tot = 0;
-    for (let y = Math.floor(top + rows * k); y < top + (rows + 1) * k && y < H; y++)
+    for (let y = Math.floor(top + rows * ky); y < top + (rows + 1) * ky && y < H; y++)
       for (let x = Math.max(0, Math.floor(left)); x < left + cols * k && x < W; x++) {
         tot++;
         if (mask[y * W + x] && zone[y * W + x] === ZONE_ID.hair) hair++;
@@ -52,11 +57,11 @@ export function pixelateHead(
     if (tot === 0 || hair / tot < 0.08) break;
     rows++;
   }
-  const boxRows = Math.ceil(box.h / k);
+  const boxRows = Math.ceil(box.h / ky);
 
   // tonos por zona (k-means en los pixeles de esa zona dentro de la cabeza)
-  const zonePixels: Record<HeadZone, Lab[]> = { hair: [], skin: [], accessory: [] };
-  for (let y = Math.max(0, Math.floor(top)); y < Math.min(H, top + rows * k); y++)
+  const zonePixels: Record<HeadZone, Lab[]> = { hair: [], skin: [], accessory: [], beard: [] };
+  for (let y = Math.max(0, Math.floor(top)); y < Math.min(H, top + rows * ky); y++)
     for (let x = Math.max(0, Math.floor(left)); x < Math.min(W, left + cols * k); x++) {
       const p = y * W + x;
       if (!mask[p]) continue;
@@ -64,8 +69,13 @@ export function pixelateHead(
       if (z === ZONE_ID.hair) zonePixels.hair.push(labAt(img, p));
       else if (z === ZONE_ID.skin) zonePixels.skin.push(labAt(img, p));
       else if (z === ZONE_ID.accessory) zonePixels.accessory.push(labAt(img, p));
+      else if (z === ZONE_ID.beard) {
+        // los tonos de la barba salen de los pelos, no de la piel que se ve entre ellos
+        const l = labAt(img, p);
+        if (Math.hypot(l[1], l[2]) < 0.045 || l[0] < 0.42) zonePixels.beard.push(l);
+      }
     }
-  const toneCenters: Record<HeadZone, Lab[]> = { hair: [], skin: [], accessory: [] };
+  const toneCenters: Record<HeadZone, Lab[]> = { hair: [], skin: [], accessory: [], beard: [] };
   for (const z of HEAD_ZONES) {
     const pts = zonePixels[z];
     if (pts.length < 4) continue;
@@ -92,11 +102,11 @@ export function pixelateHead(
   const pending = new Uint8Array(cols * rows);
   for (let gy = 0; gy < rows; gy++)
     for (let gx = 0; gx < cols; gx++) {
-      const votes = [0, 0, 0];
+      const votes = [0, 0, 0, 0];
       const toneVotes = HEAD_ZONES.map((z) => new Array(toneCenters[z].length).fill(0));
       let n = 0, line = 0;
-      const y0 = top + gy * k, x0 = left + gx * k;
-      for (let y = Math.floor(y0); y < y0 + k; y++)
+      const y0 = top + gy * ky, x0 = left + gx * k;
+      for (let y = Math.floor(y0); y < y0 + ky; y++)
         for (let x = Math.floor(x0); x < x0 + k; x++) {
           n++;
           if (x < 0 || y < 0 || x >= W || y >= H) continue;
@@ -107,6 +117,7 @@ export function pixelateHead(
           if (z === ZONE_ID.hair) zi = 0;
           else if (z === ZONE_ID.skin || z === ZONE_ID.face) zi = 1;
           else if (z === ZONE_ID.accessory) zi = 2;
+          else if (z === ZONE_ID.beard) zi = 3;
           else if (z === ZONE_ID.line) { line++; continue; }
           if (zi < 0) continue;
           // debajo del recuadro solo cuenta el pelo largo
@@ -115,13 +126,15 @@ export function pixelateHead(
           if (z === ZONE_ID.face) { if (toneVotes[1].length) toneVotes[1][Math.min(1, toneVotes[1].length - 1)]++; }
           else if (toneVotes[zi].length) toneVotes[zi][nearestTone(HEAD_ZONES[zi], labAt(img, p))]++;
         }
-      const filled = votes[0] + votes[1] + votes[2];
+      const filled = votes[0] + votes[1] + votes[2] + votes[3];
       const i = gy * cols + gx;
       if (filled + line * 0.6 < n * 0.45) continue;
       if (filled === 0) { pending[i] = 1; continue; }
       // el pelo gana empates: la silueta de la cabeza es el pelo
       let zi = 0;
       if (votes[1] > votes[zi]) zi = 1;
+      // la barba gana su celda si es al menos tanto como la piel (barba de sal y pimienta)
+      if (votes[3] > 0 && votes[3] >= votes[1] * 0.8 && votes[3] >= votes[0]) zi = 3;
       // accesorios delgados (lentes, cintillo) ganan con menos cobertura: son rasgos que identifican
       if (votes[2] >= n * 0.22) zi = 2;
       cz[i] = zi;
@@ -215,7 +228,7 @@ export function pixelateHead(
     outRows.push(s);
   }
 
-  const eyeY = Math.round(((e1.y + e2.y) / 2 - top) / k) - minY;
+  const eyeY = Math.round(((e1.y + e2.y) / 2 - top) / ky) - minY;
   const cxHead = halfCols - minX; // el punto medio de los ojos cae entre cxHead-1 y cxHead
   const eyeW = EYES[stampClass(headW)].round[0].length;
   let half = ((e2.x - e1.x) / k) / 2;
@@ -227,7 +240,7 @@ export function pixelateHead(
   for (let y = 0; y < bh; y++)
     for (let x = Math.max(0, cxHead - 3); x <= Math.min(bw - 1, cxHead + 2); x++) {
       const c = outRows[y][x];
-      if (c !== '.' && palette[PIXEL_CHARS.indexOf(c)].zone === 'skin') chin = Math.max(chin, y);
+      if (c !== '.' && (palette[PIXEL_CHARS.indexOf(c)].zone === 'skin' || palette[PIXEL_CHARS.indexOf(c)].zone === 'beard')) chin = Math.max(chin, y);
     }
   return {
     w: bw,

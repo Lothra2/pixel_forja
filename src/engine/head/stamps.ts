@@ -62,6 +62,8 @@ export const MOUTHS: Record<StampClass, Record<MouthExpr, Stamp>> = {
 
 export const BLUSH: Record<StampClass, Stamp> = { 32: ['b'], 48: ['bb'], 64: ['bb'] };
 export const BROW: Record<StampClass, Stamp> = { 32: ['h'], 48: ['hh'], 64: ['hhh'] };
+/** cejas gruesas (detectadas en la foto): más anchas y, a 64, de dos filas */
+export const BROW_THICK: Record<StampClass, Stamp> = { 32: ['hh'], 48: ['hhh'], 64: ['hhhh', '.hhh'] };
 /** cejas inclinadas para bravo y triste (ojo izquierdo; el derecho se espeja) */
 export const BROW_ANGRY: Record<StampClass, Stamp> = { 32: ['h'], 48: ['h.', '.h'], 64: ['h..', '.hh'] };
 export const BROW_SAD: Record<StampClass, Stamp> = { 32: ['h'], 48: ['.h', 'h.'], 64: ['..h', 'hh.'] };

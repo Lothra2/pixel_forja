@@ -26,7 +26,7 @@ function arg(name: string): string | undefined {
 
 const ZONE_COLORS: Record<string, [number, number, number]> = {
   bg: [0, 0, 0], hair: [140, 80, 30], skin: [255, 200, 160], face: [255, 0, 255], top: [60, 120, 255], bottom: [20, 40, 140],
-  socks: [240, 240, 240], shoes: [60, 60, 60], accessory: [255, 220, 0], line: [0, 0, 0],
+  socks: [240, 240, 240], shoes: [60, 60, 60], accessory: [255, 220, 0], line: [0, 0, 0], beard: [0, 190, 120],
 };
 
 export function zoneOverlay(a: Analysis): Raster {

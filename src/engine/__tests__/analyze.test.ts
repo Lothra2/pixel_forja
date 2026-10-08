@@ -67,3 +67,31 @@ describe('zonas en las imágenes de prueba', () => {
     expect(sampleFicha('sofi').face.glasses).toBeNull();
   });
 });
+
+describe('modo busto (fotos y retratos)', () => {
+  it('detecta el tipo de imagen: dibujos de cuerpo entero contra una selfie con fondo cargado', async () => {
+    const { makeWorkImage, detectMode } = await import('../index');
+    for (const n of ['sofi', 'gabo', 'papa', 'mama', 'nena', 'portero']) expect(detectMode(makeWorkImage(loadSample(n)))).toBe('full');
+    expect(detectMode(makeWorkImage(loadSample('selfie')))).toBe('bust');
+  });
+
+  it('en la selfie encuentra ojos, cejas gruesas, barba y estampado, y el personaje pasa la calidad', async () => {
+    const { buildFicha, renderClip, runQA, FFGG_ANIMS } = await import('../index');
+    const { ficha, analysis } = buildFicha(loadSample('selfie'), { name: 'selfie', sizes: [48] });
+    expect(analysis.mode).toBe('bust');
+    expect(analysis.portrait).toMatchObject({ beard: true, brows: true });
+    expect(ficha.outfit.print).toBeTruthy();
+    expect(ficha.face.thickBrows).toBe(true);
+    // la cabeza tiene barba y no quedó estirada
+    const hb = ficha.heads['48']!.front;
+    expect(hb.palette.some((p) => p.zone === 'beard')).toBe(true);
+    expect(hb.h / hb.w).toBeLessThan(1.3);
+    // ojos sobre la cara (no en la pérgola ni en la barba)
+    const s = 640 / 800;
+    const [l, r] = analysis.zones.head.eyes;
+    expect(Math.abs(l.x - 250 * s)).toBeLessThan(10);
+    expect(Math.abs(r.x - 350 * s)).toBeLessThan(10);
+    expect(Math.abs(l.y - 372 * s)).toBeLessThan(10);
+    for (const a of FFGG_ANIMS) expect(runQA(ficha, renderClip(ficha, 48, a)).ok, a).toBe(true);
+  });
+});

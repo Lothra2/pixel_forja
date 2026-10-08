@@ -4,7 +4,7 @@ import { ZONES, type HeadSpec, type Point } from '../../engine/index';
 
 export const ZONE_COLORS: Record<string, [number, number, number]> = {
   hair: [150, 90, 40], skin: [255, 196, 150], face: [255, 0, 200], top: [50, 120, 255], bottom: [30, 50, 150],
-  socks: [245, 245, 245], shoes: [70, 70, 80], accessory: [255, 215, 0], line: [20, 20, 20],
+  socks: [245, 245, 245], shoes: [70, 70, 80], accessory: [255, 215, 0], line: [20, 20, 20], beard: [0, 190, 120],
 };
 
 export type StageMode = 'bg' | 'zones' | 'head' | 'plain';

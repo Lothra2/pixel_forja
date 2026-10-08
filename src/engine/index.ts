@@ -34,3 +34,4 @@ export * from './export/engines';
 export * from './export/bundle';
 export * from './render/editor';
 export * from './sheet/variants';
+export * from './analyze/portrait';

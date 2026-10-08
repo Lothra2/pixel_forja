@@ -11,7 +11,7 @@ export const FICHA_VERSION = 2;
 export type CellSize = 32 | 48 | 64;
 export const CELL_SIZES: CellSize[] = [32, 48, 64];
 
-export type HeadZone = 'hair' | 'skin' | 'accessory';
+export type HeadZone = 'hair' | 'skin' | 'accessory' | 'beard';
 
 export interface HeadBitmap {
   w: number;
@@ -91,9 +91,11 @@ export interface HumanFicha extends FichaBase {
     numberColor?: string;
     /** guantes de portero (las manos toman el color del accesorio) */
     gloves?: boolean;
+    /** estampado chillón en el pecho (un detalle de color, la letra no cabe) */
+    print?: string | null;
   };
   /** glasses: color del marco si tiene lentes (se dibujan con sello, no se reducen) */
-  face: { eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null };
+  face: { eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean };
   /** cabezas ya pixeladas, por tamaño */
   heads: Partial<Record<`${CellSize}`, HeadSet>>;
   physics: { hairLag: number };

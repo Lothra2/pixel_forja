@@ -19,10 +19,10 @@ import {
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'style' | 'animate' | 'editor' | 'export';
 const HUMAN_STEPS: Step[] = ['image', 'bg', 'zones', 'head', 'style', 'animate', 'editor', 'export'];
 const ANIMAL_STEPS: Step[] = ['image', 'bg', 'style', 'animate', 'export'];
-const EDIT_ZONES: Zone[] = ['hair', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'];
+const EDIT_ZONES: Zone[] = ['hair', 'beard', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'];
 const SAMPLES: { name: string; kind: 'human' | 'animal'; species?: Species }[] = [
   { name: 'gabo', kind: 'human' }, { name: 'portero', kind: 'human' }, { name: 'sofi', kind: 'human' }, { name: 'nena', kind: 'human' },
-  { name: 'mama', kind: 'human' }, { name: 'papa', kind: 'human' }, { name: 'thor', kind: 'animal', species: 'boxer' },
+  { name: 'mama', kind: 'human' }, { name: 'papa', kind: 'human' }, { name: 'selfie', kind: 'human' }, { name: 'thor', kind: 'animal', species: 'boxer' },
 ];
 const ARTIFACT = !!import.meta.env.VITE_ARTIFACT;
 
@@ -419,11 +419,20 @@ export function App() {
             <aside className="panel side">
               {step === 'bg' && (
                 <>
-                  <p>{t('bgHelp')}</p>
-                  <label className="field">
-                    {t('tolerance')} <output>{params.bgTolerance.toFixed(2)}</output>
-                    <input type="range" min={0.02} max={0.2} step={0.01} value={params.bgTolerance} onChange={(e) => setParams((q) => ({ ...q, bgTolerance: +e.target.value }))} />
-                  </label>
+                  <Seg
+                    label={`${t('imgMode')} (${t('modeAuto')}: ${t(analysis.mode === 'bust' ? 'mode_bust' : 'mode_full')})`}
+                    value={params.mode ?? analysis.mode}
+                    set={(v) => setParams((q) => ({ ...q, mode: v as 'full' | 'bust', head: undefined, zoneEdits: [] }))}
+                    opts={[['full', t('mode_full')], ['bust', t('mode_bust')]]}
+                    testid="img-mode"
+                  />
+                  <p>{analysis.mode === 'bust' ? t('bustHelp') : t('bgHelp')}</p>
+                  {analysis.mode !== 'bust' && (
+                    <label className="field">
+                      {t('tolerance')} <output>{params.bgTolerance.toFixed(2)}</output>
+                      <input type="range" min={0.02} max={0.2} step={0.01} value={params.bgTolerance} onChange={(e) => setParams((q) => ({ ...q, bgTolerance: +e.target.value }))} />
+                    </label>
+                  )}
                   <div className="seg">
                     <button className={bgBrush === 'fg' ? 'on' : ''} onClick={() => setBgBrush('fg')}>{t('brushFg')}</button>
                     <button className={bgBrush === 'bg' ? 'on' : ''} onClick={() => setBgBrush('bg')}>{t('brushBg')}</button>

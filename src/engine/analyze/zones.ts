@@ -6,7 +6,8 @@ import { kmeans } from '../color/kmeans';
 import { type Lab, deltaE, labToLch } from '../color/oklab';
 
 /** Zonas que el motor reconoce. `face` son ojos, cejas y boca: se borran y se reemplazan por sellos. */
-export const ZONES = ['bg', 'hair', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'] as const;
+/** `beard` va al final para no mover los índices de las zonas que ya existían. */
+export const ZONES = ['bg', 'hair', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line', 'beard'] as const;
 export type Zone = (typeof ZONES)[number];
 export const ZONE_ID: Record<Zone, number> = Object.fromEntries(ZONES.map((z, i) => [z, i])) as Record<Zone, number>;
 
@@ -43,14 +44,14 @@ export interface ZoneAnalysis {
 
 const K = 12;
 
-interface Clustering {
+export interface Clustering {
   cluster: Int32Array;
   centers: Lab[];
   /** 1 = línea del dibujo (oscura y delgada) */
   line: Uint8Array;
 }
 
-function clusterImage(img: WorkImage, mask: Mask): Clustering {
+export function clusterImage(img: WorkImage, mask: Mask): Clustering {
   const { w, h } = img.raster;
   const fgIdx: number[] = [];
   for (let i = 0; i < w * h; i++) if (mask[i]) fgIdx.push(i);

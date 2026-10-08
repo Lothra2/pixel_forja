@@ -111,3 +111,21 @@ test('cambia a inglés', async ({ page }) => {
   await page.getByRole('button', { name: 'EN', exact: true }).click();
   await expect(page.getByText('Upload image')).toBeVisible();
 });
+
+test('foto de busto: detecta el modo, la barba y arma el personaje', async ({ page }, info) => {
+  test.setTimeout(120000);
+  const tag = info.project.name;
+  await page.goto('/');
+  await page.getByTestId('sample-selfie').click();
+  await idle(page);
+  await expect(page.getByTestId('img-mode').getByRole('button', { name: 'Busto (foto o retrato)' })).toHaveAttribute('aria-pressed', 'true');
+  await page.screenshot({ path: `${shots}/${tag}_10_busto.png`, fullPage: true });
+  await page.getByTestId('next').click();
+  await idle(page);
+  await page.screenshot({ path: `${shots}/${tag}_11_busto_zonas.png`, fullPage: true });
+  await page.getByTestId('step-animate').click();
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  await idle(page);
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  await page.screenshot({ path: `${shots}/${tag}_12_busto_animar.png`, fullPage: true });
+});

@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import {
-  decodePng, makeWorkImage, removeBackground, proposeZones, applyZoneEdits, buildFicha, buildAnimalFicha, renderClip, runQA,
+  decodePng, makeWorkImage, analyzeImage, buildFicha, buildAnimalFicha, renderClip, runQA,
   exportFiles, renderPlan, surprise, isHuman,
   type Raster, type WorkImage, type Analysis, type HumanFicha,
 } from '../engine/index';
@@ -15,10 +15,7 @@ const toRaster = (p: ImagePayload): Raster => (p.png ? decodePng(p.png) : { w: p
 
 function analyze(p: AnalyzeParams): Analysis {
   if (!source || !work) throw new Error('No hay imagen cargada');
-  const mask = removeBackground(work, { tolerance: p.bgTolerance, strokes: p.bgStrokes });
-  const zones = proposeZones(work, mask, p.head);
-  const zone = applyZoneEdits(zones, mask, p.zoneEdits);
-  return { work, mask, zones, zone };
+  return analyzeImage(source, { bgTolerance: p.bgTolerance, bgStrokes: p.bgStrokes, head: p.head, zoneEdits: p.zoneEdits, mode: p.mode }, work);
 }
 
 const post = (r: Response & { id: number }, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(r, transfer);
@@ -50,7 +47,7 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
         const a = analyze(req.params);
         const rgba = new Uint8ClampedArray(a.work.raster.data);
         reply(
-          { type: 'analyzed', result: { w: a.work.raster.w, h: a.work.raster.h, rgba, mask: a.mask, zone: a.zone, head: a.zones.head, headGuessed: a.zones.headGuessed } },
+          { type: 'analyzed', result: { w: a.work.raster.w, h: a.work.raster.h, rgba, mask: a.mask, zone: a.zone, head: a.zones.head, headGuessed: a.zones.headGuessed, mode: a.mode } },
           [rgba.buffer, a.mask.buffer, a.zone.buffer],
         );
         break;
