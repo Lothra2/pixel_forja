@@ -11,6 +11,12 @@ pero estos datos de arte sí quedan bajo sus licencias originales.
 **Al exportar** un personaje que usa estas piezas, PixelForja agrega un `CREDITOS.txt` con los autores y licencias de las piezas usadas.
 Muéstralo en el juego, por ejemplo en la pantalla de créditos.
 
+## Peinados propios derivados
+
+`python3 scripts/lpc_custom.py` agrega peinados editados a mano sobre una pieza LPC (por ejemplo `swept_back`: lados cortos,
+volumen peinado hacia atrás y entradas, hecho a partir de `high_and_tight`). Quedan bajo la misma licencia de la pieza original
+y con crédito a sus autores, más la nota de la edición.
+
 ## Créditos de todas las piezas incluidas
 
 - `beards/beard/5oclock_shadow/idle.png`: JaidynReiman,Thane Brimhall (pennomi),laetissima. CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/lpc-base-character-expressions
@@ -167,3 +173,4 @@ Muéstralo en el juego, por ejemplo en la pantalla de créditos.
 - `head/nose/elderly/adult/idle.png`: ElizaWy. OGA-BY 3.0. https://opengameart.org/content/lpc-revised-elders
 - `head/nose/large/adult/idle.png`: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head/Head%20Overlay%2001%20-%20Large%20Nose,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
 - `head/nose/straight/adult/idle.png`: Thane Brimhall (pennomi),laetissima,Matthew Krohn (makrohn). GPL 3.0,CC-BY-SA 3.0. https://opengameart.org/content/lpc-base-character-expressions
+- `pixelforja/hair/swept_back/idle.png`: Skorpio,bluecarrot16,PixelForja (edición del peinado high_and_tight). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/lpc-skorpios-scifi-sprite-pack,https://opengameart.org/content/lpc-hair

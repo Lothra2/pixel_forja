@@ -321,12 +321,12 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, view: Vie
     const av = f.avatar;
     const useLpc = lpcBox;
     const hi: HeadImage & { pal: { dark?: string }[] } = useLpc
-      ? lpcHead(av!.lpc!, view, { skin: f.palette.skin[BASE], hair: f.palette.hair[BASE], eyes: f.palette.eyes, beard: av!.beard.color, glasses: av!.glasses.color }, pose.face.eyes, pose.face.mouth) as HeadImage & { pal: { dark?: string }[] }
+      ? lpcHead(av!.lpc!, view, { skin: f.palette.skin[BASE], hair: f.palette.hair[BASE], eyes: f.palette.eyes, beard: av!.beard.color, glasses: av!.glasses.color }, pose.face.eyes, pose.face.mouth ?? f.face.mouth) as HeadImage & { pal: { dark?: string }[] }
       : avatarHead && style
       ? renderHeadModel(modelFromAvatar(f.avatar!), {
           width: d.headW, style,
           yaw: view === 'front' ? 0 : view === 'back' ? 180 : SIDE_YAW - (pose.head.yaw ?? 0),
-          eyes: pose.face.eyes, mouth: pose.face.mouth ?? (f.face.mouth === 'smile' ? 'smile' : 'line'),
+          eyes: pose.face.eyes, mouth: pose.face.mouth ?? (f.face.mouth === 'open' ? 'line' : f.face.mouth),
           skin: f.palette.skin[BASE], hair: f.palette.hair[BASE],
         }) as HeadImage & { pal: { dark?: string }[] }
       : buildHeadImage(f, set!, view, pose.face.eyes, pose.face.mouth);

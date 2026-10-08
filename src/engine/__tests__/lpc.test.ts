@@ -31,6 +31,23 @@ describe('piezas dibujadas LPC', () => {
     const b = lpcHead(DEFAULT_LPC, 'front', colors, 'closed');
     expect(Buffer.from(a.img.idx.buffer).equals(Buffer.from(b.img.idx.buffer))).toBe(false);
   });
+  it('la boca se ve: sonrisa, sonrisa con dientes, abierta y triste cambian la cara de frente y de lado', () => {
+    const key = (h: ReturnType<typeof lpcHead>) => Buffer.from(h.img.idx.buffer).toString('base64') + h.pal.map((p) => p.hex).join();
+    for (const v of ['front', 'side'] as const) {
+      const line = key(lpcHead(DEFAULT_LPC, v, colors, 'open', 'line'));
+      for (const m of ['smile', 'grin', 'open', 'frown'] as const) expect(key(lpcHead(DEFAULT_LPC, v, colors, 'open', m)), `${m} ${v}`).not.toBe(line);
+    }
+    // la cara feliz de LPC no deja los ojos en blanco
+    const happy = lpcHead(DEFAULT_LPC, 'front', colors, 'happy', 'smile');
+    expect([...happy.img.idx].filter((i) => i >= 0 && hexToLab(happy.pal[i].hex)[0] > 0.95).length).toBe(0);
+  });
+  it('peinados propios derivados: swept_back trae volumen arriba y créditos de la pieza original', () => {
+    expect(LPC_HAIRS).toContain('swept_back');
+    const a = lpcHead({ ...DEFAULT_LPC, hair: 'swept_back' }, 'side', colors);
+    const b = lpcHead({ ...DEFAULT_LPC, hair: 'high_and_tight' }, 'side', colors);
+    expect(a.anchor.y).toBeGreaterThan(b.anchor.y);
+    expect(lpcCredits({ ...DEFAULT_LPC, hair: 'swept_back' }).join('\n')).toContain('Skorpio');
+  });
   it('los créditos salen con cada exportación', () => {
     expect(lpcCredits({ ...DEFAULT_LPC, beard: 'trimmed', glasses: 'round' }).length).toBeGreaterThanOrEqual(4);
     const f = fichaFromAvatar('x', { ...defaultAvatar(), lpc: { ...DEFAULT_LPC, hair: 'long', beard: 'basic' } });

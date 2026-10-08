@@ -133,8 +133,8 @@ test('crear desde cero: avatar por piezas y animar', async ({ page }, info) => {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
   await page.getByTestId('from-scratch').click();
-  // piezas dibujadas (LPC): 85 peinados con miniatura
-  await expect(page.getByTestId('av-lpcHair').locator('button')).toHaveCount(85, { timeout: 30000 });
+  // piezas dibujadas (LPC): 86 peinados con miniatura
+  await expect(page.getByTestId('av-lpcHair').locator('button')).toHaveCount(86, { timeout: 30000 });
   await page.getByTestId('av-lpcHair-pigtails').click();
   await idle(page);
   await expect(page.getByTestId('av-lpcHair-pigtails')).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });

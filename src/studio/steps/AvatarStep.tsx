@@ -24,6 +24,9 @@ interface Props {
   photoColors: (f: File) => void;
   /** cambia edad, contextura y figura (y las proporciones de la ficha) */
   setBody: (b: BodyType) => void;
+  /** expresión de reposo: la boca de todas las animaciones que no traen la suya */
+  mouth: string;
+  setMouth: (m: 'line' | 'smile' | 'grin') => void;
 }
 
 const HAT_SWATCHES = ['#8a5a32', '#3b3f4a', '#c9d3df', '#e2b23c', '#b0283a', '#2f5aa8', '#2f9b5b', '#5a3a9a', '#f2f2ee'];
@@ -187,6 +190,7 @@ export function AvatarStep(p: Props) {
         <>
           <p className="muted small">{t('kit_lpcHelp')}</p>
           {body}
+          <Seg label={t('av_expr')} value={p.mouth === 'open' ? 'line' : p.mouth} set={(v) => p.setMouth(v as 'line' | 'smile' | 'grin')} opts={[['line', t('expr_line')], ['smile', t('expr_smile')], ['grin', t('expr_grin')]]} testid="av-expr" />
           {section('lpcHead', 'av_headType')}
           {section('lpcHair', 'av_hair', <Swatches label={t('av_hairColor')} colors={HAIR_SWATCHES} value={a.hair.color} set={(c) => p.setAvatar({ ...a, hair: { ...a.hair, color: c } })} testid="av-hair-color" />)}
           <details className="group" open>

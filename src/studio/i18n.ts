@@ -266,6 +266,7 @@ const es = {
   jacket: 'Chaqueta abierta', jacketColor: 'Color de la chaqueta',
   shoesKind: 'Calzado', shoes_tenis: 'Tenis', shoes_guayos: 'Guayos', shoes_botas: 'Botas', shoes_descalzo: 'Descalzo',
   sheetScale: 'Escala de la hoja (2x o 4x para React Native)',
+  av_expr: 'Expresión', expr_line: 'Seria', expr_smile: 'Sonrisa', expr_grin: 'Risa',
   error: 'Algo falló',
 };
 
@@ -537,6 +538,7 @@ const en: Dict = {
   jacket: 'Open jacket', jacketColor: 'Jacket color',
   shoesKind: 'Footwear', shoes_tenis: 'Sneakers', shoes_guayos: 'Cleats', shoes_botas: 'Boots', shoes_descalzo: 'Barefoot',
   sheetScale: 'Sheet scale (2x or 4x for React Native)',
+  av_expr: 'Expression', expr_line: 'Serious', expr_smile: 'Smile', expr_grin: 'Big smile',
   error: 'Something failed',
 };
 

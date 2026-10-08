@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import {
   type Ficha, type HumanFicha, type AnimalFicha, type Proportions, type Variant, type ColorSlot, type AnimalColorSlot, type Species,
-  SPECIES, BASE, isHuman,
+  SPECIES, BASE, isHuman, usesAvatar,
 } from '../../engine/index';
 import type { Key } from '../i18n';
 import { Seg, Toggle, Slider, type T } from '../components/ui';
@@ -131,6 +131,8 @@ export function StyleStep(p: Props) {
           </label>
           <Toggle label={t('gloves')} on={!!h.outfit.gloves} set={(v) => p.setOutfit('gloves', v)} />
         </div>
+        {!usesAvatar(h) && (
+          <>
         <Seg label={t('eyes')} value={h.face.eyes} set={(v) => p.setFace('eyes', v as HumanFicha['face']['eyes'])} opts={(['round', 'big', 'small'] as const).map((v) => [v, t(`eyes_${v}`)])} />
         <Seg label={t('mouth')} value={h.face.mouth} set={(v) => p.setFace('mouth', v as HumanFicha['face']['mouth'])} opts={(['smile', 'line', 'open'] as const).map((v) => [v, t(`mouth_${v}`)])} />
         <div className="row">
@@ -138,6 +140,8 @@ export function StyleStep(p: Props) {
           <Toggle label={t('brows')} on={h.face.brows} set={(v) => p.setFace('brows', v)} />
           <Toggle label={t('glasses')} on={!!h.face.glasses} set={(v) => p.setFace('glasses', v ? h.face.glasses || '#1d3c78' : null)} />
         </div>
+          </>
+        )}
       </details>
       <fieldset className="colors">
         <legend>{t('colors')}</legend>

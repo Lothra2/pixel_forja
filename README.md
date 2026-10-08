@@ -1,7 +1,7 @@
 # PixelForja
 
 Creador de personajes de pixel art animados y listos para juegos. Armas el personaje pieza por pieza
-(cuerpo, edad, cara, 85 peinados dibujados a mano, barba, lentes, gorros, ropa y colores) y sale animado
+(cuerpo, edad, cara, 86 peinados dibujados a mano, barba, lentes, gorros, ropa y colores) y sale animado
 con 75 movimientos en cuatro direcciones. También convierte dibujos de cuerpo entero y toma los colores
 de una foto. Sin IA y sin servidor: todo corre en tu equipo.
 
@@ -12,7 +12,7 @@ de una foto. Sin IA y sin servidor: todo corre en tu equipo.
 - 10 animaciones de animal (boxer, perro, mapache, gato).
 - Vista lateral y 4 direcciones tipo RPG. Tamaños de 32, 48 y 64 px. Cuerpo chibi, juvenil o realista.
 - Modo busto para selfies y fotos: cara, barba, cejas, camisa y estampado. El resto del cuerpo va por defecto.
-- Creador de avatar con 85 peinados y piezas dibujadas a mano del proyecto LPC (con créditos automáticos al exportar).
+- Creador de avatar con 86 peinados y piezas dibujadas a mano del proyecto LPC (con créditos automáticos al exportar).
 - Editor de poses, galería, "sorpréndeme" y estudio en español e inglés.
 - Exporta hoja PNG + JSON (Phaser), preajuste de Fútbol Familia GG, Aseprite, Godot 4, Unity,
   PNG por cuadro, GIF y la ficha del personaje.

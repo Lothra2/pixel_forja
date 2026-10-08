@@ -37,7 +37,7 @@ export interface HeadSet {
 export const PIXEL_CHARS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export type EyeStyle = 'round' | 'big' | 'small';
-export type MouthStyle = 'smile' | 'line' | 'open';
+export type MouthStyle = 'smile' | 'line' | 'open' | 'grin';
 
 export type PresetName = 'chibi' | 'juvenil' | 'realista';
 

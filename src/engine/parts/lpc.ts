@@ -5,7 +5,7 @@ import type { ModelHeadImage, ModelHeadPal } from '../head3d/render';
 
 /**
  * Piezas dibujadas a mano del proyecto LPC (Liberated Pixel Cup): cabezas, caras con expresiones, cejas,
- * narices, barbas, bigotes, lentes y 85 peinados, cada uno en tres direcciones.
+ * narices, barbas, bigotes, lentes y 86 peinados, cada uno en tres direcciones.
  * Se recolorean de forma relativa (cada tono guarda su distancia al tono base que eligió el artista),
  * así el sombreado original se conserva con cualquier color de piel o de pelo.
  * Licencias: CC-BY-SA, GPL, OGA-BY, CC0 según la pieza. Hay que dar crédito: ver lpcCredits().
@@ -137,15 +137,16 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back', colors: 
   const headColors = new Set(headDir.colors);
   const irisBase = '#5686ae';
   const skin = (c: string) => relative(c, skinBase, colors.skin);
-  const faceMap = (c: string) => (isIris(c) ? relative(c, irisBase, colors.eyes, 1, 0) : headColors.has(c) && labToLch(hexToLab(c))[1] > 0.03 ? skin(c) : c);
+  // blanco del ojo: frío y casi sin color. Los tonos claros de la piel (cálidos) se recolorean como piel
+  const eyeWhite = (c: string) => { const [L, C, h] = labToLch(hexToLab(c)); const deg = ((h * 180) / Math.PI + 360) % 360; return L > 0.9 && (C < 0.012 || (deg > 150 && deg < 280)); };
+  const faceMap = (c: string) => (isIris(c) ? relative(c, irisBase, colors.eyes, 1, 0) : eyeWhite(c) ? c : headColors.has(c) || labToLch(hexToLab(c))[1] > 0.03 ? skin(c) : c);
   const tinted = (target: string, kL = 1) => (c: string, d: PartDir) => relative(c, baseColor(d), target, kL);
   const brow = labToHex((() => { const l = hexToLab(colors.hair); return [Math.min(0.3, l[0] * 0.75), l[1], l[2]] as Lab; })());
   // la expresión feliz de LPC no trae boca: con boca abierta o risa se usa la cara de sorpresa o feliz
   const exprName = mouth === 'o' && eyes === 'open' ? 'shock' : (mouth === 'grin' || mouth === 'open') && eyes === 'open' ? 'happy' : EXPR[eyes];
   const layers: Layer[] = [];
   if (look.hair) layers.push({ key: `hairbg/${look.hair}`, mat: 'hair', map: tinted(colors.hair) });
-  const white = (c: string) => { const [L, C] = labToLch(hexToLab(c)); return L > 0.9 && C < 0.02; };
-  layers.push({ key: `head/${look.head}`, mat: 'skin', map: (c) => (isIris(c) ? relative(c, irisBase, colors.eyes, 1, 0) : white(c) ? c : skin(c)) });
+  layers.push({ key: `head/${look.head}`, mat: 'skin', map: (c) => (isIris(c) ? relative(c, irisBase, colors.eyes, 1, 0) : eyeWhite(c) ? c : skin(c)) });
   if (dir !== 'up') layers.push({ key: `face/${sex}/${exprName}`, mat: 'face', map: faceMap });
   if (look.nose && dir !== 'up') layers.push({ key: `nose/${look.nose}`, mat: 'skin', map: skin });
   if (look.brows && dir !== 'up') layers.push({ key: `brows/${look.brows}`, mat: 'hair', map: tinted(brow, 0.8) });
@@ -193,6 +194,33 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back', colors: 
         const back = l.mat === 'hair' && dir !== 'up' && fy > chinY;
         idx[(fy - y0) * w + (fx - x0)] = entry(mapped[v - 1], l.mat, back);
       }
+  }
+  // boca: las caras LPC no traen boca. Se dibuja a mano, con el tono oscuro de la piel, debajo de la nariz
+  if (mouth && mouth !== 'line' && dir !== 'up') {
+    const lip = skin('#99423c'), dark = '#5a1f26', teeth = '#f4f1ea';
+    const r1 = chinY - 3, r2 = chinY - 2;
+    const put = (fx: number, fy: number, hex: string) => {
+      const i = (fy - y0) * w + (fx - x0);
+      if (fx < x0 || fy < y0 || fx >= x1 || fy >= y1 || idx[i] < 0) return;
+      idx[i] = entry(hex, 'face', false);
+    };
+    if (dir === 'down') {
+      const c0 = Math.round(headDir.x + headDir.w / 2) - 2; // cuatro columnas: c0..c0+3
+      const shapes: Record<string, [string, string]> = {
+        smile: ['l..l', '.ll.'], grin: ['lttl', '.ll.'], open: ['.dd.', '.dd.'], o: ['.dd.', '....'], frown: ['.ll.', 'l..l'],
+      };
+      const [a, b] = shapes[mouth] ?? ['....', '.ll.'];
+      [a, b].forEach((row, j) => [...row].forEach((ch, i) => {
+        if (ch !== '.') put(c0 + i, j ? r2 : r1, ch === 'l' ? lip : ch === 't' ? teeth : dark);
+      }));
+    } else {
+      // de lado: la boca queda junto al borde de la cara
+      let xr = x0;
+      for (let xx = x1 - 1; xx >= x0; xx--) { const v = idx[(r2 - y0) * w + (xx - x0)]; if (v >= 0 && pal[v].mat === 'skin') { xr = xx; break; } }
+      if (mouth === 'smile' || mouth === 'grin') { put(xr - 1, r1, lip); put(xr - 2, r2, lip); put(xr - 3, r2, lip); if (mouth === 'grin') put(xr - 2, r1, teeth); }
+      else if (mouth === 'open' || mouth === 'o') { put(xr - 1, r1, dark); put(xr - 1, r2, dark); }
+      else if (mouth === 'frown') { put(xr - 1, r2, lip); put(xr - 2, r1, lip); }
+    }
   }
   // cuello: debajo del centro de la cabeza; de lado, un poco hacia la nuca
   const neckX = headDir.x + headDir.w / 2 - (dir === 'right' ? 2 : 0);

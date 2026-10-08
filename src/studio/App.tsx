@@ -591,6 +591,8 @@ export function App() {
                   canChooseHead={Object.keys(ficha.heads).length > 0} headMode={ficha.headMode ?? 'avatar'} setHeadMode={setHeadMode}
                   canReset={!!fittedAvatar.current} reset={resetAvatar} random={() => setAvatar(randomAvatar(Date.now() % 100000))}
                   loadThumbs={loadThumbs}
+                  mouth={ficha.face.mouth}
+                  setMouth={(m) => setFace('mouth', m)}
                   setBody={(b: BodyType) => {
                     const av = { ...ficha.avatar!, body: b };
                     setAvatar(av);
