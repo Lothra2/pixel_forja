@@ -119,12 +119,61 @@ Desde la portada, sección **Taller RPG**:
 - **Poderes:** 8 elementos por 10 tipos de efecto (proyectil en 8 direcciones, impacto, nova, aura, golpe del cielo,
   curación, escudo, círculo, mejora, tajo). Se exportan como hoja PNG + JSON con `anims`, igual que los personajes.
   En Phaser se cargan con `load.atlas` y se reproducen como cualquier animación, encima o debajo del personaje.
-- **Objetos:** 45 íconos (pociones, anillos, amuletos, gemas, runas, pergaminos, llaves, oro, equipo) con rareza
-  normal, mágica, rara, de set o única. Atlas PNG + JSON Hash con el nombre de cada ícono (`potion_health_large`,
-  `gem_ruby_perfect`, `w_axe_unique`).
+- **Botín y legendarios:** ver la sección 4d.
 
 Para un RPG tipo Diablo: héroes y enemigos en **Isométrica 8 direcciones**, poderes con los proyectiles en 8 direcciones
 y los íconos de objetos en 32 px para el inventario (64 px si tu interfaz es grande).
+
+## 4d. Botín: legendarios, armaduras que evolucionan, cofres, oro y Thor
+
+Desde la portada, **Taller RPG > Botín y legendarios**. Todo se dibuja nativo a 32 o 64 px (no se escala).
+
+- **Armas:** 27 tipos de Diablo 2, 3 y 4 y algo más (espada, cimitarra, katana, estoque, daga, kris, hacha, hacha
+  arrojadiza, maza, lucero del alba, mangual, martillo de guerra, cetro, garrote, varita, garra, jabalina, mandoble,
+  hacha doble, gran martillo, báculo, lanza, alabarda, guadaña, arco corto, arco largo, ballesta) y 9 de mano libre
+  (4 escudos, broquel, orbe, tomo, cabeza reducida, carcaj). Cada una en 3 calidades: normal, excepcional y élite.
+- **Mágicos y raros:** se tiran al azar con prefijo y sufijo (azul, 1 o 2 propiedades) o con nombre propio y 3 a 5
+  propiedades (amarillo, con otro color de metal y gema). Misma semilla, mismo objeto.
+- **Legendarios:** 40 con nombre propio, estadísticas y frase (naranja, animados 8 cuadros con barrido de brillo y
+  destellos). Los nombres son originales: no se usan los de Blizzard.
+- **Set Legado GG (verde):** Juramento de Rick, Escudo de la Casa GG, Báculo Estelar de Steph, Arco Celeste de Sophie,
+  Varita en Flor de Alana y Collar de Thor, con bonos a 2, 3, 4 y 6 piezas.
+- **Armaduras que evolucionan:** cuero, malla, placas y túnica en 5 niveles cada una, como en Diablo 3 y 4: al subir
+  cambia el material, aparecen ribete, hombreras, capa, gema y al final runas que brillan. 7 piezas por nivel
+  (casco, pecho, hombreras, guantes, cinturón, pantalón, botas). En Estilo, **Nivel de la armadura** se la pone a tu
+  héroe con el casco del nivel (se puede quitar).
+- **Equipar:** en el detalle de un objeto, *Equipar en mi héroe* pone la legendaria en la mano con sus colores o viste
+  la pieza de armadura. La barda va en Thor.
+- **Joyas y consumibles:** anillos, amuletos, talismanes, joyas, pociones en 6 tipos por 5 tamaños, pergaminos, llaves,
+  oro, mineral, esencia, trofeo, mapa, 7 gemas en 5 grados y 12 runas.
+- **Cofres y oro:** cofre de madera, reforzado, dorado y legendario (quieto con brillo y abriendo en 10 cuadros),
+  moneda que gira, 4 montones de oro con brillo, lluvia de monedas, haz de luz por rareza y el objeto que cae girando.
+- **Thor:** en Familia GG, sin y con armadura. Se ve en las 8 direcciones y trae el paquete *Mascota RPG*: morder,
+  ladrar, aullar (le da el escudo a su dueño: efecto `escudo_de_thor`), recoger botín con la moneda en la boca, golpe y
+  caer. Su barda tiene 5 niveles (arnés, peto tachonado, cota del guardián, placas del campeón, égida de Thor).
+
+### Exportar el botín
+
+*Exportar todo el botín* baja un zip con:
+
+- `botin_iconos_32.png/json` y `botin_iconos_64.png/json`: atlas JSON Hash de Phaser. Cada ícono se llama por su id
+  (`sword_3`, `armor_placas_chest_5`, `gem_ruby_perfect`, `hoja_del_vacio`). Los especiales traen 8 cuadros y su
+  animación en `anims` (`hoja_del_vacio_0` ... `_7`).
+- `botin_mundo.png/json`: `cofre_<nivel>_abrir`, `cofre_<nivel>_quieto`, `moneda_gira`, `oro_small` ... `oro_huge`,
+  `lluvia_de_oro`, `haz_<rareza>`, `escudo_de_thor` y `cae_<id>` de cada especial. Cada animación dice su tamaño.
+- `botin_catalogo.json`: por objeto, nombre en español e inglés, rareza, nivel, base, estadísticas (`damage`, `speed`,
+  `defense`, `block`, `mods`) con su texto listo para el tooltip, frase, set y bonos del set.
+
+```js
+// en preload()
+this.load.atlas('botin', 'botin_iconos_32.png', 'botin_iconos_32.json');
+this.load.json('botinMeta', 'botin_iconos_32.json'); // el mismo json, para leer `anims`
+this.load.json('catalogo', 'botin_catalogo.json');
+// en create(): animaciones de los especiales
+const j = this.cache.json.get('botinMeta');
+for (const [name, a] of Object.entries(j.anims)) this.anims.create({ key: name, frames: j.animations[name].map((f) => ({ key: 'botin', frame: f })), frameRate: a.fps, repeat: a.loop ? -1 : 0 });
+this.add.sprite(100, 100, 'botin').play('hoja_del_vacio');
+```
 
 ## 5. Créditos
 
