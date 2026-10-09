@@ -90,12 +90,15 @@ Pero NADIE PIERDE:
 
 El primer contacto de mis hijas con el juego es caminar por el Bosque GG. Tiene que sentirse vivo, mágico, grande y explorable, al nivel de Stardew Valley o Eastward.
 
-El taller YA hizo el Bosque GG grande. Míralo antes de planificar:
+El taller YA hizo el Bosque GG: un bosque hechizado, sombrío como Diablo pero para niñas, con pixel art estilo Stardew. Míralo antes de planificar:
+- EL VISOR VIVO: https://claude.ai/artifact/Uo2Citpun2SgzAgJtsR1ss es el mundo animado de verdad (viento, bruma en capas, oscuridad con luces, árboles hechizados que despiertan, cuervos que huyen, fuegos fatuos, ambientes). El juego tiene que verse igual o mejor. Su código está en tools/pixel_forja/scripts/visor/runtime.js: úsalo como referencia directa para la capa de atmósfera en Phaser.
 - public/assets/kit/mundo/mundo1_vista.png: el mapa entero, con puntos de colores para enemigos, cofres y fogatas.
 - public/assets/kit/mundo/postales/*.png: 8 pantallas reales de 960 x 540 (llegada, abuelo_roble, cascada_y_vado, puente_del_trol, ruinas_y_estatua, anillo_de_hadas, arena_del_minotauro, colina_goblin).
 - La sección "Mundo 1: el Bosque GG" de KIT_JUEGO.md: capas, orden de dibujo, zonas, luces y partículas.
 
 Lo que ya trae:
+- Árboles estilo Stardew con viento, árboles hechizados con ojos (dormido, despierto, parpadeo), árboles secos, sauces, telarañas, y criaturas: cuervos, murciélagos, ojos entre arbustos y fuegos fatuos.
+- Bruma en dos capas que pegan por los lados, con intensidad por zona.
 - 120 x 90 cuadros (unas 22 pantallas), con el suelo pintado a mano por código. Hay mesetas con acantilado y escaleras, un río con cascada, vado y 3 puentes, lagos, ruinas y bosques cerrados con sendas.
 - 13 zonas con nombre. Cada una trae música, sonido de ambiente, color de luz, oscuridad y partículas.
 - Lugares memorables: el Abuelo Roble (un árbol gigante con cara), el Anillo de las Hadas, la estatua de Thor en las ruinas, la cascada, el Puente del Trol, el campamento goblin y la arena del minotauro con la cueva.

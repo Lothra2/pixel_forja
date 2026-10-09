@@ -13,6 +13,7 @@ import { isSpecial } from '../loot/render';
 import { TILE } from '../world/tiles';
 import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK } from '../world/bosqueMap';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
+import { creatures, fogTexture } from '../world/atmosphere';
 import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
 import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
@@ -230,12 +231,22 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   }
   const parts: Record<string, unknown> = {};
   for (const p of particles()) { const n = `mundo/particulas/${p.name}.png`; files.push(png(n, strip(p.frames))); parts[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
+  const crit: Record<string, unknown> = {};
+  for (const c of creatures()) {
+    const anims: Record<string, unknown> = {};
+    for (const [an, a] of Object.entries(c.anims)) { const n = `mundo/criaturas/${c.name}_${an}.png`; files.push(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
+    crit[c.name] = { w: c.w, h: c.h, anims };
+  }
+  files.push(png('mundo/niebla_nubes.png', fogTexture('nubes', 256)));
+  files.push(png('mundo/niebla_jirones.png', fogTexture('jirones', 256)));
   files.push(png('mundo/luz.png', lightTexture()));
   files.push(png('mundo/nube.png', cloudShadow()));
   manifest.mundo = {
     mapa: 'mundo/mundo1_bosque.json', nombre: 'Bosque GG', ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
     agua: 'mundo/agua.png', suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
-    vista: 'mundo/mundo1_vista.png', postales, objetos: objManifest, particulas: parts, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
+    vista: 'mundo/mundo1_vista.png', postales, objetos: objManifest, particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
+    niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', notas: 'Texturas de 256 que pegan por los 4 lados. Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla.' },
+    referencia: 'tools/pixel_forja/scripts/visor/runtime.js anima todo esto en Canvas 2D: es la referencia para el juego.',
     notas: 'Orden de dibujo: agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > objetos y personajes ordenados por y > luces (aditivo) > sombras de nubes. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',
   };
   log('mundo listo');
