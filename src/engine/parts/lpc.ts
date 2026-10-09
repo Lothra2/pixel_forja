@@ -224,12 +224,18 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
   for (const { l, d } of used) {
     const px = decode(d.px);
     const sh = turns(l.key) ? turn : 0;
+    // con lentes, las cejas suben por encima del marco (si no, el marco o el vidrio las tapan)
+    let shy = 0;
+    if (look.glasses && l.key.startsWith('brows/')) {
+      const g = DATA.parts[`glasses/${look.glasses}`]?.dirs[dir];
+      if (g) shy = Math.min(0, g.y - 1 - (d.y + d.h - 1));
+    }
     const mapped = d.colors.map((c) => l.map(c, d));
     for (let yy = 0; yy < d.h; yy++)
       for (let xx = 0; xx < d.w; xx++) {
         const v = px[yy * d.w + xx];
         if (!v) continue;
-        const fx = d.x + xx + sh, fy = d.y + yy;
+        const fx = d.x + xx + sh, fy = d.y + yy + shy;
         if (fx >= x1) continue;
         // pelo larguísimo: en un sprite de juego se corta a la altura de la espalda (si no, barre el piso y no cabe)
         if (l.mat === 'hair' && fy > chinY + MAX_HAIR_DROP) continue;
