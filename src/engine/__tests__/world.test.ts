@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  tilesetSheet, terrainTile, groundTile, cornerMask, TILE, forestObjects, forestMap, toTiledJson, renderMapPreview, hudSprites, orb, digitSheet, DIGITS,
-  SFX, SFX_NAMES, MUSIC, encodeWav, buildGameKit, type Raster,
+  tilesetSheet, terrainTile, groundTile, cornerMask, TILE, forestObjects, forestMap, toTiledJson, renderMapPreview, hudSprites, orb, digitSheet, DIGITS, inventoryPanel,
+  SFX, SFX_NAMES, MUSIC, encodeWav, buildGameKit, familyFicha, type Raster,
 } from '../index';
 
 const same = (a: Raster, b: Raster) => Buffer.from(a.data).equals(Buffer.from(b.data));
@@ -56,6 +56,18 @@ describe('interfaz tipo Diablo y audio', () => {
     const d = digitSheet();
     expect(d.png.w).toBe(d.cw * DIGITS.length);
   });
+  it('inventario: 11 casilleros de equipo y bolsa 7 x 4 dentro del panel, sin encimarse', () => {
+    const { png, layout } = inventoryPanel();
+    expect([png.w, png.h]).toEqual([layout.w, layout.h]);
+    for (const k of ['casco', 'amuleto', 'pecho', 'arma', 'mano_libre', 'guantes', 'cinturon', 'botas', 'anillo_1', 'anillo_2', 'mascota']) expect(layout.equipo, k).toHaveProperty(k);
+    const g = layout.rejilla;
+    const rects = [...Object.values(layout.equipo), [g.x, g.y, g.cols * g.celda, g.filas * g.celda] as [number, number, number, number]];
+    for (const [x, y, w, h] of rects) { expect(x).toBeGreaterThanOrEqual(5); expect(y + h).toBeLessThanOrEqual(layout.h - 5); expect(x + w).toBeLessThanOrEqual(layout.w - 5); }
+    for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) {
+      const [a, b] = [rects[i], rects[j]];
+      expect(a[0] + a[2] <= b[0] || b[0] + b[2] <= a[0] || a[1] + a[3] <= b[1] || b[1] + b[3] <= a[1]).toBe(true);
+    }
+  });
   it('sonidos y música: WAV válidos, cortos los efectos y en bucle la música', () => {
     for (const n of SFX_NAMES) {
       const w = encodeWav(SFX[n]());
@@ -70,13 +82,17 @@ describe('interfaz tipo Diablo y audio', () => {
 
 describe('kit del juego', () => {
   it('arma personajes en 8 direcciones, mundo, botín, interfaz, audio y manifest; ninguna textura pasa de 4096', () => {
-    const files = buildGameKit({ heroes: ['rick'], enemies: ['rata'], thorTiers: [0], quick: true });
+    const files = buildGameKit({ heroes: ['rick'], enemies: ['rata'], thorTiers: [0], quick: true, fichas: { prima: { ...familyFicha('steph', true), name: 'Prima' } } });
     const names = files.map((f) => f.name);
     for (const n of ['manifest.json', 'personajes/rick_walk.png', 'personajes/retrato_rick.png', 'mascota/thor_walk.png', 'enemigos/minotauro_attack_heavy.png', 'mundo/mundo1_bosque.json', 'mundo/mundo1_tiles.png', 'mundo/objetos/portal_azul_girar.png', 'ui/orbe_vida.png', 'botin/catalogo.json', 'audio/moneda.wav', 'audio/musica_jefe.wav', 'CREDITOS.txt']) expect(names, n).toContain(n);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(m.direcciones).toEqual(['down', 'down_left', 'left', 'up_left', 'up', 'up_right', 'right', 'down_right']);
     expect(m.personajes.rick.anims.walk).toMatchObject({ archivo: 'personajes/rick_walk.png', cuadros: 8 });
     expect(m.personajes.minotauro.tipo).toBe('jefe');
+    // ficha exportada del estudio: entra como heroína nueva
+    expect(m.personajes.prima).toMatchObject({ tipo: 'heroe', nombre: 'Prima', desde_estudio: true });
+    expect(names).toContain('personajes/prima_walk.png');
+    expect(m.ui.inventario.layout.rejilla).toMatchObject({ cols: 7, filas: 4 });
     expect(m.personajes.minotauro.celda).toBe(64);
     // la hoja de caminar: 8 filas (direcciones) de 48 px
     const walk = files.find((f) => f.name === 'personajes/rick_walk.png')!.bytes;

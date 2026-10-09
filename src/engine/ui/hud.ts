@@ -236,6 +236,67 @@ function banner(): Raster {
   return r;
 }
 
+// ---------- inventario del jugador ----------
+
+/** Rectángulo [x, y, w, h] dentro del panel del inventario. */
+export type Rect = [number, number, number, number];
+
+export interface InventoryLayout {
+  w: number; h: number;
+  /** franja del título (el juego escribe "Inventario" o el nombre de la heroína) */
+  titulo: Rect;
+  /** casilleros del equipo: el objeto equipado se dibuja centrado encima */
+  equipo: Record<string, Rect>;
+  /** rejilla de la bolsa: cada objeto ocupa una casilla (más simple que el tetris de Diablo, ideal para niñas) */
+  rejilla: { x: number; y: number; cols: number; filas: number; celda: number };
+  /** fila del oro: ícono ya dibujado, el número va en `texto` */
+  oro: { icono: Rect; texto: Rect };
+}
+
+/**
+ * Panel del inventario estilo Diablo: equipo arriba (muñeco con 11 casilleros, incluido Thor) y bolsa abajo (7 x 4).
+ * Devuelve el fondo con todo dibujado y las coordenadas para colocar los íconos encima.
+ */
+export function inventoryPanel(): { png: Raster; layout: InventoryLayout } {
+  const W = 280, H = 410, S = 40, C = 36;
+  const r = framed(W, H, 5, { gold: true });
+  // franja del título con línea dorada
+  for (let x = 8; x < W - 8; x++) { put(r, x, 27, GOLD[1]); put(r, x, 28, GOLD[0]); }
+  // zona del muñeco: piedra hundida con silueta tenue
+  const doll = framed(W - 24, 194, 2, { inset: true });
+  over(r, doll, 12, 32);
+  const col = [52, 120, 188], row = [38, 84, 130, 176];
+  const eq: Record<string, Rect> = {
+    mascota: [col[0], row[0], S, S], casco: [col[1], row[0], S, S], amuleto: [col[2], row[0], S, S],
+    arma: [col[0], row[1], S, S], pecho: [col[1], row[1], S, S], mano_libre: [col[2], row[1], S, S],
+    guantes: [col[0], row[2], S, S], cinturon: [col[1], row[2], S, S], anillo_2: [col[2], row[2], S, S],
+    anillo_1: [col[0], row[3], S, S], botas: [col[1], row[3], S, S],
+  };
+  const ghosts = new Map(equipSlots().map((s) => [s.name.replace('equipo_', ''), s.frames[0]]));
+  for (const [slot, [x, y]] of Object.entries(eq)) {
+    const g = ghosts.get(slot.startsWith('anillo') ? 'anillo' : slot);
+    if (g) over(r, g, x, y);
+  }
+  // espacio libre abajo a la derecha del muñeco: ahí va el retrato de la heroína
+  over(r, framed(S, S, 2, { inset: true, gold: true }), col[2], row[3]);
+  eq.retrato = [col[2], row[3], S, S];
+  // oro
+  const oroY = 232;
+  over(r, icon('oro'), 16, oroY - 4);
+  const texto: Rect = [44, oroY, 120, 16];
+  // bolsa
+  const cols = 7, filas = 4, gx = Math.floor((W - cols * C) / 2), gy = 256;
+  for (let j = 0; j < filas; j++) for (let i = 0; i < cols; i++) over(r, framed(C, C, 2, { inset: true }), gx + i * C, gy + j * C);
+  return {
+    png: r,
+    layout: {
+      w: W, h: H, titulo: [8, 6, W - 16, 20], equipo: eq,
+      rejilla: { x: gx, y: gy, cols, filas, celda: C },
+      oro: { icono: [16, oroY - 4, 24, 24], texto },
+    },
+  };
+}
+
 /** Todos los sprites de la interfaz. */
 export function hudSprites(): UiSprite[] {
   const out: UiSprite[] = [];

@@ -2,7 +2,7 @@ import { createRaster, blit, type Raster } from '../core/raster';
 import { encodePng } from '../export/png';
 import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim } from '../render/clip';
-import type { Ficha, CellSize } from '../sheet/ficha';
+import type { Ficha, CellSize, HumanFicha } from '../sheet/ficha';
 import { familyFicha, thorFicha, FAMILY, FAMILY_GG, type FamilyId } from '../rpg/family';
 import { enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, type EnemyId } from '../rpg/presets';
 import { PET_RPG_ANIMS } from '../anim/animal';
@@ -13,7 +13,7 @@ import { isSpecial } from '../loot/render';
 import { tilesetSheet, TILE } from '../world/tiles';
 import { forestObjects } from '../world/objects';
 import { forestMap, toTiledJson, renderMapPreview } from '../world/map';
-import { hudSprites, digitSheet, DIGITS } from '../ui/hud';
+import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
 
@@ -30,6 +30,11 @@ const MAX_TEX = 4096;
 
 export interface KitOptions {
   heroes?: FamilyId[];
+  /**
+   * Personajes editados en el estudio (Exportar ficha), por id. Si el id es de la familia reemplaza a su preset,
+   * si no, se agrega como heroína nueva. Así el estudio y el juego quedan conectados.
+   */
+  fichas?: Record<string, HumanFicha>;
   enemies?: EnemyId[];
   boss?: EnemyId;
   /** niveles de armadura de Thor a exportar (0 = sin armadura) */
@@ -78,7 +83,7 @@ function portrait(f: Ficha, view: 'front' | 'se' = 'front', anim = 'idle'): Rast
   return out;
 }
 
-export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean }>; clase?: string; retrato?: string }
+export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean }>; clase?: string; retrato?: string; desde_estudio?: boolean }
 
 function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void): CharEntry {
   const out: CharEntry = { ...entry, celda: cell, pivote: [cell / 2, cell - 2], anims: {} };
@@ -110,12 +115,16 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
 
   // ---------- héroes, mascota, enemigos y jefe ----------
   const chars: Record<string, CharEntry> = {};
-  for (const id of heroes) {
-    const f = familyFicha(id, true);
+  const custom = opts.fichas ?? {};
+  const heroIds = [...new Set<string>([...heroes, ...Object.keys(custom)])];
+  for (const id of heroIds) {
+    if (!/^[a-z0-9_]+$/.test(id)) throw new Error(`id de personaje inválido: "${id}" (usa minúsculas, números y _)`);
+    const fam = FAMILY_GG[id as FamilyId];
+    const f = custom[id] ?? familyFicha(id as FamilyId, true);
     const c = creditsFor(f);
     if (c) credits.add(c);
     files.push(png(`personajes/retrato_${id}.png`, portrait(f)));
-    chars[id] = exportChar('personajes', id, f, 48, heroAnims, { tipo: 'heroe', nombre: FAMILY_GG[id].name, clase: FAMILY_GG[id].clase, retrato: `personajes/retrato_${id}.png` }, files, log);
+    chars[id] = exportChar('personajes', id, f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log);
   }
   const tiers = opts.thorTiers ?? [0, 1, 2, 3, 4, 5];
   for (const t of tiers) {
@@ -203,6 +212,9 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const dg = digitSheet();
   files.push(png('ui/numeros.png', dg.png));
   ui.numeros = { archivo: 'ui/numeros.png', w: dg.cw, h: dg.ch, caracteres: DIGITS, filas: dg.colors };
+  const inv = inventoryPanel();
+  files.push(png('ui/inventario.png', inv.png));
+  ui.inventario = { archivo: 'ui/inventario.png', w: inv.layout.w, h: inv.layout.h, cuadros: 1, layout: inv.layout };
   manifest.ui = ui;
 
   // ---------- audio ----------
