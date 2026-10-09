@@ -45,6 +45,7 @@ export * from './parts/lpc';
 export * from './head3d/photo';
 export * from './fx/fx';
 export * from './fx/arrow';
+export * from './fx/stomp';
 export * from './loot/index';
 export * from './rpg/presets';
 export * from './rpg/family';

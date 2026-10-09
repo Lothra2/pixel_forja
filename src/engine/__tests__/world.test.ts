@@ -102,7 +102,13 @@ describe('kit del juego', () => {
       expect(atlases[it.atlas], it.id).toBeDefined();
       for (const k of it.animated ? [`${it.icon}_0`, `${it.icon}_7`] : [it.icon]) expect(atlases[it.atlas], `${it.id} -> ${k}`).toHaveProperty([k]);
     }
-    expect(m.personajes.minotauro.celda).toBe(64);
+    // el jefe llena la pantalla: celda 96 y la hoja de 8 filas de 96
+    expect(m.personajes.minotauro).toMatchObject({ celda: 96, pivote: [48, 93] });
+    const mw = files.find((f) => f.name === 'enemigos/minotauro_walk.png')!.bytes;
+    expect((mw[20] << 24) | (mw[21] << 16) | (mw[22] << 8) | mw[23]).toBe(8 * 96);
+    expect(m.fx.onda_pisoton).toMatchObject({ celda: 96, cuadros: 8, fps: 16, loop: false });
+    expect(m.mundo.objetos.aviso_carga).toMatchObject({ w: 32, h: 48, apoyo: [0, 24] });
+    expect(Object.keys(m.app).sort()).toEqual(['apple_touch_180', 'favicon_32', 'icono_192', 'icono_512', 'icono_maskable_512']);
     expect(m.ui.iconos_cartel.peligro).toBe('ui/carteles/peligro.png');
     expect(m.ui.girar_tablet.cuadros).toBe(2);
     expect(m.ui.habilidades.curar).toBe('ui/habilidades/curar.png');

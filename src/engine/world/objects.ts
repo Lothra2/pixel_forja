@@ -1,4 +1,4 @@
-import type { Raster } from '../core/raster';
+import { createRaster, type Raster } from '../core/raster';
 import { IconCanvas, type MatDef, type P } from '../loot/canvas';
 import { glowMat, metalMat } from '../loot/materials';
 
@@ -349,11 +349,43 @@ export function telegraph(): WorldObject {
   return { name: 'aviso_jefe', w: 96, h: 48, anchor: [48, 24], solid: null, anims: { llenar: { frames, fps: 8, loop: false } } };
 }
 
+/**
+ * Aviso de la carga del minotauro: un tramo de 32 x 48 que se repite a lo largo de la línea por donde va a correr
+ * (apoyo en el borde izquierdo, al medio: se gira hacia donde carga). La franja se llena de rojo desde el centro y
+ * las flechas corren hacia adelante. Los tramos pegan entre sí sin costura.
+ */
+export function chargeWarning(): WorldObject {
+  const frames: Raster[] = [];
+  const W = 32, H = 48, top = 12, bot = 35, mid = (top + bot) / 2;
+  for (let f = 0; f < 8; f++) {
+    const r = createRaster(W, H);
+    const put = (x: number, y: number, c: [number, number, number], a: number) => { const i = (y * W + x) * 4; r.data.set([...c, a], i); };
+    const fill = (f + 1) / 8;
+    for (let y = top; y <= bot; y++) for (let x = 0; x < W; x++) {
+      const inner = Math.abs(y - mid) <= (bot - top) / 2 * fill;
+      put(x, y, inner ? [255, 58, 42] : [190, 30, 30], inner ? 150 : 70);
+    }
+    // bordes claros arriba y abajo
+    for (let x = 0; x < W; x++) { put(x, top, [255, 208, 160], 190); put(x, bot, [255, 208, 160], 190); }
+    // flechas ">" que avanzan 2 px por cuadro (cada 16 px: pega sin costura con el tramo siguiente)
+    for (let k = 0; k < 2; k++) {
+      const x0 = (k * 16 + f * 2) % W;
+      for (let d = 0; d <= 6; d++) for (const t of [0, 1]) {
+        const x = (x0 + d + t) % W;
+        put(x, Math.round(mid) - 6 + d, [255, 236, 200], 210);
+        put(x, Math.round(mid) + 6 - d, [255, 236, 200], 210);
+      }
+    }
+    frames.push(r);
+  }
+  return { name: 'aviso_carga', w: W, h: H, anchor: [0, 24], solid: null, layer: 'suelo', anims: { llenar: { frames, fps: 8, loop: false } } };
+}
+
 /** Todos los objetos del bosque. */
 export function forestObjects(): WorldObject[] {
   return [
     oakTree(0), oakTree(1), oakTree(2), pineTree(0), pineTree(1), bush(false), bush(true), rock(false), rock(true), stump(), logPile(), mushrooms(), tallGrass(),
-    fence('h'), fence('v'), fence('post'), signpost(), campfire(), campfireCamp(), torch(), breakable('caja'), breakable('barril'), breakable('vasija'), cave(), standingStone(),
+    fence('h'), fence('v'), fence('post'), signpost(), campfire(), campfireCamp(), chargeWarning(), torch(), breakable('caja'), breakable('barril'), breakable('vasija'), cave(), standingStone(),
     portal('azul'), portal('rojo'), telegraph(),
   ];
 }

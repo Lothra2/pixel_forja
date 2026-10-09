@@ -162,3 +162,72 @@ export function drawText(font: BitmapFont, text: string, scale = 1): Raster {
   }
   return out;
 }
+
+/**
+ * Logo "GG Abyss" (288 x 96, 8 cuadros a 8 fps): "GG" grande dorado y "ABYSS" plateado con un halo violeta,
+ * con el estilo de la fuente de títulos (degradé por filas, contorno y sombra) y un brillo que recorre las letras.
+ */
+export function renderLogo(bold: ArrayBuffer): Raster[] {
+  const fb = parse(bold);
+  const W = 288, H = 96;
+  type Line = { text: string; px: number; ramp: RGB[]; outline: RGB; y: number };
+  const lines: Line[] = [
+    { text: 'GG', px: 8, ramp: ['#fff2b0', '#ffd25a', '#e8a828', '#c47a18', '#8a4a10'].map(hex), outline: hex('#1a0e08'), y: 3 },
+    { text: 'ABYSS', px: 7, ramp: ['#ffffff', '#e4dcff', '#b8a8e8', '#8a74c8', '#5a4890'].map(hex), outline: hex('#0e0a1c'), y: 50 },
+  ];
+  // máscara de cada línea: qué pixel es letra y en qué fila de la mayúscula cae (para el degradé)
+  const fill = new Int16Array(W * H).fill(-1), lineOf = new Int8Array(W * H).fill(-1);
+  lines.forEach((ln, li) => {
+    const gl = rasterGlyphs(fb, ln.px).filter((g) => ln.text.includes(g.ch));
+    const by = (ch: string) => gl.find((g) => g.ch === ch)!;
+    const width = [...ln.text].reduce((a, ch) => a + by(ch).adv, 0) - ln.px;
+    let x = Math.round((W - width) / 2);
+    const capTop = Math.min(...[...ln.text].map((ch) => by(ch).top)), capH = Math.max(...[...ln.text].map((ch) => by(ch).top + by(ch).h)) - capTop;
+    for (const ch of ln.text) {
+      const g = by(ch);
+      for (let yy = 0; yy < g.h; yy++) for (let xx = 0; xx < g.w; xx++) {
+        if (!g.mask[yy * g.w + xx]) continue;
+        const X = x + g.left + xx, Y = ln.y + (g.top - capTop) + yy;
+        if (X < 0 || Y < 0 || X >= W || Y >= H) continue;
+        fill[Y * W + X] = Math.floor(((g.top - capTop + yy) / capH) * ln.ramp.length);
+        lineOf[Y * W + X] = li;
+      }
+      x += g.adv;
+    }
+  });
+  const isFill = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && fill[y * W + x] >= 0;
+  const frames: Raster[] = [];
+  for (let f = 0; f < 8; f++) {
+    const r = createRaster(W, H);
+    const put = (x: number, y: number, c: RGB, a = 255) => { if (x >= 0 && y >= 0 && x < W && y < H) r.data.set([...c, a], (y * W + x) * 4); };
+    // halo violeta detrás de ABYSS que respira
+    const breathe = 0.75 + 0.25 * Math.sin((f / 8) * Math.PI * 2);
+    for (let y = 44; y < H; y++) for (let x = 0; x < W; x++) {
+      const d = Math.hypot((x - W / 2) / 140, (y - 68) / 26);
+      if (d < 1) put(x, y, [110, 70, 200], Math.round(70 * (1 - d) * breathe));
+    }
+    // sombra (2 px abajo a la derecha) y contorno de 2 px
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (isFill(x, y)) continue;
+      let near = false, li = -1;
+      for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2; dx++) if (Math.abs(dx) + Math.abs(dy) <= 3 && isFill(x + dx, y + dy)) { near = true; li = lineOf[(y + dy) * W + x + dx]; break; }
+      if (near) put(x, y, lines[li].outline);
+      else if (isFill(x - 3, y - 3) || isFill(x - 2, y - 4)) put(x, y, [0, 0, 0], 150);
+    }
+    // relleno en degradé, borde de arriba claro y el brillo que pasa en diagonal
+    const s = -40 + (f / 7) * 380;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const k = fill[y * W + x];
+      if (k < 0) continue;
+      const ln = lines[lineOf[y * W + x]];
+      let c = ln.ramp[Math.min(ln.ramp.length - 1, k)];
+      if (!isFill(x, y - 1)) c = ln.ramp[0];
+      const band = Math.abs(x + y * 0.6 - s);
+      if (band < 5) c = [255, 255, 255];
+      else if (band < 9) c = c.map((v) => Math.min(255, v + 70)) as RGB;
+      put(x, y, c);
+    }
+    frames.push(r);
+  }
+  return frames;
+}

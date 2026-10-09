@@ -7,7 +7,9 @@ import { familyFicha, thorFicha, FAMILY, FAMILY_GG, type FamilyId } from '../rpg
 import { enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, type EnemyId } from '../rpg/presets';
 import { PET_RPG_ANIMS } from '../anim/animal';
 import { renderFx, projectile8, rotate8, type FxElement } from '../fx/fx';
+import { scaleRaster } from '../render/rotsprite';
 import { arrowProjectile, arrowImpact } from '../fx/arrow';
+import { stompWave } from '../fx/stomp';
 import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
 import { isSpecial } from '../loot/render';
@@ -17,7 +19,8 @@ import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
 import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
 import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
-import { bitmapFonts } from '../ui/fonts';
+import { bitmapFonts, renderLogo } from '../ui/fonts';
+import { appIcons } from '../ui/appIcons';
 import { signIcons, hudIcons, rotateTablet, skillIcons } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
@@ -53,12 +56,13 @@ export interface KitOptions {
 }
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
-function sheet8(f: Ficha, cell: CellSize, anim: string): { png: Raster; frames: number; fps: number; loop: boolean } | null {
+function sheet8(f: Ficha, cell: CellSize, anim: string, k = 1): { png: Raster; frames: number; fps: number; loop: boolean } | null {
   if (!hasAnim(f, anim)) return null;
   const clips = EIGHT_VIEWS.map((v) => renderClip(f, cell, anim, v, { props: true }));
   const n = Math.max(...clips.map((c) => c.frames.length));
-  const png = createRaster(n * cell, 8 * cell);
-  clips.forEach((c, row) => c.frames.forEach((fr, i) => blit(png, fr, i * cell, row * cell)));
+  const C = Math.round(cell * k);
+  const png = createRaster(n * C, 8 * C);
+  clips.forEach((c, row) => c.frames.forEach((fr, i) => blit(png, k === 1 ? fr : scaleRaster(fr, k), i * C, row * C)));
   return { png, frames: n, fps: clips[0].fps, loop: clips[0].loop };
 }
 
@@ -103,10 +107,12 @@ function portrait(f: Ficha, view: 'front' | 'se' = 'front', anim = 'idle'): Rast
 
 export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean }>; clase?: string; retrato?: string; desde_estudio?: boolean }
 
-function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void): CharEntry {
-  const out: CharEntry = { ...entry, celda: cell, pivote: [cell / 2, cell - 2], anims: {} };
+/** k: se dibuja en `cell` y se agranda por k a la manera de RotSprite (el jefe: 64 x 1.5 = celda 96). */
+function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void, k = 1): CharEntry {
+  const C = Math.round(cell * k);
+  const out: CharEntry = { ...entry, celda: C, pivote: [C / 2, Math.floor((cell - 2) * k)], anims: {} };
   for (const a of anims) {
-    const s = sheet8(f, cell, a);
+    const s = sheet8(f, cell, a, k);
     if (!s) continue;
     const name = `${prefix}/${id}_${a}.png`;
     files.push(png(name, s.png));
@@ -159,7 +165,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   }
   {
     const f = enemyFicha(boss);
-    chars[boss] = exportChar('enemigos', boss, f, enemyCell(boss), [...enemyAnims(boss), 'leap'], { tipo: 'jefe', nombre: boss }, files, log);
+    // el jefe llena la pantalla: dibujado en 64 (ahí le caben los cuernos) y agrandado x1.5 a celda 96
+    chars[boss] = exportChar('enemigos', boss, f, 64, [...enemyAnims(boss), 'leap'], { tipo: 'jefe', nombre: boss }, files, log, 1.5);
   }
   manifest.personajes = chars;
 
@@ -182,6 +189,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   // la flecha: pintada a mano, 2 cuadros en vuelo y astillas al pegar
   for (const { dir, frames } of rotate8(arrowProjectile(48))) addFx(`proyectil_flecha_${dir}`, frames, 14, true);
   addFx('impacto_flecha', arrowImpact(48), 16, false);
+  // el pisotón del minotauro: celda 96, polvo y grietas en anillo
+  addFx('onda_pisoton', stompWave(96), 16, false);
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);
 
@@ -286,9 +295,17 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       files.push(file(`ui/fuentes/${f.name}.fnt`, enc.encode(f.fnt), 'application/xml'));
       fuentes[f.name] = { png: `ui/fuentes/${f.name}.png`, fnt: `ui/fuentes/${f.name}.fnt`, alto_linea: f.lineHeight, base: f.base };
     }
+    // logo animado con la misma fuente de títulos
+    const logo = renderLogo(opts.fonts.bold);
+    files.push(png('ui/logo.png', strip(logo)));
+    ui.logo = { archivo: 'ui/logo.png', w: 288, h: 96, cuadros: logo.length, fps: 8, loop: true };
     ui.fuentes = { ...fuentes, notas: 'BMFont XML: this.load.bitmapFont(nombre, png, fnt). fuente_ui (8 px, blanca con sombra, se tiñe con setTint; usar escala entera x2 o x3), fuente_titulo y fuente_titulo_plata (16 px, ya pintadas). Tienen ñ, tildes, ¡ y ¿.' };
   }
   manifest.ui = ui;
+  // íconos de la app (PWA): Thor sobre el portal
+  const app: Record<string, unknown> = {};
+  for (const ic of appIcons()) { const n = `app/${ic.name}.png`; files.push(png(n, ic.img)); app[ic.name] = { archivo: n, tam: ic.size, uso: ic.purpose }; }
+  manifest.app = app;
 
   // ---------- audio ----------
   const audio: Record<string, string> = {};

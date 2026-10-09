@@ -267,3 +267,29 @@ describe('taller entrega 2', () => {
     for (const s of sk) expect([s.frames[0].w, s.frames[0].h]).toEqual([40, 40]);
   });
 });
+
+describe('taller entrega 3', () => {
+  it('íconos de la app del tamaño justo, aviso de carga que pega sin costura y onda del pisotón', async () => {
+    const { appIcons } = await import('../ui/appIcons');
+    const { stompWave } = await import('../fx/stomp');
+    const { forestObjects } = await import('../world/objects');
+    for (const ic of appIcons()) { expect([ic.img.w, ic.img.h], ic.name).toEqual([ic.size, ic.size]); expect(ic.img.data[3], ic.name).toBe(255); }
+    const av = forestObjects().find((o) => o.name === 'aviso_carga')!;
+    expect(av.anims.llenar.frames).toHaveLength(8);
+    // el borde izquierdo de un tramo sigue al borde derecho del anterior: mismas filas pintadas
+    for (const fr of av.anims.llenar.frames) for (let y = 0; y < 48; y++) expect(fr.data[(y * 32) * 4 + 3] > 0).toBe(fr.data[(y * 32 + 31) * 4 + 3] > 0);
+    const st = stompWave();
+    expect(st).toHaveLength(8);
+    expect(st[0].w).toBe(96);
+  });
+
+  it('el logo usa la fuente de títulos: 288 x 96, 8 cuadros con el brillo en distinto lugar', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { renderLogo } = await import('../ui/fonts');
+    const b = readFileSync('node_modules/@fontsource/silkscreen/files/silkscreen-latin-700-normal.woff');
+    const logo = renderLogo(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer);
+    expect(logo).toHaveLength(8);
+    expect([logo[0].w, logo[0].h]).toEqual([288, 96]);
+    expect(Buffer.from(logo[1].data).equals(Buffer.from(logo[5].data))).toBe(false);
+  });
+});
