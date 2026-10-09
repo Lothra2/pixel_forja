@@ -26,21 +26,3 @@ describe('poderes (efectos)', () => {
     expect(Buffer.from(dirs[0].clip.frames[0].data).equals(Buffer.from(dirs[2].clip.frames[0].data))).toBe(false);
   });
 });
-
-import { renderItem, itemName, ITEM_KINDS, RARITIES } from '../index';
-describe('objetos (íconos)', () => {
-  it('cada objeto se dibuja en 32 px, con y sin casillero, y cambia con la rareza', () => {
-    for (const kind of ITEM_KINDS) {
-      const a = renderItem({ kind });
-      let lit = 0;
-      for (let i = 0; i < 32 * 32; i++) if (a.data[i * 4 + 3]) lit++;
-      expect(lit, kind).toBeGreaterThan(30);
-      const framed = renderItem({ kind, rarity: 'unique', frame: true });
-      expect(Buffer.from(framed.data).equals(Buffer.from(a.data)), kind).toBe(false);
-    }
-    expect(renderItem({ kind: 'ring', px: 64 }).w).toBe(64);
-    expect(itemName({ kind: 'gem', gem: 'emerald', size: 'large' })).toBe('gem_emerald_perfect');
-    expect(itemName({ kind: 'w_axe', rarity: 'unique' })).toBe('w_axe_unique');
-    expect(RARITIES.length).toBe(5);
-  });
-});

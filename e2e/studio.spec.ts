@@ -232,13 +232,41 @@ test('taller RPG: héroe con clase, enemigos, poderes y objetos', async ({ page 
   let dl = page.waitForEvent('download');
   await page.getByTestId('fx-export').click();
   expect((await dl).suggestedFilename()).toBe('poderes.zip');
-  // objetos: exportar
-  await page.getByTestId('tool-home').click();
+  expect(errors).toEqual([]);
+});
+
+test('botín: legendarios, armas, armaduras que evolucionan, cofres y exportar', async ({ page }, info) => {
+  test.setTimeout(180000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
   await page.getByTestId('rpg-items').click();
-  await expect(page.getByTestId('items-grid').locator('canvas')).toHaveCount(45);
-  await page.screenshot({ path: `${shots}/${tag}_33_objetos.png`, fullPage: true });
+  // legendarios y set: el detalle con nombre y estadísticas
+  await expect(page.getByTestId('loot-grid').locator('canvas').first()).toBeVisible({ timeout: 30000 });
+  expect(await page.getByTestId('loot-grid').locator('canvas').count()).toBeGreaterThanOrEqual(40);
+  await page.getByTestId('loot-juramento_de_rick').click();
+  await expect(page.getByTestId('loot-name')).toHaveText('Juramento de Rick');
+  await page.screenshot({ path: `${shots}/${tag}_33_botin_legendarios.png`, fullPage: true });
+  let dl = page.waitForEvent('download');
+  await page.getByTestId('loot-export').click();
+  expect((await dl).suggestedFilename()).toBe('botin_legend.zip');
+  // armas raras al azar
+  await page.getByTestId('loot-tab-weapons').click();
+  await page.getByTestId('loot-grade').getByRole('button', { name: 'Raro' }).click();
+  await page.getByTestId('loot-reroll').click();
+  await expect(page.getByTestId('loot-grid').locator('canvas')).toHaveCount(36);
+  await page.screenshot({ path: `${shots}/${tag}_34_botin_armas.png`, fullPage: true });
+  // armaduras: 140 piezas
+  await page.getByTestId('loot-tab-armor').click();
+  await expect(page.getByTestId('loot-grid').locator('canvas')).toHaveCount(140, { timeout: 30000 });
+  await page.screenshot({ path: `${shots}/${tag}_35_botin_armaduras.png`, fullPage: true });
+  // cofres y oro
+  await page.getByTestId('loot-tab-world').click();
+  await expect(page.getByTestId('chest-legendario').locator('canvas')).toHaveCount(2);
+  await page.screenshot({ path: `${shots}/${tag}_36_botin_mundo.png`, fullPage: true });
   dl = page.waitForEvent('download');
-  await page.getByTestId('items-export').click();
-  expect((await dl).suggestedFilename()).toBe('objetos.zip');
+  await page.getByTestId('loot-export-world').click();
+  expect((await dl).suggestedFilename()).toBe('botin_world.zip');
   expect(errors).toEqual([]);
 });

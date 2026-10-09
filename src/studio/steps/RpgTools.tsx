@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  renderFx, renderItem, exportFx, exportItems, FX_ELEMENTS, FX_KINDS, FX_PALETTES, ITEM_KINDS, RARITIES, RARITY_COLORS, GEM_COLORS, ENEMIES, FAMILY, FAMILY_GG,
-  type FamilyId, type FxElement, type FxKind, type CellSize, type ItemSpec, type Rarity, type GemColor, type EnemyId, type Raster,
+  renderFx, exportFx, FX_ELEMENTS, FX_KINDS, FX_PALETTES, ENEMIES, FAMILY, FAMILY_GG,
+  type FamilyId, type FxElement, type FxKind, type CellSize, type EnemyId, type Raster,
 } from '../../engine/index';
 import type { FrameSet } from '../protocol';
 import type { Key } from '../i18n';
-import { Seg, Toggle, type T } from '../components/ui';
+import { Seg, type T } from '../components/ui';
 import { downloadFiles } from '../util';
 
 /** Lienzo animado de cuadros RGBA (sin suavizar). */
@@ -27,17 +27,6 @@ export function AnimCanvas({ frames, cell, fps, zoom, testid }: { frames: Uint8C
     return () => cancelAnimationFrame(raf);
   }, [frames, cell, fps]);
   return <canvas ref={ref} className="pixel" style={{ width: cell * zoom, height: cell * zoom }} data-testid={testid} />;
-}
-
-function StaticCanvas({ r, zoom }: { r: Raster; zoom: number }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const c = ref.current;
-    if (!c) return;
-    c.width = r.w; c.height = r.h;
-    c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(r.data), r.w, r.h), 0, 0);
-  }, [r]);
-  return <canvas ref={ref} className="pixel" style={{ width: r.w * zoom, height: r.h * zoom }} />;
 }
 
 const toggleIn = <V,>(s: Set<V>, v: V) => { const n = new Set(s); if (n.has(v)) n.delete(v); else n.add(v); return n; };
@@ -122,52 +111,6 @@ export function FxStep({ t }: { t: T }) {
         </div>
         <button className="btn" disabled={!els.size || !kinds.size} onClick={doExport} data-testid="fx-export">{t('fx_export')}</button>
         <p className="muted small">{t('fx_help')}</p>
-      </aside>
-    </>
-  );
-}
-
-// ---------- objetos ----------
-
-const GEMS = Object.keys(GEM_COLORS) as GemColor[];
-
-export function ItemsStep({ t }: { t: T }) {
-  const [rarity, setRarity] = useState<Rarity | 'mix'>('mix');
-  const [frame, setFrame] = useState(true);
-  const [px, setPx] = useState(32);
-  const [size, setSize] = useState<'small' | 'medium' | 'large'>('medium');
-  const specs: ItemSpec[] = useMemo(() => {
-    const r = (i: number): Rarity => (rarity === 'mix' ? RARITIES[i % RARITIES.length] : rarity);
-    return [
-      ...ITEM_KINDS.map((kind, i) => ({ kind, rarity: r(i), frame, seed: i, size: kind.startsWith('potion') ? size : undefined })),
-      ...GEMS.map((gem, i) => ({ kind: 'gem' as const, gem, size, frame, rarity: r(i) })),
-    ];
-  }, [rarity, frame, size]);
-  const icons = useMemo(() => specs.map((s) => renderItem(s)), [specs]);
-  return (
-    <>
-      <section className="panel">
-        <div className="item-grid" data-testid="items-grid">
-          {icons.map((r, i) => <div key={i} className="item-cell" title={specs[i].kind}><StaticCanvas r={r} zoom={2} /></div>)}
-        </div>
-      </section>
-      <aside className="panel side">
-        <div className="field">
-          <span>{t('it_rarity')}</span>
-          <div className="chips">
-            <button className={`chip ${rarity === 'mix' ? 'on' : ''}`} onClick={() => setRarity('mix')}>{t('it_mix')}</button>
-            {RARITIES.map((r) => (
-              <button key={r} className={`chip ${rarity === r ? 'on' : ''}`} onClick={() => setRarity(r)}>
-                <i style={{ background: RARITY_COLORS[r] }} />{t(`rar_${r}` as Key)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <Seg label={t('it_size')} value={size} set={(v) => setSize(v as typeof size)} opts={[['small', t('it_small')], ['medium', t('it_medium')], ['large', t('it_large')]]} />
-        <Toggle label={t('it_frame')} on={frame} set={setFrame} />
-        <Seg label={t('it_px')} value={String(px)} set={(v) => setPx(+v)} opts={[['32', '32'], ['64', '64']]} />
-        <button className="btn" onClick={() => downloadFiles(exportItems(specs, px), 'objetos.zip')} data-testid="items-export">{t('it_export')}</button>
-        <p className="muted small">{t('it_help')}</p>
       </aside>
     </>
   );

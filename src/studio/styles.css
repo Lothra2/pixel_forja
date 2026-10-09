@@ -432,6 +432,35 @@ p.ok { margin: 0; }
   background: #0e0c18; color: var(--muted); font-size: 12px; cursor: pointer;
 }
 .fx-thumb.on { border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 1px var(--accent) inset; }
-.item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 6px; }
-.item-cell { display: grid; place-items: center; padding: 2px; }
+/* ---------- Botín ---------- */
+.loot .loot-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.loot-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.loot-head .h2 { margin: 0 0 4px; }
+.loot-head p { max-width: 640px; margin: 0; }
+.loot-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.loot-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 18px; margin-bottom: 12px; }
+.loot-bar .field { margin: 0; }
+.loot-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.loot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; max-height: 640px; overflow: auto; padding: 2px; }
+.loot-grid.big { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+.loot-tile { display: grid; place-items: center; padding: 2px; border-radius: 8px; border: 1px solid transparent; background: transparent; cursor: pointer; transition: transform 0.12s, border-color 0.12s; }
+.loot-tile:hover { transform: translateY(-2px); }
+.loot-tile.on { border-color: var(--rar, var(--accent)); box-shadow: 0 0 0 1px var(--rar, var(--accent)) inset, 0 0 18px -6px var(--rar, var(--accent)); }
+.loot-tile canvas { max-width: 100%; height: auto !important; }
+.loot-detail { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: #0e0c18; }
+.loot-detail-art { display: flex; align-items: flex-end; justify-content: center; gap: 12px; padding: 8px; border-radius: 10px; background: radial-gradient(60% 60% at 50% 55%, rgba(255, 138, 30, 0.1), transparent 70%); }
+.loot-detail h3 { margin: 4px 0 0; font-size: 18px; }
+.loot-stats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; }
+.loot-stats .mod { color: #8fa8ff; }
+.loot-set { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.flavor { margin: 4px 0 0; color: #c79a3c; font-style: italic; font-size: 13px; }
+.loot-evo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.evo-names { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--muted); }
+.evo-names b { color: var(--text); min-width: 64px; }
+.loot-world h4 { margin: 18px 0 8px; font: 700 11px/1 var(--pixel); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+.world-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.world-card { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: #232a20; min-width: 90px; }
+.world-card figcaption { font-size: 12px; color: #d6dccf; }
+.world-pair { display: flex; gap: 8px; align-items: flex-end; }
+@media (max-width: 900px) { .loot-body { grid-template-columns: 1fr; } .loot-detail { position: static; } .loot-grid { max-height: none; } }
 @media (max-width: 900px) { .rpg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

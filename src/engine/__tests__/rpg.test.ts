@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   HERO_CLASSES, ENEMIES, applyClass, enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, fichaFromAvatar, defaultAvatar, renderPlan,
-  exportFx, exportItems, ITEM_KINDS, FX_ELEMENTS, EIGHT_VIEWS, FAMILY, FAMILY_GG, familyFicha, validateFicha, type HumanFicha,
+  exportFx, FX_ELEMENTS, EIGHT_VIEWS, FAMILY, FAMILY_GG, familyFicha, validateFicha, type HumanFicha,
 } from '../index';
 
 describe('RPG: clases, enemigos y exportación', () => {
@@ -46,14 +46,10 @@ describe('RPG: clases, enemigos y exportación', () => {
     expect(familyFicha('rick').avatar?.lpc).toMatchObject({ hair: 'swept_back', glasses: 'nerd', beard: 'basic' });
     expect(familyFicha('sophie', true).gear?.main).toBe('bow');
   }, 300000);
-  it('exporta poderes y objetos como PNG + JSON de Phaser', () => {
+  it('exporta poderes como PNG + JSON de Phaser', () => {
     const fx = exportFx(FX_ELEMENTS.slice(0, 2), ['projectile', 'impact'], 48);
     const j = JSON.parse(new TextDecoder().decode(fx[1].bytes));
     expect(Object.keys(j.anims)).toContain('projectile_fuego_down_right');
     expect(j.anims.impact_hielo.frames).toBe(8);
-    const it = exportItems(ITEM_KINDS.map((kind) => ({ kind, rarity: 'magic' as const })), 32);
-    const ij = JSON.parse(new TextDecoder().decode(it[1].bytes));
-    expect(Object.keys(ij.frames).length).toBe(ITEM_KINDS.length);
-    expect(ij.frames.w_axe_magic.frame.w).toBe(32);
   });
 });

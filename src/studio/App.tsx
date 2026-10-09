@@ -11,7 +11,8 @@ import { StyleStep } from './steps/StyleStep';
 import { EditorStep } from './steps/EditorStep';
 import { ExportStep } from './steps/ExportStep';
 import { AvatarStep } from './steps/AvatarStep';
-import { EnemiesStep, FxStep, ItemsStep, FamilyRow } from './steps/RpgTools';
+import { EnemiesStep, FxStep, FamilyRow } from './steps/RpgTools';
+import { LootStep } from './steps/LootStep';
 import { loadGallery, saveGallery, upsert, type GalleryItem } from './gallery';
 import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, safeName } from './util';
 import {
@@ -694,7 +695,7 @@ export function App() {
 
         {step === 'enemies' && <EnemiesStep t={t} render={renderEnemy} open={openEnemy} />}
         {step === 'fx' && <FxStep t={t} />}
-        {step === 'items' && <ItemsStep t={t} />}
+        {step === 'items' && <LootStep t={t} lang={lang} />}
 
         {step === 'editor' && ficha && (isHuman(ficha)
           ? <EditorStep t={t} lang={lang} ficha={ficha} cell={cell} onSave={saveCustom} />
