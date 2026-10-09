@@ -1,7 +1,9 @@
 import { createRaster, type Raster } from '../core/raster';
 import { over } from '../loot/canvas';
 import { TILE } from './tiles';
-import { paintTerrain, waterTile, chunks, type PaintedTerrain, type TP } from './paint';
+import { paintTerrain, waterTile, chunks, forestFloor, type PaintedTerrain, type TP } from './paint';
+import { floraV3, gloomGrade } from './flora';
+import { cobweb } from './atmosphere';
 import { bosqueDesign, LUGARES as L, BOSQUE_W, BOSQUE_H } from './bosque';
 import { forestObjects, type WorldObject } from './objects';
 import { landmarkObjects } from './landmarks';
@@ -39,7 +41,12 @@ function rng(seed: number) {
 
 /** Todos los objetos que usa el mundo grande. */
 export function bosqueObjects(): WorldObject[] {
-  return [...forestObjects(), ...landmarkObjects()];
+  // los objetos de la paleta vieja pasan por la corrección sombría; la flora v3 ya viene sombría
+  const graded = [...forestObjects(), ...landmarkObjects()].map((o) => ({
+    ...o, anims: Object.fromEntries(Object.entries(o.anims).map(([k, a]) => [k, { ...a, frames: a.frames.map((f) => gloomGrade(f)) }])),
+  }));
+  const web: WorldObject = { name: 'telarana', w: 40, h: 36, anchor: [6, 35], solid: null, anims: { idle: { frames: [cobweb()], fps: 1, loop: true } } };
+  return [...graded, ...floraV3(), web];
 }
 
 export function bosqueMap(seed = 2024): BigMap {
@@ -182,7 +189,7 @@ export function bosqueMap(seed = 2024): BigMap {
 
   // ---------- El Abuelo Roble ----------
   const [ax, ay] = L.abuelo;
-  place('abuelo_roble', T(ax), ay * TILE + 8, 3);
+  place('abuelo_roble_v3', T(ax), ay * TILE + 8, 3);
   reserve(ax, ay + 2, 3);
   checkpoint('abuelo', 'El Abuelo Roble', ax + 4, ay + 3);
   chest(ax - 4, ay + 2, 'reforzado');
@@ -217,14 +224,14 @@ export function bosqueMap(seed = 2024): BigMap {
   const [mx, my] = L.pradera;
   for (let i = 0; i < 26; i++) { const [x, y] = near(mx + Math.round((r() - 0.5) * 18), my + Math.round((r() - 0.5) * 12), 2); if (kindAt(x, y) === 0) { placeT('pasto_alto', x, y); occ[at(x, y)] = 1; } }
   chest(mx - 6, my - 4, 'madera', { secreto: true, pista: 'pasto_alto' });
-  for (let i = 0; i < 6; i++) { const [x, y] = near(mx + Math.round((r() - 0.5) * 20), my + Math.round((r() - 0.5) * 14), 2); placeT(r() < 0.5 ? 'arbusto_moras' : 'arbusto', x, y); occ[at(x, y)] = 1; }
+  for (let i = 0; i < 6; i++) { const [x, y] = near(mx + Math.round((r() - 0.5) * 20), my + Math.round((r() - 0.5) * 14), 2); placeT(r() < 0.5 ? 'arbusto_moras_0' : `arbusto_verde_${r() < 0.5 ? 0 : 1}`, x, y); occ[at(x, y)] = 1; }
   enemies('rata', mx + 5, my - 3, 3);
   enemies('rata', mx - 4, my + 4, 2);
   sign(36, 64, 'Al este: el Arroyo Cristalino. Al norte: el Abuelo Roble.', 'cruce');
 
   // ---------- Lago Espejo ----------
   const [lgx, lgy] = L.lago;
-  for (const [dx, dy] of [[-11, -2], [10, -3], [-7, 6], [11, 4]]) { const [x, y] = near(lgx + dx, lgy + dy, 3); placeT('sauce', x, y, 1); }
+  for (const [dx, dy] of [[-11, -2], [10, -3], [-7, 6], [11, 4]]) { const [x, y] = near(lgx + dx, lgy + dy, 3); placeT('sauce_v3', x, y, 1); }
   { const [x, y] = near(lgx - 4, lgy - 7, 3); placeT('farol', x, y); }
 
   // ---------- Ruinas del Viejo Reino ----------
@@ -353,7 +360,14 @@ export function bosqueMap(seed = 2024): BigMap {
     if (crowd || !okGround(x, y + 1) || kindAt(x, y - 1) === 3 || kindAt(x, y - 2) === 3) continue;
     const dark = zoneW(bosqueDesign.dark, x, y), hi = terrain.tileHigh[i];
     const roll = r();
-    const tree = dark > 0.35 || hi ? (roll < 0.55 ? `arbol_pino_${r() < 0.5 ? 0 : 1}` : `arbol_roble_${Math.floor(r() * 2)}`) : roll < 0.08 ? 'arbol_roble_2' : roll < 0.72 ? `arbol_roble_${Math.floor(r() * 2)}` : `arbol_pino_${r() < 0.5 ? 0 : 1}`;
+    const pine = () => `pino_${Math.floor(r() * 3)}`, oak = () => `roble_${Math.floor(r() * 3)}`;
+    const nearWater = [[2, 0], [-2, 0], [0, 2], [0, -2]].some(([dx, dy]) => at(x + dx, y + dy) >= 0 && terrain.waterTiles[at(x + dx, y + dy)]);
+    let tree: string;
+    if (nearWater && roll < 0.35) tree = 'sauce_v3';
+    else if (dark > 0.45 && roll < 0.08) tree = `arbol_hechizado_${Math.floor(r() * 3)}`;
+    else if (dark > 0.3 && roll < 0.16) tree = `arbol_seco_${r() < 0.5 ? 0 : 1}`;
+    else if (dark > 0.35 || hi) tree = roll < 0.6 ? pine() : oak();
+    else tree = roll < 0.05 ? 'roble_grande_0' : roll < 0.09 ? 'roble_otono_1' : roll < 0.7 ? oak() : pine();
     place(tree, T(x) + Math.round((r() - 0.5) * 14), y * TILE + TILE - 4 + Math.round((r() - 0.5) * 8));
     trunk[i] = 1; occ[i] = 1;
   }
@@ -365,27 +379,53 @@ export function bosqueMap(seed = 2024): BigMap {
     for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (trunk[at(x + dx, y + dy)]) trees++;
     const meadow = zoneW(bosqueDesign.meadows, x, y), dark = zoneW(bosqueDesign.dark, x, y);
     const roll = r();
-    if (trees >= 2 && trees <= 6 && roll < 0.3) { placeT(dark > 0.3 && r() < 0.4 ? 'hongos' : r() < 0.25 ? 'arbusto_moras' : 'arbusto', x, y); occ[i] = 1; }
+    if (trees >= 2 && trees <= 6 && roll < 0.3) { placeT(dark > 0.3 && r() < 0.35 ? (r() < 0.5 ? 'hongos' : 'arbusto_espinas_0') : r() < 0.2 ? 'arbusto_moras_0' : `arbusto_verde_${r() < 0.5 ? 0 : 1}`, x, y); occ[i] = 1; }
     else if (trees === 0 && meadow > 0.2 && roll < 0.05) { placeT('pasto_alto', x, y); occ[i] = 1; }
     else if (trees <= 1 && roll < 0.012) { placeT(r() < 0.6 ? 'roca' : r() < 0.5 ? 'roca_grande' : 'tocon', x, y); occ[i] = 1; }
+  }
+
+  // suelo de bosque: oscuro bajo las masas de árboles (densidad de troncos suavizada)
+  {
+    const dd = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      let n = 0, c = 0;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const j = at(x + dx, y + dy); if (j < 0) continue; c++; n += trunk[j]; }
+      dd[at(x, y)] = Math.min(1, (n / c) * 3.2 + zoneW(bosqueDesign.dark, x, y) * 0.5);
+    }
+    forestFloor(terrain, W, H, dd, seed);
+  }
+
+  // ---------- vida: telarañas en troncos del bosque oscuro, cuervos en los claros, ojos en los arbustos ----------
+  const trees = decos.filter((d) => d.sprite.startsWith('pino_') || d.sprite.startsWith('roble_') || d.sprite.startsWith('arbol_seco'));
+  for (const d of trees) {
+    const tx = Math.floor(d.x / TILE), ty = Math.floor(d.y / TILE);
+    if (zoneW(bosqueDesign.dark, tx, ty) > 0.35 && r() < 0.07) decos.push({ sprite: 'telarana', x: d.x + 4, y: d.y - 18 });
+  }
+  const critter = (especie: string, tx: number, ty: number) => { const [x, y] = near(tx, ty, 3); entities.push({ tipo: 'criatura', x: T(x) + Math.round((r() - 0.5) * 16), y: T(y), props: { especie } }); };
+  for (const [cx2, cy2, n] of [[L.pradera[0], L.pradera[1], 4], [L.ruinas[0], L.ruinas[1] - 3, 3], [L.arena[0] - 6, L.arena[1] + 5, 3], [L.llegada[0] + 6, L.llegada[1] - 4, 2], [L.calabazas[0], L.calabazas[1], 3], [L.abuelo[0] + 3, L.abuelo[1] + 4, 2]] as [number, number, number][])
+    for (let k = 0; k < n; k++) critter('cuervo', cx2 + Math.round((r() - 0.5) * 6), cy2 + Math.round((r() - 0.5) * 4));
+  const bushes = decos.filter((d) => d.sprite.startsWith('arbusto_'));
+  for (const d of bushes) {
+    const tx = Math.floor(d.x / TILE), ty = Math.floor(d.y / TILE);
+    if (zoneW(bosqueDesign.dark, tx, ty) > 0.3 && r() < 0.22) entities.push({ tipo: 'criatura', x: d.x, y: d.y - 14, props: { especie: 'ojos' } });
   }
 
   // ---------- zonas y postales ----------
   const zones: MapZone[] = [];
   const zone = (nombre: string, c: TP, rw: number, rh: number, props: Record<string, Prop>) => zones.push({ nombre, x: (c[0] - rw) * TILE, y: (c[1] - rh) * TILE, w: rw * 2 * TILE, h: rh * 2 * TILE, props: { musica: 'bosque', descubrir: true, ...props } });
-  zone('Claro de la Llegada', L.llegada, 9, 7, { ambiente: 'bosque', luz: '#ffe2b0', particulas: 'polen' });
-  zone('Pradera de las Mariposas', L.pradera, 13, 9, { ambiente: 'bosque', luz: '#fff0c0', particulas: 'mariposas,polen' });
-  zone('El Abuelo Roble', L.abuelo, 7, 6, { ambiente: 'bosque', luz: '#ffe8b8', particulas: 'hojas,luciernagas' });
-  zone('Bosque Profundo', L.profundo, 14, 13, { ambiente: 'noche', luz: '#7a8ab8', oscuridad: 0.35, particulas: 'luciernagas,esporas' });
-  zone('Anillo de las Hadas', L.hadas, 4, 4, { ambiente: 'magia', luz: '#a8fff0', oscuridad: 0.3, particulas: 'luciernagas,brillos' });
-  zone('Claro Escondido', L.escondido, 6, 5, { ambiente: 'magia', luz: '#d8b8ff', oscuridad: 0.2, particulas: 'brillos,luciernagas', secreto: true });
-  zone('Arroyo Cristalino', [55, 42], 6, 20, { ambiente: 'agua', luz: '#d8f0ff', particulas: 'luciernagas' });
-  zone('Lago Espejo', L.lago, 12, 8, { ambiente: 'agua', luz: '#d8f0ff', particulas: 'luciernagas,mariposas' });
-  zone('Ruinas del Viejo Reino', L.ruinas, 10, 8, { ambiente: 'viento', luz: '#ffe0c0', particulas: 'polvo' });
-  zone('Colina de los Goblins', L.goblins, 12, 17, { ambiente: 'viento', luz: '#ffd0a0', particulas: 'humo' });
-  zone('Campo de Calabazas', L.calabazas, 9, 7, { ambiente: 'bosque', luz: '#ffd8a0', particulas: 'hojas' });
-  zone('Las Alturas', [70, 12], 34, 11, { ambiente: 'viento', luz: '#fff4d8', particulas: 'polen,hojas' });
-  zone('Arena del Minotauro', L.arena, 9, 8, { ambiente: 'cueva', musica: 'jefe', luz: '#ffb08a', oscuridad: 0.15, particulas: 'brasas' });
+  zone('Claro de la Llegada', L.llegada, 9, 7, { ambiente: 'bosque', luz: '#ffe2b0', particulas: 'polen' , niebla: 0.25});
+  zone('Pradera de las Mariposas', L.pradera, 13, 9, { ambiente: 'bosque', luz: '#fff0c0', particulas: 'mariposas,polen' , niebla: 0.15});
+  zone('El Abuelo Roble', L.abuelo, 7, 6, { ambiente: 'bosque', luz: '#ffe8b8', particulas: 'hojas,luciernagas' , niebla: 0.3});
+  zone('Bosque Profundo', L.profundo, 14, 13, { ambiente: 'noche', luz: '#7a8ab8', oscuridad: 0.35, particulas: 'luciernagas,esporas,fuegos_fatuos,murcielagos' , niebla: 0.75});
+  zone('Anillo de las Hadas', L.hadas, 4, 4, { ambiente: 'magia', luz: '#a8fff0', oscuridad: 0.3, particulas: 'luciernagas,brillos,fuegos_fatuos' , niebla: 0.55});
+  zone('Claro Escondido', L.escondido, 6, 5, { ambiente: 'magia', luz: '#d8b8ff', oscuridad: 0.2, particulas: 'brillos,luciernagas', secreto: true , niebla: 0.45});
+  zone('Arroyo Cristalino', [55, 42], 6, 20, { ambiente: 'agua', luz: '#d8f0ff', particulas: 'luciernagas' , niebla: 0.5});
+  zone('Lago Espejo', L.lago, 12, 8, { ambiente: 'agua', luz: '#d8f0ff', particulas: 'luciernagas,mariposas' , niebla: 0.65});
+  zone('Ruinas del Viejo Reino', L.ruinas, 10, 8, { ambiente: 'viento', luz: '#ffe0c0', particulas: 'polvo' , niebla: 0.4});
+  zone('Colina de los Goblins', L.goblins, 12, 17, { ambiente: 'viento', luz: '#ffd0a0', particulas: 'humo' , niebla: 0.25});
+  zone('Campo de Calabazas', L.calabazas, 9, 7, { ambiente: 'bosque', luz: '#ffd8a0', particulas: 'hojas' , niebla: 0.5});
+  zone('Las Alturas', [70, 12], 34, 11, { ambiente: 'viento', luz: '#fff4d8', particulas: 'polen,hojas' , niebla: 0.2});
+  zone('Arena del Minotauro', L.arena, 9, 8, { ambiente: 'cueva', musica: 'jefe', luz: '#ffb08a', oscuridad: 0.15, particulas: 'brasas' , niebla: 0.55});
   const postales: Postal[] = [
     { nombre: 'llegada', x: T(L.llegada[0] - 1), y: T(L.llegada[1] - 1) },
     { nombre: 'abuelo_roble', x: T(L.abuelo[0]), y: T(L.abuelo[1] - 1) },

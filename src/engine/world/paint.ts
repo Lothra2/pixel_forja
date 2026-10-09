@@ -28,6 +28,8 @@ export interface TerrainDesign {
   roads: { pts: TP[]; w: number }[];
   /** plazas de piedra (ruinas) */
   plazas: TP[][];
+  /** arenas circulares de piedra (anillos y círculo de runas al centro) */
+  arenas?: { c: TP; r: number }[];
   /** praderas: pasto claro con muchas flores */
   meadows: { c: TP; r: number }[];
   /** bosque profundo: suelo oscuro con hojas caídas */
@@ -176,14 +178,15 @@ export function distTo(mask: Uint8Array, W: number, H: number, want = 1): Uint16
 // ---------- paletas ----------
 
 /** Pasto: de bosque oscuro (0) a pradera clara (11). */
-const GRASS = ['#1c3424', '#22402a', '#2a4e2e', '#335e32', '#3d6f35', '#487f38', '#558f3b', '#629e3e', '#71ad44', '#82bb4b', '#94c855', '#a8d462'];
-const DIRT = ['#5e4430', '#715239', '#866343', '#99744f', '#ab855c', '#bf9a6c'];
-const COBBLE = ['#4a4652', '#5c5764', '#6e6876', '#827c88', '#98929c', '#b0aab2'];
-const SANDSTONE = ['#4e4640', '#6a5e52', '#80725f', '#968670', '#ad9c82', '#c4b496'];
-const BLUESTONE = ['#3e4652', '#505a68', '#626e7c', '#768492', '#8c9aa8', '#a6b2be'];
-const ROCK = ['#2e2934', '#3a3440', '#47404d', '#554d5a', '#655c69', '#776e7a', '#8a8290'];
-const FLOWERS = ['#f2e05a', '#f08ab4', '#ffffff', '#9ab8ff', '#ff8a5a', '#c89aff'];
-const LEAVES = ['#c8742a', '#a85a24', '#d8a03a', '#8a4a20'];
+/** Paleta sombría (bosque hechizado): verdes fríos y apagados, sombras azuladas. */
+export const GRASS = ['#0f1c1c', '#142422', '#192c27', '#1f352c', '#253f31', '#2c4a36', '#34553b', '#3d6140', '#476d45', '#52794a', '#5e8550', '#6c9158'];
+const DIRT = ['#2a2220', '#352a25', '#41332b', '#4e3d32', '#5c4839', '#6b5442'];
+const COBBLE = ['#252630', '#30313c', '#3c3e4a', '#4a4c58', '#5a5c68', '#6e707c'];
+const SANDSTONE = ['#2c2826', '#38322e', '#463e38', '#544a42', '#64584e', '#76695c'];
+const BLUESTONE = ['#22283a', '#2c3446', '#384254', '#465062', '#566072', '#686f80'];
+const ROCK = ['#16151c', '#1e1d26', '#272630', '#31303b', '#3c3b47', '#494755', '#585666'];
+const FLOWERS = ['#c8b84a', '#b06a9a', '#cfd2e4', '#7a8ee0', '#c87a5a', '#9a7ad8'];
+const LEAVES = ['#7a4a26', '#5e3a20', '#8e6a34', '#4a2e1a'];
 
 /** Pinta el terreno completo. */
 export function paintTerrain(d: TerrainDesign): PaintedTerrain {
@@ -218,6 +221,12 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
       }
   }
   for (const r of d.roads) strokeMask(W, H, r.pts, r.w, 7, S + 301, road);
+  const arena = new Uint8Array(N);
+  for (const a of d.arenas ?? []) {
+    const cx = a.c[0] * TILE, cy = a.c[1] * TILE, R = a.r * TILE;
+    for (let y = Math.max(0, Math.floor(cy - R - 4)); y < Math.min(H, cy + R + 4); y++) for (let x = Math.max(0, Math.floor(cx - R - 4)); x < Math.min(W, cx + R + 4); x++)
+      if (Math.hypot(x - cx, y - cy) < R + (vn(x, y, 6, S + 405) - 0.5) * 3) { plaza[y * W + x] = 1; arena[y * W + x] = 1; }
+  }
   for (const poly of d.plazas) {
     const pp = poly.map(([x, y]) => [x * TILE, y * TILE] as TP);
     const xs = pp.map((p) => p[0]), ys = pp.map((p) => p[1]);
@@ -317,7 +326,7 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
       const hi = GRASS[Math.min(GRASS.length - 1, g + 2)], lo = GRASS[Math.max(0, g - 2)];
       dot(x - 1, y, hi); dot(x + 1, y, hi); dot(x, y + 1, GRASS[Math.min(GRASS.length - 1, g + 1)]); dot(x, y + 2, lo);
       if (hash(cx, cy, S + 24) < 0.4) { dot(x - 2, y - 1, hi); dot(x + 2, y - 1, hi); }
-    } else if ((m > 0.12 && vn(x, y, 30, S + 81) > 0.62 - m * 0.2 && roll < 0.95) || roll > 0.995) {
+    } else if ((m > 0.3 && vn(x, y, 30, S + 81) > 0.72 - m * 0.12 && roll < 0.7) || roll > 0.998) {
       // ramito de flores (en la pradera muchas, del mismo color)
       const col = FLOWERS[Math.floor(vn(x, y, 80, S + 25) * FLOWERS.length * 0.999)];
       const n = 1 + Math.floor(hash(cx, cy, S + 26) * 3);
@@ -358,39 +367,80 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
 
   // ---- 4. plazas de piedra con musgo ----
   const dPlazaEdge = (() => { const m = new Uint8Array(N); for (let i = 0; i < N; i++) m[i] = kind[i] === 2 ? 0 : 1; return distTo(m, W, H); })();
-  // losas irregulares: filas de alto variable, piedras de ancho variable, junta oscura y luz arriba a la izquierda
-  const rowOf = new Int32Array(H), rowTop = new Int32Array(H);
-  for (let y = 0, r = 0; y < H; r++) { const h = 9 + Math.floor(hash(r, 0, S + 48) * 6); for (let k = 0; k < h && y < H; k++, y++) { rowOf[y] = r; rowTop[y] = y - k; } }
-  for (let y = 0; y < H; y++) {
-    const row = rowOf[y], ly = y - rowTop[y];
-    const rh = (() => { let k = y; while (k + 1 < H && rowOf[k + 1] === row) k++; return k - rowTop[y] + 1; })();
-    let sx = -Math.floor(hash(row, 1, S + 49) * 20), sw = 12 + Math.floor(hash(row, 0, S + 50) * 14), col = 0;
-    for (let x = 0; x < W; x++) {
-      while (x >= sx + sw) { sx += sw; col++; sw = 12 + Math.floor(hash(row, col, S + 50) * 14); }
-      const i = y * W + x;
-      if (kind[i] !== 2) continue;
-      const lx = x - sx;
-      // piedras que faltan (sale pasto), más hacia el borde de la plaza
-      if (vn(x, y, 18, S + 43) < 0.22 + Math.max(0, 0.45 - dPlazaEdge[i] / 40)) continue;
-      const sid = hash(col, row, S + 41);
-      let t = 2 + Math.floor(sid * 3);
-      if (lx === 0 || ly === 0) t = 0;
-      else if (lx === 1 || ly === 1) t = Math.min(5, t + 1);
-      else if (lx === sw - 1 || ly === rh - 1) t = Math.max(1, t - 1);
-      if (t > 0 && vn(x, y, 3, S + 44) > 0.8) t = Math.max(1, t - 1);
-      const pal = sid < 0.3 ? SANDSTONE : sid < 0.45 ? BLUESTONE : COBBLE;
-      let c = pal[t];
-      if (t === 0 && vn(x, y, 14, S + 45) > 0.52) c = GRASS[Math.max(2, grassIdx[i] - 2)]; // musgo en las juntas
-      if (sid > 0.9 && lx > 2 && lx < sw - 2 && ly > 1 && ly < rh - 1 && (lx * 3 + ly) % 5 === 0) c = COBBLE[0]; // grieta
-      set(i, c);
+  // losas irregulares (Voronoi): cada celda es una piedra; junta oscura, canto claro arriba a la izquierda,
+  // sombra abajo a la derecha, musgo en algunas juntas y piedras enteras que faltan cerca del borde.
+  // En las arenas: anillos concéntricos de piedra y un círculo de runas al centro.
+  const cellAt = (x: number, y: number, size: number) => {
+    const gx = Math.floor(x / size), gy = Math.floor(y / size);
+    let d1 = 1e9, d2 = 1e9, id = 0;
+    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+      const X = gx + i, Y = gy + j;
+      const px = (X + 0.2 + hash(X, Y, S + 501) * 0.6) * size, py = (Y + 0.2 + hash(X, Y, S + 502) * 0.6) * size;
+      const dd = (x - px) ** 2 + (y - py) ** 2;
+      if (dd < d1) { d2 = d1; d1 = dd; id = (X * 7919 + Y) | 0; } else if (dd < d2) d2 = dd;
     }
+    return { id, edge: Math.sqrt(d2) - Math.sqrt(d1) };
+  };
+  const arenaInfo = (x: number, y: number) => {
+    const a = (d.arenas ?? []).find((q) => Math.hypot(x - q.c[0] * TILE, y - q.c[1] * TILE) < q.r * TILE + 6)!;
+    const dx = x - a.c[0] * TILE, dy = y - a.c[1] * TILE, rr = Math.hypot(dx, dy), ang = Math.atan2(dy, dx);
+    const ring = Math.floor(rr / 13), segs = Math.max(6, Math.round((ring + 0.5) * 13 * 2 * Math.PI / 20));
+    const u = ((ang / (2 * Math.PI)) + 1 + ring * 0.37) % 1 * segs;
+    const seg = Math.floor(u);
+    const edge = Math.min(rr - ring * 13, (ring + 1) * 13 - rr, (u - seg) * (rr * 2 * Math.PI / segs), (1 - (u - seg)) * (rr * 2 * Math.PI / segs));
+    return { id: ring * 1000 + seg, edge, rr, ring, ang, R: a.r * TILE };
+  };
+  const plazaCell = new Int32Array(N), plazaEdge = new Float32Array(N), missing = new Uint8Array(N);
+  for (let i = 0; i < N; i++) {
+    if (kind[i] !== 2) continue;
+    const x = i % W, y = (i / W) | 0;
+    const c = arena[i] ? arenaInfo(x, y) : cellAt(x, y, 15);
+    plazaCell[i] = c.id; plazaEdge[i] = c.edge;
+    // piedra que falta: la decide la celda entera (no manchas), más probable cerca del borde
+    const gone = hash(c.id, 7, S + 503) < (arena[i] ? 0.05 : 0.12) + Math.max(0, 0.5 - dPlazaEdge[i] / 36);
+    if (gone) missing[i] = 1;
+  }
+  for (let i = 0; i < N; i++) {
+    if (kind[i] !== 2 || missing[i]) continue;
+    const x = i % W, y = (i / W) | 0;
+    const id = plazaCell[i], e = plazaEdge[i];
+    const sid = hash(id, 3, S + 41);
+    const pal = arena[i] ? (sid < 0.5 ? COBBLE : BLUESTONE) : sid < 0.3 ? SANDSTONE : sid < 0.45 ? BLUESTONE : COBBLE;
+    let t = 2 + Math.floor(sid * 2.6);
+    // canto: luz arriba a la izquierda, sombra abajo a la derecha (mirando la celda vecina)
+    const up = i - W >= 0 && plazaCell[i - W] !== id, left = x > 0 && plazaCell[i - 1] !== id;
+    const down = i + W < N && plazaCell[i + W] !== id, right = x < W - 1 && plazaCell[i + 1] !== id;
+    if (e < 1.1) t = 0;
+    else if (up || left) t = Math.min(5, t + 1);
+    else if (down || right) t = Math.max(1, t - 1);
+    if (t > 0 && vn(x, y, 3, S + 44) > 0.82) t = Math.max(1, t - 1);
+    let c = pal[t];
+    if (t === 0 && vn(x, y, 10, S + 45) > 0.58) c = GRASS[Math.max(2, grassIdx[i] - 1)]; // musgo en la junta
+    // runas talladas en el círculo central de la arena
+    if (arena[i]) {
+      const info = arenaInfo(x, y);
+      if (Math.abs(info.rr - info.R * 0.42) < 2.2) c = '#2a1418';
+      const glyph = Math.floor(((info.ang + Math.PI) / (2 * Math.PI)) * 12);
+      const mid = ((info.ang + Math.PI) / (2 * Math.PI)) * 12 - glyph;
+      if (Math.abs(info.rr - info.R * 0.5) < 4 && Math.abs(mid - 0.5) < 0.18 && (glyph + Math.floor(info.rr)) % 2 === 0) c = '#5a1e24';
+      if (info.rr < info.R * 0.16) c = info.rr < info.R * 0.12 ? '#1e1418' : '#3a2228';
+    }
+    set(i, c);
+  }
+  // borde de las piedras que faltan: tierra oscura con sombra (se lee como hueco, no como mancha)
+  for (let i = 0; i < N; i++) {
+    if (kind[i] !== 2 || !missing[i]) continue;
+    const x = i % W;
+    const nearStone = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const j = i + dy * W + dx; return j >= 0 && j < N && kind[j] === 2 && !missing[j] && (dx === 0 || Math.abs((j % W) - x) === 1); });
+    if (nearStone) set(i, '#141614');
+    else if (hash(x >> 1, (i / W) >> 1, S + 504) < 0.3) set(i, DIRT[1]);
   }
 
   // ---- 5. mesetas: borde de arriba, acantilado, escaleras ----
   for (let i = 0; i < N; i++) {
     if (!high[i] || kind[i] !== 0) continue;
     const dl = dLow[i];
-    if (dl === 1) set(i, '#1a2a1e');
+    if (dl === 1) set(i, '#0a1212');
     else if (dl === 2) set(i, GRASS[Math.min(GRASS.length - 1, grassIdx[i] + 3)]);
     else if (dl === 3) set(i, GRASS[Math.min(GRASS.length - 1, grassIdx[i] + 1)]);
   }
@@ -443,16 +493,16 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
       // agua: transparente (debajo va el cuadro animado) con espuma, banda clara y fondo más oscuro
       const dl = dLand[i];
       img.data[i * 4 + 3] = 0;
-      if (dl <= 1) set(i, '#e8f6ff', 230);
-      else if (dl <= 2 && hash(x >> 1, y, S + 71) > 0.3) set(i, '#cfeaff', 170);
-      else if (dl <= 6) set(i, '#7cc0ec', dl <= 4 ? 120 : 70);
+      if (dl <= 1) set(i, '#a8c8d0', 210);
+      else if (dl <= 2 && hash(x >> 1, y, S + 71) > 0.3) set(i, '#7aa4b0', 160);
+      else if (dl <= 6) set(i, '#3e7a92', dl <= 4 ? 110 : 60);
       else if (dl > 14) {
         const a = Math.min(110, (dl - 14) * 9);
-        if ((x + y) % 2 === 0 || a > 60) set(i, '#10345e', a);
+        if ((x + y) % 2 === 0 || a > 60) set(i, '#04101c', Math.min(150, a * 1.3));
       }
     } else if (kind[i] === 0 && dWater[i] <= 2) {
       // tierra mojada de la orilla
-      set(i, dWater[i] === 1 ? '#4a3e2e' : '#5e5038');
+      set(i, dWater[i] === 1 ? '#1c1814' : '#262019');
     }
   }
   // juncos de la orilla quedan para los objetos
@@ -483,7 +533,7 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
 }
 
 /** Cuadro de agua profunda que pega por todos lados, 4 cuadros de animación (onditas que se corren). */
-export function waterTile(frame: number, base = '#2a66ad'): Raster {
+export function waterTile(frame: number, base = '#1d4a6a'): Raster {
   const r = createRaster(TILE, TILE);
   const lo = shade(base, -0.05), hi = shade(base, 0.05), sparkle = shade(base, 0.2);
   for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) {
@@ -507,4 +557,46 @@ export function chunks(img: Raster, size: number): { x: number; y: number; img: 
     out.push({ x, y, img: c });
   }
   return out;
+}
+
+/**
+ * Suelo de bosque: oscurece el pasto bajo las masas de árboles y le pone hojarasca, ramitas y manchas de musgo.
+ * density: por cuadro, 0 (abierto) a 1 (bosque cerrado), ya suavizada.
+ */
+export function forestFloor(t: PaintedTerrain, wTiles: number, hTiles: number, density: Float32Array, seed: number) {
+  const img = t.img, W = img.w, H = img.h;
+  const idx = new Map<number, number>();
+  GRASS.forEach((h, i) => idx.set(parseInt(h.slice(1), 16), i));
+  const G = GRASS.map((h) => RGB(h));
+  const dAt = (x: number, y: number) => {
+    const gx = x / TILE - 0.5, gy = y / TILE - 0.5, x0 = Math.max(0, Math.min(wTiles - 1, Math.floor(gx))), y0 = Math.max(0, Math.min(hTiles - 1, Math.floor(gy)));
+    const x1 = Math.min(wTiles - 1, x0 + 1), y1 = Math.min(hTiles - 1, y0 + 1), fx = Math.max(0, Math.min(1, gx - x0)), fy = Math.max(0, Math.min(1, gy - y0));
+    const a = density[y0 * wTiles + x0], b = density[y0 * wTiles + x1], c = density[y1 * wTiles + x0], d = density[y1 * wTiles + x1];
+    return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+  };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    if (t.kind[i] !== 0) continue;
+    const d = dAt(x, y);
+    if (d < 0.08) continue;
+    const k = i * 4;
+    const key = (img.data[k] << 16) | (img.data[k + 1] << 8) | img.data[k + 2];
+    const gi = idx.get(key);
+    // un poco de ruido para que el borde de la sombra no sea una línea
+    const shift = Math.round(d * 3.4 + (vn(x, y, 6, seed + 5) - 0.5) * 1.2);
+    if (gi !== undefined) { const c = G[Math.max(0, gi - shift)]; img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; }
+    else { const m = 1 - d * 0.45; img.data[k] *= m; img.data[k + 1] *= m; img.data[k + 2] *= m; }
+  }
+  // hojarasca y musgo
+  for (let cy = 0; cy < H; cy += 4) for (let cx = 0; cx < W; cx += 4) {
+    const x = cx + Math.floor(hash(cx, cy, seed + 31) * 4), y = cy + Math.floor(hash(cx, cy, seed + 32) * 4);
+    if (x >= W || y >= H || t.kind[y * W + x] !== 0) continue;
+    const d = dAt(x, y), roll = hash(cx, cy, seed + 33);
+    if (d < 0.3 || roll > d * 0.55) continue;
+    const pick = hash(cx, cy, seed + 34);
+    const put = (px: number, py: number, h: string) => { if (px < W && py < H && t.kind[py * W + px] === 0) { const c = RGB(h), k = (py * W + px) * 4; img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; } };
+    if (pick < 0.55) { const c = LEAVES[Math.floor(hash(cx, cy, seed + 35) * LEAVES.length)]; put(x, y, c); put(x + 1, y, shade(c, -0.06)); if (pick < 0.25) put(x, y + 1, shade(c, -0.12)); }
+    else if (pick < 0.8) { const c = GRASS[5 + Math.floor(hash(cx, cy, seed + 36) * 3)]; put(x, y, c); put(x + 1, y, c); put(x, y + 1, GRASS[3]); put(x - 1, y + 1, c); }
+    else { put(x, y, '#3a2e24'); put(x + 1, y + 1, '#3a2e24'); put(x + 2, y + 1, '#2a221c'); }
+  }
 }

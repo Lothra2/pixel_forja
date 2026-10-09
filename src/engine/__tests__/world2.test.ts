@@ -60,10 +60,14 @@ describe('mundo v2: objetos y Bosque GG', () => {
     const m = bosqueMap();
     expect([m.w, m.h]).toEqual([120, 90]);
     const tipos = new Set(m.entities.map((e) => e.tipo));
-    for (const t of ['jugador_inicio', 'thor_inicio', 'portal_llegada', 'punto_guardado', 'enemigo', 'cofre', 'rompible', 'cartel', 'jefe', 'portal_jefe', 'arena_jefe']) expect(tipos, t).toContain(t);
+    for (const t of ['jugador_inicio', 'thor_inicio', 'portal_llegada', 'punto_guardado', 'enemigo', 'cofre', 'rompible', 'cartel', 'jefe', 'portal_jefe', 'arena_jefe', 'criatura']) expect(tipos, t).toContain(t);
+    // bruma por zona y árboles hechizados en el bosque oscuro
+    expect(m.zones.every((z) => typeof z.props.niebla === 'number')).toBe(true);
+    expect(m.decos.some((d) => d.sprite.startsWith('arbol_hechizado_'))).toBe(true);
     const start = m.entities.find((e) => e.tipo === 'jugador_inicio')!;
     const seen = reachable(m, Math.floor(start.x / TILE), Math.floor(start.y / TILE));
     for (const e of m.entities) {
+      if (e.tipo === 'criatura') continue; // los ojos viven adentro de los arbustos
       const tx = Math.floor(e.x / TILE), ty = Math.floor(e.y / TILE);
       const ok = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen[(ty + dy) * m.w + tx + dx]);
       expect(ok, `${e.tipo} en ${tx},${ty} no se alcanza`).toBe(true);
@@ -107,5 +111,30 @@ describe('mundo v2: atmósfera', () => {
       let avg = 0; for (let i = 1; i < b.length; i++) avg += Math.abs(b[i] - b[i - 1]); avg /= b.length;
       expect(Math.abs(b[0] - b[b.length - 1]), n).toBeLessThan(Math.max(0.05, avg * 4));
     }
+  });
+});
+
+describe('mundo v3: flora animada y criaturas', () => {
+  it('cada árbol se mece (cuadros distintos) y los hechizados duermen, despiertan y parpadean', async () => {
+    const { floraV3, gloomGrade } = await import('../world/flora');
+    const { creatures, fogTexture } = await import('../world/atmosphere');
+    const fl = floraV3();
+    for (const f of fl) for (const a of Object.values(f.anims)) for (const fr of a.frames) { expect(fr.w, f.name).toBe(f.w); expect(fr.h, f.name).toBe(f.h); }
+    const oak = fl.find((f) => f.name === 'roble_0')!.anims.idle.frames;
+    expect(Buffer.from(oak[0].data).equals(Buffer.from(oak[3].data))).toBe(false);
+    const ht = fl.find((f) => f.name === 'arbol_hechizado_0')!;
+    expect(Object.keys(ht.anims).sort()).toEqual(['despierto', 'dormido', 'parpadeo']);
+    expect(Buffer.from(ht.anims.dormido.frames[0].data).equals(Buffer.from(ht.anims.despierto.frames[0].data))).toBe(false);
+    // la corrección sombría oscurece pero deja intacto lo que brilla
+    const r = { w: 2, h: 1, data: new Uint8ClampedArray([120, 160, 90, 255, 255, 240, 60, 255]) } as never;
+    const gr = gloomGrade(r) as { data: Uint8ClampedArray };
+    expect(gr.data[1]).toBeLessThan(160);
+    expect([gr.data[4], gr.data[5], gr.data[6]]).toEqual([255, 240, 60]);
+    const cs = creatures().map((c) => c.name);
+    for (const n of ['cuervo', 'cuervo_izq', 'murcielago', 'ojos', 'fuego_fatuo']) expect(cs).toContain(n);
+    const fog = fogTexture('nubes', 64);
+    // la bruma pega por los lados: la columna 0 y la 63 se parecen (ruido periódico)
+    let diff = 0; for (let y = 0; y < 64; y++) diff += Math.abs(fog.data[(y * 64) * 4 + 3] - fog.data[(y * 64 + 63) * 4 + 3]);
+    expect(diff / 64).toBeLessThan(30);
   });
 });

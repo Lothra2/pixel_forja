@@ -60,3 +60,5 @@ export * from './world/bosque';
 export * from './world/bosqueMap';
 export * from './world/ambient';
 export * from './audio/ambience';
+export * from './world/flora';
+export * from './world/atmosphere';

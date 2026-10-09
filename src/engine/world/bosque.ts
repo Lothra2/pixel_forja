@@ -76,9 +76,8 @@ export const bosqueDesign: TerrainDesign = {
   plazas: [
     // Ruinas del Viejo Reino
     [[72, 45], [79, 43.5], [86, 46], [86.5, 53], [82, 56.5], [75, 56], [71.5, 51]],
-    // arena del minotauro: piso de piedra rúnica
-    [[95, 8], [102, 5], [109, 8], [110, 15], [103, 19], [96, 16]],
   ],
+  arenas: [{ c: L.arena, r: 6.4 }],
   meadows: [
     { c: L.pradera, r: 13 }, { c: [44, 80], r: 8 }, { c: L.llegada, r: 6 }, { c: L.calabazas, r: 9 }, { c: [66, 38], r: 7 }, { c: [62, 12], r: 9 },
   ],
