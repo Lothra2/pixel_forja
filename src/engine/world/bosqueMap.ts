@@ -154,6 +154,10 @@ export function bosqueMap(seed = 2024): BigMap {
   const [pb0, pb1] = bridgeAt(L.puente[1], L.puente[0]);
   ent('enemigo', pb1 + 2, L.puente[1], { enemigo: 'trol', elite: true, nombre: 'Trol del Puente' });
   sign(pb0 - 3, L.puente[1] - 2, 'Puente del Trol. Dicen que cobra peaje en abrazos.', 'peligro');
+  // la guarida del trol bajo el puente: cama de paja, la olla al fuego y los restos de la cena, en la orilla
+  { const [x, y] = near(pb1 + 2, L.puente[1] + 2, 3); placeT('cama_trol', x, y, 1); }
+  { const [x, y] = near(pb1 + 4, L.puente[1] + 1, 3); placeT('olla_trol', x, y, 1); solid[at(x, y)] = 1; }
+  for (const [dx, dy] of [[1, 3], [5, 3], [3, 4]]) { const [x, y] = near(pb1 + dx, L.puente[1] + dy, 2); placeT('huesos_pescado', x, y); occ[at(x, y)] = 1; }
   bridgeAt(L.puenteSur[1], L.puenteSur[0]);
   bridgeAt(12, 52); // en Las Alturas: lleva al estanque alto (lado oeste)
   {
@@ -236,15 +240,15 @@ export function bosqueMap(seed = 2024): BigMap {
 
   // ---------- Ruinas del Viejo Reino ----------
   const [rx, ry] = L.ruinas;
-  place('estatua_thor', T(rx), ry * TILE + 20, 2);
+  place('estatua_thor', T(rx), ry * TILE + 20, 3);
   sign(rx - 2, ry + 3, 'Thor, el Guardián. Cuentan que su ladrido espantó a la oscuridad del reino.', 'estrella');
-  chest(rx, ry - 3, 'dorado');
+  chest(rx - 4, ry - 2, 'dorado');
   // arco sobre el camino de entrada (oeste) y pilares alrededor
   place('arco_ruina', T(rx - 9), (ry + 2) * TILE + 2, 0);
   for (let i = 0; i < 9; i++) {
     const a = (i / 9) * Math.PI * 2 + 0.3, x = Math.round(rx + Math.cos(a) * 7), y = Math.round(ry + Math.sin(a) * 5);
     if (!open(x, y) || kindAt(x, y) === 1) continue;
-    placeT(i % 3 === 1 ? 'pilar_roto' : 'pilar', x, y, 0);
+    placeT(i % 3 === 1 ? 'pilar_roto' : i % 3 === 2 ? 'pilar_alto' : 'pilar', x, y, 0); // alturas distintas
   }
   for (const [dx, dy] of [[5, -6], [-7, -5], [8, 5]]) { const [x, y] = near(rx + dx, ry + dy, 2); placeT('muro_ruina', x, y, 1); }
   { const [x, y] = near(rx + 5, ry + 3, 2); placeT('pozo', x, y, 1); }
@@ -282,6 +286,11 @@ export function bosqueMap(seed = 2024): BigMap {
   placeT('carpa_goblin', gx - 3, gy - 2, 1); placeT('carpa_goblin', gx + 3, gy - 3, 1); placeT('carpa_goblin', gx + 4, gy + 3, 1);
   placeT('fogata', gx, gy);
   placeT('estandarte_goblin', gx - 5, gy + 3); placeT('estandarte_goblin', gx + 6, gy - 1);
+  { const [x, y] = near(gx - 5, gy - 4, 2); placeT('carpa_goblin', x, y, 1); }
+  { const [x, y] = near(gx + 1, gy - 5, 2); placeT('tarima', x, y, 1); }
+  for (const [dx, dy] of [[-6, 0], [6, 2], [-2, -5]]) { const [x, y] = near(gx + dx, gy + dy, 2); placeT('barriles', x, y, 0); occ[at(x, y)] = 1; }
+  // campo de práctica: dianas en fila al este del campamento
+  for (let k = 0; k < 3; k++) { const [x, y] = near(gx + 11, gy - 3 + k * 3, 2); placeT('diana', x, y, 0); occ[at(x, y)] = 1; }
   // empalizada continua alrededor del campamento, con la entrada al suroeste (donde llega el sendero)
   const done = new Set<number>();
   for (let k = 0; k < 120; k++) {
@@ -306,6 +315,22 @@ export function bosqueMap(seed = 2024): BigMap {
   for (let i = 0; i < 12; i++) { const x = cx0 - 5 + (i % 6) * 2, y = cy0 - 3 + Math.floor(i / 6) * 4; if (open(x, y) && kindAt(x, y) === 0) { placeT('calabazas_deco', x, y); occ[at(x, y)] = 1; } }
   enemies('calabaza', cx0 + 2, cy0, 4);
   chest(cx0 + 5, cy0 - 3, 'madera');
+
+  // ---------- praderas: algo para descubrir cada media pantalla (15 x 8 cuadros) ----------
+  const DISCOVER = ['tocon_hongos', 'charco', 'roca', 'roca_grande', 'tronco_caido', 'flores_grandes_0', 'flores_grandes_1', 'flores_grandes_2'];
+  for (const [x0, y0, x1, y1] of [[17, 61, 43, 79], [36, 1, 104, 23]] as [number, number, number, number][]) {
+    for (let cy = y0; cy < y1; cy += 8) for (let cx = x0; cx < x1; cx += 15) {
+      const tx = cx + 2 + Math.floor(r() * 11), ty = cy + 1 + Math.floor(r() * 6);
+      if (!open(tx, ty) || kindAt(tx, ty) !== 0 || terrain.waterTiles[at(tx, ty)]) continue;
+      const pick = DISCOVER[Math.floor(r() * DISCOVER.length)];
+      placeT(pick, tx, ty, pick === 'tronco_caido' ? 1 : 0); occ[at(tx, ty)] = 1;
+      // y matas de flores grandes alrededor (no estorban: se camina entre ellas)
+      for (let k = 0; k < 2; k++) {
+        const fx = tx + Math.round((r() - 0.5) * 8), fy = ty + Math.round((r() - 0.5) * 5);
+        if (open(fx, fy) && kindAt(fx, fy) === 0 && !terrain.waterTiles[at(fx, fy)]) { placeT(`flores_grandes_${Math.floor(r() * 3)}`, fx, fy); occ[at(fx, fy)] = 1; }
+      }
+    }
+  }
 
   // ---------- sendas: el camino más corto desde el inicio hasta cada cosa queda sin árboles ----------
   {
@@ -434,7 +459,7 @@ export function bosqueMap(seed = 2024): BigMap {
     { nombre: 'ruinas_y_estatua', x: T(L.ruinas[0] - 2), y: T(L.ruinas[1]) },
     { nombre: 'anillo_de_hadas', x: T(L.hadas[0] + 2), y: T(L.hadas[1]) },
     { nombre: 'arena_del_minotauro', x: T(L.arena[0]), y: T(L.arena[1] - 1) },
-    { nombre: 'colina_goblin', x: T(L.goblins[0]), y: T(L.goblins[1]) },
+    { nombre: 'colina_goblin', x: T(L.escaleraGoblin[0] + 4), y: T(L.escaleraGoblin[1] - 6) }, // el borde de la colina y la escalera
     { nombre: 'bosque_profundo', x: T(L.profundo[0]), y: T(L.profundo[1]) },
     { nombre: 'claro_escondido', x: T(L.escondido[0]), y: T(L.escondido[1]) },
     { nombre: 'lago_espejo', x: T(L.lago[0]), y: T(L.lago[1] - 1) },

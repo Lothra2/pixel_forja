@@ -2,8 +2,10 @@ import { createRaster, type Raster } from '../core/raster';
 import { IconCanvas, type MatDef, type P, over } from '../loot/canvas';
 import { glowMat, crystalMat, metalMat, clothMat } from '../loot/materials';
 import { renderClip } from '../render/clip';
+import { scaleRaster } from '../render/rotsprite';
 import { thorFicha } from '../rpg/family';
 import type { WorldObject } from './objects';
+import { detailObjects } from './details';
 
 /**
  * Lugares y detalles del mundo grande: puente, vado, nenúfares, juncos, cascada, tronco caído, sauce, el Abuelo Roble,
@@ -223,20 +225,24 @@ export function glowShroom(color: 'azul' | 'morado'): WorldObject {
   return { name: `hongo_gigante_${color}`, w: 48, h: 64, anchor: [24, 60], solid: [-6, -4, 12, 4], anims: { idle: { frames, fps: 4, loop: true } }, light: { color: hex, radius: 100, pulse: true, dy: 26 } };
 }
 
-/** Anillo de las hadas: círculo de hongos chiquitos que brillan. Va en el suelo. */
+/** Anillo de las hadas (128 x 96): círculo de hongos que brillan por turnos y un pasto más claro adentro. Va en el suelo. */
 export function fairyRing(): WorldObject {
   const frames: Raster[] = [];
   for (let f = 0; f < 4; f++) {
-    const c = canvas(96, 64, 3); // 32 x 21.3
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2, x = 16 + Math.cos(a) * 12, y = 11 + Math.sin(a) * 7.5;
-      const on = (i + f) % 4 === 0;
-      c.poly([[x - 0.4, y + 1], [x + 0.4, y + 1], [x + 0.3, y - 0.4], [x - 0.3, y - 0.4]], clothMat('#f0e6d0'));
-      c.ellipse([x, y - 0.6], 1.3, 0.8, glowMat(on ? '#a8fff0' : '#5ad8c8'), { tone: on ? 4 : 3 });
+    const c = canvas(128, 96, 4); // 32 x 24
+    // tréboles y pasto claro adentro del anillo (la magia hace crecer el pasto)
+    for (let k = 0; k < 9; k++) { const a = k * 2.4, d = 3 + (k % 4) * 2; c.ellipse([16 + Math.cos(a) * d, 12.4 + Math.sin(a) * d * 0.62], 1.1, 0.7, leaf(k % 2 ? '#6aaa4a' : '#5a9a3e')); }
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2, x = 16 + Math.cos(a) * 13, y = 12 + Math.sin(a) * 8.6;
+      const on = (i + f) % 4 === 0, big = i % 3 === 0 ? 1.35 : 1;
+      c.poly([[x - 0.45 * big, y + 1.2 * big], [x + 0.45 * big, y + 1.2 * big], [x + 0.35 * big, y - 0.3], [x - 0.35 * big, y - 0.3]], clothMat('#f0e6d0'));
+      c.ellipse([x, y - 0.6], 1.5 * big, 0.95 * big, glowMat(on ? '#c8fff4' : '#5ad8c8'), { tone: on ? 4 : 3 });
+      c.dot([x - 0.4, y - 1], clothMat('#f6fffc'), { tone: 5 }, true);
     }
-    frames.push(c.render({ glowK: 0.7 + (f % 2) * 0.3, sparkles: f % 2 ? [[16, 8]] : [[12, 12]] }));
+    const sp: P[] = [[10 + f * 3, 6 + (f % 2) * 3], [22 - f * 2, 15 - (f % 2) * 4]];
+    frames.push(c.render({ glowK: 0.75 + (f % 2) * 0.25, sparkles: sp }));
   }
-  return { name: 'anillo_hadas', w: 96, h: 64, anchor: [48, 36], solid: null, layer: 'suelo', anims: { idle: { frames, fps: 4, loop: true } }, light: { color: '#7affe0', radius: 120, pulse: true, dy: 4 } };
+  return { name: 'anillo_hadas', w: 128, h: 96, anchor: [64, 52], solid: null, layer: 'suelo', anims: { idle: { frames, fps: 4, loop: true } }, light: { color: '#7affe0', radius: 150, pulse: true, dy: 4 } };
 }
 
 export function crystals(): WorldObject {
@@ -256,8 +262,8 @@ export function crystals(): WorldObject {
 
 const RUIN = '#a8a2a0';
 
-export function pillar(broken = false): WorldObject {
-  const H = broken ? 64 : 96;
+export function pillar(broken = false, tall = false): WorldObject {
+  const H = broken ? 64 : tall ? 128 : 96;
   const c = canvas(32, H, 1);
   const top = broken ? 18 : 8;
   c.poly([[5, H - 4], [5, H - 9], [27, H - 9], [27, H - 4]], stone(RUIN)); // base
@@ -273,7 +279,7 @@ export function pillar(broken = false): WorldObject {
   // grieta y hiedra
   c.line([19, top + 14], [16, top + 24], 0.6, stone('#4a4652'), { tone: 0 });
   for (let i = 0; i < 6; i++) c.ellipse([9 + (i % 2) * 1.6, H - 12 - i * 5], 1.6, 1.2, leaf(i % 2 ? '#4f8f34' : '#5f9e3c'));
-  return { name: broken ? 'pilar_roto' : 'pilar', w: 32, h: H, anchor: [16, H - 4], solid: [-11, -6, 22, 6], anims: one(c.render({ shadow: [16, H - 4, 12, 2] })) };
+  return { name: broken ? 'pilar_roto' : tall ? 'pilar_alto' : 'pilar', w: 32, h: H, anchor: [16, H - 4], solid: [-11, -6, 22, 6], anims: one(c.render({ shadow: [16, H - 4, 12, 2] })) };
 }
 
 export function ruinWall(): WorldObject {
@@ -322,37 +328,42 @@ export function well(): WorldObject {
   return { name: 'pozo', w: 48, h: 64, anchor: [24, 58], solid: [-17, -10, 34, 10], anims: one(c.render({ shadow: [16, 38.4, 13, 2] })) };
 }
 
-/** Estatua de Thor sentado sobre su pedestal: el guardián del Viejo Reino. */
+/** Estatua de Thor sentado sobre su pedestal (128 x 192): el guardián del Viejo Reino, con su placa dorada. */
 export function thorStatue(): WorldObject {
-  const W = 96, H = 150;
+  const W = 128, H = 192;
   const out = createRaster(W, H);
-  // pedestal (más bajo: el protagonista es Thor)
-  const ped = canvas(96, 150, 3); // 32 x 50
-  ped.poly([[5, 48.6], [5, 36.6], [27, 36.6], [27, 48.6]], stone(RUIN));
-  ped.poly([[3, 37.1], [3, 34.1], [29, 34.1], [29, 37.1]], stone(RUIN), { bias: 1 });
-  ped.poly([[3, 49.6], [3, 47.1], [29, 47.1], [29, 49.6]], stone(RUIN));
-  ped.poly([[9, 45.6], [9, 39.0], [23, 39.0], [23, 45.6]], metalMat('#c8a050')); // placa
-  for (const x of [11.5, 14, 16.5, 19, 21]) ped.px1([x, 40.6], [x, 44.0], metalMat('#6a4a1a'), { tone: 1 }, true);
-  for (let i = 0; i < 5; i++) ped.ellipse([4.6 + (i % 2), 47.6 - i * 2.4], 1.2, 0.9, leaf('#4f8f34'));
-  over(out, ped.render({ shadow: [16, 49.2, 15, 1.6] }), 0, 0);
-  // Thor sentado de 3/4, convertido en piedra y al doble de tamaño (una estatua grande se ve robusta)
+  const ped = canvas(128, 192, 4); // 32 x 48: pedestal de 34 a 47.5
+  ped.poly([[4, 46.4], [4, 36.4], [28, 36.4], [28, 46.4]], stone(RUIN));
+  ped.poly([[2.4, 36.9], [2.4, 34.2], [29.6, 34.2], [29.6, 36.9]], stone(RUIN), { bias: 1 });
+  ped.poly([[2, 47.6], [2, 45.6], [30, 45.6], [30, 47.6]], stone(RUIN));
+  // placa dorada grande con una huella grabada (se lee desde lejos)
+  ped.poly([[9, 44.2], [9, 38.2], [23, 38.2], [23, 44.2]], metalMat('#d8b050'));
+  ped.ring([16, 41.2], 7, 3, 0.4, metalMat('#8a6a2a'), { tone: 1 });
+  ped.ellipse([16, 42], 1.6, 1.1, metalMat('#6a4a1a'), { tone: 0 });
+  for (const [x, y] of [[13.6, 40.2], [15.2, 39.4], [16.8, 39.4], [18.4, 40.2]] as P[]) ped.ellipse([x, y], 0.6, 0.55, metalMat('#6a4a1a'), { tone: 0 });
+  // grietas y hiedra
+  ped.line([25, 37.4], [23.4, 41], 0.4, stone('#4a4652'), { tone: 0 });
+  for (let i = 0; i < 6; i++) ped.ellipse([4.6 + (i % 2), 45.6 - i * 1.8], 1.2, 0.9, leaf(i % 2 ? '#4f8f34' : '#5f9e3c'));
+  over(out, ped.render({ shadow: [16, 47.4, 15.6, 1.4] }), 0, 0);
+  // Thor sentado de 3/4, en piedra y al triple de tamaño
   const clip = renderClip(thorFicha(0), 64, 'sit', 'se');
   const t = clip.frames[0];
   const ramp = ['#3a3640', '#5e5862', '#7e7880', '#9e9898', '#bdb6b2', '#dcd6cc'];
   let x0 = t.w, y0 = t.h, x1 = 0, y1 = 0;
   for (let y = 0; y < t.h; y++) for (let x = 0; x < t.w; x++) if (t.data[(y * t.w + x) * 4 + 3]) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
-  const sw = (x1 - x0 + 1) * 2, sh = (y1 - y0 + 1) * 2;
+  // recorte de Thor, agrandado x3 a la manera de RotSprite (diagonales suaves) y pasado a piedra
+  const cw = x1 - x0 + 1, ch = y1 - y0 + 1, crop = createRaster(cw, ch);
+  for (let y = 0; y < ch; y++) crop.data.set(t.data.subarray(((y0 + y) * t.w + x0) * 4, ((y0 + y) * t.w + x1 + 1) * 4), y * cw * 4);
+  const big = scaleRaster(crop, 3), sw = big.w, sh = big.h;
   const st = createRaster(sw, sh);
-  for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
-    const i = ((y0 + (y >> 1)) * t.w + x0 + (x >> 1)) * 4;
-    if (!t.data[i + 3]) continue;
-    const l = (t.data[i] * 0.3 + t.data[i + 1] * 0.59 + t.data[i + 2] * 0.11) / 255;
+  for (let i = 0; i < sw * sh; i++) {
+    if (!big.data[i * 4 + 3]) continue;
+    const l = (big.data[i * 4] * 0.3 + big.data[i * 4 + 1] * 0.59 + big.data[i * 4 + 2] * 0.11) / 255;
     const [R, G, B] = rgb(ramp[Math.max(0, Math.min(5, Math.round(l * 6 - 0.2)))]);
-    const k = (y * sw + x) * 4;
-    st.data[k] = R; st.data[k + 1] = G; st.data[k + 2] = B; st.data[k + 3] = 255;
+    st.data[i * 4] = R; st.data[i * 4 + 1] = G; st.data[i * 4 + 2] = B; st.data[i * 4 + 3] = 255;
   }
-  over(out, st, Math.round(W / 2 - sw / 2), Math.round((38.5 - 4.4) * 3) - sh + 3);
-  return { name: 'estatua_thor', w: W, h: H, anchor: [48, 146], solid: [-40, -14, 80, 14], anims: one(out) };
+  over(out, st, Math.round(W / 2 - sw / 2), Math.round(34.2 * 4) - sh + 4);
+  return { name: 'estatua_thor', w: W, h: H, anchor: [64, 188], solid: [-52, -16, 104, 16], anims: one(out) };
 }
 
 // ---------- campamentos y granja ----------
@@ -441,7 +452,8 @@ export function landmarkObjects(): WorldObject[] {
   return [
     bridge(), fordStone(0), fordStone(1), lilyPad(false), lilyPad(true), reeds(), waterfall(),
     fallenLog(), willow(), grandOak(), glowShroom('azul'), glowShroom('morado'), fairyRing(), crystals(),
-    pillar(false), pillar(true), ruinWall(), ruinArch(), well(), thorStatue(),
+    pillar(false), pillar(true), pillar(false, true), ruinWall(), ruinArch(), well(), thorStatue(),
     tent('goblin'), tent('familia'), palisade(), goblinBanner(), scarecrow(), pumpkins(), lantern(),
+    ...detailObjects(),
   ];
 }

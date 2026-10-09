@@ -232,7 +232,7 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
     const xs = pp.map((p) => p[0]), ys = pp.map((p) => p[1]);
     for (let y = Math.max(0, Math.floor(Math.min(...ys) - 24)); y < Math.min(H, Math.max(...ys) + 24); y++)
       for (let x = Math.max(0, Math.floor(Math.min(...xs) - 24)); x < Math.min(W, Math.max(...xs) + 24); x++)
-        if (polySd(x, y, pp) + (fbm(x, y, S + 401) - 0.5) * 30 < 0) plaza[y * W + x] = 1;
+        if (polySd(x, y, pp) + (fbm(x, y, S + 401) - 0.5) * 52 < 0) plaza[y * W + x] = 1; // borde roto, no una mancha de borde duro
   }
 
   // acantilado: pixels bajos justo debajo de una meseta (cuenta cuántos pixeles bajó desde el borde)
@@ -398,7 +398,8 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
     const c = arena[i] ? arenaInfo(x, y) : cellAt(x, y, 15);
     plazaCell[i] = c.id; plazaEdge[i] = c.edge;
     // piedra que falta: la decide la celda entera (no manchas), más probable cerca del borde
-    const gone = hash(c.id, 7, S + 503) < (arena[i] ? 0.05 : 0.12) + Math.max(0, 0.5 - dPlazaEdge[i] / 36);
+    // en las ruinas el pasto se come el borde: cerca de la orilla faltan casi todas las losas
+    const gone = hash(c.id, 7, S + 503) < (arena[i] ? 0.05 + Math.max(0, 0.5 - dPlazaEdge[i] / 36) : 0.12 + Math.max(0, 0.8 - dPlazaEdge[i] / 34));
     if (gone) missing[i] = 1;
   }
   for (let i = 0; i < N; i++) {
