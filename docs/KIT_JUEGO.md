@@ -1,6 +1,6 @@
-# Kit del juego Legado GG
+# Kit del juego GG Abyss
 
-PixelForja genera todos los assets del juego con un comando. Sin IA, sin red, todo sale del código. El juego (repo `legado-gg`) solo lee la carpeta del kit y su `manifest.json`.
+PixelForja genera todos los assets del juego con un comando. Sin IA, sin red, todo sale del código. El juego (repo `gg-abyss`) solo lee la carpeta del kit y su `manifest.json`.
 
 ```bash
 npm run kit -- <carpeta>                       # kit completo, unos 50 s, ~350 archivos, ~9 MB
@@ -13,15 +13,15 @@ El script borra y vuelve a llenar la carpeta de salida. Se niega a borrar una ca
 ## Cómo se conectan los dos proyectos
 
 ```
-legado-gg/                     el juego (Phaser 3 + TypeScript + Vite)
+gg-abyss/                     el juego (Phaser 3 + TypeScript + Vite)
   tools/pixel_forja/           PixelForja como submódulo de git (solo para regenerar)
   fichas/                      personajes editados en el estudio (*.ficha.json), opcional
   public/assets/kit/           el kit generado, SE COMMITEA en el juego
 ```
 
-1. Una sola vez, en `legado-gg`:
+1. Una sola vez, en `gg-abyss`:
    ```bash
-   git submodule add https://github.com/Lothra2/pixel_forja tools/pixel_forja
+   git submodule add -b claude/perfeccionar-ejecucion-smh3ad https://github.com/Lothra2/pixel_forja tools/pixel_forja
    cd tools/pixel_forja && npm ci && cd ../..
    ```
 2. En el `package.json` del juego:
@@ -36,7 +36,7 @@ El kit va commiteado en el juego a propósito. Así Netlify compila el juego sin
 
 1. En el estudio abre el preset (por ejemplo "Sophie" en su versión RPG) y cámbiale lo que quieras.
 2. Botón "Exportar ficha". Baja `Sophie.ficha.json`.
-3. Guárdala en `legado-gg/fichas/sophie.ficha.json` y corre `npm run kit`.
+3. Guárdala en `gg-abyss/fichas/sophie.ficha.json` y corre `npm run kit`.
 
 El nombre del archivo es el id en el juego. `rick`, `steph`, `sophie` y `alana` reemplazan a su preset. Cualquier otro nombre entra como heroína nueva (por ejemplo `prima.ficha.json` crea `personajes/prima_*.png`). En el manifest esos personajes llevan `desde_estudio: true`.
 
@@ -62,7 +62,7 @@ Ninguna textura pasa de 4096 px (límite de tablets). El kit lo verifica y falla
 
 ```jsonc
 {
-  "juego": "Legado GG", "generado_con": "PixelForja", "version": 1,
+  "juego": "GG Abyss", "generado_con": "PixelForja", "version": 1,
   "cuadro_mundo": 32,
   "direcciones": ["down","down_left","left","up_left","up","up_right","right","down_right"],
   "personajes": {
@@ -154,7 +154,7 @@ for (const [g, by] of Object.entries(manifest.botin.atlas))
   this.load.atlas(`${g}32`, kit + by['32'].replace('.json', '.png'), kit + by['32']);
 ```
 
-`catalogo.json` trae `rarities` (color por rareza), `sets` (bonos del set Legado GG) e `items`. Cada item:
+`catalogo.json` trae `rarities` (color por rareza), `sets` (bonos del set Legado GG, el set de la familia) e `items`. Cada item:
 
 ```json
 { "id": "sword_1", "name": {"es": "Espada", "en": "Sword"}, "rarity": "normal", "level": 1,

@@ -1,5 +1,5 @@
 /**
- * Kit del juego Legado GG: genera todos los assets listos para Phaser en una carpeta, con su manifest.json.
+ * Kit del juego GG Abyss: genera todos los assets listos para Phaser en una carpeta, con su manifest.json.
  *   npx tsx scripts/game-kit.ts <carpeta> [--rapido] [--fichas <carpeta con *.ficha.json>]
  * Desde el juego (PixelForja como submódulo en tools/pixel_forja):
  *   npx tsx tools/pixel_forja/scripts/game-kit.ts public/assets/kit --fichas fichas

@@ -18,7 +18,7 @@ import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
 
 /**
- * Kit del juego "Legado GG": todo lo que el juego necesita, listo para Phaser, con un manifest.json que dice qué es
+ * Kit del juego "GG Abyss": todo lo que el juego necesita, listo para Phaser, con un manifest.json que dice qué es
  * cada archivo. Sin navegador: se genera desde la línea de comandos (scripts/game-kit.ts) o desde el estudio.
  *
  * Hojas de personajes: un PNG por animación, 8 filas (una por dirección, en el orden de `direcciones`) y una columna
@@ -108,7 +108,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const heroAnims = opts.quick ? ['idle', 'walk', 'attack', 'hit', 'die'] : [...HERO_RPG_ANIMS];
   const credits = new Set<string>();
   const manifest: Record<string, unknown> = {
-    juego: 'Legado GG', generado_con: 'PixelForja', version: 1, cuadro_mundo: TILE,
+    juego: 'GG Abyss', generado_con: 'PixelForja', version: 1, cuadro_mundo: TILE,
     direcciones: EIGHT_VIEWS.map((v) => VIEW_SUFFIX[v]),
     notas: 'Hojas de personajes: fila = dirección (orden de `direcciones`), columna = cuadro. El pivote es el punto de apoyo (pies).',
   };
@@ -241,7 +241,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   log('audio listo');
 
   // ---------- créditos y manifest ----------
-  const creditTxt = ['Legado GG: créditos del arte', '', 'Personajes, mundo, botín, interfaz y sonidos generados con PixelForja (código).', '', ...credits].join('\n');
+  const creditTxt = ['GG Abyss: créditos del arte', '', 'Personajes, mundo, botín, interfaz y sonidos generados con PixelForja (código).', '', ...credits].join('\n');
   files.push(file('CREDITOS.txt', enc.encode(creditTxt), 'text/plain'));
   manifest.creditos = 'CREDITOS.txt';
   // ninguna textura más grande que lo que soportan las tablets
