@@ -5,6 +5,8 @@ import { SPORTS } from './sports';
 import { RPG } from './rpg';
 import { SKILLS, ENEMY } from './skills';
 import { ANIMAL_ANIMS, type AnimalAnimDef } from './animal';
+
+const PET_ONLY = new Set(['bite', 'bark', 'howl', 'pickup', 'hurt', 'die']);
 import { type Pose, keyed } from '../rig/pose';
 import type { CustomAnim, Ficha } from '../sheet/ficha';
 import { isHuman } from '../sheet/ficha';
@@ -49,7 +51,8 @@ export interface AnimInfo {
 
 /** Todas las animaciones disponibles para una ficha (incluye las propias). */
 export function animsFor(f: Ficha): AnimInfo[] {
-  if (!isHuman(f)) return ANIMAL_ANIMS.map((a) => ({ name: a.name, pack: 'animal' as Pack, fps: a.fps, loop: a.loop }));
+  // las de mascota de RPG (morder, ladrar, aullar, recoger, golpe, caer) van en su propio paquete
+  if (!isHuman(f)) return ANIMAL_ANIMS.map((a) => ({ name: a.name, pack: (PET_ONLY.has(a.name) ? 'pet' : 'animal') as Pack, fps: a.fps, loop: a.loop }));
   return [
     ...HUMAN_ANIMS.map((a) => ({ name: a.name, pack: a.pack, fps: a.fps, loop: a.loop })),
     ...(f.customAnims ?? []).map((c) => ({ name: c.name, pack: 'custom' as Pack, fps: c.fps, loop: c.loop })),

@@ -62,6 +62,8 @@ export interface QPose {
   air: number;
   /** pelota en la boca */
   ball?: boolean;
+  /** moneda en la boca (recoger botín) */
+  coin?: boolean;
 }
 
 export function standQ(d: AnimalDims): QPose {

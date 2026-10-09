@@ -175,7 +175,7 @@ test('familia GG: avatares listos para abrir y modificar', async ({ page }, info
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByTestId('family').locator('canvas')).toHaveCount(8, { timeout: 60000 });
+  await expect(page.getByTestId('family').locator('canvas')).toHaveCount(10, { timeout: 60000 });
   await page.screenshot({ path: `${shots}/${tag}_25_familia.png`, fullPage: true });
   // Rick casual: abre en el creador con su peinado y lentes, y se puede cambiar
   await page.getByTestId('family-rick-casual').click();
@@ -192,6 +192,32 @@ test('familia GG: avatares listos para abrir y modificar', async ({ page }, info
   await idle(page);
   await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
   await page.screenshot({ path: `${shots}/${tag}_27_familia_sophie.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test('Thor mascota: armadura por nivel, 8 direcciones y animaciones de RPG', async ({ page }, info) => {
+  test.setTimeout(180000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('family-thor-armor').click();
+  await expect(page.getByTestId('pet-armor')).toContainText('Égida de Thor', { timeout: 30000 });
+  await page.getByTestId('barding-3').click();
+  await expect(page.getByTestId('pet-armor')).toContainText('Cota del guardián');
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  await page.screenshot({ path: `${shots}/${tag}_38_thor.png`, fullPage: true });
+  await page.getByTestId('step-animate').click();
+  await page.getByTestId('pack').selectOption('pet');
+  await page.getByTestId('anim').selectOption('howl');
+  await page.getByTestId('view').getByRole('button', { name: 'Diagonal ↘' }).click();
+  await idle(page);
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  await page.screenshot({ path: `${shots}/${tag}_39_thor_aullido.png`, fullPage: true });
+  await page.getByTestId('step-export').click();
+  await page.getByTestId('views-eight').click();
+  await expect(page.getByTestId('qa-summary')).toBeVisible({ timeout: 60000 });
   expect(errors).toEqual([]);
 });
 

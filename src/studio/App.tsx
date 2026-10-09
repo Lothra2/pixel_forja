@@ -20,7 +20,7 @@ import {
   type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim, type Avatar, type AvatarPart,
   DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
   applyClass, CLASS_KITS, enemyFicha, enemyCell, enemyAnims, type Gear, type HeroClass, type EnemyId,
-  familyFicha, type FamilyId, applyArmorTier, equipLoot, type ArmorLine, type ArmorTier, type LootItem,
+  familyFicha, thorFicha, type FamilyId, applyArmorTier, equipLoot, type ArmorLine, type ArmorTier, type LootItem,
 } from '../engine/index';
 
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export' | ToolStep;
@@ -204,7 +204,7 @@ export function App() {
   useEffect(() => {
     if (!ficha || !needsFicha || step === 'editor' || !animList.some((a) => a.name === anim)) return;
     run(async () => {
-      const r = await engine.call<'rendered'>({ type: 'render', ficha, cell, anim, view: isHuman(ficha) ? view : 'side', props });
+      const r = await engine.call<'rendered'>({ type: 'render', ficha, cell, anim, view, props });
       if (r) { setClip(r.clip); setQa(r.qa); }
     });
   }, [ficha, cell, anim, view, props, needsFicha, step, engine, run, animList]);
@@ -283,7 +283,7 @@ export function App() {
     if (loaded) setBuildTick((n) => n + 1); // la cabeza se vuelve a pixelar al tamaño nuevo
     else updateFicha((f) => (isHuman(f) ? { ...f, body: { ...f.body, proportions: p } } : f));
   };
-  const setAnimal = (patch: { species?: Species; collar?: boolean; markings?: { chest: boolean; paws: boolean; mask: boolean } }) => {
+  const setAnimal = (patch: { species?: Species; collar?: boolean; markings?: { chest: boolean; paws: boolean; mask: boolean }; barding?: number }) => {
     if (patch.species) setSpecies(patch.species);
     updateFicha((f) => {
       if (isHuman(f)) return f;
@@ -291,6 +291,7 @@ export function App() {
       if (patch.species) out.body.species = patch.species;
       if (patch.markings) out.markings = patch.markings;
       if (patch.collar !== undefined) out.palette.collar = patch.collar ? out.palette.collar ?? makeRamp('#1f5fd6') : null;
+      if (patch.barding !== undefined) { if (patch.barding > 0) out.barding = patch.barding; else delete out.barding; }
       return out;
     });
   };
@@ -328,6 +329,8 @@ export function App() {
   };
   /** equipa un objeto del botín: si no hay héroe abierto, se lo pone a Rick */
   const equipItem = (item: LootItem) => {
+    // la barda va en Thor
+    if (item.base.cat === 'pet') { openThor(item.base.tier); return; }
     if (!ficha || !isHuman(ficha)) openFicha(familyFicha('rick'));
     updateFicha((f) => {
       if (!isHuman(f)) return f;
@@ -395,6 +398,18 @@ export function App() {
     const r = await engine.call<'rendered'>({ type: 'render', key: `fam-${id}-${rpg}`, ficha: familyFicha(id, rpg), cell: 48, anim: 'walk', view: 'se', props: true }).catch(() => null);
     return r ? r.clip : null;
   }, [engine]);
+  const renderThor = useCallback(async (barding: number) => {
+    const r = await engine.call<'rendered'>({ type: 'render', key: `thor-${barding}`, ficha: thorFicha(barding), cell: 48, anim: 'walk', view: 'se', props: false }).catch(() => null);
+    return r ? r.clip : null;
+  }, [engine]);
+  const openThor = (barding: number) => {
+    openFicha(thorFicha(barding));
+    setSpecies('boxer');
+    setCell(48);
+    setView('se');
+    setAnim('walk');
+    setStep('style');
+  };
   // la familia GG: se abre en el creador de avatar, lista para modificar
   const openFamily = (id: FamilyId, rpg: boolean) => {
     const f = familyFicha(id, rpg);
@@ -560,7 +575,7 @@ export function App() {
             {kind === 'human' && (
               <>
                 <div className="section-h"><h3>{t('fam_title')}</h3><span className="muted small">{t('fam_help')}</span></div>
-                <FamilyRow t={t} render={renderFamily} open={openFamily} />
+                <FamilyRow t={t} render={renderFamily} open={openFamily} renderPet={renderThor} openPet={openThor} />
                 <div className="section-h"><h3>{t('rpg_workshop')}</h3><span className="muted small">{t('rpg_workshopHelp')}</span></div>
                 <div className="home-grid rpg-grid">
                   <button className="tile" onClick={() => { startFromScratch(); setHeroClass('paladin'); setStep('style'); }} data-testid="rpg-hero">
@@ -736,7 +751,7 @@ export function App() {
                 <Select label={t('anim')} value={anim} set={setAnim} opts={animList.filter((a) => a.pack === curPack).map((a) => [a.name, animLabel(a.name, lang)])} testid="anim" />
               </div>
               <div className="controls">
-                {ficha && isHuman(ficha) && <DirPad label={t('view')} value={view} set={setView} name={(v) => t(`view_${v}` as Key)} />}
+                {ficha && <DirPad label={t('view')} value={view} set={setView} name={(v) => t(`view_${v}` as Key)} />}
                 <Seg label={t('size')} value={String(cell)} set={(v) => setCell(+v as CellSize)} opts={[['32', '32'], ['48', '48'], ['64', '64']]} />
                 <Seg label={t('background')} value={bg} set={(v) => setBg(v as PreviewBg)} opts={[['studio', t('bg_studio')], ['pitch', t('bg_pitch')], ['grass', t('bg_grass')], ['plain', t('bg_plain')]]} />
                 {ficha && isHuman(ficha) && <Toggle label={t('props')} on={props} set={setProps} />}

@@ -6,7 +6,7 @@ import { makeCtx, type AnimDef } from '../anim/types';
 import { humanAnim, animalAnim, customToDef } from '../anim/registry';
 import type { Pose } from '../rig/pose';
 import { renderHuman, type BigFrame, type RenderOptions, type RenderView } from './human';
-import { renderAnimal } from './animal';
+import { renderPet3d, type PetView } from './pet3d';
 import type { View } from './head';
 
 /**
@@ -116,7 +116,8 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
     if (!def) throw new Error(`No existe la animación ${name}`);
     const d = animalDims(f.body.species, cell, f.body.size);
     const poses = def.build(d);
-    big = poses.map((p) => renderAnimal(f, cell, p));
+    // mascota en 3D: las 8 direcciones (las de la izquierda, espejo) con armadura si la tiene
+    big = poses.map((p) => renderPet3d(f, cell, p, (base === 'side' || base === 'se' || base === 'front' || base === 'ne' || base === 'back' ? base : 'side') as PetView, f.barding ?? 0));
     fps = def.fps; loop = def.loop; steady = !!def.steady;
     airborne = poses.map((p) => p.air > 0);
   }

@@ -123,7 +123,7 @@ export const A_LIE: AnimalAnimDef = {
 };
 
 export const A_WAG: AnimalAnimDef = {
-  name: 'wag', fps: 12, loop: true, steady: true,
+  name: 'wag', fps: 12, loop: true,
   build: (d) => [0, 1, 2, 1, 0, 1, 2, 1].map((k, i) => Q(d, {
     x: k === 2 ? 0.5 : 0, tail: [55, 30, 5, 30, 55, 30, 5, 30][i], mouth: 'tongue', eyes: 'happy', head: { angle: -6 },
   })),
@@ -144,4 +144,70 @@ export const A_FETCH: AnimalAnimDef = {
   build: (d) => A_RUN.build(d).map((p) => ({ ...p, ball: true, mouth: 'closed' as const })),
 };
 
-export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH];
+// ---------- mascota de RPG: atacar, ladrar, aullar (escudo), recoger botín, golpe y caída ----------
+
+/** Mordida: se agacha, se lanza con la boca abierta y vuelve. */
+export const A_BITE: AnimalAnimDef = {
+  name: 'bite', fps: 14, loop: false,
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    const crouch = Q(d, { pitch: 8, x: -1, legs: { rn: { x: 0.4 * L, y: 0.7 * L }, rf: { x: 0.3 * L, y: 0.7 * L }, fn: { x: 0.1 * L, y: 0.75 * L }, ff: { x: 0, y: 0.75 * L } }, tail: 5, head: { angle: 8 } });
+    const lunge = Q(d, { pitch: -6, x: 3, air: 1, legs: { rn: { x: -0.6 * L, y: 0.85 * L }, rf: { x: -0.7 * L, y: 0.8 * L }, fn: { x: 0.6 * L, y: 0.7 * L }, ff: { x: 0.5 * L, y: 0.75 * L } }, mouth: 'open', tail: 20, head: { angle: -10, dx: 1 } });
+    const snap = Q(d, { pitch: 4, x: 3, legs: { rn: { x: -0.3 * L, y: L - 0.3 }, rf: { x: -0.4 * L, y: L - 0.3 }, fn: { x: 0.5 * L, y: L - 0.3 }, ff: { x: 0.4 * L, y: L - 0.3 } }, mouth: 'closed', tail: 15, head: { angle: 12, dx: 1 } });
+    return [standQ(d), crouch, crouch, lunge, snap, snap, Q(d, { x: 1, tail: 20 }), standQ(d)];
+  },
+};
+
+/** Ladrido: la cabeza sube y la boca se abre dos veces. */
+export const A_BARK: AnimalAnimDef = {
+  name: 'bark', fps: 10, loop: true,
+  build: (d) => [0, 1, 0, 1, 0, 0].map((open, i) => Q(d, {
+    pitch: open ? -4 : 0, head: { angle: open ? -14 : -4, dy: open ? -1 : 0 }, mouth: open ? 'open' : 'closed', tail: 35 + (i % 2) * 15,
+  })),
+};
+
+/** Aullido: se sienta, levanta la cabeza y aúlla (para dar el escudo a su dueño). */
+export const A_HOWL: AnimalAnimDef = {
+  name: 'howl', fps: 8, loop: false,
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    const sit = (head: number, mouth: QPose['mouth'], eyes: QPose['eyes']) => Q(d, {
+      pitch: -30, legs: { rn: { x: 0.55 * L, y: 0.15 * L }, rf: { x: 0.45 * L, y: 0.15 * L }, fn: { x: 0.25 * L, y: L - 0.2 }, ff: { x: 0.05 * L, y: L - 0.2 } },
+      head: { angle: head, dy: 0 }, tail: -5, mouth, eyes,
+    });
+    return [standQ(d), sit(10, 'closed', 'open'), sit(-20, 'closed', 'open'), sit(-45, 'open', 'closed'), sit(-50, 'open', 'closed'), sit(-50, 'open', 'closed'), sit(-30, 'closed', 'happy'), sit(0, 'tongue', 'happy')];
+  },
+};
+
+/** Recoger botín: baja la cabeza al piso y sube con la moneda en la boca. */
+export const A_PICKUP: AnimalAnimDef = {
+  name: 'pickup', fps: 10, loop: false,
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    const down = (coin: boolean) => Q(d, { pitch: 16, legs: { fn: { x: 0.35 * L, y: 0.62 * L }, ff: { x: 0.25 * L, y: 0.62 * L }, rn: { x: 0, y: L - 0.3 }, rf: { x: -0.1 * L, y: L - 0.3 } }, head: { angle: 30, dy: 2 }, tail: 40, coin });
+    return [standQ(d), down(false), down(false), down(true), Q(d, { coin: true, head: { angle: -6 }, tail: 50, eyes: 'happy' }), Q(d, { coin: true, head: { angle: -6 }, tail: 20, eyes: 'happy' }), Q(d, { coin: true, tail: 50, eyes: 'happy' }), Q(d, { coin: true, tail: 30 })];
+  },
+};
+
+/** Golpe recibido: retrocede y cierra los ojos. */
+export const A_HURT: AnimalAnimDef = {
+  name: 'hurt', fps: 12, loop: false,
+  build: (d) => [Q(d, { x: -2, pitch: -6, eyes: 'closed', mouth: 'open', tail: 5, head: { angle: -12 } }), Q(d, { x: -3, pitch: -4, eyes: 'closed', tail: 0 }), Q(d, { x: -1, eyes: 'open', tail: 10 }), standQ(d)],
+};
+
+/** Cae rendido (se acuesta y no se levanta). */
+export const A_DIE: AnimalAnimDef = {
+  name: 'die', fps: 8, loop: false,
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    const lie = (b: number, eyes: QPose['eyes']) => Q(d, {
+      legs: { fn: { x: 0.9 * L, y: 0.15 * L }, ff: { x: 0.75 * L, y: 0.15 * L }, rn: { x: 0.5 * L, y: 0.12 * L }, rf: { x: 0.35 * L, y: 0.12 * L } },
+      head: { angle: 30 + b, dy: 2 }, tail: -20, eyes,
+    });
+    return [A_HURT.build(d)[0], Q(d, { pitch: 12, eyes: 'closed', tail: -10, legs: { fn: { x: 0.5 * L, y: 0.5 * L }, ff: { x: 0.4 * L, y: 0.5 * L }, rn: { x: 0, y: L - 0.5 }, rf: { x: -0.1 * L, y: L - 0.5 } } }), lie(0, 'closed'), lie(6, 'closed'), lie(6, 'closed')];
+  },
+};
+
+export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH, A_BITE, A_BARK, A_HOWL, A_PICKUP, A_HURT, A_DIE];
+/** Animaciones de la mascota de un RPG, en el orden en que suelen pedirse. */
+export const PET_RPG_ANIMS = ['idle', 'walk', 'run', 'bite', 'bark', 'howl', 'pickup', 'hurt', 'die', 'sit', 'wag'];

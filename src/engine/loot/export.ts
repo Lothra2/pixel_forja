@@ -4,6 +4,7 @@ import type { ExportFile } from '../export/bundle';
 import { renderLoot, lootFrames, isSpecial } from './render';
 import { allLoot, modText, SET_BONUS, SET_NAME, SET_GG, type LootItem } from './catalog';
 import { RARITY_COLORS } from './materials';
+import { renderFx } from '../fx/fx';
 import { CHEST_TIERS, chestFrames, coinFrames, PILE_SIZES, pileFrames, coinBurstFrames, dropFrames, beamFrames } from './world';
 
 /**
@@ -91,6 +92,9 @@ export function exportLootWorld(items: LootItem[] = allLoot().filter((i) => isSp
   for (const s of PILE_SIZES) rows.push({ name: `oro_${s}`, frames: pileFrames(s), fps: 6, loop: true });
   rows.push({ name: 'lluvia_de_oro', frames: coinBurstFrames(48), fps: 14, loop: false });
   for (const r of ['magic', 'rare', 'set', 'unique', 'legendary'] as const) rows.push({ name: `haz_${r}`, frames: beamFrames(r), fps: 10, loop: true });
+  // el escudo que Thor le da a su dueño al aullar
+  const shield = renderFx({ kind: 'shield', element: 'sagrado', cell: 48 });
+  rows.push({ name: 'escudo_de_thor', frames: shield.frames, fps: shield.fps, loop: shield.loop });
   for (const it of items) rows.push({ name: `cae_${it.id}`, frames: dropFrames(it, 32), fps: 14, loop: false });
   const { png, json } = packRows(rows, `${name}.png`);
   return file(name, png, json);

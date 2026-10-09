@@ -146,10 +146,42 @@ function FamilyCard({ id, t, render, open }: { id: FamilyId; t: T; render: (id: 
   );
 }
 
-export function FamilyRow({ t, render, open }: { t: T; render: (id: FamilyId, rpg: boolean) => Promise<FrameSet | null>; open: (id: FamilyId, rpg: boolean) => void }) {
+/** Thor, la mascota: sin armadura y con su barda. */
+function PetCard({ t, render, open }: { t: T; render: (barding: number) => Promise<FrameSet | null>; open: (barding: number) => void }) {
+  const [clips, setClips] = useState<(FrameSet | null)[]>([null, null]);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const a = await render(0);
+      if (live) setClips([a, null]);
+      const b = await render(5);
+      if (live) setClips([a, b]);
+    })();
+    return () => { live = false; };
+  }, [render]);
+  return (
+    <div className="tile family" data-testid="family-thor">
+      <div className="family-stage">
+        {clips.map((c, i) => (
+          <button key={i} className="family-look" onClick={() => open(i ? 5 : 0)} data-testid={`family-thor-${i ? 'armor' : 'plain'}`} aria-label={`Thor ${i ? t('fam_petArmor') : t('fam_pet')}`}>
+            {c ? <AnimCanvas frames={c.frames} cell={c.cell} fps={c.fps} zoom={3} /> : <span className="muted small">···</span>}
+            <small>{i ? t('fam_petArmor') : t('fam_pet')}</small>
+          </button>
+        ))}
+      </div>
+      <strong>Thor</strong>
+    </div>
+  );
+}
+
+export function FamilyRow({ t, render, open, renderPet, openPet }: {
+  t: T; render: (id: FamilyId, rpg: boolean) => Promise<FrameSet | null>; open: (id: FamilyId, rpg: boolean) => void;
+  renderPet: (barding: number) => Promise<FrameSet | null>; openPet: (barding: number) => void;
+}) {
   return (
     <div className="family-grid" data-testid="family">
       {FAMILY.map((id) => <FamilyCard key={id} id={id} t={t} render={render} open={open} />)}
+      <PetCard t={t} render={renderPet} open={openPet} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import type { HumanFicha, Gear } from '../sheet/ficha';
+import { FICHA_FORMAT, FICHA_VERSION, type HumanFicha, type AnimalFicha, type Gear } from '../sheet/ficha';
+import { makeRamp } from '../color/ramp';
 import { fichaFromAvatar } from '../sheet/build';
 import { recolor, type ColorSlot } from '../sheet/recolor';
 import { defaultAvatar } from '../head3d/avatar';
@@ -82,4 +83,15 @@ export function familyFicha(id: FamilyId, rpg = false): HumanFicha {
   let r = applyClass(f, m.clase);
   if (m.gear) r = { ...r, gear: { ...r.gear, ...m.gear } };
   return { ...r, name: m.name };
+}
+
+/** Thor, el bóxer de la familia: mascota ayudante. barding = nivel de su armadura (0 a 5). */
+export function thorFicha(barding = 0): AnimalFicha {
+  return {
+    format: FICHA_FORMAT, version: FICHA_VERSION, name: 'Thor',
+    body: { skeleton: 'quadruped', species: 'boxer', size: 1 },
+    palette: { fur: makeRamp('#b5713a'), fur2: makeRamp('#f0ece4'), dark: makeRamp('#573e2b'), eyes: '#3a2414', collar: makeRamp('#225fd4') },
+    markings: { chest: true, paws: true, mask: true },
+    ...(barding > 0 ? { barding } : {}),
+  };
 }

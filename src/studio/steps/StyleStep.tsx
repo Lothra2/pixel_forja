@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import {
   type Ficha, type HumanFicha, type AnimalFicha, type Proportions, type Variant, type ColorSlot, type AnimalColorSlot, type Species, type Gear, type HeroClass, type ArmorLine, type ArmorTier,
-  SPECIES, BASE, isHuman, usesAvatar,
+  SPECIES, BASE, isHuman, usesAvatar, PET_ARMOR, RARITY_COLORS,
 } from '../../engine/index';
 import type { Key } from '../i18n';
 import { Seg, Toggle, Slider, type T } from '../components/ui';
@@ -17,7 +17,7 @@ interface Props {
   setFace: <K extends keyof HumanFicha['face']>(k: K, v: HumanFicha['face'][K]) => void;
   setColor: (slot: ColorSlot | AnimalColorSlot, hex: string) => void;
   setProportions: (p: Proportions) => void;
-  setAnimal: (patch: Partial<Pick<AnimalFicha, 'markings'>> & { species?: Species; collar?: boolean }) => void;
+  setAnimal: (patch: Partial<Pick<AnimalFicha, 'markings'>> & { species?: Species; collar?: boolean; barding?: number }) => void;
   variants: { variants: Variant[]; thumbs: Uint8ClampedArray[] } | null;
   askVariants: () => void;
   pickVariant: (v: Variant) => void;
@@ -59,6 +59,15 @@ export function StyleStep(p: Props) {
         <div className="row">
           <Toggle label={t('markings')} on={a.markings.chest} set={(v) => p.setAnimal({ markings: { chest: v, paws: v, mask: a.markings.mask } })} />
           <Toggle label={t('collar')} on={!!a.palette.collar} set={(v) => p.setAnimal({ collar: v })} />
+        </div>
+        <div className="field" data-testid="pet-armor">
+          <span>{t('pet_armor')}: <b>{a.barding ? PET_ARMOR[a.barding - 1].name[p.lang ?? 'es'] : t('pet_armorNone')}</b></span>
+          <div className="seg">
+            {[0, 1, 2, 3, 4, 5].map((n) => (
+              <button key={n} className={(a.barding ?? 0) === n ? 'on' : ''} aria-pressed={(a.barding ?? 0) === n} data-testid={`barding-${n}`} onClick={() => p.setAnimal({ barding: n })}
+                style={n >= 4 ? { color: n === 5 ? RARITY_COLORS.legendary : RARITY_COLORS.rare } : undefined}>{n || '—'}</button>
+            ))}
+          </div>
         </div>
         <fieldset className="colors">
           <legend>{t('colors')}</legend>

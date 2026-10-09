@@ -167,6 +167,8 @@ export interface AnimalFicha extends FichaBase {
     collar: Ramp | null;
   };
   markings: { chest: boolean; paws: boolean; mask: boolean };
+  /** armadura de mascota (barda), nivel 1 a 5; 0 o sin valor, sin armadura */
+  barding?: number;
 }
 
 export type Ficha = HumanFicha | AnimalFicha;

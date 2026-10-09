@@ -2,7 +2,7 @@ import { createRaster, type Raster } from '../core/raster';
 import { IconCanvas, over, type P } from './canvas';
 import { drawWeaponIcon, type WeaponIcon, type WeaponDesign } from './weapons';
 import { drawArmorIcon, type TierLook } from './armor';
-import { drawOffhandIcon, drawJewelIcon, drawPotionIcon, drawConsumableIcon, drawGemIcon, drawRuneIcon, type OffhandIcon, type OffhandDesign, type JewelDesign } from './misc';
+import { drawOffhandIcon, drawJewelIcon, drawPotionIcon, drawConsumableIcon, drawGemIcon, drawRuneIcon, drawPetArmorIcon, type OffhandIcon, type OffhandDesign, type JewelDesign } from './misc';
 import { RARITY_COLORS, type Rarity } from './materials';
 import type { LootItem, LootBase } from './catalog';
 import type { WeaponKind, OffhandKind } from '../rig/pose';
@@ -34,6 +34,7 @@ export function drawBase(c: IconCanvas, base: LootBase, design?: LootItem['desig
     case 'consumable': return drawConsumableIcon(c, base.icon);
     case 'gem': return drawGemIcon(c, base.kind, base.grade);
     case 'rune': return drawRuneIcon(c, base.index, null);
+    case 'pet': return drawPetArmorIcon(c, base.tier);
   }
 }
 

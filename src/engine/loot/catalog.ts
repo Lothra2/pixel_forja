@@ -3,6 +3,7 @@ import type { WeaponIcon, WeaponDesign } from './weapons';
 import { TWO_HANDED, WEAPON_ICONS } from './weapons';
 import { JEWEL_ICONS, POTION_KINDS, POTION_SIZES, CONSUMABLE_ICONS, GEM_GRADES, GEM_KINDS, RUNE_COUNT, OFFHAND_ICONS, type OffhandIcon, type OffhandDesign, type JewelIcon, type JewelDesign, type PotionKind, type PotionSize, type ConsumableIcon, type GemGrade } from './misc';
 import { ARMOR_LINES, ARMOR_SLOTS, ARMOR_TIERS } from './armor';
+import { PET_ARMOR } from '../render/pet3d';
 import { ARMOR_EVOLUTION, SLOT_NAMES, type ArmorLine, type ArmorSlot, type ArmorTier, type TierLook } from './armor';
 
 /**
@@ -19,7 +20,8 @@ export type LootBase =
   | { cat: 'potion'; kind: PotionKind; size: PotionSize }
   | { cat: 'consumable'; icon: ConsumableIcon }
   | { cat: 'gem'; kind: GemColor; grade: GemGrade }
-  | { cat: 'rune'; index: number };
+  | { cat: 'rune'; index: number }
+  | { cat: 'pet'; tier: number };
 
 export type StatKey =
   | 'str' | 'dex' | 'vit' | 'ene' | 'life' | 'mana' | 'allRes' | 'fireRes' | 'coldRes' | 'lightRes' | 'poisonRes'
@@ -424,9 +426,17 @@ export function allMisc(): LootItem[] {
   return out;
 }
 
-/** Todo el botín del juego: bases, armaduras, joyas y consumibles, legendarios y set. */
+/** Armaduras de mascota (la barda de Thor), 5 niveles. */
+export function allPetArmor(): LootItem[] {
+  return PET_ARMOR.map((p, i) => ({
+    id: `pet_armor_${i + 1}`, name: p.name, rarity: i === 4 ? 'legendary' : i === 3 ? 'rare' : 'normal', base: { cat: 'pet', tier: i + 1 }, level: p.level,
+    stats: { defense: p.defense, mods: i >= 3 ? [m('petDmg', i === 4 ? 40 : 20), m('petArmor', i === 4 ? 50 : 25)] : [] },
+  }));
+}
+
+/** Todo el botín del juego: bases, armaduras, joyas y consumibles, armaduras de mascota, legendarios y set. */
 export function allLoot(): LootItem[] {
-  return [...allBases(), ...allArmor(), ...allMisc(), ...UNIQUE_LOOT];
+  return [...allBases(), ...allArmor(), ...allMisc(), ...allPetArmor(), ...UNIQUE_LOOT];
 }
 
 export { gemMat, glowMat };

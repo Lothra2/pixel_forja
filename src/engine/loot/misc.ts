@@ -1,5 +1,6 @@
 import { IconCanvas, type MatDef, type P } from './canvas';
 import { MAT, gemMat, glowMat, GEM_COLORS, type GemColor } from './materials';
+import { PET_ARMOR } from '../render/pet3d';
 
 /**
  * Mano libre (escudos, orbes, tomos, cabezas reducidas, carcaj), joyas, consumibles, gemas por grado y runas.
@@ -307,5 +308,26 @@ export function drawRuneIcon(c: IconCanvas, index: number, glow: string | null =
   const g = RUNE_GLYPHS[((index % RUNE_COUNT) + RUNE_COUNT) % RUNE_COUNT];
   const m: MatDef = glow ? glowMat(glow) : { hex: '#4a443c', kind: 'stone' };
   for (const [a, b] of g) c.line(a, b, 1.6, m, glow ? { tone: 4 } : { tone: 1 });
+  c.center();
+}
+
+// ---------- armadura de mascota (la barda de Thor) ----------
+
+export function drawPetArmorIcon(c: IconCanvas, tier: number) {
+  const L = PET_ARMOR[Math.max(1, Math.min(5, tier)) - 1];
+  const main = { hex: L.main, kind: tier >= 3 ? 'metal' as const : 'leather' as const };
+  const trim = L.trim ? { hex: L.trim, kind: 'metal' as const } : null;
+  // manta de lomo vista de arriba en 3/4: un escudo ancho con las puntas que caen a los lados
+  if (L.cloth) c.poly([[4, 10], [28, 10], [29, 24], [23, 28], [16, 29], [9, 28], [3, 24]], { hex: L.cloth, kind: 'cloth' });
+  c.poly([[6, 7], [26, 7], [27.4, 20], [22, 25], [16, 26.4], [10, 25], [4.6, 20]], main);
+  if (tier >= 3) for (const y of [12, 17]) c.px1([6, y], [26, y], main, { tone: 1 }, true);
+  if (trim) { c.px1([6, 7.4], [26, 7.4], trim, { tone: 4 }); c.px1([5, 20.4], [10, 25.4], trim, { tone: 4 }); c.px1([27, 20.4], [22, 25.4], trim, { tone: 4 }); c.px1([10, 25.6], [22, 25.6], trim, { tone: 4 }); }
+  // collar con chapa arriba
+  c.ring([16, 6], 7.6, 2.6, 1.4, { hex: '#225fd4', kind: 'leather' }, {}, 180, 360);
+  c.circle([16, 8.6], 1.3, MAT.gold);
+  // huella en el centro
+  emblem(c, 'paw', [16, 16.6], 5, L.glow ? glowMat(L.glow) : trim ?? MAT.bone);
+  if (tier >= 2 && tier < 4) for (const [x, y] of [[8, 10], [24, 10], [9, 21], [23, 21]] as P[]) c.dot([x, y], trim ?? MAT.bronze, { tone: 4 });
+  if (L.gem) c.circle([16, 11.4], 1.3, gemMat(L.gem));
   c.center();
 }

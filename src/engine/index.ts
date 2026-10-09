@@ -22,6 +22,7 @@ export * from './render/rotsprite';
 export * from './render/head';
 export * from './render/human';
 export * from './render/animal';
+export * from './render/pet3d';
 export * from './render/clip';
 export * from './qa/checks';
 export * from './export/png';

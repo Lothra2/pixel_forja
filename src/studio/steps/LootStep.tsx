@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  allBases, allArmor, allMisc, LEGENDARIES, SET_ITEMS, SET_BONUS, rollItem, lootFrames, modText, RARITY_COLORS, ARMOR_LINES, ARMOR_EVOLUTION, ARMOR_SLOTS, baseArmor,
+  allBases, allArmor, allMisc, allPetArmor, LEGENDARIES, SET_ITEMS, SET_BONUS, rollItem, lootFrames, modText, RARITY_COLORS, ARMOR_LINES, ARMOR_EVOLUTION, ARMOR_SLOTS, baseArmor,
   CHEST_TIERS, chestFrames, coinFrames, PILE_SIZES, pileFrames, coinBurstFrames, dropFrames, beamFrames, exportLootIcons, exportLootWorld, exportLootCatalog, exportLootAll,
   type LootItem, type Raster, type ArmorLine,
 } from '../../engine/index';
@@ -47,7 +47,7 @@ function LootTile({ item, px, slot, on, pick }: { item: LootItem; px: 32 | 64; s
 }
 
 /** se puede llevar puesto: armas, piezas de armadura y mano libre (menos el carcaj) */
-const wearable = (i: LootItem) => i.base.cat === 'weapon' || i.base.cat === 'armor' || (i.base.cat === 'offhand' && i.base.icon !== 'quiver');
+const wearable = (i: LootItem) => i.base.cat === 'weapon' || i.base.cat === 'armor' || i.base.cat === 'pet' || (i.base.cat === 'offhand' && i.base.icon !== 'quiver');
 
 function Detail({ item, t, lang, equip, hero }: { item: LootItem; t: T; lang: 'es' | 'en'; equip?: (i: LootItem) => void; hero?: string | null }) {
   const big = useMemo(() => lootFrames(item, 64, true), [item]);
@@ -76,7 +76,7 @@ function Detail({ item, t, lang, equip, hero }: { item: LootItem; t: T; lang: 'e
       {equip && wearable(item) && (
         <>
           <button className="btn" onClick={() => equip(item)} data-testid="loot-equip">{t('loot_equip')}</button>
-          <span className="muted small">{hero ? `${t('loot_equipOn')} ${hero}` : t('loot_equipRick')}</span>
+          <span className="muted small">{item.base.cat === 'pet' ? `${t('loot_equipOn')} Thor` : hero ? `${t('loot_equipOn')} ${hero}` : t('loot_equipRick')}</span>
         </>
       )}
     </div>
@@ -134,7 +134,7 @@ export function LootStep({ t, lang, equip, hero }: { t: T; lang: 'es' | 'en'; eq
       return grade === 'magic' || grade === 'rare' ? base.map((b, i) => rollItem(b, grade, seed * 100 + i)) : base;
     }
     if (tab === 'armor') return line === 'all' ? allArmor() : ARMOR_SLOTS.flatMap((s) => ([1, 2, 3, 4, 5] as const).map((tier) => baseArmor(s, line, tier)));
-    if (tab === 'misc') return allMisc();
+    if (tab === 'misc') return [...allPetArmor(), ...allMisc()];
     return [];
   }, [tab, grade, seed, line]);
   const current = sel && (tab === 'world' || items.some((i) => i.id === sel.id)) ? sel : items[0] ?? null;

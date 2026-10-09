@@ -18,7 +18,7 @@ export function ExportStep({ t, ficha, cell: cell0, qa, doExport, artifact }: Pr
   const all = useMemo(() => animsFor(ficha), [ficha]);
   const packs = useMemo(() => [...new Set(all.map((a) => a.pack))], [all]);
   const human = isHuman(ficha);
-  const [sel, setSel] = useState<Set<string>>(() => new Set(human ? ['basic', 'football'] : ['animal']));
+  const [sel, setSel] = useState<Set<string>>(() => new Set(human ? ['basic', 'football'] : ['animal', 'pet']));
   const [views, setViews] = useState<Set<ViewName>>(new Set(['side']));
   const [cell, setCell] = useState<CellSize>(cell0);
   const [props, setProps] = useState(true);
@@ -27,7 +27,7 @@ export function ExportStep({ t, ficha, cell: cell0, qa, doExport, artifact }: Pr
   const [scale, setScale] = useState(1);
   const [report, setReport] = useState<{ reports: QAReport[]; missing: string[] } | null>(null);
   const plan: ExportPlan = useMemo(
-    () => ({ cell, anims: all.filter((a) => sel.has(a.pack)).map((a) => a.name), views: human ? VIEW_NAMES.filter((v) => views.has(v)) : ['side'], props, scale: kind === 'sheet' ? scale : 1 }),
+    () => ({ cell, anims: all.filter((a) => sel.has(a.pack)).map((a) => a.name), views: VIEW_NAMES.filter((v) => views.has(v)), props, scale: kind === 'sheet' ? scale : 1 }),
     [cell, all, sel, views, props, human, kind, scale],
   );
   const usesPlan = kind !== 'ffgg' && kind !== 'ficha';
@@ -68,7 +68,7 @@ export function ExportStep({ t, ficha, cell: cell0, qa, doExport, artifact }: Pr
               <button className="chip" onClick={() => setSel(new Set(packs))}>{t('selectAll')}</button>
             </div>
           </div>
-          {human && (
+          {(
             <div className="field">
               <span>{t('view')}</span>
               <div className="chips">
