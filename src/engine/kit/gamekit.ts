@@ -165,17 +165,33 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
 
   // ---------- botín ----------
   const loot = allLoot();
-  const normals = loot.filter((i) => !isSpecial(i.rarity));
-  for (const px of [32, 64] as const) {
-    files.push(...exportLootIcons(normals, px, true, `botin/iconos_${px}`).map((f) => ({ ...f })));
-    files.push(...exportLootIcons(UNIQUE_LOOT, px, true, `botin/especiales_${px}`));
+  const uniqueIds = new Set(UNIQUE_LOOT.map((i) => i.id));
+  // tres atlas: normales (1 cuadro), únicos y set (8 cuadros) y armaduras de nivel 5 (8 cuadros).
+  // Separados para que ninguno pase de 4096 px a 64.
+  const groups: Record<string, typeof loot> = {
+    iconos: loot.filter((i) => !isSpecial(i.rarity)),
+    especiales: loot.filter((i) => uniqueIds.has(i.id)),
+    armadura_n5: loot.filter((i) => isSpecial(i.rarity) && !uniqueIds.has(i.id)),
+  };
+  const atlasOf = new Map<string, string>();
+  const atlas: Record<string, Record<number, string>> = {};
+  for (const [g, items] of Object.entries(groups)) {
+    if (!items.length) continue;
+    atlas[g] = {};
+    for (const it of items) atlasOf.set(it.id, g);
+    for (const px of [32, 64] as const) {
+      files.push(...exportLootIcons(items, px, true, `botin/${g}_${px}`));
+      atlas[g][px] = `botin/${g}_${px}.json`;
+    }
   }
   files.push(...exportLootWorld(UNIQUE_LOOT, 'botin/mundo'));
-  files.push(json('botin/catalogo.json', lootCatalog(loot)));
+  const catalog = lootCatalog(loot) as { items: { id: string; atlas?: string }[] };
+  for (const it of catalog.items) it.atlas = atlasOf.get(it.id);
+  files.push(json('botin/catalogo.json', catalog));
   manifest.botin = {
-    iconos: { 32: 'botin/iconos_32.json', 64: 'botin/iconos_64.json' }, especiales: { 32: 'botin/especiales_32.json', 64: 'botin/especiales_64.json' },
+    atlas, iconos: atlas.iconos, especiales: atlas.especiales,
     mundo: 'botin/mundo.json', catalogo: 'botin/catalogo.json',
-    notas: 'Los íconos van con su casillero (borde de la rareza). Los especiales (legendarios y set) traen 8 cuadros animados.',
+    notas: 'Cada objeto del catálogo dice en qué atlas está (`atlas`). Los íconos van con su casillero (borde de la rareza). Los de 8 cuadros (animated) se animan con <icon>_0 a <icon>_7. Los que caen al piso (cae_*) son solo los únicos y el set.',
   };
   log('botín listo');
 

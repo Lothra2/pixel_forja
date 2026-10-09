@@ -93,6 +93,15 @@ describe('kit del juego', () => {
     expect(m.personajes.prima).toMatchObject({ tipo: 'heroe', nombre: 'Prima', desde_estudio: true });
     expect(names).toContain('personajes/prima_walk.png');
     expect(m.ui.inventario.layout.rejilla).toMatchObject({ cols: 7, filas: 4 });
+    // cada objeto del catálogo está en el atlas que dice, con todos sus cuadros
+    const read = (n: string) => JSON.parse(new TextDecoder().decode(files.find((f) => f.name === n)!.bytes));
+    const cat = read('botin/catalogo.json');
+    const atlases: Record<string, Record<string, unknown>> = {};
+    for (const [g, by] of Object.entries(m.botin.atlas as Record<string, Record<string, string>>)) atlases[g] = read(by['32']).frames;
+    for (const it of cat.items) {
+      expect(atlases[it.atlas], it.id).toBeDefined();
+      for (const k of it.animated ? [`${it.icon}_0`, `${it.icon}_7`] : [it.icon]) expect(atlases[it.atlas], `${it.id} -> ${k}`).toHaveProperty([k]);
+    }
     expect(m.personajes.minotauro.celda).toBe(64);
     // la hoja de caminar: 8 filas (direcciones) de 48 px
     const walk = files.find((f) => f.name === 'personajes/rick_walk.png')!.bytes;
