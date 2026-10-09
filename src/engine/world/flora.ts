@@ -496,7 +496,8 @@ export function floraV3(): Flora[] {
 export function grandOakV3(): Flora {
   const W = 240, H = 228, cx = 120, base = H - 8, seed = 4242;
   const puffs = oakPuffs(cx, 72, 3.3, seed);
-  const paint = (sw: number, crown: boolean) => {
+  /** smile: 0 = ojos cerrados contentos (como siempre); hasta 1 = ojos abiertos con brillo y sonrisa grande. t: hojitas que caen */
+  const paint = (sw: number, crown: boolean, smile = 0, t = -1) => {
     const r = createRaster(W, H);
     groundShadow(r, cx + 6, base - 2, 70, 15);
     drawTrunk(r, cx, base, 118, 54, 34, RAMPS.corteza, seed, 0, 8);
@@ -504,16 +505,42 @@ export function grandOakV3(): Flora {
     else innerBranches(r, cx, 122, 48, 22, seed);
     // cara: ojos cerrados contentos, mejillas y sonrisa (talladas, con borde claro para que se lean)
     const dark: RGB = [20, 13, 10], rim: RGB = [140, 112, 78];
+    const open = Math.max(0, Math.min(1, (smile - 0.3) / 0.4));
     for (const s of [-1, 1]) {
       const ex = cx + s * 12, ey = 168;
-      for (let dx = -6; dx <= 6; dx++) { const y = ey - Math.round(Math.sqrt(Math.max(0, 36 - dx * dx)) * 0.55); setPx(r, ex + dx, y, dark); setPx(r, ex + dx, y + 1, dark); setPx(r, ex + dx, y + 2, rim); }
-      for (let dx = -3; dx <= 3; dx++) for (let dy = -1; dy <= 1; dy++) setPx(r, ex + s * 5 + dx, ey + 7 + dy, [170, 90, 80], 150);
+      if (open === 0) {
+        for (let dx = -6; dx <= 6; dx++) { const y = ey - Math.round(Math.sqrt(Math.max(0, 36 - dx * dx)) * 0.55); setPx(r, ex + dx, y, dark); setPx(r, ex + dx, y + 1, dark); setPx(r, ex + dx, y + 2, rim); }
+      } else {
+        // ojo abierto: hueco ovalado que se abre, con un brillo cálido y el borde claro arriba
+        const ry = 1 + open * 3.4;
+        for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) if ((dx * dx) / 25 + (dy * dy) / (ry * ry) <= 1) setPx(r, ex + dx, ey - 2 + dy, dark);
+        for (let dx = -5; dx <= 5; dx++) setPx(r, ex + dx, ey - 3 - Math.round(ry) - Math.round(Math.abs(dx) * -0.2), rim);
+        if (open > 0.5) { setPx(r, ex - 2, ey - 4, [255, 236, 190]); setPx(r, ex - 1, ey - 4, [255, 214, 150]); setPx(r, ex - 2, ey - 3, [255, 214, 150]); }
+      }
+      const blush = 150 + Math.round(smile * 80);
+      for (let dx = -3; dx <= 3; dx++) for (let dy = -1; dy <= 1; dy++) setPx(r, ex + s * 5 + dx, ey + 7 + dy, [190, 90, 80], blush);
     }
-    for (let dx = -9; dx <= 9; dx++) { const y = 182 + Math.round(Math.sqrt(Math.max(0, 81 - dx * dx)) * 0.5); setPx(r, cx + dx, y, dark); setPx(r, cx + dx, y + 1, dark); setPx(r, cx + dx, y - 1, rim); }
+    const mw = 9 + Math.round(smile * 4), depth = 0.5 + smile * 0.25;
+    for (let dx = -mw; dx <= mw; dx++) { const y = 182 + Math.round(Math.sqrt(Math.max(0, mw * mw - dx * dx)) * depth); setPx(r, cx + dx, y, dark); setPx(r, cx + dx, y + 1, dark); setPx(r, cx + dx, y - 1, rim); }
+    // hojitas que caen de la copa cuando sonríe
+    if (t >= 0) for (let k = 0; k < 10; k++) {
+      const x = Math.round(cx - 70 + k * 15 + Math.sin(t * 6 + k) * 4), y = Math.round(96 + hash(k, 3, seed) * 20 + t * 90);
+      const c: RGB = k % 3 ? [122, 164, 102] : [196, 154, 88];
+      setPx(r, x, y, c); setPx(r, x + 1, y, c); setPx(r, x, y + 1, [40, 60, 40]);
+    }
     return r;
   };
   const sws = swayFrames(1.2), frames = sws.map((v) => paint(v, true));
-  return { name: 'abuelo_roble_v3', w: W, h: H, anchor: [cx, base], solid: [-28, -16, 56, 16], anims: { idle: { frames, fps: 4, loop: true }, ...splitAnims(frames, sws.map((v) => paint(v, false)), 4) } };
+  // sonreir: 8 cuadros sin bucle (con la copa quieta, igual al cuadro 0 de `copa`)
+  const sm = [0, 0.2, 0.4, 0.6, 0.8, 1, 1, 0.9];
+  return {
+    name: 'abuelo_roble_v3', w: W, h: H, anchor: [cx, base], solid: [-28, -16, 56, 16],
+    anims: {
+      idle: { frames, fps: 4, loop: true }, ...splitAnims(frames, sws.map((v) => paint(v, false)), 4),
+      sonreir: { frames: sm.map((v, f) => paint(0, true, v, f / 7)), fps: 8, loop: false },
+      tronco_sonreir: { frames: sm.map((v, f) => paint(0, false, v, f / 7)), fps: 8, loop: false },
+    },
+  };
 }
 
 /**

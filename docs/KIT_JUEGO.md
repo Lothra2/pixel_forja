@@ -47,9 +47,9 @@ Límite honesto: la armadura que evoluciona se ve en Thor (6 niveles exportados)
 | Carpeta | Qué hay |
 |---|---|
 | `personajes/` | Rick, Steph, Sophie, Alana: 21 animaciones en 8 direcciones, celda 48. Retratos 40x40 |
-| `mascota/` | Thor sin armadura y con armadura nivel 1 a 5, las 11 animaciones en todos (idle, walk, run, bite, bark, howl, pickup, hurt, die, sit, wag) |
-| `enemigos/` | rata, calabaza y goblin_arquero (celda 48), trol élite (celda 64, pivote [32, 62], más alto y ancho, garrote grande) y minotauro jefe (celda 64, con carga, pisotón y salto) |
-| `fx/` | 86 efectos: proyectil en 8 direcciones, impacto y nova para fuego, hielo, rayo, veneno, sagrado, arcano y naturaleza (verde esmeralda con hojas y pétalos, la magia de Alana). La flecha (`proyectil_flecha_<dir>`, 2 cuadros a 14 fps, y `impacto_flecha`, 5 cuadros de astillas). Tajo, curar, escudo de Thor, aura de nivel, grito de guerra, círculo mágico |
+| `mascota/` | Thor sin armadura y con armadura nivel 1 a 5, las 12 animaciones en todos (idle, walk, run, bite, bark, howl, pickup, hurt, die, sit, wag, dig). `dig` es cavar en bucle: con `fx.tierra_cavada` encima para desenterrar algo |
+| `enemigos/` | rata, calabaza y goblin_arquero (celda 48), trol élite (celda 64, pivote [32, 62], más alto y ancho, garrote grande) y minotauro jefe (celda 96, pivote [48, 93]: llena la pantalla. Se dibuja en 64 y se agranda x1.5 a la manera de RotSprite, sin colores nuevos. Con carga, pisotón y salto) |
+| `fx/` | 86 efectos: proyectil en 8 direcciones, impacto y nova para fuego, hielo, rayo, veneno, sagrado, arcano y naturaleza (verde esmeralda con hojas y pétalos, la magia de Alana). La flecha (`proyectil_flecha_<dir>`, 2 cuadros a 14 fps, y `impacto_flecha`, 5 cuadros de astillas). `onda_pisoton` (celda 96, 8 cuadros: grietas y anillo de polvo del pisotón del minotauro) y `tierra_cavada` (celda 48, 6 cuadros). Tajo, curar, escudo de Thor, aura de nivel, grito de guerra, círculo mágico |
 | `botin/` | 393 objetos en atlas de 32 y 64 px, legendarios animados (8 cuadros), cofres, monedas, haz de luz por rareza, objetos que caen. `catalogo.json` con stats |
 | `mundo/` | el Bosque GG (bosque hechizado, sombrío): 120 x 90 cuadros (3840 x 2880 px, unas 22 pantallas) con el suelo pintado en 12 trozos, agua animada, árboles estilo Stardew con viento, árboles hechizados que despiertan, criaturas (cuervos, murciélagos, ojos, fuegos fatuos), bruma en 2 capas, 13 partículas, luz y nube, 8 postales y la vista del mapa |
 | `ui/` | orbes, paneles 9-slice, casilleros con silueta, inventario completo, cinturón, barras, estandarte, íconos, cursores, números de daño |
@@ -127,6 +127,7 @@ Recorrido: Claro de la Llegada, Pradera de las Mariposas, El Abuelo Roble, Puent
 | `agua` | tiles | agua animada (tileset `agua.png`, el cuadro 0 pasa por 4 cuadros cada 220 ms). Va DEBAJO del suelo |
 | `suelo` | grupo de capas de imagen | 12 trozos (`suelo/mundo1_bosque_N.png`) con `offsetx/offsety`. El agua es transparente: se ve la capa de abajo |
 | `colision` | tiles | invisible. Distinto de 0 = no se pasa (agua honda, acantilados, troncos, objetos sólidos). Los puentes y el vado ya están abiertos |
+| `superficie` | tiles | invisible. Qué paso suena en cada cuadro: 1 pasto, 2 tierra, 3 piedra, 4 madera (puentes), 5 agua (vado y orillas). Se lee directo de `data`, no es un gráfico. Sonido: `audio.paso_<superficie>_<0..2>` alternando las 3 variantes |
 | `objetos` | puntos | decorado. `sprite` = nombre en `manifest.mundo.objetos`. `x, y` = punto de apoyo |
 | `entidades` | puntos | ver abajo |
 | `zonas` | rectángulos | cada zona con `musica`, `ambiente`, `luz` (color), `oscuridad` (0 a 1), `particulas` (lista separada por coma), `descubrir` y a veces `secreto` |
@@ -169,6 +170,9 @@ Partículas sugeridas por zona: `luciernaga`, `hoja_verde`, `hoja_otono`, `marip
 - Bruma: `niebla.jirones` y `niebla.nubes`, dos capas que corren con el viento a distinta velocidad, con alfa = `zona.niebla`. Van ANTES de la oscuridad, así las luces la iluminan.
 - Telarañas (`telarana`) pegadas a troncos del bosque oscuro.
 - Tronco y copa por separado: los árboles grandes (`roble_*`, `pino_*`, `sauce_v3`, `arbol_seco_*`, `abuelo_roble_v3`) traen, además de `idle`, las anims `tronco` y `copa` con el mismo tamaño, apoyo y cuadros. Se dibuja el tronco ordenado por `y` y la copa en el mismo lugar con la profundidad del tronco + 1. Cuando la heroína pasa detrás, solo la copa baja a alfa 0.45 y el tronco queda firme. Tronco + copa = `idle` pixel por pixel (hay un test). Los hechizados traen `copa` y un tronco por estado: `tronco_dormido`, `tronco_despierto`, `tronco_parpadeo` (la cara va en el tronco). Se sincronizan por número de cuadro, y `parpadeo` va con el cuadro 0 de la copa. `idle` sigue entero para quien no lo use.
+- Pasto alto (`pasto_alto`): `apartar_izq` y `apartar_der` (4 cuadros a 12 fps, sin bucle) cuando la heroína lo cruza; después vuelve a `idle`.
+- El Abuelo Roble (`abuelo_roble_v3`): `sonreir` (8 cuadros a 8 fps, sin bucle) al tocarlo o abrazarlo: abre los ojos, sonríe más y caen hojitas. Si se usa tronco y copa, `tronco_sonreir` va con el cuadro 0 de `copa`.
+- Aviso de la carga del minotauro (`aviso_carga`, capa suelo): tramo de 32 x 48 con apoyo [0, 24] que se repite a lo largo de la línea de la carga (girado hacia donde va a correr). `llenar` 8 cuadros a 8 fps; los tramos pegan sin costura.
 - Campamento de fogata (`campamento_fogata`, 64 x 48, luz de radio 150): va en los 3 `punto_guardado`. La `fogata` chica sigue existiendo para decorar.
 
 **Referencia lista para copiar:** `scripts/visor/runtime.js` anima todo esto en Canvas 2D (orden de dibujo, viento, ojos, cuervos, bruma, oscuridad con luces, resplandor de color, partículas por zona, banner de zona, ambientes). El juego en Phaser debe verse igual o mejor. Para verlo: `npx tsx scripts/visor-mundo.ts <carpeta>` y servir la carpeta.
@@ -215,6 +219,8 @@ for (const [g, by] of Object.entries(manifest.botin.atlas))
 - Íconos de 24 x 24 con el mismo estilo que `icono_ajustes`: `icono_pausa`, `icono_secreto`, `icono_zona`, `icono_luna`, `icono_sonido`, `icono_silencio`, `icono_calidad`, `icono_jugadora`, `icono_peque`, `icono_jugar` e `icono_guardado`.
 - Íconos de los carteles del mapa: `ui.iconos_cartel.<icono>` (un PNG de 24 x 24 en `ui/carteles/`). Cada `icono` que trae un cartel del mapa tiene el suyo: `flecha_norte`, `peligro`, `corazon`, `cruce`, `estrella`.
 - Íconos de habilidad: `ui.habilidades.<nombre>` (40 x 40 sobre medallón redondo con el aro del color de la habilidad): `lluvia_flechas`, `esquiva`, `llamar_thor`, `curar`, `torbellino`, `bloqueo`, `nova_fuego`, `rayo_canalizado`. Para la recarga, oscurecer con tinte.
+- `logo`: "GG Abyss" de 288 x 96, 8 cuadros a 8 fps en bucle, con un brillo que recorre las letras. Hecho con la misma fuente de títulos.
+- `continuara`: ilustración de 960 x 540 (la escalera que baja al abismo hacia el portal). Sin texto: el juego escribe "Continuará..." encima con `fuente_titulo`.
 - `girar_tablet`: 64 x 64, 2 cuadros (vertical y acostada con la flecha). Para pedir que giren la tablet a horizontal.
 - Fuentes bitmap (`manifest.ui.fuentes`), en formato BMFont XML, hechas a partir de Silkscreen (Jason Kottke, SIL Open Font License 1.1). Traen ñ, tildes, ¡ y ¿:
   - `fuente_ui`: 8 px, blanca con sombra negra. Se tiñe con `setTint` y se agranda con escala entera (x2 o x3, nunca 1.5).
@@ -224,8 +230,12 @@ for (const [g, by] of Object.entries(manifest.botin.atlas))
   this.add.bitmapText(x, y, 'fuente_titulo', '¡Descubriste!').setOrigin(0.5);
   ```
 
+### Íconos de la app
+
+`manifest.app`: `icono_192`, `icono_512`, `icono_maskable_512` (Thor dentro del 80 % del centro), `apple_touch_180` y `favicon_32`. Cada uno trae `archivo`, `tam` y `uso` (`any` o `maskable`). La cara de Thor sobre el portal, en pixel art agrandado por enteros para que se vea nítido y se lea a 48 px.
+
 ### Audio
 
-WAV mono 16 bits a 22050 Hz. Además de los de combate e interfaz: `descubrir` (zona nueva), `secreto` (secreto encontrado), `elegir` (tocar una tarjeta de jugadora), `guardado` (guardar en la fogata), `arco`, `esquiva`, `bloqueo`, `thor_rescate` y pasos por superficie `paso_<pasto|tierra|piedra|madera|agua>_<0|1|2>` (3 variantes de cada uno, para alternar). Efectos cortos, música para loop y ambientes de 12 s que hacen bucle sin corte. En tablets el audio arranca solo después del primer toque del usuario, así que la pantalla de inicio debe pedir un toque.
+WAV mono 16 bits a 22050 Hz. Músicas: `musica_bosque`, `musica_jefe`, `musica_victoria` y `musica_titulo` (40 s, misteriosa y suave, en bucle). Además de los de combate e interfaz: `descubrir` (zona nueva), `secreto` (secreto encontrado), `elegir` (tocar una tarjeta de jugadora), `guardado` (guardar en la fogata), `arco`, `esquiva`, `bloqueo`, `thor_rescate` y pasos por superficie `paso_<pasto|tierra|piedra|madera|agua>_<0|1|2>` (3 variantes de cada uno, para alternar). Efectos cortos, música para loop y ambientes de 12 s que hacen bucle sin corte. En tablets el audio arranca solo después del primer toque del usuario, así que la pantalla de inicio debe pedir un toque.
 
 Lo que no se pudo verificar: los sonidos están chequeados por forma (duración, sin saturar, WAV válido) pero nadie los escuchó todavía. Si alguno suena feo se cambia su receta en `src/engine/audio/sfx.ts`.

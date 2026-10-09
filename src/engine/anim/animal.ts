@@ -208,6 +208,23 @@ export const A_DIE: AnimalAnimDef = {
   },
 };
 
-export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH, A_BITE, A_BARK, A_HOWL, A_PICKUP, A_HURT, A_DIE];
+/** Cava: agachado adelante, las patas de adelante rascan la tierra una y otra (en bucle) y la cola feliz arriba. */
+export const A_DIG: AnimalAnimDef = {
+  name: 'dig', fps: 10, loop: true,
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    return [0, 1, 2, 3, 4, 5].map((i) => {
+      const p = (i / 6) * TAU;
+      // cada pata delantera va adelante pegada al piso y vuelve hacia atrás levantada (tira la tierra)
+      const scratch = (ph: number): QFoot => ({ x: 0.2 * L + Math.cos(p + ph) * 0.38 * L, y: 0.68 * L - Math.max(0, -Math.sin(p + ph)) * 0.22 * L });
+      return Q(d, {
+        pitch: 14, legs: { fn: scratch(0), ff: scratch(Math.PI), rn: { x: 0.1 * L, y: L - 0.3 }, rf: { x: -0.1 * L, y: L - 0.3 } },
+        head: { angle: 24, dy: 2 }, tail: 45 + Math.sin(p * 2) * 12, mouth: i % 3 === 0 ? 'tongue' : 'closed',
+      });
+    });
+  },
+};
+
+export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH, A_BITE, A_BARK, A_HOWL, A_PICKUP, A_HURT, A_DIE, A_DIG];
 /** Animaciones de la mascota de un RPG, en el orden en que suelen pedirse. */
-export const PET_RPG_ANIMS = ['idle', 'walk', 'run', 'bite', 'bark', 'howl', 'pickup', 'hurt', 'die', 'sit', 'wag'];
+export const PET_RPG_ANIMS = ['idle', 'walk', 'run', 'bite', 'bark', 'howl', 'pickup', 'hurt', 'die', 'sit', 'wag', 'dig'];

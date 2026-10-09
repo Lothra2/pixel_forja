@@ -128,17 +128,25 @@ export function mushrooms(): WorldObject {
 }
 
 export function tallGrass(): WorldObject {
-  const frames: Raster[] = [];
-  for (let f = 0; f < 4; f++) {
+  // sway: cuánto se corre la punta; squash: qué tan alto queda (al apartarse se aplasta)
+  const frame = (sway: number, squash = 1) => {
     const c = canvas(32, 32, 1);
-    const sway = [0, 0.8, 1.2, 0.6][f];
     for (let i = 0; i < 9; i++) {
-      const x = 7 + i * 2.2, h = 8 + ((i * 7) % 5);
-      c.poly([[x - 0.9, 26], [x + 0.9, 26], [x + sway * (h / 10), 26 - h]], leaf(i % 2 ? '#5f9e3c' : '#4f8f34'), { bias: i % 3 === 0 ? 1 : 0 });
+      const x = 7 + i * 2.2, h = (8 + ((i * 7) % 5)) * squash;
+      c.poly([[x - 1.1, 26], [x + 1.1, 26], [x + sway * (h / 10), 26 - h]], leaf(i % 2 ? '#5f9e3c' : '#4f8f34'), { bias: i % 3 === 0 ? 1 : 0 });
     }
-    frames.push(c.render());
-  }
-  return { name: 'pasto_alto', w: 32, h: 32, anchor: [16, 27], solid: null, anims: { idle: { frames, fps: 4, loop: true } } };
+    return c.render();
+  };
+  // apartar: se abre hacia un lado cuando pasa la heroína y vuelve (4 cuadros a 12 fps, sin bucle)
+  const part = (dir: number) => [[4.5, 0.78], [6.5, 0.64], [3.5, 0.82], [1, 0.95]].map(([s, q]) => frame(s * dir, q));
+  return {
+    name: 'pasto_alto', w: 32, h: 32, anchor: [16, 27], solid: null,
+    anims: {
+      idle: { frames: [0, 0.8, 1.2, 0.6].map((s) => frame(s)), fps: 4, loop: true },
+      apartar_izq: { frames: part(-1), fps: 12, loop: false },
+      apartar_der: { frames: part(1), fps: 12, loop: false },
+    },
+  };
 }
 
 export function fence(kind: 'h' | 'v' | 'post'): WorldObject {

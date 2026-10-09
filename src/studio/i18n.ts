@@ -750,7 +750,7 @@ const ANIM_LABELS: Record<string, [string, string]> = {
   summon: ['Invocar', 'Summon'], warcry: ['Grito de guerra', 'War cry'], attack_heavy: ['Golpe pesado', 'Heavy strike'], attack_thrust: ['Estocada', 'Thrust'],
   zombie_walk: ['Caminar de zombi', 'Zombie walk'], claw: ['Zarpazo', 'Claw'], lunge: ['Embestida', 'Lunge'], rise: ['Levantarse del piso', 'Rise from ground'], trot: ['Trotar', 'Trot'], sit: ['Sentarse', 'Sit'], lie: ['Echarse', 'Lie down'], wag: ['Mover la cola', 'Wag tail'],
   fetch: ['Buscar la pelota', 'Fetch'],
-  bite: ['Morder', 'Bite'], bark: ['Ladrar', 'Bark'], howl: ['Aullar (escudo)', 'Howl (shield)'], pickup: ['Recoger botín', 'Pick up loot'], hurt: ['Recibe golpe', 'Hurt'],
+  bite: ['Morder', 'Bite'], bark: ['Ladrar', 'Bark'], howl: ['Aullar (escudo)', 'Howl (shield)'], pickup: ['Recoger botín', 'Pick up loot'], dig: ['Cavar', 'Dig'], hurt: ['Recibe golpe', 'Hurt'],
 };
 
 export function animLabel(name: string, lang: Lang): string {

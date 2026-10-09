@@ -236,4 +236,27 @@ export function musicVictoria(): Float32Array {
   return song(130, 18, [{ wave: 'square', notes: lead, vol: 0.22, duty: 0.5, vib: [6, 0.2] }, { wave: 'triangle', notes: bass, vol: 0.35 }], 'k...k...s...k.....');
 }
 
-export const MUSIC = { bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria };
+/**
+ * Música del título: misteriosa y suave, en Re menor, 72 pulsos (unos 40 s en bucle). Sin batería: un bajo largo,
+ * un arpegio de cristal muy bajito, la melodía en triángulo con vibrato y campanitas sueltas arriba.
+ */
+export function musicTitulo(): Float32Array {
+  const hold = (n: string, len: number) => [n, ...Array.from({ length: len - 1 }, () => '-')];
+  const lead = [
+    'D5', '-', '-', '-', 'F5', '-', 'A5', '-', 'G5', '-', '-', '-', 'F5', '-', 'E5', '-', 'D5', '-', '-', '-', '-', '-', '.', '.', 'A4', '-', 'C5', '-', 'D5', '-', '-', '-',
+    'F5', '-', '-', '-', 'A5', '-', 'C6', '-', 'A#5', '-', '-', '-', 'A5', '-', 'G5', '-', 'A5', '-', '-', '-', '-', '-', '.', '.', 'E5', '-', 'F5', '-', 'E5', '-', '-', '-',
+    'D5', '-', 'F5', '-', 'E5', '-', 'C5', '-', 'D5', '-', '-', '-', 'A4', '-', '-', '-', 'A#4', '-', 'C5', '-', 'D5', '-', '-', '-', '-', '-', '-', '-', '.', '.', '.', '.',
+  ];
+  const chords: [string, string[]][] = [['D3', ['D4', 'F4', 'A4', 'F4']], ['A#2', ['A#3', 'D4', 'F4', 'D4']], ['F2', ['F4', 'A4', 'C5', 'A4']], ['C3', ['C4', 'E4', 'G4', 'E4']], ['G2', ['G3', 'A#3', 'D4', 'A#3']], ['A2', ['A3', 'C#4', 'E4', 'C#4']]];
+  const bass = chords.flatMap(([b]) => hold(b, 16));
+  const arp = chords.flatMap(([, a]) => rep(a, 4));
+  const bells = Array.from({ length: 96 }, (_, i) => ({ 6: 'A6', 22: 'F6', 38: 'E6', 54: 'C6', 70: 'D6', 86: 'A5' } as Record<number, string>)[i] ?? '.');
+  return song(72, 96, [
+    { wave: 'triangle', notes: lead, vol: 0.2, vib: [4.5, 0.25] },
+    { wave: 'triangle', notes: bass, vol: 0.26 },
+    { wave: 'square', notes: arp, vol: 0.035, duty: 0.125 },
+    { wave: 'sine', notes: bells, vol: 0.09 },
+  ], '', 1);
+}
+
+export const MUSIC = { bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo };

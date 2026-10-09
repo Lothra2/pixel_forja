@@ -6,7 +6,7 @@ import { RPG } from './rpg';
 import { SKILLS, ENEMY } from './skills';
 import { ANIMAL_ANIMS, type AnimalAnimDef } from './animal';
 
-const PET_ONLY = new Set(['bite', 'bark', 'howl', 'pickup', 'hurt', 'die']);
+const PET_ONLY = new Set(['bite', 'bark', 'howl', 'pickup', 'hurt', 'die', 'dig']);
 import { type Pose, keyed } from '../rig/pose';
 import type { CustomAnim, Ficha } from '../sheet/ficha';
 import { isHuman } from '../sheet/ficha';

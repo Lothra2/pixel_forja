@@ -473,6 +473,28 @@ export interface BigMapFiles {
 }
 
 /** Exporta a Tiled: capas de imagen del suelo (trozos), agua animada, colisión, objetos, entidades, zonas y postales. */
+/** Valores de la capa `superficie` (qué paso suena en cada cuadro). */
+export const SUPERFICIES = ['', 'pasto', 'tierra', 'piedra', 'madera', 'agua'] as const;
+
+/**
+ * Superficie de cada cuadro para los pasos: 1 pasto, 2 tierra (caminos), 3 piedra (plazas, acantilados, escaleras),
+ * 4 madera (puentes) y 5 agua (vado y orillas).
+ */
+export function surfaceTiles(m: BigMap): Uint8Array {
+  const byKind = [1, 2, 3, 3, 5, 3]; // pasto, camino, plaza, acantilado, agua, escalera
+  const out = Uint8Array.from(m.terrain.tileKind, (k) => byKind[k] ?? 1);
+  const objs = new Map(m.objects.map((o) => [o.name, o]));
+  for (const d of m.decos) {
+    if (d.sprite !== 'puente') continue;
+    const o = objs.get(d.sprite)!;
+    // el tablero del puente: todo el ancho y la franja del medio del alto
+    const x0 = Math.floor((d.x - o.anchor[0]) / TILE), x1 = Math.floor((d.x - o.anchor[0] + o.w - 1) / TILE);
+    const y0 = Math.floor((d.y - o.anchor[1] + 12) / TILE), y1 = Math.floor((d.y - o.anchor[1] + o.h - 13) / TILE);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) out[y * m.w + x] = 4;
+  }
+  return out;
+}
+
 export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
   const parts = chunks(m.terrain.img, CHUNK).map((c, i) => ({ name: `${dir}/${m.name}_${i}.png`, ...c }));
   // agua: 4 cuadros en una tira; el cuadro 0 se anima por los 4
@@ -495,6 +517,8 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
       { id: lid++, name: 'agua', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 1, visible: true, data: Array.from(m.terrain.waterTiles, (v) => (v ? 1 : 0)) },
       { id: lid++, name: 'suelo', type: 'group', opacity: 1, visible: true, layers: parts.map((p, i) => ({ id: 100 + i, name: `suelo_${i}`, type: 'imagelayer', image: p.name.split('/').pop() ? `${p.name}` : p.name, offsetx: p.x, offsety: p.y, x: 0, y: 0, opacity: 1, visible: true })) },
       { id: lid++, name: 'colision', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.5, visible: false, data: Array.from(m.solid, (v) => (v ? solidGid : 0)) },
+      // pasos: un valor por cuadro (no es un gráfico, se lee directo de data)
+      { id: lid++, name: 'superficie', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.4, visible: false, data: Array.from(surfaceTiles(m)), properties: props({ valores: SUPERFICIES.map((n, i) => (i ? `${i} ${n}` : '')).filter(Boolean).join(', ') }) },
       { id: lid++, name: 'objetos', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.decos.map((d) => point(d.sprite, 'deco', d.x, d.y, { sprite: d.sprite })) },
       { id: lid++, name: 'entidades', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.entities.map((e) => point(e.tipo, e.tipo, e.x, e.y, e.props)) },
       { id: lid++, name: 'zonas', type: 'objectgroup', draworder: 'topdown', opacity: 0.3, visible: false, x: 0, y: 0, objects: m.zones.map((z) => ({ id: oid++, name: z.nombre, type: 'zona', x: z.x, y: z.y, width: z.w, height: z.h, rotation: 0, visible: true, properties: props(z.props) })) },

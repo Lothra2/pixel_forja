@@ -75,3 +75,27 @@ export function stompWave(cell = 96): Raster[] {
   }
   return out;
 }
+
+/** Tierra cavada (celda 48, 6 cuadros sin bucle): terrones que saltan hacia atrás y un montoncito que crece. */
+export function dirtDig(cell = 48): Raster[] {
+  const out: Raster[] = [];
+  const cx = cell / 2, cy = cell * 0.72;
+  for (let f = 0; f < 6; f++) {
+    const r = createRaster(cell, cell);
+    const t = f / 5;
+    const put = (x: number, y: number, c: RGB) => { const X = Math.round(x), Y = Math.round(y); if (X >= 0 && Y >= 0 && X < cell && Y < cell) r.data.set([...c, 255], (Y * cell + X) * 4); };
+    // hoyo oscuro y montoncito de tierra al lado que crece
+    for (let y = -2; y <= 2; y++) for (let x = -5; x <= 5; x++) if ((x / 5) ** 2 + (y / 2) ** 2 <= 1) put(cx + x, cy + y, CRACK);
+    const mh = 1 + Math.round(t * 3);
+    for (let y = 0; y < mh + 2; y++) for (let x = -6 + y; x <= 6 - y; x++) put(cx + 9 + x, cy + 1 - y, y === mh + 1 ? DUST[3] : y > mh / 2 ? DUST[2] : DUST[1]);
+    // terrones que vuelan en arco hacia atrás y caen
+    for (let k = 0; k < 6; k++) {
+      const tt = Math.min(1, t * 1.4 + hash(k, 4) * 0.3), sp = 8 + hash(k, 5) * 10;
+      const x = cx - 2 - tt * sp, y = cy - 2 - Math.sin(tt * Math.PI) * (6 + hash(k, 6) * 8);
+      if (tt >= 1) continue;
+      put(x, y, DUST[1]); put(x + 1, y, DUST[2]); put(x, y + 1, DUST[0]);
+    }
+    out.push(r);
+  }
+  return out;
+}

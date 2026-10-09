@@ -9,7 +9,7 @@ import { PET_RPG_ANIMS } from '../anim/animal';
 import { renderFx, projectile8, rotate8, type FxElement } from '../fx/fx';
 import { scaleRaster } from '../render/rotsprite';
 import { arrowProjectile, arrowImpact } from '../fx/arrow';
-import { stompWave } from '../fx/stomp';
+import { stompWave, dirtDig } from '../fx/stomp';
 import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
 import { isSpecial } from '../loot/render';
@@ -21,6 +21,7 @@ import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
 import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
 import { bitmapFonts, renderLogo } from '../ui/fonts';
 import { appIcons } from '../ui/appIcons';
+import { continuara } from '../ui/continuara';
 import { signIcons, hudIcons, rotateTablet, skillIcons } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
@@ -191,6 +192,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   addFx('impacto_flecha', arrowImpact(48), 16, false);
   // el pisotón del minotauro: celda 96, polvo y grietas en anillo
   addFx('onda_pisoton', stompWave(96), 16, false);
+  // tierra que tira Thor al cavar
+  addFx('tierra_cavada', dirtDig(48), 10, false);
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);
 
@@ -301,6 +304,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     ui.logo = { archivo: 'ui/logo.png', w: 288, h: 96, cuadros: logo.length, fps: 8, loop: true };
     ui.fuentes = { ...fuentes, notas: 'BMFont XML: this.load.bitmapFont(nombre, png, fnt). fuente_ui (8 px, blanca con sombra, se tiñe con setTint; usar escala entera x2 o x3), fuente_titulo y fuente_titulo_plata (16 px, ya pintadas). Tienen ñ, tildes, ¡ y ¿.' };
   }
+  files.push(png('ui/continuara.png', continuara()));
+  ui.continuara = { archivo: 'ui/continuara.png', w: 960, h: 540, cuadros: 1 };
   manifest.ui = ui;
   // íconos de la app (PWA): Thor sobre el portal
   const app: Record<string, unknown> = {};

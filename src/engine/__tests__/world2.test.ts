@@ -82,7 +82,12 @@ describe('mundo v2: objetos y Bosque GG', () => {
     // Tiled: agua, suelo en trozos, colisión, objetos, entidades, zonas y postales
     const t = bigMapToTiled(m);
     const layers = (t.json.layers as { name: string }[]).map((l) => l.name);
-    expect(layers).toEqual(['agua', 'suelo', 'colision', 'objetos', 'entidades', 'zonas', 'postales']);
+    expect(layers).toEqual(['agua', 'suelo', 'colision', 'superficie', 'objetos', 'entidades', 'zonas', 'postales']);
+    // pasos: hay de los 5 tipos y el puente suena a madera
+    const sup = (t.json.layers as { name: string; data?: number[] }[]).find((l) => l.name === 'superficie')!.data!;
+    expect(new Set(sup)).toEqual(new Set([1, 2, 3, 4, 5]));
+    const bridge = m.decos.find((d) => d.sprite === 'puente')!;
+    expect(sup[Math.floor(bridge.y / TILE) * m.w + Math.floor(bridge.x / TILE)]).toBe(4);
     for (const c of t.chunks) { expect(c.img.w).toBeLessThanOrEqual(CHUNK); expect(c.img.h).toBeLessThanOrEqual(CHUNK); }
     expect(t.chunks).toHaveLength(12);
     // misma semilla, mismo mapa
@@ -292,4 +297,26 @@ describe('taller entrega 3', () => {
     expect([logo[0].w, logo[0].h]).toEqual([288, 96]);
     expect(Buffer.from(logo[1].data).equals(Buffer.from(logo[5].data))).toBe(false);
   });
+
+  it('Thor cava, el Abuelo sonríe, el pasto se aparta y la música del título dura 30 a 45 s', async () => {
+    const { thorFicha } = await import('../rpg/family');
+    const { renderClip } = await import('../render/clip');
+    const { floraV3 } = await import('../world/flora');
+    const { forestObjects } = await import('../world/objects');
+    const { musicTitulo, RATE } = await import('../audio/sfx');
+    const { dirtDig } = await import('../fx/stomp');
+    const dig = renderClip(thorFicha(0), 48, 'dig', 'side');
+    expect(dig.frames).toHaveLength(6);
+    expect(dig.fps).toBe(10);
+    expect(dirtDig()).toHaveLength(6);
+    const ab = floraV3().find((f) => f.name === 'abuelo_roble_v3')!;
+    expect(ab.anims.sonreir.frames).toHaveLength(8);
+    expect(ab.anims.sonreir.loop).toBe(false);
+    expect(Buffer.from(ab.anims.sonreir.frames[0].data).equals(Buffer.from(ab.anims.sonreir.frames[5].data))).toBe(false);
+    const pasto = forestObjects().find((o) => o.name === 'pasto_alto')!;
+    for (const a of ['apartar_izq', 'apartar_der']) expect(pasto.anims[a]).toMatchObject({ fps: 12, loop: false });
+    const secs = musicTitulo().length / RATE;
+    expect(secs).toBeGreaterThanOrEqual(30);
+    expect(secs).toBeLessThanOrEqual(45);
+  }, 60_000);
 });
