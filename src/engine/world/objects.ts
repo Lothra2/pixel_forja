@@ -246,7 +246,9 @@ export function standingStone(): WorldObject {
     c.poly([[9, 58], [8, 20], [11, 9], [16, 6], [21, 9], [24, 20], [23, 58]], stone('#7a7480'));
     c.poly([[11, 20], [14, 10], [16, 9], [15, 24]], stone('#7a7480'), { bias: 1 });
     const g = lit ? glowMat('#ff5a3a') : stone('#4a4450');
-    for (const [a, b] of [[[16, 24], [16, 40]], [[12, 30], [20, 30]], [[13, 44], [19, 50]]] as [P, P][]) c.line(a, b, 1.2, g, { tone: lit ? 4 : 1 });
+    // runa en rombo con un trazo abajo (sin cruces: no son lápidas)
+    for (const [a, b] of [[[16, 23], [20, 31]], [[20, 31], [16, 39]], [[16, 39], [12, 31]], [[12, 31], [16, 23]], [[16, 44], [16, 51]], [[13, 47], [16, 44]], [[19, 47], [16, 44]]] as [P, P][]) c.line(a, b, 1.2, g, { tone: lit ? 4 : 1 });
+    c.dot([16, 31], g, { tone: lit ? 5 : 2 }, true);
     return c.render({ shadow: [16, 58, 10, 2.5], glowK: lit });
   };
   return {
@@ -288,13 +290,14 @@ export function telegraph(): WorldObject {
   for (let f = 0; f < 8; f++) {
     const c = canvas(96, 48, 3);
     const fill = (f + 1) / 8;
-    c.ellipse([16, 8], 14, 6.6, glowMat('#ff3a2a'), { tone: 1 });
-    c.ellipse([16, 8], 14 * fill, 6.6 * fill, glowMat('#ff6a3a'), { tone: 3 });
+    // rojo vivo (no marrón sobre el pasto): el fondo tenue y lo que se llena más fuerte
+    c.ellipse([16, 8], 14, 6.6, glowMat('#ff2a2a'), { tone: 3 });
+    c.ellipse([16, 8], 14 * fill, 6.6 * fill, glowMat('#ff3a2a'), { tone: 4 });
     c.ring([16, 8], 14, 6.6, 0.6, glowMat('#ffd0a0'), { tone: 5 }, 0, 360);
     frames.push(c.render({ noOutline: true, glowK: 0.4 }));
   }
   // semitransparente: es una marca en el piso
-  for (const fr of frames) for (let i = 3; i < fr.data.length; i += 4) if (fr.data[i]) fr.data[i] = Math.min(fr.data[i], 150);
+  for (const fr of frames) for (let i = 3; i < fr.data.length; i += 4) if (fr.data[i]) fr.data[i] = Math.min(fr.data[i], 170);
   return { name: 'aviso_jefe', w: 96, h: 48, anchor: [48, 24], solid: null, anims: { llenar: { frames, fps: 8, loop: false } } };
 }
 
