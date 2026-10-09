@@ -16,6 +16,7 @@ import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
 import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
 import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
+import { bitmapFonts } from '../ui/fonts';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
 
@@ -43,6 +44,8 @@ export interface KitOptions {
   thorTiers?: number[];
   /** menos animaciones (para pruebas rápidas) */
   quick?: boolean;
+  /** archivos de Silkscreen (normal y negrita) para las fuentes bitmap; sin ellos el kit sale sin fuentes */
+  fonts?: { regular: ArrayBuffer; bold: ArrayBuffer };
   /** avisa el avance (para la barra del estudio o la consola) */
   progress?: (msg: string) => void;
 }
@@ -264,6 +267,15 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const inv = inventoryPanel();
   files.push(png('ui/inventario.png', inv.png));
   ui.inventario = { archivo: 'ui/inventario.png', w: inv.layout.w, h: inv.layout.h, cuadros: 1, layout: inv.layout };
+  if (opts.fonts) {
+    const fuentes: Record<string, unknown> = {};
+    for (const f of bitmapFonts(opts.fonts.regular, opts.fonts.bold)) {
+      files.push(png(`ui/fuentes/${f.name}.png`, f.png));
+      files.push(file(`ui/fuentes/${f.name}.fnt`, enc.encode(f.fnt), 'application/xml'));
+      fuentes[f.name] = { png: `ui/fuentes/${f.name}.png`, fnt: `ui/fuentes/${f.name}.fnt`, alto_linea: f.lineHeight, base: f.base };
+    }
+    ui.fuentes = { ...fuentes, notas: 'BMFont XML: this.load.bitmapFont(nombre, png, fnt). fuente_ui (8 px, blanca con sombra, se tiñe con setTint; usar escala entera x2 o x3), fuente_titulo y fuente_titulo_plata (16 px, ya pintadas). Tienen ñ, tildes, ¡ y ¿.' };
+  }
   manifest.ui = ui;
 
   // ---------- audio ----------
@@ -275,7 +287,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   log('audio listo');
 
   // ---------- créditos y manifest ----------
-  const creditTxt = ['GG Abyss: créditos del arte', '', 'Personajes, mundo, botín, interfaz y sonidos generados con PixelForja (código).', '', ...credits].join('\n');
+  const creditTxt = ['GG Abyss: créditos del arte', '', 'Personajes, mundo, botín, interfaz y sonidos generados con PixelForja (código).', '', ...(opts.fonts ? ['Fuentes: Silkscreen, de Jason Kottke. SIL Open Font License 1.1 (https://openfontlicense.org).', ''] : []), ...credits].join('\n');
   files.push(file('CREDITOS.txt', enc.encode(creditTxt), 'text/plain'));
   manifest.creditos = 'CREDITOS.txt';
   // ninguna textura más grande que lo que soportan las tablets

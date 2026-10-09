@@ -8,6 +8,7 @@
  */
 import { mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, join, basename } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildGameKit } from '../src/engine/kit/gamekit.ts';
 import { migrateFicha, validateFicha, isHuman, type HumanFicha } from '../src/engine/sheet/ficha.ts';
 
@@ -39,7 +40,12 @@ if (fichasDir) {
 }
 
 const t0 = Date.now();
-const files = buildGameKit({ quick, fichas, progress: (m) => console.log(`  ${m}`) });
+// fuentes bitmap: Silkscreen (OFL), que viene con el proyecto
+const fontDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'node_modules', '@fontsource', 'silkscreen', 'files');
+const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
+const fonts = existsSync(fontDir) ? { regular: ab(join(fontDir, 'silkscreen-latin-400-normal.woff')), bold: ab(join(fontDir, 'silkscreen-latin-700-normal.woff')) } : undefined;
+if (!fonts) console.warn('  sin fuentes: falta node_modules/@fontsource/silkscreen (corre npm ci)');
+const files = buildGameKit({ quick, fichas, fonts, progress: (m) => console.log(`  ${m}`) });
 rmSync(out, { recursive: true, force: true });
 let bytes = 0;
 for (const f of files) {

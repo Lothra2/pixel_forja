@@ -208,6 +208,13 @@ for (const [g, by] of Object.entries(manifest.botin.atlas))
   - `rejilla`: `{ x, y, cols: 7, filas: 4, celda: 36 }`. Un objeto por casilla.
   - `oro.texto`: donde escribir la cantidad. `titulo`: franja de arriba.
 - `boton` tiene 3 cuadros: normal, encima, presionado.
+- Fuentes bitmap (`manifest.ui.fuentes`), en formato BMFont XML, hechas a partir de Silkscreen (Jason Kottke, SIL Open Font License 1.1). Traen ñ, tildes, ¡ y ¿:
+  - `fuente_ui`: 8 px, blanca con sombra negra. Se tiñe con `setTint` y se agranda con escala entera (x2 o x3, nunca 1.5).
+  - `fuente_titulo` (dorada) y `fuente_titulo_plata`: 16 px, ya pintadas con degradé, contorno y sombra. Para banners de zona, "¡Thor te salvó!", nombres y títulos.
+  ```ts
+  this.load.bitmapFont('fuente_ui', kit + 'ui/fuentes/fuente_ui.png', kit + 'ui/fuentes/fuente_ui.fnt');
+  this.add.bitmapText(x, y, 'fuente_titulo', '¡Descubriste!').setOrigin(0.5);
+  ```
 
 ### Audio
 

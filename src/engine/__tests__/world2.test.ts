@@ -138,3 +138,21 @@ describe('mundo v3: flora animada y criaturas', () => {
     expect(diff / 64).toBeLessThan(30);
   });
 });
+
+describe('fuentes bitmap', () => {
+  it('Silkscreen sale como BMFont con ñ, tildes, ¡ y ¿, nítida (sin pixeles a medias en la de ui)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { bitmapFonts } = await import('../ui/fonts');
+    const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
+    const d = 'node_modules/@fontsource/silkscreen/files/';
+    const fs = bitmapFonts(ab(d + 'silkscreen-latin-400-normal.woff'), ab(d + 'silkscreen-latin-700-normal.woff'));
+    expect(fs.map((f) => f.name)).toEqual(['fuente_ui', 'fuente_titulo', 'fuente_titulo_plata']);
+    for (const f of fs) {
+      for (const ch of ['ñ', 'á', 'Ú', '¡', '¿', 'A', '9']) expect(f.fnt, `${f.name} ${ch}`).toContain(`<char id="${ch.codePointAt(0)}"`);
+      expect(f.fnt).toContain(`file="${f.name}.png"`);
+    }
+    const ui = fs[0];
+    const alphas = new Set<number>(); for (let i = 3; i < ui.png.data.length; i += 4) alphas.add(ui.png.data[i]);
+    expect([...alphas].sort((a, b) => a - b)).toEqual([0, 255]);
+  });
+});
