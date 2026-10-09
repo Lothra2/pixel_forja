@@ -14,6 +14,8 @@ import { modelFromAvatar } from '../head3d/avatar';
 import { lpcHead } from '../parts/lpc';
 import { rotSprite } from './rotsprite';
 import { drawBall, drawHeld, drawGround, isBall, ballSize } from './props';
+import { findLoot } from '../loot/catalog';
+import { handMaterials } from '../loot/render';
 
 export type { View } from './head';
 
@@ -101,6 +103,13 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   if (fo.belt) mats.add('belt', ink(makeRamp(fo.belt)));
   if (f.gear?.glow) mats.add('p_glow', makeRamp(f.gear.glow));
   if (f.gear?.shield) mats.add('p_shieldc', makeRamp(f.gear.shield));
+  // armas del botín: el arma en la mano toma los colores del objeto (primero la mano libre, después la principal)
+  for (const id of [f.gear?.offLoot, f.gear?.mainLoot]) {
+    const it = id ? findLoot(id) : undefined;
+    if (it) for (const [k, r] of Object.entries(handMaterials(it))) mats.add(k, r);
+  }
+  if (armor && fo.armorGem) mats.add('agem', makeRamp(fo.armorGem));
+  if (armor && fo.armorGlow) { const g = makeRamp(fo.armorGlow); mats.add('aglow', [g[1], g[3], g[3], '#ffffff']); }
   const shoeMat = armor === 'placas' ? 'armor' : fo.shoes === 'descalzo' ? 'skin' : 'shoes';
   const side = view === 'side';
   const sign = view === 'back' ? -1 : 1; // de espalda, lo "cercano" queda a la izquierda
@@ -280,6 +289,10 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
             else if (armor === 'placas') { mat = 'armor'; slot = topRow ? LIGHT : row % 3 === 2 ? SHADOW : !side && Math.abs(col - mid) < 0.6 ? LIGHT : BASE; }
             else { mat = 'armor'; if (fo.trim && view === 'front' && Math.abs(col - mid) < 0.6) mat = 'trim'; }
             if (fo.trim && topRow && armor !== 'tunica') mat = 'trim';
+            // nivel 4 y 5: gema en el pecho y runas que brillan
+            if (!side && view !== 'back' && fo.armorGem && row === 2 && Math.abs(col - mid) < 0.6) { mat = 'agem'; slot = LIGHT; }
+            if (fo.armorGlow && !side && row >= 3 && row < shirtRows - 1 && Math.abs(Math.abs(col - mid) - 2) < 0.6 && (row + (col > mid ? 1 : 0)) % 2 === 0) { mat = 'aglow'; slot = BASE; }
+            if (fo.armorGlow && topRow && armor !== 'tunica') { mat = 'aglow'; slot = BASE; }
           }
           // cuello en V (piel) o de polo (puntas claras y la tapeta)
           if (view === 'front' && !fo.jacket && !armor) {

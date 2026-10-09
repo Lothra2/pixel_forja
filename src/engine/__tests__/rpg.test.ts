@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   HERO_CLASSES, ENEMIES, applyClass, enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, fichaFromAvatar, defaultAvatar, renderPlan,
-  exportFx, FX_ELEMENTS, EIGHT_VIEWS, FAMILY, FAMILY_GG, familyFicha, validateFicha, type HumanFicha,
+  exportFx, FX_ELEMENTS, EIGHT_VIEWS, FAMILY, FAMILY_GG, familyFicha, validateFicha, applyArmorTier, equipLoot, findLoot, ARMOR_LINES, renderClip, type HumanFicha,
 } from '../index';
 
 describe('RPG: clases, enemigos y exportación', () => {
@@ -46,6 +46,32 @@ describe('RPG: clases, enemigos y exportación', () => {
     expect(familyFicha('rick').avatar?.lpc).toMatchObject({ hair: 'swept_back', glasses: 'nerd', beard: 'basic' });
     expect(familyFicha('sophie', true).gear?.main).toBe('bow');
   }, 300000);
+  it('la armadura evoluciona en el héroe: 5 niveles por línea, con casco, y pasa el control de calidad', () => {
+    const rick = familyFicha('rick');
+    const px = (f: HumanFicha) => Buffer.from(renderClip(f, 48, 'idle', 'se').frames[0].data).toString('base64');
+    for (const line of ARMOR_LINES) {
+      const imgs = [1, 2, 3, 4, 5].map((t) => applyArmorTier(rick, line, t as 1));
+      expect(new Set(imgs.map(px)).size, line).toBe(5);
+      expect(imgs[4].outfit.armorGlow, line).toBeTruthy();
+      expect(imgs[4].avatar?.lpc?.hair).toBe('swept_back');
+      expect(validateFicha(imgs[4])).toEqual([]);
+      const { qa } = renderPlan(imgs[4], { cell: 48, anims: ['idle', 'walk', 'attack'], views: EIGHT_VIEWS, props: true });
+      expect(qa.filter((r) => !r.ok).map((r) => `${line} ${r.clip}`)).toEqual([]);
+    }
+    expect(applyArmorTier(rick, 'placas', 3, false).avatar?.lpc?.hat).toBeNull();
+  }, 300000);
+  it('equipar el botín: la legendaria va a la mano con sus colores y la pieza de armadura viste al héroe', () => {
+    const rick = familyFicha('rick');
+    const a = equipLoot(rick, findLoot('hoja_del_vacio')!);
+    expect(a.gear).toMatchObject({ main: 'greatsword', mainLoot: 'hoja_del_vacio', off: null });
+    const plain = { ...a, gear: { ...a.gear, mainLoot: null } };
+    const img = (f: HumanFicha) => Buffer.from(renderClip(f, 48, 'attack', 'side', { props: true }).frames[3].data).toString('base64');
+    expect(img(a)).not.toBe(img(plain));
+    const b = equipLoot(equipLoot(rick, findLoot('juramento_de_rick')!), findLoot('escudo_de_la_casa_gg')!);
+    expect(b.gear).toMatchObject({ main: 'sword', off: 'shield', mainLoot: 'juramento_de_rick', offLoot: 'escudo_de_la_casa_gg' });
+    const c = equipLoot(rick, findLoot('coraza_del_dragon_rojo')!);
+    expect(c.outfit).toMatchObject({ armor: 'placas', armorTier: 5, armorColor: '#8e2a32' });
+  });
   it('exporta poderes como PNG + JSON de Phaser', () => {
     const fx = exportFx(FX_ELEMENTS.slice(0, 2), ['projectile', 'impact'], 48);
     const j = JSON.parse(new TextDecoder().decode(fx[1].bytes));

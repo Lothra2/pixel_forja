@@ -5,6 +5,9 @@ import { defaultAvatar, type Avatar } from '../head3d/avatar';
 import { withLpc } from '../head3d/thumb';
 import { DEFAULT_LPC, type LpcLook } from '../parts/lpc';
 import { bodyProportions, DEFAULT_BODY, type BodyType } from '../rig/dims';
+import { ARMOR_EVOLUTION, type ArmorLine, type ArmorTier, type TierLook } from '../loot/armor';
+import type { LootItem } from '../loot/catalog';
+import { handKindOf } from '../loot/render';
 
 /**
  * Clases de héroe y enemigos listos para un RPG de acción (estilo Diablo).
@@ -23,7 +26,7 @@ interface Kit {
 export type HeroClass = 'barbaro' | 'paladin' | 'hechicera' | 'amazona' | 'nigromante' | 'druida' | 'asesina';
 export const HERO_CLASSES: HeroClass[] = ['barbaro', 'paladin', 'hechicera', 'amazona', 'nigromante', 'druida', 'asesina'];
 
-const NO_ARMOR: Partial<Outfit> = { armor: null, armorColor: undefined, trim: null, cape: null, pauldrons: false, belt: null };
+const NO_ARMOR: Partial<Outfit> = { armor: null, armorColor: undefined, trim: null, cape: null, pauldrons: false, belt: null, armorTier: undefined, armorGem: null, armorGlow: null };
 
 export const CLASS_KITS: Record<HeroClass, Kit> = {
   barbaro: {
@@ -132,4 +135,44 @@ export function enemyFicha(id: EnemyId): HumanFicha {
   f = applyKit(f, e);
   if (e.bare) f = recolor(f, 'top', av.skin) as HumanFicha;
   return f;
+}
+
+/**
+ * Pone una armadura de la evolución del botín: línea (cuero, malla, placas, túnica) y nivel 1 a 5.
+ * Cambia el color, ribete, hombreras, cinturón, capa, gema, runas y (si helmet) el casco LPC del nivel.
+ */
+export function applyArmorTier(f: HumanFicha, line: ArmorLine, tier: ArmorTier, helmet = true, over: Partial<TierLook> = {}): HumanFicha {
+  const t = { ...ARMOR_EVOLUTION[line][tier - 1], ...over };
+  let out: HumanFicha = {
+    ...f,
+    outfit: { ...f.outfit, armor: line, armorTier: tier, armorColor: t.base, trim: t.trim, pauldrons: t.pauldrons, belt: t.belt, cape: t.cape, armorGem: t.gem, armorGlow: t.glow, shoes: f.outfit.shoes === 'descalzo' || f.outfit.shoes === 'tenis' ? 'botas' : f.outfit.shoes },
+  };
+  if (out.avatar?.lpc) {
+    // el casco toma el color de la armadura (el celestial, el del ribete)
+    // cascos de cuero altos y de vikingo van en hierro; el de la égida celestial, en blanco con oro
+    const hatColor = !helmet || !t.helm ? null
+      : t.helm === 'crown' ? t.trim ?? t.base
+      : line === 'cuero' && tier >= 4 ? '#6e7480'
+      : line === 'placas' && tier === 5 ? '#ece6d4'
+      : t.base;
+    out = { ...out, avatar: { ...out.avatar, kit: 'lpc', lpc: { ...out.avatar.lpc, hat: helmet ? t.helm : null, hatColor } } };
+  }
+  return out;
+}
+
+/** Se equipa un objeto del botín: armas y escudos van a la mano con sus colores; las piezas de armadura visten al héroe. */
+export function equipLoot(f: HumanFicha, item: LootItem, helmet = true): HumanFicha {
+  if (item.base.cat === 'armor') return applyArmorTier(f, item.base.line, item.base.tier, helmet, (item.design ?? {}) as Partial<TierLook>);
+  const h = handKindOf(item);
+  if (!h) return f;
+  const gear = { ...(f.gear ?? {}) };
+  if (h.main) {
+    gear.main = h.main; gear.mainLoot = item.id;
+    if (item.twoHanded) { gear.off = null; gear.offLoot = null; }
+  }
+  if (h.off) { gear.off = h.off; gear.offLoot = item.id; }
+  const d = item.design as { glow?: string | null; gem?: string | null; face?: string } | undefined;
+  if (d?.glow ?? d?.gem) gear.glow = (d.glow ?? d.gem)!;
+  if (h.off && d?.face) gear.shield = d.face;
+  return { ...f, gear };
 }

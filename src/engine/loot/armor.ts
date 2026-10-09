@@ -42,9 +42,9 @@ const BRONZE = '#b87a3e', SILVER = '#cfd6e0', GOLD = '#e3ae3c';
 export const ARMOR_EVOLUTION: Record<ArmorLine, [TierLook, TierLook, TierLook, TierLook, TierLook]> = {
   cuero: [
     T('Jubón de cuero', 'Leather Jerkin', '#7a4a2a', null, null, null, null, false, '#5a3a22', null, 8, 1),
-    T('Cuero tachonado', 'Studded Leather', '#6e4228', BRONZE, null, null, 'leather_cap', false, '#4a2e1c', null, 18, 8),
-    T('Cuero endurecido', 'Hardened Hide', '#5a3524', SILVER, null, null, 'barbarian', true, '#3a2418', null, 32, 18),
-    T('Piel de wyvern', 'Wyvernhide', '#3f5e3c', GOLD, '#1fb35e', null, 'horned', true, '#2e2018', '#5a2a1a', 50, 30),
+    T('Cuero tachonado', 'Studded Leather', '#6e4228', BRONZE, null, null, 'headband', false, '#4a2e1c', null, 18, 8),
+    T('Cuero endurecido', 'Hardened Hide', '#5a3524', SILVER, null, null, 'leather_cap', true, '#3a2418', null, 32, 18),
+    T('Piel de wyvern', 'Wyvernhide', '#3f5e3c', GOLD, '#1fb35e', null, 'barbarian', true, '#2e2018', '#5a2a1a', 50, 30),
     T('Manto del Cazador Eterno', 'Eternal Hunter Mantle', '#2c2236', GOLD, '#ff8a1e', '#ff8a1e', 'viking', true, '#1e1626', '#1e1630', 75, 45),
   ],
   malla: [
@@ -52,19 +52,19 @@ export const ARMOR_EVOLUTION: Record<ArmorLine, [TierLook, TierLook, TierLook, T
     T('Cota de malla', 'Chain Mail', '#9aa4b0', BRONZE, null, null, 'nasal', false, '#5a3a22', null, 24, 8),
     T('Cota de escamas', 'Scale Mail', '#7f8e9c', SILVER, null, null, 'norman', true, '#4a3022', null, 38, 18),
     T('Malla de mithril', 'Mithril Mail', '#a8d0f0', GOLD, '#2f62e6', null, 'spangenhelm', true, '#2a2a4a', '#2a4a8a', 56, 30),
-    T('Malla del Guardián Astral', 'Astral Warden Mail', '#cfe6ff', GOLD, '#6cc8ff', '#6cc8ff', 'maximus', true, '#1e2a4a', '#18305e', 82, 45),
+    T('Malla del Guardián Astral', 'Astral Warden Mail', '#cfe6ff', GOLD, '#6cc8ff', '#6cc8ff', 'legion', true, '#1e2a4a', '#18305e', 82, 45),
   ],
   placas: [
     T('Coraza de hierro', 'Iron Breastplate', '#8a9099', null, null, null, 'kettle', false, null, null, 20, 1),
     T('Placas de acero', 'Steel Plate', '#aeb8c4', BRONZE, null, null, 'bascinet', false, '#4a3022', null, 34, 8),
     T('Placas de caballero', 'Knight Plate', '#c2cad4', SILVER, null, null, 'armet', true, '#3a2418', '#2f4f9a', 50, 18),
     T('Placas de campeón', 'Champion Plate', '#d6dce4', GOLD, '#d8243e', null, 'greathelm', true, '#5a1a22', '#7a1f2b', 70, 30),
-    T('Égida Celestial', 'Celestial Aegis', '#f2efe6', GOLD, '#ffd86a', '#ffd86a', 'celestial', true, '#e3ae3c', '#f4ecd6', 100, 45),
+    T('Égida Celestial', 'Celestial Aegis', '#f2efe6', GOLD, '#ffd86a', '#ffd86a', 'close', true, '#e3ae3c', '#f4ecd6', 100, 45),
   ],
   tunica: [
     T('Túnica de aprendiz', 'Apprentice Robe', '#6a5a8a', null, null, null, null, false, '#3a2a4a', null, 6, 1),
     T('Túnica de seda', 'Silk Robe', '#3d4fa0', BRONZE, null, null, 'hood', false, '#2a2040', null, 12, 8),
-    T('Túnica arcana', 'Arcane Robe', '#3a2a7a', SILVER, '#2f62e6', null, 'pointed', false, '#22184a', null, 22, 18),
+    T('Túnica arcana', 'Arcane Robe', '#3a2a7a', SILVER, '#2f62e6', null, 'hood', false, '#22184a', null, 22, 18),
     T('Vestiduras del archimago', 'Archmage Vestments', '#2a1f5a', GOLD, '#9a3ad8', null, 'wizard', true, '#1a1236', '#1a1440', 34, 30),
     T('Manto de las Estrellas', 'Starweave Mantle', '#16112e', GOLD, '#b48cff', '#b48cff', 'celestial', true, '#100c22', '#100c26', 50, 45),
   ],
@@ -154,13 +154,15 @@ function chest(c: IconCanvas, L: Look) {
 function helmFamily(id: string | null): 'cap' | 'hood' | 'coif' | 'nasal' | 'closed' | 'horned' | 'wizard' | 'crest' | 'circlet' | 'crown' {
   if (!id) return 'circlet';
   if (id === 'crown' || id === 'tiara') return 'crown';
+  if (id === 'headband' || id === 'headband_tied' || id === 'bandana' || id === 'bandana2') return 'circlet';
   if (id === 'leather_cap' || id === 'kettle') return 'cap';
   if (id === 'hood') return 'hood';
   if (id === 'mail') return 'coif';
   if (id === 'nasal' || id === 'norman' || id === 'spangenhelm') return 'nasal';
-  if (id === 'bascinet' || id === 'armet' || id === 'greathelm') return 'closed';
+  if (id === 'bascinet' || id === 'armet' || id === 'greathelm' || id === 'close') return 'closed';
   if (id === 'horned' || id === 'viking' || id === 'barbarian') return 'horned';
-  if (id === 'pointed' || id === 'wizard') return 'wizard';
+  if (id === 'wizard' || id === 'celestial') return 'wizard';
+  if (id === 'pointed') return 'nasal';
   return 'crest';
 }
 
@@ -207,12 +209,14 @@ function helm(c: IconCanvas, L: Look) {
     c.poly([[9.6, 14.6], [22.4, 14.6], [22.4, 16.4], [9.6, 16.4]], MAT.obsidian, { tone: 0 });
     for (let x = 12; x <= 20; x += 2.6) c.poly([[x, 19.4], [x + 0.9, 19.4], [x + 0.9, 23.6], [x, 23.6]], MAT.obsidian, { tone: 1 });
     c.px1([16, 5], [16, 26.4], m, { tone: 5 }, true);
+    // el yelmo legendario lleva alas doradas
+    if (L.glow) for (const s of [0, 1]) { const pts: P[] = [[7.6, 13], [2, 7], [1.4, 2.6], [4.6, 5.6], [5, 2.4], [7.4, 6.8], [9.6, 9.6]]; c.poly(s ? mirror(pts) : pts, tr ?? MAT.gold); }
   }
   if (tr) c.px1([7.4, 16.2], [24.6, 16.2], tr, { tone: 4 }, true);
   if (fam === 'horned') for (const s of [0, 1]) { const pts: P[] = [[7.6, 12], [3, 8.6], [1.6, 3], [4.4, 6], [9, 9.6]]; c.poly(s ? mirror(pts) : pts, MAT.bone); }
   if (fam === 'crest') {
     // cimera o alas: penacho o alas doradas a los lados
-    if (L.t.helm === 'celestial') for (const s of [0, 1]) { const pts: P[] = [[7.6, 13], [2, 7], [1.4, 2.6], [4.6, 5.6], [5, 2.4], [7.4, 6.8], [9.6, 9.6]]; c.poly(s ? mirror(pts) : pts, tr ?? MAT.gold); }
+    if (L.t.helm === 'maximus') for (const s of [0, 1]) { const pts: P[] = [[7.6, 13], [2, 7], [1.4, 2.6], [4.6, 5.6], [5, 2.4], [7.4, 6.8], [9.6, 9.6]]; c.poly(s ? mirror(pts) : pts, tr ?? MAT.gold); }
     else c.poly([[13.6, 4.8], [14.6, 1], [22, 0.8], [26, 3.6], [18.4, 4.6]], clothMat(L.t.cape ?? '#7a1f2b'));
   }
   if (L.t.gem) c.circle([16, 9], 1.4, gemMat(L.t.gem));

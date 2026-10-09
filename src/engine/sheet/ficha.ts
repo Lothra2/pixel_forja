@@ -73,7 +73,11 @@ interface FichaBase {
 }
 
 /** main: arma (null = a mano limpia). off: escudo, orbe o libro (null = nada). glow: brillo mágico. shield: color del escudo */
-export interface Gear { main?: WeaponKind | null; off?: OffhandKind | null; glow?: string; shield?: string }
+export interface Gear {
+  main?: WeaponKind | null; off?: OffhandKind | null; glow?: string; shield?: string;
+  /** objeto del botín que lleva en cada mano (id del catálogo): pinta el arma con sus colores */
+  mainLoot?: string | null; offLoot?: string | null;
+}
 
 /** cuero (pícaro, bárbaro), malla (guerrero), placas (paladín), túnica (mago, nigromante) */
 export type ArmorKind = 'cuero' | 'malla' | 'placas' | 'tunica';
@@ -124,6 +128,12 @@ export interface HumanFicha extends FichaBase {
     pauldrons?: boolean;
     /** cinturón (color) */
     belt?: string | null;
+    /** nivel de la armadura (1 a 5): sale de la evolución del botín */
+    armorTier?: number;
+    /** gema en el pecho (color) */
+    armorGem?: string | null;
+    /** runas que brillan (color, nivel legendario) */
+    armorGlow?: string | null;
   };
   /** glasses: color del marco si tiene lentes (se dibujan con sello, no se reducen) */
   face: { eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean };

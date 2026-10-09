@@ -20,7 +20,7 @@ import {
   type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim, type Avatar, type AvatarPart,
   DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
   applyClass, CLASS_KITS, enemyFicha, enemyCell, enemyAnims, type Gear, type HeroClass, type EnemyId,
-  familyFicha, type FamilyId,
+  familyFicha, type FamilyId, applyArmorTier, equipLoot, type ArmorLine, type ArmorTier, type LootItem,
 } from '../engine/index';
 
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export' | ToolStep;
@@ -315,6 +315,32 @@ export function App() {
       if (nf.avatar) o.avatar = nf.avatar;
       return nf;
     });
+  };
+  /** armadura que evoluciona: línea y nivel 1 a 5 (con o sin casco) */
+  const setArmorTier = (line: ArmorLine, tier: ArmorTier, helmet: boolean) => {
+    updateFicha((f) => {
+      if (!isHuman(f)) return f;
+      const nf = applyArmorTier(f, line, tier, helmet);
+      overrides.current.outfit = { ...nf.outfit };
+      if (nf.avatar) overrides.current.avatar = nf.avatar;
+      return nf;
+    });
+  };
+  /** equipa un objeto del botín: si no hay héroe abierto, se lo pone a Rick */
+  const equipItem = (item: LootItem) => {
+    if (!ficha || !isHuman(ficha)) openFicha(familyFicha('rick'));
+    updateFicha((f) => {
+      if (!isHuman(f)) return f;
+      const nf = equipLoot(f, item);
+      const o = overrides.current;
+      o.outfit = { ...nf.outfit };
+      o.gear = nf.gear;
+      if (nf.avatar) o.avatar = nf.avatar;
+      return nf;
+    });
+    setCell(48);
+    setView('se');
+    setStep('style');
   };
   const setHeadMode = (m: 'avatar' | 'image') => {
     overrides.current.headMode = m;
@@ -695,7 +721,7 @@ export function App() {
 
         {step === 'enemies' && <EnemiesStep t={t} render={renderEnemy} open={openEnemy} />}
         {step === 'fx' && <FxStep t={t} />}
-        {step === 'items' && <LootStep t={t} lang={lang} />}
+        {step === 'items' && <LootStep t={t} lang={lang} equip={equipItem} hero={ficha && isHuman(ficha) ? ficha.name : null} />}
 
         {step === 'editor' && ficha && (isHuman(ficha)
           ? <EditorStep t={t} lang={lang} ficha={ficha} cell={cell} onSave={saveCustom} />
@@ -736,9 +762,9 @@ export function App() {
               {step === 'avatar' && ficha && isHuman(ficha) && !ficha.avatar && <p className="muted">{t('working')}</p>}
               {step === 'style' && ficha && (
                 <StyleStep
-                  t={t} ficha={ficha} name={name} setName={(s) => setName(safeName(s))}
+                  t={t} lang={lang} ficha={ficha} name={name} setName={(s) => setName(safeName(s))}
                   setOutfit={setOutfit} setFace={setFace} setColor={setColor} setProportions={setProportions} setAnimal={setAnimal}
-                  setGear={setGear} setHeroClass={setHeroClass}
+                  setGear={setGear} setHeroClass={setHeroClass} setArmorTier={setArmorTier}
                   variants={variants} askVariants={askVariants} pickVariant={pickVariant}
                   canExtra={loaded && kind === 'human'} extraLoaded={extraLoaded} loadExtra={loadExtra}
                 />

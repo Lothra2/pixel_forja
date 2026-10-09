@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import {
-  type Ficha, type HumanFicha, type AnimalFicha, type Proportions, type Variant, type ColorSlot, type AnimalColorSlot, type Species, type Gear, type HeroClass,
+  type Ficha, type HumanFicha, type AnimalFicha, type Proportions, type Variant, type ColorSlot, type AnimalColorSlot, type Species, type Gear, type HeroClass, type ArmorLine, type ArmorTier,
   SPECIES, BASE, isHuman, usesAvatar,
 } from '../../engine/index';
 import type { Key } from '../i18n';
@@ -9,6 +9,7 @@ import { RpgGear } from './RpgGear';
 
 interface Props {
   t: T;
+  lang?: 'es' | 'en';
   ficha: Ficha;
   name: string;
   setName: (s: string) => void;
@@ -25,6 +26,7 @@ interface Props {
   loadExtra: (view: 'side' | 'back', f: File | null) => void;
   setGear: (g: Gear) => void;
   setHeroClass: (c: HeroClass | null) => void;
+  setArmorTier: (line: ArmorLine, tier: ArmorTier, helmet: boolean) => void;
 }
 
 const P_KEYS: (keyof Omit<Proportions, 'preset'>)[] = ['height', 'build', 'legs', 'arms', 'head', 'shoulders', 'hips'];
@@ -78,7 +80,7 @@ export function StyleStep(p: Props) {
   return (
     <>
       {name}
-      <RpgGear t={t} h={h} setOutfit={p.setOutfit} setGear={p.setGear} applyClass={p.setHeroClass} />
+      <RpgGear t={t} h={h} setOutfit={p.setOutfit} setGear={p.setGear} applyClass={p.setHeroClass} setArmorTier={p.setArmorTier} lang={p.lang} />
       <details open className="group">
         <summary>{t('proportions')}</summary>
         <Seg label={t('preset')} value={pr.preset} set={(v) => p.setProportions({ ...pr, preset: v as Proportions['preset'] })} opts={(['chibi', 'juvenil', 'realista'] as const).map((v) => [v, t(`preset_${v}`)])} testid="preset" />

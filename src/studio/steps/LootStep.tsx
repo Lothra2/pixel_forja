@@ -46,7 +46,10 @@ function LootTile({ item, px, slot, on, pick }: { item: LootItem; px: 32 | 64; s
   );
 }
 
-function Detail({ item, t, lang }: { item: LootItem; t: T; lang: 'es' | 'en' }) {
+/** se puede llevar puesto: armas, piezas de armadura y mano libre (menos el carcaj) */
+const wearable = (i: LootItem) => i.base.cat === 'weapon' || i.base.cat === 'armor' || (i.base.cat === 'offhand' && i.base.icon !== 'quiver');
+
+function Detail({ item, t, lang, equip, hero }: { item: LootItem; t: T; lang: 'es' | 'en'; equip?: (i: LootItem) => void; hero?: string | null }) {
   const big = useMemo(() => lootFrames(item, 64, true), [item]);
   const drop = useMemo(() => dropFrames(item, 32), [item]);
   const s = item.stats;
@@ -70,6 +73,12 @@ function Detail({ item, t, lang }: { item: LootItem; t: T; lang: 'es' | 'en' }) 
         </div>
       )}
       {item.flavor && <p className="flavor">“{item.flavor[lang]}”</p>}
+      {equip && wearable(item) && (
+        <>
+          <button className="btn" onClick={() => equip(item)} data-testid="loot-equip">{t('loot_equip')}</button>
+          <span className="muted small">{hero ? `${t('loot_equipOn')} ${hero}` : t('loot_equipRick')}</span>
+        </>
+      )}
     </div>
   );
 }
@@ -109,7 +118,7 @@ function World({ t, item }: { t: T; item: LootItem | null }) {
   );
 }
 
-export function LootStep({ t, lang }: { t: T; lang: 'es' | 'en' }) {
+export function LootStep({ t, lang, equip, hero }: { t: T; lang: 'es' | 'en'; equip?: (i: LootItem) => void; hero?: string | null }) {
   const [tab, setTab] = useState<Tab>('legend');
   const [px, setPx] = useState<32 | 64>(32);
   const [slot, setSlot] = useState(true);
@@ -187,7 +196,7 @@ export function LootStep({ t, lang }: { t: T; lang: 'es' | 'en' }) {
               {items.map((it) => <LootTile key={it.id} item={it} px={px} slot={slot} on={current?.id === it.id} pick={setSel} />)}
             </div>
           </div>
-          {current && <Detail item={current} t={t} lang={lang} />}
+          {current && <Detail item={current} t={t} lang={lang} equip={equip} hero={hero} />}
         </div>
       )}
       <p className="muted small">{t('loot_exportHelp')}</p>

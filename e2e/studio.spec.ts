@@ -251,6 +251,18 @@ test('botín: legendarios, armas, armaduras que evolucionan, cofres y exportar',
   let dl = page.waitForEvent('download');
   await page.getByTestId('loot-export').click();
   expect((await dl).suggestedFilename()).toBe('botin_legend.zip');
+  // equipar: la legendaria va a la mano de Rick y la armadura sube de nivel
+  await page.getByTestId('loot-hoja_del_vacio').click();
+  await page.getByTestId('loot-equip').click();
+  await expect(page.getByTestId('rpg-loot')).toContainText('Hoja del Vacío', { timeout: 30000 });
+  await page.getByTestId('rpg-armor').getByRole('button', { name: 'Placas' }).click();
+  await page.getByTestId('tier-5').click();
+  await expect(page.getByTestId('rpg-tier')).toContainText('Égida Celestial');
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  await page.screenshot({ path: `${shots}/${tag}_37_botin_equipado.png`, fullPage: true });
+  await page.getByTestId('step-image').click();
+  await page.getByTestId('rpg-items').click();
   // armas raras al azar
   await page.getByTestId('loot-tab-weapons').click();
   await page.getByTestId('loot-grade').getByRole('button', { name: 'Raro' }).click();

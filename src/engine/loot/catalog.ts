@@ -225,7 +225,8 @@ export function rollItem(base: LootItem, rarity: 'magic' | 'rare', seed: number)
 const L = (
   id: string, es: string, en: string, base: LootBase, design: WeaponDesign | OffhandDesign | JewelDesign | Partial<TierLook>, level: number, stats: Partial<ItemStats> & { mods: Mod[] },
   flavorEs: string, flavorEn: string, extra: Partial<LootItem> = {},
-): LootItem => ({ id, name: { es, en }, rarity: 'legendary', base, design, level, stats: { ...stats }, flavor: { es: flavorEs, en: flavorEn }, ...extra });
+): LootItem => ({ id, name: { es, en }, rarity: 'legendary', base, design, level, stats: { ...stats }, flavor: { es: flavorEs, en: flavorEn }, twoHanded: twoH(base), ...extra });
+const twoH = (b: LootBase) => b.cat === 'weapon' && TWO_HANDED.includes(b.icon);
 const W = (icon: WeaponIcon): LootBase => ({ cat: 'weapon', icon });
 const O = (icon: OffhandIcon): LootBase => ({ cat: 'offhand', icon });
 const J = (icon: JewelIcon): LootBase => ({ cat: 'jewel', icon });
@@ -330,7 +331,7 @@ export const SET_GG = 'legado_gg';
 export const SET_NAME = { es: 'Legado GG', en: 'GG Legacy' };
 
 const S = (id: string, es: string, en: string, base: LootBase, design: WeaponDesign | OffhandDesign | JewelDesign, stats: Partial<ItemStats> & { mods: Mod[] }, fEs: string, fEn: string): LootItem =>
-  ({ id, name: { es, en }, rarity: 'set', base, design, level: 25, stats, flavor: { es: fEs, en: fEn }, set: SET_GG });
+  ({ id, name: { es, en }, rarity: 'set', base, design, level: 25, stats, flavor: { es: fEs, en: fEn }, set: SET_GG, twoHanded: twoH(base) });
 
 export const SET_ITEMS: LootItem[] = [
   S('juramento_de_rick', 'Juramento de Rick', "Rick's Oath", W('sword'), { blade: MAT.silver, edge: MAT.palegold, guard: MAT.gold, pommel: MAT.gold, gem: '#2f62e6', glow: '#7fc8ff', accent: 'runes', guardShape: 'wings', shape: 'broad' },
