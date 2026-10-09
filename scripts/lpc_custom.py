@@ -38,9 +38,14 @@ CUSTOM = {
                 16: (9, '12234444332211'),
             },
         },
-        # entradas: las esquinas de la frente suben
+        # de espalda el pelo baja hasta la nuca (si no, se ve la cabeza pelada por detrás)
+        'fill_head': {'up': (27, 31)},
+        # sin huecos de piel: sienes, sobre las orejas y la nuca quedan cubiertas (lados cortos pero con pelo)
         'pixels': {
-            'down': [(20, 10, '.'), (20, 11, '.'), (20, 20, '.'), (19, 10, '0'), (19, 11, '0'), (19, 19, '0')],
+            'down': [(18, 8, '2'), (18, 23, '2'), (18, 24, '0'), (20, 6, '7'), (20, 7, '7'), (21, 6, '7'), (21, 7, '7'),
+                     (20, 24, '7'), (20, 25, '7'), (21, 24, '7'), (21, 25, '7')],
+            'right': [(21, 16, '1'), (21, 17, '1')] + [(y, x, '7') for y in range(20, 26) for x in (6, 7)] + [(26, 7, '7'), (26, 9, '7'), (26, 10, '7'), (26, 11, '7')],
+            'up': [(19, 8, '2'), (19, 23, '2'), (19, 24, '0'), (20, 23, '7')] + [(y, 7, '7') for y in range(21, 27)] + [(y, x, '7') for y in range(21, 27) for x in (23, 24)],
         },
     },
 }
@@ -82,6 +87,15 @@ def main():
                 for i, ch in enumerate(s):
                     if ch not in '. ':
                         pix[(X0 + start + i, y)] = RAMP[int(ch)]
+            # rellena filas sobre la forma de la cabeza (la de todas las cabezas de hombre, para no sobresalir)
+            if dn in spec.get('fill_head', {}):
+                y0, y1 = spec['fill_head'][dn]
+                heads = [decode(data['parts'][f'head/{h}']['dirs'][dn]) for h in ('male', 'male_gaunt', 'male_plump', 'male_elderly')]
+                common = set(heads[0]).intersection(*[set(h) for h in heads[1:]])
+                for (x, y) in common:
+                    if y0 <= y <= y1 and (x, y) not in pix:
+                        edge = (x - 1, y) not in common or (x + 1, y) not in common or y == y1
+                        pix[(x, y)] = RAMP[1] if edge else RAMP[7]
             for y, i, ch in spec['pixels'].get(dn, []):
                 if ch == '.':
                     pix.pop((X0 + i, y), None)
