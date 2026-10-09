@@ -4,6 +4,7 @@ import { TWO_HANDED, WEAPON_ICONS } from './weapons';
 import { JEWEL_ICONS, POTION_KINDS, POTION_SIZES, CONSUMABLE_ICONS, GEM_GRADES, GEM_KINDS, RUNE_COUNT, OFFHAND_ICONS, type OffhandIcon, type OffhandDesign, type JewelIcon, type JewelDesign, type PotionKind, type PotionSize, type ConsumableIcon, type GemGrade } from './misc';
 import { ARMOR_LINES, ARMOR_SLOTS, ARMOR_TIERS } from './armor';
 import { PET_ARMOR } from '../render/pet3d';
+import { earlyLoot } from './early';
 import { ARMOR_EVOLUTION, SLOT_NAMES, type ArmorLine, type ArmorSlot, type ArmorTier, type TierLook } from './armor';
 
 /**
@@ -237,6 +238,11 @@ const m = (stat: StatKey, value: number): Mod => ({ stat, value });
 const dmg = (icon: WeaponIcon, k: number) => { const [a, b, s] = W_BASE[icon]; return { damage: [Math.round(a * k), Math.round(b * k)] as [number, number], speed: s }; };
 
 export const LEGENDARIES: LootItem[] = [
+  // los de nivel bajo, para el cofre del Claro Escondido del Mundo 1: uno para cada niña
+  L('pluma_de_cuervo', 'Arco Pluma de Cuervo', 'Ravenfeather Bow', W('bow'), { blade: metalMat('#2a2a3e'), grip: MAT.silver, gem: '#9a3ad8', glow: '#b48cff', feather: '#1a1a26', accent: 'stars' }, 8,
+    { ...dmg('bow', 2), mods: [m('atkSpeed', 20), m('critChance', 8), m('moveSpeed', 8)] }, 'Los cuervos del bosque lo dejaron en el claro. Para ti.', 'The forest crows left it in the clearing. For you.'),
+  L('ramita_del_abuelo', 'Ramita del Abuelo Roble', "Grandfather Oak's Twig", W('wand'), { haft: MAT.palewood, guard: MAT.gold, gem: '#5fd47a', glow: '#9affb0', accent: 'leaves' }, 9,
+    { ...dmg('wand', 2), mods: [m('dmgPct', 60), m('petDmg', 30), m('lifeRegen', 4)] }, 'Te la dio sonriendo. Todavía le salen hojas.', 'He gave it to you with a smile. It still grows leaves.'),
   // espadas
   L('filo_del_alba', 'Filo del Alba', 'Dawnedge', W('sword'), { blade: MAT.silver, edge: MAT.palegold, guard: MAT.gold, pommel: MAT.gold, gem: '#ffd86a', glow: '#ffe9a0', accent: 'holy', guardShape: 'wings', shape: 'broad' }, 20,
     { ...dmg('sword', 3.4), mods: [m('dmgPct', 120), m('lightDmg', 30), m('healPct', 15), m('allRes', 10)] }, 'La primera luz del día corta más que el acero.', 'The first light of day cuts deeper than steel.'),
@@ -434,9 +440,9 @@ export function allPetArmor(): LootItem[] {
   }));
 }
 
-/** Todo el botín del juego: bases, armaduras, joyas y consumibles, armaduras de mascota, legendarios y set. */
+/** Todo el botín del juego: bases, armaduras, joyas y consumibles, armaduras de mascota, mágicos y raros de nivel bajo, legendarios y set. */
 export function allLoot(): LootItem[] {
-  return [...allBases(), ...allArmor(), ...allMisc(), ...allPetArmor(), ...UNIQUE_LOOT];
+  return [...allBases(), ...allArmor(), ...allMisc(), ...allPetArmor(), ...earlyLoot(), ...UNIQUE_LOOT];
 }
 
 export { gemMat, glowMat };

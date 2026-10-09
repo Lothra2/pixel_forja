@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { renderFx, projectile8, FX_ELEMENTS, FX_KINDS, FX_PALETTES } from '../index';
+import { renderFx, projectile8, FX_ELEMENTS, FX_KINDS, FX_PALETTES, FX_EXTRA_COLORS } from '../index';
 
 describe('poderes (efectos)', () => {
-  it('cada tipo y elemento da cuadros con pixeles solo de su rampa', () => {
+  it('cada tipo y elemento da cuadros con pixeles solo de su rampa (más hojas y pétalos en naturaleza)', () => {
     for (const element of FX_ELEMENTS)
       for (const kind of FX_KINDS) {
         const c = renderFx({ kind, element, cell: 48 });
         expect(c.frames.length, `${kind} ${element}`).toBeGreaterThanOrEqual(5);
-        const pal = new Set(FX_PALETTES[element].map((h) => parseInt(h.slice(1), 16)));
+        const pal = new Set([...FX_PALETTES[element], ...(FX_EXTRA_COLORS[element] ?? [])].map((h) => parseInt(h.slice(1), 16)));
         let lit = 0;
         for (const fr of c.frames)
           for (let i = 0; i < fr.w * fr.h; i++) {

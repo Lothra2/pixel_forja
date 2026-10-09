@@ -1,5 +1,5 @@
-import type { Raster } from '../core/raster';
-import { IconCanvas, type P } from '../loot/canvas';
+import { createRaster, type Raster } from '../core/raster';
+import { IconCanvas, over, type P } from '../loot/canvas';
 import { MAT, clothMat, gemMat, glowMat, metalMat } from '../loot/materials';
 import type { UiSprite } from './hud';
 
@@ -91,4 +91,78 @@ export function rotateTablet(): UiSprite {
     return c.render();
   };
   return { name: 'girar_tablet', frames: [frame(false), frame(true)] };
+}
+
+// ---------- íconos de habilidad (40 x 40, sobre medallón redondo) ----------
+
+/** Medallón: disco oscuro con luz arriba, aro del color de la habilidad y contorno negro. */
+function medallion(rim: string): Raster {
+  const S = 40, r = createRaster(S, S), c = (S - 1) / 2;
+  const R = [parseInt(rim.slice(1, 3), 16), parseInt(rim.slice(3, 5), 16), parseInt(rim.slice(5, 7), 16)];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const d = Math.hypot(x - c, y - c);
+    if (d > 19.6) continue;
+    let col: number[];
+    if (d > 18.6) col = [10, 8, 14];
+    else if (d > 16.4) { const k = y < c ? 1.15 : 0.8; col = R.map((v) => Math.min(255, v * k)); }
+    else if (d > 15.4) col = [14, 12, 20];
+    else { const l = 1 - Math.hypot(x - c + 4, y - c + 5) / 26; col = [24 + l * 26, 22 + l * 24, 34 + l * 30]; }
+    r.data.set([...col.map(Math.round), 255], (y * S + x) * 4);
+  }
+  return r;
+}
+
+function skill(rim: string, draw: (c: IconCanvas) => void): Raster {
+  const bg = medallion(rim);
+  const c = new IconCanvas(40, 40);
+  draw(c);
+  c.center();
+  over(bg, c.render());
+  return bg;
+}
+
+function arrowDown(c: IconCanvas, x: number, y: number, len: number) {
+  c.line([x - len * 0.5, y - len], [x, y - 2], 1.6, MAT.wood);
+  c.poly([[x + 1.6, y - 4.4], [x - 2.2, y - 0.6], [x + 1.2, y + 1.2]], MAT.steel);
+  c.poly([[x - len * 0.5 - 1.6, y - len - 1], [x - len * 0.5 + 1.2, y - len + 0.4], [x - len * 0.5 - 0.6, y - len + 3]], red);
+}
+
+/** Íconos de los botones de habilidad (ui/habilidades/<nombre>.png). */
+export function skillIcons(): UiSprite[] {
+  const list: [string, string, (c: IconCanvas) => void][] = [
+    ['lluvia_flechas', '#4fb04a', (c) => { arrowDown(c, 13, 30, 12); arrowDown(c, 21, 27, 14); arrowDown(c, 29, 31, 12); }],
+    ['esquiva', '#6cb4ff', (c) => {
+      for (const [y, x0] of [[13, 6], [20, 3], [27, 7]] as [number, number][]) c.line([x0, y], [x0 + 9, y], 1.8, white);
+      c.ring([22, 20], 10, 10, 2.6, MAT.gold, {}, 200, 340);
+      c.poly([[30.6, 9.4], [34, 16], [27, 15]], MAT.gold);
+    }],
+    ['llamar_thor', '#c8843a', (c) => {
+      const paw = clothMat('#8a5a3a');
+      c.ellipse([20, 25], 7.4, 6.2, paw);
+      for (const [x, y] of [[11.4, 17], [16.6, 12.4], [23.4, 12.4], [28.6, 17]] as P[]) c.ellipse([x, y], 2.9, 3.6, paw);
+    }],
+    ['curar', '#4fd88a', (c) => {
+      heart(c, 20, 21, 1.45, clothMat('#e8304a'));
+      c.poly([[26, 9], [28.4, 9], [28.4, 12], [31.4, 12], [31.4, 14.4], [28.4, 14.4], [28.4, 17.4], [26, 17.4], [26, 14.4], [23, 14.4], [23, 12], [26, 12]], glowMat('#8affb0'), { tone: 4 });
+    }],
+    ['torbellino', '#d8a03a', (c) => {
+      for (const [r, a0] of [[14, 0], [9.5, 120], [5, 240]] as [number, number][]) c.ring([20, 20], r, r, 2.2, white, {}, a0, a0 + 230);
+      c.line([20, 20], [31, 9], 2.2, MAT.steel); c.line([17, 23], [22, 18], 2.4, MAT.gold);
+    }],
+    ['bloqueo', '#aab5c3', (c) => {
+      c.poly([[9, 8], [31, 8], [31, 20], [20, 33], [9, 20]], clothMat('#2f5fb8'));
+      c.poly([[9, 8], [31, 8], [31, 10.4], [9, 10.4]], MAT.gold, { bias: 1 });
+      c.poly([[18.6, 12], [21.4, 12], [21.4, 17], [26, 17], [26, 19.8], [21.4, 19.8], [21.4, 27], [18.6, 27], [18.6, 19.8], [14, 19.8], [14, 17], [18.6, 17]], MAT.gold);
+    }],
+    ['nova_fuego', '#ff6a2a', (c) => {
+      for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2, x = 20 + Math.cos(a) * 12, y = 20 + Math.sin(a) * 12; c.poly([[20 + Math.cos(a - 0.22) * 7, 20 + Math.sin(a - 0.22) * 7], [x, y], [20 + Math.cos(a + 0.22) * 7, 20 + Math.sin(a + 0.22) * 7]], glowMat('#ff8a1e'), { tone: 3 }); }
+      c.circle([20, 20], 7.4, glowMat('#ffb040'), { tone: 3 });
+      c.circle([20, 20], 4, glowMat('#fff0b0'), { tone: 4 });
+    }],
+    ['rayo_canalizado', '#8a7aff', (c) => {
+      c.poly([[23, 4], [11, 22], [19, 22], [15, 36], [29, 16], [21, 16], [26, 4]], glowMat('#c8d8ff'), { tone: 4 });
+      c.poly([[22.6, 7], [14.6, 20], [20.6, 20]], glowMat('#ffffff'), { tone: 4 });
+    }],
+  ];
+  return list.map(([name, rim, draw]) => ({ name, frames: [skill(rim, draw)] }));
 }

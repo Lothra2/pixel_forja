@@ -216,3 +216,54 @@ describe('taller entrega 1', () => {
     expect(enemyFicha('trol').body.proportions.height).toBeGreaterThan(1.2);
   }, 120_000);
 });
+
+describe('taller entrega 2', () => {
+  it('botín de nivel bajo: 24 mágicos, 8 raros y 2 legendarios, con propiedades que el juego sabe usar', async () => {
+    const { earlyMagic, earlyRare, EARLY_STATS } = await import('../loot/early');
+    const { allLoot, UNIQUE_LOOT } = await import('../loot/catalog');
+    const mag = earlyMagic(), rare = earlyRare();
+    expect(mag).toHaveLength(24);
+    expect(rare).toHaveLength(8);
+    for (const it of mag) { expect(it.rarity).toBe('magic'); expect(it.level, it.id).toBeGreaterThanOrEqual(2); expect(it.level, it.id).toBeLessThanOrEqual(10); }
+    for (const it of rare) { expect(it.rarity).toBe('rare'); expect(it.level, it.id).toBeGreaterThanOrEqual(5); expect(it.level, it.id).toBeLessThanOrEqual(10); }
+    // las propiedades nuevas (no las de la base) son de 1 a 2 en mágicos y de 2 a 3 en raros, todas del subconjunto del juego
+    for (const it of [...mag, ...rare]) for (const md of it.stats.mods) expect(EARLY_STATS, `${it.id} ${md.stat}`).toContain(md.stat);
+    // un arma de cada clase en mágicos y en raros, y las 8 piezas de armadura y joyas repartidas
+    const icons = (l: typeof mag) => new Set(l.map((i) => (i.base.cat === 'weapon' || i.base.cat === 'offhand' || i.base.cat === 'jewel' ? i.base.icon : i.base.cat === 'armor' ? i.base.slot : '')));
+    for (const w of ['bow', 'wand', 'sword', 'staff', 'shield_round']) expect(icons(mag), w).toContain(w);
+    for (const w of ['bow', 'wand', 'sword', 'staff']) expect(icons(rare), w).toContain(w);
+    expect(mag.filter((i) => i.base.cat === 'armor')).toHaveLength(12);
+    expect(mag.filter((i) => i.base.cat === 'jewel')).toHaveLength(4);
+    const low = UNIQUE_LOOT.filter((i) => i.rarity === 'legendary' && i.level <= 10);
+    expect(low.map((i) => i.id).sort()).toEqual(['pluma_de_cuervo', 'ramita_del_abuelo']);
+    // todo entra al catálogo y ningún id se repite
+    const ids = allLoot().map((i) => i.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const it of [...mag, ...rare]) expect(ids).toContain(it.id);
+  });
+
+  it('flecha en 8 direcciones con impacto, magia de naturaleza e íconos de habilidad', async () => {
+    const { arrowProjectile, arrowImpact } = await import('../fx/arrow');
+    const { rotate8, renderFx, projectile8 } = await import('../fx/fx');
+    const { skillIcons } = await import('../ui/icons2');
+    const arrows = rotate8(arrowProjectile());
+    expect(arrows.map((a) => a.dir)).toEqual(['right', 'down_right', 'down', 'down_left', 'left', 'up_left', 'up', 'up_right']);
+    for (const a of arrows) { expect(a.frames).toHaveLength(2); expect(a.frames[0].w).toBe(48); }
+    // la flecha mide unos 20 px de punta a plumas
+    const f = arrowProjectile()[0];
+    let x0 = 99, x1 = -1; for (let y = 0; y < 48; y++) for (let x = 0; x < 48; x++) if (f.data[(y * 48 + x) * 4 + 3]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+    expect(x1 - x0).toBeGreaterThanOrEqual(18);
+    expect(x1 - x0).toBeLessThanOrEqual(26);
+    expect(arrowImpact()).toHaveLength(5);
+    expect(projectile8({ element: 'naturaleza', cell: 48 })[0].clip.frames).toHaveLength(6);
+    expect(renderFx({ kind: 'impact', element: 'naturaleza', cell: 48 }).frames).toHaveLength(8);
+    expect(renderFx({ kind: 'nova', element: 'naturaleza', cell: 48 }).frames).toHaveLength(10);
+    // la naturaleza trae pétalos rosados (no es el veneno con otro nombre)
+    const nat = renderFx({ kind: 'impact', element: 'naturaleza', cell: 48 }).frames[3];
+    let pink = 0; for (let i = 0; i < nat.data.length; i += 4) if (nat.data[i] > 200 && nat.data[i + 1] < 160 && nat.data[i + 2] > 150) pink++;
+    expect(pink).toBeGreaterThan(5);
+    const sk = skillIcons();
+    expect(sk.map((s) => s.name)).toEqual(['lluvia_flechas', 'esquiva', 'llamar_thor', 'curar', 'torbellino', 'bloqueo', 'nova_fuego', 'rayo_canalizado']);
+    for (const s of sk) expect([s.frames[0].w, s.frames[0].h]).toEqual([40, 40]);
+  });
+});

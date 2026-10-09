@@ -49,7 +49,7 @@ Límite honesto: la armadura que evoluciona se ve en Thor (6 niveles exportados)
 | `personajes/` | Rick, Steph, Sophie, Alana: 21 animaciones en 8 direcciones, celda 48. Retratos 40x40 |
 | `mascota/` | Thor sin armadura y con armadura nivel 1 a 5, las 11 animaciones en todos (idle, walk, run, bite, bark, howl, pickup, hurt, die, sit, wag) |
 | `enemigos/` | rata, calabaza y goblin_arquero (celda 48), trol élite (celda 64, pivote [32, 62], más alto y ancho, garrote grande) y minotauro jefe (celda 64, con carga, pisotón y salto) |
-| `fx/` | 66 efectos: proyectil en 8 direcciones, impacto y nova para fuego, hielo, rayo, veneno, sagrado y arcano. Tajo, curar, escudo de Thor, aura de nivel, grito de guerra, círculo mágico |
+| `fx/` | 86 efectos: proyectil en 8 direcciones, impacto y nova para fuego, hielo, rayo, veneno, sagrado, arcano y naturaleza (verde esmeralda con hojas y pétalos, la magia de Alana). La flecha (`proyectil_flecha_<dir>`, 2 cuadros a 14 fps, y `impacto_flecha`, 5 cuadros de astillas). Tajo, curar, escudo de Thor, aura de nivel, grito de guerra, círculo mágico |
 | `botin/` | 393 objetos en atlas de 32 y 64 px, legendarios animados (8 cuadros), cofres, monedas, haz de luz por rareza, objetos que caen. `catalogo.json` con stats |
 | `mundo/` | el Bosque GG (bosque hechizado, sombrío): 120 x 90 cuadros (3840 x 2880 px, unas 22 pantallas) con el suelo pintado en 12 trozos, agua animada, árboles estilo Stardew con viento, árboles hechizados que despiertan, criaturas (cuervos, murciélagos, ojos, fuegos fatuos), bruma en 2 capas, 13 partículas, luz y nube, 8 postales y la vista del mapa |
 | `ui/` | orbes, paneles 9-slice, casilleros con silueta, inventario completo, cinturón, barras, estandarte, íconos, cursores, números de daño |
@@ -200,7 +200,7 @@ for (const [g, by] of Object.entries(manifest.botin.atlas))
   "icon": "sword_1", "animated": false, "atlas": "iconos" }
 ```
 
-`atlas` dice en qué atlas está e `icon` es el nombre del cuadro. Si `animated` es true, los cuadros son `<icon>_0` a `<icon>_7`. Hay 393 objetos: 109 armas, 145 piezas de armadura, 34 escudos y similares, 30 pociones, 35 gemas, 12 runas, 13 joyas, 10 consumibles y 5 armaduras para Thor. En `mundo.json` todo viene en cuadros numerados `_N`: `cofre_<madera|reforzado|dorado|legendario>_quieto_N` (brillo en reposo), `cofre_<nivel>_abrir_N`, `moneda_gira_N`, `oro_<small|medium|large|huge>_N`, `lluvia_de_oro_N`, `haz_<rareza>_N` y `cae_<único>_N` (el objeto cayendo al piso, solo para únicos y set. Para el resto basta un tween del ícono).
+`atlas` dice en qué atlas está e `icon` es el nombre del cuadro. Si `animated` es true, los cuadros son `<icon>_0` a `<icon>_7`. Hay 427 objetos: las bases (armas, armaduras, escudos, pociones, gemas, runas, joyas, consumibles y 5 armaduras para Thor), los legendarios, el set y el botín de nivel bajo para el Mundo 1: 24 mágicos de nivel 2 a 10 (ids `m_*`: un arma por clase, la rodela, 12 piezas de armadura, 4 joyas, carcaj, orbe y daga), 8 raros de nivel 5 a 10 (ids `r_*`, al menos uno por clase) y 2 legendarios de nivel 8 y 9 para el cofre del Claro Escondido: `pluma_de_cuervo` (arco, para Sophie) y `ramita_del_abuelo` (varita, para Alana), con brillo de 8 cuadros y `cae_<id>`. Todas las propiedades del botín de nivel bajo son del subconjunto que usa el juego (`EARLY_STATS` en `src/engine/loot/early.ts`). En `mundo.json` todo viene en cuadros numerados `_N`: `cofre_<madera|reforzado|dorado|legendario>_quieto_N` (brillo en reposo), `cofre_<nivel>_abrir_N`, `moneda_gira_N`, `oro_<small|medium|large|huge>_N`, `lluvia_de_oro_N`, `haz_<rareza>_N` y `cae_<único>_N` (el objeto cayendo al piso, solo para únicos y set. Para el resto basta un tween del ícono).
 
 ### Interfaz
 
@@ -214,6 +214,7 @@ for (const [g, by] of Object.entries(manifest.botin.atlas))
 - `boton` tiene 3 cuadros: normal, encima, presionado.
 - Íconos de 24 x 24 con el mismo estilo que `icono_ajustes`: `icono_pausa`, `icono_secreto`, `icono_zona`, `icono_luna`, `icono_sonido`, `icono_silencio`, `icono_calidad`, `icono_jugadora`, `icono_peque`, `icono_jugar` e `icono_guardado`.
 - Íconos de los carteles del mapa: `ui.iconos_cartel.<icono>` (un PNG de 24 x 24 en `ui/carteles/`). Cada `icono` que trae un cartel del mapa tiene el suyo: `flecha_norte`, `peligro`, `corazon`, `cruce`, `estrella`.
+- Íconos de habilidad: `ui.habilidades.<nombre>` (40 x 40 sobre medallón redondo con el aro del color de la habilidad): `lluvia_flechas`, `esquiva`, `llamar_thor`, `curar`, `torbellino`, `bloqueo`, `nova_fuego`, `rayo_canalizado`. Para la recarga, oscurecer con tinte.
 - `girar_tablet`: 64 x 64, 2 cuadros (vertical y acostada con la flecha). Para pedir que giren la tablet a horizontal.
 - Fuentes bitmap (`manifest.ui.fuentes`), en formato BMFont XML, hechas a partir de Silkscreen (Jason Kottke, SIL Open Font License 1.1). Traen ñ, tildes, ¡ y ¿:
   - `fuente_ui`: 8 px, blanca con sombra negra. Se tiñe con `setTint` y se agranda con escala entera (x2 o x3, nunca 1.5).

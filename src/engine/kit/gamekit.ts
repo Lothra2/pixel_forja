@@ -6,7 +6,8 @@ import type { Ficha, CellSize, HumanFicha } from '../sheet/ficha';
 import { familyFicha, thorFicha, FAMILY, FAMILY_GG, type FamilyId } from '../rpg/family';
 import { enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, type EnemyId } from '../rpg/presets';
 import { PET_RPG_ANIMS } from '../anim/animal';
-import { renderFx, projectile8, type FxElement } from '../fx/fx';
+import { renderFx, projectile8, rotate8, type FxElement } from '../fx/fx';
+import { arrowProjectile, arrowImpact } from '../fx/arrow';
 import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
 import { isSpecial } from '../loot/render';
@@ -17,7 +18,7 @@ import { creatures, fogTexture } from '../world/atmosphere';
 import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
 import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
 import { bitmapFonts } from '../ui/fonts';
-import { signIcons, hudIcons, rotateTablet } from '../ui/icons2';
+import { signIcons, hudIcons, rotateTablet, skillIcons } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
 
@@ -169,7 +170,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     files.push(png(a, strip(frames)));
     fx[name] = { archivo: a, cuadros: frames.length, fps, loop, celda: frames[0].w };
   };
-  const elements: FxElement[] = ['fuego', 'hielo', 'sagrado', 'veneno', 'arcano', 'rayo'];
+  const elements: FxElement[] = ['fuego', 'hielo', 'sagrado', 'veneno', 'arcano', 'rayo', 'naturaleza'];
   for (const element of elements) {
     for (const { dir, clip } of projectile8({ element, cell: 48 })) addFx(`proyectil_${element}_${dir}`, clip.frames, clip.fps, clip.loop);
     for (const kind of ['impact', 'nova'] as const) { const c = renderFx({ kind, element, cell: 48 }); addFx(`${kind === 'impact' ? 'impacto' : 'nova'}_${element}`, c.frames, c.fps, c.loop); }
@@ -178,6 +179,9 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const c = renderFx({ kind, element, cell: 48 });
     addFx(name, c.frames, c.fps, c.loop);
   }
+  // la flecha: pintada a mano, 2 cuadros en vuelo y astillas al pegar
+  for (const { dir, frames } of rotate8(arrowProjectile(48))) addFx(`proyectil_flecha_${dir}`, frames, 14, true);
+  addFx('impacto_flecha', arrowImpact(48), 16, false);
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);
 
@@ -266,6 +270,9 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const carteles: Record<string, string> = {};
   for (const s of signIcons()) { const n = `ui/carteles/${s.name}.png`; files.push(png(n, s.frames[0])); carteles[s.name] = n; }
   ui.iconos_cartel = carteles;
+  const habilidades: Record<string, string> = {};
+  for (const s of skillIcons()) { const n = `ui/habilidades/${s.name}.png`; files.push(png(n, s.frames[0])); habilidades[s.name] = n; }
+  ui.habilidades = habilidades;
   const dg = digitSheet();
   files.push(png('ui/numeros.png', dg.png));
   ui.numeros = { archivo: 'ui/numeros.png', w: dg.cw, h: dg.ch, caracteres: DIGITS, filas: dg.colors };

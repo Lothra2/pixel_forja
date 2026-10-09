@@ -9,8 +9,8 @@ import { rotSprite } from '../render/rotsprite';
  * Todo es determinista: la misma receta da los mismos pixeles.
  */
 
-export type FxElement = 'fuego' | 'hielo' | 'rayo' | 'veneno' | 'sagrado' | 'sombra' | 'arcano' | 'sangre';
-export const FX_ELEMENTS: FxElement[] = ['fuego', 'hielo', 'rayo', 'veneno', 'sagrado', 'sombra', 'arcano', 'sangre'];
+export type FxElement = 'fuego' | 'hielo' | 'rayo' | 'veneno' | 'sagrado' | 'sombra' | 'arcano' | 'sangre' | 'naturaleza';
+export const FX_ELEMENTS: FxElement[] = ['fuego', 'hielo', 'rayo', 'veneno', 'sagrado', 'sombra', 'arcano', 'sangre', 'naturaleza'];
 
 export type FxKind = 'projectile' | 'impact' | 'nova' | 'aura' | 'strike' | 'heal' | 'shield' | 'circle' | 'buff' | 'slash';
 export const FX_KINDS: FxKind[] = ['projectile', 'impact', 'nova', 'aura', 'strike', 'heal', 'shield', 'circle', 'buff', 'slash'];
@@ -25,6 +25,8 @@ export const FX_PALETTES: Record<FxElement, string[]> = {
   sombra: ['#0a0612', '#25123a', '#4d1f78', '#8a3ac4', '#c98aff', '#f0d8ff'],
   arcano: ['#120a2a', '#3a1a7a', '#7a3ae0', '#c060ff', '#ff9af0', '#ffffff'],
   sangre: ['#1a0408', '#5a0a14', '#a0162a', '#e03a4a', '#ff8a90', '#ffe0e0'],
+  // verde esmeralda (más azulado que el veneno, que es lima) y se le agregan hojas y pétalos rosados
+  naturaleza: ['#06201a', '#0f4f3a', '#1f9a5a', '#4fd88a', '#aaf5c0', '#f4fff0'],
 };
 
 const FRAMES: Record<FxKind, { n: number; loop: boolean; fps: number }> = {
@@ -74,6 +76,8 @@ function rng(seed: number) {
 /** Lienzo de "calor": cada partícula suma intensidad; al final se pasa a la rampa de colores. */
 class Heat {
   v: Float32Array;
+  /** hojas y pétalos (naturaleza): se pintan encima, con forma propia */
+  bits: { x: number; y: number; kind: 'petalo' | 'hoja'; a: number }[] = [];
   constructor(public w: number, public h: number) { this.v = new Float32Array(w * h); }
   add(x: number, y: number, a: number) {
     const xi = Math.round(x), yi = Math.round(y);
@@ -169,6 +173,11 @@ function projectile(h: Heat, t: number, S: number, el: FxElement, rnd: () => num
     }
     if (el === 'arcano' || el === 'sombra') for (let k = 0; k < 3; k++) { const a = t * Math.PI * 2 + (k * Math.PI * 2) / 3; h.splat(cx + Math.cos(a) * r * 1.4, cy + Math.sin(a) * r * 1.4, 0.8, 1); }
     if (el === 'sagrado') { h.line(cx - r * 1.5, cy, cx + r * 1.5, cy, 0.7, 0.5); h.line(cx, cy - r * 1.5, cx, cy + r * 1.5, 0.7, 0.5); }
+    if (el === 'naturaleza') {
+      // dos hojas que giran alrededor de la semilla de luz y pétalos que se quedan atrás
+      for (let k = 0; k < 2; k++) { const a = t * Math.PI * 2 + k * Math.PI; h.bits.push({ x: cx + Math.cos(a) * r * 1.5, y: cy + Math.sin(a) * r * 1.1, kind: 'hoja', a: a + Math.PI / 2 }); }
+      for (let k = 0; k < 3; k++) h.bits.push({ x: cx - r * (1.6 + k * 1.3 + ((t * 3 + k) % 1) * 0.8), y: cy + Math.sin(t * Math.PI * 2 + k * 2) * r * 0.9, kind: 'petalo', a: t * 6 + k });
+    }
   }
 }
 
@@ -182,8 +191,12 @@ function impact(h: Heat, t: number, S: number, el: FxElement, rnd: () => number)
     const up = el === 'fuego' ? -t * S * 0.15 : el === 'veneno' ? t * S * 0.08 : 0;
     h.splat(cx + Math.cos(a) * sp, cy + Math.sin(a) * sp * 0.75 + up, Math.max(1, S * 0.09 * (1 - t * 0.8)), 1.3 - t * 0.8);
   }
+  if (el === 'naturaleza') for (let k = 0; k < 9; k++) {
+    const a = (k / 9) * Math.PI * 2 + 0.3, sp = S * (0.1 + t * 0.38);
+    h.bits.push({ x: cx + Math.cos(a) * sp, y: cy + Math.sin(a) * sp * 0.75 + t * t * S * 0.12, kind: k % 3 ? 'petalo' : 'hoja', a: a + t * 4 });
+  }
   // humo o restos al final
-  if (t > 0.45) for (let k = 0; k < 7; k++) h.splat(cx + (rnd() - 0.5) * S * 0.5, cy - t * S * 0.2 + (rnd() - 0.5) * S * 0.2, S * 0.08, 0.55 * (1.3 - t));
+  if (t > 0.45 && el !== 'naturaleza') for (let k = 0; k < 7; k++) h.splat(cx + (rnd() - 0.5) * S * 0.5, cy - t * S * 0.2 + (rnd() - 0.5) * S * 0.2, S * 0.08, 0.55 * (1.3 - t));
 }
 
 function nova(h: Heat, t: number, S: number, el: FxElement, rnd: () => number) {
@@ -197,6 +210,10 @@ function nova(h: Heat, t: number, S: number, el: FxElement, rnd: () => number) {
     if (el === 'fuego' || el === 'sombra') h.splat(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.5 - S * 0.05 * rnd(), 0.8, 0.5 * (1 - t));
   }
   if (t < 0.25) h.splat(cx, cy, S * 0.12, 1 - t * 3, 0.6);
+  if (el === 'naturaleza') for (let k = 0; k < 12; k++) {
+    const a = (k / 12) * Math.PI * 2 + t * 0.8, rr = R * 1.02;
+    if (t < 0.9) h.bits.push({ x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr * 0.5 - t * S * 0.06 * (k % 2), kind: k % 2 ? 'petalo' : 'hoja', a: a + Math.PI / 2 });
+  }
 }
 
 function aura(h: Heat, t: number, S: number, _el: FxElement, rnd: () => number) {
@@ -301,6 +318,31 @@ function slash(h: Heat, t: number, S: number, el: FxElement, rnd: () => number) 
   void rnd; void el;
 }
 
+/** Colores que un elemento agrega fuera de su rampa (las hojas y pétalos de la naturaleza). */
+export const FX_EXTRA_COLORS: Partial<Record<FxElement, string[]>> = {
+  naturaleza: ['#0a2818', '#8ce678', '#3caa50', '#5a1a3c', '#ffd6e8', '#c85a96', '#f08ab4'],
+};
+
+/** Hoja (verde, 3 px con nervio) o pétalo (rosado, 2 x 2 con luz), con contorno oscuro. */
+function drawBit(r: Raster, b: Heat['bits'][number]) {
+  const put = (x: number, y: number, c: [number, number, number], soft = false) => {
+    const X = Math.round(x), Y = Math.round(y);
+    if (X < 0 || Y < 0 || X >= r.w || Y >= r.h) return;
+    if (soft && r.data[(Y * r.w + X) * 4 + 3]) return;
+    r.data.set([...c, 255], (Y * r.w + X) * 4);
+  };
+  const dx = Math.round(Math.cos(b.a)), dy = Math.round(Math.sin(b.a));
+  if (b.kind === 'hoja') {
+    const pts: [number, number][] = [[b.x - dx, b.y - dy], [b.x, b.y], [b.x + dx, b.y + dy]];
+    for (const [x, y] of pts) for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) put(x + ox, y + oy, [10, 40, 24], true);
+    pts.forEach(([x, y], i) => put(x, y, i === 1 ? [140, 230, 120] : [60, 170, 80]));
+  } else {
+    const pts: [number, number][] = [[b.x, b.y], [b.x + 1, b.y], [b.x, b.y + 1], [b.x + 1, b.y + 1]];
+    for (const [x, y] of pts) for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) put(x + ox, y + oy, [90, 26, 60], true);
+    pts.forEach(([x, y], i) => put(x, y, i === 0 ? [255, 214, 232] : i === 3 ? [200, 90, 150] : [240, 138, 180]));
+  }
+}
+
 const DRAW: Record<FxKind, Draw> = { projectile, impact, nova, aura, strike, heal, shield, circle, buff, slash };
 
 /** Dibuja un efecto: frames del tamaño de la celda. */
@@ -313,19 +355,24 @@ export function renderFx(spec: FxSpec): FxClip {
     const rnd = rng((spec.seed ?? 7) * 1009 + f * 7919 + FX_KINDS.indexOf(spec.kind) * 31 + FX_ELEMENTS.indexOf(spec.element) * 131);
     const h = new Heat(S, S);
     DRAW[spec.kind](h, n > 1 ? f / (loop ? n : n - 1) : 0, S, spec.element, rnd);
-    frames.push(paint(toIndex(h, spec.outline ?? true), pal));
+    const fr = paint(toIndex(h, spec.outline ?? true), pal);
+    for (const b of h.bits) drawBit(fr, b);
+    frames.push(fr);
   }
   return { name: `${spec.kind}_${spec.element}`, fps, loop, cell: S as CellSize, frames };
 }
 
+const DIRS8: [string, number][] = [['right', 0], ['down_right', 45], ['down', 90], ['down_left', 135], ['left', 180], ['up_left', 225], ['up', 270], ['up_right', 315]];
+
 /** Un proyectil en las 8 direcciones (derecha, abajo-derecha, abajo...), girado con RotSprite. */
 export function projectile8(spec: Omit<FxSpec, 'kind'>): { dir: string; clip: FxClip }[] {
   const base = renderFx({ ...spec, kind: 'projectile' });
-  const dirs: [string, number][] = [['right', 0], ['down_right', 45], ['down', 90], ['down_left', 135], ['left', 180], ['up_left', 225], ['up', 270], ['up_right', 315]];
-  return dirs.map(([dir, deg]) => ({
-    dir,
-    clip: { ...base, name: `${base.name}_${dir}`, frames: base.frames.map((fr) => rotateRaster(fr, deg)) },
-  }));
+  return rotate8(base.frames).map(({ dir, frames }) => ({ dir, clip: { ...base, name: `${base.name}_${dir}`, frames } }));
+}
+
+/** Cuadros dibujados mirando a la derecha, girados a las 8 direcciones con RotSprite. */
+export function rotate8(frames: Raster[]): { dir: string; frames: Raster[] }[] {
+  return DIRS8.map(([dir, deg]) => ({ dir, frames: frames.map((fr) => rotateRaster(fr, deg)) }));
 }
 
 /** Gira un cuadro con RotSprite (pasando por índices de color para no inventar tonos). */
