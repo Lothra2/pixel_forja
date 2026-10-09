@@ -51,9 +51,9 @@ Límite honesto: la armadura que evoluciona se ve en Thor (6 niveles exportados)
 | `enemigos/` | rata, calabaza, goblin_arquero, trol (celda 48) y minotauro jefe (celda 64, con carga, pisotón y salto) |
 | `fx/` | 66 efectos: proyectil en 8 direcciones, impacto y nova para fuego, hielo, rayo, veneno, sagrado y arcano. Tajo, curar, escudo de Thor, aura de nivel, grito de guerra, círculo mágico |
 | `botin/` | 393 objetos en atlas de 32 y 64 px, legendarios animados (8 cuadros), cofres, monedas, haz de luz por rareza, objetos que caen. `catalogo.json` con stats |
-| `mundo/` | tileset 32 px, mapa del Mundo 1 en Tiled JSON, 27 objetos con anclaje y colisión, vista previa del mapa |
+| `mundo/` | el Bosque GG: 120 x 90 cuadros (3840 x 2880 px, unas 22 pantallas) con el suelo pintado en 12 trozos, agua animada, 54 objetos con luz y colisión, 13 partículas, textura de luz y de nube, 8 postales y la vista del mapa |
 | `ui/` | orbes, paneles 9-slice, casilleros con silueta, inventario completo, cinturón, barras, estandarte, íconos, cursores, números de daño |
-| `audio/` | 26 efectos y 3 temas (bosque, jefe, victoria) en WAV 22 kHz |
+| `audio/` | 26 efectos, 3 temas (bosque, jefe, victoria) y 6 ambientes en bucle (bosque, agua, noche, viento, cueva, magia) en WAV 22 kHz |
 | `CREDITOS.txt` | créditos de las piezas LPC. Hay que mostrarlos en el juego |
 
 Ninguna textura pasa de 4096 px (límite de tablets). El kit lo verifica y falla si alguna se pasa.
@@ -77,8 +77,13 @@ Ninguna textura pasa de 4096 px (límite de tablets). El kit lo verifica y falla
   "fx": { "nova_fuego": { "archivo": "fx/nova_fuego.png", "cuadros": 10, "fps": 16, "loop": false, "celda": 48 }, ... },
   "botin": { "atlas": { "iconos": {"32": "botin/iconos_32.json", "64": ...}, "especiales": {...}, "armadura_n5": {...} },
              "mundo": "botin/mundo.json", "catalogo": "botin/catalogo.json" },
-  "mundo": { "mapa": "mundo/mundo1_bosque.json", "tileset": "mundo/mundo1_tiles.png", "layout": {...},
-             "objetos": { "portal_azul": { "w": 64, "h": 96, "apoyo": [32, 92], "solido": null, "anims": { "girar": {...} } } } },
+  "mundo": { "mapa": "mundo/mundo1_bosque.json", "ancho": 120, "alto": 90, "cuadro": 32, "trozo": 960,
+             "agua": "mundo/agua.png", "suelo": [{ "archivo": "mundo/suelo/mundo1_bosque_0.png", "x": 0, "y": 0 }, ...],
+             "objetos": { "fogata": { "w": 32, "h": 32, "apoyo": [16, 28], "solido": [-8, -4, 16, 4],
+                                      "luz": { "color": "#ffa040", "radius": 120, "flicker": true, "dy": 8 }, "anims": {...} },
+                          "puente": { ..., "capa": "suelo" }, "arco_ruina": { ..., "solidos": [[-52, -8, 22, 8], [28, -8, 22, 8]] } },
+             "particulas": { "luciernaga": { "archivo": "mundo/particulas/luciernaga.png", "w": 8, "h": 8, "cuadros": 4, "fps": 6 }, ... },
+             "luz": "mundo/luz.png", "nube": "mundo/nube.png", "postales": { "cascada_y_vado": "mundo/postales/cascada_y_vado.png", ... } },
   "ui": { "panel": { "archivo": "ui/panel.png", "w": 48, "h": 48, "cuadros": 1, "nueve": [12,12,12,12] },
           "inventario": { "archivo": "ui/inventario.png", "w": 280, "h": 410, "layout": {...} },
           "numeros": { "archivo": "ui/numeros.png", "w": 7, "h": 9, "caracteres": "0123456789+-!", "filas": ["blanco","amarillo","rojo","verde","azul"] } },
@@ -111,33 +116,52 @@ const deg = (Phaser.Math.RadToDeg(Math.atan2(dy, dx)) + 360) % 360;
 const dir = DIRS[Math.round(((deg - 90 + 360) % 360) / 45) % 8];
 ```
 
-### Mapa (Tiled)
+### Mundo 1: el Bosque GG
 
-`mundo/mundo1_bosque.json` es un mapa ortogonal de 48 x 32 cuadros de 32 px. Se puede abrir y editar en Tiled.
+Un mapa grande para explorar: 120 x 90 cuadros de 32 px (3840 x 2880 px). El suelo NO son cuadros repetidos: está pintado pixel por pixel (mesetas con acantilado, escaleras, río con cascada, lagos, caminos, plazas de losas, praderas de flores, bosque oscuro) y viene cortado en 12 trozos de 960 px. Se puede abrir en Tiled.
+
+Recorrido: Claro de la Llegada, Pradera de las Mariposas, El Abuelo Roble, Puente del Trol sobre el Arroyo Cristalino, Ruinas del Viejo Reino con la estatua de Thor, Pie de la Escalera, Las Alturas y la Arena del Minotauro. Desvíos: Bosque Profundo, Anillo de las Hadas, Claro Escondido (camino secreto), vado bajo la cascada, Lago Espejo, Colina de los Goblins y Campo de Calabazas. Todo se alcanza caminando desde el inicio (hay un test que lo verifica).
 
 | Capa | Tipo | Uso |
 |---|---|---|
-| `suelo` | tiles | pasto, flores, camino y agua con bordes automáticos |
-| `colision` | tiles | invisible. Cualquier tile distinto de 0 es sólido (agua, troncos de árboles, piedras, fogata) |
-| `objetos` | puntos | decoración. Propiedad `sprite` = nombre en `manifest.mundo.objetos`. `x, y` = punto de apoyo en pixeles |
-| `entidades` | puntos | `jugador_inicio`, `thor_inicio`, `portal_llegada`, `enemigo` (prop `enemigo`), `cofre` (prop `nivel`, `tras_jefe`), `rompible` (prop `objeto`), `jefe` (props `enemigo`, `nombre`), `portal_jefe` (props `color`, `destino`), `cartel` (prop `texto`) |
+| `agua` | tiles | agua animada (tileset `agua.png`, el cuadro 0 pasa por 4 cuadros cada 220 ms). Va DEBAJO del suelo |
+| `suelo` | grupo de capas de imagen | 12 trozos (`suelo/mundo1_bosque_N.png`) con `offsetx/offsety`. El agua es transparente: se ve la capa de abajo |
+| `colision` | tiles | invisible. Distinto de 0 = no se pasa (agua honda, acantilados, troncos, objetos sólidos). Los puentes y el vado ya están abiertos |
+| `objetos` | puntos | decorado. `sprite` = nombre en `manifest.mundo.objetos`. `x, y` = punto de apoyo |
+| `entidades` | puntos | ver abajo |
+| `zonas` | rectángulos | cada zona con `musica`, `ambiente`, `luz` (color), `oscuridad` (0 a 1), `particulas` (lista separada por coma), `descubrir` y a veces `secreto` |
+| `postales` | puntos | centros de cámara para las capturas de calidad (Playwright) y el paneo de presentación |
 
-Propiedades del mapa: `bioma` y `musica`.
+Entidades: `jugador_inicio`, `thor_inicio`, `portal_llegada`, `punto_guardado` (props `id`, `nombre`: fogata donde se guarda y se reaparece), `enemigo` (props `enemigo`, a veces `elite` y `nombre`), `cofre` (props `nivel`, y `secreto` + `pista` en los escondidos, `tras_jefe` en el legendario), `rompible` (prop `objeto`), `cartel` (props `texto`, `icono`), `jefe`, `portal_jefe`, `arena_jefe` (prop `radio`: al entrar empieza la pelea).
+
+Orden de dibujo, de abajo hacia arriba:
+1. capa `agua`
+2. trozos de `suelo`
+3. objetos con `capa: "suelo"` (puente, piedras del vado, nenúfares, anillo de las hadas)
+4. objetos y personajes ordenados por `y` del apoyo
+5. luces: `luz.png` teñida con `objetos.X.luz.color`, escala = `radius * 2 / 128`, modo aditivo, `flicker` = parpadeo, `pulse` = latido lento
+6. sombras de nubes (`nube.png`) moviéndose despacio
+7. tinte y oscuridad de la zona actual, con transición suave al cambiar de zona
 
 ```ts
 this.load.tilemapTiledJSON('mundo1', kit + 'mundo/mundo1_bosque.json');
-this.load.image('mundo1_tiles', kit + 'mundo/mundo1_tiles.png');
-this.load.image('colision', kit + 'mundo/colision.png');
+this.load.image('agua', kit + 'mundo/agua.png');
+manifest.mundo.suelo.forEach((s, i) => this.load.image(`suelo_${i}`, kit + s.archivo));
 
 const map = this.make.tilemap({ key: 'mundo1' });
-const suelo = map.createLayer('suelo', map.addTilesetImage('mundo1_tiles', 'mundo1_tiles')!)!;
-const col = map.createLayer('colision', map.addTilesetImage('colision', 'colision')!)!.setVisible(false);
+const agua = map.createLayer('agua', map.addTilesetImage('agua', 'agua')!)!;
+manifest.mundo.suelo.forEach((s, i) => this.add.image(s.x, s.y, `suelo_${i}`).setOrigin(0).setDepth(1));
+const col = map.createLayer('colision', map.addTilesetImage('agua', 'agua')!)!.setVisible(false);
 col.setCollisionByExclusion([-1, 0]);
 ```
 
-Objetos del mundo: `sprite.setOrigin(apoyo[0] / w, apoyo[1] / h)` y `setDepth(y)` para que lo de abajo tape lo de arriba. `solido` es un rectángulo `[dx, dy, w, h]` relativo al apoyo, por si quieres colisión más fina que la capa `colision`.
+Objetos: `sprite.setOrigin(apoyo[0] / w, apoyo[1] / h)` y `setDepth(y)`. `solido` (y `solidos`) son rectángulos `[dx, dy, w, h]` relativos al apoyo, ya marcados en la capa `colision`.
 
-El agua trae 4 cuadros de animación por tile (`tiles[].animation` en el JSON, 260 ms). Phaser no anima tiles de Tiled solo: hay que cambiar los índices cada 260 ms con un timer. `manifest.mundo.layout.water[f][mask]` dice qué tile corresponde a cada cuadro.
+El agua se anima cambiando el índice de los cuadros de la capa `agua` cada 220 ms (Phaser no anima tiles de Tiled solo).
+
+Partículas sugeridas por zona: `luciernaga`, `hoja_verde`, `hoja_otono`, `mariposa_*`, `polen`, `brasa`, `brillo`, `espora`, `humo`, `polvo`, `gota`. Ambientes: `audio/ambiente_<zona.ambiente>.wav` en bucle, con fundido al cambiar de zona.
+
+Las postales (`mundo/postales/*.png`) son exactamente lo que se ve en pantalla a 960 x 540 en cada lugar. Sirven de referencia de calidad: el juego con luces y partículas debe verse igual o mejor.
 
 ### Botín
 
@@ -177,6 +201,6 @@ for (const [g, by] of Object.entries(manifest.botin.atlas))
 
 ### Audio
 
-WAV mono 16 bits a 22050 Hz. Efectos cortos y música para loop. En tablets el audio arranca solo después del primer toque del usuario, así que la pantalla de inicio debe pedir un toque.
+WAV mono 16 bits a 22050 Hz. Efectos cortos, música para loop y ambientes de 12 s que hacen bucle sin corte. En tablets el audio arranca solo después del primer toque del usuario, así que la pantalla de inicio debe pedir un toque.
 
 Lo que no se pudo verificar: los sonidos están chequeados por forma (duración, sin saturar, WAV válido) pero nadie los escuchó todavía. Si alguno suena feo se cambia su receta en `src/engine/audio/sfx.ts`.

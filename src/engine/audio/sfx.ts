@@ -64,7 +64,8 @@ function mix(voices: Voice[], extra = 0.05): Float32Array {
 }
 
 /** Arma un WAV de 16 bits mono. */
-export function encodeWav(samples: Float32Array, rate = RATE): Uint8Array {
+/** loop = true no apaga el final (para sonidos en bucle que ya vienen fundidos). */
+export function encodeWav(samples: Float32Array, rate = RATE, loop = false): Uint8Array {
   const n = samples.length;
   const out = new Uint8Array(44 + n * 2);
   const dv = new DataView(out.buffer);
@@ -77,7 +78,7 @@ export function encodeWav(samples: Float32Array, rate = RATE): Uint8Array {
   for (const s of samples) peak = Math.max(peak, Math.abs(s));
   const k = peak > 0.9 ? 0.9 / peak : 1;
   for (let i = 0; i < n; i++) {
-    const fade = i > n - 200 ? (n - i) / 200 : 1;
+    const fade = !loop && i > n - 200 ? (n - i) / 200 : 1;
     dv.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i] * k * fade)) * 32767, true);
   }
   return out;

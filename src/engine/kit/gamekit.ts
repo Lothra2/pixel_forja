@@ -10,9 +10,10 @@ import { renderFx, projectile8, type FxElement } from '../fx/fx';
 import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
 import { isSpecial } from '../loot/render';
-import { tilesetSheet, TILE } from '../world/tiles';
-import { forestObjects } from '../world/objects';
-import { forestMap, toTiledJson, renderMapPreview } from '../world/map';
+import { TILE } from '../world/tiles';
+import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK } from '../world/bosqueMap';
+import { particles, lightTexture, cloudShadow } from '../world/ambient';
+import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
 import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
@@ -58,6 +59,17 @@ function sheet8(f: Ficha, cell: CellSize, anim: string): { png: Raster; frames: 
 const file = (name: string, bytes: Uint8Array, mime: string): ExportFile => ({ name, bytes, mime });
 const png = (name: string, r: Raster) => file(name, encodePng(r), 'image/png');
 const json = (name: string, v: unknown) => file(name, enc.encode(JSON.stringify(v, null, 1)), 'application/json');
+
+/** Imagen a la mitad (promedio de 2 x 2, para la vista del mapa). */
+function half(r: Raster): Raster {
+  const o = createRaster(r.w >> 1, r.h >> 1);
+  for (let y = 0; y < o.h; y++) for (let x = 0; x < o.w; x++) for (let c = 0; c < 4; c++) {
+    let v = 0;
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) v += r.data[((y * 2 + dy) * r.w + x * 2 + dx) * 4 + c];
+    o.data[(y * o.w + x) * 4 + c] = v / 4;
+  }
+  return o;
+}
 
 /** Tira horizontal de cuadros. */
 function strip(frames: Raster[]): Raster {
@@ -195,27 +207,37 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   };
   log('botín listo');
 
-  // ---------- mundo 1 ----------
-  const { png: tilesPng, layout } = tilesetSheet('bosque');
-  files.push(png('mundo/mundo1_tiles.png', tilesPng));
-  const solidTile = createRaster(TILE, TILE);
-  for (let i = 0; i < TILE * TILE; i++) solidTile.data.set([255, 0, 0, 90], i * 4);
-  files.push(png('mundo/colision.png', solidTile));
-  const map = forestMap();
-  files.push(json('mundo/mundo1_bosque.json', toTiledJson(map, 'mundo1_tiles.png', tilesPng.w, tilesPng.h)));
-  const objs = forestObjects();
-  files.push(png('mundo/mundo1_vista.png', renderMapPreview(map, tilesPng, objs)));
+  // ---------- mundo 1: el Bosque GG grande ----------
+  const big = bosqueMap();
+  const tiled = bigMapToTiled(big, 'suelo');
+  files.push(json('mundo/mundo1_bosque.json', tiled.json));
+  files.push(png('mundo/agua.png', tiled.aguaPng));
+  for (const c of tiled.chunks) files.push(png(`mundo/${c.name}`, c.img));
+  // vista completa a la mitad (para mirar el mapa) y postales a tamaño real (lo que se ve en pantalla)
+  const full = renderBigMap(big);
+  files.push(png('mundo/mundo1_vista.png', half(renderBigMap(big, { entities: true }))));
+  const postales: Record<string, string> = {};
+  for (const p of big.postales) { const n = `mundo/postales/${p.nombre}.png`; files.push(png(n, cropView(full, p.x, p.y))); postales[p.nombre] = n; }
   const objManifest: Record<string, unknown> = {};
-  for (const o of objs) {
+  for (const o of big.objects) {
     const anims: Record<string, unknown> = {};
     for (const [an, a] of Object.entries(o.anims)) {
       const name = `mundo/objetos/${o.name}_${an}.png`;
       files.push(png(name, strip(a.frames)));
       anims[an] = { archivo: name, cuadros: a.frames.length, fps: a.fps, loop: a.loop };
     }
-    objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, anims };
+    objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, ...(o.solids ? { solidos: o.solids } : {}), ...(o.layer ? { capa: o.layer } : {}), ...(o.light ? { luz: o.light } : {}), anims };
   }
-  manifest.mundo = { mapa: 'mundo/mundo1_bosque.json', tileset: 'mundo/mundo1_tiles.png', vista: 'mundo/mundo1_vista.png', layout, objetos: objManifest };
+  const parts: Record<string, unknown> = {};
+  for (const p of particles()) { const n = `mundo/particulas/${p.name}.png`; files.push(png(n, strip(p.frames))); parts[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
+  files.push(png('mundo/luz.png', lightTexture()));
+  files.push(png('mundo/nube.png', cloudShadow()));
+  manifest.mundo = {
+    mapa: 'mundo/mundo1_bosque.json', nombre: 'Bosque GG', ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
+    agua: 'mundo/agua.png', suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
+    vista: 'mundo/mundo1_vista.png', postales, objetos: objManifest, particulas: parts, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
+    notas: 'Orden de dibujo: agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > objetos y personajes ordenados por y > luces (aditivo) > sombras de nubes. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',
+  };
   log('mundo listo');
 
   // ---------- interfaz ----------
@@ -237,6 +259,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const audio: Record<string, string> = {};
   for (const n of SFX_NAMES) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(SFX[n]()), 'audio/wav')); audio[n] = a; }
   for (const [n, fn] of Object.entries(MUSIC)) { const a = `audio/musica_${n}.wav`; files.push(file(a, encodeWav(fn()), 'audio/wav')); audio[`musica_${n}`] = a; }
+  for (const n of AMBIENCE_NAMES) { const a = `audio/ambiente_${n}.wav`; files.push(file(a, encodeWav(ambience(n), undefined, true), 'audio/wav')); audio[`ambiente_${n}`] = a; }
   manifest.audio = audio;
   log('audio listo');
 

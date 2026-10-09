@@ -3,6 +3,9 @@ import { paintTerrain, distTo, FACE, type TerrainDesign } from '../world/paint';
 import { landmarkObjects } from '../world/landmarks';
 import { bosqueMap, bigMapToTiled, reachable, CHUNK } from '../world/bosqueMap';
 import { TILE } from '../world/tiles';
+import { particles, lightTexture, cloudShadow } from '../world/ambient';
+import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
+import { RATE } from '../audio/sfx';
 
 const small: TerrainDesign = {
   w: 24, h: 18, seed: 5,
@@ -82,5 +85,27 @@ describe('mundo v2: objetos y Bosque GG', () => {
     const m2 = bosqueMap();
     expect(m2.decos.slice(0, 50)).toEqual(m.decos.slice(0, 50));
     expect(m2.decos.length).toBe(m.decos.length);
+  });
+});
+
+describe('mundo v2: atmósfera', () => {
+  it('partículas con todos sus cuadros del mismo tamaño, luz radial y sombra de nube', () => {
+    const ps = particles();
+    const names = ps.map((p) => p.name);
+    for (const n of ['luciernaga', 'hoja_verde', 'hoja_otono', 'mariposa_azul', 'polen', 'brasa', 'brillo', 'espora', 'humo', 'polvo', 'gota']) expect(names, n).toContain(n);
+    for (const p of ps) for (const f of p.frames) { expect(f.w, p.name).toBe(p.w); expect(f.h, p.name).toBe(p.h); }
+    const l = lightTexture(64);
+    expect(l.data[(32 * 64 + 32) * 4 + 3]).toBeGreaterThan(200);
+    expect(l.data[3]).toBe(0);
+    const c = cloudShadow();
+    expect(Math.max(...Array.from({ length: c.w * c.h }, (_, i) => c.data[i * 4 + 3]))).toBeLessThanOrEqual(90);
+  });
+  it('ambientes de 12 s que hacen bucle sin salto', () => {
+    for (const n of AMBIENCE_NAMES) {
+      const b = ambience(n);
+      expect(b.length, n).toBe(12 * RATE);
+      let avg = 0; for (let i = 1; i < b.length; i++) avg += Math.abs(b[i] - b[i - 1]); avg /= b.length;
+      expect(Math.abs(b[0] - b[b.length - 1]), n).toBeLessThan(Math.max(0.05, avg * 4));
+    }
   });
 });

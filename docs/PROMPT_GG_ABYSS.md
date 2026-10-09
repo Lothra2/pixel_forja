@@ -88,36 +88,37 @@ Pero NADIE PIERDE:
 
 ## El mundo tiene que ser INCREÍBLE (la prioridad de arte del proyecto)
 
-El primer contacto de mis hijas con el juego es caminar por el Bosque GG. Tiene que sentirse vivo, mágico y hecho con cariño, al nivel de Stardew Valley o Eastward. No un mapa de prueba con árboles. Quiero que planifiques el mundo como director de arte y diseñador de niveles.
+El primer contacto de mis hijas con el juego es caminar por el Bosque GG. Tiene que sentirse vivo, mágico, grande y explorable, al nivel de Stardew Valley o Eastward.
 
-1. Crítica honesta del mapa actual (mundo1_vista.png). Qué funciona, qué se ve pobre o repetido, qué falta para que sea memorable.
-2. Diseño del Bosque GG por zonas, con un recorrido que cuente una mini historia desde el portal de llegada hasta la arena del minotauro. Por ejemplo:
-   - claro de la fogata
-   - arroyo con puente
-   - bosquecillo de hongos que brillan
-   - ruinas antiguas
-   - colina de los goblins
-   - arena de piedras rúnicas frente a la cueva
-   Cada zona con su identidad visual, un secreto escondido (cofre detrás de árboles, camino oculto) y un momento "wow".
-3. Vida y atmósfera, todo con assets del kit más efectos en código:
-   - Luz cálida de tarde: tinte global suave y viñeta.
-   - Pozos de luz alrededor de fogata, antorchas, portal y hongos, con un degradado radial en modo aditivo que parpadea.
-   - Partículas con límite de cantidad: luciérnagas cerca del agua y al atardecer, hojas que caen, polen en los claros, chispas de la fogata.
-   - Pasto alto que se mueve al pasar. Copas de árboles que se mecen con un tween suave.
-   - Sombras de nubes que cruzan el mapa despacio. Agua animada con destellos.
-   - Polvito al caminar. Pasos con sonido.
-   - Sombra elíptica bajo cada personaje.
-   - Orden por profundidad perfecto. Las copas se vuelven semitransparentes cuando la heroína pasa detrás.
-   - Cámara con seguimiento suave y un poco de anticipación. La primera vez, paneo de presentación desde el portal hasta la heroína.
-   - Sonido ambiente por zona: pájaros, viento, agua. Si no existe en el kit, va a ASSETS_PENDIENTES.md.
-4. Lista de assets de mundo que faltan para lograr eso, para ASSETS_PENDIENTES.md. Por ejemplo:
-   - puente, río o arroyo, juncos, nenúfares, flores en parches
-   - tronco caído, ruinas, anillo de hongos, estatua
-   - acantilados o desniveles
-   - sprites de partículas: luciérnaga, hoja, mariposa
-   - loops de ambiente
-   Priorízalos: imprescindible para la Fase 1 o mejora posterior. Si el mapa necesita otro layout, especifica las zonas con coordenadas en cuadros para que yo regenere el mapa en el taller.
-5. Criterio de calidad verificable: 4 o 5 "postales" (posición de cámara y hora) que Playwright captura en docs/capturas/ al final de cada fase. Yo las reviso. Además, 60 fps en un viewport de tablet con todos los efectos prendidos, con un medidor de fps en modo prueba.
+El taller YA hizo el Bosque GG grande. Míralo antes de planificar:
+- public/assets/kit/mundo/mundo1_vista.png: el mapa entero, con puntos de colores para enemigos, cofres y fogatas.
+- public/assets/kit/mundo/postales/*.png: 8 pantallas reales de 960 x 540 (llegada, abuelo_roble, cascada_y_vado, puente_del_trol, ruinas_y_estatua, anillo_de_hadas, arena_del_minotauro, colina_goblin).
+- La sección "Mundo 1: el Bosque GG" de KIT_JUEGO.md: capas, orden de dibujo, zonas, luces y partículas.
+
+Lo que ya trae:
+- 120 x 90 cuadros (unas 22 pantallas), con el suelo pintado a mano por código. Hay mesetas con acantilado y escaleras, un río con cascada, vado y 3 puentes, lagos, ruinas y bosques cerrados con sendas.
+- 13 zonas con nombre. Cada una trae música, sonido de ambiente, color de luz, oscuridad y partículas.
+- Lugares memorables: el Abuelo Roble (un árbol gigante con cara), el Anillo de las Hadas, la estatua de Thor en las ruinas, la cascada, el Puente del Trol, el campamento goblin y la arena del minotauro con la cueva.
+- 6 cofres secretos, 3 fogatas de guardado y un camino escondido al Claro Escondido.
+- Objetos que emiten luz (fogata, antorchas, faroles, hongos, cristales, portal, cascada), 13 tipos de partículas, textura de luz y de nube, y 6 ambientes en bucle.
+
+Tu trabajo como director de arte:
+1. Crítica honesta del mundo actual mirando las postales. Qué se ve increíble, qué se ve pobre o repetido, y qué falta para que cada zona tenga su momento "wow".
+2. Plan de atmósfera en código usando lo del kit. Que se sienta vivo, no un fondo quieto:
+   - Luz cálida de tarde con el tinte de cada zona, viñeta suave y oscuridad en el Bosque Profundo.
+   - Pozos de luz aditivos en cada objeto con `luz`, que parpadean o laten.
+   - Partículas por zona con límite de cantidad: luciérnagas, hojas, mariposas, polen, brasas en la arena, humo en el campamento.
+   - Pasto alto que se aparta al pasar. Copas que se mecen con un tween suave y se vuelven semitransparentes cuando la heroína pasa detrás.
+   - Sombras de nubes cruzando el mapa. Agua animada.
+   - Polvito y sonido de pasos. Sombra elíptica bajo cada personaje.
+   - Ambiente sonoro por zona con fundido al cambiar.
+   - Banner "¡Descubriste: Arroyo Cristalino!" la primera vez que entra a cada zona, y un contador de zonas descubiertas y secretos encontrados.
+   - Cámara con seguimiento suave y anticipación. La primera vez, paneo de presentación desde el portal hasta la heroína.
+3. Lo que falte para que sea increíble va a ASSETS_PENDIENTES.md, con especificación exacta y prioridad: imprescindible para F1 o mejora posterior. Si quieres cambiar el layout, da las zonas con coordenadas en cuadros y yo regenero el mapa en el taller.
+4. Criterio de calidad verificable:
+   - Playwright captura las mismas 8 postales en el juego (docs/capturas/), ya con luces, partículas y personajes.
+   - Tienen que verse igual o mejor que las del kit. Yo las reviso.
+   - 60 fps en un viewport de tablet con todos los efectos prendidos, con un medidor de fps en modo prueba.
 
 ## Selección de jugador (va en la Fase 1)
 
@@ -243,7 +244,7 @@ Guardado:
    - Dirección de arte del mundo: paleta de luz, atmósfera por zona y las postales.
    - Fases cortas, cada una jugable al terminar:
      - F0, base: Vite, TS, Phaser, Vitest, Playwright, Netlify, cargador del manifest, comprobación de que el kit está y avisa claro si falta.
-     - F1, elegir jugador y explorar un mundo increíble: título, selección de jugador, mapa con todas sus capas, atmósfera completa, tocar para moverse con A*, 8 direcciones, cámara, Thor que sigue, ambiente sonoro. Sin combate todavía. Es la demo que les enseño a mis hijas.
+     - F1, elegir jugador y explorar un mundo increíble: título, selección de jugador, el Bosque GG entero con todas sus capas, atmósfera completa (luces, partículas, nubes, tinte por zona, ambientes), banners de descubrimiento, cofres secretos que se abren (sin botín todavía, solo la animación y una moneda), tocar para moverse con A*, 8 direcciones, cámara, Thor que sigue, guardado en fogatas. Sin combate: los enemigos todavía no están. Es la demo que les enseño a mis hijas.
      - F2, combate: enemigos, ataques y habilidades por clase, números de daño, orbes, XP, rescate de Thor.
      - F3, botín: drops, oro, cofres, rompibles, inventario, equipo, cinturón, guardado completo.
      - F4, el minotauro: arena, fases, avisos, victoria, portal, cofre legendario y Continuará.

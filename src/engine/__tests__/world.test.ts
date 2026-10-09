@@ -84,7 +84,7 @@ describe('kit del juego', () => {
   it('arma personajes en 8 direcciones, mundo, botín, interfaz, audio y manifest; ninguna textura pasa de 4096', () => {
     const files = buildGameKit({ heroes: ['rick'], enemies: ['rata'], thorTiers: [0], quick: true, fichas: { prima: { ...familyFicha('steph', true), name: 'Prima' } } });
     const names = files.map((f) => f.name);
-    for (const n of ['manifest.json', 'personajes/rick_walk.png', 'personajes/retrato_rick.png', 'mascota/thor_walk.png', 'enemigos/minotauro_attack_heavy.png', 'mundo/mundo1_bosque.json', 'mundo/mundo1_tiles.png', 'mundo/objetos/portal_azul_girar.png', 'ui/orbe_vida.png', 'botin/catalogo.json', 'audio/moneda.wav', 'audio/musica_jefe.wav', 'CREDITOS.txt']) expect(names, n).toContain(n);
+    for (const n of ['manifest.json', 'personajes/rick_walk.png', 'personajes/retrato_rick.png', 'mascota/thor_walk.png', 'enemigos/minotauro_attack_heavy.png', 'mundo/mundo1_bosque.json', 'mundo/suelo/mundo1_bosque_0.png', 'mundo/agua.png', 'mundo/objetos/portal_azul_girar.png', 'mundo/objetos/abuelo_roble_idle.png', 'mundo/particulas/luciernaga.png', 'mundo/luz.png', 'mundo/postales/cascada_y_vado.png', 'audio/ambiente_bosque.wav', 'ui/orbe_vida.png', 'botin/catalogo.json', 'audio/moneda.wav', 'audio/musica_jefe.wav', 'CREDITOS.txt']) expect(names, n).toContain(n);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(m.direcciones).toEqual(['down', 'down_left', 'left', 'up_left', 'up', 'up_right', 'right', 'down_right']);
     expect(m.personajes.rick.anims.walk).toMatchObject({ archivo: 'personajes/rick_walk.png', cuadros: 8 });
