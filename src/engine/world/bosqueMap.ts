@@ -416,16 +416,16 @@ export function bosqueMap(seed = 2024): BigMap {
   zone('Claro de la Llegada', L.llegada, 9, 7, { ambiente: 'bosque', luz: '#ffe2b0', particulas: 'polen' , niebla: 0.25});
   zone('Pradera de las Mariposas', L.pradera, 13, 9, { ambiente: 'bosque', luz: '#fff0c0', particulas: 'mariposas,polen' , niebla: 0.15});
   zone('El Abuelo Roble', L.abuelo, 7, 6, { ambiente: 'bosque', luz: '#ffe8b8', particulas: 'hojas,luciernagas' , niebla: 0.3});
-  zone('Bosque Profundo', L.profundo, 14, 13, { ambiente: 'noche', luz: '#7a8ab8', oscuridad: 0.35, particulas: 'luciernagas,esporas,fuegos_fatuos,murcielagos' , niebla: 0.75});
-  zone('Anillo de las Hadas', L.hadas, 4, 4, { ambiente: 'magia', luz: '#a8fff0', oscuridad: 0.3, particulas: 'luciernagas,brillos,fuegos_fatuos' , niebla: 0.55});
-  zone('Claro Escondido', L.escondido, 6, 5, { ambiente: 'magia', luz: '#d8b8ff', oscuridad: 0.2, particulas: 'brillos,luciernagas', secreto: true , niebla: 0.45});
+  zone('Bosque Profundo', L.profundo, 14, 13, { ambiente: 'noche', luz: '#7a8ab8', oscuridad: 0.4, particulas: 'luciernagas,esporas,fuegos_fatuos,murcielagos' , niebla: 0.75});
+  zone('Anillo de las Hadas', L.hadas, 4, 4, { ambiente: 'magia', luz: '#a8fff0', oscuridad: 0.4, particulas: 'luciernagas,brillos,fuegos_fatuos' , niebla: 0.55});
+  zone('Claro Escondido', L.escondido, 6, 5, { ambiente: 'magia', luz: '#d8b8ff', oscuridad: 0.3, particulas: 'brillos,luciernagas', secreto: true , niebla: 0.45});
   zone('Arroyo Cristalino', [55, 42], 6, 20, { ambiente: 'agua', luz: '#d8f0ff', particulas: 'luciernagas' , niebla: 0.5});
   zone('Lago Espejo', L.lago, 12, 8, { ambiente: 'agua', luz: '#d8f0ff', particulas: 'luciernagas,mariposas' , niebla: 0.65});
   zone('Ruinas del Viejo Reino', L.ruinas, 10, 8, { ambiente: 'viento', luz: '#ffe0c0', particulas: 'polvo' , niebla: 0.4});
   zone('Colina de los Goblins', L.goblins, 12, 17, { ambiente: 'viento', luz: '#ffd0a0', particulas: 'humo' , niebla: 0.25});
   zone('Campo de Calabazas', L.calabazas, 9, 7, { ambiente: 'bosque', luz: '#ffd8a0', particulas: 'hojas' , niebla: 0.5});
   zone('Las Alturas', [70, 12], 34, 11, { ambiente: 'viento', luz: '#fff4d8', particulas: 'polen,hojas' , niebla: 0.2});
-  zone('Arena del Minotauro', L.arena, 9, 8, { ambiente: 'cueva', musica: 'jefe', luz: '#ffb08a', oscuridad: 0.15, particulas: 'brasas' , niebla: 0.55});
+  zone('Arena del Minotauro', L.arena, 9, 8, { ambiente: 'cueva', musica: 'jefe', luz: '#ffb08a', oscuridad: 0.4, particulas: 'brasas' , niebla: 0.55});
   const postales: Postal[] = [
     { nombre: 'llegada', x: T(L.llegada[0] - 1), y: T(L.llegada[1] - 1) },
     { nombre: 'abuelo_roble', x: T(L.abuelo[0]), y: T(L.abuelo[1] - 1) },

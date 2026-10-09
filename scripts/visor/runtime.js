@@ -10,7 +10,7 @@
   let D = null; const IMG = {};
   let VW = 640, VH = 360, scale = 1, Wp = 0, Hp = 0;
   const cam = { x: 0, y: 0 };
-  let tour = true, tourIdx = 0, tourT = 0, tourFrom = null, nieblaK = 1, nocheK = 0.55, t = 0;
+  let tour = true, tourIdx = 0, tourT = 0, tourFrom = null, nieblaK = 1, nocheK = 0.15, t = 0; // hora dorada: base 15 %, las zonas oscuras suman hasta 55 %
   const hash = (a, b) => { let h = (a * 374761393 + b * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
   const lerp = (a, b, k) => a + (b - a) * k;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -296,7 +296,7 @@
     fogLayer(IMG['fx/niebla_nubes.png'], 1.15, 7, -2, fogA * 0.55, 2);
 
     // 7. oscuridad con pozos de luz
-    const night = clamp(nocheK * 0.8 + Z.oscuridad * 0.6, 0, 0.92);
+    const night = clamp(nocheK + Z.oscuridad, 0, 0.6);
     dg.globalCompositeOperation = 'source-over';
     dg.clearRect(0, 0, VW, VH);
     dg.fillStyle = `rgba(3,6,18,${night})`; dg.fillRect(0, 0, VW, VH);
