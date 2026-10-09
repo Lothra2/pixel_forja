@@ -177,6 +177,48 @@ export function campfire(): WorldObject {
   return { name: 'fogata', w: 32, h: 32, anchor: [16, 28], solid: [-8, -4, 16, 4], anims: { idle: { frames, fps: 10, loop: true } }, light: { color: '#ffa040', radius: 120, flicker: true, dy: 8 } };
 }
 
+/**
+ * Campamento de fogata (64 x 48): el punto de guardado. Fuego grande con troncos en pirámide, anillo de piedras,
+ * un tronco para sentarse y brasas. Tiene que verse desde lejos al lado de árboles de 116 px.
+ */
+export function campfireCamp(): WorldObject {
+  const frames: Raster[] = [];
+  const rock = stone('#6a6874'), log = wood('#5a3a22'), seat = wood('#7a5232');
+  for (let f = 0; f < 6; f++) {
+    const c = canvas(64, 48);
+    // tronco para sentarse (izquierda) y tocón con una olla (derecha)
+    c.poly([[1.5, 18.6], [7.5, 17.2], [8.4, 19.6], [2.4, 21]], seat);
+    c.ellipse([1.9, 19.8], 0.9, 1.2, wood('#c09460'), { bias: 1 });
+    c.ellipse([28.6, 19], 2.4, 1.2, wood('#c09460'), { bias: 1 });
+    c.poly([[26.2, 19], [31, 19], [31, 21.4], [26.2, 21.4]], seat);
+    c.poly([[27.2, 17.8], [30, 17.8], [30.4, 15.6], [26.8, 15.6]], metalMat('#3a3a44'));
+    // anillo de piedras: las de atrás primero
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2 + 0.2;
+      if (Math.sin(a) < 0) c.ellipse([16 + Math.cos(a) * 8.4, 19 + Math.sin(a) * 3], 1.5, 1.05, rock, { bias: 1 });
+    }
+    // brasas en el centro
+    c.ellipse([16, 19.2], 6, 1.9, glowMat('#c83a12'), { tone: 2 });
+    for (const [x, y] of [[13.2, 19.4], [18.6, 19.1], [15.6, 20.1]] as P[]) c.dot([x, y], glowMat('#ffb040'), { tone: 4 }, (f + Math.round(x)) % 2 === 0);
+    // troncos en pirámide
+    for (const [x0, x1] of [[10.4, 15.4], [21.6, 16.6], [12.8, 17.2], [19.4, 15]] as [number, number][]) c.line([x0, 20.2], [x1, 14.6], 1.3, log);
+    // fuego: tres lenguas que respiran desfasadas
+    const H = [11.5, 13, 12, 13.6, 11.8, 12.8][f];
+    const t = (k: number) => Math.sin((f / 6) * Math.PI * 2 + k);
+    c.poly([[10.6, 19.6], [11.6 + t(0) * 0.6, 19 - H * 0.55], [13.8, 19 - H * 0.42], [15.4 + t(1) * 0.8, 19 - H], [17.6, 19 - H * 0.5], [19.6 + t(2) * 0.6, 19 - H * 0.72], [20.8, 19 - H * 0.38], [21.4, 19.6]], glowMat('#ff7a1a'), { tone: 3 });
+    c.poly([[12.6, 19.6], [14.2, 19 - H * 0.42], [16 + t(1) * 0.5, 19 - H * 0.7], [18.2, 19 - H * 0.36], [19.4, 19.6]], glowMat('#ffb040'), { tone: 4 });
+    c.poly([[14.4, 19.6], [15.6, 19 - H * 0.3], [16.4 + t(3) * 0.3, 19 - H * 0.44], [17.6, 19.6]], glowMat('#fff0b0'), { tone: 4 });
+    // anillo de piedras: las de adelante tapan la base del fuego
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2 + 0.2;
+      if (Math.sin(a) >= 0) c.ellipse([16 + Math.cos(a) * 8.4, 19 + Math.sin(a) * 3], 1.6, 1.15, rock, { bias: 1 });
+    }
+    const sparks: P[] = [[14 + f * 0.7, 6 - (f % 3)], [18.5 - f * 0.4, 4 + (f % 2) * 2]].filter((_, i) => (f + i) % 2 === 0) as P[];
+    frames.push(c.render({ sparkles: sparks, shadow: [16, 21, 15, 2.4] }));
+  }
+  return { name: 'campamento_fogata', w: 64, h: 48, anchor: [32, 40], solid: [-14, -6, 28, 8], anims: { idle: { frames, fps: 10, loop: true } }, light: { color: '#ffa040', radius: 150, flicker: true, dy: 10 } };
+}
+
 export function torch(): WorldObject {
   const frames: Raster[] = [];
   for (let f = 0; f < 4; f++) {
@@ -311,7 +353,7 @@ export function telegraph(): WorldObject {
 export function forestObjects(): WorldObject[] {
   return [
     oakTree(0), oakTree(1), oakTree(2), pineTree(0), pineTree(1), bush(false), bush(true), rock(false), rock(true), stump(), logPile(), mushrooms(), tallGrass(),
-    fence('h'), fence('v'), fence('post'), signpost(), campfire(), torch(), breakable('caja'), breakable('barril'), breakable('vasija'), cave(), standingStone(),
+    fence('h'), fence('v'), fence('post'), signpost(), campfire(), campfireCamp(), torch(), breakable('caja'), breakable('barril'), breakable('vasija'), cave(), standingStone(),
     portal('azul'), portal('rojo'), telegraph(),
   ];
 }

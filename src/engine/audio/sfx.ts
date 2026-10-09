@@ -93,7 +93,9 @@ const NOTE = (n: string): number => {
 export type SfxName =
   | 'espadazo' | 'golpe' | 'critico' | 'enemigo_dolor' | 'enemigo_muere' | 'jefe_rugido' | 'jefe_pisoton' | 'moneda' | 'oro_mucho'
   | 'pocion' | 'curar' | 'cofre_abrir' | 'romper' | 'portal' | 'subir_nivel' | 'paso' | 'ladrido' | 'aullido' | 'mordida'
-  | 'recoger' | 'legendario' | 'click' | 'abrir_inventario' | 'error' | 'jugador_dolor' | 'magia';
+  | 'recoger' | 'legendario' | 'click' | 'abrir_inventario' | 'error' | 'jugador_dolor' | 'magia'
+  | 'descubrir' | 'secreto' | 'elegir' | 'guardado' | 'arco' | 'esquiva' | 'bloqueo' | 'thor_rescate'
+  | `paso_${'pasto' | 'tierra' | 'piedra' | 'madera' | 'agua'}_${0 | 1 | 2}`;
 
 /** Efectos de sonido. */
 export const SFX: Record<SfxName, () => Float32Array> = {
@@ -123,7 +125,42 @@ export const SFX: Record<SfxName, () => Float32Array> = {
   error: () => mix([{ wave: 'square', f0: 180, dur: 0.12, vol: 0.3 }, { wave: 'square', f0: 140, dur: 0.18, at: 0.12, vol: 0.3 }]),
   jugador_dolor: () => mix([{ wave: 'square', f0: 330, f1: 180, dur: 0.18, vol: 0.35, duty: 0.4 }, { wave: 'noise', f0: 2500, f1: 600, dur: 0.1, vol: 0.2 }]),
   magia: () => mix([{ wave: 'sine', f0: 600, f1: 1400, dur: 0.35, vol: 0.35, vib: [12, 1] }, { wave: 'triangle', f0: 1200, f1: 2400, dur: 0.3, at: 0.05, vol: 0.15 }]),
+  // descubrir una zona: campanitas que suben (1.5 s)
+  descubrir: () => mix([...['G5', 'C6', 'E6', 'G6', 'C7'].map((n, i) => ({ wave: 'triangle' as Wave, f0: NOTE(n), dur: 0.7, at: i * 0.13, vol: 0.28, vib: [5, 0.12] as [number, number] })), ...['G6', 'C7'].map((n, i) => ({ wave: 'sine' as Wave, f0: NOTE(n), dur: 0.8, at: 0.65 + i * 0.12, vol: 0.12 }))]),
+  // secreto: más mágico, acorde que se abre y brillo al final (2 s)
+  secreto: () => mix([
+    ...['A4', 'C5', 'E5', 'A5'].map((n, i) => ({ wave: 'sine' as Wave, f0: NOTE(n), dur: 1.6, at: i * 0.1, a: 0.15, vol: 0.18, vib: [4, 0.3] as [number, number] })),
+    ...['E6', 'A6', 'C7', 'E7', 'A7'].map((n, i) => ({ wave: 'triangle' as Wave, f0: NOTE(n), dur: 0.35, at: 0.9 + i * 0.09, vol: 0.14 })),
+    { wave: 'noise', f0: 10000, dur: 0.6, at: 1.3, a: 0.05, vol: 0.05, lp: 0.7 },
+  ]),
+  // elegir jugadora: alegre y corto (0.6 s)
+  elegir: () => mix(['C5', 'G5', 'C6'].map((n, i) => ({ wave: 'square' as Wave, f0: NOTE(n), dur: i === 2 ? 0.32 : 0.1, at: i * 0.09, vol: 0.24, duty: 0.4 })).concat([{ wave: 'triangle' as Wave, f0: NOTE('E6'), dur: 0.3, at: 0.2, vol: 0.18, duty: 0.5 }])),
+  // guardado en la fogata: suave, dos notas cálidas (0.8 s)
+  guardado: () => mix([{ wave: 'triangle', f0: NOTE('E5'), dur: 0.5, a: 0.03, vol: 0.3, vib: [5, 0.15] }, { wave: 'triangle', f0: NOTE('A5'), dur: 0.6, at: 0.18, a: 0.03, vol: 0.28, vib: [5, 0.15] }, { wave: 'sine', f0: NOTE('A6'), dur: 0.4, at: 0.3, vol: 0.08 }]),
+  // arco: cuerda que suelta y la flecha que silba (0.3 s)
+  arco: () => mix([{ wave: 'triangle', f0: 220, f1: 140, dur: 0.12, vol: 0.4, vib: [40, 1.5] }, { wave: 'noise', f0: 6000, f1: 2500, dur: 0.22, at: 0.04, vol: 0.2, lp: 0.5 }]),
+  // esquiva: whoosh (0.3 s)
+  esquiva: () => mix([{ wave: 'noise', f0: 1500, f1: 5000, dur: 0.14, a: 0.06, vol: 0.35, lp: 0.35 }, { wave: 'noise', f0: 5000, f1: 1200, dur: 0.16, at: 0.12, vol: 0.25, lp: 0.35 }]),
+  // bloqueo: clang de escudo (0.4 s)
+  bloqueo: () => mix([{ wave: 'square', f0: 880, f1: 860, dur: 0.35, vol: 0.22, vib: [30, 0.3], duty: 0.3 }, { wave: 'square', f0: 1320, f1: 1300, dur: 0.3, vol: 0.12, duty: 0.3 }, { wave: 'noise', f0: 7000, f1: 2000, dur: 0.08, vol: 0.4 }]),
+  // Thor te salvó: aullido corto y alegre que termina en ladrido (1.2 s)
+  thor_rescate: () => mix([{ wave: 'triangle', f0: 420, f1: 700, dur: 0.75, a: 0.12, vol: 0.42, vib: [6, 0.5] }, { wave: 'sine', f0: 840, f1: 1400, dur: 0.75, a: 0.15, vol: 0.1 }, { wave: 'saw', f0: 560, f1: 330, dur: 0.12, at: 0.85, vol: 0.4, lp: 0.35 }, { wave: 'saw', f0: 600, f1: 360, dur: 0.12, at: 1.03, vol: 0.38, lp: 0.35 }]),
+  ...pasos(),
 };
+
+/** Pasos por superficie, 3 variantes cada uno (tono y largo un poco distintos). */
+function pasos() {
+  const out: Record<string, () => Float32Array> = {};
+  const recipe: Record<string, (k: number) => Voice[]> = {
+    pasto: (k) => [{ wave: 'noise', f0: 2600 + k * 300, f1: 900, dur: 0.11 + k * 0.01, a: 0.02, vol: 0.16, lp: 0.45 }],
+    tierra: (k) => [{ wave: 'noise', f0: 700 + k * 90, f1: 250, dur: 0.08, vol: 0.22, lp: 0.25 }, { wave: 'sine', f0: 110 - k * 8, f1: 70, dur: 0.06, vol: 0.18 }],
+    piedra: (k) => [{ wave: 'noise', f0: 3800 + k * 400, f1: 1500, dur: 0.05, vol: 0.22, lp: 0.6 }, { wave: 'square', f0: 260 + k * 30, f1: 180, dur: 0.04, vol: 0.1, duty: 0.2 }],
+    madera: (k) => [{ wave: 'triangle', f0: 190 + k * 18, f1: 140, dur: 0.1, vol: 0.35 }, { wave: 'noise', f0: 1600, f1: 600, dur: 0.05, vol: 0.12, lp: 0.4 }],
+    agua: (k) => [{ wave: 'noise', f0: 1800 + k * 200, f1: 600, dur: 0.14, a: 0.01, vol: 0.2, lp: 0.35 }, { wave: 'sine', f0: 500 + k * 80, f1: 1100 + k * 100, dur: 0.06, at: 0.04, vol: 0.12 }],
+  };
+  for (const [sup, f] of Object.entries(recipe)) for (const k of [0, 1, 2]) out[`paso_${sup}_${k}`] = () => mix(f(k));
+  return out as Record<`paso_${'pasto' | 'tierra' | 'piedra' | 'madera' | 'agua'}_${0 | 1 | 2}`, () => Float32Array>;
+}
 
 export const SFX_NAMES = Object.keys(SFX) as SfxName[];
 

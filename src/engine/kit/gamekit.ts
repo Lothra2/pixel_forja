@@ -17,6 +17,7 @@ import { creatures, fogTexture } from '../world/atmosphere';
 import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
 import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
 import { bitmapFonts } from '../ui/fonts';
+import { signIcons, hudIcons, rotateTablet } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
 
@@ -145,7 +146,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const tiers = opts.thorTiers ?? [0, 1, 2, 3, 4, 5];
   for (const t of tiers) {
     const f = thorFicha(t);
-    const anims = t === 0 ? (opts.quick ? ['idle', 'walk', 'bite'] : PET_RPG_ANIMS) : ['idle', 'walk', 'run', 'bite', 'howl', 'hurt'];
+    // todas las armaduras con las mismas animaciones que Thor sin armadura (el juego no tiene que saber cuál lleva)
+    const anims = opts.quick ? (t === 0 ? ['idle', 'walk', 'bite'] : ['idle', 'walk']) : PET_RPG_ANIMS;
     const id = t ? `thor_armadura${t}` : 'thor';
     chars[id] = exportChar('mascota', id, f, 48, anims, { tipo: 'mascota', nombre: t ? `Thor (${PET_ARMOR[t - 1].name.es})` : 'Thor' }, files, log);
   }
@@ -256,11 +258,14 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
 
   // ---------- interfaz ----------
   const ui: Record<string, unknown> = {};
-  for (const s of hudSprites()) {
+  for (const s of [...hudSprites(), ...hudIcons(), rotateTablet()]) {
     const name = `ui/${s.name}.png`;
     files.push(png(name, strip(s.frames)));
     ui[s.name] = { archivo: name, w: s.frames[0].w, h: s.frames[0].h, cuadros: s.frames.length, ...(s.slice ? { nueve: s.slice } : {}) };
   }
+  const carteles: Record<string, string> = {};
+  for (const s of signIcons()) { const n = `ui/carteles/${s.name}.png`; files.push(png(n, s.frames[0])); carteles[s.name] = n; }
+  ui.iconos_cartel = carteles;
   const dg = digitSheet();
   files.push(png('ui/numeros.png', dg.png));
   ui.numeros = { archivo: 'ui/numeros.png', w: dg.cw, h: dg.ch, caracteres: DIGITS, filas: dg.colors };

@@ -44,7 +44,8 @@ const spriteIndex = new Map<string, number>();
 for (const o of m.objects) {
   if (!used.has(o.name)) continue;
   const anims: Record<string, { f: string; n: number; fps: number; loop: boolean }> = {};
-  for (const [an, a] of Object.entries(o.anims)) { const f = `o/${o.name}__${an}.png`; png(f, strip(a.frames)); anims[an] = { f, n: a.frames.length, fps: a.fps, loop: a.loop }; }
+  // tronco y copa por separado son para cuando la heroína pasa detrás: el visor no tiene heroína
+  for (const [an, a] of Object.entries(o.anims)) { if (an === 'copa' || an.startsWith('tronco')) continue; const f = `o/${o.name}__${an}.png`; png(f, strip(a.frames)); anims[an] = { f, n: a.frames.length, fps: a.fps, loop: a.loop }; }
   spriteIndex.set(o.name, sprites.length);
   sprites.push({ name: o.name, w: o.w, h: o.h, ax: o.anchor[0], ay: o.anchor[1], ...(o.layer ? { layer: o.layer } : {}), ...(o.light ? { light: o.light } : {}), anims });
 }

@@ -354,8 +354,9 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
     if (e <= 1) v = 0.6; else if (e <= 3) v -= 1.1; else if (e <= 5) v -= 0.4;
     // huellas: dos surcos suaves dentro del camino
     let c = DIRT[Math.max(0, Math.min(DIRT.length - 1, Math.round(v)))];
-    if (hash(x >> 1, y >> 1, S + 37) > 0.985) c = '#a8a29a';
-    else if (hash(x, y, S + 38) > 0.993) c = '#d8c8a8';
+    // piedritas: pocas y de poco contraste (en tablet, muchas y claras se ven como estática)
+    if (hash(x >> 1, y >> 1, S + 37) > 0.9925) c = '#7b7066';
+    else if (hash(x, y, S + 38) > 0.9965) c = '#93826d';
     set(i, c);
   }
   // pasto que invade el borde del camino

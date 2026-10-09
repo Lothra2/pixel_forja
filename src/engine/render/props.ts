@@ -133,11 +133,22 @@ function drawWeapon(part: Part, kind: PropKind, at: [number, number], angle: num
       for (let k = 0; k < pts.length - 1; k++) stroke(part, pts[k], pts[k + 1], t, () => 'p_bone', LIGHT);
       part.set(Math.round(tip[0]), Math.round(tip[1]), 'p_iron');
     }
-  } else if (kind === 'mace' || kind === 'club') {
-    const len = n(kind === 'club' ? 9 : 8);
-    stroke(part, dir(-1), dir(len), t, () => (kind === 'club' ? 'p_wood' : 'p_iron'));
+  } else if (kind === 'club') {
+    // garrote de tronco: mango fino que engorda hasta una cabeza nudosa
+    const len = n(12);
+    stroke(part, dir(-1), dir(len * 0.4), t, () => 'p_wood', SHADOW);
+    stroke(part, dir(len * 0.35), dir(len * 0.75), t + 1, () => 'p_wood');
+    const c = dir(len);
+    blob(part, dir(len * 0.72), n(3.5), 'p_wood');
+    blob(part, c, n(5), 'p_wood');
+    blob(part, side(c, -n(1)), n(2.5), 'p_wood', LIGHT);
+    // nudos oscuros
+    for (const [a, d] of [[len * 0.8, n(1.5)], [len + n(1), -n(1.5)]] as const) { const k = side(dir(a), d); part.set(Math.round(k[0]), Math.round(k[1]), 'p_wood', SHADOW); }
+  } else if (kind === 'mace') {
+    const len = n(8);
+    stroke(part, dir(-1), dir(len), t, () => 'p_iron');
     const c = dir(len + n(1.5));
-    blob(part, c, n(kind === 'club' ? 4 : 4), kind === 'club' ? 'p_wood' : 'p_steel');
+    blob(part, c, n(4), 'p_steel');
     if (kind === 'mace') for (const [dx, dy] of [[0, -1], [0, 1], [1, 0], [-1, 0]]) part.set(Math.round(c[0] + dx * n(2.5)), Math.round(c[1] + dy * n(2.5)), 'p_iron');
   } else if (kind === 'hammer') {
     const len = n(11);

@@ -267,6 +267,35 @@ export interface Flora { name: string; w: number; h: number; anchor: [number, nu
 const SWAY = [0, 0.8, 1.4, 1.6, 1.2, 0.5, -0.3, -0.7, -0.4];
 const swayFrames = (amp: number) => SWAY.map((v) => v * amp);
 
+/** Ramas gruesas que suben desde la punta del tronco hacia adentro de la copa (solo se ven si la copa se aclara). */
+function innerBranches(r: Raster, x: number, y: number, len: number, w: number, seed: number) {
+  drawBranches(r, [
+    { x, y, a: -1.57, len: len * 1.05, w, depth: 1 },
+    { x: x - w * 0.3, y: y + 1, a: -2.3, len, w: w * 0.75, depth: 1 },
+    { x: x + w * 0.3, y: y + 1, a: -0.85, len, w: w * 0.75, depth: 1 },
+  ], RAMPS.corteza, seed + 5, 0, r.h);
+}
+
+/** La copa sola: los pixeles del árbol completo que no son del tronco solo. Tronco abajo + copa arriba = el árbol. */
+function crownOf(full: Raster, trunk: Raster): Raster {
+  const out = createRaster(full.w, full.h);
+  for (let i = 0; i < full.data.length; i += 4) {
+    const same = full.data[i] === trunk.data[i] && full.data[i + 1] === trunk.data[i + 1] && full.data[i + 2] === trunk.data[i + 2] && full.data[i + 3] === trunk.data[i + 3];
+    if (!same && full.data[i + 3]) out.data.set(full.data.subarray(i, i + 4), i);
+  }
+  return out;
+}
+
+/**
+ * Anims `tronco` y `copa` de un árbol (mismo tamaño, apoyo y cuadros que idle): el juego dibuja el tronco ordenado por
+ * profundidad y la copa encima, y cuando la heroína pasa detrás baja solo la copa a alfa 0.45.
+ */
+function splitAnims(full: Raster[], trunkRaw: Raster[], fps: number, trunkName = 'tronco') {
+  // las ramas de adentro nunca se salen de la silueta del árbol
+  const trunk = trunkRaw.map((t, k) => { const o = createRaster(t.w, t.h); for (let i = 3; i < t.data.length; i += 4) if (full[k].data[i]) o.data.set(t.data.subarray(i - 3, i + 1), i - 3); return o; });
+  return { [trunkName]: { frames: trunk, fps, loop: true }, copa: { frames: full.map((f, i) => crownOf(f, trunk[i])), fps, loop: true } };
+}
+
 function oakPuffs(cx: number, cy: number, s: number, seed: number): Puff[] {
   const p: Puff[] = [
     { x: cx, y: cy - 6 * s, r: 15 * s },
@@ -283,14 +312,16 @@ export function oakV3(variant = 0, big = false, autumn = false): Flora {
   const W = Math.round(96 * (big ? 1.32 : 1)), H = Math.round(116 * (big ? 1.32 : 1));
   const cx = W / 2, base = H - 6, seed = 400 + variant * 37 + (big ? 900 : 0);
   const puffs = oakPuffs(cx, H * 0.4, s, seed);
-  const frames = swayFrames(big ? 1.6 : 1.3).map((sw) => {
+  const paint = (sw: number, crown: boolean) => {
     const r = createRaster(W, H);
     groundShadow(r, cx + 3, base - 1, 22 * s, 6 * s);
     drawTrunk(r, cx, base, Math.round(H * 0.6), 12 * s, 9 * s, RAMPS.corteza, seed, 0, 3);
-    drawCanopy(r, puffs, autumn ? RAMPS.roble_otono : RAMPS.roble, seed, sw, big ? 7 : 6);
+    if (crown) drawCanopy(r, puffs, autumn ? RAMPS.roble_otono : RAMPS.roble, seed, sw, big ? 7 : 6);
+    else innerBranches(r, cx, Math.round(H * 0.6) + 2, 16 * s, 7 * s, seed);
     return r;
-  });
-  return { name: `roble${big ? '_grande' : ''}${autumn ? '_otono' : ''}_${variant}`, w: W, h: H, anchor: [Math.round(cx), base], solid: [-Math.round(7 * s), -6, Math.round(14 * s), 6], anims: { idle: { frames, fps: 5, loop: true } } };
+  };
+  const sws = swayFrames(big ? 1.6 : 1.3), frames = sws.map((v) => paint(v, true));
+  return { name: `roble${big ? '_grande' : ''}${autumn ? '_otono' : ''}_${variant}`, w: W, h: H, anchor: [Math.round(cx), base], solid: [-Math.round(7 * s), -6, Math.round(14 * s), 6], anims: { idle: { frames, fps: 5, loop: true }, ...splitAnims(frames, sws.map((v) => paint(v, false)), 5) } };
 }
 
 /** Pisos de agujas: triángulos con el borde de abajo en flecos que cuelgan, luz a la izquierda, sombra del piso de arriba. */
@@ -342,14 +373,16 @@ function drawPineTiers(r: Raster, cx: number, top: number, tiers: number, tierH:
 export function pineV3(variant = 0): Flora {
   const W = 64, H = 124, cx = 32, base = H - 5, seed = 700 + variant * 53;
   const tiers = 5 + (variant % 2);
-  const frames = swayFrames(1.1).map((sw) => {
+  const paint = (sw: number, crown: boolean) => {
     const r = createRaster(W, H);
     groundShadow(r, cx + 2, base - 1, 16, 4.5);
     drawTrunk(r, cx, base, base - 24, 7, 5, RAMPS.corteza, seed, 0, 2);
-    drawPineTiers(r, cx, 4, tiers, variant % 2 ? 24 : 27, 6, variant === 2 ? 4.4 : 4.9, RAMPS.pino, seed, sw, base);
+    if (!crown) drawTrunk(r, cx, base - 20, 14, 5, 2, RAMPS.corteza, seed, 0, 0);
+    if (crown) drawPineTiers(r, cx, 4, tiers, variant % 2 ? 24 : 27, 6, variant === 2 ? 4.4 : 4.9, RAMPS.pino, seed, sw, base);
     return r;
-  });
-  return { name: `pino_${variant}`, w: W, h: H, anchor: [cx, base], solid: [-5, -5, 10, 5], anims: { idle: { frames, fps: 5, loop: true } } };
+  };
+  const sws = swayFrames(1.1), frames = sws.map((v) => paint(v, true));
+  return { name: `pino_${variant}`, w: W, h: H, anchor: [cx, base], solid: [-5, -5, 10, 5], anims: { idle: { frames, fps: 5, loop: true }, ...splitAnims(frames, sws.map((v) => paint(v, false)), 5) } };
 }
 
 /**
@@ -360,10 +393,10 @@ export function hauntedTree(variant = 0): Flora {
   const W = 112, H = 128, cx = 56, base = H - 6, seed = 1300 + variant * 71;
   const glow = variant % 2 ? '#7affc8' : '#ffd25a';
   const bend = variant % 2 ? -5 : 5;
-  const make = (sw: number, open: number) => {
+  const make = (sw: number, open: number, crown = true) => {
     const r = createRaster(W, H);
     groundShadow(r, cx + 3, base - 1, 28, 7);
-    drawBranches(r, [
+    if (crown) drawBranches(r, [
       { x: cx + bend - 10, y: 50, a: -2.5, len: 26, w: 8, depth: 3 },
       { x: cx + bend + 10, y: 48, a: -0.6, len: 27, w: 8, depth: 3 },
       { x: cx + bend, y: 42, a: -1.7, len: 20, w: 6, depth: 2 },
@@ -373,16 +406,23 @@ export function hauntedTree(variant = 0): Flora {
     // nudos en la corteza
     for (const [dx, dy] of [[-8, 92], [7, 102], [-3, 58]]) { setPx(r, cx + bend * 0.6 + dx, dy, hex(RAMPS.corteza_muerta[0])); setPx(r, cx + bend * 0.6 + dx + 1, dy, hex(RAMPS.corteza_muerta[1])); setPx(r, cx + bend * 0.6 + dx, dy - 1, hex(RAMPS.corteza_muerta[4])); }
     treeFace(r, Math.round(cx + bend * 0.85), 74, open, glow);
-    hangingMoss(r, [[cx - 30 + bend, 40, 20], [cx - 18 + bend, 46, 14], [cx + 22 + bend, 36, 24], [cx + 32 + bend, 32, 16], [cx + 8 + bend, 44, 11], [cx - 6 + bend, 48, 9]], sw * 2.2, seed);
+    if (crown) hangingMoss(r, [[cx - 30 + bend, 40, 20], [cx - 18 + bend, 46, 14], [cx + 22 + bend, 36, 24], [cx + 32 + bend, 32, 16], [cx + 8 + bend, 44, 11], [cx - 6 + bend, 48, 9]], sw * 2.2, seed);
     return r;
   };
   const sw = swayFrames(1.8);
+  const dormido = sw.map((v) => make(v, 0)), despierto = sw.map((v) => make(v, 1));
+  // la cara va en el tronco: un tronco por estado y una sola copa (ramas y musgo), sincronizados por cuadro
+  const { copa } = splitAnims(dormido, sw.map((v) => make(v, 0, false)), 5);
   return {
     name: `arbol_hechizado_${variant}`, w: W, h: H, anchor: [cx, base], solid: [-14, -8, 28, 8],
     anims: {
-      dormido: { frames: sw.map((v) => make(v, 0)), fps: 5, loop: true },
-      despierto: { frames: sw.map((v) => make(v, 1)), fps: 5, loop: true },
+      dormido: { frames: dormido, fps: 5, loop: true },
+      despierto: { frames: despierto, fps: 5, loop: true },
       parpadeo: { frames: [1, 0.5, 0, 0.5, 1].map((o) => make(0, o)), fps: 12, loop: false },
+      copa,
+      tronco_dormido: { frames: sw.map((v) => make(v, 0, false)), fps: 5, loop: true },
+      tronco_despierto: { frames: sw.map((v) => make(v, 1, false)), fps: 5, loop: true },
+      tronco_parpadeo: { frames: [1, 0.5, 0, 0.5, 1].map((o) => make(0, o, false)), fps: 12, loop: false },
     },
   };
 }
@@ -390,24 +430,26 @@ export function hauntedTree(variant = 0): Flora {
 /** Árbol seco (sin cara): ramas negras retorcidas, para los bordes sombríos. */
 export function deadTree(variant = 0): Flora {
   const W = 80, H = 112, cx = 40, base = H - 5, seed = 1700 + variant * 29;
-  const frames = swayFrames(1.2).map((sw) => {
+  const paint = (sw: number, crown: boolean) => {
     const r = createRaster(W, H);
     groundShadow(r, cx + 2, base - 1, 16, 4.5);
-    drawBranches(r, [{ x: cx, y: 46, a: -2.1, len: 20, w: 4, depth: 3 }, { x: cx, y: 44, a: -1.0, len: 22, w: 4, depth: 3 }, { x: cx + 1, y: 40, a: -1.6, len: 14, w: 3, depth: 2 }], RAMPS.corteza_muerta, seed, sw, base);
+    if (crown) drawBranches(r, [{ x: cx, y: 46, a: -2.1, len: 20, w: 4, depth: 3 }, { x: cx, y: 44, a: -1.0, len: 22, w: 4, depth: 3 }, { x: cx + 1, y: 40, a: -1.6, len: 14, w: 3, depth: 2 }], RAMPS.corteza_muerta, seed, sw, base);
     drawTrunk(r, cx, base, 42, 9, 5, RAMPS.corteza_muerta, seed, variant ? -4 : 4, 3);
     return r;
-  });
-  return { name: `arbol_seco_${variant}`, w: W, h: H, anchor: [cx, base], solid: [-5, -5, 10, 5], anims: { idle: { frames, fps: 5, loop: true } } };
+  };
+  const sws = swayFrames(1.2), frames = sws.map((v) => paint(v, true));
+  return { name: `arbol_seco_${variant}`, w: W, h: H, anchor: [cx, base], solid: [-5, -5, 10, 5], anims: { idle: { frames, fps: 5, loop: true }, ...splitAnims(frames, sws.map((v) => paint(v, false)), 5) } };
 }
 
 /** Sauce llorón sombrío: copa con cortinas de hojas que se mecen. */
 export function willowV3(): Flora {
   const W = 104, H = 124, cx = 52, base = H - 5, seed = 2100;
   const R = RAMPS.sauce.map(hex);
-  const frames = swayFrames(1.5).map((sw) => {
+  const paint = (sw: number, crown: boolean) => {
     const r = createRaster(W, H);
     groundShadow(r, cx + 2, base - 1, 26, 6);
     drawTrunk(r, cx, base, 52, 11, 7, RAMPS.corteza, seed, 2, 3);
+    if (!crown) { innerBranches(r, cx + 1, 54, 22, 6, seed); return r; }
     drawCanopy(r, [{ x: cx, y: 36, r: 24 }, { x: cx - 22, y: 44, r: 16 }, { x: cx + 22, y: 42, r: 17 }, { x: cx, y: 18, r: 15 }], RAMPS.sauce, seed, sw, 5.5);
     // cortinas
     for (let k = 0; k < 22; k++) {
@@ -421,8 +463,9 @@ export function willowV3(): Flora {
       setPx(r, Math.round(x0 + sw * 1.6), Math.round(y0 + len), R[1]);
     }
     return r;
-  });
-  return { name: 'sauce_v3', w: W, h: H, anchor: [cx, base], solid: [-7, -6, 14, 6], anims: { idle: { frames, fps: 5, loop: true } } };
+  };
+  const sws = swayFrames(1.5), frames = sws.map((v) => paint(v, true));
+  return { name: 'sauce_v3', w: W, h: H, anchor: [cx, base], solid: [-7, -6, 14, 6], anims: { idle: { frames, fps: 5, loop: true }, ...splitAnims(frames, sws.map((v) => paint(v, false)), 5) } };
 }
 
 /** Arbusto en nubes (con moras o flores opcionales). */
@@ -453,11 +496,12 @@ export function floraV3(): Flora[] {
 export function grandOakV3(): Flora {
   const W = 240, H = 228, cx = 120, base = H - 8, seed = 4242;
   const puffs = oakPuffs(cx, 72, 3.3, seed);
-  const frames = swayFrames(1.2).map((sw) => {
+  const paint = (sw: number, crown: boolean) => {
     const r = createRaster(W, H);
     groundShadow(r, cx + 6, base - 2, 70, 15);
     drawTrunk(r, cx, base, 118, 54, 34, RAMPS.corteza, seed, 0, 8);
-    drawCanopy(r, puffs, RAMPS.roble, seed, sw * 0.6, 9);
+    if (crown) drawCanopy(r, puffs, RAMPS.roble, seed, sw * 0.6, 9);
+    else innerBranches(r, cx, 122, 48, 22, seed);
     // cara: ojos cerrados contentos, mejillas y sonrisa (talladas, con borde claro para que se lean)
     const dark: RGB = [20, 13, 10], rim: RGB = [140, 112, 78];
     for (const s of [-1, 1]) {
@@ -467,8 +511,9 @@ export function grandOakV3(): Flora {
     }
     for (let dx = -9; dx <= 9; dx++) { const y = 182 + Math.round(Math.sqrt(Math.max(0, 81 - dx * dx)) * 0.5); setPx(r, cx + dx, y, dark); setPx(r, cx + dx, y + 1, dark); setPx(r, cx + dx, y - 1, rim); }
     return r;
-  });
-  return { name: 'abuelo_roble_v3', w: W, h: H, anchor: [cx, base], solid: [-28, -16, 56, 16], anims: { idle: { frames, fps: 4, loop: true } } };
+  };
+  const sws = swayFrames(1.2), frames = sws.map((v) => paint(v, true));
+  return { name: 'abuelo_roble_v3', w: W, h: H, anchor: [cx, base], solid: [-28, -16, 56, 16], anims: { idle: { frames, fps: 4, loop: true }, ...splitAnims(frames, sws.map((v) => paint(v, false)), 4) } };
 }
 
 /**

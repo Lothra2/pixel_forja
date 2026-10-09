@@ -101,7 +101,7 @@ export function bosqueMap(seed = 2024): BigMap {
   };
   const checkpoint = (id: string, nombre: string, tx: number, ty: number) => {
     const [x, y] = near(tx, ty);
-    place('fogata', T(x), y * TILE + 28);
+    place('campamento_fogata', T(x), y * TILE + 28);
     entities.push({ tipo: 'punto_guardado', x: T(x), y: T(y + 1), props: { id, nombre } });
     reserve(x, y, 2);
   };
@@ -435,6 +435,11 @@ export function bosqueMap(seed = 2024): BigMap {
     { nombre: 'anillo_de_hadas', x: T(L.hadas[0] + 2), y: T(L.hadas[1]) },
     { nombre: 'arena_del_minotauro', x: T(L.arena[0]), y: T(L.arena[1] - 1) },
     { nombre: 'colina_goblin', x: T(L.goblins[0]), y: T(L.goblins[1]) },
+    { nombre: 'bosque_profundo', x: T(L.profundo[0]), y: T(L.profundo[1]) },
+    { nombre: 'claro_escondido', x: T(L.escondido[0]), y: T(L.escondido[1]) },
+    { nombre: 'lago_espejo', x: T(L.lago[0]), y: T(L.lago[1] - 1) },
+    { nombre: 'campo_calabazas', x: T(L.calabazas[0]), y: T(L.calabazas[1]) },
+    { nombre: 'las_alturas', x: T(L.alturas[0]), y: T(L.alturas[1]) },
   ];
   return { name: 'mundo1_bosque', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects };
 }

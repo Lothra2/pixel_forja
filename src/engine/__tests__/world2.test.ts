@@ -123,7 +123,7 @@ describe('mundo v3: flora animada y criaturas', () => {
     const oak = fl.find((f) => f.name === 'roble_0')!.anims.idle.frames;
     expect(Buffer.from(oak[0].data).equals(Buffer.from(oak[3].data))).toBe(false);
     const ht = fl.find((f) => f.name === 'arbol_hechizado_0')!;
-    expect(Object.keys(ht.anims).sort()).toEqual(['despierto', 'dormido', 'parpadeo']);
+    expect(Object.keys(ht.anims).sort()).toEqual(['copa', 'despierto', 'dormido', 'parpadeo', 'tronco_despierto', 'tronco_dormido', 'tronco_parpadeo']);
     expect(Buffer.from(ht.anims.dormido.frames[0].data).equals(Buffer.from(ht.anims.despierto.frames[0].data))).toBe(false);
     // la corrección sombría oscurece pero deja intacto lo que brilla
     const r = { w: 2, h: 1, data: new Uint8ClampedArray([120, 160, 90, 255, 255, 240, 60, 255]) } as never;
@@ -155,4 +155,64 @@ describe('fuentes bitmap', () => {
     const alphas = new Set<number>(); for (let i = 3; i < ui.png.data.length; i += 4) alphas.add(ui.png.data[i]);
     expect([...alphas].sort((a, b) => a - b)).toEqual([0, 255]);
   });
+});
+
+describe('taller entrega 1', () => {
+  // dibuja b encima de a (alfa normal) y devuelve el resultado
+  const over = (a: { data: Uint8ClampedArray }, b: { data: Uint8ClampedArray }) => {
+    const o = new Uint8ClampedArray(a.data);
+    for (let i = 0; i < o.length; i += 4) if (b.data[i + 3]) o.set(b.data.subarray(i, i + 4), i);
+    return o;
+  };
+
+  it('árboles grandes con tronco y copa por separado: tronco + copa = el árbol entero, cuadro por cuadro', async () => {
+    const { floraV3 } = await import('../world/flora');
+    const fl = floraV3();
+    for (const n of ['roble_0', 'roble_grande_0', 'roble_otono_1', 'pino_0', 'sauce_v3', 'arbol_seco_0', 'abuelo_roble_v3']) {
+      const t = fl.find((f) => f.name === n)!;
+      const { idle, tronco, copa } = t.anims;
+      expect(tronco.frames.length, n).toBe(idle.frames.length);
+      expect(copa.frames.length, n).toBe(idle.frames.length);
+      idle.frames.forEach((fr, i) => expect(Buffer.from(over(tronco.frames[i], copa.frames[i])).equals(Buffer.from(fr.data)), `${n} cuadro ${i}`).toBe(true));
+    }
+    const ht = fl.find((f) => f.name === 'arbol_hechizado_1')!;
+    ht.anims.despierto.frames.forEach((fr, i) => expect(Buffer.from(over(ht.anims.tronco_despierto.frames[i], ht.anims.copa.frames[i])).equals(Buffer.from(fr.data))).toBe(true));
+  });
+
+  it('íconos de cartel, del HUD y girar la tablet: 24 x 24 (64 x 64 la tablet), con dibujo y contorno', async () => {
+    const { signIcons, hudIcons, rotateTablet } = await import('../ui/icons2');
+    expect(signIcons().map((s) => s.name)).toEqual(['flecha_norte', 'peligro', 'corazon', 'cruce', 'estrella']);
+    const hud = hudIcons().map((s) => s.name);
+    for (const n of ['pausa', 'secreto', 'zona', 'luna', 'sonido', 'silencio', 'calidad', 'jugadora', 'peque', 'jugar', 'guardado']) expect(hud).toContain(`icono_${n}`);
+    for (const s of [...signIcons(), ...hudIcons()]) {
+      const f = s.frames[0];
+      expect([f.w, f.h], s.name).toEqual([24, 24]);
+      let n = 0; for (let i = 3; i < f.data.length; i += 4) if (f.data[i]) n++;
+      expect(n, s.name).toBeGreaterThan(60);
+      // nada sólido pegado arriba o abajo: el contorno entra entero (un halo tenue sí puede llegar)
+      for (let x = 0; x < 24; x++) for (const y of [0, 23]) expect(f.data[(y * 24 + x) * 4 + 3], `${s.name} borde`).toBeLessThan(100);
+    }
+    const tab = rotateTablet();
+    expect(tab.frames).toHaveLength(2);
+    expect([tab.frames[0].w, tab.frames[0].h]).toEqual([64, 64]);
+  });
+
+  it('campamento de fogata en los 3 puntos de guardado, postales nuevas y trol de 64', async () => {
+    const { forestObjects } = await import('../world/objects');
+    const { enemyCell, enemyFicha } = await import('../rpg/presets');
+    const camp = forestObjects().find((o) => o.name === 'campamento_fogata')!;
+    expect(camp).toMatchObject({ w: 64, h: 48, anchor: [32, 40], solid: [-14, -6, 28, 8], light: { color: '#ffa040', radius: 150, flicker: true, dy: 10 } });
+    expect(camp.anims.idle.frames).toHaveLength(6);
+    expect(camp.anims.idle.fps).toBe(10);
+    const m = bosqueMap();
+    const camps = m.decos.filter((d) => d.sprite === 'campamento_fogata');
+    const saves = m.entities.filter((e) => e.tipo === 'punto_guardado');
+    expect(camps.length).toBe(saves.length);
+    for (const s of saves) expect(camps.some((c) => Math.abs(c.x - s.x) < TILE && Math.abs(c.y - s.y) < TILE * 2), `fogata en ${s.props?.id}`).toBe(true);
+    const postales = m.postales.map((p) => p.nombre);
+    for (const n of ['bosque_profundo', 'claro_escondido', 'lago_espejo', 'campo_calabazas', 'las_alturas']) expect(postales).toContain(n);
+    expect(enemyCell('trol')).toBe(64);
+    expect(enemyCell('goblin_arquero')).toBe(48);
+    expect(enemyFicha('trol').body.proportions.height).toBeGreaterThan(1.2);
+  }, 120_000);
 });

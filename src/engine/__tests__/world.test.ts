@@ -84,7 +84,7 @@ describe('kit del juego', () => {
   it('arma personajes en 8 direcciones, mundo, botín, interfaz, audio y manifest; ninguna textura pasa de 4096', () => {
     const files = buildGameKit({ heroes: ['rick'], enemies: ['rata'], thorTiers: [0], quick: true, fichas: { prima: { ...familyFicha('steph', true), name: 'Prima' } } });
     const names = files.map((f) => f.name);
-    for (const n of ['manifest.json', 'personajes/rick_walk.png', 'personajes/retrato_rick.png', 'mascota/thor_walk.png', 'enemigos/minotauro_attack_heavy.png', 'mundo/mundo1_bosque.json', 'mundo/suelo/mundo1_bosque_0.png', 'mundo/agua.png', 'mundo/objetos/portal_azul_girar.png', 'mundo/objetos/abuelo_roble_v3_idle.png', 'mundo/objetos/arbol_hechizado_0_despierto.png', 'mundo/criaturas/cuervo_volar.png', 'mundo/niebla_nubes.png', 'mundo/particulas/luciernaga.png', 'mundo/luz.png', 'mundo/postales/cascada_y_vado.png', 'audio/ambiente_bosque.wav', 'ui/orbe_vida.png', 'botin/catalogo.json', 'audio/moneda.wav', 'audio/musica_jefe.wav', 'CREDITOS.txt']) expect(names, n).toContain(n);
+    for (const n of ['manifest.json', 'personajes/rick_walk.png', 'personajes/retrato_rick.png', 'mascota/thor_walk.png', 'enemigos/minotauro_attack_heavy.png', 'mundo/mundo1_bosque.json', 'mundo/suelo/mundo1_bosque_0.png', 'mundo/agua.png', 'mundo/objetos/portal_azul_girar.png', 'mundo/objetos/abuelo_roble_v3_idle.png', 'mundo/objetos/arbol_hechizado_0_despierto.png', 'mundo/criaturas/cuervo_volar.png', 'mundo/niebla_nubes.png', 'mundo/particulas/luciernaga.png', 'mundo/luz.png', 'mundo/postales/cascada_y_vado.png', 'audio/ambiente_bosque.wav', 'ui/orbe_vida.png', 'botin/catalogo.json', 'audio/moneda.wav', 'audio/musica_jefe.wav', 'CREDITOS.txt', 'ui/icono_pausa.png', 'ui/girar_tablet.png', 'ui/carteles/peligro.png', 'mundo/objetos/campamento_fogata_idle.png', 'mundo/objetos/roble_0_copa.png', 'mundo/objetos/roble_0_tronco.png', 'mundo/postales/lago_espejo.png', 'audio/descubrir.wav', 'audio/paso_madera_0.wav']) expect(names, n).toContain(n);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(m.direcciones).toEqual(['down', 'down_left', 'left', 'up_left', 'up', 'up_right', 'right', 'down_right']);
     expect(m.personajes.rick.anims.walk).toMatchObject({ archivo: 'personajes/rick_walk.png', cuadros: 8 });
@@ -103,6 +103,8 @@ describe('kit del juego', () => {
       for (const k of it.animated ? [`${it.icon}_0`, `${it.icon}_7`] : [it.icon]) expect(atlases[it.atlas], `${it.id} -> ${k}`).toHaveProperty([k]);
     }
     expect(m.personajes.minotauro.celda).toBe(64);
+    expect(m.ui.iconos_cartel.peligro).toBe('ui/carteles/peligro.png');
+    expect(m.ui.girar_tablet.cuadros).toBe(2);
     // la hoja de caminar: 8 filas (direcciones) de 48 px
     const walk = files.find((f) => f.name === 'personajes/rick_walk.png')!.bytes;
     const h = (walk[20] << 24) | (walk[21] << 16) | (walk[22] << 8) | walk[23];

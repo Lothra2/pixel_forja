@@ -92,6 +92,10 @@ interface EnemyDef extends Kit {
   bare?: boolean;
   /** jefe: más grande, va en celdas de 64 px */
   boss?: boolean;
+  /** élite grande: celda de 64 sin ser jefe */
+  big?: boolean;
+  /** proporciones a mano (sobre las del cuerpo): para que un élite o un jefe impongan */
+  size?: { height?: number; build?: number; shoulders?: number; head?: number; arms?: number };
   anims: string[];
 }
 
@@ -109,12 +113,12 @@ const ENEMY_DEFS: Record<EnemyId, EnemyDef> = {
   demonio: { head: 'troll', skin: '#b02a2a', body: { build: 'robusto' }, outfit: { armor: 'tunica', armorColor: '#1a0a0a', trim: '#ff6a2a', cape: '#3a0a0a' }, gear: { main: 'scythe', off: null, glow: '#ff6a2a' }, lpc: { horns: 'curled' }, anims: [...BASIC_FOE, 'cast', 'nova', 'leap'] },
   rata: { head: 'rat', body: { age: 'adolescente', build: 'delgado' }, outfit: { armor: 'cuero', armorColor: '#5a4a3a', bottom: 'shorts', shoes: 'descalzo' }, colors: { bottom: '#4a3a2a' }, gear: { main: 'dagger', off: null }, anims: ['idle', 'walk', 'run', 'attack_thrust', 'dodge', 'hit', 'die'] },
   calabaza: { head: 'jack', outfit: { armor: 'tunica', armorColor: '#2a1a12', trim: '#ff9a1f', cape: '#140c08' }, gear: { main: 'scythe', off: null }, anims: [...BASIC_FOE, 'cast', 'summon'] },
-  trol: { head: 'troll', bare: true, body: { build: 'robusto' }, outfit: { sleeves: 'none', bottom: 'shorts', belt: '#3a2a1a', shoes: 'descalzo' }, colors: { bottom: '#4a3a2a' }, gear: { main: 'club', off: null }, anims: [...BASIC_FOE, 'attack_heavy', 'warcry'] },
+  trol: { head: 'troll', big: true, size: { height: 1.22, build: 1.35, shoulders: 1.2, arms: 1.05 }, skin: '#7a8a6a', bare: true, body: { build: 'robusto' }, outfit: { sleeves: 'none', bottom: 'shorts', belt: '#3a2a1a', shoes: 'descalzo' }, colors: { bottom: '#4a3a2a' }, gear: { main: 'club', off: null }, anims: [...BASIC_FOE, 'attack_heavy', 'warcry'] },
 };
 
 /** Tamaño de celda recomendado (los jefes grandes no caben en 48). */
 export function enemyCell(id: EnemyId): 48 | 64 {
-  return ENEMY_DEFS[id].boss ? 64 : 48;
+  return ENEMY_DEFS[id].boss || ENEMY_DEFS[id].big ? 64 : 48;
 }
 
 /** Animaciones pensadas para un enemigo. */
@@ -131,7 +135,7 @@ export function enemyFicha(id: EnemyId): HumanFicha {
   const body: BodyType = { ...DEFAULT_BODY, ...e.body };
   av = { ...av, body };
   let f = fichaFromAvatar(id, av) as HumanFicha;
-  f = { ...f, body: { ...f.body, proportions: bodyProportions(f.body.proportions.preset, body) } };
+  f = { ...f, body: { ...f.body, proportions: { ...bodyProportions(f.body.proportions.preset, body), ...e.size } } };
   f = applyKit(f, e);
   if (e.bare) f = recolor(f, 'top', av.skin) as HumanFicha;
   return f;
