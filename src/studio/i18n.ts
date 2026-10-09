@@ -2,6 +2,9 @@ export type Lang = 'es' | 'en';
 
 const es = {
   home: 'Inicio',
+  fam_title: 'Familia GG',
+  fam_help: 'Listos para usar. Toca uno y modifícalo a tu gusto.',
+  fam_casual: 'Casual',
   rpg_workshop: 'Taller RPG',
   rpg_workshopHelp: 'Héroes, enemigos, poderes y objetos para un RPG de acción tipo Diablo.',
   rpg_hero: 'Héroe con clase',
@@ -350,6 +353,9 @@ type Dict = typeof es;
 
 const en: Dict = {
   home: 'Home',
+  fam_title: 'GG family',
+  fam_help: 'Ready to use. Tap one and tweak it however you like.',
+  fam_casual: 'Casual',
   rpg_workshop: 'RPG workshop',
   rpg_workshopHelp: 'Heroes, enemies, powers and items for a Diablo-style action RPG.',
   rpg_hero: 'Hero with a class',

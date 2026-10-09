@@ -11,7 +11,7 @@ import { StyleStep } from './steps/StyleStep';
 import { EditorStep } from './steps/EditorStep';
 import { ExportStep } from './steps/ExportStep';
 import { AvatarStep } from './steps/AvatarStep';
-import { EnemiesStep, FxStep, ItemsStep } from './steps/RpgTools';
+import { EnemiesStep, FxStep, ItemsStep, FamilyRow } from './steps/RpgTools';
 import { loadGallery, saveGallery, upsert, type GalleryItem } from './gallery';
 import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, safeName } from './util';
 import {
@@ -19,6 +19,7 @@ import {
   type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim, type Avatar, type AvatarPart,
   DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
   applyClass, CLASS_KITS, enemyFicha, enemyCell, enemyAnims, type Gear, type HeroClass, type EnemyId,
+  familyFicha, type FamilyId,
 } from '../engine/index';
 
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export' | ToolStep;
@@ -363,6 +364,19 @@ export function App() {
     setView('se');
     setAnim(enemyAnims(id)[1] ?? 'walk');
   };
+  const renderFamily = useCallback(async (id: FamilyId, rpg: boolean) => {
+    const r = await engine.call<'rendered'>({ type: 'render', key: `fam-${id}-${rpg}`, ficha: familyFicha(id, rpg), cell: 48, anim: 'walk', view: 'se', props: true }).catch(() => null);
+    return r ? r.clip : null;
+  }, [engine]);
+  // la familia GG: se abre en el creador de avatar, lista para modificar
+  const openFamily = (id: FamilyId, rpg: boolean) => {
+    const f = familyFicha(id, rpg);
+    openFicha(f);
+    setCell(48);
+    setView('se');
+    setAnim('walk');
+    setStep(rpg ? 'style' : 'avatar');
+  };
   const askVariants = () =>
     run(async () => {
       if (!ficha || !isHuman(ficha)) return;
@@ -518,6 +532,8 @@ export function App() {
             )}
             {kind === 'human' && (
               <>
+                <div className="section-h"><h3>{t('fam_title')}</h3><span className="muted small">{t('fam_help')}</span></div>
+                <FamilyRow t={t} render={renderFamily} open={openFamily} />
                 <div className="section-h"><h3>{t('rpg_workshop')}</h3><span className="muted small">{t('rpg_workshopHelp')}</span></div>
                 <div className="home-grid rpg-grid">
                   <button className="tile" onClick={() => { startFromScratch(); setHeroClass('paladin'); setStep('style'); }} data-testid="rpg-hero">

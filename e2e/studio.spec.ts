@@ -169,6 +169,32 @@ test('crear desde cero: avatar por piezas y animar', async ({ page }, info) => {
   expect(errors).toEqual([]);
 });
 
+test('familia GG: avatares listos para abrir y modificar', async ({ page }, info) => {
+  test.setTimeout(180000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await expect(page.getByTestId('family').locator('canvas')).toHaveCount(8, { timeout: 60000 });
+  await page.screenshot({ path: `${shots}/${tag}_25_familia.png`, fullPage: true });
+  // Rick casual: abre en el creador con su peinado y lentes, y se puede cambiar
+  await page.getByTestId('family-rick-casual').click();
+  await expect(page.getByTestId('av-lpcHair-swept_back')).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
+  await page.getByTestId('av-skin').locator('button').nth(2).click();
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  await page.screenshot({ path: `${shots}/${tag}_26_familia_rick.png`, fullPage: true });
+  // Sophie amazona: abre en el estilo con su arco
+  await page.getByTestId('step-image').click();
+  await page.getByTestId('family-sophie-rpg').click();
+  await expect(page.getByTestId('rpg-weapon')).toHaveValue('bow', { timeout: 30000 });
+  await page.getByTestId('step-animate').click();
+  await idle(page);
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  await page.screenshot({ path: `${shots}/${tag}_27_familia_sophie.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});
+
 test('taller RPG: héroe con clase, enemigos, poderes y objetos', async ({ page }, info) => {
   test.setTimeout(180000);
   const tag = info.project.name;

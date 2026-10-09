@@ -398,6 +398,22 @@ p.ok { margin: 0; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
+/* ---------- Familia GG ---------- */
+.family-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile.family { align-items: center; text-align: center; padding: 10px 10px 12px; cursor: default; }
+.tile.family:hover { transform: none; }
+.family-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
+.family-look {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 160px; padding: 6px 2px;
+  border-radius: 12px; border: 1px solid transparent; cursor: pointer; color: var(--muted); font: inherit;
+  background: radial-gradient(60% 50% at 50% 70%, rgba(143, 123, 255, 0.16), transparent 70%), repeating-conic-gradient(var(--stage) 0 25%, var(--stage-cell) 0 50%) 0 0 / 12px 12px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.family-look:hover, .family-look:focus-visible { border-color: var(--accent); transform: translateY(-2px); }
+.family-look small { font-size: 11.5px; }
+.family-look canvas { max-width: 100%; height: auto !important; }
+@media (max-width: 900px) { .family-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 /* ---------- Taller RPG ---------- */
 .rpg-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .tile.enemy { align-items: center; text-align: center; padding: 10px 8px 12px; }

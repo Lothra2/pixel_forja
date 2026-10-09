@@ -203,6 +203,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
     layers.push({ key: `hat/${look.hat}`, mat: 'hair', map: (c, d) => (hc ? relative(c, baseColor(d), hc, 0.9) : c) });
   }
 
+  const happyBrows = mouth === 'smile' || mouth === 'grin' || mouth === 'open';
   // caja común en coordenadas del cuadro LPC de 64x64
   const used = layers.map((l) => ({ l, d: DATA.parts[l.key]?.dirs[dir] })).filter((u): u is { l: Layer; d: PartDir } => !!u.d);
   let x0 = 64, y0 = 64, x1 = 0, y1 = 0;
@@ -225,6 +226,8 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
     const px = decode(d.px);
     const sh = turns(l.key) ? turn : 0;
     // con lentes, las cejas suben por encima del marco (si no, el marco o el vidrio las tapan)
+    // con boca contenta, las puntas de afuera de la ceja no caen (si caen, la cara se lee triste)
+    const lift = happyBrows && l.key.startsWith('brows/') && d.h >= 2;
     let shy = 0;
     if (look.glasses && l.key.startsWith('brows/')) {
       const g = DATA.parts[`glasses/${look.glasses}`]?.dirs[dir];
@@ -235,6 +238,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
       for (let xx = 0; xx < d.w; xx++) {
         const v = px[yy * d.w + xx];
         if (!v) continue;
+        if (lift && yy === d.h - 1 && !px[(yy - 1) * d.w + xx]) continue;
         const fx = d.x + xx + sh, fy = d.y + yy + shy;
         if (fx >= x1) continue;
         // pelo larguísimo: en un sprite de juego se corta a la altura de la espalda (si no, barre el piso y no cabe)
@@ -246,22 +250,37 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
       }
   }
   // boca: las caras LPC no traen boca. Se dibuja a mano, con el tono oscuro de la piel, debajo de la nariz
+  const r1 = chinY - 3, r2 = chinY - 2;
+  const c0 = Math.round(headDir.x + headDir.w / 2) - 2 + turn; // de frente, cuatro columnas: c0..c0+3
+  const bearded = !!look.beard && dir === 'down' && !monster;
+  if (bearded && mouth !== 'frown') {
+    // la sombra de la barba LPC baja en V desde la boca y se lee como cara triste: alrededor de la boca se aclara
+    const lum = (i: number) => hexToLab(pal[i].hex)[0];
+    const tones = [...new Set(idx)].filter((i) => i >= 0 && pal[i].mat === 'beard').sort((a, b) => lum(a) - lum(b));
+    const mid = tones[Math.floor(tones.length / 2)];
+    for (let fy = r1; fy <= Math.min(r2 + 2, y1 - 1); fy++)
+      for (let fx = c0 - 1; fx <= c0 + 4; fx++) {
+        const i = (fy - y0) * w + (fx - x0);
+        if (fx >= x0 && fx < x1 && idx[i] >= 0 && pal[idx[i]].mat === 'beard' && lum(idx[i]) < lum(mid)) idx[i] = mid;
+      }
+  }
   if (mouth && mouth !== 'line' && dir !== 'up' && !monster) {
     const lip = skin('#99423c'), dark = '#5a1f26', teeth = '#f4f1ea';
-    const r1 = chinY - 3, r2 = chinY - 2;
     const put = (fx: number, fy: number, hex: string) => {
       const i = (fy - y0) * w + (fx - x0);
       if (fx < x0 || fy < y0 || fx >= x1 || fy >= y1 || idx[i] < 0) return;
       idx[i] = entry(hex, 'face', false);
     };
     if (dir === 'down') {
-      const c0 = Math.round(headDir.x + headDir.w / 2) - 2 + turn; // cuatro columnas: c0..c0+3
-      const shapes: Record<string, [string, string]> = {
-        smile: ['l..l', '.ll.'], grin: ['lttl', '.ll.'], open: ['.dd.', '.dd.'], o: ['.dd.', '....'], frown: ['.ll.', 'l..l'],
-      };
+      // con barba, la sonrisa es más ancha para que se vea entre el pelo
+      const wide = bearded && (mouth === 'smile' || mouth === 'grin');
+      const shapes: Record<string, [string, string]> = wide
+        ? { smile: ['l....l', '.llll.'], grin: ['lttttl', '.llll.'] }
+        : { smile: ['l..l', '.ll.'], grin: ['lttl', '.ll.'], open: ['.dd.', '.dd.'], o: ['.dd.', '....'], frown: ['.ll.', 'l..l'] };
       const [a, b] = shapes[mouth] ?? ['....', '.ll.'];
+      const cx = wide ? c0 - 1 : c0;
       [a, b].forEach((row, j) => [...row].forEach((ch, i) => {
-        if (ch !== '.') put(c0 + i, j ? r2 : r1, ch === 'l' ? lip : ch === 't' ? teeth : dark);
+        if (ch !== '.') put(cx + i, j ? r2 : r1, ch === 'l' ? lip : ch === 't' ? teeth : dark);
       }));
     } else {
       // de lado: la boca queda junto al borde de la cara

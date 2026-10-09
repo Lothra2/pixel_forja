@@ -45,4 +45,5 @@ export * from './head3d/photo';
 export * from './fx/fx';
 export * from './items/items';
 export * from './rpg/presets';
+export * from './rpg/family';
 export * from './rpg/export';

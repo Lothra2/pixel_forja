@@ -42,6 +42,27 @@ describe('piezas dibujadas LPC', () => {
     const happy = lpcHead(DEFAULT_LPC, 'front', colors, 'happy', 'smile');
     expect([...happy.img.idx].filter((i) => i >= 0 && hexToLab(happy.pal[i].hex)[0] > 0.95).length).toBe(0);
   });
+  it('con barba, la sonrisa se ve ancha y la sombra de la barba no dibuja una boca triste', () => {
+    const look = { ...DEFAULT_LPC, beard: 'basic', brows: 'thick' };
+    const lum = (h: ReturnType<typeof lpcHead>, i: number) => hexToLab(h.pal[i].hex)[0];
+    const darkest = (h: ReturnType<typeof lpcHead>) => Math.min(...[...h.img.idx].filter((i) => i >= 0 && h.pal[i].mat === 'beard').map((i) => lum(h, i)));
+    // en las filas de la boca, el tono más oscuro de la barba ya no aparece al centro
+    const zone = (h: ReturnType<typeof lpcHead>) => {
+      const out: number[] = [];
+      for (let y = h.anchor.y - 3; y <= h.anchor.y - 1; y++)
+        for (let x = h.anchor.x - 3; x <= h.anchor.x + 2; x++) out.push(h.img.idx[y * h.img.w + x]);
+      return out;
+    };
+    for (const m of ['line', 'smile'] as const) {
+      const h = lpcHead(look, 'front', colors, 'open', m);
+      expect(zone(h).filter((i) => i >= 0 && h.pal[i].mat === 'beard' && lum(h, i) <= darkest(h) + 1e-6), m).toEqual([]);
+    }
+    const s = lpcHead(look, 'front', colors, 'open', 'smile');
+    expect(zone(s).filter((i) => i >= 0 && s.pal[i].mat === 'face').length).toBeGreaterThanOrEqual(6);
+    // y con boca contenta las puntas de las cejas gruesas no caen
+    const brow = (h: ReturnType<typeof lpcHead>) => [...h.img.idx].filter((i) => i >= 0 && h.pal[i].mat === 'hair').length;
+    expect(brow(s)).toBeLessThan(brow(lpcHead(look, 'front', colors, 'open', 'line')));
+  });
   it('peinados propios derivados: swept_back trae volumen arriba y créditos de la pieza original', () => {
     expect(LPC_HAIRS).toContain('swept_back');
     const a = lpcHead({ ...DEFAULT_LPC, hair: 'swept_back' }, 'side', colors);
