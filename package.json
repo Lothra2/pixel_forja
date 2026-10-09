@@ -13,7 +13,8 @@
     "e2e": "playwright test",
     "forja": "tsx cli/forja.ts",
     "samples": "tsx scripts/render-samples.ts",
-    "entregables": "tsx scripts/deliverables.ts"
+    "entregables": "tsx scripts/deliverables.ts",
+    "kit": "tsx scripts/game-kit.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

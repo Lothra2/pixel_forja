@@ -1,0 +1,225 @@
+import { createRaster, blit, type Raster } from '../core/raster';
+import { encodePng } from '../export/png';
+import { creditsFor, type ExportFile } from '../export/bundle';
+import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim } from '../render/clip';
+import type { Ficha, CellSize } from '../sheet/ficha';
+import { familyFicha, thorFicha, FAMILY, FAMILY_GG, type FamilyId } from '../rpg/family';
+import { enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, type EnemyId } from '../rpg/presets';
+import { PET_RPG_ANIMS } from '../anim/animal';
+import { renderFx, projectile8, type FxElement } from '../fx/fx';
+import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
+import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
+import { isSpecial } from '../loot/render';
+import { tilesetSheet, TILE } from '../world/tiles';
+import { forestObjects } from '../world/objects';
+import { forestMap, toTiledJson, renderMapPreview } from '../world/map';
+import { hudSprites, digitSheet, DIGITS } from '../ui/hud';
+import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
+import { PET_ARMOR } from '../render/pet3d';
+
+/**
+ * Kit del juego "Legado GG": todo lo que el juego necesita, listo para Phaser, con un manifest.json que dice qué es
+ * cada archivo. Sin navegador: se genera desde la línea de comandos (scripts/game-kit.ts) o desde el estudio.
+ *
+ * Hojas de personajes: un PNG por animación, 8 filas (una por dirección, en el orden de `direcciones`) y una columna
+ * por cuadro. Así ninguna textura pasa de 4096 px (el límite de las tablets).
+ */
+
+const enc = new TextEncoder();
+const MAX_TEX = 4096;
+
+export interface KitOptions {
+  heroes?: FamilyId[];
+  enemies?: EnemyId[];
+  boss?: EnemyId;
+  /** niveles de armadura de Thor a exportar (0 = sin armadura) */
+  thorTiers?: number[];
+  /** menos animaciones (para pruebas rápidas) */
+  quick?: boolean;
+  /** avisa el avance (para la barra del estudio o la consola) */
+  progress?: (msg: string) => void;
+}
+
+/** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
+function sheet8(f: Ficha, cell: CellSize, anim: string): { png: Raster; frames: number; fps: number; loop: boolean } | null {
+  if (!hasAnim(f, anim)) return null;
+  const clips = EIGHT_VIEWS.map((v) => renderClip(f, cell, anim, v, { props: true }));
+  const n = Math.max(...clips.map((c) => c.frames.length));
+  const png = createRaster(n * cell, 8 * cell);
+  clips.forEach((c, row) => c.frames.forEach((fr, i) => blit(png, fr, i * cell, row * cell)));
+  return { png, frames: n, fps: clips[0].fps, loop: clips[0].loop };
+}
+
+const file = (name: string, bytes: Uint8Array, mime: string): ExportFile => ({ name, bytes, mime });
+const png = (name: string, r: Raster) => file(name, encodePng(r), 'image/png');
+const json = (name: string, v: unknown) => file(name, enc.encode(JSON.stringify(v, null, 1)), 'application/json');
+
+/** Tira horizontal de cuadros. */
+function strip(frames: Raster[]): Raster {
+  const w = frames[0].w, h = frames[0].h;
+  const out = createRaster(w * frames.length, h);
+  frames.forEach((fr, i) => blit(out, fr, i * w, 0));
+  return out;
+}
+
+/** Retrato: la cabeza del personaje de frente (para elegir personaje y para la barra). */
+function portrait(f: Ficha, view: 'front' | 'se' = 'front', anim = 'idle'): Raster {
+  const fr = renderClip(f, 64, anim, view).frames[0];
+  let y0 = 64, x0 = 64, x1 = 0;
+  for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) if (fr.data[(y * 64 + x) * 4 + 3]) { y0 = Math.min(y0, y); x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+  const S = 40, cx = Math.round((x0 + x1) / 2);
+  const out = createRaster(S, S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const sx = cx - S / 2 + x, sy = y0 - 1 + y;
+    if (sx < 0 || sy < 0 || sx >= 64 || sy >= 64) continue;
+    const s = (sy * 64 + sx) * 4, d = (y * S + x) * 4;
+    for (let c = 0; c < 4; c++) out.data[d + c] = fr.data[s + c];
+  }
+  return out;
+}
+
+export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean }>; clase?: string; retrato?: string }
+
+function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void): CharEntry {
+  const out: CharEntry = { ...entry, celda: cell, pivote: [cell / 2, cell - 2], anims: {} };
+  for (const a of anims) {
+    const s = sheet8(f, cell, a);
+    if (!s) continue;
+    const name = `${prefix}/${id}_${a}.png`;
+    files.push(png(name, s.png));
+    out.anims[a] = { archivo: name, cuadros: s.frames, fps: s.fps, loop: s.loop };
+  }
+  log(`${prefix}/${id}: ${Object.keys(out.anims).length} animaciones`);
+  return out;
+}
+
+/** Arma todo el kit. Devuelve los archivos (rutas relativas a la carpeta del kit). */
+export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
+  const log = opts.progress ?? (() => {});
+  const files: ExportFile[] = [];
+  const heroes = opts.heroes ?? FAMILY;
+  const enemies = opts.enemies ?? (['rata', 'calabaza', 'goblin_arquero', 'trol'] as EnemyId[]);
+  const boss = opts.boss ?? 'minotauro';
+  const heroAnims = opts.quick ? ['idle', 'walk', 'attack', 'hit', 'die'] : [...HERO_RPG_ANIMS];
+  const credits = new Set<string>();
+  const manifest: Record<string, unknown> = {
+    juego: 'Legado GG', generado_con: 'PixelForja', version: 1, cuadro_mundo: TILE,
+    direcciones: EIGHT_VIEWS.map((v) => VIEW_SUFFIX[v]),
+    notas: 'Hojas de personajes: fila = dirección (orden de `direcciones`), columna = cuadro. El pivote es el punto de apoyo (pies).',
+  };
+
+  // ---------- héroes, mascota, enemigos y jefe ----------
+  const chars: Record<string, CharEntry> = {};
+  for (const id of heroes) {
+    const f = familyFicha(id, true);
+    const c = creditsFor(f);
+    if (c) credits.add(c);
+    files.push(png(`personajes/retrato_${id}.png`, portrait(f)));
+    chars[id] = exportChar('personajes', id, f, 48, heroAnims, { tipo: 'heroe', nombre: FAMILY_GG[id].name, clase: FAMILY_GG[id].clase, retrato: `personajes/retrato_${id}.png` }, files, log);
+  }
+  const tiers = opts.thorTiers ?? [0, 1, 2, 3, 4, 5];
+  for (const t of tiers) {
+    const f = thorFicha(t);
+    const anims = t === 0 ? (opts.quick ? ['idle', 'walk', 'bite'] : PET_RPG_ANIMS) : ['idle', 'walk', 'run', 'bite', 'howl', 'hurt'];
+    const id = t ? `thor_armadura${t}` : 'thor';
+    chars[id] = exportChar('mascota', id, f, 48, anims, { tipo: 'mascota', nombre: t ? `Thor (${PET_ARMOR[t - 1].name.es})` : 'Thor' }, files, log);
+  }
+  files.push(png('mascota/retrato_thor.png', portrait(thorFicha(0), 'se', 'sit')));
+  for (const id of enemies) {
+    const f = enemyFicha(id);
+    chars[id] = exportChar('enemigos', id, f, enemyCell(id), enemyAnims(id), { tipo: 'enemigo', nombre: id }, files, log);
+  }
+  {
+    const f = enemyFicha(boss);
+    chars[boss] = exportChar('enemigos', boss, f, enemyCell(boss), [...enemyAnims(boss), 'leap'], { tipo: 'jefe', nombre: boss }, files, log);
+  }
+  manifest.personajes = chars;
+
+  // ---------- poderes ----------
+  const fx: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean; celda: number }> = {};
+  const addFx = (name: string, frames: Raster[], fps: number, loop: boolean) => {
+    const a = `fx/${name}.png`;
+    files.push(png(a, strip(frames)));
+    fx[name] = { archivo: a, cuadros: frames.length, fps, loop, celda: frames[0].w };
+  };
+  const elements: FxElement[] = ['fuego', 'hielo', 'sagrado', 'veneno', 'arcano', 'rayo'];
+  for (const element of elements) {
+    for (const { dir, clip } of projectile8({ element, cell: 48 })) addFx(`proyectil_${element}_${dir}`, clip.frames, clip.fps, clip.loop);
+    for (const kind of ['impact', 'nova'] as const) { const c = renderFx({ kind, element, cell: 48 }); addFx(`${kind === 'impact' ? 'impacto' : 'nova'}_${element}`, c.frames, c.fps, c.loop); }
+  }
+  for (const [kind, element, name] of [['slash', 'sagrado', 'tajo'], ['heal', 'sagrado', 'curar'], ['shield', 'sagrado', 'escudo_de_thor'], ['aura', 'sagrado', 'aura_nivel'], ['buff', 'fuego', 'grito_de_guerra'], ['circle', 'arcano', 'circulo_magico']] as const) {
+    const c = renderFx({ kind, element, cell: 48 });
+    addFx(name, c.frames, c.fps, c.loop);
+  }
+  manifest.fx = fx;
+  log(`fx: ${Object.keys(fx).length}`);
+
+  // ---------- botín ----------
+  const loot = allLoot();
+  const normals = loot.filter((i) => !isSpecial(i.rarity));
+  for (const px of [32, 64] as const) {
+    files.push(...exportLootIcons(normals, px, true, `botin/iconos_${px}`).map((f) => ({ ...f })));
+    files.push(...exportLootIcons(UNIQUE_LOOT, px, true, `botin/especiales_${px}`));
+  }
+  files.push(...exportLootWorld(UNIQUE_LOOT, 'botin/mundo'));
+  files.push(json('botin/catalogo.json', lootCatalog(loot)));
+  manifest.botin = {
+    iconos: { 32: 'botin/iconos_32.json', 64: 'botin/iconos_64.json' }, especiales: { 32: 'botin/especiales_32.json', 64: 'botin/especiales_64.json' },
+    mundo: 'botin/mundo.json', catalogo: 'botin/catalogo.json',
+    notas: 'Los íconos van con su casillero (borde de la rareza). Los especiales (legendarios y set) traen 8 cuadros animados.',
+  };
+  log('botín listo');
+
+  // ---------- mundo 1 ----------
+  const { png: tilesPng, layout } = tilesetSheet('bosque');
+  files.push(png('mundo/mundo1_tiles.png', tilesPng));
+  const solidTile = createRaster(TILE, TILE);
+  for (let i = 0; i < TILE * TILE; i++) solidTile.data.set([255, 0, 0, 90], i * 4);
+  files.push(png('mundo/colision.png', solidTile));
+  const map = forestMap();
+  files.push(json('mundo/mundo1_bosque.json', toTiledJson(map, 'mundo1_tiles.png', tilesPng.w, tilesPng.h)));
+  const objs = forestObjects();
+  files.push(png('mundo/mundo1_vista.png', renderMapPreview(map, tilesPng, objs)));
+  const objManifest: Record<string, unknown> = {};
+  for (const o of objs) {
+    const anims: Record<string, unknown> = {};
+    for (const [an, a] of Object.entries(o.anims)) {
+      const name = `mundo/objetos/${o.name}_${an}.png`;
+      files.push(png(name, strip(a.frames)));
+      anims[an] = { archivo: name, cuadros: a.frames.length, fps: a.fps, loop: a.loop };
+    }
+    objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, anims };
+  }
+  manifest.mundo = { mapa: 'mundo/mundo1_bosque.json', tileset: 'mundo/mundo1_tiles.png', vista: 'mundo/mundo1_vista.png', layout, objetos: objManifest };
+  log('mundo listo');
+
+  // ---------- interfaz ----------
+  const ui: Record<string, unknown> = {};
+  for (const s of hudSprites()) {
+    const name = `ui/${s.name}.png`;
+    files.push(png(name, strip(s.frames)));
+    ui[s.name] = { archivo: name, w: s.frames[0].w, h: s.frames[0].h, cuadros: s.frames.length, ...(s.slice ? { nueve: s.slice } : {}) };
+  }
+  const dg = digitSheet();
+  files.push(png('ui/numeros.png', dg.png));
+  ui.numeros = { archivo: 'ui/numeros.png', w: dg.cw, h: dg.ch, caracteres: DIGITS, filas: dg.colors };
+  manifest.ui = ui;
+
+  // ---------- audio ----------
+  const audio: Record<string, string> = {};
+  for (const n of SFX_NAMES) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(SFX[n]()), 'audio/wav')); audio[n] = a; }
+  for (const [n, fn] of Object.entries(MUSIC)) { const a = `audio/musica_${n}.wav`; files.push(file(a, encodeWav(fn()), 'audio/wav')); audio[`musica_${n}`] = a; }
+  manifest.audio = audio;
+  log('audio listo');
+
+  // ---------- créditos y manifest ----------
+  const creditTxt = ['Legado GG: créditos del arte', '', 'Personajes, mundo, botín, interfaz y sonidos generados con PixelForja (código).', '', ...credits].join('\n');
+  files.push(file('CREDITOS.txt', enc.encode(creditTxt), 'text/plain'));
+  manifest.creditos = 'CREDITOS.txt';
+  // ninguna textura más grande que lo que soportan las tablets
+  const tooBig: string[] = [];
+  for (const f of files) if (f.mime === 'image/png') { const w = (f.bytes[16] << 24) | (f.bytes[17] << 16) | (f.bytes[18] << 8) | f.bytes[19], h = (f.bytes[20] << 24) | (f.bytes[21] << 16) | (f.bytes[22] << 8) | f.bytes[23]; if (w > MAX_TEX || h > MAX_TEX) tooBig.push(`${f.name} ${w}x${h}`); }
+  if (tooBig.length) throw new Error(`Texturas más grandes que ${MAX_TEX}: ${tooBig.join(', ')}`);
+  files.push(json('manifest.json', manifest));
+  return files;
+}
