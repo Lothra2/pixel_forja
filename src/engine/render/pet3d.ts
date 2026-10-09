@@ -56,8 +56,8 @@ export const PET_ARMOR: PetArmorLook[] = [
   { name: { es: 'Arnés de cuero', en: 'Leather Harness' }, main: '#7a4a2a', trim: null, cloth: null, gem: null, glow: null, helm: false, chest: false, defense: 6, level: 1 },
   { name: { es: 'Peto tachonado', en: 'Studded Vest' }, main: '#6e4228', trim: '#b87a3e', cloth: null, gem: null, glow: null, helm: false, chest: true, defense: 14, level: 8 },
   { name: { es: 'Cota del guardián', en: "Guardian's Mail" }, main: '#9aa4b0', trim: '#cfd6e0', cloth: '#2f4f9a', gem: null, glow: null, helm: true, chest: true, defense: 26, level: 18 },
-  { name: { es: 'Placas del campeón', en: "Champion's Barding" }, main: '#c8d0da', trim: '#e3ae3c', cloth: '#7a1f2b', gem: '#d8243e', glow: null, helm: true, chest: true, defense: 40, level: 30 },
-  { name: { es: 'Égida de Thor', en: "Thor's Aegis" }, main: '#f2efe6', trim: '#e3ae3c', cloth: '#1e3a7a', gem: '#ffd86a', glow: '#ffd86a', helm: true, chest: true, defense: 60, level: 45 },
+  { name: { es: 'Placas del campeón', en: "Champion's Barding" }, main: '#aeb8c6', trim: '#e3ae3c', cloth: '#7a1f2b', gem: '#d8243e', glow: null, helm: true, chest: true, defense: 40, level: 30 },
+  { name: { es: 'Égida de Thor', en: "Thor's Aegis" }, main: '#d9dfe8', trim: '#e3ae3c', cloth: '#1e3a7a', gem: '#ffd86a', glow: '#ffd86a', helm: true, chest: true, defense: 60, level: 45 },
 ];
 
 function rayEll(o: V3, d: V3, p: Prim, toLocal: (v: V3) => V3, toLocalDir: (v: V3) => V3): { t: number; n: V3 } | null {
@@ -210,13 +210,13 @@ function build(f: AnimalFicha, d: AnimalDims, pose: QPose, armor: number): { pri
       prims.push({ kind: 'ell', c: P(-len * 0.04, yb), r: [len * 0.44, (ch + wa) * 0.31, ch * 0.5], rot: -pose.pitch, mat: look.cloth ? 'cloth' : am, clipY: 0.05, trim: look.trim ? 'trim' : undefined, g: 960 });
       if (look.cloth) prims.push({ kind: 'ell', c: P(-len * 0.04, yb + 0.5), r: [len * 0.36, (ch + wa) * 0.3, ch * 0.49], rot: -pose.pitch, mat: am, clipY: 0.35, trim: look.trim ? 'trim' : undefined, g: 961 });
       if (look.chest) prims.push({ kind: 'ell', c: chestC, r: [ch * 0.56, ch * 0.57, ch * 0.55], rot: -pose.pitch, mat: am, clipX: 0.25, trim: look.trim ? 'trim' : undefined, g: 962 });
-      if (look.helm) prims.push({ kind: 'ell', c: headC, r: [s * 0.55, s * 0.53, s * 0.55], mat: am, clipY: 0.12, trim: look.trim ? 'trim' : undefined, g: 963 });
-      if (armor >= 4) prims.push({ kind: 'ell', c: H(-s * 0.05, s * 0.62), r: [s * 0.12, s * 0.16, s * 0.12], mat: 'trim', g: 964 });
-      if (look.gem) prims.push({ kind: 'ell', c: add(chestC, [ch * 0.53, 0, 0]), r: [0.9, 1.1, 1.1], mat: 'gem', g: 965 });
-      if (look.glow) {
-        // alitas de luz en los hombros
-        for (const zs of [-1, 1]) prims.push({ kind: 'ell', c: P(len / 2 - ch * 0.75, yb + ch * 0.58, zs * ch * 0.38), r: [ch * 0.35, ch * 0.12, ch * 0.06], rot: 28, mat: 'glow', far: zs < 0, g: 966 });
-      }
+      // casco: una gorra de metal arriba de la cabeza (la cara y el hocico quedan a la vista), con ribete de frente
+      if (look.helm) prims.push({ kind: 'ell', c: H(-s * 0.04, s * 0.04), r: [s * 0.56, s * 0.54, s * 0.56], mat: am, clipY: 0.32, trim: look.trim ? 'trim' : undefined, g: 963 });
+      // cimera: una cresta de adelante hacia atrás (no una bola)
+      if (armor >= 4) prims.push({ kind: 'ell', c: H(-s * 0.1, s * 0.56), r: [s * 0.42, s * 0.14, s * 0.07], rot: (hang * 180) / Math.PI - 8, mat: 'trim', g: 964 });
+      // égida: aletas doradas a los lados del casco, hacia atrás y arriba
+      if (look.glow) for (const zs of [-1, 1]) prims.push({ kind: 'ell', c: H(-s * 0.32, s * 0.42, zs * s * 0.5), r: [s * 0.3, s * 0.09, s * 0.05], rot: (hang * 180) / Math.PI + 32, mat: 'glow', far: zs < 0, g: 967 });
+      if (look.gem) prims.push({ kind: 'ell', c: add(chestC, [ch * 0.53, 0, 0]), r: [0.9, 1.1, 1.1], mat: look.glow ? 'glow' : 'gem', g: 965 });
     }
   }
   const eyes: V3[] = [H(s * 0.3, s * 0.1, s * 0.27), H(s * 0.3, s * 0.1, -s * 0.27)];
@@ -231,7 +231,16 @@ export function renderPet3d(f: AnimalFicha, cell: CellSize, pose: QPose, view: P
   // a 32 px no hay lugar: sin agrandar
   const K = cell >= 48 ? K48 : 1;
   const phi = (YAW[view] * Math.PI) / 180, cp = Math.cos(phi), sp = Math.sin(phi);
-  const { prims, eyes, nose, mouth } = build(f, d, pose, armor);
+  const built = build(f, d, pose, armor);
+  // de frente y de espaldas un perro real se ve angosto y, desde arriba, el lomo se apila como una columna.
+  // Como hace un pixel artist: en esas vistas se ensancha (z) y se acorta (x). De lado no cambia nada
+  const fr = sp * sp;
+  const zK = 1 + 0.5 * fr, xK = 1 - 0.3 * fr;
+  const squash = (v: V3): V3 => [v[0] * xK, v[1], v[2] * zK];
+  const prims = built.prims.map((p) => p.kind === 'cap'
+    ? { ...p, a: squash(p.a!), b: squash(p.b!), rad: p.rad! * (1 + 0.25 * fr) }
+    : { ...p, c: squash(p.c), r: [p.r![0] * (1 - 0.15 * fr), p.r![1], p.r![2] * zK] as V3 });
+  const eyes = built.eyes.map(squash), nose = squash(built.nose), mouth: [V3, V3] = [squash(built.mouth[0]), squash(built.mouth[1])];
   const look = armor > 0 ? PET_ARMOR[armor - 1] : null;
   const ramps: Record<string, Ramp> = {
     fur: f.palette.fur, chest: f.palette.fur, leg: f.palette.fur, paw: f.markings.paws ? f.palette.fur2 : f.palette.fur, dark: f.palette.dark,
