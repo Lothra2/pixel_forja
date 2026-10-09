@@ -53,7 +53,7 @@ function canopy(c: IconCanvas, C: P, rx: number, ry: number, col: string, seed: 
 export function bridge(): WorldObject {
   const c = canvas(160, 72, 4); // 40 x 18 unidades
   // sombra del puente sobre el agua
-  c.poly([[3, 15.5], [37, 15.5], [36, 17.5], [4, 17.5]], stone('#0e2a4a'), { tone: 0 });
+  c.poly([[3, 15.4], [37, 15.4], [36, 16.8], [4, 16.8]], stone('#1e4e80'), { tone: 1 });
   // tablas (de norte a sur), alternando tono
   for (let i = 0; i < 18; i++) {
     const x = 2.5 + i * 2, j = (i * 7) % 3;

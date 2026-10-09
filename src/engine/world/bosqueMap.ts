@@ -108,10 +108,18 @@ export function bosqueMap(seed = 2024): BigMap {
     if (!isWaterT(hint, ty)) { for (let d = 1; d < 8; d++) { if (isWaterT(hint + d, ty)) return riverSpan(ty, hint + d); if (isWaterT(hint - d, ty)) return riverSpan(ty, hint - d); } }
     return [x0, x1];
   };
-  const bridgeAt = (ty: number, hint: number) => {
+  const bridgeAt = (ty0: number, hint: number) => {
+    // la fila donde el camino toca las dos orillas (así el puente queda justo en el cruce)
+    let ty = ty0, best = -1;
+    for (let d = 0; d <= 5; d++) for (const t of d ? [ty0 - d, ty0 + d] : [ty0]) {
+      const [a0, a1] = riverSpan(t, hint);
+      let score = 0;
+      for (const x of [a0 - 1, a0 - 2, a1 + 1, a1 + 2]) if (kindAt(x, t) === 1) score++;
+      if (score > best) { best = score; ty = t; }
+    }
     const [x0, x1] = riverSpan(ty, hint);
     const cx = ((x0 + x1 + 1) / 2) * TILE;
-    place('puente', cx, ty * TILE + TILE / 2 + 24);
+    place('puente', cx, ty * TILE + TILE / 2 + 2);
     // el puente se camina: libre de este a oeste, con un cuadro de orilla a cada lado
     for (let x = x0 - 1; x <= x1 + 1; x++) { solid[at(x, ty)] = 0; occ[at(x, ty)] = 1; occ[at(x, ty - 1)] = 1; occ[at(x, ty + 1)] = 1; }
     return [x0, x1] as [number, number];
