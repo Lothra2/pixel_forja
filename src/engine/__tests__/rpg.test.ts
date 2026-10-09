@@ -46,6 +46,18 @@ describe('RPG: clases, enemigos y exportación', () => {
     expect(familyFicha('rick').avatar?.lpc).toMatchObject({ hair: 'swept_back', glasses: 'nerd', beard: 'basic' });
     expect(familyFicha('sophie', true).gear?.main).toBe('bow');
   }, 300000);
+  it('la familia corre de frente y de espaldas sin saltitos, gira el torbellino y gatea en verde', () => {
+    for (const id of FAMILY)
+      for (const rpg of [false, true]) {
+        const f = familyFicha(id, rpg);
+        const anims = rpg ? ['run', 'whirlwind', 'crawl'] : ['run', 'crawl'];
+        const { qa } = renderPlan(f, { cell: 48, anims, views: EIGHT_VIEWS, props: true });
+        expect(qa.filter((r) => !r.ok).map((r) => `${id}${rpg ? ' rpg' : ''} ${r.clip}`)).toEqual([]);
+      }
+    // de espaldas, el cuerpo de Steph no sube y baja al correr (el pie apoyado no se corre con la profundidad)
+    const top = renderClip(familyFicha('steph'), 48, 'run', 'back').frames.map((fr) => { for (let i = 0; i < fr.data.length; i += 4) if (fr.data[i + 3]) return Math.floor(i / 4 / fr.w); return -1; });
+    expect(Math.max(...top) - Math.min(...top)).toBeLessThanOrEqual(1);
+  }, 300000);
   it('la armadura evoluciona en el héroe: 5 niveles por línea, con casco, y pasa el control de calidad', () => {
     const rick = familyFicha('rick');
     const px = (f: HumanFicha) => Buffer.from(renderClip(f, 48, 'idle', 'se').frames[0].data).toString('base64');

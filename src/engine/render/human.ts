@@ -66,6 +66,8 @@ const DIGITS: Record<string, string[]> = {
 };
 
 const P_FRONT = 0.3;
+/** largo de cada arma desde la mano hasta la punta (en unidades de 48 px) */
+const WEAPON_REACH = { sword: 13, dagger: 7, greatsword: 18, axe: 12, mace: 10, club: 11, hammer: 13, spear: 21, staff: 17, scythe: 18, wand: 8, claws: 7 } as const;
 /** vistas en diagonal (isométrica, tipo Diablo): lo que va hacia adelante se ve corrido a la derecha y un poco más abajo */
 const DIAG_X = 0.7, DIAG_Z = 0.7, DIAG_LEAN = 0.6;
 /** se = de frente mirando abajo a la derecha, ne = de espalda mirando arriba a la derecha (las otras dos son espejos) */
@@ -148,8 +150,14 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     // de frente: adelante se ve como un poco más abajo (de espalda, más arriba)
     const P = view === 'front' ? P_FRONT : -P_FRONT;
     const z = (foot.z ?? 0) * (far ? -1 : 1) * sign;
+    // el pie apoyado no se corre con la profundidad (si se corriera, el cuerpo daría un saltito cada medio paso);
+    // solo el pie en el aire lleva la perspectiva, y nunca baja del piso
+    const ymax = Math.max(pose.legs.near.y, pose.legs.far.y);
+    const lifted = Math.max(0, Math.min(1, (ymax - foot.y) / (0.15 * (d.legUpper + d.legLower))));
     const proj = (p: [number, number], k: number): [number, number] => {
-      const v = rot(diag ? [z * k * DIAG_Z + p[0] * DIAG_X, p[1] + p[0] * P * DIAG_Z] : [z * k, p[1] + p[0] * P], theta);
+      const depth = p[0] * P * lifted * (diag ? DIAG_Z : 1);
+      const y = Math.min(ymax, p[1] + depth);
+      const v = rot(diag ? [z * k * DIAG_Z + p[0] * DIAG_X, k === 1 ? y : p[1] + depth] : [z * k, k === 1 ? y : p[1] + depth], theta);
       return add(root, v);
     };
     return { root, mid: proj(ik.mid, 0.5), end: proj(ik.end, 1), foot };
@@ -461,6 +469,21 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
       if (hangs) {
         if (side) ang = 28;
         else { const cx = local(0, d.torsoH / 2)[0]; ang = p[0] >= cx ? (view === 'back' ? 12 : 32) : (view === 'back' ? 168 : 148); }
+        // la mano casi en el piso (gatear): el arma se acuesta, si no se metería en el suelo
+        const floor = Math.max(legs.near.end[1], legs.far.end[1]);
+        if (p[1] > floor - 6 * d.u) ang = side ? 0 : p[0] >= local(0, d.torsoH / 2)[0] ? 0 : 180;
+      }
+      // un arma que apunta hacia afuera (el torbellino, un ataque largo) no puede salirse del cuadro: se levanta lo justo
+      if (!rest && !hangs && WEAPON_SET.has(kind) && kind !== 'bow') {
+        const reach = (WEAPON_REACH[kind as keyof typeof WEAPON_REACH] ?? 10) * d.u;
+        const lim = C / 2 - 3;
+        const hx = p[0]; // las piezas se dibujan con el pivote en 0
+        const cos = Math.cos((ang * Math.PI) / 180);
+        if (Math.abs(hx + reach * cos) > lim) {
+          const room = Math.max(-1, Math.min(1, (Math.sign(cos) * lim - hx) / reach));
+          const a = (Math.acos(room) * 180) / Math.PI;
+          ang = -a;
+        }
       }
       if (isBall(pr.kind)) drawBall(part, pr.kind, p, d.u);
       else drawHeld(part, pr.kind, p, ang, d.u, rest);

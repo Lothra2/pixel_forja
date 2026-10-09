@@ -50,7 +50,9 @@ export const whirlwind: AnimDef = {
   build: (c) =>
     Array.from({ length: 8 }, (_, i) => P(c, {
       torso: 6, legs: feet(c, 0.35, 0.3),
-      arms: { near: { shoulder: 92, elbow: 0, spread: 80 }, far: { shoulder: 92, elbow: 0, spread: 80 } },
+      // brazos abiertos del todo a los lados (en cruz): de lado van hacia la profundidad y no hacia adelante,
+      // así el arma gira sin salirse del cuadro aunque los brazos sean largos
+      arms: { near: { shoulder: 92, elbow: 0, spread: 90 }, far: { shoulder: 92, elbow: 0, spread: 90 } },
       face: { eyes: 'angry', mouth: i % 2 ? 'grin' : 'line' },
     })),
 };
