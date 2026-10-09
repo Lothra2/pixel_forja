@@ -54,3 +54,7 @@ export * from './world/map';
 export * from './ui/hud';
 export * from './audio/sfx';
 export * from './kit/gamekit';
+export * from './world/paint';
+export * from './world/landmarks';
+export * from './world/bosque';
+export * from './world/bosqueMap';

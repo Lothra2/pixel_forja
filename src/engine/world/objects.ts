@@ -18,6 +18,12 @@ export interface WorldObject {
   solid: [number, number, number, number] | null;
   /** animaciones: nombre -> cuadros */
   anims: Record<string, { frames: Raster[]; fps: number; loop: boolean }>;
+  /** cajas sólidas extra (por ejemplo las dos patas de un arco), relativas al apoyo */
+  solids?: [number, number, number, number][];
+  /** 'suelo' = se dibuja debajo de los personajes (puentes, piedras del vado, nenúfares). Si no, se ordena por y */
+  layer?: 'suelo';
+  /** luz que emite: color, radio en px, si parpadea, y altura de la luz sobre el apoyo (px hacia arriba) */
+  light?: { color: string; radius: number; flicker?: boolean; pulse?: boolean; dy?: number };
 }
 
 const leaf = (hex: string): MatDef => ({ hex, kind: 'fur' });
@@ -168,7 +174,7 @@ export function campfire(): WorldObject {
     const sparks: P[] = f % 2 ? [[14 + f, 10 - f * 0.4]] : [];
     frames.push(c.render({ sparkles: sparks, shadow: [16, 27, 10, 2] }));
   }
-  return { name: 'fogata', w: 32, h: 32, anchor: [16, 28], solid: [-8, -4, 16, 4], anims: { idle: { frames, fps: 10, loop: true } } };
+  return { name: 'fogata', w: 32, h: 32, anchor: [16, 28], solid: [-8, -4, 16, 4], anims: { idle: { frames, fps: 10, loop: true } }, light: { color: '#ffa040', radius: 120, flicker: true, dy: 8 } };
 }
 
 export function torch(): WorldObject {
@@ -182,7 +188,7 @@ export function torch(): WorldObject {
     c.poly([[13.5, 28], [16, 28 - h * 0.6], [18.5, 28]], glowMat('#ffe08a'), { tone: 4 });
     frames.push(c.render({ shadow: [16, 92, 6, 2] }));
   }
-  return { name: 'antorcha', w: 16, h: 48, anchor: [8, 46], solid: [-2, -2, 4, 2], anims: { idle: { frames, fps: 8, loop: true } } };
+  return { name: 'antorcha', w: 16, h: 48, anchor: [8, 46], solid: [-2, -2, 4, 2], anims: { idle: { frames, fps: 8, loop: true } }, light: { color: '#ff8a3a', radius: 90, flicker: true, dy: 40 } };
 }
 
 /** Cosas que se rompen al pegarles (como en Diablo): caja, barril y vasija, con su animación de romperse. */
@@ -281,7 +287,7 @@ export function portal(color: 'azul' | 'rojo' = 'azul'): WorldObject {
   const opening = [0.15, 0.35, 0.6, 0.85, 1, 1].map((o, i) => frame(o, i));
   const loop = Array.from({ length: 8 }, (_, i) => frame(1, i + 6));
   const closing = [1, 0.8, 0.55, 0.3, 0.1, 0].map((o, i) => frame(o, i + 14));
-  return { name: `portal_${color}`, w: 64, h: 96, anchor: [32, 92], solid: null, anims: { abrir: { frames: opening, fps: 12, loop: false }, girar: { frames: loop, fps: 10, loop: true }, cerrar: { frames: closing, fps: 12, loop: false } } };
+  return { name: `portal_${color}`, w: 64, h: 96, anchor: [32, 92], solid: null, anims: { abrir: { frames: opening, fps: 12, loop: false }, girar: { frames: loop, fps: 10, loop: true }, cerrar: { frames: closing, fps: 12, loop: false } }, light: { color: pal[2], radius: 140, pulse: true, dy: 40 } };
 }
 
 /** Aviso del ataque del jefe en el piso: un círculo que se llena (el jugador tiene tiempo de salir). */
