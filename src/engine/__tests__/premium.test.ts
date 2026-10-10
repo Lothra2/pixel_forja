@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { familyFicha, renderPlan, renderClip, posesFor, EIGHT_VIEWS, migrateFicha, FICHA_VERSION, exportFiles, type HumanFicha, type CellSize, type ExportPlan } from '../index';
 import { buildGameKit } from '../kit/gamekit';
+import { buildSportsKit, SPORT_PACKS } from '../kit/sportskit';
+import { heroFicha, heroCell, HEROES } from '../rpg/heroes';
 import { PREMIUM } from '../anim/premium';
 import { ATHLETICS_PREMIUM } from '../anim/athletics';
 import { SWIM_PREMIUM } from '../anim/swim';
@@ -231,4 +233,30 @@ describe('movimiento premium', () => {
       expect(poses[hitAt].props?.some((p) => p.kind === 'spark'), a).toBe(true);
     }
   }, 600_000);
+
+  it('el kit deportivo trae hojas de 8 direcciones y un manifiesto con eventos, elevación y agua', () => {
+    const files = buildSportsKit({ athletes: { rick: premium('rick', false) }, packs: ['natacion', 'atletismo'], quick: true });
+    const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
+    expect(m.direcciones).toHaveLength(8);
+    const nat = m.atletas.rick.deportes.natacion, atl = m.atletas.rick.deportes.atletismo;
+    expect(nat.dive.agua.some((v: number | null) => v !== null)).toBe(true);
+    expect(nat.dive.eventos.map((e: { tipo: string }) => e.tipo)).toEqual(['despegue', 'impacto']);
+    expect(Math.max(...atl.javelin.elevacion ?? [0])).toBe(0);
+    expect(atl.javelin.eventos.some((e: { tipo: string }) => e.tipo === 'suelta')).toBe(true);
+    // cada hoja: 8 filas de celda 48
+    const png = files.find((f) => f.name === nat.dive.archivo)!;
+    expect(png.bytes.length).toBeGreaterThan(100);
+  }, 120_000);
+
+  it('los 6 héroes originales pasan el control en todos los deportes y 8 direcciones (con y sin arma)', () => {
+    const anims = [...new Set(Object.values(SPORT_PACKS).flat())];
+    for (const id of HEROES) for (const armed of [false, true]) {
+      const { qa, missing } = renderPlan(heroFicha(id, armed), { cell: heroCell(id), anims, views: EIGHT_VIEWS, props: true });
+      expect(missing, id).toEqual([]);
+      expect(qa.filter((r) => !r.ok).map((r) => `${id} ${armed} ${r.clip}`)).toEqual([]);
+    }
+    // nombres propios y sin emblemas ajenos: el coloso va en celda grande, el resto en 48
+    expect(heroCell('coloso')).toBe(64);
+    expect(HEROES.filter((h) => heroCell(h) === 48)).toHaveLength(5);
+  }, 1_800_000);
 });

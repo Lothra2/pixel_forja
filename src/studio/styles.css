@@ -500,3 +500,7 @@ p.ok { margin: 0; }
 .world-pair { display: flex; gap: 8px; align-items: flex-end; }
 @media (max-width: 900px) { .loot-body { grid-template-columns: 1fr; } .loot-detail { position: static; } .loot-grid { max-height: none; } }
 @media (max-width: 900px) { .rpg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* héroes: una sola animación por tarjeta, centrada */
+.tile.hero { text-align: center; cursor: pointer; }
+.tile.hero .family-stage { grid-template-columns: 1fr; justify-items: center; align-items: end; min-height: 110px; }

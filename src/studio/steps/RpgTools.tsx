@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  renderFx, exportFx, FX_ELEMENTS, FX_KINDS, FX_PALETTES, ENEMIES, FAMILY, FAMILY_GG,
-  type FamilyId, type FxElement, type FxKind, type CellSize, type EnemyId, type Raster,
+  renderFx, exportFx, FX_ELEMENTS, FX_KINDS, FX_PALETTES, ENEMIES, FAMILY, FAMILY_GG, HEROES, HERO_DEFS,
+  type FamilyId, type HeroId, type FxElement, type FxKind, type CellSize, type EnemyId, type Raster,
 } from '../../engine/index';
 import type { FrameSet } from '../protocol';
-import type { Key } from '../i18n';
+import type { Key, Lang } from '../i18n';
 import { Seg, type T } from '../components/ui';
 import { downloadFiles } from '../util';
 
@@ -182,6 +182,35 @@ export function FamilyRow({ t, render, open, renderPet, openPet }: {
     <div className="family-grid" data-testid="family">
       {FAMILY.map((id) => <FamilyCard key={id} id={id} t={t} render={render} open={open} />)}
       <PetCard t={t} render={renderPet} open={openPet} />
+    </div>
+  );
+}
+
+// ---------- héroes originales ----------
+
+function HeroCard({ id, lang, render, open }: { id: HeroId; lang: Lang; render: (id: HeroId) => Promise<FrameSet | null>; open: (id: HeroId) => void }) {
+  const [clip, setClip] = useState<FrameSet | null>(null);
+  useEffect(() => {
+    let live = true;
+    render(id).then((c) => { if (live) setClip(c); });
+    return () => { live = false; };
+  }, [id, render]);
+  const h = HERO_DEFS[id];
+  return (
+    <button className="tile family hero" onClick={() => open(id)} data-testid={`hero-${id}`} title={h.idea[lang]}>
+      <div className="family-stage">
+        {clip ? <AnimCanvas frames={clip.frames} cell={clip.cell} fps={clip.fps} zoom={clip.cell > 48 ? 2 : 3} /> : <span className="muted small">···</span>}
+      </div>
+      <strong>{h.name[lang]}</strong>
+      <span className="muted small">{h.idea[lang]}</span>
+    </button>
+  );
+}
+
+export function HeroRow({ lang, render, open }: { lang: Lang; render: (id: HeroId) => Promise<FrameSet | null>; open: (id: HeroId) => void }) {
+  return (
+    <div className="family-grid" data-testid="heroes">
+      {HEROES.map((id) => <HeroCard key={id} id={id} lang={lang} render={render} open={open} />)}
     </div>
   );
 }

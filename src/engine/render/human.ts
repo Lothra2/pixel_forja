@@ -111,7 +111,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const ink = (r: Ramp): Ramp => (style?.outline === 'black' ? ['#16121c', r[1], r[2], r[3]] : r);
   const mats = new Materials({
     skin: ink(f.palette.skin), hair: ink(f.palette.hair), top: ink(f.palette.top), bottom: ink(f.palette.bottom), socks: ink(f.palette.socks),
-    shoes: ink(f.palette.shoes), accessory: ink(f.palette.accessory), face: ink(f.palette.skin),
+    shoes: ink(f.palette.shoes), accessory: ink(f.palette.accessory), face: ink(f.palette.skin), ears: ink(f.palette.skin),
   } as Record<string, Ramp>);
   const fo = f.outfit;
   if (fo.pattern && fo.pattern !== 'liso') mats.add('top2', ink(makeRamp(fo.pattern2 ?? '#f2f2f2')));
@@ -589,7 +589,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   // la caja que decide el encuadre es la del cuerpo y la cara, más el contorno
   // materiales de implementos (raqueta, espada, pelota): fuera de la caja del cuerpo si se pide
   const propMats = opt.propsApart ? new Set(Object.keys(PROP_COLORS).map((k) => mats.id(`p_${k}`))) : undefined;
-  const soft = lpcBox ? bodyBox(canvas, 0, 0, mats.id('hair'), false, propMats) : null;
+  // premium: las orejas (de gato, de lobo) son como el pelo: pueden recortarse en la punta en una pose extrema
+  const softSkip = opt.propsApart ? new Set([...(propMats ?? []), mats.id('ears')]) : propMats;
+  const soft = lpcBox ? bodyBox(canvas, 0, 0, mats.id('hair'), false, softSkip) : null;
   if (!opt.noOutline)
     finalizeOutlines(canvas, {
       fused: [[Layer.FarLeg, Layer.Torso], [Layer.NearLeg, Layer.Torso], [Layer.Skirt, Layer.Torso]],

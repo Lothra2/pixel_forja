@@ -11,7 +11,7 @@ import { StyleStep } from './steps/StyleStep';
 import { EditorStep } from './steps/EditorStep';
 import { ExportStep } from './steps/ExportStep';
 import { AvatarStep } from './steps/AvatarStep';
-import { EnemiesStep, FxStep, FamilyRow } from './steps/RpgTools';
+import { EnemiesStep, FxStep, FamilyRow, HeroRow } from './steps/RpgTools';
 import { LootStep } from './steps/LootStep';
 import { loadGallery, saveGallery, upsert, type GalleryItem } from './gallery';
 import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, safeName } from './util';
@@ -21,7 +21,7 @@ import {
   DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
   applyClass, CLASS_KITS, enemyFicha, enemyCell, enemyAnims, type Gear, type HeroClass, type EnemyId,
   familyFicha, thorFicha, type FamilyId, applyArmorTier, equipLoot, type ArmorLine, type ArmorTier, type LootItem,
-  isPremiumClip, type MovementProfile,
+  isPremiumClip, type MovementProfile, heroFicha, heroCell, type HeroId,
 } from '../engine/index';
 
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export' | ToolStep;
@@ -431,6 +431,18 @@ export function App() {
     setAnim('walk');
     setStep('style');
   };
+  // héroes originales: de pelea con su arma en la tarjeta; se abren con ropa de deporte y movimiento premium
+  const renderHero = useCallback(async (id: HeroId) => {
+    const r = await engine.call<'rendered'>({ type: 'render', key: `hero-${id}`, ficha: heroFicha(id, true), cell: heroCell(id), anim: 'guard', view: 'se', props: true }).catch(() => null);
+    return r ? r.clip : null;
+  }, [engine]);
+  const openHero = (id: HeroId) => {
+    openFicha(heroFicha(id));
+    setCell(heroCell(id));
+    setView('se');
+    setAnim('sprint');
+    setStep('animate');
+  };
   // la familia GG: se abre en el creador de avatar, lista para modificar
   const openFamily = (id: FamilyId, rpg: boolean) => {
     const f = familyFicha(id, rpg);
@@ -597,6 +609,8 @@ export function App() {
               <>
                 <div className="section-h"><h3>{t('fam_title')}</h3><span className="muted small">{t('fam_help')}</span></div>
                 <FamilyRow t={t} render={renderFamily} open={openFamily} renderPet={renderThor} openPet={openThor} />
+                <div className="section-h"><h3>{t('hero_title')}</h3><span className="muted small">{t('hero_help')}</span></div>
+                <HeroRow lang={lang} render={renderHero} open={openHero} />
                 <div className="section-h"><h3>{t('rpg_workshop')}</h3><span className="muted small">{t('rpg_workshopHelp')}</span></div>
                 <div className="home-grid rpg-grid">
                   <button className="tile" onClick={() => { startFromScratch(); setHeroClass('paladin'); setStep('style'); }} data-testid="rpg-hero">

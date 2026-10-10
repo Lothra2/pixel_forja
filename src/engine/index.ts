@@ -50,6 +50,7 @@ export * from './fx/stomp';
 export * from './loot/index';
 export * from './rpg/presets';
 export * from './rpg/family';
+export * from './rpg/heroes';
 export * from './rpg/export';
 export * from './world/tiles';
 export * from './world/objects';

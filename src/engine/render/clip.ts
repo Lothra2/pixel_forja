@@ -170,7 +170,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     // un solo corrimiento para todo el ciclo: se centra la unión de todos los cuadros 'shared' (el más largo manda)
     const shared = poses.map((p, i) => (p.fit === 'shared' ? i : -1)).filter((i) => i >= 0);
     if (shared.length) {
-      const boxOf = (r: BigFrame) => r.whole ?? r.body;
+      const boxOf = boxFor;
       const union = (list: BigFrame[]) => {
         let x0 = Infinity, x1 = -Infinity;
         for (const r of list) { const q = boxOf(r); if (q) { x0 = Math.min(x0, q.x0); x1 = Math.max(x1, q.x1); } }
@@ -194,7 +194,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     big = big.map((b, i) => {
       if (poses[i].fit !== true || !b.body) return b;
       // lo que entra en la celda va de left+1 a left+cell-2: su centro está medio pixel antes del pivote
-      const offOf = (r: BigFrame) => { const q = r.whole ?? r.body; return q ? r.pivotX - 0.5 - (q.x0 + q.x1) / 2 : 0; };
+      const offOf = (r: BigFrame) => { const q = boxFor(r); return q ? r.pivotX - 0.5 - (q.x0 + q.x1) / 2 : 0; };
       const probe = renderAt({ ...poses[i], x: poses[i].x + 4 }, i);
       const perUnit = probe.body ? (offOf(b) - offOf(probe)) / 4 : 0;
       if (Math.abs(perUnit) < 0.25) return b;
@@ -346,6 +346,12 @@ function mirrorBig(b: BigFrame): BigFrame {
   const W = b.raster.w;
   const fx = (box: BigFrame['body']) => (box ? { x0: W - 1 - box.x1, x1: W - 1 - box.x0, y0: box.y0, y1: box.y1 } : box);
   return { ...b, raster: mirror(b.raster), pivotX: W - b.pivotX, body: fx(b.body), full: b.full === undefined ? undefined : fx(b.full), joints: undefined };
+}
+
+/** Caja para centrar: con el pelo si cabe en la celda; si no, el cuerpo (y la punta del pelo se recorta). */
+function boxFor(r: BigFrame) {
+  const cell = r.raster.w / 3;
+  return r.whole && r.whole.x1 - r.whole.x0 + 1 <= cell - 2 ? r.whole : r.body;
 }
 
 /**

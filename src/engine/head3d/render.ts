@@ -42,7 +42,7 @@ export const HEAD_STYLES: Record<string, HeadStyle> = {
 
 export interface ModelHeadPal {
   hex: string;
-  mat: 'hair' | 'skin' | 'face' | 'beard' | 'accessory';
+  mat: 'hair' | 'skin' | 'face' | 'beard' | 'accessory' | 'ears';
   /** pelo largo por debajo de la barbilla: va detrás del cuerpo */
   back: boolean;
   /** color del contorno de este color */

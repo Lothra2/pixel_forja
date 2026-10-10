@@ -168,8 +168,9 @@ export const poleVault: AnimDef = {
     const rock = P(c, { torso: -110, rise: R(22), legs: { near: { x: 0.25 * L, y: -0.75 * L, toe: 0 }, far: { x: 0.15 * L, y: -0.7 * L, toe: 0 } },
       arms: { near: { shoulder: 175, elbow: 5 }, far: { shoulder: 170, elbow: 5 } }, face, props: [pole(88, 5)] });
     // de cabeza: todo estirado sobre la garrocha que se endereza y lo lanza
-    const invert = P(c, { torso: 180, rise: R(32), legs: { near: { x: 0.05 * L, y: -0.95 * L, toe: 0 }, far: { x: -0.05 * L, y: -0.95 * L, toe: 0 } },
-      arms: { near: { shoulder: 178, elbow: 0 }, far: { shoulder: 175, elbow: 0 } }, face, props: [pole(90, 0)] });
+    // de cabeza las piernas van casi estiradas (estiradas del todo no cabe un adulto robusto en la celda)
+    const invert = P(c, { torso: 180, rise: R(32), legs: { near: { x: 0.15 * L, y: -0.6 * L, toe: 0 }, far: { x: 0.05 * L, y: -0.6 * L, toe: 0 } },
+      arms: { near: { shoulder: 160, elbow: 10 }, far: { shoulder: 158, elbow: 10 } }, face, props: [pole(90, 0)] });
     // empuje y suelta: gira, se empuja con los brazos y la garrocha se va
     const push = P(c, { torso: 150, rise: R(38), legs: { near: { x: 0.25 * L, y: -0.8 * L, toe: 0 }, far: { x: 0.15 * L, y: -0.85 * L, toe: 0 } },
       arms: { near: { shoulder: 120, elbow: 0 }, far: { shoulder: 115, elbow: 0 } }, face: { eyes: 'angry', mouth: 'grin' } });

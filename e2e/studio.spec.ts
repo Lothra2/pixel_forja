@@ -405,3 +405,23 @@ test('atletismo: la garrocha sube sobre su sombra en la vista previa', async ({ 
   await page.screenshot({ path: `${shots}/${tag}_42_garrocha.png`, fullPage: true });
   expect(errors).toEqual([]);
 });
+
+test('héroes originales: aparecen en el inicio y se abren listos para animar', async ({ page }, info) => {
+  test.setTimeout(120000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await expect(page.getByTestId('heroes').locator('canvas')).toHaveCount(6, { timeout: 60000 });
+  await page.screenshot({ path: `${shots}/${tag}_43_heroes.png`, fullPage: true });
+  await page.getByTestId('hero-pantera').click();
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  // el coloso va en celda grande
+  await page.getByTestId('step-image').click();
+  await page.getByTestId('hero-coloso').click();
+  await idle(page);
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

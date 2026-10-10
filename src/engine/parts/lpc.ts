@@ -174,7 +174,8 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
   const layers: Layer[] = [];
   if (look.hair) layers.push({ key: `hairbg/${look.hair}`, mat: 'hair', map: tinted(colors.hair) });
   const earMap = look.ears === 'cat' || look.ears === 'wolf' ? tinted(colors.hair) : skin;
-  if (look.ears) layers.push({ key: `earsbg/${look.ears}`, mat: 'skin', map: earMap });
+  // las orejas llevan su propio material (con la rampa de la piel): así se pueden tratar como el pelo al encuadrar
+  if (look.ears) layers.push({ key: `earsbg/${look.ears}`, mat: 'ears', map: earMap });
   if (look.horns) layers.push({ key: `hornsbg/${look.horns}`, mat: 'accessory', map: (c) => c });
   layers.push({
     key: `head/${look.head}`, mat: 'skin',
@@ -188,7 +189,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
     if (look.beard) layers.push({ key: `beard/${look.beard}`, mat: 'beard', map: tinted(colors.beard) });
     if (look.mustache && dir !== 'up') layers.push({ key: `mustache/${look.mustache}`, mat: 'beard', map: tinted(colors.beard) });
   }
-  if (look.ears) layers.push({ key: `ears/${look.ears}`, mat: 'skin', map: earMap });
+  if (look.ears) layers.push({ key: `ears/${look.ears}`, mat: 'ears', map: earMap });
   if (look.hair) layers.push({ key: `hair/${look.hair}`, mat: 'hair', map: tinted(colors.hair) });
   if (look.horns) layers.push({ key: `horns/${look.horns}`, mat: 'accessory', map: (c) => c });
   if (look.glasses && dir !== 'up') {
