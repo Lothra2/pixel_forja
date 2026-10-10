@@ -92,7 +92,10 @@ function clipFiles(kind: ExportKind, clips: RenderedClip[], tag: string, base: s
         fr.sourceSize = { w: fr.sourceSize.w * k, h: fr.sourceSize.h * k };
       }
       sj.cell = [sj.cell[0] * k, sj.cell[1] * k];
-      for (const a of Object.values(sj.anims)) if (a.avance) a.avance *= k;
+      for (const a of Object.values(sj.anims)) {
+        if (a.avance) a.avance *= k;
+        if (a.elevacion) a.elevacion = a.elevacion.map((v) => v * k);
+      }
       sj.pivot = [sj.pivot[0] * k, sj.pivot[1] * k];
       sj.meta = { ...sj.meta, image: `${name}.png`, size: { w: big.w, h: big.h }, scale: String(k) as '1' };
       return [{ name: `${name}.png`, bytes: encodePng(big), mime: 'image/png' }, { name: `${name}.json`, bytes: json(sj), mime: 'application/json' }];

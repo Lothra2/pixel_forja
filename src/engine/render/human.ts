@@ -45,6 +45,9 @@ export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 
 export type Joints = Record<JointName, [number, number]>;
 
 /** Caja de lo que no es implemento, ya en coordenadas del cuadro grande. */
+/** Implementos largos que se sostienen (garrocha, jabalina): nunca marcan el piso. */
+export const LONG_HELD = new Set<string>(['pole', 'javelin']);
+
 export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99): BigFrame['body'] {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let y = 0; y < c.h; y++)
@@ -489,7 +492,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
         }
       }
       if (isBall(pr.kind)) drawBall(part, pr.kind, p, d.u);
-      else drawHeld(part, pr.kind, p, ang, d.u, rest);
+      else drawHeld(part, pr.kind, p, ang, d.u, rest, pr.bend ?? 0);
       // estela del golpe: arco claro de dos pixeles a lo largo del recorrido del filo, sin contorno
       const sm = pr.smear?.[viewIn];
       if (sm) {
@@ -546,7 +549,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   // ---------- piso: el punto más bajo toca el suelo (o queda a `air` pixeles) ----------
   // el piso lo toca el cuerpo: un hacha o un báculo que cuelgan más abajo que los pies no levantan al personaje
   const bbAll = canvas.bbox();
-  const bbBody = gear ? bodyBox(canvas, 0, 0) : null;
+  const bbBody = gear || props.some((q) => LONG_HELD.has(q.kind)) ? bodyBox(canvas, 0, 0) : null;
   const bb = bbBody ? { y1: bbBody.y1 } : bbAll;
   const hipH = pose.hipH;
   const groundCanvas = hipH !== undefined ? canvas.oy + Math.round(hipH) : (bb ? bb.y1 + 1 : canvas.oy) + Math.round(pose.air);

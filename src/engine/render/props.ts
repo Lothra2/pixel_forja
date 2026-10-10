@@ -7,18 +7,18 @@ import type { PropKind } from '../rig/pose';
  * a partir de un punto de enganche y un ángulo. u = escala (1 a 48 px).
  */
 export function ballSize(kind: PropKind, u: number): number {
-  const base = kind === 'basketball' || kind === 'volleyball' ? 7 : kind === 'soccer' ? 6 : kind === 'baseball' ? 3 : 3;
-  return Math.max(kind === 'tennisball' || kind === 'baseball' ? 2 : 4, Math.round(base * u));
+  const base = kind === 'basketball' || kind === 'volleyball' ? 7 : kind === 'soccer' ? 6 : kind === 'shot' ? 4 : kind === 'baseball' ? 3 : 3;
+  return Math.max(kind === 'tennisball' || kind === 'baseball' ? 2 : kind === 'shot' ? 3 : 4, Math.round(base * u));
 }
 
 export function isBall(kind: PropKind): boolean {
-  return kind === 'soccer' || kind === 'basketball' || kind === 'volleyball' || kind === 'tennisball' || kind === 'baseball';
+  return kind === 'soccer' || kind === 'basketball' || kind === 'volleyball' || kind === 'tennisball' || kind === 'baseball' || kind === 'shot';
 }
 
 /** Dibuja un balón con centro en c. */
 export function drawBall(part: Part, kind: PropKind, c: [number, number], u: number) {
   const s = ballSize(kind, u);
-  const main = kind === 'basketball' ? 'p_orange' : kind === 'tennisball' ? 'p_lime' : 'p_white';
+  const main = kind === 'basketball' ? 'p_orange' : kind === 'tennisball' ? 'p_lime' : kind === 'shot' ? 'p_iron' : 'p_white';
   blob(part, c, s, main, BASE);
   const r = (s - 1) / 2;
   const ox = Math.round(c[0] - r), oy = Math.round(c[1] - r);
@@ -56,12 +56,35 @@ export function drawBall(part: Part, kind: PropKind, c: [number, number], u: num
  * Implementos que se sostienen: el ángulo dice hacia dónde apunta (0 = derecha, 90 = abajo).
  * at = punto de agarre (mano).
  */
-export function drawHeld(part: Part, kind: PropKind, at: [number, number], angle: number, u: number, rest = false) {
+export function drawHeld(part: Part, kind: PropKind, at: [number, number], angle: number, u: number, rest = false, bend = 0) {
   const dir = (len: number): [number, number] => {
     const [x, y] = rot([len, 0], angle);
     return [at[0] + x, at[1] + y];
   };
   const t = Math.max(1, Math.round(u));
+  const nn = (v: number) => Math.max(1, Math.round(v * u));
+  if (kind === 'javelin') {
+    // jabalina: vara fina y larga tomada por el medio (la empuñadura de cuerda), punta de metal adelante
+    const len = nn(26);
+    stroke(part, dir(-len * 0.42), dir(len * 0.58), 1, () => 'p_metal', LIGHT);
+    stroke(part, dir(-nn(1.5)), dir(nn(1.5)), t, () => 'p_leather');
+    stroke(part, dir(len * 0.58 - nn(3)), dir(len * 0.58), 1, () => 'p_steel', SHADOW);
+    return;
+  }
+  if (kind === 'pole') {
+    // garrocha: muy larga, tomada cerca de una punta; se dobla en un arco cuando se clava
+    const len = nn(40), k = bend * u, segs = 12;
+    let prev = dir(-nn(3));
+    for (let i = 1; i <= segs; i++) {
+      const s = i / segs, along = -nn(3) + (len + nn(3)) * s;
+      const off = k * Math.sin(Math.PI * s);
+      const [bx, by] = rot([along, off], angle);
+      const cur: [number, number] = [at[0] + bx, at[1] + by];
+      stroke(part, prev, cur, t, () => (s > 0.92 ? 'p_black' : 'p_yellow'), s < 0.5 ? LIGHT : BASE);
+      prev = cur;
+    }
+    return;
+  }
   if (kind === 'racket') {
     const handle = Math.round(5 * u), head = Math.max(4, Math.round(6 * u)), wide = Math.max(3, Math.round(5 * u));
     stroke(part, dir(-1), dir(handle), t, () => 'p_black');

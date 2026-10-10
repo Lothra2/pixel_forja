@@ -264,12 +264,16 @@ canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; border-
 .ev-dot.ev-paso { background: #4ade80; }
 .ev-dot.ev-impacto { background: #ff4f6d; transform: rotate(45deg); }
 .ev-dot.ev-suelta { background: #60a5fa; }
+.ev-dot.ev-despegue { background: #fbbf24; border-radius: 6px 6px 0 0; }
+.ev-dot.ev-aterriza { background: #c084fc; border-radius: 0 0 6px 6px; }
 .tl-count { min-width: 42px; text-align: center; font: 700 11px/1 var(--pixel); color: var(--muted); }
 .seg.speed button { min-width: 34px; }
 .ev-flash { position: absolute; top: 10px; left: 12px; padding: 5px 8px; border-radius: 7px; font: 700 10px/1 var(--pixel); letter-spacing: 0.6px; text-transform: uppercase; color: #0b0a12; animation: evpop 0.18s steps(2); }
 .ev-flash.ev-paso { background: #4ade80; }
 .ev-flash.ev-impacto { background: #ff4f6d; color: #fff; }
 .ev-flash.ev-suelta { background: #60a5fa; }
+.ev-flash.ev-despegue { background: #fbbf24; }
+.ev-flash.ev-aterriza { background: #c084fc; }
 @keyframes evpop { from { transform: scale(1.25); } to { transform: scale(1); } }
 .controls.motion { padding-top: 2px; }
 @media (prefers-reduced-motion: reduce) { .ev-flash { animation: none; } }

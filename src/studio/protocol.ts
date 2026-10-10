@@ -33,6 +33,8 @@ export interface FrameSet {
   profile: 'classic' | 'premium';
   /** pasos y golpes (premium), con el cuadro donde caen */
   events?: { type: AnimEvent['type']; frame: number }[];
+  /** cuánto sube el juego el sprite en cada cuadro (saltos que no caben en la celda) */
+  rise?: number[];
   frames: Uint8ClampedArray[];
 }
 

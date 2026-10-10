@@ -6,7 +6,7 @@ import { makeCtx, type AnimDef, type AnimEvent } from '../anim/types';
 import { humanAnim, animalAnim, customToDef } from '../anim/registry';
 import { premiumAnim, swingWeapon } from '../anim/premium';
 import type { Pose } from '../rig/pose';
-import { renderHuman, type BigFrame, type Joints, type RenderOptions, type RenderView } from './human';
+import { renderHuman, LONG_HELD, type BigFrame, type Joints, type RenderOptions, type RenderView } from './human';
 import { renderPet3d, type PetView } from './pet3d';
 import type { View } from './head';
 
@@ -39,6 +39,8 @@ export interface RenderedClip {
   steady: boolean;
   /** false si el clip no cabe en la celda ni corriéndolo */
   fits: boolean;
+  /** cuánto sube el juego el sprite en cada cuadro (saltos que no caben en la celda), en pixeles */
+  rise?: number[];
   /** encuadre fijo (premium): los cuadros que se salen de la celda */
   overflow?: number[];
   /** por cuadro, alto del cuerpo sin implementos (arriba y abajo, en la celda): el control de calidad mide con esto */
@@ -108,19 +110,24 @@ export function posesFor(f: Ficha, cell: CellSize, name: string, view: View = 's
 export function scalePose(p: Pose, k: number): Pose {
   const foot = (q: Pose['legs']['near']) => ({ ...q, x: q.x * k, y: q.y * k, ...(q.z !== undefined ? { z: q.z * k } : {}) });
   return {
-    ...p, x: p.x * k, air: p.air * k, ...(p.hipH !== undefined ? { hipH: p.hipH * k } : {}),
+    ...p, x: p.x * k, air: p.air * k, ...(p.hipH !== undefined ? { hipH: p.hipH * k } : {}), ...(p.rise !== undefined ? { rise: p.rise * k } : {}),
     head: { ...p.head, dx: p.head.dx * k, dy: p.head.dy * k },
     legs: { near: foot(p.legs.near), far: foot(p.legs.far) },
     props: p.props?.map((q) => ({ ...q, ...(q.x !== undefined ? { x: q.x * k } : {}), ...(q.y !== undefined ? { y: q.y * k } : {}) })),
   };
 }
 
-export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewName = 'side', opt: RenderOptions = {}): RenderedClip {
+export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewName = 'side', opt: RenderOptions = {}): RenderedClip {
+  // de lado nomás (garrocha): de frente y de espalda se usa la diagonal más cercana
+  const lateral = !!humanDef(f, name)?.lateral && (asked === 'front' || asked === 'back');
+  const view: ViewName = lateral ? (asked === 'front' ? 'se' : 'ne') : asked;
   const base: RenderView = MIRRORED[view] ?? (view as RenderView);
   // las diagonales usan las poses pensadas de lado (adelante = hacia la derecha)
   const poseView: View = base === 'se' || base === 'ne' ? 'side' : base;
   let big: BigFrame[], fps: number, loop: boolean, steady: boolean, airborne: boolean[];
-  let events: AnimEvent[] | undefined, stride: number | undefined;
+  let events: AnimEvent[] | undefined, stride: number | undefined, rise: number[] | undefined;
+  // garrocha o jabalina: largas, no marcan el piso (el control mide el cuerpo, como con el equipo de RPG)
+  let longHeld: boolean[] = [];
   const premium = isPremiumClip(f, name);
   if (isHuman(f)) {
     const def = humanDef(f, name);
@@ -164,8 +171,33 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
       }
       return out;
     });
+    // premium, en acciones de un disparo (no ciclos): si un cuadro se sale de la celda por la cabeza grande del chibi
+    // (pasa a 32 px), se corre lo justo para que entre. En los ciclos manda el control: ahí correrlo sería temblor
+    if (premium && !def.steady && !def.loop) {
+      const left0 = big[0].pivotX - cell / 2;
+      big = big.map((b, i) => {
+        if (!b.body || poses[i].fit) return b;
+        const need = b.body.x0 < left0 + 1 ? left0 + 1 - b.body.x0 : b.body.x1 > left0 + cell - 2 ? left0 + cell - 2 - b.body.x1 : 0;
+        if (!need || b.body.x1 - b.body.x0 + 1 > cell - 2) return b;
+        const probe = renderAt({ ...poses[i], x: poses[i].x + 4 }, i);
+        const perUnit = probe.body ? (probe.body.x0 - b.body.x0) / 4 : 0;
+        if (Math.abs(perUnit) < 0.25) return b;
+        let out = b;
+        for (let k = 0, x = poses[i].x; k < 3; k++) {
+          const ob = out.body!;
+          const d = ob.x0 < left0 + 1 ? left0 + 1 - ob.x0 : ob.x1 > left0 + cell - 2 ? left0 + cell - 2 - ob.x1 : 0;
+          if (!d) break;
+          x += (d + Math.sign(d) * 0.4) / perUnit;
+          poses[i] = { ...poses[i], x };
+          out = renderAt(poses[i], i);
+        }
+        return out;
+      });
+    }
     fps = def.fps; loop = def.loop; steady = !!def.steady;
-    airborne = poses.map((p) => p.air > 0 || p.hipH !== undefined);
+    airborne = poses.map((p) => p.air > 0 || p.hipH !== undefined || (p.rise ?? 0) > 0);
+    if (poses.some((p) => p.rise)) rise = poses.map((p) => Math.round(p.rise ?? 0));
+    longHeld = poses.map((p) => !!p.props?.some((q) => LONG_HELD.has(q.kind)));
   } else {
     const def = animalAnim(name);
     if (!def) throw new Error(`No existe la animación ${name}`);
@@ -180,8 +212,8 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
   const { frames, fits, top, left, overflow } = cropClip(big, cell, premium);
   // el cuerpo sin armas ni balones (con el pelo y el contorno): un hacha colgando no cuenta como pie
   // solo con equipo de RPG: sin equipo el piso lo marca todo lo dibujado (balones, raquetas) y se mide igual
-  const useBodies = isHuman(f) && !!f.gear;
-  const bodies = big.map((b) => (useBodies && b.full ? { y0: b.full.y0 - top, y1: b.full.y1 - top } : null));
+  const useBodies = (i: number) => isHuman(f) && (!!f.gear || !!longHeld[i]);
+  const bodies = big.map((b, i) => (useBodies(i) && b.full ? { y0: b.full.y0 - top, y1: b.full.y1 - top } : null));
   const mirrored = !!MIRRORED[view];
   // articulaciones en coordenadas de la celda final (espejadas si la vista es espejo)
   const joints = premium && big.every((b) => b.joints)
@@ -191,6 +223,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
     name, fps, loop, cell, view, frames: mirrored ? frames.map(mirror) : frames, airborne, steady, fits, bodies: bodies.some(Boolean) ? bodies : undefined,
     profile: premium ? 'premium' : 'classic',
     ...(overflow ? { overflow } : {}),
+    ...(rise ? { rise } : {}),
     ...(events?.length ? { events } : {}), ...(stride ? { stride } : {}), ...(joints ? { joints } : {}),
   };
 }

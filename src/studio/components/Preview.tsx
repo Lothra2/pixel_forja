@@ -31,6 +31,9 @@ export function backgroundPixels(kind: PreviewBg, cell: number): Uint8ClampedArr
 
 const SPEEDS = [0.25, 0.5, 1] as const;
 
+/** Lo más alto que sube el sprite en el clip (o en el comparado). */
+const liftOf = (a?: FrameSet | null, b?: FrameSet | null) => Math.max(0, ...(a?.rise ?? []), ...(b?.rise ?? []));
+
 /** Cada cuadro en su propio canvas (para dibujar encima del fondo y con transparencia en el papel cebolla). */
 function toCanvases(frames: Uint8ClampedArray[], cell: number): HTMLCanvasElement[] {
   return frames.map((f) => {
@@ -79,22 +82,34 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
     c2.playing = c1.playing;
     loaded.current = [clip, compare ?? null];
     const main = [big.current, small.current, small2.current].filter(Boolean) as HTMLCanvasElement[];
-    [...main, other.current].forEach((c) => { if (c) { c.width = cell; c.height = cell; } });
-    const paint = (c: HTMLCanvasElement, list: HTMLCanvasElement[], i: number, ghost: boolean, loop: boolean) => {
+    // saltos que no caben en la celda: el lienzo crece hacia arriba y el sprite sube sobre su sombra, como en el juego
+    const lift = liftOf(clip, compare);
+    [...main, other.current].forEach((c) => { if (c) { c.width = cell; c.height = cell + lift; } });
+    const paint = (c: HTMLCanvasElement, list: HTMLCanvasElement[], i: number, ghost: boolean, loop: boolean, rise: number[] | undefined) => {
       const g = c.getContext('2d')!;
-      g.clearRect(0, 0, cell, cell);
-      g.drawImage(back, 0, 0);
+      const r = rise?.[i] ?? 0;
+      g.clearRect(0, 0, cell, cell + lift);
+      g.drawImage(back, 0, lift);
+      if (lift) {
+        // sombra en el piso: más chica y más clara cuanto más alto va
+        const k = 1 - Math.min(0.6, r / (lift + cell * 0.25));
+        const rw = Math.max(2, Math.round(cell * 0.2 * k)), ry = Math.max(1, Math.round(cell * 0.04 * k));
+        const cx = cell / 2, cy = lift + cell - 2;
+        g.fillStyle = `rgba(0,0,0,${(0.16 + 0.22 * k).toFixed(2)})`;
+        for (let y = -ry; y <= ry; y++) { const half = Math.round(rw * Math.sqrt(1 - (y * y) / ((ry + 0.5) * (ry + 0.5)))); g.fillRect(cx - half, cy + y, half * 2, 1); }
+      }
       if (ghost && list.length > 1 && (i > 0 || loop)) {
         g.globalAlpha = 0.3;
-        g.drawImage(list[(i - 1 + list.length) % list.length], 0, 0);
+        const j = (i - 1 + list.length) % list.length;
+        g.drawImage(list[j], 0, lift - (rise?.[j] ?? 0));
         g.globalAlpha = 1;
       }
-      g.drawImage(list[i], 0, 0);
+      g.drawImage(list[i], 0, lift - r);
     };
     redraw.current = () => {
       // el papel cebolla solo en el grande: el tamaño real es para ver cómo queda en el juego
-      main.forEach((c) => paint(c, sprites, c1.frame, onion && c === big.current, clip.loop));
-      if (sprites2 && other.current) paint(other.current, sprites2, c2.frame, onion, compare!.loop);
+      main.forEach((c) => paint(c, sprites, c1.frame, onion && c === big.current, clip.loop, clip.rise));
+      if (sprites2 && other.current) paint(other.current, sprites2, c2.frame, onion, compare!.loop, compare!.rise);
       setFrame(c1.frame);
       setPlaying(c1.playing);
     };
@@ -134,29 +149,32 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
   const now = evAt(frame);
   const premiumLabel = (p: FrameSet['profile']) => t(p === 'premium' ? 'motion_premium' : 'motion_classic');
   const w = clip.cell * zoom;
+  // con saltos el lienzo es más alto que ancho
+  const lift = liftOf(clip, compare);
+  const box = (width: number) => ({ width, height: (width * (clip.cell + lift)) / clip.cell, aspectRatio: `${clip.cell} / ${clip.cell + lift}` });
 
   return (
     <div className="preview-box" tabIndex={0} onKeyDown={onKey} aria-label={t('pb_keys')}>
       <div className="preview">
         <div className={compare ? 'pair' : 'solo'}>
           <figure>
-            <canvas ref={big} className="pixel" data-testid="preview-big" style={{ width: w, height: w }} />
+            <canvas ref={big} className="pixel" data-testid="preview-big" style={box(w)} />
             <figcaption>{compare ? premiumLabel(clip.profile) : `${t('zoomed')} ×${zoom}`}</figcaption>
           </figure>
           {compare && (
             <figure>
-              <canvas ref={other} className="pixel" data-testid="preview-compare" style={{ width: w, height: w }} />
+              <canvas ref={other} className="pixel" data-testid="preview-compare" style={box(w)} />
               <figcaption>{premiumLabel(compare.profile)}</figcaption>
             </figure>
           )}
         </div>
         <div className="preview-real">
           <figure>
-            <canvas ref={small} className="pixel" style={{ width: clip.cell, height: clip.cell }} />
+            <canvas ref={small} className="pixel" style={box(clip.cell)} />
             <figcaption>{t('realSize')}</figcaption>
           </figure>
           <figure>
-            <canvas ref={small2} className="pixel" style={{ width: clip.cell * 2, height: clip.cell * 2 }} />
+            <canvas ref={small2} className="pixel" style={box(clip.cell * 2)} />
             <figcaption>×2</figcaption>
           </figure>
         </div>

@@ -28,6 +28,7 @@ export interface Arm {
 export type PropKind =
   | 'soccer' | 'basketball' | 'volleyball' | 'tennisball' | 'baseball'
   | 'racket' | 'bat' | 'skate' | 'bike' | 'sword' | 'shield' | 'potion' | 'glove' | 'hurdle'
+  | 'javelin' | 'pole' | 'shot'
   | WeaponKind | OffhandKind | 'arrow';
 
 /** Armas de mano (RPG). */
@@ -59,6 +60,8 @@ export interface PropState {
    * pantalla, por vista. Es el "smear" de los animadores: en un solo cuadro se lee todo el recorrido.
    */
   smear?: Partial<Record<'side' | 'front' | 'back' | 'se' | 'ne', [number, number]>>;
+  /** curvatura (garrocha que se dobla): flecha del arco en pixeles a 48, + hacia abajo del palo */
+  bend?: number;
   /** delante de todo, también de la cabeza (un escudo que se levanta para bloquear). Con lista: solo en esas vistas */
   front?: boolean | ('side' | 'front' | 'back' | 'se' | 'ne')[];
 }
@@ -81,6 +84,11 @@ export interface Pose {
   roll?: number;
   /** altura fija de la cadera sobre el piso (bici): ignora el apoyo de los pies */
   hipH?: number;
+  /**
+   * Elevación que pone el juego (pixeles de la celda): para saltos que no caben en el cuadro (garrocha, remate) el
+   * cuerpo se dibuja cerca del piso y el juego sube el sprite sobre su sombra.
+   */
+  rise?: number;
   /** acostado (premium): el cuerpo se centra en la celda midiendo lo dibujado (la cabeza grande no cabe si no) */
   fit?: boolean;
   /** vaivén del pelo largo (lo calcula el clip a partir del movimiento) */

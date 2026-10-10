@@ -382,3 +382,26 @@ test('editor de poses: deshacer, rehacer y borrador que se recupera', async ({ p
   await expect(page.getByTestId('ed-draft')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('atletismo: la garrocha sube sobre su sombra en la vista previa', async ({ page }, info) => {
+  test.setTimeout(120000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('family-rick-casual').click();
+  await page.getByTestId('step-animate').click();
+  await idle(page);
+  await page.getByTestId('motion').getByRole('button', { name: 'Premium' }).click();
+  await page.getByTestId('pack').selectOption('athletics');
+  await page.getByTestId('anim').selectOption('pole_vault');
+  await idle(page);
+  // el lienzo es más alto que ancho: el salto no cabe en la celda y se dibuja arriba
+  await expect.poll(async () => { const b = (await page.getByTestId('preview-big').boundingBox())!; return b.height > b.width * 1.4; }, { timeout: 30000 }).toBe(true);
+  await expect(page.getByTestId('pb-timeline').locator('.ev-despegue')).toHaveCount(1);
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  await page.getByTestId('pb-toggle').click();
+  await page.getByTestId('pb-timeline').locator('button').nth(6).click();
+  await page.screenshot({ path: `${shots}/${tag}_42_garrocha.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});

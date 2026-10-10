@@ -33,6 +33,11 @@ export interface AnimDef {
   events?: AnimEvent[];
   /** de pie y con altura estable: aplica el control de altura y de temblor */
   steady?: boolean;
+  /**
+   * Solo se lee de lado y en diagonal (giros de cabeza, garrocha): de frente se usa la diagonal de abajo y de
+   * espalda la de arriba, así la hoja sigue teniendo 8 direcciones y ninguna se ve rota.
+   */
+  lateral?: boolean;
   /** vistas donde se usa (para exportar paquetes de 4 direcciones) */
   views?: View[];
   /** el pelo largo se va hacia atrás (correr) */
@@ -42,7 +47,8 @@ export interface AnimDef {
   build: (c: Ctx) => Pose[];
 }
 
-export interface AnimEvent { type: 'paso' | 'impacto' | 'suelta'; phase: number; foot?: 'near' | 'far' }
+/** paso, golpe, suelta (proyectil, efecto), despegue y aterriza (saltos) */
+export interface AnimEvent { type: 'paso' | 'impacto' | 'suelta' | 'despegue' | 'aterriza'; phase: number; foot?: 'near' | 'far' }
 
 export function makeCtx(d: Dims, build: number, view: View): Ctx {
   return { d, L: d.legUpper + d.legLower, A: d.armUpper + d.armLower, u: d.u, build, view };

@@ -69,7 +69,7 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
         const qa = runQA(req.ficha, c);
         const frames = c.frames.map((f) => f.data);
         const events = c.events?.map((e) => ({ type: e.type, frame: Math.min(frames.length - 1, Math.floor(e.phase * frames.length + 1e-6)) }));
-        reply({ type: 'rendered', clip: { name: c.name, fps: c.fps, cell: c.cell, view: c.view, loop: c.loop, profile: c.profile, events, frames }, qa }, frames.map((f) => f.buffer));
+        reply({ type: 'rendered', clip: { name: c.name, fps: c.fps, cell: c.cell, view: c.view, loop: c.loop, profile: c.profile, events, rise: c.rise, frames }, qa }, frames.map((f) => f.buffer));
         break;
       }
       case 'variants': {

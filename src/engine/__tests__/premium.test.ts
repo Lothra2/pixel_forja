@@ -2,9 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { familyFicha, renderPlan, renderClip, posesFor, EIGHT_VIEWS, migrateFicha, FICHA_VERSION, exportFiles, type HumanFicha, type CellSize, type ExportPlan } from '../index';
 import { buildGameKit } from '../kit/gamekit';
 import { PREMIUM } from '../anim/premium';
+import { ATHLETICS_PREMIUM } from '../anim/athletics';
 
 const premium = (id: 'rick' | 'steph' | 'sophie' | 'alana', rpg = true): HumanFicha => ({ ...familyFicha(id, rpg), movementProfile: 'premium' });
-const NAMES = PREMIUM.map((a) => a.name);
+const ATH = ATHLETICS_PREMIUM.map((a) => a.name);
+// las de héroe (con espada y escudo); el atletismo se prueba con ropa de calle
+const NAMES = PREMIUM.map((a) => a.name).filter((n) => !ATH.includes(n));
 
 describe('movimiento premium', () => {
   it('toda la familia pasa el control de calidad en 8 direcciones a 48 px (y Rick también a 32 y 64)', () => {
@@ -120,4 +123,42 @@ describe('movimiento premium', () => {
     expect(rick.anims.attack.eventos[0].tipo).toBe('impacto');
     expect(m.personajes.minotauro.perfil_movimiento).toBeUndefined();
   }, 120_000);
+
+  it('atletismo: toda la familia pasa el control en 8 direcciones y 3 tamaños', () => {
+    const casual = (id: 'rick' | 'steph' | 'sophie' | 'alana') => premium(id, false);
+    const runs: [HumanFicha, CellSize][] = [
+      [casual('rick'), 48], [casual('steph'), 48], [casual('sophie'), 48], [casual('alana'), 48], [casual('rick'), 32], [casual('alana'), 32], [casual('rick'), 64],
+    ];
+    for (const [f, cell] of runs) {
+      const { qa, missing } = renderPlan(f, { cell, anims: ATH, views: EIGHT_VIEWS, props: true });
+      expect(missing, f.name).toEqual([]);
+      expect(qa.filter((r) => !r.ok).map((r) => `${f.name} ${cell} ${r.clip}`)).toEqual([]);
+    }
+  }, 600_000);
+
+  it('garrocha y salto largo: el juego recibe la elevación, despegue y aterrizaje; de frente usa la diagonal', () => {
+    const f = premium('rick', false);
+    const pv = renderClip(f, 48, 'pole_vault', 'side', { props: true });
+    expect(Math.max(...pv.rise!)).toBeGreaterThan(30);
+    expect(pv.events!.map((e) => e.type)).toEqual(['paso', 'despegue', 'suelta', 'aterriza']);
+    // donde aterriza ya no sube
+    const land = Math.floor(pv.events!.find((e) => e.type === 'aterriza')!.phase * pv.frames.length);
+    expect(pv.rise![land]).toBe(0);
+    const lj = renderClip(f, 48, 'long_jump', 'side', { props: true });
+    expect(Math.max(...lj.rise!)).toBeGreaterThan(6);
+    // de frente se dibuja la diagonal de abajo: los mismos cuadros que se
+    const front = renderClip(f, 48, 'pole_vault', 'front', { props: true }), se = renderClip(f, 48, 'pole_vault', 'se', { props: true });
+    expect(Buffer.from(front.frames[5].data).equals(Buffer.from(se.frames[5].data))).toBe(true);
+    // la bala sale de la mano en el cuadro de la suelta y la jabalina igual
+    const sp = renderClip(f, 48, 'shot_put', 'side', { props: true });
+    expect(sp.events![0].type).toBe('suelta');
+    expect(renderClip(f, 48, 'javelin', 'side', { props: true }).events!.some((e) => e.type === 'suelta')).toBe(true);
+  });
+
+  it('la elevación viaja en la hoja y en el archivo de movimiento', () => {
+    const files = exportFiles(premium('rick', false), 'sheet', { cell: 48, anims: ['pole_vault'], views: ['side'], props: true });
+    const sj = JSON.parse(new TextDecoder().decode(files.find((x) => x.name.endsWith('_48.json'))!.bytes));
+    expect(sj.anims.pole_vault.elevacion.length).toBe(sj.anims.pole_vault.frames);
+    expect(Math.max(...sj.anims.pole_vault.elevacion)).toBeGreaterThan(30);
+  });
 });
