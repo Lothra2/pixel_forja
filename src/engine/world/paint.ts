@@ -188,8 +188,48 @@ const ROCK = ['#16151c', '#1e1d26', '#272630', '#31303b', '#3c3b47', '#494755', 
 const FLOWERS = ['#c8b84a', '#b06a9a', '#cfd2e4', '#7a8ee0', '#c87a5a', '#9a7ad8'];
 const LEAVES = ['#7a4a26', '#5e3a20', '#8e6a34', '#4a2e1a'];
 
+/**
+ * Los colores de un mundo. El Bosque usa los de arriba; otro mundo (la Catedral) trae los suyos y el pintor hace
+ * lo mismo con otra paleta: "pasto" es el suelo base, "camino" el sendero, "plaza" las losas y "roca" los muros.
+ */
+export interface TerrainPalette {
+  grass: string[];
+  dirt: string[];
+  cobble: string[];
+  sandstone: string[];
+  bluestone: string[];
+  rock: string[];
+  flowers: string[];
+  leaves: string[];
+  /** orilla del agua: espuma, banda clara, poco hondo y fondo */
+  shore: [string, string, string, string];
+  /** tierra mojada de la orilla (pegada y a dos pixeles) */
+  wetEarth: [string, string];
+  /** borde de arriba de la meseta y junta de las piedras que faltan */
+  edgeDark: string;
+  holeDark: string;
+  /** runas de la arena: anillo, glifos y el centro */
+  runes: [string, string, string, string];
+  /** piedritas y guijarros sueltos */
+  pebbles: [string, string, string, string];
+  /** el centro de cada florcita */
+  flowerHeart: string;
+}
+
+export const BOSQUE_PALETTE: TerrainPalette = {
+  grass: GRASS, dirt: DIRT, cobble: COBBLE, sandstone: SANDSTONE, bluestone: BLUESTONE, rock: ROCK, flowers: FLOWERS, leaves: LEAVES,
+  shore: ['#a8c8d0', '#7aa4b0', '#3e7a92', '#04101c'],
+  wetEarth: ['#1c1814', '#262019'],
+  edgeDark: '#0a1212',
+  holeDark: '#141614',
+  runes: ['#2a1418', '#5a1e24', '#1e1418', '#3a2228'],
+  pebbles: ['#7b7066', '#93826d', '#9a948c', '#7a746e'],
+  flowerHeart: '#fff2a0',
+};
+
 /** Pinta el terreno completo. */
-export function paintTerrain(d: TerrainDesign): PaintedTerrain {
+export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALETTE): PaintedTerrain {
+  const { grass: GRASS, dirt: DIRT, cobble: COBBLE, sandstone: SANDSTONE, bluestone: BLUESTONE, rock: ROCK, flowers: FLOWERS, leaves: LEAVES } = pal;
   const W = d.w * TILE, H = d.h * TILE, N = W * H, S = d.seed;
   const img = createRaster(W, H);
   const kind = new Uint8Array(N);
@@ -332,7 +372,7 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
       const n = 1 + Math.floor(hash(cx, cy, S + 26) * 3);
       for (let k = 0; k < n; k++) {
         const fx = x + Math.floor((hash(k, cx, cy) - 0.5) * 5), fy = y + Math.floor((hash(cy, k, cx) - 0.5) * 4);
-        dot(fx - 1, fy, col); dot(fx + 1, fy, col); dot(fx, fy - 1, col); dot(fx, fy + 1, shade(col, -0.14)); dot(fx, fy, '#fff2a0'); dot(fx, fy + 2, GRASS[Math.max(0, g - 2)]);
+        dot(fx - 1, fy, col); dot(fx + 1, fy, col); dot(fx, fy - 1, col); dot(fx, fy + 1, shade(col, -0.14)); dot(fx, fy, pal.flowerHeart); dot(fx, fy + 2, GRASS[Math.max(0, g - 2)]);
       }
     } else if (dk > 0.25 && roll < 0.42 + dk * 0.4) {
       // hojas caídas y ramitas en el bosque oscuro
@@ -341,7 +381,7 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
     } else if (roll < 0.56) {
       // trébol o piedrita
       if (hash(cx, cy, S + 29) < 0.6) { const c = GRASS[Math.min(GRASS.length - 1, g + 1)]; dot(x, y, c); dot(x + 1, y, c); dot(x, y + 1, c); dot(x + 1, y + 1, GRASS[Math.max(0, g - 1)]); }
-      else { dot(x, y, '#9a948c'); dot(x + 1, y, '#7a746e'); }
+      else { dot(x, y, pal.pebbles[2]); dot(x + 1, y, pal.pebbles[3]); }
     }
   }
 
@@ -355,8 +395,8 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
     // huellas: dos surcos suaves dentro del camino
     let c = DIRT[Math.max(0, Math.min(DIRT.length - 1, Math.round(v)))];
     // piedritas: pocas y de poco contraste (en tablet, muchas y claras se ven como estática)
-    if (hash(x >> 1, y >> 1, S + 37) > 0.9925) c = '#7b7066';
-    else if (hash(x, y, S + 38) > 0.9965) c = '#93826d';
+    if (hash(x >> 1, y >> 1, S + 37) > 0.9925) c = pal.pebbles[0];
+    else if (hash(x, y, S + 38) > 0.9965) c = pal.pebbles[1];
     set(i, c);
   }
   // pasto que invade el borde del camino
@@ -407,7 +447,7 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
     const x = i % W, y = (i / W) | 0;
     const id = plazaCell[i], e = plazaEdge[i];
     const sid = hash(id, 3, S + 41);
-    const pal = arena[i] ? (sid < 0.5 ? COBBLE : BLUESTONE) : sid < 0.3 ? SANDSTONE : sid < 0.45 ? BLUESTONE : COBBLE;
+    const piedra = arena[i] ? (sid < 0.5 ? COBBLE : BLUESTONE) : sid < 0.3 ? SANDSTONE : sid < 0.45 ? BLUESTONE : COBBLE;
     let t = 2 + Math.floor(sid * 2.6);
     // canto: luz arriba a la izquierda, sombra abajo a la derecha (mirando la celda vecina)
     const up = i - W >= 0 && plazaCell[i - W] !== id, left = x > 0 && plazaCell[i - 1] !== id;
@@ -416,16 +456,16 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
     else if (up || left) t = Math.min(5, t + 1);
     else if (down || right) t = Math.max(1, t - 1);
     if (t > 0 && vn(x, y, 3, S + 44) > 0.82) t = Math.max(1, t - 1);
-    let c = pal[t];
+    let c = piedra[t];
     if (t === 0 && vn(x, y, 10, S + 45) > 0.58) c = GRASS[Math.max(2, grassIdx[i] - 1)]; // musgo en la junta
     // runas talladas en el círculo central de la arena
     if (arena[i]) {
       const info = arenaInfo(x, y);
-      if (Math.abs(info.rr - info.R * 0.42) < 2.2) c = '#2a1418';
+      if (Math.abs(info.rr - info.R * 0.42) < 2.2) c = pal.runes[0];
       const glyph = Math.floor(((info.ang + Math.PI) / (2 * Math.PI)) * 12);
       const mid = ((info.ang + Math.PI) / (2 * Math.PI)) * 12 - glyph;
-      if (Math.abs(info.rr - info.R * 0.5) < 4 && Math.abs(mid - 0.5) < 0.18 && (glyph + Math.floor(info.rr)) % 2 === 0) c = '#5a1e24';
-      if (info.rr < info.R * 0.16) c = info.rr < info.R * 0.12 ? '#1e1418' : '#3a2228';
+      if (Math.abs(info.rr - info.R * 0.5) < 4 && Math.abs(mid - 0.5) < 0.18 && (glyph + Math.floor(info.rr)) % 2 === 0) c = pal.runes[1];
+      if (info.rr < info.R * 0.16) c = info.rr < info.R * 0.12 ? pal.runes[2] : pal.runes[3];
     }
     set(i, c);
   }
@@ -434,7 +474,7 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
     if (kind[i] !== 2 || !missing[i]) continue;
     const x = i % W;
     const nearStone = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const j = i + dy * W + dx; return j >= 0 && j < N && kind[j] === 2 && !missing[j] && (dx === 0 || Math.abs((j % W) - x) === 1); });
-    if (nearStone) set(i, '#141614');
+    if (nearStone) set(i, pal.holeDark);
     else if (hash(x >> 1, (i / W) >> 1, S + 504) < 0.3) set(i, DIRT[1]);
   }
 
@@ -442,7 +482,7 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
   for (let i = 0; i < N; i++) {
     if (!high[i] || kind[i] !== 0) continue;
     const dl = dLow[i];
-    if (dl === 1) set(i, '#0a1212');
+    if (dl === 1) set(i, pal.edgeDark);
     else if (dl === 2) set(i, GRASS[Math.min(GRASS.length - 1, grassIdx[i] + 3)]);
     else if (dl === 3) set(i, GRASS[Math.min(GRASS.length - 1, grassIdx[i] + 1)]);
   }
@@ -495,16 +535,16 @@ export function paintTerrain(d: TerrainDesign): PaintedTerrain {
       // agua: transparente (debajo va el cuadro animado) con espuma, banda clara y fondo más oscuro
       const dl = dLand[i];
       img.data[i * 4 + 3] = 0;
-      if (dl <= 1) set(i, '#a8c8d0', 210);
-      else if (dl <= 2 && hash(x >> 1, y, S + 71) > 0.3) set(i, '#7aa4b0', 160);
-      else if (dl <= 6) set(i, '#3e7a92', dl <= 4 ? 110 : 60);
+      if (dl <= 1) set(i, pal.shore[0], 210);
+      else if (dl <= 2 && hash(x >> 1, y, S + 71) > 0.3) set(i, pal.shore[1], 160);
+      else if (dl <= 6) set(i, pal.shore[2], dl <= 4 ? 110 : 60);
       else if (dl > 14) {
         const a = Math.min(110, (dl - 14) * 9);
-        if ((x + y) % 2 === 0 || a > 60) set(i, '#04101c', Math.min(150, a * 1.3));
+        if ((x + y) % 2 === 0 || a > 60) set(i, pal.shore[3], Math.min(150, a * 1.3));
       }
     } else if (kind[i] === 0 && dWater[i] <= 2) {
       // tierra mojada de la orilla
-      set(i, dWater[i] === 1 ? '#1c1814' : '#262019');
+      set(i, dWater[i] === 1 ? pal.wetEarth[0] : pal.wetEarth[1]);
     }
   }
   // juncos de la orilla quedan para los objetos
