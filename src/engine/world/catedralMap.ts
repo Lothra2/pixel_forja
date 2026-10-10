@@ -42,9 +42,11 @@ const SALAS: TP[][] = [
   [[4, 18], [32, 18], [33, 22], [33, 30], [31, 35], [5, 35], [4, 30]], // el atrio
   rect(31, 22, 40, 28.5), // el paso al claustro
   rect(38, 9, 63, 35), // el claustro (con el bloque del jardín en el medio)
+  rect(62.5, 20.5, 64.5, 25), // la rendija hacia la capilla
+  rect(64, 18.5, 70, 26), // la capilla escondida (el secreto de Thor)
   rect(15.5, 34, 22.5, 39), // el paso a la nave
   rect(5, 38, 41, 57), // la nave inundada
-  rect(40, 43, 45, 49), // de la nave a la forja
+  rect(40, 50, 45, 55), // de la nave a la forja (por la orilla de abajo)
   rect(48, 34, 52, 39), // el atajo del claustro a la forja
   rect(44, 37.5, 64, 55), // la forja
   rect(63, 45, 67, 49), // de la forja al campanario
@@ -61,14 +63,14 @@ export const catedralDesign: TerrainDesign = {
   rooms: SALAS,
   plateaus: [...DESCANSOS, ...BLOQUES],
   stairs: [{ x: 16, y: 9.4, w: 4 }],
-  rivers: [],
+  // la nave inundada: un río de agua casi negra la cruza de lado a lado; se pasa por el puente o saltando las losas
+  rivers: [{ pts: [[3, 46.5], [14, 46], [27, 46.8], [43, 46.2]], w: 4.6 }],
   lakes: [
     { c: LC.pozo, rx: 3, ry: 1.8 }, // agua quieta del atrio
-    { c: [16, 48], rx: 9, ry: 6 }, { c: [31, 46], rx: 7, ry: 7 }, // la nave inundada
   ],
   roads: [],
   // losas en casi todo el piso: donde faltan se ve la tierra con raíces
-  plazas: [rect(6.5, 3, 25.5, 9), rect(6.5, 10.5, 25.5, 18.5), [[5, 19], [31, 19], [32, 30], [30, 34], [6, 34], [5, 30]], rect(31.5, 22.6, 39.5, 27.8), rect(38.5, 9.6, 62.5, 34.5), rect(44.5, 38, 63.5, 54.5)],
+  plazas: [rect(6.5, 3, 25.5, 9), rect(6.5, 10.5, 25.5, 18.5), [[5, 19], [31, 19], [32, 30], [30, 34], [6, 34], [5, 30]], rect(31.5, 22.6, 39.5, 27.8), rect(38.5, 9.6, 62.5, 34.5), rect(44.5, 38, 63.5, 54.5), rect(5.5, 38.5, 40.5, 56.5), rect(64.3, 19, 69.7, 25.5)],
   arenas: [{ c: LC.campanario, r: 6 }],
   meadows: [],
   dark: [{ c: [22, 48], r: 18 }, { c: [72, 52], r: 10 }],
@@ -234,11 +236,58 @@ export function catedralMap(seed = 777): BigMap {
   for (const [x, y] of [[40, 12], [60, 12], [60, 32], [40, 33]] as TP[]) placeT('columna_rota', x, y);
   for (const [x, y] of [[42, 14], [58, 14]] as TP[]) placeT('brasero_apagado', x, y);
 
-  // ---------- lo que todavía no se abre: raíces gruesas cierran la nave y el atajo ----------
-  place('raices_cortina', T(19), 36 * TILE + 26);
-  for (let x = 16; x <= 22; x++) solid[at(x, 36)] = 1;
+  // ---------- 3b. el resto del claustro: raicitas que Thor distrae y la capilla escondida ----------
+  // tres raicitas en el pasillo del este: saltan de un lado a otro y si Thor anda cerca lo persiguen a él
+  for (const [x, y] of [[59, 18], [60, 23], [58, 28]] as TP[]) ent('enemigo', x, y, { enemigo: 'raicita', nombre: 'Raicita' });
+  // la rendija de la capilla: raíces en el muro la disimulan, Thor la huele
+  place('raices_muro', T(63), 20.5 * TILE + 60);
+  chest(67, 22, 'dorado', { secreto: true, pista: 'capilla_escondida' });
+  placeT('brasero_apagado', 65, 20);
+  placeT('columna_rota', 69, 25);
+
+  // ---------- 4. la nave inundada ----------
+  // la orilla de arriba: se ve el agua negra antes de tocarla
+  for (const [x, y] of [[8, 41], [33, 41], [8, 55], [33, 55]] as TP[]) placeT('columna_raiz', x, y);
+  for (const x of [10, 22, 34]) place('raices_muro', T(x), 38 * TILE + 60);
+  // dónde cruza el río cada columna
+  const cruce = (tx: number): [number, number] => {
+    let y0 = 40, y1 = 40
+    while (y0 < 56 && !isWaterT(tx, y0)) y0++
+    y1 = y0
+    while (y1 < 56 && isWaterT(tx, y1 + 1)) y1++
+    return [y0, y1]
+  };
+  // el puente seguro (al oeste): se camina por encima
+  {
+    const tx = 11, [y0, y1] = cruce(tx);
+    place('puente_piedra', T(tx), ((y0 + y1 + 1) / 2) * TILE);
+    for (let y = y0 - 1; y <= y1 + 1; y++) for (let x = tx - 1; x <= tx; x++) { solid[at(x, y)] = 0; occ[at(x, y)] = 1; }
+  }
+  // el vado de losas hundidas (al este): pisar fuera de las losas es caer al agua. Es seguro: Thor la saca a la orilla
+  // y no se pierde nada. Se enseña acá, sin enemigos cerca, antes del vigía.
+  {
+    const tx = 25, [y0, y1] = cruce(tx);
+    for (let y = y0; y <= y1; y++) {
+      place(`losa_hundida_${y % 2}`, T(tx), y * TILE + 22);
+      solid[at(tx, y)] = 0; occ[at(tx, y)] = 1;
+      // a los lados de las losas el agua también se pisa, pero es agua: ahí se cae
+      for (const dx of [-1, 1]) { solid[at(tx + dx, y)] = 0; occ[at(tx + dx, y)] = 1; entities.push({ tipo: 'peligro_agua', x: T(tx + dx), y: T(y) }); }
+    }
+    for (const y of [y0 - 1, y1 + 1]) { solid[at(tx, y)] = 0; occ[at(tx, y)] = 1; }
+  }
+  // el vigía de las raíces en la orilla de abajo: se queda quieto y tira bolas violetas que se ven venir
+  ent('enemigo', 34, 51, { enemigo: 'vigia_raices', nombre: 'Vigía de las Raíces' });
+  ent('enemigo', 15, 52, { enemigo: 'raicita', nombre: 'Raicita' });
+  // la recompensa de la nave y un brasero apagado para la próxima entrega
+  chest(7, 53, 'reforzado');
+  placeT('brasero_apagado', 21, 54);
+
+  // ---------- lo que todavía no se abre: raíces gruesas cierran la forja (por el claustro y por la nave) ----------
   place('raices_cortina', T(50), 36 * TILE + 26);
   for (let x = 48; x <= 51; x++) solid[at(x, 36)] = 1;
+  place('raices_cortina', T(42), 52 * TILE + 26);
+  for (let y = 50; y <= 54; y++) solid[at(42, y)] = 1;
+  for (let y = 50; y <= 54; y++) solid[at(43, y)] = 1;
 
   // ---------- zonas y postales ----------
   const zones: MapZone[] = [];
@@ -247,10 +296,14 @@ export function catedralMap(seed = 777): BigMap {
   zone('La Escalera Hundida', 5, 2, 27, 18, { luz: '#dfe8ff', oscuridad: 0.25, particulas: 'polvo', niebla: 0.12 });
   zone('El Atrio de las Luciérnagas', 4, 18, 33, 36, { luz: '#8affe8', oscuridad: 0.45, particulas: 'luciernagas_turquesa,gotas', niebla: 0.15 });
   zone('Los Claustros Quebrados', 31, 9, 64, 36, { luz: '#9aa8c8', oscuridad: 0.5, particulas: 'polvo,gotas', niebla: 0.18 });
+  zone('La Capilla Escondida', 64, 18, 70, 26, { luz: '#8affe8', oscuridad: 0.5, particulas: 'luciernagas_turquesa', niebla: 0.1, secreto: true });
+  zone('La Nave Inundada', 5, 36, 41, 57, { luz: '#7a9ab8', oscuridad: 0.6, particulas: 'gotas', niebla: 0.2 });
   const postales: Postal[] = [
     { nombre: 'escalera_hundida', x: T(LC.escalera[0]), y: T(LC.escalera[1]) },
     { nombre: 'atrio_luciernagas', x: T(ax - 2), y: T(ay - 1) },
     { nombre: 'claustros_quebrados', x: T(LC.guardian[0] + 2), y: T(LC.guardian[1]) },
+    { nombre: 'capilla_escondida', x: T(66), y: T(22) },
+    { nombre: 'nave_inundada', x: T(22), y: T(47) },
   ];
   return {
     name: 'mundo2_catedral', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects,

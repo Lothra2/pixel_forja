@@ -218,9 +218,34 @@ export function lightShaft(): WorldObject {
   return { name: 'haz_luz', w: W, h: H, anchor: [48, 156], solid: null, layer: 'suelo', anims: { idle: { frames, fps: 3, loop: true } }, light: { color: '#ffe8c0', radius: 120, pulse: true, dy: 40 } };
 }
 
+/** Losa hundida: piedra para cruzar el agua negra saltando (el vado de la nave). Fuera de ella, al agua. */
+export function sunkenSlab(variant = 0): WorldObject {
+  const c = canvas(32, 24, 1);
+  const rx = variant ? 10 : 11.5, ry = variant ? 6 : 6.8;
+  c.ring([16, 13], rx + 2, ry + 1.6, 1, { hex: '#5a7a88', kind: 'cloth' }, { tone: 2 }, 0, 360); // ondita alrededor
+  c.ellipse([16, 12], rx, ry, stone(CAT.piedra));
+  c.ellipse([14, 10.5], rx * 0.6, ry * 0.45, stone(CAT.piedraClara), { bias: 1 });
+  c.dot([20, 14], glowMat(CAT.turquesa), { tone: 3 }, true);
+  return { name: `losa_hundida_${variant}`, w: 32, h: 24, anchor: [16, 14], solid: null, layer: 'suelo', anims: one(c.render()) };
+}
+
+/** Puente de piedra sobre el agua negra de la nave (de norte a sur): losas con baranda baja, se camina por encima. */
+export function stoneBridge(): WorldObject {
+  const c = new IconCanvas(48, 12, 160); // 12 x 40 unidades (vertical)
+  c.poly([[10.6, 1], [11.8, 2], [11.8, 39], [10.6, 39]], stone('#05070a'), { tone: 1 }); // sombra en el agua
+  for (let i = 0; i < 10; i++) {
+    const y = 1 + i * 3.8;
+    c.poly([[1.6, y], [10.4, y], [10.4, y + 3.6], [1.6, y + 3.6]], stone(i % 2 ? CAT.piedra : '#56607a'), { bias: 0 });
+  }
+  for (const x of [1.4, 10.6]) c.poly([[x - 1, 0.4], [x + 0.4, 0.4], [x + 0.4, 39.6], [x - 1, 39.6]], stone(CAT.piedraClara), { bias: 1 });
+  root(c, [2, 6], [9, 14], 0.8, 1.2, 61);
+  c.dot([6, 28], glowMat(CAT.turquesa), { tone: 3 }, true);
+  return { name: 'puente_piedra', w: 48, h: 160, anchor: [24, 80], solid: null, layer: 'suelo', anims: one(c.render()) };
+}
+
 export function catedralObjects(): WorldObject[] {
   return [
     rootColumn(false), rootColumn(true), brokenArch(), copperBrazier(true), copperBrazier(false),
-    emberPedestal(0), emberPedestal(1), emberPedestal(2), emberPedestal(3), wallRoots(), rubble(), rootCurtain(), lightShaft(),
+    emberPedestal(0), emberPedestal(1), emberPedestal(2), emberPedestal(3), wallRoots(), rubble(), rootCurtain(), lightShaft(), stoneBridge(), sunkenSlab(0), sunkenSlab(1),
   ];
 }

@@ -81,8 +81,8 @@ export const HERO_RPG_ANIMS = [
 
 export type EnemyId =
   | 'esqueleto' | 'esqueleto_mago' | 'zombi' | 'orco' | 'goblin_arquero' | 'vampiro' | 'hombre_lobo'
-  | 'minotauro' | 'hombre_lagarto' | 'demonio' | 'rata' | 'calabaza' | 'trol' | 'guardian_cobre';
-export const ENEMIES: EnemyId[] = ['esqueleto', 'esqueleto_mago', 'zombi', 'orco', 'goblin_arquero', 'vampiro', 'hombre_lobo', 'minotauro', 'hombre_lagarto', 'demonio', 'rata', 'calabaza', 'trol', 'guardian_cobre'];
+  | 'minotauro' | 'hombre_lagarto' | 'demonio' | 'rata' | 'calabaza' | 'trol' | 'guardian_cobre' | 'raicita' | 'vigia_raices';
+export const ENEMIES: EnemyId[] = ['esqueleto', 'esqueleto_mago', 'zombi', 'orco', 'goblin_arquero', 'vampiro', 'hombre_lobo', 'minotauro', 'hombre_lagarto', 'demonio', 'rata', 'calabaza', 'trol', 'guardian_cobre', 'raicita', 'vigia_raices'];
 
 interface EnemyDef extends Kit {
   head: string;
@@ -115,6 +115,10 @@ const ENEMY_DEFS: Record<EnemyId, EnemyDef> = {
   calabaza: { head: 'jack', outfit: { armor: 'tunica', armorColor: '#2a1a12', trim: '#ff9a1f', cape: '#140c08' }, gear: { main: 'scythe', off: null }, anims: [...BASIC_FOE, 'cast', 'summon'] },
   // la Catedral (mundo 2): un centinela de cobre viejo con verdín, yelmo cerrado, martillo y escudo. Pesado y lento.
   guardian_cobre: { head: 'troll', big: true, size: { height: 1.12, build: 1.25, shoulders: 1.2, arms: 1 }, skin: '#5f7a74', body: { build: 'robusto' }, outfit: { armor: 'placas', armorColor: '#a0623a', trim: '#4f8f80', pauldrons: true, belt: '#3a281c', bottom: 'pants', shoes: 'botas' }, colors: { bottom: '#3a3428', shoes: '#5a3a22' }, gear: { main: 'axe', off: 'shield_round', shield: '#8a5a32' }, lpc: { hat: 'greathelm', hatColor: '#a0623a' }, anims: [...BASIC_FOE, 'attack_heavy', 'warcry'] },
+  // una criatura chiquita de raíz: salta de un lado a otro y se distrae con Thor (lo persigue en vez de a la heroína)
+  raicita: { head: 'goblin', skin: '#7a5a3a', bare: true, body: { age: 'nino', build: 'delgado' }, outfit: { sleeves: 'none', bottom: 'shorts', belt: '#3a281c', shoes: 'descalzo' }, colors: { bottom: '#4a3424' }, gear: { main: 'claws', off: null }, lpc: { hat: 'hood', hatColor: '#3a5a48' }, anims: ['idle', 'walk', 'run', 'attack', 'dodge', 'hit', 'die'] },
+  // el vigía de las raíces: se queda en su lugar y tira una bola violeta que se ve venir
+  vigia_raices: { head: 'goblin', skin: '#6a7a6a', body: { build: 'delgado' }, outfit: { armor: 'tunica', armorColor: '#2a2238', trim: '#8a4ac8', cape: '#1e1a28' }, gear: { main: 'staff', off: null, glow: '#b07aff' }, lpc: { hat: 'hood', hatColor: '#2a2238' }, anims: [...BASIC_FOE, 'cast'] },
   trol: { head: 'troll', big: true, size: { height: 1.22, build: 1.35, shoulders: 1.2, arms: 1.05 }, skin: '#7a8a6a', bare: true, body: { build: 'robusto' }, outfit: { sleeves: 'none', bottom: 'shorts', belt: '#3a2a1a', shoes: 'descalzo' }, colors: { bottom: '#4a3a2a' }, gear: { main: 'club', off: null }, anims: [...BASIC_FOE, 'attack_heavy', 'warcry'] },
 };
 

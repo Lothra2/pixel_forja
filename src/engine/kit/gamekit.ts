@@ -129,7 +129,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const log = opts.progress ?? (() => {});
   const files: ExportFile[] = [];
   const heroes = opts.heroes ?? FAMILY;
-  const enemies = opts.enemies ?? (['rata', 'calabaza', 'goblin_arquero', 'trol', 'guardian_cobre'] as EnemyId[]);
+  const enemies = opts.enemies ?? (['rata', 'calabaza', 'goblin_arquero', 'trol', 'guardian_cobre', 'raicita', 'vigia_raices'] as EnemyId[]);
   const boss = opts.boss ?? 'minotauro';
   const heroAnims = opts.quick ? ['idle', 'walk', 'attack', 'hit', 'die'] : [...HERO_RPG_ANIMS];
   const credits = new Set<string>();

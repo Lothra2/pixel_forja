@@ -49,17 +49,34 @@ describe('catedral: la rebanada (escalera, atrio y el primer guardián)', () => 
     expect(seen[46 * m.w + 54]).toBe(0);
   });
   it('zonas con nombre, música y oscuridad que sube al bajar; postales; objetos conocidos', () => {
-    expect(m.zones.length).toBeGreaterThanOrEqual(3);
+    expect(m.zones.length).toBeGreaterThanOrEqual(5);
     expect(m.zones.every((z) => z.props.musica === 'catedral' && z.props.ambiente === 'catedral')).toBe(true);
     const osc = m.zones.map((z) => Number(z.props.oscuridad ?? 0));
     for (let i = 1; i < osc.length; i++) expect(osc[i]).toBeGreaterThanOrEqual(osc[i - 1]!);
-    expect(m.postales.length).toBeGreaterThanOrEqual(3);
+    expect(m.postales.length).toBeGreaterThanOrEqual(5);
     const names = new Set(m.objects.map((o) => o.name));
     for (const d of m.decos) expect(names.has(d.sprite), d.sprite).toBe(true);
     for (const n of ['portal_azul', 'aviso_jefe']) expect(names.has(n), n).toBe(true);
     const t = bigMapToTiled(m);
     expect((t.json.properties as { name: string; value: unknown }[]).find((p) => p.name === 'bioma')!.value).toBe('catedral');
     expect([m.w, m.h]).toEqual([catedralDesign.w, catedralDesign.h]);
+  });
+  it('la nave: un puente seguro, un vado de losas con agua que se pisa a los lados (el peligro) y el vigía en la otra orilla', () => {
+    expect(m.decos.some((d) => d.sprite === 'puente_piedra')).toBe(true)
+    expect(m.decos.filter((d) => d.sprite.startsWith('losa_hundida_')).length).toBeGreaterThanOrEqual(3)
+    const peligro = m.entities.filter((e) => e.tipo === 'peligro_agua')
+    expect(peligro.length).toBeGreaterThanOrEqual(6)
+    // el agua del peligro se pisa (si no, no habría caída) y es agua de verdad
+    for (const p of peligro) {
+      const i = Math.floor(p.y / TILE) * m.w + Math.floor(p.x / TILE)
+      expect(m.solid[i]).toBe(0)
+      expect(m.terrain.waterTiles[i]).toBe(1)
+    }
+    const tipos = m.entities.filter((e) => e.tipo === 'enemigo').map((e) => e.props!.enemigo)
+    for (const t of ['guardian_cobre', 'raicita', 'vigia_raices']) expect(tipos, t).toContain(t)
+    // la capilla escondida es un secreto con su cofre
+    expect(m.zones.find((z) => z.nombre === 'La Capilla Escondida')!.props.secreto).toBe(true)
+    expect(m.entities.some((e) => e.tipo === 'cofre' && e.props!.secreto && e.props!.pista === 'capilla_escondida')).toBe(true)
   });
   it('misma semilla, mismo mapa', () => {
     const m2 = catedralMap();
