@@ -28,7 +28,7 @@ export interface Arm {
 export type PropKind =
   | 'soccer' | 'basketball' | 'volleyball' | 'tennisball' | 'baseball'
   | 'racket' | 'bat' | 'skate' | 'bike' | 'sword' | 'shield' | 'potion' | 'glove' | 'hurdle'
-  | 'javelin' | 'pole' | 'shot'
+  | 'javelin' | 'pole' | 'shot' | 'spark'
   | WeaponKind | OffhandKind | 'arrow';
 
 /** Armas de mano (RPG). */

@@ -5,13 +5,15 @@ import { PREMIUM } from '../anim/premium';
 import { ATHLETICS_PREMIUM } from '../anim/athletics';
 import { SWIM_PREMIUM } from '../anim/swim';
 import { NET_PREMIUM } from '../anim/net';
+import { FIGHT_PREMIUM } from '../anim/fight';
 
 const premium = (id: 'rick' | 'steph' | 'sophie' | 'alana', rpg = true): HumanFicha => ({ ...familyFicha(id, rpg), movementProfile: 'premium' });
 const ATH = ATHLETICS_PREMIUM.map((a) => a.name);
 const SWIM = SWIM_PREMIUM.map((a) => a.name);
 const NET = NET_PREMIUM.map((a) => a.name);
+const FIGHT = FIGHT_PREMIUM.map((a) => a.name);
 // las de héroe (con espada y escudo); el atletismo se prueba con ropa de calle
-const NAMES = PREMIUM.map((a) => a.name).filter((n) => !ATH.includes(n) && !SWIM.includes(n) && !NET.includes(n));
+const NAMES = PREMIUM.map((a) => a.name).filter((n) => !ATH.includes(n) && !SWIM.includes(n) && !NET.includes(n) && !FIGHT.includes(n));
 
 describe('movimiento premium', () => {
   it('toda la familia pasa el control de calidad en 8 direcciones a 48 px (y Rick también a 32 y 64)', () => {
@@ -213,4 +215,20 @@ describe('movimiento premium', () => {
       expect(renderClip(f, 48, a, 'side', { props: true }).events!.some((e) => e.type === 'impacto'), a).toBe(true);
     expect(Math.max(...renderClip(f, 48, 'spike', 'side', { props: true }).rise!)).toBeGreaterThan(10);
   });
+
+  it('peleas: toda la familia pasa el control, cada golpe trae impacto y chispa', () => {
+    const casual = (id: 'rick' | 'steph' | 'sophie' | 'alana') => premium(id, false);
+    const runs: [HumanFicha, CellSize][] = [[casual('rick'), 48], [casual('steph'), 48], [casual('sophie'), 48], [casual('alana'), 48], [casual('rick'), 32], [casual('sophie'), 64]];
+    for (const [f, cell] of runs) {
+      const { qa, missing } = renderPlan(f, { cell, anims: FIGHT, views: EIGHT_VIEWS, props: true });
+      expect(missing, f.name).toEqual([]);
+      expect(qa.filter((r) => !r.ok).map((r) => `${f.name} ${cell} ${r.clip}`)).toEqual([]);
+    }
+    const f = casual('rick');
+    for (const a of ['jab', 'punch', 'hook', 'uppercut', 'low_kick', 'kick_martial', 'flying_kick']) {
+      const poses = posesFor(f, 48, a);
+      const hitAt = Math.floor(renderClip(f, 48, a, 'side', { props: true }).events!.find((e) => e.type === 'impacto')!.phase * poses.length);
+      expect(poses[hitAt].props?.some((p) => p.kind === 'spark'), a).toBe(true);
+    }
+  }, 600_000);
 });

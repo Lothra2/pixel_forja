@@ -3,6 +3,7 @@ import { type AnimDef, P, feet } from './types';
 import { ATHLETICS_PREMIUM } from './athletics';
 import { SWIM_PREMIUM } from './swim';
 import { NET_PREMIUM } from './net';
+import { FIGHT_PREMIUM } from './fight';
 
 /**
  * Animaciones premium: poses clave pensadas como las haría un animador, no fórmulas.
@@ -317,7 +318,7 @@ export const idle: AnimDef = {
   },
 };
 
-export const PREMIUM: AnimDef[] = [idle, walk, run, attack, attackHeavy, hit, block, cast, useItem, die, ...ATHLETICS_PREMIUM, ...SWIM_PREMIUM, ...NET_PREMIUM];
+export const PREMIUM: AnimDef[] = [idle, walk, run, attack, attackHeavy, hit, block, cast, useItem, die, ...ATHLETICS_PREMIUM, ...SWIM_PREMIUM, ...NET_PREMIUM, ...FIGHT_PREMIUM];
 const byName = new Map(PREMIUM.map((a) => [a.name, a]));
 
 /** La versión premium de una animación, si existe. */

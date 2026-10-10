@@ -121,6 +121,14 @@ export function drawHeld(part: Part, kind: PropKind, at: [number, number], angle
     blob(part, [at[0], at[1] - 1], s, 'p_pink');
     part.set(Math.round(at[0]), Math.round(at[1] - 1 - s / 2), 'p_glass');
     part.set(Math.round(at[0]), Math.round(at[1] - 2 - s / 2), 'p_brown');
+  } else if (kind === 'spark') {
+    // chispa de impacto: una estrella blanca con centro amarillo, un poco adelante del puño
+    const c = dir(Math.max(2, Math.round(2.5 * u)));
+    const r = Math.max(2, Math.round(3 * u)), q = Math.max(1, Math.round(2 * u));
+    const cx = Math.round(c[0]), cy = Math.round(c[1]);
+    for (let k = 1; k <= r; k++) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) part.set(cx + dx * k, cy + dy * k, k === r ? 'p_yellow' : 'p_white', LIGHT);
+    for (let k = 1; k <= q; k++) for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) part.set(cx + dx * k, cy + dy * k, 'p_yellow', BASE);
+    part.set(cx, cy, 'p_yellow', LIGHT);
   } else if (kind === 'glove') {
     blob(part, at, Math.max(3, Math.round(4 * u)), 'p_brown');
   } else drawWeapon(part, kind, at, angle, u, dir, t, rest);
