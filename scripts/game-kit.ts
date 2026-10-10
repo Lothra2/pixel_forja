@@ -45,7 +45,23 @@ const fontDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'node_module
 const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
 const fonts = existsSync(fontDir) ? { regular: ab(join(fontDir, 'silkscreen-latin-400-normal.woff')), bold: ab(join(fontDir, 'silkscreen-latin-700-normal.woff')) } : undefined;
 if (!fonts) console.warn('  sin fuentes: falta node_modules/@fontsource/silkscreen (corre npm ci)');
-const files = buildGameKit({ quick, fichas, fonts, progress: (m) => console.log(`  ${m}`) });
+// las capas de equipo tardan en dibujarse: se guardan en .cache/capas (con --sin-cache se rehacen todas)
+const cacheDir = join(dirname(fileURLToPath(import.meta.url)), '..', '.cache', 'capas');
+const usarCache = !args.includes('--sin-cache');
+if (usarCache) mkdirSync(cacheDir, { recursive: true });
+const cache = usarCache ? {
+  get: (k: string) => {
+    const pj = join(cacheDir, `${k}.json`);
+    if (!existsSync(pj)) return undefined;
+    const pp = join(cacheDir, `${k}.png`);
+    return { meta: readFileSync(pj, 'utf8'), png: existsSync(pp) ? new Uint8Array(readFileSync(pp)) : new Uint8Array() };
+  },
+  set: (k: string, v: { png: Uint8Array; meta: string }) => {
+    if (v.png.length) writeFileSync(join(cacheDir, `${k}.png`), v.png);
+    writeFileSync(join(cacheDir, `${k}.json`), v.meta);
+  },
+} : undefined;
+const files = buildGameKit({ quick, fichas, fonts, cache, sinCapas: args.includes('--sin-capas'), progress: (m) => console.log(`  ${m}`) });
 rmSync(out, { recursive: true, force: true });
 let bytes = 0;
 for (const f of files) {

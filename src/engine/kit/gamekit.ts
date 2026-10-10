@@ -6,6 +6,7 @@ import type { Ficha, CellSize, HumanFicha } from '../sheet/ficha';
 import { familyFicha, thorFicha, FAMILY, FAMILY_GG, type FamilyId } from '../rpg/family';
 import { enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, type EnemyId } from '../rpg/presets';
 import { merchantFicha, NPCS, NPC_ANIMS, NPC_NOMBRES } from '../rpg/npc';
+import { CAPAS_VERSION, capaDeObjeto, clipsBase, hojaCapa, huella, sinEquipo, variantes, type BloqueCapa, type ClipsBase, type TipoCapa } from './capas';
 import { PET_RPG_ANIMS } from '../anim/animal';
 import { renderFx, projectile8, rotate8, type FxElement } from '../fx/fx';
 import { scaleRaster } from '../render/rotsprite';
@@ -13,7 +14,7 @@ import { arrowProjectile, arrowImpact } from '../fx/arrow';
 import { stompWave, dirtDig } from '../fx/stomp';
 import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
-import { isSpecial } from '../loot/render';
+import { isSpecial, handKindOf } from '../loot/render';
 import { TILE } from '../world/tiles';
 import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK, type BigMap } from '../world/bosqueMap';
 import { catedralMap } from '../world/catedralMap';
@@ -56,6 +57,10 @@ export interface KitOptions {
   fonts?: { regular: ArrayBuffer; bold: ArrayBuffer };
   /** avisa el avance (para la barra del estudio o la consola) */
   progress?: (msg: string) => void;
+  /** sin capas de equipo (las heroínas salen con su arma dibujada, como antes) */
+  sinCapas?: boolean;
+  /** caché de capas de equipo (la línea de comandos la guarda en disco): son lentas de dibujar */
+  cache?: { get: (clave: string) => { png: Uint8Array; meta: string } | undefined; set: (clave: string, v: { png: Uint8Array; meta: string }) => void };
 }
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
@@ -108,7 +113,10 @@ function portrait(f: Ficha, view: 'front' | 'se' = 'front', anim = 'idle'): Rast
   return out;
 }
 
-export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'npc'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean }>; clase?: string; retrato?: string; desde_estudio?: boolean }
+export interface CapaEntry { archivo: string; columnas: number; bloques: Record<string, BloqueCapa> }
+export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'npc'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean }>; clase?: string; retrato?: string; desde_estudio?: boolean;
+  /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
+  capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
 
 /** k: se dibuja en `cell` y se agranda por k a la manera de RotSprite (el jefe: 64 x 1.5 = celda 96). */
 function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void, k = 1): CharEntry {
@@ -122,6 +130,39 @@ function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims:
     out.anims[a] = { archivo: name, cuadros: s.frames, fps: s.fps, loop: s.loop };
   }
   log(`${prefix}/${id}: ${Object.keys(out.anims).length} animaciones`);
+  return out;
+}
+
+/**
+ * Las capas de equipo de una heroína: arma, mano libre, pecho y casco (ver capas.ts). Cada una es una hoja PNG con un
+ * bloque por animación. Las que ya están en la caché (misma ficha, mismas animaciones, mismo dibujo base) no se redibujan.
+ */
+function exportCapas(id: string, f: HumanFicha, anims: string[], files: ExportFile[], log: (m: string) => void, cache?: KitOptions['cache']): NonNullable<CharEntry['capas']> {
+  const out: NonNullable<CharEntry['capas']> = { orden: ['pecho', 'casco', 'arma', 'mano'], defecto: { arma: f.gear?.main ?? null, mano: f.gear?.off ?? null }, arma: {}, mano: {}, pecho: {}, casco: {} };
+  // la huella del dibujo base: si cambia cómo se dibuja (el motor), cambian las capas
+  const base = sinEquipo(f);
+  const idle = sheet8(base, 48, 'idle');
+  const firma = huella(JSON.stringify({ v: CAPAS_VERSION, anims, idle: idle ? huella(String(Array.from(idle.png.data.subarray(0, 40000)))) : '' }));
+  let clips: ClipsBase | null = null;
+  let hechas = 0, deCache = 0;
+  for (const v of variantes(f)) {
+    const clave = huella(JSON.stringify({ firma, ficha: v.ficha, base }));
+    const nombre = `personajes/capas/${id}_${v.tipo}_${v.clave}.png`;
+    let entrada = cache?.get(clave);
+    if (entrada) deCache++;
+    else {
+      clips ??= clipsBase(f, anims);
+      const h = hojaCapa(clips, v.ficha, anims);
+      entrada = h ? { png: encodePng(h.png), meta: JSON.stringify({ columnas: h.columnas, bloques: h.bloques }) } : { png: new Uint8Array(), meta: 'null' };
+      cache?.set(clave, entrada);
+    }
+    hechas++;
+    const meta = JSON.parse(entrada.meta) as { columnas: number; bloques: Record<string, BloqueCapa> } | null;
+    if (!meta) continue;
+    files.push(file(nombre, entrada.png, 'image/png'));
+    out[v.tipo][v.clave] = { archivo: nombre, ...meta };
+  }
+  log(`personajes/${id}: ${hechas} capas de equipo (${deCache} de la caché)`);
   return out;
 }
 
@@ -151,7 +192,9 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const c = creditsFor(f);
     if (c) credits.add(c);
     files.push(png(`personajes/retrato_${id}.png`, portrait(f)));
-    chars[id] = exportChar('personajes', id, f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log);
+    const conCapas = !opts.sinCapas && !opts.quick;
+    chars[id] = exportChar('personajes', id, conCapas ? sinEquipo(f) : f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log);
+    if (conCapas) chars[id].capas = exportCapas(id, f, heroAnims, files, log, opts.cache);
   }
   const tiers = opts.thorTiers ?? [0, 1, 2, 3, 4, 5];
   for (const t of tiers) {
@@ -228,8 +271,15 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     }
   }
   files.push(...exportLootWorld(UNIQUE_LOOT, 'botin/mundo'));
-  const catalog = lootCatalog(loot) as { items: { id: string; atlas?: string }[] };
-  for (const it of catalog.items) it.atlas = atlasOf.get(it.id);
+  const catalog = lootCatalog(loot) as { items: { id: string; atlas?: string; visual?: { capa: TipoCapa; clave: string } }[] };
+  const porId = new Map(loot.map((i) => [i.id, i]));
+  for (const it of catalog.items) {
+    it.atlas = atlasOf.get(it.id);
+    // la capa de equipo que se ve en la heroína con esto puesto
+    const li = porId.get(it.id);
+    const v = li ? capaDeObjeto(li as never, handKindOf(li)) : null;
+    if (v) it.visual = v;
+  }
   files.push(json('botin/catalogo.json', catalog));
   manifest.botin = {
     atlas, iconos: atlas.iconos, especiales: atlas.especiales,

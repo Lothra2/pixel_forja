@@ -8,7 +8,7 @@ describe('PNJ: el mercader', () => {
     const f = merchantFicha();
     for (const id of NPCS) for (const a of NPC_ANIMS[id]) for (const v of EIGHT_VIEWS) {
       const r = runQA(f, renderClip(f, 48, a, v, { props: true }));
-      expect(r.ok, `${id} ${a} ${v}: ${JSON.stringify(r.issues ?? r)}`.slice(0, 300)).toBe(true);
+      expect(r.ok, `${id} ${a} ${v}: ${JSON.stringify(r)}`.slice(0, 300)).toBe(true);
     }
   }, 60000);
   it('lleva su libro de cuentas y no lleva armas', () => {
