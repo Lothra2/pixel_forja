@@ -248,7 +248,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       files.push(png(name, strip(a.frames)));
       anims[an] = { archivo: name, cuadros: a.frames.length, fps: a.fps, loop: a.loop };
     }
-    objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, ...(o.solids ? { solidos: o.solids } : {}), ...(o.layer ? { capa: o.layer } : {}), ...(o.light ? { luz: o.light } : {}), anims };
+    objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, ...(o.solids ? { solidos: o.solids } : {}), ...(o.layer ? { capa: o.layer } : {}), ...(o.light ? { luz: o.light } : {}), ...(o.foam ? { espuma: o.foam } : {}), anims };
   }
   const parts: Record<string, unknown> = {};
   for (const p of particles()) { const n = `mundo/particulas/${p.name}.png`; files.push(png(n, strip(p.frames))); parts[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }

@@ -6,7 +6,7 @@ import { floraV3, gloomGrade } from './flora';
 import { cobweb } from './atmosphere';
 import { bosqueDesign, LUGARES as L, BOSQUE_W, BOSQUE_H } from './bosque';
 import { forestObjects, type WorldObject } from './objects';
-import { landmarkObjects } from './landmarks';
+import { landmarkObjects, fittedWaterfall, type WaterfallCol } from './landmarks';
 
 /**
  * El Bosque GG armado: terreno pintado + lugares + bosque lleno + enemigos, cofres (varios secretos), fogatas de guardado,
@@ -174,7 +174,25 @@ export function bosqueMap(seed = 2024): BigMap {
     const cx = Math.round(((x0 + x1 + 1) / 2) * TILE);
     let edge = 0;
     for (let y = (L.cascada[1] - 8) * TILE; y < (L.cascada[1] + 6) * TILE; y++) if (terrain.high[(y - 1) * W * TILE + cx] && !terrain.high[y * W * TILE + cx]) { edge = y; break; }
-    place('cascada', cx, edge + 98);
+    // la cascada se hace a la medida de este acantilado: cada columna del río cae del labio real al pie real de la roca
+    const PW = W * TILE;
+    const cols: WaterfallCol[] = [];
+    for (let x = cx - 90; x <= cx + 90; x++) {
+      let lip = -1;
+      for (let y = (L.cascada[1] - 8) * TILE; y < (L.cascada[1] + 6) * TILE; y++) if (terrain.high[(y - 1) * PW + x] && !terrain.high[y * PW + x]) { lip = y; break; }
+      if (lip < 0 || terrain.kind[(lip - 3) * PW + x] !== 4) { if (cols.length && x > cx) break; cols.length = 0; continue; }
+      let base = lip;
+      while (base < lip + 140 && terrain.kind[base * PW + x] === 3) base++;
+      cols.push({ x, lip, base });
+    }
+    const pixelWater = (x: number, y: number) => x >= 0 && y >= 0 && x < PW && terrain.kind[y * PW + x] === 4 && !terrain.high[y * PW + x];
+    const fall = fittedWaterfall(cols, pixelWater);
+    objects[objects.findIndex((o) => o.name === 'cascada')] = fall.obj;
+    byName.set('cascada', fall.obj);
+    // se agrega directo y reserva el mismo cuadro que la cascada vieja: así el resto del bosque (árboles, cofres,
+    // enemigos) queda exactamente donde estaba y no se pierden los cofres abiertos de las partidas guardadas
+    decos.push({ sprite: 'cascada', x: fall.x, y: fall.y });
+    occ[at(Math.floor(cx / TILE), Math.floor((edge + 97) / TILE))] = 1;
     // detrás de la cascada, en la orilla de abajo: cofre secreto
     chest(x1 + 2, Math.floor(edge / TILE) + 3, 'reforzado', { secreto: true, pista: 'tras_la_cascada' });
   }
