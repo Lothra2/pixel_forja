@@ -1,9 +1,10 @@
 import { type Raster, createRaster, blit } from '../core/raster';
 import type { RenderedClip } from '../render/clip';
+import { motionOf, type MovimientoAnim } from './motion';
 
 export const SHEET_COLS = 8;
 
-export interface SheetAnim {
+export interface SheetAnim extends MovimientoAnim {
   start: number;
   frames: number;
   fps: number;
@@ -18,6 +19,8 @@ export interface SheetJson {
   pivot: [number, number];
   cols: number;
   anims: Record<string, SheetAnim>;
+  /** solo si alguna animación es premium: entonces las animaciones traen eventos y avance */
+  perfil_movimiento?: 'premium';
   meta: { app: string; version: string; image: string; format: 'RGBA8888'; size: { w: number; h: number }; scale: '1' };
 }
 
@@ -39,7 +42,8 @@ export function packSheet(clips: RenderedClip[], imageName: string): { png: Rast
     meta: { app: 'PixelForja', version: '0.0.1', image: imageName, format: 'RGBA8888', size: { w: png.w, h: png.h }, scale: '1' },
   };
   for (const { c, start } of placed) {
-    json.anims[c.name] = { start, frames: c.frames.length, fps: c.fps, loop: c.loop };
+    json.anims[c.name] = { start, frames: c.frames.length, fps: c.fps, loop: c.loop, ...motionOf(c) };
+    if (c.profile === 'premium') json.perfil_movimiento = 'premium';
     json.animations[c.name] = [];
     c.frames.forEach((fr, i) => {
       const idx = start + i;

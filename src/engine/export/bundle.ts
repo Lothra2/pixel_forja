@@ -1,6 +1,7 @@
 import type { Ficha } from '../sheet/ficha';
 import { renderPlan, FFGG_PLAN, type ExportPlan } from './plan';
 import { packSheet } from './sheet';
+import { movimientoJson } from './motion';
 import { encodePng } from './png';
 import { upscaleNearest } from '../core/raster';
 import { toFfgg } from './ffgg';
@@ -8,6 +9,7 @@ import { encodeGif } from './gif';
 import { encodeAseprite, asepriteJson } from './aseprite';
 import { godotSpriteFrames, unityMeta, framesZip } from './engines';
 import type { QAReport } from '../qa/checks';
+import type { RenderedClip } from '../render/clip';
 import { isHuman } from '../sheet/ficha';
 import { lpcCredits, LPC_SOURCE } from '../parts/lpc';
 
@@ -63,6 +65,14 @@ function exportFilesRaw(f: Ficha, kind: ExportKind, plan: ExportPlan, opt: { for
   const bad = qa.filter((q) => !q.ok);
   if (bad.length && !opt.force) throw new QAError(bad);
   const tag = `${base}_${p.cell}`;
+  const files = clipFiles(kind, clips, tag, base, p, opt);
+  // perfil premium: pasos, golpe, avance y articulaciones en un archivo aparte que sirve para cualquier motor
+  const mov = movimientoJson(clips);
+  if (mov) files.push({ name: `${tag}.movimiento.json`, bytes: json(mov), mime: 'application/json' });
+  return files;
+}
+
+function clipFiles(kind: ExportKind, clips: RenderedClip[], tag: string, base: string, p: ExportPlan, opt: { gifScale?: number }): ExportFile[] {
   if (kind === 'gif')
     return clips.map((c) => ({ name: `${tag}_${c.name}.gif`, bytes: encodeGif(c.frames, c.fps, { scale: opt.gifScale ?? Math.max(2, Math.round(192 / p.cell)) }), mime: 'image/gif' }));
   if (kind === 'frames') return [{ name: `${tag}_cuadros.zip`, bytes: framesZip(clips), mime: 'application/zip' }];
@@ -82,6 +92,7 @@ function exportFilesRaw(f: Ficha, kind: ExportKind, plan: ExportPlan, opt: { for
         fr.sourceSize = { w: fr.sourceSize.w * k, h: fr.sourceSize.h * k };
       }
       sj.cell = [sj.cell[0] * k, sj.cell[1] * k];
+      for (const a of Object.values(sj.anims)) if (a.avance) a.avance *= k;
       sj.pivot = [sj.pivot[0] * k, sj.pivot[1] * k];
       sj.meta = { ...sj.meta, image: `${name}.png`, size: { w: big.w, h: big.h }, scale: String(k) as '1' };
       return [{ name: `${name}.png`, bytes: encodePng(big), mime: 'image/png' }, { name: `${name}.json`, bytes: json(sj), mime: 'application/json' }];

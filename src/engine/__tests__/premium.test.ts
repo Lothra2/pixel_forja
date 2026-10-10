@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { familyFicha, renderPlan, renderClip, posesFor, EIGHT_VIEWS, migrateFicha, FICHA_VERSION, type HumanFicha, type CellSize } from '../index';
+import { familyFicha, renderPlan, renderClip, posesFor, EIGHT_VIEWS, migrateFicha, FICHA_VERSION, exportFiles, type HumanFicha, type CellSize, type ExportPlan } from '../index';
+import { buildGameKit } from '../kit/gamekit';
 import { PREMIUM } from '../anim/premium';
 
 const premium = (id: 'rick' | 'steph' | 'sophie' | 'alana', rpg = true): HumanFicha => ({ ...familyFicha(id, rpg), movementProfile: 'premium' });
@@ -76,4 +77,42 @@ describe('movimiento premium', () => {
     expect(posesFor(f, 64, 'mia')[0].x).toBeCloseTo(8);
     expect(posesFor(f, 32, 'mia')[0].legs.near.x).toBeCloseTo(4 * 32 / 48);
   });
+
+  it('los exportadores llevan el perfil, los pasos, el golpe y el avance; los clásicos no cambian', () => {
+    const text = (b: Uint8Array) => JSON.parse(new TextDecoder().decode(b));
+    const plan: ExportPlan = { cell: 48, anims: ['walk', 'attack'], views: ['side'], props: true };
+    const sheet = exportFiles(premium('rick'), 'sheet', plan);
+    const sj = text(sheet.find((f) => f.name.endsWith('_48.json'))!.bytes);
+    expect(sj.perfil_movimiento).toBe('premium');
+    expect(sj.anims.walk.eventos.map((e: { tipo: string; cuadro: number }) => [e.tipo, e.cuadro])).toEqual([['paso', 0], ['paso', 4]]);
+    expect(sj.anims.walk.avance).toBeGreaterThan(6);
+    expect(sj.anims.attack.eventos[0]).toMatchObject({ tipo: 'impacto', cuadro: 3 });
+    // hoja agrandada: el avance se mide en pixeles de esa hoja
+    const x2 = text(exportFiles(premium('rick'), 'sheet', { ...plan, scale: 2 }).find((f) => f.name.endsWith('.json') && !f.name.includes('movimiento'))!.bytes);
+    expect(x2.anims.walk.avance).toBeCloseTo(sj.anims.walk.avance * 2, 1);
+    // los formatos sin lugar para eso llevan el archivo de movimiento al lado, con articulaciones por cuadro
+    for (const kind of ['aseprite', 'godot', 'gif', 'frames'] as const) {
+      const mov = exportFiles(premium('rick'), kind, plan).find((f) => f.name.endsWith('.movimiento.json'));
+      expect(mov, kind).toBeDefined();
+      const m = text(mov!.bytes);
+      expect(m.anims.walk.articulaciones).toHaveLength(m.anims.walk.cuadros);
+    }
+    // clásico: sin perfil ni archivo extra
+    const classic = exportFiles(familyFicha('rick', true), 'sheet', plan);
+    expect(classic.some((f) => f.name.includes('movimiento'))).toBe(false);
+    const cj = text(classic.find((f) => f.name.endsWith('_48.json'))!.bytes);
+    expect(cj.perfil_movimiento).toBeUndefined();
+    expect(cj.anims.walk.eventos).toBeUndefined();
+  });
+
+  it('el kit del juego anota el perfil premium y el avance en el manifiesto', () => {
+    const files = buildGameKit({ heroes: [], enemies: [], thorTiers: [], quick: true, fichas: { rick: premium('rick') } });
+    const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
+    const rick = m.personajes.rick;
+    expect(rick.perfil_movimiento).toBe('premium');
+    expect(rick.anims.walk.avance).toBeGreaterThan(6);
+    expect(rick.anims.walk.eventos).toHaveLength(2);
+    expect(rick.anims.attack.eventos[0].tipo).toBe('impacto');
+    expect(m.personajes.minotauro.perfil_movimiento).toBeUndefined();
+  }, 120_000);
 });
