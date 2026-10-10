@@ -62,8 +62,9 @@ describe('movimiento premium', () => {
   });
 
   it('las fichas clásicas quedan igual y las viejas se migran como clásicas', () => {
-    const classic = familyFicha('rick', true);
-    const a = renderClip(classic, 48, 'walk', 'side'), b = renderClip({ ...classic, movementProfile: 'classic' }, 48, 'walk', 'side');
+    // la familia viene en premium: aquí se la pone en clásico a propósito
+    const classic: HumanFicha = { ...familyFicha('rick', true), movementProfile: 'classic' };
+    const a = renderClip(classic, 48, 'walk', 'side'), b = renderClip({ ...classic, movementProfile: undefined }, 48, 'walk', 'side');
     expect(a.profile).toBe('classic');
     expect(a.events).toBeUndefined();
     expect(Buffer.from(a.frames[3].data).equals(Buffer.from(b.frames[3].data))).toBe(true);
@@ -114,7 +115,7 @@ describe('movimiento premium', () => {
       expect(m.anims.walk.articulaciones).toHaveLength(m.anims.walk.cuadros);
     }
     // clásico: sin perfil ni archivo extra
-    const classic = exportFiles(familyFicha('rick', true), 'sheet', plan);
+    const classic = exportFiles({ ...familyFicha('rick', true), movementProfile: 'classic' }, 'sheet', plan);
     expect(classic.some((f) => f.name.includes('movimiento'))).toBe(false);
     const cj = text(classic.find((f) => f.name.endsWith('_48.json'))!.bytes);
     expect(cj.perfil_movimiento).toBeUndefined();
@@ -259,4 +260,11 @@ describe('movimiento premium', () => {
     expect(heroCell('coloso')).toBe(64);
     expect(HEROES.filter((h) => heroCell(h) === 48)).toHaveLength(5);
   }, 1_800_000);
+
+  it('la familia viene en premium, también con su clase de RPG', () => {
+    for (const id of ['rick', 'steph', 'sophie', 'alana'] as const) {
+      expect(familyFicha(id).movementProfile, id).toBe('premium');
+      expect(familyFicha(id, true).movementProfile, id).toBe('premium');
+    }
+  });
 });

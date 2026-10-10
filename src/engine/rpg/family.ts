@@ -78,7 +78,8 @@ export function familyFicha(id: FamilyId, rpg = false): HumanFicha {
   const body = { ...DEFAULT_BODY, ...(m.body ?? {}) };
   f = { ...f, body: { ...f.body, proportions: { ...bodyProportions(f.body.proportions.preset, body), ...(m.proportions ?? {}) } } };
   for (const [s, h] of Object.entries(m.colors)) f = recolor(f, s as ColorSlot, h) as HumanFicha;
-  f = { ...f, face: { ...f.face, mouth: m.mouth } };
+  // la familia se mueve con el perfil premium (poses clave de verdad, pivote fijo, eventos)
+  f = { ...f, face: { ...f.face, mouth: m.mouth }, movementProfile: 'premium' };
   if (!rpg) return f;
   let r = applyClass(f, m.clase);
   if (m.gear) r = { ...r, gear: { ...r.gear, ...m.gear } };

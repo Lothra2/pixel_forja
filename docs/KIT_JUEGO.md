@@ -69,7 +69,12 @@ Ninguna textura pasa de 4096 px (límite de tablets). El kit lo verifica y falla
     "rick": {
       "tipo": "heroe", "nombre": "Rick", "clase": "paladin", "retrato": "personajes/retrato_rick.png",
       "celda": 48, "pivote": [24, 46],
-      "anims": { "walk": { "archivo": "personajes/rick_walk.png", "cuadros": 8, "fps": 10, "loop": true }, ... }
+      "perfil_movimiento": "premium",
+      "anims": {
+        "walk": { "archivo": "personajes/rick_walk.png", "cuadros": 8, "fps": 10, "loop": true,
+                  "eventos": [{ "tipo": "paso", "cuadro": 0, "fase": 0, "pie": "cerca" }, ...], "avance": 10.6 },
+        "attack": { ..., "eventos": [{ "tipo": "impacto", "cuadro": 3, "fase": 0.43 }] }, ...
+      }
     },
     "minotauro": { "tipo": "jefe", "celda": 64, ... },
     "thor_armadura3": { "tipo": "mascota", ... }
@@ -90,6 +95,22 @@ Ninguna textura pasa de 4096 px (límite de tablets). El kit lo verifica y falla
   "audio": { "moneda": "audio/moneda.wav", "musica_bosque": "audio/musica_bosque.wav", ... }
 }
 ```
+
+### La familia se mueve en premium
+
+Rick, Steph, Sophie y Alana salen con el perfil de movimiento premium:
+- Poses clave de verdad.
+- El pivote no se mueve entre cuadros ni entre animaciones.
+- Cada animación que lo tiene trae:
+  - `eventos`: en qué cuadro cae cada paso, golpe (`impacto`) o suelta.
+  - `avance`: pixeles por ciclo sin que el pie patine.
+
+Qué hace el juego con eso:
+- Sonido de pisada en cada `paso`.
+- Daño y una pausa de 2 o 3 cuadros en el `impacto`.
+- El ritmo de caminar y correr se ajusta con `ritmo = velocidad * cuadros / (avance * fps)`, así los pies no patinan.
+
+Si una ficha del estudio llega en clásico, sale como siempre, sin esos campos.
 
 Todas las rutas son relativas a la carpeta del kit.
 
