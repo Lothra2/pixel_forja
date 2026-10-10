@@ -319,4 +319,12 @@ describe('taller entrega 3', () => {
     expect(secs).toBeGreaterThanOrEqual(30);
     expect(secs).toBeLessThanOrEqual(45);
   }, 60_000);
+  it('música por estados: amenaza, combate y fogata, cada una entre 15 y 45 s', async () => {
+    const { MUSIC, RATE } = await import('../audio/sfx');
+    for (const k of ['amenaza', 'combate', 'fogata'] as const) {
+      const secs = MUSIC[k]().length / RATE;
+      expect(secs, k).toBeGreaterThanOrEqual(15);
+      expect(secs, k).toBeLessThanOrEqual(45);
+    }
+  }, 60_000);
 });
