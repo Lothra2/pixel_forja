@@ -1,5 +1,5 @@
 import { createRaster, blit, type Raster } from '../core/raster';
-import { encodePng } from '../export/png';
+import { encodePng, encodePngPaleta, decodePng } from '../export/png';
 import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim } from '../render/clip';
 import type { Ficha, CellSize, HumanFicha } from '../sheet/ficha';
@@ -159,7 +159,8 @@ function exportCapas(id: string, f: HumanFicha, anims: string[], files: ExportFi
     hechas++;
     const meta = JSON.parse(entrada.meta) as { columnas: number; bloques: Record<string, BloqueCapa> } | null;
     if (!meta) continue;
-    files.push(file(nombre, entrada.png, 'image/png'));
+    // la caché guarda RGBA; al kit va con paleta (sin pérdida, la mitad de peso)
+    files.push(file(nombre, encodePngPaleta(decodePng(entrada.png)), 'image/png'));
     out[v.tipo][v.clave] = { archivo: nombre, ...meta };
   }
   log(`personajes/${id}: ${hechas} capas de equipo (${deCache} de la caché)`);

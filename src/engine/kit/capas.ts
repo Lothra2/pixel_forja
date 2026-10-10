@@ -40,7 +40,9 @@ export function variantes(f: HumanFicha): Variante[] {
   for (const k of WEAPON_KINDS) out.push({ tipo: 'arma', clave: k, ficha: { ...base, gear: { ...base.gear, main: k } } });
   for (const k of OFFHAND_KINDS) out.push({ tipo: 'mano', clave: k, ficha: { ...base, gear: { ...base.gear, off: k } } });
   for (const line of ARMOR_LINES) for (const tier of ARMOR_TIERS) {
-    out.push({ tipo: 'pecho', clave: `${line}_${tier}`, ficha: applyArmorTier(base, line, tier, false) });
+    // la armadura del pecho no le quita lo que lleva en la cabeza (la vincha de Sophie): eso es del casco
+    const pecho = applyArmorTier(base, line, tier, false);
+    out.push({ tipo: 'pecho', clave: `${line}_${tier}`, ficha: base.avatar && pecho.avatar ? { ...pecho, avatar: { ...pecho.avatar, lpc: base.avatar.lpc } } : pecho });
     // el casco solo: el sombrero LPC del nivel, sin tocar la ropa
     if (!ARMOR_EVOLUTION[line][tier - 1].helm || !base.avatar?.lpc) continue;
     const lpc = applyArmorTier(base, line, tier, true).avatar!.lpc!;

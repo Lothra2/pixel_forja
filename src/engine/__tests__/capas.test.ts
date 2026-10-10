@@ -65,3 +65,18 @@ describe('capas de equipo', () => {
     expect(hojaCapa(clips, base, anims)).toBeNull();
   }, 60000);
 });
+
+describe('PNG con paleta', () => {
+  it('es sin pérdida y pesa menos que el RGBA', async () => {
+    const { encodePng, encodePngPaleta, decodePng } = await import('../export/png');
+    const f = familyFicha('alana', true);
+    const r = renderClip(f, 48, 'walk', 'front', { props: true }).frames[2];
+    const a = encodePng(r), b = encodePngPaleta(r);
+    expect(b.length).toBeLessThan(a.length);
+    expect(Array.from(decodePng(b).data)).toEqual(Array.from(decodePng(a).data));
+  });
+  it('la armadura del pecho deja lo que lleva en la cabeza', () => {
+    const v = variantes(familyFicha('sophie', true)).filter((x) => x.tipo === 'pecho');
+    for (const x of v) expect(x.ficha.avatar?.lpc?.hat, x.clave).toBe(familyFicha('sophie', true).avatar?.lpc?.hat);
+  });
+});
