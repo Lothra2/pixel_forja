@@ -58,41 +58,118 @@ function framed(w: number, h: number, b: number, opts: { inset?: boolean; gold?:
 
 // ---------- orbes de vida y maná ----------
 
-/** Orbe con su marco, lleno al nivel dado (0 a 10). wave anima la superficie. */
+// tramado ordenado 4 x 4: los degradados de la esfera pasan de un tono al otro sin escalones ni bloques
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
+/** Elige el tono de la paleta para una luz de 0 a 1, tramando entre los dos más cercanos. */
+function tono(pal: string[], l: number, x: number, y: number, tramar = true): string {
+  const t = Math.max(0, Math.min(1, l)) * (pal.length - 1);
+  const b = Math.floor(t);
+  return pal[Math.min(pal.length - 1, t - b > (tramar ? BAYER[(y & 3) * 4 + (x & 3)] : 0.5) ? b + 1 : b)];
+}
+// la luz viene de arriba a la izquierda y un poco de frente
+const LUZ = (() => { const v = [-0.55, -0.62, 0.56]; const n = Math.hypot(...v); return v.map((c) => c / n); })();
+
+const VIDRIO = ['#050308', '#0a0710', '#100c17', '#18121f', '#221a2c'];
+const LIQUIDO = {
+  vida: ['#2a040a', '#550a14', '#8a1222', '#c01c32', '#e83448', '#ff6a72'],
+  mana: ['#040a2a', '#0a1a5a', '#13308e', '#1f4cc8', '#3a72f0', '#7aa8ff'],
+};
+const ESPUMA = { vida: '#ffb0b0', mana: '#c8dcff' };
+
+/**
+ * Orbe con su marco, lleno al nivel dado (0 a 10). wave (0 a 3) anima la superficie y las burbujas y cierra el ciclo en 4 cuadros.
+ * Todo se sombrea como una esfera de vidrio: el líquido y el vidrio vacío con la normal de la esfera y tramado, la superficie como
+ * una elipse vista un poco desde arriba con su borde de espuma, y el aro como un tubo de hierro con un hilo de oro.
+ */
 export function orb(kind: 'vida' | 'mana', level: number, wave = 0, size = 72): Raster {
   const r = createRaster(size, size);
   const C = (size - 1) / 2, R = size / 2 - 7, Ro = size / 2 - 1;
-  const liquid = kind === 'vida' ? ['#4a0a12', '#8e1420', '#d8243e', '#ff6a6a'] : ['#0a1a4a', '#14308e', '#2f62e6', '#7ab0ff'];
+  const liquid = LIQUIDO[kind];
+  const fase = (wave % 4) * (Math.PI / 2);
+  const lleno = level >= 10, vacio = level <= 0;
+  // la superficie es una elipse: ancho = la cuerda de la esfera a esa altura, alto = un poco de perspectiva
   const top = C + R - (2 * R * level) / 10;
+  const semi = Math.sqrt(Math.max(0, R * R - (top - C) ** 2));
+  const ev = Math.max(1, Math.min(3.2, semi * 0.13));
+  const ola = (x: number) => (lleno || vacio ? 0 : Math.sin(x * 0.3 + fase) * 0.6 + Math.sin(x * 0.67 - fase * 2) * 0.25);
+
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const dx = x - C, dy = y - C, d = Math.hypot(dx, dy);
     if (d > Ro) continue;
     if (d > R) {
-      // aro: piedra tallada con un hilo de oro
-      const ring = (d - R) / (Ro - R);
-      const lit = dx + dy < 0;
-      let c = ring < 0.2 ? '#0a080c' : ring > 0.85 ? '#0a080c' : lit ? IRON[3] : IRON[1];
-      if (ring > 0.4 && ring < 0.6) c = lit ? GOLD[3] : GOLD[1];
-      put(r, x, y, c);
+      // aro: un tubo de hierro, más claro donde mira a la luz, con un hilo de oro en el medio y contorno oscuro
+      const t = (d - R) / (Ro - R);
+      if (t < 0.16 || t > 0.86) { put(r, x, y, '#0a080c'); continue; }
+      const cara = (dx * LUZ[0] + dy * LUZ[1]) / (d * Math.hypot(LUZ[0], LUZ[1])); // 1 de cara a la luz, -1 de espaldas
+      const tubo = 1 - Math.abs((t - 0.51) / 0.35) * 0.55; // el centro del tubo brilla más que sus bordes
+      const l = (0.5 + 0.5 * cara) * 0.75 + tubo * 0.25;
+      put(r, x, y, t > 0.4 && t < 0.62 ? tono([GOLD[0], GOLD[1], GOLD[2], GOLD[3]], l * 1.05, x, y, false) : tono(IRON, l, x, y, false));
       continue;
     }
-    // vidrio: oscuro arriba, líquido abajo con superficie ondulada
-    const surf = top + Math.sin(x * 0.35 + wave * 1.6) * (level > 0 && level < 10 ? 1.2 : 0);
-    if (y >= surf && level > 0) {
-      const depth = (y - surf) / (2 * R);
-      const side = Math.abs(dx) / R;
-      let k = depth < 0.04 ? 3 : side > 0.8 ? 0 : depth > 0.6 || dx > R * 0.4 ? 1 : 2;
-      if (hash(x, y + wave, 9) > 0.985) k = 3;
-      put(r, x, y, liquid[k]);
-    } else put(r, x, y, d > R - 1.5 ? '#08060a' : hash(x >> 1, y >> 1, 4) > 0.5 ? '#100c16' : '#140f1a');
-  }
-  // reflejo del vidrio
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    const dx = x - (C - R * 0.38), dy = y - (C - R * 0.42);
-    if ((dx / (R * 0.32)) ** 2 + (dy / (R * 0.18)) ** 2 <= 1 && Math.hypot(x - C, y - C) < R) {
-      const i = (y * size + x) * 4;
-      r.data[i] = Math.min(255, r.data[i] + 90); r.data[i + 1] = Math.min(255, r.data[i + 1] + 90); r.data[i + 2] = Math.min(255, r.data[i + 2] + 100);
+    // normal de la esfera en este punto
+    const nx = dx / R, ny = dy / R, nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+    const luz = nx * LUZ[0] + ny * LUZ[1] + nz * LUZ[2];
+    const borde = d / R; // 0 en el centro, 1 en el vidrio
+    // ¿dónde está la superficie en esta columna? la mitad de atrás de la elipse queda arriba de top, la de adelante abajo
+    const u = semi > 0 ? dx / semi : 2;
+    const media = Math.abs(u) < 1 ? ev * Math.sqrt(1 - u * u) : 0;
+    const atras = top - media, frente = top + media + ola(x);
+    const enLiquido = lleno || (!vacio && y >= atras && Math.abs(u) < 1) || (!vacio && y > top && Math.abs(u) >= 1);
+
+    if (enLiquido) {
+      let l = 0.18 + luz * 0.72 - borde ** 3 * 0.35;
+      // el fondo de la esfera y la zona profunda caen a la sombra
+      if (!lleno) l -= Math.max(0, (y - frente) / (2 * R)) * 0.18;
+      let c = tono(liquid, l, x, y);
+      if (!lleno && y < frente && Math.abs(u) < 1) {
+        // la cara de arriba del líquido: se ve más clara que el cuerpo y brilla donde le pega la luz
+        const brillo = 0.62 + 0.25 * Math.sin(dx * 0.45 + fase) * Math.cos((y - top) * 0.9 - fase);
+        c = tono(liquid, brillo - (u + 1) * 0.08, x, y);
+        // borde de espuma al frente, más blanco en las crestas de la ola
+        if (y >= frente - 1) c = ola(x) < -0.55 ? ESPUMA[kind] : liquid[5];
+        else if (y <= atras + 0.6) c = liquid[3]; // línea de atrás, contra el vidrio
+      }
+      put(r, x, y, c);
+    } else {
+      // vidrio vacío: casi negro, con volumen y un poco de rebote de luz abajo a la derecha
+      const rebote = Math.max(0, nx * 0.6 + ny * 0.8) * borde ** 4 * 0.5;
+      put(r, x, y, tono(VIDRIO, 0.15 + luz * 0.45 - borde ** 4 * 0.2 + rebote, x, y));
     }
+    // sombra donde el vidrio toca el aro
+    if (d > R - 1) put(r, x, y, '#06040a');
+  }
+
+  // burbujas que suben y se mueven con wave
+  if (!vacio) for (let b = 0; b < 7; b++) {
+    const bx = Math.round(C - R * 0.6 + hash(b, 3, kind === 'vida' ? 11 : 13) * R * 1.2);
+    const by0 = C + R - 3 - hash(b, 7, 17) * R * 1.6;
+    const by = Math.round(by0 - (wave % 4) * 1.5);
+    const surfY = lleno ? C - R : top + ev + ola(bx);
+    if (by < surfY + 2 || Math.hypot(bx - C, by - C) > R - 3) continue;
+    put(r, bx, by, liquid[5]);
+    if (b % 3 === 0) put(r, bx + 1, by, liquid[4]);
+  }
+
+  // reflejo del vidrio: un óvalo suave arriba a la izquierda, con su centro más claro y un destello
+  const lighten = (x: number, y: number, k: number) => {
+    const i = (y * size + x) * 4;
+    r.data[i] = Math.min(255, r.data[i] + k); r.data[i + 1] = Math.min(255, r.data[i + 1] + k); r.data[i + 2] = Math.min(255, r.data[i + 2] + k + 10);
+  };
+  const hx = C - R * 0.36, hy = C - R * 0.44;
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    if (Math.hypot(x - C, y - C) >= R - 1) continue;
+    const e = ((x - hx) / (R * 0.34)) ** 2 + ((y - hy) / (R * 0.2)) ** 2;
+    if (e <= 0.35) lighten(x, y, 105);
+    else if (e <= 1) lighten(x, y, 60);
+    else if (e <= 1.45 && BAYER[(y & 3) * 4 + (x & 3)] < 0.5) lighten(x, y, 28);
+  }
+  lighten(Math.round(hx + R * 0.42), Math.round(hy + R * 0.16), 130);
+  // brillo fino de la curva del vidrio abajo a la derecha
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const dx = x - C, dy = y - C, d = Math.hypot(dx, dy);
+    if (d < R - 3.2 || d >= R - 1.6) continue;
+    const a = Math.atan2(dy, dx);
+    if (a > 0.15 && a < 1.35) lighten(x, y, 34);
   }
   return r;
 }
@@ -302,8 +379,10 @@ export function hudSprites(): UiSprite[] {
   const out: UiSprite[] = [];
   out.push({ name: 'orbe_vida', frames: Array.from({ length: 11 }, (_, i) => orb('vida', i, 0)) });
   out.push({ name: 'orbe_mana', frames: Array.from({ length: 11 }, (_, i) => orb('mana', i, 0)) });
-  out.push({ name: 'orbe_vida_ola', frames: Array.from({ length: 4 }, (_, i) => orb('vida', 6, i)) });
-  out.push({ name: 'orbe_mana_ola', frames: Array.from({ length: 4 }, (_, i) => orb('mana', 6, i)) });
+  // la superficie viva para cada nivel con líquido y aire: cuadro (N - 1) * 4 + t es el nivel N (1 a 9), paso t (0 a 3)
+  const olas = (k: 'vida' | 'mana') => Array.from({ length: 36 }, (_, i) => orb(k, Math.floor(i / 4) + 1, i % 4));
+  out.push({ name: 'orbe_vida_ola', frames: olas('vida') });
+  out.push({ name: 'orbe_mana_ola', frames: olas('mana') });
   out.push({ name: 'panel', frames: [framed(48, 48, 4, { gold: true })], slice: [12, 12, 12, 12] });
   out.push({ name: 'panel_hundido', frames: [framed(24, 24, 3, { inset: true })], slice: [6, 6, 6, 6] });
   out.push({ name: 'tooltip', frames: [framed(24, 24, 2, { alpha: 235 })], slice: [6, 6, 6, 6] });

@@ -210,7 +210,7 @@ for (const [g, by] of Object.entries(manifest.botin.atlas))
 ### Interfaz
 
 - Paneles con `nueve`: `this.add.nineslice(x, y, 'panel', 0, ancho, alto, ...nueve)`.
-- Orbes: 11 cuadros, cuadro N = vida al N*10 %. `orbe_*_ola` son 4 cuadros para animar la superficie.
+- Orbes: 11 cuadros, cuadro N = vida al N*10 %. Sombreados como esfera de vidrio, sin bloques rectos. `orbe_*_ola` son 36 cuadros con la superficie viva: el cuadro (N - 1) * 4 + t es el nivel N (1 a 9) en el paso t (0 a 3), y los 4 pasos cierran el ciclo. Los niveles 0 y 10 no tienen superficie y van quietos.
 - Números de daño: `numeros.png` es una rejilla de 13 columnas (`caracteres`) por 5 filas (`filas`, un color por fila), celdas de 7x9. Sirve como `RetroFont` o recortando cuadros.
 - `inventario.png` (280 x 410) ya trae dibujados los casilleros. `layout` dice dónde va cada cosa:
   - `equipo`: `casco, amuleto, pecho, arma, mano_libre, guantes, cinturon, botas, anillo_1, anillo_2, mascota, retrato` como `[x, y, w, h]`.

@@ -52,6 +52,12 @@ describe('interfaz tipo Diablo y audio', () => {
     for (const n of ['orbe_vida', 'orbe_mana', 'panel', 'tooltip', 'casillero', 'equipo_casco', 'equipo_arma', 'equipo_mascota', 'cinturon', 'barra_jefe', 'estandarte', 'cursor_guantelete']) expect(names, n).toContain(n);
     expect(sp.find((s) => s.name === 'orbe_vida')!.frames).toHaveLength(11);
     expect(same(orb('vida', 2), orb('vida', 8))).toBe(false);
+    // superficie viva para los niveles 1 a 9, cuatro pasos cada uno, y la ola de verdad se mueve
+    expect(sp.find((s) => s.name === 'orbe_mana_ola')!.frames).toHaveLength(36);
+    expect(same(orb('vida', 5, 0), orb('vida', 5, 1))).toBe(false);
+    // el líquido crece con el nivel: se cuentan los pixeles rojizos dentro del vidrio
+    const rojos = (n: number) => { const o = orb('vida', n); let c = 0; for (let i = 0; i < o.data.length; i += 4) if (o.data[i] > 70 && o.data[i] > o.data[i + 2] * 2 && o.data[i + 1] < 90) c++; return c; };
+    for (let n = 1; n <= 10; n++) expect(rojos(n), `nivel ${n}`).toBeGreaterThan(rojos(n - 1));
     expect(sp.find((s) => s.name === 'panel')!.slice).toEqual([12, 12, 12, 12]);
     const d = digitSheet();
     expect(d.png.w).toBe(d.cw * DIGITS.length);
