@@ -1,6 +1,6 @@
 # Kit deportivo de PixelForja
 
-Hojas de sprites de 8 direcciones para un juego de deportes isométrico: atletismo, natación, vóley, tenis y peleas, con la familia GG y seis héroes originales. Todo sale con el movimiento premium (poses clave de verdad, pivote fijo, eventos).
+Hojas de sprites de 8 direcciones para un juego de deportes isométrico: atletismo, natación, vóley, tenis y peleas, con la familia GG y seis superhéroes de cómic (versiones de fan para uso personal). Todo sale con el movimiento premium (poses clave de verdad, pivote fijo, eventos).
 
 ## Generar el kit
 
@@ -24,7 +24,7 @@ CREDITOS.txt                              autores de las piezas LPC (hay que mos
 
 Las filas siguen el orden de `direcciones` del manifiesto: `down, down_left, left, up_left, up, up_right, right, down_right`.
 
-Cada atleta trae su `celda` y su `pivote`. El pivote es el punto de apoyo (los pies) y **no se mueve** entre cuadros, direcciones ni animaciones. El Coloso Verde va en celda de 64 y el resto en 48.
+Cada atleta trae su `celda` y su `pivote`. El pivote es el punto de apoyo (los pies) y **no se mueve** entre cuadros, direcciones ni animaciones. Hulk va en celda de 64 y el resto en 48.
 
 ## Qué hace el juego con cada dato
 
@@ -85,18 +85,18 @@ En local: `npm run deportes -- public/kit_deportes` y después `npm run dev`. En
 - **Tenis:** espera con split step, derecha, revés a dos manos, saque, volea y smash.
 - **Peleas:** guardia, desplazamiento, jab, directo, gancho, uppercut, patada baja, patada alta, patada voladora, bloqueo, esquiva, golpe recibido, nocaut y victoria. Cada golpe trae chispa de impacto.
 
-## Héroes originales
+## Superhéroes
 
-| Id | Nombre | Idea |
+| Id | Nombre | Cómo se ve |
 |---|---|---|
-| `aracnido` | Arácnido | Trepamuros ágil, traje azul noche con red dorada |
-| `garra` | Garra | Mutante rudo, chaqueta de cuero y garras de acero |
-| `pantera` | Pantera de Ónix | Guerrera felina, traje negro con franja plateada |
-| `carmesi` | Mercenario Carmesí | Mercenario bromista, carmesí y negro, con espada |
-| `vigilante` | Vigilante Nocturno | Detective de la noche, capa, capucha con orejas en punta |
-| `coloso` | Coloso Verde | Gigante verde de fuerza bruta (celda 64) |
+| `spiderman` | Spider-Man | Rojo y azul, telaraña, ojos blancos de máscara y la araña en el pecho |
+| `wolverine` | Wolverine | Pelo en punta, patillas, traje amarillo y azul y garras |
+| `blackpanther` | Pantera Negra | Traje negro, orejas de felino, ojos blancos y garras |
+| `deadpool` | Deadpool | Rojo entero, parches negros en los ojos, correa al pecho y katana |
+| `batman` | Batman | Gris y negro, capa, orejas en punta, cinturón y el murciélago en el óvalo amarillo |
+| `hulk` | Hulk | Gigante verde, pelo negro revuelto, short morado y descalzo (celda 64) |
 
-Son arquetipos propios: nombres, colores y siluetas distintos, sin emblemas ni trajes copiados de personajes con dueño. Así el juego se puede publicar sin problemas de derechos. Si usas personajes de Marvel o DC tal cual en un juego publicado, necesitas una licencia.
+Son versiones chibi de fan, para uso personal. Los personajes son de Marvel y DC: para meterlos en un juego que se publique o se venda hace falta una licencia.
 
 En el kit salen con ropa de deporte y sin arma. Con `heroFicha(id, true)` llevan sus garras o su espada para las peleas.
 

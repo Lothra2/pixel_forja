@@ -77,6 +77,12 @@ export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99, w
   return isFinite(x0) ? { x0: x0 + dx, y0: y0 + dy, x1: x1 + dx, y1: y1 + dy } : null;
 }
 
+/** emblemas del pecho: # el color del emblema, o el fondo (óvalo), . la camisa */
+const EMBLEMS: Record<'spider' | 'bat', { plain: string[]; oval: string[] }> = {
+  spider: { plain: ['#.#.#', '.###.', '#.#.#'], oval: ['.ooooo.', 'o#o#o#o', 'oo###oo', 'o#o#o#o', '.ooooo.'] },
+  bat: { plain: ['#.#.#', '#####', '.#.#.'], oval: ['.ooooooo.', 'o##o#o##o', 'o#######o', '.oo#o#oo.'] },
+};
+
 const DIGITS: Record<string, string[]> = {
   '0': ['###', '#.#', '#.#', '#.#', '###'], '1': ['.#.', '##.', '.#.', '.#.', '###'], '2': ['###', '..#', '###', '#..', '###'],
   '3': ['###', '..#', '.##', '..#', '###'], '4': ['#.#', '#.#', '###', '..#', '..#'], '5': ['###', '#..', '###', '..#', '###'],
@@ -373,13 +379,32 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
           if (part.get(px, py)?.mat === 'top') numPx.add(Part.key(px, py) + 0.5);
         }
     }
+    // emblema (araña, murciélago): centrado arriba del pecho, de frente y en diagonal
+    const embPx = new Map<number, 'fg' | 'bg'>();
+    const emb = armor ? undefined : f.outfit.emblem;
+    if (emb && !side && view !== 'back' && d.torsoW >= 7 && Math.abs(theta) < 20) {
+      const rows = f.outfit.emblemBg && d.torsoW >= 9 ? EMBLEMS[emb].oval : EMBLEMS[emb].plain;
+      const w = rows[0].length;
+      const x0 = -Math.floor(w / 2) - (d.torsoW % 2 === 0 ? 1 : 0) + (w % 2 === 0 ? 1 : 0);
+      const shirtRows = d.torsoH - d.pantsRows;
+      const y0 = -d.torsoH + Math.max(1, Math.min(2, shirtRows - rows.length - 1));
+      rows.forEach((row, j) => [...row].forEach((c, i) => {
+        if (c === '.') return;
+        const px = x0 + i + Math.round(shear * (d.torsoH - 2 - j)), py = y0 + j;
+        const m = part.get(px, py)?.mat;
+        if (m === 'top' || m === 'top2') embPx.set(Part.key(px, py), c === '#' ? 'fg' : 'bg');
+      }));
+    }
+    const embPaint = { color: packHex(f.outfit.emblemColor ?? '#111111'), dark: mats.paint('top', 0).dark, mat: mats.id('top') };
+    const embBgPaint = { color: packHex(f.outfit.emblemBg ?? '#f2c230'), dark: mats.paint('top', 0).dark, mat: mats.id('top') };
     const numPaint = { color: packHex(f.outfit.numberColor ?? '#ffffff'), dark: mats.paint('top', 0).dark, mat: mats.id('top') };
     const printPaint = print ? { color: packHex(print), dark: mats.paint('top', 0).dark, mat: mats.id('top') } : numPaint;
     for (const [x, y, p] of part.entries()) {
       let slot = p.slot;
       if (!part.has(x - 1, y) && slot >= BASE) slot = SHADOW;
       const k = Part.key(x, y);
-      canvas.put(x, y, Layer.Torso, numPx.has(k) ? numPaint : numPx.has(k + 0.5) ? printPaint : mats.paint(p.mat, slot));
+      const e = embPx.get(k);
+      canvas.put(x, y, Layer.Torso, e ? (e === 'fg' ? embPaint : embBgPaint) : numPx.has(k) ? numPaint : numPx.has(k + 0.5) ? printPaint : mats.paint(p.mat, slot));
     }
   };
 

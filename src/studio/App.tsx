@@ -431,7 +431,7 @@ export function App() {
     setAnim('walk');
     setStep('style');
   };
-  // héroes originales: de pelea con su arma en la tarjeta; se abren con ropa de deporte y movimiento premium
+  // superhéroes: de pelea con su arma en la tarjeta; se abren con ropa de deporte y movimiento premium
   const renderHero = useCallback(async (id: HeroId) => {
     const r = await engine.call<'rendered'>({ type: 'render', key: `hero-${id}`, ficha: heroFicha(id, true), cell: heroCell(id), anim: 'guard', view: 'se', props: true }).catch(() => null);
     return r ? r.clip : null;

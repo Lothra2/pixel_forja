@@ -186,7 +186,7 @@ export function FamilyRow({ t, render, open, renderPet, openPet }: {
   );
 }
 
-// ---------- héroes originales ----------
+// ---------- superhéroes ----------
 
 function HeroCard({ id, lang, render, open }: { id: HeroId; lang: Lang; render: (id: HeroId) => Promise<FrameSet | null>; open: (id: HeroId) => void }) {
   const [clip, setClip] = useState<FrameSet | null>(null);

@@ -295,17 +295,27 @@ describe('movimiento premium', () => {
     expect(png.bytes.length).toBeGreaterThan(100);
   }, 120_000);
 
-  it('los 6 héroes originales pasan el control en todos los deportes y 8 direcciones (con y sin arma)', () => {
+  it('los 6 superhéroes pasan el control en todos los deportes y 8 direcciones (con y sin arma)', () => {
     const anims = [...new Set(Object.values(SPORT_PACKS).flat())];
     for (const id of HEROES) for (const armed of [false, true]) {
       const { qa, missing } = renderPlan(heroFicha(id, armed), { cell: heroCell(id), anims, views: EIGHT_VIEWS, props: true });
       expect(missing, id).toEqual([]);
       expect(qa.filter((r) => !r.ok).map((r) => `${id} ${armed} ${r.clip}`)).toEqual([]);
     }
-    // nombres propios y sin emblemas ajenos: el coloso va en celda grande, el resto en 48
-    expect(heroCell('coloso')).toBe(64);
+    // Hulk va en celda grande, el resto en 48
+    expect(heroCell('hulk')).toBe(64);
     expect(HEROES.filter((h) => heroCell(h) === 48)).toHaveLength(5);
   }, 1_800_000);
+
+  it('los emblemas se dibujan en el pecho de frente y no de espalda', () => {
+    for (const id of ['spiderman', 'batman'] as const) {
+      const f = heroFicha(id);
+      const sin = { ...f, outfit: { ...f.outfit, emblem: null } };
+      const px = (r: { data: Uint8ClampedArray | Uint8Array }) => Array.from(r.data).join(',');
+      expect(px(renderClip(f, 48, 'idle', 'front').frames[0]), id).not.toBe(px(renderClip(sin, 48, 'idle', 'front').frames[0]));
+      expect(px(renderClip(f, 48, 'idle', 'back').frames[0]), id).toBe(px(renderClip(sin, 48, 'idle', 'back').frames[0]));
+    }
+  });
 
   it('la familia viene en premium, también con su clase de RPG', () => {
     for (const id of ['rick', 'steph', 'sophie', 'alana'] as const) {
