@@ -166,7 +166,7 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
         <button className="tbtn" onClick={() => step(-1)} aria-label={t('pb_prev')} title={t('pb_prev')}>◀︎◀︎</button>
         <button className="tbtn play" onClick={toggle} aria-label={playing ? t('pb_pause') : t('pb_play')} title={playing ? t('pb_pause') : t('pb_play')} data-testid="pb-toggle">{playing ? '❚❚' : '▶︎'}</button>
         <button className="tbtn" onClick={() => step(1)} aria-label={t('pb_next')} title={t('pb_next')}>▶︎▶︎</button>
-        <div className="timeline" role="group" aria-label={t('pb_frame')} data-testid="timeline">
+        <div className="pb-timeline" role="group" aria-label={t('pb_frame')} data-testid="pb-timeline">
           {Array.from({ length: n }, (_, i) => {
             const ev = evAt(i);
             return (

@@ -322,7 +322,7 @@ test('movimiento premium: perfil, comparar, pausar y cuadro a cuadro', async ({ 
   await page.getByTestId('motion').getByRole('button', { name: 'Premium' }).click();
   await idle(page);
   // la caminata premium marca sus dos pasos en la línea de tiempo
-  await expect(page.getByTestId('timeline').locator('.ev-paso')).toHaveCount(2, { timeout: 30000 });
+  await expect(page.getByTestId('pb-timeline').locator('.ev-paso')).toHaveCount(2, { timeout: 30000 });
   await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
   await page.getByTestId('motion-compare').check();
   await expect(page.getByTestId('preview-compare')).toBeVisible({ timeout: 30000 });
@@ -331,8 +331,54 @@ test('movimiento premium: perfil, comparar, pausar y cuadro a cuadro', async ({ 
   const at = Number((await page.getByTestId('frame-count').textContent())!.split('/')[0]);
   await page.getByRole('button', { name: 'Cuadro siguiente' }).click();
   await expect(page.getByTestId('frame-count')).toHaveText(`${(at % 8) + 1}/8`);
-  await page.getByTestId('timeline').locator('button').first().click();
+  await page.getByTestId('pb-timeline').locator('button').first().click();
   await expect(page.getByTestId('event-flash')).toHaveText('Paso');
   await page.screenshot({ path: `${shots}/${tag}_40_premium_comparar.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test('editor de poses: deshacer, rehacer y borrador que se recupera', async ({ page }, info) => {
+  test.setTimeout(120000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const openEditor = async () => {
+    await page.goto('/');
+    await page.getByTestId('family-rick-rpg').click();
+    await page.getByTestId('step-editor').click();
+    await expect(page.getByTestId('editor-canvas')).toBeVisible({ timeout: 30000 });
+  };
+  await openEditor();
+  const hand = page.getByTestId('joint-handNear');
+  // la mano medida desde el canvas (los botones mueven la página)
+  const handY = async () => Math.round((await hand.boundingBox())!.y - (await page.getByTestId('editor-canvas').boundingBox())!.y);
+  const start = await handY();
+  const drag = async () => {
+    const b = (await hand.boundingBox())!;
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(b.x + 30, b.y - 50, { steps: 6 });
+    await page.mouse.up();
+  };
+  await expect(page.getByTestId('ed-undo')).toBeDisabled();
+  await drag();
+  const moved = await handY();
+  expect(Math.abs(moved - start)).toBeGreaterThan(10);
+  // un arrastre entero se deshace de una vez
+  await page.getByTestId('ed-undo').click();
+  await expect.poll(handY).toBe(start);
+  await page.keyboard.press('Control+Shift+Z');
+  await expect.poll(handY).toBe(moved);
+  // sin guardar: al volver queda el borrador y se recupera
+  await page.waitForTimeout(800);
+  await openEditor();
+  await expect(page.getByTestId('ed-draft')).toBeVisible();
+  await page.getByTestId('ed-recover').click();
+  await expect.poll(handY).toBe(moved);
+  await page.screenshot({ path: `${shots}/${tag}_41_editor_borrador.png`, fullPage: true });
+  // guardar borra el borrador
+  await page.getByTestId('ed-save').click();
+  await openEditor();
+  await expect(page.getByTestId('ed-draft')).toHaveCount(0);
   expect(errors).toEqual([]);
 });

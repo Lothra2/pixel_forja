@@ -103,7 +103,7 @@ export function posesFor(f: Ficha, cell: CellSize, name: string, view: View = 's
 }
 
 /** Escala las distancias de una pose (pies, cuerpo, cabeza, implementos) sin tocar los ángulos. */
-function scalePose(p: Pose, k: number): Pose {
+export function scalePose(p: Pose, k: number): Pose {
   const foot = (q: Pose['legs']['near']) => ({ ...q, x: q.x * k, y: q.y * k, ...(q.z !== undefined ? { z: q.z * k } : {}) });
   return {
     ...p, x: p.x * k, air: p.air * k, ...(p.hipH !== undefined ? { hipH: p.hipH * k } : {}),

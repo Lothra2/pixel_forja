@@ -257,7 +257,7 @@ canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; border-
 .tbtn:hover { border-color: var(--accent); }
 .tbtn.play { min-width: 44px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .tbtn.on { background: var(--violet); color: #fff; border-color: transparent; }
-.timeline { display: flex; gap: 3px; padding: 4px; border-radius: 9px; background: var(--panel-2); border: 1px solid var(--line); max-width: 100%; overflow-x: auto; }
+.pb-timeline { display: flex; gap: 3px; padding: 4px; border-radius: 9px; background: var(--panel-2); border: 1px solid var(--line); max-width: 100%; overflow-x: auto; }
 .tl { position: relative; width: 18px; height: 24px; flex: none; padding: 0; border: 0; border-radius: 4px; background: var(--panel-3); cursor: pointer; }
 .tl.on { background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
 .ev-dot { position: absolute; left: 50%; bottom: 3px; width: 6px; height: 6px; margin-left: -3px; border-radius: 2px; }
@@ -386,6 +386,8 @@ select { font: inherit; font-size: 13.5px; color: var(--text); background: var(-
 .editor-stage .stage-overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
 .joint { stroke: #111; stroke-width: 0.25; cursor: grab; }
 .joint:hover { stroke: #fff; }
+.draft-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 10px; border-radius: 12px; background: color-mix(in srgb, var(--violet) 18%, var(--panel-2)); border: 1px solid var(--line-2); }
+.draft-bar span { flex: 1 1 200px; }
 .timeline { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
 .timeline button { min-width: 34px; padding: 6px 8px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-2); cursor: pointer; font-variant-numeric: tabular-nums; }
 .timeline button.on { background: var(--grad); color: var(--accent-ink); border-color: transparent; }

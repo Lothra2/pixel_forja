@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   type HumanFicha, type CellSize, type Pose, type JointName, type CustomAnim, type EyeExpr, type MouthExpr,
-  editorFrame, dragJoint, posesFor, customFrames, DRAGGABLE, EYE_EXPRS, MOUTH_EXPRS, animsFor,
+  editorFrame, dragJoint, posesFor, customFrames, DRAGGABLE, EYE_EXPRS, MOUTH_EXPRS, animsFor, scalePose,
 } from '../../engine/index';
+import { History } from '../history';
 import { animLabel, type Key, type Lang } from '../i18n';
 import { Select, Slider, Toggle, Seg, type T } from '../components/ui';
 import { backgroundPixels } from '../components/Preview';
@@ -13,6 +14,20 @@ interface Props {
   ficha: HumanFicha;
   cell: CellSize;
   onSave: (anim: CustomAnim) => void;
+}
+
+/** Lo que se puede deshacer y lo que guarda el borrador. */
+interface Doc { keys: Pose[]; inb: number; fps: number; loop: boolean }
+interface Draft extends Doc { base: string; name: string; cell: CellSize; at: number }
+const draftKey = (f: HumanFicha) => `pf.editorDraft:${f.name}`;
+function readDraft(f: HumanFicha): Draft | null {
+  try {
+    const d = JSON.parse(localStorage.getItem(draftKey(f)) ?? 'null') as Draft | null;
+    return d && Array.isArray(d.keys) && d.keys.length ? d : null;
+  } catch { return null; }
+}
+function clearDraft(f: HumanFicha) {
+  try { localStorage.removeItem(draftKey(f)); } catch { /* sin almacenamiento */ }
 }
 
 const ZOOM: Record<CellSize, number> = { 32: 12, 48: 9, 64: 7 };
@@ -48,12 +63,73 @@ export function EditorStep({ t, lang, ficha, cell, onSave }: Props) {
   const [saved, setSaved] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const drag = useRef<JointName | null>(null);
+  const gesture = useRef(0);
   const zoom = ZOOM[cell];
 
+  // ---------- deshacer, rehacer y borrador ----------
+  const hist = useRef(new History<Doc>());
+  const [, rerender] = useState(0);
+  const dirty = useRef(false);
+  const [draft, setDraft] = useState<Draft | null>(() => readDraft(ficha));
+  const doc = (): Doc => ({ keys, inb, fps, loop });
+  const record = (tag?: string) => {
+    hist.current.record(doc(), tag);
+    dirty.current = true;
+    setSaved(false);
+    rerender((n) => n + 1);
+  };
+  const apply = (d: Doc) => {
+    setKeys(d.keys);
+    setInb(d.inb);
+    setFps(d.fps);
+    setLoop(d.loop);
+    setSel((i) => Math.min(i, d.keys.length - 1));
+    dirty.current = true;
+    setSaved(false);
+    rerender((n) => n + 1);
+  };
+  const undo = () => { const d = hist.current.undo(doc()); if (d) apply(d); };
+  const redo = () => { const d = hist.current.redo(doc()); if (d) apply(d); };
+  const recover = () => {
+    if (!draft) return;
+    record();
+    // el borrador pudo hacerse a otro tamaño: las distancias se pasan a este
+    const k = cell / draft.cell;
+    apply({ ...draft, keys: k === 1 ? draft.keys : draft.keys.map((p) => scalePose(p, k)) });
+    setBase(draft.base);
+    setName(draft.name);
+    setDraft(null);
+  };
+  const discard = () => { clearDraft(ficha); setDraft(null); };
+  // el borrador se guarda solo, medio segundo después del último cambio
+  useEffect(() => {
+    if (!dirty.current) return;
+    const id = setTimeout(() => {
+      try { localStorage.setItem(draftKey(ficha), JSON.stringify({ keys, inb, fps, loop, base, name, cell, at: Date.now() } satisfies Draft)); } catch { /* sin almacenamiento */ }
+    }, 500);
+    return () => clearTimeout(id);
+  }, [keys, inb, fps, loop, base, name, cell, ficha]);
+  // Ctrl+Z, Ctrl+Shift+Z y Ctrl+Y (no dentro de un campo de texto)
+  const keyRef = useRef({ undo, redo });
+  keyRef.current = { undo, redo };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || (e.target as HTMLElement)?.tagName === 'INPUT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); keyRef.current.undo(); }
+      else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); keyRef.current.redo(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const loadBase = (n: string) => {
+    record();
     setBase(n);
     const custom = ficha.customAnims?.find((c) => c.name === n);
-    const ps = custom ? (custom.keys as Pose[]) : posesFor(ficha, cell, n);
+    // una animación guardada a otro tamaño se trae a este (las poses del editor van en pixeles de la celda)
+    const k = custom?.authoredCell ? cell / custom.authoredCell : 1;
+    const ps = custom ? (custom.keys as Pose[]).map((p) => (k === 1 ? p : scalePose(p, k))) : posesFor(ficha, cell, n);
     // de una animación de fábrica se toman hasta 8 poses clave repartidas
     const step = custom ? 1 : Math.max(1, Math.ceil(ps.length / 8));
     setKeys(ps.filter((_, i) => i % step === 0).map((p) => ({ ...p, hair: undefined })));
@@ -85,9 +161,9 @@ export function EditorStep({ t, lang, ficha, cell, onSave }: Props) {
     draw(c, cell, layers);
   }, [current, keys, sel, onion, playing, sequence, ficha, cell, fps, loop]);
 
-  const update = (patch: (p: Pose) => Pose) => {
+  const update = (patch: (p: Pose) => Pose, tag?: string) => {
+    record(tag);
     setKeys((ks) => ks.map((k, i) => (i === sel ? patch(k) : k)));
-    setSaved(false);
   };
   const toCell = (e: React.PointerEvent): [number, number] => {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -98,6 +174,13 @@ export function EditorStep({ t, lang, ficha, cell, onSave }: Props) {
   return (
     <>
       <section className="panel stage-wrap">
+        {draft && (
+          <div className="draft-bar" role="status" data-testid="ed-draft">
+            <span>{t('ed_draft')} <b>{draft.name}</b></span>
+            <button className="btn" onClick={recover} data-testid="ed-recover">{t('ed_draftRecover')}</button>
+            <button className="btn ghost" onClick={discard}>{t('ed_draftDiscard')}</button>
+          </div>
+        )}
         <p className="muted small">{t('ed_help')}</p>
         <div className="editor-stage" style={{ width: cell * zoom, maxWidth: '100%' }}>
           <canvas ref={canvas} className="pixel" style={{ width: '100%', height: 'auto' }} data-testid="editor-canvas" />
@@ -108,7 +191,7 @@ export function EditorStep({ t, lang, ficha, cell, onSave }: Props) {
               onPointerMove={(e) => {
                 if (!drag.current) return;
                 const to = toCell(e);
-                update((p) => dragJoint(ficha, cell, p, drag.current!, to, editorFrame(ficha, cell, p).joints));
+                update((p) => dragJoint(ficha, cell, p, drag.current!, to, editorFrame(ficha, cell, p).joints), `drag${gesture.current}`);
               }}
               onPointerUp={() => (drag.current = null)}
               onPointerLeave={() => (drag.current = null)}
@@ -124,7 +207,7 @@ export function EditorStep({ t, lang, ficha, cell, onSave }: Props) {
                     className="joint"
                     style={{ fill: JOINT_COLOR[j] }}
                     data-testid={`joint-${j}`}
-                    onPointerDown={(e) => { (e.currentTarget.ownerSVGElement as Element).setPointerCapture(e.pointerId); drag.current = j; }}
+                    onPointerDown={(e) => { (e.currentTarget.ownerSVGElement as Element).setPointerCapture(e.pointerId); drag.current = j; gesture.current++; }}
                   />
                 );
               })}
@@ -137,24 +220,26 @@ export function EditorStep({ t, lang, ficha, cell, onSave }: Props) {
           ))}
         </div>
         <div className="row center">
-          <button className="btn ghost" onClick={() => { setKeys((ks) => [...ks.slice(0, sel + 1), structuredClone(ks[sel]), ...ks.slice(sel + 1)]); setSel(sel + 1); }}>{t('ed_add')}</button>
-          <button className="btn ghost" disabled={keys.length <= 1} onClick={() => { setKeys((ks) => ks.filter((_, i) => i !== sel)); setSel(Math.max(0, sel - 1)); }}>{t('ed_del')}</button>
+          <button className="btn ghost" onClick={undo} disabled={!hist.current.canUndo} title="Ctrl+Z" data-testid="ed-undo">{t('ed_undo')}</button>
+          <button className="btn ghost" onClick={redo} disabled={!hist.current.canRedo} title="Ctrl+Shift+Z" data-testid="ed-redo">{t('ed_redo')}</button>
+          <button className="btn ghost" onClick={() => { record(); setKeys((ks) => [...ks.slice(0, sel + 1), structuredClone(ks[sel]), ...ks.slice(sel + 1)]); setSel(sel + 1); }}>{t('ed_add')}</button>
+          <button className="btn ghost" disabled={keys.length <= 1} onClick={() => { record(); setKeys((ks) => ks.filter((_, i) => i !== sel)); setSel(Math.max(0, sel - 1)); }}>{t('ed_del')}</button>
           <button className="btn" onClick={() => setPlaying(!playing)} data-testid="ed-play">{playing ? t('ed_stop') : t('ed_play')}</button>
           <span className="muted small">{sequence.length} {t('frames')}</span>
         </div>
       </section>
       <aside className="panel side">
         <Select label={t('ed_base')} value={base} set={loadBase} opts={bases.map((a) => [a.name, animLabel(a.name, lang)])} testid="ed-base" />
-        <Slider label={t('ed_torso')} value={pose.torso} min={-180} max={180} step={1} fmt={(v) => `${v}°`} set={(v) => update((p) => ({ ...p, torso: v }))} />
-        <Slider label={t('ed_tilt')} value={pose.head.tilt} min={-40} max={40} step={1} fmt={(v) => `${v}°`} set={(v) => update((p) => ({ ...p, head: { ...p.head, tilt: v } }))} />
-        <Slider label={t('ed_air')} value={pose.air} min={0} max={Math.round(cell / 6)} step={1} set={(v) => update((p) => ({ ...p, air: v }))} />
+        <Slider label={t('ed_torso')} value={pose.torso} min={-180} max={180} step={1} fmt={(v) => `${v}°`} set={(v) => update((p) => ({ ...p, torso: v }), `torso${sel}`)} />
+        <Slider label={t('ed_tilt')} value={pose.head.tilt} min={-40} max={40} step={1} fmt={(v) => `${v}°`} set={(v) => update((p) => ({ ...p, head: { ...p.head, tilt: v } }), `tilt${sel}`)} />
+        <Slider label={t('ed_air')} value={pose.air} min={0} max={Math.round(cell / 6)} step={1} set={(v) => update((p) => ({ ...p, air: v }), `air${sel}`)} />
         <Seg label={t('ed_eyes')} value={pose.face.eyes} set={(v) => update((p) => ({ ...p, face: { ...p.face, eyes: v as EyeExpr } }))} opts={EYE_EXPRS.map((e) => [e, t(`eye_${e}` as Key)])} />
         <Seg label={t('ed_mouth')} value={pose.face.mouth ?? ficha.face.mouth} set={(v) => update((p) => ({ ...p, face: { ...p.face, mouth: v as MouthExpr } }))} opts={MOUTH_EXPRS.map((m) => [m, t(`mouth_${m}` as Key)])} />
-        <Slider label={t('ed_inb')} value={inb} min={0} max={4} step={1} set={setInb} />
-        <Slider label={t('fps')} value={fps} min={4} max={16} step={1} set={setFps} />
+        <Slider label={t('ed_inb')} value={inb} min={0} max={4} step={1} set={(v) => { record('inb'); setInb(v); }} />
+        <Slider label={t('fps')} value={fps} min={4} max={16} step={1} set={(v) => { record('fps'); setFps(v); }} />
         <div className="row">
           <Toggle label={t('ed_onion')} on={onion} set={setOnion} />
-          <Toggle label={t('loop')} on={loop} set={setLoop} />
+          <Toggle label={t('loop')} on={loop} set={(v) => { record(); setLoop(v); }} />
         </div>
         <label className="field">
           {t('ed_name')}
@@ -163,7 +248,14 @@ export function EditorStep({ t, lang, ficha, cell, onSave }: Props) {
         <button
           className="btn"
           data-testid="ed-save"
-          onClick={() => { onSave({ name, fps, loop, inBetweens: inb, keys: keys.map((k) => ({ ...k, hair: undefined })) }); setSaved(true); }}
+          onClick={() => {
+            // authoredCell: así al exportar a otro tamaño las poses se escalan
+            onSave({ name, fps, loop, inBetweens: inb, keys: keys.map((k) => ({ ...k, hair: undefined })), authoredCell: cell });
+            setSaved(true);
+            dirty.current = false;
+            clearDraft(ficha);
+            setDraft(null);
+          }}
         >{t('ed_save')}</button>
         {saved && <p className="ok small">{t('ed_saved')}</p>}
         <p className="muted small">{t('ed_onlySide')}</p>
