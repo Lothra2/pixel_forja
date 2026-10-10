@@ -81,20 +81,23 @@ test('arena: el kit juega con pasos, saltos, clavado, saque y golpes', async ({ 
   expect(s.counts.impacto >= 2 || s.score[0] + s.score[1] >= 1).toBe(true);
   await page.screenshot({ path: `${shots}/${tag}_arena_voley.png` });
 
-  // tenis: la cancha es larga; los dos jugadores tienen que verse enteros, también en el teléfono
+  // tenis: la cámara sigue al jugador; él siempre se ve entero, también en el teléfono
   await page.locator('[data-s="tenis"]').click();
   await ready(page, 'tenis');
   await page.waitForTimeout(1500);
   const inView = await page.evaluate(() => {
     const g = (window as unknown as { __arena: any }).__arena;
     const v = (window as unknown as { __arenaView: { x: number; y: number; w: number; h: number } }).__arenaView;
-    return [g.player, g.rival].map((a: any) => {
+    return [g.player].map((a: any) => {
       const sx = a.pos.x - a.pos.y, sy = (a.pos.x + a.pos.y) / 2;
       // el sprite: medio ancho de celda a cada lado y una celda hacia arriba desde los pies
       return sx - 20 >= v.x && sx + 20 <= v.x + v.w && sy - 44 >= v.y && sy + 2 <= v.y + v.h;
     });
   });
-  expect(inView).toEqual([true, true]);
+  expect(inView).toEqual([true]);
+  // y de cerca: el atleta se ve tan grande como en vóley (el zoom no se aleja por la cancha)
+  const close = await page.evaluate(() => (window as unknown as { __arenaView: { w: number } }).__arenaView.w);
+  if (isMobile) expect(close).toBeLessThan(240);
   await page.getByRole('button', { name: /Saque|Serve/ }).click();
   await page.waitForTimeout(4500);
   s = await state(page);

@@ -625,6 +625,30 @@ export class Game {
     }
   }
 
+  /**
+   * Con la cámara pegada al jugador, la pelota y el rival pueden quedar afuera: una flechita en el borde dice
+   * dónde están (amarilla la pelota, blanca el rival).
+   */
+  drawOffscreen(g: CanvasRenderingContext2D, cam: Vec, W: number, H: number) {
+    if (!this.scene.follow) return;
+    const marks: [Vec, number, string][] = [];
+    if (this.rival) marks.push([this.rival.pos, 20, 'rgba(245,242,255,0.85)']);
+    if (this.ball) marks.push([this.ball.pos, this.ball.z, '#ffd34d']);
+    for (const [p, z, color] of marks) {
+      const s = toScreen(p.x, p.y, z);
+      const x = s.x - cam.x, y = s.y - cam.y, m = 6;
+      if (x >= 0 && x < W && y >= 0 && y < H) continue;
+      const ex = Math.max(m, Math.min(W - m, x)), ey = Math.max(m, Math.min(H - m, y));
+      const a = Math.atan2(y - ey, x - ex);
+      g.fillStyle = color;
+      g.beginPath();
+      g.moveTo(Math.round(ex + Math.cos(a) * 4), Math.round(ey + Math.sin(a) * 4));
+      g.lineTo(Math.round(ex + Math.cos(a + 2.4) * 4), Math.round(ey + Math.sin(a + 2.4) * 4));
+      g.lineTo(Math.round(ex + Math.cos(a - 2.4) * 4), Math.round(ey + Math.sin(a - 2.4) * 4));
+      g.fill();
+    }
+  }
+
   private shadow(g: CanvasRenderingContext2D, cam: Vec, p: Vec) {
     const s = toScreen(p.x, p.y);
     g.fillStyle = 'rgba(8,6,16,0.35)';
@@ -664,15 +688,23 @@ export class Game {
 
   /**
    * A dónde mira la cámara. En las canchas, al medio entre los dos (y la pelota), pero nunca deja afuera al
-   * jugador: si no entran todos, manda el jugador. W y H: tamaño de la vista en pixeles de arte.
+   * jugador: si no entran todos, manda el jugador. En tenis sigue al jugador de cerca y se asoma un poco hacia
+   * la pelota. W y H: tamaño de la vista en pixeles de arte.
    */
   focus(W: number, H: number): Vec {
     const p = this.player.pos;
     if (this.rival) {
-      const pts = [p, this.rival.pos, ...(this.ball ? [this.ball.pos] : [])];
-      const m = { x: pts.reduce((t, q) => t + q.x, 0) / pts.length, y: pts.reduce((t, q) => t + q.y, 0) / pts.length };
-      const c = toScreen(m.x, m.y, 14);
       const ps = toScreen(p.x, p.y);
+      let c: Vec;
+      if (this.scene.follow) {
+        // se asoma hacia la pelota, o hacia la cancha si no hay pelota en juego
+        const b = this.ball ? toScreen(this.ball.pos.x, this.ball.pos.y) : toScreen(0, 0);
+        c = { x: ps.x + (b.x - ps.x) * 0.35, y: ps.y - 22 + (b.y - ps.y) * 0.35 };
+      } else {
+        const pts = [p, this.rival.pos, ...(this.ball ? [this.ball.pos] : [])];
+        const m = { x: pts.reduce((t, q) => t + q.x, 0) / pts.length, y: pts.reduce((t, q) => t + q.y, 0) / pts.length };
+        c = toScreen(m.x, m.y, 14);
+      }
       // el sprite va de 46 pixeles arriba de los pies hasta los pies; se deja un margen a los lados
       const mx = Math.max(0, W / 2 - 30);
       const y0 = ps.y + 6 - H / 2, y1 = ps.y - 50 + H / 2;

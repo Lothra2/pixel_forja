@@ -28,8 +28,10 @@ export interface Scene {
   props(g: CanvasRenderingContext2D, cam: Vec, t: number, layer: 'back' | 'mid' | 'front'): void;
   /** canchas: medio largo y medio ancho de la cancha (lo que es adentro) */
   court?: { X: number; Y: number };
-  /** ancho mínimo de la vista en pixeles de arte: en una cancha larga tienen que entrar los dos jugadores */
+  /** ancho mínimo de la vista en pixeles de arte (una cancha que tiene que entrar entera) */
   span?: number;
+  /** la cámara sigue al jugador de cerca en vez de mostrar a los dos (tenis: la cancha es larga) */
+  follow?: boolean;
   /** red: los atletas de un lado se dibujan antes que la red y los del otro después */
   netX?: number;
   netTop?: number;
@@ -204,7 +206,7 @@ function court(id: 'voley' | 'tenis'): Scene {
   const sideSign = (p: Vec) => (p.x < 0 ? -1 : 1);
   return {
     id, bg: volley ? '#e2c48c' : '#468c60', bounds, ground, origin, netX: 0, netTop,
-    court: { X, Y: volley ? Y : 28 }, span: volley ? 200 : 250,
+    court: { X, Y: volley ? Y : 28 }, ...(volley ? { span: 200 } : { follow: true }),
     player: { pos: volley ? { x: -60, y: 0 } : { x: -90, y: 8 }, facing: 'down_right' },
     rival: { pos: volley ? { x: 60, y: 0 } : { x: 90, y: -8 }, facing: 'up_left' },
     clamp: (p, side) => {
