@@ -101,7 +101,7 @@ describe('mundo v2: atmósfera', () => {
   it('partículas con todos sus cuadros del mismo tamaño, luz radial y sombra de nube', () => {
     const ps = particles();
     const names = ps.map((p) => p.name);
-    for (const n of ['luciernaga', 'hoja_verde', 'hoja_otono', 'mariposa_azul', 'polen', 'brasa', 'brillo', 'espora', 'humo', 'polvo', 'gota']) expect(names, n).toContain(n);
+    for (const n of ['luciernaga', 'hoja_verde', 'hoja_otono', 'mariposa_azul', 'polen', 'brasa', 'brillo', 'espora', 'humo', 'polvo', 'gota', 'huella']) expect(names, n).toContain(n);
     for (const p of ps) for (const f of p.frames) { expect(f.w, p.name).toBe(p.w); expect(f.h, p.name).toBe(p.h); }
     const l = lightTexture(64);
     expect(l.data[(32 * 64 + 32) * 4 + 3]).toBeGreaterThan(200);
