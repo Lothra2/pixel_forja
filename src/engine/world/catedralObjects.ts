@@ -243,9 +243,70 @@ export function stoneBridge(): WorldObject {
   return { name: 'puente_piedra', w: 48, h: 160, anchor: [24, 80], solid: null, layer: 'suelo', anims: one(c.render()) };
 }
 
+/**
+ * La forja apagada: el centro del mundo. Un horno de piedra y cobre con chimenea, fuelle y tres huecos en el frente.
+ * Estados: `forja_0` a `forja_2` (cuántas brasas volvieron, los huecos se prenden) y `forja_3` encendida (fuego que late).
+ */
+export function forge(lit: 0 | 1 | 2 | 3): WorldObject {
+  const frames: Raster[] = [];
+  const n = lit === 3 ? 6 : 1;
+  for (let f = 0; f < n; f++) {
+    const c = canvas(160, 128, 5); // 32 x 25.6 unidades
+    // base y cuerpo de piedra
+    c.poly([[2, 25], [2, 20], [30, 20], [30, 25]], stone(CAT.piedraOscura));
+    c.poly([[4, 20], [5, 8], [27, 8], [28, 20]], stone(CAT.piedra), { bias: 0 });
+    c.poly([[3, 8.4], [3, 6.4], [29, 6.4], [29, 8.4]], stone(CAT.piedraClara), { bias: 1 });
+    // chimenea de cobre con verdín
+    c.poly([[13, 6.4], [13.6, 0.6], [18.4, 0.6], [19, 6.4]], metalMat(CAT.cobre));
+    c.poly([[12.6, 1.4], [12.6, 0.2], [19.4, 0.2], [19.4, 1.4]], metalMat(CAT.cobre), { bias: 1 });
+    c.dot([14.6, 3.4], metalMat(CAT.verdin), { tone: 3 }, true);
+    // la boca del horno: negra apagada, ámbar encendida
+    c.ellipse([16, 15], 6.4, 4.4, stone('#0a0b10'));
+    if (lit === 3) {
+      const k = [0, 1, 2, 1, 0, -1][f];
+      c.ellipse([16, 15.6], 5.6 + k * 0.2, 3.6 + k * 0.2, glowMat('#ff7a24'), { tone: 3 });
+      c.ellipse([16, 16], 4, 2.6, glowMat(CAT.ambar), { tone: 4 });
+      c.ellipse([16 + (f % 2) * 0.6, 16.4], 2, 1.4, glowMat('#ffe8a0'), { tone: 5 });
+    }
+    // los tres huecos de las brasas, arriba de la boca
+    for (let i = 0; i < 3; i++) {
+      const x = 10 + i * 6;
+      c.ellipse([x, 9.8], 1.6, 1.1, stone('#14161e'));
+      if (i < lit) c.ellipse([x, 9.6], 1.2, 0.9, glowMat(CAT.ambar), { tone: 4 });
+    }
+    // el fuelle de cuero al costado
+    c.poly([[28.6, 17], [31.6, 14.6], [31.6, 19.4]], { hex: '#5a3a22', kind: 'leather' });
+    // raíces que la abrazan (se ponen turquesa cuando la forja vuelve a vivir)
+    root(c, [4, 9], [2.4, 24], 1.2, 1.4, 71, lit === 3 ? '#3a8a80' : CAT.raiz);
+    root(c, [27, 9], [29.6, 24], 1.1, 1.4, 72, lit === 3 ? '#3a8a80' : CAT.raizOscura);
+    frames.push(c.render({ glowK: lit === 3 ? [0.85, 1, 0.9, 1, 0.8, 0.95][f] : 0.9, shadow: [16, 24.6, 15, 1.4] }));
+  }
+  return {
+    name: `forja_${lit}`, w: 160, h: 128, anchor: [80, 122], solid: [-64, -26, 128, 26],
+    anims: { idle: { frames, fps: lit === 3 ? 8 : 1, loop: true } },
+    ...(lit ? { light: { color: CAT.ambar, radius: lit === 3 ? 260 : 60 + lit * 30, flicker: lit === 3, pulse: lit < 3, dy: 60 } } : {}),
+  };
+}
+
+/** Una brasa: el objeto de la misión. Late en ámbar y se recoge tocándola. */
+export function ember(): WorldObject {
+  const frames: Raster[] = [];
+  for (let f = 0; f < 8; f++) {
+    const c = canvas(32, 32, 1);
+    const k = Math.sin((f / 8) * Math.PI * 2);
+    c.ellipse([16, 26], 6, 2, stone('#1a1c24')); // el soporte de piedra
+    c.ellipse([16, 18 - k], 5 + k * 0.5, 5.5 + k * 0.6, glowMat('#ff7a24'), { tone: 3 });
+    c.ellipse([16, 18 - k], 3.4, 3.8, glowMat(CAT.ambar), { tone: 4 });
+    c.ellipse([15.4, 17 - k], 1.6, 1.8, glowMat('#ffe8a0'), { tone: 5 });
+    if (f % 4 === 0) c.dot([20, 10 - (f % 3)], glowMat(CAT.ambar), { tone: 4 }, true);
+    frames.push(c.render({ glowK: 0.8 + 0.2 * k, shadow: [16, 27, 6, 1.4] }));
+  }
+  return { name: 'brasa', w: 32, h: 32, anchor: [16, 27], solid: null, anims: { idle: { frames, fps: 10, loop: true } }, light: { color: CAT.ambar, radius: 110, pulse: true, dy: 12 } };
+}
+
 export function catedralObjects(): WorldObject[] {
   return [
     rootColumn(false), rootColumn(true), brokenArch(), copperBrazier(true), copperBrazier(false),
-    emberPedestal(0), emberPedestal(1), emberPedestal(2), emberPedestal(3), wallRoots(), rubble(), rootCurtain(), lightShaft(), stoneBridge(), sunkenSlab(0), sunkenSlab(1),
+    emberPedestal(0), emberPedestal(1), emberPedestal(2), emberPedestal(3), wallRoots(), rubble(), rootCurtain(), lightShaft(), stoneBridge(), sunkenSlab(0), sunkenSlab(1), forge(0), forge(1), forge(2), forge(3), ember(),
   ];
 }

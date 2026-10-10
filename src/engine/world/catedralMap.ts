@@ -186,6 +186,11 @@ export function catedralMap(seed = 777): BigMap {
     return [x, y] as [number, number];
   };
   const chest = (tx: number, ty: number, nivel: string, extra: Record<string, Prop> = {}) => { const [x, y] = ent('cofre', tx, ty, { nivel, ...extra }); solid[at(x, y)] = 1; };
+  /** un brasero que se prende cuando vuelven `requiere` brasas: lo dibuja el juego (apagado o encendido) */
+  const braseroBrasa = (tx: number, ty: number, requiere: number) => {
+    entities.push({ tipo: 'brasero_brasa', x: T(tx), y: ty * TILE + TILE - 4, props: { requiere } });
+    solid[at(tx, ty)] = 1; occ[at(tx, ty)] = 1;
+  };
   const reserve = (tx: number, ty: number, rad: number) => { for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) if (at(tx + dx, ty + dy) >= 0) occ[at(tx + dx, ty + dy)] = 1; };
 
   // borde del mapa: nunca se sale
@@ -215,15 +220,17 @@ export function catedralMap(seed = 777): BigMap {
   entities.push({ tipo: 'punto_guardado', x: T(ax), y: T(ay + 1), props: { id: 'atrio', nombre: 'Atrio de las Luciérnagas' } });
   reserve(ax, ay, 2);
   // la misión sin palabras: el pedestal con las tres brasas vacías
-  placeT('pedestal_brasas_0', LC.pedestal[0], LC.pedestal[1]);
-  entities.push({ tipo: 'pedestal_brasas', x: T(LC.pedestal[0]), y: T(LC.pedestal[1] + 1), props: { brasas: 3 } });
+  // el juego lo dibuja con las brasas que ya volvieron (pedestal_brasas_0 a _3)
+  entities.push({ tipo: 'pedestal_brasas', x: T(LC.pedestal[0]), y: LC.pedestal[1] * TILE + TILE - 4, props: { brasas: 3 } });
+  solid[at(LC.pedestal[0], LC.pedestal[1])] = 1; solid[at(LC.pedestal[0] - 1, LC.pedestal[1])] = 1;
   reserve(LC.pedestal[0], LC.pedestal[1], 1);
   // dos filas de columnas guían hacia el claustro (la luz turquesa del atrio sale de las luciérnagas)
   for (const x of [8, 13, 23, 28]) { placeT('columna_raiz', x, 20); placeT(x === 13 ? 'columna_rota' : 'columna_raiz', x, 33); }
   // un cofre de bienvenida junto al agua
   chest(LC.pozo[0] + 4, LC.pozo[1] - 2, 'madera');
   // braseros apagados: se prenden con las brasas (próxima entrega)
-  for (const [x, y] of [[6, 21], [30, 21]] as TP[]) placeT('brasero_apagado', x, y);
+  // los braseros del atrio se prenden con la primera brasa
+  for (const [x, y] of [[6, 21], [30, 21]] as TP[]) braseroBrasa(x, y, 1);
 
   // ---------- 3. el paso y la entrada de los claustros: el primer guardián ----------
   place('arco_roto', T(LC.pasoClaustro[0]), 28 * TILE + 10);
@@ -234,7 +241,10 @@ export function catedralMap(seed = 777): BigMap {
   chest(42, 31, 'reforzado');
   // columnas rotas a lo largo del claustro
   for (const [x, y] of [[40, 12], [60, 12], [60, 32], [40, 33]] as TP[]) placeT('columna_rota', x, y);
-  for (const [x, y] of [[42, 14], [58, 14]] as TP[]) placeT('brasero_apagado', x, y);
+  // los del claustro con la segunda
+  for (const [x, y] of [[42, 14], [58, 14]] as TP[]) braseroBrasa(x, y, 2);
+  // una brasa en el pasillo de arriba del claustro
+  entities.push({ tipo: 'brasa', x: T(51), y: T(11), props: { id: 'claustro' } }); occ[at(51, 11)] = 1;
 
   // ---------- 3b. el resto del claustro: raicitas que Thor distrae y la capilla escondida ----------
   // tres raicitas en el pasillo del este: saltan de un lado a otro y si Thor anda cerca lo persiguen a él
@@ -242,7 +252,7 @@ export function catedralMap(seed = 777): BigMap {
   // la rendija de la capilla: raíces en el muro la disimulan, Thor la huele
   place('raices_muro', T(63), 20.5 * TILE + 60);
   chest(67, 22, 'dorado', { secreto: true, pista: 'capilla_escondida' });
-  placeT('brasero_apagado', 65, 20);
+  braseroBrasa(65, 20, 2);
   placeT('columna_rota', 69, 25);
 
   // ---------- 4. la nave inundada ----------
@@ -280,14 +290,34 @@ export function catedralMap(seed = 777): BigMap {
   ent('enemigo', 15, 52, { enemigo: 'raicita', nombre: 'Raicita' });
   // la recompensa de la nave y un brasero apagado para la próxima entrega
   chest(7, 53, 'reforzado');
-  placeT('brasero_apagado', 21, 54);
+  braseroBrasa(21, 54, 1);
+  // la brasa de la nave: en la orilla de abajo, cuidada por el vigía
+  entities.push({ tipo: 'brasa', x: T(30), y: T(54), props: { id: 'nave' } }); occ[at(30, 54)] = 1;
 
-  // ---------- lo que todavía no se abre: raíces gruesas cierran la forja (por el claustro y por la nave) ----------
-  place('raices_cortina', T(50), 36 * TILE + 26);
-  for (let x = 48; x <= 51; x++) solid[at(x, 36)] = 1;
-  place('raices_cortina', T(42), 52 * TILE + 26);
-  for (let y = 50; y <= 54; y++) solid[at(42, y)] = 1;
-  for (let y = 50; y <= 54; y++) solid[at(43, y)] = 1;
+  // ---------- 5. la forja apagada: el centro ----------
+  // la forja (la dibuja el juego según las brasas: forja_0 a forja_3) y su lugar sólido
+  entities.push({ tipo: 'forja', x: T(LC.forja[0]), y: LC.forja[1] * TILE + TILE - 6 });
+  for (let y = LC.forja[1] - 1; y <= LC.forja[1]; y++) for (let x = LC.forja[0] - 2; x <= LC.forja[0] + 2; x++) { solid[at(x, y)] = 1; occ[at(x, y)] = 1; }
+  reserve(LC.forja[0], LC.forja[1] + 1, 1);
+  for (const [x, y] of [[46, 40], [62, 40], [46, 53], [62, 53]] as TP[]) braseroBrasa(x, y, 3);
+  for (const [x, y] of [[48, 47], [60, 47]] as TP[]) placeT('columna_raiz', x, y);
+  for (const x of [48, 56]) place('raices_muro', T(x), 37.5 * TILE + 60);
+  // la tercera brasa está en la forja misma, en el rincón de abajo
+  entities.push({ tipo: 'brasa', x: T(61), y: T(51), props: { id: 'forja' } }); occ[at(61, 51)] = 1;
+  chest(46, 50, 'dorado');
+
+  // ---------- las compuertas de raíces: se abren cuando vuelven las brasas (las dibuja y las cierra el juego) ----------
+  // con 1 brasa la de la nave a la forja, con 2 el atajo del claustro y con 3 la del campanario
+  const compuerta = (id: string, requiere: number, ax0: number, ay0: number, ax1: number, ay1: number) => {
+    // se ajusta a los cuadros que se pisan de verdad (sin la cara del muro ni las paredes de los costados)
+    let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+    for (let y = ay0; y <= ay1; y++) for (let x = ax0; x <= ax1; x++) if (!solid[at(x, y)]) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    if (x1 < 0) throw new Error(`la compuerta ${id} no cubre ningún cuadro libre`);
+    entities.push({ tipo: 'compuerta_raices', x: T((x0 + x1) / 2), y: (y1 + 1) * TILE - 6, props: { id, requiere, x0, y0, x1, y1 } });
+  };
+  compuerta('nave_forja', 1, 42, 50, 43, 54);
+  compuerta('atajo', 2, 48, 36, 51, 36);
+  compuerta('campanario', 3, 64, 45, 65, 49);
 
   // ---------- zonas y postales ----------
   const zones: MapZone[] = [];
@@ -298,12 +328,14 @@ export function catedralMap(seed = 777): BigMap {
   zone('Los Claustros Quebrados', 31, 9, 64, 36, { luz: '#9aa8c8', oscuridad: 0.5, particulas: 'polvo,gotas', niebla: 0.18 });
   zone('La Capilla Escondida', 64, 18, 70, 26, { luz: '#8affe8', oscuridad: 0.5, particulas: 'luciernagas_turquesa', niebla: 0.1, secreto: true });
   zone('La Nave Inundada', 5, 36, 41, 57, { luz: '#7a9ab8', oscuridad: 0.6, particulas: 'gotas', niebla: 0.2 });
+  zone('La Forja Apagada', 43, 37, 64, 56, { luz: '#ffcf9a', oscuridad: 0.6, particulas: 'polvo', niebla: 0.15 });
   const postales: Postal[] = [
     { nombre: 'escalera_hundida', x: T(LC.escalera[0]), y: T(LC.escalera[1]) },
     { nombre: 'atrio_luciernagas', x: T(ax - 2), y: T(ay - 1) },
     { nombre: 'claustros_quebrados', x: T(LC.guardian[0] + 2), y: T(LC.guardian[1]) },
     { nombre: 'capilla_escondida', x: T(66), y: T(22) },
     { nombre: 'nave_inundada', x: T(22), y: T(47) },
+    { nombre: 'forja_apagada', x: T(LC.forja[0]), y: T(LC.forja[1] + 1) },
   ];
   return {
     name: 'mundo2_catedral', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects,

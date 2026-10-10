@@ -78,6 +78,33 @@ describe('catedral: la rebanada (escalera, atrio y el primer guardián)', () => 
     expect(m.zones.find((z) => z.nombre === 'La Capilla Escondida')!.props.secreto).toBe(true)
     expect(m.entities.some((e) => e.tipo === 'cofre' && e.props!.secreto && e.props!.pista === 'capilla_escondida')).toBe(true)
   });
+  it('la forja: tres brasas, braseros que se prenden con 1, 2 y 3, y tres compuertas de raíces que abren el camino', () => {
+    const brasas = m.entities.filter((e) => e.tipo === 'brasa')
+    expect(new Set(brasas.map((b) => b.props!.id)).size).toBeGreaterThanOrEqual(3)
+    const req = m.entities.filter((e) => e.tipo === 'brasero_brasa').map((e) => Number(e.props!.requiere))
+    for (const n of [1, 2, 3]) expect(req, `braseros que piden ${n}`).toContain(n)
+    const comp = m.entities.filter((e) => e.tipo === 'compuerta_raices')
+    expect(comp.map((c) => Number(c.props!.requiere)).sort()).toEqual([1, 2, 3])
+    // cada compuerta cierra su paso de pared a pared: sin ella (abierta) se pasa, con ella (cerrada) no
+    const ini = m.entities.find((e) => e.tipo === 'jugador_inicio')!
+    const sinCompuertas = reachable(m, Math.floor(ini.x / TILE), Math.floor(ini.y / TILE))
+    const cerrado = { ...m, solid: Uint8Array.from(m.solid) }
+    for (const c of comp) { const p = c.props as Record<string, number>; for (let y = p.y0!; y <= p.y1!; y++) for (let x = p.x0!; x <= p.x1!; x++) cerrado.solid[y * m.w + x] = 1 }
+    const conCompuertas = reachable(cerrado, Math.floor(ini.x / TILE), Math.floor(ini.y / TILE))
+    const forja = m.entities.find((e) => e.tipo === 'brasa' && e.props!.id === 'forja')!
+    const iF = Math.floor(forja.y / TILE) * m.w + Math.floor(forja.x / TILE)
+    expect(sinCompuertas[iF], 'con las compuertas abiertas se llega a la forja').toBe(1)
+    expect(conCompuertas[iF], 'con las compuertas cerradas la forja está cerrada').toBe(0)
+    // y las dos primeras brasas se alcanzan con todo cerrado (no se traba el orden)
+    for (const id of ['nave', 'claustro']) {
+      const b = m.entities.find((e) => e.tipo === 'brasa' && e.props!.id === id)!
+      expect(conCompuertas[Math.floor(b.y / TILE) * m.w + Math.floor(b.x / TILE)], id).toBe(1)
+    }
+    expect(m.entities.some((e) => e.tipo === 'forja')).toBe(true)
+    expect(m.zones.some((z) => z.nombre === 'La Forja Apagada')).toBe(true)
+    const objs = new Set(catedralObjects().map((o) => o.name))
+    for (const n of ['forja_0', 'forja_1', 'forja_2', 'forja_3', 'brasa', 'pedestal_brasas_3', 'brasero_apagado', 'brasero_cobre', 'raices_cortina']) expect(objs.has(n), n).toBe(true)
+  });
   it('misma semilla, mismo mapa', () => {
     const m2 = catedralMap();
     expect(m2.decos).toEqual(m.decos);
