@@ -147,11 +147,13 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     const ring = EIGHT_VIEWS;
     const start = Math.max(0, ring.indexOf(view));
     const frameView = (i: number): ViewName => (def.spin ? ring[(start + i) % ring.length] : view);
+    // premium: los implementos no cuentan como cuerpo para encuadrar
+    const ro: RenderOptions = premium ? { ...opt, propsApart: true } : opt;
     const renderAt = (p: Pose, i: number): BigFrame => {
       const v = frameView(i);
-      if (!def.spin || v === view) return renderHuman(f, cell, p, base, opt);
+      if (!def.spin || v === view) return renderHuman(f, cell, p, base, ro);
       const b = MIRRORED[v] ?? (v as RenderView);
-      const fr = renderHuman(f, cell, p, b, opt);
+      const fr = renderHuman(f, cell, p, b, ro);
       // la vista final se espeja entera al final si view es espejo: se compensa aquí
       return !!MIRRORED[v] !== !!MIRRORED[view] ? mirrorBig(fr) : fr;
     };
@@ -250,7 +252,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
   if (water.some(Boolean)) frames = wetFrames(frames, big, water, cell, left, top);
   // el cuerpo sin armas ni balones (con el pelo y el contorno): un hacha colgando no cuenta como pie
   // solo con equipo de RPG: sin equipo el piso lo marca todo lo dibujado (balones, raquetas) y se mide igual
-  const useBodies = (i: number) => isHuman(f) && (!!f.gear || !!longHeld[i]);
+  const useBodies = (i: number) => isHuman(f) && (!!f.gear || premium || !!longHeld[i]);
   const bodies = big.map((b, i) => (useBodies(i) && b.full ? { y0: b.full.y0 - top, y1: b.full.y1 - top } : null));
   const mirrored = !!MIRRORED[view];
   // articulaciones en coordenadas de la celda final (espejadas si la vista es espejo)

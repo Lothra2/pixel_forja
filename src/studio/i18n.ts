@@ -757,6 +757,8 @@ const ANIM_LABELS: Record<string, [string, string]> = {
   forehand: ['Derecha', 'Forehand'], backhand: ['Revés', 'Backhand'], bat: ['Batear', 'Bat'], pitch: ['Lanzar (béisbol)', 'Pitch'], catch: ['Atrapar', 'Catch'],
   dive: ['Salida de natación', 'Swim start dive'], hurdles: ['Vallas', 'Hurdles'], long_jump: ['Salto largo', 'Long jump'], sprint_start: ['Salida de tacos', 'Sprint start'],
   swim_back: ['Nadar (espalda)', 'Swim (backstroke)'], swim_breast: ['Nadar (pecho)', 'Swim (breaststroke)'], swim_fly: ['Nadar (mariposa)', 'Swim (butterfly)'], tread_water: ['Flotar', 'Tread water'],
+  vb_ready: ['Vóley: espera', 'Volley: ready'], vb_bump: ['Vóley: recepción', 'Volley: bump'], vb_set: ['Vóley: colocación', 'Volley: set'], vb_dive: ['Vóley: plancha', 'Volley: dive'],
+  tn_ready: ['Tenis: espera', 'Tennis: ready'], tn_volley: ['Tenis: volea', 'Tennis: volley'], tn_smash: ['Tenis: smash', 'Tennis: smash'],
   sprint: ['Sprint', 'Sprint'], pole_vault: ['Salto con garrocha', 'Pole vault'], shot_put: ['Lanzamiento de bala', 'Shot put'], javelin: ['Lanzamiento de jabalina', 'Javelin throw'],
   guard: ['Guardia', 'Guard'], punch: ['Golpe', 'Punch'], kick_martial: ['Patada', 'Martial kick'], skate: ['Montar skate', 'Skate'], bike: ['Pedalear', 'Bike'],
   attack: ['Atacar', 'Attack'], throw: ['Lanzar objeto', 'Throw'], block_shield: ['Bloquear con escudo', 'Shield block'], use_item: ['Usar objeto', 'Use item'],

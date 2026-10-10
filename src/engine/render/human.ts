@@ -6,7 +6,7 @@ import { type Pose, type Arm, type Foot, type PropKind, solveTwoBone, WEAPON_KIN
 const WEAPON_SET = new Set<PropKind>(WEAPON_KINDS);
 import { type Ramp, SHADOW, BASE, LIGHT, makeRamp } from '../color/ramp';
 import { LayerCanvas, Layer, finalizeOutlines, toRaster, packHex } from './canvas';
-import { Materials } from './materials';
+import { Materials, PROP_COLORS } from './materials';
 import { Part, stroke, blob, rot, polygon } from './part';
 import { buildHeadImage, type View, type HeadImage } from './head';
 import { renderHeadModel, HEAD_STYLES } from '../head3d/render';
@@ -23,6 +23,8 @@ export interface RenderOptions {
   /** dibujar balones y implementos */
   props?: boolean;
   noOutline?: boolean;
+  /** premium: los implementos nunca cuentan como cuerpo para encuadrar, aunque se dibujen en la capa del brazo */
+  propsApart?: boolean;
 }
 
 /**
@@ -50,12 +52,24 @@ export type Joints = Record<JointName, [number, number]>;
 /** Implementos largos que se sostienen (garrocha, jabalina): nunca marcan el piso. */
 export const LONG_HELD = new Set<string>(['pole', 'javelin']);
 
-export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99, withHairBack = false): BigFrame['body'] {
+export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99, withHairBack = false, skipMats?: Set<number>): BigFrame['body'] {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let y = 0; y < c.h; y++)
     for (let x = 0; x < c.w; x++) {
       const l = c.layer[y * c.w + x];
-      if (c.mat[y * c.w + x] === softMat) continue;
+      const m = c.mat[y * c.w + x];
+      if (m === softMat || skipMats?.has(m)) continue;
+      // contorno (-2) que solo toca implementos: también es del implemento
+      if (m === -2 && skipMats) {
+        let prop = false, other = false;
+        for (const [ax, ay] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+          if (ax < 0 || ay < 0 || ax >= c.w || ay >= c.h) continue;
+          const n = c.mat[ay * c.w + ax];
+          if (n < 0) continue;
+          if (skipMats.has(n)) prop = true; else other = true;
+        }
+        if (prop && !other) continue;
+      }
       // el pelo largo que cuelga detrás puede recortarse en el borde, como un balón
       if (!l || l === Layer.Prop || l === Layer.PropMid || l === Layer.Behind || (l === Layer.HairBack && !withHairBack)) continue;
       if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
@@ -553,7 +567,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   // ---------- piso: el punto más bajo toca el suelo (o queda a `air` pixeles) ----------
   // el piso lo toca el cuerpo: un hacha o un báculo que cuelgan más abajo que los pies no levantan al personaje
   const bbAll = canvas.bbox();
-  const bbBody = gear || props.some((q) => LONG_HELD.has(q.kind)) ? bodyBox(canvas, 0, 0) : null;
+  // premium: el piso lo marca el cuerpo (una raqueta que apunta abajo no levanta al personaje)
+  const groundMats = opt.propsApart ? new Set(Object.keys(PROP_COLORS).map((k) => mats.id(`p_${k}`))) : undefined;
+  const bbBody = gear || opt.propsApart || props.some((q) => LONG_HELD.has(q.kind)) ? bodyBox(canvas, 0, 0, -99, false, groundMats) : null;
   const bb = bbBody ? { y1: bbBody.y1 } : bbAll;
   const hipH = pose.hipH;
   const groundCanvas = hipH !== undefined ? canvas.oy + Math.round(hipH) : (bb ? bb.y1 + 1 : canvas.oy) + Math.round(pose.air);
@@ -571,7 +587,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
 
   // con piezas dibujadas, el pelo (colitas, melenas) puede recortarse en el borde de la celda en poses extremas:
   // la caja que decide el encuadre es la del cuerpo y la cara, más el contorno
-  const soft = lpcBox ? bodyBox(canvas, 0, 0, mats.id('hair')) : null;
+  // materiales de implementos (raqueta, espada, pelota): fuera de la caja del cuerpo si se pide
+  const propMats = opt.propsApart ? new Set(Object.keys(PROP_COLORS).map((k) => mats.id(`p_${k}`))) : undefined;
+  const soft = lpcBox ? bodyBox(canvas, 0, 0, mats.id('hair'), false, propMats) : null;
   if (!opt.noOutline)
     finalizeOutlines(canvas, {
       fused: [[Layer.FarLeg, Layer.Torso], [Layer.NearLeg, Layer.Torso], [Layer.Skirt, Layer.Torso]],
@@ -587,9 +605,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     shoulderNear: J(arms.near.root), shoulderFar: J(arms.far.root), handNear: J(arms.near.end), handFar: J(arms.far.end),
     neck: J(neck), head: J(add(neck, local(0, d.headW * 0.5))),
   };
-  const body = soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : bodyBox(canvas, dx, dy);
-  const full = soft ? bodyBox(canvas, dx, dy) : body;
-  const whole = bodyBox(canvas, dx, dy, -99, true);
+  const body = soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : bodyBox(canvas, dx, dy, -99, false, propMats);
+  const full = soft ? bodyBox(canvas, dx, dy, -99, false, propMats) : body;
+  const whole = bodyBox(canvas, dx, dy, -99, true, propMats);
   return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, whole, joints };
 }
 
