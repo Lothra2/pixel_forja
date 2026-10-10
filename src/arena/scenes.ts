@@ -26,6 +26,10 @@ export interface Scene {
   clamp(p: Vec, side?: -1 | 1): Vec;
   /** objetos con altura: se dibujan detrás o delante según `depth` (x + y del mundo) */
   props(g: CanvasRenderingContext2D, cam: Vec, t: number, layer: 'back' | 'mid' | 'front'): void;
+  /** canchas: medio largo y medio ancho de la cancha (lo que es adentro) */
+  court?: { X: number; Y: number };
+  /** ancho mínimo de la vista en pixeles de arte: en una cancha larga tienen que entrar los dos jugadores */
+  span?: number;
   /** red: los atletas de un lado se dibujan antes que la red y los del otro después */
   netX?: number;
   netTop?: number;
@@ -182,8 +186,9 @@ function swimming(): Scene {
 
 function court(id: 'voley' | 'tenis'): Scene {
   const volley = id === 'voley';
-  const X = volley ? 90 : 120, Y = volley ? 45 : 50;
-  const bounds = volley ? { x0: -150, y0: -100, x1: 150, y1: 100 } : { x0: -180, y0: -90, x1: 180, y1: 90 };
+  // el tenis va en una cancha compacta, estilo arcade: con la de verdad los jugadores quedan chiquitos y lejos
+  const X = volley ? 90 : 80, Y = volley ? 45 : 36;
+  const bounds = volley ? { x0: -150, y0: -100, x1: 150, y1: 100 } : { x0: -130, y0: -76, x1: 130, y1: 76 };
   const netTop = volley ? 26 : 11;
   const { ground, origin } = paint(bounds, (p) => {
     const { x, y } = p;
@@ -192,15 +197,16 @@ function court(id: 'voley' | 'tenis'): Scene {
       if (inC && (near(Math.abs(x), X) || near(Math.abs(y), Y) || near(x, 0) || near(Math.abs(x), 30))) return WHITE;
       return inC ? [214, 168, 112] : [226, 196, 140];
     }
-    const singles = 40, service = 65;
+    const singles = 28, service = 44;
     if (inC && (near(Math.abs(x), X) || near(Math.abs(y), Y) || near(Math.abs(y), singles) || (Math.abs(x) <= service && (near(Math.abs(x), service) || near(y, 0))))) return WHITE;
     return inC ? [52, 112, 168] : [70, 140, 96];
   });
   const sideSign = (p: Vec) => (p.x < 0 ? -1 : 1);
   return {
     id, bg: volley ? '#e2c48c' : '#468c60', bounds, ground, origin, netX: 0, netTop,
-    player: { pos: volley ? { x: -60, y: 0 } : { x: -128, y: 14 }, facing: 'down_right' },
-    rival: { pos: volley ? { x: 60, y: 0 } : { x: 128, y: -14 }, facing: 'up_left' },
+    court: { X, Y: volley ? Y : 28 }, span: volley ? 200 : 250,
+    player: { pos: volley ? { x: -60, y: 0 } : { x: -90, y: 8 }, facing: 'down_right' },
+    rival: { pos: volley ? { x: 60, y: 0 } : { x: 90, y: -8 }, facing: 'up_left' },
     clamp: (p, side) => {
       const s = side ?? sideSign(p);
       const x = s < 0 ? Math.max(bounds.x0 + 12, Math.min(-6, p.x)) : Math.min(bounds.x1 - 12, Math.max(6, p.x));

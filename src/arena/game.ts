@@ -345,8 +345,9 @@ export class Game {
     // a dónde va: a la cancha del otro, más rápido el remate y el smash, alto la colocación
     const fast = anim === 'spike' || anim === 'tn_smash';
     const T = volley ? (fast ? 0.55 : anim === 'vb_set' ? 1.5 : 1.15) : fast ? 0.55 : 0.95;
-    const tx = -side * (volley ? 25 + Math.random() * 50 : 40 + Math.random() * 70);
-    const ty = (Math.random() * 2 - 1) * (volley ? 34 : 36);
+    const c = this.scene.court ?? { X: 80, Y: 30 };
+    const tx = -side * (c.X * 0.3 + Math.random() * c.X * 0.55);
+    const ty = (Math.random() * 2 - 1) * (c.Y - 8);
     const zt = volley ? 14 : 0;
     ball.pos = { ...at.pos }; ball.z = Math.max(4, at.z);
     ball.v = { x: (tx - ball.pos.x) / T, y: (ty - ball.pos.y) / T };
@@ -407,8 +408,8 @@ export class Game {
   }
 
   private inCourt(p: Vec) {
-    const X = this.sport === 'voley' ? 90 : 120, Y = this.sport === 'voley' ? 45 : 40;
-    return Math.abs(p.x) <= X && Math.abs(p.y) <= Y;
+    const c = this.scene.court;
+    return !!c && Math.abs(p.x) <= c.X && Math.abs(p.y) <= c.Y;
   }
 
   private scorePoint(b: Ball) {
@@ -661,13 +662,21 @@ export class Game {
     }
   }
 
-  /** a dónde mira la cámara: el jugador, o el medio entre los dos en las canchas */
-  focus(): Vec {
+  /**
+   * A dónde mira la cámara. En las canchas, al medio entre los dos (y la pelota), pero nunca deja afuera al
+   * jugador: si no entran todos, manda el jugador. W y H: tamaño de la vista en pixeles de arte.
+   */
+  focus(W: number, H: number): Vec {
     const p = this.player.pos;
     if (this.rival) {
-      const r = this.rival.pos;
-      const m = { x: (p.x + r.x) / 2, y: (p.y + r.y) / 2 };
-      return toScreen(m.x, m.y, 14);
+      const pts = [p, this.rival.pos, ...(this.ball ? [this.ball.pos] : [])];
+      const m = { x: pts.reduce((t, q) => t + q.x, 0) / pts.length, y: pts.reduce((t, q) => t + q.y, 0) / pts.length };
+      const c = toScreen(m.x, m.y, 14);
+      const ps = toScreen(p.x, p.y);
+      // el sprite va de 46 pixeles arriba de los pies hasta los pies; se deja un margen a los lados
+      const mx = Math.max(0, W / 2 - 30);
+      const y0 = ps.y + 6 - H / 2, y1 = ps.y - 50 + H / 2;
+      return { x: Math.max(ps.x - mx, Math.min(ps.x + mx, c.x)), y: y0 <= y1 ? Math.max(y0, Math.min(y1, c.y)) : ps.y - 22 };
     }
     const s = toScreen(p.x, p.y, 16);
     // mira un poco adelante de hacia donde va
