@@ -7,3 +7,6 @@ out
 .DS_Store
 dist-artifact
 private
+
+# kit deportivo generado para la arena (se arma en el build)
+public/kit_deportes

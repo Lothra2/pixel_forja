@@ -1,5 +1,6 @@
 [build]
-  command = "npm run build"
+  # el sitio trae la arena con el kit deportivo generado en el build
+  command = "npm run build:sitio"
   publish = "dist"
 
 [build.environment]

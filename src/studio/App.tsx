@@ -519,6 +519,7 @@ export function App() {
         </div>
         <div className="top-right">
           {busy > 0 && <span className="busy" role="status">{t('working')}</span>}
+          <a className="arena-link" href="./arena.html" data-testid="arena-link" aria-label={t('arenaLink')}><span className="long">{t('arenaLink')}</span><span className="short">{t('arenaShort')}</span></a>
           <div className="theme" role="group" aria-label={t('theme')}>
             <button className={theme === 'dark' ? 'on' : ''} onClick={() => setTheme('dark')} aria-label={t('themeDark')} aria-pressed={theme === 'dark'}>☾</button>
             <button className={theme === 'light' ? 'on' : ''} onClick={() => setTheme('light')} aria-label={t('themeLight')} aria-pressed={theme === 'light'}>☀</button>

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:sitio": "npm run deportes -- public/kit_deportes && npm run build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
