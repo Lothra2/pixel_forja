@@ -273,7 +273,10 @@ function frame(now: number) {
     // la cámara no muestra más allá del piso (si el piso es más chico que la vista, lo centra)
     const sc = game.scene, gw = sc.ground.width, gh = sc.ground.height;
     const fit = (c: number, o: number, size: number, view: number) => (size <= view ? o + (size - view) / 2 : Math.max(o, Math.min(o + size - view, c)));
-    const target = { x: fit(f.x - pix.width / 2, sc.origin.x, gw, pix.width), y: fit(f.y - pix.height / 2, sc.origin.y, gh, pix.height) };
+    // siguiendo al jugador (tenis) la cámara no se frena en el borde: más allá el fondo es del mismo color
+    const target = sc.follow
+      ? { x: f.x - pix.width / 2, y: f.y - pix.height / 2 }
+      : { x: fit(f.x - pix.width / 2, sc.origin.x, gw, pix.width), y: fit(f.y - pix.height / 2, sc.origin.y, gh, pix.height) };
     cam = { x: cam.x + (target.x - cam.x) * Math.min(1, real * 6), y: cam.y + (target.y - cam.y) * Math.min(1, real * 6) };
     // para las pruebas: qué parte del mundo se ve
     (window as unknown as { __arenaView: unknown }).__arenaView = { x: cam.x, y: cam.y, w: pix.width, h: pix.height };
@@ -282,6 +285,7 @@ function frame(now: number) {
     pg.fillStyle = game.scene.bg;
     pg.fillRect(0, 0, pix.width, pix.height);
     game.draw(pg, c, $<HTMLInputElement>('ar-debug').checked);
+    game.drawOffscreen(pg, c, pix.width, pix.height);
     vg.imageSmoothingEnabled = false;
     vg.drawImage(pix, 0, 0, pix.width * zoom, pix.height * zoom);
     game.fx.drawTexts(vg, c, zoom);
