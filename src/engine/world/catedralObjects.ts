@@ -304,9 +304,41 @@ export function ember(): WorldObject {
   return { name: 'brasa', w: 32, h: 32, anchor: [16, 27], solid: null, anims: { idle: { frames, fps: 10, loop: true } }, light: { color: CAT.ambar, radius: 110, pulse: true, dy: 12 } };
 }
 
+/**
+ * La campana del campanario invertido: bronce viejo colgado de raíces gruesas que bajan del techo. Corrompida late en
+ * violeta; libre (después del jefe) las raíces brotan turquesa. No choca: cuelga sobre la arena.
+ */
+export function bell(libre: boolean): WorldObject {
+  const frames: Raster[] = [];
+  for (let f = 0; f < 4; f++) {
+    const c = canvas(96, 128, 3); // 32 x 42.7 unidades
+    const sw = [0, 0.4, 0, -0.4][f];
+    const raiz = libre ? '#3a8a80' : CAT.raizOscura;
+    root(c, [10, 0], [14 + sw, 15], 2, 1.5, 81, raiz);
+    root(c, [22, 0], [18 + sw, 15], 2, 1.5, 82, raiz);
+    root(c, [16, 0], [16 + sw, 14], 1.6, 1, 83, libre ? '#4fb0a0' : CAT.raiz);
+    // la campana
+    c.poly([[11 + sw, 17], [21 + sw, 17], [24 + sw, 30], [27 + sw, 34], [5 + sw, 34], [8 + sw, 30]], metalMat('#8a6a3a'));
+    c.poly([[4 + sw, 33.6], [28 + sw, 33.6], [28 + sw, 35.6], [4 + sw, 35.6]], metalMat('#a8824a'), { bias: 1 });
+    c.ellipse([16 + sw, 16.6], 5.4, 1.6, metalMat('#a8824a'), { bias: 1 });
+    c.dot([12 + sw, 24], metalMat('#4f8f80'), { tone: 3 }, true);
+    c.dot([20 + sw, 28], metalMat('#4f8f80'), { tone: 3 }, true);
+    // el badajo y el brillo: violeta corrompida, turquesa libre
+    c.ellipse([16 + sw * 1.5, 36.4], 1.6, 1.6, metalMat('#5a4a3a'));
+    const brillo = libre ? CAT.turquesa : CAT.violeta;
+    for (const [x, y] of [[9, 26], [23, 25], [16, 31]] as P[]) c.dot([x + sw, y], glowMat(brillo), { tone: 3 + (f % 2) }, true);
+    frames.push(c.render({ glowK: 0.7 + f * 0.1 }));
+  }
+  return {
+    name: libre ? 'campana_libre' : 'campana', w: 96, h: 128, anchor: [48, 124], solid: null,
+    anims: { idle: { frames, fps: 3, loop: true } },
+    light: { color: libre ? CAT.turquesa : CAT.violeta, radius: libre ? 220 : 140, pulse: true, dy: 40 },
+  };
+}
+
 export function catedralObjects(): WorldObject[] {
   return [
     rootColumn(false), rootColumn(true), brokenArch(), copperBrazier(true), copperBrazier(false),
-    emberPedestal(0), emberPedestal(1), emberPedestal(2), emberPedestal(3), wallRoots(), rubble(), rootCurtain(), lightShaft(), stoneBridge(), sunkenSlab(0), sunkenSlab(1), forge(0), forge(1), forge(2), forge(3), ember(),
+    emberPedestal(0), emberPedestal(1), emberPedestal(2), emberPedestal(3), wallRoots(), rubble(), rootCurtain(), lightShaft(), stoneBridge(), sunkenSlab(0), sunkenSlab(1), forge(0), forge(1), forge(2), forge(3), ember(), bell(false), bell(true),
   ];
 }

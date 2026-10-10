@@ -165,10 +165,10 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const f = enemyFicha(id);
     chars[id] = exportChar('enemigos', id, f, enemyCell(id), enemyAnims(id), { tipo: 'enemigo', nombre: id }, files, log);
   }
-  {
-    const f = enemyFicha(boss);
-    // el jefe llena la pantalla: dibujado en 64 (ahí le caben los cuernos) y agrandado x1.5 a celda 96
-    chars[boss] = exportChar('enemigos', boss, f, 64, [...enemyAnims(boss), 'leap'], { tipo: 'jefe', nombre: boss }, files, log, 1.5);
+  // los jefes llenan la pantalla: dibujados en 64 (ahí les caben los cuernos) y agrandados x1.5 a celda 96
+  for (const b of [boss, ...(opts.boss ? [] : (['guardian_campana'] as EnemyId[]))]) {
+    const f = enemyFicha(b);
+    chars[b] = exportChar('enemigos', b, f, 64, [...enemyAnims(b), 'leap'], { tipo: 'jefe', nombre: b }, files, log, 1.5);
   }
   manifest.personajes = chars;
 

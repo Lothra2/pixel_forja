@@ -306,6 +306,20 @@ export function catedralMap(seed = 777): BigMap {
   entities.push({ tipo: 'brasa', x: T(61), y: T(51), props: { id: 'forja' } }); occ[at(61, 51)] = 1;
   chest(46, 50, 'dorado');
 
+  // ---------- 6. el campanario invertido: la arena del Guardián de la Campana ----------
+  {
+    const [cx, cy] = LC.campanario;
+    entities.push({ tipo: 'arena_jefe', x: T(cx), y: T(cy), props: { radio: 5.5 * TILE } });
+    entities.push({ tipo: 'jefe', x: T(cx), y: T(cy - 1), props: { enemigo: 'guardian_campana', nombre: 'Guardián de la Campana', titulo: 'Guardián de la Catedral' } });
+    // la campana cuelga sobre la arena (el juego la cambia por la libre cuando el guardián se libera)
+    entities.push({ tipo: 'campana', x: T(cx), y: T(cy - 5) });
+    // la bajada todavía más honda: aparece al ganar (el kit no trae el mundo 3, el juego muestra Continuará)
+    entities.push({ tipo: 'portal_jefe', x: T(cx), y: T(cy + 7), props: { color: 'rojo', destino: 'mundo3' } });
+    chest(cx + 4, cy + 7, 'dorado', { tras_jefe: true });
+    for (const [x, y] of [[67, 42], [77, 42], [67, 60], [77, 60]] as TP[]) braseroBrasa(x, y, 3);
+    for (const x of [68, 76]) place('raices_muro', T(x), 40 * TILE + 60);
+  }
+
   // ---------- las compuertas de raíces: se abren cuando vuelven las brasas (las dibuja y las cierra el juego) ----------
   // con 1 brasa la de la nave a la forja, con 2 el atajo del claustro y con 3 la del campanario
   const compuerta = (id: string, requiere: number, ax0: number, ay0: number, ax1: number, ay1: number) => {
@@ -329,6 +343,7 @@ export function catedralMap(seed = 777): BigMap {
   zone('La Capilla Escondida', 64, 18, 70, 26, { luz: '#8affe8', oscuridad: 0.5, particulas: 'luciernagas_turquesa', niebla: 0.1, secreto: true });
   zone('La Nave Inundada', 5, 36, 41, 57, { luz: '#7a9ab8', oscuridad: 0.6, particulas: 'gotas', niebla: 0.2 });
   zone('La Forja Apagada', 43, 37, 64, 56, { luz: '#ffcf9a', oscuridad: 0.6, particulas: 'polvo', niebla: 0.15 });
+  zone('El Campanario Invertido', 65, 39, 79, 63, { musica: 'jefe', luz: '#b08aff', oscuridad: 0.7, particulas: 'esporas,gotas', niebla: 0.2 });
   const postales: Postal[] = [
     { nombre: 'escalera_hundida', x: T(LC.escalera[0]), y: T(LC.escalera[1]) },
     { nombre: 'atrio_luciernagas', x: T(ax - 2), y: T(ay - 1) },
@@ -336,6 +351,7 @@ export function catedralMap(seed = 777): BigMap {
     { nombre: 'capilla_escondida', x: T(66), y: T(22) },
     { nombre: 'nave_inundada', x: T(22), y: T(47) },
     { nombre: 'forja_apagada', x: T(LC.forja[0]), y: T(LC.forja[1] + 1) },
+    { nombre: 'campanario_invertido', x: T(LC.campanario[0]), y: T(LC.campanario[1] - 1) },
   ];
   return {
     name: 'mundo2_catedral', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects,

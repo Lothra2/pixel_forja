@@ -81,8 +81,8 @@ export const HERO_RPG_ANIMS = [
 
 export type EnemyId =
   | 'esqueleto' | 'esqueleto_mago' | 'zombi' | 'orco' | 'goblin_arquero' | 'vampiro' | 'hombre_lobo'
-  | 'minotauro' | 'hombre_lagarto' | 'demonio' | 'rata' | 'calabaza' | 'trol' | 'guardian_cobre' | 'raicita' | 'vigia_raices';
-export const ENEMIES: EnemyId[] = ['esqueleto', 'esqueleto_mago', 'zombi', 'orco', 'goblin_arquero', 'vampiro', 'hombre_lobo', 'minotauro', 'hombre_lagarto', 'demonio', 'rata', 'calabaza', 'trol', 'guardian_cobre', 'raicita', 'vigia_raices'];
+  | 'minotauro' | 'hombre_lagarto' | 'demonio' | 'rata' | 'calabaza' | 'trol' | 'guardian_cobre' | 'raicita' | 'vigia_raices' | 'guardian_campana';
+export const ENEMIES: EnemyId[] = ['esqueleto', 'esqueleto_mago', 'zombi', 'orco', 'goblin_arquero', 'vampiro', 'hombre_lobo', 'minotauro', 'hombre_lagarto', 'demonio', 'rata', 'calabaza', 'trol', 'guardian_cobre', 'raicita', 'vigia_raices', 'guardian_campana'];
 
 interface EnemyDef extends Kit {
   head: string;
@@ -119,6 +119,8 @@ const ENEMY_DEFS: Record<EnemyId, EnemyDef> = {
   raicita: { head: 'goblin', skin: '#7a5a3a', bare: true, body: { age: 'nino', build: 'delgado' }, outfit: { sleeves: 'none', bottom: 'shorts', belt: '#3a281c', shoes: 'descalzo' }, colors: { bottom: '#4a3424' }, gear: { main: 'claws', off: null }, lpc: { hat: 'hood', hatColor: '#3a5a48' }, anims: ['idle', 'walk', 'run', 'attack', 'dodge', 'hit', 'die'] },
   // el vigía de las raíces: se queda en su lugar y tira una bola violeta que se ve venir
   vigia_raices: { head: 'goblin', skin: '#6a7a6a', body: { build: 'delgado' }, outfit: { armor: 'tunica', armorColor: '#2a2238', trim: '#8a4ac8', cape: '#1e1a28' }, gear: { main: 'staff', off: null, glow: '#b07aff' }, lpc: { hat: 'hood', hatColor: '#2a2238' }, anims: [...BASIC_FOE, 'cast'] },
+  // el jefe de la Catedral: un gigante de piedra con raíces violetas (la corrupción) y un martillo de campanero
+  guardian_campana: { head: 'troll', boss: true, size: { height: 1.04, build: 1.18, shoulders: 1.14, arms: 1 }, skin: '#7a8496', bare: true, body: { build: 'robusto' }, outfit: { armor: 'placas', armorColor: '#5c6678', trim: '#8a4ac8', pauldrons: true, belt: '#3a281c', bottom: 'pants', shoes: 'botas' }, colors: { bottom: '#3a4254', shoes: '#2a2f3e' }, gear: { main: 'hammer', off: null }, lpc: { hat: 'greathelm', hatColor: '#4a5266' }, anims: [...BASIC_FOE, 'attack_heavy', 'charge', 'warcry'] },
   trol: { head: 'troll', big: true, size: { height: 1.22, build: 1.35, shoulders: 1.2, arms: 1.05 }, skin: '#7a8a6a', bare: true, body: { build: 'robusto' }, outfit: { sleeves: 'none', bottom: 'shorts', belt: '#3a2a1a', shoes: 'descalzo' }, colors: { bottom: '#4a3a2a' }, gear: { main: 'club', off: null }, anims: [...BASIC_FOE, 'attack_heavy', 'warcry'] },
 };
 

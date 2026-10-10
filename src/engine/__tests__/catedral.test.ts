@@ -50,7 +50,7 @@ describe('catedral: la rebanada (escalera, atrio y el primer guardián)', () => 
   });
   it('zonas con nombre, música y oscuridad que sube al bajar; postales; objetos conocidos', () => {
     expect(m.zones.length).toBeGreaterThanOrEqual(5);
-    expect(m.zones.every((z) => z.props.musica === 'catedral' && z.props.ambiente === 'catedral')).toBe(true);
+    expect(m.zones.every((z) => (z.props.musica === 'catedral' || z.nombre === 'El Campanario Invertido') && z.props.ambiente === 'catedral')).toBe(true);
     const osc = m.zones.map((z) => Number(z.props.oscuridad ?? 0));
     for (let i = 1; i < osc.length; i++) expect(osc[i]).toBeGreaterThanOrEqual(osc[i - 1]!);
     expect(m.postales.length).toBeGreaterThanOrEqual(5);
@@ -74,6 +74,8 @@ describe('catedral: la rebanada (escalera, atrio y el primer guardián)', () => 
     }
     const tipos = m.entities.filter((e) => e.tipo === 'enemigo').map((e) => e.props!.enemigo)
     for (const t of ['guardian_cobre', 'raicita', 'vigia_raices']) expect(tipos, t).toContain(t)
+    expect(m.entities.find((e) => e.tipo === 'jefe')!.props!.enemigo).toBe('guardian_campana')
+    expect(m.entities.find((e) => e.tipo === 'portal_jefe')!.props!.destino).toBe('mundo3')
     // la capilla escondida es un secreto con su cofre
     expect(m.zones.find((z) => z.nombre === 'La Capilla Escondida')!.props.secreto).toBe(true)
     expect(m.entities.some((e) => e.tipo === 'cofre' && e.props!.secreto && e.props!.pista === 'capilla_escondida')).toBe(true)
