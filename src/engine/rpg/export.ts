@@ -6,7 +6,7 @@ import type { CellSize } from '../sheet/ficha';
 import { renderFx, projectile8, type FxElement, type FxKind, type FxClip } from '../fx/fx';
 
 const enc = new TextEncoder();
-const asClip = (c: FxClip): RenderedClip => ({ ...c, view: 'side', airborne: c.frames.map(() => true), steady: false, fits: true });
+const asClip = (c: FxClip): RenderedClip => ({ ...c, profile: 'classic', view: 'side', airborne: c.frames.map(() => true), steady: false, fits: true });
 
 /**
  * Hoja de poderes para el juego: cada efecto es una animación (proyectiles en 8 direcciones).

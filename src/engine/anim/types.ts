@@ -26,6 +26,11 @@ export interface AnimDef {
   pack: Pack;
   fps: number;
   loop: boolean;
+  /**
+   * Eventos para el juego, en fase del ciclo (0 a 1): cuándo pisa cada pie (sonido de paso, polvo), cuándo pega
+   * el golpe (daño, sacudida) y cuándo suelta (flecha, hechizo). near/far = pie de adelante o de atrás de la pose.
+   */
+  events?: AnimEvent[];
   /** de pie y con altura estable: aplica el control de altura y de temblor */
   steady?: boolean;
   /** vistas donde se usa (para exportar paquetes de 4 direcciones) */
@@ -36,6 +41,8 @@ export interface AnimDef {
   spin?: boolean;
   build: (c: Ctx) => Pose[];
 }
+
+export interface AnimEvent { type: 'paso' | 'impacto' | 'suelta'; phase: number; foot?: 'near' | 'far' }
 
 export function makeCtx(d: Dims, build: number, view: View): Ctx {
   return { d, L: d.legUpper + d.legLower, A: d.armUpper + d.armLower, u: d.u, build, view };

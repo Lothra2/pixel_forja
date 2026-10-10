@@ -2,10 +2,11 @@ import { type Raster, createRaster } from '../core/raster';
 import { type Ficha, type CellSize, isHuman } from '../sheet/ficha';
 import { dimsFor } from '../rig/dims';
 import { animalDims } from '../rig/animal';
-import { makeCtx, type AnimDef } from '../anim/types';
+import { makeCtx, type AnimDef, type AnimEvent } from '../anim/types';
 import { humanAnim, animalAnim, customToDef } from '../anim/registry';
+import { premiumAnim, swingWeapon } from '../anim/premium';
 import type { Pose } from '../rig/pose';
-import { renderHuman, type BigFrame, type RenderOptions, type RenderView } from './human';
+import { renderHuman, type BigFrame, type Joints, type RenderOptions, type RenderView } from './human';
 import { renderPet3d, type PetView } from './pet3d';
 import type { View } from './head';
 
@@ -40,12 +41,29 @@ export interface RenderedClip {
   fits: boolean;
   /** por cuadro, alto del cuerpo sin implementos (arriba y abajo, en la celda): el control de calidad mide con esto */
   bodies?: ({ y0: number; y1: number } | null)[];
+  /** perfil con el que se dibujó */
+  profile: 'classic' | 'premium';
+  /** eventos para el juego (pasos, golpe, suelta), en fase 0 a 1 */
+  events?: AnimEvent[];
+  /**
+   * Andar (premium): cuántos pixeles avanza el cuerpo en un ciclo para que el pie apoyado no patine, a este tamaño.
+   * El juego puede ajustar la velocidad de la animación: ritmo = velocidad_del_juego / (avance * fps / cuadros).
+   */
+  stride?: number;
+  /** articulaciones de cada cuadro ya en coordenadas de la celda (premium; para enganchar cosas en el juego) */
+  joints?: Joints[];
 }
 
 function humanDef(f: Ficha, name: string): AnimDef | undefined {
   if (!isHuman(f)) return undefined;
   const custom = f.customAnims?.find((c) => c.name === name);
-  return custom ? customToDef(custom) : humanAnim(name);
+  if (custom) return customToDef(custom);
+  return (f.movementProfile === 'premium' ? premiumAnim(name) : undefined) ?? humanAnim(name);
+}
+
+/** ¿Esta ficha usa la versión premium de esta animación? */
+export function isPremiumClip(f: Ficha, name: string): boolean {
+  return isHuman(f) && f.movementProfile === 'premium' && !f.customAnims?.some((c) => c.name === name) && !!premiumAnim(name);
 }
 
 export function hasAnim(f: Ficha, name: string): boolean {
@@ -59,6 +77,9 @@ export function posesFor(f: Ficha, cell: CellSize, name: string, view: View = 's
   if (!def) throw new Error(`No existe la animación ${name}`);
   const d = dimsFor(cell, f.body.proportions);
   let poses = def.build(makeCtx(d, f.body.proportions.build, view));
+  // una animación del editor hecha a otro tamaño: las distancias se escalan (los ángulos no)
+  const custom = f.customAnims?.find((c) => c.name === name);
+  if (custom?.authoredCell && custom.authoredCell !== cell) poses = poses.map((p) => scalePose(p, cell / custom.authoredCell!));
   // con equipo de RPG, el héroe lleva el arma (y el escudo) también al caminar, correr, recibir golpes...
   const g = f.gear;
   if (g && (def.pack === 'basic' || def.pack === 'rpg' || def.pack === 'skills')) {
@@ -69,6 +90,7 @@ export function posesFor(f: Ficha, cell: CellSize, name: string, view: View = 's
       return { ...p, props };
     });
   }
+  if (isPremiumClip(f, name)) poses = swingWeapon(name, poses, g?.main);
   // vaivén del pelo: llega tarde al subir y bajar, y se va hacia atrás al correr
   const lag = f.physics.hairLag;
   return poses.map((p, i) => {
@@ -80,15 +102,29 @@ export function posesFor(f: Ficha, cell: CellSize, name: string, view: View = 's
   });
 }
 
+/** Escala las distancias de una pose (pies, cuerpo, cabeza, implementos) sin tocar los ángulos. */
+function scalePose(p: Pose, k: number): Pose {
+  const foot = (q: Pose['legs']['near']) => ({ ...q, x: q.x * k, y: q.y * k, ...(q.z !== undefined ? { z: q.z * k } : {}) });
+  return {
+    ...p, x: p.x * k, air: p.air * k, ...(p.hipH !== undefined ? { hipH: p.hipH * k } : {}),
+    head: { ...p.head, dx: p.head.dx * k, dy: p.head.dy * k },
+    legs: { near: foot(p.legs.near), far: foot(p.legs.far) },
+    props: p.props?.map((q) => ({ ...q, ...(q.x !== undefined ? { x: q.x * k } : {}), ...(q.y !== undefined ? { y: q.y * k } : {}) })),
+  };
+}
+
 export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewName = 'side', opt: RenderOptions = {}): RenderedClip {
   const base: RenderView = MIRRORED[view] ?? (view as RenderView);
   // las diagonales usan las poses pensadas de lado (adelante = hacia la derecha)
   const poseView: View = base === 'se' || base === 'ne' ? 'side' : base;
   let big: BigFrame[], fps: number, loop: boolean, steady: boolean, airborne: boolean[];
+  let events: AnimEvent[] | undefined, stride: number | undefined;
+  const premium = isPremiumClip(f, name);
   if (isHuman(f)) {
     const def = humanDef(f, name);
     if (!def) throw new Error(`No existe la animación ${name}`);
     const poses = posesFor(f, cell, name, poseView);
+    if (premium) { events = def.events; stride = strideOf(poses, def.loop); }
     // giro (torbellino): cada cuadro en la dirección siguiente, en el sentido de las agujas del reloj
     const ring = EIGHT_VIEWS;
     const start = Math.max(0, ring.indexOf(view));
@@ -121,19 +157,45 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
     fps = def.fps; loop = def.loop; steady = !!def.steady;
     airborne = poses.map((p) => p.air > 0);
   }
-  const { frames, fits, top } = cropClip(big, cell);
+  // premium: el pivote queda siempre en el mismo lugar de la celda (no salta entre cuadros, direcciones ni acciones)
+  const { frames, fits, top, left } = cropClip(big, cell, premium);
   // el cuerpo sin armas ni balones (con el pelo y el contorno): un hacha colgando no cuenta como pie
   // solo con equipo de RPG: sin equipo el piso lo marca todo lo dibujado (balones, raquetas) y se mide igual
   const useBodies = isHuman(f) && !!f.gear;
   const bodies = big.map((b) => (useBodies && b.full ? { y0: b.full.y0 - top, y1: b.full.y1 - top } : null));
-  return { name, fps, loop, cell, view, frames: MIRRORED[view] ? frames.map(mirror) : frames, airborne, steady, fits, bodies: bodies.some(Boolean) ? bodies : undefined };
+  const mirrored = !!MIRRORED[view];
+  // articulaciones en coordenadas de la celda final (espejadas si la vista es espejo)
+  const joints = premium && big.every((b) => b.joints)
+    ? big.map((b) => Object.fromEntries(Object.entries(b.joints!).map(([k, [x, y]]) => [k, [mirrored ? cell - 1 - (x - left) : x - left, y - top]])) as Joints)
+    : undefined;
+  return {
+    name, fps, loop, cell, view, frames: mirrored ? frames.map(mirror) : frames, airborne, steady, fits, bodies: bodies.some(Boolean) ? bodies : undefined,
+    profile: premium ? 'premium' : 'classic',
+    ...(events?.length ? { events } : {}), ...(stride ? { stride } : {}), ...(joints ? { joints } : {}),
+  };
+}
+
+/**
+ * Cuánto avanza el cuerpo en un ciclo sin que el pie apoyado patine: suma lo que retrocede el pie que carga el peso
+ * entre cuadros seguidos con el mismo apoyo (las poses se piensan de lado, adelante = +x).
+ */
+function strideOf(poses: Pose[], loop: boolean): number | undefined {
+  if (!loop || !poses.some((p) => p.support === 'near' || p.support === 'far')) return undefined;
+  let d = 0;
+  for (let i = 0; i < poses.length; i++) {
+    const a = poses[i], b = poses[(i + 1) % poses.length];
+    if (a.support !== b.support || (a.support !== 'near' && a.support !== 'far')) continue;
+    const s = a.support;
+    d += a.x + a.legs[s].x - (b.x + b.legs[s].x);
+  }
+  return d > 0 ? Math.round(d * 10) / 10 : undefined;
 }
 
 /**
  * Recorta la celda alrededor del pie de apoyo. Si una pose se sale por un lado, corre TODO el clip
  * lo mismo (así no salta entre cuadros). Si no cabe ni así, avisa.
  */
-function cropClip(big: BigFrame[], cell: CellSize): { frames: Raster[]; fits: boolean; top: number } {
+function cropClip(big: BigFrame[], cell: CellSize, fixed = false): { frames: Raster[]; fits: boolean; top: number; left: number } {
   // solo el cuerpo decide el encuadre: un balón que sale disparado se recorta.
   // Si el cuerpo con el pelo cabe, se encuadra con el pelo (así no se corta la cabeza al caer acostado)
   const union = (full: boolean) => {
@@ -151,7 +213,10 @@ function cropClip(big: BigFrame[], cell: CellSize): { frames: Raster[]; fits: bo
   let left = pivotX - cell / 2;
   const top = groundRow - (cell - 2);
   let fits = true;
-  if (isFinite(x0)) {
+  if (isFinite(x0) && fixed) {
+    // encuadre fijo: no se corre nada; si algo del cuerpo se sale, la animación está mal hecha y el control lo dice
+    if (x0 < left + 1 || x1 > left + cell - 2 || y0 < top + 1) fits = false;
+  } else if (isFinite(x0)) {
     if (x1 - x0 + 1 > cell - 2) fits = false;
     if (withHair.x1 - withHair.x0 + 1 <= cell - 2) {
       if (withHair.x0 < left + 1) left = withHair.x0 - 1;
@@ -176,7 +241,7 @@ function cropClip(big: BigFrame[], cell: CellSize): { frames: Raster[]; fits: bo
       }
     return out;
   });
-  return { frames, fits, top };
+  return { frames, fits, top, left };
 }
 
 /** Espeja un cuadro grande sobre su eje (el pie de apoyo queda en el centro). */

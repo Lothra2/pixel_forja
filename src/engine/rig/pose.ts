@@ -47,8 +47,20 @@ export interface PropState {
   y?: number;
   /** grados (raqueta, bate, espada) */
   angle?: number;
+  /**
+   * Ángulo en pantalla por vista (premium): así un arma apunta adonde tiene que apuntar también de frente, de espalda
+   * y en diagonal, no solo de lado. Las vistas de la izquierda usan el espejo de su par de la derecha.
+   */
+  angles?: Partial<Record<'side' | 'front' | 'back' | 'se' | 'ne', number>>;
   /** detrás del cuerpo */
   behind?: boolean;
+  /**
+   * Estela del golpe (premium): un arco claro que el filo dibuja en el cuadro del impacto, de un ángulo a otro en
+   * pantalla, por vista. Es el "smear" de los animadores: en un solo cuadro se lee todo el recorrido.
+   */
+  smear?: Partial<Record<'side' | 'front' | 'back' | 'se' | 'ne', [number, number]>>;
+  /** delante de todo, también de la cabeza (un escudo que se levanta para bloquear). Con lista: solo en esas vistas */
+  front?: boolean | ('side' | 'front' | 'back' | 'se' | 'ne')[];
 }
 
 export interface Pose {
@@ -63,6 +75,8 @@ export interface Pose {
   face: { eyes: EyeExpr; mouth?: MouthExpr };
   /** pixeles que el punto más bajo queda sobre el piso. 0 = pisando */
   air: number;
+  /** qué pie carga el peso (premium): ese pie queda en el piso y el resto del cuerpo se apoya en él */
+  support?: 'near' | 'far' | 'both';
   /** giro de lado a lado (solo de frente o de espalda; morir en RPG = 90) */
   roll?: number;
   /** altura fija de la cadera sobre el piso (bici): ignora el apoyo de los pies */

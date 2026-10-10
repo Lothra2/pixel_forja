@@ -8,7 +8,15 @@ import type { WeaponKind, OffhandKind } from '../rig/pose';
  * así se puede parpadear y cambiar de expresión).
  */
 export const FICHA_FORMAT = 'pixelforja.ficha';
-export const FICHA_VERSION = 2;
+export const FICHA_VERSION = 3;
+
+/**
+ * Cómo se mueve el personaje. classic: las animaciones de siempre (las fichas viejas quedan igual, pixel por pixel).
+ * premium: animaciones con poses clave de verdad (contacto, bajada, paso, subida; anticipación, impacto y recuperación),
+ * apoyo declarado en cada cuadro, encuadre fijo y eventos para el juego (pasos, golpes).
+ */
+export type MovementProfile = 'classic' | 'premium';
+export const MOVEMENT_PROFILES: MovementProfile[] = ['classic', 'premium'];
 
 export type CellSize = 32 | 48 | 64;
 export const CELL_SIZES: CellSize[] = [32, 48, 64];
@@ -62,12 +70,16 @@ export interface CustomAnim {
   /** cuadros entre cada par de poses clave */
   inBetweens: number;
   keys: unknown[];
+  /** tamaño de celda en el que se hicieron las poses: al exportar a otro tamaño se escalan las distancias */
+  authoredCell?: CellSize;
 }
 
 interface FichaBase {
   format: typeof FICHA_FORMAT;
   version: number;
   name: string;
+  /** cómo se mueve (si falta: classic) */
+  movementProfile?: MovementProfile;
   /** animaciones hechas en el editor de poses */
   customAnims?: CustomAnim[];
 }
@@ -219,6 +231,11 @@ export function migrateFicha(input: unknown): Ficha {
     const body = f.body as HumanFicha['body'];
     body.proportions = { ...DEFAULT_PROPORTIONS, ...body.proportions };
     f.version = 2;
+  }
+  if (f.version === 2) {
+    // la versión 3 agrega el perfil de movimiento: lo viejo queda clásico
+    f.movementProfile = 'classic';
+    f.version = 3;
   }
   return f as unknown as Ficha;
 }

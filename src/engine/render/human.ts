@@ -452,10 +452,13 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
       // sin ángulo dado, el implemento sigue al antebrazo
       const limb = pr.at === 'handFar' ? arms.far : pr.at === 'handNear' ? arms.near : null;
       const auto = limb ? (Math.atan2(limb.end[1] - limb.mid[1], limb.end[0] - limb.mid[0]) * 180) / Math.PI : 0;
-      let ang = pr.angle !== undefined && side ? pr.angle : auto;
+      // ángulo pensado para esta vista (premium): manda sobre todo lo automático
+      const viewAng = pr.angles?.[viewIn];
+      let ang = viewAng ?? (pr.angle !== undefined && side ? pr.angle : auto);
       // armas largas con el brazo colgando: el báculo y la lanza van parados, el arco vertical
       const down = Math.sin((auto * Math.PI) / 180) > 0.5;
-      const rest = pr.angle === undefined && down && (kind === 'staff' || kind === 'spear' || kind === 'scythe');
+      const explicit = viewAng !== undefined || pr.angle !== undefined;
+      const rest = !explicit && down && (kind === 'staff' || kind === 'spear' || kind === 'scythe');
       if (rest) {
         // parado al costado y más largo que el cuerpo, la punta asoma por encima de la cabeza
         ang = side ? -62 : -90;
@@ -463,9 +466,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
         p[1] = local(0, Math.round(d.torsoH * 0.25))[1];
         if (!side) { const cx = local(0, d.torsoH / 2)[0]; p[0] += Math.sign(p[0] - cx || 1) * Math.round(3 * d.u); }
       }
-      if (pr.angle === undefined && down && kind === 'bow') ang = 0;
+      if (!explicit && down && kind === 'bow') ang = 0;
       // armas cortas con el brazo colgando: hacia adelante y abajo, sin tocar el piso
-      const hangs = !rest && pr.angle === undefined && down && limb && WEAPON_SET.has(kind) && kind !== 'bow';
+      const hangs = !rest && !explicit && down && limb && WEAPON_SET.has(kind) && kind !== 'bow';
       if (hangs) {
         if (side) ang = 28;
         else { const cx = local(0, d.torsoH / 2)[0]; ang = p[0] >= cx ? (view === 'back' ? 12 : 32) : (view === 'back' ? 168 : 148); }
@@ -474,7 +477,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
         if (p[1] > floor - 6 * d.u) ang = side ? 0 : p[0] >= local(0, d.torsoH / 2)[0] ? 0 : 180;
       }
       // un arma que apunta hacia afuera (el torbellino, un ataque largo) no puede salirse del cuadro: se levanta lo justo
-      if (!rest && !hangs && WEAPON_SET.has(kind) && kind !== 'bow') {
+      if (viewAng === undefined && !rest && !hangs && WEAPON_SET.has(kind) && kind !== 'bow') {
         const reach = (WEAPON_REACH[kind as keyof typeof WEAPON_REACH] ?? 10) * d.u;
         const lim = C / 2 - 3;
         const hx = p[0]; // las piezas se dibujan con el pivote en 0
@@ -487,9 +490,28 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
       }
       if (isBall(pr.kind)) drawBall(part, pr.kind, p, d.u);
       else drawHeld(part, pr.kind, p, ang, d.u, rest);
+      // estela del golpe: arco claro de dos pixeles a lo largo del recorrido del filo, sin contorno
+      const sm = pr.smear?.[viewIn];
+      if (sm) {
+        const trail = new Part();
+        const reach = (WEAPON_REACH[kind as keyof typeof WEAPON_REACH] ?? 10) * d.u;
+        const [a0, a1] = sm, steps = Math.max(8, Math.ceil(Math.abs(a1 - a0) / 3));
+        for (let k = 0; k <= steps; k++) {
+          const a = ((a0 + ((a1 - a0) * k) / steps) * Math.PI) / 180;
+          // más gruesa al final del recorrido (donde está el filo ahora), fina al principio
+          const thick = k / steps > 0.45 ? 2 : 1;
+          for (let t = 0; t < thick; t++) {
+            const r = reach * 0.9 - t;
+            trail.set(Math.round(p[0] + Math.cos(a) * r), Math.round(p[1] + Math.sin(a) * r), 'p_white', t === 0 ? LIGHT : BASE);
+          }
+        }
+        commit(trail, Layer.Prop, false, false);
+      }
       const handUp = !!limb && view !== 'back' && (side ? limb === arms.near : true) && limb.end[1] < local(0, d.torsoH)[1] + 1;
       const pointsUp = !isBall(pr.kind) && view !== 'back' && Math.sin((ang * Math.PI) / 180) < -0.3;
-      commit(part, behind ? Layer.Behind : rest && view !== 'back' ? Layer.Prop : (handUp || pointsUp) && !isBall(pr.kind) ? Layer.ArmUp : Layer.Prop, false, false);
+      // delante de todo, salvo de espalda: ahí lo que va adelante del cuerpo queda tapado por él
+      const front = Array.isArray(pr.front) ? pr.front.includes(viewIn) : !!pr.front && view !== 'back';
+      commit(part, behind ? Layer.Behind : front || (rest && view !== 'back') ? Layer.Prop : (handUp || pointsUp) && !isBall(pr.kind) ? Layer.ArmUp : Layer.Prop, false, false);
     }
   };
 
