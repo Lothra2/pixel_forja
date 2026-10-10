@@ -244,9 +244,9 @@ export function catedralMap(seed = 777): BigMap {
   const zones: MapZone[] = [];
   const zone = (nombre: string, x0: number, y0: number, x1: number, y1: number, props: Record<string, Prop>) =>
     zones.push({ nombre, x: x0 * TILE, y: y0 * TILE, w: (x1 - x0) * TILE, h: (y1 - y0) * TILE, props: { musica: 'catedral', ambiente: 'catedral', descubrir: true, ...props } });
-  zone('La Escalera Hundida', 5, 2, 27, 18, { luz: '#dfe8ff', oscuridad: 0.25, particulas: 'polvo', niebla: 0.2 });
-  zone('El Atrio de las Luciérnagas', 4, 18, 33, 36, { luz: '#8affe8', oscuridad: 0.4, particulas: 'luciernagas_turquesa,gotas', niebla: 0.35 });
-  zone('Los Claustros Quebrados', 31, 9, 64, 36, { luz: '#9aa8c8', oscuridad: 0.5, particulas: 'polvo,gotas', niebla: 0.4 });
+  zone('La Escalera Hundida', 5, 2, 27, 18, { luz: '#dfe8ff', oscuridad: 0.25, particulas: 'polvo', niebla: 0.12 });
+  zone('El Atrio de las Luciérnagas', 4, 18, 33, 36, { luz: '#8affe8', oscuridad: 0.45, particulas: 'luciernagas_turquesa,gotas', niebla: 0.15 });
+  zone('Los Claustros Quebrados', 31, 9, 64, 36, { luz: '#9aa8c8', oscuridad: 0.5, particulas: 'polvo,gotas', niebla: 0.18 });
   const postales: Postal[] = [
     { nombre: 'escalera_hundida', x: T(LC.escalera[0]), y: T(LC.escalera[1]) },
     { nombre: 'atrio_luciernagas', x: T(ax - 2), y: T(ay - 1) },

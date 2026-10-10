@@ -70,7 +70,8 @@ export function rootColumn(broken = false): WorldObject {
   // musgo turquesa: la vida que todavía queda
   const r = seeded(14);
   for (let i = 0; i < 5; i++) c.dot([10 + r() * 12, top + 10 + r() * (base - top - 14)], glowMat(CAT.turquesa), { tone: 3 }, true);
-  return { name: broken ? 'columna_rota' : 'columna_raiz', w: W, h: H, anchor: [24, H - 4], solid: [-10, -6, 20, 6], anims: one(c.render({ shadow: [16, base, 13, 2] })) };
+  // el musgo turquesa brilla un poco: puntos de vida que guían en la oscuridad
+  return { name: broken ? 'columna_rota' : 'columna_raiz', w: W, h: H, anchor: [24, H - 4], solid: [-10, -6, 20, 6], anims: one(c.render({ shadow: [16, base, 13, 2] })), light: { color: CAT.turquesa, radius: broken ? 34 : 46, pulse: true, dy: broken ? 24 : 44 } };
 }
 
 /** Arco roto de la nave: se pasa por debajo, solo las patas chocan. */
@@ -122,7 +123,7 @@ export function copperBrazier(lit: boolean): WorldObject {
   return {
     name: lit ? 'brasero_cobre' : 'brasero_apagado', w: 32, h: 48, anchor: [16, 45], solid: [-9, -5, 18, 5],
     anims: { idle: { frames, fps: lit ? 8 : 1, loop: true } },
-    ...(lit ? { light: { color: CAT.ambar, radius: 130, flicker: true, dy: 24 } } : {}),
+    ...(lit ? { light: { color: CAT.ambar, radius: 200, flicker: true, dy: 24 } } : {}),
   };
 }
 
