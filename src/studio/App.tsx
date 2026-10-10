@@ -21,6 +21,7 @@ import {
   DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
   applyClass, CLASS_KITS, enemyFicha, enemyCell, enemyAnims, type Gear, type HeroClass, type EnemyId,
   familyFicha, thorFicha, type FamilyId, applyArmorTier, equipLoot, type ArmorLine, type ArmorTier, type LootItem,
+  isPremiumClip, type MovementProfile,
 } from '../engine/index';
 
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export' | ToolStep;
@@ -60,6 +61,8 @@ interface Overrides {
   headMode?: 'avatar' | 'image';
   /** equipo de RPG (arma y mano libre) */
   gear?: Gear;
+  /** cómo se mueve: clásico o premium (poses clave de verdad) */
+  movementProfile?: MovementProfile;
 }
 const emptyOverrides = (): Overrides => ({ outfit: {}, face: {}, colors: {}, customAnims: [] });
 
@@ -117,6 +120,8 @@ export function App() {
   }, [step, engine]);
   const [props, setProps] = useState(true);
   const [clip, setClip] = useState<FrameSet | null>(null);
+  const [compareOn, setCompareOn] = useState(false);
+  const [compareClip, setCompareClip] = useState<FrameSet | null>(null);
   const [qa, setQa] = useState<QAReport | null>(null);
   const [variants, setVariants] = useState<{ variants: Variant[]; thumbs: Uint8ClampedArray[] } | null>(null);
   const [gallery, setGallery] = useState<GalleryItem[]>(loadGallery);
@@ -172,6 +177,7 @@ export function App() {
       if (o.avatar) out = withAvatar(out, o.avatar);
       if (o.headMode && out.avatar) out = { ...out, headMode: o.headMode };
       if (o.gear) out = { ...out, gear: o.gear } as HumanFicha;
+      if (o.movementProfile) out = { ...out, movementProfile: o.movementProfile };
     }
     for (const [slot, hex] of Object.entries(o.colors)) out = recolor(out, slot as ColorSlot, hex!);
     return out;
@@ -208,6 +214,17 @@ export function App() {
       if (r) { setClip(r.clip); setQa(r.qa); }
     });
   }, [ficha, cell, anim, view, props, needsFicha, step, engine, run, animList]);
+  // comparador: la misma animación con el otro perfil, al lado
+  const canCompare = !!ficha && isHuman(ficha) && isPremiumClip({ ...ficha, movementProfile: 'premium' }, anim) && !ficha.customAnims?.some((c) => c.name === anim);
+  useEffect(() => {
+    if (!compareOn || !canCompare || !ficha || !isHuman(ficha) || step === 'editor') { setCompareClip(null); return; }
+    const otherProfile: MovementProfile = ficha.movementProfile === 'premium' ? 'classic' : 'premium';
+    let live = true;
+    engine.call<'rendered'>({ type: 'render', key: 'compare', ficha: { ...ficha, movementProfile: otherProfile }, cell, anim, view, props })
+      .then((r) => { if (r && live) setCompareClip(r.clip); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [compareOn, canCompare, ficha, cell, anim, view, props, step, engine]);
 
   // ---------- carga ----------
   const loadFile = (file: Blob, fileName: string, k: 'human' | 'animal' = kind, sp: Species = species) =>
@@ -266,6 +283,10 @@ export function App() {
 
   // ---------- cambios de estilo ----------
   const updateFicha = (fn: (f: Ficha) => Ficha) => setFicha((f) => (f ? fn(f) : f));
+  const setMovement = (p: MovementProfile) => {
+    overrides.current.movementProfile = p;
+    updateFicha((f) => (isHuman(f) ? { ...f, movementProfile: p } : f));
+  };
   const setOutfit = <K extends keyof HumanFicha['outfit']>(k: K, v: HumanFicha['outfit'][K]) => {
     overrides.current.outfit[k] = v;
     updateFicha((f) => (isHuman(f) ? { ...f, outfit: { ...f.outfit, [k]: v } } : f));
@@ -745,11 +766,18 @@ export function App() {
         {(step === 'avatar' || step === 'style' || step === 'animate' || step === 'export') && (
           <>
             <section className="panel stage-wrap preview-wrap">
-              {clip ? <Preview clip={clip} bg={bg} zoom={zoom} labels={{ real: t('realSize'), zoomed: t('zoomed') }} /> : <p className="muted">{t('working')}</p>}
+              {clip ? <Preview clip={clip} compare={compareOn && canCompare ? compareClip : null} bg={bg} zoom={compareOn && canCompare ? Math.max(3, zoom - 2) : zoom} t={t} /> : <p className="muted">{t('working')}</p>}
               <div className="controls">
                 <Select label={t('pack')} value={curPack ?? ''} set={(p) => { const first = animList.find((a) => a.pack === p); if (first) setAnim(first.name); }} opts={packOpts.map((p) => [p, t(`pack_${p}` as Key)])} testid="pack" />
                 <Select label={t('anim')} value={anim} set={setAnim} opts={animList.filter((a) => a.pack === curPack).map((a) => [a.name, animLabel(a.name, lang)])} testid="anim" />
               </div>
+              {ficha && isHuman(ficha) && (
+                <div className="controls motion">
+                  <Seg label={t('motion')} value={ficha.movementProfile ?? 'classic'} set={(v) => setMovement(v as MovementProfile)} opts={[['classic', t('motion_classic')], ['premium', t('motion_premium')]]} testid="motion" />
+                  <Toggle label={t('motion_compare')} on={compareOn} set={setCompareOn} testid="motion-compare" />
+                  {!canCompare && <span className="muted small">{t('motion_none')}</span>}
+                </div>
+              )}
               <div className="controls">
                 {ficha && <DirPad label={t('view')} value={view} set={setView} name={(v) => t(`view_${v}` as Key)} />}
                 <Seg label={t('size')} value={String(cell)} set={(v) => setCell(+v as CellSize)} opts={[['32', '32'], ['48', '48'], ['64', '64']]} />

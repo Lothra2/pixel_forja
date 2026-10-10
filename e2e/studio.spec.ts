@@ -308,3 +308,31 @@ test('botín: legendarios, armas, armaduras que evolucionan, cofres y exportar',
   expect((await dl).suggestedFilename()).toBe('botin_world.zip');
   expect(errors).toEqual([]);
 });
+
+test('movimiento premium: perfil, comparar, pausar y cuadro a cuadro', async ({ page }, info) => {
+  test.setTimeout(180000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('family-rick-rpg').click();
+  await page.getByTestId('step-animate').click();
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  await page.getByTestId('motion').getByRole('button', { name: 'Premium' }).click();
+  await idle(page);
+  // la caminata premium marca sus dos pasos en la línea de tiempo
+  await expect(page.getByTestId('timeline').locator('.ev-paso')).toHaveCount(2, { timeout: 30000 });
+  await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
+  await page.getByTestId('motion-compare').check();
+  await expect(page.getByTestId('preview-compare')).toBeVisible({ timeout: 30000 });
+  // pausa y cuadro a cuadro: el contador avanza de a uno
+  await page.getByTestId('pb-toggle').click();
+  const at = Number((await page.getByTestId('frame-count').textContent())!.split('/')[0]);
+  await page.getByRole('button', { name: 'Cuadro siguiente' }).click();
+  await expect(page.getByTestId('frame-count')).toHaveText(`${(at % 8) + 1}/8`);
+  await page.getByTestId('timeline').locator('button').first().click();
+  await expect(page.getByTestId('event-flash')).toHaveText('Paso');
+  await page.screenshot({ path: `${shots}/${tag}_40_premium_comparar.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});

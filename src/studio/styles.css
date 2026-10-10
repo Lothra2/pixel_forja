@@ -245,6 +245,35 @@ button:focus-visible, input:focus-visible, select:focus-visible, label:focus-wit
 canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; border-radius: 8px; max-width: 100%; height: auto !important; aspect-ratio: 1; }
 .preview canvas.pixel { filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35)); }
 
+/* reproducción: transporte, línea de tiempo con pasos y golpes, comparador */
+.preview-box { width: 100%; display: flex; flex-direction: column; gap: 10px; border-radius: 14px; }
+.preview-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.preview { position: relative; }
+.preview .solo, .preview .pair { display: contents; }
+.preview .pair { display: flex; gap: 12px; justify-content: center; min-width: 0; max-width: 100%; }
+.preview .pair figure { min-width: 0; flex: 0 1 auto; }
+.transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
+.tbtn { min-width: 36px; height: 32px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--line-2); background: var(--panel-2); color: inherit; font: 700 11px/1 var(--pixel); cursor: pointer; }
+.tbtn:hover { border-color: var(--accent); }
+.tbtn.play { min-width: 44px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.tbtn.on { background: var(--violet); color: #fff; border-color: transparent; }
+.timeline { display: flex; gap: 3px; padding: 4px; border-radius: 9px; background: var(--panel-2); border: 1px solid var(--line); max-width: 100%; overflow-x: auto; }
+.tl { position: relative; width: 18px; height: 24px; flex: none; padding: 0; border: 0; border-radius: 4px; background: var(--panel-3); cursor: pointer; }
+.tl.on { background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+.ev-dot { position: absolute; left: 50%; bottom: 3px; width: 6px; height: 6px; margin-left: -3px; border-radius: 2px; }
+.ev-dot.ev-paso { background: #4ade80; }
+.ev-dot.ev-impacto { background: #ff4f6d; transform: rotate(45deg); }
+.ev-dot.ev-suelta { background: #60a5fa; }
+.tl-count { min-width: 42px; text-align: center; font: 700 11px/1 var(--pixel); color: var(--muted); }
+.seg.speed button { min-width: 34px; }
+.ev-flash { position: absolute; top: 10px; left: 12px; padding: 5px 8px; border-radius: 7px; font: 700 10px/1 var(--pixel); letter-spacing: 0.6px; text-transform: uppercase; color: #0b0a12; animation: evpop 0.18s steps(2); }
+.ev-flash.ev-paso { background: #4ade80; }
+.ev-flash.ev-impacto { background: #ff4f6d; color: #fff; }
+.ev-flash.ev-suelta { background: #60a5fa; }
+@keyframes evpop { from { transform: scale(1.25); } to { transform: scale(1); } }
+.controls.motion { padding-top: 2px; }
+@media (prefers-reduced-motion: reduce) { .ev-flash { animation: none; } }
+
 .controls { width: 100%; display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-end; justify-content: center; }
 
 /* cruceta de 8 direcciones */

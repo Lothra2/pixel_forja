@@ -1,6 +1,6 @@
 import type {
   BrushStroke, HeadSpec, ZoneEdit, Ficha, HumanFicha, CellSize, QAReport, BuildReport, Species, Proportions, ViewName,
-  ExportKind, ExportPlan, Variant, ImageMode, Avatar, AvatarPart, PhotoColors,
+  ExportKind, ExportPlan, Variant, ImageMode, Avatar, AvatarPart, PhotoColors, AnimEvent,
 } from '../engine/index';
 
 export interface AnalyzeParams {
@@ -28,6 +28,11 @@ export interface FrameSet {
   fps: number;
   cell: CellSize;
   view: ViewName;
+  loop: boolean;
+  /** con qué perfil de movimiento se dibujó */
+  profile: 'classic' | 'premium';
+  /** pasos y golpes (premium), con el cuadro donde caen */
+  events?: { type: AnimEvent['type']; frame: number }[];
   frames: Uint8ClampedArray[];
 }
 
