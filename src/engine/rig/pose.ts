@@ -89,8 +89,17 @@ export interface Pose {
    * cuerpo se dibuja cerca del piso y el juego sube el sprite sobre su sombra.
    */
   rise?: number;
+  /** superficie del agua: pixeles sobre el piso de la celda. Lo de abajo se tiñe de azul, con espuma y gotas */
+  water?: number;
+  /** salpicadura grande en la superficie (la entrada del clavado) */
+  splash?: boolean;
+  /** cuerpo acostado de verdad (nadar): en diagonal el tronco no se endereza */
+  flat?: boolean;
+  /** brazos libres (nadar): el límite del chibi se mide respecto al mundo, así se estiran al frente pasando la cabeza */
+  freeArms?: boolean;
   /** acostado (premium): el cuerpo se centra en la celda midiendo lo dibujado (la cabeza grande no cabe si no) */
-  fit?: boolean;
+  /** true: cada cuadro se centra solo. 'shared': un solo corrimiento para todo el ciclo (no tiembla) */
+  fit?: boolean | 'shared';
   /** vaivén del pelo largo (lo calcula el clip a partir del movimiento) */
   hair?: { dx: number; dy: number };
   props?: PropState[];

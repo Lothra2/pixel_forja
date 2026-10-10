@@ -32,12 +32,14 @@ function bounds(r: Raster) {
 }
 
 /** Pixeles opacos sin ningún vecino opaco (8 vecinos): basura visual. */
-export function countOrphans(r: Raster): { n: number; at: [number, number][] } {
+/** skip: filas que no se cuentan (gotas y estela del agua, que van sueltas a propósito) */
+export function countOrphans(r: Raster, skip?: [number, number]): { n: number; at: [number, number][] } {
   const at: [number, number][] = [];
   const op = (x: number, y: number) => x >= 0 && y >= 0 && x < r.w && y < r.h && r.data[(y * r.w + x) * 4 + 3] > 0;
   for (let y = 0; y < r.h; y++)
     for (let x = 0; x < r.w; x++) {
       if (!op(x, y)) continue;
+      if (skip && y >= skip[0] && y <= skip[1]) continue;
       let nb = 0;
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && op(x + dx, y + dy)) nb++;
       if (nb === 0) at.push([x, y]);
@@ -91,7 +93,8 @@ export function runQA(f: Ficha, clip: RenderedClip): QAReport {
     where: off.length ? `#${off.map((x) => x.i).join(', #')}` : undefined,
   });
   // pixeles sueltos
-  const orphans = clip.frames.map(countOrphans);
+  // con agua: la superficie y lo que salpica arriba (hasta 9 filas) son efecto, no cuerpo
+  const orphans = clip.frames.map((fr, i) => { const w = clip.waterRows?.[i]; return countOrphans(fr, w !== undefined && w !== null ? [w - 9, w] : undefined); });
   const total = orphans.reduce((s, o) => s + o.n, 0);
   const firstBad = orphans.findIndex((o) => o.n > 0);
   items.push({

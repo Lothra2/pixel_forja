@@ -6,6 +6,7 @@ import { makeCtx, type AnimDef, type AnimEvent } from '../anim/types';
 import { humanAnim, animalAnim, customToDef } from '../anim/registry';
 import { premiumAnim, swingWeapon } from '../anim/premium';
 import type { Pose } from '../rig/pose';
+import { applyWater } from './water';
 import { renderHuman, LONG_HELD, type BigFrame, type Joints, type RenderOptions, type RenderView } from './human';
 import { renderPet3d, type PetView } from './pet3d';
 import type { View } from './head';
@@ -25,6 +26,8 @@ export const VIEW_SUFFIX: Record<ViewName, string> = {
   side: 'right', left: 'left', front: 'down', back: 'up', se: 'down_right', sw: 'down_left', ne: 'up_right', nw: 'up_left',
 };
 const MIRRORED: Partial<Record<ViewName, RenderView>> = { left: 'side', sw: 'se', nw: 'ne' };
+/** Para las que avanzan de espaldas: cada vista lateral usa su espejo. */
+const BACKWARD: Partial<Record<ViewName, ViewName>> = { side: 'left', left: 'side', se: 'sw', sw: 'se', ne: 'nw', nw: 'ne' };
 
 export interface RenderedClip {
   name: string;
@@ -41,6 +44,8 @@ export interface RenderedClip {
   fits: boolean;
   /** cuánto sube el juego el sprite en cada cuadro (saltos que no caben en la celda), en pixeles */
   rise?: number[];
+  /** fila de la superficie del agua en cada cuadro (nadar), o null si no hay agua */
+  waterRows?: (number | null)[];
   /** encuadre fijo (premium): los cuadros que se salen de la celda */
   overflow?: number[];
   /** por cuadro, alto del cuerpo sin implementos (arriba y abajo, en la celda): el control de calidad mide con esto */
@@ -119,8 +124,10 @@ export function scalePose(p: Pose, k: number): Pose {
 
 export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewName = 'side', opt: RenderOptions = {}): RenderedClip {
   // de lado nomás (garrocha): de frente y de espalda se usa la diagonal más cercana
-  const lateral = !!humanDef(f, name)?.lateral && (asked === 'front' || asked === 'back');
-  const view: ViewName = lateral ? (asked === 'front' ? 'se' : 'ne') : asked;
+  const hd = humanDef(f, name);
+  const lateral = !!hd?.lateral && (asked === 'front' || asked === 'back');
+  let view: ViewName = lateral ? (asked === 'front' ? 'se' : 'ne') : asked;
+  if (hd?.backward) view = BACKWARD[view] ?? view;
   const base: RenderView = MIRRORED[view] ?? (view as RenderView);
   // las diagonales usan las poses pensadas de lado (adelante = hacia la derecha)
   const poseView: View = base === 'se' || base === 'ne' ? 'side' : base;
@@ -128,6 +135,8 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
   let events: AnimEvent[] | undefined, stride: number | undefined, rise: number[] | undefined;
   // garrocha o jabalina: largas, no marcan el piso (el control mide el cuerpo, como con el equipo de RPG)
   let longHeld: boolean[] = [];
+  // agua por cuadro (nadar): fila de la superficie y si salpica fuerte
+  let water: ({ level: number; big: boolean } | null)[] = [];
   const premium = isPremiumClip(f, name);
   if (isHuman(f)) {
     const def = humanDef(f, name);
@@ -156,10 +165,34 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     });
     // acostado (premium): se corre el cuerpo hasta centrarlo en la celda. Se mide cuánto mueve un paso de x
     // en esta vista (de lado, en diagonal o de frente no es lo mismo) y se vuelve a dibujar
+    // un solo corrimiento para todo el ciclo: se centra la unión de todos los cuadros 'shared' (el más largo manda)
+    const shared = poses.map((p, i) => (p.fit === 'shared' ? i : -1)).filter((i) => i >= 0);
+    if (shared.length) {
+      const boxOf = (r: BigFrame) => r.whole ?? r.body;
+      const union = (list: BigFrame[]) => {
+        let x0 = Infinity, x1 = -Infinity;
+        for (const r of list) { const q = boxOf(r); if (q) { x0 = Math.min(x0, q.x0); x1 = Math.max(x1, q.x1); } }
+        return { x0, x1 };
+      };
+      const u0 = union(shared.map((i) => big[i]));
+      const i0 = shared[0];
+      const probe = renderAt({ ...poses[i0], x: poses[i0].x + 4 }, i0);
+      const q0 = boxOf(big[i0]), qp = boxOf(probe);
+      const perUnit = q0 && qp ? (qp.x0 - q0.x0) / 4 : 0;
+      const off = big[i0].pivotX - 0.5 - (u0.x0 + u0.x1) / 2;
+      if (isFinite(off) && Math.abs(perUnit) >= 0.25 && Math.abs(off) >= 1) {
+        const dx = off / perUnit;
+        big = big.map((b, i) => {
+          if (poses[i].fit !== 'shared') return b;
+          poses[i] = { ...poses[i], x: poses[i].x + dx };
+          return renderAt(poses[i], i);
+        });
+      }
+    }
     big = big.map((b, i) => {
-      if (!poses[i].fit || !b.body) return b;
+      if (poses[i].fit !== true || !b.body) return b;
       // lo que entra en la celda va de left+1 a left+cell-2: su centro está medio pixel antes del pivote
-      const offOf = (r: BigFrame) => (r.body ? r.pivotX - 0.5 - (r.body.x0 + r.body.x1) / 2 : 0);
+      const offOf = (r: BigFrame) => { const q = r.whole ?? r.body; return q ? r.pivotX - 0.5 - (q.x0 + q.x1) / 2 : 0; };
       const probe = renderAt({ ...poses[i], x: poses[i].x + 4 }, i);
       const perUnit = probe.body ? (offOf(b) - offOf(probe)) / 4 : 0;
       if (Math.abs(perUnit) < 0.25) return b;
@@ -172,11 +205,12 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
       return out;
     });
     // premium, en acciones de un disparo (no ciclos): si un cuadro se sale de la celda por la cabeza grande del chibi
-    // (pasa a 32 px), se corre lo justo para que entre. En los ciclos manda el control: ahí correrlo sería temblor
-    if (premium && !def.steady && !def.loop) {
+    // (pasa a 32 px), se corre lo justo para que entre. En los ciclos manda el control: ahí correrlo sería temblor,
+    // también los cuadros de un ciclo centrado de una vez (nadar) que todavía se pasan un pixel
+    if (premium && ((!def.steady && !def.loop) || shared.length)) {
       const left0 = big[0].pivotX - cell / 2;
       big = big.map((b, i) => {
-        if (!b.body || poses[i].fit) return b;
+        if (!b.body || poses[i].fit === true || (def.loop && poses[i].fit !== 'shared')) return b;
         const need = b.body.x0 < left0 + 1 ? left0 + 1 - b.body.x0 : b.body.x1 > left0 + cell - 2 ? left0 + cell - 2 - b.body.x1 : 0;
         if (!need || b.body.x1 - b.body.x0 + 1 > cell - 2) return b;
         const probe = renderAt({ ...poses[i], x: poses[i].x + 4 }, i);
@@ -198,6 +232,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     airborne = poses.map((p) => p.air > 0 || p.hipH !== undefined || (p.rise ?? 0) > 0);
     if (poses.some((p) => p.rise)) rise = poses.map((p) => Math.round(p.rise ?? 0));
     longHeld = poses.map((p) => !!p.props?.some((q) => LONG_HELD.has(q.kind)));
+    water = poses.map((p) => (p.water !== undefined ? { level: p.water, big: !!p.splash } : null));
   } else {
     const def = animalAnim(name);
     if (!def) throw new Error(`No existe la animación ${name}`);
@@ -209,7 +244,10 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     airborne = poses.map((p) => p.air > 0);
   }
   // premium: el pivote queda siempre en el mismo lugar de la celda (no salta entre cuadros, direcciones ni acciones)
-  const { frames, fits, top, left, overflow } = cropClip(big, cell, premium);
+  const cropped = cropClip(big, cell, premium);
+  const { fits, top, left, overflow } = cropped;
+  let { frames } = cropped;
+  if (water.some(Boolean)) frames = wetFrames(frames, big, water, cell, left, top);
   // el cuerpo sin armas ni balones (con el pelo y el contorno): un hacha colgando no cuenta como pie
   // solo con equipo de RPG: sin equipo el piso lo marca todo lo dibujado (balones, raquetas) y se mide igual
   const useBodies = (i: number) => isHuman(f) && (!!f.gear || !!longHeld[i]);
@@ -224,6 +262,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     profile: premium ? 'premium' : 'classic',
     ...(overflow ? { overflow } : {}),
     ...(rise ? { rise } : {}),
+    ...(water.some(Boolean) ? { waterRows: water.map((w) => (w ? cell - 2 - Math.round(w.level) : null)) } : {}),
     ...(events?.length ? { events } : {}), ...(stride ? { stride } : {}), ...(joints ? { joints } : {}),
   };
 }
@@ -305,6 +344,27 @@ function mirrorBig(b: BigFrame): BigFrame {
   const W = b.raster.w;
   const fx = (box: BigFrame['body']) => (box ? { x0: W - 1 - box.x1, x1: W - 1 - box.x0, y0: box.y0, y1: box.y1 } : box);
   return { ...b, raster: mirror(b.raster), pivotX: W - b.pivotX, body: fx(b.body), full: b.full === undefined ? undefined : fx(b.full), joints: undefined };
+}
+
+/**
+ * Pone el agua en los cuadros de un nadador. Las gotas salen donde una mano o un pie cruza la superficie entre un
+ * cuadro y el siguiente (entra o sale del agua).
+ */
+function wetFrames(frames: Raster[], big: BigFrame[], water: ({ level: number; big: boolean } | null)[], cell: number, left: number, top: number): Raster[] {
+  const ends = ['handNear', 'handFar', 'footNear', 'footFar'] as const;
+  return frames.map((fr, i) => {
+    const w = water[i];
+    if (!w) return fr;
+    const row = cell - 2 - Math.round(w.level);
+    const cur = big[i].joints, prev = big[(i - 1 + big.length) % big.length].joints;
+    const splashes: [number, number][] = [];
+    if (cur && prev) for (const e of ends) {
+      const [x, y] = cur[e], py = prev[e][1] - top, cy = y - top;
+      if ((py - row) * (cy - row) <= 0 && Math.abs(py - cy) >= 1) splashes.push([x - left, row]);
+    }
+    if (w.big && cur) splashes.push([cur.hip[0] - left, row]);
+    return applyWater(fr, { row, splashes, frame: i, big: w.big });
+  });
 }
 
 export function mirror(r: Raster): Raster {

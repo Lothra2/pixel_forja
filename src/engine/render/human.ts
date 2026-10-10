@@ -37,6 +37,8 @@ export interface BigFrame {
   body: { x0: number; y0: number; x1: number; y1: number } | null;
   /** caja con el pelo incluido: se prefiere para encuadrar si cabe en la celda */
   full?: { x0: number; y0: number; x1: number; y1: number } | null;
+  /** todo lo que es persona, también el pelo que cuelga atrás (para centrar a alguien acostado) */
+  whole?: { x0: number; y0: number; x1: number; y1: number } | null;
   /** articulaciones en coordenadas del cuadro grande (para el editor de poses) */
   joints?: Joints;
 }
@@ -48,14 +50,14 @@ export type Joints = Record<JointName, [number, number]>;
 /** Implementos largos que se sostienen (garrocha, jabalina): nunca marcan el piso. */
 export const LONG_HELD = new Set<string>(['pole', 'javelin']);
 
-export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99): BigFrame['body'] {
+export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99, withHairBack = false): BigFrame['body'] {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let y = 0; y < c.h; y++)
     for (let x = 0; x < c.w; x++) {
       const l = c.layer[y * c.w + x];
       if (c.mat[y * c.w + x] === softMat) continue;
       // el pelo largo que cuelga detrás puede recortarse en el borde, como un balón
-      if (!l || l === Layer.Prop || l === Layer.PropMid || l === Layer.Behind || l === Layer.HairBack) continue;
+      if (!l || l === Layer.Prop || l === Layer.PropMid || l === Layer.Behind || (l === Layer.HairBack && !withHairBack)) continue;
       if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
     }
   return isFinite(x0) ? { x0: x0 + dx, y0: y0 + dy, x1: x1 + dx, y1: y1 + dy } : null;
@@ -119,7 +121,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const side = view === 'side';
   const sign = view === 'back' ? -1 : 1; // de espalda, lo "cercano" queda a la izquierda
   // en vista lateral el torso se inclina. De frente o espalda, `torso` no rota (se ve igual) y `roll` sí
-  const rawTheta = side ? pose.torso : diag ? (pose.roll ? pose.roll : pose.torso * DIAG_LEAN) : pose.roll ?? 0;
+  const rawTheta = side ? pose.torso : diag ? (pose.roll ? pose.roll : pose.torso * (pose.flat ? 1 : DIAG_LEAN)) : pose.roll ?? 0;
   // inclinación chica: no se rota (quedaría dentado), se corren las filas de arriba (como en el piloto)
   const SMALL = 12;
   const shear = Math.abs(rawTheta) < SMALL ? Math.tan((rawTheta * Math.PI) / 180) : 0;
@@ -174,7 +176,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     // o se adelanta (de lado), así la mano asoma junto a la cabeza en vez de esconderse detrás
     let shoulder = a.shoulder, spreadDeg = a.spread ?? 0;
     const chibi = d.headW > 1.5 * (d.armUpper + d.armLower);
-    const up = ((shoulder % 360) + 360) % 360;
+    // con brazos libres se mide hacia dónde apunta el brazo en el mundo (acostado, 180 es al frente, no arriba)
+    const world = pose.freeArms && (side || diag) ? shoulder - theta : shoulder;
+    const up = ((world % 360) + 360) % 360;
     if (chibi && up > 115 && up < 245) {
       if (side) shoulder = 115 + (up - 115) * 0.25 + (shoulder - up);
       else spreadDeg = Math.max(spreadDeg, 50 + (Math.min(up, 180) - 115) * 0.2);
@@ -585,7 +589,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   };
   const body = soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : bodyBox(canvas, dx, dy);
   const full = soft ? bodyBox(canvas, dx, dy) : body;
-  return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, joints };
+  const whole = bodyBox(canvas, dx, dy, -99, true);
+  return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, whole, joints };
 }
 
 /** Distancia del hombro a la cadera y ángulos del brazo para llegar a un punto (para manubrios, barras). */

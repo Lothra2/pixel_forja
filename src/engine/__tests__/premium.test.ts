@@ -3,11 +3,13 @@ import { familyFicha, renderPlan, renderClip, posesFor, EIGHT_VIEWS, migrateFich
 import { buildGameKit } from '../kit/gamekit';
 import { PREMIUM } from '../anim/premium';
 import { ATHLETICS_PREMIUM } from '../anim/athletics';
+import { SWIM_PREMIUM } from '../anim/swim';
 
 const premium = (id: 'rick' | 'steph' | 'sophie' | 'alana', rpg = true): HumanFicha => ({ ...familyFicha(id, rpg), movementProfile: 'premium' });
 const ATH = ATHLETICS_PREMIUM.map((a) => a.name);
+const SWIM = SWIM_PREMIUM.map((a) => a.name);
 // las de héroe (con espada y escudo); el atletismo se prueba con ropa de calle
-const NAMES = PREMIUM.map((a) => a.name).filter((n) => !ATH.includes(n));
+const NAMES = PREMIUM.map((a) => a.name).filter((n) => !ATH.includes(n) && !SWIM.includes(n));
 
 describe('movimiento premium', () => {
   it('toda la familia pasa el control de calidad en 8 direcciones a 48 px (y Rick también a 32 y 64)', () => {
@@ -160,5 +162,36 @@ describe('movimiento premium', () => {
     const sj = JSON.parse(new TextDecoder().decode(files.find((x) => x.name.endsWith('_48.json'))!.bytes));
     expect(sj.anims.pole_vault.elevacion.length).toBe(sj.anims.pole_vault.frames);
     expect(Math.max(...sj.anims.pole_vault.elevacion)).toBeGreaterThan(30);
+  });
+
+  it('natación: toda la familia pasa el control en 8 direcciones y 3 tamaños, con el agua puesta', () => {
+    const casual = (id: 'rick' | 'steph' | 'sophie' | 'alana') => premium(id, false);
+    const runs: [HumanFicha, CellSize][] = [[casual('rick'), 48], [casual('steph'), 48], [casual('sophie'), 48], [casual('alana'), 48], [casual('rick'), 32], [casual('sophie'), 32], [casual('rick'), 64]];
+    for (const [f, cell] of runs) {
+      const { qa, missing } = renderPlan(f, { cell, anims: SWIM, views: EIGHT_VIEWS, props: true });
+      expect(missing, f.name).toEqual([]);
+      expect(qa.filter((r) => !r.ok).map((r) => `${f.name} ${cell} ${r.clip}`)).toEqual([]);
+    }
+  }, 600_000);
+
+  it('el agua tiñe lo de abajo y deja la cabeza afuera; espalda avanza con la cabeza primero', () => {
+    const f = premium('rick', false);
+    const crawl = renderClip(f, 48, 'swim', 'side');
+    const row = crawl.waterRows![0]!;
+    // abajo de la superficie todo es más azul que rojo (tinte), arriba queda la cabeza con su color
+    const fr = crawl.frames[0];
+    let below = 0, blue = 0;
+    for (let y = row + 2; y < 48; y++) for (let x = 0; x < 48; x++) { const i = (y * 48 + x) * 4; if (fr.data[i + 3]) { below++; if (fr.data[i + 2] > fr.data[i]) blue++; } }
+    expect(below).toBeGreaterThan(20);
+    expect(blue / below).toBeGreaterThan(0.8);
+    // ciclo sin rebote: la superficie queda en la misma fila
+    expect(new Set(crawl.waterRows).size).toBe(1);
+    // espalda: de lado se dibuja con la vista espejo (cabeza adelante, boca arriba)
+    const back = renderClip(f, 48, 'swim_back', 'side'), left = renderClip({ ...f }, 48, 'swim_back', 'left');
+    expect(Buffer.from(back.frames[0].data).equals(Buffer.from(left.frames[0].data))).toBe(false);
+    // el clavado entra con salpicadura y se marca el golpe con el agua
+    const dive = renderClip(f, 48, 'dive', 'side');
+    expect(dive.events!.map((e) => e.type)).toEqual(['despegue', 'impacto']);
+    expect(dive.rise![0]).toBeGreaterThan(5);
   });
 });

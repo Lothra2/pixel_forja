@@ -38,6 +38,8 @@ export interface AnimDef {
    * espalda la de arriba, así la hoja sigue teniendo 8 direcciones y ninguna se ve rota.
    */
   lateral?: boolean;
+  /** avanza hacia atrás de lado (espalda en natación): se dibuja con la vista espejo para que vaya cabeza primero */
+  backward?: boolean;
   /** vistas donde se usa (para exportar paquetes de 4 direcciones) */
   views?: View[];
   /** el pelo largo se va hacia atrás (correr) */
