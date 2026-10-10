@@ -93,12 +93,28 @@ function drop(): Particle {
   return { name: 'gota', w: 4, h: 6, fps: 8, frames: [frame(4, 6, (r) => { put(r, 1, 1, '#e8f6ff'); put(r, 1, 2, '#a8daf8'); put(r, 2, 2, '#a8daf8'); put(r, 1, 3, '#6cb4e4'); put(r, 2, 3, '#6cb4e4'); }), frame(4, 6, (r) => { put(r, 0, 4, '#cfeaff'); put(r, 3, 4, '#cfeaff'); put(r, 1, 5, '#a8daf8'); put(r, 2, 5, '#a8daf8'); })] };
 }
 
+/** Huella de Thor cuando olfatea: una patita dorada que brilla en el piso (el juego la desvanece). */
+function pawPrint(): Particle {
+  const C = '#ffd27a', B = '#fff0b8', S = '#a8741e';
+  return {
+    name: 'huella', w: 8, h: 8, fps: 1,
+    frames: [frame(8, 8, (r) => {
+      for (const [x, y] of [[2, 1], [5, 1], [0, 3], [7, 3]]) put(r, x, y, C);
+      put(r, 2, 0, B); put(r, 5, 0, B);
+      for (let x = 2; x <= 5; x++) put(r, x, 4, C);
+      for (let x = 1; x <= 6; x++) put(r, x, 5, x === 1 || x === 6 ? S : C);
+      for (let x = 2; x <= 5; x++) put(r, x, 6, S);
+      put(r, 3, 4, B); put(r, 4, 4, B);
+    })],
+  };
+}
+
 /** Todas las partículas del mundo. */
 export function particles(): Particle[] {
   return [
     firefly(), leaf('verde'), leaf('otono'), butterfly('azul'), butterfly('naranja'), butterfly('rosa'),
     dotParticle('polen', ['#fff6c0', '#ffe88a']), dotParticle('brasa', ['#ffd27a', '#ff8a1e', '#d8401a'], 4, 8),
-    sparkle(), dotParticle('espora', ['#a8fff0', '#5ad8c8']), smoke(), dotParticle('polvo', ['#d8c8a8', '#bfae8e']), drop(),
+    sparkle(), dotParticle('espora', ['#a8fff0', '#5ad8c8']), smoke(), dotParticle('polvo', ['#d8c8a8', '#bfae8e']), drop(), pawPrint(),
   ];
 }
 
