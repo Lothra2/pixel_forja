@@ -61,6 +61,42 @@ describe('movimiento premium', () => {
     expect(r + l).toBe(47);
   });
 
+  it('el avance cuenta el vuelo de la carrera: medido en los pixeles, el pie que pisa no patina', () => {
+    // se mide en lo dibujado (las articulaciones de la celda), no en las poses: el pie apoyado retrocede en la celda
+    // lo mismo que el juego tiene que mover el sprite
+    for (const id of ['rick', 'sophie'] as const) for (const anim of ['walk', 'run', 'sprint']) {
+      const f = premium(id, false);
+      const c = renderClip(f, 48, anim, 'side');
+      const poses = posesFor(f, 48, anim, 'side');
+      const steps: number[] = [];
+      for (let i = 0; i < poses.length; i++) {
+        const a = poses[i], b = poses[(i + 1) % poses.length];
+        const s = a.support === 'near' || a.support === 'far' ? a.support : null;
+        if (!s || b.support !== s) continue;
+        const key = s === 'near' ? 'footNear' : 'footFar';
+        steps.push(c.joints![i][key][0] - c.joints![(i + 1) % poses.length][key][0]);
+      }
+      const measured = (steps.reduce((t, d) => t + d, 0) / steps.length) * poses.length;
+      expect(Math.abs(c.stride! - measured) / measured, `${id} ${anim}`).toBeLessThan(0.15);
+    }
+  });
+
+  it('las acciones que avanzan traen su desplazamiento; las que pegan en el lugar, no', () => {
+    const f = premium('sophie', false);
+    const sprint = renderClip(f, 48, 'sprint', 'side').stride!;
+    for (const anim of ['sprint_start', 'long_jump', 'pole_vault', 'javelin', 'dive', 'spike', 'vb_dive', 'flying_kick']) {
+      const t = renderClip(f, 48, anim, 'side').travel!;
+      expect(t, anim).toBeDefined();
+      expect(t[0]).toBe(0);
+      for (let i = 1; i < t.length; i++) expect(t[i], `${anim} ${i}`).toBeGreaterThanOrEqual(t[i - 1]);
+    }
+    // el salto largo cubre más que una zancada de sprint
+    expect(renderClip(f, 48, 'long_jump', 'side').travel!.at(-1)).toBeGreaterThan(sprint);
+    for (const anim of ['jab', 'forehand', 'vb_set']) expect(renderClip(f, 48, anim, 'side').travel, anim).toBeUndefined();
+    // nadar y las vallas no tienen pie que mida: traen su avance igual
+    for (const anim of ['swim', 'swim_back', 'swim_breast', 'swim_fly', 'hurdles']) expect(renderClip(f, 48, anim, 'side').stride, anim).toBeGreaterThan(5);
+  });
+
   it('las fichas clásicas quedan igual y las viejas se migran como clásicas', () => {
     // la familia viene en premium: aquí se la pone en clásico a propósito
     const classic: HumanFicha = { ...familyFicha('rick', true), movementProfile: 'classic' };
@@ -244,6 +280,12 @@ describe('movimiento premium', () => {
     expect(nat.dive.eventos.map((e: { tipo: string }) => e.tipo)).toEqual(['despegue', 'impacto']);
     expect(Math.max(...atl.javelin.elevacion ?? [0])).toBe(0);
     expect(atl.javelin.eventos.some((e: { tipo: string }) => e.tipo === 'suelta')).toBe(true);
+    // la jabalina avanza y de frente va en diagonal: el rumbo le dice al juego hacia dónde moverla
+    expect(atl.javelin.desplazamiento.at(-1)).toBeGreaterThan(5);
+    expect(atl.javelin.rumbo[m.direcciones.indexOf('down')]).toBe('down_right');
+    expect(atl.javelin.rumbo[m.direcciones.indexOf('up')]).toBe('up_right');
+    expect(atl.javelin.rumbo[m.direcciones.indexOf('left')]).toBe('left');
+    expect(nat.dive.desplazamiento.at(-1)).toBeGreaterThan(5);
     // cada hoja: 8 filas de celda 48
     const png = files.find((f) => f.name === nat.dive.archivo)!;
     expect(png.bytes.length).toBeGreaterThan(100);

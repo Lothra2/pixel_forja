@@ -1,6 +1,6 @@
 import { createRaster, blit, type Raster } from '../core/raster';
 import { encodePng } from '../export/png';
-import { motionOf, type MovimientoAnim } from '../export/motion';
+import { motionOf8, type MovimientoAnim } from '../export/motion';
 import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim } from '../render/clip';
 import type { Ficha, CellSize, HumanFicha } from '../sheet/ficha';
@@ -66,7 +66,7 @@ function sheet8(f: Ficha, cell: CellSize, anim: string, k = 1): { png: Raster; f
   const png = createRaster(n * C, 8 * C);
   clips.forEach((c, row) => c.frames.forEach((fr, i) => blit(png, k === 1 ? fr : scaleRaster(fr, k), i * C, row * C)));
   // los pasos y el avance son los mismos en las 8 direcciones (la pose es una sola, cambia la cámara)
-  return { png, frames: n, fps: clips[0].fps, loop: clips[0].loop, premium: clips[0].profile === 'premium', mov: motionOf(clips[0], k) };
+  return { png, frames: n, fps: clips[0].fps, loop: clips[0].loop, premium: clips[0].profile === 'premium', mov: motionOf8(clips, k) };
 }
 
 const file = (name: string, bytes: Uint8Array, mime: string): ExportFile => ({ name, bytes, mime });

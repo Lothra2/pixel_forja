@@ -139,7 +139,7 @@ export const kickMartial: AnimDef = {
 
 /** Patada voladora: corre dos pasos, salta con la rodilla al pecho y estira la pierna en el aire. */
 export const flyingKick: AnimDef = {
-  name: 'flying_kick', pack: 'martial', fps: 14, loop: false, views: ['side', 'front', 'back'], lateral: true,
+  name: 'flying_kick', pack: 'martial', fps: 14, loop: false, travel: { ref: 'run', k: [0.2, 0.6, 0.8, 0.8, 0.7, 0.5, 0.2, 0, 0] }, views: ['side', 'front', 'back'], lateral: true,
   events: [{ type: 'despegue', phase: 2 / 10 }, { type: 'impacto', phase: 4 / 10 }, { type: 'aterriza', phase: 7 / 10 }],
   build: (c) => {
     const L = c.L, u = c.u;

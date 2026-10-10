@@ -1,11 +1,19 @@
-import type { RenderedClip } from '../render/clip';
+import { VIEW_SUFFIX, type RenderedClip } from '../render/clip';
 import type { AnimEvent } from '../anim/types';
 
 /** Evento listo para el juego: tipo, cuadro donde cae y, si es un paso, qué pie. */
 export interface EventoJson { tipo: AnimEvent['type']; cuadro: number; fase: number; pie?: 'cerca' | 'lejos' }
 
 /** Lo que el juego necesita para mover bien al personaje: eventos y avance (premium) y elevación de los saltos. */
-export interface MovimientoAnim { eventos?: EventoJson[]; avance?: number; elevacion?: number[] }
+export interface MovimientoAnim {
+  eventos?: EventoJson[];
+  avance?: number;
+  elevacion?: number[];
+  /** acciones que se desplazan: pixeles avanzados en cada cuadro desde el primero, hacia donde mira */
+  desplazamiento?: number[];
+  /** hojas de 8 direcciones: hacia dónde va de verdad cada fila (de frente, una prueba de campo va en diagonal) */
+  rumbo?: string[];
+}
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
@@ -23,6 +31,15 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
     ...(e.foot ? { pie: e.foot === 'near' ? 'cerca' as const : 'lejos' as const } : {}),
   }));
   if (c.stride) out.avance = r2(c.stride * k);
+  if (c.travel) out.desplazamiento = c.travel.map((v) => r2(v * k));
+  return out;
+}
+
+/** Movimiento de una hoja de 8 direcciones: se mide en la vista de lado (la que piensan las poses) y se agrega el rumbo. */
+export function motionOf8(clips: RenderedClip[], k = 1): MovimientoAnim {
+  const side = clips.find((c) => c.view === 'side') ?? clips[0];
+  const out = motionOf(side, k);
+  if (clips.some((c) => c.heading)) out.rumbo = clips.map((c) => VIEW_SUFFIX[c.heading ?? c.view]);
   return out;
 }
 

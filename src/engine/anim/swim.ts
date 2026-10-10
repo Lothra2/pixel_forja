@@ -19,7 +19,7 @@ function float(c: Ctx) {
 // ---------- crol ----------
 
 export const swim: AnimDef = {
-  name: 'swim', pack: 'swim', fps: 10, loop: true, lateral: true, views: ['side', 'front', 'back'],
+  name: 'swim', pack: 'swim', fps: 10, loop: true, strideL: 2, lateral: true, views: ['side', 'front', 'back'],
   build: (c) => {
     const L = c.L;
     const fl = float(c);
@@ -52,7 +52,7 @@ export const swim: AnimDef = {
 
 /** Espalda: boca arriba, brazos estirados como aspas que entran detrás de la cabeza. Avanza con la cabeza primero. */
 export const swimBack: AnimDef = {
-  name: 'swim_back', pack: 'swim', fps: 9, loop: true, lateral: true, backward: true, views: ['side', 'front', 'back'],
+  name: 'swim_back', pack: 'swim', fps: 9, loop: true, strideL: 1.8, lateral: true, backward: true, views: ['side', 'front', 'back'],
   build: (c) => {
     const L = c.L;
     const fl = float(c);
@@ -83,7 +83,7 @@ export const swimBack: AnimDef = {
  * piernas (talones al glúteo) y patea como rana estirando todo de nuevo.
  */
 export const swimBreast: AnimDef = {
-  name: 'swim_breast', pack: 'swim', fps: 9, loop: true, lateral: true, views: ['side', 'front', 'back'],
+  name: 'swim_breast', pack: 'swim', fps: 9, loop: true, strideL: 1.5, lateral: true, views: ['side', 'front', 'back'],
   build: (c) => {
     const L = c.L, u = c.u;
     const fl = float(c);
@@ -115,7 +115,7 @@ export const swimBreast: AnimDef = {
  * bajan alternados) y dos patadas por brazada. Respira levantando la cabeza al terminar de tirar.
  */
 export const swimFly: AnimDef = {
-  name: 'swim_fly', pack: 'swim', fps: 10, loop: true, lateral: true, views: ['side', 'front', 'back'],
+  name: 'swim_fly', pack: 'swim', fps: 10, loop: true, strideL: 2, lateral: true, views: ['side', 'front', 'back'],
   build: (c) => {
     const L = c.L, u = c.u;
     const fl = float(c);
@@ -172,7 +172,7 @@ export const treadWater: AnimDef = {
  * entra al agua de cabeza (salpicadura grande) y se desliza debajo del agua antes de empezar a nadar.
  */
 export const dive: AnimDef = {
-  name: 'dive', pack: 'swim', fps: 12, loop: false, lateral: true, views: ['side', 'front', 'back'],
+  name: 'dive', pack: 'swim', fps: 12, loop: false, travel: { ref: 'run', k: [0, 0, 0.4, 1, 1, 0.9, 0.6, 0.4, 0.3, 0.2] }, lateral: true, views: ['side', 'front', 'back'],
   events: [{ type: 'despegue', phase: 3 / 11 }, { type: 'impacto', phase: 6 / 11 }],
   build: (c) => {
     const L = c.L, u = c.u;

@@ -70,7 +70,7 @@ export const vbSet: AnimDef = {
  * de golpe se arma atrás como un arco, latigazo sobre la pelota, cae con las dos piernas.
  */
 export const spike: AnimDef = {
-  name: 'spike', pack: 'volley', fps: 12, loop: false, views: ['side', 'front', 'back'], lateral: true,
+  name: 'spike', pack: 'volley', fps: 12, loop: false, travel: { ref: 'run', k: [0.7, 0.8, 0.5, 0.25, 0.2, 0.2, 0.15, 0.1, 0, 0] }, views: ['side', 'front', 'back'], lateral: true,
   events: [{ type: 'paso', phase: 0 }, { type: 'despegue', phase: 3 / 11 }, { type: 'impacto', phase: 6 / 11 }, { type: 'aterriza', phase: 8 / 11 }],
   build: (c) => {
     const L = c.L, u = c.u;
@@ -148,7 +148,7 @@ export const serve: AnimDef = {
 
 /** Plancha: se lanza al frente, estira los brazos para salvar la pelota y se desliza sobre el pecho. */
 export const vbDive: AnimDef = {
-  name: 'vb_dive', pack: 'volley', fps: 12, loop: false, views: ['side', 'front', 'back'], lateral: true,
+  name: 'vb_dive', pack: 'volley', fps: 12, loop: false, travel: { ref: 'run', k: [0.4, 0.9, 0.8, 0.6, 0.4, 0.2, 0, 0] }, views: ['side', 'front', 'back'], lateral: true,
   events: [{ type: 'impacto', phase: 3 / 9 }, { type: 'aterriza', phase: 4 / 9 }],
   build: (c) => {
     const L = c.L, u = c.u;
