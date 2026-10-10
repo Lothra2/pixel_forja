@@ -286,6 +286,10 @@ describe('movimiento premium', () => {
     expect(atl.javelin.rumbo[m.direcciones.indexOf('up')]).toBe('up_right');
     expect(atl.javelin.rumbo[m.direcciones.indexOf('left')]).toBe('left');
     expect(nat.dive.desplazamiento.at(-1)).toBeGreaterThan(5);
+    // la suelta dice de dónde sale la jabalina en cada fila: de la mano, arriba del piso y cerca del cuerpo
+    const rel = atl.javelin.eventos.find((e: { tipo: string }) => e.tipo === 'suelta').punto;
+    expect(rel).toHaveLength(8);
+    for (const [x, y] of rel) { expect(Math.abs(x)).toBeLessThan(24); expect(y).toBeLessThan(-4); }
     // cada hoja: 8 filas de celda 48
     const png = files.find((f) => f.name === nat.dive.archivo)!;
     expect(png.bytes.length).toBeGreaterThan(100);

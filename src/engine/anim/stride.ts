@@ -34,21 +34,3 @@ export function strideOf(poses: Pose[]): number | undefined {
   const v = (steps.reduce((s, d) => s + d, 0) / steps.length) * poses.length;
   return v > 0 ? Math.round(v * 10) / 10 : undefined;
 }
-
-/**
- * Desplazamiento de una acción de un disparo (salto largo, garrocha, clavado): cuánto lleva avanzado el cuerpo en
- * cada cuadro desde el primero. En el aire sigue con la velocidad del último paso apoyado (por `airK`); lo que el
- * cuerpo ya se corre dentro de la celda se descuenta para que el juego no lo mueva dos veces.
- */
-export function travelOf(poses: Pose[], airK = 1): number[] {
-  const out = [0];
-  let v = 0;
-  for (let i = 0; i + 1 < poses.length; i++) {
-    const a = poses[i], b = poses[i + 1];
-    const g = groundStep(a, b);
-    let d: number;
-    if (g !== null) { d = g; v = g; } else d = v * airK - (b.x - a.x);
-    out.push(out[i] + d);
-  }
-  return out.map((d) => Math.round(d * 10) / 10);
-}
