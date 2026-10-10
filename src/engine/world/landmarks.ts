@@ -154,6 +154,133 @@ export function waterfall(): WorldObject {
   return { name: 'cascada', w: W, h: H, anchor: [64, 112], solid: null, anims: { idle: { frames, fps: 10, loop: true } }, light: { color: '#bfe6ff', radius: 110, pulse: true, dy: 40 } };
 }
 
+/** Una columna de la cascada en pixeles del mundo: dónde está el borde de arriba (labio) y dónde termina la roca (base). */
+export interface WaterfallCol { x: number; lip: number; base: number }
+
+// los azules del río (agua.png) y su versión con aire, más clara, para el agua que cae
+const FALL = ['#0d3c5e', '#1d4a6a', '#2c5876', '#3f6f8e', '#5286a1', '#7fa9bf', '#a9cad8'];
+const FOAM = ['#c4dde8', '#e2f0f6', '#ffffff'];
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
+const frac = (v: number) => v - Math.floor(v);
+
+/**
+ * Cascada hecha a la medida del acantilado: cada columna cae desde el labio real de la meseta hasta el pie real de la roca,
+ * así el agua tapa justo la pared que cruza el río (aunque el borde sea diagonal o irregular). Abajo hace espuma que hierve,
+ * bruma que sube, gotas que saltan y manchas de espuma que se van río abajo. Los 6 cuadros cierran el ciclo sin saltos.
+ * isWater dice si un pixel del mundo es agua (para no pintar espuma sobre el pasto).
+ */
+export function fittedWaterfall(cols: WaterfallCol[], isWater: (x: number, y: number) => boolean, F = 6): { obj: WorldObject; x: number; y: number } {
+  const L = cols[0].x, R = cols[cols.length - 1].x;
+  const minLip = Math.min(...cols.map((c) => c.lip)), maxBase = Math.max(...cols.map((c) => c.base));
+  const x0 = L - 12, y0 = minLip - 8, W = R - L + 25, H = maxBase - minLip + 56;
+  const byX = new Map(cols.map((c) => [c.x, c]));
+  const mid = cols[Math.floor(cols.length / 2)];
+  // la base como línea (para la espuma de las partículas del juego): de la primera a la última columna
+  const baseAt = (x: number) => byX.get(Math.max(L, Math.min(R, x)))!.base;
+  const frames: Raster[] = [];
+  for (let f = 0; f < F; f++) {
+    const r = createRaster(W, H);
+    const px = (x: number, y: number, hex: string, a = 255) => put(r, x - x0, y - y0, hex, a);
+    const ph = f / F;
+
+    // 1. la cortina de agua: hilos verticales de 2 pixeles con su tono, rayas claras que bajan, labio claro arriba
+    for (const c of cols) {
+      const side = Math.min(c.x - L, R - c.x);
+      const rope = hash(c.x >> 1, 5, 21);
+      const P = 16 + Math.floor(hash(c.x >> 1, 9, 23) * 14);
+      const off = hash(c.x >> 1, 3, 29) * P;
+      const P2 = 9 + Math.floor(hash(c.x, 4, 31) * 6);
+      const h = c.base - c.lip;
+      // el agua de arriba acelera antes de caer: rayas claras sobre el río de la meseta
+      for (let y = c.lip - 5; y < c.lip; y++) {
+        const v = frac((y + off) / 6 - ph * 2);
+        if (v < 0.35) px(c.x, y, y >= c.lip - 2 ? FALL[5] : FALL[4], side < 2 ? 140 : 210);
+      }
+      for (let y = c.lip; y <= c.base + 1; y++) {
+        const t = (y - c.lip) / h;
+        // más espuma y más claro abajo, donde el agua ya trae aire
+        let k = 2 + (rope > 0.66 ? 1 : rope < 0.25 ? -1 : 0) + (t > 0.7 ? 1 : 0);
+        const v = frac((y - c.lip + off) / P - ph);
+        const v2 = frac((y - c.lip + off * 1.7) / P2 - ph * 2);
+        if (v < 0.12) k = 6; else if (v < 0.26) k = 5; else if (v2 < 0.1) k = Math.max(k, 4);
+        let a = 255;
+        if (y < c.lip + 2) k = y === c.lip ? 6 : 5; // labio
+        if (side <= 1) { k = Math.max(k, 5); a = side === 0 ? 120 : 190; } // orilla de la cortina, se deshace en rocío
+        px(c.x, y, k >= 7 ? FOAM[0] : FALL[Math.max(0, k)], a);
+      }
+    }
+
+    // 2. espuma al pie: hierve (se mueve hacia arriba y abajo) y se abre un poco a los lados sobre el agua
+    for (let x = L - 6; x <= R + 6; x++) {
+      const b = baseAt(x);
+      const fuera = x < L ? L - x : x > R ? x - R : 0;
+      const alto = 9 + Math.floor(hash(x >> 2, 7, 37) * 5) - fuera;
+      for (let y = b - 4; y <= b + alto; y++) {
+        if (y > b + 1 && !isWater(x, y)) continue;
+        if (y <= b + 1 && fuera > 0) continue;
+        const dist = Math.abs(y - (b + 1)) / (alto + 1);
+        const n = hash((x + f * 3) >> 1, (y - f * 2) >> 1, 41) * 0.6 + hash(x, y + f * 5, 43) * 0.4;
+        const th = 0.12 + dist * 0.8;
+        if (n > th) px(x, y, n > th + 0.3 ? FOAM[2] : n > th + 0.15 ? FOAM[1] : FOAM[0], y > b + 3 ? 225 : 255);
+      }
+    }
+
+    // 3. estela: el agua revuelta sigue blanca un buen trecho río abajo y se va apagando
+    for (let x = L - 4; x <= R + 4; x++) {
+      const b = baseAt(x);
+      for (let y = b + 6; y < b + 40; y++) {
+        if (!isWater(x, y)) continue;
+        const dist = (y - b - 6) / 34;
+        const n = hash(x >> 1, (y - f * 2) >> 1, 47) * 0.7 + hash(x, y - f * 2, 49) * 0.3;
+        if (n > 0.6 + dist * 0.38) px(x, y, n > 0.9 ? FOAM[1] : FOAM[0], Math.round(200 - dist * 120));
+      }
+    }
+    // manchas de espuma que se van con la corriente
+    const rr = (i: number, s: number) => hash(i, s, 53);
+    for (let i = 0; i < 34; i++) {
+      const sx = Math.round(L - 4 + rr(i, 1) * (R - L + 8));
+      const travel = 40;
+      const d = frac(rr(i, 2) + ph) * travel; // baja y vuelve a nacer
+      const y = Math.round(baseAt(sx) + 8 + d), len = 3 + Math.floor(rr(i, 3) * 5);
+      const a = Math.round(230 * (1 - d / travel));
+      for (let k = 0; k < len; k++) if (isWater(sx + k, y)) px(sx + k, y, k === 0 || k === len - 1 ? FOAM[0] : FOAM[1], a);
+    }
+
+    // 4. bruma que sube del golpe del agua: manchas suaves tramadas, semitransparentes
+    for (let i = 0; i < 12; i++) {
+      const bx = L + (i + 0.5) * ((R - L) / 12) + (rr(i, 7) - 0.5) * 8;
+      const rise = frac(rr(i, 8) + ph) * 14;
+      const by = baseAt(Math.round(bx)) + 4 - rise, rad = 7 + rr(i, 9) * 6;
+      const fade = 1 - rise / 14;
+      for (let y = Math.floor(by - rad); y <= by + rad; y++) for (let x = Math.floor(bx - rad); x <= bx + rad; x++) {
+        const q = 1 - Math.hypot(x - bx, (y - by) * 1.3) / rad;
+        if (q <= 0) continue;
+        if (q * fade > BAYER4[((y & 3) << 2) | (x & 3)]) px(x, y, FOAM[1], Math.round(90 + q * 80));
+      }
+    }
+
+    // 5. gotas que saltan del pie
+    for (let i = 0; i < 16; i++) {
+      const sx = L + rr(i, 11) * (R - L);
+      const life = frac(rr(i, 12) + ph);
+      const vx = (rr(i, 13) - 0.5) * 18, vy = 16 + rr(i, 14) * 14;
+      const x = Math.round(sx + vx * life), y = Math.round(baseAt(Math.round(sx)) - vy * life + 30 * life * life);
+      px(x, y, FOAM[2], Math.round(240 * (1 - life * 0.6)));
+    }
+    frames.push(r);
+  }
+  const ax = mid.x - x0, ay = mid.base - y0;
+  const foamLine: [number, number, number, number] = [L - mid.x, baseAt(L) - mid.base, R - mid.x, baseAt(R) - mid.base];
+  return {
+    obj: {
+      name: 'cascada', w: W, h: H, anchor: [ax, ay], solid: null, layer: 'suelo', foam: foamLine,
+      anims: { idle: { frames, fps: 12, loop: true } },
+      light: { color: '#bfe6ff', radius: Math.round(40 + (R - L) * 0.7), pulse: true, dy: Math.round((mid.base - mid.lip) / 2) },
+    },
+    x: mid.x, y: mid.base,
+  };
+}
+
 // ---------- bosque ----------
 
 export function fallenLog(): WorldObject {

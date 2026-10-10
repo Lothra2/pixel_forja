@@ -121,3 +121,27 @@ describe('kit del juego', () => {
     expect(h).toBe(8 * 48);
   }, 240000);
 });
+
+describe('cascada a la medida del acantilado', () => {
+  it('cubre cada columna del labio al pie aunque el borde sea diagonal, y echa espuma abajo', async () => {
+    const { fittedWaterfall } = await import('../world/landmarks');
+    const cols = Array.from({ length: 61 }, (_, i) => { const x = 100 + i, lip = 50 + Math.round(i * 0.4) + (i % 7 === 0 ? 2 : 0); return { x, lip, base: lip + 48 + (i % 5) }; });
+    const isWater = (x: number, y: number) => x >= 96 && x <= 164 && y > cols[Math.max(0, Math.min(60, x - 100))].base;
+    const { obj, x, y } = fittedWaterfall(cols, isWater);
+    const ox = x - obj.anchor[0], oy = y - obj.anchor[1];
+    const f0 = obj.anims.idle.frames[0];
+    const a = (fr: typeof f0, wx: number, wy: number) => fr.data[((wy - oy) * fr.w + (wx - ox)) * 4 + 3];
+    for (const c of cols.slice(2, -2)) {
+      for (let yy = c.lip; yy < c.base; yy++) expect(a(f0, c.x, yy), `columna ${c.x} y ${yy}`).toBe(255);
+      expect(a(f0, c.x, c.lip - 7), 'nada flota arriba del labio').toBe(0);
+    }
+    // espuma blanca al pie
+    let blancos = 0;
+    for (const c of cols) for (let yy = c.base - 2; yy < c.base + 10; yy++) { const i = ((yy - oy) * f0.w + (c.x - ox)) * 4; if (f0.data[i] === 255 && f0.data[i + 1] === 255 && f0.data[i + 2] === 255) blancos++; }
+    expect(blancos).toBeGreaterThan(cols.length);
+    expect(obj.layer).toBe('suelo');
+    expect(obj.foam).toEqual([100 - x, cols[0].base - y, 160 - x, cols[60].base - y]);
+    // se mueve: los cuadros no son iguales
+    expect(Buffer.from(obj.anims.idle.frames[1].data).equals(Buffer.from(f0.data))).toBe(false);
+  });
+});

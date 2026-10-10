@@ -165,6 +165,7 @@ Partículas sugeridas por zona: `luciernaga`, `hoja_verde`, `hoja_otono`, `marip
 #### Vida y bruma (v3, bosque hechizado)
 
 - Árboles con viento: cada árbol trae 9 cuadros (`idle`) que se mecen; arrancar cada uno en un cuadro distinto para que no se muevan todos iguales.
+- Cascada (`cascada`): se hace a la medida del acantilado del mapa, columna por columna del labio al pie de la roca, con espuma, estela, bruma y gotas (6 cuadros a 12 fps que cierran el ciclo). Va en `capa: suelo` y trae `espuma` = [x0, y0, x1, y1], la línea donde el agua golpea, relativa al apoyo: ahí el juego suelta gotas y bruma.
 - Árboles hechizados (`arbol_hechizado_0..2`): `dormido` normalmente, `despierto` cuando la heroína está a menos de ~130 px (ojos que brillan, con una luz pequeña del color de los ojos) y `parpadeo` de vez en cuando.
 - Criaturas (`manifest.mundo.criaturas`): `cuervo` y `cuervo_izq` (`quieto`, `picotear`, `volar`: huyen cuando la heroína se acerca o cuando los tocan), `murcielago` (cruza la pantalla en el Bosque Profundo), `ojos` (entre arbustos del bosque oscuro: `mirar` y `parpadeo`, brillan en la oscuridad), `fuego_fatuo` y `fuego_fatuo_violeta` (flotan y alumbran). En el mapa vienen como entidades `criatura` con `especie`.
 - Bruma: `niebla.jirones` y `niebla.nubes`, dos capas que corren con el viento a distinta velocidad, con alfa = `zona.niebla`. Van ANTES de la oscuridad, así las luces la iluminan.

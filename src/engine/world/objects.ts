@@ -24,6 +24,8 @@ export interface WorldObject {
   layer?: 'suelo';
   /** luz que emite: color, radio en px, si parpadea, y altura de la luz sobre el apoyo (px hacia arriba) */
   light?: { color: string; radius: number; flicker?: boolean; pulse?: boolean; dy?: number };
+  /** línea donde el agua golpea abajo (cascada), relativa al apoyo [x0, y0, x1, y1]: ahí salen las gotas y la bruma */
+  foam?: [number, number, number, number];
 }
 
 const leaf = (hex: string): MatDef => ({ hex, kind: 'fur' });
