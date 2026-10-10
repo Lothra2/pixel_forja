@@ -155,6 +155,7 @@ async function start() {
   ($ as (id: string) => HTMLElement)('ar-rival-wrap').hidden = !SPORTS[sport].rival;
   $('ar-hint').textContent = t(`hint_${sport}` as keyof typeof T);
   buildControls();
+  resize();
   $('ar-loading').hidden = true;
   (window as unknown as { __arena: Game }).__arena = g;
 }
@@ -247,7 +248,9 @@ function resize() {
   const r = stage.getBoundingClientRect();
   const dpr = Math.min(2, devicePixelRatio || 1);
   // zoom entero: el pixel art se ve nítido
-  zoom = Math.max(2, Math.floor(Math.min(r.width / 160, r.height / 150) * dpr));
+  // en una cancha larga (tenis) se aleja un poco para que entren los dos jugadores
+  const span = game?.scene.span ?? 160;
+  zoom = Math.max(2, Math.floor(Math.min((r.width * dpr) / span, (r.height * dpr) / 150, (r.width / 160) * dpr)));
   view.width = Math.round(r.width * dpr);
   view.height = Math.round(r.height * dpr);
   pix.width = Math.ceil(view.width / zoom);
@@ -266,12 +269,14 @@ function frame(now: number) {
     const dt = real * slow;
     const i = intent();
     game.step(dt, i, i.run);
-    const f = game.focus();
+    const f = game.focus(pix.width, pix.height);
     // la cámara no muestra más allá del piso (si el piso es más chico que la vista, lo centra)
     const sc = game.scene, gw = sc.ground.width, gh = sc.ground.height;
     const fit = (c: number, o: number, size: number, view: number) => (size <= view ? o + (size - view) / 2 : Math.max(o, Math.min(o + size - view, c)));
     const target = { x: fit(f.x - pix.width / 2, sc.origin.x, gw, pix.width), y: fit(f.y - pix.height / 2, sc.origin.y, gh, pix.height) };
     cam = { x: cam.x + (target.x - cam.x) * Math.min(1, real * 6), y: cam.y + (target.y - cam.y) * Math.min(1, real * 6) };
+    // para las pruebas: qué parte del mundo se ve
+    (window as unknown as { __arenaView: unknown }).__arenaView = { x: cam.x, y: cam.y, w: pix.width, h: pix.height };
     const sh = game.fx.shake;
     const c = { x: Math.round(cam.x + (sh ? (Math.random() - 0.5) * sh * 2 : 0)), y: Math.round(cam.y + (sh ? (Math.random() - 0.5) * sh * 2 : 0)) };
     pg.fillStyle = game.scene.bg;
