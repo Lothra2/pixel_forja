@@ -310,4 +310,32 @@ export function musicFogata(): Float32Array {
   ], '', 1);
 }
 
-export const MUSIC = { bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata };
+/**
+ * La Catedral de las Raíces (mundo 2): misterio y belleza, en Re menor (dórico), lenta. Un órgano suave de triángulos,
+ * una melodía que vuelve con eco (la misma pista repetida más bajo y corrida: la catedral responde) y una campana honda
+ * cada tanto. Sin batería: se camina despacio.
+ */
+export function musicCatedral(): Float32Array {
+  const hold = (n: string, len: number) => [n, ...Array.from({ length: len - 1 }, () => '-')];
+  const lead = [
+    'D5', '-', '-', '-', 'F5', '-', 'E5', '-', 'D5', '-', '-', '-', 'A4', '-', '-', '-',
+    'C5', '-', 'D5', '-', 'E5', '-', 'G5', '-', 'F5', '-', '-', '-', '.', '.', '.', '.',
+    'A5', '-', '-', '-', 'G5', '-', 'F5', '-', 'E5', '-', '-', '-', 'C5', '-', '-', '-',
+    'D5', '-', 'E5', '-', 'F5', '-', 'E5', '-', 'D5', '-', '-', '-', '.', '.', '.', '.',
+  ];
+  // eco: la misma frase tres corcheas después y a un tercio del volumen
+  const eco = ['.', '.', '.', ...lead.slice(0, lead.length - 3)];
+  const chords: [string, string[]][] = [['D2', ['D3', 'F3', 'A3', 'C4']], ['C2', ['C3', 'E3', 'G3', 'B3']], ['A#1', ['A#2', 'D3', 'F3', 'A3']], ['A1', ['A2', 'C#3', 'E3', 'G3']]];
+  const organ = chords.flatMap(([b]) => hold(b, 16));
+  const pad = chords.flatMap(([, a]) => hold(a[1]!, 8).concat(hold(a[2]!, 8)));
+  const bell = chords.flatMap(([b]) => [b.replace(/\d/, (d) => String(Number(d) + 2)), ...Array.from({ length: 15 }, () => '.')]);
+  return song(60, 64, [
+    { wave: 'triangle', notes: lead, vol: 0.19, vib: [4, 0.25] },
+    { wave: 'triangle', notes: eco, vol: 0.07, vib: [4, 0.25] },
+    { wave: 'triangle', notes: organ, vol: 0.26 },
+    { wave: 'square', notes: pad, vol: 0.035, duty: 0.5 },
+    { wave: 'sine', notes: bell, vol: 0.16 },
+  ], '', 1);
+}
+
+export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata };

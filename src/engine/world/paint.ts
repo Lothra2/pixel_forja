@@ -36,6 +36,12 @@ export interface TerrainDesign {
   dark: { c: TP; r: number }[];
   /** claros (para el pintor solo aclaran un poco el pasto) */
   clearings?: { c: TP; r: number }[];
+  /**
+   * Interior (la Catedral): todo empieza como muro (meseta) y estas salas se tallan a nivel del piso. Las mesetas de
+   * arriba vuelven a levantar lo que haga falta adentro de una sala (un descanso alto, un bloque de muro). El muro de
+   * arriba de cada sala muestra su cara, igual que un acantilado.
+   */
+  rooms?: TP[][];
 }
 
 export interface PaintedTerrain {
@@ -93,7 +99,7 @@ function segDist(px: number, py: number, ax: number, ay: number, bx: number, by:
   return Math.sqrt(ex * ex + ey * ey);
 }
 
-function inPoly(x: number, y: number, poly: TP[]): boolean {
+export function inPoly(x: number, y: number, poly: TP[]): boolean {
   let c = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
     const [xi, yi] = poly[i], [xj, yj] = poly[j];
@@ -214,6 +220,11 @@ export interface TerrainPalette {
   pebbles: [string, string, string, string];
   /** el centro de cada florcita */
   flowerHeart: string;
+  /**
+   * Losas de obra en vez de piedras sueltas: rectángulos en hileras trabadas (ancho y alto en px). Sin esto las plazas
+   * son de piedras irregulares (las ruinas del Bosque).
+   */
+  slabs?: { w: number; h: number };
 }
 
 export const BOSQUE_PALETTE: TerrainPalette = {
@@ -239,6 +250,18 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
   const plaza = new Uint8Array(N);
 
   // ---- máscaras ----
+  if (d.rooms?.length) {
+    high.fill(1);
+    for (const poly of d.rooms) {
+      const pp = poly.map(([x, y]) => [x * TILE, y * TILE] as TP);
+      const xs = pp.map((p) => p[0]), ys = pp.map((p) => p[1]);
+      const x0 = Math.max(0, Math.floor(Math.min(...xs) - 24)), x1 = Math.min(W - 1, Math.ceil(Math.max(...xs) + 24));
+      const y0 = Math.max(0, Math.floor(Math.min(...ys) - 24)), y1 = Math.min(H - 1, Math.ceil(Math.max(...ys) + 24));
+      // muro con tramos rectos y algún bloque salido: poco ruido, que se lea como obra y no como roca
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++)
+        if (polySd(x, y, pp) + (vn(x, y, 40, S + 111) - 0.5) * 10 + (vn(x, y, 8, S + 113) - 0.5) * 3 < 0) high[y * W + x] = 0;
+    }
+  }
   for (const poly of d.plateaus) {
     const pp = poly.map(([x, y]) => [x * TILE, y * TILE] as TP);
     const xs = pp.map((p) => p[0]), ys = pp.map((p) => p[1]);
@@ -431,11 +454,22 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
     const edge = Math.min(rr - ring * 13, (ring + 1) * 13 - rr, (u - seg) * (rr * 2 * Math.PI / segs), (1 - (u - seg)) * (rr * 2 * Math.PI / segs));
     return { id: ring * 1000 + seg, edge, rr, ring, ang, R: a.r * TILE };
   };
+  // losas de obra: hileras de alto fijo, cada hilera corrida y con largos que varían un poco
+  const slabAt = (x: number, y: number, sw: number, sh: number) => {
+    const row = Math.floor(y / sh), ly = y - row * sh;
+    const off = Math.floor(hash(row, 3, S + 505) * sw);
+    const u = x + off, col0 = Math.floor(u / sw);
+    // cada losa puede ser una y media de larga: se juntan de a pares según la hilera
+    const join = hash(col0 >> 1, row, S + 506) < 0.3;
+    const col = join ? col0 >> 1 : col0 * 2 + 1;
+    const x0 = join ? (col0 >> 1) * 2 * sw : col0 * sw, x1 = join ? x0 + 2 * sw : x0 + sw;
+    return { id: (row * 7919 + col * 31 + (join ? 1 : 0)) | 0, edge: Math.min(ly + 0.5, sh - ly - 0.5, u - x0 + 0.5, x1 - u - 0.5) };
+  };
   const plazaCell = new Int32Array(N), plazaEdge = new Float32Array(N), missing = new Uint8Array(N);
   for (let i = 0; i < N; i++) {
     if (kind[i] !== 2) continue;
     const x = i % W, y = (i / W) | 0;
-    const c = arena[i] ? arenaInfo(x, y) : cellAt(x, y, 15);
+    const c = arena[i] ? arenaInfo(x, y) : pal.slabs ? slabAt(x, y, pal.slabs.w, pal.slabs.h) : cellAt(x, y, 15);
     plazaCell[i] = c.id; plazaEdge[i] = c.edge;
     // piedra que falta: la decide la celda entera (no manchas), más probable cerca del borde
     // en las ruinas el pasto se come el borde: cerca de la orilla faltan casi todas las losas
@@ -447,8 +481,9 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
     const x = i % W, y = (i / W) | 0;
     const id = plazaCell[i], e = plazaEdge[i];
     const sid = hash(id, 3, S + 41);
-    const piedra = arena[i] ? (sid < 0.5 ? COBBLE : BLUESTONE) : sid < 0.3 ? SANDSTONE : sid < 0.45 ? BLUESTONE : COBBLE;
-    let t = 2 + Math.floor(sid * 2.6);
+    const piedra = arena[i] ? (sid < 0.5 ? COBBLE : BLUESTONE) : pal.slabs ? (sid < 0.07 ? SANDSTONE : sid < 0.55 ? BLUESTONE : COBBLE) : sid < 0.3 ? SANDSTONE : sid < 0.45 ? BLUESTONE : COBBLE;
+    // las losas de obra varían poco de una a otra: el piso se lee entero y los personajes se despegan
+    let t = pal.slabs && !arena[i] ? 2 + Math.floor(hash(id, 5, S + 507) * 1.9) : 2 + Math.floor(sid * 2.6);
     // canto: luz arriba a la izquierda, sombra abajo a la derecha (mirando la celda vecina)
     const up = i - W >= 0 && plazaCell[i - W] !== id, left = x > 0 && plazaCell[i - 1] !== id;
     const down = i + W < N && plazaCell[i + W] !== id, right = x < W - 1 && plazaCell[i + 1] !== id;
