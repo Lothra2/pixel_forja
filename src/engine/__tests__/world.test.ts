@@ -99,6 +99,9 @@ describe('kit del juego', () => {
     expect(m.direcciones).toEqual(['down', 'down_left', 'left', 'up_left', 'up', 'up_right', 'right', 'down_right']);
     expect(m.personajes.rick.anims.walk).toMatchObject({ archivo: 'personajes/rick_walk.png', cuadros: 8 });
     expect(m.personajes.minotauro.tipo).toBe('jefe');
+    // el mercader de las fogatas: un PNJ con su gesto, en 8 direcciones
+    expect(m.personajes.mercader).toMatchObject({ tipo: 'npc', nombre: 'Don Cachivache', celda: 48 });
+    expect(Object.keys(m.personajes.mercader.anims)).toEqual(expect.arrayContaining(['idle', 'cast']));
     // ficha exportada del estudio: entra como heroína nueva
     expect(m.personajes.prima).toMatchObject({ tipo: 'heroe', nombre: 'Prima', desde_estudio: true });
     expect(names).toContain('personajes/prima_walk.png');
