@@ -37,6 +37,11 @@ describe('movimiento premium', () => {
     expect(run.stride).toBeGreaterThan(walk.stride!);
     expect(renderClip(f, 48, 'attack', 'side').events?.[0]).toMatchObject({ type: 'impacto' });
     expect(renderClip(f, 48, 'block_shield', 'side').events?.[0]).toMatchObject({ type: 'impacto' });
+    // hechizo y poción sueltan su efecto, morir marca el golpe contra el piso
+    expect(renderClip(f, 48, 'cast', 'side').events?.[0]).toMatchObject({ type: 'suelta' });
+    expect(renderClip(f, 48, 'use_item', 'side').events?.[0]).toMatchObject({ type: 'suelta' });
+    expect(renderClip(f, 48, 'die', 'side').events?.[0]).toMatchObject({ type: 'impacto' });
+    expect(renderClip(f, 48, 'attack_heavy', 'side').events?.[0]).toMatchObject({ type: 'impacto' });
     // las articulaciones vienen en coordenadas de la celda, también en las vistas espejo
     for (const v of ['side', 'left'] as const) for (const j of renderClip(f, 48, 'walk', v).joints!) for (const [x, y] of Object.values(j)) {
       expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThan(48); expect(y).toBeGreaterThanOrEqual(0); expect(y).toBeLessThan(48);

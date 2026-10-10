@@ -73,7 +73,7 @@ export function runQA(f: Ficha, clip: RenderedClip): QAReport {
     value: heights.length ? `${Math.min(...heights)}-${Math.max(...heights)} px${clip.steady ? '' : ' *'}` : 'n/a',
   });
   // que nada se salga del cuadro
-  const clipped = clip.fits ? [] : b.map((x, i) => ({ i, x }));
+  const clipped = clip.fits ? [] : clip.overflow?.length ? clip.overflow.map((i) => ({ i })) : b.map((_, i) => ({ i }));
   items.push({
     check: 'fit',
     severity: clipped.length ? 'error' : 'ok',

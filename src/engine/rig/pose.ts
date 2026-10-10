@@ -81,6 +81,8 @@ export interface Pose {
   roll?: number;
   /** altura fija de la cadera sobre el piso (bici): ignora el apoyo de los pies */
   hipH?: number;
+  /** acostado (premium): el cuerpo se centra en la celda midiendo lo dibujado (la cabeza grande no cabe si no) */
+  fit?: boolean;
   /** vaivén del pelo largo (lo calcula el clip a partir del movimiento) */
   hair?: { dx: number; dy: number };
   props?: PropState[];

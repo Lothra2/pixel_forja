@@ -39,6 +39,8 @@ export interface RenderedClip {
   steady: boolean;
   /** false si el clip no cabe en la celda ni corriéndolo */
   fits: boolean;
+  /** encuadre fijo (premium): los cuadros que se salen de la celda */
+  overflow?: number[];
   /** por cuadro, alto del cuerpo sin implementos (arriba y abajo, en la celda): el control de calidad mide con esto */
   bodies?: ({ y0: number; y1: number } | null)[];
   /** perfil con el que se dibujó */
@@ -145,6 +147,23 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
       poses[i] = { ...poses[i], air: Math.max(0, poses[i].air - (top - b.body.y0)) };
       return renderAt(poses[i], i);
     });
+    // acostado (premium): se corre el cuerpo hasta centrarlo en la celda. Se mide cuánto mueve un paso de x
+    // en esta vista (de lado, en diagonal o de frente no es lo mismo) y se vuelve a dibujar
+    big = big.map((b, i) => {
+      if (!poses[i].fit || !b.body) return b;
+      // lo que entra en la celda va de left+1 a left+cell-2: su centro está medio pixel antes del pivote
+      const offOf = (r: BigFrame) => (r.body ? r.pivotX - 0.5 - (r.body.x0 + r.body.x1) / 2 : 0);
+      const probe = renderAt({ ...poses[i], x: poses[i].x + 4 }, i);
+      const perUnit = probe.body ? (offOf(b) - offOf(probe)) / 4 : 0;
+      if (Math.abs(perUnit) < 0.25) return b;
+      let out = b;
+      // unas pasadas: el redondeo a pixeles puede dejarlo a medio camino la primera vez
+      for (let k = 0; k < 3 && Math.abs(offOf(out)) >= 1; k++) {
+        poses[i] = { ...poses[i], x: poses[i].x + offOf(out) / perUnit };
+        out = renderAt(poses[i], i);
+      }
+      return out;
+    });
     fps = def.fps; loop = def.loop; steady = !!def.steady;
     airborne = poses.map((p) => p.air > 0 || p.hipH !== undefined);
   } else {
@@ -158,7 +177,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
     airborne = poses.map((p) => p.air > 0);
   }
   // premium: el pivote queda siempre en el mismo lugar de la celda (no salta entre cuadros, direcciones ni acciones)
-  const { frames, fits, top, left } = cropClip(big, cell, premium);
+  const { frames, fits, top, left, overflow } = cropClip(big, cell, premium);
   // el cuerpo sin armas ni balones (con el pelo y el contorno): un hacha colgando no cuenta como pie
   // solo con equipo de RPG: sin equipo el piso lo marca todo lo dibujado (balones, raquetas) y se mide igual
   const useBodies = isHuman(f) && !!f.gear;
@@ -171,6 +190,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, view: ViewNam
   return {
     name, fps, loop, cell, view, frames: mirrored ? frames.map(mirror) : frames, airborne, steady, fits, bodies: bodies.some(Boolean) ? bodies : undefined,
     profile: premium ? 'premium' : 'classic',
+    ...(overflow ? { overflow } : {}),
     ...(events?.length ? { events } : {}), ...(stride ? { stride } : {}), ...(joints ? { joints } : {}),
   };
 }
@@ -195,7 +215,7 @@ function strideOf(poses: Pose[], loop: boolean): number | undefined {
  * Recorta la celda alrededor del pie de apoyo. Si una pose se sale por un lado, corre TODO el clip
  * lo mismo (así no salta entre cuadros). Si no cabe ni así, avisa.
  */
-function cropClip(big: BigFrame[], cell: CellSize, fixed = false): { frames: Raster[]; fits: boolean; top: number; left: number } {
+function cropClip(big: BigFrame[], cell: CellSize, fixed = false): { frames: Raster[]; fits: boolean; top: number; left: number; overflow?: number[] } {
   // solo el cuerpo decide el encuadre: un balón que sale disparado se recorta.
   // Si el cuerpo con el pelo cabe, se encuadra con el pelo (así no se corta la cabeza al caer acostado)
   const union = (full: boolean) => {
@@ -213,9 +233,12 @@ function cropClip(big: BigFrame[], cell: CellSize, fixed = false): { frames: Ras
   let left = pivotX - cell / 2;
   const top = groundRow - (cell - 2);
   let fits = true;
+  let overflow: number[] | undefined;
   if (isFinite(x0) && fixed) {
     // encuadre fijo: no se corre nada; si algo del cuerpo se sale, la animación está mal hecha y el control lo dice
     if (x0 < left + 1 || x1 > left + cell - 2 || y0 < top + 1) fits = false;
+    // cuáles cuadros se salen (para que el control diga dónde está el problema, no "todos")
+    if (!fits) overflow = big.flatMap((b, i) => (b.body && (b.body.x0 < left + 1 || b.body.x1 > left + cell - 2 || b.body.y0 < top + 1) ? [i] : []));
   } else if (isFinite(x0)) {
     if (x1 - x0 + 1 > cell - 2) fits = false;
     if (withHair.x1 - withHair.x0 + 1 <= cell - 2) {
@@ -241,7 +264,7 @@ function cropClip(big: BigFrame[], cell: CellSize, fixed = false): { frames: Ras
       }
     return out;
   });
-  return { frames, fits, top, left };
+  return { frames, fits, top, left, overflow };
 }
 
 /** Espeja un cuadro grande sobre su eje (el pie de apoyo queda en el centro). */
