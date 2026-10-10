@@ -57,7 +57,7 @@ export const sprint: AnimDef = {
 // ---------- salida de tacos ----------
 
 export const sprintStart: AnimDef = {
-  name: 'sprint_start', pack: 'athletics', lateral: true, fps: 12, loop: false, views: ['side', 'front', 'back'],
+  name: 'sprint_start', pack: 'athletics', lateral: true, fps: 12, loop: false, travel: { ref: 'sprint', k: [0, 0, 0, 0.35, 0.55, 0.65, 0.75, 0.85, 0.9] }, views: ['side', 'front', 'back'],
   events: [{ type: 'despegue', phase: 4 / 10 }, { type: 'paso', phase: 5 / 10, foot: 'far' }, { type: 'paso', phase: 7 / 10, foot: 'near' }],
   build: (c) => {
     const L = c.L;
@@ -80,7 +80,7 @@ export const sprintStart: AnimDef = {
 // ---------- vallas ----------
 
 export const hurdles: AnimDef = {
-  name: 'hurdles', pack: 'athletics', lateral: true, fps: 14, loop: true, hairTrail: -1, views: ['side', 'front', 'back'],
+  name: 'hurdles', pack: 'athletics', lateral: true, fps: 14, loop: true, strideL: 3.36, hairTrail: -1, views: ['side', 'front', 'back'],
   events: [{ type: 'despegue', phase: 2 / 8 }, { type: 'aterriza', phase: 5 / 8, foot: 'near' }],
   build: (c) => {
     const L = c.L, u = c.u;
@@ -105,7 +105,7 @@ export const hurdles: AnimDef = {
 // ---------- salto largo ----------
 
 export const longJump: AnimDef = {
-  name: 'long_jump', pack: 'athletics', lateral: true, fps: 12, loop: false, views: ['side', 'front', 'back'],
+  name: 'long_jump', pack: 'athletics', lateral: true, fps: 12, loop: false, travel: { ref: 'sprint', k: [1, 1, 0.95, 0.9, 0.9, 0.9, 0.9, 0.8, 0.15, 0, 0] }, views: ['side', 'front', 'back'],
   events: [{ type: 'despegue', phase: 3 / 12 }, { type: 'aterriza', phase: 8 / 12 }],
   build: (c) => {
     const L = c.L, u = c.u;
@@ -142,7 +142,7 @@ export const longJump: AnimDef = {
  * de espaldas y cae de espalda en la colchoneta. La garrocha se dobla al cargar y se suelta arriba.
  */
 export const poleVault: AnimDef = {
-  name: 'pole_vault', pack: 'athletics', lateral: true, fps: 12, loop: false, views: ['side', 'front', 'back'],
+  name: 'pole_vault', pack: 'athletics', lateral: true, fps: 12, loop: false, travel: { ref: 'sprint', k: [0.75, 0.7, 0.3, 0.15, 0.15, 0.15, 0.15, 0.25, 0.3, 0.25, 0.1, 0, 0] }, views: ['side', 'front', 'back'],
   events: [{ type: 'paso', phase: 0, foot: 'near' }, { type: 'despegue', phase: 3 / 14 }, { type: 'suelta', phase: 7 / 14 }, { type: 'aterriza', phase: 11 / 14 }],
   build: (c) => {
     const L = c.L, u = c.u;
@@ -200,7 +200,7 @@ export const poleVault: AnimDef = {
  * (peso atrás, piernas abiertas), empuja de abajo hacia arriba sin lanzar con el brazo y hace el cambio de pies.
  */
 export const shotPut: AnimDef = {
-  name: 'shot_put', pack: 'athletics', lateral: true, fps: 12, loop: false, views: ['side', 'front', 'back'],
+  name: 'shot_put', pack: 'athletics', lateral: true, fps: 12, loop: false, travel: { ref: 'walk', k: [0, 0.3, 0.8, 0.4, 0.2, 0.1, 0.1, 0, 0, 0] }, views: ['side', 'front', 'back'],
   events: [{ type: 'suelta', phase: 6 / 11 }],
   build: (c) => {
     const L = c.L, u = c.u;
@@ -240,7 +240,7 @@ export const shotPut: AnimDef = {
  * cuerpo echado atrás, bloqueo con la pierna de adelante, latigazo por encima del hombro y freno.
  */
 export const javelin: AnimDef = {
-  name: 'javelin', pack: 'athletics', lateral: true, fps: 14, loop: false, views: ['side', 'front', 'back'],
+  name: 'javelin', pack: 'athletics', lateral: true, fps: 14, loop: false, travel: { ref: 'sprint', k: [0.6, 0.6, 0.6, 0.6, 0.6, 0.5, 0.25, 0.15, 0.1, 0.1, 0] }, views: ['side', 'front', 'back'],
   events: [{ type: 'paso', phase: 0, foot: 'near' }, { type: 'paso', phase: 6 / 12, foot: 'far' }, { type: 'suelta', phase: 7 / 12 }],
   build: (c) => {
     const L = c.L, u = c.u;

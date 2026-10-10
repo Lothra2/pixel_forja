@@ -1,11 +1,30 @@
-import type { RenderedClip } from '../render/clip';
+import { VIEW_SUFFIX, type RenderedClip } from '../render/clip';
 import type { AnimEvent } from '../anim/types';
+import type { Joints } from '../render/human';
 
 /** Evento listo para el juego: tipo, cuadro donde cae y, si es un paso, qué pie. */
-export interface EventoJson { tipo: AnimEvent['type']; cuadro: number; fase: number; pie?: 'cerca' | 'lejos' }
+export interface EventoJson {
+  tipo: AnimEvent['type'];
+  cuadro: number;
+  fase: number;
+  pie?: 'cerca' | 'lejos';
+  /**
+   * Hojas de 8 direcciones, golpe y suelta: dónde está la mano o el pie que pega (o la mano que suelta) en ese cuadro,
+   * en pixeles desde el pivote, una entrada por fila. El juego saca la pelota o el proyectil de ahí.
+   */
+  punto?: [number, number][];
+}
 
 /** Lo que el juego necesita para mover bien al personaje: eventos y avance (premium) y elevación de los saltos. */
-export interface MovimientoAnim { eventos?: EventoJson[]; avance?: number; elevacion?: number[] }
+export interface MovimientoAnim {
+  eventos?: EventoJson[];
+  avance?: number;
+  elevacion?: number[];
+  /** acciones que se desplazan: pixeles avanzados en cada cuadro desde el primero, hacia donde mira */
+  desplazamiento?: number[];
+  /** hojas de 8 direcciones: hacia dónde va de verdad cada fila (de frente, una prueba de campo va en diagonal) */
+  rumbo?: string[];
+}
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
@@ -23,7 +42,35 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
     ...(e.foot ? { pie: e.foot === 'near' ? 'cerca' as const : 'lejos' as const } : {}),
   }));
   if (c.stride) out.avance = r2(c.stride * k);
+  if (c.travel) out.desplazamiento = c.travel.map((v) => r2(v * k));
   return out;
+}
+
+/** Movimiento de una hoja de 8 direcciones: se mide en la vista de lado (la que piensan las poses) y se agrega el rumbo. */
+export function motionOf8(clips: RenderedClip[], k = 1): MovimientoAnim {
+  const side = clips.find((c) => c.view === 'side') ?? clips[0];
+  const out = motionOf(side, k);
+  const j = side.joints;
+  if (j && out.eventos) {
+    for (const e of out.eventos) {
+      if (e.tipo !== 'impacto' && e.tipo !== 'suelta') continue;
+      const name = contactJoint(j[e.cuadro], e.tipo);
+      if (!clips.every((c) => c.joints?.[e.cuadro])) continue;
+      e.punto = clips.map((c) => {
+        const [x, y] = c.joints![e.cuadro][name];
+        return [Math.round((x - c.cell / 2) * k), Math.round((y - (c.cell - 2)) * k)];
+      });
+    }
+  }
+  if (clips.some((c) => c.heading)) out.rumbo = clips.map((c) => VIEW_SUFFIX[c.heading ?? c.view]);
+  return out;
+}
+
+/** Qué pega: en un golpe, la mano o el pie que llega más adelante; en una suelta, la mano más alta (la que lanza). */
+function contactJoint(j: Joints, tipo: 'impacto' | 'suelta'): 'handNear' | 'handFar' | 'footNear' | 'footFar' {
+  if (tipo === 'suelta') return j.handNear[1] <= j.handFar[1] ? 'handNear' : 'handFar';
+  const cands = ['handNear', 'handFar', 'footNear', 'footFar'] as const;
+  return cands.reduce((a, b) => (j[b][0] > j[a][0] ? b : a));
 }
 
 /**

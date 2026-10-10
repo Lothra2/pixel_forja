@@ -1,6 +1,6 @@
 import { createRaster, blit, type Raster } from '../core/raster';
 import { encodePng } from '../export/png';
-import { motionOf } from '../export/motion';
+import { motionOf8 } from '../export/motion';
 import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim, type RenderedClip } from '../render/clip';
 import type { CellSize, HumanFicha } from '../sheet/ficha';
@@ -48,6 +48,8 @@ export interface SportAnimEntry {
   eventos?: { tipo: string; cuadro: number; fase: number; pie?: string }[];
   avance?: number;
   elevacion?: number[];
+  desplazamiento?: number[];
+  rumbo?: string[];
   /** fila de la superficie del agua en cada cuadro (en pixeles desde arriba de la celda), o null */
   agua?: (number | null)[];
 }
@@ -55,12 +57,12 @@ export interface SportAnimEntry {
 const enc = new TextEncoder();
 
 /** Hoja de 8 direcciones: fila = dirección (orden de `direcciones`), columna = cuadro. */
-function sheet8(f: HumanFicha, cell: CellSize, anim: string): { png: Raster; first: RenderedClip; frames: number } {
+function sheet8(f: HumanFicha, cell: CellSize, anim: string): { png: Raster; first: RenderedClip; clips: RenderedClip[]; frames: number } {
   const clips = EIGHT_VIEWS.map((v) => renderClip(f, cell, anim, v, { props: true }));
   const n = Math.max(...clips.map((c) => c.frames.length));
   const png = createRaster(n * cell, 8 * cell);
   clips.forEach((c, row) => c.frames.forEach((fr, i) => blit(png, fr, i * cell, row * cell)));
-  return { png, first: clips[0], frames: n };
+  return { png, first: clips[0], clips, frames: n };
 }
 
 export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
@@ -84,7 +86,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
       'avance: pixeles que avanza el cuerpo en un ciclo sin patinar. Ritmo = velocidad_del_juego * cuadros / (avance * fps).',
       'elevacion: pixeles que el juego sube el sprite en cada cuadro (saltos que no caben en la celda); la sombra queda en el piso.',
       'agua: fila de la superficie en la celda; el juego puede dibujar su piscina detrás y el nadador ya trae el tinte y las gotas.',
-      'Pruebas de campo (saltos y lanzamientos): de frente y de espalda usan la diagonal más cercana.',
+      'desplazamiento: en las acciones que avanzan (salto largo, clavado, remate), pixeles que el juego mueve el sprite hacia donde mira, acumulados desde el primer cuadro.',
+      'rumbo: en las pruebas de campo, de frente y de espalda se dibuja la diagonal más cercana; rumbo dice hacia dónde moverlo en cada fila.',
     ],
   };
   const out: Record<string, { nombre: string; celda: number; pivote: [number, number]; deportes: Record<string, Record<string, SportAnimEntry>> }> = {};
@@ -101,7 +104,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
         const s = sheet8(f, C, a);
         const name = `atletas/${id}/${pack}/${a}.png`;
         files.push({ name, bytes: encodePng(s.png), mime: 'image/png' });
-        const m = motionOf(s.first);
+        const m = motionOf8(s.clips);
         entries[a] = {
           archivo: name, cuadros: s.frames, fps: s.first.fps, loop: s.first.loop, ...m,
           ...(s.first.waterRows ? { agua: s.first.waterRows } : {}),

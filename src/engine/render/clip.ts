@@ -6,6 +6,7 @@ import { makeCtx, type AnimDef, type AnimEvent } from '../anim/types';
 import { humanAnim, animalAnim, customToDef } from '../anim/registry';
 import { premiumAnim, swingWeapon } from '../anim/premium';
 import type { Pose } from '../rig/pose';
+import { strideOf } from '../anim/stride';
 import { applyWater } from './water';
 import { renderHuman, LONG_HELD, type BigFrame, type Joints, type RenderOptions, type RenderView } from './human';
 import { renderPet3d, type PetView } from './pet3d';
@@ -59,6 +60,13 @@ export interface RenderedClip {
    * El juego puede ajustar la velocidad de la animación: ritmo = velocidad_del_juego / (avance * fps / cuadros).
    */
   stride?: number;
+  /**
+   * Acciones que se desplazan (salto largo, clavado): cuántos pixeles lleva avanzado el cuerpo en cada cuadro desde
+   * el primero. El juego mueve el sprite eso hacia donde mira; la celda ya descuenta lo que el cuerpo se corre adentro.
+   */
+  travel?: number[];
+  /** hacia dónde va de verdad cuando no es la vista pedida (de frente, una prueba de campo usa la diagonal) */
+  heading?: ViewName;
   /** articulaciones de cada cuadro ya en coordenadas de la celda (premium; para enganchar cosas en el juego) */
   joints?: Joints[];
 }
@@ -132,7 +140,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
   // las diagonales usan las poses pensadas de lado (adelante = hacia la derecha)
   const poseView: View = base === 'se' || base === 'ne' ? 'side' : base;
   let big: BigFrame[], fps: number, loop: boolean, steady: boolean, airborne: boolean[];
-  let events: AnimEvent[] | undefined, stride: number | undefined, rise: number[] | undefined;
+  let events: AnimEvent[] | undefined, stride: number | undefined, rise: number[] | undefined, travel: number[] | undefined;
   // garrocha o jabalina: largas, no marcan el piso (el control mide el cuerpo, como con el equipo de RPG)
   let longHeld: boolean[] = [];
   // agua por cuadro (nadar): fila de la superficie y si salpica fuerte
@@ -142,7 +150,12 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     const def = humanDef(f, name);
     if (!def) throw new Error(`No existe la animación ${name}`);
     const poses = posesFor(f, cell, name, poseView);
-    if (premium) { events = def.events; stride = strideOf(poses, def.loop); }
+    if (premium) {
+      events = def.events;
+      const L = dimsFor(cell, f.body.proportions);
+      if (def.loop) stride = def.strideL ? Math.round(def.strideL * (L.legUpper + L.legLower) * 10) / 10 : strideOf(poses);
+      else if (def.travel) travel = travelFor(f, cell, def, poses);
+    }
     // giro (torbellino): cada cuadro en la dirección siguiente, en el sentido de las agujas del reloj
     const ring = EIGHT_VIEWS;
     const start = Math.max(0, ring.indexOf(view));
@@ -265,24 +278,27 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     ...(overflow ? { overflow } : {}),
     ...(rise ? { rise } : {}),
     ...(water.some(Boolean) ? { waterRows: water.map((w) => (w ? cell - 2 - Math.round(w.level) : null)) } : {}),
-    ...(events?.length ? { events } : {}), ...(stride ? { stride } : {}), ...(joints ? { joints } : {}),
+    ...(events?.length ? { events } : {}), ...(stride ? { stride } : {}), ...(travel ? { travel } : {}),
+    ...(lateral ? { heading: (asked === 'front' ? 'se' : 'ne') as ViewName } : {}), ...(joints ? { joints } : {}),
   };
 }
 
 /**
- * Cuánto avanza el cuerpo en un ciclo sin que el pie apoyado patine: suma lo que retrocede el pie que carga el peso
- * entre cuadros seguidos con el mismo apoyo (las poses se piensan de lado, adelante = +x).
+ * Desplazamiento acumulado de una acción de un disparo, en pixeles de la celda: lo que el cuerpo avanza (fracción
+ * de la velocidad de su carrera) menos lo que ya se corre dentro de la celda, así el juego no lo mueve dos veces.
+ * Nunca retrocede: si la celda ya corrió el cuerpo de más, el juego se queda quieto ese cuadro.
  */
-function strideOf(poses: Pose[], loop: boolean): number | undefined {
-  if (!loop || !poses.some((p) => p.support === 'near' || p.support === 'far')) return undefined;
-  let d = 0;
-  for (let i = 0; i < poses.length; i++) {
-    const a = poses[i], b = poses[(i + 1) % poses.length];
-    if (a.support !== b.support || (a.support !== 'near' && a.support !== 'far')) continue;
-    const s = a.support;
-    d += a.x + a.legs[s].x - (b.x + b.legs[s].x);
+function travelFor(f: Ficha, cell: CellSize, def: AnimDef, poses: Pose[]): number[] {
+  const t = def.travel!;
+  const ref = posesFor(f, cell, t.ref, 'side');
+  const refDef = humanDef(f, t.ref);
+  const v = ((strideOf(ref) ?? 0) * (refDef?.fps ?? def.fps)) / ref.length / def.fps;
+  const out = [0];
+  for (let i = 0; i + 1 < poses.length; i++) {
+    const d = Math.max(0, (t.k[i] ?? 0) * v - (poses[i + 1].x - poses[i].x));
+    out.push(out[i] + d);
   }
-  return d > 0 ? Math.round(d * 10) / 10 : undefined;
+  return out.map((d) => Math.round(d * 10) / 10);
 }
 
 /**

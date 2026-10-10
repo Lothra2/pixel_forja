@@ -46,6 +46,13 @@ export interface AnimDef {
   hairTrail?: number;
   /** giro: cada cuadro mira a la dirección siguiente de las 8 (torbellino) */
   spin?: boolean;
+  /** ciclos sin pie que mida el avance (nadar, vallas): cuánto avanza el cuerpo en un ciclo, en largos de pierna */
+  strideL?: number;
+  /**
+   * Acciones de un disparo que se desplazan (salto largo, clavado): velocidad del cuerpo entre cada cuadro y el
+   * siguiente, como fracción de la velocidad de `ref` (la carrera del mismo personaje). El juego mueve el sprite con esto.
+   */
+  travel?: { ref: 'walk' | 'run' | 'sprint'; k: number[] };
   build: (c: Ctx) => Pose[];
 }
 

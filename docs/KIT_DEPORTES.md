@@ -35,9 +35,24 @@ Cada atleta trae su `celda` y su `pivote`. El pivote es el punto de apoyo (los p
 | `eventos[].tipo = impacto` | El cuadro exacto del golpe | Daño, hitstop de 2 o 3 cuadros, sonido, temblor de pantalla |
 | `eventos[].tipo = suelta` | Sale la pelota, la bala, la jabalina o el efecto | Crea el proyectil en ese cuadro |
 | `eventos[].tipo = despegue` / `aterriza` | Deja el piso / vuelve al piso | Activa y apaga la física del salto, polvo al caer |
-| `avance` | Pixeles que avanza el cuerpo en un ciclo sin que el pie patine | `ritmo = velocidad_del_juego * cuadros / (avance * fps)`; con ese ritmo el pie no patina |
+| `eventos[].punto` | En golpes y sueltas: dónde está la mano o el pie que pega, en pixeles desde el pivote, una entrada por fila | Saca la pelota, la bala o la chispa de ahí |
+| `avance` | Pixeles que avanza el cuerpo en un ciclo sin que el pie patine (medido de lado) | Avanza la animación por distancia: un ciclo completo cada `avance` recorrido. El pie no patina a ninguna velocidad |
+| `desplazamiento` | En las acciones que avanzan: pixeles recorridos en cada cuadro desde el primero | Mueve el sprite eso hacia donde mira (interpolado entre cuadros) |
+| `rumbo` | En las pruebas de campo: hacia dónde va de verdad cada fila | De frente se dibuja la diagonal: muévelo hacia el `rumbo`, no hacia abajo |
 | `elevacion` | Pixeles que el juego sube el sprite en cada cuadro | Dibuja la sombra en el piso y el sprite `elevacion[i]` pixeles más arriba |
-| `agua` | Fila de la superficie del agua en la celda (o `null`) | Alinea la superficie de su piscina con esa fila |
+| `agua` | Fila de la superficie del agua en la celda (o `null`) | Dibuja el sprite con esa fila sobre la superficie de su piscina |
+
+### Mover sin patinar, en isométrica
+
+`avance` y `desplazamiento` se miden de lado, en pixeles de pantalla. En una isométrica 2:1 moverse a la derecha de la pantalla es ir en diagonal por el mundo, así que un ciclo equivale a `avance / √2` unidades de mundo en cualquier dirección. Lo más simple y exacto es que la animación la mueva la distancia:
+
+```js
+// por cada paso del juego
+const recorrido = velocidad * dt;                 // en unidades de mundo
+anim.cuadro += recorrido / (avance / Math.SQRT2) * cuadros;
+```
+
+La velocidad natural de un ciclo (la que deja la animación a sus fps) es `(avance / √2) * fps / cuadros`. Si el juego va más rápido, la animación se acelera sola y el pie sigue sin patinar. La arena hace exactamente esto.
 
 ### Por qué existe `elevacion`
 
@@ -46,6 +61,21 @@ Un garrochista sube 5 metros y no cabe en una celda de 48 px. Los juegos isomét
 ### Natación
 
 El nadador ya viene con el agua puesta: lo que queda bajo la superficie va teñido de azul y medio transparente, con espuma en la línea, estela y gotas cuando entra una mano o un pie. El juego dibuja su piscina detrás y alinea la superficie con `agua`. El cuerpo flota a altura fija: las patadas no lo hacen rebotar.
+
+## La arena: el kit jugando de verdad
+
+`arena.html` (en el sitio, el botón **Arena deportiva** del estudio) es un juego mínimo que usa el kit como lo haría el tuyo. Solo lee `manifest.json` y las hojas PNG: no importa nada del motor de PixelForja, y una prueba lo vigila. Si algo falla ahí, le falta al kit.
+
+- **Atletismo:** salida de tacos y 100 m con cronómetro, salto largo con distancia, garrocha, bala y jabalina que vuelan desde el `punto` de la suelta.
+- **Natación:** clavado desde el banco y los cuatro estilos con cronómetro del largo.
+- **Vóley y tenis:** el saque se lanza en `suelta` y se pega en `impacto`. El rival calcula dónde va a estar la pelota y arranca su golpe para que el `impacto` caiga justo ahí.
+- **Pelea:** los golpes llegan si el `punto` cae sobre el rival, con hitstop, chispa y sacudida. El rival se cubre, esquiva y contraataca.
+- **Datos del kit:** cuadro, ritmo, avance, desplazamiento, elevación y los últimos eventos en vivo. Con **Celda y pivote** se ve el recuadro de cada sprite, y con **Cámara lenta** se revisa si un pie patina.
+- **Probar tu kit:** elige la carpeta de un kit que generaste y juega con tus personajes sin publicar nada. También sirve `arena.html?kit=<carpeta>`.
+
+En el teléfono hay palanca y botones. Con el teclado: flechas o WASD, Shift para correr y del 1 al 9 para las acciones.
+
+En local: `npm run deportes -- public/kit_deportes` y después `npm run dev`. En Netlify, `npm run build:sitio` arma el kit y el sitio juntos.
 
 ## Animaciones por deporte
 
@@ -78,7 +108,10 @@ En el kit salen con ropa de deporte y sin arma. Con `heroFicha(id, true)` llevan
   - La pelota pasa adelante de la cara o encima de la cabeza, nunca en el medio.
   - Un brazo levantado no pasa por encima de la cabeza.
 - **32 px:** en las acciones de un solo disparo, un cuadro que se pasa por la cabeza grande se corre lo justo para entrar en la celda (1 o 2 pixeles). En los ciclos (correr, nadar) no se corre nada: si algo no cabe, el control de calidad lo marca.
-- **La pelota del juego:** los sprites dibujan la pelota hasta el contacto. Después la mueve el juego, desde el evento `impacto` o `suelta`.
+- **La pelota del juego:** los sprites dibujan la pelota hasta el contacto. Después la mueve el juego, desde el `punto` del evento `impacto` o `suelta`.
+- **Piernas cortas:** un chibi tiene piernas cortas, así que a su velocidad natural avanza poco. Sophie hace el sprint a unos 43 px por segundo en celda 48. Para un juego arcade se puede ir más rápido: la animación se acelera con la distancia y el pie no patina, pero se ve más agitada.
+- **De frente y de espalda:** al caminar hacia la cámara los pies no avanzan en la hoja, se mueven en el lugar. Es lo normal en sprites de 8 direcciones. Los juegos lo resuelven con el ritmo de los pasos.
+- **Paso de guardia:** el paso de pelea avanza muy poco por ciclo, porque es un arrastre corto. En la arena va al doble de ritmo. Si tu juego necesita peleadores rápidos, conviene un paso más largo.
 
 ## Control de calidad
 

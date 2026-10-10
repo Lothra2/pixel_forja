@@ -121,6 +121,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, label:focus-wit
 .logo { width: 38px; height: 38px; flex: 0 0 auto; border-radius: 11px; display: grid; place-items: center; background: #1a1428; box-shadow: var(--glow); }
 .logo svg { width: 26px; height: 26px; image-rendering: pixelated; }
 .top-right { display: flex; align-items: center; gap: 10px; }
+.arena-link { color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border: 1px solid var(--line-2); border-radius: 999px; white-space: nowrap; }
+.arena-link:hover { border-color: var(--accent); color: var(--accent); }
+.arena-link .short { display: none; }
+@media (max-width: 640px) { .arena-link .long { display: none; } .arena-link .short { display: inline; } .arena-link { padding: 5px 10px; } }
 .busy { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; }
 .busy::before { content: ''; width: 8px; height: 8px; background: var(--accent); box-shadow: 10px 0 0 var(--accent-2), 20px 0 0 var(--violet); margin-right: 20px; animation: blink 0.9s steps(3) infinite; }
 @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.35; } 100% { opacity: 1; } }
