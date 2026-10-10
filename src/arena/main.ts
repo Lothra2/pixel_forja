@@ -28,7 +28,7 @@ const T = {
   keys: ['Flechas o WASD para moverte · Shift corre · 1 a 9 acciones · Espacio la primera', 'Arrows or WASD to move · Shift runs · 1 to 9 actions · Space the first one'],
   athletics: ['Atletismo', 'Athletics'], swim: ['Natación', 'Swimming'], volley: ['Vóley', 'Volleyball'], tennis: ['Tenis', 'Tennis'], fight: ['Pelea', 'Fight'],
   hint_atletismo: ['Salida y corre a la meta. Salta en la arena, lanza la bala y la jabalina.', 'Start from the blocks and run to the finish. Jump in the pit, throw the shot and the javelin.'],
-  hint_natacion: ['Clavado para entrar al agua y nada hasta el otro lado.', 'Dive in and swim to the far end.'],
+  hint_natacion: ['Clavado para entrar al agua y nada hasta el otro lado. Pegado a un borde, sal del agua.', 'Dive in and swim to the far end. Next to an edge, climb out.'],
   hint_voley: ['Saca y devuelve. La pelota se pega en el cuadro del golpe que trae el kit.', 'Serve and return. The ball is hit on the kit’s impact frame.'],
   hint_tenis: ['Saca y devuelve después del pique.', 'Serve and return after the bounce.'],
   hint_pelea: ['Acércate y pega. El rival se cubre y contraataca.', 'Close in and strike. The rival blocks and counters.'],
@@ -38,7 +38,7 @@ const t = (k: keyof typeof T) => T[k][lang === 'es' ? 0 : 1];
 const ANIM: Record<string, [string, string]> = {
   idle: ['Reposo', 'Idle'], walk: ['Caminar', 'Walk'], run: ['Correr', 'Run'], sprint: ['Sprint', 'Sprint'], hurdles: ['Vallas', 'Hurdles'],
   sprint_start: ['Salida', 'Start'], long_jump: ['Salto largo', 'Long jump'], pole_vault: ['Garrocha', 'Pole vault'], shot_put: ['Bala', 'Shot put'], javelin: ['Jabalina', 'Javelin'], celebrate: ['Festejar', 'Celebrate'],
-  swim: ['Crol', 'Crawl'], swim_back: ['Espalda', 'Backstroke'], swim_breast: ['Pecho', 'Breaststroke'], swim_fly: ['Mariposa', 'Butterfly'], tread_water: ['Flotar', 'Tread water'], dive: ['Clavado', 'Dive'],
+  swim: ['Crol', 'Crawl'], swim_back: ['Espalda', 'Backstroke'], swim_breast: ['Pecho', 'Breaststroke'], swim_fly: ['Mariposa', 'Butterfly'], tread_water: ['Flotar', 'Tread water'], dive: ['Clavado', 'Dive'], swim_exit: ['Salir del agua', 'Climb out'],
   vb_ready: ['Espera', 'Ready'], serve: ['Saque', 'Serve'], vb_bump: ['Recepción', 'Bump'], vb_set: ['Colocación', 'Set'], spike: ['Remate', 'Spike'], block: ['Bloqueo', 'Block'], vb_dive: ['Plancha', 'Dive'],
   tn_ready: ['Espera', 'Ready'], tennis_serve: ['Saque', 'Serve'], forehand: ['Derecha', 'Forehand'], backhand: ['Revés', 'Backhand'], tn_volley: ['Volea', 'Volley'], tn_smash: ['Smash', 'Smash'],
   guard: ['Guardia', 'Guard'], fight_step: ['Paso de guardia', 'Guard step'], jab: ['Jab', 'Jab'], punch: ['Directo', 'Cross'], hook: ['Gancho', 'Hook'], uppercut: ['Uppercut', 'Uppercut'], low_kick: ['Patada baja', 'Low kick'],
