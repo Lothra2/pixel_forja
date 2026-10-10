@@ -119,6 +119,10 @@ export interface HumanFicha extends FichaBase {
     gloves?: boolean;
     /** estampado chillón en el pecho (un detalle de color, la letra no cabe) */
     print?: string | null;
+    /** emblema del pecho, de frente y en diagonal: araña o murciélago (con óvalo de fondo si hay emblemBg) */
+    emblem?: 'spider' | 'bat' | null;
+    emblemColor?: string;
+    emblemBg?: string | null;
     /** diseño de la camiseta, con un segundo color (camisetas de equipo) */
     pattern?: 'liso' | 'rayas' | 'rayas_h' | 'banda' | 'mitades' | 'cuadros';
     pattern2?: string;

@@ -6,15 +6,15 @@ import { DEFAULT_LPC, type LpcLook } from '../parts/lpc';
 import { bodyProportions, DEFAULT_BODY, type BodyType } from '../rig/dims';
 
 /**
- * Héroes de cómic originales para el proyecto de juegos deportivos. Son arquetipos propios: nombres, colores y
- * siluetas distintos, sin emblemas ni trajes copiados de personajes con dueño (así el juego se puede publicar).
+ * Héroes de cómic para el proyecto de juegos deportivos de Rick: versiones chibi de fan, para uso personal.
+ * Son personajes con dueño (Marvel y DC): publicarlos en un juego o un sitio abierto necesita licencia.
  *
- * La máscara se logra pintando la cabeza del color del traje, sin pelo ni cejas, con los ojos como lentes claros.
- * El traje entero: manga larga, pantalón, guantes y botas del mismo color.
+ * La máscara se logra pintando la cabeza del color del traje, sin pelo ni cejas, con los ojos como lentes.
+ * El traje entero: manga larga, pantalón, guantes y botas, y el emblema en el pecho cuando lo tiene.
  */
 
-export type HeroId = 'aracnido' | 'garra' | 'pantera' | 'carmesi' | 'vigilante' | 'coloso';
-export const HEROES: HeroId[] = ['aracnido', 'garra', 'pantera', 'carmesi', 'vigilante', 'coloso'];
+export type HeroId = 'spiderman' | 'wolverine' | 'blackpanther' | 'deadpool' | 'batman' | 'hulk';
+export const HEROES: HeroId[] = ['spiderman', 'wolverine', 'blackpanther', 'deadpool', 'batman', 'hulk'];
 
 interface HeroDef {
   name: { es: string; en: string };
@@ -28,74 +28,74 @@ interface HeroDef {
   lens?: string;
   lpc: Partial<LpcLook>;
   body?: BodyType;
-  /** medidas fuera de los límites del estudio (el coloso) */
+  /** medidas fuera de los límites del estudio (Hulk) */
   size?: Partial<Proportions>;
   outfit: Partial<HumanFicha['outfit']>;
   colors: Partial<Record<ColorSlot, string>>;
   mouth: HumanFicha['face']['mouth'];
   gear?: Gear;
-  /** celda en la que se dibuja (el coloso no entra en 48) */
+  /** celda en la que se dibuja (Hulk no entra en 48) */
   cell: CellSize;
 }
 
-/** cabeza con máscara: sin pelo, cejas, nariz ni barba */
+/** cabeza con máscara: sin pelo, cejas, nariz ni barba. Con marco redondo y ojos blancos quedan los ojos de la máscara */
 const mask: Partial<LpcLook> = { hair: null, brows: null, nose: null, beard: null, mustache: null, glasses: 'sunglasses' };
 
 export const HERO_DEFS: Record<HeroId, HeroDef> = {
-  // trepamuros: azul noche con una red dorada, lentes blancos grandes
-  aracnido: {
-    name: { es: 'Arácnido', en: 'Webcrawler' }, idea: { es: 'Trepamuros ágil de traje azul noche con red dorada', en: 'Agile wall-crawler in a midnight suit with a golden web' },
-    skin: '#1f3fae', eyes: '#f4f8ff', lens: '#f4f8ff', lpc: { head: 'male', ...mask },
-    body: { age: 'adolescente', build: 'delgado', shape: 'recto' },
-    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', gloves: true, pattern: 'cuadros', pattern2: '#e8b938', collar: 'redondo' },
-    colors: { top: '#1f3fae', bottom: '#16245e', shoes: '#16245e', accessory: '#e8b938' },
+  // rojo con telaraña negra, azul en las piernas, ojos blancos grandes y la araña en el pecho
+  spiderman: {
+    name: { es: 'Spider-Man', en: 'Spider-Man' }, idea: { es: 'El trepamuros: rojo y azul, telaraña y la araña en el pecho', en: 'The wall-crawler: red and blue, webbing and the chest spider' },
+    skin: '#c8202c', eyes: '#ffffff', lens: '#101014', lpc: { head: 'male', ...mask, glasses: 'round' },
+    body: { age: 'adulto', build: 'medio', shape: 'recto' },
+    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', gloves: true, pattern: 'cuadros', pattern2: '#7a0f18', collar: 'redondo', emblem: 'spider', emblemColor: '#141418' },
+    colors: { top: '#c8202c', bottom: '#1f4fc0', shoes: '#c8202c', accessory: '#c8202c' },
     mouth: 'line', cell: 48,
   },
-  // mutante con garras: chaqueta de cuero, patillas y pelo en punta, garras de acero
-  garra: {
-    name: { es: 'Garra', en: 'Talon' }, idea: { es: 'Mutante rudo de chaqueta de cuero y garras de acero', en: 'Rugged mutant in a leather jacket with steel claws' },
-    skin: '#c48a64', hair: '#1c1612', eyes: '#3a2418', lpc: { head: 'male_gaunt', hair: 'spiked', brows: 'thick', nose: 'straight', beard: 'trimmed' },
+  // Logan: pelo en punta, patillas, traje amarillo y azul y las garras
+  wolverine: {
+    name: { es: 'Wolverine', en: 'Wolverine' }, idea: { es: 'Logan: traje amarillo y azul, patillas y garras de adamantium', en: 'Logan: yellow and blue suit, sideburns and adamantium claws' },
+    skin: '#d39a72', hair: '#141414', eyes: '#3a2418', lpc: { head: 'male_gaunt', hair: 'spiked', brows: 'thick', nose: 'straight', beard: 'trimmed' },
     body: { age: 'adulto', build: 'robusto', shape: 'recto' },
-    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', jacket: '#6b4527', collar: 'v' },
-    colors: { top: '#d9d2bc', bottom: '#2e3b55', shoes: '#2a201a' },
+    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', gloves: true, collar: 'redondo', belt: '#b8322a' },
+    colors: { top: '#f2c230', bottom: '#2443a0', shoes: '#2443a0', accessory: '#2443a0' },
     mouth: 'line', gear: { main: 'claws', off: null }, cell: 48,
   },
-  // guerrera pantera: todo negro con franja plateada, orejas de felino y garras
-  pantera: {
-    name: { es: 'Pantera de Ónix', en: 'Onyx Panther' }, idea: { es: 'Guerrera felina de traje negro con franja plateada', en: 'Feline warrior in a black suit with a silver stripe' },
-    skin: '#18181d', eyes: '#cfdcff', lens: '#c9d4ef', lpc: { head: 'male', ...mask, ears: 'cat' },
+  // todo negro con detalles plateados, orejas de felino y garras
+  blackpanther: {
+    name: { es: 'Pantera Negra', en: 'Black Panther' }, idea: { es: 'El rey de Wakanda: traje negro con plata, orejas de felino y garras', en: 'The king of Wakanda: black suit with silver, cat ears and claws' },
+    skin: '#18181d', eyes: '#e8ecf5', lens: '#e8ecf5', lpc: { head: 'male', ...mask, ears: 'cat' },
     body: { age: 'adulto', build: 'medio', shape: 'recto' },
-    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', gloves: true, pattern: 'banda', pattern2: '#9aa6bd', collar: 'redondo' },
-    colors: { top: '#1d1d24', bottom: '#15151a', shoes: '#15151a', accessory: '#2a2a33' },
+    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', gloves: true, collar: 'v' },
+    colors: { top: '#1d1d24', bottom: '#15151a', shoes: '#15151a', accessory: '#26262e' },
     mouth: 'line', gear: { main: 'claws', off: null }, cell: 48,
   },
-  // mercenario bocón: mitad carmesí, mitad negro, máscara roja y una espada
-  carmesi: {
-    name: { es: 'Mercenario Carmesí', en: 'Crimson Merc' }, idea: { es: 'Mercenario bromista de traje carmesí y negro con espada', en: 'Wisecracking merc in crimson and black with a sword' },
-    skin: '#b01f2b', eyes: '#ffffff', lens: '#ffffff', lpc: { head: 'male', ...mask },
+  // rojo entero con los parches negros de los ojos, guantes y botas negras, cinturón y su espada
+  deadpool: {
+    name: { es: 'Deadpool', en: 'Deadpool' }, idea: { es: 'El mercenario bocón: rojo con negro, parches en los ojos y katana', en: 'The merc with a mouth: red and black, eye patches and katana' },
+    skin: '#b3121e', eyes: '#ffffff', lens: '#0d0d10', lpc: { head: 'male', ...mask, glasses: 'round' },
     body: { age: 'adulto', build: 'medio', shape: 'recto' },
-    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', gloves: true, pattern: 'mitades', pattern2: '#1e1e24', belt: '#3a2a1a' },
-    colors: { top: '#b01f2b', bottom: '#1e1e24', shoes: '#1e1e24', accessory: '#1e1e24' },
+    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', gloves: true, pattern: 'banda', pattern2: '#141418', belt: '#3a2a1a', collar: 'redondo' },
+    colors: { top: '#b3121e', bottom: '#b3121e', shoes: '#141418', accessory: '#141418' },
     mouth: 'line', gear: { main: 'sword', off: null }, cell: 48,
   },
-  // vigilante nocturno: gris carbón, capa larga, capucha con orejas en punta y cinturón dorado
-  vigilante: {
-    name: { es: 'Vigilante Nocturno', en: 'Night Warden' }, idea: { es: 'Detective de la noche con capa, capucha de orejas en punta y cinturón dorado', en: 'Night detective with a cape, pointed cowl and golden belt' },
-    skin: '#24252d', eyes: '#f4f6ff', lens: '#e9edf8', lpc: { head: 'male', ...mask, ears: 'long' },
+  // gris con capa y capucha negras, orejas en punta, cinturón amarillo y el murciélago en el óvalo amarillo
+  batman: {
+    name: { es: 'Batman', en: 'Batman' }, idea: { es: 'El caballero de la noche: gris y negro, capa, orejas en punta y el murciélago', en: 'The dark knight: grey and black, cape, pointed ears and the bat' },
+    skin: '#1e1f26', eyes: '#f4f6ff', lens: '#f4f6ff', lpc: { head: 'male', ...mask, ears: 'cat' },
     body: { age: 'adulto', build: 'robusto', shape: 'recto' },
-    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', gloves: true, belt: '#e2b23c', cape: '#17181f', collar: 'redondo' },
-    colors: { top: '#4a4d59', bottom: '#2a2b33', shoes: '#1b1c22', accessory: '#1b1c22' },
+    outfit: { sleeves: 'long', bottom: 'pants', socks: 'none', shoes: 'botas', gloves: true, belt: '#f2c230', cape: '#16171d', collar: 'redondo', emblem: 'bat', emblemColor: '#141418', emblemBg: '#f2c230' },
+    colors: { top: '#7f828e', bottom: '#4a4d59', shoes: '#16171d', accessory: '#16171d' },
     mouth: 'line', cell: 48,
   },
-  // coloso: gigante verde, sin camisa, short de jean roto, descalzo
-  coloso: {
-    name: { es: 'Coloso Verde', en: 'Green Colossus' }, idea: { es: 'Gigante verde de fuerza bruta, enorme y descalzo', en: 'Huge barefoot green brute' },
-    skin: '#5d9b48', hair: '#18201a', eyes: '#2a3a1e', lpc: { head: 'male', hair: 'buzzcut', brows: 'thick', nose: 'big' },
+  // gigante verde, pelo negro revuelto, short morado roto, descalzo
+  hulk: {
+    name: { es: 'Hulk', en: 'Hulk' }, idea: { es: 'El gigante verde: enorme, short morado y descalzo', en: 'The green giant: huge, purple shorts and barefoot' },
+    skin: '#5d9b48', hair: '#121212', eyes: '#2a3a1e', lpc: { head: 'male', hair: 'messy1', brows: 'thick', nose: 'big' },
     body: { age: 'adulto', build: 'robusto', shape: 'recto' },
     size: { height: 1.2, build: 1.38, shoulders: 1.25, arms: 1.08 },
     // el pecho marcado en un verde más oscuro (sin camisa)
-    outfit: { sleeves: 'none', bottom: 'shorts', socks: 'none', shoes: 'descalzo', belt: '#3a2a1a', print: '#47803a' },
-    colors: { bottom: '#33405e' },
+    outfit: { sleeves: 'none', bottom: 'shorts', socks: 'none', shoes: 'descalzo', print: '#47803a' },
+    colors: { bottom: '#5b2a86' },
     mouth: 'line', cell: 64,
   },
 };

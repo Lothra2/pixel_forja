@@ -31,7 +31,7 @@ export const SPORT_PACK_NAMES = Object.keys(SPORT_PACKS) as SportPack[];
 export interface SportsKitOptions {
   /** atletas por id (minúsculas, números y _). Sin esto, la familia con ropa de calle y los héroes */
   athletes?: Record<string, HumanFicha>;
-  /** celda de un atleta en particular (el coloso va en 64); los demás usan `cell` */
+  /** celda de un atleta en particular (Hulk va en 64); los demás usan `cell` */
   cells?: Record<string, CellSize>;
   packs?: SportPack[];
   cell?: CellSize;
