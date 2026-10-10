@@ -1,0 +1,141 @@
+import { RATE } from './sfx';
+
+/**
+ * Sonidos de ambiente por zona, en bucle sin corte (el final se funde con el principio).
+ * bosque (viento suave y pájaros), agua (arroyo), noche (grillos), viento (ráfagas), cueva (eco y gotas),
+ * magia (campanitas y un colchón brillante). Todo sintetizado.
+ */
+
+export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia';
+
+function rng(seed: number) {
+  let s = seed >>> 0 || 1;
+  return () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+}
+
+/** Ruido rosa aproximado (Paul Kellet, versión corta). */
+function pink(n: number, r: () => number): Float32Array {
+  const out = new Float32Array(n);
+  let b0 = 0, b1 = 0, b2 = 0;
+  for (let i = 0; i < n; i++) {
+    const w = r() * 2 - 1;
+    b0 = 0.99765 * b0 + w * 0.099; b1 = 0.963 * b1 + w * 0.2965; b2 = 0.57 * b2 + w * 1.0527;
+    out[i] = (b0 + b1 + b2 + w * 0.1848) * 0.2;
+  }
+  return out;
+}
+
+/** Filtro de estado variable (pasa banda) con corte que cambia en el tiempo. */
+function bandpass(x: Float32Array, cutoff: (i: number) => number, q = 0.6): Float32Array {
+  const out = new Float32Array(x.length);
+  let low = 0, band = 0;
+  for (let i = 0; i < x.length; i++) {
+    const f = 2 * Math.sin((Math.PI * Math.min(cutoff(i), RATE / 6)) / RATE);
+    const high = x[i] - low - q * band;
+    band += f * high; low += f * band;
+    out[i] = band;
+  }
+  return out;
+}
+function lowpass(x: Float32Array, k: number): Float32Array {
+  const out = new Float32Array(x.length);
+  let y = 0;
+  for (let i = 0; i < x.length; i++) { y += (x[i] - y) * k; out[i] = y; }
+  return out;
+}
+
+/** Tono corto con barrido y caída exponencial, sumado en `buf` a partir de `t0` segundos. */
+function blip(buf: Float32Array, t0: number, dur: number, f0: number, f1: number, vol: number, decay = 6) {
+  const s = Math.floor(t0 * RATE), n = Math.floor(dur * RATE);
+  let ph = 0;
+  for (let i = 0; i < n && s + i < buf.length; i++) {
+    const t = i / n;
+    ph += (f0 + (f1 - f0) * t) / RATE;
+    const env = Math.min(1, i / (RATE * 0.004)) * Math.exp(-t * decay);
+    buf[s + i] += Math.sin(ph * Math.PI * 2) * env * vol;
+  }
+}
+
+/** Funde el final sobre el principio para que el bucle no se note. */
+function loopify(x: Float32Array, len: number): Float32Array {
+  const out = x.slice(0, len);
+  const fade = x.length - len;
+  for (let i = 0; i < fade; i++) {
+    const t = i / fade;
+    out[i] = out[i] * Math.sqrt(t) + x[len + i] * Math.sqrt(1 - t);
+  }
+  return out;
+}
+
+const SECONDS = 12, FADE = 1.5;
+
+export function ambience(name: AmbienceName): Float32Array {
+  const total = Math.floor((SECONDS + FADE) * RATE), len = Math.floor(SECONDS * RATE);
+  const r = rng(name.length * 7919 + name.charCodeAt(0));
+  let buf: Float32Array = new Float32Array(total);
+  const add = (x: Float32Array, k: number) => { for (let i = 0; i < total; i++) buf[i] += x[i] * k; };
+  const lfo = (i: number, hz: number, ph = 0) => 0.5 + 0.5 * Math.sin((i / RATE) * hz * Math.PI * 2 + ph);
+
+  if (name === 'bosque' || name === 'viento' || name === 'noche') {
+    // viento: ruido rosa por un filtro que respira
+    const wind = bandpass(pink(total, r), (i) => 300 + 500 * lfo(i, 0.07) + 300 * lfo(i, 0.23, 1), 0.9);
+    const gust = name === 'viento' ? 1 : 0.35;
+    for (let i = 0; i < total; i++) buf[i] += wind[i] * (0.25 + 0.75 * lfo(i, 0.11, 2) * lfo(i, 0.05)) * gust;
+  }
+  if (name === 'bosque') {
+    // pájaros: frases de 3 a 6 notas con barrido
+    for (let k = 0; k < 9; k++) {
+      let t = r() * (SECONDS + FADE - 1.2);
+      const base = 2200 + r() * 1800, notes = 3 + Math.floor(r() * 4), up = r() < 0.5;
+      for (let j = 0; j < notes; j++) {
+        const f = base * (1 + (r() - 0.5) * 0.2);
+        blip(buf, t, 0.05 + r() * 0.06, up ? f * 0.8 : f * 1.2, up ? f * 1.25 : f * 0.85, 0.11, 4);
+        t += 0.07 + r() * 0.08;
+      }
+    }
+  }
+  if (name === 'agua') {
+    const rush = lowpass(pink(total, r), 0.18);
+    add(bandpass(rush, (i) => 700 + 250 * lfo(i, 0.3), 1.2), 1.4);
+    add(lowpass(pink(total, r), 0.05), 1.1);
+    // burbujas: tonitos que suben
+    for (let k = 0; k < 140; k++) blip(buf, r() * (SECONDS + FADE), 0.03 + r() * 0.04, 300 + r() * 500, 700 + r() * 900, 0.05, 5);
+  }
+  if (name === 'noche') {
+    // grillos: un tono agudo cortado en pulsos (grupos de 3) que se repiten
+    for (const [f, every, off] of [[4400, 0.9, 0.1], [5200, 1.3, 0.5]] as [number, number, number][]) {
+      for (let t = off; t < SECONDS + FADE; t += every * (0.9 + r() * 0.2))
+        for (let p = 0; p < 3; p++) blip(buf, t + p * 0.035, 0.022, f, f, 0.06, 1);
+    }
+    // ranita a lo lejos
+    for (let t = 1; t < SECONDS + FADE; t += 2.3 + r()) blip(buf, t, 0.12, 180, 140, 0.08, 3);
+  }
+  if (name === 'cueva') {
+    add(lowpass(pink(total, r), 0.015), 2.2);
+    // gotas con eco
+    for (let k = 0; k < 9; k++) {
+      const t = r() * (SECONDS + FADE - 1), f = 1100 + r() * 900;
+      for (let e = 0; e < 4; e++) blip(buf, t + e * 0.18, 0.06, f, f * 0.6, 0.12 * Math.pow(0.45, e), 8);
+    }
+  }
+  if (name === 'magia') {
+    // colchón: acorde agudo con trémolo lento
+    const chord = [523.25, 659.25, 783.99, 987.77];
+    for (let i = 0; i < total; i++) {
+      let s = 0;
+      for (let c = 0; c < chord.length; c++) s += Math.sin((i / RATE) * chord[c] * Math.PI * 2) * (0.5 + 0.5 * Math.sin((i / RATE) * (0.2 + c * 0.07) * Math.PI * 2));
+      buf[i] += s * 0.025;
+    }
+    // campanitas
+    for (let k = 0; k < 22; k++) { const f = [1568, 1760, 2093, 2349, 2637][Math.floor(r() * 5)]; blip(buf, r() * (SECONDS + FADE), 0.6, f, f, 0.06, 7); }
+  }
+  buf = loopify(buf, len);
+  // nivel parejo (todos los ambientes suenan parecido de fuerte)
+  let peak = 0;
+  for (const s of buf) peak = Math.max(peak, Math.abs(s));
+  const k = peak ? 0.5 / peak : 1;
+  for (let i = 0; i < buf.length; i++) buf[i] *= k;
+  return buf;
+}
+
+export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia'];

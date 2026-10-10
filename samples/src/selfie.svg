@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe8ee"/><stop offset="1" stop-color="#b9cdb8"/></linearGradient>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 0.55"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/></filter>
+    <radialGradient id="skin" cx="0.55" cy="0.4" r="0.7"><stop offset="0" stop-color="#d9a283"/><stop offset="1" stop-color="#b98266"/></radialGradient>
+  </defs>
+  <!-- fondo de foto: cielo, pérgola, árboles y juegos -->
+  <rect width="600" height="800" fill="url(#sky)"/>
+  <g fill="#f4f4f2" stroke="#c9ccd0" stroke-width="3">
+    <rect x="-20" y="40" width="660" height="26" transform="rotate(-8 300 50)"/>
+    <rect x="-20" y="140" width="660" height="22" transform="rotate(-6 300 150)"/>
+    <rect x="-20" y="240" width="660" height="20" transform="rotate(-4 300 250)"/>
+    <rect x="60" y="0" width="22" height="520"/>
+  </g>
+  <circle cx="70" cy="560" r="90" fill="#3f7d3a"/><circle cx="540" cy="520" r="110" fill="#4c8c3f"/>
+  <rect x="440" y="520" width="80" height="60" fill="#d8402e"/><rect x="470" y="480" width="20" height="120" fill="#2f5fb0"/>
+  <rect x="20" y="430" width="40" height="40" fill="#e9a21a"/>
+  <!-- camiseta navy con estampado neón -->
+  <path d="M60 800 Q80 640 220 600 L380 600 Q520 640 540 800 Z" fill="#1f2a55"/>
+  <text x="400" y="740" font-family="Arial Black, Arial" font-weight="900" font-size="34" fill="#e9f36a">ENJOY</text>
+  <!-- cuello -->
+  <rect x="250" y="520" width="100" height="100" fill="#b98266"/>
+  <!-- cabeza -->
+  <ellipse cx="300" cy="380" rx="125" ry="160" fill="url(#skin)"/>
+  <ellipse cx="176" cy="390" rx="18" ry="34" fill="#c08a6c"/><ellipse cx="424" cy="390" rx="18" ry="34" fill="#c08a6c"/>
+  <!-- pelo corto oscuro -->
+  <path d="M175 330 Q170 205 300 200 Q430 205 425 330 Q410 262 350 250 Q300 240 250 252 Q195 265 175 330 Z" fill="#2e211b"/>
+  <!-- barba sal y pimienta -->
+  <path d="M178 400 Q182 520 300 548 Q418 520 422 400 Q410 455 380 462 Q345 440 300 448 Q255 440 220 462 Q190 455 178 400 Z" fill="#7d7570"/>
+  <path d="M178 400 Q182 520 300 548 Q418 520 422 400 Q410 455 380 462 Q345 440 300 448 Q255 440 220 462 Q190 455 178 400 Z" fill="#ffffff" filter="url(#grain)"/>
+  <path d="M255 455 Q300 440 345 455 L340 470 Q300 462 260 470 Z" fill="#5e5752"/>
+  <!-- boca -->
+  <path d="M272 488 Q300 496 328 488" stroke="#8a4a46" stroke-width="7" fill="none"/>
+  <!-- cejas gruesas y ojos -->
+  <path d="M215 338 Q245 322 282 334 L280 346 Q245 338 217 350 Z" fill="#231915"/>
+  <path d="M318 334 Q355 322 385 338 L383 350 Q355 338 320 346 Z" fill="#231915"/>
+  <ellipse cx="250" cy="372" rx="15" ry="9" fill="#2a1b14"/>
+  <ellipse cx="350" cy="372" rx="15" ry="9" fill="#2a1b14"/>
+  <path d="M300 360 L292 425 L312 425" stroke="#a5705a" stroke-width="5" fill="none"/>
+</svg>

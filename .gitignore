@@ -1,0 +1,9 @@
+node_modules
+dist
+test-results
+playwright-report
+out
+*.tsbuildinfo
+.DS_Store
+dist-artifact
+private

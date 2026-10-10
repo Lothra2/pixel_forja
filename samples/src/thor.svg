@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="500" viewBox="0 0 700 500">
+  <rect width="700" height="500" fill="#ffffff"/>
+  <g stroke="#1b1410" stroke-width="5" stroke-linejoin="round">
+    <!-- cola corta -->
+    <path d="M150 190 L110 150 L125 140 L165 178 Z" fill="#b5713a"/>
+    <!-- patas de atrás -->
+    <path d="M170 260 L150 420 L185 420 L215 280 Z" fill="#9c5f2f"/>
+    <path d="M220 260 L205 430 L245 430 L260 280 Z" fill="#b5713a"/>
+    <rect x="200" y="420" width="50" height="20" rx="8" fill="#f2efe8"/>
+    <!-- patas de adelante -->
+    <path d="M440 270 L430 430 L465 430 L470 280 Z" fill="#9c5f2f"/>
+    <path d="M490 270 L485 440 L525 440 L520 280 Z" fill="#b5713a"/>
+    <rect x="480" y="425" width="50" height="20" rx="8" fill="#f2efe8"/>
+    <!-- cuerpo -->
+    <path d="M150 190 Q160 160 220 165 L460 170 Q530 170 540 230 Q545 300 480 310 L320 300 Q260 300 230 300 Q160 300 150 250 Z" fill="#b5713a"/>
+    <!-- pecho blanco -->
+    <path d="M470 220 Q545 230 520 300 L470 305 Q480 260 470 220 Z" fill="#f2efe8"/>
+    <!-- cuello y collar -->
+    <path d="M470 180 L520 110 L580 130 L530 230 Z" fill="#b5713a"/>
+    <path d="M478 168 L548 210" stroke="#1f5fd6" stroke-width="18"/>
+    <circle cx="540" cy="226" r="8" fill="#f2c94c"/>
+    <!-- cabeza -->
+    <path d="M510 70 Q560 40 600 70 L640 90 Q660 100 655 130 L650 150 Q640 165 610 160 L560 150 Q520 140 510 110 Z" fill="#b5713a"/>
+    <!-- hocico negro -->
+    <path d="M600 95 L652 100 Q662 120 650 152 L605 155 Q590 125 600 95 Z" fill="#2a1c14"/>
+    <path d="M520 70 L540 40 L560 62 Z" fill="#9c5f2f"/>
+    <circle cx="575" cy="92" r="7" fill="#2a1c14"/>
+    <circle cx="577" cy="90" r="2.5" fill="#fff" stroke="none"/>
+  </g>
+</svg>

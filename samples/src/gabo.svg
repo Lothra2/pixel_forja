@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="800" viewBox="0 0 400 800">
+  <rect width="400" height="800" fill="#bfe3f2"/>
+  <g stroke="#1d1a1a" stroke-width="4" stroke-linejoin="round">
+    <!-- piernas -->
+    <rect x="158" y="560" width="36" height="170" rx="12" fill="#c98c5c"/>
+    <rect x="206" y="560" width="36" height="170" rx="12" fill="#c98c5c"/>
+    <!-- medias largas rojas -->
+    <rect x="156" y="600" width="40" height="130" rx="8" fill="#d8232a"/>
+    <rect x="204" y="600" width="40" height="130" rx="8" fill="#d8232a"/>
+    <rect x="156" y="608" width="40" height="10" fill="#ffffff"/>
+    <rect x="204" y="608" width="40" height="10" fill="#ffffff"/>
+    <!-- guayos -->
+    <path d="M140 728 L198 728 L200 760 L136 760 Q132 740 140 728 Z" fill="#222428"/>
+    <path d="M202 728 L262 728 Q270 740 266 760 L202 760 Z" fill="#222428"/>
+    <!-- short blanco -->
+    <path d="M146 495 L254 495 L258 590 L206 590 L200 565 L194 590 L142 590 Z" fill="#f2f2f2"/>
+    <path d="M150 500 L148 585" stroke="#cfcfd6" stroke-width="8"/>
+    <!-- brazos -->
+    <rect x="112" y="405" width="32" height="150" rx="14" fill="#c98c5c"/>
+    <rect x="256" y="405" width="32" height="150" rx="14" fill="#c98c5c"/>
+    <circle cx="128" cy="558" r="18" fill="#c98c5c"/>
+    <circle cx="272" cy="558" r="18" fill="#c98c5c"/>
+    <!-- camiseta roja -->
+    <path d="M148 350 L252 350 L294 382 L294 450 L258 450 L258 510 L142 510 L142 450 L106 450 L106 382 Z" fill="#d8232a"/>
+    <path d="M150 362 L150 505" stroke="#a8161c" stroke-width="10"/>
+    <text x="200" y="470" font-family="Arial Black, Arial" font-weight="900" font-size="70" text-anchor="middle" fill="#ffffff" stroke="none">10</text>
+    <!-- cuello -->
+    <rect x="182" y="318" width="36" height="40" fill="#c98c5c"/>
+    <!-- cara -->
+    <ellipse cx="200" cy="235" rx="100" ry="105" fill="#c98c5c"/>
+    <ellipse cx="98" cy="250" rx="14" ry="22" fill="#c98c5c"/>
+    <ellipse cx="302" cy="250" rx="14" ry="22" fill="#c98c5c"/>
+    <!-- pelo corto parado -->
+    <path d="M100 215 Q92 135 140 118 L150 95 L172 112 L190 88 L208 110 L232 90 L242 115 L270 102 L268 128 Q308 150 300 215 Q285 170 255 160 Q220 172 200 160 Q170 175 140 165 Q112 175 100 215 Z" fill="#17171c"/>
+    <!-- ojos -->
+    <ellipse cx="162" cy="250" rx="12" ry="17" fill="#2b1b12"/>
+    <ellipse cx="238" cy="250" rx="12" ry="17" fill="#2b1b12"/>
+    <circle cx="166" cy="244" r="4.5" fill="#ffffff" stroke="none"/>
+    <circle cx="242" cy="244" r="4.5" fill="#ffffff" stroke="none"/>
+    <path d="M145 218 L178 214 M222 214 L255 218" fill="none" stroke-width="7"/>
+    <path d="M180 296 Q200 316 220 296" fill="#7a2020" stroke-width="4"/>
+  </g>
+</svg>

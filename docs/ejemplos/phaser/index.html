@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PixelForja en Phaser</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <style>html, body { margin: 0; background: #1b1b24; color: #ddd; font: 14px system-ui; } p { padding: 0 12px; }</style>
+</head>
+<body>
+  <p>Flechas para caminar. Espacio para patear. Sirve tal cual con cualquier hoja de PixelForja.</p>
+  <script>
+    // Nombre base de los archivos exportados (hoja PNG + JSON)
+    const SHEET = 'jugador_48';
+
+    class Demo extends Phaser.Scene {
+      preload() {
+        // La hoja de PixelForja es un atlas "JSON Hash": Phaser la carga directo
+        this.load.atlas('jugador', `${SHEET}.png`, `${SHEET}.json`);
+        this.load.json('jugador_meta', `${SHEET}.json`);
+      }
+
+      create() {
+        const meta = this.cache.json.get('jugador_meta');
+        // Una animación de Phaser por cada animación de la hoja, con sus fps y si repite
+        for (const [name, a] of Object.entries(meta.anims)) {
+          this.anims.create({
+            key: name,
+            frames: meta.animations[name].map((frame) => ({ key: 'jugador', frame })),
+            frameRate: a.fps,
+            repeat: a.loop ? -1 : 0,
+          });
+        }
+        // El pivote es la planta del pie: así el personaje queda parado sobre el piso
+        const [cw, ch] = meta.cell;
+        const [px, py] = meta.pivot;
+        this.hero = this.add.sprite(240, 160, 'jugador').setOrigin(px / cw, py / ch).setScale(2);
+        this.dir = 'down';
+        this.hero.play(this.has('idle_down') ? 'idle_down' : 'idle');
+        this.keys = this.input.keyboard.createCursorKeys();
+        this.kicking = false;
+        this.hero.on('animationcomplete', () => { this.kicking = false; });
+      }
+
+      has(name) { return this.anims.exists(name); }
+
+      update(_, dt) {
+        const k = this.keys;
+        if (this.kicking) return;
+        if (Phaser.Input.Keyboard.JustDown(k.space) && this.has(`shot_${this.dir}`)) {
+          this.kicking = true;
+          this.hero.play(`shot_${this.dir}`);
+          return;
+        }
+        let vx = 0, vy = 0;
+        if (k.left.isDown) { vx = -1; this.dir = 'left'; }
+        else if (k.right.isDown) { vx = 1; this.dir = 'right'; }
+        if (k.up.isDown) { vy = -1; if (!vx) this.dir = 'up'; }
+        else if (k.down.isDown) { vy = 1; if (!vx) this.dir = 'down'; }
+        const moving = vx || vy;
+        const anim = `${moving ? 'walk' : 'idle'}_${this.dir}`;
+        if (this.hero.anims.currentAnim?.key !== anim && this.has(anim)) this.hero.play(anim);
+        this.hero.x += vx * dt * 0.08;
+        this.hero.y += vy * dt * 0.08;
+        this.hero.setDepth(this.hero.y);
+      }
+    }
+
+    new Phaser.Game({ type: Phaser.AUTO, width: 480, height: 300, pixelArt: true, backgroundColor: '#5aa04a', scene: Demo });
+  </script>
+</body>
+</html>

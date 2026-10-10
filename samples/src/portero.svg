@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="800" viewBox="0 0 400 800">
+  <rect width="400" height="800" fill="#d9f0d0"/>
+  <g stroke="#1d1a1a" stroke-width="4" stroke-linejoin="round">
+    <rect x="158" y="560" width="36" height="170" rx="12" fill="#f0c49c"/>
+    <rect x="206" y="560" width="36" height="170" rx="12" fill="#f0c49c"/>
+    <rect x="156" y="610" width="40" height="120" rx="8" fill="#ffd400"/>
+    <rect x="204" y="610" width="40" height="120" rx="8" fill="#ffd400"/>
+    <path d="M140 728 L198 728 L200 760 L136 760 Q132 740 140 728 Z" fill="#1e3a8a"/>
+    <path d="M202 728 L262 728 Q270 740 266 760 L202 760 Z" fill="#1e3a8a"/>
+    <path d="M146 495 L254 495 L258 590 L206 590 L200 565 L194 590 L142 590 Z" fill="#1f1f24"/>
+    <!-- mangas largas y guantes -->
+    <path d="M106 382 L148 360 L150 520 L110 520 Z" fill="#ffd400"/>
+    <path d="M294 382 L252 360 L250 520 L290 520 Z" fill="#ffd400"/>
+    <circle cx="128" cy="540" r="24" fill="#ff7a00"/>
+    <circle cx="272" cy="540" r="24" fill="#ff7a00"/>
+    <path d="M148 350 L252 350 L294 382 L294 420 L258 420 L258 510 L142 510 L142 420 L106 420 L106 382 Z" fill="#ffd400"/>
+    <path d="M150 362 L150 505" stroke="#d8b300" stroke-width="10"/>
+    <text x="200" y="470" font-family="Arial Black, Arial" font-weight="900" font-size="70" text-anchor="middle" fill="#1f1f24" stroke="none">1</text>
+    <rect x="182" y="318" width="36" height="40" fill="#f0c49c"/>
+    <ellipse cx="200" cy="235" rx="100" ry="105" fill="#f0c49c"/>
+    <path d="M100 220 Q96 128 200 118 Q304 128 300 220 Q290 168 250 158 Q200 168 150 158 Q110 168 100 220 Z" fill="#c8862a"/>
+    <ellipse cx="162" cy="250" rx="12" ry="17" fill="#2a4a6a"/>
+    <ellipse cx="238" cy="250" rx="12" ry="17" fill="#2a4a6a"/>
+    <circle cx="166" cy="244" r="4.5" fill="#fff" stroke="none"/>
+    <circle cx="242" cy="244" r="4.5" fill="#fff" stroke="none"/>
+    <path d="M180 300 L220 300" fill="none" stroke-width="5"/>
+  </g>
+</svg>

@@ -1,0 +1,57 @@
+<meta charset="utf-8">
+<title>Bosque GG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Silkscreen&display=swap">
+<style>
+  /* Pantalla de juego: el bosque ocupa todo; la interfaz son placas de piedra oscura con letra de libro viejo. Un solo look (oscuro). */
+  :root {
+    --noche: #070a12;
+    --piedra: rgba(12, 16, 24, 0.78);
+    --borde: #3a3f52;
+    --vela: #ffd27a;
+    --tinta: #e6e0d2;
+    --tinta-baja: #9a9caa;
+    --f-titulo: 'IM Fell English SC', 'Iowan Old Style', Georgia, serif;
+    --f-ui: 'Silkscreen', ui-monospace, 'Courier New', monospace;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { background: var(--noche); color: var(--tinta); overflow: hidden; font-family: var(--f-ui); }
+  #escena { position: fixed; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; cursor: grab; display: block; }
+  #escena:active { cursor: grabbing; }
+  .marca { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px); left: 16px; margin: 0; pointer-events: none; text-shadow: 0 2px 0 #000, 0 0 12px rgba(0, 0, 0, 0.8); }
+  .marca h1 { font-family: var(--f-titulo); font-weight: 400; font-size: clamp(1.5rem, 3.4vw, 2.4rem); margin: 0; letter-spacing: 0.02em; line-height: 1; }
+  .marca p { margin: 6px 0 0; font-size: 0.68rem; letter-spacing: 0.08em; color: var(--tinta-baja); text-transform: uppercase; }
+  .marca #zonaActual { color: var(--vela); }
+  .zona { position: fixed; left: 50%; top: 22%; transform: translate(-50%, -6px); text-align: center; opacity: 0; transition: opacity 0.9s ease, transform 0.9s ease; pointer-events: none; text-shadow: 0 2px 0 #000, 0 0 18px rgba(0, 0, 0, 0.9); width: min(90vw, 640px); }
+  .zona.ver { opacity: 1; transform: translate(-50%, 0); }
+  .zona small { display: block; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vela); }
+  .zona span { display: block; font-family: var(--f-titulo); font-size: clamp(1.8rem, 5vw, 3.2rem); line-height: 1.1; text-wrap: balance; }
+  .controles { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 16px; padding: 10px 14px; background: var(--piedra); border: 1px solid var(--borde); border-radius: 4px; box-shadow: 0 0 0 1px #000, 0 6px 24px rgba(0, 0, 0, 0.5); width: max-content; max-width: calc(100vw - 32px); }
+  .controles button { font-family: var(--f-ui); font-size: 0.72rem; color: var(--tinta); background: #1a1f2c; border: 1px solid var(--borde); border-radius: 3px; padding: 8px 12px; cursor: pointer; letter-spacing: 0.04em; }
+  .controles button[aria-pressed="true"] { background: #3a2c14; border-color: var(--vela); color: var(--vela); }
+  .controles button:focus-visible, .controles input:focus-visible { outline: 2px solid var(--vela); outline-offset: 2px; }
+  .controles label { display: flex; align-items: center; gap: 8px; font-size: 0.68rem; color: var(--tinta-baja); letter-spacing: 0.06em; }
+  .controles input[type="range"] { width: 96px; accent-color: var(--vela); }
+  .pista { position: fixed; right: 16px; top: calc(env(safe-area-inset-top, 0px) + 18px); margin: 0; font-size: 0.62rem; color: var(--tinta-baja); letter-spacing: 0.06em; text-shadow: 0 1px 0 #000; max-width: 40vw; text-align: right; pointer-events: none; }
+  .carga { position: fixed; inset: 0; display: grid; place-content: center; gap: 10px; text-align: center; background: var(--noche); font-family: var(--f-titulo); font-size: 1.4rem; }
+  .carga #pct { font-family: var(--f-ui); font-size: 0.8rem; color: var(--vela); }
+  @media (max-width: 520px) { .pista { display: none; } .controles input[type="range"] { width: 72px; } }
+</style>
+<canvas id="escena" aria-label="El Bosque GG animado: bruma, luces, árboles hechizados y criaturas"></canvas>
+<div class="carga" id="carga"><span id="cargaTexto">Entrando al Bosque GG…</span><span id="pct">0%</span></div>
+<header class="marca">
+  <h1>Bosque GG</h1>
+  <p>GG Abyss · Mundo 1 · <span id="zonaActual">Claro de la Llegada</span></p>
+</header>
+<div class="zona" id="zona" aria-live="polite"><small>Descubriste</small><span id="zonaNombre"></span></div>
+<p class="pista">Arrastra para explorar · flechas o WASD · toca un cuervo</p>
+<nav class="controles" aria-label="Controles del visor">
+  <button id="btnTour" type="button" aria-pressed="true">Recorrido</button>
+  <label for="niebla">Bruma <input id="niebla" type="range" min="0" max="150" value="100"></label>
+  <label for="noche">Noche <input id="noche" type="range" min="0" max="55" value="15"></label>
+  <button id="btnSonido" type="button" aria-pressed="false">Sonido</button>
+</nav>
+<script>/*RUNTIME*/</script>
