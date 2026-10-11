@@ -10,6 +10,8 @@ import { mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync
 import { dirname, join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildGameKit } from '../src/engine/kit/gamekit.ts';
+import { encodePng, decodePng } from '../src/engine/export/png.ts';
+import type { Raster } from '../src/engine/core/raster.ts';
 import { migrateFicha, validateFicha, isHuman, type HumanFicha } from '../src/engine/sheet/ficha.ts';
 
 const args = process.argv.slice(2);
@@ -61,7 +63,14 @@ const cache = usarCache ? {
     writeFileSync(join(cacheDir, `${k}.json`), v.meta);
   },
 } : undefined;
-const files = buildGameKit({ quick, fichas, fonts, cache, sinCapas: args.includes('--sin-capas'), progress: (m) => console.log(`  ${m}`) });
+// los jefes grandes también: cada cuadro se guarda en .cache/jefes con la huella de su escena
+const bossDir = join(dirname(fileURLToPath(import.meta.url)), '..', '.cache', 'jefes');
+if (usarCache) mkdirSync(bossDir, { recursive: true });
+const bossCache = usarCache ? {
+  get: (k: string) => { const p = join(bossDir, `${k}.png`); return existsSync(p) ? decodePng(new Uint8Array(readFileSync(p))) : null; },
+  set: (k: string, r: Raster) => writeFileSync(join(bossDir, `${k}.png`), encodePng(r)),
+} : undefined;
+const files = buildGameKit({ quick, fichas, fonts, cache, bossCache, sinCapas: args.includes('--sin-capas'), progress: (m) => console.log(`  ${m}`) });
 rmSync(out, { recursive: true, force: true });
 let bytes = 0;
 for (const f of files) {

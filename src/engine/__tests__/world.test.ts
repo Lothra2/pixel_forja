@@ -94,7 +94,7 @@ describe('kit del juego', () => {
   it('arma personajes en 8 direcciones, mundo, botín, interfaz, audio y manifest; ninguna textura pasa de 4096', () => {
     const files = buildGameKit({ heroes: ['rick'], enemies: ['rata'], thorTiers: [0], quick: true, fichas: { prima: { ...familyFicha('steph', true), name: 'Prima' } } });
     const names = files.map((f) => f.name);
-    for (const n of ['manifest.json', 'personajes/rick_walk.png', 'personajes/retrato_rick.png', 'mascota/thor_walk.png', 'enemigos/minotauro_attack_heavy.png', 'mundo/mundo1_bosque.json', 'mundo/suelo/mundo1_bosque_0.png', 'mundo/agua.png', 'mundo/objetos/portal_azul_girar.png', 'mundo/objetos/abuelo_roble_v3_idle.png', 'mundo/objetos/arbol_hechizado_0_despierto.png', 'mundo/criaturas/cuervo_volar.png', 'mundo/niebla_nubes.png', 'mundo/particulas/luciernaga.png', 'mundo/luz.png', 'mundo/postales/cascada_y_vado.png', 'audio/ambiente_bosque.wav', 'ui/orbe_vida.png', 'botin/catalogo.json', 'audio/moneda.wav', 'audio/musica_jefe.wav', 'CREDITOS.txt', 'ui/icono_pausa.png', 'ui/girar_tablet.png', 'ui/carteles/peligro.png', 'mundo/objetos/campamento_fogata_idle.png', 'mundo/objetos/roble_0_copa.png', 'mundo/objetos/roble_0_tronco.png', 'mundo/postales/lago_espejo.png', 'audio/descubrir.wav', 'audio/paso_madera_0.wav', 'fx/proyectil_flecha_up.png', 'fx/impacto_flecha.png', 'fx/proyectil_naturaleza_left.png', 'fx/nova_naturaleza.png', 'ui/habilidades/llamar_thor.png', 'ui/continuara.png', 'audio/musica_titulo.wav', 'fx/tierra_cavada.png', 'mundo/objetos/pasto_alto_apartar_izq.png', 'mundo/objetos/abuelo_roble_v3_sonreir.png']) expect(names, n).toContain(n);
+    for (const n of ['manifest.json', 'personajes/rick_walk.png', 'personajes/retrato_rick.png', 'mascota/thor_walk.png', 'enemigos/minotauro_idle.png', 'enemigos/guardian_campana_idle.png', 'mundo/mundo1_bosque.json', 'mundo/suelo/mundo1_bosque_0.png', 'mundo/agua.png', 'mundo/objetos/portal_azul_girar.png', 'mundo/objetos/abuelo_roble_v3_idle.png', 'mundo/objetos/arbol_hechizado_0_despierto.png', 'mundo/criaturas/cuervo_volar.png', 'mundo/niebla_nubes.png', 'mundo/particulas/luciernaga.png', 'mundo/luz.png', 'mundo/postales/cascada_y_vado.png', 'audio/ambiente_bosque.wav', 'ui/orbe_vida.png', 'botin/catalogo.json', 'audio/moneda.wav', 'audio/musica_jefe.wav', 'CREDITOS.txt', 'ui/icono_pausa.png', 'ui/girar_tablet.png', 'ui/carteles/peligro.png', 'mundo/objetos/campamento_fogata_idle.png', 'mundo/objetos/roble_0_copa.png', 'mundo/objetos/roble_0_tronco.png', 'mundo/postales/lago_espejo.png', 'audio/descubrir.wav', 'audio/paso_madera_0.wav', 'fx/proyectil_flecha_up.png', 'fx/impacto_flecha.png', 'fx/proyectil_naturaleza_left.png', 'fx/nova_naturaleza.png', 'ui/habilidades/llamar_thor.png', 'ui/continuara.png', 'audio/musica_titulo.wav', 'fx/tierra_cavada.png', 'mundo/objetos/pasto_alto_apartar_izq.png', 'mundo/objetos/abuelo_roble_v3_sonreir.png']) expect(names, n).toContain(n);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(m.direcciones).toEqual(['down', 'down_left', 'left', 'up_left', 'up', 'up_right', 'right', 'down_right']);
     expect(m.personajes.rick.anims.walk).toMatchObject({ archivo: 'personajes/rick_walk.png', cuadros: 8 });
@@ -115,10 +115,13 @@ describe('kit del juego', () => {
       expect(atlases[it.atlas], it.id).toBeDefined();
       for (const k of it.animated ? [`${it.icon}_0`, `${it.icon}_7`] : [it.icon]) expect(atlases[it.atlas], `${it.id} -> ${k}`).toHaveProperty([k]);
     }
-    // el jefe llena la pantalla: celda 96 y la hoja de 8 filas de 96
-    expect(m.personajes.minotauro).toMatchObject({ celda: 96, pivote: [48, 93] });
-    const mw = files.find((f) => f.name === 'enemigos/minotauro_walk.png')!.bytes;
-    expect((mw[20] << 24) | (mw[21] << 16) | (mw[22] << 8) | mw[23]).toBe(8 * 96);
+    // el minotauro se dibuja a su tamaño: celda 128 sin agrandar, hoja de 8 filas de 128 y pivote medido en los pies
+    expect(m.personajes.minotauro).toMatchObject({ celda: 128, perfil_movimiento: 'premium' });
+    expect(m.personajes.minotauro.pivote[0]).toBe(64);
+    expect(m.personajes.minotauro.pivote[1]).toBeGreaterThan(96);
+    const mw = files.find((f) => f.name === 'enemigos/minotauro_idle.png')!.bytes;
+    expect((mw[20] << 24) | (mw[21] << 16) | (mw[22] << 8) | mw[23]).toBe(8 * 128);
+    expect(m.personajes.guardian_campana).toMatchObject({ celda: 128, perfil_movimiento: 'premium' });
     expect(m.fx.onda_pisoton).toMatchObject({ celda: 96, cuadros: 8, fps: 16, loop: false });
     expect(m.mundo.objetos.aviso_carga).toMatchObject({ w: 32, h: 48, apoyo: [0, 24] });
     expect(Object.keys(m.app).sort()).toEqual(['apple_touch_180', 'favicon_32', 'icono_192', 'icono_512', 'icono_maskable_512']);

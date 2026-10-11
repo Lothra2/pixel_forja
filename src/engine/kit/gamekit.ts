@@ -29,6 +29,9 @@ import { continuara } from '../ui/continuara';
 import { signIcons, hudIcons, rotateTablet, skillIcons } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
+import { renderBossSheets, clipSheet, type BossSpec, type BossCache } from '../boss/sheet';
+import { MINO_SPEC } from '../boss/minotauro';
+import { GUARDIAN_SPEC } from '../boss/guardian';
 
 /**
  * Kit del juego "GG Abyss": todo lo que el juego necesita, listo para Phaser, con un manifest.json que dice qué es
@@ -62,6 +65,8 @@ export interface KitOptions {
   sinCapas?: boolean;
   /** caché de capas de equipo (la línea de comandos la guarda en disco): son lentas de dibujar */
   cache?: { get: (clave: string) => { png: Uint8Array; meta: string } | undefined; set: (clave: string, v: { png: Uint8Array; meta: string }) => void };
+  /** caché de cuadros de los jefes grandes (también lentos) */
+  bossCache?: BossCache;
 }
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
@@ -170,6 +175,42 @@ function exportCapas(id: string, f: HumanFicha, anims: string[], files: ExportFi
   return out;
 }
 
+/** Jefes dibujados a su tamaño final (motor de jefes grandes, src/engine/boss). */
+export const BIG_BOSSES: Partial<Record<EnemyId, BossSpec>> = { minotauro: MINO_SPEC, guardian_campana: GUARDIAN_SPEC };
+
+const r2 = (v: number) => Math.round(v * 100) / 100;
+
+/**
+ * Un jefe grande al kit: una hoja por animación (fila = dirección, columna = cuadro), celda y pivote reales, y en el
+ * manifiesto los eventos (con el punto que pega en cada dirección), el aviso de los golpes fuertes, el avance de los
+ * pasos y la elevación de los saltos. quick: solo el reposo en 2 cuadros (pruebas).
+ */
+function exportBoss(spec: BossSpec, files: ExportFile[], log: (m: string) => void, cache?: BossCache, quick?: boolean): CharEntry {
+  const s = quick ? { ...spec, anims: spec.anims.filter((a) => a.name === 'idle').map((a) => ({ ...a, frames: 2 })) } : spec;
+  const { clips, pivot } = renderBossSheets(s, cache, log);
+  const ds = spec.dims(spec.cell).s, cs = spec.cell / 128;
+  const out: CharEntry = { tipo: 'jefe', nombre: spec.id, celda: spec.cell, pivote: pivot, anims: {}, perfil_movimiento: 'premium' };
+  for (const c of clips) {
+    const name = `enemigos/${spec.id}_${c.def.name}.png`;
+    files.push(png(name, clipSheet(c, spec.cell)));
+    const n = c.def.frames;
+    const eventos = (c.def.events ?? []).filter((e) => e.frame < n).map((e) => ({
+      tipo: e.type as NonNullable<MovimientoAnim['eventos']>[number]['tipo'], cuadro: e.frame, fase: r2(e.frame / n),
+      ...(e.foot ? { pie: e.foot === 'near' ? ('cerca' as const) : ('lejos' as const) } : {}),
+      ...(c.strike?.[e.frame] ? { punto: c.strike[e.frame] } : {}),
+    }));
+    out.anims[c.def.name] = {
+      archivo: name, cuadros: n, fps: c.def.fps, loop: c.def.loop,
+      ...(eventos.length ? { eventos } : {}),
+      ...(c.def.stride ? { avance: r2(c.def.stride * ds) } : {}),
+      ...(c.def.rise ? { elevacion: c.def.rise.slice(0, n).map((v) => r2(v * cs)) } : {}),
+      ...(c.def.windup ? { aviso: c.def.windup } : {}),
+    } as CharEntry['anims'][string];
+  }
+  log(`enemigos/${spec.id}: ${clips.length} animaciones a celda ${spec.cell}, pivote ${pivot.join(',')}`);
+  return out;
+}
+
 /** Arma todo el kit. Devuelve los archivos (rutas relativas a la carpeta del kit). */
 export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const log = opts.progress ?? (() => {});
@@ -213,8 +254,11 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const f = enemyFicha(id);
     chars[id] = exportChar('enemigos', id, f, enemyCell(id), enemyAnims(id), { tipo: 'enemigo', nombre: id }, files, log);
   }
-  // los jefes llenan la pantalla: dibujados en 64 (ahí les caben los cuernos) y agrandados x1.5 a celda 96
+  // jefes: se dibujan a su tamaño final (celda 128, sin agrandar). Uno que todavía no tenga su versión grande sale
+  // como antes: dibujado en 64 y agrandado x1.5 a celda 96
   for (const b of [boss, ...(opts.boss ? [] : (['guardian_campana'] as EnemyId[]))]) {
+    const spec = BIG_BOSSES[b];
+    if (spec) { chars[b] = exportBoss(spec, files, log, opts.bossCache, opts.quick); continue; }
     const f = enemyFicha(b);
     chars[b] = exportChar('enemigos', b, f, 64, [...enemyAnims(b), 'leap'], { tipo: 'jefe', nombre: b }, files, log, 1.5);
   }

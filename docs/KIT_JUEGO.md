@@ -114,6 +114,34 @@ Si una ficha del estudio llega en clásico, sale como siempre, sin esos campos.
 
 Todas las rutas son relativas a la carpeta del kit.
 
+### Jefes grandes (dibujados a su tamaño)
+
+El minotauro y el guardián de la campana ya no son jefes de 64 agrandados x1.5. Se dibujan a celda **128**, pixel
+por pixel, con el motor de jefes grandes (`src/engine/boss`).
+
+- `celda`: 128. `pivote`: medido en los pies de verdad en todas las direcciones y cuadros (hoy `[64, 104]` el
+  minotauro y `[64, 101]` el guardián). Cada jefe tiene el suyo: el juego lo lee del manifiesto.
+  En la vista de arriba lo que está delante de los pies baja en pantalla: por eso el pivote no está en la última fila.
+- Mismas animaciones y mismos fps de antes: `idle` 6, `walk` 10, `attack` 14, `hit` 12, `die` 8,
+  `attack_heavy` 12, `charge` 14, `warcry` 10, `leap` 12. Cambian los cuadros: `die` 16, `attack_heavy` 11,
+  `warcry` 10, `leap` 12.
+- `eventos`: `impacto` (con `punto`: dónde pega la cabeza del mazo en cada dirección, en pixeles desde el pivote),
+  `paso`, `grito`, `despegue`, `aterriza` y `suelta` (cuando suelta el mazo al liberarse).
+- `aviso`: `[desde, hasta]` cuadros de la preparación de los golpes fuertes. Dura al menos 4 cuadros y tiembla:
+  es lo que le da tiempo a Alana de esquivar. El juego puede pintar el aviso en el piso durante esos cuadros.
+- `avance` en `walk` y `charge`, como las heroínas.
+- `elevacion` en `leap`: cuánto sube el juego el sprite sobre su sombra en cada cuadro. El salto no se dibuja
+  dentro de la celda (no entraría): el dibujo queda a ras del piso y el juego lo levanta.
+- `die` termina en **liberado**: se le va el encantamiento en chispas violetas, suelta el mazo, se arrodilla y
+  queda tranquilo con los ojos tibios. No hay cuerpo tirado.
+- El guardián es un gólem de cobre con verdín y la campana colgando delante de la panza, que se mece con 2 cuadros
+  de retraso. Encantado, la visera, las runas de la campana y los brotes de las raíces brillan **violeta**; al final
+  de `die` pasan a **turquesa**. Trae además `libre` (8 cuadros, 6 fps, en bucle): parado y en paz, en turquesa,
+  sin el mazo, para mostrarlo después de la pelea junto a la `campana_libre` del mapa.
+
+Del lado del juego: el radio de golpe y la barra de vida se ajustan a la celda nueva (`celda` y `pivote` ya vienen
+en el manifiesto).
+
 ### Hojas de personajes
 
 Un PNG por animación. Fila = dirección en el orden de `direcciones`. Columna = cuadro. Ancho = `cuadros * celda`, alto = `8 * celda`.

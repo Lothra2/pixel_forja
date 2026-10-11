@@ -167,7 +167,7 @@ describe('movimiento premium', () => {
     expect(rick.anims.walk.avance).toBeGreaterThan(6);
     expect(rick.anims.walk.eventos).toHaveLength(2);
     expect(rick.anims.attack.eventos[0].tipo).toBe('impacto');
-    expect(m.personajes.minotauro.perfil_movimiento).toBeUndefined();
+    expect(m.personajes.guardian_campana.perfil_movimiento).toBe('premium');
   }, 120_000);
 
   it('atletismo: toda la familia pasa el control en 8 direcciones y 3 tamaños', () => {

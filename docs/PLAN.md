@@ -18,6 +18,7 @@ criterio de aceptación por cumplido hay que pasar las imágenes reales por el e
 | 7 | Exportadores Aseprite, Godot, Unity, zip de cuadros, paquete de personaje. Galería y "sorpréndeme" | Hecho |
 | Fotos | Modo busto para selfies: cara, ojos, cejas, pelo, barba, camisa y estampado. Lo de abajo se completa con ropa por defecto | Hecho |
 | Netlify | `netlify.toml` listo | Falta conectar tu cuenta |
+| Jefes grandes | Motor 3D a pixel para jefes a su tamaño (96, 128, 192), minotauro y guardián de la campana a 128 en 8 direcciones, control de calidad de jefes | Hecho |
 
 ## Decisiones que tomé sin preguntarte
 
@@ -108,6 +109,31 @@ el cuerpo abajo. También se elige a mano en el paso de fondo.
 - **Playwright, 8 pruebas**, en computadora y teléfono. Recorren el flujo completo de persona y de
   animal, el editor de poses, la galería, las descargas y una selfie de busto.
 - `npm run entregables` revisó 604 clips sin errores de calidad. La tabla está en `docs/final/calidad.md`.
+
+## Jefes grandes (motor 3D a pixel)
+
+Los jefes se dibujan a su tamaño final (96, 128 o 192) sin agrandar nada. El cuerpo se arma con formas 3D
+(elipsoides, conos redondeados, cajas, anillos y bandas que abrazan otra forma) que se funden entre sí dentro de
+cada grupo, se mira desde arriba en 3/4 y se pinta pixel por pixel:
+
+- Luz única de arriba a la izquierda. Rampas de 5 a 7 tonos que giran el color: luces cálidas, sombras frías.
+- Textura pegada a cada pieza: mechones de pelo que corren a lo largo de la pieza, grietas de piedra, veta de
+  madera, poros de cuero y brillo duro de 1 o 2 pixeles en el metal.
+- Oclusión donde una pieza pasa por delante de otra, líneas de adentro y contorno de 1 pixel más oscuro que la
+  sombra más oscura.
+- Partes que cuelgan (cola, taparrabo, campana, alas) con 2 cuadros de retraso respecto a la cadera.
+- 3D de verdad: las 8 direcciones salen de la misma pose, con el arma en la misma mano.
+- Animaciones con poses clave y aviso sostenido de al menos 4 cuadros antes de cada golpe fuerte.
+- Control de calidad propio (`src/engine/qa/boss.ts`) a 96, 128 y 192: que quepa y no toque el borde, pies en el
+  pivote, contorno de 1 px, detector de escalado (columnas repetidas y bloques de 2x2 y 3x3 de un color) y silueta
+  al 50 %.
+
+Archivos: `src/engine/boss/` (sdf, render, rig, anim, secondary, sheet, minotauro, guardian). Láminas en `docs/jefes/`.
+
+**Límite honesto: el tamaño.** El pedido era un minotauro de unos 110 px en celda 128. En la vista de arriba lo que
+está delante de los pies baja en pantalla y lo que está atrás sube, así que el mazazo necesita lugar debajo del
+apoyo. Con 110 px de alto no entra en las 8 direcciones. Quedó en unos 100 px con los cuernos (2.3 veces la
+heroína) y el mazazo cae cerca de los pies. El guardián quedó en unos 95. Para uno más grande hace falta la celda 192.
 
 ## Lo que falta o no quedó perfecto
 
