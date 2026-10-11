@@ -1,4 +1,4 @@
-import type { Pose } from '../rig/pose';
+import type { Pose, PropState } from '../rig/pose';
 import { type AnimDef, type Ctx, P, feet } from './types';
 
 /**
@@ -168,4 +168,191 @@ export const thrownSpin: AnimDef = {
   },
 };
 
-export const BRAWL: AnimDef[] = [lift, carryIdle, carryWalk, carryRun, throwOverhead, carried, thrownSpin];
+
+// ---------- caer, agarrar, marearse, burlarse, golpes corriendo y en el aire ----------
+
+const hurt = { eyes: 'hurt' as const, mouth: 'o' as const };
+const spark = (at: PropState['at'], angle = 0): PropState => ({ kind: 'spark', at, angles: { side: angle, se: angle + 10, ne: angle - 10 }, front: true });
+
+/** Guardia de pelea callejera: más suelta que la de artes marciales, puños a la altura del pecho. */
+function street(c: Ctx, b = 0): Pose {
+  const L = c.L;
+  return P(c, {
+    torso: 6, legs: { near: { x: 0.28 * L, y: L - 1.0 + b * 0.6 }, far: { x: -0.3 * L, y: L - 1.0 + b * 0.6, toe: 10 } },
+    arms: { near: { shoulder: 60, elbow: 110 }, far: { shoulder: 70, elbow: 100 } }, face: fierce, support: 'both',
+  });
+}
+
+/** Tirado boca arriba (para caídas y rebotes). */
+function down(c: Ctx, air = 0, eyes: 'closed' | 'hurt' = 'closed'): Pose {
+  const L = c.L;
+  return P(c, {
+    torso: -88, air, legs: { near: { x: 0.75 * L, y: 0.1 * L, toe: -30 }, far: { x: 0.7 * L, y: 0.2 * L, toe: -30 } },
+    arms: { near: { shoulder: 120, elbow: 40 }, far: { shoulder: 140, elbow: 30 } }, face: { eyes, mouth: 'o' }, fit: true,
+  });
+}
+
+/** Caer de plano: pega contra el piso, rebota un poco y queda. */
+export const landFlat: AnimDef = {
+  name: 'land_flat', pack: 'brawl', fps: 12, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'aterriza', phase: 0 }],
+  build: (c) => [down(c, 0, 'hurt'), down(c, Math.max(1, Math.round(2 * c.u)), 'hurt'), down(c), down(c)],
+};
+
+/** Agarrar de la ropa: estira las dos manos y cierra adelante, a la altura del pecho del rival (impacto). */
+export const grab: AnimDef = {
+  name: 'grab', pack: 'brawl', fps: 14, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'impacto', phase: 2 / 4 }],
+  build: (c) => {
+    const L = c.L, s = street(c);
+    const lunge = P(c, { torso: 14, legs: { near: { x: 0.4 * L, y: L - 0.9 }, far: { x: -0.3 * L, y: L - 0.5, toe: 20 } }, arms: { near: { shoulder: 85, elbow: 20 }, far: { shoulder: 90, elbow: 20 } }, face: fierce, support: 'near' });
+    const shut = { ...lunge, torso: 12, arms: { near: { shoulder: 88, elbow: 60 }, far: { shoulder: 92, elbow: 60 } }, face: strain };
+    return [s, lunge, shut, { ...shut, torso: 8, x: -c.u }];
+  },
+};
+
+/** Sostener el agarre: tironea un poco adelante y atrás. */
+export const grabHold: AnimDef = {
+  name: 'grab_hold', pack: 'brawl', fps: 8, loop: true, steady: true, views: ['side', 'front', 'back'],
+  build: (c) => {
+    const L = c.L;
+    const k = (t: number, e: number): Pose => P(c, { torso: 8 + t, x: (t / 4) * c.u, legs: { near: { x: 0.35 * L, y: L - 0.9 }, far: { x: -0.3 * L, y: L - 0.7, toe: 15 } }, arms: { near: { shoulder: 88, elbow: e }, far: { shoulder: 92, elbow: e } }, face: strain, support: 'both' });
+    return [k(0, 60), k(3, 70), k(4, 75), k(1, 65)];
+  },
+};
+
+/** Agarrado: echado para atrás, los brazos manoteando y los pies arrastrando. */
+export const grabbed: AnimDef = {
+  name: 'grabbed', pack: 'brawl', fps: 8, loop: true, steady: true, views: ['side', 'front', 'back'],
+  build: (c) => {
+    const L = c.L;
+    const k = (t: number, a: number): Pose => P(c, { torso: -10 - t, x: -c.u, head: { tilt: -8 - t, dx: 0, dy: 0 }, legs: { near: { x: 0.2 * L, y: L - 0.6, toe: -10 }, far: { x: -0.25 * L, y: L - 0.5 } }, arms: { near: { shoulder: 40 + a, elbow: 50, spread: 20 }, far: { shoulder: 60 - a, elbow: 50, spread: 20 } }, face: hurt, support: 'both' });
+    return [k(0, 0), k(3, 25), k(4, 10), k(1, -15)];
+  },
+};
+
+/** Rodillazo en agarre: tira del rival hacia abajo y sube la rodilla al cuerpo (impacto). */
+export const kneeGrab: AnimDef = {
+  name: 'knee_grab', pack: 'brawl', fps: 14, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'impacto', phase: 2 / 5 }],
+  build: (c) => {
+    const L = c.L;
+    const hold = P(c, { torso: 10, legs: { near: { x: 0.3 * L, y: L - 0.9 }, far: { x: -0.3 * L, y: L - 0.7 } }, arms: { near: { shoulder: 85, elbow: 70 }, far: { shoulder: 90, elbow: 70 } }, face: strain, support: 'both' });
+    const pull = { ...hold, torso: 18, arms: { near: { shoulder: 70, elbow: 80 }, far: { shoulder: 75, elbow: 80 } } };
+    const knee = P(c, { torso: 14, legs: { near: { x: 0.45 * L, y: 0.35 * L, toe: 40 }, far: { x: -0.1 * L, y: L - 0.4, toe: 20 } }, arms: { near: { shoulder: 65, elbow: 85 }, far: { shoulder: 70, elbow: 85 } }, face: { eyes: 'angry', mouth: 'grin' }, support: 'far', props: [spark('footNear', -40)] });
+    return [hold, pull, knee, { ...knee, props: [] }, hold];
+  },
+};
+
+/** Zafarse: se encoge, gira y abre los brazos de golpe, y da un paso atrás. */
+export const breakFree: AnimDef = {
+  name: 'break_free', pack: 'brawl', fps: 14, loop: false, views: ['side', 'front', 'back'],
+  build: (c) => {
+    const L = c.L;
+    const curl = P(c, { torso: 18, legs: feet(c, 0.4, 0.22), arms: { near: { shoulder: 20, elbow: 130 }, far: { shoulder: 25, elbow: 130 } }, face: strain, support: 'both' });
+    const burst = P(c, { torso: -6, legs: feet(c, 0.15, 0.25), arms: { near: { shoulder: 100, elbow: 10, spread: 60 }, far: { shoulder: 110, elbow: 10, spread: 60 } }, face: { eyes: 'angry', mouth: 'open' }, support: 'both' });
+    const back = P(c, { torso: 2, x: -c.u, legs: { near: { x: 0.1 * L, y: L - 0.6 }, far: { x: -0.4 * L, y: L - 0.8 } }, arms: { near: { shoulder: 50, elbow: 60 }, far: { shoulder: 55, elbow: 60 } }, face: fierce, support: 'far' });
+    return [curl, curl, burst, back, street(c)];
+  },
+};
+
+/**
+ * Mareado: se tambalea en círculo, la cabeza cae de un lado al otro y los brazos cuelgan. `cabeza` dice dónde van
+ * los pajaritos.
+ */
+export const dizzy: AnimDef = {
+  name: 'dizzy', pack: 'brawl', fps: 8, loop: true, views: ['side', 'front', 'back'],
+  build: (c) => {
+    const L = c.L;
+    return Array.from({ length: 8 }, (_, i) => {
+      const a = (i / 8) * Math.PI * 2, sw = Math.sin(a), cw = Math.cos(a);
+      return P(c, {
+        torso: 6 * sw, x: Math.round(sw * c.u), head: { tilt: 12 * sw, dx: 0, dy: 0 },
+        legs: { near: { x: (0.2 + 0.06 * cw) * L, y: L - 0.9 }, far: { x: (-0.2 + 0.06 * cw) * L, y: L - 0.9 } },
+        arms: { near: { shoulder: 10 + 10 * cw, elbow: 20, spread: 15 }, far: { shoulder: 10 - 10 * cw, elbow: 20, spread: 15 } },
+        face: { eyes: i % 4 < 2 ? 'hurt' : 'closed', mouth: 'o' }, support: 'both',
+      });
+    });
+  },
+};
+
+/** Nocaut con rebote: el golpe lo levanta, cae, rebota (dos aterrizajes) y queda tirado. Más exagerado que `knockout`. */
+export const koBounce: AnimDef = {
+  name: 'ko_bounce', pack: 'brawl', fps: 12, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'aterriza', phase: 3 / 8 }, { type: 'aterriza', phase: 5 / 8 }],
+  build: (c) => {
+    const L = c.L, u = c.u, R = (v: number) => Math.max(1, Math.round(v * u));
+    const snap = P(c, { torso: -22, x: -u, head: { tilt: -22, dx: 0, dy: 0 }, legs: { near: { x: -0.4 * L, y: L - 0.6 }, far: { x: 0.2 * L, y: L - 0.5 } }, arms: { near: { shoulder: -20, elbow: 30, spread: 40 }, far: { shoulder: 10, elbow: 30, spread: 40 } }, face: hurt, support: 'both' });
+    const fly = P(c, { torso: -65, air: R(6), legs: { near: { x: 0.6 * L, y: 0.2 * L, toe: 20 }, far: { x: 0.5 * L, y: 0.35 * L, toe: 20 } }, arms: { near: { shoulder: 150, elbow: 30 }, far: { shoulder: 165, elbow: 30 } }, face: hurt, fit: true });
+    const flat = P(c, { ...fly, torso: -82, air: R(5) });
+    return [snap, fly, flat, down(c, 0, 'hurt'), down(c, R(4), 'hurt'), down(c, 0, 'hurt'), down(c), down(c)];
+  },
+};
+
+/** Burla: mano en la cadera y la otra llamando "ven, ven", con la cabeza ladeada y sonrisa. */
+export const taunt: AnimDef = {
+  name: 'taunt', pack: 'brawl', fps: 8, loop: false, views: ['side', 'front', 'back'],
+  build: (c) => {
+    const L = c.L;
+    const k = (e: number, tilt: number): Pose => P(c, { torso: -4, head: { tilt, dx: 0, dy: 0 }, legs: { near: { x: 0.25 * L, y: L - 0.4 }, far: { x: -0.25 * L, y: L - 0.4 } }, arms: { near: { shoulder: 85, elbow: e }, far: { shoulder: -30, elbow: 110 } }, face: { eyes: 'happy', mouth: 'grin' }, support: 'both' });
+    return [street(c), k(10, 4), k(80, 8), k(10, 4), k(80, 8), k(10, 6), k(70, 6), street(c)];
+  },
+};
+
+/** Puñetazo corriendo: llega a la carrera y el puño sale adelante con todo el cuerpo (impacto). */
+export const runPunch: AnimDef = {
+  name: 'run_punch', pack: 'brawl', fps: 16, loop: false, views: ['side', 'front', 'back'], travel: { ref: 'run', k: [1, 0.9, 0.7, 0.4, 0.15, 0] },
+  events: [{ type: 'impacto', phase: 2 / 6 }],
+  build: (c) => {
+    const L = c.L;
+    const run = P(c, { torso: 16, legs: { near: { x: 0.35 * L, y: L - 0.6 }, far: { x: -0.4 * L, y: L - 0.7, toe: 30 } }, arms: { near: { shoulder: 40, elbow: 110 }, far: { shoulder: -30, elbow: 70 } }, face: fierce, support: 'near' });
+    const hit = P(c, { torso: 20, legs: { near: { x: 0.45 * L, y: L - 1.0 }, far: { x: -0.4 * L, y: L - 0.4, toe: 40 } }, arms: { near: { shoulder: 90, elbow: 0 }, far: { shoulder: 30, elbow: 100 } }, face: { eyes: 'angry', mouth: 'grin' }, support: 'near' });
+    return [run, { ...run, arms: { near: { shoulder: 20, elbow: 120 }, far: run.arms.far } }, { ...hit, props: [spark('handNear')] }, hit, { ...hit, torso: 12, arms: { near: { shoulder: 60, elbow: 60 }, far: hit.arms.far } }, street(c)];
+  },
+};
+
+/** Patada voladora corriendo: corre, despega, estira la pierna en el aire (impacto) y aterriza. Con elevación y desplazamiento. */
+export const runKick: AnimDef = {
+  name: 'run_kick', pack: 'brawl', fps: 14, loop: false, lateral: true, views: ['side', 'front', 'back'], travel: { ref: 'run', k: [1, 1, 0.95, 0.9, 0.85, 0.6, 0.2, 0] },
+  events: [{ type: 'despegue', phase: 2 / 8 }, { type: 'impacto', phase: 4 / 8 }, { type: 'aterriza', phase: 6 / 8 }],
+  build: (c) => {
+    const L = c.L, u = c.u, R = (v: number) => Math.round(v * u);
+    const run = P(c, { torso: 14, legs: { near: { x: 0.35 * L, y: L - 0.5 }, far: { x: -0.4 * L, y: L - 0.6, toe: 30 } }, arms: { near: { shoulder: -40, elbow: 80 }, far: { shoulder: 50, elbow: 80 } }, face: fierce, support: 'near' });
+    const take = P(c, { torso: 4, rise: R(6), legs: { near: { x: 0.4 * L, y: 0.35 * L, toe: 20 }, far: { x: -0.15 * L, y: L - 0.2, toe: 50 } }, arms: { near: { shoulder: 60, elbow: 100 }, far: { shoulder: 70, elbow: 100 } }, face: fierce });
+    const kick = P(c, { torso: -28, x: -2 * u, rise: R(12), legs: { near: { x: 1.0 * L, y: 0.2 * L, toe: 0 }, far: { x: -0.2 * L, y: 0.5 * L, toe: 40 } }, arms: { near: { shoulder: -50, elbow: 30, spread: 30 }, far: { shoulder: 80, elbow: 90 } }, face: { eyes: 'angry', mouth: 'grin' } });
+    const fall = P(c, { torso: -8, rise: R(5), legs: { near: { x: 0.4 * L, y: 0.6 * L, toe: 20 }, far: { x: -0.2 * L, y: 0.7 * L, toe: 30 } }, arms: { near: { shoulder: 30, elbow: 90 }, far: { shoulder: 60, elbow: 100 } }, face: fierce });
+    const land = P(c, { torso: 14, legs: { near: { x: 0.35 * L, y: L - 1.8 }, far: { x: -0.35 * L, y: L - 1.8 } }, arms: { near: { shoulder: 40, elbow: 100 }, far: { shoulder: 60, elbow: 100 } }, face: fierce, support: 'both' });
+    return [run, run, take, { ...kick, rise: R(11), props: [] }, { ...kick, props: [spark('footNear', 10)] }, fall, land, street(c)];
+  },
+};
+
+/** Patada en el aire desde un salto normal: recoge las piernas, estira una (impacto) y la vuelve a recoger. */
+export const airKick: AnimDef = {
+  name: 'air_kick', pack: 'brawl', fps: 14, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'impacto', phase: 1 / 4 }],
+  build: (c) => {
+    const L = c.L, u = c.u, air = Math.max(2, Math.round(3 * u));
+    const tuck = P(c, { torso: -6, air, legs: { near: { x: 0.35 * L, y: 0.35 * L, toe: 20 }, far: { x: 0.1 * L, y: 0.45 * L, toe: 30 } }, arms: { near: { shoulder: 50, elbow: 110 }, far: { shoulder: 60, elbow: 110 } }, face: fierce });
+    const kick = P(c, { torso: -24, x: -u, air, legs: { near: { x: 0.95 * L, y: 0.3 * L, toe: 0 }, far: { x: -0.1 * L, y: 0.5 * L, toe: 40 } }, arms: { near: { shoulder: -40, elbow: 30, spread: 30 }, far: { shoulder: 80, elbow: 90 } }, face: { eyes: 'angry', mouth: 'grin' } });
+    return [tuck, { ...kick, props: [spark('footNear', 10)] }, kick, tuck];
+  },
+};
+
+/** Resbalón en piso mojado: el pie se va adelante, los brazos aletean, cae de espalda (aterriza) y queda viendo estrellas. */
+export const slipWet: AnimDef = {
+  name: 'slip_wet', pack: 'brawl', fps: 14, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'aterriza', phase: 4 / 8 }],
+  build: (c) => {
+    const L = c.L, u = c.u, R = (v: number) => Math.max(1, Math.round(v * u));
+    const step = P(c, { torso: 4, legs: { near: { x: 0.4 * L, y: L - 0.2 }, far: { x: -0.3 * L, y: L - 0.4, toe: 10 } }, arms: { near: { shoulder: -20, elbow: 15 }, far: { shoulder: 20, elbow: 20 } }, face: { eyes: 'open', mouth: 'line' }, support: 'near' });
+    const slide = P(c, { torso: -18, legs: { near: { x: 0.85 * L, y: L - 0.9, toe: -20 }, far: { x: -0.2 * L, y: L - 0.5 } }, arms: { near: { shoulder: 120, elbow: 20, spread: 30 }, far: { shoulder: 130, elbow: 20, spread: 30 } }, face: { eyes: 'wide', mouth: 'o' }, support: 'far' });
+    const air1 = P(c, { torso: -45, air: R(5), legs: { near: { x: 0.7 * L, y: -0.1 * L, toe: 0 }, far: { x: 0.5 * L, y: 0.2 * L } }, arms: { near: { shoulder: 160, elbow: 20 }, far: { shoulder: 150, elbow: 30 } }, face: { eyes: 'wide', mouth: 'o' }, fit: true });
+    const air2 = P(c, { ...air1, torso: -72, air: R(3) });
+    return [step, slide, air1, air2, down(c, 0, 'hurt'), down(c, R(2), 'hurt'), down(c), down(c)];
+  },
+};
+
+export const BRAWL: AnimDef[] = [
+  lift, carryIdle, carryWalk, carryRun, throwOverhead, carried, thrownSpin, landFlat,
+  grab, grabHold, grabbed, kneeGrab, breakFree, dizzy, koBounce, taunt, runPunch, runKick, airKick, slipWet,
+];
