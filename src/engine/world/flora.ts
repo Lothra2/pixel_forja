@@ -265,7 +265,7 @@ function treeFace(r: Raster, cx: number, cy: number, open: number, glow: string)
 export interface Flora { name: string; w: number; h: number; anchor: [number, number]; solid: [number, number, number, number]; anims: Record<string, { frames: Raster[]; fps: number; loop: boolean }> }
 
 const SWAY = [0, 0.8, 1.4, 1.6, 1.2, 0.5, -0.3, -0.7, -0.4];
-const swayFrames = (amp: number) => SWAY.map((v) => v * amp);
+export const swayFrames = (amp: number) => SWAY.map((v) => v * amp);
 
 /** Ramas gruesas que suben desde la punta del tronco hacia adentro de la copa (solo se ven si la copa se aclara). */
 function innerBranches(r: Raster, x: number, y: number, len: number, w: number, seed: number) {
@@ -290,7 +290,7 @@ function crownOf(full: Raster, trunk: Raster): Raster {
  * Anims `tronco` y `copa` de un árbol (mismo tamaño, apoyo y cuadros que idle): el juego dibuja el tronco ordenado por
  * profundidad y la copa encima, y cuando la heroína pasa detrás baja solo la copa a alfa 0.45.
  */
-function splitAnims(full: Raster[], trunkRaw: Raster[], fps: number, trunkName = 'tronco') {
+export function splitAnims(full: Raster[], trunkRaw: Raster[], fps: number, trunkName = 'tronco') {
   // las ramas de adentro nunca se salen de la silueta del árbol
   const trunk = trunkRaw.map((t, k) => { const o = createRaster(t.w, t.h); for (let i = 3; i < t.data.length; i += 4) if (full[k].data[i]) o.data.set(t.data.subarray(i - 3, i + 1), i - 3); return o; });
   return { [trunkName]: { frames: trunk, fps, loop: true }, copa: { frames: full.map((f, i) => crownOf(f, trunk[i])), fps, loop: true } };
@@ -325,7 +325,7 @@ export function oakV3(variant = 0, big = false, autumn = false): Flora {
 }
 
 /** Pisos de agujas: triángulos con el borde de abajo en flecos que cuelgan, luz a la izquierda, sombra del piso de arriba. */
-function drawPineTiers(r: Raster, cx: number, top: number, tiers: number, tierH: number, w0: number, dw: number, ramp: string[], seed: number, sway: number, bottomY: number) {
+export function drawPineTiers(r: Raster, cx: number, top: number, tiers: number, tierH: number, w0: number, dw: number, ramp: string[], seed: number, sway: number, bottomY: number) {
   const R = ramp.map(hex), N = R.length;
   const W = r.w, H = r.h;
   const owner = new Int16Array(W * H).fill(-1), tone = new Float32Array(W * H);

@@ -19,8 +19,8 @@ export interface TerrainDesign {
   seed: number;
   /** mesetas (nivel 1): polígonos. El borde de abajo muestra el acantilado */
   plateaus: TP[][];
-  /** escaleras talladas en el acantilado: centro x y fila del borde, ancho en cuadros */
-  stairs: { x: number; y: number; w: number }[];
+  /** escaleras talladas en el acantilado: centro x y fila del borde, ancho en cuadros. `tierra`: rampa de tierra pisada */
+  stairs: { x: number; y: number; w: number; style?: 'piedra' | 'tierra' }[];
   /** ríos: polilínea y ancho en cuadros */
   rivers: { pts: TP[]; w: number }[];
   lakes: { c: TP; rx: number; ry: number }[];
@@ -529,11 +529,26 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
       if (kind[i] !== 3 && kind[i] !== 5) continue;
       const r = run[i];
       if (kind[i] === 5) {
+        const s = d.stairs.find((s2) => Math.abs(x - s2.x * TILE) < (s2.w * TILE) / 2)!;
+        const ex = Math.abs(x - s.x * TILE) - (s.w * TILE) / 2;
+        if (s.style === 'tierra') {
+          // rampa de tierra pisada: más clara arriba (le da la luz), surcos de pisadas, bordes de roca con sombra al pie
+          const fh = faceH[x];
+          // arriba le da la luz y abajo queda en sombra: la pendiente se lee por el degradé
+          let t = 5.3 - (r / fh) * 3.6 + (vn(x, y, 5, S + 71) - 0.5) * 0.9;
+          // pisadas: escalones gastados cada 7 px, con el borde de abajo oscuro
+          if (r % 7 === 6) t -= 1.2; else if (r % 7 === 0) t += 0.5;
+          // los bordes de la rampa bajan en sombra hacia los muros
+          if (ex > -9) t -= (ex + 9) * 0.25;
+          let c = DIRT[Math.max(0, Math.min(DIRT.length - 1, Math.round(t)))];
+          if (ex > -4) c = ex > -2 ? ROCK[1] : ROCK[3];
+          if (hash(x >> 1, y >> 1, S + 73) > 0.985) c = pal.pebbles[0];
+          set(i, c);
+          continue;
+        }
         // escalones de piedra: franjas horizontales con borde claro
         const step = Math.floor((r - 1) / 7), ly = (r - 1) % 7;
         let c = ly === 0 ? COBBLE[5] : ly === 1 ? COBBLE[4] : ly >= 5 ? COBBLE[1] : COBBLE[3 - (step % 2)];
-        const s = d.stairs.find((s2) => Math.abs(x - s2.x * TILE) < (s2.w * TILE) / 2)!;
-        const ex = Math.abs(x - s.x * TILE) - (s.w * TILE) / 2;
         if (ex > -3) c = ROCK[2]; // muros de los lados
         set(i, c);
         continue;

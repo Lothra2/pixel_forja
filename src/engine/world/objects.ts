@@ -20,8 +20,13 @@ export interface WorldObject {
   anims: Record<string, { frames: Raster[]; fps: number; loop: boolean }>;
   /** cajas sólidas extra (por ejemplo las dos patas de un arco), relativas al apoyo */
   solids?: [number, number, number, number][];
-  /** 'suelo' = se dibuja debajo de los personajes (puentes, piedras del vado, nenúfares). Si no, se ordena por y */
-  layer?: 'suelo';
+  /**
+   * 'suelo' = se dibuja debajo de los personajes (puentes, piedras del vado, nenúfares). Si no, se ordena por y.
+   * 'frente' = encima de todo, con paralaje (ramas que cuelgan cerca de la cámara). 'fondo' = debajo de todo (abismo).
+   */
+  layer?: 'suelo' | 'frente' | 'fondo';
+  /** sombra horneada (mismo tamaño que el objeto, negra con alfa): el juego la dibuja debajo de todo */
+  shadow?: Raster;
   /** luz que emite: color, radio en px, si parpadea, y altura de la luz sobre el apoyo (px hacia arriba) */
   light?: { color: string; radius: number; flicker?: boolean; pulse?: boolean; dy?: number };
   /** línea donde el agua golpea abajo (cascada), relativa al apoyo [x0, y0, x1, y1]: ahí salen las gotas y la bruma */

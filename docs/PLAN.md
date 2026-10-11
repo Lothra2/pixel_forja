@@ -18,6 +18,7 @@ criterio de aceptación por cumplido hay que pasar las imágenes reales por el e
 | 7 | Exportadores Aseprite, Godot, Unity, zip de cuadros, paquete de personaje. Galería y "sorpréndeme" | Hecho |
 | Fotos | Modo busto para selfies: cara, ojos, cejas, pelo, barba, camisa y estampado. Lo de abajo se completa con ropa por defecto | Hecho |
 | Netlify | `netlify.toml` listo | Falta conectar tu cuenta |
+| Mundos premium | Piloto del Bosque Profundo: meseta y rampa, árboles por tamaño y forma, puntos focales, calcomanías, primer plano y sombras horneadas. Solo cambia esa zona | Hecho, falta tu aprobación |
 | Jefes grandes | Motor 3D a pixel para jefes a su tamaño (96, 128, 192), minotauro y guardián de la campana a 128 en 8 direcciones, control de calidad de jefes | Hecho |
 
 ## Decisiones que tomé sin preguntarte

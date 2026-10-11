@@ -7,6 +7,10 @@ import { cobweb } from './atmosphere';
 import { bosqueDesign, LUGARES as L, BOSQUE_W, BOSQUE_H } from './bosque';
 import { forestObjects, type WorldObject } from './objects';
 import { landmarkObjects, fittedWaterfall, type WaterfallCol } from './landmarks';
+import { treesPremium } from './premium/trees';
+import { withShadow, drawShadow } from './premium/shadow';
+import { forestDecals, forestGroups, forestFront } from './premium/details';
+import { applyPremiumZone, type PremiumZone, type ZoneReport } from './premium/zone';
 
 /**
  * El Bosque GG armado: terreno pintado + lugares + bosque lleno + enemigos, cofres (varios secretos), fogatas de guardado,
@@ -48,10 +52,34 @@ export function bosqueObjects(): WorldObject[] {
     ...o, anims: Object.fromEntries(Object.entries(o.anims).map(([k, a]) => [k, { ...a, frames: a.frames.map((f) => gloomGrade(f)) }])),
   }));
   const web: WorldObject = { name: 'telarana', w: 40, h: 36, anchor: [6, 35], solid: null, anims: { idle: { frames: [cobweb()], fps: 1, loop: true } } };
-  return [...graded, ...floraV3(), web];
+  const base = [...graded, ...floraV3(), web];
+  // premium (piloto del Bosque Profundo): árboles por tamaño y forma, grupos armados, calcomanías y primer plano.
+  // Los que se paran en el piso traen su sombra horneada
+  const byName = new Map(base.map((o) => [o.name, o]));
+  const premium = [...treesPremium().map((t) => withShadow(t)), ...forestGroups(byName).map((g) => withShadow(g, { length: 0.5, drop: 0.25 })), ...forestDecals(), ...forestFront()];
+  return [...base, ...premium];
 }
 
-export function bosqueMap(seed = 2024): BigMap {
+/** El piloto premium: el Bosque Profundo con meseta, rampa, árboles variados, puntos focales y primer plano. */
+export const ZONA_PILOTO: Omit<PremiumZone, 'darkAt'> = {
+  nombre: 'Bosque Profundo',
+  rect: [2, 29, 30, 47],
+  // meseta al noreste del sendero, con su rampa de tierra en la punta suroeste
+  plateaus: [[[19.5, 29.6], [28.5, 29.6], [29.6, 33.5], [27.5, 36.2], [23.5, 35.4], [19.6, 33.4]]],
+  ramps: [{ x: 21.6, y: 34.1, w: 2.4 }],
+  seed: 3407,
+  keep: (s) => !/^(pino_|roble_|arbol_seco_|arbusto_|roca$|roca_grande|tocon$|hongos$|telarana)/.test(s),
+};
+
+export function bosqueMap(seed = 2024, opts: { premium?: boolean } = {}): BigMap & { piloto?: ZoneReport } {
+  const m = bosqueMapBase(seed);
+  if (opts.premium === false) return m;
+  const darkAt = (tx: number, ty: number) => bosqueDesign.dark.reduce((mx, z) => Math.max(mx, 1 - Math.hypot(tx - z.c[0], ty - z.c[1]) / z.r), 0);
+  const piloto = applyPremiumZone(m, bosqueDesign, { ...ZONA_PILOTO, darkAt }, m.objects);
+  return { ...m, piloto };
+}
+
+function bosqueMapBase(seed = 2024): BigMap {
   const W = BOSQUE_W, H = BOSQUE_H, r = rng(seed);
   const terrain = paintTerrain(bosqueDesign);
   const objects = bosqueObjects();
@@ -588,11 +616,17 @@ export function renderBigMap(m: BigMap, opts: { entities?: boolean; frame?: numb
   const byName = new Map(m.objects.map((o) => [o.name, o]));
   const frameOf = (o: WorldObject) => { const a = o.anims.idle ?? o.anims.girar ?? Object.values(o.anims)[0]; return a.frames[Math.min(a.frames.length - 1, opts.frame ?? 0)]; };
   const ground = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'suelo');
-  const rest = m.decos.filter((d) => byName.get(d.sprite)?.layer !== 'suelo').sort((a, b) => a.y - b.y);
-  for (const d of [...ground, ...rest]) {
+  const front = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'frente');
+  const rest = m.decos.filter((d) => { const l = byName.get(d.sprite)?.layer; return l !== 'suelo' && l !== 'frente'; }).sort((a, b) => a.y - b.y);
+  for (const d of ground) { const o = byName.get(d.sprite)!; over(out, frameOf(o), Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1])); }
+  // sombras horneadas: sobre el suelo y debajo de todo lo que se para en él (como las dibuja el juego)
+  for (const d of rest) { const o = byName.get(d.sprite)!; if (o.shadow) drawShadow(out, o.shadow, Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1])); }
+  for (const d of rest) {
     const o = byName.get(d.sprite)!;
     over(out, frameOf(o), Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1]));
   }
+  // primer plano: encima de todo
+  for (const d of front) { const o = byName.get(d.sprite)!; over(out, frameOf(o), Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1])); }
   if (opts.entities) {
     const col: Record<string, string> = { enemigo: '#ff3a3a', jefe: '#ff00ff', cofre: '#ffd84a', jugador_inicio: '#3aff6a', thor_inicio: '#b5713a', portal_jefe: '#6cb4ff', portal_llegada: '#6cb4ff', rompible: '#c09460', cartel: '#ffffff', punto_guardado: '#ff8a1e' };
     for (const e of m.entities) {

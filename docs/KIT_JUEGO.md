@@ -142,6 +142,26 @@ por pixel, con el motor de jefes grandes (`src/engine/boss`).
 Del lado del juego: el radio de golpe y la barra de vida se ajustan a la celda nueva (`celda` y `pivote` ya vienen
 en el manifiesto).
 
+### Mundos premium (piloto: el Bosque Profundo)
+
+Campos nuevos en `mundo.objetos` (opcionales: si no están, todo sigue como antes):
+
+- `sombra`: PNG del mismo tamaño que el objeto, negro con alfa. Se dibuja sobre el suelo y debajo de todos los
+  objetos y personajes, en la misma posición que el objeto. Si un objeto no la trae, se usa la elipse de siempre.
+- `capa: "frente"`: se dibuja encima de todo con paralaje 1.15 y baja a alfa 0.35 si la heroína queda detrás.
+  Ninguno es sólido. `capa: "fondo"`: debajo de todo (lo usa la Catedral para el abismo, en la próxima tanda).
+
+Objetos nuevos del Bosque:
+- Árboles `roble_t<tamaño>_<forma>` y `pino_t<tamaño>_<forma>` (tamaño 0, 1 o 2: 116, 146 y 182 px; forma 0, 1 o 2),
+  con `idle`, `tronco` y `copa` como los de siempre, y `sombra`.
+- Grupos: `claro_tronco_hongos`, `rocas_musgo_grupo`, `raices_expuestas`, `arbusto_flores_grupo`, y `helecho`.
+- Calcomanías con `capa: "suelo"`: `hojas_caidas_0..3`, `raiz_suelo_0..2`, `grieta_0..2`, `charco_chico_0..1`,
+  `flores_suelo_0..3`, `piedritas_0..2`.
+- Primer plano con `capa: "frente"`: `frente_ramas_0..2` (256 x 96, 9 cuadros) y `frente_hojas_0..1` (128 x 64).
+
+El mapa (`mundo1_bosque.json`) ya los trae ubicados en el Bosque Profundo, con una meseta y su rampa de tierra.
+La colisión sale del mapa como siempre. Detalle y reglas: `docs/mundos/PILOTO.md`.
+
 ### Hojas de personajes
 
 Un PNG por animación. Fila = dirección en el orden de `direcciones`. Columna = cuadro. Ancho = `cuadros * celda`, alto = `8 * celda`.
