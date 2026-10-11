@@ -142,7 +142,7 @@ por pixel, con el motor de jefes grandes (`src/engine/boss`).
 Del lado del juego: el radio de golpe y la barra de vida se ajustan a la celda nueva (`celda` y `pivote` ya vienen
 en el manifiesto).
 
-### Mundos premium (piloto: el Bosque Profundo)
+### Mundos premium (el Bosque entero)
 
 Campos nuevos en `mundo.objetos` (opcionales: si no están, todo sigue como antes):
 
@@ -168,8 +168,12 @@ Objetos nuevos del Bosque:
   reacciones, color de los ojos) se busca con `def.base ?? id`. Afuera de la zona premium se siguen usando los de
   siempre hasta que le toque a cada zona.
 
-El mapa (`mundo1_bosque.json`) ya los trae ubicados en el Bosque Profundo, con una meseta y su rampa de tierra.
-Nada queda montado: el pie de cada objeto se ve siempre y dos cuerpos se pisan como mucho un 12 %.
+El mapa (`mundo1_bosque.json`) ya los trae ubicados en todo el Bosque, con la meseta y su rampa de tierra en el
+Bosque Profundo. Nada queda montado: el pie de cada objeto se ve siempre y dos cuerpos se pisan como mucho un 12 %.
+En el interior de las masas cerradas los árboles van en filas (dosel) y ahí sí se tapan el tronco entre ellos, como
+en cualquier bosque visto desde arriba. Lo que el diseño puso a mano (lugares, campamentos, ruinas, carteles,
+puentes, cofres y enemigos) no se movió. Zonas con primer plano declarado: Bosque Profundo, Claro Escondido y Anillo
+de las Hadas.
 La colisión sale del mapa como siempre. Detalle y reglas: `docs/mundos/PILOTO.md`.
 
 ### Hojas de personajes

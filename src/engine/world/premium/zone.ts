@@ -1,20 +1,23 @@
 import { TILE } from '../tiles';
-import { paintTerrain, forestFloor, distTo, GRASS, type TerrainDesign, type TP } from '../paint';
+import { paintTerrain, forestFloor, distTo, GRASS, type TerrainDesign, type TP, type PaintedTerrain } from '../paint';
 import type { BigMap, Deco } from '../bosqueMap';
 import type { WorldObject } from '../objects';
 
 /**
- * Zona premium: rehace una parte de un mundo con las reglas de realismo (piloto: el Bosque Profundo) sin tocar el
- * resto. El mundo se arma igual que siempre y después, solo adentro del rectángulo de la zona:
+ * Mundo premium: rehace la vegetación y el suelo de un mundo entero con las reglas de realismo, sin mover lo que el
+ * diseño puso a propósito (lugares, campamentos, ruinas, carteles, puentes, cofres, enemigos).
  *
- * 1. Relieve: el terreno se vuelve a pintar con una meseta y su rampa (el pintor ya sabe hacer la cara del
- *    acantilado, el pasto que cuelga, las grietas y la sombra al pie). Raíces que cuelgan de la cara.
- * 2. Árboles nuevos: 3 tamaños y 3 formas por especie, sin dos iguales cerca, con su sombra horneada.
- * 3. Un punto focal en cada pantalla (grupo armado: tronco con hongos, rocas con musgo, raíces, arbusto con flores).
- * 4. Calcomanías del suelo (al menos 6 por pantalla), caminos gastados (claros al centro, piedritas en el borde).
- * 5. Primer plano: ramas que cuelgan cerca de la cámara.
- *
- * Fuera del rectángulo no cambia ni un pixel ni un objeto: las decos, entidades y el suelo de afuera son los mismos.
+ * 1. Relieve: el terreno se vuelve a pintar una sola vez para todo el mundo, con las mesetas y rampas nuevas de las
+ *    zonas premium (el pintor hace la cara del acantilado, el pasto que cuelga, las grietas y la sombra al pie).
+ * 2. Zonas premium (el piloto: el Bosque Profundo): su propia receta de lugares, meseta y bosquecillos.
+ * 3. El resto del mundo: la densidad de bosque del diseño decide dónde va bosque. En el interior de las masas cerradas
+ *    los árboles van en filas escalonadas (dosel), por manchas de una especie. En los bordes y en lo que se camina,
+ *    con las reglas estrictas (troncos a la vista, nada montado).
+ * 4. Los lugares de vegetación (hechizados, secos, sauces, hongos gigantes, robles de otoño, tocones, rocas) se mudan
+ *    cerca de donde estaban, con su sombra.
+ * 5. Un punto focal y calcomanías en cada pantalla, monte bajo al pie de los árboles, telarañas en el bosque oscuro.
+ * 6. Todo lo que se alcanzaba caminando se sigue alcanzando (si un árbol tapa el paso, se quita).
+ * 7. Suelo de bosque con los troncos nuevos, caminos gastados, raíces que cuelgan y piso calmo.
  */
 
 export interface PremiumZone {
@@ -36,6 +39,21 @@ export interface PremiumZone {
   darkAt: (tx: number, ty: number) => number;
 }
 
+/** El resto del mundo (todo lo que no es zona premium con receta propia). */
+export interface WorldPass {
+  seed: number;
+  darkAt: (tx: number, ty: number) => number;
+  /** vegetación: se quita y se vuelve a plantar */
+  vegetation: RegExp;
+  /** de la vegetación, lo que se muda cerca de donde estaba (con su copia `_p`) */
+  relocate: RegExp;
+  /** de la vegetación, lo que se queda donde está (con su copia `_p` si la hay) */
+  stay: RegExp;
+  undergrowth: string[];
+  /** primer plano por zona del mapa (nombre de la zona: ids) */
+  frente: Record<string, string[]>;
+}
+
 /** Tamaño de una pantalla del juego en cuadros (para los puntos focales y la densidad de calcomanías). */
 export const SCREEN = { w: 20, h: 11 };
 
@@ -43,6 +61,8 @@ function rng(seed: number) {
   let a = seed >>> 0;
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
+
+export interface ScreenReport { x: number; y: number; focal: string[]; calcomanias: number }
 
 export interface ZoneReport {
   arboles: number;
@@ -52,7 +72,18 @@ export interface ZoneReport {
   frente: string[];
   /** lugares que no entraron (se avisa: no se encajan a la fuerza) */
   sinLugar: string[];
-  pantallas: { x: number; y: number; focal: string[]; calcomanias: number }[];
+  pantallas: ScreenReport[];
+}
+
+export interface WorldReport {
+  arboles: number;
+  /** árboles del dosel (interior de las masas): se pueden tapar el tronco entre ellos */
+  dosel: { x: number; y: number }[];
+  mudados: number;
+  sinLugar: string[];
+  /** árboles que se quitaron porque tapaban el paso a algo */
+  quitadosPorPaso: number;
+  pantallas: ScreenReport[];
 }
 
 /** Celda de la grilla de colocación (px). */
@@ -74,137 +105,151 @@ export function footprint(o: WorldObject): Footprint {
   const cells = (m: Map<string, number>, min: number) => [...m].filter(([, n]) => n >= min).map(([k]) => k.split(',').map(Number) as [number, number]);
   const body = cells(cnt, 4);
   // el pie: lo que toca el piso (las 2 filas de celdas de arriba del apoyo y la de abajo)
+  // (el punto de apoyo cuenta siempre, aunque el dibujo sea fino como un poste)
   const foot = body.filter(([, cy]) => cy >= -2 && cy <= 0);
-  return { body, foot: foot.length ? foot : [[0, -1]], shadow: cells(sh, 6) };
+  for (const c of [[0, -1], [-1, -1]] as [number, number][]) if (!foot.some((q) => q[0] === c[0] && q[1] === c[1])) foot.push(c);
+  for (const c of foot) if (!body.some((q) => q[0] === c[0] && q[1] === c[1])) body.push(c);
+  return { body, foot, shadow: cells(sh, 6) };
 }
 
+const GROUPS = ['claro_tronco_hongos', 'rocas_musgo_grupo', 'raices_expuestas', 'arbusto_flores_grupo'];
+const DECALS = ['hojas_caidas_0', 'hojas_caidas_1', 'hojas_caidas_2', 'hojas_caidas_3', 'raiz_suelo_0', 'raiz_suelo_1', 'raiz_suelo_2', 'grieta_0', 'grieta_1', 'grieta_2', 'charco_chico_0', 'charco_chico_1', 'flores_suelo_0', 'flores_suelo_1', 'flores_suelo_2', 'flores_suelo_3', 'piedritas_0', 'piedritas_1', 'piedritas_2'];
+const TREE_P = /^(pino|roble)_t\d_\d$/;
+
+interface Rules { maxOverlap?: number; roadGap?: number; maxRoad?: number; edge?: number; onlyHigh?: boolean; onlyLow?: boolean; dosel?: boolean }
+
 /**
- * Aplica la zona premium a un mapa ya armado. `design` es el diseño del terreno del mundo (se le suman la meseta y
- * la rampa de la zona), `objects` los objetos del mundo (con los premium adentro).
- *
- * Todo lo que se para en el piso se coloca con las mismas reglas (para que nada quede "montado"):
- * - el pie de un objeto nunca queda tapado por otro, y su cuerpo nunca tapa el pie de otro;
- * - dos cuerpos se pisan como mucho un 12 % (las copas se rozan, los troncos se ven);
- * - nada tapa la cara del acantilado ni la rampa, y lo de abajo no se mete arriba de la meseta;
- * - lo de arriba de la meseta queda a 12 px del borde y su sombra cae sobre la meseta;
- * - el pie no va en el camino ni pegado a las entidades.
+ * Pasa un mundo entero a premium. `zones` son las zonas con receta propia (el piloto), `world` el resto. Devuelve el
+ * informe de cada zona y el del resto del mundo.
  */
-export function applyPremiumZone(m: BigMap, design: TerrainDesign, z: PremiumZone, objects: WorldObject[]): ZoneReport {
-  const W = m.w, H = m.h, r = rng(z.seed);
-  const [rx0, ry0, rx1, ry1] = z.rect;
-  const inRect = (tx: number, ty: number) => tx >= rx0 && tx <= rx1 && ty >= ry0 && ty <= ry1;
+export function premiumWorld(m: BigMap, design: TerrainDesign, zones: PremiumZone[], world: WorldPass | null, objects: WorldObject[]): { zonas: ZoneReport[]; mundo: WorldReport | null } {
+  const W = m.w, H = m.h;
   const byName = new Map(objects.map((o) => [o.name, o]));
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= W || y >= H ? -1 : y * W + x);
+  const tileOf = (px: number, py: number) => at(Math.floor(px / TILE), Math.floor((py - 1) / TILE));
+  const inZoneRect = (tx: number, ty: number) => zones.some((z) => tx >= z.rect[0] && tx <= z.rect[2] && ty >= z.rect[1] && ty <= z.rect[3]);
+  const copy = (n: string) => (byName.has(`${n}_p`) ? `${n}_p` : n);
 
-  // ---------- 1. terreno con meseta y rampa ----------
-  const t2 = paintTerrain({ ...design, plateaus: [...design.plateaus, ...z.plateaus], stairs: [...design.stairs, ...z.ramps.map((s) => ({ ...s, style: 'tierra' as const }))] });
-  const PX0 = rx0 * TILE, PY0 = ry0 * TILE, PX1 = (rx1 + 1) * TILE, PY1 = (ry1 + 1) * TILE, IW = m.terrain.img.w, IH = m.terrain.img.h;
+  // ---------- 1. terreno nuevo, una sola vez para todo el mundo ----------
+  const t2: PaintedTerrain = paintTerrain({ ...design, plateaus: [...design.plateaus, ...zones.flatMap((z) => z.plateaus)], stairs: [...design.stairs, ...zones.flatMap((z) => z.ramps.map((s) => ({ ...s, style: 'tierra' as const })))] });
+  const IW = t2.img.w, IH = t2.img.h;
   const pix = (x: number, y: number) => (x < 0 || y < 0 || x >= IW || y >= IH ? -1 : y * IW + x);
+  const baseTerrainSolid = m.terrain.solid;
 
-  // ---------- 2. decos: se quita todo lo que se para en el piso, menos lo que la zona guarda ----------
-  const keep: Deco[] = [];
-  const inZone = (d: Deco) => inRect(Math.floor(d.x / TILE), Math.floor((d.y - 1) / TILE));
-  for (const d of m.decos) if (!inZone(d) || z.keep(d.sprite)) keep.push(d);
+  // ---------- 2. qué se queda, qué se va ----------
+  const ojos = m.entities.filter((e) => e.tipo === 'criatura' && e.props?.especie === 'ojos');
+  const keep: Deco[] = [], removed: Deco[] = [], moving: Deco[] = [];
+  for (const d of m.decos) {
+    const t = tileOf(d.x, d.y), tx = t % W, ty = Math.floor(t / W);
+    const z = zones.find((q) => tx >= q.rect[0] && tx <= q.rect[2] && ty >= q.rect[1] && ty <= q.rect[3]);
+    if (z) { if (z.keep(d.sprite)) keep.push(d); else removed.push(d); continue; }
+    if (!world || !world.vegetation.test(d.sprite)) { keep.push(d); continue; }
+    // los arbustos donde viven los ojos y lo que el diseño dejó fijo se quedan (con su sombra)
+    if (world.stay.test(d.sprite) || (/^arbusto_/.test(d.sprite) && ojos.some((e) => Math.abs(e.x - d.x) < 28 && Math.abs(e.y - d.y) < 28))) { keep.push({ ...d, sprite: copy(d.sprite) }); removed.push(d); continue; }
+    removed.push(d);
+    if (world.relocate.test(d.sprite)) moving.push(d);
+  }
   m.decos = keep;
+
+  // colisión: lo que ponían las decos que se fueron vuelve a ser lo del terreno, y el relieve nuevo manda
   const solid = m.solid;
-  for (let ty = ry0; ty <= ry1; ty++) for (let tx = rx0; tx <= rx1; tx++) solid[at(tx, ty)] = t2.solid[at(tx, ty)];
+  const special = new Uint8Array(W * H);
+  for (const e of m.entities) if (e.tipo === 'cofre' || e.tipo === 'rompible') special[at(Math.floor(e.x / TILE), Math.floor(e.y / TILE))] = 1;
+  const boxTiles = (sprite: string, px: number, py: number, fn: (k: number) => void) => {
+    const o = byName.get(sprite);
+    if (!o) return;
+    for (const b of [o.solid, ...(o.solids ?? [])]) {
+      if (!b) continue;
+      for (let ty = Math.floor((py + b[1]) / TILE); ty <= Math.floor((py + b[1] + b[3] - 1) / TILE); ty++) for (let tx = Math.floor((px + b[0]) / TILE); tx <= Math.floor((px + b[0] + b[2] - 1) / TILE); tx++) { const k = at(tx, ty); if (k >= 0) fn(k); }
+    }
+  };
+  const keptSolid = new Uint8Array(W * H);
+  for (const d of keep) boxTiles(d.sprite, d.x, d.y, (k) => { keptSolid[k] = 1; });
+  for (const d of removed) boxTiles(d.sprite, d.x, d.y, (k) => { const x = k % W, y = Math.floor(k / W); if (!keptSolid[k] && !special[k] && !(x < 2 || y < 1 || x >= W - 2 || y >= H - 2)) solid[k] = baseTerrainSolid[k]; });
+  for (let k = 0; k < W * H; k++) if (t2.solid[k] !== baseTerrainSolid[k]) solid[k] = t2.solid[k] || keptSolid[k] || special[k];
+  // en las zonas con receta propia la colisión es la del terreno nuevo más lo que se quedó
+  for (const z of zones) for (let ty = z.rect[1]; ty <= z.rect[3]; ty++) for (let tx = z.rect[0]; tx <= z.rect[2]; tx++) { const k = at(tx, ty); solid[k] = t2.solid[k] || keptSolid[k] || special[k]; }
+  const keptSolidSnapshot = new Uint8Array(solid);
 
   // ---------- 3. la grilla de colocación ----------
   const GW = Math.ceil(IW / CELL), GH = Math.ceil(IH / CELL);
-  // body: de quién es cada celda (-1 nadie); areas: cuántas celdas tiene cada cuerpo
-  const body = new Int32Array(GW * GH).fill(-1), foot = new Uint8Array(GW * GH), decal = new Uint8Array(GW * GH);
-  const areas: number[] = [];
+  // body: de quién es cada celda (-1 nadie); foot: 1 pie de un objeto, 2 pie de un árbol del dosel
+  // cuerpos por celda: una lista (en el dosel una celda puede tener varios dueños)
+  const head = new Int32Array(GW * GH).fill(-1), foot = new Uint8Array(GW * GH), decal = new Uint8Array(GW * GH);
+  let nodeId = new Int32Array(1 << 20), nodeNext = new Int32Array(1 << 20), nodes = 0;
+  const addOwner = (g: number, id: number) => {
+    if (nodes === nodeId.length) { const a = new Int32Array(nodes * 2), b = new Int32Array(nodes * 2); a.set(nodeId); b.set(nodeNext); nodeId = a; nodeNext = b; }
+    nodeId[nodes] = id; nodeNext[nodes] = head[g]; head[g] = nodes++;
+  };
+  const areas: number[] = [], isDosel: boolean[] = [];
   const fps = new Map<string, Footprint>();
   const fpOf = (n: string) => { let f = fps.get(n); if (!f) { f = footprint(byName.get(n)!); fps.set(n, f); } return f; };
   const gAt = (px: number, py: number, c: [number, number]) => { const gx = Math.floor(px / CELL) + c[0], gy = Math.floor(py / CELL) + c[1]; return gx < 0 || gy < 0 || gx >= GW || gy >= GH ? -1 : gy * GW + gx; };
-  // terreno por celda (en el centro de la celda)
   const kindAtG = (g: number) => t2.kind[pix((g % GW) * CELL + 2, Math.floor(g / GW) * CELL + 2)];
   const highAtG = (g: number) => t2.high[pix((g % GW) * CELL + 2, Math.floor(g / GW) * CELL + 2)];
-  // distancia al camino y al borde de la meseta (px)
   const roadMask = new Uint8Array(IW * IH), lowMask = new Uint8Array(IW * IH);
-  for (let i = 0; i < IW * IH; i++) { roadMask[i] = t2.kind[i] === 1 || t2.kind[i] === 5 ? 1 : 0; lowMask[i] = t2.high[i] ? 0 : 1; }
+  for (let i = 0; i < IW * IH; i++) { roadMask[i] = t2.kind[i] === 1 || t2.kind[i] === 5 || t2.kind[i] === 2 ? 1 : 0; lowMask[i] = t2.high[i] ? 0 : 1; }
   const dRoad = distTo(roadMask, IW, IH), dEdge = distTo(lowMask, IW, IH);
-
-  const solidBox = (sprite: string, px: number, py: number) => {
-    const o = byName.get(sprite);
-    if (!o) return;
-    for (const s of [o.solid, ...(o.solids ?? [])]) {
-      if (!s) continue;
-      const x0 = Math.floor((px + s[0]) / TILE), x1 = Math.floor((px + s[0] + s[2] - 1) / TILE);
-      const y0 = Math.floor((py + s[1]) / TILE), y1 = Math.floor((py + s[1] + s[3] - 1) / TILE);
-      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (at(x, y) >= 0 && inRect(x, y)) solid[at(x, y)] = 1;
-    }
-  };
-  const register = (sprite: string, px: number, py: number) => {
+  const register = (sprite: string, px: number, py: number, dosel = false) => {
     const o = byName.get(sprite);
     if (!o || o.layer === 'suelo' || o.layer === 'frente' || o.layer === 'fondo') return;
     const f = fpOf(sprite);
     const id = areas.length;
-    areas.push(f.body.length);
-    for (const c of f.body) { const g = gAt(px, py, c); if (g >= 0) body[g] = id; }
-    for (const c of f.foot) { const g = gAt(px, py, c); if (g >= 0) foot[g] = 1; }
+    areas.push(f.body.length); isDosel.push(dosel);
+    for (const c of f.body) { const g = gAt(px, py, c); if (g >= 0) addOwner(g, id); }
+    for (const c of f.foot) { const g = gAt(px, py, c); if (g >= 0 && foot[g] !== 1) foot[g] = dosel ? 2 : 1; }
   };
-  // lo que ya está (afuera cerca del borde y lo que se guardó adentro) también cuenta
-  for (const d of keep) {
-    const tx = Math.floor(d.x / TILE), ty = Math.floor((d.y - 1) / TILE);
-    if (tx < rx0 - 6 || tx > rx1 + 6 || ty < ry0 - 6 || ty > ry1 + 8) continue;
-    register(d.sprite, d.x, d.y);
-    if (inRect(tx, ty)) solidBox(d.sprite, d.x, d.y);
-  }
-  // la subida queda libre: la rampa, 2 cuadros arriba de ella (la entrada a la meseta) y 1 abajo
+  for (const d of keep) register(d.sprite, d.x, d.y);
+  // la subida de las rampas nuevas y lo que el diseño deja libre: ahí no va nada sólido
   const clear = new Uint8Array(W * H);
-  for (const rp of z.ramps) for (let ty = Math.floor(rp.y) - 2; ty <= Math.floor(rp.y) + 2; ty++) for (let tx = Math.floor(rp.x - rp.w / 2); tx < Math.ceil(rp.x + rp.w / 2); tx++) if (at(tx, ty) >= 0) clear[at(tx, ty)] = 1;
-  const ents = m.entities.filter((e) => e.x >= PX0 - 64 && e.x < PX1 + 64 && e.y >= PY0 - 64 && e.y < PY1 + 64);
+  if (m.libre) clear.set(m.libre);
+  for (const z of zones) for (const rp of z.ramps) for (let ty = Math.floor(rp.y) - 2; ty <= Math.floor(rp.y) + 2; ty++) for (let tx = Math.floor(rp.x - rp.w / 2); tx < Math.ceil(rp.x + rp.w / 2); tx++) if (at(tx, ty) >= 0) clear[at(tx, ty)] = 1;
+  const ents = m.entities;
 
-  interface Rules { maxOverlap?: number; roadGap?: number; maxRoad?: number; edge?: number; onlyHigh?: boolean; onlyLow?: boolean }
+  let allowed: (tx: number, ty: number) => boolean = () => true;
   const fits = (sprite: string, px: number, py: number, ru: Rules = {}): boolean => {
-    // se mira en el mismo lugar donde va a quedar (redondeado)
     px = Math.round(px); py = Math.round(py);
     const f = fpOf(sprite);
-    const ai = pix(Math.round(px), Math.round(py) - 1);
-    if (ai < 0 || !inRect(Math.floor(px / TILE), Math.floor((py - 1) / TILE))) return false;
+    const ai = pix(px, py - 1);
+    if (ai < 0) return false;
+    const tk = tileOf(px, py);
+    if (!allowed(tk % W, Math.floor(tk / W))) return false;
     const hi = t2.high[ai];
     if ((ru.onlyHigh && !hi) || (ru.onlyLow && hi)) return false;
     if (t2.kind[ai] !== 0) return false;
-    // arriba de la meseta: lejos del borde
     if (hi && dEdge[ai] < (ru.edge ?? 12)) return false;
     if (dRoad[ai] < (ru.roadGap ?? 10)) return false;
     for (const e of ents) if (Math.abs(e.x - px) < 22 && Math.abs(e.y - py) < 18) return false;
-    // ni el pie ni la caja sólida en la subida
     const o = byName.get(sprite)!;
-    for (const b of [o.solid, ...(o.solids ?? [])]) {
-      if (!b) continue;
-      for (let ty = Math.floor((py + b[1]) / TILE); ty <= Math.floor((py + b[1] + b[3] - 1) / TILE); ty++) for (let tx = Math.floor((px + b[0]) / TILE); tx <= Math.floor((px + b[0] + b[2] - 1) / TILE); tx++) if (clear[at(tx, ty)]) return false;
-    }
-    if (clear[at(Math.floor(px / TILE), Math.floor((py - 1) / TILE))] && o.solid) return false;
-    // el pie: piso libre, nadie encima
+    if (o.solid || o.solids) { let bad = false; boxTiles(sprite, px, py, (k) => { if (clear[k] || special[k]) bad = true; }); if (bad || clear[tk]) return false; }
     for (const c of f.foot) {
       const g = gAt(px, py, c);
-      if (g < 0 || body[g] >= 0 || foot[g]) return false;
-      const k = kindAtG(g);
-      if (k !== 0 || highAtG(g) !== hi) return false;
+      if (g < 0 || foot[g]) return false;
+      // nadie encima del pie (en el dosel, solo otros árboles del dosel)
+      for (let q = head[g]; q >= 0; q = nodeNext[q]) if (!(ru.dosel && isDosel[nodeId[q]])) return false;
+      if (kindAtG(g) !== 0 || highAtG(g) !== hi) return false;
     }
     let road = 0, cross = 0;
     const ov = new Map<number, number>();
     for (const c of f.body) {
       const g = gAt(px, py, c);
       if (g < 0) continue;
-      if (foot[g]) return false; // nunca tapa el pie de otro
-      if (body[g] >= 0) ov.set(body[g], (ov.get(body[g]) ?? 0) + 1);
+      if (foot[g] === 1 || (foot[g] === 2 && !ru.dosel)) return false; // nunca tapa el pie de otro
+      for (let q = head[g]; q >= 0; q = nodeNext[q]) ov.set(nodeId[q], (ov.get(nodeId[q]) ?? 0) + 1);
       const k = kindAtG(g);
-      // la cara del acantilado y la rampa siempre se ven
-      if (k === 3 || k === 5) return false;
-      if (k === 1) road++;
+      if (k === 3 || k === 5) return false; // la cara del acantilado y la rampa siempre se ven
+      if (k === 1 || k === 2) road++;
       if (!hi && highAtG(g)) cross++;
     }
     const n = f.body.length;
-    // con cada vecino por separado: lo que se pisan no pasa del 12 % del más chico de los dos
-    for (const [id, k] of ov) if (k > Math.min(n, areas[id]) * (ru.maxOverlap ?? 0.12)) return false;
+    for (const [id, k] of ov) {
+      // con cada vecino por separado: lo que se pisan no pasa del 12 % del más chico (en el dosel, la mitad)
+      const lim = ru.dosel && isDosel[id] ? 0.5 : (ru.maxOverlap ?? 0.12);
+      if (k > Math.min(n, areas[id]) * lim) return false;
+    }
     if (road > n * (ru.maxRoad ?? 0.2)) return false;
-    // lo de abajo no se mete encima de la meseta
     if (cross > n * 0.02) return false;
-    // la sombra cae en el mismo nivel del objeto
-    if (f.shadow.length) {
+    if (f.shadow.length && !ru.dosel) {
       let off = 0;
       for (const c of f.shadow) { const g = gAt(px, py, c); if (g < 0) continue; const k = kindAtG(g); if (k === 3 || k === 5 || highAtG(g) !== hi) off++; }
       if (off > f.shadow.length * (hi ? 0.2 : 0.15)) return false;
@@ -213,208 +258,331 @@ export function applyPremiumZone(m: BigMap, design: TerrainDesign, z: PremiumZon
   };
   const decos: Deco[] = [];
   const trunk = new Uint8Array(W * H);
-  const place = (sprite: string, px: number, py: number) => {
+  const placed: { d: Deco; dosel: boolean; tree: boolean }[] = [];
+  const place = (sprite: string, px: number, py: number, opts: { dosel?: boolean; tree?: boolean } = {}) => {
     px = Math.round(px); py = Math.round(py);
-    decos.push({ sprite, x: px, y: py });
-    register(sprite, px, py);
-    solidBox(sprite, px, py);
+    const d = { sprite, x: px, y: py };
+    decos.push(d);
+    placed.push({ d, dosel: !!opts.dosel, tree: !!opts.tree });
+    register(sprite, px, py, opts.dosel);
+    boxTiles(sprite, px, py, (k) => { solid[k] = 1; });
+    if (opts.tree) trunk[tileOf(px, py)] = 1;
   };
-  // candidatos: puntos al azar dentro del rectángulo
-  const randPt = (): [number, number] => [PX0 + 8 + r() * (PX1 - PX0 - 16), PY0 + 12 + r() * (PY1 - PY0 - 16)];
-
-  const report: ZoneReport = { arboles: 0, grupos: [], calcomanias: 0, frente: [...z.frente], sinLugar: [], pantallas: [] };
-  const screens: { x: number; y: number }[] = [];
-  for (let sy = ry0; sy <= ry1; sy += SCREEN.h) for (let sx = rx0; sx <= rx1; sx += SCREEN.w) screens.push({ x: sx, y: sy });
-
-  // ---------- 4. un punto focal por pantalla (en el medio, lejos del camino) ----------
-  const GROUPS = ['claro_tronco_hongos', 'rocas_musgo_grupo', 'raices_expuestas', 'arbusto_flores_grupo'];
-  let gi = Math.floor(r() * GROUPS.length);
-  for (const sc of screens) {
-    const g = GROUPS[gi++ % GROUPS.length];
-    const cx = (Math.min(rx1 + 1, sc.x + SCREEN.w) + sc.x) / 2 * TILE, cy = (Math.min(ry1 + 1, sc.y + SCREEN.h) + sc.y) / 2 * TILE;
-    let done = false;
-    for (let rad = 0; rad <= 9 * TILE && !done; rad += 6) for (let a = 0; a < 16 && !done; a++) {
-      const px = cx + Math.cos((a / 16) * Math.PI * 2) * rad, py = cy + Math.sin((a / 16) * Math.PI * 2) * rad * 0.7;
-      if (Math.floor(px / TILE) < sc.x || Math.floor(px / TILE) >= sc.x + SCREEN.w || Math.floor(py / TILE) < sc.y || Math.floor(py / TILE) >= sc.y + SCREEN.h) continue;
-      if (fits(g, px, py, { roadGap: 24, onlyLow: true, maxOverlap: 0 })) { place(g, px, py); report.grupos.push(g); done = true; }
-    }
-  }
-
-  // ---------- 5. lugares (hongos gigantes, árboles hechizados, troncos...) ----------
-  const lm: { x: number; y: number; fam: string }[] = [];
-  for (const L of z.landmarks) for (let k = 0; k < L.n; k++) {
-    let ok = false;
-    for (let t = 0; t < 600 && !ok; t++) {
-      const [px, py] = randPt();
-      // los lugares se reparten: a 4 cuadros uno de otro, y a 7 si son de la misma familia
-      const fam = L.sprite.startsWith('arbol_') ? 'arbol' : L.sprite.replace(/_\d.*$|_(azul|morado).*$/, '');
-      if (lm.some((q) => Math.hypot(q.x - px, q.y - py) < (q.fam === fam ? 7 : 4) * TILE)) continue;
-      if (fits(L.sprite, px, py, { roadGap: 14, maxOverlap: 0.04 })) { place(L.sprite, px, py); lm.push({ x: px, y: py, fam }); trunk[at(Math.floor(px / TILE), Math.floor((py - 1) / TILE))] = 1; ok = true; }
-    }
-    if (!ok) report.sinLugar.push(L.sprite);
-  }
-
-  // ---------- 6. árboles: variedad de tamaño y forma, nunca dos iguales a menos de 3 cuadros ----------
+  const hv = (x: number, y: number, s: number) => { let v = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; v = Math.imul(v ^ (v >>> 13), 1274126177); return ((v ^ (v >>> 16)) >>> 0) / 4294967296; };
+  const noise = (px: number, py: number, C: number, s: number) => {
+    const gx = px / C, gy = py / C, x0 = Math.floor(gx), y0 = Math.floor(gy), fx = gx - x0, fy = gy - y0;
+    const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    const a = hv(x0, y0, s), b = hv(x0 + 1, y0, s), c = hv(x0, y0 + 1, s), d = hv(x0 + 1, y0 + 1, s);
+    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+  };
   const recent: { name: string; x: number; y: number }[] = [];
-  const pickTree = (tx: number, ty: number, dark: number, hi: number, size: number): string => {
+  const pickTree = (r: () => number, tx: number, ty: number, dark: number, hi: number, size: number): string => {
     const species = dark > 0.35 || hi ? (r() < 0.6 ? 'pino' : 'roble') : r() < 0.4 ? 'pino' : 'roble';
-    for (let k = 0; k < 6; k++) {
-      const name = `${species}_t${size}_${Math.floor(r() * 3)}`;
+    // la especie y el tamaño que tocan primero; si las 3 formas ya están cerca, la otra especie; si no, nada
+    const s0 = Math.floor(r() * 3);
+    for (const sp of [species, species === 'pino' ? 'roble' : 'pino']) for (let k = 0; k < 3; k++) {
+      const name = `${sp}_t${size}_${(s0 + k) % 3}`;
       if (!recent.some((q) => q.name === name && Math.abs(q.x - tx) <= 3 && Math.abs(q.y - ty) <= 3)) return name;
     }
-    return `${species === 'pino' ? 'roble' : 'pino'}_t${size}_${Math.floor(r() * 3)}`;
+    return '';
   };
-  const hv = (x: number, y: number) => { let v = (x * 374761393 + y * 668265263 + z.seed * 2147483647) | 0; v = Math.imul(v ^ (v >>> 13), 1274126177); return ((v ^ (v >>> 16)) >>> 0) / 4294967296; };
-  const grove = (px: number, py: number) => {
-    const C = 5 * TILE, gx = px / C, gy = py / C, x0 = Math.floor(gx), y0 = Math.floor(gy), fx = gx - x0, fy = gy - y0;
-    const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-    const a = hv(x0, y0), b = hv(x0 + 1, y0), c = hv(x0, y0 + 1), d = hv(x0 + 1, y0 + 1);
-    const v = a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
-    return Math.max(0, Math.min(1, (v - 0.3) / 0.45));
-  };
-  // la meseta primero: es el lugar alto de la pantalla y se lee mejor con su bosquecillo arriba
-  for (let t = 0; t < 500; t++) {
-    const [px, py] = randPt();
-    const i = pix(Math.round(px), Math.round(py) - 1);
-    if (i < 0 || !t2.high[i]) continue;
-    const tx = Math.floor(px / TILE), ty = Math.floor((py - 1) / TILE);
-    const name = pickTree(tx, ty, 0.5, 1, t % 3 === 0 ? 1 : 0);
-    if (!fits(name, px, py, { roadGap: 18, onlyHigh: true })) continue;
-    place(name, px, py);
-    recent.push({ name, x: tx, y: ty });
-    trunk[at(tx, ty)] = 1;
-    report.arboles++;
-  }
-  // primero los grandes (ocupan más), después los medianos y los chicos rellenan
-  for (const [size, tries] of [[2, 260], [1, 900], [0, 1400]] as const) {
-    for (let t = 0; t < tries; t++) {
-      const [px, py] = randPt();
-      const tx = Math.floor(px / TILE), ty = Math.floor((py - 1) / TILE);
-      const dark = z.darkAt(tx, ty), hi = t2.high[pix(Math.round(px), Math.round(py) - 1)] ?? 0;
-      // bosquecillos y claros: un ruido grande decide dónde se juntan los árboles (no salpicados parejo)
-      if (r() > (0.12 + grove(px, py) * 0.75) * (0.5 + dark * 0.7) + (hi ? 0.3 : 0)) continue;
-      const name = pickTree(tx, ty, dark, hi, size);
-      if (!fits(name, px, py, { roadGap: 18 })) continue;
-      place(name, px, py);
-      recent.push({ name, x: tx, y: ty });
-      trunk[at(tx, ty)] = 1;
-      report.arboles++;
-    }
-  }
+  const plantTree = (name: string, px: number, py: number) => { place(name, px, py, { tree: true }); recent.push({ name, x: Math.floor(px / TILE), y: Math.floor((py - 1) / TILE) }); };
 
-  // ---------- 7. monte bajo: al pie de los árboles, nunca en el medio de la nada ----------
-  const trees = decos.filter((d) => /^(pino|roble)_t/.test(d.sprite) || lm.some((q) => Math.round(q.x) === d.x && Math.round(q.y) === d.y));
-  for (let t = 0; t < 900; t++) {
-    const base = trees[Math.floor(r() * trees.length)];
-    if (!base) break;
-    const a = r() * Math.PI * 2, d = 18 + r() * 34;
-    const px = base.x + Math.cos(a) * d, py = base.y + Math.sin(a) * d * 0.6;
-    const name = z.undergrowth[Math.floor(r() * z.undergrowth.length)];
-    if (r() < 0.55 && fits(name, px, py, { roadGap: 8, maxOverlap: 0.1, edge: 10 })) place(name, px, py);
-  }
-
-  // ---------- 8. calcomanías: al menos 6 por pantalla, sin pisarse y a la vista ----------
-  const DECALS = ['hojas_caidas_0', 'hojas_caidas_1', 'hojas_caidas_2', 'hojas_caidas_3', 'raiz_suelo_0', 'raiz_suelo_1', 'raiz_suelo_2', 'grieta_0', 'grieta_1', 'grieta_2', 'charco_chico_0', 'charco_chico_1', 'flores_suelo_0', 'flores_suelo_1', 'flores_suelo_2', 'flores_suelo_3', 'piedritas_0', 'piedritas_1', 'piedritas_2'];
-  const decalFits = (name: string, px: number, py: number, road: boolean) => {
+  const darkOf = (tx: number, ty: number) => { const z = zones.find((q) => tx >= q.rect[0] && tx <= q.rect[2] && ty >= q.rect[1] && ty <= q.rect[3]); return z ? z.darkAt(tx, ty) : world ? world.darkAt(tx, ty) : 0; };
+  // calcomanías de una pantalla: sin pisarse y a la vista
+  const decalFits = (name: string, px: number, py: number, road: boolean, X0: number, Y0: number, X1: number, Y1: number) => {
     const o = byName.get(name)!, f = o.anims.idle.frames[0];
     for (let y = 0; y < f.h; y += 2) for (let x = 0; x < f.w; x += 2) {
       if (f.data[(y * f.w + x) * 4 + 3] < 128) continue;
       const X = Math.round(px - o.anchor[0] + x), Y = Math.round(py - o.anchor[1] + y), i = pix(X, Y);
-      if (i < 0 || X < PX0 || Y < PY0 || X >= PX1 || Y >= PY1) return false;
+      if (i < 0 || X < X0 || Y < Y0 || X >= X1 || Y >= Y1) return false;
       const k = t2.kind[i];
       if (road ? k !== 1 : k !== 0) return false;
       const g = Math.floor(Y / CELL) * GW + Math.floor(X / CELL);
-      if (body[g] >= 0 || decal[g]) return false;
+      if (head[g] >= 0 || decal[g]) return false;
     }
     return true;
   };
-  for (const sc of screens) {
+  const decalsFor = (r: () => number, sc: { x: number; y: number }, want: number, X0: number, Y0: number, X1: number, Y1: number) => {
     let n = 0, tries = 0;
-    while (n < 9 && tries++ < 600) {
+    while (n < want && tries++ < 700) {
       const px = (sc.x + r() * SCREEN.w) * TILE, py = (sc.y + r() * SCREEN.h) * TILE;
       const i = pix(Math.round(px), Math.round(py));
       if (i < 0) continue;
       const road = t2.kind[i] === 1;
-      const pool = road ? DECALS.filter((d) => d.startsWith('piedritas') || d.startsWith('grieta')) : DECALS;
+      // charquitos solo en el bosque oscuro (en la pradera se leen como huecos)
+      const wet = darkOf(Math.floor(px / TILE), Math.floor(py / TILE)) > 0.3;
+      const pool = road ? DECALS.filter((d) => d.startsWith('piedritas') || d.startsWith('grieta')) : wet ? DECALS : DECALS.filter((d) => !d.startsWith('charco'));
       const name = pool[Math.floor(r() * pool.length)];
-      if (!decalFits(name, px, py, road)) continue;
+      if (!decalFits(name, px, py, road, X0, Y0, X1, Y1)) continue;
       const o = byName.get(name)!;
       for (let y = 0; y < o.h; y += CELL) for (let x = 0; x < o.w; x += CELL) { const g = Math.floor((py - o.anchor[1] + y) / CELL) * GW + Math.floor((px - o.anchor[0] + x) / CELL); if (g >= 0 && g < decal.length) decal[g] = 1; }
       decos.push({ sprite: name, x: Math.round(px), y: Math.round(py) });
       n++;
     }
-    report.calcomanias += n;
-    report.pantallas.push({ x: sc.x, y: sc.y, focal: [], calcomanias: n });
+    return n;
+  };
+  // lo que el diseño puso a mano (campamentos, granja, ruinas): los grupos focales no se le arriman
+  const designed = keep.filter((d) => byName.get(d.sprite)?.layer !== 'suelo' && !/^(pasto_alto|flores_grandes|juncos|nenufar)/.test(d.sprite) && !(world && world.vegetation.test(d.sprite.replace(/_p$/, ''))));
+  const focalGroup = (g: string, sc: { x: number; y: number }, x1: number, y1: number) => {
+    const cx = ((Math.min(x1 + 1, sc.x + SCREEN.w) + sc.x) / 2) * TILE, cy = ((Math.min(y1 + 1, sc.y + SCREEN.h) + sc.y) / 2) * TILE;
+    // primero en lo bajo y lejos del camino; si no hay lugar, también arriba y un poco más cerca del camino
+    for (const ru of [{ roadGap: 24, onlyLow: true, maxOverlap: 0 }, { roadGap: 14, maxOverlap: 0 }] as Rules[])
+      for (let rad = 0; rad <= 9 * TILE; rad += 6) for (let a = 0; a < 16; a++) {
+        const px = cx + Math.cos((a / 16) * Math.PI * 2) * rad, py = cy + Math.sin((a / 16) * Math.PI * 2) * rad * 0.7;
+        if (Math.floor(px / TILE) < sc.x || Math.floor(px / TILE) >= sc.x + SCREEN.w || Math.floor(py / TILE) < sc.y || Math.floor(py / TILE) >= sc.y + SCREEN.h) continue;
+        if (designed.some((d) => Math.abs(d.x - px) < 4 * TILE && Math.abs(d.y - py) < 4 * TILE)) continue;
+        if (fits(g, px, py, ru)) { place(g, px, py); return true; }
+      }
+    return false;
+  };
+  const undergrowthNear = (r: () => number, list: string[], trees: Deco[], tries: number) => {
+    for (let t = 0; t < tries; t++) {
+      const base = trees[Math.floor(r() * trees.length)];
+      if (!base) break;
+      const a = r() * Math.PI * 2, d = 18 + r() * 34;
+      const px = base.x + Math.cos(a) * d, py = base.y + Math.sin(a) * d * 0.6;
+      const name = list[Math.floor(r() * list.length)];
+      if (r() < 0.55 && fits(name, px, py, { roadGap: 8, maxOverlap: 0.1, edge: 10 })) place(name, px, py);
+    }
+  };
+
+  // ---------- 4. zonas con receta propia ----------
+  const zonas: ZoneReport[] = [];
+  for (const z of zones) {
+    const r = rng(z.seed);
+    const [rx0, ry0, rx1, ry1] = z.rect;
+    allowed = (tx, ty) => tx >= rx0 && tx <= rx1 && ty >= ry0 && ty <= ry1;
+    const PX0 = rx0 * TILE, PY0 = ry0 * TILE, PX1 = (rx1 + 1) * TILE, PY1 = (ry1 + 1) * TILE;
+    const randPt = (): [number, number] => [Math.round(PX0 + 8 + r() * (PX1 - PX0 - 16)), Math.round(PY0 + 12 + r() * (PY1 - PY0 - 16))];
+    const report: ZoneReport = { arboles: 0, grupos: [], calcomanias: 0, frente: [...z.frente], sinLugar: [], pantallas: [] };
+    const screens: { x: number; y: number }[] = [];
+    for (let sy = ry0; sy <= ry1; sy += SCREEN.h) for (let sx = rx0; sx <= rx1; sx += SCREEN.w) screens.push({ x: sx, y: sy });
+    let gi = Math.floor(r() * GROUPS.length);
+    for (const sc of screens) { const g = GROUPS[gi++ % GROUPS.length]; if (focalGroup(g, sc, rx1, ry1)) report.grupos.push(g); }
+    // lugares: pocos y repartidos (a 4 cuadros uno de otro, a 7 si son de la misma familia)
+    const lm: { x: number; y: number; fam: string }[] = [];
+    for (const L of z.landmarks) for (let k = 0; k < L.n; k++) {
+      let ok = false;
+      for (let t = 0; t < 600 && !ok; t++) {
+        const [px, py] = randPt();
+        const fam = L.sprite.startsWith('arbol_') ? 'arbol' : L.sprite.replace(/_\d.*$|_(azul|morado).*$/, '');
+        if (lm.some((q) => Math.hypot(q.x - px, q.y - py) < (q.fam === fam ? 7 : 4) * TILE)) continue;
+        if (fits(L.sprite, px, py, { roadGap: 14, maxOverlap: 0.04 })) { place(L.sprite, px, py, { tree: true }); lm.push({ x: px, y: py, fam }); ok = true; }
+      }
+      if (!ok) report.sinLugar.push(L.sprite);
+    }
+    // la meseta primero: es el lugar alto de la pantalla y se lee mejor con su bosquecillo arriba
+    for (let t = 0; t < 500; t++) {
+      const [px, py] = randPt();
+      const i = pix(Math.round(px), Math.round(py) - 1);
+      if (i < 0 || !t2.high[i]) continue;
+      const name = pickTree(r, Math.floor(px / TILE), Math.floor((py - 1) / TILE), 0.5, 1, t % 3 === 0 ? 1 : 0);
+      if (name && fits(name, px, py, { roadGap: 18, onlyHigh: true })) plantTree(name, px, py);
+    }
+    report.pantallas = screens.map((sc) => ({ x: sc.x, y: sc.y, focal: [], calcomanias: 0 }));
+    const mz = m.zones.find((q) => q.nombre === z.nombre);
+    if (mz && z.frente.length) mz.props = { ...mz.props, frente: z.frente.join(',') };
+    zonas.push(report);
   }
+
+  // ---------- 5. el resto del mundo ----------
+  let mundo: WorldReport | null = null;
+  if (world) {
+    const r = rng(world.seed);
+    allowed = (tx, ty) => !inZoneRect(tx, ty);
+    mundo = { arboles: 0, dosel: [], mudados: 0, sinLugar: [], quitadosPorPaso: 0, pantallas: [] };
+    const dens = m.densidad ?? new Float32Array(W * H);
+    const D = (tx: number, ty: number) => { const k = at(tx, ty); return k < 0 ? 1 : dens[k]; };
+
+    // 5a. los lugares de vegetación se mudan cerca de donde estaban
+    for (const d of moving) {
+      const name = copy(d.sprite);
+      let ok = false;
+      for (let rad = 0; rad <= 2.5 * TILE && !ok; rad += 4) for (let a = 0; a < (rad ? 12 : 1) && !ok; a++) {
+        const px = d.x + Math.cos((a / 12) * Math.PI * 2) * rad, py = d.y + Math.sin((a / 12) * Math.PI * 2) * rad * 0.7;
+        if (fits(name, px, py, { roadGap: 6, maxOverlap: 0.04 })) { place(name, px, py, { tree: /^(arbol_|sauce|roble_otono)/.test(d.sprite) }); ok = true; }
+      }
+      if (ok) mundo.mudados++; else mundo.sinLugar.push(d.sprite);
+    }
+
+    // 5b. un punto focal por pantalla (donde haya lugar)
+    const screens: { x: number; y: number }[] = [];
+    // (la última fila de pantallas, si queda cortada a menos de la mitad, no cuenta: es el borde del mapa)
+    for (let sy = 0; sy + SCREEN.h / 2 <= H; sy += SCREEN.h) for (let sx = 0; sx < W; sx += SCREEN.w) if (!inZoneRect(sx + SCREEN.w / 2, sy + SCREEN.h / 2)) screens.push({ x: sx, y: sy });
+    let gi = Math.floor(r() * GROUPS.length);
+    for (const sc of screens) focalGroup(GROUPS[gi++ % GROUPS.length], sc, W - 1, H - 1);
+
+    // 5c. el dosel: interior de las masas cerradas, en filas escalonadas y por manchas de una especie
+    const open = new Uint8Array(W * H);
+    for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
+      const k = at(tx, ty);
+      if (t2.tileKind[k] !== 0 || t2.waterTiles[k] || D(tx, ty) < 0.45 || keptSolid[k] || special[k]) open[k] = 1;
+    }
+    for (const e of ents) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const k = at(Math.floor(e.x / TILE) + dx, Math.floor(e.y / TILE) + dy); if (k >= 0) open[k] = 1; }
+    const dOpen = new Uint16Array(W * H).fill(999);
+    { const q: number[] = []; for (let k = 0; k < W * H; k++) if (open[k]) { dOpen[k] = 0; q.push(k); }
+      for (let qi = 0; qi < q.length; qi++) { const k = q[qi], x = k % W, y = Math.floor(k / W); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const j = at(x + dx, y + dy); if (j >= 0 && dOpen[j] > dOpen[k] + 1) { dOpen[j] = dOpen[k] + 1; q.push(j); } } } }
+    // los árboles van en todo el mundo con la misma regla (también en las zonas con receta propia)
+    allowed = () => true;
+    const isDoselTile = (tx: number, ty: number) => { const k = at(tx, ty); return k >= 0 && dOpen[k] >= 2 && D(tx, ty) >= 0.6 - world.darkAt(tx, ty) * 0.15; };
+    const ROW = 40, COL = 54;
+    for (let row = 0, y = ROW; y < IH; y += ROW, row++) for (let col = 0, x0 = (row % 2) * (COL / 2); x0 < IW; x0 += COL, col++) {
+      const px = Math.round(x0 + (hv(row, col, world.seed + 1) - 0.5) * 12), py = Math.round(y + (hv(col, row, world.seed + 2) - 0.5) * 10);
+      const tx = Math.floor(px / TILE), ty = Math.floor((py - 1) / TILE);
+      if (!isDoselTile(tx, ty)) continue;
+      const dark = world.darkAt(tx, ty);
+      const species = noise(px, py, 7 * TILE, world.seed + 3) + dark * 0.35 > 0.62 ? 'pino' : 'roble';
+      const sizeN = noise(px, py, 5 * TILE, world.seed + 4);
+      const size = sizeN > 0.68 ? 2 : sizeN > 0.25 ? 1 : 0;
+      // la forma cambia de vecino a vecino: nunca dos iguales a menos de 3 cuadros
+      const s0 = Math.floor(hv(col, row, world.seed + 6) * 3);
+      let name = '';
+      for (let k = 0; k < 6 && !name; k++) {
+        const cand = `${species}_t${k < 3 ? size : (size + 1) % 3}_${(s0 + k) % 3}`;
+        if (!recent.some((q) => q.name === cand && Math.abs(q.x - tx) <= 3 && Math.abs(q.y - ty) <= 3)) name = cand;
+      }
+      if (name && fits(name, px, py, { roadGap: 14, dosel: true })) { place(name, px, py, { dosel: true, tree: true }); recent.push({ name, x: tx, y: ty }); mundo.dosel.push({ x: Math.round(px), y: Math.round(py) }); }
+    }
+
+    // 5d. bordes y lo que se camina: reglas estrictas, bosquecillos y claros según la densidad del diseño
+    for (const [size, per] of [[2, 0.5], [1, 2.2], [0, 3]] as const) {
+      const tries = Math.round(W * H * per);
+      for (let t = 0; t < tries; t++) {
+        const px = Math.round(8 + r() * (IW - 16)), py = Math.round(12 + r() * (IH - 16));
+        const tx = Math.floor(px / TILE), ty = Math.floor((py - 1) / TILE);
+        const dark = world.darkAt(tx, ty), hi = t2.high[pix(Math.round(px), Math.round(py) - 1)] ?? 0;
+        // en el bosque oscuro hay más árboles aunque el diseño lo marque como claro
+        const dd = D(tx, ty) + dark * 0.45;
+        if (dd <= 0) continue;
+        const grove = Math.max(0, Math.min(1, (noise(px, py, 5 * TILE, world.seed + 5) - 0.25) / 0.5));
+        if (r() > Math.min(1, dd) * (0.35 + grove * 0.65)) continue;
+        const name = pickTree(r, tx, ty, dark, hi, size);
+        if (name && fits(name, px, py, { roadGap: 18 })) plantTree(name, px, py);
+      }
+    }
+    mundo.arboles = placed.filter((p) => TREE_P.test(p.d.sprite) && !inZoneRect(Math.floor(p.d.x / TILE), Math.floor((p.d.y - 1) / TILE))).length;
+
+    // 5e. monte bajo al pie de los árboles del borde (no adentro del dosel)
+    allowed = (tx, ty) => !inZoneRect(tx, ty);
+    const edgeTrees = placed.filter((p) => p.tree && !p.dosel && allowed(Math.floor(p.d.x / TILE), Math.floor((p.d.y - 1) / TILE))).map((p) => p.d);
+    undergrowthNear(r, world.undergrowth, edgeTrees, edgeTrees.length * 4);
+
+    // 5f. telarañas en los troncos del bosque oscuro
+    for (const p of placed) if (p.tree && TREE_P.test(p.d.sprite) && world.darkAt(Math.floor(p.d.x / TILE), Math.floor(p.d.y / TILE)) > 0.35 && r() < 0.06) decos.push({ sprite: 'telarana', x: p.d.x + 4, y: p.d.y - 18 });
+
+    // 5g. calcomanías
+    for (const sc of screens) {
+      const n = decalsFor(r, sc, 9, 0, 0, IW, IH);
+      mundo.pantallas.push({ x: sc.x, y: sc.y, focal: [], calcomanias: n });
+    }
+    for (const [zn, list] of Object.entries(world.frente)) { const mz = m.zones.find((q) => q.nombre === zn); if (mz && list.length) mz.props = { ...mz.props, frente: list.join(',') }; }
+  }
+  // las zonas con receta propia: árboles contados, monte bajo y calcomanías (después de que el mundo plantó)
+  zones.forEach((z, zi) => {
+    const r = rng(z.seed + 1);
+    const [rx0, ry0, rx1, ry1] = z.rect;
+    allowed = (tx, ty) => tx >= rx0 && tx <= rx1 && ty >= ry0 && ty <= ry1;
+    const rep = zonas[zi];
+    const inside = placed.filter((p) => allowed(Math.floor(p.d.x / TILE), Math.floor((p.d.y - 1) / TILE)));
+    rep.arboles = inside.filter((p) => TREE_P.test(p.d.sprite)).length;
+    undergrowthNear(r, z.undergrowth, inside.filter((p) => p.tree && !p.dosel).map((p) => p.d), 900);
+    for (const p of rep.pantallas) { p.calcomanias = decalsFor(r, p, 9, rx0 * TILE, ry0 * TILE, (rx1 + 1) * TILE, (ry1 + 1) * TILE); rep.calcomanias += p.calcomanias; }
+  });
   m.decos.push(...decos);
 
-  // ---------- 9. primer plano: no va en el mapa, la zona lo declara y el juego lo pega a los bordes de la pantalla ----------
-  const zone = m.zones.find((q) => q.nombre === z.nombre);
-  if (zone && z.frente.length) zone.props = { ...zone.props, frente: z.frente.join(',') };
+  // ---------- 6. todo lo que se alcanzaba se sigue alcanzando ----------
+  const start = m.entities.find((e) => e.tipo === 'jugador_inicio');
+  if (start) {
+    const sx = Math.floor(start.x / TILE), sy = Math.floor(start.y / TILE);
+    const bfs = (blocked: (k: number) => boolean) => {
+      const prev = new Int32Array(W * H).fill(-2);
+      const q = [at(sx, sy)]; prev[q[0]] = -1;
+      for (let qi = 0; qi < q.length; qi++) { const k = q[qi], x = k % W, y = Math.floor(k / W); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const j = at(x + dx, y + dy); if (j < 0 || prev[j] !== -2 || blocked(j)) continue; prev[j] = k; q.push(j); } }
+      return prev;
+    };
+    const target = (e: { x: number; y: number }) => { const tx = Math.floor(e.x / TILE), ty = Math.floor(e.y / TILE); return [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => at(tx + dx, ty + dy)).filter((k) => k >= 0); };
+    const removedSet = new Set<Deco>();
+    for (let round = 0; round < 8; round++) {
+      const seen = bfs((k) => solid[k] === 1);
+      const lost = m.entities.filter((e) => e.tipo !== 'criatura' && !target(e).some((k) => seen[k] !== -2));
+      if (!lost.length) break;
+      // camino ignorando lo plantado: lo plantado que pisa ese camino se quita
+      const free = bfs((k) => keptSolidSnapshot[k] === 1);
+      const pathTiles = new Set<number>();
+      for (const e of lost) {
+        const end = target(e).find((k) => free[k] !== -2);
+        for (let k = end ?? -1; k >= 0; k = free[k]) pathTiles.add(k);
+      }
+      let n = 0;
+      for (const p of placed) {
+        if (removedSet.has(p.d)) continue;
+        let hit = false;
+        boxTiles(p.d.sprite, p.d.x, p.d.y, (k) => { if (pathTiles.has(k)) hit = true; });
+        if (hit) { removedSet.add(p.d); n++; }
+      }
+      if (!n) break;
+      // rehacer la colisión sin lo quitado
+      solid.set(keptSolidSnapshot);
+      for (const p of placed) if (!removedSet.has(p.d)) boxTiles(p.d.sprite, p.d.x, p.d.y, (k) => { solid[k] = 1; });
+    }
+    if (removedSet.size) {
+      m.decos = m.decos.filter((d) => !removedSet.has(d));
+      if (mundo) mundo.quitadosPorPaso = removedSet.size;
+    }
+  }
 
   // puntos focales por pantalla: grupos y lugares
-  for (const p of report.pantallas) {
-    p.focal = m.decos.filter((d) => {
-      const tx = Math.floor(d.x / TILE), ty = Math.floor(d.y / TILE);
-      return tx >= p.x && tx < p.x + SCREEN.w && ty >= p.y && ty < p.y + SCREEN.h && (GROUPS.includes(d.sprite) || /^hongo_gigante|^arbol_hechizado/.test(d.sprite) || d.sprite === 'anillo_hadas');
-    }).map((d) => d.sprite);
-  }
+  const focalOf = (p: ScreenReport) => m.decos.filter((d) => {
+    const tx = Math.floor(d.x / TILE), ty = Math.floor(d.y / TILE);
+    return tx >= p.x && tx < p.x + SCREEN.w && ty >= p.y && ty < p.y + SCREEN.h && (GROUPS.includes(d.sprite) || /^(hongo_gigante|arbol_hechizado|abuelo_roble|estatua|anillo_hadas|campamento|cueva|arco_ruina|pozo|cascada|puente|carpa|cristales|espantapajaros|tronco_caido|tocon_hongos|sauce_v3|roble_otono)/.test(d.sprite));
+  }).map((d) => d.sprite);
+  for (const z of zonas) for (const p of z.pantallas) p.focal = focalOf(p);
+  if (mundo) for (const p of mundo.pantallas) p.focal = focalOf(p);
 
-  // ---------- 10. suelo de bosque con los troncos nuevos, raíces que cuelgan y caminos gastados ----------
+  // ---------- 7. suelo de bosque con los troncos nuevos, caminos gastados, raíces y piso calmo ----------
   const dd = new Float32Array(W * H);
-  for (let ty = ry0; ty <= ry1; ty++) for (let tx = rx0; tx <= rx1; tx++) {
+  for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
     let n = 0, c = 0;
     for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const j = at(tx + dx, ty + dy); if (j < 0) continue; c++; n += trunk[j]; }
-    dd[at(tx, ty)] = Math.min(1, (n / c) * 3.2 + z.darkAt(tx, ty) * 0.5);
+    // oscuro bajo las copas: el bosque oscuro oscurece más, pero un claro sin árboles no queda negro
+    const td = n / c;
+    dd[at(tx, ty)] = Math.min(1, td * 3.2 + darkOf(tx, ty) * 0.5 * Math.min(1, td * 6));
   }
-  // hojarasca más calma adentro (el detalle lo ponen las calcomanías), igual que afuera cerca del borde
-  forestFloor(t2, W, H, dd, z.seed, (x, y) => 0.35 + 0.65 * Math.max(0, 1 - Math.min(x - PX0, PX1 - 1 - x, y - PY0, PY1 - 1 - y) / (2 * TILE)));
-  wornPaths(t2.img.data, t2.kind, t2.img.w, t2.img.h, PX0, PY0, PX1, PY1, z.seed);
-  // arriba de la meseta llega más luz: el pasto sube un tono (así la altura se lee también de lejos)
+  const seed = zones[0]?.seed ?? world?.seed ?? 1;
+  forestFloor(t2, W, H, dd, seed, () => 0.35);
+  wornPaths(t2.img.data, t2.kind, IW, IH, 0, 0, IW, IH, seed);
+  // arriba de las mesetas llega más luz: el pasto sube un tono (así la altura se lee también de lejos)
   {
     const idx = new Map(GRASS.map((h, i) => [parseInt(h.slice(1), 16), i]));
+    const G = GRASS.map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
     const d = t2.img.data;
-    for (let y = PY0; y < PY1; y++) for (let x = PX0; x < PX1; x++) {
-      const i = y * t2.img.w + x;
+    for (let i = 0; i < IW * IH; i++) {
       if (!t2.high[i] || t2.kind[i] !== 0) continue;
       const gi = idx.get((d[i * 4] << 16) | (d[i * 4 + 1] << 8) | d[i * 4 + 2]);
       if (gi === undefined) continue;
-      const c = GRASS[Math.min(GRASS.length - 1, gi + 1)];
-      d[i * 4] = parseInt(c.slice(1, 3), 16); d[i * 4 + 1] = parseInt(c.slice(3, 5), 16); d[i * 4 + 2] = parseInt(c.slice(5, 7), 16);
+      const c = G[Math.min(G.length - 1, gi + 1)];
+      d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2];
     }
   }
-  calmSpeckles(t2.img.data, t2.kind, t2.img.w, PX0, PY0, PX1, PY1);
-  hangingRoots(t2, PX0, PY0, PX1, PY1, z.seed);
+  calmSpeckles(t2.img.data, t2.kind, IW, 0, 0, IW, IH);
+  hangingRoots(t2, 0, 0, IW, IH, seed);
 
-  // ---------- 11. pegar la zona en la imagen del mundo, con borde suave (2 cuadros) ----------
-  const F = 2 * TILE;
-  const img = m.terrain.img.data, src = t2.img.data;
-  for (let y = PY0; y < PY1; y++) for (let x = PX0; x < PX1; x++) {
-    const edge = Math.min(x - PX0, PX1 - 1 - x, y - PY0, PY1 - 1 - y);
-    const i = y * IW + x;
-    // el relieve nuevo no se mezcla: donde el terreno cambia de tipo manda el nuevo
-    const changed = t2.kind[i] !== m.terrain.kind[i] || t2.high[i] !== m.terrain.high[i];
-    const t = changed ? 1 : Math.min(1, edge / F);
-    // mezcla con tramado (no se promedian colores: el pixel art no tiene colores intermedios)
-    const dith = ((x * 7 + y * 13) % 16) / 16;
-    if (t >= 1 || dith < t) for (let c = 0; c < 4; c++) img[i * 4 + c] = src[i * 4 + c];
-    m.terrain.kind[i] = t2.kind[i]; m.terrain.high[i] = t2.high[i];
-  }
-  for (let ty = ry0; ty <= ry1; ty++) for (let tx = rx0; tx <= rx1; tx++) {
-    const k = at(tx, ty);
-    m.terrain.tileKind[k] = t2.tileKind[k]; m.terrain.tileHigh[k] = t2.tileHigh[k]; m.terrain.waterTiles[k] = t2.waterTiles[k]; m.terrain.solid[k] = t2.solid[k];
-  }
-  // entidades que quedaron sobre el relieve nuevo: al cuadro libre más cercano
+  // ---------- 8. el terreno nuevo pasa al mundo entero (sin costuras: es una sola pintura) ----------
+  m.terrain.img.data.set(t2.img.data);
+  m.terrain.kind.set(t2.kind); m.terrain.high.set(t2.high);
+  m.terrain.tileKind.set(t2.tileKind); m.terrain.tileHigh.set(t2.tileHigh); m.terrain.waterTiles.set(t2.waterTiles); m.terrain.solid.set(t2.solid);
+  // entidades que quedaron sobre algo sólido: al cuadro libre más cercano
   for (const e of m.entities) {
     const tx = Math.floor(e.x / TILE), ty = Math.floor(e.y / TILE);
-    if (!inRect(tx, ty) || !solid[at(tx, ty)]) continue;
+    if (!solid[at(tx, ty)] || e.tipo === 'cofre' || e.tipo === 'rompible') continue;
     let done = false;
     for (let rad = 1; rad <= 6 && !done; rad++) for (let dy = -rad; dy <= rad && !done; dy++) for (let dx = -rad; dx <= rad && !done; dx++) {
       const k = at(tx + dx, ty + dy);
       if (k >= 0 && !solid[k] && !m.terrain.waterTiles[k]) { e.x = (tx + dx) * TILE + TILE / 2; e.y = (ty + dy) * TILE + TILE / 2; done = true; }
     }
   }
-  return report;
+  return { zonas, mundo };
 }
 
 /**
@@ -427,15 +595,15 @@ function calmSpeckles(data: Uint8ClampedArray, kind: Uint8Array, W: number, x0: 
   for (let y = y0 + 1; y < y1 - 1; y++) for (let x = x0 + 1; x < x1 - 1; x++) {
     const i = y * W + x;
     if (kind[i] !== 0) continue;
-    const c = col(i), votes = new Map<number, number>();
-    let same = 0;
-    for (const j of [i - W - 1, i - W, i - W + 1, i - 1, i + 1, i + W - 1, i + W, i + W + 1]) {
+    const c = col(i), nb = [i - W - 1, i - W, i - W + 1, i - 1, i + 1, i + W - 1, i + W, i + W + 1];
+    // lo común (algún vecino igual) se decide rápido, sin contar votos
+    if (nb.some((j) => kind[j] === 0 && col(j) === c)) continue;
+    const votes = new Map<number, number>();
+    for (const j of nb) {
       if (kind[j] !== 0) continue;
       const v = col(j);
-      if (v === c) same++;
       votes.set(v, (votes.get(v) ?? 0) + 1);
     }
-    if (same > 0) continue;
     let best = c, bn = 0;
     for (const [v, n] of votes) if (n > bn) { bn = n; best = v; }
     if (bn < 4) continue;

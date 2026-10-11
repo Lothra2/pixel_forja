@@ -10,7 +10,7 @@ import { landmarkObjects, fittedWaterfall, type WaterfallCol } from './landmarks
 import { treesPremium } from './premium/trees';
 import { withShadow, drawShadow } from './premium/shadow';
 import { forestDecals, forestGroups, forestFront } from './premium/details';
-import { applyPremiumZone, type PremiumZone, type ZoneReport } from './premium/zone';
+import { premiumWorld, type PremiumZone, type ZoneReport, type WorldPass, type WorldReport } from './premium/zone';
 
 /**
  * El Bosque GG armado: terreno pintado + lugares + bosque lleno + enemigos, cofres (varios secretos), fogatas de guardado,
@@ -38,6 +38,10 @@ export interface BigMap {
   objects: WorldObject[];
   /** datos del mundo para Tiled y el agua (el Bosque no los trae: usa los de siempre) */
   meta?: { bioma: string; musica: string; nombre: string; agua?: string };
+  /** cuadros que el diseño deja libres (claros de los lugares, puentes, vado, camino secreto): ahí no se planta nada */
+  libre?: Uint8Array;
+  /** cuánto bosque quiere el diseño en cada cuadro (menos de 0 nada, 1 o más bosque cerrado) */
+  densidad?: Float32Array;
 }
 
 function rng(seed: number) {
@@ -59,16 +63,16 @@ export function bosqueObjects(): WorldObject[] {
   const premium = [
     ...treesPremium().map((t) => withShadow(t)),
     ...forestGroups(byName).map((g) => withShadow(g, { length: 0.5, drop: 0.25 })),
-    // lo de la paleta vieja que se usa en la zona premium, con su sombra horneada (`_p`): afuera de la zona se
-    // siguen usando los de siempre, así el resto del mundo no cambia hasta que le toque
+    // lo de la paleta vieja que usa el mundo premium, con su sombra horneada (`_p`). El original queda en el kit
+    // por si otro mundo lo usa
     ...PREMIUM_COPIES.map((n) => { const o = byName.get(n)!; return withShadow({ ...o, name: `${n}_p`, base: n }, n.startsWith('arbusto') || n === 'helecho' || n === 'hongos' || n.startsWith('roca') ? { length: 0.5, drop: 0.25 } : {}); }),
     ...forestDecals(), ...forestFront(),
   ];
   return [...base, ...premium];
 }
 
-/** Objetos de siempre que la zona premium usa con sombra horneada. */
-const PREMIUM_COPIES = ['hongo_gigante_azul', 'hongo_gigante_morado', 'arbol_hechizado_1', 'arbol_hechizado_2', 'arbol_seco_0', 'arbol_seco_1', 'tronco_caido', 'arbusto_verde_0', 'arbusto_verde_1', 'arbusto_moras_0', 'hongos', 'roca', 'roca_grande'];
+/** Objetos de siempre que el mundo premium usa con sombra horneada. */
+const PREMIUM_COPIES = ['hongo_gigante_azul', 'hongo_gigante_morado', 'arbol_hechizado_0', 'arbol_hechizado_1', 'arbol_hechizado_2', 'arbol_seco_0', 'arbol_seco_1', 'tronco_caido', 'arbusto_verde_0', 'arbusto_verde_1', 'arbusto_moras_0', 'arbusto_espinas_0', 'hongos', 'roca', 'roca_grande', 'sauce_v3', 'roble_otono_1', 'tocon', 'tocon_hongos'];
 
 /** El piloto premium: el Bosque Profundo con meseta, rampa, árboles variados, puntos focales y primer plano. */
 export const ZONA_PILOTO: Omit<PremiumZone, 'darkAt'> = {
@@ -91,12 +95,23 @@ export const ZONA_PILOTO: Omit<PremiumZone, 'darkAt'> = {
   frente: ['frente_ramas_0', 'frente_ramas_1', 'frente_hojas_0'],
 };
 
-export function bosqueMap(seed = 2024, opts: { premium?: boolean } = {}): BigMap & { piloto?: ZoneReport } {
+/** El resto del Bosque: misma receta para todo lo que no es el piloto. */
+export const BOSQUE_PREMIUM: Omit<WorldPass, 'darkAt'> = {
+  seed: 5113,
+  vegetation: /^(pino_\d|roble_\d|roble_grande|roble_otono|arbol_hechizado|arbol_seco|sauce_v3|arbusto_|hongos$|hongo_gigante|tocon|roca$|roca_grande|telarana|tronco_caido)/,
+  // lo que el diseño puso con intención (y los descubrimientos de las praderas) se muda cerca, no se pierde
+  relocate: /^(arbol_hechizado|arbol_seco|sauce_v3|roble_otono|hongo_gigante|tocon|roca$|roca_grande|tronco_caido)/,
+  stay: /^arbusto_espinas/,
+  undergrowth: ['arbusto_verde_0_p', 'arbusto_verde_1_p', 'arbusto_moras_0_p', 'helecho', 'helecho', 'arbusto_verde_0_p', 'helecho', 'arbusto_verde_1_p', 'helecho', 'hongos_p'],
+  frente: { 'Claro Escondido': ['frente_ramas_2', 'frente_hojas_1'], 'Anillo de las Hadas': ['frente_hojas_0', 'frente_hojas_1'] },
+};
+
+export function bosqueMap(seed = 2024, opts: { premium?: boolean } = {}): BigMap & { piloto?: ZoneReport; mundo?: WorldReport } {
   const m = bosqueMapBase(seed);
   if (opts.premium === false) return m;
   const darkAt = (tx: number, ty: number) => bosqueDesign.dark.reduce((mx, z) => Math.max(mx, 1 - Math.hypot(tx - z.c[0], ty - z.c[1]) / z.r), 0);
-  const piloto = applyPremiumZone(m, bosqueDesign, { ...ZONA_PILOTO, darkAt }, m.objects);
-  return { ...m, piloto };
+  const { zonas, mundo } = premiumWorld(m, bosqueDesign, [{ ...ZONA_PILOTO, darkAt }], { ...BOSQUE_PREMIUM, darkAt }, m.objects);
+  return { ...m, piloto: zonas[0], mundo: mundo ?? undefined };
 }
 
 function bosqueMapBase(seed = 2024): BigMap {
@@ -106,6 +121,7 @@ function bosqueMapBase(seed = 2024): BigMap {
   const byName = new Map(objects.map((o) => [o.name, o]));
   const solid = new Uint8Array(terrain.solid);
   const occ = new Uint8Array(W * H); // lugar ya usado (no poner árboles encima)
+  const libre = new Uint8Array(W * H); // lo que el diseño deja libre a propósito
   const decos: Deco[] = [], entities: Ent[] = [];
   const T = (t: number) => t * TILE + TILE / 2;
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= W || y >= H ? -1 : y * W + x);
@@ -128,7 +144,7 @@ function bosqueMapBase(seed = 2024): BigMap {
     for (let dy = -reserve; dy <= reserve; dy++) for (let dx = -reserve; dx <= reserve; dx++) if (at(tx + dx, ty + dy) >= 0) occ[at(tx + dx, ty + dy)] = 1;
   };
   const placeT = (sprite: string, tx: number, ty: number, reserve = 0) => place(sprite, T(tx), ty * TILE + TILE - 4, reserve);
-  const reserve = (tx: number, ty: number, rad: number) => { for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) if (dx * dx + dy * dy <= rad * rad + 1 && at(tx + dx, ty + dy) >= 0) occ[at(tx + dx, ty + dy)] = 1; };
+  const reserve = (tx: number, ty: number, rad: number) => { for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) if (dx * dx + dy * dy <= rad * rad + 1 && at(tx + dx, ty + dy) >= 0) { occ[at(tx + dx, ty + dy)] = 1; libre[at(tx + dx, ty + dy)] = 1; } };
   /** lugar libre más cercano en espiral */
   const near = (tx: number, ty: number, maxR = 8): [number, number] => {
     for (let rad = 0; rad <= maxR; rad++) for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) {
@@ -178,7 +194,7 @@ function bosqueMapBase(seed = 2024): BigMap {
     const cx = ((x0 + x1 + 1) / 2) * TILE;
     place('puente', cx, ty * TILE + TILE / 2 + 2);
     // el puente se camina: libre de este a oeste, con un cuadro de orilla a cada lado
-    for (let x = x0 - 1; x <= x1 + 1; x++) { solid[at(x, ty)] = 0; occ[at(x, ty)] = 1; occ[at(x, ty - 1)] = 1; occ[at(x, ty + 1)] = 1; }
+    for (let x = x0 - 1; x <= x1 + 1; x++) { solid[at(x, ty)] = 0; occ[at(x, ty)] = 1; occ[at(x, ty - 1)] = 1; occ[at(x, ty + 1)] = 1; libre[at(x, ty)] = libre[at(x, ty - 1)] = libre[at(x, ty + 1)] = 1; }
     return [x0, x1] as [number, number];
   };
 
@@ -214,8 +230,8 @@ function bosqueMapBase(seed = 2024): BigMap {
     // vado: piedras para saltar de orilla a orilla
     const ty = L.vado[1];
     const [x0, x1] = riverSpan(ty, L.vado[0]);
-    for (let x = x0; x <= x1; x++) { place(`piedra_vado_${x % 2}`, T(x), ty * TILE + 22); solid[at(x, ty)] = 0; occ[at(x, ty)] = 1; }
-    occ[at(x0 - 1, ty)] = 1; occ[at(x1 + 1, ty)] = 1; solid[at(x0 - 1, ty)] = 0; solid[at(x1 + 1, ty)] = 0;
+    for (let x = x0; x <= x1; x++) { place(`piedra_vado_${x % 2}`, T(x), ty * TILE + 22); solid[at(x, ty)] = 0; occ[at(x, ty)] = 1; libre[at(x, ty)] = 1; }
+    occ[at(x0 - 1, ty)] = 1; occ[at(x1 + 1, ty)] = 1; solid[at(x0 - 1, ty)] = 0; solid[at(x1 + 1, ty)] = 0; libre[at(x0 - 1, ty)] = libre[at(x1 + 1, ty)] = 1;
   }
   {
     // cascada donde el río cae del acantilado
@@ -284,7 +300,7 @@ function bosqueMapBase(seed = 2024): BigMap {
   for (let i = 0; i < secretPath.length - 1; i++) {
     const [a0, a1] = secretPath[i], [b0, b1] = secretPath[i + 1];
     const n = Math.ceil(Math.hypot(b0 - a0, b1 - a1) * 2);
-    for (let k = 0; k <= n; k++) { const x = Math.round(a0 + ((b0 - a0) * k) / n), y = Math.round(a1 + ((b1 - a1) * k) / n); occ[at(x, y)] = 1; solid[at(x, y)] = 0; }
+    for (let k = 0; k <= n; k++) { const x = Math.round(a0 + ((b0 - a0) * k) / n), y = Math.round(a1 + ((b1 - a1) * k) / n); occ[at(x, y)] = 1; solid[at(x, y)] = 0; libre[at(x, y)] = 1; }
   }
   reserve(ex, ey, 4);
   chest(ex, ey - 1, 'dorado', { secreto: true, pista: 'claro_escondido' });
@@ -534,7 +550,7 @@ function bosqueMapBase(seed = 2024): BigMap {
     { nombre: 'campo_calabazas', x: T(L.calabazas[0]), y: T(L.calabazas[1]) },
     { nombre: 'las_alturas', x: T(L.alturas[0]), y: T(L.alturas[1]) },
   ];
-  return { name: 'mundo1_bosque', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects };
+  return { name: 'mundo1_bosque', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects, libre, densidad: dens };
 }
 
 /** Desde dónde se puede llegar caminando (4 vecinos), empezando en un cuadro. */
