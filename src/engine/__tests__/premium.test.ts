@@ -9,14 +9,16 @@ import { SWIM_PREMIUM } from '../anim/swim';
 import { NET_PREMIUM } from '../anim/net';
 import { FIGHT_PREMIUM } from '../anim/fight';
 import { FOOTBALL_PREMIUM } from '../anim/footballPremium';
+import { BRAWL } from '../anim/brawl';
 
 const premium = (id: 'rick' | 'steph' | 'sophie' | 'alana', rpg = true): HumanFicha => ({ ...familyFicha(id, rpg), movementProfile: 'premium' });
 const ATH = ATHLETICS_PREMIUM.map((a) => a.name);
 const SWIM = SWIM_PREMIUM.map((a) => a.name);
 const NET = NET_PREMIUM.map((a) => a.name);
 const FIGHT = FIGHT_PREMIUM.map((a) => a.name);
-// las de héroe (con espada y escudo); el atletismo se prueba con ropa de calle
-const NAMES = PREMIUM.map((a) => a.name).filter((n) => !ATH.includes(n) && !SWIM.includes(n) && !NET.includes(n) && !FIGHT.includes(n));
+const STREET = BRAWL.map((a) => a.name);
+// las de héroe (con espada y escudo); el atletismo se prueba con ropa de calle y la pelea callejera en brawl.test.ts
+const NAMES = PREMIUM.map((a) => a.name).filter((n) => !ATH.includes(n) && !SWIM.includes(n) && !NET.includes(n) && !FIGHT.includes(n) && !STREET.includes(n));
 
 describe('movimiento premium', () => {
   it('toda la familia pasa el control de calidad en 8 direcciones a 48 px (y Rick también a 32 y 64)', () => {

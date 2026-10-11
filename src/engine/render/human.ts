@@ -13,7 +13,7 @@ import { renderHeadModel, HEAD_STYLES } from '../head3d/render';
 import { modelFromAvatar } from '../head3d/avatar';
 import { lpcHead } from '../parts/lpc';
 import { rotSprite } from './rotsprite';
-import { drawBall, drawHeld, drawGround, isBall, ballSize } from './props';
+import { drawBall, drawHeld, drawGround, isBall, ballSize, drawHeldFloorProp, FLOOR_PROPS, type FloorPropKind } from './props';
 import { findLoot } from '../loot/catalog';
 import { handMaterials } from '../loot/render';
 
@@ -25,6 +25,8 @@ export interface RenderOptions {
   noOutline?: boolean;
   /** premium: los implementos nunca cuentan como cuerpo para encuadrar, aunque se dibujen en la capa del brazo */
   propsApart?: boolean;
+  /** el arma del piso que va en la mano en las animaciones de armas (sin esto no se dibuja, solo se exporta dónde va) */
+  held?: { kind: FloorPropKind; variant?: number };
 }
 
 /**
@@ -43,10 +45,13 @@ export interface BigFrame {
   whole?: { x0: number; y0: number; x1: number; y1: number } | null;
   /** articulaciones en coordenadas del cuadro grande (para el editor de poses) */
   joints?: Joints;
+  /** el arma en la mano: agarre, ángulo en pantalla (0 = derecha, horario) y si va detrás del cuerpo */
+  held?: { x: number; y: number; angle: number; behind: boolean };
 }
 
 export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 'shoulderNear' | 'shoulderFar' | 'handNear' | 'handFar' | 'neck' | 'head';
-export type Joints = Record<JointName, [number, number]>;
+/** `carry`: dónde se apoya lo que se lleva (solo en las poses con `load`): entre las manos, arriba de las palmas */
+export type Joints = Record<JointName, [number, number]> & { carry?: [number, number] };
 
 /** Caja de lo que no es implemento, ya en coordenadas del cuadro grande. */
 /** Implementos largos que se sostienen (garrocha, jabalina): nunca marcan el piso. */
@@ -485,6 +490,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const gear = f.gear;
   const gearKind = (k: PropKind): PropKind | null =>
     k === 'sword' && gear && gear.main !== undefined ? gear.main : k === 'shield' && gear && gear.off !== undefined ? gear.off : k;
+  let heldAt: { p: [number, number]; angle: number; behind: boolean } | null = null;
   const drawAttached = (behind: boolean) => {
     for (const raw of props) {
       if (raw.at === 'ground' || !!raw.behind !== behind) continue;
@@ -493,14 +499,27 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
       const pr = { ...raw, kind };
       const part = new Part();
       const anchor: [number, number] =
-        pr.at === 'handNear' ? arms.near.end : pr.at === 'handFar' ? arms.far.end : pr.at === 'footNear' ? legs.near.end : pr.at === 'footFar' ? legs.far.end : local(0, d.torsoH / 2);
+        pr.at === 'handNear' ? arms.near.end : pr.at === 'handFar' ? arms.far.end : pr.at === 'footNear' ? legs.near.end : pr.at === 'footFar' ? legs.far.end
+        : pr.at === 'hands' ? [(arms.near.end[0] + arms.far.end[0]) / 2, Math.min(arms.near.end[1], arms.far.end[1])] : local(0, d.torsoH / 2);
       const p: [number, number] = [anchor[0] + (pr.x ?? 0) * (side ? 1 : diag ? DIAG_X : sign), anchor[1] + (pr.y ?? 0)];
       // sin ángulo dado, el implemento sigue al antebrazo
-      const limb = pr.at === 'handFar' ? arms.far : pr.at === 'handNear' ? arms.near : null;
+      const limb = pr.at === 'handFar' ? arms.far : pr.at === 'handNear' || pr.at === 'hands' ? arms.near : null;
       const auto = limb ? (Math.atan2(limb.end[1] - limb.mid[1], limb.end[0] - limb.mid[0]) * 180) / Math.PI : 0;
       // ángulo pensado para esta vista (premium): manda sobre todo lo automático
       const viewAng = pr.angles?.[viewIn];
       let ang = viewAng ?? (pr.angle !== undefined && side ? pr.angle : auto);
+      if (kind === 'held') {
+        // arma del piso en la mano: se exporta dónde va (el juego dibuja la que el personaje recogió) y, si se pide, se dibuja
+        const layer = behind ? Layer.Behind : view === 'back' ? Layer.FarArm : Layer.Prop;
+        heldAt = { p, angle: ang, behind: layer < Layer.Torso };
+        if (opt.held) {
+          const col = FLOOR_PROPS[opt.held.kind].colores?.[opt.held.variant ?? 0];
+          if (col) mats.add('p_color0', makeRamp(col));
+          drawHeldFloorProp(part, opt.held.kind, p, ang, d.u, { open: pr.open });
+          commit(part, layer, false, false);
+        }
+        continue;
+      }
       // armas largas con el brazo colgando: el báculo y la lanza van parados, el arco vertical
       const down = Math.sin((auto * Math.PI) / 180) > 0.5;
       const explicit = viewAng !== undefined || pr.angle !== undefined;
@@ -561,21 +580,23 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     }
   };
 
+  // cargando arriba (levantar, llevar): los brazos se dibujan después de la cabeza, cuando se sabe dónde termina el pelo
+  const lifting = !!pose.load && Math.min(pose.arms.near.shoulder, pose.arms.far.shoulder) >= 140;
   // orden de dibujo: lo de atrás primero
   drawAttached(true);
   if (side) {
-    drawArm(true, L_FAR_ARM);
+    if (!lifting) drawArm(true, L_FAR_ARM);
     drawLeg(true, L_FAR_LEG);
     drawLeg(false, Layer.NearLeg);
   } else if (diag) {
     // en diagonal el brazo y la pierna "far" quedan del lado de la cámara
     drawLeg(false, Layer.FarLeg);
     drawLeg(true, Layer.NearLeg);
-    drawArm(false, Layer.FarArm);
+    if (!lifting) drawArm(false, Layer.FarArm);
   } else {
     drawLeg(true, L_FAR_LEG);
     drawLeg(false, Layer.NearLeg);
-    if (view === 'back') { drawArm(true, L_FAR_ARM); drawArm(false, L_NEAR_ARM); }
+    if (view === 'back' && !lifting) { drawArm(true, L_FAR_ARM); drawArm(false, L_NEAR_ARM); }
   }
   drawCape();
   drawSkirt();
@@ -583,8 +604,52 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   drawHead();
   // si la mano queda más arriba que la barbilla, el brazo va detrás de la cabeza
   const chinY = local(0, d.torsoH)[1];
+  const carrying = !!pose.load;
   const upLayer = (p: { end: [number, number] }, normal: number) => (p.end[1] < chinY + 1 ? Layer.ArmUp : normal);
-  if (side) drawArm(false, upLayer(arms.near, Layer.NearArm));
+  if (lifting) {
+    // Levantar con chibi (como en los Kunio): los brazos suben por los costados de la cabeza y se estiran lo justo
+    // para que las palmas lleguen a lo más alto del pelo, donde se apoya la carga. Así las manos tocan lo cargado
+    // y la cara queda a la vista. Solo en estas poses: en el resto los brazos miden lo de siempre.
+    let hx0 = Infinity, hx1 = -Infinity, hy0 = Infinity;
+    for (let y = 0; y < canvas.h; y++) for (let x = 0; x < canvas.w; x++) {
+      const l = canvas.layer[y * canvas.w + x];
+      if (l !== Layer.Head && l !== Layer.HairBack) continue;
+      if (x < hx0) hx0 = x; if (x > hx1) hx1 = x; if (y < hy0) hy0 = y;
+    }
+    hx0 -= canvas.ox; hx1 -= canvas.ox; hy0 -= canvas.oy;
+    const hr = Math.floor(d.hand / 2), cx = (hx0 + hx1) / 2;
+    const reachTo = (root: [number, number], target: [number, number]): LimbPts => {
+      const tx = target[0] - root[0], ty = target[1] - root[1];
+      const dist = Math.hypot(tx, ty), len = d.armUpper + d.armLower;
+      const k = Math.max(1, dist / (len * 0.97));
+      // el codo se abre hacia afuera de la cabeza
+      const out = root[0] < cx ? -1 : 1;
+      const a = solveTwoBone(d.armUpper * k, d.armLower * k, tx, ty, 1), b = solveTwoBone(d.armUpper * k, d.armLower * k, tx, ty, -1);
+      const ik = (a.mid[0] - b.mid[0]) * out > 0 ? a : b;
+      return { root, mid: add(root, ik.mid), end: add(root, ik.end) };
+    };
+    // las palmas no se salen de la celda (un peinado en punta puede llegar al borde de arriba): como mucho a un pixel
+    // del borde (más el contorno), medido desde el piso
+    let feetY = -Infinity;
+    for (let y = 0; y < canvas.h; y++) for (let x = 0; x < canvas.w; x++) if (canvas.layer[y * canvas.w + x] === Layer.NearLeg || canvas.layer[y * canvas.w + x] === Layer.FarLeg) feetY = Math.max(feetY, y - canvas.oy);
+    const cellTop = feetY + 1 + 2 - C;
+    const top = Math.max(hy0, cellTop + 2) + hr;
+    if (side) {
+      // de lado las dos palmas asoman arriba y adelante de la cabeza; los brazos pasan por detrás de ella
+      arms.near = reachTo(arms.near.root, [hx1 + hr, top]);
+      arms.far = reachTo(arms.far.root, [hx1 + hr - 2, top]);
+      drawArm(true, Layer.ArmUp);
+      drawArm(false, Layer.ArmUp);
+    } else {
+      // de frente, de espalda y en diagonal: una mano a cada costado de la cabeza, por fuera del pelo
+      for (const k of ['near', 'far'] as const) {
+        const root = arms[k].root;
+        arms[k] = reachTo(root, [root[0] < cx ? hx0 - hr : hx1 + hr, top]);
+      }
+      drawArm(true, Layer.NearArm);
+      drawArm(false, Layer.NearArm);
+    }
+  } else if (side) drawArm(false, upLayer(arms.near, Layer.NearArm));
   else if (diag) drawArm(true, upLayer(arms.far, Layer.NearArm));
   else if (view === 'front') { drawArm(true, upLayer(arms.far, L_FAR_ARM)); drawArm(false, upLayer(arms.near, L_NEAR_ARM)); }
   drawAttached(false);
@@ -635,7 +700,16 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const body = soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : bodyBox(canvas, dx, dy, -99, false, propMats);
   const full = soft ? bodyBox(canvas, dx, dy, -99, false, propMats) : body;
   const whole = bodyBox(canvas, dx, dy, -99, true, propMats);
-  return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, whole, joints };
+  if (carrying) {
+    // la carga se apoya en las palmas: entre las dos manos, en el borde de arriba de la más alta
+    const top = Math.min(joints.handNear[1], joints.handFar[1]) - Math.floor(d.hand / 2);
+    joints.carry = [(joints.handNear[0] + joints.handFar[0]) / 2, top];
+  }
+  const held = heldAt as { p: [number, number]; angle: number; behind: boolean } | null;
+  return {
+    raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, whole, joints,
+    ...(held ? { held: { x: J(held.p)[0], y: J(held.p)[1], angle: ((Math.round(held.angle) % 360) + 360) % 360, behind: held.behind } } : {}),
+  };
 }
 
 /** Distancia del hombro a la cadera y ángulos del brazo para llegar a un punto (para manubrios, barras). */

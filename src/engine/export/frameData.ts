@@ -21,8 +21,8 @@ export function viewsForRows(filas: readonly string[]): ViewName[] {
   return filas.map((f) => ROW_VIEW[f]);
 }
 
-export type FrameDataField = 'cajas' | 'manos' | 'cabeza' | 'pies';
-export const FRAME_DATA_FIELDS: FrameDataField[] = ['cajas', 'manos', 'cabeza', 'pies'];
+export type FrameDataField = 'cajas' | 'cuerpo' | 'manos' | 'cabeza' | 'pies' | 'carga' | 'arma';
+export const FRAME_DATA_FIELDS: FrameDataField[] = ['cajas', 'cuerpo', 'manos', 'cabeza', 'pies', 'carga', 'arma'];
 
 type Box = [number, number, number, number];
 type Pt = [number, number];
@@ -30,12 +30,24 @@ type Pt = [number, number];
 export interface FrameData {
   /** [fila][cuadro] = [x, y, w, h] del recuadro de lo opaco, desde el pivote. null si el cuadro está vacío */
   cajas?: (Box | null)[][];
+  /** igual que cajas pero solo la persona: sin implementos, pelotas ni efectos (el hurtbox) */
+  cuerpo?: (Box | null)[][];
   /** [fila][cuadro] = [[x, y] mano cercana, [x, y] mano lejana] */
   manos?: [Pt, Pt][][];
   /** [fila][cuadro] = [x, y] del centro de la cabeza */
   cabeza?: Pt[][];
   /** [fila][cuadro] = [[x, y] pie cercano, [x, y] pie lejano] */
   pies?: [Pt, Pt][][];
+  /**
+   * [fila][cuadro] = [x, y] donde apoya su base lo que se lleva (levantar, llevar, lanzar), o null en los cuadros
+   * sin carga. Solo en las animaciones que cargan algo
+   */
+  carga?: (Pt | null)[][];
+  /**
+   * [fila][cuadro] = [x, y, angulo, detras] del arma del piso en la mano: el agarre, hacia dónde apunta (grados, 0 = a la
+   * derecha, horario) y 1 si va detrás del cuerpo. null sin arma. Solo en las animaciones de armas
+   */
+  arma?: ([number, number, number, number] | null)[][];
 }
 
 /** Recuadro de los pixeles opacos de un cuadro, en coordenadas del cuadro (null si no hay ninguno). */
@@ -68,11 +80,18 @@ export function frameDataOf(clips: RenderedClip[], fields: readonly FrameDataFie
     const b = opaqueBox(fr);
     return b ? [b.x0 - px, b.y0 - py, b.x1 - b.x0 + 1, b.y1 - b.y0 + 1] : null;
   }));
+  // el cuerpo sale del render (separa implementos y efectos): solo en las animaciones premium de personas
+  if (fields.includes('cuerpo') && clips.every((c) => c.wholes)) out.cuerpo = clips.map((c) => c.wholes!.map((w) => (w ? [w.x0 - px, w.y0 - py, w.x1 - w.x0 + 1, w.y1 - w.y0 + 1] : null)));
+  if (fields.includes('arma') && clips.some((c) => c.held)) out.arma = clips.map((c) => c.frames.map((_, i) => {
+    const h = c.held?.[i];
+    return h ? [Math.round(h.x - px), Math.round(h.y - py), h.angle, h.behind ? 1 : 0] : null;
+  }));
   const withJoints = clips.every((c) => c.joints && c.joints.length === c.frames.length);
   if (!withJoints) return out;
   const J = (c: RenderedClip) => c.joints as Joints[];
   if (fields.includes('manos')) out.manos = clips.map((c) => J(c).map((j) => [rel(j.handNear), rel(j.handFar)] as [Pt, Pt]));
   if (fields.includes('cabeza')) out.cabeza = clips.map((c) => J(c).map((j) => rel(j.head)));
   if (fields.includes('pies')) out.pies = clips.map((c) => J(c).map((j) => [rel(j.footNear), rel(j.footFar)] as [Pt, Pt]));
+  if (fields.includes('carga') && clips.some((c) => J(c).some((j) => j.carry))) out.carga = clips.map((c) => J(c).map((j) => (j.carry ? rel(j.carry) : null)));
   return out;
 }

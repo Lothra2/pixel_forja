@@ -13,3 +13,12 @@ npm run deportes -- salida/kit_nekketsu --fichas mis_fichas --deportes pelea,nat
 Sale `atletas/rick/pelea.png + .json` (atlas JSON Hash de TexturePacker), `atletas/rick/retratos.png`, `ui/cabecitas.png` y un `manifest.json` con `cajas`, `manos`, `cabeza` y `pies` por fila y cuadro. Los campos están explicados en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#datos-por-cuadro-atlas-retratos-y-vestuario).
 
 Los nombres de pack del juego (`base`, `judo`...) llegan con el lote B. Por ahora el vestuario usa los packs que ya tiene el kit deportivo: atletismo, natacion, voley, tenis, pelea y futbol.
+
+## Pelea callejera (lote B1) y armas del piso (D1)
+
+```bash
+npm run deportes -- salida/kit_calle --fichas mis_fichas --deportes calle \
+  --filas right,down_right,up_right,down,up --datos --atlas --objetos
+```
+
+Sale `atletas/rick/calle.png + .json` con las 26 animaciones de beat 'em up (levantar, llevar, lanzar, agarres, armas) y `objetos/armas.png + .json` con las 19 armas del piso. Cómo se compone lo levantado (`carga`) y el arma en la mano (`arma`): [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#pelea-callejera---deportes-calle).

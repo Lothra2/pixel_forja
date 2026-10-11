@@ -20,6 +20,7 @@ npm run deportes -- salida/kit --datos       # cajas, manos, cabeza y pies en ca
 npm run deportes -- salida/kit --atlas       # un atlas por pack (JSON Hash de TexturePacker) en vez de una hoja por animación
 npm run deportes -- salida/kit --retratos    # 7 expresiones en 40 x 40 y 96 x 96 por atleta
 npm run deportes -- salida/kit --cabecitas   # ui/cabecitas.png: una cabeza de 12 x 12 por atleta
+npm run deportes -- salida/kit --deportes calle --objetos   # pelea callejera (no va por defecto) y las armas del piso
 ```
 
 Sin estas opciones el kit sale **byte a byte igual** que antes (hay una prueba que lo revisa).
@@ -98,6 +99,9 @@ Todos van como `[fila][cuadro]`, en pixeles **desde el pivote**, con `x` hacia l
 | `manos` | `[[x, y] mano cercana, [x, y] mano lejana]` | Enganchar un arma o una pelota, hitbox del puño |
 | `cabeza` | `[x, y]` del centro de la cabeza | Estrellitas de mareo, globo de diálogo, cabezazos |
 | `pies` | `[[x, y] pie cercano, [x, y] pie lejano]` | Hitbox de la patada, polvo, huellas |
+| `cuerpo` | Igual que `cajas` pero solo la persona (con el pelo): sin implementos, pelotas, armas ni chispas | **El hurtbox.** `cajas` incluye la pelota o la chispa del golpe; `cuerpo` no |
+| `carga` | `[x, y]` donde apoya su base lo que se lleva (levantar, llevar, lanzar). `null` en los cuadros sin carga. Solo en esas animaciones | Dibujar al rival levantado o el objeto encima de quien carga (ver Pelea callejera) |
+| `arma` | `[x, y, angulo, detras]`: el agarre del arma del piso en la mano, hacia dónde apunta (grados, 0 = derecha, horario) y 1 si va detrás del cuerpo. `null` sin arma. Solo en las animaciones de armas | Dibujar el arma que el personaje recogió (ver Armas del piso) |
 
 ```js
 // hitbox del puño en el cuadro del impacto, para el jugador que mira a la derecha
@@ -168,8 +172,71 @@ Una variante cambia solo lo que dice (`outfit` y los colores de `top`, `bottom`,
 
 ### En el estudio
 
-- **Ver datos** (en Animar, junto a Papel cebolla): dibuja encima del personaje la caja, las manos, la cabeza, los pies y el punto del golpe, con su leyenda y la caja del cuadro en números. Son los mismos datos que exporta el kit.
+- **Ver datos** (en Animar, junto a Papel cebolla): dibuja encima del personaje la caja, el cuerpo (punteado), las manos, la cabeza, los pies, el punto del golpe, la carga y el arma, con su leyenda y la caja del cuadro en números. Son los mismos datos que exporta el kit.
+- **Arma en la mano:** en las animaciones de armas, elige cuál de las armas del piso se ve en la mano.
 - **Vestuario:** si la ficha trae variantes, aparecen debajo de la animación. Se ve cada una sin tocar la ficha.
+
+## Pelea callejera (`--deportes calle`)
+
+Movimientos de beat 'em up en el estilo Kunio: levantar y lanzar a un rival o un objeto, agarres, mareo, nocaut con rebote, golpes corriendo y armas del piso. **No sale por defecto**: se pide con `--deportes calle` (o `packs: ['calle']`). Trae también reposo, caminar, correr, golpe recibido, jab, directo, patada baja y nocaut.
+
+| Animación | Cuadros, fps | Eventos y datos |
+|---|---|---|
+| `lift` | 6, 12 | `impacto` al agarrar · `carga` desde el cuadro 2 · aplaste de un cuadro cuando la carga llega arriba |
+| `carry_idle`, `carry_walk`, `carry_run` | 4, 6 · 8, 10 · 8, 14 | `paso` · `carga` en todos los cuadros |
+| `throw_overhead` | 6, 14 | `suelta` con `punto` · `carga` hasta la suelta (incluida) |
+| `carried` | 4, 6 | el levantado: acostado, pataleando · de frente usa la diagonal |
+| `thrown_spin` | 8, 16 | rueda en el aire hecho bolita, centrado en la celda · de frente usa la diagonal |
+| `land_flat` | 4, 12 | `aterriza` |
+| `grab`, `grab_hold`, `grabbed`, `knee_grab`, `break_free` | 4-5, 8-14 | `impacto` en `grab` y `knee_grab` |
+| `dizzy` | 8, 8 | `cabeza` para los pajaritos |
+| `ko_bounce` | 8, 12 | `aterriza` dos veces |
+| `taunt` | 8, 8 | |
+| `run_punch`, `run_kick`, `air_kick` | 6, 16 · 8, 14 · 4, 14 | `impacto` con `punto`; `run_kick` con `despegue`, `aterriza`, `elevacion` y `desplazamiento` |
+| `slip_wet` | 8, 14 | `aterriza` |
+| `weapon_pick` | 4, 12 | `impacto` al agarrar · `arma` desde ese cuadro |
+| `weapon_swing` | 6, 14 | `impacto` con `punto` (la mano) · `arma` |
+| `weapon_swing_heavy` | 8, 12 | `impacto` · `arma` (a dos manos, entre las manos) · `carga` mientras está sobre la cabeza |
+| `weapon_throw` | 6, 14 | `suelta` · `arma` hasta antes de la suelta |
+| `umbrella_block` | 4, 12 | `arma` (paraguas abierto adelante) |
+| `fan_gust` | 6, 12 | `suelta` (la ráfaga) · `arma` (abanico abierto) |
+
+### Levantar, llevar y lanzar
+
+Lo levantado **no viene dentro del sprite** de quien carga: es otro sprite que dibuja el juego.
+
+- **Un rival:** su animación `carried`. Pon la base de su `cuerpo` (el centro de abajo de la caja) en la `carga` de quien lo levanta.
+- **Un objeto del piso:** su cuadro `quieto`. Pon su pivote en la `carga` de quien lo levanta.
+
+Dibújalo **después** de quien carga: va encima de las manos. Con chibi los brazos no llegan arriba de la cabeza, así que en las poses de carga se estiran lo justo para que las palmas lleguen a lo más alto del pelo (como en los Kunio) y la `carga` queda en el borde de arriba de las palmas. Hay una prueba que revisa que la base toca el pelo o las manos, sin hueco, en todas las filas y tamaños.
+
+Al lanzar: en el cuadro de la `suelta`, lo cargado sale volando desde la `carga` de ese cuadro. El rival pasa a `thrown_spin` (el juego lo mueve por la parábola) y al caer a `land_flat` o `ko_bounce`.
+
+### Armas del piso (`--objetos`, opción `objetos`)
+
+19 objetos dibujados con código: chancleta, silla plástica, nón lá, coco, tubo, llanta, pote de basura, cono, escoba, piedra, paraguas, abanico, termo de tinto, furro, palo de escoba, balón de goma, chapa, tejo y volante de đá cầu. Los que tienen colores salen como ids aparte (`silla_plastica_azul`, `chapa_dorada`...).
+
+```
+objetos/armas.png + objetos/armas.json      atlas JSON Hash, cuadros <id>_<anim>_<cuadro>
+"objetos": { "chancleta": { "atlas": "objetos/armas.json", "w": 11, "h": 5, "agarre": [12, 20], "peso": "liviano", "rota": true, "uso": "throw", "anims": { "quieto": 1, "girando": 8, "mano": 16 } } }
+```
+
+- `quieto`: en el piso, con la base en el pivote de la celda (como un personaje). La celda de los objetos es la mitad de la de los personajes (24 para 48).
+- `girando`: en el aire, centrado (los que tienen `rota`).
+- `mano`: 16 cuadros con el **agarre en el centro de la celda**; el cuadro `k` está girado `k * 22.5` grados.
+- Extras: `pote_basura` trae `sin_tapa` y `tapa` (la tapa sale volando al pegar), `paraguas` y `abanico` traen `abierto`, `termo` trae `vapor`, `chapa` y `volante_dacau` traen `volando`.
+- `uso` dice qué animación le toca: `swing` (batazo), `heavy` (a dos manos), `throw` (lanzar), `gust` (abanico).
+
+Las animaciones de armas **no dibujan el arma**: así una sola hoja sirve para todas. Cada cuadro trae `arma = [x, y, angulo, detras]`. Para dibujarla:
+
+```js
+const [x, y, ang, detras] = anim.arma[fila][cuadro];        // null si en ese cuadro no tiene arma
+const k = Math.round(ang / 22.5) % 16;
+arma.setTexture('armas', `${id}_mano_${k}`).setPosition(sprite.x + x, sprite.y + y).setOrigin(0.5, 0.5);
+arma.setDepth(sprite.depth + (detras ? -1 : 1));
+```
+
+Al espejar con `flipX`, la `x` cambia de signo y el ángulo pasa a `180 - ang`.
 
 ## La arena: el kit jugando de verdad
 
@@ -193,6 +260,7 @@ En local: `npm run deportes -- public/kit_deportes` y después `npm run dev`. En
 - **Vóley:** espera, recepción, colocación, remate, bloqueo, saque flotado y plancha.
 - **Tenis:** espera con split step, derecha, revés a dos manos, saque, volea y smash.
 - **Peleas:** guardia, desplazamiento, jab, directo, gancho, uppercut, patada baja, patada alta, patada voladora, bloqueo, esquiva, golpe recibido, nocaut y victoria. Cada golpe trae chispa de impacto.
+- **Pelea callejera (`calle`):** las 26 animaciones de beat 'em up de arriba.
 - **Fútbol:** espera, control, pase, vaselina, tiro, volea, cabezazo, barrida, conducción (`run_ball`, corre tocando la pelota), entrada, saque de banda y el arquero (espera, estirada, atajada alta, saque con la mano y de volea). Las patadas tienen zancada, pie de apoyo, carga, contacto y seguimiento, y el `impacto` cae en el cuadro del contacto con el `punto` del pie. Celebraciones de gol incluidas.
 - **Natación:** además, salir del agua por el borde (`swim_exit`).
 

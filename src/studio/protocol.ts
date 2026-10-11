@@ -1,5 +1,5 @@
 import type {
-  BrushStroke, HeadSpec, ZoneEdit, Ficha, HumanFicha, CellSize, QAReport, BuildReport, Species, Proportions, ViewName,
+  BrushStroke, HeadSpec, ZoneEdit, Ficha, HumanFicha, CellSize, QAReport, BuildReport, Species, Proportions, ViewName, FloorPropKind,
   ExportKind, ExportPlan, Variant, ImageMode, Avatar, AvatarPart, PhotoColors, AnimEvent,
 } from '../engine/index';
 
@@ -43,6 +43,12 @@ export interface FrameSet {
 type Pt = [number, number];
 export interface ClipData {
   cajas: ([number, number, number, number] | null)[];
+  /** solo la persona, sin implementos ni efectos (el hurtbox) */
+  cuerpo?: ([number, number, number, number] | null)[];
+  /** dónde se apoya lo que carga */
+  carga?: (Pt | null)[];
+  /** el arma en la mano: agarre, ángulo y si va detrás */
+  arma?: ([number, number, number, number] | null)[];
   manos?: [Pt, Pt][];
   cabeza?: Pt[];
   pies?: [Pt, Pt][];
@@ -59,7 +65,7 @@ export type Request =
   | { type: 'analyze'; params: AnalyzeParams }
   | { type: 'build'; params: AnalyzeParams; name: string; outfit?: Partial<HumanFicha['outfit']>; face?: Partial<HumanFicha['face']>; proportions?: Proportions }
   | { type: 'buildAnimal'; name: string; species: Species; bgTolerance: number; bgStrokes: BrushStroke[] }
-  | { type: 'render'; ficha: Ficha; cell: CellSize; anim: string; view: ViewName; props: boolean; key?: string }
+  | { type: 'render'; ficha: Ficha; cell: CellSize; anim: string; view: ViewName; props: boolean; key?: string; held?: { kind: FloorPropKind; variant?: number } }
   | { type: 'variants'; ficha: HumanFicha; params: AnalyzeParams | null; seed: number; n: number }
   | { type: 'export'; ficha: Ficha; kind: ExportKind; plan: ExportPlan; force: boolean }
   | { type: 'qa'; ficha: Ficha; plan: ExportPlan }

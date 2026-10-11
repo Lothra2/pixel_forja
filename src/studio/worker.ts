@@ -65,14 +65,14 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
         break;
       }
       case 'render': {
-        const c = renderClip(req.ficha, req.cell, req.anim, req.view, { props: req.props });
+        const c = renderClip(req.ficha, req.cell, req.anim, req.view, { props: req.props, ...(req.held ? { held: req.held } : {}) });
         const qa = runQA(req.ficha, c);
         const frames = c.frames.map((f) => f.data);
         const events = c.events?.map((e) => ({ type: e.type, frame: Math.min(frames.length - 1, Math.floor(e.phase * frames.length + 1e-6)) }));
         // los datos por cuadro, como los exporta el kit (una sola fila: la vista que se está viendo)
         const d = frameDataOf([c], FRAME_DATA_FIELDS);
         const puntos = (motionOf8([c]).eventos ?? []).flatMap((e) => (e.punto ? [{ frame: e.cuadro, at: e.punto[0] }] : []));
-        const data: ClipData = { cajas: d.cajas![0], manos: d.manos?.[0], cabeza: d.cabeza?.[0], pies: d.pies?.[0], puntos };
+        const data: ClipData = { cajas: d.cajas![0], cuerpo: d.cuerpo?.[0], manos: d.manos?.[0], cabeza: d.cabeza?.[0], pies: d.pies?.[0], carga: d.carga?.[0], arma: d.arma?.[0], puntos };
         reply({ type: 'rendered', clip: { name: c.name, fps: c.fps, cell: c.cell, view: c.view, loop: c.loop, profile: c.profile, events, rise: c.rise, data, frames }, qa }, frames.map((f) => f.buffer));
         break;
       }

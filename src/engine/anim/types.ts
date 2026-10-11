@@ -4,9 +4,9 @@ import type { View } from '../render/head';
 
 export type Pack =
   | 'basic' | 'football' | 'keeper' | 'basket' | 'volley' | 'tennis' | 'baseball'
-  | 'swim' | 'athletics' | 'martial' | 'skate' | 'bike' | 'rpg' | 'skills' | 'enemy' | 'animal' | 'pet' | 'custom';
+  | 'swim' | 'athletics' | 'martial' | 'brawl' | 'skate' | 'bike' | 'rpg' | 'skills' | 'enemy' | 'animal' | 'pet' | 'custom';
 
-export const PACKS: Pack[] = ['basic', 'football', 'keeper', 'basket', 'volley', 'tennis', 'baseball', 'swim', 'athletics', 'martial', 'skate', 'bike', 'rpg', 'skills', 'enemy'];
+export const PACKS: Pack[] = ['basic', 'football', 'keeper', 'basket', 'volley', 'tennis', 'baseball', 'swim', 'athletics', 'martial', 'brawl', 'skate', 'bike', 'rpg', 'skills', 'enemy'];
 
 export interface Ctx {
   d: Dims;

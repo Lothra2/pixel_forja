@@ -29,6 +29,8 @@ export type PropKind =
   | 'soccer' | 'basketball' | 'volleyball' | 'tennisball' | 'baseball'
   | 'racket' | 'bat' | 'skate' | 'bike' | 'sword' | 'shield' | 'potion' | 'glove' | 'hurdle'
   | 'javelin' | 'pole' | 'shot' | 'spark'
+  /** el arma del piso que tenga en la mano (pelea callejera): el render la dibuja si se le dice cuál, y siempre exporta dónde va */
+  | 'held'
   | WeaponKind | OffhandKind | 'arrow';
 
 /** Armas de mano (RPG). */
@@ -43,7 +45,8 @@ export const OFFHAND_KINDS: OffhandKind[] = ['shield', 'shield_round', 'shield_k
 export interface PropState {
   kind: PropKind;
   /** dónde va enganchado. ground = x respecto a la cadera, y = altura sobre el piso */
-  at: 'handNear' | 'handFar' | 'footNear' | 'footFar' | 'ground' | 'body';
+  /** hands = entre las dos manos (lo pesado que se agarra a dos manos) */
+  at: 'handNear' | 'handFar' | 'footNear' | 'footFar' | 'ground' | 'body' | 'hands';
   x?: number;
   y?: number;
   /** grados (raqueta, bate, espada) */
@@ -60,6 +63,8 @@ export interface PropState {
    * pantalla, por vista. Es el "smear" de los animadores: en un solo cuadro se lee todo el recorrido.
    */
   smear?: Partial<Record<'side' | 'front' | 'back' | 'se' | 'ne', [number, number]>>;
+  /** arma del piso abierta (paraguas, abanico) */
+  open?: boolean;
   /** curvatura (garrocha que se dobla): flecha del arco en pixeles a 48, + hacia abajo del palo */
   bend?: number;
   /** delante de todo, también de la cabeza (un escudo que se levanta para bloquear). Con lista: solo en esas vistas */
@@ -100,6 +105,12 @@ export interface Pose {
   /** acostado (premium): el cuerpo se centra en la celda midiendo lo dibujado (la cabeza grande no cabe si no) */
   /** true: cada cuadro se centra solo. 'shared': un solo corrimiento para todo el ciclo (no tiembla) */
   fit?: boolean | 'shared';
+  /**
+   * Lleva algo en las manos (levantar, llevar, lanzar). El render abre los brazos a los costados de la cabeza y exporta
+   * dónde se apoya la carga: la articulación `carry` (`carga` en el kit), entre las dos manos y en el borde de arriba
+   * de las palmas. El juego dibuja ahí el objeto o al rival, detrás de quien lo carga
+   */
+  load?: boolean;
   /** vaivén del pelo largo (lo calcula el clip a partir del movimiento) */
   hair?: { dx: number; dy: number };
   props?: PropState[];
