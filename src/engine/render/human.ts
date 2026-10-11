@@ -46,7 +46,8 @@ export interface BigFrame {
 }
 
 export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 'shoulderNear' | 'shoulderFar' | 'handNear' | 'handFar' | 'neck' | 'head';
-export type Joints = Record<JointName, [number, number]>;
+/** `carry`: dónde se apoya lo que se lleva (solo en las poses con `load`) */
+export type Joints = Record<JointName, [number, number]> & { carry?: [number, number] };
 
 /** Caja de lo que no es implemento, ya en coordenadas del cuadro grande. */
 /** Implementos largos que se sostienen (garrocha, jabalina): nunca marcan el piso. */
@@ -635,6 +636,12 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const body = soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : bodyBox(canvas, dx, dy, -99, false, propMats);
   const full = soft ? bodyBox(canvas, dx, dy, -99, false, propMats) : body;
   const whole = bodyBox(canvas, dx, dy, -99, true, propMats);
+  if (pose.load !== undefined && whole) {
+    // entre las manos (load 0) y sobre lo más alto del pelo (load 1, hundido un pixel: así se lee el contacto)
+    const k = Math.max(0, Math.min(1, pose.load));
+    const hx = (joints.handNear[0] + joints.handFar[0]) / 2, hy = Math.min(joints.handNear[1], joints.handFar[1]);
+    joints.carry = [hx + (joints.head[0] - hx) * k, hy + (whole.y0 + 1 - hy) * k];
+  }
   return { raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, whole, joints };
 }
 

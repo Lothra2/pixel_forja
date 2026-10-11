@@ -50,6 +50,11 @@ export interface RenderedClip {
   waterRows?: (number | null)[];
   /** encuadre fijo (premium): los cuadros que se salen de la celda */
   overflow?: number[];
+  /**
+   * por cuadro, caja de la persona (con el pelo) sin implementos, pelotas ni efectos, en la celda: el hurtbox.
+   * Solo premium (el render separa los implementos)
+   */
+  wholes?: ({ x0: number; y0: number; x1: number; y1: number } | null)[];
   /** por cuadro, alto del cuerpo sin implementos (arriba y abajo, en la celda): el control de calidad mide con esto */
   bodies?: ({ y0: number; y1: number } | null)[];
   /** perfil con el que se dibujó */
@@ -280,8 +285,16 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
   const joints = isHuman(f) && big.every((b) => b.joints)
     ? big.map((b) => Object.fromEntries(Object.entries(b.joints!).map(([k, [x, y]]) => [k, [mirrored ? cell - 1 - (x - left) : x - left, y - top]])) as Joints)
     : undefined;
+  const clampX = (v: number) => Math.max(0, Math.min(cell - 1, v)), clampY = clampX;
+  const wholes = premium && isHuman(f) ? big.map((b) => {
+    const w = b.whole;
+    if (!w) return null;
+    const x0 = clampX(w.x0 - left), x1 = clampX(w.x1 - left), y0 = clampY(w.y0 - top), y1 = clampY(w.y1 - top);
+    return mirrored ? { x0: cell - 1 - x1, x1: cell - 1 - x0, y0, y1 } : { x0, x1, y0, y1 };
+  }) : undefined;
   return {
     name, fps, loop, cell, view, frames: mirrored ? frames.map(mirror) : frames, airborne, steady, fits, bodies: bodies.some(Boolean) ? bodies : undefined,
+    ...(wholes?.some(Boolean) ? { wholes } : {}),
     profile: premium ? 'premium' : 'classic',
     ...(overflow ? { overflow } : {}),
     ...(rise ? { rise } : {}),
@@ -371,7 +384,7 @@ function mirrorBig(b: BigFrame): BigFrame {
   const fx = (box: BigFrame['body']) => (box ? { x0: W - 1 - box.x1, x1: W - 1 - box.x0, y0: box.y0, y1: box.y1 } : box);
   // las articulaciones se espejan igual que los pixeles (x -> W - 1 - x)
   const joints = b.joints ? (Object.fromEntries(Object.entries(b.joints).map(([k, [x, y]]) => [k, [W - 1 - x, y]])) as Joints) : undefined;
-  return { ...b, raster: mirror(b.raster), pivotX: W - b.pivotX, body: fx(b.body), full: b.full === undefined ? undefined : fx(b.full), joints };
+  return { ...b, raster: mirror(b.raster), pivotX: W - b.pivotX, body: fx(b.body), full: b.full === undefined ? undefined : fx(b.full), whole: b.whole === undefined ? undefined : fx(b.whole), joints };
 }
 
 /** Caja para centrar: con el pelo si cabe en la celda; si no, el cuerpo (y la punta del pelo se recorta). */

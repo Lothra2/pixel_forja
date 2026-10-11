@@ -100,6 +100,11 @@ export interface Pose {
   /** acostado (premium): el cuerpo se centra en la celda midiendo lo dibujado (la cabeza grande no cabe si no) */
   /** true: cada cuadro se centra solo. 'shared': un solo corrimiento para todo el ciclo (no tiembla) */
   fit?: boolean | 'shared';
+  /**
+   * Carga (levantar y llevar): dónde va lo que se lleva, de 0 = entre las manos a 1 = apoyado sobre el pelo. El render
+   * lo exporta como la articulación `carry` y el kit como `carga`: el juego dibuja ahí el objeto o al rival levantado
+   */
+  load?: number;
   /** vaivén del pelo largo (lo calcula el clip a partir del movimiento) */
   hair?: { dx: number; dy: number };
   props?: PropState[];

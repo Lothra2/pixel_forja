@@ -287,3 +287,45 @@ export function bikeGeometry(x: number, groundY: number, u: number) {
   const R = Math.round(7 * u);
   return { seat: [x - 3 * u, groundY - R * 2.3] as [number, number], crank: [x, groundY - R] as [number, number], bar: [x + Math.round(17 * u) / 2 - 1 * u, groundY - R * 2.5] as [number, number], crankR: Math.max(2, Math.round(3 * u)) };
 }
+
+/**
+ * Armas del piso de la pelea callejera: objetos sueltos que el juego pone en el piso, se recogen, se llevan sobre la
+ * cabeza y se tiran. Se dibujan parados sobre `base` (centro de abajo). u = escala (1 a 48 px).
+ */
+export type FloorPropKind = 'pote_basura';
+
+/** Pote de basura de lata: acanalado, con dos bandas, tapa abombada con asa. `lid` = con la tapa puesta. */
+export function drawFloorProp(part: Part, kind: FloorPropKind, base: [number, number], u: number, lid = true) {
+  const n = (v: number) => Math.max(1, Math.round(v * u));
+  if (kind === 'pote_basura') {
+    const h = n(12), wb = n(8), wt = n(10);
+    const bx = Math.round(base[0]), by = Math.round(base[1]);
+    for (let j = 0; j < h; j++) {
+      // un poco más ancho arriba (cónico, como los de lata)
+      const w = Math.round(wb + ((wt - wb) * j) / Math.max(1, h - 1));
+      const y = by - j, x0 = bx - Math.floor(w / 2);
+      for (let i = 0; i < w; i++) {
+        // luz a la izquierda, sombra a la derecha; las canaletas verticales cada 3 pixeles van más oscuras
+        const t = i / Math.max(1, w - 1);
+        let slot = t < 0.3 ? LIGHT : t > 0.75 ? SHADOW : BASE;
+        if (i > 0 && i < w - 1 && i % 3 === 1 && slot !== SHADOW) slot = slot === LIGHT ? BASE : SHADOW;
+        part.set(x0 + i, y, 'p_steel', slot);
+      }
+    }
+    // dos bandas de refuerzo
+    for (const k of [0.3, 0.72]) {
+      const y = by - Math.round(h * k), w = Math.round(wb + (wt - wb) * k);
+      for (let i = 0; i < w; i++) part.set(bx - Math.floor(w / 2) + i, y, 'p_iron', i < w * 0.3 ? BASE : SHADOW);
+    }
+    if (!lid) return;
+    // tapa: un disco aplanado que sobresale, abombado, con el asa arriba
+    const lw = wt + 2, ly = by - h;
+    for (let i = 0; i < lw; i++) part.set(bx - Math.floor(lw / 2) + i, ly, 'p_steel', i < lw * 0.35 ? LIGHT : BASE);
+    const dw = lw - n(3);
+    for (let i = 0; i < dw; i++) part.set(bx - Math.floor(dw / 2) + i, ly - 1, 'p_steel', i < dw * 0.4 ? LIGHT : BASE);
+    const hw = Math.max(2, n(3));
+    for (let i = 0; i < hw; i++) part.set(bx - Math.floor(hw / 2) + i, ly - 2 - (u >= 1.2 ? 1 : 0), 'p_iron', BASE);
+    part.set(bx - Math.floor(hw / 2), ly - 2, 'p_iron', BASE);
+    part.set(bx - Math.floor(hw / 2) + hw - 1, ly - 2, 'p_iron', BASE);
+  }
+}
