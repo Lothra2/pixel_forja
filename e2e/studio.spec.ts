@@ -425,3 +425,37 @@ test('superhéroes: aparecen en el inicio y se abren listos para animar', async 
   await expect(page.getByTestId('qa').locator('td.error')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('ver datos y vestuario: cajas, manos y puntos encima del personaje, y cada variante de ropa', async ({ page }, info) => {
+  test.setTimeout(180000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  // una ficha con vestuario por pack (el ejemplo de docs/ejemplos/nekketsu)
+  await page.getByTestId('open-ficha').setInputFiles('docs/ejemplos/nekketsu/rick.ficha.json');
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  const ward = page.getByTestId('wardrobe');
+  await expect(ward.getByRole('button')).toHaveText(['Ropa de la ficha', 'Calle', 'Bañador', 'Judogi', 'Camiseta']);
+  const before = await page.getByTestId('preview-big').evaluate((c: HTMLCanvasElement) => c.toDataURL());
+  await ward.getByRole('button', { name: 'Judogi' }).click();
+  await idle(page);
+  await expect(ward.getByRole('button', { name: 'Judogi' })).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => page.getByTestId('preview-big').evaluate((c: HTMLCanvasElement) => c.toDataURL())).not.toBe(before);
+  // ver datos: la leyenda y la caja del cuadro, en pixeles desde el pivote
+  await page.getByTestId('pb-toggle').click();
+  await page.getByTestId('show-data').click();
+  await expect(page.getByTestId('show-data')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('data-legend')).toContainText('Manos');
+  await expect(page.getByTestId('data-box')).toHaveText(/Caja: \[-?\d+, -\d+, \d+, \d+\]/);
+  // un golpe de artes marciales: se va al cuadro del impacto, donde se dibuja el punto
+  await page.getByTestId('pack').selectOption('martial');
+  await page.getByTestId('anim').selectOption('jab');
+  await idle(page);
+  await page.getByTestId('pb-timeline').locator('button:has(.ev-impacto)').first().click();
+  await expect(page.getByTestId('event-flash')).toHaveText('Golpe');
+  await expect(page.getByTestId('data-box')).toBeVisible();
+  await page.screenshot({ path: `${shots}/${tag}_50_ver_datos.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});

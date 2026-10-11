@@ -46,9 +46,12 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
   return out;
 }
 
-/** Movimiento de una hoja de 8 direcciones: se mide en la vista de lado (la que piensan las poses) y se agrega el rumbo. */
-export function motionOf8(clips: RenderedClip[], k = 1): MovimientoAnim {
-  const side = clips.find((c) => c.view === 'side') ?? clips[0];
+/**
+ * Movimiento de una hoja de 8 direcciones (o de las filas pedidas): se mide en la vista de lado (la que piensan las
+ * poses) y se agrega el rumbo. `side` es el clip de lado para medir cuando las filas pedidas no lo traen.
+ */
+export function motionOf8(clips: RenderedClip[], k = 1, sideClip?: RenderedClip): MovimientoAnim {
+  const side = clips.find((c) => c.view === 'side') ?? sideClip ?? clips[0];
   const out = motionOf(side, k);
   const j = side.joints;
   if (j && out.eventos) {
@@ -86,7 +89,7 @@ export function movimientoJson(clips: RenderedClip[]) {
     notas: 'avance: pixeles que avanza el cuerpo en un ciclo sin que el pie patine. Ritmo de la animación = velocidad_del_juego * cuadros / (avance * fps). elevacion: pixeles que el juego sube el sprite en cada cuadro (la sombra queda en el piso).',
     anims: Object.fromEntries(premium.map((c) => [c.name, {
       cuadros: c.frames.length, fps: c.fps, loop: c.loop, ...motionOf(c),
-      ...(c.joints ? { articulaciones: c.joints } : {}),
+      ...(c.profile === 'premium' && c.joints ? { articulaciones: c.joints } : {}),
     }])),
   };
 }

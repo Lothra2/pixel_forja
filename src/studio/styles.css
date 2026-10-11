@@ -508,3 +508,9 @@ p.ok { margin: 0; }
 /* héroes: una sola animación por tarjeta, centrada */
 .tile.hero { text-align: center; cursor: pointer; }
 .tile.hero .family-stage { grid-template-columns: 1fr; justify-items: center; align-items: end; min-height: 110px; }
+
+/* "Ver datos": leyenda de colores debajo de la vista previa */
+.data-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; list-style: none; margin: 6px 0 0; padding: 0; font-size: 12px; }
+.data-legend li { display: flex; align-items: center; gap: 6px; }
+.data-legend i { width: 10px; height: 10px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+.data-legend .muted { font-variant-numeric: tabular-nums; }

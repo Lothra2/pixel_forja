@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import type { FrameSet } from '../protocol';
+import type { ClipData, FrameSet } from '../protocol';
 import type { Key } from '../i18n';
 import { PlaybackClock } from '../playback';
 import type { T } from './ui';
@@ -30,6 +30,36 @@ export function backgroundPixels(kind: PreviewBg, cell: number): Uint8ClampedArr
 }
 
 const SPEEDS = [0.25, 0.5, 1] as const;
+
+/** Colores de "Ver datos" (los mismos en la leyenda). */
+export const DATA_COLORS = { caja: '#4cc3ff', mano: '#ff4d6d', manoLejos: '#ffa3b5', cabeza: '#ffd23f', pie: '#3ddc84', pieLejos: '#a8f0c6', punto: '#ffffff' } as const;
+
+/**
+ * Dibuja los datos de un cuadro encima del sprite, en pixeles de la celda: la caja de lo opaco, las manos, la cabeza,
+ * los pies y el punto del golpe. (ox, oy) es dónde cae el pivote en el lienzo.
+ */
+function paintData(g: CanvasRenderingContext2D, d: ClipData, i: number, ox: number, oy: number) {
+  const dot = (p: [number, number] | undefined, color: string) => { if (p) { g.fillStyle = color; g.fillRect(ox + p[0], oy + p[1], 1, 1); } };
+  const box = d.cajas[i];
+  if (box) {
+    g.strokeStyle = DATA_COLORS.caja;
+    g.globalAlpha = 0.85;
+    g.lineWidth = 1;
+    g.strokeRect(ox + box[0] + 0.5, oy + box[1] + 0.5, box[2] - 1, box[3] - 1);
+    g.globalAlpha = 1;
+  }
+  dot(d.manos?.[i][1], DATA_COLORS.manoLejos);
+  dot(d.pies?.[i][1], DATA_COLORS.pieLejos);
+  dot(d.manos?.[i][0], DATA_COLORS.mano);
+  dot(d.pies?.[i][0], DATA_COLORS.pie);
+  dot(d.cabeza?.[i], DATA_COLORS.cabeza);
+  for (const p of d.puntos) if (p.frame === i) {
+    g.fillStyle = DATA_COLORS.punto;
+    const [x, y] = [ox + p.at[0], oy + p.at[1]];
+    g.fillRect(x - 2, y, 5, 1);
+    g.fillRect(x, y - 2, 1, 5);
+  }
+}
 
 /** Lo más alto que sube el sprite en el clip (o en el comparado). */
 const liftOf = (a?: FrameSet | null, b?: FrameSet | null) => Math.max(0, ...(a?.rise ?? []), ...(b?.rise ?? []));
@@ -66,6 +96,7 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState<number>(1);
   const [onion, setOnion] = useState(false);
+  const [showData, setShowData] = useState(false);
 
   useEffect(() => {
     if (!clip) return;
@@ -85,7 +116,7 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
     // saltos que no caben en la celda: el lienzo crece hacia arriba y el sprite sube sobre su sombra, como en el juego
     const lift = liftOf(clip, compare);
     [...main, other.current].forEach((c) => { if (c) { c.width = cell; c.height = cell + lift; } });
-    const paint = (c: HTMLCanvasElement, list: HTMLCanvasElement[], i: number, ghost: boolean, loop: boolean, rise: number[] | undefined) => {
+    const paint = (c: HTMLCanvasElement, list: HTMLCanvasElement[], i: number, ghost: boolean, loop: boolean, rise: number[] | undefined, data?: ClipData) => {
       const g = c.getContext('2d')!;
       const r = rise?.[i] ?? 0;
       g.clearRect(0, 0, cell, cell + lift);
@@ -105,11 +136,13 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
         g.globalAlpha = 1;
       }
       g.drawImage(list[i], 0, lift - r);
+      if (data) paintData(g, data, i, cell / 2, lift - r + cell - 2);
     };
     redraw.current = () => {
       // el papel cebolla solo en el grande: el tamaño real es para ver cómo queda en el juego
-      main.forEach((c) => paint(c, sprites, c1.frame, onion && c === big.current, clip.loop, clip.rise));
-      if (sprites2 && other.current) paint(other.current, sprites2, c2.frame, onion, compare!.loop, compare!.rise);
+      // los datos, como el papel cebolla, solo en el grande
+      main.forEach((c) => paint(c, sprites, c1.frame, onion && c === big.current, clip.loop, clip.rise, showData && c === big.current ? clip.data : undefined));
+      if (sprites2 && other.current) paint(other.current, sprites2, c2.frame, onion, compare!.loop, compare!.rise, showData ? compare!.data : undefined);
       setFrame(c1.frame);
       setPlaying(c1.playing);
     };
@@ -124,7 +157,7 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [clip, compare, bg, onion]);
+  }, [clip, compare, bg, onion, showData]);
 
   if (!clip) return null;
   const n = clip.frames.length;
@@ -180,6 +213,14 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
         </div>
         {now.length > 0 && <span className={`ev-flash ev-${now[0].type}`} data-testid="event-flash">{t(`ev_${now[0].type}` as Key)}</span>}
       </div>
+      {showData && (
+        <ul className="data-legend" data-testid="data-legend">
+          {([['caja', 'data_box'], ['mano', 'data_hands'], ['cabeza', 'data_head'], ['pie', 'data_feet'], ['punto', 'data_point']] as const).map(([c, k]) => (
+            <li key={c}><i style={{ background: DATA_COLORS[c] }} />{t(k)}</li>
+          ))}
+          {clip.data?.cajas[frame] && <li className="muted" data-testid="data-box">{t('data_box')}: [{clip.data.cajas[frame]!.join(', ')}]</li>}
+        </ul>
+      )}
       <div className="transport">
         <button className="tbtn" onClick={() => step(-1)} aria-label={t('pb_prev')} title={t('pb_prev')}>◀︎◀︎</button>
         <button className="tbtn play" onClick={toggle} aria-label={playing ? t('pb_pause') : t('pb_play')} title={playing ? t('pb_pause') : t('pb_play')} data-testid="pb-toggle">{playing ? '❚❚' : '▶︎'}</button>
@@ -199,6 +240,7 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
           {SPEEDS.map((s) => <button key={s} className={speed === s ? 'on' : ''} aria-pressed={speed === s} onClick={() => setRate(s)}>{s === 1 ? '1×' : s === 0.5 ? '½×' : '¼×'}</button>)}
         </div>
         <button className={`tbtn onion${onion ? ' on' : ''}`} aria-pressed={onion} onClick={() => setOnion(!onion)} title={t('ed_onion')}>{t('ed_onion')}</button>
+        <button className={`tbtn onion${showData ? ' on' : ''}`} aria-pressed={showData} onClick={() => setShowData(!showData)} title={t('data_help')} data-testid="show-data">{t('data_show')}</button>
       </div>
     </div>
   );

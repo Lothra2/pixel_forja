@@ -35,7 +35,19 @@ export interface FrameSet {
   events?: { type: AnimEvent['type']; frame: number }[];
   /** cuánto sube el juego el sprite en cada cuadro (saltos que no caben en la celda) */
   rise?: number[];
+  /** datos por cuadro, desde el pivote, para el interruptor "Ver datos" (los mismos que exporta el kit) */
+  data?: ClipData;
   frames: Uint8ClampedArray[];
+}
+
+type Pt = [number, number];
+export interface ClipData {
+  cajas: ([number, number, number, number] | null)[];
+  manos?: [Pt, Pt][];
+  cabeza?: Pt[];
+  pies?: [Pt, Pt][];
+  /** de dónde sale el golpe o la suelta en su cuadro */
+  puntos: { frame: number; at: Pt }[];
 }
 
 export type ImagePayload = { png?: Uint8Array; rgba?: Uint8ClampedArray; w?: number; h?: number };

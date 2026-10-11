@@ -1,10 +1,10 @@
 /// <reference lib="webworker" />
 import {
   decodePng, makeWorkImage, analyzeImage, buildFicha, buildAnimalFicha, renderClip, runQA,
-  exportFiles, renderPlan, surprise, isHuman, headThumb, avatarOptions, colorsFromPhoto,
+  exportFiles, renderPlan, surprise, isHuman, headThumb, avatarOptions, colorsFromPhoto, frameDataOf, motionOf8, FRAME_DATA_FIELDS,
   type Raster, type WorkImage, type Analysis, type HumanFicha,
 } from '../engine/index';
-import type { AnalyzeParams, ImagePayload, Request, Response } from './protocol';
+import type { AnalyzeParams, ClipData, ImagePayload, Request, Response } from './protocol';
 
 /** El motor corre aquí, lejos de la pantalla, para que generar no la congele. */
 let source: Raster | null = null;
@@ -69,7 +69,11 @@ self.onmessage = (ev: MessageEvent<Request & { id: number }>) => {
         const qa = runQA(req.ficha, c);
         const frames = c.frames.map((f) => f.data);
         const events = c.events?.map((e) => ({ type: e.type, frame: Math.min(frames.length - 1, Math.floor(e.phase * frames.length + 1e-6)) }));
-        reply({ type: 'rendered', clip: { name: c.name, fps: c.fps, cell: c.cell, view: c.view, loop: c.loop, profile: c.profile, events, rise: c.rise, frames }, qa }, frames.map((f) => f.buffer));
+        // los datos por cuadro, como los exporta el kit (una sola fila: la vista que se está viendo)
+        const d = frameDataOf([c], FRAME_DATA_FIELDS);
+        const puntos = (motionOf8([c]).eventos ?? []).flatMap((e) => (e.punto ? [{ frame: e.cuadro, at: e.punto[0] }] : []));
+        const data: ClipData = { cajas: d.cajas![0], manos: d.manos?.[0], cabeza: d.cabeza?.[0], pies: d.pies?.[0], puntos };
+        reply({ type: 'rendered', clip: { name: c.name, fps: c.fps, cell: c.cell, view: c.view, loop: c.loop, profile: c.profile, events, rise: c.rise, data, frames }, qa }, frames.map((f) => f.buffer));
         break;
       }
       case 'variants': {

@@ -1,6 +1,6 @@
 /**
  * Kit del juego GG Abyss: genera todos los assets listos para Phaser en una carpeta, con su manifest.json.
- *   npx tsx scripts/game-kit.ts <carpeta> [--rapido] [--fichas <carpeta con *.ficha.json>]
+ *   npx tsx scripts/game-kit.ts <carpeta> [--rapido] [--fichas <carpeta con *.ficha.json>] [--filas right,down_right,up_right,down,up]
  * Desde el juego (PixelForja como submódulo en tools/pixel_forja):
  *   npx tsx tools/pixel_forja/scripts/game-kit.ts public/assets/kit --fichas fichas
  * Con --fichas, cada `<id>.ficha.json` exportado del estudio reemplaza al preset de ese id (rick, steph, sophie, alana)
@@ -15,7 +15,7 @@ import { migrateFicha, validateFicha, isHuman, type HumanFicha } from '../src/en
 const args = process.argv.slice(2);
 const flag = (k: string) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
 const fichasDir = flag('--fichas');
-const out = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--fichas');
+const out = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--fichas' && args[i - 1] !== '--filas');
 if (!out) { console.error('Uso: npx tsx scripts/game-kit.ts <carpeta> [--rapido] [--fichas <carpeta>]'); process.exit(1); }
 const quick = args.includes('--rapido');
 
@@ -45,7 +45,7 @@ const fontDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'node_module
 const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
 const fonts = existsSync(fontDir) ? { regular: ab(join(fontDir, 'silkscreen-latin-400-normal.woff')), bold: ab(join(fontDir, 'silkscreen-latin-700-normal.woff')) } : undefined;
 if (!fonts) console.warn('  sin fuentes: falta node_modules/@fontsource/silkscreen (corre npm ci)');
-const files = buildGameKit({ quick, fichas, fonts, progress: (m) => console.log(`  ${m}`) });
+const files = buildGameKit({ quick, fichas, fonts, filas: flag('--filas')?.split(','), progress: (m) => console.log(`  ${m}`) });
 rmSync(out, { recursive: true, force: true });
 let bytes = 0;
 for (const f of files) {

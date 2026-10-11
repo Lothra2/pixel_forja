@@ -1,7 +1,10 @@
 /**
  * Kit deportivo: hojas de 8 direcciones por atleta y deporte, con manifest.json (eventos, avance, elevación, agua).
  *   npx tsx scripts/sports-kit.ts <carpeta> [--rapido] [--celda 32|48|64] [--deportes atletismo,natacion,voley,tenis,pelea] [--fichas <carpeta>]
+ *     [--filas right,down_right,up_right,down,up] [--datos] [--atlas] [--retratos] [--cabecitas]
  * Con --fichas, cada `<id>.ficha.json` del estudio se agrega como atleta (y reemplaza a la familia).
+ * --filas: solo esas filas, en ese orden. --datos: cajas, manos, cabeza y pies por cuadro. --atlas: un atlas por pack
+ * (JSON Hash de TexturePacker). --retratos: 7 expresiones en 40 y 96. --cabecitas: ui/cabecitas.png de 12 x 12.
  */
 import { mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, join, basename } from 'node:path';
@@ -10,7 +13,7 @@ import { migrateFicha, validateFicha, isHuman, type HumanFicha, type CellSize } 
 
 const args = process.argv.slice(2);
 const flag = (k: string) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
-const valued = new Set(['--fichas', '--celda', '--deportes']);
+const valued = new Set(['--fichas', '--celda', '--deportes', '--filas']);
 const out = args.find((a, i) => !a.startsWith('--') && !valued.has(args[i - 1]));
 if (!out) { console.error('Uso: npx tsx scripts/sports-kit.ts <carpeta> [--rapido] [--celda 48] [--deportes atletismo,natacion] [--fichas <carpeta>]'); process.exit(1); }
 const cell = Number(flag('--celda') ?? 48) as CellSize;
@@ -42,7 +45,11 @@ if (fichasDir) {
 }
 
 const t0 = Date.now();
-const files = buildSportsKit({ athletes, packs, cell, quick: args.includes('--rapido'), progress: (m) => console.log(`  ${m}`) });
+const files = buildSportsKit({
+  athletes, packs, cell, quick: args.includes('--rapido'), progress: (m) => console.log(`  ${m}`),
+  filas: flag('--filas')?.split(','), datos: args.includes('--datos'), atlas: args.includes('--atlas'),
+  retratos: args.includes('--retratos'), cabecitas: args.includes('--cabecitas'),
+});
 rmSync(out, { recursive: true, force: true });
 let bytes = 0;
 for (const f of files) {
