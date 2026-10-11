@@ -118,6 +118,8 @@ Todas las rutas son relativas a la carpeta del kit.
 
 Un PNG por animación. Fila = dirección en el orden de `direcciones`. Columna = cuadro. Ancho = `cuadros * celda`, alto = `8 * celda`.
 
+Con `--filas right,down_right,up_right,down,up` (opción `filas` de `buildGameKit`) las hojas traen solo esas filas, en ese orden, y `direcciones` dice cuáles son. Sirve para un juego que espeja la izquierda con `flipX`. Sin la opción, el kit sale igual que siempre.
+
 ```ts
 // Phaser: cargar
 this.load.spritesheet(`${id}_${anim}`, kit + a.archivo, { frameWidth: p.celda, frameHeight: p.celda });

@@ -164,6 +164,26 @@ export interface HumanFicha extends FichaBase {
   avatar?: Avatar;
   headMode?: 'avatar' | 'image';
   physics: { hairLag: number };
+  /**
+   * Vestuario por pack: variantes de ropa con nombre (calle, bañador, judogi...) y cuál usa cada pack del kit.
+   * Lo que la variante no dice queda como en la ficha. Ver sheet/wardrobe.ts
+   */
+  wardrobe?: Wardrobe;
+}
+
+/** Una variante de ropa: cambia la ropa y sus colores (hex o la rampa entera). */
+export interface WardrobeVariant {
+  /** nombre para mostrar en el estudio */
+  label?: string;
+  outfit?: Partial<HumanFicha['outfit']>;
+  colors?: Partial<Record<'top' | 'bottom' | 'socks' | 'shoes' | 'accessory', string | Ramp>>;
+}
+
+export interface Wardrobe {
+  /** variantes por nombre (en minúsculas, números y _) */
+  variants: Record<string, WardrobeVariant>;
+  /** qué variante usa cada pack del kit (pack -> variante). El pack que no figura usa la ropa de la ficha */
+  packs?: Record<string, string>;
 }
 
 export type Species = 'boxer' | 'perro' | 'mapache' | 'gato';
@@ -210,6 +230,12 @@ export function validateFicha(f: unknown): string[] {
   if (!o.palette) errs.push('falta palette');
   if (!o.body) errs.push('falta body');
   if (o.body?.skeleton === 'quadruped') return errs;
+  const wd = (o as { wardrobe?: Wardrobe }).wardrobe;
+  if (wd) {
+    if (!wd.variants || typeof wd.variants !== 'object') errs.push('wardrobe.variants tiene que ser un objeto');
+    else for (const k of Object.keys(wd.variants)) if (!/^[a-z0-9_]+$/.test(k)) errs.push(`wardrobe.variants: nombre inválido "${k}" (minúsculas, números y _)`);
+    for (const [pack, v] of Object.entries(wd.packs ?? {})) if (!wd.variants?.[v]) errs.push(`wardrobe.packs.${pack}: no existe la variante "${v}"`);
+  }
   const hasAvatar = !!(o as { avatar?: unknown }).avatar;
   if (!hasAvatar && (!o.heads || Object.keys(o.heads).length === 0)) errs.push('falta al menos una cabeza en heads (o un avatar)');
   for (const [k, hs] of Object.entries(o.heads ?? {})) {

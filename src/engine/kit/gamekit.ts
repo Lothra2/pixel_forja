@@ -2,7 +2,8 @@ import { createRaster, blit, type Raster } from '../core/raster';
 import { encodePng } from '../export/png';
 import { motionOf8, type MovimientoAnim } from '../export/motion';
 import { creditsFor, type ExportFile } from '../export/bundle';
-import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim } from '../render/clip';
+import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim, type ViewName } from '../render/clip';
+import { viewsForRows } from '../export/frameData';
 import type { Ficha, CellSize, HumanFicha } from '../sheet/ficha';
 import { familyFicha, thorFicha, FAMILY, FAMILY_GG, type FamilyId } from '../rpg/family';
 import { enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, type EnemyId } from '../rpg/presets';
@@ -51,22 +52,28 @@ export interface KitOptions {
   thorTiers?: number[];
   /** menos animaciones (para pruebas rápidas) */
   quick?: boolean;
+  /**
+   * filas de las hojas de personajes (nombres de `direcciones`, en el orden en que van). Sin esto, las 8. Un juego que
+   * espeja la izquierda pide 5: right, down_right, up_right, down, up
+   */
+  filas?: string[];
   /** archivos de Silkscreen (normal y negrita) para las fuentes bitmap; sin ellos el kit sale sin fuentes */
   fonts?: { regular: ArrayBuffer; bold: ArrayBuffer };
   /** avisa el avance (para la barra del estudio o la consola) */
   progress?: (msg: string) => void;
 }
 
-/** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
-function sheet8(f: Ficha, cell: CellSize, anim: string, k = 1): { png: Raster; frames: number; fps: number; loop: boolean; premium: boolean; mov: MovimientoAnim } | null {
+/** Hoja de una animación en 8 direcciones (o en las filas pedidas): fila = dirección, columna = cuadro. */
+function sheet8(f: Ficha, cell: CellSize, anim: string, k = 1, views: ViewName[] = EIGHT_VIEWS): { png: Raster; frames: number; fps: number; loop: boolean; premium: boolean; mov: MovimientoAnim } | null {
   if (!hasAnim(f, anim)) return null;
-  const clips = EIGHT_VIEWS.map((v) => renderClip(f, cell, anim, v, { props: true }));
+  const clips = views.map((v) => renderClip(f, cell, anim, v, { props: true }));
   const n = Math.max(...clips.map((c) => c.frames.length));
   const C = Math.round(cell * k);
-  const png = createRaster(n * C, 8 * C);
+  const png = createRaster(n * C, views.length * C);
   clips.forEach((c, row) => c.frames.forEach((fr, i) => blit(png, k === 1 ? fr : scaleRaster(fr, k), i * C, row * C)));
   // los pasos y el avance son los mismos en las 8 direcciones (la pose es una sola, cambia la cámara)
-  return { png, frames: n, fps: clips[0].fps, loop: clips[0].loop, premium: clips[0].profile === 'premium', mov: motionOf8(clips, k) };
+  const side = views.includes('side') ? undefined : renderClip(f, cell, anim, 'side', { props: true });
+  return { png, frames: n, fps: clips[0].fps, loop: clips[0].loop, premium: clips[0].profile === 'premium', mov: motionOf8(clips, k, side) };
 }
 
 const file = (name: string, bytes: Uint8Array, mime: string): ExportFile => ({ name, bytes, mime });
@@ -111,11 +118,11 @@ function portrait(f: Ficha, view: 'front' | 'se' = 'front', anim = 'idle'): Rast
 export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean } & MovimientoAnim>; perfil_movimiento?: 'premium'; clase?: string; retrato?: string; desde_estudio?: boolean }
 
 /** k: se dibuja en `cell` y se agranda por k a la manera de RotSprite (el jefe: 64 x 1.5 = celda 96). */
-function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void, k = 1): CharEntry {
+function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void, k = 1, views: ViewName[] = EIGHT_VIEWS): CharEntry {
   const C = Math.round(cell * k);
   const out: CharEntry = { ...entry, celda: C, pivote: [C / 2, Math.floor((cell - 2) * k)], anims: {} };
   for (const a of anims) {
-    const s = sheet8(f, cell, a, k);
+    const s = sheet8(f, cell, a, k, views);
     if (!s) continue;
     const name = `${prefix}/${id}_${a}.png`;
     files.push(png(name, s.png));
@@ -135,9 +142,10 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const boss = opts.boss ?? 'minotauro';
   const heroAnims = opts.quick ? ['idle', 'walk', 'attack', 'hit', 'die'] : [...HERO_RPG_ANIMS];
   const credits = new Set<string>();
+  const views = opts.filas ? viewsForRows(opts.filas) : EIGHT_VIEWS;
   const manifest: Record<string, unknown> = {
     juego: 'GG Abyss', generado_con: 'PixelForja', version: 1, cuadro_mundo: TILE,
-    direcciones: EIGHT_VIEWS.map((v) => VIEW_SUFFIX[v]),
+    direcciones: views.map((v) => VIEW_SUFFIX[v]),
     notas: 'Hojas de personajes: fila = dirección (orden de `direcciones`), columna = cuadro. El pivote es el punto de apoyo (pies).',
   };
 
@@ -152,7 +160,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const c = creditsFor(f);
     if (c) credits.add(c);
     files.push(png(`personajes/retrato_${id}.png`, portrait(f)));
-    chars[id] = exportChar('personajes', id, f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log);
+    chars[id] = exportChar('personajes', id, f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log, 1, views);
   }
   const tiers = opts.thorTiers ?? [0, 1, 2, 3, 4, 5];
   for (const t of tiers) {
@@ -160,17 +168,17 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     // todas las armaduras con las mismas animaciones que Thor sin armadura (el juego no tiene que saber cuál lleva)
     const anims = opts.quick ? (t === 0 ? ['idle', 'walk', 'bite'] : ['idle', 'walk']) : PET_RPG_ANIMS;
     const id = t ? `thor_armadura${t}` : 'thor';
-    chars[id] = exportChar('mascota', id, f, 48, anims, { tipo: 'mascota', nombre: t ? `Thor (${PET_ARMOR[t - 1].name.es})` : 'Thor' }, files, log);
+    chars[id] = exportChar('mascota', id, f, 48, anims, { tipo: 'mascota', nombre: t ? `Thor (${PET_ARMOR[t - 1].name.es})` : 'Thor' }, files, log, 1, views);
   }
   files.push(png('mascota/retrato_thor.png', portrait(thorFicha(0), 'se', 'sit')));
   for (const id of enemies) {
     const f = enemyFicha(id);
-    chars[id] = exportChar('enemigos', id, f, enemyCell(id), enemyAnims(id), { tipo: 'enemigo', nombre: id }, files, log);
+    chars[id] = exportChar('enemigos', id, f, enemyCell(id), enemyAnims(id), { tipo: 'enemigo', nombre: id }, files, log, 1, views);
   }
   {
     const f = enemyFicha(boss);
     // el jefe llena la pantalla: dibujado en 64 (ahí le caben los cuernos) y agrandado x1.5 a celda 96
-    chars[boss] = exportChar('enemigos', boss, f, 64, [...enemyAnims(boss), 'leap'], { tipo: 'jefe', nombre: boss }, files, log, 1.5);
+    chars[boss] = exportChar('enemigos', boss, f, 64, [...enemyAnims(boss), 'leap'], { tipo: 'jefe', nombre: boss }, files, log, 1.5, views);
   }
   manifest.personajes = chars;
 

@@ -18,7 +18,7 @@ import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, saf
 import {
   type Ficha, type HumanFicha, type CellSize, type HeadSpec, type Point, type Zone, type QAReport, type ColorSlot, type AnimalColorSlot,
   type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim, type Avatar, type AvatarPart,
-  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
+  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, withVariant, variantNames, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
   applyClass, CLASS_KITS, enemyFicha, enemyCell, enemyAnims, type Gear, type HeroClass, type EnemyId,
   familyFicha, thorFicha, type FamilyId, applyArmorTier, equipLoot, type ArmorLine, type ArmorTier, type LootItem,
   isPremiumClip, type MovementProfile, heroFicha, heroCell, type HeroId,
@@ -91,6 +91,8 @@ export function App() {
   const [anim, setAnim] = useState('walk');
   const [view, setView] = useState<ViewName>('side');
   const [bg, setBg] = useState<PreviewBg>('studio');
+  /** variante de ropa que se está viendo ('' = la ropa de la ficha) */
+  const [outfitVar, setOutfitVar] = useState('');
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try { return localStorage.getItem('pf.theme') === 'light' ? 'light' : 'dark'; } catch { return 'dark'; }
   });
@@ -207,24 +209,28 @@ export function App() {
   useEffect(() => {
     if (ficha && animList.length && !animList.some((a) => a.name === anim)) setAnim(animList.some((a) => a.name === 'walk') ? 'walk' : animList[0].name);
   }, [animList, anim, ficha]);
+  // vestuario: la ficha con la variante elegida (la ficha guardada no cambia)
+  const wardrobeNames = useMemo(() => (ficha ? variantNames(ficha) : []), [ficha]);
+  useEffect(() => { if (outfitVar && !wardrobeNames.includes(outfitVar)) setOutfitVar(''); }, [wardrobeNames, outfitVar]);
+  const dressed = useMemo(() => (ficha && outfitVar && isHuman(ficha) ? withVariant(ficha, ficha.wardrobe?.variants[outfitVar]) : ficha), [ficha, outfitVar]);
   useEffect(() => {
-    if (!ficha || !needsFicha || step === 'editor' || !animList.some((a) => a.name === anim)) return;
+    if (!dressed || !needsFicha || step === 'editor' || !animList.some((a) => a.name === anim)) return;
     run(async () => {
-      const r = await engine.call<'rendered'>({ type: 'render', ficha, cell, anim, view, props });
+      const r = await engine.call<'rendered'>({ type: 'render', ficha: dressed, cell, anim, view, props });
       if (r) { setClip(r.clip); setQa(r.qa); }
     });
-  }, [ficha, cell, anim, view, props, needsFicha, step, engine, run, animList]);
+  }, [dressed, cell, anim, view, props, needsFicha, step, engine, run, animList]);
   // comparador: la misma animación con el otro perfil, al lado
   const canCompare = !!ficha && isHuman(ficha) && isPremiumClip({ ...ficha, movementProfile: 'premium' }, anim) && !ficha.customAnims?.some((c) => c.name === anim);
   useEffect(() => {
     if (!compareOn || !canCompare || !ficha || !isHuman(ficha) || step === 'editor') { setCompareClip(null); return; }
     const otherProfile: MovementProfile = ficha.movementProfile === 'premium' ? 'classic' : 'premium';
     let live = true;
-    engine.call<'rendered'>({ type: 'render', key: 'compare', ficha: { ...ficha, movementProfile: otherProfile }, cell, anim, view, props })
+    engine.call<'rendered'>({ type: 'render', key: 'compare', ficha: { ...(dressed as HumanFicha), movementProfile: otherProfile }, cell, anim, view, props })
       .then((r) => { if (r && live) setCompareClip(r.clip); })
       .catch(() => {});
     return () => { live = false; };
-  }, [compareOn, canCompare, ficha, cell, anim, view, props, step, engine]);
+  }, [compareOn, canCompare, ficha, dressed, cell, anim, view, props, step, engine]);
 
   // ---------- carga ----------
   const loadFile = (file: Blob, fileName: string, k: 'human' | 'animal' = kind, sp: Species = species) =>
@@ -592,7 +598,7 @@ export function App() {
                   <span className="ico" aria-hidden>📂</span>
                   <strong>{t('openFicha')}</strong>
                   <span>{t('openFichaHelp')}</span>
-                  <input type="file" accept="application/json,.json" onChange={(e) => { const f = e.target.files?.[0]; if (f) openFichaFile(f); }} />
+                  <input type="file" accept="application/json,.json" data-testid="open-ficha" onChange={(e) => { const f = e.target.files?.[0]; if (f) openFichaFile(f); }} />
                 </label>
               </div>
             ) : (
@@ -786,6 +792,17 @@ export function App() {
                 <Select label={t('pack')} value={curPack ?? ''} set={(p) => { const first = animList.find((a) => a.pack === p); if (first) setAnim(first.name); }} opts={packOpts.map((p) => [p, t(`pack_${p}` as Key)])} testid="pack" />
                 <Select label={t('anim')} value={anim} set={setAnim} opts={animList.filter((a) => a.pack === curPack).map((a) => [a.name, animLabel(a.name, lang)])} testid="anim" />
               </div>
+              {ficha && isHuman(ficha) && wardrobeNames.length > 0 && (
+                <div className="controls" title={t('wardrobe_help')}>
+                  <Seg
+                    label={t('wardrobe')}
+                    value={outfitVar}
+                    set={setOutfitVar}
+                    opts={[['', t('wardrobe_base')], ...wardrobeNames.map((v): [string, string] => [v, ficha.wardrobe!.variants[v].label ?? v])]}
+                    testid="wardrobe"
+                  />
+                </div>
+              )}
               {ficha && isHuman(ficha) && (
                 <div className="controls motion">
                   <Seg label={t('motion')} value={ficha.movementProfile ?? 'classic'} set={(v) => setMovement(v as MovementProfile)} opts={[['classic', t('motion_classic')], ['premium', t('motion_premium')]]} testid="motion" />

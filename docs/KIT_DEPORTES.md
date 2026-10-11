@@ -12,6 +12,18 @@ npm run deportes -- salida/kit --fichas mis_fichas        # tus personajes expor
 npm run deportes -- salida/kit --rapido                   # 2 animaciones por deporte, para probar
 ```
 
+Opciones para juegos de pelea y deportes con atlas (ver [Datos por cuadro, atlas, retratos y vestuario](#datos-por-cuadro-atlas-retratos-y-vestuario)):
+
+```bash
+npm run deportes -- salida/kit --filas right,down_right,up_right,down,up   # solo esas filas, en ese orden
+npm run deportes -- salida/kit --datos       # cajas, manos, cabeza y pies en cada cuadro
+npm run deportes -- salida/kit --atlas       # un atlas por pack (JSON Hash de TexturePacker) en vez de una hoja por animación
+npm run deportes -- salida/kit --retratos    # 7 expresiones en 40 x 40 y 96 x 96 por atleta
+npm run deportes -- salida/kit --cabecitas   # ui/cabecitas.png: una cabeza de 12 x 12 por atleta
+```
+
+Sin estas opciones el kit sale **byte a byte igual** que antes (hay una prueba que lo revisa).
+
 La carpeta se borra y se vuelve a escribir. Por seguridad, el script se niega si la carpeta tiene otra cosa que no sea un kit de PixelForja.
 
 ## Qué trae
@@ -61,6 +73,103 @@ Un garrochista sube 5 metros y no cabe en una celda de 48 px. Los juegos isomét
 ### Natación
 
 El nadador ya viene con el agua puesta: lo que queda bajo la superficie va teñido de azul y medio transparente, con espuma en la línea, estela y gotas cuando entra una mano o un pie. El juego dibuja su piscina detrás y alinea la superficie con `agua`. El cuerpo flota a altura fija: las patadas no lo hacen rebotar.
+
+## Datos por cuadro, atlas, retratos y vestuario
+
+Lo que necesita un juego de peleas o de deportes con golpes: saber dónde está el cuerpo, las manos, la cabeza y los pies en cada cuadro, sin adivinar.
+
+### Filas (`--filas`, opción `filas`)
+
+Un juego que espeja la izquierda con `flipX` no necesita las 8 direcciones. Con `filas` el kit dibuja solo las pedidas, en ese orden:
+
+```json
+"filas": ["right", "down_right", "up_right", "down", "up"]
+```
+
+El manifiesto trae `filas` y `direcciones` con esa lista, y todos los datos por fila (`punto`, `rumbo`, `cajas`, `manos`...) traen una entrada por fila pedida, en el mismo orden. Las pruebas de campo (salto largo, garrocha, lanzamientos) siguen usando la diagonal cuando se piden de frente o de espalda, y `rumbo` lo dice. El kit de GG Abyss acepta la misma opción (`npm run kit -- salida --filas ...`).
+
+### Datos por cuadro (`--datos`, opción `datos`)
+
+Todos van como `[fila][cuadro]`, en pixeles **desde el pivote**, con `x` hacia la derecha e `y` hacia abajo (lo de arriba del piso es negativo). El juego suma la posición del personaje y listo.
+
+| Campo | Qué es | Para qué |
+|---|---|---|
+| `cajas` | `[x, y, w, h]` del recuadro de los pixeles opacos. `null` si el cuadro está vacío | Hurtbox, choques, selección con el dedo |
+| `manos` | `[[x, y] mano cercana, [x, y] mano lejana]` | Enganchar un arma o una pelota, hitbox del puño |
+| `cabeza` | `[x, y]` del centro de la cabeza | Estrellitas de mareo, globo de diálogo, cabezazos |
+| `pies` | `[[x, y] pie cercano, [x, y] pie lejano]` | Hitbox de la patada, polvo, huellas |
+
+```js
+// hitbox del puño en el cuadro del impacto, para el jugador que mira a la derecha
+const [hx, hy] = anim.manos[fila][cuadro][0];
+const golpe = new Phaser.Geom.Circle(sprite.x + (sprite.flipX ? -hx : hx), sprite.y + hy, 4);
+```
+
+Al espejar con `flipX`, se cambia el signo de la `x` (y en `cajas`, `x` pasa a `-(x + w)`).
+
+`punto` (en los eventos de golpe y suelta) ahora sale en todas las filas pedidas, también en las vistas espejo.
+
+### Atlas por pack (`--atlas`, opción `atlas`)
+
+En vez de un PNG por animación, un atlas por atleta y pack, en el formato JSON Hash de TexturePacker que carga Phaser:
+
+```
+atletas/<id>/<pack>.png + atletas/<id>/<pack>.json
+```
+
+```js
+this.load.atlas('rick_pelea', 'atletas/rick/pelea.png', 'atletas/rick/pelea.json');
+// cuadro: <anim>_<fila>_<cuadro>, la fila por nombre y el cuadro desde 0
+const jab = manifest.atletas.rick.packs.pelea.anims.jab;
+this.anims.create({ key: 'rick_jab_right', frames: this.anims.generateFrameNames('rick_pelea', { prefix: 'jab_right_', start: 0, end: jab.cuadros - 1 }), frameRate: jab.fps });
+```
+
+Con atlas, cada atleta trae `packs` en vez de `deportes`:
+
+```json
+"packs": { "pelea": { "atlas": "atletas/rick/pelea.json", "imagen": "atletas/rick/pelea.png", "anims": { "jab": { "cuadros": 6, "fps": 16, "cajas": [...] } } } }
+```
+
+Los cuadros no se recortan: todos miden la celda y el pivote queda en el mismo lugar (también va en cada cuadro como `pivot`, en fracción). Ningún atlas pasa de 4096 px: el pack más grande (fútbol, 8 filas, Hulk en celda 64) mide 2560 x 2496. Si un pack no entrara, el kit avisa en vez de cortar.
+
+Con `--datos` o `--atlas` el manifiesto escribe los arreglos de números en una línea (pesa unas 5 veces menos). Sigue siendo JSON normal.
+
+### Retratos (`--retratos`, opción `retratos`)
+
+```
+atletas/<id>/retratos.png
+"retratos": { "archivo": "atletas/rick/retratos.png", "chico": 40, "grande": 96, "expresiones": ["neutral", "feliz", "enojo", "triste", "susto", "cerrado", "dolor"], "escala_grande": 3 }
+```
+
+La hoja tiene dos filas: arriba los 7 chicos de 40 x 40 (el `i` en `x = i * 40`), abajo los 7 grandes de 96 x 96 (el `i` en `x = i * 96`, `y = 40`), en el orden de `expresiones`. Las caras son los ojos y bocas del motor, los mismos del sprite.
+
+- **Chico (40):** cabeza y torso, dibujado a celda 64 pixel a pixel.
+- **Grande (96):** cabeza y hombros. **No está dibujado a 96:** el motor dibuja personas hasta celda 64, donde el chibi entero mide unos 50 px. El grande es un recorte de 32 x 32 escalado **x3 entero**: nítido, sin colores mezclados, pero con el mismo detalle que el sprite.
+
+### Cabecitas (`--cabecitas`, opción `cabecitas`)
+
+`ui/cabecitas.png` con una cabeza de 12 x 12 por atleta, en fila, en el orden de `cabecitas.orden`. Cada atleta dice cuál es la suya con `"cabecita": "ui/cabecitas.png#rick"`. Salen de la cabeza a celda 64 reducida a la mitad sin mezclar colores (cada bloque de 2 x 2 se queda con su color más repetido). Se distingue el peinado, la piel y la ropa. Los ojos pueden perderse.
+
+### Vestuario por pack (en la ficha)
+
+Una ficha puede traer variantes de ropa con nombre y decir cuál usa cada pack. El kit dibuja cada pack con la suya. No es una opción del kit: va en la ficha.
+
+```json
+"wardrobe": {
+  "variants": {
+    "banador": { "label": "Bañador", "outfit": { "sleeves": "none", "shoes": "descalzo" }, "colors": { "top": "#1d5fbf", "bottom": "#1d5fbf" } },
+    "judogi":  { "label": "Judogi", "outfit": { "sleeves": "long", "bottom": "pants" }, "colors": { "top": "#f2f2ee", "bottom": "#f2f2ee" } }
+  },
+  "packs": { "natacion": "banador", "pelea": "judogi" }
+}
+```
+
+Una variante cambia solo lo que dice (`outfit` y los colores de `top`, `bottom`, `socks`, `shoes`, `accessory`). El pack que no figura usa la ropa de la ficha. El manifiesto dice qué usó cada pack: `"vestuario": { "pelea": "judogi", "natacion": "banador" }` (`ficha` = la ropa de la ficha). Ejemplo completo: [`docs/ejemplos/nekketsu/rick.ficha.json`](ejemplos/nekketsu/rick.ficha.json).
+
+### En el estudio
+
+- **Ver datos** (en Animar, junto a Papel cebolla): dibuja encima del personaje la caja, las manos, la cabeza, los pies y el punto del golpe, con su leyenda y la caja del cuadro en números. Son los mismos datos que exporta el kit.
+- **Vestuario:** si la ficha trae variantes, aparecen debajo de la animación. Se ve cada una sin tocar la ficha.
 
 ## La arena: el kit jugando de verdad
 
@@ -114,6 +223,9 @@ En el kit salen con ropa de deporte y sin arma. Con `heroFicha(id, true)` llevan
 - **Piernas cortas:** un chibi tiene piernas cortas, así que a su velocidad natural avanza poco. Sophie hace el sprint a unos 43 px por segundo en celda 48. Para un juego arcade se puede ir más rápido: la animación se acelera con la distancia y el pie no patina, pero se ve más agitada.
 - **De frente y de espalda:** al caminar hacia la cámara los pies no avanzan en la hoja, se mueven en el lugar. Es lo normal en sprites de 8 direcciones. Los juegos lo resuelven con el ritmo de los pasos.
 - **Paso de guardia:** el paso de pelea avanza muy poco por ciclo, porque es un arrastre corto. En la arena va al doble de ritmo. Si tu juego necesita peleadores rápidos, conviene un paso más largo.
+- **`cajas` incluye todo lo opaco:** también la pelota, la jabalina o la chispa del golpe, porque sale de los pixeles. Para un hurtbox del cuerpo solo, conviene achicarla o usar `cabeza` y `pies` para armarla.
+- **Manos tapadas:** de espaldas (`up`, `up_right`) la mano muchas veces queda detrás del cuerpo. `manos` dice dónde está igual, sobre un pixel opaco, pero ese pixel puede ser la espalda.
+- **Bañador:** el motor no dibuja el torso desnudo. Un bañador es una camiseta sin mangas del color del traje.
 
 ## Control de calidad
 
