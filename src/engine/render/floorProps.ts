@@ -116,7 +116,7 @@ export interface ObjectEntry {
 /**
  * Atlas de todas las armas del piso (JSON Hash de TexturePacker) y la entrada de cada una para el manifiesto. Las
  * variantes de color son ids aparte (`silla_plastica_azul`...). Cuadros: `quieto` (base en el pivote), `girando`
- * (centrado), `mano_0` a `mano_15` (agarre en el centro, cada 22.5 grados) y los propios de cada objeto.
+ * (centrado), `mano` de 16 cuadros (agarre en el centro, cuadro k girado k * 22.5 grados) y los propios de cada objeto.
  */
 export function buildObjectsAtlas(cell = 48, image = 'armas.png'): { png: Raster; json: TexturePackerHash; objetos: Record<string, ObjectEntry> } {
   const size = objectCell(cell), u = cell / 48;
@@ -127,7 +127,10 @@ export function buildObjectsAtlas(cell = 48, image = 'armas.png'): { png: Raster
     const cols = FLOOR_PROPS[kind].colores ?? [undefined];
     cols.forEach((col, v) => {
       const id = v === 0 ? kind : `${kind}_${COLOR_NAMES[col!] ?? v}`;
-      const anims = floorPropAnims(kind, cell, v);
+      const raw = floorPropAnims(kind, cell, v);
+      // en la mano: una animación `mano` de 16 cuadros (uno por ángulo)
+      const anims: Record<string, Raster[]> = Object.fromEntries(Object.entries(raw).filter(([a]) => !a.startsWith('mano_')));
+      anims.mano = Array.from({ length: 16 }, (_, k) => raw[`mano_${k}`][0]);
       for (const [a, rs] of Object.entries(anims)) rs.forEach((r, i) => frames.push({ name: objectFrameName(id, a, i), raster: r }));
       const q = anims.quieto[0];
       let x0 = size, x1 = -1, y0 = size;
@@ -136,9 +139,8 @@ export function buildObjectsAtlas(cell = 48, image = 'armas.png'): { png: Raster
       objetos[id] = {
         atlas: image.replace(/\.png$/, '.json'), w: x1 - x0 + 1, h: size - 1 - y0, agarre: [Math.floor(size / 2) + gx, size - 2 + gy],
         peso: FLOOR_PROPS[kind].peso, rota: FLOOR_PROPS[kind].rota, uso: FLOOR_PROPS[kind].uso, nombre: FLOOR_PROPS[kind].nombre,
-        anims: Object.fromEntries(Object.entries(anims).filter(([a]) => !a.startsWith('mano_')).map(([a, rs]) => [a, rs.length])),
+        anims: Object.fromEntries(Object.entries(anims).map(([a, rs]) => [a, rs.length])),
       };
-      objetos[id].anims.mano = 16;
     });
   }
   const { png, json } = packAtlas(frames, size, image, [size / 2, size - 2]);

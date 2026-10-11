@@ -1,5 +1,6 @@
 import type { Pose, PropState } from '../rig/pose';
 import { type AnimDef, type Ctx, P, feet } from './types';
+import { FLOOR_PROPS, FLOOR_PROP_KINDS, type FloorPropKind } from '../render/props';
 
 /**
  * Pelea callejera (beat 'em up): levantar, llevar y lanzar, a un rival o a un objeto del piso.
@@ -454,3 +455,16 @@ export const BRAWL: AnimDef[] = [
   grab, grabHold, grabbed, kneeGrab, breakFree, dizzy, koBounce, taunt, runPunch, runKick, airKick, slipWet,
   weaponPick, weaponSwing, weaponSwingHeavy, weaponThrow, umbrellaBlock, fanGust,
 ];
+
+/**
+ * Qué armas del piso le sirven a cada animación de armas, y cuál se ve si no se elige otra (en el estudio). El kit no
+ * dibuja el arma: exporta `arma` y el juego pone la que el personaje recogió.
+ */
+export const HELD_ANIMS: Record<string, { kinds: FloorPropKind[]; default: FloorPropKind }> = {
+  weapon_pick: { kinds: [...FLOOR_PROP_KINDS], default: 'escoba' },
+  weapon_swing: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'swing'), default: 'tubo' },
+  weapon_swing_heavy: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'heavy'), default: 'pote_basura' },
+  weapon_throw: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'throw' || FLOOR_PROPS[k].peso === 'liviano'), default: 'chancleta' },
+  umbrella_block: { kinds: ['paraguas'], default: 'paraguas' },
+  fan_gust: { kinds: ['abanico'], default: 'abanico' },
+};

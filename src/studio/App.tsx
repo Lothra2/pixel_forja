@@ -18,7 +18,7 @@ import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, saf
 import {
   type Ficha, type HumanFicha, type CellSize, type HeadSpec, type Point, type Zone, type QAReport, type ColorSlot, type AnimalColorSlot,
   type Proportions, type Species, type ViewName, type ExportKind, type ExportPlan, type Variant, type CustomAnim, type Avatar, type AvatarPart,
-  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, withVariant, variantNames, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
+  DEFAULT_BG_TOLERANCE, validateFicha, migrateFicha, withVariant, variantNames, HELD_ANIMS, FLOOR_PROPS, type FloorPropKind, recolor, isHuman, animsFor, makeRamp, SPECIES, fichaFromAvatar, randomAvatar, defaultAvatar, applyPhotoColors, bodyProportions, type BodyType,
   applyClass, CLASS_KITS, enemyFicha, enemyCell, enemyAnims, type Gear, type HeroClass, type EnemyId,
   familyFicha, thorFicha, type FamilyId, applyArmorTier, equipLoot, type ArmorLine, type ArmorTier, type LootItem,
   isPremiumClip, type MovementProfile, heroFicha, heroCell, type HeroId,
@@ -93,6 +93,8 @@ export function App() {
   const [bg, setBg] = useState<PreviewBg>('studio');
   /** variante de ropa que se está viendo ('' = la ropa de la ficha) */
   const [outfitVar, setOutfitVar] = useState('');
+  /** el arma del piso que se ve en la mano en las animaciones de armas */
+  const [heldKind, setHeldKind] = useState<FloorPropKind | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try { return localStorage.getItem('pf.theme') === 'light' ? 'light' : 'dark'; } catch { return 'dark'; }
   });
@@ -213,13 +215,15 @@ export function App() {
   const wardrobeNames = useMemo(() => (ficha ? variantNames(ficha) : []), [ficha]);
   useEffect(() => { if (outfitVar && !wardrobeNames.includes(outfitVar)) setOutfitVar(''); }, [wardrobeNames, outfitVar]);
   const dressed = useMemo(() => (ficha && outfitVar && isHuman(ficha) ? withVariant(ficha, ficha.wardrobe?.variants[outfitVar]) : ficha), [ficha, outfitVar]);
+  const heldInfo = HELD_ANIMS[anim];
+  const held = heldInfo ? (heldKind && heldInfo.kinds.includes(heldKind) ? heldKind : heldInfo.default) : null;
   useEffect(() => {
     if (!dressed || !needsFicha || step === 'editor' || !animList.some((a) => a.name === anim)) return;
     run(async () => {
-      const r = await engine.call<'rendered'>({ type: 'render', ficha: dressed, cell, anim, view, props });
+      const r = await engine.call<'rendered'>({ type: 'render', ficha: dressed, cell, anim, view, props, ...(held && props ? { held: { kind: held } } : {}) });
       if (r) { setClip(r.clip); setQa(r.qa); }
     });
-  }, [dressed, cell, anim, view, props, needsFicha, step, engine, run, animList]);
+  }, [dressed, cell, anim, view, props, needsFicha, step, engine, run, animList, held]);
   // comparador: la misma animación con el otro perfil, al lado
   const canCompare = !!ficha && isHuman(ficha) && isPremiumClip({ ...ficha, movementProfile: 'premium' }, anim) && !ficha.customAnims?.some((c) => c.name === anim);
   useEffect(() => {
@@ -792,6 +796,11 @@ export function App() {
                 <Select label={t('pack')} value={curPack ?? ''} set={(p) => { const first = animList.find((a) => a.pack === p); if (first) setAnim(first.name); }} opts={packOpts.map((p) => [p, t(`pack_${p}` as Key)])} testid="pack" />
                 <Select label={t('anim')} value={anim} set={setAnim} opts={animList.filter((a) => a.pack === curPack).map((a) => [a.name, animLabel(a.name, lang)])} testid="anim" />
               </div>
+              {ficha && isHuman(ficha) && heldInfo && held && (
+                <div className="controls" title={t('held_help')}>
+                  <Select label={t('held')} value={held} set={(v) => setHeldKind(v as FloorPropKind)} opts={heldInfo.kinds.map((k): [string, string] => [k, FLOOR_PROPS[k].nombre[lang]])} testid="held" />
+                </div>
+              )}
               {ficha && isHuman(ficha) && wardrobeNames.length > 0 && (
                 <div className="controls" title={t('wardrobe_help')}>
                   <Seg

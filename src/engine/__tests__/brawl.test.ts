@@ -3,8 +3,14 @@ import {
   familyFicha, renderClip, runQA, viewsForRows, frameDataOf, opaqueBox, EIGHT_VIEWS, FAMILY,
   heroFicha, heroCell, HEROES, type HumanFicha, type CellSize, type Raster,
 } from '../index';
-import { floorPropSprite } from '../render/floorProps';
-import { BRAWL } from '../anim/brawl';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { floorPropSprite, buildObjectsAtlas, floorPropAnims, objectCell } from '../render/floorProps';
+import { FLOOR_PROP_KINDS } from '../render/props';
+import { BRAWL, HELD_ANIMS } from '../anim/brawl';
+import { buildSportsKit, DEFAULT_SPORT_PACKS } from '../kit/sportskit';
+import { encodePng, decodePng, createRaster, blit } from '../index';
+import { ROOT } from './helpers';
 
 const premium = (id: (typeof FAMILY)[number]): HumanFicha => ({ ...familyFicha(id, false), movementProfile: 'premium' });
 const FIVE = ['right', 'down_right', 'up_right', 'down', 'up'];
@@ -19,9 +25,9 @@ const OVERHEAD: Record<string, (i: number) => boolean> = {
 };
 
 describe('levantar y llevar (pelea callejera)', () => {
-  it('todas pasan el control de calidad en 32, 48 y 64, en las 8 direcciones', () => {
+  it('todas pasan el control de calidad en 32, 48 y 64, en las 5 filas', () => {
     const bad: string[] = [];
-    for (const id of FAMILY) for (const cell of [32, 48, 64] as const) for (const a of BRAWL) for (const v of EIGHT_VIEWS) {
+    for (const id of FAMILY) for (const cell of [32, 48, 64] as const) for (const a of BRAWL) for (const v of viewsForRows(FIVE)) {
       const f = premium(id), c = renderClip(f, cell, a.name, v, { props: true });
       if (!runQA(f, c).ok) bad.push(`${id} ${cell} ${a.name} ${v}`);
     }
@@ -98,5 +104,72 @@ describe('levantar y llevar (pelea callejera)', () => {
       expect(Math.abs((b.x0 + b.x1) / 2 - cell / 2)).toBeLessThanOrEqual(1.5);
       expect(floorPropSprite('pote_basura', cell, { lid: false }).data).not.toEqual(r.data);
     }
+  });
+
+  it('armas: el dato `arma` sale en cada cuadro con el arma en la mano, espejado a la izquierda, y el kit no la dibuja', () => {
+    const f = premium('rick');
+    const r = renderClip(f, 48, 'weapon_swing', 'side', { props: true });
+    const l = renderClip(f, 48, 'weapon_swing', 'left', { props: true });
+    const drawn = renderClip(f, 48, 'weapon_swing', 'side', { props: true, held: { kind: 'tubo' } });
+    expect(r.held!.every(Boolean)).toBe(true);
+    r.held!.forEach((h, i) => {
+      const m = l.held![i]!;
+      expect(m.x).toBe(47 - h!.x);
+      expect(m.angle).toBe((540 - h!.angle) % 360);
+    });
+    // con el arma pedida el cuadro cambia; sin pedirla, el sprite es el mismo que el de la mano vacía
+    expect(drawn.frames.some((fr, i) => !Buffer.from(fr.data).equals(Buffer.from(r.frames[i].data)))).toBe(true);
+    const d = frameDataOf([r], ['arma']).arma![0];
+    expect(d[3]).toEqual([expect.any(Number), expect.any(Number), 0, 0]);
+    // al soltar el arma (lanzar), desde la suelta ya no hay arma
+    const thr = renderClip(f, 48, 'weapon_throw', 'side', { props: true });
+    expect(thr.held![2]).not.toBeNull();
+    expect(thr.held![3]).toBeNull();
+    for (const [a, h] of Object.entries(HELD_ANIMS)) expect(h.kinds, a).toContain(h.default);
+  });
+
+  it('armas del piso: cada una con su sprite, su giro y sus 16 ángulos en la mano, en un atlas de menos de 4096', () => {
+    for (const cell of [32, 48, 64] as const) {
+      const { png, json, objetos } = buildObjectsAtlas(cell);
+      expect(Math.max(png.w, png.h)).toBeLessThanOrEqual(4096);
+      for (const k of FLOOR_PROP_KINDS) {
+        expect(objetos[k], k).toBeTruthy();
+        expect(json.frames[`${k}_quieto_0`], k).toBeTruthy();
+        for (let i = 0; i < 16; i++) expect(json.frames[`${k}_mano_${i}`], `${k} mano ${i}`).toBeTruthy();
+        if (objetos[k].rota) expect(objetos[k].anims.girando).toBe(8);
+      }
+      expect(objetos.pote_basura.anims).toMatchObject({ sin_tapa: 1, tapa: 1 });
+      expect(objetos.silla_plastica_azul).toBeTruthy();
+      // en la mano el agarre queda en el centro de la celda: el cuadro no está vacío y no se sale
+      const s = objectCell(cell);
+      for (const k of FLOOR_PROP_KINDS) for (const r of Object.values(floorPropAnims(k, cell)).flat()) expect([r.w, r.h]).toEqual([s, s]);
+    }
+  }, 120_000);
+
+  it('el kit deportivo trae la pelea callejera y las armas solo si se piden', () => {
+    expect(DEFAULT_SPORT_PACKS).not.toContain('calle');
+    const files = buildSportsKit({ athletes: { rick: premium('rick') }, packs: ['calle'], quick: true, filas: FIVE, datos: true, objetos: true });
+    const m = JSON.parse(new TextDecoder().decode(files.find((x) => x.name === 'manifest.json')!.bytes));
+    const anims = m.atletas.rick.deportes.calle;
+    expect(Object.keys(anims)).toEqual(['umbrella_block', 'fan_gust']);
+    expect(anims.fan_gust.arma).toHaveLength(5);
+    expect(m.objetos.chancleta).toMatchObject({ atlas: 'objetos/armas.json', peso: 'liviano', rota: true });
+    expect(files.some((x) => x.name === 'objetos/armas.png')).toBe(true);
+  }, 120_000);
+
+  it('imagen dorada: un cuadro clave de cada animación (Rick, de lado, 48)', () => {
+    const f = premium('rick');
+    const out = createRaster(48 * BRAWL.length, 48);
+    BRAWL.forEach((a, i) => {
+      const c = renderClip(f, 48, a.name, 'side', { props: true });
+      const key = c.events?.length ? Math.min(c.frames.length - 1, Math.floor(c.events[0].phase * c.frames.length + 1e-6)) : Math.floor(c.frames.length / 2);
+      blit(out, c.frames[key], i * 48, 0);
+    });
+    const file = join(ROOT, 'golden', 'brawl_rick_48.png');
+    if (process.env.UPDATE_GOLDEN || !existsSync(file)) { writeFileSync(file, encodePng(out)); return; }
+    const gold = decodePng(readFileSync(file));
+    const same = gold.w === out.w && Buffer.from(gold.data).equals(Buffer.from(out.data));
+    if (!same) { mkdirSync(join(ROOT, 'out'), { recursive: true }); writeFileSync(join(ROOT, 'out', 'golden_actual_brawl_rick_48.png'), encodePng(out)); }
+    expect(same, 'cambió brawl_rick_48; mira out/golden_actual_brawl_rick_48.png').toBe(true);
   });
 });

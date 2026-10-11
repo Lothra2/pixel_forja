@@ -459,3 +459,35 @@ test('ver datos y vestuario: cajas, manos y puntos encima del personaje, y cada 
   await page.screenshot({ path: `${shots}/${tag}_50_ver_datos.png`, fullPage: true });
   expect(errors).toEqual([]);
 });
+
+test('pelea callejera: levantar con carga, arma en la mano y sus datos', async ({ page }, info) => {
+  test.setTimeout(180000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('family-rick-rpg').click();
+  await page.getByTestId('step-animate').click();
+  await idle(page);
+  await page.getByTestId('pack').selectOption('brawl');
+  await page.getByTestId('anim').selectOption('lift');
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  // levantar: la carga se ve en "Ver datos"
+  await page.getByTestId('pb-toggle').click();
+  await page.getByTestId('show-data').click();
+  await page.getByTestId('pb-timeline').locator('button').last().click();
+  await expect(page.getByTestId('data-legend')).toContainText('Carga');
+  await expect(page.getByTestId('data-legend')).toContainText('Cuerpo');
+  // batazo: el arma en la mano se elige y cambia el dibujo
+  await page.getByTestId('anim').selectOption('weapon_swing');
+  await idle(page);
+  await expect(page.getByTestId('held')).toHaveValue('tubo');
+  const before = await page.getByTestId('preview-big').evaluate((c: HTMLCanvasElement) => c.toDataURL());
+  await page.getByTestId('held').selectOption('escoba');
+  await idle(page);
+  await expect.poll(() => page.getByTestId('preview-big').evaluate((c: HTMLCanvasElement) => c.toDataURL())).not.toBe(before);
+  await expect(page.getByTestId('data-legend')).toContainText('Arma');
+  await page.screenshot({ path: `${shots}/${tag}_60_pelea_callejera.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});

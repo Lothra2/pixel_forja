@@ -32,7 +32,7 @@ export function backgroundPixels(kind: PreviewBg, cell: number): Uint8ClampedArr
 const SPEEDS = [0.25, 0.5, 1] as const;
 
 /** Colores de "Ver datos" (los mismos en la leyenda). */
-export const DATA_COLORS = { caja: '#4cc3ff', mano: '#ff4d6d', manoLejos: '#ffa3b5', cabeza: '#ffd23f', pie: '#3ddc84', pieLejos: '#a8f0c6', punto: '#ffffff' } as const;
+export const DATA_COLORS = { caja: '#4cc3ff', cuerpo: '#b388ff', mano: '#ff4d6d', manoLejos: '#ffa3b5', cabeza: '#ffd23f', pie: '#3ddc84', pieLejos: '#a8f0c6', punto: '#ffffff', carga: '#ff9f1c', arma: '#00e5c7' } as const;
 
 /**
  * Dibuja los datos de un cuadro encima del sprite, en pixeles de la celda: la caja de lo opaco, las manos, la cabeza,
@@ -47,6 +47,23 @@ function paintData(g: CanvasRenderingContext2D, d: ClipData, i: number, ox: numb
     g.lineWidth = 1;
     g.strokeRect(ox + box[0] + 0.5, oy + box[1] + 0.5, box[2] - 1, box[3] - 1);
     g.globalAlpha = 1;
+  }
+  const body = d.cuerpo?.[i];
+  if (body) {
+    // el cuerpo (hurtbox) con línea de puntos, para distinguirlo de la caja
+    g.fillStyle = DATA_COLORS.cuerpo;
+    const [x0, y0, w, h] = [ox + body[0], oy + body[1], body[2], body[3]];
+    for (let k = 0; k < w; k += 2) { g.fillRect(x0 + k, y0, 1, 1); g.fillRect(x0 + k, y0 + h - 1, 1, 1); }
+    for (let k = 0; k < h; k += 2) { g.fillRect(x0, y0 + k, 1, 1); g.fillRect(x0 + w - 1, y0 + k, 1, 1); }
+  }
+  const load = d.carga?.[i];
+  if (load) { g.fillStyle = DATA_COLORS.carga; g.fillRect(ox + load[0] - 2, oy + load[1], 5, 1); }
+  const weapon = d.arma?.[i];
+  if (weapon) {
+    // el agarre y hacia dónde apunta el arma
+    g.fillStyle = DATA_COLORS.arma;
+    const a = (weapon[2] * Math.PI) / 180;
+    for (let k = 0; k <= 5; k++) g.fillRect(Math.round(ox + weapon[0] + Math.cos(a) * k), Math.round(oy + weapon[1] + Math.sin(a) * k), 1, 1);
   }
   dot(d.manos?.[i][1], DATA_COLORS.manoLejos);
   dot(d.pies?.[i][1], DATA_COLORS.pieLejos);
@@ -215,7 +232,7 @@ export function Preview({ clip, compare, bg, zoom, t }: Props) {
       </div>
       {showData && (
         <ul className="data-legend" data-testid="data-legend">
-          {([['caja', 'data_box'], ['mano', 'data_hands'], ['cabeza', 'data_head'], ['pie', 'data_feet'], ['punto', 'data_point']] as const).map(([c, k]) => (
+          {([['caja', 'data_box'], ['cuerpo', 'data_body'], ['mano', 'data_hands'], ['cabeza', 'data_head'], ['pie', 'data_feet'], ['punto', 'data_point'], ['carga', 'data_load'], ['arma', 'data_weapon']] as const).filter(([c]) => (c !== 'carga' || clip.data?.carga) && (c !== 'arma' || clip.data?.arma)).map(([c, k]) => (
             <li key={c}><i style={{ background: DATA_COLORS[c] }} />{t(k)}</li>
           ))}
           {clip.data?.cajas[frame] && <li className="muted" data-testid="data-box">{t('data_box')}: [{clip.data.cajas[frame]!.join(', ')}]</li>}

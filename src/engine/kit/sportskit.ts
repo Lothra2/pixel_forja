@@ -15,6 +15,8 @@ import { SWIM_PREMIUM } from '../anim/swim';
 import { NET_PREMIUM } from '../anim/net';
 import { FIGHT_PREMIUM } from '../anim/fight';
 import { FOOTBALL_PREMIUM } from '../anim/footballPremium';
+import { BRAWL } from '../anim/brawl';
+import { buildObjectsAtlas } from '../render/floorProps';
 
 /**
  * Kit deportivo: hojas de 8 direcciones de cada atleta y cada deporte, con un manifest.json que le dice al juego
@@ -30,9 +32,13 @@ export const SPORT_PACKS = {
   tenis: [...base, ...NET_PREMIUM.filter((a) => a.pack === 'tennis').map((a) => a.name)],
   pelea: ['idle', 'walk', ...FIGHT_PREMIUM.map((a) => a.name)],
   futbol: ['idle', 'walk', 'run', ...FOOTBALL_PREMIUM.filter((a) => a.name !== 'kick').map((a) => a.name), 'celebrate', 'goal_knee', 'goal_plane', 'sad'],
+  /** pelea callejera (beat 'em up): levantar, llevar, lanzar, agarres, armas del piso. Se pide aparte (no va por defecto) */
+  calle: ['idle', 'walk', 'run', 'hit', 'jab', 'punch', 'low_kick', 'knockout', ...BRAWL.map((a) => a.name)],
 } as const;
 export type SportPack = keyof typeof SPORT_PACKS;
 export const SPORT_PACK_NAMES = Object.keys(SPORT_PACKS) as SportPack[];
+/** los deportes que salen si no se piden otros (los de siempre: la pelea callejera se pide con `calle`) */
+export const DEFAULT_SPORT_PACKS = SPORT_PACK_NAMES.filter((p) => p !== 'calle');
 
 export interface SportsKitOptions {
   /** atletas por id (minúsculas, números y _). Sin esto, la familia con ropa de calle y los héroes */
@@ -59,6 +65,8 @@ export interface SportsKitOptions {
   retratos?: boolean;
   /** cabecitas de 12 x 12 de todos los atletas en ui/cabecitas.png */
   cabecitas?: boolean;
+  /** las armas del piso (pelea callejera) en objetos/armas.png + .json, con su entrada en `objetos` */
+  objetos?: boolean;
   progress?: (msg: string) => void;
 }
 
@@ -116,7 +124,7 @@ function strip(rs: Raster[], w: number, h: number): Raster {
 export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
   const log = opts.progress ?? (() => {});
   const cell = opts.cell ?? 48;
-  const packs = opts.packs ?? SPORT_PACK_NAMES;
+  const packs = opts.packs ?? DEFAULT_SPORT_PACKS;
   const views = opts.filas ? viewsForRows(opts.filas) : EIGHT_VIEWS;
   const rows = views.map((v) => VIEW_SUFFIX[v]);
   const fields: FrameDataField[] = opts.datos === true ? FRAME_DATA_FIELDS : opts.datos || [];
@@ -210,6 +218,14 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
   if (opts.cabecitas && heads.length) {
     files.push({ name: 'ui/cabecitas.png', bytes: encodePng(strip(heads, HEAD_ICON, HEAD_ICON)), mime: 'image/png' });
     manifest.cabecitas = { archivo: 'ui/cabecitas.png', celda: HEAD_ICON, orden: Object.keys(out) };
+  }
+  if (opts.objetos) {
+    const { png, json, objetos } = buildObjectsAtlas(cell, 'armas.png');
+    files.push({ name: 'objetos/armas.png', bytes: encodePng(png), mime: 'image/png' });
+    files.push({ name: 'objetos/armas.json', bytes: enc.encode(JSON.stringify(json)), mime: 'application/json' });
+    for (const o of Object.values(objetos)) o.atlas = 'objetos/armas.json';
+    manifest.objetos = objetos;
+    manifest.notas_objetos = 'objetos: armas del piso. Cuadros <id>_<anim>_<cuadro>. quieto: la base en el pivote de la celda (como un personaje). girando: centrado. mano (16 cuadros): el agarre en el centro de la celda, el cuadro k girado k * 22.5 grados (0 = como en el piso). Para dibujar el arma en la mano usa el dato `arma` [x, y, angulo, detras] de la animación: elige <id>_mano_<k> con k = round(angulo / 22.5) % 16 y pon el centro de la celda en (x, y) desde el pivote del personaje; si detras = 1, dibújala antes que al personaje.';
   }
   if (credits.size) {
     files.push({ name: 'CREDITOS.txt', bytes: enc.encode([...credits].join('\n\n')), mime: 'text/plain' });
