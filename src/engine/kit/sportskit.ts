@@ -43,7 +43,7 @@ export const DEFAULT_SPORT_PACKS = SPORT_PACK_NAMES.filter((p) => p !== 'calle')
 export interface SportsKitOptions {
   /** atletas por id (minúsculas, números y _). Sin esto, la familia con ropa de calle y los héroes */
   athletes?: Record<string, HumanFicha>;
-  /** celda de un atleta en particular (Hulk va en 64); los demás usan `cell` */
+  /** celda de un atleta en particular (Hulk va en 64); si no, la de su ficha (`cell`) o la del kit */
   cells?: Record<string, CellSize>;
   packs?: SportPack[];
   cell?: CellSize;
@@ -166,7 +166,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     if (c) credits.add(c);
     const sports: Record<string, Record<string, SportAnimEntry>> = {};
     const atlases: Record<string, PackEntry> = {};
-    const C = cells[id] ?? cell;
+    // la celda: la que se pidió para ese atleta, la de su ficha (un gigante va en 64) o la del kit
+    const C = cells[id] ?? athletes[id].cell ?? cell;
     for (const pack of packs) {
       // vestuario por pack: la ficha puede traer una variante de ropa para este pack
       const fp = dressForPack(f, pack);

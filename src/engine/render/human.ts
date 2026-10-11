@@ -95,6 +95,27 @@ const DIGITS: Record<string, string[]> = {
   '9': ['###', '#.#', '###', '..#', '###'],
 };
 
+/** números bajitos (4 filas) para camisas cortas */
+const DIGITS4: Record<string, string[]> = {
+  '0': ['###', '#.#', '#.#', '###'], '1': ['##.', '.#.', '.#.', '###'], '2': ['##.', '..#', '.#.', '###'], '3': ['###', '.##', '..#', '###'],
+  '4': ['#.#', '#.#', '###', '..#'], '5': ['###', '##.', '..#', '##.'], '6': ['#..', '###', '#.#', '###'], '7': ['###', '..#', '.#.', '.#.'],
+  '8': ['###', '###', '#.#', '###'], '9': ['###', '#.#', '###', '..#'],
+};
+
+/** letras de 3 x 5 para el pecho (las iniciales de un equipo) */
+const GLYPHS: Record<string, string[]> = {
+  A: ['.#.', '#.#', '###', '#.#', '#.#'], B: ['##.', '#.#', '##.', '#.#', '##.'], C: ['.##', '#..', '#..', '#..', '.##'], D: ['##.', '#.#', '#.#', '#.#', '##.'],
+  E: ['###', '#..', '##.', '#..', '###'], F: ['###', '#..', '##.', '#..', '#..'], G: ['.##', '#..', '#.#', '#.#', '.##'], H: ['#.#', '#.#', '###', '#.#', '#.#'],
+  I: ['###', '.#.', '.#.', '.#.', '###'], J: ['..#', '..#', '..#', '#.#', '.#.'], K: ['#.#', '#.#', '##.', '#.#', '#.#'], L: ['#..', '#..', '#..', '#..', '###'],
+  M: ['#.#', '###', '###', '#.#', '#.#'], N: ['##.', '#.#', '#.#', '#.#', '#.#'], O: ['.#.', '#.#', '#.#', '#.#', '.#.'], P: ['##.', '#.#', '##.', '#..', '#..'],
+  Q: ['.#.', '#.#', '#.#', '##.', '.##'], R: ['##.', '#.#', '##.', '#.#', '#.#'], S: ['.##', '#..', '.#.', '..#', '##.'], T: ['###', '.#.', '.#.', '.#.', '.#.'],
+  U: ['#.#', '#.#', '#.#', '#.#', '###'], V: ['#.#', '#.#', '#.#', '#.#', '.#.'], W: ['#.#', '#.#', '###', '###', '#.#'], X: ['#.#', '#.#', '.#.', '#.#', '#.#'],
+  Y: ['#.#', '#.#', '.#.', '.#.', '.#.'], Z: ['###', '..#', '.#.', '#..', '###'], ...DIGITS,
+};
+/** la letra en 4 filas (camisas cortas): sin la cuarta fila; G, S y los números tienen la suya */
+const GLYPHS4: Record<string, string[]> = { G: ['.##', '#..', '#.#', '.##'], S: ['.##', '#..', '..#', '##.'], ...DIGITS4 };
+const compact = (ch: string) => GLYPHS4[ch] ?? GLYPHS[ch].filter((_, i) => i !== 3);
+
 const P_FRONT = 0.3;
 /** largo de cada arma desde la mano hasta la punta (en unidades de 48 px) */
 const WEAPON_REACH = { sword: 13, dagger: 7, greatsword: 18, axe: 12, mace: 10, club: 11, hammer: 13, spear: 21, staff: 17, scythe: 18, wand: 8, claws: 7 } as const;
@@ -127,6 +148,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const fo = f.outfit;
   if (fo.pattern && fo.pattern !== 'liso') mats.add('top2', ink(makeRamp(fo.pattern2 ?? '#f2f2f2')));
   if (fo.jacket) mats.add('jacket', ink(makeRamp(fo.jacket)));
+  const gakuran = !!fo.jacket && fo.jacketCut === 'gakuran';
+  if (gakuran) mats.add('jbutton', ink(makeRamp(fo.buttons ?? '#e2b23c')));
+  if (fo.armband) mats.add('armband', ink(makeRamp(fo.armband)));
   // armaduras y trajes de RPG
   const armor = fo.armor ?? null;
   if (armor) mats.add('armor', ink(makeRamp(fo.armorColor ?? ARMOR_DEFAULT_COLOR[armor])));
@@ -233,11 +257,17 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const drawArm = (far: boolean, layer: number) => {
     const p = far ? arms.far : arms.near;
     const part = new Part();
-    const sleeve = fo.jacket || armor === 'tunica' ? 'long' : f.outfit.sleeves;
-    const sm = fo.jacket ? 'jacket' : armor === 'tunica' ? 'armor' : 'top';
+    // chaqueta sin mangas (chaleco): se ven las mangas de la camiseta
+    const jacketArms = !!fo.jacket && (fo.jacketSleeves ?? 'long') !== 'none';
+    const sleeve = armor === 'tunica' ? 'long' : jacketArms ? fo.jacketSleeves ?? 'long' : f.outfit.sleeves;
+    const sm = jacketArms ? 'jacket' : armor === 'tunica' ? 'armor' : 'top';
     // malla y placas cubren el brazo; con placas también el antebrazo y la mano (guantelete)
     const metalUp = armor === 'malla' || armor === 'placas', metalLow = armor === 'placas';
-    stroke(part, p.root, p.mid, d.armT, (t) => (metalUp ? 'armor' : sleeve === 'long' || (sleeve === 'short' && t < 0.6) ? sm : 'skin'));
+    // brazalete: una franja en la parte de arriba del brazo cercano (1 pixel en 32, 2 en 48 y 64)
+    const upLen = Math.max(1, Math.hypot(p.mid[0] - p.root[0], p.mid[1] - p.root[1]));
+    const band = fo.armband && !far && !metalUp ? [0.3, 0.3 + (cell >= 48 ? 2 : 1) / upLen] : null;
+    stroke(part, p.root, p.mid, d.armT, (t) =>
+      band && t >= band[0] && t < band[1] ? 'armband' : metalUp ? 'armor' : sleeve === 'long' || (sleeve === 'short' && t < 0.6) ? sm : 'skin');
     stroke(part, p.mid, p.end, d.armT, () => (metalLow ? 'armor' : sleeve === 'long' ? sm : 'skin'));
     blob(part, p.end, d.hand + (f.outfit.gloves || metalLow ? 1 : 0), metalLow ? 'armor' : handMat);
     if (fo.pauldrons && armor) blob(part, [p.root[0], p.root[1] - 0.5], d.armT + 2, fo.trim ? 'trim' : 'armor', BASE);
@@ -315,8 +345,17 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
           if (on) mat = 'top2';
           // chaqueta abierta: de frente se ve la camiseta al medio; de lado y de espalda, casi toda chaqueta
           if (fo.jacket) {
-            const open = view === 'front' ? Math.abs(col - mid) < d.torsoW * 0.22 : side ? rr > tx1 - 1.5 : false;
+            const open = fo.jacketClosed ? false : view === 'front' ? Math.abs(col - mid) < d.torsoW * 0.22 : side ? rr > tx1 - 1.5 : false;
             if (!open) mat = 'jacket';
+            if (gakuran && !open) {
+              // cuello alto: la fila de arriba sin brillo, pegada a la barbilla
+              if (topRow) slot = BASE;
+              // botones dorados, uno sí y otro no desde abajo (arriba los tapa la barbilla): cerrado, al medio (de lado, en el borde de adelante); abierto, en el borde de la abertura
+              const btnCol = fo.jacketClosed
+                ? view === 'front' ? col === Math.round(mid) : side ? rr > tx1 - 0.5 : false
+                : view === 'front' && Math.abs(Math.abs(col - mid) - d.torsoW * 0.22) < 0.75 && col > mid;
+              if (btnCol && row >= 1 && (shirtRows - 1 - row) % 2 === 0 && d.torsoW >= 6) { mat = 'jbutton'; slot = LIGHT; }
+            }
           }
           // armadura encima: cuero con correa cruzada, malla tejida, placas con juntas, túnica con ribete al centro
           if (armor) {
@@ -352,27 +391,43 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
         }
         part.set(x, y, mat, slot);
       }
-    // número de camiseta, de frente o de espalda (contorno de la camisa)
+    // número de camiseta, de frente o de espalda (contorno de la camisa). Con letras en el pecho, solo de espalda.
+    // Cabe si sobra un pixel de cada lado; con pocas filas de camisa, los números bajitos (de 4 filas)
     const numPx = new Set<number>();
+    const txtPx = new Set<number>();
+    const shirtRowsT = d.torsoH - d.pantsRows;
+    const stamp = (glyphs: string[][], set: Set<number>, startRow: number, lean = true) => {
+      const w = glyphs.length * 4 - 1;
+      const x0 = -Math.floor(w / 2) - (d.torsoW % 2 === 0 ? 1 : 0) + (w % 2 === 0 ? 1 : 0);
+      const y0 = -d.torsoH + startRow;
+      glyphs.forEach((g, k) => g.forEach((row, jj) => [...row].forEach((c, ii) => {
+        const px = x0 + k * 4 + ii + (lean ? Math.round(shear * (d.torsoH - 2 - jj)) : 0), py = y0 + jj;
+        const m = part.get(px, py)?.mat;
+        if (c === '#' && (m === 'top' || m === 'top2' || m === 'jacket')) set.add(Part.key(px, py));
+      })));
+    };
     const num = armor ? undefined : f.outfit.number;
-    if (num && !side && d.torsoW >= 9 && Math.abs(theta) < 20) {
+    const text = armor ? undefined : f.outfit.chestText?.toUpperCase();
+    if (num && !side && Math.abs(theta) < 20 && (!text || view === 'back')) {
       const digits = num.slice(0, 2).split('').filter((ch) => DIGITS[ch]);
       const wNum = digits.length * 4 - 1;
-      const shirtRows = d.torsoH - d.pantsRows;
-      const x0 = -Math.floor(wNum / 2) - (d.torsoW % 2 === 0 ? 1 : 0) + (wNum % 2 === 0 ? 1 : 0);
-      const y0 = -d.torsoH + Math.max(1, Math.floor((shirtRows - 5) / 2) + 1);
-      digits.forEach((ch, k) =>
-        DIGITS[ch].forEach((row, j) =>
-          [...row].forEach((c, i) => {
-            const px = x0 + k * 4 + i, py = y0 + j;
-            if (c === '#' && (part.get(px, py)?.mat === 'top' || part.get(px, py)?.mat === 'top2')) numPx.add(Part.key(px, py));
-          }),
-        ),
-      );
+      if (digits.length && d.torsoW >= wNum + 2) {
+        if (shirtRowsT >= 6) stamp(digits.map((ch) => DIGITS[ch]), numPx, Math.max(1, Math.floor((shirtRowsT - 5) / 2) + 1), false);
+        else if (shirtRowsT >= 4) stamp(digits.map((ch) => DIGITS4[ch]), numPx, shirtRowsT >= 5 ? 1 : 0, false);
+      }
+    }
+    // letras en el pecho, de frente y en diagonal: todas si caben; si no, la primera
+    if (text && !side && view !== 'back' && Math.abs(theta) < 20 && shirtRowsT >= 4) {
+      const all = text.slice(0, 3).split('').filter((ch) => GLYPHS[ch]);
+      const tall = shirtRowsT >= 7;
+      const fit = (n: number) => d.torsoW >= n * 4 - 1 + 1;
+      const use = fit(all.length) ? all : all.slice(0, 1);
+      // pegadas abajo de la camisa: arriba la tapan la barbilla y la barba
+      if (use.length && fit(use.length)) stamp(use.map((ch) => (tall ? GLYPHS[ch] : compact(ch))), txtPx, shirtRowsT - (tall ? 5 : 4));
     }
     // estampado del pecho: un parche de color (la letra no cabe), de frente y de lado
-    const print = f.outfit.print;
-    if (print && view !== 'back' && Math.abs(theta) < 20 && d.torsoW >= 7) {
+    const print = f.outfit.print ?? (text && side ? f.outfit.chestTextColor ?? '#f2c230' : null);
+    if (print && view !== 'back' && Math.abs(theta) < 20 && d.torsoW >= 7 && !(text && !side)) {
       const pw = d.torsoW >= 12 ? 3 : 2, ph = d.torsoH - d.pantsRows >= 7 ? 3 : 2;
       const x0 = side ? tx1 - pw : tx1 - pw - 1;
       const y0 = -d.torsoH + 2;
@@ -403,13 +458,14 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     const embPaint = { color: packHex(f.outfit.emblemColor ?? '#111111'), dark: mats.paint('top', 0).dark, mat: mats.id('top') };
     const embBgPaint = { color: packHex(f.outfit.emblemBg ?? '#f2c230'), dark: mats.paint('top', 0).dark, mat: mats.id('top') };
     const numPaint = { color: packHex(f.outfit.numberColor ?? '#ffffff'), dark: mats.paint('top', 0).dark, mat: mats.id('top') };
+    const txtPaint = { color: packHex(f.outfit.chestTextColor ?? '#f2c230'), dark: mats.paint('top', 0).dark, mat: mats.id('top') };
     const printPaint = print ? { color: packHex(print), dark: mats.paint('top', 0).dark, mat: mats.id('top') } : numPaint;
     for (const [x, y, p] of part.entries()) {
       let slot = p.slot;
       if (!part.has(x - 1, y) && slot >= BASE) slot = SHADOW;
       const k = Part.key(x, y);
       const e = embPx.get(k);
-      canvas.put(x, y, Layer.Torso, e ? (e === 'fg' ? embPaint : embBgPaint) : numPx.has(k) ? numPaint : numPx.has(k + 0.5) ? printPaint : mats.paint(p.mat, slot));
+      canvas.put(x, y, Layer.Torso, e ? (e === 'fg' ? embPaint : embBgPaint) : txtPx.has(k) ? txtPaint : numPx.has(k) ? numPaint : numPx.has(k + 0.5) ? printPaint : mats.paint(p.mat, slot));
     }
   };
 
