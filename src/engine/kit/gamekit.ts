@@ -1,11 +1,13 @@
 import { createRaster, blit, type Raster } from '../core/raster';
-import { encodePng } from '../export/png';
+import { encodePng, encodePngPaleta, decodePng } from '../export/png';
 import { motionOf8, type MovimientoAnim } from '../export/motion';
 import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim } from '../render/clip';
 import type { Ficha, CellSize, HumanFicha } from '../sheet/ficha';
 import { familyFicha, thorFicha, FAMILY, FAMILY_GG, type FamilyId } from '../rpg/family';
 import { enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, type EnemyId } from '../rpg/presets';
+import { merchantFicha, NPCS, NPC_ANIMS, NPC_NOMBRES } from '../rpg/npc';
+import { CAPAS_VERSION, capaDeObjeto, clipsBase, hojaCapa, huella, sinEquipo, variantes, type BloqueCapa, type ClipsBase, type TipoCapa } from './capas';
 import { PET_RPG_ANIMS } from '../anim/animal';
 import { renderFx, projectile8, rotate8, type FxElement } from '../fx/fx';
 import { scaleRaster } from '../render/rotsprite';
@@ -13,9 +15,10 @@ import { arrowProjectile, arrowImpact } from '../fx/arrow';
 import { stompWave, dirtDig } from '../fx/stomp';
 import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
-import { isSpecial } from '../loot/render';
+import { isSpecial, handKindOf } from '../loot/render';
 import { TILE } from '../world/tiles';
-import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK } from '../world/bosqueMap';
+import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK, type BigMap } from '../world/bosqueMap';
+import { catedralMap } from '../world/catedralMap';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
 import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
@@ -55,6 +58,10 @@ export interface KitOptions {
   fonts?: { regular: ArrayBuffer; bold: ArrayBuffer };
   /** avisa el avance (para la barra del estudio o la consola) */
   progress?: (msg: string) => void;
+  /** sin capas de equipo (las heroínas salen con su arma dibujada, como antes) */
+  sinCapas?: boolean;
+  /** caché de capas de equipo (la línea de comandos la guarda en disco): son lentas de dibujar */
+  cache?: { get: (clave: string) => { png: Uint8Array; meta: string } | undefined; set: (clave: string, v: { png: Uint8Array; meta: string }) => void };
 }
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
@@ -108,7 +115,10 @@ function portrait(f: Ficha, view: 'front' | 'se' = 'front', anim = 'idle'): Rast
   return out;
 }
 
-export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean } & MovimientoAnim>; perfil_movimiento?: 'premium'; clase?: string; retrato?: string; desde_estudio?: boolean }
+export interface CapaEntry { archivo: string; columnas: number; bloques: Record<string, BloqueCapa> }
+export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'npc'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean } & MovimientoAnim>; perfil_movimiento?: 'premium'; clase?: string; retrato?: string; desde_estudio?: boolean;
+  /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
+  capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
 
 /** k: se dibuja en `cell` y se agranda por k a la manera de RotSprite (el jefe: 64 x 1.5 = celda 96). */
 function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void, k = 1): CharEntry {
@@ -126,12 +136,46 @@ function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims:
   return out;
 }
 
+/**
+ * Las capas de equipo de una heroína: arma, mano libre, pecho y casco (ver capas.ts). Cada una es una hoja PNG con un
+ * bloque por animación. Las que ya están en la caché (misma ficha, mismas animaciones, mismo dibujo base) no se redibujan.
+ */
+function exportCapas(id: string, f: HumanFicha, anims: string[], files: ExportFile[], log: (m: string) => void, cache?: KitOptions['cache']): NonNullable<CharEntry['capas']> {
+  const out: NonNullable<CharEntry['capas']> = { orden: ['pecho', 'casco', 'arma', 'mano'], defecto: { arma: f.gear?.main ?? null, mano: f.gear?.off ?? null }, arma: {}, mano: {}, pecho: {}, casco: {} };
+  // la huella del dibujo base: si cambia cómo se dibuja (el motor), cambian las capas
+  const base = sinEquipo(f);
+  const idle = sheet8(base, 48, 'idle');
+  const firma = huella(JSON.stringify({ v: CAPAS_VERSION, anims, idle: idle ? huella(String(Array.from(idle.png.data.subarray(0, 40000)))) : '' }));
+  let clips: ClipsBase | null = null;
+  let hechas = 0, deCache = 0;
+  for (const v of variantes(f)) {
+    const clave = huella(JSON.stringify({ firma, ficha: v.ficha, base }));
+    const nombre = `personajes/capas/${id}_${v.tipo}_${v.clave}.png`;
+    let entrada = cache?.get(clave);
+    if (entrada) deCache++;
+    else {
+      clips ??= clipsBase(f, anims);
+      const h = hojaCapa(clips, v.ficha, anims);
+      entrada = h ? { png: encodePng(h.png), meta: JSON.stringify({ columnas: h.columnas, bloques: h.bloques }) } : { png: new Uint8Array(), meta: 'null' };
+      cache?.set(clave, entrada);
+    }
+    hechas++;
+    const meta = JSON.parse(entrada.meta) as { columnas: number; bloques: Record<string, BloqueCapa> } | null;
+    if (!meta) continue;
+    // la caché guarda RGBA; al kit va con paleta (sin pérdida, la mitad de peso)
+    files.push(file(nombre, encodePngPaleta(decodePng(entrada.png)), 'image/png'));
+    out[v.tipo][v.clave] = { archivo: nombre, ...meta };
+  }
+  log(`personajes/${id}: ${hechas} capas de equipo (${deCache} de la caché)`);
+  return out;
+}
+
 /** Arma todo el kit. Devuelve los archivos (rutas relativas a la carpeta del kit). */
 export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const log = opts.progress ?? (() => {});
   const files: ExportFile[] = [];
   const heroes = opts.heroes ?? FAMILY;
-  const enemies = opts.enemies ?? (['rata', 'calabaza', 'goblin_arquero', 'trol'] as EnemyId[]);
+  const enemies = opts.enemies ?? (['rata', 'calabaza', 'goblin_arquero', 'trol', 'guardian_cobre', 'raicita', 'vigia_raices'] as EnemyId[]);
   const boss = opts.boss ?? 'minotauro';
   const heroAnims = opts.quick ? ['idle', 'walk', 'attack', 'hit', 'die'] : [...HERO_RPG_ANIMS];
   const credits = new Set<string>();
@@ -152,7 +196,9 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const c = creditsFor(f);
     if (c) credits.add(c);
     files.push(png(`personajes/retrato_${id}.png`, portrait(f)));
-    chars[id] = exportChar('personajes', id, f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log);
+    const conCapas = !opts.sinCapas && !opts.quick;
+    chars[id] = exportChar('personajes', id, conCapas ? sinEquipo(f) : f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log);
+    if (conCapas) chars[id].capas = exportCapas(id, f, heroAnims, files, log, opts.cache);
   }
   const tiers = opts.thorTiers ?? [0, 1, 2, 3, 4, 5];
   for (const t of tiers) {
@@ -167,10 +213,17 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const f = enemyFicha(id);
     chars[id] = exportChar('enemigos', id, f, enemyCell(id), enemyAnims(id), { tipo: 'enemigo', nombre: id }, files, log);
   }
-  {
-    const f = enemyFicha(boss);
-    // el jefe llena la pantalla: dibujado en 64 (ahí le caben los cuernos) y agrandado x1.5 a celda 96
-    chars[boss] = exportChar('enemigos', boss, f, 64, [...enemyAnims(boss), 'leap'], { tipo: 'jefe', nombre: boss }, files, log, 1.5);
+  // los jefes llenan la pantalla: dibujados en 64 (ahí les caben los cuernos) y agrandados x1.5 a celda 96
+  for (const b of [boss, ...(opts.boss ? [] : (['guardian_campana'] as EnemyId[]))]) {
+    const f = enemyFicha(b);
+    chars[b] = exportChar('enemigos', b, f, 64, [...enemyAnims(b), 'leap'], { tipo: 'jefe', nombre: b }, files, log, 1.5);
+  }
+  // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
+  for (const id of NPCS) {
+    const f = merchantFicha();
+    const c = creditsFor(f);
+    if (c) credits.add(c);
+    chars[id] = exportChar('personajes', id, f, 48, NPC_ANIMS[id], { tipo: 'npc', nombre: NPC_NOMBRES[id] }, files, log);
   }
   manifest.personajes = chars;
 
@@ -222,8 +275,15 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     }
   }
   files.push(...exportLootWorld(UNIQUE_LOOT, 'botin/mundo'));
-  const catalog = lootCatalog(loot) as { items: { id: string; atlas?: string }[] };
-  for (const it of catalog.items) it.atlas = atlasOf.get(it.id);
+  const catalog = lootCatalog(loot) as { items: { id: string; atlas?: string; visual?: { capa: TipoCapa; clave: string } }[] };
+  const porId = new Map(loot.map((i) => [i.id, i]));
+  for (const it of catalog.items) {
+    it.atlas = atlasOf.get(it.id);
+    // la capa de equipo que se ve en la heroína con esto puesto
+    const li = porId.get(it.id);
+    const v = li ? capaDeObjeto(li as never, handKindOf(li)) : null;
+    if (v) it.visual = v;
+  }
   files.push(json('botin/catalogo.json', catalog));
   manifest.botin = {
     atlas, iconos: atlas.iconos, especiales: atlas.especiales,
@@ -232,47 +292,57 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   };
   log('botín listo');
 
-  // ---------- mundo 1: el Bosque GG grande ----------
-  const big = bosqueMap();
-  const tiled = bigMapToTiled(big, 'suelo');
-  files.push(json('mundo/mundo1_bosque.json', tiled.json));
-  files.push(png('mundo/agua.png', tiled.aguaPng));
-  for (const c of tiled.chunks) files.push(png(`mundo/${c.name}`, c.img));
-  // vista completa a la mitad (para mirar el mapa) y postales a tamaño real (lo que se ve en pantalla)
-  const full = renderBigMap(big);
-  files.push(png('mundo/mundo1_vista.png', half(renderBigMap(big, { entities: true }))));
-  const postales: Record<string, string> = {};
-  for (const p of big.postales) { const n = `mundo/postales/${p.nombre}.png`; files.push(png(n, cropView(full, p.x, p.y))); postales[p.nombre] = n; }
-  const objManifest: Record<string, unknown> = {};
-  for (const o of big.objects) {
-    const anims: Record<string, unknown> = {};
-    for (const [an, a] of Object.entries(o.anims)) {
-      const name = `mundo/objetos/${o.name}_${an}.png`;
-      files.push(png(name, strip(a.frames)));
-      anims[an] = { archivo: name, cuadros: a.frames.length, fps: a.fps, loop: a.loop };
-    }
-    objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, ...(o.solids ? { solidos: o.solids } : {}), ...(o.layer ? { capa: o.layer } : {}), ...(o.light ? { luz: o.light } : {}), ...(o.foam ? { espuma: o.foam } : {}), anims };
-  }
+  // ---------- mundos: el Bosque GG (mundo 1) y la Catedral de las Raíces (mundo 2) ----------
+  const hechos = new Set<string>();
+  const once = (f: ExportFile) => { if (!hechos.has(f.name)) { hechos.add(f.name); files.push(f); } };
   const parts: Record<string, unknown> = {};
-  for (const p of particles()) { const n = `mundo/particulas/${p.name}.png`; files.push(png(n, strip(p.frames))); parts[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
+  for (const p of particles()) { const n = `mundo/particulas/${p.name}.png`; once(png(n, strip(p.frames))); parts[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
   const crit: Record<string, unknown> = {};
   for (const c of creatures()) {
     const anims: Record<string, unknown> = {};
-    for (const [an, a] of Object.entries(c.anims)) { const n = `mundo/criaturas/${c.name}_${an}.png`; files.push(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
+    for (const [an, a] of Object.entries(c.anims)) { const n = `mundo/criaturas/${c.name}_${an}.png`; once(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
     crit[c.name] = { w: c.w, h: c.h, anims };
   }
-  files.push(png('mundo/niebla_nubes.png', fogTexture('nubes', 256)));
-  files.push(png('mundo/niebla_jirones.png', fogTexture('jirones', 256)));
-  files.push(png('mundo/luz.png', lightTexture()));
-  files.push(png('mundo/nube.png', cloudShadow()));
-  manifest.mundo = {
-    mapa: 'mundo/mundo1_bosque.json', nombre: 'Bosque GG', ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
-    agua: 'mundo/agua.png', suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
-    vista: 'mundo/mundo1_vista.png', postales, objetos: objManifest, particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
-    niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', notas: 'Texturas de 256 que pegan por los 4 lados. Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla.' },
-    referencia: 'tools/pixel_forja/scripts/visor/runtime.js anima todo esto en Canvas 2D: es la referencia para el juego.',
-    notas: 'Orden de dibujo: agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > objetos y personajes ordenados por y > luces (aditivo) > sombras de nubes. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',
+  once(png('mundo/niebla_nubes.png', fogTexture('nubes', 256)));
+  once(png('mundo/niebla_jirones.png', fogTexture('jirones', 256)));
+  once(png('mundo/luz.png', lightTexture()));
+  once(png('mundo/nube.png', cloudShadow()));
+  const exportarMundo = (big: BigMap, slug: string, nombre: string, agua: string) => {
+    const tiled = bigMapToTiled(big, 'suelo');
+    once(json(`mundo/${big.name}.json`, tiled.json));
+    once(png(agua, tiled.aguaPng));
+    for (const c of tiled.chunks) once(png(`mundo/${c.name}`, c.img));
+    // vista completa a la mitad (para mirar el mapa) y postales a tamaño real (lo que se ve en pantalla)
+    const full = renderBigMap(big);
+    once(png(`mundo/${slug}_vista.png`, half(renderBigMap(big, { entities: true }))));
+    const postales: Record<string, string> = {};
+    for (const p of big.postales) { const n = `mundo/postales/${p.nombre}.png`; once(png(n, cropView(full, p.x, p.y))); postales[p.nombre] = n; }
+    const objManifest: Record<string, unknown> = {};
+    for (const o of big.objects) {
+      const anims: Record<string, unknown> = {};
+      for (const [an, a] of Object.entries(o.anims)) {
+        const name = `mundo/objetos/${o.name}_${an}.png`;
+        once(png(name, strip(a.frames)));
+        anims[an] = { archivo: name, cuadros: a.frames.length, fps: a.fps, loop: a.loop };
+      }
+      objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, ...(o.solids ? { solidos: o.solids } : {}), ...(o.layer ? { capa: o.layer } : {}), ...(o.light ? { luz: o.light } : {}), ...(o.foam ? { espuma: o.foam } : {}), anims };
+    }
+    return {
+      mapa: `mundo/${big.name}.json`, nombre, ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
+      agua, suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
+      vista: `mundo/${slug}_vista.png`, postales, objetos: objManifest, particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
+      niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', notas: 'Texturas de 256 que pegan por los 4 lados. Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla.' },
+      referencia: 'tools/pixel_forja/scripts/visor/runtime.js anima todo esto en Canvas 2D: es la referencia para el juego.',
+      notas: 'Orden de dibujo: agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > objetos y personajes ordenados por y > luces (aditivo) > sombras de nube. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',
+    };
   };
+  const bosque = exportarMundo(bosqueMap(), 'mundo1', 'Bosque GG', 'mundo/agua.png');
+  log('bosque listo');
+  const catedral = exportarMundo(catedralMap(), 'mundo2', 'La Catedral de las Raíces', 'mundo/mundo2_agua.png');
+  log('catedral lista');
+  // `mundo` sigue siendo el Bosque (un juego viejo lo lee así); `mundos` trae todos en orden de bajada
+  manifest.mundo = bosque;
+  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }];
   log('mundo listo');
 
   // ---------- interfaz ----------

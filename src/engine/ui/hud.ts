@@ -374,6 +374,40 @@ export function inventoryPanel(): { png: Raster; layout: InventoryLayout } {
   };
 }
 
+/**
+ * Flecha guía dorada para el borde de la pantalla: 8 cuadros en el orden de las direcciones del kit
+ * (down, down_left, left, up_left, up, up_right, right, down_right). Contorno oscuro, luz arriba y sombra abajo.
+ */
+export function guideArrow(size = 24): UiSprite {
+  const c = size / 2;
+  // la flecha apuntando a la derecha, en coordenadas centradas
+  const dentro = (lx: number, ly: number) => {
+    if (lx >= -9 && lx <= -1 && Math.abs(ly) <= 3) return true; // asta
+    if (lx >= -1 && lx <= 9 && Math.abs(ly) <= (9 - lx) * 0.85) return true; // punta
+    return false;
+  };
+  const frames: Raster[] = [];
+  for (let i = 0; i < 8; i++) {
+    const ang = ((i * 45 + 90) % 360) * (Math.PI / 180);
+    const ca = Math.cos(-ang), sa = Math.sin(-ang);
+    const r = createRaster(size, size);
+    const local = (x: number, y: number) => {
+      const dx = x + 0.5 - c, dy = y + 0.5 - c;
+      return [dx * ca - dy * sa, dx * sa + dy * ca] as const;
+    };
+    const en = (x: number, y: number) => x >= 0 && y >= 0 && x < size && y < size && dentro(...local(x, y));
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      if (en(x, y)) {
+        // luz y sombra según el lado de la pantalla (arriba claro, abajo oscuro), no según la flecha
+        const borde = !en(x, y - 1) ? 'arriba' : !en(x, y + 1) ? 'abajo' : '';
+        put(r, x, y, borde === 'arriba' ? '#fff0b8' : borde === 'abajo' ? '#a8741e' : '#ffd27a');
+      } else if (en(x + 1, y) || en(x - 1, y) || en(x, y + 1) || en(x, y - 1)) put(r, x, y, '#1a1008');
+    }
+    frames.push(r);
+  }
+  return { name: 'flecha_guia', frames };
+}
+
 /** Todos los sprites de la interfaz. */
 export function hudSprites(): UiSprite[] {
   const out: UiSprite[] = [];
@@ -383,6 +417,7 @@ export function hudSprites(): UiSprite[] {
   const olas = (k: 'vida' | 'mana') => Array.from({ length: 36 }, (_, i) => orb(k, Math.floor(i / 4) + 1, i % 4));
   out.push({ name: 'orbe_vida_ola', frames: olas('vida') });
   out.push({ name: 'orbe_mana_ola', frames: olas('mana') });
+  out.push(guideArrow());
   out.push({ name: 'panel', frames: [framed(48, 48, 4, { gold: true })], slice: [12, 12, 12, 12] });
   out.push({ name: 'panel_hundido', frames: [framed(24, 24, 3, { inset: true })], slice: [6, 6, 6, 6] });
   out.push({ name: 'tooltip', frames: [framed(24, 24, 2, { alpha: 235 })], slice: [6, 6, 6, 6] });

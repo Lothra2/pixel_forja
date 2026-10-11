@@ -32,6 +32,8 @@ export interface BigMap {
   zones: MapZone[];
   postales: Postal[];
   objects: WorldObject[];
+  /** datos del mundo para Tiled y el agua (el Bosque no los trae: usa los de siempre) */
+  meta?: { bioma: string; musica: string; nombre: string; agua?: string };
 }
 
 function rng(seed: number) {
@@ -542,7 +544,7 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
   const parts = chunks(m.terrain.img, CHUNK).map((c, i) => ({ name: `${dir}/${m.name}_${i}.png`, ...c }));
   // agua: 4 cuadros en una tira; el cuadro 0 se anima por los 4
   const agua = createRaster(TILE * 5, TILE);
-  for (let f = 0; f < 4; f++) over(agua, waterTile(f), f * TILE, 0);
+  for (let f = 0; f < 4; f++) over(agua, waterTile(f, m.meta?.agua), f * TILE, 0);
   for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) { const k = (y * agua.w + 4 * TILE + x) * 4; agua.data[k] = 255; agua.data[k + 1] = 0; agua.data[k + 2] = 255; agua.data[k + 3] = 110; }
   const solidGid = 5; // el 5to cuadro de la tira es la marca de colisión
   let oid = 1, lid = 1;
@@ -551,7 +553,7 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
   const json = {
     type: 'map', version: '1.10', tiledversion: '1.10.2', orientation: 'orthogonal', renderorder: 'right-down', infinite: false,
     width: m.w, height: m.h, tilewidth: TILE, tileheight: TILE,
-    properties: props({ bioma: 'bosque', musica: 'bosque', nombre: 'Bosque GG', trozo: CHUNK }),
+    properties: props({ bioma: m.meta?.bioma ?? 'bosque', musica: m.meta?.musica ?? 'bosque', nombre: m.meta?.nombre ?? 'Bosque GG', trozo: CHUNK }),
     tilesets: [{
       firstgid: 1, name: 'agua', image: 'agua.png', imagewidth: agua.w, imageheight: TILE, tilewidth: TILE, tileheight: TILE, columns: 5, tilecount: 5, margin: 0, spacing: 0,
       tiles: [{ id: 0, animation: [0, 1, 2, 3].map((f) => ({ tileid: f, duration: 220 })) }],
@@ -577,7 +579,7 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
 export function renderBigMap(m: BigMap, opts: { entities?: boolean; frame?: number } = {}): Raster {
   const img = m.terrain.img, W = img.w, H = img.h;
   const out = createRaster(W, H);
-  const water = waterTile(opts.frame ?? 0);
+  const water = waterTile(opts.frame ?? 0, m.meta?.agua);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = (y * W + x) * 4, a = img.data[i + 3] / 255, w = ((y % TILE) * TILE + (x % TILE)) * 4;
     for (let c = 0; c < 3; c++) out.data[i + c] = img.data[i + c] * a + water.data[w + c] * (1 - a);

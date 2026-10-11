@@ -54,6 +54,10 @@ describe('interfaz tipo Diablo y audio', () => {
     expect(same(orb('vida', 2), orb('vida', 8))).toBe(false);
     // superficie viva para los niveles 1 a 9, cuatro pasos cada uno, y la ola de verdad se mueve
     expect(sp.find((s) => s.name === 'orbe_mana_ola')!.frames).toHaveLength(36);
+    // la flecha guía: 8 direcciones, todas distintas
+    const fl = sp.find((s) => s.name === 'flecha_guia')!.frames;
+    expect(fl).toHaveLength(8);
+    for (let i = 1; i < 8; i++) expect(same(fl[0], fl[i])).toBe(false);
     expect(same(orb('vida', 5, 0), orb('vida', 5, 1))).toBe(false);
     // el líquido crece con el nivel: se cuentan los pixeles rojizos dentro del vidrio
     const rojos = (n: number) => { const o = orb('vida', n); let c = 0; for (let i = 0; i < o.data.length; i += 4) if (o.data[i] > 70 && o.data[i] > o.data[i + 2] * 2 && o.data[i + 1] < 90) c++; return c; };
@@ -95,6 +99,9 @@ describe('kit del juego', () => {
     expect(m.direcciones).toEqual(['down', 'down_left', 'left', 'up_left', 'up', 'up_right', 'right', 'down_right']);
     expect(m.personajes.rick.anims.walk).toMatchObject({ archivo: 'personajes/rick_walk.png', cuadros: 8 });
     expect(m.personajes.minotauro.tipo).toBe('jefe');
+    // el mercader de las fogatas: un PNJ con su gesto, en 8 direcciones
+    expect(m.personajes.mercader).toMatchObject({ tipo: 'npc', nombre: 'Don Cachivache', celda: 48 });
+    expect(Object.keys(m.personajes.mercader.anims)).toEqual(expect.arrayContaining(['idle', 'cast']));
     // ficha exportada del estudio: entra como heroína nueva
     expect(m.personajes.prima).toMatchObject({ tipo: 'heroe', nombre: 'Prima', desde_estudio: true });
     expect(names).toContain('personajes/prima_walk.png');

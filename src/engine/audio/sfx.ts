@@ -259,4 +259,83 @@ export function musicTitulo(): Float32Array {
   ], '', 1);
 }
 
-export const MUSIC = { bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo };
+/**
+ * Amenaza: hay enemigos que vieron a la heroína. Pulso bajo y lento en Mi menor, sin melodía larga: avisa sin asustar.
+ * 64 pulsos a 96 bpm (unos 20 s en bucle).
+ */
+export function musicAmenaza(): Float32Array {
+  const bass = rep(['E2', '.', 'E2', '.', '.', '.', 'E2', '.'], 4).concat(rep(['C2', '.', 'C2', '.', '.', '.', 'D2', '.'], 4));
+  const pad = rep(['B3', '-', '-', '-', '-', '-', '-', '-'], 4).concat(rep(['G3', '-', '-', '-', '-', '-', 'A3', '-'], 4));
+  const pinchos = Array.from({ length: 64 }, (_, i) => ({ 6: 'E5', 14: 'G5', 30: 'F#5', 38: 'E5', 54: 'D5', 62: 'B4' } as Record<number, string>)[i] ?? '.');
+  const drums = rep(['k', '.', '.', '.', '.', '.', 'h', '.'], 8).join('');
+  return song(96, 64, [
+    { wave: 'triangle', notes: bass, vol: 0.34 },
+    { wave: 'square', notes: pad, vol: 0.05, duty: 0.125, vib: [3, 0.2] },
+    { wave: 'triangle', notes: pinchos, vol: 0.12 },
+  ], drums, 1);
+}
+
+/** Combate: una pelea de verdad (élite o varios a la vez). Más empuje que la amenaza, menos que el jefe. En Mi menor. */
+export function musicCombate(): Float32Array {
+  const lead = [
+    'E5', '-', 'G5', '-', 'F#5', 'E5', 'D5', '-', 'E5', '-', 'B4', '-', '.', '.', 'D5', 'E5',
+    'G5', '-', 'A5', '-', 'G5', 'F#5', 'E5', '-', 'F#5', '-', '-', '-', '.', '.', '.', '.',
+    'E5', '-', 'G5', '-', 'B5', '-', 'A5', 'G5', 'F#5', '-', 'D5', '-', 'E5', '-', '-', '-',
+    'C5', '-', 'D5', '-', 'E5', '-', 'D5', 'C5', 'B4', '-', '-', '-', '.', '.', '.', '.',
+  ];
+  const bass = rep(['E2', 'E2', 'E3', 'E2', 'E2', 'E3', 'E2', 'D2'], 2).concat(rep(['C2', 'C2', 'C3', 'C2', 'D2', 'D2', 'D3', 'D2'], 2), rep(['E2', 'E2', 'E3', 'E2', 'B1', 'B1', 'B2', 'B1'], 2), rep(['C2', 'C2', 'C3', 'C2', 'B1', 'B1', 'D#2', 'B1'], 2));
+  const drums = rep(['k', 'h', 's', 'h', 'k', 'h', 's', 'h'], 8).join('');
+  return song(128, 64, [
+    { wave: 'square', notes: lead, vol: 0.15, duty: 0.25 },
+    { wave: 'triangle', notes: bass, vol: 0.3 },
+  ], drums, 2);
+}
+
+/** Descanso en la fogata: cálida y lenta, en Fa mayor, guitarra de triángulos y campanitas. */
+export function musicFogata(): Float32Array {
+  const hold = (n: string, len: number) => [n, ...Array.from({ length: len - 1 }, () => '-')];
+  const lead = [
+    'A4', '-', 'C5', '-', 'F5', '-', '-', '-', 'E5', '-', 'D5', '-', 'C5', '-', '-', '-',
+    'D5', '-', 'F5', '-', 'A5', '-', '-', '-', 'G5', '-', 'F5', '-', 'E5', '-', '-', '-',
+    'F5', '-', 'E5', '-', 'D5', '-', 'C5', '-', 'A#4', '-', 'C5', '-', 'D5', '-', '-', '-',
+    'C5', '-', 'A4', '-', 'G4', '-', 'A4', '-', 'F4', '-', '-', '-', '.', '.', '.', '.',
+  ];
+  const chords: [string, string[]][] = [['F2', ['F3', 'A3', 'C4', 'A3']], ['D2', ['D3', 'F3', 'A3', 'F3']], ['A#1', ['A#2', 'D3', 'F3', 'D3']], ['C2', ['C3', 'E3', 'G3', 'E3']]];
+  const bass = chords.flatMap(([b]) => hold(b, 16));
+  const arp = chords.flatMap(([, a]) => rep(a, 4));
+  return song(76, 64, [
+    { wave: 'triangle', notes: lead, vol: 0.2, vib: [4, 0.2] },
+    { wave: 'triangle', notes: bass, vol: 0.24 },
+    { wave: 'triangle', notes: arp, vol: 0.08 },
+  ], '', 1);
+}
+
+/**
+ * La Catedral de las Raíces (mundo 2): misterio y belleza, en Re menor (dórico), lenta. Un órgano suave de triángulos,
+ * una melodía que vuelve con eco (la misma pista repetida más bajo y corrida: la catedral responde) y una campana honda
+ * cada tanto. Sin batería: se camina despacio.
+ */
+export function musicCatedral(): Float32Array {
+  const hold = (n: string, len: number) => [n, ...Array.from({ length: len - 1 }, () => '-')];
+  const lead = [
+    'D5', '-', '-', '-', 'F5', '-', 'E5', '-', 'D5', '-', '-', '-', 'A4', '-', '-', '-',
+    'C5', '-', 'D5', '-', 'E5', '-', 'G5', '-', 'F5', '-', '-', '-', '.', '.', '.', '.',
+    'A5', '-', '-', '-', 'G5', '-', 'F5', '-', 'E5', '-', '-', '-', 'C5', '-', '-', '-',
+    'D5', '-', 'E5', '-', 'F5', '-', 'E5', '-', 'D5', '-', '-', '-', '.', '.', '.', '.',
+  ];
+  // eco: la misma frase tres corcheas después y a un tercio del volumen
+  const eco = ['.', '.', '.', ...lead.slice(0, lead.length - 3)];
+  const chords: [string, string[]][] = [['D2', ['D3', 'F3', 'A3', 'C4']], ['C2', ['C3', 'E3', 'G3', 'B3']], ['A#1', ['A#2', 'D3', 'F3', 'A3']], ['A1', ['A2', 'C#3', 'E3', 'G3']]];
+  const organ = chords.flatMap(([b]) => hold(b, 16));
+  const pad = chords.flatMap(([, a]) => hold(a[1]!, 8).concat(hold(a[2]!, 8)));
+  const bell = chords.flatMap(([b]) => [b.replace(/\d/, (d) => String(Number(d) + 2)), ...Array.from({ length: 15 }, () => '.')]);
+  return song(60, 64, [
+    { wave: 'triangle', notes: lead, vol: 0.19, vib: [4, 0.25] },
+    { wave: 'triangle', notes: eco, vol: 0.07, vib: [4, 0.25] },
+    { wave: 'triangle', notes: organ, vol: 0.26 },
+    { wave: 'square', notes: pad, vol: 0.035, duty: 0.5 },
+    { wave: 'sine', notes: bell, vol: 0.16 },
+  ], '', 1);
+}
+
+export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata };
