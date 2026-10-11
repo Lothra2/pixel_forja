@@ -11,6 +11,7 @@ import { treesPremium } from './premium/trees';
 import { withShadow, drawShadow } from './premium/shadow';
 import { forestDecals, forestGroups, forestFront } from './premium/details';
 import { waterExtras, drawFoam, ESPUMA } from './water';
+import { withReactions, reactiveObjects } from './reactions';
 import { premiumWorld, type PremiumZone, type ZoneReport, type WorldPass, type WorldReport } from './premium/zone';
 
 /**
@@ -71,7 +72,8 @@ export function bosqueObjects(): WorldObject[] {
     ...PREMIUM_COPIES.map((n) => { const o = byName.get(n)!; return withShadow({ ...o, name: `${n}_p`, base: n }, n.startsWith('arbusto') || n === 'helecho' || n === 'hongos' || n.startsWith('roca') ? { length: 0.5, drop: 0.25 } : {}); }),
     ...forestDecals(), ...forestFront(),
   ];
-  return [...base, ...premium];
+  // el mundo que reacciona (2.9): animaciones nuevas en lo que ya había y los objetos que se usan
+  return withReactions([...base, ...premium, ...reactiveObjects().filter((o) => /^(palanca|puerta_madera|piedra_empujable)$/.test(o.name))]);
 }
 
 /** Objetos de siempre que el mundo premium usa con sombra horneada. */

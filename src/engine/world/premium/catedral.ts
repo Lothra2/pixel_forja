@@ -33,9 +33,9 @@ const LIP = '#1c2130';
 const RECETAS: Record<string, { muebles: [string, number][]; vitral: number; vitrales: number; frente: string[] }> = {
   'La Escalera Hundida': { muebles: [['candelabro_pie', 2], ['libros_tirados', 1], ['estatua_santo_rota', 1]], vitral: 0, vitrales: 2, frente: ['frente_columna'] },
   'El Atrio de las Luciérnagas': { muebles: [['banca_rota', 6], ['candelabro_pie', 3], ['libros_tirados', 2], ['estatua_santo_rota', 2]], vitral: 2, vitrales: 3, frente: ['frente_columna'] },
-  'Los Claustros Quebrados': { muebles: [['estatua_santo_rota', 3], ['banca_rota', 2], ['candelabro_pie', 2], ['libros_tirados', 1]], vitral: 1, vitrales: 3, frente: ['frente_raices_colgantes'] },
+  'Los Claustros Quebrados': { muebles: [['estatua_santo_rota', 3], ['campana_chica', 1], ['banca_rota', 2], ['candelabro_pie', 2], ['libros_tirados', 1]], vitral: 1, vitrales: 3, frente: ['frente_raices_colgantes'] },
   'La Capilla Escondida': { muebles: [['candelabro_pie', 2], ['libros_tirados', 1]], vitral: 2, vitrales: 1, frente: ['frente_raices_colgantes'] },
-  'La Nave Inundada': { muebles: [['banca_rota', 5], ['candelabro_pie', 3], ['estatua_santo_rota', 2], ['libros_tirados', 1]], vitral: 0, vitrales: 2, frente: ['frente_columna', 'frente_raices_colgantes'] },
+  'La Nave Inundada': { muebles: [['banca_rota', 5], ['candelabro_pie', 3], ['campana_chica', 1], ['estatua_santo_rota', 2], ['libros_tirados', 1]], vitral: 0, vitrales: 2, frente: ['frente_columna', 'frente_raices_colgantes'] },
   'La Forja Apagada': { muebles: [['candelabro_pie', 3], ['banca_rota', 1], ['estatua_santo_rota', 1], ['libros_tirados', 1]], vitral: 0, vitrales: 2, frente: ['frente_columna'] },
   'El Campanario Invertido': { muebles: [['candelabro_pie', 4], ['estatua_santo_rota', 2]], vitral: 1, vitrales: 2, frente: ['frente_raices_colgantes'] },
 };

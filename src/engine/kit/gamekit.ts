@@ -18,6 +18,7 @@ import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
 import { isSpecial, handKindOf } from '../loot/render';
 import { TILE } from '../world/tiles';
 import { ESPUMA } from '../world/water';
+import { smallCreatures } from '../world/reactions';
 import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK, type BigMap } from '../world/bosqueMap';
 import { catedralMap } from '../world/catedralMap';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
@@ -343,7 +344,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const parts: Record<string, unknown> = {};
   for (const p of particles()) { const n = `mundo/particulas/${p.name}.png`; once(png(n, strip(p.frames))); parts[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
   const crit: Record<string, unknown> = {};
-  for (const c of creatures()) {
+  for (const c of [...creatures(), ...smallCreatures()]) {
     const anims: Record<string, unknown> = {};
     for (const [an, a] of Object.entries(c.anims)) { const n = `mundo/criaturas/${c.name}_${an}.png`; once(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
     crit[c.name] = { w: c.w, h: c.h, anims };

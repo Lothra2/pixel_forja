@@ -182,6 +182,37 @@ Agua (los dos mundos):
 - `reflejo: { capa: "reflejo" }`: por cuadro, 1 = agua quieta. Ahí el juego puede reflejar a la heroína y a los árboles
   de la orilla (el sprite invertido, con alfa bajo y una ondita).
 
+### Un mundo que reacciona (2.9)
+
+Animaciones nuevas en los objetos de siempre (el reposo y el tamaño no cambian):
+
+| Objetos | Animación | Cuadros a fps | Cuándo |
+|---|---|---|---|
+| Todos los arbustos (también las copias `_p`) | `sacudir` | 6 a 12 (sin bucle) | La heroína pasa al lado o le pega. Sueltan dos hojitas |
+| `arbusto_moras_*` | `sin_moras` | 1 | Después de pegarle (sueltan moras que curan) |
+| `hongos`, `hongo_gigante_*`, `tocon_hongos` | `rebotar` | 6 a 12 (sin bucle) | Al pisarlos |
+| `flores_grandes_*` | `cerrar` y `abrir` | 4 y 4 a 8 (sin bucle) | Pasa un enemigo y después |
+| `nenufar`, `juncos` | `mecer` | 6 a 8 (sin bucle) | Al pasar por el agua al lado |
+| `charco`, `charco_chico_*` | `salpicar` | 6 a 12 (sin bucle) | Al pisarlo |
+| `antorcha`, `farol`, `candelabro_pie` | `apagada` y `prender` | 1, y 6 a 10 | Las apagadas se prenden al pasar con la luz |
+| `telarana` | `romper` | 6 a 12 (sin bucle) | Al pasar, queda colgando (último cuadro) |
+
+Objetos nuevos (en `mundo.objetos`):
+- `palanca` (32 x 32, sólida 12 x 6): `arriba`, `bajar` (8 a 10 fps), `abajo`. En los dos mundos.
+- `puerta_madera` (Bosque) y `reja_catedral` (Catedral), 64 x 64, sólidas cerradas: `cerrada`, `abrir` (9 cuadros), `abierta`.
+- `piedra_empujable` (32 x 32): `quieta` y `arrastrar` (6 a 6 fps). En los dos mundos.
+- `campana_chica` (Catedral, 32 x 48): `sonar` (8 a 10 fps). Ya va ubicada en los Claustros y en la Nave.
+
+La palanca, la puerta, la reja y la piedra no van ubicadas en los mapas: abren y cierran pasos, y eso lo decide el juego
+(dónde, qué abre cada palanca, qué tapa cada piedra). Están en el kit listas para usar.
+
+Criaturas chicas nuevas (en `mundo.criaturas`, como los cuervos): `rana`, `pez` y `ardilla`, de 16 x 16, con `quieto` (4 fps)
+y `huir` (10 a 12 fps). En el Bosque van como entidades `criatura` con `especie`: ranas en la orilla de los lagos,
+peces en el lago (el `huir` del pez es el salto fuera del agua) y ardillas al pie de los árboles.
+
+Sonidos nuevos (en `audio`, de 0.2 a 0.8 s y con pico de 0.5): `arbusto_sacudir`, `hongo_rebote`, `charco_pisar`,
+`rana_salto`, `palanca`, `puerta_abrir`, `reja_abrir`, `piedra_arrastrar`, `campana_chica` y `telarana_romper`.
+
 Objetos nuevos del Bosque:
 - Árboles `roble_t<tamaño>_<forma>` y `pino_t<tamaño>_<forma>` (tamaño 0, 1 o 2: 116, 146 y 182 px; forma 0, 1 o 2),
   con `idle`, `tronco` y `copa` como los de siempre, y `sombra`.

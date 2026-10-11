@@ -313,6 +313,23 @@ export function premiumWorld(m: BigMap, design: TerrainDesign, zones: PremiumZon
       const n = decalsFor(r, sc, 9, 0, 0, IW, IH);
       mundo.pantallas.push({ x: sc.x, y: sc.y, focal: [], calcomanias: n });
     }
+    // 5h. criaturas chicas que huyen (2.9): ranas en la orilla del agua quieta, peces en el lago, ardillas cerca de los árboles
+    const critters: { x: number; y: number }[] = [];
+    const freeTile = (k: number) => k >= 0 && !solid[k] && !t2.waterTiles[k] && t2.tileKind[k] === 0;
+    const addCritter = (especie: string, k: number, minD: number) => {
+      const x = (k % W) * TILE + TILE / 2, y = Math.floor(k / W) * TILE + TILE / 2;
+      if (critters.some((c) => Math.hypot(c.x - x, c.y - y) < minD * TILE) || m.entities.some((e) => Math.hypot(e.x - x, e.y - y) < 2 * TILE)) return false;
+      critters.push({ x, y }); m.entities.push({ tipo: 'criatura', x, y, props: { especie } }); return true;
+    };
+    const order = Array.from({ length: W * H }, (_, k) => k).sort((a, b) => hv(a, 1, world.seed + 9) - hv(b, 1, world.seed + 9));
+    let ranas = 0, peces = 0, ardillas = 0;
+    for (const k of order) {
+      const x = k % W, y = Math.floor(k / W);
+      const still = !!m.quieta?.[k];
+      if (ranas < 8 && freeTile(k) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const j = at(x + dx, y + dy); return j >= 0 && t2.waterTiles[j] && m.quieta?.[j]; }) && addCritter('rana', k, 4)) ranas++;
+      else if (peces < 5 && still && t2.waterTiles[k] && [[2, 0], [-2, 0], [0, 2], [0, -2]].every(([dx, dy]) => { const j = at(x + dx, y + dy); return j >= 0 && t2.waterTiles[j]; }) && addCritter('pez', k, 4)) peces++;
+      else if (ardillas < 8 && freeTile(k) && world.darkAt(x, y) < 0.3 && trunk[k] === 0 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => trunk[at(x + dx, y + dy)] === 1) && addCritter('ardilla', k, 6)) ardillas++;
+    }
     for (const [zn, list] of Object.entries(world.frente)) { const mz = m.zones.find((q) => q.nombre === zn); if (mz && list.length) mz.props = { ...mz.props, frente: list.join(',') }; }
   }
   // las zonas con receta propia: árboles contados, monte bajo y calcomanías (después de que el mundo plantó)

@@ -19,7 +19,13 @@ describe('mundo premium: el Bosque entero', () => {
     expect(designed.length).toBeGreaterThan(200);
     for (const d of designed) expect(now.has(key(d)), `${d.sprite} en ${d.x},${d.y}`).toBe(true);
     const count = (l: { tipo: string }[]) => l.reduce<Record<string, number>>((a, e) => ({ ...a, [e.tipo]: (a[e.tipo] ?? 0) + 1 }), {});
-    expect(count(m.entities)).toEqual(count(base.entities));
+    // lo mismo de siempre, más las criaturas chicas que huyen (2.9)
+    const sinCriaturas = (l: { tipo: string }[]) => l.filter((e) => e.tipo !== 'criatura');
+    expect(count(sinCriaturas(m.entities))).toEqual(count(sinCriaturas(base.entities)));
+    const esp = (n: string) => m.entities.filter((e) => e.tipo === 'criatura' && e.props?.especie === n).length;
+    expect(esp('rana')).toBeGreaterThanOrEqual(4);
+    expect(esp('pez')).toBeGreaterThanOrEqual(3);
+    expect(esp('ardilla')).toBeGreaterThanOrEqual(4);
     // los lugares de vegetación se mudan cerca, no se pierden (se avisa los que no entraron)
     expect(m.mundo!.mudados).toBeGreaterThan(70);
     expect(m.mundo!.sinLugar.length).toBeLessThanOrEqual(4);

@@ -5,6 +5,7 @@ import { forestObjects, type WorldObject } from './objects';
 import { landmarkObjects } from './landmarks';
 import type { BigMap, Deco, Ent, MapZone, Postal, Prop } from './bosqueMap';
 import { catedralPremiumObjects } from './catedralPremium';
+import { withReactions, reactiveObjects } from './reactions';
 import { premiumCatedral, type CatedralReport } from './premium/catedral';
 
 /**
@@ -126,7 +127,7 @@ function hash(x: number, y: number, s: number): number {
 /** Los objetos que usa la catedral: los suyos y unos pocos del bosque (cartel, juncos). */
 export function catedralMapObjects(): WorldObject[] {
   const prestados = new Set(['cartel', 'portal_azul', 'portal_rojo', 'aviso_jefe', 'aviso_carga']);
-  return [...catedralObjects(), ...catedralPremiumObjects(), ...[...forestObjects(), ...landmarkObjects()].filter((o) => prestados.has(o.name))];
+  return withReactions([...catedralObjects(), ...catedralPremiumObjects(), ...reactiveObjects().filter((o) => /^(palanca|reja_catedral|piedra_empujable|campana_chica)$/.test(o.name)), ...[...forestObjects(), ...landmarkObjects()].filter((o) => prestados.has(o.name))]);
 }
 
 export function catedralMap(seed = 777, opts: { premium?: boolean } = {}): BigMap & { premium?: CatedralReport } {

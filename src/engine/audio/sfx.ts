@@ -63,6 +63,23 @@ function mix(voices: Voice[], extra = 0.05): Float32Array {
   return buf;
 }
 
+/** Deja el pico en `p` (los sonidos del mundo que reacciona van a 0.5, como los ambientes). */
+function pico(b: Float32Array, p = 0.5): Float32Array {
+  let m = 0;
+  for (const v of b) m = Math.max(m, Math.abs(v));
+  if (m > 0) for (let i = 0; i < b.length; i++) b[i] *= p / m;
+  return b;
+}
+/**
+ * Los sonidos nuevos usan su propia semilla y después dejan la de siempre como estaba: así agregar uno no cambia el
+ * ruido de los que ya estaban (ni la música, que se genera después).
+ */
+function aparte(s: number, fn: () => Float32Array, p = 0.5): Float32Array {
+  const keep = seed;
+  seed = s;
+  try { return pico(fn(), p); } finally { seed = keep; }
+}
+
 /** Arma un WAV de 16 bits mono. */
 /** loop = true no apaga el final (para sonidos en bucle que ya vienen fundidos). */
 export function encodeWav(samples: Float32Array, rate = RATE, loop = false): Uint8Array {
@@ -95,6 +112,7 @@ export type SfxName =
   | 'pocion' | 'curar' | 'cofre_abrir' | 'romper' | 'portal' | 'subir_nivel' | 'paso' | 'ladrido' | 'aullido' | 'mordida'
   | 'recoger' | 'legendario' | 'click' | 'abrir_inventario' | 'error' | 'jugador_dolor' | 'magia'
   | 'descubrir' | 'secreto' | 'elegir' | 'guardado' | 'arco' | 'esquiva' | 'bloqueo' | 'thor_rescate'
+  | 'arbusto_sacudir' | 'hongo_rebote' | 'charco_pisar' | 'rana_salto' | 'palanca' | 'puerta_abrir' | 'reja_abrir' | 'piedra_arrastrar' | 'campana_chica' | 'telarana_romper'
   | `paso_${'pasto' | 'tierra' | 'piedra' | 'madera' | 'agua'}_${0 | 1 | 2}`;
 
 /** Efectos de sonido. */
@@ -145,6 +163,27 @@ export const SFX: Record<SfxName, () => Float32Array> = {
   bloqueo: () => mix([{ wave: 'square', f0: 880, f1: 860, dur: 0.35, vol: 0.22, vib: [30, 0.3], duty: 0.3 }, { wave: 'square', f0: 1320, f1: 1300, dur: 0.3, vol: 0.12, duty: 0.3 }, { wave: 'noise', f0: 7000, f1: 2000, dur: 0.08, vol: 0.4 }]),
   // Thor te salvó: aullido corto y alegre que termina en ladrido (1.2 s)
   thor_rescate: () => mix([{ wave: 'triangle', f0: 420, f1: 700, dur: 0.75, a: 0.12, vol: 0.42, vib: [6, 0.5] }, { wave: 'sine', f0: 840, f1: 1400, dur: 0.75, a: 0.15, vol: 0.1 }, { wave: 'saw', f0: 560, f1: 330, dur: 0.12, at: 0.85, vol: 0.4, lp: 0.35 }, { wave: 'saw', f0: 600, f1: 360, dur: 0.12, at: 1.03, vol: 0.38, lp: 0.35 }]),
+  // ---- el mundo que reacciona (2.9): cortos, de 0.2 a 0.8 s, con pico de 0.5 ----
+  // arbusto que se sacude: hojas que rozan (0.35 s)
+  arbusto_sacudir: () => aparte(1037, () => mix([{ wave: 'noise', f0: 3200, f1: 1400, dur: 0.18, a: 0.02, vol: 0.4, lp: 0.45 }, { wave: 'noise', f0: 2600, f1: 1100, dur: 0.16, at: 0.12, a: 0.02, vol: 0.32, lp: 0.4 }])),
+  // hongo que rebota: boing blandito (0.35 s)
+  hongo_rebote: () => aparte(1074, () => mix([{ wave: 'sine', f0: 180, f1: 420, dur: 0.14, vol: 0.6 }, { wave: 'sine', f0: 420, f1: 260, dur: 0.2, at: 0.12, vol: 0.4, vib: [14, 0.6] }])),
+  // pisar un charco: plaf con gotitas (0.4 s)
+  charco_pisar: () => aparte(1111, () => mix([{ wave: 'noise', f0: 1600, f1: 500, dur: 0.16, a: 0.01, vol: 0.5, lp: 0.35 }, ...[0.08, 0.15, 0.24].map((at, i) => ({ wave: 'sine' as Wave, f0: 900 + i * 250, f1: 1500 + i * 300, dur: 0.05, at, vol: 0.25 }))])),
+  // rana que salta: croac corto y el salto (0.35 s)
+  rana_salto: () => aparte(1148, () => mix([{ wave: 'square', f0: 140, f1: 110, dur: 0.12, vol: 0.4, duty: 0.3, vib: [30, 2] }, { wave: 'noise', f0: 1200, f1: 600, dur: 0.08, at: 0.18, vol: 0.3, lp: 0.4 }])),
+  // palanca: clac de madera y metal (0.4 s)
+  palanca: () => aparte(1185, () => mix([{ wave: 'noise', f0: 2400, f1: 900, dur: 0.06, vol: 0.5 }, { wave: 'square', f0: 220, f1: 160, dur: 0.1, vol: 0.35, duty: 0.25 }, { wave: 'square', f0: 330, f1: 300, dur: 0.12, at: 0.18, vol: 0.3, duty: 0.25 }])),
+  // puerta de madera que se abre: crujido de bisagra (0.8 s)
+  puerta_abrir: () => aparte(1222, () => mix([{ wave: 'saw', f0: 260, f1: 380, dur: 0.6, a: 0.05, vol: 0.35, lp: 0.12, vib: [22, 1.8] }, { wave: 'noise', f0: 700, f1: 300, dur: 0.12, at: 0.62, vol: 0.4, lp: 0.3 }])),
+  // reja de la Catedral: hierro que sube con cadena (0.8 s)
+  reja_abrir: () => aparte(1259, () => mix([...Array.from({ length: 6 }, (_, i) => ({ wave: 'square' as Wave, f0: 760 + (i % 2) * 90, dur: 0.05, at: i * 0.1, vol: 0.22, duty: 0.2 })), { wave: 'noise', f0: 3000, f1: 1200, dur: 0.7, a: 0.05, vol: 0.12, lp: 0.5 }])),
+  // piedra que arrastra Thor: roce grave (0.7 s)
+  piedra_arrastrar: () => aparte(1296, () => mix([{ wave: 'noise', f0: 500, f1: 300, dur: 0.65, a: 0.08, vol: 0.6, lp: 0.15 }, { wave: 'sine', f0: 70, f1: 55, dur: 0.6, vol: 0.3 }])),
+  // campana chica: ding de bronce con eco corto (0.8 s)
+  campana_chica: () => aparte(1333, () => mix([{ wave: 'sine', f0: NOTE('E6'), dur: 0.75, vol: 0.5 }, { wave: 'sine', f0: NOTE('E6') * 2.4, dur: 0.4, vol: 0.18 }, { wave: 'triangle', f0: NOTE('B5'), dur: 0.6, at: 0.02, vol: 0.2 }])),
+  // telaraña que se rompe: hilos finos que se cortan (0.3 s)
+  telarana_romper: () => aparte(1370, () => mix([...[0, 0.06, 0.13].map((at, i) => ({ wave: 'noise' as Wave, f0: 7000 - i * 800, f1: 4000, dur: 0.05, at, vol: 0.35, lp: 0.7 })), { wave: 'sine', f0: 1800, f1: 2600, dur: 0.08, at: 0.16, vol: 0.12 }])),
   ...pasos(),
 };
 
