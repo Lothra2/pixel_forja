@@ -43,6 +43,11 @@ export interface TerrainDesign {
    */
   rooms?: TP[][];
   /**
+   * Cuevas (Mundo 3): como `rooms`, pero el piso sale de una grilla por cuadro (1 = piso, `w` x `h`) y el borde es
+   * roca orgánica (el ruido mueve la pared hasta un tercio de cuadro).
+   */
+  cave?: Uint8Array;
+  /**
    * Hundidos: el piso baja un nivel adentro del polígono (el Anillo de las Hadas). Se ve la cara de roca debajo del
    * borde norte, paredes angostas a los lados, el canto del borde sur y una bajada de tierra en `entry` (centro x y
    * ancho en cuadros, sobre el borde sur). El borde no se pasa, salvo por la bajada.
@@ -266,6 +271,19 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
       // muro con tramos rectos y algún bloque salido: poco ruido, que se lea como obra y no como roca
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++)
         if (polySd(x, y, pp) + (vn(x, y, 40, S + 111) - 0.5) * 10 + (vn(x, y, 8, S + 113) - 0.5) * 3 < 0) high[y * W + x] = 0;
+    }
+  }
+  if (d.cave) {
+    const cv = d.cave, cw = d.w, ch = d.h;
+    const cell = (tx: number, ty: number) => (tx < 0 || ty < 0 || tx >= cw || ty >= ch ? 0 : cv[ty * cw + tx]);
+    high.fill(1);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      // valor suave entre los centros de los cuadros: la pared queda cerca del borde del cuadro, y el ruido la quiebra
+      const gx = x / TILE - 0.5, gy = y / TILE - 0.5, x0 = Math.floor(gx), y0 = Math.floor(gy), fx = gx - x0, fy = gy - y0;
+      const a = cell(x0, y0), b = cell(x0 + 1, y0), c = cell(x0, y0 + 1), e = cell(x0 + 1, y0 + 1);
+      if (a === b && b === c && c === e) { if (a) high[y * W + x] = 0; continue; }
+      const v = a + (b - a) * fx + (c - a) * fy + (a - b - c + e) * fx * fy + (vn(x, y, 26, S + 121) - 0.5) * 0.5 + (vn(x, y, 8, S + 123) - 0.5) * 0.2;
+      if (v > 0.5) high[y * W + x] = 0;
     }
   }
   for (const poly of d.plateaus) {

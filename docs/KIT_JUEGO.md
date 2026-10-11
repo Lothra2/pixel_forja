@@ -235,6 +235,31 @@ puentes, cofres y enemigos) no se movió. Zonas con primer plano declarado: Bosq
 de las Hadas.
 La colisión sale del mapa como siempre. Detalle y reglas: `docs/mundos/PILOTO.md`.
 
+### Mundo 3: Las Galerías del Eco
+
+`manifest.mundos` trae ahora `mundo3` (mapa `mundo/mundo3_galerias.json`, 100 x 80, con `fondo`, `espuma`, `reflejo`
+como los otros). Detalle completo en `docs/mundos/GALERIAS.md`. Lo nuevo para el juego:
+
+- Capa de objetos **`cristales`** en el mapa y el campo `cristales` en el mundo del manifiesto: cada punto es el pie de
+  un cristal con `id`, `color`, `forma` (0 cian, 1 violeta, 2 ámbar) y `grande`. Arrancan apagados. Se dibujan con
+  `cristal_apagado_<forma>` / `cristal_prendido_<forma>` (anim `prenderse` de 8 cuadros a 14 fps, una vez) y los 4 de
+  la arena con `cristal_grande_apagado` / `cristal_grande_prendido`. Las luces (radio 80 y 180) ya vienen en el
+  objeto prendido. `golpearCristal`, `avanceLuz`, `reinaVulnerable` y `apagarConPolvo` usan estos puntos tal cual.
+- Entidades: 3 `punto_guardado` con `farol: true` (al lado de su `farol_minero`), `carrito` (`ruta` "x,y;x,y" en
+  cuadros, `empuja: thor`), `figura` (dónde se asoma en el Puente Colgante), `mural` (`pieza: 3`), cofres con
+  `secreto`/`pista`, y los enemigos `polilla_ceniza`, `minero_piedra` y `sombra`. El jefe es `polilla_reina` en su
+  `arena_jefe`, y el portal de salida va a `mundo4`.
+- Zonas con `ambiente` `galerias`, `agua`, `viento`, `eco` y `jefe`, partículas `polvo`, `brillos`, `brasas_frias`,
+  `humo` y `ceniza` (en `particulas` van `brasa_fria` y `ceniza`, nuevas, y las de siempre), y su `frente`
+  (`estalactitas_frente_0..1`, `cristales_techo_frente_0..1`).
+- Personajes nuevos en `personajes`: `polilla_ceniza` (48), `minero_piedra` (64), `sombra` (48) y `polilla_reina` (128,
+  `tipo: jefe`), con el mismo formato que los jefes grandes (eventos, `aviso`, pivote medido). Los que vuelan traen
+  `vuela: true`: el pivote es el punto del piso debajo de ellos. La sombra se dibuja normal y el juego la muestra solo
+  dentro de la luz (`sombraVisible`). Afuera se ve `sombra_ojos` (en `mundo.criaturas`, 16 x 8).
+- `fx`: `aviso_polvo` (96 x 96, 8 cuadros, va en el piso) y `nube_polvo` (96 x 96, 10 cuadros a 12 fps).
+- `audio`: `musica_galerias`, `musica_jefe_polilla`, `ambiente_galerias`, `ambiente_eco`, `cristal_prender`,
+  `cristal_apagar`, `polilla_aleteo`, `minero_golpe`, `sombra_aparece`, `carrito_rodar` (bucle) y `figura_irse`.
+
 ### Hojas de personajes
 
 Un PNG por animación. Fila = dirección en el orden de `direcciones`. Columna = cuadro. Ancho = `cuadros * celda`, alto = `8 * celda`.

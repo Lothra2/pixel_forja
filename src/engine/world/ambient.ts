@@ -117,6 +117,8 @@ export function particles(): Particle[] {
     firefly(), leaf('verde'), leaf('otono'), butterfly('azul'), butterfly('naranja'), butterfly('rosa'),
     dotParticle('polen', ['#fff6c0', '#ffe88a']), dotParticle('brasa', ['#ffd27a', '#ff8a1e', '#d8401a'], 4, 8),
     sparkle(), dotParticle('espora', ['#a8fff0', '#5ad8c8']), smoke(), dotParticle('polvo', ['#d8c8a8', '#bfae8e']), drop(), pawPrint(), firefly('turquesa'),
+    // Mundo 3: las brasas frías del Puente Colgante (motas azules) y la ceniza de la Cueva de la Reina
+    dotParticle('brasa_fria', ['#b8e0ff', '#6aa8f0', '#3a6ac8'], 4, 8), dotParticle('ceniza', ['#c8c0d0', '#8a8494']),
   ];
 }
 

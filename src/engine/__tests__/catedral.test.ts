@@ -111,7 +111,7 @@ describe('catedral: la rebanada (escalera, atrio y el primer guardián)', () => 
     const m2 = catedralMap();
     expect(m2.decos).toEqual(m.decos);
     expect(m2.entities).toEqual(m.entities);
-  });
+  }, 120_000); // la Catedral premium tarda; con otras pruebas en paralelo pasa los 30 s
 });
 
 describe('catedral: objetos, guardián y sonido', () => {

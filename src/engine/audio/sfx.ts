@@ -113,6 +113,7 @@ export type SfxName =
   | 'recoger' | 'legendario' | 'click' | 'abrir_inventario' | 'error' | 'jugador_dolor' | 'magia'
   | 'descubrir' | 'secreto' | 'elegir' | 'guardado' | 'arco' | 'esquiva' | 'bloqueo' | 'thor_rescate'
   | 'arbusto_sacudir' | 'hongo_rebote' | 'charco_pisar' | 'rana_salto' | 'palanca' | 'puerta_abrir' | 'reja_abrir' | 'piedra_arrastrar' | 'campana_chica' | 'telarana_romper'
+  | 'cristal_prender' | 'cristal_apagar' | 'polilla_aleteo' | 'minero_golpe' | 'sombra_aparece' | 'carrito_rodar' | 'figura_irse'
   | `paso_${'pasto' | 'tierra' | 'piedra' | 'madera' | 'agua'}_${0 | 1 | 2}`;
 
 /** Efectos de sonido. */
@@ -184,6 +185,21 @@ export const SFX: Record<SfxName, () => Float32Array> = {
   campana_chica: () => aparte(1333, () => mix([{ wave: 'sine', f0: NOTE('E6'), dur: 0.75, vol: 0.5 }, { wave: 'sine', f0: NOTE('E6') * 2.4, dur: 0.4, vol: 0.18 }, { wave: 'triangle', f0: NOTE('B5'), dur: 0.6, at: 0.02, vol: 0.2 }])),
   // telaraña que se rompe: hilos finos que se cortan (0.3 s)
   telarana_romper: () => aparte(1370, () => mix([...[0, 0.06, 0.13].map((at, i) => ({ wave: 'noise' as Wave, f0: 7000 - i * 800, f1: 4000, dur: 0.05, at, vol: 0.35, lp: 0.7 })), { wave: 'sine', f0: 1800, f1: 2600, dur: 0.08, at: 0.16, vol: 0.12 }])),
+  // ---- el Mundo 3 (3.5): todo bajito, pico de 0.5, nada que asuste de golpe ----
+  // cristal que se prende: brillo que sube (0.8 s), tres notas de vidrio que se encienden en orden
+  cristal_prender: () => aparte(2101, () => mix([...['E6', 'B6', 'E7'].map((n, i) => ({ wave: 'sine' as Wave, f0: NOTE(n), dur: 0.8 - i * 0.12, at: i * 0.1, a: 0.05, vol: 0.32 - i * 0.06, vib: [7, 0.3] as [number, number] })), { wave: 'triangle', f0: 600, f1: 1800, dur: 0.5, a: 0.2, vol: 0.12 }])),
+  // cristal que se apaga: brillo que baja (0.6 s)
+  cristal_apagar: () => aparte(2203, () => mix([{ wave: 'sine', f0: NOTE('B6'), f1: NOTE('E5'), dur: 0.55, a: 0.02, vol: 0.32 }, { wave: 'triangle', f0: 1400, f1: 300, dur: 0.45, vol: 0.12 }])),
+  // aleteo de polilla: tres batidas de aire blando (0.4 s)
+  polilla_aleteo: () => aparte(2309, () => mix([0, 0.12, 0.24].map((at) => ({ wave: 'noise' as Wave, f0: 900, f1: 400, dur: 0.09, at, a: 0.03, vol: 0.45, lp: 0.12 })))),
+  // minero de piedra: piedra contra piedra, sordo (0.45 s)
+  minero_golpe: () => aparte(2411, () => mix([{ wave: 'noise', f0: 1600, f1: 300, dur: 0.18, vol: 0.6, lp: 0.25 }, { wave: 'sine', f0: 95, f1: 45, dur: 0.35, vol: 0.55 }, { wave: 'noise', f0: 3000, f1: 1500, dur: 0.05, at: 0.06, vol: 0.2 }])),
+  // la sombra aparece: un soplido suave que sube (0.7 s), nada de gritos
+  sombra_aparece: () => aparte(2503, () => mix([{ wave: 'noise', f0: 500, f1: 1100, dur: 0.6, a: 0.3, vol: 0.4, lp: 0.08 }, { wave: 'sine', f0: NOTE('D4'), f1: NOTE('F4'), dur: 0.6, a: 0.3, vol: 0.08 }])),
+  // carrito que rueda: 3 s en bucle, traqueteo de las ruedas en las juntas del riel y un roce grave parejo
+  carrito_rodar: () => aparte(2609, () => mix([{ wave: 'noise', f0: 400, f1: 400, dur: 3, vol: 0.25, lp: 0.08 }, ...Array.from({ length: 12 }, (_, i) => ({ wave: 'noise' as Wave, f0: 2200, f1: 900, dur: 0.05, at: i * 0.25, vol: 0.32 })), ...Array.from({ length: 12 }, (_, i) => ({ wave: 'sine' as Wave, f0: 160, f1: 120, dur: 0.07, at: i * 0.25 + 0.04, vol: 0.25 }))], 0)),
+  // la figura se va: humo (soplido que baja) y un "plin" agudo (0.8 s)
+  figura_irse: () => aparte(2707, () => mix([{ wave: 'noise', f0: 1200, f1: 300, dur: 0.6, a: 0.05, vol: 0.32, lp: 0.15 }, { wave: 'sine', f0: NOTE('A6'), dur: 0.35, at: 0.42, vol: 0.28 }, { wave: 'sine', f0: NOTE('E7'), dur: 0.25, at: 0.45, vol: 0.1 }])),
   ...pasos(),
 };
 
@@ -377,4 +393,84 @@ export function musicCatedral(): Float32Array {
   ], '', 1);
 }
 
-export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata };
+/** Deja `len` segundos justos: lo que suena después del final vuelve al principio (para que el bucle no corte). */
+function loopTo(x: Float32Array, seconds: number): Float32Array {
+  const n = Math.round(seconds * RATE), out = new Float32Array(n);
+  for (let i = 0; i < x.length; i++) out[i % n] += x[i];
+  return out;
+}
+/** Con su propia semilla, como los sonidos nuevos: no cambia el ruido de lo que se genera después. */
+function conSemilla(s: number, fn: () => Float32Array): Float32Array {
+  const keep = seed;
+  seed = s;
+  try { return fn(); } finally { seed = keep; }
+}
+
+/**
+ * Las Galerías del Eco (90 s en bucle): lenta y misteriosa, con mucho espacio. Bajo grave que casi no se mueve,
+ * campanitas de cristal sueltas que vuelven con eco, y una melodía en Mi menor que aparece y se va.
+ */
+export function musicGalerias(): Float32Array {
+  return conSemilla(3101, () => {
+    const hold = (n: string, len: number) => [n, ...Array.from({ length: len - 1 }, () => '-')];
+    const rest = (len: number) => Array.from({ length: len }, () => '.');
+    // 192 corcheas a 64 bpm = 90 s: cuatro partes de 48
+    const bass = [...hold('E2', 24), ...hold('C2', 24), ...hold('A1', 24), ...hold('B1', 24), ...hold('E2', 24), ...hold('G1', 24), ...hold('A1', 24), ...hold('B1', 24)];
+    const lead = [
+      ...rest(16), 'B4', '-', '-', '-', 'E5', '-', '-', '-', 'G5', '-', 'F#5', '-', 'E5', '-', '-', '-', '-', '-', '-', '-', ...rest(16),
+      ...rest(8), 'D5', '-', '-', '-', 'E5', '-', 'B4', '-', '-', '-', '-', '-', ...rest(28),
+      ...rest(16), 'G5', '-', '-', '-', 'A5', '-', 'B5', '-', '-', '-', 'A5', '-', 'G5', '-', 'F#5', '-', 'E5', '-', '-', '-', '-', '-', '-', '-', ...rest(8),
+      ...rest(48),
+    ];
+    const eco = ['.', '.', '.', '.', ...lead.slice(0, lead.length - 4)];
+    // campanitas de cristal: notas altas sueltas, nunca en el pulso esperado
+    const bells = Array.from({ length: 192 }, (_, i) => ([5, 19, 29, 43, 61, 70, 88, 101, 117, 131, 150, 163, 177, 186].includes(i) ? ['E6', 'B6', 'G6', 'D7', 'F#6', 'E7'][i % 6] : '.'));
+    const pad = [...hold('G3', 48), ...hold('E3', 48), ...hold('G3', 48), ...hold('F#3', 48)];
+    const buf = song(64, 192, [
+      { wave: 'sine', notes: bass, vol: 0.34 },
+      { wave: 'triangle', notes: pad, vol: 0.05 },
+      { wave: 'triangle', notes: lead, vol: 0.15, vib: [4, 0.3] },
+      { wave: 'triangle', notes: eco, vol: 0.05, vib: [4, 0.3] },
+      { wave: 'sine', notes: bells, vol: 0.13 },
+    ], '', 1);
+    return loopTo(buf, 90);
+  });
+}
+
+/**
+ * La Polilla Reina: más rítmica (118 bpm), en Mi menor, con el aleteo en la percusión (batidas de aire en
+ * semicorcheas que suben y bajan). 32 corcheas por vuelta, cuatro vueltas.
+ */
+export function musicJefePolilla(): Float32Array {
+  return conSemilla(3203, () => {
+    const lead = [
+      'E5', '-', 'G5', '-', 'B5', '-', 'A5', 'G5', 'F#5', '-', 'E5', '-', 'D5', '-', 'E5', '-',
+      'G5', '-', 'F#5', 'E5', 'D5', '-', 'B4', '-', 'C5', '-', 'D5', '-', 'E5', '-', '-', '-',
+    ];
+    const lead2 = lead.map((n) => (n === '-' || n === '.' ? n : n.replace(/\d/, (d) => String(Number(d) + 1))));
+    const bass = rep(['E2', '.', 'E2', 'E3', 'C2', '.', 'C2', 'C3', 'A1', '.', 'A1', 'A2', 'B1', '.', 'B1', 'B2'], 2);
+    const arp = rep(['E4', 'G4', 'B4', 'G4', 'C4', 'E4', 'G4', 'E4', 'A3', 'C4', 'E4', 'C4', 'B3', 'D#4', 'F#4', 'D#4'], 2);
+    const drums = rep(['k', 'h', 's', 'h', 'k', 'k', 's', 'h'], 4).join('');
+    const parts: Float32Array[] = [];
+    for (const [l, withArp] of [[lead, false], [lead, true], [lead2, true], [lead, true]] as [string[], boolean][]) {
+      parts.push(song(118, 32, [
+        { wave: 'square', notes: l, vol: 0.13, duty: 0.25, vib: [6, 0.2] },
+        { wave: 'triangle', notes: bass, vol: 0.3 },
+        ...(withArp ? [{ wave: 'square' as Wave, notes: arp, vol: 0.05, duty: 0.125 }] : []),
+      ], drums, 1));
+    }
+    const beat = 60 / 118 / 2, seg = Math.round(32 * beat * RATE);
+    const out = new Float32Array(seg * 4);
+    parts.forEach((p, k) => { for (let i = 0; i < p.length; i++) out[(k * seg + i) % out.length] += p[i]; });
+    // el aleteo: batidas de aire en semicorcheas, en grupos de cuatro que crecen
+    const flutter = mix(Array.from({ length: 128 * 2 }, (_, i) => ({ wave: 'noise' as Wave, f0: 1400, f1: 500, dur: beat / 2 * 0.8, at: i * (beat / 2), vol: 0.05 + 0.05 * ((i % 4) / 3), lp: 0.15 })), 0);
+    for (let i = 0; i < flutter.length; i++) out[i % out.length] += flutter[i];
+    // al nivel de las otras músicas
+    let m = 0;
+    for (const v of out) m = Math.max(m, Math.abs(v));
+    if (m > 0) for (let i = 0; i < out.length; i++) out[i] *= 0.6 / m;
+    return out;
+  });
+}
+
+export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata, galerias: musicGalerias, jefe_polilla: musicJefePolilla };

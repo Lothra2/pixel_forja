@@ -6,7 +6,7 @@ import { RATE } from './sfx';
  * magia (campanitas y un colchón brillante). Todo sintetizado.
  */
 
-export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'catedral';
+export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'catedral' | 'galerias' | 'eco';
 
 function rng(seed: number) {
   let s = seed >>> 0 || 1;
@@ -139,6 +139,32 @@ export function ambience(name: AmbienceName): Float32Array {
     }
     for (let k = 0; k < 3; k++) blip(buf, r() * (SECONDS + FADE - 1.5), 0.9, 90 + r() * 40, 60 + r() * 20, 0.05, 2);
   }
+  if (name === 'galerias') {
+    // la mina: aire quieto muy grave, viento lejano que entra por los túneles, goteo y una piedra que cae a lo lejos
+    const hum = lowpass(pink(total, r), 0.012);
+    for (let i = 0; i < total; i++) buf[i] += hum[i] * 1.8;
+    const far = bandpass(pink(total, r), (i) => 180 + 120 * lfo(i, 0.05), 1.1);
+    for (let i = 0; i < total; i++) buf[i] += far[i] * 0.5 * lfo(i, 0.083, 1) ** 2;
+    for (let k = 0; k < 11; k++) {
+      const t = r() * (SECONDS + FADE - 1), f = 1300 + r() * 900;
+      for (let e = 0; e < 3; e++) blip(buf, t + e * 0.22, 0.05, f, f * 0.62, 0.1 * Math.pow(0.4, e), 9);
+    }
+    // la piedra lejana: un golpe sordo y unas piedritas que ruedan después
+    const tp = 5 + r() * 3;
+    blip(buf, tp, 0.5, 110, 55, 0.12, 4);
+    for (let j = 0; j < 6; j++) blip(buf, tp + 0.18 + j * (0.07 + r() * 0.06), 0.04, 600 + r() * 500, 400, 0.035 * (1 - j / 7), 10);
+  }
+  if (name === 'eco') {
+    // la Sala del Eco: casi silencio, y cada gota vuelve muchas veces, cada vez más lejos
+    const hum = lowpass(pink(total, r), 0.008);
+    for (let i = 0; i < total; i++) buf[i] += hum[i] * 1.2;
+    for (let k = 0; k < 6; k++) {
+      const t = r() * (SECONDS + FADE - 3), f = 1500 + r() * 800;
+      for (let e = 0; e < 9; e++) blip(buf, t + e * 0.38, 0.08, f * (1 - e * 0.015), f * 0.6, 0.12 * Math.pow(0.68, e), 7);
+    }
+    // un cristal que canta apenas
+    for (let k = 0; k < 3; k++) { const f = [1975.5, 2349.3, 2637][k]; blip(buf, 1 + k * 4 + r(), 2.2, f, f, 0.025, 2.5); }
+  }
   buf = loopify(buf, len);
   // nivel parejo (todos los ambientes suenan parecido de fuerte)
   let peak = 0;
@@ -148,4 +174,4 @@ export function ambience(name: AmbienceName): Float32Array {
   return buf;
 }
 
-export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral'];
+export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral', 'galerias', 'eco'];

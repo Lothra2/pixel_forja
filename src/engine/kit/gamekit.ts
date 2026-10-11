@@ -21,6 +21,10 @@ import { ESPUMA } from '../world/water';
 import { smallCreatures } from '../world/reactions';
 import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK, type BigMap } from '../world/bosqueMap';
 import { catedralMap } from '../world/catedralMap';
+import { galeriasMap } from '../world/galeriasMap';
+import { dustWarning, dustCloud, shadowEyes } from '../world/galeriasObjects';
+import { POLILLA_REINA_SPEC, POLILLA_CENIZA_SPEC } from '../boss/polilla';
+import { MINERO_PIEDRA_SPEC, SOMBRA_SPEC } from '../boss/mina';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
 import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
@@ -69,6 +73,8 @@ export interface KitOptions {
   cache?: { get: (clave: string) => { png: Uint8Array; meta: string } | undefined; set: (clave: string, v: { png: Uint8Array; meta: string }) => void };
   /** caché de cuadros de los jefes grandes (también lentos) */
   bossCache?: BossCache;
+  /** sin el Mundo 3 (mapa, enemigos y la Polilla Reina): para pruebas rápidas de lo demás */
+  sinMundo3?: boolean;
 }
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
@@ -124,6 +130,8 @@ function portrait(f: Ficha, view: 'front' | 'se' = 'front', anim = 'idle'): Rast
 
 export interface CapaEntry { archivo: string; columnas: number; bloques: Record<string, BloqueCapa> }
 export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'npc'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean } & MovimientoAnim>; perfil_movimiento?: 'premium'; clase?: string; retrato?: string; desde_estudio?: boolean;
+  /** vuela: el cuerpo va en el aire y el pivote es el punto del piso debajo (donde va la sombra) */
+  vuela?: boolean;
   /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
   capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
 
@@ -181,17 +189,19 @@ function exportCapas(id: string, f: HumanFicha, anims: string[], files: ExportFi
 export const BIG_BOSSES: Partial<Record<EnemyId, BossSpec>> = { minotauro: MINO_SPEC, guardian_campana: GUARDIAN_SPEC };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
+/** efectos de sonido que suenan en bucle */
+const SFX_BUCLE = new Set<string>(['carrito_rodar']);
 
 /**
  * Un jefe grande al kit: una hoja por animación (fila = dirección, columna = cuadro), celda y pivote reales, y en el
  * manifiesto los eventos (con el punto que pega en cada dirección), el aviso de los golpes fuertes, el avance de los
  * pasos y la elevación de los saltos. quick: solo el reposo en 2 cuadros (pruebas).
  */
-function exportBoss(spec: BossSpec, files: ExportFile[], log: (m: string) => void, cache?: BossCache, quick?: boolean): CharEntry {
+function exportBoss(spec: BossSpec, files: ExportFile[], log: (m: string) => void, cache?: BossCache, quick?: boolean, extra: Partial<CharEntry> = {}): CharEntry {
   const s = quick ? { ...spec, anims: spec.anims.filter((a) => a.name === 'idle').map((a) => ({ ...a, frames: 2 })) } : spec;
   const { clips, pivot } = renderBossSheets(s, cache, log);
   const ds = spec.dims(spec.cell).s, cs = spec.cell / 128;
-  const out: CharEntry = { tipo: 'jefe', nombre: spec.id, celda: spec.cell, pivote: pivot, anims: {}, perfil_movimiento: 'premium' };
+  const out: CharEntry = { tipo: 'jefe', nombre: spec.id, celda: spec.cell, pivote: pivot, anims: {}, perfil_movimiento: 'premium', ...extra };
   for (const c of clips) {
     const name = `enemigos/${spec.id}_${c.def.name}.png`;
     files.push(png(name, clipSheet(c, spec.cell)));
@@ -264,6 +274,15 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const f = enemyFicha(b);
     chars[b] = exportChar('enemigos', b, f, 64, [...enemyAnims(b), 'leap'], { tipo: 'jefe', nombre: b }, files, log, 1.5);
   }
+  // el Mundo 3: enemigos y la Polilla Reina con el motor de volúmenes (a su celda, sin agrandar)
+  if (!opts.sinMundo3) {
+    for (const [spec, extra] of [
+      [POLILLA_CENIZA_SPEC, { tipo: 'enemigo', nombre: 'Polilla de Ceniza', vuela: true }],
+      [MINERO_PIEDRA_SPEC, { tipo: 'enemigo', nombre: 'Minero de Piedra' }],
+      [SOMBRA_SPEC, { tipo: 'enemigo', nombre: 'Sombra' }],
+      [POLILLA_REINA_SPEC, { tipo: 'jefe', nombre: 'Polilla Reina', vuela: true }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+  }
   // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
   for (const id of NPCS) {
     const f = merchantFicha();
@@ -296,6 +315,9 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   addFx('onda_pisoton', stompWave(96), 16, false);
   // tierra que tira Thor al cavar
   addFx('tierra_cavada', dirtDig(48), 10, false);
+  // la Polilla Reina: dónde va a caer el polvo (capa suelo) y la nube que apaga la luz donde cae
+  addFx('aviso_polvo', dustWarning(), 10, false);
+  addFx('nube_polvo', dustCloud(), 12, false);
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);
 
@@ -338,13 +360,13 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   };
   log('botín listo');
 
-  // ---------- mundos: el Bosque GG (mundo 1) y la Catedral de las Raíces (mundo 2) ----------
+  // ---------- mundos: el Bosque GG (mundo 1), la Catedral de las Raíces (mundo 2) y las Galerías del Eco (mundo 3) ----------
   const hechos = new Set<string>();
   const once = (f: ExportFile) => { if (!hechos.has(f.name)) { hechos.add(f.name); files.push(f); } };
   const parts: Record<string, unknown> = {};
   for (const p of particles()) { const n = `mundo/particulas/${p.name}.png`; once(png(n, strip(p.frames))); parts[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
   const crit: Record<string, unknown> = {};
-  for (const c of [...creatures(), ...smallCreatures()]) {
+  for (const c of [...creatures(), ...smallCreatures(), shadowEyes()]) {
     const anims: Record<string, unknown> = {};
     for (const [an, a] of Object.entries(c.anims)) { const n = `mundo/criaturas/${c.name}_${an}.png`; once(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
     crit[c.name] = { w: c.w, h: c.h, anims };
@@ -391,9 +413,19 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   log('bosque listo');
   const catedral = exportarMundo(catedralMap(), 'mundo2', 'La Catedral de las Raíces', 'mundo/mundo2_agua.png');
   log('catedral lista');
+  const galeriasBig = opts.sinMundo3 ? null : galeriasMap();
+  const galerias = galeriasBig ? {
+    ...exportarMundo(galeriasBig, 'mundo3', 'Las Galerías del Eco', 'mundo/mundo3_agua.png'),
+    cristales: {
+      capa: 'cristales', total: galeriasBig.cristales!.filter((c) => !c.grande).length, grandes: galeriasBig.cristales!.filter((c) => c.grande).length,
+      objetos: { apagado: 'cristal_apagado_<forma>', prendido: 'cristal_prendido_<forma>', prenderse: 'anim prenderse de cristal_prendido_<forma>', grande_apagado: 'cristal_grande_apagado', grande_prendido: 'cristal_grande_prendido' },
+      notas: 'Capa de objetos `cristales` del mapa: cada punto es el pie del cristal (x, y) con id, color (cian, violeta, ambar), forma (0 cian, 1 violeta, 2 ámbar: forma y color van juntos) y grande. Arrancan apagados; el juego los dibuja apagados o prendidos según su estado (src/logic/abismo.ts). Son sólidos como el objeto (14 x 6 al pie; los grandes 30 x 10).',
+    },
+  } : null;
+  if (galerias) log('galerías listas');
   // `mundo` sigue siendo el Bosque (un juego viejo lo lee así); `mundos` trae todos en orden de bajada
   manifest.mundo = bosque;
-  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }];
+  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : [])];
   log('mundo listo');
 
   // ---------- interfaz ----------
@@ -438,7 +470,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
 
   // ---------- audio ----------
   const audio: Record<string, string> = {};
-  for (const n of SFX_NAMES) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(SFX[n]()), 'audio/wav')); audio[n] = a; }
+  // los efectos en bucle (el carrito) no se apagan al final, como los ambientes
+  for (const n of SFX_NAMES) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(SFX[n](), undefined, SFX_BUCLE.has(n)), 'audio/wav')); audio[n] = a; }
   for (const [n, fn] of Object.entries(MUSIC)) { const a = `audio/musica_${n}.wav`; files.push(file(a, encodeWav(fn()), 'audio/wav')); audio[`musica_${n}`] = a; }
   for (const n of AMBIENCE_NAMES) { const a = `audio/ambiente_${n}.wav`; files.push(file(a, encodeWav(ambience(n), undefined, true), 'audio/wav')); audio[`ambiente_${n}`] = a; }
   manifest.audio = audio;

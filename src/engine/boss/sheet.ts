@@ -25,6 +25,8 @@ export interface BossSpec {
   strikePoint?: (j: Joints, d: BossDims) => V3;
   /** variantes de color: nombre y cambio de materiales */
   elev?: number;
+  /** retoque final de cada cuadro ya recortado (la sombra se deshace al morir) */
+  post?: (r: Raster, anim: string, frame: number, frames: number) => void;
 }
 
 export interface BossClip {
@@ -98,7 +100,7 @@ export function renderBossSheets(spec: BossSpec, cache?: BossCache, log?: (m: st
   const pivot: [number, number] = [cell / 2, pivotY];
   const clips: BossClip[] = raw.map(({ def, frames, joints }) => {
     let overflow = 0;
-    const out = frames.map((row) => row.map((f) => {
+    const out = frames.map((row) => row.map((f, fi) => {
       const r = createRaster(cell, cell);
       const dx = pivot[0] - f.origin[0], dy = pivot[1] - f.origin[1];
       for (let y = 0; y < f.full.h; y++)
@@ -110,6 +112,7 @@ export function renderBossSheets(spec: BossSpec, cache?: BossCache, log?: (m: st
           const ti = (Y * cell + X) * 4;
           for (let c = 0; c < 4; c++) r.data[ti + c] = f.full.data[si + c];
         }
+      spec.post?.(r, def.name, fi, row.length);
       return r;
     }));
     let strike: BossClip['strike'];

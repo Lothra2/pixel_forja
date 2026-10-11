@@ -46,6 +46,18 @@ export interface BigMap {
   densidad?: Float32Array;
   /** por cuadro: 1 = agua quieta (lagos, pozos), donde el juego puede mostrar reflejos */
   quieta?: Uint8Array;
+  /** Mundo 3: los cristales que se prenden (los dibuja el juego, apagados o prendidos, según el estado) */
+  cristales?: Cristal[];
+}
+
+/** Un cristal del Mundo 3: `x`, `y` es el pie (el apoyo del objeto). Chico: `cristal_apagado_<forma>`; grande: `cristal_grande_*`. */
+export interface Cristal {
+  id: string;
+  x: number;
+  y: number;
+  color: 'cian' | 'violeta' | 'ambar';
+  forma: number;
+  grande: boolean;
 }
 
 function rng(seed: number) {
@@ -610,6 +622,7 @@ export function surfaceTiles(m: BigMap): Uint8Array {
   const out = Uint8Array.from(m.terrain.tileKind, (k) => byKind[k] ?? 1);
   const objs = new Map(m.objects.map((o) => [o.name, o]));
   for (const d of m.decos) {
+    if (d.sprite.startsWith('puente_colgante')) { const k = Math.floor((d.y - 1) / TILE) * m.w + Math.floor(d.x / TILE); if (k >= 0 && k < out.length) out[k] = 4; continue; }
     if (d.sprite !== 'puente') continue;
     const o = objs.get(d.sprite)!;
     // el tablero del puente: todo el ancho y la franja del medio del alto
@@ -652,6 +665,8 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
       { id: lid++, name: 'entidades', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.entities.map((e) => point(e.tipo, e.tipo, e.x, e.y, e.props)) },
       { id: lid++, name: 'zonas', type: 'objectgroup', draworder: 'topdown', opacity: 0.3, visible: false, x: 0, y: 0, objects: m.zones.map((z) => ({ id: oid++, name: z.nombre, type: 'zona', x: z.x, y: z.y, width: z.w, height: z.h, rotation: 0, visible: true, properties: props(z.props) })) },
       { id: lid++, name: 'postales', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: false, x: 0, y: 0, objects: m.postales.map((p) => point(p.nombre, 'postal', p.x, p.y)) },
+      // Mundo 3: los cristales que se prenden al pegarles (solo en los mundos que los traen)
+      ...(m.cristales ? [{ id: lid++, name: 'cristales', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.cristales.map((c) => point(c.id, c.grande ? 'cristal_grande' : 'cristal', c.x, c.y, { color: c.color, forma: c.forma, grande: c.grande })) }] : []),
     ],
   };
   (json as Record<string, unknown>).nextlayerid = 200;
@@ -681,7 +696,9 @@ export function renderBigMap(m: BigMap, opts: { entities?: boolean; frame?: numb
   drawFoam(out, m, opts.frame ?? 0);
   const ground = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'suelo');
   const front = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'frente');
-  const rest = m.decos.filter((d) => { const l = byName.get(d.sprite)?.layer; return l !== 'suelo' && l !== 'frente'; }).sort((a, b) => a.y - b.y);
+  // los cristales del Mundo 3 se ven apagados (así arranca el juego)
+  const cris = (m.cristales ?? []).map((c) => ({ sprite: c.grande ? 'cristal_grande_apagado' : `cristal_apagado_${c.forma}`, x: c.x, y: c.y }));
+  const rest = [...m.decos, ...cris].filter((d) => { const l = byName.get(d.sprite)?.layer; return l !== 'suelo' && l !== 'frente'; }).sort((a, b) => a.y - b.y);
   for (const d of ground) { const o = byName.get(d.sprite)!; over(out, frameOf(o), Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1])); }
   // sombras horneadas: sobre el suelo y debajo de todo lo que se para en él (como las dibuja el juego)
   for (const d of rest) { const o = byName.get(d.sprite)!; if (o.shadow) drawShadow(out, o.shadow, Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1])); }
