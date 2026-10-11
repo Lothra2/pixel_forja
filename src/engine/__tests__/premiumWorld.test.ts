@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { bosqueMap, ZONA_PILOTO, bosqueObjects } from '../world/bosqueMap';
 import { TILE } from '../world/tiles';
-import { SCREEN } from '../world/premium/zone';
+import { SCREEN, CELL, footprint } from '../world/premium/zone';
 import { TREE_HEIGHT } from '../world/premium/trees';
 
 describe('mundo premium: piloto del Bosque Profundo', () => {
@@ -53,7 +53,8 @@ describe('mundo premium: piloto del Bosque Profundo', () => {
 
   it('árboles con escala de verdad y variedad: dos iguales nunca a menos de 3 cuadros', () => {
     const trees = pilot.decos.filter((d) => /^(roble|pino)_t\d_\d$/.test(d.sprite));
-    expect(trees.length).toBeGreaterThan(25);
+    // bosque con bosquecillos y claros: menos árboles que antes, pero ninguno montado
+    expect(trees.length).toBeGreaterThanOrEqual(20);
     for (let i = 0; i < trees.length; i++) for (let j = i + 1; j < trees.length; j++) {
       const a = trees[i], b = trees[j];
       if (a.sprite !== b.sprite) continue;
@@ -64,6 +65,42 @@ describe('mundo premium: piloto del Bosque Profundo', () => {
     expect(Math.max(...TREE_HEIGHT)).toBeLessThanOrEqual(200);
     // los 3 tamaños aparecen
     expect(new Set(trees.map((t) => t.sprite.slice(-3, -2))).size).toBe(3);
+  });
+
+  it('nada montado: ningún pie tapado, dos cuerpos se pisan como mucho un 12 % y el acantilado y la rampa se ven', () => {
+    const byName = new Map(pilot.objects.map((o) => [o.name, o]));
+    const GW = Math.ceil(pilot.terrain.img.w / CELL), IW = pilot.terrain.img.w;
+    const placed = pilot.decos.filter((d) => inRect(d.x, d.y - 1) && byName.get(d.sprite) && !byName.get(d.sprite)!.layer).map((d) => {
+      const f = footprint(byName.get(d.sprite)!);
+      const g = (c: [number, number]) => (Math.floor(d.y / CELL) + c[1]) * GW + Math.floor(d.x / CELL) + c[0];
+      return { d, body: new Set(f.body.map(g)), foot: new Set(f.foot.map(g)) };
+    });
+    expect(placed.length).toBeGreaterThan(40);
+    for (let i = 0; i < placed.length; i++) {
+      const a = placed[i];
+      // la cara del acantilado y la rampa no las tapa nada
+      for (const g of a.body) {
+        const k = pilot.terrain.kind[((g / GW) | 0) * CELL * IW + (g % GW) * CELL + 2 * IW + 2];
+        expect(k === 3 || k === 5, `${a.d.sprite} en ${a.d.x},${a.d.y} tapa el acantilado o la rampa`).toBe(false);
+      }
+      for (let j = 0; j < placed.length; j++) {
+        if (i === j) continue;
+        const b = placed[j];
+        const covered = [...a.foot].filter((g) => b.body.has(g)).length;
+        expect(covered, `${b.d.sprite} tapa el pie de ${a.d.sprite} (${a.d.x},${a.d.y})`).toBe(0);
+        if (j < i) continue;
+        const ov = [...a.body].filter((g) => b.body.has(g)).length;
+        expect(ov, `${a.d.sprite} y ${b.d.sprite} montados`).toBeLessThanOrEqual(Math.ceil(Math.min(a.body.size, b.body.size) * 0.12));
+      }
+    }
+  });
+
+  it('el primer plano no va en el mapa: la zona lo declara para los bordes de la pantalla', () => {
+    const front = pilot.decos.filter((d) => d.sprite.startsWith('frente_'));
+    expect(front).toEqual([]);
+    const z = pilot.zones.find((q) => q.nombre === ZONA_PILOTO.nombre)!;
+    expect(String(z.props.frente).split(',')).toEqual(ZONA_PILOTO.frente);
+    expect(pilot.piloto!.sinLugar).toEqual([]);
   });
 
   it('una sola luz: todas las sombras horneadas caen abajo a la derecha del apoyo', () => {

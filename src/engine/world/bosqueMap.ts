@@ -56,9 +56,19 @@ export function bosqueObjects(): WorldObject[] {
   // premium (piloto del Bosque Profundo): árboles por tamaño y forma, grupos armados, calcomanías y primer plano.
   // Los que se paran en el piso traen su sombra horneada
   const byName = new Map(base.map((o) => [o.name, o]));
-  const premium = [...treesPremium().map((t) => withShadow(t)), ...forestGroups(byName).map((g) => withShadow(g, { length: 0.5, drop: 0.25 })), ...forestDecals(), ...forestFront()];
+  const premium = [
+    ...treesPremium().map((t) => withShadow(t)),
+    ...forestGroups(byName).map((g) => withShadow(g, { length: 0.5, drop: 0.25 })),
+    // lo de la paleta vieja que se usa en la zona premium, con su sombra horneada (`_p`): afuera de la zona se
+    // siguen usando los de siempre, así el resto del mundo no cambia hasta que le toque
+    ...PREMIUM_COPIES.map((n) => { const o = byName.get(n)!; return withShadow({ ...o, name: `${n}_p`, base: n }, n.startsWith('arbusto') || n === 'helecho' || n === 'hongos' || n.startsWith('roca') ? { length: 0.5, drop: 0.25 } : {}); }),
+    ...forestDecals(), ...forestFront(),
+  ];
   return [...base, ...premium];
 }
+
+/** Objetos de siempre que la zona premium usa con sombra horneada. */
+const PREMIUM_COPIES = ['hongo_gigante_azul', 'hongo_gigante_morado', 'arbol_hechizado_1', 'arbol_hechizado_2', 'arbol_seco_0', 'arbol_seco_1', 'tronco_caido', 'arbusto_verde_0', 'arbusto_verde_1', 'arbusto_moras_0', 'hongos', 'roca', 'roca_grande'];
 
 /** El piloto premium: el Bosque Profundo con meseta, rampa, árboles variados, puntos focales y primer plano. */
 export const ZONA_PILOTO: Omit<PremiumZone, 'darkAt'> = {
@@ -68,7 +78,17 @@ export const ZONA_PILOTO: Omit<PremiumZone, 'darkAt'> = {
   plateaus: [[[19.5, 29.6], [28.5, 29.6], [29.6, 33.5], [27.5, 36.2], [23.5, 35.4], [19.6, 33.4]]],
   ramps: [{ x: 21.6, y: 34.1, w: 2.4 }],
   seed: 3407,
-  keep: (s) => !/^(pino_|roble_|arbol_seco_|arbusto_|roca$|roca_grande|tocon$|hongos$|telarana)/.test(s),
+  // se quedan los carteles, fogatas, juncos y lugares que no son vegetación; lo demás se vuelve a colocar
+  keep: (s) => !/^(pino_|roble_|arbol_|arbusto_|roca|tocon|hongos|hongo_gigante|tronco_caido|telarana|helecho)/.test(s),
+  // pocos y repartidos: un lugar se nota cuando no compite con otro igual al lado
+  landmarks: [
+    { sprite: 'arbol_hechizado_2_p', n: 1 }, { sprite: 'arbol_hechizado_1_p', n: 1 },
+    { sprite: 'hongo_gigante_azul_p', n: 2 }, { sprite: 'hongo_gigante_morado_p', n: 1 },
+    { sprite: 'arbol_seco_0_p', n: 1 },
+  ],
+  // monte bajo (la lista pesa: más helechos y arbustos, pocos hongos; las piedras van en los grupos)
+  undergrowth: ['arbusto_verde_0_p', 'arbusto_verde_1_p', 'arbusto_moras_0_p', 'helecho', 'helecho', 'arbusto_verde_0_p', 'helecho', 'arbusto_verde_1_p', 'helecho', 'hongos_p'],
+  frente: ['frente_ramas_0', 'frente_ramas_1', 'frente_hojas_0'],
 };
 
 export function bosqueMap(seed = 2024, opts: { premium?: boolean } = {}): BigMap & { piloto?: ZoneReport } {

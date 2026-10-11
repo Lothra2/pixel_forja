@@ -148,8 +148,11 @@ Campos nuevos en `mundo.objetos` (opcionales: si no están, todo sigue como ante
 
 - `sombra`: PNG del mismo tamaño que el objeto, negro con alfa. Se dibuja sobre el suelo y debajo de todos los
   objetos y personajes, en la misma posición que el objeto. Si un objeto no la trae, se usa la elipse de siempre.
-- `capa: "frente"`: se dibuja encima de todo con paralaje 1.15 y baja a alfa 0.35 si la heroína queda detrás.
-  Ninguno es sólido. `capa: "fondo"`: debajo de todo (lo usa la Catedral para el abismo, en la próxima tanda).
+- `capa: "frente"`: primer plano. No viene ubicado en el mapa: la zona lo declara en su propiedad `frente` (lista de
+  ids separados por coma) y el juego lo pega a los bordes de la pantalla mientras la heroína está en esa zona. Las
+  `frente_ramas_*` cuelgan del borde de arriba (apoyo arriba al centro) y las `frente_hojas_*` suben del borde de abajo
+  (apoyo abajo al centro). Se mueven con paralaje 1.15 respecto de la cámara y entran y salen con un fundido de medio
+  segundo al cambiar de zona. Ninguno es sólido. `capa: "fondo"`: debajo de todo (lo usa la Catedral para el abismo, en la próxima tanda).
 
 Objetos nuevos del Bosque:
 - Árboles `roble_t<tamaño>_<forma>` y `pino_t<tamaño>_<forma>` (tamaño 0, 1 o 2: 116, 146 y 182 px; forma 0, 1 o 2),
@@ -158,8 +161,15 @@ Objetos nuevos del Bosque:
 - Calcomanías con `capa: "suelo"`: `hojas_caidas_0..3`, `raiz_suelo_0..2`, `grieta_0..2`, `charco_chico_0..1`,
   `flores_suelo_0..3`, `piedritas_0..2`.
 - Primer plano con `capa: "frente"`: `frente_ramas_0..2` (256 x 96, 9 cuadros) y `frente_hojas_0..1` (128 x 64).
+- Copias con sombra de objetos de siempre (`_p`): `hongo_gigante_azul_p`, `hongo_gigante_morado_p`,
+  `arbol_hechizado_1_p`, `arbol_hechizado_2_p`, `arbol_seco_0_p`, `arbol_seco_1_p`, `tronco_caido_p`,
+  `arbusto_verde_0_p`, `arbusto_verde_1_p`, `arbusto_moras_0_p`, `hongos_p`, `roca_p`, `roca_grande_p`. Son el mismo
+  dibujo con su `sombra` y traen `base` con el id original: todo lo que el juego decide por nombre (partículas,
+  reacciones, color de los ojos) se busca con `def.base ?? id`. Afuera de la zona premium se siguen usando los de
+  siempre hasta que le toque a cada zona.
 
 El mapa (`mundo1_bosque.json`) ya los trae ubicados en el Bosque Profundo, con una meseta y su rampa de tierra.
+Nada queda montado: el pie de cada objeto se ve siempre y dos cuerpos se pisan como mucho un 12 %.
 La colisión sale del mapa como siempre. Detalle y reglas: `docs/mundos/PILOTO.md`.
 
 ### Hojas de personajes

@@ -31,6 +31,8 @@ export interface WorldObject {
   light?: { color: string; radius: number; flicker?: boolean; pulse?: boolean; dy?: number };
   /** línea donde el agua golpea abajo (cascada), relativa al apoyo [x0, y0, x1, y1]: ahí salen las gotas y la bruma */
   foam?: [number, number, number, number];
+  /** copia de otro objeto (mismo dibujo con su sombra): el juego le da el comportamiento del original */
+  base?: string;
 }
 
 const leaf = (hex: string): MatDef => ({ hex, kind: 'fur' });

@@ -306,11 +306,24 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
   }
   const faceH = new Uint8Array(W);
   for (let x = 0; x < W; x++) faceH[x] = FACE - Math.floor(vn(x, 0, 9, S + 65) * 7) - Math.floor(vn(x, 0, 40, S + 66) * 8);
-  const stairAt = (x: number, y: number) => d.stairs.some((s) => Math.abs(x - s.x * TILE) < (s.w * TILE) / 2 && y > s.y * TILE - 70 && y < s.y * TILE + FACE + 40);
+  // la rampa de tierra se abre hacia abajo (angosta arriba, ancha al pie): se lee como talud y no como caja
+  const stairHalf = (s: TerrainDesign['stairs'][number], r: number) => (s.style === 'tierra' ? ((s.w * TILE) / 2) * (0.78 + 0.42 * Math.min(1, r / FACE)) : (s.w * TILE) / 2);
+  const stairAt = (x: number, y: number, r = 0) => d.stairs.some((s) => Math.abs(x - s.x * TILE) < stairHalf(s, r) && y > s.y * TILE - 70 && y < s.y * TILE + FACE + 40);
+  // al pie de la rampa de tierra: un abanico de tierra pisada que se junta con el pasto (y con el camino si está cerca)
+  for (const s of d.stairs) {
+    if (s.style !== 'tierra') continue;
+    const cx = s.x * TILE, hw = stairHalf(s, FACE);
+    for (let y = Math.floor(s.y * TILE); y < Math.min(H, s.y * TILE + FACE + 70); y++) for (let x = Math.max(0, Math.floor(cx - hw - 20)); x < Math.min(W, cx + hw + 20); x++) {
+      const i = y * W + x;
+      if (high[i] || run[i] <= faceH[x] || run[i] > faceH[x] + 34) continue;
+      const k = (run[i] - faceH[x]) / 34;
+      if (Math.abs(x - cx) < hw * (1 - k * k * 0.7) + (vn(x, y, 7, S + 79) - 0.5) * 10) road[i] = 1;
+    }
+  }
   // clasificación final (prioridad: acantilado/escalera > agua > plaza > camino > pasto)
   for (let i = 0; i < N; i++) {
     const x = i % W, y = (i / W) | 0;
-    if (!high[i] && run[i] <= faceH[x]) kind[i] = stairAt(x, y) ? 5 : 3;
+    if (!high[i] && run[i] <= faceH[x]) kind[i] = stairAt(x, y, run[i]) ? 5 : 3;
     else if (water[i]) kind[i] = 4;
     else if (plaza[i]) kind[i] = 2;
     else if (road[i]) kind[i] = 1;
@@ -332,6 +345,15 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
   const isLand = new Uint8Array(N); for (let i = 0; i < N; i++) isLand[i] = kind[i] === 4 ? 0 : 1;
   const dLand = distTo(isLand, W, H); // en el agua: distancia a la orilla
   const notRoad = new Uint8Array(N); for (let i = 0; i < N; i++) notRoad[i] = kind[i] === 1 ? 0 : 1;
+  // pixeles de rampa de tierra (las escaleras de piedra no cambian)
+  const earthRamp = new Uint8Array(N);
+  for (const s of d.stairs) {
+    if (s.style !== 'tierra') continue;
+    const hw = stairHalf(s, FACE) + 2;
+    for (let y = Math.max(0, Math.floor(s.y * TILE - 70)); y < Math.min(H, s.y * TILE + FACE + 40); y++) for (let x = Math.max(0, Math.floor(s.x * TILE - hw)); x < Math.min(W, s.x * TILE + hw); x++) if (kind[y * W + x] === 5) earthRamp[y * W + x] = 1;
+  }
+  // la rampa de tierra sigue el camino: entre los dos no hay borde
+  for (let i = 0; i < N; i++) if (earthRamp[i]) notRoad[i] = 0;
   const dRoadEdge = distTo(notRoad, W, H); // en el camino: distancia al pasto
 
   // ---- campos suaves de zona ----
@@ -517,6 +539,8 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
   for (let i = 0; i < N; i++) {
     if (!high[i] || kind[i] !== 0) continue;
     const dl = dLow[i];
+    // arriba de la rampa no hay canto: el pasto de la meseta sigue de largo hacia la tierra
+    if (dl <= 4 && earthRamp[i + dl * W]) continue;
     if (dl === 1) set(i, pal.edgeDark);
     else if (dl === 2) set(i, GRASS[Math.min(GRASS.length - 1, grassIdx[i] + 3)]);
     else if (dl === 3) set(i, GRASS[Math.min(GRASS.length - 1, grassIdx[i] + 1)]);
@@ -529,20 +553,22 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
       if (kind[i] !== 3 && kind[i] !== 5) continue;
       const r = run[i];
       if (kind[i] === 5) {
-        const s = d.stairs.find((s2) => Math.abs(x - s2.x * TILE) < (s2.w * TILE) / 2)!;
-        const ex = Math.abs(x - s.x * TILE) - (s.w * TILE) / 2;
+        const s = d.stairs.find((s2) => Math.abs(x - s2.x * TILE) < stairHalf(s2, r))!;
+        const ex = Math.abs(x - s.x * TILE) - stairHalf(s, r);
         if (s.style === 'tierra') {
-          // rampa de tierra pisada: más clara arriba (le da la luz), surcos de pisadas, bordes de roca con sombra al pie
-          const fh = faceH[x];
-          // arriba le da la luz y abajo queda en sombra: la pendiente se lee por el degradé
-          let t = 5.3 - (r / fh) * 3.6 + (vn(x, y, 5, S + 71) - 0.5) * 0.9;
-          // pisadas: escalones gastados cada 7 px, con el borde de abajo oscuro
-          if (r % 7 === 6) t -= 1.2; else if (r % 7 === 0) t += 0.5;
-          // los bordes de la rampa bajan en sombra hacia los muros
-          if (ex > -9) t -= (ex + 9) * 0.25;
+          // rampa de tierra pisada: más clara arriba (le da la luz) y en sombra abajo, pisadas suaves y rotas,
+          // taludes a los costados (el izquierdo con luz, el derecho en sombra) y el pasto de la meseta que cuelga arriba
+          const fh = faceH[x], side = x < s.x * TILE ? -1 : 1;
+          let t = 4.9 - Math.min(1, r / fh) * 2.4 + (vn(x, y, 6, S + 71) - 0.5) * 0.8;
+          if ((r + Math.floor(vn(x, 0, 12, S + 74) * 4)) % 9 === 0 && hash(x >> 1, r, S + 75) > 0.3) t -= 0.9;
+          if (ex > -8) t -= (ex + 8) * (side < 0 ? 0.12 : 0.32);
           let c = DIRT[Math.max(0, Math.min(DIRT.length - 1, Math.round(t)))];
-          if (ex > -4) c = ex > -2 ? ROCK[1] : ROCK[3];
-          if (hash(x >> 1, y >> 1, S + 73) > 0.985) c = pal.pebbles[0];
+          if (ex > -2) c = side < 0 ? ROCK[3] : ROCK[0];
+          else if (ex > -3) c = side < 0 ? ROCK[4] : ROCK[1];
+          const hang = 2 + Math.floor(vn(x, 0, 5, S + 76) * 4);
+          if (r <= hang) c = GRASS[Math.max(0, grassIdx[i] - (r === hang ? 2 : 0))];
+          else if (ex > -7 && ex < -2 && vn(x, y, 4, S + 77) > 0.7) c = GRASS[Math.max(0, grassIdx[i] - 2)];
+          if (hash(x >> 1, y >> 1, S + 73) > 0.988) c = pal.pebbles[0];
           set(i, c);
           continue;
         }
@@ -655,7 +681,7 @@ export function chunks(img: Raster, size: number): { x: number; y: number; img: 
  * Suelo de bosque: oscurece el pasto bajo las masas de árboles y le pone hojarasca, ramitas y manchas de musgo.
  * density: por cuadro, 0 (abierto) a 1 (bosque cerrado), ya suavizada.
  */
-export function forestFloor(t: PaintedTerrain, wTiles: number, hTiles: number, density: Float32Array, seed: number) {
+export function forestFloor(t: PaintedTerrain, wTiles: number, hTiles: number, density: Float32Array, seed: number, litter?: (x: number, y: number) => number) {
   const img = t.img, W = img.w, H = img.h;
   const idx = new Map<number, number>();
   GRASS.forEach((h, i) => idx.set(parseInt(h.slice(1), 16), i));
@@ -684,7 +710,7 @@ export function forestFloor(t: PaintedTerrain, wTiles: number, hTiles: number, d
     const x = cx + Math.floor(hash(cx, cy, seed + 31) * 4), y = cy + Math.floor(hash(cx, cy, seed + 32) * 4);
     if (x >= W || y >= H || t.kind[y * W + x] !== 0) continue;
     const d = dAt(x, y), roll = hash(cx, cy, seed + 33);
-    if (d < 0.3 || roll > d * 0.55) continue;
+    if (d < 0.3 || roll > d * 0.55 * (litter ? litter(x, y) : 1)) continue;
     const pick = hash(cx, cy, seed + 34);
     const put = (px: number, py: number, h: string) => { if (px < W && py < H && t.kind[py * W + px] === 0) { const c = RGB(h), k = (py * W + px) * 4; img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; } };
     if (pick < 0.55) { const c = LEAVES[Math.floor(hash(cx, cy, seed + 35) * LEAVES.length)]; put(x, y, c); put(x + 1, y, shade(c, -0.06)); if (pick < 0.25) put(x, y + 1, shade(c, -0.12)); }

@@ -372,7 +372,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       // sombra horneada (mismo tamaño que el objeto): el juego la dibuja debajo de todo, en vez de la elipse
       let sombra: { sombra: string } | Record<string, never> = {};
       if (o.shadow) { const n = `mundo/objetos/${o.name}_sombra.png`; once(png(n, o.shadow)); sombra = { sombra: n }; }
-      objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, ...(o.solids ? { solidos: o.solids } : {}), ...(o.layer ? { capa: o.layer } : {}), ...(o.light ? { luz: o.light } : {}), ...(o.foam ? { espuma: o.foam } : {}), ...sombra, anims };
+      objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, ...(o.solids ? { solidos: o.solids } : {}), ...(o.layer ? { capa: o.layer } : {}), ...(o.light ? { luz: o.light } : {}), ...(o.foam ? { espuma: o.foam } : {}), ...(o.base ? { base: o.base } : {}), ...sombra, anims };
     }
     return {
       mapa: `mundo/${big.name}.json`, nombre, ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
@@ -380,7 +380,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       vista: `mundo/${slug}_vista.png`, postales, objetos: objManifest, particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
       niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', notas: 'Texturas de 256 que pegan por los 4 lados. Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla.' },
       referencia: 'tools/pixel_forja/scripts/visor/runtime.js anima todo esto en Canvas 2D: es la referencia para el juego.',
-      notas: 'Orden de dibujo: capa fondo (paralaje) > agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > sombras horneadas (campo sombra; si no hay, la elipse de siempre) > objetos y personajes ordenados por y > capa frente (paralaje 1.15, alfa 0.35 si la heroína queda detrás) > luces (aditivo) > sombras de nube. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',
+      notas: 'Orden de dibujo: capa fondo (paralaje) > agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > sombras horneadas (campo sombra; si no hay, la elipse de siempre) > objetos y personajes ordenados por y > capa frente (no va en el mapa: la zona la declara en su propiedad frente y el juego la pega a los bordes de la pantalla, con paralaje 1.15) > luces (aditivo) > sombras de nube. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',
     };
   };
   const bosque = exportarMundo(bosqueMap(), 'mundo1', 'Bosque GG', 'mundo/agua.png');

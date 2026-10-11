@@ -159,6 +159,7 @@ describe('movimiento premium', () => {
     expect(cj.anims.walk.eventos).toBeUndefined();
   });
 
+  // arma el kit entero (mundos con la zona premium incluidos): con la máquina ocupada pasa de los 2 minutos
   it('el kit del juego anota el perfil premium y el avance en el manifiesto', () => {
     const files = buildGameKit({ heroes: [], enemies: [], thorTiers: [], quick: true, fichas: { rick: premium('rick') } });
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
@@ -168,7 +169,7 @@ describe('movimiento premium', () => {
     expect(rick.anims.walk.eventos).toHaveLength(2);
     expect(rick.anims.attack.eventos[0].tipo).toBe('impacto');
     expect(m.personajes.guardian_campana.perfil_movimiento).toBe('premium');
-  }, 120_000);
+  }, 300_000);
 
   it('atletismo: toda la familia pasa el control en 8 direcciones y 3 tamaños', () => {
     const casual = (id: 'rick' | 'steph' | 'sophie' | 'alana') => premium(id, false);
