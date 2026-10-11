@@ -18,7 +18,10 @@ export interface EventoJson {
 /** Lo que el juego necesita para mover bien al personaje: eventos y avance (premium) y elevación de los saltos. */
 export interface MovimientoAnim {
   eventos?: EventoJson[];
+  /** pixeles de la hoja que avanza el cuerpo en un ciclo completo (todos los cuadros: dos pasos), sin que el pie patine */
   avance?: number;
+  /** px/s a los que el pie no patina con el fps de la hoja: avance * fps / cuadros. ritmo = velocidad_del_juego / velocidad_natural */
+  velocidad_natural?: number;
   elevacion?: number[];
   /** acciones que se desplazan: pixeles avanzados en cada cuadro desde el primero, hacia donde mira */
   desplazamiento?: number[];
@@ -41,7 +44,7 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
     tipo: e.type, cuadro: Math.min(c.frames.length - 1, Math.floor(e.phase * c.frames.length + 1e-6)), fase: r2(e.phase),
     ...(e.foot ? { pie: e.foot === 'near' ? 'cerca' as const : 'lejos' as const } : {}),
   }));
-  if (c.stride) out.avance = r2(c.stride * k);
+  if (c.stride) { out.avance = r2(c.stride * k); out.velocidad_natural = r2((c.stride * k * c.fps) / c.frames.length); }
   if (c.travel) out.desplazamiento = c.travel.map((v) => r2(v * k));
   return out;
 }
@@ -83,7 +86,7 @@ export function movimientoJson(clips: RenderedClip[]) {
   return {
     perfil_movimiento: clips.some((c) => c.profile === 'premium') ? 'premium' as const : 'clasico' as const,
     celda: clips[0].cell,
-    notas: 'avance: pixeles que avanza el cuerpo en un ciclo sin que el pie patine. Ritmo de la animación = velocidad_del_juego * cuadros / (avance * fps). elevacion: pixeles que el juego sube el sprite en cada cuadro (la sombra queda en el piso).',
+    notas: 'avance: pixeles de la hoja que avanza el cuerpo en un ciclo completo (todos los cuadros, dos pasos) sin que el pie patine. velocidad_natural = avance * fps / cuadros (px/s). Ritmo de la animación = velocidad_del_juego / velocidad_natural. elevacion: pixeles que el juego sube el sprite en cada cuadro (la sombra queda en el piso).',
     anims: Object.fromEntries(premium.map((c) => [c.name, {
       cuadros: c.frames.length, fps: c.fps, loop: c.loop, ...motionOf(c),
       ...(c.joints ? { articulaciones: c.joints } : {}),

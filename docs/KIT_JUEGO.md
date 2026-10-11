@@ -103,12 +103,30 @@ Rick, Steph, Sophie y Alana salen con el perfil de movimiento premium:
 - El pivote no se mueve entre cuadros ni entre animaciones.
 - Cada animación que lo tiene trae:
   - `eventos`: en qué cuadro cae cada paso, golpe (`impacto`) o suelta.
-  - `avance`: pixeles por ciclo sin que el pie patine.
+  - `avance`: pixeles de la hoja que avanza el cuerpo en un ciclo completo (todos los cuadros, o sea dos pasos), sin
+    que el pie patine. Es la misma unidad para todos.
+  - `velocidad_natural`: px/s a los que el pie no patina con el fps de la hoja (`avance * fps / cuadros`).
 
 Qué hace el juego con eso:
 - Sonido de pisada en cada `paso`.
 - Daño y una pausa de 2 o 3 cuadros en el `impacto`.
-- El ritmo de caminar y correr se ajusta con `ritmo = velocidad * cuadros / (avance * fps)`, así los pies no patinan.
+- El ritmo de caminar y correr se ajusta con `ritmo = velocidad / velocidad_natural` (es la misma cuenta de antes:
+  `velocidad * cuadros / (avance * fps)`).
+
+Ojo con las proporciones chibi. La familia es cabezona y de piernas cortas (a celda 48 la pierna de Rick mide 8 px, la
+de Sophie 6 y la de Alana 4), así que el pie cubre poco. Por eso Alana tiene casi la mitad de avance que Sophie: la
+unidad es la misma, el cuerpo es otro. Con las velocidades del juego el ritmo exacto sale entre 3 y 11 veces, que a 8
+cuadros se ve como un borrón. Lo recomendado es lo que ya hace el juego: `ritmo = clamp(velocidad /
+velocidad_natural, 0.7, 1.5)` y aceptar que el pie patine un poco, como en cualquier RPG chibi.
+
+| Personaje | Anim | Cuadros a fps | Avance (px por ciclo) | velocidad_natural (px/s) |
+|---|---|---|---|---|
+| Rick | walk / run | 8 a 10 / 8 a 14 | 14.1 / 23.3 | 17.6 / 40.8 |
+| Steph | walk / run | 8 a 10 / 8 a 14 | 16.6 / 27.4 | 20.8 / 47.9 |
+| Sophie | walk / run | 8 a 10 / 8 a 14 | 13.2 / 21.8 | 16.5 / 38.1 |
+| Alana | walk / run | 8 a 10 / 8 a 14 | 7.8 / 12.9 | 9.8 / 22.6 |
+| Thor | walk / run | 8 a 9 / 8 a 14 | 18.9 / 56.7 | 21.3 / 99.2 |
+| Minotauro y guardián | walk / charge | 8 a 10 / 8 a 14 | 32 / 55.5 | 40 / 97.1 |
 
 Si una ficha del estudio llega en clásico, sale como siempre, sin esos campos.
 

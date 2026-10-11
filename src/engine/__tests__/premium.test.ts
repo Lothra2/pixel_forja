@@ -166,6 +166,9 @@ describe('movimiento premium', () => {
     const rick = m.personajes.rick;
     expect(rick.perfil_movimiento).toBe('premium');
     expect(rick.anims.walk.avance).toBeGreaterThan(6);
+    // velocidad a la que el pie no patina: avance por ciclo * fps / cuadros (misma unidad para todos)
+    const w = rick.anims.walk;
+    expect(w.velocidad_natural).toBeCloseTo((w.avance * w.fps) / w.cuadros, 1);
     expect(rick.anims.walk.eventos).toHaveLength(2);
     expect(rick.anims.attack.eventos[0].tipo).toBe('impacto');
     expect(m.personajes.guardian_campana.perfil_movimiento).toBe('premium');

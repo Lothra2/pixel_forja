@@ -94,6 +94,7 @@ function clipFiles(kind: ExportKind, clips: RenderedClip[], tag: string, base: s
       sj.cell = [sj.cell[0] * k, sj.cell[1] * k];
       for (const a of Object.values(sj.anims)) {
         if (a.avance) a.avance *= k;
+        if (a.velocidad_natural) a.velocidad_natural *= k;
         if (a.elevacion) a.elevacion = a.elevacion.map((v) => v * k);
       }
       sj.pivot = [sj.pivot[0] * k, sj.pivot[1] * k];

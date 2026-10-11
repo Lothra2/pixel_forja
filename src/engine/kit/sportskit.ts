@@ -49,6 +49,7 @@ export interface SportAnimEntry {
   loop: boolean;
   eventos?: { tipo: string; cuadro: number; fase: number; pie?: string }[];
   avance?: number;
+  velocidad_natural?: number;
   elevacion?: number[];
   desplazamiento?: number[];
   rumbo?: string[];
@@ -85,7 +86,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     notas: [
       'Hojas: fila = dirección (orden de `direcciones`), columna = cuadro. El pivote es el punto de apoyo (pies) y no se mueve.',
       'eventos: en qué cuadro cae cada paso, golpe (impacto), despegue, suelta (pelota, bala, jabalina, hechizo) y aterrizaje.',
-      'avance: pixeles que avanza el cuerpo en un ciclo sin patinar. Ritmo = velocidad_del_juego * cuadros / (avance * fps).',
+      'avance: pixeles que avanza el cuerpo en un ciclo completo (dos pasos) sin patinar. velocidad_natural = avance * fps / cuadros (px/s). Ritmo = velocidad_del_juego / velocidad_natural.',
       'elevacion: pixeles que el juego sube el sprite en cada cuadro (saltos que no caben en la celda); la sombra queda en el piso.',
       'agua: fila de la superficie en la celda; el juego puede dibujar su piscina detrás y el nadador ya trae el tinte y las gotas.',
       'desplazamiento: en las acciones que avanzan (salto largo, clavado, remate), pixeles que el juego mueve el sprite hacia donde mira, acumulados desde el primer cuadro.',

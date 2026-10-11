@@ -202,7 +202,7 @@ function exportBoss(spec: BossSpec, files: ExportFile[], log: (m: string) => voi
     out.anims[c.def.name] = {
       archivo: name, cuadros: n, fps: c.def.fps, loop: c.def.loop,
       ...(eventos.length ? { eventos } : {}),
-      ...(c.def.stride ? { avance: r2(c.def.stride * ds) } : {}),
+      ...(c.def.stride ? { avance: r2(c.def.stride * ds), velocidad_natural: r2((c.def.stride * ds * c.def.fps) / n) } : {}),
       ...(c.def.rise ? { elevacion: c.def.rise.slice(0, n).map((v) => r2(v * cs)) } : {}),
       ...(c.def.windup ? { aviso: c.def.windup } : {}),
     } as CharEntry['anims'][string];
