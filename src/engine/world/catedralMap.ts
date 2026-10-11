@@ -4,6 +4,8 @@ import { catedralObjects, CAT } from './catedralObjects';
 import { forestObjects, type WorldObject } from './objects';
 import { landmarkObjects } from './landmarks';
 import type { BigMap, Deco, Ent, MapZone, Postal, Prop } from './bosqueMap';
+import { catedralPremiumObjects } from './catedralPremium';
+import { premiumCatedral, type CatedralReport } from './premium/catedral';
 
 /**
  * Mundo 2: La Catedral de las Raíces (PLAN.md F8). Debajo del bosque, una catedral atravesada por raíces.
@@ -76,6 +78,18 @@ export const catedralDesign: TerrainDesign = {
   dark: [{ c: [22, 48], r: 18 }, { c: [72, 52], r: 10 }],
 };
 
+/**
+ * La nave premium tiene dos alturas: una galería alta al este (con su desnivel de piedra labrada, baranda y escalones
+ * rotos) y el piso de abajo con el río, que se corre un poco al sur para dejar orilla debajo de la galería.
+ */
+const GALERIA: TP[] = rect(27, 38, 41, 41.2);
+export const catedralDesignPremium: TerrainDesign = {
+  ...catedralDesign,
+  plateaus: [...DESCANSOS, GALERIA, ...BLOQUES],
+  stairs: [...catedralDesign.stairs, { x: 33.5, y: 41.2, w: 3 }],
+  rivers: [{ pts: [[3, 48], [14, 47.5], [27, 48.3], [43, 47.7]], w: 4.6 }],
+};
+
 /** Piedra azul grisácea, tierra oscura, cobre viejo y agua casi negra. Turquesa en los brotes, violeta en las runas. */
 export const CATEDRAL_PALETTE: TerrainPalette = {
   grass: ['#101218', '#151820', '#1a1e26', '#20242d', '#262b34', '#2c313b', '#323843', '#39404b', '#404753', '#474f5b', '#4f5763', '#575f6b'],
@@ -112,18 +126,21 @@ function hash(x: number, y: number, s: number): number {
 /** Los objetos que usa la catedral: los suyos y unos pocos del bosque (cartel, juncos). */
 export function catedralMapObjects(): WorldObject[] {
   const prestados = new Set(['cartel', 'portal_azul', 'portal_rojo', 'aviso_jefe', 'aviso_carga']);
-  return [...catedralObjects(), ...[...forestObjects(), ...landmarkObjects()].filter((o) => prestados.has(o.name))];
+  return [...catedralObjects(), ...catedralPremiumObjects(), ...[...forestObjects(), ...landmarkObjects()].filter((o) => prestados.has(o.name))];
 }
 
-export function catedralMap(seed = 777): BigMap {
+export function catedralMap(seed = 777, opts: { premium?: boolean } = {}): BigMap & { premium?: CatedralReport } {
+  const premium = opts.premium !== false;
   const W = CATEDRAL_W, H = CATEDRAL_H, r = rng(seed);
-  const terrain = paintTerrain(catedralDesign, CATEDRAL_PALETTE);
+  const design = premium ? catedralDesignPremium : catedralDesign;
+  const descansos = premium ? [...DESCANSOS, GALERIA] : DESCANSOS;
+  const terrain = paintTerrain(design, CATEDRAL_PALETTE);
   const objects = catedralMapObjects();
   const byName = new Map(objects.map((o) => [o.name, o]));
   const img = terrain.img, PW = img.w, PH = img.h;
 
   // ---- los muros: la parte alta que no es descanso no se pisa, y su techo es oscuridad ----
-  const enDescanso = (px: number, py: number) => DESCANSOS.some((d) => inPoly(px / TILE, py / TILE, d));
+  const enDescanso = (px: number, py: number) => descansos.some((d) => inPoly(px / TILE, py / TILE, d));
   const low = new Uint8Array(PW * PH);
   for (let i = 0; i < low.length; i++) low[i] = terrain.high[i] ? 0 : 1;
   const dLow = distTo(low, PW, PH);
@@ -149,7 +166,7 @@ export function catedralMap(seed = 777): BigMap {
   const solid = new Uint8Array(terrain.solid);
   for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
     if (!terrain.tileHigh[ty * W + tx]) continue;
-    if (!DESCANSOS.some((d) => inPoly(tx + 0.5, ty + 0.5, d))) solid[ty * W + tx] = 1;
+    if (!descansos.some((d) => inPoly(tx + 0.5, ty + 0.5, d))) solid[ty * W + tx] = 1;
   }
 
   const occ = new Uint8Array(W * H);
@@ -257,8 +274,9 @@ export function catedralMap(seed = 777): BigMap {
 
   // ---------- 4. la nave inundada ----------
   // la orilla de arriba: se ve el agua negra antes de tocarla
-  for (const [x, y] of [[8, 41], [33, 41], [8, 55], [33, 55]] as TP[]) placeT('columna_raiz', x, y);
-  for (const x of [10, 22, 34]) place('raices_muro', T(x), 38 * TILE + 60);
+  // (en la premium la galería ocupa el norte del este: ahí no van la columna ni las raíces del muro)
+  for (const [x, y] of [[8, 41], [33, 41], [8, 55], [33, 55]] as TP[]) if (!premium || x < 27 || y > 45) placeT('columna_raiz', x, y);
+  for (const x of [10, 22, 34]) if (!premium || x < 27) place('raices_muro', T(x), 38 * TILE + 60);
   // dónde cruza el río cada columna
   const cruce = (tx: number): [number, number] => {
     let y0 = 40, y1 = 40
@@ -353,8 +371,15 @@ export function catedralMap(seed = 777): BigMap {
     { nombre: 'forja_apagada', x: T(LC.forja[0]), y: T(LC.forja[1] + 1) },
     { nombre: 'campanario_invertido', x: T(LC.campanario[0]), y: T(LC.campanario[1] - 1) },
   ];
-  return {
+  const map: BigMap & { premium?: CatedralReport } = {
     name: 'mundo2_catedral', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects,
     meta: { bioma: 'catedral', musica: 'catedral', nombre: 'La Catedral de las Raíces', agua: AGUA_CATEDRAL },
   };
+  if (premium) {
+    // la galería de la nave: los escalones rotos tapan la escalera que pintó el pintor
+    decos.push({ sprite: 'escalones_rotos', x: Math.round(33.5 * TILE), y: Math.round(41.2 * TILE) + 62 });
+    const darkAt = (tx: number, ty: number) => design.dark.reduce((mx, z) => Math.max(mx, 1 - Math.hypot(tx - z.c[0], ty - z.c[1]) / z.r), 0);
+    map.premium = premiumCatedral(map, { descansos, seed: seed + 11, darkAt });
+  }
+  return map;
 }

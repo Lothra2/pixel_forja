@@ -65,11 +65,15 @@ export interface PlacerArgs {
   darkOf: (tx: number, ty: number) => number;
   /** calcomanías posibles según el piso (camino o no) y si el lugar es húmedo y oscuro */
   decalPool: (road: boolean, wet: boolean) => string[];
+  /** el piso donde se para lo que se coloca (0 pasto en el Bosque, 2 losa en la Catedral) */
+  floorKind?: number;
+  /** de qué se aleja el pie (camino, escaleras, plazas) */
+  roadKinds?: number[];
 }
 
 export type Placer = ReturnType<typeof createPlacer>;
 
-export function createPlacer({ m, t2, byName, keep, solid, special, clear, designed, darkOf, decalPool }: PlacerArgs) {
+export function createPlacer({ m, t2, byName, keep, solid, special, clear, designed, darkOf, decalPool, floorKind = 0, roadKinds = [1, 5, 2] }: PlacerArgs) {
   const W = m.w, H = m.h;
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= W || y >= H ? -1 : y * W + x);
   const tileOf = (px: number, py: number) => at(Math.floor(px / TILE), Math.floor((py - 1) / TILE));
@@ -100,7 +104,7 @@ export function createPlacer({ m, t2, byName, keep, solid, special, clear, desig
   const kindAtG = (g: number) => t2.kind[pix((g % GW) * CELL + 2, Math.floor(g / GW) * CELL + 2)];
   const highAtG = (g: number) => t2.high[pix((g % GW) * CELL + 2, Math.floor(g / GW) * CELL + 2)];
   const roadMask = new Uint8Array(IW * IH), lowMask = new Uint8Array(IW * IH);
-  for (let i = 0; i < IW * IH; i++) { roadMask[i] = t2.kind[i] === 1 || t2.kind[i] === 5 || t2.kind[i] === 2 ? 1 : 0; lowMask[i] = t2.high[i] ? 0 : 1; }
+  for (let i = 0; i < IW * IH; i++) { roadMask[i] = roadKinds.includes(t2.kind[i]) ? 1 : 0; lowMask[i] = t2.high[i] ? 0 : 1; }
   const dRoad = distTo(roadMask, IW, IH), dEdge = distTo(lowMask, IW, IH);
   const register = (sprite: string, px: number, py: number, dosel = false) => {
     const o = byName.get(sprite);
@@ -124,7 +128,7 @@ export function createPlacer({ m, t2, byName, keep, solid, special, clear, desig
     if (!allowed(tk % W, Math.floor(tk / W))) return false;
     const hi = t2.high[ai];
     if ((ru.onlyHigh && !hi) || (ru.onlyLow && hi)) return false;
-    if (t2.kind[ai] !== 0) return false;
+    if (t2.kind[ai] !== floorKind) return false;
     if (hi && dEdge[ai] < (ru.edge ?? 12)) return false;
     if (dRoad[ai] < (ru.roadGap ?? 10)) return false;
     for (const e of ents) if (Math.abs(e.x - px) < 22 && Math.abs(e.y - py) < 18) return false;
@@ -135,7 +139,7 @@ export function createPlacer({ m, t2, byName, keep, solid, special, clear, desig
       if (g < 0 || foot[g]) return false;
       // nadie encima del pie (en el dosel, solo otros árboles del dosel)
       for (let q = head[g]; q >= 0; q = nodeNext[q]) if (!(ru.dosel && isDosel[nodeId[q]])) return false;
-      if (kindAtG(g) !== 0 || highAtG(g) !== hi) return false;
+      if (kindAtG(g) !== floorKind || highAtG(g) !== hi) return false;
     }
     let road = 0, cross = 0;
     const ov = new Map<number, number>();
@@ -146,7 +150,7 @@ export function createPlacer({ m, t2, byName, keep, solid, special, clear, desig
       for (let q = head[g]; q >= 0; q = nodeNext[q]) ov.set(nodeId[q], (ov.get(nodeId[q]) ?? 0) + 1);
       const k = kindAtG(g);
       if (k === 3 || k === 5) return false; // la cara del acantilado y la rampa siempre se ven
-      if (k === 1 || k === 2) road++;
+      if (k !== floorKind && roadKinds.includes(k)) road++;
       if (!hi && highAtG(g)) cross++;
     }
     const n = f.body.length;
@@ -204,7 +208,7 @@ export function createPlacer({ m, t2, byName, keep, solid, special, clear, desig
       const X = Math.round(px - o.anchor[0] + x), Y = Math.round(py - o.anchor[1] + y), i = pix(X, Y);
       if (i < 0 || X < X0 || Y < Y0 || X >= X1 || Y >= Y1) return false;
       const k = t2.kind[i];
-      if (road ? k !== 1 : k !== 0) return false;
+      if (road ? k !== 1 : k !== floorKind) return false;
       const g = Math.floor(Y / CELL) * GW + Math.floor(X / CELL);
       if (head[g] >= 0 || decal[g]) return false;
     }

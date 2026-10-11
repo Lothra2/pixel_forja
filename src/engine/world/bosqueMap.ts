@@ -37,7 +37,7 @@ export interface BigMap {
   postales: Postal[];
   objects: WorldObject[];
   /** datos del mundo para Tiled y el agua (el Bosque no los trae: usa los de siempre) */
-  meta?: { bioma: string; musica: string; nombre: string; agua?: string };
+  meta?: { bioma: string; musica: string; nombre: string; agua?: string; fondo?: { id: string; paralaje: number }[] };
   /** cuadros que el diseño deja libres (claros de los lugares, puentes, vado, camino secreto): ahí no se planta nada */
   libre?: Uint8Array;
   /** cuánto bosque quiere el diseño en cada cuadro (menos de 0 nada, 1 o más bosque cerrado) */
@@ -617,7 +617,7 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
   const json = {
     type: 'map', version: '1.10', tiledversion: '1.10.2', orientation: 'orthogonal', renderorder: 'right-down', infinite: false,
     width: m.w, height: m.h, tilewidth: TILE, tileheight: TILE,
-    properties: props({ bioma: m.meta?.bioma ?? 'bosque', musica: m.meta?.musica ?? 'bosque', nombre: m.meta?.nombre ?? 'Bosque GG', trozo: CHUNK }),
+    properties: props({ bioma: m.meta?.bioma ?? 'bosque', musica: m.meta?.musica ?? 'bosque', nombre: m.meta?.nombre ?? 'Bosque GG', trozo: CHUNK, ...(m.meta?.fondo ? { fondo: m.meta.fondo.map((f) => `${f.id}:${f.paralaje}`).join(',') } : {}) }),
     tilesets: [{
       firstgid: 1, name: 'agua', image: 'agua.png', imagewidth: agua.w, imageheight: TILE, tilewidth: TILE, tileheight: TILE, columns: 5, tilecount: 5, margin: 0, spacing: 0,
       tiles: [{ id: 0, animation: [0, 1, 2, 3].map((f) => ({ tileid: f, duration: 220 })) }],
@@ -644,12 +644,19 @@ export function renderBigMap(m: BigMap, opts: { entities?: boolean; frame?: numb
   const img = m.terrain.img, W = img.w, H = img.h;
   const out = createRaster(W, H);
   const water = waterTile(opts.frame ?? 0, m.meta?.agua);
+  const byName = new Map(m.objects.map((o) => [o.name, o]));
+  // el abismo: los fondos (sin paralaje en la foto) donde no hay suelo ni agua
+  const fondos = (m.meta?.fondo ?? []).map((f) => byName.get(f.id)?.anims.idle.frames[0]).filter((f): f is Raster => !!f);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = (y * W + x) * 4, a = img.data[i + 3] / 255, w = ((y % TILE) * TILE + (x % TILE)) * 4;
-    for (let c = 0; c < 3; c++) out.data[i + c] = img.data[i + c] * a + water.data[w + c] * (1 - a);
+    let under = [water.data[w], water.data[w + 1], water.data[w + 2]];
+    if (fondos.length && a < 1 && !m.terrain.waterTiles[Math.floor(y / TILE) * m.w + Math.floor(x / TILE)]) {
+      under = [4, 6, 12];
+      for (const f of fondos) { const k = ((y % f.h) * f.w + (x % f.w)) * 4, fa = f.data[k + 3] / 255; for (let c = 0; c < 3; c++) under[c] = under[c] * (1 - fa) + f.data[k + c] * fa; }
+    }
+    for (let c = 0; c < 3; c++) out.data[i + c] = img.data[i + c] * a + under[c] * (1 - a);
     out.data[i + 3] = 255;
   }
-  const byName = new Map(m.objects.map((o) => [o.name, o]));
   const frameOf = (o: WorldObject) => { const a = o.anims.idle ?? o.anims.girar ?? Object.values(o.anims)[0]; return a.frames[Math.min(a.frames.length - 1, opts.frame ?? 0)]; };
   const ground = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'suelo');
   const front = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'frente');

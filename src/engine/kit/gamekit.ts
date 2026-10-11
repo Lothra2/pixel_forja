@@ -377,7 +377,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     return {
       mapa: `mundo/${big.name}.json`, nombre, ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
       agua, suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
-      vista: `mundo/${slug}_vista.png`, postales, objetos: objManifest, particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
+      vista: `mundo/${slug}_vista.png`, postales, objetos: objManifest, ...(big.meta?.fondo ? { fondo: big.meta.fondo.map((f) => ({ objeto: f.id, paralaje: f.paralaje })) } : {}), particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
       niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', notas: 'Texturas de 256 que pegan por los 4 lados. Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla.' },
       referencia: 'tools/pixel_forja/scripts/visor/runtime.js anima todo esto en Canvas 2D: es la referencia para el juego.',
       notas: 'Orden de dibujo: capa fondo (paralaje) > agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > sombras horneadas (campo sombra; si no hay, la elipse de siempre) > objetos y personajes ordenados por y > capa frente (no va en el mapa: la zona la declara en su propiedad frente y el juego la pega a los bordes de la pantalla, con paralaje 1.15) > luces (aditivo) > sombras de nube. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',

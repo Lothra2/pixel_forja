@@ -46,7 +46,7 @@ export interface TerrainDesign {
 
 export interface PaintedTerrain {
   img: Raster;
-  /** por pixel: 0 pasto, 1 camino, 2 plaza, 3 acantilado, 4 agua, 5 escalera */
+  /** por pixel: 0 pasto, 1 camino, 2 plaza, 3 acantilado, 4 agua, 5 escalera, 6 techo de muro o abismo (Catedral) */
   kind: Uint8Array;
   /** por pixel: 1 = meseta */
   high: Uint8Array;

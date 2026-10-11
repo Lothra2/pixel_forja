@@ -152,7 +152,9 @@ Campos nuevos en `mundo.objetos` (opcionales: si no están, todo sigue como ante
   ids separados por coma) y el juego lo pega a los bordes de la pantalla mientras la heroína está en esa zona. Las
   `frente_ramas_*` cuelgan del borde de arriba (apoyo arriba al centro) y las `frente_hojas_*` suben del borde de abajo
   (apoyo abajo al centro). Se mueven con paralaje 1.15 respecto de la cámara y entran y salen con un fundido de medio
-  segundo al cambiar de zona. Ninguno es sólido. `capa: "fondo"`: debajo de todo (lo usa la Catedral para el abismo, en la próxima tanda).
+  segundo al cambiar de zona. Ninguno es sólido. `capa: "fondo"`: debajo de todo, repetido por
+  toda la pantalla con su paralaje. Lo usa la Catedral para el abismo: el mundo trae `fondo: [{ objeto, paralaje }]`
+  en el manifiesto y el suelo es transparente donde no hay piso (ni agua). Detalle en `docs/mundos/CATEDRAL.md`.
 
 Objetos nuevos del Bosque:
 - Árboles `roble_t<tamaño>_<forma>` y `pino_t<tamaño>_<forma>` (tamaño 0, 1 o 2: 116, 146 y 182 px; forma 0, 1 o 2),
