@@ -3,6 +3,7 @@ import { catedralMap } from '../world/catedralMap';
 import { reachable } from '../world/bosqueMap';
 import { TILE } from '../world/tiles';
 import { CELL, footprint } from '../world/premium/placer';
+import { waterExtras } from '../world/water';
 
 describe('Catedral premium', () => {
   const m = catedralMap();
@@ -66,6 +67,14 @@ describe('Catedral premium', () => {
     }
     expect(m.zones.every((z) => typeof z.props.frente === 'string')).toBe(true);
     expect(m.decos.some((d) => d.sprite.startsWith('frente_'))).toBe(false);
+  });
+
+  it('el agua negra: espuma en las orillas del río y del pozo, reflejo solo en el pozo quieto', () => {
+    const w = waterExtras(m);
+    expect(w.piezas).toBeGreaterThan(20);
+    let refl = 0;
+    for (let k = 0; k < w.reflejo.length; k++) if (w.reflejo[k]) { refl++; expect(m.terrain.waterTiles[k]).toBe(1); }
+    expect(refl).toBeGreaterThan(3);
   });
 
   it('nada montado: los muebles no se pisan, no tapan pies ni muros, y no están sobre el abismo', () => {

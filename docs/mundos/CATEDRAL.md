@@ -37,6 +37,6 @@ muebles. Al final se revisa que nada nuevo tape un paso.
 
 ## Lo que no quedó y por qué
 
-- **El agua con espuma en la orilla y el reflejo (2.7):** va en la tanda siguiente, para los dos mundos.
+- **El agua:** la espuma de orilla y el reflejo (el pozo del atrio) son los mismos del Bosque: ver `BOSQUE.md`.
 - **Altura 2 (una meseta encima de otra):** no hizo falta. La nave a dos alturas sale con un descanso alto adentro de
   la sala, que es lo que ya usaba la escalera hundida.

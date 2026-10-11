@@ -10,6 +10,7 @@ import { landmarkObjects, fittedWaterfall, type WaterfallCol } from './landmarks
 import { treesPremium } from './premium/trees';
 import { withShadow, drawShadow } from './premium/shadow';
 import { forestDecals, forestGroups, forestFront } from './premium/details';
+import { waterExtras, drawFoam, ESPUMA } from './water';
 import { premiumWorld, type PremiumZone, type ZoneReport, type WorldPass, type WorldReport } from './premium/zone';
 
 /**
@@ -42,6 +43,8 @@ export interface BigMap {
   libre?: Uint8Array;
   /** cuánto bosque quiere el diseño en cada cuadro (menos de 0 nada, 1 o más bosque cerrado) */
   densidad?: Float32Array;
+  /** por cuadro: 1 = agua quieta (lagos, pozos), donde el juego puede mostrar reflejos */
+  quieta?: Uint8Array;
 }
 
 function rng(seed: number) {
@@ -106,11 +109,17 @@ export const BOSQUE_PREMIUM: Omit<WorldPass, 'darkAt'> = {
   frente: { 'Claro Escondido': ['frente_ramas_2', 'frente_hojas_1'], 'Anillo de las Hadas': ['frente_hojas_0', 'frente_hojas_1'] },
 };
 
+/** El Anillo de las Hadas hundido un nivel (2.8 del encargo), con la bajada donde llega el sendero. */
+export const ANILLO_HUNDIDO = {
+  poly: Array.from({ length: 20 }, (_, i) => [L.hadas[0] + 0.2 + Math.cos((i / 20) * Math.PI * 2) * 4.6, L.hadas[1] - 0.2 + Math.sin((i / 20) * Math.PI * 2) * 3.6] as TP),
+  entry: { x: 10.8, w: 2.2 },
+};
+
 export function bosqueMap(seed = 2024, opts: { premium?: boolean } = {}): BigMap & { piloto?: ZoneReport; mundo?: WorldReport } {
   const m = bosqueMapBase(seed);
   if (opts.premium === false) return m;
   const darkAt = (tx: number, ty: number) => bosqueDesign.dark.reduce((mx, z) => Math.max(mx, 1 - Math.hypot(tx - z.c[0], ty - z.c[1]) / z.r), 0);
-  const { zonas, mundo } = premiumWorld(m, bosqueDesign, [{ ...ZONA_PILOTO, darkAt }], { ...BOSQUE_PREMIUM, darkAt }, m.objects);
+  const { zonas, mundo } = premiumWorld(m, { ...bosqueDesign, pits: [ANILLO_HUNDIDO] }, [{ ...ZONA_PILOTO, darkAt }], { ...BOSQUE_PREMIUM, darkAt }, m.objects);
   return { ...m, piloto: zonas[0], mundo: mundo ?? undefined };
 }
 
@@ -550,7 +559,10 @@ function bosqueMapBase(seed = 2024): BigMap {
     { nombre: 'campo_calabazas', x: T(L.calabazas[0]), y: T(L.calabazas[1]) },
     { nombre: 'las_alturas', x: T(L.alturas[0]), y: T(L.alturas[1]) },
   ];
-  return { name: 'mundo1_bosque', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects, libre, densidad: dens };
+  // agua quieta: los lagos (los ríos corren)
+  const quieta = new Uint8Array(W * H);
+  for (const l of bosqueDesign.lakes) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (Math.hypot((x + 0.5 - l.c[0]) / (l.rx + 1), (y + 0.5 - l.c[1]) / (l.ry + 1)) < 1) quieta[at(x, y)] = 1;
+  return { name: 'mundo1_bosque', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects, libre, densidad: dens, quieta };
 }
 
 /** Desde dónde se puede llegar caminando (4 vecinos), empezando en un cuadro. */
@@ -579,6 +591,8 @@ export interface BigMapFiles {
   json: Record<string, unknown>;
   chunks: { name: string; x: number; y: number; img: Raster }[];
   aguaPng: Raster;
+  /** atlas de la espuma de orilla (capa espuma del mapa) */
+  espumaPng: Raster;
 }
 
 /** Exporta a Tiled: capas de imagen del suelo (trozos), agua animada, colisión, objetos, entidades, zonas y postales. */
@@ -611,6 +625,7 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
   for (let f = 0; f < 4; f++) over(agua, waterTile(f, m.meta?.agua), f * TILE, 0);
   for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) { const k = (y * agua.w + 4 * TILE + x) * 4; agua.data[k] = 255; agua.data[k + 1] = 0; agua.data[k + 2] = 255; agua.data[k + 3] = 110; }
   const solidGid = 5; // el 5to cuadro de la tira es la marca de colisión
+  const water = waterExtras(m);
   let oid = 1, lid = 1;
   const props = (p?: Record<string, Prop>) => Object.entries(p ?? {}).map(([name, value]) => ({ name, type: typeof value === 'number' ? 'float' : typeof value === 'boolean' ? 'bool' : 'string', value }));
   const point = (name: string, type: string, x: number, y: number, p?: Record<string, Prop>) => ({ id: oid++, name, type, x, y, width: 0, height: 0, rotation: 0, visible: true, point: true, properties: props(p) });
@@ -628,6 +643,9 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
       { id: lid++, name: 'colision', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.5, visible: false, data: Array.from(m.solid, (v) => (v ? solidGid : 0)) },
       // pasos: un valor por cuadro (no es un gráfico, se lee directo de data)
       { id: lid++, name: 'superficie', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.4, visible: false, data: Array.from(surfaceTiles(m)), properties: props({ valores: SUPERFICIES.map((n, i) => (i ? `${i} ${n}` : '')).filter(Boolean).join(', ') }) },
+      // espuma de la orilla (pieza del atlas por cuadro, animada) y agua quieta con reflejo
+      { id: lid++, name: 'espuma', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 1, visible: false, data: Array.from(water.espuma), properties: props({ atlas: `${m.name}_espuma.png`, columnas: ESPUMA.columnas, filas: water.filas, cuadros: ESPUMA.cuadros, fps: ESPUMA.fps, notas: 'n > 0: pieza n - 1 del atlas; el cuadro f de la animación está f * filas * 32 px más abajo' }) },
+      { id: lid++, name: 'reflejo', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.4, visible: false, data: Array.from(water.reflejo) },
       { id: lid++, name: 'objetos', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.decos.map((d) => point(d.sprite, 'deco', d.x, d.y, { sprite: d.sprite })) },
       { id: lid++, name: 'entidades', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.entities.map((e) => point(e.tipo, e.tipo, e.x, e.y, e.props)) },
       { id: lid++, name: 'zonas', type: 'objectgroup', draworder: 'topdown', opacity: 0.3, visible: false, x: 0, y: 0, objects: m.zones.map((z) => ({ id: oid++, name: z.nombre, type: 'zona', x: z.x, y: z.y, width: z.w, height: z.h, rotation: 0, visible: true, properties: props(z.props) })) },
@@ -636,7 +654,7 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
   };
   (json as Record<string, unknown>).nextlayerid = 200;
   (json as Record<string, unknown>).nextobjectid = oid;
-  return { json, chunks: parts, aguaPng: agua };
+  return { json, chunks: parts, aguaPng: agua, espumaPng: water.atlas };
 }
 
 /** Vista completa: agua, suelo, objetos de suelo y luego el resto ordenado por profundidad (sin entidades). */
@@ -658,6 +676,7 @@ export function renderBigMap(m: BigMap, opts: { entities?: boolean; frame?: numb
     out.data[i + 3] = 255;
   }
   const frameOf = (o: WorldObject) => { const a = o.anims.idle ?? o.anims.girar ?? Object.values(o.anims)[0]; return a.frames[Math.min(a.frames.length - 1, opts.frame ?? 0)]; };
+  drawFoam(out, m, opts.frame ?? 0);
   const ground = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'suelo');
   const front = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'frente');
   const rest = m.decos.filter((d) => { const l = byName.get(d.sprite)?.layer; return l !== 'suelo' && l !== 'frente'; }).sort((a, b) => a.y - b.y);

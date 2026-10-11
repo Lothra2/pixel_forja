@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { bosqueMap, ZONA_PILOTO, BOSQUE_PREMIUM, bosqueObjects } from '../world/bosqueMap';
+import { bosqueMap, ZONA_PILOTO, BOSQUE_PREMIUM, ANILLO_HUNDIDO, bosqueObjects, bigMapToTiled, reachable } from '../world/bosqueMap';
+import { inPoly } from '../world/paint';
+import { waterExtras, ESPUMA } from '../world/water';
 import { TILE } from '../world/tiles';
 import { SCREEN, CELL, footprint } from '../world/premium/zone';
 import { TREE_HEIGHT } from '../world/premium/trees';
@@ -111,6 +113,37 @@ describe('mundo premium: el Bosque entero', () => {
     expect(String(z.props.frente).split(',')).toEqual(ZONA_PILOTO.frente);
     for (const [nombre, list] of Object.entries(BOSQUE_PREMIUM.frente)) expect(String(m.zones.find((q) => q.nombre === nombre)!.props.frente).split(',')).toEqual(list);
     expect(m.piloto!.sinLugar).toEqual([]);
+  });
+
+  it('el Anillo de las Hadas hundido un nivel: cara de roca al norte, bajada al sur, y su cofre adentro y alcanzable', () => {
+    let face = 0, inside = 0;
+    for (let ty = 19; ty <= 30; ty++) for (let tx = 3; tx <= 16; tx++) {
+      const k = ty * m.w + tx;
+      if (inPoly(tx + 0.5, ty + 0.5, ANILLO_HUNDIDO.poly)) { inside++; if (m.terrain.tileKind[k] === 3) face++; }
+    }
+    expect(face).toBeGreaterThan(4);
+    expect(inside).toBeGreaterThan(30);
+    const cofre = m.entities.find((e) => e.tipo === 'cofre' && e.props?.pista === 'anillo_hadas')!;
+    expect(inPoly(cofre.x / TILE, cofre.y / TILE, ANILLO_HUNDIDO.poly)).toBe(true);
+    const ini = m.entities.find((e) => e.tipo === 'jugador_inicio')!;
+    const seen = reachable(m, Math.floor(ini.x / TILE), Math.floor(ini.y / TILE));
+    const tx = Math.floor(cofre.x / TILE), ty = Math.floor(cofre.y / TILE);
+    expect([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen[(ty + dy) * m.w + tx + dx])).toBe(true);
+  });
+
+  it('el agua: espuma animada en cada orilla y reflejo solo en el agua quieta', () => {
+    const w = waterExtras(m);
+    expect(w.piezas).toBeGreaterThan(100);
+    expect(w.atlas.h).toBe(w.filas * TILE * ESPUMA.cuadros);
+    expect(w.atlas.h).toBeLessThanOrEqual(4096);
+    for (let k = 0; k < w.espuma.length; k++) if (w.espuma[k]) expect(m.terrain.waterTiles[k], `espuma fuera del agua en ${k % m.w},${Math.floor(k / m.w)}`).toBe(1);
+    let refl = 0, water = 0;
+    for (let k = 0; k < w.reflejo.length; k++) { if (w.reflejo[k]) { refl++; expect(m.terrain.waterTiles[k]).toBe(1); } if (m.terrain.waterTiles[k]) water++; }
+    expect(refl).toBeGreaterThan(20);
+    expect(refl).toBeLessThan(water); // el río que corre no refleja
+    const names = (bigMapToTiled(m).json as { layers: { name: string }[] }).layers.map((l) => l.name);
+    expect(names).toContain('espuma');
+    expect(names).toContain('reflejo');
   });
 
   it('una sola luz: todas las sombras horneadas caen abajo a la derecha del apoyo', () => {

@@ -42,6 +42,12 @@ export interface TerrainDesign {
    * arriba de cada sala muestra su cara, igual que un acantilado.
    */
   rooms?: TP[][];
+  /**
+   * Hundidos: el piso baja un nivel adentro del polígono (el Anillo de las Hadas). Se ve la cara de roca debajo del
+   * borde norte, paredes angostas a los lados, el canto del borde sur y una bajada de tierra en `entry` (centro x y
+   * ancho en cuadros, sobre el borde sur). El borde no se pasa, salvo por la bajada.
+   */
+  pits?: { poly: TP[]; entry: { x: number; w: number } }[];
 }
 
 export interface PaintedTerrain {
@@ -625,15 +631,68 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
   }
   // juncos de la orilla quedan para los objetos
 
+  // ---- hundidos (solo si el diseño los trae: el resto sale igual) ----
+  const pitLip = new Uint8Array(d.pits?.length ? N : 0);
+  for (const pit of d.pits ?? []) {
+    const pp = pit.poly.map(([x, y]) => [x * TILE, y * TILE] as TP);
+    const xs = pp.map((p) => p[0]), ys = pp.map((p) => p[1]);
+    const x0 = Math.max(1, Math.floor(Math.min(...xs) - 24)), x1 = Math.min(W - 2, Math.ceil(Math.max(...xs) + 24));
+    const y0 = Math.max(1, Math.floor(Math.min(...ys) - 24)), y1 = Math.min(H - 2, Math.ceil(Math.max(...ys) + 24));
+    const inPit = (x: number, y: number) => polySd(x, y, pp) + (vn(x, y, 24, S + 501) - 0.5) * 14 < 0;
+    const ex0 = (pit.entry.x - pit.entry.w / 2) * TILE, ex1 = (pit.entry.x + pit.entry.w / 2) * TILE;
+    for (let x = x0; x <= x1; x++) {
+      // primera fila del hundido en esta columna: debajo va la cara de roca
+      let top = -1, bottom = -1;
+      for (let y = y0; y <= y1; y++) if (inPit(x, y)) { if (top < 0) top = y; bottom = y; }
+      if (top < 0) continue;
+      const faceH = 34 + Math.floor(vn(x, 0, 9, S + 503) * 8);
+      const hang = 1 + Math.floor(vn(x, 0, 5, S + 505) * 3);
+      for (let y = top; y <= bottom; y++) {
+        const i = y * W + x;
+        if (!inPit(x, y) || kind[i] === 4) continue;
+        const r = y - top;
+        // en la bajada no hay pared: tierra que baja hasta el piso del hundido
+        const entry = x >= ex0 && x <= ex1 && bottom - y < 26;
+        if (entry) { kind[i] = 1; set(i, DIRT[Math.max(0, Math.min(DIRT.length - 1, 2 + Math.round((y - (bottom - 26)) / 13)))]); continue; }
+        const side = !inPit(x - 5, y) || !inPit(x + 5, y);
+        if (r <= faceH) {
+          kind[i] = 3;
+          if (r <= hang) { set(i, GRASS[Math.max(0, grassIdx[i] - 1)]); continue; }
+          const cw = 11 + Math.floor(vn(x, 0, 60, S + 507) * 7), cx = (x + Math.floor(vn(x, 0, 30, S + 509) * 14)) % cw;
+          let t = 4 - (r / faceH) * 2.6 + (vn(x, y * 0.3, 6, S + 511) - 0.5) * 1.6;
+          if (cx <= 1) t += 1.2; else if (cx >= cw - 2) t -= 1.4;
+          if (r >= faceH - 1) t = 0;
+          set(i, ROCK[Math.max(0, Math.min(ROCK.length - 1, Math.round(t)))]);
+        } else if (side) {
+          kind[i] = 3;
+          set(i, ROCK[!inPit(x - 5, y) ? 4 : 2]);
+        } else if (kind[i] === 0) {
+          // el piso del hundido: un tono más oscuro, y más todavía pegado a las paredes (oclusión)
+          const near = !inPit(x, y - faceH - 6) || !inPit(x - 9, y) || !inPit(x + 9, y) || !inPit(x, y + 4);
+          set(i, GRASS[Math.max(0, grassIdx[i] - (near ? 3 : 1))]);
+        }
+      }
+      // el canto del borde sur (el piso de arriba termina): oscuro y con luz, y no se pasa salvo por la bajada
+      for (let y = bottom + 1; y <= Math.min(H - 1, bottom + 3); y++) {
+        const i = y * W + x;
+        if (x >= ex0 && x <= ex1) { if (kind[i] === 0) { kind[i] = 1; set(i, DIRT[3]); } continue; }
+        if (kind[i] !== 0) continue;
+        set(i, y === bottom + 1 ? pal.edgeDark : GRASS[Math.min(GRASS.length - 1, grassIdx[i] + 2)]);
+        pitLip[i] = 1;
+      }
+    }
+  }
+
   // ---- grillas por cuadro ----
   const TW = d.w, TH = d.h;
   const solid = new Uint8Array(TW * TH), waterTiles = new Uint8Array(TW * TH), tileKind = new Uint8Array(TW * TH), tileHigh = new Uint8Array(TW * TH);
   for (let ty = 0; ty < TH; ty++) for (let tx = 0; tx < TW; tx++) {
     const cnt = [0, 0, 0, 0, 0, 0];
-    let hi = 0, lo = 0;
+    let hi = 0, lo = 0, lip = 0;
     for (let y = ty * TILE; y < ty * TILE + TILE; y += 2) for (let x = tx * TILE; x < tx * TILE + TILE; x += 2) {
       const i = y * W + x;
       cnt[kind[i]]++;
+      if (pitLip.length && (pitLip[i] || pitLip[i + W])) lip++;
       if (high[i]) hi++; else lo++;
     }
     const t = ty * TW + tx, total = (TILE / 2) ** 2;
@@ -646,6 +705,7 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
     if (cnt[3] > total * 0.12 && !stairs) solid[t] = 1;
     if (hi > 0 && lo > 0 && !stairs && cnt[3] + cnt[5] > 0) solid[t] = 1;
     if (hi > total * 0.15 && lo > total * 0.15 && !stairs) solid[t] = 1;
+    if (lip > 0) solid[t] = 1;
   }
   return { img, kind, high, solid, waterTiles, tileKind, tileHigh };
 }

@@ -34,12 +34,21 @@ Roble, las ruinas y la estatua, el campamento goblin, la granja, la arena del mi
 cascada, los carteles, las fogatas, los cofres, los rompibles y los enemigos. Los arbustos donde viven los ojos y
 los arbustos de espinas se quedan en su lugar (con su sombra).
 
+## El Anillo hundido y el agua
+
+- **El Anillo de las Hadas hundido un nivel (2.8):** el pintor sabe hacer hundidos (`pits` en el diseño): cara de roca
+  debajo del borde norte, paredes angostas a los lados, piso más oscuro pegado a las paredes, canto en el borde sur y
+  una bajada de tierra donde llega el sendero. El borde no se pasa salvo por la bajada. El cofre secreto del Anillo
+  quedó adentro del hundido.
+- **Espuma de orilla (2.7):** 4 cuadros a 5 fps. En vez de un autotile de 16 bordes rectos, cada cuadro de orilla
+  trae su pieza pintada sobre la orilla real, que es orgánica. El atlas es `mundo/<mapa>_espuma.png` y el mapa trae la
+  capa `espuma` (0 nada, n = pieza n - 1). El juego la dibuja encima del suelo.
+- **Reflejo (2.7):** capa `reflejo` por cuadro: 1 donde el agua está quieta (los lagos). El río no refleja.
+
 ## Lo que no quedó y por qué
 
 - **Dos sauces sin lugar:** a la orilla no había dónde ponerlos sin pisar otra cosa. No se encajan a la fuerza.
-- **Agua con espuma en la orilla y reflejos:** todavía no. El agua sigue siendo la animada de siempre.
-- **Alturas 0, 1 y 2 en el pintor:** el pintor sabe una altura. Sin eso todavía no están el Anillo de las Hadas
-  hundido un nivel (2.8 del encargo) ni la nave de la Catedral a dos alturas. Va en la próxima tanda, con la
-  Catedral. Las Alturas ya tienen su acantilado con cara de roca, raíces que cuelgan y sombra al pie.
+- **Altura 2 completa (una meseta encima de otra):** no hizo falta para ninguna zona. El hundido y los descansos
+  resuelven el Anillo y la nave de la Catedral.
 - **Primer plano en la postal:** las postales son fotos quietas sin primer plano, porque el juego lo pega a los
   bordes de la pantalla.

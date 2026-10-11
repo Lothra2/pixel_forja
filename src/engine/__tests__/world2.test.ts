@@ -82,7 +82,7 @@ describe('mundo v2: objetos y Bosque GG', () => {
     // Tiled: agua, suelo en trozos, colisión, objetos, entidades, zonas y postales
     const t = bigMapToTiled(m);
     const layers = (t.json.layers as { name: string }[]).map((l) => l.name);
-    expect(layers).toEqual(['agua', 'suelo', 'colision', 'superficie', 'objetos', 'entidades', 'zonas', 'postales']);
+    expect(layers).toEqual(['agua', 'suelo', 'colision', 'superficie', 'espuma', 'reflejo', 'objetos', 'entidades', 'zonas', 'postales']);
     // pasos: hay de los 5 tipos y el puente suena a madera
     const sup = (t.json.layers as { name: string; data?: number[] }[]).find((l) => l.name === 'superficie')!.data!;
     expect(new Set(sup)).toEqual(new Set([1, 2, 3, 4, 5]));

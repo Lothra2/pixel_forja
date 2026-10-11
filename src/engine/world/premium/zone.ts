@@ -1,5 +1,5 @@
 import { TILE } from '../tiles';
-import { paintTerrain, forestFloor, distTo, GRASS, type TerrainDesign, type TP, type PaintedTerrain } from '../paint';
+import { paintTerrain, forestFloor, distTo, inPoly, GRASS, type TerrainDesign, type TP, type PaintedTerrain } from '../paint';
 import { createPlacer, CELL, footprint, SCREEN, type Footprint } from './placer';
 
 export { CELL, footprint, SCREEN, type Footprint };
@@ -143,12 +143,36 @@ export function premiumWorld(m: BigMap, design: TerrainDesign, zones: PremiumZon
   for (let k = 0; k < W * H; k++) if (t2.solid[k] !== baseTerrainSolid[k]) solid[k] = t2.solid[k] || keptSolid[k] || special[k];
   // en las zonas con receta propia la colisión es la del terreno nuevo más lo que se quedó
   for (const z of zones) for (let ty = z.rect[1]; ty <= z.rect[3]; ty++) for (let tx = z.rect[0]; tx <= z.rect[2]; tx++) { const k = at(tx, ty); solid[k] = t2.solid[k] || keptSolid[k] || special[k]; }
+  // un cofre o rompible que quedó adentro del relieve nuevo (la cara de un hundido) se corre al piso libre más cercano
+  for (const e of m.entities) {
+    if (e.tipo !== 'cofre' && e.tipo !== 'rompible') continue;
+    const tx = Math.floor(e.x / TILE), ty = Math.floor(e.y / TILE), k0 = at(tx, ty);
+    if (!t2.solid[k0] || baseTerrainSolid[k0]) continue;
+    // primero adentro del hundido (el secreto es del lugar), si no, el piso libre más cercano
+    const inPits = (x: number, y: number) => (design.pits ?? []).some((p) => inPoly(x + 0.5, y + 0.5, p.poly));
+    let best = -1, bestD = 1e9;
+    for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
+      const k = at(tx + dx, ty + dy);
+      if (k < 0 || t2.solid[k] || solid[k] || t2.waterTiles[k] || special[k] || ![0, 1].includes(t2.tileKind[k])) continue;
+      const d = Math.hypot(dx, dy) + (inPits(tx + dx, ty + dy) ? 0 : 20);
+      if (d < bestD) { bestD = d; best = k; }
+    }
+    if (best < 0) continue;
+    special[k0] = 0; solid[k0] = t2.solid[k0];
+    special[best] = 1; solid[best] = 1;
+    e.x = (best % W) * TILE + TILE / 2; e.y = Math.floor(best / W) * TILE + TILE / 2;
+  }
   const keptSolidSnapshot = new Uint8Array(solid);
 
   // ---------- 3. el motor de colocación ----------
   // la subida de las rampas nuevas y lo que el diseño deja libre: ahí no va nada sólido
   const clear = new Uint8Array(W * H);
   if (m.libre) clear.set(m.libre);
+  // la bajada de cada hundido también queda libre
+  for (const pit of design.pits ?? []) {
+    const yb = Math.max(...pit.poly.map((q) => q[1]));
+    for (let ty = Math.floor(yb) - 3; ty <= Math.floor(yb) + 2; ty++) for (let tx = Math.floor(pit.entry.x - pit.entry.w / 2) - 1; tx <= Math.ceil(pit.entry.x + pit.entry.w / 2); tx++) if (at(tx, ty) >= 0) clear[at(tx, ty)] = 1;
+  }
   for (const z of zones) for (const rp of z.ramps) for (let ty = Math.floor(rp.y) - 2; ty <= Math.floor(rp.y) + 2; ty++) for (let tx = Math.floor(rp.x - rp.w / 2); tx < Math.ceil(rp.x + rp.w / 2); tx++) if (at(tx, ty) >= 0) clear[at(tx, ty)] = 1;
   const darkOf = (tx: number, ty: number) => { const z = zones.find((q) => tx >= q.rect[0] && tx <= q.rect[2] && ty >= q.rect[1] && ty <= q.rect[3]); return z ? z.darkAt(tx, ty) : world ? world.darkAt(tx, ty) : 0; };
   // lo que el diseño puso a mano (campamentos, granja, ruinas): los grupos focales no se le arriman

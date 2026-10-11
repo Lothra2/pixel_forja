@@ -174,6 +174,14 @@ Campos nuevos en `mundo.objetos` (opcionales: si no están, todo sigue como ante
   toda la pantalla con su paralaje. Lo usa la Catedral para el abismo: el mundo trae `fondo: [{ objeto, paralaje }]`
   en el manifiesto y el suelo es transparente donde no hay piso (ni agua). Detalle en `docs/mundos/CATEDRAL.md`.
 
+Agua (los dos mundos):
+- `espuma` en cada mundo del manifiesto: `{ archivo, capa: "espuma", columnas, cuadros: 4, fps: 5 }`. La capa
+  `espuma` del mapa trae por cuadro 0 (nada) o n: la pieza n - 1 del atlas (`columnas` por fila). El cuadro f de la
+  animación está `f * filas * 32` px más abajo (`filas` va en las propiedades de la capa). Se dibuja encima del suelo,
+  debajo de los objetos.
+- `reflejo: { capa: "reflejo" }`: por cuadro, 1 = agua quieta. Ahí el juego puede reflejar a la heroína y a los árboles
+  de la orilla (el sprite invertido, con alfa bajo y una ondita).
+
 Objetos nuevos del Bosque:
 - Árboles `roble_t<tamaño>_<forma>` y `pino_t<tamaño>_<forma>` (tamaño 0, 1 o 2: 116, 146 y 182 px; forma 0, 1 o 2),
   con `idle`, `tronco` y `copa` como los de siempre, y `sombra`.

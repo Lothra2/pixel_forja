@@ -17,6 +17,7 @@ import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
 import { isSpecial, handKindOf } from '../loot/render';
 import { TILE } from '../world/tiles';
+import { ESPUMA } from '../world/water';
 import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK, type BigMap } from '../world/bosqueMap';
 import { catedralMap } from '../world/catedralMap';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
@@ -355,6 +356,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const tiled = bigMapToTiled(big, 'suelo');
     once(json(`mundo/${big.name}.json`, tiled.json));
     once(png(agua, tiled.aguaPng));
+    once(png(`mundo/${big.name}_espuma.png`, tiled.espumaPng));
     for (const c of tiled.chunks) once(png(`mundo/${c.name}`, c.img));
     // vista completa a la mitad (para mirar el mapa) y postales a tamaño real (lo que se ve en pantalla)
     const full = renderBigMap(big);
@@ -376,7 +378,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     }
     return {
       mapa: `mundo/${big.name}.json`, nombre, ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
-      agua, suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
+      agua, espuma: { archivo: `mundo/${big.name}_espuma.png`, capa: 'espuma', columnas: ESPUMA.columnas, cuadros: ESPUMA.cuadros, fps: ESPUMA.fps }, reflejo: { capa: 'reflejo' },
+      suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
       vista: `mundo/${slug}_vista.png`, postales, objetos: objManifest, ...(big.meta?.fondo ? { fondo: big.meta.fondo.map((f) => ({ objeto: f.id, paralaje: f.paralaje })) } : {}), particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
       niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', notas: 'Texturas de 256 que pegan por los 4 lados. Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla.' },
       referencia: 'tools/pixel_forja/scripts/visor/runtime.js anima todo esto en Canvas 2D: es la referencia para el juego.',

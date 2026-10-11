@@ -371,8 +371,11 @@ export function catedralMap(seed = 777, opts: { premium?: boolean } = {}): BigMa
     { nombre: 'forja_apagada', x: T(LC.forja[0]), y: T(LC.forja[1] + 1) },
     { nombre: 'campanario_invertido', x: T(LC.campanario[0]), y: T(LC.campanario[1] - 1) },
   ];
+  // agua quieta: el pozo del atrio (el río de la nave corre)
+  const quieta = new Uint8Array(W * H);
+  for (const l of design.lakes) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (Math.hypot((x + 0.5 - l.c[0]) / (l.rx + 1), (y + 0.5 - l.c[1]) / (l.ry + 1)) < 1) quieta[at(x, y)] = 1;
   const map: BigMap & { premium?: CatedralReport } = {
-    name: 'mundo2_catedral', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects,
+    name: 'mundo2_catedral', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects, quieta,
     meta: { bioma: 'catedral', musica: 'catedral', nombre: 'La Catedral de las Raíces', agua: AGUA_CATEDRAL },
   };
   if (premium) {
