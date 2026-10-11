@@ -14,9 +14,6 @@ import type { BigFrame } from './human';
 export type PetView = 'side' | 'se' | 'front' | 'ne' | 'back';
 const YAW: Record<PetView, number> = { side: 0, se: 45, front: 90, ne: -45, back: -90 };
 
-/** elevación de la cámara (grados): 35 se parece a la vista de Diablo */
-const ELEV = (35 * Math.PI) / 180;
-const SIN = Math.sin(ELEV), COS = Math.cos(ELEV);
 /** escala de dibujo sobre el esqueleto */
 const K48 = 1.22;
 
@@ -226,8 +223,12 @@ function build(f: AnimalFicha, d: AnimalDims, pose: QPose, armor: number): { pri
 
 /** Pinta la mascota en una vista. Mismo formato que el renderer de lado (cuadro grande con piso y pivote). */
 export function renderPet3d(f: AnimalFicha, cell: CellSize, pose: QPose, view: PetView = 'side', armor = 0): BigFrame {
-  const d = animalDims(f.body.species, cell, f.body.size);
+  const prem = f.movementProfile === 'premium';
+  const d = animalDims(f.body.species, cell, f.body.size, prem);
   const W = cell * 3, Hh = cell * 2;
+  // premium: cámara un poco más baja, así en la diagonal de atrás el lomo no se apila y no parece parado de manos
+  const ELV = ((prem ? 24 : 35) * Math.PI) / 180;
+  const SIN = Math.sin(ELV), COS = Math.cos(ELV);
   // a 32 px no hay lugar: sin agrandar
   const K = cell >= 48 ? K48 : 1;
   const phi = (YAW[view] * Math.PI) / 180, cp = Math.cos(phi), sp = Math.sin(phi);
@@ -235,7 +236,7 @@ export function renderPet3d(f: AnimalFicha, cell: CellSize, pose: QPose, view: P
   // de frente y de espaldas un perro real se ve angosto y, desde arriba, el lomo se apila como una columna.
   // Como hace un pixel artist: en esas vistas se ensancha (z) y se acorta (x). De lado no cambia nada
   const fr = sp * sp;
-  const zK = 1 + 0.5 * fr, xK = 1 - 0.3 * fr;
+  const zK = 1 + 0.5 * fr, xK = 1 - (prem ? 0.4 : 0.3) * fr;
   const squash = (v: V3): V3 => [v[0] * xK, v[1], v[2] * zK];
   const prims = built.prims.map((p) => p.kind === 'cap'
     ? { ...p, a: squash(p.a!), b: squash(p.b!), rad: p.rad! * (1 + 0.25 * fr) }
@@ -360,7 +361,10 @@ export function renderPet3d(f: AnimalFicha, cell: CellSize, pose: QPose, view: P
   let y1 = -1, x0 = Infinity, x1 = -1, y0 = Infinity;
   for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) if (out.data[(y * W + x) * 4 + 3]) { y1 = Math.max(y1, y); y0 = Math.min(y0, y); x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
   const dy = y1 < 0 ? 0 : oy - y1 - Math.round(pose.air);
-  const dx = Math.round(pose.x);
+  // premium: el perro se corre hacia la cola (lo mismo en todas las animaciones, así el pivote no salta): estira más
+  // hacia adelante (cabeza, pelota, mordida) que hacia atrás y si no la cabeza pega contra el borde de la celda
+  const lead = prem ? Math.round(3 * d.u * Math.cos(phi)) : 0;
+  const dx = Math.round(pose.x) - lead;
   const shifted = createRaster(W, Hh);
   for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) {
     const X = x - dx, Y = y - dy;

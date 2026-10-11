@@ -1,7 +1,7 @@
 import { Actor } from './actor';
 import type { Kit, KitEvent } from './kit';
 import { DIR_WORLD, SQRT2, dist, nearestDirection, screenIntentToWorld, toScreen, type Direction, type Vec } from './iso';
-import { makeScene, toUV, type Scene, type SceneId } from './scenes';
+import { makeScene, toUV, fromUV, type Scene, type SceneId } from './scenes';
 import { Effects, Sfx } from './fx';
 
 /**
@@ -20,7 +20,7 @@ export interface SportConfig {
 
 export const SPORTS: Record<SceneId, SportConfig> = {
   atletismo: { idle: 'idle', walk: 'walk', gaits: ['run', 'sprint', 'hurdles'], actions: ['sprint_start', 'long_jump', 'pole_vault', 'shot_put', 'javelin', 'celebrate'] },
-  natacion: { idle: 'tread_water', gaits: ['swim', 'swim_back', 'swim_breast', 'swim_fly'], actions: ['dive'] },
+  natacion: { idle: 'tread_water', gaits: ['swim', 'swim_back', 'swim_breast', 'swim_fly'], actions: ['dive', 'swim_exit'] },
   voley: { idle: 'vb_ready', walk: 'walk', gaits: ['run'], actions: ['serve', 'vb_bump', 'vb_set', 'spike', 'block', 'vb_dive'], rival: true },
   tenis: { idle: 'tn_ready', walk: 'walk', gaits: ['run'], actions: ['tennis_serve', 'forehand', 'backhand', 'tn_volley', 'tn_smash'], rival: true },
   pelea: { idle: 'guard', walk: 'fight_step', gaits: [], actions: ['jab', 'punch', 'hook', 'uppercut', 'low_kick', 'kick_martial', 'flying_kick', 'fight_block', 'slip'], rival: true },
@@ -129,10 +129,24 @@ export class Game {
     const p = this.player;
     if (p.busy) return;
     if (this.sport === 'natacion') {
-      if (name !== 'dive' || !this.onBlock) return;
-      this.onBlock = false;
-      p.inWater = true;
-      p.play('dive', () => { p.loop(this.cfg.idle); });
+      if (name === 'dive' && this.onBlock) {
+        this.onBlock = false;
+        p.inWater = true;
+        p.play('dive', () => { p.loop(this.cfg.idle); });
+      }
+      // salir: solo pegado a un borde; mira hacia el borde, sale y queda parado afuera, de vuelta hacia la piscina
+      const edge = name === 'swim_exit' && !this.onBlock && p.inWater ? this.poolEdge() : null;
+      if (edge) {
+        p.facing = edge.facing;
+        p.play('swim_exit', () => {
+          p.inWater = false;
+          this.onBlock = true;
+          p.pos = edge.out;
+          p.facing = edge.back;
+          p.loop('idle');
+          this.lapStart = null;
+        });
+      }
       return;
     }
     if (this.sport === 'voley' || this.sport === 'tenis') {
@@ -146,6 +160,21 @@ export class Game {
     }
     if (name === 'sprint_start') this.raceStart = null;
     p.play(name, () => p.loop(this.cfg.idle));
+  }
+
+  /** El borde de la piscina más cercano si el nadador está pegado a él (a menos de 16): hacia dónde salir y dónde queda. */
+  poolEdge(): { facing: Direction; back: Direction; out: Vec } | null {
+    const pool = this.scene.pool;
+    if (!pool) return null;
+    const { u, v } = toUV(this.player.pos);
+    const edges: [number, Direction, Direction, Vec][] = [
+      [u - pool.u0, 'left', 'right', fromUV(pool.u0 - 6, v)],
+      [pool.u1 - u, 'right', 'left', fromUV(pool.u1 + 6, v)],
+      [v - pool.v0, 'up', 'down', fromUV(u, pool.v0 - 6)],
+      [pool.v1 - v, 'down', 'up', fromUV(u, pool.v1 + 6)],
+    ];
+    const [d, facing, back, out] = edges.reduce((a, b) => (b[0] < a[0] ? b : a));
+    return d < 16 ? { facing, back, out } : null;
   }
 
   private faceTo(a: Actor, b: Actor): Direction {
@@ -168,7 +197,8 @@ export class Game {
 
   private movePlayer(dt: number, intent: Vec, run: boolean) {
     const p = this.player;
-    if (p.busy) { p.update(dt); this.keepApart(); this.clamp(p, -1); return; }
+    // en la piscina el clavado y la salida cruzan el borde: no se encierran en el agua
+    if (p.busy) { p.update(dt); this.keepApart(); if (this.sport !== 'natacion') this.clamp(p, -1); return; }
     const k = Math.min(1, Math.hypot(intent.x, intent.y));
     const blocked = this.onBlock || (this.sport === 'pelea' && this.koT > 0);
     if (k < 0.15 || blocked) {

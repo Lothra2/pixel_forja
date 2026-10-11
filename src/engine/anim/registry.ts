@@ -1,6 +1,7 @@
 import type { AnimDef, Pack } from './types';
 import { BASIC, swim } from './basic';
 import { FOOTBALL, kick } from './football';
+import { FOOTBALL_NEW } from './footballPremium';
 import { SPORTS } from './sports';
 import { ATHLETICS_NEW } from './athletics';
 import { SWIM_NEW } from './swim';
@@ -15,7 +16,7 @@ import { type Pose, keyed } from '../rig/pose';
 import type { CustomAnim, Ficha } from '../sheet/ficha';
 import { isHuman } from '../sheet/ficha';
 
-export const HUMAN_ANIMS: AnimDef[] = [...BASIC, kick, ...FOOTBALL, ...SPORTS.filter((a) => a !== swim), ...ATHLETICS_NEW, ...NET_NEW, ...FIGHT_NEW, swim, ...SWIM_NEW, ...RPG, ...SKILLS, ...ENEMY];
+export const HUMAN_ANIMS: AnimDef[] = [...BASIC, kick, ...FOOTBALL, ...FOOTBALL_NEW, ...SPORTS.filter((a) => a !== swim), ...ATHLETICS_NEW, ...NET_NEW, ...FIGHT_NEW, swim, ...SWIM_NEW, ...RPG, ...SKILLS, ...ENEMY];
 
 const byName = new Map(HUMAN_ANIMS.map((a) => [a.name, a]));
 const animalByName = new Map(ANIMAL_ANIMS.map((a) => [a.name, a]));

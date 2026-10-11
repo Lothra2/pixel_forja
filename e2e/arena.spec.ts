@@ -66,6 +66,11 @@ test('arena: el kit juega con pasos, saltos, clavado, saque y golpes', async ({ 
   s = await state(page);
   expect(s.counts.impacto).toBeGreaterThanOrEqual(1);
   await page.screenshot({ path: `${shots}/${tag}_arena_natacion.png` });
+  // recién entrado, sigue pegado al borde: sale del agua y queda parado afuera
+  await page.getByRole('button', { name: /Salir del agua|Climb out/ }).click();
+  await page.waitForTimeout(1600);
+  const fuera = await page.evaluate(() => { const g = (window as unknown as { __arena: any }).__arena; return { onBlock: g.onBlock, inWater: g.player.inWater, anim: g.player.anim }; });
+  expect(fuera).toEqual({ onBlock: true, inWater: false, anim: 'idle' });
 
   // vóley: el saque se lanza (suelta) y se pega (impacto); la pelota queda en juego
   await page.locator('[data-s="voley"]').click();
