@@ -1,6 +1,6 @@
 # Lote A: datos y exportación
 Estado: entregado
-PR: (pendiente)
+PR: https://github.com/Lothra2/pixel_forja/pull/7
 Fecha: 2026-10-11
 
 ## Qué se hizo
@@ -42,7 +42,7 @@ Los campos y el código de Phaser están en [docs/KIT_DEPORTES.md](../../KIT_DEP
 
 ## Pruebas
 
-`npm test` en verde. `npm run e2e` en verde, en escritorio y en teléfono. Las nuevas están en `src/engine/__tests__/frameData.test.ts` y en la prueba e2e "ver datos y vestuario".
+`npm test`: 170 de 170. `npm run e2e`: 30 de 30 en escritorio y teléfono, incluida la arena con el kit completo (`npm run build:sitio`). Las nuevas están en `src/engine/__tests__/frameData.test.ts` y en la prueba e2e "ver datos y vestuario".
 
 Tabla de calidad del lote:
 
