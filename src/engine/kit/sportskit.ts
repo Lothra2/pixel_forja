@@ -10,6 +10,7 @@ import { ATHLETICS_PREMIUM } from '../anim/athletics';
 import { SWIM_PREMIUM } from '../anim/swim';
 import { NET_PREMIUM } from '../anim/net';
 import { FIGHT_PREMIUM } from '../anim/fight';
+import { FOOTBALL_PREMIUM } from '../anim/footballPremium';
 
 /**
  * Kit deportivo: hojas de 8 direcciones de cada atleta y cada deporte, con un manifest.json que le dice al juego
@@ -24,6 +25,7 @@ export const SPORT_PACKS = {
   voley: [...base, ...NET_PREMIUM.filter((a) => a.pack === 'volley').map((a) => a.name)],
   tenis: [...base, ...NET_PREMIUM.filter((a) => a.pack === 'tennis').map((a) => a.name)],
   pelea: ['idle', 'walk', ...FIGHT_PREMIUM.map((a) => a.name)],
+  futbol: ['idle', 'walk', 'run', ...FOOTBALL_PREMIUM.filter((a) => a.name !== 'kick').map((a) => a.name), 'celebrate', 'goal_knee', 'goal_plane', 'sad'],
 } as const;
 export type SportPack = keyof typeof SPORT_PACKS;
 export const SPORT_PACK_NAMES = Object.keys(SPORT_PACKS) as SportPack[];

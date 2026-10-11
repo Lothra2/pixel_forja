@@ -8,6 +8,7 @@ import { ATHLETICS_PREMIUM } from '../anim/athletics';
 import { SWIM_PREMIUM } from '../anim/swim';
 import { NET_PREMIUM } from '../anim/net';
 import { FIGHT_PREMIUM } from '../anim/fight';
+import { FOOTBALL_PREMIUM } from '../anim/footballPremium';
 
 const premium = (id: 'rick' | 'steph' | 'sophie' | 'alana', rpg = true): HumanFicha => ({ ...familyFicha(id, rpg), movementProfile: 'premium' });
 const ATH = ATHLETICS_PREMIUM.map((a) => a.name);
@@ -306,6 +307,25 @@ describe('movimiento premium', () => {
     expect(heroCell('hulk')).toBe(64);
     expect(HEROES.filter((h) => heroCell(h) === 48)).toHaveLength(5);
   }, 1_800_000);
+
+  it('fútbol premium: toda la familia pasa el control en 8 direcciones y 3 tamaños; cada contacto trae su golpe', () => {
+    const names = FOOTBALL_PREMIUM.map((a) => a.name);
+    for (const id of ['rick', 'steph', 'sophie', 'alana'] as const) for (const cell of [32, 48, 64] as CellSize[]) {
+      const { qa, missing } = renderPlan(premium(id, false), { cell, anims: names, views: EIGHT_VIEWS, props: true });
+      expect(missing, id).toEqual([]);
+      expect(qa.filter((r) => !r.ok).map((r) => `${id} ${cell} ${r.clip}`)).toEqual([]);
+    }
+    const f = premium('rick', false);
+    for (const a of ['shot', 'pass', 'chip', 'volley', 'header', 'trap', 'tackle', 'keeper_punt', 'run_ball']) {
+      expect(renderClip(f, 48, a, 'side').events?.some((e) => e.type === 'impacto'), a).toBe(true);
+    }
+    for (const a of ['throw_in', 'keeper_throw']) expect(renderClip(f, 48, a, 'side').events?.some((e) => e.type === 'suelta'), a).toBe(true);
+    // la conducción avanza como correr y el tiro trae la carrera de aproximación
+    expect(renderClip(f, 48, 'run_ball', 'side').stride).toBeGreaterThan(10);
+    expect(renderClip(f, 48, 'shot', 'side').travel!.at(-1)).toBeGreaterThan(3);
+    // el clásico (el preajuste del juego de fútbol con fichas clásicas) no cambia: sigue en 8 cuadros
+    expect(renderClip({ ...f, movementProfile: 'classic' }, 48, 'shot', 'side').frames).toHaveLength(8);
+  }, 600_000);
 
   it('los emblemas se dibujan en el pecho de frente y no de espalda', () => {
     for (const id of ['spiderman', 'batman'] as const) {

@@ -6,7 +6,7 @@ Hojas de sprites de 8 direcciones para un juego de deportes isométrico: atletis
 
 ```bash
 npm run deportes -- salida/kit_deportes                  # todo: familia + héroes, los 5 deportes, celda 48
-npm run deportes -- salida/kit --deportes natacion,pelea  # solo algunos deportes
+npm run deportes -- salida/kit --deportes natacion,pelea  # solo algunos deportes (atletismo, natacion, voley, tenis, pelea, futbol)
 npm run deportes -- salida/kit --celda 64                 # más grande
 npm run deportes -- salida/kit --fichas mis_fichas        # tus personajes exportados del estudio (.ficha.json)
 npm run deportes -- salida/kit --rapido                   # 2 animaciones por deporte, para probar
@@ -84,6 +84,8 @@ En local: `npm run deportes -- public/kit_deportes` y después `npm run dev`. En
 - **Vóley:** espera, recepción, colocación, remate, bloqueo, saque flotado y plancha.
 - **Tenis:** espera con split step, derecha, revés a dos manos, saque, volea y smash.
 - **Peleas:** guardia, desplazamiento, jab, directo, gancho, uppercut, patada baja, patada alta, patada voladora, bloqueo, esquiva, golpe recibido, nocaut y victoria. Cada golpe trae chispa de impacto.
+- **Fútbol:** espera, control, pase, vaselina, tiro, volea, cabezazo, barrida, conducción (`run_ball`, corre tocando la pelota), entrada, saque de banda y el arquero (espera, estirada, atajada alta, saque con la mano y de volea). Las patadas tienen zancada, pie de apoyo, carga, contacto y seguimiento, y el `impacto` cae en el cuadro del contacto con el `punto` del pie. Celebraciones de gol incluidas.
+- **Natación:** además, salir del agua por el borde (`swim_exit`).
 
 ## Superhéroes
 
