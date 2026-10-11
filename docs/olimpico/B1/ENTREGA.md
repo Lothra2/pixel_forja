@@ -1,6 +1,6 @@
 # Lote B1 + D1: beat 'em up y armas del piso
 Estado: entregado
-PR: (pendiente)
+PR: https://github.com/Lothra2/pixel_forja/pull/8
 Fecha: 2026-10-11
 
 ## Qué se hizo
