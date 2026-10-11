@@ -33,8 +33,15 @@ export interface AnimalDims extends SpeciesTemplate {
   groundY: number;
 }
 
-export function animalDims(species: Species, cell: CellSize, size = 1): AnimalDims {
-  const t = SPECIES_T[species];
+/**
+ * Medidas a este tamaño. premium: lomo más corto y patas más largas (un bóxer es cuadrado y atlético; con el lomo
+ * largo y las patas cortas se ve como un salchicha y las patas casi no se leen al correr).
+ */
+export function animalDims(species: Species, cell: CellSize, size = 1, premium = false): AnimalDims {
+  const t0 = SPECIES_T[species];
+  const t: SpeciesTemplate = premium
+    ? { ...t0, bodyLen: t0.bodyLen * 0.84, chest: t0.chest * 0.95, legUpper: t0.legUpper * 1.25, legLower: t0.legLower * 1.2, neckLen: t0.neckLen * 1.1 }
+    : t0;
   const u = (cell / 48) * size;
   const r = (v: number, min = 1) => Math.max(min, Math.round(v * u));
   return {

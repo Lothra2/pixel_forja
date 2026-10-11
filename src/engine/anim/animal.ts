@@ -1,5 +1,6 @@
 import { type AnimalDims, type QPose, type QFoot, standQ } from '../rig/animal';
 import { merge, type DeepPartial } from '../rig/pose';
+import type { AnimEvent } from './types';
 
 /**
  * Animaciones de cuatro patas. Los andares son ciclos con la fase de cada pata:
@@ -10,6 +11,10 @@ export interface AnimalAnimDef {
   fps: number;
   loop: boolean;
   steady?: boolean;
+  /** premium: pisadas, mordida (impacto), ladrido (suelta), saltos */
+  events?: AnimEvent[];
+  /** premium: pixeles de celda que avanza el cuerpo en un ciclo (la pata apoyada no patina) */
+  stride?: (d: AnimalDims) => number;
   build: (d: AnimalDims) => QPose[];
 }
 

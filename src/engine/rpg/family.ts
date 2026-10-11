@@ -94,5 +94,7 @@ export function thorFicha(barding = 0): AnimalFicha {
     palette: { fur: makeRamp('#b5713a'), fur2: makeRamp('#f0ece4'), dark: makeRamp('#573e2b'), eyes: '#3a2414', collar: makeRamp('#225fd4') },
     markings: { chest: true, paws: true, mask: true },
     ...(barding > 0 ? { barding } : {}),
+    // premium: proporciones de bóxer, andares de verdad, eventos y pivote fijo
+    movementProfile: 'premium',
   };
 }

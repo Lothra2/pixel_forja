@@ -5,6 +5,7 @@ import { animalDims } from '../rig/animal';
 import { makeCtx, type AnimDef, type AnimEvent } from '../anim/types';
 import { humanAnim, animalAnim, customToDef } from '../anim/registry';
 import { premiumAnim, swingWeapon } from '../anim/premium';
+import { petPremiumAnim } from '../anim/petPremium';
 import type { Pose } from '../rig/pose';
 import { strideOf } from '../anim/stride';
 import { applyWater } from './water';
@@ -80,7 +81,10 @@ function humanDef(f: Ficha, name: string): AnimDef | undefined {
 
 /** ¿Esta ficha usa la versión premium de esta animación? */
 export function isPremiumClip(f: Ficha, name: string): boolean {
-  return isHuman(f) && f.movementProfile === 'premium' && !f.customAnims?.some((c) => c.name === name) && !!premiumAnim(name);
+  if (f.movementProfile !== 'premium') return false;
+  // la mascota premium (Thor): andares de verdad, eventos y pivote fijo
+  if (!isHuman(f)) return !!petPremiumAnim(name);
+  return !f.customAnims?.some((c) => c.name === name) && !!premiumAnim(name);
 }
 
 export function hasAnim(f: Ficha, name: string): boolean {
@@ -249,14 +253,15 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     longHeld = poses.map((p) => !!p.props?.some((q) => LONG_HELD.has(q.kind)));
     water = poses.map((p) => (p.water !== undefined ? { level: p.water, big: !!p.splash } : null));
   } else {
-    const def = animalAnim(name);
+    const def = (premium ? petPremiumAnim(name) : undefined) ?? animalAnim(name);
     if (!def) throw new Error(`No existe la animación ${name}`);
-    const d = animalDims(f.body.species, cell, f.body.size);
+    const d = animalDims(f.body.species, cell, f.body.size, f.movementProfile === 'premium');
     const poses = def.build(d);
     // mascota en 3D: las 8 direcciones (las de la izquierda, espejo) con armadura si la tiene
     big = poses.map((p) => renderPet3d(f, cell, p, (base === 'side' || base === 'se' || base === 'front' || base === 'ne' || base === 'back' ? base : 'side') as PetView, f.barding ?? 0));
     fps = def.fps; loop = def.loop; steady = !!def.steady;
     airborne = poses.map((p) => p.air > 0);
+    if (premium) { events = def.events; if (def.loop && def.stride) stride = Math.round(def.stride(d) * 10) / 10; }
   }
   // premium: el pivote queda siempre en el mismo lugar de la celda (no salta entre cuadros, direcciones ni acciones)
   const cropped = cropClip(big, cell, premium);

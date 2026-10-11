@@ -4,6 +4,23 @@ import { thorFicha, renderClip, renderPlan, EIGHT_VIEWS, PET_RPG_ANIMS, PET_ARMO
 const key = (r: Raster) => Buffer.from(r.data).toString('base64');
 
 describe('Thor, mascota ayudante', () => {
+  it('es premium: pisadas, mordida, ladrido y avance sin patinar; las patas se ven trabajar al correr', () => {
+    const f = thorFicha();
+    expect(f.movementProfile).toBe('premium');
+    const walk = renderClip(f, 48, 'walk', 'side'), run = renderClip(f, 48, 'run', 'side');
+    expect(walk.events?.filter((e) => e.type === 'paso')).toHaveLength(4);
+    expect(run.events?.some((e) => e.type === 'despegue')).toBe(true);
+    expect(run.stride!).toBeGreaterThan(walk.stride!);
+    expect(renderClip(f, 48, 'bite', 'side').events?.[0]).toMatchObject({ type: 'impacto' });
+    expect(renderClip(f, 48, 'bark', 'side').events?.every((e) => e.type === 'suelta')).toBe(true);
+    // el galope cambia de verdad cuadro a cuadro (antes las patas casi no se movían)
+    const frames = run.frames.map(key);
+    expect(new Set(frames).size).toBe(frames.length);
+    // pivote fijo: todas las animaciones comparten el punto de apoyo
+    expect(renderClip(f, 48, 'idle', 'side').frames[0].w).toBe(48);
+  });
+
+
   it('es una ficha válida y se ve distinto en cada una de las 5 vistas (las otras 3 son espejo)', () => {
     const f = thorFicha();
     expect(validateFicha(f)).toEqual([]);
