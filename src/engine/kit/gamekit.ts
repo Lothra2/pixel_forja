@@ -25,6 +25,7 @@ import { galeriasMap } from '../world/galeriasMap';
 import { dustWarning, dustCloud, shadowEyes } from '../world/galeriasObjects';
 import { POLILLA_REINA_SPEC, POLILLA_CENIZA_SPEC } from '../boss/polilla';
 import { MINERO_PIEDRA_SPEC, SOMBRA_SPEC } from '../boss/mina';
+import { introPanels, fuegoPared, humoGrande, logoFuego } from '../intro/intro';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
 import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
@@ -75,6 +76,8 @@ export interface KitOptions {
   bossCache?: BossCache;
   /** sin el Mundo 3 (mapa, enemigos y la Polilla Reina): para pruebas rápidas de lo demás */
   sinMundo3?: boolean;
+  /** sin el intro (paneles, fuego, humo y logo con fuego) */
+  sinIntro?: boolean;
 }
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
@@ -191,6 +194,8 @@ export const BIG_BOSSES: Partial<Record<EnemyId, BossSpec>> = { minotauro: MINO_
 const r2 = (v: number) => Math.round(v * 100) / 100;
 /** efectos de sonido que suenan en bucle */
 const SFX_BUCLE = new Set<string>(['carrito_rodar']);
+/** músicas nuevas que suenan en bucle justo (ya traen el final pegado al principio) */
+const MUSICA_BUCLE = new Set<string>(['galerias', 'jefe_polilla']);
 
 /**
  * Un jefe grande al kit: una hoja por animación (fila = dirección, columna = cuadro), celda y pivote reales, y en el
@@ -428,6 +433,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : [])];
   log('mundo listo');
 
+  let introLogo: Record<string, unknown> | null = null;
   // ---------- interfaz ----------
   const ui: Record<string, unknown> = {};
   for (const s of [...hudSprites(), ...hudIcons(), rotateTablet()]) {
@@ -458,7 +464,34 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const logo = renderLogo(opts.fonts.bold);
     files.push(png('ui/logo.png', strip(logo)));
     ui.logo = { archivo: 'ui/logo.png', w: 288, h: 96, cuadros: logo.length, fps: 8, loop: true };
+    // el logo con fuego del intro: al doble, 16 cuadros en una grilla de 4 x 4 (una tira pasaría de 4096)
+    if (!opts.sinIntro) {
+      const lf = logoFuego(logo[0]), C = 4, lw = lf[0].w, lh = lf[0].h;
+      const grid = createRaster(lw * C, lh * Math.ceil(lf.length / C));
+      lf.forEach((fr, i) => blit(grid, fr, (i % C) * lw, Math.floor(i / C) * lh));
+      files.push(png('intro/logo_fuego.png', grid));
+      introLogo = { archivo: 'intro/logo_fuego.png', w: lw, h: lh, cuadros: lf.length, fps: 12, loop: true, columnas: C, notas: 'Cuadro i en la columna i % 4, fila floor(i / 4). El logo de siempre al doble, con 32 px de aire arriba para las llamas.' };
+    }
     ui.fuentes = { ...fuentes, notas: 'BMFont XML: this.load.bitmapFont(nombre, png, fnt). fuente_ui (8 px, blanca con sombra, se tiñe con setTint; usar escala entera x2 o x3), fuente_titulo y fuente_titulo_plata (16 px, ya pintadas). Tienen ñ, tildes, ¡ y ¿.' };
+  }
+  // ---------- el intro (parte 4): paneles en capas, fuego, humo y el logo con fuego ----------
+  if (!opts.sinIntro) {
+    const intro: Record<string, unknown> = {};
+    for (const p of introPanels()) {
+      intro[p.id] = {
+        w: p.w, h: p.h, notas: p.notas,
+        capas: p.capas.map((c) => { const n = `intro/${p.id}_${c.nombre}.png`; files.push(png(n, strip(c.frames))); return { nombre: c.nombre, archivo: n, cuadros: c.frames.length, fps: c.fps, paralaje: c.paralaje }; }),
+      };
+    }
+    const fp = fuegoPared(), hg = humoGrande();
+    files.push(png('intro/fuego_pared.png', strip(fp)), png('intro/humo_grande.png', strip(hg)));
+    intro.fuego_pared = { archivo: 'intro/fuego_pared.png', w: 128, h: 96, cuadros: fp.length, fps: 12, loop: true, notas: 'Pega de lado a lado: repetirla a lo ancho de la pantalla. Sin piedras.' };
+    intro.humo_grande = { archivo: 'intro/humo_grande.png', w: 128, h: 128, cuadros: hg.length, fps: 6, loop: false, notas: 'Cruza la pantalla delante de todo y se desvanece (el último cuadro ya casi no se ve).' };
+    if (introLogo) intro.logo_fuego = introLogo;
+    intro.audio = { musica: 'musica_intro', latido: 'latido' };
+    intro.notas = 'Paneles de 480 x 270 (el corte del abismo 480 x 540) para agrandar x2 o x3 entero. Cada capa es una tira de cuadros; dibujar fondo, medio y frente en ese orden, cada una corrida con su paralaje respecto de la cámara. La luz sale de abajo, del fuego. Momentos de GUION_INTRO: brasas y cueva > intro_bosque_noche e intro_corte_abismo, ojos > intro_ojos, guardianes > intro_guardianes, familia > intro_familia, titulo > logo_fuego sobre fuego_pared.';
+    manifest.intro = intro;
+    log('intro listo');
   }
   files.push(png('ui/continuara.png', continuara()));
   ui.continuara = { archivo: 'ui/continuara.png', w: 960, h: 540, cuadros: 1 };
@@ -472,7 +505,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const audio: Record<string, string> = {};
   // los efectos en bucle (el carrito) no se apagan al final, como los ambientes
   for (const n of SFX_NAMES) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(SFX[n](), undefined, SFX_BUCLE.has(n)), 'audio/wav')); audio[n] = a; }
-  for (const [n, fn] of Object.entries(MUSIC)) { const a = `audio/musica_${n}.wav`; files.push(file(a, encodeWav(fn()), 'audio/wav')); audio[`musica_${n}`] = a; }
+  // las músicas nuevas que van en bucle no se apagan al final (las de antes quedan como estaban)
+  for (const [n, fn] of Object.entries(MUSIC)) { const a = `audio/musica_${n}.wav`; files.push(file(a, encodeWav(fn(), undefined, MUSICA_BUCLE.has(n)), 'audio/wav')); audio[`musica_${n}`] = a; }
   for (const n of AMBIENCE_NAMES) { const a = `audio/ambiente_${n}.wav`; files.push(file(a, encodeWav(ambience(n), undefined, true), 'audio/wav')); audio[`ambiente_${n}`] = a; }
   manifest.audio = audio;
   log('audio listo');

@@ -114,6 +114,7 @@ export type SfxName =
   | 'descubrir' | 'secreto' | 'elegir' | 'guardado' | 'arco' | 'esquiva' | 'bloqueo' | 'thor_rescate'
   | 'arbusto_sacudir' | 'hongo_rebote' | 'charco_pisar' | 'rana_salto' | 'palanca' | 'puerta_abrir' | 'reja_abrir' | 'piedra_arrastrar' | 'campana_chica' | 'telarana_romper'
   | 'cristal_prender' | 'cristal_apagar' | 'polilla_aleteo' | 'minero_golpe' | 'sombra_aparece' | 'carrito_rodar' | 'figura_irse'
+  | 'latido'
   | `paso_${'pasto' | 'tierra' | 'piedra' | 'madera' | 'agua'}_${0 | 1 | 2}`;
 
 /** Efectos de sonido. */
@@ -200,6 +201,9 @@ export const SFX: Record<SfxName, () => Float32Array> = {
   carrito_rodar: () => aparte(2609, () => mix([{ wave: 'noise', f0: 400, f1: 400, dur: 3, vol: 0.25, lp: 0.08 }, ...Array.from({ length: 12 }, (_, i) => ({ wave: 'noise' as Wave, f0: 2200, f1: 900, dur: 0.05, at: i * 0.25, vol: 0.32 })), ...Array.from({ length: 12 }, (_, i) => ({ wave: 'sine' as Wave, f0: 160, f1: 120, dur: 0.07, at: i * 0.25 + 0.04, vol: 0.25 }))], 0)),
   // la figura se va: humo (soplido que baja) y un "plin" agudo (0.8 s)
   figura_irse: () => aparte(2707, () => mix([{ wave: 'noise', f0: 1200, f1: 300, dur: 0.6, a: 0.05, vol: 0.32, lp: 0.15 }, { wave: 'sine', f0: NOTE('A6'), dur: 0.35, at: 0.42, vol: 0.28 }, { wave: 'sine', f0: NOTE('E7'), dur: 0.25, at: 0.45, vol: 0.1 }])),
+  // ---- el intro (parte 4) ----
+  // latido grave para el momento de los ojos (1.2 s): dos golpes sordos, el segundo más suave
+  latido: () => aparte(4101, () => mix([{ wave: 'sine', f0: 70, f1: 40, dur: 0.28, vol: 0.9 }, { wave: 'noise', f0: 300, f1: 120, dur: 0.1, vol: 0.12, lp: 0.08 }, { wave: 'sine', f0: 62, f1: 38, dur: 0.32, at: 0.24, vol: 0.6 }, { wave: 'sine', f0: 30, dur: 0.01, at: 1.19, vol: 0 }], 0)),
   ...pasos(),
 };
 
@@ -473,4 +477,83 @@ export function musicJefePolilla(): Float32Array {
   });
 }
 
-export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata, galerias: musicGalerias, jefe_polilla: musicJefePolilla };
+/**
+ * La música del intro (27 s, sin bucle), sincronizada con GUION_INTRO del juego: épica y grave, con un coro sin
+ * palabras. Golpes en 9 s (los ojos), 13 s (los guardianes) y 23 s (el título), y medio segundo de silencio justo
+ * antes del título. Los golpes son graves y redondos: impresionan sin asustar.
+ */
+export function musicIntro(): Float32Array {
+  return conSemilla(3307, () => {
+    const len = Math.round(27 * RATE), buf = new Float32Array(len);
+    const N = (n: string) => NOTE(n);
+    /** colchón sostenido (el coro): varias voces desafinadas apenas, con vibrato lento y un filtro que respira */
+    const pad = (t0: number, t1: number, notes: string[], vol: number, att = 1.2, rel = 1.2, bright = 0.12) => {
+      const s0 = Math.floor(t0 * RATE), s1 = Math.min(len, Math.floor(t1 * RATE));
+      notes.forEach((n, k) => {
+        for (const det of [-0.12, 0.1]) {
+          let ph = 0, lp = 0;
+          const f0 = N(n) * Math.pow(2, det / 12);
+          for (let i = s0; i < s1; i++) {
+            const t = (i - s0) / RATE, rest = (s1 - i) / RATE;
+            const f = f0 * Math.pow(2, (Math.sin(t * (4.8 + k * 0.3) * Math.PI * 2) * 0.12) / 12);
+            ph += f / RATE;
+            const p = ph - Math.floor(ph);
+            // un "aah": triángulo con un poco de diente de sierra, pasado por un pasa bajos
+            const raw = (p < 0.5 ? p * 4 - 1 : 3 - p * 4) * 0.8 + (p * 2 - 1) * 0.2;
+            lp += (raw - lp) * (bright + 0.04 * Math.sin(t * 0.7));
+            const env = Math.min(1, t / att) * Math.min(1, rest / rel);
+            buf[i] += lp * env * vol;
+          }
+        }
+      });
+    };
+    /** el golpe: un tambor grande (seno que baja) con un poco de aire, y su eco */
+    const boom = (t: number, vol: number) => {
+      for (const [dt, k] of [[0, 1], [0.32, 0.25]] as [number, number][]) {
+        const s0 = Math.floor((t + dt) * RATE), n = Math.floor(1.6 * RATE);
+        let ph = 0, lp = 0;
+        for (let i = 0; i < n && s0 + i < len; i++) {
+          const u = i / RATE;
+          const f = 38 + 60 * Math.exp(-u * 9);
+          ph += f / RATE;
+          const env = Math.min(1, i / (RATE * 0.004)) * Math.exp(-u * 3.2);
+          lp += ((rnd() * 2 - 1) - lp) * 0.06;
+          buf[s0 + i] += (Math.sin(ph * Math.PI * 2) * 0.9 + lp * Math.exp(-u * 14) * 0.6) * env * vol * k;
+        }
+      }
+    };
+    /** tambores del medio (taiko chicos) */
+    const drum = (t: number, vol: number) => {
+      const s0 = Math.floor(t * RATE), n = Math.floor(0.5 * RATE);
+      let ph = 0;
+      for (let i = 0; i < n && s0 + i < len; i++) { const u = i / RATE; ph += (70 + 50 * Math.exp(-u * 20)) / RATE; buf[s0 + i] += Math.sin(ph * Math.PI * 2) * Math.exp(-u * 8) * vol; }
+    };
+    // 0 a 9 s: el bajo grave que crece y el coro que entra de a poco (Re menor)
+    pad(0, 9.2, ['D2', 'A2'], 0.16, 3, 0.6, 0.05);
+    pad(2.5, 9.2, ['D4', 'F4', 'A4'], 0.05, 3, 0.6, 0.08);
+    // 9 s: los ojos. Golpe, y el coro sube
+    boom(9, 0.9);
+    pad(9, 13.2, ['A#1', 'F2'], 0.18, 0.3, 0.5, 0.05);
+    pad(9, 13.2, ['A#3', 'D4', 'F4'], 0.07, 0.6, 0.5, 0.1);
+    // 13 s: los guardianes. Golpe más fuerte, tambores y el coro arriba
+    boom(13, 1);
+    for (let t = 13.75; t < 22; t += 0.75) { drum(t, 0.32); if ((t * 4) % 3 < 0.5) drum(t + 0.375, 0.18); }
+    pad(13, 17.6, ['C2', 'G2'], 0.18, 0.3, 0.4, 0.05);
+    pad(13, 17.6, ['C4', 'E4', 'G4'], 0.08, 0.5, 0.4, 0.12);
+    pad(17.6, 22.5, ['A1', 'E2'], 0.18, 0.4, 0.15, 0.05);
+    pad(17.6, 22.5, ['A3', 'C#4', 'E4', 'A4'], 0.085, 0.6, 0.15, 0.14);
+    // 22.5 a 23 s: silencio. 23 s: el título, el acorde grande en Re mayor que se queda sonando
+    boom(23, 1);
+    pad(23, 27, ['D2', 'A2'], 0.2, 0.05, 2.2, 0.06);
+    pad(23, 27, ['D4', 'F#4', 'A4', 'D5'], 0.08, 0.15, 2.2, 0.16);
+    // el silencio de verdad antes del título (con fundidos de 30 ms)
+    const a = Math.floor(22.5 * RATE), b = Math.floor(23 * RATE), fade = Math.floor(0.03 * RATE);
+    for (let i = a - fade; i < b; i++) buf[i] *= i < a ? (a - i) / fade : 0;
+    let m = 0;
+    for (const v of buf) m = Math.max(m, Math.abs(v));
+    if (m > 0) for (let i = 0; i < len; i++) buf[i] *= 0.6 / m;
+    return buf;
+  });
+}
+
+export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata, galerias: musicGalerias, jefe_polilla: musicJefePolilla, intro: musicIntro };

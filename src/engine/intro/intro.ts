@@ -262,7 +262,7 @@ function corteAbismo(): IntroPanel {
 function ojos(): IntroPanel {
   const W = PANEL_W, H = PANEL_H;
   // cerrados, se abren de a poco, miran, miran al costado, parpadean, miran
-  const open = [0, 0.12, 0.38, 0.72, 1, 1, 0.08, 1];
+  const open = [0, 0.12, 0.38, 0.72, 1, 1, 0, 1];
   const look = [0, 0, 0, 0, 0, -0.35, 0, 0.15];
   const frames: Raster[] = [];
   for (let f = 0; f < 8; f++) {

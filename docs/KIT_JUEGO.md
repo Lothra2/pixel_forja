@@ -260,6 +260,20 @@ como los otros). Detalle completo en `docs/mundos/GALERIAS.md`. Lo nuevo para el
 - `audio`: `musica_galerias`, `musica_jefe_polilla`, `ambiente_galerias`, `ambiente_eco`, `cristal_prender`,
   `cristal_apagar`, `polilla_aleteo`, `minero_golpe`, `sombra_aparece`, `carrito_rodar` (bucle) y `figura_irse`.
 
+### El intro (parte 4)
+
+`manifest.intro` trae los paneles pintados para el intro: `intro_bosque_noche`, `intro_corte_abismo`, `intro_ojos`,
+`intro_guardianes` e `intro_familia`. Cada uno trae `{ w, h, capas: [{ nombre, archivo, cuadros, fps, paralaje }] }`;
+cada capa es una tira de cuadros y se dibujan en orden (fondo, medio, frente). También trae:
+
+- `logo_fuego`: 16 cuadros en una grilla de 4 x 4 (`columnas: 4`). El cuadro i va en la columna i % 4 y la fila
+  floor(i / 4).
+- `fuego_pared`: 128 x 96, se repite a lo ancho.
+- `humo_grande`: 128 x 128.
+- `audio`: `musica_intro` (27 s, golpes en 9, 13 y 23 s y silencio de 22.5 a 23 s) y `latido` (1.2 s).
+
+Qué panel va en cada momento de `GUION_INTRO`, en `intro.notas`. Detalle en `docs/intro/INTRO.md`.
+
 ### Hojas de personajes
 
 Un PNG por animación. Fila = dirección en el orden de `direcciones`. Columna = cuadro. Ancho = `cuadros * celda`, alto = `8 * celda`.
