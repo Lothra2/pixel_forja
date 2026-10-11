@@ -101,10 +101,11 @@ export interface Pose {
   /** true: cada cuadro se centra solo. 'shared': un solo corrimiento para todo el ciclo (no tiembla) */
   fit?: boolean | 'shared';
   /**
-   * Carga (levantar y llevar): dónde va lo que se lleva, de 0 = entre las manos a 1 = apoyado sobre el pelo. El render
-   * lo exporta como la articulación `carry` y el kit como `carga`: el juego dibuja ahí el objeto o al rival levantado
+   * Lleva algo en las manos (levantar, llevar, lanzar). El render abre los brazos a los costados de la cabeza y exporta
+   * dónde se apoya la carga: la articulación `carry` (`carga` en el kit), entre las dos manos y en el borde de arriba
+   * de las palmas. El juego dibuja ahí el objeto o al rival, detrás de quien lo carga
    */
-  load?: number;
+  load?: boolean;
   /** vaivén del pelo largo (lo calcula el clip a partir del movimiento) */
   hair?: { dx: number; dy: number };
   props?: PropState[];
