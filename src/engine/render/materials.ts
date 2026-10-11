@@ -11,6 +11,10 @@ export const PROP_COLORS = {
   glow: '#5fe0ff',
   /** color del escudo (la ficha puede cambiarlo) */
   shieldc: '#2f5fb8',
+  /** paja (nón lá, escoba), crema (termo, cuero del furro) y verde azulado (chancleta) */
+  straw: '#d9b56a', cream: '#efe3c8', teal: '#2bb3a3',
+  /** color de la variante de un arma del piso (silla, paraguas, chancleta...): se cambia por objeto */
+  color0: '#d23c3c',
 } as const;
 export type PropColor = keyof typeof PROP_COLORS;
 

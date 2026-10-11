@@ -289,43 +289,323 @@ export function bikeGeometry(x: number, groundY: number, u: number) {
 }
 
 /**
- * Armas del piso de la pelea callejera: objetos sueltos que el juego pone en el piso, se recogen, se llevan sobre la
- * cabeza y se tiran. Se dibujan parados sobre `base` (centro de abajo). u = escala (1 a 48 px).
+ * Armas del piso de la pelea callejera: objetos sueltos que el juego pone en el piso, se recogen, se llevan en la mano
+ * o sobre la cabeza y se tiran. Todos se dibujan con código, en su postura de piso, con la base (centro de abajo) en
+ * (0, 0) y hacia arriba. u = escala (1 a 48 px).
  */
-export type FloorPropKind = 'pote_basura';
+export const FLOOR_PROP_KINDS = [
+  'chancleta', 'silla_plastica', 'non_la', 'coco', 'tubo', 'llanta', 'pote_basura', 'cono', 'escoba', 'piedra',
+  'paraguas', 'abanico', 'termo', 'furro', 'broomstick', 'balon_goma', 'chapa', 'tejo', 'volante_dacau',
+] as const;
+export type FloorPropKind = (typeof FLOOR_PROP_KINDS)[number];
 
-/** Pote de basura de lata: acanalado, con dos bandas, tapa abombada con asa. `lid` = con la tapa puesta. */
-export function drawFloorProp(part: Part, kind: FloorPropKind, base: [number, number], u: number, lid = true) {
+/** Cómo se usa cada arma del piso: qué animación de quien la agarra le toca. */
+export type FloorPropUse = 'swing' | 'heavy' | 'throw' | 'block' | 'gust';
+
+export interface FloorPropInfo {
+  nombre: { es: string; en: string };
+  peso: 'liviano' | 'medio' | 'pesado';
+  /** gira en el aire cuando se lanza */
+  rota: boolean;
+  uso: FloorPropUse;
+  /** variantes de color (la primera es la de siempre) */
+  colores?: string[];
+}
+
+export const FLOOR_PROPS: Record<FloorPropKind, FloorPropInfo> = {
+  chancleta: { nombre: { es: 'Chancleta', en: 'Flip-flop' }, peso: 'liviano', rota: true, uso: 'throw', colores: ['#2bb3a3', '#e0466a', '#f2c94c'] },
+  silla_plastica: { nombre: { es: 'Silla plástica', en: 'Plastic chair' }, peso: 'pesado', rota: true, uso: 'heavy', colores: ['#d23c3c', '#3d6fd6', '#4caf50'] },
+  non_la: { nombre: { es: 'Nón lá', en: 'Conical hat' }, peso: 'liviano', rota: true, uso: 'throw' },
+  coco: { nombre: { es: 'Coco', en: 'Coconut' }, peso: 'medio', rota: true, uso: 'throw' },
+  tubo: { nombre: { es: 'Tubo', en: 'Pipe' }, peso: 'medio', rota: true, uso: 'swing' },
+  llanta: { nombre: { es: 'Llanta', en: 'Tire' }, peso: 'pesado', rota: true, uso: 'heavy' },
+  pote_basura: { nombre: { es: 'Pote de basura', en: 'Trash can' }, peso: 'pesado', rota: true, uso: 'heavy' },
+  cono: { nombre: { es: 'Cono', en: 'Traffic cone' }, peso: 'medio', rota: true, uso: 'heavy' },
+  escoba: { nombre: { es: 'Escoba', en: 'Broom' }, peso: 'medio', rota: true, uso: 'swing' },
+  piedra: { nombre: { es: 'Piedra', en: 'Rock' }, peso: 'liviano', rota: true, uso: 'throw' },
+  paraguas: { nombre: { es: 'Paraguas', en: 'Umbrella' }, peso: 'medio', rota: true, uso: 'swing', colores: ['#24305e', '#d23c3c', '#2bb3a3'] },
+  abanico: { nombre: { es: 'Abanico', en: 'Hand fan' }, peso: 'liviano', rota: true, uso: 'gust', colores: ['#d23c3c', '#8a4fd6', '#e2b23c'] },
+  termo: { nombre: { es: 'Termo de tinto', en: 'Coffee flask' }, peso: 'liviano', rota: true, uso: 'throw' },
+  furro: { nombre: { es: 'Furro', en: 'Furro drum' }, peso: 'pesado', rota: true, uso: 'heavy' },
+  broomstick: { nombre: { es: 'Palo de escoba', en: 'Broomstick' }, peso: 'medio', rota: true, uso: 'swing' },
+  balon_goma: { nombre: { es: 'Balón de goma', en: 'Rubber ball' }, peso: 'liviano', rota: true, uso: 'throw' },
+  chapa: { nombre: { es: 'Chapa', en: 'Bottle cap' }, peso: 'liviano', rota: true, uso: 'throw', colores: ['#d23c3c', '#3d6fd6', '#e2b23c'] },
+  tejo: { nombre: { es: 'Tejo', en: 'Tejo disc' }, peso: 'liviano', rota: true, uso: 'throw' },
+  volante_dacau: { nombre: { es: 'Volante de đá cầu', en: 'Đá cầu shuttlecock' }, peso: 'liviano', rota: true, uso: 'throw' },
+};
+
+export interface FloorPropOpts {
+  /** pote con la tapa puesta (si no, sin tapa) */
+  lid?: boolean;
+  /** paraguas y abanico abiertos */
+  open?: boolean;
+  /** material de color de la variante (la ficha de colores del objeto) */
+  color?: string;
+  /** cuadro de una animación propia (vapor del termo, plumas del volante) */
+  phase?: number;
+}
+
+/**
+ * Dónde se agarra cada objeto, desde su base (x a la derecha, y hacia abajo): ahí va la mano y ahí gira en la mano.
+ * Los largos se toman de un extremo; los chicos, del centro; los pesados, del borde de arriba.
+ */
+export function floorPropGrip(kind: FloorPropKind, u: number, opts: FloorPropOpts = {}): [number, number] {
   const n = (v: number) => Math.max(1, Math.round(v * u));
-  if (kind === 'pote_basura') {
-    const h = n(12), wb = n(8), wt = n(10);
-    const bx = Math.round(base[0]), by = Math.round(base[1]);
-    for (let j = 0; j < h; j++) {
-      // un poco más ancho arriba (cónico, como los de lata)
-      const w = Math.round(wb + ((wt - wb) * j) / Math.max(1, h - 1));
-      const y = by - j, x0 = bx - Math.floor(w / 2);
-      for (let i = 0; i < w; i++) {
-        // luz a la izquierda, sombra a la derecha; las canaletas verticales cada 3 pixeles van más oscuras
-        const t = i / Math.max(1, w - 1);
-        let slot = t < 0.3 ? LIGHT : t > 0.75 ? SHADOW : BASE;
-        if (i > 0 && i < w - 1 && i % 3 === 1 && slot !== SHADOW) slot = slot === LIGHT ? BASE : SHADOW;
-        part.set(x0 + i, y, 'p_steel', slot);
-      }
-    }
-    // dos bandas de refuerzo
-    for (const k of [0.3, 0.72]) {
-      const y = by - Math.round(h * k), w = Math.round(wb + (wt - wb) * k);
-      for (let i = 0; i < w; i++) part.set(bx - Math.floor(w / 2) + i, y, 'p_iron', i < w * 0.3 ? BASE : SHADOW);
-    }
-    if (!lid) return;
-    // tapa: un disco aplanado que sobresale, abombado, con el asa arriba
-    const lw = wt + 2, ly = by - h;
-    for (let i = 0; i < lw; i++) part.set(bx - Math.floor(lw / 2) + i, ly, 'p_steel', i < lw * 0.35 ? LIGHT : BASE);
-    const dw = lw - n(3);
-    for (let i = 0; i < dw; i++) part.set(bx - Math.floor(dw / 2) + i, ly - 1, 'p_steel', i < dw * 0.4 ? LIGHT : BASE);
-    const hw = Math.max(2, n(3));
-    for (let i = 0; i < hw; i++) part.set(bx - Math.floor(hw / 2) + i, ly - 2 - (u >= 1.2 ? 1 : 0), 'p_iron', BASE);
-    part.set(bx - Math.floor(hw / 2), ly - 2, 'p_iron', BASE);
-    part.set(bx - Math.floor(hw / 2) + hw - 1, ly - 2, 'p_iron', BASE);
+  switch (kind) {
+    case 'tubo': case 'broomstick': return [-n(7), -n(1)];
+    case 'escoba': return [-n(6), -n(2)];
+    case 'paraguas': return opts.open ? [0, -n(2)] : [-n(7), -n(1)];
+    case 'abanico': return opts.open ? [0, -1] : [-n(3), -1];
+    case 'silla_plastica': return [-n(3), -n(13)];
+    case 'llanta': return [0, -n(11)];
+    case 'pote_basura': return [0, -n(12)];
+    case 'cono': return [0, -n(10)];
+    case 'furro': return [0, -n(10)];
+    case 'termo': return [0, -n(5)];
+    case 'volante_dacau': return [0, -1];
+    default: return [0, -Math.max(1, Math.round(floorPropSize(kind, u)[1] / 2))];
   }
+}
+
+/** Ancho y alto aproximados de cada objeto parado en el piso (para centrar y agarrar). */
+export function floorPropSize(kind: FloorPropKind, u: number): [number, number] {
+  const n = (v: number) => Math.max(1, Math.round(v * u));
+  const S: Record<FloorPropKind, [number, number]> = {
+    chancleta: [9, 3], silla_plastica: [11, 14], non_la: [14, 6], coco: [7, 7], tubo: [18, 2], llanta: [12, 12], pote_basura: [11, 14],
+    cono: [9, 11], escoba: [18, 4], piedra: [6, 4], paraguas: [18, 3], abanico: [8, 2], termo: [4, 10], furro: [10, 11],
+    broomstick: [18, 2], balon_goma: [7, 7], chapa: [3, 2], tejo: [6, 2], volante_dacau: [5, 6],
+  };
+  const [w, h] = S[kind];
+  return [n(w), n(h)];
+}
+
+/** Dibuja un objeto del piso con la base en `base` (centro de abajo). */
+export function drawFloorProp(part: Part, kind: FloorPropKind, base: [number, number], u: number, opts: FloorPropOpts | boolean = {}) {
+  const o: FloorPropOpts = typeof opts === 'boolean' ? { lid: opts } : opts;
+  const n = (v: number) => Math.max(1, Math.round(v * u));
+  const bx = Math.round(base[0]), by = Math.round(base[1]);
+  const color = o.color ?? 'p_color0';
+  /** rectángulo con luz a la izquierda y sombra a la derecha */
+  const box = (x0: number, y0: number, w: number, h: number, mat: string, shade = true) => {
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const t = i / Math.max(1, w - 1);
+      part.set(x0 + i, y0 + j, mat, !shade ? BASE : t < 0.3 ? LIGHT : t > 0.75 ? SHADOW : BASE);
+    }
+  };
+  const rod = (len: number, t: number, mat: string, x0 = bx - Math.floor(len / 2)) => {
+    for (let j = 0; j < t; j++) for (let i = 0; i < len; i++) part.set(x0 + i, by - j, mat, j === t - 1 && t > 1 ? LIGHT : BASE);
+  };
+  switch (kind) {
+    case 'pote_basura': {
+      const h = n(12), wb = n(8), wt = n(10);
+      for (let j = 0; j < h; j++) {
+        // un poco más ancho arriba (cónico, como los de lata); las canaletas cada 3 pixeles, más oscuras
+        const w = Math.round(wb + ((wt - wb) * j) / Math.max(1, h - 1));
+        const y = by - j, x0 = bx - Math.floor(w / 2);
+        for (let i = 0; i < w; i++) {
+          const t = i / Math.max(1, w - 1);
+          let slot = t < 0.3 ? LIGHT : t > 0.75 ? SHADOW : BASE;
+          if (i > 0 && i < w - 1 && i % 3 === 1 && slot !== SHADOW) slot = slot === LIGHT ? BASE : SHADOW;
+          part.set(x0 + i, y, 'p_steel', slot);
+        }
+      }
+      for (const k of [0.3, 0.72]) {
+        const y = by - Math.round(h * k), w = Math.round(wb + (wt - wb) * k);
+        for (let i = 0; i < w; i++) part.set(bx - Math.floor(w / 2) + i, y, 'p_iron', i < w * 0.3 ? BASE : SHADOW);
+      }
+      if (o.lid === false) return;
+      drawPoteLid(part, [bx, by - h], u);
+      return;
+    }
+    case 'chancleta': {
+      // de costado: suela gruesa con la tira en V arriba
+      const w = n(9);
+      box(bx - Math.floor(w / 2), by - n(1) + 1, w, n(1), 'p_white', false);
+      box(bx - Math.floor(w / 2), by - n(2) + 1, w, 1, color);
+      const sx = bx - Math.floor(w / 2) + Math.round(w * 0.35);
+      part.set(sx, by - n(2), color, LIGHT); part.set(sx + 1, by - n(3), color, LIGHT); part.set(sx + n(3), by - n(2), color, BASE); part.set(sx + n(2), by - n(3), color, BASE);
+      return;
+    }
+    case 'silla_plastica': {
+      // silla monobloc de lado: patas abiertas, asiento y respaldo inclinado
+      const h = n(14), seatY = by - n(7), w = n(9);
+      const x0 = bx - Math.floor(w / 2);
+      stroke(part, [x0, by], [x0 + n(1), seatY], 1, () => color, SHADOW);
+      stroke(part, [x0 + w - 1, by], [x0 + w - 2, seatY], 1, () => color, SHADOW);
+      box(x0, seatY - n(1) + 1, w, n(1) + 1, color);
+      stroke(part, [x0, seatY], [x0 - n(2), by - h], n(1) + (u >= 1 ? 1 : 0), () => color, BASE);
+      stroke(part, [x0 - n(2), by - h], [x0 - n(2), by - h + n(3)], n(1) + 1, () => color, LIGHT);
+      return;
+    }
+    case 'non_la': {
+      // sombrero cónico de lado: triángulo de paja con las rayas del tejido
+      const w = n(14), h = n(6);
+      const pts: [number, number][] = [[bx - w / 2, by], [bx + w / 2, by], [bx, by - h]];
+      polygon(part, pts, 'p_straw', BASE);
+      for (let k = 1; k < 3; k++) { const y = by - Math.round((h * k) / 3); const half = Math.round((w / 2) * (1 - k / 3)); for (let i = -half; i <= half; i++) if (part.has(bx + i, y)) part.set(bx + i, y, 'p_straw', SHADOW); }
+      for (let i = 0; i < w; i++) part.set(bx - Math.floor(w / 2) + i, by, 'p_straw', SHADOW);
+      return;
+    }
+    case 'coco': {
+      const s = n(7);
+      blob(part, [bx, by - (s - 1) / 2], s, 'p_brown', BASE);
+      for (const [x, y, p] of [...part.entries()]) if (p.mat === 'p_brown' && x < bx && y < by - s / 2) part.set(x, y, 'p_brown', LIGHT);
+      // los tres ojitos del coco
+      part.set(bx - 1, by - Math.round(s * 0.6), 'p_black'); part.set(bx + 1, by - Math.round(s * 0.6), 'p_black'); part.set(bx, by - Math.round(s * 0.4), 'p_black');
+      return;
+    }
+    case 'tubo': rod(n(18), Math.max(2, n(2)), 'p_metal'); part.set(bx + Math.floor(n(18) / 2) - 1, by - 1, 'p_iron'); return;
+    case 'broomstick': rod(n(18), Math.max(1, n(1.5)), 'p_wood'); return;
+    case 'escoba': {
+      const len = n(13), x0 = bx - n(9);
+      rod(len, Math.max(1, n(1.5)), 'p_wood', x0);
+      // cerdas en abanico al final del palo
+      const bw = n(5), bh = n(4);
+      for (let i = 0; i < bw; i++) for (let j = 0; j < bh; j++) if (j <= (i * bh) / bw + 1) part.set(x0 + len + i, by - j + Math.floor(bh / 2) - 1, 'p_straw', i % 2 ? SHADOW : BASE);
+      return;
+    }
+    case 'llanta': {
+      const R = n(6);
+      for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) {
+        const d = Math.hypot(x, y);
+        if (d <= R + 0.3 && d >= R * 0.45) part.set(bx + x, by - R + y, 'p_black', d > R * 0.8 ? SHADOW : x + y < 0 ? LIGHT : BASE);
+        else if (d < R * 0.45 && d >= R * 0.25) part.set(bx + x, by - R + y, 'p_grey', BASE);
+      }
+      return;
+    }
+    case 'cono': {
+      const h = n(10), w = n(9);
+      box(bx - Math.floor(w / 2), by, w, 1, 'p_orange');
+      for (let j = 1; j <= h; j++) {
+        const half = Math.max(0, Math.round((w / 2 - 1) * (1 - j / h)));
+        const band = j > h * 0.35 && j < h * 0.55;
+        for (let i = -half; i <= half; i++) part.set(bx + i, by - j, band ? 'p_white' : 'p_orange', i < 0 ? LIGHT : i > half / 2 ? SHADOW : BASE);
+      }
+      return;
+    }
+    case 'piedra': {
+      const w = n(6), h = n(4);
+      for (let j = 0; j < h; j++) { const ww = w - (j === h - 1 ? 2 : j === 0 ? 0 : 0); for (let i = 0; i < ww; i++) part.set(bx - Math.floor(w / 2) + i + (j === h - 1 ? 1 : 0), by - j, 'p_grey', i < ww * 0.4 && j > 0 ? LIGHT : j === 0 ? SHADOW : BASE); }
+      return;
+    }
+    case 'paraguas': {
+      if (o.open) {
+        // abierto, de frente al golpe: copa en media luna con varillas y el mango hacia abajo
+        const R = n(8);
+        for (let y = -R; y <= 0; y++) for (let x = -R; x <= R; x++) if (x * x + y * y * 2.2 <= R * R) part.set(bx + x, by - n(4) + y, color, y > -2 ? SHADOW : Math.abs(x) % n(4) === 0 ? SHADOW : x < 0 ? LIGHT : BASE);
+        stroke(part, [bx, by - n(4)], [bx, by], 1, () => 'p_black');
+        part.set(bx + 1, by, 'p_black');
+        return;
+      }
+      // cerrado y acostado: mango en gancho a la izquierda, tela enrollada que se afina hacia la punta
+      const len = n(16), x0 = bx - Math.floor(len / 2);
+      rod(len, 1, 'p_black', x0);
+      for (let i = Math.round(len * 0.35); i < len - 1; i++) { const t = Math.round(2 * (1 - (i - len * 0.35) / (len * 0.65))) + 1; for (let j = 0; j < t; j++) part.set(x0 + i, by - j, color, j === t - 1 ? LIGHT : BASE); }
+      part.set(x0 - 1, by - 1, 'p_black'); part.set(x0 - 1, by - 2, 'p_black'); part.set(x0, by - 2, 'p_black');
+      return;
+    }
+    case 'abanico': {
+      if (o.open) {
+        // abierto: media rueda de varillas con la tela pintada
+        const R = n(6);
+        for (let y = -R; y <= 0; y++) for (let x = -R; x <= R; x++) { const d = Math.hypot(x, y); if (d <= R && d >= 1.5) part.set(bx + x, by + y, color, Math.round((Math.atan2(y, x) * 180) / Math.PI / 20) % 2 ? BASE : LIGHT); }
+        part.set(bx, by, 'p_wood');
+        return;
+      }
+      rod(n(7), Math.max(1, n(1.5)), color, bx - n(3)); part.set(bx - n(3), by, 'p_wood');
+      return;
+    }
+    case 'termo': {
+      // termo de tinto: cuerpo a cuadros con tapa y vapor que sube (4 cuadros)
+      const w = n(4), h = n(9);
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) part.set(bx - Math.floor(w / 2) + i, by - j, (i + j) % 3 === 0 ? 'p_cream' : 'p_red', i === 0 ? LIGHT : i === w - 1 ? SHADOW : BASE);
+      box(bx - Math.floor(w / 2), by - h, w, 1, 'p_black', false);
+      if (o.phase !== undefined) {
+        const ph = o.phase % 4;
+        for (let k = 0; k < 3; k++) { const y = by - h - 2 - k * 2 - (ph % 2); const x = bx + ((k + ph) % 2 ? 1 : -1); part.set(x, y, 'p_white', LIGHT); }
+      }
+      return;
+    }
+    case 'furro': {
+      // furro: tambor de madera con el cuero arriba amarrado con cuerdas en zigzag y el palo de frotar
+      const w = n(9), h = n(10);
+      box(bx - Math.floor(w / 2), by - h + 1, w, h, 'p_wood');
+      box(bx - Math.floor(w / 2), by - h, w, 1, 'p_cream', false);
+      for (let j = 1; j < h - 1; j += 2) { const x = bx - Math.floor(w / 2) + ((j / 2) % 2 ? 1 : w - 2); part.set(x, by - j, 'p_white', BASE); }
+      stroke(part, [bx, by - h], [bx + n(1), by - h - n(4)], 1, () => 'p_brown');
+      return;
+    }
+    case 'balon_goma': {
+      const s = n(7);
+      blob(part, [bx, by - (s - 1) / 2], s, 'p_red', BASE);
+      for (const [x, y, p] of [...part.entries()]) if (p.mat === 'p_red' && x - bx < -(by - s / 2 - y) * 0.3 - 1) part.set(x, y, 'p_red', LIGHT);
+      for (let i = -Math.floor(s / 2); i <= Math.floor(s / 2); i++) if (part.has(bx + i, by - Math.floor(s / 2))) part.set(bx + i, by - Math.floor(s / 2), 'p_white', BASE);
+      return;
+    }
+    case 'chapa': {
+      const w = n(3);
+      box(bx - Math.floor(w / 2), by, w, 1, color);
+      box(bx - Math.floor(w / 2), by - 1, w, 1, 'p_metal', false);
+      return;
+    }
+    case 'tejo': {
+      const w = n(6);
+      box(bx - Math.floor(w / 2), by, w, 1, 'p_iron');
+      box(bx - Math.floor(w / 2) + 1, by - 1, w - 2, 1, 'p_steel', false);
+      return;
+    }
+    case 'volante_dacau': {
+      // base pesada de goma y plumas de colores en abanico (se mueven con `phase`)
+      box(bx - 1, by - n(1) + 1, 3, n(1), 'p_black', false);
+      const cols = ['p_red', 'p_yellow', 'p_green', 'p_blue', 'p_pink'];
+      const sway = o.phase !== undefined && o.phase % 2 ? 1 : 0;
+      for (let k = 0; k < 5; k++) stroke(part, [bx, by - n(1)], [bx - 2 + k + (k > 2 ? sway : -sway), by - n(5)], 1, () => cols[k], LIGHT);
+      return;
+    }
+  }
+}
+
+/** La tapa del pote sola (sale volando cuando el pote pega), con la base en `base`. */
+export function drawPoteLid(part: Part, base: [number, number], u: number) {
+  const n = (v: number) => Math.max(1, Math.round(v * u));
+  const bx = Math.round(base[0]), ly = Math.round(base[1]);
+  const lw = n(10) + 2;
+  for (let i = 0; i < lw; i++) part.set(bx - Math.floor(lw / 2) + i, ly, 'p_steel', i < lw * 0.35 ? LIGHT : BASE);
+  const dw = lw - n(3);
+  for (let i = 0; i < dw; i++) part.set(bx - Math.floor(dw / 2) + i, ly - 1, 'p_steel', i < dw * 0.4 ? LIGHT : BASE);
+  const hw = Math.max(2, n(3));
+  for (let i = 0; i < hw; i++) part.set(bx - Math.floor(hw / 2) + i, ly - 2 - (u >= 1.2 ? 1 : 0), 'p_iron', BASE);
+  part.set(bx - Math.floor(hw / 2), ly - 2, 'p_iron', BASE);
+  part.set(bx - Math.floor(hw / 2) + hw - 1, ly - 2, 'p_iron', BASE);
+}
+
+/** Gira una pieza `deg` grados alrededor de (0, 0), muestreando hacia atrás (sin agujeros, sin colores nuevos). */
+export function rotatePart(src: Part, deg: number): Part {
+  const k = ((Math.round(deg) % 360) + 360) % 360;
+  if (!k) return src;
+  const out = new Part();
+  const a = (deg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const [x, y] of src.entries()) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+    const X = (x + dx - 0.5) * c - (y + dy - 0.5) * s, Y = (x + dx - 0.5) * s + (y + dy - 0.5) * c;
+    x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y);
+  }
+  for (let y = Math.floor(y0); y <= Math.ceil(y1); y++) for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) {
+    const sx = Math.round(x * c + y * s), sy = Math.round(-x * s + y * c);
+    const p = src.get(sx, sy);
+    if (p) out.set(x, y, p.mat, p.slot);
+  }
+  return out;
+}
+
+/**
+ * Un arma del piso en la mano: el agarre en `grip` y el objeto girado `angle` grados (0 = hacia la derecha, como en el
+ * piso; los largos apuntan hacia donde mira el ángulo).
+ */
+export function drawHeldFloorProp(part: Part, kind: FloorPropKind, grip: [number, number], angle: number, u: number, opts: FloorPropOpts = {}) {
+  const tmp = new Part();
+  const [gx, gy] = floorPropGrip(kind, u, opts);
+  drawFloorProp(tmp, kind, [-gx, -gy], u, opts);
+  const rot = rotatePart(tmp, angle);
+  for (const [x, y, p] of rot.entries()) part.set(Math.round(grip[0]) + x, Math.round(grip[1]) + y, p.mat, p.slot);
 }

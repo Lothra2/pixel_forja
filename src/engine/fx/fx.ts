@@ -376,7 +376,7 @@ export function rotate8(frames: Raster[]): { dir: string; frames: Raster[] }[] {
 }
 
 /** Gira un cuadro con RotSprite (pasando por índices de color para no inventar tonos). */
-function rotateRaster(r: Raster, deg: number): Raster {
+export function rotateRaster(r: Raster, deg: number): Raster {
   if (deg % 360 === 0) return r;
   const colors: number[] = [];
   const idx = new Int16Array(r.w * r.h).fill(-1);

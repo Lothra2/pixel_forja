@@ -352,7 +352,105 @@ export const slipWet: AnimDef = {
   },
 };
 
+// ---------- armas del piso ----------
+
+/**
+ * El arma del piso en la mano cercana: `held` no dibuja nada en el kit (el juego dibuja la que el personaje recogió,
+ * con el dato `arma`); en el estudio se ve la que se elija. side = ángulo de lado (0 = adelante, 90 = abajo).
+ */
+const held = (side: number, extra: Partial<PropState> = {}): PropState => ({ kind: 'held', at: 'handNear', angles: { side, se: side + 8, ne: side - 8 }, ...extra });
+const heldNear = held;
+
+/** Recoger del piso: se agacha, agarra (impacto) y se levanta con el arma en la mano. */
+export const weaponPick: AnimDef = {
+  name: 'weapon_pick', pack: 'brawl', fps: 12, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'impacto', phase: 2 / 4 }],
+  build: (c) => {
+    const L = c.L;
+    const bend = P(c, { torso: 30, x: -c.u, legs: { near: { x: 0.3 * L, y: L - 1.6 }, far: { x: -0.3 * L, y: L - 1.2, toe: 20 } }, arms: { near: { shoulder: 40, elbow: 10 }, far: { shoulder: 10, elbow: 30 } }, face: fierce, support: 'both' });
+    const take = { ...bend, torso: 32, arms: { near: { shoulder: 35, elbow: 5 }, far: bend.arms.far }, props: [held(20)] };
+    const up = P(c, { ...street(c), arms: { near: { shoulder: 50, elbow: 70 }, far: { shoulder: 60, elbow: 100 } }, props: [held(-50)] });
+    return [street(c), bend, take, up];
+  },
+};
+
+/** Batazo: lleva el arma atrás por encima del hombro, la descarga en arco (impacto, con la estela) y sigue de largo. */
+export const weaponSwing: AnimDef = {
+  name: 'weapon_swing', pack: 'brawl', fps: 14, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'impacto', phase: 3 / 6 }],
+  build: (c) => {
+    const L = c.L;
+    const ready = P(c, { ...street(c), arms: { near: { shoulder: 60, elbow: 80 }, far: { shoulder: 60, elbow: 100 } }, props: [held(-60)] });
+    const wind = P(c, { torso: -6, x: -c.u, legs: { near: { x: 0.25 * L, y: L - 0.8 }, far: { x: -0.35 * L, y: L - 1.0 } }, arms: { near: { shoulder: 150, elbow: 60 }, far: { shoulder: 70, elbow: 90 } }, face: fierce, support: 'far', props: [held(-150)] });
+    const hit = P(c, { torso: 16, legs: { near: { x: 0.4 * L, y: L - 1.0 }, far: { x: -0.35 * L, y: L - 0.5, toe: 30 } }, arms: { near: { shoulder: 90, elbow: 0 }, far: { shoulder: 50, elbow: 80 } }, face: { eyes: 'angry', mouth: 'grin' }, support: 'near' });
+    const through = { ...hit, torso: 20, arms: { near: { shoulder: 40, elbow: 0 }, far: hit.arms.far }, props: [held(60)] };
+    return [ready, wind, { ...wind, torso: 2, arms: { near: { shoulder: 130, elbow: 30 }, far: wind.arms.far }, props: [held(-100)] }, { ...hit, props: [held(0, { smear: { side: [-120, 0], se: [-110, 8], ne: [-130, -8] } }), spark('handNear', 0)] }, through, { ...street(c), props: [held(-60)] }];
+  },
+};
+
+/**
+ * Golpe pesado a dos manos (pote, silla, llanta): lo sube sobre la cabeza (con los brazos estirados de la carga), lo
+ * sostiene y lo estrella adelante (impacto). Los pesados cuelgan de su agarre (el borde de arriba): el ángulo de `held`
+ * es el giro del objeto desde su postura de piso, así 180 lo pone de cabeza encima de las manos.
+ */
+export const weaponSwingHeavy: AnimDef = {
+  name: 'weapon_swing_heavy', pack: 'brawl', fps: 12, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'impacto', phase: 4 / 8 }],
+  build: (c) => {
+    const L = c.L;
+    const two = (sh: number, el: number) => ({ near: { shoulder: sh, elbow: el }, far: { shoulder: sh + 4, elbow: el } });
+    // a dos manos: el agarre va entre las manos
+    const held = (side: number) => ({ ...heldNear(side), at: 'hands' as const });
+    const hold = P(c, { torso: 8, legs: feet(c, 0.25, 0.24), arms: two(80, 50), face: strain, support: 'both', props: [held(-30)] });
+    const raise = P(c, { torso: -6, x: -c.u, legs: feet(c, 0.1, 0.24), arms: two(170, -10), face: strain, support: 'both', load: true, props: [held(180)] });
+    const slam = P(c, { torso: 28, legs: { near: { x: 0.4 * L, y: L - 1.3 }, far: { x: -0.35 * L, y: L - 0.6, toe: 20 } }, arms: two(80, 0), face: { eyes: 'angry', mouth: 'open' }, support: 'near' });
+    return [hold, raise, raise, { ...raise, torso: -10, props: [held(200)] }, { ...slam, props: [held(-70), spark('handNear', 30)] }, { ...slam, props: [held(-40)] }, { ...hold, torso: 14 }, hold];
+  },
+};
+
+/** Lanzar el arma (chancleta, piedra, nón lá, termo): la lleva atrás de la cabeza y la suelta hacia adelante (suelta). */
+export const weaponThrow: AnimDef = {
+  name: 'weapon_throw', pack: 'brawl', fps: 14, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'suelta', phase: 3 / 6 }],
+  build: (c) => {
+    const L = c.L;
+    const ready = P(c, { ...street(c), props: [held(-40)] });
+    const back = P(c, { torso: -10, x: -c.u, legs: { near: { x: 0.3 * L, y: L - 0.7 }, far: { x: -0.35 * L, y: L - 1.0 } }, arms: { near: { shoulder: 160, elbow: 90 }, far: { shoulder: 80, elbow: 30 } }, face: fierce, support: 'far', props: [held(-170)] });
+    const out = P(c, { torso: 20, legs: { near: { x: 0.4 * L, y: L - 1.0 }, far: { x: -0.35 * L, y: L - 0.5, toe: 30 } }, arms: { near: { shoulder: 110, elbow: 0 }, far: { shoulder: 30, elbow: 60 } }, face: { eyes: 'angry', mouth: 'open' }, support: 'near' });
+    return [ready, back, { ...back, torso: 0, arms: { near: { shoulder: 150, elbow: 40 }, far: back.arms.far }, props: [held(-120)] }, out, { ...out, torso: 24, arms: { near: { shoulder: 60, elbow: 10 }, far: out.arms.far } }, street(c)];
+  },
+};
+
+/** Bloquear con el paraguas: lo abre adelante como escudo y aguanta detrás de él. */
+export const umbrellaBlock: AnimDef = {
+  name: 'umbrella_block', pack: 'brawl', fps: 12, loop: false, views: ['side', 'front', 'back'],
+  build: (c) => {
+    const L = c.L;
+    const brace = P(c, { torso: 10, x: -c.u, legs: { near: { x: 0.3 * L, y: L - 1.2 }, far: { x: -0.35 * L, y: L - 1.0 } }, arms: { near: { shoulder: 75, elbow: 40 }, far: { shoulder: 70, elbow: 90 } }, face: fierce, support: 'both' });
+    return [
+      P(c, { ...street(c), props: [held(-50)] }),
+      { ...brace, props: [held(30, { open: true })] },
+      { ...brace, props: [held(90, { open: true, front: true })] },
+      { ...brace, torso: 12, props: [held(90, { open: true, front: true })] },
+    ];
+  },
+};
+
+/** Abanicazo: abre el abanico, lo lleva atrás y lo barre hacia adelante soltando la ráfaga (suelta). */
+export const fanGust: AnimDef = {
+  name: 'fan_gust', pack: 'brawl', fps: 12, loop: false, views: ['side', 'front', 'back'],
+  events: [{ type: 'suelta', phase: 3 / 6 }],
+  build: (c) => {
+    const L = c.L;
+    const open = P(c, { torso: 0, legs: feet(c, 0.15, 0.24), arms: { near: { shoulder: 120, elbow: 40 }, far: { shoulder: 60, elbow: 100 } }, face: fierce, support: 'both', props: [held(-80, { open: true })] });
+    const back = P(c, { torso: -12, x: -c.u, legs: { near: { x: 0.25 * L, y: L - 0.7 }, far: { x: -0.35 * L, y: L - 1.0 } }, arms: { near: { shoulder: 150, elbow: 80 }, far: { shoulder: 70, elbow: 90 } }, face: fierce, support: 'far', props: [held(-150, { open: true })] });
+    const sweep = P(c, { torso: 18, legs: { near: { x: 0.4 * L, y: L - 1.0 }, far: { x: -0.35 * L, y: L - 0.5, toe: 30 } }, arms: { near: { shoulder: 90, elbow: 0 }, far: { shoulder: 40, elbow: 80 } }, face: { eyes: 'angry', mouth: 'open' }, support: 'near', props: [held(90, { open: true })] });
+    return [P(c, { ...street(c), props: [held(-50)] }), open, back, sweep, { ...sweep, torso: 22, props: [held(120, { open: true })] }, P(c, { ...street(c), props: [held(-50)] })];
+  },
+};
+
 export const BRAWL: AnimDef[] = [
   lift, carryIdle, carryWalk, carryRun, throwOverhead, carried, thrownSpin, landFlat,
   grab, grabHold, grabbed, kneeGrab, breakFree, dizzy, koBounce, taunt, runPunch, runKick, airKick, slipWet,
+  weaponPick, weaponSwing, weaponSwingHeavy, weaponThrow, umbrellaBlock, fanGust,
 ];
