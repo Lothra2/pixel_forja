@@ -98,7 +98,7 @@ function stampFace(
   // con barba la línea de la boca se pierde: se dibuja color labio
   const bearded = hb.palette.some((e) => e.zone === 'beard');
   const colors: Record<string, string> = {
-    o: darkEye, i: iris, w: '#ffffff', m: bearded ? '#7a3b3b' : f.palette.skin[OUTLINE], r: '#b8323f', b: blush, h: f.palette.hair[OUTLINE],
+    o: darkEye, i: iris, w: '#ffffff', m: bearded ? '#7a3b3b' : f.palette.skin[OUTLINE], r: '#b8323f', t: '#ee7a8a', b: blush, h: f.palette.hair[OUTLINE],
     g: f.face.glasses || '#1d3c78',
   };
   const shift = view === 'side' && !fromImage ? (cls >= 48 ? 1 : 0) : 0;
@@ -120,8 +120,8 @@ function stampFace(
   const lx = l.x - Math.floor((ew - 1) / 2) + shift;
   const rx = r.x - Math.ceil((ew - 1) / 2) + shift;
   const ey0 = eyeY - Math.floor((eh - 1) / 2);
-  if (f.face.brows || eyesExpr === 'angry' || eyesExpr === 'sad') {
-    const b = eyesExpr === 'angry' ? BROW_ANGRY[cls] : eyesExpr === 'sad' ? BROW_SAD[cls] : f.face.thickBrows ? BROW_THICK[cls] : BROW[cls];
+  if (f.face.brows || eyesExpr === 'angry' || eyesExpr === 'sad' || eyesExpr === 'wink') {
+    const b = eyesExpr === 'angry' || eyesExpr === 'wink' ? BROW_ANGRY[cls] : eyesExpr === 'sad' ? BROW_SAD[cls] : f.face.thickBrows ? BROW_THICK[cls] : BROW[cls];
     const by = ey0 - 1 - b.length;
     put(b, lx, by);
     if (!single) put(mirrorStamp(b), rx + ew - b[0].length, by);
@@ -133,7 +133,8 @@ function stampFace(
     if (!single) put(b, rx + pad, ey0 + eh);
   }
   put(eyeStamp, lx, ey0);
-  if (!single) put(eyesExpr === 'hurt' ? mirrorStamp(eyeStamp) : eyeStamp, rx, ey0);
+  // el guiño: el ojo de la derecha cerrado
+  if (!single) put(eyesExpr === 'hurt' ? mirrorStamp(eyeStamp) : eyesExpr === 'wink' ? set.closed : eyeStamp, rx, ey0);
   if (f.face.glasses) {
     const pad = cls >= 64 ? 1 : 0;
     const frame = (x0: number) => {

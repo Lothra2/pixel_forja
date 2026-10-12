@@ -9,11 +9,13 @@ import type { StampClass } from '../rig/dims';
  */
 export type Stamp = string[];
 
-export type EyeExpr = 'open' | 'closed' | 'happy' | 'sad' | 'angry' | 'wide' | 'hurt';
-export type MouthExpr = 'smile' | 'line' | 'open' | 'frown' | 'grin' | 'o';
+/** wink: guiño de burla, el ojo de la izquierda fruncido y el de la derecha cerrado. */
+export type EyeExpr = 'open' | 'closed' | 'happy' | 'sad' | 'angry' | 'wide' | 'hurt' | 'wink';
+/** smirk: media sonrisa torcida (la cara malandra, la burla). tongue: lengua afuera (t = lengua). */
+export type MouthExpr = 'smile' | 'line' | 'open' | 'frown' | 'grin' | 'o' | 'smirk' | 'tongue';
 
-export const EYE_EXPRS: EyeExpr[] = ['open', 'closed', 'happy', 'sad', 'angry', 'wide', 'hurt'];
-export const MOUTH_EXPRS: MouthExpr[] = ['smile', 'line', 'open', 'frown', 'grin', 'o'];
+export const EYE_EXPRS: EyeExpr[] = ['open', 'closed', 'happy', 'sad', 'angry', 'wide', 'hurt', 'wink'];
+export const MOUTH_EXPRS: MouthExpr[] = ['smile', 'line', 'open', 'frown', 'grin', 'o', 'smirk', 'tongue'];
 
 type EyeSet = Record<EyeStyle, Stamp> & Record<Exclude<EyeExpr, 'open'>, Stamp>;
 
@@ -29,6 +31,7 @@ export const EYES: Record<StampClass, EyeSet> = {
     angry: ['o', 'i'],
     wide: ['o', 'o'],
     hurt: ['.', 'o'],
+    wink: ['o', 'i'],
   },
   48: {
     round: ['ow', 'oo', 'ii'],
@@ -40,6 +43,7 @@ export const EYES: Record<StampClass, EyeSet> = {
     angry: ['.o', 'ow', 'ii'],
     wide: ['oo', 'ow', 'oo'],
     hurt: ['o.', '.o', 'o.'],
+    wink: ['.o', 'ow', 'ii'],
   },
   64: {
     round: ['.oo', 'oow', 'ooo', 'ii.'],
@@ -51,13 +55,14 @@ export const EYES: Record<StampClass, EyeSet> = {
     angry: ['..o', '.oo', 'oow', 'iii'],
     wide: ['ooo', 'oww', 'ooo', 'iii'],
     hurt: ['o..', '.o.', 'o..', '...'],
+    wink: ['..o', '.oo', 'oow', 'iii'],
   },
 };
 
 export const MOUTHS: Record<StampClass, Record<MouthExpr, Stamp>> = {
-  32: { smile: ['mm'], line: ['m'], open: ['r'], frown: ['mm'], grin: ['rr'], o: ['r'] },
-  48: { smile: ['m..m', '.mm.'], line: ['mm'], open: ['mmm', '.r.'], frown: ['.mm.', 'm..m'], grin: ['mmmm', '.rr.'], o: ['mm', 'rr'] },
-  64: { smile: ['m...m', '.mmm.'], line: ['mmm'], open: ['mmmm', '.rr.'], frown: ['.mmm.', 'm...m'], grin: ['mmmmm', '.rrr.'], o: ['.m.', 'mrm', '.m.'] },
+  32: { smile: ['mm'], line: ['m'], open: ['r'], frown: ['mm'], grin: ['rr'], o: ['r'], smirk: ['.m', 'm.'], tongue: ['m', 't'] },
+  48: { smile: ['m..m', '.mm.'], line: ['mm'], open: ['mmm', '.r.'], frown: ['.mm.', 'm..m'], grin: ['mmmm', '.rr.'], o: ['mm', 'rr'], smirk: ['...m', 'mmm.'], tongue: ['mmm', '.t.', '.t.'] },
+  64: { smile: ['m...m', '.mmm.'], line: ['mmm'], open: ['mmmm', '.rr.'], frown: ['.mmm.', 'm...m'], grin: ['mmmmm', '.rrr.'], o: ['.m.', 'mrm', '.m.'], smirk: ['....m', '.mmm.'], tongue: ['mmmm', '.tt.', '.tt.'] },
 };
 
 export const BLUSH: Record<StampClass, Stamp> = { 32: ['b'], 48: ['bb'], 64: ['bb'] };

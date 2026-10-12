@@ -57,7 +57,16 @@ export interface AnimDef {
 }
 
 /** paso, golpe, suelta (proyectil, efecto), despegue y aterriza (saltos) */
-export interface AnimEvent { type: 'paso' | 'impacto' | 'suelta' | 'despegue' | 'aterriza'; phase: number; foot?: 'near' | 'far' }
+export interface AnimEvent {
+  type: 'paso' | 'impacto' | 'suelta' | 'despegue' | 'aterriza';
+  phase: number;
+  foot?: 'near' | 'far';
+  /**
+   * Qué pega en un impacto (o qué suelta). Sin esto, la mano o el pie que llega más adelante. Con esto, esa
+   * articulación: la frente en un cabezazo, el pie de abajo en un pisotón, el codo en un codazo hacia atrás.
+   */
+  joint?: 'handNear' | 'handFar' | 'footNear' | 'footFar' | 'elbowNear' | 'elbowFar' | 'frente' | 'head';
+}
 
 export function makeCtx(d: Dims, build: number, view: View): Ctx {
   return { d, L: d.legUpper + d.legLower, A: d.armUpper + d.armLower, u: d.u, build, view };

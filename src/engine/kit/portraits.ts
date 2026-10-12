@@ -17,7 +17,7 @@ import type { EyeExpr, MouthExpr } from '../head/stamps';
  * - cabecita: 12 x 12, la cabeza de celda 64 reducida a la mitad sin mezclar colores (ver `halve`).
  */
 
-export const EXPRESSIONS = ['neutral', 'feliz', 'enojo', 'triste', 'susto', 'cerrado', 'dolor'] as const;
+export const EXPRESSIONS = ['neutral', 'feliz', 'enojo', 'triste', 'susto', 'cerrado', 'dolor', 'burla'] as const;
 export type Expression = (typeof EXPRESSIONS)[number];
 
 /** Ojos y boca de cada expresión (sellos del motor). */
@@ -29,6 +29,8 @@ export const EXPRESSION_FACE: Record<Expression, { eyes: EyeExpr; mouth: MouthEx
   susto: { eyes: 'wide', mouth: 'o' },
   cerrado: { eyes: 'closed', mouth: 'line' },
   dolor: { eyes: 'hurt', mouth: 'open' },
+  // la cara de sobrado de la pelea (lote P1): guiño con la ceja fruncida y media sonrisa torcida, para el VS
+  burla: { eyes: 'wink', mouth: 'smirk' },
 };
 
 export const PORTRAIT_SMALL = 40;
@@ -117,7 +119,7 @@ export function headIcon(f: HumanFicha): Raster {
 }
 
 /**
- * Hoja de retratos: dos filas, la de arriba con los 7 chicos (40 x 40) y la de abajo con los 7 grandes (96 x 96), en
+ * Hoja de retratos: dos filas, la de arriba con los 8 chicos (40 x 40) y la de abajo con los 8 grandes (96 x 96), en
  * el orden de EXPRESSIONS. El chico i está en (i * 40, 0); el grande i en (i * 96, 40).
  */
 export function portraitSheet(f: HumanFicha): { png: Raster; chico: number; grande: number; expresiones: Expression[] } {

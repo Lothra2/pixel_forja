@@ -235,6 +235,32 @@
             "weapon_throw",
             "umbrella_block",
             "fan_gust",
+            "stomp",
+            "grab_throw",
+            "knee_hit_react",
+            "back_elbow",
+            "dash",
+            "dash_back",
+            "headbutt",
+            "eat",
+            "edge_teeter",
+            "fall_off",
+            "taunt_rick",
+            "taunt_steph",
+            "taunt_sophie",
+            "taunt_alana",
+            "taunt_kenji",
+            "taunt_ryu",
+            "taunt_goro",
+            "taunt_tetsu",
+            "victory_rick",
+            "victory_steph",
+            "victory_sophie",
+            "victory_alana",
+            "victory_kenji",
+            "victory_ryu",
+            "victory_goro",
+            "victory_tetsu",
             "swim",
             "swim_back",
             "swim_breast",
@@ -282,7 +308,7 @@
     },
     "retratos": {
       "type": "boolean",
-      "description": "Retratos de 7 expresiones en 40 y 96. Sin valor: sí."
+      "description": "Retratos de 8 expresiones en 40 y 96. Sin valor: sí."
     },
     "cabecitas": {
       "type": "boolean",
@@ -315,13 +341,19 @@
               "balon_goma",
               "chapa",
               "tejo",
-              "volante_dacau"
+              "volante_dacau",
+              "arepa",
+              "tequeno",
+              "empanada",
+              "banh_mi",
+              "pan_de_bono",
+              "comida"
             ]
           },
           "uniqueItems": true
         }
       ],
-      "description": "Armas del piso: true = todas, o la lista."
+      "description": "Armas del piso y comida de la pelea (peso \"comida\", con humito): true = todo, o la lista. \"comida\" pide toda la comida."
     },
     "animales": {
       "type": "array",
@@ -372,6 +404,10 @@
             }
           },
           "description": "Todavía no se genera: llega con el resto del lote G1."
+        },
+        "vs_fondo": {
+          "type": "boolean",
+          "description": "La pantalla del VS: el fondo con los colores de cada par de equipos partidos en diagonal y rayos (ui/vs/), uno neutro, y las letras VS aparte para estrellarlas."
         }
       }
     },
@@ -458,12 +494,20 @@
                   "arena",
                   "brillo_record",
                   "huella_mojada",
+                  "onomatopeya_pow",
+                  "onomatopeya_paf",
+                  "onomatopeya_crack",
+                  "onomatopeya_nam",
+                  "ko_grande",
+                  "bloqueo",
+                  "agarre",
                   "polvo_correr",
                   "polvo_frenar",
                   "polvo_caer",
                   "chispa_golpe",
                   "chapuzon",
                   "fuegos_artificiales",
+                  "onomatopeya",
                   "polvo",
                   "golpe",
                   "reaccion",
@@ -618,7 +662,33 @@
       }
     },
     "publico": {
-      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con público (lote C6)."
+      "type": "object",
+      "description": "El público. \"azoteas\": la gente asomada en las azoteas vecinas de la pelea, en publico/azoteas.png (de día) y publico/azoteas_noche.png, con los estados quieto, celebra y abuchea. Los hinchas por país (paises, variantes) llegan con el lote C6 y vuelven como aviso.",
+      "properties": {
+        "azoteas": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ancho": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2048
+                },
+                "gente": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2048
+                }
+              }
+            }
+          ]
+        }
+      }
     },
     "npc": {
       "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con NPC (lote C6)."

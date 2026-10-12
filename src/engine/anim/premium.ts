@@ -6,6 +6,7 @@ import { NET_PREMIUM } from './net';
 import { FIGHT_PREMIUM } from './fight';
 import { FOOTBALL_PREMIUM } from './footballPremium';
 import { BRAWL } from './brawl';
+import { PELEA } from './pelea';
 
 /**
  * Animaciones premium: poses clave pensadas como las haría un animador, no fórmulas.
@@ -320,7 +321,7 @@ export const idle: AnimDef = {
   },
 };
 
-export const PREMIUM: AnimDef[] = [idle, walk, run, attack, attackHeavy, hit, block, cast, useItem, die, ...ATHLETICS_PREMIUM, ...SWIM_PREMIUM, ...NET_PREMIUM, ...FIGHT_PREMIUM, ...FOOTBALL_PREMIUM, ...BRAWL];
+export const PREMIUM: AnimDef[] = [idle, walk, run, attack, attackHeavy, hit, block, cast, useItem, die, ...ATHLETICS_PREMIUM, ...SWIM_PREMIUM, ...NET_PREMIUM, ...FIGHT_PREMIUM, ...FOOTBALL_PREMIUM, ...BRAWL, ...PELEA];
 const byName = new Map(PREMIUM.map((a) => [a.name, a]));
 
 /** La versión premium de una animación, si existe. */

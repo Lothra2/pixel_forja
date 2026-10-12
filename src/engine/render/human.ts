@@ -49,7 +49,7 @@ export interface BigFrame {
   held?: { x: number; y: number; angle: number; behind: boolean };
 }
 
-export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 'shoulderNear' | 'shoulderFar' | 'handNear' | 'handFar' | 'neck' | 'head';
+export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 'shoulderNear' | 'shoulderFar' | 'handNear' | 'handFar' | 'neck' | 'head' | 'elbowNear' | 'elbowFar' | 'frente';
 /** `carry`: dónde se apoya lo que se lleva (solo en las poses con `load`): entre las manos, arriba de las palmas */
 export type Joints = Record<JointName, [number, number]> & { carry?: [number, number] };
 
@@ -609,7 +609,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
       const pr = { ...raw, kind };
       const part = new Part();
       const anchor: [number, number] =
-        pr.at === 'handNear' ? arms.near.end : pr.at === 'handFar' ? arms.far.end : pr.at === 'footNear' ? legs.near.end : pr.at === 'footFar' ? legs.far.end
+        pr.at === 'handNear' ? arms.near.end : pr.at === 'handFar' ? arms.far.end : pr.at === 'footNear' ? legs.near.end : pr.at === 'footFar' ? legs.far.end : pr.at === 'elbowNear' ? arms.near.mid
         : pr.at === 'hands' ? [(arms.near.end[0] + arms.far.end[0]) / 2, Math.min(arms.near.end[1], arms.far.end[1])] : local(0, d.torsoH / 2);
       const p: [number, number] = [anchor[0] + (pr.x ?? 0) * (side ? 1 : diag ? DIAG_X : sign), anchor[1] + (pr.y ?? 0)];
       // sin ángulo dado, el implemento sigue al antebrazo
@@ -809,6 +809,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     hip: J([0, 0]), hipNear: J(legs.near.root), hipFar: J(legs.far.root), footNear: J(legs.near.end), footFar: J(legs.far.end),
     shoulderNear: J(arms.near.root), shoulderFar: J(arms.far.root), handNear: J(arms.near.end), handFar: J(arms.far.end),
     neck: J(neck), head: J(add(neck, local(0, d.headW * 0.5))),
+    elbowNear: J(arms.near.mid), elbowFar: J(arms.far.mid),
+    // la frente: de lado, adelante de la cabeza (lo que pega en un cabezazo); de frente o de espalda, el centro
+    frente: J(add(neck, local(side ? d.headW * 0.42 : diag ? d.headW * 0.25 : 0, d.headW * 0.62))),
   };
   const body = soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : bodyBox(canvas, dx, dy, -99, false, propMats);
   const full = soft ? bodyBox(canvas, dx, dy, -99, false, propMats) : body;

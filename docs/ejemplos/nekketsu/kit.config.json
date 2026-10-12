@@ -86,6 +86,34 @@
       "pole_vault",
       "shot_put",
       "javelin"
+    ],
+    "kachinuki": [
+      "stomp",
+      "grab_throw",
+      "knee_hit_react",
+      "back_elbow",
+      "dash",
+      "dash_back",
+      "headbutt",
+      "eat",
+      "edge_teeter",
+      "fall_off",
+      "taunt_rick",
+      "taunt_steph",
+      "taunt_sophie",
+      "taunt_alana",
+      "taunt_kenji",
+      "taunt_ryu",
+      "taunt_goro",
+      "taunt_tetsu",
+      "victory_rick",
+      "victory_steph",
+      "victory_sophie",
+      "victory_alana",
+      "victory_kenji",
+      "victory_ryu",
+      "victory_goro",
+      "victory_tetsu"
     ]
   },
   "pruebas": {
@@ -106,7 +134,8 @@
     "azoteas": [
       "base",
       "pelea",
-      "armas"
+      "armas",
+      "kachinuki"
     ]
   },
   "objetos": true,
@@ -120,9 +149,13 @@
         "en",
         "vi"
       ]
-    }
+    },
+    "vs_fondo": true
   },
   "escenarios": "escenarios/",
+  "publico": {
+    "azoteas": true
+  },
   "fx": true,
   "audio": {
     "sfx": [
