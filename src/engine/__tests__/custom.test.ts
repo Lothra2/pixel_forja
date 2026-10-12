@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, statSync, mkdtempSync, writeFileSync, exists
 import { join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
+import { hayFfmpeg } from '../../../scripts/codificador-ffmpeg';
 import Ajv from 'ajv';
 import { buildCustomKit, kitConfigSchema, validateKitConfig, validateTeams, type KitConfig } from '../kit/custom';
 import { SPORT_PACKS, DEFAULT_SPORT_PACKS } from '../kit/sportskit';
@@ -27,7 +28,7 @@ const pngSize = (b: Buffer) => [b.readUInt32BE(16), b.readUInt32BE(20)];
 const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : [p]; });
 /** Todas las rutas a archivos que nombra el manifiesto (sin el #id de las cabecitas). */
 const refsOf = (v: unknown, out = new Set<string>()): Set<string> => {
-  if (typeof v === 'string' && /^[\w/.-]+\.(png|json|fnt|txt|wav|html|md)(#\w+)?$/.test(v)) out.add(v.split('#')[0]);
+  if (typeof v === 'string' && /^[\w/.-]+\.(png|json|fnt|txt|wav|ogg|m4a|html|md)(#\w+)?$/.test(v)) out.add(v.split('#')[0]);
   else if (Array.isArray(v)) v.forEach((x) => refsOf(x, out));
   else if (v && typeof v === 'object') Object.values(v).forEach((x) => refsOf(x, out));
   return out;
@@ -209,7 +210,11 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     // G1: el logo y la interfaz, con un panel por equipo
     expect(m.ui.logo).toMatchObject({ w: 320, h: 112, texto: 'NEKKETSU OLYMPIC GG' });
     expect(Object.keys(m.ui.interfaz).filter((k) => k.startsWith('panel_'))).toEqual(['panel_familia_gg', 'panel_instituto_nekketsu']);
-    expect(m.pendiente).toBeUndefined();
+    // H1b: audio comprimido. Sin ffmpeg en la máquina, la música queda pendiente
+    if (hayFfmpeg()) {
+      expect(m.pendiente).toBeUndefined();
+      expect(m.audio.musica.marcha_nekketsu.archivo).toEqual(['audio/musica/marcha_nekketsu.ogg', 'audio/musica/marcha_nekketsu.m4a']);
+    } else expect(m.pendiente.every((w: string) => w.startsWith('audio.'))).toBe(true);
   });
 
   it('el escenario de saigon_hem sale con sus 9 pruebas en verde (lote E1)', () => {

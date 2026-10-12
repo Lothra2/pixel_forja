@@ -60,7 +60,7 @@ export interface KitConfig {
   /** efectos del catálogo general: true = todos, o ids, bases (polvo_correr) y grupos (reaccion) */
   fx?: boolean | string[];
   /** sonidos del motor: true = todos, o la lista. Los nombres que todavía no existen vuelven como aviso (lote H) */
-  audio?: { sfx?: boolean | string[]; musica?: boolean | string[]; ambientes?: boolean | string[]; voces?: boolean | string[] | Record<string, Partial<Voz>>; [k: string]: unknown };
+  audio?: { sfx?: boolean | string[]; musica?: boolean | string[]; ambientes?: boolean | string[]; voces?: boolean | string[] | Record<string, Partial<Voz>>; formato?: AudioFormato; [k: string]: unknown };
   // lo que todavía no genera el kit a medida (se acepta y vuelve como aviso)
   /** carpeta con *.layout.json, o la lista de layouts: salen en escenarios/<id>/ */
   escenarios?: string | string[];
@@ -208,6 +208,8 @@ export function validateKitConfig(cfg: unknown): string[] {
       if (!isStrList(v)) { e.push(`audio.${k}: true o una lista de nombres`); continue; }
       for (const t of sortNames(v as string[], AUDIO_SECTIONS[k]).typos) e.push(`audio.${k}[${t.i}]: "${t.name}" no es un sonido del motor.${t.hint}`);
     }
+    const fo = isObj(cfg.audio) ? cfg.audio.formato : undefined;
+    if (fo !== undefined && !AUDIO_FORMATOS.includes(fo as AudioFormato)) e.push(`audio.formato: "${fo}" no es un formato.${suggest(String(fo), AUDIO_FORMATOS)} Hay ${AUDIO_FORMATOS.join(', ')}`);
     const vo = isObj(cfg.audio) ? cfg.audio.voces : undefined;
     if (vo !== undefined && typeof vo !== 'boolean' && !isStrList(vo)) {
       if (!isObj(vo)) e.push('audio.voces: true, una lista de ids o { "id": { "tono": 1, "timbre": "cuadrada" } }');
@@ -266,8 +268,9 @@ export function kitConfigSchema(): Record<string, unknown> {
       fx: { oneOf: [{ type: 'boolean' }, list({ anyOf: [{ enum: EFFECT_NAMES }, { type: 'string' }] })], description: 'Efectos del catálogo general en fx/: true = todos, o ids, bases (polvo_correr = sus 3 tamaños) y grupos (polvo, golpe, reaccion, agua, fiesta, objetos, pantalla, clima, tecnica, ambiente). Ver docs/EFECTOS.md.' },
       audio: {
         type: 'object',
-        description: 'Sonidos sintetizados del motor en audio/sfx, audio/musica y audio/ambiente (WAV). Los nombres que todavía no existen vuelven como aviso: llegan con el lote H.',
+        description: 'Sonidos sintetizados del motor en audio/sfx, audio/musica y audio/ambiente. Los nombres que todavía no existen vuelven como aviso: llegan con el lote H.',
         properties: {
+          formato: { enum: AUDIO_FORMATOS, description: '"wav" (por defecto): un WAV por sonido y "archivo" es un texto. "comprimido": OGG Vorbis y M4A (AAC) en mono, música a 64 kbps, ambientes a 48 y efectos a 64, y "archivo" es la lista [ogg, m4a] para que el juego cargue el que su navegador toque. Necesita ffmpeg en la máquina que arma el kit: sin ffmpeg los efectos salen en WAV (["x.wav"]) y la música y los ambientes quedan en manifest.pendiente. Las voces siempre van en WAV.' },
           ...Object.fromEntries((Object.keys(AUDIO_SECTIONS) as AudioSection[]).map((k) => [k, { oneOf: [{ type: 'boolean' }, list({ anyOf: [{ enum: AUDIO_SECTIONS[k] }, { type: 'string' }] })] }])),
           voces: {
             description: 'Voces en blips para los diálogos: true = todos los atletas, una lista de ids (atletas o NPC como "locutor"), o { id: { tono, timbre } }.',
@@ -317,7 +320,20 @@ export interface CustomKitOptions {
   /** solo estas partes del kit */
   solo?: KitPart[];
   progress?: (msg: string) => void;
+  /**
+   * Comprime un WAV para `audio.formato: "comprimido"`. El motor no trae codificador: lo pone quien arma el kit
+   * (el CLI usa ffmpeg). Devuelve null si no puede.
+   */
+  codificar?: Codificador;
 }
+
+/** Cómo sale el audio del kit. */
+export type AudioFormato = 'wav' | 'comprimido';
+export const AUDIO_FORMATOS: readonly AudioFormato[] = ['wav', 'comprimido'];
+/** Recibe un WAV mono y devuelve el archivo en ese formato a esos kbps, o null si no puede. */
+export type Codificador = (wav: Uint8Array, formato: 'ogg' | 'm4a', kbps: number) => Uint8Array | null;
+/** kbps por sección en el formato comprimido: lo que pidió el juego para que la música de 60 s quede cerca de 500 KB. */
+export const KBPS: Record<AudioSection, number> = { musica: 64, ambientes: 48, sfx: 64 };
 
 /** Los personajes y animales del kit: los de las fichas y los que ya trae el motor. */
 function cast(cfg: KitConfig, inputs: KitInputs) {
@@ -360,7 +376,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
   if (Array.isArray(fxList)) { const later = sortNames(fxList, EFFECT_NAMES).later; if (later.length) warnings.push(`fx: todavía no existen (se saltan): ${later.join(', ')}`); }
   const sounds: Partial<Record<AudioSection, string[]>> = {};
   if (cfg.audio) {
-    for (const k of Object.keys(cfg.audio)) if (!(k in AUDIO_SECTIONS) && k !== 'voces') warnings.push(`audio.${k}: todavía no se genera, llega con el audio (lote H)`);
+    for (const k of Object.keys(cfg.audio)) if (!(k in AUDIO_SECTIONS) && k !== 'voces' && k !== 'formato') warnings.push(`audio.${k}: todavía no se genera, llega con el audio (lote H)`);
     for (const k of Object.keys(AUDIO_SECTIONS) as AudioSection[]) {
       const v = cfg.audio[k];
       if (!v) continue;
@@ -400,22 +416,44 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     }
     opts.progress?.(`efectos: ${defs.length}`);
   }
-  // audio: WAV de 16 bits mono, siempre iguales (cada sonido arranca de la misma semilla)
+  // audio: WAV de 16 bits mono, siempre iguales (cada sonido arranca de la misma semilla).
+  // En formato comprimido: OGG primero y M4A de respaldo. Sin codificador, la música y los ambientes no salen en WAV.
   let audio: Record<string, Record<string, unknown>> | undefined;
   if (parts.has('audio') && Object.values(sounds).some((v) => v?.length)) {
     audio = {};
     const dir = { sfx: 'sfx', musica: 'musica', ambientes: 'ambiente' } as const;
+    const comprimido = cfg.audio?.formato === 'comprimido';
+    const sinCodificar: string[] = [];
     for (const k of Object.keys(sounds) as AudioSection[]) {
       if (!sounds[k]!.length) continue;
       audio[k] = {};
       for (const name of sounds[k]!) {
         const { samples, loop } = renderSound(k, name);
-        const archivo = `audio/${dir[k]}/${name}.wav`;
-        files.push({ name: archivo, bytes: encodeWav(samples, RATE, loop), mime: 'audio/wav' });
-        audio[k][name] = { archivo, duracion: Math.round((samples.length / RATE) * 100) / 100, ...(loop ? { bucle: true } : {}) };
+        const wav = encodeWav(samples, RATE, loop);
+        const base = `audio/${dir[k]}/${name}`;
+        const meta = { duracion: Math.round((samples.length / RATE) * 100) / 100, ...(loop ? { bucle: true } : {}) };
+        if (!comprimido) {
+          files.push({ name: `${base}.wav`, bytes: wav, mime: 'audio/wav' });
+          audio[k][name] = { archivo: `${base}.wav`, ...meta };
+          continue;
+        }
+        const ogg = opts.codificar?.(wav, 'ogg', KBPS[k]) ?? null;
+        const m4a = ogg && opts.codificar!(wav, 'm4a', KBPS[k]);
+        if (ogg && m4a) {
+          files.push({ name: `${base}.ogg`, bytes: ogg, mime: 'audio/ogg' }, { name: `${base}.m4a`, bytes: m4a, mime: 'audio/mp4' });
+          audio[k][name] = { archivo: [`${base}.ogg`, `${base}.m4a`], ...meta, muestras: samples.length, frecuencia: RATE };
+        } else if (k === 'sfx') {
+          files.push({ name: `${base}.wav`, bytes: wav, mime: 'audio/wav' });
+          audio[k][name] = { archivo: [`${base}.wav`], ...meta };
+          sinCodificar.push(name);
+        } else {
+          warnings.push(`audio.${k}.${name}: sin codificador (ffmpeg) no sale. En formato comprimido la música y los ambientes no van en WAV`);
+        }
       }
+      if (!Object.keys(audio[k]).length) delete audio[k];
     }
-    opts.progress?.(`audio: ${Object.values(sounds).reduce((n, v) => n + (v?.length ?? 0), 0)} sonidos`);
+    if (sinCodificar.length) warnings.push(`audio.sfx: sin codificador (ffmpeg) salen en WAV: ${sinCodificar.join(', ')}`);
+    opts.progress?.(`audio: ${Object.values(sounds).reduce((n, v) => n + (v?.length ?? 0), 0)} sonidos${comprimido ? (opts.codificar ? ', comprimidos' : ', sin codificador') : ''}`);
   }
   // voces en blips: 4 variantes por personaje, el juego elige una por letra
   let voces: Record<string, ListenVoice> | undefined;

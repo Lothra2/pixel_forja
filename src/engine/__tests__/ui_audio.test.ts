@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { retroUi, gameLogo, UI_PARTS, BANNERS, DEFAULT_TEAM_COLORS } from '../ui/retro';
 import { MUSIC_DEPORTE, SFX_DEPORTE, blip, vozDe, BLIPS, thirdBelow } from '../audio/deporte';
 import { SONIDOS, renderSound, JINGLES } from '../audio/catalogo';
 import { listenPage } from '../audio/escuchar';
 import { RATE } from '../audio/sfx';
-import { buildCustomKit, validateKitConfig, type KitConfig } from '../kit/custom';
+import { buildCustomKit, validateKitConfig, type KitConfig, type Codificador } from '../kit/custom';
+import { codificadorFfmpeg, hayFfmpeg } from '../../../scripts/codificador-ffmpeg';
 import { encodePng, decodePng, createRaster, blit } from '../index';
 import type { Raster } from '../core/raster';
 import { ROOT } from './helpers';
@@ -209,5 +212,73 @@ describe('kit a medida: interfaz, logo, sonidos de H1 y voces', () => {
     const { files } = buildCustomKit({ ...MIN, audio: { voces: { locutor: { tono: 0.7, timbre: 'sierra' } } } }, {}, { quick: true, solo: ['audio'] });
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(m.audio.voces.locutor).toMatchObject({ tono: 0.7, timbre: 'sierra' });
+  });
+});
+
+describe('audio comprimido para el celular (lote H1b)', () => {
+  const manifest = (files: { name: string; bytes: Uint8Array }[]) => JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
+  const cfg: KitConfig = { ...MIN, audio: { formato: 'comprimido', sfx: ['silbato'], musica: ['victoria_banda'], ambientes: ['viento'], voces: ['rick'] } };
+  const pedidos: string[] = [];
+  const falso: Codificador = (wav, formato, kbps) => { pedidos.push(`${formato}@${kbps}`); return new TextEncoder().encode(`${formato}:${kbps}:${wav.length}`); };
+
+  it('OGG primero y M4A de respaldo, con los kbps que pidió el juego, y las voces siguen en WAV', () => {
+    const { files, warnings } = buildCustomKit(cfg, {}, { quick: true, solo: ['audio'], codificar: falso });
+    const m = manifest(files);
+    expect(warnings).toEqual([]);
+    expect(m.audio.musica.victoria_banda).toMatchObject({ archivo: ['audio/musica/victoria_banda.ogg', 'audio/musica/victoria_banda.m4a'], frecuencia: RATE });
+    expect(Math.abs(m.audio.musica.victoria_banda.muestras / RATE - m.audio.musica.victoria_banda.duracion)).toBeLessThan(0.01);
+    expect(m.audio.ambientes.viento).toMatchObject({ archivo: ['audio/ambiente/viento.ogg', 'audio/ambiente/viento.m4a'], bucle: true });
+    expect(m.audio.sfx.silbato.archivo).toEqual(['audio/sfx/silbato.ogg', 'audio/sfx/silbato.m4a']);
+    expect(pedidos.sort()).toEqual(['m4a@48', 'm4a@64', 'm4a@64', 'ogg@48', 'ogg@64', 'ogg@64']);
+    expect(m.audio.voces.rick.archivos.every((a: string) => a.endsWith('.wav'))).toBe(true);
+    const names = files.map((f) => f.name);
+    expect(names.filter((n) => /\.(wav)$/.test(n) && !n.startsWith('audio/voz/'))).toEqual([]);
+    // la página para escuchar toca el que el navegador entienda
+    const html = new TextDecoder().decode(files.find((f) => f.name === 'audio/escuchar.html')!.bytes);
+    expect(html).toContain('"f":["musica/victoria_banda.ogg","musica/victoria_banda.m4a"]');
+    expect(html).toContain('canPlayType');
+  });
+
+  it('sin codificador: los efectos salen en WAV y la música y los ambientes quedan pendientes, no en WAV', () => {
+    const { files, warnings } = buildCustomKit(cfg, {}, { quick: true, solo: ['audio'] });
+    const m = manifest(files);
+    expect(m.audio.sfx.silbato.archivo).toEqual(['audio/sfx/silbato.wav']);
+    expect(m.audio.musica).toBeUndefined();
+    expect(m.audio.ambientes).toBeUndefined();
+    expect(files.some((f) => f.name.startsWith('audio/musica/') || f.name.startsWith('audio/ambiente/'))).toBe(false);
+    expect(m.pendiente).toEqual(warnings);
+    expect(warnings.join('\n')).toMatch(/audio\.musica\.victoria_banda: sin codificador/);
+    expect(warnings.join('\n')).toMatch(/audio\.ambientes\.viento: sin codificador/);
+    expect(warnings.join('\n')).toMatch(/audio\.sfx: sin codificador \(ffmpeg\) salen en WAV: silbato/);
+  });
+
+  it('el formato por defecto sigue siendo WAV con "archivo" de texto (GG Abyss no cambia)', () => {
+    const { files } = buildCustomKit({ ...MIN, audio: { sfx: ['silbato'] } }, {}, { quick: true, solo: ['audio'], codificar: falso });
+    expect(manifest(files).audio.sfx.silbato.archivo).toBe('audio/sfx/silbato.wav');
+  });
+
+  it('valida audio.formato con sugerencia', () => {
+    expect(validateKitConfig({ ...MIN, audio: { formato: 'comprimdo' } } as unknown as KitConfig)).toEqual(['audio.formato: "comprimdo" no es un formato. ¿Quisiste decir "comprimido"? Hay wav, comprimido']);
+  });
+
+  it.skipIf(!hayFfmpeg())('con ffmpeg: la marcha de 60 s pesa cerca de 500 KB, sale igual cada vez y el bucle no se corre', () => {
+    const cod = codificadorFfmpeg()!;
+    const { files } = buildCustomKit({ ...MIN, audio: { formato: 'comprimido', musica: ['marcha_nekketsu'] } }, {}, { quick: true, solo: ['audio'], codificar: cod });
+    const m = manifest(files).audio.musica.marcha_nekketsu;
+    const ogg = files.find((f) => f.name === m.archivo[0])!.bytes, m4a = files.find((f) => f.name === m.archivo[1])!.bytes;
+    expect(m.duracion).toBe(60);
+    expect(ogg.length).toBeLessThan(560_000);
+    expect(m4a.length).toBeLessThan(560_000);
+    expect(Buffer.from(ogg).equals(Buffer.from(files2().find((f) => f.name === m.archivo[0])!.bytes))).toBe(true);
+    // decodificado, el OGG trae exacto las muestras del original y el M4A a lo sumo 64 de más al final
+    const largo = (b: Uint8Array, ext: string) => {
+      const p = join(mkdtempSync(join(tmpdir(), 'h1b-')), `x.${ext}`);
+      writeFileSync(p, b);
+      return spawnSync('ffmpeg', ['-v', 'error', '-i', p, '-f', 's16le', '-'], { maxBuffer: 1 << 26 }).stdout.length / 2;
+    };
+    expect(largo(ogg, 'ogg')).toBe(m.muestras);
+    expect(largo(m4a, 'm4a') - m.muestras).toBeGreaterThanOrEqual(0);
+    expect(largo(m4a, 'm4a') - m.muestras).toBeLessThanOrEqual(64);
+    function files2() { return buildCustomKit({ ...MIN, audio: { formato: 'comprimido', musica: ['marcha_nekketsu'] } }, {}, { quick: true, solo: ['audio'], codificar: codificadorFfmpeg()! }).files; }
   });
 });

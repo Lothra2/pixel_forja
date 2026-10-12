@@ -81,6 +81,7 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
 ```jsonc
 "fx": ["polvo", "golpe", "reaccion", "chapuzon", "aura_nekketsu"],     // grupos, bases o ids; true = todos
 "audio": {
+  "formato": "comprimido",                                             // OGG + M4A para el celular. Sin esto: WAV
   "sfx": ["golpe", "critico", "esquiva", "paso_tierra_0", "silbato"],  // silbato llega con el lote H: aviso
   "musica": ["marcha_nekketsu"],                                       // llega con el lote H: aviso
   "ambientes": ["agua"]
@@ -96,6 +97,17 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
 - **Qué sale del audio:**
   - `audio/sfx/<n>.wav`, `audio/musica/<n>.wav`, `audio/ambiente/<n>.wav` y `audio/voz/<id>_<k>.wav`.
   - Cada sonido trae `manifest.audio.<sección>.<n> = { archivo, duracion, bucle? }`.
+  - **Con `"formato": "comprimido"`** sale OGG Vorbis y M4A (AAC) en mono en vez de WAV, y `archivo` es la lista `["<n>.ogg", "<n>.m4a"]`. El juego se la pasa entera a `this.load.audio` y Phaser carga el primero que el navegador toque: OGG en Chrome y Android, M4A en Safari del iPhone.
+    - Música a 64 kbps: la marcha de 60 s baja de 2.6 MB a unos 520 KB. Ambientes a 48 kbps. Efectos a 64 kbps.
+    - Cada uno trae además `muestras` y `frecuencia`: el largo exacto del original. Los decodificadores agregan unos milisegundos casi en silencio al final: Chrome le suma 136 muestras al OGG de la marcha (6 ms) y el M4A trae hasta 64. El arranque sí queda exacto. Para que el bucle no tenga ese hueco, la música en bucle se toca con un marcador que dura `muestras / frecuencia`:
+      ```js
+      const s = this.sound.add('marcha_nekketsu');
+      s.addMarker({ name: 'bucle', start: 0, duration: a.muestras / a.frecuencia, config: { loop: true } });
+      s.play('bucle');
+      ```
+    - Necesita **ffmpeg** (con libvorbis y aac) en la máquina que arma el kit. Sin ffmpeg, los efectos salen en WAV (`["<n>.wav"]`) y la música y los ambientes no salen: quedan en `manifest.pendiente` con su aviso. Así nunca se cuela un WAV de 2.6 MB en el arranque.
+    - Las voces siempre van en WAV: son blips de milisegundos y el M4A les metería relleno al principio.
+    - Sale igual byte por byte cada vez, igual que el WAV.
   - Cada atleta trae su `voz`.
   - Sale `audio/escuchar.html` para oírlo todo con un clic, también en la tablet.
   - Cada sonido sale igual siempre, se pida solo o con otros.
@@ -206,7 +218,8 @@ class Carga extends Phaser.Scene {
     if (m.objetos) this.load.atlas('armas', KIT + 'objetos/armas.png', KIT + 'objetos/armas.json');
     for (const [id, f] of Object.entries(m.ui?.fuentes ?? {})) if (f.png) this.load.bitmapFont(id, KIT + f.png, KIT + f.fnt);
     for (const [id, e] of Object.entries(m.fx ?? {})) this.load.spritesheet(`fx_${id}`, KIT + e.archivo, { frameWidth: e.w, frameHeight: e.h });
-    for (const sec of Object.values(m.audio ?? {})) for (const [n, a] of Object.entries(sec)) this.load.audio(n, KIT + a.archivo);
+    // archivo es un texto (WAV) o la lista [ogg, m4a] del formato comprimido: Phaser carga el que el navegador toque
+    for (const sec of ['sfx', 'musica', 'ambientes']) for (const [n, a] of Object.entries(m.audio?.[sec] ?? {})) this.load.audio(n, [a.archivo].flat().map((f) => KIT + f));
     this.load.once('complete', () => { crearAnimaciones(this, m, prueba); this.scene.start('Prueba'); });
     this.load.start();
   }
