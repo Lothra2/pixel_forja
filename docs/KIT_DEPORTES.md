@@ -202,7 +202,7 @@ Las letras y el número **buscan dónde no los tape la cabeza**: primero donde i
 ```jsonc
 "animales": {
   "thor": { "nombre": "Thor", "celda": 48, "pivote": [24, 46], "atlas": "animales/thor.json", "imagen": "animales/thor.png",
-            "anims": { "run": { "cuadros": 6, "fps": 14, "loop": true, "avance": 22, "eventos": [ ... ] }, ... } }
+            "anims": { "run": { "cuadros": 8, "fps": 14, "loop": true, "avance": 56.7, "eventos": [ ... ] }, ... } }
 }
 ```
 

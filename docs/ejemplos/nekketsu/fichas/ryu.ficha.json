@@ -6,9 +6,9 @@
     "skeleton": "human",
     "proportions": {
       "preset": "chibi",
-      "height": 1,
+      "height": 1.04,
       "build": 0.85,
-      "legs": 1,
+      "legs": 1.08,
       "arms": 1,
       "head": 1,
       "shoulders": 0.95,

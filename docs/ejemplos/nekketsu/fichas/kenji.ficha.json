@@ -7,12 +7,12 @@
     "proportions": {
       "preset": "chibi",
       "height": 1,
-      "build": 1,
+      "build": 1.22,
       "legs": 1,
       "arms": 1,
       "head": 1,
-      "shoulders": 1,
-      "hips": 1
+      "shoulders": 1.08,
+      "hips": 1.08
     }
   },
   "palette": {
@@ -140,7 +140,7 @@
     },
     "body": {
       "age": "adulto",
-      "build": "medio",
+      "build": "robusto",
       "shape": "recto"
     }
   },

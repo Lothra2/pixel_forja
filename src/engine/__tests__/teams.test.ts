@@ -84,12 +84,14 @@ describe('equipos: fichas de ejemplo (lote C1)', () => {
 
   it('gakuran: cerrado tapa la camiseta y lleva botones dorados; abierto deja ver la camiseta', () => {
     const kenji = human('kenji');
-    const WHITE = 0xf2f2ee, GOLD = 0xe2b23c;
+    const WHITE = 0xf2f2ee;
     const open = idle(kenji, 'front');
     const closed = idle({ ...kenji, outfit: { ...kenji.outfit, jacketClosed: true } }, 'front');
-    expect(count(open, WHITE, 30)).toBeGreaterThan(4);
-    expect(count(closed, WHITE, 30)).toBe(0);
-    expect(count(closed, GOLD, 60)).toBeGreaterThan(0);
+    // la camiseta blanca se ve abierto y desaparece cerrado (queda el blanco de los ojos)
+    expect(count(closed, WHITE, 30)).toBeLessThanOrEqual(count(open, WHITE, 30) - 4);
+    // botones dorados (en su tono claro): amarillos, que abierto no están al medio
+    const yellow = (r: Raster) => { let n = 0; for (let i = 0; i < r.data.length; i += 4) if (r.data[i + 3] && r.data[i] > 170 && r.data[i + 1] > 130 && r.data[i + 2] < 110) n++; return n; };
+    expect(yellow(closed)).toBeGreaterThan(0);
     // sin mangas (Goro): los brazos son de piel, el torso del gakuran
     const goro = human('goro');
     const sleeveless = idle(goro, 'front'), sleeved = idle({ ...goro, outfit: { ...goro.outfit, jacketSleeves: 'long' } }, 'front');
@@ -97,15 +99,20 @@ describe('equipos: fichas de ejemplo (lote C1)', () => {
   });
 
   it('brazalete: una franja de su color en el brazo cercano', () => {
-    const RED = 0xd42a2a;
+    // rojo de verdad (también en sus tonos de sombra): mucho rojo, poco verde y azul
+    const reds = (r: Raster) => {
+      let n = 0;
+      for (let i = 0; i < r.data.length; i += 4) if (r.data[i + 3] && r.data[i] > 110 && r.data[i + 1] < 70 && r.data[i + 2] < 80) n++;
+      return n;
+    };
     for (const id of TEAMS.instituto_nekketsu) {
       const f = human(id);
-      for (const v of ['side', 'front', 'se']) expect(count(idle(f, v), RED, 50), `${id} ${v}`).toBeGreaterThan(0);
-      expect(count(idle({ ...f, outfit: { ...f.outfit, armband: null } }, 'side'), RED, 50)).toBe(0);
+      // con brazalete hay más rojo que sin él (la boca y la sombra de la piel también son rojizas)
+      for (const v of ['side', 'front', 'se']) expect(reds(idle(f, v)), `${id} ${v}`).toBeGreaterThan(reds(idle({ ...f, outfit: { ...f.outfit, armband: null } }, v)));
     }
   });
 
-  it('"GG" en el pecho y el número atrás, sin que los tape la cabeza', () => {
+  it('"GG" en el pecho y el número atrás, enteros: nunca a medias detrás de la cabeza o los brazos', () => {
     const GOLD = 0xf2c230;
     for (const id of TEAMS.familia_gg) {
       const f = human(id);
@@ -115,10 +122,13 @@ describe('equipos: fichas de ejemplo (lote C1)', () => {
       const plain = idle({ ...f, outfit: { ...f.outfit, chestText: null } }, 'front');
       expect(Buffer.from(plain.data).equals(Buffer.from(idle(f, 'front').data))).toBe(false);
     }
-    // Rick: las dos G enteras (14 pixeles) de frente y el 7 entero (6 pixeles) de espalda
+    // Rick a 64: las dos G enteras (9 pixeles cada una). A 48 su barba no deja lugar y va el parche
     const rick = human('rick');
-    expect(count(idle(rick, 'front'), GOLD, 40)).toBeGreaterThanOrEqual(14);
-    expect(count(idle(rick, 'back'), GOLD, 40)).toBeGreaterThanOrEqual(6);
+    expect(count(idle(rick, 'front', 64), GOLD, 40)).toBe(18);
+    expect(count(idle(rick, 'front'), GOLD, 40)).toBe(6);
+    // el 7 entero de espalda (6 pixeles); a Steph el pelo le tapa la espalda y el número no se dibuja a medias
+    expect(count(idle(rick, 'back'), GOLD, 40)).toBe(6);
+    expect(count(idle(human('steph'), 'back'), GOLD, 40)).toBe(0);
   });
 
   it('el kit respeta la celda de la ficha, trae el número y exporta la mascota con todas sus animaciones', () => {

@@ -6,13 +6,13 @@
     "skeleton": "human",
     "proportions": {
       "preset": "chibi",
-      "height": 1,
-      "build": 1,
-      "legs": 1,
+      "height": 0.9,
+      "build": 0.85,
+      "legs": 0.88,
       "arms": 1,
       "head": 1,
-      "shoulders": 1,
-      "hips": 1
+      "shoulders": 0.95,
+      "hips": 0.95
     }
   },
   "palette": {
@@ -140,7 +140,7 @@
     },
     "body": {
       "age": "adulto",
-      "build": "medio",
+      "build": "delgado",
       "shape": "recto"
     }
   },
