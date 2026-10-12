@@ -8,8 +8,9 @@ import { cielo } from './cielo';
 import { lejosDe, tonosDe } from './skyline';
 import { piezaVietnam, posteLuz, toldo, cables, paloma, moto, MOTO_W, banquito, porton } from './calle';
 import { filaVietnam, ropaTendida, nuevasAnclas, type Anclas, type Hueco } from './vietnam';
-import { piezaSaigon, posteSaigon, arco, lamparasColgantes, redesPesca, cuerdasRopa } from './saigon';
+import { piezaSaigon, posteSaigon, arco, lamparasColgantes, redesPesca, cuerdasRopa, vallas } from './saigon';
 import { PINTORES_CERCA, FONDO_CERCA, torreReloj, arcoSalida, type CtxCerca } from './fachadas';
+import { corre, volumen, caraIzquierda, alLado, cizallarPiso, huecosJuntos, huecoInclinado, cantoSobreHueco, orillaAguaHonda } from './inclinada';
 import { drawText, textWidth, LINE_H } from './letras';
 import { fichaArte, type FichaArte } from './ficha';
 
@@ -56,6 +57,10 @@ export interface Superficie { id: string; color: string; paso: string; resbala: 
 
 export interface Escena {
   layout: ObliqueLayout;
+  /** La vista inclinada: px = x + inclinacion * y. 0 es el dibujo derecho de antes. */
+  inclinacion: number;
+  /** Ancho pintado de las capas largas: largo + inclinacion * D (la fila de adelante termina más a la derecha). */
+  ancho: number;
   paleta: Paleta;
   ficha: FichaArte;
   cielo: Lienzo;
@@ -91,9 +96,11 @@ const TECHADOS = new Set(['mercado_interior']);
  * rango con tema su pintor, recortado a su rango. Después lo que pasa por encima de los bordes: la torre del reloj y el
  * arco de salida del mercado.
  */
-function pintarCerca(pal: Paleta, L: ObliqueLayout, huecos: Hueco[], seed: number, anclas: Anclas): Lienzo {
-  const W = L.largo, FT = L.franja.atras;
-  const conPintor = L.ranuras_deco.filter((r) => PINTORES_CERCA[r.tema] && (r.capa === 'cerca' || r.capa === 'lejos')).sort((a, b) => b.x1 - b.x0 - (a.x1 - a.x0));
+function pintarCerca(pal: Paleta, L: ObliqueLayout, huecos: Hueco[], seed: number, anclas: Anclas, ancho = L.largo): Lienzo {
+  const W = ancho, FT = L.franja.atras;
+  // lo que llega al final del mundo sigue hasta el borde del ancho pintado
+  const fin = (x1: number) => (x1 >= L.largo ? W : x1);
+  const conPintor = L.ranuras_deco.filter((r) => PINTORES_CERCA[r.tema] && (r.capa === 'cerca' || r.capa === 'lejos')).map((r) => ({ ...r, x1: fin(r.x1) })).sort((a, b) => b.x1 - b.x0 - (a.x1 - a.x0));
   const ctx: CtxCerca = {
     seed,
     zonas: L.solidos.filter((b) => b.tipo).map((b) => ({ x0: b.x, x1: b.x + b.w, tipo: b.tipo! })).filter((z, i, a) => a.findIndex((q) => q.x0 === z.x0) === i && L.solidos.find((b) => b.x === z.x0)!.y < 50),
@@ -108,7 +115,7 @@ function pintarCerca(pal: Paleta, L: ObliqueLayout, huecos: Hueco[], seed: numbe
   let C: Lienzo;
   if (fondo) { C = new Lienzo(W, FT, pal); for (const [a, b] of libres) recortado(C, fondo, a, b, ctx); }
   else {
-    const temas = L.ranuras_deco.filter((r) => r.capa === 'cerca').map((r) => ({ x0: r.x0, x1: r.x1, tema: r.tema }));
+    const temas = L.ranuras_deco.filter((r) => r.capa === 'cerca').map((r) => ({ x0: r.x0, x1: fin(r.x1), tema: r.tema }));
     const vacios = conPintor.map((r) => ({ x0: r.x0, x1: r.x1 }));
     // saigon_hem quedó aprobado con sus plantas bajas oscuras: los tramos nuevos las aclaran para la prueba 7
     const pieClaro = L.paralaje.cerca !== 'hem';
@@ -123,6 +130,13 @@ function pintarCerca(pal: Paleta, L: ObliqueLayout, huecos: Hueco[], seed: numbe
     if (sal.x !== ent.x) arcoSalida(C, sal.x + Math.round(sal.w / 2), FT);
   }
   return C;
+}
+
+/** Corre cada fila de una capa transparente del piso según su fondo (la de abajo de la franja, como la fila de adelante). */
+function correrFilas(M: Lienzo, L: ObliqueLayout, k: number): Lienzo {
+  const D = depthOf(L), out = new Lienzo(L.largo + corre(k, D), M.h, M.pal);
+  for (let y = 0; y < M.h; y++) out.r.data.set(M.r.data.subarray(y * M.w * 4, (y + 1) * M.w * 4), (y * out.w + corre(k, Math.min(y, D))) * 4);
+  return out;
 }
 
 /** Corre un pintor en un lienzo aparte y copia solo las columnas de su rango: nada se sale. */
@@ -156,10 +170,13 @@ export function elegirCallejones(L: ObliqueLayout): Hueco[] {
   return out.sort((a, b) => a.x0 - b.x0);
 }
 
-export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
+/** Cajas que son un volumen macizo: muestran su cara izquierda. Las caladas o redondas (vallas, tanques, botes, carritos) no. */
+const SIN_CARA = new Set(['valla', 'tanque_agua', 'bote_bambu', 'mesas_plasticas', 'banca', 'carrito_cafe', 'carrito_che', 'puesto_banhmi', 'carro', 'moto_estacionada']);
+
+export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   const pal = PALETAS[L.pais]?.(L.hora, L.clima) ?? VIETNAM_MANANA;
   const lluvia = L.clima[0] === 'aguacero' || L.hora === 'aguacero';
-  const FT = L.franja.atras, D = depthOf(L), W = L.largo;
+  const FT = L.franja.atras, D = depthOf(L), W = L.largo, Wp = W + corre(k, D);
   const huecos = elegirCallejones(L);
   const anclas: Anclas = nuevasAnclas();
 
@@ -168,7 +185,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
   const lejos = lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
 
   // la fila de casas, o el fondo que pida cada tema
-  const cerca = pintarCerca(pal, L, huecos, seed, anclas);
+  const cerca = pintarCerca(pal, L, huecos, seed, anclas, Wp);
 
   // cables de los postes a las casas, en la capa de las casas
   const R = rng(seed * 3);
@@ -176,7 +193,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
   const top = (p: (typeof postes)[number]) => FT + p.y - p.alto + 9; // fila de la cruceta
   for (const p of postes) {
     if (!esPosteLuz(p)) continue;
-    const cx = p.x + 2;
+    const cx = p.x + 2 + corre(k, p.y);
     for (let k = 0; k < 6; k++) {
       const side = k % 2 ? 1 : -1, tx = cx + side * (70 + Math.floor(R() * 200)), ty = 100 + Math.floor(R() * 50);
       if (tx < 0 || tx >= W || !cerca.has(tx, ty)) continue;
@@ -189,7 +206,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
   if (typeof salida === 'number') pancarta(cerca, salida + 30, 96, 'XUẤT PHÁT');
   if (typeof meta === 'number') pancarta(cerca, meta, 96, 'VỀ ĐÍCH');
 
-  // piso, con la línea de salida, la de meta y las sombras de las cosas
+  // piso, con la línea de salida, la de meta y las sombras de las cosas (pintado derecho; después se inclina)
   const piso = pintarPiso(pal, L, { seed: seed % 97 });
   if (typeof salida === 'number') for (let y = 2; y < D; y++) { piso.p(salida, y, 'luz'); piso.p(salida + 1, y, (y >> 2) % 2 ? 'luz' : 'cemento_claro'); }
   if (typeof meta === 'number') for (let y = 0; y < D; y++) for (let i = 0; i < 8; i++) piso.p(meta + i, y, ((i >> 2) + (y >> 2)) % 2 ? 'tinta' : 'luz');
@@ -211,19 +228,40 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
     else inundar(piso, cerca, a.x0, a.x1, a.y0 ?? 0, a.y1 ?? D, FT, seed);
   }
 
+  // la vista inclinada: el piso se corre fila por fila, los huecos muestran sus paredes y adelante va el bordillo
+  const pisoFinal = k > 0 ? cizallarPiso(piso, L, k, seed % 97) : piso;
+  if (k > 0) {
+    for (const h of huecosJuntos(L)) huecoInclinado(pisoFinal, L, h, k, seed % 97);
+    cantoSobreHueco(pisoFinal, piso, L, k);
+    orillaAguaHonda(pisoFinal, L, k);
+  }
+
   // objetos: cajas, toldo y postes
   const objetos: ObjetoEscena[] = [];
-  boxesOf(L).forEach((b, i) => {
+  const todas = boxesOf(L);
+  todas.forEach((b, i) => {
+    const id = `${b.tipo ?? b.lista}_${i}`, tipo = b.tipo ?? b.lista, superficie = SUPERFICIE_CAJA[b.tipo ?? ''] ?? 'piedra';
+    if (k > 0 && b.tipo === 'valla') {
+      const v = vallas(pal, b.w, b.d, b.z, 16, k, b.y);
+      objetos.push({ id, tipo, origen: b.lista, img: v.img, x: b.x + corre(k, b.y), y: FT + b.y - b.z, orden: b.y + b.d, superficie });
+      return;
+    }
     const pz = piezaSaigon(pal, b.tipo, b.w, b.d, b.z, seed + i) ?? piezaVietnam(pal, b.tipo, b.w, b.d, b.z, seed + i);
-    objetos.push({ id: `${b.tipo ?? b.lista}_${i}`, tipo: b.tipo ?? b.lista, origen: b.lista, img: pz.img, x: b.x, y: FT + b.y - b.z - pz.sobre, orden: b.y + b.d, superficie: SUPERFICIE_CAJA[b.tipo ?? ''] ?? 'piedra' });
+    if (k === 0) { objetos.push({ id, tipo, origen: b.lista, img: pz.img, x: b.x, y: FT + b.y - b.z - pz.sobre, orden: b.y + b.d, superficie }); return; }
+    const v = volumen(pz.img, pz.sobre, b.d, b.y, k);
+    objetos.push({ id, tipo, origen: b.lista, img: v.img, x: b.x + v.dx, y: FT + b.y - b.z - pz.sobre, orden: b.y + b.d, superficie });
+    // la cara de la izquierda, en su propio objeto: delante de lo que va detrás de la caja y detrás de quien va a su lado
+    if (SIN_CARA.has(b.tipo ?? '')) return;
+    const c = caraIzquierda(pz.img, pz.sobre, b, alLado(b, todas), k);
+    if (c) objetos.push({ id: `${id}_cara`, tipo: `${tipo}_cara`, origen: b.lista, img: c.img, x: b.x + corre(k, b.y) + c.dx, y: FT + b.y - b.z + c.dy, orden: b.y + 0.1 });
   });
   L.bajo.forEach((b, i) => {
     const id = `${b.tipo ?? 'bajo'}_${i}`, tipo = b.tipo ?? 'bajo', w = b.x1 - b.x0, y0 = b.y0 ?? 0, y1 = b.y1 ?? D;
-    if (b.tipo === 'lamparas_colgantes') { const l = lamparasColgantes(pal, w, y0, y1, b.z, 66 - FT, seed + i); objetos.push({ id, tipo, origen: 'bajo', img: l.img, x: b.x0, y: FT + l.top, orden: y1 }); return; }
-    if (b.tipo === 'redes_pesca') { const r = redesPesca(pal, w, y1 - y0, b.z, seed + i); objetos.push({ id, tipo, origen: 'bajo', img: r.img, x: b.x0, y: FT + y0 - b.z - 2, orden: y1 }); return; }
-    if (b.tipo === 'ropa_tendida') { const c = cuerdasRopa(pal, w, y0, y1, b.z, 0, seed + i); objetos.push({ id, tipo, origen: 'bajo', img: c.img, x: b.x0, y: FT + c.top, orden: y1 }); return; }
-    const t = toldo(pal, w, y1 - y0);
-    objetos.push({ id, tipo, origen: 'bajo', img: t.img, x: b.x0, y: FT + y0 - b.z, orden: y1 });
+    if (b.tipo === 'lamparas_colgantes') { const l = lamparasColgantes(pal, w, y0, y1, b.z, 66 - FT, seed + i, k); objetos.push({ id, tipo, origen: 'bajo', img: l.img, x: b.x0 + l.dx, y: FT + l.top, orden: y1 }); return; }
+    if (b.tipo === 'redes_pesca') { const r = redesPesca(pal, w, y1 - y0, b.z, seed + i, k, y0); objetos.push({ id, tipo, origen: 'bajo', img: r.img, x: b.x0 + r.dx, y: FT + y0 - b.z - 2, orden: y1 }); return; }
+    if (b.tipo === 'ropa_tendida') { const c = cuerdasRopa(pal, w, y0, y1, b.z, 0, seed + i, k); objetos.push({ id, tipo, origen: 'bajo', img: c.img, x: b.x0 + c.dx, y: FT + c.top, orden: y1 }); return; }
+    const t = toldo(pal, w, y1 - y0), tv = k > 0 ? volumen(t.img, 0, y1 - y0, y0, k) : { img: t.img, dx: 0 };
+    objetos.push({ id, tipo, origen: 'bajo', img: tv.img, x: b.x0 + tv.dx, y: FT + y0 - b.z, orden: y1 });
   });
   // arcos sobre el paso entre dos pilares de un portón (mercado, estadio)
   const pilares = L.muros.filter((m) => m.tipo?.startsWith('porton_')).sort((a, b) => a.x - b.x || a.y - b.y);
@@ -231,18 +269,18 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
     const n = pilares[i + 1];
     if (!n || n.x !== m.x || n.tipo !== m.tipo || n.y <= m.y + m.d) return;
     const est = m.tipo === 'porton_estadio';
-    const a = arco(pal, m.w, m.y + m.d, n.y, Math.max(m.z, n.z), est ? 'VÀO' : 'CỬA NAM', est ? { viga: 'cemento_claro', borde: 'azul', placa: 'azul', letra: 'luz' } : undefined);
+    const a = arco(pal, m.w, m.y + m.d, n.y, Math.max(m.z, n.z), est ? 'VÀO' : 'CỬA NAM', est ? { viga: 'cemento_claro', borde: 'azul', placa: 'azul', letra: 'luz' } : undefined, k);
     objetos.push({ id: `arco_${i}`, tipo: 'arco', origen: 'muros', img: a.img, x: m.x + a.dx, y: FT + a.top, orden: a.orden });
   });
   // portón abierto donde un muro deja paso adelante: se lee por dónde se rodea
   L.muros.forEach((m, i) => {
     if (!conPortonHem(m) || m.y + m.d >= D - 8) return;
-    const pt = porton(pal, m.w, m.y + m.d, D, m.z, 'HẺM 42');
+    const pt = porton(pal, m.w, m.y + m.d, D, m.z, 'HẺM 42', k);
     objetos.push({ id: `porton_${i}`, tipo: 'porton', origen: 'muros', img: pt.img, x: m.x + pt.dx, y: FT + pt.top, orden: D + 1 });
   });
   postes.forEach((p, i) => {
     const otro = posteSaigon(pal, p.tipo, p.alto, seed + i), po = otro?.pieza ?? posteLuz(pal, p.alto, L.paralaje.cerca === 'hem' ? 'tinta' : 'asfalto');
-    objetos.push({ id: `${p.tipo ?? 'poste'}_${i}`, tipo: p.tipo ?? 'poste', origen: 'postes', img: po.img, x: p.x + 2 - (otro?.cx ?? 22), y: FT + p.y - p.alto - 5, orden: p.y });
+    objetos.push({ id: `${p.tipo ?? 'poste'}_${i}`, tipo: p.tipo ?? 'poste', origen: 'postes', img: po.img, x: p.x + 2 + corre(k, p.y) - (otro?.cx ?? 22), y: FT + p.y - p.alto - 5, orden: p.y });
   });
   objetos.sort((a, b) => a.orden - b.orden || a.x - b.x);
 
@@ -253,7 +291,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
     vida.push({ id: `ropa_${i}`, tipo: 'ropa_tendida', capa: 'cerca', x: r.x, y: r.y, cuadros, fps: 2 });
   });
   if (L.vida.includes('cables_viento') || L.vida.includes('palomas')) {
-    const xs = [-10, ...postes.map((p) => p.x + 2), W + 10];
+    const xs = [-10, ...postes.map((p) => p.x + 2 + corre(k, p.y)), W + 10];
     for (let k = 0; k < xs.length - 1; k++) {
       const a = xs[k] + (k === 0 ? 0 : 14), b = xs[k + 1] - (k === xs.length - 2 ? 0 : 14), ya = k === 0 ? 60 : top(postes[k - 1]) - 2, yb = k === xs.length - 2 ? 60 : top(postes[k]) - 2;
       const x0 = Math.max(0, Math.min(a, b)), x1 = Math.min(W, Math.max(a, b)), sag = Math.round(Math.min(34, Math.max(8, (x1 - x0) / 40)));
@@ -280,28 +318,30 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
   // luces y partículas
   const luces: Luz[] = [
     ...anclas.altares.map((a) => ({ x: a.x, y: a.y + 10, color: pal.rojo, radio: 12, latido: 0.5, encendida: true, nota: 'bombillo rojo del altar' })),
-    ...postes.filter(esPosteLuz).map((p) => ({ x: p.x + 18, y: top(p) + 13, color: pal.oro, radio: 40, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'lámpara del poste: de día va apagada' })),
-    ...postes.filter((p) => p.tipo === 'farol_rio').map((p) => ({ x: p.x + 2, y: FT + p.y - p.alto + 12, color: pal.luz, radio: 30, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'globos del farol del malecón' })),
-    ...postes.filter((p) => p.tipo === 'torre_luz').map((p) => ({ x: p.x + 2, y: FT + p.y - p.alto + 13, color: pal.luz, radio: 90, encendida: L.hora !== 'manana' && L.hora !== 'mediodia', nota: 'focos de la torre del estadio' })),
+    ...postes.filter(esPosteLuz).map((p) => ({ x: p.x + 18 + corre(k, p.y), y: top(p) + 13, color: pal.oro, radio: 40, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'lámpara del poste: de día va apagada' })),
+    ...postes.filter((p) => p.tipo === 'farol_rio').map((p) => ({ x: p.x + 2 + corre(k, p.y), y: FT + p.y - p.alto + 12, color: pal.luz, radio: 30, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'globos del farol del malecón' })),
+    ...postes.filter((p) => p.tipo === 'torre_luz').map((p) => ({ x: p.x + 2 + corre(k, p.y), y: FT + p.y - p.alto + 13, color: pal.luz, radio: 90, encendida: L.hora !== 'manana' && L.hora !== 'mediodia', nota: 'focos de la torre del estadio' })),
   ];
   const particulas: Particula[] = [
     ...anclas.altares.map((a) => ({ tipo: 'humo', x0: a.x - 2, x1: a.x + 2, y0: a.y - 2, y1: a.y, color: [pal.cemento_claro, pal.cemento], cada: 0.5, sube: 14, vida: 1.8, nota: 'incienso del altar' })),
     ...anclas.buganvillas.map((b) => ({ tipo: 'petalo', fx: 'petalo_buganvilla', x0: b.x - 8, x1: b.x + 8, y0: b.y, y1: b.y + 4, cada: 4, nota: 'pétalos que caen de la buganvilla' })),
     ...anclas.aires.map((a) => ({ tipo: 'gota', x0: a.x, x1: a.x + 2, y0: a.y, y1: a.y, color: [pal.celeste], cada: 3, vida: 0.8, nota: 'gotera del aire acondicionado' })),
-    ...L.agua.map((a) => ({ tipo: 'onda', fx: 'onda_charco', x0: a.x0, x1: a.x1, y0: FT + (a.y0 ?? 0), y1: FT + (a.y1 ?? D), cada: 0.7, nota: `${a.nombre ?? 'agua'}: ondas sueltas, y salpicadura_piso a cada paso` })),
-    ...L.huecos.filter((h) => h.caida === 'agua').map((h) => ({ tipo: 'brillo', x0: h.x0, x1: h.x1, y0: FT + (h.y0 ?? 0) + 18, y1: FT + (h.y1 ?? D), color: [pal.luz, pal.cielo], cada: 0.9, vida: 0.4, nota: `${h.nombre ?? 'canal'}: brillitos en el agua` })),
+    ...L.agua.map((a) => ({ tipo: 'onda', fx: 'onda_charco', x0: a.x0 + corre(k, a.y0 ?? 0), x1: a.x1 + corre(k, a.y1 ?? D), y0: FT + (a.y0 ?? 0), y1: FT + (a.y1 ?? D), cada: 0.7, nota: `${a.nombre ?? 'agua'}: ondas sueltas, y salpicadura_piso a cada paso` })),
+    ...L.huecos.filter((h) => h.caida === 'agua').map((h) => ({ tipo: 'brillo', x0: h.x0 + corre(k, h.y0 ?? 0), x1: h.x1 + corre(k, h.y1 ?? D), y0: FT + (h.y0 ?? 0) + 18, y1: FT + (h.y1 ?? D), color: [pal.luz, pal.cielo], cada: 0.9, vida: 0.4, nota: `${h.nombre ?? 'canal'}: brillitos en el agua` })),
   ];
 
   // primer plano: cosas sobre la acera de enfrente, sin tapar la franja
   const frenteY = FT + D - 14;
-  const frente = new Lienzo(W, 360 - frenteY, pal);
-  primerPlano(frente, L, frenteY, seed);
+  const frente = new Lienzo(Wp, 360 - frenteY, pal);
+  // con la vista inclinada, lo de adelante es el bordillo (va en el piso): el frente queda libre
+  if (k === 0) primerPlano(frente, L, frenteY, seed);
 
   // piso mojado (si el clima trae aguacero): charcos y brillo, encima del piso
-  const pisoMojado = L.clima.includes('aguacero') || L.clima.includes('llovizna') ? mojar(pal, L, piso.h, seed) : null;
+  const mojado = L.clima.includes('aguacero') || L.clima.includes('llovizna') ? mojar(pal, L, piso.h, seed) : null;
+  const pisoMojado = mojado && k > 0 ? correrFilas(mojado, L, k) : mojado;
 
   return {
-    layout: L, paleta: pal, ficha: fichaArte(L), cielo: sky, lejos, cerca, piso, pisoMojado, frente, frenteY,
+    layout: L, inclinacion: k, ancho: Wp, paleta: pal, ficha: fichaArte(L), cielo: sky, lejos, cerca, piso: pisoFinal, pisoMojado, frente, frenteY,
     objetos, vida, luces, particulas, superficie: superficie(L), huecos,
   };
 }
@@ -386,7 +426,8 @@ function rioHondo(P: Lienzo, L: ObliqueLayout, x0: number, x1: number, y0: numbe
     const borde = Math.min(x - x0, x1 - 1 - x);
     // agua verde turbia con el cielo reflejado en tramado, más claro hacia el fondo
     const t = y < D ? y / D : 1;
-    let c: Color = bayer(x, y) < 0.42 - t * 0.2 ? 'celeste' : grain(x >> 3, y >> 2, seed + 5) < 0.12 && bayer(x, y) < 0.5 ? 'verde_oscuro' : 'canal';
+    // agua honda: celeste con tramado azul que se hace más denso hacia adelante y manchones turbios
+    let c: Color = bayer(x, y) < 0.18 + t * 0.14 ? 'azul' : grain(x >> 3, y >> 2, seed + 5) < 0.12 && bayer(x, y) < 0.6 ? 'canal' : 'celeste';
     if (borde < 3) c = borde === 0 ? 'luz' : 'cielo';
     else if (borde < 7 && bayer(x, y) < 0.5) c = 'celeste';
     P.p(x, y, c);
@@ -530,7 +571,7 @@ export function postal(E: Escena, x0: number, actores: Actor[] = [], w = 640, h 
     ...actores.map((a) => {
       // parado encima de una caja: va después de la caja
       const sobre = (a.z ?? 0) > 0 ? boxesOf(E.layout).find((b) => a.x >= b.x && a.x < b.x + b.w && a.y >= b.y && a.y < b.y + b.d && Math.abs(b.z - (a.z ?? 0)) <= 2) : undefined;
-      return { orden: sobre ? sobre.y + sobre.d + 0.01 : a.y + 0.5, draw: () => pegar(a.img, a.x - a.px - x0, FT + a.y - (a.z ?? 0) - a.py) };
+      return { orden: sobre ? sobre.y + sobre.d + 0.01 : a.y + 0.5, draw: () => pegar(a.img, a.x + corre(E.inclinacion, a.y) - a.px - x0, FT + a.y - (a.z ?? 0) - a.py) };
     }),
   ];
   capa.sort((a, b) => a.orden - b.orden).forEach((c) => c.draw());

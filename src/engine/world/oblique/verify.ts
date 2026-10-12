@@ -135,7 +135,7 @@ export function verificar(E: Escena, raw: unknown, contornos: string[] = [CONTOR
   add(6, 'Camino', cm.ok, `${cm.detalle}, con salto de ${REGLAS.salto}, escalón de ${REGLAS.escalon} y salto largo de ${REGLAS.saltoLargo}`);
 
   // 7. Legibilidad: una silueta de atleta cada 64 px en cada carril, contra la escena armada
-  const vista = postal(E, 0, [], L.largo, 360);
+  const vista = postal(E, 0, [], E.ancho ?? L.largo, 360);
   const ys = L.carriles.length ? L.carriles.map((c) => c.y) : [Math.floor(D / 2)];
   let peor = Infinity, suma = 0, n = 0, donde = '';
   for (const c of contornos) for (const y of ys) for (let x = 24; x < L.largo - 24; x += 64) {
@@ -143,7 +143,7 @@ export function verificar(E: Escena, raw: unknown, contornos: string[] = [CONTOR
     // anillo alrededor de una silueta de 18 x 44 parada en (x, y)
     const pies = FT + y, vals: number[] = [];
     for (let dy = -45; dy <= 0; dy += 3) for (const dx of [-10, 10]) {
-      const px = x + dx, py = pies + dy;
+      const px = x + Math.round((E.inclinacion ?? 0) * y) + dx, py = pies + dy;
       if (px < 0 || py < 0 || px >= vista.w || py >= vista.h) continue;
       vals.push(contraste(c, hex(vista, (py * vista.w + px) * 4)));
     }

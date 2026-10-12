@@ -2,6 +2,7 @@ import { rng, grain } from '../../fx/pix';
 import { Lienzo } from './lienzo';
 import { drawText, textWidth, LINE_H } from './letras';
 import { nueva, pie, type Pieza } from './calle';
+import { corre } from './inclinada';
 import type { Color, Paleta } from './paleta';
 
 /**
@@ -260,17 +261,18 @@ export function portonMercado(pal: Paleta, w: number, d: number, z: number, seed
  * Arco que cruza un paso entre dos pilares, por encima de las cabezas: viga de `y0` a `y1` de profundidad, a la altura
  * `z`, con la placa de frente. Devuelve el dibujo, la fila de arriba relativa a `franja.atras` y el `orden`.
  */
-export function arco(pal: Paleta, w: number, y0: number, y1: number, z: number, placa: string, colores: { viga: Color; borde: Color; placa: Color; letra: Color } = { viga: 'amarillo', borde: 'ocre', placa: 'vino', letra: 'oro' }) {
-  const g = 6, tw = textWidth(placa) + 6, W = Math.max(w, tw), top = y0 - z - g - LINE_H - 2, H = y1 - z - top + 1;
-  const L = new Lienzo(W, H, pal), ox = Math.floor((W - w) / 2);
-  // la viga vista desde arriba (techo) y su frente al final del paso
-  for (let y = y0; y < y1; y++) { L.hl(ox, y - z - g - top, w, colores.viga); L.p(ox, y - z - g - top, colores.borde); L.p(ox + w - 1, y - z - g - top, colores.borde); }
+export function arco(pal: Paleta, w: number, y0: number, y1: number, z: number, placa: string, colores: { viga: Color; borde: Color; placa: Color; letra: Color } = { viga: 'amarillo', borde: 'ocre', placa: 'vino', letra: 'oro' }, k = 0) {
+  const g = 6, tw = textWidth(placa) + 6, sx = (y: number) => corre(k, y) - corre(k, y0), ext = sx(y1);
+  const W = Math.max(w, tw) + ext, top = y0 - z - g - LINE_H - 2, H = y1 - z - top + 1;
+  const L = new Lienzo(W, H, pal), ox = Math.floor((Math.max(w, tw) - w) / 2);
+  // la viga vista desde arriba (techo, corrida según el fondo) y su frente al final del paso
+  for (let y = y0; y < y1; y++) { L.hl(ox + sx(y), y - z - g - top, w, colores.viga); L.p(ox + sx(y), y - z - g - top, colores.borde); L.p(ox + sx(y) + w - 1, y - z - g - top, colores.borde); }
   L.hl(ox, y0 - z - g - top, w, 'luz');
-  L.f(ox, y1 - z - g - top, w, g, colores.borde); L.hl(ox, y1 - z - g - top, w, colores.viga);
+  L.f(ox + ext, y1 - z - g - top, w, g, colores.borde); L.hl(ox + ext, y1 - z - g - top, w, colores.viga);
   // placa colgada de la viga, de frente
-  const sx = Math.floor((W - tw) / 2), sy = y1 - z - g - top - LINE_H - 1;
-  L.box(sx, sy, tw, LINE_H + 2, colores.placa, 'tinta'); drawText(L, sx + 3, sy, placa, colores.letra);
-  return { img: L, dx: -ox, top, orden: y1 };
+  const px = Math.floor((Math.max(w, tw) - tw) / 2) + ext, sy = y1 - z - g - top - LINE_H - 1;
+  L.box(px, sy, tw, LINE_H + 2, colores.placa, 'tinta'); drawText(L, px + 3, sy, placa, colores.letra);
+  return { img: L, dx: -ox + corre(k, y0), top, orden: y1 };
 }
 
 // ------------------------------------------------------------------ el río
@@ -454,19 +456,20 @@ export function portonEstadio(pal: Paleta, w: number, d: number, z: number): Pie
  * Fila de vallas de atletismo que cruza la pista, una por carril. Calada: entre la barra y el piso se ve la pista.
  * El techo de la caja son las barras vistas desde arriba y cada valla baja de la barra al piso por sus dos patas.
  */
-export function vallas(pal: Paleta, w: number, d: number, z: number, carril = 16): Pieza {
-  const P = nueva(pal, w, d, z), L = P.img;
+export function vallas(pal: Paleta, w: number, d: number, z: number, carril = 16, k = 0, yMundo = 0): Pieza {
+  const sx = (y: number) => corre(k, yMundo + y) - corre(k, yMundo);
+  const P = { img: new Lienzo(w + sx(d), d + z, pal), sobre: 0 }, L = P.img;
   const row = (y: number, h: number) => y + (z - h); // fila de la imagen para (profundidad, altura)
   for (let y0 = 1; y0 < d - 2; y0 += carril) {
     const y1 = Math.min(d - 1, y0 + carril - 3);
     // sombra de la barra en el piso, hacia la derecha
-    for (let y = y0; y <= y1; y++) if (y % 2) L.p(w - 1, row(y, 0), 'vino');
+    for (let y = y0; y <= y1; y++) if (y % 2) L.p(w - 1 + sx(y), row(y, 0), 'vino');
     // patas en los dos extremos, con el pie que se apoya en el piso
-    for (const yy of [y0, y1]) { L.vl(2, row(yy, z), z, 'cemento_claro'); L.vl(3, row(yy, z), z, 'cemento'); L.hl(0, row(yy, 0), w - 1, 'asfalto_claro'); }
+    for (const yy of [y0, y1]) { L.vl(2 + sx(yy), row(yy, z), z, 'cemento_claro'); L.vl(3 + sx(yy), row(yy, z), z, 'cemento'); L.hl(sx(yy), row(yy, 0), w - 1, 'asfalto_claro'); }
     // barra a rayas blanco y negro, de 4 de ancho y 3 de alto
     for (let y = y0; y <= y1; y++) for (const h of [z, z - 1, z - 2]) for (let c = 1; c <= 4; c++) {
       const negra = Math.floor((y - y0) / 4) % 2 === 1;
-      L.p(c, row(y, h), negra ? (h === z ? 'sombra' : 'tinta') : h === z ? 'luz' : c === 4 ? 'cemento_claro' : 'luz');
+      L.p(c + sx(y), row(y, h), negra ? (h === z ? 'sombra' : 'tinta') : h === z ? 'luz' : c === 4 ? 'cemento_claro' : 'luz');
     }
   }
   return P;
@@ -531,55 +534,65 @@ export function torreLuz(pal: Paleta, alto: number): Pieza {
 
 // ------------------------------------------------------------------ lo que cuelga (bajo)
 
-/** Faroles de tela rojos colgando del techo del mercado, a distintas profundidades. Sale como una sola imagen. */
-export function lamparasColgantes(pal: Paleta, w: number, y0: number, y1: number, z: number, techo: number, seed = 1) {
+/**
+ * Faroles de tela rojos colgando del techo del mercado, a distintas profundidades. Sale como una sola imagen. Con
+ * inclinación `k`, cada farol se corre según su fondo (el cable baja derecho).
+ */
+export function lamparasColgantes(pal: Paleta, w: number, y0: number, y1: number, z: number, techo: number, seed = 1, k = 0) {
   // filas relativas a franja.atras: arriba el techo (row techo), abajo el farol más adelante
-  const top = techo, H = y1 - z + 14 - top, L = new Lienzo(w, H, pal), R = rng(seed);
+  const sx = (y: number) => corre(k, y) - corre(k, y0);
+  const top = techo, H = y1 - z + 14 - top, L = new Lienzo(w + sx(y1) + 5, H, pal), R = rng(seed);
   const n = Math.max(2, Math.round(w / 26));
-  for (let k = 0; k < n; k++) {
-    const x = Math.round(((k + 0.5) * w) / n) + Math.floor(R() * 7) - 3, y = y0 + 4 + Math.floor(R() * Math.max(1, y1 - y0 - 8)), h = z + 4 + Math.floor(R() * 8);
+  for (let i = 0; i < n; i++) {
+    const y = y0 + 4 + Math.floor(R() * Math.max(1, y1 - y0 - 8));
+    const x = Math.round(((i + 0.5) * w) / n) + Math.floor(R() * 7) - 3 + sx(y), h = z + 4 + Math.floor(R() * 8);
     const ly = y - h - top; // fila del farol dentro del dibujo
     L.vl(x, 0, ly, 'sombra');
     L.f(x - 4, ly + 1, 9, 8, 'rojo'); L.hl(x - 3, ly, 7, 'oro'); L.hl(x - 3, ly + 9, 7, 'oro');
     L.vl(x - 4, ly + 2, 6, 'vino'); L.vl(x + 4, ly + 2, 6, 'vino'); L.vl(x - 2, ly + 1, 8, 'salmon'); L.hl(x - 4, ly + 4, 9, 'vino');
     L.vl(x, ly + 10, 3, 'oro'); L.p(x - 1, ly + 12, 'amarillo'); L.p(x + 1, ly + 12, 'amarillo');
   }
-  return { img: L, top };
+  return { img: L, top, dx: corre(k, y0) };
 }
 
-/** Redes de pesca puestas a secar en una vara de bambú, con boyas. Caladas: se ve lo de atrás. */
-export function redesPesca(pal: Paleta, w: number, d: number, z: number, seed = 1) {
-  const caida = 16, H = d + z + 4, L = new Lienzo(w, H, pal);
+/**
+ * Redes de pesca puestas a secar en varas de bambú, con boyas. Caladas: se ve lo de atrás. La fila r del dibujo es la
+ * fila de pantalla `franja.atras + y0 - z - 2 + r`. Con inclinación, cada fila de la red y cada paral se corren según
+ * su fondo.
+ */
+export function redesPesca(pal: Paleta, w: number, d: number, z: number, seed = 1, k = 0, y0 = 0) {
+  const caida = 16, H = d + z + 4, sx = (y: number) => corre(k, y0 + y) - corre(k, y0), L = new Lienzo(w + sx(d) + 1, H, pal);
   // parales de bambú hasta el piso, adelante y atrás (fila del piso a la profundidad yy: yy + z + 2)
-  for (const yy of [2, d - 2]) for (const px of [1, w - 2]) { L.vl(px, yy, z + 2, 'amarillo'); L.p(px, yy + z + 2, 'terracota'); for (let k = 6; k < z; k += 8) L.p(px, yy + k, 'ocre'); }
+  for (const yy of [2, d - 2]) for (const px of [1, w - 2]) { const c = px + sx(yy - 2); L.vl(c, yy, z + 2, 'amarillo'); L.p(c, yy + z + 2, 'terracota'); for (let q = 6; q < z; q += 8) L.p(c, yy + q, 'ocre'); }
   // varas a lo largo, adelante y atrás
-  for (const yy of [2, d]) { L.hl(0, yy, w, 'amarillo'); L.hl(0, yy + 1, w, 'ocre'); for (let x = 9; x < w; x += 18) L.p(x, yy, 'terracota'); }
+  for (const yy of [2, d]) { const c = sx(yy - 2); L.hl(c, yy, w, 'amarillo'); L.hl(c, yy + 1, w, 'ocre'); for (let x = 9; x < w; x += 18) L.p(c + x, yy, 'terracota'); }
   // la red tendida entre las varas, y lo que cuelga por delante
   for (let y = 3; y < d + caida; y++) for (let x = 0; x < w; x++) {
     const sag = y > d ? Math.round(Math.sin((x / w) * Math.PI * 3 + seed) * 2) : 0;
     if (y > d + 1 && y - d > caida - 4 + sag) continue;
-    if ((x + y) % 6 === 0 || (x - y + 600) % 6 === 0) L.p(x, y, y > d ? 'verde' : 'menta');
+    if ((x + y) % 6 === 0 || (x - y + 600) % 6 === 0) L.p(x + sx(Math.min(y, d) - 2), y, y > d ? 'verde' : 'menta');
   }
-  for (let x = 6; x < w; x += 16) { const y = d + caida - 2 + Math.round(Math.sin(x) * 2); L.f(x, y, 4, 3, (x >> 4) % 2 ? 'oro' : 'rojo'); L.p(x, y, 'luz'); }
-  return { img: L, alto: z };
+  for (let x = 6; x < w; x += 16) { const y = d + caida - 2 + Math.round(Math.sin(x) * 2); L.f(x + sx(d - 2), y, 4, 3, (x >> 4) % 2 ? 'oro' : 'rojo'); L.p(x + sx(d - 2), y, 'luz'); }
+  return { img: L, alto: z, dx: corre(k, y0) };
 }
 
 /** Cuerdas de ropa en la azotea: cada cuerda a lo largo, a una profundidad, con su ropa colgada (2 cuadros). */
-export function cuerdasRopa(pal: Paleta, w: number, y0: number, y1: number, z: number, cuadro: 0 | 1, seed = 1) {
-  const top = y0 - z - 16, H = y1 - z + 14 - top, L = new Lienzo(w, H, pal), R = rng(seed);
+export function cuerdasRopa(pal: Paleta, w: number, y0: number, y1: number, z: number, cuadro: 0 | 1, seed = 1, k = 0) {
+  const sx = (y: number) => corre(k, y) - corre(k, y0);
+  const top = y0 - z - 16, H = y1 - z + 14 - top, L = new Lienzo(w + sx(y1), H, pal), R = rng(seed);
   const cols: Color[] = ['luz', 'rojo', 'azul', 'amarillo', 'celeste', 'salmon', 'menta'];
   for (let y = y0 + 6; y < y1; y += 26) {
-    const ly = y - z - 10 - top;
-    for (let x = 0; x < w; x++) L.p(x, ly + Math.round(Math.sin((x / w) * Math.PI) * 4), 'cemento');
+    const ly = y - z - 10 - top, o = sx(y);
+    for (let x = 0; x < w; x++) L.p(x + o, ly + Math.round(Math.sin((x / w) * Math.PI) * 4), 'cemento');
     // palos en las puntas
-    for (const px of [0, w - 1]) { L.vl(px, ly - 2, 12, 'cemento_claro'); }
+    for (const px of [0, w - 1]) { L.vl(px + o, ly - 2, 12, 'cemento_claro'); }
     for (let x = 6; x < w - 10; x += 9 + Math.floor(R() * 5)) {
-      const c = cols[Math.floor(R() * cols.length)], hh = 8 + Math.floor(R() * 5), yy = ly + 1 + Math.round(Math.sin((x / w) * Math.PI) * 4), sw = cuadro && (x >> 3) % 2 ? 1 : 0;
-      L.f(x + sw, yy, 6, hh, c); L.vl(x + 5 + sw, yy, hh, c === 'luz' ? 'cemento_claro' : 'sombra'); L.p(x + 1, yy - 1, 'cemento_claro'); L.p(x + 4, yy - 1, 'cemento_claro');
+      const c = cols[Math.floor(R() * cols.length)], hh = 8 + Math.floor(R() * 5), yy = ly + 1 + Math.round(Math.sin((x / w) * Math.PI) * 4), sw = (cuadro && (x >> 3) % 2 ? 1 : 0) + o;
+      L.f(x + sw, yy, 6, hh, c); L.vl(x + 5 + sw, yy, hh, c === 'luz' ? 'cemento_claro' : 'sombra'); L.p(x + 1 + o, yy - 1, 'cemento_claro'); L.p(x + 4 + o, yy - 1, 'cemento_claro');
       if (hh > 10) L.hl(x + sw, yy + 4, 6, c === 'luz' ? 'cemento_claro' : c);
     }
   }
-  return { img: L, top };
+  return { img: L, top, dx: corre(k, y0) };
 }
 
 /** Qué dibujo va en cada `tipo` de caja nuevo de Saigón. `null` si no es de aquí. */

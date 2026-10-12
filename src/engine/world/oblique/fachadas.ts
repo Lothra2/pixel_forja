@@ -281,7 +281,7 @@ export const rioAbierto: PintorCerca = (C, x0, x1, base, ctx) => {
   const top = base - 34, R = rng(ctx.seed + 31);
   for (let y = top; y < base; y++) for (let x = x0; x < x1; x++) {
     const t = (y - top) / (base - top);
-    C.p(x, y, y === top ? 'verde_oscuro' : bayer(x, y) < 0.25 - t * 0.2 ? 'celeste' : grain(x >> 3, y, 5) < 0.12 ? 'celeste' : 'canal');
+    C.p(x, y, y === top ? 'verde_oscuro' : bayer(x, y) < 0.06 + t * 0.12 ? 'azul' : grain(x >> 3, y, 5) < 0.12 ? 'canal' : 'celeste');
   }
   // reflejos en rayitas, más largas adelante
   for (let k = 0; k < (x1 - x0) / 6; k++) { const y = top + 2 + Math.floor(R() * (base - top - 3)), x = x0 + Math.floor(R() * (x1 - x0)), len = 2 + Math.floor(((y - top) / (base - top)) * 8); C.hl(x, y, len, R() < 0.3 ? 'luz' : 'cielo'); }

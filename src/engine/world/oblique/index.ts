@@ -12,6 +12,9 @@ import { validateLayout, type ObliqueLayout } from './layout';
 import { renderEscena, type Escena } from './escena';
 import { exportarEscena, type Archivo } from './exportar';
 import { verificar, verificacionMarkdown, type Prueba } from './verify';
+import { INCLINACION } from './inclinada';
+
+export { INCLINACION } from './inclinada';
 
 export { validateLayout, toScreen, depthOf, collisionOf, HORAS, PISOS, CLIMAS, PAISES, type ObliqueLayout } from './layout';
 export { renderEscena, postal, type Escena, type Actor } from './escena';
@@ -28,6 +31,11 @@ export interface OpcionesEscenario {
   contornos?: string[];
   /** Semilla de los detalles al azar (casas, letreros, grietas). La misma semilla da los mismos pixeles. */
   semilla?: number;
+  /**
+   * La vista inclinada, la misma del piso de la pelea: px = x + inclinacion * y (lo del fondo queda a la izquierda).
+   * 0.35 por defecto. 0 da el dibujo derecho de antes. Va en `escenario.json` para que el juego corra a los atletas igual.
+   */
+  inclinacion?: number;
 }
 
 export interface ResultadoEscenario {
@@ -46,7 +54,7 @@ export interface ResultadoEscenario {
 export function generarEscenario(layout: unknown, o: OpcionesEscenario = {}): ResultadoEscenario {
   const v = validateLayout(layout);
   if (!v.layout) return { ok: false, id: null, errores: v.errores, avisos: v.avisos, pruebas: [], archivos: [], escena: null, layout: null };
-  const E = renderEscena(v.layout, o.semilla ?? 42);
+  const E = renderEscena(v.layout, o.semilla ?? 42, o.inclinacion ?? INCLINACION);
   const pruebas = verificar(E, layout, o.contornos);
   const ok = pruebas.every((p) => p.ok);
   const md = verificacionMarkdown(v.layout.id, pruebas);

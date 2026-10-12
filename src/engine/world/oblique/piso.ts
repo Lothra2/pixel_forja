@@ -54,7 +54,7 @@ const tierra: Pintor = (_L, x, y, s) => {
   const n = g(x, y, s);
   if (n < 0.04) return 'terracota';
   if (n > 0.97) return 'crema';
-  return g(x >> 2, y >> 1, s + 1) < 0.3 && bayer(x, y) < 0.5 ? 'terracota' : n > 0.85 ? 'amarillo' : 'ocre';
+  return g(x >> 2, y >> 1, s + 1) < 0.35 && bayer(x, y) < 0.5 ? 'terracota' : n > 0.94 ? 'amarillo' : 'ocre';
 };
 const arena: Pintor = (_L, x, y, s) => { const n = g(x, y, s); return n < 0.06 ? 'ocre' : n > 0.9 ? 'luz' : 'crema'; };
 const pasto: Pintor = (_L, x, y, s) => { const n = g(x, y, s); return n < 0.1 ? 'verde_oscuro' : n > 0.92 ? 'menta' : 'verde'; };
