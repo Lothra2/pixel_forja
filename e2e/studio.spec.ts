@@ -511,7 +511,8 @@ test('equipos: gakuran, brazalete y letras en el pecho en Estilo, y el gigante a
   await page.getByTestId('step-animate').click();
   await idle(page);
   await expect.poll(() => page.getByTestId('preview-big').evaluate((c: HTMLCanvasElement) => c.toDataURL())).not.toBe(before);
-  // Rick (Familia GG): "GG" en el pecho
+  // Rick (Familia GG): "GG" en el pecho (Abrir ficha está en Inicio)
+  await page.goto('/');
   await page.getByTestId('open-ficha').setInputFiles('docs/ejemplos/nekketsu/fichas/rick.ficha.json');
   await idle(page);
   await page.getByTestId('step-style').click();
@@ -520,6 +521,7 @@ test('equipos: gakuran, brazalete y letras en el pecho en Estilo, y el gigante a
   await expect(page.getByTestId('chest-text')).toHaveValue('NK');
   await page.screenshot({ path: `${shots}/${tag}_70_equipos_estilo.png`, fullPage: true });
   // Goro, el gigante: abre en celda 64
+  await page.goto('/');
   await page.getByTestId('open-ficha').setInputFiles('docs/ejemplos/nekketsu/fichas/goro.ficha.json');
   await idle(page);
   await expect(page.getByTestId('cell-size').getByRole('button', { name: '64' })).toHaveAttribute('aria-pressed', 'true');

@@ -54,7 +54,7 @@ Los campos están explicados en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#equ
 
 ## Pruebas
 
-`npm test` y `npm run e2e`: ver el PR. Las nuevas están en `src/engine/__tests__/teams.test.ts` y en la prueba e2e "equipos".
+`npm test`: 187 de 187. `npm run e2e`: 34 de 34 en escritorio y teléfono, con la arena sobre el kit completo (`npm run build:sitio`). `tsc -b` limpio. Las nuevas están en `src/engine/__tests__/teams.test.ts` y en la prueba e2e "equipos".
 
 | Qué se revisa | Resultado |
 |---|---|
