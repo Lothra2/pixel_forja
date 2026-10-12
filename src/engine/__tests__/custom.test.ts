@@ -1,0 +1,219 @@
+import { describe, it, expect, beforeAll } from 'vitest';
+import { readFileSync, readdirSync, statSync, mkdtempSync, writeFileSync, existsSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
+import Ajv from 'ajv';
+import { buildCustomKit, kitConfigSchema, validateKitConfig, validateTeams, type KitConfig } from '../kit/custom';
+import { SPORT_PACKS, DEFAULT_SPORT_PACKS } from '../kit/sportskit';
+import { HERO_RPG_ANIMS } from '../rpg/presets';
+import { FLOOR_PROP_KINDS } from '../render/props';
+import { ROOT } from './helpers';
+
+const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
+const D = join(ROOT, 'node_modules', '@fontsource', 'silkscreen', 'files');
+const SILK = { regular: ab(join(D, 'silkscreen-latin-400-normal.woff')), bold: ab(join(D, 'silkscreen-latin-700-normal.woff')) };
+const EJ = join(ROOT, 'docs', 'ejemplos');
+const EXAMPLES = ['nekketsu/kit.config.json', 'kit-deportivo.config.json', 'gg-abyss.config.json'];
+const readJson = (p: string) => JSON.parse(readFileSync(p, 'utf8'));
+const SCHEMA_FILE = join(ROOT, 'docs', 'kit-a-medida.schema.json');
+const validator = new Ajv({ allErrors: true }).compile(readJson(SCHEMA_FILE));
+const MIN: KitConfig = { juego: 'Prueba', personajes_incluidos: ['familia'], packs: { base: ['idle', 'walk'] } };
+
+/** Corre la línea de comandos de verdad. */
+const cli = (...args: string[]) => spawnSync(process.execPath, [join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs'), join(ROOT, 'scripts', 'kit-a-medida.ts'), ...args], { cwd: ROOT, encoding: 'utf8' });
+/** Ancho y alto de un PNG, de su cabecera. */
+const pngSize = (b: Buffer) => [b.readUInt32BE(16), b.readUInt32BE(20)];
+const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : [p]; });
+/** Todas las rutas a archivos que nombra el manifiesto (sin el #id de las cabecitas). */
+const refsOf = (v: unknown, out = new Set<string>()): Set<string> => {
+  if (typeof v === 'string' && /^[\w/.-]+\.(png|json|fnt|txt)(#\w+)?$/.test(v)) out.add(v.split('#')[0]);
+  else if (Array.isArray(v)) v.forEach((x) => refsOf(x, out));
+  else if (v && typeof v === 'object') Object.values(v).forEach((x) => refsOf(x, out));
+  return out;
+};
+
+describe('kit a medida (lote I): configuración', () => {
+  it('docs/kit-a-medida.schema.json es el que sale del motor (no se desfasa)', () => {
+    const now = JSON.stringify(kitConfigSchema(), null, 2) + '\n';
+    if (process.env.UPDATE_GOLDEN) writeFileSync(SCHEMA_FILE, now);
+    expect(readFileSync(SCHEMA_FILE, 'utf8')).toBe(now);
+  });
+
+  it('las configuraciones de ejemplo son válidas para el motor y para el esquema', () => {
+    for (const f of EXAMPLES) {
+      const cfg = readJson(join(EJ, f));
+      expect(validateKitConfig(cfg), f).toEqual([]);
+      expect(validator(cfg), `${f}: ${JSON.stringify(validator.errors)}`).toBe(true);
+    }
+  });
+
+  it('el kit deportivo y el de GG Abyss se expresan como configuración', () => {
+    const dep = readJson(join(EJ, 'kit-deportivo.config.json')) as KitConfig;
+    expect(Object.keys(dep.packs)).toEqual([...DEFAULT_SPORT_PACKS]);
+    for (const p of DEFAULT_SPORT_PACKS) expect(dep.packs[p], p).toEqual(SPORT_PACKS[p]);
+    expect(dep.personajes_incluidos).toEqual(['familia', 'heroes']);
+    const abyss = readJson(join(EJ, 'gg-abyss.config.json')) as KitConfig;
+    expect(abyss.packs.rpg).toEqual([...HERO_RPG_ANIMS]);
+    expect(abyss.personajes_incluidos).toEqual(['familia_rpg']);
+  });
+
+  it('los errores dicen el campo y sugieren el nombre correcto', () => {
+    const errs = validateKitConfig({
+      juego: 'X', pakcs: {}, personajes_incluidos: ['familai'], filas: ['rigth', 'down'], datos_por_cuadro: ['cajas', 'mano'],
+      packs: { base: ['idle', 'wlak'], 'Pelea': ['jab'] }, pruebas: { calle: ['bse'] }, objetos: ['chancleta', 'paragua'],
+      ui: { fuentes: { idiomas: ['es', 'fr'] }, colores: true }, celda: 50,
+    });
+    const has = (s: string) => expect(errs.some((e) => e.includes(s)), `${s}\n${errs.join('\n')}`).toBe(true);
+    has('"pakcs": clave desconocida. ¿Quisiste decir "packs"?');
+    has('personajes_incluidos[0]: "familai" no existe');
+    has('¿Quisiste decir "familia"?');
+    has('filas[0]: "rigth" no es una fila. ¿Quisiste decir "right"?');
+    has('datos_por_cuadro[1]: "mano" no es un dato. ¿Quisiste decir "manos"?');
+    has('packs.base[1]: "wlak" no es una animación. ¿Quisiste decir "walk"?');
+    has('packs.Pelea: el nombre del pack va en minúsculas');
+    has('pruebas.calle[0]: el pack "bse" no está en packs. ¿Quisiste decir "base"?');
+    has('objetos[1]: "paragua" no es un arma del piso. ¿Quisiste decir "paraguas"?');
+    has('ui.fuentes.idiomas[1]: "fr" todavía no está');
+    has('ui.colores: clave desconocida');
+    has('celda: tiene que ser');
+    expect(validateKitConfig({ packs: { base: ['idle'] } })).toEqual(expect.arrayContaining([
+      'juego: falta el nombre del juego',
+      'faltan personajes: pon "fichas" (una carpeta con *.ficha.json) o "personajes_incluidos"',
+    ]));
+    expect(validateKitConfig(MIN)).toEqual([]);
+    // el esquema rechaza lo mismo
+    expect(validator({ ...MIN, packs: { base: ['wlak'] } })).toBe(false);
+    expect(validator({ ...MIN, pakcs: {} })).toBe(false);
+    expect(validator({ juego: 'X', packs: { base: ['idle'] } })).toBe(false);
+  });
+
+  it('los equipos se revisan contra las fichas y los animales', () => {
+    const errs = validateTeams({
+      azul: { nombre: 'Azul', atletas: ['rick', 'stpeh'], mascota: 'tohr' },
+      rojo: { nombre: 'Rojo', atletas: ['rick'] },
+      'Verde!': { atletas: [] },
+    }, ['rick', 'steph'], ['thor']);
+    expect(errs).toEqual(expect.arrayContaining([
+      'equipos.azul.atletas[1]: no hay ficha de "stpeh". ¿Quisiste decir "steph"?',
+      'equipos.azul.mascota: no hay ficha del animal "tohr". ¿Quisiste decir "thor"?',
+      'equipos.rojo.atletas[0]: "rick" ya está en el equipo azul',
+      'equipos.Verde!: el id va en minúsculas, números y _',
+      'equipos.Verde!.nombre: falta',
+    ]));
+  });
+
+  it('buildCustomKit junta todos los problemas en un solo error', () => {
+    expect(() => buildCustomKit({ ...MIN, packs: { base: ['wlak'] }, ui: { fuentes: true } }))
+      .toThrowError(/2 problemas:\n {2}packs\.base\[0\]: "wlak".*\n {2}ui\.fuentes: faltan los archivos/);
+  });
+
+  it('lo que todavía no genera vuelve como aviso y en manifest.pendiente', () => {
+    const { files, warnings } = buildCustomKit({ ...MIN, escenarios: 'data/stages/', fx: ['estrellas_mareo'], animales: ['chiguire'], ui: { logo: { texto: 'GG' } } }, {}, { quick: true, solo: ['cabecitas'] });
+    expect(warnings).toEqual([
+      'escenarios: todavía no se genera, llega con escenarios oblicuos (lote E)',
+      'fx: todavía no se genera, llega con efectos (lote F)',
+      'ui.logo: todavía no se genera, llega con el resto del lote G1',
+      'animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire',
+    ]);
+    const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
+    expect(m.pendiente).toEqual(warnings);
+    expect(m.tipo).toBe('kit a medida');
+  });
+
+  it('--solo arma solo esas partes', () => {
+    const names = (solo: Parameters<typeof buildCustomKit>[2]) => buildCustomKit({ ...MIN, objetos: ['chancleta'], ui: { fuentes: true } }, { fuentes: SILK }, solo).files.map((f) => f.name).sort();
+    expect(names({ quick: true, solo: ['fuentes'] })).toEqual(['CREDITOS.txt', 'manifest.json', ...['fuente_titulo', 'fuente_titulo_plata', 'fuente_ui'].flatMap((n) => [`ui/fuentes/${n}.fnt`, `ui/fuentes/${n}.png`])]);
+    expect(names({ quick: true, solo: ['objetos'] })).toEqual(['CREDITOS.txt', 'manifest.json', 'objetos/armas.json', 'objetos/armas.png']);
+    const at = names({ quick: true, solo: ['atletas'] });
+    expect(at).toContain('atletas/rick/base.png');
+    expect(at.some((n) => n.startsWith('ui/') || n.startsWith('objetos/') || n.endsWith('retratos.png'))).toBe(false);
+  });
+
+  it('la línea de comandos explica los errores y sale con 1', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'kam-'));
+    writeFileSync(join(dir, 'kit.config.json'), JSON.stringify({ ...MIN, packs: { base: ['idel'] } }));
+    const r = cli(join(dir, 'salida'), '--config', join(dir, 'kit.config.json'));
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('packs.base[0]: "idel" no es una animación. ¿Quisiste decir "idle"?');
+    expect(existsSync(join(dir, 'salida'))).toBe(false);
+    const s = cli(join(dir, 'salida'), '--config', join(dir, 'kit.config.json'), '--solo', 'atletas,fondos');
+    expect(s.stderr).toContain('--solo: "fondos" no es una parte del kit');
+  });
+});
+
+describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
+  const out = mkdtempSync(join(tmpdir(), 'kit-nekketsu-'));
+  let seconds = 0;
+  let m: Record<string, any>;
+  let files: string[];
+  beforeAll(() => {
+    const t0 = Date.now();
+    const r = cli(out, '--config', join(EJ, 'nekketsu', 'kit.config.json'));
+    seconds = (Date.now() - t0) / 1000;
+    if (r.status !== 0) throw new Error(r.stderr);
+    m = readJson(join(out, 'manifest.json'));
+    files = walk(out).map((p) => relative(out, p).replaceAll('\\', '/'));
+  }, 240_000);
+
+  it('se genera en menos de 3 minutos', () => {
+    expect(seconds).toBeLessThan(180);
+  });
+
+  it('el manifiesto cumple el contrato (sección 4.3)', () => {
+    expect(m).toMatchObject({ juego: 'Nekketsu Olympic GG', generado_con: 'PixelForja', version: 1, resolucion: [640, 360], filas: ['right', 'down_right', 'up_right', 'down', 'up'] });
+    expect(Object.keys(m.equipos)).toEqual(['familia_gg', 'instituto_nekketsu']);
+    expect(m.equipos.familia_gg).toMatchObject({ nombre: 'Familia GG', atletas: ['rick', 'steph', 'sophie', 'alana'], mascota: 'thor' });
+    const cfg = readJson(join(EJ, 'nekketsu', 'kit.config.json')) as KitConfig;
+    expect(Object.keys(m.atletas).sort()).toEqual(['alana', 'goro', 'kenji', 'rick', 'ryu', 'sophie', 'steph', 'tetsu']);
+    for (const [id, a] of Object.entries<any>(m.atletas)) {
+      const team = Object.entries<any>(m.equipos).find(([, t]) => t.atletas.includes(id))![0];
+      expect(a.equipo, id).toBe(team);
+      expect(a.celda, id).toBe(id === 'goro' ? 64 : 48);
+      expect(a.pivote, id).toEqual([a.celda / 2, a.celda - 2]);
+      expect(a.retratos).toMatchObject({ archivo: `atletas/${id}/retratos.png`, chico: 40, grande: 96, expresiones: ['neutral', 'feliz', 'enojo', 'triste', 'susto', 'cerrado', 'dolor'] });
+      expect(a.cabecita).toBe(`ui/cabecitas.png#${id}`);
+      expect(m.cabecitas.orden).toContain(id);
+      expect(Object.keys(a.packs), id).toEqual(Object.keys(cfg.packs));
+      for (const [p, pk] of Object.entries<any>(a.packs)) {
+        expect(pk.atlas).toBe(`atletas/${id}/${p}.json`);
+        const atlas = readJson(join(out, pk.atlas));
+        expect(Object.keys(pk.anims).sort(), `${id}/${p}`).toEqual([...cfg.packs[p]].sort());
+        for (const [an, d] of Object.entries<any>(pk.anims)) {
+          expect(d).toMatchObject({ cuadros: expect.any(Number), fps: expect.any(Number), loop: expect.any(Boolean) });
+          // un cuadro del atlas por fila y cuadro, y los datos por cuadro en [fila][cuadro]
+          for (const fila of m.filas) for (let k = 0; k < d.cuadros; k++) expect(atlas.frames[`${an}_${fila}_${k}`], `${id} ${an}_${fila}_${k}`).toBeDefined();
+          for (const f of ['cajas', 'cuerpo', 'manos', 'cabeza', 'pies']) {
+            expect(d[f], `${id} ${an} ${f}`).toHaveLength(m.filas.length);
+            for (const row of d[f]) expect(row).toHaveLength(d.cuadros);
+          }
+        }
+      }
+    }
+    for (const [prueba, packs] of Object.entries<string[]>(m.pruebas)) for (const p of packs) expect(m.atletas.rick.packs[p], `${prueba}: ${p}`).toBeDefined();
+    expect(m.animales.thor).toMatchObject({ atlas: 'animales/thor.json', imagen: 'animales/thor.png' });
+    for (const k of FLOOR_PROP_KINDS) expect(m.objetos[k], k).toMatchObject({ atlas: 'objetos/armas.json' });
+    expect(Object.keys(m.ui.fuentes)).toEqual(['fuente_ui', 'fuente_titulo', 'fuente_titulo_plata', 'notas']);
+    expect(m.creditos).toBe('CREDITOS.txt');
+    expect(m.pendiente).toBeUndefined();
+  });
+
+  it('no falta ningún archivo que nombra el manifiesto, y no sobra ninguno', () => {
+    const refs = refsOf(m);
+    for (const r of refs) expect(files, r).toContain(r);
+    // cada atlas nombra su imagen
+    for (const f of files.filter((n) => n.endsWith('.json') && n !== 'manifest.json')) {
+      const img = readJson(join(out, f)).meta?.image;
+      expect(img, f).toBeTruthy();
+      expect(files, `${f} -> ${img}`).toContain(f.replace(/[^/]+$/, img));
+    }
+    const atlasImages = files.filter((n) => n.endsWith('.png') && files.includes(n.replace(/\.png$/, '.json')));
+    for (const f of files) if (f !== 'manifest.json' && !atlasImages.includes(f)) expect(refs, `nadie nombra ${f}`).toContain(f);
+  });
+
+  it('ninguna imagen pasa de 4096 px', () => {
+    const pngs = files.filter((n) => n.endsWith('.png'));
+    expect(pngs.length).toBe(54);
+    for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
+  });
+});

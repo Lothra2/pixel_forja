@@ -1,0 +1,397 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Lothra2/pixel_forja/blob/main/docs/kit-a-medida.schema.json",
+  "title": "kit.config.json de PixelForja",
+  "description": "Lo que un juego le pide a PixelForja: personajes, packs de animaciones, objetos, animales y fuentes. npm run kit-a-medida -- <salida> --config kit.config.json. Ver docs/KIT_A_MEDIDA.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "juego",
+    "packs"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "fichas"
+      ]
+    },
+    {
+      "required": [
+        "personajes_incluidos"
+      ]
+    }
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "juego": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nombre del juego. Va al manifiesto."
+    },
+    "resolucion": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Resolución interna del juego [ancho, alto], para el manifiesto."
+    },
+    "celda": {
+      "enum": [
+        32,
+        48,
+        64
+      ],
+      "description": "Celda de los atletas en pixeles. Un gigante usa la de su ficha (cell)."
+    },
+    "filas": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "right",
+          "left",
+          "down",
+          "up",
+          "down_right",
+          "down_left",
+          "up_right",
+          "up_left"
+        ]
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "description": "Filas de las hojas, en orden. Sin valor: las 8 direcciones. Un juego que espeja usa [\"right\", \"down_right\", \"up_right\", \"down\", \"up\"]."
+    },
+    "datos_por_cuadro": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "items": {
+            "enum": [
+              "cajas",
+              "cuerpo",
+              "manos",
+              "cabeza",
+              "pies",
+              "carga",
+              "arma"
+            ]
+          },
+          "uniqueItems": true
+        }
+      ],
+      "description": "Datos por fila y cuadro en el manifiesto: true = todos, o la lista."
+    },
+    "fichas": {
+      "type": "string",
+      "description": "Carpeta con *.ficha.json, relativa a este archivo. El id de cada personaje es el nombre del archivo."
+    },
+    "personajes_incluidos": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "familia",
+          "familia_rpg",
+          "heroes"
+        ]
+      },
+      "uniqueItems": true,
+      "description": "Personajes que ya trae el motor: la familia GG de calle, la familia GG con su equipo de GG Abyss, los héroes."
+    },
+    "equipos": {
+      "type": "string",
+      "description": "Archivo de equipos, relativo a este archivo: { id: { nombre, atletas, mascota?, colores?, ... } }. Pasa al manifiesto tal cual."
+    },
+    "packs": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9_]+$"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "enum": [
+            "idle",
+            "walk",
+            "run",
+            "jump_takeoff",
+            "jump_rise",
+            "jump_apex",
+            "jump_fall",
+            "land",
+            "jump",
+            "hit",
+            "fall_getup",
+            "celebrate",
+            "sad",
+            "crawl",
+            "kick",
+            "ready",
+            "trap",
+            "pass",
+            "chip",
+            "shot",
+            "header",
+            "volley",
+            "chilena",
+            "slide",
+            "bump",
+            "stagger",
+            "tumble",
+            "dance",
+            "lose",
+            "win",
+            "laugh",
+            "point",
+            "call",
+            "clap",
+            "goal_knee",
+            "goal_plane",
+            "skid",
+            "power",
+            "keeper_ready",
+            "keeper_dive",
+            "keeper_catch",
+            "run_ball",
+            "tackle",
+            "throw_in",
+            "keeper_throw",
+            "keeper_punt",
+            "dribble",
+            "shoot",
+            "dunk",
+            "block",
+            "serve",
+            "spike",
+            "tennis_serve",
+            "forehand",
+            "backhand",
+            "bat",
+            "pitch",
+            "catch",
+            "dive",
+            "hurdles",
+            "long_jump",
+            "sprint_start",
+            "guard",
+            "punch",
+            "kick_martial",
+            "skate",
+            "bike",
+            "sprint",
+            "pole_vault",
+            "shot_put",
+            "javelin",
+            "vb_ready",
+            "vb_bump",
+            "vb_set",
+            "vb_dive",
+            "tn_ready",
+            "tn_volley",
+            "tn_smash",
+            "fight_step",
+            "jab",
+            "hook",
+            "uppercut",
+            "low_kick",
+            "flying_kick",
+            "fight_block",
+            "slip",
+            "fight_hit",
+            "knockout",
+            "victory",
+            "lift",
+            "carry_idle",
+            "carry_walk",
+            "carry_run",
+            "throw_overhead",
+            "carried",
+            "thrown_spin",
+            "land_flat",
+            "grab",
+            "grab_hold",
+            "grabbed",
+            "knee_grab",
+            "break_free",
+            "dizzy",
+            "ko_bounce",
+            "taunt",
+            "run_punch",
+            "run_kick",
+            "air_kick",
+            "slip_wet",
+            "weapon_pick",
+            "weapon_swing",
+            "weapon_swing_heavy",
+            "weapon_throw",
+            "umbrella_block",
+            "fan_gust",
+            "swim",
+            "swim_back",
+            "swim_breast",
+            "swim_fly",
+            "tread_water",
+            "swim_exit",
+            "attack",
+            "throw",
+            "block_shield",
+            "use_item",
+            "die",
+            "cast",
+            "nova",
+            "channel",
+            "whirlwind",
+            "leap",
+            "charge",
+            "dodge",
+            "shoot_bow",
+            "summon",
+            "warcry",
+            "attack_heavy",
+            "attack_thrust",
+            "zombie_walk",
+            "claw",
+            "lunge",
+            "rise"
+          ]
+        },
+        "uniqueItems": true,
+        "minItems": 1
+      },
+      "description": "Cada pack es un atlas por atleta: { \"base\": [\"idle\", \"walk\", \"run\"] }."
+    },
+    "pruebas": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "uniqueItems": true
+      },
+      "description": "Qué packs carga cada prueba del juego. Se copia al manifiesto."
+    },
+    "retratos": {
+      "type": "boolean",
+      "description": "Retratos de 7 expresiones en 40 y 96. Sin valor: sí."
+    },
+    "cabecitas": {
+      "type": "boolean",
+      "description": "Cabecitas de 12 x 12 para el minimapa. Sin valor: sí."
+    },
+    "objetos": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "items": {
+            "enum": [
+              "chancleta",
+              "silla_plastica",
+              "non_la",
+              "coco",
+              "tubo",
+              "llanta",
+              "pote_basura",
+              "cono",
+              "escoba",
+              "piedra",
+              "paraguas",
+              "abanico",
+              "termo",
+              "furro",
+              "broomstick",
+              "balon_goma",
+              "chapa",
+              "tejo",
+              "volante_dacau"
+            ]
+          },
+          "uniqueItems": true
+        }
+      ],
+      "description": "Armas del piso: true = todas, o la lista."
+    },
+    "animales": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9_]+$"
+      },
+      "uniqueItems": true,
+      "description": "Animales: los de las fichas y thor, que trae el motor."
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fuentes": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "idiomas": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "es",
+                      "en",
+                      "vi"
+                    ]
+                  },
+                  "uniqueItems": true
+                }
+              }
+            }
+          ],
+          "description": "Las tres fuentes bitmap (con vietnamita) en ui/fuentes."
+        },
+        "logo": {
+          "type": "object",
+          "required": [
+            "texto"
+          ],
+          "properties": {
+            "texto": {
+              "type": "string"
+            }
+          },
+          "description": "Todavía no se genera: llega con el resto del lote G1."
+        }
+      }
+    },
+    "escenarios": {
+      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con escenarios oblicuos (lote E)."
+    },
+    "publico": {
+      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con público (lote C6)."
+    },
+    "npc": {
+      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con NPC (lote C6)."
+    },
+    "vehiculos": {
+      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con vehículos (lote D2)."
+    },
+    "fx": {
+      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con efectos (lote F)."
+    },
+    "audio": {
+      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con audio (lote H)."
+    }
+  }
+}

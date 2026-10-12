@@ -288,7 +288,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     ? big.map((b) => Object.fromEntries(Object.entries(b.joints!).map(([k, [x, y]]) => [k, [mirrored ? cell - 1 - (x - left) : x - left, y - top]])) as Joints)
     : undefined;
   const clampX = (v: number) => Math.max(0, Math.min(cell - 1, v)), clampY = clampX;
-  const wholes = premium && isHuman(f) ? big.map((b) => {
+  const wholes = isHuman(f) ? big.map((b) => {
     const w = b.whole;
     if (!w) return null;
     const x0 = clampX(w.x0 - left), x1 = clampX(w.x1 - left), y0 = clampY(w.y0 - top), y1 = clampY(w.y1 - top);

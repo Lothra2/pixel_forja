@@ -48,3 +48,15 @@ Sale cada atleta en su celda (Goro en 64), con su `numero` en el manifiesto, y T
 ## Fuentes con vietnamita (lote G1)
 
 Con `--fuentes`, el kit trae `ui/fuentes/` con `fuente_ui`, `fuente_titulo` y `fuente_titulo_plata`, con todas las letras del vietnamita: "Rồng Sài Gòn", "Đá cầu", "Bà Hoa", "Tuấn" y "Trời ơi" se leen a 8 px. Detalles en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#fuentes---fuentes-opción-fuentes).
+
+## Kit a medida (lote I)
+
+[`kit.config.json`](kit.config.json) es la configuración del kit del juego y [`equipos.json`](equipos.json) sus dos equipos. Con eso sale todo lo de arriba de una vez, en el formato del contrato:
+
+```bash
+npm run kit-a-medida -- salida/kit_nekketsu --config docs/ejemplos/nekketsu/kit.config.json
+```
+
+Salen los 8 atletas con 5 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`), retratos, cabecitas, las 19 armas del piso, Thor y las fuentes con vietnamita, en unos 80 segundos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
+
+El juego tendrá su propio `kit.config.json` y `data/teams.json`. Esta es la versión de ejemplo, con lo que PixelForja ya genera.

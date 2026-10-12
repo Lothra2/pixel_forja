@@ -1,0 +1,15 @@
+{
+  "$schema": "../kit-a-medida.schema.json",
+  "juego": "GG Abyss",
+  "resolucion": [640, 360],
+  "celda": 48,
+  "personajes_incluidos": ["familia_rpg"],
+  "packs": {
+    "rpg": ["idle", "walk", "run", "attack", "attack_heavy", "attack_thrust", "cast", "nova", "channel", "whirlwind", "leap", "charge", "dodge", "shoot_bow", "summon", "warcry", "block_shield", "use_item", "throw", "hit", "die"]
+  },
+  "retratos": true,
+  "cabecitas": false,
+  "animales": ["thor"],
+  "ui": { "fuentes": true },
+  "escenarios": "mundo/"
+}
