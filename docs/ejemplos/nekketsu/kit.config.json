@@ -122,6 +122,7 @@
       ]
     }
   },
+  "escenarios": "escenarios/",
   "fx": true,
   "audio": {
     "sfx": [

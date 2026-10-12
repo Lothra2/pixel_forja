@@ -64,3 +64,14 @@ El juego tendrá su propio `kit.config.json` y `data/teams.json`. Esta es la ver
 ## Efectos y sonidos (lote F)
 
 La configuración pide `"fx": true` (los 56 efectos del catálogo general en `fx/`) y los sonidos del motor que le sirven al juego en `audio/sfx/`: golpes, esquiva, bloqueo, pasos, ladrido de Thor y los de la interfaz. `silbato`, `pistola` y `marcha_nekketsu` todavía no existen: el kit los salta con aviso y quedan en `manifest.pendiente` hasta el lote H. Qué efecto va con qué evento: [docs/EFECTOS.md](../../EFECTOS.md).
+
+## Escenarios
+
+`escenarios/saigon_hem.layout.json` es el layout del tramo 1 del Cross Country, copiado tal cual del juego (lo escribe el juego en `data/stages/`). La configuración lo pide con `"escenarios": "escenarios/"` y el kit lo pinta en `escenarios/saigon_hem/` con sus 9 pruebas. Para ver las postales y la ficha de arte:
+
+```bash
+npm run escenario -- docs/ejemplos/nekketsu/escenarios/saigon_hem.layout.json salida --postales --ficha
+```
+
+Cómo se carga en el juego: [docs/ESCENARIOS.md](../../ESCENARIOS.md).
+
