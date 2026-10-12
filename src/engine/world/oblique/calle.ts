@@ -241,17 +241,25 @@ export function kiosco(pal: Paleta, w: number, d: number, z: number, texto = 'SI
 export function muro(pal: Paleta, w: number, d: number, z: number, alto: boolean, seed = 1): Pieza {
   const sobre = alto ? 4 : 0, P = nueva(pal, w, d, z, sobre), L = P.img, top = sobre, fr = top + d;
   // techo: la corona del muro, larga hacia el fondo
-  L.f(0, top, w, d, alto ? 'terracota' : 'cemento_claro');
   if (alto) {
-    for (let y = top + 1; y < fr; y += 3) L.hl(1, y, w - 2, 'vino');
-    for (let y = top + 2; y < fr; y += 6) for (let x = 2; x < w - 2; x += 5) { L.p(x, y - 3, 'cielo'); L.p(x + 1, y - 4, 'menta'); L.p(x, y - 4, 'luz'); }
+    // repello claro con vidrios rotos de colores clavados arriba (para que nadie se trepe)
+    L.f(0, top, w, d, 'cemento_claro'); L.vl(1, top, d, 'luz'); L.vl(w - 2, top, d, 'cemento');
+    for (let y = top + 2; y < fr - 1; y += 3) for (let x = 3; x < w - 3; x += 4) {
+      const k = (x * 7 + y * 3 + seed) % 5;
+      const c: Color = k === 0 ? 'verde' : k === 1 ? 'celeste' : k === 2 ? 'luz' : k === 3 ? 'ocre' : 'menta';
+      L.p(x + ((y >> 1) % 2), y, c); L.p(x + ((y >> 1) % 2), y - 1, 'luz');
+    }
   } else {
-    L.speckle(0, top, w, d, 'cemento', 0.15, seed);
-    for (let y = top; y < fr; y++) if (grain(0, y, seed) < 0.2) L.p(1, y, 'verde');
+    // corona de ladrillo: contrasta con el concreto gris y se lee como muro
+    for (let y = top; y < fr; y++) for (let x = 0; x < w; x++) {
+      const row = Math.floor((y - top) / 4), jx = (x + (row % 2 ? 4 : 0)) % 8;
+      L.p(x, y, (y - top) % 4 === 3 || jx === 7 ? 'vino' : grain(x, y, seed) < 0.08 ? 'salmon' : 'terracota');
+    }
+    L.vl(1, top, d, 'salmon');
   }
   L.vl(0, top, d, 'tinta'); L.vl(w - 1, top, d, 'tinta');
   // frente
-  L.f(0, fr, w, z, 'crema'); L.hl(0, fr, w, 'luz'); L.hl(0, fr + 1, w, alto ? 'vino' : 'cemento');
+  L.f(0, fr, w, z, 'crema'); L.hl(0, fr, w, 'luz'); L.hl(0, fr + 1, w, 'cemento');
   L.speckle(0, fr + 2, w, z - 2, 'cemento_claro', 0.15, seed + 3);
   // ladrillo donde se cayó el repello
   const R = rng(seed);

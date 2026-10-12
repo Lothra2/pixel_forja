@@ -1,4 +1,4 @@
-import { rng, grain } from '../../fx/pix';
+import { rng, grain, bayer } from '../../fx/pix';
 import { Lienzo } from './lienzo';
 import { drawText, textWidth, LINE_H } from './letras';
 import type { Color, Paleta } from './paleta';
@@ -16,7 +16,20 @@ export type ParedColor = 'amarillo' | 'salmon' | 'menta' | 'celeste' | 'crema';
 const SOMBRA: Record<ParedColor, Color> = { amarillo: 'ocre', salmon: 'terracota', menta: 'canal', celeste: 'azul', crema: 'cemento_claro' };
 const LUZ: Record<ParedColor, Color> = { amarillo: 'crema', salmon: 'crema', menta: 'cielo', celeste: 'cielo', crema: 'luz' };
 
-export type PlantaBaja = 'reja' | 'tienda' | 'cafe' | 'garaje' | 'pho';
+export type PlantaBaja = 'reja' | 'tienda' | 'cafe' | 'garaje' | 'pho' | 'farmacia' | 'ropa' | 'peluqueria' | 'sala';
+
+/** El letrero va con lo que hay adentro: cada local tiene su lista. */
+export const LETREROS_DE: Record<PlantaBaja, string[]> = {
+  reja: [],
+  tienda: ['TẠP HÓA', 'SIM THẺ', 'ĐIỆN THOẠI'],
+  cafe: ['CÀ PHÊ', 'CÀ PHÊ SỮA ĐÁ', 'BIA HƠI', 'TRÀ ĐÁ'],
+  garaje: ['SỬA XE', 'VÁ XE', 'RỬA XE'],
+  pho: ['PHỞ 24', 'BÚN BÒ', 'HỦ TIẾU', 'CƠM TẤM', 'BÁNH MÌ'],
+  farmacia: ['NHÀ THUỐC', 'THUỐC TÂY'],
+  ropa: ['TIỆM MAY', 'ÁO DÀI', 'SHOP'],
+  peluqueria: ['GỘI ĐẦU', 'CẮT TÓC', 'SALON'],
+  sala: [],
+};
 export type Techo = 'tanque' | 'ton' | 'terraza';
 
 export interface CasaTubo {
@@ -31,11 +44,20 @@ export interface CasaTubo {
   seed?: number;
 }
 
+/** Dónde quedó lo que se anima o echa partículas, en pixeles de la casa. */
+export interface Anclas {
+  ropa: { x: number; y: number; w: number; seed: number }[];
+  altares: { x: number; y: number }[];
+  buganvillas: { x: number; y: number }[];
+  aires: { x: number; y: number }[];
+}
+export const nuevasAnclas = (): Anclas => ({ ropa: [], altares: [], buganvillas: [], aires: [] });
+
 /** Alto total de una casa (con el techo). */
 export const casaAlto = (c: CasaTubo) => PB + PISO * (c.pisos - 1) + 16;
 
 /** Una casa tubo de frente, con la base en la última fila. */
-export function casaTubo(pal: Paleta, c: CasaTubo): Lienzo {
+export function casaTubo(pal: Paleta, c: CasaTubo, anclas?: Anclas): Lienzo {
   const W = c.w, H = casaAlto(c);
   const L = new Lienzo(W, H, pal);
   const R = rng(c.seed ?? 1);
@@ -51,14 +73,14 @@ export function casaTubo(pal: Paleta, c: CasaTubo): Lienzo {
   // pisos de arriba, de abajo hacia arriba
   for (let k = 1; k < c.pisos; k++) {
     const fy = H - PB - PISO * k; // arriba de este piso
-    piso(L, c, fy, k, R, k === c.pisos - 1);
+    piso(L, c, fy, k, R, k === c.pisos - 1, anclas);
   }
-  plantaBaja(L, c, H - PB, R);
+  plantaBaja(L, c, H - PB, R, anclas);
   techo(L, c, roofY, R);
   return L;
 }
 
-function piso(L: Lienzo, c: CasaTubo, fy: number, k: number, R: () => number, ultimo: boolean) {
+function piso(L: Lienzo, c: CasaTubo, fy: number, k: number, R: () => number, ultimo: boolean, anclas?: Anclas) {
   const W = c.w, sh = SOMBRA[c.pared], hi = LUZ[c.pared];
   // losa: canto claro arriba, sombra debajo y chorreado de mugre
   L.f(2, fy + PISO - 4, W - 4, 3, 'cemento_claro');
@@ -130,31 +152,29 @@ function piso(L: Lienzo, c: CasaTubo, fy: number, k: number, R: () => number, ul
     if (R() < 0.5) { L.p(px + 1, by + 1, 'rojo'); L.p(px + 5, by + 2, 'rojo'); L.p(px + 3, by - 1, 'salmon'); }
   }
   // buganvilla que se derrama por la baranda
-  if (R() < 0.3) buganvilla(L, R() < 0.5 ? 12 : W - 12, by, 10 + Math.floor(R() * 10), (c.seed ?? 1) * 31 + k);
-  // ropa tendida en algunos balcones
+  if (R() < 0.3) {
+    const bx = R() < 0.5 ? 12 : W - 12;
+    buganvilla(L, bx, by, 10 + Math.floor(R() * 10), (c.seed ?? 1) * 31 + k);
+    anclas?.buganvillas.push({ x: bx, y: by + 6 });
+  }
+  // ropa tendida en algunos balcones: con anclas va aparte, para animarla con el viento
   if (R() < 0.35) {
-    const lw = Math.min(W - 8, 24 + Math.floor(R() * 24)), lx = 4 + Math.floor(R() * (W - 8 - lw)), ly = by - 9;
-    L.hl(lx, ly, lw, 'sombra');
-    const cols: Color[] = ['luz', 'rojo', 'azul', 'amarillo', 'celeste', 'salmon'];
-    for (let x = lx + 2; x < lx + lw - 6; x += 7 + Math.floor(R() * 4)) {
-      const col = cols[Math.floor(R() * cols.length)];
-      const tall = R() < 0.5;
-      L.f(x, ly + 1, 5, tall ? 8 : 5, col);
-      if (tall) { L.p(x + 2, ly + 8, 'tinta'); L.p(x + 2, ly + 7, col === 'luz' ? 'cemento_claro' : 'sombra'); }
-      L.vl(x + 4, ly + 1, tall ? 8 : 5, col === 'luz' ? 'cemento_claro' : 'sombra');
-    }
+    const lw = Math.min(W - 8, 24 + Math.floor(R() * 24)), lx = 4 + Math.floor(R() * (W - 8 - lw)), ly = by - 9, rs = Math.floor(R() * 1000);
+    if (anclas) anclas.ropa.push({ x: lx, y: ly, w: lw, seed: rs });
+    else ropaTendida(L, lx, ly, lw, rs, 0);
   }
   // aire acondicionado colgado
   if (R() < 0.6) {
     const ax = R() < 0.5 ? 3 : W - 17;
     L.box(ax, oy + 2, 14, 9, 'luz', 'cemento');
+    anclas?.aires.push({ x: ax + 3, y: oy + 12 });
     for (let y = oy + 4; y < oy + 10; y += 2) L.hl(ax + 2, y, 10, 'cemento_claro');
     L.hl(ax, oy + 11, 14, sh);
   }
   if (ultimo) L.hl(2, fy, W - 4, sh);
 }
 
-function plantaBaja(L: Lienzo, c: CasaTubo, gy: number, R: () => number) {
+function plantaBaja(L: Lienzo, c: CasaTubo, gy: number, R: () => number, anclas?: Anclas) {
   const W = c.w, sh = SOMBRA[c.pared];
   // letrero arriba del vano
   const sy = gy + 2, shh = LINE_H + 3;
@@ -179,15 +199,44 @@ function plantaBaja(L: Lienzo, c: CasaTubo, gy: number, R: () => number) {
   if (c.planta === 'reja') rejaPlegable(L, ox, oy, ow, oh, 0.7);
   else if (c.planta === 'tienda') tienda(L, ox, oy, ow, oh, R);
   else if (c.planta === 'cafe') cafe(L, ox, oy, ow, oh, floorY, R);
-  else if (c.planta === 'garaje') { garajeMoto(L, ox, oy, ow, oh); rejaPlegable(L, ox, oy, ow, oh, 0.25); }
+  else if (c.planta === 'garaje') { garajeMoto(L, ox, oy, ow, oh, R); rejaPlegable(L, ox, oy, ow, oh, 0.25); }
+  else if (c.planta === 'farmacia') farmacia(L, ox, oy, ow, oh);
+  else if (c.planta === 'ropa') ropa(L, ox, oy, ow, oh, R);
+  else if (c.planta === 'peluqueria') peluqueria(L, ox, oy, ow, oh);
+  else if (c.planta === 'sala') sala(L, ox, oy, ow, oh, R);
   else pho(L, ox, oy, ow, oh);
   // altar de la tierra (Thần Tài) en el piso, en la esquina
-  if (c.altar) altarTierra(L, c.planta === 'reja' ? ox + ow - 14 : ox + 1, floorY - 12);
+  if (c.altar) {
+    const ax = c.planta === 'reja' ? ox + ow - 14 : ox + 1;
+    altarTierra(L, ax, floorY - 12);
+    anclas?.altares.push({ x: ax + 7, y: floorY - 18 });
+  }
   // numero de casa en placa azul
   if (c.numero) {
     const nw = textWidth(c.numero) + 4;
     L.box(W - nw - 3, gy + 20 + (c.letrero ? 0 : -14), nw, 9, 'azul', 'azul_noche');
     drawText(L, W - nw - 1, gy + 17 + (c.letrero ? 0 : -14), c.numero, 'luz');
+  }
+}
+
+/**
+ * Ropa tendida en su cuerda, de `w` de largo con la cuerda en la fila `y`. Dos cuadros: en el 1 el viento la empuja.
+ * Mide w x 10.
+ */
+export function ropaTendida(L: Lienzo, x: number, y: number, w: number, seed: number, cuadro: 0 | 1) {
+  const R = rng(seed);
+  L.hl(x, y, w, 'sombra');
+  const cols: Color[] = ['luz', 'rojo', 'azul', 'amarillo', 'celeste', 'salmon'];
+  for (let cx = x + 2; cx < x + w - 6; cx += 7 + Math.floor(R() * 4)) {
+    const col = cols[Math.floor(R() * cols.length)], tall = R() < 0.5, hh = tall ? 8 : 5, sh: Color = col === 'luz' ? 'cemento_claro' : 'sombra';
+    if (cuadro === 0) {
+      L.f(cx, y + 1, 5, hh, col);
+      L.vl(cx + 4, y + 1, hh, sh);
+      if (tall) L.p(cx + 2, y + hh, 'tinta');
+    } else {
+      // empujada: la parte de abajo se va a la derecha
+      for (let j = 0; j < hh; j++) { const dx = Math.floor((j * 2) / hh); L.f(cx + dx, y + 1 + j, 5, 1, col); L.p(cx + dx + 4, y + 1 + j, sh); }
+    }
   }
 }
 
@@ -251,10 +300,64 @@ function cafe(L: Lienzo, x: number, y: number, w: number, _h: number, floorY: nu
   }
 }
 
-function garajeMoto(L: Lienzo, x: number, y: number, w: number, h: number) {
+function garajeMoto(L: Lienzo, x: number, y: number, w: number, h: number, R: () => number) {
   L.f(x, y + h - 6, w, 6, 'asfalto');
   for (let i = x; i < x + w; i += 6) L.vl(i, y + h - 6, 6, 'asfalto_claro');
-  moto(L, x + w - MOTO_W - 2, y + h, 'rojo', -1);
+  // herramientas colgadas y llantas
+  for (let i = x + 4; i < x + w - 20; i += 7) { L.vl(i + 2, y + 4, 3, 'cemento'); L.f(i, y + 7, 5, 2, 'cemento_claro'); }
+  L.d(x + 8, y + h - 12, 6, 'tinta'); L.d(x + 8, y + h - 12, 3, 'sombra');
+  const cols: Color[] = ['rojo', 'azul', 'crema', 'sombra'];
+  moto(L, x + w - MOTO_W - 2, y + h, cols[Math.floor(R() * cols.length)], -1);
+}
+
+/** Farmacia: vitrinas blancas con cajitas de colores y la cruz verde. */
+function farmacia(L: Lienzo, x: number, y: number, w: number, h: number) {
+  L.f(x, y, w, h, 'crema');
+  for (let s = 0; s < 3; s++) { const sy = y + 4 + s * 9; L.hl(x + 2, sy + 7, w - 4, 'cemento'); for (let i = x + 3; i < x + w - 3; i += 3) L.f(i, sy + 3 + ((i >> 1) % 2), 2, 4 - ((i >> 1) % 2), (['luz', 'celeste', 'verde', 'salmon', 'azul'] as Color[])[(i * 7) % 5]); }
+  L.box(x + 2, y + h - 12, w - 4, 12, 'cielo', 'cemento'); L.hl(x + 3, y + h - 11, w - 6, 'luz');
+  const cx = x + Math.floor(w / 2);
+  L.f(cx - 1, y + 1, 3, 7, 'verde'); L.f(cx - 3, y + 3, 7, 3, 'verde');
+}
+
+/** Sastrería: camisas y áo dài colgadas en una barra, y un maniquí. */
+function ropa(L: Lienzo, x: number, y: number, w: number, h: number, R: () => number) {
+  L.hl(x + 2, y + 5, w - 4, 'cemento');
+  const cols: Color[] = ['luz', 'rojo', 'celeste', 'amarillo', 'salmon', 'menta', 'azul'];
+  for (let i = x + 3; i < x + w - 16; i += 6) { const c = cols[Math.floor(R() * cols.length)], long = R() < 0.4; L.f(i, y + 6, 5, long ? 20 : 11, c); L.vl(i + 4, y + 6, long ? 20 : 11, c === 'luz' ? 'cemento_claro' : 'sombra'); L.p(i + 2, y + 5, 'cemento_claro'); }
+  const mx = x + w - 11;
+  L.d(mx + 3, y + 9, 2.5, 'crema'); L.f(mx, y + 12, 7, 14, 'rojo'); L.f(mx + 1, y + 26, 5, 8, 'rojo'); L.vl(mx + 3, y + 34, h - 34, 'cemento');
+  L.f(x + 2, y + h - 3, w - 4, 3, 'ocre');
+}
+
+/** Peluquería: silla, espejo y las toallas. */
+function peluqueria(L: Lienzo, x: number, y: number, w: number, h: number) {
+  L.f(x, y, w, h, 'salmon'); L.dither(x, y, w, h, 'salmon', 'crema');
+  L.box(x + 6, y + 4, 14, 18, 'cielo', 'cemento'); L.ln(x + 8, y + 8, x + 12, y + 5, 'luz');
+  if (w > 44) { L.box(x + w - 22, y + 4, 14, 18, 'cielo', 'cemento'); L.ln(x + w - 20, y + 8, x + w - 16, y + 5, 'luz'); }
+  for (const cx of [x + 13, x + w - 15]) { L.f(cx - 5, y + h - 16, 10, 8, 'sombra'); L.f(cx - 4, y + h - 22, 8, 7, 'sombra'); L.vl(cx, y + h - 8, 8, 'cemento'); L.hl(cx - 3, y + h - 1, 7, 'cemento'); }
+  for (let i = x + 24; i < x + w - 26; i += 4) L.f(i, y + 6, 3, 6, i % 8 ? 'luz' : 'celeste');
+}
+
+/** Sala de una casa: piso de baldosa, la moto adentro y el altar de los ancestros en la pared del fondo. */
+function sala(L: Lienzo, x: number, y: number, w: number, h: number, R: () => number) {
+  L.f(x, y, w, h - 8, 'crema'); L.speckle(x, y, w, h - 8, 'cemento_claro', 0.06, x);
+  for (let i = x; i < x + w; i++) for (let j = y + h - 8; j < y + h; j++) L.p(i, j, ((i >> 2) + (j >> 1)) % 2 ? 'cemento_claro' : 'luz');
+  // altar de los ancestros: repisa roja con fotos, frutas y dos lámparas
+  const ax = x + 3, ay = y + 4, aw = Math.min(26, w - 8);
+  L.f(ax, ay + 10, aw, 4, 'vino'); L.hl(ax, ay + 10, aw, 'oro');
+  L.box(ax + 3, ay, 7, 9, 'cemento', 'ocre'); L.f(ax + 5, ay + 2, 3, 4, 'sombra');
+  L.box(ax + 12, ay + 1, 6, 8, 'cemento', 'ocre'); L.f(ax + 14, ay + 3, 2, 3, 'sombra');
+  L.p(ax + 1, ay + 8, 'rojo'); L.p(ax + aw - 2, ay + 8, 'rojo'); L.p(ax + 1, ay + 9, 'oro'); L.p(ax + aw - 2, ay + 9, 'oro');
+  L.d(ax + aw - 5, ay + 8, 2, 'amarillo');
+  // reloj y almanaque rojo de hojas
+  if (w > 50) { L.d(x + w - 10, y + 7, 3, 'luz'); L.p(x + w - 10, y + 6, 'tinta'); L.p(x + w - 9, y + 7, 'tinta'); }
+  L.f(x + aw + 6, y + 3, 7, 9, 'rojo'); L.f(x + aw + 7, y + 6, 5, 5, 'luz'); L.hl(x + aw + 8, y + 8, 3, 'rojo'); L.hl(x + aw + 6, y + 3, 7, 'oro');
+  // ventilador de pie
+  const vx = x + aw + 4, vy = y + h - 22;
+  if (w >= 60) { L.d(vx + 4, vy + 4, 4, 'celeste'); L.d(vx + 4, vy + 4, 1.5, 'azul'); L.vl(vx + 4, vy + 8, 12, 'cemento'); L.hl(vx + 1, vy + 20, 7, 'cemento'); }
+  const cols: Color[] = ['rojo', 'azul', 'crema', 'sombra'];
+  if (w >= 60) moto(L, x + w - MOTO_W - 1, y + h, cols[Math.floor(R() * cols.length)], -1);
+  else { banquito(L, x + w - 12, y + h - 7, 'azul'); }
 }
 
 function pho(L: Lienzo, x: number, y: number, w: number, h: number) {
@@ -307,5 +410,125 @@ function techo(L: Lienzo, c: CasaTubo, roofY: number, R: () => number) {
 
 /** Texto de un letrero de tienda que cabe en `w`: escoge el más largo que quepa de la lista. */
 export function letreroQueCabe(opciones: string[], w: number) {
-  return opciones.filter((o) => textWidth(o) + 8 <= w).sort((a, b) => textWidth(b) - textWidth(a))[0];
+  return opciones.find((o) => textWidth(o) + 8 <= w);
+}
+
+/** Bandera de Vietnam de 11 x 8 en su asta, con la base en (x, y). */
+export function bandera(L: Lienzo, x: number, y: number) {
+  L.vl(x, y - 16, 16, 'cemento');
+  L.f(x + 1, y - 16, 11, 8, 'rojo'); L.hl(x + 1, y - 9, 11, 'vino');
+  L.p(x + 6, y - 14, 'oro'); L.hl(x + 5, y - 13, 3, 'oro'); L.p(x + 5, y - 12, 'oro'); L.p(x + 7, y - 12, 'oro');
+}
+
+export interface Hueco { x0: number; x1: number; tipo: 'callejon' | 'canal' }
+
+/** Un callejón abierto al fondo: piso que se va, muro bajo con matas al final y el cielo arriba (transparente). */
+function callejon(L: Lienzo, x0: number, x1: number, base: number, tipo: 'callejon' | 'canal', R: () => number) {
+  const w = x1 - x0, fondo = base - 34;
+  if (tipo === 'canal') {
+    for (let y = fondo + 14; y < base; y++) for (let x = x0; x < x1; x++) L.p(x, y, grain(x >> 2, y >> 1, 5) < 0.3 && bayer(x, y) < 0.5 ? 'verde_oscuro' : 'canal');
+    for (let x = x0; x < x1; x += 3) L.p(x, fondo + 18 + ((x >> 2) % 3), 'cielo');
+    // la otra orilla con su baranda
+    L.f(x0, fondo + 8, w, 6, 'cemento_claro'); L.hl(x0, fondo + 8, w, 'luz'); L.hl(x0, fondo + 13, w, 'cemento');
+    for (let x = x0 + 1; x < x1; x += 4) L.vl(x, fondo, 8, 'cemento'); L.hl(x0, fondo, w, 'cemento_claro');
+    L.d(x0 + Math.floor(w / 2), fondo + 3, 5, 'verde'); L.p(x0 + Math.floor(w / 2) - 2, fondo, 'menta');
+  } else {
+    // piso del callejón con su sombra, y el murito del fondo con matas
+    for (let y = fondo + 12; y < base; y++) for (let x = x0; x < x1; x++) L.p(x, y, x - x0 < (base - y) * 0.4 + 3 ? 'cemento' : (y - fondo) % 7 === 0 ? 'cemento' : 'cemento_claro');
+    L.f(x0, fondo, w, 12, 'crema'); L.hl(x0, fondo, w, 'luz'); L.hl(x0, fondo + 11, w, 'cemento');
+    L.speckle(x0, fondo + 1, w, 10, 'cemento_claro', 0.15, x0);
+    for (let x = x0 + 3; x < x1 - 4; x += 8 + Math.floor(R() * 4)) { L.f(x, fondo - 5, 5, 5, 'terracota'); L.d(x + 2, fondo - 8, 3.5, 'verde'); L.p(x + 1, fondo - 10, 'menta'); }
+    // una moto parada adentro, en sombra
+    if (w >= 22 && R() < 0.6) { L.f(x0 + 4, base - 9, w - 8, 3, 'sombra'); L.d(x0 + 6, base - 4, 3, 'tinta'); L.d(x1 - 6, base - 4, 3, 'tinta'); }
+  }
+  // cuerda de ropa que cruza el callejón arriba
+  const ly = fondo - 38 - Math.floor(R() * 20);
+  for (let x = x0 - 2; x < x1 + 2; x++) L.p(x, ly + Math.round(Math.sin(((x - x0 + 2) / (w + 4)) * Math.PI) * 3), 'sombra');
+  const cols: Color[] = ['luz', 'rojo', 'azul', 'amarillo'];
+  for (let x = x0 + 2; x < x1 - 5; x += 8) { const c = cols[Math.floor(R() * cols.length)]; const yy = ly + 1 + Math.round(Math.sin(((x - x0 + 2) / (w + 4)) * Math.PI) * 3); L.f(x, yy, 5, 7, c); L.vl(x + 4, yy, 7, c === 'luz' ? 'cemento_claro' : 'sombra'); }
+}
+
+export interface FilaOpts {
+  /** Huecos entre casas: canales que siguen hacia atrás y callejones abiertos. */
+  huecos: Hueco[];
+  /** Zonas con tema: comida o inundadas. */
+  temas: { x0: number; x1: number; tema: string }[];
+  seed?: number;
+}
+
+/**
+ * La fila de casas tubo de todo el tramo, de `w` x `base` pixeles, con la base de las casas en la última fila.
+ * Arriba de las casas queda transparente: ahí se ven el cielo y la ciudad lejana.
+ */
+export function filaVietnam(pal: Paleta, w: number, base: number, o: FilaOpts, anclas?: Anclas): Lienzo {
+  const L = new Lienzo(w, base, pal);
+  const R = rng(o.seed ?? 42);
+  const huecos = [...o.huecos].sort((a, b) => a.x0 - b.x0);
+  const tramos: [number, number][] = [];
+  let x = -24; // la primera casa empieza afuera, así el borde no se ve cortado a propósito
+  for (const h of huecos) { tramos.push([x, h.x0]); x = h.x1; }
+  tramos.push([x, w + 24]);
+  const paredes: ParedColor[] = ['amarillo', 'salmon', 'menta', 'celeste', 'crema'];
+  let last: ParedColor = 'crema', n = 0, lastPlanta: PlantaBaja | null = null;
+  const bolsas = new Map<string, PlantaBaja[]>();
+  for (const [a, b] of tramos) {
+    let cx = a;
+    while (cx < b) {
+      const resto = b - cx;
+      let cw = [56, 64, 72, 80, 88, 96, 104][Math.floor(R() * 7)];
+      if (resto - cw < 56) cw = resto < 112 && resto >= 56 ? resto : Math.min(resto, cw);
+      const tema = o.temas.filter((t) => cx + cw / 2 >= t.x0 && cx + cw / 2 < t.x1).sort((p, q) => p.x1 - p.x0 - (q.x1 - q.x0))[0]?.tema; // el más angosto manda
+      const inund = tema === 'fachadas_inundadas', comida = tema === 'puesto_comida';
+      const pisos = [2, 3, 3, 4, 4, 4, 5][Math.floor(R() * 7)];
+      let pared = paredes[Math.floor(R() * paredes.length)];
+      if (pared === last) pared = paredes[(paredes.indexOf(pared) + 1) % paredes.length];
+      last = pared;
+      const opciones: PlantaBaja[] = inund ? ['reja', 'reja', 'garaje', 'sala'] : comida ? ['pho', 'pho', 'cafe'] : ['reja', 'tienda', 'cafe', 'garaje', 'sala', 'sala', 'farmacia', 'ropa', 'peluqueria', 'reja', 'tienda', 'cafe'];
+      // bolsa sin repetición: se sacan todos los tipos antes de repetir
+      const key = inund ? 'inund' : comida ? 'comida' : 'calle';
+      let bag = bolsas.get(key);
+      if (!bag || !bag.length) { bag = [...opciones]; for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; } bolsas.set(key, bag); }
+      let planta = bag.pop()!;
+      if (planta === lastPlanta && bag.length) { const o2 = bag.pop()!; bag.unshift(planta); planta = o2; }
+      lastPlanta = planta;
+      const lista = LETREROS_DE[planta];
+      const k0 = Math.floor(R() * Math.max(1, lista.length));
+      const letrero = lista.length ? letreroQueCabe([...lista.slice(k0), ...lista.slice(0, k0)], cw) : undefined;
+      const c: CasaTubo = {
+        w: cw, pisos, pared, planta, letrero, seed: (o.seed ?? 42) * 100 + n,
+        techo: (['tanque', 'ton', 'terraza', 'tanque'] as Techo[])[Math.floor(R() * 4)],
+        numero: R() < 0.5 ? `${10 + n * 2}${R() < 0.4 ? '/' + (1 + Math.floor(R() * 9)) : ''}` : undefined,
+        altar: planta !== 'garaje' && planta !== 'sala' && R() < 0.45,
+      };
+      const an = anclas ? nuevasAnclas() : undefined;
+      const casa = casaTubo(pal, c, an);
+      if (an && anclas) {
+        const dy = base - casa.h;
+        for (const k of ['ropa', 'altares', 'buganvillas', 'aires'] as const) for (const it of an[k]) (anclas[k] as { x: number; y: number }[]).push({ ...it, x: it.x + cx, y: it.y + dy });
+      }
+      if (inund) marcaInundacion(casa, R);
+      if (R() < 0.18) bandera(casa, cw - 14, 16);
+      L.paste(casa, cx, base - casa.h);
+      cx += cw; n++;
+    }
+  }
+  for (const h of huecos) callejon(L, h.x0, h.x1, base, h.tipo, R);
+  // sombra de contacto al pie de toda la fila
+  for (let xx = 0; xx < w; xx++) if (L.has(xx, base - 1)) L.p(xx, base - 1, 'cemento');
+  return L;
+}
+
+/** La marca que deja el agua en las paredes, y sacos de arena en la puerta. */
+function marcaInundacion(c: Lienzo, R: () => number) {
+  const top = c.h - 16;
+  for (let y = top; y < c.h - 2; y++) for (let x = 2; x < c.w - 2; x++) {
+    if (!c.has(x, y)) continue;
+    if (y === top) { if (bayer(x, y) < 0.5) c.p(x, y, 'canal'); continue; }
+    if (bayer(x, y) < 0.18 + (y - top) * 0.012) c.p(x, y, 'canal');
+  }
+  // sacos de arena
+  for (let x = 5; x < c.w - 10; x += 9 + Math.floor(R() * 3)) {
+    if (R() < 0.35) continue;
+    c.f(x, c.h - 8, 9, 5, 'ocre'); c.hl(x, c.h - 8, 9, 'amarillo'); c.hl(x, c.h - 4, 9, 'terracota'); c.vl(x + 4, c.h - 7, 2, 'terracota');
+  }
 }

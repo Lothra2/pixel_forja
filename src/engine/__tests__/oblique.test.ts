@@ -9,6 +9,8 @@ import { cielo } from '../world/oblique/cielo';
 import { textWidth, drawText, LINE_H } from '../world/oblique/letras';
 import { fichaArte, fichaMarkdown } from '../world/oblique/ficha';
 import { Lienzo } from '../world/oblique/lienzo';
+import { renderEscena, trozo, postal, TROZO } from '../world/oblique/escena';
+import { exportarEscena, puntosPostal } from '../world/oblique/exportar';
 import type { Raster } from '../index';
 
 const HEM = JSON.parse(readFileSync('docs/ejemplos/nekketsu/escenarios/saigon_hem.layout.json', 'utf8'));
@@ -168,5 +170,75 @@ describe('ficha de arte', () => {
     const md = fichaMarkdown(f);
     expect(md).toMatch(/# Ficha de arte: saigon_hem/);
     expect(md).toMatch(/`mesas_plasticas` \| 48 x 30, z 20 y 48 x 30, z 34 \| 2/);
+  });
+});
+
+describe('escena completa', () => {
+  const L = validateLayout(JSON.parse(readFileSync('docs/ejemplos/nekketsu/escenarios/saigon_hem.layout.json', 'utf8'))).layout!;
+  const E = renderEscena(L);
+
+  it('todas las capas, objetos y cuadros de vida usan solo la paleta, sin mezcla', () => {
+    const capas = [E.cielo, E.lejos, E.cerca, E.piso, E.frente, ...(E.pisoMojado ? [E.pisoMojado] : []), ...E.objetos.map((o) => o.img), ...E.vida.flatMap((v) => v.cuadros)];
+    for (const c of capas) expect(fuera(c.r)).toEqual({ bad: [], semi: 0 });
+  });
+
+  it('el piso no tiene ni un pixel transparente', () => {
+    let vacios = 0;
+    for (let i = 3; i < E.piso.r.data.length; i += 4) if (E.piso.r.data[i] === 0) vacios++;
+    expect(vacios).toBe(0);
+    expect(E.piso.w).toBe(L.largo);
+  });
+
+  it('la fila de casas cubre el largo, con cielo arriba y los callejones abiertos', () => {
+    expect(E.cerca.w).toBe(L.largo);
+    expect(E.cerca.h).toBe(L.franja.atras);
+    // la última fila está pintada salvo en los canales
+    for (let x = 0; x < L.largo; x++) if (!L.huecos.some((h) => x >= h.x0 - 1 && x <= h.x1)) expect(E.cerca.has(x, E.cerca.h - 1), `x ${x}`).toBe(true);
+    // por cada callejón se ve el cielo a la altura de la cámara del juego
+    const callejones = E.huecos.filter((h) => h.tipo === 'callejon');
+    expect(callejones.length).toBeGreaterThanOrEqual(4);
+    // la cámara del juego ve desde la fila 93: en el hueco, entre 93 y 150, más de la mitad es cielo
+    for (const h of callejones) {
+      let libre = 0, total = 0;
+      for (let y = 93; y < 150; y++) for (let x = h.x0 + 1; x < h.x1 - 1; x++) { total++; if (!E.cerca.has(x, y)) libre++; }
+      expect(libre / total, `callejón en ${h.x0}`).toBeGreaterThan(0.5);
+    }
+  });
+
+  it('cada caja, el toldo y los postes salen como objeto, en orden de profundidad', () => {
+    expect(E.objetos).toHaveLength(boxesOf(L).length + L.bajo.length + L.postes.length);
+    for (let i = 1; i < E.objetos.length; i++) expect(E.objetos[i].orden).toBeGreaterThanOrEqual(E.objetos[i - 1].orden);
+  });
+
+  it('trae la vida del layout y las luces y partículas de los altares', () => {
+    const tipos = new Set(E.vida.map((v) => v.tipo));
+    for (const v of L.vida) expect(tipos.has(v), v).toBe(true);
+    expect(E.luces.some((l) => l.nota.includes('altar'))).toBe(true);
+    expect(E.particulas.some((p) => p.tipo === 'humo')).toBe(true);
+    for (const v of E.vida) expect(v.cuadros.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('los trozos de 1280 pegan sin una línea de diferencia', () => {
+    for (const capa of [E.cerca, E.piso, E.frente]) {
+      let x0 = 0;
+      while (x0 < capa.w) {
+        const t = trozo(capa, x0);
+        for (let y = 0; y < capa.h; y += 7) for (const x of [0, t.w - 1]) {
+          const a = (y * t.w + x) * 4, b = (y * capa.w + x0 + x) * 4;
+          expect(t.data.slice(a, a + 4)).toEqual(capa.r.data.slice(b, b + 4));
+        }
+        x0 += TROZO;
+      }
+    }
+  });
+
+  it('exporta la carpeta del pedido', () => {
+    const fs = exportarEscena(E).map((f) => f.nombre);
+    for (const n of ['escenario.json', 'cielo_manana.png', 'lejos.png', 'cerca_0.png', 'cerca_2.png', 'piso_0.png', 'piso_mojado_0.png', 'frente_0.png', 'objetos.png', 'objetos.json', 'vida.png', 'superficie.png', 'colision.json', 'luces.json', 'particulas.json', 'postales/inicio.png', 'postales/medio.png', 'postales/final.png', 'ficha_arte.md']) expect(fs, n).toContain(n);
+    const pp = puntosPostal(E);
+    expect(pp.inicio).toBe(0);
+    expect(pp.final).toBe(L.largo - 640);
+    const p = postal(E, pp.medio);
+    expect([p.w, p.h]).toEqual([640, 360]);
   });
 });
