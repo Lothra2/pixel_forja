@@ -12,7 +12,7 @@ Lo que pedía `para_pixel_forja/NOCHE.md` (v2), lote por lote, con el link de ca
 | 4 | C2: la cara malandra y los 4 equipos nacionales | Hecho | https://github.com/Lothra2/pixel_forja/pull/17 | `claude/olimpico-lote-c2` |
 | 5 | B2 y B3: recorridos y trepar | Hecho | https://github.com/Lothra2/pixel_forja/pull/18 | `claude/olimpico-lote-b2b3` |
 | 6 | C7: animales | En parte: perros y gatos sí, el gallo no | https://github.com/Lothra2/pixel_forja/pull/19 | `claude/olimpico-lote-c7` |
-| 7 | D2: vehículos | Hecho | ver el ENTREGA de D2 | `claude/olimpico-lote-d2` |
+| 7 | D2: vehículos | Hecho | https://github.com/Lothra2/pixel_forja/pull/20 | `claude/olimpico-lote-d2` |
 | 8 | E3: Comuna 13, Hội An y Caracas | **No empezado** | | |
 
 ## En qué orden unir
