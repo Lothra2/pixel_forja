@@ -100,9 +100,12 @@ export function puesto(pal: Paleta, tipo: Puesto, w: number, d: number, z: numbe
       const t = menu.filter((m) => textWidth(m) <= pw - 6)[Math.floor(R() * 3)] ?? 'CƠM';
       L.box(x0 + 2, gy0 - 2, pw - 4, LINE_H + 1, 'rojo', 'vino'); drawText(L, x0 + Math.floor((pw - textWidth(t)) / 2), gy0 - 3, t, 'amarillo');
       for (let x = x0 + 5; x < x1 - 8; x += 13) {
-        const oy = gy1 - 12;
-        L.f(x, oy, 10, 10, 'cemento'); L.hl(x, oy, 10, 'luz'); L.vl(x, oy, 10, 'cemento_claro'); L.vl(x + 9, oy, 10, 'asfalto_claro'); L.hl(x - 1, oy - 1, 12, 'cemento_claro');
-        for (let j = 0; j < 3; j++) { L.p(x + 3 + j * 2, oy - 4 - j, 'luz'); L.p(x + 4 + j * 2, oy - 7 - j, 'cielo'); }
+        // olla de aluminio: panza redonda, tapa con su perilla y el vapor
+        const oy = gy1 - 10;
+        L.f(x + 1, oy, 9, 9, 'cemento_claro'); L.f(x, oy + 1, 11, 6, 'cemento_claro'); L.vl(x, oy + 1, 6, 'luz'); L.vl(x + 10, oy + 1, 6, 'cemento'); L.hl(x + 1, oy + 8, 9, 'cemento');
+        L.hl(x - 1, oy + 2, 2, 'asfalto_claro'); L.hl(x + 10, oy + 2, 2, 'asfalto_claro');
+        L.d(x + 5, oy, 5, 'cemento', 0.4); L.hl(x + 1, oy - 1, 9, 'luz'); L.p(x + 5, oy - 2, 'asfalto');
+        for (let j = 0; j < 3; j++) { L.p(x + 3 + j * 2, oy - 5 - j, 'luz'); L.p(x + 4 + j * 2, oy - 8 - j, 'cielo'); }
       }
     } else if (tipo === 'recuerdos') {
       // nón lá colgados, cajitas lacadas y franelas
@@ -328,7 +331,8 @@ export function muelle(pal: Paleta, w: number, d: number, z: number, seed = 1): 
   // frente: viga y pilotes
   L.f(0, fr, w, 4, 'terracota'); L.hl(0, fr, w, 'ocre'); L.hl(0, fr + 3, w, 'vino');
   for (let x = 4; x < w - 4; x += 24) { L.f(x, fr + 4, 5, z - 4, 'terracota'); L.vl(x, fr + 4, z - 4, 'ocre'); L.vl(x + 4, fr + 4, z - 4, 'vino'); }
-  for (let x = 16; x < w - 12; x += 48) { L.d(x, fr + 6, 4, 'tinta'); L.d(x, fr + 6, 2, 'sombra'); }
+  // llantas de defensa colgadas de la viga, de canto
+  for (let x = 40; x < w - 20; x += 96) { L.f(x, fr + 1, 6, 7, 'sombra'); L.vl(x, fr + 2, 5, 'asfalto'); L.f(x + 2, fr + 3, 2, 3, 'canal'); L.p(x + 3, fr, 'cemento'); }
   L.vl(0, 0, d + z, 'vino'); L.vl(w - 1, 0, d + z, 'vino');
   return P;
 }

@@ -48,7 +48,14 @@ const acera: Pintor = (_L, x, y, s) => {
   return g(x >> 1, y, s + 3) < 0.015 ? 'cemento' : 'cemento_claro';
 };
 
-const tierra: Pintor = (_L, x, y, s) => { const n = g(x, y, s); return n < 0.08 ? 'terracota' : n > 0.93 ? 'amarillo' : n > 0.8 ? 'ocre' : 'ocre'; };
+/** Tierra apisonada: manchones más oscuros, piedritas y matas de pasto sueltas. */
+const tierra: Pintor = (_L, x, y, s) => {
+  if (g(x >> 3, y >> 2, s + 4) < 0.1 && g(x, y, s + 5) < 0.6) return (x + y) % 3 ? 'verde' : 'verde_oscuro';
+  const n = g(x, y, s);
+  if (n < 0.04) return 'terracota';
+  if (n > 0.97) return 'crema';
+  return g(x >> 2, y >> 1, s + 1) < 0.3 && bayer(x, y) < 0.5 ? 'terracota' : n > 0.85 ? 'amarillo' : 'ocre';
+};
 const arena: Pintor = (_L, x, y, s) => { const n = g(x, y, s); return n < 0.06 ? 'ocre' : n > 0.9 ? 'luz' : 'crema'; };
 const pasto: Pintor = (_L, x, y, s) => { const n = g(x, y, s); return n < 0.1 ? 'verde_oscuro' : n > 0.92 ? 'menta' : 'verde'; };
 const greda: Pintor = (_L, x, y, s) => { const n = g(x >> 1, y, s); return n < 0.1 ? 'vino' : n > 0.9 ? 'salmon' : 'terracota'; };
