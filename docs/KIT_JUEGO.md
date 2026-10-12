@@ -247,7 +247,7 @@ for (const [g, by] of Object.entries(manifest.botin.atlas))
 - `logo`: "GG Abyss" de 288 x 96, 8 cuadros a 8 fps en bucle, con un brillo que recorre las letras. Hecho con la misma fuente de títulos.
 - `continuara`: ilustración de 960 x 540 (la escalera que baja al abismo hacia el portal). Sin texto: el juego escribe "Continuará..." encima con `fuente_titulo`.
 - `girar_tablet`: 64 x 64, 2 cuadros (vertical y acostada con la flecha). Para pedir que giren la tablet a horizontal.
-- Fuentes bitmap (`manifest.ui.fuentes`), en formato BMFont XML, hechas a partir de Silkscreen (Jason Kottke, SIL Open Font License 1.1). Traen ñ, tildes, ¡ y ¿:
+- Fuentes bitmap (`manifest.ui.fuentes`), en formato BMFont XML, hechas a partir de Silkscreen (Jason Kottke, SIL Open Font License 1.1). Traen ñ, tildes, ¡, ¿ y todas las letras del vietnamita (ver [KIT_DEPORTES.md](KIT_DEPORTES.md#fuentes---fuentes-opción-fuentes)):
   - `fuente_ui`: 8 px, blanca con sombra negra. Se tiñe con `setTint` y se agranda con escala entera (x2 o x3, nunca 1.5).
   - `fuente_titulo` (dorada) y `fuente_titulo_plata`: 16 px, ya pintadas con degradé, contorno y sombra. Para banners de zona, "¡Thor te salvó!", nombres y títulos.
   ```ts

@@ -18,6 +18,7 @@ import { FIGHT_PREMIUM } from '../anim/fight';
 import { FOOTBALL_PREMIUM } from '../anim/footballPremium';
 import { BRAWL } from '../anim/brawl';
 import { buildObjectsAtlas } from '../render/floorProps';
+import { bitmapFonts } from '../ui/fonts';
 
 /**
  * Kit deportivo: hojas de 8 direcciones de cada atleta y cada deporte, con un manifest.json que le dice al juego
@@ -70,6 +71,11 @@ export interface SportsKitOptions {
   objetos?: boolean;
   /** animales (una mascota como Thor): todas sus animaciones en animales/<id>.png + .json, con su entrada en `animales` */
   animales?: Record<string, AnimalFicha>;
+  /**
+   * archivos de Silkscreen (normal y negrita): las fuentes bitmap (BMFont) en ui/fuentes/, con ñ, tildes y vietnamita,
+   * y su entrada en `ui.fuentes`
+   */
+  fuentes?: { regular: ArrayBuffer; bold: ArrayBuffer };
   progress?: (msg: string) => void;
 }
 
@@ -257,6 +263,16 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
       log(`animal ${id}: ${Object.keys(entries).length} animaciones`);
     }
     manifest.animales = animals;
+  }
+  if (opts.fuentes) {
+    const fuentes: Record<string, unknown> = {};
+    for (const f of bitmapFonts(opts.fuentes.regular, opts.fuentes.bold)) {
+      files.push({ name: `ui/fuentes/${f.name}.png`, bytes: encodePng(f.png), mime: 'image/png' });
+      files.push({ name: `ui/fuentes/${f.name}.fnt`, bytes: enc.encode(f.fnt), mime: 'application/xml' });
+      fuentes[f.name] = { png: `ui/fuentes/${f.name}.png`, fnt: `ui/fuentes/${f.name}.fnt`, alto_linea: f.lineHeight, base: f.base };
+    }
+    manifest.ui = { fuentes: { ...fuentes, notas: 'BMFont XML: this.load.bitmapFont(nombre, png, fnt). fuente_ui (8 px, blanca con sombra, se tiñe con setTint; usar escala entera x2 o x3), fuente_titulo y fuente_titulo_plata (16 px, ya pintadas). Tienen ñ, tildes, ¡, ¿ y todas las letras del vietnamita (ă, â, ê, ô, ơ, ư, đ y los 5 tonos). Las marcas dobles de la breve con tono (ắ) y del circunflejo con tilde (ẫ) suben 2 pixeles de fuente por encima de la línea.' } };
+    credits.add('Fuentes: Silkscreen, de Jason Kottke. SIL Open Font License 1.1 (https://openfontlicense.org).');
   }
   if (credits.size) {
     files.push({ name: 'CREDITOS.txt', bytes: enc.encode([...credits].join('\n\n')), mime: 'text/plain' });
