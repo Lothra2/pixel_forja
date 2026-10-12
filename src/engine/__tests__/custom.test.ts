@@ -112,10 +112,22 @@ describe('kit a medida (lote I): configuración', () => {
       .toThrowError(/2 problemas:\n {2}packs\.base\[0\]: "wlak".*\n {2}ui\.fuentes: faltan los archivos/);
   });
 
+  it('vehículos (lote D2): una tira por vehículo con ancla, huella y animaciones; "moto" son los 4 colores', () => {
+    const { files, warnings } = buildCustomKit({ ...MIN, vehiculos: ['ferry', 'moto', 'transmilenio'] }, {}, { quick: true, solo: ['vehiculos'] });
+    expect(warnings).toEqual(['vehiculos: todavía no existen (se saltan): transmilenio']);
+    const names = files.map((f) => f.name).filter((n) => n.startsWith('vehiculos/')).sort();
+    expect(names).toEqual(['vehiculos/ferry.png', 'vehiculos/moto_amarillo.png', 'vehiculos/moto_azul.png', 'vehiculos/moto_rojo.png', 'vehiculos/moto_verde.png']);
+    const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
+    expect(m.vehiculos.ferry).toMatchObject({ archivo: 'vehiculos/ferry.png', huella: { w: 110, d: 40, z: 12 }, anims: { andando: { desde: 0, cuadros: 4 }, atracado: { desde: 4, cuadros: 2 } } });
+    expect(m.vehiculos.moto_rojo).toMatchObject({ mira: 'izquierda', anims: { andando: {}, frenando: {}, corneta: {} } });
+    const png = files.find((f) => f.name === 'vehiculos/ferry.png')!;
+    expect(pngSize(Buffer.from(png.bytes))).toEqual([m.vehiculos.ferry.w * 6, m.vehiculos.ferry.h]);
+  });
+
   it('lo que todavía no genera vuelve como aviso y en manifest.pendiente', () => {
-    const { files, warnings } = buildCustomKit({ ...MIN, vehiculos: ['moto'], fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], ui: { logo: { texto: 'GG' } } }, {}, { quick: true, solo: ['cabecitas'] });
+    const { files, warnings } = buildCustomKit({ ...MIN, npc: ['vendedor'], fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], ui: { logo: { texto: 'GG' } } }, {}, { quick: true, solo: ['cabecitas'] });
     expect(warnings).toEqual([
-      'vehiculos: todavía no se genera, llega con vehículos (lote D2)',
+      'npc: todavía no se genera, llega con NPC (lote C6)',
       'ui.logo: todavía no se genera, llega con el resto del lote G1',
       'animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire',
       'fx: todavía no existen (se saltan): confeti_dorado',
@@ -261,8 +273,8 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
     // atletas (24 x 9 hojas: 8 packs y los retratos) + efectos + escenario + armas y comida + la interfaz (cabecitas, 3 fuentes,
-    // neutro, letras y los 15 pares del VS) + 2 del público + thor, 3 perros y 2 gatos
-    expect(pngs.length).toBe(24 * 9 + 63 + 17 + 2 + (4 + 2 + 15) + 2 + 6);
+    // neutro, letras y los 15 pares del VS) + 2 del público + thor, 3 perros y 2 gatos + los 10 vehículos y objetos del lote D2
+    expect(pngs.length).toBe(24 * 9 + 63 + 17 + 2 + (4 + 2 + 15) + 2 + 6 + 10);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

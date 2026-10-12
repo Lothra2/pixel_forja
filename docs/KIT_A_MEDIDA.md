@@ -112,12 +112,20 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
 - **Retrato `burla`:** los retratos traen una octava expresión, `burla` (guiño con la ceja fruncida y media sonrisa). En la hoja va al final, así que `grande_burla` es el grande número 7.
 - **Público de azoteas** (`publico.azoteas`): `publico/azoteas.png` y `publico/azoteas_noche.png`. Una fila por estado (`quieto`, `celebra`, `abuchea`), 4 cuadros por fila. La gente se asoma detrás del muro de la azotea vecina, que ocupa las `muro` filas de abajo. Los hinchas por país (`publico.paises`) llegan con C6 y vuelven como aviso.
 
+- **Vehículos** (`vehiculos`, lote D2): `true` o una lista de ids (`"moto"` = los 4 colores). Cada uno sale en `vehiculos/<id>.png`, una tira de cuadros de `w` × `h`, en la vista inclinada del escenario (`px = x + 0.35 y`, con la cara izquierda a la vista). El manifiesto trae:
+  - `ancla`: dónde cae en el cuadro la esquina de atrás a la izquierda de la huella, en el piso. El juego pone ahí el (x, y) del vehículo.
+  - `huella` (`w`, `d`, `z`): el ferry es de 110 × 40 y 12 de alto, como el gris del juego.
+  - `anims` con `desde`, `cuadros`, `fps` y `loop`.
+  - `mira` en los que van de frente: el espejo no sirve, porque se vería la cara de la derecha.
+
+  Hoy hay `ferry` (`andando`, `atracado`), `xich_lo` (`andando`), `moto_rojo`, `moto_azul`, `moto_amarillo` y `moto_verde` (`andando`, `frenando`, `corneta`), `bote_bambu` (`meciendo`), `metrocable` (`colgando`), `jacintos` (`flotando`) y `frutas_regadas`. Los demás del pedido vuelven como aviso.
+
 ### Lo que todavía no genera
 
-`publico.paises`, `npc`, `vehiculos`, `ui.logo` y los sonidos nuevos del lote H se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
+`publico.paises`, `npc`, `ui.logo` y los sonidos nuevos del lote H se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
 
 ```
-aviso: vehiculos: todavía no se genera, llega con vehículos (lote D2)
+aviso: npc: todavía no se genera, llega con NPC (lote C6)
 aviso: animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire
 aviso: audio.musica: todavía no existen, llegan con el lote H: marcha_nekketsu
 ```
