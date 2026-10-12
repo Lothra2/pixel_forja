@@ -14,6 +14,7 @@ import { AvatarStep } from './steps/AvatarStep';
 import { EnemiesStep, FxStep, FamilyRow, HeroRow } from './steps/RpgTools';
 import { LootStep } from './steps/LootStep';
 import { FontsStep } from './steps/FontsStep';
+import { EffectsStep } from './steps/EffectsStep';
 import { loadGallery, saveGallery, upsert, type GalleryItem } from './gallery';
 import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, safeName } from './util';
 import {
@@ -27,8 +28,8 @@ import {
 
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export' | ToolStep;
 /** herramientas del Taller RPG: páginas sueltas, fuera de los pasos */
-type ToolStep = 'enemies' | 'fx' | 'items' | 'fonts';
-const TOOLS: Step[] = ['enemies', 'fx', 'items', 'fonts'];
+type ToolStep = 'enemies' | 'fx' | 'items' | 'fonts' | 'effects';
+const TOOLS: Step[] = ['enemies', 'fx', 'items', 'fonts', 'effects'];
 const HUMAN_STEPS: Step[] = ['image', 'bg', 'zones', 'head', 'avatar', 'style', 'animate', 'editor', 'export'];
 const ANIMAL_STEPS: Step[] = ['image', 'bg', 'style', 'animate', 'export'];
 const EDIT_ZONES: Zone[] = ['hair', 'beard', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'];
@@ -654,6 +655,11 @@ export function App() {
                     <strong>{t('fonts_title')}</strong>
                     <span>{t('fonts_tile')}</span>
                   </button>
+                  <button className="tile" onClick={() => setStep('effects')} data-testid="tool-effects">
+                    <span className="ico" aria-hidden>💥</span>
+                    <strong>{t('ef_title')}</strong>
+                    <span>{t('ef_tile')}</span>
+                  </button>
                 </div>
               </>
             )}
@@ -793,6 +799,7 @@ export function App() {
         {step === 'enemies' && <EnemiesStep t={t} render={renderEnemy} open={openEnemy} />}
         {step === 'fx' && <FxStep t={t} />}
         {step === 'fonts' && <FontsStep t={t} />}
+        {step === 'effects' && <EffectsStep t={t} lang={lang} />}
         {step === 'items' && <LootStep t={t} lang={lang} equip={equipItem} hero={ficha && isHuman(ficha) ? ficha.name : null} />}
 
         {step === 'editor' && ficha && (isHuman(ficha)

@@ -47,6 +47,10 @@ El juego describe en un `kit.config.json` qué personajes, packs de animaciones,
 y sale el kit con su `manifest.json` y los atlas para Phaser. `visor.html` lo recorre con cajas, manos y eventos
 dibujados. Detalle: [docs/KIT_A_MEDIDA.md](docs/KIT_A_MEDIDA.md).
 
+El kit también trae el catálogo general de efectos (polvo, chispas de golpe, reacciones de anime, agua, fiesta, clima,
+técnicas y pantalla completa) y los sonidos que ya tiene el motor. Los efectos se ven en el estudio, en Inicio,
+**Efectos del juego**. Detalle: [docs/EFECTOS.md](docs/EFECTOS.md).
+
 ## Pruebas
 
 ```bash

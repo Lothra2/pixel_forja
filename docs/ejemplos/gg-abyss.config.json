@@ -11,5 +11,6 @@
   "cabecitas": false,
   "animales": ["thor"],
   "ui": { "fuentes": true },
+  "audio": { "sfx": true, "musica": true, "ambientes": true },
   "escenarios": "mundo/"
 }

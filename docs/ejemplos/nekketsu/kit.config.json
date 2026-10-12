@@ -121,5 +121,32 @@
         "vi"
       ]
     }
+  },
+  "fx": true,
+  "audio": {
+    "sfx": [
+      "golpe",
+      "critico",
+      "jugador_dolor",
+      "esquiva",
+      "bloqueo",
+      "romper",
+      "recoger",
+      "paso_tierra_0",
+      "paso_tierra_1",
+      "paso_tierra_2",
+      "paso_agua_0",
+      "ladrido",
+      "click",
+      "elegir",
+      "error",
+      "moneda",
+      "subir_nivel",
+      "silbato",
+      "pistola"
+    ],
+    "musica": [
+      "marcha_nekketsu"
+    ]
   }
 }

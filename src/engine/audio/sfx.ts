@@ -260,3 +260,11 @@ export function musicTitulo(): Float32Array {
 }
 
 export const MUSIC = { bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo };
+
+export type MusicName = keyof typeof MUSIC;
+export const MUSIC_NAMES = Object.keys(MUSIC) as MusicName[];
+
+/** Un efecto de sonido, siempre igual: el ruido arranca de la misma semilla, se pida solo o junto a otros. */
+export function renderSfx(name: SfxName): Float32Array { seed = 1; return SFX[name](); }
+/** Una música, siempre igual (misma semilla para la batería). */
+export function renderMusic(name: MusicName): Float32Array { seed = 1; return MUSIC[name](); }

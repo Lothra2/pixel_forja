@@ -58,6 +58,8 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `objetos` | Armas del piso: `true` (las 19) o la lista | No van |
 | `animales` | Ids de animales: de las fichas, o `thor` que viene con el motor. La mascota de un equipo entra sola | No van |
 | `ui.fuentes` | `true` o `{ "idiomas": [...] }`: las tres fuentes bitmap con vietnamita | No van |
+| `fx` | Efectos del catálogo general: `true` (los 56) o ids, bases y grupos. Ver abajo | No van |
+| `audio` | `{ "sfx": [...], "musica": [...], "ambientes": [...] }` con los sonidos del motor, o `true` en cada sección. Ver abajo | No va |
 
 Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 142 del motor. El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
 
@@ -72,13 +74,33 @@ Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se 
 
 Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la mascota exista. Cualquier otro campo (`pais`, `musica`, `bandera`...) pasa al manifiesto sin tocarlo.
 
+### Efectos y audio
+
+```jsonc
+"fx": ["polvo", "golpe", "reaccion", "chapuzon", "aura_nekketsu"],     // grupos, bases o ids; true = todos
+"audio": {
+  "sfx": ["golpe", "critico", "esquiva", "paso_tierra_0", "silbato"],  // silbato llega con el lote H: aviso
+  "musica": ["marcha_nekketsu"],                                       // llega con el lote H: aviso
+  "ambientes": ["agua"]
+}
+```
+
+- **Efectos:** cada uno sale en `fx/<id>.png` con su entrada en `manifest.fx`: tamaño, cuadros, fps, bucle, ancla, a qué se pega y si va delante o detrás. El catálogo, qué efecto va con qué evento y cómo se ponen en Phaser están en [EFECTOS.md](EFECTOS.md).
+- **Audio:** los sonidos que ya tiene el motor, sintetizados, en WAV de 16 bits mono a 22050 Hz:
+  - `sfx` (49): espadazo, golpe, critico, enemigo_dolor, enemigo_muere, jefe_rugido, jefe_pisoton, moneda, oro_mucho, pocion, curar, cofre_abrir, romper, portal, subir_nivel, paso, ladrido, aullido, mordida, recoger, legendario, click, abrir_inventario, error, jugador_dolor, magia, descubrir, secreto, elegir, guardado, arco, esquiva, bloqueo, thor_rescate y `paso_<pasto|tierra|piedra|madera|agua>_<0|1|2>`.
+  - `musica` (4): bosque, jefe, victoria, titulo. En bucle.
+  - `ambientes` (6): bosque, agua, noche, viento, cueva, magia. En bucle sin corte.
+- **Qué sale del audio:** `audio/sfx/<n>.wav`, `audio/musica/<n>.wav` y `audio/ambiente/<n>.wav`, con `manifest.audio.<sección>.<n> = { archivo, duracion, bucle? }`. Cada sonido sale igual siempre, se pida solo o con otros.
+- **Nombres que todavía no existen:** si un nombre se parece mucho a uno que existe, es un error con sugerencia (`ladridoo`: "¿Quisiste decir "ladrido"?"). Si no se parece a ninguno, es un sonido o efecto que llega después: se salta con aviso y queda en `manifest.pendiente`. Así el juego puede listar desde ya los sonidos del lote H (`golpe_1`, `silbato`, `marcha_nekketsu`...). Lo mismo con otras secciones de audio, como `voces`.
+
 ### Lo que todavía no genera
 
-`escenarios`, `publico`, `npc`, `vehiculos`, `fx`, `audio` y `ui.logo` se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
+`escenarios`, `publico`, `npc`, `vehiculos`, `ui.logo` y los sonidos nuevos del lote H se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
 
 ```
 aviso: escenarios: todavía no se genera, llega con escenarios oblicuos (lote E)
 aviso: animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire
+aviso: audio.musica: todavía no existen, llegan con el lote H: marcha_nekketsu
 ```
 
 Cada sección se irá sumando con su lote, sin cambiar la configuración del juego.
@@ -106,6 +128,8 @@ kit/
   objetos/armas.png + .json
   ui/cabecitas.png
   ui/fuentes/<fuente>.png + .fnt
+  fx/<id>.png                         efectos
+  audio/sfx/<n>.wav  audio/musica/<n>.wav  audio/ambiente/<n>.wav
 ```
 
 El manifiesto sigue el contrato del kit:
@@ -128,7 +152,9 @@ El manifiesto sigue el contrato del kit:
   "cabecitas": { "archivo": "ui/cabecitas.png", "celda": 12, "orden": ["alana", "goro", "..."] },
   "objetos": { "chancleta": { "atlas": "objetos/armas.json", "anims": { "quieto": 1, "girando": 8, "mano": 16 } } },
   "animales": { "thor": { "nombre": "Thor", "celda": 48, "atlas": "animales/thor.json", "anims": { "idle": {} } } },
+  "fx": { "chispa_golpe_medio": { "archivo": "fx/chispa_golpe_medio.png", "celda": 24, "cuadros": 5, "fps": 18, "ancla": [12, 12], "se_pega_a": "mano", "capa": "frente" } },
   "ui": { "fuentes": { "fuente_ui": { "png": "ui/fuentes/fuente_ui.png", "fnt": "ui/fuentes/fuente_ui.fnt" } } },
+  "audio": { "sfx": { "golpe": { "archivo": "audio/sfx/golpe.wav", "duracion": 0.17 } }, "ambientes": { "agua": { "archivo": "audio/ambiente/agua.wav", "duracion": 12, "bucle": true } } },
   "creditos": "CREDITOS.txt",
   "notas": ["..."]
 }
@@ -162,6 +188,8 @@ class Carga extends Phaser.Scene {
     for (const [id, a] of Object.entries(m.animales ?? {})) this.load.atlas(id, KIT + a.imagen, KIT + a.atlas);
     if (m.objetos) this.load.atlas('armas', KIT + 'objetos/armas.png', KIT + 'objetos/armas.json');
     for (const [id, f] of Object.entries(m.ui?.fuentes ?? {})) if (f.png) this.load.bitmapFont(id, KIT + f.png, KIT + f.fnt);
+    for (const [id, e] of Object.entries(m.fx ?? {})) this.load.spritesheet(`fx_${id}`, KIT + e.archivo, { frameWidth: e.w, frameHeight: e.h });
+    for (const sec of Object.values(m.audio ?? {})) for (const [n, a] of Object.entries(sec)) this.load.audio(n, KIT + a.archivo);
     this.load.once('complete', () => { crearAnimaciones(this, m, prueba); this.scene.start('Prueba'); });
     this.load.start();
   }
@@ -237,15 +265,15 @@ npm run build:sitio && npx vite preview      # http://localhost:4173/visor.html
 
 | Configuración | Qué arma |
 |---|---|
-| [`ejemplos/nekketsu/kit.config.json`](ejemplos/nekketsu/kit.config.json) | Nekketsu Olympic GG: Familia GG e Instituto Nekketsu, 5 packs, armas, Thor y fuentes con vietnamita |
+| [`ejemplos/nekketsu/kit.config.json`](ejemplos/nekketsu/kit.config.json) | Nekketsu Olympic GG: Familia GG e Instituto Nekketsu, 5 packs, armas, Thor, fuentes con vietnamita, los 56 efectos y los sonidos del motor que le sirven |
 | [`ejemplos/kit-deportivo.config.json`](ejemplos/kit-deportivo.config.json) | El kit deportivo de siempre (`npm run deportes`): la familia y los héroes con los 6 packs de deporte |
-| [`ejemplos/gg-abyss.config.json`](ejemplos/gg-abyss.config.json) | Los personajes de GG Abyss: la familia con su equipo, las 21 animaciones RPG, retratos, Thor y fuentes |
+| [`ejemplos/gg-abyss.config.json`](ejemplos/gg-abyss.config.json) | Los personajes de GG Abyss: la familia con su equipo, las 21 animaciones RPG, retratos, Thor, fuentes y todo el audio |
 
 Una prueba revisa que los packs de esas configuraciones sean los mismos que usan `npm run deportes` y `npm run kit`. GG Abyss no se expresa completo todavía. Los enemigos, el jefe, el botín, las armaduras de Thor y el mundo siguen en `npm run kit` hasta la versión completa del kit a medida.
 
 ## Límites honestos
 
-- **Versión inicial.** Arma atletas, retratos, cabecitas, armas del piso, animales con ficha y fuentes. Escenarios, público, NPC, vehículos, efectos, audio y logo llegan con sus lotes, y mientras tanto vuelven como aviso.
+- **Versión inicial.** Arma atletas, retratos, cabecitas, armas del piso, animales con ficha, fuentes, efectos y los sonidos del motor. Escenarios, público, NPC, vehículos, logo y los sonidos nuevos llegan con sus lotes, y mientras tanto vuelven como aviso.
 - **Animales nuevos.** Solo salen los que tienen ficha, más Thor. Las especies nuevas (chigüire, perro de la calle...) llegan con el lote C7.
 - **Celda mixta.** Cada atleta usa la celda de la configuración salvo que su ficha diga otra (un gigante en 64). Un pack no mezcla celdas: cada atlas es de un solo atleta.
 - **Tiempo.** Crece con atletas x animaciones. 8 atletas con 52 animaciones tardan unos 80 segundos en una máquina de 4 núcleos. Para iterar está `--rapido`.

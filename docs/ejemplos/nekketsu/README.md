@@ -60,3 +60,7 @@ npm run kit-a-medida -- salida/kit_nekketsu --config docs/ejemplos/nekketsu/kit.
 Salen los 8 atletas con 5 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`), retratos, cabecitas, las 19 armas del piso, Thor y las fuentes con vietnamita, en unos 80 segundos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
 
 El juego tendrá su propio `kit.config.json` y `data/teams.json`. Esta es la versión de ejemplo, con lo que PixelForja ya genera.
+
+## Efectos y sonidos (lote F)
+
+La configuración pide `"fx": true` (los 56 efectos del catálogo general en `fx/`) y los sonidos del motor que le sirven al juego en `audio/sfx/`: golpes, esquiva, bloqueo, pasos, ladrido de Thor y los de la interfaz. `silbato`, `pistola` y `marcha_nekketsu` todavía no existen: el kit los salta con aviso y quedan en `manifest.pendiente` hasta el lote H. Qué efecto va con qué evento: [docs/EFECTOS.md](../../EFECTOS.md).

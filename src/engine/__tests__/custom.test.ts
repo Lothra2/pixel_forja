@@ -27,7 +27,7 @@ const pngSize = (b: Buffer) => [b.readUInt32BE(16), b.readUInt32BE(20)];
 const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : [p]; });
 /** Todas las rutas a archivos que nombra el manifiesto (sin el #id de las cabecitas). */
 const refsOf = (v: unknown, out = new Set<string>()): Set<string> => {
-  if (typeof v === 'string' && /^[\w/.-]+\.(png|json|fnt|txt)(#\w+)?$/.test(v)) out.add(v.split('#')[0]);
+  if (typeof v === 'string' && /^[\w/.-]+\.(png|json|fnt|txt|wav)(#\w+)?$/.test(v)) out.add(v.split('#')[0]);
   else if (Array.isArray(v)) v.forEach((x) => refsOf(x, out));
   else if (v && typeof v === 'object') Object.values(v).forEach((x) => refsOf(x, out));
   return out;
@@ -109,12 +109,13 @@ describe('kit a medida (lote I): configuración', () => {
   });
 
   it('lo que todavía no genera vuelve como aviso y en manifest.pendiente', () => {
-    const { files, warnings } = buildCustomKit({ ...MIN, escenarios: 'data/stages/', fx: ['estrellas_mareo'], animales: ['chiguire'], ui: { logo: { texto: 'GG' } } }, {}, { quick: true, solo: ['cabecitas'] });
+    const { files, warnings } = buildCustomKit({ ...MIN, escenarios: 'data/stages/', vehiculos: ['moto'], fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], ui: { logo: { texto: 'GG' } } }, {}, { quick: true, solo: ['cabecitas'] });
     expect(warnings).toEqual([
       'escenarios: todavía no se genera, llega con escenarios oblicuos (lote E)',
-      'fx: todavía no se genera, llega con efectos (lote F)',
+      'vehiculos: todavía no se genera, llega con vehículos (lote D2)',
       'ui.logo: todavía no se genera, llega con el resto del lote G1',
       'animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire',
+      'fx: todavía no existen (se saltan): confeti_dorado',
     ]);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(m.pendiente).toEqual(warnings);
@@ -195,7 +196,16 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     for (const k of FLOOR_PROP_KINDS) expect(m.objetos[k], k).toMatchObject({ atlas: 'objetos/armas.json' });
     expect(Object.keys(m.ui.fuentes)).toEqual(['fuente_ui', 'fuente_titulo', 'fuente_titulo_plata', 'notas']);
     expect(m.creditos).toBe('CREDITOS.txt');
-    expect(m.pendiente).toBeUndefined();
+    // los 56 efectos y los sonidos del motor; lo del lote H queda pendiente
+    expect(Object.keys(m.fx)).toHaveLength(56);
+    expect(m.fx.chispa_golpe_pesado).toMatchObject({ archivo: 'fx/chispa_golpe_pesado.png', celda: 32, se_pega_a: 'mano' });
+    expect(m.fx.pantalla_rota).toMatchObject({ w: 640, h: 360 });
+    expect(Object.keys(m.audio.sfx)).toEqual((cfg.audio!.sfx as string[]).filter((n) => n !== 'silbato' && n !== 'pistola'));
+    expect(m.audio.musica).toBeUndefined();
+    expect(m.pendiente).toEqual([
+      'audio.sfx: todavía no existen, llegan con el lote H: silbato, pistola',
+      'audio.musica: todavía no existen, llegan con el lote H: marcha_nekketsu',
+    ]);
   });
 
   it('no falta ningún archivo que nombra el manifiesto, y no sobra ninguno', () => {
@@ -213,7 +223,7 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    expect(pngs.length).toBe(54);
+    expect(pngs.length).toBe(54 + 56);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });
