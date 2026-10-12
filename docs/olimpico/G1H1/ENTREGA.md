@@ -1,6 +1,6 @@
 # Lote G1 resto + H1: interfaz y audio de la rebanada vertical
 Estado: entregado
-PR: (se pone al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/13
 Fecha: 2026-10-12
 
 ## Qué se hizo
