@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   worker: { format: 'es' },
-  // dos páginas: el estudio y la arena que prueba el kit deportivo
-  build: { rollupOptions: { input: { main: 'index.html', arena: 'arena.html' } } },
+  // tres páginas: el estudio, la arena que prueba el kit deportivo y el visor del kit
+  build: { rollupOptions: { input: { main: 'index.html', arena: 'arena.html', visor: 'visor.html' } } },
   test: {
     include: ['src/**/*.test.ts'],
     testTimeout: 30000,

@@ -117,13 +117,14 @@ export interface ObjectEntry {
  * Atlas de todas las armas del piso (JSON Hash de TexturePacker) y la entrada de cada una para el manifiesto. Las
  * variantes de color son ids aparte (`silla_plastica_azul`...). Cuadros: `quieto` (base en el pivote), `girando`
  * (centrado), `mano` de 16 cuadros (agarre en el centro, cuadro k girado k * 22.5 grados) y los propios de cada objeto.
+ * `kinds` elige cuáles (sin valor: todas).
  */
-export function buildObjectsAtlas(cell = 48, image = 'armas.png'): { png: Raster; json: TexturePackerHash; objetos: Record<string, ObjectEntry> } {
+export function buildObjectsAtlas(cell = 48, image = 'armas.png', kinds: readonly FloorPropKind[] = FLOOR_PROP_KINDS): { png: Raster; json: TexturePackerHash; objetos: Record<string, ObjectEntry> } {
   const size = objectCell(cell), u = cell / 48;
   const frames: { name: string; raster: Raster }[] = [];
   const objetos: Record<string, ObjectEntry> = {};
   const COLOR_NAMES: Record<string, string> = { '#d23c3c': 'roja', '#3d6fd6': 'azul', '#4caf50': 'verde', '#2bb3a3': 'turquesa', '#e0466a': 'rosada', '#f2c94c': 'amarilla', '#24305e': 'negra', '#8a4fd6': 'morada', '#e2b23c': 'dorada' };
-  for (const kind of FLOOR_PROP_KINDS) {
+  for (const kind of kinds) {
     const cols = FLOOR_PROPS[kind].colores ?? [undefined];
     cols.forEach((col, v) => {
       const id = v === 0 ? kind : `${kind}_${COLOR_NAMES[col!] ?? v}`;

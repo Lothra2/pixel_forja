@@ -80,7 +80,7 @@ export function frameDataOf(clips: RenderedClip[], fields: readonly FrameDataFie
     const b = opaqueBox(fr);
     return b ? [b.x0 - px, b.y0 - py, b.x1 - b.x0 + 1, b.y1 - b.y0 + 1] : null;
   }));
-  // el cuerpo sale del render (separa implementos y efectos): solo en las animaciones premium de personas
+  // el cuerpo sale del render (separa implementos y efectos): en todas las animaciones de personas
   if (fields.includes('cuerpo') && clips.every((c) => c.wholes)) out.cuerpo = clips.map((c) => c.wholes!.map((w) => (w ? [w.x0 - px, w.y0 - py, w.x1 - w.x0 + 1, w.y1 - w.y0 + 1] : null)));
   if (fields.includes('arma') && clips.some((c) => c.held)) out.arma = clips.map((c) => c.frames.map((_, i) => {
     const h = c.held?.[i];

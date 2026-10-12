@@ -37,6 +37,16 @@ npm run forja -- render out/gabo/gabo.ficha.json --out out/gabo2 --anims all
 npx tsx scripts/personaje.ts samples/selfie.png out/selfie selfie   # comparación, GIF, hoja del juego y ficha
 ```
 
+## Kit a medida para un juego
+
+```bash
+npm run kit-a-medida -- out/kit --config docs/ejemplos/nekketsu/kit.config.json
+```
+
+El juego describe en un `kit.config.json` qué personajes, packs de animaciones, armas, animales y fuentes necesita,
+y sale el kit con su `manifest.json` y los atlas para Phaser. `visor.html` lo recorre con cajas, manos y eventos
+dibujados. Detalle: [docs/KIT_A_MEDIDA.md](docs/KIT_A_MEDIDA.md).
+
 ## Pruebas
 
 ```bash

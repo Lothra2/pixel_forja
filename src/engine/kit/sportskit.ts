@@ -18,6 +18,7 @@ import { FIGHT_PREMIUM } from '../anim/fight';
 import { FOOTBALL_PREMIUM } from '../anim/footballPremium';
 import { BRAWL } from '../anim/brawl';
 import { buildObjectsAtlas } from '../render/floorProps';
+import type { FloorPropKind } from '../render/props';
 import { bitmapFonts } from '../ui/fonts';
 
 /**
@@ -47,7 +48,10 @@ export interface SportsKitOptions {
   athletes?: Record<string, HumanFicha>;
   /** celda de un atleta en particular (Hulk va en 64); si no, la de su ficha (`cell`) o la del kit */
   cells?: Record<string, CellSize>;
-  packs?: SportPack[];
+  /** packs a exportar: los del kit deportivo o, con `packDefs`, los que ahí se definan */
+  packs?: string[];
+  /** packs a medida: nombre -> animaciones (el kit a medida los arma desde su configuración). Sin esto, SPORT_PACKS */
+  packDefs?: Record<string, readonly string[]>;
   cell?: CellSize;
   /** pocas animaciones por deporte (para pruebas rápidas) */
   quick?: boolean;
@@ -67,8 +71,8 @@ export interface SportsKitOptions {
   retratos?: boolean;
   /** cabecitas de 12 x 12 de todos los atletas en ui/cabecitas.png */
   cabecitas?: boolean;
-  /** las armas del piso (pelea callejera) en objetos/armas.png + .json, con su entrada en `objetos` */
-  objetos?: boolean;
+  /** las armas del piso (pelea callejera) en objetos/armas.png + .json, con su entrada en `objetos`: todas o las de la lista */
+  objetos?: boolean | FloorPropKind[];
   /** animales (una mascota como Thor): todas sus animaciones en animales/<id>.png + .json, con su entrada en `animales` */
   animales?: Record<string, AnimalFicha>;
   /**
@@ -133,7 +137,8 @@ function strip(rs: Raster[], w: number, h: number): Raster {
 export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
   const log = opts.progress ?? (() => {});
   const cell = opts.cell ?? 48;
-  const packs = opts.packs ?? DEFAULT_SPORT_PACKS;
+  const defs: Record<string, readonly string[]> = opts.packDefs ?? SPORT_PACKS;
+  const packs = opts.packs ?? (opts.packDefs ? Object.keys(opts.packDefs) : DEFAULT_SPORT_PACKS);
   const views = opts.filas ? viewsForRows(opts.filas) : EIGHT_VIEWS;
   const rows = views.map((v) => VIEW_SUFFIX[v]);
   const fields: FrameDataField[] = opts.datos === true ? FRAME_DATA_FIELDS : opts.datos || [];
@@ -180,7 +185,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     for (const pack of packs) {
       // vestuario por pack: la ficha puede traer una variante de ropa para este pack
       const fp = dressForPack(f, pack);
-      const names = (opts.quick ? SPORT_PACKS[pack].slice(-2) : SPORT_PACKS[pack]).filter((a) => hasAnim(fp, a));
+      const all = defs[pack] ?? [];
+      const names = (opts.quick ? all.slice(-2) : all).filter((a) => hasAnim(fp, a));
       const entries: Record<string, SportAnimEntry> = {};
       const frames: { name: string; raster: Raster }[] = [];
       for (const a of names) {
@@ -232,7 +238,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     manifest.cabecitas = { archivo: 'ui/cabecitas.png', celda: HEAD_ICON, orden: Object.keys(out) };
   }
   if (opts.objetos) {
-    const { png, json, objetos } = buildObjectsAtlas(cell, 'armas.png');
+    const { png, json, objetos } = buildObjectsAtlas(cell, 'armas.png', Array.isArray(opts.objetos) ? opts.objetos : undefined);
     files.push({ name: 'objetos/armas.png', bytes: encodePng(png), mime: 'image/png' });
     files.push({ name: 'objetos/armas.json', bytes: enc.encode(JSON.stringify(json)), mime: 'application/json' });
     for (const o of Object.values(objetos)) o.atlas = 'objetos/armas.json';

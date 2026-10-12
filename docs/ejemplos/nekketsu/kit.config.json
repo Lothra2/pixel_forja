@@ -1,0 +1,125 @@
+{
+  "$schema": "../../kit-a-medida.schema.json",
+  "juego": "Nekketsu Olympic GG",
+  "resolucion": [
+    640,
+    360
+  ],
+  "celda": 48,
+  "filas": [
+    "right",
+    "down_right",
+    "up_right",
+    "down",
+    "up"
+  ],
+  "datos_por_cuadro": [
+    "cajas",
+    "cuerpo",
+    "manos",
+    "cabeza",
+    "pies",
+    "carga",
+    "arma"
+  ],
+  "fichas": "fichas/",
+  "equipos": "equipos.json",
+  "packs": {
+    "base": [
+      "idle",
+      "walk",
+      "run",
+      "jump",
+      "hit",
+      "fall_getup",
+      "celebrate",
+      "sad",
+      "taunt",
+      "dizzy",
+      "ko_bounce",
+      "knockout"
+    ],
+    "pelea": [
+      "jab",
+      "punch",
+      "kick_martial",
+      "run_punch",
+      "run_kick",
+      "air_kick",
+      "grab",
+      "grab_hold",
+      "grabbed",
+      "knee_grab",
+      "break_free",
+      "lift",
+      "carry_idle",
+      "carry_walk",
+      "carry_run",
+      "throw_overhead",
+      "carried",
+      "thrown_spin",
+      "land_flat",
+      "slip_wet"
+    ],
+    "armas": [
+      "weapon_pick",
+      "weapon_swing",
+      "weapon_swing_heavy",
+      "weapon_throw",
+      "umbrella_block",
+      "fan_gust"
+    ],
+    "natacion": [
+      "swim",
+      "swim_breast",
+      "swim_fly",
+      "swim_back",
+      "dive",
+      "tread_water",
+      "swim_exit"
+    ],
+    "atletismo": [
+      "sprint_start",
+      "sprint",
+      "hurdles",
+      "long_jump",
+      "pole_vault",
+      "shot_put",
+      "javelin"
+    ]
+  },
+  "pruebas": {
+    "crosscountry": [
+      "base",
+      "pelea",
+      "armas",
+      "natacion"
+    ],
+    "vallas": [
+      "base",
+      "atletismo"
+    ],
+    "natacion": [
+      "base",
+      "natacion"
+    ],
+    "azoteas": [
+      "base",
+      "pelea",
+      "armas"
+    ]
+  },
+  "objetos": true,
+  "animales": [
+    "thor"
+  ],
+  "ui": {
+    "fuentes": {
+      "idiomas": [
+        "es",
+        "en",
+        "vi"
+      ]
+    }
+  }
+}
