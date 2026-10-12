@@ -193,8 +193,15 @@ Todo esto va en la ficha y se edita en el estudio (Estilo). Sirve para cualquier
 | `armband` | Brazalete del color dado en el brazo cercano. Sirve de distintivo de equipo o de capitán |
 | `chestText`, `chestTextColor` | Hasta 3 letras en el pecho (las iniciales del equipo). Con letras, el número va solo atrás |
 | `number`, `numberColor` | Número de la camiseta, de uno o dos dígitos |
+| `neck` | Algo al cuello: `{ "kind": "bufanda", "color": "#..." }` da la vuelta arriba y cuelga una punta. `{ "kind": "panoleta", "color": "#..." }` es el triángulo al frente del uniforme escolar vietnamita. Con algo al cuello no se dibuja el cuello de la camiseta |
+| `pattern` | Además de los de siempre: `flores` (la bata de casa, puntos sueltos del color `pattern2`) y `guayabera` (una alforza a cada lado del pecho, dos si el torso es ancho) |
+| `shoes` | Además de los de siempre: `chancletas` (el pie descalzo con la suela de color) y `sandalias` (además, la tira de arriba) |
 
 Las letras y el número **buscan dónde no los tape la cabeza**: primero donde iban siempre, después más abajo y con números o letras bajitas (de 4 filas). Si en un pecho chico no cabe ni una letra entera, va un parche del color de las letras. Si de espalda el pelo tapa el número, no se dibuja a medias: el manifiesto trae `numero` en cada atleta para mostrarlo en el HUD.
+
+**Gorros propios:** además de los gorros LPC, `avatar.lpc.hat` acepta `non_la`, `vueltiao`, `gorra_beisbol`, `casco_ciclista`, `sombrero_gaitero` y `rolos`. Los dibuja el motor (las cabezas LPC no los traen), apoyados en la cima del pelo, de frente, de lado y de espalda. `hatColor` les cambia el color, menos al vueltiao, que siempre es crema y negro.
+
+**Cara de base:** `face.base` (`{ "eyes": "angry", "mouth": "smirk" }`) es la cara que el personaje pone cuando la animación no pide otra. Reemplaza los ojos abiertos y la boca neutra o sonriente, pero no el golpe, los ojos cerrados ni las demás caras. Es la cara malandra de los rivales del Instituto Nekketsu. En las cabezas LPC las cejas en V se dibujan encima del flequillo para que se lean.
 
 **Gigantes:** `"cell": 64` en la ficha hace que el kit lo dibuje en 64 aunque el resto vaya en 48, y el estudio lo abre en 64. El atleta trae su `celda` y su `pivote` en el manifiesto, como Hulk.
 
@@ -207,7 +214,7 @@ Las letras y el número **buscan dónde no los tape la cabeza**: primero donde i
 }
 ```
 
-Ejemplos listos: la Familia GG con "GG" dorado y su número, el Instituto Nekketsu con gakuran y brazalete rojo, y Thor, en [`docs/ejemplos/nekketsu/fichas/`](ejemplos/nekketsu/fichas/).
+Ejemplos listos: la Familia GG con "GG" dorado y su número, el Instituto Nekketsu con gakuran, brazalete rojo y la cara malandra, los cuatro equipos nacionales (Rồng Sài Gòn, Rolos de Chapinero, Los Panas de Caracas y Maracuchos del Lago) y Thor, en [`docs/ejemplos/nekketsu/fichas/`](ejemplos/nekketsu/fichas/).
 
 ## Fuentes (`--fuentes`, opción `fuentes`)
 

@@ -23,17 +23,21 @@ npm run deportes -- salida/kit_calle --fichas mis_fichas --deportes calle \
 
 Sale `atletas/rick/calle.png + .json` con las 26 animaciones de beat 'em up (levantar, llevar, lanzar, agarres, armas) y `objetos/armas.png + .json` con las 19 armas del piso. Cómo se compone lo levantado (`carga`) y el arma en la mano (`arma`): [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#pelea-callejera---deportes-calle).
 
-## Equipos (lote C1): Familia GG e Instituto Nekketsu
+## Equipos (lotes C1 y C2)
 
-En [`fichas/`](fichas/) están los 8 atletas y la mascota, listos para abrir y editar en el estudio (Inicio, Abrir ficha):
+En [`fichas/`](fichas/) están los 24 atletas de los 6 equipos y la mascota, listos para abrir y editar en el estudio (Inicio, Abrir ficha):
 
 | Equipo | Atletas | Uniforme |
 |---|---|---|
 | Familia GG | `rick` (7), `steph` (28), `sophie` (15), `alana` (21) | Su look de siempre en su color: Rick azul, Steph rosado, Sophie verde, Alana fucsia. "GG" dorado en el pecho y el número dorado atrás. Alana trae además el vestuario "Mickey" |
-| Instituto Nekketsu | `kenji`, `ryu`, `goro` (gigante, celda 64), `tetsu` | Gakuran azul marino muy oscuro con botones dorados y brazalete rojo. Kenji lo lleva abierto sobre camiseta blanca, Goro sin mangas |
+| Instituto Nekketsu | `kenji`, `ryu`, `goro` (gigante, celda 64), `tetsu` | Gakuran azul marino muy oscuro con botones dorados y brazalete rojo. Kenji lo lleva abierto sobre camiseta blanca, Goro sin mangas. Los cuatro con la cara malandra de base (lote C2) |
+| Rồng Sài Gòn (C2) | `minh`, `lan`, `tuan`, `ba_hoa` | Minh con vovinam azul y cinta roja. Lan con el uniforme escolar y la pañoleta roja. Tuấn con franela y sandalias. Bà Hoa con bộ bà ba y nón lá |
+| Rolos de Chapinero (C2) | `andres`, `camila`, `pipe`, `don_hernando` (gigante, celda 64) | Andrés con chaqueta gris cerrada y bufanda. Camila con casco de ciclista e impermeable. Pipe con camiseta azul sin escudo y bufanda. Don Hernando con saco de paño y bigote |
+| Los Panas de Caracas (C2) | `gabo`, `yuli`, `toto`, `carmen` | Gabo con gorra y camisa de pelotero. Yuli con la chemise beige del liceo. Toto con franela grande y chancletas. La señora Carmen con rolos y bata de flores |
+| Maracuchos del Lago (C2) | `ender`, `yusmary`, `jhonder`, `abuela_nerva` | Ender con sombrero de gaitero, bigote y guayabera. Yusmary con camiseta de básquet. Jhonder con franela de rayas y short. La abuela Nerva con bata fresca |
 | Mascota | `thor` | El bóxer con todas sus animaciones de mascota |
 
-Todo sale de campos generales de la ficha (`jacketCut`, `jacketClosed`, `jacketSleeves`, `armband`, `chestText`, `cell`), explicados en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#equipos-uniformes-gigantes-y-mascota).
+Todo sale de campos generales de la ficha (`jacketCut`, `jacketClosed`, `jacketSleeves`, `armband`, `chestText`, `cell`, `neck`, `face.base`, los gorros propios y el calzado abierto), explicados en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#equipos-uniformes-gigantes-y-mascota).
 
 El kit de los dos equipos con todo lo del juego:
 
@@ -51,13 +55,13 @@ Con `--fuentes`, el kit trae `ui/fuentes/` con `fuente_ui`, `fuente_titulo` y `f
 
 ## Kit a medida (lote I)
 
-[`kit.config.json`](kit.config.json) es la configuración del kit del juego y [`equipos.json`](equipos.json) sus dos equipos. Con eso sale todo lo de arriba de una vez, en el formato del contrato:
+[`kit.config.json`](kit.config.json) es la configuración del kit del juego y [`equipos.json`](equipos.json) sus seis equipos. Con eso sale todo lo de arriba de una vez, en el formato del contrato:
 
 ```bash
 npm run kit-a-medida -- salida/kit_nekketsu --config docs/ejemplos/nekketsu/kit.config.json
 ```
 
-Salen los 8 atletas con 5 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`), retratos, cabecitas, las 19 armas del piso, Thor y las fuentes con vietnamita, en unos 80 segundos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
+Salen los 24 atletas con 6 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`, `kachinuki`), retratos, cabecitas, las 19 armas del piso, Thor las fuentes con vietnamita y todo lo de la pelea, en unos 2 minutos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
 
 El juego tendrá su propio `kit.config.json` y `data/teams.json`. Esta es la versión de ejemplo, con lo que PixelForja ya genera.
 
