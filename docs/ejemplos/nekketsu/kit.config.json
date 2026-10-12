@@ -126,6 +126,7 @@
     },
     "interfaz": true
   },
+  "escenarios": "escenarios/",
   "fx": true,
   "audio": {
     "sfx": [

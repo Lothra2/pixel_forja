@@ -536,3 +536,12 @@ p.ok { margin: 0; }
 .fx-bg-claro .fx-stage { background: #d8dce8; }
 .fx-bg-cuadros .fx-stage { background: repeating-conic-gradient(#2c3040 0% 25%, #3a3f52 0% 50%) 0 0 / 16px 16px; }
 .fonts-viet { overflow-wrap: anywhere; word-break: break-all; line-height: 1.6; }
+
+/* Escena: el escenario oblicuo con el personaje corriendo encima */
+.scene-stage { display: grid; place-items: center; min-height: 200px; width: 100%; }
+.scene-stage canvas.scene-canvas { width: 100%; max-width: 1280px; aspect-ratio: 16 / 9; image-rendering: pixelated; border-radius: 10px; background: #0b0a12; }
+.scene-errors { margin: 10px 0 0; padding-left: 18px; color: var(--danger, #ff6b6b); font-size: 13px; }
+.scene-tests { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 13px; }
+.scene-tests td { padding: 5px 8px; border-top: 1px solid rgba(255, 255, 255, 0.07); vertical-align: top; }
+.scene-tests tr.ok td:first-child { color: #4ade80; }
+.scene-tests tr.bad td:first-child { color: #ff6b6b; }

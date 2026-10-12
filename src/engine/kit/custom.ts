@@ -6,6 +6,7 @@ import { isHuman, CELL_SIZES, type AnimalFicha, type CellSize, type Ficha, type 
 import { familyFicha, FAMILY, thorFicha } from '../rpg/family';
 import { heroFicha, heroCell, HEROES } from '../rpg/heroes';
 import { buildSportsKit, compactJson } from './sportskit';
+import { generarEscenario } from '../world/oblique';
 import { EFFECT_NAMES, expandEffects, renderEffect, effectSheet } from '../fx/catalog';
 import { encodeWav, RATE } from '../audio/sfx';
 import { SONIDOS, renderSound, type SoundSection } from '../audio/catalogo';
@@ -21,8 +22,8 @@ import { encodePng } from '../export/png';
  * propio de cada uno vive en su configuración, no en el código.
  *
  * Versión inicial: atletas (con sus packs, datos por cuadro, retratos, cabecitas y vestuario), equipos, pruebas,
- * armas del piso, animales, fuentes, efectos y los sonidos que ya tiene el motor. Lo que todavía no genera (escenarios,
- * público, NPC, vehículos, logo y los sonidos nuevos del lote H) se acepta en la configuración y vuelve como aviso,
+ * armas del piso, animales, fuentes, logo e interfaz, efectos, el audio del motor y los escenarios oblicuos. Lo que
+ * todavía no genera (público, NPC, vehículos y los sonidos de lotes futuros) se acepta y vuelve como aviso,
  * para que el juego sepa qué falta.
  */
 
@@ -61,7 +62,9 @@ export interface KitConfig {
   /** sonidos del motor: true = todos, o la lista. Los nombres que todavía no existen vuelven como aviso (lote H) */
   audio?: { sfx?: boolean | string[]; musica?: boolean | string[]; ambientes?: boolean | string[]; voces?: boolean | string[] | Record<string, Partial<Voz>>; [k: string]: unknown };
   // lo que todavía no genera el kit a medida (se acepta y vuelve como aviso)
-  escenarios?: unknown; publico?: unknown; npc?: unknown; vehiculos?: unknown;
+  /** carpeta con *.layout.json, o la lista de layouts: salen en escenarios/<id>/ */
+  escenarios?: string | string[];
+  publico?: unknown; npc?: unknown; vehiculos?: unknown;
 }
 
 /** Un equipo del archivo de equipos. Lo que no se usa para armar el kit pasa al manifiesto tal cual. */
@@ -70,15 +73,15 @@ export interface TeamDef { nombre: string; atletas: string[]; mascota?: string; 
 export const INCLUDED_CAST = ['familia', 'familia_rpg', 'heroes'] as const;
 export type IncludedCast = (typeof INCLUDED_CAST)[number];
 
-export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'interfaz', 'efectos', 'audio'] as const;
+export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'interfaz', 'efectos', 'audio', 'escenarios'] as const;
 export type KitPart = (typeof KIT_PARTS)[number];
 
 /** Las secciones que todavía no genera el kit a medida, y el lote del pedido que las trae. */
 export const PENDING_SECTIONS: Record<string, string> = {
-  escenarios: 'escenarios oblicuos (lote E)', publico: 'público (lote C6)', npc: 'NPC (lote C6)',
+  publico: 'público (lote C6)', npc: 'NPC (lote C6)',
   vehiculos: 'vehículos (lote D2)',
 };
-const KNOWN_KEYS = ['$schema', 'juego', 'resolucion', 'celda', 'filas', 'datos_por_cuadro', 'fichas', 'personajes_incluidos', 'equipos', 'packs', 'pruebas', 'retratos', 'cabecitas', 'objetos', 'animales', 'ui', 'fx', 'audio', ...Object.keys(PENDING_SECTIONS)];
+const KNOWN_KEYS = ['$schema', 'juego', 'resolucion', 'celda', 'filas', 'datos_por_cuadro', 'fichas', 'personajes_incluidos', 'equipos', 'packs', 'pruebas', 'retratos', 'cabecitas', 'objetos', 'animales', 'ui', 'fx', 'audio', 'escenarios', ...Object.keys(PENDING_SECTIONS)];
 const ANIM_NAMES = HUMAN_ANIMS.map((a) => a.name);
 const IDIOMAS = ['es', 'en', 'vi'];
 /** Los sonidos que ya tiene el motor, por sección de audio. */
@@ -192,6 +195,7 @@ export function validateKitConfig(cfg: unknown): string[] {
       if (cfg.ui.logo !== undefined && !(isObj(cfg.ui.logo) && typeof cfg.ui.logo.texto === 'string' && cfg.ui.logo.texto.trim())) e.push('ui.logo: { "texto": "NOMBRE DEL JUEGO" }');
     }
   }
+  if (cfg.escenarios !== undefined && typeof cfg.escenarios !== 'string' && !isStrList(cfg.escenarios)) e.push('escenarios: una carpeta con los *.layout.json ("data/stages/") o la lista de layouts');
   if (cfg.fx !== undefined && typeof cfg.fx !== 'boolean') {
     if (!isStrList(cfg.fx)) e.push('fx: true o una lista de efectos, bases (polvo_correr) o grupos (reaccion)');
     else for (const t of sortNames(cfg.fx as string[], EFFECT_NAMES).typos) e.push(`fx[${t.i}]: "${t.name}" no es un efecto.${t.hint}`);
@@ -258,6 +262,7 @@ export function kitConfigSchema(): Record<string, unknown> {
           interfaz: { oneOf: [{ type: 'boolean' }, list({ enum: UI_PARTS })], description: 'Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador. true = todas.' },
         },
       },
+      escenarios: { oneOf: [{ type: 'string' }, list({ type: 'string' }, { minItems: 1 })], description: 'Carpeta con los *.layout.json ("data/stages/") o la lista de layouts. Cada uno sale en escenarios/<id>/ con sus capas, objetos, vida, superficie y colisión, y pasa por las 9 pruebas. Ver docs/ESCENARIOS.md.' },
       fx: { oneOf: [{ type: 'boolean' }, list({ anyOf: [{ enum: EFFECT_NAMES }, { type: 'string' }] })], description: 'Efectos del catálogo general en fx/: true = todos, o ids, bases (polvo_correr = sus 3 tamaños) y grupos (polvo, golpe, reaccion, agua, fiesta, objetos, pantalla, clima, tecnica, ambiente). Ver docs/EFECTOS.md.' },
       audio: {
         type: 'object',
@@ -302,6 +307,8 @@ export interface KitInputs {
   equipos?: Record<string, TeamDef>;
   /** archivos de Silkscreen, para las fuentes */
   fuentes?: { regular: ArrayBuffer; bold: ArrayBuffer };
+  /** los layouts de escenarios ya leídos, por nombre de archivo */
+  escenarios?: Record<string, unknown>;
 }
 
 export interface CustomKitOptions {
@@ -462,9 +469,25 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     opts.progress?.(`interfaz: ${Object.keys((ui.interfaz as object) ?? {}).length + (ui.logo ? 2 : 0)} piezas`);
   }
 
-  if (fx || audio || Object.keys(ui).length) {
+  // escenarios oblicuos: cada layout pasa por las 9 pruebas; si una falla, el kit no sale
+  let escenarios: Record<string, string> | undefined;
+  if (parts.has('escenarios') && inputs.escenarios && Object.keys(inputs.escenarios).length) {
+    escenarios = {};
+    const malos: string[] = [];
+    for (const [nombre, layout] of Object.entries(inputs.escenarios)) {
+      const r = generarEscenario(layout);
+      for (const a of r.avisos) warnings.push(`${nombre}: ${a}`);
+      if (!r.ok) { malos.push(`${nombre}:\n    ${r.errores.join('\n    ')}`); continue; }
+      for (const a of r.archivos) files.push({ name: `escenarios/${r.id}/${a.nombre}`, bytes: a.bytes, mime: a.nombre.endsWith('.png') ? 'image/png' : a.nombre.endsWith('.json') ? 'application/json' : 'text/markdown' });
+      escenarios[r.id!] = `escenarios/${r.id}/escenario.json`;
+      opts.progress?.(`escenario ${r.id}: ${r.archivos.length} archivos, 9 pruebas en verde`);
+    }
+    if (malos.length) throw new Error(`Escenarios que no pasan las pruebas:\n  ${malos.join('\n  ')}`);
+  }
+
+  if (fx || audio || Object.keys(ui).length || escenarios) {
     const ci = files.findIndex((f) => f.name === 'CREDITOS.txt');
-    const line = 'Efectos, interfaz y sonidos: dibujados y sintetizados con código por PixelForja. No usan piezas de nadie y no piden crédito.\n';
+    const line = 'Efectos, interfaz, sonidos y escenarios: dibujados y sintetizados con código por PixelForja. No usan piezas de nadie y no piden crédito.\n';
     const prev = ci >= 0 ? new TextDecoder().decode(files[ci].bytes) : '';
     const credit = { name: 'CREDITOS.txt', bytes: new TextEncoder().encode(prev ? `${prev.trimEnd()}\n\n${line}` : line), mime: 'text/plain' };
     if (ci >= 0) files[ci] = credit; else files.push(credit);
@@ -494,6 +517,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     ...(fx ? { fx } : {}),
     ...(sm.ui || Object.keys(ui).length ? { ui: { ...((sm.ui as object) ?? {}), ...ui } } : {}),
     ...(audio ? { audio } : {}),
+    ...(escenarios ? { escenarios } : {}),
     ...(files.some((f) => f.name === 'CREDITOS.txt') ? { creditos: 'CREDITOS.txt' } : {}),
     ...(warnings.length ? { pendiente: warnings } : {}),
     notas,

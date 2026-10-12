@@ -75,3 +75,14 @@ La configuración pide además:
 - **Voces:** los 8 atletas más `locutor` y `arbitro`.
 
 Ya no queda nada en `manifest.pendiente`. Para oír todo: `audio/escuchar.html` del kit, que en el sitio está en `kit_nekketsu/audio/escuchar.html`. Detalles en [docs/INTERFAZ.md](../../INTERFAZ.md) y [docs/AUDIO.md](../../AUDIO.md).
+
+## Escenarios
+
+`escenarios/saigon_hem.layout.json` es el layout del tramo 1 del Cross Country, copiado tal cual del juego (lo escribe el juego en `data/stages/`). La configuración lo pide con `"escenarios": "escenarios/"` y el kit lo pinta en `escenarios/saigon_hem/` con sus 9 pruebas. Para ver las postales y la ficha de arte:
+
+```bash
+npm run escenario -- docs/ejemplos/nekketsu/escenarios/saigon_hem.layout.json salida --postales --ficha
+```
+
+Cómo se carga en el juego: [docs/ESCENARIOS.md](../../ESCENARIOS.md).
+

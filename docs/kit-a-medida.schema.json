@@ -400,6 +400,22 @@
         }
       }
     },
+    "escenarios": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      ],
+      "description": "Carpeta con los *.layout.json (\"data/stages/\") o la lista de layouts. Cada uno sale en escenarios/<id>/ con sus capas, objetos, vida, superficie y colisión, y pasa por las 9 pruebas. Ver docs/ESCENARIOS.md."
+    },
     "fx": {
       "oneOf": [
         {
@@ -684,9 +700,6 @@
           ]
         }
       }
-    },
-    "escenarios": {
-      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con escenarios oblicuos (lote E)."
     },
     "publico": {
       "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con público (lote C6)."

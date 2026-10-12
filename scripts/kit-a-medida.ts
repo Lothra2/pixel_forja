@@ -47,6 +47,20 @@ if (cfg!.equipos) {
   if (!existsSync(p)) fail(`equipos: no existe ${p}`);
   try { equipos = JSON.parse(readFileSync(p, 'utf8')); } catch (e) { fail(`${p}: no es un JSON válido (${(e as Error).message})`); }
 }
+// escenarios: una carpeta con *.layout.json o una lista de layouts
+let escenarios: Record<string, unknown> | undefined;
+if (cfg!.escenarios) {
+  const lista = typeof cfg!.escenarios === 'string' ? [cfg!.escenarios] : cfg!.escenarios;
+  escenarios = {};
+  for (const e of lista) {
+    const p = resolve(base, e);
+    if (!existsSync(p)) fail(`escenarios: no existe ${p}`);
+    const archivos = statSync(p).isDirectory() ? readdirSync(p).filter((n) => n.endsWith('.layout.json')).sort().map((n) => join(p, n)) : [p];
+    for (const f of archivos) {
+      try { escenarios[basename(f)] = JSON.parse(readFileSync(f, 'utf8')); } catch (er) { fail(`${f}: no es un JSON válido (${(er as Error).message})`); }
+    }
+  }
+}
 // fuentes: Silkscreen (OFL), que viene con el proyecto. También la usan el logo y la interfaz
 let fuentes: { regular: ArrayBuffer; bold: ArrayBuffer } | undefined;
 if (cfg!.ui?.fuentes || cfg!.ui?.logo || cfg!.ui?.interfaz) {
@@ -65,7 +79,7 @@ if (existsSync(out!) && readdirSync(out!).length) {
 const t0 = Date.now();
 let res: ReturnType<typeof buildCustomKit>;
 try {
-  res = buildCustomKit(cfg!, { fichas, equipos, fuentes }, { quick: args.includes('--rapido'), solo, progress: (m) => console.log(`  ${m}`) });
+  res = buildCustomKit(cfg!, { fichas, equipos, fuentes, escenarios }, { quick: args.includes('--rapido'), solo, progress: (m) => console.log(`  ${m}`) });
 } catch (e) { fail((e as Error).message); }
 rmSync(out!, { recursive: true, force: true });
 let bytes = 0;

@@ -27,7 +27,7 @@ const pngSize = (b: Buffer) => [b.readUInt32BE(16), b.readUInt32BE(20)];
 const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : [p]; });
 /** Todas las rutas a archivos que nombra el manifiesto (sin el #id de las cabecitas). */
 const refsOf = (v: unknown, out = new Set<string>()): Set<string> => {
-  if (typeof v === 'string' && /^[\w/.-]+\.(png|json|fnt|txt|wav|html)(#\w+)?$/.test(v)) out.add(v.split('#')[0]);
+  if (typeof v === 'string' && /^[\w/.-]+\.(png|json|fnt|txt|wav|html|md)(#\w+)?$/.test(v)) out.add(v.split('#')[0]);
   else if (Array.isArray(v)) v.forEach((x) => refsOf(x, out));
   else if (v && typeof v === 'object') Object.values(v).forEach((x) => refsOf(x, out));
   return out;
@@ -109,9 +109,8 @@ describe('kit a medida (lote I): configuración', () => {
   });
 
   it('lo que todavía no genera vuelve como aviso y en manifest.pendiente', () => {
-    const { files, warnings } = buildCustomKit({ ...MIN, escenarios: 'data/stages/', vehiculos: ['moto'], fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], audio: { sfx: ['trueno'], radio: ['noticias'] } }, {}, { quick: true, solo: ['cabecitas'] });
+    const { files, warnings } = buildCustomKit({ ...MIN, vehiculos: ['moto'], fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], audio: { sfx: ['trueno'], radio: ['noticias'] } }, {}, { quick: true, solo: ['cabecitas'] });
     expect(warnings).toEqual([
-      'escenarios: todavía no se genera, llega con escenarios oblicuos (lote E)',
       'vehiculos: todavía no se genera, llega con vehículos (lote D2)',
       'animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire',
       'fx: todavía no existen (se saltan): confeti_dorado',
@@ -213,11 +212,26 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     expect(m.pendiente).toBeUndefined();
   });
 
+  it('el escenario de saigon_hem sale con sus 9 pruebas en verde (lote E1)', () => {
+    expect(m.escenarios).toEqual({ saigon_hem: 'escenarios/saigon_hem/escenario.json' });
+    const e = readJson(join(out, m.escenarios.saigon_hem));
+    expect(e).toMatchObject({ id: 'saigon_hem', escala: 1, largo: 3840, franja: { atras: 200, adelante: 330 } });
+    expect(readFileSync(join(out, 'escenarios/saigon_hem/verificacion.md'), 'utf8')).toMatch(/Las 9 pruebas pasan/);
+    // las postales y la ficha son para aprobar: el kit no las lleva
+    expect(files.some((f) => f.startsWith('escenarios/saigon_hem/postales/'))).toBe(false);
+  });
+
   it('no falta ningún archivo que nombra el manifiesto, y no sobra ninguno', () => {
     const refs = refsOf(m);
+    // cada escenario nombra sus archivos en su escenario.json
+    for (const [, ej] of Object.entries<string>(m.escenarios ?? {})) {
+      const dir = ej.replace(/[^/]+$/, '');
+      for (const r of refsOf(readJson(join(out, ej)))) refs.add(dir + r);
+      refs.add(dir + 'verificacion.md');
+    }
     for (const r of refs) expect(files, r).toContain(r);
     // cada atlas nombra su imagen
-    for (const f of files.filter((n) => n.endsWith('.json') && n !== 'manifest.json')) {
+    for (const f of files.filter((n) => n.endsWith('.json') && n !== 'manifest.json' && !n.startsWith('escenarios/'))) {
       const img = readJson(join(out, f)).meta?.image;
       expect(img, f).toBeTruthy();
       expect(files, `${f} -> ${img}`).toContain(f.replace(/[^/]+$/, img));
@@ -228,8 +242,8 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas, retratos, cabecitas, armas, Thor y fuentes (54), efectos (56), logo e interfaz (32)
-    expect(pngs.length).toBe(54 + 56 + 32);
+    // atletas, retratos, cabecitas, armas, Thor y fuentes (54), efectos (56), logo e interfaz (32), escenario (17)
+    expect(pngs.length).toBe(54 + 56 + 32 + 17);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });
