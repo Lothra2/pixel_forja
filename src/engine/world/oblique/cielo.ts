@@ -43,16 +43,18 @@ function nube(L: Lienzo, cx: number, cy: number, cw: number, luz: Color, panza: 
   }
 }
 
-export function cielo(pal: Paleta, w: number, h: number, hora: Hora = 'manana', seed = 7, clima: string[] = []): Lienzo {
+export function cielo(pal: Paleta, w: number, h: number, hora: Hora = 'manana', seed = 7, clima: string[] = [], tema?: string): Lienzo {
   const L = new Lienzo(w, h, pal);
   const lluvia = clima[0] === 'aguacero' || hora === 'aguacero';
-  const fr = lluvia && hora !== 'atardecer' ? FRANJAS.tarde! : FRANJAS[hora] ?? FRANJAS.manana!;
+  // la tormenta de las azoteas: el cielo se cierra casi como de noche
+  const tormenta = lluvia && tema === 'azoteas';
+  const fr = tormenta ? (['sombra', 'asfalto', 'celeste', 'bruma'] as Color[]) : lluvia && hora !== 'atardecer' ? FRANJAS.tarde! : FRANJAS[hora] ?? FRANJAS.manana!;
   // la mañana quedó aprobada así en saigon_hem; las demás horas reparten el degradé en lo que se ve (las 200 de arriba)
   franjas(L, fr, hora === 'manana' ? h : Math.min(h, 200));
   const R = rng(seed);
   if (lluvia) {
     // capas de nubarrones que tapan el cielo: bandas onduladas que se repiten en x
-    const capas: [number, Color, Color][] = [[0.08, 'asfalto', 'asfalto_claro'], [0.26, 'asfalto_claro', 'celeste'], [0.46, 'celeste', 'cielo']];
+    const capas: [number, Color, Color][] = tormenta ? [[0.08, 'tinta', 'sombra'], [0.26, 'sombra', 'asfalto'], [0.46, 'asfalto', 'asfalto_claro']] : [[0.08, 'asfalto', 'asfalto_claro'], [0.26, 'asfalto_claro', 'celeste'], [0.46, 'celeste', 'cielo']];
     for (const [k, [y0, oscuro, claro]] of capas.entries()) {
       const amp = 5 + k * 3, base = Math.round(h * y0), per = w / (3 + k);
       for (let x = 0; x < w; x++) {
@@ -62,7 +64,27 @@ export function cielo(pal: Paleta, w: number, h: number, hora: Hora = 'manana', 
       }
     }
     // cortinas de lluvia que caen de las nubes, rayas finas inclinadas
-    for (let x = 0; x < w; x += 3) for (let y = Math.round(Math.min(h, 200) * 0.3); y < h; y++) if (grain(x, y >> 2, seed) < 0.12 && (x + y) % 7 < 2) L.p((x + Math.floor(y / 3)) % w, y, 'cielo');
+    // rayas de 4 a 6 pixeles inclinadas (la tormenta, más tupidas)
+    const dens = tormenta ? 0.05 : 0.03;
+    for (let x = 0; x < w; x++) for (let y = Math.round(Math.min(h, 200) * 0.2); y < h; y += 2) if (grain(x, y, seed) < dens) { const n = 4 + ((x + y) % 3); for (let j = 0; j < n; j++) L.p((x + Math.floor(j / 3)) % w, y + j, j === 0 ? 'celeste' : 'cielo'); }
+    return L;
+  }
+  if (hora === 'tarde') {
+    // tarde dorada: el sol bajo a la derecha con su halo y nubes largas encendidas de oro
+    franjas(L, ['celeste', 'cielo', 'cielo', 'bruma'], Math.min(h, 200));
+    const sx = Math.floor(w * 0.66), sy = Math.min(Math.floor(h * 0.5), 96);
+    for (let y = sy - 30; y <= sy + 30; y++) for (let x = sx - 40; x <= sx + 40; x++) {
+      const d = Math.hypot((x - sx) / 1.2, y - sy);
+      if (d < 9) L.p(x, y, d < 6 ? 'luz' : 'amarillo');
+      else if (d < 30 && bayer(x, y) < ((30 - d) / 30) * 0.8) L.p(x, y, d < 18 ? 'amarillo' : 'oro');
+    }
+    for (let i = 0; i < 9; i++) {
+      const cx = R() * w, cy = Math.floor(Math.min(h, 200) * (0.1 + R() * 0.45)), cw = 40 + R() * 110;
+      for (let x = Math.floor(cx - cw / 2); x < cx + cw / 2; x++) {
+        const t = (x - (cx - cw / 2)) / cw, th = Math.max(1, Math.round(Math.sin(t * Math.PI) * 3));
+        for (let j = 0; j < th; j++) L.p(((x % w) + w) % w, cy + j, j === th - 1 ? 'oro' : j === 0 ? 'luz' : 'amarillo');
+      }
+    }
     return L;
   }
   if (hora === 'atardecer') {

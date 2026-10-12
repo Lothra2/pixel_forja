@@ -250,7 +250,7 @@ export function arcoSalida(C: Lienzo, cx: number, base: number, texto = 'CỬA B
 // ------------------------------------------------------------------ el río
 
 /** Edificio colonial del malecón: repello crema, persianas verdes, techo de teja y un letrero. */
-function colonial(C: Lienzo, x: number, base: number, w: number, pisos: number, R: () => number, letra?: string) {
+export function colonial(C: Lienzo, x: number, base: number, w: number, pisos: number, R: () => number, letra?: string) {
   const h = 22 + pisos * 26, y0 = base - h;
   C.f(x, y0, w, h, 'crema'); C.vl(x, y0, h, 'cemento_claro'); C.vl(x + w - 1, y0, h, 'cemento');
   for (let k = 0; k < pisos; k++) {
@@ -271,14 +271,15 @@ function colonial(C: Lienzo, x: number, base: number, w: number, pisos: number, 
 
 /** El malecón Bạch Đằng: jardinera con seto y flores, tamarindos y edificios coloniales detrás. */
 export const malecon: PintorCerca = (C, x0, x1, base, ctx) => {
-  const R = rng(ctx.seed + 21), nombres = ['KHÁCH SẠN', 'NHÀ HÀNG', 'BẢO TÀNG', 'CÀ PHÊ'];
-  let x = x0 - 20, k = 0;
-  while (x < x1) {
-    const w = 90 + Math.floor(R() * 60);
-    colonial(C, x, base - 6, w, 2 + Math.floor(R() * 2), R, R() < 0.6 ? nombres[k % nombres.length] : undefined);
-    x += w + 20 + Math.floor(R() * 60); k++;
+  const R = rng(ctx.seed + 21);
+  // detrás de la baranda está el río abierto, con la ciudad del otro lado (en la capa lejos)
+  rioAbierto(C, x0, x1, base - 10, ctx);
+  // palmas y árboles alternados, como en el malecón Bạch Đằng
+  let alt = 0;
+  for (let ax = x0 + 30; ax < x1; ax += 80 + Math.floor(R() * 50), alt++) {
+    if (alt % 3 === 1) arbol(C, ax, base - 8, 110 + Math.floor(R() * 30), ctx.seed + ax);
+    else palmera(C, ax, base - 8, 70 + Math.floor(R() * 34), alt % 2 ? 1 : -1, ctx.seed + ax);
   }
-  for (let ax = x0 + 30; ax < x1; ax += 110 + Math.floor(R() * 60)) arbol(C, ax, base - 8, 110 + Math.floor(R() * 30), ctx.seed + ax);
   // jardinera baja con seto y flores, y la baranda de hierro
   for (let xx = x0; xx < x1; xx++) {
     for (let y = base - 22; y < base - 8; y++) C.p(xx, y, y === base - 22 ? 'menta' : grain(xx >> 1, y, 4) < 0.25 ? 'verde_oscuro' : 'verde');
@@ -286,7 +287,28 @@ export const malecon: PintorCerca = (C, x0, x1, base, ctx) => {
     C.f(xx, base - 8, 1, 8, 'cemento_claro'); if (xx % 16 === 0) C.vl(xx, base - 8, 8, 'cemento');
   }
   C.hl(x0, base - 8, x1 - x0, 'luz'); C.hl(x0, base - 1, x1 - x0, 'cemento');
+  // bolardos con cadena sobre la baranda, y un xích lô estacionado cada tanto
+  for (let bx = x0 + 12; bx < x1 - 4; bx += 40) {
+    C.f(bx, base - 16, 5, 9, 'cemento_claro'); C.vl(bx, base - 16, 9, 'luz'); C.vl(bx + 4, base - 16, 9, 'cemento'); C.hl(bx - 1, base - 17, 7, 'tinta');
+    for (let i = 5; i < 40 && bx + i < x1; i++) C.p(bx + i, base - 13 + Math.round(Math.sin(((i - 5) / 35) * Math.PI) * 3), i % 2 ? 'sombra' : 'asfalto');
+  }
+  for (let xx = x0 + 150 + Math.floor(R() * 100); xx < x1 - 60; xx += 420 + Math.floor(R() * 200)) xichLo(C, xx, base - 2);
 };
+
+/** Xích lô estacionado: el asiento de adelante con su capota y la bicicleta atrás. Base en (x, gy), mide 46 x 30. */
+export function xichLo(C: Lienzo, x: number, gy: number) {
+  const rueda = (cx: number, cy: number, r: number) => { for (let a = 0; a < 24; a++) { const t = (a / 24) * Math.PI * 2; C.p(Math.round(cx + Math.cos(t) * r), Math.round(cy + Math.sin(t) * r), 'tinta'); } C.p(cx, cy, 'cemento'); C.ln(cx - r + 1, cy, cx + r - 1, cy, 'asfalto_claro'); };
+  // asiento y capota verde oliva
+  C.f(x + 2, gy - 18, 16, 8, 'vino'); C.hl(x + 2, gy - 18, 16, 'rojo');
+  C.f(x + 1, gy - 10, 20, 3, 'azul_noche'); C.hl(x + 1, gy - 10, 20, 'azul');
+  for (let j = 0; j < 12; j++) C.hl(x + 1 + Math.floor(j / 3), gy - 30 + j, 18 - Math.floor(j / 2), j === 0 ? 'menta' : 'verde');
+  C.vl(x + 1, gy - 29, 12, 'verde_oscuro');
+  rueda(x + 4, gy - 4, 4); rueda(x + 18, gy - 4, 4);
+  // cuadro de la bici y el ciclista que no está: sillín, manubrio y la rueda de atrás
+  C.ln(x + 20, gy - 8, x + 36, gy - 12, 'azul'); C.ln(x + 30, gy - 4, x + 34, gy - 16, 'azul'); C.hl(x + 32, gy - 17, 5, 'tinta');
+  C.ln(x + 22, gy - 12, x + 24, gy - 18, 'azul'); C.hl(x + 22, gy - 19, 4, 'tinta');
+  rueda(x + 38, gy - 5, 5);
+}
 
 /** El río abierto: se ve el agua hasta la otra orilla, donde está Landmark 81 (en la capa lejos). */
 export const rioAbierto: PintorCerca = (C, x0, x1, base, ctx) => {
@@ -350,28 +372,30 @@ export const orillaThuThiem: PintorCerca = (C, x0, x1, base, ctx) => {
 
 // ------------------------------------------------------------------ azoteas
 
-const AVISOS: [string, Color, Color][] = [['KARAOKE', 'vino', 'oro'], ['KHÁCH SẠN', 'azul_noche', 'menta'], ['CÀ PHÊ', 'tinta', 'rojo'], ['NHÀ HÀNG', 'vino', 'luz'], ['PHỞ', 'tinta', 'amarillo'], ['SPA', 'azul_noche', 'salmon']];
 
 /** Azoteas vecinas detrás de la nuestra: pisos de arriba con ventanas prendidas, tanques, avisos y un café con bombillos. */
 export const azoteas: PintorCerca = (C, x0, x1, base, ctx) => {
   const R = rng(ctx.seed + 51), par = base - 16;
-  const paredes: Color[] = ['crema', 'salmon', 'menta', 'cemento_claro', 'amarillo', 'celeste'];
+  // sin rosado ni turquesa en las paredes: en la tormenta esos son los neones
+  const paredes: Color[] = ['crema', 'cemento', 'cemento_claro', 'ocre', 'celeste', 'asfalto_claro'];
   // edificios vecinos de distintos altos
   for (let x = x0 - 10, k = 0; x < x1; k++) {
     const w = 60 + Math.floor(R() * 70), h = 36 + Math.floor(R() * 56), y0 = par - h, c = paredes[(k + Math.floor(R() * 2)) % paredes.length];
     C.f(x, y0, w, h, c); C.vl(x, y0, h, 'luz'); C.vl(x + w - 1, y0, h, 'cemento'); C.hl(x, y0, w, 'cemento');
     C.speckle(x, y0, w, h, 'cemento', 0.06, x);
     for (let fy = y0 + 8; fy < par - 10; fy += 18) for (let wx = x + 6; wx < x + w - 10; wx += 14) {
-      const pr = R() < 0.4; C.f(wx, fy, 8, 10, pr ? 'oro' : 'asfalto_claro'); C.hl(wx, fy, 8, pr ? 'amarillo' : 'cemento'); if (!pr) C.p(wx + 2, fy + 3, 'cemento_claro');
+      const pr = R() < 0.62; C.f(wx, fy, 8, 10, pr ? 'oro' : 'asfalto_claro'); C.hl(wx, fy, 8, pr ? 'amarillo' : 'cemento'); if (!pr) C.p(wx + 2, fy + 3, 'cemento_claro');
       C.hl(wx - 1, fy + 10, 10, 'cemento');
     }
     // en el techo: tanque, aviso o café
     const que = R();
     if (que < 0.35) { const tx = x + 8 + Math.floor(R() * (w - 30)); C.f(tx, y0 - 16, 14, 16, 'cemento_claro'); C.vl(tx, y0 - 16, 16, 'luz'); C.vl(tx + 13, y0 - 16, 16, 'cemento'); C.hl(tx, y0 - 16, 14, 'luz'); for (let yy = y0 - 12; yy < y0; yy += 5) C.hl(tx, yy, 14, 'cemento'); }
-    else if (que < 0.7) {
-      const [t, f, l] = AVISOS[Math.floor(R() * AVISOS.length)], aw = textWidth(t) + 10, ax = x + Math.max(2, Math.floor((w - aw) / 2));
+    else if (que < 0.75) {
+      // neón sobre el techo: letras de luz sobre fondo oscuro, con el halo en la neblina
+      const [t, l] = NEONES[Math.floor(R() * NEONES.length)], aw = textWidth(t) + 10, ax = x + Math.max(2, Math.floor((w - aw) / 2));
       C.vl(ax + 3, y0 - 8, 8, 'asfalto_claro'); C.vl(ax + aw - 4, y0 - 8, 8, 'asfalto_claro');
-      C.box(ax, y0 - 22, aw, 14, f, 'asfalto'); drawText(C, ax + 5, y0 - 22, t, l);
+      halo(C, ax - 6, y0 - 28, aw + 12, 26, l);
+      C.box(ax, y0 - 22, aw, 14, 'azul_noche', l); drawText(C, ax + 5, y0 - 22, t, l);
     } else {
       // café de azotea: sombrillas y bombillos colgados
       for (let ux = x + 10; ux < x + w - 16; ux += 24) { C.vl(ux + 7, y0 - 14, 14, 'cemento'); for (let j = 0; j < 5; j++) C.hl(ux + 7 - j * 2, y0 - 18 + j, 1 + j * 4, j === 4 ? 'vino' : 'rojo'); }
@@ -379,6 +403,8 @@ export const azoteas: PintorCerca = (C, x0, x1, base, ctx) => {
     }
     x += w + (R() < 0.3 ? 8 + Math.floor(R() * 12) : 0);
   }
+  // el aguacero delante de los edificios: rayas de lluvia inclinadas, sueltas
+  for (let x = x0; x < x1; x++) for (let y = 4; y < par - 6; y += 2) if (grain(x, y, ctx.seed + 77) < 0.018) for (let j = 0; j < 5; j++) C.p(x + Math.floor(j / 3), y + j, 'cielo');
   // nuestra baranda del fondo: murito con matas, cortado en los huecos entre edificios
   const enHueco = (x: number) => (ctx.huecos ?? []).some((h) => x >= h.x0 && x < h.x1);
   for (let x = x0; x < x1; x++) {
@@ -397,6 +423,18 @@ export const azoteas: PintorCerca = (C, x0, x1, base, ctx) => {
     for (let k = 0; k < 3; k++) { const y = par - 50 + k * 14; for (let x = h.x0; x < h.x1; x++) C.p(x, y + Math.round(Math.sin(((x - h.x0) / (h.x1 - h.x0)) * Math.PI) * 4), 'sombra'); }
   }
 };
+
+/** Los neones de las azoteas: texto y color de la luz. */
+const NEONES: [string, Color][] = [['SÀI GÒN', 'salmon'], ['CÀ PHÊ', 'oro'], ['NHÀ THUỐC', 'azul'], ['BIA HƠI', 'rojo'], ['KHÁCH SẠN', 'menta'], ['KARAOKE', 'salmon'], ['PHỞ', 'rojo']];
+
+/** El halo de un neón en la neblina: tramado del color que se apaga hacia afuera. */
+function halo(C: Lienzo, x: number, y: number, w: number, h: number, c: Color) {
+  const cx = x + w / 2, cy = y + h / 2;
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const d = Math.hypot((x + i - cx) / (w / 2), (y + j - cy) / (h / 2));
+    if (d < 1 && bayer(x + i, y + j) < (1 - d) * 0.35) C.p(x + i, y + j, c);
+  }
+}
 
 // ------------------------------------------------------------------ el estadio
 

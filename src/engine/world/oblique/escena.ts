@@ -80,7 +80,7 @@ export interface Escena {
 }
 
 /** La paleta del país a la hora del layout (y con el clima de ese día, el primero de `clima`). */
-const PALETAS: Record<string, (hora: string, clima: string[]) => Paleta> = { vietnam: paletaVietnam };
+const PALETAS: Record<string, (hora: string, clima: string[], tema?: string) => Paleta> = { vietnam: paletaVietnam };
 
 /** Muros que llevan el portón de hẻm adelante cuando dejan paso: los de la calle, no los portones ni las casetas. */
 const conPortonHem = (m: { tipo?: string }) => m.tipo === undefined || m.tipo === 'muro_alto' || m.tipo === 'muro_bajo';
@@ -174,14 +174,14 @@ export function elegirCallejones(L: ObliqueLayout): Hueco[] {
 const SIN_CARA = new Set(['valla', 'tanque_agua', 'bote_bambu', 'mesas_plasticas', 'banca', 'carrito_cafe', 'carrito_che', 'puesto_banhmi', 'carro', 'moto_estacionada']);
 
 export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
-  const pal = PALETAS[L.pais]?.(L.hora, L.clima) ?? VIETNAM_MANANA;
+  const pal = PALETAS[L.pais]?.(L.hora, L.clima, L.paralaje.cerca) ?? VIETNAM_MANANA;
   const lluvia = L.clima[0] === 'aguacero' || L.hora === 'aguacero';
   const FT = L.franja.atras, D = depthOf(L), W = L.largo, Wp = W + corre(k, D);
   const huecos = elegirCallejones(L);
   const anclas: Anclas = nuevasAnclas();
 
   // cielo y ciudad lejana
-  const sky = cielo(pal, 640, 360, L.hora, seed, L.clima);
+  const sky = cielo(pal, 640, 360, L.hora, seed, L.clima, L.paralaje.cerca);
   const lejos = lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
 
   // la fila de casas, o el fondo que pida cada tema
@@ -439,13 +439,13 @@ function rioHondo(P: Lienzo, L: ObliqueLayout, x0: number, x1: number, y0: numbe
   for (let k = 0; k < ((x1 - x0) * (yEnd - y0)) / 260; k++) {
     const x = x0 + 8 + Math.floor(R() * (x1 - x0 - 24)), y = y0 + 2 + Math.floor(R() * (yEnd - y0 - 4)), len = 4 + Math.floor(R() * 10);
     if (y < D && !waterAt(L, x, y)) continue;
-    P.hl(x, y, len, R() < 0.25 ? 'luz' : 'cielo'); if (R() < 0.5) P.hl(x + 3, y + 1, Math.max(2, len - 5), 'celeste');
+    P.hl(x, y, len, R() < 0.25 ? 'luz' : L.hora === 'tarde' && R() < 0.5 ? 'oro' : 'cielo'); if (R() < 0.5) P.hl(x + 3, y + 1, Math.max(2, len - 5), 'celeste');
   }
   // jacintos sueltos (los que bajan con la corriente van en vida)
   for (let k = 0; k < (x1 - x0) / 120; k++) {
     const cx = x0 + 12 + Math.floor(R() * (x1 - x0 - 24)), cy = y0 + 8 + Math.floor(R() * Math.max(1, yEnd - y0 - 16));
     if (cy < D && !waterAt(L, cx, cy)) continue;
-    P.d(cx, cy + 1, 6, 'verde_oscuro', 0.55); P.d(cx, cy, 5, 'verde', 0.55); P.d(cx - 2, cy - 1, 2.5, 'menta', 0.6); P.p(cx + 1, cy - 3, 'salmon'); P.p(cx + 2, cy - 3, 'celeste');
+    jacinto(P, cx, cy, 6 + Math.floor(R() * 8), seed + k);
   }
 }
 
@@ -492,6 +492,23 @@ function charcosConReflejo(P: Lienzo, C: Lienzo, L: ObliqueLayout, k: number, se
       // brillo: rayitas horizontales de luz, como el agua que tiembla
       P.p(x, y, (y + i) % 3 === 0 && grain(x >> 2, y, seed + i) < 0.3 ? 'luz' : col);
     }
+  }
+}
+
+/**
+ * Una isla de jacintos de agua (lục bình): hojas redondas brillantes en manojos, con espigas de flor lila que asoman.
+ * `r` es el radio de la isla; va aplastada como todo lo que flota.
+ */
+function jacinto(P: Lienzo, cx: number, cy: number, r: number, seed: number) {
+  const R = rng(seed);
+  P.d(cx + 1, cy + 2, r + 1, 'verde_oscuro', 0.45);
+  for (let i = 0; i < r * 1.6; i++) {
+    const a = R() * Math.PI * 2, t = Math.sqrt(R()) * r, x = Math.round(cx + Math.cos(a) * t), y = Math.round(cy + Math.sin(a) * t * 0.45);
+    P.d(x, y, 2 + R() * 1.5, 'verde', 0.7); P.p(x - 1, y - 1, 'menta');
+  }
+  for (let i = 0; i < Math.max(1, r / 3); i++) {
+    const x = Math.round(cx + (R() - 0.5) * r * 1.4), y = Math.round(cy + (R() - 0.5) * r * 0.5) - 2;
+    P.p(x, y - 1, 'salmon'); P.p(x, y - 2, 'celeste'); P.p(x + 1, y - 1, 'celeste'); P.p(x, y, 'verde_oscuro');
   }
 }
 

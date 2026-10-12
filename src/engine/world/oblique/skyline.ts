@@ -12,8 +12,9 @@ export type Skyline = (typeof SKYLINES)[number];
 /** Los colores de la silueta: cuerpo, ventanas, el lado en sombra y el detalle (antena, foco). */
 export interface Tonos { cuerpo: Color; ventana: Color; sombra: Color; detalle: Color; ventanas: number }
 export function tonosDe(hora: string, lluvia: boolean): Tonos {
-  if (lluvia) return { cuerpo: 'asfalto_claro', ventana: 'oro', sombra: 'asfalto', detalle: 'rojo', ventanas: 0.25 };
+  if (lluvia) return { cuerpo: 'asfalto_claro', ventana: 'oro', sombra: 'asfalto', detalle: 'rojo', ventanas: 0.45 };
   if (hora === 'mediodia') return { cuerpo: 'cemento_claro', ventana: 'cielo', sombra: 'cemento', detalle: 'rojo', ventanas: 0.6 };
+  if (hora === 'tarde') return { cuerpo: 'celeste', ventana: 'oro', sombra: 'cielo', detalle: 'rojo', ventanas: 0.35 };
   if (hora === 'atardecer') return { cuerpo: 'celeste', ventana: 'oro', sombra: 'azul_noche', detalle: 'rojo', ventanas: 0.35 };
   return { cuerpo: 'celeste', ventana: 'cielo', sombra: 'azul', detalle: 'rojo', ventanas: 0.7 };
 }
@@ -57,6 +58,18 @@ function torre(L: Lienzo, x: number, gy: number, w: number, h: number, R: () => 
   if (R() < 0.4) L.vl(x + Math.floor(w / 2), gy - h - 6, 6, T.cuerpo);
 }
 
+/** El ferry del río: casco largo, la cabina de dos pisos con ventanas y la bandera. Escala `k`. */
+function ferry(L: Lienzo, x: number, gy: number, T: Tonos, k = 1) {
+  const w = Math.round(46 * k), h = Math.round(5 * k);
+  L.f(x, gy - h, w, h, 'luz'); L.hl(x, gy - h, w, 'cemento_claro'); L.hl(x + 2, gy - 1, w - 4, T.sombra);
+  L.f(x + Math.round(6 * k), gy - h - Math.round(7 * k), Math.round(30 * k), Math.round(7 * k), 'crema');
+  L.f(x + Math.round(10 * k), gy - h - Math.round(12 * k), Math.round(20 * k), Math.round(5 * k), 'azul');
+  for (let i = x + Math.round(8 * k); i < x + Math.round(34 * k); i += 3) L.p(i, gy - h - Math.round(4 * k), T.ventana === 'oro' ? 'oro' : 'azul_noche');
+  L.vl(x + Math.round(28 * k), gy - h - Math.round(18 * k), Math.round(6 * k), 'cemento'); L.f(x + Math.round(29 * k), gy - h - Math.round(18 * k), 3, 2, 'rojo');
+  // la estela
+  L.hl(x + w, gy - 1, Math.round(10 * k), 'luz'); L.hl(x + w + 3, gy, Math.round(6 * k), 'cielo');
+}
+
 /** Grúa de construcción. */
 function grua(L: Lienzo, x: number, gy: number, h: number, T: Tonos) {
   for (let v = 0; v < h; v++) { L.p(x, gy - v, T.cuerpo); L.p(x + 2, gy - v, T.cuerpo); if (v % 3 === 0) L.p(x + 1, gy - v, T.cuerpo); }
@@ -95,6 +108,9 @@ export function saigonLandmark81(pal: Paleta, w: number, h: number, seed = 81, T
   landmark81(L, Math.floor(w * 0.55), gy, Math.min(h - 4, 166), T, 34);
   bitexco(L, Math.floor(w * 0.18), gy, Math.min(h - 40, 70), T, 0.8);
   grua(L, Math.floor(w * 0.82), gy - 16, 50, T);
+  // el ferry y un barco de carga del otro lado, en la línea del agua
+  ferry(L, Math.floor(w * 0.34), gy - 3, T);
+  ferry(L, Math.floor(w * 0.78), gy - 2, T, 0.7);
   // la orilla de enfrente: árboles bajos de Thủ Thiêm
   // los árboles dan la vuelta por el borde: así el trozo se repite sin salto
   for (let x = 0; x < w; x += 5) { const r = 3 + ((x * 13) % 4); for (const dx of [-w, 0, w]) L.d(x + 2 + dx, gy - 6, r, 'verde_oscuro', 0.7); }
@@ -110,6 +126,18 @@ export function saigonBitexco(pal: Paleta, w: number, h: number, seed = 81, T: T
   ciudad(L, R, T, 1.4);
   bitexco(L, Math.floor(w * 0.42), gy, Math.min(h - 4, 158), T, 1.8);
   landmark81(L, Math.floor(w * 0.85), gy, Math.min(h - 40, 110), T, 18);
+  if (T.ventana === 'oro') {
+    // de tormenta: el filo de la Bitexco en luz turquesa, y avisos de neón chiquitos en las torres
+    const bx = Math.floor(w * 0.42), hw = Math.round(10 * 1.8), cx = bx + hw + 2, bh = Math.min(h - 4, 158);
+    for (let v = 4; v < bh - 4; v++) { const t = v / bh, ww = Math.round(hw * Math.sin(Math.PI * (0.12 + t * 0.78)) ** 0.7); L.p(cx - ww, gy - 1 - v, 'menta'); if (v % 9 === 0) L.hl(cx - ww + 1, gy - 1 - v, ww * 2 - 2, 'azul'); }
+    const NE: Color[] = ['salmon', 'rojo', 'menta', 'azul', 'oro'];
+    for (let x = 12, i = 0; x < w - 30; x += 70 + Math.floor(R() * 60), i++) {
+      if (Math.abs(x - cx) < 40) continue;
+      const c = NE[i % NE.length], y = gy - 30 - Math.floor(R() * 40), vw = 14 + Math.floor(R() * 12);
+      for (let yy = y - 3; yy < y + 8; yy++) for (let xx = x - 3; xx < x + vw + 3; xx++) if ((xx + yy) % 3 === 0) L.p(xx, yy, c);
+      L.f(x, y, vw, 5, 'azul_noche'); for (let xx = x + 1; xx < x + vw - 1; xx += 2) L.p(xx, y + 2, c); L.hl(x, y, vw, c); L.hl(x, y + 4, vw, c);
+    }
+  }
   return L;
 }
 

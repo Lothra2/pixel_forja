@@ -87,6 +87,29 @@ export const VIETNAM_TARDE_AGUACERO: Paleta = {
   azul_noche: '#27354d', canal: '#4f6872', oro: '#f2b33a', bruma: '#8b8f9c',
 };
 
+/** Vietnam en la tarde dorada: el sol bajo pinta todo de miel, el cielo de lavanda a durazno y el río de lila con oro. */
+export const VIETNAM_TARDE_DORADA: Paleta = {
+  tinta: '#231a26', sombra: '#45333f', asfalto: '#6a5560', asfalto_claro: '#8c7478',
+  cemento: '#b89c8e', cemento_claro: '#e2c6a8', crema: '#f6e0b8', luz: '#fff4d6',
+  amarillo: '#ffd56a', ocre: '#d4943c', terracota: '#b65a34', rojo: '#e0402e',
+  vino: '#862a2e', salmon: '#e8689a', menta: '#9cc9a0', verde: '#4f8a48',
+  verde_oscuro: '#2c5634', celeste: '#93a6d0', cielo: '#f6d9a2', azul: '#4c66a0',
+  azul_noche: '#2c3560', canal: '#6f8fae', oro: '#ffb43a', bruma: '#f2b56a',
+};
+
+/**
+ * Las azoteas bajo el aguacero de la tarde: la tormenta oscurece todo como de noche, las ventanas se prenden y los
+ * neones de la ciudad brillan en la neblina. Rosado, turquesa, rojo y azul son los neones.
+ */
+export const VIETNAM_TORMENTA: Paleta = {
+  tinta: '#14131c', sombra: '#262635', asfalto: '#353646', asfalto_claro: '#4d5062',
+  cemento: '#686c80', cemento_claro: '#8a8fa4', crema: '#aaa7a6', luz: '#e8eaf2',
+  amarillo: '#e8c45a', ocre: '#a8763a', terracota: '#8a4a32', rojo: '#ff3d4a',
+  vino: '#5a2032', salmon: '#ff5aa8', menta: '#5ce0d8', verde: '#3f6a52',
+  verde_oscuro: '#22392f', celeste: '#56637f', cielo: '#8a9ab8', azul: '#4a72d8',
+  azul_noche: '#1e2640', canal: '#3d5568', oro: '#ffc246', bruma: '#454e68',
+};
+
 /** Vietnam al atardecer: el cielo de violeta a durazno y naranja, todo con la luz cálida de abajo. */
 export const VIETNAM_ATARDECER: Paleta = {
   tinta: '#1d1424', sombra: '#3b2640', asfalto: '#54404f', asfalto_claro: '#7d6270',
@@ -98,8 +121,10 @@ export const VIETNAM_ATARDECER: Paleta = {
 };
 
 /** La paleta del estilo vietnam para una hora y un clima. */
-export function paletaVietnam(hora: string, clima: string[] = []): Paleta {
+export function paletaVietnam(hora: string, clima: string[] = [], tema?: string): Paleta {
+  if (tema === 'azoteas' && clima[0] === 'aguacero') return VIETNAM_TORMENTA;
   if (hora === 'mediodia') return VIETNAM_MEDIODIA;
+  if (hora === 'tarde' && clima[0] !== 'aguacero') return VIETNAM_TARDE_DORADA;
   if (hora === 'tarde' || hora === 'aguacero' || hora === 'nublado' || clima[0] === 'aguacero') return hora === 'manana' ? VIETNAM_MANANA : VIETNAM_TARDE_AGUACERO;
   if (hora === 'atardecer') return VIETNAM_ATARDECER;
   return VIETNAM_MANANA;
@@ -108,6 +133,8 @@ export function paletaVietnam(hora: string, clima: string[] = []): Paleta {
 /** Para qué sirven los colores del cielo según la hora (el resto de los usos no cambia). */
 export const USO_CIELO: Record<string, Partial<Record<Color, string>>> = {
   mediodia: { celeste: 'cielo alto, pared celeste', cielo: 'cielo bajo, vidrio que brilla', bruma: 'calima del mediodía', canal: 'agua del río, color oliva' },
+  tormenta: { salmon: 'neón rosado', menta: 'neón turquesa', rojo: 'neón rojo', azul: 'neón azul', oro: 'ventanas encendidas', cielo: 'la lluvia', bruma: 'la neblina' },
+  tarde_dorada: { celeste: 'lavanda del cielo alto y el agua', cielo: 'cielo de miel', bruma: 'horizonte dorado', canal: 'el río', oro: 'el sol en el agua y las ventanas' },
   tarde: { celeste: 'nubes de aguacero', cielo: 'claros entre nubes', bruma: 'cortina de lluvia, ciudad lejana', canal: 'charcos', oro: 'ventanas encendidas' },
   atardecer: { celeste: 'violeta del cielo alto', cielo: 'durazno del cielo', bruma: 'naranja del horizonte', terracota: 'pista roja', oro: 'luz del sol bajo y reflectores' },
 };

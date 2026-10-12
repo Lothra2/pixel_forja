@@ -23,8 +23,8 @@ export const corre = (k: number, y: number) => Math.round(k * y);
 /** Un tono más claro de la paleta (la cara que da a la luz). */
 export const MAS_CLARO: Record<Color, Color> = {
   tinta: 'sombra', sombra: 'asfalto', asfalto: 'asfalto_claro', asfalto_claro: 'cemento', cemento: 'cemento_claro', cemento_claro: 'crema', crema: 'luz', luz: 'luz',
-  amarillo: 'crema', ocre: 'amarillo', terracota: 'salmon', rojo: 'salmon', vino: 'rojo', salmon: 'crema', menta: 'cielo', verde: 'menta',
-  verde_oscuro: 'verde', celeste: 'cielo', cielo: 'luz', azul: 'celeste', azul_noche: 'azul', canal: 'menta', oro: 'amarillo', bruma: 'luz',
+  amarillo: 'crema', ocre: 'amarillo', terracota: 'ocre', rojo: 'oro', vino: 'rojo', salmon: 'crema', menta: 'cielo', verde: 'menta',
+  verde_oscuro: 'verde', celeste: 'cielo', cielo: 'luz', azul: 'celeste', azul_noche: 'azul', canal: 'celeste', oro: 'amarillo', bruma: 'luz',
 };
 /** Un tono más oscuro (el pie de una cara, la sombra). */
 export const MAS_OSCURO: Record<Color, Color> = {
@@ -284,10 +284,13 @@ export function cantoSobreHueco(P: Lienzo, F: Lienzo, L: ObliqueLayout, k: numbe
     for (let r = 0; r < 8; r++) for (let x = 0; x < p.x1 - p.x0; x++) {
       const y = p.y1 + r;
       if (y >= P.h) continue;
-      P.p(c0 + x, y, r === 0 ? 'cemento_claro' : r === 7 ? 'sombra' : x % 10 === 3 && (r === 2 || r === 5) ? 'cemento_claro' : 'asfalto');
+      // viga de hierro en I, oxidada: ala de arriba con luz, alma con remaches y el ala de abajo en sombra
+      P.p(c0 + x, y, r === 0 ? 'ocre' : r === 1 ? 'terracota' : r === 7 ? 'tinta' : r === 6 ? 'vino' : x % 8 === 3 && (r === 3 || r === 4) ? 'ocre' : grain(c0 + x, y, 3) < 0.15 ? 'vino' : 'terracota');
     }
+    // el techo de la viga (lo que se pisa): óxido con chapa estriada, para que se lea encima del vacío
+    for (let y = p.y0; y < p.y1; y++) for (let x = p.x0; x < p.x1; x++) P.p(x + corre(k, y), y, y === p.y0 ? 'ocre' : (x + y) % 4 === 0 ? 'ocre' : grain(x, y, 7) < 0.2 ? 'vino' : 'terracota');
     // la cara izquierda del canto (da a la luz)
-    for (let y = p.y0; y < p.y1; y++) for (let r = 0; r < 8; r++) P.p(p.x0 + corre(k, y) - 1, y + r, r === 0 ? 'luz' : 'asfalto_claro');
+    for (let y = p.y0; y < p.y1; y++) for (let r = 0; r < 8; r++) P.p(p.x0 + corre(k, y) - 1, y + r, r === 0 ? 'amarillo' : 'ocre');
   }
 }
 
