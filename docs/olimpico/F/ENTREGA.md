@@ -1,6 +1,6 @@
 # Lote F: efectos
 Estado: entregado
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/12
 Fecha: 2026-10-12
 
 ## Qué se hizo
