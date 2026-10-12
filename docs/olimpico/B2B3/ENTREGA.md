@@ -1,6 +1,6 @@
 # Lote B2 y B3: recorridos y trepar
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrir el PR)
+PR: https://github.com/Lothra2/pixel_forja/pull/18
 Fecha: 2026-10-12
 
 ## Qué se hizo
