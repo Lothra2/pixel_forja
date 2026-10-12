@@ -7,7 +7,8 @@ import { viewsForRows, frameDataOf, pivotOf, FRAME_DATA_FIELDS, type FrameData, 
 import { packAtlas, atlasFrameName } from '../export/atlas';
 import { portraitSheet, headIcon, HEAD_ICON, PORTRAIT_BIG_SCALE } from './portraits';
 import { dressForPack, variantForPack } from '../sheet/wardrobe';
-import type { CellSize, HumanFicha } from '../sheet/ficha';
+import type { CellSize, HumanFicha, AnimalFicha } from '../sheet/ficha';
+import { animsFor } from '../anim/registry';
 import { familyFicha, FAMILY } from '../rpg/family';
 import { heroFicha, heroCell, HEROES } from '../rpg/heroes';
 import { ATHLETICS_PREMIUM } from '../anim/athletics';
@@ -43,7 +44,7 @@ export const DEFAULT_SPORT_PACKS = SPORT_PACK_NAMES.filter((p) => p !== 'calle')
 export interface SportsKitOptions {
   /** atletas por id (minúsculas, números y _). Sin esto, la familia con ropa de calle y los héroes */
   athletes?: Record<string, HumanFicha>;
-  /** celda de un atleta en particular (Hulk va en 64); los demás usan `cell` */
+  /** celda de un atleta en particular (Hulk va en 64); si no, la de su ficha (`cell`) o la del kit */
   cells?: Record<string, CellSize>;
   packs?: SportPack[];
   cell?: CellSize;
@@ -67,6 +68,8 @@ export interface SportsKitOptions {
   cabecitas?: boolean;
   /** las armas del piso (pelea callejera) en objetos/armas.png + .json, con su entrada en `objetos` */
   objetos?: boolean;
+  /** animales (una mascota como Thor): todas sus animaciones en animales/<id>.png + .json, con su entrada en `animales` */
+  animales?: Record<string, AnimalFicha>;
   progress?: (msg: string) => void;
 }
 
@@ -156,7 +159,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
   type AthleteEntry = {
     nombre: string; celda: number; pivote: [number, number];
     deportes?: Record<string, Record<string, SportAnimEntry>>; packs?: Record<string, PackEntry>;
-    vestuario?: Record<string, string>; retratos?: Record<string, unknown>; cabecita?: string;
+    vestuario?: Record<string, string>; retratos?: Record<string, unknown>; cabecita?: string; numero?: string;
   };
   const out: Record<string, AthleteEntry> = {};
   const heads: Raster[] = [];
@@ -166,7 +169,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     if (c) credits.add(c);
     const sports: Record<string, Record<string, SportAnimEntry>> = {};
     const atlases: Record<string, PackEntry> = {};
-    const C = cells[id] ?? cell;
+    // la celda: la que se pidió para ese atleta, la de su ficha (un gigante va en 64) o la del kit
+    const C = cells[id] ?? athletes[id].cell ?? cell;
     for (const pack of packs) {
       // vestuario por pack: la ficha puede traer una variante de ropa para este pack
       const fp = dressForPack(f, pack);
@@ -199,6 +203,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
       log(`${id}/${pack}: ${names.length} animaciones`);
     }
     const entry: AthleteEntry = { nombre: f.name || id, celda: C, pivote: [C / 2, C - 2] };
+    // el número de la camiseta, para el HUD (de espalda el pelo largo lo puede tapar)
+    if (f.outfit.number) entry.numero = f.outfit.number;
     if (opts.atlas) entry.packs = atlases; else entry.deportes = sports;
     if (f.wardrobe) entry.vestuario = Object.fromEntries(packs.map((p) => [p, variantForPack(f, p) ?? 'ficha']));
     if (opts.retratos) {
@@ -226,6 +232,31 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     for (const o of Object.values(objetos)) o.atlas = 'objetos/armas.json';
     manifest.objetos = objetos;
     manifest.notas_objetos = 'objetos: armas del piso. Cuadros <id>_<anim>_<cuadro>. quieto: la base en el pivote de la celda (como un personaje). girando: centrado. mano (16 cuadros): el agarre en el centro de la celda, el cuadro k girado k * 22.5 grados (0 = como en el piso). Para dibujar el arma en la mano usa el dato `arma` [x, y, angulo, detras] de la animación: elige <id>_mano_<k> con k = round(angulo / 22.5) % 16 y pon el centro de la celda en (x, y) desde el pivote del personaje; si detras = 1, dibújala antes que al personaje.';
+  }
+  if (opts.animales && Object.keys(opts.animales).length) {
+    // las mascotas: un atlas por animal con todas sus animaciones, en las mismas filas que los atletas
+    const animals: Record<string, unknown> = {};
+    for (const [id, f] of Object.entries(opts.animales)) {
+      if (!/^[a-z0-9_]+$/.test(id)) throw new Error(`id de animal inválido: "${id}" (usa minúsculas, números y _)`);
+      const entries: Record<string, SportAnimEntry> = {};
+      const frames: { name: string; raster: Raster }[] = [];
+      const blank = createRaster(cell, cell);
+      for (const a of animsFor(f).map((x) => x.name)) {
+        const clips = views.map((v) => renderClip(f, cell, a, v, {}));
+        const side = views.includes('side') ? undefined : renderClip(f, cell, a, 'side', {});
+        const n = Math.max(...clips.map((c) => c.frames.length));
+        clips.forEach((cl, r) => { for (let i = 0; i < n; i++) frames.push({ name: atlasFrameName(a, rows[r], i), raster: cl.frames[i] ?? blank }); });
+        const entry: SportAnimEntry = { cuadros: n, fps: clips[0].fps, loop: clips[0].loop, ...motionOf8(clips, 1, side) };
+        if (fields.length) Object.assign(entry, frameDataOf(clips, fields));
+        entries[a] = entry;
+      }
+      const { png, json } = packAtlas(frames, cell, `${id}.png`, pivotOf(cell));
+      files.push({ name: `animales/${id}.png`, bytes: encodePng(png), mime: 'image/png' });
+      files.push({ name: `animales/${id}.json`, bytes: enc.encode(JSON.stringify(json)), mime: 'application/json' });
+      animals[id] = { nombre: f.name || id, celda: cell, pivote: [cell / 2, cell - 2], atlas: `animales/${id}.json`, imagen: `animales/${id}.png`, anims: entries };
+      log(`animal ${id}: ${Object.keys(entries).length} animaciones`);
+    }
+    manifest.animales = animals;
   }
   if (credits.size) {
     files.push({ name: 'CREDITOS.txt', bytes: enc.encode([...credits].join('\n\n')), mime: 'text/plain' });

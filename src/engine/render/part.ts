@@ -6,6 +6,7 @@ export interface Px { mat: string; slot: number }
 export class Part {
   readonly px = new Map<number, Px>();
   static key(x: number, y: number) { return (y + 2048) * 8192 + (x + 2048); }
+  static unkey(k: number): [number, number] { return [(k % 8192) - 2048, Math.floor(k / 8192) - 2048]; }
   set(x: number, y: number, mat: string, slot = BASE) { this.px.set(Part.key(x, y), { mat, slot }); }
   has(x: number, y: number) { return this.px.has(Part.key(x, y)); }
   get(x: number, y: number) { return this.px.get(Part.key(x, y)); }

@@ -491,3 +491,39 @@ test('pelea callejera: levantar con carga, arma en la mano y sus datos', async (
   await page.screenshot({ path: `${shots}/${tag}_60_pelea_callejera.png`, fullPage: true });
   expect(errors).toEqual([]);
 });
+
+test('equipos: gakuran, brazalete y letras en el pecho en Estilo, y el gigante abre en su celda', async ({ page }, info) => {
+  test.setTimeout(180000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  // Kenji (Instituto Nekketsu): gakuran abierto con brazalete
+  await page.getByTestId('open-ficha').setInputFiles('docs/ejemplos/nekketsu/fichas/kenji.ficha.json');
+  await idle(page);
+  await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });
+  const before = await page.getByTestId('preview-big').evaluate((c: HTMLCanvasElement) => c.toDataURL());
+  await page.getByTestId('step-style').click();
+  const cut = page.getByTestId('jacket-cut');
+  await expect(cut.getByRole('button', { name: /Gakuran/ })).toHaveAttribute('aria-pressed', 'true');
+  await cut.getByRole('button', { name: 'Casual' }).click();
+  await idle(page);
+  await page.getByTestId('step-animate').click();
+  await idle(page);
+  await expect.poll(() => page.getByTestId('preview-big').evaluate((c: HTMLCanvasElement) => c.toDataURL())).not.toBe(before);
+  // Rick (Familia GG): "GG" en el pecho (Abrir ficha está en Inicio)
+  await page.goto('/');
+  await page.getByTestId('open-ficha').setInputFiles('docs/ejemplos/nekketsu/fichas/rick.ficha.json');
+  await idle(page);
+  await page.getByTestId('step-style').click();
+  await expect(page.getByTestId('chest-text')).toHaveValue('GG');
+  await page.getByTestId('chest-text').fill('NK');
+  await expect(page.getByTestId('chest-text')).toHaveValue('NK');
+  await page.screenshot({ path: `${shots}/${tag}_70_equipos_estilo.png`, fullPage: true });
+  // Goro, el gigante: abre en celda 64
+  await page.goto('/');
+  await page.getByTestId('open-ficha').setInputFiles('docs/ejemplos/nekketsu/fichas/goro.ficha.json');
+  await idle(page);
+  await expect(page.getByTestId('cell-size').getByRole('button', { name: '64' })).toHaveAttribute('aria-pressed', 'true');
+  expect(errors).toEqual([]);
+});

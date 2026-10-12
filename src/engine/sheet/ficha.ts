@@ -130,6 +130,19 @@ export interface HumanFicha extends FichaBase {
     collar?: 'redondo' | 'v' | 'polo';
     /** chaqueta abierta encima (color); null o sin valor, no hay */
     jacket?: string | null;
+    /** corte de la chaqueta: casual (la de siempre) o gakuran (escolar japonesa: cuello alto y botones dorados) */
+    jacketCut?: 'casual' | 'gakuran';
+    /** chaqueta cerrada: tapa la camiseta (el gakuran abotonado) */
+    jacketClosed?: boolean;
+    /** mangas de la chaqueta (sin valor: largas). Sin mangas se ven las de la camiseta */
+    jacketSleeves?: 'none' | 'short' | 'long';
+    /** color de los botones del gakuran (sin valor: dorado) */
+    buttons?: string;
+    /** brazalete en la parte de arriba del brazo cercano (color): capitán de fútbol, distintivo de equipo */
+    armband?: string | null;
+    /** letras en el pecho, hasta 3 (las iniciales del equipo). Con letras, el número va solo atrás */
+    chestText?: string | null;
+    chestTextColor?: string;
     /** calzado */
     shoes?: 'tenis' | 'guayos' | 'botas' | 'descalzo';
     /** armadura o traje de RPG encima de la ropa */
@@ -164,6 +177,8 @@ export interface HumanFicha extends FichaBase {
   avatar?: Avatar;
   headMode?: 'avatar' | 'image';
   physics: { hairLag: number };
+  /** celda en la que se dibuja si no se pide otra (un gigante va en 64). Sin valor: la que pida el kit */
+  cell?: CellSize;
   /**
    * Vestuario por pack: variantes de ropa con nombre (calle, bañador, judogi...) y cuál usa cada pack del kit.
    * Lo que la variante no dice queda como en la ficha. Ver sheet/wardrobe.ts

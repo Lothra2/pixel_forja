@@ -22,3 +22,25 @@ npm run deportes -- salida/kit_calle --fichas mis_fichas --deportes calle \
 ```
 
 Sale `atletas/rick/calle.png + .json` con las 26 animaciones de beat 'em up (levantar, llevar, lanzar, agarres, armas) y `objetos/armas.png + .json` con las 19 armas del piso. Cómo se compone lo levantado (`carga`) y el arma en la mano (`arma`): [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#pelea-callejera---deportes-calle).
+
+## Equipos (lote C1): Familia GG e Instituto Nekketsu
+
+En [`fichas/`](fichas/) están los 8 atletas y la mascota, listos para abrir y editar en el estudio (Inicio, Abrir ficha):
+
+| Equipo | Atletas | Uniforme |
+|---|---|---|
+| Familia GG | `rick` (7), `steph` (28), `sophie` (15), `alana` (21) | Su look de siempre en su color: Rick azul, Steph rosado, Sophie verde, Alana fucsia. "GG" dorado en el pecho y el número dorado atrás. Alana trae además el vestuario "Mickey" |
+| Instituto Nekketsu | `kenji`, `ryu`, `goro` (gigante, celda 64), `tetsu` | Gakuran azul marino muy oscuro con botones dorados y brazalete rojo. Kenji lo lleva abierto sobre camiseta blanca, Goro sin mangas |
+| Mascota | `thor` | El bóxer con todas sus animaciones de mascota |
+
+Todo sale de campos generales de la ficha (`jacketCut`, `jacketClosed`, `jacketSleeves`, `armband`, `chestText`, `cell`), explicados en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#equipos-uniformes-gigantes-y-mascota).
+
+El kit de los dos equipos con todo lo del juego:
+
+```bash
+npm run deportes -- salida/kit_equipos --fichas docs/ejemplos/nekketsu/fichas \
+  --deportes atletismo,natacion,voley,tenis,pelea,futbol,calle \
+  --filas right,down_right,up_right,down,up --datos --atlas --retratos --cabecitas --objetos
+```
+
+Sale cada atleta en su celda (Goro en 64), con su `numero` en el manifiesto, y Thor en `animales/thor.png + .json`.

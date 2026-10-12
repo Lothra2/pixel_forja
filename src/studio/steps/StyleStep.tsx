@@ -133,6 +133,42 @@ export function StyleStep(p: Props) {
             </label>
           )}
         </div>
+        {h.outfit.jacket && (
+          <>
+            <Seg label={t('jacketCut')} value={h.outfit.jacketCut ?? 'casual'} set={(v) => p.setOutfit('jacketCut', v as HumanFicha['outfit']['jacketCut'])} opts={(['casual', 'gakuran'] as const).map((v) => [v, t(`jacketCut_${v}`)])} testid="jacket-cut" />
+            <Seg label={t('jacketSleeves')} value={h.outfit.jacketSleeves ?? 'long'} set={(v) => p.setOutfit('jacketSleeves', v as HumanFicha['outfit']['jacketSleeves'])} opts={(['none', 'short', 'long'] as const).map((v) => [v, t(`sleeves_${v}`)])} />
+            <div className="row">
+              <Toggle label={t('jacketClosed')} on={!!h.outfit.jacketClosed} set={(v) => p.setOutfit('jacketClosed', v)} />
+              {h.outfit.jacketCut === 'gakuran' && (
+                <label className="swatch">
+                  <input type="color" value={h.outfit.buttons ?? '#e2b23c'} onChange={(e) => p.setOutfit('buttons', e.target.value)} />
+                  {t('buttons')}
+                </label>
+              )}
+            </div>
+          </>
+        )}
+        <div className="row">
+          <Toggle label={t('armband')} on={!!h.outfit.armband} set={(v) => p.setOutfit('armband', v ? '#d42a2a' : null)} />
+          {h.outfit.armband && (
+            <label className="swatch">
+              <input type="color" value={h.outfit.armband} onChange={(e) => p.setOutfit('armband', e.target.value)} />
+              {t('armbandColor')}
+            </label>
+          )}
+        </div>
+        <div className="row">
+          <label className="field narrow">
+            {t('chestText')}
+            <input value={h.outfit.chestText ?? ''} maxLength={3} onChange={(e) => p.setOutfit('chestText', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || null)} data-testid="chest-text" />
+          </label>
+          {h.outfit.chestText && (
+            <label className="swatch">
+              <input type="color" value={h.outfit.chestTextColor ?? '#f2c230'} onChange={(e) => p.setOutfit('chestTextColor', e.target.value)} />
+              {t('chestTextColor')}
+            </label>
+          )}
+        </div>
         <Seg label={t('shoesKind')} value={h.outfit.shoes ?? 'tenis'} set={(v) => p.setOutfit('shoes', v as HumanFicha['outfit']['shoes'])} opts={(['tenis', 'guayos', 'botas', 'descalzo'] as const).map((v) => [v, t(`shoes_${v}`)])} />
         <Seg label={t('socks')} value={h.outfit.socks} set={(v) => p.setOutfit('socks', v as HumanFicha['outfit']['socks'])} opts={(['none', 'low', 'knee'] as const).map((v) => [v, t(`socks_${v}`)])} />
         <div className="row">

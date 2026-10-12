@@ -3,14 +3,15 @@
  *   npx tsx scripts/sports-kit.ts <carpeta> [--rapido] [--celda 32|48|64] [--deportes atletismo,natacion,voley,tenis,pelea] [--fichas <carpeta>]
  *     [--filas right,down_right,up_right,down,up] [--datos] [--atlas] [--retratos] [--cabecitas] [--objetos]
  * --deportes calle: la pelea callejera (levantar, lanzar, agarres, armas). --objetos: las armas del piso en un atlas.
- * Con --fichas, cada `<id>.ficha.json` del estudio se agrega como atleta (y reemplaza a la familia).
+ * Con --fichas, cada `<id>.ficha.json` del estudio se agrega como atleta (y reemplaza a la familia). Un animal (la
+ * mascota) sale con todas sus animaciones en animales/<id>.png + .json. Un gigante sale en la celda de su ficha.
  * --filas: solo esas filas, en ese orden. --datos: cajas, manos, cabeza y pies por cuadro. --atlas: un atlas por pack
  * (JSON Hash de TexturePacker). --retratos: 7 expresiones en 40 y 96. --cabecitas: ui/cabecitas.png de 12 x 12.
  */
 import { mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, join, basename } from 'node:path';
 import { buildSportsKit, SPORT_PACK_NAMES, DEFAULT_SPORT_PACKS, type SportPack } from '../src/engine/kit/sportskit.ts';
-import { migrateFicha, validateFicha, isHuman, type HumanFicha, type CellSize } from '../src/engine/sheet/ficha.ts';
+import { migrateFicha, validateFicha, isHuman, type HumanFicha, type AnimalFicha, type CellSize } from '../src/engine/sheet/ficha.ts';
 
 const args = process.argv.slice(2);
 const flag = (k: string) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
@@ -30,6 +31,7 @@ if (existsSync(out) && readdirSync(out).length) {
 }
 
 let athletes: Record<string, HumanFicha> | undefined;
+const animales: Record<string, AnimalFicha> = {};
 const fichasDir = flag('--fichas');
 if (fichasDir) {
   athletes = {};
@@ -38,7 +40,8 @@ if (fichasDir) {
     const f = migrateFicha(JSON.parse(readFileSync(join(fichasDir, n), 'utf8')));
     const errs = validateFicha(f);
     if (errs.length) { console.error(`${n}: ficha inválida\n  ${errs.join('\n  ')}`); process.exit(1); }
-    if (!isHuman(f)) { console.warn(`${n}: es un animal, se salta`); continue; }
+    // un animal (la mascota) sale con todas sus animaciones en animales/<id>.png
+    if (!isHuman(f)) { animales[id] = { ...f, movementProfile: 'premium' }; console.log(`  animal: ${id} (${f.name})`); continue; }
     // los deportes salen con el movimiento premium aunque la ficha diga clásico
     athletes[id] = { ...f, movementProfile: 'premium' };
     console.log(`  atleta: ${id} (${f.name})`);
@@ -49,7 +52,7 @@ const t0 = Date.now();
 const files = buildSportsKit({
   athletes, packs, cell, quick: args.includes('--rapido'), progress: (m) => console.log(`  ${m}`),
   filas: flag('--filas')?.split(','), datos: args.includes('--datos'), atlas: args.includes('--atlas'),
-  retratos: args.includes('--retratos'), cabecitas: args.includes('--cabecitas'), objetos: args.includes('--objetos'),
+  retratos: args.includes('--retratos'), cabecitas: args.includes('--cabecitas'), objetos: args.includes('--objetos'), animales,
 });
 rmSync(out, { recursive: true, force: true });
 let bytes = 0;

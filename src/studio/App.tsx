@@ -275,7 +275,10 @@ export function App() {
       const raw = JSON.parse(await file.text());
       const errs = validateFicha(raw);
       if (errs.length) throw new Error(errs.join('. '));
-      openFicha(migrateFicha(raw));
+      const f = migrateFicha(raw);
+      openFicha(f);
+      // un gigante trae su celda en la ficha
+      if (isHuman(f) && f.cell) setCell(f.cell);
     });
 
   const loadExtra = (v: 'side' | 'back', file: File | null) =>
@@ -821,7 +824,7 @@ export function App() {
               )}
               <div className="controls">
                 {ficha && <DirPad label={t('view')} value={view} set={setView} name={(v) => t(`view_${v}` as Key)} />}
-                <Seg label={t('size')} value={String(cell)} set={(v) => setCell(+v as CellSize)} opts={[['32', '32'], ['48', '48'], ['64', '64']]} />
+                <Seg label={t('size')} value={String(cell)} set={(v) => setCell(+v as CellSize)} opts={[['32', '32'], ['48', '48'], ['64', '64']]} testid="cell-size" />
                 <Seg label={t('background')} value={bg} set={(v) => setBg(v as PreviewBg)} opts={[['studio', t('bg_studio')], ['pitch', t('bg_pitch')], ['grass', t('bg_grass')], ['plain', t('bg_plain')]]} />
                 {ficha && isHuman(ficha) && <Toggle label={t('props')} on={props} set={setProps} />}
               </div>
