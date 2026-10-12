@@ -270,7 +270,8 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     // mascota en 3D: las 8 direcciones (las de la izquierda, espejo) con armadura si la tiene
     big = poses.map((p) => renderPet3d(f, cell, p, (base === 'side' || base === 'se' || base === 'front' || base === 'ne' || base === 'back' ? base : 'side') as PetView, f.barding ?? 0));
     fps = def.fps; loop = def.loop; steady = !!def.steady;
-    airborne = poses.map((p) => p.air > 0);
+    airborne = poses.map((p) => p.air > 0 || (p.rise ?? 0) > 0);
+    if (poses.some((p) => p.rise)) rise = poses.map((p) => Math.round(p.rise ?? 0));
     if (premium) { events = def.events; if (def.loop && def.stride) stride = Math.round(def.stride(d) * 10) / 10; }
   }
   // premium: el pivote queda siempre en el mismo lugar de la celda (no salta entre cuadros, direcciones ni acciones)

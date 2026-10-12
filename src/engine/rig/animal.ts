@@ -67,6 +67,11 @@ export interface QPose {
   /** ángulo de la cola: 0 horizontal hacia atrás, + hacia arriba */
   tail: number;
   air: number;
+  /**
+   * Elevación que pone el juego (pixeles de la celda), como en los humanos: el animal se dibuja cerca del piso y el
+   * juego sube el sprite (el gato que salta a un muro).
+   */
+  rise?: number;
   /** pelota en la boca */
   ball?: boolean;
   /** moneda en la boca (recoger botín) */

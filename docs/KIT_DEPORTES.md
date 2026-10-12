@@ -214,6 +214,8 @@ Las letras y el número **buscan dónde no los tape la cabeza**: primero donde i
 }
 ```
 
+**Animales de la calle (lote C7):** cualquier ficha de animal trae además `sleep` (enroscado, la cabeza sobre las patas, los ojos cerrados y la cola alrededor: se lee dormido desde lejos), `scratch` (sentado, rascándose con la pata de atrás) y `jump_wall` (saltar a un muro, con `elevacion` como los humanos que suben). En `animales` del kit a medida se piden por id, como Thor.
+
 Ejemplos listos: la Familia GG con "GG" dorado y su número, el Instituto Nekketsu con gakuran, brazalete rojo y la cara malandra, los cuatro equipos nacionales (Rồng Sài Gòn, Rolos de Chapinero, Los Panas de Caracas y Maracuchos del Lago) y Thor, en [`docs/ejemplos/nekketsu/fichas/`](ejemplos/nekketsu/fichas/).
 
 ## Fuentes (`--fuentes`, opción `fuentes`)

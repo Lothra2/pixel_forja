@@ -1,0 +1,37 @@
+{
+  "format": "pixelforja.ficha",
+  "version": 3,
+  "name": "Sombra",
+  "body": {
+    "skeleton": "quadruped",
+    "species": "gato",
+    "size": 0.75
+  },
+  "palette": {
+    "fur": [
+      "#020104",
+      "#120f18",
+      "#2c2932",
+      "#4b4851"
+    ],
+    "fur2": [
+      "#666369",
+      "#bbb7bf",
+      "#e8e4ec",
+      "#f5f1f9"
+    ],
+    "dark": [
+      "#020103",
+      "#020104",
+      "#0e0c12",
+      "#2a282e"
+    ],
+    "eyes": "#c9a230"
+  },
+  "markings": {
+    "chest": false,
+    "paws": true,
+    "mask": false
+  },
+  "movementProfile": "premium"
+}
