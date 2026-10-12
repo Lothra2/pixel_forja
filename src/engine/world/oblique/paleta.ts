@@ -102,7 +102,7 @@ export const VIETNAM_TARDE_DORADA: Paleta = {
  * neones de la ciudad brillan en la neblina. Rosado, turquesa, rojo y azul son los neones.
  */
 export const VIETNAM_TORMENTA: Paleta = {
-  tinta: '#14131c', sombra: '#262635', asfalto: '#353646', asfalto_claro: '#4d5062',
+  tinta: '#14131c', sombra: '#2a2a3a', asfalto: '#4b4d60', asfalto_claro: '#62667a',
   cemento: '#686c80', cemento_claro: '#8a8fa4', crema: '#aaa7a6', luz: '#e8eaf2',
   amarillo: '#e8c45a', ocre: '#a8763a', terracota: '#8a4a32', rojo: '#ff3d4a',
   vino: '#5a2032', salmon: '#ff5aa8', menta: '#5ce0d8', verde: '#3f6a52',

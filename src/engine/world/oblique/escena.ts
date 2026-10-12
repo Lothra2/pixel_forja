@@ -13,6 +13,7 @@ import { PINTORES_CERCA, FONDO_CERCA, torreReloj, arcoSalida, type CtxCerca } fr
 import { MAS_OSCURO, nombreEn, corre, volumen, caraIzquierda, alLado, cizallarPiso, huecosJuntos, huecoInclinado, cantoSobreHueco, orillaAguaHonda } from './inclinada';
 import { drawText, textWidth, LINE_H } from './letras';
 import { fichaArte, type FichaArte } from './ficha';
+import { vidaSaigon } from './vidaSaigon';
 
 /**
  * Un escenario oblicuo completo a partir del layout: todas las capas de 10.3, los objetos con su orden de dibujo,
@@ -318,6 +319,9 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     vida.push({ id: 'motos_fondo', tipo: 'motos_fondo', capa: 'tras_cerca', x: W, y: FT - 22 - 40, cuadros, fps: 8, velocidad: -70, cada: 5 });
   }
 
+  // la vida de los tramos del Cross: mercado, río, azoteas y estadio
+  vida.push(...vidaSaigon(pal, L, Wp, seed));
+
   // luces y partículas
   const luces: Luz[] = [
     ...anclas.altares.map((a) => ({ x: a.x, y: a.y + 10, color: pal.rojo, radio: 12, latido: 0.5, encendida: true, nota: 'bombillo rojo del altar' })),
@@ -330,6 +334,9 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     ...anclas.buganvillas.map((b) => ({ tipo: 'petalo', fx: 'petalo_buganvilla', x0: b.x - 8, x1: b.x + 8, y0: b.y, y1: b.y + 4, cada: 4, nota: 'pétalos que caen de la buganvilla' })),
     ...anclas.aires.map((a) => ({ tipo: 'gota', x0: a.x, x1: a.x + 2, y0: a.y, y1: a.y, color: [pal.celeste], cada: 3, vida: 0.8, nota: 'gotera del aire acondicionado' })),
     ...L.agua.map((a) => ({ tipo: 'onda', fx: 'onda_charco', x0: a.x0 + corre(k, a.y0 ?? 0), x1: a.x1 + corre(k, a.y1 ?? D), y0: FT + (a.y0 ?? 0), y1: FT + (a.y1 ?? D), cada: 0.7, nota: `${a.nombre ?? 'agua'}: ondas sueltas, y salpicadura_piso a cada paso` })),
+    ...(L.vida.includes('lluvia') ? [{ tipo: 'lluvia', fx: 'lluvia', x0: 0, x1: Wp, y0: 10, y1: 300, cada: 0.12, nota: 'el aguacero: parches de lluvia en mosaico que caen sobre toda la pantalla' }] : []),
+    ...(L.vida.includes('charcos_crecen') ? L.agua.filter((a) => a.nivel <= 2).map((a) => ({ tipo: 'gota', fx: 'salpicadura_piso', x0: a.x0 + corre(k, a.y0 ?? 0), x1: a.x1 + corre(k, a.y1 ?? D), y0: FT + (a.y0 ?? 0), y1: FT + (a.y1 ?? D), cada: 0.25, nota: `${a.nombre ?? 'charco'}: la lluvia que cae en el charco` })) : []),
+    ...(L.vida.includes('fuegos_artificiales') ? (['rojo', 'oro', 'azul', 'verde'] as const).map((c, i) => ({ tipo: 'fuegos', fx: `fuegos_artificiales_${c === 'oro' ? 'dorado' : c}`, x0: 200 + i * 400, x1: 400 + i * 400, y0: 20, y1: 80, cada: 1.6 + i * 0.3, nota: 'fuegos artificiales sobre el estadio cuando alguien llega' })) : []),
     ...L.huecos.filter((h) => h.caida === 'agua').map((h) => ({ tipo: 'brillo', x0: h.x0 + corre(k, h.y0 ?? 0), x1: h.x1 + corre(k, h.y1 ?? D), y0: FT + (h.y0 ?? 0) + 18, y1: FT + (h.y1 ?? D), color: [pal.luz, pal.cielo], cada: 0.9, vida: 0.4, nota: `${h.nombre ?? 'canal'}: brillitos en el agua` })),
   ];
 

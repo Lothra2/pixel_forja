@@ -241,7 +241,8 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    expect(pngs.length).toBe(54 + 56 + 17 + 56);
+    // atletas + efectos + los 5 escenarios: hẻm 21, Bến Thành 17, río 17, azoteas 21 (con piso mojado) y estadio 11
+    expect(pngs.length).toBe(54 + 56 + 21 + 17 + 17 + 21 + 11);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

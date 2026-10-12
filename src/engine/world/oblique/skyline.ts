@@ -59,7 +59,7 @@ function torre(L: Lienzo, x: number, gy: number, w: number, h: number, R: () => 
 }
 
 /** El ferry del río: casco largo, la cabina de dos pisos con ventanas y la bandera. Escala `k`. */
-function ferry(L: Lienzo, x: number, gy: number, T: Tonos, k = 1) {
+export function ferry(L: Lienzo, x: number, gy: number, T: Tonos, k = 1) {
   const w = Math.round(46 * k), h = Math.round(5 * k);
   L.f(x, gy - h, w, h, 'luz'); L.hl(x, gy - h, w, 'cemento_claro'); L.hl(x + 2, gy - 1, w - 4, T.sombra);
   L.f(x + Math.round(6 * k), gy - h - Math.round(7 * k), Math.round(30 * k), Math.round(7 * k), 'crema');

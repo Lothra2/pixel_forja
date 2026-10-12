@@ -153,10 +153,41 @@ Todas bloquean: si una falla, el escenario no sale.
   - `carro` es un xe ba gác, y `puesto_banhmi`, `cajas`, `moto_estacionada`, `mesas_plasticas`, `tanque_agua` y `kiosco` tienen su propio dibujo;
   - `muro_bajo` es de ladrillo y `muro_alto` lleva vidrios rotos arriba;
   - un tipo sin dibujo sale como muro.
+- **Las horas del estilo `vietnam`**, cada una con su paleta de 24 colores:
+  - **Mañana:** luz cálida con bruma.
+  - **Mediodía:** cielo limpio y sombras cortas.
+  - **Tarde dorada** (`tarde` sin aguacero): cielo de lavanda a miel, sol bajo con halo, agua lila con destellos de oro y el filo de las torres encendido.
+  - **Aguacero:** nublado y lavado.
+  - **Tormenta** (`tarde` con `aguacero` y el tema `azoteas`): casi de noche, con ventanas prendidas, neones rosado, turquesa, rojo y azul con su halo en la neblina, y la Bitexco con el filo de luz.
+  - **Atardecer:** violeta, durazno y naranja.
+- **El rosado (`salmon`) es el de la buganvilla y la pitahaya:** las paredes van amarillas, menta, celestes y crema, como en Saigón, y el rosado resalta.
+- **El hẻm, más vivo:**
+  - buganvillas en cascada;
+  - cortinas metálicas (cửa cuốn) verdes y azules;
+  - toldos de rayas sobre los locales;
+  - matas grandes en materos de barro o vidriados;
+  - charcos que reflejan las casas de cabeza, tramados con el cielo (el hẻm amanece mojado).
+- **Los puestos del mercado** llevan toldo de lona a rayas, de un color por puesto, con la cenefa en ondas. **La torre del reloj** de Bến Thành va ancha, con el reloj grande, el nombre en relieve y el techo de cuatro aguas.
+- **El río** se ve abierto detrás de la baranda del malecón, con palmas, bolardos con cadena, xích lô estacionados, el ferry y los barcos del otro lado, y jacintos en islas con su flor.
+- **La viga sobre un hueco** es de hierro en I, oxidada: se lee clara sobre el vacío oscuro.
+- **Vida de los tramos del Cross** (`vidaSaigon.ts`), según la lista `vida` del layout:
+
+  | Vida | Qué se anima |
+  |---|---|
+  | `toldos_viento` | Cenefas de toldo |
+  | `vendedoras_pregonando` | Vendedoras con nón lá que pregonan |
+  | `agua_animada` | Brillos del agua |
+  | `jacintos_flotando` | Jacintos que bajan con la corriente |
+  | `ferry` | El ferry del fondo, que cruza |
+  | `botes_bambu` | Thúng chai que se mecen |
+  | `ropa_viento` | La ropa al viento |
+  | `publico_ondeando` | La ola en la tribuna |
+  | `banderas` | Banderas de Vietnam que ondean |
+  | `lluvia`, `charcos_crecen` y `fuegos_artificiales` | Van como partículas con los efectos `lluvia`, `salpicadura_piso` y `fuegos_artificiales_*` del kit |
 - **Los otros estilos del pedido** (`colombia_colonial`, `colombia_ladrillo`, `venezuela_barrio`, `venezuela_ciudad`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos
 
-- **Una sola hora pintada por escenario:** la de la ficha. `cielo.ts` trae la mañana. Las otras horas se suman con la ficha de su escenario.
+- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.
 - **La legibilidad se mide con el contorno de los atletas,** no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.

@@ -438,7 +438,7 @@ function halo(C: Lienzo, x: number, y: number, w: number, h: number, c: Color) {
 
 // ------------------------------------------------------------------ el estadio
 
-const VALLAS_AVISO: [string, Color, Color][] = [['NEKKETSU', 'luz', 'rojo'], ['VIỆT NAM', 'rojo', 'oro'], ['SÀI GÒN', 'azul', 'luz'], ['GG', 'oro', 'vino'], ['CỐ LÊN!', 'luz', 'azul'], ['CROSS', 'menta', 'azul_noche']];
+const VALLAS_AVISO: [string, Color, Color][] = [['NEKKETSU', 'luz', 'rojo'], ['VIỆT NAM', 'rojo', 'oro'], ['SÀI GÒN', 'azul', 'luz'], ['THỂ THAO', 'oro', 'vino'], ['CỐ LÊN!', 'luz', 'azul'], ['THỐNG NHẤT', 'azul', 'oro']];
 
 /** El estadio por fuera: muro con aletas, el nombre, banderas y la taquilla. */
 export const estadioFuera: PintorCerca = (C, x0, x1, base, ctx) => {
@@ -447,7 +447,7 @@ export const estadioFuera: PintorCerca = (C, x0, x1, base, ctx) => {
   C.f(x0 + 60, top, x1 - x0 - 60, base - top, 'cemento_claro'); C.hl(x0 + 60, top, x1 - x0 - 60, 'luz');
   for (let x = x0 + 64; x < x1; x += 12) { C.f(x, top + 4, 4, base - top - 4, 'crema'); C.vl(x + 3, top + 4, base - top - 4, 'cemento'); }
   C.f(x0 + 60, top + 2, x1 - x0 - 60, 3, 'azul'); C.f(x0 + 60, base - 30, x1 - x0 - 60, 3, 'azul');
-  letrero(C, Math.round((x0 + 60 + x1) / 2), top + 14, 'SÂN VẬN ĐỘNG', 'azul', 'luz', 'azul_noche', 5);
+  letrero(C, Math.round((x0 + 60 + x1) / 2), top + 14, 'SÂN VẬN ĐỘNG THỐNG NHẤT', 'azul', 'luz', 'azul_noche', 5);
   // taquilla
   const tx = x0 + 90;
   C.box(tx, base - 34, 40, 34, 'crema', 'cemento'); C.f(tx + 4, base - 26, 32, 12, 'azul_noche'); C.hl(tx + 4, base - 26, 32, 'celeste');
@@ -472,14 +472,28 @@ export const gradas: PintorCerca = (C, x0, x1, base, ctx) => {
       if (grain(x >> 2, y, 7) < 0.08) { C.f(x, y + 5, 4, 3, (y >> 3) % 2 ? 'rojo' : 'azul'); continue; } // silla vacía
       const c = ropa[Math.floor(R() * ropa.length)];
       C.f(x, y + 4, 4, 4, c); C.d(x + 1.5, y + 2, 1.6, piel[Math.floor(R() * piel.length)]); C.p(x + 1, y + 1, 'tinta');
-      if (R() < 0.05) { C.vl(x + 3, y - 6, 8, 'cemento'); C.f(x + 4, y - 6, 6, 4, 'rojo'); C.p(x + 6, y - 5, 'oro'); } // bandera
+      if (R() < 0.05) { C.vl(x + 3, y - 6, 8, 'cemento'); C.f(x + 4, y - 6, 6, 4, 'rojo'); C.p(x + 6, y - 5, 'oro'); } // banderita
     }
+  }
+  // banderas grandes de Vietnam que ondean sobre la tribuna: rojo con la estrella amarilla
+  for (let x = x0 + 40; x < x1 - 20; x += 70 + Math.floor(R() * 50)) {
+    const y = techo + 6 + Math.floor(R() * 34), fw = 16, fh = 11;
+    C.vl(x, y - 2, fh + 10, 'cemento_claro');
+    for (let j = 0; j < fh; j++) for (let i = 0; i < fw; i++) { const dy = Math.round(Math.sin((i / fw) * Math.PI * 1.5 + x) * 1.5); C.p(x + 1 + i, y + j + dy, j === fh - 1 ? 'vino' : 'rojo'); }
+    const sx = x + 1 + fw / 2, sy = y + fh / 2;
+    for (const [dx, dy] of [[0, -3], [-1, -1], [0, -1], [1, -1], [-3, 0], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [3, 0], [-1, 1], [0, 1], [1, 1], [-2, 2], [2, 2]]) C.p(Math.round(sx + dx), Math.round(sy + dy + Math.sin((dx + fw / 2) / fw * Math.PI * 1.5 + x) * 1.5), 'oro');
   }
   // escaleras cada 240 y una pancarta grande
   for (let x = x0 + 120; x < x1; x += 240) { C.f(x, techo, 10, vy - techo, 'cemento_claro'); for (let y = techo + 2; y < vy; y += 4) C.hl(x, y, 10, 'cemento'); }
-  for (let x = x0 + 300; x < x1 - 140; x += 600) { const t = 'CỐ LÊN NEKKETSU!'; C.f(x, techo + 30, textWidth(t) + 10, 14, 'luz'); C.hl(x, techo + 30, textWidth(t) + 10, 'cemento'); drawText(C, x + 5, techo + 31, t, 'rojo'); }
   // columnas del techo
   for (let x = x0 + 60; x < x1; x += 240) { C.f(x, techo - 10, 4, vy - techo + 10, 'cemento'); C.vl(x, techo - 10, vy - techo + 10, 'cemento_claro'); }
+  // pancartas de la hinchada, en vietnamita bien escrito: rojas con letras amarillas y azules con letras blancas
+  const PANCARTAS: [string, Color, Color][] = [['VIỆT NAM VÔ ĐỊCH', 'rojo', 'oro'], ['CỐ LÊN NEKKETSU!', 'luz', 'rojo'], ['VIỆT NAM TIẾN LÊN!', 'azul', 'luz'], ['ĐOÀN KẾT', 'rojo', 'oro']];
+  for (let x = x0 + 200, k = 0; x < x1 - 150; x += 380, k++) {
+    const [t, f, l] = PANCARTAS[k % PANCARTAS.length], tw = textWidth(t) + 12, y = techo + 22 + (k % 2) * 16;
+    C.box(x, y, tw, 15, f, f === 'luz' ? 'cemento' : 'vino'); C.hl(x + 1, y + 1, tw - 2, f === 'rojo' ? 'oro' : 'luz');
+    drawText(C, x + 6, y + 1, t, l);
+  }
   // valla de avisos
   C.hl(x0, vy - 2, x1 - x0, 'cemento_claro'); C.hl(x0, vy - 1, x1 - x0, 'cemento');
   for (let x = x0, k = 0; x < x1; x += 96, k++) {
