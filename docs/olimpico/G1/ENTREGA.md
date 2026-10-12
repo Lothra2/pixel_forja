@@ -37,7 +37,7 @@ Detalles en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#fuentes---fuentes-opci�
 
 ## Pruebas
 
-`npm test` y `npm run e2e`: ver el PR. Las nuevas están en `src/engine/__tests__/fonts.test.ts` y en la prueba e2e "fuentes del juego".
+`npm test`: 193 de 193. `npm run e2e`: 36 de 36 en escritorio y teléfono, con la arena sobre el kit completo (`npm run build:sitio`). `tsc -b` limpio. Las nuevas están en `src/engine/__tests__/fonts.test.ts` y en la prueba e2e "fuentes del juego".
 
 | Qué se revisa | Resultado |
 |---|---|
