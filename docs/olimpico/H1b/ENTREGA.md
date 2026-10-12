@@ -1,6 +1,6 @@
 # Lote H1b: el audio comprimido para el celular
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/21
 Fecha: 2026-10-12
 
 ## Qué se hizo
