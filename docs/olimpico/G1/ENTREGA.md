@@ -1,6 +1,6 @@
 # Lote G1 fuentes: acentos del vietnamita
 Estado: entregado
-PR: (pendiente)
+PR: https://github.com/Lothra2/pixel_forja/pull/10
 Fecha: 2026-10-12
 
 ## Qué se hizo
