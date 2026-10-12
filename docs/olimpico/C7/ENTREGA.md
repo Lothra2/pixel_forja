@@ -1,6 +1,6 @@
 # Lote C7: los perros de la calle y los gatos de los techos
 Estado: entregado en parte (sin el gallo), pendiente de Rick
-PR: (se llena al abrir el PR)
+PR: https://github.com/Lothra2/pixel_forja/pull/19
 Fecha: 2026-10-12
 
 ## Qué se hizo
