@@ -1,3 +1,4 @@
+import { bikeU, bikeDrop } from '../render/props';
 import { type Pose, type PropState, keyed } from '../rig/pose';
 import { type AnimDef, type Ctx, P, TAU, feet } from './types';
 import { swim, run } from './basic';
@@ -272,14 +273,17 @@ export const skate: AnimDef = {
 export const bike: AnimDef = {
   name: 'bike', pack: 'bike', fps: 10, loop: true, hairTrail: -1,
   build: (c) => {
-    const L = c.L, u = c.u;
+    const L = c.L, u = bikeU(c.u);
     const R = Math.round(7 * u);
     const seatH = R * 2.3 + 1;
-    const hipH = Math.round(seatH);
+    // a 32 px un pixel más abajo y, con un cuerpo alto, lo que haga falta: si no, la cabeza se sale de la celda.
+    // El pedal y el manubrio se miden desde la cadera, así que bajan con ella
+    const drop = Math.min(c.u < 0.8 ? -1 : 0, bikeDrop(c.d, seatH));
+    const hipH = Math.round(seatH) + drop;
     const torso = 28;
-    const crankRel: [number, number] = [3 * u, seatH - R];
+    const crankRel: [number, number] = [3 * u, seatH - R + drop];
     const crankR = Math.max(2, Math.round(3 * u));
-    const bar: [number, number] = [Math.round(17 * u) / 2 - 1 * u + 3 * u, -(R * 2.5) + seatH];
+    const bar: [number, number] = [Math.round(17 * u) / 2 - 1 * u + 3 * u, -(R * 2.5) + seatH + drop];
     const out: Pose[] = [];
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * TAU;

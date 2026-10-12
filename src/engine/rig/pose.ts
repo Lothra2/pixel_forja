@@ -65,6 +65,8 @@ export interface PropState {
   smear?: Partial<Record<'side' | 'front' | 'back' | 'se' | 'ne', [number, number]>>;
   /** arma del piso abierta (paraguas, abanico) */
   open?: boolean;
+  /** bici acostada en el piso (caída): 0 parada, 1 tirada de lado. Se aplasta contra el piso */
+  lay?: number;
   /** curvatura (garrocha que se dobla): flecha del arco en pixeles a 48, + hacia abajo del palo */
   bend?: number;
   /** delante de todo, también de la cabeza (un escudo que se levanta para bloquear). Con lista: solo en esas vistas */

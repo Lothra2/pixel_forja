@@ -323,6 +323,37 @@ Lo que le faltaba a una pelea de azotea en arte. Va en su propio pack (`kachinuk
 
 **Las propias van solo con su dueño.** El pack lista todas (`taunt_rick`, `taunt_kenji`...) y el kit dibuja en el atlas de cada atleta solo las suyas: Kenji trae `taunt_kenji` y `victory_kenji`, no las de Rick. Una animación con el id de alguien que no está en el kit se dibuja para todos.
 
+## Recorridos y trepar (packs `recorridos` y `trepar`)
+
+Lo que piden un cross country con obstáculos y una azotea: escaleras, muros, vigas, cables bajos, bicis, patinetas y postes. Van en sus propios packs, que no salen por defecto: se piden en `packs` del kit a medida o con `--deportes recorridos,trepar`. Lo que se trepa (la escalera, el muro, el poste, la viga) lo dibuja el juego. El kit dice dónde están las manos y los pies, y cuánto subir el sprite.
+
+| Animación | Cuadros | Qué hace | Evento |
+|---|---|---|---|
+| `ladder` | 8, en bucle | Escalera de mano: mano y rodilla contrarias suben juntas. De espaldas, en la fila de arriba | `paso` con `mano` y `punto` en cada mano que agarra |
+| `climb_wall` | 8 | Muro bajo: se agacha, salta, agarra el borde, se jala, apoya la rodilla y se para arriba | `impacto` al agarrar el borde |
+| `ledge_hang` | 4, en bucle | Colgado del borde, meciéndose | |
+| `pull_up` | 8 | De colgado a parado encima del borde | |
+| `balance_walk` | 8, en bucle | Por la viga: pies en línea y brazos en cruz | `paso` |
+| `balance_wobble` | 8, en bucle | Tambalearse en la viga, los brazos en molinete | |
+| `balance_fall` | 6 | Caerse de la viga (de frente, de lado; de lado, hacia adelante) | |
+| `duck_run` | 8, en bucle | Correr agachado bajo cables y toldos | `paso` |
+| `bike_fast` | 8, en bucle | La bici rápida: el cuerpo pegado al manubrio, al doble de cadencia | |
+| `bike_crash` | 8 | La bici se acuesta en el piso y el ciclista sale por encima | `aterriza` |
+| `skate_crash` | 8 | La tabla se va adelante y cae de espalda | `aterriza` |
+| `climb_pole` | 8, en bucle | Trepar el poste como gusano medidor | `paso` con `mano` y `punto` en cada agarre |
+| `pole_idle` | 4, en bucle | Quieto en el poste | |
+| `pole_punch` | 6 | Golpe hacia arriba con una mano agarrada | `impacto` en la mano, arriba |
+| `pole_slide` | 4, en bucle | Deslizarse por el poste | |
+| `pole_kick_down` | 6 | Patada hacia abajo al que viene trepando | `impacto` en el pie |
+| `pole_shake` | 6 | Desde abajo, sacude el poste | `impacto` |
+| `grab_leg_up` | 6 | Desde abajo, jala del pie al que trepa | `impacto` con las manos arriba |
+
+`trepar` trae además `edge_teeter` y `fall_off` del pack `kachinuki`, que son del mismo borde.
+
+- **`elevacion` en las que suben** (`climb_wall` y `pull_up`): cuánto sube el juego el sprite en cada cuadro. El último cuadro es la altura del muro o del borde. El borde de `pull_up` está a la altura de las manos colgado, y el muro de `climb_wall` un poco más bajo, a lo que se alcanza de pie con los brazos arriba.
+- **`mano` en los pasos:** en la escalera y el poste, el `paso` dice qué mano agarra (`cerca` o `lejos`) y trae su `punto` en cada fila, como un golpe. Así el juego puede sonar el agarre y poner el polvo o la astilla donde va la mano.
+- **La bici acostada:** el objeto `bike` acepta `lay` de 0 a 1 (en el piso de lado), y a 32 px se dibuja más chica para que el ciclista quepa.
+
 ## La arena: el kit jugando de verdad
 
 `arena.html` (en el sitio, el botón **Arena deportiva** del estudio) es un juego mínimo que usa el kit como lo haría el tuyo. Solo lee `manifest.json` y las hojas PNG: no importa nada del motor de PixelForja, y una prueba lo vigila. Si algo falla ahí, le falta al kit.
@@ -346,6 +377,7 @@ En local: `npm run deportes -- public/kit_deportes` y después `npm run dev`. En
 - **Tenis:** espera con split step, derecha, revés a dos manos, saque, volea y smash.
 - **Peleas:** guardia, desplazamiento, jab, directo, gancho, uppercut, patada baja, patada alta, patada voladora, bloqueo, esquiva, golpe recibido, nocaut y victoria. Cada golpe trae chispa de impacto.
 - **Pelea callejera (`calle`):** las 26 animaciones de beat 'em up de arriba.
+- **Recorridos (`recorridos`) y trepar (`trepar`):** escalera, muro, colgarse y subir, la viga, correr agachado, la bici rápida y las caídas de bici y patineta; el poste y lo que se hace desde abajo.
 - **Kachinuki (`kachinuki`):** pisotón, lanzamiento desde el agarre, reacción al rodillazo, codazo atrás, amagues, cabezazo, comer, tambalearse en el borde, caerse, y la burla y la victoria propias de cada uno.
 - **Fútbol:** espera, control, pase, vaselina, tiro, volea, cabezazo, barrida, conducción (`run_ball`, corre tocando la pelota), entrada, saque de banda y el arquero (espera, estirada, atajada alta, saque con la mano y de volea). Las patadas tienen zancada, pie de apoyo, carga, contacto y seguimiento, y el `impacto` cae en el cuadro del contacto con el `punto` del pie. Celebraciones de gol incluidas.
 - **Natación:** además, salir del agua por el borde (`swim_exit`).

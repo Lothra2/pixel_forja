@@ -114,6 +114,30 @@
       "victory_ryu",
       "victory_goro",
       "victory_tetsu"
+    ],
+    "recorridos": [
+      "ladder",
+      "climb_wall",
+      "ledge_hang",
+      "pull_up",
+      "balance_walk",
+      "balance_wobble",
+      "balance_fall",
+      "duck_run",
+      "bike_fast",
+      "bike_crash",
+      "skate_crash"
+    ],
+    "trepar": [
+      "climb_pole",
+      "pole_idle",
+      "pole_punch",
+      "pole_slide",
+      "pole_kick_down",
+      "pole_shake",
+      "grab_leg_up",
+      "edge_teeter",
+      "fall_off"
     ]
   },
   "pruebas": {
@@ -121,7 +145,8 @@
       "base",
       "pelea",
       "armas",
-      "natacion"
+      "natacion",
+      "recorridos"
     ],
     "vallas": [
       "base",
@@ -135,7 +160,8 @@
       "base",
       "pelea",
       "armas",
-      "kachinuki"
+      "kachinuki",
+      "trepar"
     ]
   },
   "objetos": true,

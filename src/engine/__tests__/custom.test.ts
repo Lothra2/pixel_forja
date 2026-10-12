@@ -260,9 +260,9 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas (24 x 7 hojas: 6 packs y los retratos) + efectos + escenario + armas y comida + la interfaz (cabecitas, 3 fuentes,
+    // atletas (24 x 9 hojas: 8 packs y los retratos) + efectos + escenario + armas y comida + la interfaz (cabecitas, 3 fuentes,
     // neutro, letras y los 15 pares del VS) + 2 del público + thor
-    expect(pngs.length).toBe(24 * 7 + 63 + 17 + 2 + (4 + 2 + 15) + 2 + 1);
+    expect(pngs.length).toBe(24 * 9 + 63 + 17 + 2 + (4 + 2 + 15) + 2 + 1);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

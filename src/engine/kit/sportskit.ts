@@ -19,6 +19,7 @@ import { FIGHT_PREMIUM } from '../anim/fight';
 import { FOOTBALL_PREMIUM } from '../anim/footballPremium';
 import { BRAWL } from '../anim/brawl';
 import { PELEA, duenoDe } from '../anim/pelea';
+import { RECORRIDOS, TREPAR } from '../anim/recorridos';
 import { buildObjectsAtlas } from '../render/floorProps';
 import type { FloorPropKind } from '../render/props';
 import { bitmapFonts } from '../ui/fonts';
@@ -41,11 +42,15 @@ export const SPORT_PACKS = {
   calle: ['idle', 'walk', 'run', 'hit', 'jab', 'punch', 'low_kick', 'knockout', ...BRAWL.map((a) => a.name)],
   /** la pelea del Kachinuki (lote P1): pisotón, lanzar, codazo, amague, cabezazo, comer, borde, burla y victoria propias */
   kachinuki: PELEA.map((a) => a.name),
+  /** recorridos (lote B2): escalera, muro, colgarse, viga, correr agachado, bici rápida y caídas de bici y patineta */
+  recorridos: RECORRIDOS.map((a) => a.name),
+  /** trepar (lote B3): el poste y lo que se hace desde abajo, más el borde de la azotea */
+  trepar: [...TREPAR.map((a) => a.name), 'edge_teeter', 'fall_off'],
 } as const;
 export type SportPack = keyof typeof SPORT_PACKS;
 export const SPORT_PACK_NAMES = Object.keys(SPORT_PACKS) as SportPack[];
 /** los deportes que salen si no se piden otros (los de siempre: la pelea callejera se pide con `calle`) */
-export const DEFAULT_SPORT_PACKS = SPORT_PACK_NAMES.filter((p) => p !== 'calle' && p !== 'kachinuki');
+export const DEFAULT_SPORT_PACKS = SPORT_PACK_NAMES.filter((p) => p !== 'calle' && p !== 'kachinuki' && p !== 'recorridos' && p !== 'trepar');
 
 export interface SportsKitOptions {
   /** atletas por id (minúsculas, números y _). Sin esto, la familia con ropa de calle y los héroes */
