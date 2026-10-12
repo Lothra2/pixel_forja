@@ -15,6 +15,8 @@ import { EnemiesStep, FxStep, FamilyRow, HeroRow } from './steps/RpgTools';
 import { LootStep } from './steps/LootStep';
 import { FontsStep } from './steps/FontsStep';
 import { EffectsStep } from './steps/EffectsStep';
+import { InterfaceStep } from './steps/InterfaceStep';
+import { AudioStep } from './steps/AudioStep';
 import { loadGallery, saveGallery, upsert, type GalleryItem } from './gallery';
 import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, safeName } from './util';
 import {
@@ -28,8 +30,8 @@ import {
 
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export' | ToolStep;
 /** herramientas del Taller RPG: páginas sueltas, fuera de los pasos */
-type ToolStep = 'enemies' | 'fx' | 'items' | 'fonts' | 'effects';
-const TOOLS: Step[] = ['enemies', 'fx', 'items', 'fonts', 'effects'];
+type ToolStep = 'enemies' | 'fx' | 'items' | 'fonts' | 'effects' | 'interface' | 'audio';
+const TOOLS: Step[] = ['enemies', 'fx', 'items', 'fonts', 'effects', 'interface', 'audio'];
 const HUMAN_STEPS: Step[] = ['image', 'bg', 'zones', 'head', 'avatar', 'style', 'animate', 'editor', 'export'];
 const ANIMAL_STEPS: Step[] = ['image', 'bg', 'style', 'animate', 'export'];
 const EDIT_ZONES: Zone[] = ['hair', 'beard', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'];
@@ -660,6 +662,16 @@ export function App() {
                     <strong>{t('ef_title')}</strong>
                     <span>{t('ef_tile')}</span>
                   </button>
+                  <button className="tile" onClick={() => setStep('interface')} data-testid="tool-interface">
+                    <span className="ico" aria-hidden>🎮</span>
+                    <strong>{t('ui_title')}</strong>
+                    <span>{t('ui_tile')}</span>
+                  </button>
+                  <button className="tile" onClick={() => setStep('audio')} data-testid="tool-audio">
+                    <span className="ico" aria-hidden>🎺</span>
+                    <strong>{t('au_title')}</strong>
+                    <span>{t('au_tile')}</span>
+                  </button>
                 </div>
               </>
             )}
@@ -800,6 +812,8 @@ export function App() {
         {step === 'fx' && <FxStep t={t} />}
         {step === 'fonts' && <FontsStep t={t} />}
         {step === 'effects' && <EffectsStep t={t} lang={lang} />}
+        {step === 'interface' && <InterfaceStep t={t} />}
+        {step === 'audio' && <AudioStep t={t} />}
         {step === 'items' && <LootStep t={t} lang={lang} equip={equipItem} hero={ficha && isHuman(ficha) ? ficha.name : null} />}
 
         {step === 'editor' && ficha && (isHuman(ficha)

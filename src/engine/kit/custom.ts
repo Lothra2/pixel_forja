@@ -7,8 +7,12 @@ import { familyFicha, FAMILY, thorFicha } from '../rpg/family';
 import { heroFicha, heroCell, HEROES } from '../rpg/heroes';
 import { buildSportsKit, compactJson } from './sportskit';
 import { EFFECT_NAMES, expandEffects, renderEffect, effectSheet } from '../fx/catalog';
-import { SFX_NAMES, MUSIC_NAMES, renderSfx, renderMusic, encodeWav, RATE, type SfxName, type MusicName } from '../audio/sfx';
-import { ambience, AMBIENCE_NAMES, type AmbienceName } from '../audio/ambience';
+import { encodeWav, RATE } from '../audio/sfx';
+import { SONIDOS, renderSound, type SoundSection } from '../audio/catalogo';
+import { blip, vozDe, BLIPS, TIMBRES, type Voz, type Timbre } from '../audio/deporte';
+import { listenPage, type ListenEntry, type ListenVoice } from '../audio/escuchar';
+import { retroUi, gameLogo, UI_PARTS, type UiPart, type UiPiece } from '../ui/retro';
+import type { Raster } from '../core/raster';
 import { encodePng } from '../export/png';
 
 /**
@@ -51,11 +55,11 @@ export interface KitConfig {
   objetos?: boolean | string[];
   /** animales: de las fichas o del motor (thor) */
   animales?: string[];
-  ui?: { fuentes?: boolean | { idiomas?: string[] }; logo?: { texto: string } };
+  ui?: { fuentes?: boolean | { idiomas?: string[] }; logo?: { texto: string }; interfaz?: boolean | UiPart[] };
   /** efectos del catálogo general: true = todos, o ids, bases (polvo_correr) y grupos (reaccion) */
   fx?: boolean | string[];
   /** sonidos del motor: true = todos, o la lista. Los nombres que todavía no existen vuelven como aviso (lote H) */
-  audio?: { sfx?: boolean | string[]; musica?: boolean | string[]; ambientes?: boolean | string[]; [k: string]: unknown };
+  audio?: { sfx?: boolean | string[]; musica?: boolean | string[]; ambientes?: boolean | string[]; voces?: boolean | string[] | Record<string, Partial<Voz>>; [k: string]: unknown };
   // lo que todavía no genera el kit a medida (se acepta y vuelve como aviso)
   escenarios?: unknown; publico?: unknown; npc?: unknown; vehiculos?: unknown;
 }
@@ -66,7 +70,7 @@ export interface TeamDef { nombre: string; atletas: string[]; mascota?: string; 
 export const INCLUDED_CAST = ['familia', 'familia_rpg', 'heroes'] as const;
 export type IncludedCast = (typeof INCLUDED_CAST)[number];
 
-export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'efectos', 'audio'] as const;
+export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'interfaz', 'efectos', 'audio'] as const;
 export type KitPart = (typeof KIT_PARTS)[number];
 
 /** Las secciones que todavía no genera el kit a medida, y el lote del pedido que las trae. */
@@ -78,8 +82,8 @@ const KNOWN_KEYS = ['$schema', 'juego', 'resolucion', 'celda', 'filas', 'datos_p
 const ANIM_NAMES = HUMAN_ANIMS.map((a) => a.name);
 const IDIOMAS = ['es', 'en', 'vi'];
 /** Los sonidos que ya tiene el motor, por sección de audio. */
-export const AUDIO_SECTIONS = { sfx: SFX_NAMES as string[], musica: MUSIC_NAMES as string[], ambientes: AMBIENCE_NAMES as string[] };
-type AudioSection = keyof typeof AUDIO_SECTIONS;
+export const AUDIO_SECTIONS = SONIDOS;
+type AudioSection = SoundSection;
 
 /** Distancia de edición, para sugerir el nombre correcto. */
 function dist(a: string, b: string): number {
@@ -171,7 +175,12 @@ export function validateKitConfig(cfg: unknown): string[] {
   if (cfg.ui !== undefined) {
     if (!isObj(cfg.ui)) e.push('ui: tiene que ser un objeto');
     else {
-      for (const k of Object.keys(cfg.ui)) if (k !== 'fuentes' && k !== 'logo') e.push(`ui.${k}: clave desconocida (hay "fuentes" y "logo")`);
+      for (const k of Object.keys(cfg.ui)) if (k !== 'fuentes' && k !== 'logo' && k !== 'interfaz') e.push(`ui.${k}: clave desconocida (hay "fuentes", "logo" e "interfaz")`);
+      const it = cfg.ui.interfaz;
+      if (it !== undefined && typeof it !== 'boolean') {
+        if (!isStrList(it)) e.push(`ui.interfaz: true o una lista de ${UI_PARTS.join(', ')}`);
+        else (it as string[]).forEach((x, i) => { if (!UI_PARTS.includes(x as UiPart)) e.push(`ui.interfaz[${i}]: "${x}" no es una pieza de interfaz.${suggest(x, UI_PARTS)} Hay ${UI_PARTS.join(', ')}`); });
+      }
       const fu = cfg.ui.fuentes;
       if (fu !== undefined && typeof fu !== 'boolean') {
         if (!isObj(fu)) e.push('ui.fuentes: true o { "idiomas": [...] }');
@@ -180,7 +189,7 @@ export function validateKitConfig(cfg: unknown): string[] {
           else (fu.idiomas as string[]).forEach((l, i) => { if (!IDIOMAS.includes(l)) e.push(`ui.fuentes.idiomas[${i}]: "${l}" todavía no está (hay ${IDIOMAS.join(', ')})`); });
         }
       }
-      if (cfg.ui.logo !== undefined && !(isObj(cfg.ui.logo) && typeof cfg.ui.logo.texto === 'string')) e.push('ui.logo: { "texto": "..." }');
+      if (cfg.ui.logo !== undefined && !(isObj(cfg.ui.logo) && typeof cfg.ui.logo.texto === 'string' && cfg.ui.logo.texto.trim())) e.push('ui.logo: { "texto": "NOMBRE DEL JUEGO" }');
     }
   }
   if (cfg.fx !== undefined && typeof cfg.fx !== 'boolean') {
@@ -194,6 +203,15 @@ export function validateKitConfig(cfg: unknown): string[] {
       if (v === undefined || typeof v === 'boolean') continue;
       if (!isStrList(v)) { e.push(`audio.${k}: true o una lista de nombres`); continue; }
       for (const t of sortNames(v as string[], AUDIO_SECTIONS[k]).typos) e.push(`audio.${k}[${t.i}]: "${t.name}" no es un sonido del motor.${t.hint}`);
+    }
+    const vo = isObj(cfg.audio) ? cfg.audio.voces : undefined;
+    if (vo !== undefined && typeof vo !== 'boolean' && !isStrList(vo)) {
+      if (!isObj(vo)) e.push('audio.voces: true, una lista de ids o { "id": { "tono": 1, "timbre": "cuadrada" } }');
+      else for (const [id, v] of Object.entries(vo)) {
+        if (!isObj(v)) { e.push(`audio.voces.${id}: { "tono": 0.9, "timbre": "cuadrada" }`); continue; }
+        if (v.tono !== undefined && !(typeof v.tono === 'number' && v.tono >= 0.3 && v.tono <= 3)) e.push(`audio.voces.${id}.tono: un número entre 0.3 y 3 (1 = 220 Hz)`);
+        if (v.timbre !== undefined && !TIMBRES.includes(v.timbre as Timbre)) e.push(`audio.voces.${id}.timbre: "${v.timbre}" no es un timbre.${suggest(String(v.timbre), TIMBRES)} Hay ${TIMBRES.join(', ')}`);
+      }
     }
   }
   return e;
@@ -236,14 +254,21 @@ export function kitConfigSchema(): Record<string, unknown> {
         type: 'object', additionalProperties: false,
         properties: {
           fuentes: { oneOf: [{ type: 'boolean' }, { type: 'object', additionalProperties: false, properties: { idiomas: list({ enum: IDIOMAS }) } }], description: 'Las tres fuentes bitmap (con vietnamita) en ui/fuentes.' },
-          logo: { type: 'object', required: ['texto'], properties: { texto: { type: 'string' } }, description: 'Todavía no se genera: llega con el resto del lote G1.' },
+          logo: { type: 'object', required: ['texto'], properties: { texto: { type: 'string', minLength: 1 } }, description: 'El logo animado del juego a partir de su nombre, en 320 x 112 y 160 x 56 (ui/logo.png y ui/logo_chico.png).' },
+          interfaz: { oneOf: [{ type: 'boolean' }, list({ enum: UI_PARTS })], description: 'Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador. true = todas.' },
         },
       },
       fx: { oneOf: [{ type: 'boolean' }, list({ anyOf: [{ enum: EFFECT_NAMES }, { type: 'string' }] })], description: 'Efectos del catálogo general en fx/: true = todos, o ids, bases (polvo_correr = sus 3 tamaños) y grupos (polvo, golpe, reaccion, agua, fiesta, objetos, pantalla, clima, tecnica, ambiente). Ver docs/EFECTOS.md.' },
       audio: {
         type: 'object',
         description: 'Sonidos sintetizados del motor en audio/sfx, audio/musica y audio/ambiente (WAV). Los nombres que todavía no existen vuelven como aviso: llegan con el lote H.',
-        properties: Object.fromEntries((Object.keys(AUDIO_SECTIONS) as AudioSection[]).map((k) => [k, { oneOf: [{ type: 'boolean' }, list({ anyOf: [{ enum: AUDIO_SECTIONS[k] }, { type: 'string' }] })] }])),
+        properties: {
+          ...Object.fromEntries((Object.keys(AUDIO_SECTIONS) as AudioSection[]).map((k) => [k, { oneOf: [{ type: 'boolean' }, list({ anyOf: [{ enum: AUDIO_SECTIONS[k] }, { type: 'string' }] })] }])),
+          voces: {
+            description: 'Voces en blips para los diálogos: true = todos los atletas, una lista de ids (atletas o NPC como "locutor"), o { id: { tono, timbre } }.',
+            oneOf: [{ type: 'boolean' }, list(id), { type: 'object', additionalProperties: { type: 'object', additionalProperties: false, properties: { tono: { type: 'number', minimum: 0.3, maximum: 3 }, timbre: { enum: TIMBRES } } } }],
+          },
+        },
       },
       ...pending,
     },
@@ -315,12 +340,11 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
   const { humans, animals, cells } = cast(cfg, inputs);
   if (inputs.equipos) errs.push(...validateTeams(inputs.equipos, Object.keys(humans), Object.keys(animals)));
   if (!Object.keys(humans).length) errs.push('no hay ningún personaje: la carpeta de fichas está vacía y no hay personajes_incluidos');
-  if (cfg.ui?.fuentes && !inputs.fuentes) errs.push('ui.fuentes: faltan los archivos de Silkscreen');
+  if ((cfg.ui?.fuentes || cfg.ui?.logo || cfg.ui?.interfaz) && !inputs.fuentes) errs.push('ui: faltan los archivos de Silkscreen (las fuentes, el logo y la interfaz los usan)');
   if (errs.length) throw new Error(`La configuración del kit tiene ${errs.length} problema${errs.length > 1 ? 's' : ''}:\n  ${errs.join('\n  ')}`);
 
   const warnings: string[] = [];
   for (const [k, what] of Object.entries(PENDING_SECTIONS)) if ((cfg as unknown as Record<string, unknown>)[k] !== undefined) warnings.push(`${k}: todavía no se genera, llega con ${what}`);
-  if (cfg.ui?.logo) warnings.push('ui.logo: todavía no se genera, llega con el resto del lote G1');
   // animales pedidos que no tienen ficha: llegan con el lote C7 (especies nuevas) o falta su ficha
   const wantedAnimals = [...new Set([...(cfg.animales ?? []), ...Object.values(inputs.equipos ?? {}).map((t) => t.mascota).filter((m): m is string => !!m)])];
   const missing = wantedAnimals.filter((a) => !animals[a]);
@@ -329,7 +353,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
   if (Array.isArray(fxList)) { const later = sortNames(fxList, EFFECT_NAMES).later; if (later.length) warnings.push(`fx: todavía no existen (se saltan): ${later.join(', ')}`); }
   const sounds: Partial<Record<AudioSection, string[]>> = {};
   if (cfg.audio) {
-    for (const k of Object.keys(cfg.audio)) if (!(k in AUDIO_SECTIONS)) warnings.push(`audio.${k}: todavía no se genera, llega con el audio (lote H)`);
+    for (const k of Object.keys(cfg.audio)) if (!(k in AUDIO_SECTIONS) && k !== 'voces') warnings.push(`audio.${k}: todavía no se genera, llega con el audio (lote H)`);
     for (const k of Object.keys(AUDIO_SECTIONS) as AudioSection[]) {
       const v = cfg.audio[k];
       if (!v) continue;
@@ -378,19 +402,69 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
       if (!sounds[k]!.length) continue;
       audio[k] = {};
       for (const name of sounds[k]!) {
-        const loop = k !== 'sfx';
-        const samples = k === 'sfx' ? renderSfx(name as SfxName) : k === 'musica' ? renderMusic(name as MusicName) : ambience(name as AmbienceName);
+        const { samples, loop } = renderSound(k, name);
         const archivo = `audio/${dir[k]}/${name}.wav`;
-        files.push({ name: archivo, bytes: encodeWav(samples, RATE, k === 'ambientes'), mime: 'audio/wav' });
+        files.push({ name: archivo, bytes: encodeWav(samples, RATE, loop), mime: 'audio/wav' });
         audio[k][name] = { archivo, duracion: Math.round((samples.length / RATE) * 100) / 100, ...(loop ? { bucle: true } : {}) };
       }
     }
     opts.progress?.(`audio: ${Object.values(sounds).reduce((n, v) => n + (v?.length ?? 0), 0)} sonidos`);
   }
+  // voces en blips: 4 variantes por personaje, el juego elige una por letra
+  let voces: Record<string, ListenVoice> | undefined;
+  const vcfg = cfg.audio?.voces;
+  if (parts.has('audio') && vcfg) {
+    voces = {};
+    const ids = vcfg === true ? Object.keys(humans) : Array.isArray(vcfg) ? vcfg : Object.keys(vcfg);
+    for (const id of ids) {
+      const f = humans[id];
+      const body = (f?.avatar as { body?: { age?: string; shape?: string } } | undefined)?.body;
+      const auto = vozDe(id, { edad: body?.age, femenina: body?.shape === 'curvas', celda: cells[id] ?? (f && 'cell' in f ? (f as { cell?: number }).cell : undefined) });
+      const over = !Array.isArray(vcfg) && typeof vcfg === 'object' ? vcfg[id] ?? {} : {};
+      const v: Voz = { tono: over.tono ?? auto.tono, timbre: over.timbre ?? auto.timbre };
+      const archivos = Array.from({ length: BLIPS }, (_, k) => {
+        const archivo = `audio/voz/${id}_${k}.wav`;
+        files.push({ name: archivo, bytes: encodeWav(blip(v, k), RATE), mime: 'audio/wav' });
+        return archivo;
+      });
+      voces[id] = { ...v, archivos };
+    }
+    if (!audio) audio = {};
+    opts.progress?.(`voces: ${ids.length}`);
+  }
+  if (audio) {
+    files.push({ name: 'audio/escuchar.html', bytes: new TextEncoder().encode(listenPage(cfg.juego, audio as Record<string, Record<string, ListenEntry>>, voces)), mime: 'text/html' });
+    if (voces) audio.voces = voces;
+    audio.escuchar = 'audio/escuchar.html' as unknown as Record<string, unknown>;
+  }
 
-  if (fx || audio) {
+  // interfaz: el logo del juego y las piezas retro, en ui/
+  const ui: Record<string, unknown> = {};
+  if (parts.has('interfaz') && (cfg.ui?.logo || cfg.ui?.interfaz) && inputs.fuentes) {
+    const sheetOf = (frames: Raster[], w: number, h: number) => effectSheet(frames, w, h);
+    const put = (name: string, frames: Raster[], w: number, h: number) => {
+      const { sheet, columnas } = sheetOf(frames, w, h);
+      files.push({ name: `ui/${name}.png`, bytes: encodePng(sheet), mime: 'image/png' });
+      return { archivo: `ui/${name}.png`, w, h, ...(frames.length > 1 ? { cuadros: frames.length, columnas } : {}) };
+    };
+    if (cfg.ui?.logo) {
+      ui.logo = { ...put('logo', gameLogo(inputs.fuentes.bold, cfg.ui.logo.texto, 320, 112), 320, 112), fps: 10, loop: true, texto: cfg.ui.logo.texto,
+        chico: { ...put('logo_chico', gameLogo(inputs.fuentes.bold, cfg.ui.logo.texto, 160, 56), 160, 56), fps: 10, loop: true } };
+    }
+    if (cfg.ui?.interfaz) {
+      const want = cfg.ui.interfaz === true ? UI_PARTS : cfg.ui.interfaz;
+      const colors = Object.fromEntries(Object.entries(inputs.equipos ?? {}).filter(([, t]) => Array.isArray(t.colores) && t.colores.length >= 2).map(([id, t]) => [id, [t.colores![0], t.colores![1]] as [string, string]]));
+      const pieces: UiPiece[] = retroUi(inputs.fuentes.bold, want, colors);
+      const it: Record<string, unknown> = {};
+      for (const pc of pieces) it[pc.name] = { ...put(pc.name, pc.frames, pc.w, pc.h), ...(pc.fps ? { fps: pc.fps, loop: !!pc.loop } : {}), ...(pc.nueve ? { nueve: pc.nueve } : {}), ...(pc.tres ? { tres: pc.tres } : {}), ...(pc.extra ?? {}) };
+      ui.interfaz = it;
+    }
+    opts.progress?.(`interfaz: ${Object.keys((ui.interfaz as object) ?? {}).length + (ui.logo ? 2 : 0)} piezas`);
+  }
+
+  if (fx || audio || Object.keys(ui).length) {
     const ci = files.findIndex((f) => f.name === 'CREDITOS.txt');
-    const line = 'Efectos y sonidos: dibujados y sintetizados con código por PixelForja. No usan piezas de nadie y no piden crédito.\n';
+    const line = 'Efectos, interfaz y sonidos: dibujados y sintetizados con código por PixelForja. No usan piezas de nadie y no piden crédito.\n';
     const prev = ci >= 0 ? new TextDecoder().decode(files[ci].bytes) : '';
     const credit = { name: 'CREDITOS.txt', bytes: new TextEncoder().encode(prev ? `${prev.trimEnd()}\n\n${line}` : line), mime: 'text/plain' };
     if (ci >= 0) files[ci] = credit; else files.push(credit);
@@ -403,7 +477,8 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
   for (const [id, t] of Object.entries(inputs.equipos ?? {})) for (const a of t.atletas) teamOf.set(a, id);
   const atletas = Object.fromEntries(Object.entries((sm.atletas ?? {}) as Record<string, Record<string, unknown>>).map(([id, a]) => {
     const { nombre, ...rest } = a;
-    return [id, { nombre, ...(teamOf.has(id) ? { equipo: teamOf.get(id) } : {}), ...rest }];
+    const voz = voces?.[id] ? { voz: { tono: voces[id].tono, timbre: voces[id].timbre, archivos: voces[id].archivos } } : {};
+    return [id, { nombre, ...(teamOf.has(id) ? { equipo: teamOf.get(id) } : {}), ...rest, ...voz }];
   }));
   const notas = [...((sm.notas as string[]) ?? []).map((n) => n.replace('orden de `direcciones`', 'orden de `filas`')), ...(typeof sm.retratos === 'string' ? [sm.retratos] : []), ...(typeof sm.notas_objetos === 'string' ? [sm.notas_objetos] : [])];
   const manifest: Record<string, unknown> = {
@@ -417,7 +492,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     ...(sm.objetos ? { objetos: sm.objetos } : {}),
     ...(sm.animales ? { animales: sm.animales } : {}),
     ...(fx ? { fx } : {}),
-    ...(sm.ui ? { ui: sm.ui } : {}),
+    ...(sm.ui || Object.keys(ui).length ? { ui: { ...((sm.ui as object) ?? {}), ...ui } } : {}),
     ...(audio ? { audio } : {}),
     ...(files.some((f) => f.name === 'CREDITOS.txt') ? { creditos: 'CREDITOS.txt' } : {}),
     ...(warnings.length ? { pendiente: warnings } : {}),

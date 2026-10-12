@@ -2,7 +2,7 @@
  * Kit a medida: arma el kit de un juego desde su kit.config.json.
  *   npm run kit-a-medida -- <carpeta de salida> --config <juego>/kit.config.json [--rapido] [--solo atletas,retratos,...]
  * Las rutas de la configuración (fichas, equipos) son relativas a la carpeta del kit.config.json.
- * --rapido: 2 animaciones por pack. --solo: solo esas partes (atletas, retratos, cabecitas, objetos, animales, fuentes).
+ * --rapido: 2 animaciones por pack. --solo: solo esas partes (atletas, retratos, cabecitas, objetos, animales, fuentes, interfaz, efectos, audio).
  * Ver docs/KIT_A_MEDIDA.md.
  */
 import { mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
@@ -47,9 +47,9 @@ if (cfg!.equipos) {
   if (!existsSync(p)) fail(`equipos: no existe ${p}`);
   try { equipos = JSON.parse(readFileSync(p, 'utf8')); } catch (e) { fail(`${p}: no es un JSON válido (${(e as Error).message})`); }
 }
-// fuentes: Silkscreen (OFL), que viene con el proyecto
+// fuentes: Silkscreen (OFL), que viene con el proyecto. También la usan el logo y la interfaz
 let fuentes: { regular: ArrayBuffer; bold: ArrayBuffer } | undefined;
-if (cfg!.ui?.fuentes) {
+if (cfg!.ui?.fuentes || cfg!.ui?.logo || cfg!.ui?.interfaz) {
   const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'node_modules', '@fontsource', 'silkscreen', 'files');
   const ab = (f: string) => { const b = readFileSync(join(dir, f)); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
   fuentes = { regular: ab('silkscreen-latin-400-normal.woff'), bold: ab('silkscreen-latin-700-normal.woff') };

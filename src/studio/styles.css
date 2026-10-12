@@ -518,6 +518,14 @@ p.ok { margin: 0; }
 .data-legend li { display: flex; align-items: center; gap: 6px; }
 .data-legend i { width: 10px; height: 10px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
 .data-legend .muted { font-variant-numeric: tabular-nums; }
+.ui-stage { display: grid; gap: 16px; width: 100%; min-width: 0; padding: 12px; background: #262a38; border-radius: 10px; box-sizing: border-box; }
+.ui-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.ui-stage canvas.pixel, .ui-piece canvas.pixel { aspect-ratio: auto; max-width: 100%; border-radius: 0; }
+.ui-grid { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.ui-piece { margin: 0; display: grid; gap: 4px; justify-items: center; }
+.audio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; width: 100%; }
+.audio-btn { text-align: left; padding: 12px; border-radius: 10px; border: 1px solid var(--line-2); background: rgba(0, 0, 0, 0.18); color: var(--text); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.audio-btn.on { border-color: var(--accent); color: var(--accent); }
 .fx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; width: 100%; min-width: 0; }
 .fx-card { margin: 0; display: grid; gap: 6px; padding: 10px; border-radius: 10px; background: rgba(0, 0, 0, 0.18); min-width: 0; }
 .fx-card.fx-wide { grid-column: 1 / -1; }

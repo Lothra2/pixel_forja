@@ -51,6 +51,11 @@ El kit también trae el catálogo general de efectos (polvo, chispas de golpe, r
 técnicas y pantalla completa) y los sonidos que ya tiene el motor. Los efectos se ven en el estudio, en Inicio,
 **Efectos del juego**. Detalle: [docs/EFECTOS.md](docs/EFECTOS.md).
 
+También trae la interfaz retro (logo desde el nombre del juego, caja de diálogo, paneles por equipo, barras,
+banners, controles táctiles, minimapa y marcador) y el audio: marcha de banda, tema con đàn tranh, tema de pelea,
+golpes, público y voces en blips, con `audio/escuchar.html` para oírlo todo. Detalle: [docs/INTERFAZ.md](docs/INTERFAZ.md)
+y [docs/AUDIO.md](docs/AUDIO.md).
+
 ## Pruebas
 
 ```bash
