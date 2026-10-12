@@ -1,6 +1,6 @@
 # Lote P1: la pelea
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrir el PR)
+PR: https://github.com/Lothra2/pixel_forja/pull/15
 Fecha: 2026-10-12
 
 ## Qué se hizo
