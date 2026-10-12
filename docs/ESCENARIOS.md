@@ -83,6 +83,29 @@ En pantalla no hay inclinación: `px = x`, `py = franja.atras + y - z`. Una caja
 | `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360 |
 | `ficha_arte.md` | Con `--ficha`: paleta, elementos icónicos, vida y qué dibujo va en cada caja |
 
+## Vista inclinada
+
+Desde E2 los escenarios salen en la vista inclinada de la pelea, con `inclinacion` 0.35 por defecto. La proyección es la misma del gris del juego:
+
+```
+px = x + inclinacion * y      (y = 0 al fondo de la franja; lo del fondo queda a la izquierda)
+py = franja.atras + y - z
+```
+
+- **La geometría no cambia.** El layout y `colision.json` son los mismos. Solo cambia el dibujo.
+- **Todo lo que toca el piso se corre `inclinacion * y`:** piso, juntas, agua, huecos, cajas, postes, toldos, sombras y partículas.
+- **Las capas largas miden `largo + inclinacion * D`.** `escenario.json` trae `inclinacion` y `ancho`.
+- **Las cajas son volúmenes:**
+  - el techo es un paralelogramo, el frente un rectángulo;
+  - la cara de la izquierda se ve y da a la luz;
+  - esa cara sube desde lo que la caja tenga pegado a ese lado, así un tramo de escalones se lee escalón por escalón (la contrahuella);
+  - la cara va en su propio objeto, `<tipo>_cara`, con `orden` y + 0.1: delante de lo que va detrás de la caja y detrás de quien pasa a su lado;
+  - las caladas o redondas (vallas, tanques, botes, carritos) no llevan cara.
+- **Los huecos** muestran la pared del fondo (de frente), la pared del otro lado (inclinada) y abajo el agua o el vacío. Lo que los cruza (una viga) muestra su canto de 8 px.
+- **Adelante va el bordillo:** la cara del piso que da a la cámara, de la fila D hasta el borde de la pantalla. Donde el agua llega adelante, el agua sigue.
+- **Para el juego:** corre a los atletas `inclinacion * y`, igual que en el gris. Los objetos de `objetos.json` ya vienen corridos.
+- **Para el dibujo derecho de antes:** `generarEscenario(layout, { inclinacion: 0 })`.
+
 ## En Phaser
 
 ```js
