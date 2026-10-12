@@ -527,3 +527,24 @@ test('equipos: gakuran, brazalete y letras en el pecho en Estilo, y el gigante a
   await expect(page.getByTestId('cell-size').getByRole('button', { name: '64' })).toHaveAttribute('aria-pressed', 'true');
   expect(errors).toEqual([]);
 });
+
+test('fuentes del juego: vietnamita en las tres fuentes y descarga', async ({ page }, info) => {
+  test.setTimeout(120000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('tool-fonts').click();
+  const ui = page.getByTestId('font-fuente_ui');
+  await expect(ui).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId('font-fuente_titulo')).toBeVisible();
+  await expect(page.getByTestId('fonts-viet')).toContainText('ồ');
+  const w0 = await ui.evaluate((c: HTMLCanvasElement) => c.width);
+  await page.getByTestId('fonts-text').fill('Trời ơi');
+  await expect.poll(() => ui.evaluate((c: HTMLCanvasElement) => c.width)).toBeLessThan(w0);
+  const dl = page.waitForEvent('download');
+  await page.getByTestId('fonts-export').click();
+  expect((await dl).suggestedFilename()).toBe('fuentes.zip');
+  await page.screenshot({ path: `${shots}/${tag}_80_fuentes.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});

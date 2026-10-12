@@ -21,6 +21,7 @@ npm run deportes -- salida/kit --atlas       # un atlas por pack (JSON Hash de T
 npm run deportes -- salida/kit --retratos    # 7 expresiones en 40 x 40 y 96 x 96 por atleta
 npm run deportes -- salida/kit --cabecitas   # ui/cabecitas.png: una cabeza de 12 x 12 por atleta
 npm run deportes -- salida/kit --deportes calle --objetos   # pelea callejera (no va por defecto) y las armas del piso
+npm run deportes -- salida/kit --fuentes     # las fuentes bitmap (con vietnamita) en ui/fuentes/
 ```
 
 Con `--fichas`, una ficha de animal (la mascota) sale en `animales/<id>.png + .json` con todas sus animaciones, y un gigante sale en la celda que dice su ficha. Ver [Equipos](#equipos-uniformes-gigantes-y-mascota).
@@ -207,6 +208,30 @@ Las letras y el número **buscan dónde no los tape la cabeza**: primero donde i
 ```
 
 Ejemplos listos: la Familia GG con "GG" dorado y su número, el Instituto Nekketsu con gakuran y brazalete rojo, y Thor, en [`docs/ejemplos/nekketsu/fichas/`](ejemplos/nekketsu/fichas/).
+
+## Fuentes (`--fuentes`, opción `fuentes`)
+
+Las mismas fuentes bitmap del kit de GG Abyss, en formato BMFont XML (`this.load.bitmapFont(nombre, png, fnt)` en Phaser), hechas a partir de Silkscreen (Jason Kottke, SIL Open Font License 1.1, ya va en `CREDITOS.txt`):
+
+- `ui/fuentes/fuente_ui.png + .fnt`: 8 px, blanca con sombra negra. Se tiñe con `setTint` y se agranda con escala entera (x2 o x3).
+- `ui/fuentes/fuente_titulo` (dorada) y `fuente_titulo_plata`: 16 px, ya pintadas con degradé, contorno y sombra.
+
+Traen ñ, tildes, ¡, ¿ y **todas las letras del vietnamita**: ă, â, ê, ô, ơ, ư, đ, Đ y los 5 tonos (huyền, sắc, hỏi, ngã, nặng) sobre todas las vocales, en mayúscula y minúscula. Silkscreen no las trae: el motor las arma pegando las marcas dibujadas sobre la letra base, con el mismo trazo que los acentos de la fuente.
+
+- Las marcas van en las 2 filas de arriba de la letra, con una fila de aire, como los acentos de siempre.
+- Con circunflejo, el tono va a su derecha (ấ, ầ, ẩ), como se escribe en vietnamita. La letra avanza 2 pixeles de fuente más.
+- La tilde sobre el circunflejo (ẫ) y cualquier tono sobre la breve (ắ, ằ, ẳ, ẵ, ặ) van encima, y suben 2 pixeles de fuente por arriba de la línea.
+- El nặng es un punto debajo. ơ y ư llevan un ganchito en el hombro derecho. đ y Đ, una barra que cruza el palo.
+
+En el manifiesto:
+
+```jsonc
+"ui": { "fuentes": {
+  "fuente_ui": { "png": "ui/fuentes/fuente_ui.png", "fnt": "ui/fuentes/fuente_ui.fnt", "alto_linea": 11, "base": 8 },
+  "fuente_titulo": { ... }, "fuente_titulo_plata": { ... }, "notas": "..." } }
+```
+
+En el estudio: Inicio, **Fuentes del juego**. Se escribe un texto, se ve en las tres fuentes a 1x, 2x o 3x, y se descargan.
 
 ## Pelea callejera (`--deportes calle`)
 

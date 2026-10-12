@@ -40,7 +40,11 @@ El kit de los dos equipos con todo lo del juego:
 ```bash
 npm run deportes -- salida/kit_equipos --fichas docs/ejemplos/nekketsu/fichas \
   --deportes atletismo,natacion,voley,tenis,pelea,futbol,calle \
-  --filas right,down_right,up_right,down,up --datos --atlas --retratos --cabecitas --objetos
+  --filas right,down_right,up_right,down,up --datos --atlas --retratos --cabecitas --objetos --fuentes
 ```
 
 Sale cada atleta en su celda (Goro en 64), con su `numero` en el manifiesto, y Thor en `animales/thor.png + .json`.
+
+## Fuentes con vietnamita (lote G1)
+
+Con `--fuentes`, el kit trae `ui/fuentes/` con `fuente_ui`, `fuente_titulo` y `fuente_titulo_plata`, con todas las letras del vietnamita: "Rồng Sài Gòn", "Đá cầu", "Bà Hoa", "Tuấn" y "Trời ơi" se leen a 8 px. Detalles en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#fuentes---fuentes-opción-fuentes).

@@ -12,6 +12,23 @@ import { createRaster, type Raster } from '../core/raster';
 
 export const FONT_CHARS = ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~¡¿ñÑáéíóúÁÉÍÓÚüÜ…·«»°';
 
+/**
+ * Letras del vietnamita: ă, â, ê, ô, ơ, ư, đ y los 5 tonos (huyền, sắc, hỏi, ngã, nặng) sobre todas las vocales, en
+ * mayúscula y minúscula. Las que la fuente no trae se arman pegando las marcas dibujadas sobre la letra base (ver
+ * composeGlyph). Sirven para cualquier texto que las use, no solo vietnamita.
+ */
+export const VIETNAMESE_CHARS: string = (() => {
+  const vowels = ['a', 'ă', 'â', 'e', 'ê', 'i', 'o', 'ô', 'ơ', 'u', 'ư', 'y'];
+  const tones = ['', '\u0300', '\u0301', '\u0309', '\u0303', '\u0323'];
+  const out = new Set<string>();
+  for (const v of vowels) for (const t of tones) for (const c of [v, v.toUpperCase()]) out.add((c + t).normalize('NFC'));
+  out.add('đ'); out.add('Đ');
+  return [...out].filter((c) => !FONT_CHARS.includes(c)).join('');
+})();
+
+/** Todos los caracteres de las fuentes del juego: los de siempre y, al final, los del vietnamita. */
+export const ALL_FONT_CHARS = FONT_CHARS + VIETNAMESE_CHARS;
+
 export interface BitmapFont { name: string; png: Raster; fnt: string; lineHeight: number; base: number }
 
 type RGB = [number, number, number];
@@ -50,20 +67,96 @@ function inside(polys: [number, number][][], x: number, y: number): boolean {
 
 interface Glyph { ch: string; mask: Uint8Array; w: number; h: number; top: number; left: number; adv: number }
 
-/** Rasteriza cada glifo a pixeles de fuente (1 pixel de fuente = `px` pixeles). */
-function rasterGlyphs(font: Font, px: number): Glyph[] {
+// ---------- marcas del vietnamita, dibujadas en la grilla de la fuente ----------
+
+type Mark = 'grave' | 'acute' | 'hook' | 'tilde' | 'dot' | 'circumflex' | 'breve' | 'horn' | 'stroke';
+const COMBINING: Record<string, Mark> = {
+  '\u0300': 'grave', '\u0301': 'acute', '\u0309': 'hook', '\u0303': 'tilde', '\u0323': 'dot', '\u0302': 'circumflex', '\u0306': 'breve', '\u031b': 'horn',
+};
+
+/** La letra base y sus marcas: "ấ" = a + circunflejo + agudo. đ y Đ no se descomponen en Unicode: d con barra. */
+export function splitMarks(ch: string): { base: string; marks: Mark[] } | null {
+  if (ch === 'đ' || ch === 'Đ') return { base: ch === 'đ' ? 'd' : 'D', marks: ['stroke'] };
+  const [base, ...rest] = [...ch.normalize('NFD')];
+  const marks = rest.map((c) => COMBINING[c]);
+  return marks.length && marks.every(Boolean) ? { base, marks } : null;
+}
+
+/**
+ * Pixeles de cada marca, en pixeles de fuente, como dibuja Silkscreen sus acentos: dos filas sobre la mayúscula con una
+ * de aire (filas top - 3 y top - 2). x0..x1 son las columnas de la letra; c, la columna central (la de la izquierda si
+ * la letra es par). El circunflejo con un tono de lado (ấ, ầ, ẩ) se corre un pixel a la izquierda y el tono va a su
+ * derecha, como se escribe en vietnamita. La tilde sobre el circunflejo (ẫ) y cualquier tono sobre la breve (ắ) van
+ * dos filas más arriba.
+ */
+function markPixels(m: Mark, x0: number, x1: number, top: number, shift = 0, up = 0): [number, number][] {
+  const w = x1 - x0 + 1, even = w % 2 === 0, c = x0 + Math.floor((w - 1) / 2) + shift;
+  const r0 = top - 3 - up, r1 = top - 2 - up;
+  switch (m) {
+    case 'acute': return [[c + 1, r0], [c, r1]];
+    case 'grave': return [[c, r0], [c + 1, r1]];
+    case 'hook': return [[c, r0], [c + 1, r0], [c + 1, r1]];
+    case 'tilde': return [[c, r0], [c + 2, r0], [c - 1, r1], [c + 1, r1]];
+    case 'circumflex': return even ? [[c, r0], [c + 1, r0], [c - 1, r1], [c + 2, r1]] : [[c, r0], [c - 1, r1], [c + 1, r1]];
+    case 'breve': return even ? [[c - 1, r0], [c + 2, r0], [c, r1], [c + 1, r1]] : [[c - 1, r0], [c + 1, r0], [c, r1]];
+    // nặng: un punto debajo, con una fila de aire
+    case 'dot': return [[c, 1]];
+    // ơ, ư: un ganchito en el hombro derecho
+    case 'horn': return [[x1 + 1, top - 1], [x1 + 1, top]];
+    // đ: la barra cruza el palo de la izquierda a media altura
+    case 'stroke': return [[x0 - 1, top + 2], [x0 + 1, top + 2]];
+  }
+}
+
+/** Arma una letra con marcas sobre la letra base ya rasterizada (en pixeles de fuente de `px` pixeles). */
+function composeGlyph(ch: string, base: Glyph, marks: Mark[], px: number): Glyph {
+  const x0 = base.left / px, x1 = (base.left + base.w) / px - 1, top = base.top / px;
+  const tone = marks.find((m) => m === 'grave' || m === 'acute' || m === 'hook' || m === 'tilde');
+  const pts: [number, number][] = [];
+  for (const m of marks) {
+    if (m === tone && marks.includes('circumflex') && m !== 'tilde') {
+      // el tono al lado del circunflejo, a su derecha
+      pts.push(...markPixels(m, x1 + 1, x1 + 2, top));
+    } else if (m === tone && (marks.includes('breve') || marks.includes('circumflex'))) pts.push(...markPixels(m, x0, x1, top, 0, 2));
+    else if (m === 'circumflex' && tone && tone !== 'tilde') pts.push(...markPixels(m, x0, x1, top, -1));
+    else pts.push(...markPixels(m, x0, x1, top));
+  }
+  // el nuevo recuadro: la letra y las marcas
+  const bx0 = Math.min(x0, ...pts.map((p) => p[0])), bx1 = Math.max(x1, ...pts.map((p) => p[0]));
+  const by0 = Math.min(top, ...pts.map((p) => p[1])), by1 = Math.max(base.top / px + base.h / px - 1, ...pts.map((p) => p[1]));
+  const w = (bx1 - bx0 + 1) * px, h = (by1 - by0 + 1) * px;
+  const mask = new Uint8Array(w * h);
+  const ox = (x0 - bx0) * px, oy = (top - by0) * px;
+  for (let y = 0; y < base.h; y++) for (let x = 0; x < base.w; x++) if (base.mask[y * base.w + x]) mask[(y + oy) * w + x + ox] = 1;
+  for (const [fx, fy] of pts) for (let yy = 0; yy < px; yy++) for (let xx = 0; xx < px; xx++) mask[((fy - by0) * px + yy) * w + (fx - bx0) * px + xx] = 1;
+  // lo que sale a la derecha corre el avance para no pisar la letra que sigue
+  const adv = Math.max(base.adv, (bx1 + 2) * px);
+  return { ch, mask, w, h, top: by0 * px, left: bx0 * px, adv };
+}
+
+/** Rasteriza cada glifo a pixeles de fuente (1 pixel de fuente = `px` pixeles). Las letras que faltan se componen. */
+function rasterGlyphs(font: Font, px: number, chars = ALL_FONT_CHARS): Glyph[] {
   const unit = font.unitsPerEm / 8; // 125: 1 pixel de la grilla de Silkscreen
   const out: Glyph[] = [];
-  for (const ch of FONT_CHARS) {
+  const done = new Map<string, Glyph>();
+  for (const ch of chars) {
     const g = glyphPolys(font, ch, unit);
-    if (!g) continue;
+    if (!g) {
+      // no está en la fuente: se arma con la letra base y sus marcas
+      const sp = splitMarks(ch);
+      const base = sp && (done.get(sp.base) ?? rasterGlyphs(font, px, sp.base)[0]);
+      if (sp && base) { const cg = composeGlyph(ch, base, sp.marks, px); out.push(cg); done.set(ch, cg); }
+      continue;
+    }
     const xs = g.polys.flat().map((p) => p[0]), ys = g.polys.flat().map((p) => p[1]);
     const x0 = xs.length ? Math.floor(Math.min(...xs)) : 0, x1 = xs.length ? Math.ceil(Math.max(...xs)) : 0;
     const y0 = ys.length ? Math.floor(Math.min(...ys)) : 0, y1 = ys.length ? Math.ceil(Math.max(...ys)) : 0;
     const w = (x1 - x0) * px, h = (y1 - y0) * px;
     const mask = new Uint8Array(Math.max(1, w * h));
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (inside(g.polys, x0 + (x + 0.5) / px, y0 + (y + 0.5) / px)) mask[y * w + x] = 1;
-    out.push({ ch, mask, w, h, top: y0 * px, left: x0 * px, adv: Math.round(g.adv * px) });
+    const gl = { ch, mask, w, h, top: y0 * px, left: x0 * px, adv: Math.round(g.adv * px) };
+    out.push(gl);
+    done.set(ch, gl);
   }
   return out;
 }

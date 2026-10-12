@@ -313,7 +313,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const logo = renderLogo(opts.fonts.bold);
     files.push(png('ui/logo.png', strip(logo)));
     ui.logo = { archivo: 'ui/logo.png', w: 288, h: 96, cuadros: logo.length, fps: 8, loop: true };
-    ui.fuentes = { ...fuentes, notas: 'BMFont XML: this.load.bitmapFont(nombre, png, fnt). fuente_ui (8 px, blanca con sombra, se tiñe con setTint; usar escala entera x2 o x3), fuente_titulo y fuente_titulo_plata (16 px, ya pintadas). Tienen ñ, tildes, ¡ y ¿.' };
+    ui.fuentes = { ...fuentes, notas: 'BMFont XML: this.load.bitmapFont(nombre, png, fnt). fuente_ui (8 px, blanca con sombra, se tiñe con setTint; usar escala entera x2 o x3), fuente_titulo y fuente_titulo_plata (16 px, ya pintadas). Tienen ñ, tildes, ¡, ¿ y todas las letras del vietnamita.' };
   }
   files.push(png('ui/continuara.png', continuara()));
   ui.continuara = { archivo: 'ui/continuara.png', w: 960, h: 540, cuadros: 1 };
