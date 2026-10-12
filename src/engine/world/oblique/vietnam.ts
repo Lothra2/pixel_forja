@@ -453,6 +453,10 @@ export interface FilaOpts {
   huecos: Hueco[];
   /** Zonas con tema: comida o inundadas. */
   temas: { x0: number; x1: number; tema: string }[];
+  /** Rangos donde no van casas: ahí pinta otro tema. Las casas terminan y empiezan justo en sus bordes. */
+  vacios?: { x0: number; x1: number }[];
+  /** Aclara las plantas bajas en las últimas 48 filas (donde quedan los atletas del fondo): lo negro pasa a gris. */
+  pieClaro?: boolean;
   seed?: number;
 }
 
@@ -464,10 +468,11 @@ export function filaVietnam(pal: Paleta, w: number, base: number, o: FilaOpts, a
   const L = new Lienzo(w, base, pal);
   const R = rng(o.seed ?? 42);
   const huecos = [...o.huecos].sort((a, b) => a.x0 - b.x0);
+  const cortes = [...huecos, ...(o.vacios ?? [])].sort((a, b) => a.x0 - b.x0);
   const tramos: [number, number][] = [];
   let x = -24; // la primera casa empieza afuera, así el borde no se ve cortado a propósito
-  for (const h of huecos) { tramos.push([x, h.x0]); x = h.x1; }
-  tramos.push([x, w + 24]);
+  for (const h of cortes) { if (h.x0 > x) tramos.push([x, h.x0]); x = Math.max(x, h.x1); }
+  if (x < w + 24) tramos.push([x, w + 24]);
   const paredes: ParedColor[] = ['amarillo', 'salmon', 'menta', 'celeste', 'crema'];
   let last: ParedColor = 'crema', n = 0, lastPlanta: PlantaBaja | null = null;
   const bolsas = new Map<string, PlantaBaja[]>();
@@ -515,6 +520,15 @@ export function filaVietnam(pal: Paleta, w: number, base: number, o: FilaOpts, a
   for (const h of huecos) callejon(L, h.x0, h.x1, base, h.tipo, R);
   // sombra de contacto al pie de toda la fila
   for (let xx = 0; xx < w; xx++) if (L.has(xx, base - 1)) L.p(xx, base - 1, 'cemento');
+  if (o.pieClaro) {
+    const sombra = pal.sombra.toLowerCase(), tinta = pal.tinta.toLowerCase();
+    for (let y = base - 48; y < base; y++) for (let xx = 0; xx < w; xx++) {
+      const i = (y * w + xx) * 4, d = L.r.data;
+      if (!d[i + 3]) continue;
+      const hx = '#' + [d[i], d[i + 1], d[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+      if (hx === sombra) L.p(xx, y, 'asfalto'); else if (hx === tinta) L.p(xx, y, 'sombra');
+    }
+  }
   return L;
 }
 

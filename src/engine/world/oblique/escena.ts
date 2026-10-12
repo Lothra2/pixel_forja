@@ -1,13 +1,15 @@
-import { rng, bayer } from '../../fx/pix';
+import { rng, bayer, grain } from '../../fx/pix';
 import { createRaster, type Raster } from '../../core/raster';
 import { Lienzo } from './lienzo';
 import { boxesOf, depthOf, floorAt, holeAt, waterAt, type ObliqueLayout, type TipoPiso } from './layout';
-import { VIETNAM_MANANA, type Color, type Paleta } from './paleta';
+import { VIETNAM_MANANA, paletaVietnam, type Color, type Paleta } from './paleta';
 import { pintarPiso } from './piso';
 import { cielo } from './cielo';
-import { saigonSkyline } from './skyline';
+import { lejosDe, tonosDe } from './skyline';
 import { piezaVietnam, posteLuz, toldo, cables, paloma, moto, MOTO_W, banquito, porton } from './calle';
 import { filaVietnam, ropaTendida, nuevasAnclas, type Anclas, type Hueco } from './vietnam';
+import { piezaSaigon, posteSaigon, arco, lamparasColgantes, redesPesca, cuerdasRopa } from './saigon';
+import { PINTORES_CERCA, FONDO_CERCA, torreReloj, arcoSalida, type CtxCerca } from './fachadas';
 import { drawText, textWidth, LINE_H } from './letras';
 import { fichaArte, type FichaArte } from './ficha';
 
@@ -72,11 +74,71 @@ export interface Escena {
   huecos: Hueco[];
 }
 
-const PALETAS: Record<string, Paleta> = { vietnam: VIETNAM_MANANA };
+/** La paleta del país a la hora del layout (y con el clima de ese día, el primero de `clima`). */
+const PALETAS: Record<string, (hora: string, clima: string[]) => Paleta> = { vietnam: paletaVietnam };
+
+/** Muros que llevan el portón de hẻm adelante cuando dejan paso: los de la calle, no los portones ni las casetas. */
+const conPortonHem = (m: { tipo?: string }) => m.tipo === undefined || m.tipo === 'muro_alto' || m.tipo === 'muro_bajo';
+
+/** El poste de luz de concreto de siempre (lleva cables a las casas y lámpara). */
+const esPosteLuz = (p: { tipo?: string }) => p.tipo === undefined || p.tipo === 'poste_luz' || p.tipo === 'poste';
+
+/** Temas de la capa cerca que tienen techo: adentro no cruzan cables ni palomas. */
+const TECHADOS = new Set(['mercado_interior']);
+
+/**
+ * La capa cerca: la fila de casas tubo (o el fondo que pida `paralaje.cerca`) donde ningún tema tiene pintor, y en cada
+ * rango con tema su pintor, recortado a su rango. Después lo que pasa por encima de los bordes: la torre del reloj y el
+ * arco de salida del mercado.
+ */
+function pintarCerca(pal: Paleta, L: ObliqueLayout, huecos: Hueco[], seed: number, anclas: Anclas): Lienzo {
+  const W = L.largo, FT = L.franja.atras;
+  const conPintor = L.ranuras_deco.filter((r) => PINTORES_CERCA[r.tema] && (r.capa === 'cerca' || r.capa === 'lejos')).sort((a, b) => b.x1 - b.x0 - (a.x1 - a.x0));
+  const ctx: CtxCerca = {
+    seed,
+    zonas: L.solidos.filter((b) => b.tipo).map((b) => ({ x0: b.x, x1: b.x + b.w, tipo: b.tipo! })).filter((z, i, a) => a.findIndex((q) => q.x0 === z.x0) === i && L.solidos.find((b) => b.x === z.x0)!.y < 50),
+    huecos: L.huecos.filter((h) => (h.y0 ?? 0) === 0).map((h) => ({ x0: h.x0, x1: h.x1 })),
+  };
+  // los rangos sin pintor: casas tubo, o el fondo del lugar
+  const libres: [number, number][] = [];
+  let x = 0;
+  for (const [a, b] of conPintor.map((r) => [r.x0, r.x1] as const).sort((p, q) => p[0] - q[0])) { if (a > x) libres.push([x, a]); x = Math.max(x, b); }
+  if (x < W) libres.push([x, W]);
+  const fondo = FONDO_CERCA[L.paralaje.cerca ?? ''];
+  let C: Lienzo;
+  if (fondo) { C = new Lienzo(W, FT, pal); for (const [a, b] of libres) recortado(C, fondo, a, b, ctx); }
+  else {
+    const temas = L.ranuras_deco.filter((r) => r.capa === 'cerca').map((r) => ({ x0: r.x0, x1: r.x1, tema: r.tema }));
+    const vacios = conPintor.map((r) => ({ x0: r.x0, x1: r.x1 }));
+    // saigon_hem quedó aprobado con sus plantas bajas oscuras: los tramos nuevos las aclaran para la prueba 7
+    const pieClaro = L.paralaje.cerca !== 'hem';
+    C = filaVietnam(pal, W, FT, { huecos: huecos.filter((h) => !vacios.some((v) => h.x0 < v.x1 && h.x1 > v.x0)), temas, vacios, pieClaro, seed }, anclas);
+  }
+  for (const r of conPintor) recortado(C, PINTORES_CERCA[r.tema], r.x0, r.x1, ctx);
+  // la torre del reloj sobre la entrada del mercado y el arco de salida
+  const portones = L.muros.filter((m) => m.tipo === 'porton_mercado').sort((a, b) => a.x - b.x);
+  if (portones.length) {
+    const ent = portones[0], sal = portones[portones.length - 1];
+    if (L.ranuras_deco.some((r) => r.tema === 'calle_le_loi')) torreReloj(C, ent.x + Math.round(ent.w / 2), FT);
+    if (sal.x !== ent.x) arcoSalida(C, sal.x + Math.round(sal.w / 2), FT);
+  }
+  return C;
+}
+
+/** Corre un pintor en un lienzo aparte y copia solo las columnas de su rango: nada se sale. */
+function recortado(C: Lienzo, pintor: (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void, x0: number, x1: number, ctx: CtxCerca) {
+  const T = new Lienzo(C.w, C.h, C.pal);
+  pintor(T, x0, x1, C.h, ctx);
+  const a = Math.max(0, x0), b = Math.min(C.w, x1);
+  for (let y = 0; y < C.h; y++) {
+    const i = (y * C.w + a) * 4, j = (y * C.w + b) * 4;
+    for (let k = i; k < j; k += 4) if (T.r.data[k + 3]) C.r.data.set(T.r.data.subarray(k, k + 4), k);
+  }
+}
 
 /** Dónde se abren los callejones: cada 600 a 700 px, lejos de los canales, los muros y las orillas del tramo. */
 export function elegirCallejones(L: ObliqueLayout): Hueco[] {
-  const canales: Hueco[] = L.huecos.filter((h) => (h.y0 ?? 0) === 0).map((h) => ({ x0: h.x0, x1: h.x1, tipo: 'canal' as const }));
+  const canales: Hueco[] = L.huecos.filter((h) => (h.y0 ?? 0) === 0 && h.caida === 'agua').map((h) => ({ x0: h.x0, x1: h.x1, tipo: 'canal' as const }));
   const ocupado = [
     ...canales.map((c) => [c.x0 - 70, c.x1 + 70]),
     ...L.muros.filter((m) => m.y === 0).map((m) => [m.x - 50, m.x + m.w + 50]),
@@ -95,24 +157,25 @@ export function elegirCallejones(L: ObliqueLayout): Hueco[] {
 }
 
 export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
-  const pal = PALETAS[L.pais] ?? VIETNAM_MANANA;
+  const pal = PALETAS[L.pais]?.(L.hora, L.clima) ?? VIETNAM_MANANA;
+  const lluvia = L.clima[0] === 'aguacero' || L.hora === 'aguacero';
   const FT = L.franja.atras, D = depthOf(L), W = L.largo;
   const huecos = elegirCallejones(L);
   const anclas: Anclas = nuevasAnclas();
 
   // cielo y ciudad lejana
-  const sky = cielo(pal, 640, 360, L.hora, seed);
-  const lejos = saigonSkyline(pal, TROZO, LEJOS_ALTO, seed + 39);
+  const sky = cielo(pal, 640, 360, L.hora, seed, L.clima);
+  const lejos = lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
 
-  // la fila de casas
-  const temas = L.ranuras_deco.filter((r) => r.capa === 'cerca').map((r) => ({ x0: r.x0, x1: r.x1, tema: r.tema }));
-  const cerca = filaVietnam(pal, W, FT, { huecos, temas, seed }, anclas);
+  // la fila de casas, o el fondo que pida cada tema
+  const cerca = pintarCerca(pal, L, huecos, seed, anclas);
 
   // cables de los postes a las casas, en la capa de las casas
   const R = rng(seed * 3);
   const postes = [...L.postes].sort((a, b) => a.x - b.x);
   const top = (p: (typeof postes)[number]) => FT + p.y - p.alto + 9; // fila de la cruceta
   for (const p of postes) {
+    if (!esPosteLuz(p)) continue;
     const cx = p.x + 2;
     for (let k = 0; k < 6; k++) {
       const side = k % 2 ? 1 : -1, tx = cx + side * (70 + Math.floor(R() * 200)), ty = 100 + Math.floor(R() * 50);
@@ -131,9 +194,9 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
   if (typeof salida === 'number') for (let y = 2; y < D; y++) { piso.p(salida, y, 'luz'); piso.p(salida + 1, y, (y >> 2) % 2 ? 'luz' : 'cemento_claro'); }
   if (typeof meta === 'number') for (let y = 0; y < D; y++) for (let i = 0; i < 8; i++) piso.p(meta + i, y, ((i >> 2) + (y >> 2)) % 2 ? 'tinta' : 'luz');
   for (const b of boxesOf(L)) sombraCaja(piso, b.x, b.y, b.w, b.d, b.z, L);
-  for (const b of L.bajo) for (let y = (b.y0 ?? 0) + 2; y < (b.y1 ?? D) + 2 && y < D; y++) for (let x = b.x0 + 6; x < b.x1 + 6 && x < W; x++) if (bayer(x, y) < 0.3 && !holeAt(L, x, y)) piso.p(x, y, floorAt(L, x, y) === 'acera' ? 'cemento' : 'asfalto');
+  for (const b of L.bajo.filter((q) => q.tipo === undefined || q.tipo === 'toldo')) for (let y = (b.y0 ?? 0) + 2; y < (b.y1 ?? D) + 2 && y < D; y++) for (let x = b.x0 + 6; x < b.x1 + 6 && x < W; x++) if (bayer(x, y) < 0.3 && !holeAt(L, x, y)) piso.p(x, y, floorAt(L, x, y) === 'acera' ? 'cemento' : 'asfalto');
   // umbral de baldosa en el paso del portón, con los rieles de la reja
-  for (const m of L.muros) {
+  for (const m of L.muros.filter(conPortonHem)) {
     if (m.y + m.d >= D - 8) continue;
     for (let y = m.y + m.d; y < D; y++) for (let x = m.x - 2; x < m.x + m.w + 2; x++) {
       const borde = y === m.y + m.d || y === D - 1 || x === m.x - 2 || x === m.x + m.w + 1;
@@ -141,28 +204,45 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
     }
     for (let x = m.x - 2; x < m.x + m.w + 34; x++) piso.p(x, D - 2, 'sombra');
   }
-  // calle inundada
-  for (const a of L.agua) inundar(piso, cerca, a.x0, a.x1, a.y0 ?? 0, a.y1 ?? D, FT, seed);
+  // agua: río hondo, calle inundada o charco, según el nivel
+  for (const a of L.agua) {
+    if (a.nivel >= 12) rioHondo(piso, L, a.x0, a.x1, a.y0 ?? 0, a.y1 ?? D, seed);
+    else if (a.nivel <= 2) charco(piso, a.x0, a.x1, a.y0 ?? 0, a.y1 ?? D, seed);
+    else inundar(piso, cerca, a.x0, a.x1, a.y0 ?? 0, a.y1 ?? D, FT, seed);
+  }
 
   // objetos: cajas, toldo y postes
   const objetos: ObjetoEscena[] = [];
   boxesOf(L).forEach((b, i) => {
-    const pz = piezaVietnam(pal, b.tipo, b.w, b.d, b.z, seed + i);
+    const pz = piezaSaigon(pal, b.tipo, b.w, b.d, b.z, seed + i) ?? piezaVietnam(pal, b.tipo, b.w, b.d, b.z, seed + i);
     objetos.push({ id: `${b.tipo ?? b.lista}_${i}`, tipo: b.tipo ?? b.lista, origen: b.lista, img: pz.img, x: b.x, y: FT + b.y - b.z - pz.sobre, orden: b.y + b.d, superficie: SUPERFICIE_CAJA[b.tipo ?? ''] ?? 'piedra' });
   });
   L.bajo.forEach((b, i) => {
-    const t = toldo(pal, b.x1 - b.x0, (b.y1 ?? D) - (b.y0 ?? 0));
-    objetos.push({ id: `${b.tipo ?? 'bajo'}_${i}`, tipo: b.tipo ?? 'bajo', origen: 'bajo', img: t.img, x: b.x0, y: FT + (b.y0 ?? 0) - b.z, orden: b.y1 ?? D });
+    const id = `${b.tipo ?? 'bajo'}_${i}`, tipo = b.tipo ?? 'bajo', w = b.x1 - b.x0, y0 = b.y0 ?? 0, y1 = b.y1 ?? D;
+    if (b.tipo === 'lamparas_colgantes') { const l = lamparasColgantes(pal, w, y0, y1, b.z, 66 - FT, seed + i); objetos.push({ id, tipo, origen: 'bajo', img: l.img, x: b.x0, y: FT + l.top, orden: y1 }); return; }
+    if (b.tipo === 'redes_pesca') { const r = redesPesca(pal, w, y1 - y0, b.z, seed + i); objetos.push({ id, tipo, origen: 'bajo', img: r.img, x: b.x0, y: FT + y0 - b.z - 2, orden: y1 }); return; }
+    if (b.tipo === 'ropa_tendida') { const c = cuerdasRopa(pal, w, y0, y1, b.z, 0, seed + i); objetos.push({ id, tipo, origen: 'bajo', img: c.img, x: b.x0, y: FT + c.top, orden: y1 }); return; }
+    const t = toldo(pal, w, y1 - y0);
+    objetos.push({ id, tipo, origen: 'bajo', img: t.img, x: b.x0, y: FT + y0 - b.z, orden: y1 });
+  });
+  // arcos sobre el paso entre dos pilares de un portón (mercado, estadio)
+  const pilares = L.muros.filter((m) => m.tipo?.startsWith('porton_')).sort((a, b) => a.x - b.x || a.y - b.y);
+  pilares.forEach((m, i) => {
+    const n = pilares[i + 1];
+    if (!n || n.x !== m.x || n.tipo !== m.tipo || n.y <= m.y + m.d) return;
+    const est = m.tipo === 'porton_estadio';
+    const a = arco(pal, m.w, m.y + m.d, n.y, Math.max(m.z, n.z), est ? 'VÀO' : 'CỬA NAM', est ? { viga: 'cemento_claro', borde: 'azul', placa: 'azul', letra: 'luz' } : undefined);
+    objetos.push({ id: `arco_${i}`, tipo: 'arco', origen: 'muros', img: a.img, x: m.x + a.dx, y: FT + a.top, orden: a.orden });
   });
   // portón abierto donde un muro deja paso adelante: se lee por dónde se rodea
   L.muros.forEach((m, i) => {
-    if (m.y + m.d >= D - 8) return;
+    if (!conPortonHem(m) || m.y + m.d >= D - 8) return;
     const pt = porton(pal, m.w, m.y + m.d, D, m.z, 'HẺM 42');
     objetos.push({ id: `porton_${i}`, tipo: 'porton', origen: 'muros', img: pt.img, x: m.x + pt.dx, y: FT + pt.top, orden: D + 1 });
   });
   postes.forEach((p, i) => {
-    const po = posteLuz(pal, p.alto);
-    objetos.push({ id: `${p.tipo ?? 'poste'}_${i}`, tipo: p.tipo ?? 'poste', origen: 'postes', img: po.img, x: p.x + 2 - 22, y: FT + p.y - p.alto - 5, orden: p.y });
+    const otro = posteSaigon(pal, p.tipo, p.alto, seed + i), po = otro?.pieza ?? posteLuz(pal, p.alto, L.paralaje.cerca === 'hem' ? 'tinta' : 'asfalto');
+    objetos.push({ id: `${p.tipo ?? 'poste'}_${i}`, tipo: p.tipo ?? 'poste', origen: 'postes', img: po.img, x: p.x + 2 - (otro?.cx ?? 22), y: FT + p.y - p.alto - 5, orden: p.y });
   });
   objetos.sort((a, b) => a.orden - b.orden || a.x - b.x);
 
@@ -178,6 +258,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
       const a = xs[k] + (k === 0 ? 0 : 14), b = xs[k + 1] - (k === xs.length - 2 ? 0 : 14), ya = k === 0 ? 60 : top(postes[k - 1]) - 2, yb = k === xs.length - 2 ? 60 : top(postes[k]) - 2;
       const x0 = Math.max(0, Math.min(a, b)), x1 = Math.min(W, Math.max(a, b)), sag = Math.round(Math.min(34, Math.max(8, (x1 - x0) / 40)));
       if (x1 - x0 < 20) continue;
+      if (L.ranuras_deco.some((r) => TECHADOS.has(r.tema) && r.x0 < x1 && r.x1 > x0)) continue;
       const y0 = Math.min(ya, yb) - 2, h = Math.abs(ya - yb) + sag + 12;
       const cuadros = [0, 1].map((f) => { const c = new Lienzo(x1 - x0, h, pal); cables(c, a - x0, ya - y0, b - x0, yb - y0, 4, sag + f, seed + k); return c; });
       if (L.vida.includes('cables_viento')) vida.push({ id: `cables_${k}`, tipo: 'cables_viento', capa: 'cerca', x: x0, y: y0, cuadros, fps: 1 });
@@ -199,14 +280,16 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
   // luces y partículas
   const luces: Luz[] = [
     ...anclas.altares.map((a) => ({ x: a.x, y: a.y + 10, color: pal.rojo, radio: 12, latido: 0.5, encendida: true, nota: 'bombillo rojo del altar' })),
-    ...postes.map((p) => ({ x: p.x + 18, y: top(p) + 13, color: pal.oro, radio: 40, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'lámpara del poste: de día va apagada' })),
+    ...postes.filter(esPosteLuz).map((p) => ({ x: p.x + 18, y: top(p) + 13, color: pal.oro, radio: 40, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'lámpara del poste: de día va apagada' })),
+    ...postes.filter((p) => p.tipo === 'farol_rio').map((p) => ({ x: p.x + 2, y: FT + p.y - p.alto + 12, color: pal.luz, radio: 30, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'globos del farol del malecón' })),
+    ...postes.filter((p) => p.tipo === 'torre_luz').map((p) => ({ x: p.x + 2, y: FT + p.y - p.alto + 13, color: pal.luz, radio: 90, encendida: L.hora !== 'manana' && L.hora !== 'mediodia', nota: 'focos de la torre del estadio' })),
   ];
   const particulas: Particula[] = [
     ...anclas.altares.map((a) => ({ tipo: 'humo', x0: a.x - 2, x1: a.x + 2, y0: a.y - 2, y1: a.y, color: [pal.cemento_claro, pal.cemento], cada: 0.5, sube: 14, vida: 1.8, nota: 'incienso del altar' })),
     ...anclas.buganvillas.map((b) => ({ tipo: 'petalo', fx: 'petalo_buganvilla', x0: b.x - 8, x1: b.x + 8, y0: b.y, y1: b.y + 4, cada: 4, nota: 'pétalos que caen de la buganvilla' })),
     ...anclas.aires.map((a) => ({ tipo: 'gota', x0: a.x, x1: a.x + 2, y0: a.y, y1: a.y, color: [pal.celeste], cada: 3, vida: 0.8, nota: 'gotera del aire acondicionado' })),
     ...L.agua.map((a) => ({ tipo: 'onda', fx: 'onda_charco', x0: a.x0, x1: a.x1, y0: FT + (a.y0 ?? 0), y1: FT + (a.y1 ?? D), cada: 0.7, nota: `${a.nombre ?? 'agua'}: ondas sueltas, y salpicadura_piso a cada paso` })),
-    ...L.huecos.map((h) => ({ tipo: 'brillo', x0: h.x0, x1: h.x1, y0: FT + (h.y0 ?? 0) + 18, y1: FT + (h.y1 ?? D), color: [pal.luz, pal.cielo], cada: 0.9, vida: 0.4, nota: `${h.nombre ?? 'canal'}: brillitos en el agua` })),
+    ...L.huecos.filter((h) => h.caida === 'agua').map((h) => ({ tipo: 'brillo', x0: h.x0, x1: h.x1, y0: FT + (h.y0 ?? 0) + 18, y1: FT + (h.y1 ?? D), color: [pal.luz, pal.cielo], cada: 0.9, vida: 0.4, nota: `${h.nombre ?? 'canal'}: brillitos en el agua` })),
   ];
 
   // primer plano: cosas sobre la acera de enfrente, sin tapar la franja
@@ -289,6 +372,47 @@ function inundar(P: Lienzo, cerca: Lienzo, x0: number, x1: number, y0: number, y
     else if (t === 1) { P.f(x, y, 8, 4, 'luz'); P.hl(x, y + 4, 8, 'cemento_claro'); }
     else if (t === 2) { P.p(x, y, 'verde'); P.p(x + 1, y, 'verde_oscuro'); P.p(x + 2, y + 1, 'verde'); P.p(x + 1, y + 1, 'verde'); }
     else { P.f(x, y, 4, 3, 'azul'); P.p(x + 1, y, 'celeste'); }
+  }
+}
+
+/**
+ * Río hondo (nivel alto): no se ve el fondo. Agua más oscura en el medio, espuma donde toca la orilla, la corriente
+ * en rayas que siguen el sentido del agua y unos jacintos sueltos.
+ */
+function rioHondo(P: Lienzo, L: ObliqueLayout, x0: number, x1: number, y0: number, y1: number, seed: number) {
+  const D = depthOf(L), yEnd = y1 >= D ? P.h : y1, R = rng(seed + x0 + y0);
+  for (let y = y0; y < yEnd; y++) for (let x = x0; x < x1; x++) {
+    if (y < D && !waterAt(L, x, y)) continue;
+    const borde = Math.min(x - x0, x1 - 1 - x);
+    // agua verde turbia con el cielo reflejado en tramado, más claro hacia el fondo
+    const t = y < D ? y / D : 1;
+    let c: Color = bayer(x, y) < 0.42 - t * 0.2 ? 'celeste' : grain(x >> 3, y >> 2, seed + 5) < 0.12 && bayer(x, y) < 0.5 ? 'verde_oscuro' : 'canal';
+    if (borde < 3) c = borde === 0 ? 'luz' : 'cielo';
+    else if (borde < 7 && bayer(x, y) < 0.5) c = 'celeste';
+    P.p(x, y, c);
+  }
+  // la corriente: rayas largas en grupos
+  for (let k = 0; k < ((x1 - x0) * (yEnd - y0)) / 260; k++) {
+    const x = x0 + 8 + Math.floor(R() * (x1 - x0 - 24)), y = y0 + 2 + Math.floor(R() * (yEnd - y0 - 4)), len = 4 + Math.floor(R() * 10);
+    if (y < D && !waterAt(L, x, y)) continue;
+    P.hl(x, y, len, R() < 0.25 ? 'luz' : 'cielo'); if (R() < 0.5) P.hl(x + 3, y + 1, Math.max(2, len - 5), 'celeste');
+  }
+  // jacintos sueltos (los que bajan con la corriente van en vida)
+  for (let k = 0; k < (x1 - x0) / 120; k++) {
+    const cx = x0 + 12 + Math.floor(R() * (x1 - x0 - 24)), cy = y0 + 8 + Math.floor(R() * Math.max(1, yEnd - y0 - 16));
+    if (cy < D && !waterAt(L, cx, cy)) continue;
+    P.d(cx, cy + 1, 6, 'verde_oscuro', 0.55); P.d(cx, cy, 5, 'verde', 0.55); P.d(cx - 2, cy - 1, 2.5, 'menta', 0.6); P.p(cx + 1, cy - 3, 'salmon'); P.p(cx + 2, cy - 3, 'celeste');
+  }
+}
+
+/** Charco bajito: una mancha ovalada dentro del rango, con el cielo reflejado y el borde mojado. */
+function charco(P: Lienzo, x0: number, x1: number, y0: number, y1: number, seed: number) {
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = (x1 - x0) / 2, ry = (y1 - y0) / 2;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const wob = 1 + Math.sin(Math.atan2(y - cy, x - cx) * 3 + seed) * 0.08;
+    const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+    if (d > wob) continue;
+    P.p(x, y, d > wob - 0.12 ? 'asfalto_claro' : d > wob - 0.25 && bayer(x, y) < 0.5 ? 'cemento' : (y - y0) % 7 === 0 && grain(x >> 2, y, seed) < 0.4 ? 'cielo' : 'celeste');
   }
 }
 

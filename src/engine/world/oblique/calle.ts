@@ -14,10 +14,10 @@ export interface Pieza {
   sobre: number;
 }
 
-const nueva = (pal: Paleta, w: number, d: number, z: number, sobre = 0): Pieza => ({ img: new Lienzo(w, sobre + d + z, pal), sobre });
+export const nueva = (pal: Paleta, w: number, d: number, z: number, sobre = 0): Pieza => ({ img: new Lienzo(w, sobre + d + z, pal), sobre });
 
 /** Sombra de contacto: una fila oscura en el piso, al pie del frente. */
-function pie(L: Lienzo, y: number, w: number) { L.hl(0, y, w, 'tinta'); }
+export function pie(L: Lienzo, y: number, w: number) { L.hl(0, y, w, 'tinta'); }
 
 /** Xe ba gác: triciclo de carga con plataforma de tablas a la altura `z`. El conductor va adelante (a la derecha). */
 export function baGac(pal: Paleta, w: number, d: number, z: number): Pieza {
@@ -318,13 +318,13 @@ export function porton(pal: Paleta, w: number, yFin: number, D: number, z: numbe
 }
 
 /** Poste de luz de concreto con cruceta, transformador, lámpara y la maraña de cables. Base en la última fila. */
-export function posteLuz(pal: Paleta, alto: number): Pieza {
+export function posteLuz(pal: Paleta, alto: number, borde: Color = 'tinta'): Pieza {
   const w = 44, P = { img: new Lienzo(w, alto + 6, pal), sobre: 6 }, L = P.img, cx = 22, base = alto + 5;
   // poste que se angosta
   for (let y = 6; y <= base; y++) {
     const t = (y - 6) / alto, hw = 2 + Math.round(t * 1.5);
     for (let x = cx - hw; x <= cx + hw; x++) L.p(x, y, x === cx - hw ? 'cemento_claro' : x >= cx + hw - 1 ? 'cemento' : 'cemento_claro');
-    L.p(cx - hw - 1, y, 'tinta'); L.p(cx + hw + 1, y, 'tinta');
+    L.p(cx - hw - 1, y, borde); L.p(cx + hw + 1, y, borde);
   }
   for (let y = 30; y < base - 10; y += 14) L.hl(cx - 2, y, 4, 'cemento');
   // cruceta y aisladores
