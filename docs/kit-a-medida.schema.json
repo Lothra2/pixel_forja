@@ -375,6 +375,232 @@
         }
       }
     },
+    "fx": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "enum": [
+                  "polvo_correr_chico",
+                  "polvo_correr_medio",
+                  "polvo_correr_grande",
+                  "polvo_frenar_chico",
+                  "polvo_frenar_medio",
+                  "polvo_frenar_grande",
+                  "polvo_caer_chico",
+                  "polvo_caer_medio",
+                  "polvo_caer_grande",
+                  "chispa_golpe_liviano",
+                  "chispa_golpe_medio",
+                  "chispa_golpe_pesado",
+                  "estrellas_mareo",
+                  "nube_ko",
+                  "vena_enojo",
+                  "gota_nervios",
+                  "sonrojo",
+                  "exclamacion",
+                  "interrogacion",
+                  "lagrima_comica",
+                  "sudor",
+                  "chapuzon_chico",
+                  "chapuzon_grande",
+                  "estela",
+                  "ondas",
+                  "confeti",
+                  "serpentina",
+                  "fuegos_artificiales_rojo",
+                  "fuegos_artificiales_azul",
+                  "fuegos_artificiales_dorado",
+                  "fuegos_artificiales_verde",
+                  "bola_tama",
+                  "bola_tama_explota",
+                  "bola_tama_cartel",
+                  "mecha_tejo",
+                  "estela_chapa",
+                  "ventana_rota",
+                  "pantalla_rota",
+                  "lineas_velocidad",
+                  "marco_corte",
+                  "lluvia",
+                  "salpicadura_piso",
+                  "onda_charco",
+                  "relampago",
+                  "calor",
+                  "rayo_catatumbo",
+                  "onda_furro",
+                  "rafaga_abanico",
+                  "vapor_termo",
+                  "aura_nekketsu",
+                  "humo_moto",
+                  "petalo_buganvilla",
+                  "hoja",
+                  "arena",
+                  "brillo_record",
+                  "huella_mojada",
+                  "polvo_correr",
+                  "polvo_frenar",
+                  "polvo_caer",
+                  "chispa_golpe",
+                  "chapuzon",
+                  "fuegos_artificiales",
+                  "polvo",
+                  "golpe",
+                  "reaccion",
+                  "agua",
+                  "fiesta",
+                  "objetos",
+                  "pantalla",
+                  "clima",
+                  "tecnica",
+                  "ambiente"
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "uniqueItems": true
+        }
+      ],
+      "description": "Efectos del catálogo general en fx/: true = todos, o ids, bases (polvo_correr = sus 3 tamaños) y grupos (polvo, golpe, reaccion, agua, fiesta, objetos, pantalla, clima, tecnica, ambiente). Ver docs/EFECTOS.md."
+    },
+    "audio": {
+      "type": "object",
+      "description": "Sonidos sintetizados del motor en audio/sfx, audio/musica y audio/ambiente (WAV). Los nombres que todavía no existen vuelven como aviso: llegan con el lote H.",
+      "properties": {
+        "sfx": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "espadazo",
+                      "golpe",
+                      "critico",
+                      "enemigo_dolor",
+                      "enemigo_muere",
+                      "jefe_rugido",
+                      "jefe_pisoton",
+                      "moneda",
+                      "oro_mucho",
+                      "pocion",
+                      "curar",
+                      "cofre_abrir",
+                      "romper",
+                      "portal",
+                      "subir_nivel",
+                      "paso",
+                      "ladrido",
+                      "aullido",
+                      "mordida",
+                      "recoger",
+                      "legendario",
+                      "click",
+                      "abrir_inventario",
+                      "error",
+                      "jugador_dolor",
+                      "magia",
+                      "descubrir",
+                      "secreto",
+                      "elegir",
+                      "guardado",
+                      "arco",
+                      "esquiva",
+                      "bloqueo",
+                      "thor_rescate",
+                      "paso_pasto_0",
+                      "paso_pasto_1",
+                      "paso_pasto_2",
+                      "paso_tierra_0",
+                      "paso_tierra_1",
+                      "paso_tierra_2",
+                      "paso_piedra_0",
+                      "paso_piedra_1",
+                      "paso_piedra_2",
+                      "paso_madera_0",
+                      "paso_madera_1",
+                      "paso_madera_2",
+                      "paso_agua_0",
+                      "paso_agua_1",
+                      "paso_agua_2"
+                    ]
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "uniqueItems": true
+            }
+          ]
+        },
+        "musica": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "bosque",
+                      "jefe",
+                      "victoria",
+                      "titulo"
+                    ]
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "uniqueItems": true
+            }
+          ]
+        },
+        "ambientes": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "bosque",
+                      "agua",
+                      "noche",
+                      "viento",
+                      "cueva",
+                      "magia"
+                    ]
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "uniqueItems": true
+            }
+          ]
+        }
+      }
+    },
     "escenarios": {
       "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con escenarios oblicuos (lote E)."
     },
@@ -386,12 +612,6 @@
     },
     "vehiculos": {
       "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con vehículos (lote D2)."
-    },
-    "fx": {
-      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con efectos (lote F)."
-    },
-    "audio": {
-      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con audio (lote H)."
     }
   }
 }

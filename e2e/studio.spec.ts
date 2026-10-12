@@ -548,3 +548,33 @@ test('fuentes del juego: vietnamita en las tres fuentes y descarga', async ({ pa
   await page.screenshot({ path: `${shots}/${tag}_80_fuentes.png`, fullPage: true });
   expect(errors).toEqual([]);
 });
+
+test('efectos del juego: el catálogo animado por grupo y la descarga', async ({ page }, info) => {
+  test.setTimeout(120000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('tool-effects').click();
+  const grid = page.getByTestId('effects-grid');
+  await expect(grid.getByTestId('effect-chispa_golpe_pesado')).toBeVisible({ timeout: 30000 });
+  await expect(grid.getByTestId('effect-estrellas_mareo')).toBeVisible();
+  // la chispa se anima: el lienzo cambia entre una mirada y otra
+  const canvas = grid.getByTestId('effect-chispa_golpe_pesado').locator('canvas');
+  const snap = () => canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL());
+  const a = await snap();
+  await expect.poll(snap, { timeout: 5000 }).not.toBe(a);
+  // cada grupo filtra; todos son 56
+  await page.getByTestId('effects-groups').getByRole('button', { name: /Reacciones|Reactions/ }).click();
+  await expect(grid.locator('figure')).toHaveCount(7);
+  await expect(grid.getByTestId('effect-vena_enojo')).toBeVisible();
+  await page.getByTestId('effects-groups').getByRole('button', { name: /Todos|All/ }).click();
+  await expect(grid.locator('figure')).toHaveCount(56);
+  await page.getByTestId('effects-groups').getByRole('button', { name: /Pantalla|Screen/ }).click();
+  await expect(grid.getByTestId('effect-lineas_velocidad')).toBeVisible();
+  await page.screenshot({ path: `${shots}/${tag}_81_efectos.png`, fullPage: true });
+  const dl = page.waitForEvent('download');
+  await page.getByTestId('effects-export').click();
+  expect((await dl).suggestedFilename()).toBe('efectos.zip');
+  expect(errors).toEqual([]);
+});
