@@ -75,7 +75,11 @@
     "mouth": "line",
     "blush": false,
     "brows": true,
-    "glasses": null
+    "glasses": null,
+    "base": {
+      "eyes": "angry",
+      "mouth": "smirk"
+    }
   },
   "heads": {},
   "avatar": {

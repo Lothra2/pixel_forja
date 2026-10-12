@@ -1,3 +1,4 @@
+import type { EyeExpr, MouthExpr } from '../head/stamps';
 import type { Ramp } from '../color/ramp';
 import type { Avatar } from '../head3d/avatar';
 import type { WeaponKind, OffhandKind } from '../rig/pose';
@@ -165,7 +166,14 @@ export interface HumanFicha extends FichaBase {
     armorGlow?: string | null;
   };
   /** glasses: color del marco si tiene lentes (se dibujan con sello, no se reducen) */
-  face: { eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean };
+  face: {
+    eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean;
+    /**
+     * La cara de siempre, cuando la animación no pide otra: reemplaza los ojos abiertos y la boca neutra (o la sonrisa
+     * suave). La cara "malandra" de los rivales es { eyes: 'angry', mouth: 'smirk' }.
+     */
+    base?: { eyes?: EyeExpr; mouth?: MouthExpr };
+  };
   /** equipo de RPG: arma en la mano y algo en la otra (escudo, orbe, libro). Reemplaza la espada y el escudo de las animaciones */
   gear?: Gear;
   /** cabezas ya pixeladas, por tamaño */

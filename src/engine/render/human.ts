@@ -556,20 +556,26 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
 
   // ---------- cabeza ----------
   const drawHead = () => {
+    // la cara de base de la ficha (la malandra de los rivales) reemplaza la cara neutra de la animación
+    const base = f.face.base;
+    const face = base ? {
+      eyes: pose.face.eyes === 'open' && base.eyes ? base.eyes : pose.face.eyes,
+      mouth: (pose.face.mouth === undefined || pose.face.mouth === 'line' || pose.face.mouth === 'smile') && base.mouth ? base.mouth : pose.face.mouth,
+    } : pose.face;
     const forward = side && !style ? Math.max(1, Math.round(d.u * 1.2)) : 0;
     const neck = local(forward, d.torsoH);
     const av = f.avatar;
     const useLpc = lpcBox;
     const hi: HeadImage & { pal: { dark?: string }[] } = useLpc
-      ? lpcHead(av!.lpc!, viewIn === 'se' ? 'front34' : view, { skin: f.palette.skin[BASE], hair: f.palette.hair[BASE], eyes: f.palette.eyes, beard: av!.beard.color, glasses: av!.glasses.color }, pose.face.eyes, pose.face.mouth ?? f.face.mouth) as HeadImage & { pal: { dark?: string }[] }
+      ? lpcHead(av!.lpc!, viewIn === 'se' ? 'front34' : view, { skin: f.palette.skin[BASE], hair: f.palette.hair[BASE], eyes: f.palette.eyes, beard: av!.beard.color, glasses: av!.glasses.color }, face.eyes, face.mouth ?? f.face.mouth) as HeadImage & { pal: { dark?: string }[] }
       : avatarHead && style
       ? renderHeadModel(modelFromAvatar(f.avatar!), {
           width: d.headW, style,
           yaw: viewIn === 'se' ? 34 : viewIn === 'ne' ? 146 : view === 'front' ? 0 : view === 'back' ? 180 : SIDE_YAW - (pose.head.yaw ?? 0),
-          eyes: pose.face.eyes, mouth: pose.face.mouth ?? (f.face.mouth === 'open' ? 'line' : f.face.mouth),
+          eyes: face.eyes, mouth: face.mouth ?? (f.face.mouth === 'open' ? 'line' : f.face.mouth),
           skin: f.palette.skin[BASE], hair: f.palette.hair[BASE],
         }) as HeadImage & { pal: { dark?: string }[] }
-      : buildHeadImage(f, set!, view, pose.face.eyes, pose.face.mouth);
+      : buildHeadImage(f, set!, view, face.eyes, face.mouth);
     // tilt es cabeceo (se piensa de lado): de frente o de espalda no gira la cabeza, solo le da un toque de vida
     const angle = Math.round(rawTheta * (Math.abs(rawTheta) > 45 ? 1 : 0.6) + (side ? pose.head.tilt : Math.max(-6, Math.min(6, pose.head.tilt * 0.15))));
     let img = hi.img, px = hi.anchor.x, py = hi.anchor.y;
