@@ -15,6 +15,7 @@ import { EnemiesStep, FxStep, FamilyRow, HeroRow } from './steps/RpgTools';
 import { LootStep } from './steps/LootStep';
 import { FontsStep } from './steps/FontsStep';
 import { EffectsStep } from './steps/EffectsStep';
+import { EscenaStep } from './steps/EscenaStep';
 import { loadGallery, saveGallery, upsert, type GalleryItem } from './gallery';
 import { download, downloadFiles, fileToPayload, payloadTransfer, thumbnail, safeName } from './util';
 import {
@@ -28,8 +29,8 @@ import {
 
 type Step = 'image' | 'bg' | 'zones' | 'head' | 'avatar' | 'style' | 'animate' | 'editor' | 'export' | ToolStep;
 /** herramientas del Taller RPG: páginas sueltas, fuera de los pasos */
-type ToolStep = 'enemies' | 'fx' | 'items' | 'fonts' | 'effects';
-const TOOLS: Step[] = ['enemies', 'fx', 'items', 'fonts', 'effects'];
+type ToolStep = 'enemies' | 'fx' | 'items' | 'fonts' | 'effects' | 'escena';
+const TOOLS: Step[] = ['enemies', 'fx', 'items', 'fonts', 'effects', 'escena'];
 const HUMAN_STEPS: Step[] = ['image', 'bg', 'zones', 'head', 'avatar', 'style', 'animate', 'editor', 'export'];
 const ANIMAL_STEPS: Step[] = ['image', 'bg', 'style', 'animate', 'export'];
 const EDIT_ZONES: Zone[] = ['hair', 'beard', 'skin', 'face', 'top', 'bottom', 'socks', 'shoes', 'accessory', 'line'];
@@ -124,6 +125,15 @@ export function App() {
       setShowcase(out.map((d) => [...d]));
     })();
   }, [step, engine]);
+  // la escena pone a correr al personaje del estudio; sin personaje, al primero de la vitrina
+  const [walker, setWalker] = useState<FrameSet | null>(null);
+  useEffect(() => {
+    if (step !== 'escena') return;
+    let alive = true;
+    const f = ficha && isHuman(ficha) ? ficha : demoCast()[0];
+    engine.call<'rendered'>({ type: 'render', key: 'escena', ficha: f, cell: 48, anim: 'run', view: 'side', props: false }).then((r) => { if (alive && r) setWalker(r.clip); }).catch(() => {});
+    return () => { alive = false; };
+  }, [step, engine, ficha]);
   const [props, setProps] = useState(true);
   const [clip, setClip] = useState<FrameSet | null>(null);
   const [compareOn, setCompareOn] = useState(false);
@@ -660,6 +670,11 @@ export function App() {
                     <strong>{t('ef_title')}</strong>
                     <span>{t('ef_tile')}</span>
                   </button>
+                  <button className="tile" onClick={() => setStep('escena')} data-testid="tool-escena">
+                    <span className="ico" aria-hidden>🏘️</span>
+                    <strong>{t('sc_title')}</strong>
+                    <span>{t('sc_tile')}</span>
+                  </button>
                 </div>
               </>
             )}
@@ -800,6 +815,7 @@ export function App() {
         {step === 'fx' && <FxStep t={t} />}
         {step === 'fonts' && <FontsStep t={t} />}
         {step === 'effects' && <EffectsStep t={t} lang={lang} />}
+        {step === 'escena' && <EscenaStep t={t} walker={walker} />}
         {step === 'items' && <LootStep t={t} lang={lang} equip={equipItem} hero={ficha && isHuman(ficha) ? ficha.name : null} />}
 
         {step === 'editor' && ficha && (isHuman(ficha)

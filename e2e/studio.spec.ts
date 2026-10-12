@@ -578,3 +578,33 @@ test('efectos del juego: el catálogo animado por grupo y la descarga', async ({
   expect((await dl).suggestedFilename()).toBe('efectos.zip');
   expect(errors).toEqual([]);
 });
+
+test('escena: el layout pintado, el personaje corriendo, la colisión y las 9 pruebas', async ({ page }, info) => {
+  test.setTimeout(120000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('tool-escena').click();
+  const canvas = page.getByTestId('scene-canvas');
+  await expect(canvas).toBeVisible({ timeout: 60000 });
+  // las 9 pruebas del pedido, todas en verde
+  const tests = page.getByTestId('scene-tests');
+  await expect(tests.locator('tr')).toHaveCount(9);
+  await expect(tests.locator('tr.ok')).toHaveCount(9);
+  await expect(page.getByTestId('scene-name')).toContainText('3840');
+  // corre solo: el lienzo cambia
+  const snap = () => canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL());
+  const a = await snap();
+  await expect.poll(snap, { timeout: 5000 }).not.toBe(a);
+  await page.screenshot({ path: `${shots}/${tag}_85_escena.png`, fullPage: true });
+  // la colisión del layout encima y el aguacero
+  await page.getByTestId('scene-collision').check();
+  await page.getByTestId('scene-weather').getByRole('button', { name: /Aguacero|Downpour/ }).click();
+  await page.screenshot({ path: `${shots}/${tag}_86_escena_colision.png`, fullPage: true });
+  // un layout con errores lo dice claro y no deja descargar
+  await page.getByTestId('scene-file').setInputFiles({ name: 'malo.layout.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ id: 'malo', pais: 'vietnam' })) });
+  await expect(page.getByTestId('scene-errors')).toContainText(/largo/, { timeout: 20000 });
+  await expect(page.getByTestId('scene-export')).toBeDisabled();
+  expect(errors).toEqual([]);
+});

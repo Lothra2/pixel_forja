@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { validateLayout, collisionOf, floorAt, holeAt, boxesOf, toScreen } from '../world/oblique/layout';
+import { validateLayout, collisionOf, floorAt, holeAt, boxesOf, toScreen, depthOf } from '../world/oblique/layout';
+import { verificar, camino, contraste } from '../world/oblique/verify';
+import { generarEscenario } from '../world/oblique';
 import { VIETNAM_MANANA, NOMBRES } from '../world/oblique/paleta';
 import { piezaVietnam, posteLuz, toldo } from '../world/oblique/calle';
 import { casaTubo, casaAlto } from '../world/oblique/vietnam';
@@ -206,7 +208,12 @@ describe('escena completa', () => {
   });
 
   it('cada caja, el toldo y los postes salen como objeto, en orden de profundidad', () => {
-    expect(E.objetos).toHaveLength(boxesOf(L).length + L.bajo.length + L.postes.length);
+    const portones = L.muros.filter((m) => m.y + m.d < depthOf(L) - 8).length;
+    expect(portones).toBe(1); // el muro alto deja paso adelante
+    expect(E.objetos).toHaveLength(boxesOf(L).length + L.bajo.length + L.postes.length + portones);
+    // el portón va adelante de todo y no baja de 44 px dentro de la franja, salvo el poste y la reja del borde
+    const pt = E.objetos.find((o) => o.tipo === 'porton')!;
+    expect(pt.orden).toBeGreaterThan(depthOf(L));
     for (let i = 1; i < E.objetos.length; i++) expect(E.objetos[i].orden).toBeGreaterThanOrEqual(E.objetos[i - 1].orden);
   });
 
@@ -240,5 +247,65 @@ describe('escena completa', () => {
     expect(pp.final).toBe(L.largo - 640);
     const p = postal(E, pp.medio);
     expect([p.w, p.h]).toEqual([640, 360]);
+  });
+});
+
+describe('las 9 pruebas del pedido (10.4)', () => {
+  it('saigon_hem pasa las 9', () => {
+    const r = generarEscenario(clone());
+    expect(r.errores).toEqual([]);
+    expect(r.pruebas.map((p) => [p.n, p.ok])).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [n, true]));
+    // sin opciones no salen postales ni ficha, y escenario.json no las nombra
+    const nombres = r.archivos.map((a) => a.nombre);
+    expect(nombres).toContain('verificacion.md');
+    expect(nombres.some((n) => n.startsWith('postales/') || n === 'ficha_arte.md')).toBe(false);
+    const ej = JSON.parse(new TextDecoder().decode(r.archivos.find((a) => a.nombre === 'escenario.json')!.bytes));
+    expect(ej.postales).toBeUndefined();
+    expect(ej.ficha).toBeUndefined();
+    expect(ej.verificacion).toBe('verificacion.md');
+  });
+
+  it('con --postales y --ficha salen también', () => {
+    const nombres = generarEscenario(clone(), { postales: true, ficha: true }).archivos.map((a) => a.nombre);
+    for (const n of ['postales/inicio.png', 'postales/medio.png', 'postales/final.png', 'ficha_arte.md']) expect(nombres).toContain(n);
+  });
+
+  it('camino: falla si un muro alto tapa la franja entera y no hay por dónde subir', () => {
+    const L = clone();
+    L.muros[1] = { ...L.muros[1], d: 130, z: 80 }; // el muro alto sin portón ni cajas que alcancen
+    expect(camino(validateLayout(L).layout!).ok).toBe(false);
+    expect(camino(validateLayout(clone()).layout!).ok).toBe(true);
+  });
+
+  it('camino: un canal más ancho que el salto largo corta el tramo', () => {
+    const L = clone();
+    L.huecos[1] = { ...L.huecos[1], x1: 3020 + 120 };
+    const c = camino(validateLayout(L).layout!);
+    expect(c.ok).toBe(false);
+    expect(c.detalle).toMatch(/lo más lejos es x 30/);
+  });
+
+  it('apoyo y colisión fallan cuando corresponde', () => {
+    const L = clone();
+    L.plataformas.push({ x: 1210, y: 10, w: 30, d: 20, z: 20, tipo: 'cajas', subible: true }); // sobre el canal
+    const v = validateLayout(L).layout!;
+    const E = renderEscena(v);
+    const ps = verificar(E, L);
+    expect(ps.find((p) => p.n === 4)!.ok).toBe(false);
+    // si el layout que llega no es el que se pintó, la colisión no calza
+    const otro = clone();
+    expect(verificar(E, otro).find((p) => p.n === 5)!.ok).toBe(false);
+  });
+
+  it('contraste WCAG', () => {
+    expect(contraste('#000000', '#ffffff')).toBeCloseTo(21, 0);
+    expect(contraste('#1e1418', '#7a7178')).toBeGreaterThan(3);
+  });
+
+  it('un layout con errores no sale', () => {
+    const r = generarEscenario({ id: 'x' });
+    expect(r.ok).toBe(false);
+    expect(r.archivos).toEqual([]);
+    expect(r.errores.join()).toMatch(/falta `largo`/);
   });
 });

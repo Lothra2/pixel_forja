@@ -6,7 +6,7 @@ import { VIETNAM_MANANA, type Color, type Paleta } from './paleta';
 import { pintarPiso } from './piso';
 import { cielo } from './cielo';
 import { saigonSkyline } from './skyline';
-import { piezaVietnam, posteLuz, toldo, cables, paloma, moto, MOTO_W, banquito } from './calle';
+import { piezaVietnam, posteLuz, toldo, cables, paloma, moto, MOTO_W, banquito, porton } from './calle';
 import { filaVietnam, ropaTendida, nuevasAnclas, type Anclas, type Hueco } from './vietnam';
 import { drawText, textWidth, LINE_H } from './letras';
 import { fichaArte, type FichaArte } from './ficha';
@@ -132,6 +132,15 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
   if (typeof meta === 'number') for (let y = 0; y < D; y++) for (let i = 0; i < 8; i++) piso.p(meta + i, y, ((i >> 2) + (y >> 2)) % 2 ? 'tinta' : 'luz');
   for (const b of boxesOf(L)) sombraCaja(piso, b.x, b.y, b.w, b.d, b.z, L);
   for (const b of L.bajo) for (let y = (b.y0 ?? 0) + 2; y < (b.y1 ?? D) + 2 && y < D; y++) for (let x = b.x0 + 6; x < b.x1 + 6 && x < W; x++) if (bayer(x, y) < 0.3 && !holeAt(L, x, y)) piso.p(x, y, floorAt(L, x, y) === 'acera' ? 'cemento' : 'asfalto');
+  // umbral de baldosa en el paso del portón, con los rieles de la reja
+  for (const m of L.muros) {
+    if (m.y + m.d >= D - 8) continue;
+    for (let y = m.y + m.d; y < D; y++) for (let x = m.x - 2; x < m.x + m.w + 2; x++) {
+      const borde = y === m.y + m.d || y === D - 1 || x === m.x - 2 || x === m.x + m.w + 1;
+      piso.p(x, y, borde ? 'cemento' : ((x >> 2) + (y >> 2)) % 2 ? 'crema' : 'cemento_claro');
+    }
+    for (let x = m.x - 2; x < m.x + m.w + 34; x++) piso.p(x, D - 2, 'sombra');
+  }
   // calle inundada
   for (const a of L.agua) inundar(piso, cerca, a.x0, a.x1, a.y0 ?? 0, a.y1 ?? D, FT, seed);
 
@@ -144,6 +153,12 @@ export function renderEscena(L: ObliqueLayout, seed = 42): Escena {
   L.bajo.forEach((b, i) => {
     const t = toldo(pal, b.x1 - b.x0, (b.y1 ?? D) - (b.y0 ?? 0));
     objetos.push({ id: `${b.tipo ?? 'bajo'}_${i}`, tipo: b.tipo ?? 'bajo', origen: 'bajo', img: t.img, x: b.x0, y: FT + (b.y0 ?? 0) - b.z, orden: b.y1 ?? D });
+  });
+  // portón abierto donde un muro deja paso adelante: se lee por dónde se rodea
+  L.muros.forEach((m, i) => {
+    if (m.y + m.d >= D - 8) return;
+    const pt = porton(pal, m.w, m.y + m.d, D, m.z, 'HẺM 42');
+    objetos.push({ id: `porton_${i}`, tipo: 'porton', origen: 'muros', img: pt.img, x: m.x + pt.dx, y: FT + pt.top, orden: D + 1 });
   });
   postes.forEach((p, i) => {
     const po = posteLuz(pal, p.alto);

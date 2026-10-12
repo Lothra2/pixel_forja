@@ -1,6 +1,6 @@
 import { rng, grain } from '../../fx/pix';
 import { Lienzo } from './lienzo';
-import { drawText, textWidth } from './letras';
+import { drawText, textWidth, LINE_H } from './letras';
 import type { Color, Paleta } from './paleta';
 
 /**
@@ -237,7 +237,7 @@ export function kiosco(pal: Paleta, w: number, d: number, z: number, texto = 'SI
   return P;
 }
 
-/** Muro que cruza la calle. Bajo: repellado con ladrillo pelado. Alto: con tejas arriba, vidrios rotos y el portón plegado. */
+/** Muro que cruza la calle. Bajo: corona de ladrillo. Alto: repello con vidrios rotos arriba. El portón va aparte (`porton`). */
 export function muro(pal: Paleta, w: number, d: number, z: number, alto: boolean, seed = 1): Pieza {
   const sobre = alto ? 4 : 0, P = nueva(pal, w, d, z, sobre), L = P.img, top = sobre, fr = top + d;
   // techo: la corona del muro, larga hacia el fondo
@@ -271,16 +271,50 @@ export function muro(pal: Paleta, w: number, d: number, z: number, alto: boolean
   // moho abajo
   for (let x = 0; x < w; x++) { const hh = 1 + Math.floor(grain(x, 0, seed + 5) * 4); for (let y = 0; y < hh; y++) L.p(x, fr + z - 1 - y, y === 0 ? 'verde_oscuro' : 'canal'); }
   L.vl(0, fr, z, 'cemento'); L.vl(w - 1, fr, z, 'cemento');
-  if (alto) {
-    // portón de hierro abierto, plegado contra el frente
-    const gx = 2, gw = Math.min(w - 4, 14), gy = fr + 6, gh = z - 8;
-    L.box(gx, gy, gw, gh, 'azul', 'azul_noche');
-    for (let x = gx + 2; x < gx + gw - 1; x += 3) L.vl(x, gy + 1, gh - 2, 'azul_noche');
-    L.hl(gx, gy + Math.floor(gh / 2), gw, 'azul_noche');
-    L.p(gx + gw - 2, gy + Math.floor(gh / 2) + 2, 'oro');
-  }
   pie(L, fr + z - 1, w);
   return P;
+}
+
+/**
+ * Portón de hẻm (cổng hẻm) abierto en el hueco que deja un muro adelante: pilar al final del muro, poste en el borde de
+ * la franja, viga por arriba de las cabezas con la placa y la hoja de reja abierta hacia afuera. No tapa el paso: todo
+ * lo que cae dentro de la franja va por encima de `zLibre` o es la reja calada del borde.
+ *
+ * Medidas de mundo: el muro termina en `yFin` y la franja en `D`, el muro mide `w` de ancho y `z` de alto.
+ * Devuelve el dibujo y dónde va: `dx` desde la x del muro y `top` como fila de pantalla relativa a `franja.atras`.
+ */
+export function porton(pal: Paleta, w: number, yFin: number, D: number, z: number, placa = 'HẺM'): { img: Lienzo; dx: number; top: number } {
+  const ZA = Math.max(z + 14, 60), hoja = 30, dx = -2;
+  const row = (y: number, zz: number) => y - zz; // fila relativa a franja.atras
+  const top = Math.min(row(yFin, ZA + 8), row(D, ZA + 4) - LINE_H - 4), W = Math.max(w + 4 + hoja + 4, textWidth(placa) + 8 + w), H = D - top + 1;
+  const L = new Lienzo(W, H, pal);
+  const R = (y: number, zz: number) => row(y, zz) - top; // fila dentro del dibujo
+  const cx = Math.floor(w / 2) - dx; // centro del muro dentro del dibujo
+  // pilar al final del muro, un poco más alto y más ancho que el muro, con su remate
+  const px0 = cx - Math.ceil(w / 2) - 1, pw = w + 2;
+  L.f(px0, R(yFin - 4, ZA + 4), pw, 4, 'cemento_claro'); L.hl(px0, R(yFin - 4, ZA + 4), pw, 'luz');
+  L.f(px0, R(yFin, ZA + 4), pw, R(yFin, z) - R(yFin, ZA + 4), 'crema');
+  L.vl(px0, R(yFin, ZA + 4), R(yFin, z) - R(yFin, ZA + 4), 'tinta'); L.vl(px0 + pw - 1, R(yFin, ZA + 4), R(yFin, z) - R(yFin, ZA + 4), 'tinta');
+  L.hl(px0, R(yFin, ZA + 4), pw, 'luz'); L.d(cx, R(yFin - 2, ZA + 7), 2.5, 'cemento_claro'); L.p(cx - 1, R(yFin - 2, ZA + 8), 'luz');
+  // viga por arriba, de pilar a poste: techo largo hacia adelante y su frente
+  const bx = cx - 4;
+  for (let y = yFin; y < D; y++) { L.f(bx, R(y, ZA + 4), 8, 1, 'azul'); L.p(bx, R(y, ZA + 4), 'azul_noche'); L.p(bx + 7, R(y, ZA + 4), 'azul_noche'); }
+  for (let y = yFin + 3; y < D - 2; y += 5) L.hl(bx + 1, R(y, ZA + 4), 6, 'celeste');
+  L.f(bx, R(D, ZA + 4), 8, 4, 'azul_noche');
+  // poste de adelante
+  L.f(cx - 2, R(D, ZA), 5, R(D, 0) - R(D, ZA), 'azul'); L.vl(cx - 2, R(D, ZA), R(D, 0) - R(D, ZA), 'celeste'); L.vl(cx + 2, R(D, ZA), R(D, 0) - R(D, ZA), 'azul_noche');
+  L.f(cx - 3, R(D, 2), 7, 2, 'sombra');
+  // placa del hẻm colgada del poste, de frente
+  const tw = textWidth(placa) + 6, sx = cx - Math.floor(tw / 2), sy = R(D, ZA + 4) - LINE_H - 3;
+  L.box(sx, sy, tw, LINE_H + 2, 'azul', 'azul_noche'); drawText(L, sx + 3, sy, placa, 'luz');
+  // hoja de reja abierta hacia afuera, contra el borde de la franja: calada, se ve lo de atrás
+  const hx = cx + 3, hy0 = R(D, 44), hy1 = R(D, 0);
+  L.hl(hx, hy0, hoja, 'azul_noche'); L.hl(hx, hy0 + 1, hoja, 'azul'); L.hl(hx, hy1 - 2, hoja, 'azul'); L.hl(hx, hy1 - 1, hoja, 'azul_noche');
+  L.hl(hx, Math.floor((hy0 + hy1) / 2), hoja, 'azul');
+  L.vl(hx + hoja - 1, hy0, hy1 - hy0, 'azul_noche');
+  for (let x = hx + 4; x < hx + hoja - 1; x += 4) { L.vl(x, hy0 + 2, hy1 - hy0 - 4, 'azul'); L.p(x, hy0 - 1, 'azul'); L.p(x, hy0 - 2, 'celeste'); }
+  for (let x = hx + 2; x < hx + hoja - 2; x += 8) { L.p(x + 1, hy0 + 6, 'oro'); L.p(x + 2, hy0 + 5, 'oro'); L.p(x + 3, hy0 + 6, 'oro'); }
+  return { img: L, dx, top };
 }
 
 /** Poste de luz de concreto con cruceta, transformador, lámpara y la maraña de cables. Base en la última fila. */

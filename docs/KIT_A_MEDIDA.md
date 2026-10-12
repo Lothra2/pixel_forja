@@ -93,12 +93,18 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
 - **Qué sale del audio:** `audio/sfx/<n>.wav`, `audio/musica/<n>.wav` y `audio/ambiente/<n>.wav`, con `manifest.audio.<sección>.<n> = { archivo, duracion, bucle? }`. Cada sonido sale igual siempre, se pida solo o con otros.
 - **Nombres que todavía no existen:** si un nombre se parece mucho a uno que existe, es un error con sugerencia (`ladridoo`: "¿Quisiste decir "ladrido"?"). Si no se parece a ninguno, es un sonido o efecto que llega después: se salta con aviso y queda en `manifest.pendiente`. Así el juego puede listar desde ya los sonidos del lote H (`golpe_1`, `silbato`, `marcha_nekketsu`...). Lo mismo con otras secciones de audio, como `voces`.
 
+- **Escenarios oblicuos:** `"escenarios": "data/stages/"` (o una lista de layouts).
+  - Cada layout pasa por las 9 pruebas y sale en `escenarios/<id>/`, con `manifest.escenarios.<id>` apuntando a su `escenario.json`.
+  - Si una prueba falla, el kit no sale y el error dice cuál y por qué.
+  - Las postales y la ficha de arte no van en el kit: se piden aparte con `npm run escenario -- <layout> <carpeta> --postales --ficha`.
+  - Todo el detalle: [ESCENARIOS.md](ESCENARIOS.md).
+
 ### Lo que todavía no genera
 
-`escenarios`, `publico`, `npc`, `vehiculos`, `ui.logo` y los sonidos nuevos del lote H se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
+`publico`, `npc`, `vehiculos`, `ui.logo` y los sonidos nuevos del lote H se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
 
 ```
-aviso: escenarios: todavía no se genera, llega con escenarios oblicuos (lote E)
+aviso: vehiculos: todavía no se genera, llega con vehículos (lote D2)
 aviso: animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire
 aviso: audio.musica: todavía no existen, llegan con el lote H: marcha_nekketsu
 ```

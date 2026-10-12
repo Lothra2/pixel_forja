@@ -46,7 +46,15 @@ export function puntosPostal(E: Escena): Record<'inicio' | 'medio' | 'final', nu
   return { inicio: Math.max(0, Math.min(salida - 40, L.largo - W)), medio: mejor, final: Math.max(0, Math.min(meta + 50 - W, L.largo - W)) };
 }
 
-export function exportarEscena(E: Escena, verificacion?: string): Archivo[] {
+export interface OpcionesExportar {
+  /** postales/inicio, medio y final (para aprobar; el juego no las carga). Por defecto, sí. */
+  postales?: boolean;
+  /** ficha_arte.md (para aprobar). Por defecto, sí. */
+  ficha?: boolean;
+}
+
+export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExportar = {}): Archivo[] {
+  const conPostales = o.postales ?? true, conFicha = o.ficha ?? true;
   const L = E.layout, FT = L.franja.atras, D = depthOf(L), out: Archivo[] = [];
   const png = (nombre: string, r: Raster) => out.push({ nombre, bytes: encodePng(r) });
   const trozos = (base: string, capa: Lienzo) => {
@@ -81,9 +89,9 @@ export function exportarEscena(E: Escena, verificacion?: string): Archivo[] {
   out.push({ nombre: 'particulas.json', bytes: json({ nota: 'x e y en pixeles de pantalla a escala 1 (y de pantalla = franja.atras + y del mundo). fx: nombre del efecto del catálogo (manifest.fx).', particulas: E.particulas }) });
   // postales
   const pp = puntosPostal(E);
-  for (const [n, x] of Object.entries(pp)) png(`postales/${n}.png`, postal(E, x));
+  if (conPostales) for (const [n, x] of Object.entries(pp)) png(`postales/${n}.png`, postal(E, x));
   // ficha y verificación
-  out.push({ nombre: 'ficha_arte.md', bytes: new TextEncoder().encode(fichaMarkdown(E.ficha)) });
+  if (conFicha) out.push({ nombre: 'ficha_arte.md', bytes: new TextEncoder().encode(fichaMarkdown(E.ficha)) });
   if (verificacion) out.push({ nombre: 'verificacion.md', bytes: new TextEncoder().encode(verificacion) });
   // el escenario: layout validado y cómo va todo
   out.push({
@@ -105,9 +113,9 @@ export function exportarEscena(E: Escena, verificacion?: string): Archivo[] {
       callejones: E.huecos,
       superficie: { archivo: 'superficie.png', y: FT, leyenda: E.superficie.leyenda },
       colision: 'colision.json', luces: 'luces.json', particulas: 'particulas.json',
-      postales: Object.fromEntries(Object.entries(pp).map(([n, x]) => [n, { archivo: `postales/${n}.png`, x }])),
+      ...(conPostales ? { postales: Object.fromEntries(Object.entries(pp).map(([n, x]) => [n, { archivo: `postales/${n}.png`, x }])) } : {}),
       paleta: NOMBRES.map((n) => ({ nombre: n, hex: E.paleta[n] })),
-      ficha: 'ficha_arte.md',
+      ...(conFicha ? { ficha: 'ficha_arte.md' } : {}),
       ...(verificacion ? { verificacion: 'verificacion.md' } : {}),
       layout: L,
     }),
