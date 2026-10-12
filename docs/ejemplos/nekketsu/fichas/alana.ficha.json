@@ -68,7 +68,7 @@
     "print": null,
     "chestText": "GG",
     "chestTextColor": "#f2c230",
-    "number": "4",
+    "number": "21",
     "numberColor": "#f2c230"
   },
   "face": {
@@ -149,5 +149,25 @@
   "physics": {
     "hairLag": 1
   },
-  "movementProfile": "premium"
+  "movementProfile": "premium",
+  "wardrobe": {
+    "variants": {
+      "equipo": {
+        "label": "Equipo"
+      },
+      "mickey": {
+        "label": "Mickey",
+        "outfit": {
+          "bottom": "shorts",
+          "socks": "none",
+          "shoes": "tenis"
+        },
+        "colors": {
+          "top": "#d7263d",
+          "bottom": "#1e1e24",
+          "shoes": "#f2c230"
+        }
+      }
+    }
+  }
 }

@@ -23,6 +23,8 @@ npm run deportes -- salida/kit --cabecitas   # ui/cabecitas.png: una cabeza de 1
 npm run deportes -- salida/kit --deportes calle --objetos   # pelea callejera (no va por defecto) y las armas del piso
 ```
 
+Con `--fichas`, una ficha de animal (la mascota) sale en `animales/<id>.png + .json` con todas sus animaciones, y un gigante sale en la celda que dice su ficha. Ver [Equipos](#equipos-uniformes-gigantes-y-mascota).
+
 Sin estas opciones el kit sale **byte a byte igual** que antes (hay una prueba que lo revisa).
 
 La carpeta se borra y se vuelve a escribir. Por seguridad, el script se niega si la carpeta tiene otra cosa que no sea un kit de PixelForja.
@@ -37,7 +39,7 @@ CREDITOS.txt                              autores de las piezas LPC (hay que mos
 
 Las filas siguen el orden de `direcciones` del manifiesto: `down, down_left, left, up_left, up, up_right, right, down_right`.
 
-Cada atleta trae su `celda` y su `pivote`. El pivote es el punto de apoyo (los pies) y **no se mueve** entre cuadros, direcciones ni animaciones. Hulk va en celda de 64 y el resto en 48.
+Cada atleta trae su `celda` y su `pivote`. El pivote es el punto de apoyo (los pies) y **no se mueve** entre cuadros, direcciones ni animaciones. Hulk va en celda de 64 y el resto en 48. Un gigante de tus fichas va en la celda que diga su ficha (`cell`).
 
 ## Qué hace el juego con cada dato
 
@@ -175,6 +177,36 @@ Una variante cambia solo lo que dice (`outfit` y los colores de `top`, `bottom`,
 - **Ver datos** (en Animar, junto a Papel cebolla): dibuja encima del personaje la caja, el cuerpo (punteado), las manos, la cabeza, los pies, el punto del golpe, la carga y el arma, con su leyenda y la caja del cuadro en números. Son los mismos datos que exporta el kit.
 - **Arma en la mano:** en las animaciones de armas, elige cuál de las armas del piso se ve en la mano.
 - **Vestuario:** si la ficha trae variantes, aparecen debajo de la animación. Se ve cada una sin tocar la ficha.
+
+## Equipos: uniformes, gigantes y mascota
+
+Todo esto va en la ficha y se edita en el estudio (Estilo). Sirve para cualquier equipo.
+
+| Campo de `outfit` | Qué hace |
+|---|---|
+| `jacket` | Chaqueta encima, del color dado |
+| `jacketCut` | `casual` (la de siempre) o `gakuran`: chaqueta escolar japonesa de cuello alto con botones dorados |
+| `jacketClosed` | `true`: la chaqueta tapa la camiseta (el gakuran abotonado). Si no, abierta |
+| `jacketSleeves` | `none`, `short` o `long` (sin valor: largas). Sin mangas se ven las de la camiseta |
+| `buttons` | Color de los botones del gakuran (sin valor: dorado) |
+| `armband` | Brazalete del color dado en el brazo cercano. Sirve de distintivo de equipo o de capitán |
+| `chestText`, `chestTextColor` | Hasta 3 letras en el pecho (las iniciales del equipo). Con letras, el número va solo atrás |
+| `number`, `numberColor` | Número de la camiseta, de uno o dos dígitos |
+
+Las letras y el número **buscan dónde no los tape la cabeza**: primero donde iban siempre, después más abajo y con números o letras bajitas (de 4 filas). Si en un pecho chico no cabe ni una letra entera, va un parche del color de las letras. Si de espalda el pelo tapa el número, no se dibuja a medias: el manifiesto trae `numero` en cada atleta para mostrarlo en el HUD.
+
+**Gigantes:** `"cell": 64` en la ficha hace que el kit lo dibuje en 64 aunque el resto vaya en 48, y el estudio lo abre en 64. El atleta trae su `celda` y su `pivote` en el manifiesto, como Hulk.
+
+**Mascota:** una ficha de animal en la carpeta de `--fichas` sale en `animales/<id>.png + .json` (JSON Hash de TexturePacker, cuadro `<anim>_<fila>_<cuadro>`, las mismas filas que los atletas) con todas sus animaciones. Su entrada en el manifiesto:
+
+```jsonc
+"animales": {
+  "thor": { "nombre": "Thor", "celda": 48, "pivote": [24, 46], "atlas": "animales/thor.json", "imagen": "animales/thor.png",
+            "anims": { "run": { "cuadros": 6, "fps": 14, "loop": true, "avance": 22, "eventos": [ ... ] }, ... } }
+}
+```
+
+Ejemplos listos: la Familia GG con "GG" dorado y su número, el Instituto Nekketsu con gakuran y brazalete rojo, y Thor, en [`docs/ejemplos/nekketsu/fichas/`](ejemplos/nekketsu/fichas/).
 
 ## Pelea callejera (`--deportes calle`)
 

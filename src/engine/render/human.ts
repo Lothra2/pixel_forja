@@ -392,38 +392,81 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
         part.set(x, y, mat, slot);
       }
     // número de camiseta, de frente o de espalda (contorno de la camisa). Con letras en el pecho, solo de espalda.
-    // Cabe si sobra un pixel de cada lado; con pocas filas de camisa, los números bajitos (de 4 filas)
+    // Cabe si sobra al menos un pixel; con pocas filas de camisa, los números bajitos (de 4 filas)
     const numPx = new Set<number>();
     const txtPx = new Set<number>();
     const shirtRowsT = d.torsoH - d.pantsRows;
-    const stamp = (glyphs: string[][], set: Set<number>, startRow: number, lean = true) => {
+    // la cabeza ya está dibujada: un pixel tapado es uno con algo de más adelante encima (barbilla, barba, pelo) o
+    // pegado a eso (ahí va el contorno de la cabeza)
+    const over = (X: number, Y: number) => X >= 0 && Y >= 0 && X < canvas.w && Y < canvas.h && canvas.layer[Y * canvas.w + X] > Layer.Torso;
+    const covered = (px: number, py: number) => {
+      const X = px + canvas.ox, Y = py + canvas.oy;
+      return over(X, Y) || over(X, Y - 1) || over(X - 1, Y) || over(X + 1, Y);
+    };
+    interface Spot { glyphs: string[][]; row: number; lean: boolean }
+    const pixelsOf = ({ glyphs, row, lean }: Spot) => {
       const w = glyphs.length * 4 - 1;
       const x0 = -Math.floor(w / 2) - (d.torsoW % 2 === 0 ? 1 : 0) + (w % 2 === 0 ? 1 : 0);
-      const y0 = -d.torsoH + startRow;
-      glyphs.forEach((g, k) => g.forEach((row, jj) => [...row].forEach((c, ii) => {
+      const y0 = -d.torsoH + row;
+      const keys: number[] = [];
+      let total = 0, seen = 0;
+      glyphs.forEach((g, k) => g.forEach((line, jj) => [...line].forEach((c, ii) => {
+        if (c !== '#') return;
+        total++;
         const px = x0 + k * 4 + ii + (lean ? Math.round(shear * (d.torsoH - 2 - jj)) : 0), py = y0 + jj;
         const m = part.get(px, py)?.mat;
-        if (c === '#' && (m === 'top' || m === 'top2' || m === 'jacket')) set.add(Part.key(px, py));
+        if (m !== 'top' && m !== 'top2' && m !== 'jacket') return;
+        keys.push(Part.key(px, py));
+        if (!covered(px, py)) seen++;
       })));
+      return { keys, total, seen };
     };
+    // el primer lugar donde se ve completo; si ninguno, el que más se ve (si se ve al menos el 75 %)
+    const place = (spots: Spot[], set: Set<number>) => {
+      let best: ReturnType<typeof pixelsOf> | null = null;
+      for (const s of spots) {
+        const r = pixelsOf(s);
+        if (r.total && r.seen === r.total) { best = r; break; }
+        if (!best || r.seen > best.seen) best = r;
+      }
+      if (!best || best.seen < best.total * 0.75) return false;
+      for (const k of best.keys) set.add(k);
+      return true;
+    };
+    const rowsFrom = (h: number, first: number) => [first, ...Array.from({ length: Math.max(0, shirtRowsT - h + 1) }, (_, k) => k).filter((k) => k !== first)];
     const num = armor ? undefined : f.outfit.number;
     const text = armor ? undefined : f.outfit.chestText?.toUpperCase();
     if (num && !side && Math.abs(theta) < 20 && (!text || view === 'back')) {
       const digits = num.slice(0, 2).split('').filter((ch) => DIGITS[ch]);
       const wNum = digits.length * 4 - 1;
-      if (digits.length && d.torsoW >= wNum + 2) {
-        if (shirtRowsT >= 6) stamp(digits.map((ch) => DIGITS[ch]), numPx, Math.max(1, Math.floor((shirtRowsT - 5) / 2) + 1), false);
-        else if (shirtRowsT >= 4) stamp(digits.map((ch) => DIGITS4[ch]), numPx, shirtRowsT >= 5 ? 1 : 0, false);
+      if (digits.length && d.torsoW >= wNum + 1) {
+        // primero donde iba siempre; si la cabeza lo tapa, más abajo o con los números bajitos
+        const tall = digits.map((ch) => DIGITS[ch]), low = digits.map((ch) => DIGITS4[ch]);
+        const spots: Spot[] = [];
+        if (shirtRowsT >= 6) spots.push(...rowsFrom(5, Math.max(1, Math.floor((shirtRowsT - 5) / 2) + 1)).map((row) => ({ glyphs: tall, row, lean: false })));
+        if (shirtRowsT >= 4) spots.push(...rowsFrom(4, shirtRowsT >= 5 ? 1 : 0).map((row) => ({ glyphs: low, row, lean: false })));
+        place(spots, numPx);
       }
     }
-    // letras en el pecho, de frente y en diagonal: todas si caben; si no, la primera
+    // letras en el pecho, de frente y en diagonal: todas si caben; si no, la primera. Abajo de la camisa primero
     if (text && !side && view !== 'back' && Math.abs(theta) < 20 && shirtRowsT >= 4) {
       const all = text.slice(0, 3).split('').filter((ch) => GLYPHS[ch]);
-      const tall = shirtRowsT >= 7;
       const fit = (n: number) => d.torsoW >= n * 4 - 1 + 1;
       const use = fit(all.length) ? all : all.slice(0, 1);
-      // pegadas abajo de la camisa: arriba la tapan la barbilla y la barba
-      if (use.length && fit(use.length)) stamp(use.map((ch) => (tall ? GLYPHS[ch] : compact(ch))), txtPx, shirtRowsT - (tall ? 5 : 4));
+      if (use.length && fit(use.length)) {
+        const spots: Spot[] = [];
+        if (shirtRowsT >= 7) spots.push(...rowsFrom(5, shirtRowsT - 5).map((row) => ({ glyphs: use.map((ch) => GLYPHS[ch]), row, lean: true })));
+        spots.push(...rowsFrom(4, shirtRowsT - 4).map((row) => ({ glyphs: use.map(compact), row, lean: true })));
+        place(spots, txtPx);
+      }
+      // si ninguna letra se ve entera (pecho chico o tapado por la barbilla): un parche del color al medio, abajo
+      if (!txtPx.size) {
+        const pw = d.torsoW >= 7 ? 3 : 2, x0 = -Math.floor(pw / 2) - (d.torsoW % 2 === 0 && pw % 2 === 1 ? 1 : 0);
+        for (let j = 0; j < 2; j++) for (let i = 0; i < pw; i++) {
+          const py = -d.torsoH + shirtRowsT - 2 + j, px = x0 + i + Math.round(shear * (d.torsoH - 2 - (shirtRowsT - 2 + j)));
+          if (part.get(px, py)?.mat === 'top' && !covered(px, py)) txtPx.add(Part.key(px, py));
+        }
+      }
     }
     // estampado del pecho: un parche de color (la letra no cabe), de frente y de lado
     const print = f.outfit.print ?? (text && side ? f.outfit.chestTextColor ?? '#f2c230' : null);
@@ -656,8 +699,10 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   }
   drawCape();
   drawSkirt();
-  drawTorso();
+  // la cabeza antes que el torso: el número y las letras del pecho buscan dónde no los tape (el orden no cambia
+  // el dibujo, cada pieza tiene su capa)
   drawHead();
+  drawTorso();
   // si la mano queda más arriba que la barbilla, el brazo va detrás de la cabeza
   const chinY = local(0, d.torsoH)[1];
   const carrying = !!pose.load;
