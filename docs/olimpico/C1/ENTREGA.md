@@ -1,6 +1,6 @@
 # Lote C1: Familia GG e Instituto Nekketsu
 Estado: entregado
-PR: (pendiente)
+PR: https://github.com/Lothra2/pixel_forja/pull/9
 Fecha: 2026-10-12
 
 ## Qué se hizo
