@@ -1,6 +1,6 @@
 # Lote E1: sistema de escenarios oblicuos y saigon_hem
 Estado: entregado
-PR: (se pone al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/14
 Fecha: 2026-10-12
 
 ## Qué se hizo
