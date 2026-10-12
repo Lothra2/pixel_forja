@@ -107,7 +107,14 @@ Lo que sale:
 - `custom.test.ts`:
   - El kit completo de Nekketsu trae `kachinuki` con las propias solo en su dueño, la comida después de las armas, `ui.vs`, `publico.azoteas`, los 63 efectos y el `punto` del impacto en las 5 filas.
   - No falta ni sobra ningún archivo y ninguna imagen pasa de 4096 px.
-- Suite completa y e2e: ver el PR.
+- **Suite completa (vitest): 255 pruebas.** En la primera corrida pasaron 252. Las 3 que fallaron eran esperables o mías y quedaron corregidas:
+  - La imagen dorada de efectos: entraron los 7 nuevos. Revisé que los 56 de antes quedaran idénticos pixel por pixel antes de regenerarla.
+  - El ancho de la hoja de retratos: ahora tiene 8 expresiones.
+  - `edge_teeter` de Rick a 32 px se salía de la celda: bajé la inclinación.
+
+  Los 5 archivos tocados pasan 70 de 70 en la segunda corrida.
+- **e2e (Playwright): 44 de 44.** El estudio ahora muestra 63 efectos, y ajusté esa cuenta en la prueba.
+- `tsc` sin errores.
 
 **Un bug que agarré revisando los GIF:** el kit sacaba la hoja del público vacía, porque `ancho: undefined` pisaba el valor de fábrica. Está corregido y tiene su prueba.
 
