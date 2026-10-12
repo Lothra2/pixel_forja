@@ -1,3 +1,4 @@
+import { esGorroPropio, pixelesGorro } from './sombreros';
 import data from './lpc-data.json';
 import { hexToLab, labToHex, labToLch, lchToLab, type Lab } from '../color/oklab';
 import type { EyeExpr, MouthExpr } from '../head/stamps';
@@ -133,7 +134,7 @@ export function lpcSkinOf(head: string): string | null {
 
 // ---------- armado ----------
 
-const EXPR: Record<EyeExpr, string> = { open: 'neutral', closed: 'closed', happy: 'happy', sad: 'sad', angry: 'anger', wide: 'shock', hurt: 'sad', wink: 'anger' };
+const EXPR: Record<EyeExpr, string> = { open: 'neutral', closed: 'closed', happy: 'happy', sad: 'sad', angry: 'anger', wide: 'shock', hurt: 'sad', wink: 'anger' }; // el guiño parte de la cara de enojo y después cierra un ojo a mano
 
 interface Layer { key: string; mat: ModelHeadPal['mat']; map: (c: string, d: PartDir) => string }
 
@@ -209,6 +210,11 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
   const used = layers.map((l) => ({ l, d: DATA.parts[l.key]?.dirs[dir] })).filter((u): u is { l: Layer; d: PartDir } => !!u.d);
   let x0 = 64, y0 = 64, x1 = 0, y1 = 0;
   for (const { d } of used) { x0 = Math.min(x0, d.x); y0 = Math.min(y0, d.y); x1 = Math.max(x1, d.x + d.w); y1 = Math.max(y1, d.y + d.h); }
+  // gorro propio (dibujado con código): agranda la caja si se sale (el ala del nón lá, la visera)
+  // el gorro se apoya en la cima del pelo (o de la cabeza, si es calva)
+  const cimaPelo = used.filter((u) => u.l.key.startsWith('hair/')).reduce((m, u) => Math.min(m, u.d.y), headDir.y);
+  const gorro = esGorroPropio(look.hat) ? pixelesGorro(look.hat, dir, { x: headDir.x + (turns('face/') ? turn : 0), y: cimaPelo, w: headDir.w, h: headDir.h }, look.hatColor) : [];
+  for (const p of gorro) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x + 1); y1 = Math.max(y1, p.y + 1); }
   const w = x1 - x0, h = y1 - y0;
   const idx = new Int16Array(w * h).fill(-1);
   const pal: ModelHeadPal[] = [];
@@ -252,6 +258,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
         idx[(fy - y0) * w + (fx - x0)] = entry(hex, l.mat, back);
       }
   }
+  for (const p of gorro) idx[(p.y - y0) * w + (p.x - x0)] = entry(p.hex, 'hair', false);
   // cejas fruncidas encima de todo (también del flequillo, que las tapa): una raya en V sobre cada ojo, de la punta de
   // afuera arriba a la de adentro abajo, y el párpado que baja. Es la cara de enojo y la malandra de los rivales.
   if ((eyes === 'angry' || eyes === 'wink') && dir === 'down' && !monster) {
@@ -266,6 +273,22 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
       const o = ojos.filter(([fx]) => (fx - cx) * lado > 0.5);
       if (!o.length) continue;
       const top = Math.min(...o.map(([, fy]) => fy)), xs = o.map(([fx]) => fx), inner = lado < 0 ? Math.max(...xs) : Math.min(...xs), outer = lado < 0 ? Math.min(...xs) : Math.max(...xs);
+      // guiño: el ojo de la derecha de la imagen se cierra (piel encima y una raya curva), y su ceja no se frunce
+      if (eyes === 'wink' && lado > 0) {
+        const bot = Math.max(...o.map(([, fy]) => fy)), mid = Math.round((top + bot) / 2) + 1;
+        // se tapa la caja del ojo con su blanco (lo que es cara y no es piel), no solo la pupila
+        for (let fy = top - 1; fy <= bot + 1; fy++) for (let fx = Math.min(...xs) - 1; fx <= Math.max(...xs) + 1; fx++) {
+          if (fx < x0 || fx >= x1 || fy < y0 || fy >= y1) continue;
+          const v = idx[(fy - y0) * w + (fx - x0)];
+          if (v >= 0 && pal[v].mat === 'face') idx[(fy - y0) * w + (fx - x0)] = parpado;
+        }
+        for (let fx = Math.min(...xs); fx <= Math.max(...xs); fx++) {
+          const borde = fx === Math.min(...xs) || fx === Math.max(...xs);
+          const fy = mid - (borde ? 0 : 1);
+          if (fx >= x0 && fx < x1 && fy >= y0 && fy < y1) idx[(fy - y0) * w + (fx - x0)] = ceja;
+        }
+        continue;
+      }
       const n = Math.abs(inner - outer) + 1;
       for (let i = 0; i <= n; i++) {
         const fx = outer + (inner > outer ? i : -i) + (inner > outer ? 0 : 0), fy = top - 3 + Math.round((i / n) * 2);

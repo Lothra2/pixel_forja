@@ -3,6 +3,7 @@ import { hexToRgb } from '../color/oklab';
 import { makeRamp, OUTLINE } from '../color/ramp';
 import { renderHeadModel, HEAD_STYLES, type ModelHeadImage } from './render';
 import { lpcHead, LPC_HEADS, LPC_HAIRS, LPC_BROWS, LPC_NOSES, LPC_BEARDS, LPC_MUSTACHES, LPC_GLASSES, LPC_HATS, LPC_MONSTERS, LPC_EARS, LPC_HORNS, DEFAULT_LPC, isMonsterHead, lpcSkinOf, type LpcLook } from '../parts/lpc';
+import { GORROS_PROPIOS } from '../parts/sombreros';
 import {
   modelFromAvatar, withHairStyle, HAIR_STYLE_IDS, EYE_STYLE_IDS, BROW_STYLE_IDS, BEARD_STYLE_IDS, GLASSES_STYLE_IDS, NOSE_IDS, LOOK_IDS,
   GLASSES_SWATCHES, type Avatar,
@@ -38,7 +39,7 @@ const LPC_FIELD: Record<string, keyof LpcLook> = {
   lpcMonster: 'head', lpcEars: 'ears', lpcHorns: 'horns',
 };
 const LPC_LIST: Record<string, (string | null)[]> = {
-  lpcHead: LPC_HEADS, lpcHair: LPC_HAIRS, lpcBrows: [...LPC_BROWS, null], lpcNose: [null, ...LPC_NOSES], lpcBeard: [null, ...LPC_BEARDS], lpcMustache: [null, ...LPC_MUSTACHES], lpcGlasses: [null, ...LPC_GLASSES], lpcHat: [null, ...LPC_HATS],
+  lpcHead: LPC_HEADS, lpcHair: LPC_HAIRS, lpcBrows: [...LPC_BROWS, null], lpcNose: [null, ...LPC_NOSES], lpcBeard: [null, ...LPC_BEARDS], lpcMustache: [null, ...LPC_MUSTACHES], lpcGlasses: [null, ...LPC_GLASSES], lpcHat: [null, ...LPC_HATS, ...GORROS_PROPIOS],
   lpcMonster: LPC_MONSTERS, lpcEars: [null, ...LPC_EARS], lpcHorns: [null, ...LPC_HORNS],
 };
 /** piel humana por defecto al volver de una cabeza de monstruo */

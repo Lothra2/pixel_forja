@@ -71,10 +71,11 @@ export class LayerCanvas {
     return this.layer[Y * this.w + X];
   }
   bbox(): { x0: number; y0: number; x1: number; y1: number } | null {
-    let x0 = this.w, y0 = this.h, x1 = -1, y1 = -1;
-    for (let y = 0; y < this.h; y++)
-      for (let x = 0; x < this.w; x++)
-        if (this.layer[y * this.w + x]) {
+    const w = this.w, h = this.h, layer = this.layer;
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++)
+        if (layer[y * w + x]) {
           if (x < x0) x0 = x; if (x > x1) x1 = x;
           if (y < y0) y0 = y; if (y > y1) y1 = y;
         }
@@ -94,18 +95,30 @@ export interface OutlineRules {
  */
 export function finalizeOutlines(c: LayerCanvas, rules: OutlineRules): void {
   const { w, h } = c;
+  const layer = c.layer, mat = c.mat, dark = c.dark;
   const isFused = (a: number, b: number) => rules.fused.some(([p, q]) => (p === a && q === b) || (p === b && q === a));
   const newColor = new Uint32Array(c.color);
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
+  // los 4 vecinos en orden (izquierda, derecha, arriba, abajo) sin crear un arreglo por pixel: es el lazo más caliente del kit
+  const nb = new Int32Array(4);
+  const vecinos = (x: number, y: number, i: number) => {
+    nb[0] = x > 0 ? i - 1 : -1; nb[1] = x < w - 1 ? i + 1 : -1; nb[2] = y > 0 ? i - w : -1; nb[3] = y < h - 1 ? i + w : -1;
+  };
+  // solo se recorre la caja de lo pintado más un pixel de margen (el contorno de afuera cae ahí)
+  const bb = c.bbox();
+  if (!bb) return;
+  const X0 = Math.max(0, bb.x0 - 1), X1 = Math.min(w - 1, bb.x1 + 1), Y0 = Math.max(0, bb.y0 - 1), Y1 = Math.min(h - 1, bb.y1 + 1);
+  for (let y = Y0; y <= Y1; y++)
+    for (let x = X0; x <= X1; x++) {
       const i = y * w + x;
-      const L = c.layer[i];
+      const L = layer[i];
       if (!L) continue;
-      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
+      vecinos(x, y, i);
+      for (let k = 0; k < 4; k++) {
+        const j = nb[k];
         if (j < 0) continue;
-        const M = c.layer[j];
-        if (M > L && !(c.mat[j] === c.mat[i] && isFused(L, M))) {
-          newColor[i] = c.dark[i];
+        const M = layer[j];
+        if (M > L && !(mat[j] === mat[i] && isFused(L, M))) {
+          newColor[i] = dark[i];
           break;
         }
       }
@@ -114,23 +127,26 @@ export function finalizeOutlines(c: LayerCanvas, rules: OutlineRules): void {
   // contorno exterior (4 vecinos: esquinas limpias)
   const outColor = new Uint32Array(w * h);
   const outLayer = new Int8Array(w * h);
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
+  for (let y = Y0; y <= Y1; y++)
+    for (let x = X0; x <= X1; x++) {
       const i = y * w + x;
-      if (c.layer[i]) continue;
+      if (layer[i]) continue;
       let best = 0, bl = 0;
-      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
-        if (j < 0 || !c.layer[j]) continue;
-        if (c.layer[j] > bl) { bl = c.layer[j]; best = c.dark[j]; }
+      vecinos(x, y, i);
+      for (let k = 0; k < 4; k++) {
+        const j = nb[k];
+        if (j < 0 || !layer[j]) continue;
+        if (layer[j] > bl) { bl = layer[j]; best = dark[j]; }
       }
       if (bl) { outColor[i] = best; outLayer[i] = bl; }
     }
-  for (let i = 0; i < w * h; i++)
-    if (outLayer[i]) {
-      c.color[i] = outColor[i];
-      c.layer[i] = outLayer[i];
-      c.mat[i] = -2; // contorno
-    }
+  for (let y = Y0; y <= Y1; y++)
+    for (let i = y * w + X0; i <= y * w + X1; i++)
+      if (outLayer[i]) {
+        c.color[i] = outColor[i];
+        layer[i] = outLayer[i];
+        mat[i] = -2; // contorno
+      }
 }
 
 export function toRaster(c: LayerCanvas, x0: number, y0: number, w: number, h: number, dx: number, dy: number): Raster {

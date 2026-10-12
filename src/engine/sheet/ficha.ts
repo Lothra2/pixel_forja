@@ -125,7 +125,7 @@ export interface HumanFicha extends FichaBase {
     emblemColor?: string;
     emblemBg?: string | null;
     /** diseño de la camiseta, con un segundo color (camisetas de equipo) */
-    pattern?: 'liso' | 'rayas' | 'rayas_h' | 'banda' | 'mitades' | 'cuadros';
+    pattern?: 'liso' | 'rayas' | 'rayas_h' | 'banda' | 'mitades' | 'cuadros' | 'flores' | 'guayabera';
     pattern2?: string;
     /** cuello de la camiseta */
     collar?: 'redondo' | 'v' | 'polo';
@@ -145,7 +145,9 @@ export interface HumanFicha extends FichaBase {
     chestText?: string | null;
     chestTextColor?: string;
     /** calzado */
-    shoes?: 'tenis' | 'guayos' | 'botas' | 'descalzo';
+    shoes?: 'tenis' | 'guayos' | 'botas' | 'descalzo' | 'chancletas' | 'sandalias';
+    /** algo al cuello: bufanda (con la punta que cuelga) o pañoleta de pionero (el triángulo al frente), con su color */
+    neck?: { kind: 'bufanda' | 'panoleta'; color: string } | null;
     /** armadura o traje de RPG encima de la ropa */
     armor?: ArmorKind | null;
     /** color de la armadura: metal, cuero o tela */

@@ -29,12 +29,14 @@ test('visor del kit: atletas, packs y animaciones con sus datos dibujados', asyn
   await page.goto('/visor.html');
   await page.waitForFunction(() => (window as unknown as { __visor?: Hook }).__visor?.ready, null, { timeout: 60000 });
 
-  // los dos equipos y Thor, agrupados
+  // los seis equipos y Thor, agrupados en el orden de equipos.json: arranca con el primero de la Familia GG
   const sel = page.getByTestId('visor-char');
-  await expect(sel.locator('optgroup')).toHaveCount(3);
-  await expect(sel.locator('option')).toHaveCount(9);
+  await expect(sel.locator('optgroup')).toHaveCount(7);
+  await expect(sel.locator('option')).toHaveCount(25);
+  await expect(sel.locator('optgroup').first()).toHaveAttribute('label', 'Familia GG');
+  await expect(sel.locator('optgroup').last().locator('option')).toHaveText(['Thor']);
   let h = await hook(page);
-  expect(h).toMatchObject({ char: 'alana', rows: 5 });
+  expect(h).toMatchObject({ char: 'rick', rows: 5 });
   expect(h.drawn).toBe(5);
 
   // Rick, pack pelea, carry_walk: trae carga y lo dice el panel

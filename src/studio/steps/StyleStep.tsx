@@ -116,7 +116,7 @@ export function StyleStep(p: Props) {
         <summary>{t('step_style')}</summary>
         <Seg label={t('sleeves')} value={h.outfit.sleeves} set={(v) => p.setOutfit('sleeves', v as HumanFicha['outfit']['sleeves'])} opts={(['none', 'short', 'long'] as const).map((v) => [v, t(`sleeves_${v}`)])} />
         <Seg label={t('bottom')} value={h.outfit.bottom} set={(v) => p.setOutfit('bottom', v as HumanFicha['outfit']['bottom'])} opts={(['shorts', 'pants', 'skirt'] as const).map((v) => [v, t(`bottom_${v}`)])} />
-        <Seg label={t('pattern')} value={h.outfit.pattern ?? 'liso'} set={(v) => p.setOutfit('pattern', v as HumanFicha['outfit']['pattern'])} opts={(['liso', 'rayas', 'rayas_h', 'banda', 'mitades', 'cuadros'] as const).map((v) => [v, t(`pattern_${v}`)])} testid="pattern" />
+        <Seg label={t('pattern')} value={h.outfit.pattern ?? 'liso'} set={(v) => p.setOutfit('pattern', v as HumanFicha['outfit']['pattern'])} opts={(['liso', 'rayas', 'rayas_h', 'banda', 'mitades', 'cuadros', 'flores', 'guayabera'] as const).map((v) => [v, t(`pattern_${v}`)])} testid="pattern" />
         {h.outfit.pattern && h.outfit.pattern !== 'liso' && (
           <label className="swatch">
             <input type="color" value={h.outfit.pattern2 ?? '#f2f2f2'} onChange={(e) => p.setOutfit('pattern2', e.target.value)} />
@@ -124,6 +124,15 @@ export function StyleStep(p: Props) {
           </label>
         )}
         <Seg label={t('neck')} value={h.outfit.collar ?? 'redondo'} set={(v) => p.setOutfit('collar', v as HumanFicha['outfit']['collar'])} opts={(['redondo', 'v', 'polo'] as const).map((v) => [v, t(`collar_${v}`)])} />
+        <div className="row">
+          <Seg label={t('neckItem')} value={h.outfit.neck?.kind ?? 'none'} set={(v) => p.setOutfit('neck', v === 'none' ? undefined : { kind: v as 'bufanda' | 'panoleta', color: h.outfit.neck?.color ?? (v === 'panoleta' ? '#da251d' : '#8a8f99') })} opts={(['none', 'bufanda', 'panoleta'] as const).map((v) => [v, t(`neck_${v}`)])} />
+          {h.outfit.neck && (
+            <label className="swatch">
+              <input type="color" value={h.outfit.neck.color} onChange={(e) => p.setOutfit('neck', { ...h.outfit.neck!, color: e.target.value })} />
+              {t('neckColor')}
+            </label>
+          )}
+        </div>
         <div className="row">
           <Toggle label={t('jacket')} on={!!h.outfit.jacket} set={(v) => p.setOutfit('jacket', v ? '#3b3f4a' : null)} />
           {h.outfit.jacket && (
@@ -169,7 +178,7 @@ export function StyleStep(p: Props) {
             </label>
           )}
         </div>
-        <Seg label={t('shoesKind')} value={h.outfit.shoes ?? 'tenis'} set={(v) => p.setOutfit('shoes', v as HumanFicha['outfit']['shoes'])} opts={(['tenis', 'guayos', 'botas', 'descalzo'] as const).map((v) => [v, t(`shoes_${v}`)])} />
+        <Seg label={t('shoesKind')} value={h.outfit.shoes ?? 'tenis'} set={(v) => p.setOutfit('shoes', v as HumanFicha['outfit']['shoes'])} opts={(['tenis', 'guayos', 'botas', 'descalzo', 'chancletas', 'sandalias'] as const).map((v) => [v, t(`shoes_${v}`)])} />
         <Seg label={t('socks')} value={h.outfit.socks} set={(v) => p.setOutfit('socks', v as HumanFicha['outfit']['socks'])} opts={(['none', 'low', 'knee'] as const).map((v) => [v, t(`socks_${v}`)])} />
         <div className="row">
           <label className="field narrow">
@@ -182,6 +191,7 @@ export function StyleStep(p: Props) {
           </label>
           <Toggle label={t('gloves')} on={!!h.outfit.gloves} set={(v) => p.setOutfit('gloves', v)} />
         </div>
+        <Toggle label={t('faceBase')} on={!!h.face.base} set={(v) => p.setFace('base', v ? { eyes: 'angry', mouth: 'smirk' } : undefined)} />
         {!usesAvatar(h) && (
           <>
         <Seg label={t('eyes')} value={h.face.eyes} set={(v) => p.setFace('eyes', v as HumanFicha['face']['eyes'])} opts={(['round', 'big', 'small'] as const).map((v) => [v, t(`eyes_${v}`)])} />

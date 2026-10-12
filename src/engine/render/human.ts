@@ -57,26 +57,41 @@ export type Joints = Record<JointName, [number, number]> & { carry?: [number, nu
 /** Implementos largos que se sostienen (garrocha, jabalina): nunca marcan el piso. */
 export const LONG_HELD = new Set<string>(['pole', 'javelin']);
 
+// las capas en constantes locales: leerlas del módulo en cada pixel pasaba por un getter
+const L_PROP: number = Layer.Prop, L_PROPMID: number = Layer.PropMid, L_BEHIND: number = Layer.Behind, L_HAIRBACK: number = Layer.HairBack;
+
 export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99, withHairBack = false, skipMats?: Set<number>): BigFrame['body'] {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (let y = 0; y < c.h; y++)
-    for (let x = 0; x < c.w; x++) {
-      const l = c.layer[y * c.w + x];
-      const m = c.mat[y * c.w + x];
-      if (m === softMat || skipMats?.has(m)) continue;
+  const { w, h } = c;
+  const layer = c.layer, mat = c.mat;
+  // los materiales que se saltan, en una tabla (el Set por pixel pesaba): el índice es el material + 2 (el contorno es -2)
+  let maxMat = 0;
+  if (skipMats) for (const m of skipMats) if (m > maxMat) maxMat = m;
+  const skip = new Uint8Array(maxMat + 3);
+  if (skipMats) for (const m of skipMats) if (m >= -2) skip[m + 2] = 1;
+  const salta = (m: number) => m >= -2 && m <= maxMat && skip[m + 2] === 1;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      const l = layer[i];
+      // lo vacío no cuenta: se descarta antes que nada porque es casi todo el lienzo
+      if (!l) continue;
+      const m = mat[i];
+      if (m === softMat || (skipMats && salta(m))) continue;
       // contorno (-2) que solo toca implementos: también es del implemento
       if (m === -2 && skipMats) {
         let prop = false, other = false;
-        for (const [ax, ay] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
-          if (ax < 0 || ay < 0 || ax >= c.w || ay >= c.h) continue;
-          const n = c.mat[ay * c.w + ax];
+        for (let k = 0; k < 4; k++) {
+          const ax = k === 0 ? x - 1 : k === 1 ? x + 1 : x, ay = k === 2 ? y - 1 : k === 3 ? y + 1 : y;
+          if (ax < 0 || ay < 0 || ax >= w || ay >= h) continue;
+          const n = mat[ay * w + ax];
           if (n < 0) continue;
-          if (skipMats.has(n)) prop = true; else other = true;
+          if (salta(n)) prop = true; else other = true;
         }
         if (prop && !other) continue;
       }
       // el pelo largo que cuelga detrás puede recortarse en el borde, como un balón
-      if (!l || l === Layer.Prop || l === Layer.PropMid || l === Layer.Behind || (l === Layer.HairBack && !withHairBack)) continue;
+      if (l === L_PROP || l === L_PROPMID || l === L_BEHIND || (l === L_HAIRBACK && !withHairBack)) continue;
       if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
     }
   return isFinite(x0) ? { x0: x0 + dx, y0: y0 + dy, x1: x1 + dx, y1: y1 + dy } : null;
@@ -151,6 +166,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const gakuran = !!fo.jacket && fo.jacketCut === 'gakuran';
   if (gakuran) mats.add('jbutton', ink(makeRamp(fo.buttons ?? '#e2b23c')));
   if (fo.armband) mats.add('armband', ink(makeRamp(fo.armband)));
+  if (fo.neck) mats.add('neck', ink(makeRamp(fo.neck.color)));
   // armaduras y trajes de RPG
   const armor = fo.armor ?? null;
   if (armor) mats.add('armor', ink(makeRamp(fo.armorColor ?? ARMOR_DEFAULT_COLOR[armor])));
@@ -166,7 +182,10 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   }
   if (armor && fo.armorGem) mats.add('agem', makeRamp(fo.armorGem));
   if (armor && fo.armorGlow) { const g = makeRamp(fo.armorGlow); mats.add('aglow', [g[1], g[3], g[3], '#ffffff']); }
-  const shoeMat = armor === 'placas' ? 'armor' : fo.shoes === 'descalzo' ? 'skin' : 'shoes';
+  const abierto = fo.shoes === 'chancletas' || fo.shoes === 'sandalias';
+  const shoeMat = armor === 'placas' ? 'armor' : fo.shoes === 'descalzo' || abierto ? 'skin' : 'shoes';
+  // chancletas: el pie descalzo y la suela de color abajo. Sandalias: además la tira de arriba
+  const pieMat = (r: number) => (abierto && (r === 0 || (fo.shoes === 'sandalias' && r === 2)) ? 'shoes' : shoeMat);
   const side = view === 'side';
   const sign = view === 'back' ? -1 : 1; // de espalda, lo "cercano" queda a la izquierda
   // en vista lateral el torso se inclina. De frente o espalda, `torso` no rota (se ve igual) y `roll` sí
@@ -290,7 +309,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
       const fw = d.legT + (d.footLen > 3 ? 1 : 0) + (diag ? Math.max(1, Math.round(d.footLen / 3)) : 0);
       const x0 = an[0] - off - (fw > d.legT ? (far ? 1 : 0) * sign : 0);
       const yb = an[1] + (d.legT - 1 - off);
-      for (let r = 0; r < d.footH; r++) for (let x = x0; x < x0 + fw; x++) part.set(x, yb - r, shoeMat, r === 0 && d.footH >= 2 ? SHADOW : BASE);
+      for (let r = 0; r < d.footH; r++) for (let x = x0; x < x0 + fw; x++) part.set(x, yb - r, pieMat(r), r === 0 && d.footH >= 2 ? SHADOW : BASE);
     } else if (Math.abs(toe) < 30 && Math.abs(theta) < 30) {
       // zapato plano: punta hacia adelante, esquina de arriba redondeada
       const fx0 = an[0] - off;
@@ -302,7 +321,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
           let slot = d.footH >= 3 && r === 0 ? SHADOW : r === d.footH - 1 && x === fx0 + len - 1 ? LIGHT : BASE;
           // guayos: tacos oscuros en la suela
           if (fo.shoes === 'guayos' && r === 0 && (x - fx0) % 2 === 1) slot = SHADOW;
-          part.set(x, y, shoeMat, slot);
+          part.set(x, y, pieMat(r), slot);
         }
       }
     } else {
@@ -426,6 +445,10 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
             : pat === 'banda' ? !side && Math.abs(col - (row * (d.torsoW - 1)) / shirtRows) <= 1
             : pat === 'mitades' ? !side && col < d.torsoW / 2
             : pat === 'cuadros' ? ((col >> 1) + (row >> 1)) % 2 === 1
+            // flores sueltas (la bata de casa): un punto cada tanto, corrido fila por fila
+            : pat === 'flores' ? (col * 3 + row * 5) % 7 === 0 && row < shirtRows
+            // guayabera: una alforza vertical a cada lado del pecho (dos si el torso es ancho); con torso par el medio cae entre pixeles
+            : pat === 'guayabera' ? !side && (Math.abs(Math.abs(col - mid) - 1.75) <= 0.25 || (d.torsoW >= 10 && Math.abs(Math.abs(col - mid) - 3.75) <= 0.25)) && row >= 1 && row < shirtRows
             : false;
           if (on) mat = 'top2';
           // chaqueta abierta: de frente se ve la camiseta al medio; de lado y de espalda, casi toda chaqueta
@@ -458,8 +481,21 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
             if (fo.armorGlow && !side && row >= 3 && row < shirtRows - 1 && Math.abs(Math.abs(col - mid) - 2) < 0.6 && (row + (col > mid ? 1 : 0)) % 2 === 0) { mat = 'aglow'; slot = BASE; }
             if (fo.armorGlow && topRow && armor !== 'tunica') { mat = 'aglow'; slot = BASE; }
           }
+          // al cuello: la bufanda da la vuelta arriba y cuelga una punta; la pañoleta es un triángulo al frente
+          if (fo.neck && !armor) {
+            if (fo.neck.kind === 'bufanda') {
+              // la vuelta al cuello: las dos filas de arriba de lado a lado, y la punta de dos pixeles que cuelga
+              if (row <= 1) { mat = 'neck'; slot = row === 0 ? LIGHT : BASE; }
+              // la punta cuelga hacia un lado (al centro se lee como corbata); en un torso angosto no hay más lugar que cerca del medio
+              const pc = Math.round(mid) + (d.torsoW >= 9 ? 2 : 1);
+              const punta = view === 'front' || diag ? col === pc || col === pc + 1 : side ? rr > tx1 - 2.5 : false;
+              if (punta && row >= 2 && row <= Math.min(5, shirtRows - 1)) { mat = 'neck'; slot = col === pc + 1 || row % 2 ? SHADOW : BASE; }
+            } else if (view === 'front' || diag) {
+              if (row <= 1 || (row === 2 && Math.abs(col - mid) <= 1.5) || (row === 3 && Math.abs(col - mid) <= 0.6)) { mat = 'neck'; slot = row === 0 ? LIGHT : BASE; }
+            } else if (row === 0) { mat = 'neck'; slot = BASE; }
+          }
           // cuello en V (piel) o de polo (puntas claras y la tapeta)
-          if (view === 'front' && !fo.jacket && !armor) {
+          if (view === 'front' && !fo.jacket && !armor && !fo.neck) {
             if (fo.collar === 'v' && ((row === 0 && Math.abs(col - mid) <= 1) || (row === 1 && Math.abs(col - mid) < 0.6))) mat = 'skin';
             if (fo.collar === 'polo') {
               if (row === 0 && Math.abs(Math.abs(col - mid) - 1.5) <= 0.6) { mat = 'top'; slot = LIGHT; }

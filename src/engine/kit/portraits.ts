@@ -72,8 +72,14 @@ export function scaleInt(r: Raster, k: number): Raster {
 export const PORTRAIT_BIG_SCALE = 3;
 
 /** Un retrato: la cabeza arriba (con pixeles de aire sobre el pelo) y los hombros abajo. */
+/** La cara de una expresión para una ficha: si su cara de base ya es la media sonrisa (la malandra), la burla saca la lengua. */
+export function expressionFace(f: HumanFicha, expr: Expression): { eyes: EyeExpr; mouth: MouthExpr } {
+  const face = EXPRESSION_FACE[expr];
+  return expr === 'burla' && f.face.base?.mouth === face.mouth ? { ...face, mouth: 'tongue' } : face;
+}
+
 export function portrait(f: HumanFicha, expr: Expression, size: 'chico' | 'grande' = 'chico'): Raster {
-  const { r, head, top } = faceFrame(f, 64, EXPRESSION_FACE[expr]);
+  const { r, head, top } = faceFrame(f, 64, expressionFace(f, expr));
   if (size === 'chico') return crop(r, Math.round(head[0] - PORTRAIT_SMALL / 2), top - 2, PORTRAIT_SMALL);
   const side = PORTRAIT_BIG / PORTRAIT_BIG_SCALE;
   return scaleInt(crop(r, Math.round(head[0] - side / 2), top - 1, side), PORTRAIT_BIG_SCALE);

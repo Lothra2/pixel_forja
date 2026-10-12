@@ -21,6 +21,8 @@ const readJson = (p: string) => JSON.parse(readFileSync(p, 'utf8'));
 const SCHEMA_FILE = join(ROOT, 'docs', 'kit-a-medida.schema.json');
 const validator = new Ajv({ allErrors: true }).compile(readJson(SCHEMA_FILE));
 const MIN: KitConfig = { juego: 'Prueba', personajes_incluidos: ['familia'], packs: { base: ['idle', 'walk'] } };
+const GIGANTES = ['goro', 'don_hernando'];
+const CON_BURLA_PROPIA = ['rick', 'steph', 'sophie', 'alana', 'kenji', 'ryu', 'goro', 'tetsu'];
 
 /** Corre la línea de comandos de verdad. */
 const cli = (...args: string[]) => spawnSync(process.execPath, [join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs'), join(ROOT, 'scripts', 'kit-a-medida.ts'), ...args], { cwd: ROOT, encoding: 'utf8' });
@@ -164,14 +166,16 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('el manifiesto cumple el contrato (sección 4.3)', () => {
     expect(m).toMatchObject({ juego: 'Nekketsu Olympic GG', generado_con: 'PixelForja', version: 1, resolucion: [640, 360], filas: ['right', 'down_right', 'up_right', 'down', 'up'] });
-    expect(Object.keys(m.equipos)).toEqual(['familia_gg', 'instituto_nekketsu']);
+    expect(Object.keys(m.equipos)).toEqual(['familia_gg', 'instituto_nekketsu', 'rong_sai_gon', 'rolos_de_chapinero', 'panas_de_caracas', 'maracuchos_del_lago']);
+    expect(m.equipos.rong_sai_gon).toMatchObject({ nombre: 'Rồng Sài Gòn', atletas: ['minh', 'lan', 'tuan', 'ba_hoa'] });
     expect(m.equipos.familia_gg).toMatchObject({ nombre: 'Familia GG', atletas: ['rick', 'steph', 'sophie', 'alana'], mascota: 'thor' });
     const cfg = readJson(join(EJ, 'nekketsu', 'kit.config.json')) as KitConfig;
-    expect(Object.keys(m.atletas).sort()).toEqual(['alana', 'goro', 'kenji', 'rick', 'ryu', 'sophie', 'steph', 'tetsu']);
+    expect(Object.keys(m.atletas).sort()).toEqual(Object.values<any>(m.equipos).flatMap((t) => t.atletas).sort());
+    expect(Object.keys(m.atletas)).toHaveLength(24);
     for (const [id, a] of Object.entries<any>(m.atletas)) {
       const team = Object.entries<any>(m.equipos).find(([, t]) => t.atletas.includes(id))![0];
       expect(a.equipo, id).toBe(team);
-      expect(a.celda, id).toBe(id === 'goro' ? 64 : 48);
+      expect(a.celda, id).toBe(GIGANTES.includes(id) ? 64 : 48);
       expect(a.pivote, id).toEqual([a.celda / 2, a.celda - 2]);
       expect(a.retratos).toMatchObject({ archivo: `atletas/${id}/retratos.png`, chico: 40, grande: 96, expresiones: ['neutral', 'feliz', 'enojo', 'triste', 'susto', 'cerrado', 'dolor', 'burla'] });
       expect(a.cabecita).toBe(`ui/cabecitas.png#${id}`);
@@ -200,13 +204,16 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     // la comida de la pelea va en objetos, después de las armas (el primer objeto sigue siendo un arma)
     expect(Object.values<any>(m.objetos)[0].atlas).toBe('objetos/armas.json');
     for (const k of COMIDAS) expect(m.objetos[k], k).toMatchObject({ atlas: 'objetos/comida.json', peso: 'comida', rota: false, anims: { quieto: 1, humito: 4 }, cura: expect.any(Number) });
-    for (const t of ['taunt', 'victory']) for (const id of Object.keys(m.atletas)) {
+    // la burla y la victoria propias son de los 8 de la pelea (lote P1); las de los equipos nacionales llegan con C5
+    for (const t of ['taunt', 'victory']) for (const id of CON_BURLA_PROPIA) {
       expect(m.atletas[id].packs.kachinuki.anims[`${t}_${id}`], `${t}_${id}`).toBeDefined();
     }
     // el pisotón, el codazo y el cabezazo marcan el impacto en el pie, el codo y la frente
     const imp = (id: string, a: string) => m.atletas[id].packs.kachinuki.anims[a].eventos.find((e: any) => e.tipo === 'impacto');
     for (const id of ['sophie', 'alana', 'goro']) for (const a of ['stomp', 'back_elbow', 'headbutt', 'eat']) expect(imp(id, a)?.punto, `${id} ${a}`).toHaveLength(m.filas.length);
     expect(m.ui.vs).toMatchObject({ neutro: 'ui/vs/neutro.png', pares: { familia_gg__instituto_nekketsu: 'ui/vs/familia_gg__instituto_nekketsu.png' }, w: 640, h: 360 });
+    // un fondo por cada par de los 6 equipos
+    expect(Object.keys(m.ui.vs.pares)).toHaveLength(15);
     expect(m.publico.azoteas).toMatchObject({ archivo: 'publico/azoteas.png', archivo_noche: 'publico/azoteas_noche.png', h: 40, cuadros: 4, estados: { quieto: 0, celebra: 1, abuchea: 2 } });
     expect(Object.keys(m.ui.fuentes)).toEqual(['fuente_ui', 'fuente_titulo', 'fuente_titulo_plata', 'notas']);
     expect(m.creditos).toBe('CREDITOS.txt');
@@ -253,8 +260,9 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas (8 x 7 hojas, Goro igual) + efectos + escenario + comida + 3 del VS + 2 del público
-    expect(pngs.length).toBe(54 + 8 + 63 + 17 + 1 + 3 + 2);
+    // atletas (24 x 7 hojas: 6 packs y los retratos) + efectos + escenario + armas y comida + la interfaz (cabecitas, 3 fuentes,
+    // neutro, letras y los 15 pares del VS) + 2 del público + thor
+    expect(pngs.length).toBe(24 * 7 + 63 + 17 + 2 + (4 + 2 + 15) + 2 + 1);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

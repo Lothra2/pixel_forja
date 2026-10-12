@@ -35,6 +35,11 @@ export function readManifest(m: Record<string, any>): VKit {
     chars.push({ id, nombre: a.nombre ?? id, tipo: 'animal', celda, pivote: a.pivote ?? [celda / 2, celda - 2], packs: { animal: { name: 'animal', atlas: a.atlas, anims: animsOf(a.anims) } } });
   }
   if (!chars.length) throw new Error('El kit no trae atletas ni animales');
+  // en el orden de los equipos (y dentro de cada equipo, el de sus atletas); los sin equipo después y los animales al final
+  const equipos: Record<string, { atletas?: string[] }> = m.equipos ?? {};
+  const orden = Object.keys(equipos);
+  const rank = (c: VChar) => (c.tipo === 'animal' ? [orden.length + 1, 0] : c.equipo && orden.includes(c.equipo) ? [orden.indexOf(c.equipo), Math.max(0, equipos[c.equipo].atletas?.indexOf(c.id) ?? 0)] : [orden.length, 0]);
+  chars.sort((a, b) => { const [ta, ia] = rank(a), [tb, ib] = rank(b); return ta - tb || ia - ib; });
   return { juego: m.juego ?? m.tipo ?? 'kit', filas, chars, equipos: m.equipos ?? {}, objetos: m.objetos ?? {}, pruebas: m.pruebas };
 }
 
