@@ -65,7 +65,8 @@ function inside(polys: [number, number][][], x: number, y: number): boolean {
   return w !== 0;
 }
 
-interface Glyph { ch: string; mask: Uint8Array; w: number; h: number; top: number; left: number; adv: number }
+/** overhang: la letra se mete en las filas de marcas de la que sigue (el tono al lado del circunflejo) */
+interface Glyph { ch: string; mask: Uint8Array; w: number; h: number; top: number; left: number; adv: number; overhang?: boolean }
 
 // ---------- marcas del vietnamita, dibujadas en la grilla de la fuente ----------
 
@@ -129,9 +130,12 @@ function composeGlyph(ch: string, base: Glyph, marks: Mark[], px: number): Glyph
   const ox = (x0 - bx0) * px, oy = (top - by0) * px;
   for (let y = 0; y < base.h; y++) for (let x = 0; x < base.w; x++) if (base.mask[y * base.w + x]) mask[(y + oy) * w + x + ox] = 1;
   for (const [fx, fy] of pts) for (let yy = 0; yy < px; yy++) for (let xx = 0; xx < px; xx++) mask[((fy - by0) * px + yy) * w + (fx - bx0) * px + xx] = 1;
-  // lo que sale a la derecha corre el avance para no pisar la letra que sigue
-  const adv = Math.max(base.adv, (bx1 + 2) * px);
-  return { ch, mask, w, h, top: by0 * px, left: bx0 * px, adv };
+  // el tono al lado del circunflejo no ensancha la letra: se mete en las filas de marcas de la que sigue, que casi
+  // siempre están vacías (si la que sigue también lleva marca, el .fnt trae un kerning que las separa). Lo demás que
+  // sale a la derecha (el gancho de ơ, la tilde de una letra angosta) sí corre el avance
+  const beside = !!tone && tone !== 'tilde' && marks.includes('circumflex');
+  const adv = beside ? base.adv : Math.max(base.adv, (bx1 + 2) * px);
+  return { ch, mask, w, h, top: by0 * px, left: bx0 * px, adv, overhang: beside };
 }
 
 /** Rasteriza cada glifo a pixeles de fuente (1 pixel de fuente = `px` pixeles). Las letras que faltan se componen. */
@@ -161,6 +165,35 @@ function rasterGlyphs(font: Font, px: number, chars = ALL_FONT_CHARS): Glyph[] {
   return out;
 }
 
+/**
+ * Pares que necesitan separarse: para cada letra con overhang, cuánto hay que correr la siguiente para que lo pintado
+ * de las dos (con sombra o contorno) no se pise ni se toque de costado. Casi todas las letras no necesitan nada.
+ */
+function kernings(cells: { g: Glyph; r: Raster }[], pad: number, base: number): [string, string, number][] {
+  const out: [string, string, number][] = [];
+  const opaque = (r: Raster, x: number, y: number) => x >= 0 && y >= 0 && x < r.w && y < r.h && r.data[(y * r.w + x) * 4 + 3] > 0;
+  for (const a of cells) {
+    if (!a.g.overhang) continue;
+    const ax = a.g.left - pad, ay = base + a.g.top - pad;
+    for (const b of cells) {
+      const by = base + b.g.top - pad;
+      const hits = (k: number) => {
+        const bx = a.g.adv + k + b.g.left - pad;
+        for (let y = 0; y < b.r.h; y++) for (let x = 0; x < b.r.w; x++) {
+          if (!opaque(b.r, x, y)) continue;
+          const X = bx + x - ax, Y = by + y - ay;
+          if (opaque(a.r, X, Y) || opaque(a.r, X - 1, Y)) return true;
+        }
+        return false;
+      };
+      let k = 0;
+      while (hits(k) && k < 16) k++;
+      if (k) out.push([a.g.ch, b.g.ch, k]);
+    }
+  }
+  return out;
+}
+
 /** Arma el atlas y el .fnt. style decide cómo se pinta cada glifo (con margen para contorno y sombra). */
 function pack(name: string, glyphs: Glyph[], pad: number, paint: (g: Glyph) => Raster, lineHeight: number, base: number, face: string, size: number): BitmapFont {
   const cells = glyphs.map((g) => ({ g, r: paint(g) }));
@@ -174,13 +207,16 @@ function pack(name: string, glyphs: Glyph[], pad: number, paint: (g: Glyph) => R
   const png = createRaster(W, H);
   cells.forEach(({ r }, i) => { for (let yy = 0; yy < r.h; yy++) png.data.set(r.data.subarray(yy * r.w * 4, (yy + 1) * r.w * 4), ((pos[i].y + yy) * W + pos[i].x) * 4); });
   const chars = cells.map(({ g, r }, i) => `    <char id="${g.ch.codePointAt(0)}" x="${pos[i].x}" y="${pos[i].y}" width="${r.w}" height="${r.h}" xoffset="${g.left - pad}" yoffset="${base + g.top - pad}" xadvance="${g.adv}" page="0" chnl="15"/>`);
+  // kerning: una letra que se mete en la que sigue (overhang) se separa solo si de verdad la pisa o la toca
+  const kern = kernings(cells, pad, base);
+  const kernXml = kern.length ? [`  <kernings count="${kern.length}">`, ...kern.map(([a, b, n]) => `    <kerning first="${a.codePointAt(0)}" second="${b.codePointAt(0)}" amount="${n}"/>`), '  </kernings>'] : [];
   const fnt = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<font>',
     `  <info face="${face}" size="${size}" bold="0" italic="0" charset="" unicode="1" stretchH="100" smooth="0" aa="1" padding="0,0,0,0" spacing="1,1"/>`,
     `  <common lineHeight="${lineHeight}" base="${base}" scaleW="${W}" scaleH="${H}" pages="1" packed="0"/>`,
     `  <pages><page id="0" file="${name}.png"/></pages>`,
-    `  <chars count="${chars.length}">`, ...chars, '  </chars>', '</font>', '',
+    `  <chars count="${chars.length}">`, ...chars, '  </chars>', ...kernXml, '</font>', '',
   ].join('\n');
   return { name, png, fnt, lineHeight, base };
 }
@@ -235,13 +271,24 @@ export function drawText(font: BitmapFont, text: string, scale = 1): Raster {
   const chars = new Map<number, { x: number; y: number; w: number; h: number; xo: number; yo: number; adv: number }>();
   for (const m of font.fnt.matchAll(/<char id="(\d+)" x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)" xoffset="(-?\d+)" yoffset="(-?\d+)" xadvance="(\d+)"/g))
     chars.set(+m[1], { x: +m[2], y: +m[3], w: +m[4], h: +m[5], xo: +m[6], yo: +m[7], adv: +m[8] });
-  let W = 4;
-  for (const ch of text) W += chars.get(ch.codePointAt(0)!)?.adv ?? 4;
-  const out = createRaster(W * scale + 4, (font.lineHeight + 4) * scale);
-  let cx = 2;
-  for (const ch of text) {
+  const kern = new Map<string, number>();
+  for (const m of font.fnt.matchAll(/<kerning first="(\d+)" second="(\d+)" amount="(-?\d+)"/g)) kern.set(`${m[1]},${m[2]}`, +m[3]);
+  const glyphs = [...text];
+  // cada letra corre lo que dice su avance más el kerning con la que sigue; el ancho incluye lo que sobresale
+  const xs: number[] = [];
+  let x = 2, W = 4;
+  glyphs.forEach((ch, i) => {
     const c = chars.get(ch.codePointAt(0)!);
-    if (!c) { cx += 4; continue; }
+    xs.push(x);
+    if (c) W = Math.max(W, x + c.xo + c.w + 2);
+    x += (c?.adv ?? 4) + (i + 1 < glyphs.length ? kern.get(`${ch.codePointAt(0)},${glyphs[i + 1].codePointAt(0)}`) ?? 0 : 0);
+  });
+  W = Math.max(W, x + 2);
+  const out = createRaster(W * scale, (font.lineHeight + 4) * scale);
+  for (const [i, ch] of glyphs.entries()) {
+    const cx = xs[i];
+    const c = chars.get(ch.codePointAt(0)!);
+    if (!c) continue;
     for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) {
       const s = ((c.y + y) * font.png.w + c.x + x) * 4;
       if (!font.png.data[s + 3]) continue;
@@ -251,7 +298,6 @@ export function drawText(font: BitmapFont, text: string, scale = 1): Raster {
         out.data.set(font.png.data.subarray(s, s + 4), (Y * out.w + X) * 4);
       }
     }
-    cx += c.adv;
   }
   return out;
 }

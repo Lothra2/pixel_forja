@@ -51,12 +51,28 @@ describe('fuentes con vietnamita (lote G1)', () => {
     }
   });
 
-  it('ninguna letra pisa a la siguiente: lo dibujado (con la sombra) termina antes del avance', () => {
+  it('el tono al lado del circunflejo no ensancha la letra, y ninguna letra pisa a la siguiente', () => {
+    const SIDE = 'ấầẩếềểốồổẤẦẨẾỀỂỐỒỔ';
+    const opaque = (r: { data: Uint8ClampedArray }) => { let n = 0; for (let i = 3; i < r.data.length; i += 4) if (r.data[i]) n++; return n; };
     for (const f of FONTS) {
+      const cs = charsOf(f);
+      // ấ avanza lo mismo que a: el tono se mete en las filas de marcas de la letra que sigue
+      for (const ch of SIDE) expect(cs.get(ch)!.adv, `${f.name} ${ch}`).toBe(cs.get(ch.normalize('NFD')[0])!.adv);
+      // el resto del vietnamita termina antes de su avance
       const pad = f.name === 'fuente_ui' ? 0 : 1, shadow = f.name === 'fuente_ui' ? 1 : 3;
-      for (const [ch, c] of charsOf(f)) if (VIETNAMESE_CHARS.includes(ch)) expect(c.xo + pad + c.w - shadow, `${f.name} ${ch}`).toBeLessThanOrEqual(c.adv);
+      for (const [ch, c] of cs) if (VIETNAMESE_CHARS.includes(ch) && !SIDE.includes(ch)) expect(c.xo + pad + c.w - shadow, `${f.name} ${ch}`).toBeLessThanOrEqual(c.adv);
+      // escritas juntas, con el kerning, ninguna pisa a la otra: lo pintado del par es la suma de lo pintado de cada una
+      const next = [...'ACUNGHIOT', ...'àáảãạâấầẩẫậăắằ', ...'ÊẾỀỂỄỆÔỐỒỔỖỘƠỚỜỞỠỢƯỨỪỬỮỰĐ'];
+      for (const a of SIDE) for (const b of next) {
+        expect(opaque(drawText(f, a + b)), `${f.name} ${a}${b}`).toBe(opaque(drawText(f, a)) + opaque(drawText(f, b)));
+      }
     }
-  });
+    // "CẦU" y "TUẤN" no tienen kerning (la U y la N no llevan marca); "ẤẤ" sí
+    const ui = FONTS[0];
+    const k = (a: string, b: string) => ui.fnt.includes(`<kerning first="${a.codePointAt(0)}" second="${b.codePointAt(0)}"`);
+    expect(k('Ầ', 'U') || k('ầ', 'u') || k('Ấ', 'N')).toBe(false);
+    expect(k('Ấ', 'Ấ')).toBe(true);
+  }, 120_000);
 
   it('la fuente de ui sigue nítida (solo pixeles enteros) y las frases de prueba no tienen letras de más', () => {
     const ui = FONTS[0];

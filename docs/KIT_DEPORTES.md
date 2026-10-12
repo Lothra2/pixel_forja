@@ -219,7 +219,7 @@ Las mismas fuentes bitmap del kit de GG Abyss, en formato BMFont XML (`this.load
 Traen ñ, tildes, ¡, ¿ y **todas las letras del vietnamita**: ă, â, ê, ô, ơ, ư, đ, Đ y los 5 tonos (huyền, sắc, hỏi, ngã, nặng) sobre todas las vocales, en mayúscula y minúscula. Silkscreen no las trae: el motor las arma pegando las marcas dibujadas sobre la letra base, con el mismo trazo que los acentos de la fuente.
 
 - Las marcas van en las 2 filas de arriba de la letra, con una fila de aire, como los acentos de siempre.
-- Con circunflejo, el tono va a su derecha (ấ, ầ, ẩ), como se escribe en vietnamita. La letra avanza 2 pixeles de fuente más.
+- Con circunflejo, el tono va a su derecha (ấ, ầ, ẩ), como se escribe en vietnamita, y **no ensancha la letra**: se mete sobre las filas de marcas de la letra que sigue, que casi siempre están vacías. Si la que sigue también lleva marca ("ẤẤ"), el `.fnt` trae un par de `kerning` que las separa lo justo. Phaser aplica el kerning solo.
 - La tilde sobre el circunflejo (ẫ) y cualquier tono sobre la breve (ắ, ằ, ẳ, ẵ, ặ) van encima, y suben 2 pixeles de fuente por arriba de la línea.
 - El nặng es un punto debajo. ơ y ư llevan un ganchito en el hombro derecho. đ y Đ, una barra que cruza el palo.
 

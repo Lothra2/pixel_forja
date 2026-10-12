@@ -14,7 +14,7 @@ Las tres fuentes bitmap del motor ya escriben vietnamita: `fuente_ui` (8 px) y l
 - **Cómo se arman:** Silkscreen no trae casi ninguna. El motor arma cada letra que falta pegando marcas dibujadas sobre la letra base (`composeGlyph` en `src/engine/ui/fonts.ts`), con el mismo trazo que los acentos que la fuente ya traía. Las pocas que la fuente sí trae (à, â, ã, ê, ô, õ, ì, ý) salen de la fuente.
 - **Las reglas de las marcas:**
   - Van en las 2 filas de arriba de la letra, con una fila de aire.
-  - Con circunflejo, el tono va a su derecha (ấ, ầ, ẩ), como se escribe en vietnamita.
+  - Con circunflejo, el tono va a su derecha (ấ, ầ, ẩ), como se escribe en vietnamita, sin ensanchar la letra: se mete sobre las filas de marcas de la que sigue. Solo si la siguiente también lleva marca, un kerning del `.fnt` las separa.
   - La tilde sobre el circunflejo (ẫ) y los tonos sobre la breve (ắ, ặ...) van encima.
   - El nặng es un punto debajo. ơ y ư llevan un ganchito en el hombro derecho. đ y Đ llevan una barra que cruza el palo.
 - **En el kit:** `--fuentes` (opción `fuentes`) pone las tres en `ui/fuentes/*.png + .fnt` (BMFont XML para Phaser), con la entrada `ui.fuentes` del manifiesto y el crédito de Silkscreen en `CREDITOS.txt`. El kit de GG Abyss ya las traía y ahora salen con vietnamita.
@@ -44,7 +44,7 @@ Detalles en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#fuentes---fuentes-opci�
 | Las tres fuentes traen las 146 letras | Sí |
 | Las frases del pedido ("Rồng Sài Gòn", "Đá cầu", "Bà Hoa", "Tuấn", "Trời ơi") salen sin letras de más, a 8 px | Sí. Se ven en el tablero a tamaño real |
 | Los 6 tonos de cada vocal se distinguen entre sí a 8 px | Las 12 vocales, cada una con sus 6 formas distintas |
-| Ninguna letra pisa a la siguiente | El dibujo, con la sombra, termina antes del avance en las tres fuentes |
+| El tono de ấ, ầ, ẩ no ensancha la letra y ninguna letra pisa a la siguiente | ấ avanza lo mismo que a. Escritas juntas, con el kerning, ningún par pisa al otro |
 | `fuente_ui` sigue nítida | Solo pixeles enteros (alfa 0 o 255) |
 | Kit con `--fuentes` | `ui/fuentes/` con las tres, `ui.fuentes` en el manifiesto y Silkscreen en los créditos. Sin la opción, el kit no cambia |
 | Imagen dorada | `golden/fuentes_vietnamita.png`: las frases en las tres fuentes |
@@ -55,7 +55,7 @@ Entregable en esta carpeta: `tablero_fuentes.png`. Trae las frases de la prueba 
 ## Decisiones que tomé sin preguntar
 
 - **Componer en vez de cambiar de fuente.** El pedido lo permite. Otra fuente pixel con vietnamita cambiaría el estilo de todo lo que ya existe (GG Abyss, la arena). Así, las letras nuevas tienen el mismo trazo que los acentos de Silkscreen.
-- **El tono a la derecha del circunflejo** (ấ, ầ, ẩ). Es como se escribe en vietnamita y cabe en las 2 filas de marcas. La letra avanza 2 pixeles de fuente más.
+- **El tono a la derecha del circunflejo** (ấ, ầ, ẩ). Es como se escribe en vietnamita y cabe en las 2 filas de marcas. Tras la revisión de Rick, no ensancha la letra: el tono se mete sobre la letra siguiente ("CẦU" y "TUẤN" quedan parejas). El motor calcula los pares de kerning para cuando la siguiente también lleva marca.
 - **La tilde sobre el circunflejo (ẫ, ễ, ỗ) y los tonos sobre la breve (ắ, ằ, ẳ, ẵ, ặ) van apilados** y suben 2 pixeles de fuente por encima de la línea. No hay otra forma de que se lean.
 - **Mayúscula y minúscula iguales:** Silkscreen no tiene minúsculas (todas son versalitas). Por eso ă y Ă se ven iguales.
 - **La página "Fuentes del juego" en el estudio**, junto a las herramientas del taller. El pedido dice que todo lo nuevo se tiene que ver ahí.
@@ -64,7 +64,7 @@ Entregable en esta carpeta: `tablero_fuentes.png`. Trae las frases de la prueba 
 
 - **Marcas que suben de la línea:** en un texto de varias líneas con el alto de línea de siempre (11 en `fuente_ui`), una ắ o una ẫ pueden tocar el punto del nặng de la línea de arriba si caen justo una encima de la otra. Pasa poco. Si molesta, el juego puede usar un alto de línea de 13 para el vietnamita.
 - **El hỏi a 8 px** es un ganchito de 3 pixeles. Se distingue de los otros tonos, pero no es el signo de pregunta chiquito de la tipografía impresa.
-- **ấ, ầ, ẩ son más anchas:** con el tono de lado, "Tuấn" o "cầu" tienen un poco más de aire después de esa letra.
+- **Kerning:** el juego tiene que respetar el kerning del `.fnt` (Phaser lo hace). Un motor que lo ignore pisaría ấ con una letra acentuada que siga.
 - **ị** se ve como un signo de exclamación al revés, porque la i de Silkscreen es un palo. Es lo normal en fuentes pixel de 5 filas.
 
 ## Lo que necesita el siguiente lote
