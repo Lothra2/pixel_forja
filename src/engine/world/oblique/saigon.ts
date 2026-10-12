@@ -59,9 +59,17 @@ export function puesto(pal: Paleta, tipo: Puesto, w: number, d: number, z: numbe
     const x0 = Math.round(k * sw), x1 = Math.round((k + 1) * sw), pw = x1 - x0, s = seed * 13 + k;
     // fondo claro del puesto: lona crema, así el atleta se lee delante
     L.f(x0, fr, pw, z, 'crema'); L.speckle(x0, fr, pw, z - mostrador, 'cemento_claro', 0.12, s);
-    // techo: lo que se ve desde arriba
-    L.f(x0, 0, pw, d, 'cemento_claro');
-    if (tipo === 'ropa') for (let x = x0 + 1; x < x1 - 1; x += 6) { const c = ropa[(x + s) % ropa.length]; L.f(x, 2, 5, d - 4, c); L.hl(x, 2, 5, 'luz'); for (let y = 5; y < d - 2; y += 3) L.hl(x, y, 5, c === 'luz' ? 'cemento_claro' : 'sombra'); }
+    // techo: el toldo de lona a rayas de cada puesto (azul, verde, rojo o amarillo con crema), como en el mercado
+    const TOLDOS: Color[] = ['azul', 'verde', 'rojo', 'canal', 'oro'];
+    const tc = TOLDOS[(seed * 3 + k) % TOLDOS.length], ts: Color = tc === 'oro' ? 'ocre' : tc === 'rojo' ? 'vino' : tc === 'verde' ? 'verde_oscuro' : 'azul_noche';
+    for (let x = x0; x < x1; x++) for (let y = 0; y < d; y++) {
+      const raya = Math.floor((x - x0) / 4) % 2 === 0;
+      L.p(x, y, y === 0 ? 'luz' : raya ? (y > d - 4 ? ts : tc) : y > d - 4 ? 'cemento_claro' : 'crema');
+    }
+    L.vl(x0, 0, d, ts);
+    const toldo = true;
+    if (toldo) { /* la mercancía de arriba queda bajo el toldo */ }
+    else if (tipo === 'ropa') for (let x = x0 + 1; x < x1 - 1; x += 6) { const c = ropa[(x + s) % ropa.length]; L.f(x, 2, 5, d - 4, c); L.hl(x, 2, 5, 'luz'); for (let y = 5; y < d - 2; y += 3) L.hl(x, y, 5, c === 'luz' ? 'cemento_claro' : 'sombra'); }
     else if (tipo === 'flores') for (let i = 0; i < pw * d * 0.09; i++) { const x = x0 + 2 + Math.floor(R() * (pw - 4)), y = 2 + Math.floor(R() * (d - 4)); L.p(x, y, 'verde'); L.d(x, y - 1, 1.2, (['rojo', 'amarillo', 'salmon', 'luz', 'oro'] as Color[])[Math.floor(R() * 5)]); }
     else if (tipo === 'telas') for (let y = 1; y < d - 1; y += 4) { const c = ropa[(y + s) % ropa.length]; L.f(x0 + 1, y, pw - 2, 3, c); L.p(x0 + 1, y + 1, 'luz'); L.p(x1 - 2, y + 1, 'sombra'); }
     else if (tipo === 'comida') { for (let x = x0 + 6; x < x1 - 4; x += 12) { L.d(x, Math.floor(d / 2), 5, 'cemento', 0.7); L.d(x, Math.floor(d / 2), 4, k % 2 ? 'ocre' : 'terracota', 0.7); L.p(x - 1, Math.floor(d / 2) - 1, 'amarillo'); } }
@@ -133,6 +141,13 @@ export function puesto(pal: Paleta, tipo: Puesto, w: number, d: number, z: numbe
     // parales del puesto
     L.vl(x0, fr, z, 'asfalto_claro'); L.vl(x1 - 1, fr, z, 'asfalto_claro');
     L.hl(x0, fr, pw, 'cemento'); L.hl(x0, fr + 1, pw, 'cemento_claro');
+    // la cenefa del toldo cuelga sobre el frente, en ondas
+    for (let x = x0; x < x1; x++) {
+      const raya = Math.floor((x - x0) / 4) % 2 === 0, onda = (x - x0) % 4 === 1 || (x - x0) % 4 === 2;
+      for (let j = 0; j < 4; j++) L.p(x, fr + j, raya ? tc : 'crema');
+      L.p(x, fr + 4, onda ? (raya ? ts : 'cemento_claro') : 'sombra');
+      if (onda) L.p(x, fr + 5, 'sombra');
+    }
   }
   L.vl(0, 0, d, 'asfalto'); L.vl(w - 1, 0, d, 'asfalto');
   pie(L, fr + z - 1, w);

@@ -116,7 +116,7 @@ export const fachadaBenThanh: PintorCerca = (C, x0, x1, base, ctx) => {
 
 /** La torre del reloj de Bến Thành, centrada en `cx`: va encima de todo, también del interior del mercado. */
 export function torreReloj(C: Lienzo, cx: number, base: number) {
-  const tw = 60, x0 = cx - tw / 2, cuerpo = base - 104, uw = 40, ux = cx - uw / 2, uy = 34;
+  const tw = 64, x0 = cx - tw / 2, cuerpo = base - 104, uw = 56, ux = cx - uw / 2, uy = 28;
   // cuerpo ancho
   C.f(x0, cuerpo - 8, tw, base - cuerpo + 8, 'amarillo'); C.vl(x0, cuerpo - 8, base - cuerpo + 8, 'ocre'); C.vl(x0 + tw - 1, cuerpo - 8, base - cuerpo + 8, 'ocre');
   C.vl(x0 + 4, cuerpo - 8, base - cuerpo + 8, 'crema'); C.vl(x0 + tw - 5, cuerpo - 8, base - cuerpo + 8, 'crema');
@@ -132,17 +132,29 @@ export function torreReloj(C: Lienzo, cx: number, base: number) {
     const edge = (dy < 0 && (i - r + 0.5) ** 2 + dy * dy > (r - 2) ** 2) || i < 2 || i > aw - 3;
     C.p(cx - r + i, ay + j, edge ? 'crema' : j < 20 ? (bayer(i, j) < 0.3 ? 'cemento_claro' : 'luz') : 'cemento_claro');
   }
-  // cuerpo alto con el reloj
-  C.f(ux, uy, uw, cuerpo - 12 - uy, 'amarillo'); C.vl(ux, uy, cuerpo - 12 - uy, 'ocre'); C.vl(ux + uw - 1, uy, cuerpo - 12 - uy, 'ocre'); C.vl(ux + 3, uy, cuerpo - 12 - uy, 'crema');
-  C.f(ux - 2, uy - 3, uw + 4, 4, 'crema'); C.hl(ux - 2, uy - 3, uw + 4, 'luz'); C.hl(ux - 2, uy + 1, uw + 4, 'terracota');
-  const ry = uy + 22;
-  C.d(cx, ry, 13, 'ocre'); C.d(cx, ry, 12, 'crema'); C.d(cx, ry, 10, 'luz');
-  for (let h = 0; h < 12; h++) { const a = (h / 12) * Math.PI * 2; C.p(Math.round(cx + Math.sin(a) * 9), Math.round(ry - Math.cos(a) * 9), 'tinta'); }
-  C.ln(cx, ry, cx - 4, ry + 3, 'tinta'); C.ln(cx, ry, cx, ry - 7, 'tinta'); C.p(cx, ry, 'rojo');
-  for (let y = ry + 16; y < cuerpo - 14; y += 6) ventanaArco(C, cx - 4, y, 8, 5, 'crema', 'celeste', 'azul');
-  // techito y bandera
-  for (let y = uy - 18; y < uy - 3; y++) { const k = y - (uy - 18), hw = Math.round(4 + k * 1.4); C.hl(cx - hw, y, hw * 2, (k % 3 === 2 ? 'vino' : 'terracota')); C.p(cx - hw, y, 'vino'); }
-  C.vl(cx, uy - 34, 16, 'cemento'); bandera(C, cx, uy - 18);
+  // cuerpo alto con el reloj: la torre es lo que más se reconoce del mercado, va ancha y con el nombre en relieve
+  C.f(ux, uy, uw, cuerpo - 12 - uy, 'amarillo'); C.vl(ux, uy, cuerpo - 12 - uy, 'ocre'); C.vl(ux + uw - 1, uy, cuerpo - 12 - uy, 'ocre');
+  C.vl(ux + 1, uy, cuerpo - 12 - uy, 'tinta'); C.vl(ux + 3, uy, cuerpo - 12 - uy, 'crema'); C.vl(ux + uw - 4, uy, cuerpo - 12 - uy, 'ocre');
+  // pilastras en las esquinas
+  for (const px of [ux + 4, ux + uw - 8]) { C.f(px, uy + 4, 4, cuerpo - 18 - uy, 'crema'); C.vl(px + 3, uy + 4, cuerpo - 18 - uy, 'ocre'); }
+  C.f(ux - 3, uy - 3, uw + 6, 5, 'crema'); C.hl(ux - 3, uy - 3, uw + 6, 'luz'); C.hl(ux - 3, uy + 2, uw + 6, 'terracota');
+  const ry = uy + 21, rr = 15;
+  C.d(cx, ry, rr + 2, 'ocre'); C.d(cx, ry, rr + 1, 'crema'); C.d(cx, ry, rr - 1, 'luz');
+  for (let h = 0; h < 12; h++) { const a = (h / 12) * Math.PI * 2; C.p(Math.round(cx + Math.sin(a) * (rr - 3)), Math.round(ry - Math.cos(a) * (rr - 3)), h % 3 ? 'cemento' : 'tinta'); }
+  C.ln(cx, ry, cx - 6, ry + 4, 'tinta'); C.ln(cx, ry, cx, ry - 10, 'tinta'); C.ln(cx + 1, ry, cx + 1, ry - 9, 'azul_noche'); C.p(cx, ry, 'rojo');
+  // el nombre en relieve dorado debajo del reloj
+  const n = 'BẾN THÀNH', ny = ry + rr + 5;
+  C.f(cx - Math.ceil(textWidth(n) / 2) - 3, ny, textWidth(n) + 6, LINE_H + 2, 'ocre'); C.hl(cx - Math.ceil(textWidth(n) / 2) - 3, ny, textWidth(n) + 6, 'amarillo');
+  drawText(C, cx - Math.floor(textWidth(n) / 2), ny - 1, n, 'tinta');
+  for (let y = ny + LINE_H + 6; y < cuerpo - 18; y += 8) ventanaArco(C, cx - 4, y, 8, 6, 'crema', 'celeste', 'azul');
+  // techo de cuatro aguas con alero, en tejas
+  const th = 20, rx0 = ux - 8, rw = uw + 16;
+  for (let j = 0; j < th; j++) {
+    const k = j / th, hw = Math.round(6 + (rw / 2 - 6) * k), y = uy - 3 - th + j;
+    for (let i = -hw; i < hw; i++) C.p(cx + i, y, i === -hw || i === hw - 1 ? 'vino' : j % 4 === 3 ? 'vino' : i < -hw / 3 ? 'rojo' : 'terracota');
+  }
+  C.hl(rx0, uy - 3, rw, 'vino'); C.hl(rx0 + 2, uy - 2, rw - 4, 'sombra');
+  bandera(C, cx, uy - th - 2);
 }
 
 // ------------------------------------------------------------------ interior del mercado

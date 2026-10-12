@@ -16,11 +16,12 @@ export type ParedColor = 'amarillo' | 'salmon' | 'menta' | 'celeste' | 'crema';
 const SOMBRA: Record<ParedColor, Color> = { amarillo: 'ocre', salmon: 'terracota', menta: 'canal', celeste: 'azul', crema: 'cemento_claro' };
 const LUZ: Record<ParedColor, Color> = { amarillo: 'crema', salmon: 'crema', menta: 'cielo', celeste: 'cielo', crema: 'luz' };
 
-export type PlantaBaja = 'reja' | 'tienda' | 'cafe' | 'garaje' | 'pho' | 'farmacia' | 'ropa' | 'peluqueria' | 'sala';
+export type PlantaBaja = 'reja' | 'cortina' | 'tienda' | 'cafe' | 'garaje' | 'pho' | 'farmacia' | 'ropa' | 'peluqueria' | 'sala';
 
 /** El letrero va con lo que hay adentro: cada local tiene su lista. */
 export const LETREROS_DE: Record<PlantaBaja, string[]> = {
   reja: [],
+  cortina: [],
   tienda: ['TẠP HÓA', 'SIM THẺ', 'ĐIỆN THOẠI'],
   cafe: ['CÀ PHÊ', 'CÀ PHÊ SỮA ĐÁ', 'BIA HƠI', 'TRÀ ĐÁ'],
   garaje: ['SỬA XE', 'VÁ XE', 'RỬA XE'],
@@ -151,10 +152,10 @@ function piso(L: Lienzo, c: CasaTubo, fy: number, k: number, R: () => number, ul
     L.d(px + 3, by + 2, 3.5, 'verde'); L.p(px + 2, by, 'menta'); L.p(px + 4, by + 3, 'verde_oscuro'); L.p(px + 1, by + 3, 'verde_oscuro');
     if (R() < 0.5) { L.p(px + 1, by + 1, 'rojo'); L.p(px + 5, by + 2, 'rojo'); L.p(px + 3, by - 1, 'salmon'); }
   }
-  // buganvilla que se derrama por la baranda
-  if (R() < 0.3) {
-    const bx = R() < 0.5 ? 12 : W - 12;
-    buganvilla(L, bx, by, 10 + Math.floor(R() * 10), (c.seed ?? 1) * 31 + k);
+  // buganvilla que se derrama por la baranda: en cascadas grandes, lo que más color le da al hẻm
+  if (R() < 0.5) {
+    const bx = R() < 0.5 ? 12 + Math.floor(R() * 8) : W - 12 - Math.floor(R() * 8);
+    buganvilla(L, bx, by, 18 + Math.floor(R() * 26), (c.seed ?? 1) * 31 + k);
     anclas?.buganvillas.push({ x: bx, y: by + 6 });
   }
   // ropa tendida en algunos balcones: con anclas va aparte, para animarla con el viento
@@ -197,6 +198,7 @@ function plantaBaja(L: Lienzo, c: CasaTubo, gy: number, R: () => number, anclas?
   L.hl(0, gy + PB - 2, W, 'cemento_claro');
   const floorY = gy + PB - 2;
   if (c.planta === 'reja') rejaPlegable(L, ox, oy, ow, oh, 0.7);
+  else if (c.planta === 'cortina') cortinaMetalica(L, ox, oy, ow, oh, (c.seed ?? 0) % 3 === 0 ? 'azul' : 'verde', R);
   else if (c.planta === 'tienda') tienda(L, ox, oy, ow, oh, R);
   else if (c.planta === 'cafe') cafe(L, ox, oy, ow, oh, floorY, R);
   else if (c.planta === 'garaje') { garajeMoto(L, ox, oy, ow, oh, R); rejaPlegable(L, ox, oy, ow, oh, 0.25); }
@@ -205,6 +207,11 @@ function plantaBaja(L: Lienzo, c: CasaTubo, gy: number, R: () => number, anclas?
   else if (c.planta === 'peluqueria') peluqueria(L, ox, oy, ow, oh);
   else if (c.planta === 'sala') sala(L, ox, oy, ow, oh, R);
   else pho(L, ox, oy, ow, oh);
+  // toldo de rayas sobre los locales que venden: verde, azul o rojo, cada uno con su crema
+  if ((c.planta === 'tienda' || c.planta === 'cafe' || c.planta === 'pho' || c.planta === 'ropa' || c.planta === 'farmacia') && ((c.seed ?? 0) * 7) % 10 < 7) {
+    const cols: Color[] = ['verde', 'azul', 'rojo', 'canal'];
+    toldoRayas(L, 1, oy - 2, W - 2, cols[(c.seed ?? 0) % cols.length]);
+  }
   // altar de la tierra (Thần Tài) en el piso, en la esquina
   if (c.altar) {
     const ax = c.planta === 'reja' ? ox + ow - 14 : ox + 1;
@@ -244,9 +251,9 @@ export function ropaTendida(L: Lienzo, x: number, y: number, w: number, seed: nu
 export function buganvilla(L: Lienzo, x: number, y: number, len: number, seed: number) {
   const R = rng(seed);
   const blobs: [number, number, number][] = [];
-  for (let i = 0; i < 7 + Math.floor(len / 3); i++) {
-    const t = i / (6 + len / 3);
-    blobs.push([x + (R() - 0.5) * (22 - t * 12), y - 3 + t * len, 2.5 + R() * 2.5 * (1 - t * 0.5)]);
+  for (let i = 0; i < 9 + Math.floor(len / 2.5); i++) {
+    const t = i / (8 + len / 2.5);
+    blobs.push([x + (R() - 0.5) * (28 - t * 16), y - 4 + t * len, 3 + R() * 3 * (1 - t * 0.55)]);
   }
   const m = new Lienzo(L.w, L.h, L.pal);
   for (const [bx, by, br] of blobs) m.d(bx, by, br, 'verde');
@@ -254,8 +261,46 @@ export function buganvilla(L: Lienzo, x: number, y: number, len: number, seed: n
     if (!m.has(xx, yy)) continue;
     const g = grain(xx, yy, seed);
     const under = !m.has(xx, yy + 1), over = !m.has(xx, yy - 1);
-    L.p(xx, yy, under ? 'verde_oscuro' : g < 0.36 ? 'rojo' : g < 0.55 ? 'salmon' : over && g < 0.7 ? 'menta' : g < 0.85 ? 'verde' : 'verde_oscuro');
+    // racimos de flor: rosado con luz arriba y vino en la sombra, y las hojas que asoman entre racimos
+    const flor = grain(xx >> 1, yy >> 1, seed + 3) < 0.66;
+    L.p(xx, yy, under ? 'verde_oscuro' : flor ? (over || g < 0.62 ? 'salmon' : 'vino') : g < 0.6 ? 'verde' : 'verde_oscuro');
   }
+}
+
+/**
+ * Cortina metálica enrollable (cửa cuốn), bajada: láminas horizontales del color de la casa de al lado (verde o azul),
+ * con la caja del rollo arriba, la manilla abajo y un papelito pegado.
+ */
+export function cortinaMetalica(L: Lienzo, x: number, y: number, w: number, h: number, col: 'verde' | 'azul', R: () => number) {
+  const claro: Color = col === 'verde' ? 'menta' : 'celeste', oscuro: Color = col === 'verde' ? 'verde_oscuro' : 'azul_noche';
+  L.f(x, y, w, h, col);
+  for (let j = y + 5; j < y + h - 1; j += 3) { L.hl(x, j, w, oscuro); L.hl(x, j + 1, w, claro); }
+  // la caja del rollo arriba
+  L.f(x, y, w, 5, 'cemento'); L.hl(x, y, w, 'cemento_claro'); L.hl(x, y + 4, w, 'sombra');
+  // luz de la izquierda: el lado izquierdo de cada lámina un poco más claro
+  for (let j = y + 6; j < y + h - 1; j += 3) L.hl(x, j, Math.min(6, w), claro);
+  // manilla y cerrojo abajo
+  const mx = x + Math.floor(w / 2) - 3;
+  L.f(mx, y + h - 5, 6, 2, 'cemento_claro'); L.p(mx - 2, y + h - 3, 'sombra'); L.p(mx + 7, y + h - 3, 'sombra');
+  // un aviso de papel pegado (alquiler, número de teléfono)
+  if (w > 30 && R() < 0.7) { const px = x + 4 + Math.floor(R() * (w - 16)), py = y + 10 + Math.floor(R() * 8); L.box(px, py, 7, 9, 'luz', 'cemento_claro'); L.hl(px + 1, py + 3, 5, 'sombra'); L.hl(px + 1, py + 5, 4, 'sombra'); }
+}
+
+/** Toldo de rayas sobre la tienda, con el borde en ondas y su sombra: va encima del vano. */
+export function toldoRayas(L: Lienzo, x: number, y: number, w: number, col: Color) {
+  const h = 7;
+  for (let i = 0; i < w; i++) {
+    const raya = Math.floor(i / 4) % 2 === 0;
+    for (let j = 0; j < h; j++) L.p(x + i, y + j, j === 0 ? 'luz' : raya ? col : 'crema');
+    // ondas abajo
+    const onda = i % 4 === 1 || i % 4 === 2;
+    L.p(x + i, y + h, onda ? (raya ? col : 'crema') : 'tinta');
+    if (onda) L.p(x + i, y + h + 1, 'tinta');
+  }
+  L.hl(x, y - 1, w, 'tinta');
+  L.vl(x, y, h, 'tinta'); L.vl(x + w - 1, y, h, 'tinta');
+  // la sombra que tira sobre la pared y el vano
+  for (let i = 1; i < w - 1; i++) L.p(x + i, y + h + 2, 'sombra');
 }
 
 /** Reja plegable (cửa xếp): barras con tijeras; `k` es cuánto del vano tapa, desde la izquierda. */
@@ -473,7 +518,8 @@ export function filaVietnam(pal: Paleta, w: number, base: number, o: FilaOpts, a
   let x = -24; // la primera casa empieza afuera, así el borde no se ve cortado a propósito
   for (const h of cortes) { if (h.x0 > x) tramos.push([x, h.x0]); x = Math.max(x, h.x1); }
   if (x < w + 24) tramos.push([x, w + 24]);
-  const paredes: ParedColor[] = ['amarillo', 'salmon', 'menta', 'celeste', 'crema'];
+  // sin paredes rosadas: el rosado es de la buganvilla, que tiene que resaltar sobre la pared
+  const paredes: ParedColor[] = ['amarillo', 'menta', 'celeste', 'crema', 'amarillo', 'menta'];
   let last: ParedColor = 'crema', n = 0, lastPlanta: PlantaBaja | null = null;
   const bolsas = new Map<string, PlantaBaja[]>();
   for (const [a, b] of tramos) {
@@ -488,7 +534,7 @@ export function filaVietnam(pal: Paleta, w: number, base: number, o: FilaOpts, a
       let pared = paredes[Math.floor(R() * paredes.length)];
       if (pared === last) pared = paredes[(paredes.indexOf(pared) + 1) % paredes.length];
       last = pared;
-      const opciones: PlantaBaja[] = inund ? ['reja', 'reja', 'garaje', 'sala'] : comida ? ['pho', 'pho', 'cafe'] : ['reja', 'tienda', 'cafe', 'garaje', 'sala', 'sala', 'farmacia', 'ropa', 'peluqueria', 'reja', 'tienda', 'cafe'];
+      const opciones: PlantaBaja[] = inund ? ['reja', 'cortina', 'garaje', 'sala'] : comida ? ['pho', 'pho', 'cafe'] : ['cortina', 'tienda', 'cafe', 'garaje', 'sala', 'sala', 'farmacia', 'ropa', 'peluqueria', 'reja', 'tienda', 'cafe', 'cortina'];
       // bolsa sin repetición: se sacan todos los tipos antes de repetir
       const key = inund ? 'inund' : comida ? 'comida' : 'calle';
       let bag = bolsas.get(key);
@@ -514,6 +560,8 @@ export function filaVietnam(pal: Paleta, w: number, base: number, o: FilaOpts, a
       if (inund) marcaInundacion(casa, R);
       if (R() < 0.18) bandera(casa, cw - 14, 16);
       L.paste(casa, cx, base - casa.h);
+      // en la acera: una mata grande en su matero al pie de la casa (la mitad de las casas)
+      if (R() < 0.5 && !inund) mataGrande(L, cx + (R() < 0.5 ? 6 : cw - 18), base - 1, Math.floor(R() * 1000));
       cx += cw; n++;
     }
   }
@@ -530,6 +578,23 @@ export function filaVietnam(pal: Paleta, w: number, base: number, o: FilaOpts, a
     }
   }
   return L;
+}
+
+/** Mata grande en matero, de 14 x 26: el matero de barro o vidriado azul y las hojas en manojos con luz arriba. */
+export function mataGrande(L: Lienzo, x: number, gy: number, seed: number) {
+  const R = rng(seed), azul = R() < 0.35;
+  const mc: Color = azul ? 'azul' : 'terracota', ml: Color = azul ? 'celeste' : 'salmon', ms: Color = azul ? 'azul_noche' : 'vino';
+  // matero
+  L.f(x + 1, gy - 9, 12, 9, mc); L.hl(x, gy - 10, 14, ml); L.hl(x, gy - 9, 14, mc); L.vl(x + 11, gy - 9, 9, ms); L.hl(x + 2, gy - 1, 10, ms);
+  L.vl(x, gy - 10, 2, 'tinta'); L.vl(x + 13, gy - 10, 2, 'tinta');
+  // hojas: manojos que salen hacia arriba y a los lados
+  const m = new Lienzo(L.w, L.h, L.pal);
+  for (let i = 0; i < 9; i++) { const a = -Math.PI / 2 + (R() - 0.5) * 2.2, r = 5 + R() * 9; m.d(x + 7 + Math.cos(a) * r * 0.8, gy - 12 + Math.sin(a) * r, 2.5 + R() * 2, 'verde'); }
+  for (let yy = gy - 30; yy < gy - 9; yy++) for (let xx = x - 6; xx < x + 21; xx++) {
+    if (!m.has(xx, yy)) continue;
+    const top = !m.has(xx, yy - 1), side = !m.has(xx + 1, yy);
+    L.p(xx, yy, top ? 'menta' : side || grain(xx, yy, seed) < 0.25 ? 'verde_oscuro' : 'verde');
+  }
 }
 
 /** La marca que deja el agua en las paredes, y sacos de arena en la puerta. */

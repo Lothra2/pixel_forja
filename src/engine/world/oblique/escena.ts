@@ -10,7 +10,7 @@ import { piezaVietnam, posteLuz, toldo, cables, paloma, moto, MOTO_W, banquito, 
 import { filaVietnam, ropaTendida, nuevasAnclas, type Anclas, type Hueco } from './vietnam';
 import { piezaSaigon, posteSaigon, arco, lamparasColgantes, redesPesca, cuerdasRopa, vallas } from './saigon';
 import { PINTORES_CERCA, FONDO_CERCA, torreReloj, arcoSalida, type CtxCerca } from './fachadas';
-import { corre, volumen, caraIzquierda, alLado, cizallarPiso, huecosJuntos, huecoInclinado, cantoSobreHueco, orillaAguaHonda } from './inclinada';
+import { MAS_OSCURO, nombreEn, corre, volumen, caraIzquierda, alLado, cizallarPiso, huecosJuntos, huecoInclinado, cantoSobreHueco, orillaAguaHonda } from './inclinada';
 import { drawText, textWidth, LINE_H } from './letras';
 import { fichaArte, type FichaArte } from './ficha';
 
@@ -236,6 +236,9 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     orillaAguaHonda(pisoFinal, L, k);
   }
 
+  // charcos que reflejan las casas: el hẻm amanece mojado (como en su concepto) y las azoteas con aguacero también
+  if (L.paralaje.cerca === 'hem' || L.paralaje.cerca === 'azoteas' || lluvia) charcosConReflejo(pisoFinal, cerca, L, k, seed);
+
   // objetos: cajas, toldo y postes
   const objetos: ObjetoEscena[] = [];
   const todas = boxesOf(L);
@@ -454,6 +457,41 @@ function charco(P: Lienzo, x0: number, x1: number, y0: number, y1: number, seed:
     const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
     if (d > wob) continue;
     P.p(x, y, d > wob - 0.12 ? 'asfalto_claro' : d > wob - 0.25 && bayer(x, y) < 0.5 ? 'cemento' : (y - y0) % 7 === 0 && grain(x >> 2, y, seed) < 0.4 ? 'cielo' : 'celeste');
+  }
+}
+
+/**
+ * Charcos en el piso que reflejan lo que tienen encima: cada pixel del charco toma el color de la capa cerca en el
+ * espejo de la línea del fondo (la fila `y` del piso refleja la fila FT - y de las casas, corrida por la inclinación),
+ * un tono más oscuro, con rayitas de luz que lo hacen agua. Donde arriba hay cielo, refleja cielo.
+ */
+function charcosConReflejo(P: Lienzo, C: Lienzo, L: ObliqueLayout, k: number, seed: number) {
+  const D = depthOf(L), FT = L.franja.atras, R = rng(seed * 11 + 5);
+  const n = Math.round(L.largo / 240);
+  for (let i = 0; i < n; i++) {
+    const cxw = 60 + R() * (L.largo - 120), cy = 16 + R() * (D - 38), rx = 32 + R() * 40, ry = 7 + R() * 6;
+    // solo en piso firme: ni huecos ni agua ni bajo las cajas
+    let ok = true;
+    for (const [dx, dy] of [[-rx, 0], [rx, 0], [0, -ry], [0, ry], [0, 0], [-rx / 2, 0], [rx / 2, 0]]) {
+      const x = Math.round(cxw + dx), y = Math.round(cy + dy);
+      if (holeAt(L, x, y) || waterAt(L, x, y) || boxesOf(L).some((b) => x >= b.x - 4 && x < b.x + b.w + 4 && y >= b.y - 4 && y < b.y + b.d + 4)) ok = false;
+    }
+    if (!ok) continue;
+    for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let xw = Math.floor(cxw - rx); xw <= cxw + rx; xw++) {
+      const wob = 1 + Math.sin(Math.atan2(y - cy, xw - cxw) * 3 + seed + i) * 0.1 + (grain(xw >> 2, y, seed + i) - 0.5) * 0.14;
+      const d = ((xw - cxw) / rx) ** 2 + ((y - cy) / ry) ** 2;
+      if (d > wob) continue;
+      const x = xw + corre(k, y);
+      if (d > wob - 0.12) { const c0 = nombreEn(P, x, y); if (c0) P.p(x, y, MAS_OSCURO[c0]); continue; }
+      // el reflejo: rayas verticales del color de la casa que está encima, de cabeza (la planta baja arriba del charco
+      // y los pisos de arriba hacia adelante), tramadas con el cielo que se refleja
+      const rel = y - (cy - ry), sy = FT - 6 - Math.round(rel * 5), sx = x - corre(k, y);
+      const c = sy >= 0 && sx >= 0 && sx < C.w ? nombreEn(C, sx, sy) : undefined;
+      const casa = c && c !== 'tinta' && c !== 'sombra' ? c : undefined;
+      const col: Color = casa && bayer(x, y) < 0.62 ? casa : bayer(x + 1, y) < 0.5 ? 'cielo' : 'celeste';
+      // brillo: rayitas horizontales de luz, como el agua que tiembla
+      P.p(x, y, (y + i) % 3 === 0 && grain(x >> 2, y, seed + i) < 0.3 ? 'luz' : col);
+    }
   }
 }
 
