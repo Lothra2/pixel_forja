@@ -90,14 +90,12 @@ En el `kit.config.json` del juego:
 - **Las de audio de antes** (`ui_audio.test.ts` y `effects.test.ts`): en verde. "audio: true trae todos los sonidos" ahora cuenta los 12 nuevos solo, porque cuenta el catálogo.
 - **`custom.test.ts`:** 15 de 15, en 192 s. El kit completo de Nekketsu sale con los 12 sonidos nuevos comprimidos y sin `pendiente`. "Se genera en menos de 5 minutos" pasa. Solo con `--solo audio`, el kit tarda 23 s con lo nuevo y 12 s sin lo nuevo.
 - **El esquema** `docs/kit-a-medida.schema.json` está regenerado.
-- **Suite completa:** 33 archivos, 342 pruebas. Pasan 341.
-  - Falló una, `comuna13.test.ts` "solo la paleta de Colombia", con la máquina cargada por otros agentes.
-  - Corrida sola pasa. No toca audio.
+- **Suite completa: 34 archivos, 357 de 357.** La primera corrida, con la máquina cargada por otros lotes, falló una de `comuna13.test.ts` que no toca audio. Repetida con la máquina libre, pasan todas.
 - **`tsc` limpio y `npm run build:sitio` limpio.**
 - **`audio/escuchar.html` de esta carpeta, probado en Chromium:** carga los 12, toca el gallo con un clic y los OGG traen sus 20 s.
-- **e2e "audio del juego":** pasa y a veces falla en teléfono, esperando `audio-stop` después de "Decir".
-  - **No es de este lote:** en `main`, sin mis cambios, falla igual, en la misma línea. Falló 3 de 12 y 3 de 16 veces en `main`, contra 7 de 12 y 6 de 16 en esta rama.
-  - Es la carrera que se arregla en otra rama: el `play()` del silbato se corta con "Decir" y su `catch` apaga el botón de parar.
+- **e2e de Playwright: 50 de 50.**
+  - "audio del juego" fallaba a veces, también en `main`: 3 de cada 16. Era una carrera del estudio: el `play()` del silbato se cortaba con "Decir" y su `catch` apagaba el botón de parar.
+  - El arreglo es de una línea y es el mismo de la rama de C5: solo limpia si ese sonido sigue siendo el que suena. Con él, pasa siempre.
 
 ## Para aprobar (todo en esta carpeta)
 
