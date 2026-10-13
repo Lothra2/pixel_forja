@@ -57,7 +57,8 @@ En el `kit.config.json` del juego (la copia de `docs/ejemplos/nekketsu/kit.confi
   - El contrato del manifiesto: los 24 traen `burla_<su equipo>` en `ngg_burlas`, con su `frase`, y nadie trae la de otro equipo.
   - +24 PNG en el kit de Nekketsu (un atlas de burlas por atleta).
   - El esquema está regenerado. `packs` sigue aceptando solo animaciones del motor, así el editor sigue marcando los errores de tipeo.
-- **Suite completa, `tsc`, build y e2e:** ver el PR.
+- **Suite completa: 34 archivos, 350 de 350.** `tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 50 de 50.
+- **Arreglé una prueba inestable de antes, que no era de este lote.** "audio del juego" fallaba 3 de cada 16 veces, también en `main`. Era un bug del estudio: al tocar "Decir" justo después de un efecto, el efecto se cortaba antes de arrancar y su `play()` fallido borraba el estado de la voz, así que el botón de parar no salía. Ahora solo limpia si ese sonido sigue siendo el que suena. Pasó 20 de 20 repetida.
 
 ## Para aprobar (todo en esta carpeta)
 
@@ -74,6 +75,7 @@ En el `kit.config.json` del juego (la copia de `docs/ejemplos/nekketsu/kit.confi
 5. **La `frase` de la salsa va en el cuadro 1,** el primer "¡ven!" con las dos manos, que es el gesto fuerte. El paso de salsa viene después, ya con el globo puesto.
 6. **El guiño de la Familia se ve de frente y en diagonal.** De lado la cara va de perfil y lo que se lee es el pulgar.
 7. **Sumé `ngg_burlas` a las pruebas `crosscountry` y `azoteas`,** que son las que tienen pelea.
+8. **Arreglé el bug del audio del estudio** que hacía fallar el e2e a veces (ver Pruebas). Es una línea y no cambia nada del kit.
 
 ## Límites honestos
 

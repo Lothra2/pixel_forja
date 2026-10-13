@@ -26,10 +26,11 @@ export function AudioStep({ t }: { t: T }) {
     if (!u) { const r = renderSound(sec, name); u = wavUrl(r.samples, r.loop); cache.current.set(key, u); }
     const a = new Audio(u);
     a.loop = sec !== 'sfx';
-    a.onended = () => setPlaying('');
+    // si otro sonido o la voz lo cortó antes de arrancar, su play() falla: solo limpia si sigue siendo el que suena
+    a.onended = () => { if (cur.current === a) setPlaying(''); };
     cur.current = a;
     setPlaying(key);
-    void a.play().catch(() => setPlaying(''));
+    void a.play().catch(() => { if (cur.current === a) setPlaying(''); });
   };
   const say = () => {
     stop();
