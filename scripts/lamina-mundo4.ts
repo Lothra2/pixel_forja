@@ -2,8 +2,8 @@
  * Láminas de revisión del Mundo 4 (encargo F12 de GG Abyss) en docs/entregas/:
  *   npx tsx scripts/lamina-mundo4.ts [pendientes|farol|mapa|enemigos|jefe|todo]
  *
- * - pendientes.png: el ícono de ataque (x1 y x2 al lado de nova_fuego), el cinturón, el casillero de poción y los
- *   portales de cada mundo (girar, abrir y cerrar).
+ * - pendientes.png: el ícono de ataque (x1 y x2 al lado de nova_fuego), el cinturón, el casillero de poción, el
+ *   ícono del farol (prendido, recargando y x2) y los portales de cada mundo (girar, abrir y cerrar).
  * - thor_farol.png: Thor con el farol en las 8 direcciones caminando (todos los cuadros), alzando el farol (howl) y
  *   con el farol apagado.
  * - mundo4_mapa.png: el mapa entero chiquito, con las entidades.
@@ -39,6 +39,7 @@ async function pendientes() {
   const r = fill(createRaster(W, H), [20, 24, 30]);
   over(r, ic.get('ataque')!, 8, 8); over(r, ic.get('nova_fuego')!, 56, 8); over(r, ic.get('rayo_canalizado')!, 104, 8); over(r, up(ic.get('ataque')!, 2), 152, 8);
   over(r, ui.get('cinturon')!, 250, 20); over(r, ui.get('casillero_pocion')!, 450, 24);
+  over(r, ic.get('farol')!, 510, 8); over(r, ic.get('farol_recarga')!, 558, 8); over(r, up(ic.get('farol')!, 2), 606, 8);
   P.forEach((p, i) => {
     const y = 120 + i * 128;
     const frames = [p.anims.girar.frames[0], p.anims.girar.frames[4], p.anims.girar.frames[8], ...[1, 3, 5, 7].map((f) => p.anims.abrir.frames[f]), p.anims.cerrar.frames[2], p.anims.arco.frames[0]];

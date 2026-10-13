@@ -179,6 +179,40 @@ export function skillIcons(): UiSprite[] {
   const out = list.map(([name, rim, draw]) => ({ name, frames: [skill(rim, draw)] }));
   // #38: el ataque básico (el mismo para todas las heroínas): dos espadas cruzadas claras, aro dorado en degradé
   out.push({ name: 'ataque', frames: [skill('#e8b850', crossedSwords, '#ffd27a')] });
+  // #41: alzar el farol de Thor (el botón de Alana), y el mismo en gris para la recarga
+  const farol = skill('#e8b850', raisedLantern, '#ffd27a');
+  out.push({ name: 'farol', frames: [farol] });
+  out.push({ name: 'farol_recarga', frames: [grayed(farol)] });
+  return out;
+}
+
+/** El farol de Thor alzado: rayos ámbar alrededor, vidrio que brilla, jaula de hierro, el asa arriba. */
+function raisedLantern(c: IconCanvas) {
+  // los rayos: ocho, largos y cortos alternados, de ámbar a casi blanco
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2 - Math.PI / 2 + Math.PI / 8, L = k % 2 ? 4 : 6.5, w = 0.13, R = 10;
+    const cx = 20, cy = 21;
+    void w;
+    c.line([cx + Math.cos(a) * R, cy + Math.sin(a) * R], [cx + Math.cos(a) * (R + L), cy + Math.sin(a) * (R + L)], 1.3, glowMat(k % 2 ? '#ffc070' : '#fff0c0'), { tone: k % 2 ? 3 : 4 });
+  }
+  const iron = metalMat('#3a3a44');
+  // el asa (lo que muerde Thor) y el techito
+  c.ring([20, 12.5], 3.6, 3.2, 1.2, iron, {}, 180, 360);
+  c.poly([[14, 16], [26, 16], [20, 11.5]], iron, { bias: 1 });
+  // la jaula con el vidrio prendido y la llama
+  c.poly([[14.5, 16], [25.5, 16], [25, 27], [15, 27]], glowMat('#f0a040'), { tone: 3 });
+  c.ellipse([20, 22.5], 2.2, 3.6, glowMat('#fff0c0'), { tone: 5 });
+  for (const x of [14.6, 20, 25.4]) c.px1([x, 16], [x, 27], iron, { tone: 1 });
+  c.poly([[13.5, 27], [26.5, 27], [26, 29.5], [14, 29.5]], iron);
+}
+
+/** El ícono apagado (recarga): en grises, más oscuro. */
+function grayed(r: Raster): Raster {
+  const out = createRaster(r.w, r.h);
+  for (let i = 0; i < r.w * r.h; i++) {
+    const k = i * 4, l = (r.data[k] * 0.3 + r.data[k + 1] * 0.59 + r.data[k + 2] * 0.11) * 0.75;
+    out.data[k] = out.data[k + 1] = Math.round(l); out.data[k + 2] = Math.round(l * 1.04); out.data[k + 3] = r.data[k + 3];
+  }
   return out;
 }
 
