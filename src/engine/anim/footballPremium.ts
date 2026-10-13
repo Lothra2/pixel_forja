@@ -262,7 +262,7 @@ export const keeperReadyP: AnimDef = {
 /** Estirada: carga, se lanza estirado con las palmas adelante, ataja (impacto) en el aire y cae de costado. */
 export const keeperDiveP: AnimDef = {
   name: 'keeper_dive', pack: 'keeper', fps: 12, loop: false,
-  events: [{ type: 'despegue', phase: 1 / 8 }, { type: 'impacto', phase: 3 / 8 }, { type: 'aterriza', phase: 5 / 8 }],
+  events: [{ type: 'despegue', phase: 1 / 8 }, { type: 'impacto', phase: 3 / 8 }, { type: 'atrapa', phase: 3 / 8, joint: 'handNear' }, { type: 'aterriza', phase: 5 / 8 }],
   travel: { ref: 'run', k: [0.3, 0.9, 0.9, 0.7, 0.4, 0.1, 0] },
   build: (c) => {
     const L = c.L, u = c.u;
@@ -285,7 +285,7 @@ export const keeperDiveP: AnimDef = {
 /** Atajada alta: salta, agarra la pelota arriba (impacto), la trae al pecho y cae. */
 export const keeperCatchP: AnimDef = {
   name: 'keeper_catch', pack: 'keeper', fps: 10, loop: false,
-  events: [{ type: 'despegue', phase: 1 / 7 }, { type: 'impacto', phase: 2 / 7 }, { type: 'aterriza', phase: 4 / 7 }],
+  events: [{ type: 'despegue', phase: 1 / 7 }, { type: 'impacto', phase: 2 / 7 }, { type: 'atrapa', phase: 2 / 7, joint: 'handNear' }, { type: 'aterriza', phase: 4 / 7 }],
   build: (c) => {
     const L = c.L, u = c.u;
     const top = Math.max(2, Math.round(4 * u));

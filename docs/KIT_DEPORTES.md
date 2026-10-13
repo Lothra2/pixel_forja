@@ -51,7 +51,9 @@ Cada atleta trae su `celda` y su `pivote`. El pivote es el punto de apoyo (los p
 | `eventos[].tipo = impacto` | El cuadro exacto del golpe | Daño, hitstop de 2 o 3 cuadros, sonido, temblor de pantalla |
 | `eventos[].tipo = suelta` | Sale la pelota, la bala, la jabalina o el efecto | Crea el proyectil en ese cuadro |
 | `eventos[].tipo = despegue` / `aterriza` | Deja el piso / vuelve al piso | Activa y apaga la física del salto, polvo al caer |
-| `eventos[].punto` | En golpes y sueltas: dónde está la mano o el pie que pega, en pixeles desde el pivote, una entrada por fila | Saca la pelota, la bala o la chispa de ahí |
+| `eventos[].tipo = bote` | La pelota toca el piso (el `dribble`) | Sonido del bote |
+| `eventos[].tipo = atrapa` | La pelota llega a la mano o al guante y se queda | Apaga la física de la pelota: desde ahí la lleva el atleta |
+| `eventos[].punto` | En golpes, sueltas y atrapadas: dónde está la mano o el pie que pega, en pixeles desde el pivote, una entrada por fila | Saca la pelota, la bala o la chispa de ahí |
 | `avance` | Pixeles que avanza el cuerpo en un ciclo sin que el pie patine (medido de lado) | Avanza la animación por distancia: un ciclo completo cada `avance` recorrido. El pie no patina a ninguna velocidad |
 | `desplazamiento` | En las acciones que avanzan: pixeles recorridos en cada cuadro desde el primero | Mueve el sprite eso hacia donde mira (interpolado entre cuadros) |
 | `rumbo` | En las pruebas de campo: hacia dónde va de verdad cada fila | De frente se dibuja la diagonal: muévelo hacia el `rumbo`, no hacia abajo |
@@ -105,7 +107,7 @@ Todos van como `[fila][cuadro]`, en pixeles **desde el pivote**, con `x` hacia l
 | `cuerpo` | Igual que `cajas` pero solo la persona (con el pelo): sin implementos, pelotas, armas ni chispas | **El hurtbox.** `cajas` incluye la pelota o la chispa del golpe; `cuerpo` no |
 | `carga` | `[x, y]` donde apoya su base lo que se lleva (levantar, llevar, lanzar). `null` en los cuadros sin carga. Solo en esas animaciones | Dibujar al rival levantado o el objeto encima de quien carga (ver Pelea callejera) |
 | `arma` | `[x, y, angulo, detras]`: el agarre del arma del piso en la mano, hacia dónde apunta (grados, 0 = derecha, horario) y 1 si va detrás del cuerpo. `null` sin arma. Solo en las animaciones de armas | Dibujar el arma que el personaje recogió (ver Armas del piso) |
-| `objetos` | Lista de `{ tipo, clase, x, y, r, detras }` con cada pelota que el pack no dibuja, o `null`. Solo en los packs con `sin_props` del kit a medida, y sale aunque no se pidan datos | Poner la pelota de la física donde iba la dibujada. Ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#packs-sin-pelotas-sin_props-lote-sp) |
+| `objetos` | Lista de `{ tipo, clase, x, y, r, detras }` con cada pelota que el pack no dibuja, o `null`. Solo en los packs con `sin_props` del kit a medida, y sale aunque no se pidan datos | Poner la pelota de la física donde iba la dibujada. Ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#packs-sin-pelotas-sin_props-lotes-sp-y-sp2) |
 
 ```js
 // hitbox del puño en el cuadro del impacto, para el jugador que mira a la derecha

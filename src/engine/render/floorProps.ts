@@ -4,7 +4,8 @@ import { Materials } from './materials';
 import { Part } from './part';
 import { makeRamp } from '../color/ramp';
 import { BASE, SHADOW } from '../color/ramp';
-import { drawFloorProp, drawPoteLid, floorPropGrip, rotatePart, FLOOR_PROPS, FLOOR_PROP_KINDS, type FloorPropKind, type FloorPropOpts } from './props';
+import { drawFloorProp, drawPoteLid, floorPropGrip, rotatePart, drawBall, ballSize, FLOOR_PROPS, FLOOR_PROP_KINDS, type FloorPropKind, type FloorPropOpts } from './props';
+import type { PropKind } from '../rig/pose';
 import { rotateRaster } from '../fx/fx';
 import { packAtlas, type TexturePackerHash } from '../export/atlas';
 
@@ -146,4 +147,39 @@ export function buildObjectsAtlas(cell = 48, image = 'armas.png', kinds: readonl
   }
   const { png, json } = packAtlas(frames, size, image, [size / 2, size - 2]);
   return { png, json, objetos };
+}
+
+/**
+ * Una pelota suelta (lote SP2), dibujada igual que en la mano del atleta de celda `cell`: el disco de `ballSize` más
+ * su contorno, en un cuadrado de d + 2 de lado. Su centro exacto es el centro del cuadrado.
+ */
+export function pelotaSprite(kind: PropKind, cell = 48): Raster {
+  const u = cell / 48, s = ballSize(kind, u), r = (s - 1) / 2;
+  const part = new Part();
+  // el disco va de round(c - r) a round(c - r) + s - 1: con c = r cae de 0 a s - 1, y el contorno en -1 y s
+  drawBall(part, kind, [r, r], u);
+  const canvas = new LayerCanvas(s + 2, s + 2, 1, 1);
+  const mats = new Materials({});
+  for (const [x, y, p] of part.entries()) canvas.put(x, y, Layer.Prop, mats.paint(p.mat, p.slot));
+  finalizeOutlines(canvas, { fused: [] });
+  return toRaster(canvas, 0, 0, s + 2, s + 2, 0, 0);
+}
+
+/**
+ * Atlas de las pelotas sueltas (JSON Hash de TexturePacker): una tira con cada pelota en su tamaño exacto, el cuadro
+ * `<id>_<celda>` con el pivote en el centro. `pares`: qué pelota en qué celda de atleta, con el id que lleva.
+ */
+export function buildPelotasAtlas(pares: readonly { kind: PropKind; cell: number; id: string }[], image = 'pelotas.png'): { png: Raster; json: TexturePackerHash } {
+  const sprites = pares.map((p) => ({ name: `${p.id}_${p.cell}`, raster: pelotaSprite(p.kind, p.cell) }));
+  const W = sprites.reduce((a, s) => a + s.raster.w, 0), H = Math.max(...sprites.map((s) => s.raster.h));
+  const png = createRaster(W, H);
+  const json: TexturePackerHash = { frames: {}, meta: { app: 'PixelForja', version: '1', image, format: 'RGBA8888', size: { w: W, h: H }, scale: '1' } };
+  let x = 0;
+  for (const { name, raster } of sprites) {
+    blit(png, raster, x, 0);
+    const { w, h } = raster;
+    json.frames[name] = { frame: { x, y: 0, w, h }, rotated: false, trimmed: false, spriteSourceSize: { x: 0, y: 0, w, h }, sourceSize: { w, h }, pivot: { x: 0.5, y: 0.5 } };
+    x += w;
+  }
+  return { png, json };
 }

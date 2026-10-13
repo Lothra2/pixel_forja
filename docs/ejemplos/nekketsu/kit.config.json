@@ -154,7 +154,8 @@
         "spike",
         "block",
         "serve",
-        "vb_dive"
+        "vb_dive",
+        "vb_ready"
       ],
       "sin_props": true
     },
@@ -163,7 +164,44 @@
         "trap",
         "header",
         "volley",
-        "chilena"
+        "chilena",
+        "shot",
+        "pass",
+        "slide"
+      ],
+      "sin_props": true
+    },
+    "keeper": {
+      "anims": [
+        "keeper_ready",
+        "keeper_dive",
+        "keeper_catch"
+      ],
+      "sin_props": true
+    },
+    "basket": {
+      "anims": [
+        "dribble",
+        "shoot",
+        "dunk"
+      ],
+      "sin_props": true
+    },
+    "tennis": {
+      "anims": [
+        "tn_ready",
+        "forehand",
+        "backhand",
+        "tennis_serve",
+        "tn_volley",
+        "tn_smash"
+      ],
+      "sin_props": true
+    },
+    "beisbol": {
+      "anims": [
+        "pitch",
+        "catch"
       ],
       "sin_props": true
     }
@@ -207,11 +245,31 @@
     ],
     "futbol_callejero": [
       "base",
-      "futbol"
+      "futbol",
+      "keeper"
     ],
     "da_cau": [
       "base",
       "futbol"
+    ],
+    "basket": [
+      "base",
+      "pelea",
+      "basket"
+    ],
+    "tenis": [
+      "base",
+      "tennis"
+    ],
+    "chapita": [
+      "base",
+      "armas",
+      "beisbol"
+    ],
+    "quemado": [
+      "base",
+      "armas",
+      "beisbol"
     ]
   },
   "objetos": true,

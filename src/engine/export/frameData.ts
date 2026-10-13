@@ -68,6 +68,14 @@ export const PELOTAS: Partial<Record<PropKind, string>> = {
   soccer: 'futbol', volleyball: 'voley', basketball: 'basquet', tennisball: 'tenis', baseball: 'beisbol', shot: 'bala',
 };
 
+/**
+ * El id de cada pelota suelta en `pelotas` del manifiesto y en objetos/pelotas.json (lote SP2), por su `clase`. Los
+ * cuatro primeros son los nombres que ya usa Nekketsu para sus texturas.
+ */
+export const PELOTA_IDS: Record<string, string> = {
+  futbol: 'balon_futbol', voley: 'balon_voley', basquet: 'balon_basket', tenis: 'pelota_tenis', beisbol: 'pelota_beisbol', bala: 'bala',
+};
+
 /** Recuadro de los pixeles opacos de un cuadro, en coordenadas del cuadro (null si no hay ninguno). */
 export function opaqueBox(r: Raster): { x0: number; y0: number; x1: number; y1: number } | null {
   let x0 = Infinity, y0 = Infinity, x1 = -1, y1 = -1;

@@ -3,7 +3,7 @@ import { encodePng } from '../export/png';
 import { motionOf8 } from '../export/motion';
 import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim, type RenderedClip, type ViewName } from '../render/clip';
-import { viewsForRows, frameDataOf, objetosOf, PELOTAS, pivotOf, FRAME_DATA_FIELDS, type FrameData, type FrameDataField } from '../export/frameData';
+import { viewsForRows, frameDataOf, objetosOf, PELOTAS, PELOTA_IDS, pivotOf, FRAME_DATA_FIELDS, type FrameData, type FrameDataField } from '../export/frameData';
 import { packAtlas, atlasFrameName } from '../export/atlas';
 import { portraitSheet, headIcon, HEAD_ICON, PORTRAIT_BIG_SCALE } from './portraits';
 import { dressForPack, variantForPack } from '../sheet/wardrobe';
@@ -20,8 +20,9 @@ import { FOOTBALL_PREMIUM } from '../anim/footballPremium';
 import { BRAWL } from '../anim/brawl';
 import { PELEA, duenoDe } from '../anim/pelea';
 import { RECORRIDOS, TREPAR } from '../anim/recorridos';
-import { buildObjectsAtlas } from '../render/floorProps';
+import { buildObjectsAtlas, buildPelotasAtlas } from '../render/floorProps';
 import type { FloorPropKind } from '../render/props';
+import type { PropKind } from '../rig/pose';
 import { bitmapFonts } from '../ui/fonts';
 
 /**
@@ -141,7 +142,7 @@ function sheetOf(clips: RenderedClip[], cell: CellSize, n: number): Raster {
 
 /** La nota del manifiesto para los packs sin pelotas. */
 export const NOTA_SIN_PROPS = (packs: readonly string[]): string =>
-  `sin_props (${packs.join(', ')}): estos packs salen sin las pelotas dibujadas, porque el juego las mueve con su física. El cuerpo es el mismo, pixel a pixel, que en un pack con pelota. Lo que va agarrado (raqueta, bate, garrocha, jabalina) sí sale dibujado. objetos: [fila][cuadro] = lista de { tipo, clase, x, y, r, detras } o null si en ese cuadro no hay pelota. tipo = "pelota", clase = ${Object.values(PELOTAS).join(', ')}. x, y = centro exacto desde el pivote (puede caer en medio pixel), r = radio sin el contorno, detras = 1 si iba detrás del cuerpo. Al espejar, x pasa a -x.`;
+  `sin_props (${packs.join(', ')}): estos packs salen sin las pelotas dibujadas, porque el juego las mueve con su física. El cuerpo es el mismo, pixel a pixel, que en un pack con pelota. Lo que va agarrado (raqueta, bate, garrocha, jabalina) sí sale dibujado. objetos: [fila][cuadro] = lista de { tipo, clase, x, y, r, detras } o null si en ese cuadro no hay pelota. tipo = "pelota", clase = ${Object.values(PELOTAS).join(', ')}. x, y = centro exacto desde el pivote (puede caer en medio pixel), r = radio sin el contorno, detras = 1 si iba detrás del cuerpo. Al espejar, x pasa a -x. pelotas: cada pelota quitada, dibujada igual, en objetos/pelotas.json (cuadro <id>_<celda>, con su contorno y el pivote en el centro exacto): se pone en (x, y) de objetos.`;
 
 /** ¿Se escribe en una sola línea? Los arreglos de números (y de arreglos de números): cajas, manos, agua... */
 const inline = (v: unknown): boolean => Array.isArray(v) && v.every((x) => x === null || typeof x !== 'object' || inline(x));
@@ -206,6 +207,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
   };
   const out: Record<string, AthleteEntry> = {};
   const heads: Raster[] = [];
+  // las pelotas que quitaron los packs sin_props, en cada celda (`<kind>:<celda>`): salen sueltas en objetos/pelotas.png
+  const pelotasUsadas = new Set<string>();
   const ids = Object.keys(athletes);
   const equipos = [...new Set(Object.values(opts.equipoDe ?? {}))];
   for (const [id, f] of Object.entries(athletes)) {
@@ -241,7 +244,10 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
         }
         if (fields.length) Object.assign(entry, frameDataOf(clips, fields));
         // sin pelotas: dónde iba cada una, aunque no se pidan datos por cuadro (sin esto la pelota se pierde)
-        if (sinP) Object.assign(entry, objetosOf(clips));
+        if (sinP) {
+          Object.assign(entry, objetosOf(clips));
+          for (const c of clips) for (const bs of c.balls ?? []) for (const b of bs) pelotasUsadas.add(`${b.kind}:${C}`);
+        }
         // el archivo va primero en el manifest, como siempre
         entries[a] = entry.archivo ? { archivo: entry.archivo, ...entry } : entry;
       }
@@ -271,6 +277,21 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     out[id] = entry;
   }
   manifest.atletas = out;
+  if (pelotasUsadas.size) {
+    // en el orden de PELOTAS y de menor a mayor celda
+    const kinds = Object.keys(PELOTAS) as PropKind[];
+    const pares = [...pelotasUsadas].map((k) => { const [kind, c] = k.split(':'); return { kind: kind as PropKind, cell: Number(c), id: PELOTA_IDS[PELOTAS[kind as PropKind]!] }; })
+      .sort((a, b) => kinds.indexOf(a.kind) - kinds.indexOf(b.kind) || a.cell - b.cell);
+    const { png, json } = buildPelotasAtlas(pares);
+    files.push({ name: 'objetos/pelotas.png', bytes: encodePng(png), mime: 'image/png' });
+    files.push({ name: 'objetos/pelotas.json', bytes: enc.encode(JSON.stringify(json)), mime: 'application/json' });
+    const pelotas: Record<string, { clase: string; atlas: string; cuadros: Record<string, string> }> = {};
+    for (const p of pares) {
+      pelotas[p.id] ??= { clase: PELOTAS[p.kind]!, atlas: 'objetos/pelotas.json', cuadros: {} };
+      pelotas[p.id].cuadros[String(p.cell)] = `${p.id}_${p.cell}`;
+    }
+    manifest.pelotas = pelotas;
+  }
   if (opts.retratos) manifest.retratos = 'retratos.png: arriba los chicos de 40 x 40 (el i en x = i * 40), abajo los grandes de 96 x 96 (el i en x = i * 96, y = 40), en el orden de `expresiones`. El grande es la cabeza y los hombros escalados x3 entero.';
   if (opts.cabecitas && heads.length) {
     files.push({ name: 'ui/cabecitas.png', bytes: encodePng(strip(heads, HEAD_ICON, HEAD_ICON)), mime: 'image/png' });

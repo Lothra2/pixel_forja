@@ -172,6 +172,8 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     const def = humanDef(f, name);
     if (!def) throw new Error(`No existe la animación ${name}`);
     const poses = posesFor(f, cell, name, poseView);
+    // las clásicas con eventos (las de pelota del lote SP2) también los mandan al juego si la ficha es premium
+    if (!premium && f.movementProfile === 'premium' && def.events) events = def.events;
     if (premium) {
       events = def.events;
       const L = dimsFor(cell, f.body.proportions);
