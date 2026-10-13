@@ -1,6 +1,6 @@
 # Lote H2: un tema por mundo y los efectos del gallo, el tejo, el đá cầu y el tatami
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/30
 Fecha: 2026-10-13
 
 ## Qué se hizo
