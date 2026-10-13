@@ -151,12 +151,14 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
       "grafitero": { "anims": ["pintar", "mirar"], "vistas": { "pintar": "espalda_tres_cuartos" } },
       "vendedor_paletas": { "anims": ["llamar", "ofrecer"], "vista": "tres_cuartos" },
       // un grupo en un solo sprite, uno al lado del otro, con el parlante
-      "musicos": { "grupo": { "rapero": { "tocar": "rapear", "animar": "animar" }, "percusionista": { "tocar": "tamborear", "animar": "animar" } }, "parlante": true }
+      "musicos": { "grupo": { "rapero": { "tocar": "rapear", "animar": "animar" }, "percusionista": { "tocar": "tamborear", "animar": "animar" } }, "parlante": true },
+      // la Marimonda del Carnaval (lote E5): camina de lado y baila de frente
+      "marimonda": { "anims": { "caminar": "walk", "bailar": "dance" }, "vistas": { "caminar": "lado" } }
     }
   }
   ```
   - Cada NPC sale en `npc/<id>.png`, **una tira** con todos los cuadros de sus animaciones seguidas, de `w` × `h`. El manifiesto trae `ancla` (el pixel de los pies: ahí va el (x, y) del NPC), `anims` con `desde`, `cuadros`, `fps`, `loop` y `vista`, y `eventos` donde hay algo que hacer: en `patear`, `{ "tipo": "impacto", "cuadro": 2 }` es cuando el pie le pega a la pelota y el juego la suelta.
-  - **Vistas:** `frente` (por defecto), `tres_cuartos` (hacia la calle), `espalda` y `espalda_tres_cuartos` (el grafitero contra su muro). No se espejan.
+  - **Vistas:** `frente` (por defecto), `tres_cuartos` (hacia la calle), `espalda` y `espalda_tres_cuartos` (el grafitero contra su muro). No se espejan. `lado` (lote E5) es de perfil mirando a la derecha, para el que camina de un lado al otro (la Marimonda): el juego lo espeja para ir a la izquierda.
   - **`anims`** es una lista de animaciones del motor, o `{ "nombre_en_el_juego": "animación" }` para ponerles otro nombre.
   - **Las animaciones de la calle** (pack `calle`): `toprock`, `molino` y `reclama` (break); `espera`, `patear` y `perdon` (fútbol de la calle); `pintar` y `mirar` (grafitero, con la lata de spray); `rapear` (micrófono), `tamborear` (tambora) y `animar`; `llamar` (campanita) y `ofrecer` (paleta). Sirve cualquier otra animación del motor.
   - Una ficha que no está o una animación que no existe se salta con aviso.
