@@ -579,6 +579,48 @@ test('efectos del juego: el catálogo animado por grupo y la descarga', async ({
   expect(errors).toEqual([]);
 });
 
+test('interfaz del juego: logo desde el texto, caja de diálogo armada y descarga', async ({ page }, info) => {
+  test.setTimeout(120000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('tool-interface').click();
+  const logo = page.getByTestId('ui-logo');
+  await expect(logo).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId('ui-dialog-demo')).toBeVisible();
+  await expect(page.getByTestId('ui-banner_meta')).toBeVisible();
+  await expect(page.getByTestId('ui-control_especial')).toBeVisible();
+  // otro texto, otro logo
+  const before = await logo.evaluate((c: HTMLCanvasElement) => c.toDataURL());
+  await page.getByTestId('ui-logo-text').fill('NEKKETSU OLYMPIC GG');
+  await expect.poll(() => logo.evaluate((c: HTMLCanvasElement) => c.toDataURL())).not.toBe(before);
+  await page.screenshot({ path: `${shots}/${tag}_82_interfaz.png`, fullPage: true });
+  const dl = page.waitForEvent('download');
+  await page.getByTestId('ui-export').click();
+  expect((await dl).suggestedFilename()).toBe('interfaz.zip');
+  expect(errors).toEqual([]);
+});
+
+test('audio del juego: secciones, un sonido que suena y la voz en blips', async ({ page }, info) => {
+  test.setTimeout(120000);
+  const tag = info.project.name;
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByTestId('tool-audio').click();
+  await expect(page.getByTestId('sound-marcha_nekketsu')).toBeVisible({ timeout: 30000 });
+  await page.getByTestId('audio-sections').getByRole('button', { name: /Efectos|Effects/ }).click();
+  await expect(page.getByTestId('sound-silbato')).toBeVisible();
+  await expect(page.getByTestId('sound-publico_grito')).toBeVisible();
+  await page.getByTestId('sound-silbato').click();
+  await expect(page.getByTestId('sound-silbato')).toHaveClass(/on/);
+  await page.getByTestId('voice-say').click();
+  await expect(page.getByTestId('audio-stop')).toBeVisible();
+  await page.screenshot({ path: `${shots}/${tag}_83_audio.png`, fullPage: true });
+  expect(errors).toEqual([]);
+});
+
 test('escena: el layout pintado, el personaje corriendo, la colisión y las 9 pruebas', async ({ page }, info) => {
   test.setTimeout(120000);
   const tag = info.project.name;
