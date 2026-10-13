@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { hayFfmpeg } from '../../../scripts/codificador-ffmpeg';
 import Ajv from 'ajv';
-import { buildCustomKit, kitConfigSchema, validateKitConfig, validateTeams, type KitConfig } from '../kit/custom';
+import { buildCustomKit, kitConfigSchema, validateKitConfig, validateTeams, packAnims, type KitConfig } from '../kit/custom';
 import { SPORT_PACKS, DEFAULT_SPORT_PACKS } from '../kit/sportskit';
 import { HERO_RPG_ANIMS } from '../rpg/presets';
 import { FLOOR_PROP_KINDS } from '../render/props';
@@ -198,9 +198,11 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
       for (const [p, pk] of Object.entries<any>(a.packs)) {
         expect(pk.atlas).toBe(`atletas/${id}/${p}.json`);
         const atlas = readJson(join(out, pk.atlas));
-        // la burla y la victoria propias (taunt_<id>, victory_<id>) solo van en el atlas de su dueño
-        const ids = Object.keys(m.atletas);
-        expect(Object.keys(pk.anims).sort(), `${id}/${p}`).toEqual(cfg.packs[p].filter((a) => (duenoDe(a, ids) ?? id) === id).sort());
+        // la burla y la victoria propias (taunt_<id>, victory_<id>) solo van en el atlas de su dueño, y la burla del
+        // equipo (burla_<equipo>, lote C5) solo en los de ese equipo
+        const ids = Object.keys(m.atletas), equipos = Object.keys(m.equipos);
+        const nombres = packAnims(cfg.packs[p]).flatMap((a) => { const al = Object.keys(cfg.alias ?? {}).filter((k) => cfg.alias![k] === a); return al.length ? al : [a]; });
+        expect(Object.keys(pk.anims).sort(), `${id}/${p}`).toEqual(nombres.filter((a) => (duenoDe(a, ids) ?? id) === id && (duenoDe(a, equipos) ?? team) === team).sort());
         for (const [an, d] of Object.entries<any>(pk.anims)) {
           expect(d).toMatchObject({ cuadros: expect.any(Number), fps: expect.any(Number), loop: expect.any(Boolean) });
           // un cuadro del atlas por fila y cuadro, y los datos por cuadro en [fila][cuadro]
@@ -213,6 +215,14 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
       }
     }
     for (const [prueba, packs] of Object.entries<string[]>(m.pruebas)) for (const p of packs) expect(m.atletas.rick.packs[p], `${prueba}: ${p}`).toBeDefined();
+    // lote SP: voley y futbol salen sin pelotas, con dónde iba cada una en objetos; los demás packs no traen objetos
+    for (const [p, an] of [['voley', 'serve'], ['futbol', 'header']]) for (const id of ['rick', 'goro']) {
+      const o = m.atletas[id].packs[p].anims[an].objetos;
+      expect(o, `${id} ${p} ${an}`).toHaveLength(m.filas.length);
+      expect(o.flat().filter(Boolean).flat()[0], `${id} ${p} ${an}`).toMatchObject({ tipo: 'pelota', clase: p === 'voley' ? 'voley' : 'futbol', detras: 0 });
+    }
+    expect(Object.values<any>(m.atletas.rick.packs.base.anims).some((d) => d.objetos)).toBe(false);
+    expect(m.notas.some((n: string) => n.startsWith('sin_props (voley, futbol): '))).toBe(true);
     expect(m.animales.thor).toMatchObject({ atlas: 'animales/thor.json', imagen: 'animales/thor.png' });
     // las aves del motor (lote C7b): una tira de lado, con el ancla en las patas y el canto del gallo
     expect(m.animales.gallo).toMatchObject({ tipo: 'ave', imagen: 'animales/gallo.png', w: 32, h: 32, ancla: [17, 30], vista: 'lado', eventos: { cantar: [{ tipo: 'canto', cuadro: 3 }] } });
@@ -221,9 +231,15 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     // la comida de la pelea va en objetos, después de las armas (el primer objeto sigue siendo un arma)
     expect(Object.values<any>(m.objetos)[0].atlas).toBe('objetos/armas.json');
     for (const k of COMIDAS) expect(m.objetos[k], k).toMatchObject({ atlas: 'objetos/comida.json', peso: 'comida', rota: false, anims: { quieto: 1, humito: 4 }, cura: expect.any(Number) });
-    // la burla y la victoria propias son de los 8 de la pelea (lote P1); las de los equipos nacionales llegan con C5
+    // la burla y la victoria propias son de los 8 de la pelea (lote P1)
     for (const t of ['taunt', 'victory']) for (const id of CON_BURLA_PROPIA) {
       expect(m.atletas[id].packs.kachinuki.anims[`${t}_${id}`], `${t}_${id}`).toBeDefined();
+    }
+    // la burla de cada equipo (lote C5): los 24 la traen, con la frase en el gesto fuerte
+    for (const [eq, t] of Object.entries<any>(m.equipos)) for (const id of t.atletas) {
+      const b = m.atletas[id].packs.ngg_burlas.anims[`burla_${eq}`];
+      expect(b, `${id} burla_${eq}`).toMatchObject({ loop: false, fps: 8 });
+      expect(b.eventos.filter((e: any) => e.tipo === 'frase'), id).toHaveLength(1);
     }
     // el pisotón, el codazo y el cabezazo marcan el impacto en el pie, el codo y la frente
     const imp = (id: string, a: string) => m.atletas[id].packs.kachinuki.anims[a].eventos.find((e: any) => e.tipo === 'impacto');
@@ -291,11 +307,11 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas (24 x 9 hojas: los packs y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida
+    // atletas (24 x 12 hojas: los packs, las burlas del lote C5, voley y futbol sin pelotas del lote SP, y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida
     // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 8 escenarios: hẻm 21,
     // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14, Caracas 10 y Hội An 8 + 3 perros y 2 gatos (lote C7)
     // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b)
-    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 5 + 10 + 9 + 2);
+    expect(pngs.length).toBe(24 * 12 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 5 + 10 + 9 + 2);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

@@ -138,7 +138,43 @@
       "grab_leg_up",
       "edge_teeter",
       "fall_off"
-    ]
+    ],
+    "ngg_burlas": [
+      "burla_pulgar",
+      "burla_bruce_lee",
+      "burla_dragon",
+      "burla_risa_tapada",
+      "burla_salsa",
+      "burla_hombros"
+    ],
+    "voley": {
+      "anims": [
+        "vb_bump",
+        "vb_set",
+        "spike",
+        "block",
+        "serve",
+        "vb_dive"
+      ],
+      "sin_props": true
+    },
+    "futbol": {
+      "anims": [
+        "trap",
+        "header",
+        "volley",
+        "chilena"
+      ],
+      "sin_props": true
+    }
+  },
+  "alias": {
+    "burla_familia_gg": "burla_pulgar",
+    "burla_instituto_nekketsu": "burla_bruce_lee",
+    "burla_rong_sai_gon": "burla_dragon",
+    "burla_rolos_de_chapinero": "burla_risa_tapada",
+    "burla_panas_de_caracas": "burla_salsa",
+    "burla_maracuchos_del_lago": "burla_hombros"
   },
   "pruebas": {
     "crosscountry": [
@@ -146,7 +182,8 @@
       "pelea",
       "armas",
       "natacion",
-      "recorridos"
+      "recorridos",
+      "ngg_burlas"
     ],
     "vallas": [
       "base",
@@ -161,7 +198,20 @@
       "pelea",
       "armas",
       "kachinuki",
-      "trepar"
+      "trepar",
+      "ngg_burlas"
+    ],
+    "voley_playa": [
+      "base",
+      "voley"
+    ],
+    "futbol_callejero": [
+      "base",
+      "futbol"
+    ],
+    "da_cau": [
+      "base",
+      "futbol"
     ]
   },
   "objetos": true,
@@ -229,14 +279,26 @@
       "mareo",
       "ko",
       "publico_grito",
-      "publico_ooh"
+      "publico_ooh",
+      "gallo",
+      "aleteo",
+      "mecha_tejo",
+      "toque_cau",
+      "caida_tatami",
+      "pitazo_largo"
     ],
     "musica": [
       "marcha_nekketsu",
       "saigon_chay",
       "azotea_final",
       "victoria_banda",
-      "derrota"
+      "derrota",
+      "tema_instituto",
+      "hoian_noche",
+      "ajiaco_rock",
+      "parce_corra",
+      "pana_dale",
+      "gaita_lago"
     ],
     "voces": [
       "rick",
