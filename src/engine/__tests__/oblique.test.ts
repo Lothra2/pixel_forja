@@ -250,6 +250,57 @@ describe('escena completa', () => {
   });
 });
 
+describe('vista inclinada (px = x + 0.35 y)', () => {
+  const L = validateLayout(JSON.parse(readFileSync('docs/ejemplos/nekketsu/escenarios/saigon_hem.layout.json', 'utf8'))).layout!;
+  const E = renderEscena(L, 42, 0.35), D = L.franja.adelante - L.franja.atras;
+
+  it('las capas largas miden largo + 0.35 * D y el piso no tiene huecos transparentes', () => {
+    expect(E.inclinacion).toBe(0.35);
+    expect(E.ancho).toBe(L.largo + Math.round(0.35 * D));
+    for (const c of [E.cerca, E.piso, E.frente]) expect(c.w).toBe(E.ancho);
+    let vacios = 0;
+    for (let i = 3; i < E.piso.r.data.length; i += 4) if (E.piso.r.data[i] === 0) vacios++;
+    expect(vacios).toBe(0);
+  });
+
+  it('cada caja maciza trae su cara izquierda detrás de quien pasa a su lado', () => {
+    const caras = E.objetos.filter((o) => o.tipo.endsWith('_cara'));
+    expect(caras.map((c) => c.tipo).sort()).toEqual(expect.arrayContaining(['muro_bajo_cara', 'muro_alto_cara', 'cajas_cara']));
+    for (const c of caras) {
+      const caja = E.objetos.find((o) => o.id === c.id.replace(/_cara$/, ''))!;
+      expect(c.orden).toBeLessThan(caja.orden);
+    }
+    // las cajas apiladas: la de 36 al lado de la de 18 solo muestra el pedazo que sobresale (la contrahuella)
+    const alta = E.objetos.filter((o) => o.tipo === 'cajas_cara').sort((a, b) => a.x - b.x)[1];
+    expect(alta.img.h).toBeGreaterThan(0);
+    const filas = new Set<number>();
+    for (let y = 0; y < alta.img.h; y++) for (let x = 0; x < alta.img.w; x++) if (alta.img.has(x, y)) filas.add(y);
+    expect(Math.max(...filas) - Math.min(...filas)).toBeLessThan(40 + 36 - 18 + 2);
+  });
+
+  it('los objetos se corren según su fondo: un poste en y 4 se corre 1', () => {
+    const recto = renderEscena(L, 42, 0);
+    const a = recto.objetos.find((o) => o.origen === 'postes')!, b = E.objetos.find((o) => o.origen === 'postes' && o.id === a.id)!;
+    expect(b.x - a.x).toBe(Math.round(0.35 * L.postes[0].y));
+  });
+
+  it('con inclinación 0 sale el dibujo derecho de antes', () => {
+    const recto = renderEscena(L, 42, 0);
+    expect(recto.ancho).toBe(L.largo);
+    expect(recto.objetos.some((o) => o.tipo.endsWith('_cara'))).toBe(false);
+  });
+
+  it('escenario.json lleva la inclinación y el ancho, y los 5 tramos pasan las 9 pruebas', () => {
+    for (const id of ['saigon_hem', 'saigon_benthanh', 'saigon_rio', 'saigon_azoteas', 'saigon_estadio']) {
+      const r = generarEscenario(JSON.parse(readFileSync(`docs/ejemplos/nekketsu/escenarios/${id}.layout.json`, 'utf8')));
+      expect(r.errores, id).toEqual([]);
+      const ej = JSON.parse(new TextDecoder().decode(r.archivos.find((a) => a.nombre === 'escenario.json')!.bytes));
+      expect(ej.inclinacion).toBe(0.35);
+      expect(ej.ancho).toBe(ej.largo + 46);
+    }
+  });
+});
+
 describe('las 9 pruebas del pedido (10.4)', () => {
   it('saigon_hem pasa las 9', () => {
     const r = generarEscenario(clone());
