@@ -32,10 +32,10 @@ test('visor del kit: atletas, packs y animaciones con sus datos dibujados', asyn
   // los seis equipos y Thor, agrupados en el orden de equipos.json: arranca con el primero de la Familia GG
   const sel = page.getByTestId('visor-char');
   await expect(sel.locator('optgroup')).toHaveCount(7);
-  // 24 atletas, Thor y los 5 animales de la calle (lote C7)
-  await expect(sel.locator('option')).toHaveCount(30);
+  // 24 atletas, Thor, los 5 animales de la calle (lote C7) y el gallo y la paloma (lote C7b)
+  await expect(sel.locator('option')).toHaveCount(32);
   await expect(sel.locator('optgroup').first()).toHaveAttribute('label', 'Familia GG');
-  await expect(sel.locator('optgroup').last().locator('option')).toHaveText(['Thor', 'Canelo', 'Negrito', 'Manchas', 'Mango', 'Sombra']);
+  await expect(sel.locator('optgroup').last().locator('option')).toHaveText(['Thor', 'Canelo', 'Negrito', 'Manchas', 'Mango', 'Sombra', 'Gallo', 'Paloma']);
   let h = await hook(page);
   expect(h).toMatchObject({ char: 'rick', rows: 5 });
   expect(h.drawn).toBe(5);
@@ -85,7 +85,20 @@ test('visor del kit: atletas, packs y animaciones con sus datos dibujados', asyn
   await expect(page.getByTestId('visor-packs')).toBeHidden();
   expect((await hook(page)).drawn).toBe(5);
 
+  // el gallo: una tira de lado, una sola fila, celda de 32, con el canto
+  await sel.selectOption('gallo');
+  await expect.poll(async () => (await hook(page)).pack).toBe('ave');
+  await page.getByTestId('visor-board').getByRole('button', { name: 'cantar', exact: true }).click();
+  await expect.poll(async () => (await hook(page)).anim).toBe('cantar');
+  expect((await hook(page)).rows).toBe(1);
+  const gallo = await opaque(page, 'lado');
+  expect(gallo.w).toBe(32 * z);
+  expect(gallo.n).toBeGreaterThan(150 * z * z);
+  await page.screenshot({ path: `${shots}/${tag}_visor_gallo.png`, fullPage: true });
+
   // el enlace guarda dónde estabas
+  await sel.selectOption('thor');
+  await expect.poll(async () => (await hook(page)).char).toBe('thor');
   expect(page.url()).toContain('p=thor');
   expect(errors).toEqual([]);
 });

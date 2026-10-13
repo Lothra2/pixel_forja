@@ -56,7 +56,7 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `retratos` | 8 expresiones en 40 y 96 px (la 8 es burla) | Sí |
 | `cabecitas` | 12 x 12 para el minimapa, en `ui/cabecitas.png` | Sí |
 | `objetos` | Armas del piso: `true` (las 19) o la lista | No van |
-| `animales` | Ids de animales: de las fichas, o `thor` que viene con el motor. La mascota de un equipo entra sola | No van |
+| `animales` | Ids de animales: de las fichas, o los que vienen con el motor: `thor` y las aves `gallo` y `paloma`. La mascota de un equipo entra sola | No van |
 | `ui.fuentes` | `true` o `{ "idiomas": [...] }`: las tres fuentes bitmap con vietnamita | No van |
 | `ui.logo` | `{ "texto": "NOMBRE DEL JUEGO" }`: el logo animado en 320 x 112 y 160 x 56. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
 | `ui.interfaz` | `true` o la lista: `dialogo`, `paneles`, `barras`, `marcos`, `banners`, `controles`, `minimapa`, `numeros` | No va |
@@ -161,6 +161,30 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
   - **Las animaciones de la calle** (pack `calle`): `toprock`, `molino` y `reclama` (break); `espera`, `patear` y `perdon` (fútbol de la calle); `pintar` y `mirar` (grafitero, con la lata de spray); `rapear` (micrófono), `tamborear` (tambora) y `animar`; `llamar` (campanita) y `ofrecer` (paleta). Sirve cualquier otra animación del motor.
   - Una ficha que no está o una animación que no existe se salta con aviso.
 
+### Las aves (lote C7b)
+
+`"animales": ["gallo", "paloma"]` trae las aves del motor, sin ficha. Salen en la misma sección `animales` del manifiesto, con `tipo: "ave"`, pero no en atlas: cada ave es una tira, como los NPC.
+
+```jsonc
+"gallo": {
+  "nombre": "Gallo", "tipo": "ave", "imagen": "animales/gallo.png", "w": 32, "h": 32, "ancla": [17, 30], "vista": "lado", "cuadros": 24,
+  "anims": { "idle": { "desde": 0, "cuadros": 4, "fps": 4, "loop": true }, "asustarse": { "desde": 14, "cuadros": 4, "fps": 10, "loop": false, "aire": [0, 4, 5, 0] } },
+  "eventos": { "cantar": [{ "tipo": "canto", "cuadro": 3 }], "asustarse": [{ "tipo": "aleteo", "cuadro": 1 }] }
+}
+```
+
+- **De lado, mirando a la derecha.** Para la izquierda se espejan (`setFlipX`) con el ancla en las patas.
+- **El cuadro `i` va en `x = i * w`.** Cada animación empieza en `desde` y dura `cuadros`.
+- **Se quedan en su sitio.** El juego mueve al ave. `aire` dice cuántos pixeles va el ave sobre el ancla en cada cuadro: el salto del gallo, el despegue y el vuelo de la paloma.
+- **El gallo** (celda 32, rojo con la capa dorada y la cola negra con brillo verde):
+  - `idle` y `caminar` en bucle, y `picotear`.
+  - `cantar` lleva el evento `canto` en el cuadro 3.
+  - `asustarse`: salta, aletea y cae en el mismo sitio.
+- **La paloma** (celda 16, gris azulada con el cuello tornasol):
+  - `idle`, `caminar` (cabeceando) y `volar` en bucle, y `picotear`.
+  - `despegar` y `aterrizar`: el juego la hace despegar, la mueve volando y la devuelve.
+- **El esqueleto de ave es general** (`rig/ave.ts`): cada especie es una plantilla con su celda, sus medidas y sus colores. La garza, la guacamaya y el colibrí se suman como plantillas.
+
 ### Lo que todavía no genera
 
 `publico.paises` y los sonidos de lotes futuros (como los del H2) se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
@@ -191,7 +215,7 @@ kit/
   CREDITOS.txt
   atletas/<id>/<pack>.png + .json     atlas del pack, JSON Hash de TexturePacker
   atletas/<id>/retratos.png
-  animales/<id>.png + .json
+  animales/<id>.png + .json          los cuadrúpedos en atlas; las aves (tipo "ave") solo la tira .png
   objetos/armas.png + .json
   ui/cabecitas.png
   ui/fuentes/<fuente>.png + .fnt
@@ -255,7 +279,9 @@ class Carga extends Phaser.Scene {
         const p = a.packs[pack];
         this.load.atlas(`${id}_${pack}`, KIT + p.imagen, KIT + p.atlas);
       }
-    for (const [id, a] of Object.entries(m.animales ?? {})) this.load.atlas(id, KIT + a.imagen, KIT + a.atlas);
+    for (const [id, a] of Object.entries(m.animales ?? {}))
+      if (a.tipo === 'ave') this.load.spritesheet(id, KIT + a.imagen, { frameWidth: a.w, frameHeight: a.h });
+      else this.load.atlas(id, KIT + a.imagen, KIT + a.atlas);
     if (m.objetos) this.load.atlas('armas', KIT + 'objetos/armas.png', KIT + 'objetos/armas.json');
     for (const [id, f] of Object.entries(m.ui?.fuentes ?? {})) if (f.png) this.load.bitmapFont(id, KIT + f.png, KIT + f.fnt);
     for (const [id, e] of Object.entries(m.fx ?? {})) this.load.spritesheet(`fx_${id}`, KIT + e.archivo, { frameWidth: e.w, frameHeight: e.h });
@@ -277,6 +303,10 @@ function crearAnimaciones(scene, m, prueba) {
             frames: scene.anims.generateFrameNames(`${id}_${pack}`, { prefix: `${nombre}_${fila}_`, start: 0, end: an.cuadros - 1 }),
             frameRate: an.fps, repeat: an.loop ? -1 : 0,
           });
+  // las aves: una animación por nombre, de la tira (gallo_cantar, paloma_volar...)
+  for (const [id, a] of Object.entries(m.animales ?? {})) if (a.tipo === 'ave')
+    for (const [nombre, an] of Object.entries(a.anims))
+      scene.anims.create({ key: `${id}_${nombre}`, frames: scene.anims.generateFrameNumbers(id, { start: an.desde, end: an.desde + an.cuadros - 1 }), frameRate: an.fps, repeat: an.loop ? -1 : 0 });
 }
 ```
 

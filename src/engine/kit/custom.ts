@@ -19,6 +19,7 @@ import { COMIDAS, type Comida } from '../render/comida';
 import { publicoHoja } from '../render/publico';
 import { vehiculosD2, VEHICULOS_D2, K_INCLINACION } from '../world/oblique/vehiculos';
 import { npcTira, pelotaTira, VISTAS_NPC, type NpcConfig } from './npc';
+import { aveTira, AVES_KIT, NOTA_AVES } from './aves';
 import { createRaster, blit } from '../core/raster';
 import { vsFondo, vsLetras, coloresVs, VS_NEUTRO } from '../ui/vs';
 
@@ -60,7 +61,7 @@ export interface KitConfig {
   cabecitas?: boolean;
   /** armas del piso y comida de la pelea: true = todo, o la lista (ids, o "comida" para toda la comida) */
   objetos?: boolean | string[];
-  /** animales: de las fichas o del motor (thor) */
+  /** animales: de las fichas o del motor (thor, y las aves: gallo y paloma) */
   animales?: string[];
   /** fuentes, logo, la interfaz retro y la pantalla del VS (el fondo partido de cada par de equipos y las letras) */
   ui?: { fuentes?: boolean | { idiomas?: string[] }; logo?: { texto: string }; interfaz?: boolean | UiPart[]; vs_fondo?: boolean };
@@ -297,7 +298,7 @@ export function kitConfigSchema(): Record<string, unknown> {
       retratos: { type: 'boolean', description: 'Retratos de 8 expresiones en 40 y 96. Sin valor: sí.' },
       cabecitas: { type: 'boolean', description: 'Cabecitas de 12 x 12 para el minimapa. Sin valor: sí.' },
       objetos: { oneOf: [{ type: 'boolean' }, list({ enum: OBJETOS })], description: 'Armas del piso y comida de la pelea (peso "comida", con humito): true = todo, o la lista. "comida" pide toda la comida.' },
-      animales: list(id, { description: 'Animales: los de las fichas y thor, que trae el motor.' }),
+      animales: list(id, { description: 'Animales: los de las fichas, y los que trae el motor: thor y las aves (gallo, paloma).' }),
       ui: {
         type: 'object', additionalProperties: false,
         properties: {
@@ -444,7 +445,9 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
   for (const k of Object.keys(cfg.publico ?? {})) if (k !== 'azoteas') warnings.push(`publico.${k}: todavía no se genera, llegan los hinchas por país con el lote C6`);
   // animales pedidos que no tienen ficha: llegan con el lote C7 (especies nuevas) o falta su ficha
   const wantedAnimals = [...new Set([...(cfg.animales ?? []), ...Object.values(inputs.equipos ?? {}).map((t) => t.mascota).filter((m): m is string => !!m)])];
-  const missing = wantedAnimals.filter((a) => !animals[a]);
+  // las aves que trae el motor (sin ficha): van en su tira, aparte de los cuadrúpedos
+  const wantedBirds = wantedAnimals.filter((a) => !animals[a] && AVES_KIT.includes(a));
+  const missing = wantedAnimals.filter((a) => !animals[a] && !wantedBirds.includes(a));
   if (missing.length) warnings.push(`animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): ${missing.join(', ')}`);
   const fxList = cfg.fx === true ? true : Array.isArray(cfg.fx) ? cfg.fx : [];
   if (Array.isArray(fxList)) { const later = sortNames(fxList, EFFECT_NAMES).later; if (later.length) warnings.push(`fx: todavía no existen (se saltan): ${later.join(', ')}`); }
@@ -654,6 +657,18 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     opts.progress?.(`vehiculos: ${Object.keys(vehiculos).length - 1}`);
   }
 
+  // las aves: una tira por ave en animales/, con su entrada en `animales`
+  let aves: Record<string, unknown> | undefined;
+  if (parts.has('animales') && wantedBirds.length) {
+    aves = {};
+    for (const id of wantedBirds) {
+      const r = aveTira(id);
+      files.push({ name: `animales/${id}.png`, bytes: encodePng(r.tira), mime: 'image/png' });
+      aves[id] = { ...r.entrada, imagen: `animales/${id}.png` };
+    }
+    opts.progress?.(`aves: ${wantedBirds.join(', ')}`);
+  }
+
   // la gente de la calle: una tira por NPC en npc/, y la pelota
   let npc: Record<string, unknown> | undefined;
   if (parts.has('npc') && cfg.npc) {
@@ -692,7 +707,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     const voz = voces?.[id] ? { voz: { tono: voces[id].tono, timbre: voces[id].timbre, archivos: voces[id].archivos } } : {};
     return [id, { nombre, ...(teamOf.has(id) ? { equipo: teamOf.get(id) } : {}), ...rest, ...voz }];
   }));
-  const notas = [...((sm.notas as string[]) ?? []).map((n) => n.replace('orden de `direcciones`', 'orden de `filas`')), ...(typeof sm.retratos === 'string' ? [sm.retratos] : []), ...(typeof sm.notas_objetos === 'string' ? [sm.notas_objetos] : []), ...(typeof sm.notas_comida === 'string' ? [sm.notas_comida] : [])];
+  const notas = [...(wantedBirds.length && parts.has('animales') ? [NOTA_AVES] : []), ...((sm.notas as string[]) ?? []).map((n) => n.replace('orden de `direcciones`', 'orden de `filas`')), ...(typeof sm.retratos === 'string' ? [sm.retratos] : []), ...(typeof sm.notas_objetos === 'string' ? [sm.notas_objetos] : []), ...(typeof sm.notas_comida === 'string' ? [sm.notas_comida] : [])];
   const manifest: Record<string, unknown> = {
     juego: cfg.juego, generado_con: 'PixelForja', version: 1, tipo: 'kit a medida',
     ...(cfg.resolucion ? { resolucion: cfg.resolucion } : {}),
@@ -702,7 +717,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     ...(cfg.pruebas ? { pruebas: cfg.pruebas } : {}),
     ...(sm.cabecitas ? { cabecitas: sm.cabecitas } : {}),
     ...(sm.objetos ? { objetos: sm.objetos } : {}),
-    ...(sm.animales ? { animales: sm.animales } : {}),
+    ...(sm.animales || aves ? { animales: { ...((sm.animales as Record<string, unknown>) ?? {}), ...(aves ?? {}) } } : {}),
     ...(fx ? { fx } : {}),
     ...(sm.ui || Object.keys(ui).length || vs ? { ui: { ...((sm.ui as object) ?? {}), ...ui, ...(vs ? { vs } : {}) } } : {}),
     ...(audio ? { audio } : {}),

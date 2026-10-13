@@ -214,6 +214,9 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     }
     for (const [prueba, packs] of Object.entries<string[]>(m.pruebas)) for (const p of packs) expect(m.atletas.rick.packs[p], `${prueba}: ${p}`).toBeDefined();
     expect(m.animales.thor).toMatchObject({ atlas: 'animales/thor.json', imagen: 'animales/thor.png' });
+    // las aves del motor (lote C7b): una tira de lado, con el ancla en las patas y el canto del gallo
+    expect(m.animales.gallo).toMatchObject({ tipo: 'ave', imagen: 'animales/gallo.png', w: 32, h: 32, ancla: [17, 30], vista: 'lado', eventos: { cantar: [{ tipo: 'canto', cuadro: 3 }] } });
+    expect(m.animales.paloma).toMatchObject({ tipo: 'ave', imagen: 'animales/paloma.png', w: 16, h: 16, ancla: [9, 14] });
     for (const k of FLOOR_PROP_KINDS) expect(m.objetos[k], k).toMatchObject({ atlas: 'objetos/armas.json' });
     // la comida de la pelea va en objetos, después de las armas (el primer objeto sigue siendo un arma)
     expect(Object.values<any>(m.objetos)[0].atlas).toBe('objetos/armas.json');
@@ -291,8 +294,8 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     // atletas (24 x 9 hojas: los packs y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida
     // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 7 escenarios: hẻm 21,
     // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14 y Caracas 10 + 3 perros y 2 gatos (lote C7)
-    // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a)
-    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 5 + 10 + 9);
+    // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b)
+    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 5 + 10 + 9 + 2);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });
