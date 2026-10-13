@@ -1,6 +1,6 @@
 # Lote E3a: la Comuna 13 de Medellín
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/22
 Fecha: 2026-10-13
 
 ## Qué se hizo
@@ -63,7 +63,8 @@ En el juego no cambia nada de la configuración: `"escenarios": "data/stages/"` 
 - **La prueba 7 ahora mide la silueta parada encima de la caja que tenga debajo.** Antes la medía en el piso, que en la Comuna 13 queda tapado por la terraza.
 - **Los 5 tramos de Saigón salen idénticos byte por byte a E2** en todas sus imágenes y archivos. Lo comparé contra la rama de E2. Solo cambia el texto de su `verificacion.md`, por la prueba 7 nueva, y sigue en verde.
 - **`custom.test.ts`:** el kit de Nekketsu trae los 6 escenarios, 14 imágenes más.
-- **Suite completa, `tsc`, `npm run build:sitio` y e2e:** ver el PR.
+- **Suite completa:** 24 archivos, 258 de 258. La corrida completa dio 257, con el aviso nuevo del asta faltando en la lista que espera `custom.test.ts`. Lo agregué y esa prueba pasa: 14 de 14.
+- **`tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 44 de 44.**
 
 ## Para aprobar (todo en esta carpeta)
 
