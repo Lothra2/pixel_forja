@@ -1,6 +1,6 @@
 # Lote C7c: el perro que despierta y embiste, y el muro medido
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/27
 Fecha: 2026-10-13
 
 ## Qué se hizo
