@@ -94,3 +94,20 @@ test('visor del kit: sin kit lo dice claro', async ({ page }) => {
   await page.waitForFunction(() => !!(window as unknown as { __visor?: Hook }).__visor?.error);
   await expect(page.locator('#vk-loading')).toContainText(/npm run kit-a-medida/);
 });
+
+test('audio/escuchar.html del kit: cada sonido con su botón y el probador de voces', async ({ page }) => {
+  test.skip(!existsSync('dist/kit_nekketsu/audio/escuchar.html'), 'el build no trae el kit a medida (npm run build:sitio)');
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/kit_nekketsu/audio/escuchar.html');
+  await expect(page.getByRole('heading', { name: /Audio de Nekketsu Olympic GG/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /marcha_nekketsu/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^silbato/ })).toBeVisible();
+  // los archivos que nombra la página existen
+  const ok = await page.evaluate(async () => (await fetch('musica/marcha_nekketsu.wav')).ok && (await fetch('voz/rick_0.wav')).ok);
+  expect(ok).toBe(true);
+  await page.getByRole('button', { name: /^silbato/ }).click();
+  await expect(page.locator('#now')).toHaveText('silbato');
+  await page.getByRole('button', { name: /Decir/ }).click();
+  expect(errors).toEqual([]);
+});

@@ -58,6 +58,22 @@ export function camino(L: ObliqueLayout, r: Reglas = REGLAS): { ok: boolean; det
   const i0 = Math.floor(salida / SX);
   for (let j = 0; j < NY; j++) if (H[j * NX + i0] !== null) { seen[j * NX + i0] = 1; q.push(j * NX + i0); }
   const iMeta = Math.floor(meta / SX);
+  // una arena (la pelea) no tiene salida ni meta: lo que vale es que se llegue a todo el piso
+  const arena = !L.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta');
+  if (arena) {
+    let n = 0, total = 0;
+    while (q.length) {
+      const c = q.shift()!, i = c % NX, j = (c - i) / NX, h = H[c]!;
+      n++;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const ni = i + di, nj = j + dj, k = nj * NX + ni;
+        if (ni < 0 || nj < 0 || ni >= NX || nj >= NY || seen[k] || H[k] === null || H[k]! - h > r.salto) continue;
+        seen[k] = 1; q.push(k);
+      }
+    }
+    for (const v of H) if (v !== null) total++;
+    return { ok: n === total, detalle: `arena sin salida ni meta: se llega a ${n === total ? 'todo el piso' : `${n} de ${total} celdas`} desde x ${salida}` };
+  }
   let mejor = salida;
   while (q.length) {
     const c = q.shift()!, i = c % NX, j = (c - i) / NX, h = H[c]!;
@@ -135,15 +151,15 @@ export function verificar(E: Escena, raw: unknown, contornos: string[] = [CONTOR
   add(6, 'Camino', cm.ok, `${cm.detalle}, con salto de ${REGLAS.salto}, escalón de ${REGLAS.escalon} y salto largo de ${REGLAS.saltoLargo}`);
 
   // 7. Legibilidad: una silueta de atleta cada 64 px en cada carril, contra la escena armada
-  const vista = postal(E, 0, [], L.largo, 360);
+  const vista = postal(E, 0, [], E.ancho ?? L.largo, 360);
   const ys = L.carriles.length ? L.carriles.map((c) => c.y) : [Math.floor(D / 2)];
   let peor = Infinity, suma = 0, n = 0, donde = '';
   for (const c of contornos) for (const y of ys) for (let x = 24; x < L.largo - 24; x += 64) {
     if (holeAt(L, x, y)) continue;
-    // anillo alrededor de una silueta de 18 x 44 parada en (x, y)
-    const pies = FT + y, vals: number[] = [];
+    // anillo alrededor de una silueta de 18 x 44 parada en (x, y), arriba de la caja que tenga debajo
+    const pies = FT + y - (alturaEn(L, x, y) ?? 0), vals: number[] = [];
     for (let dy = -45; dy <= 0; dy += 3) for (const dx of [-10, 10]) {
-      const px = x + dx, py = pies + dy;
+      const px = x + Math.round((E.inclinacion ?? 0) * y) + dx, py = pies + dy;
       if (px < 0 || py < 0 || px >= vista.w || py >= vista.h) continue;
       vals.push(contraste(c, hex(vista, (py * vista.w + px) * 4)));
     }
@@ -166,7 +182,7 @@ export function verificar(E: Escena, raw: unknown, contornos: string[] = [CONTOR
   let maxL = 0, maxV = 0, maxO = 0;
   for (let x = 0; x <= L.largo - 640; x += 32) {
     maxL = Math.max(maxL, E.luces.filter((l) => l.encendida && l.x >= x && l.x < x + 640).length);
-    maxV = Math.max(maxV, E.vida.filter((v) => v.capa === 'cerca' && v.x < x + 640 && v.x + v.cuadros[0].w > x).length + E.vida.filter((v) => v.capa === 'tras_cerca').length);
+    maxV = Math.max(maxV, E.vida.filter((v) => (v.capa === 'cerca' || v.capa === 'objeto') && v.x < x + 640 && v.x + v.cuadros[0].w > x).length + E.vida.filter((v) => v.capa === 'tras_cerca' || v.capa === 'lejos').length);
     maxO = Math.max(maxO, E.objetos.filter((o) => o.x < x + 640 && o.x + o.img.w > x).length);
   }
   const okW = capas <= PESO.capas && maxL <= PESO.luces && maxV <= PESO.vidaAnimada && maxO <= PESO.objetos;
