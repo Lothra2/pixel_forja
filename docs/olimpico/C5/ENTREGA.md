@@ -1,6 +1,6 @@
 # Lote C5: las burlas por equipo
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/26
 Fecha: 2026-10-13
 
 ## Qué se hizo
