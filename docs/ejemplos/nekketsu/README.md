@@ -36,7 +36,7 @@ En [`fichas/`](fichas/) están los 24 atletas de los 6 equipos y la mascota, lis
 | Los Panas de Caracas (C2) | `gabo`, `yuli`, `toto`, `carmen` | Gabo con gorra y camisa de pelotero. Yuli con la chemise beige del liceo. Toto con franela grande y chancletas. La señora Carmen con rolos y bata de flores |
 | Maracuchos del Lago (C2) | `ender`, `yusmary`, `jhonder`, `abuela_nerva` | Ender con sombrero de gaitero, bigote y guayabera. Yusmary con camiseta de básquet. Jhonder con franela de rayas y short. La abuela Nerva con bata fresca |
 | Mascota | `thor` | El bóxer con todas sus animaciones de mascota |
-| Animales de la calle (C7) | `perro_calle_1` (Canelo), `perro_calle_2` (Negrito), `perro_calle_3` (Manchas), `gato_1` (Mango), `gato_2` (Sombra) | Los perros de la Comuna 13 y los gatos de los techos, con `sleep`, `scratch` y `jump_wall` |
+| Animales de la calle (C7) | `perro_calle_1` (Canelo), `perro_calle_2` (Negrito), `perro_calle_3` (Manchas), `gato_1` (Mango), `gato_2` (Sombra) | Los perros de la Comuna 13 y los gatos de los techos, con `sleep`, `scratch` y `jump_wall` (medido con `subida`, lote C7c). Los perros, además, `wake` y `pounce` |
 
 Todo sale de campos generales de la ficha (`jacketCut`, `jacketClosed`, `jacketSleeves`, `armband`, `chestText`, `cell`, `neck`, `face.base`, los gorros propios y el calzado abierto), explicados en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#equipos-uniformes-gigantes-y-mascota).
 

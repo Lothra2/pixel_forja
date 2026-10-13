@@ -75,6 +75,8 @@ export interface RenderedClip {
   travel?: number[];
   /** hacia dónde va de verdad cuando no es la vista pedida (de frente, una prueba de campo usa la diagonal) */
   heading?: ViewName;
+  /** saltos a un muro: el alto que sube el dibujo (el máximo de `rise`) y entre qué altos de muro se ve bien, en pixeles */
+  muro?: { alto: number; min: number; max: number };
   /**
    * articulaciones de cada cuadro ya en coordenadas de la celda (para enganchar cosas en el juego: manos, cabeza,
    * pies). Las traen todas las animaciones de personas, premium o no
@@ -155,6 +157,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
   const poseView: View = base === 'se' || base === 'ne' ? 'side' : base;
   let big: BigFrame[], fps: number, loop: boolean, steady: boolean, airborne: boolean[];
   let events: AnimEvent[] | undefined, stride: number | undefined, rise: number[] | undefined, travel: number[] | undefined;
+  let muro: RenderedClip['muro'];
   // garrocha o jabalina: largas, no marcan el piso (el control mide el cuerpo, como con el equipo de RPG)
   let longHeld: boolean[] = [];
   // agua por cuadro (nadar): fila de la superficie y si salpica fuerte
@@ -272,7 +275,10 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     fps = def.fps; loop = def.loop; steady = !!def.steady;
     airborne = poses.map((p) => p.air > 0 || (p.rise ?? 0) > 0);
     if (poses.some((p) => p.rise)) rise = poses.map((p) => Math.round(p.rise ?? 0));
+    if (rise && def.muro) { const alto = Math.max(...rise); muro = { alto, min: Math.round(alto * def.muro.min), max: Math.round(alto * def.muro.max) }; }
     if (premium) { events = def.events; if (def.loop && def.stride) stride = Math.round(def.stride(d) * 10) / 10; }
+    // las de la calle (perros y gatos del lote C7) no tienen versión premium, pero sus eventos también van al juego
+    else if (f.movementProfile === 'premium' && def.events) events = def.events;
   }
   // premium: el pivote queda siempre en el mismo lugar de la celda (no salta entre cuadros, direcciones ni acciones)
   const cropped = cropClip(big, cell, premium);
@@ -305,7 +311,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     ...(wholes?.some(Boolean) ? { wholes } : {}), ...(held ? { held } : {}),
     profile: premium ? 'premium' : 'classic',
     ...(overflow ? { overflow } : {}),
-    ...(rise ? { rise } : {}),
+    ...(rise ? { rise } : {}), ...(muro ? { muro } : {}),
     ...(water.some(Boolean) ? { waterRows: water.map((w) => (w ? cell - 2 - Math.round(w.level) : null)) } : {}),
     ...(events?.length ? { events } : {}), ...(stride ? { stride } : {}), ...(travel ? { travel } : {}),
     ...(lateral ? { heading: (asked === 'front' ? 'se' : 'ne') as ViewName } : {}), ...(joints ? { joints } : {}),

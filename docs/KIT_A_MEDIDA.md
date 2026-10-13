@@ -254,7 +254,9 @@ El manifiesto sigue el contrato del kit:
 }
 ```
 
-Los campos de cada animación (`eventos`, `avance`, `elevacion`, `desplazamiento`, `agua`, `cajas`, `cuerpo`, `manos`, `cabeza`, `pies`, `carga`, `arma`) son los del kit deportivo: [KIT_DEPORTES.md](KIT_DEPORTES.md#datos-por-cuadro-atlas-retratos-y-vestuario). Todos los datos por cuadro van como `[fila][cuadro]`, en pixeles desde el pivote.
+Los campos de cada animación (`eventos`, `avance`, `elevacion`, `subida`, `muro_min`, `muro_max`, `desplazamiento`, `agua`, `cajas`, `cuerpo`, `manos`, `cabeza`, `pies`, `carga`, `arma`) son los del kit deportivo: [KIT_DEPORTES.md](KIT_DEPORTES.md#datos-por-cuadro-atlas-retratos-y-vestuario). Todos los datos por cuadro van como `[fila][cuadro]`, en pixeles desde el pivote.
+
+**Saltos a un muro** (`jump_wall` del gato, lote C7c): además de `elevacion` (pixeles, para el muro dibujado), traen `subida` de 0 a 1 por cuadro y `muro_min` y `muro_max`, los pixeles de muro donde el salto se ve bien. Para un muro de alto `h` dentro de ese rango, el juego sube el sprite `subida[i] * h` en el cuadro `i`. `subida` llega a 1 justo en el cuadro del `aterriza` (las patas tocan arriba) y se queda en 1.
 
 Garantías, cada una con su prueba (`src/engine/__tests__/custom.test.ts`):
 - No falta ningún archivo que nombre el manifiesto, y no sobra ninguno.
