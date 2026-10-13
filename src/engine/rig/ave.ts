@@ -33,6 +33,8 @@ export interface ColoresAve {
   contorno: string;
   cuerpo: string; cuerpo_claro: string; cuerpo_oscuro: string;
   ala: string; ala_oscura: string;
+  /** la cara de abajo del ala, más clara: se ve con el ala arriba */
+  ala_bajo?: string;
   cuello: string; cuello_claro: string; cuello_oscuro?: string;
   cabeza: string;
   cola: string; cola_brillo: string;
@@ -77,12 +79,12 @@ export const AVES: Record<string, AveEspecie> = {
     pico: { largo: 1.1, alto: 1 },
     tarso: 1.6, dedo: 1.4,
     cola: { tipo: 'corta', largo: 2.3, alto: 1.6 },
-    ala: { largo: 4.6, alto: 2.3, abierta: 5.5 },
+    ala: { largo: 4.6, alto: 2.3, abierta: 6.5 },
     esclavina: 'tornasol', barras: true,
     colores: {
       contorno: '#1e1418',
       cuerpo: '#8890a4', cuerpo_claro: '#b4bccc', cuerpo_oscuro: '#5c6478',
-      ala: '#a4acbe', ala_oscura: '#6c7488',
+      ala: '#a4acbe', ala_oscura: '#6c7488', ala_bajo: '#dde2ec',
       cuello: '#3e9a7a', cuello_claro: '#5cc49c', cuello_oscuro: '#8a5aa8',
       cabeza: '#7c849a',
       cola: '#5c6478', cola_brillo: '#2a2c38',

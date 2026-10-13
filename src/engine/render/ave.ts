@@ -119,18 +119,21 @@ export function dibujarAve(especie: string | AveEspecie, p: AvePose, celda?: num
   // el ala de lejos, abierta: detrás del cuerpo y más oscura
   const alaAbierta = (lejos: boolean) => {
     if (p.ala === 'plegada') return;
-    const b = rad(-55 + (p.ala + 1) * 65), largo = L(E.ala.abierta);
+    const b = rad(-80 + (p.ala + 1) * 77.5), largo = L(E.ala.abierta);
     const hombro = rot(L(E.cuerpo.rx * 0.2) + (lejos ? L(1) : 0), -ry * 0.45 - (lejos ? L(0.6) : 0));
     const dir: [number, number] = [-Math.cos(b), -Math.sin(b)];
     const punta: [number, number] = [hombro[0] + dir[0] * largo, hombro[1] + dir[1] * largo];
-    const atras: [number, number] = [hombro[0] - L(E.ala.largo) * 0.45, hombro[1] + L(0.6)];
-    const cola2: [number, number] = [atras[0] + dir[0] * largo * 0.75, atras[1] + dir[1] * largo * 0.75];
+    // el ala abierta es ancha: del hombro a la punta va el borde de ataque, y la cuerda corre hacia atrás por el lomo
+    const atras: [number, number] = [hombro[0] - L(E.ala.largo) * 0.75, hombro[1] + L(0.5)];
+    const cola2: [number, number] = [punta[0] + (atras[0] - hombro[0]) * 0.5, punta[1] + (atras[1] - hombro[1]) * 0.5];
     const pts: [number, number][] = [[hombro[0] + L(1), hombro[1]], punta, cola2, atras];
+    // con el ala arriba se ve la cara de abajo, más clara; con el ala abajo, la de arriba
+    const debajo = (p.ala as number) > 0.3, base = debajo ? k.ala_bajo ?? k.cuerpo_claro : k.ala;
     T.poligono(pts, lejos ? k.ala_oscura : (x, y) => {
       // el borde de ataque claro y las puntas de las plumas oscuras
       const fx = x - hombro[0], fy = y - hombro[1], along = fx * dir[0] + fy * dir[1], perp = fx * -dir[1] + fy * dir[0];
-      if (along > largo * 0.7) return ((Math.floor(perp / Math.max(1, L(1.3))) & 1) ? k.ala_oscura : k.ala);
-      return perp > -L(0.9) && perp < L(0.4) ? k.cuerpo_claro : k.ala;
+      if (along > largo * 0.72) return ((Math.floor(perp / Math.max(1, L(1.3))) & 1) ? k.ala_oscura : base);
+      return perp > -L(0.9) && perp < L(0.4) && !debajo ? k.cuerpo_claro : base;
     });
   };
   alaAbierta(true);

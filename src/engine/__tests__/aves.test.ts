@@ -37,6 +37,7 @@ describe('las aves: el gallo y la paloma (lote C7b)', () => {
         expect(usados.has(E.colores.contorno)).toBe(true);
         // nada pegado al borde de arriba ni a los lados: el contorno entra entero
         for (let y = 0; y < r.h; y++) for (const x of [0, r.w - 1]) expect(hex(r, x, y), `${id} ${a.nombre} ${i} borde`).toBeNull();
+        for (let x = 0; x < r.w; x++) expect(hex(r, x, 0), `${id} ${a.nombre} ${i} borde de arriba`).toBeNull();
       });
     }
   });
@@ -82,6 +83,15 @@ describe('las aves: el gallo y la paloma (lote C7b)', () => {
     expect(d.eventos).toEqual([{ tipo: 'aleteo', cuadro: 1 }]);
     const v = cuadros('paloma', 'volar');
     for (let i = 1; i < v.length; i++) expect(igual(v[i], v[i - 1]), `volar ${i}`).toBe(false);
+    // el aleteo se ve: las alas salen del cuerpo, arriba en 2 cuadros y abajo en 1, y la silueta cambia 4 px o más de alto
+    const alto = v.map((r) => { let y0 = r.h, y1 = -1; for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) if (r.data[(y * r.w + x) * 4 + 3]) { y0 = Math.min(y0, y); y1 = Math.max(y1, y); } return { y0, y1, h: y1 - y0 + 1 }; });
+    expect(Math.max(...alto.map((a) => a.h)) - Math.min(...alto.map((a) => a.h))).toBeGreaterThanOrEqual(4);
+    const vol = ANIMS_AVE.paloma.find((a) => a.nombre === 'volar')!.poses.map((p) => p.ala as number);
+    expect(vol.filter((a) => a > 0.3)).toHaveLength(2);
+    expect(vol.filter((a) => a < -0.5)).toHaveLength(1);
+    expect(alto[2].y1).toBeGreaterThan(alto[3].y1);
+    // con el ala arriba se ve la cara de abajo, más clara
+    expect(cuadros('paloma', 'volar').slice(0, 2).every((r) => { for (let i = 0; i < r.data.length; i += 4) if (r.data[i + 3] && '#' + [0, 1, 2].map((k) => r.data[i + k].toString(16).padStart(2, '0')).join('') === AVES.paloma.colores.ala_bajo) return true; return false; })).toBe(true);
     const at = ANIMS_AVE.paloma.find((a) => a.nombre === 'aterrizar')!;
     expect(at.poses[at.poses.length - 1].aire).toBe(0);
   });
@@ -96,7 +106,7 @@ describe('las aves: el gallo y la paloma (lote C7b)', () => {
     for (const a of Object.values(g.entrada.anims)) { expect(a.desde).toBe(desde); desde += a.cuadros; }
     const p = aveTira('paloma');
     expect(p.entrada).toMatchObject({ w: 16, h: 16, ancla: [9, 14], cuadros: 22, eventos: { despegar: [{ tipo: 'aleteo', cuadro: 1 }] } });
-    expect(p.entrada.anims.volar.aire).toEqual([3, 3, 4, 3]);
+    expect(p.entrada.anims.volar.aire).toEqual([0, 1, 2, 1]);
     // en el kit a medida: van en animales sin ficha, y un ave que no existe sigue avisando
     const { files, warnings } = buildCustomKit({ juego: 'Prueba', personajes_incluidos: ['familia'], packs: { base: ['idle'] }, animales: ['gallo', 'paloma', 'garza'] }, {}, { quick: true, solo: ['animales'] });
     expect(files.map((f) => f.name).filter((n) => n.startsWith('animales/')).sort()).toEqual(['animales/gallo.png', 'animales/paloma.png']);

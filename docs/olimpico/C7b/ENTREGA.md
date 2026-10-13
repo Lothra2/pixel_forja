@@ -19,6 +19,14 @@ Las dos aves que acordamos con el juego, sobre un esqueleto de ave nuevo, de lad
 - **Las aves en el kit** (`kit/aves.ts`): van en la sección `animales`, con `tipo: "ave"`, en una tira como los NPC. Traen el ancla en la cadera sobre el piso, los eventos y el `aire` de cada cuadro.
 - **El visor del kit lee aves:** las muestra de lado, en una sola fila, con su ancla. Antes esperaba un atlas con 5 filas para todo animal y las aves no se veían.
 
+**Después de probarlo en el juego.** El juego conectó las aves y pidió una cosa: la paloma volando era "una mancha gris que flota", porque las alas no salían del cuerpo.
+- **El aleteo de `volar` ahora tiene 4 tiempos:** dos cuadros con las alas bien arriba del lomo, uno abajo del cuerpo y uno de paso. La silueta cambia 4 px de alto, y sigue en celda 16.
+- **El ala abierta es ancha,** con la cuerda que corre por el lomo, y la punta con las plumas marcadas.
+- **Con el ala arriba se ve la cara de abajo, más clara** (`ala_bajo`, un color nuevo de la especie). El ala abajo baja más (hasta 80 grados).
+- El gallo usa el mismo dibujo de ala: su `asustarse` aletea con el ala más ancha.
+- El `aire` cambió: `despegar` [0, 1, 1, 2], `volar` [0, 1, 2, 1]. Nombres, anclas y formato, igual que antes.
+- **La prueba de "el kit en menos de 3 minutos" pasa a 300 s,** como pidió Rick: con la máquina de hoy tarda entre 185 y 200 s.
+
 ## Cómo se usa (estudio y kit)
 
 En el `kit.config.json` del juego basta con sumarlas a `animales`. No llevan ficha: vienen con el motor, como Thor.
@@ -60,10 +68,11 @@ En el manifiesto:
   - La imagen dorada `golden/aves_c7b.png`.
 - **`custom.test.ts`:** el kit de Nekketsu trae el gallo y la paloma (+2 PNG), con su entrada en `animales`. El esquema está regenerado.
 - **e2e del visor:** 32 personajes (suman el gallo y la paloma), y el gallo se dibuja en una fila de lado con `cantar`.
-- **Suite completa:** 30 archivos, 298 de 299.
-  - La que falla es "el kit se genera en menos de 3 minutos": tardó entre 185 y 201 s.
-  - **No es de este lote:** la rama de C6a, sin mis cambios, también tarda 195 s en esta máquina, y las aves suman menos de un segundo.
-  - Cuando se entregó C6a pasaba. Hoy la máquina va más lenta. No toqué el límite.
+- **Suite completa:** 30 archivos, 299 de 299, con el límite del kit en 300 s.
+  - Antes fallaba "el kit se genera en menos de 3 minutos": tardó entre 185 y 201 s.
+  - **No es de este lote:** la rama de C6a, sin mis cambios, también tardaba 195 s en esta máquina, y las aves suman menos de un segundo.
+  - Rick pidió subir el límite a 300 s.
+- **El aleteo se prueba:** dos alas arriba, una abajo, la silueta cambia 4 px o más, la cara de abajo clara con el ala arriba, y nada toca el borde de arriba de la celda.
 - **`tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 44 de 44.**
 
 ## Para aprobar (todo en esta carpeta)
@@ -83,7 +92,7 @@ En el manifiesto:
 
 ## Límites honestos
 
-- **La paloma es muy chiquita (16 px).** Se lee como paloma, pero las alas abiertas en vuelo son una mancha gris de 5 o 6 px. El aleteo se nota por el cambio de forma, no por el detalle de las plumas.
+- **La paloma es muy chiquita (16 px).** El aleteo se lee por la silueta y la cara clara del ala, no por el detalle de las plumas.
 - **El gallo asustado aletea con un ala roja grande** arriba del lomo. A 32 px se lee como "salta aleteando", pero no tiene el abanico de plumas de un gallo de verdad.
 - **Ninguna de las dos camina de verdad hacia adelante.** Los pasos y el cabeceo están en su sitio. El juego mueve al ave mientras toca `caminar`.
 - **No están en el estudio todavía.** Salen en el kit y en las pruebas, pero el catálogo del estudio no tiene la página de aves.

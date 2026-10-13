@@ -99,20 +99,21 @@ export const ANIMS_PALOMA: AveAnim[] = [
     eventos: [{ tipo: 'aleteo', cuadro: 1 }],
     poses: [
       pose({ pitch: 4, alto: -0.7, cuello: 30, cola: -4 }),
-      pose({ pitch: 18, aire: 1, ala: 0.8, cuello: 15, patas: pasos(0.6, -0.4), cola: 6 }),
-      pose({ pitch: 12, aire: 2, ala: -0.7, cuello: 25, patas: pasos(-0.4, -1), cola: 8 }),
-      pose({ pitch: 4, aire: 3, ala: 0.6, cuello: 30, recogidas: true, cola: 4 }),
+      pose({ pitch: 18, aire: 0.7, ala: 0.8, cuello: 15, patas: pasos(0.6, -0.4), cola: 6 }),
+      pose({ pitch: 12, aire: 1.4, ala: -0.7, cuello: 25, patas: pasos(-0.4, -1), cola: 8 }),
+      pose({ pitch: 4, aire: 2, ala: 0.6, cuello: 30, recogidas: true, cola: 4 }),
     ],
   },
   {
+    // el aleteo: dos cuadros con las alas bien arriba del lomo, uno abajo y uno de paso; la silueta cambia de alto
     nombre: 'volar', fps: 12, loop: true,
-    poses: [0.5, 0.1, -0.8, 0.1].map((a, i) => pose({ pitch: 0, aire: 3 + (i === 2 ? 0.6 : 0), ala: a, cuello: 35, cabeza: 4, recogidas: true, cola: 2 })),
+    poses: [1, 0.55, -1, 0.05].map((a, i) => pose({ pitch: 0, aire: [0.4, 0.8, 1.8, 1.2][i], ala: a, cuello: 35, cabeza: 4, recogidas: true, cola: 2 })),
   },
   {
     nombre: 'aterrizar', fps: 10, loop: false,
     poses: [
       pose({ pitch: 20, aire: 3, ala: 0.45, cuello: 25, patas: pasos(1.4, 1), cola: 14 }),
-      pose({ pitch: 24, aire: 1.5, ala: 0.3, cuello: 20, patas: pasos(1.2, 0.8), cola: 16 }),
+      pose({ pitch: 24, aire: 1.5, ala: 0.55, cuello: 20, patas: pasos(1.2, 0.8), cola: 16 }),
       pose({ pitch: 12, aire: 0, alto: -0.6, ala: 0.6, cuello: 30, patas: pasos(0.8, -0.6), cola: 8 }),
       pose({ pitch: 8 }),
     ],
