@@ -229,14 +229,26 @@
       "mareo",
       "ko",
       "publico_grito",
-      "publico_ooh"
+      "publico_ooh",
+      "gallo",
+      "aleteo",
+      "mecha_tejo",
+      "toque_cau",
+      "caida_tatami",
+      "pitazo_largo"
     ],
     "musica": [
       "marcha_nekketsu",
       "saigon_chay",
       "azotea_final",
       "victoria_banda",
-      "derrota"
+      "derrota",
+      "tema_instituto",
+      "hoian_noche",
+      "ajiaco_rock",
+      "parce_corra",
+      "pana_dale",
+      "gaita_lago"
     ],
     "voces": [
       "rick",
