@@ -79,6 +79,14 @@ if (o && !pelota.suelta) pelota.setPosition(sprite.x + (sprite.flipX ? -o.x : o.
 - **`tsc` limpio, `npm run build:sitio` limpio y e2e del visor 6 de 6** (con la casilla nueva de la pelota).
 - **Suite completa: 34 archivos, 353 pruebas, todas en verde, y e2e de Playwright 50 de 50.** En una corrida con otros tres lotes armándose a la vez en la misma máquina, el arranque del kit completo de Nekketsu se cortó por tiempo. Corrida sola: 15 de 15 en 199 s.
 
+- **Después de unir todo (#26 a #34 en `main`):**
+  - Prueba nueva en `burlas.test.ts`, la que pidió el juego: una burla con alias dentro de un pack objeto con `sin_props`.
+    - El alias sale en el manifiesto y la pelota se va del dibujo y queda en `objetos`.
+    - La validación no da "no está en ningún pack".
+  - El arreglo de `alias` ya estaba en `main`. Faltaba la prueba que lo cuida.
+  - En `main`, la suite completa da 40 archivos y 428 de 428. `tsc` y `npm run build:sitio` salen limpios y el e2e de Playwright da 50 de 50.
+  - El kit de Nekketsu con todos los lotes, por la línea de comandos: 231 s, 1333 archivos y 75 MB. Quedan 69 s de margen frente al límite de 300.
+
 ## Para aprobar (todo en esta carpeta)
 
 - `tablero_sin_props.png`: las 10 animaciones de Rick, de lado y en diagonal. Arriba el pack con pelota (fondo azul), abajo el pack sin pelota (fondo verde) con el círculo de `objetos` en rojo. Sale del kit de verdad: los atlas y el manifiesto de `buildCustomKit`.

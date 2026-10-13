@@ -86,6 +86,24 @@ describe('las burlas por equipo (lote C5)', () => {
     expect(Object.keys(atlas.frames).every((k) => k.startsWith('burla_familia_gg_'))).toBe(true);
   });
 
+  it('alias con un pack en forma de objeto y sin_props: el alias sale, la pelota se va y queda en objetos', () => {
+    const cfg = {
+      juego: 'Prueba', personajes_incluidos: ['familia'], filas: ['right'],
+      packs: { mix: { anims: ['burla_pulgar', 'vb_bump'], sin_props: true } },
+      alias: { burla_familia_gg: 'burla_pulgar' },
+    } as KitConfig;
+    expect(validateKitConfig(cfg)).toEqual([]);
+    const equipos = { familia_gg: { nombre: 'Familia GG', atletas: ['rick', 'steph', 'sophie', 'alana'] } };
+    const { files } = buildCustomKit(cfg, { equipos }, { quick: true, solo: ['atletas'] });
+    const m = JSON.parse(new TextDecoder().decode(files.find((x) => x.name === 'manifest.json')!.bytes));
+    const anims = m.atletas.rick.packs.mix.anims;
+    expect(Object.keys(anims).sort()).toEqual(['burla_familia_gg', 'vb_bump']);
+    expect(anims.vb_bump.objetos.flat().some((o: unknown) => Array.isArray(o) && o.length)).toBe(true);
+    expect(anims.burla_familia_gg.objetos).toBeUndefined();
+    // un alias que apunta a una animación de un pack en forma de objeto no da el error de "no está en ningún pack"
+    expect(validateKitConfig({ ...cfg, alias: { burla_x: 'vb_bump' } }).join()).not.toMatch(/ningún pack/);
+  });
+
   it('alias mal puestos (a algo que no existe, con el nombre de una del motor, fuera de los packs) y uno que se repite', () => {
     const base = { juego: 'Prueba', personajes_incluidos: ['familia'] };
     expect(validateKitConfig({ ...base, packs: { b: ['burla_pulgar'] }, alias: { burla_x: 'burla_pulgr' } }).join()).toMatch(/alias\.burla_x: "burla_pulgr" no es una animación del motor.*burla_pulgar/);
