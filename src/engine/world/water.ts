@@ -20,6 +20,8 @@ export interface WaterExtras {
   /** atlas de piezas: `columnas` de ancho, cada cuadro de la animación debajo del anterior */
   atlas: Raster;
   filas: number;
+  /** columnas del atlas: 32 (lo de siempre) o 64 si la orilla es tan larga que no entra (el Mundo 4) */
+  columnas: number;
   /** por cuadro del mapa: 0 nada, n = pieza n - 1 */
   espuma: Uint16Array;
   /** por cuadro del mapa: 1 = agua quieta con reflejo */
@@ -46,9 +48,12 @@ export function waterExtras(m: BigMap): WaterExtras {
     pieces.push({ tx, ty });
     espuma[ty * m.w + tx] = pieces.length;
   }
-  const C = ESPUMA.columnas, filas = Math.max(1, Math.ceil(pieces.length / C));
+  const C = pieces.length > ESPUMA.columnas * 32 ? ESPUMA.columnas * 2 : ESPUMA.columnas, filas = Math.max(1, Math.ceil(pieces.length / C));
   if (filas * TILE * ESPUMA.cuadros > 4096) throw new Error(`espuma: ${pieces.length} piezas no entran en un atlas de 4096`);
   const atlas = createRaster(C * TILE, filas * TILE * ESPUMA.cuadros);
+  // la espuma de siempre es blanca; un mundo puede traer la suya (el Mundo 4, verde oscura)
+  const fc = m.meta?.espuma, foam = fc ? [parseInt(fc.slice(1, 3), 16), parseInt(fc.slice(3, 5), 16), parseInt(fc.slice(5, 7), 16)] as [number, number, number] : null;
+  const FOAM: [number, number, number][] = foam ? [foam, foam.map((v) => Math.round(v * 0.8)) as [number, number, number], foam] : [[226, 240, 242], [180, 214, 222], [210, 232, 238]];
   const put = (x: number, y: number, rgb: [number, number, number], a: number) => { const k = (y * atlas.w + x) * 4; atlas.data[k] = rgb[0]; atlas.data[k + 1] = rgb[1]; atlas.data[k + 2] = rgb[2]; atlas.data[k + 3] = a; };
   pieces.forEach((p, n) => {
     const ax = (n % C) * TILE, ay = Math.floor(n / C) * TILE;
@@ -59,15 +64,15 @@ export function waterExtras(m: BigMap): WaterExtras {
       // la ola que lame la orilla: avanza y se retira (4 cuadros), con un borde que no es recto
       const wave = (Math.sin(x * 0.31 + y * 0.23 + (f * Math.PI) / 2) + 1) * 0.9 + (Math.sin(x * 0.09 - y * 0.13 + f * 1.1) + 1) * 0.4;
       const Y = ay + f * filas * TILE + ly, X = ax + lx;
-      if (d <= 1 + wave) put(X, Y, [226, 240, 242], d <= 1 ? 220 : 170);
-      else if (d <= 2.5 + wave && ((x + y + f) % 3 === 0)) put(X, Y, [180, 214, 222], 120);
+      if (d <= 1 + wave) put(X, Y, FOAM[0], d <= 1 ? 220 : 170);
+      else if (d <= 2.5 + wave && ((x + y + f) % 3 === 0)) put(X, Y, FOAM[1], 120);
       // brillitos sueltos un poco más afuera
-      else if (d >= 3 && d <= 5 && ((x * 7 + y * 13 + f * 5) % 41) === 0) put(X, Y, [210, 232, 238], 150);
+      else if (d >= 3 && d <= 5 && ((x * 7 + y * 13 + f * 5) % 41) === 0) put(X, Y, FOAM[2], 150);
     }
   });
   const reflejo = new Uint8Array(m.w * m.h);
   if (m.quieta) for (let k = 0; k < reflejo.length; k++) reflejo[k] = t.waterTiles[k] && m.quieta[k] ? 1 : 0;
-  const out = { atlas, filas, espuma, reflejo, piezas: pieces.length };
+  const out = { atlas, filas, columnas: C, espuma, reflejo, piezas: pieces.length };
   cache.set(m, out);
   return out;
 }
@@ -78,7 +83,7 @@ export function drawFoam(dst: Raster, m: BigMap, frame = 0) {
   for (let ty = 0; ty < m.h; ty++) for (let tx = 0; tx < m.w; tx++) {
     const n = x.espuma[ty * m.w + tx];
     if (!n) continue;
-    const ax = ((n - 1) % ESPUMA.columnas) * TILE, ay = Math.floor((n - 1) / ESPUMA.columnas) * TILE + f * x.filas * TILE;
+    const ax = ((n - 1) % x.columnas) * TILE, ay = Math.floor((n - 1) / x.columnas) * TILE + f * x.filas * TILE;
     for (let ly = 0; ly < TILE; ly++) for (let lx = 0; lx < TILE; lx++) {
       const s = ((ay + ly) * x.atlas.w + ax + lx) * 4, a = x.atlas.data[s + 3] / 255;
       if (!a) continue;

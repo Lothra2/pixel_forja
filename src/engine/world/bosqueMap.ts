@@ -40,7 +40,7 @@ export interface BigMap {
   postales: Postal[];
   objects: WorldObject[];
   /** datos del mundo para Tiled y el agua (el Bosque no los trae: usa los de siempre) */
-  meta?: { bioma: string; musica: string; nombre: string; agua?: string; fondo?: { id: string; paralaje: number }[] };
+  meta?: { bioma: string; musica: string; nombre: string; agua?: string; fondo?: { id: string; paralaje: number }[]; /** brillos del agua y color de la espuma (Mundo 4) */ aguaBrillo?: string; espuma?: string };
   /** cuadros que el diseño deja libres (claros de los lugares, puentes, vado, camino secreto): ahí no se planta nada */
   libre?: Uint8Array;
   /** cuánto bosque quiere el diseño en cada cuadro (menos de 0 nada, 1 o más bosque cerrado) */
@@ -49,6 +49,8 @@ export interface BigMap {
   quieta?: Uint8Array;
   /** Mundo 3: los cristales que se prenden (los dibuja el juego, apagados o prendidos, según el estado) */
   cristales?: Cristal[];
+  /** Mundo 4: por cuadro, 1 = solo se camina con esa marea (baja: el barro; alta: los muelles flotantes) */
+  marea?: { baja: Uint8Array; alta: Uint8Array };
 }
 
 /** Un cristal del Mundo 3: `x`, `y` es el pie (el apoyo del objeto). Chico: `cristal_apagado_<forma>`; grande: `cristal_grande_*`. */
@@ -624,7 +626,7 @@ export function surfaceTiles(m: BigMap): Uint8Array {
   const out = Uint8Array.from(m.terrain.tileKind, (k) => byKind[k] ?? 1);
   const objs = new Map(m.objects.map((o) => [o.name, o]));
   for (const d of m.decos) {
-    if (d.sprite.startsWith('puente_colgante')) { const k = Math.floor((d.y - 1) / TILE) * m.w + Math.floor(d.x / TILE); if (k >= 0 && k < out.length) out[k] = 4; continue; }
+    if (d.sprite.startsWith('puente_colgante') || d.sprite.startsWith('muelle')) { const k = Math.floor((d.y - 1) / TILE) * m.w + Math.floor(d.x / TILE); if (k >= 0 && k < out.length) out[k] = 4; continue; }
     if (d.sprite !== 'puente') continue;
     const o = objs.get(d.sprite)!;
     // el tablero del puente: todo el ancho y la franja del medio del alto
@@ -639,7 +641,7 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
   const parts = chunks(m.terrain.img, CHUNK).map((c, i) => ({ name: `${dir}/${m.name}_${i}.png`, ...c }));
   // agua: 4 cuadros en una tira; el cuadro 0 se anima por los 4
   const agua = createRaster(TILE * 5, TILE);
-  for (let f = 0; f < 4; f++) over(agua, waterTile(f, m.meta?.agua), f * TILE, 0);
+  for (let f = 0; f < 4; f++) over(agua, waterTile(f, m.meta?.agua, m.meta?.aguaBrillo), f * TILE, 0);
   for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) { const k = (y * agua.w + 4 * TILE + x) * 4; agua.data[k] = 255; agua.data[k + 1] = 0; agua.data[k + 2] = 255; agua.data[k + 3] = 110; }
   const solidGid = 5; // el 5to cuadro de la tira es la marca de colisión
   const water = waterExtras(m);
@@ -661,13 +663,15 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
       // pasos: un valor por cuadro (no es un gráfico, se lee directo de data)
       { id: lid++, name: 'superficie', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.4, visible: false, data: Array.from(surfaceTiles(m)), properties: props({ valores: SUPERFICIES.map((n, i) => (i ? `${i} ${n}` : '')).filter(Boolean).join(', ') }) },
       // espuma de la orilla (pieza del atlas por cuadro, animada) y agua quieta con reflejo
-      { id: lid++, name: 'espuma', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 1, visible: false, data: Array.from(water.espuma), properties: props({ atlas: `${m.name}_espuma.png`, columnas: ESPUMA.columnas, filas: water.filas, cuadros: ESPUMA.cuadros, fps: ESPUMA.fps, notas: 'n > 0: pieza n - 1 del atlas; el cuadro f de la animación está f * filas * 32 px más abajo' }) },
+      { id: lid++, name: 'espuma', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 1, visible: false, data: Array.from(water.espuma), properties: props({ atlas: `${m.name}_espuma.png`, columnas: water.columnas, filas: water.filas, cuadros: ESPUMA.cuadros, fps: ESPUMA.fps, notas: 'n > 0: pieza n - 1 del atlas; el cuadro f de la animación está f * filas * 32 px más abajo' }) },
       { id: lid++, name: 'reflejo', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.4, visible: false, data: Array.from(water.reflejo) },
       { id: lid++, name: 'objetos', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.decos.map((d) => point(d.sprite, 'deco', d.x, d.y, { sprite: d.sprite })) },
       { id: lid++, name: 'entidades', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.entities.map((e) => point(e.tipo, e.tipo, e.x, e.y, e.props)) },
       { id: lid++, name: 'zonas', type: 'objectgroup', draworder: 'topdown', opacity: 0.3, visible: false, x: 0, y: 0, objects: m.zones.map((z) => ({ id: oid++, name: z.nombre, type: 'zona', x: z.x, y: z.y, width: z.w, height: z.h, rotation: 0, visible: true, properties: props(z.props) })) },
       { id: lid++, name: 'postales', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: false, x: 0, y: 0, objects: m.postales.map((p) => point(p.nombre, 'postal', p.x, p.y)) },
       // Mundo 3: los cristales que se prenden al pegarles (solo en los mundos que los traen)
+      // Mundo 4: las mareas (por cuadro, 1 = solo se camina con esa marea; en `colision` los dos van libres)
+      ...(m.marea ? (['baja', 'alta'] as const).map((k) => ({ id: lid++, name: `marea_${k}`, type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.4, visible: false, data: Array.from(m.marea![k]), properties: props({ notas: k === 'baja' ? 'Solo se camina con la marea baja: con la alta se tapa de agua (objeto agua_marea) y es sólido.' : 'Solo se camina con la marea alta: los muelles flotantes suben (anim subir y arriba). Con la baja es sólido.' }) })) : []),
       ...(m.cristales ? [{ id: lid++, name: 'cristales', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.cristales.map((c) => point(c.id, c.grande ? 'cristal_grande' : 'cristal', c.x, c.y, { color: c.color, forma: c.forma, grande: c.grande })) }] : []),
     ],
   };
@@ -680,7 +684,7 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
 export function renderBigMap(m: BigMap, opts: { entities?: boolean; frame?: number } = {}): Raster {
   const img = m.terrain.img, W = img.w, H = img.h;
   const out = createRaster(W, H);
-  const water = waterTile(opts.frame ?? 0, m.meta?.agua);
+  const water = waterTile(opts.frame ?? 0, m.meta?.agua, m.meta?.aguaBrillo);
   const byName = new Map(m.objects.map((o) => [o.name, o]));
   // el abismo: los fondos (sin paralaje en la foto) donde no hay suelo ni agua
   const fondos = (m.meta?.fondo ?? []).map((f) => byName.get(f.id)?.anims.idle.frames[0]).filter((f): f is Raster => !!f);

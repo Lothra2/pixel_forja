@@ -729,9 +729,9 @@ export function paintTerrain(d: TerrainDesign, pal: TerrainPalette = BOSQUE_PALE
 }
 
 /** Cuadro de agua profunda que pega por todos lados, 4 cuadros de animación (onditas que se corren). */
-export function waterTile(frame: number, base = '#1d4a6a'): Raster {
+export function waterTile(frame: number, base = '#1d4a6a', brillo?: string): Raster {
   const r = createRaster(TILE, TILE);
-  const lo = shade(base, -0.05), hi = shade(base, 0.05), sparkle = shade(base, 0.2);
+  const lo = shade(base, -0.05), hi = shade(base, 0.05), sparkle = brillo ?? shade(base, 0.2);
   for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) {
     const n = pnoise(x + frame * 2, y, 8, TILE, 91) * 0.6 + pnoise(x, y + frame, 4, TILE, 93) * 0.4;
     let c = n < 0.38 ? lo : n < 0.66 ? base : hi;

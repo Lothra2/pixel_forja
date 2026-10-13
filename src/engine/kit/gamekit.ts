@@ -18,11 +18,13 @@ import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
 import { isSpecial, handKindOf } from '../loot/render';
 import { TILE } from '../world/tiles';
-import { ESPUMA } from '../world/water';
+import { ESPUMA, waterExtras } from '../world/water';
 import { smallCreatures } from '../world/reactions';
 import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK, type BigMap } from '../world/bosqueMap';
 import { catedralMap } from '../world/catedralMap';
 import { galeriasMap } from '../world/galeriasMap';
+import { puertoMap } from '../world/puertoMap';
+import { marinerEyes } from '../world/puertoObjectsB';
 import { dustWarning, dustCloud, shadowEyes } from '../world/galeriasObjects';
 import { POLILLA_REINA_SPEC, POLILLA_CENIZA_SPEC } from '../boss/polilla';
 import { MINERO_PIEDRA_SPEC, SOMBRA_SPEC } from '../boss/mina';
@@ -428,7 +430,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     }
     return {
       mapa: `mundo/${big.name}.json`, nombre, ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
-      agua, espuma: { archivo: `mundo/${big.name}_espuma.png`, capa: 'espuma', columnas: ESPUMA.columnas, cuadros: ESPUMA.cuadros, fps: ESPUMA.fps }, reflejo: { capa: 'reflejo' },
+      agua, espuma: { archivo: `mundo/${big.name}_espuma.png`, capa: 'espuma', columnas: waterExtras(big).columnas, cuadros: ESPUMA.cuadros, fps: ESPUMA.fps }, reflejo: { capa: 'reflejo' },
       suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
       vista: `mundo/${slug}_vista.png`, postales, objetos: objManifest, ...(portal ? { portal, portales: 'Portales premium (#40), 96 x 128 con apoyo abajo al centro: anims girar (12 a 12 fps), abrir (8), cerrar (6), y las capas sueltas arco (1) y remolino (12). `portal` es el de este mundo; portal_azul y portal_rojo siguen en todos.' } : {}), ...(big.meta?.fondo ? { fondo: big.meta.fondo.map((f) => ({ objeto: f.id, paralaje: f.paralaje })) } : {}), particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
       niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', notas: 'Texturas de 256 que pegan por los 4 lados. Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla.' },
@@ -450,9 +452,27 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     },
   } : null;
   if (galerias) log('galerías listas');
+  // el Mundo 4: el Puerto Ahogado, con sus mareas
+  const puertoBig = opts.sinMundo4 ? null : puertoMap();
+  const puerto = puertoBig ? (() => {
+    const ojos = marinerEyes(), anims: Record<string, unknown> = {};
+    for (const [an, a] of Object.entries(ojos.anims)) { const n = `mundo/criaturas/${ojos.name}_${an}.png`; once(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
+    const base = exportarMundo(puertoBig, 'mundo4', 'El Puerto Ahogado', 'mundo/mundo4_agua.png', 'portal_rojo');
+    return {
+      ...base,
+      criaturas: { ...crit, marinero_ojos: { w: ojos.w, h: ojos.h, anims } },
+      marea: {
+        capas: { baja: 'marea_baja', alta: 'marea_alta' }, agua: 'agua_marea', flotante: 'muelle_flotante',
+        notas: 'Capas de cuadros del mapa (1 = solo se camina con esa marea). En `colision` los dos van libres: con la marea alta el juego suma marea_baja a la colisión y dibuja agua_marea en esos cuadros; con la baja suma marea_alta y deja los muelles flotantes en `abajo` (al subir: anim subir y después arriba). Desde cualquier cuadro que se camina hay camino a un farol con las dos mareas.',
+      },
+      faroles: { apagado: 'farol_muelle_apagado', prendido: 'farol_muelle_prendido', prenderse: 'farol_muelle_prenderse', notas: 'Entidades farol_muelle (el poste, con `punto` = id del punto_guardado). Arrancan apagados; Thor los prende. El primero (tutorial) enseña el farol de Thor.' },
+      notas_luz: 'Sin sombras horneadas con dirección: los objetos traen solo la sombra de contacto al pie (campo sombra). La sombra larga la hace el juego lejos de la luz que alumbra (el farol de Thor, los faroles del muelle y el faro).',
+    };
+  })() : null;
+  if (puerto) log('puerto listo');
   // `mundo` sigue siendo el Bosque (un juego viejo lo lee así); `mundos` trae todos en orden de bajada
   manifest.mundo = bosque;
-  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : [])];
+  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : []), ...(puerto ? [{ id: 'mundo4', ...puerto }] : [])];
   log('mundo listo');
 
   let introLogo: Record<string, unknown> | null = null;

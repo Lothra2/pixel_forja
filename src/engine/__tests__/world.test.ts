@@ -136,7 +136,7 @@ describe('kit del juego', () => {
     const walk = files.find((f) => f.name === 'personajes/rick_walk.png')!.bytes;
     const h = (walk[20] << 24) | (walk[21] << 16) | (walk[22] << 8) | walk[23];
     expect(h).toBe(8 * 48);
-  }, 240000);
+  }, 600000); // con el Mundo 4 (el mapa del puerto y el farol de Thor) el kit rápido tarda más
 });
 
 describe('cascada a la medida del acantilado', () => {
