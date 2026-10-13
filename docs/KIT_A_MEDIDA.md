@@ -398,7 +398,7 @@ scene.add.bitmapText(8, 8, 'fuente_ui', eq.nombre.toUpperCase()).setScale(2);
 `visor.html` (en el sitio, junto a la arena) recorre un kit con los datos dibujados encima:
 - **Arriba:** los personajes agrupados por equipo, los packs en pestañas y un tablero con todas las animaciones del pack moviéndose.
 - **En el centro:** la animación elegida en todas sus filas.
-- **Los datos:** se prenden y apagan por separado. Cajas en verde, cuerpo en azul punteado, manos en amarillo, cabeza en rojo, pies en cian, carga en morado, arma en naranja, la línea del agua, los eventos del cuadro con su `punto` y el pivote. La mano o el pie cercano va relleno y el lejano hueco.
+- **Los datos:** se prenden y apagan por separado. Cajas en verde, cuerpo en azul punteado, manos en amarillo, cabeza en rojo, pies en cian, carga en morado, arma en naranja, la pelota de `objetos` como un círculo rosado (packs con `sin_props`), la línea del agua, los eventos del cuadro con su `punto` y el pivote. La mano o el pie cercano va relleno y el lejano hueco.
 - **Las armas:** compone el arma elegida en la mano tal como lo haría el juego. Es la referencia viva de ese cálculo.
 - **Controles:** pausa, cuadro a cuadro (← →), cambiar de animación (↑ ↓), velocidad y zoom. El enlace guarda el personaje, el pack y la animación.
 
