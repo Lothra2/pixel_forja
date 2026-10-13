@@ -28,6 +28,7 @@ import { marinerEyes } from '../world/puertoObjectsB';
 import { dustWarning, dustCloud, shadowEyes } from '../world/galeriasObjects';
 import { POLILLA_REINA_SPEC, POLILLA_CENIZA_SPEC } from '../boss/polilla';
 import { MINERO_PIEDRA_SPEC, SOMBRA_SPEC } from '../boss/mina';
+import { MARINERO_NIEBLA_SPEC, CANGREJO_CENIZA_SPEC, MEDUSA_NEGRA_SPEC, CAPITAN_AHOGADO_SPEC } from '../boss/puerto';
 import { introPanels, fuegoPared, humoGrande, logoFuego } from '../intro/intro';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
@@ -142,6 +143,8 @@ export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'n
   vuela?: boolean;
   /** capa que va encima de otro personaje, cuadro por cuadro (el farol de Thor: `capa_de: 'thor'`) */
   capa_de?: string;
+  /** minijefe (el Capitán Ahogado) */
+  elite?: boolean;
   /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
   capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
 
@@ -310,6 +313,15 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       [MINERO_PIEDRA_SPEC, { tipo: 'enemigo', nombre: 'Minero de Piedra' }],
       [SOMBRA_SPEC, { tipo: 'enemigo', nombre: 'Sombra' }],
       [POLILLA_REINA_SPEC, { tipo: 'jefe', nombre: 'Polilla Reina', vuela: true }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+  }
+  // el Mundo 4: los enemigos del puerto y el Capitán Ahogado (a su celda, sin agrandar)
+  if (!opts.sinMundo4) {
+    for (const [spec, extra] of [
+      [MARINERO_NIEBLA_SPEC, { tipo: 'enemigo', nombre: 'Marinero de Niebla' }],
+      [CANGREJO_CENIZA_SPEC, { tipo: 'enemigo', nombre: 'Cangrejo de Ceniza' }],
+      [MEDUSA_NEGRA_SPEC, { tipo: 'enemigo', nombre: 'Medusa Negra', vuela: true }],
+      [CAPITAN_AHOGADO_SPEC, { tipo: 'enemigo', nombre: 'El Capitán Ahogado', elite: true }],
     ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
   }
   // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
