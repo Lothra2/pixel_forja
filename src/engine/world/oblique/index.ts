@@ -58,7 +58,7 @@ export interface ResultadoEscenario {
 }
 
 /** Los fondos lejanos que ya tienen arte. */
-const LEJOS: string[] = [...SKYLINES, 'valle_de_aburra', 'avila_noche'];
+const LEJOS: string[] = [...SKYLINES, 'valle_de_aburra', 'avila_noche', 'rio_thu_bon_puente_japones'];
 
 /** Valida el layout, pinta el escenario, corre las 9 pruebas y devuelve la carpeta `escenarios/<id>/`. */
 export function generarEscenario(layout: unknown, o: OpcionesEscenario = {}): ResultadoEscenario {

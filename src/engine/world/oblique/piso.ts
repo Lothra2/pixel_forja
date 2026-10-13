@@ -3,6 +3,7 @@ import { Lienzo } from './lienzo';
 import type { Color, Paleta } from './paleta';
 import { depthOf, type ObliqueLayout, type TipoPiso } from './layout';
 import { losaAzotea, orillaTorre } from './caracas';
+import { piedraHoian, aceraHoian, maderaHoian, orillaHoian } from './hoian';
 
 /**
  * Piso en vista oblicua, por tipo. La imagen va de la fila `franja.atras` hasta el borde de abajo de la pantalla:
@@ -89,11 +90,17 @@ const agua: Pintor = (_L, x, y, s) => (bayer(x, y) < 0.3 && g(x >> 2, y, s) < 0.
 
 export const PINTORES: Record<TipoPiso, Pintor> = { asfalto, acera, tierra, baldosa, madera, metal, arena, tatami, greda, cancha, pasto, agua };
 
-/** La baldosa de un lugar que la tiene distinta (por `paralaje.cerca`): las losas grandes de la azotea de Parque Central. */
-const BALDOSA_DE: Record<string, Pintor> = { torres_parque_central: (_L, x, y, s) => losaAzotea(x, y, s) };
+/**
+ * Los pisos de un lugar que los tiene distintos (por `paralaje.cerca`): las losas grandes de la azotea de Parque Central,
+ * y en Hội An la calle de piedra, su acera y el muelle de madera.
+ */
+const PISOS_DE: Record<string, Partial<Record<TipoPiso, Pintor>>> = {
+  torres_parque_central: { baldosa: (_L, x, y, s) => losaAzotea(x, y, s) },
+  casas_amarillas_hoian: { baldosa: (_L, x, y, s) => piedraHoian(x, y, s), acera: (_L, x, y, s) => aceraHoian(x, y, s), madera: (_L, x, y, s) => maderaHoian(x, y, s) },
+};
 
-/** El pintor de un tipo de piso en este layout (con la baldosa propia del lugar si la tiene). */
-export const pintorDe = (L: ObliqueLayout, tipo: TipoPiso): Pintor => (tipo === 'baldosa' && BALDOSA_DE[L.paralaje?.cerca ?? '']) || PINTORES[tipo];
+/** El pintor de un tipo de piso en este layout (con el piso propio del lugar si lo tiene). */
+export const pintorDe = (L: ObliqueLayout, tipo: TipoPiso): Pintor => PISOS_DE[L.paralaje?.cerca ?? '']?.[tipo] ?? PINTORES[tipo];
 
 /** Una grieta que camina con su rama. */
 function grieta(L: Lienzo, x: number, y: number, len: number, R: () => number) {
@@ -253,6 +260,9 @@ export const ORILLAS: Record<string, (P: Lienzo, x: number, r: number, s: number
   torres_parque_central: (_P, x, r, s) => orillaTorre(x, r, s),
   /** Adentro del mercado: la baldosa sigue y la canaleta del desagüe. */
   mercado_interior: (_P, x, r) => r === 2 || r === 3 ? (x % 6 < 4 ? 'asfalto_claro' : 'cemento') : baldosa(_P, x, r + 2, 0),
+  /** Hội An: el canto del muelle, los pilotes y el río de adelante con las velitas. */
+  casas_amarillas_hoian: (P, x, r, s) => orillaHoian(P, x, r, s),
+  velitas_en_el_rio: (P, x, r, s) => orillaHoian(P, x, r, s),
   /** El borde de la pista: un poco más de tartán, el bordillo blanco y el pasto de adentro. */
   gradas: (_P, x, r, s) => r < 5 ? cancha(_P, x, r + 1, s) : r < 7 ? (r === 5 ? 'luz' : 'cemento_claro') : g(x, r, s) < 0.12 ? 'verde_oscuro' : (r >> 2) % 2 ? 'verde' : g(x >> 1, r, s + 1) < 0.5 ? 'verde' : 'menta',
 };

@@ -3,6 +3,7 @@ import { boxesOf } from './layout';
 import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Paleta } from './paleta';
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
+import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
 
 /**
  * Ficha de arte de un escenario: la puerta 1 del pedido. Paleta de 24 colores, de 8 a 12 elementos icónicos y los
@@ -277,7 +278,42 @@ const VENEZUELA_CIUDAD: Estilo = {
   letreros: ['AREPERA LA CHAMA', 'CARACAS', 'CARACAS ES BELLA'],
 };
 
-const ESTILOS: Record<string, Estilo> = { vietnam: VIETNAM, colombia_ladrillo: COLOMBIA_LADRILLO, venezuela_ciudad: VENEZUELA_CIUDAD };
+/** Hội An de noche: la ciudad vieja con el Tama-wari. */
+const VIETNAM_HOIAN: Estilo = {
+  paleta: VIETNAM_HOIAN_NOCHE,
+  paletaDe: paletaVietnam,
+  uso: USO_HOIAN,
+  horas: HORAS_HOIAN,
+  iconos: [
+    { id: 'casas', nombre: 'Las casas amarillas de la ciudad vieja, de dos pisos, con la pared gastada', donde: 'cerca, de x 166 al final' },
+    { id: 'tejas', nombre: 'Los techos de tejas de barro con el caballete de puntas curvas, y el alero entre los pisos', donde: 'cerca' },
+    { id: 'madera', nombre: 'La planta baja de madera oscura: vanos abiertos con la tienda encendida, puertas plegables y celosías', donde: 'cerca' },
+    { id: 'farol_puerta', nombre: 'Un farol en cada puerta y los racimos de faroles debajo del alero', donde: 'cerca' },
+    { id: 'cuerdas', nombre: 'Las cuerdas de faroles de seda de colores sobre la calle, de poste en poste', donde: 'bajo cuerdas_faroles' },
+    { id: 'puestos', nombre: 'Los puestos de faroles: techito de tejas, faroles en dos filas y el mostrador', donde: 'cerca, detrás de la vendedora y al final' },
+    { id: 'buganvilla', nombre: 'La buganvilla fucsia que cae de los techos y los balcones, y el árbol de la esquina', donde: 'cerca' },
+    { id: 'puente', nombre: 'El puente japonés (Chùa Cầu) encendido, con sus arcos y el templito', donde: 'lejos, por la izquierda' },
+    { id: 'rio', nombre: 'El río Thu Bồn con los reflejos de los faroles, velitas en flores de papel y botes con faroles', donde: 'lejos, cerca (izquierda) y debajo del muelle' },
+    { id: 'tamawari', nombre: 'Los dos postes de bambú del Tama-wari, con trípode, el collar del equipo y las cintas de colores', donde: 'postes poste_tamawari' },
+    { id: 'piedra', nombre: 'La calle de piedra con la luz tibia de los faroles y el muelle de madera', donde: 'piso' },
+    { id: 'balcones', nombre: 'Los vecinos asomados a los balcones de madera, con nón lá y abanicos', donde: 'cerca, vida publico' },
+  ],
+  vida: {
+    faroles_meciendose: 'Los faroles de las cuerdas y de los postes que se mecen con la brisa, 4 cuadros',
+    velitas_rio: 'Las velitas del río de adelante, que titilan, 3 cuadros',
+    botes_con_faroles: 'El bote con faroles amarrado en el río de la izquierda, que se mece, y otro que cruza lejos por el río',
+    publico: 'Los vecinos de los balcones, que levantan los brazos, los abanicos y los celulares: 2 cuadros',
+  },
+  cajas: {
+    base_poste: 'Cajón de madera lleno de piedras al pie del poste del Tama-wari, con el trípode de bambú amarrado encima',
+  },
+  letreros: ['ĐÈN LỒNG', 'CAO LẦU', 'MAY ĐO'],
+};
+
+const ESTILOS: Record<string, Estilo> = { vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, colombia_ladrillo: COLOMBIA_LADRILLO, venezuela_ciudad: VENEZUELA_CIUDAD };
+
+/** Los fondos de la capa cerca que son de Hội An (con su estilo). */
+const CERCAS_HOIAN = new Set(['casas_amarillas_hoian']);
 
 /** ¿Ya hay ficha para el estilo de este layout, y a su hora? */
 export const hayEstilo = (L: ObliqueLayout) => estiloDe(L) in ESTILOS && (!ESTILOS[estiloDe(L)].horas || ESTILOS[estiloDe(L)].horas!.includes(L.hora));
@@ -286,7 +322,7 @@ export const hayEstilo = (L: ObliqueLayout) => estiloDe(L) in ESTILOS && (!ESTIL
 export const horasDe = (L: ObliqueLayout) => ESTILOS[estiloDe(L)]?.horas;
 
 /** El estilo de fachada que va con cada país. */
-export const estiloDe = (L: ObliqueLayout) => (L.pais === 'vietnam' ? 'vietnam' : L.pais === 'colombia' ? 'colombia_ladrillo' : L.pais === 'venezuela' ? 'venezuela_ciudad' : L.pais);
+export const estiloDe = (L: ObliqueLayout) => (L.pais === 'vietnam' ? (CERCAS_HOIAN.has(L.paralaje?.cerca ?? '') ? 'vietnam_hoian' : 'vietnam') : L.pais === 'colombia' ? 'colombia_ladrillo' : L.pais === 'venezuela' ? 'venezuela_ciudad' : L.pais);
 
 export function fichaArte(L: ObliqueLayout): FichaArte {
   const estilo = estiloDe(L), E = ESTILOS[estilo];
