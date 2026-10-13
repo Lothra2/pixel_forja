@@ -8,6 +8,7 @@ import { familyFicha } from '../rpg/family';
 import { decodePng, type Raster } from '../index';
 import { buildCustomKit, validateKitConfig, packAnims, packsSinProps, type KitConfig } from '../kit/custom';
 import { objetosOf, pivotOf, ROW_VIEW, PELOTAS } from '../export/frameData';
+import { motionOf8 } from '../export/motion';
 import { pelotaSprite } from '../render/floorProps';
 import type { PropKind } from '../rig/pose';
 import { ROOT } from './helpers';
@@ -336,6 +337,58 @@ describe('sin_props (lote SP2): los packs nuevos', () => {
     // de lado, el tiro va hacia adelante
     const xs = renderClip(RICK, 48, 'shoot', 'side', { props: true }).balls!.slice(1, 5).map((b) => b[0].x);
     for (let i = 1; i < xs.length; i++) expect(xs[i]).toBeGreaterThanOrEqual(xs[i - 1]);
+  });
+
+  it('las de pelota sin versión premium traen eventos, y caen donde lo dice el dibujo', () => {
+    const ev = (f: HumanFicha, a: string) => {
+      const clips = FILAS.map((fila) => renderClip(f, 48, a, ROW_VIEW[fila], { props: true }));
+      return { clips, eventos: motionOf8(clips).eventos ?? [] };
+    };
+    const de = (e: { tipo: string; cuadro: number }[], tipo: string) => e.filter((x) => x.tipo === tipo).map((x) => x.cuadro);
+    const lejos = (c: RenderedClip, i: number) => { const b = c.balls![i][0], m = c.joints![i].handNear; return b ? Math.hypot(b.x - m[0], b.y - m[1]) : Infinity; };
+    const cerca = (c: RenderedClip, i: number) => lejos(c, i) <= 6 * c.cell / 48;
+    // la suelta es el primer cuadro en que la pelota ya no va con la mano (o no se dibuja), con el punto de la mano en las 5 filas
+    for (const a of ['shoot', 'dunk', 'pitch']) {
+      const { clips, eventos } = ev(RICK, a);
+      const [s] = de(eventos, 'suelta');
+      expect(de(eventos, 'suelta'), a).toHaveLength(1);
+      for (const c of clips) expect(c.balls![s - 1].length > 0 && (!c.balls![s].length || !cerca(c, s)), `${a} ${c.view} ${s}`).toBe(true);
+      expect(eventos.find((e) => e.tipo === 'suelta')!.punto, a).toHaveLength(FILAS.length);
+    }
+    expect(de(ev(RICK, 'shoot').eventos, 'suelta')).toEqual([5]);
+    expect(de(ev(RICK, 'dunk').eventos, 'suelta')).toEqual([5]);
+    expect(de(ev(RICK, 'pitch').eventos, 'suelta')).toEqual([6]);
+    // los saltos: en el aire entre el despegue y el aterriza
+    for (const a of ['shoot', 'dunk']) {
+      const { clips, eventos } = ev(RICK, a);
+      const [d] = de(eventos, 'despegue'), [t] = de(eventos, 'aterriza');
+      clips[0].airborne!.forEach((aire, i) => expect(aire, `${a} ${i}`).toBe(i >= d && i < t));
+    }
+    // la atrapada: el primer cuadro con la pelota pegada al guante (antes viene llegando: en un brazo largo de lado ya
+    // casi lo toca en el 2, pero se engancha en el 3)
+    const k = ev(RICK, 'catch');
+    expect(de(k.eventos, 'atrapa')).toEqual([3]);
+    for (const c of k.clips) {
+      expect(lejos(c, 2), c.view).toBeGreaterThan(lejos(c, 3));
+      for (let i = 3; i < 6; i++) expect(lejos(c, i), `catch ${c.view} ${i}`).toBeLessThanOrEqual(1.5);
+    }
+    // el bote: el cuadro donde el balón toca el piso
+    const d = ev(RICK, 'dribble');
+    expect(de(d.eventos, 'bote')).toEqual([3]);
+    d.clips.forEach((c) => { const b = c.balls![3][0]; expect(b.y + b.d / 2).toBe(c.cell - 2); });
+    // las atajadas también dicen `atrapa`, en el mismo cuadro del impacto de siempre
+    for (const a of ['keeper_dive', 'keeper_catch']) {
+      const { eventos } = ev(RICK, a);
+      expect(de(eventos, 'atrapa'), a).toEqual(de(eventos, 'impacto'));
+    }
+    // una ficha clásica no trae eventos, como siempre
+    expect(ev({ ...RICK, movementProfile: 'classic' }, 'shoot').eventos).toEqual([]);
+    // y llegan al manifiesto del kit, en el pack sin pelotas
+    const { files } = buildCustomKit({ ...MIN, filas: FILAS, packs: { basket: { anims: ['dribble', 'shoot'], sin_props: true } } }, {}, { quick: true, solo: ['atletas'] });
+    const m = JSON.parse(new TextDecoder().decode(files.find((x) => x.name === 'manifest.json')!.bytes));
+    const anims = m.atletas.rick.packs.basket.anims;
+    expect(anims.shoot.eventos.map((e: { tipo: string; cuadro: number }) => `${e.tipo} ${e.cuadro}`)).toEqual(['despegue 2', 'suelta 5', 'aterriza 5']);
+    expect(anims.dribble.eventos.map((e: { tipo: string; cuadro: number }) => `${e.tipo} ${e.cuadro}`)).toEqual(['bote 3']);
   });
 });
 

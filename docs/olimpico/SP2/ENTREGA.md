@@ -63,18 +63,33 @@ En el manifiesto:
 - Cargar `objetos/pelotas.json` como atlas y usar la de la `clase` de `objetos` en la celda del atleta: `setOrigin(0.5)` y la posición de `objetos`. O seguir con sus círculos, en el mismo punto.
 - Cuándo manda `objetos`, por animación (está completo en `docs/KIT_A_MEDIDA.md`, sección "Packs sin pelotas"):
   - **Golpes del tenis y del fútbol:** hasta el `impacto` (forehand y backhand en el 4, `tn_volley` en el 3, `tn_smash` en el 4, `tennis_serve` en el 6, `shot` y `pass` en el 4). Después es de la física.
-  - **Atrapadas (`keeper_dive`, `keeper_catch`, `catch`):** al revés. Hasta el impacto la pelota viene llegando y desde ahí se queda con el atleta: `objetos` manda hasta el final.
-  - **Las clásicas no traen eventos.** `shoot` y `dunk` sueltan en el 5. `pitch` suelta en el 6. `catch` atrapa en el 3. `dribble` nunca suelta: para tirar o pasar se cambia de animación.
+  - **Atrapadas (`keeper_dive`, `keeper_catch`, `catch`):** al revés. Hasta el `atrapa` la pelota viene llegando y desde ahí se queda con el atleta: `objetos` manda hasta el final.
+  - **Tiros:** hasta la `suelta`. `shoot` y `dunk` en el 5, `pitch` en el 6. `dribble` nunca suelta: para tirar o pasar se cambia de animación.
+  - **Todo sale de los `eventos`,** también en las clásicas (ver abajo). Nada de números de cuadro escritos a mano.
 - En Chapita y Quemado, `clase` dice `beisbol`: se dibuja la chapa o el balón de goma en ese punto, como el cầu del Đá cầu.
+
+**Eventos en las clásicas de pelota (pedido del juego, después del PR):** `dribble`, `shoot`, `dunk`, `pitch` y `catch` no tienen versión premium y no traían eventos. Ahora los traen, en el manifiesto de cualquier ficha premium (en el kit lo son todas):
+
+| Animación | Eventos |
+|---|---|
+| `dribble` | `bote` en el 3, cuando el balón toca el piso |
+| `shoot` | `despegue` 2, `suelta` 5 (con `punto`), `aterriza` 5 |
+| `dunk` | `despegue` 2, `suelta` 5 (con `punto`), `aterriza` 6 |
+| `pitch` | `suelta` 6 (con `punto`) |
+| `catch` | `atrapa` 3 (con `punto`) |
+| `keeper_dive`, `keeper_catch` | suman `atrapa` en el mismo cuadro del `impacto` (3 y 2). El `impacto` se queda |
+
+`bote` y `atrapa` son tipos nuevos. Todo lo de antes sigue igual.
 
 ## Pruebas
 
-- **`sinprops.test.ts`, 8 casos nuevos (16 en total, 16 de 16):**
+- **`sinprops.test.ts`, 9 casos nuevos (17 en total, 17 de 17):**
   - Las 18 animaciones en las 5 filas de Nekketsu: solo cambia la pelota y su contorno, `wholes`, articulaciones y pelotas iguales, y no queda ni un pixel del color del disco de la pelota. Las 4 que no traen pelota no cambian nada.
   - El tenis: la raqueta está dibujada en al menos la mitad de los cuadros de cada golpe (en el remate de algunos queda detrás de la espalda) y es la misma que en el pack con pelota.
   - `objetos` en `[fila][cuadro]` desde el pivote, con la clase de cada deporte, en las 18. Las que no traen pelota no lo llevan.
   - El bote: el balón debajo de la mano en las 5 filas, en Rick (48) y en Goro (64), toca el piso en el 3 y la palma en el 0.
   - El tiro sube sin devolverse y la atrapada se queda en el guante, en las 5 filas.
+  - Los eventos de las clásicas caen donde lo dice el dibujo, en las 5 filas: la `suelta` es el primer cuadro en que la pelota ya no va con la mano, entre `despegue` y `aterriza` el atleta está en el aire, el `atrapa` es el primer cuadro con la pelota pegada al guante y el `bote` es el cuadro en que el balón toca el piso. Las atajadas traen `atrapa` en el cuadro del `impacto`. Una ficha clásica sigue sin eventos, y en el kit llegan al manifiesto del pack sin pelotas.
   - Las pelotas sueltas son el mismo dibujo que se quitó, pixel a pixel, con el centro exacto en el centro del cuadro.
   - El kit trae `objetos/pelotas` solo con las pelotas que se quitaron, y nada sin packs `sin_props`.
   - El ejemplo de Nekketsu valida en el motor y en el esquema, con los 6 packs y las pruebas.
@@ -88,7 +103,7 @@ En el manifiesto:
 - **`tsc` limpio, `npm run build:sitio` limpio (278 s) y e2e del visor 6 de 6** (en el puerto 4187).
 - **Resto de `src/engine/__tests__` (sin `custom.test.ts`), después del arreglo del render: 30 archivos, 333 de 333.**
 
-- **Suite completa: 34 archivos, 361 de 361.** `npm run build:sitio` limpio y e2e de Playwright 50 de 50.
+- **Suite completa: 34 archivos, 362 de 362** (con los eventos de las clásicas). `tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 50 de 50.
 - **El corte del kit completo:** el `beforeAll` de `custom.test.ts` cortaba a los 240 s, antes de que la prueba de "menos de 5 minutos" (300 s, lo que pidió Rick) pudiera medir. Pasa a 320 s, así decide la de los 300 con su tiempo medido.
 
 ## Para aprobar (todo en esta carpeta)
@@ -111,10 +126,14 @@ En el manifiesto:
 9. **Las pelotas sueltas van con los atletas,** no con `objetos` del config (que son las armas del piso). Salen aunque se pida `--solo atletas`, porque sin ellas los packs sin pelota quedan cojos.
 10. **El cuadro de cada pelota mide justo `2r + 2`,** con el pivote en 0.5. Así el centro calza exacto con `x` e `y` de `objetos`, también en las de medio pixel.
 11. **Bajé el tiempo en vez de sacar packs del ejemplo.** El tope real de la prueba del kit completo es el `beforeAll`, de 240 s, no los 300 s de "menos de 5 minutos". No toqué ninguno de los dos. Hice más rápido el render y los 6 packs quedan en el ejemplo.
+12. **`bote` y `atrapa` son tipos nuevos, no `paso` ni `impacto`.** El `paso` es un pie, y el `impacto` hace daño y temblor en el juego. En las atajadas sumé `atrapa` sin quitar el `impacto` que ya usa el juego.
+13. **`shoot` y `dunk` traen también `despegue` y `aterriza`,** como los saltos premium. Así el juego hace la sombra y el polvo con los mismos eventos de siempre.
+14. **Los eventos salen en las clásicas de una ficha premium, sin pasarlas a premium.** Pasarlas cambiaba el encuadre de los cuadros. Así el dibujo queda igual pixel a pixel. Revisé que ninguna otra animación clásica de persona tenga eventos, así que esto solo cambia estas cinco. Es la misma regla que C7c puso para los animales.
 
 ## Límites honestos
 
-- **Las clásicas no traen eventos.** `dribble`, `shoot`, `dunk`, `pitch` y `catch` no dicen en los datos cuándo se suelta la pelota. Está en la tabla de la doc, pero el juego lo tiene que escribir a mano. Darles eventos a las clásicas toca `motionOf` y cambia otros kits, así que no lo hice acá.
+- **`bote` y `atrapa` son tipos de evento nuevos.** Un juego que no los conoce los ignora, pero tiene que leerlos para usarlos. Los de siempre no cambiaron.
+- **`shoot` y `dunk` no son premium:** traen eventos, pero no el pivote fijo ni el `desplazamiento` de las premium. Se ven igual que antes.
 - **`catch` trae el guante de béisbol.** Para Quemado (atrapar contra el pecho) no hay una animación sin guante. El pedido del juego ya lo anota como arte pendiente.
 - **De espalda el bote no toca la palma del todo.** La mano queda 2 o 3 px más arriba y tapada por el cuerpo, así que no se nota.
 - **En `shot` y `pass` la pelota sigue en `objetos` después del impacto** (es el vuelo de la animación) y en `pass` se queda quieta fuera de la celda. Desde el impacto manda la física y eso se ignora.
@@ -126,8 +145,8 @@ En el manifiesto:
 
 - **El juego:**
   - Copiar los 6 packs y las pruebas del ejemplo, y si quiere, renombrar las de SP a su regla.
-  - Cargar `objetos/pelotas.json` y poner la pelota en `objetos` según la tabla.
+  - Cargar `objetos/pelotas.json` y poner la pelota en `objetos` hasta la `suelta` o el `impacto`, y desde el `atrapa`.
+  - El sonido del bote (`rebote_balon` de H3) en el evento `bote`.
   - Avisar si quiere `keeper_throw` o `keeper_punt` para el saque del arquero, que el motor ya tiene.
 - **PixelForja:**
-  - Eventos para las animaciones clásicas de pelota, o pasarlas a premium, así la suelta sale en los datos.
   - Una atrapada contra el pecho sin guante para Quemado (`catch` sigue siendo la de béisbol), y `dodge_jump`, `bat_stance` y `bat_swing` del pedido de Chapita y Quemado.

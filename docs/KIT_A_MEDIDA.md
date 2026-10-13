@@ -129,22 +129,22 @@ if (o && !pelota.suelta) {
 // en el evento impacto (o despegue) la pelota pasa a la física, con su velocidad
 ```
 
-**Cuándo manda `objetos`, animación por animación.** Las premium traen `eventos`: la pelota pasa a la física en el `impacto`. Las clásicas (`dribble`, `shoot`, `dunk`, `pitch`, `catch`) no traen eventos: el cuadro de la suelta va en la tabla. En las atrapadas pasa al revés: hasta el impacto la pelota viene llegando y desde ahí se queda con el atleta, así que `objetos` manda hasta el final.
+**Cuándo manda `objetos`, animación por animación.** Todas dicen en sus `eventos` cuándo pasa la pelota a la física: en el `impacto` de un golpe o en la `suelta` de un tiro (con el `punto` de la mano). En las atrapadas pasa al revés: hasta el `atrapa` la pelota viene llegando y desde ahí se queda con el atleta, así que `objetos` manda hasta el final. El `bote` del `dribble` es el cuadro en que el balón toca el piso: ahí va el sonido. Lee los cuadros de los eventos, no de esta tabla: la tabla es para entender, los eventos siguen al dibujo si un día se redibuja.
 
 | Animación | Cuadros | Con pelota | Qué hace la pelota | El juego la suelta |
 |---|---|---|---|---|
-| `dribble` | 8, en bucle | todos | bota entre la palma y el piso, siempre debajo de la mano | nunca: para tirar o pasar se cambia de animación |
-| `shoot` | 6 | 0 a 4 | sube con las manos y sale por arriba | en el 5 (desde donde estaba en el 4) |
-| `dunk` | 8 | 0 a 4 | en la mano hasta la clavada | en el 5 (por el aro) |
-| `keeper_dive` | 8 | todos | llega, `impacto` en el 3 (la ataja) y se queda en las manos | no se suelta |
-| `keeper_catch` | 7 | todos | llega, `impacto` en el 2 y se queda en las manos | no se suelta |
+| `dribble` | 8, en bucle | todos | bota entre la palma y el piso, siempre debajo de la mano, `bote` en el 3 | nunca: para tirar o pasar se cambia de animación |
+| `shoot` | 6 | 0 a 4 | sube con las manos y sale por arriba, `despegue` en el 2 y `aterriza` en el 5 | `suelta` en el 5 (desde donde estaba en el 4) |
+| `dunk` | 8 | 0 a 4 | en la mano hasta la clavada, `despegue` en el 2 y `aterriza` en el 6 | `suelta` en el 5 (por el aro) |
+| `keeper_dive` | 8 | todos | llega, `impacto` y `atrapa` en el 3 (la ataja) y se queda en las manos | no se suelta |
+| `keeper_catch` | 7 | todos | llega, `impacto` y `atrapa` en el 2 y se queda en las manos | no se suelta |
 | `forehand`, `backhand` | 9 | 0 a 4 | llega a la raqueta | `impacto` en el 4 |
 | `tennis_serve` | 11 | 0 a 6 | en la mano, `suelta` en el 2 (el lanzamiento) y sube | `impacto` en el 6 |
 | `tn_volley` | 6 | 0 a 3 | llega a la raqueta | `impacto` en el 3 |
 | `tn_smash` | 9 | 0 a 4 | baja desde arriba | `impacto` en el 4 |
 | `shot`, `pass` | 10 | 0 a 6, todos | en el pie | `impacto` en el 4 (lo de después es el vuelo de la animación) |
-| `pitch` | 8 | todos | en la mano hasta el 5, sale en el 6 | en el 6 |
-| `catch` | 6 | todos | llega hasta el 2 y desde el 3 queda en el guante | no se suelta: se atrapa en el 3 |
+| `pitch` | 8 | todos | en la mano hasta el 5, sale en el 6 | `suelta` en el 6 |
+| `catch` | 6 | todos | llega hasta el 2 y desde el 3 queda en el guante | no se suelta: `atrapa` en el 3 |
 
 La raqueta y el guante no se quitan. En Chapita y en Quemado la `clase` dice `beisbol`: el juego dibuja su chapa o su balón de goma en el mismo punto, como el cầu del Đá cầu en `futbol`.
 

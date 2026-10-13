@@ -15,7 +15,7 @@ function athletic(c: Ctx, crouch = 0.45): Pose {
 // ---------- básquet ----------
 
 export const dribble: AnimDef = {
-  name: 'dribble', pack: 'basket', fps: 10, loop: true, steady: true,
+  name: 'dribble', pack: 'basket', fps: 10, loop: true, steady: true, events: [{ type: 'bote', phase: 3 / 8 }],
   build: (c) => {
     const u = c.u;
     // el balón va y viene entre la mano y el piso, siempre debajo de la mano (lote SP2). En 6, 7, 0 y 1 la palma va
@@ -36,6 +36,7 @@ export const dribble: AnimDef = {
 
 export const shootBasket: AnimDef = {
   name: 'shoot', pack: 'basket', fps: 10, loop: false,
+  events: [{ type: 'despegue', phase: 2 / 6 }, { type: 'suelta', phase: 5 / 6, joint: 'handNear' }, { type: 'aterriza', phase: 5 / 6 }],
   build: (c) => {
     const L = c.L, u = c.u;
     const top = Math.max(2, Math.round(4 * u));
@@ -52,6 +53,7 @@ export const shootBasket: AnimDef = {
 
 export const dunk: AnimDef = {
   name: 'dunk', pack: 'basket', fps: 12, loop: false,
+  events: [{ type: 'despegue', phase: 2 / 8 }, { type: 'suelta', phase: 5 / 8, joint: 'handNear' }, { type: 'aterriza', phase: 6 / 8 }],
   build: (c) => {
     const L = c.L, u = c.u;
     const top = Math.max(3, Math.round(7 * u));
@@ -156,7 +158,7 @@ export const bat: AnimDef = {
 };
 
 export const pitch: AnimDef = {
-  name: 'pitch', pack: 'baseball', fps: 12, loop: false,
+  name: 'pitch', pack: 'baseball', fps: 12, loop: false, events: [{ type: 'suelta', phase: 6 / 8, joint: 'handNear' }],
   build: (c) => {
     const L = c.L, u = c.u;
     const knee = P(c, { torso: -8, legs: { far: { x: 0, y: L - 0.3 }, near: { x: 0.25 * L, y: 0.4 * L, toe: 20 } }, arms: { near: { shoulder: 40, elbow: 100 }, far: { shoulder: 40, elbow: 100 } } });
@@ -168,7 +170,7 @@ export const pitch: AnimDef = {
 };
 
 export const catchBall: AnimDef = {
-  name: 'catch', pack: 'baseball', fps: 10, loop: false,
+  name: 'catch', pack: 'baseball', fps: 10, loop: false, events: [{ type: 'atrapa', phase: 3 / 6, joint: 'handNear' }],
   build: (c) => {
     const L = c.L, u = c.u;
     const reach = P(c, { torso: 6, legs: feet(c, 0.4, 0.25), arms: { near: { shoulder: 110, elbow: 20 }, far: { shoulder: 20, elbow: 40 } } });

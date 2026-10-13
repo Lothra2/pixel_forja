@@ -4,7 +4,7 @@
  */
 
 export interface KitEvent {
-  tipo: 'paso' | 'impacto' | 'suelta' | 'despegue' | 'aterriza';
+  tipo: 'paso' | 'impacto' | 'suelta' | 'despegue' | 'aterriza' | 'bote' | 'atrapa';
   cuadro: number;
   fase: number;
   pie?: 'cerca' | 'lejos';
