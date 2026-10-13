@@ -77,6 +77,7 @@ if (o && !pelota.suelta) pelota.setPosition(sprite.x + (sprite.flipX ? -o.x : o.
 - **El kit de Nekketsu completo, por la línea de comandos: 185 s,** 938 archivos y 58.1 MB. Pasa el límite de 300 s.
 - **Resto de `src/engine/__tests__`:** 30 archivos, 325 de 325.
 - **`tsc` limpio, `npm run build:sitio` limpio y e2e del visor 6 de 6** (con la casilla nueva de la pelota).
+- **Suite completa: 34 archivos, 353 pruebas, todas en verde, y e2e de Playwright 50 de 50.** En una corrida con otros tres lotes armándose a la vez en la misma máquina, el arranque del kit completo de Nekketsu se cortó por tiempo. Corrida sola: 15 de 15 en 199 s.
 
 ## Para aprobar (todo en esta carpeta)
 
