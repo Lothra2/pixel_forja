@@ -32,9 +32,10 @@ test('visor del kit: atletas, packs y animaciones con sus datos dibujados', asyn
   // los seis equipos y Thor, agrupados en el orden de equipos.json: arranca con el primero de la Familia GG
   const sel = page.getByTestId('visor-char');
   await expect(sel.locator('optgroup')).toHaveCount(7);
-  await expect(sel.locator('option')).toHaveCount(25);
+  // 24 atletas, Thor y los 5 animales de la calle (lote C7)
+  await expect(sel.locator('option')).toHaveCount(30);
   await expect(sel.locator('optgroup').first()).toHaveAttribute('label', 'Familia GG');
-  await expect(sel.locator('optgroup').last().locator('option')).toHaveText(['Thor']);
+  await expect(sel.locator('optgroup').last().locator('option')).toHaveText(['Thor', 'Canelo', 'Negrito', 'Manchas', 'Mango', 'Sombra']);
   let h = await hook(page);
   expect(h).toMatchObject({ char: 'rick', rows: 5 });
   expect(h.drawn).toBe(5);

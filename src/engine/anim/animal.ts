@@ -230,6 +230,64 @@ export const A_DIG: AnimalAnimDef = {
   },
 };
 
-export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH, A_BITE, A_BARK, A_HOWL, A_PICKUP, A_HURT, A_DIE, A_DIG];
+/**
+ * Dormir enroscado (lote C7): echado bien bajo, la cabeza apoyada sobre las patas de adelante, los ojos cerrados y la
+ * cola enrollada hacia adelante, alrededor del cuerpo. El lomo sube y baja despacio. Se lee dormido desde lejos;
+ * la "Z" la pone el juego.
+ */
+export const A_SLEEP: AnimalAnimDef = {
+  name: 'sleep', fps: 4, loop: true,
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    return [0, 0, 1, 1].map((b) => Q(d, {
+      pitch: 4,
+      legs: { fn: { x: 0.85 * L, y: 0.08 * L }, ff: { x: 0.7 * L, y: 0.08 * L }, rn: { x: 0.35 * L, y: 0.06 * L }, rf: { x: 0.2 * L, y: 0.06 * L } },
+      head: { angle: 38, dx: 0, dy: 2 + b }, tail: -150, eyes: 'closed', mouth: 'closed',
+    }));
+  },
+};
+
+/**
+ * Rascarse (lote C7): sentado, la pata de atrás de afuera sube a la oreja y rasca rápido, con la cabeza ladeada hacia
+ * la pata y la lengua afuera.
+ */
+export const A_SCRATCH: AnimalAnimDef = {
+  name: 'scratch', fps: 14, loop: true,
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    return [0, 1, 0, 1, 0, 1, 2, 2].map((k) => Q(d, {
+      pitch: -30,
+      legs: {
+        // la pata de atrás cercana patea hacia adelante y arriba, al cuello, dos veces por cuadro par
+        rn: k === 2 ? { x: 0.55 * L, y: 0.15 * L } : { x: (0.75 - k * 0.35) * L, y: (0.45 + k * 0.15) * L },
+        rf: { x: 0.45 * L, y: 0.15 * L }, fn: { x: 0.25 * L, y: L - 0.2 }, ff: { x: 0.05 * L, y: L - 0.2 },
+      },
+      head: { angle: k === 2 ? 20 : 34, dx: 0, dy: k === 1 ? 1 : 0 }, tail: -10,
+      eyes: k === 2 ? 'open' : 'happy', mouth: k === 2 ? 'closed' : 'tongue',
+    }));
+  },
+};
+
+/**
+ * Saltar a un muro (lote C7, el gato de los techos): se agacha meneando la cola, salta estirado, llega con las patas
+ * de adelante al borde y sube las de atrás. `elevacion` lleva el cuerpo hasta arriba del muro (dos veces su alzada).
+ */
+export const A_JUMP_WALL: AnimalAnimDef = {
+  name: 'jump_wall', fps: 12, loop: false,
+  events: [{ type: 'despegue', phase: 2 / 8 }, { type: 'aterriza', phase: 5 / 8 }],
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    const H = Math.round(2 * (L + d.chest));
+    const agacha = Q(d, { pitch: 8, legs: { rn: { x: 0.3 * L, y: 0.55 * L }, rf: { x: 0.2 * L, y: 0.55 * L }, fn: { x: 0, y: 0.65 * L }, ff: { x: -0.1 * L, y: 0.65 * L } }, tail: 5 });
+    const menea = { ...agacha, tail: 25 };
+    const impulso = Q(d, { pitch: -35, air: Math.max(2, Math.round(3 * d.u)), rise: Math.round(H * 0.2), legs: { rn: { x: -0.6 * L, y: 0.85 * L }, rf: { x: -0.7 * L, y: 0.8 * L }, fn: { x: 0.6 * L, y: 0.3 * L }, ff: { x: 0.5 * L, y: 0.35 * L } }, tail: 35 });
+    const vuela = Q(d, { pitch: -28, air: Math.max(2, Math.round(3 * d.u)), rise: Math.round(H * 0.6), legs: { rn: { x: -0.75 * L, y: 0.6 * L }, rf: { x: -0.85 * L, y: 0.55 * L }, fn: { x: 0.8 * L, y: 0.2 * L }, ff: { x: 0.7 * L, y: 0.25 * L } }, tail: 20, eyes: 'open' });
+    const engancha = Q(d, { pitch: -20, rise: Math.round(H * 0.85), legs: { rn: { x: 0.1 * L, y: 0.9 * L }, rf: { x: 0, y: L - 0.2 }, fn: { x: 0.6 * L, y: 0.15 * L }, ff: { x: 0.5 * L, y: 0.2 * L } }, tail: 10 });
+    const sube = Q(d, { pitch: 6, rise: H, legs: { rn: { x: 0.3 * L, y: 0.6 * L }, rf: { x: 0.2 * L, y: 0.6 * L }, fn: { x: 0.2 * L, y: L - 0.4 }, ff: { x: 0.1 * L, y: L - 0.4 } }, tail: 30 });
+    return [standQ(d), agacha, menea, impulso, vuela, engancha, sube, { ...standQ(d), rise: H }];
+  },
+};
+
+export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH, A_BITE, A_BARK, A_HOWL, A_PICKUP, A_HURT, A_DIE, A_DIG, A_SLEEP, A_SCRATCH, A_JUMP_WALL];
 /** Animaciones de la mascota de un RPG, en el orden en que suelen pedirse. */
 export const PET_RPG_ANIMS = ['idle', 'walk', 'run', 'bite', 'bark', 'howl', 'pickup', 'hurt', 'die', 'sit', 'wag', 'dig'];

@@ -1,0 +1,37 @@
+{
+  "format": "pixelforja.ficha",
+  "version": 3,
+  "name": "Negrito",
+  "body": {
+    "skeleton": "quadruped",
+    "species": "perro",
+    "size": 0.75
+  },
+  "palette": {
+    "fur": [
+      "#020101",
+      "#191614",
+      "#34302e",
+      "#53504e"
+    ],
+    "fur2": [
+      "#69655d",
+      "#bfb9af",
+      "#ece6dc",
+      "#f9f3ea"
+    ],
+    "dark": [
+      "#020101",
+      "#020101",
+      "#141111",
+      "#302d2d"
+    ],
+    "eyes": "#3a2414"
+  },
+  "markings": {
+    "chest": true,
+    "paws": true,
+    "mask": false
+  },
+  "movementProfile": "premium"
+}

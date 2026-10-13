@@ -1,0 +1,37 @@
+{
+  "format": "pixelforja.ficha",
+  "version": 3,
+  "name": "Manchas",
+  "body": {
+    "skeleton": "quadruped",
+    "species": "perro",
+    "size": 0.82
+  },
+  "palette": {
+    "fur": [
+      "#3f3932",
+      "#837b71",
+      "#a49c92",
+      "#bcb5ac"
+    ],
+    "fur2": [
+      "#696660",
+      "#bfbbb3",
+      "#ece8e0",
+      "#f9f5ee"
+    ],
+    "dark": [
+      "#0e0a08",
+      "#2e2824",
+      "#4a4440",
+      "#605a56"
+    ],
+    "eyes": "#2a1a10"
+  },
+  "markings": {
+    "chest": true,
+    "paws": true,
+    "mask": true
+  },
+  "movementProfile": "premium"
+}

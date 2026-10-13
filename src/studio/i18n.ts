@@ -866,6 +866,7 @@ const ANIM_LABELS: Record<string, [string, string]> = {
   bike_fast: ['Pedalear rápido', 'Bike fast'], bike_crash: ['Caerse de la bici', 'Bike crash'], skate_crash: ['Caerse de la patineta', 'Skate crash'],
   climb_pole: ['Trepar el poste', 'Climb pole'], pole_idle: ['Quieto en el poste', 'Pole idle'], pole_punch: ['Golpe arriba desde el poste', 'Pole punch'], pole_slide: ['Deslizarse por el poste', 'Pole slide'],
   pole_kick_down: ['Patada abajo desde el poste', 'Pole kick down'], pole_shake: ['Sacudir el poste', 'Shake the pole'], grab_leg_up: ['Jalar del pie', 'Grab leg up'],
+  sleep: ['Dormir enroscado', 'Sleep curled up'], scratch: ['Rascarse', 'Scratch'], jump_wall: ['Saltar a un muro', 'Jump onto a wall'],
   bite: ['Morder', 'Bite'], bark: ['Ladrar', 'Bark'], howl: ['Aullar (escudo)', 'Howl (shield)'], pickup: ['Recoger botín', 'Pick up loot'], dig: ['Cavar', 'Dig'], hurt: ['Recibe golpe', 'Hurt'],
 };
 
