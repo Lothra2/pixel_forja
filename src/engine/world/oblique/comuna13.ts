@@ -330,6 +330,14 @@ function cerroDeCasas(C: Lienzo, x0: number, x1: number, base: number, seed: num
 const estacion: PintorCerca = (C, x0, x1, base, ctx) => {
   // el valle abierto detrás, con matas y la baranda del borde
   monte(C, x0, base - 34, x1 - x0, 34, ctx.seed + 11);
+  // al final del tramo el cerro empieza a subir: así el paso a las casas de la subida va por el monte y no es un corte
+  const sube = 150;
+  for (let x = Math.max(x0, x1 - sube); x < x1; x++) {
+    const t = (x - (x1 - sube)) / sube, top = Math.round(base - 34 - t * t * (base - 34 - 56) + Math.sin(x * 0.3) * 2);
+    for (let y = top; y < base - 30; y++) C.p(x, y, y < top + 2 ? 'verde' : grain(x, y, ctx.seed) < 0.22 ? 'verde' : 'verde_oscuro');
+    // casitas sueltas en la ladera
+    if (t > 0.45 && x % 23 === 0) { const hy = top + 10 + (x % 3) * 6; if (hy + 10 < base - 34) { C.f(x, hy, 9, 8, (x / 23) % 2 ? 'terracota' : 'ocre'); C.hl(x, hy, 9, 'cemento_claro'); C.p(x + 3, hy + 3, 'azul_noche'); } }
+  }
   for (let x = x0; x < x1; x += 4) C.vl(x, base - 44, 10, 'sombra');
   C.hl(x0, base - 44, x1 - x0, 'tinta'); C.hl(x0, base - 40, x1 - x0, 'sombra');
   // el edificio de la estación
