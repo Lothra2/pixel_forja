@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, statSync, mkdtempSync, writeFileSync, exists
 import { join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
+import { hayFfmpeg } from '../../../scripts/codificador-ffmpeg';
 import Ajv from 'ajv';
 import { buildCustomKit, kitConfigSchema, validateKitConfig, validateTeams, type KitConfig } from '../kit/custom';
 import { SPORT_PACKS, DEFAULT_SPORT_PACKS } from '../kit/sportskit';
@@ -29,7 +30,7 @@ const pngSize = (b: Buffer) => [b.readUInt32BE(16), b.readUInt32BE(20)];
 const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : [p]; });
 /** Todas las rutas a archivos que nombra el manifiesto (sin el #id de las cabecitas). */
 const refsOf = (v: unknown, out = new Set<string>()): Set<string> => {
-  if (typeof v === 'string' && /^[\w/.-]+\.(png|json|fnt|txt|wav|md)(#\w+)?$/.test(v)) out.add(v.split('#')[0]);
+  if (typeof v === 'string' && /^[\w/.-]+\.(png|json|fnt|txt|wav|ogg|m4a|html|md)(#\w+)?$/.test(v)) out.add(v.split('#')[0]);
   else if (Array.isArray(v)) v.forEach((x) => refsOf(x, out));
   else if (v && typeof v === 'object') Object.values(v).forEach((x) => refsOf(x, out));
   return out;
@@ -107,16 +108,17 @@ describe('kit a medida (lote I): configuración', () => {
 
   it('buildCustomKit junta todos los problemas en un solo error', () => {
     expect(() => buildCustomKit({ ...MIN, packs: { base: ['wlak'] }, ui: { fuentes: true } }))
-      .toThrowError(/2 problemas:\n {2}packs\.base\[0\]: "wlak".*\n {2}ui\.fuentes: faltan los archivos/);
+      .toThrowError(/2 problemas:\n {2}packs\.base\[0\]: "wlak".*\n {2}ui: faltan los archivos de Silkscreen/);
   });
 
   it('lo que todavía no genera vuelve como aviso y en manifest.pendiente', () => {
-    const { files, warnings } = buildCustomKit({ ...MIN, vehiculos: ['moto'], fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], ui: { logo: { texto: 'GG' } } }, {}, { quick: true, solo: ['cabecitas'] });
+    const { files, warnings } = buildCustomKit({ ...MIN, vehiculos: ['moto'], fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], audio: { sfx: ['trueno'], radio: ['noticias'] } }, {}, { quick: true, solo: ['cabecitas'] });
     expect(warnings).toEqual([
       'vehiculos: todavía no se genera, llega con vehículos (lote D2)',
-      'ui.logo: todavía no se genera, llega con el resto del lote G1',
       'animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire',
       'fx: todavía no existen (se saltan): confeti_dorado',
+      'audio.radio: todavía no se genera, llega con el audio (lote H)',
+      'audio.sfx: todavía no existen, llegan con el lote H: trueno',
     ]);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(m.pendiente).toEqual(warnings);
@@ -215,21 +217,34 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     expect(m.fx.ko_grande).toMatchObject({ w: 640, h: 360, cuadros: 12 });
     expect(m.fx.chispa_golpe_pesado).toMatchObject({ archivo: 'fx/chispa_golpe_pesado.png', celda: 32, se_pega_a: 'mano' });
     expect(m.fx.pantalla_rota).toMatchObject({ w: 640, h: 360 });
-    expect(Object.keys(m.audio.sfx)).toEqual((cfg.audio!.sfx as string[]).filter((n) => n !== 'silbato' && n !== 'pistola'));
-    expect(m.audio.musica).toBeUndefined();
-    expect(m.pendiente).toEqual([
-      'audio.sfx: todavía no existen, llegan con el lote H: silbato, pistola',
-      'audio.musica: todavía no existen, llegan con el lote H: marcha_nekketsu',
-    ]);
+    // H1: todos los sonidos pedidos ya existen; las voces y la página para escucharlos
+    expect(Object.keys(m.audio.sfx)).toEqual(cfg.audio!.sfx);
+    expect(Object.keys(m.audio.musica)).toEqual(cfg.audio!.musica);
+    expect(Object.keys(m.audio.voces)).toEqual(cfg.audio!.voces);
+    expect(m.atletas.sophie.voz.tono).toBeGreaterThan(m.atletas.rick.voz.tono);
+    expect(m.audio.escuchar).toBe('audio/escuchar.html');
+    // G1: el logo y la interfaz, con un panel por equipo
+    expect(m.ui.logo).toMatchObject({ w: 320, h: 112, texto: 'NEKKETSU OLYMPIC GG' });
+    expect(Object.keys(m.ui.interfaz).filter((k) => k.startsWith('panel_'))).toEqual(['panel_familia_gg', 'panel_instituto_nekketsu']);
+    // H1b: audio comprimido. Sin ffmpeg en la máquina, la música queda pendiente
+    if (hayFfmpeg()) {
+      expect(m.pendiente).toBeUndefined();
+      expect(m.audio.musica.marcha_nekketsu.archivo).toEqual(['audio/musica/marcha_nekketsu.ogg', 'audio/musica/marcha_nekketsu.m4a']);
+    } else expect(m.pendiente.every((w: string) => w.startsWith('audio.'))).toBe(true);
   });
 
-  it('el escenario de saigon_hem sale con sus 9 pruebas en verde (lote E1)', () => {
-    expect(m.escenarios).toEqual({ saigon_hem: 'escenarios/saigon_hem/escenario.json' });
-    const e = readJson(join(out, m.escenarios.saigon_hem));
-    expect(e).toMatchObject({ id: 'saigon_hem', escala: 1, largo: 3840, franja: { atras: 200, adelante: 330 } });
-    expect(readFileSync(join(out, 'escenarios/saigon_hem/verificacion.md'), 'utf8')).toMatch(/Las 9 pruebas pasan/);
-    // las postales y la ficha son para aprobar: el kit no las lleva
-    expect(files.some((f) => f.startsWith('escenarios/saigon_hem/postales/'))).toBe(false);
+  it('los 5 tramos del Cross Country, la Comuna 13 y la azotea de Caracas salen con sus 9 pruebas en verde (lotes E1, E2, E3a y E3b)', () => {
+    const tramos = ['caracas_azotea', 'medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio'];
+    expect(Object.keys(m.escenarios).sort()).toEqual(tramos);
+    for (const id of tramos) {
+      expect(m.escenarios[id]).toBe(`escenarios/${id}/escenario.json`);
+      const e = readJson(join(out, m.escenarios[id]));
+      const caracas = id === 'caracas_azotea';
+      expect(e).toMatchObject({ id, escala: 1, largo: id === 'saigon_estadio' ? 1920 : id === 'medellin_c13' ? 3600 : caracas ? 640 : 3840, franja: caracas ? { atras: 246, adelante: 344 } : { atras: 200, adelante: 330 } });
+      expect(readFileSync(join(out, `escenarios/${id}/verificacion.md`), 'utf8'), id).toMatch(/Las 9 pruebas pasan/);
+      // las postales y la ficha son para aprobar: el kit no las lleva
+      expect(files.some((f) => f.startsWith(`escenarios/${id}/postales/`))).toBe(false);
+    }
   });
 
   it('no falta ningún archivo que nombra el manifiesto, y no sobra ninguno', () => {
@@ -253,8 +268,9 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas (8 x 7 hojas, Goro igual) + efectos + escenario + comida + 3 del VS + 2 del público
-    expect(pngs.length).toBe(54 + 8 + 63 + 17 + 1 + 3 + 2);
+    // atletas, retratos, cabecitas, armas, Thor y fuentes (54), el pack de pelea (8), efectos (63), logo e interfaz (32), comida (1),
+    // 3 del VS, 2 del público y los 7 escenarios: hẻm 21, Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14 y Caracas 10
+    expect(pngs.length).toBe(54 + 8 + 63 + 32 + 1 + 3 + 2 + 21 + 17 + 17 + 21 + 11 + 14 + 10);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

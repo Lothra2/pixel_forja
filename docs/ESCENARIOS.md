@@ -76,12 +76,39 @@ En pantalla no hay inclinación: `px = x`, `py = franja.atras + y - z`. Una caja
 | `objetos.png` + `.json` | Cada caja del layout dibujada a su medida, el toldo, los postes y el portón. Con `x`, `y` y `orden` |
 | `vida.png` | Lo que se mueve, cuadro a cuadro: ropa tendida, cables con viento, palomas (2 cuadros paradas y 2 volando) y motos al fondo |
 | `superficie.png` | Por pixel de la franja: qué suena al pisar (`paso_piedra`, `paso_agua`... más `_0` a `_2`) y si resbala. La leyenda va en `escenario.json` |
+| `borde_filo.png` + `borde_vacio.png` | Solo si hay un borde al vacío (un hueco `vacio` que llega al final del mundo). El filo con la franja amarilla y negra que se desmorona en 6 cuadros, y la ciudad allá abajo en 128 x 128 que se repite. Para cuando el juego hace avanzar el borde. Van en `escenario.json` → `borde` |
 | `colision.json` | La geometría del layout, igual |
 | `luces.json` | Color, radio y latido. De día, las lámparas de los postes van apagadas |
 | `particulas.json` | Humo de incienso, pétalos, goteras, ondas en el agua. Las que traen `fx` usan el catálogo de efectos del kit |
 | `verificacion.md` | Las 9 pruebas, con lo que midió cada una |
-| `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360 |
+| `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360. En una arena de una pantalla van a 0, 2 y 4 segundos, para que se vea la vida |
 | `ficha_arte.md` | Con `--ficha`: paleta, elementos icónicos, vida y qué dibujo va en cada caja |
+
+## Vista inclinada
+
+Desde E2 los escenarios salen en la vista inclinada de la pelea, con `inclinacion` 0.35 por defecto. La proyección es la misma del gris del juego:
+
+```
+px = x + inclinacion * y      (y = 0 al fondo de la franja; lo del fondo queda a la izquierda)
+py = franja.atras + y - z
+```
+
+- **La geometría no cambia.** El layout y `colision.json` son los mismos. Solo cambia el dibujo.
+- **Todo lo que toca el piso se corre `inclinacion * y`:** piso, juntas, agua, huecos, cajas, postes, toldos, sombras y partículas.
+- **Las capas largas miden `largo + inclinacion * D`.** `escenario.json` trae `inclinacion` y `ancho`.
+- **Las cajas son volúmenes:**
+  - el techo es un paralelogramo, el frente un rectángulo;
+  - la cara de la izquierda se ve y da a la luz;
+  - esa cara sube desde lo que la caja tenga pegado a ese lado, así un tramo de escalones se lee escalón por escalón (la contrahuella);
+  - la cara va en su propio objeto, `<tipo>_cara`, con `orden` y + 0.1: delante de lo que va detrás de la caja y detrás de quien pasa a su lado;
+  - las caladas o redondas (vallas, tanques, botes, carritos) no llevan cara.
+- **Los huecos** muestran la pared del fondo (de frente), la pared del otro lado (inclinada) y abajo el agua o el vacío. Lo que los cruza (una viga) muestra su canto de 8 px.
+- **Adelante va el bordillo:** la cara del piso que da a la cámara, de la fila D hasta el borde de la pantalla. Donde el agua llega adelante, el agua sigue.
+- **Para el juego:** corre a los atletas `inclinacion * y`, igual que en el gris. Los objetos de `objetos.json` ya vienen corridos.
+- **Una caja parada sobre otra** (un tanque en la terraza, el aire en el techo, las letras en el mirador) se dibuja solo de su base para arriba, y su `orden` es el de la caja de abajo + 0.3: así va después de ella. Quien se pare encima de esa caja va con `setDepth(FT + orden + 0.5)` del objeto de la caja, no con `y + d` (que la dejaría detrás de la base).
+- **Los postes se paran en lo que tengan debajo:** su `alto` se mide desde el techo de la caja donde están, y su `orden` va justo después de esa caja.
+- **Los tramos de peldaños seguidos** (escalera eléctrica, escalones, escalera de colores) salen como un solo objeto `<tipo>_<n>_tramo`, con las contrahuellas de adentro. La cara izquierda del primero queda aparte.
+- **Para el dibujo derecho de antes:** `generarEscenario(layout, { inclinacion: 0 })`.
 
 ## En Phaser
 
@@ -103,6 +130,23 @@ for (const o of O.objetos) this.add.image(o.x, o.y, 'objetos_atlas', o.id).setOr
 
 **Para cargar los objetos como atlas:** cada `cuadro` de `objetos.json` es el rectángulo dentro de `objetos.png`. Lo mismo vale para la vida en `vida.png`.
 
+**Las capas de la vida** (`escenario.json`, `vida.piezas[].capa`):
+
+| Capa | Dónde va | Cómo se mueve |
+|---|---|---|
+| `tras_cerca` | Entre la ciudad lejana y las casas | `velocidad` y `cada`: cruza y vuelve |
+| `cerca` | Encima de las casas, en x e y de pantalla | Quieta, cambia de cuadro a `fps` |
+| `lejos` | Pegada a la capa lejos: x e y son pixeles de `lejos.png`, que se repite cada su ancho y corre con su paralaje | Va de `recorrido.desde` a `recorrido.hasta` en `recorrido.segundos` y vuelve a empezar, adelantada por `recorrido.desfase` (0 a 1). Es el metrocable |
+| `objeto` | Encima de un objeto, en x e y de pantalla | Se ordena con los atletas con `setDepth(FT + orden)`, como los objetos. Son los peldaños de la escalera eléctrica que corren y la bandera del asta |
+
+```js
+// la vida de la capa lejos: en update, con lejosX = cam.scrollX * C.lejos.paralaje
+const f = ((t / p.recorrido.segundos + (p.recorrido.desfase ?? 0)) % 1);
+const x = p.recorrido.desde[0] + (p.recorrido.hasta[0] - p.recorrido.desde[0]) * f;
+img.setPosition(Math.round(x - (lejosX % anchoLejos)), C.lejos.y + p.recorrido.desde[1]).setScrollFactor(0).setDepth(-34);
+// y otra copia corrida anchoLejos a la derecha, para cuando da la vuelta
+```
+
 ## Las 9 pruebas
 
 Todas bloquean: si una falla, el escenario no sale.
@@ -114,7 +158,7 @@ Todas bloquean: si una falla, el escenario no sale.
 | 3 | Piso | Ni un pixel transparente en la franja |
 | 4 | Apoyo | Ninguna caja, poste ni objeto del layout cae sobre un hueco |
 | 5 | Colisión | `colision.json` es igual al layout |
-| 6 | Camino | Se llega de la salida a la meta con las reglas del juego: salto de 36, escalón de 6, salto largo de 84 |
+| 6 | Camino | Se llega de la salida a la meta con las reglas del juego: salto de 36, escalón de 6, salto largo de 84. En una arena (sin salida ni meta, como la pelea), se llega a todo el piso |
 | 7 | Legibilidad | Una silueta de atleta cada 64 px en cada carril. Contraste mediano entre su contorno y el fondo de al menos 2:1 |
 | 8 | Paleta | Ningún color fuera de los 24 de la ficha |
 | 9 | Peso | En la pantalla más cargada: hasta 8 capas, 12 luces encendidas, 16 piezas animadas y 24 objetos |
@@ -130,10 +174,62 @@ Todas bloquean: si una falla, el escenario no sale.
   - `carro` es un xe ba gác, y `puesto_banhmi`, `cajas`, `moto_estacionada`, `mesas_plasticas`, `tanque_agua` y `kiosco` tienen su propio dibujo;
   - `muro_bajo` es de ladrillo y `muro_alto` lleva vidrios rotos arriba;
   - un tipo sin dibujo sale como muro.
-- **Los otros estilos del pedido** (`colombia_colonial`, `colombia_ladrillo`, `venezuela_barrio`, `venezuela_ciudad`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
+- **Las horas del estilo `vietnam`**, cada una con su paleta de 24 colores:
+  - **Mañana:** luz cálida con bruma.
+  - **Mediodía:** cielo limpio y sombras cortas.
+  - **Tarde dorada** (`tarde` sin aguacero): cielo de lavanda a miel, sol bajo con halo, agua lila con destellos de oro y el filo de las torres encendido.
+  - **Aguacero:** nublado y lavado.
+  - **Tormenta** (`tarde` con `aguacero` y el tema `azoteas`): casi de noche, con ventanas prendidas, neones rosado, turquesa, rojo y azul con su halo en la neblina, y la Bitexco con el filo de luz.
+  - **Atardecer:** violeta, durazno y naranja.
+- **El rosado (`salmon`) es el de la buganvilla y la pitahaya:** las paredes van amarillas, menta, celestes y crema, como en Saigón, y el rosado resalta.
+- **El hẻm, más vivo:**
+  - buganvillas en cascada;
+  - cortinas metálicas (cửa cuốn) verdes y azules;
+  - toldos de rayas sobre los locales;
+  - matas grandes en materos de barro o vidriados;
+  - charcos que reflejan las casas de cabeza, tramados con el cielo (el hẻm amanece mojado).
+- **Los puestos del mercado** llevan toldo de lona a rayas, de un color por puesto, con la cenefa en ondas. **La torre del reloj** de Bến Thành va ancha, con el reloj grande, el nombre en relieve y el techo de cuatro aguas.
+- **El río** se ve abierto detrás de la baranda del malecón, con palmas, bolardos con cadena, xích lô estacionados, el ferry y los barcos del otro lado, y jacintos en islas con su flor.
+- **La viga sobre un hueco** es de hierro en I, oxidada: se lee clara sobre el vacío oscuro.
+- **Vida de los tramos del Cross** (`vidaSaigon.ts`), según la lista `vida` del layout:
+
+  | Vida | Qué se anima |
+  |---|---|
+  | `toldos_viento` | Cenefas de toldo |
+  | `vendedoras_pregonando` | Vendedoras con nón lá que pregonan |
+  | `agua_animada` | Brillos del agua |
+  | `jacintos_flotando` | Jacintos que bajan con la corriente |
+  | `ferry` | El ferry del fondo, que cruza |
+  | `botes_bambu` | Thúng chai que se mecen |
+  | `ropa_viento` | La ropa al viento |
+  | `publico_ondeando` | La ola en la tribuna |
+  | `banderas` | Banderas de Vietnam que ondean |
+  | `lluvia`, `charcos_crecen` y `fuegos_artificiales` | Van como partículas con los efectos `lluvia`, `salpicadura_piso` y `fuegos_artificiales_*` del kit |
+- **El estilo `colombia_ladrillo`** (`pais: "colombia"`, lote E3a): los barrios de ladrillo de Medellín. Hoy pinta la Comuna 13 (`paralaje.cerca: "c13_casas_ladrillo"`, `paralaje.lejos: "valle_de_aburra"`).
+  - **Paleta de mañana** (`colombiaPaleta.ts`): ladrillo naranja, cielo azul limpio con cúmulos arriba, el verde de los cerros y los colores de los murales. `canal` es el violeta de los murales (aquí no hay agua).
+  - **Lejos:** el Valle de Aburrá con la cordillera en bruma, los cerros llenos de casitas, la ciudad abajo y el cable del metrocable con sus torres. Las cabinas son vida de la capa `lejos`.
+  - **Cerca, por tema de `ranuras_deco`:** `estacion_san_javier` (la estación del metro con su letrero y la torre del cable), `grafitis_murales` (el cerro de casas con el mural de la cara y el colibrí y LA 13 ES CULTURA), `casas_ladrillo_apiladas`, `techos_zinc_tanques` y `mirador_grafitis` (el valle abierto con copas de árboles).
+  - **Las casas:** de ladrillo o repello pintado, en tres gradas del cerro, con losa y varillas, rejas de colores, matas en latas, tanques negros, banderas y algunos murales (el ojo, el colibrí, la mariposa, la cara de perfil).
+  - **Cada caja por su `tipo`:** `carrito_paletas`, `escalon` (con la franja amarilla), `terraza` (adoquín con el murito de matas atrás; su frente es el muro de contención con murales, y en la subida el mural corrido de COMUNA 13), `muro_grafiti`, `escalera_electrica`, `escalones`, `tanque_agua` (el negro), `techo_lata`, `baranda`, `aire_acondicionado`, `escalera_pintada` (el arcoíris) y `mirador` (la plaza con la reja del borde y el mural AQUÍ SE SUEÑA EN GRANDE). `letras_comuna13` son las letras gigantes.
+  - **Bajo:** `techo_escalera` (la lámina naranja sobre columnas) y `tendedero` (tres cuerdas con ropa, parado en el piso de abajo).
+  - **Postes:** `poste_luz`, `antena` y `asta_bandera` con la bandera de Colombia que ondea. Si el asta del layout es tan alta que la bandera se saldría de la pantalla, se dibuja más corta y `generarEscenario` lo avisa.
+  - **Vida:** `metrocable` (6 cabinas en dos cables, ida y vuelta, en 60 s), `banderines` y `ropa_tendida` (solo donde detrás hay casas), la bandera del asta y los peldaños de la escalera eléctrica que corren (3 cuadros).
+  - **Letreros en español:** SALIDA y META en la pancarta (en Vietnam siguen XUẤT PHÁT y VỀ ĐÍCH). Si la meta queda arriba de una terraza alta, la pancarta va en dos palos parados al fondo de la terraza, y la línea a cuadros se pinta en el techo de la caja.
+- **El estilo `venezuela_ciudad`** (`pais: "venezuela"`, lote E3b): Caracas de noche. Hoy pinta la azotea de Parque Central (`paralaje.cerca: "torres_parque_central"`, `paralaje.lejos: "avila_noche"`).
+  - **Solo de noche** (`venezuelaPaleta.ts`): el cielo y El Ávila azul casi negro, el concreto gris violeta, las ventanas y los cerros en amarillo, y los neones rosado y turquesa (`salmon` y `menta`). `canal` es el violeta del reflejo del neón. Un layout de Venezuela a otra hora queda `pendiente` y lo dice: "todavía no tiene arte de tarde (hoy pinta: noche)".
+  - **El cielo de noche** (para cualquier estilo que tenga noche): estrellas, unas grandes en cruz, nubes finas tocadas por la luna y el resplandor de la ciudad abajo.
+  - **Lejos:** El Ávila, la montaña larga azul con quebradas, la luna en las laderas y la Cruz encendida en el pico. Va bajo en la capa: con el zoom de la pelea la cámara empieza en la fila 93 y el marcador tapa unas 45 más, así que la Cruz cae en la fila 135 o más abajo, en el hueco entre la segunda torre y la caseta. El avión y el helicóptero vuelan a esa altura. Delante, los cerros llenos de lucecitas en manchones y la ciudad abajo.
+  - **Cerca:** `torres_parque_central` es el fondo: la ciudad encendida, las dos torres de concreto claro con sus ventanas y la luz roja, el público en dos azoteas vecinas (con banderas y celulares), los tanques de agua y el murito del borde. `letreros_neon` suma la caseta de la escalera con la puerta de lámina, los bombillos, CARACAS ES BELLA, la escalerita al techo, las antenas, las parabólicas y los dos neones con su halo: AREPERA LA CHAMA con la arepa y CARACAS con El Ávila y la Cruz.
+  - **El piso:** la `baldosa` de este lugar son losas grandes de concreto (48 x 16) con charquitos ovalados. De noche, el piso mojado refleja los neones en rayas debajo de su columna, más fuertes en los charcos (`reflejoNeon`, solo los neones: una camisa turquesa no se refleja).
+  - **El borde sin baranda:** un hueco `vacio` que llega al final del mundo es el borde del edificio. Lleva la franja amarilla y negra en el filo y, pasando el canto, la ciudad muy abajo con sus avenidas. Para cuando el borde avanza, sale `borde_filo.png` y `borde_vacio.png`.
+  - **Postes:** `antena` es la torre de celosía de telecomunicaciones con sus paneles, una parabólica y la luz roja.
+  - **Vida:** `letreros_neon` (los dos neones, 4 cuadros con un parpadeo), `luces_ciudad` (las luces rojas de las torres y el tráfico allá abajo pasando el borde), `avion_lejos` y `helicoptero_reflector` (en la capa lejos, con su recorrido; el helicóptero con el haz que barre), `publico` (los de las azoteas vecinas levantan brazos, banderas y celulares) y `fuegos_artificiales` (partículas, repartidas a lo ancho de la arena).
+  - **Luces:** los dos neones (parpadean con su vida), los dos bombillos de la caseta y las luces rojas de las torres y las antenas, que prenden y apagan cada segundo.
+- **Los otros estilos del pedido** (`colombia_colonial`, `venezuela_barrio`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos
 
-- **Una sola hora pintada por escenario:** la de la ficha. `cielo.ts` trae la mañana. Las otras horas se suman con la ficha de su escenario.
+- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad` solo sabe pintar la noche.
+- **El borde que avanza** lo mueve el juego: el arte trae el filo y el vacío, pero el murito del fondo, pintado en la capa cerca, sigue entero hasta el borde de antes.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.
-- **La legibilidad se mide con el contorno de los atletas,** no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.
+- **La legibilidad se mide con el contorno de los atletas,** parados encima de la caja que tengan debajo, no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.
