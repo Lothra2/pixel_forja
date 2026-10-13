@@ -18,7 +18,7 @@ Opciones para juegos de pelea y deportes con atlas (ver [Datos por cuadro, atlas
 npm run deportes -- salida/kit --filas right,down_right,up_right,down,up   # solo esas filas, en ese orden
 npm run deportes -- salida/kit --datos       # cajas, manos, cabeza y pies en cada cuadro
 npm run deportes -- salida/kit --atlas       # un atlas por pack (JSON Hash de TexturePacker) en vez de una hoja por animación
-npm run deportes -- salida/kit --retratos    # 7 expresiones en 40 x 40 y 96 x 96 por atleta
+npm run deportes -- salida/kit --retratos    # 8 expresiones en 40 x 40 y 96 x 96 por atleta
 npm run deportes -- salida/kit --cabecitas   # ui/cabecitas.png: una cabeza de 12 x 12 por atleta
 npm run deportes -- salida/kit --deportes calle --objetos   # pelea callejera (no va por defecto) y las armas del piso
 npm run deportes -- salida/kit --fuentes     # las fuentes bitmap (con vietnamita) en ui/fuentes/
@@ -295,6 +295,27 @@ arma.setDepth(sprite.depth + (detras ? -1 : 1));
 
 Al espejar con `flipX`, la `x` cambia de signo y el ángulo pasa a `180 - ang`.
 
+## Kachinuki: la pelea de azotea (pack `kachinuki`)
+
+Lo que le faltaba a una pelea de azotea en arte. Va en su propio pack (`kachinuki`), que no sale por defecto: se pide en `packs` del kit a medida o con `--deportes kachinuki`.
+
+| Animación | Cuadros | Qué hace | Evento |
+|---|---|---|---|
+| `stomp` | 6 | Pisotón al que está en el piso: sube la rodilla y pisa | `impacto` en el pie (`footNear`) |
+| `grab_throw` | 8 | Desde el agarre, lo lanza por encima del hombro | `suelta` en la mano |
+| `knee_hit_react` | 5 | El agarrado recibe el rodillazo y se dobla | |
+| `back_elbow` | 6 | Codazo hacia atrás, para cuando te rodean | `impacto` en el codo (`elbowNear`) |
+| `dash` y `dash_back` | 6 | Amague rápido hacia adelante o hacia atrás, con `desplazamiento` | `paso` |
+| `headbutt` | 6 | Cabezazo corto | `impacto` en la frente (`frente`) |
+| `eat` | 8 | Se agacha, agarra la comida del piso, muerde y mastica | `impacto` cuando la mano agarra la comida |
+| `edge_teeter` | 8, en bucle | Tambalearse en el borde de la azotea, con los brazos como molino | |
+| `fall_off` | 8 | Caerse de la azotea | `despegue` |
+| `taunt_<id>` y `victory_<id>` | 8 a 10 | La burla y la victoria propias de cada atleta | |
+
+**El punto del impacto sale de la articulación que pega.** Cada evento puede decir qué articulación pega (`joint` en la definición). El `punto` del manifiesto sale de ahí en cada fila: el pie del pisotón, el codo, la frente del cabezazo. Sin `joint`, el motor elige la mano o el pie que llega más adelante, como antes.
+
+**Las propias van solo con su dueño.** El pack lista todas (`taunt_rick`, `taunt_kenji`...) y el kit dibuja en el atlas de cada atleta solo las suyas: Kenji trae `taunt_kenji` y `victory_kenji`, no las de Rick. Una animación con el id de alguien que no está en el kit se dibuja para todos.
+
 ## La arena: el kit jugando de verdad
 
 `arena.html` (en el sitio, el botón **Arena deportiva** del estudio) es un juego mínimo que usa el kit como lo haría el tuyo. Solo lee `manifest.json` y las hojas PNG: no importa nada del motor de PixelForja, y una prueba lo vigila. Si algo falla ahí, le falta al kit.
@@ -318,6 +339,7 @@ En local: `npm run deportes -- public/kit_deportes` y después `npm run dev`. En
 - **Tenis:** espera con split step, derecha, revés a dos manos, saque, volea y smash.
 - **Peleas:** guardia, desplazamiento, jab, directo, gancho, uppercut, patada baja, patada alta, patada voladora, bloqueo, esquiva, golpe recibido, nocaut y victoria. Cada golpe trae chispa de impacto.
 - **Pelea callejera (`calle`):** las 26 animaciones de beat 'em up de arriba.
+- **Kachinuki (`kachinuki`):** pisotón, lanzamiento desde el agarre, reacción al rodillazo, codazo atrás, amagues, cabezazo, comer, tambalearse en el borde, caerse, y la burla y la victoria propias de cada uno.
 - **Fútbol:** espera, control, pase, vaselina, tiro, volea, cabezazo, barrida, conducción (`run_ball`, corre tocando la pelota), entrada, saque de banda y el arquero (espera, estirada, atajada alta, saque con la mano y de volea). Las patadas tienen zancada, pie de apoyo, carga, contacto y seguimiento, y el `impacto` cae en el cuadro del contacto con el `punto` del pie. Celebraciones de gol incluidas.
 - **Natación:** además, salir del agua por el borde (`swim_exit`).
 

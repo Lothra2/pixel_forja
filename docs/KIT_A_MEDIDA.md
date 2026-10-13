@@ -53,7 +53,7 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `equipos` | Archivo de equipos (abajo). Pasa al manifiesto tal cual | Sin equipos |
 | `packs` | Cada pack es un atlas por atleta: nombre y lista de animaciones | Obligatorio |
 | `pruebas` | Qué packs carga cada prueba. Se copia al manifiesto para que el juego cargue solo lo que usa | No va |
-| `retratos` | 7 expresiones en 40 y 96 px | Sí |
+| `retratos` | 8 expresiones en 40 y 96 px (la 8 es burla) | Sí |
 | `cabecitas` | 12 x 12 para el minimapa, en `ui/cabecitas.png` | Sí |
 | `objetos` | Armas del piso: `true` (las 19) o la lista | No van |
 | `animales` | Ids de animales: de las fichas, o `thor` que viene con el motor. La mascota de un equipo entra sola | No van |
@@ -119,9 +119,22 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
   - Las postales y la ficha de arte no van en el kit: se piden aparte con `npm run escenario -- <layout> <carpeta> --postales --ficha`.
   - Todo el detalle: [ESCENARIOS.md](ESCENARIOS.md).
 
+### La pelea: comida, VS y público (lote P1)
+
+```jsonc
+"objetos": true,                    // las armas y la comida; o ["silla_plastica", "arepa"] o ["comida"]
+"ui": { "vs_fondo": true },         // la pantalla del VS
+"publico": { "azoteas": true }      // o { "azoteas": { "ancho": 320, "gente": 16 } }
+```
+
+- **Comida** (`arepa`, `tequeno`, `empanada`, `banh_mi`, `pan_de_bono`): va en `objetos`, después de las armas, con `peso: "comida"`, `cura` de 1 a 3 y su propio atlas `objetos/comida.json` en celdas de 16. Cuadros `<id>_quieto_0` y `<id>_humito_0..3`, con la sombra ya dibujada y la base en el pivote (8, 14).
+- **VS** (`ui.vs_fondo`): `ui/vs/<a>__<b>.png` para cada par de equipos (en el orden del archivo de equipos), `ui/vs/neutro.png` y `ui/vs/letras.png` aparte, para estrellarlas con tu propio rebote. El color de cada lado es el primero del equipo, salvo que sea muy oscuro; si los dos quedan del mismo tono, el de la derecha usa otro color suyo. Si el par va al revés, voltea la imagen.
+- **Retrato `burla`:** los retratos traen una octava expresión, `burla` (guiño con la ceja fruncida y media sonrisa). En la hoja va al final, así que `grande_burla` es el grande número 7.
+- **Público de azoteas** (`publico.azoteas`): `publico/azoteas.png` y `publico/azoteas_noche.png`. Una fila por estado (`quieto`, `celebra`, `abuchea`), 4 cuadros por fila. La gente se asoma detrás del muro de la azotea vecina, que ocupa las `muro` filas de abajo. Los hinchas por país (`publico.paises`) llegan con C6 y vuelven como aviso.
+
 ### Lo que todavía no genera
 
-`publico`, `npc`, `vehiculos` y los sonidos de lotes futuros (como los del H2) se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
+`publico.paises`, `npc`, `vehiculos` y los sonidos de lotes futuros (como los del H2) se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
 
 ```
 aviso: vehiculos: todavía no se genera, llega con vehículos (lote D2)
@@ -295,7 +308,7 @@ npm run build:sitio && npx vite preview      # http://localhost:4173/visor.html
 
 | Configuración | Qué arma |
 |---|---|
-| [`ejemplos/nekketsu/kit.config.json`](ejemplos/nekketsu/kit.config.json) | Nekketsu Olympic GG: Familia GG e Instituto Nekketsu, 5 packs, armas, Thor, fuentes con vietnamita, los 56 efectos y los sonidos del motor que le sirven |
+| [`ejemplos/nekketsu/kit.config.json`](ejemplos/nekketsu/kit.config.json) | Nekketsu Olympic GG: Familia GG e Instituto Nekketsu, 5 packs, armas, Thor, fuentes con vietnamita, los 63 efectos, la pelea de azotea (pack `kachinuki`, comida, VS y público) y los sonidos del motor que le sirven |
 | [`ejemplos/kit-deportivo.config.json`](ejemplos/kit-deportivo.config.json) | El kit deportivo de siempre (`npm run deportes`): la familia y los héroes con los 6 packs de deporte |
 | [`ejemplos/gg-abyss.config.json`](ejemplos/gg-abyss.config.json) | Los personajes de GG Abyss: la familia con su equipo, las 21 animaciones RPG, retratos, Thor, fuentes y todo el audio |
 

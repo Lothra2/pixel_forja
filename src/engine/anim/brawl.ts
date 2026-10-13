@@ -12,8 +12,8 @@ import { FLOOR_PROPS, FLOOR_PROP_KINDS, type FloorPropKind } from '../render/pro
  * contra la carga, y la cabeza de quien carga queda delante de lo cargado.
  */
 
-const strain = { eyes: 'angry' as const, mouth: 'grin' as const };
-const fierce = { eyes: 'angry' as const, mouth: 'line' as const };
+export const strain = { eyes: 'angry' as const, mouth: 'grin' as const };
+export const fierce = { eyes: 'angry' as const, mouth: 'line' as const };
 
 /** Brazos arriba sosteniendo la carga (el render los abre a los costados de la cabeza, por delante). */
 const up = (s = 170, e = -10) => ({ near: { shoulder: s, elbow: e }, far: { shoulder: s, elbow: e } });
@@ -172,11 +172,11 @@ export const thrownSpin: AnimDef = {
 
 // ---------- caer, agarrar, marearse, burlarse, golpes corriendo y en el aire ----------
 
-const hurt = { eyes: 'hurt' as const, mouth: 'o' as const };
-const spark = (at: PropState['at'], angle = 0): PropState => ({ kind: 'spark', at, angles: { side: angle, se: angle + 10, ne: angle - 10 }, front: true });
+export const hurt = { eyes: 'hurt' as const, mouth: 'o' as const };
+export const spark = (at: PropState['at'], angle = 0): PropState => ({ kind: 'spark', at, angles: { side: angle, se: angle + 10, ne: angle - 10 }, front: true });
 
 /** Guardia de pelea callejera: más suelta que la de artes marciales, puños a la altura del pecho. */
-function street(c: Ctx, b = 0): Pose {
+export function street(c: Ctx, b = 0): Pose {
   const L = c.L;
   return P(c, {
     torso: 6, legs: { near: { x: 0.28 * L, y: L - 1.0 + b * 0.6 }, far: { x: -0.3 * L, y: L - 1.0 + b * 0.6, toe: 10 } },
@@ -185,7 +185,7 @@ function street(c: Ctx, b = 0): Pose {
 }
 
 /** Tirado boca arriba (para caídas y rebotes). */
-function down(c: Ctx, air = 0, eyes: 'closed' | 'hurt' = 'closed'): Pose {
+export function down(c: Ctx, air = 0, eyes: 'closed' | 'hurt' = 'closed'): Pose {
   const L = c.L;
   return P(c, {
     torso: -88, air, legs: { near: { x: 0.75 * L, y: 0.1 * L, toe: -30 }, far: { x: 0.7 * L, y: 0.2 * L, toe: -30 } },

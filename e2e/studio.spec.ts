@@ -564,12 +564,12 @@ test('efectos del juego: el catálogo animado por grupo y la descarga', async ({
   const snap = () => canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL());
   const a = await snap();
   await expect.poll(snap, { timeout: 5000 }).not.toBe(a);
-  // cada grupo filtra; todos son 56
+  // cada grupo filtra; todos son 63 (56 del lote F y 7 de la pelea)
   await page.getByTestId('effects-groups').getByRole('button', { name: /Reacciones|Reactions/ }).click();
   await expect(grid.locator('figure')).toHaveCount(7);
   await expect(grid.getByTestId('effect-vena_enojo')).toBeVisible();
   await page.getByTestId('effects-groups').getByRole('button', { name: /Todos|All/ }).click();
-  await expect(grid.locator('figure')).toHaveCount(56);
+  await expect(grid.locator('figure')).toHaveCount(63);
   await page.getByTestId('effects-groups').getByRole('button', { name: /Pantalla|Screen/ }).click();
   await expect(grid.getByTestId('effect-lineas_velocidad')).toBeVisible();
   await page.screenshot({ path: `${shots}/${tag}_81_efectos.png`, fullPage: true });

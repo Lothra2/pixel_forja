@@ -46,7 +46,7 @@ export interface PropState {
   kind: PropKind;
   /** dónde va enganchado. ground = x respecto a la cadera, y = altura sobre el piso */
   /** hands = entre las dos manos (lo pesado que se agarra a dos manos) */
-  at: 'handNear' | 'handFar' | 'footNear' | 'footFar' | 'ground' | 'body' | 'hands';
+  at: 'handNear' | 'handFar' | 'footNear' | 'footFar' | 'ground' | 'body' | 'hands' | 'elbowNear';
   x?: number;
   y?: number;
   /** grados (raqueta, bate, espada) */

@@ -15,6 +15,9 @@ import { listenPage, type ListenEntry, type ListenVoice } from '../audio/escucha
 import { retroUi, gameLogo, UI_PARTS, type UiPart, type UiPiece } from '../ui/retro';
 import type { Raster } from '../core/raster';
 import { encodePng } from '../export/png';
+import { COMIDAS, type Comida } from '../render/comida';
+import { publicoHoja } from '../render/publico';
+import { vsFondo, vsLetras, coloresVs, VS_NEUTRO } from '../ui/vs';
 
 /**
  * Kit a medida: el juego describe en un kit.config.json qué personajes, packs de animaciones, objetos, animales y
@@ -48,15 +51,16 @@ export interface KitConfig {
   packs: Record<string, string[]>;
   /** qué packs carga cada prueba del juego (se copia al manifiesto) */
   pruebas?: Record<string, string[]>;
-  /** retratos de 7 expresiones (sin valor: sí) */
+  /** retratos de 8 expresiones (sin valor: sí) */
   retratos?: boolean;
   /** cabecitas de 12 x 12 (sin valor: sí) */
   cabecitas?: boolean;
-  /** armas del piso: true = todas, o la lista */
+  /** armas del piso y comida de la pelea: true = todo, o la lista (ids, o "comida" para toda la comida) */
   objetos?: boolean | string[];
   /** animales: de las fichas o del motor (thor) */
   animales?: string[];
-  ui?: { fuentes?: boolean | { idiomas?: string[] }; logo?: { texto: string }; interfaz?: boolean | UiPart[] };
+  /** fuentes, logo, la interfaz retro y la pantalla del VS (el fondo partido de cada par de equipos y las letras) */
+  ui?: { fuentes?: boolean | { idiomas?: string[] }; logo?: { texto: string }; interfaz?: boolean | UiPart[]; vs_fondo?: boolean };
   /** efectos del catálogo general: true = todos, o ids, bases (polvo_correr) y grupos (reaccion) */
   fx?: boolean | string[];
   /** sonidos del motor: true = todos, o la lista. Los nombres que todavía no existen vuelven como aviso (lote H) */
@@ -64,7 +68,9 @@ export interface KitConfig {
   // lo que todavía no genera el kit a medida (se acepta y vuelve como aviso)
   /** carpeta con *.layout.json, o la lista de layouts: salen en escenarios/<id>/ */
   escenarios?: string | string[];
-  publico?: unknown; npc?: unknown; vehiculos?: unknown;
+  /** el público: `azoteas` (la gente de las azoteas vecinas de la pelea) ya sale; los hinchas por país llegan con C6 */
+  publico?: { azoteas?: boolean | { ancho?: number; gente?: number }; [k: string]: unknown };
+  npc?: unknown; vehiculos?: unknown;
 }
 
 /** Un equipo del archivo de equipos. Lo que no se usa para armar el kit pasa al manifiesto tal cual. */
@@ -73,15 +79,25 @@ export interface TeamDef { nombre: string; atletas: string[]; mascota?: string; 
 export const INCLUDED_CAST = ['familia', 'familia_rpg', 'heroes'] as const;
 export type IncludedCast = (typeof INCLUDED_CAST)[number];
 
-export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'interfaz', 'efectos', 'audio', 'escenarios'] as const;
+export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'interfaz', 'efectos', 'audio', 'escenarios', 'vs', 'publico'] as const;
 export type KitPart = (typeof KIT_PARTS)[number];
 
 /** Las secciones que todavía no genera el kit a medida, y el lote del pedido que las trae. */
 export const PENDING_SECTIONS: Record<string, string> = {
-  publico: 'público (lote C6)', npc: 'NPC (lote C6)',
+  npc: 'NPC (lote C6)',
   vehiculos: 'vehículos (lote D2)',
 };
-const KNOWN_KEYS = ['$schema', 'juego', 'resolucion', 'celda', 'filas', 'datos_por_cuadro', 'fichas', 'personajes_incluidos', 'equipos', 'packs', 'pruebas', 'retratos', 'cabecitas', 'objetos', 'animales', 'ui', 'fx', 'audio', 'escenarios', ...Object.keys(PENDING_SECTIONS)];
+const KNOWN_KEYS = ['$schema', 'juego', 'resolucion', 'celda', 'filas', 'datos_por_cuadro', 'fichas', 'personajes_incluidos', 'equipos', 'packs', 'pruebas', 'retratos', 'cabecitas', 'objetos', 'animales', 'ui', 'fx', 'audio', 'escenarios', 'publico', ...Object.keys(PENDING_SECTIONS)];
+/** Lo que se puede pedir en `objetos`: las armas, cada comida y "comida" (toda). */
+const OBJETOS = [...FLOOR_PROP_KINDS, ...COMIDAS, 'comida'] as string[];
+/** Reparte la lista de `objetos` en armas y comida. */
+function splitObjetos(v: KitConfig['objetos']): { armas: boolean | FloorPropKind[]; comida: boolean | Comida[] } {
+  if (v === true) return { armas: true, comida: true };
+  if (!Array.isArray(v)) return { armas: false, comida: false };
+  const armas = v.filter((o): o is FloorPropKind => (FLOOR_PROP_KINDS as readonly string[]).includes(o));
+  const comida = v.includes('comida') ? true : v.filter((o): o is Comida => (COMIDAS as readonly string[]).includes(o));
+  return { armas: armas.length ? armas : false, comida: comida === true || comida.length ? comida : false };
+}
 const ANIM_NAMES = HUMAN_ANIMS.map((a) => a.name);
 const IDIOMAS = ['es', 'en', 'vi'];
 /** Los sonidos que ya tiene el motor, por sección de audio. */
@@ -171,19 +187,20 @@ export function validateKitConfig(cfg: unknown): string[] {
   }
   for (const k of ['retratos', 'cabecitas'] as const) if (cfg[k] !== undefined && typeof cfg[k] !== 'boolean') e.push(`${k}: true o false`);
   if (cfg.objetos !== undefined && typeof cfg.objetos !== 'boolean') {
-    if (!isStrList(cfg.objetos)) e.push('objetos: true o una lista de armas del piso');
-    else (cfg.objetos as string[]).forEach((o, i) => { if (!FLOOR_PROP_KINDS.includes(o as FloorPropKind)) e.push(`objetos[${i}]: "${o}" no es un arma del piso.${suggest(o, FLOOR_PROP_KINDS)}`); });
+    if (!isStrList(cfg.objetos)) e.push('objetos: true o una lista de armas del piso y comida');
+    else (cfg.objetos as string[]).forEach((o, i) => { if (!OBJETOS.includes(o)) e.push(`objetos[${i}]: "${o}" no es un arma del piso ni una comida.${suggest(o, OBJETOS)}`); });
   }
   if (cfg.animales !== undefined && !isStrList(cfg.animales)) e.push('animales: tiene que ser una lista de ids');
   if (cfg.ui !== undefined) {
     if (!isObj(cfg.ui)) e.push('ui: tiene que ser un objeto');
     else {
-      for (const k of Object.keys(cfg.ui)) if (k !== 'fuentes' && k !== 'logo' && k !== 'interfaz') e.push(`ui.${k}: clave desconocida (hay "fuentes", "logo" e "interfaz")`);
+      for (const k of Object.keys(cfg.ui)) if (!['fuentes', 'logo', 'interfaz', 'vs_fondo'].includes(k)) e.push(`ui.${k}: clave desconocida (hay "fuentes", "logo", "interfaz" y "vs_fondo")`);
       const it = cfg.ui.interfaz;
       if (it !== undefined && typeof it !== 'boolean') {
         if (!isStrList(it)) e.push(`ui.interfaz: true o una lista de ${UI_PARTS.join(', ')}`);
         else (it as string[]).forEach((x, i) => { if (!UI_PARTS.includes(x as UiPart)) e.push(`ui.interfaz[${i}]: "${x}" no es una pieza de interfaz.${suggest(x, UI_PARTS)} Hay ${UI_PARTS.join(', ')}`); });
       }
+      if (cfg.ui.vs_fondo !== undefined && typeof cfg.ui.vs_fondo !== 'boolean') e.push('ui.vs_fondo: true o false');
       const fu = cfg.ui.fuentes;
       if (fu !== undefined && typeof fu !== 'boolean') {
         if (!isObj(fu)) e.push('ui.fuentes: true o { "idiomas": [...] }');
@@ -193,6 +210,16 @@ export function validateKitConfig(cfg: unknown): string[] {
         }
       }
       if (cfg.ui.logo !== undefined && !(isObj(cfg.ui.logo) && typeof cfg.ui.logo.texto === 'string' && cfg.ui.logo.texto.trim())) e.push('ui.logo: { "texto": "NOMBRE DEL JUEGO" }');
+    }
+  }
+  if (cfg.publico !== undefined) {
+    if (!isObj(cfg.publico)) e.push('publico: tiene que ser un objeto, por ejemplo { "azoteas": true }');
+    else {
+      const az = cfg.publico.azoteas;
+      if (az !== undefined && typeof az !== 'boolean') {
+        if (!isObj(az)) e.push('publico.azoteas: true o { "ancho": 320, "gente": 16 }');
+        else for (const k of ['ancho', 'gente'] as const) if (az[k] !== undefined && !(Number.isInteger(az[k]) && (az[k] as number) > 0 && (az[k] as number) <= 2048)) e.push(`publico.azoteas.${k}: un entero entre 1 y 2048`);
+      }
     }
   }
   if (cfg.escenarios !== undefined && typeof cfg.escenarios !== 'string' && !isStrList(cfg.escenarios)) e.push('escenarios: una carpeta con los *.layout.json ("data/stages/") o la lista de layouts');
@@ -252,9 +279,9 @@ export function kitConfigSchema(): Record<string, unknown> {
       equipos: { type: 'string', description: 'Archivo de equipos, relativo a este archivo: { id: { nombre, atletas, mascota?, colores?, ... } }. Pasa al manifiesto tal cual.' },
       packs: { type: 'object', minProperties: 1, propertyNames: id, additionalProperties: list({ enum: ANIM_NAMES }, { minItems: 1 }), description: 'Cada pack es un atlas por atleta: { "base": ["idle", "walk", "run"] }.' },
       pruebas: { type: 'object', additionalProperties: list({ type: 'string' }), description: 'Qué packs carga cada prueba del juego. Se copia al manifiesto.' },
-      retratos: { type: 'boolean', description: 'Retratos de 7 expresiones en 40 y 96. Sin valor: sí.' },
+      retratos: { type: 'boolean', description: 'Retratos de 8 expresiones en 40 y 96. Sin valor: sí.' },
       cabecitas: { type: 'boolean', description: 'Cabecitas de 12 x 12 para el minimapa. Sin valor: sí.' },
-      objetos: { oneOf: [{ type: 'boolean' }, list({ enum: FLOOR_PROP_KINDS })], description: 'Armas del piso: true = todas, o la lista.' },
+      objetos: { oneOf: [{ type: 'boolean' }, list({ enum: OBJETOS })], description: 'Armas del piso y comida de la pelea (peso "comida", con humito): true = todo, o la lista. "comida" pide toda la comida.' },
       animales: list(id, { description: 'Animales: los de las fichas y thor, que trae el motor.' }),
       ui: {
         type: 'object', additionalProperties: false,
@@ -262,6 +289,7 @@ export function kitConfigSchema(): Record<string, unknown> {
           fuentes: { oneOf: [{ type: 'boolean' }, { type: 'object', additionalProperties: false, properties: { idiomas: list({ enum: IDIOMAS }) } }], description: 'Las tres fuentes bitmap (con vietnamita) en ui/fuentes.' },
           logo: { type: 'object', required: ['texto'], properties: { texto: { type: 'string', minLength: 1 } }, description: 'El logo animado del juego a partir de su nombre, en 320 x 112 y 160 x 56 (ui/logo.png y ui/logo_chico.png).' },
           interfaz: { oneOf: [{ type: 'boolean' }, list({ enum: UI_PARTS })], description: 'Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador. true = todas.' },
+          vs_fondo: { type: 'boolean', description: 'La pantalla del VS: el fondo con los colores de cada par de equipos partidos en diagonal y rayos (ui/vs/), uno neutro, y las letras VS aparte para estrellarlas.' },
         },
       },
       escenarios: { oneOf: [{ type: 'string' }, list({ type: 'string' }, { minItems: 1 })], description: 'Carpeta con los *.layout.json ("data/stages/") o la lista de layouts. Cada uno sale en escenarios/<id>/ con sus capas, objetos, vida, superficie y colisión, y pasa por las 9 pruebas. Ver docs/ESCENARIOS.md.' },
@@ -277,6 +305,11 @@ export function kitConfigSchema(): Record<string, unknown> {
             oneOf: [{ type: 'boolean' }, list(id), { type: 'object', additionalProperties: { type: 'object', additionalProperties: false, properties: { tono: { type: 'number', minimum: 0.3, maximum: 3 }, timbre: { enum: TIMBRES } } } }],
           },
         },
+      },
+      publico: {
+        type: 'object',
+        description: 'El público. "azoteas": la gente asomada en las azoteas vecinas de la pelea, en publico/azoteas.png (de día) y publico/azoteas_noche.png, con los estados quieto, celebra y abuchea. Los hinchas por país (paises, variantes) llegan con el lote C6 y vuelven como aviso.',
+        properties: { azoteas: { oneOf: [{ type: 'boolean' }, { type: 'object', additionalProperties: false, properties: { ancho: { type: 'integer', minimum: 1, maximum: 2048 }, gente: { type: 'integer', minimum: 1, maximum: 2048 } } }] } },
       },
       ...pending,
     },
@@ -368,6 +401,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
 
   const warnings: string[] = [];
   for (const [k, what] of Object.entries(PENDING_SECTIONS)) if ((cfg as unknown as Record<string, unknown>)[k] !== undefined) warnings.push(`${k}: todavía no se genera, llega con ${what}`);
+  for (const k of Object.keys(cfg.publico ?? {})) if (k !== 'azoteas') warnings.push(`publico.${k}: todavía no se genera, llegan los hinchas por país con el lote C6`);
   // animales pedidos que no tienen ficha: llegan con el lote C7 (especies nuevas) o falta su ficha
   const wantedAnimals = [...new Set([...(cfg.animales ?? []), ...Object.values(inputs.equipos ?? {}).map((t) => t.mascota).filter((m): m is string => !!m)])];
   const missing = wantedAnimals.filter((a) => !animals[a]);
@@ -389,11 +423,12 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
   const parts = new Set<KitPart>(opts.solo?.length ? opts.solo : KIT_PARTS);
   const keptAnimals = Object.fromEntries(wantedAnimals.filter((a) => animals[a]).map((a) => [a, animals[a]]));
   const datos = cfg.datos_por_cuadro === undefined ? false : cfg.datos_por_cuadro;
+  const obj = splitObjetos(parts.has('objetos') ? cfg.objetos : false);
   const files = buildSportsKit({
     athletes: humans, cells, cell: cfg.celda ?? 48, filas: cfg.filas, datos: parts.has('atletas') ? datos : false, atlas: true,
     packDefs: cfg.packs, packs: parts.has('atletas') ? Object.keys(cfg.packs) : [], quick: opts.quick,
     retratos: parts.has('retratos') && cfg.retratos !== false, cabecitas: parts.has('cabecitas') && cfg.cabecitas !== false,
-    objetos: parts.has('objetos') && cfg.objetos ? (Array.isArray(cfg.objetos) ? (cfg.objetos as FloorPropKind[]) : true) : false,
+    objetos: obj.armas, comida: obj.comida,
     animales: parts.has('animales') ? keptAnimals : undefined,
     fuentes: parts.has('fuentes') && cfg.ui?.fuentes ? inputs.fuentes : undefined,
     progress: opts.progress,
@@ -524,9 +559,46 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     if (malos.length) throw new Error(`Escenarios que no pasan las pruebas:\n  ${malos.join('\n  ')}`);
   }
 
-  if (fx || audio || Object.keys(ui).length || escenarios) {
+  // la pantalla del VS: un fondo por par de equipos (en el orden del archivo de equipos), uno neutro y las letras
+  let vs: Record<string, unknown> | undefined;
+  if (parts.has('vs') && cfg.ui?.vs_fondo) {
+    const [w, h] = cfg.resolucion ?? [640, 360];
+    const pares: Record<string, string> = {};
+    files.push({ name: 'ui/vs/neutro.png', bytes: encodePng(vsFondo(VS_NEUTRO[0], VS_NEUTRO[1], w, h)), mime: 'image/png' });
+    const eq = Object.entries(inputs.equipos ?? {});
+    for (let i = 0; i < eq.length; i++) for (let j = i + 1; j < eq.length; j++) {
+      const [a, ta] = eq[i], [b, tb] = eq[j];
+      const [ca, cb] = coloresVs(ta.colores ?? [VS_NEUTRO[0]], tb.colores ?? [VS_NEUTRO[1]]);
+      const archivo = `ui/vs/${a}__${b}.png`;
+      files.push({ name: archivo, bytes: encodePng(vsFondo(ca, cb, w, h)), mime: 'image/png' });
+      pares[`${a}__${b}`] = archivo;
+    }
+    const letras = vsLetras();
+    files.push({ name: 'ui/vs/letras.png', bytes: encodePng(letras), mime: 'image/png' });
+    vs = {
+      neutro: 'ui/vs/neutro.png', pares, letras: { archivo: 'ui/vs/letras.png', w: letras.w, h: letras.h }, w, h, centro: [Math.round(w / 2), Math.round(h * 0.42)],
+      nota: 'Fondo del VS: el primer equipo del par a la izquierda. Si el par va al revés (b__a), voltea la imagen en x. Los rayos salen de `centro`, donde van las letras VS (estréllalas con tu rebote). Las franjas negras de arriba y abajo miden el 7 % del alto.',
+    };
+    opts.progress?.(`vs: ${Object.keys(pares).length + 1} fondos`);
+  }
+  // el público de las azoteas vecinas: de día y de noche, 3 estados de 4 cuadros
+  let publico: Record<string, unknown> | undefined;
+  if (parts.has('publico') && cfg.publico?.azoteas) {
+    const az = isObj(cfg.publico.azoteas) ? cfg.publico.azoteas : {};
+    const dia = publicoHoja({ ancho: az.ancho, gente: az.gente }), noche = publicoHoja({ ancho: az.ancho, gente: az.gente, noche: true });
+    files.push({ name: 'publico/azoteas.png', bytes: encodePng(dia.png), mime: 'image/png' });
+    files.push({ name: 'publico/azoteas_noche.png', bytes: encodePng(noche.png), mime: 'image/png' });
+    publico = {
+      azoteas: {
+        archivo: 'publico/azoteas.png', archivo_noche: 'publico/azoteas_noche.png', w: dia.w, h: dia.h, cuadros: dia.cuadros, fps: dia.fps, muro: dia.muro, estados: dia.estados,
+        nota: 'Una fila por estado (quieto, celebra, abuchea) y 4 cuadros de w x h por fila. El muro de la azotea vecina ocupa las `muro` filas de abajo: apoya ese borde en la azotea de tu fondo. Señalan hacia el medio de la tira. Repítela en x para llenar el ancho.',
+      },
+    };
+  }
+
+  if (fx || audio || Object.keys(ui).length || escenarios || vs || publico) {
     const ci = files.findIndex((f) => f.name === 'CREDITOS.txt');
-    const line = 'Efectos, interfaz, sonidos y escenarios: dibujados y sintetizados con código por PixelForja. No usan piezas de nadie y no piden crédito.\n';
+    const line = 'Efectos, interfaz, sonidos, escenarios, VS y público: dibujados y sintetizados con código por PixelForja. No usan piezas de nadie y no piden crédito.\n';
     const prev = ci >= 0 ? new TextDecoder().decode(files[ci].bytes) : '';
     const credit = { name: 'CREDITOS.txt', bytes: new TextEncoder().encode(prev ? `${prev.trimEnd()}\n\n${line}` : line), mime: 'text/plain' };
     if (ci >= 0) files[ci] = credit; else files.push(credit);
@@ -542,7 +614,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     const voz = voces?.[id] ? { voz: { tono: voces[id].tono, timbre: voces[id].timbre, archivos: voces[id].archivos } } : {};
     return [id, { nombre, ...(teamOf.has(id) ? { equipo: teamOf.get(id) } : {}), ...rest, ...voz }];
   }));
-  const notas = [...((sm.notas as string[]) ?? []).map((n) => n.replace('orden de `direcciones`', 'orden de `filas`')), ...(typeof sm.retratos === 'string' ? [sm.retratos] : []), ...(typeof sm.notas_objetos === 'string' ? [sm.notas_objetos] : [])];
+  const notas = [...((sm.notas as string[]) ?? []).map((n) => n.replace('orden de `direcciones`', 'orden de `filas`')), ...(typeof sm.retratos === 'string' ? [sm.retratos] : []), ...(typeof sm.notas_objetos === 'string' ? [sm.notas_objetos] : []), ...(typeof sm.notas_comida === 'string' ? [sm.notas_comida] : [])];
   const manifest: Record<string, unknown> = {
     juego: cfg.juego, generado_con: 'PixelForja', version: 1, tipo: 'kit a medida',
     ...(cfg.resolucion ? { resolucion: cfg.resolucion } : {}),
@@ -554,9 +626,10 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     ...(sm.objetos ? { objetos: sm.objetos } : {}),
     ...(sm.animales ? { animales: sm.animales } : {}),
     ...(fx ? { fx } : {}),
-    ...(sm.ui || Object.keys(ui).length ? { ui: { ...((sm.ui as object) ?? {}), ...ui } } : {}),
+    ...(sm.ui || Object.keys(ui).length || vs ? { ui: { ...((sm.ui as object) ?? {}), ...ui, ...(vs ? { vs } : {}) } } : {}),
     ...(audio ? { audio } : {}),
     ...(escenarios ? { escenarios } : {}),
+    ...(publico ? { publico } : {}),
     ...(files.some((f) => f.name === 'CREDITOS.txt') ? { creditos: 'CREDITOS.txt' } : {}),
     ...(warnings.length ? { pendiente: warnings } : {}),
     notas,

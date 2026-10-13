@@ -133,7 +133,7 @@ export function lpcSkinOf(head: string): string | null {
 
 // ---------- armado ----------
 
-const EXPR: Record<EyeExpr, string> = { open: 'neutral', closed: 'closed', happy: 'happy', sad: 'sad', angry: 'anger', wide: 'shock', hurt: 'sad' };
+const EXPR: Record<EyeExpr, string> = { open: 'neutral', closed: 'closed', happy: 'happy', sad: 'sad', angry: 'anger', wide: 'shock', hurt: 'sad', wink: 'anger' };
 
 interface Layer { key: string; mat: ModelHeadPal['mat']; map: (c: string, d: PartDir) => string }
 

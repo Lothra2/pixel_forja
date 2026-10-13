@@ -1,5 +1,6 @@
 import { createRaster, blit, type Raster } from '../core/raster';
 import { Pix, puff, sparkle, star5, rng, bayer } from './pix';
+import { PELEA_FX } from './pelea';
 
 /**
  * Catálogo general de efectos: polvo, chispas de golpe, reacciones de anime, agua, fiesta, clima, técnicas,
@@ -734,6 +735,8 @@ export const EFFECTS: EffectDef[] = [
   { id: 'arena', base: 'arena', grupo: 'ambiente', w: 32, h: 16, cuadros: 8, fps: 12, loop: true, ancla: [0, 15], se_pega_a: 'mosaico', capa: 'frente', draw: arena, uso: u('Arena que sopla a la derecha, en mosaico horizontal a ras del piso.', 'Sand blowing right, tiling horizontally along the ground.') },
   { id: 'brillo_record', base: 'brillo_record', grupo: 'ambiente', w: 16, h: 16, cuadros: 6, fps: 12, loop: true, ancla: [8, 8], se_pega_a: 'libre', capa: 'frente', draw: brillo, uso: u('Destello dorado para récords, medallas y trofeos.', 'Golden twinkle for records, medals and trophies.') },
   { id: 'huella_mojada', base: 'huella_mojada', grupo: 'ambiente', w: 8, h: 8, cuadros: 6, fps: 3, loop: false, ancla: [4, 4], se_pega_a: 'pies', capa: 'detras', draw: huella, uso: u('Huella mojada en el evento `paso` al salir del agua; se seca sola en 2 s.', 'Wet footprint on `paso` events after swimming; dries in 2 s.') },
+  // la pelea (lote P1): onomatopeyas, K.O. grande, bloqueo y agarre
+  ...PELEA_FX,
 ];
 
 export const EFFECT_IDS = EFFECTS.map((e) => e.id);

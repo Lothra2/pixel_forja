@@ -9,6 +9,8 @@ import { buildCustomKit, kitConfigSchema, validateKitConfig, validateTeams, type
 import { SPORT_PACKS, DEFAULT_SPORT_PACKS } from '../kit/sportskit';
 import { HERO_RPG_ANIMS } from '../rpg/presets';
 import { FLOOR_PROP_KINDS } from '../render/props';
+import { COMIDAS } from '../render/comida';
+import { duenoDe } from '../anim/pelea';
 import { ROOT } from './helpers';
 
 const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
@@ -74,7 +76,7 @@ describe('kit a medida (lote I): configuración', () => {
     has('packs.base[1]: "wlak" no es una animación. ¿Quisiste decir "walk"?');
     has('packs.Pelea: el nombre del pack va en minúsculas');
     has('pruebas.calle[0]: el pack "bse" no está en packs. ¿Quisiste decir "base"?');
-    has('objetos[1]: "paragua" no es un arma del piso. ¿Quisiste decir "paraguas"?');
+    has('objetos[1]: "paragua" no es un arma del piso ni una comida. ¿Quisiste decir "paraguas"?');
     has('ui.fuentes.idiomas[1]: "fr" todavía no está');
     has('ui.colores: clave desconocida');
     has('celda: tiene que ser');
@@ -173,14 +175,16 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
       expect(a.equipo, id).toBe(team);
       expect(a.celda, id).toBe(id === 'goro' ? 64 : 48);
       expect(a.pivote, id).toEqual([a.celda / 2, a.celda - 2]);
-      expect(a.retratos).toMatchObject({ archivo: `atletas/${id}/retratos.png`, chico: 40, grande: 96, expresiones: ['neutral', 'feliz', 'enojo', 'triste', 'susto', 'cerrado', 'dolor'] });
+      expect(a.retratos).toMatchObject({ archivo: `atletas/${id}/retratos.png`, chico: 40, grande: 96, expresiones: ['neutral', 'feliz', 'enojo', 'triste', 'susto', 'cerrado', 'dolor', 'burla'] });
       expect(a.cabecita).toBe(`ui/cabecitas.png#${id}`);
       expect(m.cabecitas.orden).toContain(id);
       expect(Object.keys(a.packs), id).toEqual(Object.keys(cfg.packs));
       for (const [p, pk] of Object.entries<any>(a.packs)) {
         expect(pk.atlas).toBe(`atletas/${id}/${p}.json`);
         const atlas = readJson(join(out, pk.atlas));
-        expect(Object.keys(pk.anims).sort(), `${id}/${p}`).toEqual([...cfg.packs[p]].sort());
+        // la burla y la victoria propias (taunt_<id>, victory_<id>) solo van en el atlas de su dueño
+        const ids = Object.keys(m.atletas);
+        expect(Object.keys(pk.anims).sort(), `${id}/${p}`).toEqual(cfg.packs[p].filter((a) => (duenoDe(a, ids) ?? id) === id).sort());
         for (const [an, d] of Object.entries<any>(pk.anims)) {
           expect(d).toMatchObject({ cuadros: expect.any(Number), fps: expect.any(Number), loop: expect.any(Boolean) });
           // un cuadro del atlas por fila y cuadro, y los datos por cuadro en [fila][cuadro]
@@ -195,10 +199,22 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     for (const [prueba, packs] of Object.entries<string[]>(m.pruebas)) for (const p of packs) expect(m.atletas.rick.packs[p], `${prueba}: ${p}`).toBeDefined();
     expect(m.animales.thor).toMatchObject({ atlas: 'animales/thor.json', imagen: 'animales/thor.png' });
     for (const k of FLOOR_PROP_KINDS) expect(m.objetos[k], k).toMatchObject({ atlas: 'objetos/armas.json' });
+    // la comida de la pelea va en objetos, después de las armas (el primer objeto sigue siendo un arma)
+    expect(Object.values<any>(m.objetos)[0].atlas).toBe('objetos/armas.json');
+    for (const k of COMIDAS) expect(m.objetos[k], k).toMatchObject({ atlas: 'objetos/comida.json', peso: 'comida', rota: false, anims: { quieto: 1, humito: 4 }, cura: expect.any(Number) });
+    for (const t of ['taunt', 'victory']) for (const id of Object.keys(m.atletas)) {
+      expect(m.atletas[id].packs.kachinuki.anims[`${t}_${id}`], `${t}_${id}`).toBeDefined();
+    }
+    // el pisotón, el codazo y el cabezazo marcan el impacto en el pie, el codo y la frente
+    const imp = (id: string, a: string) => m.atletas[id].packs.kachinuki.anims[a].eventos.find((e: any) => e.tipo === 'impacto');
+    for (const id of ['sophie', 'alana', 'goro']) for (const a of ['stomp', 'back_elbow', 'headbutt', 'eat']) expect(imp(id, a)?.punto, `${id} ${a}`).toHaveLength(m.filas.length);
+    expect(m.ui.vs).toMatchObject({ neutro: 'ui/vs/neutro.png', pares: { familia_gg__instituto_nekketsu: 'ui/vs/familia_gg__instituto_nekketsu.png' }, w: 640, h: 360 });
+    expect(m.publico.azoteas).toMatchObject({ archivo: 'publico/azoteas.png', archivo_noche: 'publico/azoteas_noche.png', h: 40, cuadros: 4, estados: { quieto: 0, celebra: 1, abuchea: 2 } });
     expect(Object.keys(m.ui.fuentes)).toEqual(['fuente_ui', 'fuente_titulo', 'fuente_titulo_plata', 'notas']);
     expect(m.creditos).toBe('CREDITOS.txt');
-    // los 56 efectos y los sonidos del motor; lo del lote H queda pendiente
-    expect(Object.keys(m.fx)).toHaveLength(56);
+    // los 63 efectos (56 del lote F y 7 de la pelea) y los sonidos del motor; lo del lote H queda pendiente
+    expect(Object.keys(m.fx)).toHaveLength(63);
+    expect(m.fx.ko_grande).toMatchObject({ w: 640, h: 360, cuadros: 12 });
     expect(m.fx.chispa_golpe_pesado).toMatchObject({ archivo: 'fx/chispa_golpe_pesado.png', celda: 32, se_pega_a: 'mano' });
     expect(m.fx.pantalla_rota).toMatchObject({ w: 640, h: 360 });
     // H1: todos los sonidos pedidos ya existen; las voces y la página para escucharlos
@@ -252,9 +268,9 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas, retratos, cabecitas, armas, Thor y fuentes (54), efectos (56), logo e interfaz (32) y los 7 escenarios:
-    // hẻm 21, Bến Thành 17, río 17, azoteas 21 (con piso mojado), estadio 11, Comuna 13 14 y la azotea de Caracas 10
-    expect(pngs.length).toBe(54 + 56 + 32 + 21 + 17 + 17 + 21 + 11 + 14 + 10);
+    // atletas, retratos, cabecitas, armas, Thor y fuentes (54), el pack de pelea (8), efectos (63), logo e interfaz (32), comida (1),
+    // 3 del VS, 2 del público y los 7 escenarios: hẻm 21, Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14 y Caracas 10
+    expect(pngs.length).toBe(54 + 8 + 63 + 32 + 1 + 3 + 2 + 21 + 17 + 17 + 21 + 11 + 14 + 10);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

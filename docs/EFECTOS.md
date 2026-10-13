@@ -1,6 +1,6 @@
 # Efectos del juego
 
-El catálogo general de efectos de PixelForja: polvo, chispas de golpe, reacciones de anime, agua, fiesta, objetos, clima, técnicas, ambiente y efectos de pantalla completa. Son 56 efectos en pixel art, dibujados con código, deterministas y sin piezas de nadie. Sirven para cualquier juego.
+El catálogo general de efectos de PixelForja: polvo, chispas de golpe, reacciones de anime, agua, fiesta, objetos, clima, técnicas, ambiente y efectos de pantalla completa. Son 63 efectos en pixel art, dibujados con código, deterministas y sin piezas de nadie. Sirven para cualquier juego.
 
 - **En el estudio:** Inicio, **Efectos del juego**. Están todos animados, por grupo, sobre fondo oscuro, claro o a cuadros, y se descargan juntos (`efectos.zip`, con las hojas y `efectos.json`).
 - **En el kit a medida:** con `"fx": true` salen todos. También se puede pedir una lista de ids (`chispa_golpe_pesado`), bases (`polvo_correr` trae sus 3 tamaños) o grupos (`reaccion`). Ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#efectos-y-audio).
@@ -152,6 +152,18 @@ bola.setFrame(m.fx.bola_tama.estados.indexOf('agrietada'));
 | `mecha_tejo` | 48 x 48 | 10 | 14 | no | objeto | frente | El tejo pega en la mecha: estallido y humo. |
 | `estela_chapa` | 32 x 8 | 4 | 14 | sí | objeto | detras | Detrás de la chapa en vuelo. Mira a la derecha: girar con el ángulo del vuelo. |
 | `ventana_rota` | 48 x 48 | 8 | 14 | no | objeto | frente | Vidrios que saltan donde pegó algo. |
+
+### Pelea de cómic (lote P1)
+
+| Id | Tamaño | Cuadros | fps | Bucle | Se pega a | Capa | Para qué |
+|---|---|---|---|---|---|---|---|
+| `onomatopeya_pow` | 64 x 40 | 6 | 14 | no | mano | frente | ¡POW! con estallido de cómic: entra con rebote. En el `punto` del `impacto` de un golpe fuerte. |
+| `onomatopeya_paf` | 64 x 40 | 6 | 14 | no | mano | frente | ¡PAF! para los golpes medianos y las cachetadas. |
+| `onomatopeya_crack` | 80 x 40 | 6 | 14 | no | mano | frente | CRACK! para el codazo, el pisotón y lo que rompe. |
+| `onomatopeya_nam` | 64 x 40 | 6 | 14 | no | cabeza | frente | ¡ÑAM! sobre la cabeza del que come (`eat`). |
+| `ko_grande` | la resolución | 12 | 12 | no | pantalla | frente | El K.O. de pantalla completa: destello blanco, rayos, las letras que se estrellan una por una y astillas. Para el final con cámara lenta. |
+| `bloqueo` | 24 x 32 | 5 | 18 | no | mano | frente | El destello azul de la guardia, delante de los brazos. |
+| `agarre` | 24 x 24 | 4 | 10 | sí | mano | frente | Líneas de esfuerzo mientras se forcejea en el agarre. |
 
 ### Pantalla completa
 

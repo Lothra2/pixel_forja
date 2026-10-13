@@ -526,20 +526,21 @@ function render(m: HeadModel, o: ModelHeadOpts): ModelHeadImage {
           const outer = sgn < 0 ? i === 0 : i === bw - 1;
           const inner = sgn < 0 ? i === bw - 1 : i === 0;
           let rr = browTop + t;
-          if (eyeExpr === 'angry' && inner) rr += 1;
+          if ((eyeExpr === 'angry' || eyeExpr === 'wink') && inner) rr += 1;
           if (eyeExpr === 'sad' && inner) rr -= 1;
           if (browStyle === 'arqueada' && (outer || inner) && bw > 2) rr += 1;
           if (t === bT - 1 && bT > 1 && outer) continue;
           put(bx0 + i, rr, browHex, 'hair');
         }
     }
-    // ojo
+    // ojo (el guiño cierra el de la derecha)
+    const shut = eyeExpr === 'closed' || eyeExpr === 'happy' || (eyeExpr === 'wink' && sgn > 0);
     const lid = eyeStyle === 'serios' && eyeExpr === 'open' && eh >= 2;
     for (let j = 0; j < eh; j++)
       for (let i = 0; i < ewF; i++) {
         const xx = x0 + i, yy = ey0 + j;
         let hex: string | null = darkEye;
-        if (eyeExpr === 'closed' || eyeExpr === 'happy') {
+        if (shut) {
           if (j !== eh - 1) hex = null;
         } else if (lid && j === 0) {
           hex = skinR[SHADOW];
@@ -551,8 +552,8 @@ function render(m: HeadModel, o: ModelHeadOpts): ModelHeadImage {
         if (eyeExpr === 'wide' && j === 0) hex = darkEye;
         if (hex) put(xx, yy, hex, hex === skinR[SHADOW] ? 'skin' : 'face');
       }
-    if (eyeStyle === 'pestanas' && eyeExpr !== 'closed') put(sgn < 0 ? x0 - 1 : x0 + ewF, ey0 - 1, darkEye);
-    if (eyeStyle === 'grandes' && eyeExpr !== 'closed' && eyeExpr !== 'happy') {
+    if (eyeStyle === 'pestanas' && eyeExpr !== 'closed' && !(eyeExpr === 'wink' && sgn > 0)) put(sgn < 0 ? x0 - 1 : x0 + ewF, ey0 - 1, darkEye);
+    if (eyeStyle === 'grandes' && !shut) {
       // ojo grande tipo Megaman: blanco al lado de afuera y pupila oscura adentro
       const wx = sgn < 0 ? x0 - 1 : x0 + ewF;
       for (let j = 0; j < eh; j++) put(wx, ey0 + j, '#f4f1ea');
@@ -613,13 +614,17 @@ function render(m: HeadModel, o: ModelHeadOpts): ModelHeadImage {
       open: ['m'.repeat(mw), `.${'r'.repeat(Math.max(1, mw - 2))}.`],
       grin: ['m'.repeat(mw), 'w'.repeat(mw)],
       o: ['mm', 'rr'],
+      // media sonrisa: la comisura de un lado sube (la cara malandra)
+      smirk: [`${'.'.repeat(Math.max(1, mw - 1))}m`, `${'m'.repeat(Math.max(1, mw - 1))}.`],
+      // lengua afuera: la boca abierta y la lengua que cuelga dos filas
+      tongue: ['m'.repeat(mw), `.${'t'.repeat(Math.max(1, mw - 2))}.`, `.${'t'.repeat(Math.max(1, mw - 2))}.`],
     };
     // con barba la boca es una línea corta: una sonrisa de dos filas se come la barbilla
     const bearded = !!m.look && m.look.beard !== 'ninguna' && m.look.beard !== 'sombra';
     const expr = bearded && (mouthExpr === 'smile' || mouthExpr === 'frown') ? 'line' : mouthExpr;
     const rows = shape[expr] ?? shape.line;
     rows.forEach((s, j) => [...s].forEach((ch, i) => {
-      const hex = ch === 'l' ? lip : ch === 'm' ? lineHex : ch === 'r' ? '#5a1f26' : ch === 'w' ? '#f4f1ea' : null;
+      const hex = ch === 'l' ? lip : ch === 'm' ? lineHex : ch === 'r' ? '#5a1f26' : ch === 'w' ? '#f4f1ea' : ch === 't' ? '#e8707e' : null;
       if (hex) put(mcol + i + (rows[0].length < mw ? Math.floor((mw - rows[0].length) / 2) : 0), mrow + j, hex);
     }));
   }

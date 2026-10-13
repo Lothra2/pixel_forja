@@ -57,16 +57,22 @@ export function motionOf8(clips: RenderedClip[], k = 1, sideClip?: RenderedClip)
   if (j && out.eventos) {
     for (const e of out.eventos) {
       if (e.tipo !== 'impacto' && e.tipo !== 'suelta') continue;
-      const name = contactJoint(j[e.cuadro], e.tipo);
+      const name = c0joint(side, e) ?? contactJoint(j[e.cuadro], e.tipo);
       if (!clips.every((c) => c.joints?.[e.cuadro])) continue;
       e.punto = clips.map((c) => {
-        const [x, y] = c.joints![e.cuadro][name];
+        const [x, y] = c.joints![e.cuadro][name] ?? c.joints![e.cuadro].head;
         return [Math.round((x - c.cell / 2) * k), Math.round((y - (c.cell - 2)) * k)];
       });
     }
   }
   if (clips.some((c) => c.heading)) out.rumbo = clips.map((c) => VIEW_SUFFIX[c.heading ?? c.view]);
   return out;
+}
+
+/** La articulación que el evento dice que pega, si la dice. */
+function c0joint(c: RenderedClip, e: EventoJson): Exclude<keyof Joints, 'carry'> | undefined {
+  const ev = c.events?.find((x) => x.type === e.tipo && Math.min(c.frames.length - 1, Math.floor(x.phase * c.frames.length + 1e-6)) === e.cuadro);
+  return ev?.joint as Exclude<keyof Joints, 'carry'> | undefined;
 }
 
 /** Qué pega: en un golpe, la mano o el pie que llega más adelante; en una suelta, la mano más alta (la que lanza). */

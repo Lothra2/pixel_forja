@@ -9,6 +9,7 @@ import { portraitSheet, headIcon, HEAD_ICON, PORTRAIT_BIG_SCALE } from './portra
 import { dressForPack, variantForPack } from '../sheet/wardrobe';
 import type { CellSize, HumanFicha, AnimalFicha } from '../sheet/ficha';
 import { animsFor } from '../anim/registry';
+import { buildComidaAtlas, COMIDA_CELDA, COMIDA_PIVOTE, type Comida } from '../render/comida';
 import { familyFicha, FAMILY } from '../rpg/family';
 import { heroFicha, heroCell, HEROES } from '../rpg/heroes';
 import { ATHLETICS_PREMIUM } from '../anim/athletics';
@@ -17,6 +18,7 @@ import { NET_PREMIUM } from '../anim/net';
 import { FIGHT_PREMIUM } from '../anim/fight';
 import { FOOTBALL_PREMIUM } from '../anim/footballPremium';
 import { BRAWL } from '../anim/brawl';
+import { PELEA, duenoDe } from '../anim/pelea';
 import { buildObjectsAtlas } from '../render/floorProps';
 import type { FloorPropKind } from '../render/props';
 import { bitmapFonts } from '../ui/fonts';
@@ -37,11 +39,13 @@ export const SPORT_PACKS = {
   futbol: ['idle', 'walk', 'run', ...FOOTBALL_PREMIUM.filter((a) => a.name !== 'kick').map((a) => a.name), 'celebrate', 'goal_knee', 'goal_plane', 'sad'],
   /** pelea callejera (beat 'em up): levantar, llevar, lanzar, agarres, armas del piso. Se pide aparte (no va por defecto) */
   calle: ['idle', 'walk', 'run', 'hit', 'jab', 'punch', 'low_kick', 'knockout', ...BRAWL.map((a) => a.name)],
+  /** la pelea del Kachinuki (lote P1): pisotón, lanzar, codazo, amague, cabezazo, comer, borde, burla y victoria propias */
+  kachinuki: PELEA.map((a) => a.name),
 } as const;
 export type SportPack = keyof typeof SPORT_PACKS;
 export const SPORT_PACK_NAMES = Object.keys(SPORT_PACKS) as SportPack[];
 /** los deportes que salen si no se piden otros (los de siempre: la pelea callejera se pide con `calle`) */
-export const DEFAULT_SPORT_PACKS = SPORT_PACK_NAMES.filter((p) => p !== 'calle');
+export const DEFAULT_SPORT_PACKS = SPORT_PACK_NAMES.filter((p) => p !== 'calle' && p !== 'kachinuki');
 
 export interface SportsKitOptions {
   /** atletas por id (minúsculas, números y _). Sin esto, la familia con ropa de calle y los héroes */
@@ -67,12 +71,14 @@ export interface SportsKitOptions {
    * El atleta trae `packs` en vez de `deportes`
    */
   atlas?: boolean;
-  /** hoja de retratos por atleta: 7 expresiones en 40 x 40 y 96 x 96 */
+  /** hoja de retratos por atleta: 8 expresiones en 40 x 40 y 96 x 96 */
   retratos?: boolean;
   /** cabecitas de 12 x 12 de todos los atletas en ui/cabecitas.png */
   cabecitas?: boolean;
   /** las armas del piso (pelea callejera) en objetos/armas.png + .json, con su entrada en `objetos`: todas o las de la lista */
   objetos?: boolean | FloorPropKind[];
+  /** la comida de la pelea en objetos/comida.png + .json, con `peso: 'comida'` en `objetos`: toda o la de la lista */
+  comida?: boolean | Comida[];
   /** animales (una mascota como Thor): todas sus animaciones en animales/<id>.png + .json, con su entrada en `animales` */
   animales?: Record<string, AnimalFicha>;
   /**
@@ -174,6 +180,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
   };
   const out: Record<string, AthleteEntry> = {};
   const heads: Raster[] = [];
+  const ids = Object.keys(athletes);
   for (const [id, f] of Object.entries(athletes)) {
     if (!/^[a-z0-9_]+$/.test(id)) throw new Error(`id de atleta inválido: "${id}" (usa minúsculas, números y _)`);
     const c = creditsFor(f);
@@ -186,7 +193,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
       // vestuario por pack: la ficha puede traer una variante de ropa para este pack
       const fp = dressForPack(f, pack);
       const all = defs[pack] ?? [];
-      const names = (opts.quick ? all.slice(-2) : all).filter((a) => hasAnim(fp, a));
+      // las propias de otro atleta (`taunt_kenji` en Rick) no se dibujan: cada uno trae solo las suyas
+      const names = (opts.quick ? all.slice(-2) : all).filter((a) => hasAnim(fp, a) && (duenoDe(a, ids) ?? id) === id);
       const entries: Record<string, SportAnimEntry> = {};
       const frames: { name: string; raster: Raster }[] = [];
       for (const a of names) {
@@ -244,6 +252,15 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     for (const o of Object.values(objetos)) o.atlas = 'objetos/armas.json';
     manifest.objetos = objetos;
     manifest.notas_objetos = 'objetos: armas del piso. Cuadros <id>_<anim>_<cuadro>. quieto: la base en el pivote de la celda (como un personaje). girando: centrado. mano (16 cuadros): el agarre en el centro de la celda, el cuadro k girado k * 22.5 grados (0 = como en el piso). Para dibujar el arma en la mano usa el dato `arma` [x, y, angulo, detras] de la animación: elige <id>_mano_<k> con k = round(angulo / 22.5) % 16 y pon el centro de la celda en (x, y) desde el pivote del personaje; si detras = 1, dibújala antes que al personaje.';
+  }
+  if (opts.comida) {
+    const { png, json, objetos } = buildComidaAtlas('comida.png', Array.isArray(opts.comida) ? opts.comida : undefined);
+    files.push({ name: 'objetos/comida.png', bytes: encodePng(png), mime: 'image/png' });
+    files.push({ name: 'objetos/comida.json', bytes: enc.encode(JSON.stringify(json)), mime: 'application/json' });
+    for (const o of Object.values(objetos)) o.atlas = 'objetos/comida.json';
+    // van después de las armas: el primer objeto sigue siendo un arma
+    manifest.objetos = { ...((manifest.objetos as Record<string, unknown>) ?? {}), ...objetos };
+    manifest.notas_comida = `comida: objetos con peso "comida" en su propio atlas (objetos/comida.json, celdas de ${COMIDA_CELDA}). Cuadros <id>_quieto_0 y <id>_humito_0..3 (en bucle a 6 fps), con la base en el pivote (${COMIDA_PIVOTE.join(', ')}) y su sombra ya dibujada. \`cura\` va de 1 a 3. Se come con la animación eat: el evento impacto marca el mordisco.`;
   }
   if (opts.animales && Object.keys(opts.animales).length) {
     // las mascotas: un atlas por animal con todas sus animaciones, en las mismas filas que los atletas

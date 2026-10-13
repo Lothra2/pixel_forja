@@ -112,11 +112,11 @@ describe('atlas', () => {
 });
 
 describe('retratos y cabecitas', () => {
-  it('7 expresiones en 40 y en 96; el grande es cabeza y hombros escalado x3 entero', () => {
+  it('8 expresiones en 40 y en 96; el grande es cabeza y hombros escalado x3 entero', () => {
     const f = premium('rick');
     const s = portraitSheet(f);
     expect(s.expresiones).toEqual([...EXPRESSIONS]);
-    expect([s.png.w, s.png.h]).toEqual([7 * 96, 40 + 96]);
+    expect([s.png.w, s.png.h]).toEqual([EXPRESSIONS.length * 96, 40 + 96]);
     const small = EXPRESSIONS.map((e) => portrait(f, e, 'chico'));
     for (const p of small) { expect([p.w, p.h]).toEqual([40, 40]); expect(opaqueBox(p)).not.toBeNull(); }
     // cada expresión cambia la cara
