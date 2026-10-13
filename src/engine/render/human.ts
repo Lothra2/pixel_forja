@@ -111,6 +111,49 @@ export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99, w
   return isFinite(x0) ? { x0: x0 + dx, y0: y0 + dy, x1: x1 + dx, y1: y1 + dy } : null;
 }
 
+/**
+ * bodyBox sin pelo de atrás y con él (`whole`), en una sola pasada por el lienzo: lo mismo que llamarla dos veces con
+ * withHairBack false y true, pero recorre el lienzo una vez (lote SP2, para que el kit tarde menos).
+ */
+function bodyAndWhole(c: LayerCanvas, dx: number, dy: number, skipMats?: Set<number>): [BigFrame['body'], BigFrame['body']] {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  let X0 = Infinity, Y0 = Infinity, X1 = -Infinity, Y1 = -Infinity;
+  const { w, h } = c;
+  const layer = c.layer, mat = c.mat;
+  let maxMat = 0;
+  if (skipMats) for (const m of skipMats) if (m > maxMat) maxMat = m;
+  const skip = new Uint8Array(maxMat + 3);
+  if (skipMats) for (const m of skipMats) if (m >= -2) skip[m + 2] = 1;
+  const salta = (m: number) => m >= -2 && m <= maxMat && skip[m + 2] === 1;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      const l = layer[i];
+      if (!l) continue;
+      const m = mat[i];
+      if (skipMats && salta(m)) continue;
+      if (m === -2 && skipMats) {
+        let prop = false, other = false;
+        for (let k = 0; k < 4; k++) {
+          const ax = k === 0 ? x - 1 : k === 1 ? x + 1 : x, ay = k === 2 ? y - 1 : k === 3 ? y + 1 : y;
+          if (ax < 0 || ay < 0 || ax >= w || ay >= h) continue;
+          const n = mat[ay * w + ax];
+          if (n < 0) continue;
+          if (salta(n)) prop = true; else other = true;
+        }
+        if (prop && !other) continue;
+      }
+      if (l === L_PROP || l === L_PROPMID || l === L_BEHIND) continue;
+      if (x < X0) X0 = x; if (x > X1) X1 = x; if (y < Y0) Y0 = y; if (y > Y1) Y1 = y;
+      if (l === L_HAIRBACK) continue;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+  return [
+    isFinite(x0) ? { x0: x0 + dx, y0: y0 + dy, x1: x1 + dx, y1: y1 + dy } : null,
+    isFinite(X0) ? { x0: X0 + dx, y0: Y0 + dy, x1: X1 + dx, y1: Y1 + dy } : null,
+  ];
+}
+
 /** emblemas del pecho: # el color del emblema, o el fondo (óvalo), . la camisa */
 const EMBLEMS: Record<'spider' | 'bat', { plain: string[]; oval: string[] }> = {
   spider: { plain: ['#.#.#', '.###.', '#.#.#'], oval: ['.ooooo.', 'o#o#o#o', 'oo###oo', 'o#o#o#o', '.ooooo.'] },
@@ -833,10 +876,12 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
 
   // ---------- piso: el punto más bajo toca el suelo (o queda a `air` pixeles) ----------
   // el piso lo toca el cuerpo: un hacha o un báculo que cuelgan más abajo que los pies no levantan al personaje
-  const bbAll = canvas.bbox();
+  // la segunda pasada de sinPelotas trae el piso ya medido y solo pinta: las cajas salen de la primera (lote SP2, más rápido)
+  const medir = opt.suelo === undefined;
+  const bbAll = medir ? canvas.bbox() : null;
   // premium: el piso lo marca el cuerpo (una raqueta que apunta abajo no levanta al personaje)
   const groundMats = opt.propsApart ? new Set(Object.keys(PROP_COLORS).map((k) => mats.id(`p_${k}`))) : undefined;
-  const bbBody = gear || opt.propsApart || props.some((q) => LONG_HELD.has(q.kind)) ? bodyBox(canvas, 0, 0, -99, false, groundMats) : null;
+  const bbBody = medir && (gear || opt.propsApart || props.some((q) => LONG_HELD.has(q.kind))) ? bodyBox(canvas, 0, 0, -99, false, groundMats) : null;
   const bb = bbBody ? { y1: bbBody.y1 } : bbAll;
   const hipH = pose.hipH;
   const groundCanvas = opt.suelo ?? (hipH !== undefined ? canvas.oy + Math.round(hipH) : (bb ? bb.y1 + 1 : canvas.oy) + Math.round(pose.air));
@@ -862,7 +907,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const propMats = opt.propsApart ? new Set(Object.keys(PROP_COLORS).map((k) => mats.id(`p_${k}`))) : undefined;
   // premium: las orejas (de gato, de lobo) son como el pelo: pueden recortarse en la punta en una pose extrema
   const softSkip = opt.propsApart ? new Set([...(propMats ?? []), mats.id('ears')]) : propMats;
-  const soft = lpcBox ? bodyBox(canvas, 0, 0, mats.id('hair'), false, softSkip) : null;
+  const soft = medir && lpcBox ? bodyBox(canvas, 0, 0, mats.id('hair'), false, softSkip) : null;
   drawChestMarks();
   if (!opt.noOutline)
     finalizeOutlines(canvas, {
@@ -882,9 +927,10 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     // la frente: de lado, adelante de la cabeza (lo que pega en un cabezazo); de frente o de espalda, el centro
     frente: J(add(neck, local(side ? d.headW * 0.42 : diag ? d.headW * 0.25 : 0, d.headW * 0.62))),
   };
-  const body = soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : bodyBox(canvas, dx, dy, -99, false, propMats);
-  const full = soft ? bodyBox(canvas, dx, dy, -99, false, propMats) : body;
-  const whole = bodyBox(canvas, dx, dy, -99, true, propMats);
+  // la caja sin el pelo de atrás y la entera salen de una sola pasada
+  const [sinPelo, whole] = medir ? bodyAndWhole(canvas, dx, dy, propMats) : [null, null];
+  const body = !medir ? null : soft ? { x0: soft.x0 - 1 + dx, y0: soft.y0 - 1 + dy, x1: soft.x1 + 1 + dx, y1: soft.y1 + 1 + dy } : sinPelo;
+  const full = !medir ? null : soft ? sinPelo : body;
   if (carrying) {
     // la carga se apoya en las palmas: entre las dos manos, en el borde de arriba de la más alta
     const top = Math.min(joints.handNear[1], joints.handFar[1]) - Math.floor(d.hand / 2);
