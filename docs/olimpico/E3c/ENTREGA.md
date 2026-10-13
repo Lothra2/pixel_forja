@@ -1,6 +1,6 @@
 # Lote E3c: Hội An de noche con el Tama-wari
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/29
 Fecha: 2026-10-13
 
 ## Qué se hizo
