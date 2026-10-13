@@ -2,7 +2,8 @@
  * La página para escuchar el audio de un kit (audio/escuchar.html): cada sonido con su botón, "tocar todo" en orden
  * y un probador de voces que dice un texto en blips. No necesita servidor: abre directo desde la carpeta o la tablet.
  */
-export interface ListenEntry { archivo: string; duracion: number; bucle?: boolean }
+/** archivo: una ruta, o la lista [ogg, m4a] del formato comprimido (la página toca el primero que el navegador entienda). */
+export interface ListenEntry { archivo: string | string[]; duracion: number; bucle?: boolean }
 export interface ListenVoice { tono: number; timbre: string; archivos: string[] }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -11,7 +12,7 @@ export function listenPage(juego: string, audio: Record<string, Record<string, L
   // las rutas del manifiesto son desde la raíz del kit; la página vive en audio/
   const rel = (p: string) => p.replace(/^audio\//, '');
   const data = {
-    secciones: Object.fromEntries(Object.entries(audio).map(([s, list]) => [s, Object.entries(list).map(([n, e]) => ({ n, f: rel(e.archivo), d: e.duracion, b: !!e.bucle }))])),
+    secciones: Object.fromEntries(Object.entries(audio).map(([s, list]) => [s, Object.entries(list).map(([n, e]) => ({ n, f: (Array.isArray(e.archivo) ? e.archivo : [e.archivo]).map(rel), d: e.duracion, b: !!e.bucle }))])),
     voces: Object.fromEntries(Object.entries(voces).map(([id, v]) => [id, v.archivos.map(rel)])),
   };
   const TITLES: Record<string, string> = { musica: 'Música', sfx: 'Efectos', ambientes: 'Ambientes' };
@@ -40,9 +41,11 @@ input,select{font:inherit;background:var(--panel);color:var(--text);border:1px s
 const D=${JSON.stringify(data)};const T=${JSON.stringify(TITLES)};
 let cur=null,queue=[],timer=null;
 const $=(id)=>document.getElementById(id);
+const MIME={ogg:'audio/ogg',m4a:'audio/mp4',wav:'audio/wav'};const probe=new Audio();
+const pick=(fs)=>fs.find(f=>probe.canPlayType(MIME[f.split('.').pop()]||''))||fs[0];
 function stop(){if(cur){cur.pause();cur=null}clearTimeout(timer);queue=[];document.querySelectorAll('button.on').forEach(b=>b.classList.remove('on'));$('now').textContent=''}
 function play(item,btn,next){if(cur)cur.pause();document.querySelectorAll('button.on').forEach(b=>b.classList.remove('on'));
- const a=new Audio(item.f);cur=a;btn&&btn.classList.add('on');$('now').textContent=item.n;a.play().catch(()=>{});
+ const a=new Audio(pick(item.f));cur=a;btn&&btn.classList.add('on');$('now').textContent=item.n;a.play().catch(()=>{});
  const lim=item.b?Math.min(item.d,8):item.d;clearTimeout(timer);timer=setTimeout(()=>{a.pause();btn&&btn.classList.remove('on');next&&next()},lim*1000+250)}
 const list=$('list');
 for(const[s,items]of Object.entries(D.secciones)){const h=document.createElement('h2');h.textContent=T[s]||s;list.append(h);const g=document.createElement('div');g.className='grid';list.append(g);

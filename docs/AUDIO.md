@@ -83,5 +83,5 @@ function hablar(scene, id, texto, cps = 18) {
 
 - **No hay voz hablada sin IA.** Lo asume el pedido: los diálogos usan blips.
 - **Síntesis de 8 bits.** Suena a consola, no a banda real. Para Rick es una decisión de estilo: la marcha y el đàn tranh se reconocen, pero son chiptune.
-- **Mono a 22050 Hz.** Liviano para el teléfono. La marcha de 60 s pesa 2.6 MB en WAV. Si el peso importa, el juego puede pasarla a OGG en su build.
+- **Mono a 22050 Hz.** La marcha de 60 s pesa 2.6 MB en WAV. Con `"formato": "comprimido"` en el `kit.config.json`, el kit la saca en OGG y M4A a 64 kbps, unos 520 KB (ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#efectos-y-audio)).
 - **`victoria` y `victoria_banda`:** `victoria` es la fanfarria de GG Abyss y no se cambió para no tocar ese kit. Para Nekketsu va `victoria_banda`, que combina con la marcha.

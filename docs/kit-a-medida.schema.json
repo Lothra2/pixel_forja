@@ -513,8 +513,15 @@
     },
     "audio": {
       "type": "object",
-      "description": "Sonidos sintetizados del motor en audio/sfx, audio/musica y audio/ambiente (WAV). Los nombres que todavía no existen vuelven como aviso: llegan con el lote H.",
+      "description": "Sonidos sintetizados del motor en audio/sfx, audio/musica y audio/ambiente. Los nombres que todavía no existen vuelven como aviso: llegan con el lote H.",
       "properties": {
+        "formato": {
+          "enum": [
+            "wav",
+            "comprimido"
+          ],
+          "description": "\"wav\" (por defecto): un WAV por sonido y \"archivo\" es un texto. \"comprimido\": OGG Vorbis y M4A (AAC) en mono, música a 64 kbps, ambientes a 48 y efectos a 64, y \"archivo\" es la lista [ogg, m4a] para que el juego cargue el que su navegador toque. Necesita ffmpeg en la máquina que arma el kit: sin ffmpeg los efectos salen en WAV ([\"x.wav\"]) y la música y los ambientes quedan en manifest.pendiente. Las voces siempre van en WAV."
+        },
         "sfx": {
           "oneOf": [
             {
