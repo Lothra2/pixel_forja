@@ -95,16 +95,28 @@ export function rotateTablet(): UiSprite {
 
 // ---------- íconos de habilidad (40 x 40, sobre medallón redondo) ----------
 
-/** Medallón: disco oscuro con luz arriba, aro del color de la habilidad y contorno negro. */
-function medallion(rim: string): Raster {
+/**
+ * Medallón: disco oscuro con luz arriba, aro del color de la habilidad y contorno negro. Con `rim2` el aro va en
+ * degradé de `rim` (abajo) a `rim2` (arriba), como el aro dorado del ataque.
+ */
+function medallion(rim: string, rim2?: string): Raster {
   const S = 40, r = createRaster(S, S), c = (S - 1) / 2;
-  const R = [parseInt(rim.slice(1, 3), 16), parseInt(rim.slice(3, 5), 16), parseInt(rim.slice(5, 7), 16)];
+  const hx = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const R = hx(rim), R2 = rim2 ? hx(rim2) : null;
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
     const d = Math.hypot(x - c, y - c);
     if (d > 19.6) continue;
     let col: number[];
     if (d > 18.6) col = [10, 8, 14];
-    else if (d > 16.4) { const k = y < c ? 1.15 : 0.8; col = R.map((v) => Math.min(255, v * k)); }
+    else if (d > 16.4) {
+      if (R2) {
+        // degradé de abajo (oscuro) a arriba (claro), con un brillo duro arriba a la izquierda
+        const t = Math.max(0, Math.min(1, 0.5 - (y - c) / (S * 0.9) - (x - c) / (S * 2.4)));
+        col = R.map((v, i) => v + (R2[i] - v) * t);
+        if (d < 17.4 && y < c - 8 && x < c) col = [255, 240, 196];
+        if (d > 17.9 && y > c + 6) col = col.map((v) => v * 0.72);
+      } else { const k = y < c ? 1.15 : 0.8; col = R.map((v) => Math.min(255, v * k)); }
+    }
     else if (d > 15.4) col = [14, 12, 20];
     else { const l = 1 - Math.hypot(x - c + 4, y - c + 5) / 26; col = [24 + l * 26, 22 + l * 24, 34 + l * 30]; }
     r.data.set([...col.map(Math.round), 255], (y * S + x) * 4);
@@ -112,8 +124,8 @@ function medallion(rim: string): Raster {
   return r;
 }
 
-function skill(rim: string, draw: (c: IconCanvas) => void): Raster {
-  const bg = medallion(rim);
+function skill(rim: string, draw: (c: IconCanvas) => void, rim2?: string): Raster {
+  const bg = medallion(rim, rim2);
   const c = new IconCanvas(40, 40);
   draw(c);
   c.center();
@@ -164,5 +176,29 @@ export function skillIcons(): UiSprite[] {
       c.poly([[22.6, 7], [14.6, 20], [20.6, 20]], glowMat('#ffffff'), { tone: 4 });
     }],
   ];
-  return list.map(([name, rim, draw]) => ({ name, frames: [skill(rim, draw)] }));
+  const out = list.map(([name, rim, draw]) => ({ name, frames: [skill(rim, draw)] }));
+  // #38: el ataque básico (el mismo para todas las heroínas): dos espadas cruzadas claras, aro dorado en degradé
+  out.push({ name: 'ataque', frames: [skill('#e8b850', crossedSwords, '#ffd27a')] });
+  return out;
+}
+
+/** Dos espadas cruzadas: hoja clara con filo de luz, guarda dorada, empuñadura de cuero y pomo. */
+function crossedSwords(c: IconCanvas) {
+  const blade = metalMat('#d8e0ea'), edge = glowMat('#ffffff'), grip = MAT.leather, gold = MAT.gold;
+  const sword = (s: number) => {
+    // s = 1: la punta arriba a la derecha; s = -1: arriba a la izquierda (espejo)
+    // todo un poco más chico que el medallón, para que las puntas y los pomos no toquen el aro
+    const X = (x: number) => 20 + ((s > 0 ? x : 40 - x) - 20) * 0.8;
+    const Y = (y: number) => 21 + (y - 21) * 0.8;
+    // hoja: ancha en la guarda, con punta
+    c.poly([[X(12.4), Y(25.4)], [X(14.6), Y(27.6)], [X(30.4), Y(11.4)], [X(31.6), Y(8.4)], [X(28.6), Y(9.6)]], blade);
+    c.px1([X(13.4), Y(25.4)], [X(29.4), Y(9.6)], edge, { tone: 5 }, true);
+    // guarda
+    c.line([X(9.4), Y(24.4)], [X(15.6), Y(30.6)], 2.2, gold);
+    // empuñadura y pomo
+    c.line([X(11.4), Y(28.6)], [X(7.4), Y(32.6)], 2.2, grip);
+    c.circle([X(6.6), Y(33.4)], 1.9, gold);
+  };
+  sword(-1);
+  sword(1);
 }

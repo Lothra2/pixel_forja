@@ -1,3 +1,4 @@
+import { premiumPortals } from './portales';
 import { TILE } from './tiles';
 import { paintTerrain, distTo, smoothPath, type TerrainDesign, type TerrainPalette, type TP } from './paint';
 import { galeriasObjects, GAL, MINA_PARALAJE } from './galeriasObjects';
@@ -180,13 +181,14 @@ export function galeriasDesign(seed = 333): TerrainDesign {
 
 /** Los objetos que usa el Mundo 3: los suyos, unas calcomanías de la Catedral y lo prestado del Bosque. */
 export function galeriasMapObjects(): WorldObject[] {
-  const prestados = new Set(['cartel', 'portal_azul', 'portal_rojo', 'aviso_jefe', 'aviso_carga']);
+  const prestados = new Set(['cartel', 'aviso_jefe', 'aviso_carga']);
   const catedral = /^(escombro_chico_\d|charco_negro_\d)$/;
   return withReactions([
     ...galeriasObjects(),
     ...catedralPremiumObjects().filter((o) => catedral.test(o.name)),
     ...reactiveObjects().filter((o) => /^(palanca|piedra_empujable)$/.test(o.name)),
     ...[...forestObjects(), ...landmarkObjects()].filter((o) => prestados.has(o.name)),
+    ...premiumPortals(['azul', 'rojo', 'ambar']),
   ]);
 }
 

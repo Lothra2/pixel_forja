@@ -1,3 +1,4 @@
+import { premiumPortals } from './portales';
 import { createRaster, type Raster } from '../core/raster';
 import { over } from '../loot/canvas';
 import { TILE } from './tiles';
@@ -68,7 +69,8 @@ function rng(seed: number) {
 /** Todos los objetos que usa el mundo grande. */
 export function bosqueObjects(): WorldObject[] {
   // los objetos de la paleta vieja pasan por la corrección sombría; la flora v3 ya viene sombría
-  const graded = [...forestObjects(), ...landmarkObjects()].map((o) => ({
+  // los portales de siempre se cambian por los premium (#40), que no pasan por la corrección sombría
+  const graded = [...forestObjects(), ...landmarkObjects()].filter((o) => !o.name.startsWith('portal_')).map((o) => ({
     ...o, anims: Object.fromEntries(Object.entries(o.anims).map(([k, a]) => [k, { ...a, frames: a.frames.map((f) => gloomGrade(f)) }])),
   }));
   const web: WorldObject = { name: 'telarana', w: 40, h: 36, anchor: [6, 35], solid: null, anims: { idle: { frames: [cobweb()], fps: 1, loop: true } } };
@@ -85,7 +87,7 @@ export function bosqueObjects(): WorldObject[] {
     ...forestDecals(), ...forestFront(),
   ];
   // el mundo que reacciona (2.9): animaciones nuevas en lo que ya había y los objetos que se usan
-  return withReactions([...base, ...premium, ...reactiveObjects().filter((o) => /^(palanca|puerta_madera|piedra_empujable)$/.test(o.name))]);
+  return withReactions([...base, ...premium, ...premiumPortals(['azul', 'rojo', 'verde']), ...reactiveObjects().filter((o) => /^(palanca|puerta_madera|piedra_empujable)$/.test(o.name))]);
 }
 
 /** Objetos de siempre que el mundo premium usa con sombra horneada. */
