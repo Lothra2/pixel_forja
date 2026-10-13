@@ -28,6 +28,9 @@ const ACORDES: Record<string, string[]> = {
   A7: ['A', 'C#', 'E', 'G'], E7: ['E', 'G#', 'B', 'D'], G7: ['G', 'B', 'D', 'F'],
   // los del lote H3
   Bb: ['Bb', 'D', 'F'], B7: ['B', 'D#', 'F#', 'A'], D7: ['D', 'F#', 'A', 'C'],
+  // los del lote H4
+  'F#m': ['F#', 'A', 'C#'], 'C#m': ['C#', 'E', 'G#'], Gm: ['G', 'Bb', 'D'], Cm: ['C', 'Eb', 'G'],
+  'C#7': ['C#', 'E#', 'G#', 'B'], 'F#7': ['F#', 'A#', 'C#', 'E'],
 };
 /** Las notas del acorde hacia arriba, desde la raíz en la octava dada. */
 export function acorde(name: string, oct: number): number[] {

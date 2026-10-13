@@ -56,7 +56,7 @@ const llamador = (m: Mixer, t: number, vol: number) => {
   m.add({ t, dur: 0.003, f: 4000, wave: 'noise', vol: vol * 0.3, s: 1, r: 0.015, lp: 0.4 });
 };
 /** Bandolina: cuerdas dobles punteadas, brillantes. Las notas largas en trémolo, la púa que va y viene. */
-function bandolina(m: Mixer, n: Nota, f: number, vol: number) {
+export function bandolina(m: Mixer, n: Nota, f: number, vol: number) {
   const paso = 0.068, golpes = n.units >= 2 ? Math.max(2, Math.floor((n.dur * 0.95) / paso)) : 1;
   for (let k = 0; k < golpes; k++) {
     const t = n.t + k * paso, ultimo = k === golpes - 1, d = ultimo ? n.dur * 0.95 - k * paso : paso;
@@ -67,7 +67,7 @@ function bandolina(m: Mixer, n: Nota, f: number, vol: number) {
   }
 }
 /** Đàn tranh: cuerda punteada con "nhấn" (sube desde abajo doblando la cuerda) y vibrato en las notas largas. */
-function tranh(m: Mixer, n: Nota, vol: number, nhan: boolean) {
+export function tranh(m: Mixer, n: Nota, vol: number, nhan: boolean) {
   m.add({ t: n.t, dur: n.dur, f: nhan ? n.f / Math.pow(2, 2 / 12) : n.f, wave: 'pluck', vol, r: 0.3, bend: nhan ? { semis: 2, at: 0.03, len: 0.1 } : undefined, vib: n.units >= 3 ? [5, 0.22, 0.35] : undefined });
 }
 
