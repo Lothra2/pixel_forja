@@ -32,7 +32,8 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
   "equipos": "equipos.json",
   "packs": {
     "base": ["idle", "walk", "run", "jump", "hit"],
-    "pelea": ["jab", "punch", "lift", "carry_walk", "throw_overhead", "carried", "thrown_spin"]
+    "pelea": ["jab", "punch", "lift", "carry_walk", "throw_overhead", "carried", "thrown_spin"],
+    "voley": { "anims": ["vb_bump", "vb_set", "spike", "block", "serve", "vb_dive", "vb_ready"], "sin_props": true }
   },
   "pruebas": { "crosscountry": ["base", "pelea"] },
   "objetos": true,
@@ -51,7 +52,7 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `fichas` | Carpeta con `*.ficha.json` del estudio. El id es el nombre del archivo. Personas y animales | |
 | `personajes_incluidos` | Los que trae el motor: `familia` (de calle), `familia_rpg` (con su equipo de GG Abyss) o `heroes` | |
 | `equipos` | Archivo de equipos (abajo). Pasa al manifiesto tal cual | Sin equipos |
-| `packs` | Cada pack es un atlas por atleta: nombre y lista de animaciones | Obligatorio |
+| `packs` | Cada pack es un atlas por atleta: nombre y lista de animaciones, o `{ "anims": [...], "sin_props": true }` para que salga sin las pelotas dibujadas (ver abajo) | Obligatorio |
 | `pruebas` | Qué packs carga cada prueba. Se copia al manifiesto para que el juego cargue solo lo que usa | No va |
 | `retratos` | 8 expresiones en 40 y 96 px (la 8 es burla) | Sí |
 | `cabecitas` | 12 x 12 para el minimapa, en `ui/cabecitas.png` | Sí |
@@ -63,7 +64,89 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `fx` | Efectos del catálogo general: `true` (los 56) o ids, bases y grupos. Ver abajo | No van |
 | `audio` | `{ "sfx": [...], "musica": [...], "ambientes": [...], "voces": [...] }` con los sonidos del motor, o `true` en cada sección. Ver abajo y [AUDIO.md](AUDIO.md) | No va |
 
-Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 142 del motor. El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
+Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 205 del motor. Con `alias` salen con el nombre que use el juego (ver abajo). El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
+
+### Packs sin pelotas (`sin_props`, lotes SP y SP2)
+
+Las animaciones de pelota traen la pelota dibujada en los cuadros. Si el juego mueve la pelota con su física, se verían dos. Para eso un pack puede ir en forma de objeto:
+
+```jsonc
+"packs": {
+  "base": ["idle", "walk", "run"],                                                       // la lista de siempre sigue valiendo
+  "voley": { "anims": ["vb_bump", "vb_set", "spike", "block", "serve", "vb_dive", "vb_ready"], "sin_props": true },
+  "futbol": { "anims": ["trap", "header", "volley", "chilena", "shot", "pass", "slide"], "sin_props": true },
+  "keeper": { "anims": ["keeper_ready", "keeper_dive", "keeper_catch"], "sin_props": true },
+  "basket": { "anims": ["dribble", "shoot", "dunk"], "sin_props": true },
+  "tennis": { "anims": ["tn_ready", "forehand", "backhand", "tennis_serve", "tn_volley", "tn_smash"], "sin_props": true },
+  "beisbol": { "anims": ["pitch", "catch"], "sin_props": true }
+}
+```
+
+- **Qué se quita:** las pelotas, lo que sale volando suelto: `futbol`, `voley`, `basquet`, `tenis`, `beisbol` y la `bala` del lanzamiento de bala.
+- **Qué se queda:** lo que va agarrado (la raqueta, el guante, el bate, la garrocha, la jabalina, las armas), las chispas y el cuerpo.
+- **El cuerpo no cambia ni un pixel.** Todo se mide con la pelota puesta (el piso, el encuadre, las cajas) y después se pinta sin ella. Solo cambian los pixeles de la pelota y de su contorno: donde tapaba al cuerpo, ahora se ve el cuerpo.
+- **`cuerpo`, `manos`, `pies` y los demás datos salen iguales** que en un pack con pelota. `cajas` sí cambia, porque la caja de lo opaco ya no tiene la pelota.
+- **`objetos`:** cada animación del pack que traía pelota lleva este dato por cuadro, aunque no se pida `datos_por_cuadro`. Las que no traen ninguna (`block`, `vb_ready`, `keeper_ready`, `tn_ready`, `slide`, `idle`) no lo llevan.
+
+```jsonc
+"serve": {
+  "cuadros": 9, "fps": 10, "loop": false,
+  "objetos": [
+    [[{ "tipo": "pelota", "clase": "voley", "x": 3.5, "y": -15.5, "r": 3.5, "detras": 0 }], ..., null, null, null],   // fila right
+    ...                                                                                                       // una por fila
+  ]
+}
+```
+
+  - `objetos[fila][cuadro]` es la lista de objetos sueltos de ese cuadro, o `null` si no hay ninguno. Hoy cada cuadro trae una pelota como mucho, pero es lista para cuando haya más.
+  - `x`, `y`: el centro exacto de la pelota desde el pivote, con `y` hacia abajo, como los demás datos. Puede caer en medio pixel (una pelota de 7 px tiene el centro en medio de un pixel).
+  - `r`: el radio sin el contorno. En celda 48: vóley y básquet 3.5, fútbol 3, tenis y béisbol 1.5.
+  - `detras`: 1 si iba detrás del cuerpo.
+  - Al espejar con `flipX`, `x` pasa a `-x`.
+  - La pelota se puede salir de la celda (un cabezazo la manda lejos): `objetos` dice dónde iría igual.
+- **Las pelotas sueltas (lote SP2):** cada pelota que se quitó sale dibujada igual, con su contorno, en `objetos/pelotas.png` y `objetos/pelotas.json` (JSON Hash de TexturePacker). Una por clase y por celda de atleta, en un cuadro de `2r + 2` de lado con el pivote en el centro exacto. El manifiesto las lista en `pelotas`, con el nombre de textura que usa Nekketsu:
+
+```jsonc
+"pelotas": {
+  "balon_futbol": { "clase": "futbol", "atlas": "objetos/pelotas.json", "cuadros": { "48": "balon_futbol_48", "64": "balon_futbol_64" } },
+  "balon_voley": { ... }, "balon_basket": { ... }, "pelota_tenis": { ... }, "pelota_beisbol": { ... }
+}
+```
+
+  Salen con los atletas (también con `--solo atletas`) y solo las que algún pack `sin_props` quitó. Si no hay packs `sin_props`, no sale nada.
+- **Los packs sin `sin_props` salen igual que siempre,** byte a byte. La forma objeto sin `sin_props` sale igual que la lista.
+
+En Phaser, la pelota se pone en `objetos` mientras la animación la tiene, y en el impacto pasa a la física:
+
+```js
+const an = a.packs.voley.anims.serve;
+const o = an.objetos[filaIdx][sprite.anims.currentFrame.index - 1]?.[0];
+if (o && !pelota.suelta) {
+  const p = Object.values(m.pelotas).find((q) => q.clase === o.clase);           // la textura de esa pelota
+  pelota.setTexture('pelotas', p.cuadros[a.celda]).setOrigin(0.5);               // o la del juego (la chapa, el cầu)
+  pelota.setPosition(sprite.x + (sprite.flipX ? -o.x : o.x), sprite.y + o.y).setDepth(sprite.depth + (o.detras ? -1 : 1));
+}
+// en el evento impacto (o despegue) la pelota pasa a la física, con su velocidad
+```
+
+**Cuándo manda `objetos`, animación por animación.** Todas dicen en sus `eventos` cuándo pasa la pelota a la física: en el `impacto` de un golpe o en la `suelta` de un tiro (con el `punto` de la mano). En las atrapadas pasa al revés: hasta el `atrapa` la pelota viene llegando y desde ahí se queda con el atleta, así que `objetos` manda hasta el final. El `bote` del `dribble` es el cuadro en que el balón toca el piso: ahí va el sonido. Lee los cuadros de los eventos, no de esta tabla: la tabla es para entender, los eventos siguen al dibujo si un día se redibuja.
+
+| Animación | Cuadros | Con pelota | Qué hace la pelota | El juego la suelta |
+|---|---|---|---|---|
+| `dribble` | 8, en bucle | todos | bota entre la palma y el piso, siempre debajo de la mano, `bote` en el 3 | nunca: para tirar o pasar se cambia de animación |
+| `shoot` | 6 | 0 a 4 | sube con las manos y sale por arriba, `despegue` en el 2 y `aterriza` en el 5 | `suelta` en el 5 (desde donde estaba en el 4) |
+| `dunk` | 8 | 0 a 4 | en la mano hasta la clavada, `despegue` en el 2 y `aterriza` en el 6 | `suelta` en el 5 (por el aro) |
+| `keeper_dive` | 8 | todos | llega, `impacto` y `atrapa` en el 3 (la ataja) y se queda en las manos | no se suelta |
+| `keeper_catch` | 7 | todos | llega, `impacto` y `atrapa` en el 2 y se queda en las manos | no se suelta |
+| `forehand`, `backhand` | 9 | 0 a 4 | llega a la raqueta | `impacto` en el 4 |
+| `tennis_serve` | 11 | 0 a 6 | en la mano, `suelta` en el 2 (el lanzamiento) y sube | `impacto` en el 6 |
+| `tn_volley` | 6 | 0 a 3 | llega a la raqueta | `impacto` en el 3 |
+| `tn_smash` | 9 | 0 a 4 | baja desde arriba | `impacto` en el 4 |
+| `shot`, `pass` | 10 | 0 a 6, todos | en el pie | `impacto` en el 4 (lo de después es el vuelo de la animación) |
+| `pitch` | 8 | todos | en la mano hasta el 5, sale en el 6 | `suelta` en el 6 |
+| `catch` | 6 | todos | llega hasta el 2 y desde el 3 queda en el guante | no se suelta: `atrapa` en el 3 |
+
+La raqueta y el guante no se quitan. En Chapita y en Quemado la `clase` dice `beisbol`: el juego dibuja su chapa o su balón de goma en el mismo punto, como el cầu del Đá cầu en `futbol`.
 
 ### Equipos
 
@@ -76,14 +159,29 @@ Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se 
 
 Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la mascota exista. Cualquier otro campo (`pais`, `musica`, `bandera`...) pasa al manifiesto sin tocarlo.
 
+### Nombres propios y animaciones por equipo (`alias`, lote C5)
+
+Un juego puede ponerle su nombre a una animación del motor. El pack pide la del motor y en las hojas, el atlas y el manifiesto sale con el nombre del juego:
+
+```jsonc
+"packs": { "ngg_burlas": ["burla_pulgar", "burla_bruce_lee"] },
+"alias": { "burla_familia_gg": "burla_pulgar", "burla_instituto_nekketsu": "burla_bruce_lee" }
+```
+
+- Una animación puede tener varios alias (dos equipos con el mismo gesto): sale una vez por alias. Con alias, ya no sale con su nombre del motor.
+
+- **Si el nombre termina en `_<equipo>`** (un id del archivo de equipos), solo lo trae el atleta de ese equipo, igual que `taunt_<id>` solo lo trae su dueño. Así un pack de burlas por equipo pesa una animación por atleta, no seis.
+- El alias no puede llevar el nombre de una animación del motor, y tiene que apuntar a una que exista y que esté en algún pack. Los errores dicen cuál quisiste decir.
+- Las burlas del motor: `burla_pulgar` (pulgar arriba con guiño), `burla_bruce_lee` (el pulgar en la nariz y la mano que llama), `burla_dragon` (saludo de puño en la palma, reverencia y garra de dragón), `burla_risa_tapada` (se tapa la boca riéndose y señala), `burla_salsa` (llama con las dos manos y un paso de salsa) y `burla_hombros` (sacude los hombros y abre los brazos). Sin bucle, a 8 fps, con el evento `frase` en el cuadro del gesto fuerte: ahí va el globo con la frase.
+
 ### Efectos y audio
 
 ```jsonc
 "fx": ["polvo", "golpe", "reaccion", "chapuzon", "aura_nekketsu"],     // grupos, bases o ids; true = todos
 "audio": {
   "formato": "comprimido",                                             // OGG + M4A para el celular. Sin esto: WAV
-  "sfx": ["golpe", "critico", "esquiva", "paso_tierra_0", "silbato"],  // silbato llega con el lote H: aviso
-  "musica": ["marcha_nekketsu"],                                       // llega con el lote H: aviso
+  "sfx": ["golpe", "critico", "esquiva", "paso_tierra_0", "silbato", "gallo"],
+  "musica": ["marcha_nekketsu", "parce_corra"],                        // un tema por mundo: ver AUDIO.md
   "ambientes": ["agua"]
 }
 ```
@@ -256,7 +354,9 @@ El manifiesto sigue el contrato del kit:
 }
 ```
 
-Los campos de cada animación (`eventos`, `avance`, `elevacion`, `desplazamiento`, `agua`, `cajas`, `cuerpo`, `manos`, `cabeza`, `pies`, `carga`, `arma`) son los del kit deportivo: [KIT_DEPORTES.md](KIT_DEPORTES.md#datos-por-cuadro-atlas-retratos-y-vestuario). Todos los datos por cuadro van como `[fila][cuadro]`, en pixeles desde el pivote.
+Los campos de cada animación (`eventos`, `avance`, `elevacion`, `subida`, `muro_min`, `muro_max`, `desplazamiento`, `agua`, `cajas`, `cuerpo`, `manos`, `cabeza`, `pies`, `carga`, `arma`) son los del kit deportivo: [KIT_DEPORTES.md](KIT_DEPORTES.md#datos-por-cuadro-atlas-retratos-y-vestuario). `objetos` sale solo en los packs con `sin_props` (ver arriba). Todos los datos por cuadro van como `[fila][cuadro]`, en pixeles desde el pivote.
+
+**Saltos a un muro** (`jump_wall` del gato, lote C7c): además de `elevacion` (pixeles, para el muro dibujado), traen `subida` de 0 a 1 por cuadro y `muro_min` y `muro_max`, los pixeles de muro donde el salto se ve bien. Para un muro de alto `h` dentro de ese rango, el juego sube el sprite `subida[i] * h` en el cuadro `i`. `subida` llega a 1 justo en el cuadro del `aterriza` (las patas tocan arriba) y se queda en 1.
 
 Garantías, cada una con su prueba (`src/engine/__tests__/custom.test.ts`):
 - No falta ningún archivo que nombre el manifiesto, y no sobra ninguno.
@@ -354,7 +454,7 @@ scene.add.bitmapText(8, 8, 'fuente_ui', eq.nombre.toUpperCase()).setScale(2);
 `visor.html` (en el sitio, junto a la arena) recorre un kit con los datos dibujados encima:
 - **Arriba:** los personajes agrupados por equipo, los packs en pestañas y un tablero con todas las animaciones del pack moviéndose.
 - **En el centro:** la animación elegida en todas sus filas.
-- **Los datos:** se prenden y apagan por separado. Cajas en verde, cuerpo en azul punteado, manos en amarillo, cabeza en rojo, pies en cian, carga en morado, arma en naranja, la línea del agua, los eventos del cuadro con su `punto` y el pivote. La mano o el pie cercano va relleno y el lejano hueco.
+- **Los datos:** se prenden y apagan por separado. Cajas en verde, cuerpo en azul punteado, manos en amarillo, cabeza en rojo, pies en cian, carga en morado, arma en naranja, la pelota de `objetos` como un círculo rosado (packs con `sin_props`), la línea del agua, los eventos del cuadro con su `punto` y el pivote. La mano o el pie cercano va relleno y el lejano hueco.
 - **Las armas:** compone el arma elegida en la mano tal como lo haría el juego. Es la referencia viva de ese cálculo.
 - **Controles:** pausa, cuadro a cuadro (← →), cambiar de animación (↑ ↓), velocidad y zoom. El enlace guarda el personaje, el pack y la animación.
 
@@ -368,7 +468,7 @@ npm run build:sitio && npx vite preview      # http://localhost:4173/visor.html
 
 | Configuración | Qué arma |
 |---|---|
-| [`ejemplos/nekketsu/kit.config.json`](ejemplos/nekketsu/kit.config.json) | Nekketsu Olympic GG: los 6 equipos (24 atletas), 8 packs (con `recorridos` y `trepar`), armas, Thor, fuentes con vietnamita, los 63 efectos, la pelea de azotea (pack `kachinuki`, comida, VS y público) y los sonidos del motor que le sirven |
+| [`ejemplos/nekketsu/kit.config.json`](ejemplos/nekketsu/kit.config.json) | Nekketsu Olympic GG: los 6 equipos (24 atletas), 14 packs (con `recorridos`, `trepar`, y `voley`, `futbol`, `keeper`, `basket`, `tennis` y `beisbol` sin pelotas), armas, Thor, fuentes con vietnamita, los 63 efectos, la pelea de azotea (pack `kachinuki`, comida, VS y público) y los sonidos del motor que le sirven |
 | [`ejemplos/kit-deportivo.config.json`](ejemplos/kit-deportivo.config.json) | El kit deportivo de siempre (`npm run deportes`): la familia y los héroes con los 6 packs de deporte |
 | [`ejemplos/gg-abyss.config.json`](ejemplos/gg-abyss.config.json) | Los personajes de GG Abyss: la familia con su equipo, las 21 animaciones RPG, retratos, Thor, fuentes y todo el audio |
 

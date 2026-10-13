@@ -61,6 +61,11 @@ export interface PropState {
   /** detrás del cuerpo */
   behind?: boolean;
   /**
+   * Solo con at = 'ground': la x sale de esta mano en pantalla (más x) y la y sigue siendo la altura sobre el piso. El
+   * balón que se bota queda debajo de la mano en todas las vistas
+   */
+  under?: 'handNear' | 'handFar';
+  /**
    * Estela del golpe (premium): un arco claro que el filo dibuja en el cuadro del impacto, de un ángulo a otro en
    * pantalla, por vista. Es el "smear" de los animadores: en un solo cuadro se lee todo el recorrido.
    */
@@ -74,6 +79,12 @@ export interface PropState {
   /** delante de todo, también de la cabeza (un escudo que se levanta para bloquear). Con lista: solo en esas vistas */
   front?: boolean | ('side' | 'front' | 'back' | 'se' | 'ne')[];
 }
+
+/**
+ * Forma de la mano (gestos que se leen en la silueta): `pulgar` arriba sobre el puño, `dedo` que apunta hacia donde va el
+ * antebrazo, `garra` con los dedos abiertos y curvos, `palma` abierta. Sin esto, el puño redondo de siempre.
+ */
+export type HandShape = 'pulgar' | 'dedo' | 'garra' | 'palma';
 
 export interface Pose {
   /** corrimiento horizontal de todo el cuerpo */
@@ -118,6 +129,8 @@ export interface Pose {
   /** vaivén del pelo largo (lo calcula el clip a partir del movimiento) */
   hair?: { dx: number; dy: number };
   props?: PropState[];
+  /** la forma de cada mano (burlas, saludos): ver HandShape */
+  hands?: { near?: HandShape; far?: HandShape };
 }
 
 export interface AnimClip {
