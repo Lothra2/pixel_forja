@@ -1,6 +1,6 @@
 # Lote SP2: más packs sin pelota (básquet, arquero, tenis, béisbol)
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/33
 Fecha: 2026-10-13
 
 ## Qué se hizo
