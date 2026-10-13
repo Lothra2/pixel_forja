@@ -1,7 +1,7 @@
 import { rng, bayer, grain } from '../../fx/pix';
 import { createRaster, type Raster } from '../../core/raster';
 import { Lienzo } from './lienzo';
-import { boxesOf, depthOf, floorAt, holeAt, waterAt, type ObliqueLayout, type TipoPiso } from './layout';
+import { boxesOf, depthOf, floorAt, holeAt, waterAt, type Caja, type ObliqueLayout, type TipoPiso } from './layout';
 import { VIETNAM_MANANA, paletaVietnam, type Color, type Paleta } from './paleta';
 import { pintarPiso } from './piso';
 import { cielo } from './cielo';
@@ -14,6 +14,8 @@ import { MAS_OSCURO, nombreEn, corre, volumen, caraIzquierda, alLado, cizallarPi
 import { drawText, textWidth, LINE_H } from './letras';
 import { fichaArte, type FichaArte } from './ficha';
 import { vidaSaigon } from './vidaSaigon';
+import { paletaColombia } from './colombiaPaleta';
+import { PINTORES_C13, FONDO_C13, valleAburra, cabina, CABLE_Y, piezaColombia, posteColombia, banderaAsta, banderinesVida, ropaVida, tendedero, techoEscalera, peldano } from './comuna13';
 
 /**
  * Un escenario oblicuo completo a partir del layout: todas las capas de 10.3, los objetos con su orden de dibujo,
@@ -41,8 +43,12 @@ export interface ObjetoEscena {
 export interface VidaEscena {
   id: string;
   tipo: string;
-  /** `tras_cerca` va entre la ciudad lejana y las casas (se ve por los callejones). `cerca` va encima de las casas. */
-  capa: 'tras_cerca' | 'cerca';
+  /**
+   * `tras_cerca` va entre la ciudad lejana y las casas (se ve por los callejones). `cerca` va encima de las casas.
+   * `lejos` va pegada a la capa lejos (x e y en pixeles de esa imagen, que se repite) y se mueve por su `recorrido`.
+   * `objeto` va encima de un objeto: se ordena con los atletas con su `orden`, como los objetos.
+   */
+  capa: 'tras_cerca' | 'cerca' | 'lejos' | 'objeto';
   x: number;
   y: number;
   cuadros: Lienzo[];
@@ -50,6 +56,10 @@ export interface VidaEscena {
   /** Para lo que cruza la pantalla: velocidad en px/s y cada cuántos segundos sale uno. */
   velocidad?: number;
   cada?: number;
+  /** Para `lejos`: va de `desde` a `hasta` (pixeles de la capa lejos) en `segundos`, y vuelve a empezar. `desfase` (0 a 1) lo adelanta. */
+  recorrido?: { desde: [number, number]; hasta: [number, number]; segundos: number; desfase?: number };
+  /** Para `objeto`: la profundidad, como la de los objetos (setDepth(franja.atras + orden)). */
+  orden?: number;
 }
 
 export interface Luz { x: number; y: number; color: string; radio: number; parpadeo?: number; latido?: number; encendida: boolean; nota: string }
@@ -81,7 +91,37 @@ export interface Escena {
 }
 
 /** La paleta del país a la hora del layout (y con el clima de ese día, el primero de `clima`). */
-const PALETAS: Record<string, (hora: string, clima: string[], tema?: string) => Paleta> = { vietnam: paletaVietnam };
+const PALETAS: Record<string, (hora: string, clima: string[], tema?: string) => Paleta> = { vietnam: paletaVietnam, colombia: paletaColombia };
+
+/** Los pintores de la capa cerca de todos los lugares, por tema, y el fondo por `paralaje.cerca`. */
+const PINTORES: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...PINTORES_CERCA, ...PINTORES_C13 };
+const FONDOS: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...FONDO_CERCA, ...FONDO_C13 };
+
+/** Los letreros de salida y meta en el idioma del país. */
+const PANCARTAS: Record<string, [string, string]> = { vietnam: ['XUẤT PHÁT', 'VỀ ĐÍCH'], colombia: ['SALIDA', 'META'], venezuela: ['SALIDA', 'META'], japon: ['START', 'GOAL'] };
+
+/** La altura del piso en (x, y): la caja más alta que tenga debajo, o 0. */
+export function sueloEn(L: ObliqueLayout, x: number, y: number): number {
+  let h = 0;
+  for (const b of boxesOf(L)) if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.d) h = Math.max(h, b.z);
+  return h;
+}
+
+/**
+ * La caja sobre la que está parada otra (su huella cae entera adentro y es más baja): la base. Una caja encima de otra
+ * se dibuja solo de la base para arriba y después de la base, así no la tapa.
+ */
+export function baseDe(b: Caja, todas: Caja[]): Caja | undefined {
+  let mejor: Caja | undefined;
+  for (const o of todas) if (o !== b && o.z < b.z && b.x >= o.x && b.x + b.w <= o.x + o.w && b.y >= o.y && b.y + b.d <= o.y + o.d && (!mejor || o.z > mejor.z)) mejor = o;
+  return mejor;
+}
+
+/** El orden de dibujo de una caja: su borde de adelante, o justo después de la caja que tiene debajo. */
+export function ordenCaja(b: Caja, todas: Caja[]): number {
+  const base = baseDe(b, todas);
+  return base ? ordenCaja(base, todas) + 0.3 : b.y + b.d;
+}
 
 /** Muros que llevan el portón de hẻm adelante cuando dejan paso: los de la calle, no los portones ni las casetas. */
 const conPortonHem = (m: { tipo?: string }) => m.tipo === undefined || m.tipo === 'muro_alto' || m.tipo === 'muro_bajo';
@@ -101,7 +141,7 @@ function pintarCerca(pal: Paleta, L: ObliqueLayout, huecos: Hueco[], seed: numbe
   const W = ancho, FT = L.franja.atras;
   // lo que llega al final del mundo sigue hasta el borde del ancho pintado
   const fin = (x1: number) => (x1 >= L.largo ? W : x1);
-  const conPintor = L.ranuras_deco.filter((r) => PINTORES_CERCA[r.tema] && (r.capa === 'cerca' || r.capa === 'lejos')).map((r) => ({ ...r, x1: fin(r.x1) })).sort((a, b) => b.x1 - b.x0 - (a.x1 - a.x0));
+  const conPintor = L.ranuras_deco.filter((r) => PINTORES[r.tema] && (r.capa === 'cerca' || r.capa === 'lejos')).map((r) => ({ ...r, x1: fin(r.x1) })).sort((a, b) => b.x1 - b.x0 - (a.x1 - a.x0));
   const ctx: CtxCerca = {
     seed,
     zonas: L.solidos.filter((b) => b.tipo).map((b) => ({ x0: b.x, x1: b.x + b.w, tipo: b.tipo! })).filter((z, i, a) => a.findIndex((q) => q.x0 === z.x0) === i && L.solidos.find((b) => b.x === z.x0)!.y < 50),
@@ -112,7 +152,7 @@ function pintarCerca(pal: Paleta, L: ObliqueLayout, huecos: Hueco[], seed: numbe
   let x = 0;
   for (const [a, b] of conPintor.map((r) => [r.x0, r.x1] as const).sort((p, q) => p[0] - q[0])) { if (a > x) libres.push([x, a]); x = Math.max(x, b); }
   if (x < W) libres.push([x, W]);
-  const fondo = FONDO_CERCA[L.paralaje.cerca ?? ''];
+  const fondo = FONDOS[L.paralaje.cerca ?? ''];
   let C: Lienzo;
   if (fondo) { C = new Lienzo(W, FT, pal); for (const [a, b] of libres) recortado(C, fondo, a, b, ctx); }
   else {
@@ -122,7 +162,7 @@ function pintarCerca(pal: Paleta, L: ObliqueLayout, huecos: Hueco[], seed: numbe
     const pieClaro = L.paralaje.cerca !== 'hem';
     C = filaVietnam(pal, W, FT, { huecos: huecos.filter((h) => !vacios.some((v) => h.x0 < v.x1 && h.x1 > v.x0)), temas, vacios, pieClaro, seed }, anclas);
   }
-  for (const r of conPintor) recortado(C, PINTORES_CERCA[r.tema], r.x0, r.x1, ctx);
+  for (const r of conPintor) recortado(C, PINTORES[r.tema], r.x0, r.x1, ctx);
   // la torre del reloj sobre la entrada del mercado y el arco de salida
   const portones = L.muros.filter((m) => m.tipo === 'porton_mercado').sort((a, b) => a.x - b.x);
   if (portones.length) {
@@ -172,7 +212,7 @@ export function elegirCallejones(L: ObliqueLayout): Hueco[] {
 }
 
 /** Cajas que son un volumen macizo: muestran su cara izquierda. Las caladas o redondas (vallas, tanques, botes, carritos) no. */
-const SIN_CARA = new Set(['valla', 'tanque_agua', 'bote_bambu', 'mesas_plasticas', 'banca', 'carrito_cafe', 'carrito_che', 'puesto_banhmi', 'carro', 'moto_estacionada']);
+const SIN_CARA = new Set(['valla', 'tanque_agua', 'bote_bambu', 'mesas_plasticas', 'banca', 'carrito_cafe', 'carrito_che', 'puesto_banhmi', 'carro', 'moto_estacionada', 'carrito_paletas', 'letras_comuna13', 'baranda']);
 
 export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   const pal = PALETAS[L.pais]?.(L.hora, L.clima, L.paralaje.cerca) ?? VIETNAM_MANANA;
@@ -183,7 +223,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
 
   // cielo y ciudad lejana
   const sky = cielo(pal, 640, 360, L.hora, seed, L.clima, L.paralaje.cerca);
-  const lejos = lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
+  const lejos = L.paralaje.lejos === 'valle_de_aburra' ? valleAburra(pal, TROZO, LEJOS_ALTO, seed + 39) : lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
 
   // la fila de casas, o el fondo que pida cada tema
   const cerca = pintarCerca(pal, L, huecos, seed, anclas, Wp);
@@ -191,7 +231,8 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   // cables de los postes a las casas, en la capa de las casas
   const R = rng(seed * 3);
   const postes = [...L.postes].sort((a, b) => a.x - b.x);
-  const top = (p: (typeof postes)[number]) => FT + p.y - p.alto + 9; // fila de la cruceta
+  // los postes se paran en lo que tengan debajo (el piso o la caja): `alto` se mide desde ahí
+  const top = (p: (typeof postes)[number]) => FT + p.y - sueloEn(L, p.x, p.y) - p.alto + 9; // fila de la cruceta
   for (const p of postes) {
     if (!esPosteLuz(p)) continue;
     const cx = p.x + 2 + corre(k, p.y);
@@ -204,14 +245,24 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   // letreros de salida y meta colgados del cable
   const salida = L.entidades.find((e) => e.tipo === 'salida')?.x;
   const meta = L.entidades.find((e) => e.tipo === 'meta')?.x;
-  if (typeof salida === 'number') pancarta(cerca, salida + 30, 96, 'XUẤT PHÁT');
-  if (typeof meta === 'number') pancarta(cerca, meta, 96, 'VỀ ĐÍCH');
+  const [tSalida, tMeta] = PANCARTAS[L.pais] ?? PANCARTAS.vietnam;
+  // la pancarta cuelga sobre el piso donde está: si la meta queda arriba de una terraza, sube con ella
+  // arriba de una terraza alta no hay de dónde colgarla: va en dos palos parados al fondo de la terraza
+  const colgar = (x: number, t: string) => { const z = sueloEn(L, x, 0); if (96 - z >= 30) pancarta(cerca, x, 96 - z, t); else pancarta(cerca, x, FT - z - 40, t, FT - z); };
+  if (typeof salida === 'number') colgar(salida + 30, tSalida);
+  if (typeof meta === 'number') colgar(meta, tMeta);
 
   // piso, con la línea de salida, la de meta y las sombras de las cosas (pintado derecho; después se inclina)
   const piso = pintarPiso(pal, L, { seed: seed % 97 });
   if (typeof salida === 'number') for (let y = 2; y < D; y++) { piso.p(salida, y, 'luz'); piso.p(salida + 1, y, (y >> 2) % 2 ? 'luz' : 'cemento_claro'); }
   if (typeof meta === 'number') for (let y = 0; y < D; y++) for (let i = 0; i < 8; i++) piso.p(meta + i, y, ((i >> 2) + (y >> 2)) % 2 ? 'tinta' : 'luz');
   for (const b of boxesOf(L)) sombraCaja(piso, b.x, b.y, b.w, b.d, b.z, L);
+  // en Colombia la calle de asfalto termina en un paso de cebra antes de la acera (la estación, el cruce)
+  if (L.pais === 'colombia') for (const f of L.piso.filter((q) => q.tipo === 'asfalto' && q.x1 - q.x0 > 200)) {
+    const x0 = f.x1 - 70;
+    for (let y = 4; y < D - 4; y++) if ((y >> 3) % 2 === 0) for (let x = x0; x < x0 + 34; x++) if (!holeAt(L, x, y)) piso.p(x, y, 'cemento_claro');
+    for (let y = 0; y < D; y++) piso.p(x0 - 6, y, 'amarillo');
+  }
   for (const b of L.bajo.filter((q) => q.tipo === undefined || q.tipo === 'toldo')) for (let y = (b.y0 ?? 0) + 2; y < (b.y1 ?? D) + 2 && y < D; y++) for (let x = b.x0 + 6; x < b.x1 + 6 && x < W; x++) if (bayer(x, y) < 0.3 && !holeAt(L, x, y)) piso.p(x, y, floorAt(L, x, y) === 'acera' ? 'cemento' : 'asfalto');
   // umbral de baldosa en el paso del portón, con los rieles de la reja
   for (const m of L.muros.filter(conPortonHem)) {
@@ -250,19 +301,32 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
       objetos.push({ id, tipo, origen: b.lista, img: v.img, x: b.x + corre(k, b.y), y: FT + b.y - b.z, orden: b.y + b.d, superficie });
       return;
     }
-    const pz = piezaSaigon(pal, b.tipo, b.w, b.d, b.z, seed + i) ?? piezaVietnam(pal, b.tipo, b.w, b.d, b.z, seed + i);
-    if (k === 0) { objetos.push({ id, tipo, origen: b.lista, img: pz.img, x: b.x, y: FT + b.y - b.z - pz.sobre, orden: b.y + b.d, superficie }); return; }
+    // una caja parada sobre otra: se dibuja de la base para arriba y después de la base
+    const base = baseDe(b, todas), alto = b.z - (base?.z ?? 0), orden = ordenCaja(b, todas);
+    const tema = L.ranuras_deco.find((r) => r.capa === 'cerca' && b.x + b.w / 2 >= r.x0 && b.x + b.w / 2 < r.x1)?.tema;
+    const pz = (L.pais === 'colombia' ? piezaColombia(pal, b.tipo, b.w, b.d, alto, seed + i, { x: b.x, tema }) : null)
+      ?? piezaSaigon(pal, b.tipo, b.w, b.d, alto, seed + i) ?? piezaVietnam(pal, b.tipo, b.w, b.d, alto, seed + i);
+    // la línea de meta pintada en el techo de la caja donde cae
+    if (typeof meta === 'number' && meta >= b.x && meta < b.x + b.w) lineaMeta(pz.img, meta - b.x, pz.sobre, b.d);
+    if (k === 0) { objetos.push({ id, tipo, origen: b.lista, img: pz.img, x: b.x, y: FT + b.y - b.z - pz.sobre, orden, superficie }); return; }
     const v = volumen(pz.img, pz.sobre, b.d, b.y, k);
-    objetos.push({ id, tipo, origen: b.lista, img: v.img, x: b.x + v.dx, y: FT + b.y - b.z - pz.sobre, orden: b.y + b.d, superficie });
+    objetos.push({ id, tipo, origen: b.lista, img: v.img, x: b.x + v.dx, y: FT + b.y - b.z - pz.sobre, orden, superficie });
     // la cara de la izquierda, en su propio objeto: delante de lo que va detrás de la caja y detrás de quien va a su lado
     if (SIN_CARA.has(b.tipo ?? '')) return;
-    const c = caraIzquierda(pz.img, pz.sobre, b, alLado(b, todas), k);
-    if (c) objetos.push({ id: `${id}_cara`, tipo: `${tipo}_cara`, origen: b.lista, img: c.img, x: b.x + corre(k, b.y) + c.dx, y: FT + b.y - b.z + c.dy, orden: b.y + 0.1 });
+    const c = caraIzquierda(pz.img, pz.sobre, b, alLado(b, todas), k, alto);
+    if (c) objetos.push({ id: `${id}_cara`, tipo: `${tipo}_cara`, origen: b.lista, img: c.img, x: b.x + corre(k, b.y) + c.dx, y: FT + b.y - b.z + c.dy, orden: base ? orden - 0.1 : b.y + 0.1 });
   });
   L.bajo.forEach((b, i) => {
     const id = `${b.tipo ?? 'bajo'}_${i}`, tipo = b.tipo ?? 'bajo', w = b.x1 - b.x0, y0 = b.y0 ?? 0, y1 = b.y1 ?? D;
     if (b.tipo === 'lamparas_colgantes') { const l = lamparasColgantes(pal, w, y0, y1, b.z, 66 - FT, seed + i, k); objetos.push({ id, tipo, origen: 'bajo', img: l.img, x: b.x0 + l.dx, y: FT + l.top, orden: y1 }); return; }
     if (b.tipo === 'redes_pesca') { const r = redesPesca(pal, w, y1 - y0, b.z, seed + i, k, y0); objetos.push({ id, tipo, origen: 'bajo', img: r.img, x: b.x0 + r.dx, y: FT + y0 - b.z - 2, orden: y1 }); return; }
+    if (b.tipo === 'tendedero') { const t = tendedero(pal, w, y0, y1, b.z, seed + i, k, sueloEn(L, b.x0 + 1, y0 + 1)); objetos.push({ id, tipo, origen: 'bajo', img: t.img, x: b.x0 + t.dx, y: FT + t.top, orden: y1 + 0.6 }); return; }
+    if (b.tipo === 'techo_escalera') {
+      // el techo va sobre los peldaños: las columnas bajan hasta el peldaño que tengan debajo
+      const t = techoEscalera(pal, w, y0, y1, b.z, k, (xx) => sueloEn(L, b.x0 + xx, y1 - 1));
+      objetos.push({ id, tipo, origen: 'bajo', img: t.img, x: b.x0 + t.dx, y: FT + t.top, orden: y1 + 0.6 });
+      return;
+    }
     if (b.tipo === 'ropa_tendida') { const c = cuerdasRopa(pal, w, y0, y1, b.z, 0, seed + i, k); objetos.push({ id, tipo, origen: 'bajo', img: c.img, x: b.x0 + c.dx, y: FT + c.top, orden: y1 }); return; }
     const t = toldo(pal, w, y1 - y0), tv = k > 0 ? volumen(t.img, 0, y1 - y0, y0, k) : { img: t.img, dx: 0 };
     objetos.push({ id, tipo, origen: 'bajo', img: tv.img, x: b.x0 + tv.dx, y: FT + y0 - b.z, orden: y1 });
@@ -283,9 +347,14 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     objetos.push({ id: `porton_${i}`, tipo: 'porton', origen: 'muros', img: pt.img, x: m.x + pt.dx, y: FT + pt.top, orden: D + 1 });
   });
   postes.forEach((p, i) => {
-    const otro = posteSaigon(pal, p.tipo, p.alto, seed + i), po = otro?.pieza ?? posteLuz(pal, p.alto, L.paralaje.cerca === 'hem' ? 'tinta' : 'asfalto');
-    objetos.push({ id: `${p.tipo ?? 'poste'}_${i}`, tipo: p.tipo ?? 'poste', origen: 'postes', img: po.img, x: p.x + 2 + corre(k, p.y) - (otro?.cx ?? 22), y: FT + p.y - p.alto - 5, orden: p.y });
+    const otro = (L.pais === 'colombia' ? posteColombia(pal, p.tipo, altoVisible(L, p), seed + i) : null) ?? posteSaigon(pal, p.tipo, p.alto, seed + i);
+    const po = otro?.pieza ?? posteLuz(pal, p.alto, L.paralaje.cerca === 'hem' ? 'tinta' : 'asfalto');
+    // parado en la caja que tenga debajo: va después de ella
+    const caja = todas.filter((b) => p.x >= b.x && p.x < b.x + b.w && p.y >= b.y && p.y < b.y + b.d).sort((a, b) => b.z - a.z)[0];
+    const z0 = caja?.z ?? 0, orden = caja ? ordenCaja(caja, todas) + 0.2 : p.y;
+    objetos.push({ id: `${p.tipo ?? 'poste'}_${i}`, tipo: p.tipo ?? 'poste', origen: 'postes', img: po.img, x: p.x + 2 + corre(k, p.y) - (otro?.cx ?? 22), y: FT + p.y - z0 - (p.tipo === 'asta_bandera' ? altoVisible(L, p) : p.alto) - 5, orden });
   });
+  if (k > 0) juntarEscaleras(objetos, todas, pal);
   objetos.sort((a, b) => a.orden - b.orden || a.x - b.x);
 
   // vida
@@ -321,6 +390,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
 
   // la vida de los tramos del Cross: mercado, río, azoteas y estadio
   vida.push(...vidaSaigon(pal, L, Wp, seed));
+  if (L.pais === 'colombia') vida.push(...vidaColombia(pal, L, k, seed, postes, todas));
 
   // luces y partículas
   const luces: Luz[] = [
@@ -359,9 +429,10 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
 const SUPERFICIE_CAJA: Record<string, string> = { carro: 'madera', puesto_banhmi: 'metal', cajas: 'plastico', moto_estacionada: 'metal', mesas_plasticas: 'plastico', tanque_agua: 'metal', kiosco: 'metal', muro_bajo: 'piedra', muro_alto: 'piedra' };
 
 /** Pancarta de tela colgada de dos cuerdas, centrada en x, con la parte de arriba en la fila y. */
-function pancarta(L: Lienzo, cx: number, y: number, texto: string) {
+function pancarta(L: Lienzo, cx: number, y: number, texto: string, pie?: number) {
   const tw = textWidth(texto), w = tw + 12, x = Math.round(cx - w / 2), h = LINE_H + 5;
-  L.vl(x + 2, y - 40, 40, 'sombra'); L.vl(x + w - 3, y - 40, 40, 'sombra');
+  if (pie !== undefined) for (const px of [x - 2, x + w + 1]) { L.f(px, y - 2, 2, pie - y + 2, 'cemento_claro'); L.vl(px + 1, y - 2, pie - y + 2, 'asfalto'); }
+  else { L.vl(x + 2, y - 40, 40, 'sombra'); L.vl(x + w - 3, y - 40, 40, 'sombra'); }
   L.box(x, y, w, h, 'rojo', 'vino'); L.hl(x + 1, y + 1, w - 2, 'salmon');
   drawText(L, x + 6, y + 2, texto, 'oro');
   for (let i = 0; i < w; i += 4) L.p(x + i + 1, y + h, 'vino');
@@ -619,6 +690,12 @@ export function postal(E: Escena, x0: number, actores: Actor[] = [], w = 640, h 
   for (let x = -((x0 * PARALAJE.cielo) % E.cielo.w); x < w; x += E.cielo.w) pegar(E.cielo.r, Math.floor(x), 0);
   const lx = Math.floor(x0 * PARALAJE.lejos) % E.lejos.w;
   for (let x = -lx; x < w; x += E.lejos.w) pegar(E.lejos.r, x, FT - 30 - E.lejos.h);
+  // lo que anda por la capa lejos (el metrocable): en su punto del recorrido a los t segundos, repetido como la capa
+  for (const v of E.vida) if (v.capa === 'lejos' && v.recorrido) {
+    const r = v.recorrido, f = ((t / r.segundos + (r.desfase ?? 0)) % 1 + 1) % 1;
+    const vx = Math.round(r.desde[0] + (r.hasta[0] - r.desde[0]) * f), vy = Math.round(r.desde[1] + (r.hasta[1] - r.desde[1]) * f);
+    for (let x = -lx; x < w; x += E.lejos.w) pegar(v.cuadros[0].r, x + vx, FT - 30 - E.lejos.h + vy);
+  }
   const cuadro = (v: VidaEscena) => v.cuadros[Math.floor(t * v.fps) % v.cuadros.length].r;
   for (const v of E.vida) if (v.capa === 'tras_cerca' && v.velocidad) {
     // lo que cruza al fondo: una pasada cada `cada` segundos
@@ -630,13 +707,125 @@ export function postal(E: Escena, x0: number, actores: Actor[] = [], w = 640, h 
   pegar(E.piso.r, -x0, FT);
   const capa: { orden: number; draw: () => void }[] = [
     ...E.objetos.filter((o) => o.x + o.img.w > x0 && o.x < x0 + w).map((o) => ({ orden: o.orden, draw: () => pegar(o.img.r, o.x - x0, o.y) })),
+    // la vida que va encima de un objeto (los peldaños que corren, la bandera del asta)
+    ...E.vida.filter((v) => v.capa === 'objeto' && v.x + v.cuadros[0].w > x0 && v.x < x0 + w).map((v) => ({ orden: v.orden ?? 0, draw: () => pegar(cuadro(v), v.x - x0, v.y) })),
     ...actores.map((a) => {
-      // parado encima de una caja: va después de la caja
-      const sobre = (a.z ?? 0) > 0 ? boxesOf(E.layout).find((b) => a.x >= b.x && a.x < b.x + b.w && a.y >= b.y && a.y < b.y + b.d && Math.abs(b.z - (a.z ?? 0)) <= 2) : undefined;
-      return { orden: sobre ? sobre.y + sobre.d + 0.01 : a.y + 0.5, draw: () => pegar(a.img, a.x + corre(E.inclinacion, a.y) - a.px - x0, FT + a.y - (a.z ?? 0) - a.py) };
+      // parado encima de una caja: va después de la caja (y de lo que la caja tenga debajo)
+      const todas = boxesOf(E.layout);
+      const sobre = (a.z ?? 0) > 0 ? todas.find((b) => a.x >= b.x && a.x < b.x + b.w && a.y >= b.y && a.y < b.y + b.d && Math.abs(b.z - (a.z ?? 0)) <= 2) : undefined;
+      return { orden: sobre ? ordenCaja(sobre, todas) + 0.01 : a.y + 0.5, draw: () => pegar(a.img, a.x + corre(E.inclinacion, a.y) - a.px - x0, FT + a.y - (a.z ?? 0) - a.py) };
     }),
   ];
   capa.sort((a, b) => a.orden - b.orden).forEach((c) => c.draw());
   pegar(E.frente.r, -x0, E.frenteY);
   return C.r;
+}
+
+
+/** La línea de meta a cuadros pintada en el techo de una caja (en la pieza, antes de inclinarla). */
+function lineaMeta(P: Lienzo, x: number, sobre: number, d: number) {
+  for (let y = 0; y < d; y++) for (let i = 0; i < 8; i++) P.p(x + i, sobre + y, ((i >> 2) + (y >> 2)) % 2 ? 'tinta' : 'luz');
+}
+
+/**
+ * La vida de los escenarios de Colombia: el metrocable que cruza el valle (en la capa lejos), la bandera del asta, los
+ * banderines y la ropa tendida, y los peldaños de la escalera eléctrica que bajan (encima de su objeto).
+ */
+function vidaColombia(pal: Paleta, L: ObliqueLayout, k: number, seed: number, postes: ObliqueLayout['postes'], todas: Caja[]): VidaEscena[] {
+  const out: VidaEscena[] = [], FT = L.franja.atras, R = rng(seed + 77);
+  if (L.vida.includes('metrocable')) {
+    // dos cables: el de arriba va a la derecha y el de abajo vuelve; tres cabinas en cada uno
+    const cab = cabina(pal), W = TROZO;
+    for (let i = 0; i < 6; i++) {
+      const ida = i < 3, y = (ida ? CABLE_Y - 2 : CABLE_Y + 3) - 1;
+      out.push({
+        id: `metrocable_${i}`, tipo: 'metrocable', capa: 'lejos', x: ida ? -12 : W, y, cuadros: [cab], fps: 1,
+        recorrido: { desde: ida ? [-12, y] : [W, y], hasta: ida ? [W, y] : [-12, y], segundos: 60, desfase: ((i % 3) / 3 + (ida ? 0 : 0.16)) % 1 },
+      });
+    }
+  }
+  if (L.vida.includes('banderines')) {
+    // banderines sobre la calle, de casa a casa: unos cuantos a lo largo del tramo
+    for (let x = 640; x < L.largo - 300; x += 520 + Math.floor(R() * 200)) {
+      // de casa a casa: solo donde detrás hay casas (no sobre el mirador) y por encima del piso de adelante
+      const z = Math.max(sueloEn(L, x, 0), sueloEn(L, x + 130, 0));
+      if (FT - z < 90) continue;
+      const w = 90 + Math.floor(R() * 40), y = FT - z - 70 - Math.floor(R() * 12);
+      out.push({ id: `banderines_${x}`, tipo: 'banderines', capa: 'cerca', x, y: Math.round(y), cuadros: banderinesVida(pal, w, 7), fps: 2 });
+    }
+  }
+  if (L.vida.includes('ropa_tendida')) {
+    for (let x = 1300; x < L.largo - 500; x += 700 + Math.floor(R() * 200)) {
+      const z = Math.max(sueloEn(L, x, 0), sueloEn(L, x + 60, 0));
+      if (FT - z < 90) continue;
+      const y = FT - z - 46;
+      out.push({ id: `ropa_${x}`, tipo: 'ropa_tendida', capa: 'cerca', x, y, cuadros: ropaVida(pal, 50, seed + x), fps: 2 });
+    }
+  }
+  for (const p of postes.filter((q) => q.tipo === 'asta_bandera')) {
+    const z0 = sueloEn(L, p.x, p.y), alto = altoVisible(L, p);
+    out.push({ id: `bandera_${p.x}`, tipo: 'bandera', capa: 'objeto', x: p.x + 3 + corre(k, p.y), y: FT + p.y - z0 - alto - 4, cuadros: banderaAsta(pal), fps: 4, orden: p.y + 200 });
+  }
+  // la escalera eléctrica: los peldaños que corren, encima de su objeto (un tramo seguido es una sola pieza)
+  const esc = todas.filter((b) => b.tipo === 'escalera_electrica').sort((a, b) => a.x - b.x);
+  const tramos: Caja[][] = [];
+  for (const b of esc) { const t = tramos[tramos.length - 1]; if (t && t[t.length - 1].x + t[t.length - 1].w === b.x && t[0].y === b.y) t.push(b); else tramos.push([b]); }
+  for (const t of tramos) {
+    const x0 = t[0].x, y = t[0].y, d = t[0].d, zMax = Math.max(...t.map((b) => b.z)), zMin = Math.min(...t.map((b) => b.z));
+    const w = t[t.length - 1].x + t[t.length - 1].w - x0, ext = corre(k, y + d) - corre(k, y), alto = d + zMax - zMin;
+    const cuadros = [0, 1, 2].map((f) => {
+      const C = new Lienzo(w + ext + 1, alto, pal);
+      for (const b of t) {
+        const P = new Lienzo(b.w, b.d, pal);
+        peldano(P, 0, 0, b.w, b.d, f);
+        // solo el peldaño: el vidrio de adelante queda en el objeto
+        for (let j = 0; j < b.d - 20; j++) for (let i = 0; i < b.w; i++) {
+          const ii = (j * P.w + i) * 4;
+          C.r.data.set(P.r.data.subarray(ii, ii + 4), ((j + zMax - b.z) * C.w + (b.x - x0 + i + corre(k, y + j) - corre(k, y))) * 4);
+        }
+      }
+      return C;
+    });
+    out.push({ id: `escalera_electrica_${x0}`, tipo: 'escalera_electrica', capa: 'objeto', x: x0 + corre(k, y), y: FT + y - zMax, cuadros, fps: 6, orden: y + d + 0.05 });
+  }
+  return out;
+}
+
+/** Tipos de caja que vienen en tramos de peldaños seguidos: cada tramo sale como un solo objeto (cuenta uno en el peso). */
+const TRAMOS = new Set(['escalera_electrica', 'escalones', 'escalera_pintada']);
+
+/**
+ * Junta los peldaños seguidos del mismo tipo (mismo fondo y pegados en x) en un solo objeto, con sus contrahuellas de
+ * adentro. La cara izquierda del primero queda aparte, como siempre. Así un tramo de 7 peldaños pesa 2 objetos y no 14.
+ */
+function juntarEscaleras(objetos: ObjetoEscena[], todas: Caja[], pal: Paleta) {
+  const idx = new Map(todas.map((b, i) => [b, i] as const));
+  const grupos: Caja[][] = [];
+  for (const b of [...todas].filter((q) => TRAMOS.has(q.tipo ?? '')).sort((p, q) => p.y - q.y || p.x - q.x)) {
+    const g = grupos[grupos.length - 1], u = g?.[g.length - 1];
+    if (u && u.tipo === b.tipo && u.y === b.y && u.d === b.d && u.x + u.w === b.x) g.push(b); else grupos.push([b]);
+  }
+  for (const g of grupos) {
+    if (g.length < 2) continue;
+    const ids = g.map((b) => `${b.tipo}_${idx.get(b)}`);
+    const partes = objetos.filter((o) => ids.includes(o.id) || ids.slice(1).some((id) => o.id === `${id}_cara`));
+    if (partes.length < 2) continue;
+    const x0 = Math.min(...partes.map((o) => o.x)), y0 = Math.min(...partes.map((o) => o.y));
+    const x1 = Math.max(...partes.map((o) => o.x + o.img.w)), y1 = Math.max(...partes.map((o) => o.y + o.img.h));
+    const img = new Lienzo(x1 - x0, y1 - y0, pal);
+    // las caras primero y los peldaños encima, en el orden de siempre
+    for (const o of [...partes].sort((a, b) => a.orden - b.orden || a.x - b.x)) img.paste(o.img, o.x - x0, o.y - y0);
+    const primero = objetos.find((o) => o.id === ids[0])!;
+    const nuevo: ObjetoEscena = { id: `${ids[0]}_tramo`, tipo: primero.tipo, origen: primero.origen, img, x: x0, y: y0, orden: Math.max(...partes.map((o) => o.orden)), superficie: primero.superficie };
+    for (const o of partes) objetos.splice(objetos.indexOf(o), 1);
+    objetos.push(nuevo);
+  }
+}
+
+/**
+ * El alto con que se dibuja un asta: el del layout, pero sin pasarse de la pantalla (la bandera tiene que verse). Si el
+ * layout pide más, el asta se acorta y el escenario lo avisa en `avisos` del verificador.
+ */
+export function altoVisible(L: ObliqueLayout, p: ObliqueLayout['postes'][number]): number {
+  return Math.min(p.alto, L.franja.atras + p.y - sueloEn(L, p.x, p.y) - 30);
 }

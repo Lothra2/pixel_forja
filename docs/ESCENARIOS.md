@@ -104,6 +104,9 @@ py = franja.atras + y - z
 - **Los huecos** muestran la pared del fondo (de frente), la pared del otro lado (inclinada) y abajo el agua o el vacío. Lo que los cruza (una viga) muestra su canto de 8 px.
 - **Adelante va el bordillo:** la cara del piso que da a la cámara, de la fila D hasta el borde de la pantalla. Donde el agua llega adelante, el agua sigue.
 - **Para el juego:** corre a los atletas `inclinacion * y`, igual que en el gris. Los objetos de `objetos.json` ya vienen corridos.
+- **Una caja parada sobre otra** (un tanque en la terraza, el aire en el techo, las letras en el mirador) se dibuja solo de su base para arriba, y su `orden` es el de la caja de abajo + 0.3: así va después de ella. Quien se pare encima de esa caja va con `setDepth(FT + orden + 0.5)` del objeto de la caja, no con `y + d` (que la dejaría detrás de la base).
+- **Los postes se paran en lo que tengan debajo:** su `alto` se mide desde el techo de la caja donde están, y su `orden` va justo después de esa caja.
+- **Los tramos de peldaños seguidos** (escalera eléctrica, escalones, escalera de colores) salen como un solo objeto `<tipo>_<n>_tramo`, con las contrahuellas de adentro. La cara izquierda del primero queda aparte.
 - **Para el dibujo derecho de antes:** `generarEscenario(layout, { inclinacion: 0 })`.
 
 ## En Phaser
@@ -125,6 +128,23 @@ for (const o of O.objetos) this.add.image(o.x, o.y, 'objetos_atlas', o.id).setOr
 ```
 
 **Para cargar los objetos como atlas:** cada `cuadro` de `objetos.json` es el rectángulo dentro de `objetos.png`. Lo mismo vale para la vida en `vida.png`.
+
+**Las capas de la vida** (`escenario.json`, `vida.piezas[].capa`):
+
+| Capa | Dónde va | Cómo se mueve |
+|---|---|---|
+| `tras_cerca` | Entre la ciudad lejana y las casas | `velocidad` y `cada`: cruza y vuelve |
+| `cerca` | Encima de las casas, en x e y de pantalla | Quieta, cambia de cuadro a `fps` |
+| `lejos` | Pegada a la capa lejos: x e y son pixeles de `lejos.png`, que se repite cada su ancho y corre con su paralaje | Va de `recorrido.desde` a `recorrido.hasta` en `recorrido.segundos` y vuelve a empezar, adelantada por `recorrido.desfase` (0 a 1). Es el metrocable |
+| `objeto` | Encima de un objeto, en x e y de pantalla | Se ordena con los atletas con `setDepth(FT + orden)`, como los objetos. Son los peldaños de la escalera eléctrica que corren y la bandera del asta |
+
+```js
+// la vida de la capa lejos: en update, con lejosX = cam.scrollX * C.lejos.paralaje
+const f = ((t / p.recorrido.segundos + (p.recorrido.desfase ?? 0)) % 1);
+const x = p.recorrido.desde[0] + (p.recorrido.hasta[0] - p.recorrido.desde[0]) * f;
+img.setPosition(Math.round(x - (lejosX % anchoLejos)), C.lejos.y + p.recorrido.desde[1]).setScrollFactor(0).setDepth(-34);
+// y otra copia corrida anchoLejos a la derecha, para cuando da la vuelta
+```
 
 ## Las 9 pruebas
 
@@ -184,10 +204,20 @@ Todas bloquean: si una falla, el escenario no sale.
   | `publico_ondeando` | La ola en la tribuna |
   | `banderas` | Banderas de Vietnam que ondean |
   | `lluvia`, `charcos_crecen` y `fuegos_artificiales` | Van como partículas con los efectos `lluvia`, `salpicadura_piso` y `fuegos_artificiales_*` del kit |
-- **Los otros estilos del pedido** (`colombia_colonial`, `colombia_ladrillo`, `venezuela_barrio`, `venezuela_ciudad`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
+- **El estilo `colombia_ladrillo`** (`pais: "colombia"`, lote E3a): los barrios de ladrillo de Medellín. Hoy pinta la Comuna 13 (`paralaje.cerca: "c13_casas_ladrillo"`, `paralaje.lejos: "valle_de_aburra"`).
+  - **Paleta de mañana** (`colombiaPaleta.ts`): ladrillo naranja, cielo azul limpio con cúmulos arriba, el verde de los cerros y los colores de los murales. `canal` es el violeta de los murales (aquí no hay agua).
+  - **Lejos:** el Valle de Aburrá con la cordillera en bruma, los cerros llenos de casitas, la ciudad abajo y el cable del metrocable con sus torres. Las cabinas son vida de la capa `lejos`.
+  - **Cerca, por tema de `ranuras_deco`:** `estacion_san_javier` (la estación del metro con su letrero y la torre del cable), `grafitis_murales` (el cerro de casas con el mural de la cara y el colibrí y LA 13 ES CULTURA), `casas_ladrillo_apiladas`, `techos_zinc_tanques` y `mirador_grafitis` (el valle abierto con copas de árboles).
+  - **Las casas:** de ladrillo o repello pintado, en tres gradas del cerro, con losa y varillas, rejas de colores, matas en latas, tanques negros, banderas y algunos murales (el ojo, el colibrí, la mariposa, la cara de perfil).
+  - **Cada caja por su `tipo`:** `carrito_paletas`, `escalon` (con la franja amarilla), `terraza` (adoquín con el murito de matas atrás; su frente es el muro de contención con murales, y en la subida el mural corrido de COMUNA 13), `muro_grafiti`, `escalera_electrica`, `escalones`, `tanque_agua` (el negro), `techo_lata`, `baranda`, `aire_acondicionado`, `escalera_pintada` (el arcoíris) y `mirador` (la plaza con la reja del borde y el mural AQUÍ SE SUEÑA EN GRANDE). `letras_comuna13` son las letras gigantes.
+  - **Bajo:** `techo_escalera` (la lámina naranja sobre columnas) y `tendedero` (tres cuerdas con ropa, parado en el piso de abajo).
+  - **Postes:** `poste_luz`, `antena` y `asta_bandera` con la bandera de Colombia que ondea. Si el asta del layout es tan alta que la bandera se saldría de la pantalla, se dibuja más corta y `generarEscenario` lo avisa.
+  - **Vida:** `metrocable` (6 cabinas en dos cables, ida y vuelta, en 60 s), `banderines` y `ropa_tendida` (solo donde detrás hay casas), la bandera del asta y los peldaños de la escalera eléctrica que corren (3 cuadros).
+  - **Letreros en español:** SALIDA y META en la pancarta (en Vietnam siguen XUẤT PHÁT y VỀ ĐÍCH). Si la meta queda arriba de una terraza alta, la pancarta va en dos palos parados al fondo de la terraza, y la línea a cuadros se pinta en el techo de la caja.
+- **Los otros estilos del pedido** (`colombia_colonial`, `venezuela_barrio`, `venezuela_ciudad`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos
 
 - **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.
-- **La legibilidad se mide con el contorno de los atletas,** no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.
+- **La legibilidad se mide con el contorno de los atletas,** parados encima de la caja que tengan debajo, no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.

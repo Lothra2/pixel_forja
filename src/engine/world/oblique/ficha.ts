@@ -1,6 +1,7 @@
 import type { ObliqueLayout } from './layout';
 import { boxesOf } from './layout';
 import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Paleta } from './paleta';
+import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 
 /**
  * Ficha de arte de un escenario: la puerta 1 del pedido. Paleta de 24 colores, de 8 a 12 elementos icónicos y los
@@ -178,10 +179,72 @@ VIETNAM.lugares = {
   },
 };
 
-const ESTILOS: Record<string, Estilo> = { vietnam: VIETNAM };
+/** Los barrios de ladrillo de Medellín. Hoy: la Comuna 13. */
+const COLOMBIA_LADRILLO: Estilo = {
+  paleta: COLOMBIA_MANANA,
+  paletaDe: paletaColombia,
+  uso: USO_COLOMBIA,
+  iconos: [
+    { id: 'casas', nombre: 'Casas de ladrillo apiladas en el cerro, en tres gradas, con losa de concreto y varillas', donde: 'cerca' },
+    { id: 'rejas', nombre: 'Ventanas con rejas de colores y matas en latas', donde: 'cerca, en cada casa' },
+    { id: 'tanques', nombre: 'Tanques negros de plástico en los techos', donde: 'cerca y caja tanque_agua' },
+    { id: 'murales', nombre: 'Murales: la cara de perfil, el ojo, el colibrí y la mariposa', donde: 'cerca y el frente de las terrazas' },
+    { id: 'valle', nombre: 'El Valle de Aburrá: cordillera, cerros llenos de casitas y la ciudad abajo', donde: 'lejos' },
+    { id: 'metrocable', nombre: 'El metrocable: torres, cables y las cabinas rojas que cruzan', donde: 'lejos y vida' },
+  ],
+  vida: {
+    metrocable: 'Cabinas rojas que cruzan el valle por los cables, en la capa lejos, con su recorrido',
+    banderines: 'Banderines de colores de casa a casa, 2 cuadros',
+    ropa_tendida: 'Ropa tendida que se mueve con el viento, 2 cuadros',
+    bailarines_break: 'Bailarines de break en rueda (entidad npc: lote C6a)',
+    musicos: 'Músicos con el parlante en el mirador (entidad npc: lote C6a)',
+    perros: 'Perros de la calle (entidad animal, lote C7)',
+    gallos: 'El gallo en el techo de zinc (entidad animal, lote C7b)',
+  },
+  cajas: {
+    carrito_paletas: 'Carrito amarillo de paletas de mango biche con el parasol verde y el letrero MANGO',
+    escalon: 'Escalón de concreto de la estación con la franja amarilla en la nariz',
+    terraza: 'Terraza de concreto. Su frente es el muro de contención: el mural corrido de COMUNA 13 en la subida, y ladrillo con murales en el callejón',
+    muro_grafiti: 'Muro de grafitis con franjas de colores por altura: la cara de la izquierda las sigue',
+    escalera_electrica: 'Peldaño de aluminio con estrías y borde amarillo, el vidrio y el pasamanos negro que sube. Los peldaños corren hacia abajo (vida)',
+    escalones: 'Escalones de concreto con el pasamanos de tubo',
+    tanque_agua: 'Tanque negro de plástico con sus anillos',
+    techo_lata: 'Techo de zinc ondulado con óxido y tornillos. Abajo, la casa de ladrillo con ventanas y un mural',
+    baranda: 'Pasarela de lámina sobre el hueco, con reja a los dos lados',
+    aire_acondicionado: 'Unidad de aire acondicionado con el ventilador redondo',
+    escalera_pintada: 'La escalera de colores: franjas del arcoíris en el peldaño y la contrahuella de un color',
+    mirador: 'La plaza del mirador en adoquín, con la reja del borde, bancas y materas. Su frente es el mural AQUÍ SE SUEÑA EN GRANDE',
+    letras_comuna13: 'Las letras gigantes de COMUNA 13, cada una de un color, con su espesor y la base',
+  },
+  letreros: ['ESTACIÓN SAN JAVIER', 'METROCABLE LÍNEA J', 'MANGO', 'COMUNA 13', 'LA 13 ES CULTURA', 'AQUÍ SE SUEÑA EN GRANDE', 'SALIDA', 'META'],
+};
+COLOMBIA_LADRILLO.lugares = {
+  c13_casas_ladrillo: {
+    iconos: [
+      { id: 'estacion', nombre: 'La estación San Javier del metro, con el letrero y la torre del metrocable', donde: 'cerca, x 0 a 520' },
+      { id: 'mural_comuna', nombre: 'El muro largo de COMUNA 13 con colibríes y mariposas', donde: 'frente de la terraza de la subida' },
+      { id: 'cara', nombre: 'El mural de la cara de perfil con el colibrí, y LA 13 ES CULTURA', donde: 'cerca, la subida de los grafitis' },
+      { id: 'casas', nombre: 'Casas de ladrillo apiladas en tres gradas, con rejas de colores y matas', donde: 'cerca' },
+      { id: 'escalera_electrica', nombre: 'La escalera eléctrica con el techo naranja sobre columnas grises', donde: 'cajas escalera_electrica y bajo techo_escalera' },
+      { id: 'tanques', nombre: 'Tanques negros, varillas y antenas en los techos', donde: 'cerca y caja tanque_agua' },
+      { id: 'zinc', nombre: 'Techos de zinc con óxido', donde: 'cajas techo_lata' },
+      { id: 'escalera_colores', nombre: 'La escalera de colores', donde: 'cajas escalera_pintada' },
+      { id: 'letras', nombre: 'Las letras gigantes de COMUNA 13', donde: 'caja letras_comuna13' },
+      { id: 'bandera', nombre: 'La bandera de Colombia en el asta del mirador', donde: 'poste asta_bandera y vida' },
+      { id: 'valle', nombre: 'El Valle de Aburrá con la ciudad abajo', donde: 'lejos' },
+      { id: 'metrocable', nombre: 'El metrocable cruzando el valle', donde: 'lejos y vida' },
+    ],
+    letreros: ['ESTACIÓN SAN JAVIER', 'METROCABLE LÍNEA J', 'MANGO', 'COMUNA 13', 'LA 13 ES CULTURA', 'AQUÍ SE SUEÑA EN GRANDE', 'SALIDA', 'META'],
+  },
+};
+
+const ESTILOS: Record<string, Estilo> = { vietnam: VIETNAM, colombia_ladrillo: COLOMBIA_LADRILLO };
+
+/** ¿Ya hay ficha para el estilo de este layout? */
+export const hayEstilo = (L: ObliqueLayout) => estiloDe(L) in ESTILOS;
 
 /** El estilo de fachada que va con cada país. */
-export const estiloDe = (L: ObliqueLayout) => (L.pais === 'vietnam' ? 'vietnam' : L.pais);
+export const estiloDe = (L: ObliqueLayout) => (L.pais === 'vietnam' ? 'vietnam' : L.pais === 'colombia' ? 'colombia_ladrillo' : L.pais);
 
 export function fichaArte(L: ObliqueLayout): FichaArte {
   const estilo = estiloDe(L), E = ESTILOS[estilo];

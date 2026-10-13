@@ -106,6 +106,11 @@ export function cielo(pal: Paleta, w: number, h: number, hora: Hora = 'manana', 
   }
   // mañana y mediodía: nubes blancas (al mediodía pocas y chicas, con el sol arriba)
   const n = hora === 'mediodia' ? Math.max(2, Math.round(w / 300)) : Math.max(2, Math.round(w / 220));
+  if (tema?.startsWith('c13')) {
+    // la Comuna 13: el valle tapa lo de abajo, así que los cúmulos van arriba, grandes, sobre el azul limpio
+    for (let i = 0; i < n + 1; i++) nube(L, R() * w, 14 + R() * 22, 40 + R() * 40, 'luz', 'cielo', 'cielo');
+    return L;
+  }
   for (let i = 0; i < n; i++) {
     const cx = R() * w, cy = h * (hora === 'mediodia' ? 0.12 + R() * 0.3 : 0.25 + R() * 0.4), cw = (hora === 'mediodia' ? 22 : 28) + R() * 40;
     nube(L, cx, cy, cw, 'luz', 'cielo');

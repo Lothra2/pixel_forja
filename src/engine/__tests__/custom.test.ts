@@ -204,16 +204,18 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     expect(m.pendiente).toEqual([
       'audio.sfx: todavía no existen, llegan con el lote H: silbato, pistola',
       'audio.musica: todavía no existen, llegan con el lote H: marcha_nekketsu',
+      // E3a: el asta del mirador es tan alta que la bandera se saldría de la pantalla
+      expect.stringMatching(/^medellin_c13\.layout\.json: postes: el asta de x 3080 pide alto 120/),
     ]);
   });
 
-  it('los 5 tramos del Cross Country salen con sus 9 pruebas en verde (lotes E1 y E2)', () => {
-    const tramos = ['saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio'];
+  it('los 5 tramos del Cross Country y la Comuna 13 salen con sus 9 pruebas en verde (lotes E1, E2 y E3a)', () => {
+    const tramos = ['medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio'];
     expect(Object.keys(m.escenarios).sort()).toEqual(tramos);
     for (const id of tramos) {
       expect(m.escenarios[id]).toBe(`escenarios/${id}/escenario.json`);
       const e = readJson(join(out, m.escenarios[id]));
-      expect(e).toMatchObject({ id, escala: 1, largo: id === 'saigon_estadio' ? 1920 : 3840, franja: { atras: 200, adelante: 330 } });
+      expect(e).toMatchObject({ id, escala: 1, largo: id === 'saigon_estadio' ? 1920 : id === 'medellin_c13' ? 3600 : 3840, franja: { atras: 200, adelante: 330 } });
       expect(readFileSync(join(out, `escenarios/${id}/verificacion.md`), 'utf8'), id).toMatch(/Las 9 pruebas pasan/);
       // las postales y la ficha son para aprobar: el kit no las lleva
       expect(files.some((f) => f.startsWith(`escenarios/${id}/postales/`))).toBe(false);
@@ -241,8 +243,8 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas + efectos + los 5 escenarios: hẻm 21, Bến Thành 17, río 17, azoteas 21 (con piso mojado) y estadio 11
-    expect(pngs.length).toBe(54 + 56 + 21 + 17 + 17 + 21 + 11);
+    // atletas + efectos + los 6 escenarios: hẻm 21, Bến Thành 17, río 17, azoteas 21 (con piso mojado), estadio 11 y Comuna 13 14
+    expect(pngs.length).toBe(54 + 56 + 21 + 17 + 17 + 21 + 11 + 14);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });
