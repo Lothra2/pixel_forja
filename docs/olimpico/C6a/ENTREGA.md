@@ -1,6 +1,6 @@
 # Lote C6a: la gente de la calle de la Comuna 13
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/23
 Fecha: 2026-10-13
 
 ## Qué se hizo
