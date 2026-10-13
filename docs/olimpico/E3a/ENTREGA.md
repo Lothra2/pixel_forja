@@ -27,7 +27,7 @@ Fecha: 2026-10-13
 - **Dos capas nuevas de vida:**
   - `lejos`: va pegada a la capa lejos y se mueve por su `recorrido`.
   - `objeto`: va encima de un objeto, con su `orden`.
-- **Pancartas en el idioma del país:** SALIDA y META en Colombia. En Vietnam siguen XUẤT PHÁT y VỀ ĐÍCH. Si la meta queda arriba de una terraza alta, la pancarta va en dos palos y la línea a cuadros se pinta en el techo de la caja.
+- **Pancartas en el idioma del país:** SALIDA y META en Colombia. En Vietnam siguen XUẤT PHÁT y VỀ ĐÍCH. Si la meta queda arriba de una terraza alta, la pancarta va en dos palos parados en el borde de adelante de la terraza, a 64 px sobre el piso y con letra al doble, y la línea a cuadros se pinta en el techo de la caja.
 - **Un lugar sin arte todavía se salta con aviso, en vez de tumbar el kit.** Lo explico abajo.
 
 ## Cómo se usa (estudio y kit)
@@ -42,7 +42,7 @@ En el juego no cambia nada de la configuración: `"escenarios": "data/stages/"` 
    - Ver el ejemplo en `docs/ESCENARIOS.md`.
 2. **Vida de la capa `objeto`** (los peldaños de la escalera eléctrica, la bandera): `setDepth(FT + orden)`, como un objeto, y no -19. Si no, queda detrás de su escalera.
 3. **Atleta parado en una caja que está encima de otra** (el tanque, las letras): la profundidad es `FT + orden + 0.5` del objeto de esa caja. Con `y + d` queda detrás de la terraza de abajo. La cuenta está en `ordenCaja()`.
-4. **El asta del mirador:** el layout pide `alto: 120` encima del mirador de 144. Así la bandera queda en la fila -60, fuera de la pantalla, y en el gris pasa lo mismo. La dibujo de 30 para que se vea, y el kit lo avisa. **Propongo cambiar el layout a `alto: 30`.**
+4. **El asta del mirador:** el layout pedía `alto: 120` encima del mirador de 144, y la bandera quedaba en la fila -60. **El juego ya lo cambió a `alto: 30`** y la copia de aquí también. El kit sigue avisando y acortando el asta si algún layout la pide tan alta que la bandera se salga de la pantalla.
 
 ## Pruebas
 
@@ -51,7 +51,8 @@ En el juego no cambia nada de la configuración: `"escenarios": "data/stages/"` 
   - Peso: 16 objetos y 10 piezas animadas en la pantalla más cargada.
   - Paleta: 24 de 24.
 - **Prueba nueva `comuna13.test.ts`, 9 casos:**
-  - Las 9 pruebas y el aviso del asta.
+  - Las 9 pruebas sin avisos, y el aviso del asta con un layout que la pida de 120.
+  - La pancarta de META debajo de la franja del marcador.
   - La ficha del estilo.
   - Solo la paleta, sin mezcla.
   - Cajas encima de cajas.
@@ -92,10 +93,10 @@ En el juego no cambia nada de la configuración: `"escenarios": "data/stages/"` 
 1. **`canal` es el violeta de los murales en la paleta de Colombia.** En Vietnam es el agua. Aquí no hay agua y los murales piden violeta. Así la paleta sigue en 24 colores con los mismos nombres.
 2. **Los murales intensos van en el cerro de atrás y en el frente de las terrazas,** que queda debajo de la franja en la pantalla. Los pisos por donde se corre van en gris claro y crema, sin murales.
 3. **El metrocable va en un cable horizontal con torres cada 640 px.** Así da la vuelta sin costura cuando la capa lejos se repite. En la vida real sube por el cerro, pero en una capa que se repite no se puede.
-4. **El asta se dibuja de 30 y no de 120** (ver arriba). Lo aviso en vez de cambiar el layout del juego.
+4. **El kit sigue cuidando el asta.** El juego pidió quitar el aviso y el ajuste, pero lo dejé: no hace nada con un asta normal (con la de 30 no sale ningún aviso) y evita que otro escenario saque la bandera de la pantalla sin que nadie se entere.
 5. **Arreglé algo de E2 sin que lo pidieran:** el kit se caía entero si `data/stages/` traía un escenario sin arte. Con la carpeta del juego, `caracas_azotea` lo tumbaba y `hoian` salía pintado como Saigón. Ahora los dos se saltan con aviso hasta que llegue su lote.
 6. **Los tramos de peldaños se juntan solo para los tipos nuevos** (escalera eléctrica, escalones y escalera de colores). Así Saigón no cambia ni un byte.
-7. **La pancarta de la meta va en dos palos parados al fondo del mirador.** A 144 de alto no hay de dónde colgarla.
+7. **La pancarta de la meta va en dos palos parados en el borde de adelante del mirador.** Primero la puse al fondo, en las filas 16 a 56, y la tapaba la barra del marcador del juego (filas 28 a 60). Ahora queda en las filas 120 a 142, con letra al doble, y los atletas pasan por detrás. La regla es general: una pancarta que caería por encima de la fila 64 va así.
 
 ## Límites honestos
 
@@ -112,5 +113,4 @@ En el juego no cambia nada de la configuración: `"escenarios": "data/stages/"` 
 - **El juego:**
   - Las capas `lejos` y `objeto` de la vida.
   - La profundidad de quien se para en una caja encima de otra.
-  - El `alto` del asta.
 - **Dependencia:** esta rama sale de E2 (https://github.com/Lothra2/pixel_forja/pull/16) y se une después de ese PR.

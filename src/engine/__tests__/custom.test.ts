@@ -204,8 +204,6 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     expect(m.pendiente).toEqual([
       'audio.sfx: todavía no existen, llegan con el lote H: silbato, pistola',
       'audio.musica: todavía no existen, llegan con el lote H: marcha_nekketsu',
-      // E3a: el asta del mirador es tan alta que la bandera se saldría de la pantalla
-      expect.stringMatching(/^medellin_c13\.layout\.json: postes: el asta de x 3080 pide alto 120/),
     ]);
   });
 

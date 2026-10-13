@@ -19,11 +19,15 @@ const PAL = new Set(NOMBRES.map((n) => COLOMBIA_MANANA[n].toLowerCase()));
 const hex = (r: Raster, i: number) => '#' + [0, 1, 2].map((k) => r.data[i + k].toString(16).padStart(2, '0')).join('');
 
 describe('la Comuna 13 (lote E3a)', () => {
-  it('pasa las 9 pruebas y exporta la carpeta, con la bandera recortada como aviso', () => {
+  it('pasa las 9 pruebas y exporta la carpeta, sin avisos', () => {
     const r = generarEscenario(RAW, { ficha: true });
     expect(r.errores).toEqual([]);
+    expect(r.avisos).toEqual([]);
     expect(r.pruebas.every((p) => p.ok)).toBe(true);
-    expect(r.avisos.join()).toMatch(/asta de x 3080 pide alto 120/);
+    // un asta tan alta que la bandera se saldría de la pantalla se acorta y avisa
+    const alta = JSON.parse(JSON.stringify(RAW));
+    alta.postes.find((p: { tipo?: string }) => p.tipo === 'asta_bandera').alto = 120;
+    expect(generarEscenario(alta).avisos.join()).toMatch(/asta de x 3080 pide alto 120/);
     const ej = JSON.parse(new TextDecoder().decode(r.archivos.find((a) => a.nombre === 'escenario.json')!.bytes));
     expect(ej).toMatchObject({ id: 'medellin_c13', inclinacion: 0.35, largo: 3600, ancho: 3600 + 46 });
     expect(ej.vida.nota).toMatch(/capa lejos/);
@@ -100,6 +104,13 @@ describe('la Comuna 13 (lote E3a)', () => {
     const { files, warnings } = buildCustomKit({ juego: 'Prueba', personajes_incluidos: ['familia'], packs: { base: ['idle'] }, escenarios: 'x/' }, { escenarios: { 'caracas.layout.json': venezuela } }, { quick: true, solo: ['escenarios'] });
     expect(warnings.join()).toMatch(/caracas_prueba: el estilo "venezuela" todavía no tiene arte.*Se salta/);
     expect(files.some((f) => f.name.startsWith('escenarios/'))).toBe(false);
+  });
+
+  it('la pancarta de META arriba del mirador va en dos palos al borde de adelante, debajo de la franja del marcador', () => {
+    const p = E.objetos.find((o) => o.id === 'pancarta_META')!;
+    expect(p).toBeDefined();
+    expect(p.y).toBeGreaterThanOrEqual(64);
+    expect(p.orden).toBeGreaterThan(ordenCaja(todas.find((b) => b.tipo === 'mirador')!, todas));
   });
 
   it('imagen dorada: la estación, la escalera eléctrica, los techos y el mirador', () => {

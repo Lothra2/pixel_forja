@@ -247,10 +247,11 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   const meta = L.entidades.find((e) => e.tipo === 'meta')?.x;
   const [tSalida, tMeta] = PANCARTAS[L.pais] ?? PANCARTAS.vietnam;
   // la pancarta cuelga sobre el piso donde está: si la meta queda arriba de una terraza, sube con ella
-  // arriba de una terraza alta no hay de dónde colgarla: va en dos palos parados al fondo de la terraza
-  const colgar = (x: number, t: string) => { const z = sueloEn(L, x, 0); if (96 - z >= 30) pancarta(cerca, x, 96 - z, t); else pancarta(cerca, x, FT - z - 40, t, FT - z); };
-  if (typeof salida === 'number') colgar(salida + 30, tSalida);
-  if (typeof meta === 'number') colgar(meta, tMeta);
+  // colgada del cable sobre la calle. Arriba de una terraza alta caería en la franja del marcador (filas 0 a 64):
+  // ahí va en dos palos parados en el borde de adelante de la terraza (un objeto, más abajo)
+  const enAlto = (x: number) => 96 - sueloEn(L, x, 0) < 64;
+  if (typeof salida === 'number' && !enAlto(salida + 30)) pancarta(cerca, salida + 30, 96 - sueloEn(L, salida + 30, 0), tSalida);
+  if (typeof meta === 'number' && !enAlto(meta)) pancarta(cerca, meta, 96 - sueloEn(L, meta, 0), tMeta);
 
   // piso, con la línea de salida, la de meta y las sombras de las cosas (pintado derecho; después se inclina)
   const piso = pintarPiso(pal, L, { seed: seed % 97 });
@@ -354,6 +355,20 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     const z0 = caja?.z ?? 0, orden = caja ? ordenCaja(caja, todas) + 0.2 : p.y;
     objetos.push({ id: `${p.tipo ?? 'poste'}_${i}`, tipo: p.tipo ?? 'poste', origen: 'postes', img: po.img, x: p.x + 2 + corre(k, p.y) - (otro?.cx ?? 22), y: FT + p.y - z0 - (p.tipo === 'asta_bandera' ? altoVisible(L, p) : p.alto) - 5, orden });
   });
+  // la pancarta de una meta (o salida) arriba de una terraza alta: dos palos en el borde de adelante, 64 sobre el piso
+  for (const [x, t] of [[typeof salida === 'number' ? salida + 30 : NaN, tSalida], [meta ?? NaN, tMeta]] as [number, string][]) {
+    if (!Number.isFinite(x) || !enAlto(x)) continue;
+    const yf = D - 3, caja = todas.filter((b) => x >= b.x && x < b.x + b.w && yf >= b.y && yf < b.y + b.d).sort((a, b) => b.z - a.z)[0];
+    // la pancarta grande, con letra al doble, para que se lea desde lejos
+    const z = caja?.z ?? 0, alto = 64, bw = textWidth(t) * 2 + 18, bh = 22, img = new Lienzo(bw + 6, alto + 2, pal);
+    for (const px of [1, bw + 3]) { img.f(px, 4, 2, alto - 2, 'cemento_claro'); img.vl(px + 1, 4, alto - 2, 'asfalto'); }
+    img.box(3, 2, bw, bh, 'rojo', 'vino'); img.hl(4, 3, bw - 2, 'salmon');
+    for (let i = 4; i < bw + 2; i += 4) img.p(i, 2 + bh, 'vino');
+    const T = new Lienzo(textWidth(t) + 2, LINE_H, pal);
+    drawText(T, 0, 0, t, 'oro');
+    for (let yy = 0; yy < T.h; yy++) for (let xx = 0; xx < T.w; xx++) if (T.has(xx, yy)) img.f(12 + xx * 2, 2 + 2 + (yy - 3) * 2, 2, 2, 'oro');
+    objetos.push({ id: `pancarta_${t}`, tipo: 'pancarta', origen: 'postes', img, x: x - Math.floor(img.w / 2) + corre(k, yf), y: FT + yf - z - alto - 1, orden: (caja ? ordenCaja(caja, todas) : yf) + 0.6 });
+  }
   if (k > 0) juntarEscaleras(objetos, todas, pal);
   objetos.sort((a, b) => a.orden - b.orden || a.x - b.x);
 
