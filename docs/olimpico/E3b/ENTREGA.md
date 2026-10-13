@@ -1,6 +1,6 @@
 # Lote E3b: la azotea de Caracas
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/24
 Fecha: 2026-10-13
 
 ## Qué se hizo
