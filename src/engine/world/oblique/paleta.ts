@@ -4,6 +4,7 @@
  */
 
 import { VIETNAM_HOIAN_NOCHE } from './hoianPaleta';
+import { VIETNAM_DOJO_TARDE, VIETNAM_TAODAN_AMANECER } from './lugaresPaleta';
 
 export const NOMBRES = [
   'tinta', 'sombra', 'asfalto', 'asfalto_claro', 'cemento', 'cemento_claro', 'crema', 'luz',
@@ -122,11 +123,15 @@ export const VIETNAM_ATARDECER: Paleta = {
   azul_noche: '#262c5c', canal: '#5a6b8a', oro: '#ffb52e', bruma: '#f58a5a',
 };
 
+/** Los lugares de Vietnam con paleta propia, por su fondo (`paralaje.cerca`): el dojo de Hà Nội y el parque Tao Đàn. */
+export const PALETAS_LUGAR_VIETNAM: Record<string, Paleta> = { dojo_hanoi: VIETNAM_DOJO_TARDE, parque_tao_dan: VIETNAM_TAODAN_AMANECER };
+
 /**
- * La paleta del estilo vietnam para una hora y un clima. De noche es la de Hội An (estilo `vietnam_hoian`): las otras
- * horas no cambian.
+ * La paleta del estilo vietnam para una hora y un clima. De noche es la de Hội An (estilo `vietnam_hoian`). El dojo de
+ * Hà Nội y el parque Tao Đàn traen la suya, por su fondo: las otras horas no cambian.
  */
 export function paletaVietnam(hora: string, clima: string[] = [], tema?: string): Paleta {
+  if (tema && PALETAS_LUGAR_VIETNAM[tema]) return PALETAS_LUGAR_VIETNAM[tema];
   if (tema === 'azoteas' && clima[0] === 'aguacero') return VIETNAM_TORMENTA;
   if (hora === 'noche') return VIETNAM_HOIAN_NOCHE;
   if (hora === 'mediodia') return VIETNAM_MEDIODIA;

@@ -1,4 +1,5 @@
 import type { Color, Paleta } from './paleta';
+import { COLOMBIA_CANDELARIA_TARDE } from './lugaresPaleta';
 
 /**
  * El estilo `colombia_ladrillo`: los barrios de ladrillo de Medellín. La misma lista de 24 nombres que Vietnam, con los
@@ -59,7 +60,7 @@ export const USO_COLOMBIA: Record<Color, string> = {
   bruma: 'bruma sobre el valle',
 };
 
-/** La paleta del estilo colombia para una hora. Por ahora el único escenario es de mañana. */
-export function paletaColombia(_hora: string, _clima: string[] = [], _tema?: string): Paleta {
-  return COLOMBIA_MANANA;
+/** La paleta del estilo colombia para una hora. La Comuna 13 es de mañana. La cancha de tejo de La Candelaria trae la suya. */
+export function paletaColombia(_hora: string, _clima: string[] = [], tema?: string): Paleta {
+  return tema === 'cancha_tejo_candelaria' ? COLOMBIA_CANDELARIA_TARDE : COLOMBIA_MANANA;
 }
