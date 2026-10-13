@@ -171,7 +171,8 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     if (r.status !== 0) throw new Error(r.stderr);
     m = readJson(join(out, 'manifest.json'));
     files = walk(out).map((p) => relative(out, p).replaceAll('\\', '/'));
-  }, 240_000);
+    // el corte va por encima del límite de 300 s de abajo: así decide esa prueba, con su tiempo medido, y no un corte a ciegas
+  }, 320_000);
 
   // el límite era 180 s; con el kit completo (escenarios, NPC, aves) y la máquina de hoy tarda entre 185 y 200: 300 s (lote C7b)
   it('se genera en menos de 5 minutos', () => {
