@@ -368,10 +368,35 @@
           ],
           "properties": {
             "texto": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             }
           },
-          "description": "Todavía no se genera: llega con el resto del lote G1."
+          "description": "El logo animado del juego a partir de su nombre, en 320 x 112 y 160 x 56 (ui/logo.png y ui/logo_chico.png)."
+        },
+        "interfaz": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "dialogo",
+                  "paneles",
+                  "barras",
+                  "marcos",
+                  "banners",
+                  "controles",
+                  "minimapa",
+                  "numeros"
+                ]
+              },
+              "uniqueItems": true
+            }
+          ],
+          "description": "Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador. true = todas."
         }
       }
     },
@@ -549,7 +574,23 @@
                       "paso_madera_2",
                       "paso_agua_0",
                       "paso_agua_1",
-                      "paso_agua_2"
+                      "paso_agua_2",
+                      "pistola",
+                      "silbato",
+                      "golpe_1",
+                      "golpe_2",
+                      "golpe_3",
+                      "golpe_pesado",
+                      "chancleta",
+                      "silla",
+                      "pote",
+                      "levantar",
+                      "lanzar",
+                      "caer_plano",
+                      "mareo",
+                      "ko",
+                      "publico_grito",
+                      "publico_ooh"
                     ]
                   },
                   {
@@ -575,7 +616,12 @@
                       "bosque",
                       "jefe",
                       "victoria",
-                      "titulo"
+                      "titulo",
+                      "marcha_nekketsu",
+                      "saigon_chay",
+                      "azotea_final",
+                      "victoria_banda",
+                      "derrota"
                     ]
                   },
                   {
@@ -612,6 +658,44 @@
                 ]
               },
               "uniqueItems": true
+            }
+          ]
+        },
+        "voces": {
+          "description": "Voces en blips para los diálogos: true = todos los atletas, una lista de ids (atletas o NPC como \"locutor\"), o { id: { tono, timbre } }.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9_]+$"
+              },
+              "uniqueItems": true
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tono": {
+                    "type": "number",
+                    "minimum": 0.3,
+                    "maximum": 3
+                  },
+                  "timbre": {
+                    "enum": [
+                      "cuadrada",
+                      "aguda",
+                      "triangulo",
+                      "sierra"
+                    ]
+                  }
+                }
+              }
             }
           ]
         }

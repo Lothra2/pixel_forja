@@ -58,8 +58,10 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `objetos` | Armas del piso: `true` (las 19) o la lista | No van |
 | `animales` | Ids de animales: de las fichas, o `thor` que viene con el motor. La mascota de un equipo entra sola | No van |
 | `ui.fuentes` | `true` o `{ "idiomas": [...] }`: las tres fuentes bitmap con vietnamita | No van |
+| `ui.logo` | `{ "texto": "NOMBRE DEL JUEGO" }`: el logo animado en 320 x 112 y 160 x 56. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
+| `ui.interfaz` | `true` o la lista: `dialogo`, `paneles`, `barras`, `marcos`, `banners`, `controles`, `minimapa`, `numeros` | No va |
 | `fx` | Efectos del catálogo general: `true` (los 56) o ids, bases y grupos. Ver abajo | No van |
-| `audio` | `{ "sfx": [...], "musica": [...], "ambientes": [...] }` con los sonidos del motor, o `true` en cada sección. Ver abajo | No va |
+| `audio` | `{ "sfx": [...], "musica": [...], "ambientes": [...], "voces": [...] }` con los sonidos del motor, o `true` en cada sección. Ver abajo y [AUDIO.md](AUDIO.md) | No va |
 
 Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 142 del motor. El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
 
@@ -86,11 +88,17 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
 ```
 
 - **Efectos:** cada uno sale en `fx/<id>.png` con su entrada en `manifest.fx`: tamaño, cuadros, fps, bucle, ancla, a qué se pega y si va delante o detrás. El catálogo, qué efecto va con qué evento y cómo se ponen en Phaser están en [EFECTOS.md](EFECTOS.md).
-- **Audio:** los sonidos que ya tiene el motor, sintetizados, en WAV de 16 bits mono a 22050 Hz:
-  - `sfx` (49): espadazo, golpe, critico, enemigo_dolor, enemigo_muere, jefe_rugido, jefe_pisoton, moneda, oro_mucho, pocion, curar, cofre_abrir, romper, portal, subir_nivel, paso, ladrido, aullido, mordida, recoger, legendario, click, abrir_inventario, error, jugador_dolor, magia, descubrir, secreto, elegir, guardado, arco, esquiva, bloqueo, thor_rescate y `paso_<pasto|tierra|piedra|madera|agua>_<0|1|2>`.
-  - `musica` (4): bosque, jefe, victoria, titulo. En bucle.
+- **Audio:** los sonidos del motor, sintetizados, en WAV de 16 bits mono a 22050 Hz. El catálogo completo está en [AUDIO.md](AUDIO.md).
+  - `sfx` (65): los del lote H1 (pistola, silbato, golpe_1 a 3, golpe_pesado, chancleta, silla, pote, levantar, lanzar, caer_plano, mareo, ko, publico_grito, publico_ooh), los de pelea e interfaz (golpe, critico, esquiva, bloqueo, click, elegir...), los pasos por superficie y los de GG Abyss.
+  - `musica` (9): marcha_nekketsu, saigon_chay, azotea_final, victoria_banda, derrota, y bosque, jefe, victoria y titulo de GG Abyss. Las que van en bucle empalman sin corte.
   - `ambientes` (6): bosque, agua, noche, viento, cueva, magia. En bucle sin corte.
-- **Qué sale del audio:** `audio/sfx/<n>.wav`, `audio/musica/<n>.wav` y `audio/ambiente/<n>.wav`, con `manifest.audio.<sección>.<n> = { archivo, duracion, bucle? }`. Cada sonido sale igual siempre, se pida solo o con otros.
+  - `voces`: 4 blips por personaje para los diálogos. Con `true` salen todos los atletas, con una lista también los NPC (`locutor`), y con un objeto se fija la voz.
+- **Qué sale del audio:**
+  - `audio/sfx/<n>.wav`, `audio/musica/<n>.wav`, `audio/ambiente/<n>.wav` y `audio/voz/<id>_<k>.wav`.
+  - Cada sonido trae `manifest.audio.<sección>.<n> = { archivo, duracion, bucle? }`.
+  - Cada atleta trae su `voz`.
+  - Sale `audio/escuchar.html` para oírlo todo con un clic, también en la tablet.
+  - Cada sonido sale igual siempre, se pida solo o con otros.
 - **Nombres que todavía no existen:** si un nombre se parece mucho a uno que existe, es un error con sugerencia (`ladridoo`: "¿Quisiste decir "ladrido"?"). Si no se parece a ninguno, es un sonido o efecto que llega después: se salta con aviso y queda en `manifest.pendiente`. Así el juego puede listar desde ya los sonidos del lote H (`golpe_1`, `silbato`, `marcha_nekketsu`...). Lo mismo con otras secciones de audio, como `voces`.
 
 - **Escenarios oblicuos:** `"escenarios": "data/stages/"` (o una lista de layouts).
@@ -101,12 +109,12 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
 
 ### Lo que todavía no genera
 
-`publico`, `npc`, `vehiculos`, `ui.logo` y los sonidos nuevos del lote H se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
+`publico`, `npc`, `vehiculos` y los sonidos de lotes futuros (como los del H2) se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
 
 ```
 aviso: vehiculos: todavía no se genera, llega con vehículos (lote D2)
 aviso: animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire
-aviso: audio.musica: todavía no existen, llegan con el lote H: marcha_nekketsu
+aviso: audio.sfx: todavía no existen, llegan con el lote H: trueno
 ```
 
 Cada sección se irá sumando con su lote, sin cambiar la configuración del juego.
@@ -134,8 +142,11 @@ kit/
   objetos/armas.png + .json
   ui/cabecitas.png
   ui/fuentes/<fuente>.png + .fnt
+  ui/logo.png  ui/logo_chico.png      logo animado
+  ui/<pieza>.png                      interfaz: dialogo, panel_<equipo>, barras, marcos, banner_<id>, control_<id>, minimapa, numeros
   fx/<id>.png                         efectos
-  audio/sfx/<n>.wav  audio/musica/<n>.wav  audio/ambiente/<n>.wav
+  audio/sfx/<n>.wav  audio/musica/<n>.wav  audio/ambiente/<n>.wav  audio/voz/<id>_<k>.wav
+  audio/escuchar.html                 para oír todo el audio con un clic
 ```
 
 El manifiesto sigue el contrato del kit:
@@ -279,7 +290,7 @@ Una prueba revisa que los packs de esas configuraciones sean los mismos que usan
 
 ## Límites honestos
 
-- **Versión inicial.** Arma atletas, retratos, cabecitas, armas del piso, animales con ficha, fuentes, efectos y los sonidos del motor. Escenarios, público, NPC, vehículos, logo y los sonidos nuevos llegan con sus lotes, y mientras tanto vuelven como aviso.
+- **Versión inicial.** Arma atletas, retratos, cabecitas, armas del piso, animales con ficha, fuentes, logo, interfaz, efectos, música, efectos de sonido y voces. Escenarios, público, NPC, vehículos y los sonidos de lotes futuros llegan con sus lotes, y mientras tanto vuelven como aviso.
 - **Animales nuevos.** Solo salen los que tienen ficha, más Thor. Las especies nuevas (chigüire, perro de la calle...) llegan con el lote C7.
 - **Celda mixta.** Cada atleta usa la celda de la configuración salvo que su ficha diga otra (un gigante en 64). Un pack no mezcla celdas: cada atlas es de un solo atleta.
 - **Tiempo.** Crece con atletas x animaciones. 8 atletas con 52 animaciones tardan unos 80 segundos en una máquina de 4 núcleos. Para iterar está `--rapido`.
