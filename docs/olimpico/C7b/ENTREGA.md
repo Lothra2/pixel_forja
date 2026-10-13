@@ -1,6 +1,6 @@
 # Lote C7b: el gallo y la paloma
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/25
 Fecha: 2026-10-13
 
 ## Qué se hizo
