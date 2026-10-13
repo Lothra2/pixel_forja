@@ -27,7 +27,17 @@ export interface RenderOptions {
   propsApart?: boolean;
   /** el arma del piso que va en la mano en las animaciones de armas (sin esto no se dibuja, solo se exporta dónde va) */
   held?: { kind: FloorPropKind; variant?: number };
+  /**
+   * sin pelotas (`sin_props` del kit a medida): el cuadro sale sin las pelotas, pero todo lo demás se mide con ellas
+   * (el piso, las cajas, el encuadre), así el cuerpo queda en el mismo pixel. Dónde iba cada una sale en `pelotas`
+   */
+  sinPelotas?: boolean;
+  /** uso interno de sinPelotas: el piso ya medido con las pelotas (fila del lienzo) */
+  suelo?: number;
 }
+
+/** Una pelota dibujada: centro exacto (puede caer en medio pixel), diámetro sin el contorno y si va detrás del cuerpo. */
+export interface BallAt { kind: PropKind; x: number; y: number; d: number; behind: boolean }
 
 /**
  * Cuadro "grande": 3 celdas de ancho y 2 de alto, con el pie de apoyo en (1.5C, C + groundY).
@@ -47,6 +57,10 @@ export interface BigFrame {
   joints?: Joints;
   /** el arma en la mano: agarre, ángulo en pantalla (0 = derecha, horario) y si va detrás del cuerpo */
   held?: { x: number; y: number; angle: number; behind: boolean };
+  /** las pelotas del cuadro (dibujadas o no), en coordenadas continuas del cuadro grande */
+  pelotas?: BallAt[];
+  /** fila del lienzo donde quedó el piso (para dibujar el mismo cuadro sin pelotas) */
+  suelo?: number;
 }
 
 export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 'shoulderNear' | 'shoulderFar' | 'handNear' | 'handFar' | 'neck' | 'head' | 'elbowNear' | 'elbowFar' | 'frente';
@@ -142,6 +156,13 @@ export type RenderView = View | 'se' | 'ne';
 export const SIDE_YAW = 62;
 
 export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: RenderView, opt: RenderOptions = {}): BigFrame {
+  if (opt.sinPelotas && opt.props !== false && pose.props?.some((q) => isBall(q.kind))) {
+    // dos pasadas: con las pelotas se mide todo (piso, cajas, articulaciones); sin ellas, con el mismo piso, se pinta.
+    // Así el cuerpo no se mueve ni un pixel: solo cambia donde estaba la pelota (y su contorno)
+    const con = renderHuman(f, cell, pose, viewIn, { ...opt, sinPelotas: false });
+    const sin = renderHuman(f, cell, { ...pose, props: pose.props.filter((q) => !isBall(q.kind)) }, viewIn, { ...opt, sinPelotas: false, suelo: con.suelo });
+    return { ...con, raster: sin.raster };
+  }
   // en diagonal se arma como de frente (o de espalda) y lo que va hacia adelante se proyecta hacia la derecha
   const diag = viewIn === 'se' || viewIn === 'ne';
   const view: View = viewIn === 'se' ? 'front' : viewIn === 'ne' ? 'back' : viewIn;
@@ -645,6 +666,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const gearKind = (k: PropKind): PropKind | null =>
     k === 'sword' && gear && gear.main !== undefined ? gear.main : k === 'shield' && gear && gear.off !== undefined ? gear.off : k;
   let heldAt: { p: [number, number]; angle: number; behind: boolean } | null = null;
+  // las pelotas dibujadas: centro pedido (en el lienzo, desde la cadera) y si van detrás
+  const pelotas: { kind: PropKind; c: [number, number]; behind: boolean }[] = [];
   const drawAttached = (behind: boolean) => {
     for (const raw of props) {
       if (raw.at === 'ground' || !!raw.behind !== behind) continue;
@@ -707,7 +730,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
           ang = -a;
         }
       }
-      if (isBall(pr.kind)) drawBall(part, pr.kind, p, d.u);
+      if (isBall(pr.kind)) { drawBall(part, pr.kind, p, d.u); pelotas.push({ kind: pr.kind, c: [p[0], p[1]], behind }); }
       else drawHeld(part, pr.kind, p, ang, d.u, rest, pr.bend ?? 0);
       // estela del golpe: arco claro de dos pixeles a lo largo del recorrido del filo, sin contorno
       const sm = pr.smear?.[viewIn];
@@ -818,7 +841,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const bbBody = gear || opt.propsApart || props.some((q) => LONG_HELD.has(q.kind)) ? bodyBox(canvas, 0, 0, -99, false, groundMats) : null;
   const bb = bbBody ? { y1: bbBody.y1 } : bbAll;
   const hipH = pose.hipH;
-  const groundCanvas = hipH !== undefined ? canvas.oy + Math.round(hipH) : (bb ? bb.y1 + 1 : canvas.oy) + Math.round(pose.air);
+  const groundCanvas = opt.suelo ?? (hipH !== undefined ? canvas.oy + Math.round(hipH) : (bb ? bb.y1 + 1 : canvas.oy) + Math.round(pose.air));
   for (const pr of props) {
     if (pr.at !== 'ground') continue;
     const part = new Part();
@@ -826,7 +849,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     const gy = groundCanvas - canvas.oy;
     if (isBall(pr.kind)) {
       const s = ballSize(pr.kind, d.u);
-      drawBall(part, pr.kind, [gx, gy - 1 - (s - 1) / 2 - (pr.y ?? 0)], d.u);
+      const c: [number, number] = [gx, gy - 1 - (s - 1) / 2 - (pr.y ?? 0)];
+      drawBall(part, pr.kind, c, d.u);
+      pelotas.push({ kind: pr.kind, c, behind: !!pr.behind });
     } else drawGround(part, pr.kind, gx, gy - 1 - (pr.y ?? 0), d.u, pr.angle ?? 0, pr.lay ?? 0);
     commit(part, pr.behind ? Layer.Behind : pr.kind === 'bike' || pr.kind === 'skate' ? Layer.PropMid : Layer.Prop, false, false);
   }
@@ -866,9 +891,16 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     joints.carry = [(joints.handNear[0] + joints.handFar[0]) / 2, top];
   }
   const held = heldAt as { p: [number, number]; angle: number; behind: boolean } | null;
+  // cada pelota como la pinta blob: de round(c - r) a round(c - r) + s - 1, así que su centro continuo es el borde + s / 2
+  const balls = pelotas.map(({ kind, c, behind }): BallAt => {
+    const s = ballSize(kind, d.u), r = (s - 1) / 2;
+    const [x0, y0] = J([Math.round(c[0] - r), Math.round(c[1] - r)]);
+    return { kind, x: x0 + s / 2, y: y0 + s / 2, d: s, behind };
+  });
   return {
-    raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, whole, joints,
+    raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, whole, joints, suelo: groundCanvas,
     ...(held ? { held: { x: J(held.p)[0], y: J(held.p)[1], angle: ((Math.round(held.angle) % 360) + 360) % 360, behind: held.behind } } : {}),
+    ...(balls.length ? { pelotas: balls } : {}),
   };
 }
 

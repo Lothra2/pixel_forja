@@ -3,7 +3,7 @@ import { encodePng } from '../export/png';
 import { motionOf8 } from '../export/motion';
 import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim, type RenderedClip, type ViewName } from '../render/clip';
-import { viewsForRows, frameDataOf, pivotOf, FRAME_DATA_FIELDS, type FrameData, type FrameDataField } from '../export/frameData';
+import { viewsForRows, frameDataOf, objetosOf, PELOTAS, pivotOf, FRAME_DATA_FIELDS, type FrameData, type FrameDataField } from '../export/frameData';
 import { packAtlas, atlasFrameName } from '../export/atlas';
 import { portraitSheet, headIcon, HEAD_ICON, PORTRAIT_BIG_SCALE } from './portraits';
 import { dressForPack, variantForPack } from '../sheet/wardrobe';
@@ -68,6 +68,11 @@ export interface SportsKitOptions {
    * equipo, como `taunt_<id>` solo para su dueño
    */
   equipoDe?: Record<string, string>;
+  /**
+   * packs que salen sin las pelotas dibujadas (`sin_props` del kit a medida): el cuerpo queda igual, pixel a pixel, y
+   * dónde iba cada pelota sale en el dato `objetos` de la animación
+   */
+  sinProps?: readonly string[];
   cell?: CellSize;
   /** pocas animaciones por deporte (para pruebas rápidas) */
   quick?: boolean;
@@ -119,10 +124,11 @@ export interface SportAnimEntry extends FrameData {
 const enc = new TextEncoder();
 
 /** Las animaciones de una hoja: una fila por vista pedida (8 si no se piden filas). */
-function clips8(f: HumanFicha, cell: CellSize, anim: string, views: readonly ViewName[]): { clips: RenderedClip[]; frames: number; side?: RenderedClip } {
-  const clips = views.map((v) => renderClip(f, cell, anim, v, { props: true }));
+function clips8(f: HumanFicha, cell: CellSize, anim: string, views: readonly ViewName[], sinPelotas = false): { clips: RenderedClip[]; frames: number; side?: RenderedClip } {
+  const ro = sinPelotas ? { props: true, sinPelotas } : { props: true };
+  const clips = views.map((v) => renderClip(f, cell, anim, v, ro));
   // el avance y los eventos se miden de lado: si las filas pedidas no lo traen, se dibuja aparte solo para medir
-  const side = views.includes('side') ? undefined : renderClip(f, cell, anim, 'side', { props: true });
+  const side = views.includes('side') ? undefined : renderClip(f, cell, anim, 'side', ro);
   return { clips, frames: Math.max(...clips.map((c) => c.frames.length)), side };
 }
 
@@ -133,6 +139,10 @@ function sheetOf(clips: RenderedClip[], cell: CellSize, n: number): Raster {
   return png;
 }
 
+/** La nota del manifiesto para los packs sin pelotas. */
+export const NOTA_SIN_PROPS = (packs: readonly string[]): string =>
+  `sin_props (${packs.join(', ')}): estos packs salen sin las pelotas dibujadas, porque el juego las mueve con su física. El cuerpo es el mismo, pixel a pixel, que en un pack con pelota. Lo que va agarrado (raqueta, bate, garrocha, jabalina) sí sale dibujado. objetos: [fila][cuadro] = lista de { tipo, clase, x, y, r, detras } o null si en ese cuadro no hay pelota. tipo = "pelota", clase = ${Object.values(PELOTAS).join(', ')}. x, y = centro exacto desde el pivote (puede caer en medio pixel), r = radio sin el contorno, detras = 1 si iba detrás del cuerpo. Al espejar, x pasa a -x.`;
+
 /** ¿Se escribe en una sola línea? Los arreglos de números (y de arreglos de números): cajas, manos, agua... */
 const inline = (v: unknown): boolean => Array.isArray(v) && v.every((x) => x === null || typeof x !== 'object' || inline(x));
 
@@ -142,7 +152,10 @@ export function compactJson(v: unknown, ind = ''): string {
   const n = ind + ' ';
   if (Array.isArray(v)) return v.length ? `[\n${v.map((x) => n + compactJson(x, n)).join(',\n')}\n${ind}]` : '[]';
   const es = Object.entries(v).filter(([, x]) => x !== undefined);
-  return es.length ? `{\n${es.map(([k, x]) => `${n}${JSON.stringify(k)}: ${compactJson(x, n)}`).join(',\n')}\n${ind}}` : '{}';
+  // `objetos` de una animación ([fila][cuadro] = lista de objetos o null): una fila por línea, como los demás datos por cuadro
+  const rows = (k: string, x: unknown) => k === 'objetos' && Array.isArray(x) && x.every(Array.isArray)
+    ? `[\n${x.map((r) => n + ' ' + JSON.stringify(r)).join(',\n')}\n${n}]` : compactJson(x, n);
+  return es.length ? `{\n${es.map(([k, x]) => `${n}${JSON.stringify(k)}: ${rows(k, x)}`).join(',\n')}\n${ind}}` : '{}';
 }
 
 /** Une rasters del mismo alto en una tira horizontal. */
@@ -181,6 +194,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
       'desplazamiento: en las acciones que avanzan (salto largo, clavado, remate), pixeles que el juego mueve el sprite hacia donde mira, acumulados desde el primer cuadro.',
       'rumbo: en las pruebas de campo, de frente y de espalda se dibuja la diagonal más cercana; rumbo dice hacia dónde moverlo en cada fila.',
       ...(fields.length ? ['cajas, manos, cabeza y pies: [fila][cuadro], en pixeles desde el pivote con y hacia abajo. cajas = [x, y, w, h] de lo opaco (null si el cuadro está vacío); manos y pies = [[x, y] cerca, [x, y] lejos].'] : []),
+      ...(opts.sinProps?.some((p) => packs.includes(p)) ? [NOTA_SIN_PROPS(opts.sinProps.filter((p) => packs.includes(p)))] : []),
       ...(opts.atlas ? ['packs: un atlas por pack (JSON Hash de TexturePacker, para this.load.atlas de Phaser). Cada cuadro se llama <anim>_<fila>_<cuadro>, con la fila por nombre (right, down...) y el cuadro desde 0.'] : []),
     ],
   };
@@ -212,7 +226,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
       const entries: Record<string, SportAnimEntry> = {};
       const frames: { name: string; raster: Raster }[] = [];
       for (const a of names) {
-        const { clips, frames: n, side } = clips8(fp, C, real(a), views);
+        const sinP = !!opts.sinProps?.includes(pack);
+        const { clips, frames: n, side } = clips8(fp, C, real(a), views, sinP);
         const first = clips[0];
         const m = motionOf8(clips, 1, side);
         const entry: SportAnimEntry = { cuadros: n, fps: first.fps, loop: first.loop, ...m, ...(first.waterRows ? { agua: first.waterRows } : {}) };
@@ -225,6 +240,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
           entry.archivo = name;
         }
         if (fields.length) Object.assign(entry, frameDataOf(clips, fields));
+        // sin pelotas: dónde iba cada una, aunque no se pidan datos por cuadro (sin esto la pelota se pierde)
+        if (sinP) Object.assign(entry, objetosOf(clips));
         // el archivo va primero en el manifest, como siempre
         entries[a] = entry.archivo ? { archivo: entry.archivo, ...entry } : entry;
       }

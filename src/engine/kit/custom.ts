@@ -51,8 +51,12 @@ export interface KitConfig {
   personajes_incluidos?: IncludedCast[];
   /** archivo de equipos (lo lee la línea de comandos) */
   equipos?: string;
-  /** cada pack: su nombre y sus animaciones del motor (con `alias` salen con el nombre del juego) */
-  packs: Record<string, string[]>;
+  /**
+   * cada pack: su nombre y sus animaciones. La lista sola, o { anims, sin_props } para que el pack salga sin las
+   * pelotas dibujadas (el juego las mueve con su física) y con su posición en el dato `objetos`. Con `alias`, una
+   * animación sale con el nombre del juego
+   */
+  packs: Record<string, string[] | PackDef>;
   /**
    * nombres del juego para animaciones del motor que están en algún pack: { "burla_familia_gg": "burla_pulgar" }. En las
    * hojas y el manifiesto sale el nombre del juego (una animación puede tener varios). Si el nombre termina en
@@ -85,6 +89,14 @@ export interface KitConfig {
   /** vehículos y objetos de escenario en la vista inclinada (lote D2): true = todos, o ids ("moto" = los 4 colores) */
   vehiculos?: boolean | string[];
 }
+
+/** Un pack en forma de objeto: sus animaciones y, si se pide, sin las pelotas dibujadas. */
+export interface PackDef { anims: string[]; sin_props?: boolean }
+const PACK_KEYS = ['anims', 'sin_props'];
+/** Las animaciones de un pack, en cualquiera de las dos formas. */
+export const packAnims = (p: string[] | PackDef): string[] => (Array.isArray(p) ? p : p.anims);
+/** Los packs que salen sin pelotas. */
+export const packsSinProps = (packs: KitConfig['packs']): string[] => Object.entries(packs).filter(([, p]) => !Array.isArray(p) && p.sin_props === true).map(([k]) => k);
 
 /** Un equipo del archivo de equipos. Lo que no se usa para armar el kit pasa al manifiesto tal cual. */
 export interface TeamDef { nombre: string; atletas: string[]; mascota?: string; colores?: string[]; [k: string]: unknown }
@@ -190,10 +202,17 @@ export function validateKitConfig(cfg: unknown): string[] {
   }
   if (!cfg.fichas && !cfg.personajes_incluidos) e.push('faltan personajes: pon "fichas" (una carpeta con *.ficha.json) o "personajes_incluidos"');
   if (!isObj(cfg.packs) || !Object.keys(cfg.packs).length) e.push('packs: falta al menos un pack, por ejemplo { "base": ["idle", "walk", "run"] }');
-  else for (const [p, list] of Object.entries(cfg.packs)) {
+  else for (const [p, def] of Object.entries(cfg.packs)) {
     if (!/^[a-z0-9_]+$/.test(p)) e.push(`packs.${p}: el nombre del pack va en minúsculas, números y _`);
-    if (!isStrList(list) || !(list as string[]).length) { e.push(`packs.${p}: tiene que ser una lista de animaciones`); continue; }
-    (list as string[]).forEach((a, i) => { if (!ANIM_NAMES.includes(a)) e.push(`packs.${p}[${i}]: "${a}" no es una animación.${suggest(a, ANIM_NAMES)}`); });
+    // la lista sola o { "anims": [...], "sin_props": true }
+    let list: unknown = def, at = `packs.${p}`;
+    if (isObj(def)) {
+      for (const k of Object.keys(def)) if (!PACK_KEYS.includes(k)) e.push(`packs.${p}.${k}: clave desconocida.${suggest(k, PACK_KEYS)} Hay ${PACK_KEYS.map((x) => `"${x}"`).join(' y ')}`);
+      if (def.sin_props !== undefined && typeof def.sin_props !== 'boolean') e.push(`packs.${p}.sin_props: true o false`);
+      list = def.anims; at = `packs.${p}.anims`;
+    }
+    if (!isStrList(list) || !(list as string[]).length) { e.push(`${at}: tiene que ser una lista de animaciones, o { "anims": [...], "sin_props": true }`); continue; }
+    (list as string[]).forEach((a, i) => { if (!ANIM_NAMES.includes(a)) e.push(`${at}[${i}]: "${a}" no es una animación.${suggest(a, ANIM_NAMES)}`); });
   }
   if (cfg.alias !== undefined) {
     if (!isObj(cfg.alias)) e.push('alias: tiene que ser un objeto nombre -> animación del motor, por ejemplo { "burla_familia_gg": "burla_pulgar" }');
@@ -201,7 +220,7 @@ export function validateKitConfig(cfg: unknown): string[] {
       if (!/^[a-z0-9_]+$/.test(k)) e.push(`alias.${k}: el nombre va en minúsculas, números y _`);
       else if (ANIM_NAMES.includes(k)) e.push(`alias.${k}: ya es una animación del motor, ponle otro nombre`);
       if (typeof v !== 'string' || !ANIM_NAMES.includes(v)) e.push(`alias.${k}: "${String(v)}" no es una animación del motor.${suggest(String(v), ANIM_NAMES)}`);
-      else if (isObj(cfg.packs) && !Object.values(cfg.packs).some((l) => Array.isArray(l) && l.includes(v))) e.push(`alias.${k}: "${v}" no está en ningún pack (pon "${v}" en el pack donde quieres "${k}")`);
+      else if (isObj(cfg.packs) && !Object.values(cfg.packs).some((l) => (Array.isArray(l) ? l : isObj(l) && Array.isArray(l.anims) ? l.anims : []).includes(v))) e.push(`alias.${k}: "${v}" no está en ningún pack (pon "${v}" en el pack donde quieres "${k}")`);
     }
   }
   if (cfg.pruebas !== undefined) {
@@ -316,7 +335,22 @@ export function kitConfigSchema(): Record<string, unknown> {
       fichas: { type: 'string', description: 'Carpeta con *.ficha.json, relativa a este archivo. El id de cada personaje es el nombre del archivo.' },
       personajes_incluidos: list({ enum: INCLUDED_CAST }, { description: 'Personajes que ya trae el motor: la familia GG de calle, la familia GG con su equipo de GG Abyss, los héroes.' }),
       equipos: { type: 'string', description: 'Archivo de equipos, relativo a este archivo: { id: { nombre, atletas, mascota?, colores?, ... } }. Pasa al manifiesto tal cual.' },
-      packs: { type: 'object', minProperties: 1, propertyNames: id, additionalProperties: list({ enum: ANIM_NAMES }, { minItems: 1 }), description: 'Cada pack es un atlas por atleta: { "base": ["idle", "walk", "run"] }. Con `alias`, una animación sale con el nombre del juego.' },
+      packs: {
+        type: 'object', minProperties: 1, propertyNames: id,
+        additionalProperties: {
+          oneOf: [
+            list({ enum: ANIM_NAMES }, { minItems: 1 }),
+            {
+              type: 'object', additionalProperties: false, required: ['anims'],
+              properties: {
+                anims: list({ enum: ANIM_NAMES }, { minItems: 1 }),
+                sin_props: { type: 'boolean', description: 'true: el pack sale sin las pelotas dibujadas (futbol, voley, basquet, tenis, beisbol y la bala) porque el juego las mueve con su física. El cuerpo queda igual pixel a pixel y la posición de cada pelota va en el dato por cuadro `objetos`. Lo agarrado (raqueta, bate, garrocha, jabalina) sí sale.' },
+              },
+            },
+          ],
+        },
+        description: 'Cada pack es un atlas por atleta: { "base": ["idle", "walk", "run"] }, o { "voley": { "anims": ["vb_bump", "spike"], "sin_props": true } } para que salga sin las pelotas dibujadas. Con `alias`, una animación sale con el nombre del juego.',
+      },
       alias: { type: 'object', propertyNames: id, additionalProperties: { enum: ANIM_NAMES }, description: 'Nombres del juego para animaciones del motor que están en algún pack: { "burla_familia_gg": "burla_pulgar" }. Salen con el nombre del juego (una animación puede tener varios). Si el nombre termina en _<equipo>, solo la trae el atleta de ese equipo (como taunt_<id> solo su dueño).' },
       pruebas: { type: 'object', additionalProperties: list({ type: 'string' }), description: 'Qué packs carga cada prueba del juego. Se copia al manifiesto.' },
       retratos: { type: 'boolean', description: 'Retratos de 8 expresiones en 40 y 96. Sin valor: sí.' },
@@ -493,7 +527,8 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
   const obj = splitObjetos(parts.has('objetos') ? cfg.objetos : false);
   const files = buildSportsKit({
     athletes: humans, cells, cell: cfg.celda ?? 48, filas: cfg.filas, datos: parts.has('atletas') ? datos : false, atlas: true,
-    packDefs: conAlias(cfg.packs, cfg.alias), packs: parts.has('atletas') ? Object.keys(cfg.packs) : [], quick: opts.quick, alias: cfg.alias,
+    packDefs: conAlias(Object.fromEntries(Object.entries(cfg.packs).map(([k, p]) => [k, packAnims(p)])), cfg.alias), sinProps: packsSinProps(cfg.packs),
+    packs: parts.has('atletas') ? Object.keys(cfg.packs) : [], quick: opts.quick, alias: cfg.alias,
     equipoDe: Object.fromEntries(Object.entries(inputs.equipos ?? {}).flatMap(([eq, t]) => t.atletas.map((a) => [a, eq]))),
     retratos: parts.has('retratos') && cfg.retratos !== false, cabecitas: parts.has('cabecitas') && cfg.cabecitas !== false,
     objetos: obj.armas, comida: obj.comida,

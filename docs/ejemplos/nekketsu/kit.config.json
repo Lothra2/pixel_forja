@@ -146,7 +146,27 @@
       "burla_risa_tapada",
       "burla_salsa",
       "burla_hombros"
-    ]
+    ],
+    "voley": {
+      "anims": [
+        "vb_bump",
+        "vb_set",
+        "spike",
+        "block",
+        "serve",
+        "vb_dive"
+      ],
+      "sin_props": true
+    },
+    "futbol": {
+      "anims": [
+        "trap",
+        "header",
+        "volley",
+        "chilena"
+      ],
+      "sin_props": true
+    }
   },
   "alias": {
     "burla_familia_gg": "burla_pulgar",
@@ -180,6 +200,18 @@
       "kachinuki",
       "trepar",
       "ngg_burlas"
+    ],
+    "voley_playa": [
+      "base",
+      "voley"
+    ],
+    "futbol_callejero": [
+      "base",
+      "futbol"
+    ],
+    "da_cau": [
+      "base",
+      "futbol"
     ]
   },
   "objetos": true,

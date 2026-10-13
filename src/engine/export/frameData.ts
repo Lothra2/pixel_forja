@@ -1,6 +1,7 @@
 import type { Raster } from '../core/raster';
 import { VIEW_SUFFIX, type RenderedClip, type ViewName } from '../render/clip';
 import type { Joints } from '../render/human';
+import type { PropKind } from '../rig/pose';
 
 /**
  * Datos por cuadro para los juegos de pelea y de deportes (cajas, manos, cabeza y pies) y el filtro de filas.
@@ -48,7 +49,24 @@ export interface FrameData {
    * derecha, horario) y 1 si va detrás del cuerpo. null sin arma. Solo en las animaciones de armas
    */
   arma?: ([number, number, number, number] | null)[][];
+  /**
+   * [fila][cuadro] = lista de los objetos sueltos que el pack no dibuja (`sin_props`), o null si en ese cuadro no hay
+   * ninguno. Solo en los packs con sin_props y en las animaciones que traen alguno
+   */
+  objetos?: (ObjetoSuelto[] | null)[][];
 }
+
+/**
+ * Un objeto suelto que el juego dibuja y mueve por su cuenta (hoy, las pelotas). x e y son el centro exacto desde el
+ * pivote (pueden caer en medio pixel: una pelota de 7 px tiene el centro en medio de un pixel), r es el radio sin el
+ * contorno y detras = 1 si iba detrás del cuerpo.
+ */
+export interface ObjetoSuelto { tipo: 'pelota'; clase: string; x: number; y: number; r: number; detras: 0 | 1 }
+
+/** Las pelotas que se quitan con `sin_props`, y el nombre con que salen en `objetos`. */
+export const PELOTAS: Partial<Record<PropKind, string>> = {
+  soccer: 'futbol', volleyball: 'voley', basketball: 'basquet', tennisball: 'tenis', baseball: 'beisbol', shot: 'bala',
+};
 
 /** Recuadro de los pixeles opacos de un cuadro, en coordenadas del cuadro (null si no hay ninguno). */
 export function opaqueBox(r: Raster): { x0: number; y0: number; x1: number; y1: number } | null {
@@ -94,4 +112,19 @@ export function frameDataOf(clips: RenderedClip[], fields: readonly FrameDataFie
   if (fields.includes('pies')) out.pies = clips.map((c) => J(c).map((j) => [rel(j.footNear), rel(j.footFar)] as [Pt, Pt]));
   if (fields.includes('carga') && clips.some((c) => J(c).some((j) => j.carry))) out.carga = clips.map((c) => J(c).map((j) => (j.carry ? rel(j.carry) : null)));
   return out;
+}
+
+/**
+ * El dato `objetos` de una hoja: dónde iba cada pelota en cada fila y cuadro, desde el pivote. Vacío si ningún cuadro
+ * trae pelota.
+ */
+export function objetosOf(clips: RenderedClip[]): Pick<FrameData, 'objetos'> {
+  if (!clips.some((c) => c.balls?.some((b) => b.length))) return {};
+  const [px, py] = pivotOf(clips[0].cell);
+  return {
+    objetos: clips.map((c) => c.frames.map((_, i) => {
+      const bs = c.balls?.[i] ?? [];
+      return bs.length ? bs.map((b): ObjetoSuelto => ({ tipo: 'pelota', clase: PELOTAS[b.kind] ?? b.kind, x: b.x - px, y: b.y - py, r: b.d / 2, detras: b.behind ? 1 : 0 })) : null;
+    })),
+  };
 }
