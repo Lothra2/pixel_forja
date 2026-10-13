@@ -1,6 +1,6 @@
 # Lote H3: el audio de los mundos de pelota (Barranquilla, Margarita y Đà Lạt) y la red, el balón, el aro y la chapa
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/32
 Fecha: 2026-10-13
 
 ## Qué se hizo
