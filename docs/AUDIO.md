@@ -34,9 +34,31 @@ Además sale **`audio/escuchar.html`**:
 | `derrota` | Trombón de caricatura que baja, "guau guau guau guaaa" | 3.1 s | No |
 | `bosque`, `jefe`, `victoria`, `titulo` | Los de GG Abyss | | `victoria` no, las demás sí |
 
+### Un tema por mundo (lote H2)
+
+Todos en bucle sin corte y en mono, como los de H1. Cada uno dura sus compases exactos.
+
+| Id | Mundo | Qué es | Duración |
+|---|---|---|---|
+| `tema_instituto` | Japón, Instituto Nekketsu | Rock japonés de los 80 en La menor a 152 bpm. Riff de guitarra, verso y un coro con el "royal road" (Fa, Sol, Mi menor, La menor) que sube. Lead en cuadrada con la segunda voz en terceras, guitarra rítmica con palm mute, bajo en corcheas, colchón de sintetizador en el coro y batería con redobles | 37.9 s |
+| `hoian_noche` | Hội An | La noche de los faroles. Mi menor pentatónico a 92 bpm. La sáo lleva el tema, con notas que suben desde abajo. Tambores de festival como los de la danza del león: el trống grande, la baqueta en el aro, címbalos chicos y un gong cada 4 compases. En la segunda vuelta entran el đàn nguyệt y los redobles | 41.7 s |
+| `ajiaco_rock` | Bogotá | Rock en español bogotano de los 90 en chiptune. Re mayor con el Do mixolidio, 132 bpm. Guitarras distorsionadas en rasgueo sincopado, un coro de estadio doblado una octava abajo y el charles abierto en el coro | 29.1 s |
+| `parce_corra` | Medellín, Comuna 13 | Cumbia en La menor a 100 bpm. Acordeón en dos cuadradas que baten, con terceras. Guacharaca con ruido filtrado ("chaaa-ki-chi" en cada tiempo), llamador en los contratiempos, tambora, bajo de cumbia (raíz y quinta) y el "chucu" del teclado | 38.4 s |
+| `pana_dale` | Caracas | Joropo en Re mayor, 3/4 a 180. El arpa llanera lleva la melodía con el bordón en el 2 y el 3. El cuatro rasguea, arpegia y apaga, y las maracas no paran, con el acento que cambia entre 3/4 y 6/8 | 32 s |
+| `gaita_lago` | Maracaibo | Gaita zuliana en La menor, 6/8. El furro hace el "rum, rum-rum", la tambora alterna parche y palitos en el aro, la charrasca raspa y las maracas siguen. El coro canta en dos voces y en la segunda vuelta se dobla a la octava | 34.3 s |
+
+Saigón ya tenía `saigon_chay`, y la marcha de la ceremonia es `marcha_nekketsu`. Siguen pendientes del pedido `cafe_neblina`, `vestuario` y los `acorde_<equipo>`.
+
 ## Efectos
 
 - **Del lote H1:** `pistola` (salida), `silbato` (dos pitazos con trino), `golpe_1`, `golpe_2`, `golpe_3` (tres golpes distintos para no repetir), `golpe_pesado`, `chancleta`, `silla` (silla plástica), `pote` (pote de metal que retumba), `levantar`, `lanzar`, `caer_plano`, `mareo` (pajaritos), `ko` (golpe y campana), `publico_grito` (el público celebra, con palmas) y `publico_ooh` (el público se lamenta).
+- **Del lote H2:**
+  - `gallo`: el kikirikí, 1.3 s. "Ki-ki-ri-kiiii": tres sílabas que suben y la última larga que sube, se sostiene y cae, con la garganta áspera. Arranca en la muestra 0, así que va justo en el evento `canto` del cuadro 3 de `cantar`. Suena más largo que lo que queda de la animación (0.4 s a 8 fps): el gallo se queda con el pico abierto en el último cuadro y el canto termina solo.
+  - `aleteo`: 0.3 s, cuatro golpes de ala cada uno más suave, con el roce de las plumas. Va en el evento `aleteo` del gallo (`asustarse`) y de la paloma (`despegar`).
+  - `mecha_tejo`: 0.7 s, el disco contra la greda, el estallido de la pólvora y el chisporroteo. Se llama igual que el efecto visual `mecha_tejo` de `fx`, para que el juego toque los dos juntos.
+  - `toque_cau`: 0.2 s, el pie contra la base del volante del đá cầu, seco y medio agudo, con el silbido de las plumas.
+  - `caida_tatami`: 0.2 s, la caída de judo. La palmada del brazo, seca y sorda, y el cuerpo que cae junto, sin rebote. Distinta de `caer_plano`, que rebota.
+  - `pitazo_largo`: 1.25 s, un solo pitazo largo del árbitro, con trino. El `silbato` de antes (dos pitazos) no cambió.
 - **Los de antes:** espadazo, golpe, critico, esquiva, bloqueo, pasos por superficie (`paso_<pasto|tierra|piedra|madera|agua>_<0|1|2>`), ladrido, interfaz (click, elegir, error...) y los de GG Abyss.
 
 ## Voces en blips
@@ -66,6 +88,11 @@ this.sound.play('marcha_nekketsu', { loop: m.audio.musica.marcha_nekketsu.bucle,
 // el silbato y la pistola en la largada
 this.sound.play('pistola');
 
+// el gallo canta en el evento "canto" de su animación, y aletea en "aleteo"
+gallo.on('animationupdate', (anim, frame) => {
+  for (const ev of m.animales.gallo.eventos[anim.key] ?? []) if (frame.index - 1 === ev.cuadro) this.sound.play(ev.tipo === 'canto' ? 'gallo' : 'aleteo');
+});
+
 // un golpe distinto cada vez
 this.sound.play(Phaser.Utils.Array.GetRandom(['golpe_1', 'golpe_2', 'golpe_3']));
 
@@ -82,6 +109,7 @@ function hablar(scene, id, texto, cps = 18) {
 ## Límites honestos
 
 - **No hay voz hablada sin IA.** Lo asume el pedido: los diálogos usan blips.
+- **Los temas de los mundos son chiptune, no grabaciones.** La cumbia, el joropo y la gaita se reconocen por el ritmo (la guacharaca, las maracas y el furro), pero el acordeón, el arpa y el coro son ondas cuadradas y cuerdas punteadas sintetizadas. El furro de verdad es más grave de lo que un parlante de teléfono toca: el de acá va en 62 Hz con armónicos para que se oiga.
 - **Síntesis de 8 bits.** Suena a consola, no a banda real. Para Rick es una decisión de estilo: la marcha y el đàn tranh se reconocen, pero son chiptune.
 - **Mono a 22050 Hz.** La marcha de 60 s pesa 2.6 MB en WAV. Con `"formato": "comprimido"` en el `kit.config.json`, el kit la saca en OGG y M4A a 64 kbps, unos 520 KB (ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#efectos-y-audio)).
 - **`victoria` y `victoria_banda`:** `victoria` es la fanfarria de GG Abyss y no se cambió para no tocar ese kit. Para Nekketsu va `victoria_banda`, que combina con la marcha.

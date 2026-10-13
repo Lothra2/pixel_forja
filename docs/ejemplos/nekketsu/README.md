@@ -36,7 +36,7 @@ En [`fichas/`](fichas/) están los 24 atletas de los 6 equipos y la mascota, lis
 | Los Panas de Caracas (C2) | `gabo`, `yuli`, `toto`, `carmen` | Gabo con gorra y camisa de pelotero. Yuli con la chemise beige del liceo. Toto con franela grande y chancletas. La señora Carmen con rolos y bata de flores |
 | Maracuchos del Lago (C2) | `ender`, `yusmary`, `jhonder`, `abuela_nerva` | Ender con sombrero de gaitero, bigote y guayabera. Yusmary con camiseta de básquet. Jhonder con franela de rayas y short. La abuela Nerva con bata fresca |
 | Mascota | `thor` | El bóxer con todas sus animaciones de mascota |
-| Animales de la calle (C7) | `perro_calle_1` (Canelo), `perro_calle_2` (Negrito), `perro_calle_3` (Manchas), `gato_1` (Mango), `gato_2` (Sombra) | Los perros de la Comuna 13 y los gatos de los techos, con `sleep`, `scratch` y `jump_wall` |
+| Animales de la calle (C7) | `perro_calle_1` (Canelo), `perro_calle_2` (Negrito), `perro_calle_3` (Manchas), `gato_1` (Mango), `gato_2` (Sombra) | Los perros de la Comuna 13 y los gatos de los techos, con `sleep`, `scratch` y `jump_wall` (medido con `subida`, lote C7c). Los perros, además, `wake` y `pounce` |
 
 Todo sale de campos generales de la ficha (`jacketCut`, `jacketClosed`, `jacketSleeves`, `armband`, `chestText`, `cell`, `neck`, `face.base`, los gorros propios y el calzado abierto), explicados en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#equipos-uniformes-gigantes-y-mascota).
 
@@ -62,21 +62,22 @@ Con `--fuentes`, el kit trae `ui/fuentes/` con `fuente_ui`, `fuente_titulo` y `f
 npm run kit-a-medida -- salida/kit_nekketsu --config docs/ejemplos/nekketsu/kit.config.json
 ```
 
-Salen los 24 atletas con 8 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`, `kachinuki`, `recorridos`, `trepar`), retratos, cabecitas, las 19 armas del piso, Thor, las fuentes con vietnamita y todo lo de la pelea, en unos 2 minutos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
+Salen los 24 atletas con 11 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`, `kachinuki`, `recorridos`, `trepar`, `ngg_burlas`, la burla de su equipo, y `voley` y `futbol` sin las pelotas dibujadas, con `objetos`), retratos, cabecitas, las 19 armas del piso, Thor, las fuentes con vietnamita y todo lo de la pelea, en unos 2 minutos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
 
 El juego tendrá su propio `kit.config.json` y `data/teams.json`. Esta es la versión de ejemplo, con lo que PixelForja ya genera.
 
 ## Efectos y sonidos (lote F)
 
-La configuración pide `"fx": true` (los 56 efectos del catálogo general en `fx/`) y los sonidos del motor que le sirven al juego en `audio/sfx/`: golpes, esquiva, bloqueo, pasos, ladrido de Thor y los de la interfaz. `silbato`, `pistola` y `marcha_nekketsu` todavía no existen: el kit los salta con aviso y quedan en `manifest.pendiente` hasta el lote H. Qué efecto va con qué evento: [docs/EFECTOS.md](../../EFECTOS.md).
+La configuración pide `"fx": true` (los 56 efectos del catálogo general en `fx/`) y los sonidos del motor que le sirven al juego en `audio/sfx/`: golpes, esquiva, bloqueo, pasos, ladrido de Thor y los de la interfaz. `silbato`, `pistola` y `marcha_nekketsu` llegaron con el lote H1. Qué efecto va con qué evento: [docs/EFECTOS.md](../../EFECTOS.md).
 
 ## Interfaz y audio de la rebanada (lotes G1 y H1)
 
 La configuración pide además:
 - **Logo:** `ui.logo` con "NEKKETSU OLYMPIC GG".
 - **Interfaz completa:** `ui.interfaz: true`, con un panel por cada equipo de `equipos.json`.
-- **Música:** `marcha_nekketsu`, `saigon_chay`, `azotea_final`, `victoria_banda` y `derrota`.
+- **Música:** `marcha_nekketsu`, `saigon_chay`, `azotea_final`, `victoria_banda` y `derrota`, y un tema por mundo del lote H2: `tema_instituto`, `hoian_noche`, `ajiaco_rock`, `parce_corra`, `pana_dale` y `gaita_lago`.
 - **Sonidos de H1:** pistola, silbato, golpes, chancleta, silla, pote, público...
+- **Sonidos de H2:** `gallo` (el kikirikí), `aleteo`, `mecha_tejo`, `toque_cau`, `caida_tatami` y `pitazo_largo`.
 - **Voces:** los 8 atletas más `locutor` y `arbitro`.
 
 Ya no queda nada en `manifest.pendiente`. Para oír todo: `audio/escuchar.html` del kit, que en el sitio está en `kit_nekketsu/audio/escuchar.html`. Detalles en [docs/INTERFAZ.md](../../INTERFAZ.md) y [docs/AUDIO.md](../../AUDIO.md).

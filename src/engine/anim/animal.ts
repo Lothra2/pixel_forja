@@ -15,6 +15,11 @@ export interface AnimalAnimDef {
   events?: AnimEvent[];
   /** premium: pixeles de celda que avanza el cuerpo en un ciclo (la pata apoyada no patina) */
   stride?: (d: AnimalDims) => number;
+  /**
+   * Saltos a un muro: entre qué alturas de muro se ve bien, como fracción de la subida dibujada. El kit exporta
+   * `subida` (0 a 1 por cuadro), `muro_min` y `muro_max` en pixeles, para que el juego lo ajuste a cada muro
+   */
+  muro?: { min: number; max: number };
   build: (d: AnimalDims) => QPose[];
 }
 
@@ -271,9 +276,11 @@ export const A_SCRATCH: AnimalAnimDef = {
 /**
  * Saltar a un muro (lote C7, el gato de los techos): se agacha meneando la cola, salta estirado, llega con las patas
  * de adelante al borde y sube las de atrás. `elevacion` lleva el cuerpo hasta arriba del muro (dos veces su alzada).
+ * Lote C7c: `subida` de 0 a 1 por cuadro y el rango de muros (`muro_min`, `muro_max`) donde se ve bien. Para otro muro,
+ * el juego sube el sprite `subida * alto_del_muro`.
  */
 export const A_JUMP_WALL: AnimalAnimDef = {
-  name: 'jump_wall', fps: 12, loop: false,
+  name: 'jump_wall', fps: 12, loop: false, muro: { min: 0.5, max: 1.5 },
   events: [{ type: 'despegue', phase: 2 / 8 }, { type: 'aterriza', phase: 5 / 8 }],
   build: (d) => {
     const L = d.legUpper + d.legLower;
@@ -282,12 +289,50 @@ export const A_JUMP_WALL: AnimalAnimDef = {
     const menea = { ...agacha, tail: 25 };
     const impulso = Q(d, { pitch: -35, air: Math.max(2, Math.round(3 * d.u)), rise: Math.round(H * 0.2), legs: { rn: { x: -0.6 * L, y: 0.85 * L }, rf: { x: -0.7 * L, y: 0.8 * L }, fn: { x: 0.6 * L, y: 0.3 * L }, ff: { x: 0.5 * L, y: 0.35 * L } }, tail: 35 });
     const vuela = Q(d, { pitch: -28, air: Math.max(2, Math.round(3 * d.u)), rise: Math.round(H * 0.6), legs: { rn: { x: -0.75 * L, y: 0.6 * L }, rf: { x: -0.85 * L, y: 0.55 * L }, fn: { x: 0.8 * L, y: 0.2 * L }, ff: { x: 0.7 * L, y: 0.25 * L } }, tail: 20, eyes: 'open' });
-    const engancha = Q(d, { pitch: -20, rise: Math.round(H * 0.85), legs: { rn: { x: 0.1 * L, y: 0.9 * L }, rf: { x: 0, y: L - 0.2 }, fn: { x: 0.6 * L, y: 0.15 * L }, ff: { x: 0.5 * L, y: 0.2 * L } }, tail: 10 });
+    // la subida llega a 1 justo cuando las patas de adelante tocan arriba (lo acordado con el juego), y se queda en 1
+    const engancha = Q(d, { pitch: -20, rise: H, legs: { rn: { x: 0.1 * L, y: 0.9 * L }, rf: { x: 0, y: L - 0.2 }, fn: { x: 0.6 * L, y: 0.15 * L }, ff: { x: 0.5 * L, y: 0.2 * L } }, tail: 10 });
     const sube = Q(d, { pitch: 6, rise: H, legs: { rn: { x: 0.3 * L, y: 0.6 * L }, rf: { x: 0.2 * L, y: 0.6 * L }, fn: { x: 0.2 * L, y: L - 0.4 }, ff: { x: 0.1 * L, y: L - 0.4 } }, tail: 30 });
     return [standQ(d), agacha, menea, impulso, vuela, engancha, sube, { ...standQ(d), rise: H }];
   },
 };
 
-export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH, A_BITE, A_BARK, A_HOWL, A_PICKUP, A_HURT, A_DIE, A_DIG, A_SLEEP, A_SCRATCH, A_JUMP_WALL];
+/**
+ * Embestida (lote C7c, el perro que tumba): se agacha con el trasero arriba, salta estirado con las patas de adelante
+ * por delante y la boca abierta, pega con las patas (el `impacto`, ahí el juego tumba al atleta) y cae plantado. No
+ * avanza solo: el juego lo mueve entre el `despegue` y el `aterriza`.
+ */
+export const A_POUNCE: AnimalAnimDef = {
+  name: 'pounce', fps: 12, loop: false,
+  events: [{ type: 'despegue', phase: 2 / 8 }, { type: 'impacto', phase: 4 / 8 }, { type: 'aterriza', phase: 6 / 8 }],
+  build: (d) => {
+    const L = d.legUpper + d.legLower, a = Math.max(2, Math.round(3 * d.u));
+    const acecha = (t: number) => Q(d, { pitch: 14, legs: { fn: { x: 0.45 * L, y: 0.62 * L }, ff: { x: 0.3 * L, y: 0.62 * L }, rn: { x: 0.05 * L, y: L - 0.3 }, rf: { x: -0.1 * L, y: L - 0.3 } }, head: { angle: 10, dy: 1 }, tail: t, eyes: 'open' });
+    const salta = Q(d, { pitch: -18, air: a, legs: { rn: { x: -0.7 * L, y: 0.8 * L }, rf: { x: -0.8 * L, y: 0.75 * L }, fn: { x: 0.6 * L, y: 0.5 * L }, ff: { x: 0.5 * L, y: 0.55 * L } }, head: { angle: -6 }, tail: 40, mouth: 'open' });
+    const pega = Q(d, { x: 1, pitch: -10, air: a, legs: { rn: { x: -0.5 * L, y: 0.85 * L }, rf: { x: -0.6 * L, y: 0.8 * L }, fn: { x: 0.95 * L, y: 0.45 * L }, ff: { x: 0.85 * L, y: 0.5 * L } }, head: { angle: 0 }, tail: 45, mouth: 'open' });
+    const cae = Q(d, { x: 1, pitch: 10, legs: { fn: { x: 0.55 * L, y: L - 0.3 }, ff: { x: 0.45 * L, y: L - 0.3 }, rn: { x: -0.2 * L, y: 0.75 * L }, rf: { x: -0.3 * L, y: 0.7 * L } }, head: { angle: 8 }, tail: 35, mouth: 'open' });
+    return [standQ(d), acecha(50), acecha(20), salta, pega, pega, cae, Q(d, { x: 1, tail: 40, mouth: 'tongue', eyes: 'happy' })];
+  },
+};
+
+/**
+ * Despertar (lote C7c): sale del `sleep` enroscado. Abre los ojos, levanta la cabeza de golpe, se para con las de
+ * adelante, después con las de atrás, y queda alerta con la cola arriba. El primer cuadro es el último del `sleep`.
+ */
+export const A_WAKE: AnimalAnimDef = {
+  name: 'wake', fps: 8, loop: false,
+  build: (d) => {
+    const L = d.legUpper + d.legLower;
+    const echado = { fn: { x: 0.85 * L, y: 0.08 * L }, ff: { x: 0.7 * L, y: 0.08 * L }, rn: { x: 0.35 * L, y: 0.06 * L }, rf: { x: 0.2 * L, y: 0.06 * L } };
+    const duerme = A_SLEEP.build(d)[3];
+    const abre = Q(d, { pitch: 4, legs: echado, head: { angle: 30, dx: 0, dy: 3 }, tail: -150, eyes: 'open', mouth: 'closed' });
+    const alza = Q(d, { pitch: 2, legs: echado, head: { angle: -14, dx: 0, dy: 0 }, tail: -60, eyes: 'open', mouth: 'closed' });
+    const adelante = Q(d, { pitch: -24, legs: { fn: { x: 0.25 * L, y: L - 0.3 }, ff: { x: 0.1 * L, y: L - 0.3 }, rn: { x: 0.45 * L, y: 0.15 * L }, rf: { x: 0.3 * L, y: 0.15 * L } }, head: { angle: -10 }, tail: 0, eyes: 'open' });
+    const atras = Q(d, { pitch: 6, legs: { fn: { x: 0.2 * L, y: L - 0.3 }, ff: { x: 0.05 * L, y: L - 0.3 }, rn: { x: 0, y: 0.8 * L }, rf: { x: -0.15 * L, y: 0.8 * L } }, head: { angle: -8 }, tail: 20, eyes: 'open' });
+    const alerta = Q(d, { head: { angle: -10 }, tail: 50, eyes: 'open', mouth: 'closed' });
+    return [duerme, abre, alza, adelante, atras, alerta, { ...alerta, tail: 40 }];
+  },
+};
+
+export const ANIMAL_ANIMS: AnimalAnimDef[] = [A_IDLE, A_WALK, A_TROT, A_RUN, A_JUMP, A_SIT, A_LIE, A_WAG, A_CELEBRATE, A_FETCH, A_BITE, A_BARK, A_HOWL, A_PICKUP, A_HURT, A_DIE, A_DIG, A_SLEEP, A_SCRATCH, A_JUMP_WALL, A_POUNCE, A_WAKE];
 /** Animaciones de la mascota de un RPG, en el orden en que suelen pedirse. */
 export const PET_RPG_ANIMS = ['idle', 'walk', 'run', 'bite', 'bark', 'howl', 'pickup', 'hurt', 'die', 'sit', 'wag', 'dig'];

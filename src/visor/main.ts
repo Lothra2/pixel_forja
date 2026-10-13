@@ -5,7 +5,7 @@ import { readManifest, frameRect, overlaysOf, atlasImage, OVERLAYS, type VKit, t
 
 /**
  * Visor del kit: recorre atletas, packs y animaciones de un kit de PixelForja con los datos por cuadro dibujados encima
- * (cajas, cuerpo, manos, cabeza, pies, carga, arma, agua, eventos y pivote). Lee el kit publicado junto a la página
+ * (cajas, cuerpo, manos, cabeza, pies, carga, arma, pelotas de objetos, agua, eventos y pivote). Lee el kit publicado junto a la página
  * (kit_nekketsu/ o kit_deportes/), el de ?kit=<carpeta> o una carpeta del equipo. Es también la referencia de cómo un
  * juego lee el kit y compone el arma en la mano.
  */
@@ -27,14 +27,14 @@ const T = {
   team: ['Equipo', 'Team'], chars: ['personajes', 'characters'], animals: ['Animales', 'Animals'], noTeam: ['Sin equipo', 'No team'], tests: ['Pruebas', 'Events'],
   keys: ['Espacio pausa · ← → cuadro a cuadro · ↑ ↓ animación', 'Space pauses · ← → step · ↑ ↓ animation'],
   cajas: ['cajas', 'boxes'], cuerpo: ['cuerpo', 'body'], manos: ['manos', 'hands'], cabeza: ['cabeza', 'head'], pies: ['pies', 'feet'],
-  carga: ['carga', 'carry'], arma: ['arma', 'weapon'], agua: ['agua', 'water'], eventos: ['eventos', 'events'], pivote: ['pivote', 'pivot'],
+  carga: ['carga', 'carry'], arma: ['arma', 'weapon'], objetos: ['pelota', 'ball'], agua: ['agua', 'water'], eventos: ['eventos', 'events'], pivote: ['pivote', 'pivot'],
 } as const;
 const t = (k: keyof typeof T) => T[k][lang === 'es' ? 0 : 1];
 /** lo que viene del kit se escapa: un kit ajeno no puede meter HTML en la página */
 const esc = (v: unknown) => String(v).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 const COLORS: Record<Overlay, string> = {
-  cajas: '#4ade80', cuerpo: '#5a9dff', manos: '#ffd34d', cabeza: '#ff4f6d', pies: '#39d0d8', carga: '#d16bff', arma: '#ff8a3d', agua: '#6ec3ff', eventos: '#ffffff', pivote: '#ffffff',
+  cajas: '#4ade80', cuerpo: '#5a9dff', manos: '#ffd34d', cabeza: '#ff4f6d', pies: '#39d0d8', carga: '#d16bff', arma: '#ff8a3d', objetos: '#ff2fd0', agua: '#6ec3ff', eventos: '#ffffff', pivote: '#ffffff',
 };
 
 const app = document.getElementById('app')!;
@@ -293,6 +293,11 @@ function drawOverlays(g: CanvasRenderingContext2D, a: VAnim, row: number, k: num
     const w = cell('arma');
     // el agarre; el ángulo se ve con el arma compuesta (selector "Arma en la mano")
     if (w) dot([w[0], w[1]], COLORS.arma);
+  }
+  // las pelotas que el pack no dibuja (sin_props): su círculo donde el juego pone la suya. El centro es continuo
+  if (shown.has('objetos')) for (const o of cell('objetos') ?? []) {
+    g.strokeStyle = COLORS.objetos; g.lineWidth = Math.max(1, z / 2);
+    g.beginPath(); g.arc((P[0] + o.x) * z, (P[1] + o.y) * z, (o.r + 0.5) * z, 0, Math.PI * 2); g.stroke();
   }
   if (shown.has('pivote')) {
     const [x, y] = at(0, 0);
