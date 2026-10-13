@@ -36,6 +36,11 @@ export interface BossScene {
   materials: Record<string, BossMaterial>;
   /** suavidad de la unión por grupo (pixeles). Los que no figuran se unen duro */
   smooth?: Record<number, number>;
+  /**
+   * Agua (el Pez Farol): lo que queda debajo de esta altura (pixeles sobre el piso, el piso es la superficie) se ve a
+   * través del agua: teñido del color del agua y semitransparente, con la línea del agua clara donde la corta.
+   */
+  water?: { level: number; color: string; alpha: number; line: string; /** más hondo que esto ya no se ve (pixeles bajo la superficie) */ cut?: number };
 }
 
 export interface BossView {
@@ -132,6 +137,8 @@ export function renderBoss(scene: BossScene, cell: number, view: BossView, pivot
   const grp = new Int32Array(N).fill(-1);
   const pid = new Int32Array(N).fill(-1);
   const nrm: (V3 | null)[] = new Array(N).fill(null);
+  // altura en el mundo de cada pixel dibujado (solo si la escena trae agua)
+  const wy = scene.water ? new Float32Array(N).fill(Infinity) : null;
 
   // candidatas por columna de pixeles para no recorrer todas en cada pixel
   for (let py = 0; py < H; py++) {
@@ -163,6 +170,7 @@ export function renderBoss(scene: BossScene, cell: number, view: BossView, pivot
       grp[i] = pc.g;
       pid[i] = hit;
       nrm[i] = n;
+      if (wy) wy[i] = mv(Ci, p)[1];
       tone[i] = shade(scene, pc, local(pc, p), n);
       // segunda capa (verdín, musgo): cambia de material donde el ruido lo dice
       const m = scene.materials[pc.mat];
@@ -252,6 +260,31 @@ export function renderBoss(scene: BossScene, cell: number, view: BossView, pivot
       if (best) edge.push([i, scene.materials[best]?.surface === 'glow' ? scene.materials[best].ramp[Math.max(0, scene.materials[best].ramp.length - 3)] : outlineOf(best)]);
     }
   for (const [i, hex] of edge) put(i, hex);
+  // lo que está debajo del agua: teñido y translúcido, y la línea donde el agua lo corta
+  if (wy && scene.water) {
+    const w = scene.water, [wr, wg, wb] = hexToRgb(w.color), [lr, lg, lb] = hexToRgb(w.line);
+    const under = (i: number) => wy[i] < w.level;
+    for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+      const i = py * W + px;
+      if (!big.data[i * 4 + 3]) continue;
+      // el contorno toma el estado del pixel dibujado de al lado
+      let u = mat[i] ? under(i) : false;
+      let depN = 0;
+      if (!mat[i]) for (const j of [i - 1, i + 1, i - W, i + W]) if (j >= 0 && j < N && mat[j] && under(j)) { u = true; depN = Math.max(depN, w.level - wy[j]); }
+      if (!u) continue;
+      const k = i * 4;
+      // la línea del agua: el primer pixel sumergido debajo de uno que no lo está
+      const above = py > 0 && mat[i - W] && !under(i - W);
+      if (above) { big.data[k] = lr; big.data[k + 1] = lg; big.data[k + 2] = lb; big.data[k + 3] = 230; continue; }
+      // lo muy hondo se pierde en lo negro del agua
+      const dep = mat[i] ? w.level - wy[i] : depN;
+      if (w.cut !== undefined && dep > w.cut) { big.data[k + 3] = 0; continue; }
+      big.data[k] = Math.round(big.data[k] * 0.35 + wr * 0.65);
+      big.data[k + 1] = Math.round(big.data[k + 1] * 0.35 + wg * 0.65);
+      big.data[k + 2] = Math.round(big.data[k + 2] * 0.35 + wb * 0.65);
+      big.data[k + 3] = w.cut !== undefined ? Math.round(w.alpha * (1 - Math.min(0.7, dep / w.cut))) : w.alpha;
+    }
+  }
 
   // recorte a la celda y conteo de lo que se sale
   const out = createRaster(cell, cell);

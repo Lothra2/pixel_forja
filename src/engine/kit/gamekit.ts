@@ -29,6 +29,7 @@ import { dustWarning, dustCloud, shadowEyes } from '../world/galeriasObjects';
 import { POLILLA_REINA_SPEC, POLILLA_CENIZA_SPEC } from '../boss/polilla';
 import { MINERO_PIEDRA_SPEC, SOMBRA_SPEC } from '../boss/mina';
 import { MARINERO_NIEBLA_SPEC, CANGREJO_CENIZA_SPEC, MEDUSA_NEGRA_SPEC, CAPITAN_AHOGADO_SPEC } from '../boss/puerto';
+import { PEZ_FAROL_SPEC, biteWarning, waveWarning, wave } from '../boss/pez';
 import { introPanels, fuegoPared, humoGrande, logoFuego } from '../intro/intro';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
@@ -145,6 +146,9 @@ export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'n
   capa_de?: string;
   /** minijefe (el Capitán Ahogado) */
   elite?: boolean;
+  /** vive en el agua: lo de abajo de la superficie viene teñido y translúcido en la hoja (el Pez Farol) */
+  en_agua?: boolean;
+  luz_antena?: { color: string; radius: number; notas: string };
   /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
   capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
 
@@ -315,13 +319,14 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       [POLILLA_REINA_SPEC, { tipo: 'jefe', nombre: 'Polilla Reina', vuela: true }],
     ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
   }
-  // el Mundo 4: los enemigos del puerto y el Capitán Ahogado (a su celda, sin agrandar)
+  // el Mundo 4: los enemigos del puerto, el Capitán Ahogado y el Pez Farol (a su celda, sin agrandar)
   if (!opts.sinMundo4) {
     for (const [spec, extra] of [
       [MARINERO_NIEBLA_SPEC, { tipo: 'enemigo', nombre: 'Marinero de Niebla' }],
       [CANGREJO_CENIZA_SPEC, { tipo: 'enemigo', nombre: 'Cangrejo de Ceniza' }],
       [MEDUSA_NEGRA_SPEC, { tipo: 'enemigo', nombre: 'Medusa Negra', vuela: true }],
       [CAPITAN_AHOGADO_SPEC, { tipo: 'enemigo', nombre: 'El Capitán Ahogado', elite: true }],
+      [PEZ_FAROL_SPEC, { tipo: 'jefe', nombre: 'El Pez Farol', en_agua: true, luz_antena: { color: '#fff0c0', radius: 220, notas: 'La luz robada del faro, en la punta de la antena: lo más brillante de la pantalla. Se apaga en die (cuadro 9 en adelante).' } }],
     ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
   }
   // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
@@ -334,11 +339,12 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   manifest.personajes = chars;
 
   // ---------- poderes ----------
-  const fx: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean; celda: number }> = {};
+  const fx: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean; celda: number; w?: number; h?: number }> = {};
   const addFx = (name: string, frames: Raster[], fps: number, loop: boolean) => {
     const a = `fx/${name}.png`;
     files.push(png(a, strip(frames)));
-    fx[name] = { archivo: a, cuadros: frames.length, fps, loop, celda: frames[0].w };
+    // los que no son cuadrados (la ola, el aviso de la mordida) traen su ancho y su alto
+    fx[name] = { archivo: a, cuadros: frames.length, fps, loop, celda: frames[0].w, ...(frames[0].h !== frames[0].w ? { w: frames[0].w, h: frames[0].h } : {}) };
   };
   const elements: FxElement[] = ['fuego', 'hielo', 'sagrado', 'veneno', 'arcano', 'rayo', 'naturaleza'];
   for (const element of elements) {
@@ -359,6 +365,12 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   // la Polilla Reina: dónde va a caer el polvo (capa suelo) y la nube que apaga la luz donde cae
   addFx('aviso_polvo', dustWarning(), 10, false);
   addFx('nube_polvo', dustCloud(), 12, false);
+  // el Pez Farol: dónde va a morder (capa suelo), por dónde pasa la ola (se repite en línea) y la ola
+  if (!opts.sinMundo4) {
+    addFx('aviso_mordida', biteWarning(), 10, false);
+    addFx('aviso_ola', waveWarning(), 10, true);
+    addFx('ola', wave(), 12, false);
+  }
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);
 
