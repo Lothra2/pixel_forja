@@ -279,6 +279,19 @@
             "pole_kick_down",
             "pole_shake",
             "grab_leg_up",
+            "toprock",
+            "molino",
+            "reclama",
+            "espera",
+            "patear",
+            "perdon",
+            "pintar",
+            "mirar",
+            "rapear",
+            "tamborear",
+            "animar",
+            "llamar",
+            "ofrecer",
             "swim",
             "swim_back",
             "swim_breast",
@@ -799,6 +812,83 @@
         }
       }
     },
+    "npc": {
+      "type": "object",
+      "required": [
+        "personajes"
+      ],
+      "description": "La gente de la calle en npc/<id>.png: una tira con los cuadros de sus animaciones seguidas, de frente o en 3/4 (sin espejo), con el ancla en los pies. Un grupo (los músicos) va en un solo sprite. Ver docs/KIT_A_MEDIDA.md.",
+      "properties": {
+        "fichas": {
+          "type": "string",
+          "description": "Carpeta con las fichas de los NPC (*.ficha.json), relativa al kit.config.json. No son atletas."
+        },
+        "pelota": {
+          "type": "boolean",
+          "description": "La pelota de la calle: npc/pelota.png, 8 x 8 con 4 cuadros de giro."
+        },
+        "personajes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "ficha": {
+                "type": "string"
+              },
+              "anims": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "uniqueItems": true
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "vista": {
+                "enum": [
+                  "frente",
+                  "tres_cuartos",
+                  "espalda",
+                  "espalda_tres_cuartos"
+                ]
+              },
+              "vistas": {
+                "type": "object",
+                "additionalProperties": {
+                  "enum": [
+                    "frente",
+                    "tres_cuartos",
+                    "espalda",
+                    "espalda_tres_cuartos"
+                  ]
+                }
+              },
+              "grupo": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              },
+              "parlante": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
     "vehiculos": {
       "oneOf": [
         {
@@ -832,9 +922,6 @@
         }
       ],
       "description": "Vehículos y objetos de escenario en la vista inclinada (px = x + 0.35 y), en vehiculos/<id>.png: una tira de cuadros con sus animaciones, el ancla (la esquina de atrás a la izquierda de la huella, en el piso) y la huella. true = todos, o ids (\"moto\" = los 4 colores). Los que todavía no existen vuelven como aviso."
-    },
-    "npc": {
-      "description": "Todavía no se genera: se acepta y vuelve como aviso en manifest.pendiente. Llega con NPC (lote C6)."
     }
   }
 }

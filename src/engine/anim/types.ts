@@ -4,7 +4,7 @@ import type { View } from '../render/head';
 
 export type Pack =
   | 'basic' | 'football' | 'keeper' | 'basket' | 'volley' | 'tennis' | 'baseball'
-  | 'swim' | 'athletics' | 'martial' | 'brawl' | 'climb' | 'skate' | 'bike' | 'rpg' | 'skills' | 'enemy' | 'animal' | 'pet' | 'custom';
+  | 'swim' | 'athletics' | 'martial' | 'brawl' | 'climb' | 'skate' | 'bike' | 'rpg' | 'skills' | 'enemy' | 'animal' | 'pet' | 'calle' | 'custom';
 
 export const PACKS: Pack[] = ['basic', 'football', 'keeper', 'basket', 'volley', 'tennis', 'baseball', 'swim', 'athletics', 'martial', 'brawl', 'climb', 'skate', 'bike', 'rpg', 'skills', 'enemy'];
 

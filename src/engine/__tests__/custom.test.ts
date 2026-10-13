@@ -126,9 +126,8 @@ describe('kit a medida (lote I): configuración', () => {
   });
 
   it('lo que todavía no genera vuelve como aviso y en manifest.pendiente', () => {
-    const { files, warnings } = buildCustomKit({ ...MIN, npc: ['vendedor'], fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], audio: { sfx: ['trueno'], radio: ['noticias'] } }, {}, { quick: true, solo: ['cabecitas'] });
+    const { files, warnings } = buildCustomKit({ ...MIN, fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], audio: { sfx: ['trueno'], radio: ['noticias'] } }, {}, { quick: true, solo: ['cabecitas'] });
     expect(warnings).toEqual([
-      'npc: todavía no se genera, llega con NPC (lote C6)',
       'animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire',
       'fx: todavía no existen (se saltan): confeti_dorado',
       'audio.radio: todavía no se genera, llega con el audio (lote H)',
@@ -292,8 +291,8 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     // atletas (24 x 9 hojas: los packs y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida
     // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 7 escenarios: hẻm 21,
     // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14 y Caracas 10 + 3 perros y 2 gatos (lote C7)
-    // + los 10 vehículos y objetos del lote D2
-    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 5 + 10);
+    // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a)
+    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 5 + 10 + 9);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });
