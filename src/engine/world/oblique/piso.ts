@@ -48,16 +48,43 @@ const acera: Pintor = (_L, x, y, s) => {
   return g(x >> 1, y, s + 3) < 0.015 ? 'cemento' : 'cemento_claro';
 };
 
-const tierra: Pintor = (_L, x, y, s) => { const n = g(x, y, s); return n < 0.08 ? 'terracota' : n > 0.93 ? 'amarillo' : n > 0.8 ? 'ocre' : 'ocre'; };
+/** Tierra apisonada: manchones más oscuros, piedritas y matas de pasto sueltas. */
+const tierra: Pintor = (_L, x, y, s) => {
+  if (g(x >> 3, y >> 2, s + 4) < 0.1 && g(x, y, s + 5) < 0.6) return (x + y) % 3 ? 'verde' : 'verde_oscuro';
+  const n = g(x, y, s);
+  if (n < 0.04) return 'terracota';
+  if (n > 0.97) return 'crema';
+  return g(x >> 2, y >> 1, s + 1) < 0.35 && bayer(x, y) < 0.5 ? 'terracota' : n > 0.94 ? 'amarillo' : 'ocre';
+};
 const arena: Pintor = (_L, x, y, s) => { const n = g(x, y, s); return n < 0.06 ? 'ocre' : n > 0.9 ? 'luz' : 'crema'; };
 const pasto: Pintor = (_L, x, y, s) => { const n = g(x, y, s); return n < 0.1 ? 'verde_oscuro' : n > 0.92 ? 'menta' : 'verde'; };
 const greda: Pintor = (_L, x, y, s) => { const n = g(x >> 1, y, s); return n < 0.1 ? 'vino' : n > 0.9 ? 'salmon' : 'terracota'; };
 const madera: Pintor = (_L, x, y, s) => { const b = Math.floor(y / 5); const jy = y % 5; const jx = (x + b * 37) % 48; return jy === 4 || jx === 0 ? 'terracota' : g(x >> 2, y, s) < 0.12 ? 'terracota' : jy === 0 ? 'amarillo' : 'ocre'; };
-const baldosa: Pintor = (_L, x, y) => { const c = (Math.floor(x / 10) + Math.floor(y / 6)) % 2; return x % 10 === 0 || y % 6 === 0 ? 'cemento' : c ? 'crema' : 'cemento_claro'; };
-const metal: Pintor = (_L, x, y) => (y % 4 === 0 ? 'cemento' : (x + y * 3) % 8 === 0 ? 'luz' : 'cemento_claro');
+/** Baldosa de 16 x 8 con su junta: casi todas iguales, alguna más clara y alguna gastada. */
+const baldosa: Pintor = (_L, x, y, s) => {
+  const jx = x % 16, jy = y % 8;
+  if (jy === 7 || jx === 15) return 'cemento';
+  const t = g(Math.floor(x / 16), Math.floor(y / 8), s + 11);
+  if (t < 0.12) return jy === 0 || jx === 0 ? 'luz' : 'crema';
+  if (t > 0.94 && bayer(x, y) < 0.25) return 'cemento';
+  return jy === 0 && jx < 14 ? 'crema' : 'cemento_claro';
+};
+/** Lámina de zinc: ondas que corren hacia el fondo, juntas cada 60 y manchas de óxido. */
+const metal: Pintor = (_L, x, y, s) => {
+  if (x % 60 === 0) return 'asfalto_claro';
+  // óxido que chorrea a lo largo de algunas ondas
+  if (g(x >> 2, y >> 4, s + 7) < 0.05 && g(x, y, s) < 0.6) return x % 4 === 1 ? 'ocre' : 'terracota';
+  const k = x % 4;
+  return k === 0 ? 'cemento' : k === 1 ? 'luz' : 'cemento_claro';
+};
 const tatami: Pintor = (_L, x, y) => (x % 48 === 0 || y % 24 === 0 ? 'verde_oscuro' : (x + y) % 2 ? 'menta' : 'verde');
-const cancha: Pintor = (_L, x, y) => (y % 40 === 20 || x % 320 === 0 ? 'luz' : 'verde');
-const agua: Pintor = (_L, x, y, s) => (bayer(x, y) < 0.15 && g(x >> 2, y, s) < 0.4 ? 'celeste' : 'canal');
+/** Pista de atletismo: tartán rojo con las líneas blancas de los carriles cada 16 filas. */
+const cancha: Pintor = (_L, x, y, s) => {
+  if (y % 16 === 0) return 'luz';
+  const n = g(x >> 1, y, s + 2);
+  return n < 0.05 ? 'vino' : n > 0.96 ? 'salmon' : 'terracota';
+};
+const agua: Pintor = (_L, x, y, s) => (bayer(x, y) < 0.3 && g(x >> 2, y, s) < 0.6 ? 'celeste' : 'canal');
 
 export const PINTORES: Record<TipoPiso, Pintor> = { asfalto, acera, tierra, baldosa, madera, metal, arena, tatami, greda, cancha, pasto, agua };
 
@@ -128,9 +155,17 @@ export function pintarPiso(pal: Paleta, L: ObliqueLayout, o: PisoOpts = {}): Lie
       for (let j = -r; j <= r; j++) for (let i = -r * 1.6; i <= r * 1.6; i++) if ((i / 1.6) ** 2 + j * j < r * r && bayer(x + i, y + j) < 0.5) P.p(Math.round(x + i), Math.round(y + j), 'asfalto');
     } else rejilla(P, x, top - 2);
   }
-  // 4. huecos: canal con su pared del fondo, el agua turbia y lo que flota
-  for (const h of L.huecos) canal(P, h.x0, h.x1, h.y0 ?? 0, h.y1 ?? D, D, s);
-  // 5. orilla de enfrente: cuneta, bordillo y acera
+  // 4. huecos: canal con su pared del fondo, el agua turbia y lo que flota, o el vacío entre edificios
+  for (const h of L.huecos) if (h.caida === 'vacio') vacio(P, h.x0, h.x1, h.y0 ?? 0, h.y1 ?? D, D, s);
+  else canal(P, h.x0, h.x1, h.y0 ?? 0, h.y1 ?? D, D, s);
+  // los pisos que cruzan un vacío (vigas, tablones) muestran su canto
+  for (const p of L.piso) {
+    const sobre = L.huecos.find((h) => h.caida === 'vacio' && p.x0 >= h.x0 && p.x1 <= h.x1);
+    if (!sobre || p.y0 === undefined || p.y1 === undefined) continue;
+    for (let x = p.x0; x < p.x1; x++) { P.p(x, p.y0, 'luz'); P.p(x, p.y1 - 1, 'asfalto_claro'); P.p(x, p.y1, 'asfalto'); P.p(x, p.y1 + 1, 'sombra'); }
+    for (let x = p.x0 + 4; x < p.x1; x += 8) { P.p(x, p.y0 + 2, 'asfalto_claro'); P.p(x, p.y1 - 3, 'asfalto_claro'); }
+  }
+  // 5. orilla de enfrente: cuneta, bordillo y acera (o lo que diga el tema)
   orilla(P, L, D, s);
   return P;
 }
@@ -184,14 +219,48 @@ export function canal(P: Lienzo, x0: number, x1: number, y0: number, y1: number,
   }
 }
 
+/**
+ * Un vacío entre edificios visto desde arriba: el canto de la losa, las paredes que bajan hacia la oscuridad y, muy
+ * abajo, el callejón con un bombillo. Sigue hasta abajo de la pantalla si el hueco llega al borde de la franja.
+ */
+export function vacio(P: Lienzo, x0: number, x1: number, y0: number, y1: number, D: number, s: number) {
+  const yEnd = y1 >= D ? P.h : y1, w = x1 - x0;
+  for (let y = y0; y < yEnd; y++) for (let x = x0; x < x1; x++) {
+    const i = x - x0, lado = Math.min(i, w - 1 - i);
+    // las dos paredes en perspectiva: la izquierda al sol, la derecha en sombra
+    let c: Color = lado < 6 ? (i < w / 2 ? (lado < 2 ? 'cemento' : 'asfalto_claro') : lado < 2 ? 'asfalto' : 'sombra') : bayer(x, y) < 0.35 ? 'sombra' : 'tinta';
+    if (lado >= 6 && g(x >> 2, y >> 3, s + 3) < 0.05) c = 'oro'; // ventanita prendida allá abajo
+    P.p(x, y, c);
+  }
+  // canto de la losa y el borde de enfrente
+  for (let x = x0 - 1; x <= x1; x++) if (y0 > 0) { P.p(x, y0 - 1, 'luz'); P.p(x, y0, 'cemento'); }
+  for (let y = y0; y < yEnd; y++) { P.p(x0 - 1, y, 'luz'); P.p(x1, y, 'cemento'); }
+  if (y1 < D) for (let x = x0 - 1; x <= x1; x++) { P.p(x, y1, 'luz'); P.p(x, y1 + 1, 'cemento_claro'); }
+}
+
+/** Qué se ve en la orilla de enfrente, por tema o por `paralaje.cerca`: una función de (x, fila de la orilla). */
+export const ORILLAS: Record<string, (P: Lienzo, x: number, r: number, s: number) => Color> = {
+  /** El borde de la azotea: la cornisa y la fachada que baja. */
+  azoteas: (_P, x, r, s) => r === 0 ? 'asfalto' : r < 3 ? 'luz' : r < 6 ? 'cemento_claro' : r === 6 ? 'cemento' : (x % 64 > 8 && x % 64 < 30 && r > 12 && r < 26) ? (r === 13 ? 'cemento' : g(x >> 3, 0, s) < 0.3 ? 'oro' : 'asfalto') : r % 9 === 0 ? 'cemento' : 'crema',
+  /** Adentro del mercado: la baldosa sigue y la canaleta del desagüe. */
+  mercado_interior: (_P, x, r) => r === 2 || r === 3 ? (x % 6 < 4 ? 'asfalto_claro' : 'cemento') : baldosa(_P, x, r + 2, 0),
+  /** El borde de la pista: un poco más de tartán, el bordillo blanco y el pasto de adentro. */
+  gradas: (_P, x, r, s) => r < 5 ? cancha(_P, x, r + 1, s) : r < 7 ? (r === 5 ? 'luz' : 'cemento_claro') : g(x, r, s) < 0.12 ? 'verde_oscuro' : (r >> 2) % 2 ? 'verde' : g(x >> 1, r, s + 1) < 0.5 ? 'verde' : 'menta',
+};
+
 /** La orilla de enfrente: cuneta con un hilo de agua, bordillo y acera, cortada donde pasan los canales. */
 function orilla(P: Lienzo, L: ObliqueLayout, D: number, s: number) {
   const W = L.largo;
+  const temas = L.ranuras_deco.filter((t) => ORILLAS[t.tema]);
+  const estilo = (x: number) => ORILLAS[temas.find((t) => x >= t.x0 && x < t.x1)?.tema ?? ''] ?? ORILLAS[L.paralaje?.cerca ?? ''];
   const enCanal = (x: number) => L.huecos.some((h) => x >= h.x0 && x < h.x1);
-  const enAgua = (x: number) => L.agua.some((a) => x >= a.x0 && x < a.x1);
+  // solo el agua que llega al borde de la franja sigue por la orilla
+  const enAgua = (x: number) => L.agua.some((a) => x >= a.x0 && x < a.x1 && (a.y1 ?? D) >= D);
   for (let x = 0; x < W; x++) {
     if (enCanal(x)) continue;
-    for (let y = D; y < P.h; y++) {
+    const f = estilo(x);
+    if (f) { for (let y = D; y < P.h; y++) P.p(x, y, f(P, x, y - D, s)); if (!enAgua(x)) continue; }
+    else for (let y = D; y < P.h; y++) {
       const r = y - D;
       let c: Color;
       if (r < 3) c = r === 0 ? 'asfalto' : g(x, y, s) < 0.3 ? 'canal' : 'asfalto';
@@ -203,5 +272,5 @@ function orilla(P: Lienzo, L: ObliqueLayout, D: number, s: number) {
     }
     if (enAgua(x)) for (let y = D; y < P.h; y++) if (bayer(x, y) < 0.7) P.p(x, y, y % 5 === 0 && g(x, y, s) < 0.3 ? 'celeste' : 'canal');
   }
-  for (const h of L.huecos) for (let y = D; y < P.h; y++) { P.p(h.x0 - 1, y, 'cemento'); P.p(h.x1, y, 'cemento'); }
+  for (const h of L.huecos) if (h.caida !== 'vacio') for (let y = D; y < P.h; y++) { P.p(h.x0 - 1, y, 'cemento'); P.p(h.x1, y, 'cemento'); }
 }

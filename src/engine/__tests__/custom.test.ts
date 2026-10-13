@@ -217,13 +217,17 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     } else expect(m.pendiente.every((w: string) => w.startsWith('audio.'))).toBe(true);
   });
 
-  it('el escenario de saigon_hem sale con sus 9 pruebas en verde (lote E1)', () => {
-    expect(m.escenarios).toEqual({ saigon_hem: 'escenarios/saigon_hem/escenario.json' });
-    const e = readJson(join(out, m.escenarios.saigon_hem));
-    expect(e).toMatchObject({ id: 'saigon_hem', escala: 1, largo: 3840, franja: { atras: 200, adelante: 330 } });
-    expect(readFileSync(join(out, 'escenarios/saigon_hem/verificacion.md'), 'utf8')).toMatch(/Las 9 pruebas pasan/);
-    // las postales y la ficha son para aprobar: el kit no las lleva
-    expect(files.some((f) => f.startsWith('escenarios/saigon_hem/postales/'))).toBe(false);
+  it('los 5 tramos del Cross Country salen con sus 9 pruebas en verde (lotes E1 y E2)', () => {
+    const tramos = ['saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio'];
+    expect(Object.keys(m.escenarios).sort()).toEqual(tramos);
+    for (const id of tramos) {
+      expect(m.escenarios[id]).toBe(`escenarios/${id}/escenario.json`);
+      const e = readJson(join(out, m.escenarios[id]));
+      expect(e).toMatchObject({ id, escala: 1, largo: id === 'saigon_estadio' ? 1920 : 3840, franja: { atras: 200, adelante: 330 } });
+      expect(readFileSync(join(out, `escenarios/${id}/verificacion.md`), 'utf8'), id).toMatch(/Las 9 pruebas pasan/);
+      // las postales y la ficha son para aprobar: el kit no las lleva
+      expect(files.some((f) => f.startsWith(`escenarios/${id}/postales/`))).toBe(false);
+    }
   });
 
   it('no falta ningún archivo que nombra el manifiesto, y no sobra ninguno', () => {
@@ -247,8 +251,9 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas, retratos, cabecitas, armas, Thor y fuentes (54), efectos (56), logo e interfaz (32), escenario (17)
-    expect(pngs.length).toBe(54 + 56 + 32 + 17);
+    // atletas, retratos, cabecitas, armas, Thor y fuentes (54), efectos (56), logo e interfaz (32) y los 5 escenarios:
+    // hẻm 21, Bến Thành 17, río 17, azoteas 21 (con piso mojado) y estadio 11
+    expect(pngs.length).toBe(54 + 56 + 32 + 21 + 17 + 17 + 21 + 11);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

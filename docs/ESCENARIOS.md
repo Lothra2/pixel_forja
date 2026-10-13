@@ -83,6 +83,29 @@ En pantalla no hay inclinación: `px = x`, `py = franja.atras + y - z`. Una caja
 | `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360 |
 | `ficha_arte.md` | Con `--ficha`: paleta, elementos icónicos, vida y qué dibujo va en cada caja |
 
+## Vista inclinada
+
+Desde E2 los escenarios salen en la vista inclinada de la pelea, con `inclinacion` 0.35 por defecto. La proyección es la misma del gris del juego:
+
+```
+px = x + inclinacion * y      (y = 0 al fondo de la franja; lo del fondo queda a la izquierda)
+py = franja.atras + y - z
+```
+
+- **La geometría no cambia.** El layout y `colision.json` son los mismos. Solo cambia el dibujo.
+- **Todo lo que toca el piso se corre `inclinacion * y`:** piso, juntas, agua, huecos, cajas, postes, toldos, sombras y partículas.
+- **Las capas largas miden `largo + inclinacion * D`.** `escenario.json` trae `inclinacion` y `ancho`.
+- **Las cajas son volúmenes:**
+  - el techo es un paralelogramo, el frente un rectángulo;
+  - la cara de la izquierda se ve y da a la luz;
+  - esa cara sube desde lo que la caja tenga pegado a ese lado, así un tramo de escalones se lee escalón por escalón (la contrahuella);
+  - la cara va en su propio objeto, `<tipo>_cara`, con `orden` y + 0.1: delante de lo que va detrás de la caja y detrás de quien pasa a su lado;
+  - las caladas o redondas (vallas, tanques, botes, carritos) no llevan cara.
+- **Los huecos** muestran la pared del fondo (de frente), la pared del otro lado (inclinada) y abajo el agua o el vacío. Lo que los cruza (una viga) muestra su canto de 8 px.
+- **Adelante va el bordillo:** la cara del piso que da a la cámara, de la fila D hasta el borde de la pantalla. Donde el agua llega adelante, el agua sigue.
+- **Para el juego:** corre a los atletas `inclinacion * y`, igual que en el gris. Los objetos de `objetos.json` ya vienen corridos.
+- **Para el dibujo derecho de antes:** `generarEscenario(layout, { inclinacion: 0 })`.
+
 ## En Phaser
 
 ```js
@@ -130,10 +153,41 @@ Todas bloquean: si una falla, el escenario no sale.
   - `carro` es un xe ba gác, y `puesto_banhmi`, `cajas`, `moto_estacionada`, `mesas_plasticas`, `tanque_agua` y `kiosco` tienen su propio dibujo;
   - `muro_bajo` es de ladrillo y `muro_alto` lleva vidrios rotos arriba;
   - un tipo sin dibujo sale como muro.
+- **Las horas del estilo `vietnam`**, cada una con su paleta de 24 colores:
+  - **Mañana:** luz cálida con bruma.
+  - **Mediodía:** cielo limpio y sombras cortas.
+  - **Tarde dorada** (`tarde` sin aguacero): cielo de lavanda a miel, sol bajo con halo, agua lila con destellos de oro y el filo de las torres encendido.
+  - **Aguacero:** nublado y lavado.
+  - **Tormenta** (`tarde` con `aguacero` y el tema `azoteas`): casi de noche, con ventanas prendidas, neones rosado, turquesa, rojo y azul con su halo en la neblina, y la Bitexco con el filo de luz.
+  - **Atardecer:** violeta, durazno y naranja.
+- **El rosado (`salmon`) es el de la buganvilla y la pitahaya:** las paredes van amarillas, menta, celestes y crema, como en Saigón, y el rosado resalta.
+- **El hẻm, más vivo:**
+  - buganvillas en cascada;
+  - cortinas metálicas (cửa cuốn) verdes y azules;
+  - toldos de rayas sobre los locales;
+  - matas grandes en materos de barro o vidriados;
+  - charcos que reflejan las casas de cabeza, tramados con el cielo (el hẻm amanece mojado).
+- **Los puestos del mercado** llevan toldo de lona a rayas, de un color por puesto, con la cenefa en ondas. **La torre del reloj** de Bến Thành va ancha, con el reloj grande, el nombre en relieve y el techo de cuatro aguas.
+- **El río** se ve abierto detrás de la baranda del malecón, con palmas, bolardos con cadena, xích lô estacionados, el ferry y los barcos del otro lado, y jacintos en islas con su flor.
+- **La viga sobre un hueco** es de hierro en I, oxidada: se lee clara sobre el vacío oscuro.
+- **Vida de los tramos del Cross** (`vidaSaigon.ts`), según la lista `vida` del layout:
+
+  | Vida | Qué se anima |
+  |---|---|
+  | `toldos_viento` | Cenefas de toldo |
+  | `vendedoras_pregonando` | Vendedoras con nón lá que pregonan |
+  | `agua_animada` | Brillos del agua |
+  | `jacintos_flotando` | Jacintos que bajan con la corriente |
+  | `ferry` | El ferry del fondo, que cruza |
+  | `botes_bambu` | Thúng chai que se mecen |
+  | `ropa_viento` | La ropa al viento |
+  | `publico_ondeando` | La ola en la tribuna |
+  | `banderas` | Banderas de Vietnam que ondean |
+  | `lluvia`, `charcos_crecen` y `fuegos_artificiales` | Van como partículas con los efectos `lluvia`, `salpicadura_piso` y `fuegos_artificiales_*` del kit |
 - **Los otros estilos del pedido** (`colombia_colonial`, `colombia_ladrillo`, `venezuela_barrio`, `venezuela_ciudad`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos
 
-- **Una sola hora pintada por escenario:** la de la ficha. `cielo.ts` trae la mañana. Las otras horas se suman con la ficha de su escenario.
+- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.
 - **La legibilidad se mide con el contorno de los atletas,** no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.

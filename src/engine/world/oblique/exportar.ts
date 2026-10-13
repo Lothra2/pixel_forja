@@ -72,7 +72,7 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
   out.push({
     nombre: 'objetos.json', bytes: json({
       imagen: 'objetos.png',
-      nota: 'x, y: esquina de arriba a la izquierda en el mundo a escala 1. orden: la profundidad para ordenar con los atletas (se dibuja después de todo atleta con y menor). En Phaser: setDepth(franja.atras + orden).',
+      nota: 'x, y: esquina de arriba a la izquierda en pantalla a escala 1 (con la inclinación ya puesta). orden: la profundidad para ordenar con los atletas (se dibuja después de todo atleta con y menor). En Phaser: setDepth(franja.atras + orden). Las caras izquierdas de las cajas (tipo *_cara) van con orden y + 0.1: detrás de quien pasa a su lado.',
       objetos: E.objetos.map((o, i) => ({ id: o.id, tipo: o.tipo, origen: o.origen, cuadro: ob.rects[i], x: o.x, y: o.y, orden: o.orden, superficie: o.superficie })),
     }),
   });
@@ -99,12 +99,15 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
       generado_con: 'PixelForja',
       id: L.id, nombre: L.nombre ?? L.id, escala: 1, resolucion: [640, 360],
       franja: L.franja, largo: L.largo, hora: L.hora, clima: L.clima,
+      inclinacion: E.inclinacion,
+      ancho: E.ancho,
+      nota_inclinacion: E.inclinacion ? `vista inclinada: px = x + ${E.inclinacion} * y (lo del fondo queda a la izquierda). Las capas largas miden ${E.ancho} px (largo + ${E.inclinacion} * fondo de la franja). Los objetos ya vienen corridos: corre a los atletas igual.` : undefined,
       capas: {
         cielo: { archivo: `cielo_${L.hora}.png`, y: 0, paralaje: PARALAJE.cielo, repetir_x: true },
         lejos: { archivo: 'lejos.png', y: FT - 30 - E.lejos.h, paralaje: PARALAJE.lejos, repetir_x: true },
         tras_cerca: { nota: 'la vida con capa tras_cerca va aquí: se ve por los callejones' },
         cerca: { archivos: cerca, trozo: TROZO, y: 0, paralaje: PARALAJE.cerca },
-        piso: { archivos: piso, trozo: TROZO, y: FT, paralaje: PARALAJE.piso, nota: `las primeras ${D} filas son la franja, las de abajo la orilla de enfrente` },
+        piso: { archivos: piso, trozo: TROZO, y: FT, paralaje: PARALAJE.piso, nota: E.inclinacion ? `las primeras ${D} filas son la franja (inclinada), las de abajo el bordillo: la cara del piso que da a la cámara` : `las primeras ${D} filas son la franja, las de abajo la orilla de enfrente` },
         ...(mojado.length ? { piso_mojado: { archivos: mojado, trozo: TROZO, y: FT, clima: 'aguacero', nota: 'va encima del piso cuando llueve' } } : {}),
         objetos: { archivo: 'objetos.json', nota: 'entre el piso y el frente, ordenados con los atletas' },
         frente: { archivos: frente, trozo: TROZO, y: E.frenteY, paralaje: PARALAJE.frente },
