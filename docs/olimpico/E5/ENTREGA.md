@@ -1,6 +1,6 @@
 # Lote E5: los escenarios de los cuatro deportes de pelota y la Marimonda
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/34
 Fecha: 2026-10-13
 
 ## Qué se hizo
