@@ -82,8 +82,8 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
 "fx": ["polvo", "golpe", "reaccion", "chapuzon", "aura_nekketsu"],     // grupos, bases o ids; true = todos
 "audio": {
   "formato": "comprimido",                                             // OGG + M4A para el celular. Sin esto: WAV
-  "sfx": ["golpe", "critico", "esquiva", "paso_tierra_0", "silbato"],  // silbato llega con el lote H: aviso
-  "musica": ["marcha_nekketsu"],                                       // llega con el lote H: aviso
+  "sfx": ["golpe", "critico", "esquiva", "paso_tierra_0", "silbato", "gallo"],
+  "musica": ["marcha_nekketsu", "parce_corra"],                        // un tema por mundo: ver AUDIO.md
   "ambientes": ["agua"]
 }
 ```

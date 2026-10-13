@@ -68,15 +68,16 @@ El juego tendrá su propio `kit.config.json` y `data/teams.json`. Esta es la ver
 
 ## Efectos y sonidos (lote F)
 
-La configuración pide `"fx": true` (los 56 efectos del catálogo general en `fx/`) y los sonidos del motor que le sirven al juego en `audio/sfx/`: golpes, esquiva, bloqueo, pasos, ladrido de Thor y los de la interfaz. `silbato`, `pistola` y `marcha_nekketsu` todavía no existen: el kit los salta con aviso y quedan en `manifest.pendiente` hasta el lote H. Qué efecto va con qué evento: [docs/EFECTOS.md](../../EFECTOS.md).
+La configuración pide `"fx": true` (los 56 efectos del catálogo general en `fx/`) y los sonidos del motor que le sirven al juego en `audio/sfx/`: golpes, esquiva, bloqueo, pasos, ladrido de Thor y los de la interfaz. `silbato`, `pistola` y `marcha_nekketsu` llegaron con el lote H1. Qué efecto va con qué evento: [docs/EFECTOS.md](../../EFECTOS.md).
 
 ## Interfaz y audio de la rebanada (lotes G1 y H1)
 
 La configuración pide además:
 - **Logo:** `ui.logo` con "NEKKETSU OLYMPIC GG".
 - **Interfaz completa:** `ui.interfaz: true`, con un panel por cada equipo de `equipos.json`.
-- **Música:** `marcha_nekketsu`, `saigon_chay`, `azotea_final`, `victoria_banda` y `derrota`.
+- **Música:** `marcha_nekketsu`, `saigon_chay`, `azotea_final`, `victoria_banda` y `derrota`, y un tema por mundo del lote H2: `tema_instituto`, `hoian_noche`, `ajiaco_rock`, `parce_corra`, `pana_dale` y `gaita_lago`.
 - **Sonidos de H1:** pistola, silbato, golpes, chancleta, silla, pote, público...
+- **Sonidos de H2:** `gallo` (el kikirikí), `aleteo`, `mecha_tejo`, `toque_cau`, `caida_tatami` y `pitazo_largo`.
 - **Voces:** los 8 atletas más `locutor` y `arbitro`.
 
 Ya no queda nada en `manifest.pendiente`. Para oír todo: `audio/escuchar.html` del kit, que en el sitio está en `kit_nekketsu/audio/escuchar.html`. Detalles en [docs/INTERFAZ.md](../../INTERFAZ.md) y [docs/AUDIO.md](../../AUDIO.md).
