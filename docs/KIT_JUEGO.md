@@ -260,6 +260,43 @@ como los otros). Detalle completo en `docs/mundos/GALERIAS.md`. Lo nuevo para el
 - `audio`: `musica_galerias`, `musica_jefe_polilla`, `ambiente_galerias`, `ambiente_eco`, `cristal_prender`,
   `cristal_apagar`, `polilla_aleteo`, `minero_golpe`, `sombra_aparece`, `carrito_rodar` (bucle) y `figura_irse`.
 
+### Mundo 4: El Puerto Ahogado (encargo F12)
+
+`manifest.mundos` trae `mundo4` (mapa `mundo/mundo4_puerto.json`, 110 x 90, con `fondo` (`fondo_mar_lejos_0..2`),
+`espuma`, `reflejo`, `portal: portal_rojo`). Resumen de la entrega: `docs/entregas/abyss_mundo4.md`. Lo nuevo:
+
+- **Mareas.** Capas de cuadros `marea_baja` (el barro del banco de arena: solo se camina con la marea baja) y
+  `marea_alta` (los muelles flotantes: solo con la alta). En `colision` van libres los dos: con la marea alta el juego
+  suma `marea_baja` a la colisión y dibuja `agua_marea` encima; con la baja suma `marea_alta` y deja los
+  `muelle_flotante` en `abajo` (al subir: `subir` y después `arriba`). El mundo trae `marea` con los nombres.
+- **Faroles del muelle** (la fogata del piso): 4 `punto_guardado` con `farol: true` y `objeto: farol_muelle`, y al
+  lado la entidad `farol_muelle` (el poste, `punto` = id). Arrancan apagados (`farol_muelle_apagado`); Thor los prende
+  (`farol_muelle_prenderse` una vez y después `farol_muelle_prendido`, luz ámbar de 180). El primero trae
+  `tutorial: true`.
+- **Entidades:** `portal_llegada` (rojo), `portal_volver` (mundo3), `portal_jefe` (`destino: mundo5`), `jefe`
+  (`enemigo: pez_farol`, `en_agua`), `arena_jefe` (`agua: true`), el minijefe `capitan_ahogado` con `elite: true`,
+  `campana_iglesia` (`suena_sola`), `mural` (`pieza: 4`), `figura` (una con `alto: true`: en lo alto del faro) y los
+  enemigos `marinero_niebla`, `cangrejo_ceniza` y `medusa_negra`.
+- **Zonas** con `ambiente` `puerto`, `campana`, `agua` y `jefe`, `musica: ninguna` (casi sin música: entra en las
+  peleas; el Faro trae `musica: jefe_pez` y `musica_victoria: faro`, el Astillero `musica_pelea: capitan`) y su
+  `frente` (`red_colgando_0..1`, `rocas_frente_0..1`, `vigas_frente_0..1`).
+- **Luz:** sin sombras horneadas con dirección. Los objetos traen solo la sombra de contacto al pie en `sombra`.
+- **El farol de Thor:** `personajes.thor_farol` y `thor_farol_apagado` (`capa_de: thor`): misma celda, pivote,
+  animaciones y cuadros que `thor`. Cada cuadro trae solo el farol: se dibuja encima de Thor (con cualquier
+  armadura). En `howl` el farol queda arriba (alzar el farol).
+- **Enemigos y jefe:** `marinero_niebla` (48, translúcido; fuera de la luz se ven los `marinero_ojos`, en
+  `criaturas` del mundo 4), `cangrejo_ceniza` (48), `medusa_negra` (48, `vuela`), `capitan_ahogado` (64, `elite`) y
+  `pez_farol` (128, `tipo: jefe`, `en_agua`, `luz_antena`). Mismo formato que los jefes grandes (eventos, `aviso`,
+  `elevacion`, pivote medido). `fx`: `aviso_mordida` (128 x 64, `w`/`h`), `aviso_ola` (32 x 32, en bucle, se repite
+  en línea) y `ola` (128 x 64, 12 fps).
+- **Audio:** `ambiente_puerto` (20 s), `ambiente_campana`, `musica_jefe_pez`, `musica_capitan` (en bucle),
+  `musica_faro` (30 s), y los efectos `campana_lejos`, `campana_cerca`, `marea_sube`, `farol_prender`,
+  `farol_apagar`, `thor_alza_farol`, `marinero_se_deshace`, `cangrejo_tenaza`, `medusa_toca`, `ancla_golpe`,
+  `pez_emerge`, `pez_mordida`, `ola` y `faro_prende`. Todo con pico de 0.5.
+- **Pendientes:** `ui.habilidades.ataque` (#38), `ui.cinturon` nuevo de 190 x 44 y `ui.casillero_pocion` (#39), y
+  los portales premium de 96 x 128 (#40: `portal_azul`, `portal_rojo`, `portal_verde`, `portal_violeta`,
+  `portal_ambar`, con `girar`, `abrir`, `cerrar`, `arco` y `remolino`). Cada mundo dice el suyo en `portal`.
+
 ### El intro (parte 4)
 
 `manifest.intro` trae los paneles pintados para el intro: `intro_bosque_noche`, `intro_corte_abismo`, `intro_ojos`,
