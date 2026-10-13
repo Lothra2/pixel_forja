@@ -37,7 +37,8 @@ const idle = (f: HumanFicha, view: string, cell = cellOf(f)) => renderClip(f, ce
 describe('equipos: fichas de ejemplo (lote C1)', () => {
   it('las 8 fichas y Thor son válidas, y Goro trae su celda de gigante', () => {
     const files = readdirSync(DIR).filter((n) => n.endsWith('.ficha.json')).map((n) => n.replace('.ficha.json', '')).sort();
-    expect(files).toEqual([...ALL, 'thor'].sort());
+    // en la carpeta también están los equipos nacionales (lote C2), que se prueban en equipos.test.ts
+    for (const id of [...ALL, 'thor']) expect(files).toContain(id);
     for (const id of files) expect(validateFicha(JSON.parse(readFileSync(join(DIR, `${id}.ficha.json`), 'utf8'))), id).toEqual([]);
     expect(isHuman(load('thor'))).toBe(false);
     expect(human('goro').cell).toBe(64);

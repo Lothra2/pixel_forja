@@ -208,7 +208,7 @@ Garantías, cada una con su prueba (`src/engine/__tests__/custom.test.ts`):
 - No falta ningún archivo que nombre el manifiesto, y no sobra ninguno.
 - Ninguna imagen pasa de 4096 px. La más grande del ejemplo mide 1600.
 - Cada animación trae un cuadro de atlas por fila y cuadro, y sus datos en `[fila][cuadro]`.
-- El kit completo de ejemplo se genera en menos de 3 minutos.
+- El kit completo de ejemplo (24 atletas en 6 equipos) se genera en menos de 3 minutos. Hoy tarda unos 2.
 
 ## En Phaser
 
@@ -308,7 +308,7 @@ npm run build:sitio && npx vite preview      # http://localhost:4173/visor.html
 
 | Configuración | Qué arma |
 |---|---|
-| [`ejemplos/nekketsu/kit.config.json`](ejemplos/nekketsu/kit.config.json) | Nekketsu Olympic GG: Familia GG e Instituto Nekketsu, 5 packs, armas, Thor, fuentes con vietnamita, los 63 efectos, la pelea de azotea (pack `kachinuki`, comida, VS y público) y los sonidos del motor que le sirven |
+| [`ejemplos/nekketsu/kit.config.json`](ejemplos/nekketsu/kit.config.json) | Nekketsu Olympic GG: los 6 equipos (24 atletas), 6 packs, armas, Thor, fuentes con vietnamita, los 63 efectos, la pelea de azotea (pack `kachinuki`, comida, VS y público) y los sonidos del motor que le sirven |
 | [`ejemplos/kit-deportivo.config.json`](ejemplos/kit-deportivo.config.json) | El kit deportivo de siempre (`npm run deportes`): la familia y los héroes con los 6 packs de deporte |
 | [`ejemplos/gg-abyss.config.json`](ejemplos/gg-abyss.config.json) | Los personajes de GG Abyss: la familia con su equipo, las 21 animaciones RPG, retratos, Thor, fuentes y todo el audio |
 

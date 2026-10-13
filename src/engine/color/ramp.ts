@@ -26,7 +26,20 @@ function tone(base: Lab, dL: number, chromaK: number, hueTarget: number, hueDeg:
   return labToHex(lchToLab([nL, C * chromaK, nh]));
 }
 
+const rampCache = new Map<string, Ramp>();
+
+/** La rampa de un color. Es pura y se pide en cada cuadro con los mismos colores, así que se guarda (sale una copia). */
 export function makeRamp(baseHex: string): Ramp {
+  let r = rampCache.get(baseHex);
+  if (!r) {
+    r = buildRamp(baseHex);
+    if (rampCache.size > 4096) rampCache.clear();
+    rampCache.set(baseHex, r);
+  }
+  return [r[0], r[1], r[2], r[3]];
+}
+
+function buildRamp(baseHex: string): Ramp {
   const base = hexToLab(baseHex);
   const L = base[0];
   // En colores muy claros (blanco) la sombra baja más para que se lea; en muy oscuros, la luz sube más.

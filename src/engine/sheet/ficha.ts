@@ -1,3 +1,4 @@
+import type { EyeExpr, MouthExpr } from '../head/stamps';
 import type { Ramp } from '../color/ramp';
 import type { Avatar } from '../head3d/avatar';
 import type { WeaponKind, OffhandKind } from '../rig/pose';
@@ -124,7 +125,7 @@ export interface HumanFicha extends FichaBase {
     emblemColor?: string;
     emblemBg?: string | null;
     /** diseño de la camiseta, con un segundo color (camisetas de equipo) */
-    pattern?: 'liso' | 'rayas' | 'rayas_h' | 'banda' | 'mitades' | 'cuadros';
+    pattern?: 'liso' | 'rayas' | 'rayas_h' | 'banda' | 'mitades' | 'cuadros' | 'flores' | 'guayabera';
     pattern2?: string;
     /** cuello de la camiseta */
     collar?: 'redondo' | 'v' | 'polo';
@@ -144,7 +145,9 @@ export interface HumanFicha extends FichaBase {
     chestText?: string | null;
     chestTextColor?: string;
     /** calzado */
-    shoes?: 'tenis' | 'guayos' | 'botas' | 'descalzo';
+    shoes?: 'tenis' | 'guayos' | 'botas' | 'descalzo' | 'chancletas' | 'sandalias';
+    /** algo al cuello: bufanda (con la punta que cuelga) o pañoleta de pionero (el triángulo al frente), con su color */
+    neck?: { kind: 'bufanda' | 'panoleta'; color: string } | null;
     /** armadura o traje de RPG encima de la ropa */
     armor?: ArmorKind | null;
     /** color de la armadura: metal, cuero o tela */
@@ -165,7 +168,14 @@ export interface HumanFicha extends FichaBase {
     armorGlow?: string | null;
   };
   /** glasses: color del marco si tiene lentes (se dibujan con sello, no se reducen) */
-  face: { eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean };
+  face: {
+    eyes: EyeStyle; mouth: MouthStyle; blush: boolean; brows: boolean; glasses?: string | null; thickBrows?: boolean;
+    /**
+     * La cara de siempre, cuando la animación no pide otra: reemplaza los ojos abiertos y la boca neutra (o la sonrisa
+     * suave). La cara "malandra" de los rivales es { eyes: 'angry', mouth: 'smirk' }.
+     */
+    base?: { eyes?: EyeExpr; mouth?: MouthExpr };
+  };
   /** equipo de RPG: arma en la mano y algo en la otra (escudo, orbe, libro). Reemplaza la espada y el escudo de las animaciones */
   gear?: Gear;
   /** cabezas ya pixeladas, por tamaño */
