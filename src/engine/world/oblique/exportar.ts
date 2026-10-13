@@ -5,6 +5,8 @@ import { NOMBRES } from './paleta';
 import { fichaMarkdown } from './ficha';
 import { PARALAJE, TROZO, postal, trozo, type Escena } from './escena';
 import type { Lienzo } from './lienzo';
+import { filoDesmorona, vacioTextura } from './caracas';
+import { ORILLA } from './piso';
 
 /**
  * La carpeta `escenarios/<id>/` del pedido (10.3), lista para el juego: capas en trozos de 1280, atlas de objetos y de
@@ -43,6 +45,8 @@ export function puntosPostal(E: Escena): Record<'inicio' | 'medio' | 'final', nu
     const n = L.huecos.filter((h) => h.x0 < x + W && h.x1 > x).length * 3 + L.muros.filter((m) => m.x < x + W && m.x + m.w > x).length * 3 + [...L.plataformas, ...L.solidos].filter((b) => b.x < x + W && b.x + b.w > x).length;
     if (n > max) { max = n; mejor = x; }
   }
+  // una arena (sin salida ni meta) que cabe en una pantalla: el principio, el medio y el final de lo que la cámara recorre
+  if (!L.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta') && E.ancho - W <= W) return { inicio: 0, medio: Math.round((E.ancho - W) / 2), final: Math.max(0, E.ancho - W) };
   return { inicio: Math.max(0, Math.min(salida - 40, L.largo - W)), medio: mejor, final: Math.max(0, Math.min(meta + 50 - W, L.largo - W)) };
 }
 
@@ -72,7 +76,7 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
   out.push({
     nombre: 'objetos.json', bytes: json({
       imagen: 'objetos.png',
-      nota: 'x, y: esquina de arriba a la izquierda en el mundo a escala 1. orden: la profundidad para ordenar con los atletas (se dibuja después de todo atleta con y menor). En Phaser: setDepth(franja.atras + orden).',
+      nota: 'x, y: esquina de arriba a la izquierda en pantalla a escala 1 (con la inclinación ya puesta). orden: la profundidad para ordenar con los atletas (se dibuja después de todo atleta con y menor). En Phaser: setDepth(franja.atras + orden). Las caras izquierdas de las cajas (tipo *_cara) van con orden y + 0.1: detrás de quien pasa a su lado.',
       objetos: E.objetos.map((o, i) => ({ id: o.id, tipo: o.tipo, origen: o.origen, cuadro: ob.rects[i], x: o.x, y: o.y, orden: o.orden, superficie: o.superficie })),
     }),
   });
@@ -81,7 +85,22 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
   const vi = empacar(cuadros);
   png('vida.png', vi.atlas);
   let k = 0;
-  const vida = E.vida.map((v) => ({ id: v.id, tipo: v.tipo, capa: v.capa, x: v.x, y: v.y, fps: v.fps, velocidad: v.velocidad, cada: v.cada, cuadros: v.cuadros.map(() => vi.rects[k++]) }));
+  const vida = E.vida.map((v) => ({ id: v.id, tipo: v.tipo, capa: v.capa, x: v.x, y: v.y, fps: v.fps, velocidad: v.velocidad, cada: v.cada, recorrido: v.recorrido, orden: v.orden, cuadros: v.cuadros.map(() => vi.rects[k++]) }));
+  // el borde del edificio (un vacío que llega al final del mundo): el filo que se desmorona y el vacío, para cuando avanza
+  const bordes = L.huecos.filter((h) => h.caida === 'vacio' && h.x1 >= L.largo);
+  let borde: Record<string, unknown> | undefined;
+  if (bordes.length) {
+    const alto = Math.min(D + ORILLA, 360 - FT), filo = filoDesmorona(E.paleta, D, alto, E.inclinacion, 41), w = filo[0].w;
+    const tira = createRaster(w * filo.length, alto);
+    filo.forEach((c, i) => { for (let y = 0; y < alto; y++) tira.data.set(c.r.data.subarray(y * w * 4, (y + 1) * w * 4), (y * tira.w + i * w) * 4); });
+    png('borde_filo.png', tira); png('borde_vacio.png', vacioTextura(E.paleta, 41).r);
+    borde = {
+      nota: 'Para cuando el borde avanza (la azotea se achica). borde_filo.png: 6 cuadros del canto con la franja, en tira; el 0 entero y del 1 al 5 se desmorona. Va con su esquina de arriba a la izquierda en (x del borde nuevo - 10, franja.atras), corrido como el piso. Lo de la derecha del canto es transparente: ahí va borde_vacio.png, la ciudad allá abajo, que se repite cada 128 x 128.',
+      filo: { archivo: 'borde_filo.png', w, h: alto, cuadros: filo.length, fps: 8, ancla: [10, 0] },
+      vacio: { archivo: 'borde_vacio.png', w: 128, h: 128, repetir: true },
+      hoy: bordes.map((h) => h.x0),
+    };
+  }
   // superficie, colisión, luces y partículas
   png('superficie.png', E.superficie.img);
   out.push({ nombre: 'colision.json', bytes: json(collisionOf(L)) });
@@ -89,7 +108,10 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
   out.push({ nombre: 'particulas.json', bytes: json({ nota: 'x e y en pixeles de pantalla a escala 1 (y de pantalla = franja.atras + y del mundo). fx: nombre del efecto del catálogo (manifest.fx).', particulas: E.particulas }) });
   // postales
   const pp = puntosPostal(E);
-  if (conPostales) for (const [n, x] of Object.entries(pp)) png(`postales/${n}.png`, postal(E, x));
+  // en una arena de una pantalla las tres caen casi en el mismo lugar: van a 0, 2 y 4 segundos, para que se vea la vida
+  const arena = !L.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta');
+  const seg: Record<string, number> = arena ? { inicio: 0, medio: 2, final: 4 } : {};
+  if (conPostales) for (const [n, x] of Object.entries(pp)) png(`postales/${n}.png`, postal(E, x, [], 640, 360, seg[n] ?? 0));
   // ficha y verificación
   if (conFicha) out.push({ nombre: 'ficha_arte.md', bytes: new TextEncoder().encode(fichaMarkdown(E.ficha)) });
   if (verificacion) out.push({ nombre: 'verificacion.md', bytes: new TextEncoder().encode(verificacion) });
@@ -99,18 +121,25 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
       generado_con: 'PixelForja',
       id: L.id, nombre: L.nombre ?? L.id, escala: 1, resolucion: [640, 360],
       franja: L.franja, largo: L.largo, hora: L.hora, clima: L.clima,
+      inclinacion: E.inclinacion,
+      ancho: E.ancho,
+      nota_inclinacion: E.inclinacion ? `vista inclinada: px = x + ${E.inclinacion} * y (lo del fondo queda a la izquierda). Las capas largas miden ${E.ancho} px (largo + ${E.inclinacion} * fondo de la franja). Los objetos ya vienen corridos: corre a los atletas igual.` : undefined,
       capas: {
         cielo: { archivo: `cielo_${L.hora}.png`, y: 0, paralaje: PARALAJE.cielo, repetir_x: true },
         lejos: { archivo: 'lejos.png', y: FT - 30 - E.lejos.h, paralaje: PARALAJE.lejos, repetir_x: true },
         tras_cerca: { nota: 'la vida con capa tras_cerca va aquí: se ve por los callejones' },
         cerca: { archivos: cerca, trozo: TROZO, y: 0, paralaje: PARALAJE.cerca },
-        piso: { archivos: piso, trozo: TROZO, y: FT, paralaje: PARALAJE.piso, nota: `las primeras ${D} filas son la franja, las de abajo la orilla de enfrente` },
+        piso: { archivos: piso, trozo: TROZO, y: FT, paralaje: PARALAJE.piso, nota: E.inclinacion ? `las primeras ${D} filas son la franja (inclinada), las de abajo el bordillo: la cara del piso que da a la cámara` : `las primeras ${D} filas son la franja, las de abajo la orilla de enfrente` },
         ...(mojado.length ? { piso_mojado: { archivos: mojado, trozo: TROZO, y: FT, clima: 'aguacero', nota: 'va encima del piso cuando llueve' } } : {}),
         objetos: { archivo: 'objetos.json', nota: 'entre el piso y el frente, ordenados con los atletas' },
         frente: { archivos: frente, trozo: TROZO, y: E.frenteY, paralaje: PARALAJE.frente },
       },
-      vida: { imagen: 'vida.png', piezas: vida },
+      vida: {
+        imagen: 'vida.png', piezas: vida,
+        ...(vida.some((v) => v.capa === 'lejos' || v.capa === 'objeto') ? { nota: 'capa cerca y tras_cerca: x, y de pantalla, como siempre. capa lejos: x, y en pixeles de la imagen lejos (que se repite cada su ancho y corre con su paralaje); va de recorrido.desde a recorrido.hasta en recorrido.segundos y vuelve a empezar, adelantada por desfase (0 a 1). capa objeto: va encima de un objeto, con setDepth(franja.atras + orden), como los objetos.' } : {}),
+      },
       callejones: E.huecos,
+      ...(borde ? { borde } : {}),
       superficie: { archivo: 'superficie.png', y: FT, leyenda: E.superficie.leyenda },
       colision: 'colision.json', luces: 'luces.json', particulas: 'particulas.json',
       ...(conPostales ? { postales: Object.fromEntries(Object.entries(pp).map(([n, x]) => [n, { archivo: `postales/${n}.png`, x }])) } : {}),

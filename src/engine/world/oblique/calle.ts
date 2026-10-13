@@ -14,10 +14,10 @@ export interface Pieza {
   sobre: number;
 }
 
-const nueva = (pal: Paleta, w: number, d: number, z: number, sobre = 0): Pieza => ({ img: new Lienzo(w, sobre + d + z, pal), sobre });
+export const nueva = (pal: Paleta, w: number, d: number, z: number, sobre = 0): Pieza => ({ img: new Lienzo(w, sobre + d + z, pal), sobre });
 
 /** Sombra de contacto: una fila oscura en el piso, al pie del frente. */
-function pie(L: Lienzo, y: number, w: number) { L.hl(0, y, w, 'tinta'); }
+export function pie(L: Lienzo, y: number, w: number) { L.hl(0, y, w, 'tinta'); }
 
 /** Xe ba gác: triciclo de carga con plataforma de tablas a la altura `z`. El conductor va adelante (a la derecha). */
 export function baGac(pal: Paleta, w: number, d: number, z: number): Pieza {
@@ -283,10 +283,12 @@ export function muro(pal: Paleta, w: number, d: number, z: number, alto: boolean
  * Medidas de mundo: el muro termina en `yFin` y la franja en `D`, el muro mide `w` de ancho y `z` de alto.
  * Devuelve el dibujo y dónde va: `dx` desde la x del muro y `top` como fila de pantalla relativa a `franja.atras`.
  */
-export function porton(pal: Paleta, w: number, yFin: number, D: number, z: number, placa = 'HẺM'): { img: Lienzo; dx: number; top: number } {
+export function porton(pal: Paleta, w: number, yFin: number, D: number, z: number, placa = 'HẺM', k = 0): { img: Lienzo; dx: number; top: number } {
   const ZA = Math.max(z + 14, 60), hoja = 30, dx = -2;
+  // con inclinación, cada parte se corre según su fondo: el pilar en yFin, la viga de yFin a D, el poste en D
+  const sx = (y: number) => Math.round(k * y) - Math.round(k * yFin), sD = sx(D);
   const row = (y: number, zz: number) => y - zz; // fila relativa a franja.atras
-  const top = Math.min(row(yFin, ZA + 8), row(D, ZA + 4) - LINE_H - 4), W = Math.max(w + 4 + hoja + 4, textWidth(placa) + 8 + w), H = D - top + 1;
+  const top = Math.min(row(yFin, ZA + 8), row(D, ZA + 4) - LINE_H - 4), W = Math.max(w + 4 + hoja + 4, textWidth(placa) + 8 + w) + sD, H = D - top + 1;
   const L = new Lienzo(W, H, pal);
   const R = (y: number, zz: number) => row(y, zz) - top; // fila dentro del dibujo
   const cx = Math.floor(w / 2) - dx; // centro del muro dentro del dibujo
@@ -298,33 +300,34 @@ export function porton(pal: Paleta, w: number, yFin: number, D: number, z: numbe
   L.hl(px0, R(yFin, ZA + 4), pw, 'luz'); L.d(cx, R(yFin - 2, ZA + 7), 2.5, 'cemento_claro'); L.p(cx - 1, R(yFin - 2, ZA + 8), 'luz');
   // viga por arriba, de pilar a poste: techo largo hacia adelante y su frente
   const bx = cx - 4;
-  for (let y = yFin; y < D; y++) { L.f(bx, R(y, ZA + 4), 8, 1, 'azul'); L.p(bx, R(y, ZA + 4), 'azul_noche'); L.p(bx + 7, R(y, ZA + 4), 'azul_noche'); }
-  for (let y = yFin + 3; y < D - 2; y += 5) L.hl(bx + 1, R(y, ZA + 4), 6, 'celeste');
-  L.f(bx, R(D, ZA + 4), 8, 4, 'azul_noche');
+  for (let y = yFin; y < D; y++) { L.f(bx + sx(y), R(y, ZA + 4), 8, 1, 'azul'); L.p(bx + sx(y), R(y, ZA + 4), 'azul_noche'); L.p(bx + sx(y) + 7, R(y, ZA + 4), 'azul_noche'); }
+  for (let y = yFin + 3; y < D - 2; y += 5) L.hl(bx + 1 + sx(y), R(y, ZA + 4), 6, 'celeste');
+  L.f(bx + sD, R(D, ZA + 4), 8, 4, 'azul_noche');
   // poste de adelante
-  L.f(cx - 2, R(D, ZA), 5, R(D, 0) - R(D, ZA), 'azul'); L.vl(cx - 2, R(D, ZA), R(D, 0) - R(D, ZA), 'celeste'); L.vl(cx + 2, R(D, ZA), R(D, 0) - R(D, ZA), 'azul_noche');
-  L.f(cx - 3, R(D, 2), 7, 2, 'sombra');
+  const pc = cx + sD;
+  L.f(pc - 2, R(D, ZA), 5, R(D, 0) - R(D, ZA), 'azul'); L.vl(pc - 2, R(D, ZA), R(D, 0) - R(D, ZA), 'celeste'); L.vl(pc + 2, R(D, ZA), R(D, 0) - R(D, ZA), 'azul_noche');
+  L.f(pc - 3, R(D, 2), 7, 2, 'sombra');
   // placa del hẻm colgada del poste, de frente
-  const tw = textWidth(placa) + 6, sx = cx - Math.floor(tw / 2), sy = R(D, ZA + 4) - LINE_H - 3;
-  L.box(sx, sy, tw, LINE_H + 2, 'azul', 'azul_noche'); drawText(L, sx + 3, sy, placa, 'luz');
+  const tw = textWidth(placa) + 6, sxp = pc - Math.floor(tw / 2), sy = R(D, ZA + 4) - LINE_H - 3;
+  L.box(sxp, sy, tw, LINE_H + 2, 'azul', 'azul_noche'); drawText(L, sxp + 3, sy, placa, 'luz');
   // hoja de reja abierta hacia afuera, contra el borde de la franja: calada, se ve lo de atrás
-  const hx = cx + 3, hy0 = R(D, 44), hy1 = R(D, 0);
+  const hx = pc + 3, hy0 = R(D, 44), hy1 = R(D, 0);
   L.hl(hx, hy0, hoja, 'azul_noche'); L.hl(hx, hy0 + 1, hoja, 'azul'); L.hl(hx, hy1 - 2, hoja, 'azul'); L.hl(hx, hy1 - 1, hoja, 'azul_noche');
   L.hl(hx, Math.floor((hy0 + hy1) / 2), hoja, 'azul');
   L.vl(hx + hoja - 1, hy0, hy1 - hy0, 'azul_noche');
   for (let x = hx + 4; x < hx + hoja - 1; x += 4) { L.vl(x, hy0 + 2, hy1 - hy0 - 4, 'azul'); L.p(x, hy0 - 1, 'azul'); L.p(x, hy0 - 2, 'celeste'); }
   for (let x = hx + 2; x < hx + hoja - 2; x += 8) { L.p(x + 1, hy0 + 6, 'oro'); L.p(x + 2, hy0 + 5, 'oro'); L.p(x + 3, hy0 + 6, 'oro'); }
-  return { img: L, dx, top };
+  return { img: L, dx: dx + Math.round(k * yFin), top };
 }
 
 /** Poste de luz de concreto con cruceta, transformador, lámpara y la maraña de cables. Base en la última fila. */
-export function posteLuz(pal: Paleta, alto: number): Pieza {
+export function posteLuz(pal: Paleta, alto: number, borde: Color = 'tinta'): Pieza {
   const w = 44, P = { img: new Lienzo(w, alto + 6, pal), sobre: 6 }, L = P.img, cx = 22, base = alto + 5;
   // poste que se angosta
   for (let y = 6; y <= base; y++) {
     const t = (y - 6) / alto, hw = 2 + Math.round(t * 1.5);
     for (let x = cx - hw; x <= cx + hw; x++) L.p(x, y, x === cx - hw ? 'cemento_claro' : x >= cx + hw - 1 ? 'cemento' : 'cemento_claro');
-    L.p(cx - hw - 1, y, 'tinta'); L.p(cx + hw + 1, y, 'tinta');
+    L.p(cx - hw - 1, y, borde); L.p(cx + hw + 1, y, borde);
   }
   for (let y = 30; y < base - 10; y += 14) L.hl(cx - 2, y, 4, 'cemento');
   // cruceta y aisladores

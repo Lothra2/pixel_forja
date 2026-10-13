@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { EFFECTS, EFFECT_GROUPS, EFFECT_NAMES, expandEffects, renderEffect, effectSheet } from '../fx/catalog';
-import { renderSfx, renderMusic, SFX_NAMES } from '../audio/sfx';
+import { renderSfx, renderMusic } from '../audio/sfx';
+import { SONIDOS } from '../audio/catalogo';
 import { buildCustomKit, validateKitConfig, type KitConfig } from '../kit/custom';
 import { encodePng, decodePng, createRaster, blit } from '../index';
 import type { Raster } from '../core/raster';
@@ -102,7 +103,7 @@ describe('kit a medida: fx y audio', () => {
   });
 
   it('el kit trae los efectos y los sonidos pedidos, con su entrada en el manifiesto', () => {
-    const { files, warnings } = buildCustomKit({ ...MIN, resolucion: [320, 180], fx: ['polvo_correr', 'reaccion', 'lineas_velocidad', 'bola_tama'], audio: { sfx: ['golpe', 'paso', 'silbato'], ambientes: ['agua'], voces: ['locutor'] } }, {}, { quick: true, solo: ['efectos', 'audio'] });
+    const { files, warnings } = buildCustomKit({ ...MIN, resolucion: [320, 180], fx: ['polvo_correr', 'reaccion', 'lineas_velocidad', 'bola_tama'], audio: { sfx: ['golpe', 'paso', 'trueno'], ambientes: ['agua'], radio: ['noticias'] } }, {}, { quick: true, solo: ['efectos', 'audio'] });
     const names = files.map((f) => f.name);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(Object.keys(m.fx)).toEqual([
@@ -121,20 +122,21 @@ describe('kit a medida: fx y audio', () => {
     expect(m.audio).toEqual({
       sfx: { golpe: { archivo: 'audio/sfx/golpe.wav', duracion: expect.any(Number) }, paso: { archivo: 'audio/sfx/paso.wav', duracion: expect.any(Number) } },
       ambientes: { agua: { archivo: 'audio/ambiente/agua.wav', duracion: expect.any(Number), bucle: true } },
+      escuchar: 'audio/escuchar.html',
     });
     for (const a of ['audio/sfx/golpe.wav', 'audio/sfx/paso.wav', 'audio/ambiente/agua.wav']) {
       const b = files.find((f) => f.name === a)!.bytes;
       expect(new TextDecoder().decode(b.slice(0, 4)), a).toBe('RIFF');
     }
     expect(warnings).toEqual([
-      'audio.voces: todavía no se genera, llega con el audio (lote H)',
-      'audio.sfx: todavía no existen, llegan con el lote H: silbato',
+      'audio.radio: todavía no se genera, llega con el audio (lote H)',
+      'audio.sfx: todavía no existen, llegan con el lote H: trueno',
     ]);
     expect(m.pendiente).toEqual(warnings);
   });
 
   it('audio: true trae todos los sonidos del motor', () => {
     const { files } = buildCustomKit({ ...MIN, audio: { sfx: true } }, {}, { quick: true, solo: ['audio'] });
-    expect(files.filter((f) => f.name.startsWith('audio/sfx/'))).toHaveLength(SFX_NAMES.length);
+    expect(files.filter((f) => f.name.startsWith('audio/sfx/'))).toHaveLength(SONIDOS.sfx.length);
   });
 });
