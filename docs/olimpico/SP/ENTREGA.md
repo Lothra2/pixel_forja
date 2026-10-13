@@ -79,6 +79,18 @@ if (o && !pelota.suelta) pelota.setPosition(sprite.x + (sprite.flipX ? -o.x : o.
 - **`tsc` limpio, `npm run build:sitio` limpio y e2e del visor 6 de 6** (con la casilla nueva de la pelota).
 - **Suite completa: 34 archivos, 353 pruebas, todas en verde, y e2e de Playwright 50 de 50.** En una corrida con otros tres lotes armándose a la vez en la misma máquina, el arranque del kit completo de Nekketsu se cortó por tiempo. Corrida sola: 15 de 15 en 199 s.
 
+- **Actualizado con `main` después de unir C7c, H2 y C5** (lo pidió el juego):
+  - Los choques eran los del ensayo, y salieron con la misma resolución.
+  - `alias` funciona con un pack en forma de objeto. Antes la validación solo miraba los packs en lista y daba "no está en ningún pack".
+  - Prueba nueva en `burlas.test.ts`: una burla con alias dentro de un pack objeto con `sin_props`. El alias sale en el manifiesto y en el atlas, la pelota se va del dibujo y queda en `objetos`, y la validación no se queja.
+  - La cuenta de PNG pasa a `24 * 12`, con las burlas de C5. El esquema está regenerado.
+- **El corte del kit completo pasa de 240 a 320 s,** como en SP2. Con la suite completa, el arranque de la prueba se cortó a los 240 s, antes de que la prueba de los 300 s que pidió Rick pudiera medir. Así decide esa prueba con su tiempo medido.
+- **Después de unir:**
+  - Suite completa: 36 archivos, 375 de 375.
+  - `tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 50 de 50.
+  - `custom.test.ts` solo: 15 de 15 en 232 s.
+  - El kit de Nekketsu por la línea de comandos: 219 s, 1010 archivos y 62 MB. Con las burlas y los perros nuevos subió unos 30 s.
+
 ## Para aprobar (todo en esta carpeta)
 
 - `tablero_sin_props.png`: las 10 animaciones de Rick, de lado y en diagonal. Arriba el pack con pelota (fondo azul), abajo el pack sin pelota (fondo verde) con el círculo de `objetos` en rojo. Sale del kit de verdad: los atlas y el manifiesto de `buildCustomKit`.
@@ -100,6 +112,7 @@ if (o && !pelota.suelta) pelota.setPosition(sprite.x + (sprite.flipX ? -o.x : o.
 ## Límites honestos
 
 - **No medí el kit de antes hoy.** Con los packs nuevos tarda 185 s. Por lo que medí, los 10 packs por atleta suman unos 15 a 20 s. C7b medía entre 185 y 200 s sin ellos en esta máquina, así que la carga de la máquina pesa más que esto.
+- **El kit se acerca a los 300 s.** Va en 219 s con la máquina tranquila, y SP2 le suma unos 20 más. Si hace falta margen, la próxima vez lo hago más rápido antes de subir el límite.
 - **El contorno de la pelota no siempre sale entero.** Donde el contorno cae sobre la mano, ese pixel no cambia al quitar la pelota. No es un error: la mano ya era de ese color.
 - **Es la pelota, no el vuelo.** `objetos` dice dónde está la pelota mientras el atleta la tiene. Después del impacto la animación la manda en una línea recta corta, y eso ya es de la física del juego.
 - **Fuera de la celda la pelota se corta en el pack con pelota,** pero `objetos` dice dónde iría. En el cabezazo, los primeros cuadros traen la pelota fuera de la celda.
