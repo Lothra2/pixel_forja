@@ -53,7 +53,8 @@ export interface KitConfig {
   equipos?: string;
   /**
    * cada pack: su nombre y sus animaciones. La lista sola, o { anims, sin_props } para que el pack salga sin las
-   * pelotas dibujadas (el juego las mueve con su física) y con su posición en el dato `objetos`
+   * pelotas dibujadas (el juego las mueve con su física) y con su posición en el dato `objetos`. Con `alias`, una
+   * animación sale con el nombre del juego
    */
   packs: Record<string, string[] | PackDef>;
   /**
@@ -348,7 +349,7 @@ export function kitConfigSchema(): Record<string, unknown> {
             },
           ],
         },
-        description: 'Cada pack es un atlas por atleta: { "base": ["idle", "walk", "run"] }, o { "voley": { "anims": ["vb_bump", "spike"], "sin_props": true } } para que salga sin las pelotas dibujadas.',
+        description: 'Cada pack es un atlas por atleta: { "base": ["idle", "walk", "run"] }, o { "voley": { "anims": ["vb_bump", "spike"], "sin_props": true } } para que salga sin las pelotas dibujadas. Con `alias`, una animación sale con el nombre del juego.',
       },
       alias: { type: 'object', propertyNames: id, additionalProperties: { enum: ANIM_NAMES }, description: 'Nombres del juego para animaciones del motor que están en algún pack: { "burla_familia_gg": "burla_pulgar" }. Salen con el nombre del juego (una animación puede tener varios). Si el nombre termina en _<equipo>, solo la trae el atleta de ese equipo (como taunt_<id> solo su dueño).' },
       pruebas: { type: 'object', additionalProperties: list({ type: 'string' }), description: 'Qué packs carga cada prueba del juego. Se copia al manifiesto.' },

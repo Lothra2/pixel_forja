@@ -561,7 +561,7 @@
           }
         ]
       },
-      "description": "Cada pack es un atlas por atleta: { \"base\": [\"idle\", \"walk\", \"run\"] }, o { \"voley\": { \"anims\": [\"vb_bump\", \"spike\"], \"sin_props\": true } } para que salga sin las pelotas dibujadas."
+      "description": "Cada pack es un atlas por atleta: { \"base\": [\"idle\", \"walk\", \"run\"] }, o { \"voley\": { \"anims\": [\"vb_bump\", \"spike\"], \"sin_props\": true } } para que salga sin las pelotas dibujadas. Con `alias`, una animación sale con el nombre del juego."
     },
     "alias": {
       "type": "object",

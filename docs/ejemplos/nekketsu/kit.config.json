@@ -139,6 +139,14 @@
       "edge_teeter",
       "fall_off"
     ],
+    "ngg_burlas": [
+      "burla_pulgar",
+      "burla_bruce_lee",
+      "burla_dragon",
+      "burla_risa_tapada",
+      "burla_salsa",
+      "burla_hombros"
+    ],
     "voley": {
       "anims": [
         "vb_bump",
@@ -158,15 +166,7 @@
         "chilena"
       ],
       "sin_props": true
-    },
-    "ngg_burlas": [
-      "burla_pulgar",
-      "burla_bruce_lee",
-      "burla_dragon",
-      "burla_risa_tapada",
-      "burla_salsa",
-      "burla_hombros"
-    ]
+    }
   },
   "alias": {
     "burla_familia_gg": "burla_pulgar",
