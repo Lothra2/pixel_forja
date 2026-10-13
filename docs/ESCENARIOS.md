@@ -129,9 +129,9 @@ Para las pruebas que el juego dibuja de lado (Đá cầu, Tejo): la cancha se ve
 - **El dibujo va derecho:** inclinación 0, pida lo que pida la opción `inclinacion`. `escenario.json` trae `inclinacion: 0` y `ancho` igual al `largo`, que el juego ya lee.
 - **La franja es la fila del piso del juego:** `franja.atras` es donde se para el fondo y la fila de pantalla de un atleta es `franja.atras + y`. En Tao Đàn, el piso de `DaCau.ts` está en la fila 310 y sus dos filas (304 y 316) son los carriles 14 y 26. En la cancha de tejo, `Tejo.ts` pone el piso en la 300: la franja va de 286 a 310 y los carriles son 10 (los que esperan) y 14 (el que lanza).
 - **Las mismas capas de siempre**, así el juego las carga con lo que ya tiene:
-  - `cielo` y `lejos` como siempre;
-  - `cerca` es **el fondo**: de la fila 0 a `franja.atras`, transparente donde se ve lejos (entre los árboles, por las ventanas);
-  - `piso` va de `franja.atras` hasta el borde de abajo de la pantalla: la franja y lo de adelante. Si la franja es angosta, el piso crece hasta la fila 360;
+  - `cielo` y `lejos` como siempre.
+  - `cerca` es **el fondo**: de la fila 0 a `franja.atras`, transparente donde se ve lejos (entre los árboles, por las ventanas).
+  - `piso` va de `franja.atras` hasta el borde de abajo de la pantalla: la franja y lo de adelante. Si la franja es angosta, el piso crece hasta la fila 360.
   - `frente` queda libre, `objetos` y `vida` como siempre.
 - **`escenario.json` suma** `vista: "lado"` y `nota_vista`, y no quita nada. Un escenario oblicuo no trae el campo, así sale igual que antes.
 - **En el juego**, en vez de la imagen de fondo de la prueba: `queueEscenario(this, 'tao_dan')` en el preload, `pintarEscenario(this, 'tao_dan', 5000)` en el create y `arte.tick(dt, cam.scrollX, () => false)` cada cuadro. Los atletas siguen en su fila de siempre: la vista de lado no corre a nadie.
