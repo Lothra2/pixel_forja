@@ -34,7 +34,7 @@ describe('la gente de la calle (lote C6a)', () => {
     }
   });
 
-  it('las 9 fichas de NPC son válidas, y los pelados son más bajitos que los adultos', () => {
+  it('las fichas de NPC son válidas (las 9 de la Comuna 13 y la Marimonda), y los pelados son más bajitos que los adultos', () => {
     for (const [id, r] of Object.entries(RAW)) expect(validateFicha(r), id).toEqual([]);
     const alto = (id: string) => { const fr = renderClip({ ...FICHAS[id], movementProfile: 'premium' }, 48, 'idle', 'front').frames[0]; let top = fr.h; for (let i = 3; i < fr.data.length; i += 4) if (fr.data[i]) { top = Math.min(top, Math.floor((i - 3) / 4 / fr.w)); } return fr.h - top; };
     for (const p of ['pelado_1', 'pelado_2']) for (const a of ['bailarin_1', 'vendedor_paletas', 'rapero']) expect(alto(p), `${p} vs ${a}`).toBeLessThan(alto(a));
@@ -42,9 +42,10 @@ describe('la gente de la calle (lote C6a)', () => {
 
   it('cada NPC del kit de Nekketsu pasa el control de calidad en su vista, en todas sus animaciones', () => {
     const bad: string[] = [];
-    const vista = { frente: 'front', tres_cuartos: 'se', espalda: 'back', espalda_tres_cuartos: 'ne' } as const;
+    const vista = { frente: 'front', tres_cuartos: 'se', espalda: 'back', espalda_tres_cuartos: 'ne', lado: 'side' } as const;
     for (const [id, d] of Object.entries(CFG.npc!.personajes)) {
-      const pares = d.grupo ? Object.entries(d.grupo).flatMap(([fid, m]) => Object.entries(m).map(([n, a]) => [fid, n, a])) : (d.anims as string[]).map((a) => [d.ficha ?? id, a, a]);
+      // las animaciones van en lista, o como { nombre en el juego: animación del motor } (la Marimonda del lote E5)
+      const pares = d.grupo ? Object.entries(d.grupo).flatMap(([fid, m]) => Object.entries(m).map(([n, a]) => [fid, n, a])) : Array.isArray(d.anims) ? d.anims.map((a) => [d.ficha ?? id, a, a]) : Object.entries(d.anims ?? {}).map(([n, a]) => [d.ficha ?? id, n, a]);
       for (const [fid, nombre, a] of pares) {
         const c = renderClip({ ...FICHAS[fid], movementProfile: 'premium' }, 48, a, vista[d.vistas?.[nombre] ?? d.vista ?? 'frente'], { props: true });
         for (const it of runQA(FICHAS[fid] as Ficha, c).items) if (it.severity === 'error') bad.push(`${id}/${fid} ${a}: ${it.check} ${it.value} ${it.where ?? ''}`);
@@ -65,7 +66,7 @@ describe('la gente de la calle (lote C6a)', () => {
     const { files, warnings } = buildCustomKit({ ...MIN, npc: CFG.npc }, { npc: FICHAS }, { quick: true, solo: ['npc'] });
     expect(warnings.filter((w) => w.startsWith('npc'))).toEqual([]);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes)).npc;
-    expect(Object.keys(m).sort()).toEqual(['bailarin_1', 'bailarin_2', 'bailarin_3', 'grafitero', 'musicos', 'notas', 'pelado_1', 'pelado_2', 'pelota', 'vendedor_paletas']);
+    expect(Object.keys(m).sort()).toEqual(['bailarin_1', 'bailarin_2', 'bailarin_3', 'grafitero', 'marimonda', 'musicos', 'notas', 'pelado_1', 'pelado_2', 'pelota', 'vendedor_paletas']);
     expect(m.bailarin_1).toMatchObject({ archivo: 'npc/bailarin_1.png', w: 48, h: 48, ancla: [24, 46], cuadros: 20, anims: { toprock: { desde: 0, cuadros: 8, loop: true }, molino: { desde: 8, cuadros: 8 }, reclama: { desde: 16, cuadros: 4, loop: false } } });
     expect(m.pelado_1.eventos).toEqual({ patear: [{ tipo: 'impacto', cuadro: 2 }] });
     expect(m.grafitero.anims.pintar.vista).toBe('espalda_tres_cuartos');
@@ -82,7 +83,7 @@ describe('la gente de la calle (lote C6a)', () => {
 
   it('valida la sección npc con sugerencias, y una ficha que falta se salta con aviso', () => {
     expect(validateKitConfig({ ...MIN, npc: { personajes: { x: { anims: ['toprok'], vista: 'frentee' as never } } } })).toEqual([
-      'npc.personajes.x: la vista "frentee" no existe. ¿Quisiste decir "frente"? Hay frente, tres_cuartos, espalda, espalda_tres_cuartos',
+      'npc.personajes.x: la vista "frentee" no existe. ¿Quisiste decir "frente"? Hay frente, tres_cuartos, espalda, espalda_tres_cuartos, lado',
       'npc.personajes.x: "toprok" no es una animación. ¿Quisiste decir "toprock"?',
     ]);
     const { warnings } = buildCustomKit({ ...MIN, npc: { personajes: { fantasma: { anims: ['toprock'] } } } }, { npc: FICHAS }, { quick: true, solo: ['npc'] });
@@ -90,7 +91,8 @@ describe('la gente de la calle (lote C6a)', () => {
   });
 
   it('imagen dorada: las tiras de los NPC y la pelota', () => {
-    const tiras = Object.entries(CFG.npc!.personajes).map(([id, d]) => (npcTira(id, d, FICHAS, 48) as { tira: ReturnType<typeof pelotaTira> }).tira);
+    // los NPC de la Comuna 13 (la Marimonda del lote E5 tiene su imagen dorada en e5.test.ts)
+    const tiras = Object.entries(CFG.npc!.personajes).filter(([id]) => id !== 'marimonda').map(([id, d]) => (npcTira(id, d, FICHAS, 48) as { tira: ReturnType<typeof pelotaTira> }).tira);
     tiras.push(pelotaTira());
     const out = createRaster(Math.max(...tiras.map((t) => t.w)), tiras.reduce((s, t) => s + t.h, 0));
     let y = 0;

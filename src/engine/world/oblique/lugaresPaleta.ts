@@ -181,3 +181,243 @@ export const USO_CANDELARIA: Record<Color, string> = {
   oro: 'los bombillos encendidos, la llama de la mecha',
   bruma: 'la neblina en los cerros',
 };
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Lote E5: los escenarios de los cuatro deportes de pelota
+
+/**
+ * Playa El Agua, isla de Margarita, al mediodía (estilo `venezuela_playa`): la arena clarita, el mar Caribe turquesa
+ * que se oscurece hacia el horizonte, el cielo azul limpio, el verde de las palmas y los colores de los toldos.
+ * `menta` es el agua turquesa de la orilla y `canal` el mar hondo.
+ */
+export const VENEZUELA_MARGARITA_MEDIODIA: Paleta = {
+  tinta: '#1c1820',
+  sombra: '#3a3238',
+  asfalto: '#5e5450',
+  asfalto_claro: '#8a7a6a',
+  cemento: '#b8a68c',
+  cemento_claro: '#dccaa6',
+  crema: '#f2e4c2',
+  luz: '#fffcf0',
+  amarillo: '#f6d25a',
+  ocre: '#c8963e',
+  terracota: '#a65a36',
+  rojo: '#e0403a',
+  vino: '#80282c',
+  salmon: '#f08a74',
+  menta: '#5ad8c8',
+  verde: '#4c9a3e',
+  verde_oscuro: '#255a32',
+  celeste: '#5ab4ec',
+  cielo: '#b4e0f8',
+  azul: '#2a62b8',
+  azul_noche: '#1e3a6a',
+  canal: '#1f8eaa',
+  oro: '#f7a828',
+  bruma: '#e2f0ee',
+};
+
+export const USO_MARGARITA: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro',
+  sombra: 'sombra honda debajo de los toldos y del kiosco',
+  asfalto: 'la arena mojada en sombra, el tronco de las palmas en sombra',
+  asfalto_claro: 'los troncos de las palmas, la madera gastada',
+  cemento: 'la arena en sombra, el cerro seco',
+  cemento_claro: 'la arena con sombrita, las huellas',
+  crema: 'la arena seca al sol',
+  luz: 'la espuma de las olas, el sol, la tela blanca',
+  amarillo: 'los toldos amarillos, la arena con sol',
+  ocre: 'el techo de palma del kiosco, los cocos',
+  terracota: 'la madera del kiosco, los cocos secos',
+  rojo: 'los toldos rojos, la bandera',
+  vino: 'sombra del rojo',
+  salmon: 'la piel, las flores',
+  menta: 'el agua turquesa de la orilla',
+  verde: 'las hojas de las palmas, el cerro con luz',
+  verde_oscuro: 'las hojas en sombra, el cerro',
+  celeste: 'el cielo alto del mediodía',
+  cielo: 'el cielo bajo, el agua que brilla',
+  azul: 'los toldos azules, la bandera, el mar en sombra',
+  azul_noche: 'sombra del azul, el horizonte del mar',
+  canal: 'el mar Caribe hondo',
+  oro: 'el sol en el agua, las empanadas fritas',
+  bruma: 'la calima del horizonte',
+};
+
+/**
+ * La cancha de arcilla de Đà Lạt en la mañana con neblina (estilo `vietnam_montana`): la arcilla roja de la cancha, el
+ * verde oscuro de los pinos, la neblina gris azulada de la montaña, el lago Xuân Hương, las villas coloniales crema con
+ * techo de teja y las hortensias. `canal` es el agua del lago y `bruma` la neblina.
+ */
+export const VIETNAM_DALAT_MANANA: Paleta = {
+  tinta: '#1a1c22',
+  sombra: '#2e3634',
+  asfalto: '#4a524c',
+  asfalto_claro: '#6e7670',
+  cemento: '#9aa09a',
+  cemento_claro: '#c6cac2',
+  crema: '#ece6d4',
+  luz: '#fafaf2',
+  amarillo: '#f0d066',
+  ocre: '#d08a52',
+  terracota: '#b0582e',
+  rojo: '#cc3c32',
+  vino: '#7a3026',
+  salmon: '#e89c8a',
+  menta: '#9cc8a8',
+  verde: '#4e8456',
+  verde_oscuro: '#264634',
+  celeste: '#a8c4d6',
+  cielo: '#d6e2e6',
+  azul: '#5a7cb0',
+  azul_noche: '#2e3e58',
+  canal: '#7894a0',
+  oro: '#f2b04c',
+  bruma: '#dfe4e2',
+};
+
+export const USO_DALAT: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro',
+  sombra: 'sombra honda de los pinos',
+  asfalto: 'la malla de la cancha, el hierro',
+  asfalto_claro: 'los parales de la malla, la corteza en sombra',
+  cemento: 'los pinos lejos en la neblina, el concreto',
+  cemento_claro: 'la neblina con sombra, el concreto con luz',
+  crema: 'las villas coloniales, la ropa clara',
+  luz: 'las rayas de la cancha, la ropa blanca de tenis',
+  amarillo: 'las mimosas, el sol entre la neblina',
+  ocre: 'la arcilla barrida con luz',
+  terracota: 'la arcilla roja de la cancha, las tejas',
+  rojo: 'las tejas de las villas, las banderas',
+  vino: 'la arcilla en sombra, la corteza de los pinos',
+  salmon: 'la catedral, las hortensias rosadas, la piel',
+  menta: 'los pinos con luz, el pasto',
+  verde: 'los pinos, el pasto',
+  verde_oscuro: 'los pinos en sombra, la malla verde',
+  celeste: 'el cielo, las hortensias claras',
+  cielo: 'el cielo bajo de la mañana',
+  azul: 'las hortensias azules, la ropa azul',
+  azul_noche: 'sombra del azul',
+  canal: 'el agua del lago Xuân Hương',
+  oro: 'la luz del sol en el borde de la neblina',
+  bruma: 'la neblina de la montaña',
+};
+
+/**
+ * La calle del Carnaval de Barranquilla al mediodía (estilo `colombia_caribe`): las casas de colores del Barrio Abajo,
+ * los palcos, las guirnaldas y los colores del Carnaval (rojo, amarillo, verde, azul, morado y naranja), el cielo azul
+ * del Caribe y el asfalto caliente con el confeti. `canal` es el morado del Carnaval.
+ */
+export const COLOMBIA_BARRANQUILLA_MEDIODIA: Paleta = {
+  tinta: '#1e161c',
+  sombra: '#3c2c34',
+  asfalto: '#5a5258',
+  asfalto_claro: '#7c7478',
+  cemento: '#a49c98',
+  cemento_claro: '#cec6bc',
+  crema: '#f4ead6',
+  luz: '#fffbf2',
+  amarillo: '#fcd03a',
+  ocre: '#e08c2c',
+  terracota: '#b45a30',
+  rojo: '#e43434',
+  vino: '#86223a',
+  salmon: '#f47aa8',
+  menta: '#3cc8b4',
+  verde: '#3ca448',
+  verde_oscuro: '#1e6036',
+  celeste: '#4eaaf0',
+  cielo: '#a8d8fa',
+  azul: '#2a52c8',
+  azul_noche: '#22306a',
+  canal: '#9a4cc8',
+  oro: '#ff9a1e',
+  bruma: '#dceaf0',
+};
+
+export const USO_BARRANQUILLA: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro',
+  sombra: 'sombra honda de las puertas y los palcos',
+  asfalto: 'el asfalto de la calle',
+  asfalto_claro: 'el asfalto con sol, el hierro de los palcos',
+  cemento: 'el andén, la piedra de los arcos en sombra',
+  cemento_claro: 'la piedra de los arcos, el andén con sol',
+  crema: 'las paredes claras, las columnas',
+  luz: 'la maicena, las rayas de tiza, brillos',
+  amarillo: 'la casa amarilla, las guirnaldas, la bandera',
+  ocre: 'la casa naranja, la madera de los palcos',
+  terracota: 'las tejas, la madera en sombra',
+  rojo: 'el rojo del Carnaval y de la bandera',
+  vino: 'sombra del rojo',
+  salmon: 'la casa rosada, la piel, las flores',
+  menta: 'la casa turquesa',
+  verde: 'el verde del Carnaval y de la bandera, las matas',
+  verde_oscuro: 'sombra del verde, las palmas',
+  celeste: 'el cielo alto del Caribe',
+  cielo: 'el cielo bajo, los vidrios',
+  azul: 'el azul de la bandera de Colombia, las puertas',
+  azul_noche: 'sombra del azul',
+  canal: 'el morado del Carnaval',
+  oro: 'el naranja del Carnaval, el sol',
+  bruma: 'la calima del mediodía',
+};
+
+/**
+ * La cancha de barrio de Maracaibo de noche (estilo `venezuela_lago`): el cielo de noche con el resplandor de la
+ * ciudad, el Lago oscuro con el puente General Rafael Urdaneta encendido y los mechurrios, el relámpago del Catatumbo
+ * (blanco y violeta), los bombillos de sodio de la cancha y el concreto pintado de la cancha. `salmon` es el violeta
+ * rosado del relámpago, `canal` la nube de tormenta y `celeste` el azul de la cancha.
+ */
+export const VENEZUELA_MARACAIBO_NOCHE: Paleta = {
+  tinta: '#0c0a16',
+  sombra: '#1c1a30',
+  asfalto: '#2e2c46',
+  asfalto_claro: '#4a4864',
+  cemento: '#6c6a84',
+  cemento_claro: '#9a96ac',
+  crema: '#cfc8d0',
+  luz: '#fff8e4',
+  amarillo: '#ffd84a',
+  ocre: '#e09a36',
+  terracota: '#a0583a',
+  rojo: '#e83a3c',
+  vino: '#6e2440',
+  salmon: '#e48ad8',
+  menta: '#48c8b0',
+  verde: '#2e7a5a',
+  verde_oscuro: '#1a3a34',
+  celeste: '#4a78c0',
+  cielo: '#34428a',
+  azul: '#202e66',
+  azul_noche: '#10163a',
+  canal: '#5a3e96',
+  oro: '#ffb43a',
+  bruma: '#4a3e78',
+};
+
+export const USO_MARACAIBO: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro',
+  sombra: 'la noche honda, el agua del Lago',
+  asfalto: 'la malla de la cancha, el Lago con sombra',
+  asfalto_claro: 'los tubos de la malla, la otra orilla',
+  cemento: 'el concreto de las gradas',
+  cemento_claro: 'el puente de concreto, el muro con luz',
+  crema: 'el muro alumbrado por los bombillos',
+  luz: 'el corazón del relámpago, los bombillos, las rayas de la cancha',
+  amarillo: 'las luces del puente y de la ciudad, la bandera',
+  ocre: 'la luz de sodio en el piso, los mechurrios',
+  terracota: 'el ladrillo, el óxido',
+  rojo: 'las luces rojas de las torres del puente y los balancines, la bandera',
+  vino: 'sombra del rojo',
+  salmon: 'el violeta rosado del relámpago del Catatumbo',
+  menta: 'el mural, la franja de la cancha',
+  verde: 'el concreto pintado de verde alrededor de la cancha',
+  verde_oscuro: 'sombra del verde, las matas',
+  celeste: 'el azul de la cancha',
+  cielo: 'el cielo bajo, las nubes con luz',
+  azul: 'el cielo del medio, la bandera',
+  azul_noche: 'el cielo alto',
+  canal: 'la nube de tormenta del Catatumbo',
+  oro: 'los bombillos de sodio, las ventanas',
+  bruma: 'el resplandor de la ciudad en el cielo',
+};

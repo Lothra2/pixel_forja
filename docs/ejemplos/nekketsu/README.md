@@ -90,7 +90,25 @@ Ya no queda nada en `manifest.pendiente`. Para oír todo: `audio/escuchar.html` 
 npm run escenario -- docs/ejemplos/nekketsu/escenarios/saigon_hem.layout.json salida --postales --ficha
 ```
 
-La carpeta trae también los otros cuatro tramos del Cross, la Comuna 13 (`medellin_c13`), la azotea de Caracas (`caracas_azotea`) y Hội An de noche con el Tama-wari (`hoian`), cada uno copiado del juego.
+La carpeta trae también los otros cuatro tramos del Cross, la Comuna 13 (`medellin_c13`), la azotea de Caracas (`caracas_azotea`) y Hội An de noche con el Tama-wari (`hoian`), cada uno copiado del juego. Y los de las pruebas nuevas:
+
+| Layout | Prueba | Vista | Hora |
+|---|---|---|---|
+| `judo_hanoi` | Judo (`Fight.ts`) | inclinada | tarde |
+| `tao_dan` | Đá cầu (`DaCau.ts`) | de lado | amanecer |
+| `candelaria` | Tejo (`Tejo.ts`) | de lado | tarde nublada |
+| `margarita` | Vóley Playa (`Voley.ts`) | de lado | mediodía |
+| `dalat` | Tenis de dobles (`Tenis.ts`) | de lado | mañana con neblina |
+| `barranquilla` | Fútbol Callejero (`Futbol.ts`) | inclinada | mediodía |
+| `cancha_maracaibo` | Básquet 3x3 (`Basket.ts`) | inclinada | noche |
+
+Los cuatro últimos son del lote E5: sus franjas salen de las medidas de cada prueba (el piso en la fila 310 en el vóley y el tenis, y FT 212 con 104 de fondo en el fútbol y el básquet).
 
 Cómo se carga en el juego: [docs/ESCENARIOS.md](../../ESCENARIOS.md).
 
+## La gente de la calle (lotes C6a y E5)
+
+En [`npc/`](npc/) están las fichas de los NPC y la sección `npc` de [`kit.config.json`](kit.config.json) dice qué animaciones lleva cada uno. Cada NPC sale en `npc/<id>.png`, una tira con el ancla en los pies.
+
+- **La Comuna 13 (C6a):** los tres bailarines de break, los dos pelados del fútbol, el grafitero, los músicos con el parlante y el vendedor de paletas, más la pelota.
+- **La Marimonda del Carnaval (E5):** `marimonda.ficha.json`, con la máscara de la Marimonda (`hat: "marimonda"`: la capucha roja, las orejotas azules y la trompa larga) y el traje de colores. Lleva `caminar` (la animación `walk` del motor, de lado: `vistas.caminar: "lado"`, el juego la espeja para ir a la izquierda) y `bailar` (`dance`, de frente). Es la que cruza la calle en el Fútbol Callejero.

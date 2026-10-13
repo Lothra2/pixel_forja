@@ -205,7 +205,8 @@ describe('los escenarios de las pruebas nuevas (lote E4a)', () => {
       expect(E.luces.length).toBeLessThanOrEqual(12);
       expect(E.luces.every((l) => l.encendida)).toBe(true);
     }
-    expect(Object.keys(LUGARES)).toEqual(['dojo_hanoi', 'parque_tao_dan', 'cancha_tejo_candelaria']);
+    // los de este lote van primero en el registro; después vienen los del lote E5
+    expect(Object.keys(LUGARES).slice(0, 3)).toEqual(['dojo_hanoi', 'parque_tao_dan', 'cancha_tejo_candelaria']);
   });
 
   it('las postales de un mundo de una pantalla van a 0, 2 y 4 segundos', () => {

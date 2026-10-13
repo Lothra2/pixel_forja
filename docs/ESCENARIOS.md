@@ -112,7 +112,7 @@ py = franja.atras + y - z
 
 ## Vista de lado
 
-Para las pruebas que el juego dibuja de lado (Đá cầu, Tejo): la cancha se ve de frente, el fondo detrás y el piso es una franja angosta donde se paran los atletas. Desde E4a.
+Para las pruebas que el juego dibuja de lado (Đá cầu, Tejo, Vóley Playa y Tenis): la cancha se ve de frente, el fondo detrás y el piso es una franja angosta donde se paran los atletas. Desde E4a.
 
 ```json
 {
@@ -127,7 +127,7 @@ Para las pruebas que el juego dibuja de lado (Đá cầu, Tejo): la cancha se ve
 
 - **`vista: "lado"`** en el layout. Sin el campo, la vista es `oblicua`, como siempre. Otro valor da error.
 - **El dibujo va derecho:** inclinación 0, pida lo que pida la opción `inclinacion`. `escenario.json` trae `inclinacion: 0` y `ancho` igual al `largo`, que el juego ya lee.
-- **La franja es la fila del piso del juego:** `franja.atras` es donde se para el fondo y la fila de pantalla de un atleta es `franja.atras + y`. En Tao Đàn, el piso de `DaCau.ts` está en la fila 310 y sus dos filas (304 y 316) son los carriles 14 y 26. En la cancha de tejo, `Tejo.ts` pone el piso en la 300: la franja va de 286 a 310 y los carriles son 10 (los que esperan) y 14 (el que lanza).
+- **La franja es la fila del piso del juego:** `franja.atras` es donde se para el fondo y la fila de pantalla de un atleta es `franja.atras + y`. En Tao Đàn, el piso de `DaCau.ts` está en la fila 310 y sus dos filas (304 y 316) son los carriles 14 y 26. En la cancha de tejo, `Tejo.ts` pone el piso en la 300: la franja va de 286 a 310 y los carriles son 10 (los que esperan) y 14 (el que lanza). Margarita y Đà Lạt (E5) usan la misma franja que Tao Đàn: `Voley.ts` y `Tenis.ts` también ponen el piso en la 310, con las filas 304 y 316.
 - **Las mismas capas de siempre**, así el juego las carga con lo que ya tiene:
   - `cielo` y `lejos` como siempre.
   - `cerca` es **el fondo**: de la fila 0 a `franja.atras`, transparente donde se ve lejos (entre los árboles, por las ventanas).
@@ -281,12 +281,38 @@ Todas bloquean: si una falla, el escenario no sale.
   - **El piso:** la cancha de tierra parda con la greda que salta cerca de la caja y la raya de x 104. Adelante, el borde de madera y el cemento del galpón.
   - **Cajas:** `caja_greda` es la caja de tejo de lado, con la geometría de `Tejo.ts`: la cara de greda de (534, 300) a (582, 250), el palo de atrás hasta la fila 248 y el bocín en (548, 280). Las mechas y los tejos los pinta el juego encima.
   - **Vida:** `banderines`, `publico` (levantan el tinto), `llovizna` (en las ventanas, 3 cuadros) y `humo_mechas` (partículas que suben de la caja). Luces: los tres bombillos.
+- **Lo que pinta un lugar por una entidad** (lote E5): un lugar del registro puede traer `objeto`, que pinta las entidades `objeto` del layout que conoce y las suma a `objetos.json` con `origen: "entidades"`. No es geometría: `colision.json` sigue siendo la del layout. Así salen los arcos de piedra del fútbol, que no son cajas (la pelota pasa entre las columnas).
+- **El estilo `venezuela_playa`** (`paralaje.cerca: "playa_el_agua"`, `paralaje.lejos: "mar_caribe_cerro"`): Playa El Agua, isla de Margarita, al mediodía, de lado, para el Vóley Playa.
+  - **Solo al mediodía.** La paleta: la arena clarita, el mar turquesa (`menta`) que se pone hondo hacia el horizonte (`canal`), el cielo limpio y los colores de los toldos.
+  - **Fondo:** la orilla con la ola que revienta y la espuma que sube por la arena, cuatro palmas de coco (ninguna toca la red), dos toldos a rayas con su gente, la silla y la cava, la churuata de las empanadas con el techo de palma, el mostrador EMPANADAS y COCO FRÍO, la vitrina, la nevera y la bandera de Venezuela, el letrero de madera PLAYA EL AGUA, MARGARITA, una toalla con alguien tomando sol y una pelota de playa.
+  - **Lejos:** el mar Caribe con el horizonte en la fila 186, el cerro verde de la punta de la playa con sus casitas, el morro de la izquierda, un peñero y dos veleros.
+  - **El piso:** la `arena` de este lugar, con las cintas azules de la cancha donde `Voley.ts` pone sus rayas (de x 34 a 606 en la fila 298 y de 28 a 612 en la 322). La red la dibuja el juego.
+  - **Vida:** `olas` (4 cuadros), `toldos_viento` (2), `vendedor_empanadas` (2) y `alcatraces` (los pelícanos que cruzan en la capa lejos). Sin luces: es de día.
+- **El estilo `vietnam_montana`** (`paralaje.cerca: "cancha_arcilla_dalat"`, `paralaje.lejos: "lago_xuan_huong_pinos"`): la cancha de tenis de arcilla de Đà Lạt en la mañana con neblina, de lado.
+  - **Solo de mañana.** La paleta: la arcilla roja, el verde de los pinos, la neblina (`bruma`), el lago (`canal`), las villas crema y las hortensias.
+  - **Fondo:** los pinos de Đà Lạt de tronco rojizo y copa en racimos (dos grandes a los lados y cuatro grises en la neblina), el pasto con las hortensias azules y rosadas, la malla de la cancha en rombos (ningún paral cae en la red) con la lona SÂN QUẦN VỢT ĐÀ LẠT, la silla del juez y la banca con los dos jugadores, el bolso y el cesto de pelotas.
+  - **Lejos:** la montaña casi borrada, las lomas de pinos en planos cada vez más claros, la catedral del gallo y una villa colonial en la loma, y el lago Xuân Hương con su orilla y un botecito de cisne.
+  - **El piso:** la `greda` de este lugar es la arcilla barrida en arcos, con las rayas blancas empolvadas donde las pone `Tenis.ts`. Adelante, el bordillo y el pasto con piñas.
+  - **Vida:** `neblina` (dos bandas que pasan en la capa lejos) y `publico` (los de la banca aplauden). Luces: el sol de la mañana entre los pinos.
+- **El estilo `colombia_caribe`** (`paralaje.cerca: "calle_carnaval_barranquilla"`, `paralaje.lejos: "barranquilla_mediodia"`): una calle del Carnaval de Barranquilla al mediodía, en la vista inclinada.
+  - **Solo al mediodía.** La paleta: las casas de colores y los colores del Carnaval (el morado es `canal` y el naranja `oro`).
+  - **Fondo:** tres casas del Barrio Abajo (la amarilla con la máscara de la Marimonda, la turquesa de dos pisos con balcón y la rosada con la del Torito), los dos palcos con la gradería llena y el sombrero vueltiao, el techo de lona a rayas y el faldón, el pendón CARNAVAL DE BARRANQUILLA con ¡QUIEN LO VIVE ES QUIEN LO GOZA!, cinco guirnaldas de banderines y la comparsa en la acera (cumbiamberas de pollera y Congos de turbante con el garabato).
+  - **Lejos:** la ciudad en la calima, el campanario de la catedral y las palmas.
+  - **El piso:** la `cancha` de este lugar es la calle de asfalto con el confeti, la maicena y las serpentinas, y las rayas de tiza de `Futbol.ts`. Adelante, el bordillo amarillo y negro y el andén.
+  - **Entidades:** `arco_piedra` en cada línea de gol, en dos objetos: la columna de atrás con la vara y las cintas (`parte: "atras"`, `orden` 35) y la de adelante (`orden` 71), así el arquero que se mete entre las dos queda bien ordenado.
+  - **Vida:** `publico` (los palcos), `guirnaldas` (una pieza por cuerda), `comparsa` (4 cuadros) y `confeti` (papelitos que caen). Partículas: además, el `confeti` del kit desde los palcos.
+- **El estilo `venezuela_lago`** (`paralaje.cerca: "cancha_barrio_maracaibo"`, `paralaje.lejos: "lago_puente_urdaneta"`): una cancha de barrio de Maracaibo de noche, en la vista inclinada.
+  - **Solo de noche.** La paleta: el cielo con el resplandor de la ciudad, el Lago oscuro, el blanco y el violeta del relámpago (`salmon`), la nube de tormenta (`canal`), el sodio de los bombillos y el azul de la cancha (`celeste`). No sale el reflejo de neón de Caracas.
+  - **Fondo:** la malla en rombos (deja ver el Lago), el muro de bloques con la franja amarilla, azul y roja, CANCHA LA CHINITA, BARRIO SANTA LUCÍA y el mural del puente, tres postes con los bombillos de sodio, la gradita con la gente y los gaiteros con sombrero (furro, tambora, charrasca y cuatro).
+  - **Lejos:** el puente General Rafael Urdaneta de punta a punta con las seis torres en A y sus tirantes, la otra orilla encendida con los mechurrios, tres balancines con su luz roja, los reflejos en el agua y la nube del Catatumbo a la derecha.
+  - **El piso:** la `cancha` de este lugar es el concreto pintado (azul adentro, el área naranja, verde afuera) con las rayas de `Basket.ts` y la luz de los bombillos. El aro, el tablero y el poste los dibuja el juego.
+  - **Vida:** `relampago` (8 cuadros: la nube se alumbra por dentro y cae el rayo, solo donde la capa cerca deja ver afuera), `gaiteros` y `publico`. Luces: los seis bombillos y el resplandor del Catatumbo, que parpadea.
 - **Los otros estilos del pedido** (`venezuela_barrio`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos
 
-- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad` y `vietnam_hoian` solo saben pintar la noche, `vietnam_dojo` y `colombia_colonial` la tarde, y `vietnam_parque` el amanecer.
-- **Los lugares de E4a son de una pantalla:** el dojo, Tao Đàn y la cancha de tejo están puestos para un mundo de 640, como sus pruebas.
+- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad`, `vietnam_hoian` y `venezuela_lago` solo saben pintar la noche, `vietnam_dojo` y `colombia_colonial` la tarde, `vietnam_parque` el amanecer, `vietnam_montana` la mañana, y `venezuela_playa` y `colombia_caribe` el mediodía.
+- **Los lugares de E4a y E5 son de una pantalla:** el dojo, Tao Đàn, la cancha de tejo, Margarita, Đà Lạt, Barranquilla y Maracaibo están puestos para un mundo de 640, como sus pruebas.
 - **El dibujo de Hội An es de una pantalla:** las casas, el río de la izquierda y los puestos están puestos para un mundo de 640. En un layout más largo con el mismo fondo, la última casa se estira hasta el final del ancho pintado.
 - **El borde que avanza** lo mueve el juego: el arte trae el filo y el vacío, pero el murito del fondo, pintado en la capa cerca, sigue entero hasta el borde de antes.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.

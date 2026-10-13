@@ -387,7 +387,7 @@ export function kitConfigSchema(): Record<string, unknown> {
       },
       npc: {
         type: 'object', required: ['personajes'],
-        description: 'La gente de la calle en npc/<id>.png: una tira con los cuadros de sus animaciones seguidas, de frente o en 3/4 (sin espejo), con el ancla en los pies. Un grupo (los músicos) va en un solo sprite. Ver docs/KIT_A_MEDIDA.md.',
+        description: 'La gente de la calle en npc/<id>.png: una tira con los cuadros de sus animaciones seguidas, de frente o en 3/4 (sin espejo) o de lado (mirando a la derecha), con el ancla en los pies. Un grupo (los músicos) va en un solo sprite. Ver docs/KIT_A_MEDIDA.md.',
         properties: {
           fichas: { type: 'string', description: 'Carpeta con las fichas de los NPC (*.ficha.json), relativa al kit.config.json. No son atletas.' },
           pelota: { type: 'boolean', description: 'La pelota de la calle: npc/pelota.png, 8 x 8 con 4 cuadros de giro.' },
@@ -745,7 +745,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
       files.push({ name: 'npc/pelota.png', bytes: encodePng(pelotaTira()), mime: 'image/png' });
       npc.pelota = { archivo: 'npc/pelota.png', w: 8, h: 8, ancla: [4, 7], cuadros: 4, anims: { girar: { desde: 0, cuadros: 4, fps: 12, loop: true } } };
     }
-    npc.notas = 'Cada NPC es una tira de cuadros de w x h: el cuadro i va en x = i * w. Cada animación empieza en el cuadro "desde" y dura "cuadros". El ancla es el pixel de los pies: el juego pone ahí el (x, y) del NPC. Van de frente o en 3/4 hacia la calle ("vista"); no se espejan. eventos: en qué cuadro de la animación pasa algo (en patear, el impacto es cuando el pie le pega a la pelota: ahí el juego la suelta). Un grupo trae "grupo" con los de izquierda a derecha.';
+    npc.notas = 'Cada NPC es una tira de cuadros de w x h: el cuadro i va en x = i * w. Cada animación empieza en el cuadro "desde" y dura "cuadros". El ancla es el pixel de los pies: el juego pone ahí el (x, y) del NPC. Van de frente o en 3/4 hacia la calle ("vista"); no se espejan. Los que van de lado ("lado", la Marimonda que cruza) miran a la derecha: para ir a la izquierda el juego los espeja. eventos: en qué cuadro de la animación pasa algo (en patear, el impacto es cuando el pie le pega a la pelota: ahí el juego la suelta). Un grupo trae "grupo" con los de izquierda a derecha.';
     opts.progress?.(`npc: ${Object.keys(npc).length - 1}`);
   }
 

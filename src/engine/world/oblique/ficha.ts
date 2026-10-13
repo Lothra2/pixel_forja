@@ -4,7 +4,7 @@ import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Pa
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
 import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
-import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA } from './lugaresPaleta';
+import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO } from './lugaresPaleta';
 import { lugarDe } from './lugares';
 
 /**
@@ -391,7 +391,117 @@ const COLOMBIA_COLONIAL: Estilo = {
   letreros: ['CANCHA DE TEJO', 'MECHA 3', 'BOCÍN 6', 'MOÑONA 9'],
 };
 
-const ESTILOS: Record<string, Estilo> = { vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD };
+/** Playa El Agua, isla de Margarita, al mediodía (lote E5). */
+const VENEZUELA_PLAYA: Estilo = {
+  paleta: VENEZUELA_MARGARITA_MEDIODIA,
+  uso: USO_MARGARITA,
+  horas: ['mediodia'],
+  iconos: [
+    { id: 'mar', nombre: 'El mar Caribe turquesa que se pone azul hondo en el horizonte, con las olas que revientan en la orilla', donde: 'lejos y cerca' },
+    { id: 'cerro', nombre: 'El cerro verde de la punta de la playa, con la piedra que asoma y las casitas al pie', donde: 'lejos, a la derecha' },
+    { id: 'morro', nombre: 'El morro bajo de la izquierda con sus palmitas', donde: 'lejos' },
+    { id: 'palmas', nombre: 'Las palmas de coco altísimas, con el tronco curvo y los cocos', donde: 'cerca, sin tocar la red' },
+    { id: 'toldos', nombre: 'Los toldos de lona a rayas con su gente, la silla y la cava azul y blanca', donde: 'cerca' },
+    { id: 'churuata', nombre: 'La churuata de las empanadas: techo de palma, mostrador EMPANADAS, COCO FRÍO, la vitrina y la nevera', donde: 'cerca, a la derecha de la red' },
+    { id: 'bandera', nombre: 'La bandera de Venezuela con las ocho estrellas, en el techo de la churuata', donde: 'cerca' },
+    { id: 'letrero', nombre: 'El letrero de madera PLAYA EL AGUA, MARGARITA', donde: 'cerca, a la izquierda' },
+    { id: 'penero', nombre: 'Un peñero de pesca y dos veleros en el mar', donde: 'lejos' },
+    { id: 'arena', nombre: 'La arena clara con las ondas del viento y las cintas azules de la cancha', donde: 'piso' },
+  ],
+  vida: {
+    olas: 'La ola que se levanta, revienta y sube espumosa por la arena, y se retira: 4 cuadros',
+    toldos_viento: 'Los toldos que se mecen con la brisa, y el señor de pie que saluda: 2 cuadros',
+    vendedor_empanadas: 'La vendedora de la churuata que levanta una empanada y pregona: 2 cuadros',
+    alcatraces: 'Los alcatraces (pelícanos) que pasan volando sobre el mar, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['PLAYA EL AGUA', 'MARGARITA', 'EMPANADAS', 'COCO FRÍO'],
+};
+
+/** La cancha de arcilla de Đà Lạt en la mañana con neblina (lote E5). */
+const VIETNAM_MONTANA: Estilo = {
+  paleta: VIETNAM_DALAT_MANANA,
+  uso: USO_DALAT,
+  horas: ['manana'],
+  iconos: [
+    { id: 'pinos', nombre: 'Los pinos de Đà Lạt (thông ba lá): el tronco rojizo altísimo y la copa en racimos de agujas', donde: 'cerca, a los dos lados' },
+    { id: 'pinos_neblina', nombre: 'Los pinos de atrás, grises en la neblina', donde: 'cerca, detrás de la malla' },
+    { id: 'lomas', nombre: 'Las lomas cubiertas de pinos en planos, cada una más clara en la neblina', donde: 'lejos' },
+    { id: 'lago', nombre: 'El lago Xuân Hương con la otra orilla y un botecito de cisne', donde: 'lejos' },
+    { id: 'catedral', nombre: 'La catedral del gallo (Nhà thờ Con Gà), rosada, con el gallo en la punta de la aguja', donde: 'lejos, en la loma' },
+    { id: 'villa', nombre: 'Una villa colonial francesa con el techo de teja empinado, la buhardilla y las chimeneas', donde: 'lejos, en la loma' },
+    { id: 'malla', nombre: 'La malla de la cancha con sus parales y la lona verde SÂN QUẦN VỢT ĐÀ LẠT', donde: 'cerca' },
+    { id: 'hortensias', nombre: 'Las hortensias (cẩm tú cầu) azules y rosadas contra la malla', donde: 'cerca' },
+    { id: 'silla_juez', nombre: 'La silla del juez al lado de la red, con el juez de gorra', donde: 'cerca, a la derecha de la red' },
+    { id: 'banca', nombre: 'La banca de los jugadores con el bolso de las raquetas y el cesto de pelotas', donde: 'cerca' },
+    { id: 'arcilla', nombre: 'La arcilla roja barrida en arcos, con las rayas blancas empolvadas', donde: 'piso' },
+  ],
+  vida: {
+    neblina: 'Las bandas de neblina que pasan despacio delante de las lomas, en la capa lejos',
+    publico: 'Los dos jugadores de la banca que aplauden: 2 cuadros',
+  },
+  cajas: {},
+  letreros: ['SÂN QUẦN VỢT ĐÀ LẠT'],
+};
+
+/** La calle del Carnaval de Barranquilla al mediodía (lote E5). */
+const COLOMBIA_CARIBE: Estilo = {
+  paleta: COLOMBIA_BARRANQUILLA_MEDIODIA,
+  uso: USO_BARRANQUILLA,
+  horas: ['mediodia'],
+  iconos: [
+    { id: 'casas', nombre: 'Las casas de colores del Barrio Abajo: la amarilla, la turquesa de dos pisos con balcón y la rosada', donde: 'cerca, entre los palcos' },
+    { id: 'puertas', nombre: 'Las puertas altas de madera en arco y las ventanas de barrotes torneados', donde: 'cerca' },
+    { id: 'marimonda', nombre: 'La máscara de la Marimonda: la capucha roja, las orejotas azules y la trompa larga', donde: 'cerca, en la casa amarilla' },
+    { id: 'torito', nombre: 'La máscara del Torito con los cuernos y las cintas', donde: 'cerca, en la casa rosada' },
+    { id: 'palcos', nombre: 'Los palcos del Carnaval: la gradería llena, el sombrero vueltiao, el techo de lona a rayas y el faldón', donde: 'cerca, a los dos lados' },
+    { id: 'guirnaldas', nombre: 'Las guirnaldas de banderines con los colores del Carnaval cruzando la calle', donde: 'cerca, arriba' },
+    { id: 'pendon', nombre: 'El pendón CARNAVAL DE BARRANQUILLA con el lema ¡QUIEN LO VIVE ES QUIEN LO GOZA!', donde: 'cerca, entre los palcos' },
+    { id: 'comparsa', nombre: 'La comparsa en la acera: las cumbiamberas de pollera y los Congos de turbante de flores con el garabato', donde: 'cerca' },
+    { id: 'calle', nombre: 'La calle de asfalto con el confeti, la maicena y las serpentinas', donde: 'piso' },
+    { id: 'arcos', nombre: 'Los arcos de piedra: las columnas de piedras apiladas y la vara con las cintas de colores', donde: 'entidades arco_piedra, en las líneas de gol' },
+    { id: 'ciudad', nombre: 'Barranquilla en la calima: los edificios, el campanario de la catedral y las palmas', donde: 'lejos' },
+  ],
+  vida: {
+    publico: 'La gente de los palcos que levanta los brazos: 2 cuadros',
+    guirnaldas: 'Los banderines que se mecen con la brisa: 2 cuadros',
+    comparsa: 'La comparsa que baila en la acera: 4 cuadros',
+    confeti: 'Los papelitos de colores que caen sobre la calle (partículas), y el confeti del kit que tiran desde los palcos',
+  },
+  cajas: {},
+  letreros: ['CARNAVAL DE BARRANQUILLA', '¡QUIEN LO VIVE ES QUIEN LO GOZA!'],
+};
+
+/** La cancha de barrio de Maracaibo de noche (lote E5). */
+const VENEZUELA_LAGO: Estilo = {
+  paleta: VENEZUELA_MARACAIBO_NOCHE,
+  uso: USO_MARACAIBO,
+  horas: ['noche'],
+  iconos: [
+    { id: 'puente', nombre: 'El puente General Rafael Urdaneta encendido de punta a punta, con las seis torres en A y sus tirantes', donde: 'lejos, por la malla' },
+    { id: 'lago', nombre: 'El Lago de Maracaibo de noche, con la otra orilla encendida y los reflejos de las luces', donde: 'lejos' },
+    { id: 'catatumbo', nombre: 'La nube de tormenta del Catatumbo sobre el horizonte, con sus relámpagos', donde: 'lejos y vida' },
+    { id: 'balancines', nombre: 'Los balancines petroleros en el Lago con su luz roja, y los mechurrios de la otra orilla', donde: 'lejos' },
+    { id: 'malla', nombre: 'La malla de la cancha en rombos, sobre el muro de bloques', donde: 'cerca' },
+    { id: 'muro', nombre: 'El muro pintado con la franja amarilla, azul y roja, CANCHA LA CHINITA, BARRIO SANTA LUCÍA y el mural del puente', donde: 'cerca' },
+    { id: 'postes', nombre: 'Los postes de la cancha con los bombillos de sodio y su halo', donde: 'cerca y luces' },
+    { id: 'gradas', nombre: 'La gradita de concreto con la gente del barrio', donde: 'cerca, a la izquierda' },
+    { id: 'gaiteros', nombre: 'Los gaiteros de sombrero: el furro, la tambora, la charrasca y el cuatro', donde: 'cerca, a la derecha' },
+    { id: 'cancha', nombre: 'La cancha de concreto pintada de azul con el área naranja y las rayas blancas', donde: 'piso' },
+  ],
+  vida: {
+    relampago: 'El relámpago del Catatumbo: la nube se alumbra por dentro y cae el rayo, se apaga y vuelve a parpadear: 8 cuadros',
+    gaiteros: 'Los gaiteros tocan la gaita: el furro, la tambora, la charrasca y el cuatro, 2 cuadros',
+    publico: 'La gente de la gradita levanta los brazos: 2 cuadros',
+  },
+  cajas: {},
+  letreros: ['CANCHA LA CHINITA', 'BARRIO SANTA LUCÍA'],
+};
+
+const ESTILOS: Record<string, Estilo> = {
+  vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD,
+  venezuela_playa: VENEZUELA_PLAYA, vietnam_montana: VIETNAM_MONTANA, colombia_caribe: COLOMBIA_CARIBE, venezuela_lago: VENEZUELA_LAGO,
+};
 
 /** Los fondos de la capa cerca que son de Hội An (con su estilo). */
 const CERCAS_HOIAN = new Set(['casas_amarillas_hoian']);
