@@ -145,8 +145,8 @@ describe('los escenarios de las pruebas nuevas (lote E4a)', () => {
     expect(enCaja(580, 246)).toBeNull();
     expect(enCaja(540, 298)).not.toBeNull();
     expect(enCaja(540, 260)).toBeNull();
-    // el bocín: el aro de metal en (548, 280)
-    expect([enCaja(CAJA.bocin[0] - 5, CAJA.bocin[1]), enCaja(CAJA.bocin[0] + 5, CAJA.bocin[1])]).toEqual([COLOMBIA_CANDELARIA_TARDE.asfalto, COLOMBIA_CANDELARIA_TARDE.asfalto]);
+    // el bocín: el aro de metal brillante en (548, 280)
+    expect([enCaja(CAJA.bocin[0] - 5, CAJA.bocin[1]), enCaja(CAJA.bocin[0] + 5, CAJA.bocin[1])]).toEqual([COLOMBIA_CANDELARIA_TARDE.cemento_claro, COLOMBIA_CANDELARIA_TARDE.cemento_claro]);
     // la raya de lanzamiento en x 104
     for (let y = 1; y < 23; y++) expect(hex(EC.piso.r, RAYA, y)).toBe(COLOMBIA_CANDELARIA_TARDE.ocre);
     // el letrero claro donde el juego escribe CANCHA DE TEJO en (440, 205) con #3a2418: se lee

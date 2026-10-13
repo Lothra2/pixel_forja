@@ -214,18 +214,42 @@ function rollo(C: Lienzo, x: number, y: number, texto: string) {
   C.f(x - 1, y - 1, w + 2, 3, 'terracota'); C.f(x - 1, y + h, w + 2, 3, 'terracota'); C.p(x - 2, y + h + 1, 'asfalto'); C.p(x + w + 1, y + h + 1, 'asfalto');
   C.box(x, y + 2, w, h - 2, 'crema', 'ocre');
   C.vl(x + w - 2, y + 3, h - 4, 'cemento_claro');
-  // la palabra en vertical, una letra debajo de la otra, al doble y con el trazo de pincel (un pixel más a la derecha)
+  // la palabra en vertical, una letra debajo de la otra, al doble
   const letras = [...texto.normalize('NFC')];
   let yy = y + 6;
   for (const ch of letras) {
     const T = new Lienzo(8, 12, C.pal);
     drawText(T, 0, 0, ch, 'tinta');
     const tw = textWidth(ch), ox = x + Math.floor((w - tw * 2) / 2);
-    for (let j = 0; j < T.h; j++) for (let i = 0; i < T.w; i++) if (T.has(i, j)) { C.f(ox + i * 2, yy + (j - 2) * 2, 2, 2, 'tinta'); if (grain(i, j, 3) < 0.3) C.p(ox + i * 2 + 2, yy + (j - 2) * 2 + 1, 'sombra'); }
+    for (let j = 0; j < T.h; j++) for (let i = 0; i < T.w; i++) if (T.has(i, j)) C.f(ox + i * 2, yy + (j - 2) * 2, 2, 2, 'tinta');
     yy += 15;
   }
   // el sello rojo abajo a la derecha
   C.f(x + w - 8, y + h - 10, 5, 5, 'rojo'); C.p(x + w - 7, y + h - 9, 'crema'); C.p(x + w - 5, y + h - 7, 'crema');
+}
+
+/** El tablero de los nombres de los judocas: tablillas de madera clara colgadas en filas, con el nombre en tinta. */
+function tablillas(C: Lienzo, x: number, y: number, cols: number, filas: number, seed: number) {
+  const w = cols * 7 + 5, h = filas * 15 + 5;
+  C.box(x, y, w, h, 'terracota', 'asfalto'); C.hl(x + 1, y + 1, w - 2, 'ocre');
+  for (let f = 0; f < filas; f++) {
+    C.hl(x + 2, y + 4 + f * 15, w - 4, 'vino');
+    for (let c = 0; c < cols; c++) {
+      const tx = x + 3 + c * 7, ty = y + 5 + f * 15;
+      if (grain(c, f, seed) < 0.12) continue;
+      C.f(tx, ty, 5, 12, 'crema'); C.vl(tx + 4, ty, 12, 'cemento_claro'); C.p(tx + 2, ty - 1, 'asfalto');
+      for (let j = 2; j < 10; j += 2) if (grain(tx, ty + j, seed + 1) < 0.7) C.p(tx + 2, ty + j, 'tinta');
+      if (grain(c, f, seed + 2) < 0.2) C.p(tx + 1, ty + 10, 'rojo');
+    }
+  }
+}
+
+/** El reloj de pared redondo, con el marco de madera. */
+function reloj(C: Lienzo, cx: number, cy: number) {
+  C.d(cx, cy, 9, 'terracota'); C.d(cx, cy, 7, 'luz');
+  for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; C.p(Math.round(cx + Math.cos(a) * 6), Math.round(cy + Math.sin(a) * 6), k % 3 ? 'cemento' : 'tinta'); }
+  // las cuatro y diez de la tarde
+  C.ln(cx, cy, cx + 3, cy + 2, 'tinta'); C.ln(cx, cy, cx + 2, cy - 5, 'tinta'); C.p(cx, cy, 'rojo');
 }
 
 /** El letrero de madera del club, con letra tallada dorada. */
@@ -311,6 +335,10 @@ export function pintarDojo(C: Lienzo, seed: number, o: { publico?: boolean; f?: 
   paneles(C, 0, W, RASO + 6, ZOCALO, seed);
   // el letrero del club arriba, en el centro
   letreroClub(C, BANDERA.x + BANDERA.w / 2, RASO + 18, 'VÕ ĐƯỜNG NHU ĐẠO HÀ NỘI');
+  // el tablero de los nombres del club a la izquierda y el reloj a la derecha
+  tablillas(C, 34, RASO + 14, 12, 2, seed);
+  tablillas(C, 446, RASO + 14, 12, 2, seed + 3);
+  reloj(C, 604, RASO + 30);
   // los ventanales que dan al lago, con su luz
   for (const v of VENTANALES) ventanal(C, v.x0, v.x1, VENTANA.y0, VENTANA.y1);
   // los pilares de madera oscura entre los paños

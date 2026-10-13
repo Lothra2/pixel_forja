@@ -119,7 +119,7 @@ function techo(C: Lienzo, seed: number) {
   // el entablado: tablas angostas que se van hacia el fondo, con la veta y alguna más oscura
   for (let y = 0; y < TECHO; y++) for (let x = 0; x < W; x++) {
     const tabla = Math.floor(x / 7), jx = x % 7, tono = grain(tabla, 0, seed) < 0.3;
-    C.p(x, y, jx === 0 ? 'sombra' : grain(x, y >> 2, seed + 1) < 0.08 ? 'vino' : tono ? 'vino' : 'terracota');
+    C.p(x, y, jx === 0 ? 'sombra' : tono ? 'vino' : 'terracota');
   }
   // las vigas grandes de lado a lado, con las cabezas de los cabios asomadas debajo de la de arriba
   for (const [y, h] of [[10, 7], [32, 6]] as const) {
@@ -137,8 +137,10 @@ function techo(C: Lienzo, seed: number) {
 function pared(C: Lienzo, seed: number) {
   const W = C.w;
   for (let y = PARED; y < ZOCALO; y++) for (let x = 0; x < W; x++) {
-    const humedad = grain(x >> 3, y >> 3, seed + 1) < 0.12 && y > ZOCALO - 40;
-    C.p(x, y, humedad && bayer(x, y) < 0.5 ? 'cemento_claro' : grain(x, y, seed) < 0.03 ? 'cemento_claro' : 'crema');
+    // la humedad que sube del zócalo, en manchas de borde irregular
+    const v = grain(x >> 3, y >> 3, seed + 1) * 0.6 + grain(x >> 1, y >> 1, seed + 7) * 0.4;
+    const humedad = y > ZOCALO - 34 && v < 0.2 + (y - (ZOCALO - 34)) / 120;
+    C.p(x, y, humedad ? 'cemento_claro' : grain(x, y, seed) < 0.02 ? 'cemento_claro' : 'crema');
   }
   // el pañete caído: se ven los adobes
   const R = rng(seed + 3);
@@ -245,7 +247,7 @@ function afiche(C: Lienzo, x: number, y: number) {
 function tablon(C: Lienzo, x0: number, x1: number, y0: number) {
   for (let y = y0; y < FT - 4; y++) for (let x = x0; x < x1; x++) {
     const t = (y - y0) % 12;
-    C.p(x, y, t === 11 ? 'sombra' : t === 0 ? 'ocre' : grain(x >> 1, y >> 1, 21) < 0.06 ? 'asfalto' : 'terracota');
+    C.p(x, y, t === 11 ? 'sombra' : t === 0 ? 'ocre' : grain(x >> 1, y >> 1, 21) < 0.015 ? 'asfalto' : 'terracota');
   }
   C.vl(x0, y0, FT - 4 - y0, 'sombra'); C.vl(x1 - 1, y0, FT - 4 - y0, 'sombra');
   for (let y = y0 + 4; y < FT - 6; y += 12) for (const x of [x0 + 3, x1 - 4]) C.p(x, y, 'cemento_claro');
@@ -341,11 +343,11 @@ export const fondoCandelaria = (C: Lienzo, _x0: number, _x1: number, _base: numb
 export function tierraCandelaria(x: number, y: number, s: number): Color {
   const xr = ((x % 960) + 960) % 960;
   const n = grain(xr, y, s);
-  if (n < 0.004) return 'oro';
-  if (n > 0.996) return 'cemento_claro';
+  if (n < 0.002) return 'oro';
+  if (n > 0.998) return 'cemento_claro';
   // la greda que salta de la caja: más cerca, más manchas
   const cerca = Math.max(0, (xr - 470) / 90);
-  if (grain(xr >> 1, y >> 1, s + 3) < cerca * 0.35) return bayer(xr, y) < 0.5 ? 'cemento' : 'asfalto_claro';
+  if (grain(xr >> 1, y >> 1, s + 3) < cerca * 0.22) return bayer(xr, y) < 0.5 ? 'cemento' : 'asfalto_claro';
   // la tierra parda apisonada, con manchones más claros y la huella de los que lanzan
   return grain(xr >> 3, y >> 1, s + 1) < 0.3 && bayer(xr, y) < 0.2 ? 'salmon' : grain(xr, y, s + 4) < 0.03 ? 'terracota' : 'ocre';
 }
@@ -362,11 +364,12 @@ export function orillaCandelaria(x: number, r: number, s: number): Color {
   if (r === 0) return 'ocre';
   if (r < 4) return r === 3 ? 'vino' : (xr % 48 === 0 ? 'vino' : 'terracota');
   if (r === 4) return 'sombra';
+  // el piso de cemento del galpón: losas grandes con su junta, una que otra chapa de botella y el aserrín regado
+  if (xr % 96 === 0 || r === 30) return 'asfalto_claro';
   const n = grain(xr, r, s);
-  if (n < 0.01) return 'oro';
-  if (n > 0.985) return 'amarillo';
-  if ((xr + r * 3) % 80 === 0 && r > 10) return 'asfalto';
-  return grain(xr >> 2, r >> 1, s + 1) < 0.12 && bayer(xr, r) < 0.5 ? 'cemento_claro' : 'cemento';
+  if (n < 0.003) return 'oro';
+  if (n > 0.996) return 'rojo';
+  return grain(xr >> 3, r >> 2, s + 1) < 0.18 && bayer(xr, r) < 0.4 ? 'cemento_claro' : 'cemento';
 }
 
 /**
@@ -390,13 +393,22 @@ export function cajaGreda(pal: Paleta, w: number, d: number, z: number): Pieza {
     if (sx >= 578 && sx <= 583 && sy >= 248) c = sx === 578 ? 'ocre' : sx === 583 ? 'sombra' : 'terracota';
     if (c) L.p(X(sx), Y(sy), c);
   }
-  // el canto de la cara (la línea de Tejo.ts) y la base
+  // el canto del marco (la línea de Tejo.ts) y la base
   for (let i = 0; i <= 48; i++) { const sx = 534 + i, sy = Math.round(300 - (i * 50) / 48); L.p(X(sx), Y(sy), 'sombra'); L.p(X(sx), Y(sy) - 1, 'ocre'); }
   for (let sx = 534; sx <= 584; sx++) L.p(X(sx), Y(300), 'sombra');
+  // la greda apisonada que sobresale del marco: la cara inclinada donde caen los tejos, la misma línea de Tejo.ts
+  // (pasa por el bocín en 548, 280 con pendiente 1), con el filo de arriba claro
+  const cara = (sx: number) => CAJA.bocin[1] - (sx - CAJA.bocin[0]);
+  for (let sx = 535; sx <= 577; sx++) {
+    const top = cara(sx) - 1, fondo = Math.round(300 - ((sx - 534) * 50) / 48);
+    for (let sy = top; sy < fondo; sy++) L.p(X(sx), Y(sy), sy === top ? 'cemento_claro' : sy === top + 1 ? 'cemento' : bayer(sx, sy) < 0.3 ? 'asfalto_claro' : 'cemento');
+  }
   // el bocín: el aro de metal enterrado en la greda
   const [bx, by] = CAJA.bocin;
-  L.ring(X(bx), Y(by), 5, pal.asfalto, 0.5, 1.5);
-  L.p(X(bx) - 3, Y(by) - 2, 'cemento_claro'); L.p(X(bx) - 2, Y(by) - 2, 'cemento_claro');
+  // el bocín: el aro de metal brillante, con su sombra adentro
+  L.ring(X(bx), Y(by) + 1, 5, pal.asfalto, 0.5, 1);
+  L.ring(X(bx), Y(by), 5, pal.cemento_claro, 0.5, 1);
+  L.p(X(bx) - 3, Y(by) - 2, 'luz'); L.p(X(bx) - 2, Y(by) - 2, 'luz');
   // las salpicaduras de greda en la madera
   for (let k = 0; k < 14; k++) { const sx = 536 + ((k * 37) % 44), sy = 286 + ((k * 13) % 14); if (dentro(sx, sy, 534, 300, 582, 300, 582, 250)) L.p(X(sx), Y(sy), 'cemento'); }
   return P;

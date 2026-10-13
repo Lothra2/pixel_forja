@@ -33,6 +33,10 @@ export const BANCO = { x0: 406, x1: 466, asiento: 262 };
 export const ABUELOS = [556, 584];
 /** El letrero del parque, arriba de la red (que el juego pone en x 320 y llega a la fila 264). */
 export const LETRERO = { x: 254, y: 222 };
+/** Dónde empiezan los rayos de sol (x en la fila RAYO_Y, debajo de la copa): bajan a la derecha 0.62 por fila. */
+export const RAYOS = [120, 300, 540], RAYO_Y = 136;
+/** La x del medio de un rayo en la fila y. */
+const enRayo = (x0: number, y: number) => x0 + Math.round((y - RAYO_Y) * 0.62) + 12;
 /** Las rayas de la cancha de DaCau.ts: de x 34 a 606 en la fila 298 (y 8) y de x 28 a 612 en la 322 (y 32); la red en x 320. */
 export const CANCHA = { atras: 8, adelante: 32, x0: 34, x1: 606, abre: 6, red: 320 };
 
@@ -98,7 +102,7 @@ function troncoDau(C: Lienzo, cx: number, w: number, top: number, base: number, 
       // la corteza: rayas verticales oscuras que se cortan
       else if (grain(x, y >> 3, seed) < 0.1 && t > 0.15) c = MAS_OSCURO[c];
       // el liquen en manchones
-      if (!lejos && grain(x >> 2, y >> 2, seed + 1) < 0.07) c = t < 0.5 ? 'menta' : 'verde';
+      if (!lejos && grain(x >> 1, y >> 1, seed + 1) < 0.06 && grain(x, y, seed + 2) < 0.75) c = t < 0.5 ? 'menta' : 'verde';
       C.p(x, y, c);
     }
     // el contorno
@@ -119,8 +123,13 @@ function copas(C: Lienzo, seed: number) {
   const R = rng(seed), W = C.w;
   // la bóveda: una banda tupida de follaje oscuro con el borde de abajo ondulado
   const borde = (x: number) => 82 + Math.round(Math.sin(x / 37) * 10 + Math.sin(x / 13 + 1) * 5 + grain(x >> 3, 0, seed) * 8);
-  for (let x = 0; x < W; x++) for (let y = 0; y < borde(x); y++) C.p(x, y, grain(x >> 1, y >> 1, seed + 2) < 0.18 ? 'verde' : 'verde_oscuro');
-  // racimos grandes encima de la bóveda y colgando de su borde, con luz arriba a la izquierda
+  for (let x = 0; x < W; x++) for (let y = 0; y < borde(x); y++) C.p(x, y, 'verde_oscuro');
+  // adentro de la bóveda, racimos más claros que asoman (sin ruido: masas enteras)
+  for (let k = 0; k < 30; k++) {
+    const x = Math.floor(R() * W), y = 6 + Math.floor(R() * 56), r = 8 + Math.floor(R() * 8);
+    copa(C, x, y, r, seed + k * 7, k % 3 ? ['verde_oscuro', 'verde', 'verde'] : ['verde_oscuro', 'verde_oscuro', 'verde']);
+  }
+  // racimos grandes colgando del borde de la bóveda, con luz arriba a la izquierda
   for (let x = -10; x < W + 20; x += 16 + Math.floor(R() * 12)) {
     const y = borde(Math.max(0, Math.min(W - 1, x))) - 4 + Math.floor(R() * 14), r = 9 + Math.floor(R() * 9);
     copa(C, x, y, r, seed + x, ['verde_oscuro', 'verde', 'menta']);
@@ -132,8 +141,6 @@ function copas(C: Lienzo, seed: number) {
   // el borde que da al sol se enciende
   for (let y = 1; y < 170; y++) for (let x = W - 1; x > 0; x--) if (C.has(x, y) && !C.has(x - 1, y) && grain(x, y, seed) < 0.7) C.p(x, y, y < 70 ? 'menta' : 'oro');
   for (let y = 1; y < 170; y++) for (let x = 0; x < W; x++) if (C.has(x, y) && !C.has(x, y + 1) && grain(x, y, seed + 9) < 0.5) C.p(x, y, 'verde_oscuro');
-  // motas de luz en la bóveda: hojas que agarran el sol del amanecer
-  for (let y = 4; y < 70; y++) for (let x = 0; x < W; x++) if (C.has(x, y) && grain(x >> 1, y >> 1, seed + 5) < 0.04) C.p(x, y, 'menta');
 }
 
 /**
@@ -145,8 +152,9 @@ function rayos(C: Lienzo, x0s: number[], y0: number, y1: number) {
     const cx = x0 + Math.round((y - y0) * 0.62), ancho = 22 + Math.round((y - y0) * 0.12);
     for (let x = cx; x < cx + ancho; x++) {
       const borde = Math.min(x - cx, cx + ancho - 1 - x), t = (y - y0) / (y1 - y0);
+      // sobre el cielo casi no se ve: solo sobre lo que tiene algo detrás (troncos, seto, pasto)
       const k = (borde < 4 ? 0.06 : 0.13) * (1 - t * 0.7);
-      if (bayer(x, y) < k) C.p(x, y, C.has(x, y) ? 'amarillo' : 'luz');
+      if (C.has(x, y) && bayer(x, y) < k) C.p(x, y, 'amarillo');
     }
   }
 }
@@ -279,8 +287,9 @@ export function pintarTaodan(C: Lienzo, seed: number, vida: readonly string[] = 
   // el pasto de atrás, con la sombra de los árboles y manchas de sol
   for (let y = PASTO - 14; y < FT; y++) for (let x = 0; x < W; x++) {
     if (y < PASTO) { if (bayer(x, y) < (y - (PASTO - 14)) / 14 * 0.9 || (grain(x >> 1, y, seed) < 0.3 && y > PASTO - 5)) C.p(x, y, grain(x, y, seed) < 0.3 ? 'verde_oscuro' : 'verde'); continue; }
-    const sol = grain(x >> 4, 0, seed + 3) < 0.45;
-    C.p(x, y, grain(x, y, seed + 1) < 0.08 ? 'verde_oscuro' : sol && bayer(x, y) < 0.35 ? 'menta' : 'verde');
+    // el pasto: verde parejo con matitas sueltas (la punta con luz y la sombra abajo)
+    const n = grain(x, y, seed + 1);
+    C.p(x, y, n < 0.05 ? 'verde_oscuro' : n > 0.95 ? 'menta' : 'verde');
   }
   // un seto bajo al fondo del pasto
   for (let x = 0; x < W; x++) { const alto = 8 + Math.round(Math.sin(x / 9) * 2 + grain(x >> 2, 0, seed) * 3); for (let j = 0; j < alto; j++) C.p(x, PASTO - 8 + j - alto + 8, j === 0 ? 'verde' : bayer(x, j) < 0.3 ? 'verde' : 'verde_oscuro'); }
@@ -297,7 +306,7 @@ export function pintarTaodan(C: Lienzo, seed: number, vida: readonly string[] = 
   banco(C, BANCO.x0, BANCO.x1, BANCO.asiento);
   sentadoBanco(C, BANCO.x0 + 12, BANCO.asiento - 1, 'luz', 'cafe'); sentadoBanco(C, BANCO.x0 + 44, BANCO.asiento - 1, 'celeste', 'periodico');
   // los rayos de sol entre los troncos
-  rayos(C, [92, 280, 512], 100, FT - 6);
+  rayos(C, RAYOS, RAYO_Y, FT - 6);
 }
 
 export const fondoTaodan = (C: Lienzo, _x0: number, _x1: number, _base: number, ctx: CtxCerca) => pintarTaodan(C, ctx.seed, ctx.vida ?? []);
@@ -312,9 +321,9 @@ export function tierraTaodan(x: number, y: number, s: number): Color {
   const n = grain(xr, y, s);
   if (n < 0.006) return 'ocre';
   if (n > 0.994) return 'vino';
-  // pisado: manchones más claros donde se juega, y la tierra suelta más oscura en la orilla de atrás
-  const pisado = grain(xr >> 4, y >> 3, s + 1) < 0.4;
-  if (pisado && bayer(xr, y) < 0.18) return 'ocre';
+  // pisado: manchones más claros y redondeados donde se juega, y la tierra suelta más oscura en la orilla de atrás
+  const v = grain(xr >> 4, y >> 3, s + 1) * 0.45 + grain(xr >> 2, y >> 1, s + 5) * 0.35 + grain(xr >> 1, y, s + 6) * 0.2;
+  if (v < 0.3 && bayer(xr, y) < 0.3) return 'ocre';
   if (y < 3 && bayer(xr, y) < 0.5) return 'vino';
   return grain(xr >> 1, y, s + 2) < 0.03 ? 'vino' : 'terracota';
 }
@@ -335,11 +344,12 @@ export function rayasTaodan(P: Lienzo, L: ObliqueLayout, seed: number) {
 export function orillaTaodan(x: number, r: number, s: number): Color {
   const xr = ((x % 960) + 960) % 960;
   if (r === 0) return 'vino';
-  if (r < 6) return grain(xr, r, s) < 0.25 ? 'verde_oscuro' : bayer(xr, r) < 0.3 ? 'menta' : 'verde';
+  if (r < 6) { const n = grain(xr, r, s); return r === 1 || n < 0.08 ? 'verde_oscuro' : n > 0.92 ? 'menta' : 'verde'; }
   if (r === 6) return 'cemento';
   if (r < 22) { const fila = Math.floor((r - 7) / 5), jy = (r - 7) % 5, jx = (xr + fila * 8) % 16; return jy === 4 || jx === 0 ? 'cemento' : grain(xr >> 1, r, s) < 0.05 ? 'cemento' : 'cemento_claro'; }
   if (r === 22) return 'asfalto_claro';
-  return grain(xr, r, s + 2) < 0.15 ? 'verde_oscuro' : bayer(xr, r) < 0.25 ? 'menta' : 'verde';
+  const n = grain(xr, r, s + 2);
+  return r === 23 || n < 0.06 ? 'verde_oscuro' : n > 0.94 ? 'menta' : 'verde';
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -376,11 +386,11 @@ export function vidaTaodan(pal: Paleta, L: ObliqueLayout, _k: number, _seed: num
 }
 
 export function lucesTaodan(pal: Paleta, _L: ObliqueLayout, _k: number): Luz[] {
-  return [92, 280, 512].map((x) => ({ x: x + 120, y: 250, color: pal.amarillo, radio: 70, latido: 0.12, encendida: true, nota: 'el rayo de sol del amanecer que entra entre los troncos' }));
+  return RAYOS.map((x) => ({ x: enRayo(x, 250), y: 250, color: pal.amarillo, radio: 70, latido: 0.12, encendida: true, nota: 'el rayo de sol del amanecer que entra entre los troncos' }));
 }
 
 export function particulasTaodan(pal: Paleta, _L: ObliqueLayout, _k: number): Particula[] {
-  return [92, 280, 512].map((x) => ({ tipo: 'brillo', x0: x + 60, x1: x + 120, y0: 150, y1: 260, color: [pal.luz, pal.amarillo], cada: 0.9, vida: 1, nota: 'el polvo que brilla en el rayo de sol (rayos_de_luz)' }));
+  return RAYOS.map((x) => ({ tipo: 'brillo', x0: enRayo(x, 150) - 8, x1: enRayo(x, 260) + 8, y0: 150, y1: 260, color: [pal.luz, pal.amarillo], cada: 0.9, vida: 1, nota: 'el polvo que brilla en el rayo de sol (rayos_de_luz)' }));
 }
 
 export const TAODAN: Lugar = {
