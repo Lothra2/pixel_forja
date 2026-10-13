@@ -19,7 +19,12 @@ import type { CtxCerca, PintorCerca } from './fachadas';
 // Lo lejos: El Ávila de noche
 
 /** Dónde está la Cruz en la capa lejos (x, y de la punta del pico). */
-export const CRUZ = { x: 430, y: 36 };
+/**
+ * La Cruz va baja en la capa: con el zoom de la pelea la cámara empieza en la fila 93 y el marcador tapa unas 45 más,
+ * así que la punta de la Cruz cae en la fila 135 de pantalla o más abajo (lejos va en la fila franja.atras - 200). En x
+ * va en el hueco entre la segunda torre y la caseta de los neones.
+ */
+export const CRUZ = { x: 326, y: 110 };
 
 /** El Ávila de noche: la montaña larga casi negra con las laderas de luna, la Cruz encendida, los cerros con lucecitas y la ciudad abajo. */
 export function avilaNoche(pal: Paleta, w: number, h: number, seed: number): Lienzo {
@@ -28,7 +33,7 @@ export function avilaNoche(pal: Paleta, w: number, h: number, seed: number): Lie
   const onda = (x: number, a: number[], f: number[], ph: number[]) => a.reduce((s, ai, i) => s + ai * Math.sin((x / w) * Math.PI * 2 * f[i] + ph[i]), 0);
   // el pico de la Cruz: una campana que también da la vuelta
   const pico = (x: number) => { const d = Math.min(Math.abs(x - CRUZ.x), w - Math.abs(x - CRUZ.x)); return 22 * Math.exp(-((d / 200) ** 2)); };
-  const cresta = (x: number) => Math.round(CRUZ.y + 20 + onda(x, [7, 4, 2], [2, 5, 13], [0.6 - (CRUZ.x / w) * Math.PI * 4, 2.1, 0.4]) - pico(x));
+  const cresta = (x: number) => Math.round(CRUZ.y + 16 + onda(x, [7, 4, 2], [2, 5, 13], [0.6 - (CRUZ.x / w) * Math.PI * 4, 2.1, 0.4]) - pico(x));
   for (let x = 0; x < w; x++) {
     const top = cresta(x), antes = cresta((x - 3 + w) % w);
     // la ladera que sube hacia la derecha mira a la luna (izquierda): más clara
@@ -40,7 +45,7 @@ export function avilaNoche(pal: Paleta, w: number, h: number, seed: number): Lie
       // la montaña de noche es azul casi negra; la luna la toca arriba y abajo el monte se pone verde oscuro
       let c: Color = y === top ? 'cielo' : veta ? 'azul_noche' : bayer(x >> 1, y >> 1) < luna * (1 - t) ? 'cielo' : t > 0.55 && bayer(x, y) < (t - 0.55) * 1.5 ? 'verde_oscuro' : 'azul';
       // el pie del Ávila se pierde en el resplandor de la ciudad
-      if (y > 100 && bayer(x, y) < (y - 100) / 40) c = 'bruma';
+      if (y > 150 && bayer(x, y) < (y - 150) / 24) c = 'bruma';
       L.p(x, y, c);
     }
     // casitas encendidas en las faldas del Ávila, pocas
@@ -56,7 +61,7 @@ export function avilaNoche(pal: Paleta, w: number, h: number, seed: number): Lie
   L.f(CRUZ.x - 5, cy - 10, 11, 2, 'luz'); L.hl(CRUZ.x - 5, cy - 9, 11, 'crema');
   // los cerros de adelante: barrios llenos de lucecitas, en manchones
   for (let x = 0; x < w; x++) {
-    const top = Math.round(92 + onda(x, [10, 6, 3], [3, 7, 17], [1.3, 0.2, 2.6]));
+    const top = Math.round(134 + onda(x, [6, 4, 2], [3, 7, 17], [1.3, 0.2, 2.6]));
     for (let y = top; y < h; y++) {
       L.p(x, y, y === top ? 'asfalto' : bayer(x, y) < 0.2 ? 'azul' : 'sombra');
       const barrio = grain(x >> 4, y >> 3, seed + 11) < 0.55;
@@ -66,7 +71,7 @@ export function avilaNoche(pal: Paleta, w: number, h: number, seed: number): Lie
   // la ciudad abajo: edificios con ventanas prendidas
   const R = rng(seed + 20);
   for (let n = 0; n < 70; n++) {
-    const x = Math.floor(R() * w), bw = 5 + Math.floor(R() * 9), bh = 8 + Math.floor(R() * 22), gy = 150 + Math.floor(R() * 8);
+    const x = Math.floor(R() * w), bw = 5 + Math.floor(R() * 9), bh = 6 + Math.floor(R() * 14), gy = 160 + Math.floor(R() * 6);
     for (let i = 0; i < bw; i++) { const X = (x + i) % w; for (let y = gy - bh; y < h; y++) L.p(X, y, i === 0 ? 'asfalto' : 'sombra'); }
     for (let y = gy - bh + 2; y < h - 1; y += 3) for (let i = 1; i < bw - 1; i += 2) if (R() < 0.5) L.p((x + i) % w, y, R() < 0.7 ? 'oro' : 'amarillo');
   }
@@ -113,7 +118,7 @@ function torrePC(C: Lienzo, x: number, w: number, top: number, base: number, see
 function ciudad(C: Lienzo, x0: number, x1: number, base: number, seed: number) {
   const R = rng(seed + 31);
   // dos bandas: la de atrás, más alta y más oscura, y la de adelante
-  for (const [banda, alto, cuerpo] of [[0, 30, 'sombra'], [1, 18, 'asfalto']] as [number, number, Color][]) {
+  for (const [banda, alto, cuerpo] of [[0, 18, 'sombra'], [1, 10, 'asfalto']] as [number, number, Color][]) {
     for (let x = -30; x < x1 + 30;) {
       const w = 16 + Math.floor(R() * 34), h = alto * 0.5 + Math.floor(R() * alto), top = base - 30 - banda * 4 - Math.round(h);
       if (x + w > x0) {
@@ -383,19 +388,23 @@ export function bordeAlVacio(P: Lienzo, x0: number, D: number, k: number, s: num
   }
 }
 
-/** La ciudad allá abajo, vista desde el borde: manzanas oscuras, calles encendidas y lucecitas. Se repite cada 64 x 64. */
+/**
+ * La ciudad allá abajo, vista desde el borde: manzanas oscuras, avenidas encendidas y lucecitas. Se repite cada 128 x 128,
+ * con las avenidas corridas por tramos y cortadas a ratos, para que no se lea la cuadrícula en un vacío ancho.
+ */
 export function vacioEn(c: number, y: number, s: number): Color {
-  const X = ((c % 64) + 64) % 64, Y = ((y % 64) + 64) % 64;
-  // las avenidas en diagonal, con los faroles, y unas ventanitas sueltas en las manzanas
-  if ((X + Y * 2) % 32 === 0 || (X - Y + 64) % 64 === 0) return grain(X >> 1, Y, s) < 0.3 ? 'oro' : 'asfalto';
+  const X = ((c % 128) + 128) % 128, Y = ((y % 128) + 128) % 128;
+  const off = Math.floor(grain(Y >> 4, 0, s + 5) * 9), off2 = Math.floor(grain(X >> 4, 1, s + 6) * 7);
+  const avenida = (X + Y * 2 + off) % 64 === 0 || (X - Y + 128 + off2) % 128 === 0;
+  if (avenida && grain(X >> 3, Y >> 3, s + 4) > 0.3) return grain(X >> 1, Y, s) < 0.3 ? 'oro' : 'asfalto';
   if (grain(X >> 1, Y >> 1, s + 1) < 0.03) return grain(X, Y, s + 2) < 0.6 ? 'ocre' : 'amarillo';
   return bayer(X, Y) < 0.3 ? 'sombra' : 'tinta';
 }
 
-/** La textura del vacío para el juego: 64 x 64, se repite (para pintar lo que se cae cuando el borde avanza). */
+/** La textura del vacío para el juego: 128 x 128, se repite (para pintar lo que se cae cuando el borde avanza). */
 export function vacioTextura(pal: Paleta, s: number): Lienzo {
-  const L = new Lienzo(64, 64, pal);
-  for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) L.p(x, y, vacioEn(x, y, s));
+  const L = new Lienzo(128, 128, pal);
+  for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) L.p(x, y, vacioEn(x, y, s));
   return L;
 }
 

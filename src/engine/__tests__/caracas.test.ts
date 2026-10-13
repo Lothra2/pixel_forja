@@ -46,12 +46,12 @@ describe('la azotea de Caracas (lote E3b)', () => {
     expect(c.detalle).toMatch(/se llega a \d+ de \d+ celdas/);
   });
 
-  it('El Ávila con la Cruz encendida queda debajo de la franja del marcador (filas 28 a 60)', () => {
+  it('la Cruz del Ávila cae en la fila 135 o más abajo: con el zoom de la pelea se ve debajo del marcador', () => {
     const yLejos = FT - 30 - E.lejos.h;
     let arriba = Infinity;
     for (let y = 0; y < E.lejos.h; y++) for (let x = CRUZ.x - 6; x <= CRUZ.x + 6; x++) if (es(E.lejos.r, x, y, 'luz')) arriba = Math.min(arriba, y);
     expect(arriba).toBeLessThan(Infinity);
-    expect(yLejos + arriba).toBeGreaterThanOrEqual(64);
+    expect(yLejos + arriba).toBeGreaterThanOrEqual(135);
   });
 
   it('el piso mojado refleja los neones debajo de su columna, y nada más', () => {
@@ -74,14 +74,14 @@ describe('la azotea de Caracas (lote E3b)', () => {
       const despues = hex(P, h.x0 + Math.round(0.35 * y) + 6, y)!;
       expect([VENEZUELA_NOCHE.tinta, VENEZUELA_NOCHE.sombra, VENEZUELA_NOCHE.asfalto, VENEZUELA_NOCHE.oro, VENEZUELA_NOCHE.ocre, VENEZUELA_NOCHE.amarillo]).toContain(despues);
     }
-    // el vacío del juego se repite cada 64
-    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) expect(vacioEn(x, y, 41)).toBe(vacioEn(x + 64, y + 128, 41));
+    // el vacío del juego se repite cada 128
+    for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) expect(vacioEn(x, y, 41)).toBe(vacioEn(x + 128, y + 256, 41));
   });
 
   it('exporta el filo que se desmorona y el vacío para cuando el borde avanza', () => {
     const r = generarEscenario(RAW);
     const ej = JSON.parse(new TextDecoder().decode(r.archivos.find((a) => a.nombre === 'escenario.json')!.bytes));
-    expect(ej.borde).toMatchObject({ filo: { archivo: 'borde_filo.png', cuadros: 6, h: 360 - FT, ancla: [10, 0] }, vacio: { archivo: 'borde_vacio.png', w: 64, h: 64, repetir: true }, hoy: [618] });
+    expect(ej.borde).toMatchObject({ filo: { archivo: 'borde_filo.png', cuadros: 6, h: 360 - FT, ancla: [10, 0] }, vacio: { archivo: 'borde_vacio.png', w: 128, h: 128, repetir: true }, hoy: [618] });
     const tira = decodePng(r.archivos.find((a) => a.nombre === 'borde_filo.png')!.bytes);
     const w = ej.borde.filo.w;
     expect(tira.w).toBe(w * 6);

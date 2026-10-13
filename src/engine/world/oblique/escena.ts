@@ -838,11 +838,11 @@ function vidaVenezuela(pal: Paleta, L: ObliqueLayout, k: number, seed: number, W
   }
   if (L.vida.includes('avion_lejos')) {
     const c = avion(pal);
-    out.push({ id: 'avion', tipo: 'avion_lejos', capa: 'lejos', x: -10, y: 18, cuadros: c, fps: 2, recorrido: { desde: [-10, 18], hasta: [TROZO, 10], segundos: 80, desfase: 0.3 } });
+    out.push({ id: 'avion', tipo: 'avion_lejos', capa: 'lejos', x: -10, y: 96, cuadros: c, fps: 2, recorrido: { desde: [-10, 96], hasta: [TROZO, 90], segundos: 80, desfase: 0.3 } });
   }
   if (L.vida.includes('helicoptero_reflector') || L.vida.includes('helicoptero')) {
     const c = helicoptero(pal);
-    out.push({ id: 'helicoptero', tipo: 'helicoptero_reflector', capa: 'lejos', x: TROZO, y: 10, cuadros: c, fps: 8, recorrido: { desde: [TROZO, 10], hasta: [-c[0].w, 22], segundos: 60, desfase: 0.62 } });
+    out.push({ id: 'helicoptero', tipo: 'helicoptero_reflector', capa: 'lejos', x: TROZO, y: 86, cuadros: c, fps: 8, recorrido: { desde: [TROZO, 86], hasta: [-c[0].w, 96], segundos: 60, desfase: 0.62 } });
   }
   if (L.vida.includes('publico') && L.paralaje.cerca === 'torres_parque_central') AZOTEAS_PUBLICO.forEach((a, i) => out.push({ id: `publico_${i}`, tipo: 'publico', capa: 'cerca', x: a.x - 4, y: a.techo - 24, cuadros: publicoVida(pal, a, seed + 40 + i), fps: 3 }));
   void D; void k;

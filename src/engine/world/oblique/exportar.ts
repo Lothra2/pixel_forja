@@ -95,9 +95,9 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
     filo.forEach((c, i) => { for (let y = 0; y < alto; y++) tira.data.set(c.r.data.subarray(y * w * 4, (y + 1) * w * 4), (y * tira.w + i * w) * 4); });
     png('borde_filo.png', tira); png('borde_vacio.png', vacioTextura(E.paleta, 41).r);
     borde = {
-      nota: 'Para cuando el borde avanza (la azotea se achica). borde_filo.png: 6 cuadros del canto con la franja, en tira; el 0 entero y del 1 al 5 se desmorona. Va con su esquina de arriba a la izquierda en (x del borde nuevo - 10, franja.atras), corrido como el piso. Lo de la derecha del canto es transparente: ahí va borde_vacio.png, la ciudad allá abajo, que se repite cada 64 x 64.',
+      nota: 'Para cuando el borde avanza (la azotea se achica). borde_filo.png: 6 cuadros del canto con la franja, en tira; el 0 entero y del 1 al 5 se desmorona. Va con su esquina de arriba a la izquierda en (x del borde nuevo - 10, franja.atras), corrido como el piso. Lo de la derecha del canto es transparente: ahí va borde_vacio.png, la ciudad allá abajo, que se repite cada 128 x 128.',
       filo: { archivo: 'borde_filo.png', w, h: alto, cuadros: filo.length, fps: 8, ancla: [10, 0] },
-      vacio: { archivo: 'borde_vacio.png', w: 64, h: 64, repetir: true },
+      vacio: { archivo: 'borde_vacio.png', w: 128, h: 128, repetir: true },
       hoy: bordes.map((h) => h.x0),
     };
   }

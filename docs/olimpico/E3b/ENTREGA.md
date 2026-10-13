@@ -18,7 +18,7 @@ Fecha: 2026-10-13
 | Vida | <ul><li>Los dos neones (4 cuadros, con parpadeo).</li><li>Las luces rojas de las torres y el tráfico que corre allá abajo pasando el borde.</li><li>El avioncito y el helicóptero con el reflector que barre, en la capa lejos.</li><li>El público, que levanta brazos, banderas y celulares.</li><li>Los fuegos artificiales (partículas).</li></ul> |
 | Luces | Los dos neones, los dos bombillos y las cuatro luces rojas (torres y antenas), que parpadean |
 
-**Lo que pidió el juego para cuando el borde avanza a x 420:** el arte trae un filo que se desmorona por pedazos. Son 6 cuadros del canto con la franja y los trozos de concreto que caen con su polvo. Viene con el vacío para pintar lo que se cae (la ciudad allá abajo, en 64 x 64 que se repite). Van en `borde_filo.png` y `borde_vacio.png`, y `escenario.json` → `borde` dice cómo se ponen.
+**Lo que pidió el juego para cuando el borde avanza a x 420:** el arte trae un filo que se desmorona por pedazos. Son 6 cuadros del canto con la franja y los trozos de concreto que caen con su polvo. Viene con el vacío para pintar lo que se cae (la ciudad allá abajo, en 128 x 128 que se repite). Van en `borde_filo.png` y `borde_vacio.png`, y `escenario.json` → `borde` dice cómo se ponen.
 
 **Motor, todo general:**
 - **El estilo `venezuela_ciudad`:** paleta de noche de 24 colores, ficha con 12 íconos y los letreros en español.
@@ -31,6 +31,10 @@ Fecha: 2026-10-13
 - **Los fuegos artificiales** se reparten a lo ancho de una arena corta (antes caían más allá del mundo).
 - **El incienso** queda solo para Vietnam: la ficha de Caracas no lo pide.
 - **Saigón y la Comuna 13 salen idénticos byte a byte** a como estaban en E3a: comparé los 6 escenarios, archivo por archivo.
+
+**Después de probarlo en el juego** (el juego conectó la azotea a la pelea y pidió dos cosas):
+- **El Ávila va más abajo.** Con el zoom de la pelea, la cámara muestra de la fila 93 a la 360 en 1 contra 1, y el marcador tapa unas 45 filas arriba de eso. La Cruz ahora cae en la fila 138, en el hueco entre la segunda torre y la caseta, donde ningún letrero la tapa. Los cerros con lucecitas y la ciudad del fondo bajaron con ella, y el avión y el helicóptero vuelan a esa altura.
+- **El vacío es de 128 x 128,** con las avenidas corridas por tramos y cortadas a ratos. En un vacío ancho ya no se ve la cuadrícula.
 
 ## Cómo se usa (estudio y kit)
 
@@ -47,7 +51,7 @@ npm run escenario -- docs/ejemplos/nekketsu/escenarios/caracas_azotea.layout.jso
   - El tráfico es de capa `objeto` con orden -1: encima del piso y detrás de todo.
   - El neón que parpadea es una pieza de capa `cerca` encima de su letrero.
 - **Para el borde que avanza:**
-  - Pinta `borde_vacio.png` (repetido) desde el borde nuevo hacia la derecha, corrido como el piso.
+  - Pinta `borde_vacio.png` (128 x 128, repetido) desde el borde nuevo hacia la derecha, corrido como el piso.
   - Pone `borde_filo.png` con su esquina en (x del borde - 10, franja.atras) y lo toca de 0 a 5 a 8 fps.
   - Al final se queda en el cuadro 5.
 - **Luces:** las que traen `parpadeo` prenden y apagan con ese período en segundos. Las de los neones van con su vida.
@@ -58,9 +62,9 @@ npm run escenario -- docs/ejemplos/nekketsu/escenarios/caracas_azotea.layout.jso
   - Pasa las 9 pruebas, sin avisos, con la ficha `venezuela_ciudad` de noche.
   - Caracas de tarde queda pendiente y dice qué horas hay.
   - La arena: se llega a todo el piso, y un muro alto que la parte en dos hace fallar la prueba.
-  - La Cruz del Ávila queda debajo de la franja del marcador (fila 64 o más).
+  - La Cruz del Ávila cae en la fila 135 o más abajo, debajo del marcador con el zoom de la pelea.
   - El reflejo: más de 200 pixeles rosados debajo de AREPERA y más de 150 turquesa debajo de CARACAS, y ninguno debajo del público.
-  - El borde: franja amarilla y negra en el filo, ciudad pasando el canto y el vacío que se repite cada 64.
+  - El borde: franja amarilla y negra en el filo, ciudad pasando el canto y el vacío que se repite cada 128.
   - La exportación del filo (6 cuadros distintos) y del vacío. Un escenario sin borde no la lleva.
   - La vida, pieza por pieza. El público de la vida calza pixel por pixel con el pintado, y sin pedirlo en el layout no sale.
   - Las luces: todas prendidas, las rojas parpadean y los fuegos caen dentro del mundo.
