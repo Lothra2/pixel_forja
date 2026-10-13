@@ -15,6 +15,12 @@ export const CLIMAS = ['despejado', 'aguacero', 'llovizna', 'neblina', 'nublado'
 export const PAISES = ['vietnam', 'colombia', 'venezuela', 'japon'] as const;
 export const ENTIDADES = ['salida', 'meta', 'objeto', 'npc', 'animal', 'vehiculo', 'atajo'] as const;
 export const CAPAS_DECO = ['lejos', 'cerca', 'frente'] as const;
+/**
+ * Cómo se ve el escenario. `oblicua` (lo de siempre): la franja en profundidad, con la vista inclinada de la pelea.
+ * `lado`: de lado, como Đá cầu o el Tejo: el dibujo va derecho (inclinación 0), el fondo se para en `franja.atras` y el
+ * piso es una franja angosta donde el juego pone a los atletas, de `franja.atras` hasta el borde de abajo de la pantalla.
+ */
+export const VISTAS = ['oblicua', 'lado'] as const;
 
 export interface Rango { x0: number; x1: number; y0?: number; y1?: number }
 export interface Caja { x: number; y: number; w: number; d: number; z: number; tipo?: string; subible?: boolean; trepable?: boolean; nota?: string }
@@ -32,6 +38,8 @@ export interface ObliqueLayout {
   nombre?: string;
   pais: (typeof PAISES)[number];
   prueba?: string;
+  /** `lado` para las pruebas de lado (sin el campo, `oblicua`). */
+  vista?: (typeof VISTAS)[number];
   tramo?: number;
   largo: number;
   franja: { atras: number; adelante: number };
@@ -66,7 +74,7 @@ export interface LayoutResult {
 const CAMPOS: Record<string, { req: string[]; opt: string[]; extra?: string[] }> = {
   raiz: {
     req: ['id', 'pais', 'largo', 'franja', 'hora', 'piso'],
-    opt: ['prueba', 'tramo', 'clima', 'paralaje', 'huecos', 'plataformas', 'muros', 'escaleras', 'postes', 'agua', 'bajo', 'solidos', 'carriles', 'entidades', 'ranuras_deco', 'vida'],
+    opt: ['prueba', 'vista', 'tramo', 'clima', 'paralaje', 'huecos', 'plataformas', 'muros', 'escaleras', 'postes', 'agua', 'bajo', 'solidos', 'carriles', 'entidades', 'ranuras_deco', 'vida'],
     extra: ['nombre', 'nota', 'version'],
   },
   piso: { req: ['x0', 'x1', 'tipo'], opt: ['y0', 'y1'], extra: ['nombre', 'nota'] },
@@ -102,6 +110,7 @@ export function validateLayout(raw: unknown): LayoutResult {
 
   if (typeof L.id !== 'string' || !/^[a-z0-9_]+$/.test(L.id)) errores.push('`id` va en minúsculas, números y guion bajo, como `saigon_hem`.');
   if (L.pais !== undefined && !PAISES.includes(L.pais as never)) errores.push(`\`pais\` "${String(L.pais)}" no existe. Van: ${PAISES.join(', ')}.`);
+  if (L.vista !== undefined && !VISTAS.includes(L.vista as never)) errores.push(`\`vista\` "${String(L.vista)}" no existe. Van: ${VISTAS.join(', ')}.`);
   if (L.hora !== undefined && !HORAS.includes(L.hora as never)) errores.push(`\`hora\` "${String(L.hora)}" no existe. Van: ${HORAS.join(', ')}.`);
   const largo = isNum(L.largo) && L.largo > 0 ? L.largo : 0;
   if (L.largo !== undefined && !largo) errores.push('`largo` tiene que ser un número mayor que 0.');
@@ -177,6 +186,9 @@ export function validateLayout(raw: unknown): LayoutResult {
   if (sinPiso) avisos.push(`El piso no cubre la franja en x ${sinPiso[0]}, y ${sinPiso[1]}: ahí se ve el fondo.`);
   return { layout: lay, errores, avisos };
 }
+
+/** ¿El escenario va de lado? Ahí el dibujo va derecho: inclinación 0. */
+export const deLado = (L: Pick<ObliqueLayout, 'vista'>) => L.vista === 'lado';
 
 /** Alto de la franja (profundidad jugable). */
 export const depthOf = (L: ObliqueLayout) => L.franja.adelante - L.franja.atras;

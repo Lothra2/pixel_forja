@@ -1,7 +1,8 @@
 import { rng, bayer, grain } from '../../fx/pix';
 import { createRaster, type Raster } from '../../core/raster';
 import { Lienzo } from './lienzo';
-import { boxesOf, depthOf, floorAt, holeAt, waterAt, type Caja, type ObliqueLayout, type TipoPiso } from './layout';
+import { boxesOf, depthOf, floorAt, holeAt, waterAt, deLado, type Caja, type ObliqueLayout, type TipoPiso } from './layout';
+import { LUGARES, LEJOS_LUGARES, lugarDe } from './lugares';
 import { VIETNAM_MANANA, paletaVietnam, type Color, type Paleta } from './paleta';
 import { pintarPiso } from './piso';
 import { cielo } from './cielo';
@@ -100,7 +101,7 @@ const PALETAS: Record<string, (hora: string, clima: string[], tema?: string) => 
 
 /** Los pintores de la capa cerca de todos los lugares, por tema, y el fondo por `paralaje.cerca`. */
 const PINTORES: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...PINTORES_CERCA, ...PINTORES_C13, ...PINTORES_CCS, ...PINTORES_HOIAN };
-const FONDOS: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...FONDO_CERCA, ...FONDO_C13, ...FONDO_CCS, ...FONDO_HOIAN };
+const FONDOS: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...FONDO_CERCA, ...FONDO_C13, ...FONDO_CCS, ...FONDO_HOIAN, ...Object.fromEntries(Object.entries(LUGARES).map(([id, l]) => [id, l.fondo])) };
 
 /** Los letreros de salida y meta en el idioma del país. */
 const PANCARTAS: Record<string, [string, string]> = { vietnam: ['XUẤT PHÁT', 'VỀ ĐÍCH'], colombia: ['SALIDA', 'META'], venezuela: ['SALIDA', 'META'], japon: ['START', 'GOAL'] };
@@ -151,6 +152,7 @@ function pintarCerca(pal: Paleta, L: ObliqueLayout, huecos: Hueco[], seed: numbe
     seed,
     zonas: L.solidos.filter((b) => b.tipo).map((b) => ({ x0: b.x, x1: b.x + b.w, tipo: b.tipo! })).filter((z, i, a) => a.findIndex((q) => q.x0 === z.x0) === i && L.solidos.find((b) => b.x === z.x0)!.y < 50),
     huecos: L.huecos.filter((h) => (h.y0 ?? 0) === 0).map((h) => ({ x0: h.x0, x1: h.x1 })),
+    vida: L.vida,
   };
   // los rangos sin pintor: casas tubo, o el fondo del lugar
   const libres: [number, number][] = [];
@@ -220,17 +222,22 @@ export function elegirCallejones(L: ObliqueLayout): Hueco[] {
 const SIN_CARA = new Set(['valla', 'tanque_agua', 'bote_bambu', 'mesas_plasticas', 'banca', 'carrito_cafe', 'carrito_che', 'puesto_banhmi', 'carro', 'moto_estacionada', 'carrito_paletas', 'letras_comuna13', 'baranda']);
 
 export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
+  // de lado el dibujo va derecho
+  if (deLado(L)) k = 0;
+  const lugar = lugarDe(L);
   const pal = PALETAS[L.pais]?.(L.hora, L.clima, L.paralaje.cerca) ?? VIETNAM_MANANA;
   const lluvia = L.clima[0] === 'aguacero' || L.hora === 'aguacero';
   const FT = L.franja.atras, D = depthOf(L), W = L.largo, Wp = W + corre(k, D);
-  const huecos = elegirCallejones(L);
+  // un lugar con su propio fondo no abre callejones
+  const huecos = lugar ? [] : elegirCallejones(L);
   const anclas: Anclas = nuevasAnclas();
 
   // cielo y ciudad lejana
   const sky = cielo(pal, 640, 360, L.hora, seed, L.clima, L.paralaje.cerca);
   const lejos = L.paralaje.lejos === 'valle_de_aburra' ? valleAburra(pal, TROZO, LEJOS_ALTO, seed + 39)
     : L.paralaje.lejos === 'avila_noche' ? avilaNoche(pal, TROZO, LEJOS_ALTO, seed + 39)
-    : L.paralaje.lejos === 'rio_thu_bon_puente_japones' ? rioThuBon(pal, TROZO, LEJOS_ALTO, seed + 39) : lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
+    : L.paralaje.lejos === 'rio_thu_bon_puente_japones' ? rioThuBon(pal, TROZO, LEJOS_ALTO, seed + 39)
+    : LEJOS_LUGARES[L.paralaje.lejos ?? ''] ? LEJOS_LUGARES[L.paralaje.lejos!](pal, TROZO, LEJOS_ALTO, seed + 39) : lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
 
   // la fila de casas, o el fondo que pida cada tema
   const cerca = pintarCerca(pal, L, huecos, seed, anclas, Wp);
@@ -266,6 +273,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   const piso = pintarPiso(pal, L, { seed: seed % 97 });
   if (typeof salida === 'number') for (let y = 2; y < D; y++) { piso.p(salida, y, 'luz'); piso.p(salida + 1, y, (y >> 2) % 2 ? 'luz' : 'cemento_claro'); }
   if (typeof meta === 'number') for (let y = 0; y < D; y++) for (let i = 0; i < 8; i++) piso.p(meta + i, y, ((i >> 2) + (y >> 2)) % 2 ? 'tinta' : 'luz');
+  lugar?.marcas?.(piso, L, seed);
   for (const b of boxesOf(L)) sombraCaja(piso, b.x, b.y, b.w, b.d, b.z, L);
   // en Colombia la calle de asfalto termina en un paso de cebra antes de la acera (la estación, el cruce)
   if (L.pais === 'colombia') for (const f of L.piso.filter((q) => q.tipo === 'asfalto' && q.x1 - q.x0 > 200)) {
@@ -320,7 +328,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     // una caja parada sobre otra: se dibuja de la base para arriba y después de la base
     const base = baseDe(b, todas), alto = b.z - (base?.z ?? 0), orden = ordenCaja(b, todas);
     const tema = L.ranuras_deco.find((r) => r.capa === 'cerca' && b.x + b.w / 2 >= r.x0 && b.x + b.w / 2 < r.x1)?.tema;
-    const pz = (L.pais === 'colombia' ? piezaColombia(pal, b.tipo, b.w, b.d, alto, seed + i, { x: b.x, tema }) : L.pais === 'vietnam' ? piezaHoian(pal, b.tipo, b.w, b.d, alto) : null)
+    const pz = lugar?.pieza?.(pal, b.tipo, b.w, b.d, alto, seed + i) ?? (L.pais === 'colombia' ? piezaColombia(pal, b.tipo, b.w, b.d, alto, seed + i, { x: b.x, tema }) : L.pais === 'vietnam' ? piezaHoian(pal, b.tipo, b.w, b.d, alto) : null)
       ?? piezaSaigon(pal, b.tipo, b.w, b.d, alto, seed + i) ?? piezaVietnam(pal, b.tipo, b.w, b.d, alto, seed + i);
     // la línea de meta pintada en el techo de la caja donde cae
     if (typeof meta === 'number' && meta >= b.x && meta < b.x + b.w) lineaMeta(pz.img, meta - b.x, pz.sobre, b.d);
@@ -438,6 +446,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   if (L.pais === 'colombia') vida.push(...vidaColombia(pal, L, k, seed, postes, todas));
   if (L.pais === 'venezuela') vida.push(...vidaVenezuela(pal, L, k, seed, Wp));
   if (L.pais === 'vietnam') vida.push(...vidaHoian(pal, L, k, seed, { cerca, piso: pisoFinal }, cuerdas, postesFaroles));
+  if (lugar?.vida) vida.push(...lugar.vida(pal, L, k, seed, { cerca, piso: pisoFinal }));
 
   // luces y partículas
   const luces: Luz[] = [
@@ -447,6 +456,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     ...postes.filter((p) => p.tipo === 'torre_luz').map((p) => ({ x: p.x + 2 + corre(k, p.y), y: FT + p.y - p.alto + 13, color: pal.luz, radio: 90, encendida: L.hora !== 'manana' && L.hora !== 'mediodia', nota: 'focos de la torre del estadio' })),
     ...(L.pais === 'venezuela' ? lucesVenezuela(pal, L, k, postes) : []),
     ...(L.pais === 'vietnam' ? lucesHoian(pal, L, k, cuerdas) : []),
+    ...(lugar?.luces?.(pal, L, k) ?? []),
   ];
   const particulas: Particula[] = [
     ...anclas.altares.map((a) => ({ tipo: 'humo', x0: a.x - 2, x1: a.x + 2, y0: a.y - 2, y1: a.y, color: [pal.cemento_claro, pal.cemento], cada: 0.5, sube: 14, vida: 1.8, nota: 'incienso del altar' })),
@@ -458,6 +468,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     // en una arena (menos de 1600) los cuatro se reparten a lo ancho
     ...(L.vida.includes('fuegos_artificiales') ? (['rojo', 'oro', 'azul', 'verde'] as const).map((c, i) => ({ tipo: 'fuegos', fx: `fuegos_artificiales_${c === 'oro' ? 'dorado' : c}`, x0: Wp < 1600 ? Math.round((i * Wp) / 4) : 200 + i * 400, x1: Wp < 1600 ? Math.round(((i + 1) * Wp) / 4) : 400 + i * 400, y0: 20, y1: 80, cada: 1.6 + i * 0.3, nota: 'fuegos artificiales sobre el estadio cuando alguien llega' })) : []),
     ...(L.pais === 'vietnam' ? particulasHoian(pal, L, k, Wp) : []),
+    ...(lugar?.particulas?.(pal, L, k) ?? []),
     ...L.huecos.filter((h) => h.caida === 'agua').map((h) => ({ tipo: 'brillo', x0: h.x0 + corre(k, h.y0 ?? 0), x1: h.x1 + corre(k, h.y1 ?? D), y0: FT + (h.y0 ?? 0) + 18, y1: FT + (h.y1 ?? D), color: [pal.luz, pal.cielo], cada: 0.9, vida: 0.4, nota: `${h.nombre ?? 'canal'}: brillitos en el agua` })),
   ];
 
@@ -465,10 +476,12 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   const frenteY = FT + D - 14;
   const frente = new Lienzo(Wp, 360 - frenteY, pal);
   // con la vista inclinada, lo de adelante es el bordillo (va en el piso): el frente queda libre
-  if (k === 0) primerPlano(frente, L, frenteY, seed);
+  // de lado y en un lugar con su fondo, el frente queda libre: nada tapa a los atletas
+  if (k === 0 && !deLado(L) && !lugar) primerPlano(frente, L, frenteY, seed);
 
   // piso mojado (si el clima trae aguacero): charcos y brillo, encima del piso
-  const mojado = L.clima.includes('aguacero') || L.clima.includes('llovizna') ? mojar(pal, L, piso.h, seed) : null;
+  // bajo techo (el dojo, la cancha de tejo) la lluvia de afuera no moja
+  const mojado = !lugar?.techado && (L.clima.includes('aguacero') || L.clima.includes('llovizna')) ? mojar(pal, L, piso.h, seed) : null;
   const pisoMojado = mojado && k > 0 ? correrFilas(mojado, L, k) : mojado;
 
   return {

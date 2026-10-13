@@ -1,6 +1,6 @@
 import { encodePng } from '../../export/png';
 import { createRaster, type Raster } from '../../core/raster';
-import { collisionOf, depthOf } from './layout';
+import { collisionOf, depthOf, deLado } from './layout';
 import { NOMBRES } from './paleta';
 import { fichaMarkdown } from './ficha';
 import { PARALAJE, TROZO, postal, trozo, type Escena } from './escena';
@@ -128,13 +128,14 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
       franja: L.franja, largo: L.largo, hora: L.hora, clima: L.clima,
       inclinacion: E.inclinacion,
       ancho: E.ancho,
+      ...(deLado(L) ? { vista: 'lado', nota_vista: `de lado: el dibujo va derecho (inclinación 0). El fondo (la capa cerca) va de la fila 0 a franja.atras (${FT}) y es transparente donde se ven lejos y el cielo. El piso va de la fila ${FT} al borde de abajo de la pantalla: la franja donde se paran los atletas (y del mundo = fila de pantalla - ${FT}) y lo de adelante. Las capas, los objetos y la vida se cargan igual que en la vista oblicua.` } : {}),
       nota_inclinacion: E.inclinacion ? `vista inclinada: px = x + ${E.inclinacion} * y (lo del fondo queda a la izquierda). Las capas largas miden ${E.ancho} px (largo + ${E.inclinacion} * fondo de la franja). Los objetos ya vienen corridos: corre a los atletas igual.` : undefined,
       capas: {
         cielo: { archivo: `cielo_${L.hora}.png`, y: 0, paralaje: PARALAJE.cielo, repetir_x: true },
         lejos: { archivo: 'lejos.png', y: FT - 30 - E.lejos.h, paralaje: PARALAJE.lejos, repetir_x: true },
         tras_cerca: { nota: 'la vida con capa tras_cerca va aquí: se ve por los callejones' },
         cerca: { archivos: cerca, trozo: TROZO, y: 0, paralaje: PARALAJE.cerca },
-        piso: { archivos: piso, trozo: TROZO, y: FT, paralaje: PARALAJE.piso, nota: E.inclinacion ? `las primeras ${D} filas son la franja (inclinada), las de abajo el bordillo: la cara del piso que da a la cámara` : `las primeras ${D} filas son la franja, las de abajo la orilla de enfrente` },
+        piso: { archivos: piso, trozo: TROZO, y: FT, paralaje: PARALAJE.piso, nota: E.inclinacion ? `las primeras ${D} filas son la franja (inclinada), las de abajo el bordillo: la cara del piso que da a la cámara` : deLado(L) ? `de lado: las primeras ${D} filas son la franja donde se paran los atletas, las de abajo lo de adelante hasta el borde de la pantalla` : `las primeras ${D} filas son la franja, las de abajo la orilla de enfrente` },
         ...(mojado.length ? { piso_mojado: { archivos: mojado, trozo: TROZO, y: FT, clima: 'aguacero', nota: 'va encima del piso cuando llueve' } } : {}),
         objetos: { archivo: 'objetos.json', nota: 'entre el piso y el frente, ordenados con los atletas' },
         frente: { archivos: frente, trozo: TROZO, y: E.frenteY, paralaje: PARALAJE.frente },

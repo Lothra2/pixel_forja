@@ -4,6 +4,7 @@ import type { Color, Paleta } from './paleta';
 import { depthOf, type ObliqueLayout, type TipoPiso } from './layout';
 import { losaAzotea, orillaTorre } from './caracas';
 import { piedraHoian, aceraHoian, maderaHoian, orillaHoian } from './hoian';
+import { LUGARES } from './lugares';
 
 /**
  * Piso en vista oblicua, por tipo. La imagen va de la fila `franja.atras` hasta el borde de abajo de la pantalla:
@@ -99,8 +100,11 @@ const PISOS_DE: Record<string, Partial<Record<TipoPiso, Pintor>>> = {
   casas_amarillas_hoian: { baldosa: (_L, x, y, s) => piedraHoian(x, y, s), acera: (_L, x, y, s) => aceraHoian(x, y, s), madera: (_L, x, y, s) => maderaHoian(x, y, s) },
 };
 
-/** El pintor de un tipo de piso en este layout (con el piso propio del lugar si lo tiene). */
-export const pintorDe = (L: ObliqueLayout, tipo: TipoPiso): Pintor => PISOS_DE[L.paralaje?.cerca ?? '']?.[tipo] ?? PINTORES[tipo];
+/** El pintor de un tipo de piso en este layout (con el piso propio del lugar si lo tiene, también los del registro de lugares). */
+export const pintorDe = (L: ObliqueLayout, tipo: TipoPiso): Pintor => {
+  const propio = LUGARES[L.paralaje?.cerca ?? '']?.pisos?.[tipo];
+  return propio ? (_L, x, y, s) => propio(x, y, s) : PISOS_DE[L.paralaje?.cerca ?? '']?.[tipo] ?? PINTORES[tipo];
+};
 
 /** Una grieta que camina con su rama. */
 function grieta(L: Lienzo, x: number, y: number, len: number, R: () => number) {
@@ -128,9 +132,12 @@ function rejilla(L: Lienzo, x: number, y: number) {
 
 export interface PisoOpts { seed?: number }
 
-/** Pinta el piso del layout completo: franja y orilla de enfrente. Devuelve un lienzo de largo x (D + ORILLA). */
+/**
+ * Pinta el piso del layout completo: franja y orilla de enfrente. Devuelve un lienzo de largo x (D + ORILLA), o más alto
+ * si hace falta para llegar al borde de abajo de la pantalla (una franja angosta, como la de las pruebas de lado).
+ */
 export function pintarPiso(pal: Paleta, L: ObliqueLayout, o: PisoOpts = {}): Lienzo {
-  const s = o.seed ?? 3, D = depthOf(L), W = L.largo, H = D + ORILLA;
+  const s = o.seed ?? 3, D = depthOf(L), W = L.largo, H = Math.max(D + ORILLA, 360 - L.franja.atras);
   const P = new Lienzo(W, H, pal);
   // 1. cada tipo en su rango, el último manda
   for (const p of L.piso) {
@@ -267,11 +274,17 @@ export const ORILLAS: Record<string, (P: Lienzo, x: number, r: number, s: number
   gradas: (_P, x, r, s) => r < 5 ? cancha(_P, x, r + 1, s) : r < 7 ? (r === 5 ? 'luz' : 'cemento_claro') : g(x, r, s) < 0.12 ? 'verde_oscuro' : (r >> 2) % 2 ? 'verde' : g(x >> 1, r, s + 1) < 0.5 ? 'verde' : 'menta',
 };
 
+/** Lo de abajo de la franja por nombre (tema o `paralaje.cerca`): los de arriba y los de los lugares del registro. */
+export function orillaPor(nombre: string): ((P: Lienzo, x: number, r: number, s: number) => Color) | undefined {
+  const l = LUGARES[nombre]?.orilla;
+  return ORILLAS[nombre] ?? (l ? (_P, x, r, s) => l(x, r, s) : undefined);
+}
+
 /** La orilla de enfrente: cuneta con un hilo de agua, bordillo y acera, cortada donde pasan los canales. */
 function orilla(P: Lienzo, L: ObliqueLayout, D: number, s: number) {
   const W = L.largo;
-  const temas = L.ranuras_deco.filter((t) => ORILLAS[t.tema]);
-  const estilo = (x: number) => ORILLAS[temas.find((t) => x >= t.x0 && x < t.x1)?.tema ?? ''] ?? ORILLAS[L.paralaje?.cerca ?? ''];
+  const temas = L.ranuras_deco.filter((t) => orillaPor(t.tema));
+  const estilo = (x: number) => orillaPor(temas.find((t) => x >= t.x0 && x < t.x1)?.tema ?? '') ?? orillaPor(L.paralaje?.cerca ?? '');
   const enCanal = (x: number) => L.huecos.some((h) => x >= h.x0 && x < h.x1);
   // solo el agua que llega al borde de la franja sigue por la orilla
   const enAgua = (x: number) => L.agua.some((a) => x >= a.x0 && x < a.x1 && (a.y1 ?? D) >= D);

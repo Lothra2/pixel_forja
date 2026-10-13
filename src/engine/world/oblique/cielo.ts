@@ -70,6 +70,42 @@ export function cielo(pal: Paleta, w: number, h: number, hora: Hora = 'manana', 
     for (let x = 0; x < w; x++) for (let y = Math.round(Math.min(h, 200) * 0.2); y < h; y += 2) if (grain(x, y, seed) < dens) { const n = 4 + ((x + y) % 3); for (let j = 0; j < n; j++) L.p((x + Math.floor(j / 3)) % w, y + j, j === 0 ? 'celeste' : 'cielo'); }
     return L;
   }
+  if (hora === 'nublado' || clima.includes('nublado')) {
+    // tarde nublada (Bogotá): el cielo tapado de nubes grises en capas onduladas, sin sol, más claro hacia abajo
+    const alto = Math.min(h, 200);
+    franjas(L, ['celeste', 'cielo', 'cielo', 'bruma'], alto);
+    const capas: [number, Color, Color][] = [[0.04, 'asfalto_claro', 'cemento'], [0.2, 'cemento', 'celeste'], [0.38, 'celeste', 'cielo'], [0.58, 'cielo', 'cemento_claro']];
+    for (const [k, [y0, oscuro, claro]] of capas.entries()) {
+      const amp = 4 + k * 2, base = Math.round(alto * y0), per = w / (2 + k);
+      for (let x = 0; x < w; x++) {
+        // las dos ondas dan vueltas enteras en el ancho: el cielo se repite sin costura
+        const ond = Math.sin((x / per) * Math.PI * 2 + k * 1.7) * amp + Math.sin(((x * Math.round((2 + k) * 2.6)) / w) * Math.PI * 2 + k) * 3;
+        const bot = base + 16 + Math.round(ond);
+        for (let y = Math.max(0, base - 6); y < bot && y < h; y++) L.p(x, y, y >= bot - 2 ? claro : bayer(x, y) < 0.25 ? claro : oscuro);
+      }
+    }
+    return L;
+  }
+  if (hora === 'amanecer') {
+    // el amanecer: del celeste de arriba al durazno y al rosado del horizonte, el sol recién salido a la izquierda (la
+    // luz del juego viene de la izquierda) con su halo, y nubes finas encendidas por debajo
+    const alto = Math.min(h, 200);
+    franjas(L, ['celeste', 'cielo', 'salmon', 'bruma'], alto);
+    const sx = Math.floor(w * 0.18), sy = Math.round(alto * 0.78);
+    for (let y = sy - 34; y <= sy + 34; y++) for (let x = sx - 46; x <= sx + 46; x++) {
+      const d = Math.hypot((x - sx) / 1.25, y - sy);
+      if (d < 10) L.p(x, y, d < 7 ? 'luz' : 'amarillo');
+      else if (d < 34 && bayer(x, y) < ((34 - d) / 34) * 0.85) L.p(x, y, d < 20 ? 'amarillo' : 'oro');
+    }
+    for (let i = 0; i < 8; i++) {
+      const cx = R() * w, cy = Math.floor(alto * (0.12 + R() * 0.5)), cw = 50 + R() * 120;
+      for (let x = Math.floor(cx - cw / 2); x < cx + cw / 2; x++) {
+        const t = (x - (cx - cw / 2)) / cw, th = Math.max(1, Math.round(Math.sin(t * Math.PI) * 3));
+        for (let j = 0; j < th; j++) L.p(((x % w) + w) % w, cy + j, j === th - 1 ? 'oro' : j === 0 ? 'luz' : 'salmon');
+      }
+    }
+    return L;
+  }
   if (hora === 'tarde') {
     // tarde dorada: el sol bajo a la derecha con su halo y nubes largas encendidas de oro
     franjas(L, ['celeste', 'cielo', 'cielo', 'bruma'], Math.min(h, 200));
