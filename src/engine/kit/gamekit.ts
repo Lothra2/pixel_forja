@@ -29,7 +29,10 @@ import { dustWarning, dustCloud, shadowEyes } from '../world/galeriasObjects';
 import { POLILLA_REINA_SPEC, POLILLA_CENIZA_SPEC } from '../boss/polilla';
 import { MINERO_PIEDRA_SPEC, SOMBRA_SPEC } from '../boss/mina';
 import { MARINERO_NIEBLA_SPEC, CANGREJO_CENIZA_SPEC, MEDUSA_NEGRA_SPEC, CAPITAN_AHOGADO_SPEC } from '../boss/puerto';
-import { PEZ_FAROL_SPEC, biteWarning, waveWarning, wave } from '../boss/pez';
+import { PEZ_FAROL_SPEC, biteWarning, waveWarning, wave, pezAntena } from '../boss/pez';
+import { bossPoses } from '../boss/anim';
+import { camMatrix } from '../boss/render';
+import { mv } from '../boss/sdf';
 import { introPanels, fuegoPared, humoGrande, logoFuego } from '../intro/intro';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
@@ -41,7 +44,7 @@ import { continuara } from '../ui/continuara';
 import { signIcons, hudIcons, rotateTablet, skillIcons } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
-import { renderBossSheets, clipSheet, type BossSpec, type BossCache } from '../boss/sheet';
+import { renderBossSheets, clipSheet, KIT_DIRS, DIR_YAW, type BossSpec, type BossCache } from '../boss/sheet';
 import { MINO_SPEC } from '../boss/minotauro';
 import { GUARDIAN_SPEC } from '../boss/guardian';
 
@@ -328,6 +331,16 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       [CAPITAN_AHOGADO_SPEC, { tipo: 'enemigo', nombre: 'El Capitán Ahogado', elite: true }],
       [PEZ_FAROL_SPEC, { tipo: 'jefe', nombre: 'El Pez Farol', en_agua: true, luz_antena: { color: '#fff0c0', radius: 220, notas: 'La luz robada del faro, en la punta de la antena: lo más brillante de la pantalla. Se apaga en die (cuadro 9 en adelante).' } }],
     ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+    // #42: dónde va la luz de la antena del Pez Farol, por dirección y por cuadro (pixeles desde el pivote; null si no
+    // se ve: sumergida del todo o ya apagada), para que la luz del juego siga a la antena
+    for (const [name, entry] of Object.entries(chars.pez_farol.anims)) {
+      const def = PEZ_FAROL_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).antena = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: PEZ_FAROL_SPEC.elev });
+        return poses.map((p) => { const l = pezAntena(PEZ_FAROL_SPEC.cell, p); if (!l) return null; const c = mv(M, l); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+    }
   }
   // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
   for (const id of NPCS) {

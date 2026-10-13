@@ -44,3 +44,17 @@ describe('Mundo 4: el Pez Farol', () => {
     expect([o.length, o[0].w, o[0].h]).toEqual([8, 128, 64]);
   });
 }, 600_000);
+
+describe('#42: la antena del Pez Farol', () => {
+  it('quieto, la luz está afuera del agua; cuando se escapa al morir, se apaga (null)', async () => {
+    const { pezAntena } = await import('../boss/pez');
+    const { bossPoses } = await import('../boss/anim');
+    const idle = bossPoses(PEZ_FAROL_SPEC.anims.find((a) => a.name === 'idle')!);
+    for (const p of idle) { const l = pezAntena(128, p); expect(l).not.toBeNull(); expect(l![1]).toBeGreaterThan(0); }
+    const die = bossPoses(PEZ_FAROL_SPEC.anims.find((a) => a.name === 'die')!);
+    expect(pezAntena(128, die[die.length - 1])).toBeNull();
+    // al hundirse del todo, la antena queda bajo el agua
+    const hund = bossPoses(PEZ_FAROL_SPEC.anims.find((a) => a.name === 'hundirse')!);
+    expect(hund.map((p) => pezAntena(128, p)).some((l) => l === null) || hund.map((p) => pezAntena(128, p)![1]).some((y) => y < 30)).toBe(true);
+  });
+});

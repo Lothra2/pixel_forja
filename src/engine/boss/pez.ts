@@ -59,6 +59,21 @@ function materials(freed: number, lure: number): Record<string, BossMaterial> {
 
 const s0 = 0.96;
 
+/**
+ * #42: dónde está la luz de la antena (en el marco del personaje, pixeles de la celda) para una pose, o null si no se
+ * ve (sumergida del todo, o ya se escapó y se apagó). Misma cuenta que la escena.
+ */
+export function pezAntena(cell: number, pose: BossPose): V3 | null {
+  const ex = pose.extra ?? {}, r = pose.root;
+  const small = ex.small ?? 1, s = (cell / 128) * s0 * small, base = (cell / 128) * s0;
+  const depth = ex.depth ?? -30, lure = ex.lure ?? 1, lureOff = ex.lureOff ?? 0, side = ex.side ?? 0;
+  if (lure <= 0.02) return null;
+  const body: M3 = mm(mm(rotY(r.yaw ?? 0), rotZ(-(r.lean ?? 0))), rotX((r.roll ?? 0) + side * 70));
+  const P = (v: V3): V3 => add([(r.x ?? 0) * base, (depth + (r.y ?? 0) + (pose.air ?? 0)) * base, (r.z ?? 0) * base], mv(body, mul(v, s)));
+  const lc = add(add(P([51, 34, 0]), mul([2, -2, 0], s)), [-lureOff * 34 * base, lureOff * 30 * base, -lureOff * 24 * base]);
+  return lc[1] < 0 ? null : lc;
+}
+
 function pezScene(cell: number, pose: BossPose): BossScene {
   const ex = pose.extra ?? {}, r = pose.root;
   const small = ex.small ?? 1;
@@ -130,7 +145,7 @@ const k = (f: number, pose: BossPose, ease: BossKey['ease'] = 'linear'): BossKey
 const cyc = (n: number, f: number, ph = 0) => Math.sin((f / n) * Math.PI * 2 + ph);
 
 /** Profundidades: abajo (solo la luz afuera), medio (nadando) y afuera (la barriga toca la superficie) */
-const DEEP = -44, SWIM = -16, OUT = 6;
+const DEEP = -32, SWIM = -16, OUT = 6;
 
 function pezAnims(): BossAnimDef[] {
   const idle: BossAnimDef = { name: 'idle', fps: 6, loop: true, frames: 8, keys: Array.from({ length: 8 }, (_, f) => k(f, P0({ depth: DEEP + cyc(8, f) * 2, tail: cyc(8, f) * 0.6, fin: cyc(8, f, 1) * 0.5, t: f * 0.8, lure: 1 }, { root: { lean: -6 } }))) };
