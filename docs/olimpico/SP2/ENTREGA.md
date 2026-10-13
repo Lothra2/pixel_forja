@@ -88,6 +88,9 @@ En el manifiesto:
 - **`tsc` limpio, `npm run build:sitio` limpio (278 s) y e2e del visor 6 de 6** (en el puerto 4187).
 - **Resto de `src/engine/__tests__` (sin `custom.test.ts`), después del arreglo del render: 30 archivos, 333 de 333.**
 
+- **Suite completa: 34 archivos, 361 de 361.** `npm run build:sitio` limpio y e2e de Playwright 50 de 50.
+- **El corte del kit completo:** el `beforeAll` de `custom.test.ts` cortaba a los 240 s, antes de que la prueba de "menos de 5 minutos" (300 s, lo que pidió Rick) pudiera medir. Pasa a 320 s, así decide la de los 300 con su tiempo medido.
+
 ## Para aprobar (todo en esta carpeta)
 
 - `tablero_sp2.png`: las 18 animaciones de Rick, de lado y en diagonal. Arriba el pack con pelota (fondo azul), abajo el pack sin pelota (fondo verde) con el círculo de `objetos` en rojo. Al lado de cada una, su pack, sus cuadros y el impacto o la suelta. Sale del kit de verdad: los atlas y el manifiesto de `buildCustomKit` con las fichas de Nekketsu.
