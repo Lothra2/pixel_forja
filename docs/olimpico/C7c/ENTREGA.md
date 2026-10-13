@@ -58,7 +58,7 @@ No hay que tocar el `kit.config.json`: los perros y los gatos ya están en `anim
     - Un salto que no es a un muro (`pounce`) no trae `subida`.
   - En el kit: `pounce` con sus 3 eventos en el atlas del perro, y `jump_wall` con `subida`, `muro_min` y `muro_max`.
 - **Control de calidad:** `pounce` y `wake` de los 3 perros pasan en 32, 48 y 64, en las 5 filas del juego.
-- **La imagen dorada de C7 no cambió.**
+- **La imagen dorada de C7 no cambió.** La de Thor (`golden/thor_48.png`) junta todas las animaciones de cuatro patas y creció 96 filas con `pounce` y `wake`. Lo que ya estaba quedó idéntico: 0 pixeles distintos.
 - **Suite completa, `tsc`, build y e2e:** ver el PR.
 
 ## Para aprobar (todo en esta carpeta)
