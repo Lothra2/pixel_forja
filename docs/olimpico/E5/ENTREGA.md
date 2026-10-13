@@ -148,7 +148,8 @@ Los dos inclinados llevan los carriles 24, 52 y 80 solo para la prueba de legibi
 - **Las pruebas de escenarios, de los NPC y de los gorros** (`e4a`, `hoian`, `caracas`, `comuna13`, `oblique`, `vehiculos`, `e5`, `calle` y `equipos`): 110 de 110. En una corrida anterior, con otros agentes cargando la máquina, un caso de `comuna13` se pasó del tiempo (32 s). Solo pasó, y en la corrida final también.
 - **`custom.test.ts`:** el kit de Nekketsu trae 15 escenarios y 543 PNG (los 4 nuevos con 8 cada uno y la Marimonda). 15 de 15, en 187 s las dos veces que lo corrí, por debajo de los 5 minutos.
 - **El resto de la suite:** 35 archivos, 365 de 365, en 6 minutos. Con `custom.test.ts`, 380 de 380.
-- **`tsc` limpio y `npm run build:sitio` limpio:** el kit del sitio sale con `margarita`, `dalat`, `barranquilla` y `cancha_maracaibo`, cada uno con sus 9 pruebas en verde. No corrí el e2e de Playwright.
+- **`tsc` limpio y `npm run build:sitio` limpio:** el kit del sitio sale con `margarita`, `dalat`, `barranquilla` y `cancha_maracaibo`, cada uno con sus 9 pruebas en verde.
+- **Suite completa: 36 archivos, 380 de 380, y e2e de Playwright 50 de 50.**
 
 **Las 9 pruebas** (en cada `verificacion.md`):
 - **Legibilidad:**
