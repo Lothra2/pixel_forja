@@ -343,7 +343,12 @@
       "mecha_tejo",
       "toque_cau",
       "caida_tatami",
-      "pitazo_largo"
+      "pitazo_largo",
+      "red_voley",
+      "rebote_balon",
+      "aro_basket",
+      "aro_fallo",
+      "chapa"
     ],
     "musica": [
       "marcha_nekketsu",
@@ -356,7 +361,10 @@
       "ajiaco_rock",
       "parce_corra",
       "pana_dale",
-      "gaita_lago"
+      "gaita_lago",
+      "carnaval_quilla",
+      "playa_margarita",
+      "dalat_niebla"
     ],
     "voces": [
       "rick",

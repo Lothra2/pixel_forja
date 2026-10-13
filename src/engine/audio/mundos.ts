@@ -9,12 +9,12 @@ import { RATE } from './sfx';
  */
 
 // ---------- armonía ----------
-const midiOf = (f: number) => Math.round(69 + 12 * Math.log2(f / 440));
-const fOf = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
+export const midiOf = (f: number) => Math.round(69 + 12 * Math.log2(f / 440));
+export const fOf = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 const PC: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 const pc = (n: string) => (PC[n[0]] + (n[1] === '#' ? 1 : n[1] === 'b' ? -1 : 0) + 12) % 12;
 /** Escala por sus notas, en clases de altura. */
-const escala = (...ns: string[]) => ns.map(pc);
+export const escala = (...ns: string[]) => ns.map(pc);
 /** La tercera diatónica de abajo en la escala. Si la nota no está (una sensible), una tercera mayor abajo. */
 export function terceraAbajo(f: number, sc: number[]): number {
   const m = midiOf(f), i = sc.indexOf(((m % 12) + 12) % 12);
@@ -26,14 +26,16 @@ const ACORDES: Record<string, string[]> = {
   Am: ['A', 'C', 'E'], Dm: ['D', 'F', 'A'], Em: ['E', 'G', 'B'], Bm: ['B', 'D', 'F#'],
   C: ['C', 'E', 'G'], D: ['D', 'F#', 'A'], E: ['E', 'G#', 'B'], F: ['F', 'A', 'C'], G: ['G', 'B', 'D'], A: ['A', 'C#', 'E'],
   A7: ['A', 'C#', 'E', 'G'], E7: ['E', 'G#', 'B', 'D'], G7: ['G', 'B', 'D', 'F'],
+  // los del lote H3
+  Bb: ['Bb', 'D', 'F'], B7: ['B', 'D#', 'F#', 'A'], D7: ['D', 'F#', 'A', 'C'],
 };
 /** Las notas del acorde hacia arriba, desde la raíz en la octava dada. */
-function acorde(name: string, oct: number): number[] {
+export function acorde(name: string, oct: number): number[] {
   const ns = ACORDES[name], root = midiOf(hz(`${ns[0]}${oct}`));
   return ns.map((n) => { let m = root + ((pc(n) - (root % 12) + 12) % 12); if (m < root) m += 12; return fOf(m); });
 }
-const raiz = (name: string, oct: number) => acorde(name, oct)[0];
-const quinta = (name: string, oct: number) => raiz(name, oct) * Math.pow(2, 7 / 12);
+export const raiz = (name: string, oct: number) => acorde(name, oct)[0];
+export const quinta = (name: string, oct: number) => raiz(name, oct) * Math.pow(2, 7 / 12);
 
 /**
  * Quita la componente continua (pasa altos de 20 Hz). Las cuadradas con ancho de pulso distinto de la mitad la traen,
@@ -50,7 +52,7 @@ export function sinDC(b: Float32Array, loop: boolean): Float32Array {
 
 // ---------- instrumentos y percusión ----------
 /** Raspado (guacharaca, charrasca): ruido filtrado en peines rápidos, como la vara que pasa por las ranuras. */
-function raspa(m: Mixer, t: number, dur: number, vol: number, o: { paso?: number; hp?: number; lp?: number } = {}) {
+export function raspa(m: Mixer, t: number, dur: number, vol: number, o: { paso?: number; hp?: number; lp?: number } = {}) {
   const paso = o.paso ?? 0.011, n = Math.max(1, Math.round(dur / paso));
   for (let k = 0; k < n; k++) {
     const u = k / n;
@@ -58,9 +60,9 @@ function raspa(m: Mixer, t: number, dur: number, vol: number, o: { paso?: number
   }
   m.add({ t, dur, f: 9000, wave: 'noise', vol: vol * 0.3, a: dur * 0.7, s: 1, r: 0.015, hp: o.hp ?? 0.6, lp: o.lp ?? 0.7 });
 }
-const maraca = (m: Mixer, t: number, vol: number) => m.add({ t, dur: 0.012, f: 16000, wave: 'noise', vol, a: 0.006, s: 1, r: 0.045, hp: 0.5 });
+export const maraca = (m: Mixer, t: number, vol: number) => m.add({ t, dur: 0.012, f: 16000, wave: 'noise', vol, a: 0.006, s: 1, r: 0.045, hp: 0.5 });
 /** Tambora: el parche (grave) o el aro (los palitos contra la madera). */
-function tambora(m: Mixer, t: number, vol: number, golpe: 'parche' | 'aro') {
+export function tambora(m: Mixer, t: number, vol: number, golpe: 'parche' | 'aro') {
   if (golpe === 'parche') {
     m.add({ t, dur: 0.02, f: 98, wave: 'sine', vol: vol * 0.9, s: 1, r: 0.24, bend: { semis: -5, len: 0.15 } });
     m.add({ t, dur: 0.01, f: 900, wave: 'noise', vol: vol * 0.3, s: 1, r: 0.05, lp: 0.15 });
@@ -75,7 +77,7 @@ function furro(m: Mixer, t: number, dur: number, vol: number, f = 62) {
   m.add({ t, dur, f: f * 2, wave: 'triangle', vol: vol * 0.35, a: 0.03, s: 0.6, r: 0.06, lp: 0.3, bend: { semis: 2, len: 0.07 } });
 }
 /** Rasgueo de cuatro: las cuerdas una tras otra en milisegundos. Apagado: corto y con el chasquido de la mano. */
-function rasgueo(m: Mixer, t: number, notas: number[], vol: number, apagado = false) {
+export function rasgueo(m: Mixer, t: number, notas: number[], vol: number, apagado = false) {
   notas.forEach((f, i) => m.add({ t: t + i * 0.007, dur: apagado ? 0.025 : 0.11, f, wave: 'pluck', vol: vol * (apagado ? 0.6 : 1), r: apagado ? 0.03 : 0.1 }));
   if (apagado) m.add({ t, dur: 0.006, f: 5000, wave: 'noise', vol: vol * 0.9, s: 1, r: 0.03, hp: 0.6, lp: 0.6 });
 }
@@ -94,7 +96,7 @@ function strum(m: Mixer, t: number, notas: number[], dur: number, vol: number) {
   });
 }
 /** Sáo o flauta: seno con soplo al empezar y vibrato en las notas largas; algunas suben desde abajo (luyến). */
-function flauta(m: Mixer, n: { t: number; dur: number; f: number; units: number }, vol: number, desdeAbajo = false) {
+export function flauta(m: Mixer, n: { t: number; dur: number; f: number; units: number }, vol: number, desdeAbajo = false) {
   m.add({ t: n.t, dur: n.dur * 0.94, f: desdeAbajo ? n.f / Math.pow(2, 2 / 12) : n.f, wave: 'sine', vol, a: 0.035, d: 0.1, s: 0.85, r: 0.09, vib: n.units >= 3 ? [5.2, 0.18, 0.18] : undefined, bend: desdeAbajo ? { semis: 2, len: 0.06 } : undefined });
   m.add({ t: n.t, dur: n.dur * 0.94, f: n.f * 2, wave: 'triangle', vol: vol * 0.08, a: 0.04, s: 0.8, r: 0.08 });
   m.add({ t: n.t, dur: 0.05, f: 6000, wave: 'noise', vol: vol * 0.22, a: 0.01, s: 1, r: 0.05, lp: 0.35 });
@@ -106,7 +108,7 @@ function acordeon(m: Mixer, t: number, dur: number, f: number, vol: number) {
 }
 
 /** Cuántos segundos dura cada compás y cada unidad (corchea) de un tema. */
-const tiempo = (bpm: number, unidadesPorCompas: number, porNegra = 2) => { const e = 60 / bpm / porNegra; return { e, bar: e * unidadesPorCompas }; };
+export const tiempo = (bpm: number, unidadesPorCompas: number, porNegra = 2) => { const e = 60 / bpm / porNegra; return { e, bar: e * unidadesPorCompas }; };
 
 // ---------- Instituto: rock japonés de los 80 en menor ----------
 /**
@@ -389,7 +391,7 @@ export const MUSIC_MUNDOS = {
 };
 
 // ---------- efectos ----------
-function efecto(seconds: number, seed: number, build: (m: Mixer, R: () => number) => void): Float32Array {
+export function efecto(seconds: number, seed: number, build: (m: Mixer, R: () => number) => void): Float32Array {
   const m = new Mixer(seconds, false, seed);
   build(m, rng(seed));
   return trimTail(normalize(sinDC(m.out(), false), 0.85));
