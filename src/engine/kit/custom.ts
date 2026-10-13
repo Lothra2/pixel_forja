@@ -17,6 +17,8 @@ import type { Raster } from '../core/raster';
 import { encodePng } from '../export/png';
 import { COMIDAS, type Comida } from '../render/comida';
 import { publicoHoja } from '../render/publico';
+import { vehiculosD2, VEHICULOS_D2, K_INCLINACION } from '../world/oblique/vehiculos';
+import { createRaster, blit } from '../core/raster';
 import { vsFondo, vsLetras, coloresVs, VS_NEUTRO } from '../ui/vs';
 
 /**
@@ -70,7 +72,9 @@ export interface KitConfig {
   escenarios?: string | string[];
   /** el público: `azoteas` (la gente de las azoteas vecinas de la pelea) ya sale; los hinchas por país llegan con C6 */
   publico?: { azoteas?: boolean | { ancho?: number; gente?: number }; [k: string]: unknown };
-  npc?: unknown; vehiculos?: unknown;
+  npc?: unknown;
+  /** vehículos y objetos de escenario en la vista inclinada (lote D2): true = todos, o ids ("moto" = los 4 colores) */
+  vehiculos?: boolean | string[];
 }
 
 /** Un equipo del archivo de equipos. Lo que no se usa para armar el kit pasa al manifiesto tal cual. */
@@ -79,15 +83,14 @@ export interface TeamDef { nombre: string; atletas: string[]; mascota?: string; 
 export const INCLUDED_CAST = ['familia', 'familia_rpg', 'heroes'] as const;
 export type IncludedCast = (typeof INCLUDED_CAST)[number];
 
-export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'interfaz', 'efectos', 'audio', 'escenarios', 'vs', 'publico'] as const;
+export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'interfaz', 'efectos', 'audio', 'escenarios', 'vs', 'publico', 'vehiculos'] as const;
 export type KitPart = (typeof KIT_PARTS)[number];
 
 /** Las secciones que todavía no genera el kit a medida, y el lote del pedido que las trae. */
 export const PENDING_SECTIONS: Record<string, string> = {
   npc: 'NPC (lote C6)',
-  vehiculos: 'vehículos (lote D2)',
 };
-const KNOWN_KEYS = ['$schema', 'juego', 'resolucion', 'celda', 'filas', 'datos_por_cuadro', 'fichas', 'personajes_incluidos', 'equipos', 'packs', 'pruebas', 'retratos', 'cabecitas', 'objetos', 'animales', 'ui', 'fx', 'audio', 'escenarios', 'publico', ...Object.keys(PENDING_SECTIONS)];
+const KNOWN_KEYS = ['$schema', 'juego', 'resolucion', 'celda', 'filas', 'datos_por_cuadro', 'fichas', 'personajes_incluidos', 'equipos', 'packs', 'pruebas', 'retratos', 'cabecitas', 'objetos', 'animales', 'ui', 'fx', 'audio', 'escenarios', 'publico', 'vehiculos', ...Object.keys(PENDING_SECTIONS)];
 /** Lo que se puede pedir en `objetos`: las armas, cada comida y "comida" (toda). */
 const OBJETOS = [...FLOOR_PROP_KINDS, ...COMIDAS, 'comida'] as string[];
 /** Reparte la lista de `objetos` en armas y comida. */
@@ -212,6 +215,7 @@ export function validateKitConfig(cfg: unknown): string[] {
       if (cfg.ui.logo !== undefined && !(isObj(cfg.ui.logo) && typeof cfg.ui.logo.texto === 'string' && cfg.ui.logo.texto.trim())) e.push('ui.logo: { "texto": "NOMBRE DEL JUEGO" }');
     }
   }
+  if (cfg.vehiculos !== undefined && typeof cfg.vehiculos !== 'boolean' && !(Array.isArray(cfg.vehiculos) && cfg.vehiculos.every((v) => typeof v === 'string'))) e.push('vehiculos: true o una lista de ids, por ejemplo ["ferry", "moto"]');
   if (cfg.publico !== undefined) {
     if (!isObj(cfg.publico)) e.push('publico: tiene que ser un objeto, por ejemplo { "azoteas": true }');
     else {
@@ -311,6 +315,7 @@ export function kitConfigSchema(): Record<string, unknown> {
         description: 'El público. "azoteas": la gente asomada en las azoteas vecinas de la pelea, en publico/azoteas.png (de día) y publico/azoteas_noche.png, con los estados quieto, celebra y abuchea. Los hinchas por país (paises, variantes) llegan con el lote C6 y vuelven como aviso.',
         properties: { azoteas: { oneOf: [{ type: 'boolean' }, { type: 'object', additionalProperties: false, properties: { ancho: { type: 'integer', minimum: 1, maximum: 2048 }, gente: { type: 'integer', minimum: 1, maximum: 2048 } } }] } },
       },
+      vehiculos: { oneOf: [{ type: 'boolean' }, list({ anyOf: [{ enum: [...VEHICULOS_D2, 'moto'] }, { type: 'string' }] })], description: 'Vehículos y objetos de escenario en la vista inclinada (px = x + 0.35 y), en vehiculos/<id>.png: una tira de cuadros con sus animaciones, el ancla (la esquina de atrás a la izquierda de la huella, en el piso) y la huella. true = todos, o ids ("moto" = los 4 colores). Los que todavía no existen vuelven como aviso.' },
       ...pending,
     },
   };
@@ -596,7 +601,25 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     };
   }
 
-  if (fx || audio || Object.keys(ui).length || escenarios || vs || publico) {
+  // vehículos (lote D2): una tira por vehículo, en la vista inclinada del escenario
+  let vehiculos: Record<string, unknown> | undefined;
+  if (parts.has('vehiculos') && cfg.vehiculos) {
+    const pedidos = cfg.vehiculos === true ? [...VEHICULOS_D2] : cfg.vehiculos.flatMap((v) => (v === 'moto' ? VEHICULOS_D2.filter((m) => m.startsWith('moto_')) : [v]));
+    const faltan = pedidos.filter((v) => !(VEHICULOS_D2 as readonly string[]).includes(v));
+    if (faltan.length) warnings.push(`vehiculos: todavía no existen (se saltan): ${faltan.join(', ')}`);
+    vehiculos = {};
+    for (const h of vehiculosD2().filter((v) => pedidos.includes(v.id))) {
+      const tira = createRaster(h.w * h.cuadros.length, h.h);
+      h.cuadros.forEach((c, i) => blit(tira, c, i * h.w, 0));
+      const archivo = `vehiculos/${h.id}.png`;
+      files.push({ name: archivo, bytes: encodePng(tira), mime: 'image/png' });
+      vehiculos[h.id] = { archivo, w: h.w, h: h.h, cuadros: h.cuadros.length, ancla: h.ancla, huella: h.huella, anims: h.anims, ...(h.dir ? { mira: h.dir < 0 ? 'izquierda' : 'derecha' } : {}) };
+    }
+    if (Object.keys(vehiculos).length) vehiculos.notas = `Vista inclinada con K = ${K_INCLINACION}: el punto (x, y, z) del mundo cae en (x + K y, y - z). Cada tira tiene cuadros de w x h; el cuadro i va en x = i * w. El ancla es dónde cae en el cuadro la esquina de atrás a la izquierda de la huella, en el piso: el juego pone ahí el (x, y) del vehículo. "mira" dice hacia dónde va de frente; para el otro lado no sirve el espejo (se vería la cara de la derecha).`;
+    opts.progress?.(`vehiculos: ${Object.keys(vehiculos).length - 1}`);
+  }
+
+  if (fx || audio || Object.keys(ui).length || escenarios || vs || publico || vehiculos) {
     const ci = files.findIndex((f) => f.name === 'CREDITOS.txt');
     const line = 'Efectos, interfaz, sonidos, escenarios, VS y público: dibujados y sintetizados con código por PixelForja. No usan piezas de nadie y no piden crédito.\n';
     const prev = ci >= 0 ? new TextDecoder().decode(files[ci].bytes) : '';
@@ -630,6 +653,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     ...(audio ? { audio } : {}),
     ...(escenarios ? { escenarios } : {}),
     ...(publico ? { publico } : {}),
+    ...(vehiculos ? { vehiculos } : {}),
     ...(files.some((f) => f.name === 'CREDITOS.txt') ? { creditos: 'CREDITOS.txt' } : {}),
     ...(warnings.length ? { pendiente: warnings } : {}),
     notas,
