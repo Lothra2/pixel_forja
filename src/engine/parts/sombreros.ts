@@ -1,11 +1,11 @@
 /**
  * Gorros propios de PixelForja, dibujados con código sobre las cabezas LPC (que no los traen): el nón lá vietnamita, el
  * sombrero vueltiao, la gorra de béisbol, el casco de ciclista, el sombrero de gaitero zuliano y los rolos (el catálogo
- * C4 del pedido). Van en el cuadro de 64 de LPC, apoyados en la cima del pelo, de frente, de lado y de espalda. Se piden
- * en `hat` como cualquier gorro LPC.
+ * C4 del pedido), y la máscara de la Marimonda del Carnaval de Barranquilla (lote E5). Van en el cuadro de 64 de LPC,
+ * apoyados en la cima del pelo, de frente, de lado y de espalda. Se piden en `hat` como cualquier gorro LPC.
  */
 
-export const GORROS_PROPIOS = ['non_la', 'vueltiao', 'gorra_beisbol', 'casco_ciclista', 'sombrero_gaitero', 'rolos'] as const;
+export const GORROS_PROPIOS = ['non_la', 'vueltiao', 'gorra_beisbol', 'casco_ciclista', 'sombrero_gaitero', 'rolos', 'marimonda'] as const;
 export type GorroPropio = (typeof GORROS_PROPIOS)[number];
 export const esGorroPropio = (h: string | null | undefined): h is GorroPropio => !!h && (GORROS_PROPIOS as readonly string[]).includes(h);
 
@@ -21,7 +21,8 @@ function rampa(hex: string): [string, string, string, string] {
 
 /**
  * Los pixeles del gorro para una dirección (`down` de frente, `right` de lado mirando a la derecha, `up` de espalda).
- * `cab` es la caja de la cabeza LPC (sin pelo) y `color` el del gorro (sin valor, el de siempre de cada uno).
+ * `cab` es la caja de la cabeza LPC: x y ancho de la cabeza (sin pelo), y de la cima del pelo y alto hasta la barbilla.
+ * `color` es el del gorro (sin valor, el de siempre de cada uno).
  */
 export function pixelesGorro(id: GorroPropio, dir: 'down' | 'right' | 'up', cab: Caja, color?: string | null): PixelGorro[] {
   const out: PixelGorro[] = [];
@@ -105,6 +106,7 @@ export function pixelesGorro(id: GorroPropio, dir: 'down' | 'right' | 'up', cab:
     }
     return out;
   }
+  if (id === 'marimonda') return marimonda(dir, cab, color);
   // rolos: cilindros de colores sobre el pelo, en dos filas, con la redecilla
   const cols = ['#f08aa4', '#7fb8e8', '#f2d14c', '#9ed08a'];
   const fila = (y: number, n: number, dx: number) => {
@@ -117,5 +119,53 @@ export function pixelesGorro(id: GorroPropio, dir: 'down' | 'right' | 'up', cab:
   };
   if (dir === 'right') { fila(top + 1, 2, -2); fila(top + 4, 3, -4); }
   else { fila(top + 1, Math.max(2, Math.floor(w / 6)), 0); fila(top + 4, Math.max(3, Math.floor(w / 5)), 0); }
+  return out;
+}
+
+/**
+ * La máscara de la Marimonda: la capucha de tela que tapa toda la cabeza (roja si no se pide otro color), las orejotas
+ * azules con el adentro amarillo, los tres huecos (los ojos y la boca) con su aro blanco y la trompa larga que cuelga
+ * con sus anillos. De frente la trompa baja sobre el pecho; de lado sale hacia adelante y se enrosca; de espalda se ven
+ * la capucha y las dos orejas. Todo con su contorno, para que se lea en la celda de 48.
+ */
+function marimonda(dir: 'down' | 'right' | 'up', cab: Caja, color?: string | null): PixelGorro[] {
+  const out: PixelGorro[] = [];
+  const put = (x: number, y: number, hex: string) => out.push({ x: Math.round(x), y: Math.round(y), hex });
+  const tinta = '#1e1418', blanco = '#fffaf0';
+  const [o, s, b, l] = rampa(color ?? '#e8402e');
+  const [ao, as, ab, al] = rampa('#2a5ad0'), [, ys, yb, yl] = rampa('#f2c230');
+  const cx = cab.x + cab.w / 2 - 0.5, top = cab.y - 1, H = Math.max(14, cab.h + 2), rx = cab.w / 2 + 1.5, ry = H / 2, cy = top + ry;
+  const ovalo = (ox: number, oy: number, ex: number, ey: number, fill: (x: number, y: number, d: number) => string) => {
+    for (let y = Math.floor(oy - ey - 1); y <= oy + ey + 1; y++) for (let x = Math.floor(ox - ex - 1); x <= ox + ex + 1; x++) {
+      const d = ((x - ox) / ex) ** 2 + ((y - oy) / ey) ** 2;
+      if (d <= 1) put(x, y, fill(x, y, d));
+    }
+  };
+  // las orejas van primero: la capucha las tapa donde se juntan
+  const oreja = (ox: number, oy: number) => ovalo(ox, oy, 4.5, 6.5, (x, y, d) => (d > 0.8 ? tinta : d > 0.38 ? (x < ox ? al : ab) : y < oy ? yl : yb));
+  if (dir !== 'right') { oreja(cx - rx - 2.5, top + 3.5); oreja(cx + rx + 2.5, top + 3.5); }
+  // la capucha
+  ovalo(cx, cy, rx, ry, (x, y, d) => (d > 0.8 ? tinta : y < cy - ry * 0.45 && x < cx + 1 ? l : x > cx + rx * 0.35 ? s : b));
+  // el remate de la capucha arriba
+  put(cx, top - 1, tinta); put(cx - 1, top, o); put(cx + 1, top, o);
+  // de lado se ve la oreja de este lado, encima de la capucha, hacia atrás y arriba
+  if (dir === 'right') oreja(cx - rx * 0.5, top + 2.5);
+  if (dir === 'up') return out;
+  // los huecos de los ojos y de la boca, con su aro blanco
+  const hueco = (hx: number, hy: number) => { for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) put(hx + dx, hy + dy, blanco); put(hx, hy, tinta); };
+  const ojoY = top + H * 0.42;
+  if (dir === 'down') { hueco(cx - 3, ojoY); hueco(cx + 3, ojoY); hueco(cx - 2, top + H * 0.8); }
+  else hueco(cx + rx * 0.45, ojoY);
+  // la trompa: de la nariz para abajo (de frente) o para adelante y enroscada (de lado), con anillos amarillos
+  const pts: [number, number][] = [];
+  if (dir === 'down') for (let i = 0; i < 17; i++) pts.push([cx + 0.5 + Math.round(Math.sin(i / 4) * 1.5), top + H * 0.55 + i]);
+  else for (let i = 0; i < 15; i++) pts.push([cx + rx * 0.6 + i * 0.7 + (i > 10 ? (i - 10) * 0.4 : 0), top + H * 0.55 + i * 0.75 - (i > 11 ? (i - 11) * 1.4 : 0)]);
+  pts.forEach(([px, py], i) => {
+    const ancho = i < pts.length - 3 ? 1 : 0;
+    for (let k = -ancho - 1; k <= ancho + 1; k++) put(px + k, py, Math.abs(k) === ancho + 1 ? tinta : i % 4 === 2 ? ys : k < 0 ? l : b);
+  });
+  const [ex, ey] = pts[pts.length - 1];
+  put(ex, ey + 1, tinta); put(ex - 1, ey + 1, tinta); put(ex + 1, ey + 1, tinta); put(ex, ey, yb);
+  void ao; void as; void o;
   return out;
 }

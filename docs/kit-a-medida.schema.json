@@ -817,7 +817,7 @@
       "required": [
         "personajes"
       ],
-      "description": "La gente de la calle en npc/<id>.png: una tira con los cuadros de sus animaciones seguidas, de frente o en 3/4 (sin espejo), con el ancla en los pies. Un grupo (los músicos) va en un solo sprite. Ver docs/KIT_A_MEDIDA.md.",
+      "description": "La gente de la calle en npc/<id>.png: una tira con los cuadros de sus animaciones seguidas, de frente o en 3/4 (sin espejo) o de lado (mirando a la derecha), con el ancla en los pies. Un grupo (los músicos) va en un solo sprite. Ver docs/KIT_A_MEDIDA.md.",
       "properties": {
         "fichas": {
           "type": "string",
@@ -858,7 +858,8 @@
                   "frente",
                   "tres_cuartos",
                   "espalda",
-                  "espalda_tres_cuartos"
+                  "espalda_tres_cuartos",
+                  "lado"
                 ]
               },
               "vistas": {
@@ -868,7 +869,8 @@
                     "frente",
                     "tres_cuartos",
                     "espalda",
-                    "espalda_tres_cuartos"
+                    "espalda_tres_cuartos",
+                    "lado"
                   ]
                 }
               },

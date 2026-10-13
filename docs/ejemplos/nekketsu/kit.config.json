@@ -319,6 +319,15 @@
           "ofrecer"
         ],
         "vista": "tres_cuartos"
+      },
+      "marimonda": {
+        "anims": {
+          "caminar": "walk",
+          "bailar": "dance"
+        },
+        "vistas": {
+          "caminar": "lado"
+        }
       }
     }
   }

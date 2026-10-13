@@ -6,14 +6,17 @@ import type { CellSize } from '../sheet/ficha';
 
 /**
  * La gente de la calle en el kit (lote C6a): cada NPC sale en `npc/<id>.png`, una tira con todos los cuadros de sus
- * animaciones seguidas, de frente o en 3/4 hacia la calle (sin espejo). Un grupo (los músicos) va en un solo sprite,
+ * animaciones seguidas, de frente o en 3/4 hacia la calle (sin espejo), o de lado para el que camina de un lado al otro. Un grupo (los músicos) va en un solo sprite,
  * uno al lado del otro y con el parlante. La pelota del fútbol de la calle va aparte, chiquita y girando.
  */
 
-/** Cómo se ve cada animación: de frente, en 3/4 hacia la calle o de espaldas (el grafitero contra su muro). */
-export type VistaNpc = 'frente' | 'tres_cuartos' | 'espalda' | 'espalda_tres_cuartos';
-export const VISTAS_NPC: readonly VistaNpc[] = ['frente', 'tres_cuartos', 'espalda', 'espalda_tres_cuartos'];
-const VISTA: Record<VistaNpc, 'front' | 'se' | 'back' | 'ne'> = { frente: 'front', tres_cuartos: 'se', espalda: 'back', espalda_tres_cuartos: 'ne' };
+/**
+ * Cómo se ve cada animación: de frente, en 3/4 hacia la calle, de espaldas (el grafitero contra su muro) o de lado,
+ * mirando a la derecha (lote E5: la Marimonda que cruza la calle; el juego la espeja para ir a la izquierda).
+ */
+export type VistaNpc = 'frente' | 'tres_cuartos' | 'espalda' | 'espalda_tres_cuartos' | 'lado';
+export const VISTAS_NPC: readonly VistaNpc[] = ['frente', 'tres_cuartos', 'espalda', 'espalda_tres_cuartos', 'lado'];
+const VISTA: Record<VistaNpc, 'front' | 'se' | 'back' | 'ne' | 'side'> = { frente: 'front', tres_cuartos: 'se', espalda: 'back', espalda_tres_cuartos: 'ne', lado: 'side' };
 
 export interface NpcDef {
   /** la ficha (por nombre de archivo en la carpeta de NPC). Por defecto, el id */
