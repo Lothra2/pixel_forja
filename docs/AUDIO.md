@@ -47,7 +47,7 @@ Todos en bucle sin corte y en mono, como los de H1. Cada uno dura sus compases e
 | `pana_dale` | Caracas | Joropo en Re mayor, 3/4 a 180. El arpa llanera lleva la melodía con el bordón en el 2 y el 3. El cuatro rasguea, arpegia y apaga, y las maracas no paran, con el acento que cambia entre 3/4 y 6/8 | 32 s |
 | `gaita_lago` | Maracaibo | Gaita zuliana en La menor, 6/8. El furro hace el "rum, rum-rum", la tambora alterna parche y palitos en el aro, la charrasca raspa y las maracas siguen. El coro canta en dos voces y en la segunda vuelta se dobla a la octava | 34.3 s |
 
-Saigón ya tenía `saigon_chay`, y la marcha de la ceremonia es `marcha_nekketsu`. Siguen pendientes del pedido `cafe_neblina`, `vestuario` y los `acorde_<equipo>`.
+Saigón ya tenía `saigon_chay`, y la marcha de la ceremonia es `marcha_nekketsu`. `cafe_neblina` llegó en H4. Siguen pendientes del pedido `vestuario` y los `acorde_<equipo>`.
 
 ### Los mundos de pelota (lote H3)
 
@@ -58,6 +58,17 @@ Igual que los de H2: en bucle sin corte, en mono y con sus compases exactos. Mar
 | `carnaval_quilla` | Barranquilla, Fútbol Callejero | Cumbia de carnaval en Sol mayor a 116 bpm. Primero la caña de millo lleva el tema, con trinos, sobre el tambor alegre que repica, el llamador en los contratiempos, la tambora, el maracón y la guacharaca. Después entra la papayera: dos trompetas en terceras, el trombón que contesta y hace de puente, bombo y platillo de banda. El bajo hace "um-pa" de tuba | 33.1 s |
 | `playa_margarita` | Margarita, Vóley Playa | Música oriental margariteña en 3/4 a 144. Primero un polo en Mi menor: la bandolina canta en trémolo, el cuatro rasguea y la guitarra hace los bordones. Después un galerón en Sol mayor, más vivo, con el cuatro que apaga y las maracas en 6/8. La segunda vez de cada parte, la bandolina va en terceras. Debajo, las olas que van y vienen | 40 s |
 | `dalat_niebla` | Đà Lạt, Tenis de dobles | Vals lento de montaña en Fa mayor, 3/4 a 96. El đàn tranh lleva el tema con su "nhấn" y abre cada frase con el barrido de cuerdas. En la segunda parte canta la sáo y el đàn tranh arpegia. Bajo en el 1, acorde punteado en el 2 y el 3, un colchón suave como la niebla y el viento en los pinos | 37.5 s |
+
+### Los mundos de atletismo y natación (lote H4)
+
+Para las cuatro pruebas que seguían con la música del chip. Igual que los de H2 y H3: en bucle sin corte, en mono y con sus compases exactos. `cafe_neblina` es el nombre del pedido.
+
+| Id | Mundo | Qué es | Duración |
+|---|---|---|---|
+| `champeta_murallas` | Cartagena, Azoteas | Champeta criolla en Mi mayor a 132 bpm. Cuatro compases de entrada, ocho con la guitarra que canta el tema en terceras sobre acordes cortos de teclado, y ocho de "despeluque": la guitarra repite su punteo en semicorcheas, el bajo baila más y la batería se llena. El bajo va adelante, como en un picó, y el láser del picó baja al entrar cada parte | 36.4 s |
+| `cafe_neblina` | Eje Cafetero, Vallas | Bambuco acelerado en La mayor, 6/8 a 124. La bandola andina canta en trémolo y entra a contratiempo. El tiple rasguea y adelanta el acorde que viene en la última corchea, la guitarra hace los bordones alternando 3/4 y 6/8, y las cucharas no paran. La segunda parte se va a Fa sostenido menor, con la neblina de colchón | 31 s |
+| `halong_remos` | Bahía de Hạ Long, Natación | El canto de los remeros en Sol menor pentatónico, 108 bpm. Primero el đàn bầu lleva el tema, con notas que entran deslizándose y vibrato ancho. Después el "hò": el đàn bầu llama y el coro de los remeros contesta. Debajo, el đàn tranh, el trống cơm y el remo que entra al agua en el 1 y el 3, el mõ en los contratiempos y las olas | 35.6 s |
+| `pajarillo_llano` | Llanos de Apure, Jabalina | Pajarillo, joropo recio en Si menor, a 196. El arpa lleva el tema con sus corridas, la bandola llanera hace el pespunteo y en la parte en Mi menor toma el tema. El cuatro rasguea con el golpe recio, los bajos alternan 3/4 y 6/8, y las maracas van escobilladas. Más rápido, en menor y con bandola, para no confundirse con `pana_dale` | 36.7 s |
 
 ## Efectos
 
