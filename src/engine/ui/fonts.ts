@@ -370,3 +370,26 @@ export function renderLogo(bold: ArrayBuffer): Raster[] {
   }
   return frames;
 }
+
+/**
+ * Un texto como máscara de pixeles (1 = letra), con la fuente dada a `px` pixeles por pixel de fuente. Para logos,
+ * botones y carteles que se arman con la forma de las letras. Respeta el avance y las letras compuestas.
+ */
+export function textMask(bytes: ArrayBuffer, text: string, px: number): { w: number; h: number; mask: Uint8Array; capTop: number } {
+  const gl = rasterGlyphs(parse(bytes), px, [...new Set(text)].join(''));
+  const by = new Map(gl.map((g) => [g.ch, g]));
+  const chars = [...text].map((ch) => by.get(ch) ?? by.get(' ') ?? { ch, mask: new Uint8Array(1), w: 0, h: 0, top: 0, left: 0, adv: 4 * px });
+  const top = Math.min(...chars.filter((g) => g.h).map((g) => g.top), 0), bottom = Math.max(...chars.map((g) => g.top + g.h), 1);
+  const w = Math.max(1, chars.reduce((a, g) => a + g.adv, 0) - px), h = bottom - top;
+  const mask = new Uint8Array(w * h);
+  let x = 0;
+  for (const g of chars) {
+    for (let yy = 0; yy < g.h; yy++) for (let xx = 0; xx < g.w; xx++) {
+      if (!g.mask[yy * g.w + xx]) continue;
+      const X = x + g.left + xx, Y = g.top - top + yy;
+      if (X >= 0 && X < w && Y >= 0 && Y < h) mask[Y * w + X] = 1;
+    }
+    x += g.adv;
+  }
+  return { w, h, mask, capTop: -top };
+}
