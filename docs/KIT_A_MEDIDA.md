@@ -64,7 +64,7 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `fx` | Efectos del catálogo general: `true` (los 56) o ids, bases y grupos. Ver abajo | No van |
 | `audio` | `{ "sfx": [...], "musica": [...], "ambientes": [...], "voces": [...] }` con los sonidos del motor, o `true` en cada sección. Ver abajo y [AUDIO.md](AUDIO.md) | No va |
 
-Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 142 del motor. El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
+Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 205 del motor. Con `alias` salen con el nombre que use el juego (ver abajo). El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
 
 ### Packs sin pelotas (`sin_props`, lote SP)
 
@@ -122,14 +122,29 @@ if (o && !pelota.suelta) pelota.setPosition(sprite.x + (sprite.flipX ? -o.x : o.
 
 Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la mascota exista. Cualquier otro campo (`pais`, `musica`, `bandera`...) pasa al manifiesto sin tocarlo.
 
+### Nombres propios y animaciones por equipo (`alias`, lote C5)
+
+Un juego puede ponerle su nombre a una animación del motor. El pack pide la del motor y en las hojas, el atlas y el manifiesto sale con el nombre del juego:
+
+```jsonc
+"packs": { "ngg_burlas": ["burla_pulgar", "burla_bruce_lee"] },
+"alias": { "burla_familia_gg": "burla_pulgar", "burla_instituto_nekketsu": "burla_bruce_lee" }
+```
+
+- Una animación puede tener varios alias (dos equipos con el mismo gesto): sale una vez por alias. Con alias, ya no sale con su nombre del motor.
+
+- **Si el nombre termina en `_<equipo>`** (un id del archivo de equipos), solo lo trae el atleta de ese equipo, igual que `taunt_<id>` solo lo trae su dueño. Así un pack de burlas por equipo pesa una animación por atleta, no seis.
+- El alias no puede llevar el nombre de una animación del motor, y tiene que apuntar a una que exista y que esté en algún pack. Los errores dicen cuál quisiste decir.
+- Las burlas del motor: `burla_pulgar` (pulgar arriba con guiño), `burla_bruce_lee` (el pulgar en la nariz y la mano que llama), `burla_dragon` (saludo de puño en la palma, reverencia y garra de dragón), `burla_risa_tapada` (se tapa la boca riéndose y señala), `burla_salsa` (llama con las dos manos y un paso de salsa) y `burla_hombros` (sacude los hombros y abre los brazos). Sin bucle, a 8 fps, con el evento `frase` en el cuadro del gesto fuerte: ahí va el globo con la frase.
+
 ### Efectos y audio
 
 ```jsonc
 "fx": ["polvo", "golpe", "reaccion", "chapuzon", "aura_nekketsu"],     // grupos, bases o ids; true = todos
 "audio": {
   "formato": "comprimido",                                             // OGG + M4A para el celular. Sin esto: WAV
-  "sfx": ["golpe", "critico", "esquiva", "paso_tierra_0", "silbato"],  // silbato llega con el lote H: aviso
-  "musica": ["marcha_nekketsu"],                                       // llega con el lote H: aviso
+  "sfx": ["golpe", "critico", "esquiva", "paso_tierra_0", "silbato", "gallo"],
+  "musica": ["marcha_nekketsu", "parce_corra"],                        // un tema por mundo: ver AUDIO.md
   "ambientes": ["agua"]
 }
 ```
@@ -300,7 +315,9 @@ El manifiesto sigue el contrato del kit:
 }
 ```
 
-Los campos de cada animación (`eventos`, `avance`, `elevacion`, `desplazamiento`, `agua`, `cajas`, `cuerpo`, `manos`, `cabeza`, `pies`, `carga`, `arma`) son los del kit deportivo: [KIT_DEPORTES.md](KIT_DEPORTES.md#datos-por-cuadro-atlas-retratos-y-vestuario). `objetos` sale solo en los packs con `sin_props` (ver arriba). Todos los datos por cuadro van como `[fila][cuadro]`, en pixeles desde el pivote.
+Los campos de cada animación (`eventos`, `avance`, `elevacion`, `subida`, `muro_min`, `muro_max`, `desplazamiento`, `agua`, `cajas`, `cuerpo`, `manos`, `cabeza`, `pies`, `carga`, `arma`) son los del kit deportivo: [KIT_DEPORTES.md](KIT_DEPORTES.md#datos-por-cuadro-atlas-retratos-y-vestuario). `objetos` sale solo en los packs con `sin_props` (ver arriba). Todos los datos por cuadro van como `[fila][cuadro]`, en pixeles desde el pivote.
+
+**Saltos a un muro** (`jump_wall` del gato, lote C7c): además de `elevacion` (pixeles, para el muro dibujado), traen `subida` de 0 a 1 por cuadro y `muro_min` y `muro_max`, los pixeles de muro donde el salto se ve bien. Para un muro de alto `h` dentro de ese rango, el juego sube el sprite `subida[i] * h` en el cuadro `i`. `subida` llega a 1 justo en el cuadro del `aterriza` (las patas tocan arriba) y se queda en 1.
 
 Garantías, cada una con su prueba (`src/engine/__tests__/custom.test.ts`):
 - No falta ningún archivo que nombre el manifiesto, y no sobra ninguno.
