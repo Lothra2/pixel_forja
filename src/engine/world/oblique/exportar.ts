@@ -81,7 +81,7 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
   const vi = empacar(cuadros);
   png('vida.png', vi.atlas);
   let k = 0;
-  const vida = E.vida.map((v) => ({ id: v.id, tipo: v.tipo, capa: v.capa, x: v.x, y: v.y, fps: v.fps, velocidad: v.velocidad, cada: v.cada, cuadros: v.cuadros.map(() => vi.rects[k++]) }));
+  const vida = E.vida.map((v) => ({ id: v.id, tipo: v.tipo, capa: v.capa, x: v.x, y: v.y, fps: v.fps, velocidad: v.velocidad, cada: v.cada, recorrido: v.recorrido, orden: v.orden, cuadros: v.cuadros.map(() => vi.rects[k++]) }));
   // superficie, colisión, luces y partículas
   png('superficie.png', E.superficie.img);
   out.push({ nombre: 'colision.json', bytes: json(collisionOf(L)) });
@@ -112,7 +112,10 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
         objetos: { archivo: 'objetos.json', nota: 'entre el piso y el frente, ordenados con los atletas' },
         frente: { archivos: frente, trozo: TROZO, y: E.frenteY, paralaje: PARALAJE.frente },
       },
-      vida: { imagen: 'vida.png', piezas: vida },
+      vida: {
+        imagen: 'vida.png', piezas: vida,
+        ...(vida.some((v) => v.capa === 'lejos' || v.capa === 'objeto') ? { nota: 'capa cerca y tras_cerca: x, y de pantalla, como siempre. capa lejos: x, y en pixeles de la imagen lejos (que se repite cada su ancho y corre con su paralaje); va de recorrido.desde a recorrido.hasta en recorrido.segundos y vuelve a empezar, adelantada por desfase (0 a 1). capa objeto: va encima de un objeto, con setDepth(franja.atras + orden), como los objetos.' } : {}),
+      },
       callejones: E.huecos,
       superficie: { archivo: 'superficie.png', y: FT, leyenda: E.superficie.leyenda },
       colision: 'colision.json', luces: 'luces.json', particulas: 'particulas.json',

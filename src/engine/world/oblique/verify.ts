@@ -140,8 +140,8 @@ export function verificar(E: Escena, raw: unknown, contornos: string[] = [CONTOR
   let peor = Infinity, suma = 0, n = 0, donde = '';
   for (const c of contornos) for (const y of ys) for (let x = 24; x < L.largo - 24; x += 64) {
     if (holeAt(L, x, y)) continue;
-    // anillo alrededor de una silueta de 18 x 44 parada en (x, y)
-    const pies = FT + y, vals: number[] = [];
+    // anillo alrededor de una silueta de 18 x 44 parada en (x, y), arriba de la caja que tenga debajo
+    const pies = FT + y - (alturaEn(L, x, y) ?? 0), vals: number[] = [];
     for (let dy = -45; dy <= 0; dy += 3) for (const dx of [-10, 10]) {
       const px = x + Math.round((E.inclinacion ?? 0) * y) + dx, py = pies + dy;
       if (px < 0 || py < 0 || px >= vista.w || py >= vista.h) continue;
@@ -166,7 +166,7 @@ export function verificar(E: Escena, raw: unknown, contornos: string[] = [CONTOR
   let maxL = 0, maxV = 0, maxO = 0;
   for (let x = 0; x <= L.largo - 640; x += 32) {
     maxL = Math.max(maxL, E.luces.filter((l) => l.encendida && l.x >= x && l.x < x + 640).length);
-    maxV = Math.max(maxV, E.vida.filter((v) => v.capa === 'cerca' && v.x < x + 640 && v.x + v.cuadros[0].w > x).length + E.vida.filter((v) => v.capa === 'tras_cerca').length);
+    maxV = Math.max(maxV, E.vida.filter((v) => (v.capa === 'cerca' || v.capa === 'objeto') && v.x < x + 640 && v.x + v.cuadros[0].w > x).length + E.vida.filter((v) => v.capa === 'tras_cerca' || v.capa === 'lejos').length);
     maxO = Math.max(maxO, E.objetos.filter((o) => o.x < x + 640 && o.x + o.img.w > x).length);
   }
   const okW = capas <= PESO.capas && maxL <= PESO.luces && maxV <= PESO.vidaAnimada && maxO <= PESO.objetos;

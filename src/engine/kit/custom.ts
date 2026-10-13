@@ -515,6 +515,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     for (const [nombre, layout] of Object.entries(inputs.escenarios)) {
       const r = generarEscenario(layout);
       for (const a of r.avisos) warnings.push(`${nombre}: ${a}`);
+      if (r.pendiente) { warnings.push(`escenarios: ${r.errores.join(' ')} Se salta.`); continue; }
       if (!r.ok) { malos.push(`${nombre}:\n    ${r.errores.join('\n    ')}`); continue; }
       for (const a of r.archivos) files.push({ name: `escenarios/${r.id}/${a.nombre}`, bytes: a.bytes, mime: a.nombre.endsWith('.png') ? 'image/png' : a.nombre.endsWith('.json') ? 'application/json' : 'text/markdown' });
       escenarios[r.id!] = `escenarios/${r.id}/escenario.json`;
