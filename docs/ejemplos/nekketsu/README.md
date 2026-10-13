@@ -75,9 +75,10 @@ La configuración pide `"fx": true` (los 56 efectos del catálogo general en `fx
 La configuración pide además:
 - **Logo:** `ui.logo` con "NEKKETSU OLYMPIC GG".
 - **Interfaz completa:** `ui.interfaz: true`, con un panel por cada equipo de `equipos.json`.
-- **Música:** `marcha_nekketsu`, `saigon_chay`, `azotea_final`, `victoria_banda` y `derrota`, y un tema por mundo del lote H2: `tema_instituto`, `hoian_noche`, `ajiaco_rock`, `parce_corra`, `pana_dale` y `gaita_lago`.
+- **Música:** `marcha_nekketsu`, `saigon_chay`, `azotea_final`, `victoria_banda` y `derrota`, y un tema por mundo del lote H2: `tema_instituto`, `hoian_noche`, `ajiaco_rock`, `parce_corra`, `pana_dale` y `gaita_lago`, y los de los mundos de pelota del lote H3: `carnaval_quilla`, `playa_margarita` y `dalat_niebla`.
 - **Sonidos de H1:** pistola, silbato, golpes, chancleta, silla, pote, público...
 - **Sonidos de H2:** `gallo` (el kikirikí), `aleteo`, `mecha_tejo`, `toque_cau`, `caida_tatami` y `pitazo_largo`.
+- **Sonidos de H3:** `red_voley`, `rebote_balon`, `aro_basket` (la canasta), `aro_fallo` (el tiro que pega en el aro y se sale) y `chapa`.
 - **Voces:** los 8 atletas más `locutor` y `arbitro`.
 
 Ya no queda nada en `manifest.pendiente`. Para oír todo: `audio/escuchar.html` del kit, que en el sitio está en `kit_nekketsu/audio/escuchar.html`. Detalles en [docs/INTERFAZ.md](../../INTERFAZ.md) y [docs/AUDIO.md](../../AUDIO.md).

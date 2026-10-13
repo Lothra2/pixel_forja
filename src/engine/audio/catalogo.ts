@@ -2,14 +2,16 @@ import { SFX_NAMES, MUSIC_NAMES, renderSfx, renderMusic, type SfxName, type Musi
 import { ambience, AMBIENCE_NAMES, type AmbienceName } from './ambience';
 import { SFX_DEPORTE, MUSIC_DEPORTE } from './deporte';
 import { SFX_MUNDOS, MUSIC_MUNDOS } from './mundos';
+import { SFX_PELOTA, MUSIC_PELOTA } from './pelota';
 
 /**
  * Todos los sonidos del motor por sección, con el mismo nombre que se pide en el kit: los de GG Abyss y los de
  * deporte (marcha, đàn tranh, pelea, público, golpes...) y los de los mundos (un tema por mundo, el gallo, el tejo,
- * el đá cầu, el tatami). Cada uno sale igual siempre.
+ * el đá cầu, el tatami) y los de los mundos de pelota (Barranquilla, Margarita, Đà Lạt, la red, el balón, el aro y la
+ * chapa). Cada uno sale igual siempre.
  */
-const SFX_EXTRA: Record<string, () => Float32Array> = { ...SFX_DEPORTE, ...SFX_MUNDOS };
-const MUSIC_EXTRA: Record<string, () => Float32Array> = { ...MUSIC_DEPORTE, ...MUSIC_MUNDOS };
+const SFX_EXTRA: Record<string, () => Float32Array> = { ...SFX_DEPORTE, ...SFX_MUNDOS, ...SFX_PELOTA };
+const MUSIC_EXTRA: Record<string, () => Float32Array> = { ...MUSIC_DEPORTE, ...MUSIC_MUNDOS, ...MUSIC_PELOTA };
 export const SONIDOS = {
   sfx: [...SFX_NAMES, ...Object.keys(SFX_EXTRA)] as string[],
   musica: [...MUSIC_NAMES, ...Object.keys(MUSIC_EXTRA)] as string[],

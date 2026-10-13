@@ -49,6 +49,16 @@ Todos en bucle sin corte y en mono, como los de H1. Cada uno dura sus compases e
 
 Saigón ya tenía `saigon_chay`, y la marcha de la ceremonia es `marcha_nekketsu`. Siguen pendientes del pedido `cafe_neblina`, `vestuario` y los `acorde_<equipo>`.
 
+### Los mundos de pelota (lote H3)
+
+Igual que los de H2: en bucle sin corte, en mono y con sus compases exactos. Maracaibo ya tiene `gaita_lago`, que sirve también para el básquet.
+
+| Id | Mundo | Qué es | Duración |
+|---|---|---|---|
+| `carnaval_quilla` | Barranquilla, Fútbol Callejero | Cumbia de carnaval en Sol mayor a 116 bpm. Primero la caña de millo lleva el tema, con trinos, sobre el tambor alegre que repica, el llamador en los contratiempos, la tambora, el maracón y la guacharaca. Después entra la papayera: dos trompetas en terceras, el trombón que contesta y hace de puente, bombo y platillo de banda. El bajo hace "um-pa" de tuba | 33.1 s |
+| `playa_margarita` | Margarita, Vóley Playa | Música oriental margariteña en 3/4 a 144. Primero un polo en Mi menor: la bandolina canta en trémolo, el cuatro rasguea y la guitarra hace los bordones. Después un galerón en Sol mayor, más vivo, con el cuatro que apaga y las maracas en 6/8. La segunda vez de cada parte, la bandolina va en terceras. Debajo, las olas que van y vienen | 40 s |
+| `dalat_niebla` | Đà Lạt, Tenis de dobles | Vals lento de montaña en Fa mayor, 3/4 a 96. El đàn tranh lleva el tema con su "nhấn" y abre cada frase con el barrido de cuerdas. En la segunda parte canta la sáo y el đàn tranh arpegia. Bajo en el 1, acorde punteado en el 2 y el 3, un colchón suave como la niebla y el viento en los pinos | 37.5 s |
+
 ## Efectos
 
 - **Del lote H1:** `pistola` (salida), `silbato` (dos pitazos con trino), `golpe_1`, `golpe_2`, `golpe_3` (tres golpes distintos para no repetir), `golpe_pesado`, `chancleta`, `silla` (silla plástica), `pote` (pote de metal que retumba), `levantar`, `lanzar`, `caer_plano`, `mareo` (pajaritos), `ko` (golpe y campana), `publico_grito` (el público celebra, con palmas) y `publico_ooh` (el público se lamenta).
@@ -59,6 +69,12 @@ Saigón ya tenía `saigon_chay`, y la marcha de la ceremonia es `marcha_nekketsu
   - `toque_cau`: 0.2 s, el pie contra la base del volante del đá cầu, seco y medio agudo, con el silbido de las plumas.
   - `caida_tatami`: 0.2 s, la caída de judo. La palmada del brazo, seca y sorda, y el cuerpo que cae junto, sin rebote. Distinta de `caer_plano`, que rebota.
   - `pitazo_largo`: 1.25 s, un solo pitazo largo del árbitro, con trino. El `silbato` de antes (dos pitazos) no cambió.
+- **Del lote H3:**
+  - `red_voley`: 0.4 s, la pelota contra la red de vóley. El golpe sordo, la malla que se sacude y la cuerda de arriba que vibra grave. Va cuando la pelota cruza por debajo de la red y rebota.
+  - `rebote_balon`: 0.3 s, el balón de básquet contra el cemento. El chasquido del piso y el "pung" hueco del balón, una nota grave que baja un poco. Va en cada bote.
+  - `aro_basket`: 0.67 s, la canasta. El balón contra el tablero, el aro de hierro que suena y el "swish" de la red.
+  - `aro_fallo`: 0.49 s, el tiro que pega en el aro y se sale. Empieza igual que `aro_basket` y en vez del swish trae el segundo toque del balón en el aro.
+  - `chapa`: 0.25 s, la chapa golpeada por el palo de escoba. El "toc" de la madera, el "tin" de la lata y la chapa que sale silbando.
 - **Los de antes:** espadazo, golpe, critico, esquiva, bloqueo, pasos por superficie (`paso_<pasto|tierra|piedra|madera|agua>_<0|1|2>`), ladrido, interfaz (click, elegir, error...) y los de GG Abyss.
 
 ## Voces en blips
@@ -88,6 +104,10 @@ this.sound.play('marcha_nekketsu', { loop: m.audio.musica.marcha_nekketsu.bucle,
 // el silbato y la pistola en la largada
 this.sound.play('pistola');
 
+// el básquet: cada bote, y el aro según entre o no
+this.sound.play('rebote_balon', { volume: 0.4 });
+this.sound.play(entra ? 'aro_basket' : 'aro_fallo');
+
 // el gallo canta en el evento "canto" de su animación, y aletea en "aleteo"
 gallo.on('animationupdate', (anim, frame) => {
   for (const ev of m.animales.gallo.eventos[anim.key] ?? []) if (frame.index - 1 === ev.cuadro) this.sound.play(ev.tipo === 'canto' ? 'gallo' : 'aleteo');
@@ -109,7 +129,7 @@ function hablar(scene, id, texto, cps = 18) {
 ## Límites honestos
 
 - **No hay voz hablada sin IA.** Lo asume el pedido: los diálogos usan blips.
-- **Los temas de los mundos son chiptune, no grabaciones.** La cumbia, el joropo y la gaita se reconocen por el ritmo (la guacharaca, las maracas y el furro), pero el acordeón, el arpa y el coro son ondas cuadradas y cuerdas punteadas sintetizadas. El furro de verdad es más grave de lo que un parlante de teléfono toca: el de acá va en 62 Hz con armónicos para que se oiga.
+- **Los temas de los mundos son chiptune, no grabaciones.** La cumbia, el joropo y la gaita se reconocen por el ritmo (la guacharaca, las maracas y el furro), pero el acordeón, el arpa y el coro son ondas cuadradas y cuerdas punteadas sintetizadas. Lo mismo con los de H3: la caña de millo, las trompetas de la papayera, la bandolina y el đàn tranh son ondas cuadradas y cuerdas punteadas, y se reconocen por el ritmo y el adorno (los trinos, el trémolo, el "nhấn"). El furro de verdad es más grave de lo que un parlante de teléfono toca: el de acá va en 62 Hz con armónicos para que se oiga.
 - **Síntesis de 8 bits.** Suena a consola, no a banda real. Para Rick es una decisión de estilo: la marcha y el đàn tranh se reconocen, pero son chiptune.
 - **Mono a 22050 Hz.** La marcha de 60 s pesa 2.6 MB en WAV. Con `"formato": "comprimido"` en el `kit.config.json`, el kit la saca en OGG y M4A a 64 kbps, unos 520 KB (ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#efectos-y-audio)).
 - **`victoria` y `victoria_banda`:** `victoria` es la fanfarria de GG Abyss y no se cambió para no tocar ese kit. Para Nekketsu va `victoria_banda`, que combina con la marcha.
