@@ -63,7 +63,7 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `fx` | Efectos del catálogo general: `true` (los 56) o ids, bases y grupos. Ver abajo | No van |
 | `audio` | `{ "sfx": [...], "musica": [...], "ambientes": [...], "voces": [...] }` con los sonidos del motor, o `true` en cada sección. Ver abajo y [AUDIO.md](AUDIO.md) | No va |
 
-Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 142 del motor. El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
+Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se pueden pedir son las 205 del motor. Con `alias` salen con el nombre que use el juego (ver abajo). El esquema [`kit-a-medida.schema.json`](kit-a-medida.schema.json) las trae todas, así que el editor las autocompleta.
 
 ### Equipos
 
@@ -75,6 +75,21 @@ Hace falta `fichas` o `personajes_incluidos`, o los dos. Las animaciones que se 
 ```
 
 Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la mascota exista. Cualquier otro campo (`pais`, `musica`, `bandera`...) pasa al manifiesto sin tocarlo.
+
+### Nombres propios y animaciones por equipo (`alias`, lote C5)
+
+Un juego puede ponerle su nombre a una animación del motor. El pack pide la del motor y en las hojas, el atlas y el manifiesto sale con el nombre del juego:
+
+```jsonc
+"packs": { "ngg_burlas": ["burla_pulgar", "burla_bruce_lee"] },
+"alias": { "burla_familia_gg": "burla_pulgar", "burla_instituto_nekketsu": "burla_bruce_lee" }
+```
+
+- Una animación puede tener varios alias (dos equipos con el mismo gesto): sale una vez por alias. Con alias, ya no sale con su nombre del motor.
+
+- **Si el nombre termina en `_<equipo>`** (un id del archivo de equipos), solo lo trae el atleta de ese equipo, igual que `taunt_<id>` solo lo trae su dueño. Así un pack de burlas por equipo pesa una animación por atleta, no seis.
+- El alias no puede llevar el nombre de una animación del motor, y tiene que apuntar a una que exista y que esté en algún pack. Los errores dicen cuál quisiste decir.
+- Las burlas del motor: `burla_pulgar` (pulgar arriba con guiño), `burla_bruce_lee` (el pulgar en la nariz y la mano que llama), `burla_dragon` (saludo de puño en la palma, reverencia y garra de dragón), `burla_risa_tapada` (se tapa la boca riéndose y señala), `burla_salsa` (llama con las dos manos y un paso de salsa) y `burla_hombros` (sacude los hombros y abre los brazos). Sin bucle, a 8 fps, con el evento `frase` en el cuadro del gesto fuerte: ahí va el globo con la frase.
 
 ### Efectos y audio
 

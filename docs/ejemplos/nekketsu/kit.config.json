@@ -138,7 +138,23 @@
       "grab_leg_up",
       "edge_teeter",
       "fall_off"
+    ],
+    "ngg_burlas": [
+      "burla_pulgar",
+      "burla_bruce_lee",
+      "burla_dragon",
+      "burla_risa_tapada",
+      "burla_salsa",
+      "burla_hombros"
     ]
+  },
+  "alias": {
+    "burla_familia_gg": "burla_pulgar",
+    "burla_instituto_nekketsu": "burla_bruce_lee",
+    "burla_rong_sai_gon": "burla_dragon",
+    "burla_rolos_de_chapinero": "burla_risa_tapada",
+    "burla_panas_de_caracas": "burla_salsa",
+    "burla_maracuchos_del_lago": "burla_hombros"
   },
   "pruebas": {
     "crosscountry": [
@@ -146,7 +162,8 @@
       "pelea",
       "armas",
       "natacion",
-      "recorridos"
+      "recorridos",
+      "ngg_burlas"
     ],
     "vallas": [
       "base",
@@ -161,7 +178,8 @@
       "pelea",
       "armas",
       "kachinuki",
-      "trepar"
+      "trepar",
+      "ngg_burlas"
     ]
   },
   "objetos": true,

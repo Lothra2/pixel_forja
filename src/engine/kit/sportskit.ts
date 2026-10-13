@@ -61,6 +61,13 @@ export interface SportsKitOptions {
   packs?: string[];
   /** packs a medida: nombre -> animaciones (el kit a medida los arma desde su configuración). Sin esto, SPORT_PACKS */
   packDefs?: Record<string, readonly string[]>;
+  /** nombres propios del juego para animaciones del motor: { "burla_familia_gg": "burla_pulgar" }. Salen con el nombre del juego */
+  alias?: Record<string, string>;
+  /**
+   * el equipo de cada atleta. Una animación (o un alias) que termina en `_<equipo>` solo se dibuja para los de ese
+   * equipo, como `taunt_<id>` solo para su dueño
+   */
+  equipoDe?: Record<string, string>;
   cell?: CellSize;
   /** pocas animaciones por deporte (para pruebas rápidas) */
   quick?: boolean;
@@ -186,6 +193,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
   const out: Record<string, AthleteEntry> = {};
   const heads: Raster[] = [];
   const ids = Object.keys(athletes);
+  const equipos = [...new Set(Object.values(opts.equipoDe ?? {}))];
   for (const [id, f] of Object.entries(athletes)) {
     if (!/^[a-z0-9_]+$/.test(id)) throw new Error(`id de atleta inválido: "${id}" (usa minúsculas, números y _)`);
     const c = creditsFor(f);
@@ -199,11 +207,12 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
       const fp = dressForPack(f, pack);
       const all = defs[pack] ?? [];
       // las propias de otro atleta (`taunt_kenji` en Rick) no se dibujan: cada uno trae solo las suyas
-      const names = (opts.quick ? all.slice(-2) : all).filter((a) => hasAnim(fp, a) && (duenoDe(a, ids) ?? id) === id);
+      const real = (a: string) => opts.alias?.[a] ?? a;
+      const names = (opts.quick ? all.slice(-2) : all).filter((a) => hasAnim(fp, real(a)) && (duenoDe(a, ids) ?? id) === id && (duenoDe(a, equipos) ?? opts.equipoDe?.[id]) === opts.equipoDe?.[id]);
       const entries: Record<string, SportAnimEntry> = {};
       const frames: { name: string; raster: Raster }[] = [];
       for (const a of names) {
-        const { clips, frames: n, side } = clips8(fp, C, a, views);
+        const { clips, frames: n, side } = clips8(fp, C, real(a), views);
         const first = clips[0];
         const m = motionOf8(clips, 1, side);
         const entry: SportAnimEntry = { cuadros: n, fps: first.fps, loop: first.loop, ...m, ...(first.waterRows ? { agua: first.waterRows } : {}) };
