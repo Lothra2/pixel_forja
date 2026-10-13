@@ -76,11 +76,12 @@ En pantalla no hay inclinación: `px = x`, `py = franja.atras + y - z`. Una caja
 | `objetos.png` + `.json` | Cada caja del layout dibujada a su medida, el toldo, los postes y el portón. Con `x`, `y` y `orden` |
 | `vida.png` | Lo que se mueve, cuadro a cuadro: ropa tendida, cables con viento, palomas (2 cuadros paradas y 2 volando) y motos al fondo |
 | `superficie.png` | Por pixel de la franja: qué suena al pisar (`paso_piedra`, `paso_agua`... más `_0` a `_2`) y si resbala. La leyenda va en `escenario.json` |
+| `borde_filo.png` + `borde_vacio.png` | Solo si hay un borde al vacío (un hueco `vacio` que llega al final del mundo). El filo con la franja amarilla y negra que se desmorona en 6 cuadros, y la ciudad allá abajo en 128 x 128 que se repite. Para cuando el juego hace avanzar el borde. Van en `escenario.json` → `borde` |
 | `colision.json` | La geometría del layout, igual |
 | `luces.json` | Color, radio y latido. De día, las lámparas de los postes van apagadas |
 | `particulas.json` | Humo de incienso, pétalos, goteras, ondas en el agua. Las que traen `fx` usan el catálogo de efectos del kit |
 | `verificacion.md` | Las 9 pruebas, con lo que midió cada una |
-| `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360 |
+| `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360. En una arena de una pantalla van a 0, 2 y 4 segundos, para que se vea la vida |
 | `ficha_arte.md` | Con `--ficha`: paleta, elementos icónicos, vida y qué dibujo va en cada caja |
 
 ## Vista inclinada
@@ -157,7 +158,7 @@ Todas bloquean: si una falla, el escenario no sale.
 | 3 | Piso | Ni un pixel transparente en la franja |
 | 4 | Apoyo | Ninguna caja, poste ni objeto del layout cae sobre un hueco |
 | 5 | Colisión | `colision.json` es igual al layout |
-| 6 | Camino | Se llega de la salida a la meta con las reglas del juego: salto de 36, escalón de 6, salto largo de 84 |
+| 6 | Camino | Se llega de la salida a la meta con las reglas del juego: salto de 36, escalón de 6, salto largo de 84. En una arena (sin salida ni meta, como la pelea), se llega a todo el piso |
 | 7 | Legibilidad | Una silueta de atleta cada 64 px en cada carril. Contraste mediano entre su contorno y el fondo de al menos 2:1 |
 | 8 | Paleta | Ningún color fuera de los 24 de la ficha |
 | 9 | Peso | En la pantalla más cargada: hasta 8 capas, 12 luces encendidas, 16 piezas animadas y 24 objetos |
@@ -214,10 +215,21 @@ Todas bloquean: si una falla, el escenario no sale.
   - **Postes:** `poste_luz`, `antena` y `asta_bandera` con la bandera de Colombia que ondea. Si el asta del layout es tan alta que la bandera se saldría de la pantalla, se dibuja más corta y `generarEscenario` lo avisa.
   - **Vida:** `metrocable` (6 cabinas en dos cables, ida y vuelta, en 60 s), `banderines` y `ropa_tendida` (solo donde detrás hay casas), la bandera del asta y los peldaños de la escalera eléctrica que corren (3 cuadros).
   - **Letreros en español:** SALIDA y META en la pancarta (en Vietnam siguen XUẤT PHÁT y VỀ ĐÍCH). Si la meta queda arriba de una terraza alta, la pancarta va en dos palos parados al fondo de la terraza, y la línea a cuadros se pinta en el techo de la caja.
-- **Los otros estilos del pedido** (`colombia_colonial`, `venezuela_barrio`, `venezuela_ciudad`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
+- **El estilo `venezuela_ciudad`** (`pais: "venezuela"`, lote E3b): Caracas de noche. Hoy pinta la azotea de Parque Central (`paralaje.cerca: "torres_parque_central"`, `paralaje.lejos: "avila_noche"`).
+  - **Solo de noche** (`venezuelaPaleta.ts`): el cielo y El Ávila azul casi negro, el concreto gris violeta, las ventanas y los cerros en amarillo, y los neones rosado y turquesa (`salmon` y `menta`). `canal` es el violeta del reflejo del neón. Un layout de Venezuela a otra hora queda `pendiente` y lo dice: "todavía no tiene arte de tarde (hoy pinta: noche)".
+  - **El cielo de noche** (para cualquier estilo que tenga noche): estrellas, unas grandes en cruz, nubes finas tocadas por la luna y el resplandor de la ciudad abajo.
+  - **Lejos:** El Ávila, la montaña larga azul con quebradas, la luna en las laderas y la Cruz encendida en el pico. Va bajo en la capa: con el zoom de la pelea la cámara empieza en la fila 93 y el marcador tapa unas 45 más, así que la Cruz cae en la fila 135 o más abajo, en el hueco entre la segunda torre y la caseta. El avión y el helicóptero vuelan a esa altura. Delante, los cerros llenos de lucecitas en manchones y la ciudad abajo.
+  - **Cerca:** `torres_parque_central` es el fondo: la ciudad encendida, las dos torres de concreto claro con sus ventanas y la luz roja, el público en dos azoteas vecinas (con banderas y celulares), los tanques de agua y el murito del borde. `letreros_neon` suma la caseta de la escalera con la puerta de lámina, los bombillos, CARACAS ES BELLA, la escalerita al techo, las antenas, las parabólicas y los dos neones con su halo: AREPERA LA CHAMA con la arepa y CARACAS con El Ávila y la Cruz.
+  - **El piso:** la `baldosa` de este lugar son losas grandes de concreto (48 x 16) con charquitos ovalados. De noche, el piso mojado refleja los neones en rayas debajo de su columna, más fuertes en los charcos (`reflejoNeon`, solo los neones: una camisa turquesa no se refleja).
+  - **El borde sin baranda:** un hueco `vacio` que llega al final del mundo es el borde del edificio. Lleva la franja amarilla y negra en el filo y, pasando el canto, la ciudad muy abajo con sus avenidas. Para cuando el borde avanza, sale `borde_filo.png` y `borde_vacio.png`.
+  - **Postes:** `antena` es la torre de celosía de telecomunicaciones con sus paneles, una parabólica y la luz roja.
+  - **Vida:** `letreros_neon` (los dos neones, 4 cuadros con un parpadeo), `luces_ciudad` (las luces rojas de las torres y el tráfico allá abajo pasando el borde), `avion_lejos` y `helicoptero_reflector` (en la capa lejos, con su recorrido; el helicóptero con el haz que barre), `publico` (los de las azoteas vecinas levantan brazos, banderas y celulares) y `fuegos_artificiales` (partículas, repartidas a lo ancho de la arena).
+  - **Luces:** los dos neones (parpadean con su vida), los dos bombillos de la caseta y las luces rojas de las torres y las antenas, que prenden y apagan cada segundo.
+- **Los otros estilos del pedido** (`colombia_colonial`, `venezuela_barrio`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos
 
-- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando.
+- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad` solo sabe pintar la noche.
+- **El borde que avanza** lo mueve el juego: el arte trae el filo y el vacío, pero el murito del fondo, pintado en la capa cerca, sigue entero hasta el borde de antes.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.
 - **La legibilidad se mide con el contorno de los atletas,** parados encima de la caja que tengan debajo, no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.

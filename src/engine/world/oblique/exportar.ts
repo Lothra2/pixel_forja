@@ -5,6 +5,8 @@ import { NOMBRES } from './paleta';
 import { fichaMarkdown } from './ficha';
 import { PARALAJE, TROZO, postal, trozo, type Escena } from './escena';
 import type { Lienzo } from './lienzo';
+import { filoDesmorona, vacioTextura } from './caracas';
+import { ORILLA } from './piso';
 
 /**
  * La carpeta `escenarios/<id>/` del pedido (10.3), lista para el juego: capas en trozos de 1280, atlas de objetos y de
@@ -43,6 +45,8 @@ export function puntosPostal(E: Escena): Record<'inicio' | 'medio' | 'final', nu
     const n = L.huecos.filter((h) => h.x0 < x + W && h.x1 > x).length * 3 + L.muros.filter((m) => m.x < x + W && m.x + m.w > x).length * 3 + [...L.plataformas, ...L.solidos].filter((b) => b.x < x + W && b.x + b.w > x).length;
     if (n > max) { max = n; mejor = x; }
   }
+  // una arena (sin salida ni meta) que cabe en una pantalla: el principio, el medio y el final de lo que la cámara recorre
+  if (!L.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta') && E.ancho - W <= W) return { inicio: 0, medio: Math.round((E.ancho - W) / 2), final: Math.max(0, E.ancho - W) };
   return { inicio: Math.max(0, Math.min(salida - 40, L.largo - W)), medio: mejor, final: Math.max(0, Math.min(meta + 50 - W, L.largo - W)) };
 }
 
@@ -82,6 +86,21 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
   png('vida.png', vi.atlas);
   let k = 0;
   const vida = E.vida.map((v) => ({ id: v.id, tipo: v.tipo, capa: v.capa, x: v.x, y: v.y, fps: v.fps, velocidad: v.velocidad, cada: v.cada, recorrido: v.recorrido, orden: v.orden, cuadros: v.cuadros.map(() => vi.rects[k++]) }));
+  // el borde del edificio (un vacío que llega al final del mundo): el filo que se desmorona y el vacío, para cuando avanza
+  const bordes = L.huecos.filter((h) => h.caida === 'vacio' && h.x1 >= L.largo);
+  let borde: Record<string, unknown> | undefined;
+  if (bordes.length) {
+    const alto = Math.min(D + ORILLA, 360 - FT), filo = filoDesmorona(E.paleta, D, alto, E.inclinacion, 41), w = filo[0].w;
+    const tira = createRaster(w * filo.length, alto);
+    filo.forEach((c, i) => { for (let y = 0; y < alto; y++) tira.data.set(c.r.data.subarray(y * w * 4, (y + 1) * w * 4), (y * tira.w + i * w) * 4); });
+    png('borde_filo.png', tira); png('borde_vacio.png', vacioTextura(E.paleta, 41).r);
+    borde = {
+      nota: 'Para cuando el borde avanza (la azotea se achica). borde_filo.png: 6 cuadros del canto con la franja, en tira; el 0 entero y del 1 al 5 se desmorona. Va con su esquina de arriba a la izquierda en (x del borde nuevo - 10, franja.atras), corrido como el piso. Lo de la derecha del canto es transparente: ahí va borde_vacio.png, la ciudad allá abajo, que se repite cada 128 x 128.',
+      filo: { archivo: 'borde_filo.png', w, h: alto, cuadros: filo.length, fps: 8, ancla: [10, 0] },
+      vacio: { archivo: 'borde_vacio.png', w: 128, h: 128, repetir: true },
+      hoy: bordes.map((h) => h.x0),
+    };
+  }
   // superficie, colisión, luces y partículas
   png('superficie.png', E.superficie.img);
   out.push({ nombre: 'colision.json', bytes: json(collisionOf(L)) });
@@ -89,7 +108,10 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
   out.push({ nombre: 'particulas.json', bytes: json({ nota: 'x e y en pixeles de pantalla a escala 1 (y de pantalla = franja.atras + y del mundo). fx: nombre del efecto del catálogo (manifest.fx).', particulas: E.particulas }) });
   // postales
   const pp = puntosPostal(E);
-  if (conPostales) for (const [n, x] of Object.entries(pp)) png(`postales/${n}.png`, postal(E, x));
+  // en una arena de una pantalla las tres caen casi en el mismo lugar: van a 0, 2 y 4 segundos, para que se vea la vida
+  const arena = !L.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta');
+  const seg: Record<string, number> = arena ? { inicio: 0, medio: 2, final: 4 } : {};
+  if (conPostales) for (const [n, x] of Object.entries(pp)) png(`postales/${n}.png`, postal(E, x, [], 640, 360, seg[n] ?? 0));
   // ficha y verificación
   if (conFicha) out.push({ nombre: 'ficha_arte.md', bytes: new TextEncoder().encode(fichaMarkdown(E.ficha)) });
   if (verificacion) out.push({ nombre: 'verificacion.md', bytes: new TextEncoder().encode(verificacion) });
@@ -117,6 +139,7 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
         ...(vida.some((v) => v.capa === 'lejos' || v.capa === 'objeto') ? { nota: 'capa cerca y tras_cerca: x, y de pantalla, como siempre. capa lejos: x, y en pixeles de la imagen lejos (que se repite cada su ancho y corre con su paralaje); va de recorrido.desde a recorrido.hasta en recorrido.segundos y vuelve a empezar, adelantada por desfase (0 a 1). capa objeto: va encima de un objeto, con setDepth(franja.atras + orden), como los objetos.' } : {}),
       },
       callejones: E.huecos,
+      ...(borde ? { borde } : {}),
       superficie: { archivo: 'superficie.png', y: FT, leyenda: E.superficie.leyenda },
       colision: 'colision.json', luces: 'luces.json', particulas: 'particulas.json',
       ...(conPostales ? { postales: Object.fromEntries(Object.entries(pp).map(([n, x]) => [n, { archivo: `postales/${n}.png`, x }])) } : {}),

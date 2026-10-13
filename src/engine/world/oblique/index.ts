@@ -13,7 +13,7 @@ import { renderEscena, altoVisible, type Escena } from './escena';
 import { exportarEscena, type Archivo } from './exportar';
 import { verificar, verificacionMarkdown, type Prueba } from './verify';
 import { INCLINACION } from './inclinada';
-import { hayEstilo, estiloDe } from './ficha';
+import { hayEstilo, estiloDe, horasDe } from './ficha';
 import { SKYLINES } from './skyline';
 
 export { INCLINACION } from './inclinada';
@@ -58,7 +58,7 @@ export interface ResultadoEscenario {
 }
 
 /** Los fondos lejanos que ya tienen arte. */
-const LEJOS: string[] = [...SKYLINES, 'valle_de_aburra'];
+const LEJOS: string[] = [...SKYLINES, 'valle_de_aburra', 'avila_noche'];
 
 /** Valida el layout, pinta el escenario, corre las 9 pruebas y devuelve la carpeta `escenarios/<id>/`. */
 export function generarEscenario(layout: unknown, o: OpcionesEscenario = {}): ResultadoEscenario {
@@ -66,7 +66,7 @@ export function generarEscenario(layout: unknown, o: OpcionesEscenario = {}): Re
   if (!v.layout) return { ok: false, id: null, errores: v.errores, avisos: v.avisos, pruebas: [], archivos: [], escena: null, layout: null };
   // un lugar que todavía no tiene arte: no se pinta con el de otro
   const lejos = v.layout.paralaje.lejos;
-  const falta = !hayEstilo(v.layout) ? `el estilo "${estiloDe(v.layout)}" todavía no tiene arte`
+  const falta = !hayEstilo(v.layout) ? `el estilo "${estiloDe(v.layout)}" todavía no tiene arte${horasDe(v.layout) ? ` de ${v.layout.hora} (hoy pinta: ${horasDe(v.layout)!.join(', ')})` : ''}`
     : lejos && !LEJOS.includes(lejos) ? `el fondo lejano "${lejos}" todavía no tiene arte` : null;
   if (falta) return { ok: false, pendiente: true, id: v.layout.id, errores: [`${v.layout.id}: ${falta}. Llega con el lote de su escenario.`], avisos: v.avisos, pruebas: [], archivos: [], escena: null, layout: v.layout };
   const E = renderEscena(v.layout, o.semilla ?? 42, o.inclinacion ?? INCLINACION);

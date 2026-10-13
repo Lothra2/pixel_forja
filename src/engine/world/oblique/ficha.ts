@@ -2,6 +2,7 @@ import type { ObliqueLayout } from './layout';
 import { boxesOf } from './layout';
 import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Paleta } from './paleta';
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
+import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
 
 /**
  * Ficha de arte de un escenario: la puerta 1 del pedido. Paleta de 24 colores, de 8 a 12 elementos icónicos y los
@@ -32,6 +33,8 @@ interface Estilo {
   vida: Record<string, string>;
   cajas: Record<string, string>;
   letreros: string[];
+  /** Las horas que el estilo ya sabe pintar. Sin la lista, todas. */
+  horas?: string[];
 }
 
 const VIETNAM: Estilo = {
@@ -238,13 +241,52 @@ COLOMBIA_LADRILLO.lugares = {
   },
 };
 
-const ESTILOS: Record<string, Estilo> = { vietnam: VIETNAM, colombia_ladrillo: COLOMBIA_LADRILLO };
+/** Caracas de noche. Hoy: la azotea de Parque Central. */
+const VENEZUELA_CIUDAD: Estilo = {
+  paleta: VENEZUELA_NOCHE,
+  paletaDe: paletaVenezuela,
+  uso: USO_VENEZUELA,
+  horas: HORAS_VENEZUELA,
+  iconos: [
+    { id: 'avila', nombre: 'El Ávila de noche, con la luna en las laderas', donde: 'lejos' },
+    { id: 'cruz', nombre: 'La Cruz del Ávila encendida en el pico', donde: 'lejos' },
+    { id: 'cerros', nombre: 'Los cerros llenos de lucecitas y la ciudad encendida abajo', donde: 'lejos y cerca' },
+    { id: 'torres', nombre: 'Las dos torres de Parque Central con sus ventanas y la luz roja arriba', donde: 'cerca, x 74 a 260' },
+    { id: 'publico', nombre: 'El público en las azoteas vecinas, con banderitas y celulares', donde: 'cerca, entre las torres y al lado de la caseta' },
+    { id: 'neon_arepera', nombre: 'El neón rosado de AREPERA LA CHAMA con la arepa', donde: 'cerca, sobre la caseta' },
+    { id: 'neon_caracas', nombre: 'El neón turquesa de CARACAS con El Ávila y la Cruz', donde: 'cerca, sobre la caseta' },
+    { id: 'caseta', nombre: 'La caseta de la escalera: puerta de lámina, bombillos, CARACAS ES BELLA y la escalerita al techo', donde: 'cerca, x 392 a 606' },
+    { id: 'tanques', nombre: 'Los tanques de agua en sus patas, con el tubo oxidado', donde: 'cerca, a la izquierda' },
+    { id: 'antenas', nombre: 'Las antenas de celosía con los paneles y la luz roja', donde: 'postes antena y el techo de la caseta' },
+    { id: 'borde', nombre: 'El borde sin baranda con la franja amarilla y negra, y la ciudad allá abajo', donde: 'el hueco vacío del final y el piso' },
+    { id: 'piso_mojado', nombre: 'Las losas mojadas que reflejan el neón', donde: 'piso' },
+  ],
+  vida: {
+    letreros_neon: 'Los dos neones prendidos, y LA CHAMA (o El Ávila del letrero) que parpadea: 4 cuadros',
+    luces_ciudad: 'Las luces rojas de las torres que prenden y apagan, y el tráfico que corre allá abajo pasando el borde',
+    avion_lejos: 'Un avioncito con las luces de las alas que parpadean, cruzando alto en la capa lejos',
+    helicoptero_reflector: 'El helicóptero con el reflector que barre hacia abajo, cruzando delante del Ávila (capa lejos)',
+    helicoptero: 'El helicóptero con el reflector que barre hacia abajo, cruzando delante del Ávila (capa lejos)',
+    publico: 'El público de las azoteas vecinas levanta los brazos, las banderas y los celulares: 2 cuadros',
+    fuegos_artificiales: 'Fuegos artificiales sobre la ciudad al final (partículas)',
+  },
+  cajas: {
+    tanque_agua: 'Tanque de agua cilíndrico de concreto pintado, con sus anillos',
+    aire_acondicionado: 'Unidad de aire acondicionado con el ventilador redondo',
+  },
+  letreros: ['AREPERA LA CHAMA', 'CARACAS', 'CARACAS ES BELLA'],
+};
 
-/** ¿Ya hay ficha para el estilo de este layout? */
-export const hayEstilo = (L: ObliqueLayout) => estiloDe(L) in ESTILOS;
+const ESTILOS: Record<string, Estilo> = { vietnam: VIETNAM, colombia_ladrillo: COLOMBIA_LADRILLO, venezuela_ciudad: VENEZUELA_CIUDAD };
+
+/** ¿Ya hay ficha para el estilo de este layout, y a su hora? */
+export const hayEstilo = (L: ObliqueLayout) => estiloDe(L) in ESTILOS && (!ESTILOS[estiloDe(L)].horas || ESTILOS[estiloDe(L)].horas!.includes(L.hora));
+
+/** Las horas que pinta el estilo del layout (undefined: todas, o no hay estilo). */
+export const horasDe = (L: ObliqueLayout) => ESTILOS[estiloDe(L)]?.horas;
 
 /** El estilo de fachada que va con cada país. */
-export const estiloDe = (L: ObliqueLayout) => (L.pais === 'vietnam' ? 'vietnam' : L.pais === 'colombia' ? 'colombia_ladrillo' : L.pais);
+export const estiloDe = (L: ObliqueLayout) => (L.pais === 'vietnam' ? 'vietnam' : L.pais === 'colombia' ? 'colombia_ladrillo' : L.pais === 'venezuela' ? 'venezuela_ciudad' : L.pais);
 
 export function fichaArte(L: ObliqueLayout): FichaArte {
   const estilo = estiloDe(L), E = ESTILOS[estilo];
@@ -259,7 +301,8 @@ export function fichaArte(L: ObliqueLayout): FichaArte {
   }
   const lugar = E.lugares?.[L.paralaje?.cerca ?? ''];
   const pal = E.paletaDe?.(L.hora, L.clima) ?? E.paleta, uso = { ...E.uso, ...(pal === E.paleta ? {} : USO_CIELO[L.hora === 'tarde' || L.clima[0] === 'aguacero' ? 'tarde' : L.hora] ?? {}) };
-  const vida = [...L.vida, ...(lugar ? [] : ['incienso'])].filter((v, i, a) => a.indexOf(v) === i).map((id) => ({ id, detalle: E.vida[id] ?? 'Sin dibujo todavía: se propone en la ficha' }));
+  // el incienso de los altares es de las casas de Vietnam
+  const vida = [...L.vida, ...(lugar || estilo !== 'vietnam' ? [] : ['incienso'])].filter((v, i, a) => a.indexOf(v) === i).map((id) => ({ id, detalle: E.vida[id] ?? 'Sin dibujo todavía: se propone en la ficha' }));
   return {
     id: L.id,
     nombre: L.nombre ?? L.id,
