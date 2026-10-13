@@ -1,7 +1,7 @@
 import { rng, grain, bayer } from '../../fx/pix';
 import { Lienzo } from './lienzo';
 import type { Color, Paleta } from './paleta';
-import { MAS_OSCURO, MAS_CLARO } from './tonos';
+import { MAS_OSCURO } from './tonos';
 import type { CtxCerca } from './fachadas';
 import type { ObliqueLayout } from './layout';
 import type { Luz, Particula, VidaEscena } from './escena';
@@ -11,7 +11,7 @@ import { recorte, soloAfuera, textoGrande, anchoTexto, malla, sentadita } from '
 /**
  * La cancha de básquet de un barrio de Maracaibo de noche (estilo `venezuela_lago`), en la vista inclinada de la pelea,
  * para el Básquet 3x3. Lejos, el Lago de Maracaibo oscuro con el puente General Rafael Urdaneta encendido de punta a
- * punta (las cinco torres con sus tirantes), los balancines con su luz roja, los mechurrios de la otra orilla y, a la
+ * punta (las seis torres con sus tirantes), los balancines con su luz roja, los mechurrios de la otra orilla y, a la
  * derecha, la nube de tormenta del Catatumbo con sus relámpagos. Cerca, la malla de la cancha sobre el muro pintado de
  * CANCHA LA CHINITA, los postes con los bombillos de sodio, la gradita con la gente y los gaiteros con su furro. El
  * piso es la cancha de concreto pintada, con las rayas donde las pone Basket.ts.
@@ -38,8 +38,8 @@ export const CANCHA = { x0: 40, x1: 596, prof: 104, aro: { x: 566, y: 52 }, arco
 
 /** Fila de la otra orilla en la capa lejos (la capa va de la fila 12 a la 182 de la pantalla). */
 export const ORILLA_LAGO = 120;
-/** El puente General Rafael Urdaneta: la fila del tablero y las cinco torres del tramo atirantado (x en lejos.png). */
-export const PUENTE = { tablero: 114, torres: [150, 216, 282, 348, 414], alto: 50 };
+/** El puente General Rafael Urdaneta: la fila del tablero y las seis torres de los cinco tramos atirantados (x en lejos.png). */
+export const PUENTE = { tablero: 114, torres: [132, 192, 252, 312, 372, 432], alto: 50 };
 /** La nube del Catatumbo, a la derecha, sobre el horizonte. */
 export const CATATUMBO = { x0: 456, x1: 676, top: 40 };
 
@@ -70,7 +70,7 @@ function balancin(L: Lienzo, x: number, agua: number) {
 
 /**
  * El Lago de Maracaibo de noche: la otra orilla con sus lucecitas y los mechurrios, el puente General Rafael Urdaneta
- * encendido de lado a lado con el tramo de las cinco torres, los balancines, la nube del Catatumbo a la derecha con su
+ * encendido de lado a lado con el tramo de las seis torres, los balancines, la nube del Catatumbo a la derecha con su
  * borde iluminado, y el agua oscura con los reflejos de las luces. Arriba queda transparente (el cielo).
  */
 export function lagoPuenteUrdaneta(pal: Paleta, w: number, h: number, seed: number): Lienzo {
@@ -97,7 +97,7 @@ export function lagoPuenteUrdaneta(pal: Paleta, w: number, h: number, seed: numb
   for (const mx of [64, 520, 620, 900]) { L.vl(mx, ORILLA_LAGO - 9, 6, 'asfalto_claro'); L.p(mx, ORILLA_LAGO - 10, 'oro'); L.p(mx, ORILLA_LAGO - 11, 'amarillo'); L.p(mx - 1, ORILLA_LAGO - 10, 'ocre'); }
   // el agua del Lago: oscura, con el brillo de la ciudad que baja
   for (let y = ORILLA_LAGO + 1; y < h; y++) for (let x = 0; x < w; x++) L.p(x, y, bayer(x, y) < 0.12 + (y - ORILLA_LAGO) / 260 ? 'azul_noche' : 'sombra');
-  // el puente: el tablero encendido con su hilera de faroles, las pilas que bajan al agua y las cinco torres
+  // el puente: el tablero encendido con su hilera de faroles, las pilas que bajan al agua y las seis torres
   for (let x = 0; x < w; x++) {
     const t = tableroEn(x);
     L.p(x, t - 1, 'cemento'); L.p(x, t, 'cemento_claro'); L.p(x, t + 1, 'cemento'); L.p(x, t + 2, 'asfalto_claro');
@@ -246,11 +246,13 @@ export function concretoCancha(x: number, y: number, s: number): Color {
   // la pintura gastada: manchones donde asoma el concreto, más por donde se pisa
   if (grain(xr >> 3, y >> 2, s + 1) < 0.035 && bayer(xr, y) < 0.3) return 'cemento';
   // las grietas finitas
-  if (grain(xr >> 1, y, s + 2) < 0.012) return MAS_OSCURO[base];
+  if (grain(xr >> 1, y, s + 2) < 0.005) return MAS_OSCURO[base];
   // la luz de los bombillos cae en charcos más claros
+  // (de noche el `cielo` de la paleta es oscuro: la luz de cada color va a mano)
+  const claro: Color = base === 'celeste' ? 'cemento_claro' : base === 'ocre' ? 'amarillo' : 'menta';
   const luz = POSTES_LUZ.some((p) => Math.hypot((xr - p.x) / 2.2, y - 6) < 30);
-  if (luz && bayer(xr, y) < 0.18) return MAS_CLARO[base];
-  return n > 0.985 ? MAS_CLARO[base] : base;
+  if (luz && bayer(xr, y) < 0.18) return claro;
+  return n > 0.985 ? claro : base;
 }
 
 /** Las rayas blancas de la media cancha, el área y el arco de los 2 puntos, donde las pone Basket.ts. */

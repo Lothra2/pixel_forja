@@ -304,9 +304,9 @@ Todas bloquean: si una falla, el escenario no sale.
 - **El estilo `venezuela_lago`** (`paralaje.cerca: "cancha_barrio_maracaibo"`, `paralaje.lejos: "lago_puente_urdaneta"`): una cancha de barrio de Maracaibo de noche, en la vista inclinada.
   - **Solo de noche.** La paleta: el cielo con el resplandor de la ciudad, el Lago oscuro, el blanco y el violeta del relámpago (`salmon`), la nube de tormenta (`canal`), el sodio de los bombillos y el azul de la cancha (`celeste`). No sale el reflejo de neón de Caracas.
   - **Fondo:** la malla en rombos (deja ver el Lago), el muro de bloques con la franja amarilla, azul y roja, CANCHA LA CHINITA, BARRIO SANTA LUCÍA y el mural del puente, tres postes con los bombillos de sodio, la gradita con la gente y los gaiteros con sombrero (furro, tambora, charrasca y cuatro).
-  - **Lejos:** el puente General Rafael Urdaneta de punta a punta con las cinco torres en A y sus tirantes, la otra orilla encendida con los mechurrios, tres balancines con su luz roja, los reflejos en el agua y la nube del Catatumbo a la derecha.
+  - **Lejos:** el puente General Rafael Urdaneta de punta a punta con las seis torres en A y sus tirantes, la otra orilla encendida con los mechurrios, tres balancines con su luz roja, los reflejos en el agua y la nube del Catatumbo a la derecha.
   - **El piso:** la `cancha` de este lugar es el concreto pintado (azul adentro, el área naranja, verde afuera) con las rayas de `Basket.ts` y la luz de los bombillos. El aro, el tablero y el poste los dibuja el juego.
-  - **Vida:** `relampago` (8 cuadros: la nube se alumbra por dentro y cae el rayo; solo donde la capa cerca deja ver afuera), `gaiteros` y `publico`. Luces: los seis bombillos y el resplandor del Catatumbo, que parpadea.
+  - **Vida:** `relampago` (8 cuadros: la nube se alumbra por dentro y cae el rayo, solo donde la capa cerca deja ver afuera), `gaiteros` y `publico`. Luces: los seis bombillos y el resplandor del Catatumbo, que parpadea.
 - **Los otros estilos del pedido** (`venezuela_barrio`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos

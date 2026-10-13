@@ -478,7 +478,7 @@ const VENEZUELA_LAGO: Estilo = {
   uso: USO_MARACAIBO,
   horas: ['noche'],
   iconos: [
-    { id: 'puente', nombre: 'El puente General Rafael Urdaneta encendido de punta a punta, con las cinco torres en A y sus tirantes', donde: 'lejos, por la malla' },
+    { id: 'puente', nombre: 'El puente General Rafael Urdaneta encendido de punta a punta, con las seis torres en A y sus tirantes', donde: 'lejos, por la malla' },
     { id: 'lago', nombre: 'El Lago de Maracaibo de noche, con la otra orilla encendida y los reflejos de las luces', donde: 'lejos' },
     { id: 'catatumbo', nombre: 'La nube de tormenta del Catatumbo sobre el horizonte, con sus relámpagos', donde: 'lejos y vida' },
     { id: 'balancines', nombre: 'Los balancines petroleros en el Lago con su luz roja, y los mechurrios de la otra orilla', donde: 'lejos' },
