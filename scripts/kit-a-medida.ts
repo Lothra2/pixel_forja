@@ -2,7 +2,7 @@
  * Kit a medida: arma el kit de un juego desde su kit.config.json.
  *   npm run kit-a-medida -- <carpeta de salida> --config <juego>/kit.config.json [--rapido] [--solo atletas,retratos,...]
  * Las rutas de la configuración (fichas, equipos) son relativas a la carpeta del kit.config.json.
- * --rapido: 2 animaciones por pack. --solo: solo esas partes (atletas, retratos, cabecitas, objetos, animales, fuentes).
+ * --rapido: 2 animaciones por pack. --solo: solo esas partes (atletas, retratos, cabecitas, objetos, animales, fuentes, interfaz, efectos, audio).
  * Ver docs/KIT_A_MEDIDA.md.
  */
 import { mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
@@ -10,6 +10,7 @@ import { dirname, join, basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildCustomKit, KIT_PARTS, type KitConfig, type KitPart, type TeamDef } from '../src/engine/kit/custom.ts';
 import { migrateFicha, validateFicha, type Ficha } from '../src/engine/sheet/ficha.ts';
+import { codificadorFfmpeg } from './codificador-ffmpeg.ts';
 
 const args = process.argv.slice(2);
 const flag = (k: string) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
@@ -61,9 +62,9 @@ if (cfg!.escenarios) {
     }
   }
 }
-// fuentes: Silkscreen (OFL), que viene con el proyecto
+// fuentes: Silkscreen (OFL), que viene con el proyecto. También la usan el logo y la interfaz
 let fuentes: { regular: ArrayBuffer; bold: ArrayBuffer } | undefined;
-if (cfg!.ui?.fuentes) {
+if (cfg!.ui?.fuentes || cfg!.ui?.logo || cfg!.ui?.interfaz) {
   const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'node_modules', '@fontsource', 'silkscreen', 'files');
   const ab = (f: string) => { const b = readFileSync(join(dir, f)); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
   fuentes = { regular: ab('silkscreen-latin-400-normal.woff'), bold: ab('silkscreen-latin-700-normal.woff') };
@@ -76,10 +77,14 @@ if (existsSync(out!) && readdirSync(out!).length) {
   if (!isKit) fail(`No borro ${out}: no está vacía y no es un kit de PixelForja. Usa una carpeta nueva.`);
 }
 
+// audio comprimido: OGG y M4A con ffmpeg, si la máquina lo tiene
+const codificar = cfg!.audio?.formato === 'comprimido' ? codificadorFfmpeg() : undefined;
+if (cfg!.audio?.formato === 'comprimido' && !codificar) console.warn('  aviso: no encuentro ffmpeg con libvorbis y aac. Los efectos salen en WAV y la música y los ambientes quedan pendientes');
+
 const t0 = Date.now();
 let res: ReturnType<typeof buildCustomKit>;
 try {
-  res = buildCustomKit(cfg!, { fichas, equipos, fuentes, escenarios }, { quick: args.includes('--rapido'), solo, progress: (m) => console.log(`  ${m}`) });
+  res = buildCustomKit(cfg!, { fichas, equipos, fuentes, escenarios }, { quick: args.includes('--rapido'), solo, codificar, progress: (m) => console.log(`  ${m}`) });
 } catch (e) { fail((e as Error).message); }
 rmSync(out!, { recursive: true, force: true });
 let bytes = 0;

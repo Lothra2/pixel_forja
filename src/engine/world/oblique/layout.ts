@@ -161,7 +161,9 @@ export function validateLayout(raw: unknown): LayoutResult {
     if (e.tipo === 'vehiculo' && isNum(e.carril) && Array.isArray(L.carriles) && (e.carril < 1 || e.carril > L.carriles.length)) errores.push(`entidades[${i}]: carril ${e.carril} no existe (hay ${L.carriles.length}).`);
   });
   if (L.vida !== undefined && (!Array.isArray(L.vida) || L.vida.some((v) => typeof v !== 'string'))) errores.push('`vida` es una lista de textos.');
-  if (L.prueba !== undefined && ents.length) for (const t of ['salida', 'meta'] as const) if (!ents.some((e) => e.tipo === t)) avisos.push(`Una prueba sin \`${t}\` en las entidades: la prueba de camino no se puede revisar.`);
+  // sin salida ni meta es una arena (la pelea): el camino revisa que se llegue a todo el piso. Con solo una, falta la otra
+  const conSalida = ents.some((e) => e.tipo === 'salida'), conMeta = ents.some((e) => e.tipo === 'meta');
+  if (L.prueba !== undefined && ents.length && conSalida !== conMeta) for (const t of ['salida', 'meta'] as const) if (!ents.some((e) => e.tipo === t)) avisos.push(`Una prueba sin \`${t}\` en las entidades: la prueba de camino no se puede revisar.`);
 
   if (errores.length) return { layout: null, errores, avisos };
   const lay: ObliqueLayout = {

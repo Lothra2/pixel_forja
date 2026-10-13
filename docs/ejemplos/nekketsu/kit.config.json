@@ -181,6 +181,10 @@
         "vi"
       ]
     },
+    "logo": {
+      "texto": "NEKKETSU OLYMPIC GG"
+    },
+    "interfaz": true,
     "vs_fondo": true
   },
   "escenarios": "escenarios/",
@@ -189,6 +193,7 @@
   },
   "fx": true,
   "audio": {
+    "formato": "comprimido",
     "sfx": [
       "golpe",
       "critico",
@@ -207,11 +212,41 @@
       "error",
       "moneda",
       "subir_nivel",
+      "pistola",
       "silbato",
-      "pistola"
+      "golpe_1",
+      "golpe_2",
+      "golpe_3",
+      "golpe_pesado",
+      "chancleta",
+      "silla",
+      "pote",
+      "levantar",
+      "lanzar",
+      "caer_plano",
+      "mareo",
+      "ko",
+      "publico_grito",
+      "publico_ooh"
     ],
     "musica": [
-      "marcha_nekketsu"
+      "marcha_nekketsu",
+      "saigon_chay",
+      "azotea_final",
+      "victoria_banda",
+      "derrota"
+    ],
+    "voces": [
+      "rick",
+      "steph",
+      "sophie",
+      "alana",
+      "kenji",
+      "ryu",
+      "goro",
+      "tetsu",
+      "locutor",
+      "arbitro"
     ]
   }
 }
