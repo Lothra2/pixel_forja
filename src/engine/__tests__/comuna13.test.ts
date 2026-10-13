@@ -102,7 +102,7 @@ describe('la Comuna 13 (lote E3a)', () => {
       expect(r.errores.join()).toMatch(/todavía no tiene arte/);
     }
     const { files, warnings } = buildCustomKit({ juego: 'Prueba', personajes_incluidos: ['familia'], packs: { base: ['idle'] }, escenarios: 'x/' }, { escenarios: { 'caracas.layout.json': venezuela } }, { quick: true, solo: ['escenarios'] });
-    expect(warnings.join()).toMatch(/caracas_prueba: el estilo "venezuela" todavía no tiene arte.*Se salta/);
+    expect(warnings.join()).toMatch(/caracas_prueba: el estilo "venezuela_ciudad" todavía no tiene arte de manana \(hoy pinta: noche\).*Se salta/);
     expect(files.some((f) => f.name.startsWith('escenarios/'))).toBe(false);
   });
 

@@ -2,6 +2,7 @@ import { rng, grain, bayer } from '../../fx/pix';
 import { Lienzo } from './lienzo';
 import type { Color, Paleta } from './paleta';
 import { depthOf, type ObliqueLayout, type TipoPiso } from './layout';
+import { losaAzotea, orillaTorre } from './caracas';
 
 /**
  * Piso en vista oblicua, por tipo. La imagen va de la fila `franja.atras` hasta el borde de abajo de la pantalla:
@@ -88,6 +89,12 @@ const agua: Pintor = (_L, x, y, s) => (bayer(x, y) < 0.3 && g(x >> 2, y, s) < 0.
 
 export const PINTORES: Record<TipoPiso, Pintor> = { asfalto, acera, tierra, baldosa, madera, metal, arena, tatami, greda, cancha, pasto, agua };
 
+/** La baldosa de un lugar que la tiene distinta (por `paralaje.cerca`): las losas grandes de la azotea de Parque Central. */
+const BALDOSA_DE: Record<string, Pintor> = { torres_parque_central: (_L, x, y, s) => losaAzotea(x, y, s) };
+
+/** El pintor de un tipo de piso en este layout (con la baldosa propia del lugar si la tiene). */
+export const pintorDe = (L: ObliqueLayout, tipo: TipoPiso): Pintor => (tipo === 'baldosa' && BALDOSA_DE[L.paralaje?.cerca ?? '']) || PINTORES[tipo];
+
 /** Una grieta que camina con su rama. */
 function grieta(L: Lienzo, x: number, y: number, len: number, R: () => number) {
   let cx = x, cy = y;
@@ -120,7 +127,7 @@ export function pintarPiso(pal: Paleta, L: ObliqueLayout, o: PisoOpts = {}): Lie
   const P = new Lienzo(W, H, pal);
   // 1. cada tipo en su rango, el último manda
   for (const p of L.piso) {
-    const f = PINTORES[p.tipo];
+    const f = pintorDe(L, p.tipo);
     for (let y = p.y0 ?? 0; y < (p.y1 ?? D); y++) for (let x = p.x0; x < p.x1; x++) P.p(x, y, f(P, x, y, s));
   }
   // 2. bordes de acera: donde una acera termina y empieza otro piso, el bordillo con su sombra
@@ -242,6 +249,8 @@ export function vacio(P: Lienzo, x0: number, x1: number, y0: number, y1: number,
 export const ORILLAS: Record<string, (P: Lienzo, x: number, r: number, s: number) => Color> = {
   /** El borde de la azotea: la cornisa y la fachada que baja. */
   azoteas: (_P, x, r, s) => r === 0 ? 'asfalto' : r < 3 ? 'luz' : r < 6 ? 'cemento_claro' : r === 6 ? 'cemento' : (x % 64 > 8 && x % 64 < 30 && r > 12 && r < 26) ? (r === 13 ? 'cemento' : g(x >> 3, 0, s) < 0.3 ? 'oro' : 'asfalto') : r % 9 === 0 ? 'cemento' : 'crema',
+  /** El edificio de Parque Central: el remate de la azotea y los pisos de abajo con sus ventanas. */
+  torres_parque_central: (_P, x, r, s) => orillaTorre(x, r, s),
   /** Adentro del mercado: la baldosa sigue y la canaleta del desagüe. */
   mercado_interior: (_P, x, r) => r === 2 || r === 3 ? (x % 6 < 4 ? 'asfalto_claro' : 'cemento') : baldosa(_P, x, r + 2, 0),
   /** El borde de la pista: un poco más de tartán, el bordillo blanco y el pasto de adentro. */

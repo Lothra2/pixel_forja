@@ -15,6 +15,8 @@ import { drawText, textWidth, LINE_H } from './letras';
 import { fichaArte, type FichaArte } from './ficha';
 import { vidaSaigon } from './vidaSaigon';
 import { paletaColombia } from './colombiaPaleta';
+import { paletaVenezuela } from './venezuelaPaleta';
+import { PINTORES_CCS, FONDO_CCS, avilaNoche, franjaBorde, bordeAlVacio, reflejoNeon, posteVenezuela, neonVida, luzRoja, publicoVida, avion, helicoptero, trafico, NEONES_CCS, TORRES_PC, AZOTEAS_PUBLICO } from './caracas';
 import { PINTORES_C13, FONDO_C13, valleAburra, cabina, CABLE_Y, piezaColombia, posteColombia, banderaAsta, banderinesVida, ropaVida, tendedero, techoEscalera, peldano } from './comuna13';
 
 /**
@@ -91,11 +93,11 @@ export interface Escena {
 }
 
 /** La paleta del país a la hora del layout (y con el clima de ese día, el primero de `clima`). */
-const PALETAS: Record<string, (hora: string, clima: string[], tema?: string) => Paleta> = { vietnam: paletaVietnam, colombia: paletaColombia };
+const PALETAS: Record<string, (hora: string, clima: string[], tema?: string) => Paleta> = { vietnam: paletaVietnam, colombia: paletaColombia, venezuela: paletaVenezuela };
 
 /** Los pintores de la capa cerca de todos los lugares, por tema, y el fondo por `paralaje.cerca`. */
-const PINTORES: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...PINTORES_CERCA, ...PINTORES_C13 };
-const FONDOS: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...FONDO_CERCA, ...FONDO_C13 };
+const PINTORES: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...PINTORES_CERCA, ...PINTORES_C13, ...PINTORES_CCS };
+const FONDOS: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...FONDO_CERCA, ...FONDO_C13, ...FONDO_CCS };
 
 /** Los letreros de salida y meta en el idioma del país. */
 const PANCARTAS: Record<string, [string, string]> = { vietnam: ['XUẤT PHÁT', 'VỀ ĐÍCH'], colombia: ['SALIDA', 'META'], venezuela: ['SALIDA', 'META'], japon: ['START', 'GOAL'] };
@@ -223,7 +225,8 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
 
   // cielo y ciudad lejana
   const sky = cielo(pal, 640, 360, L.hora, seed, L.clima, L.paralaje.cerca);
-  const lejos = L.paralaje.lejos === 'valle_de_aburra' ? valleAburra(pal, TROZO, LEJOS_ALTO, seed + 39) : lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
+  const lejos = L.paralaje.lejos === 'valle_de_aburra' ? valleAburra(pal, TROZO, LEJOS_ALTO, seed + 39)
+    : L.paralaje.lejos === 'avila_noche' ? avilaNoche(pal, TROZO, LEJOS_ALTO, seed + 39) : lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
 
   // la fila de casas, o el fondo que pida cada tema
   const cerca = pintarCerca(pal, L, huecos, seed, anclas, Wp);
@@ -274,6 +277,9 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     }
     for (let x = m.x - 2; x < m.x + m.w + 34; x++) piso.p(x, D - 2, 'sombra');
   }
+  // el borde del edificio (un vacío que llega al final del mundo): la franja amarilla y negra en el filo
+  const bordes = L.huecos.filter((h) => h.caida === 'vacio' && h.x1 >= L.largo);
+  for (const h of bordes) franjaBorde(piso, h.x0, D);
   // agua: río hondo, calle inundada o charco, según el nivel
   for (const a of L.agua) {
     if (a.nivel >= 12) rioHondo(piso, L, a.x0, a.x1, a.y0 ?? 0, a.y1 ?? D, seed);
@@ -284,13 +290,15 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   // la vista inclinada: el piso se corre fila por fila, los huecos muestran sus paredes y adelante va el bordillo
   const pisoFinal = k > 0 ? cizallarPiso(piso, L, k, seed % 97) : piso;
   if (k > 0) {
-    for (const h of huecosJuntos(L)) huecoInclinado(pisoFinal, L, h, k, seed % 97);
+    for (const h of huecosJuntos(L)) if (h.caida === 'vacio' && h.x1 >= L.largo) bordeAlVacio(pisoFinal, h.x0, D, k, seed % 97); else huecoInclinado(pisoFinal, L, h, k, seed % 97);
     cantoSobreHueco(pisoFinal, piso, L, k);
     orillaAguaHonda(pisoFinal, L, k);
   }
 
   // charcos que reflejan las casas: el hẻm amanece mojado (como en su concepto) y las azoteas con aguacero también
   if (L.paralaje.cerca === 'hem' || L.paralaje.cerca === 'azoteas' || lluvia) charcosConReflejo(pisoFinal, cerca, L, k, seed);
+  // de noche el piso brilla: los neones se reflejan en rayas debajo de su columna
+  if (L.hora === 'noche') reflejoNeon(pisoFinal, cerca, D, seed % 97, (sx, y) => { const yy = Math.min(y, D - 1); return !!holeAt(L, sx - corre(k, yy), yy) || bordes.some((h) => sx >= h.x0 + corre(k, yy) - 1); });
 
   // objetos: cajas, toldo y postes
   const objetos: ObjetoEscena[] = [];
@@ -348,7 +356,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     objetos.push({ id: `porton_${i}`, tipo: 'porton', origen: 'muros', img: pt.img, x: m.x + pt.dx, y: FT + pt.top, orden: D + 1 });
   });
   postes.forEach((p, i) => {
-    const otro = (L.pais === 'colombia' ? posteColombia(pal, p.tipo, altoVisible(L, p), seed + i) : null) ?? posteSaigon(pal, p.tipo, p.alto, seed + i);
+    const otro = (L.pais === 'colombia' ? posteColombia(pal, p.tipo, altoVisible(L, p), seed + i) : L.pais === 'venezuela' ? posteVenezuela(pal, p.tipo, p.alto) : null) ?? posteSaigon(pal, p.tipo, p.alto, seed + i);
     const po = otro?.pieza ?? posteLuz(pal, p.alto, L.paralaje.cerca === 'hem' ? 'tinta' : 'asfalto');
     // parado en la caja que tenga debajo: va después de ella
     const caja = todas.filter((b) => p.x >= b.x && p.x < b.x + b.w && p.y >= b.y && p.y < b.y + b.d).sort((a, b) => b.z - a.z)[0];
@@ -406,6 +414,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   // la vida de los tramos del Cross: mercado, río, azoteas y estadio
   vida.push(...vidaSaigon(pal, L, Wp, seed));
   if (L.pais === 'colombia') vida.push(...vidaColombia(pal, L, k, seed, postes, todas));
+  if (L.pais === 'venezuela') vida.push(...vidaVenezuela(pal, L, k, seed, Wp));
 
   // luces y partículas
   const luces: Luz[] = [
@@ -413,6 +422,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     ...postes.filter(esPosteLuz).map((p) => ({ x: p.x + 18 + corre(k, p.y), y: top(p) + 13, color: pal.oro, radio: 40, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'lámpara del poste: de día va apagada' })),
     ...postes.filter((p) => p.tipo === 'farol_rio').map((p) => ({ x: p.x + 2 + corre(k, p.y), y: FT + p.y - p.alto + 12, color: pal.luz, radio: 30, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'globos del farol del malecón' })),
     ...postes.filter((p) => p.tipo === 'torre_luz').map((p) => ({ x: p.x + 2 + corre(k, p.y), y: FT + p.y - p.alto + 13, color: pal.luz, radio: 90, encendida: L.hora !== 'manana' && L.hora !== 'mediodia', nota: 'focos de la torre del estadio' })),
+    ...(L.pais === 'venezuela' ? lucesVenezuela(pal, L, k, postes) : []),
   ];
   const particulas: Particula[] = [
     ...anclas.altares.map((a) => ({ tipo: 'humo', x0: a.x - 2, x1: a.x + 2, y0: a.y - 2, y1: a.y, color: [pal.cemento_claro, pal.cemento], cada: 0.5, sube: 14, vida: 1.8, nota: 'incienso del altar' })),
@@ -421,7 +431,8 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     ...L.agua.map((a) => ({ tipo: 'onda', fx: 'onda_charco', x0: a.x0 + corre(k, a.y0 ?? 0), x1: a.x1 + corre(k, a.y1 ?? D), y0: FT + (a.y0 ?? 0), y1: FT + (a.y1 ?? D), cada: 0.7, nota: `${a.nombre ?? 'agua'}: ondas sueltas, y salpicadura_piso a cada paso` })),
     ...(L.vida.includes('lluvia') ? [{ tipo: 'lluvia', fx: 'lluvia', x0: 0, x1: Wp, y0: 10, y1: 300, cada: 0.12, nota: 'el aguacero: parches de lluvia en mosaico que caen sobre toda la pantalla' }] : []),
     ...(L.vida.includes('charcos_crecen') ? L.agua.filter((a) => a.nivel <= 2).map((a) => ({ tipo: 'gota', fx: 'salpicadura_piso', x0: a.x0 + corre(k, a.y0 ?? 0), x1: a.x1 + corre(k, a.y1 ?? D), y0: FT + (a.y0 ?? 0), y1: FT + (a.y1 ?? D), cada: 0.25, nota: `${a.nombre ?? 'charco'}: la lluvia que cae en el charco` })) : []),
-    ...(L.vida.includes('fuegos_artificiales') ? (['rojo', 'oro', 'azul', 'verde'] as const).map((c, i) => ({ tipo: 'fuegos', fx: `fuegos_artificiales_${c === 'oro' ? 'dorado' : c}`, x0: 200 + i * 400, x1: 400 + i * 400, y0: 20, y1: 80, cada: 1.6 + i * 0.3, nota: 'fuegos artificiales sobre el estadio cuando alguien llega' })) : []),
+    // en una arena (menos de 1600) los cuatro se reparten a lo ancho
+    ...(L.vida.includes('fuegos_artificiales') ? (['rojo', 'oro', 'azul', 'verde'] as const).map((c, i) => ({ tipo: 'fuegos', fx: `fuegos_artificiales_${c === 'oro' ? 'dorado' : c}`, x0: Wp < 1600 ? Math.round((i * Wp) / 4) : 200 + i * 400, x1: Wp < 1600 ? Math.round(((i + 1) * Wp) / 4) : 400 + i * 400, y0: 20, y1: 80, cada: 1.6 + i * 0.3, nota: 'fuegos artificiales sobre el estadio cuando alguien llega' })) : []),
     ...L.huecos.filter((h) => h.caida === 'agua').map((h) => ({ tipo: 'brillo', x0: h.x0 + corre(k, h.y0 ?? 0), x1: h.x1 + corre(k, h.y1 ?? D), y0: FT + (h.y0 ?? 0) + 18, y1: FT + (h.y1 ?? D), color: [pal.luz, pal.cielo], cada: 0.9, vida: 0.4, nota: `${h.nombre ?? 'canal'}: brillitos en el agua` })),
   ];
 
@@ -803,6 +814,50 @@ function vidaColombia(pal: Paleta, L: ObliqueLayout, k: number, seed: number, po
     });
     out.push({ id: `escalera_electrica_${x0}`, tipo: 'escalera_electrica', capa: 'objeto', x: x0 + corre(k, y), y: FT + y - zMax, cuadros, fps: 6, orden: y + d + 0.05 });
   }
+  return out;
+}
+
+/**
+ * La vida de Caracas de noche: los neones que parpadean, las luces rojas de las torres, el tráfico allá abajo pasando
+ * el borde, el avioncito y el helicóptero con el reflector (en la capa lejos) y el público de las azoteas vecinas.
+ */
+function vidaVenezuela(pal: Paleta, L: ObliqueLayout, k: number, seed: number, Wp: number): VidaEscena[] {
+  const out: VidaEscena[] = [], FT = L.franja.atras, D = depthOf(L);
+  const hay = (r: string) => L.ranuras_deco.some((q) => q.tema === r);
+  if (L.vida.includes('letreros_neon') && hay('letreros_neon')) for (const n of ['arepera', 'caracas'] as const) {
+    const N = NEONES_CCS[n];
+    out.push({ id: `neon_${n}`, tipo: 'letreros_neon', capa: 'cerca', x: N.x, y: N.y, cuadros: neonVida(pal, n), fps: n === 'arepera' ? 3 : 2 });
+  }
+  if (L.vida.includes('luces_ciudad')) {
+    if (L.paralaje.cerca === 'torres_parque_central') TORRES_PC.forEach((t, i) => out.push({ id: `luz_torre_${i}`, tipo: 'luces_ciudad', capa: 'cerca', x: t.x + Math.floor(t.w / 2) - 2, y: t.top - 25, cuadros: i ? luzRoja(pal).reverse() : luzRoja(pal), fps: 1 }));
+    // el tráfico allá abajo, pasando el borde: encima del piso y detrás de todo lo demás
+    for (const h of L.huecos.filter((q) => q.caida === 'vacio' && q.x1 >= L.largo)) {
+      const x = h.x0 + 4, w = Wp - x, alto = 360 - FT;
+      out.push({ id: `trafico_${h.x0}`, tipo: 'luces_ciudad', capa: 'objeto', x, y: FT, cuadros: trafico(pal, w, alto), fps: 6, orden: -1 });
+    }
+  }
+  if (L.vida.includes('avion_lejos')) {
+    const c = avion(pal);
+    out.push({ id: 'avion', tipo: 'avion_lejos', capa: 'lejos', x: -10, y: 18, cuadros: c, fps: 2, recorrido: { desde: [-10, 18], hasta: [TROZO, 10], segundos: 80, desfase: 0.3 } });
+  }
+  if (L.vida.includes('helicoptero_reflector') || L.vida.includes('helicoptero')) {
+    const c = helicoptero(pal);
+    out.push({ id: 'helicoptero', tipo: 'helicoptero_reflector', capa: 'lejos', x: TROZO, y: 10, cuadros: c, fps: 8, recorrido: { desde: [TROZO, 10], hasta: [-c[0].w, 22], segundos: 60, desfase: 0.62 } });
+  }
+  if (L.vida.includes('publico') && L.paralaje.cerca === 'torres_parque_central') AZOTEAS_PUBLICO.forEach((a, i) => out.push({ id: `publico_${i}`, tipo: 'publico', capa: 'cerca', x: a.x - 4, y: a.techo - 24, cuadros: publicoVida(pal, a, seed + 40 + i), fps: 3 }));
+  void D; void k;
+  return out;
+}
+
+/** Las luces de Caracas de noche: los neones, los bombillos de la caseta y las luces rojas de las torres y las antenas. */
+function lucesVenezuela(pal: Paleta, L: ObliqueLayout, k: number, postes: ObliqueLayout['postes']): Luz[] {
+  const FT = L.franja.atras, out: Luz[] = [];
+  if (L.ranuras_deco.some((q) => q.tema === 'letreros_neon')) {
+    for (const [n, c] of [['arepera', pal.salmon], ['caracas', pal.menta]] as const) { const N = NEONES_CCS[n]; out.push({ x: N.x + N.w / 2, y: N.y + N.h / 2, color: c, radio: 90, parpadeo: n === 'arepera' ? 1.3 : 2, encendida: true, nota: `el neón de ${n === 'arepera' ? 'AREPERA LA CHAMA' : 'CARACAS'}: tiñe el piso y a los atletas que pasan cerca. Parpadea con su vida` }); }
+    for (const x of [428, 511]) out.push({ x, y: 171, color: pal.amarillo, radio: 36, encendida: true, nota: 'bombillo de la caseta' });
+  }
+  if (L.paralaje.cerca === 'torres_parque_central') TORRES_PC.forEach((t) => out.push({ x: t.x + Math.floor(t.w / 2), y: t.top - 23, color: pal.rojo, radio: 10, parpadeo: 1, encendida: true, nota: 'luz roja de la torre: prende y apaga cada segundo' }));
+  for (const p of postes.filter((q) => q.tipo === 'antena')) out.push({ x: p.x + 2 + corre(k, p.y), y: FT + p.y - sueloEn(L, p.x, p.y) - p.alto - 4, color: pal.rojo, radio: 8, parpadeo: 1, encendida: true, nota: 'luz roja de la antena' });
   return out;
 }
 

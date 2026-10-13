@@ -14,6 +14,7 @@ const FRANJAS: Partial<Record<Hora, Color[]>> = {
   aguacero: ['asfalto_claro', 'celeste', 'cielo', 'bruma'],
   nublado: ['celeste', 'cielo', 'cielo', 'bruma'],
   atardecer: ['celeste', 'salmon', 'cielo', 'bruma'],
+  noche: ['azul_noche', 'azul_noche', 'azul', 'cielo'],
 };
 
 /** Las franjas van de arriba hasta `alto` (lo que se ve sobre la ciudad); de ahí para abajo sigue la última. */
@@ -102,6 +103,26 @@ export function cielo(pal: Paleta, w: number, h: number, hora: Hora = 'manana', 
         for (let j = 0; j < th; j++) L.p(((x % w) + w) % w, cy + j, j === th - 1 ? 'oro' : j === 0 ? 'sombra' : 'vino');
       }
     }
+    return L;
+  }
+  if (hora === 'noche') {
+    // estrellas: puntitos, más en lo alto, y unas pocas grandes en cruz
+    const alto = Math.min(h, 200);
+    for (let y = 0; y < alto; y++) for (let x = 0; x < w; x++) { const g = grain(x, y, seed + 1); if (g < 0.007 * (1 - y / (alto * 1.1))) L.p(x, y, g < 0.0025 ? 'luz' : 'celeste'); }
+    for (let i = 0; i < 7; i++) {
+      const x = Math.floor(R() * w), y = 4 + Math.floor(R() * alto * 0.5);
+      L.p(x, y, 'luz'); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) L.p((x + dx + w) % w, y + dy, 'celeste');
+    }
+    // nubes largas y finas, oscuras, con el borde de arriba tocado por la luna
+    for (let i = 0; i < 6; i++) {
+      const cx = R() * w, cy = Math.floor(alto * (0.15 + R() * 0.55)), cw = 70 + R() * 130;
+      for (let x = Math.floor(cx - cw / 2); x < cx + cw / 2; x++) {
+        const t = (x - (cx - cw / 2)) / cw, th = Math.max(1, Math.round(Math.sin(t * Math.PI) * (3 + (i % 3))));
+        for (let j = 0; j < th; j++) L.p(((x % w) + w) % w, cy + j, j === 0 ? 'cielo' : bayer(x, cy + j) < 0.3 ? 'cielo' : 'azul');
+      }
+    }
+    // el resplandor de la ciudad encendida, abajo
+    for (let y = Math.floor(alto * 0.62); y < h; y++) for (let x = 0; x < w; x++) if (bayer(x, y) < (y - alto * 0.62) / (alto * 0.5)) L.p(x, y, 'bruma');
     return L;
   }
   // mañana y mediodía: nubes blancas (al mediodía pocas y chicas, con el sol arriba)

@@ -2,7 +2,7 @@ import { grain, bayer, rng } from '../../fx/pix';
 import { Lienzo } from './lienzo';
 import type { Color, Paleta } from './paleta';
 import { depthOf, holeAt, waterAt, type Caja, type Hueco as HuecoLayout, type ObliqueLayout } from './layout';
-import { PINTORES, ORILLAS } from './piso';
+import { pintorDe, ORILLAS } from './piso';
 
 /**
  * La vista inclinada: la misma proyección del piso de la pelea del juego. Lo que está más al fondo se corre a la
@@ -120,7 +120,7 @@ export function pisoBase(L: ObliqueLayout, x: number, y: number, s: number, P: L
   let tipo: (typeof L.piso)[number]['tipo'] = 'asfalto';
   for (const p of L.piso) if (xr >= p.x0 && xr < p.x1 && y >= (p.y0 ?? 0) && y < (p.y1 ?? depthOf(L))) tipo = p.tipo;
   // los patrones repiten cada 960 (múltiplo de 16, 32, 60, 64, 96 y 320): a la izquierda del 0 se toma de más allá
-  return PINTORES[tipo](P, x < 0 ? x + 960 : x, y, s);
+  return pintorDe(L, tipo)(P, x < 0 ? x + 960 : x, y, s);
 }
 
 /**
