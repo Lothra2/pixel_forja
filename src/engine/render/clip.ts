@@ -9,7 +9,7 @@ import { petPremiumAnim } from '../anim/petPremium';
 import type { Pose } from '../rig/pose';
 import { strideOf } from '../anim/stride';
 import { applyWater } from './water';
-import { renderHuman, LONG_HELD, type BigFrame, type Joints, type RenderOptions, type RenderView } from './human';
+import { renderHuman, LONG_HELD, type BallAt, type BigFrame, type Joints, type RenderOptions, type RenderView } from './human';
 import { renderPet3d, type PetView } from './pet3d';
 import type { View } from './head';
 
@@ -57,6 +57,11 @@ export interface RenderedClip {
   wholes?: ({ x0: number; y0: number; x1: number; y1: number } | null)[];
   /** por cuadro, el arma del piso en la mano (agarre en la celda, ángulo en pantalla y si va detrás del cuerpo) */
   held?: ({ x: number; y: number; angle: number; behind: boolean } | null)[];
+  /**
+   * por cuadro, las pelotas (dibujadas o no, ver `sinPelotas`): centro continuo en la celda (el pixel x va de x a x + 1),
+   * diámetro sin contorno y si van detrás. Solo si algún cuadro trae pelota
+   */
+  balls?: BallAt[][];
   /** por cuadro, alto del cuerpo sin implementos (arriba y abajo, en la celda): el control de calidad mide con esto */
   bodies?: ({ y0: number; y1: number } | null)[];
   /** perfil con el que se dibujó */
@@ -295,6 +300,10 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     const x0 = clampX(w.x0 - left), x1 = clampX(w.x1 - left), y0 = clampY(w.y0 - top), y1 = clampY(w.y1 - top);
     return mirrored ? { x0: cell - 1 - x1, x1: cell - 1 - x0, y0, y1 } : { x0, x1, y0, y1 };
   }) : undefined;
+  // las pelotas: el centro es continuo, así que al espejar x pasa a cell - x (no cell - 1 - x como un pixel)
+  const balls = big.some((b) => b.pelotas?.length)
+    ? big.map((b) => (b.pelotas ?? []).map((q) => ({ ...q, x: mirrored ? cell - (q.x - left) : q.x - left, y: q.y - top })))
+    : undefined;
   const held = big.some((b) => b.held) ? big.map((b) => {
     if (!b.held) return null;
     const x = b.held.x - left, y = b.held.y - top;
@@ -302,7 +311,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
   }) : undefined;
   return {
     name, fps, loop, cell, view, frames: mirrored ? frames.map(mirror) : frames, airborne, steady, fits, bodies: bodies.some(Boolean) ? bodies : undefined,
-    ...(wholes?.some(Boolean) ? { wholes } : {}), ...(held ? { held } : {}),
+    ...(wholes?.some(Boolean) ? { wholes } : {}), ...(held ? { held } : {}), ...(balls ? { balls } : {}),
     profile: premium ? 'premium' : 'classic',
     ...(overflow ? { overflow } : {}),
     ...(rise ? { rise } : {}),
@@ -393,7 +402,8 @@ function mirrorBig(b: BigFrame): BigFrame {
   // las articulaciones se espejan igual que los pixeles (x -> W - 1 - x)
   const joints = b.joints ? (Object.fromEntries(Object.entries(b.joints).map(([k, [x, y]]) => [k, [W - 1 - x, y]])) as Joints) : undefined;
   return { ...b, raster: mirror(b.raster), pivotX: W - b.pivotX, body: fx(b.body), full: b.full === undefined ? undefined : fx(b.full), whole: b.whole === undefined ? undefined : fx(b.whole), joints,
-    held: b.held ? { ...b.held, x: W - 1 - b.held.x, angle: (540 - b.held.angle) % 360 } : undefined };
+    held: b.held ? { ...b.held, x: W - 1 - b.held.x, angle: (540 - b.held.angle) % 360 } : undefined,
+    pelotas: b.pelotas?.map((q) => ({ ...q, x: W - q.x })) };
 }
 
 /** Caja para centrar: con el pelo si cabe en la celda; si no, el cuerpo (y la punta del pelo se recorta). */

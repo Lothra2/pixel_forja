@@ -105,6 +105,7 @@ Todos van como `[fila][cuadro]`, en pixeles **desde el pivote**, con `x` hacia l
 | `cuerpo` | Igual que `cajas` pero solo la persona (con el pelo): sin implementos, pelotas, armas ni chispas | **El hurtbox.** `cajas` incluye la pelota o la chispa del golpe; `cuerpo` no |
 | `carga` | `[x, y]` donde apoya su base lo que se lleva (levantar, llevar, lanzar). `null` en los cuadros sin carga. Solo en esas animaciones | Dibujar al rival levantado o el objeto encima de quien carga (ver Pelea callejera) |
 | `arma` | `[x, y, angulo, detras]`: el agarre del arma del piso en la mano, hacia dónde apunta (grados, 0 = derecha, horario) y 1 si va detrás del cuerpo. `null` sin arma. Solo en las animaciones de armas | Dibujar el arma que el personaje recogió (ver Armas del piso) |
+| `objetos` | Lista de `{ tipo, clase, x, y, r, detras }` con cada pelota que el pack no dibuja, o `null`. Solo en los packs con `sin_props` del kit a medida, y sale aunque no se pidan datos | Poner la pelota de la física donde iba la dibujada. Ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#packs-sin-pelotas-sin_props-lote-sp) |
 
 ```js
 // hitbox del puño en el cuadro del impacto, para el jugador que mira a la derecha
