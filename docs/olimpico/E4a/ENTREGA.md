@@ -1,6 +1,6 @@
 # Lote E4a: los escenarios del judo, el đá cầu y el tejo
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/31
 Fecha: 2026-10-13
 
 ## Qué se hizo
