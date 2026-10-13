@@ -221,8 +221,23 @@ function build(f: AnimalFicha, d: AnimalDims, pose: QPose, armor: number): { pri
   return { prims, eyes, nose, mouth: [H(s * 0.3, -s * 0.4), mouthTip], headC };
 }
 
+/**
+ * Lo que necesita quien engancha algo al perro (el farol de Thor en la boca): dónde cae en pantalla un punto del
+ * marco del perro, la profundidad de lo dibujado (más grande = más cerca de la cámara) y el corrimiento final del
+ * cuadro. Todo en coordenadas del cuadro grande ANTES de correrlo (dx, dy); el cuadro final está corrido por dx, dy.
+ */
+export interface PetHook {
+  proj: (v: [number, number, number]) => { x: number; y: number; dep: number };
+  depth: Float32Array;
+  W: number; H: number; dx: number; dy: number;
+  /** comisura y punta de la boca, y el centro de la cabeza (marco del perro, ya con el ensanche de la vista) */
+  mouth: [[number, number, number], [number, number, number]];
+  headC: [number, number, number];
+  groundRow: number;
+}
+
 /** Pinta la mascota en una vista. Mismo formato que el renderer de lado (cuadro grande con piso y pivote). */
-export function renderPet3d(f: AnimalFicha, cell: CellSize, pose: QPose, view: PetView = 'side', armor = 0): BigFrame {
+export function renderPet3d(f: AnimalFicha, cell: CellSize, pose: QPose, view: PetView = 'side', armor = 0, hook?: (h: PetHook) => void): BigFrame {
   const prem = f.movementProfile === 'premium';
   const d = animalDims(f.body.species, cell, f.body.size, prem);
   const W = cell * 3, Hh = cell * 2;
@@ -373,6 +388,7 @@ export function renderPet3d(f: AnimalFicha, cell: CellSize, pose: QPose, view: P
     for (let c = 0; c < 4; c++) shifted.data[t + c] = out.data[s + c];
   }
   const body = y1 < 0 ? null : { x0: x0 + dx, y0: y0 + dy, x1: x1 + dx, y1: y1 + dy };
+  hook?.({ proj, depth, W, H: Hh, dx, dy, mouth, headC: squash(built.headC), groundRow: oy });
   void BASE;
   return { raster: shifted, pivotX: ox, groundRow: oy, body };
 }

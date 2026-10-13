@@ -9,6 +9,7 @@ import { enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, type EnemyId } from 
 import { merchantFicha, NPCS, NPC_ANIMS, NPC_NOMBRES } from '../rpg/npc';
 import { CAPAS_VERSION, capaDeObjeto, clipsBase, hojaCapa, huella, sinEquipo, variantes, type BloqueCapa, type ClipsBase, type TipoCapa } from './capas';
 import { PET_RPG_ANIMS } from '../anim/animal';
+import { lanternClip } from '../render/petLantern';
 import { renderFx, projectile8, rotate8, type FxElement } from '../fx/fx';
 import { scaleRaster } from '../render/rotsprite';
 import { arrowProjectile, arrowImpact } from '../fx/arrow';
@@ -78,6 +79,8 @@ export interface KitOptions {
   sinMundo3?: boolean;
   /** sin el intro (paneles, fuego, humo y logo con fuego) */
   sinIntro?: boolean;
+  /** sin el Mundo 4 (mapa, farol de Thor, enemigos y el Pez Farol) */
+  sinMundo4?: boolean;
 }
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
@@ -135,6 +138,8 @@ export interface CapaEntry { archivo: string; columnas: number; bloques: Record<
 export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'npc'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean } & MovimientoAnim>; perfil_movimiento?: 'premium'; clase?: string; retrato?: string; desde_estudio?: boolean;
   /** vuela: el cuerpo va en el aire y el pivote es el punto del piso debajo (donde va la sombra) */
   vuela?: boolean;
+  /** capa que va encima de otro personaje, cuadro por cuadro (el farol de Thor: `capa_de: 'thor'`) */
+  capa_de?: string;
   /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
   capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
 
@@ -267,6 +272,23 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     chars[id] = exportChar('mascota', id, f, 48, anims, { tipo: 'mascota', nombre: t ? `Thor (${PET_ARMOR[t - 1].name.es})` : 'Thor' }, files, log);
   }
   files.push(png('mascota/retrato_thor.png', portrait(thorFicha(0), 'se', 'sit')));
+  // el farol de Thor (Mundo 4): solo el farol, cuadro por cuadro, para dibujar encima de Thor con cualquier armadura
+  if (!opts.sinMundo4 && chars.thor) {
+    for (const [id, lit] of [['thor_farol', true], ['thor_farol_apagado', false]] as const) {
+      const anims: CharEntry['anims'] = {};
+      for (const [a, meta] of Object.entries(chars.thor.anims)) {
+        const clips = EIGHT_VIEWS.map((v) => lanternClip(thorFicha(0), 48, a, v, lit));
+        const n = Math.max(...clips.map((c) => c.frames.length));
+        const sh = createRaster(n * 48, 8 * 48);
+        clips.forEach((c, row) => c.frames.forEach((fr, i) => blit(sh, fr, i * 48, row * 48)));
+        const name = `mascota/${id}_${a}.png`;
+        files.push(png(name, sh));
+        anims[a] = { ...meta, archivo: name };
+      }
+      chars[id] = { tipo: 'mascota', nombre: lit ? 'Farol de Thor' : 'Farol de Thor (apagado)', celda: chars.thor.celda, pivote: chars.thor.pivote, anims, capa_de: 'thor', ...(chars.thor.perfil_movimiento ? { perfil_movimiento: chars.thor.perfil_movimiento } : {}) };
+      log(`mascota/${id}: ${Object.keys(anims).length} animaciones`);
+    }
+  }
   for (const id of enemies) {
     const f = enemyFicha(id);
     chars[id] = exportChar('enemigos', id, f, enemyCell(id), enemyAnims(id), { tipo: 'enemigo', nombre: id }, files, log);
