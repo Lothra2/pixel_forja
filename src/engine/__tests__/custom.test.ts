@@ -256,18 +256,19 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     } else expect(m.pendiente.every((w: string) => w.startsWith('audio.'))).toBe(true);
   });
 
-  it('los 5 tramos del Cross Country, la Comuna 13, la azotea de Caracas, Hội An, el dojo, Tao Đàn y la cancha de tejo salen con sus 9 pruebas en verde (lotes E1, E2, E3a, E3b, E3c y E4a)', () => {
-    const tramos = ['candelaria', 'caracas_azotea', 'hoian', 'judo_hanoi', 'medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio', 'tao_dan'];
+  it('los 5 tramos del Cross Country, la Comuna 13, la azotea de Caracas, Hội An, el dojo, Tao Đàn, la cancha de tejo, Margarita, Đà Lạt, Barranquilla y Maracaibo salen con sus 9 pruebas en verde (lotes E1, E2, E3a, E3b, E3c, E4a y E5)', () => {
+    const tramos = ['barranquilla', 'cancha_maracaibo', 'candelaria', 'caracas_azotea', 'dalat', 'hoian', 'judo_hanoi', 'margarita', 'medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio', 'tao_dan'];
     expect(Object.keys(m.escenarios).sort()).toEqual(tramos);
-    // la franja de cada uno: la de la pelea (246 a 344), la del Cross (200 a 330) y las de lado, donde DaCau.ts y Tejo.ts ponen el piso
-    const franjas: Record<string, [number, number]> = { tao_dan: [290, 330], candelaria: [286, 310], caracas_azotea: [246, 344], hoian: [246, 344], judo_hanoi: [246, 344] };
+    // la franja de cada uno: la de la pelea (246 a 344), la del Cross (200 a 330), las de lado, donde DaCau.ts, Tejo.ts,
+    // Voley.ts y Tenis.ts ponen el piso, y la de Futbol.ts y Basket.ts (212 a 316)
+    const franjas: Record<string, [number, number]> = { tao_dan: [290, 330], candelaria: [286, 310], caracas_azotea: [246, 344], hoian: [246, 344], judo_hanoi: [246, 344], margarita: [290, 330], dalat: [290, 330], barranquilla: [212, 316], cancha_maracaibo: [212, 316] };
     for (const id of tramos) {
       expect(m.escenarios[id]).toBe(`escenarios/${id}/escenario.json`);
       const e = readJson(join(out, m.escenarios[id]));
       const [atras, adelante] = franjas[id] ?? [200, 330];
       expect(e).toMatchObject({ id, escala: 1, largo: id === 'saigon_estadio' ? 1920 : id === 'medellin_c13' ? 3600 : franjas[id] ? 640 : 3840, franja: { atras, adelante } });
       // las de lado lo dicen, con el dibujo derecho
-      if (id === 'tao_dan' || id === 'candelaria') expect(e).toMatchObject({ vista: 'lado', inclinacion: 0, ancho: 640 });
+      if (['tao_dan', 'candelaria', 'margarita', 'dalat'].includes(id)) expect(e).toMatchObject({ vista: 'lado', inclinacion: 0, ancho: 640 });
       expect(readFileSync(join(out, `escenarios/${id}/verificacion.md`), 'utf8'), id).toMatch(/Las 9 pruebas pasan/);
       // las postales y la ficha son para aprobar: el kit no las lleva
       expect(files.some((f) => f.startsWith(`escenarios/${id}/postales/`))).toBe(false);
@@ -296,11 +297,12 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
     // atletas (24 x 9 hojas: los packs y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida
-    // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 11 escenarios: hẻm 21,
+    // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 15 escenarios: hẻm 21,
     // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14, Caracas 10, Hội An 8, y el dojo, Tao Đàn y la cancha de
     // tejo 8 cada uno (lote E4a) + 3 perros y 2 gatos (lote C7) + los 10 vehículos y objetos del lote D2 + los 8 NPC de la
-    // Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b)
-    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 8 + 8 + 8 + 5 + 10 + 9 + 2);
+    // Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b) + Margarita, Đà Lạt, Barranquilla y Maracaibo, 8
+    // cada uno, y la Marimonda (lote E5)
+    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 8 + 8 + 8 + 5 + 10 + 9 + 2 + 8 * 4 + 1);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

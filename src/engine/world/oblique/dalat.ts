@@ -157,14 +157,14 @@ function pino(C: Lienzo, p: (typeof PINOS)[number], seed: number) {
   }
   const hojas: [Color, Color, Color] = lejos ? ['asfalto_claro', 'cemento', 'cemento_claro'] : ['verde_oscuro', 'verde', 'menta'];
   // las ramas que salen en diagonal hacia arriba y los racimos en su punta
-  const n = lejos ? 9 : 16, ancho = lejos ? 26 : 46;
+  const n = lejos ? 14 : 16, ancho = lejos ? 30 : 46;
   const racimos: [number, number, number][] = [];
   for (let k = 0; k < n; k++) {
     const t = k / (n - 1), y = Math.round(top + t * (copaAbajo - top)), lado = k % 2 ? 1 : -1;
     const largo = Math.round((0.35 + 0.65 * Math.sin(t * Math.PI * 0.85 + 0.3)) * ancho * (0.7 + R() * 0.4));
     const ex = x + lado * largo, ey = y - Math.round(largo * 0.25);
     C.ln(x, y + 4, ex, ey + 2, corteza[2]);
-    racimos.push([ex, ey, (lejos ? 7 : 11) + Math.floor(R() * (lejos ? 5 : 9))]);
+    racimos.push([ex, ey + (lejos ? Math.floor(R() * 5) - 2 : 0), (lejos ? 9 : 11) + Math.floor(R() * (lejos ? 6 : 9))]);
     if (largo > 16) racimos.push([x + Math.round(lado * largo * 0.5), y - Math.round(largo * 0.1), (lejos ? 6 : 9) + Math.floor(R() * 5)]);
   }
   racimos.push([x, top, lejos ? 8 : 12]);
