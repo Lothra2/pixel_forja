@@ -83,8 +83,9 @@ describe('interfaz tipo Diablo y audio', () => {
       const w = encodeWav(SFX[n]());
       expect(new TextDecoder().decode(w.slice(0, 4)), n).toBe('RIFF');
       const secs = (w.length - 44) / 2 / 22050;
-      // los efectos en bucle (el carrito que rueda) duran lo que pide el encargo
-      expect(secs, n).toBeLessThan(n === 'carrito_rodar' ? 3.05 : 2);
+      // los efectos en bucle (el carrito que rueda), las campanas y la marea duran lo que pide el encargo
+      const largo: Record<string, number> = { carrito_rodar: 3.05, campana_lejos: 4, campana_cerca: 4, marea_sube: 6.05 };
+      expect(secs, n).toBeLessThan(largo[n] ?? 2);
       expect(secs, n).toBeGreaterThan(0.02);
     }
     expect((encodeWav(MUSIC.bosque()).length - 44) / 2 / 22050).toBeGreaterThan(20);

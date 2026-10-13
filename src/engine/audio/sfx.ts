@@ -115,6 +115,8 @@ export type SfxName =
   | 'arbusto_sacudir' | 'hongo_rebote' | 'charco_pisar' | 'rana_salto' | 'palanca' | 'puerta_abrir' | 'reja_abrir' | 'piedra_arrastrar' | 'campana_chica' | 'telarana_romper'
   | 'cristal_prender' | 'cristal_apagar' | 'polilla_aleteo' | 'minero_golpe' | 'sombra_aparece' | 'carrito_rodar' | 'figura_irse'
   | 'latido'
+  | 'campana_lejos' | 'campana_cerca' | 'marea_sube' | 'farol_prender' | 'farol_apagar' | 'thor_alza_farol' | 'marinero_se_deshace' | 'cangrejo_tenaza' | 'medusa_toca'
+  | 'ancla_golpe' | 'pez_emerge' | 'pez_mordida' | 'ola' | 'faro_prende'
   | `paso_${'pasto' | 'tierra' | 'piedra' | 'madera' | 'agua'}_${0 | 1 | 2}`;
 
 /** Efectos de sonido. */
@@ -204,6 +206,42 @@ export const SFX: Record<SfxName, () => Float32Array> = {
   // ---- el intro (parte 4) ----
   // latido grave para el momento de los ojos (1.2 s): dos golpes sordos, el segundo más suave
   latido: () => aparte(4101, () => mix([{ wave: 'sine', f0: 70, f1: 40, dur: 0.28, vol: 0.9 }, { wave: 'noise', f0: 300, f1: 120, dur: 0.1, vol: 0.12, lp: 0.08 }, { wave: 'sine', f0: 62, f1: 38, dur: 0.32, at: 0.24, vol: 0.6 }, { wave: 'sine', f0: 30, dur: 0.01, at: 1.19, vol: 0 }], 0)),
+  // Mundo 4, el Puerto Ahogado: todo bajito, sin gritos ni golpes de susto
+  campana_lejos: () => aparte(5101, () => campana(NOTE('D4'), 2.6, true)),
+  campana_cerca: () => aparte(5203, () => campana(NOTE('D4'), 3.2, false)),
+  marea_sube: () => aparte(5309, () => mix([
+    { wave: 'noise', f0: 300, f1: 500, dur: 6, a: 2.2, vol: 0.5, lp: 0.05 },
+    ...[0.6, 1.9, 3.1, 4.2, 5.0].map((at, i) => ({ wave: 'noise' as Wave, f0: 1400 - i * 80, f1: 400, dur: 0.9, at, a: 0.35, vol: 0.16 + i * 0.04, lp: 0.12 })),
+    { wave: 'sine', f0: 55, f1: 70, dur: 6, a: 2.5, vol: 0.22 },
+  ], 0)),
+  farol_prender: () => aparte(5401, () => mix([
+    { wave: 'noise', f0: 6000, f1: 2500, dur: 0.06, vol: 0.4, lp: 0.7 },
+    { wave: 'noise', f0: 900, f1: 1600, dur: 0.45, at: 0.05, a: 0.15, vol: 0.28, lp: 0.2 },
+    ...['A5', 'E6'].map((n, i) => ({ wave: 'sine' as Wave, f0: NOTE(n), dur: 0.7 - i * 0.1, at: 0.25 + i * 0.08, a: 0.03, vol: 0.22 - i * 0.06, vib: [5, 0.12] as [number, number] })),
+  ])),
+  farol_apagar: () => aparte(5503, () => mix([{ wave: 'noise', f0: 1800, f1: 500, dur: 0.5, a: 0.05, vol: 0.35, lp: 0.15 }, { wave: 'sine', f0: NOTE('E5'), f1: NOTE('A4'), dur: 0.45, at: 0.05, vol: 0.14 }])),
+  thor_alza_farol: () => aparte(5607, () => mix([
+    { wave: 'triangle', f0: 400, f1: 680, dur: 0.75, a: 0.08, vol: 0.45, vib: [6, 0.5] },
+    { wave: 'sine', f0: 800, f1: 1360, dur: 0.75, a: 0.1, vol: 0.1 },
+    { wave: 'triangle', f0: 680, f1: 640, dur: 0.35, at: 0.72, vol: 0.3, vib: [6, 0.4] },
+  ])),
+  marinero_se_deshace: () => aparte(5701, () => mix([{ wave: 'noise', f0: 600, f1: 2400, dur: 0.9, a: 0.1, vol: 0.4, lp: 0.1 }, { wave: 'sine', f0: NOTE('E5'), f1: NOTE('B5'), dur: 0.8, at: 0.1, a: 0.2, vol: 0.12, vib: [4, 0.3] }])),
+  cangrejo_tenaza: () => aparte(5803, () => mix([0, 0.09].flatMap((at) => [{ wave: 'noise' as Wave, f0: 5000, f1: 2500, dur: 0.035, at, vol: 0.5, lp: 0.8 }, { wave: 'square' as Wave, f0: 900, f1: 700, dur: 0.03, at, vol: 0.2, duty: 0.2 }]))),
+  medusa_toca: () => aparte(5903, () => mix([{ wave: 'sine', f0: 360, f1: 140, dur: 0.28, a: 0.01, vol: 0.5, vib: [18, 0.8] }, { wave: 'sine', f0: 720, f1: 400, dur: 0.12, at: 0.05, vol: 0.12 }])),
+  ancla_golpe: () => aparte(6007, () => mix([{ wave: 'sine', f0: 85, f1: 38, dur: 0.6, vol: 0.8 }, { wave: 'noise', f0: 1500, f1: 200, dur: 0.4, vol: 0.4, lp: 0.25 }, { wave: 'square', f0: NOTE('C#6'), dur: 0.5, at: 0.02, vol: 0.06, duty: 0.3 }, { wave: 'sine', f0: NOTE('C#6') * 2.7, dur: 0.4, at: 0.02, vol: 0.05 }])),
+  pez_emerge: () => aparte(6109, () => mix([
+    { wave: 'noise', f0: 900, f1: 2600, dur: 0.5, a: 0.12, vol: 0.45, lp: 0.2 },
+    { wave: 'noise', f0: 2200, f1: 500, dur: 0.7, at: 0.4, vol: 0.35, lp: 0.3 },
+    ...Array.from({ length: 7 }, (_, i) => ({ wave: 'sine' as Wave, f0: 260 + i * 70, f1: 700 + i * 90, dur: 0.06, at: 0.55 + i * 0.07, vol: 0.12 })),
+    { wave: 'sine', f0: 70, f1: 50, dur: 0.6, vol: 0.3 },
+  ])),
+  pez_mordida: () => aparte(6203, () => mix([{ wave: 'noise', f0: 3000, f1: 900, dur: 0.12, vol: 0.4, lp: 0.5 }, { wave: 'sine', f0: 140, f1: 60, dur: 0.22, at: 0.05, vol: 0.6 }, { wave: 'noise', f0: 1600, f1: 400, dur: 0.4, at: 0.1, vol: 0.25, lp: 0.2 }])),
+  ola: () => aparte(6301, () => mix([{ wave: 'noise', f0: 500, f1: 1800, dur: 0.6, a: 0.3, vol: 0.5, lp: 0.12 }, { wave: 'noise', f0: 2400, f1: 400, dur: 1.2, at: 0.5, vol: 0.45, lp: 0.25 }, { wave: 'sine', f0: 60, f1: 40, dur: 1.2, at: 0.4, vol: 0.3 }])),
+  faro_prende: () => aparte(6409, () => mix([
+    { wave: 'triangle', f0: 200, f1: 400, dur: 1.4, a: 0.6, vol: 0.25, vib: [3, 0.2] },
+    ...['D5', 'F#5', 'A5', 'D6'].map((n, i) => ({ wave: 'sine' as Wave, f0: NOTE(n), dur: 1.4 - i * 0.15, at: 0.3 + i * 0.12, a: 0.08, vol: 0.18, vib: [5, 0.1] as [number, number] })),
+    { wave: 'noise', f0: 8000, dur: 1.2, at: 0.4, a: 0.4, vol: 0.04, lp: 0.6 },
+  ])),
   ...pasos(),
 };
 
@@ -556,4 +594,110 @@ export function musicIntro(): Float32Array {
   });
 }
 
-export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata, galerias: musicGalerias, jefe_polilla: musicJefePolilla, intro: musicIntro };
+
+/** Campana grave: parciales de bronce que no son armónicos y se apagan despacio. Lejos: sin los agudos y con eco. */
+function campana(f: number, dur: number, far: boolean): Float32Array {
+  const parts: [number, number][] = [[0.5, 0.35], [1, 0.5], [1.19, 0.22], [1.56, 0.16], [2.0, 0.12], [2.74, 0.07]];
+  const voices: Voice[] = [];
+  (far ? [0, 0.42, 0.9] : [0]).forEach((at, e) => {
+    for (const [m, v] of parts) {
+      if (far && m > 2) continue;
+      voices.push({ wave: 'sine', f0: f * m, dur: dur * (1.1 - m * 0.12), at, a: far ? 0.04 : 0.005, vol: v * Math.pow(0.4, e), ...(far ? { lp: 0.3 } : {}) });
+    }
+  });
+  if (!far) voices.push({ wave: 'noise', f0: 5000, f1: 2000, dur: 0.05, vol: 0.12, lp: 0.6 });
+  return mix(voices);
+}
+
+/**
+ * El Pez Farol (en bucle): grave y marina, en Re menor a 84. Bajo que se mece como el agua, una melodía oscura y la
+ * percusión de olas (ruido que crece y rompe en cada compás).
+ */
+export function musicJefePez(): Float32Array {
+  return conSemilla(6501, () => {
+    const lead = [
+      'D4', '-', '-', 'F4', 'E4', '-', 'D4', '-', 'A3', '-', '-', '-', 'C4', '-', 'D4', '-',
+      'F4', '-', '-', 'G4', 'A4', '-', 'G4', 'F4', 'E4', '-', '-', '-', 'C#4', '-', '-', '-',
+    ];
+    const high = lead.map((n) => (n === '-' || n === '.' ? n : n.replace(/\d/, (d) => String(Number(d) + 1))));
+    const bass = rep(['D2', '-', '.', 'D2', 'A1', '-', '.', 'A1', 'Bb1', '-', '.', 'Bb1', 'A1', '-', 'C2', 'C#2'], 2);
+    const drums = rep(['k', '.', '.', '.', '.', '.', 'k', '.', '.', '.', '.', '.', '.', '.', '.', '.'], 2).join('');
+    const beat = 60 / 84 / 2, seg = Math.round(32 * beat * RATE);
+    const out = new Float32Array(seg * 4);
+    [lead, lead, high, lead].forEach((l, k) => {
+      const p = song(84, 32, [
+        { wave: 'square', notes: l, vol: 0.12, duty: 0.125, vib: [4, 0.25] },
+        { wave: 'triangle', notes: bass, vol: 0.34 },
+        ...(k > 0 ? [{ wave: 'triangle' as Wave, notes: l.map((n) => (n === '-' || n === '.' ? n : n.replace(/\d/, (d) => String(Number(d) - 1)))), vol: 0.08 }] : []),
+      ], drums, 1);
+      for (let i = 0; i < p.length; i++) out[(k * seg + i) % out.length] += p[i];
+    });
+    // las olas: un ruido grave que crece en cada compás y rompe
+    const olas = mix(Array.from({ length: 8 }, (_, i) => ({ wave: 'noise' as Wave, f0: 500, f1: 1300, dur: beat * 14, at: i * beat * 16, a: beat * 10, vol: 0.12, lp: 0.07 })), 0);
+    for (let i = 0; i < olas.length; i++) out[i % out.length] += olas[i];
+    let m = 0;
+    for (const v of out) m = Math.max(m, Math.abs(v));
+    if (m > 0) for (let i = 0; i < out.length; i++) out[i] *= 0.6 / m;
+    return out;
+  });
+}
+
+/**
+ * El Capitán Ahogado (en bucle): un acordeón triste en La menor, de vals lento, que se vuelve tenso (más rápido, con
+ * el bajo que late y la caja). El acordeón son dos voces cuadradas apenas desafinadas entre sí.
+ */
+export function musicCapitan(): Float32Array {
+  return conSemilla(6603, () => {
+    const vals = [
+      'A4', '-', 'C5', '-', 'E5', '-', 'D5', '-', '-', '-', 'C5', '-', 'B4', '-', 'G#4', '-', 'A4', '-', 'B4', '-', '-', '-', '.', '.',
+      'C5', '-', 'E5', '-', 'A5', '-', 'G5', '-', 'F5', '-', 'E5', '-', 'D5', '-', 'B4', '-', 'G#4', '-', 'A4', '-', '-', '-', '-', '-',
+    ];
+    const valsBass = rep(['A2', '.', 'E3', '.', 'E3', '.', 'E2', '.', 'B2', '.', 'B2', '.', 'A2', '.', 'E3', '.', 'E3', '.', 'E2', '.', 'G#2', '.', 'G#2', '.'], 2);
+    const accordion = (notes: string[], vol: number) => [
+      { wave: 'square' as Wave, notes, vol, duty: 0.42, vib: [5.5, 0.18] as [number, number] },
+      { wave: 'square' as Wave, notes, vol: vol * 0.6, duty: 0.3, vib: [6.3, 0.26] as [number, number] },
+    ];
+    const a = song(72, 48, [...accordion(vals, 0.1), { wave: 'triangle', notes: valsBass, vol: 0.28 }], '', 1);
+    // tenso: más rápido, el bajo en corcheas, caja en el contratiempo y la melodía una octava más arriba a veces
+    const tenseBass = rep(['A2', 'A2', 'A2', 'A2', 'E2', 'E2', 'F2', 'F2', 'E2', 'E2', 'G#2', 'G#2'], 4);
+    const tense = vals.map((n, i) => (n === '-' || n === '.' || i % 12 > 5 ? n : n.replace(/\d/, (d) => String(Number(d) + 1))));
+    const drums = rep(['k', '.', 's', '.', 'k', 's'], 8).join('');
+    const b = song(104, 48, [...accordion(tense, 0.11), { wave: 'triangle', notes: tenseBass, vol: 0.3 }], drums, 1);
+    const la = Math.round(48 * (60 / 72 / 2) * RATE), lb = Math.round(48 * (60 / 104 / 2) * RATE);
+    const out = new Float32Array(la + lb);
+    for (let i = 0; i < a.length; i++) out[i % out.length] += a[i];
+    for (let i = 0; i < b.length; i++) out[(la + i) % out.length] += b[i];
+    let m = 0;
+    for (const v of out) m = Math.max(m, Math.abs(v));
+    if (m > 0) for (let i = 0; i < out.length; i++) out[i] *= 0.6 / m;
+    return out;
+  });
+}
+
+/** El faro se prende (30 s, no es bucle): victoria cálida en Re mayor que después se calma y se apaga despacio. */
+export function musicFaro(): Float32Array {
+  return conSemilla(6707, () => {
+    const lead = [
+      'D5', '-', 'F#5', '-', 'A5', '-', '-', '-', 'B5', '-', 'A5', '-', 'F#5', '-', '-', '-', 'G5', '-', 'F#5', '-', 'E5', '-', 'D5', '-', 'E5', '-', '-', '-', '-', '-', '.', '.',
+      'D5', '-', 'F#5', '-', 'A5', '-', 'D6', '-', 'C#6', '-', 'B5', '-', 'A5', '-', '-', '-', 'G5', '-', 'E5', '-', 'F#5', '-', 'E5', '-', 'D5', '-', '-', '-', '-', '-', '-', '-',
+      'A4', '-', '-', '-', 'D5', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-',
+    ];
+    const bass = rep(['D3', '-', 'A3', '-', 'G3', '-', 'A3', '-'], 8).concat(['D3', '-', '-', '-', '-', '-', '-', '-', 'D3', '-', '-', '-', '-', '-', '-', '-']);
+    const arp = rep(['D5', 'F#5', 'A5', 'F#5', 'G4', 'B4', 'D5', 'B4'], 4).concat(rep(['.'], 16)).concat(rep(['D5', 'A5', 'D6', 'A5'], 4));
+    const buf = song(80, 80, [
+      { wave: 'triangle', notes: lead, vol: 0.2, vib: [5, 0.15] },
+      { wave: 'triangle', notes: bass, vol: 0.28 },
+      { wave: 'sine', notes: arp, vol: 0.07 },
+    ], '', 1);
+    const out = new Float32Array(Math.round(30 * RATE));
+    for (let i = 0; i < Math.min(out.length, buf.length); i++) out[i] = buf[i];
+    // se calma: desde los 20 s baja hasta el silencio
+    for (let i = 0; i < out.length; i++) { const t = i / RATE; if (t > 20) out[i] *= Math.max(0, 1 - (t - 20) / 10); }
+    let m = 0;
+    for (const v of out) m = Math.max(m, Math.abs(v));
+    if (m > 0) for (let i = 0; i < out.length; i++) out[i] *= 0.55 / m;
+    return out;
+  });
+}
+
+export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata, galerias: musicGalerias, jefe_polilla: musicJefePolilla, intro: musicIntro, jefe_pez: musicJefePez, capitan: musicCapitan, faro: musicFaro };

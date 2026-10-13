@@ -6,7 +6,7 @@ import { RATE } from './sfx';
  * magia (campanitas y un colchón brillante). Todo sintetizado.
  */
 
-export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'catedral' | 'galerias' | 'eco';
+export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'catedral' | 'galerias' | 'eco' | 'puerto' | 'campana';
 
 function rng(seed: number) {
   let s = seed >>> 0 || 1;
@@ -69,8 +69,12 @@ function loopify(x: Float32Array, len: number): Float32Array {
 
 const SECONDS = 12, FADE = 1.5;
 
+/** El puerto dura 20 s (el encargo lo pide más largo: el agua contra los muelles necesita tiempo para no repetirse). */
+const LARGO: Partial<Record<AmbienceName, number>> = { puerto: 20 };
+
 export function ambience(name: AmbienceName): Float32Array {
-  const total = Math.floor((SECONDS + FADE) * RATE), len = Math.floor(SECONDS * RATE);
+  const secs = LARGO[name] ?? SECONDS;
+  const total = Math.floor((secs + FADE) * RATE), len = Math.floor(secs * RATE);
   const r = rng(name.length * 7919 + name.charCodeAt(0));
   let buf: Float32Array = new Float32Array(total);
   const add = (x: Float32Array, k: number) => { for (let i = 0; i < total; i++) buf[i] += x[i] * k; };
@@ -165,6 +169,38 @@ export function ambience(name: AmbienceName): Float32Array {
     // un cristal que canta apenas
     for (let k = 0; k < 3; k++) { const f = [1975.5, 2349.3, 2637][k]; blip(buf, 1 + k * 4 + r(), 2.2, f, f, 0.025, 2.5); }
   }
+  if (name === 'puerto') {
+    // el puerto: agua que golpea despacio contra los muelles, madera que cruje, viento bajo y, muy lejos, la campana
+    const sea = lowpass(pink(total, r), 0.02);
+    for (let i = 0; i < total; i++) buf[i] += sea[i] * 1.6 * (0.6 + 0.4 * lfo(i, 0.09));
+    // cada golpe del agua contra los pilotes: un ruido grave que sube y se corta, con chapoteo
+    for (let t = 0.4; t < len / RATE + FADE - 1; t += 2.6 + r() * 1.4) {
+      const s = Math.floor(t * RATE), n = Math.floor((0.7 + r() * 0.3) * RATE);
+      const lap = bandpass(pink(n, r), (i) => 300 + 500 * (i / n), 1.4);
+      for (let i = 0; i < n && s + i < total; i++) buf[s + i] += lap[i] * 0.9 * Math.sin((i / n) * Math.PI) ** 2;
+      for (let j = 0; j < 3; j++) blip(buf, t + 0.4 + j * 0.06 + r() * 0.05, 0.04, 600 + r() * 500, 1100 + r() * 400, 0.025, 6);
+    }
+    // madera que cruje: un roce grave con vibrato
+    for (let k = 0; k < 4; k++) {
+      const t = r() * (len / RATE - 1), s = Math.floor(t * RATE), n = Math.floor(0.6 * RATE), f0 = 90 + r() * 60;
+      let ph = 0;
+      for (let i = 0; i < n && s + i < total; i++) { ph += (f0 * (1 + 0.15 * Math.sin(i / 300))) / RATE; buf[s + i] += ((ph % 1) * 2 - 1) * 0.02 * Math.sin((i / n) * Math.PI); }
+    }
+    const wind = bandpass(pink(total, r), (i) => 200 + 160 * lfo(i, 0.05), 1);
+    for (let i = 0; i < total; i++) buf[i] += wind[i] * 0.35;
+    // la campana, muy lejos (dos veces en el bucle): parciales graves y apagados
+    for (const t of [3.5, 13.2]) for (const [m, v] of [[0.5, 0.03], [1, 0.045], [1.19, 0.02], [1.56, 0.012]] as [number, number][]) blip(buf, t, 3.2, 293.66 * m, 293.66 * m, v, 2.2);
+  }
+  if (name === 'campana') {
+    // la iglesia por dentro: hueca, eco largo, gotas que caen y la campana que vibra apenas sola
+    const hum = lowpass(pink(total, r), 0.01);
+    for (let i = 0; i < total; i++) buf[i] += hum[i] * 2 * (0.75 + 0.25 * lfo(i, 0.07));
+    for (let k = 0; k < 8; k++) {
+      const t = r() * (SECONDS + FADE - 3), f = 1000 + r() * 700;
+      for (let e = 0; e < 7; e++) blip(buf, t + e * 0.42, 0.07, f, f * 0.58, 0.1 * Math.pow(0.6, e), 8);
+    }
+    for (const [m, v] of [[0.5, 0.02], [1, 0.03], [2, 0.01]] as [number, number][]) blip(buf, 2, 9, 293.66 * m, 293.66 * m, v, 1.2);
+  }
   buf = loopify(buf, len);
   // nivel parejo (todos los ambientes suenan parecido de fuerte)
   let peak = 0;
@@ -174,4 +210,4 @@ export function ambience(name: AmbienceName): Float32Array {
   return buf;
 }
 
-export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral', 'galerias', 'eco'];
+export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral', 'galerias', 'eco', 'puerto', 'campana'];
