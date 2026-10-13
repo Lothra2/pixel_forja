@@ -33,8 +33,8 @@ export const PARALAJE = { cielo: 0, lejos: 0.25, cerca: 1, piso: 1, frente: 1 } 
 export interface ObjetoEscena {
   id: string;
   tipo: string;
-  /** De dónde sale: una caja del layout, el toldo (`bajo`), un poste. */
-  origen: 'plataformas' | 'muros' | 'solidos' | 'bajo' | 'postes';
+  /** De dónde sale: una caja del layout, el toldo (`bajo`), un poste o una entidad `objeto` que pinta el lugar. */
+  origen: 'plataformas' | 'muros' | 'solidos' | 'bajo' | 'postes' | 'entidades';
   img: Lienzo;
   /** Esquina de arriba a la izquierda en la pantalla, a escala 1. */
   x: number;
@@ -313,7 +313,8 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   if (L.paralaje.cerca === 'hem' || L.paralaje.cerca === 'azoteas' || lluvia) charcosConReflejo(pisoFinal, cerca, L, k, seed);
   // de noche el piso brilla: los neones se reflejan en rayas debajo de su columna
   // la piedra de Hội An está seca: los faroles la alumbran, no se reflejan
-  if (L.hora === 'noche' && !esHoian(L)) reflejoNeon(pisoFinal, cerca, D, seed % 97, (sx, y) => { const yy = Math.min(y, D - 1); return !!holeAt(L, sx - corre(k, yy), yy) || bordes.some((h) => sx >= h.x0 + corre(k, yy) - 1); });
+  // un lugar del registro trae su propio piso: no refleja neones (la cancha de Maracaibo no tiene)
+  if (L.hora === 'noche' && !esHoian(L) && !lugar) reflejoNeon(pisoFinal, cerca, D, seed % 97, (sx, y) => { const yy = Math.min(y, D - 1); return !!holeAt(L, sx - corre(k, yy), yy) || bordes.some((h) => sx >= h.x0 + corre(k, yy) - 1); });
 
   // objetos: cajas, toldo y postes
   const objetos: ObjetoEscena[] = [];
@@ -407,6 +408,8 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     for (let yy = 0; yy < T.h; yy++) for (let xx = 0; xx < T.w; xx++) if (T.has(xx, yy)) img.f(12 + xx * 2, 2 + 2 + (yy - 3) * 2, 2, 2, 'oro');
     objetos.push({ id: `pancarta_${t}`, tipo: 'pancarta', origen: 'postes', img, x: x - Math.floor(img.w / 2) + corre(k, yf), y: FT + yf - z - alto - 1, orden: (caja ? ordenCaja(caja, todas) : yf) + 0.6 });
   }
+  // lo que pinta el lugar por las entidades `objeto` del layout (los arcos de piedra del fútbol en la calle)
+  if (lugar?.objeto) for (const e of L.entidades) if (e.tipo === 'objeto') { const o = lugar.objeto(pal, e, L, k, seed); if (o) objetos.push(o); }
   if (k > 0) juntarEscaleras(objetos, todas, pal);
   objetos.sort((a, b) => a.orden - b.orden || a.x - b.x);
 
