@@ -69,8 +69,8 @@ npm run escenario -- docs/ejemplos/nekketsu/escenarios/hoian.layout.json salida/
 - **`custom.test.ts`:** el kit de Nekketsu trae 8 escenarios, Hội An con 8 PNG. 15 de 15, en 223 s (con otros agentes corriendo en la máquina).
 - **Las pruebas de escenarios** (`hoian`, `caracas`, `comuna13`, `oblique` y `vehiculos`): 67 de 67.
 - **`tsc` limpio y `npm run build:sitio` limpio:** el kit del sitio sale con `hoian`, 14 archivos y 9 pruebas en verde.
-- **Suite completa: 34 archivos, 356 de 356.** `npm run build:sitio` limpio y e2e de Playwright 50 de 50.
-- La prueba "audio del juego" del e2e fallaba a veces, también en `main`. Le porté el arreglo de una línea de la rama de C5 (una carrera del estudio con la voz en blips): pasó 16 de 16 repetida.
+- **Suite completa: 34 archivos, 356 de 356.** `npm run build:sitio` limpio.
+- **e2e de Playwright: 49 de 50.** Falló "audio del juego", que también falla a veces en `main` (3 de cada 16). Es una carrera del estudio con la voz en blips. Le porté el arreglo de una línea de la rama de C5 y esa prueba pasó 16 de 16 repetida.
 
 **Las 9 pruebas de `hoian`** (`verificacion.md`):
 - **Legibilidad:** contraste mediano 4.0:1, el peor 2.5:1. La piedra va en pardos medios, tibios por la luz, y la planta baja detrás de los atletas va encendida.
