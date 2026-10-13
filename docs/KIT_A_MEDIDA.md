@@ -120,12 +120,32 @@ Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la m
 
   Hoy hay `ferry` (`andando`, `atracado`), `xich_lo` (`andando`), `moto_rojo`, `moto_azul`, `moto_amarillo` y `moto_verde` (`andando`, `frenando`, `corneta`), `bote_bambu` (`meciendo`), `metrocable` (`colgando`), `jacintos` (`flotando`) y `frutas_regadas`. Los demás del pedido vuelven como aviso.
 
+- **NPC, la gente de la calle** (`npc`, lote C6a):
+
+  ```jsonc
+  "npc": {
+    "fichas": "npc/",                    // carpeta con las fichas de los NPC: no son atletas
+    "pelota": true,                      // npc/pelota.png: 8 x 8, 4 cuadros de giro
+    "personajes": {
+      "bailarin_1": { "anims": ["toprock", "molino", "reclama"] },
+      "grafitero": { "anims": ["pintar", "mirar"], "vistas": { "pintar": "espalda_tres_cuartos" } },
+      "vendedor_paletas": { "anims": ["llamar", "ofrecer"], "vista": "tres_cuartos" },
+      // un grupo en un solo sprite, uno al lado del otro, con el parlante
+      "musicos": { "grupo": { "rapero": { "tocar": "rapear", "animar": "animar" }, "percusionista": { "tocar": "tamborear", "animar": "animar" } }, "parlante": true }
+    }
+  }
+  ```
+  - Cada NPC sale en `npc/<id>.png`, **una tira** con todos los cuadros de sus animaciones seguidas, de `w` × `h`. El manifiesto trae `ancla` (el pixel de los pies: ahí va el (x, y) del NPC), `anims` con `desde`, `cuadros`, `fps`, `loop` y `vista`, y `eventos` donde hay algo que hacer: en `patear`, `{ "tipo": "impacto", "cuadro": 2 }` es cuando el pie le pega a la pelota y el juego la suelta.
+  - **Vistas:** `frente` (por defecto), `tres_cuartos` (hacia la calle), `espalda` y `espalda_tres_cuartos` (el grafitero contra su muro). No se espejan.
+  - **`anims`** es una lista de animaciones del motor, o `{ "nombre_en_el_juego": "animación" }` para ponerles otro nombre.
+  - **Las animaciones de la calle** (pack `calle`): `toprock`, `molino` y `reclama` (break); `espera`, `patear` y `perdon` (fútbol de la calle); `pintar` y `mirar` (grafitero, con la lata de spray); `rapear` (micrófono), `tamborear` (tambora) y `animar`; `llamar` (campanita) y `ofrecer` (paleta). Sirve cualquier otra animación del motor.
+  - Una ficha que no está o una animación que no existe se salta con aviso.
+
 ### Lo que todavía no genera
 
-`publico.paises`, `npc`, `ui.logo` y los sonidos nuevos del lote H se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
+`publico.paises`, `ui.logo` y los sonidos nuevos del lote H se aceptan en la configuración, pero todavía no se generan. El kit sale igual, avisa en la consola y deja la lista en `manifest.pendiente`, para que el juego sepa qué le falta:
 
 ```
-aviso: npc: todavía no se genera, llega con NPC (lote C6)
 aviso: animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire
 aviso: audio.musica: todavía no existen, llegan con el lote H: marcha_nekketsu
 ```

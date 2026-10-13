@@ -47,6 +47,21 @@ if (cfg!.equipos) {
   if (!existsSync(p)) fail(`equipos: no existe ${p}`);
   try { equipos = JSON.parse(readFileSync(p, 'utf8')); } catch (e) { fail(`${p}: no es un JSON válido (${(e as Error).message})`); }
 }
+// las fichas de los NPC: su propia carpeta (no son atletas)
+let npc: Record<string, Ficha> | undefined;
+if (cfg!.npc?.fichas) {
+  const dir = resolve(base, cfg!.npc.fichas);
+  if (!existsSync(dir) || !statSync(dir).isDirectory()) fail(`npc.fichas: no existe la carpeta ${dir}`);
+  npc = {};
+  const bad: string[] = [];
+  for (const n of readdirSync(dir).filter((x) => x.endsWith('.ficha.json')).sort()) {
+    const raw = JSON.parse(readFileSync(join(dir, n), 'utf8'));
+    const errs = validateFicha(raw);
+    if (errs.length) { bad.push(`${n}: ${errs.join('. ')}`); continue; }
+    npc[basename(n, '.ficha.json')] = migrateFicha(raw);
+  }
+  if (bad.length) fail(`Fichas de NPC inválidas:\n  ${bad.join('\n  ')}`);
+}
 // escenarios: una carpeta con *.layout.json o una lista de layouts
 let escenarios: Record<string, unknown> | undefined;
 if (cfg!.escenarios) {
@@ -79,7 +94,7 @@ if (existsSync(out!) && readdirSync(out!).length) {
 const t0 = Date.now();
 let res: ReturnType<typeof buildCustomKit>;
 try {
-  res = buildCustomKit(cfg!, { fichas, equipos, fuentes, escenarios }, { quick: args.includes('--rapido'), solo, progress: (m) => console.log(`  ${m}`) });
+  res = buildCustomKit(cfg!, { fichas, equipos, fuentes, escenarios, npc }, { quick: args.includes('--rapido'), solo, progress: (m) => console.log(`  ${m}`) });
 } catch (e) { fail((e as Error).message); }
 rmSync(out!, { recursive: true, force: true });
 let bytes = 0;

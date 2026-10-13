@@ -31,6 +31,8 @@ export type PropKind =
   | 'javelin' | 'pole' | 'shot' | 'spark'
   /** el arma del piso que tenga en la mano (pelea callejera): el render la dibuja si se le dice cuál, y siempre exporta dónde va */
   | 'held'
+  /** lo que llevan en la mano los NPC de la calle (lote C6a) */
+  | 'spray' | 'campana' | 'microfono' | 'paleta' | 'tambor'
   | WeaponKind | OffhandKind | 'arrow';
 
 /** Armas de mano (RPG). */

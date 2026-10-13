@@ -129,6 +129,34 @@ export function drawHeld(part: Part, kind: PropKind, at: [number, number], angle
     for (let k = 1; k <= r; k++) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) part.set(cx + dx * k, cy + dy * k, k === r ? 'p_yellow' : 'p_white', LIGHT);
     for (let k = 1; k <= q; k++) for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) part.set(cx + dx * k, cy + dy * k, 'p_yellow', BASE);
     part.set(cx, cy, 'p_yellow', LIGHT);
+  } else if (kind === 'spray') {
+    // lata de spray en el puño, con la tapa de color y el chorrito de pintura que sale adelante
+    const h = nn(5), w = Math.max(2, nn(2));
+    const top: [number, number] = [at[0], at[1] - h];
+    for (let k = 0; k < h; k++) for (let i = 0; i < w; i++) part.set(Math.round(at[0] - w / 2 + i), Math.round(at[1] - k), 'p_metal', i === 0 ? LIGHT : BASE);
+    part.set(Math.round(top[0]), Math.round(top[1]), 'p_pink', LIGHT);
+    if (!rest) for (let k = 1; k <= nn(3); k++) part.set(Math.round(top[0] + k), Math.round(top[1] - (k > 1 ? 1 : 0)), 'p_pink', LIGHT);
+  } else if (kind === 'campana') {
+    // campanita de bronce con su mango: el vendedor la sacude
+    const s = Math.max(2, nn(2.5));
+    stroke(part, at, dir(nn(2)), 1, () => 'p_wood');
+    const c = dir(nn(2) + s);
+    for (let j = 0; j <= s; j++) for (let i = -j; i <= j; i++) part.set(Math.round(c[0] + i), Math.round(c[1] - s + j), 'p_gold', i < 0 ? LIGHT : BASE);
+    part.set(Math.round(c[0]), Math.round(c[1] + 1), 'p_brown');
+  } else if (kind === 'microfono') {
+    // micrófono negro con la cabeza gris
+    stroke(part, dir(-1), dir(nn(3)), 1, () => 'p_black');
+    blob(part, dir(nn(4)), Math.max(2, nn(2)), 'p_grey');
+  } else if (kind === 'paleta') {
+    // paleta de mango biche: el palito y el hielo amarillo con verde
+    stroke(part, at, dir(nn(2)), 1, () => 'p_wood');
+    const c = dir(nn(4));
+    blob(part, c, Math.max(2, nn(3)), 'p_yellow');
+    part.set(Math.round(c[0]), Math.round(c[1]) - 1, 'p_lime', LIGHT);
+  } else if (kind === 'tambor') {
+    // tambora colgada adelante, entre las dos manos: el cuero claro arriba y el aro rojo
+    const w = Math.max(5, nn(8)), h = Math.max(3, nn(5));
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) part.set(Math.round(at[0] - w / 2 + i), Math.round(at[1] + j), j === 0 ? 'p_cream' : j === h - 1 || j === 1 ? 'p_red' : 'p_wood', i === 0 ? LIGHT : BASE);
   } else if (kind === 'glove') {
     blob(part, at, Math.max(3, Math.round(4 * u)), 'p_brown');
   } else drawWeapon(part, kind, at, angle, u, dir, t, rest);

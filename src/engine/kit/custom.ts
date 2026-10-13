@@ -1,6 +1,6 @@
 import type { ExportFile } from '../export/bundle';
 import { FRAME_DATA_FIELDS, ROW_NAMES, type FrameDataField } from '../export/frameData';
-import { HUMAN_ANIMS } from '../anim/registry';
+import { HUMAN_ANIMS, humanAnim } from '../anim/registry';
 import { FLOOR_PROP_KINDS, type FloorPropKind } from '../render/props';
 import { isHuman, CELL_SIZES, type AnimalFicha, type CellSize, type Ficha, type HumanFicha } from '../sheet/ficha';
 import { familyFicha, FAMILY, thorFicha } from '../rpg/family';
@@ -14,6 +14,7 @@ import { encodePng } from '../export/png';
 import { COMIDAS, type Comida } from '../render/comida';
 import { publicoHoja } from '../render/publico';
 import { vehiculosD2, VEHICULOS_D2, K_INCLINACION } from '../world/oblique/vehiculos';
+import { npcTira, pelotaTira, VISTAS_NPC, type NpcConfig } from './npc';
 import { createRaster, blit } from '../core/raster';
 import { vsFondo, vsLetras, coloresVs, VS_NEUTRO } from '../ui/vs';
 
@@ -68,7 +69,8 @@ export interface KitConfig {
   escenarios?: string | string[];
   /** el público: `azoteas` (la gente de las azoteas vecinas de la pelea) ya sale; los hinchas por país llegan con C6 */
   publico?: { azoteas?: boolean | { ancho?: number; gente?: number }; [k: string]: unknown };
-  npc?: unknown;
+  /** la gente de la calle (lote C6a): fichas propias, sus animaciones y la vista; un grupo va en un solo sprite */
+  npc?: NpcConfig;
   /** vehículos y objetos de escenario en la vista inclinada (lote D2): true = todos, o ids ("moto" = los 4 colores) */
   vehiculos?: boolean | string[];
 }
@@ -79,14 +81,12 @@ export interface TeamDef { nombre: string; atletas: string[]; mascota?: string; 
 export const INCLUDED_CAST = ['familia', 'familia_rpg', 'heroes'] as const;
 export type IncludedCast = (typeof INCLUDED_CAST)[number];
 
-export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'efectos', 'audio', 'escenarios', 'vs', 'publico', 'vehiculos'] as const;
+export const KIT_PARTS = ['atletas', 'retratos', 'cabecitas', 'objetos', 'animales', 'fuentes', 'efectos', 'audio', 'escenarios', 'vs', 'publico', 'vehiculos', 'npc'] as const;
 export type KitPart = (typeof KIT_PARTS)[number];
 
 /** Las secciones que todavía no genera el kit a medida, y el lote del pedido que las trae. */
-export const PENDING_SECTIONS: Record<string, string> = {
-  npc: 'NPC (lote C6)',
-};
-const KNOWN_KEYS = ['$schema', 'juego', 'resolucion', 'celda', 'filas', 'datos_por_cuadro', 'fichas', 'personajes_incluidos', 'equipos', 'packs', 'pruebas', 'retratos', 'cabecitas', 'objetos', 'animales', 'ui', 'fx', 'audio', 'escenarios', 'publico', 'vehiculos', ...Object.keys(PENDING_SECTIONS)];
+export const PENDING_SECTIONS: Record<string, string> = {};
+const KNOWN_KEYS = ['$schema', 'juego', 'resolucion', 'celda', 'filas', 'datos_por_cuadro', 'fichas', 'personajes_incluidos', 'equipos', 'packs', 'pruebas', 'retratos', 'cabecitas', 'objetos', 'animales', 'ui', 'fx', 'audio', 'escenarios', 'publico', 'vehiculos', 'npc', ...Object.keys(PENDING_SECTIONS)];
 /** Lo que se puede pedir en `objetos`: las armas, cada comida y "comida" (toda). */
 const OBJETOS = [...FLOOR_PROP_KINDS, ...COMIDAS, 'comida'] as string[];
 /** Reparte la lista de `objetos` en armas y comida. */
@@ -206,6 +206,17 @@ export function validateKitConfig(cfg: unknown): string[] {
       if (cfg.ui.logo !== undefined && !(isObj(cfg.ui.logo) && typeof cfg.ui.logo.texto === 'string')) e.push('ui.logo: { "texto": "..." }');
     }
   }
+  if (cfg.npc !== undefined) {
+    const n = cfg.npc as unknown;
+    if (!isObj(n) || !isObj((n as Record<string, unknown>).personajes)) e.push('npc: { "fichas": "npc/", "personajes": { "id": { "anims": ["toprock"] } } }');
+    else for (const [id, d] of Object.entries((n as unknown as NpcConfig).personajes)) {
+      if (!isObj(d)) { e.push(`npc.personajes.${id}: { "anims": [...] } o { "grupo": {...} }`); continue; }
+      const vs = [d.vista, ...Object.values(d.vistas ?? {})].filter((v) => v !== undefined);
+      for (const v of vs) if (!VISTAS_NPC.includes(v as never)) e.push(`npc.personajes.${id}: la vista "${v}" no existe.${suggest(String(v), VISTAS_NPC)} Hay ${VISTAS_NPC.join(', ')}`);
+      const nombres = d.grupo ? Object.values(d.grupo).flatMap((m) => Object.values(m)) : Array.isArray(d.anims) ? d.anims : Object.values(d.anims ?? {});
+      for (const a of nombres) if (!humanAnim(a)) e.push(`npc.personajes.${id}: "${a}" no es una animación.${suggest(a, HUMAN_ANIMS.map((x) => x.name))}`);
+    }
+  }
   if (cfg.vehiculos !== undefined && typeof cfg.vehiculos !== 'boolean' && !(Array.isArray(cfg.vehiculos) && cfg.vehiculos.every((v) => typeof v === 'string'))) e.push('vehiculos: true o una lista de ids, por ejemplo ["ferry", "moto"]');
   if (cfg.publico !== undefined) {
     if (!isObj(cfg.publico)) e.push('publico: tiene que ser un objeto, por ejemplo { "azoteas": true }');
@@ -287,6 +298,28 @@ export function kitConfigSchema(): Record<string, unknown> {
         description: 'El público. "azoteas": la gente asomada en las azoteas vecinas de la pelea, en publico/azoteas.png (de día) y publico/azoteas_noche.png, con los estados quieto, celebra y abuchea. Los hinchas por país (paises, variantes) llegan con el lote C6 y vuelven como aviso.',
         properties: { azoteas: { oneOf: [{ type: 'boolean' }, { type: 'object', additionalProperties: false, properties: { ancho: { type: 'integer', minimum: 1, maximum: 2048 }, gente: { type: 'integer', minimum: 1, maximum: 2048 } } }] } },
       },
+      npc: {
+        type: 'object', required: ['personajes'],
+        description: 'La gente de la calle en npc/<id>.png: una tira con los cuadros de sus animaciones seguidas, de frente o en 3/4 (sin espejo), con el ancla en los pies. Un grupo (los músicos) va en un solo sprite. Ver docs/KIT_A_MEDIDA.md.',
+        properties: {
+          fichas: { type: 'string', description: 'Carpeta con las fichas de los NPC (*.ficha.json), relativa al kit.config.json. No son atletas.' },
+          pelota: { type: 'boolean', description: 'La pelota de la calle: npc/pelota.png, 8 x 8 con 4 cuadros de giro.' },
+          personajes: {
+            type: 'object',
+            additionalProperties: {
+              type: 'object', additionalProperties: false,
+              properties: {
+                ficha: { type: 'string' },
+                anims: { oneOf: [list({ type: 'string' }), { type: 'object', additionalProperties: { type: 'string' } }] },
+                vista: { enum: VISTAS_NPC },
+                vistas: { type: 'object', additionalProperties: { enum: VISTAS_NPC } },
+                grupo: { type: 'object', additionalProperties: { type: 'object', additionalProperties: { type: 'string' } } },
+                parlante: { type: 'boolean' },
+              },
+            },
+          },
+        },
+      },
       vehiculos: { oneOf: [{ type: 'boolean' }, list({ anyOf: [{ enum: [...VEHICULOS_D2, 'moto'] }, { type: 'string' }] })], description: 'Vehículos y objetos de escenario en la vista inclinada (px = x + 0.35 y), en vehiculos/<id>.png: una tira de cuadros con sus animaciones, el ancla (la esquina de atrás a la izquierda de la huella, en el piso) y la huella. true = todos, o ids ("moto" = los 4 colores). Los que todavía no existen vuelven como aviso.' },
       ...pending,
     },
@@ -322,6 +355,8 @@ export interface KitInputs {
   fuentes?: { regular: ArrayBuffer; bold: ArrayBuffer };
   /** los layouts de escenarios ya leídos, por nombre de archivo */
   escenarios?: Record<string, unknown>;
+  /** las fichas de los NPC (las de la carpeta `npc.fichas`), por id. No son atletas */
+  npc?: Record<string, Ficha>;
 }
 
 export interface CustomKitOptions {
@@ -506,7 +541,27 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     opts.progress?.(`vehiculos: ${Object.keys(vehiculos).length - 1}`);
   }
 
-  if (fx || audio || escenarios || vs || publico || vehiculos) {
+  // la gente de la calle: una tira por NPC en npc/, y la pelota
+  let npc: Record<string, unknown> | undefined;
+  if (parts.has('npc') && cfg.npc) {
+    npc = {};
+    const humanos = Object.fromEntries(Object.entries(inputs.npc ?? {}).filter(([, f]) => isHuman(f))) as Record<string, HumanFicha>;
+    for (const [id, d] of Object.entries(cfg.npc.personajes)) {
+      const r = npcTira(id, d, humanos, 48);
+      if (typeof r === 'string') { warnings.push(`${r} (se salta)`); continue; }
+      const archivo = `npc/${id}.png`;
+      files.push({ name: archivo, bytes: encodePng(r.tira), mime: 'image/png' });
+      npc[id] = { archivo, ...r.entrada };
+    }
+    if (cfg.npc.pelota) {
+      files.push({ name: 'npc/pelota.png', bytes: encodePng(pelotaTira()), mime: 'image/png' });
+      npc.pelota = { archivo: 'npc/pelota.png', w: 8, h: 8, ancla: [4, 7], cuadros: 4, anims: { girar: { desde: 0, cuadros: 4, fps: 12, loop: true } } };
+    }
+    npc.notas = 'Cada NPC es una tira de cuadros de w x h: el cuadro i va en x = i * w. Cada animación empieza en el cuadro "desde" y dura "cuadros". El ancla es el pixel de los pies: el juego pone ahí el (x, y) del NPC. Van de frente o en 3/4 hacia la calle ("vista"); no se espejan. eventos: en qué cuadro de la animación pasa algo (en patear, el impacto es cuando el pie le pega a la pelota: ahí el juego la suelta). Un grupo trae "grupo" con los de izquierda a derecha.';
+    opts.progress?.(`npc: ${Object.keys(npc).length - 1}`);
+  }
+
+  if (fx || audio || escenarios || vs || publico || vehiculos || npc) {
     const ci = files.findIndex((f) => f.name === 'CREDITOS.txt');
     const line = 'Efectos, sonidos, escenarios, VS y público: dibujados y sintetizados con código por PixelForja. No usan piezas de nadie y no piden crédito.\n';
     const prev = ci >= 0 ? new TextDecoder().decode(files[ci].bytes) : '';
@@ -540,6 +595,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     ...(escenarios ? { escenarios } : {}),
     ...(publico ? { publico } : {}),
     ...(vehiculos ? { vehiculos } : {}),
+    ...(npc ? { npc } : {}),
     ...(files.some((f) => f.name === 'CREDITOS.txt') ? { creditos: 'CREDITOS.txt' } : {}),
     ...(warnings.length ? { pendiente: warnings } : {}),
     notas,
