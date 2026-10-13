@@ -132,7 +132,7 @@ Y `escenario.json` sale con lo que el juego ya lee, más dos campos:
 - **Las pruebas de escenarios** (`hoian`, `caracas`, `comuna13`, `oblique` y `vehiculos`): 67 de 67.
 - **`custom.test.ts`:** el kit de Nekketsu trae 11 escenarios, 510 PNG. 15 de 15, en 177 s.
 - **`tsc` limpio y `npm run build:sitio` limpio:** el kit del sitio sale con `judo_hanoi`, `tao_dan` y `candelaria`, cada uno con sus 9 pruebas en verde.
-- **No corrí** la suite completa ni el e2e de Playwright: no toqué el estudio.
+- **Suite completa: 35 archivos, 369 de 369.** `npm run build:sitio` limpio y e2e de Playwright 50 de 50, ya con lo último de E3c mezclado.
 
 **Las 9 pruebas** (en cada `verificacion.md`):
 - **Legibilidad:**
