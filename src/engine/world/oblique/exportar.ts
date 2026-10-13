@@ -1,6 +1,6 @@
 import { encodePng } from '../../export/png';
 import { createRaster, type Raster } from '../../core/raster';
-import { collisionOf, depthOf } from './layout';
+import { collisionOf, depthOf, deLado } from './layout';
 import { NOMBRES } from './paleta';
 import { fichaMarkdown } from './ficha';
 import { PARALAJE, TROZO, postal, trozo, type Escena } from './escena';
@@ -45,10 +45,14 @@ export function puntosPostal(E: Escena): Record<'inicio' | 'medio' | 'final', nu
     const n = L.huecos.filter((h) => h.x0 < x + W && h.x1 > x).length * 3 + L.muros.filter((m) => m.x < x + W && m.x + m.w > x).length * 3 + [...L.plataformas, ...L.solidos].filter((b) => b.x < x + W && b.x + b.w > x).length;
     if (n > max) { max = n; mejor = x; }
   }
-  // una arena (sin salida ni meta) que cabe en una pantalla: el principio, el medio y el final de lo que la cámara recorre
-  if (!L.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta') && E.ancho - W <= W) return { inicio: 0, medio: Math.round((E.ancho - W) / 2), final: Math.max(0, E.ancho - W) };
+  // una arena (sin salida ni meta) o un mundo de una pantalla, que cabe entero: el principio, el medio y el final de lo
+  // que la cámara recorre
+  if (unaPantalla(E)) return { inicio: 0, medio: Math.round((E.ancho - W) / 2), final: Math.max(0, E.ancho - W) };
   return { inicio: Math.max(0, Math.min(salida - 40, L.largo - W)), medio: mejor, final: Math.max(0, Math.min(meta + 50 - W, L.largo - W)) };
 }
+
+/** Una arena (sin salida ni meta) o un mundo de una pantalla, que la cámara recorre poco: sus postales van en el tiempo. */
+const unaPantalla = (E: Escena) => (!E.layout.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta') || E.layout.largo <= 640) && E.ancho - 640 <= 640;
 
 export interface OpcionesExportar {
   /** postales/inicio, medio y final (para aprobar; el juego no las carga). Por defecto, sí. */
@@ -77,7 +81,8 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
     nombre: 'objetos.json', bytes: json({
       imagen: 'objetos.png',
       nota: 'x, y: esquina de arriba a la izquierda en pantalla a escala 1 (con la inclinación ya puesta). orden: la profundidad para ordenar con los atletas (se dibuja después de todo atleta con y menor). En Phaser: setDepth(franja.atras + orden). Las caras izquierdas de las cajas (tipo *_cara) van con orden y + 0.1: detrás de quien pasa a su lado.',
-      objetos: E.objetos.map((o, i) => ({ id: o.id, tipo: o.tipo, origen: o.origen, cuadro: ob.rects[i], x: o.x, y: o.y, orden: o.orden, superficie: o.superficie })),
+      ...(E.objetos.some((o) => o.gancho) ? { nota_gancho: 'gancho: x, y de pantalla a escala 1 donde va el ancla de lo que cuelga del objeto y pone el juego (el hilo de la bola_tama del Tama-wari, ancla [16, 0]).' } : {}),
+      objetos: E.objetos.map((o, i) => ({ id: o.id, tipo: o.tipo, origen: o.origen, cuadro: ob.rects[i], x: o.x, y: o.y, orden: o.orden, superficie: o.superficie, ...(o.gancho ? { gancho: o.gancho } : {}) })),
     }),
   });
   // vida: cada cuadro en el atlas de vida
@@ -108,9 +113,9 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
   out.push({ nombre: 'particulas.json', bytes: json({ nota: 'x e y en pixeles de pantalla a escala 1 (y de pantalla = franja.atras + y del mundo). fx: nombre del efecto del catálogo (manifest.fx).', particulas: E.particulas }) });
   // postales
   const pp = puntosPostal(E);
-  // en una arena de una pantalla las tres caen casi en el mismo lugar: van a 0, 2 y 4 segundos, para que se vea la vida
-  const arena = !L.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta');
-  const seg: Record<string, number> = arena ? { inicio: 0, medio: 2, final: 4 } : {};
+  // en una arena o un mundo de una pantalla las tres caen casi en el mismo lugar: van a 0, 2 y 4 segundos, para que se
+  // vea la vida
+  const seg: Record<string, number> = unaPantalla(E) ? { inicio: 0, medio: 2, final: 4 } : {};
   if (conPostales) for (const [n, x] of Object.entries(pp)) png(`postales/${n}.png`, postal(E, x, [], 640, 360, seg[n] ?? 0));
   // ficha y verificación
   if (conFicha) out.push({ nombre: 'ficha_arte.md', bytes: new TextEncoder().encode(fichaMarkdown(E.ficha)) });
@@ -123,13 +128,14 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
       franja: L.franja, largo: L.largo, hora: L.hora, clima: L.clima,
       inclinacion: E.inclinacion,
       ancho: E.ancho,
+      ...(deLado(L) ? { vista: 'lado', nota_vista: `de lado: el dibujo va derecho (inclinación 0). El fondo (la capa cerca) va de la fila 0 a franja.atras (${FT}) y es transparente donde se ven lejos y el cielo. El piso va de la fila ${FT} al borde de abajo de la pantalla: la franja donde se paran los atletas (y del mundo = fila de pantalla - ${FT}) y lo de adelante. Las capas, los objetos y la vida se cargan igual que en la vista oblicua.` } : {}),
       nota_inclinacion: E.inclinacion ? `vista inclinada: px = x + ${E.inclinacion} * y (lo del fondo queda a la izquierda). Las capas largas miden ${E.ancho} px (largo + ${E.inclinacion} * fondo de la franja). Los objetos ya vienen corridos: corre a los atletas igual.` : undefined,
       capas: {
         cielo: { archivo: `cielo_${L.hora}.png`, y: 0, paralaje: PARALAJE.cielo, repetir_x: true },
         lejos: { archivo: 'lejos.png', y: FT - 30 - E.lejos.h, paralaje: PARALAJE.lejos, repetir_x: true },
         tras_cerca: { nota: 'la vida con capa tras_cerca va aquí: se ve por los callejones' },
         cerca: { archivos: cerca, trozo: TROZO, y: 0, paralaje: PARALAJE.cerca },
-        piso: { archivos: piso, trozo: TROZO, y: FT, paralaje: PARALAJE.piso, nota: E.inclinacion ? `las primeras ${D} filas son la franja (inclinada), las de abajo el bordillo: la cara del piso que da a la cámara` : `las primeras ${D} filas son la franja, las de abajo la orilla de enfrente` },
+        piso: { archivos: piso, trozo: TROZO, y: FT, paralaje: PARALAJE.piso, nota: E.inclinacion ? `las primeras ${D} filas son la franja (inclinada), las de abajo el bordillo: la cara del piso que da a la cámara` : deLado(L) ? `de lado: las primeras ${D} filas son la franja donde se paran los atletas, las de abajo lo de adelante hasta el borde de la pantalla` : `las primeras ${D} filas son la franja, las de abajo la orilla de enfrente` },
         ...(mojado.length ? { piso_mojado: { archivos: mojado, trozo: TROZO, y: FT, clima: 'aguacero', nota: 'va encima del piso cuando llueve' } } : {}),
         objetos: { archivo: 'objetos.json', nota: 'entre el piso y el frente, ordenados con los atletas' },
         frente: { archivos: frente, trozo: TROZO, y: E.frenteY, paralaje: PARALAJE.frente },

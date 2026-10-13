@@ -36,7 +36,7 @@ En [`fichas/`](fichas/) están los 24 atletas de los 6 equipos y la mascota, lis
 | Los Panas de Caracas (C2) | `gabo`, `yuli`, `toto`, `carmen` | Gabo con gorra y camisa de pelotero. Yuli con la chemise beige del liceo. Toto con franela grande y chancletas. La señora Carmen con rolos y bata de flores |
 | Maracuchos del Lago (C2) | `ender`, `yusmary`, `jhonder`, `abuela_nerva` | Ender con sombrero de gaitero, bigote y guayabera. Yusmary con camiseta de básquet. Jhonder con franela de rayas y short. La abuela Nerva con bata fresca |
 | Mascota | `thor` | El bóxer con todas sus animaciones de mascota |
-| Animales de la calle (C7) | `perro_calle_1` (Canelo), `perro_calle_2` (Negrito), `perro_calle_3` (Manchas), `gato_1` (Mango), `gato_2` (Sombra) | Los perros de la Comuna 13 y los gatos de los techos, con `sleep`, `scratch` y `jump_wall` |
+| Animales de la calle (C7) | `perro_calle_1` (Canelo), `perro_calle_2` (Negrito), `perro_calle_3` (Manchas), `gato_1` (Mango), `gato_2` (Sombra) | Los perros de la Comuna 13 y los gatos de los techos, con `sleep`, `scratch` y `jump_wall` (medido con `subida`, lote C7c). Los perros, además, `wake` y `pounce` |
 
 Todo sale de campos generales de la ficha (`jacketCut`, `jacketClosed`, `jacketSleeves`, `armband`, `chestText`, `cell`, `neck`, `face.base`, los gorros propios y el calzado abierto), explicados en [docs/KIT_DEPORTES.md](../../KIT_DEPORTES.md#equipos-uniformes-gigantes-y-mascota).
 
@@ -62,7 +62,7 @@ Con `--fuentes`, el kit trae `ui/fuentes/` con `fuente_ui`, `fuente_titulo` y `f
 npm run kit-a-medida -- salida/kit_nekketsu --config docs/ejemplos/nekketsu/kit.config.json
 ```
 
-Salen los 24 atletas con 8 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`, `kachinuki`, `recorridos`, `trepar`), retratos, cabecitas, las 19 armas del piso, Thor, las fuentes con vietnamita y todo lo de la pelea, en unos 2 minutos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
+Salen los 24 atletas con 15 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`, `kachinuki`, `recorridos`, `trepar`, `ngg_burlas`, la burla de su equipo, y `voley`, `futbol`, `keeper`, `basket`, `tennis` y `beisbol` sin las pelotas dibujadas, con `objetos` y las pelotas sueltas en `objetos/pelotas.png`), retratos, cabecitas, las 19 armas del piso, Thor, las fuentes con vietnamita y todo lo de la pelea, en unos 3 a 4 minutos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
 
 El juego tendrá su propio `kit.config.json` y `data/teams.json`. Esta es la versión de ejemplo, con lo que PixelForja ya genera.
 
@@ -91,5 +91,25 @@ Ya no queda nada en `manifest.pendiente`. Para oír todo: `audio/escuchar.html` 
 npm run escenario -- docs/ejemplos/nekketsu/escenarios/saigon_hem.layout.json salida --postales --ficha
 ```
 
+La carpeta trae también los otros cuatro tramos del Cross, la Comuna 13 (`medellin_c13`), la azotea de Caracas (`caracas_azotea`) y Hội An de noche con el Tama-wari (`hoian`), cada uno copiado del juego. Y los de las pruebas nuevas:
+
+| Layout | Prueba | Vista | Hora |
+|---|---|---|---|
+| `judo_hanoi` | Judo (`Fight.ts`) | inclinada | tarde |
+| `tao_dan` | Đá cầu (`DaCau.ts`) | de lado | amanecer |
+| `candelaria` | Tejo (`Tejo.ts`) | de lado | tarde nublada |
+| `margarita` | Vóley Playa (`Voley.ts`) | de lado | mediodía |
+| `dalat` | Tenis de dobles (`Tenis.ts`) | de lado | mañana con neblina |
+| `barranquilla` | Fútbol Callejero (`Futbol.ts`) | inclinada | mediodía |
+| `cancha_maracaibo` | Básquet 3x3 (`Basket.ts`) | inclinada | noche |
+
+Los cuatro últimos son del lote E5: sus franjas salen de las medidas de cada prueba (el piso en la fila 310 en el vóley y el tenis, y FT 212 con 104 de fondo en el fútbol y el básquet).
+
 Cómo se carga en el juego: [docs/ESCENARIOS.md](../../ESCENARIOS.md).
 
+## La gente de la calle (lotes C6a y E5)
+
+En [`npc/`](npc/) están las fichas de los NPC y la sección `npc` de [`kit.config.json`](kit.config.json) dice qué animaciones lleva cada uno. Cada NPC sale en `npc/<id>.png`, una tira con el ancla en los pies.
+
+- **La Comuna 13 (C6a):** los tres bailarines de break, los dos pelados del fútbol, el grafitero, los músicos con el parlante y el vendedor de paletas, más la pelota.
+- **La Marimonda del Carnaval (E5):** `marimonda.ficha.json`, con la máscara de la Marimonda (`hat: "marimonda"`: la capucha roja, las orejotas azules y la trompa larga) y el traje de colores. Lleva `caminar` (la animación `walk` del motor, de lado: `vistas.caminar: "lado"`, el juego la espeja para ir a la izquierda) y `bailar` (`dance`, de frente). Es la que cruza la calle en el Fútbol Callejero.

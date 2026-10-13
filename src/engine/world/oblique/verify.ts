@@ -58,20 +58,21 @@ export function camino(L: ObliqueLayout, r: Reglas = REGLAS): { ok: boolean; det
   const i0 = Math.floor(salida / SX);
   for (let j = 0; j < NY; j++) if (H[j * NX + i0] !== null) { seen[j * NX + i0] = 1; q.push(j * NX + i0); }
   const iMeta = Math.floor(meta / SX);
-  // una arena (la pelea) no tiene salida ni meta: lo que vale es que se llegue a todo el piso
+  // una arena (la pelea) no tiene salida ni meta: lo que vale es que se llegue a todo el piso. Se cuenta el piso (altura
+  // 0): el techo de una caja más alta que el salto (la caja de greda del tejo) no se pisa y no tiene por qué alcanzarse
   const arena = !L.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta');
   if (arena) {
     let n = 0, total = 0;
     while (q.length) {
       const c = q.shift()!, i = c % NX, j = (c - i) / NX, h = H[c]!;
-      n++;
+      if (h === 0) n++;
       for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const ni = i + di, nj = j + dj, k = nj * NX + ni;
         if (ni < 0 || nj < 0 || ni >= NX || nj >= NY || seen[k] || H[k] === null || H[k]! - h > r.salto) continue;
         seen[k] = 1; q.push(k);
       }
     }
-    for (const v of H) if (v !== null) total++;
+    for (const v of H) if (v === 0) total++;
     return { ok: n === total, detalle: `arena sin salida ni meta: se llega a ${n === total ? 'todo el piso' : `${n} de ${total} celdas`} desde x ${salida}` };
   }
   let mejor = salida;

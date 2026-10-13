@@ -213,7 +213,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
   // gorro propio (dibujado con código): agranda la caja si se sale (el ala del nón lá, la visera)
   // el gorro se apoya en la cima del pelo (o de la cabeza, si es calva)
   const cimaPelo = used.filter((u) => u.l.key.startsWith('hair/')).reduce((m, u) => Math.min(m, u.d.y), headDir.y);
-  const gorro = esGorroPropio(look.hat) ? pixelesGorro(look.hat, dir, { x: headDir.x + (turns('face/') ? turn : 0), y: cimaPelo, w: headDir.w, h: headDir.h }, look.hatColor) : [];
+  const gorro = esGorroPropio(look.hat) ? pixelesGorro(look.hat, dir, { x: headDir.x + (turns('face/') ? turn : 0), y: cimaPelo, w: headDir.w, h: headDir.y + headDir.h - cimaPelo }, look.hatColor) : [];
   for (const p of gorro) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x + 1); y1 = Math.max(y1, p.y + 1); }
   const w = x1 - x0, h = y1 - y0;
   const idx = new Int16Array(w * h).fill(-1);

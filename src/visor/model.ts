@@ -59,7 +59,7 @@ export function frameRect(kit: VKit, c: VChar, pack: VPack, a: VAnim, row: numbe
 }
 
 /** Los datos por cuadro que trae una animación, en el orden en que se dibujan. */
-export const OVERLAYS = ['cajas', 'cuerpo', 'manos', 'cabeza', 'pies', 'carga', 'arma', 'agua', 'eventos', 'pivote'] as const;
+export const OVERLAYS = ['cajas', 'cuerpo', 'manos', 'cabeza', 'pies', 'carga', 'arma', 'objetos', 'agua', 'eventos', 'pivote'] as const;
 export type Overlay = (typeof OVERLAYS)[number];
 export function overlaysOf(a: VAnim): Overlay[] {
   return OVERLAYS.filter((o) => o === 'pivote' || (o === 'eventos' ? !!a.raw.eventos?.length : Array.isArray(a.raw[o]) && a.raw[o].some((x: unknown) => x != null)));
