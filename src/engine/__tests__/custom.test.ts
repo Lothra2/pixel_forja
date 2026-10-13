@@ -199,9 +199,11 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
       for (const [p, pk] of Object.entries<any>(a.packs)) {
         expect(pk.atlas).toBe(`atletas/${id}/${p}.json`);
         const atlas = readJson(join(out, pk.atlas));
-        // la burla y la victoria propias (taunt_<id>, victory_<id>) solo van en el atlas de su dueño
-        const ids = Object.keys(m.atletas);
-        expect(Object.keys(pk.anims).sort(), `${id}/${p}`).toEqual(packAnims(cfg.packs[p]).filter((a) => (duenoDe(a, ids) ?? id) === id).sort());
+        // la burla y la victoria propias (taunt_<id>, victory_<id>) solo van en el atlas de su dueño, y la burla del
+        // equipo (burla_<equipo>, lote C5) solo en los de ese equipo
+        const ids = Object.keys(m.atletas), equipos = Object.keys(m.equipos);
+        const nombres = packAnims(cfg.packs[p]).flatMap((a) => { const al = Object.keys(cfg.alias ?? {}).filter((k) => cfg.alias![k] === a); return al.length ? al : [a]; });
+        expect(Object.keys(pk.anims).sort(), `${id}/${p}`).toEqual(nombres.filter((a) => (duenoDe(a, ids) ?? id) === id && (duenoDe(a, equipos) ?? team) === team).sort());
         for (const [an, d] of Object.entries<any>(pk.anims)) {
           expect(d).toMatchObject({ cuadros: expect.any(Number), fps: expect.any(Number), loop: expect.any(Boolean) });
           // un cuadro del atlas por fila y cuadro, y los datos por cuadro en [fila][cuadro]
@@ -238,9 +240,15 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     // la comida de la pelea va en objetos, después de las armas (el primer objeto sigue siendo un arma)
     expect(Object.values<any>(m.objetos)[0].atlas).toBe('objetos/armas.json');
     for (const k of COMIDAS) expect(m.objetos[k], k).toMatchObject({ atlas: 'objetos/comida.json', peso: 'comida', rota: false, anims: { quieto: 1, humito: 4 }, cura: expect.any(Number) });
-    // la burla y la victoria propias son de los 8 de la pelea (lote P1); las de los equipos nacionales llegan con C5
+    // la burla y la victoria propias son de los 8 de la pelea (lote P1)
     for (const t of ['taunt', 'victory']) for (const id of CON_BURLA_PROPIA) {
       expect(m.atletas[id].packs.kachinuki.anims[`${t}_${id}`], `${t}_${id}`).toBeDefined();
+    }
+    // la burla de cada equipo (lote C5): los 24 la traen, con la frase en el gesto fuerte
+    for (const [eq, t] of Object.entries<any>(m.equipos)) for (const id of t.atletas) {
+      const b = m.atletas[id].packs.ngg_burlas.anims[`burla_${eq}`];
+      expect(b, `${id} burla_${eq}`).toMatchObject({ loop: false, fps: 8 });
+      expect(b.eventos.filter((e: any) => e.tipo === 'frase'), id).toHaveLength(1);
     }
     // el pisotón, el codazo y el cabezazo marcan el impacto en el pie, el codo y la frente
     const imp = (id: string, a: string) => m.atletas[id].packs.kachinuki.anims[a].eventos.find((e: any) => e.tipo === 'impacto');
@@ -273,14 +281,18 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     } else expect(m.pendiente.every((w: string) => w.startsWith('audio.'))).toBe(true);
   });
 
-  it('los 5 tramos del Cross Country, la Comuna 13 y la azotea de Caracas salen con sus 9 pruebas en verde (lotes E1, E2, E3a y E3b)', () => {
-    const tramos = ['caracas_azotea', 'medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio'];
+  it('los 5 tramos del Cross Country, la Comuna 13, la azotea de Caracas, Hội An, el dojo, Tao Đàn y la cancha de tejo salen con sus 9 pruebas en verde (lotes E1, E2, E3a, E3b, E3c y E4a)', () => {
+    const tramos = ['candelaria', 'caracas_azotea', 'hoian', 'judo_hanoi', 'medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio', 'tao_dan'];
     expect(Object.keys(m.escenarios).sort()).toEqual(tramos);
+    // la franja de cada uno: la de la pelea (246 a 344), la del Cross (200 a 330) y las de lado, donde DaCau.ts y Tejo.ts ponen el piso
+    const franjas: Record<string, [number, number]> = { tao_dan: [290, 330], candelaria: [286, 310], caracas_azotea: [246, 344], hoian: [246, 344], judo_hanoi: [246, 344] };
     for (const id of tramos) {
       expect(m.escenarios[id]).toBe(`escenarios/${id}/escenario.json`);
       const e = readJson(join(out, m.escenarios[id]));
-      const caracas = id === 'caracas_azotea';
-      expect(e).toMatchObject({ id, escala: 1, largo: id === 'saigon_estadio' ? 1920 : id === 'medellin_c13' ? 3600 : caracas ? 640 : 3840, franja: caracas ? { atras: 246, adelante: 344 } : { atras: 200, adelante: 330 } });
+      const [atras, adelante] = franjas[id] ?? [200, 330];
+      expect(e).toMatchObject({ id, escala: 1, largo: id === 'saigon_estadio' ? 1920 : id === 'medellin_c13' ? 3600 : franjas[id] ? 640 : 3840, franja: { atras, adelante } });
+      // las de lado lo dicen, con el dibujo derecho
+      if (id === 'tao_dan' || id === 'candelaria') expect(e).toMatchObject({ vista: 'lado', inclinacion: 0, ancho: 640 });
       expect(readFileSync(join(out, `escenarios/${id}/verificacion.md`), 'utf8'), id).toMatch(/Las 9 pruebas pasan/);
       // las postales y la ficha son para aprobar: el kit no las lleva
       expect(files.some((f) => f.startsWith(`escenarios/${id}/postales/`))).toBe(false);
@@ -308,12 +320,11 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas (24 x 15 hojas: los 14 packs, con voley y futbol sin pelotas del lote SP y keeper, basket, tennis y beisbol del
-    // lote SP2, y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida + las pelotas sueltas (SP2)
-    // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 7 escenarios: hẻm 21,
-    // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14 y Caracas 10 + 3 perros y 2 gatos (lote C7)
+    // atletas (24 x 16 hojas: los 15 packs, con las burlas del lote C5, voley y futbol sin pelotas del lote SP y keeper, basket, tennis y beisbol del lote SP2, y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida + las pelotas sueltas (SP2)
+    // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 11 escenarios: hẻm 21,
+    // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14, Caracas 10, Hội An 8, y el dojo, Tao Đàn y la cancha de tejo 8 cada uno (lote E4a) + 3 perros y 2 gatos (lote C7)
     // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b)
-    expect(pngs.length).toBe(24 * 15 + 63 + 36 + 2 + 1 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 5 + 10 + 9 + 2);
+    expect(pngs.length).toBe(24 * 16 + 63 + 36 + 2 + 1 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 8 + 8 + 8 + 5 + 10 + 9 + 2);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

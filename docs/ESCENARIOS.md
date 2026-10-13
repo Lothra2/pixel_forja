@@ -73,7 +73,7 @@ En pantalla no hay inclinación: `px = x`, `py = franja.atras + y - z`. Una caja
 | `piso_<n>.png` | El piso en trozos de 1280, desde `franja.atras`. Las primeras filas son la franja y las de abajo la orilla de enfrente |
 | `piso_mojado_<n>.png` | Charcos y piso mojado, encima del piso, si el clima trae aguacero |
 | `frente_<n>.png` | Primer plano sobre la acera de enfrente. Nunca tapa la franja |
-| `objetos.png` + `.json` | Cada caja del layout dibujada a su medida, el toldo, los postes y el portón. Con `x`, `y` y `orden` |
+| `objetos.png` + `.json` | Cada caja del layout dibujada a su medida, el toldo, los postes y el portón. Con `x`, `y` y `orden`. Lo que lleva algo colgado que pone el juego (el poste del Tama-wari) trae `gancho`: el punto de pantalla donde va el ancla de eso |
 | `vida.png` | Lo que se mueve, cuadro a cuadro: ropa tendida, cables con viento, palomas (2 cuadros paradas y 2 volando) y motos al fondo |
 | `superficie.png` | Por pixel de la franja: qué suena al pisar (`paso_piedra`, `paso_agua`... más `_0` a `_2`) y si resbala. La leyenda va en `escenario.json` |
 | `borde_filo.png` + `borde_vacio.png` | Solo si hay un borde al vacío (un hueco `vacio` que llega al final del mundo). El filo con la franja amarilla y negra que se desmorona en 6 cuadros, y la ciudad allá abajo en 128 x 128 que se repite. Para cuando el juego hace avanzar el borde. Van en `escenario.json` → `borde` |
@@ -81,7 +81,7 @@ En pantalla no hay inclinación: `px = x`, `py = franja.atras + y - z`. Una caja
 | `luces.json` | Color, radio y latido. De día, las lámparas de los postes van apagadas |
 | `particulas.json` | Humo de incienso, pétalos, goteras, ondas en el agua. Las que traen `fx` usan el catálogo de efectos del kit |
 | `verificacion.md` | Las 9 pruebas, con lo que midió cada una |
-| `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360. En una arena de una pantalla van a 0, 2 y 4 segundos, para que se vea la vida |
+| `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360. En una arena o un mundo de una pantalla van a 0, 2 y 4 segundos, para que se vea la vida |
 | `ficha_arte.md` | Con `--ficha`: paleta, elementos icónicos, vida y qué dibujo va en cada caja |
 
 ## Vista inclinada
@@ -109,6 +109,32 @@ py = franja.atras + y - z
 - **Los postes se paran en lo que tengan debajo:** su `alto` se mide desde el techo de la caja donde están, y su `orden` va justo después de esa caja.
 - **Los tramos de peldaños seguidos** (escalera eléctrica, escalones, escalera de colores) salen como un solo objeto `<tipo>_<n>_tramo`, con las contrahuellas de adentro. La cara izquierda del primero queda aparte.
 - **Para el dibujo derecho de antes:** `generarEscenario(layout, { inclinacion: 0 })`.
+
+## Vista de lado
+
+Para las pruebas que el juego dibuja de lado (Đá cầu, Tejo): la cancha se ve de frente, el fondo detrás y el piso es una franja angosta donde se paran los atletas. Desde E4a.
+
+```json
+{
+  "id": "tao_dan", "pais": "vietnam", "prueba": "da_cau",
+  "vista": "lado",
+  "largo": 640,
+  "franja": { "atras": 290, "adelante": 330 },
+  "carriles": [{ "y": 14 }, { "y": 26 }],
+  "paralaje": { "lejos": "saigon_amanecer", "cerca": "parque_tao_dan" }
+}
+```
+
+- **`vista: "lado"`** en el layout. Sin el campo, la vista es `oblicua`, como siempre. Otro valor da error.
+- **El dibujo va derecho:** inclinación 0, pida lo que pida la opción `inclinacion`. `escenario.json` trae `inclinacion: 0` y `ancho` igual al `largo`, que el juego ya lee.
+- **La franja es la fila del piso del juego:** `franja.atras` es donde se para el fondo y la fila de pantalla de un atleta es `franja.atras + y`. En Tao Đàn, el piso de `DaCau.ts` está en la fila 310 y sus dos filas (304 y 316) son los carriles 14 y 26. En la cancha de tejo, `Tejo.ts` pone el piso en la 300: la franja va de 286 a 310 y los carriles son 10 (los que esperan) y 14 (el que lanza).
+- **Las mismas capas de siempre**, así el juego las carga con lo que ya tiene:
+  - `cielo` y `lejos` como siempre.
+  - `cerca` es **el fondo**: de la fila 0 a `franja.atras`, transparente donde se ve lejos (entre los árboles, por las ventanas).
+  - `piso` va de `franja.atras` hasta el borde de abajo de la pantalla: la franja y lo de adelante. Si la franja es angosta, el piso crece hasta la fila 360.
+  - `frente` queda libre, `objetos` y `vida` como siempre.
+- **`escenario.json` suma** `vista: "lado"` y `nota_vista`, y no quita nada. Un escenario oblicuo no trae el campo, así sale igual que antes.
+- **En el juego**, en vez de la imagen de fondo de la prueba: `queueEscenario(this, 'tao_dan')` en el preload, `pintarEscenario(this, 'tao_dan', 5000)` en el create y `arte.tick(dt, cam.scrollX, () => false)` cada cuadro. Los atletas siguen en su fila de siempre: la vista de lado no corre a nadie.
 
 ## En Phaser
 
@@ -158,7 +184,7 @@ Todas bloquean: si una falla, el escenario no sale.
 | 3 | Piso | Ni un pixel transparente en la franja |
 | 4 | Apoyo | Ninguna caja, poste ni objeto del layout cae sobre un hueco |
 | 5 | Colisión | `colision.json` es igual al layout |
-| 6 | Camino | Se llega de la salida a la meta con las reglas del juego: salto de 36, escalón de 6, salto largo de 84. En una arena (sin salida ni meta, como la pelea), se llega a todo el piso |
+| 6 | Camino | Se llega de la salida a la meta con las reglas del juego: salto de 36, escalón de 6, salto largo de 84. En una arena (sin salida ni meta, como la pelea), se llega a todo el piso: se cuenta el piso (altura 0), así el techo de una caja más alta que el salto, como la caja de greda, no tiene que alcanzarse |
 | 7 | Legibilidad | Una silueta de atleta cada 64 px en cada carril. Contraste mediano entre su contorno y el fondo de al menos 2:1 |
 | 8 | Paleta | Ningún color fuera de los 24 de la ficha |
 | 9 | Peso | En la pantalla más cargada: hasta 8 capas, 12 luces encendidas, 16 piezas animadas y 24 objetos |
@@ -225,11 +251,43 @@ Todas bloquean: si una falla, el escenario no sale.
   - **Postes:** `antena` es la torre de celosía de telecomunicaciones con sus paneles, una parabólica y la luz roja.
   - **Vida:** `letreros_neon` (los dos neones, 4 cuadros con un parpadeo), `luces_ciudad` (las luces rojas de las torres y el tráfico allá abajo pasando el borde), `avion_lejos` y `helicoptero_reflector` (en la capa lejos, con su recorrido; el helicóptero con el haz que barre), `publico` (los de las azoteas vecinas levantan brazos, banderas y celulares) y `fuegos_artificiales` (partículas, repartidas a lo ancho de la arena).
   - **Luces:** los dos neones (parpadean con su vida), los dos bombillos de la caseta y las luces rojas de las torres y las antenas, que prenden y apagan cada segundo.
-- **Los otros estilos del pedido** (`colombia_colonial`, `venezuela_barrio`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
+- **El estilo `vietnam_hoian`** (`pais: "vietnam"` con `paralaje.cerca: "casas_amarillas_hoian"`, lote E3c): Hội An de noche, con el Tama-wari. `paralaje.lejos` es `rio_thu_bon_puente_japones`.
+  - **Solo de noche** (`hoianPaleta.ts`): la noche de Vietnam es la de Hội An. `paletaVietnam` la da cuando la hora es `noche` y no cambia ninguna otra hora (Saigón sale igual byte a byte). El amarillo de las casas, la madera oscura, las tejas de barro, el rojo y el dorado de los faroles, el azul noche del río y la piedra en pardos tibios. `canal` es el morado de los faroles, `salmon` la buganvilla y `menta` los faroles verdes. A otra hora queda `pendiente`: "todavía no tiene arte de manana (hoy pinta: noche)".
+  - **Lejos:** el río Thu Bồn con la orilla de enfrente encendida y sus palmas, el puente japonés (Chùa Cầu) con los arcos de piedra, la galería de madera prendida, los dos techos de puntas curvas y el templito, y la luna llena de la noche de los faroles. El agua lleva los reflejos en rayas que tiemblan, el camino de la luna y velitas sueltas. El puente cae en la fila 135 o más abajo, debajo del marcador con el zoom de la pelea, y se ve por la izquierda, donde se abre el río.
+  - **Cerca:** `casas_amarillas_hoian` es el fondo y `casas_amarillas_faroles` el mismo dibujo por tema. A la izquierda el río con el bote amarrado, las velitas y el malecón de piedra con sus bolardos. Después, cuatro casas de dos pisos con tejas de barro, alero entre los pisos, la planta baja de madera con sus vanos (tienda de faroles, sastrería, comedor de cao lầu o puertas cerradas), un farol en cada puerta, racimos debajo del alero grande, balcones con vecinos asomados, buganvilla, el árbol de la esquina y los dos puestos de faroles. Letreros: ĐÈN LỒNG, CAO LẦU y MAY ĐO.
+  - **El piso:** la `baldosa` de este lugar es la calle de piedra con losas grandes trabadas y la luz tibia de los faroles, la `acera` son losas claras pisadas y la `madera` es el muelle de tablas. Debajo de la franja va el canto del muelle con sus pilotes y el río de adelante con las velitas. La piedra está seca: aquí no sale el reflejo del neón.
+  - **Postes:** `poste_tamawari` es la caña de bambú con sus nudos, el trípode amarrado y el yugo arriba. La bola no la dibuja el poste: es la entidad `npc` `bola_tama` y la pone el juego con el efecto del kit. El yugo trae `gancho` en `objetos.json`, donde va el ancla de la bola (16, 0). El collar de abajo va del color del equipo de la bola que tiene en su x (`equipo` de la entidad: la Familia azul y el Instituto rojo), con cintas de colores. El poste se mide desde el piso aunque esté parado en su base, y va antes que la base (que le tapa el pie) y antes que la bola. `poste_faroles` es el palo de madera con la cruceta y cuatro faroles.
+  - **Cajas y bajo:** `base_poste` es un cajón de madera lleno de piedras. `cuerdas_faroles` son cuerdas de poste en poste (los que caen en su rango), amarradas a su `z` o al alto del poste si es más bajo, con faroles de seda cada 14 a 20 px.
+  - **Una prueba que se juega en el sitio** (`prueba: "tamawari"`): `salida` y `meta` son el lado de cada equipo. No van pancartas ni la línea de meta.
+  - **Vida:** `faroles_meciendose` (los faroles de las cuerdas y de los postes, 4 cuadros: con la vida, el objeto lleva solo las cuerdas y el palo, así no quedan dobles), `velitas_rio` (las velitas de adelante titilan, 3 cuadros), `botes_con_faroles` (el bote amarrado se mece y otro cruza lejos con su recorrido) y `publico` (los vecinos de los balcones levantan los brazos, los abanicos y los celulares). Las piezas que van sobre lo pintado son un recorte de la capa con lo que se mueve: el cuadro 0 es igual a lo pintado.
+  - **Luces:** los faroles de las puertas, los dos puestos, los postes de faroles y tres faroles de las cuerdas, con latido. Partículas: pétalos de la buganvilla y brillos en el río de adelante.
+- **Los lugares del registro** (`lugares.ts`, lote E4a): un lugar nuevo trae todo su arte junto (el fondo de la capa cerca, la capa lejos, sus pisos, lo de abajo de la franja, sus cajas, su vida, sus luces y sus partículas) y se elige por `paralaje.cerca`, sin tocar el motor. Su paleta también se elige por el fondo, así las otras horas del país no cambian ni un pixel. Bajo techo (`techado`), la lluvia de afuera no moja el piso.
+- **El estilo `vietnam_dojo`** (`paralaje.cerca: "dojo_hanoi"`, `paralaje.lejos: "ho_hoan_kiem"`): el dojo de judo de Hà Nội en la tarde, en la vista inclinada de la pelea.
+  - **Solo de tarde.** La paleta: la madera clara, el tatami verde y amarillo, el rojo de la bandera y el jade del lago (`canal`).
+  - **Cerca:** la pared de madera en paneles con el cielo raso de tablas, el letrero del club VÕ ĐƯỜNG NHU ĐẠO HÀ NỘI, los tableros con las tablillas de los nombres, el reloj, cuatro ventanales altos con los postigos abiertos (los vidrios son transparentes: ahí se ve el lago), la bandera de Vietnam en el centro, la caligrafía TÂM y NHẪN en rollos con su sello, y al pie de la pared el público en la banca y los judocas en seiza. Thor se sienta antes de la banca, en x 70.
+  - **Lejos:** el lago Hoàn Kiếm color jade con la otra orilla, la Torre de la Tortuga en su islote (cae en un ventanal en todo el recorrido de la cámara de la pelea), el puente rojo Thê Húc con la puerta del templo y los sauces.
+  - **El piso:** el `tatami` de este lugar son esteras de 64 x 26, la zona de combate verde (x 64 a 576, y 10 a 88) con su borde rojo, la de seguridad amarilla, las cintas de salida y las manchas de sol de los ventanales. Debajo, el canto del tatami y el piso de madera.
+  - **Vida:** `publico` (aplauden, 2 cuadros) y `hojas_cayendo` (afuera, detrás de los vidrios, 4 cuadros). Luces: el sol de la tarde de cada ventanal.
+- **El estilo `vietnam_parque`** (`paralaje.cerca: "parque_tao_dan"`, `paralaje.lejos: "saigon_amanecer"`): el parque Tao Đàn de Saigón al amanecer, de lado.
+  - **Solo al amanecer**, con su cielo (del celeste al durazno y al rosado, el sol recién salido a la izquierda). `canal` es la ciudad en la bruma.
+  - **Fondo:** la bóveda de los dầu, los troncos claros y altísimos con sus raíces, los rayos de sol entre los troncos, el seto y el pasto, el letrero CÔNG VIÊN TAO ĐÀN, el palo con las jaulas de pájaros y el banco de piedra con los señores del café, el grupo de tai chi y los abuelos haciendo ejercicio.
+  - **Lejos:** Landmark 81 y la Bitexco entre las torres, en la bruma rosada, con los árboles del parque delante.
+  - **El piso:** la `tierra` de este lugar es la cancha roja apisonada, con las rayas de `DaCau.ts` (de x 34 a 606 en la fila 298 y de 28 a 612 en la 322) y la del medio debajo de la red. La red la dibuja el juego. Adelante, el pasto y el camino de baldosas.
+  - **Vida:** `tai_chi` (4 cuadros), `abuelos_ejercicio` y `pajaros` (los de las jaulas saltan, y otros cruzan lejos). La capa cerca va sin lo que se mueve: la vida lo trae entero. `rayos_de_luz` son partículas de polvo que brilla en los rayos.
+- **El estilo `colombia_colonial`** (`paralaje.cerca: "cancha_tejo_candelaria"`, `paralaje.lejos: "monserrate_llovizna"`): la cancha de tejo de La Candelaria en la tarde nublada, de lado.
+  - **Solo de tarde**, con el cielo tapado (`clima: ["nublado", "llovizna"]`). La paleta: la cal, la madera, la greda, el gris de la llovizna (`canal`), el verde de Monserrate y de las puertas coloniales y los colores de la bandera.
+  - **Fondo:** el techo de tablas con las vigas y el tirante, los pilares, los banderines de papel y los bombillos, la pared de cal con el pañete caído y el zócalo verde, las dos ventanas coloniales con su reja de madera y los postigos verdes, el tablero de las reglas (MECHA 3, BOCÍN 6, MOÑONA 9, MANO 1), el estante con la cajita de las mechas y los tejos, el afiche del torneo, el letrero donde el juego escribe CANCHA DE TEJO (x 380 a 500, fila 196 a 214) y la gente con ruana y sombrero en la banca.
+  - **Lejos:** Monserrate con la iglesia blanca y el teleférico, la neblina en la ladera y las casas coloniales de enfrente con balcones y techos de teja, con la llovizna. Monserrate cae en la ventana grande.
+  - **El piso:** la cancha de tierra parda con la greda que salta cerca de la caja y la raya de x 104. Adelante, el borde de madera y el cemento del galpón.
+  - **Cajas:** `caja_greda` es la caja de tejo de lado, con la geometría de `Tejo.ts`: la cara de greda de (534, 300) a (582, 250), el palo de atrás hasta la fila 248 y el bocín en (548, 280). Las mechas y los tejos los pinta el juego encima.
+  - **Vida:** `banderines`, `publico` (levantan el tinto), `llovizna` (en las ventanas, 3 cuadros) y `humo_mechas` (partículas que suben de la caja). Luces: los tres bombillos.
+- **Los otros estilos del pedido** (`venezuela_barrio`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos
 
-- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad` solo sabe pintar la noche.
+- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad` y `vietnam_hoian` solo saben pintar la noche, `vietnam_dojo` y `colombia_colonial` la tarde, y `vietnam_parque` el amanecer.
+- **Los lugares de E4a son de una pantalla:** el dojo, Tao Đàn y la cancha de tejo están puestos para un mundo de 640, como sus pruebas.
+- **El dibujo de Hội An es de una pantalla:** las casas, el río de la izquierda y los puestos están puestos para un mundo de 640. En un layout más largo con el mismo fondo, la última casa se estira hasta el final del ancho pintado.
 - **El borde que avanza** lo mueve el juego: el arte trae el filo y el vacío, pero el murito del fondo, pintado en la capa cerca, sigue entero hasta el borde de antes.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.
 - **La legibilidad se mide con el contorno de los atletas,** parados encima de la caja que tengan debajo, no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.

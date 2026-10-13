@@ -1,7 +1,7 @@
 import { type Raster } from '../core/raster';
 import { type HumanFicha, type CellSize, usesAvatar, ARMOR_DEFAULT_COLOR } from '../sheet/ficha';
 import { dimsFor, type Dims } from '../rig/dims';
-import { type Pose, type Arm, type Foot, type PropKind, solveTwoBone, WEAPON_KINDS } from '../rig/pose';
+import { type Pose, type Arm, type Foot, type PropKind, type HandShape, solveTwoBone, WEAPON_KINDS } from '../rig/pose';
 
 const WEAPON_SET = new Set<PropKind>(WEAPON_KINDS);
 import { type Ramp, SHADOW, BASE, LIGHT, makeRamp } from '../color/ramp';
@@ -352,7 +352,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     stroke(part, p.root, p.mid, d.armT, (t) =>
       band && t >= band[0] && t < band[1] ? 'armband' : metalUp ? 'armor' : sleeve === 'long' || (sleeve === 'short' && t < 0.6) ? sm : 'skin');
     stroke(part, p.mid, p.end, d.armT, () => (metalLow ? 'armor' : sleeve === 'long' ? sm : 'skin'));
-    blob(part, p.end, d.hand + (f.outfit.gloves || metalLow ? 1 : 0), metalLow ? 'armor' : handMat);
+    const hm = metalLow ? 'armor' : handMat, shape = pose.hands?.[far ? 'far' : 'near'];
+    blob(part, p.end, d.hand + (f.outfit.gloves || metalLow || shape === 'palma' ? 1 : 0), hm);
+    if (shape) handShape(part, p, shape, d.hand, hm, cell >= 48 ? 2 : 1);
     if (fo.pauldrons && armor) blob(part, [p.root[0], p.root[1] - 0.5], d.armT + 2, fo.trim ? 'trim' : 'armor', BASE);
     commit(part, layer, (side && far) || (diag && !far));
   };
@@ -964,4 +966,22 @@ export function reachArm(d: Dims, torsoDeg: number, target: [number, number]): A
   const a1 = Math.atan2(ik.mid[0], ik.mid[1]);
   const a2 = Math.atan2(ik.end[0] - ik.mid[0], ik.end[1] - ik.mid[1]);
   return { shoulder: (a1 * 180) / Math.PI, elbow: ((a2 - a1) * 180) / Math.PI };
+}
+
+/**
+ * Los dedos que salen del puño (pose.hands). Se suman a la pieza del brazo, así el contorno los rodea: a 48 px son uno o
+ * dos pixeles, lo justo para que el gesto cambie la silueta.
+ */
+function handShape(part: Part, p: { mid: [number, number]; end: [number, number] }, shape: HandShape, hand: number, mat: string, n: number) {
+  const r = Math.floor(hand / 2), [ex, ey] = p.end;
+  const vx = p.end[0] - p.mid[0], vy = p.end[1] - p.mid[1], len = Math.hypot(vx, vy);
+  const ux = len > 0.5 ? vx / len : 0, uy = len > 0.5 ? vy / len : 1;
+  const put = (x: number, y: number) => part.set(Math.round(x), Math.round(y), mat);
+  if (shape === 'pulgar') for (let k = 1; k <= n; k++) put(ex, ey - r - k);
+  else if (shape === 'dedo') { if (len > 1.5) for (let k = 1; k <= n; k++) put(ex + ux * (r + k), ey + uy * (r + k)); }
+  else if (shape === 'garra') for (const a of [-50, 0, 50]) {
+    const [dx, dy] = rot([ux, uy], a);
+    put(ex + dx * (r + 1), ey + dy * (r + 1));
+    if (n > 1 && a !== 0) put(ex + dx * (r + 1) + ux, ey + dy * (r + 1) + uy);
+  }
 }

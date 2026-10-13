@@ -3,6 +3,9 @@ import { boxesOf } from './layout';
 import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Paleta } from './paleta';
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
+import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
+import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA } from './lugaresPaleta';
+import { lugarDe } from './lugares';
 
 /**
  * Ficha de arte de un escenario: la puerta 1 del pedido. Paleta de 24 colores, de 8 a 12 elementos icónicos y los
@@ -277,7 +280,121 @@ const VENEZUELA_CIUDAD: Estilo = {
   letreros: ['AREPERA LA CHAMA', 'CARACAS', 'CARACAS ES BELLA'],
 };
 
-const ESTILOS: Record<string, Estilo> = { vietnam: VIETNAM, colombia_ladrillo: COLOMBIA_LADRILLO, venezuela_ciudad: VENEZUELA_CIUDAD };
+/** Hội An de noche: la ciudad vieja con el Tama-wari. */
+const VIETNAM_HOIAN: Estilo = {
+  paleta: VIETNAM_HOIAN_NOCHE,
+  paletaDe: paletaVietnam,
+  uso: USO_HOIAN,
+  horas: HORAS_HOIAN,
+  iconos: [
+    { id: 'casas', nombre: 'Las casas amarillas de la ciudad vieja, de dos pisos, con la pared gastada', donde: 'cerca, de x 166 al final' },
+    { id: 'tejas', nombre: 'Los techos de tejas de barro con el caballete de puntas curvas, y el alero entre los pisos', donde: 'cerca' },
+    { id: 'madera', nombre: 'La planta baja de madera oscura: vanos abiertos con la tienda encendida, puertas plegables y celosías', donde: 'cerca' },
+    { id: 'farol_puerta', nombre: 'Un farol en cada puerta y los racimos de faroles debajo del alero', donde: 'cerca' },
+    { id: 'cuerdas', nombre: 'Las cuerdas de faroles de seda de colores sobre la calle, de poste en poste', donde: 'bajo cuerdas_faroles' },
+    { id: 'puestos', nombre: 'Los puestos de faroles: techito de tejas, faroles en dos filas y el mostrador', donde: 'cerca, detrás de la vendedora y al final' },
+    { id: 'buganvilla', nombre: 'La buganvilla fucsia que cae de los techos y los balcones, y el árbol de la esquina', donde: 'cerca' },
+    { id: 'puente', nombre: 'El puente japonés (Chùa Cầu) encendido, con sus arcos y el templito', donde: 'lejos, por la izquierda' },
+    { id: 'rio', nombre: 'El río Thu Bồn con los reflejos de los faroles, velitas en flores de papel y botes con faroles', donde: 'lejos, cerca (izquierda) y debajo del muelle' },
+    { id: 'tamawari', nombre: 'Los dos postes de bambú del Tama-wari, con trípode, el collar del equipo y las cintas de colores', donde: 'postes poste_tamawari' },
+    { id: 'piedra', nombre: 'La calle de piedra con la luz tibia de los faroles y el muelle de madera', donde: 'piso' },
+    { id: 'balcones', nombre: 'Los vecinos asomados a los balcones de madera, con nón lá y abanicos', donde: 'cerca, vida publico' },
+  ],
+  vida: {
+    faroles_meciendose: 'Los faroles de las cuerdas y de los postes que se mecen con la brisa, 4 cuadros',
+    velitas_rio: 'Las velitas del río de adelante, que titilan, 3 cuadros',
+    botes_con_faroles: 'El bote con faroles amarrado en el río de la izquierda, que se mece, y otro que cruza lejos por el río',
+    publico: 'Los vecinos de los balcones, que levantan los brazos, los abanicos y los celulares: 2 cuadros',
+  },
+  cajas: {
+    base_poste: 'Cajón de madera lleno de piedras al pie del poste del Tama-wari, con el trípode de bambú amarrado encima',
+  },
+  letreros: ['ĐÈN LỒNG', 'CAO LẦU', 'MAY ĐO'],
+};
+
+/** El dojo de judo de Hà Nội en la tarde (lote E4a). */
+const VIETNAM_DOJO: Estilo = {
+  paleta: VIETNAM_DOJO_TARDE,
+  uso: USO_DOJO,
+  horas: ['tarde'],
+  iconos: [
+    { id: 'tatami', nombre: 'El tatami: la zona de combate verde, la de seguridad amarilla, las esteras de 2 x 1 con sus juntas y las cintas de salida', donde: 'piso' },
+    { id: 'madera', nombre: 'Las paredes de madera clara en paneles, con el zócalo oscuro y las vigas', donde: 'cerca' },
+    { id: 'ventanales', nombre: 'Los ventanales altos con su marco de madera y los postigos abiertos', donde: 'cerca, sobre el público' },
+    { id: 'lago', nombre: 'El lago Hoàn Kiếm por las ventanas, color jade, con los sauces de la orilla', donde: 'lejos' },
+    { id: 'torre_tortuga', nombre: 'La Torre de la Tortuga (Tháp Rùa) en su islote, y el puente rojo Thê Húc', donde: 'lejos, por las ventanas' },
+    { id: 'bandera', nombre: 'La bandera de Vietnam colgada en el centro de la pared', donde: 'cerca' },
+    { id: 'caligrafia', nombre: 'La caligrafía (thư pháp) en rollos de papel con su sello rojo: TÂM y NHẪN', donde: 'cerca, entre las ventanas' },
+    { id: 'letrero', nombre: 'El letrero de madera del club: VÕ ĐƯỜNG NHU ĐẠO HÀ NỘI', donde: 'cerca, sobre la bandera' },
+    { id: 'publico', nombre: 'El público sentado en la banca, al borde del tatami: familias, niños y judocas de judogi', donde: 'cerca, al pie de la pared' },
+    { id: 'rayos', nombre: 'La luz de la tarde que entra por las ventanas y cae en rayos sobre el tatami', donde: 'cerca y piso' },
+  ],
+  vida: {
+    publico: 'El público de la banca levanta los brazos y aplaude: 2 cuadros',
+    hojas_cayendo: 'Las hojas de los árboles del lago que caen afuera, detrás de los vidrios: 4 cuadros',
+  },
+  cajas: {},
+  letreros: ['VÕ ĐƯỜNG NHU ĐẠO HÀ NỘI', 'TÂM', 'NHẪN'],
+};
+
+/** El parque Tao Đàn de Saigón al amanecer (lote E4a). */
+const VIETNAM_PARQUE: Estilo = {
+  paleta: VIETNAM_TAODAN_AMANECER,
+  uso: USO_TAODAN,
+  horas: ['amanecer'],
+  iconos: [
+    { id: 'dau', nombre: 'Los árboles dầu enormes: troncos claros y altísimos con sus raíces abiertas y la copa allá arriba', donde: 'cerca' },
+    { id: 'rayos', nombre: 'Los rayos de sol del amanecer que entran entre los troncos', donde: 'cerca' },
+    { id: 'jaulas', nombre: 'Las jaulas de pájaros colgadas de las ramas y de un palo, con los pájaros adentro', donde: 'cerca' },
+    { id: 'tai_chi', nombre: 'El grupo de tai chi, de ropa clara, con abanicos rojos', donde: 'cerca' },
+    { id: 'abuelos', nombre: 'Los abuelos haciendo ejercicio: brazos que giran y estiramientos', donde: 'cerca' },
+    { id: 'bancos', nombre: 'Los bancos de piedra del parque con los señores del café de los pájaros', donde: 'cerca' },
+    { id: 'ciudad', nombre: 'Landmark 81 y Bitexco en la bruma rosada, por entre los árboles', donde: 'lejos' },
+    { id: 'cancha', nombre: 'La cancha de tierra apisonada del đá cầu con sus rayas gastadas', donde: 'piso' },
+  ],
+  vida: {
+    tai_chi: 'El grupo de tai chi que se mueve despacio, 4 cuadros',
+    abuelos_ejercicio: 'Los abuelos que giran los brazos y se estiran, 2 cuadros',
+    pajaros: 'Los pájaros que saltan en las jaulas, 2 cuadros, y los que cruzan el cielo lejos',
+    rayos_de_luz: 'El polvo que brilla en los rayos de sol (partículas)',
+  },
+  cajas: {},
+  letreros: ['CÔNG VIÊN TAO ĐÀN'],
+};
+
+/** La cancha de tejo de La Candelaria en la tarde nublada (lote E4a). */
+const COLOMBIA_COLONIAL: Estilo = {
+  paleta: COLOMBIA_CANDELARIA_TARDE,
+  uso: USO_CANDELARIA,
+  horas: ['tarde'],
+  iconos: [
+    { id: 'techo', nombre: 'La cancha techada: las cerchas y vigas de madera, la teja de barro por dentro y los pilares', donde: 'cerca' },
+    { id: 'greda', nombre: 'La caja de greda con el bocín, donde el juego tira el tejo', donde: 'caja caja_greda' },
+    { id: 'mechas', nombre: 'Las mechas: los triángulos de papel con pólvora, en las cajas de atrás y en la cajita del estante', donde: 'cerca' },
+    { id: 'banderines', nombre: 'Los banderines de papel de colores colgados de viga a viga', donde: 'cerca y vida' },
+    { id: 'pared', nombre: 'La pared colonial de cal con el zócalo pintado y las ventanas de madera verdes', donde: 'cerca' },
+    { id: 'monserrate', nombre: 'Monserrate con la iglesia blanca arriba, por la ventana', donde: 'lejos' },
+    { id: 'casas', nombre: 'Las casas coloniales de La Candelaria con techo de teja y balcones, del otro lado de la calle', donde: 'lejos, por las ventanas' },
+    { id: 'llovizna', nombre: 'La llovizna de Bogotá afuera, en la ventana', donde: 'lejos y vida' },
+    { id: 'ruana', nombre: 'La gente con ruana y sombrero sentada en la banca, con su tinto', donde: 'cerca, vida publico' },
+    { id: 'tablero', nombre: 'El tablero de las reglas: MECHA 3, BOCÍN 6, MOÑONA 9', donde: 'cerca' },
+  ],
+  vida: {
+    banderines: 'Los banderines que se mecen con el aire, 2 cuadros',
+    publico: 'La gente con ruana que levanta el tinto y aplaude, 2 cuadros',
+    llovizna: 'La llovizna que cae afuera, en la ventana, 3 cuadros',
+    humo_mechas: 'El humo que queda de las mechas reventadas (partículas)',
+  },
+  cajas: {
+    caja_greda: 'La caja de tejo de lado: el marco de madera, la cara de greda inclinada hacia el que lanza y el bocín de metal. Las mechas y los tejos los pinta el juego',
+  },
+  letreros: ['CANCHA DE TEJO', 'MECHA 3', 'BOCÍN 6', 'MOÑONA 9'],
+};
+
+const ESTILOS: Record<string, Estilo> = { vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD };
+
+/** Los fondos de la capa cerca que son de Hội An (con su estilo). */
+const CERCAS_HOIAN = new Set(['casas_amarillas_hoian']);
 
 /** ¿Ya hay ficha para el estilo de este layout, y a su hora? */
 export const hayEstilo = (L: ObliqueLayout) => estiloDe(L) in ESTILOS && (!ESTILOS[estiloDe(L)].horas || ESTILOS[estiloDe(L)].horas!.includes(L.hora));
@@ -286,7 +403,7 @@ export const hayEstilo = (L: ObliqueLayout) => estiloDe(L) in ESTILOS && (!ESTIL
 export const horasDe = (L: ObliqueLayout) => ESTILOS[estiloDe(L)]?.horas;
 
 /** El estilo de fachada que va con cada país. */
-export const estiloDe = (L: ObliqueLayout) => (L.pais === 'vietnam' ? 'vietnam' : L.pais === 'colombia' ? 'colombia_ladrillo' : L.pais === 'venezuela' ? 'venezuela_ciudad' : L.pais);
+export const estiloDe = (L: ObliqueLayout) => lugarDe(L)?.estilo ?? (L.pais === 'vietnam' ? (CERCAS_HOIAN.has(L.paralaje?.cerca ?? '') ? 'vietnam_hoian' : 'vietnam') : L.pais === 'colombia' ? 'colombia_ladrillo' : L.pais === 'venezuela' ? 'venezuela_ciudad' : L.pais);
 
 export function fichaArte(L: ObliqueLayout): FichaArte {
   const estilo = estiloDe(L), E = ESTILOS[estilo];

@@ -22,6 +22,11 @@ export interface MovimientoAnim {
   eventos?: EventoJson[];
   avance?: number;
   elevacion?: number[];
+  /** saltos a un muro: de 0 a 1 por cuadro (1 cuando las patas tocan arriba). Para otro muro: subida * alto_del_muro */
+  subida?: number[];
+  /** entre qué altos de muro (pixeles) se ve bien el salto */
+  muro_min?: number;
+  muro_max?: number;
   /** acciones que se desplazan: pixeles avanzados en cada cuadro desde el primero, hacia donde mira */
   desplazamiento?: number[];
   /** hojas de 8 direcciones: hacia dónde va de verdad cada fila (de frente, una prueba de campo va en diagonal) */
@@ -38,7 +43,12 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
   const out: MovimientoAnim = {};
   // elevación: cuánto sube el juego el sprite sobre su sombra en cada cuadro (en pixeles de la hoja)
   if (c.rise) out.elevacion = c.rise.map((v) => r2(v * k));
-  // los eventos van si el clip los trae (los premium y las clásicas con eventos de una ficha premium)
+  if (c.rise && c.muro) {
+    out.subida = c.rise.map((v) => r2(v / c.muro!.alto));
+    out.muro_min = Math.round(c.muro.min * k);
+    out.muro_max = Math.round(c.muro.max * k);
+  }
+  // los eventos van si el clip los trae (los premium, las clásicas con eventos de una ficha premium y los animales de ficha premium)
   if (c.events?.length) out.eventos = c.events.map((e) => ({
     tipo: e.type, cuadro: Math.min(c.frames.length - 1, Math.floor(e.phase * c.frames.length + 1e-6)), fase: r2(e.phase),
     ...(e.foot ? { pie: e.foot === 'near' ? 'cerca' as const : 'lejos' as const } : {}),

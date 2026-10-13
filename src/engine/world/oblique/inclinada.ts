@@ -2,7 +2,7 @@ import { grain, bayer, rng } from '../../fx/pix';
 import { Lienzo } from './lienzo';
 import type { Color, Paleta } from './paleta';
 import { depthOf, holeAt, waterAt, type Caja, type Hueco as HuecoLayout, type ObliqueLayout } from './layout';
-import { pintorDe, ORILLAS } from './piso';
+import { pintorDe, orillaPor } from './piso';
 
 /**
  * La vista inclinada: la misma proyección del piso de la pelea del juego. Lo que está más al fondo se corre a la
@@ -20,18 +20,9 @@ export const INCLINACION = 0.35;
 /** Cuánto se corre a la derecha la fila de fondo `y`. Siempre redondeado igual, así todo calza pixel por pixel. */
 export const corre = (k: number, y: number) => Math.round(k * y);
 
-/** Un tono más claro de la paleta (la cara que da a la luz). */
-export const MAS_CLARO: Record<Color, Color> = {
-  tinta: 'sombra', sombra: 'asfalto', asfalto: 'asfalto_claro', asfalto_claro: 'cemento', cemento: 'cemento_claro', cemento_claro: 'crema', crema: 'luz', luz: 'luz',
-  amarillo: 'crema', ocre: 'amarillo', terracota: 'ocre', rojo: 'oro', vino: 'rojo', salmon: 'crema', menta: 'cielo', verde: 'menta',
-  verde_oscuro: 'verde', celeste: 'cielo', cielo: 'luz', azul: 'celeste', azul_noche: 'azul', canal: 'celeste', oro: 'amarillo', bruma: 'luz',
-};
-/** Un tono más oscuro (el pie de una cara, la sombra). */
-export const MAS_OSCURO: Record<Color, Color> = {
-  tinta: 'tinta', sombra: 'tinta', asfalto: 'sombra', asfalto_claro: 'asfalto', cemento: 'asfalto_claro', cemento_claro: 'cemento', crema: 'cemento_claro', luz: 'crema',
-  amarillo: 'ocre', ocre: 'terracota', terracota: 'vino', rojo: 'vino', vino: 'sombra', salmon: 'terracota', menta: 'verde', verde: 'verde_oscuro',
-  verde_oscuro: 'tinta', celeste: 'azul', cielo: 'celeste', azul: 'azul_noche', azul_noche: 'tinta', canal: 'verde_oscuro', oro: 'ocre', bruma: 'cemento_claro',
-};
+// los tonos de al lado viven en tonos.ts (sin dependencias, así los lugares los usan sin ciclos)
+export { MAS_CLARO, MAS_OSCURO } from './tonos';
+import { MAS_CLARO, MAS_OSCURO } from './tonos';
 
 /** El nombre de paleta de un pixel, o undefined si está vacío o no es de la paleta. */
 export function nombreEn(L: Lienzo, x: number, y: number): Color | undefined {
@@ -144,8 +135,8 @@ export function cizallarPiso(F: Lienzo, L: ObliqueLayout, k: number, s: number):
 
 /** Los temas con bordillo propio, por x de mundo. */
 function estiloBordillo(L: ObliqueLayout) {
-  const temas = L.ranuras_deco.filter((t) => ORILLAS[t.tema]);
-  return (x: number) => ORILLAS[temas.find((t) => x >= t.x0 && x < t.x1)?.tema ?? ''] ?? ORILLAS[L.paralaje?.cerca ?? ''];
+  const temas = L.ranuras_deco.filter((t) => orillaPor(t.tema));
+  return (x: number) => orillaPor(temas.find((t) => x >= t.x0 && x < t.x1)?.tema ?? '') ?? orillaPor(L.paralaje?.cerca ?? '');
 }
 
 /**

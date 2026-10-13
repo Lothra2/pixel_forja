@@ -16,6 +16,8 @@ export interface CtxCerca {
   /** Rangos del layout con su nombre: para poner el letrero que va con lo que se vende, o el hueco entre edificios. */
   zonas?: { x0: number; x1: number; tipo: string }[];
   huecos?: { x0: number; x1: number }[];
+  /** La vida del layout: un fondo que la trae aparte no la pinta quieta (Tao Đàn). */
+  vida?: string[];
 }
 export type PintorCerca = (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void;
 

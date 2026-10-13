@@ -56,9 +56,9 @@ export interface AnimDef {
   build: (c: Ctx) => Pose[];
 }
 
-/** paso, golpe, suelta (proyectil, efecto), despegue y aterriza (saltos), bote (la pelota toca el piso) y atrapa (la pelota llega a la mano) */
+/** paso, golpe, suelta (proyectil, efecto), despegue y aterriza (saltos), bote (la pelota toca el piso), atrapa (la pelota llega a la mano); frase: el gesto fuerte de una burla (el globo) */
 export interface AnimEvent {
-  type: 'paso' | 'impacto' | 'suelta' | 'despegue' | 'aterriza' | 'bote' | 'atrapa';
+  type: 'paso' | 'impacto' | 'suelta' | 'despegue' | 'aterriza' | 'frase' | 'bote' | 'atrapa';
   phase: number;
   foot?: 'near' | 'far';
   /**

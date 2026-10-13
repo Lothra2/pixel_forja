@@ -80,6 +80,12 @@ export interface PropState {
   front?: boolean | ('side' | 'front' | 'back' | 'se' | 'ne')[];
 }
 
+/**
+ * Forma de la mano (gestos que se leen en la silueta): `pulgar` arriba sobre el puño, `dedo` que apunta hacia donde va el
+ * antebrazo, `garra` con los dedos abiertos y curvos, `palma` abierta. Sin esto, el puño redondo de siempre.
+ */
+export type HandShape = 'pulgar' | 'dedo' | 'garra' | 'palma';
+
 export interface Pose {
   /** corrimiento horizontal de todo el cuerpo */
   x: number;
@@ -123,6 +129,8 @@ export interface Pose {
   /** vaivén del pelo largo (lo calcula el clip a partir del movimiento) */
   hair?: { dx: number; dy: number };
   props?: PropState[];
+  /** la forma de cada mano (burlas, saludos): ver HandShape */
+  hands?: { near?: HandShape; far?: HandShape };
 }
 
 export interface AnimClip {

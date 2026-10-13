@@ -15,6 +15,8 @@ import { verificar, verificacionMarkdown, type Prueba } from './verify';
 import { INCLINACION } from './inclinada';
 import { hayEstilo, estiloDe, horasDe } from './ficha';
 import { SKYLINES } from './skyline';
+import { LEJOS_LUGARES } from './lugares';
+import { deLado } from './layout';
 
 export { INCLINACION } from './inclinada';
 
@@ -35,7 +37,7 @@ export interface OpcionesEscenario {
   semilla?: number;
   /**
    * La vista inclinada, la misma del piso de la pelea: px = x + inclinacion * y (lo del fondo queda a la izquierda).
-   * 0.35 por defecto. 0 da el dibujo derecho de antes. Va en `escenario.json` para que el juego corra a los atletas igual.
+   * 0.35 por defecto. 0 da el dibujo derecho de antes. Un layout de lado (`vista: "lado"`) va siempre en 0. Va en `escenario.json` para que el juego corra a los atletas igual.
    */
   inclinacion?: number;
 }
@@ -58,7 +60,7 @@ export interface ResultadoEscenario {
 }
 
 /** Los fondos lejanos que ya tienen arte. */
-const LEJOS: string[] = [...SKYLINES, 'valle_de_aburra', 'avila_noche'];
+const LEJOS: string[] = [...SKYLINES, 'valle_de_aburra', 'avila_noche', 'rio_thu_bon_puente_japones', ...Object.keys(LEJOS_LUGARES)];
 
 /** Valida el layout, pinta el escenario, corre las 9 pruebas y devuelve la carpeta `escenarios/<id>/`. */
 export function generarEscenario(layout: unknown, o: OpcionesEscenario = {}): ResultadoEscenario {
@@ -69,7 +71,8 @@ export function generarEscenario(layout: unknown, o: OpcionesEscenario = {}): Re
   const falta = !hayEstilo(v.layout) ? `el estilo "${estiloDe(v.layout)}" todavía no tiene arte${horasDe(v.layout) ? ` de ${v.layout.hora} (hoy pinta: ${horasDe(v.layout)!.join(', ')})` : ''}`
     : lejos && !LEJOS.includes(lejos) ? `el fondo lejano "${lejos}" todavía no tiene arte` : null;
   if (falta) return { ok: false, pendiente: true, id: v.layout.id, errores: [`${v.layout.id}: ${falta}. Llega con el lote de su escenario.`], avisos: v.avisos, pruebas: [], archivos: [], escena: null, layout: v.layout };
-  const E = renderEscena(v.layout, o.semilla ?? 42, o.inclinacion ?? INCLINACION);
+  // de lado (`vista: "lado"`) el dibujo va derecho, pida lo que pida la opción
+  const E = renderEscena(v.layout, o.semilla ?? 42, deLado(v.layout) ? 0 : o.inclinacion ?? INCLINACION);
   const pruebas = verificar(E, layout, o.contornos);
   const ok = pruebas.every((p) => p.ok);
   const md = verificacionMarkdown(v.layout.id, pruebas);
