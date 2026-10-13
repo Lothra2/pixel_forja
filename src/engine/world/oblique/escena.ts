@@ -17,6 +17,7 @@ import { vidaSaigon } from './vidaSaigon';
 import { paletaColombia } from './colombiaPaleta';
 import { paletaVenezuela } from './venezuelaPaleta';
 import { PINTORES_CCS, FONDO_CCS, avilaNoche, franjaBorde, bordeAlVacio, reflejoNeon, posteVenezuela, neonVida, luzRoja, publicoVida, avion, helicoptero, trafico, NEONES_CCS, TORRES_PC, AZOTEAS_PUBLICO } from './caracas';
+import { PINTORES_HOIAN, FONDO_HOIAN, PRUEBAS_EN_SITIO, rioThuBon, cuerdasFaroles, piezaHoian, posteHoian, vidaHoian, lucesHoian, particulasHoian, esHoian } from './hoian';
 import { PINTORES_C13, FONDO_C13, valleAburra, cabina, CABLE_Y, piezaColombia, posteColombia, banderaAsta, banderinesVida, ropaVida, tendedero, techoEscalera, peldano } from './comuna13';
 
 /**
@@ -40,6 +41,8 @@ export interface ObjetoEscena {
   /** Profundidad de mundo para ordenar con los atletas: se dibuja después de todo lo que tenga menor `orden`. */
   orden: number;
   superficie?: string;
+  /** Donde se cuelga algo que pone el juego (la bola del Tama-wari): x, y de pantalla a escala 1. */
+  gancho?: [number, number];
 }
 
 export interface VidaEscena {
@@ -96,8 +99,8 @@ export interface Escena {
 const PALETAS: Record<string, (hora: string, clima: string[], tema?: string) => Paleta> = { vietnam: paletaVietnam, colombia: paletaColombia, venezuela: paletaVenezuela };
 
 /** Los pintores de la capa cerca de todos los lugares, por tema, y el fondo por `paralaje.cerca`. */
-const PINTORES: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...PINTORES_CERCA, ...PINTORES_C13, ...PINTORES_CCS };
-const FONDOS: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...FONDO_CERCA, ...FONDO_C13, ...FONDO_CCS };
+const PINTORES: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...PINTORES_CERCA, ...PINTORES_C13, ...PINTORES_CCS, ...PINTORES_HOIAN };
+const FONDOS: Record<string, (C: Lienzo, x0: number, x1: number, base: number, ctx: CtxCerca) => void> = { ...FONDO_CERCA, ...FONDO_C13, ...FONDO_CCS, ...FONDO_HOIAN };
 
 /** Los letreros de salida y meta en el idioma del país. */
 const PANCARTAS: Record<string, [string, string]> = { vietnam: ['XUẤT PHÁT', 'VỀ ĐÍCH'], colombia: ['SALIDA', 'META'], venezuela: ['SALIDA', 'META'], japon: ['START', 'GOAL'] };
@@ -226,7 +229,8 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   // cielo y ciudad lejana
   const sky = cielo(pal, 640, 360, L.hora, seed, L.clima, L.paralaje.cerca);
   const lejos = L.paralaje.lejos === 'valle_de_aburra' ? valleAburra(pal, TROZO, LEJOS_ALTO, seed + 39)
-    : L.paralaje.lejos === 'avila_noche' ? avilaNoche(pal, TROZO, LEJOS_ALTO, seed + 39) : lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
+    : L.paralaje.lejos === 'avila_noche' ? avilaNoche(pal, TROZO, LEJOS_ALTO, seed + 39)
+    : L.paralaje.lejos === 'rio_thu_bon_puente_japones' ? rioThuBon(pal, TROZO, LEJOS_ALTO, seed + 39) : lejosDe(L.paralaje.lejos, pal, TROZO, LEJOS_ALTO, seed + 39, tonosDe(L.hora, lluvia));
 
   // la fila de casas, o el fondo que pida cada tema
   const cerca = pintarCerca(pal, L, huecos, seed, anclas, Wp);
@@ -245,9 +249,11 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
       cables(cerca, cx + side * (6 + (k % 3) * 4), top(p) - 2, tx, ty, 1 + (k % 2), 4 + Math.floor(R() * 6), seed + k + p.x);
     }
   }
-  // letreros de salida y meta colgados del cable
-  const salida = L.entidades.find((e) => e.tipo === 'salida')?.x;
-  const meta = L.entidades.find((e) => e.tipo === 'meta')?.x;
+  // letreros de salida y meta colgados del cable. En una prueba que se juega en el sitio (el Tama-wari), salida y meta
+  // son el lado de cada equipo: no van ni pancartas ni líneas
+  const enSitio = PRUEBAS_EN_SITIO.has(L.prueba ?? '');
+  const salida = enSitio ? undefined : L.entidades.find((e) => e.tipo === 'salida')?.x;
+  const meta = enSitio ? undefined : L.entidades.find((e) => e.tipo === 'meta')?.x;
   const [tSalida, tMeta] = PANCARTAS[L.pais] ?? PANCARTAS.vietnam;
   // la pancarta cuelga sobre el piso donde está: si la meta queda arriba de una terraza, sube con ella
   // colgada del cable sobre la calle. Arriba de una terraza alta caería en la franja del marcador (filas 0 a 64):
@@ -298,7 +304,8 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   // charcos que reflejan las casas: el hẻm amanece mojado (como en su concepto) y las azoteas con aguacero también
   if (L.paralaje.cerca === 'hem' || L.paralaje.cerca === 'azoteas' || lluvia) charcosConReflejo(pisoFinal, cerca, L, k, seed);
   // de noche el piso brilla: los neones se reflejan en rayas debajo de su columna
-  if (L.hora === 'noche') reflejoNeon(pisoFinal, cerca, D, seed % 97, (sx, y) => { const yy = Math.min(y, D - 1); return !!holeAt(L, sx - corre(k, yy), yy) || bordes.some((h) => sx >= h.x0 + corre(k, yy) - 1); });
+  // la piedra de Hội An está seca: los faroles la alumbran, no se reflejan
+  if (L.hora === 'noche' && !esHoian(L)) reflejoNeon(pisoFinal, cerca, D, seed % 97, (sx, y) => { const yy = Math.min(y, D - 1); return !!holeAt(L, sx - corre(k, yy), yy) || bordes.some((h) => sx >= h.x0 + corre(k, yy) - 1); });
 
   // objetos: cajas, toldo y postes
   const objetos: ObjetoEscena[] = [];
@@ -313,7 +320,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     // una caja parada sobre otra: se dibuja de la base para arriba y después de la base
     const base = baseDe(b, todas), alto = b.z - (base?.z ?? 0), orden = ordenCaja(b, todas);
     const tema = L.ranuras_deco.find((r) => r.capa === 'cerca' && b.x + b.w / 2 >= r.x0 && b.x + b.w / 2 < r.x1)?.tema;
-    const pz = (L.pais === 'colombia' ? piezaColombia(pal, b.tipo, b.w, b.d, alto, seed + i, { x: b.x, tema }) : null)
+    const pz = (L.pais === 'colombia' ? piezaColombia(pal, b.tipo, b.w, b.d, alto, seed + i, { x: b.x, tema }) : L.pais === 'vietnam' ? piezaHoian(pal, b.tipo, b.w, b.d, alto) : null)
       ?? piezaSaigon(pal, b.tipo, b.w, b.d, alto, seed + i) ?? piezaVietnam(pal, b.tipo, b.w, b.d, alto, seed + i);
     // la línea de meta pintada en el techo de la caja donde cae
     if (typeof meta === 'number' && meta >= b.x && meta < b.x + b.w) lineaMeta(pz.img, meta - b.x, pz.sobre, b.d);
@@ -325,8 +332,16 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     const c = caraIzquierda(pz.img, pz.sobre, b, alLado(b, todas), k, alto);
     if (c) objetos.push({ id: `${id}_cara`, tipo: `${tipo}_cara`, origen: b.lista, img: c.img, x: b.x + corre(k, b.y) + c.dx, y: FT + b.y - b.z + c.dy, orden: base ? orden - 0.1 : b.y + 0.1 });
   });
+  // las cuerdas de faroles de Hội An: los faroles van en la vida si se mecen
+  const mecen = L.vida.includes('faroles_meciendose'), cuerdas: { x: number; y: number; img: Lienzo; faroles: ReturnType<typeof cuerdasFaroles>['faroles']; orden: number }[] = [];
   L.bajo.forEach((b, i) => {
     const id = `${b.tipo ?? 'bajo'}_${i}`, tipo = b.tipo ?? 'bajo', w = b.x1 - b.x0, y0 = b.y0 ?? 0, y1 = b.y1 ?? D;
+    if (b.tipo === 'cuerdas_faroles') {
+      const c = cuerdasFaroles(pal, L, b, k, seed + i, !mecen);
+      objetos.push({ id, tipo, origen: 'bajo', img: c.img, x: c.x, y: c.y, orden: y1 });
+      cuerdas.push({ ...c, orden: y1 });
+      return;
+    }
     if (b.tipo === 'lamparas_colgantes') { const l = lamparasColgantes(pal, w, y0, y1, b.z, 66 - FT, seed + i, k); objetos.push({ id, tipo, origen: 'bajo', img: l.img, x: b.x0 + l.dx, y: FT + l.top, orden: y1 }); return; }
     if (b.tipo === 'redes_pesca') { const r = redesPesca(pal, w, y1 - y0, b.z, seed + i, k, y0); objetos.push({ id, tipo, origen: 'bajo', img: r.img, x: b.x0 + r.dx, y: FT + y0 - b.z - 2, orden: y1 }); return; }
     if (b.tipo === 'tendedero') { const t = tendedero(pal, w, y0, y1, b.z, seed + i, k, sueloEn(L, b.x0 + 1, y0 + 1)); objetos.push({ id, tipo, origen: 'bajo', img: t.img, x: b.x0 + t.dx, y: FT + t.top, orden: y1 + 0.6 }); return; }
@@ -355,13 +370,20 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     const pt = porton(pal, m.w, m.y + m.d, D, m.z, 'HẺM 42', k);
     objetos.push({ id: `porton_${i}`, tipo: 'porton', origen: 'muros', img: pt.img, x: m.x + pt.dx, y: FT + pt.top, orden: D + 1 });
   });
+  const postesFaroles: { x: number; y: number; orden: number }[] = [];
   postes.forEach((p, i) => {
-    const otro = (L.pais === 'colombia' ? posteColombia(pal, p.tipo, altoVisible(L, p), seed + i) : L.pais === 'venezuela' ? posteVenezuela(pal, p.tipo, p.alto) : null) ?? posteSaigon(pal, p.tipo, p.alto, seed + i);
+    // el poste del Tama-wari lleva el color del equipo de la bola que tiene encima (la entidad npc en su x)
+    const equipo = L.entidades.find((e) => e.tipo === 'npc' && e.x === p.x && typeof e.equipo === 'string')?.equipo as string | undefined;
+    const otro = (L.pais === 'colombia' ? posteColombia(pal, p.tipo, altoVisible(L, p), seed + i) : L.pais === 'venezuela' ? posteVenezuela(pal, p.tipo, p.alto) : L.pais === 'vietnam' ? posteHoian(pal, p.tipo, p.alto, { equipo, faroles: !mecen }) : null) ?? posteSaigon(pal, p.tipo, p.alto, seed + i);
     const po = otro?.pieza ?? posteLuz(pal, p.alto, L.paralaje.cerca === 'hem' ? 'tinta' : 'asfalto');
-    // parado en la caja que tenga debajo: va después de ella
+    // parado en la caja que tenga debajo: va después de ella. El del Tama-wari atraviesa su base: se mide desde el piso
+    // (la punta queda en el z de la bola), va antes que la base (que tapa el pie) y antes que la bola que cuelga en su y
     const caja = todas.filter((b) => p.x >= b.x && p.x < b.x + b.w && p.y >= b.y && p.y < b.y + b.d).sort((a, b) => b.z - a.z)[0];
-    const z0 = caja?.z ?? 0, orden = caja ? ordenCaja(caja, todas) + 0.2 : p.y;
-    objetos.push({ id: `${p.tipo ?? 'poste'}_${i}`, tipo: p.tipo ?? 'poste', origen: 'postes', img: po.img, x: p.x + 2 + corre(k, p.y) - (otro?.cx ?? 22), y: FT + p.y - z0 - (p.tipo === 'asta_bandera' ? altoVisible(L, p) : p.alto) - 5, orden });
+    const pasa = p.tipo === 'poste_tamawari', z0 = pasa ? 0 : caja?.z ?? 0, orden = pasa ? p.y - 0.5 : caja ? ordenCaja(caja, todas) + 0.2 : p.y;
+    const x = p.x + 2 + corre(k, p.y) - (otro?.cx ?? 22), y = FT + p.y - z0 - (p.tipo === 'asta_bandera' ? altoVisible(L, p) : p.alto) - 5;
+    const g = (otro as { gancho?: [number, number] } | null)?.gancho;
+    objetos.push({ id: `${p.tipo ?? 'poste'}_${i}`, tipo: p.tipo ?? 'poste', origen: 'postes', img: po.img, x, y, orden, ...(g ? { gancho: [x + g[0], y + g[1]] as [number, number] } : {}) });
+    if (p.tipo === 'poste_faroles' && mecen) postesFaroles.push({ x, y, orden });
   });
   // la pancarta de una meta (o salida) arriba de una terraza alta: dos palos en el borde de adelante, 64 sobre el piso
   for (const [x, t] of [[typeof salida === 'number' ? salida + 30 : NaN, tSalida], [meta ?? NaN, tMeta]] as [number, string][]) {
@@ -415,6 +437,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   vida.push(...vidaSaigon(pal, L, Wp, seed));
   if (L.pais === 'colombia') vida.push(...vidaColombia(pal, L, k, seed, postes, todas));
   if (L.pais === 'venezuela') vida.push(...vidaVenezuela(pal, L, k, seed, Wp));
+  if (L.pais === 'vietnam') vida.push(...vidaHoian(pal, L, k, seed, { cerca, piso: pisoFinal }, cuerdas, postesFaroles));
 
   // luces y partículas
   const luces: Luz[] = [
@@ -423,6 +446,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     ...postes.filter((p) => p.tipo === 'farol_rio').map((p) => ({ x: p.x + 2 + corre(k, p.y), y: FT + p.y - p.alto + 12, color: pal.luz, radio: 30, encendida: L.hora === 'noche' || L.hora === 'atardecer', nota: 'globos del farol del malecón' })),
     ...postes.filter((p) => p.tipo === 'torre_luz').map((p) => ({ x: p.x + 2 + corre(k, p.y), y: FT + p.y - p.alto + 13, color: pal.luz, radio: 90, encendida: L.hora !== 'manana' && L.hora !== 'mediodia', nota: 'focos de la torre del estadio' })),
     ...(L.pais === 'venezuela' ? lucesVenezuela(pal, L, k, postes) : []),
+    ...(L.pais === 'vietnam' ? lucesHoian(pal, L, k, cuerdas) : []),
   ];
   const particulas: Particula[] = [
     ...anclas.altares.map((a) => ({ tipo: 'humo', x0: a.x - 2, x1: a.x + 2, y0: a.y - 2, y1: a.y, color: [pal.cemento_claro, pal.cemento], cada: 0.5, sube: 14, vida: 1.8, nota: 'incienso del altar' })),
@@ -433,6 +457,7 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
     ...(L.vida.includes('charcos_crecen') ? L.agua.filter((a) => a.nivel <= 2).map((a) => ({ tipo: 'gota', fx: 'salpicadura_piso', x0: a.x0 + corre(k, a.y0 ?? 0), x1: a.x1 + corre(k, a.y1 ?? D), y0: FT + (a.y0 ?? 0), y1: FT + (a.y1 ?? D), cada: 0.25, nota: `${a.nombre ?? 'charco'}: la lluvia que cae en el charco` })) : []),
     // en una arena (menos de 1600) los cuatro se reparten a lo ancho
     ...(L.vida.includes('fuegos_artificiales') ? (['rojo', 'oro', 'azul', 'verde'] as const).map((c, i) => ({ tipo: 'fuegos', fx: `fuegos_artificiales_${c === 'oro' ? 'dorado' : c}`, x0: Wp < 1600 ? Math.round((i * Wp) / 4) : 200 + i * 400, x1: Wp < 1600 ? Math.round(((i + 1) * Wp) / 4) : 400 + i * 400, y0: 20, y1: 80, cada: 1.6 + i * 0.3, nota: 'fuegos artificiales sobre el estadio cuando alguien llega' })) : []),
+    ...(L.pais === 'vietnam' ? particulasHoian(pal, L, k, Wp) : []),
     ...L.huecos.filter((h) => h.caida === 'agua').map((h) => ({ tipo: 'brillo', x0: h.x0 + corre(k, h.y0 ?? 0), x1: h.x1 + corre(k, h.y1 ?? D), y0: FT + (h.y0 ?? 0) + 18, y1: FT + (h.y1 ?? D), color: [pal.luz, pal.cielo], cada: 0.9, vida: 0.4, nota: `${h.nombre ?? 'canal'}: brillitos en el agua` })),
   ];
 

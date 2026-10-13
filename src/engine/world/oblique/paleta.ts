@@ -3,6 +3,8 @@
  * Los nombres dicen para qué sirve cada color, así el dibujo se lee sin buscar códigos.
  */
 
+import { VIETNAM_HOIAN_NOCHE } from './hoianPaleta';
+
 export const NOMBRES = [
   'tinta', 'sombra', 'asfalto', 'asfalto_claro', 'cemento', 'cemento_claro', 'crema', 'luz',
   'amarillo', 'ocre', 'terracota', 'rojo', 'vino', 'salmon', 'menta', 'verde',
@@ -120,9 +122,13 @@ export const VIETNAM_ATARDECER: Paleta = {
   azul_noche: '#262c5c', canal: '#5a6b8a', oro: '#ffb52e', bruma: '#f58a5a',
 };
 
-/** La paleta del estilo vietnam para una hora y un clima. */
+/**
+ * La paleta del estilo vietnam para una hora y un clima. De noche es la de Hội An (estilo `vietnam_hoian`): las otras
+ * horas no cambian.
+ */
 export function paletaVietnam(hora: string, clima: string[] = [], tema?: string): Paleta {
   if (tema === 'azoteas' && clima[0] === 'aguacero') return VIETNAM_TORMENTA;
+  if (hora === 'noche') return VIETNAM_HOIAN_NOCHE;
   if (hora === 'mediodia') return VIETNAM_MEDIODIA;
   if (hora === 'tarde' && clima[0] !== 'aguacero') return VIETNAM_TARDE_DORADA;
   if (hora === 'tarde' || hora === 'aguacero' || hora === 'nublado' || clima[0] === 'aguacero') return hora === 'manana' ? VIETNAM_MANANA : VIETNAM_TARDE_AGUACERO;

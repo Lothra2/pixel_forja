@@ -73,7 +73,7 @@ En pantalla no hay inclinación: `px = x`, `py = franja.atras + y - z`. Una caja
 | `piso_<n>.png` | El piso en trozos de 1280, desde `franja.atras`. Las primeras filas son la franja y las de abajo la orilla de enfrente |
 | `piso_mojado_<n>.png` | Charcos y piso mojado, encima del piso, si el clima trae aguacero |
 | `frente_<n>.png` | Primer plano sobre la acera de enfrente. Nunca tapa la franja |
-| `objetos.png` + `.json` | Cada caja del layout dibujada a su medida, el toldo, los postes y el portón. Con `x`, `y` y `orden` |
+| `objetos.png` + `.json` | Cada caja del layout dibujada a su medida, el toldo, los postes y el portón. Con `x`, `y` y `orden`. Lo que lleva algo colgado que pone el juego (el poste del Tama-wari) trae `gancho`: el punto de pantalla donde va el ancla de eso |
 | `vida.png` | Lo que se mueve, cuadro a cuadro: ropa tendida, cables con viento, palomas (2 cuadros paradas y 2 volando) y motos al fondo |
 | `superficie.png` | Por pixel de la franja: qué suena al pisar (`paso_piedra`, `paso_agua`... más `_0` a `_2`) y si resbala. La leyenda va en `escenario.json` |
 | `borde_filo.png` + `borde_vacio.png` | Solo si hay un borde al vacío (un hueco `vacio` que llega al final del mundo). El filo con la franja amarilla y negra que se desmorona en 6 cuadros, y la ciudad allá abajo en 128 x 128 que se repite. Para cuando el juego hace avanzar el borde. Van en `escenario.json` → `borde` |
@@ -81,7 +81,7 @@ En pantalla no hay inclinación: `px = x`, `py = franja.atras + y - z`. Una caja
 | `luces.json` | Color, radio y latido. De día, las lámparas de los postes van apagadas |
 | `particulas.json` | Humo de incienso, pétalos, goteras, ondas en el agua. Las que traen `fx` usan el catálogo de efectos del kit |
 | `verificacion.md` | Las 9 pruebas, con lo que midió cada una |
-| `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360. En una arena de una pantalla van a 0, 2 y 4 segundos, para que se vea la vida |
+| `postales/*.png` | Con `--postales`: inicio, medio (la ventana con más obstáculos) y final, a 640 x 360. En una arena o un mundo de una pantalla van a 0, 2 y 4 segundos, para que se vea la vida |
 | `ficha_arte.md` | Con `--ficha`: paleta, elementos icónicos, vida y qué dibujo va en cada caja |
 
 ## Vista inclinada
@@ -225,11 +225,22 @@ Todas bloquean: si una falla, el escenario no sale.
   - **Postes:** `antena` es la torre de celosía de telecomunicaciones con sus paneles, una parabólica y la luz roja.
   - **Vida:** `letreros_neon` (los dos neones, 4 cuadros con un parpadeo), `luces_ciudad` (las luces rojas de las torres y el tráfico allá abajo pasando el borde), `avion_lejos` y `helicoptero_reflector` (en la capa lejos, con su recorrido; el helicóptero con el haz que barre), `publico` (los de las azoteas vecinas levantan brazos, banderas y celulares) y `fuegos_artificiales` (partículas, repartidas a lo ancho de la arena).
   - **Luces:** los dos neones (parpadean con su vida), los dos bombillos de la caseta y las luces rojas de las torres y las antenas, que prenden y apagan cada segundo.
+- **El estilo `vietnam_hoian`** (`pais: "vietnam"` con `paralaje.cerca: "casas_amarillas_hoian"`, lote E3c): Hội An de noche, con el Tama-wari. `paralaje.lejos` es `rio_thu_bon_puente_japones`.
+  - **Solo de noche** (`hoianPaleta.ts`): la noche de Vietnam es la de Hội An. `paletaVietnam` la da cuando la hora es `noche` y no cambia ninguna otra hora (Saigón sale igual byte a byte). El amarillo de las casas, la madera oscura, las tejas de barro, el rojo y el dorado de los faroles, el azul noche del río y la piedra en pardos tibios. `canal` es el morado de los faroles, `salmon` la buganvilla y `menta` los faroles verdes. A otra hora queda `pendiente`: "todavía no tiene arte de manana (hoy pinta: noche)".
+  - **Lejos:** el río Thu Bồn con la orilla de enfrente encendida y sus palmas, el puente japonés (Chùa Cầu) con los arcos de piedra, la galería de madera prendida, los dos techos de puntas curvas y el templito, y la luna llena de la noche de los faroles. El agua lleva los reflejos en rayas que tiemblan, el camino de la luna y velitas sueltas. El puente cae en la fila 135 o más abajo, debajo del marcador con el zoom de la pelea, y se ve por la izquierda, donde se abre el río.
+  - **Cerca:** `casas_amarillas_hoian` es el fondo y `casas_amarillas_faroles` el mismo dibujo por tema. A la izquierda el río con el bote amarrado, las velitas y el malecón de piedra con sus bolardos. Después, cuatro casas de dos pisos con tejas de barro, alero entre los pisos, la planta baja de madera con sus vanos (tienda de faroles, sastrería, comedor de cao lầu o puertas cerradas), un farol en cada puerta, racimos debajo del alero grande, balcones con vecinos asomados, buganvilla, el árbol de la esquina y los dos puestos de faroles. Letreros: ĐÈN LỒNG, CAO LẦU y MAY ĐO.
+  - **El piso:** la `baldosa` de este lugar es la calle de piedra con losas grandes trabadas y la luz tibia de los faroles, la `acera` son losas claras pisadas y la `madera` es el muelle de tablas. Debajo de la franja va el canto del muelle con sus pilotes y el río de adelante con las velitas. La piedra está seca: aquí no sale el reflejo del neón.
+  - **Postes:** `poste_tamawari` es la caña de bambú con sus nudos, el trípode amarrado y el yugo arriba. La bola no la dibuja el poste: es la entidad `npc` `bola_tama` y la pone el juego con el efecto del kit. El yugo trae `gancho` en `objetos.json`, donde va el ancla de la bola (16, 0). El collar de abajo va del color del equipo de la bola que tiene en su x (`equipo` de la entidad: la Familia azul y el Instituto rojo), con cintas de colores. El poste se mide desde el piso aunque esté parado en su base, y va antes que la base (que le tapa el pie) y antes que la bola. `poste_faroles` es el palo de madera con la cruceta y cuatro faroles.
+  - **Cajas y bajo:** `base_poste` es un cajón de madera lleno de piedras. `cuerdas_faroles` son cuerdas de poste en poste (los que caen en su rango), amarradas a su `z` o al alto del poste si es más bajo, con faroles de seda cada 14 a 20 px.
+  - **Una prueba que se juega en el sitio** (`prueba: "tamawari"`): `salida` y `meta` son el lado de cada equipo. No van pancartas ni la línea de meta.
+  - **Vida:** `faroles_meciendose` (los faroles de las cuerdas y de los postes, 4 cuadros: con la vida, el objeto lleva solo las cuerdas y el palo, así no quedan dobles), `velitas_rio` (las velitas de adelante titilan, 3 cuadros), `botes_con_faroles` (el bote amarrado se mece y otro cruza lejos con su recorrido) y `publico` (los vecinos de los balcones levantan los brazos, los abanicos y los celulares). Las piezas que van sobre lo pintado son un recorte de la capa con lo que se mueve: el cuadro 0 es igual a lo pintado.
+  - **Luces:** los faroles de las puertas, los dos puestos, los postes de faroles y tres faroles de las cuerdas, con latido. Partículas: pétalos de la buganvilla y brillos en el río de adelante.
 - **Los otros estilos del pedido** (`colombia_colonial`, `venezuela_barrio`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos
 
-- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad` solo sabe pintar la noche.
+- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad` y `vietnam_hoian` solo saben pintar la noche.
+- **El dibujo de Hội An es de una pantalla:** las casas, el río de la izquierda y los puestos están puestos para un mundo de 640. En un layout más largo con el mismo fondo, la última casa se estira hasta el final del ancho pintado.
 - **El borde que avanza** lo mueve el juego: el arte trae el filo y el vacío, pero el murito del fondo, pintado en la capa cerca, sigue entero hasta el borde de antes.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.
 - **La legibilidad se mide con el contorno de los atletas,** parados encima de la caja que tengan debajo, no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.

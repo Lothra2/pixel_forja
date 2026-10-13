@@ -256,13 +256,13 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     } else expect(m.pendiente.every((w: string) => w.startsWith('audio.'))).toBe(true);
   });
 
-  it('los 5 tramos del Cross Country, la Comuna 13 y la azotea de Caracas salen con sus 9 pruebas en verde (lotes E1, E2, E3a y E3b)', () => {
-    const tramos = ['caracas_azotea', 'medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio'];
+  it('los 5 tramos del Cross Country, la Comuna 13, la azotea de Caracas y Hội An salen con sus 9 pruebas en verde (lotes E1, E2, E3a, E3b y E3c)', () => {
+    const tramos = ['caracas_azotea', 'hoian', 'medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio'];
     expect(Object.keys(m.escenarios).sort()).toEqual(tramos);
     for (const id of tramos) {
       expect(m.escenarios[id]).toBe(`escenarios/${id}/escenario.json`);
       const e = readJson(join(out, m.escenarios[id]));
-      const caracas = id === 'caracas_azotea';
+      const caracas = id === 'caracas_azotea' || id === 'hoian';
       expect(e).toMatchObject({ id, escala: 1, largo: id === 'saigon_estadio' ? 1920 : id === 'medellin_c13' ? 3600 : caracas ? 640 : 3840, franja: caracas ? { atras: 246, adelante: 344 } : { atras: 200, adelante: 330 } });
       expect(readFileSync(join(out, `escenarios/${id}/verificacion.md`), 'utf8'), id).toMatch(/Las 9 pruebas pasan/);
       // las postales y la ficha son para aprobar: el kit no las lleva
@@ -292,10 +292,10 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
     // atletas (24 x 9 hojas: los packs y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida
-    // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 7 escenarios: hẻm 21,
-    // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14 y Caracas 10 + 3 perros y 2 gatos (lote C7)
+    // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 8 escenarios: hẻm 21,
+    // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14, Caracas 10 y Hội An 8 + 3 perros y 2 gatos (lote C7)
     // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b)
-    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 5 + 10 + 9 + 2);
+    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 5 + 10 + 9 + 2);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

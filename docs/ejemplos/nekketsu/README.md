@@ -89,5 +89,7 @@ Ya no queda nada en `manifest.pendiente`. Para oír todo: `audio/escuchar.html` 
 npm run escenario -- docs/ejemplos/nekketsu/escenarios/saigon_hem.layout.json salida --postales --ficha
 ```
 
+La carpeta trae también los otros cuatro tramos del Cross, la Comuna 13 (`medellin_c13`), la azotea de Caracas (`caracas_azotea`) y Hội An de noche con el Tama-wari (`hoian`), cada uno copiado del juego.
+
 Cómo se carga en el juego: [docs/ESCENARIOS.md](../../ESCENARIOS.md).
 
