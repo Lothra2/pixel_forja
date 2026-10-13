@@ -173,7 +173,8 @@ async function pickPack(p: VPack, animName?: string) {
   pack = p;
   for (const b of $('vk-packs').querySelectorAll('button')) b.setAttribute('aria-selected', String(b.dataset.pack === p.name));
   // un atlas y su imagen por pack; en las tiras, una hoja por animación
-  if (p.atlas) { const a = await atlas(p.atlas); await image(atlasImage(p.atlas, a)); }
+  if (p.tira) await image(p.tira);
+  else if (p.atlas) { const a = await atlas(p.atlas); await image(atlasImage(p.atlas, a)); }
   else await Promise.all(Object.values(p.anims).map((a) => (a.raw.archivo ? image(a.raw.archivo).catch(() => null) : null)));
   if (objAtlas) await image(atlasImage(Object.values(kit!.objetos)[0].atlas, objAtlas)).catch(() => null);
   buildBoard();
@@ -223,7 +224,7 @@ function buildBoard() {
 function buildRows() {
   const rows = $('vk-rows');
   rows.innerHTML = '';
-  rowCanvases = kit!.filas.map((f) => {
+  rowCanvases = (ch!.filas ?? kit!.filas).map((f) => {
     const fig = document.createElement('figure');
     const c = document.createElement('canvas');
     c.dataset.fila = f;
@@ -341,7 +342,7 @@ function stats() {
   const evs = (R.eventos ?? []).map((e: { tipo: string; cuadro: number; pie?: string }) => `<span class="${e.cuadro === frame ? 'vk-on' : ''}">${esc(e.tipo)}${e.pie ? ` ${esc(e.pie)}` : ''} @${e.cuadro}</span>`).join(' ');
   const pruebas = Object.entries(kit!.pruebas ?? {}).filter(([, ps]) => ps.includes(pack!.name)).map(([p]) => esc(p)).join(', ');
   $('vk-stats').innerHTML = [
-    `<dt>${t('frame')}</dt><dd data-testid="visor-frame">${frame + 1} / ${an!.cuadros} <code>${esc(`${an!.name}_${kit!.filas[0]}_${frame}`)}</code></dd>`,
+    `<dt>${t('frame')}</dt><dd data-testid="visor-frame">${frame + 1} / ${an!.cuadros} <code>${esc(pack!.tira ? `${pack!.tira} #${an!.raw.desde + frame}` : `${an!.name}_${kit!.filas[0]}_${frame}`)}</code></dd>`,
     row('fps', an!.fps), row('loop', an!.loop ? t('yes') : t('no')), row('adv', R.avance), row('lift', list(R.elevacion)), row('travel', list(R.desplazamiento)),
     row('events', evs), row('data', overlaysOf(an!).filter((o) => o !== 'pivote').map((o) => esc(o)).join(', ')), row('tests', pruebas),
   ].join('');

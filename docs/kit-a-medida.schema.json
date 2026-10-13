@@ -393,7 +393,7 @@
         "pattern": "^[a-z0-9_]+$"
       },
       "uniqueItems": true,
-      "description": "Animales: los de las fichas y thor, que trae el motor."
+      "description": "Animales: los de las fichas, y los que trae el motor: thor y las aves (gallo, paloma)."
     },
     "ui": {
       "type": "object",

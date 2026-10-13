@@ -6,8 +6,8 @@
 export type Pt = [number, number];
 export interface Rect { image: string; x: number; y: number; w: number; h: number }
 export interface VAnim { name: string; cuadros: number; fps: number; loop: boolean; raw: Record<string, any> }
-export interface VPack { name: string; anims: Record<string, VAnim>; atlas?: string }
-export interface VChar { id: string; nombre: string; tipo: 'atleta' | 'animal'; equipo?: string; celda: number; pivote: Pt; packs: Record<string, VPack>; numero?: string }
+export interface VPack { name: string; anims: Record<string, VAnim>; atlas?: string; /** las aves: una tira con todas sus animaciones (cada una desde su cuadro `desde`) */ tira?: string }
+export interface VChar { id: string; nombre: string; tipo: 'atleta' | 'animal'; equipo?: string; celda: number; pivote: Pt; packs: Record<string, VPack>; numero?: string; /** las filas propias (las aves solo van de lado) */ filas?: string[] }
 export interface VTeam { nombre: string; colores?: string[] }
 export interface VKit { juego: string; filas: string[]; chars: VChar[]; equipos: Record<string, VTeam>; objetos: Record<string, { atlas: string; anims?: Record<string, number> }>; pruebas?: Record<string, string[]> }
 /** JSON Hash de TexturePacker */
@@ -31,6 +31,8 @@ export function readManifest(m: Record<string, any>): VKit {
     chars.push({ id, nombre: a.nombre ?? id, tipo: 'atleta', equipo: a.equipo, celda, pivote: a.pivote ?? m.pivote ?? [celda / 2, celda - 2], packs, numero: a.numero });
   }
   for (const [id, a] of Object.entries<any>(m.animales ?? {})) {
+    // las aves: una tira de lado, con el ancla en las patas
+    if (a.tipo === 'ave') { chars.push({ id, nombre: a.nombre ?? id, tipo: 'animal', celda: a.w, pivote: a.ancla, filas: ['lado'], packs: { ave: { name: 'ave', tira: a.imagen, anims: animsOf(a.anims) } } }); continue; }
     const celda = a.celda ?? m.celda;
     chars.push({ id, nombre: a.nombre ?? id, tipo: 'animal', celda, pivote: a.pivote ?? [celda / 2, celda - 2], packs: { animal: { name: 'animal', atlas: a.atlas, anims: animsOf(a.anims) } } });
   }
@@ -48,6 +50,7 @@ export const atlasImage = (atlasPath: string, atlas: Atlas) => atlasPath.replace
 
 /** Dónde está el cuadro k de la fila r: en el atlas (<anim>_<fila>_<k>) o en la tira (fila = fila, columna = cuadro). */
 export function frameRect(kit: VKit, c: VChar, pack: VPack, a: VAnim, row: number, k: number, atlas?: Atlas): Rect | null {
+  if (pack.tira) return { image: pack.tira, x: (a.raw.desde + k) * c.celda, y: 0, w: c.celda, h: c.celda };
   if (pack.atlas) {
     const f = atlas?.frames[`${a.name}_${kit.filas[row]}_${k}`];
     return f ? { image: atlasImage(pack.atlas, atlas!), ...f.frame } : null;
