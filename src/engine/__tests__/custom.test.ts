@@ -276,10 +276,10 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas (24 x 7 hojas: 6 packs y los retratos) + efectos + logo e interfaz (36: un panel por cada uno de los 6 equipos) + armas y comida + cabecitas, 3 fuentes,
-    // neutro, letras y los 15 pares del VS + 2 del público + thor + los 7 escenarios: hẻm 21, Bến Thành 17, río 17, azoteas 21,
-    // estadio 11, Comuna 13 14 y Caracas 10
-    expect(pngs.length).toBe(24 * 7 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10);
+    // atletas (24 x 9 hojas: los packs y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida
+    // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 7 escenarios: hẻm 21,
+    // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14 y Caracas 10
+    expect(pngs.length).toBe(24 * 9 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

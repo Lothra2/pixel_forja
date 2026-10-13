@@ -8,6 +8,8 @@ export interface EventoJson {
   cuadro: number;
   fase: number;
   pie?: 'cerca' | 'lejos';
+  /** paso con la mano (escalera, poste): qué mano agarra */
+  mano?: 'cerca' | 'lejos';
   /**
    * Hojas de 8 direcciones, golpe y suelta: dónde está la mano o el pie que pega (o la mano que suelta) en ese cuadro,
    * en pixeles desde el pivote, una entrada por fila. El juego saca la pelota o el proyectil de ahí.
@@ -40,6 +42,7 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
   if (c.events?.length) out.eventos = c.events.map((e) => ({
     tipo: e.type, cuadro: Math.min(c.frames.length - 1, Math.floor(e.phase * c.frames.length + 1e-6)), fase: r2(e.phase),
     ...(e.foot ? { pie: e.foot === 'near' ? 'cerca' as const : 'lejos' as const } : {}),
+    ...(e.type === 'paso' && (e.joint === 'handNear' || e.joint === 'handFar') ? { mano: e.joint === 'handNear' ? 'cerca' as const : 'lejos' as const } : {}),
   }));
   if (c.stride) out.avance = r2(c.stride * k);
   if (c.travel) out.desplazamiento = c.travel.map((v) => r2(v * k));
@@ -56,8 +59,9 @@ export function motionOf8(clips: RenderedClip[], k = 1, sideClip?: RenderedClip)
   const j = side.joints;
   if (j && out.eventos) {
     for (const e of out.eventos) {
-      if (e.tipo !== 'impacto' && e.tipo !== 'suelta') continue;
-      const name = c0joint(side, e) ?? contactJoint(j[e.cuadro], e.tipo);
+      // golpes y sueltas; y los pasos con la mano (dónde agarra el peldaño o el poste)
+      if (e.tipo !== 'impacto' && e.tipo !== 'suelta' && !(e.tipo === 'paso' && e.mano)) continue;
+      const name = c0joint(side, e) ?? contactJoint(j[e.cuadro], e.tipo === 'paso' ? 'impacto' : e.tipo);
       if (!clips.every((c) => c.joints?.[e.cuadro])) continue;
       e.punto = clips.map((c) => {
         const [x, y] = c.joints![e.cuadro][name] ?? c.joints![e.cuadro].head;

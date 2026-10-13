@@ -4,9 +4,9 @@ import type { View } from '../render/head';
 
 export type Pack =
   | 'basic' | 'football' | 'keeper' | 'basket' | 'volley' | 'tennis' | 'baseball'
-  | 'swim' | 'athletics' | 'martial' | 'brawl' | 'skate' | 'bike' | 'rpg' | 'skills' | 'enemy' | 'animal' | 'pet' | 'custom';
+  | 'swim' | 'athletics' | 'martial' | 'brawl' | 'climb' | 'skate' | 'bike' | 'rpg' | 'skills' | 'enemy' | 'animal' | 'pet' | 'custom';
 
-export const PACKS: Pack[] = ['basic', 'football', 'keeper', 'basket', 'volley', 'tennis', 'baseball', 'swim', 'athletics', 'martial', 'brawl', 'skate', 'bike', 'rpg', 'skills', 'enemy'];
+export const PACKS: Pack[] = ['basic', 'football', 'keeper', 'basket', 'volley', 'tennis', 'baseball', 'swim', 'athletics', 'martial', 'brawl', 'climb', 'skate', 'bike', 'rpg', 'skills', 'enemy'];
 
 export interface Ctx {
   d: Dims;
@@ -64,6 +64,7 @@ export interface AnimEvent {
   /**
    * Qué pega en un impacto (o qué suelta). Sin esto, la mano o el pie que llega más adelante. Con esto, esa
    * articulación: la frente en un cabezazo, el pie de abajo en un pisotón, el codo en un codazo hacia atrás.
+   * En un paso: la mano que agarra (escalera, poste); el kit exporta `mano` y su `punto`.
    */
   joint?: 'handNear' | 'handFar' | 'footNear' | 'footFar' | 'elbowNear' | 'elbowFar' | 'frente' | 'head';
 }

@@ -825,7 +825,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     if (isBall(pr.kind)) {
       const s = ballSize(pr.kind, d.u);
       drawBall(part, pr.kind, [gx, gy - 1 - (s - 1) / 2 - (pr.y ?? 0)], d.u);
-    } else drawGround(part, pr.kind, gx, gy - 1 - (pr.y ?? 0), d.u, pr.angle ?? 0);
+    } else drawGround(part, pr.kind, gx, gy - 1 - (pr.y ?? 0), d.u, pr.angle ?? 0, pr.lay ?? 0);
     commit(part, pr.behind ? Layer.Behind : pr.kind === 'bike' || pr.kind === 'skate' ? Layer.PropMid : Layer.Prop, false, false);
   }
 

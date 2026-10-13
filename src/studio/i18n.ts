@@ -280,6 +280,7 @@ const es = {
   pack_athletics: 'Atletismo',
   pack_martial: 'Artes marciales',
   pack_brawl: 'Pelea callejera',
+  pack_climb: 'Recorridos y trepar',
   pack_skate: 'Skate',
   pack_bike: 'Bici',
   pack_rpg: 'RPG',
@@ -689,6 +690,7 @@ const en: Dict = {
   pack_athletics: 'Athletics',
   pack_martial: 'Martial arts',
   pack_brawl: 'Street brawl',
+  pack_climb: 'Courses and climbing',
   pack_skate: 'Skate',
   pack_bike: 'Bike',
   pack_rpg: 'RPG',
@@ -859,6 +861,11 @@ const ANIM_LABELS: Record<string, [string, string]> = {
   summon: ['Invocar', 'Summon'], warcry: ['Grito de guerra', 'War cry'], attack_heavy: ['Golpe pesado', 'Heavy strike'], attack_thrust: ['Estocada', 'Thrust'],
   zombie_walk: ['Caminar de zombi', 'Zombie walk'], claw: ['Zarpazo', 'Claw'], lunge: ['Embestida', 'Lunge'], rise: ['Levantarse del piso', 'Rise from ground'], trot: ['Trotar', 'Trot'], sit: ['Sentarse', 'Sit'], lie: ['Echarse', 'Lie down'], wag: ['Mover la cola', 'Wag tail'],
   fetch: ['Buscar la pelota', 'Fetch'],
+  ladder: ['Subir escalera de mano', 'Climb ladder'], climb_wall: ['Subir un muro', 'Climb wall'], ledge_hang: ['Colgado del borde', 'Ledge hang'], pull_up: ['Subir desde colgado', 'Pull up'],
+  balance_walk: ['Caminar por la viga', 'Balance walk'], balance_wobble: ['Tambalearse en la viga', 'Balance wobble'], balance_fall: ['Caerse de la viga', 'Balance fall'], duck_run: ['Correr agachado', 'Duck run'],
+  bike_fast: ['Pedalear rápido', 'Bike fast'], bike_crash: ['Caerse de la bici', 'Bike crash'], skate_crash: ['Caerse de la patineta', 'Skate crash'],
+  climb_pole: ['Trepar el poste', 'Climb pole'], pole_idle: ['Quieto en el poste', 'Pole idle'], pole_punch: ['Golpe arriba desde el poste', 'Pole punch'], pole_slide: ['Deslizarse por el poste', 'Pole slide'],
+  pole_kick_down: ['Patada abajo desde el poste', 'Pole kick down'], pole_shake: ['Sacudir el poste', 'Shake the pole'], grab_leg_up: ['Jalar del pie', 'Grab leg up'],
   bite: ['Morder', 'Bite'], bark: ['Ladrar', 'Bark'], howl: ['Aullar (escudo)', 'Howl (shield)'], pickup: ['Recoger botín', 'Pick up loot'], dig: ['Cavar', 'Dig'], hurt: ['Recibe golpe', 'Hurt'],
 };
 

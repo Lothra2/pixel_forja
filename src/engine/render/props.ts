@@ -241,8 +241,20 @@ function drawWeapon(part: Part, kind: PropKind, at: [number, number], angle: num
   }
 }
 
+/** Escala de la bici: a 32 px (u < 0.8) va más chica, si no el ciclista con la bici no cabe en la celda (la cabeza chibi es grande). */
+export const bikeU = (u: number) => (u < 0.8 ? u * 0.7 : u);
+
+/**
+ * Cuánto se baja la cadera del ciclista (pixeles, negativo) para que la cabeza quepa en la celda: el asiento a
+ * `seatH`, el torso y la cabeza encima. Con un chibi normal da 0; con un cuerpo alto (los héroes) baja lo justo.
+ */
+export function bikeDrop(d: { cell: number; torsoH: number; headW: number }, seatH: number): number {
+  const top = seatH + d.torsoH + Math.round(d.headW * 0.95) + 3;
+  return Math.min(0, d.cell - 3 - top);
+}
+
 /** Implementos en el piso: skate, bici, valla. x = centro, groundY = fila del piso. */
-export function drawGround(part: Part, kind: PropKind, x: number, groundY: number, u: number, phase = 0) {
+export function drawGround(part: Part, kind: PropKind, x: number, groundY: number, u: number, phase = 0, lay = 0) {
   if (kind === 'skate') {
     const len = Math.round(18 * u), h = Math.max(1, Math.round(u));
     const y = groundY - Math.max(2, Math.round(2 * u)) - h;
@@ -253,28 +265,32 @@ export function drawGround(part: Part, kind: PropKind, x: number, groundY: numbe
     blob(part, [x - len / 2 + 3 * u, groundY - wr / 2], wr, 'p_yellow');
     blob(part, [x + len / 2 - 3 * u, groundY - wr / 2], wr, 'p_yellow');
   } else if (kind === 'bike') {
+    u = bikeU(u);
     const R = Math.round(7 * u), sep = Math.round(17 * u);
+    // acostada (caída): todo se aplasta contra el piso, como una bici tirada de lado vista desde el costado
+    const k = 1 - 0.78 * Math.max(0, Math.min(1, lay));
+    const P = lay > 0 ? (p: [number, number]): [number, number] => [p[0], groundY - (groundY - p[1]) * k] : (p: [number, number]) => p;
     const c1: [number, number] = [x - sep / 2, groundY - R], c2: [number, number] = [x + sep / 2, groundY - R];
     for (const c of [c1, c2]) {
       const pts: [number, number][] = [];
-      for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; pts.push([c[0] + Math.cos(a) * R, c[1] + Math.sin(a) * R]); }
-      for (let k = 0; k < 16; k++) stroke(part, pts[k], pts[(k + 1) % 16], Math.max(1, Math.round(u)), () => 'p_black');
+      for (let q = 0; q < 16; q++) { const a = (q / 16) * Math.PI * 2; pts.push(P([c[0] + Math.cos(a) * R, c[1] + Math.sin(a) * R])); }
+      for (let q = 0; q < 16; q++) stroke(part, pts[q], pts[(q + 1) % 16], Math.max(1, Math.round(u)), () => 'p_black');
       // rayos que giran
       for (let s = 0; s < 2; s++) {
         const a = phase * Math.PI * 2 + (s * Math.PI) / 2;
-        stroke(part, [c[0] - Math.cos(a) * (R - 1), c[1] - Math.sin(a) * (R - 1)], [c[0] + Math.cos(a) * (R - 1), c[1] + Math.sin(a) * (R - 1)], 1, () => 'p_metal');
+        stroke(part, P([c[0] - Math.cos(a) * (R - 1), c[1] - Math.sin(a) * (R - 1)]), P([c[0] + Math.cos(a) * (R - 1), c[1] + Math.sin(a) * (R - 1)]), 1, () => 'p_metal');
       }
     }
     const seat: [number, number] = [x - 3 * u, groundY - R * 2.3];
     const crank: [number, number] = [x, groundY - R];
     const bar: [number, number] = [x + sep / 2 - 1 * u, groundY - R * 2.5];
     const t = Math.max(1, Math.round(u));
-    stroke(part, c1, crank, t, () => 'p_red');
-    stroke(part, crank, seat, t, () => 'p_red');
-    stroke(part, seat, [bar[0], seat[1] + 1], t, () => 'p_red');
-    stroke(part, c2, bar, t, () => 'p_red');
-    stroke(part, [seat[0] - 2 * u, seat[1] - 1], [seat[0] + 2 * u, seat[1] - 1], t + 1, () => 'p_black');
-    stroke(part, [bar[0] - 1, bar[1]], [bar[0] + 2 * u, bar[1] - 1], t, () => 'p_black');
+    stroke(part, P(c1), P(crank), t, () => 'p_red');
+    stroke(part, P(crank), P(seat), t, () => 'p_red');
+    stroke(part, P(seat), P([bar[0], seat[1] + 1]), t, () => 'p_red');
+    stroke(part, P(c2), P(bar), t, () => 'p_red');
+    stroke(part, P([seat[0] - 2 * u, seat[1] - 1]), P([seat[0] + 2 * u, seat[1] - 1]), t + 1, () => 'p_black');
+    stroke(part, P([bar[0] - 1, bar[1]]), P([bar[0] + 2 * u, bar[1] - 1]), t, () => 'p_black');
   } else if (kind === 'hurdle') {
     const h = Math.round(12 * u), w = Math.round(3 * u);
     stroke(part, [x, groundY - 1], [x, groundY - h], Math.max(1, Math.round(u)), () => 'p_grey');
@@ -284,6 +300,7 @@ export function drawGround(part: Part, kind: PropKind, x: number, groundY: numbe
 
 /** Centro de la rueda delantera, pedal y asiento de la bici (para poner al ciclista). */
 export function bikeGeometry(x: number, groundY: number, u: number) {
+  u = bikeU(u);
   const R = Math.round(7 * u);
   return { seat: [x - 3 * u, groundY - R * 2.3] as [number, number], crank: [x, groundY - R] as [number, number], bar: [x + Math.round(17 * u) / 2 - 1 * u, groundY - R * 2.5] as [number, number], crankR: Math.max(2, Math.round(3 * u)) };
 }
