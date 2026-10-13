@@ -274,7 +274,9 @@ como los otros). Detalle completo en `docs/mundos/GALERIAS.md`. Lo nuevo para el
   (`farol_muelle_prenderse` una vez y después `farol_muelle_prendido`, luz ámbar de 180). El primero trae
   `tutorial: true`.
 - **Entidades:** `portal_llegada` (rojo), `portal_volver` (mundo3), `portal_jefe` (`destino: mundo5`), `jefe`
-  (`enemigo: pez_farol`, `en_agua`), `arena_jefe` (`agua: true`), el minijefe `capitan_ahogado` con `elite: true`,
+  (`enemigo: pez_farol`, `en_agua`, en el centro de la poza), `arena_jefe` (`radio: 208`, `agua: true`,
+  `poza: 128`: la poza de agua negra del centro es sólida en `colision`, el anillo de tablas `anillo_poza` que la
+  rodea hasta el radio se camina entero con las dos mareas y llega a la entrada de la arena), el minijefe `capitan_ahogado` con `elite: true`,
   `campana_iglesia` (`suena_sola`), `mural` (`pieza: 4`), `figura` (una con `alto: true`: en lo alto del faro) y los
   enemigos `marinero_niebla`, `cangrejo_ceniza` y `medusa_negra`.
 - **Zonas** con `ambiente` `puerto`, `campana`, `agua` y `jefe`, `musica: ninguna` (casi sin música: entra en las
@@ -288,7 +290,9 @@ como los otros). Detalle completo en `docs/mundos/GALERIAS.md`. Lo nuevo para el
   `criaturas` del mundo 4), `cangrejo_ceniza` (48), `medusa_negra` (48, `vuela`), `capitan_ahogado` (64, `elite`) y
   `pez_farol` (128, `tipo: jefe`, `en_agua`, `luz_antena`). Mismo formato que los jefes grandes (eventos, `aviso`,
   `elevacion`, pivote medido). `fx`: `aviso_mordida` (128 x 64, `w`/`h`), `aviso_ola` (32 x 32, en bucle, se repite
-  en línea) y `ola` (128 x 64, 12 fps).
+  en línea) y `ola` (128 x 64, 12 fps). Cada anim del `pez_farol` trae `antena`: 8 listas (una por dirección, en
+  el orden de las filas de la hoja) con un `[x, y]` por cuadro, en píxeles desde el pivote (y hacia abajo), o `null`
+  cuando la luz está bajo el agua o apagada. Ahí va la luz del juego.
 - **Audio:** `ambiente_puerto` (20 s), `ambiente_campana`, `musica_jefe_pez`, `musica_capitan` (en bucle),
   `musica_faro` (30 s), y los efectos `campana_lejos`, `campana_cerca`, `marea_sube`, `farol_prender`,
   `farol_apagar`, `thor_alza_farol`, `marinero_se_deshace`, `cangrejo_tenaza`, `medusa_toca`, `ancla_golpe`,
@@ -296,6 +300,7 @@ como los otros). Detalle completo en `docs/mundos/GALERIAS.md`. Lo nuevo para el
 - **Pendientes:** `ui.habilidades.ataque` (#38), `ui.cinturon` nuevo de 190 x 44 y `ui.casillero_pocion` (#39), y
   los portales premium de 96 x 128 (#40: `portal_azul`, `portal_rojo`, `portal_verde`, `portal_violeta`,
   `portal_ambar`, con `girar`, `abrir`, `cerrar`, `arco` y `remolino`). Cada mundo dice el suyo en `portal`.
+  `ui.habilidades.farol` (#41: Thor alza el farol, rayos ámbar y aro dorado) y `farol_recarga` (el mismo en gris).
 
 ### El intro (parte 4)
 
