@@ -146,10 +146,10 @@ describe('Hội An de noche con el Tama-wari (lote E3c)', () => {
     for (let y = 0; y < E.lejos.h; y++) for (let x = PUENTE.x; x < PUENTE.x + PUENTE.w; x++) if (es(E.lejos.r, x, y, 'oro') || es(E.lejos.r, x, y, 'terracota')) arriba = Math.min(arriba, y);
     expect(yLejos + arriba).toBeGreaterThanOrEqual(135);
     expect(es(E.lejos.r, LUNA.x - 1, LUNA.y - 1, 'luz')).toBe(true);
-    // la calle de piedra está seca: nada del reflejo del neón
-    let violeta = 0;
-    for (let y = 0; y < D; y++) for (let x = 0; x < 640; x++) if (es(E.piso.r, x, y, 'canal') || es(E.piso.r, x, y, 'salmon')) violeta++;
-    expect(violeta).toBe(0);
+    // la calle de piedra está seca: nada del reflejo del neón (en la acera sí hay pétalos de buganvilla)
+    let reflejo = 0;
+    for (let y = 0; y < D; y++) for (let x = 0; x < 640; x++) if (es(E.piso.r, x, y, 'canal') || es(E.piso.r, x, y, 'menta') || (y >= 14 && es(E.piso.r, x, y, 'salmon'))) reflejo++;
+    expect(reflejo).toBe(0);
   });
 
   it('las postales de un mundo de una pantalla van a 0, 2 y 4 segundos', () => {
