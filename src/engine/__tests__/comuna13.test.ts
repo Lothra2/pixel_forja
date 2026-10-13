@@ -44,12 +44,17 @@ describe('la Comuna 13 (lote E3a)', () => {
   });
 
   it('todas las capas, objetos y cuadros de vida usan solo la paleta de Colombia, sin mezcla', () => {
+    // se juntan los pixeles malos y se compara una vez: un expect por pixel hacía la prueba lenta con la máquina cargada
+    const semitransparentes = new Set<number>(), fuera = new Set<string>();
     for (const r of [E.cielo.r, E.lejos.r, E.cerca.r, E.piso.r, E.frente.r, ...E.objetos.map((o) => o.img.r), ...E.vida.flatMap((v) => v.cuadros.map((c) => c.r))])
       for (let i = 0; i < r.data.length; i += 4) {
         if (!r.data[i + 3]) continue;
-        expect(r.data[i + 3]).toBe(255);
-        expect(PAL.has(hex(r, i))).toBe(true);
+        if (r.data[i + 3] !== 255) semitransparentes.add(r.data[i + 3]);
+        const c = hex(r, i);
+        if (!PAL.has(c)) fuera.add(c);
       }
+    expect([...semitransparentes]).toEqual([]);
+    expect([...fuera]).toEqual([]);
   });
 
   it('una caja encima de otra se dibuja de su base para arriba y después de la base', () => {

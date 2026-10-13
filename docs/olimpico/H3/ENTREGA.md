@@ -89,6 +89,9 @@ En el `kit.config.json` del juego, sumar a lo de H2:
 - **`tsc` limpio y `npm run build:sitio` limpio,** en 324 s. Ahí el kit de Nekketsu completo tardó 227 s, con la máquina cargada: queda debajo del límite de 300 s, pero se va acercando. El aviso de Vite por el tamaño de los chunks ya estaba.**
 - **`escuchar.html` de esta carpeta, probado en Chromium:** carga los 8 sin errores, los OGG traen sus 20 s, los WAV su largo, la chapa suena con un clic y "Tocar todo" arranca por `carnaval_quilla`.
 
+- **Suite completa: 35 archivos, 367 pruebas.** Con la máquina cargada falló una de la Comuna 13 ("solo la paleta de Colombia") por tiempo: llamaba a `expect` una vez por pixel y tardaba de 10 a 33 s contra el límite de 30. Ahora junta los pixeles malos y compara una vez. Mide lo mismo y tarda 0.75 s. Corrida sola pasa 10 de 10.
+- **e2e de Playwright: 50 de 50.**
+
 ## Para aprobar (todo en esta carpeta)
 
 - **`escuchar.html`:** toca cada efecto y cada tema con un clic, o todo en orden con "Tocar todo". Abre directo desde la carpeta o la tablet, sin servidor.
