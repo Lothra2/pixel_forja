@@ -1,4 +1,4 @@
-import { bikeU, bikeDrop } from '../render/props';
+import { bikeU, bikeDrop, ballSize } from '../render/props';
 import { type Pose, type PropState, keyed } from '../rig/pose';
 import { type AnimDef, type Ctx, P, TAU, feet } from './types';
 import { swim, run } from './basic';
@@ -17,13 +17,19 @@ function athletic(c: Ctx, crouch = 0.45): Pose {
 export const dribble: AnimDef = {
   name: 'dribble', pack: 'basket', fps: 10, loop: true, steady: true,
   build: (c) => {
-    const L = c.L, u = c.u;
-    const hands = [30, 35, 45, 50, 45, 35, 30, 28];
-    const hy = [11, 8, 5, 1, 0, 3, 7, 10];
+    const u = c.u;
+    // el balón va y viene entre la mano y el piso, siempre debajo de la mano (lote SP2). En 6, 7, 0 y 1 la palma va
+    // encima (se mide desde la mano: así la toca en todas las vistas y tamaños) y en 2 a 5 va suelto, medido desde el
+    // piso, que toca en el 3
+    const arm: [number, number][] = [[70, 70], [50, 70], [50, 40], [50, 40], [50, 70], [70, 40], [70, 55], [70, 80]];
+    const palma = 1 + (ballSize('basketball', u) - 1) / 2;
+    const hy = [0, 0, 2, 0, 2, 4, 0, 0];
     return [...Array(8)].map((_, i) => ({
       ...athletic(c, 0.45),
-      arms: { near: { shoulder: hands[i], elbow: 40 }, far: { shoulder: 20, elbow: 70, spread: 20 } },
-      props: [{ kind: 'basketball', at: 'ground', x: 0.85 * L, y: hy[i] * u } as PropState],
+      arms: { near: { shoulder: arm[i][0], elbow: arm[i][1] }, far: { shoulder: 20, elbow: 70, spread: 20 } },
+      props: [(i >= 2 && i <= 5
+        ? { kind: 'basketball', at: 'ground', under: 'handNear', x: 0, y: hy[i] * u }
+        : { kind: 'basketball', at: 'handNear', x: 0, y: palma }) as PropState],
     }));
   },
 };
@@ -37,7 +43,10 @@ export const shootBasket: AnimDef = {
     const rise = P(c, { air: top, torso: -2, legs: { near: { x: 0.05 * L, y: 0.9 * L, toe: 45 }, far: { x: -0.1 * L, y: 0.9 * L, toe: 45 } }, arms: { near: { shoulder: 165, elbow: 40 }, far: { shoulder: 150, elbow: 60 } } });
     const release = P(c, { ...rise, arms: { near: { shoulder: 160, elbow: 0 }, far: { shoulder: 140, elbow: 40 } }, face: { eyes: 'open', mouth: 'line' } });
     const seq = [athletic(c), set, rise, release, release, P(c, { legs: feet(c, 0.4) })];
-    return withProps(seq, (i) => (i < 2 ? [{ kind: 'basketball', at: 'handNear', x: 0, y: -3 * u }] : i < 3 ? [{ kind: 'basketball', at: 'handNear', x: 7 * u, y: -4 * u }] : [{ kind: 'basketball', at: 'ground', x: (1 + i - 3) * 0.6 * L, y: (24 + (i - 3) * 4) * u }]));
+    // el balón sube con la mano y sale por arriba y adelante sin devolverse (lote SP2). En el último cuadro ya va al aro
+    // y no se dibuja: así no salta de un lado al otro en las diagonales de espalda, donde la mano de tiro queda a la izquierda
+    const up: [number, number][] = [[0, -3], [0, -3], [1, -4], [3, -7], [6, -11]];
+    return withProps(seq, (i) => (i < 5 ? [{ kind: 'basketball', at: 'handNear', x: up[i][0] * u, y: up[i][1] * u }] : undefined));
   },
 };
 
@@ -165,7 +174,8 @@ export const catchBall: AnimDef = {
     const reach = P(c, { torso: 6, legs: feet(c, 0.4, 0.25), arms: { near: { shoulder: 110, elbow: 20 }, far: { shoulder: 20, elbow: 40 } } });
     const got = P(c, { torso: 8, legs: feet(c, 0.5, 0.25), arms: { near: { shoulder: 70, elbow: 70 }, far: { shoulder: 40, elbow: 70 } }, face: { eyes: 'happy', mouth: 'smile' } });
     const seq = keyed(6, [[0, athletic(c)], [2, reach, 'hold'], [3, reach], [5, got]]);
-    return withProps(seq, (i) => [{ kind: 'glove', at: 'handNear' }, ...(i < 3 ? [{ kind: 'baseball', at: 'ground', x: (2.8 - i * 0.6) * L, y: 18 * u } as PropState] : [])]);
+    // atrapada, la pelota se queda en el guante (lote SP2): así se lee que la agarró y, sin pelotas, el juego sabe dónde está
+    return withProps(seq, (i) => [{ kind: 'glove', at: 'handNear' }, i < 3 ? { kind: 'baseball', at: 'ground', x: (2.8 - i * 0.6) * L, y: 18 * u } : { kind: 'baseball', at: 'handNear', x: 0, y: 0 }]);
   },
 };
 

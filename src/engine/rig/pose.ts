@@ -61,6 +61,11 @@ export interface PropState {
   /** detrás del cuerpo */
   behind?: boolean;
   /**
+   * Solo con at = 'ground': la x sale de esta mano en pantalla (más x) y la y sigue siendo la altura sobre el piso. El
+   * balón que se bota queda debajo de la mano en todas las vistas
+   */
+  under?: 'handNear' | 'handFar';
+  /**
    * Estela del golpe (premium): un arco claro que el filo dibuja en el cuadro del impacto, de un ángulo a otro en
    * pantalla, por vista. Es el "smear" de los animadores: en un solo cuadro se lee todo el recorrido.
    */

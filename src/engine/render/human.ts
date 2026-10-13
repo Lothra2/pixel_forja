@@ -843,7 +843,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   for (const pr of props) {
     if (pr.at !== 'ground') continue;
     const part = new Part();
-    const gx = Math.round((pr.x ?? 0) * (side ? 1 : diag ? DIAG_X : sign));
+    const fx = (pr.x ?? 0) * (side ? 1 : diag ? DIAG_X : sign);
+    // bajo la mano (el bote): la x de la mano en pantalla, la altura desde el piso
+    const gx = Math.round(pr.under ? (pr.under === 'handFar' ? arms.far.end : arms.near.end)[0] + fx : fx);
     const gy = groundCanvas - canvas.oy;
     if (isBall(pr.kind)) {
       const s = ballSize(pr.kind, d.u);

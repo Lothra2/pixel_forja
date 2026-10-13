@@ -320,7 +320,7 @@ export function kitConfigSchema(): Record<string, unknown> {
               type: 'object', additionalProperties: false, required: ['anims'],
               properties: {
                 anims: list({ enum: ANIM_NAMES }, { minItems: 1 }),
-                sin_props: { type: 'boolean', description: 'true: el pack sale sin las pelotas dibujadas (futbol, voley, basquet, tenis, beisbol y la bala) porque el juego las mueve con su física. El cuerpo queda igual pixel a pixel y la posición de cada pelota va en el dato por cuadro `objetos`. Lo agarrado (raqueta, bate, garrocha, jabalina) sí sale.' },
+                sin_props: { type: 'boolean', description: 'true: el pack sale sin las pelotas dibujadas (futbol, voley, basquet, tenis, beisbol y la bala) porque el juego las mueve con su física. El cuerpo queda igual pixel a pixel y la posición de cada pelota va en el dato por cuadro `objetos`. Cada pelota quitada sale suelta, dibujada igual, en objetos/pelotas.png (`pelotas` del manifiesto). Lo agarrado (raqueta, bate, garrocha, jabalina, el guante) sí sale.' },
               },
             },
           ],
@@ -751,6 +751,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     ...(cfg.pruebas ? { pruebas: cfg.pruebas } : {}),
     ...(sm.cabecitas ? { cabecitas: sm.cabecitas } : {}),
     ...(sm.objetos ? { objetos: sm.objetos } : {}),
+    ...(sm.pelotas ? { pelotas: sm.pelotas } : {}),
     ...(sm.animales || aves ? { animales: { ...((sm.animales as Record<string, unknown>) ?? {}), ...(aves ?? {}) } } : {}),
     ...(fx ? { fx } : {}),
     ...(sm.ui || Object.keys(ui).length || vs ? { ui: { ...((sm.ui as object) ?? {}), ...ui, ...(vs ? { vs } : {}) } } : {}),

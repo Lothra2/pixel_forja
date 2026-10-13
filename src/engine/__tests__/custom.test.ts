@@ -213,14 +213,22 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
       }
     }
     for (const [prueba, packs] of Object.entries<string[]>(m.pruebas)) for (const p of packs) expect(m.atletas.rick.packs[p], `${prueba}: ${p}`).toBeDefined();
-    // lote SP: voley y futbol salen sin pelotas, con dónde iba cada una en objetos; los demás packs no traen objetos
-    for (const [p, an] of [['voley', 'serve'], ['futbol', 'header']]) for (const id of ['rick', 'goro']) {
+    // lotes SP y SP2: los packs de pelota salen sin pelotas, con dónde iba cada una en objetos; los demás packs no traen objetos
+    const conPelota = [['voley', 'serve', 'voley'], ['futbol', 'header', 'futbol'], ['futbol', 'shot', 'futbol'], ['keeper', 'keeper_catch', 'futbol'],
+      ['basket', 'dribble', 'basquet'], ['tennis', 'forehand', 'tenis'], ['beisbol', 'pitch', 'beisbol']];
+    for (const [p, an, clase] of conPelota) for (const id of ['rick', 'goro']) {
       const o = m.atletas[id].packs[p].anims[an].objetos;
       expect(o, `${id} ${p} ${an}`).toHaveLength(m.filas.length);
-      expect(o.flat().filter(Boolean).flat()[0], `${id} ${p} ${an}`).toMatchObject({ tipo: 'pelota', clase: p === 'voley' ? 'voley' : 'futbol', detras: 0 });
+      expect(o.flat().filter(Boolean).flat()[0], `${id} ${p} ${an}`).toMatchObject({ tipo: 'pelota', clase, detras: 0 });
     }
+    // las que no traen pelota tampoco traen objetos
+    for (const [p, an] of [['voley', 'vb_ready'], ['keeper', 'keeper_ready'], ['tennis', 'tn_ready'], ['futbol', 'slide']]) expect(m.atletas.rick.packs[p].anims[an].objetos, `${p} ${an}`).toBeUndefined();
     expect(Object.values<any>(m.atletas.rick.packs.base.anims).some((d) => d.objetos)).toBe(false);
-    expect(m.notas.some((n: string) => n.startsWith('sin_props (voley, futbol): '))).toBe(true);
+    expect(m.notas.some((n: string) => n.startsWith('sin_props (voley, futbol, keeper, basket, tennis, beisbol): '))).toBe(true);
+    // las pelotas sueltas, en 48 y en 64 (Goro)
+    expect(Object.keys(m.pelotas)).toEqual(['balon_futbol', 'balon_voley', 'balon_basket', 'pelota_tenis', 'pelota_beisbol']);
+    expect(m.pelotas.balon_basket).toEqual({ clase: 'basquet', atlas: 'objetos/pelotas.json', cuadros: { 48: 'balon_basket_48', 64: 'balon_basket_64' } });
+    expect(Object.keys(readJson(join(out, 'objetos/pelotas.json')).frames)).toHaveLength(10);
     expect(m.animales.thor).toMatchObject({ atlas: 'animales/thor.json', imagen: 'animales/thor.png' });
     // las aves del motor (lote C7b): una tira de lado, con el ancla en las patas y el canto del gallo
     expect(m.animales.gallo).toMatchObject({ tipo: 'ave', imagen: 'animales/gallo.png', w: 32, h: 32, ancla: [17, 30], vista: 'lado', eventos: { cantar: [{ tipo: 'canto', cuadro: 3 }] } });
@@ -299,11 +307,12 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas (24 x 11 hojas: los 10 packs, con voley y futbol sin pelotas del lote SP, y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida
+    // atletas (24 x 15 hojas: los 14 packs, con voley y futbol sin pelotas del lote SP y keeper, basket, tennis y beisbol del
+    // lote SP2, y los retratos) + efectos + logo e interfaz (36: un panel por equipo) + armas y comida + las pelotas sueltas (SP2)
     // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 7 escenarios: hẻm 21,
     // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14 y Caracas 10 + 3 perros y 2 gatos (lote C7)
     // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b)
-    expect(pngs.length).toBe(24 * 11 + 63 + 36 + 2 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 5 + 10 + 9 + 2);
+    expect(pngs.length).toBe(24 * 15 + 63 + 36 + 2 + 1 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 5 + 10 + 9 + 2);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

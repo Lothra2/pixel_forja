@@ -8,6 +8,8 @@ import { familyFicha } from '../rpg/family';
 import { decodePng, type Raster } from '../index';
 import { buildCustomKit, validateKitConfig, packAnims, packsSinProps, type KitConfig } from '../kit/custom';
 import { objetosOf, pivotOf, ROW_VIEW, PELOTAS } from '../export/frameData';
+import { pelotaSprite } from '../render/floorProps';
+import type { PropKind } from '../rig/pose';
 import { ROOT } from './helpers';
 
 /**
@@ -209,4 +211,198 @@ function readAtlas(k: { get: (n: string) => { bytes: Uint8Array } }, pack: strin
     for (let j = 0; j < h; j++) out.data.set(png.data.subarray(((y + j) * png.w + x) * 4, ((y + j) * png.w + x + w) * 4), j * w * 4);
     return out;
   };
+}
+
+/**
+ * Lote SP2: los packs nuevos de Nekketsu (básquet, arquero, tenis, béisbol y lo que se sumó a fútbol y vóley), los
+ * arreglos del bote, el tiro y la atrapada, y las pelotas sueltas en objetos/pelotas.png.
+ */
+const SP2: Record<string, { anims: string[]; clase: string | null }> = {
+  basket: { anims: ['dribble', 'shoot', 'dunk'], clase: 'basquet' },
+  keeper: { anims: ['keeper_ready', 'keeper_dive', 'keeper_catch'], clase: 'futbol' },
+  tennis: { anims: ['tn_ready', 'forehand', 'backhand', 'tennis_serve', 'tn_volley', 'tn_smash'], clase: 'tenis' },
+  futbol: { anims: ['shot', 'pass', 'slide'], clase: 'futbol' },
+  voley: { anims: ['vb_ready'], clase: null },
+  beisbol: { anims: ['pitch', 'catch'], clase: 'beisbol' },
+};
+/** Las que no traen pelota: salen iguales y sin objetos. */
+const SIN_PELOTA = ['keeper_ready', 'tn_ready', 'slide', 'vb_ready'];
+/** Los colores del disco de una pelota (sin el contorno) que no están en `fuera`. */
+function discoDe(kind: PropKind, fuera: Set<string>): Set<string> {
+  const sp = pelotaSprite(kind, 48), out = new Set<string>();
+  for (let y = 1; y < sp.h - 1; y++) for (let x = 1; x < sp.w - 1; x++) if (sp.data[(y * sp.w + x) * 4 + 3] && !fuera.has(px(sp, x, y))) out.add(px(sp, x, y));
+  return out;
+}
+const colores = (r: Raster) => { const s = new Set<string>(); for (let i = 0; i < r.data.length; i += 4) if (r.data[i + 3]) s.add(r.data.subarray(i, i + 4).join(',')); return s; };
+
+describe('sin_props (lote SP2): los packs nuevos', () => {
+  it('las 18 animaciones salen sin pelota, en las 5 filas, y el cuerpo no cambia fuera de ella', () => {
+    for (const { anims } of Object.values(SP2)) for (const a of anims) for (const fila of FILAS) {
+      const { con, sin } = par(RICK, 48, a, ROW_VIEW[fila]);
+      // los colores del cuerpo: la misma animación dibujada sin implementos
+      const cuerpo = new Set(renderClip(RICK, 48, a, ROW_VIEW[fila], { props: false }).frames.flatMap((fr) => [...colores(fr)]));
+      expect(sin.frames.length, a).toBe(con.frames.length);
+      expect(sin.wholes, `${a} ${fila}`).toEqual(con.wholes);
+      expect(sin.joints, `${a} ${fila}`).toEqual(con.joints);
+      expect(sin.balls, `${a} ${fila}`).toEqual(con.balls);
+      if (SIN_PELOTA.includes(a)) expect(con.balls, `${a} no trae pelota`).toBeUndefined();
+      else expect(con.balls?.some((b) => b.length), `${a} trae pelota`).toBe(true);
+      con.frames.forEach((fr, i) => {
+        const bs = con.balls?.[i] ?? [];
+        const d = diffs(fr, sin.frames[i]);
+        if (!bs.length) { expect(d, `${a} ${fila} ${i}: sin pelota no cambia nada`).toEqual([]); return; }
+        for (const [x, y] of d) {
+          const near = bs.some((b) => x + 1 >= b.x - b.d / 2 - 1 && x <= b.x + b.d / 2 + 1 && y + 1 >= b.y - b.d / 2 - 1 && y <= b.y + b.d / 2 + 1);
+          expect(near, `${a} ${fila} ${i}: cambió (${x}, ${y}) lejos de la pelota`).toBe(true);
+        }
+        // la pelota se fue: no queda ningún pixel del color de su disco (el naranja del básquet, el lima del tenis...)
+        const delDisco = discoDe(bs[0].kind, cuerpo);
+        const quedan = [...colores(sin.frames[i])].filter((c) => delDisco.has(c));
+        expect(quedan, `${a} ${fila} ${i}: quedan colores de la pelota`).toEqual([]);
+      });
+    }
+  });
+
+  it('la raqueta se queda dibujada en todo el tenis, y la pelota no', () => {
+    for (const a of SP2.tennis.anims) for (const fila of FILAS) {
+      const { con, sin } = par(RICK, 48, a, ROW_VIEW[fila]);
+      // los colores del cuerpo y la ropa: los de la misma animación dibujada sin implementos
+      const cuerpo = new Set<string>();
+      for (const fr of renderClip(RICK, 48, a, ROW_VIEW[fila], { props: false }).frames) for (const c of colores(fr)) cuerpo.add(c);
+      const lima = colores(pelotaSprite('tennisball', 48));
+      // la raqueta: pixeles de colores que no son del cuerpo ni de la pelota (el marco rojo, las cuerdas)
+      const raqueta = (fr: Raster) => {
+        let n = 0;
+        for (let k = 0; k < fr.data.length; k += 4) if (fr.data[k + 3] && !cuerpo.has(fr.data.subarray(k, k + 4).join(',')) && !lima.has(fr.data.subarray(k, k + 4).join(','))) n++;
+        return n;
+      };
+      const conRaqueta = sin.frames.filter((fr) => raqueta(fr) >= 6).length;
+      // se ve en casi todo el golpe (en el remate de algunos queda detrás de la espalda)
+      expect(conRaqueta, `${a} ${fila}`).toBeGreaterThanOrEqual(Math.ceil(sin.frames.length / 2));
+      // y es la misma que en el pack con pelota: solo cambia lo que tapaba la pelota
+      sin.frames.forEach((fr, i) => expect(raqueta(fr), `${a} ${fila} ${i}`).toBeGreaterThanOrEqual(raqueta(con.frames[i]) - 4));
+    }
+  });
+
+  it('objetos en [fila][cuadro] desde el pivote, con la clase de cada deporte; las que no traen pelota no lo llevan', () => {
+    const [px0, py0] = pivotOf(48);
+    for (const { anims, clase } of Object.values(SP2)) for (const a of anims) {
+      const clips = FILAS.map((fila) => renderClip(RICK, 48, a, ROW_VIEW[fila], { props: true, sinPelotas: true }));
+      const { objetos } = objetosOf(clips);
+      if (SIN_PELOTA.includes(a)) { expect(objetos, a).toBeUndefined(); continue; }
+      expect(objetos, a).toHaveLength(FILAS.length);
+      clips.forEach((c, r) => {
+        expect(objetos![r], `${a} ${r}`).toHaveLength(c.frames.length);
+        c.frames.forEach((_, i) => {
+          const b = c.balls![i];
+          if (!b.length) expect(objetos![r][i], `${a} ${r} ${i}`).toBeNull();
+          else expect(objetos![r][i], `${a} ${r} ${i}`).toEqual(b.map((q) => ({ tipo: 'pelota', clase, x: q.x - px0, y: q.y - py0, r: q.d / 2, detras: 0 })));
+        });
+      });
+    }
+  });
+
+  it('el bote va debajo de la mano, del piso a la palma, en todas las filas (también en un gigante)', () => {
+    for (const [f, cell] of [[RICK, 48], [GORO, 64]] as const) for (const fila of FILAS) {
+      const c = renderClip(f, cell, 'dribble', ROW_VIEW[fila], { props: true });
+      const piso = cell - 2;
+      c.frames.forEach((_, i) => {
+        const b = c.balls![i][0], mano = c.joints![i].handNear;
+        expect(Math.abs(b.x - mano[0]), `${cell} ${fila} ${i}: x de la mano ${mano[0]} y del balón ${b.x}`).toBeLessThanOrEqual(1.5);
+        // nunca por encima de la mano
+        expect(b.y - b.d / 2, `${cell} ${fila} ${i}`).toBeGreaterThan(mano[1] - 1);
+      });
+      // toca el piso en el 3 (el borde de abajo en la fila del pivote, como los pies) y la palma en el 0 (el borde de arriba del balón, a un pixel o dos de la mano)
+      const b3 = c.balls![3][0], b0 = c.balls![0][0];
+      expect(b3.y + b3.d / 2, `${cell} ${fila}`).toBe(piso);
+      // de espalda la mano queda un poco más arriba (y tapada por el cuerpo): ahí la palma va a 5 pixeles como mucho
+      expect(b0.y - b0.d / 2 - c.joints![0].handNear[1], `${cell} ${fila}`).toBeLessThanOrEqual(fila.startsWith('up') ? 5 : 3);
+    }
+  });
+
+  it('el tiro sube y avanza sin devolverse, y la atrapada se queda en el guante', () => {
+    for (const fila of FILAS) {
+      const s = renderClip(RICK, 48, 'shoot', ROW_VIEW[fila], { props: true });
+      const ys = s.balls!.map((b) => b[0]?.y);
+      // del set (1) a la suelta (4) siempre más arriba; en el 5 ya va al aro
+      for (let i = 2; i <= 4; i++) expect(ys[i]!, `${fila} ${i}`).toBeLessThan(ys[i - 1]!);
+      expect(s.balls![5]).toEqual([]);
+      const k = renderClip(RICK, 48, 'catch', ROW_VIEW[fila], { props: true });
+      for (let i = 3; i < 6; i++) {
+        const b = k.balls![i][0], mano = k.joints![i].handNear;
+        expect(Math.hypot(b.x - mano[0], b.y - mano[1]), `${fila} ${i}`).toBeLessThanOrEqual(1.5);
+      }
+    }
+    // de lado, el tiro va hacia adelante
+    const xs = renderClip(RICK, 48, 'shoot', 'side', { props: true }).balls!.slice(1, 5).map((b) => b[0].x);
+    for (let i = 1; i < xs.length; i++) expect(xs[i]).toBeGreaterThanOrEqual(xs[i - 1]);
+  });
+});
+
+describe('sin_props (lote SP2): las pelotas sueltas', () => {
+  it('cada pelota suelta es el mismo dibujo que se quitó, con el centro exacto en el centro del cuadro', () => {
+    let vistas = 0;
+    for (const [f, cell] of [[RICK, 48], [GORO, 64]] as const) for (const a of ['serve', 'forehand', 'header', 'catch', 'pitch', 'dunk', 'dribble', 'keeper_catch']) {
+      const { con, sin } = par(f, cell, a, 'side');
+      con.frames.forEach((fr, i) => {
+        for (const b of con.balls?.[i] ?? []) {
+          const sp = pelotaSprite(b.kind, cell);
+          expect([sp.w, sp.h]).toEqual([b.d + 2, b.d + 2]);
+          const x0 = b.x - sp.w / 2, y0 = b.y - sp.h / 2;
+          expect(Number.isInteger(x0) && Number.isInteger(y0)).toBe(true);
+          if (x0 < 0 || y0 < 0 || x0 + sp.w > cell || y0 + sp.h > cell) continue;
+          // donde no hay cuerpo debajo, pixel a pixel igual
+          for (let y = 0; y < sp.h; y++) for (let x = 0; x < sp.w; x++) {
+            const o = ((y0 + y) * cell + x0 + x) * 4;
+            if (!sp.data[(y * sp.w + x) * 4 + 3] || sin.frames[i].data[o + 3]) continue;
+            expect(px(sp, x, y), `${cell} ${a} ${i} (${x}, ${y})`).toBe(px(fr, x0 + x, y0 + y));
+          }
+          vistas++;
+        }
+      });
+    }
+    expect(vistas).toBeGreaterThan(60);
+  });
+
+  it('el kit trae objetos/pelotas con las que se quitaron, en cada celda; sin packs sin_props no sale', () => {
+    const k = kitSP2({ basket: { anims: ['dribble'], sin_props: true }, tennis: { anims: ['forehand', 'tn_ready'], sin_props: true }, pelea: ['idle'] });
+    expect(k.m.pelotas).toEqual({
+      balon_basket: { clase: 'basquet', atlas: 'objetos/pelotas.json', cuadros: { 48: 'balon_basket_48' } },
+      pelota_tenis: { clase: 'tenis', atlas: 'objetos/pelotas.json', cuadros: { 48: 'pelota_tenis_48' } },
+    });
+    const json = JSON.parse(new TextDecoder().decode(k.get('objetos/pelotas.json').bytes));
+    const png = decodePng(Buffer.from(k.get('objetos/pelotas.png').bytes));
+    for (const [name, kind] of [['balon_basket_48', 'basketball'], ['pelota_tenis_48', 'tennisball']] as const) {
+      const fr = json.frames[name];
+      expect(fr.pivot).toEqual({ x: 0.5, y: 0.5 });
+      const sp = pelotaSprite(kind, 48);
+      expect([fr.frame.w, fr.frame.h]).toEqual([sp.w, sp.h]);
+      for (let y = 0; y < sp.h; y++) for (let x = 0; x < sp.w; x++) expect(px(png, fr.frame.x + x, fr.frame.y + y), name).toBe(px(sp, x, y));
+    }
+    expect(k.m.notas.find((n: string) => n.startsWith('sin_props'))).toContain('objetos/pelotas.json');
+    const sin = kitSP2({ basket: ['dribble'] });
+    expect(sin.m.pelotas).toBeUndefined();
+    expect(sin.files.some((f) => f.name.startsWith('objetos/pelotas'))).toBe(false);
+  });
+
+  it('el ejemplo de Nekketsu: los packs nuevos con sin_props y las pruebas del juego', () => {
+    const cfg = readJson(join(ROOT, 'docs', 'ejemplos', 'nekketsu', 'kit.config.json')) as KitConfig;
+    expect(validateKitConfig(cfg)).toEqual([]);
+    expect(validator(cfg), JSON.stringify(validator.errors)).toBe(true);
+    for (const [p, { anims }] of Object.entries(SP2)) {
+      expect(packsSinProps(cfg.packs), p).toContain(p);
+      for (const a of anims) expect(packAnims(cfg.packs[p]), `${p}: ${a}`).toContain(a);
+    }
+    expect(cfg.pruebas).toMatchObject({
+      voley_playa: ['base', 'voley'], futbol_callejero: ['base', 'futbol', 'keeper'], da_cau: ['base', 'futbol'],
+      basket: ['base', 'pelea', 'basket'], tenis: ['base', 'tennis'], chapita: ['base', 'armas', 'beisbol'], quemado: ['base', 'armas', 'beisbol'],
+    });
+  });
+});
+
+/** Un kit chico de Rick y la familia, solo atletas, con estos packs. */
+function kitSP2(packs: KitConfig['packs']) {
+  const { files } = buildCustomKit({ ...MIN, filas: FILAS, packs }, {}, { solo: ['atletas'] });
+  const get = (n: string) => files.find((f) => f.name === n)!;
+  return { files, get, m: JSON.parse(new TextDecoder().decode(get('manifest.json').bytes)) };
 }

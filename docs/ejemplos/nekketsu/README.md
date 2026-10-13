@@ -62,7 +62,7 @@ Con `--fuentes`, el kit trae `ui/fuentes/` con `fuente_ui`, `fuente_titulo` y `f
 npm run kit-a-medida -- salida/kit_nekketsu --config docs/ejemplos/nekketsu/kit.config.json
 ```
 
-Salen los 24 atletas con 10 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`, `kachinuki`, `recorridos`, `trepar`, y `voley` y `futbol` sin las pelotas dibujadas, con `objetos`), retratos, cabecitas, las 19 armas del piso, Thor, las fuentes con vietnamita y todo lo de la pelea, en unos 2 minutos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
+Salen los 24 atletas con 14 packs (`base`, `pelea`, `armas`, `natacion`, `atletismo`, `kachinuki`, `recorridos`, `trepar`, y `voley`, `futbol`, `keeper`, `basket`, `tennis` y `beisbol` sin las pelotas dibujadas, con `objetos` y las pelotas sueltas en `objetos/pelotas.png`), retratos, cabecitas, las 19 armas del piso, Thor, las fuentes con vietnamita y todo lo de la pelea, en unos 3 a 4 minutos. El manifiesto trae `equipos`, el `equipo` de cada atleta y las `pruebas` con los packs que carga cada una. Para verlo: `visor.html` en el sitio. Detalles en [docs/KIT_A_MEDIDA.md](../../KIT_A_MEDIDA.md).
 
 El juego tendrá su propio `kit.config.json` y `data/teams.json`. Esta es la versión de ejemplo, con lo que PixelForja ya genera.
 
