@@ -69,6 +69,8 @@ interface Design {
   tide: Uint8Array;
   /** agua quieta (reflejo) */
   still: Uint8Array;
+  /** la poza de la arena del Pez Farol (agua negra, honda) */
+  pool: Uint8Array;
 }
 
 function inPoly(x: number, y: number, poly: Poly): boolean {
@@ -161,15 +163,26 @@ const FLOTANTES: TP[] = [[69, 52], [71, 52], [73, 52], [75, 52]];
 
 /** El agua quieta de la cueva (reflejo) */
 const POZA = { c: [47.5, 72] as TP, rx: 7.6, ry: 3.6 };
+/**
+ * La arena del Pez Farol: una poza de agua negra de 4 cuadros de radio en el centro (ahí nada el pez, no se entra) y
+ * alrededor un anillo que se camina hasta el radio de la arena, con un muelle redondo de tablas, pilotes y sogas.
+ */
+export const ARENA_POZA = { c: [84.5, 73.5] as TP, r: 4, anillo: 6.6 };
 
 function makeDesign(): Design {
   const W = PUERTO_W, H = PUERTO_H, t = new Uint8Array(W * H).fill(ROCK);
-  const dock = new Uint8Array(W * H), tide = new Uint8Array(W * H), still = new Uint8Array(W * H);
+  const dock = new Uint8Array(W * H), tide = new Uint8Array(W * H), still = new Uint8Array(W * H), pool = new Uint8Array(W * H);
   for (const { t: v, poly } of TIERRAS) {
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (inPoly(x + 0.5, y + 0.5, poly)) t[y * W + x] = v;
   }
   // la poza de la cueva
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (Math.hypot((x + 0.5 - POZA.c[0]) / POZA.rx, (y + 0.5 - POZA.c[1]) / POZA.ry) < 1) { t[y * W + x] = WATER; still[y * W + x] = 1; }
+  // la arena del Pez Farol: la poza en el centro y el anillo que se camina alrededor
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const dd = Math.hypot(x + 0.5 - ARENA_POZA.c[0], y + 0.5 - ARENA_POZA.c[1]), k = y * W + x;
+    if (dd < ARENA_POZA.r) { t[k] = WATER; still[k] = 1; pool[k] = 1; }
+    else if (dd < ARENA_POZA.anillo) t[k] = SLAB;
+  }
   // el barro de la marea baja
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (inPoly(x + 0.5, y + 0.5, BARRO) && t[y * W + x] === WATER) { t[y * W + x] = MUD; tide[y * W + x] = 1; }
   // los muelles (ancho 2)
@@ -185,7 +198,7 @@ function makeDesign(): Design {
   for (const [x, y] of FLOTANTES) for (const dy of [0, 1]) for (const dx of [0, 1]) { const i = (y + dy) * W + x + dx; if (t[i] === WATER) tide[i] = 2; }
   // el borde del mapa es roca
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (x < 2 || y < 2 || x >= W - 2 || y >= H - 1) t[y * W + x] = t[y * W + x] === VOID ? VOID : ROCK;
-  return { t, dock, tide, still };
+  return { t, dock, tide, still, pool };
 }
 
 /** Ruido de valor suave (para los bordes y las texturas del piso). */
@@ -278,6 +291,8 @@ function paintPuerto(d: Design, seed: number): PaintedTerrain {
       if (dVoid[i] < 160) a = Math.max(a, Math.round((1 - dVoid[i] / 160) * 235));
       // la poza de la cueva es quieta y un poco más clara en el medio
       if (d.still[ty * W + tx]) a = Math.round(40 + deep * 60);
+      // la poza del Pez Farol: tan negra como el mar hondo (la luz del pez es lo único que brilla ahí)
+      if (d.pool[ty * W + tx]) a = Math.max(160, Math.round(150 + deep * 60));
       set(i, [1, 4, 5], a);
       continue;
     }
@@ -601,9 +616,10 @@ export function puertoMap(seed = 444): BigMap & { premium: PuertoReport } {
   placeT('faro', LP.faro[0], LP.faro[1]);
   for (let y = LP.faro[1] - 1; y <= LP.faro[1]; y++) for (let x = LP.faro[0] - 2; x <= LP.faro[0] + 2; x++) occ[at(x, y)] = 1;
   const [ax, ay] = LP.arena;
-  entities.push({ tipo: 'arena_jefe', x: T(ax), y: T(ay), props: { radio: 6.5 * TILE, agua: true } });
-  // el pez sale del agua al borde de la plataforma
-  entities.push({ tipo: 'jefe', x: T(ax - 5), y: T(ay + 2), props: { enemigo: 'pez_farol', nombre: 'El Pez Farol', titulo: 'El que se robó la luz del faro', en_agua: true } });
+  entities.push({ tipo: 'arena_jefe', x: T(ax), y: T(ay), props: { radio: 6.5 * TILE, agua: true, poza: ARENA_POZA.r * TILE } });
+  // el pez nada en la poza del centro; la heroína pelea en el anillo de alrededor
+  entities.push({ tipo: 'jefe', x: T(ax), y: T(ay), props: { enemigo: 'pez_farol', nombre: 'El Pez Farol', titulo: 'El que se robó la luz del faro', en_agua: true } });
+  decos.push({ sprite: 'anillo_poza', x: T(ax), y: T(ay) });
   entities.push({ tipo: 'portal_jefe', x: T(LP.faro[0]), y: T(LP.faro[1] + 2), props: { color: 'rojo', destino: 'mundo5' } });
   chest(LP.faro[0] + 3, LP.faro[1] + 2, 'dorado', { tras_jefe: true });
   entities.push({ tipo: 'figura', x: T(LP.faro[0]), y: LP.faro[1] * TILE + TILE - 4 - 300, props: { id: 'faro', alto: true } });
@@ -615,6 +631,8 @@ export function puertoMap(seed = 444): BigMap & { premium: PuertoReport } {
     const rnd = () => { rs = (rs + 0x6d2b79f5) >>> 0; let t = Math.imul(rs ^ (rs >>> 15), rs | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     // cerca de las entidades no va nada (se pelea, se abre un cofre, se prende un farol)
     const avoid = new Uint8Array(W * H);
+    // el anillo de la arena queda libre para pelear
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (Math.hypot(x + 0.5 - ARENA_POZA.c[0], y + 0.5 - ARENA_POZA.c[1]) < ARENA_POZA.anillo + 1) avoid[at(x, y)] = 1;
     for (const e of entities) { const tx = Math.floor(e.x / TILE), ty = Math.floor(e.y / TILE); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (at(tx + dx, ty + dy) >= 0) avoid[at(tx + dx, ty + dy)] = 1; }
     const start = entities.find((e) => e.tipo === 'jugador_inicio')!;
     const s0 = at(Math.floor(start.x / TILE), Math.floor(start.y / TILE));
@@ -743,6 +761,7 @@ function poblar(m: BigMap & { premium: PuertoReport }, d: Design, c: PoblarCtx) 
       for (let t = 0; t < 30; t++) {
         const tx = sx + Math.floor(r() * 8), ty = sy + Math.floor(r() * 6), i = c.at(tx, ty);
         if (i < 0 || c.solid[i] || d.dock[i] || d.tide[i] || d.t[i] === WATER) continue;
+        if (Math.hypot(tx + 0.5 - ARENA_POZA.c[0], ty + 0.5 - ARENA_POZA.c[1]) < ARENA_POZA.anillo) continue;
         const px = tx * TILE + 4 + Math.floor(r() * 24), py = ty * TILE + 4 + Math.floor(r() * 24);
         const kd = m.terrain.kind[py * PWX + px];
         if (kd !== 1 && kd !== 2) continue;

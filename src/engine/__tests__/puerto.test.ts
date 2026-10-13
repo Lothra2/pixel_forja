@@ -64,7 +64,7 @@ describe('Mundo 4: El Puerto Ahogado (mapa y objetos)', () => {
     expect(m.entities.some((e) => e.tipo === 'figura' && e.props?.alto)).toBe(true);
     for (const id of ['marinero_niebla', 'cangrejo_ceniza', 'medusa_negra']) expect(m.entities.filter((e) => e.props?.enemigo === id).length, id).toBeGreaterThanOrEqual(3);
     // todo lo que se usa se alcanza (salvo lo que está alto o en el portal del final)
-    for (const e of m.entities) if (e.tipo !== 'portal_jefe' && !e.props?.alto) expect(llega(e.x, e.y), `${e.tipo} ${e.props?.enemigo ?? ''} en ${Math.floor(e.x / TILE)},${Math.floor(e.y / TILE)}`).toBe(true);
+    for (const e of m.entities) if (e.tipo !== 'portal_jefe' && !e.props?.alto && !(/^(jefe|arena_jefe)$/.test(e.tipo) && (e.props?.en_agua || e.props?.poza))) expect(llega(e.x, e.y), `${e.tipo} ${e.props?.enemigo ?? ''} en ${Math.floor(e.x / TILE)},${Math.floor(e.y / TILE)}`).toBe(true);
   });
 
   it('las mareas: desde cualquier cuadro que se camina se llega a un farol, con la marea baja y con la alta', () => {
@@ -86,9 +86,41 @@ describe('Mundo 4: El Puerto Ahogado (mapa y objetos)', () => {
     expect(tiled.layers.map((l) => l.name)).toEqual(expect.arrayContaining(['marea_baja', 'marea_alta']));
   });
 
+  it('la arena del Pez Farol: poza de agua en el centro (no se entra) y un anillo que se camina entero, con salida a un farol', () => {
+    const arena = m.entities.find((e) => e.tipo === 'arena_jefe')!;
+    const jefe = m.entities.find((e) => e.tipo === 'jefe')!;
+    expect([jefe.x, jefe.y]).toEqual([arena.x, arena.y]);
+    const poza = Number(arena.props!.poza), radio = Number(arena.props!.radio);
+    expect(poza).toBe(128);
+    const cx = arena.x / TILE, cy = arena.y / TILE;
+    const ring: number[] = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const dd = Math.hypot(x + 0.5 - cx, y + 0.5 - cy) * TILE, k = y * W + x;
+      // la poza: agua, sólida y con su agua animada
+      if (dd < poza - 20) { expect(m.solid[k], `poza ${x},${y}`).toBe(1); expect(m.terrain.waterTiles[k], `agua ${x},${y}`).toBe(1); }
+      if (dd > poza + 16 && dd < radio - 8) ring.push(k);
+    }
+    expect(ring.length).toBeGreaterThan(40);
+    // el anillo se camina entero (con las dos mareas) y desde ahí se llega a un farol
+    const faroles = m.entities.filter((e) => e.tipo === 'punto_guardado').map((f) => Math.floor(f.y / TILE) * W + Math.floor(f.x / TILE));
+    for (const marea of ['baja', 'alta'] as const) {
+      const ok = walk(marea);
+      for (const k of ring) expect(ok[k], `anillo ${k % W},${Math.floor(k / W)}`).toBe(1);
+      const desde = bfs(ok, faroles);
+      for (const k of ring) expect(desde[k], `anillo a un farol (${marea})`).toBe(1);
+      // y el anillo da la vuelta entera sin pasar por afuera
+      const solo = new Uint8Array(W * H);
+      for (const k of ring) solo[k] = 1;
+      expect(bfs(solo, [ring[0]]).reduce((a, v) => a + v, 0)).toBe(ring.length);
+    }
+    expect(m.decos.some((d) => d.sprite === 'anillo_poza' && d.x === arena.x && d.y === arena.y)).toBe(true);
+  });
+
   it('al menos tres ramas que vuelven al camino: tapar una no deja afuera lo importante', () => {
     expect(m.premium.ramas.length).toBeGreaterThanOrEqual(3);
-    const importantes = m.entities.filter((e) => /^(jefe|punto_guardado)$/.test(e.tipo));
+    // lo importante: los faroles y el anillo de la arena (el pez nada en la poza, no se pisa)
+    const arena = m.entities.find((e) => e.tipo === 'arena_jefe')!;
+    const importantes = [...m.entities.filter((e) => e.tipo === 'punto_guardado'), { tipo: 'anillo de la arena', x: arena.x, y: arena.y + 5 * TILE }];
     for (const rama of m.premium.ramas.filter((r) => r.tapar.length)) {
       const ok = Uint8Array.from(m.solid, (v) => (v ? 0 : 1));
       for (const [x, y] of rama.tapar) ok[y * W + x] = 0;

@@ -351,8 +351,50 @@ function tideWater(): WorldObject {
   return { name: 'agua_marea', w: 32, h: 32, anchor: [16, 16], solid: null, layer: 'suelo', anims: { idle: { frames, fps: 6, loop: true } } };
 }
 
+/**
+ * El muelle redondo de la arena del Pez Farol (352 x 352, capa suelo, apoyo en el centro): un anillo de tablas
+ * radiales que asoma sobre el borde de la poza, con doce pilotes en el borde de adentro y sogas que cuelgan entre
+ * ellos. Entre tabla y tabla queda la rendija por donde se ve el agua o la piedra. Se camina entero.
+ */
+function poolRing(): WorldObject {
+  const S = 352, c = S / 2, r = createRaster(S, S), M = PUERTO.madera;
+  const R0 = 118, R1 = 164, N = 84;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const dx = x + 0.5 - c, dy = y + 0.5 - c, d = Math.hypot(dx, dy);
+    if (d < R0 || d > R1) continue;
+    const a = (Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2), u = a * N, board = Math.floor(u), inB = u - board;
+    const edge = d < R0 + 3 || d > R1 - 3;
+    if (!edge && inB < 0.12) continue; // rendija
+    if (!edge && hash(board, 3, 41) > 0.93 && d > R0 + 18 && d < R0 + 30) continue; // una tabla rota
+    let l = 0.48 + (inB < 0.3 ? 0.14 : inB > 0.85 ? -0.16 : 0) + (hash(board, 0, 42) - 0.5) * 0.24 - (dy > 0 ? 0.06 : 0);
+    if (edge) l = d < R0 + 3 ? 0.3 : 0.22;
+    if (hash(x >> 1, y >> 1, 43) > 0.93) l -= 0.15; // humedad
+    put(r, x, y, tone(M, l, x, y));
+    if (!edge && Math.abs(d - (R0 + R1) / 2) < 0.6 && board % 3 === 0) put(r, x, y, PUERTO.hierro[3]); // clavos
+  }
+  // las sogas entre pilote y pilote, colgando hacia la poza
+  const posts = 12, pr = R0 + 3;
+  for (let k = 0; k < posts; k++) {
+    const a0 = (k / posts) * Math.PI * 2, a1 = ((k + 1) / posts) * Math.PI * 2;
+    for (let t = 0; t <= 1; t += 0.01) {
+      const a = a0 + (a1 - a0) * t, rr = pr - 2 - Math.sin(t * Math.PI) * 7;
+      put(r, c + Math.cos(a) * rr, c + Math.sin(a) * rr, PUERTO.red[t > 0.5 ? 1 : 2]);
+    }
+  }
+  // los pilotes
+  for (let k = 0; k < posts; k++) {
+    const a = (k / posts) * Math.PI * 2, px = c + Math.cos(a) * pr, py = c + Math.sin(a) * pr;
+    for (let y = -6; y <= 6; y++) for (let x = -6; x <= 6; x++) {
+      const dd = Math.hypot(x, y);
+      if (dd < 5.6) put(r, px + x, py + y, dd > 4.4 ? M[0] : tone(M, 0.66 - (x + y) * 0.05, px + x, py + y));
+    }
+    put(r, px - 1, py - 2, M[5]); put(r, px + 2, py - 4, PUERTO.alga[2]);
+  }
+  return { name: 'anillo_poza', w: S, h: S, anchor: [c, c], solid: null, layer: 'suelo', anims: one(r) };
+}
+
 export function puertoObjectsA(): WorldObject[] {
-  return [...dockLanterns(), lighthouseObject(), ...docks(), floatingDockObject(), tideWater()];
+  return [...dockLanterns(), lighthouseObject(), ...docks(), floatingDockObject(), tideWater(), poolRing()];
 }
 
 export { wood, stone, cloth, one, grounded, type Anim, type P };
