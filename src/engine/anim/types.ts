@@ -66,7 +66,9 @@ export interface AnimEvent {
    * articulación: la frente en un cabezazo, el pie de abajo en un pisotón, el codo en un codazo hacia atrás.
    * En un paso: la mano que agarra (escalera, poste); el kit exporta `mano` y su `punto`.
    */
-  joint?: 'handNear' | 'handFar' | 'footNear' | 'footFar' | 'elbowNear' | 'elbowFar' | 'frente' | 'head';
+  joint?: 'handNear' | 'handFar' | 'footNear' | 'footFar' | 'elbowNear' | 'elbowFar' | 'frente' | 'head'
+    /** la mano más baja en cada fila (la palmada del ukemi contra el tatami): de espalda la cercana y la lejana se cruzan */
+    | 'handLow';
 }
 
 export function makeCtx(d: Dims, build: number, view: View): Ctx {

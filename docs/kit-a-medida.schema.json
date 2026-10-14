@@ -308,6 +308,9 @@
                 "bat_stance",
                 "bat_swing",
                 "tejo_throw",
+                "osoto_gari",
+                "osoto_gari_thrown",
+                "bow",
                 "swim",
                 "swim_back",
                 "swim_breast",
@@ -537,6 +540,9 @@
                     "bat_stance",
                     "bat_swing",
                     "tejo_throw",
+                    "osoto_gari",
+                    "osoto_gari_thrown",
+                    "bow",
                     "swim",
                     "swim_back",
                     "swim_breast",
@@ -572,12 +578,19 @@
               "sin_props": {
                 "type": "boolean",
                 "description": "true: el pack sale sin las pelotas dibujadas (futbol, voley, basquet, tenis, beisbol y la bala) porque el juego las mueve con su física. El cuerpo queda igual pixel a pixel y la posición de cada pelota va en el dato por cuadro `objetos`. Cada pelota quitada sale suelta, dibujada igual, en objetos/pelotas.png (`pelotas` del manifiesto). Lo agarrado (raqueta, bate, garrocha, jabalina, el guante) sí sale."
+              },
+              "vestuario": {
+                "enum": [
+                  "judogi",
+                  "judogi_azul"
+                ],
+                "description": "Un uniforme para todos los atletas del pack, encima de su ropa: \"judogi\" (blanco) o \"judogi_azul\". El cinturón sale del color de su equipo. Si la ficha trae su propia variante para el pack (wardrobe), manda la de la ficha."
               }
             }
           }
         ]
       },
-      "description": "Cada pack es un atlas por atleta: { \"base\": [\"idle\", \"walk\", \"run\"] }, o { \"voley\": { \"anims\": [\"vb_bump\", \"spike\"], \"sin_props\": true } } para que salga sin las pelotas dibujadas. Con `alias`, una animación sale con el nombre del juego."
+      "description": "Cada pack es un atlas por atleta: { \"base\": [\"idle\", \"walk\", \"run\"] }, o { \"voley\": { \"anims\": [\"vb_bump\", \"spike\"], \"sin_props\": true } } para que salga sin las pelotas dibujadas, o { \"judo\": { \"anims\": [...], \"vestuario\": \"judogi\" } } con un uniforme para todos. Con `alias`, una animación sale con el nombre del juego."
     },
     "alias": {
       "type": "object",
@@ -773,6 +786,9 @@
           "bat_stance",
           "bat_swing",
           "tejo_throw",
+          "osoto_gari",
+          "osoto_gari_thrown",
+          "bow",
           "swim",
           "swim_back",
           "swim_breast",

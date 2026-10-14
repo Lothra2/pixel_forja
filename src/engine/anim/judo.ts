@@ -59,8 +59,8 @@ function ukemi(c: Ctx, air = 0, slap = true, relax = false): Pose {
     arms: { near: { shoulder: slap ? -6 : -2, elbow: 0, spread: 45 }, far: { shoulder: slap ? -6 : -2, elbow: 0, spread: 45 } },
     head: { dx: 0, dy: 0, tilt: relax ? 0 : 16 },
     face: { eyes: relax ? 'hurt' : 'closed', mouth: relax ? 'o' : 'line' }, fit: true,
-    // la palmada: un destello en la mano contra el piso (de lado el brazo queda pegado al cuerpo y no se ve)
-    ...(slap ? { props: [spark('handNear', 90)] } : {}),
+    // la palmada: un destello en la mano contra el piso (de lado, la lejana; la cercana queda sobre el cuerpo)
+    ...(slap ? { props: [spark('handFar', 90)] } : {}),
   });
 }
 /** Cayendo de espalda con los brazos arriba, listos para la palmada. */
@@ -118,7 +118,7 @@ export const judoThrow: AnimDef = {
  */
 export const judoThrown: AnimDef = {
   name: 'judo_thrown', pack: 'martial', fps: 14, loop: false, lateral: true, views: ['side', 'front', 'back'],
-  events: [{ type: 'aterriza', phase: 6 / 10 }, { type: 'impacto', phase: 6 / 10, joint: 'handNear' }],
+  events: [{ type: 'aterriza', phase: 6 / 10 }, { type: 'impacto', phase: 6 / 10, joint: 'handLow' }],
   build: (c) => {
     const L = c.L;
     const grip = kumikata(c);
@@ -181,7 +181,7 @@ export const osotoGari: AnimDef = {
  */
 export const osotoGariThrown: AnimDef = {
   name: 'osoto_gari_thrown', pack: 'martial', fps: 14, loop: false, lateral: true, views: ['side', 'front', 'back'],
-  events: [{ type: 'aterriza', phase: 6 / 10 }, { type: 'impacto', phase: 6 / 10, joint: 'handNear' }],
+  events: [{ type: 'aterriza', phase: 6 / 10 }, { type: 'impacto', phase: 6 / 10, joint: 'handLow' }],
   build: (c) => {
     const L = c.L;
     const flail = { near: { shoulder: 130, elbow: 30, spread: 30 }, far: { shoulder: 110, elbow: 40, spread: 30 } };
@@ -201,7 +201,7 @@ export const osotoGariThrown: AnimDef = {
 };
 
 /**
- * Rei: el saludo de pie. Talones juntos y las manos en los muslos; se inclina unos 30 grados con la mirada al piso
+ * Rei: el saludo de pie. Talones juntos y las manos en los muslos; se inclina unos 30 grados (un poco más en el chibi, para que se lea) con la mirada al piso
  * (las manos bajan por los muslos hacia las rodillas), se queda un instante y vuelve. Al empezar, en cada ¡hajime! y
  * al terminar.
  */
@@ -212,7 +212,7 @@ export const rei: AnimDef = {
       torso, legs: feet(c, 0, 0.06), head: { dx: 0, dy: Math.round(dy * c.u), tilt: torso > 0 ? 6 : 0 },
       arms: { near: { shoulder: sh, elbow: 0 }, far: { shoulder: sh, elbow: 0 } }, face: { eyes, mouth: 'line' }, support: 'both',
     });
-    return [k(0, 6, 0, 'open'), k(14, 14, 1, 'open'), k(30, 26, 2, 'closed'), k(30, 26, 2, 'closed'), k(14, 14, 1, 'open'), k(0, 6, 0, 'open')];
+    return [k(0, 6, 0, 'open'), k(16, 14, 1.5, 'open'), k(34, 28, 3, 'closed'), k(34, 28, 3, 'closed'), k(16, 14, 1.5, 'open'), k(0, 6, 0, 'open')];
   },
 };
 
