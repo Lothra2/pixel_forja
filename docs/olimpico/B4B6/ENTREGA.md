@@ -67,8 +67,10 @@ El ejemplo `docs/ejemplos/nekketsu/kit.config.json` ya las tiene: `vault_fail` e
   - **Imagen dorada** `golden/b4b6.png`: un cuadro clave de cada una.
 - **`brawl.test.ts`** sigue en verde con las armas nuevas en la lista.
 - **El esquema** `docs/kit-a-medida.schema.json` está regenerado.
-- **La suite sin `custom.test.ts`:** (se llena al terminar).
-- **`custom.test.ts`:** (se llena al terminar).
+- **La suite sin `custom.test.ts`:** 44 archivos, 458 de 458. Las imágenes doradas de antes salen iguales.
+- **`custom.test.ts`: 15 de 15,** con las 8 nuevas en los packs del ejemplo y el kit por debajo de 300 s.
+- **`tsc` limpio y `npm run build:sitio` limpio.**
+- **e2e de Playwright: 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
