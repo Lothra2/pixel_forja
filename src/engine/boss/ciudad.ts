@@ -295,7 +295,7 @@ function duendeAnims(): BossAnimDef[] {
   // se queda dormido: bosteza, se acurruca en el piso y se va en polvo lila
   const die: BossAnimDef = {
     name: 'die', fps: 8, loop: false, frames: 12,
-    keys: [kk(0, NAP), kk(2, over(NAP, { head: { pitch: -16 }, extra: { yawn: 1 } }), 'ease'), kk(5, over(NAP, { root: { y: -10, lean: 20 }, spine: { bend: 16 }, head: { pitch: 26 }, legs: { near: { x: 6, y: 0 }, far: { x: -2, y: 0 } } }), 'ease'), kk(11, over(NAP, { root: { y: -12, lean: 24 }, spine: { bend: 20 }, head: { pitch: 30 }, legs: { near: { x: 6, y: 0 }, far: { x: -2, y: 0 } } }))],
+    keys: [kk(0, NAP), kk(2, over(NAP, { head: { pitch: -16 }, extra: { yawn: 1 } }), 'ease'), kk(5, over(NAP, { root: { y: -10, lean: 12 }, spine: { bend: 12 }, head: { pitch: 26 }, legs: { near: { x: 6, y: 0 }, far: { x: -2, y: 0 } } }), 'ease'), kk(11, over(NAP, { root: { y: -12, lean: 14 }, spine: { bend: 14 }, head: { pitch: 30 }, legs: { near: { x: 6, y: 0 }, far: { x: -2, y: 0 } } }))],
   };
   return [idle, walk, attack, hit, die];
 }
@@ -350,7 +350,7 @@ export function sandImpact(): Raster[] {
 // ---------------------------------------------------------------- el Relojero (minijefe)
 
 const RELOJERO_LOOK: CitizenLook = { skin: '#d8b090', hair: '#e0e0d8', top: '#6a4a3a', bottom: '#3a3a4a', shoe: '#2a2018', accent: '#8a6a4a', apron: true, glasses: true, beard: '#ecece4', hairStyle: 'calvo', prop: 'llave', propHex: '#d0a848', propVivo: true, belly: 0.6 };
-const RK = 0.96;
+const RK = 1.03;
 /** con la llave apoyada en el piso como un bastón */
 const RGUARD: BossPose = {
   root: { y: -1, lean: 3 }, spine: { bend: 4 }, head: { pitch: 2 },
@@ -368,19 +368,19 @@ function relojeroAnims(): BossAnimDef[] {
     events: [{ type: 'paso', frame: 0, foot: 'near' }, { type: 'paso', frame: 4, foot: 'far' }],
   };
   // llavazo: la lleva al hombro y la pasa por delante
-  const SH = over(RGUARD, { root: { lean: -2 }, spine: { twist: -26 }, arms: { near: { pitch: 76, spread: 30, elbow: 96 } }, weapon: { angle: -60, yaw: 20 }, extra: { glow: 0.5 } });
-  const SW = over(RGUARD, { root: { lean: 12, y: -3 }, spine: { twist: 24 }, arms: { near: { pitch: 50, spread: 8, elbow: 6 }, far: { pitch: -10 } }, legs: { near: { x: 8 } }, weapon: { angle: 120, yaw: 50 }, extra: { glow: 0.5 } });
+  const SH = over(RGUARD, { root: { lean: -2 }, spine: { twist: -26 }, arms: { near: { pitch: 76, spread: 30, elbow: 96 } }, weapon: { angle: -96, yaw: 20 }, extra: { glow: 0.5 } });
+  const SW = over(RGUARD, { root: { lean: 12, y: -3 }, spine: { twist: 24 }, arms: { near: { pitch: 50, spread: 8, elbow: 6 }, far: { pitch: -10 } }, legs: { near: { x: 8 } }, weapon: { angle: 104, yaw: 50 }, extra: { glow: 0.5 } });
   const attack: BossAnimDef = {
     name: 'attack', fps: 12, loop: false, frames: 8, windup: [1, 3],
-    keys: [kk(0, RGUARD), kk(1, SH, 'out'), kk(3, over(SH, { spine: { twist: -30 }, extra: { glow: 1 } })), kk(4, SW, 'in'), kk(5, over(SW, { weapon: { angle: 130, yaw: 60 } })), kk(7, RGUARD, 'ease')],
+    keys: [kk(0, RGUARD), kk(1, SH, 'out'), kk(3, over(SH, { spine: { twist: -30 }, extra: { glow: 1 } })), kk(4, SW, 'in'), kk(5, over(SW, { weapon: { angle: 110, yaw: 60 } })), kk(7, RGUARD, 'ease')],
     events: [{ type: 'impacto', frame: 4 }],
   };
   // el golpe fuerte: levanta la llave con las dos manos (8 cuadros que tiemblan y le brillan los ojos) y la clava
-  const UP = over(RGUARD, { root: { y: -7, lean: 2 }, spine: { bend: 0 }, head: { pitch: -6 }, arms: { near: { pitch: 122, spread: 14, elbow: 60 }, far: { pitch: 118, spread: 14, elbow: 64 } }, legs: { near: { x: 7 }, far: { x: -7 } }, weapon: { angle: -66, yaw: 0, twoHand: true }, extra: { glow: 0.6 } });
-  const SLAM = over(RGUARD, { root: { y: -8, lean: 16, x: -2 }, spine: { bend: 12 }, head: { pitch: 6 }, arms: { near: { pitch: 30, spread: 8, elbow: 6 }, far: { pitch: 28, spread: 8, elbow: 10 } }, legs: { near: { x: 8 }, far: { x: -9 } }, weapon: { angle: 150, yaw: 0, twoHand: true }, extra: { glow: 1 } });
+  const UP = over(RGUARD, { root: { y: -10, lean: 4 }, spine: { bend: 0 }, head: { pitch: -6 }, arms: { near: { pitch: 104, spread: 18, elbow: 96 }, far: { pitch: 100, spread: 18, elbow: 100 } }, legs: { near: { x: 7 }, far: { x: -7 } }, weapon: { angle: -112, yaw: 0, twoHand: true }, extra: { glow: 0.6 } });
+  const SLAM = over(RGUARD, { root: { y: -8, lean: 16, x: -2 }, spine: { bend: 12 }, head: { pitch: 6 }, arms: { near: { pitch: 30, spread: 8, elbow: 6 }, far: { pitch: 28, spread: 8, elbow: 10 } }, legs: { near: { x: 8 }, far: { x: -9 } }, weapon: { angle: 108, yaw: 0, twoHand: true }, extra: { glow: 1 } });
   const heavy: BossAnimDef = {
     name: 'attack_heavy', fps: 12, loop: false, frames: 16, windup: [1, 8], shake: 1,
-    keys: [kk(0, RGUARD), kk(2, UP, 'out'), kk(8, over(UP, { root: { y: -5 }, weapon: { angle: -70 }, extra: { glow: 1 } })), kk(9, SLAM, 'in'), kk(10, over(SLAM, { root: { y: -9 } })), kk(12, over(SLAM, { root: { y: -7 }, extra: { glow: 0.4 } })), kk(15, RGUARD, 'ease')],
+    keys: [kk(0, RGUARD), kk(2, UP, 'out'), kk(8, over(UP, { root: { y: -8 }, weapon: { angle: -122 }, extra: { glow: 1 } })), kk(9, SLAM, 'in'), kk(10, over(SLAM, { root: { y: -9 } })), kk(12, over(SLAM, { root: { y: -7 }, extra: { glow: 0.4 } })), kk(15, RGUARD, 'ease')],
     events: [{ type: 'impacto', frame: 9 }],
   };
   // da cuerda: para la llave delante, la agarra con las dos manos y la gira (tic tac), los ojos se le prenden
@@ -388,7 +388,7 @@ function relojeroAnims(): BossAnimDef[] {
     name: 'warcry', fps: 10, loop: false, frames: 12, windup: [1, 3],
     keys: [
       kk(0, RGUARD),
-      ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((f) => kk(f, over(RGUARD, { root: { lean: 4, y: -2 + (f % 2) * 0.6 }, arms: { near: { pitch: 60, spread: 10, elbow: 50 }, far: { pitch: 58, spread: 10, elbow: 54 } }, weapon: { angle: 8, yaw: (f % 4) * 90, twoHand: true }, head: { pitch: -6 }, extra: { glow: Math.min(1, f / 4) } }), f === 1 ? 'out' : 'linear')),
+      ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((f) => kk(f, over(RGUARD, { root: { lean: 6, y: -2 + (f % 2) * 0.6, roll: Math.sin(f * 1.6) * 3 }, spine: { twist: Math.sin(f * 1.6) * 10 }, arms: { near: { pitch: 62 + Math.sin(f * 1.6) * 16, spread: 10, elbow: 40 - Math.cos(f * 1.6) * 14 }, far: { pitch: 60 - Math.sin(f * 1.6) * 16, spread: 10, elbow: 44 + Math.cos(f * 1.6) * 14 } }, weapon: { angle: 146 + Math.sin(f * 1.6) * 5, yaw: 0, twoHand: true }, head: { pitch: -2 }, extra: { glow: Math.min(1, f / 4) } }), f === 1 ? 'out' : 'linear')),
       kk(11, RGUARD, 'ease'),
     ],
     events: [{ type: 'grito', frame: 2 }],
@@ -397,8 +397,8 @@ function relojeroAnims(): BossAnimDef[] {
   // se libera: se tambalea, se arrodilla, se le va la piedra; se para, se arregla los anteojos y saluda
   const KNEEL: BossPose = { ...over(RGUARD, { root: { y: -14, lean: 8, x: -2 }, spine: { bend: 12 }, head: { pitch: 18 }, arms: { near: { pitch: 20, spread: 18, elbow: 40 }, far: { pitch: 18, spread: 18, elbow: 42 } }, legs: { near: { x: -10, y: 0, z: 2, toe: 60 }, far: { x: 8, y: 0, z: 3 } } }), weapon: { angle: 0, drop: true } };
   const STAND: BossPose = { ...over(RGUARD, { root: { y: -1, lean: 0 }, spine: { bend: 2 }, head: { pitch: -4 }, face: { eyes: 'open' } }), weapon: { angle: 0, drop: true }, freed: 1 };
-  const GLASSES = over(STAND, { arms: { near: { pitch: 150, spread: 26, elbow: 150 } }, head: { pitch: 4 } });
-  const SALUTE = over(STAND, { arms: { near: { pitch: 150, spread: 34, elbow: 40, open: 1 } }, head: { pitch: -8 }, face: { eyes: 'happy', mouth: 0.5 } });
+  const GLASSES = over(STAND, { arms: { near: { pitch: 120, spread: 26, elbow: 150 } }, head: { pitch: 4 } });
+  const SALUTE = over(STAND, { arms: { near: { pitch: 116, spread: 40, elbow: 50, open: 1 } }, head: { pitch: -8 }, face: { eyes: 'happy', mouth: 0.5 } });
   const die: BossAnimDef = {
     name: 'die', fps: 8, loop: false, frames: 22,
     keys: [

@@ -15,7 +15,8 @@ las pruebas del taller en verde. Lo que el juego tiene que leer está todo en el
   - `mundo5_mapa.png`: el mapa entero chiquito con las entidades.
   - `mundo5_postales.png`: una postal por zona con la oscuridad de la zona y las luces como en el juego.
   - `mundo5_estatuas.png`: cada ciudadano dormido, despertando y despierto, lado a lado.
-  - `mundo5_objetos.png`, `mundo5_enemigos.png` y `mundo5_rey.png` (al lado de la heroína).
+  - `mundo5_objetos.png`: cada objeto con su versión despierta al lado (casas, fuente, torre, puestos, árbol, organillo).
+  - `mundo5_enemigos.png` y `mundo5_rey.png` (al lado de la heroína).
   - `mundo5_ladrona.png`: la Ladrona robando un farol (con el hilo hasta el farolito), yéndose, y el portal plata.
   - `mundo5_iconos.png`: prender y chispas a 40 y a 80.
 
@@ -39,7 +40,7 @@ las pruebas del taller en verde. Lo que el juego tiene que leer está todo en el
   `lampara_trono_apagada`, `lampara_trono_prendida`, `lampara_trono_prenderse`, `cajita_musica`, `seto_piedra_0..3`,
   `flor_piedra_0..3`, `banderines_rotos_0..1`, `arco_calle_0..1`, `lampara_colgante_0..1`, `fondo_ciudad_lejos_0..2`,
   `mural_5`, `figura_ladrona` (con `farolito`), `portal_plata`, y de más: `arbol_piedra_0..2`, `puerta_ciudad`,
-  `puesto_dormido_0..2`, `glorieta_musica`, `farol_puente_0..3`, `columna_palacio_0..1`, `balcon_palacio`,
+  `puesto_dormido_0..2`, `glorieta_musica`, `organillo`, `atril_piedra_0..1`, `estandarte_palacio_0..2`, `farol_puente_0..3`, `columna_palacio_0..1`, `balcon_palacio`,
   `alfombra_palacio`, `banco_piedra`, `maceta_piedra_0..1`, `carretilla_pan`, `cajon_pan`, `cantaro`, `aljibe`, las
   variantes `_b`, y las calcomanías `adoquines_rotos_0..2`, `polvo_sueno_0..2`, `petalos_piedra_0..1`,
   `charco_seco_0..1` y `rayuela_0`.
@@ -103,6 +104,11 @@ las pruebas del taller en verde. Lo que el juego tiene que leer está todo en el
   se repite en ninguna postal, y eso lo revisa una prueba.
 - **La lámina de las postales simula la luz.** El kit trae las postales a pleno, como los otros mundos.
 - **La Ladrona** es la figura de las Galerías con farolito y brazo nuevos, no un dibujo desde cero.
-- **El duende y el sonámbulo** son gente del mismo armado que las estatuas (proporciones de persona, no chibi). A
-  48 px se leen, pero de cerca la cara es chiquita.
+- **El duende y el sonámbulo** son gente del mismo armado que las estatuas (proporciones de persona, no chibi).
+- **Pasada de pulido** (después de la entrega): cabezas y ojos más grandes en toda la gente de piedra (estatuas,
+  sonámbulo, duende y Relojero) para que la cara se lea a 48 px, los niños de la ronda un poco más grandes, el gorro
+  del duende más arriba para que se le vea la cara y la barba, el Relojero más grande en su celda de 64 (sin
+  desbordar), la fuente seca con taza honda y pie torneado (antes se leía como una cruz), la mano del ícono `prender`
+  adentro del aro, y objetos nuevos para que las postales no queden vacías: el organillo y dos atriles en el Barrio
+  de los Músicos, y tres estandartes del Rey en la pared de la sala del trono.
 - No abrí PR (no se pidió) y no toqué `main`, las ramas `claude/olimpico-*` ni ninguna otra rama.

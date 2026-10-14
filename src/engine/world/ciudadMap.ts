@@ -588,6 +588,8 @@ export function ciudadMap(seed = 555): BigMap & { premium: CiudadReport } {
   { const [cx, cy] = LC.musicos; placeT('cajita_musica', cx, cy); entities.push({ tipo: 'cajita_musica', x: T(cx), y: cy * TILE + TILE - 4, props: { id: 'cajita', suena_sola: true } }); reserve(cx, cy, 1); }
   statue(4, 89, 18); statue(5, 99, 18); statue(9, 84, 25);
   placeT('banco_piedra_b', 94, 23);
+  // el organillo del organillero y los atriles donde la banda dejó las partituras
+  placeT('organillo', 90, 11); placeT('atril_piedra_0', 92, 14); placeT('atril_piedra_1', 97, 13);
   farol(LC.farolMusicos[0], LC.farolMusicos[1], 'musicos', 'El Barrio de los Músicos');
   enemy('sonambulo_piedra', 'Sonámbulo de Piedra', 85, 12);
   enemy('sonambulo_piedra', 'Sonámbulo de Piedra', 102, 15);
@@ -674,6 +676,8 @@ export function ciudadMap(seed = 555): BigMap & { premium: CiudadReport } {
   for (let y = 85; y <= 97; y += 2) decos.push({ sprite: 'alfombra_palacio', x: acx, y: y * TILE });
   for (const [x, y, v] of [[72, 84, '0'], [96, 84, '1_b'], [72, 93, '1'], [96, 93, '0_b']] as [number, number, string][]) placeT(`columna_palacio_${v}`, x, y);
   place('balcon_palacio', T(76), 80 * TILE - 2);
+  // los estandartes del Rey en la pared de la sala, a los lados del trono
+  place('estandarte_palacio_0', T(80), 80 * TILE - 2); place('estandarte_palacio_1', T(88), 80 * TILE - 2); place('estandarte_palacio_2', T(92), 80 * TILE - 2);
   placeT('maceta_piedra_0', 70, 81); placeT('maceta_piedra_1_b', 98, 81); placeT('arbol_piedra_1', 70, 89); placeT('arbol_piedra_2_b', 98, 89); placeT('banco_piedra', 75, 97); placeT('cantaro_b', 93, 97);
   entities.push({ tipo: 'figura', x: T(76), y: 80 * TILE - 4 - 70, props: { id: 'balcon', barrio: 'El Palacio Dormido', alto: true } });
   entities.push({ tipo: 'portal_jefe', x: acx, y: T(96), props: { color: 'plata', portal: 'portal_plata', destino: 'mundo6' } });

@@ -6,7 +6,7 @@
  * - mundo5_postales.png: una postal por zona con la oscuridad de la zona y las luces como se ven en el juego (el farol
  *   de plaza del barrio prendido, la heroína con un poquito de luz propia, las lámparas y la cajita).
  * - mundo5_estatuas.png: cada ciudadano dormido, despertando y despierto, lado a lado.
- * - mundo5_objetos.png: los objetos del encargo.
+ * - mundo5_objetos.png: los objetos del encargo, con su versión despierta al lado.
  * - mundo5_enemigos.png: los enemigos y el Relojero al lado de la heroína.
  * - mundo5_rey.png: el Rey de Piedra al lado de la heroína, con la luz de la corona.
  * - mundo5_ladrona.png: la Ladrona robando un farol (el hilo de luz hasta el farolito) y el portal plata.
@@ -86,19 +86,23 @@ async function mapa() {
   tiles.forEach((t, i) => blit(g, t, (i % 2) * 960, Math.floor(i / 2) * 540));
   save('mundo5_postales.png', g);
   // los objetos del encargo
-  const names = ['farol_plaza_apagado', 'farol_plaza_prendido', 'farol_plaza_robado', 'chispa_luz', 'casa_ciudad_0', 'casa_ciudad_3', 'casa_ciudad_7', 'fuente_plaza', 'torre_reloj', 'trono_rey', 'lampara_trono_apagada', 'lampara_trono_prendida', 'cajita_musica', 'seto_piedra_0', 'seto_piedra_2', 'flor_piedra_0', 'flor_piedra_2', 'puerta_ciudad', 'puesto_dormido_0', 'farol_puente_1', 'columna_palacio_0', 'balcon_palacio', 'banderines_rotos_0', 'arco_calle_0', 'lampara_colgante_1', 'fondo_ciudad_lejos_0', 'mural_5', 'figura_ladrona', 'portal_plata', 'aljibe', 'carretilla_pan', 'banco_piedra'];
-  const cols = 8, cw = 200, chh = 300;
-  const r = fill(createRaster(cols * cw, Math.ceil(names.length / cols) * chh), [16, 18, 26]);
-  names.forEach((n, i) => {
+  const names = ['farol_plaza_apagado', 'farol_plaza_prendido', 'farol_plaza_robado', 'chispa_luz', 'casa_ciudad_0', 'casa_ciudad_3', 'casa_ciudad_7', 'fuente_plaza', 'torre_reloj', 'trono_rey', 'lampara_trono_apagada', 'lampara_trono_prendida', 'cajita_musica', 'seto_piedra_0', 'seto_piedra_2', 'flor_piedra_0', 'flor_piedra_2', 'puerta_ciudad', 'puesto_dormido_0', 'farol_puente_1', 'columna_palacio_0', 'balcon_palacio', 'banderines_rotos_0', 'arco_calle_0', 'lampara_colgante_1', 'fondo_ciudad_lejos_0', 'mural_5', 'figura_ladrona', 'portal_plata', 'aljibe', 'carretilla_pan', 'banco_piedra', 'glorieta_musica', 'organillo', 'atril_piedra_0', 'atril_piedra_1', 'estandarte_palacio_0', 'estandarte_palacio_1', 'estandarte_palacio_2', 'arbol_piedra_0', 'puesto_dormido_2'];
+  // en estantes: cada objeto con su versión despierta al lado (si la tiene), apoyados en la misma línea de piso
+  const tilesO = names.map((n) => {
     const o = byName.get(n)!;
-    const awake = o.anims.despierta ?? o.anims.corre ?? o.anims.andando;
-    const fr0 = (o.anims.idle ?? o.anims.girar ?? Object.values(o.anims)[0]).frames[0];
-    const both = awake && o.w * 2 + 8 <= cw - 8 ? [fr0, awake.frames[0]] : [fr0];
-    const tw = Math.min(cw - 8, Math.max(o.w * both.length + 4 * (both.length - 1), 64)), th = Math.min(chh - 8, o.h + 8);
-    const t = floor(tw, th);
-    both.forEach((fr, j) => { const ox = j * (o.w + 4) + Math.round((tw - o.w * both.length - 4 * (both.length - 1)) / 2), oy = Math.max(0, t.h - o.h - 4); if (o.shadow) drawShadow(t, o.shadow, ox, oy); over(t, fr, ox, oy); });
-    blit(r, t, (i % cols) * cw + 4, Math.floor(i / cols) * chh + 4);
+    const awake = o.anims.despierta ?? o.anims.corre ?? o.anims.andando ?? o.anims.prendida;
+    const fr0 = (o.anims.dormida ?? o.anims.idle ?? o.anims.girar ?? Object.values(o.anims)[0]).frames[0];
+    const both = awake ? [fr0, awake.frames[0]] : [fr0];
+    const t = floor(Math.max(o.w * both.length + 6 * (both.length - 1) + 8, 48), o.h + 8);
+    both.forEach((fr, j) => { const ox = 4 + j * (o.w + 6), oy = 4; if (o.shadow) drawShadow(t, o.shadow, ox, oy); over(t, fr, ox, oy); });
+    return t;
   });
+  const MAXW = 1600, rowsO: Raster[][] = [[]];
+  let rw = 0;
+  for (const t of tilesO) { if (rw + t.w + 6 > MAXW && rowsO[rowsO.length - 1].length) { rowsO.push([]); rw = 0; } rowsO[rowsO.length - 1].push(t); rw += t.w + 6; }
+  const r = fill(createRaster(MAXW, rowsO.reduce((a2, row) => a2 + Math.max(...row.map((t) => t.h)) + 8, 4)), [16, 18, 26]);
+  let yo = 4;
+  for (const row of rowsO) { const hh = Math.max(...row.map((t) => t.h)); let xo = 4; for (const t of row) { blit(r, t, xo, yo + hh - t.h); xo += t.w + 6; } yo += hh + 8; }
   save('mundo5_objetos.png', r);
 }
 

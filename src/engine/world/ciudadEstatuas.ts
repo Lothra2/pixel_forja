@@ -59,7 +59,7 @@ export const ESTATUAS: StatueSpec[] = [
     accion: { root: { lean: -4, roll: -6, y: 1 }, head: { pitch: -10, roll: 8 }, arms: { near: { pitch: 60, spread: 72, elbow: 10, open: 1 }, far: { pitch: 58, spread: 70, elbow: 12, open: 1 } }, legs: { near: { x: 4, y: 6, z: 2, toe: 30 }, far: { x: -2, y: 0, z: 1 } } },
   },
   {
-    nombre: 'nina_ronda', yaw: 150,
+    nombre: 'nina_ronda', yaw: 128,
     look: { skin: PIEL[3], hair: '#8a4a22', top: AMARILLO, bottom: '#e88a6a', shoe: '#6a2a2a', hairStyle: 'trenzas', skirt: 0.5, child: true },
     accion: { root: { lean: -4, roll: 6, y: 1 }, head: { pitch: -12, roll: -8 }, arms: { near: { pitch: 58, spread: 70, elbow: 12, open: 1 }, far: { pitch: 62, spread: 72, elbow: 10, open: 1 } }, legs: { near: { x: -2, y: 0, z: 1 }, far: { x: 4, y: 6, z: 2, toe: 30 } } },
   },
@@ -161,7 +161,7 @@ export function statueAnims(sp: StatueSpec): { dormida: Raster; despertar: Raste
   const saluda = over(over(WAVE, sp.accion.weapon ? { weapon: sp.accion.weapon } : {}), sp.saluda ?? {});
   const relax = over(STAND, { ...(sp.accion.weapon ? { weapon: sp.accion.weapon } : {}), ...(sp.saluda?.arms ? { arms: { near: sp.saluda.arms.near?.pitch && sp.saluda.arms.near.pitch < 100 ? sp.saluda.arms.near : STAND.arms.near, far: sp.saluda.arms.far?.pitch && sp.saluda.arms.far.pitch < 100 ? sp.saluda.arms.far : STAND.arms.far } } : {}) }) as BossPose;
   const lerp = (a: BossPose, b: BossPose, t: number): BossPose => blend(a, b, ease(Math.max(0, Math.min(1, t))));
-  const r = (p: BossPose) => renderCitizen(sp.look, p, sp.yaw);
+  const r = (p: BossPose) => renderCitizen(sp.look, p, sp.yaw, 48, 64, sp.look.child ? 1.16 : 1);
   const dormida = r(accion);
   // despertar: 0-1 la piedra se agrieta, 2-5 se estira y bosteza (todavía de piedra), 5-8 se le cae la piedra y
   // aparece el color, 9-11 baja los brazos, abre los ojos y sonríe

@@ -223,8 +223,8 @@ function throneLamps(): WorldObject[] {
 
 /**
  * La fuente (96 x 96): pileta redonda de piedra clara (vista de arriba en 3/4), una columna con una taza en el medio
- * y un pececito de piedra arriba. `quieta`: seca, con grietas y polvo lila en el fondo. `corre` (8 cuadros a 7 fps):
- * el agua sale del pez, cae de la taza en cortina y ondula en la pileta.
+ * honda y un capullo de piedra arriba. `quieta`: seca, con grietas y polvo lila en el fondo. `corre` (8 cuadros a 7 fps):
+ * el agua sale del capullo, cae de la taza en cortina y ondula en la pileta.
  */
 function fountain(water: boolean, f: number): Raster {
   const W = 96, H = 96, r = createRaster(W, H), cx = 48, cy = 66, RX = 44, RY = 22;
@@ -258,35 +258,49 @@ function fountain(water: boolean, f: number): Raster {
       }
     }
   }
-  // la columna, la taza y el pez
-  for (let y = 30; y < 66; y++) for (let x = cx - 4; x <= cx + 4; x++) put(r, x, y, tone(E, 0.78 - (x - cx + 4) / 8 * 0.55 + ((x - cx) % 3 === 0 ? -0.1 : 0), x, y));
-  for (let y = 24; y < 34; y++) {
-    const hw = 16 - Math.max(0, y - 28) * 2.2;
-    for (let x = Math.floor(cx - hw); x <= cx + hw; x++) {
-      const top = y < 27;
-      put(r, x, y, top ? (water ? tone(CIUDAD.agua, 0.6 + Math.sin(x * 0.6 + f) * 0.15, x, y) : tone(E, 0.32, x, y)) : tone(E, 0.7 - (x - cx + hw) / (hw * 2) * 0.5, x, y));
-    }
+  // el pie (una base redonda), la columna torneada que se abre abajo y la taza honda vista desde arriba en 3/4
+  for (let y = 58; y < 68; y++) {
+    const hw = y < 64 ? 7 : 10 * Math.sqrt(Math.max(0, 1 - ((y - 64) / 4) ** 2));
+    for (let x = Math.floor(cx - hw); x <= cx + hw; x++) put(r, x, y, tone(E, (y === 58 || y === 64 ? 0.8 : 0.66) - (x - cx + hw) / (hw * 2 + 1) * 0.5, x, y));
   }
-  for (let x = cx - 16; x <= cx + 16; x++) put(r, x, 23, E[5]);
-  // arriba de la taza, un capullo de flor de piedra (tres pétalos) por donde sale el agua
-  for (let y = 9; y < 24; y++) for (let x = cx - 7; x <= cx + 7; x++) {
-    const t = (y - 9) / 15;
-    const side = Math.abs(x - cx) - (y < 20 ? 6 * Math.sin(t * Math.PI * 0.85) : 2);
+  for (let y = 34; y < 58; y++) {
+    const t = (y - 34) / 24, hw = 3 + t * 2.2 + Math.exp(-(((y - 45) / 2.5) ** 2)) * 2.2;
+    for (let x = Math.floor(cx - hw); x <= cx + hw; x++) put(r, x, y, tone(E, 0.8 - (x - cx + hw) / (hw * 2 + 1) * 0.55 + (y === 43 ? 0.1 : 0) + (y === 47 ? -0.12 : 0), x, y));
+  }
+  const TR = 18, TY = 27, TRY = 5;
+  for (let y = TY; y < TY + 11; y++) {
+    const hw = TR * Math.cos(((y - TY) / 11) * Math.PI / 2) + 1;
+    for (let x = Math.floor(cx - hw); x <= cx + hw; x++) put(r, x, y, tone(E, 0.62 - (x - cx + hw) / (hw * 2 + 1) * 0.5 - (y - TY) * 0.02, x, y));
+  }
+  for (let y = TY - TRY; y <= TY + TRY; y++) for (let x = cx - TR; x <= cx + TR; x++) {
+    const d = Math.hypot((x - cx) / TR, (y - TY) / TRY);
+    if (d > 1) continue;
+    if (d > 0.72) put(r, x, y, tone(E, (y < TY ? 0.86 : 0.7) - (x - cx) / TR * 0.12, x, y));
+    else put(r, x, y, water ? tone(CIUDAD.agua, 0.58 + Math.sin(x * 0.6 + f) * 0.14, x, y) : tone(E, 0.26 + (y > TY ? 0.06 : 0), x, y));
+  }
+  if (!water) for (let x = cx - 8; x <= cx + 8; x += 4) put(r, x, TY + 1, CIUDAD.lila, 170);
+  // del medio de la taza sale un capullo de flor de piedra (tres pétalos) por donde sale el agua
+  for (let y = 12; y < 27; y++) for (let x = cx - 7; x <= cx + 7; x++) {
+    const t = (y - 12) / 15;
+    const side = Math.abs(x - cx) - (y < 23 ? 6 * Math.sin(t * Math.PI * 0.85) : 2.5);
     if (side > 0) continue;
-    const petal = Math.abs(Math.abs(x - cx) - 3.5) < 0.6 && y < 19;
-    put(r, x, y, tone(E, 0.82 - (x - cx + 7) / 14 * 0.5 - (petal ? 0.2 : 0) - (y > 19 ? 0.15 : 0), x, y));
+    const petal = Math.abs(Math.abs(x - cx) - 3.5) < 0.6 && y < 22;
+    put(r, x, y, tone(E, 0.86 - (x - cx + 7) / 14 * 0.5 - (petal ? 0.2 : 0) - (y > 22 ? 0.15 : 0), x, y));
   }
-  for (const s2 of [-1, 1]) for (let t = 0; t < 5; t++) put(r, cx + s2 * (5 + t), 22 - t * 0.6, E[3]);
+  for (const s2 of [-1, 1]) for (let t = 0; t < 5; t++) put(r, cx + s2 * (5 + t), 25 - t * 0.6, E[3]);
   outline(r, '#06080e');
   if (water) {
-    // el chorro que sube del pez, abre en arco y cae en la taza; y la cortina que cae de la taza a la pileta
+    // el chorro que sube del capullo, abre en arco y cae en la taza; y la cortina que cae del borde de la taza a la pileta
     for (let t = 0; t < 1; t += 0.01) for (const s of [-1, 1]) {
-      const x = cx + s * t * 14, y = 8 - Math.sin(t * Math.PI) * 7 + t * 16;
+      const x = cx + s * t * 15, y = 11 - Math.sin(t * Math.PI) * 7 + t * 15;
       if (hash(Math.round(t * 100), f, 41) > 0.25) put(r, x, y, (Math.round(t * 30) + f) % 4 ? CIUDAD.agua[3] : CIUDAD.agua[4], 230);
     }
-    for (let x = cx - 16; x <= cx + 16; x++) for (let y = 29; y < 44 + Math.abs(x - cx) * 0.4; y++) {
-      if ((x + f * 2 + Math.floor(y / 3)) % 5 === 0) put(r, x, y + ((f + x) % 3), CIUDAD.agua[4], 170);
-      else if (hash(x, y + f * 7, 43) > 0.8) put(r, x, y, CIUDAD.agua[3], 120);
+    for (let x = cx - TR; x <= cx + TR; x++) {
+      const dx = (x - cx) / TR, lip = TY + TRY * Math.sqrt(Math.max(0, 1 - dx * dx)) + 1, edge = Math.abs(dx) > 0.7;
+      for (let y = Math.floor(lip); y < 46 + Math.abs(x - cx) * 0.35; y++) {
+        if ((x + f * 2 + Math.floor(y / 3)) % (edge ? 3 : 5) === 0) put(r, x, y + ((f + x) % 3), CIUDAD.agua[4], edge ? 190 : 140);
+        else if (hash(x, y + f * 7, 43) > (edge ? 0.6 : 0.85)) put(r, x, y, CIUDAD.agua[3], 120);
+      }
     }
     // gotitas que saltan al caer
     for (let i = 0; i < 8; i++) { const a = hash(i, 1, 47) * Math.PI * 2, t = ((f + i) % 8) / 8; put(r, cx + Math.cos(a) * (18 + t * 6), 50 + Math.sin(a) * 6 - Math.sin(t * Math.PI) * 4, CIUDAD.agua[4], 200); }

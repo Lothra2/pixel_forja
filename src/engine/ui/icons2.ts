@@ -191,26 +191,26 @@ export function skillIcons(): UiSprite[] {
 
 /** Una mano que prende un farol: el farol de plaza arriba con la luz dorada que nace y la manito que lo toca. */
 function lightLamp(c: IconCanvas) {
-  const iron = metalMat('#3a3e4a');
-  // los rayos dorados alrededor del farol
+  const iron = metalMat('#3a3e4a'), X = 22, Y = 15;
+  // los rayos dorados alrededor del farol (cortos, para que no toquen el aro)
   for (let k = 0; k < 7; k++) {
-    const a = -Math.PI * 0.92 + (k / 6) * Math.PI * 0.84, R = 8.4, L = k % 2 ? 2.4 : 4, cx = 23, cy = 15;
-    c.line([cx + Math.cos(a) * R, cy + Math.sin(a) * R], [cx + Math.cos(a) * (R + L), cy + Math.sin(a) * (R + L)], 1.3, glowMat(k % 2 ? '#ffc070' : '#fff0c0'), { tone: k % 2 ? 3 : 4 });
+    const a = -Math.PI * 0.9 + (k / 6) * Math.PI * 0.8, R = 7.8, L = k % 2 ? 2 : 3.2;
+    c.line([X + Math.cos(a) * R, Y + Math.sin(a) * R], [X + Math.cos(a) * (R + L), Y + Math.sin(a) * (R + L)], 1.3, glowMat(k % 2 ? '#ffc070' : '#fff0c0'), { tone: k % 2 ? 3 : 4 });
   }
   // el farol: cúpula, jaula con el vidrio prendido y la llama, base
-  c.poly([[17, 9.4], [29, 9.4], [23, 4.4]], iron, { bias: 1 });
-  c.poly([[17.6, 9.4], [28.4, 9.4], [27.4, 20], [18.6, 20]], glowMat('#f0a040'), { tone: 3 });
-  c.ellipse([23, 15.4], 2, 3.4, glowMat('#fff4d0'), { tone: 5 });
-  for (const x of [17.8, 23, 28.2]) c.px1([x, 9.4], [x - (x - 23) * 0.1, 20], iron, { tone: 1 });
-  c.poly([[18, 20], [28, 20], [26.6, 22.6], [19.4, 22.6]], iron);
-  c.line([23, 22.6], [23, 26], 1.6, iron);
-  // la manito que sube a tocarlo: palma, dedo índice estirado y la manga
+  c.poly([[X - 6, 9.6], [X + 6, 9.6], [X, 5.2]], iron, { bias: 1 });
+  c.poly([[X - 5.4, 9.6], [X + 5.4, 9.6], [X + 4.4, 20], [X - 4.4, 20]], glowMat('#f0a040'), { tone: 3 });
+  c.ellipse([X, 15.4], 2, 3.4, glowMat('#fff4d0'), { tone: 5 });
+  for (const d of [-5.2, 0, 5.2]) c.px1([X + d, 9.6], [X + d * 0.9, 20], iron, { tone: 1 });
+  c.poly([[X - 5, 20], [X + 5, 20], [X + 3.6, 22.4], [X - 3.6, 22.4]], iron);
+  c.line([X, 22.4], [X, 25.4], 1.6, iron);
+  // la manito que sube a tocarlo: palma, dedo índice estirado y la manga, todo adentro del aro
   const skin = clothMat('#f0c09a');
-  c.poly([[10.4, 33.6], [13.6, 30.4], [16.4, 32], [13.4, 35]], clothMat('#5a7ad8'));
-  c.ellipse([15.6, 28.6], 3.6, 3, skin);
-  c.line([17, 26.6], [19.6, 23.2], 1.4, skin);
-  c.line([14.6, 26.2], [15.8, 24.4], 1.2, skin);
-  c.ellipse([20, 22.8], 1.2, 1.2, glowMat('#fff0c0'), { tone: 5 });
+  c.poly([[12.6, 31.4], [15.2, 28.4], [18.2, 30], [15.6, 33]], clothMat('#5a7ad8'));
+  c.ellipse([17.2, 27.4], 3.4, 2.8, skin);
+  c.line([18.6, 25.6], [20.4, 23], 1.4, skin);
+  c.line([16.2, 25.2], [17.2, 23.6], 1.2, skin);
+  c.ellipse([20.8, 22.6], 1.2, 1.2, glowMat('#fff0c0'), { tone: 5 });
 }
 
 /** Tres chispas doradas en arco (la más grande en el medio, arriba). El juego pone el contador. */

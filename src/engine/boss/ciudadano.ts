@@ -37,6 +37,8 @@ export interface CitizenLook {
   child?: boolean;
   /** panza (0 a 1) */
   belly?: number;
+  /** tamaño de la cabeza (1 es de persona; por defecto de cuento, más grande) */
+  headK?: number;
   /** lo que tiene en la mano no es de piedra (la llave dorada del Relojero) */
   propVivo?: boolean;
 }
@@ -118,7 +120,7 @@ export function citizenScene(look: CitizenLook, cell: number, pose: BossPose, se
   if (look.skirt) {
     const hem = look.skirt >= 1 ? add(ankMid, S([0, 3, 0])) : kneeMid;
     const hipC = loc(body, j.pelvis, S([0, 3, 0]));
-    B.cone(hipC, [hem[0] - flap, hem[1], hem[2]], 8 * sh, (look.skirt >= 1 ? 10 : 10.5) * sh, 'bottom', 2);
+    B.cone(hipC, [hem[0] - flap, hem[1], hem[2]], 7.4 * sh, (look.skirt >= 1 ? 8.6 : 9.4) * sh, 'bottom', 2);
   }
   for (const side of ['far', 'near'] as const) {
     const g = side === 'near' ? 44 : 40;
@@ -129,51 +131,54 @@ export function citizenScene(look: CitizenLook, cell: number, pose: BossPose, se
     B.ell(add(j.ankles[side], mv(rotY(pose.root.yaw ?? 0), S([2.4, -1.6, 0]))), S([4.6 * sh, 2.4 * sh, 3.2 * sh]), 'shoe', g + 1);
   }
   // ---------- la cabeza ----------
-  const H = (v: V3): V3 => loc(hm, j.headC, S(v));
+  // cabeza de cuento: más grande que la de verdad (como las heroínas), un poco más arriba para que asome el cuello
+  const hk = look.headK ?? (kid ? 1.3 : 1.26);
+  const SH = (v: V3): V3 => mul(v, s * hk);
+  const H = (v: V3): V3 => loc(hm, j.headC, SH([v[0], v[1] + 1.6, v[2]]));
   const hr = kid ? 10.4 : 9.4;
-  B.ell(H([0, 0, 0]), S([hr, hr * 1.08, hr]), 'skin', 20, { rot: hm });
-  B.ell(H([hr - 0.2, -0.6, 0]), S([1.7, 1.9, 1.5]), 'skin', 20, { rot: hm });
-  for (const z of [-1, 1]) B.ell(H([0, 0, z * hr]), S([1.6, 2.2, 1]), 'skin', 20, { rot: hm });
+  B.ell(H([0, 0, 0]), SH([hr, hr * 1.08, hr]), 'skin', 20, { rot: hm });
+  B.ell(H([hr - 0.2, -0.6, 0]), SH([1.7, 1.9, 1.5]), 'skin', 20, { rot: hm });
+  for (const z of [-1, 1]) B.ell(H([0, 0, z * hr]), SH([1.6, 2.2, 1]), 'skin', 20, { rot: hm });
   // los ojos: cerrados (estatua y dormidos) o abiertos; los del sonámbulo se prenden celeste
   const eyes = pose.face?.eyes ?? 'closed';
   const glow = ex.glow ?? 0;
   for (const z of [-3.1, 3.1]) {
     const e = H([hr - 0.9, 1.6, z * (kid ? 1.12 : 1)]);
-    if (glow > 0.05) B.ell(e, S([1.2, 0.8 + glow * 1.4, 1.6 + glow * 0.5]), 'glowEye', 21, { rot: hm });
-    else if (eyes === 'closed' || eyes === 'happy') B.ell(add(e, mv(hm, S([0, eyes === 'happy' ? 0.4 : -0.2, 0]))), S([0.8, 0.45, 1.5]), 'lid', 21, { rot: hm });
-    else B.ell(e, S([0.8, 1.3, 1.1]), 'eye', 21, { rot: hm });
+    if (glow > 0.05) B.ell(e, SH([1.2, 0.8 + glow * 1.4, 1.6 + glow * 0.5]), 'glowEye', 21, { rot: hm });
+    else if (eyes === 'closed' || eyes === 'happy') B.ell(add(e, mv(hm, SH([0, eyes === 'happy' ? 0.4 : -0.2, 0]))), SH([0.9, 0.55, 1.9]), 'lid', 21, { rot: hm });
+    else B.ell(e, SH([0.9, 1.6, 1.4]), 'eye', 21, { rot: hm });
   }
   // la boca: el bostezo se abre redondo, la sonrisa es una rayita
   const yawn = ex.yawn ?? 0;
-  if (yawn > 0.05) B.ell(H([hr - 0.6, -3.6, 0]), S([1.2, 0.6 + yawn * 2.1, 1.3 + yawn * 0.6]), 'mouth', 22, { rot: hm });
-  else if (pose.face?.mouth !== undefined && pose.face.mouth > 0.3) B.ell(H([hr - 0.7, -3.3, 0]), S([0.8, 0.5, 2]), 'mouth', 22, { rot: hm });
-  if (look.glasses) for (const z of [-3.1, 3.1]) B.torus(H([hr + 0.2, 1.6, z]), 1.8 * s, 0.4 * s, 'glass', 23, mm(hm, rotY(90)));
+  if (yawn > 0.05) B.ell(H([hr - 0.6, -3.6, 0]), SH([1.2, 0.6 + yawn * 2.1, 1.3 + yawn * 0.6]), 'mouth', 22, { rot: hm });
+  else if (pose.face?.mouth !== undefined && pose.face.mouth > 0.3) B.ell(H([hr - 0.7, -3.3, 0]), SH([0.8, 0.5, 2]), 'mouth', 22, { rot: hm });
+  if (look.glasses) for (const z of [-3.1, 3.1]) B.torus(H([hr + 0.2, 1.6, z]), 1.8 * s * hk, 0.4 * s * hk, 'glass', 23, mm(hm, rotY(90)));
   // el pelo
   const hair = look.hairStyle;
-  if (hair !== 'calvo') B.ell(H([-1.2, 2.6, 0]), S([hr + 0.7, hr * 0.84, hr + 0.7]), 'hair', 24, { rot: hm, bump: 0.5 * s });
-  else B.ell(H([-3, -0.4, 0]), S([hr * 0.7, hr * 0.6, hr + 0.6]), 'hair', 24, { rot: hm });
-  if (hair === 'mono') B.ell(H([-6.5, 6, 0]), S([3.6, 3.4, 3.6]), 'hair', 25, { rot: hm, bump: 0.4 * s });
-  if (hair === 'largo') B.ell(H([-5, -5, 0]), S([3.6, 9, hr]), 'hair', 25, { rot: hm, bump: 0.4 * s });
-  if (hair === 'rizos') for (let q = 0; q < 6; q++) { const a = (q / 6) * Math.PI * 2; B.ell(H([-2 + Math.cos(a) * 4, 5 + Math.sin(a) * 2, Math.sin(a) * 6]), S([2.8, 2.8, 2.8]), 'hair', 25); }
+  if (hair !== 'calvo') B.ell(H([-1.2, 2.6, 0]), SH([hr + 0.7, hr * 0.84, hr + 0.7]), 'hair', 24, { rot: hm, bump: 0.5 * s * hk });
+  else B.ell(H([-3, -0.4, 0]), SH([hr * 0.7, hr * 0.6, hr + 0.6]), 'hair', 24, { rot: hm });
+  if (hair === 'mono') B.ell(H([-6.5, 6, 0]), SH([3.6, 3.4, 3.6]), 'hair', 25, { rot: hm, bump: 0.4 * s * hk });
+  if (hair === 'largo') B.ell(H([-5, -5, 0]), SH([3.6, 9, hr]), 'hair', 25, { rot: hm, bump: 0.4 * s * hk });
+  if (hair === 'rizos') for (let q = 0; q < 6; q++) { const a = (q / 6) * Math.PI * 2; B.ell(H([-2 + Math.cos(a) * 4, 5 + Math.sin(a) * 2, Math.sin(a) * 6]), SH([2.8, 2.8, 2.8]), 'hair', 25); }
   if (hair === 'trenzas') for (const z of [-1, 1]) {
     const a = H([-3, -2, z * (hr - 1)]), sway = (sec?.hangX ?? 0) * 2;
-    B.chain([a, add(a, mv(hm, S([-1 - sway, -6, z * 1.2]))), add(a, mv(hm, S([-1.5 - sway * 1.5, -11, z * 1.4])))], [2.2, 1.9, 1.4].map((v) => v * s), 'hair', 26);
+    B.chain([a, add(a, mv(hm, SH([-1 - sway, -6, z * 1.2]))), add(a, mv(hm, SH([-1.5 - sway * 1.5, -11, z * 1.4])))], [2.2, 1.9, 1.4].map((v) => v * s * hk), 'hair', 26);
   }
-  if (look.beard) B.ell(H([hr - 2.6, -4.4, 0]), S([3.8, 4.8, 5.6]), 'beard', 27, { rot: hm, bump: 0.5 * s });
+  if (look.beard) B.ell(H([hr - 2.6, -4.4, 0]), SH([3.8, 4.8, 5.6]), 'beard', 27, { rot: hm, bump: 0.5 * s * hk });
   // los sombreros
-  if (look.hat === 'panadero') { B.cone(H([-0.6, 6, 0]), H([-1.6, 13, 0]), hr * 0.86 * s, hr * 0.98 * s, 'hat', 28); B.ell(H([-1.8, 14.2, 0]), S([hr + 1.4, 3.6, hr + 1.4]), 'hat', 28, { rot: hm }); }
-  if (look.hat === 'casco') { B.ell(H([-0.4, 4.6, 0]), S([hr + 1.2, hr * 0.62, hr + 1.2]), 'hat', 28, { rot: hm }); B.ell(H([-0.4, 9.4, 0]), S([5, 3.2, 1.4]), 'accent', 29, { rot: hm }); B.ell(H([1.4, 1.6, 0]), S([hr + 2.2, 1.1, hr + 2.2]), 'hat', 28, { rot: hm }); }
-  if (look.hat === 'gorra') { B.ell(H([-0.6, 5.4, 0]), S([hr + 0.8, 3.6, hr + 0.8]), 'hat', 28, { rot: hm }); B.ell(H([hr - 1, 4, 0]), S([4, 0.9, 5.4]), 'hat', 28, { rot: hm }); }
+  if (look.hat === 'panadero') { B.cone(H([-0.6, 6, 0]), H([-1.6, 13, 0]), hr * 0.86 * s * hk, hr * 0.98 * s * hk, 'hat', 28); B.ell(H([-1.8, 14.2, 0]), SH([hr + 1.4, 3.6, hr + 1.4]), 'hat', 28, { rot: hm }); }
+  if (look.hat === 'casco') { B.ell(H([-0.4, 4.6, 0]), SH([hr + 1.2, hr * 0.62, hr + 1.2]), 'hat', 28, { rot: hm }); B.ell(H([-0.4, 9.4, 0]), SH([5, 3.2, 1.4]), 'accent', 29, { rot: hm }); B.ell(H([1.4, 1.6, 0]), SH([hr + 2.2, 1.1, hr + 2.2]), 'hat', 28, { rot: hm }); }
+  if (look.hat === 'gorra') { B.ell(H([-0.6, 5.4, 0]), SH([hr + 0.8, 3.6, hr + 0.8]), 'hat', 28, { rot: hm }); B.ell(H([hr - 1, 4, 0]), SH([4, 0.9, 5.4]), 'hat', 28, { rot: hm }); }
   if (look.hat === 'gorro_dormir') {
     // el gorro de dormir largo: sale de la cabeza, sube un poco y se cae para atrás, con un pompón en la punta
     const sw = (sec?.hangX ?? 0) * 3 + (ex.cap ?? 0) * 3;
     const pts: V3[] = [H([-0.6, 5, 0]), H([-2.4, 11, 0]), H([-6 - sw * 0.5, 15, 1]), H([-11 - sw, 14, 2]), H([-14 - sw * 1.3, 9, 2.5])];
-    B.ell(H([-0.6, 4.4, 0]), S([hr + 0.8, 4.2, hr + 0.8]), 'hat', 28, { rot: hm });
-    B.chain(pts, [hr * 0.8, hr * 0.62, hr * 0.42, hr * 0.26, hr * 0.16].map((v) => v * s), 'hat', 28);
-    B.ell(pts[4], S([2.8, 2.8, 2.8]), 'accent', 29);
+    B.ell(H([-1.4, 6.2, 0]), SH([hr + 0.6, 3.4, hr + 0.6]), 'hat', 28, { rot: hm });
+    B.chain(pts, [hr * 0.8, hr * 0.62, hr * 0.42, hr * 0.26, hr * 0.16].map((v) => v * s * hk), 'hat', 28);
+    B.ell(pts[4], SH([2.8, 2.8, 2.8]), 'accent', 29);
   }
-  if (look.hat === 'boina') B.ell(H([-0.8, 6.2, 0]), S([hr + 1.8, 3, hr + 1.8]), 'hat', 28, { rot: mm(hm, rotZ(10)) });
-  if (look.hat === 'panuelo') { B.ell(H([-1, 2.8, 0]), S([hr + 1.2, hr * 0.92, hr + 1.2]), 'hat', 28, { rot: hm }); B.ell(H([-hr, -2, 0]), S([2.6, 3, 2.4]), 'hat', 29, { rot: hm }); }
+  if (look.hat === 'boina') B.ell(H([-0.8, 6.2, 0]), SH([hr + 1.8, 3, hr + 1.8]), 'hat', 28, { rot: mm(hm, rotZ(10)) });
+  if (look.hat === 'panuelo') { B.ell(H([-1, 2.8, 0]), SH([hr + 1.2, hr * 0.92, hr + 1.2]), 'hat', 28, { rot: hm }); B.ell(H([-hr, -2, 0]), SH([2.6, 3, 2.4]), 'hat', 29, { rot: hm }); }
   // ---------- los brazos y las manos ----------
   for (const side of ['far', 'near'] as const) {
     const g = side === 'near' ? 34 : 30;

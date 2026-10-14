@@ -380,6 +380,119 @@ function bandstand(): WorldObject {
   return { name: 'glorieta_musica', w: W, h: H, anchor: [cx, 120], solid: [-56, -26, 112, 26], anims: one(r), shadow: contactShadow(r, [cx, 120], { rows: 6, spread: 2, tall: 3.4 }) };
 }
 
+/**
+ * El organillo (64 x 64): la caja de manivela del organillero sobre su carretilla de dos ruedas, con los tubos arriba,
+ * el rosetón tallado al frente y la manivela al costado. `dormida` de piedra, `despierta` de madera roja y tubos de oro.
+ */
+function barrelOrgan(awake: boolean): Raster {
+  const r = createRaster(64, 64);
+  const WOOD = ['#3a1a14', '#5e2a1e', '#8a3e28', '#b05a38', '#d07a4e'], BOX = awake ? WOOD : E, PIPE = awake ? CIUDAD.oro : E;
+  // las varas de empujar, atrás a la izquierda
+  for (let t = 0; t < 14; t++) { put(r, 9 - t * 0.5, 40 - t * 0.9, BOX[2]); put(r, 10 - t * 0.5, 40 - t * 0.9, BOX[1]); }
+  // los tubos (de atrás, más altos al medio)
+  for (let k = 0; k < 7; k++) {
+    const x0 = 19 + k * 4, top = 8 + Math.abs(k - 3) * 3;
+    for (let y = top; y < 22; y++) for (let x = 0; x < 3; x++) put(r, x0 + x, y, tone(PIPE.slice(1), 0.85 - x * 0.28 - (y === top ? -0.1 : 0), x0 + x, y));
+    put(r, x0 + 1, top + 3, PIPE[0]);
+  }
+  // la caja: tapa clara, cara de adelante con el rosetón y las molduras
+  for (let y = 20; y < 46; y++) for (let x = 13; x < 52; x++) {
+    const lid = y < 24, rim = x === 13 || x === 51 || y === 45;
+    const d = Math.hypot(x - 32, y - 34), rose = d < 8 && (d > 6.6 || Math.abs(Math.sin(Math.atan2(y - 34, x - 32) * 4)) < 0.25 || d < 2);
+    let l = lid ? 0.85 : 0.6 - (x - 13) / 120 + (hash(x >> 2, y >> 3, 291) - 0.5) * 0.06;
+    if (rim) l -= 0.25;
+    if (rose) l += awake ? 0.3 : 0.22;
+    let c = tone(BOX, l, x, y);
+    if (awake && rose) c = tone(CIUDAD.oro, 0.6, x, y);
+    put(r, x, y, c);
+  }
+  for (const x of [17, 47]) for (let y = 26; y < 43; y++) put(r, x, y, awake ? CIUDAD.oro[3] : E[4]);
+  // la manivela al costado derecho
+  for (let t = 0; t < 6; t++) put(r, 52 + t, 32 - t * 0.4, I[4]);
+  for (let y = 26; y < 31; y++) put(r, 57, y, I[3]);
+  put(r, 57, 25, awake ? CIUDAD.oro[4] : E[5]); put(r, 58, 25, awake ? CIUDAD.oro[3] : E[4]);
+  // las dos ruedas con sus rayos
+  for (const wx of [20, 44]) for (let y = -9; y <= 9; y++) for (let x = -9; x <= 9; x++) {
+    const d = Math.hypot(x, y);
+    if (d > 9.2) continue;
+    const spoke = d < 8 && Math.abs(Math.sin(Math.atan2(y, x) * 3)) < 0.2;
+    if (d > 7.4 || spoke || d < 1.8) put(r, wx + x, 52 + y, tone(awake ? WOOD : E, (d > 7.4 ? 0.55 : 0.75) - x / 30, x, y));
+  }
+  outline(r, '#05070c');
+  if (!awake) sleepDust(r, 0.35, 293);
+  return r;
+}
+
+function barrelOrganObject(): WorldObject {
+  const d = barrelOrgan(false);
+  return grounded({ name: 'organillo', w: 64, h: 64, anchor: [32, 61], solid: [-20, -8, 40, 8], anims: { idle: { frames: [d], fps: 1, loop: true }, dormida: { frames: [d], fps: 1, loop: true }, despierta: { frames: [barrelOrgan(true)], fps: 1, loop: true } } }, { rows: 4, spread: 2, tall: 2.4 });
+}
+
+/** El atril de piedra (32 x 48): tres patas, la bandeja inclinada y una partitura que se quedó dormida ahí. v0 derecho, v1 torcido. */
+function musicStand(v: number): WorldObject {
+  const r = createRaster(32, 48), lean = v ? 2.5 : 0;
+  // las patas
+  for (const [dx, dy] of [[-7, 0], [7, 0], [0, -2]] as [number, number][]) for (let t = 0; t <= 10; t++) put(r, 16 + lean + dx * (t / 10), 34 + (12 + dy) * (t / 10), t % 4 ? I[3] : I[4]);
+  // el palo
+  for (let y = 16; y < 35; y++) { put(r, 16 + lean * ((y - 16) / 19), y, I[4]); put(r, 17 + lean * ((y - 16) / 19), y, I[2]); }
+  // la bandeja y la partitura con sus renglones
+  for (let y = 5; y < 18; y++) for (let x = 6; x < 27; x++) {
+    const tray = y > 15 || x < 8 || x > 24;
+    const staff = !tray && (y - 7) % 3 === 0 && y < 15;
+    const note = !tray && hash(x, y, 301 + v) > 0.86 && (y - 7) % 3 !== 0;
+    put(r, x + (v ? (y - 11) * 0.15 : 0), y, tray ? tone(I.slice(1), 0.6 - x / 60, x, y) : staff ? E[2] : note ? E[0] : tone(E.slice(2), 0.8 - (x - 8) / 40, x, y));
+  }
+  if (v) for (let t = 0; t < 5; t++) put(r, 25 + t * 0.6, 17 + t * 1.6, E[4]); // una hoja que se le escapa
+  outline(r, '#05070c');
+  sleepDust(r, 0.3, 303 + v);
+  return grounded({ name: `atril_piedra_${v}`, w: 32, h: 48, anchor: [16, 46], solid: [-6, -4, 12, 4], anims: one(r) }, { rows: 3, spread: 2, tall: 2 });
+}
+
+/**
+ * Estandarte del palacio (48 x 112): cuelga de una vara con remates de oro desde lo alto de la pared de la sala del
+ * trono. Tela morada apagada por el polvo, borde de oro y la luna del Rey bordada. v0 entero, v1 con la punta rota y
+ * la tela torcida, v2 más corto con una estrella.
+ */
+function palaceBanner(v: number): WorldObject {
+  const W = 48, H = 112, r = createRaster(W, H), cx = 24;
+  const CLOTH = ['#1e1428', '#2c1e3c', '#3e2a54', '#523a6c', '#6a4e86'];
+  const len = v === 2 ? 64 : 78, x0 = 12, x1 = 36;
+  // la vara y los remates
+  for (let x = 6; x <= 42; x++) { put(r, x, 4, CIUDAD.oro[3]); put(r, x, 5, CIUDAD.oro[1]); }
+  for (const x of [5, 43]) for (let y = 2; y < 8; y++) put(r, x, y, CIUDAD.oro[y < 4 ? 4 : 2]);
+  for (let t = 0; t < 4; t++) { put(r, cx - 6 + t * 0.4, t, I[3]); put(r, cx + 6 - t * 0.4, t, I[3]); }
+  // la tela: cae de la vara, termina en punta (o rota), con pliegues verticales
+  for (let y = 6; y < 6 + len + 10; y++) for (let x = x0; x <= x1; x++) {
+    const sway = v === 1 ? Math.sin(((y - 6) / len) * 2.2) * 2 : 0, xx = x - sway;
+    const tip = y - 6 - len, half = (x1 - x0) / 2;
+    if (tip > 0 && tip > (half - Math.abs(xx - cx)) * 0.85) continue;
+    if (v === 1 && tip > -8 && hash(Math.floor(xx / 3), 0, 311) > 0.5 && tip > -4 + (xx % 3)) continue; // la punta rota
+    const fold = Math.sin((xx - x0) * 0.75) * 0.12, edge = xx < x0 + 2 || xx > x1 - 2;
+    let c = edge ? tone(CIUDAD.oro, 0.45 + fold, x, y) : tone(CLOTH, 0.55 + fold - (y - 6) / 400 + (hash(x >> 1, y >> 2, 313 + v) - 0.5) * 0.05, x, y);
+    if (!edge && y > 9 && y < 12) c = tone(CIUDAD.oro, 0.4, x, y);
+    put(r, x, y, c);
+  }
+  // el bordado: la luna del Rey (o una estrella en el corto)
+  const ey = v === 2 ? 34 : 40;
+  if (v === 2) {
+    for (let y = -9; y <= 9; y++) for (let x = -9; x <= 9; x++) {
+      const a = Math.atan2(y, x) + Math.PI / 2, u = Math.abs((((a * 5) / (Math.PI * 2)) % 1 + 1) % 1 * 2 - 1);
+      if (Math.hypot(x, y) < 3.4 + (1 - u) * 5.4) put(r, cx + x, ey + y, tone(CIUDAD.oro, 0.75 - x / 30 - y / 40, x, y));
+    }
+  } else {
+    for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) {
+      const inA = Math.hypot(x, y) < 7.5, inB = Math.hypot(x - 3.4, y - 1.6) < 6.4;
+      if (inA && !inB) put(r, cx + x + (v === 1 ? 1 : 0), ey + y, tone(CIUDAD.oro, 0.75 - x / 30, x, y));
+    }
+    for (const [sx, sy] of [[5, -6], [8, 3]]) put(r, cx + sx, ey + sy, CIUDAD.oro[5]);
+  }
+  // la borla de abajo
+  if (v !== 1) for (let t = 0; t < 6; t++) put(r, cx, 6 + len + 10 + t - 1, t < 4 ? CIUDAD.oro[3] : CIUDAD.oro[1]);
+  outline(r, '#05070c');
+  sleepDust(r, 0.3, 315 + v);
+  return { name: `estandarte_palacio_${v}`, w: W, h: H, anchor: [cx, H - 1], solid: null, anims: one(r) };
+}
+
 // ---------------------------------------------------------------- primer plano (capa frente)
 
 /** Banderines rotos (128 x 96, 2 cuadros a 2 fps): un cordel de lado a lado con banderines de tela petrificada. */
@@ -611,6 +724,7 @@ export function thiefFigure(): Ladrona {
 export function ciudadObjectsB(): WorldObject[] {
   return [
     ...casas(), cityGate(), ...stalls(), deadBridgeLamp(0), deadBridgeLamp(1), deadBridgeLamp(2), deadBridgeLamp(3), palaceColumn(0), palaceColumn(1), carpet(), balcony(), bandstand(),
+    barrelOrganObject(), musicStand(0), musicStand(1), palaceBanner(0), palaceBanner(1), palaceBanner(2),
     bunting(0), bunting(1), streetArch(0), streetArch(1), hangingLamp(0), hangingLamp(1), farCity(0), farCity(1), farCity(2), mural5(), thiefFigure().objeto,
   ];
 }

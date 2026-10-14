@@ -323,8 +323,8 @@ por los huecos del abismo), `portal: portal_plata`). Resumen de la entrega: `doc
 - **Estatuas:** entidades `estatua` con `variante` (0 a 9) y `objeto` (`estatua_ciudadano_<variante>`), en el mismo
   punto que su objeto en la capa objetos (son sólidas). Anims `dormida`, `despertar` (12 a 12 fps, una vez) y
   `despierta` (4 a 4 fps, respiran y saludan). Al vencer al Rey despiertan. También despiertan las casas
-  (`casa_ciudad_0..9`, anim `despierta`: ventanas `#ffc070` y toldos de colores), los puestos, los árboles de piedra
-  y la fuente (`fuente_plaza`, anim `corre`). La torre del reloj tiene `parado` y `andando`.
+  (`casa_ciudad_0..9`, anim `despierta`: ventanas `#ffc070` y toldos de colores), los puestos, los árboles de piedra,
+  el `organillo` y la fuente (`fuente_plaza`, anim `corre`). La torre del reloj tiene `parado` y `andando`.
 - **Entidades:** `portal_llegada` (`portal: portal_plata`), `portal_volver` (mundo4), `portal_jefe` (`destino:
   mundo6`), `jefe` (`rey_de_piedra`), `arena_jefe` (`radio: 208`, `trono: true`), 4 `lampara_trono` a 150 px del centro
   en diagonal (`lampara_trono_apagada`, `_prenderse` una vez, `_prendida` con luz de 200), `mural` (`pieza: 5`),
