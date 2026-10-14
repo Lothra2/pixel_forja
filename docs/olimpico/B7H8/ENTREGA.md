@@ -1,6 +1,6 @@
 # Lote B7H8: los súper golpes, el Quemado, la Chapita, el đá cầu, el vovinam y tres ambientes
 Estado: entregado, pendiente de Rick
-PR: (pendiente)
+PR: https://github.com/Lothra2/pixel_forja/pull/42
 Fecha: 2026-10-14
 
 ## Qué se hizo
