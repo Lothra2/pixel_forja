@@ -360,6 +360,27 @@ Lo que piden un cross country con obstáculos y una azotea: escaleras, muros, vi
 - **`mano` en los pasos:** en la escalera y el poste, el `paso` dice qué mano agarra (`cerca` o `lejos`) y trae su `punto` en cada fila, como un golpe. Así el juego puede sonar el agarre y poner el polvo o la astilla donde va la mano.
 - **La bici acostada:** el objeto `bike` acepta `lay` de 0 a 1 (en el piso de lado), y a 32 px se dibuja más chica para que el ciclista quepa.
 
+## La garrocha que no llega, el judo, el Quemado, la Chapita y el tejo (lote B4B6)
+
+Ocho animaciones para pruebas que ya existen en el juego, en `src/engine/anim/pruebas.ts`. Todas con los datos por cuadro de siempre.
+
+| Animación | Cuadros, fps | Qué hace | Eventos y datos |
+|---|---|---|---|
+| `vault_fail` | 10, 12 | La garrocha no llega: clava, despega, se queda casi derecha con él colgado, se le devuelve, la suelta manoteando y cae de espalda | `aterriza` en el 8. `elevacion` como `pole_vault` |
+| `judo_grip` | 4, 10, en bucle | Guardia de judo: la mano cercana en la solapa y la lejana en la manga, tironeando | |
+| `judo_throw` | 10, 14 | Proyección: jala, se mete abajo, lo carga al hombro, se endereza y lo azota adelante, agarrado de la manga | `impacto` en el 6. `carga` del 3 al 5 |
+| `judo_thrown` | 10, 14 | El proyectado, cuadro a cuadro con `judo_throw`: agarrado, desequilibrado, por el aire y de espalda en el tatami | `aterriza` en el 6 |
+| `dodge_jump` | 8, 14 | Quemado: salta recogiendo las rodillas al pecho para que el balón pase por debajo | `despegue` en el 2, `aterriza` en el 6. `elevacion` |
+| `bat_stance` | 4, 6, en bucle | Chapita: guardia de bateo con el palo sobre el hombro de atrás | `arma` en cada cuadro |
+| `bat_swing` | 6, 14 | Chapita: carga, paso, barrido plano con el palo a dos manos y remate sobre el otro hombro | `impacto` en el 3, con la estela. `arma` en cada cuadro |
+| `tejo_throw` | 8, 12 | Lanzamiento por debajo con paso adelante | `suelta` en el 4 con su `punto`. `arma` hasta la suelta |
+
+**Lo que no va en el sprite:**
+- **El palo de la Chapita** es el arma del piso `broomstick` (o cualquier otra de batear). El juego la dibuja con `arma`, igual que en `weapon_swing`, a dos manos.
+- **El tejo** es el arma del piso `tejo`. Va en `arma` hasta la `suelta`, y desde ahí el juego lo lanza por la parábola desde el `punto`.
+- **El rival del judo:** del cuadro 3 al 5 el juego dibuja `judo_thrown` con su pivote en la `carga` de quien proyecta, detrás de él (como `carried` en levantar). Antes, cada uno en su lugar, agarrados. Después, el proyectado queda tirado delante.
+- **La garrocha** sí va dibujada, como en `pole_vault`.
+
 ## La arena: el kit jugando de verdad
 
 `arena.html` (en el sitio, el botón **Arena deportiva** del estudio) es un juego mínimo que usa el kit como lo haría el tuyo. Solo lee `manifest.json` y las hojas PNG: no importa nada del motor de PixelForja, y una prueba lo vigila. Si algo falla ahí, le falta al kit.
