@@ -350,6 +350,89 @@ por los huecos del abismo), `portal: portal_plata`). Resumen de la entrega: `doc
   `ciudad_despierta` (`figura_irse` es el de las Galerías). Todo con pico de 0.5.
 - **Íconos:** `ui.habilidades.prender` y `ui.habilidades.chispas`. **Portal:** `portal_plata`.
 
+### Mundo 6: La Fragua de las Luces (encargo F12)
+
+`manifest.mundos` trae `mundo6` (mapa `mundo/mundo6_fragua.json`, 110 x 100, con `fondo` (`fondo_fragua_lejos_0..2`, se
+ve por los huecos del abismo), `portal: portal_brasa`). Resumen de la entrega: `docs/entregas/abyss_mundo6.md`. Lo nuevo:
+
+- **La lava** va en la capa `agua` del mapa: la tira `agua` del mundo (`mundo/mundo6_agua.png`) son 4 cuadros de lava
+  que pegan por los cuatro lados, `espuma` es el borde que brilla (4 cuadros) y no hay `reflejo`. Ya es sólida en
+  `colision`. Es la luz grande del piso: el juego pone luz naranja (`#ff7020`) a lo largo de las orillas (la lava no
+  se oscurece ni se tiñe con las otras luces: brilla sola). Al vencer a la Dragona se cambia la tira por
+  `agua_apagada` (`mundo/mundo6_agua_apagada.png`, mismo formato: la lava hecha piedra con vetas tibias `#a05030`).
+- **Fuentes frías** (la fogata del piso): 5 `punto_guardado` con `fuente_fria: true` y `objeto: fuente_fria`. El
+  objeto `fuente_fria` (96 x 96, `idle` 6 a 6 fps, luz celeste de 220 que alumbra sin calentar) va en la capa objetos
+  justo arriba del punto. La de La Escalera de Ceniza trae `tutorial: true`.
+- **Jaulas** (las luces robadas): entidades `jaula` con `id`, `luz` (`bosque`, `catedral`, `galerias`, `faro`,
+  `ciudad`), `zona` (nombre exacto) y `objeto` (`jaula_luz_<luz>`). No van en la capa objetos: las dibuja el juego. El
+  punto de la entidad es el candado: la jaula va con su apoyo (`[16, 4]`, la argolla de arriba) en `(x - candado[0],
+  y - candado[1])`; `candado` viene en el objeto (`[0, 52]`). Anims `cerrada` (6 a 6 fps, luz de su color de 40),
+  `abrir` (10 a 12 fps, una vez: salta el candado, se abre la puertita y la luz sale por arriba) y `vacia` (2 a 2
+  fps). Al abrirse queda flotando `luz_libre_<luz>` (24 x 24, 8 a 8 fps, luz de 260). Las 8 de la sala del Carcelero
+  traen `carcel: true` (se abren todas juntas al vencerlo). El mundo trae `jaulas` con las notas.
+- **Grietas que respiran:** entidades `grieta` (rectángulos en Tiled: `x`, `y` arriba a la izquierda, `width` y
+  `height` de 64) con `fase` (0 a 1) y `zona`, siempre caminables. El juego llena cada parche con `grieta_brasa_<v>`
+  (64 x 64, capa suelo, 4 variantes que encajan; `grieta_brasa` es la 0): `apagada`, `aviso` (6 a 8 fps) y `caliente`
+  (6 a 6 fps). Con cada soplido de los fuelles: `aviso` y después `caliente`, corridas por `fase`.
+- **Fuelles:** entidades `fuelle` con `zona` y `objeto` (`fuelle_gigante_0`, `fuelle_gigante_1` y
+  `fuelle_gigante_0_b`), en el mismo punto que su objeto (192 x 160, sólido en la base). `quieto`, `soplar` (12 a 10
+  fps: se aplasta y sale un golpe de aire con brasas) y `dormido`. El juego los hace soplar a todos juntos y pone
+  `fuelle_sopla` 1 s antes de que las grietas se prendan.
+- **Charcos fríos:** el objeto `charco_frio` (64 x 32, capa suelo, `idle` 4 a 4 fps, luz celeste de 60) y la entidad
+  `charco_frio` (`id`, `zona`) en el mismo punto: ahí Thor se moja. Dos o más por zona y dos en el borde de la arena.
+- **La arena de la Dragona** (El Corazón de la Fragua): `arena_jefe` (`radio: 224`), `jefe` (`dragona_brasa`, "La
+  Dragona de Brasa", "La que guarda el fuego hecho de luces"), 4 `surtidor` (`id`) en diagonal a 130 px del centro,
+  cada uno con su `palanca` (`surtidor` = id del surtidor) 48 px más afuera. Los objetos van en el mismo punto:
+  `surtidor` (64 x 64, capa suelo, `quieto` y `chorro`), `surtidor_chorro` (64 x 128, el chorro alto que va encima,
+  12 a 12 fps, una vez) y `palanca` (32 x 48, `arriba` y `tirar` a 10 fps). 4 entidades `cadena` en el borde con
+  `hacia_x`, `hacia_y` (el centro): el juego repite `cadena_dragona` (32 x 32, capa suelo, a lo largo en x) girada
+  hasta la Dragona. Detrás, al norte, la **Puerta Negra**: entidad `puerta_negra` (`cerrada: true`, `destino: mundo7`)
+  en el mismo punto que el objeto `puerta_negra` (256 x 256, sólido, `cerrada` y `latido` a 2 fps, luz fría de 90).
+  `portal_jefe` con `destino: mundo7`.
+- **La fragua apagada** (al vencer a la Dragona): los fuelles en `dormido`, los braseros (`brasero_0..2`, luz de 180)
+  en `apagado`, la boca del horno (`boca_horno`, 256 x 192, luz de 360) en `apagado`, la capa agua con `agua_apagada`
+  y las grietas apagadas.
+- **La Ladrona:** `figura_cargadora` (48 x 64, `idle` 4 a 4 fps caminando con tres jaulitas colgadas de un palo, e
+  `irse` 8 a 10 fps). Entidades `figura` con `zona` (El Río de Lava, Las Jaulas Colgantes, El Horno) y una con `alto:
+  true` delante de la Puerta Negra.
+- **Entidades:** `portal_llegada` (`portal: portal_brasa`), `portal_volver` (mundo5), `mural` (`pieza: 6`, en Las
+  Jaulas Colgantes), `cofre` (2 con `secreto`, 1 `guardado_por: carcelero`, 1 `tras_jefe`), el minijefe `carcelero`
+  con `elite: true` y los enemigos `hollin`, `salamandra_brasa` y `farolero_cadenas` (los que traen `jaula: true` y
+  `luz` cuentan como jaula).
+- **Zonas** con `ambiente` `fragua`, `lava`, `jaulas`, `fuelles`, `bosque_ceniza`, `carcel`, `horno` y `jefe`,
+  partícula `brasas` (en las `particulas` del mundo 6; El Bosque de Ceniza usa `ceniza`), `musica: ninguna` (El
+  Corazón trae `musica: jefe_dragona` y `musica_victoria: liberacion`, La Cárcel `musica_pelea: carcelero`) y su
+  `frente` (`cadena_colgante_0..2`, `jaulas_frente_0..1`, `humo_frente_0..1`). Secretos: El Nido de Ceniza y La
+  Alacena del Herrero.
+- **Luz:** sin sombras horneadas con dirección, solo la sombra de contacto al pie. Todo lleva un filo naranja abajo a
+  la derecha (el rebote del fuego). La luz es de la lava, los braseros, la boca del horno, las grietas, las jaulas,
+  las luces libres, las fuentes frías y la boca de la Dragona.
+- **Enemigos:** `hollin` (32: `idle`, `walk`, `attack` con 4 de aviso, `pegado` chiquito en bucle encima de la
+  heroína, `hit`, `die`), `salamandra_brasa` (48: `attack` escupe con 4 de aviso y la boca que brilla, `piedra` cuando
+  está mojada), `farolero_cadenas` (64: `attack`, `attack_heavy` gira la cadena con 8 de aviso, `die` se desarma y la
+  jaula cae y se abre; en cada anim `jaula`: 8 listas con un `[x, y]` por cuadro desde el pivote, para su luz) y
+  `carcelero` (64, `elite`: `attack`, `attack_heavy` lanza la cadena en línea con 8 de aviso, `jalar` en bucle,
+  `warcry` portazo, `die` se libera y queda un herrero viejito que saluda). `fx`: `proyectil_brasa_<dir>` (16),
+  `impacto_brasa` (32), `rastro_brasa` (32, capa suelo), `aviso_cadena` (128 x 64), `aviso_linea_cadena` (32, en
+  bucle, se repite en línea) y `vapor` (64).
+- **La Dragona de Brasa** (`dragona_brasa`, 128, `tipo: jefe`, `luz_boca`): `idle`, `walk`, `attack` (zarpazo, 6 de
+  aviso), `coletazo` (medio círculo detrás, 6 de aviso, `elevacion`), `aliento` (8 de aviso con el pecho al rojo y
+  después el chorro), `encendida` (fase 2, cubierta de llamas, en bucle), `warcry` (ruge al cielo, llama hollines),
+  `apagada` (echada, gris, humea: ahí se le pega), `hit` y `die` (rompe las cadenas, el fuego pasa a dorado y queda una
+  dragoncita dorada enroscada). En cada anim `boca`: 8 listas con un `[x, y]` por cuadro desde el pivote (la luz de la
+  boca y el origen del aliento), `null` cuando está apagada con la boca cerrada. `fx`: `aviso_aliento` (32, en bucle,
+  se repite en línea), `fuego_piso` (32, en bucle), `aviso_cola` (192 x 96, capa suelo, el medio círculo va arriba en
+  la hoja: girarlo para que quede detrás) y `vapor_grande` (96 x 128).
+- **Audio:** `ambiente_fragua` (20 s), `ambiente_lava`, `ambiente_jaulas` (con los recuerdos de arriba),
+  `ambiente_fuelles`, `ambiente_bosque_ceniza`, `ambiente_carcel`, `ambiente_horno`, `musica_jefe_dragona` y
+  `musica_carcelero` (en bucle), `musica_liberacion` (36 s), y los efectos `fuelle_sopla`, `grieta_rojo`,
+  `calor_sube`, `acalorada`, `jaula_abre`, `luz_libre` (y `luz_libre_<luz>`, uno por luz), `thor_mojarse`,
+  `thor_sacude`, `hollin_pega`, `hollin_suelta`, `salamandra_escupe`, `salamandra_piedra`, `cadena_gira`,
+  `farolero_paso`, `carcelero_llaves`, `carcelero_portazo`, `dragona_ruge`, `dragona_aliento`, `surtidor_chorro`,
+  `dragona_apagada`, `cadenas_rompen` y `puerta_negra` (`palanca` es el de siempre). Todo con pico de 0.5.
+- **Íconos:** `ui.habilidades.sacudir` y `sacudir_seco` (en gris, sin agua), `calor`, `jaula` y `palanca`.
+  **Portal:** `portal_brasa`.
+
 ### El intro (parte 4)
 
 `manifest.intro` trae los paneles pintados para el intro: `intro_bosque_noche`, `intro_corte_abismo`, `intro_ojos`,
