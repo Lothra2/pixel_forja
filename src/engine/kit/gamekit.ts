@@ -46,6 +46,7 @@ import { LOBO_SPEC, ESPECTRO_SPEC, DIABLILLO_SPEC, CABALLERO_SPEC, BRUJA_SPEC, S
 import { REINA_SPEC, GUARDIAN_PUERTA_SPEC } from '../boss/corazonJefes';
 import { bossPoses } from '../boss/anim';
 import { camMatrix } from '../boss/render';
+import { DIABLO_SPEC, diabloOjos, diabloBoca, NOVA_HUECOS, novaFire, novaWarning, redBeam, beamWarning, firePillar, pillarWarning, boneCage, chargeWarning } from '../boss/diablo';
 import { mv } from '../boss/sdf';
 import { introPanels, fuegoPared, humoGrande, logoFuego } from '../intro/intro';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
@@ -178,6 +179,8 @@ export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'n
   luz_corona?: { color: string; radius: number; notas: string };
   /** la luz de la boca de la Dragona de Brasa (Mundo 6) */
   luz_boca?: { color: string; radius: number; notas: string };
+  /** la luz de los ojos del Diablo (Mundo 7) */
+  luz_ojos?: { color: string; radius: number; notas: string };
   /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
   capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
 
@@ -457,6 +460,22 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     nota('sombra_devoradora', 'attack: abre la boca enorme (aviso 1 a 4) y se tira a tragar: si toca a la heroína le quita una luz compañera (audio luz_comida). Ojos blancos que brillan apenas. die: se deshace en humo.');
     nota('reina_escarcha', 'Minijefe del Lago (vuela). attack: tajo (aviso 1 a 4). cast: las lanzas de hielo (aviso 1 a 6): el juego pone aviso_lanza_hielo donde caen. warcry: la ventisca en la arena. dividirse: gira y se abre en tres; en el cuadro 10 (suelta) el juego pone los dos reflejos (la misma hoja, sin sombra y un poco transparentes). die: se rompe en mil cristales.');
     nota('guardian_puerta', 'Minijefe de la Puerta del Trono. attack: el golpe en cruz (aviso 1 a 5, dos impactos: de lado y de arriba): el juego pone aviso_cruz en el piso. attack_heavy: la espada al piso (aviso 1 a 7). charge: la carga en línea (en bucle). Los ojos y las juntas de la armadura brillan rojo. die: cae de rodillas y se apaga.');
+    // el Diablo: dónde van los ojos (la luz que se ve en la oscuridad, null si no se ven) y la boca (de donde sale el
+    // rayo), por dirección y por cuadro
+    chars.diablo = exportBoss(DIABLO_SPEC, files, log, opts.bossCache, opts.quick, { tipo: 'jefe', nombre: 'El Diablo', luz_ojos: { color: '#ff2a1a', radius: 120, notas: 'La luz de los ojos, en `ojos` de cada anim (el punto entre los dos ojos). Es lo único que se ve en oscuridad. En die los ojos se apagan cuando la ceniza le llega a la cara (desde ahí null).' } } as Partial<CharEntry>);
+    for (const [name, entry] of Object.entries(chars.diablo.anims)) {
+      const def = DIABLO_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).ojos = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: DIABLO_SPEC.elev });
+        return poses.map((p) => { const l = diabloOjos(DIABLO_SPEC.cell, p); if (!l) return null; const c = mv(M, l); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+      (entry as unknown as Record<string, unknown>).boca = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: DIABLO_SPEC.elev });
+        return poses.map((p) => { const c = mv(M, diabloBoca(DIABLO_SPEC.cell, p)); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+    }
+    nota('diablo', 'Jefe final (celda 192). attack: el zarpazo (aviso 1 a 6). nova: levanta los brazos (aviso 1 a 8, fx aviso_nova en el piso) y en el impacto sale nova_fuego_diablo desde el pivote: el anillo trae dos huecos por donde se pasa, en los ángulos ' + NOVA_HUECOS.map(([c, w]) => `${c} ± ${w}`).join(' y ') + ' rad (atan2 de dy/0.62 y dx en la imagen, 0 a la derecha, crece hacia abajo). charge: la carga encorvado (en bucle, fx aviso_carga_diablo en línea antes). rayo: abre la boca (aviso 1 a 8, fx aviso_rayo en línea) y sale rayo_rojo repetido en línea desde `boca` (por dirección y por cuadro, como los ojos; el juego lo hace girar). pilares: los puños al piso (aviso 1 a 7, fx aviso_pilar donde salen) y después pilar_fuego. oscuridad: se envuelve en sombra (solo quedan los ojos, los últimos 4 cuadros en bucle). jaula: señala a la heroína (aviso 1 a 6) y salen los huesos: jaula_huesos_subir, jaula_huesos_quieta (mientras está encerrada) y jaula_huesos_romper (el encargo los pide como jaula_huesos con subir, quieta y romper). warcry: ruge al cielo y llama demonios. aturdido (en bucle): de rodillas con los 4 braseros prendidos, la piel se enfría: ahí se le pega. die: cae de rodillas (aterriza, cuadro 5), se le rompe el hielo de los cuernos, la última llama sale del pecho (suelta, cuadro 10) y se deshace en ceniza y escarcha.');
   }
   // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
   for (const id of NPCS) {
@@ -534,6 +553,18 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     for (const { dir, frames } of rotate8(smallFireball())) addFx(`proyectil_fuego_chico_${dir}`, frames, 12, true);
     addFx('aviso_lanza_hielo', iceLanceWarning(), 10, false);
     addFx('aviso_cruz', crossWarning(), 10, false);
+    // el Diablo
+    addFx('nova_fuego_diablo', novaFire(), 12, false);
+    addFx('aviso_nova', novaWarning(), 10, false);
+    addFx('rayo_rojo', redBeam(), 14, true);
+    addFx('aviso_rayo', beamWarning(), 10, true);
+    addFx('pilar_fuego', firePillar(), 12, false);
+    addFx('aviso_pilar', pillarWarning(), 10, false);
+    const jaula = boneCage();
+    addFx('jaula_huesos_subir', jaula.subir, 14, false);
+    addFx('jaula_huesos_quieta', jaula.quieta, 1, true);
+    addFx('jaula_huesos_romper', jaula.romper, 14, false);
+    addFx('aviso_carga_diablo', chargeWarning(), 10, true);
   }
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);

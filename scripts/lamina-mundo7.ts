@@ -157,7 +157,8 @@ async function enemigos(conJefe: boolean) {
   const { familyFicha } = await import('../src/engine/rpg/family.ts');
   const hero = renderClip(familyFicha('sophie', true), 48, 'idle', 'se', { props: true }).frames[0];
   const co = await import('../src/engine/boss/corazonJefes.ts');
-  const specs = conJefe ? [(await import('../src/engine/boss/dragona.ts')).DRAGONA_SPEC] : co.CORAZON_SPECS;
+  void conJefe;
+  const specs = co.CORAZON_SPECS;
   const rows: { cell: number; pivot: [number, number]; frames: Raster[] }[] = [];
   for (const s of specs) {
     const { clips, pivot } = renderBossSheets(s, bossCache());
@@ -180,6 +181,37 @@ async function enemigos(conJefe: boolean) {
   save(conJefe ? 'mundo7_diablo.png' : 'mundo7_enemigos.png', up(r, conJefe ? 1 : 2));
 }
 
+async function diablo() {
+  const { renderBossSheets } = await import('../src/engine/boss/sheet.ts');
+  const { renderClip } = await import('../src/engine/render/clip.ts');
+  const { familyFicha } = await import('../src/engine/rpg/family.ts');
+  const { DRAGONA_SPEC } = await import('../src/engine/boss/dragona.ts');
+  const d = await import('../src/engine/boss/diablo.ts');
+  const hero = renderClip(familyFicha('sophie', true), 48, 'idle', 'se', { props: true }).frames[0];
+  const D = renderBossSheets(d.DIABLO_SPEC, bossCache());
+  const G = renderBossSheets({ ...DRAGONA_SPEC, anims: DRAGONA_SPEC.anims.filter((a) => a.name === 'idle') }, bossCache());
+  console.log(`  diablo: ${D.clips.map((c) => `${c.def.name} ${c.def.frames}`).join(', ')}`);
+  // arriba: la heroína, la Dragona y el Diablo parados en la misma línea de piso (para comparar el tamaño)
+  const ground = 200;
+  const top = floor(48 + 128 + 192 * 3 + 80, ground + 12);
+  over(top, hero, 8, ground - 46);
+  over(top, G.clips[0].frames[7][0], 64, ground - G.pivot[1]);
+  const idle = D.clips.find((c) => c.def.name === 'idle')!;
+  [7, 0, 4].forEach((dir, i) => over(top, idle.frames[dir][0], 200 + i * 192, ground - D.pivot[1]));
+  // abajo: los cuadros clave de cada animación (el aviso, el golpe y el die entero en pasos)
+  const pick = (c: (typeof D.clips)[number]) => { const n = c.def.frames; return c.def.name === 'die' ? [2, 5, 8, 10, 13, 16, n - 1] : c.def.windup ? [c.def.windup[1], Math.min(n - 1, c.def.windup[1] + 2)] : [0, Math.floor(n / 2)]; };
+  const frames = D.clips.flatMap((c) => pick(c).map((f) => c.frames[7][f]));
+  const PER = 8, rows = Math.ceil(frames.length / PER);
+  const r = floor(Math.max(top.w, PER * 192 + 16), top.h + rows * 196 + 300);
+  over(r, top, 0, 0);
+  frames.forEach((f, i) => over(r, f, 8 + (i % PER) * 192, top.h + Math.floor(i / PER) * 196));
+  // los efectos
+  let x = 8; const y0 = top.h + rows * 196 + 8;
+  const fxs: Raster[] = [d.novaWarning()[7], d.novaFire()[5], d.firePillar()[5], d.pillarWarning()[4], d.boneCage().quieta[0], d.boneCage().romper[3], d.redBeam()[0], d.beamWarning()[0], d.chargeWarning()[0]];
+  for (const f of fxs) { over(r, f, x, y0 + (f.h < 256 ? 256 - f.h : 0) / 2); x += f.w + 8; if (x > r.w - 64) break; }
+  save('mundo7_diablo.png', r);
+}
+
 async function iconos() {
   const { skillIcons } = await import('../src/engine/ui/icons2.ts');
   const ic = new Map(skillIcons().map((s) => [s.name, s.frames[0]]));
@@ -194,4 +226,5 @@ if (all || what === 'mapa') await mapa();
 if (all || what === 'objetos') await objetos();
 if (all || what === 'trono') await trono();
 if (all || what === 'enemigos') await enemigos(false);
+if (all || what === 'diablo') await diablo();
 if (all || what === 'iconos') await iconos();

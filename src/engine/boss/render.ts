@@ -20,7 +20,12 @@ export interface BossMaterial {
   /** tonos de oscuro a claro (5 a 7) */
   ramp: string[];
   /** tipo de superficie: cambia la textura y el brillo */
-  surface?: 'fur' | 'skin' | 'leather' | 'metal' | 'stone' | 'wood' | 'horn' | 'cloth' | 'glow' | 'eye';
+  surface?: 'fur' | 'skin' | 'leather' | 'metal' | 'stone' | 'wood' | 'horn' | 'cloth' | 'glow' | 'eye' | 'crack';
+  /**
+   * 'crack' (el Diablo): piel con grietas de brasa. Los dos últimos tonos de la rampa son la brasa (tibia y al rojo);
+   * la piel usa los de abajo. `heat` (0 a 1.5) es cuánto se abren las grietas (0: piel fría, sin brasa).
+   */
+  heat?: number;
   /** cuánto pesa la textura (0 a 1) */
   tex?: number;
   /** escala de la textura (pixeles por celda de ruido) */
@@ -344,6 +349,16 @@ function shade(scene: BossScene, p: Piece, l: V3, n: V3): number {
       return Math.max(0, Math.min(T - 1, Math.round(v * (T - 1))));
     }
     case 'eye': return dot(n, HALF) > 0.9 ? T : 0;
+    case 'crack': {
+      // piel gruesa con poros, partida en placas por grietas de brasa (pegadas a la pieza, no se resbalan)
+      v += (noise3(l[0] / s, l[1] / s, l[2] / s) - 0.5) * 0.2 * k;
+      const heat = m.heat ?? 1;
+      const e = voronoiEdge(l[0] / (s * 4.2), l[1] / (s * 4.2), l[2] / (s * 4.2));
+      if (heat > 0.05 && e < 0.028 * heat) return T;
+      if (heat > 0.05 && e < 0.052 * heat) return T - 1;
+      if (e < 0.07) return Math.max(0, Math.round(v * (T - 2)) - 1);
+      return Math.max(0, Math.min(T - 2, Math.round(v * (T - 2))));
+    }
     default: v += (noise3(l[0] / s, l[1] / s, l[2] / s) - 0.5) * 0.1 * k;
   }
   return Math.max(0, Math.min(T, Math.round(v * T)));
