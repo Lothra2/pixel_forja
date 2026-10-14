@@ -59,7 +59,10 @@
       "carried",
       "thrown_spin",
       "land_flat",
-      "slip_wet"
+      "slip_wet",
+      "judo_grip",
+      "judo_throw",
+      "judo_thrown"
     ],
     "armas": [
       "weapon_pick",
@@ -85,7 +88,8 @@
       "long_jump",
       "pole_vault",
       "shot_put",
-      "javelin"
+      "javelin",
+      "vault_fail"
     ],
     "kachinuki": [
       "stomp",
@@ -201,7 +205,11 @@
     "beisbol": {
       "anims": [
         "pitch",
-        "catch"
+        "catch",
+        "bat_stance",
+        "bat_swing",
+        "dodge_jump",
+        "tejo_throw"
       ],
       "sin_props": true
     }

@@ -467,4 +467,9 @@ export const HELD_ANIMS: Record<string, { kinds: FloorPropKind[]; default: Floor
   weapon_throw: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'throw' || FLOOR_PROPS[k].peso === 'liviano'), default: 'chancleta' },
   umbrella_block: { kinds: ['paraguas'], default: 'paraguas' },
   fan_gust: { kinds: ['abanico'], default: 'abanico' },
+  // la Chapita (lote B6): el palo de escoba a dos manos, o cualquier otro de batear
+  bat_stance: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'swing'), default: 'broomstick' },
+  bat_swing: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'swing'), default: 'broomstick' },
+  // el tejo (lote B6), en la mano hasta la suelta
+  tejo_throw: { kinds: ['tejo'], default: 'tejo' },
 };
