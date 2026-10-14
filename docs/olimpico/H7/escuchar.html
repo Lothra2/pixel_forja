@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audio de H7: ambientes y acordes</title>
+<style>
+:root{--bg:#0f0d1a;--panel:#1b1830;--line:#2e2a4a;--text:#f2efff;--muted:#a49fc4;--accent:#ff8a3d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,sans-serif;padding:16px;max-width:900px;margin:0 auto}
+h1{font-size:22px;margin:4px 0 2px}p{color:var(--muted);margin:0 0 14px}
+h2{font-size:16px;margin:22px 0 8px;color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+button{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;cursor:pointer;min-height:56px}
+button.on{border-color:var(--accent);background:#2a2040}button small{display:block;color:var(--muted);font-size:12px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:1}
+.bar button{min-height:44px;padding:8px 14px;text-align:center}.main{background:var(--accent);color:#1a0d06;border:0;font-weight:700}
+input,select{font:inherit;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}
+.voz{display:flex;gap:8px;flex-wrap:wrap}.voz input{flex:1 1 220px}
+</style></head><body>
+<h1>Audio de H7</h1>
+<p>Toca cualquier sonido. "Tocar todo" los pasa en orden, cada música unos segundos.</p>
+<div class="bar"><button class="main" id="all">▶ Tocar todo</button><button id="stop">■ Parar</button><span id="now" style="color:var(--muted)"></span></div>
+<div id="list"></div>
+<div id="vozbox"></div>
+<script>
+const D={"secciones":{"musica":[{"n":"acorde_familia","f":["acordes/acorde_familia.ogg","acordes/acorde_familia.m4a"],"d":4.8,"b":false},{"n":"acorde_instituto","f":["acordes/acorde_instituto.ogg","acordes/acorde_instituto.m4a"],"d":3.88,"b":false},{"n":"acorde_rong","f":["acordes/acorde_rong.ogg","acordes/acorde_rong.m4a"],"d":5.21,"b":false},{"n":"acorde_rolos","f":["acordes/acorde_rolos.ogg","acordes/acorde_rolos.m4a"],"d":4.72,"b":false},{"n":"acorde_panas","f":["acordes/acorde_panas.ogg","acordes/acorde_panas.m4a"],"d":4.48,"b":false},{"n":"acorde_maracuchos","f":["acordes/acorde_maracuchos.ogg","acordes/acorde_maracuchos.m4a"],"d":4.71,"b":false}],"ambientes":[{"n":"trafico_saigon","f":["ambiente/trafico_saigon.ogg","ambiente/trafico_saigon.m4a"],"d":12,"b":true},{"n":"hoian_noche","f":["ambiente/hoian_noche.ogg","ambiente/hoian_noche.m4a"],"d":12,"b":true},{"n":"llovizna_bogota","f":["ambiente/llovizna_bogota.ogg","ambiente/llovizna_bogota.m4a"],"d":12,"b":true},{"n":"lago_noche","f":["ambiente/lago_noche.ogg","ambiente/lago_noche.m4a"],"d":12,"b":true},{"n":"azotea_noche","f":["ambiente/azotea_noche.ogg","ambiente/azotea_noche.m4a"],"d":12,"b":true},{"n":"atardecer_cartagena","f":["ambiente/atardecer_cartagena.ogg","ambiente/atardecer_cartagena.m4a"],"d":12,"b":true},{"n":"comuna","f":["ambiente/comuna.ogg","ambiente/comuna.m4a"],"d":12,"b":true},{"n":"carnaval","f":["ambiente/carnaval.ogg","ambiente/carnaval.m4a"],"d":12,"b":true},{"n":"pinos_dalat","f":["ambiente/pinos_dalat.ogg","ambiente/pinos_dalat.m4a"],"d":12,"b":true},{"n":"liceo","f":["ambiente/liceo.ogg","ambiente/liceo.m4a"],"d":12,"b":true},{"n":"trafico_saigon_dos_vueltas","f":["ambiente/trafico_saigon_dos_vueltas.ogg","ambiente/trafico_saigon_dos_vueltas.m4a"],"d":24,"b":false},{"n":"hoian_noche_dos_vueltas","f":["ambiente/hoian_noche_dos_vueltas.ogg","ambiente/hoian_noche_dos_vueltas.m4a"],"d":24,"b":false},{"n":"llovizna_bogota_dos_vueltas","f":["ambiente/llovizna_bogota_dos_vueltas.ogg","ambiente/llovizna_bogota_dos_vueltas.m4a"],"d":24,"b":false},{"n":"lago_noche_dos_vueltas","f":["ambiente/lago_noche_dos_vueltas.ogg","ambiente/lago_noche_dos_vueltas.m4a"],"d":24,"b":false},{"n":"azotea_noche_dos_vueltas","f":["ambiente/azotea_noche_dos_vueltas.ogg","ambiente/azotea_noche_dos_vueltas.m4a"],"d":24,"b":false},{"n":"atardecer_cartagena_dos_vueltas","f":["ambiente/atardecer_cartagena_dos_vueltas.ogg","ambiente/atardecer_cartagena_dos_vueltas.m4a"],"d":24,"b":false},{"n":"comuna_dos_vueltas","f":["ambiente/comuna_dos_vueltas.ogg","ambiente/comuna_dos_vueltas.m4a"],"d":24,"b":false},{"n":"carnaval_dos_vueltas","f":["ambiente/carnaval_dos_vueltas.ogg","ambiente/carnaval_dos_vueltas.m4a"],"d":24,"b":false},{"n":"pinos_dalat_dos_vueltas","f":["ambiente/pinos_dalat_dos_vueltas.ogg","ambiente/pinos_dalat_dos_vueltas.m4a"],"d":24,"b":false},{"n":"liceo_dos_vueltas","f":["ambiente/liceo_dos_vueltas.ogg","ambiente/liceo_dos_vueltas.m4a"],"d":24,"b":false}]},"voces":{}};const T={"musica":"Música","sfx":"Efectos","ambientes":"Ambientes"};
+let cur=null,queue=[],timer=null;
+const $=(id)=>document.getElementById(id);
+const MIME={ogg:'audio/ogg',m4a:'audio/mp4',wav:'audio/wav'};const probe=new Audio();
+const pick=(fs)=>fs.find(f=>probe.canPlayType(MIME[f.split('.').pop()]||''))||fs[0];
+function stop(){if(cur){cur.pause();cur=null}clearTimeout(timer);queue=[];document.querySelectorAll('button.on').forEach(b=>b.classList.remove('on'));$('now').textContent=''}
+function play(item,btn,next){if(cur)cur.pause();document.querySelectorAll('button.on').forEach(b=>b.classList.remove('on'));
+ const a=new Audio(pick(item.f));cur=a;btn&&btn.classList.add('on');$('now').textContent=item.n;a.play().catch(()=>{});
+ const lim=item.b?Math.min(item.d,8):item.d;clearTimeout(timer);timer=setTimeout(()=>{a.pause();btn&&btn.classList.remove('on');next&&next()},lim*1000+250)}
+const list=$('list');
+for(const[s,items]of Object.entries(D.secciones)){const h=document.createElement('h2');h.textContent=T[s]||s;list.append(h);const g=document.createElement('div');g.className='grid';list.append(g);
+ for(const it of items){const b=document.createElement('button');b.innerHTML=it.n+'<small>'+it.d.toFixed(1)+' s'+(it.b?' · bucle':'')+'</small>';b.onclick=()=>{queue=[];play(it,b)};it.btn=b;g.append(b)}}
+$('all').onclick=()=>{stop();queue=Object.values(D.secciones).flat();const step=()=>{const it=queue.shift();if(it)play(it,it.btn,step);else stop()};step()};
+$('stop').onclick=stop;
+const ids=Object.keys(D.voces);
+if(ids.length){const box=$('vozbox');box.innerHTML='<h2>Voces</h2><div class="voz"><select id="vid">'+ids.map(i=>'<option>'+i+'</option>').join('')+'</select><input id="vtxt" value="¡Dale que vamos a ganar!"><button class="main" id="vsay">▶ Decir</button></div>';
+ $('vsay').onclick=()=>{stop();const files=D.voces[$('vid').value];const txt=$('vtxt').value;let i=0;
+  const tick=()=>{if(i>=txt.length)return;const ch=txt[i++];if(/[\p{L}\p{N}]/u.test(ch)){new Audio(files[(ch.charCodeAt(0))%files.length]).play().catch(()=>{})}timer=setTimeout(tick,/[.,!?¡¿]/.test(ch)?220:55)};tick()}}
+</script></body></html>

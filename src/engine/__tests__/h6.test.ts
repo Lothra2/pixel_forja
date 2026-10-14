@@ -34,7 +34,8 @@ describe('ambientes de los mundos del olímpico (lote H6)', () => {
   const amb = Object.fromEntries([...NUEVOS, ...ANTES].map((n) => [n, renderSound('ambientes', n)]));
 
   it('los tres están en el catálogo, junto a los seis de antes, y ninguno pisa un nombre', () => {
-    expect(AMBIENCE_NAMES).toEqual([...ANTES, ...NUEVOS]);
+    // los de lotes siguientes (H7) van después: los de antes siguen primero y en su orden
+    expect(AMBIENCE_NAMES.slice(0, 9)).toEqual([...ANTES, ...NUEVOS]);
     for (const n of NUEVOS) expect(SONIDOS.ambientes, n).toContain(n);
     expect(new Set(SONIDOS.ambientes).size).toBe(SONIDOS.ambientes.length);
   });
