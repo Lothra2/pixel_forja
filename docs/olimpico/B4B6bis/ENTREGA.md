@@ -1,6 +1,6 @@
 # Lote B4B6 bis: el judo de verdad
 Estado: entregado, pendiente de Rick
-PR: (pendiente)
+PR: https://github.com/Lothra2/pixel_forja/pull/41
 Fecha: 2026-10-14
 
 ## Qué se hizo
