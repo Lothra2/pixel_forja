@@ -374,6 +374,11 @@
       "halong_remos",
       "pajarillo_llano"
     ],
+    "ambientes": [
+      "mar",
+      "cafetal",
+      "llano"
+    ],
     "voces": [
       "rick",
       "steph",
