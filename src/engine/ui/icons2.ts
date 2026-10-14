@@ -186,7 +186,87 @@ export function skillIcons(): UiSprite[] {
   // Mundo 5: prender el farol de plaza (o la lámpara del trono) y las chispas de la luz robada
   out.push({ name: 'prender', frames: [skill('#e8b850', lightLamp, '#ffd27a')] });
   out.push({ name: 'chispas', frames: [skill('#e8b850', threeSparks, '#ffd27a')] });
+  // Mundo 6: Thor se sacude (y el mismo en gris sin agua, cuando está seco), el calor, la jaula y la palanca
+  out.push({ name: 'sacudir', frames: [skill('#e8b850', (c) => thorShake(c, true), '#ffd27a')] });
+  out.push({ name: 'sacudir_seco', frames: [grayed(skill('#e8b850', (c) => thorShake(c, false), '#ffd27a'))] });
+  out.push({ name: 'calor', frames: [skill('#e8b850', heatGauge, '#ffd27a')] });
+  out.push({ name: 'jaula', frames: [skill('#e8b850', openCage, '#ffd27a')] });
+  out.push({ name: 'palanca', frames: [skill('#e8b850', pullLever, '#ffd27a')] });
   return out;
+}
+
+/** Thor sacudiéndose: la cabeza de frente con las orejas volando a los dos lados, rayitas de movimiento y gotas. */
+function thorShake(c: IconCanvas, wet: boolean) {
+  const fur = clothMat('#b5713a'), furD = clothMat('#7a4a26'), muzzle = clothMat('#e8c8a0');
+  // las rayitas de la sacudida (arcos a los costados)
+  for (const s of [-1, 1]) c.ring([20 + s * 1, 21], 13.5, 12, 1.2, white, {}, s > 0 ? -50 : 130, s > 0 ? 50 : 230);
+  // las orejas que vuelan hacia afuera
+  c.poly([[12, 14], [4.6, 10.4], [6, 17.6], [11, 19]], furD);
+  c.poly([[28, 14], [35.4, 10.4], [34, 17.6], [29, 19]], furD);
+  // la cabeza redonda, el hocico claro, la nariz y los ojos cerrados contentos
+  c.ellipse([20, 20], 9.6, 8.8, fur);
+  c.ellipse([20, 24.6], 5.4, 4, muzzle);
+  c.ellipse([20, 22.4], 1.8, 1.3, clothMat('#2a1a14'));
+  for (const x of [15.6, 24.4]) c.ring([x, 18.6], 1.8, 1.4, 0.9, clothMat('#2a1a14'), {}, 200, 340);
+  c.line([18.4, 27], [21.6, 27], 0.8, clothMat('#8a4a3a'));
+  // las gotas celestes que salen volando
+  if (wet) for (const [x, y, r] of [[6.4, 24.6, 1.7], [9.4, 31, 1.5], [33.6, 25, 1.7], [30.6, 31.4, 1.5], [14, 6.4, 1.4], [26.4, 6, 1.4]] as [number, number, number][]) {
+    c.ellipse([x, y], r, r * 1.3, glowMat('#7ad0ff'), { tone: 3 });
+    c.ellipse([x - r * 0.3, y - r * 0.4], r * 0.4, r * 0.4, glowMat('#e0f6ff'), { tone: 5 });
+  }
+}
+
+/** El medidor de calor: un termómetro con una llamita roja adentro del bulbo. */
+function heatGauge(c: IconCanvas) {
+  const glass = { hex: '#d8e8f0', kind: 'glass' as const };
+  // el tubo y el bulbo de vidrio
+  c.poly([[16.6, 7], [23.4, 7], [23.4, 24], [16.6, 24]], glass, { tone: 3 });
+  c.circle([20, 27.6], 7, glass, { tone: 3 });
+  // las marquitas
+  for (const y of [10, 13.4, 16.8, 20.2]) c.line([24, y], [27, y], 1, MAT.gold);
+  // el rojo que sube y la llamita en el bulbo
+  c.poly([[18.2, 12], [21.8, 12], [21.8, 24], [18.2, 24]], glowMat('#e8301a'), { tone: 3 });
+  c.circle([20, 27.6], 5.2, glowMat('#e8301a'), { tone: 3 });
+  c.poly([[20, 21.6], [23.4, 27], [22.4, 30.6], [20, 31.6], [17.6, 30.6], [16.6, 27]], glowMat('#ffb040'), { tone: 4 });
+  c.poly([[20, 25.4], [21.6, 28.6], [20, 30.6], [18.4, 28.6]], glowMat('#fff0a0'), { tone: 5 });
+}
+
+/** Una jaula abierta con la luz que sale: la puertita abierta a un costado y la lucecita que sube con su brillo. */
+function openCage(c: IconCanvas) {
+  const iron = metalMat('#4a3c34');
+  // la luz que sale y sube, con rayitos
+  for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2, cx = 25, cy = 9; c.line([cx + Math.cos(a) * 4.4, cy + Math.sin(a) * 4.4], [cx + Math.cos(a) * 6.6, cy + Math.sin(a) * 6.6], 1.1, glowMat('#ffe080'), { tone: 4 }); }
+  c.circle([25, 9], 3.4, glowMat('#ffd060'), { tone: 4 });
+  c.circle([25, 9], 1.6, glowMat('#fffae0'), { tone: 5 });
+  // la jaula: la cúpula, los barrotes, la base y la argolla
+  c.ring([17, 18], 8, 6, 1.4, iron, {}, 180, 360);
+  for (const x of [9.6, 13.4, 20.6, 24.4]) c.line([x, 18], [x, 31], 1.3, iron);
+  c.poly([[8.4, 30.4], [25.6, 30.4], [24.6, 33], [9.4, 33]], iron, { bias: 1 });
+  c.ring([17, 9.4], 1.6, 1.6, 0.8, iron, {}, 0, 360);
+  // la puertita abierta (los barrotes del medio, girados hacia afuera)
+  c.poly([[24.4, 19], [31.6, 22.6], [31.6, 33], [24.4, 31]], { hex: '#2a1a14', kind: 'metal' as const }, { tone: 1 });
+  for (const t of [0.3, 0.7]) c.line([24.4 + 7.2 * t, 19 + 3.6 * t], [24.4 + 7.2 * t, 31 + 2 * t], 1.1, iron);
+  // un brillo tibio adentro, de la luz que estuvo
+  c.ellipse([17, 25], 3, 3.4, glowMat('#ffc070'), { tone: 2 });
+}
+
+/** Una mano que tira de una palanca, con vapor que sale del caño. */
+function pullLever(c: IconCanvas) {
+  const iron = metalMat('#4a4048');
+  // el vapor arriba a la derecha
+  for (const [x, y, r] of [[29, 12, 3.4], [32.4, 8.4, 2.8], [26, 7.4, 2.6], [31, 15.6, 2.4]] as [number, number, number][]) c.circle([x, y], r, { hex: '#e8f4ff', kind: 'cloth' as const }, { tone: 4 });
+  // la caja con el caño frío
+  c.poly([[20, 22], [32, 22], [32, 33], [20, 33]], iron);
+  c.poly([[27, 14], [30, 14], [30, 22], [27, 22]], metalMat('#5a8aa8'));
+  // la palanca: barra que baja en diagonal desde la caja, con el mango de madera
+  c.line([22, 24], [11, 13], 2, iron);
+  c.line([11, 13], [7.4, 9.4], 3.2, MAT.wood);
+  c.circle([22, 24], 2, metalMat('#8a7a70'));
+  // la mano que la tira: el puño cerrado sobre el mango y la manga
+  c.ellipse([10, 13.4], 3.6, 3.2, clothMat('#f0c09a'));
+  c.poly([[4, 22], [7.6, 15], [11.6, 16.4], [8.4, 23.4]], clothMat('#5a7ad8'));
+  // las rayitas del tirón
+  for (const [x0, y0] of [[14, 8], [16.6, 10]] as P[]) c.line([x0, y0], [x0 + 3.4, y0 + 3.4], 0.9, white);
 }
 
 /** Una mano que prende un farol: el farol de plaza arriba con la luz dorada que nace y la manito que lo toca. */

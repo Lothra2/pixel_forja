@@ -196,6 +196,15 @@ async function enemigos(conJefe: boolean) {
   save(conJefe ? 'mundo6_dragona.png' : 'mundo6_enemigos.png', up(r, conJefe ? 1 : 2));
 }
 
+async function iconos() {
+  const { skillIcons } = await import('../src/engine/ui/icons2.ts');
+  const ic = new Map(skillIcons().map((s) => [s.name, s.frames[0]]));
+  const names = ['sacudir', 'sacudir_seco', 'calor', 'jaula', 'palanca'];
+  const r = fill(createRaster(48 * names.length + 92 * names.length + 16, 100), [26, 18, 16]);
+  names.forEach((n, i) => { over(r, ic.get(n)!, 8 + i * 48, 8); over(r, up(ic.get(n)!, 2), 8 + names.length * 48 + i * 92, 8); });
+  save('mundo6_iconos.png', up(r, 2));
+}
+
 const all = what === 'todo';
 if (all || what === 'mapa') await mapa();
 if (all || what === 'jaulas') await jaulas();
@@ -203,3 +212,4 @@ if (all || what === 'objetos') await objetos();
 if (all || what === 'puerta') await puerta();
 if (all || what === 'enemigos') await enemigos(false);
 if (all || what === 'jefe') await enemigos(true);
+if (all || what === 'iconos') await iconos();

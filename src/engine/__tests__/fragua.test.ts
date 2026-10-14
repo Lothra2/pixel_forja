@@ -251,3 +251,21 @@ describe('Mundo 6: La Fragua de las Luces (mapa y objetos)', () => {
   });
 }, 300_000);
 
+describe('Mundo 6, parte 6: los íconos para Alana', () => {
+  it('sacudir, sacudir_seco, calor, jaula y palanca: 40 x 40, redondos, con el aro dorado', async () => {
+    const { skillIcons } = await import('../ui/icons2');
+    const ic = new Map(skillIcons().map((s) => [s.name, s.frames[0]]));
+    for (const n of ['sacudir', 'sacudir_seco', 'calor', 'jaula', 'palanca']) {
+      const r = ic.get(n)!;
+      expect(r, n).toBeTruthy();
+      expect([r.w, r.h], n).toEqual([40, 40]);
+      expect(r.data[3], n).toBe(0);
+      expect(r.data[(39 * 40 + 39) * 4 + 3], n).toBe(0);
+    }
+    // el seco es gris (sin color) y el mojado tiene celeste
+    const gris = (r: { data: Uint8ClampedArray | Uint8Array }) => { let n = 0; for (let i = 0; i < r.data.length; i += 4) if (r.data[i + 3] && Math.max(r.data[i], r.data[i + 1], r.data[i + 2]) - Math.min(r.data[i], r.data[i + 1], r.data[i + 2]) > 30) n++; return n; };
+    expect(gris(ic.get('sacudir_seco')!)).toBeLessThan(10);
+    const celeste = (r: { data: Uint8ClampedArray | Uint8Array }) => { let n = 0; for (let i = 0; i < r.data.length; i += 4) if (r.data[i + 3] && r.data[i + 2] > 200 && r.data[i] < 160) n++; return n; };
+    expect(celeste(ic.get('sacudir')!)).toBeGreaterThan(8);
+  });
+});
