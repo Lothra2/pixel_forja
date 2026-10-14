@@ -302,6 +302,54 @@ como los otros). Detalle completo en `docs/mundos/GALERIAS.md`. Lo nuevo para el
   `portal_ambar`, con `girar`, `abrir`, `cerrar`, `arco` y `remolino`). Cada mundo dice el suyo en `portal`.
   `ui.habilidades.farol` (#41: Thor alza el farol, rayos ámbar y aro dorado) y `farol_recarga` (el mismo en gris).
 
+### Mundo 5: La Ciudad Dormida (encargo F12)
+
+`manifest.mundos` trae `mundo5` (mapa `mundo/mundo5_ciudad.json`, 110 x 100, con `fondo` (`fondo_ciudad_lejos_0..2`, se ve
+por los huecos del abismo), `portal: portal_plata`). Resumen de la entrega: `docs/entregas/abyss_mundo5.md`. Lo nuevo:
+
+- **Faroles de plaza** (la fogata del piso): 5 `punto_guardado` con `farol_plaza: true` y `objeto: farol_plaza`, y al
+  lado la entidad `farol_plaza` (el poste, `punto` = id, `barrio` = nombre exacto de la zona que alumbra). Arrancan
+  apagados (`farol_plaza_apagado`). La heroína los prende con `ui.habilidades.prender`: `farol_plaza_prenderse` una
+  vez (12 cuadros, sube un anillo de luz) y después `farol_plaza_prendido` (luz dorada de 320). Si la Ladrona roba la
+  luz: `farol_plaza_robado` una vez (el hilo de luz se va para arriba) y queda apagado. El de la Puerta trae
+  `tutorial: true`. El mundo trae `faroles` con los nombres.
+- **La luz robada:** entidades `chispa` con `barrio` (8 por barrio con farol, caminables y lejos de las paredes). El
+  juego elige tres del barrio del farol robado y dibuja `chispa_luz` (16 x 16, luz de 50). Thor las rastrea. El
+  contador va con `ui.habilidades.chispas`. El mundo trae `chispas` con las notas.
+- **La Ladrona:** `figura_ladrona` (48 x 64): `idle`, `robar` (8 a 8 fps, en bucle) e `irse` (8 a 10 fps). En el
+  objeto viene `farolito`: por anim, el `[x, y]` del farolito en cada cuadro, en pixeles desde el apoyo (y hacia
+  abajo). El juego dibuja el hilo de luz del farol de plaza hasta ahí. Entidades `figura` con `barrio` (una o dos por
+  barrio con farol) y una con `alto: true` en el balcón del palacio.
+- **Estatuas:** entidades `estatua` con `variante` (0 a 9) y `objeto` (`estatua_ciudadano_<variante>`), en el mismo
+  punto que su objeto en la capa objetos (son sólidas). Anims `dormida`, `despertar` (12 a 12 fps, una vez) y
+  `despierta` (4 a 4 fps, respiran y saludan). Al vencer al Rey despiertan. También despiertan las casas
+  (`casa_ciudad_0..9`, anim `despierta`: ventanas `#ffc070` y toldos de colores), los puestos, los árboles de piedra
+  y la fuente (`fuente_plaza`, anim `corre`). La torre del reloj tiene `parado` y `andando`.
+- **Entidades:** `portal_llegada` (`portal: portal_plata`), `portal_volver` (mundo4), `portal_jefe` (`destino:
+  mundo6`), `jefe` (`rey_de_piedra`), `arena_jefe` (`radio: 208`, `trono: true`), 4 `lampara_trono` a 150 px del centro
+  en diagonal (`lampara_trono_apagada`, `_prenderse` una vez, `_prendida` con luz de 200), `mural` (`pieza: 5`),
+  `cajita_musica`, `fuente`, `torre_reloj`, el minijefe `relojero` con `elite: true` y los enemigos
+  `sonambulo_piedra`, `gargola_dormida` y `duende_sueno`.
+- **Zonas** con `ambiente` `ciudad`, `cajita`, `jardin`, `reloj`, `abismo` y `jefe`, partícula `polvo_sueno` (en las
+  `particulas` del mundo 5), `musica: ninguna` (el Palacio trae `musica: jefe_rey` y `musica_victoria: despertar`, la
+  Torre `musica_pelea: relojero`) y su `frente` (`banderines_rotos_0..1`, `arco_calle_0..1`, `lampara_colgante_0..1`).
+- **Luz:** sin sombras horneadas con dirección, solo la sombra de contacto al pie. La luz es de los faroles de plaza,
+  las lámparas del trono, la cajita (lila, 40) y la corona del Rey.
+- **Enemigos y jefe:** `sonambulo_piedra` (48: `quieto` en la luz, `attack` con 4 cuadros de aviso con los ojos
+  celestes), `gargola_dormida` (48, `vuela`: `posada`, `despertar`, `attack` en picada con 6 de aviso), `duende_sueno`
+  (48), `relojero` (64, `elite`, `attack_heavy` con 8 de aviso, `warcry` da cuerda) y `rey_de_piedra` (128, `tipo:
+  jefe`, `luz_corona`). El Rey trae `idle`, `walk`, `attack` (puño), `attack_heavy` (pisotón con `elevacion`),
+  `barrido`, `warcry`, `aturdido`, `hit` y `die`, y en cada anim `corona`: 8 listas (una por dirección) con un `[x, y]`
+  por cuadro desde el pivote, o `null` cuando la corona ya se rompió (en `die` desde el cuadro 5). `fx`:
+  `sombra_picada` (48 x 24), `proyectil_arena_<dir>` (16), `impacto_arena` (32), `aviso_aguja` (32, en bucle, se
+  repite en línea), `aviso_puno` (96 x 48), `grieta_luz` (64) y `nota_cuna` (16).
+- **Audio:** `ambiente_ciudad` (20 s), `ambiente_cajita`, `ambiente_jardin`, `ambiente_reloj`, `ambiente_abismo`,
+  `musica_jefe_rey` y `musica_relojero` (en bucle), `musica_despertar` (30 s), y los efectos `farol_plaza_prender`,
+  `luz_robada`, `chispa_recoger`, `estatua_paso`, `estatua_quieta`, `gargola_despierta`, `gargola_picada`,
+  `arena_sueno`, `bostezo`, `reloj_campanada`, `aguja_barre`, `rey_puno`, `rey_pisoton`, `rey_canta`, `corona_rompe` y
+  `ciudad_despierta` (`figura_irse` es el de las Galerías). Todo con pico de 0.5.
+- **Íconos:** `ui.habilidades.prender` y `ui.habilidades.chispas`. **Portal:** `portal_plata`.
+
 ### El intro (parte 4)
 
 `manifest.intro` trae los paneles pintados para el intro: `intro_bosque_noche`, `intro_corte_abismo`, `intro_ojos`,
