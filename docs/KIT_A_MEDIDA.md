@@ -152,12 +152,12 @@ La raqueta y el guante no se quitan. En Chapita y en Quemado la `clase` dice `be
 
 ```json
 {
-  "familia_gg": { "nombre": "Familia GG", "pais": "venezuela", "colores": ["#2a5bd7", "#f2c230"], "atletas": ["rick", "steph", "sophie", "alana"], "mascota": "thor" },
+  "familia_gg": { "nombre": "Familia GG", "pais": "venezuela", "colores": ["#2a5bd7", "#f2c230"], "atletas": ["rick", "steph", "sophie", "alana"], "mascota": "thor", "musica": "acorde_familia" },
   "instituto_nekketsu": { "nombre": "Instituto Nekketsu", "pais": "japon", "colores": ["#353c58", "#d42a2a"], "atletas": ["kenji", "ryu", "goro", "tetsu"] }
 }
 ```
 
-Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos y que la mascota exista. Cualquier otro campo (`pais`, `musica`, `bandera`...) pasa al manifiesto sin tocarlo.
+Se revisa que cada atleta tenga ficha, que nadie esté en dos equipos, que la mascota exista y que la `musica` del equipo (su acorde de victoria, lote H7) sea una del motor. Si esa música no va en `audio.musica`, el kit avisa. Cualquier otro campo (`pais`, `bandera`...) pasa al manifiesto sin tocarlo.
 
 ### Nombres propios y animaciones por equipo (`alias`, lote C5)
 
@@ -189,8 +189,8 @@ Un juego puede ponerle su nombre a una animación del motor. El pack pide la del
 - **Efectos:** cada uno sale en `fx/<id>.png` con su entrada en `manifest.fx`: tamaño, cuadros, fps, bucle, ancla, a qué se pega y si va delante o detrás. El catálogo, qué efecto va con qué evento y cómo se ponen en Phaser están en [EFECTOS.md](EFECTOS.md).
 - **Audio:** los sonidos del motor, sintetizados, en WAV de 16 bits mono a 22050 Hz. El catálogo completo está en [AUDIO.md](AUDIO.md).
   - `sfx` (65): los del lote H1 (pistola, silbato, golpe_1 a 3, golpe_pesado, chancleta, silla, pote, levantar, lanzar, caer_plano, mareo, ko, publico_grito, publico_ooh), los de pelea e interfaz (golpe, critico, esquiva, bloqueo, click, elegir...), los pasos por superficie y los de GG Abyss.
-  - `musica` (9): marcha_nekketsu, saigon_chay, azotea_final, victoria_banda, derrota, y bosque, jefe, victoria y titulo de GG Abyss. Las que van en bucle empalman sin corte.
-  - `ambientes` (9): bosque, agua, noche, viento, cueva, magia, y los de los mundos del olímpico (lote H6): mar, cafetal y llano. En bucle sin corte.
+  - `musica`: marcha_nekketsu, saigon_chay, azotea_final, victoria_banda, derrota, un tema por mundo (lotes H2 a H4), el acorde de victoria de cada equipo (`acorde_<equipo>`, lote H7, sin bucle), y bosque, jefe, victoria y titulo de GG Abyss. Las que van en bucle empalman sin corte.
+  - `ambientes` (19): bosque, agua, noche, viento, cueva, magia, y los de los mundos del olímpico: mar, cafetal y llano (lote H6), trafico_saigon, hoian_noche, llovizna_bogota, lago_noche, azotea_noche, atardecer_cartagena, comuna, carnaval, pinos_dalat y liceo (lote H7). En bucle sin corte.
   - `voces`: 4 blips por personaje para los diálogos. Con `true` salen todos los atletas, con una lista también los NPC (`locutor`), y con un objeto se fija la voz.
 - **Qué sale del audio:**
   - `audio/sfx/<n>.wav`, `audio/musica/<n>.wav`, `audio/ambiente/<n>.wav` y `audio/voz/<id>_<k>.wav`.

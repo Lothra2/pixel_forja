@@ -75,7 +75,7 @@ export function tambora(m: Mixer, t: number, vol: number, golpe: 'parche' | 'aro
   }
 }
 /** Furro: el tambor de fricción de la gaita, un "rum" grave y áspero. */
-function furro(m: Mixer, t: number, dur: number, vol: number, f = 62) {
+export function furro(m: Mixer, t: number, dur: number, vol: number, f = 62) {
   m.add({ t, dur, f, wave: 'saw', vol, a: 0.03, d: 0.08, s: 0.65, r: 0.07, lp: 0.07, vib: [23, 0.5, 0], bend: { semis: 2, len: 0.07 } });
   m.add({ t, dur, f: f * 2, wave: 'triangle', vol: vol * 0.35, a: 0.03, s: 0.6, r: 0.06, lp: 0.3, bend: { semis: 2, len: 0.07 } });
 }
@@ -85,7 +85,7 @@ export function rasgueo(m: Mixer, t: number, notas: number[], vol: number, apaga
   if (apagado) m.add({ t, dur: 0.006, f: 5000, wave: 'noise', vol: vol * 0.9, s: 1, r: 0.03, hp: 0.6, lp: 0.6 });
 }
 /** Acorde de guitarra eléctrica (raíz, quinta y octava): sierra y cuadrada filtradas, con el palm mute si es corto. */
-function powerChord(m: Mixer, t: number, root: number, dur: number, vol: number, abierto = false) {
+export function powerChord(m: Mixer, t: number, root: number, dur: number, vol: number, abierto = false) {
   for (const k of [1, 1.4983, 2]) {
     m.add({ t, dur, f: root * k, wave: 'saw', vol, a: 0.003, d: 0.06, s: abierto ? 0.75 : 0.45, r: 0.04, lp: abierto ? 0.32 : 0.2 });
     m.add({ t, dur, f: root * k * 1.004, wave: 'square', duty: 0.3, vol: vol * 0.45, a: 0.003, d: 0.06, s: abierto ? 0.7 : 0.4, r: 0.04, lp: 0.18 });
