@@ -661,3 +661,62 @@ export const USO_BARRIO: Record<Color, string> = {
   oro: 'el sol de la tarde en las paredes, los mangos',
   bruma: 'la calima de la tarde',
 };
+
+/**
+ * El patio techado de un liceo de Caracas al mediodía (estilo `venezuela_liceo`): el concreto del patio y de las gradas,
+ * la cancha pintada de verde con las rayas amarillas y blancas, las paredes crema del edificio con la franja azul, las
+ * cerchas del techo pintadas de azul y las camisas beige de los liceístas. `canal` es El Ávila que se asoma.
+ */
+export const VENEZUELA_LICEO_MEDIODIA: Paleta = {
+  tinta: '#18161e',
+  sombra: '#2e2c3a',
+  asfalto: '#4c4a58',
+  asfalto_claro: '#6e6c7a',
+  cemento: '#9a98a0',
+  cemento_claro: '#c8c4c0',
+  crema: '#efe4cc',
+  luz: '#fbf8ee',
+  amarillo: '#f4c838',
+  ocre: '#c89448',
+  terracota: '#a85c3c',
+  rojo: '#d63a32',
+  vino: '#7c2830',
+  salmon: '#e89a84',
+  menta: '#7ec8a8',
+  verde: '#4c8c66',
+  verde_oscuro: '#2c5a44',
+  celeste: '#7ab4e0',
+  cielo: '#c4e0f2',
+  azul: '#2e5aa8',
+  azul_noche: '#22305a',
+  canal: '#5e8aa0',
+  oro: '#f4a830',
+  bruma: '#e2e6e2',
+};
+
+export const USO_LICEO: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro',
+  sombra: 'la sombra honda debajo del techo y de las gradas',
+  asfalto: 'el techo de láminas por debajo',
+  asfalto_claro: 'las láminas con luz, los tubos',
+  cemento: 'el concreto del patio y de las gradas en sombra',
+  cemento_claro: 'el concreto con luz, las paredes en sombra',
+  crema: 'las paredes del liceo, las camisas beige',
+  luz: 'las rayas blancas de la cancha, la luz de las lámparas',
+  amarillo: 'la raya del medio, la bandera',
+  ocre: 'la madera de las puertas y de la cartelera',
+  terracota: 'el ladrillo, las tejas',
+  rojo: 'la bandera, el letrero de la cantina',
+  vino: 'sombra del rojo',
+  salmon: 'la piel',
+  menta: 'la cancha con luz',
+  verde: 'la cancha pintada de verde',
+  verde_oscuro: 'la cancha gastada, las matas',
+  celeste: 'el cielo, las camisas azul claro',
+  cielo: 'el cielo bajo',
+  azul: 'las cerchas del techo, la franja del edificio, los pantalones',
+  azul_noche: 'sombra del azul',
+  canal: 'El Ávila que se asoma',
+  oro: 'el sol que entra de lado',
+  bruma: 'la calima detrás de El Ávila',
+};

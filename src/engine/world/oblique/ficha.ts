@@ -4,7 +4,7 @@ import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Pa
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
 import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
-import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG, VENEZUELA_APURE_ATARDECER, USO_APURE, VENEZUELA_BARRIO_TARDE, USO_BARRIO } from './lugaresPaleta';
+import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG, VENEZUELA_APURE_ATARDECER, USO_APURE, VENEZUELA_BARRIO_TARDE, USO_BARRIO, VENEZUELA_LICEO_MEDIODIA, USO_LICEO } from './lugaresPaleta';
 import { lugarDe } from './lugares';
 
 /**
@@ -609,10 +609,36 @@ const VENEZUELA_BARRIO: Estilo = {
   letreros: ['ABASTO EL PANA', 'HIELITOS', 'A 1 BS'],
 };
 
+
+/** El patio techado de un liceo de Caracas al mediodía (lote E6). */
+const VENEZUELA_LICEO: Estilo = {
+  paleta: VENEZUELA_LICEO_MEDIODIA,
+  uso: USO_LICEO,
+  horas: ['mediodia'],
+  iconos: [
+    { id: 'techo', nombre: 'El techo de láminas visto por debajo, con las cerchas azules en zigzag y las lámparas', donde: 'cerca, arriba' },
+    { id: 'avila', nombre: 'El Ávila que se asoma entre el techo y el edificio', donde: 'lejos' },
+    { id: 'edificio', nombre: 'El edificio de las aulas: dos pisos crema con la franja azul, las romanillas y las puertas de madera numeradas', donde: 'cerca' },
+    { id: 'letrero', nombre: 'El letrero U.E. LICEO EL ÁVILA con los escudos tricolores', donde: 'cerca, donde lo ponía el juego' },
+    { id: 'bandera', nombre: 'La bandera de Venezuela con las ocho estrellas en su asta', donde: 'cerca' },
+    { id: 'gradas', nombre: 'Las gradas de concreto llenas de liceístas con la camisa beige y el pantalón azul', donde: 'cerca, a la izquierda' },
+    { id: 'cantina', nombre: 'La cantina con la reja, las empanadas, el jugo, la señora que vende y la cola', donde: 'cerca, a la derecha, con el letrero CANTINA' },
+    { id: 'cartelera', nombre: 'La cartelera de corcho, el reloj de pared, el mural ESTUDIAR ES CRECER y el bebedero', donde: 'cerca' },
+    { id: 'cancha', nombre: 'La cancha pintada de verde con el borde blanco, la raya amarilla del medio con el círculo y los dos cementerios rayados', donde: 'piso' },
+  ],
+  vida: {
+    publico: 'Los liceístas de las gradas que brincan y levantan los brazos: 2 cuadros',
+    cantina: 'La señora de la cantina que ofrece una empanada y la cola que se mueve: 2 cuadros',
+    bandera: 'La bandera que se mece: 2 cuadros',
+  },
+  cajas: {},
+  letreros: ['U.E. LICEO EL ÁVILA', 'CANTINA', 'CARTELERA', 'ESTUDIAR', 'ES CRECER'],
+};
+
 const ESTILOS: Record<string, Estilo> = {
   vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD,
   venezuela_playa: VENEZUELA_PLAYA, vietnam_montana: VIETNAM_MONTANA, colombia_caribe: COLOMBIA_CARIBE, venezuela_lago: VENEZUELA_LAGO,
-  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA, venezuela_llano: VENEZUELA_LLANO, venezuela_barrio: VENEZUELA_BARRIO,
+  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA, venezuela_llano: VENEZUELA_LLANO, venezuela_barrio: VENEZUELA_BARRIO, venezuela_liceo: VENEZUELA_LICEO,
 };
 
 /** Los fondos de la capa cerca que son de Hội An (con su estilo). */
