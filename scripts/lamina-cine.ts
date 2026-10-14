@@ -1,10 +1,10 @@
 /**
  * Láminas de las cinemáticas del final (encargo F13 de GG Abyss, partes 1 y 2) en docs/entregas/:
- *   npx tsx scripts/lamina-cine.ts [bajada|logos|todo] [solo-un-panel]
+ *   npx tsx scripts/lamina-cine.ts [bajada|fin|todo] [solo-un-panel]
  *
- * - cine_bajada.png: cada panel armado con todas sus capas (como lo ve el juego, sin franjas), en tres
+ * - cine_bajada.png y cine_fin.png: cada panel armado con todas sus capas (como lo ve el juego, sin franjas), en tres
  *   momentos: el primer cuadro, el del medio y el último. Los de 480 x 540 van en dos mitades.
- * - cine_logos.png: el logo de hielo cuadro por cuadro y la nieve de adelante.
+ * - cine_logos.png: el logo de hielo y el de "Fin" cuadro por cuadro, y la nieve de adelante.
  */
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { createRaster, type Raster } from '../src/engine/core/raster.ts';
 import { encodePng } from '../src/engine/export/png.ts';
 import { bajadaPanels, nieveFrente, logoHielo, type CinePanel } from '../src/engine/cine/bajada.ts';
+import { finPanels, logoFin } from '../src/engine/cine/fin.ts';
 import { textoMascara } from '../src/engine/ui/fonts.ts';
 
 const what = process.argv[2] ?? 'todo';
@@ -61,14 +62,17 @@ const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.b
 const bold = ab(join(fontDir, 'silkscreen-latin-700-normal.woff'));
 
 if (what === 'bajada' || what === 'todo') lamina('cine_bajada.png', bajadaPanels().filter((p) => !solo || p.id === solo));
+if (what === 'fin' || what === 'todo') lamina('cine_fin.png', finPanels().filter((p) => !solo || p.id === solo));
 if (what === 'logos' || what === 'todo') {
   const lh = logoHielo([textoMascara(bold, 'EL CORAZÓN', 6), textoMascara(bold, 'HELADO', 6)]);
+  const lf = logoFin(textoMascara(bold, 'Fin', 8), textoMascara(bold, '¿o no?', 2));
   const nv = nieveFrente();
-  const w = lh[0].w;
-  const img = createRaster(w * 4 + 50, lh[0].h * 4 + 160);
+  const w = Math.max(lh[0].w, lf[0].w);
+  const img = createRaster(w * 4 + 50, lh[0].h * 4 + lf[0].h * 4 + 140 + 60);
   for (let i = 0; i < img.data.length; i += 4) img.data.set([4, 4, 8, 255], i);
   lh.forEach((fr, i) => over(img, fr, 10 + (i % 4) * (w + 10), 10 + Math.floor(i / 4) * lh[0].h));
   const y0 = 20 + lh[0].h * 4;
-  nv.forEach((fr, i) => over(img, fr, 10 + i * 132, y0));
+  lf.forEach((fr, i) => over(img, fr, 10 + (i % 4) * (w + 10), y0 + Math.floor(i / 4) * lf[0].h));
+  nv.forEach((fr, i) => over(img, fr, 10 + i * 132, y0 + lf[0].h * 4 + 10));
   save('cine_logos.png', img);
 }

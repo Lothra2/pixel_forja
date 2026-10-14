@@ -52,7 +52,7 @@ import { bitmapFonts, renderLogo } from '../ui/fonts';
 import { appIcons } from '../ui/appIcons';
 import { continuara } from '../ui/continuara';
 import { marcoCiclo, logoCiclo, MARCO_CICLO } from '../ui/ciclo';
-import { exportBajada, audioCine } from '../cine/kit';
+import { exportBajada, exportFin, audioCine } from '../cine/kit';
 import { signIcons, hudIcons, rotateTablet, skillIcons, celestialSkillIcons } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
@@ -774,9 +774,10 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     manifest.intro = intro;
     log('intro listo');
   }
-  // ---------- las cinemáticas del final (F13): la bajada al infierno ----------
+  // ---------- las cinemáticas del final (F13): la bajada al infierno y el cierre ----------
   if (!opts.sinCine) {
     manifest.cine_bajada = exportBajada(files, opts.fonts?.bold);
+    manifest.cine_fin = exportFin(files, opts.fonts?.bold);
     log('cinemáticas listas');
   }
   files.push(png('ui/continuara.png', continuara()));
@@ -794,7 +795,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   // las músicas nuevas que van en bucle no se apagan al final (las de antes quedan como estaban)
   for (const [n, fn] of Object.entries(MUSIC)) { const a = `audio/musica_${n}.wav`; files.push(file(a, encodeWav(fn(), undefined, MUSICA_BUCLE.has(n)), 'audio/wav')); audio[`musica_${n}`] = a; }
   for (const n of AMBIENCE_NAMES) { const a = `audio/ambiente_${n}.wav`; files.push(file(a, encodeWav(ambience(n), undefined, true), 'audio/wav')); audio[`ambiente_${n}`] = a; }
-  if (!opts.sinCine) for (const [n, b] of Object.entries(audioCine(['bajada']))) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(b), 'audio/wav')); audio[n] = a; }
+  if (!opts.sinCine) for (const [n, b] of Object.entries(audioCine(['bajada', 'fin']))) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(b), 'audio/wav')); audio[n] = a; }
   if (celeste) for (const [n, b] of Object.entries(celeste.audio)) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(b), 'audio/wav')); audio[n] = a; }
   manifest.audio = audio;
   log('audio listo');

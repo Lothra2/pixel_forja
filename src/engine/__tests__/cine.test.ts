@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { bajadaPanels, nieveFrente, logoHielo, type CinePanel } from '../cine/bajada';
-import { GUION_BAJADA } from '../cine/kit';
+import { finPanels, logoFin, primeraLuz } from '../cine/fin';
+import { GUION_BAJADA, GUION_FIN } from '../cine/kit';
 import { textoMascara } from '../ui/fonts';
-import { cineBajadaMusica, cineRugido } from '../audio/sintesis';
+import { cineBajadaMusica, cineFinMusica, cineRugido } from '../audio/sintesis';
 import { RATE } from '../audio/sfx';
 import type { Raster } from '../core/raster';
 
@@ -75,5 +76,43 @@ describe('la cinemática de bajada (F13, parte 1)', () => {
     // grave: casi toda la energía por debajo de ~300 Hz (cruces por cero pocos)
     let cruces = 0; for (let i = 1; i < rug.length; i++) if ((rug[i] >= 0) !== (rug[i - 1] >= 0)) cruces++;
     expect(cruces / (rug.length / RATE) / 2).toBeLessThan(300);
+  }, 60000);
+});
+
+describe('la cinemática de cierre (F13, parte 2)', () => {
+  const panels = finPanels();
+  it('seis paneles en el formato del intro (los pisos 480 x 540, las alas para cada heroína)', () => {
+    formato(panels, ['fin_cae', 'fin_llama', 'fin_pisos', 'fin_amanecer', 'fin_alas', 'fin_titulo'], { fin_pisos: 540 });
+    expect(panels[4].capas.some((c) => c.por_heroina)).toBe(true);
+  });
+  it('de terror a esperanza: empieza oscura y el amanecer y las alas son mucho más claros que la caída', () => {
+    const l = panels.map((p) => luz(armar(p, true)));
+    expect(l[0]).toBeLessThan(50);
+    expect(l[3]).toBeGreaterThan(l[0] * 2.5);
+    expect(l[4]).toBeGreaterThan(l[0] * 2.5);
+    // los pisos se prenden: el último cuadro mucho más claro que el primero
+    expect(luz(panels[2].capas[1].frames[7])).toBeGreaterThan(luz(panels[2].capas[1].frames[0]) + 10);
+  });
+  it('la Primera Luz es de luz: dorada y blanca cuando ya se volvió luz', () => {
+    const r = primeraLuz(1.6, 0, 1);
+    let claros = 0, total = 0;
+    for (let i = 0; i < r.w * r.h; i++) if (r.data[i * 4 + 3] === 255) { total++; if (r.data[i * 4] > 220 && r.data[i * 4 + 1] > 180) claros++; }
+    expect(claros / total).toBeGreaterThan(0.5);
+  });
+  it('logo de "Fin" y "¿o no?", guion y música', () => {
+    expect(GUION_FIN.filter((g) => g.subtitulo)).toHaveLength(5);
+    expect(GUION_FIN.map((g) => g.panel)).toEqual(panels.map((p) => p.id));
+    const s = cineFinMusica().length / RATE;
+    expect(s).toBeGreaterThanOrEqual(60);
+    expect(s).toBeLessThanOrEqual(75);
+    const fuente = 'node_modules/@fontsource/silkscreen/files/silkscreen-latin-700-normal.woff';
+    if (!existsSync(fuente)) return;
+    const b = readFileSync(fuente), bold = b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer;
+    const lf = logoFin(textoMascara(bold, 'Fin', 8), textoMascara(bold, '¿o no?', 2));
+    expect(lf).toHaveLength(16);
+    // "¿o no?" no está en el primer cuadro y sí en el último (abajo)
+    const abajo = (r: Raster) => { let n = 0; for (let y = Math.floor(r.h * 0.72); y < r.h; y++) for (let x = 0; x < r.w; x++) if (r.data[(y * r.w + x) * 4 + 3] === 255 && r.data[(y * r.w + x) * 4] > 200) n++; return n; };
+    expect(abajo(lf[0])).toBeLessThan(5);
+    expect(abajo(lf[15])).toBeGreaterThan(20);
   }, 60000);
 });

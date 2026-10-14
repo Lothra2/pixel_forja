@@ -385,7 +385,7 @@ function lago(): CinePanel {
 // ---------------------------------------------------------------- 4. la Ladrona con la última llama
 
 /** La Ladrona caminando (de costado, hacia la derecha): capucha, ojos rojos, capa con el borde roto, la llama en las manos */
-function ladrona(f: number, k: number): { r: Raster; llama: [number, number] } {
+export function ladrona(f: number, k: number, conLlama = true): { r: Raster; llama: [number, number] } {
   const W = Math.round(64 * k), H = Math.round(90 * k);
   const r = createRaster(W, H);
   const DARK = hex('#0e0b16'), RIM = hex('#2a2240');
@@ -414,6 +414,7 @@ function ladrona(f: number, k: number): { r: Raster; llama: [number, number] } {
   // canto frío en la espalda (la luz del hielo) para que se recorte contra lo oscuro
   canto(r, [-1, 0], HIELO.medio, 0.6);
   canto(r, [0, -1], HIELO.azul, 0.5);
+  if (!conLlama) return { r, llama: [lx, ly] };
   // la llama: dorada y blanca, viva
   const fl = 0.9 + 0.1 * Math.sin(f * 1.7);
   for (let y = 0; y < 12 * k * fl; y++) {
