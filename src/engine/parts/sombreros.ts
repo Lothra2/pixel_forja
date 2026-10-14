@@ -214,7 +214,7 @@ function ponchera(dir: 'down' | 'right' | 'up', cab: Caja, color?: string | null
   };
   fruta(cx - bw * 0.42, by - 1.5, 2.2, '#f2c230');
   fruta(cx + bw * 0.42, by - 1.5, 2.2, '#e8902a');
-  fruta(cx, by - 2.5, 2.4, '#e84a3a');
+  fruta(cx, by - 1.8, 2.2, '#e84a3a');
   fruta(cx - bw * 0.72, by - 0.5, 1.4, '#4aa83a');
   fruta(cx + bw * 0.72, by - 0.5, 1.4, '#c8e04a');
   fruta(cx - bw * 0.15, by - 0.8, 1.6, '#7ac04a');

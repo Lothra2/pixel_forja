@@ -102,14 +102,21 @@ La carpeta trae también los otros cuatro tramos del Cross, la Comuna 13 (`medel
 | `dalat` | Tenis de dobles (`Tenis.ts`) | de lado | mañana con neblina |
 | `barranquilla` | Fútbol Callejero (`Futbol.ts`) | inclinada | mediodía |
 | `cancha_maracaibo` | Básquet 3x3 (`Basket.ts`) | inclinada | noche |
+| `cocora` | Vallas del Café (`Vallas.ts`) | de lado | mañana con neblina |
+| `halong` | Natación (`Natacion.ts`) | de lado | mediodía |
+| `llanos_apure` | Jabalina Llanera (`Jabalina.ts`) | de lado | atardecer |
+| `barrio_caracas` | Chapita (`Chapita.ts`) | de lado | tarde |
+| `liceo_patio` | Quemado (`Quemado.ts`) | inclinada | mediodía |
+| `cartagena` | Azoteas de Cartagena (`Azoteas.ts`) | de lado | atardecer |
 
-Los cuatro últimos son del lote E5: sus franjas salen de las medidas de cada prueba (el piso en la fila 310 en el vóley y el tenis, y FT 212 con 104 de fondo en el fútbol y el básquet).
+Margarita, Đà Lạt, Barranquilla y Maracaibo son del lote E5: sus franjas salen de las medidas de cada prueba (el piso en la fila 310 en el vóley y el tenis, y FT 212 con 104 de fondo en el fútbol y el básquet). Los seis últimos son del lote E6, también con las medidas de su archivo: TOP 228 y los carriles 18, 46, 74 y 102 en las vallas, TOP 226 y los carriles 24, 50, 76 y 102 en la natación, TOP 226 con la carrera en 70 y el foul en x 380 en la jabalina, PISO 316 en la chapita, FT 214 y PROF 100 en el quemado, y TECHO 262, BORDE 440 y CALLE 352 en las azoteas.
 
 Cómo se carga en el juego: [docs/ESCENARIOS.md](../../ESCENARIOS.md).
 
-## La gente de la calle (lotes C6a y E5)
+## La gente de la calle (lotes C6a, E5 y E6)
 
 En [`npc/`](npc/) están las fichas de los NPC y la sección `npc` de [`kit.config.json`](kit.config.json) dice qué animaciones lleva cada uno. Cada NPC sale en `npc/<id>.png`, una tira con el ancla en los pies.
 
 - **La Comuna 13 (C6a):** los tres bailarines de break, los dos pelados del fútbol, el grafitero, los músicos con el parlante y el vendedor de paletas, más la pelota.
 - **La Marimonda del Carnaval (E5):** `marimonda.ficha.json`, con la máscara de la Marimonda (`hat: "marimonda"`: la capucha roja, las orejotas azules y la trompa larga) y el traje de colores. Lleva `caminar` (la animación `walk` del motor, de lado: `vistas.caminar: "lado"`, el juego la espeja para ir a la izquierda) y `bailar` (`dance`, de frente). Es la que cruza la calle en el Fútbol Callejero.
+- **La palenquera de Cartagena (E6):** `palenquera.ficha.json`, con el pañuelo y la ponchera de frutas en la cabeza (`hat: "ponchera"`: los mangos, el banano, la patilla, las guayabas y los limones en la ponchera de aluminio) y el vestido con los colores de la bandera. Lleva `pregonar` (la animación `llamar`) y `reclamar` (`reclama`, la que hace cuando un atleta cae a su lado), de frente. Va en la acera de las Azoteas, en x 432.

@@ -307,12 +307,50 @@ Todas bloquean: si una falla, el escenario no sale.
   - **Lejos:** el puente General Rafael Urdaneta de punta a punta con las seis torres en A y sus tirantes, la otra orilla encendida con los mechurrios, tres balancines con su luz roja, los reflejos en el agua y la nube del Catatumbo a la derecha.
   - **El piso:** la `cancha` de este lugar es el concreto pintado (azul adentro, el área naranja, verde afuera) con las rayas de `Basket.ts` y la luz de los bombillos. El aro, el tablero y el poste los dibuja el juego.
   - **Vida:** `relampago` (8 cuadros: la nube se alumbra por dentro y cae el rayo, solo donde la capa cerca deja ver afuera), `gaiteros` y `publico`. Luces: los seis bombillos y el resplandor del Catatumbo, que parpadea.
-- **Los otros estilos del pedido** (`venezuela_barrio`, `japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
+- **Los seis del lote E6:** las pruebas que el juego todavía pintaba con código. Cada uno sale de las constantes de su archivo del juego y reemplaza lo que ese archivo dibujaba de fondo (la pista, la piscina, el campo, la cancha y los letreros). Lo que se mueve o cambia en la partida (las vallas, los poyetes, la línea de agua, los números, los metros, las banderitas del viento, la ventana rota y el techo de enfrente) sigue siendo del juego, o va como objeto aparte.
+- **El estilo `colombia_cafetera`** (`paralaje.cerca: "valle_cocora"`, `paralaje.lejos: "cordillera_cocora"`): el valle de Cocora en la mañana con neblina, de lado, para las Vallas del Café (`Vallas.ts`, mundo de 1720).
+  - **Solo de mañana.** La paleta: los verdes del valle, la neblina (`bruma`), el tartán de la pista y los colores de la finca de Salento.
+  - **Fondo:** las palmas de cera altísimas (la copa entre las filas 136 y 152, dentro de lo que ve la cámara a zoom 1.5), la finca con el balcón de colores y el cafetal, el Willys cargado de café, las vacas, la cerca de alambre y el letrero VALLE DE COCORA, SALENTO, QUINDÍO.
+  - **Lejos:** la cordillera en planos que se aclaran en la neblina, con palmas chiquitas en la loma.
+  - **El piso:** la pista de tartán con las rayas en y 0, 28, 56, 84 y 112, los cuatro carriles en y 18, 46, 74 y 102 (TOP 228), la salida en x 120 y la meta a cuadros en x 1570. Las vallas las pone el juego.
+  - **Vida:** `neblina`, `vacas` y `loros`. Sin luces.
+- **El estilo `vietnam_bahia`** (`paralaje.cerca: "bahia_halong"`, `paralaje.lejos: "islotes_halong"`): la bahía de Hạ Long al mediodía, de lado, para la Natación (`Natacion.ts`, mundo de 1460).
+  - **Solo al mediodía.** La paleta: el agua esmeralda de la bahía, la caliza gris de los islotes, el azul de la piscina y el rojo de las banderas.
+  - **Fondo:** los islotes grandes con su monte, el junco de velas, la aldea flotante y el muelle con las banderas de Vietnam, el letrero VỊNH HẠ LONG, la silla del salvavidas y la mesa de los jueces.
+  - **Lejos:** los islotes en la calima, uno detrás del otro, cada vez más claros.
+  - **El piso:** la piscina flotante, con el agua de y 2 a y 110, las corcheras rojas y blancas en y 36, 62 y 88, los carriles en y 24, 50, 76 y 102 (TOP 226), la marca de 15 m en x 492 y la pared de llegada a cuadros en x 1360. La línea de agua de adelante, los poyetes y los nadadores son del juego.
+  - **Vida:** `banderas`, `publico`, `juncos` y `gaviotas`.
+- **El estilo `venezuela_llano`** (`paralaje.cerca: "morichal_apure"`, `paralaje.lejos: "horizonte_llano"`): los Llanos de Apure al atardecer, de lado, para la Jabalina Llanera (`Jabalina.ts`, mundo de 1560).
+  - **Solo al atardecer.** La paleta: la sabana dorada, el sol que se pone, el rojo de las corocoras y el tartán.
+  - **Fondo:** los morichales, el caney de palma con los chinchorros y su farol, el estero con los chigüires, el ganado con el llanero a caballo y la tranquera del hato. El letrero LLANOS DE APURE.
+  - **El piso:** la pista de impulso de tartán de y 60 a y 76 hasta la raya de foul en x 380 (la tabla de y 58 a y 80), el carril de carrera en y 70 (TOP 226) y el sector de caída con una marca cada 100 px desde el foul. Las banderitas del viento y los metros son del juego.
+  - **Vida:** `estero`, `ganado`, `garzas` y `corocoras`. Luces: el farol del caney.
+- **El estilo `venezuela_barrio`** (`paralaje.cerca: "calle_barrio_caracas"`, `paralaje.lejos: "avila_tarde"`): una calle de barrio de Caracas en la tarde, de lado, para la Chapita (`Chapita.ts`, mundo de 900).
+  - **Solo de tarde.** La paleta: el ladrillo de los ranchos, el bloque, el verde del Ávila y el asfalto gastado.
+  - **Fondo:** los ranchos que suben por el cerro, la fila de casas con sus rejas, el abasto ABASTO EL PANA con HIELITOS A 1 BS, el mango, el poste con el enredo de cables y la gente en las puertas.
+  - **Lejos:** El Ávila con el hotel Humboldt arriba.
+  - **El piso:** el asfalto gastado, con el home de tiza en x 94 a 116 y la marca del pitcher en x 326 a 334. Los pies van en la fila 316 (PISO).
+  - **Entidades:** `casa_vecino` (de x 640 a 810, 100 de alto desde la fila 316, `orden` 0) y `ventana_rota` (la ventana de x 646 a 682, `orden` 1, encima de la sana). Las dos salen en `objetos.json`: el juego muestra la ventana rota cuando la chapita le pega.
+  - **Vida:** `ropa_tendida`, `vecinos`, `perro` y `zamuros`.
+- **El estilo `venezuela_liceo`** (`paralaje.cerca: "patio_liceo_caracas"`, `paralaje.lejos: "avila_mediodia"`): el patio techado de un liceo de Caracas al mediodía, en la vista inclinada de 0.35, para el Quemado Nekketsu (`Quemado.ts`, 640 de ancho).
+  - **Solo al mediodía.** Es un lugar `techado`: el techo de láminas tapa el cielo y El Ávila se asoma por la abertura.
+  - **Fondo:** el techo con las cerchas azules y las lámparas, el edificio de las aulas con las ventanas de romanilla, el letrero U.E. LICEO EL ÁVILA, la bandera, la cartelera, el mural ESTUDIAR ES CRECER, las gradas con los liceístas y la CANTINA. Los pilares van en x 22, 436 y 626, lejos de los letreros.
+  - **El piso:** la cancha pintada (FT 214, PROF 100), con el borde de x 40 a 560, la raya del medio amarilla en x 300 con su círculo y los dos cementerios rayados de x 4 a 34 y de 566 a 596. Esto reemplaza la `cancha()` y los dos letreros de `bitmapText` del juego.
+  - **Vida:** `publico`, `cantina` y `bandera`. Luces: las cuatro lámparas del techo.
+- **El estilo `colombia_amurallada`** (`paralaje.cerca: "azoteas_cartagena"`, `paralaje.lejos: "bahia_cartagena"`): las azoteas de la ciudad amurallada de Cartagena al atardecer, de lado, para las Azoteas (`Azoteas.ts`, mundo de 880).
+  - **Solo al atardecer.** La paleta: las fachadas de colores, la buganvilla fucsia (`salmon`), la teja, el sol y la bahía.
+  - **Fondo:** los techos de teja de la ciudad vieja con la Torre del Reloj, la catedral y las palmas. El edificio de salida con la azotea de baldosas (filas 250 a 262, TECHO 262), la cajita roja de la garrocha en x 428 y la raya blanca del borde en x 440. Abajo, las fachadas con los balcones de madera y las buganvillas, la placa de azulejo C. DE LAS DAMAS y el callejón con el farol y la ropa tendida.
+  - **Lejos:** la bahía con Bocagrande, La Popa y el Castillo de San Felipe, y el sol que se pone en el mar.
+  - **El piso:** la calle de adoquín (`baldosa`), con la fila 352 (CALLE) como carril.
+  - **Entidades:** `techo_enfrente` (420 de ancho más el balcón de 16 que sale al hueco, con la colchoneta azul; va 16 px antes de su x, como el contenedor del juego) y `carrito_frutas` (centrado en su x). El juego los corre cada ronda: el techo a BORDE + m × 10 y el carrito a x - 15. La palenquera va como NPC (`npc: "palenquera"`) en x 432 (BORDE - 8).
+  - **Vida:** `alcatraces` y `veleros`. Luces: el farol del callejón y dos ventanas prendidas. Partículas: los pétalos de buganvilla que se lleva la brisa (`confeti`).
+- **Los otros estilos del pedido** (`japon_80s`) llegan con sus escenarios. Cada uno pasa antes por su ficha de arte.
 
 ## Límites honestos
 
-- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad`, `vietnam_hoian` y `venezuela_lago` solo saben pintar la noche, `vietnam_dojo` y `colombia_colonial` la tarde, `vietnam_parque` el amanecer, `vietnam_montana` la mañana, y `venezuela_playa` y `colombia_caribe` el mediodía.
+- **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad`, `vietnam_hoian` y `venezuela_lago` solo saben pintar la noche, `vietnam_dojo` y `colombia_colonial` la tarde, `vietnam_parque` el amanecer, `vietnam_montana` la mañana, y `venezuela_playa` y `colombia_caribe` el mediodía. De E6: `colombia_cafetera` la mañana, `vietnam_bahia` y `venezuela_liceo` el mediodía, `venezuela_barrio` la tarde, y `venezuela_llano` y `colombia_amurallada` el atardecer.
 - **Los lugares de E4a y E5 son de una pantalla:** el dojo, Tao Đàn, la cancha de tejo, Margarita, Đà Lạt, Barranquilla y Maracaibo están puestos para un mundo de 640, como sus pruebas.
+- **Los de E6 están puestos para el ancho de su prueba** (1720, 1460, 1560, 900, 640 y 880). Un layout más largo que su prueba no está probado: la pista, la piscina y el campo están medidos para ese ancho.
 - **El dibujo de Hội An es de una pantalla:** las casas, el río de la izquierda y los puestos están puestos para un mundo de 640. En un layout más largo con el mismo fondo, la última casa se estira hasta el final del ancho pintado.
 - **El borde que avanza** lo mueve el juego: el arte trae el filo y el vacío, pero el murito del fondo, pintado en la capa cerca, sigue entero hasta el borde de antes.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.

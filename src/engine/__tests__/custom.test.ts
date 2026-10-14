@@ -281,19 +281,20 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     } else expect(m.pendiente.every((w: string) => w.startsWith('audio.'))).toBe(true);
   });
 
-  it('los 5 tramos del Cross Country, la Comuna 13, la azotea de Caracas, Hội An, el dojo, Tao Đàn, la cancha de tejo, Margarita, Đà Lạt, Barranquilla y Maracaibo salen con sus 9 pruebas en verde (lotes E1, E2, E3a, E3b, E3c, E4a y E5)', () => {
-    const tramos = ['barranquilla', 'cancha_maracaibo', 'candelaria', 'caracas_azotea', 'dalat', 'hoian', 'judo_hanoi', 'margarita', 'medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio', 'tao_dan'];
+  it('los 5 tramos del Cross Country, la Comuna 13, la azotea de Caracas, Hội An, el dojo, Tao Đàn, la cancha de tejo, Margarita, Đà Lạt, Barranquilla, Maracaibo y los seis de E6 salen con sus 9 pruebas en verde (lotes E1, E2, E3a, E3b, E3c, E4a, E5 y E6)', () => {
+    const tramos = ['barranquilla', 'barrio_caracas', 'cancha_maracaibo', 'candelaria', 'caracas_azotea', 'cartagena', 'cocora', 'dalat', 'halong', 'hoian', 'judo_hanoi', 'liceo_patio', 'llanos_apure', 'margarita', 'medellin_c13', 'saigon_azoteas', 'saigon_benthanh', 'saigon_estadio', 'saigon_hem', 'saigon_rio', 'tao_dan'];
     expect(Object.keys(m.escenarios).sort()).toEqual(tramos);
     // la franja de cada uno: la de la pelea (246 a 344), la del Cross (200 a 330), las de lado, donde DaCau.ts, Tejo.ts,
-    // Voley.ts y Tenis.ts ponen el piso, y la de Futbol.ts y Basket.ts (212 a 316)
-    const franjas: Record<string, [number, number]> = { tao_dan: [290, 330], candelaria: [286, 310], caracas_azotea: [246, 344], hoian: [246, 344], judo_hanoi: [246, 344], margarita: [290, 330], dalat: [290, 330], barranquilla: [212, 316], cancha_maracaibo: [212, 316] };
+    // Voley.ts y Tenis.ts ponen el piso, y la de Futbol.ts y Basket.ts (212 a 316). Los de E6, con las medidas de su prueba
+    const franjas: Record<string, [number, number]> = { tao_dan: [290, 330], candelaria: [286, 310], caracas_azotea: [246, 344], hoian: [246, 344], judo_hanoi: [246, 344], margarita: [290, 330], dalat: [290, 330], barranquilla: [212, 316], cancha_maracaibo: [212, 316], cocora: [228, 348], halong: [226, 346], llanos_apure: [226, 346], barrio_caracas: [296, 336], liceo_patio: [214, 314], cartagena: [340, 360] };
+    const largos: Record<string, number> = { saigon_estadio: 1920, medellin_c13: 3600, cocora: 1720, halong: 1460, llanos_apure: 1560, barrio_caracas: 900, cartagena: 880 };
     for (const id of tramos) {
       expect(m.escenarios[id]).toBe(`escenarios/${id}/escenario.json`);
       const e = readJson(join(out, m.escenarios[id]));
       const [atras, adelante] = franjas[id] ?? [200, 330];
-      expect(e).toMatchObject({ id, escala: 1, largo: id === 'saigon_estadio' ? 1920 : id === 'medellin_c13' ? 3600 : franjas[id] ? 640 : 3840, franja: { atras, adelante } });
+      expect(e).toMatchObject({ id, escala: 1, largo: largos[id] ?? (franjas[id] ? 640 : 3840), franja: { atras, adelante } });
       // las de lado lo dicen, con el dibujo derecho
-      if (['tao_dan', 'candelaria', 'margarita', 'dalat'].includes(id)) expect(e).toMatchObject({ vista: 'lado', inclinacion: 0, ancho: 640 });
+      if (['tao_dan', 'candelaria', 'margarita', 'dalat', 'cocora', 'halong', 'llanos_apure', 'barrio_caracas', 'cartagena'].includes(id)) expect(e).toMatchObject({ vista: 'lado', inclinacion: 0, ancho: largos[id] ?? 640 });
       expect(readFileSync(join(out, `escenarios/${id}/verificacion.md`), 'utf8'), id).toMatch(/Las 9 pruebas pasan/);
       // las postales y la ficha son para aprobar: el kit no las lleva
       expect(files.some((f) => f.startsWith(`escenarios/${id}/postales/`))).toBe(false);
@@ -326,7 +327,8 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14, Caracas 10, Hội An 8, y el dojo, Tao Đàn y la cancha de tejo 8 cada uno (lote E4a) + 3 perros y 2 gatos (lote C7)
     // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b)
     // + Margarita, Đà Lạt, Barranquilla y Maracaibo, 8 cada uno, y la Marimonda (lote E5)
-    expect(pngs.length).toBe(24 * 16 + 63 + 36 + 2 + 1 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 8 + 8 + 8 + 5 + 10 + 9 + 2 + 8 * 4 + 1);
+    // + Cocora, Hạ Long y Apure, 11 cada uno (pasan de 1280 de ancho: la capa cerca, el piso y el frente van en dos trozos), el barrio, el liceo y Cartagena, 8 cada uno, y la palenquera (lote E6)
+    expect(pngs.length).toBe(24 * 16 + 63 + 36 + 2 + 1 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 8 + 8 + 8 + 5 + 10 + 9 + 2 + 8 * 4 + 1 + 11 * 3 + 8 * 3 + 1);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

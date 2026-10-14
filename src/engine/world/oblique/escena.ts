@@ -748,6 +748,8 @@ export interface Actor { img: Raster; /** pivote (pies) dentro de la imagen */ p
 export function postal(E: Escena, x0: number, actores: Actor[] = [], w = 640, h = 360, t = 0): Raster {
   const C = new Lienzo(w, h, E.paleta), FT = E.layout.franja.atras;
   const pegar = (src: Raster, dx: number, dy: number) => {
+    // un actor en x o y con decimales: se redondea, porque un desplazamiento fraccionario descuadra los canales de color
+    dx = Math.round(dx); dy = Math.round(dy);
     for (let y = 0; y < src.h; y++) for (let x = 0; x < src.w; x++) {
       const i = (y * src.w + x) * 4; if (src.data[i + 3] === 0) continue;
       const X = dx + x, Y = dy + y; if (X < 0 || Y < 0 || X >= w || Y >= h) continue;
