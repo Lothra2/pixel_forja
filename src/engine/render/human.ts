@@ -84,8 +84,10 @@ export function bodyBox(c: LayerCanvas, dx: number, dy: number, softMat = -99, w
   const skip = new Uint8Array(maxMat + 3);
   if (skipMats) for (const m of skipMats) if (m >= -2) skip[m + 2] = 1;
   const salta = (m: number) => m >= -2 && m <= maxMat && skip[m + 2] === 1;
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
+  // solo donde se pintó algo: el resto del lienzo está vacío
+  const r = c.region();
+  if (r) for (let y = r.y0; y <= r.y1; y++)
+    for (let x = r.x0; x <= r.x1; x++) {
       const i = y * w + x;
       const l = layer[i];
       // lo vacío no cuenta: se descarta antes que nada porque es casi todo el lienzo
@@ -125,8 +127,10 @@ function bodyAndWhole(c: LayerCanvas, dx: number, dy: number, skipMats?: Set<num
   const skip = new Uint8Array(maxMat + 3);
   if (skipMats) for (const m of skipMats) if (m >= -2) skip[m + 2] = 1;
   const salta = (m: number) => m >= -2 && m <= maxMat && skip[m + 2] === 1;
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
+  // solo donde se pintó algo: el resto del lienzo está vacío
+  const r = c.region();
+  if (r) for (let y = r.y0; y <= r.y1; y++)
+    for (let x = r.x0; x <= r.x1; x++) {
       const i = y * w + x;
       const l = layer[i];
       if (!l) continue;

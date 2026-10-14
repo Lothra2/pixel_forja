@@ -47,7 +47,10 @@ export class LayerCanvas {
   readonly dark: Uint32Array;
   readonly mat: Int16Array;
   readonly layer: Int8Array;
+  /** caja de todo lo que se pintó alguna vez (puede sobrar, nunca faltar): los recorridos del lienzo se limitan a ella */
+  private rx0: number; private ry0: number; private rx1 = -1; private ry1 = -1;
   constructor(readonly w: number, readonly h: number, readonly ox: number, readonly oy: number) {
+    this.rx0 = w; this.ry0 = h;
     this.color = new Uint32Array(w * h);
     this.dark = new Uint32Array(w * h);
     this.mat = new Int16Array(w * h).fill(-1);
@@ -64,6 +67,16 @@ export class LayerCanvas {
     this.dark[i] = p.dark;
     this.mat[i] = p.mat;
     this.layer[i] = layer;
+    if (layer) this.touch(X, Y);
+  }
+  /** Marca (X, Y) del lienzo como pintado, para `region`. */
+  touch(X: number, Y: number): void {
+    if (X < this.rx0) this.rx0 = X; if (X > this.rx1) this.rx1 = X;
+    if (Y < this.ry0) this.ry0 = Y; if (Y > this.ry1) this.ry1 = Y;
+  }
+  /** Dónde puede haber algo pintado: contiene a `bbox` (puede ser más grande). null si no se pintó nada. */
+  region(): { x0: number; y0: number; x1: number; y1: number } | null {
+    return this.rx1 < 0 ? null : { x0: this.rx0, y0: this.ry0, x1: this.rx1, y1: this.ry1 };
   }
   layerAt(x: number, y: number): number {
     const X = x + this.ox, Y = y + this.oy;
@@ -73,8 +86,8 @@ export class LayerCanvas {
   bbox(): { x0: number; y0: number; x1: number; y1: number } | null {
     const w = this.w, h = this.h, layer = this.layer;
     let x0 = w, y0 = h, x1 = -1, y1 = -1;
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++)
+    for (let y = this.ry0; y <= this.ry1; y++)
+      for (let x = this.rx0; x <= this.rx1; x++)
         if (layer[y * w + x]) {
           if (x < x0) x0 = x; if (x > x1) x1 = x;
           if (y < y0) y0 = y; if (y > y1) y1 = y;
@@ -96,7 +109,10 @@ export interface OutlineRules {
 export function finalizeOutlines(c: LayerCanvas, rules: OutlineRules): void {
   const { w, h } = c;
   const layer = c.layer, mat = c.mat, dark = c.dark;
-  const isFused = (a: number, b: number) => rules.fused.some(([p, q]) => (p === a && q === b) || (p === b && q === a));
+  // los pares fundidos en una tabla de 256 x 256 (las capas son Int8): se consulta en el lazo más caliente
+  const fused = new Uint8Array(65536);
+  for (const [p, q] of rules.fused) { fused[((p & 255) << 8) | (q & 255)] = 1; fused[((q & 255) << 8) | (p & 255)] = 1; }
+  const isFused = (a: number, b: number) => fused[((a & 255) << 8) | (b & 255)] === 1;
   const newColor = new Uint32Array(c.color);
   // los 4 vecinos en orden (izquierda, derecha, arriba, abajo) sin crear un arreglo por pixel: es el lazo más caliente del kit
   const nb = new Int32Array(4);
@@ -146,13 +162,15 @@ export function finalizeOutlines(c: LayerCanvas, rules: OutlineRules): void {
         c.color[i] = outColor[i];
         layer[i] = outLayer[i];
         mat[i] = -2; // contorno
+        c.touch(i - y * w, y);
       }
 }
 
 export function toRaster(c: LayerCanvas, x0: number, y0: number, w: number, h: number, dx: number, dy: number): Raster {
   const out = createRaster(w, h);
-  for (let y = 0; y < c.h; y++)
-    for (let x = 0; x < c.w; x++) {
+  const r = c.region();
+  if (r) for (let y = r.y0; y <= r.y1; y++)
+    for (let x = r.x0; x <= r.x1; x++) {
       const i = y * c.w + x;
       if (!c.layer[i]) continue;
       const X = x - x0 + dx, Y = y - y0 + dy;
