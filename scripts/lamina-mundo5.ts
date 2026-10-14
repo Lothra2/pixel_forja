@@ -111,6 +111,31 @@ async function estatuas() {
   save('mundo5_estatuas.png', up(r, 2));
 }
 
+async function enemigos(conJefe: boolean) {
+  const { renderBossSheets } = await import('../src/engine/boss/sheet.ts');
+  const { renderClip } = await import('../src/engine/render/clip.ts');
+  const { familyFicha } = await import('../src/engine/rpg/family.ts');
+  const ciudad = await import('../src/engine/boss/ciudad.ts');
+  const hero = renderClip(familyFicha('sophie', true), 48, 'idle', 'se', { props: true }).frames[0];
+  const specs = [ciudad.SONAMBULO_SPEC, ciudad.GARGOLA_SPEC, ciudad.DUENDE_SPEC, ciudad.RELOJERO_SPEC];
+  const rows: { cell: number; pivot: [number, number]; frames: Raster[] }[] = [];
+  for (const s of specs) {
+    const { clips, pivot } = renderBossSheets(s, bossCache());
+    const pickF = (c: (typeof clips)[number]) => { const n = c.def.frames; return c.def.name === 'die' ? [Math.floor(n * 0.45), n - 1] : c.def.windup ? [c.def.windup[1], Math.min(n - 1, c.def.windup[1] + 2)] : [0]; };
+    rows.push({ cell: s.cell, pivot, frames: clips.flatMap((c) => pickF(c).map((f) => c.frames[7][f])) });
+    console.log(`  ${s.id}: ${clips.map((c) => `${c.def.name} ${c.def.frames}`).join(', ')}`);
+  }
+  const W = Math.max(...rows.map((q) => 60 + q.frames.length * q.cell)), H = rows.reduce((a, q) => a + q.cell + 8, 0);
+  const r = floor(W, H);
+  let y = 0;
+  for (const q of rows) {
+    over(r, hero, 4, y + q.pivot[1] - 46);
+    q.frames.forEach((f, i) => over(r, f, 56 + i * q.cell, y));
+    y += q.cell + 8;
+  }
+  save(conJefe ? 'mundo5_rey.png' : 'mundo5_enemigos.png', up(r, conJefe ? 1 : 2));
+}
+
 async function ladrona() {
   const { thiefFigure } = await import('../src/engine/world/ciudadObjectsB.ts');
   const { ciudadObjectsA } = await import('../src/engine/world/ciudadObjects.ts');
@@ -140,5 +165,5 @@ async function ladrona() {
 const all = what === 'todo';
 if (all || what === 'mapa') await mapa();
 if (all || what === 'estatuas') await estatuas();
+if (all || what === 'enemigos') await enemigos(false);
 if (all || what === 'ladrona') await ladrona();
-void bossCache;

@@ -33,6 +33,7 @@ import { POLILLA_REINA_SPEC, POLILLA_CENIZA_SPEC } from '../boss/polilla';
 import { MINERO_PIEDRA_SPEC, SOMBRA_SPEC } from '../boss/mina';
 import { MARINERO_NIEBLA_SPEC, CANGREJO_CENIZA_SPEC, MEDUSA_NEGRA_SPEC, CAPITAN_AHOGADO_SPEC } from '../boss/puerto';
 import { PEZ_FAROL_SPEC, biteWarning, waveWarning, wave, pezAntena } from '../boss/pez';
+import { SONAMBULO_SPEC, GARGOLA_SPEC, DUENDE_SPEC, RELOJERO_SPEC, diveShadow, sandProjectile, sandImpact, needleWarning } from '../boss/ciudad';
 import { bossPoses } from '../boss/anim';
 import { camMatrix } from '../boss/render';
 import { mv } from '../boss/sdf';
@@ -347,6 +348,15 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       });
     }
   }
+  // el Mundo 5: los sonámbulos de piedra, las gárgolas, los duendes del sueño y el Relojero (a su celda, sin agrandar)
+  if (!opts.sinMundo5) {
+    for (const [spec, extra] of [
+      [SONAMBULO_SPEC, { tipo: 'enemigo', nombre: 'Sonámbulo de Piedra' }],
+      [GARGOLA_SPEC, { tipo: 'enemigo', nombre: 'Gárgola Dormida', vuela: true }],
+      [DUENDE_SPEC, { tipo: 'enemigo', nombre: 'Duende del Sueño' }],
+      [RELOJERO_SPEC, { tipo: 'enemigo', nombre: 'El Relojero', elite: true }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+  }
   // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
   for (const id of NPCS) {
     const f = merchantFicha();
@@ -388,6 +398,13 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     addFx('aviso_mordida', biteWarning(), 10, false);
     addFx('aviso_ola', waveWarning(), 10, true);
     addFx('ola', wave(), 12, false);
+  }
+  // el Mundo 5: la sombra de la picada de la gárgola (capa suelo), la arena del duende y la aguja del Relojero
+  if (!opts.sinMundo5) {
+    addFx('sombra_picada', diveShadow(), 10, false);
+    for (const { dir, frames } of rotate8(sandProjectile())) addFx(`proyectil_arena_${dir}`, frames, 12, true);
+    addFx('impacto_arena', sandImpact(), 14, false);
+    addFx('aviso_aguja', needleWarning(), 10, true);
   }
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);
