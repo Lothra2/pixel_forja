@@ -161,7 +161,7 @@ describe('movimiento premium', () => {
 
   // arma el kit entero (mundos con la zona premium incluidos): con la máquina ocupada pasa de los 2 minutos
   it('el kit del juego anota el perfil premium y el avance en el manifiesto', () => {
-    const files = buildGameKit({ heroes: [], enemies: [], thorTiers: [], quick: true, fichas: { rick: premium('rick') } });
+    const files = buildGameKit({ heroes: [], enemies: [], thorTiers: [], quick: true, sinMundo6: true, fichas: { rick: premium('rick') } });
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     const rick = m.personajes.rick;
     expect(rick.perfil_movimiento).toBe('premium');

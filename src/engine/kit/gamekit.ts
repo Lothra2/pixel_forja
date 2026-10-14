@@ -20,11 +20,14 @@ import { isSpecial, handKindOf } from '../loot/render';
 import { TILE } from '../world/tiles';
 import { ESPUMA, waterExtras } from '../world/water';
 import { smallCreatures } from '../world/reactions';
-import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK, type BigMap } from '../world/bosqueMap';
+import { bosqueMap, bigMapToTiled, renderBigMap, cropView, aguaTile, CHUNK, type BigMap } from '../world/bosqueMap';
 import { catedralMap } from '../world/catedralMap';
 import { galeriasMap } from '../world/galeriasMap';
 import { puertoMap } from '../world/puertoMap';
 import { ciudadMap } from '../world/ciudadMap';
+import { fraguaMap } from '../world/fraguaMap';
+import { emberParticle } from '../world/fraguaObjectsB';
+import { JAULA_CANDADO } from '../world/fraguaObjects';
 import { thiefFigure } from '../world/ciudadObjectsB';
 import { sleepParticle } from '../world/ciudadObjects';
 import { marinerEyes } from '../world/puertoObjectsB';
@@ -95,7 +98,11 @@ export interface KitOptions {
   sinMundo4?: boolean;
   /** sin el Mundo 5 (mapa, enemigos, el Relojero y el Rey de Piedra) */
   sinMundo5?: boolean;
+  /** sin el Mundo 6 (mapa, enemigos, el Carcelero y la Dragona de Brasa) */
+  sinMundo6?: boolean;
 }
+
+const LUZ_IDS_KIT = ['bosque', 'catedral', 'galerias', 'faro', 'ciudad'];
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
 function sheet8(f: Ficha, cell: CellSize, anim: string, k = 1): { png: Raster; frames: number; fps: number; loop: boolean; premium: boolean; mov: MovimientoAnim } | null {
@@ -161,6 +168,8 @@ export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'n
   luz_antena?: { color: string; radius: number; notas: string };
   /** la luz de la corona del Rey de Piedra (Mundo 5) */
   luz_corona?: { color: string; radius: number; notas: string };
+  /** la luz de la boca de la Dragona de Brasa (Mundo 6) */
+  luz_boca?: { color: string; radius: number; notas: string };
   /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
   capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
 
@@ -564,9 +573,39 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     };
   })() : null;
   if (ciudad) log('ciudad lista');
+  // el Mundo 6: La Fragua de las Luces, con la lava en la capa agua, las jaulas, las grietas que respiran y los fuelles
+  const fraguaBig = opts.sinMundo6 ? null : fraguaMap();
+  const fragua = fraguaBig ? (() => {
+    const base = exportarMundo(fraguaBig, 'mundo6', 'La Fragua de las Luces', 'mundo/mundo6_agua.png', 'portal_brasa') as Record<string, unknown>;
+    // la lava apagada (después de la Dragona): misma tira que la de la lava, hecha piedra con vetas tibias
+    const ap = createRaster(TILE * 5, TILE);
+    for (let f = 0; f < 4; f++) blit(ap, aguaTile(fraguaBig, f, true), f * TILE, 0);
+    for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) { const k = (y * ap.w + 4 * TILE + x) * 4; ap.data[k] = 255; ap.data[k + 1] = 0; ap.data[k + 2] = 255; ap.data[k + 3] = 110; }
+    once(png('mundo/mundo6_agua_apagada.png', ap));
+    const pe = emberParticle(), pn = `mundo/particulas/${pe.name}.png`;
+    once(png(pn, strip(pe.frames)));
+    const objetos = base.objetos as Record<string, Record<string, unknown>>;
+    for (const [n, o] of Object.entries(objetos)) if (n.startsWith('jaula_luz_')) o.candado = JAULA_CANDADO;
+    delete base.reflejo;
+    return {
+      ...base,
+      agua_apagada: 'mundo/mundo6_agua_apagada.png',
+      lava: { notas: 'La capa agua de este mundo es lava (no se camina: ya es sólida en colision). La tira `agua` trae 4 cuadros de lava que pegan por los cuatro lados; `espuma` es el borde que brilla (4 cuadros). Sin reflejo. La luz grande del piso: poner luz naranja (#ff7020) a lo largo de las orillas. Al vencer a la Dragona se cambia la tira por `agua_apagada` (la lava hecha piedra, mismo formato) y la espuma se apaga.' },
+      particulas: { ...parts, [pe.name]: { archivo: pn, w: pe.w, h: pe.h, cuadros: pe.frames.length, fps: pe.fps } },
+      fuentes_frias: { objeto: 'fuente_fria', notas: 'Las 5 entidades punto_guardado con fuente_fria: true son la fogata del piso (guardan, curan, enfrían y son la tienda). El objeto fuente_fria va en la capa objetos justo arriba del punto. Luz celeste de radio 220 que alumbra sin calentar.' },
+      jaulas: { entidad: 'jaula', objeto: 'jaula_luz_<luz>', luz_libre: 'luz_libre_<luz>', luces: LUZ_IDS_KIT, anims: { cerrada: 'cerrada', abrir: 'abrir', vacia: 'vacia' }, notas: 'Entidades jaula (no van en la capa objetos: las dibuja el juego). El punto de la entidad es el candado: la jaula se dibuja con su apoyo en (x - candado[0], y - candado[1]) (candado viene en el objeto). Props: id, luz (bosque, catedral, galerias, faro, ciudad), zona (nombre exacto) y carcel: true en las 8 de la sala del Carcelero (se abren todas juntas al vencerlo). Al pegarle al candado: abrir una vez, después vacia en bucle, y queda flotando luz_libre_<luz> arriba de la jaula. Los farolero_cadenas con jaula: true y luz también cuentan como jaula.' },
+      grietas: { entidad: 'grieta', objeto: 'grieta_brasa_<0..3>', anims: { apagada: 'apagada', aviso: 'aviso', caliente: 'caliente' }, notas: 'Rectángulos (x, y arriba a la izquierda, width y height de 64 o 96) siempre caminables. El juego llena cada parche con grieta_brasa_<v> en cuadros de 64 (la variante por posición, encajan entre sí). Con cada soplido de los fuelles: aviso y después caliente, corrido por fase (0 a 1). Apagadas al vencer a la Dragona.' },
+      fuelles: { entidad: 'fuelle', objetos: 'fuelle_gigante_0, fuelle_gigante_1 y fuelle_gigante_0_b', anims: { quieto: 'quieto', soplar: 'soplar', dormido: 'dormido' }, notas: 'Cada entidad fuelle va en el mismo punto que su objeto (prop objeto). El juego los hace soplar a todos juntos (audio fuelle_sopla 1 s antes de que las grietas se prendan). Dormidos al vencer a la Dragona.' },
+      charcos: { entidad: 'charco_frio', objeto: 'charco_frio', notas: 'El objeto charco_frio (capa suelo) y la entidad en el mismo punto: ahí Thor se moja. Al menos 2 por zona y 2 en el borde de la arena.' },
+      arena: { surtidor: 'surtidor (capa suelo) y surtidor_chorro encima cuando sale el chorro', palanca: 'palanca (arriba, tirar)', cadena: 'cadena_dragona', notas: 'Entidades surtidor (id) y palanca (surtidor = id de su surtidor), cada una en el mismo punto que su objeto. Las 4 entidades cadena están en el borde de la arena con hacia_x, hacia_y (el centro): el juego repite cadena_dragona girada de ahí hasta la Dragona.' },
+      apagada: { notas: 'Al vencer a la Dragona: fuelles en dormido, braseros en apagado, la boca del horno en apagado, la capa agua cambia a agua_apagada y las grietas quedan apagadas.' },
+      notas_luz: 'Sin sombras horneadas con dirección: los objetos traen solo la sombra de contacto al pie (campo sombra). La luz es de la lava (orillas), los braseros (naranja 180), la boca del horno (360), las jaulas (su color, 40), las luces libres (260), las fuentes frías (celeste 220) y la boca de la Dragona (personajes.dragona_brasa.luz_boca).',
+    };
+  })() : null;
+  if (fragua) log('fragua lista');
   // `mundo` sigue siendo el Bosque (un juego viejo lo lee así); `mundos` trae todos en orden de bajada
   manifest.mundo = bosque;
-  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : []), ...(puerto ? [{ id: 'mundo4', ...puerto }] : []), ...(ciudad ? [{ id: 'mundo5', ...ciudad }] : [])];
+  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : []), ...(puerto ? [{ id: 'mundo4', ...puerto }] : []), ...(ciudad ? [{ id: 'mundo5', ...ciudad }] : []), ...(fragua ? [{ id: 'mundo6', ...fragua }] : [])];
   log('mundo listo');
 
   let introLogo: Record<string, unknown> | null = null;
