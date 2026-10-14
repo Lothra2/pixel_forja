@@ -143,7 +143,7 @@ export const spikeFuego: AnimDef = {
     const rec = P(c, { torso: 10, legs: feet(c, 0.45, 0.22), arms: { near: { shoulder: 60, elbow: 110, spread: 20 }, far: { shoulder: 20, elbow: 40 } }, face: { eyes: 'happy', mouth: 'grin' }, support: 'both' });
     const seq = [runStep(c, 0), runStep(c, 1), plant, take, tuck(80, R(c, 14)), tuck(170, R(c, 20)), tuck(265, R(c, 24)), cock, hit, follow, land, rec, rec];
     // la pelota arriba y adelante; baja hasta el punto del golpe y se va con él
-    const bx = [0, 0, 0, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7], by = [0, 0, 0, 40, 38, 36, 34, 31, 26];
+    const bx = [0, 0, 0, 2.2, 2.1, 2.0, 1.2, 1.6, 1.7], by = [0, 0, 0, 40, 38, 36, 34, 31, 26];
     return seq.map((p, i) => (i >= 3 && i <= 8 ? { ...p, props: [...(p.props ?? []), vball(c, bx[i], by[i])] } : p));
   },
 };
@@ -322,7 +322,7 @@ const cau = (c: Ctx, x: number, y: number): PropState => ({ kind: 'soccer', at: 
  * para mantenerlo en el aire. El cầu sale en `objetos` como la pelota de fútbol.
  */
 export const shuttleJuggle: AnimDef = {
-  name: 'shuttle_juggle', pack: 'football', fps: 12, loop: true, steady: true, views: ['side', 'front', 'back'],
+  name: 'shuttle_juggle', pack: 'football', fps: 12, loop: true, views: ['side', 'front', 'back'],
   events: [{ type: 'impacto', phase: 0, joint: 'footNear' }, { type: 'impacto', phase: 4 / 8, joint: 'footFar' }],
   build: (c) => {
     const L = c.L;
@@ -410,13 +410,13 @@ export const shuttleKickBackNekketsu: AnimDef = {
 /**
  * La patada tijera del vovinam (`vovinam_scissor`, đòn chân): corre, salta de lado, abre las piernas en el aire a la
  * altura del cuello del rival (la de adelante por delante de él, la de atrás por detrás), las cierra como una tijera
- * (impacto), gira el cuerpo y los dos caen (aterriza). Rueda y se levanta. El rival es `vovinam_scissored`, con los
+ * (impacto), gira el cuerpo y los dos caen (aterriza). Se incorpora y queda de rodilla junto al rival. El rival es `vovinam_scissored`, con los
  * mismos cuadros: el juego lo pone de pie delante, a media celda, y ahí lo atrapan las piernas. Con `elevacion` y
  * `desplazamiento`. De lado: de frente y de espalda sale en la diagonal.
  */
 export const vovinamScissor: AnimDef = {
   name: 'vovinam_scissor', pack: 'martial', fps: 14, loop: false, lateral: true, views: ['side', 'front', 'back'],
-  travel: { ref: 'run', k: [1, 1, 0.8, 0.6, 0.3, 0, 0, 0, 0, 0] },
+  travel: { ref: 'run', k: [1.4, 1.4, 1.2, 1, 0.6, 0.2, 0, 0, 0, 0] },
   events: [{ type: 'despegue', phase: 2 / 10 }, { type: 'impacto', phase: 4 / 10, joint: 'footNear' }, { type: 'aterriza', phase: 6 / 10 }],
   build: (c) => {
     const L = c.L;
@@ -437,9 +437,9 @@ export const vovinamScissor: AnimDef = {
     const roll = P(c, { torso: -40, hipH: Math.round(c.d.u * 3), legs: { near: { x: 0.5 * L, y: 0.3 * L, toe: 20 }, far: { x: 0.2 * L, y: 0.5 * L, toe: 20 } },
       arms: { near: { shoulder: 20, elbow: 30 }, far: { shoulder: 30, elbow: 30 } }, face: fierce });
     const kneel = P(c, { torso: 20, legs: { near: { x: 0.4 * L, y: L - 1.8 }, far: { x: -0.4 * L, y: L - 0.9, toe: 50 } }, arms: { near: { shoulder: 70, elbow: 100 }, far: { shoulder: 40, elbow: 90 } }, face: fierce, support: 'both' });
-    // de pie, la guardia del vovinam con el saludo: el puño cerrado sobre el pecho
-    const guard = P(c, { torso: 4, legs: { near: { x: 0.3 * L, y: L - 1.0 }, far: { x: -0.3 * L, y: L - 1.0, toe: 10 } }, arms: { near: { shoulder: 70, elbow: 120 }, far: { shoulder: 30, elbow: 130 } }, face: { eyes: 'angry', mouth: 'grin' }, support: 'both' });
-    return [runStep(c, 0), runStep(c, 1), take, open, shut, twist, floor, roll, kneel, guard];
+    // termina de rodilla junto al rival, con el puño cerrado sobre el pecho: de ahí el juego sigue con la guardia
+    const kneel2 = P(c, { ...kneel, torso: 10, arms: { near: { shoulder: 70, elbow: 120 }, far: { shoulder: 30, elbow: 130 } }, face: { eyes: 'angry', mouth: 'grin' } });
+    return [runStep(c, 0), runStep(c, 1), take, open, shut, twist, floor, roll, kneel, kneel2];
   },
 };
 
