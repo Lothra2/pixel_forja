@@ -189,6 +189,10 @@ function edificioSalida(C: Lienzo, seed: number) {
   // la cajita roja donde se clava la garrocha y la raya blanca del borde
   C.f(caja - 4, baldosa + 4, 8, 6, 'rojo'); C.f(caja - 3, baldosa + 5, 6, 3, 'vino');
   C.f(borde - 2, baldosa, 2, techo - baldosa, 'luz');
+  // la placa de azulejo con el nombre de la calle, como las del centro histórico, bajo la cornisa de la primera casa
+  const placa = 'C. DE LAS DAMAS', pw = anchoTexto(placa, 1) + 5, py = techo + 2;
+  C.f(6, py, pw, 9, 'azul_noche'); C.f(7, py + 1, pw - 2, 7, 'luz'); C.hl(7, py + 7, pw - 2, 'cemento_claro');
+  textoGrande(C, 9, py, placa, 'azul', 1);
   // las materas y una silla en la azotea, al fondo
   for (const mx of [30, 196, 380]) { C.f(mx, baldosa - 6, 8, 6, 'terracota'); for (let k = 0; k < 9; k++) C.p(mx - 2 + (k * 5) % 12, baldosa - 8 - (k % 4), k % 3 ? 'verde' : 'salmon'); }
 }
@@ -354,4 +358,4 @@ export const CARTAGENA: Lugar = {
   particulas: particulasCartagena,
 };
 
-void anchoTexto; void textoGrande; void onda;
+void onda;

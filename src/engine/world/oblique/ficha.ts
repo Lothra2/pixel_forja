@@ -661,7 +661,7 @@ const COLOMBIA_AMURALLADA: Estilo = {
     veleros: 'Los veleros que cruzan la bahía despacio, en la capa lejos',
   },
   cajas: {},
-  letreros: [],
+  letreros: ['C. DE LAS DAMAS'],
 };
 
 const ESTILOS: Record<string, Estilo> = {
