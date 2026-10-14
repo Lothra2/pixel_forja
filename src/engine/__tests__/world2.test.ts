@@ -110,7 +110,7 @@ describe('mundo v2: atmósfera', () => {
     expect(Math.max(...Array.from({ length: c.w * c.h }, (_, i) => c.data[i * 4 + 3]))).toBeLessThanOrEqual(90);
   });
   it('ambientes de 12 s (el del puerto y el de la ciudad, 20 s; la cajita, 14.4) que hacen bucle sin salto', () => {
-    const largo: Record<string, number> = { puerto: 20, ciudad: 20, cajita: 14.4, fragua: 20, jaulas: 16 };
+    const largo: Record<string, number> = { puerto: 20, ciudad: 20, cajita: 14.4, fragua: 20, jaulas: 16, hielo: 20, puente: 16, trono: 16 };
     for (const n of AMBIENCE_NAMES) {
       const b = ambience(n);
       expect(b.length, n).toBe(Math.floor((largo[n] ?? 12) * RATE));

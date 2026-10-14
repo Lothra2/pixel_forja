@@ -236,9 +236,9 @@ export const BIG_BOSSES: Partial<Record<EnemyId, BossSpec>> = { minotauro: MINO_
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 /** efectos de sonido que suenan en bucle */
-const SFX_BUCLE = new Set<string>(['carrito_rodar']);
+const SFX_BUCLE = new Set<string>(['carrito_rodar', 'viento_fuerte']);
 /** músicas nuevas que suenan en bucle justo (ya traen el final pegado al principio) */
-const MUSICA_BUCLE = new Set<string>(['galerias', 'jefe_polilla', 'jefe_pez', 'capitan', 'jefe_rey', 'relojero', 'jefe_dragona', 'carcelero']);
+const MUSICA_BUCLE = new Set<string>(['galerias', 'jefe_polilla', 'jefe_pez', 'capitan', 'jefe_rey', 'relojero', 'jefe_dragona', 'carcelero', 'reina_escarcha', 'guardian', 'diablo_1', 'diablo_2', 'diablo_3', 'diablo_final']);
 
 /**
  * Un jefe grande al kit: una hoja por animación (fila = dirección, columna = cuadro), celda y pivote reales, y en el

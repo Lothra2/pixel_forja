@@ -84,7 +84,7 @@ describe('interfaz tipo Diablo y audio', () => {
       expect(new TextDecoder().decode(w.slice(0, 4)), n).toBe('RIFF');
       const secs = (w.length - 44) / 2 / 22050;
       // los efectos en bucle (el carrito que rueda), las campanas y la marea duran lo que pide el encargo
-      const largo: Record<string, number> = { carrito_rodar: 3.05, campana_lejos: 4, campana_cerca: 4, marea_sube: 6.05, reloj_campanada: 4.3, rey_canta: 3.4, ciudad_despierta: 3.8, fuelle_sopla: 2.1, dragona_aliento: 2.3, dragona_apagada: 2.5, puerta_negra: 3.1 };
+      const largo: Record<string, number> = { carrito_rodar: 3.05, campana_lejos: 4, campana_cerca: 4, marea_sube: 6.05, reloj_campanada: 4.3, rey_canta: 3.4, ciudad_despierta: 3.8, fuelle_sopla: 2.1, dragona_aliento: 2.3, dragona_apagada: 2.5, puerta_negra: 3.1, ventisca_viene: 2.7, viento_fuerte: 3.05, lobo_aullido: 2.2, diablo_ruge: 2.5, diablo_nova: 2.55, diablo_rayo: 2.1, diablo_oscuridad: 2.2, diablo_cae: 4.3 };
       expect(secs, n).toBeLessThan(largo[n] ?? 2);
       expect(secs, n).toBeGreaterThan(0.02);
     }

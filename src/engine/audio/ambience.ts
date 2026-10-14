@@ -7,7 +7,8 @@ import { RATE } from './sfx';
  */
 
 export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'catedral' | 'galerias' | 'eco' | 'puerto' | 'campana' | 'ciudad' | 'cajita' | 'jardin' | 'reloj' | 'abismo'
-  | 'fragua' | 'lava' | 'jaulas' | 'fuelles' | 'bosque_ceniza' | 'carcel' | 'horno';
+  | 'fragua' | 'lava' | 'jaulas' | 'fuelles' | 'bosque_ceniza' | 'carcel' | 'horno'
+  | 'hielo' | 'bosque_hielo' | 'lago' | 'catacumbas' | 'ciudadela' | 'puente' | 'puerta' | 'trono';
 
 function rng(seed: number) {
   let s = seed >>> 0 || 1;
@@ -71,7 +72,7 @@ function loopify(x: Float32Array, len: number): Float32Array {
 const SECONDS = 12, FADE = 1.5;
 
 /** El puerto dura 20 s (el encargo lo pide más largo: el agua contra los muelles necesita tiempo para no repetirse). */
-const LARGO: Partial<Record<AmbienceName, number>> = { puerto: 20, ciudad: 20, cajita: 14.4, fragua: 20, jaulas: 16 };
+const LARGO: Partial<Record<AmbienceName, number>> = { puerto: 20, ciudad: 20, cajita: 14.4, fragua: 20, jaulas: 16, hielo: 20, puente: 16, trono: 16 };
 
 export function ambience(name: AmbienceName): Float32Array {
   const secs = LARGO[name] ?? SECONDS;
@@ -323,6 +324,60 @@ export function ambience(name: AmbienceName): Float32Array {
     for (let i = 0; i < total; i++) buf[i] += deep[i] * 1.6;
     crujidos(8, 0.06);
   }
+  // ---------- Mundo 7: El Corazón Helado ----------
+  /** viento helado: aire que silba entre el hielo, con ráfagas que crecen y bajan despacio */
+  const viento = (vol: number, alto = 1) => { const w = bandpass(pink(total, r), (i) => (380 + 340 * lfo(i, 0.05)) * alto, 1.4); const w2 = bandpass(pink(total, r), (i) => (1300 + 500 * lfo(i, 0.08, 2)) * alto, 1.2); for (let i = 0; i < total; i++) buf[i] += (w[i] * 0.8 + w2[i] * 0.25) * vol * (0.45 + 0.55 * lfo(i, 1 / 7, 0.6) ** 2); };
+  /** el hielo que cruje: un quejido grave que se dobla (como un lago congelado) y chasquidos secos */
+  const crujeHielo = (n: number, vol: number) => { for (let k = 0; k < n; k++) { const t = r() * (T - 1.5), f = 90 + r() * 140; blip(buf, t, 0.5 + r() * 0.6, f * 1.6, f * 0.6, vol, 2.2); blip(buf, t + 0.05, 0.4, f * 3.1, f * 1.2, vol * 0.4, 3); } crujidos(Math.round(n * 1.4), vol * 0.6); };
+  /** goteo helado: gotas que caen en agua quieta con eco */
+  const goteo = (n: number, vol: number) => { for (let k = 0; k < n; k++) { const t = r() * (T - 0.8), f = 1200 + r() * 900; blip(buf, t, 0.12, f, f * 1.6, vol, 9); blip(buf, t + 0.28, 0.12, f, f * 1.6, vol * 0.3, 9); } };
+  /** el rumor hondo del abismo */
+  const hondo = (vol: number) => { const d = lowpass(pink(total, r), 0.01); for (let i = 0; i < total; i++) buf[i] += d[i] * vol; };
+  if (name === 'hielo') {
+    // la escalera helada: viento helado siempre y el hielo que cruje de vez en cuando
+    hondo(1.2); viento(1); crujeHielo(5, 0.05);
+  }
+  if (name === 'bosque_hielo') {
+    // el bosque de escarcha: ramas de hielo que tintinean con el viento y lobos que aúllan lejos
+    hondo(0.9); viento(0.8, 1.2);
+    for (let k = 0; k < 18; k++) { const t = r() * (T - 0.5), f = 2400 + r() * 1800; blip(buf, t, 0.25, f, f, 0.012, 6); }
+    for (const t0 of [2.5, 8.2]) { const f = 380 + r() * 60; blip(buf, t0, 2.4, f, f * 1.45, 0.02, 1.4); blip(buf, t0 + 0.5, 2, f * 1.45, f * 1.2, 0.012, 1.6); }
+  }
+  if (name === 'lago') {
+    // el lago: el hielo que suena bajo los pies (quejidos largos y graves que viajan) y un viento bajito
+    hondo(1.4); viento(0.5); crujeHielo(9, 0.07);
+    for (let k = 0; k < 4; k++) { const t = r() * (T - 2), f = 900 + r() * 500; blip(buf, t, 1.6, f, f * 0.4, 0.02, 1.2); }
+  }
+  if (name === 'catacumbas') {
+    // las catacumbas: goteo helado con eco y susurros sin palabras (ruido que sube y baja como una voz)
+    hondo(1.3); goteo(14, 0.035);
+    for (let k = 0; k < 4; k++) { const t0 = 1 + r() * (T - 3), dur = 1.2 + r(), s0 = Math.floor(t0 * RATE), n = Math.floor(dur * RATE); const v = bandpass(pink(n, r), (i) => 900 + 600 * Math.sin((i / n) * Math.PI * 3 + k), 0.9); for (let i = 0; i < n && s0 + i < total; i++) buf[s0 + i] += v[i] * 0.22 * Math.sin((i / n) * Math.PI) ** 2; }
+  }
+  if (name === 'ciudadela') {
+    // la ciudadela: el viento que pasa por las almenas (silbido más agudo), una bandera helada que golpea y cadenas
+    hondo(1); viento(0.7, 1.6);
+    for (let t = 0.6; t < T - 1; t += 2.2 + r() * 1.8) for (let j = 0; j < 3; j++) { const s0 = Math.floor((t + j * 0.09) * RATE), m = Math.floor(0.04 * RATE); for (let i = 0; i < m && s0 + i < total; i++) buf[s0 + i] += (r() * 2 - 1) * 0.06 * (1 - i / m); }
+    cadenas(3, 0.02);
+  }
+  if (name === 'puente') {
+    // el puente: la ventisca que no para (fuerte y de lado), las cadenas del puente que golpean y el vacío abajo
+    hondo(1.6); viento(1.6, 1.1); viento(0.8, 2);
+    for (let t = 0.3; t < T - 0.5; t += 0.9 + r() * 0.8) { const f = 1600 + r() * 900; blip(buf, t, 0.12, f, f * 0.97, 0.03, 7); }
+  }
+  if (name === 'puerta') {
+    // la puerta del trono: un rumor de fuego negro detrás de la puerta y el viento helado delante
+    hondo(1.2); viento(0.5);
+    const roar = bandpass(pink(total, r), (i) => 70 + 30 * lfo(i, 0.06), 0.7);
+    for (let i = 0; i < total; i++) buf[i] += roar[i] * 0.9 * (0.6 + 0.4 * lfo(i, 1 / 8));
+    crujidos(6, 0.05);
+  }
+  if (name === 'trono') {
+    // el corazón helado: un latido grave y lento (dos golpes hondos, sin susto) sobre el viento y las brasas del trono
+    hondo(1.4); viento(0.4);
+    const beat = len / RATE / 12;
+    for (let t = 0.3; t < T; t += beat) { blip(buf, t, 0.28, 62, 44, 0.32, 3.5); blip(buf, t + 0.26, 0.24, 56, 40, 0.22, 3.5); }
+    crujidos(18, 0.04);
+  }
   buf = loopify(buf, len);
   // nivel parejo (todos los ambientes suenan parecido de fuerte)
   let peak = 0;
@@ -332,4 +387,4 @@ export function ambience(name: AmbienceName): Float32Array {
   return buf;
 }
 
-export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral', 'galerias', 'eco', 'puerto', 'campana', 'ciudad', 'cajita', 'jardin', 'reloj', 'abismo', 'fragua', 'lava', 'jaulas', 'fuelles', 'bosque_ceniza', 'carcel', 'horno'];
+export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral', 'galerias', 'eco', 'puerto', 'campana', 'ciudad', 'cajita', 'jardin', 'reloj', 'abismo', 'fragua', 'lava', 'jaulas', 'fuelles', 'bosque_ceniza', 'carcel', 'horno', 'hielo', 'bosque_hielo', 'lago', 'catacumbas', 'ciudadela', 'puente', 'puerta', 'trono'];
