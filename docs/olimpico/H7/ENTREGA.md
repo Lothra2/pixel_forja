@@ -1,6 +1,6 @@
 # Lote H7: los ambientes del resto de los mundos y el acorde de cada equipo
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/39
 Fecha: 2026-10-14
 
 ## Qué se hizo
@@ -105,7 +105,7 @@ Y en el `equipos.json`, a cada equipo, su `"musica"`, como en el ejemplo.
 - **`custom.test.ts`: 15 de 15,** incluida "se genera en menos de 5 minutos". En E6, H5 y H6 esa fallaba por la máquina. Hoy pasó con los 16 sonidos nuevos dentro.
 - **El esquema** `docs/kit-a-medida.schema.json` está regenerado.
 - **`tsc` limpio y `npm run build:sitio` limpio.**
-- **e2e de Playwright:** (se llena al terminar).
+- **e2e de Playwright: 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
