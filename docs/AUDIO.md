@@ -11,7 +11,7 @@ Toda la música, los efectos, los ambientes y las voces del motor, sintetizados 
 "audio": {
   "sfx": ["pistola", "silbato", "golpe_1", "golpe_pesado", "publico_grito"],   // o true: todos
   "musica": ["marcha_nekketsu", "saigon_chay", "azotea_final", "victoria_banda", "derrota"],
-  "ambientes": ["agua"],
+  "ambientes": ["agua", "mar"],
   "voces": ["rick", "steph", "sophie", "alana", "locutor"]                    // o true, o { "locutor": { "tono": 0.8, "timbre": "sierra" } }
 }
 ```
@@ -93,6 +93,16 @@ Para las cuatro pruebas que seguían con la música del chip. Igual que los de H
   - `garrocha`: 0.67 s, el salto con pértiga. La punta que se clava en la cajita con un golpe de metal, la pértiga de fibra que se dobla con un "uuum" que sube, y el latigazo cuando se endereza. Va en el evento `despegue` de `pole_vault`: el latigazo cae 1/3 s después, justo en `suelta` (4 cuadros a 12 fps).
 - **Los de antes:** espadazo, golpe, critico, esquiva, bloqueo, pasos por superficie (`paso_<pasto|tierra|piedra|madera|agua>_<0|1|2>`), ladrido, interfaz (click, elegir, error...) y los de GG Abyss.
 
+## Ambientes
+
+12 s en bucle sin corte: el final se funde con el principio. Todos salen al mismo nivel (pico en 0.5), para ponerlos debajo de la música sin ajustar cada uno.
+
+- **Los de antes:** `bosque` (viento suave y pájaros), `agua` (arroyo), `noche` (grillos y una ranita), `viento` (ráfagas), `cueva` (rumor y gotas con eco) y `magia` (campanitas sobre un colchón brillante).
+- **Del lote H6**, los de los mundos que ya tienen escenario:
+  - `mar`: para Hạ Long y Margarita. Un rumor grave que no para y tres olas en los 12 s. Cada una crece, revienta con un golpe ancho que se apaga despacio y se devuelve siseando por la arena. Una gaviota llama dos veces seguidas y otra más tarde. La última ola cae justo en el empalme del bucle, así que no se nota la vuelta.
+  - `cafetal`: para Cocora. La brisa fresca de la montaña, pájaros que silban en frases cortas, la bandada de loros que pasa graznando y una vaca a lo lejos.
+  - `llano`: para Apure. El viento abierto de la sabana al atardecer, las chicharras que crecen y bajan dos veces sin callarse nunca, el alcaraván dos veces ("cá-cá-cá-cáaa") y el ganado a lo lejos.
+
 ## Voces en blips
 
 Los diálogos no tienen voz hablada: cada letra suena con un "blip", como en los juegos de 8 bits.
@@ -133,6 +143,9 @@ gallo.on('animationupdate', (anim, frame) => {
   for (const ev of m.animales.gallo.eventos[anim.key] ?? []) if (frame.index - 1 === ev.cuadro) this.sound.play(ev.tipo === 'canto' ? 'gallo' : 'aleteo');
 });
 
+// el ambiente del mundo, en bucle debajo de la música
+this.sound.play('mar', { loop: true, volume: 0.35 });
+
 // un golpe distinto cada vez
 this.sound.play(Phaser.Utils.Array.GetRandom(['golpe_1', 'golpe_2', 'golpe_3']));
 
@@ -154,3 +167,4 @@ function hablar(scene, id, texto, cps = 18) {
 - **Mono a 22050 Hz.** La marcha de 60 s pesa 2.6 MB en WAV. Con `"formato": "comprimido"` en el `kit.config.json`, el kit la saca en OGG y M4A a 64 kbps, unos 520 KB (ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#efectos-y-audio)).
 - **`victoria` y `victoria_banda`:** `victoria` es la fanfarria de GG Abyss y no se cambió para no tocar ese kit. Para Nekketsu va `victoria_banda`, que combina con la marcha.
 - **El agua es ruido filtrado y burbujas sintetizadas** (lote H5). El chapuzón y la brazada se reconocen por la forma (el golpe, el "shhh", las burbujas que suben y las gotas), pero son de videojuego, no grabaciones. Repetida en cada brazada, conviene variarle un poco el `rate` y el volumen en el juego para que no suene a máquina.
+- **Los ambientes son de 12 s.** En un juego de 2 o 3 minutos se oye la vuelta si uno pone atención: la gaviota y el alcaraván llaman siempre en el mismo segundo. Si molesta, el juego puede arrancar el ambiente en un punto al azar.

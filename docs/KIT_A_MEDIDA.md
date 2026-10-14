@@ -190,7 +190,7 @@ Un juego puede ponerle su nombre a una animación del motor. El pack pide la del
 - **Audio:** los sonidos del motor, sintetizados, en WAV de 16 bits mono a 22050 Hz. El catálogo completo está en [AUDIO.md](AUDIO.md).
   - `sfx` (65): los del lote H1 (pistola, silbato, golpe_1 a 3, golpe_pesado, chancleta, silla, pote, levantar, lanzar, caer_plano, mareo, ko, publico_grito, publico_ooh), los de pelea e interfaz (golpe, critico, esquiva, bloqueo, click, elegir...), los pasos por superficie y los de GG Abyss.
   - `musica` (9): marcha_nekketsu, saigon_chay, azotea_final, victoria_banda, derrota, y bosque, jefe, victoria y titulo de GG Abyss. Las que van en bucle empalman sin corte.
-  - `ambientes` (6): bosque, agua, noche, viento, cueva, magia. En bucle sin corte.
+  - `ambientes` (9): bosque, agua, noche, viento, cueva, magia, y los de los mundos del olímpico (lote H6): mar, cafetal y llano. En bucle sin corte.
   - `voces`: 4 blips por personaje para los diálogos. Con `true` salen todos los atletas, con una lista también los NPC (`locutor`), y con un objeto se fija la voz.
 - **Qué sale del audio:**
   - `audio/sfx/<n>.wav`, `audio/musica/<n>.wav`, `audio/ambiente/<n>.wav` y `audio/voz/<id>_<k>.wav`.
