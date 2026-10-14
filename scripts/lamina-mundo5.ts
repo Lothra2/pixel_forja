@@ -162,9 +162,19 @@ async function ladrona() {
   save('mundo5_ladrona.png', r);
 }
 
+async function iconos() {
+  const { skillIcons } = await import('../src/engine/ui/icons2.ts');
+  const ic = new Map(skillIcons().map((s) => [s.name, s.frames[0]]));
+  const r = fill(createRaster(380, 100), [20, 24, 30]);
+  over(r, ic.get('prender')!, 8, 8); over(r, ic.get('chispas')!, 56, 8); over(r, ic.get('farol')!, 104, 8);
+  over(r, up(ic.get('prender')!, 2), 160, 8); over(r, up(ic.get('chispas')!, 2), 250, 8);
+  save('mundo5_iconos.png', up(r, 2));
+}
+
 const all = what === 'todo';
 if (all || what === 'mapa') await mapa();
 if (all || what === 'estatuas') await estatuas();
 if (all || what === 'enemigos') await enemigos(false);
 if (all || what === 'jefe') await enemigos(true);
 if (all || what === 'ladrona') await ladrona();
+if (all || what === 'iconos') await iconos();

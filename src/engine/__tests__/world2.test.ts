@@ -269,7 +269,7 @@ describe('taller entrega 2', () => {
     let pink = 0; for (let i = 0; i < nat.data.length; i += 4) if (nat.data[i] > 200 && nat.data[i + 1] < 160 && nat.data[i + 2] > 150) pink++;
     expect(pink).toBeGreaterThan(5);
     const sk = skillIcons();
-    expect(sk.map((s) => s.name)).toEqual(['lluvia_flechas', 'esquiva', 'llamar_thor', 'curar', 'torbellino', 'bloqueo', 'nova_fuego', 'rayo_canalizado', 'ataque', 'farol', 'farol_recarga']);
+    expect(sk.map((s) => s.name)).toEqual(['lluvia_flechas', 'esquiva', 'llamar_thor', 'curar', 'torbellino', 'bloqueo', 'nova_fuego', 'rayo_canalizado', 'ataque', 'farol', 'farol_recarga', 'prender', 'chispas']);
     for (const s of sk) expect([s.frames[0].w, s.frames[0].h]).toEqual([40, 40]);
   });
 });

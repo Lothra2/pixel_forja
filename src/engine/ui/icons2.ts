@@ -183,7 +183,47 @@ export function skillIcons(): UiSprite[] {
   const farol = skill('#e8b850', raisedLantern, '#ffd27a');
   out.push({ name: 'farol', frames: [farol] });
   out.push({ name: 'farol_recarga', frames: [grayed(farol)] });
+  // Mundo 5: prender el farol de plaza (o la lámpara del trono) y las chispas de la luz robada
+  out.push({ name: 'prender', frames: [skill('#e8b850', lightLamp, '#ffd27a')] });
+  out.push({ name: 'chispas', frames: [skill('#e8b850', threeSparks, '#ffd27a')] });
   return out;
+}
+
+/** Una mano que prende un farol: el farol de plaza arriba con la luz dorada que nace y la manito que lo toca. */
+function lightLamp(c: IconCanvas) {
+  const iron = metalMat('#3a3e4a');
+  // los rayos dorados alrededor del farol
+  for (let k = 0; k < 7; k++) {
+    const a = -Math.PI * 0.92 + (k / 6) * Math.PI * 0.84, R = 8.4, L = k % 2 ? 2.4 : 4, cx = 23, cy = 15;
+    c.line([cx + Math.cos(a) * R, cy + Math.sin(a) * R], [cx + Math.cos(a) * (R + L), cy + Math.sin(a) * (R + L)], 1.3, glowMat(k % 2 ? '#ffc070' : '#fff0c0'), { tone: k % 2 ? 3 : 4 });
+  }
+  // el farol: cúpula, jaula con el vidrio prendido y la llama, base
+  c.poly([[17, 9.4], [29, 9.4], [23, 4.4]], iron, { bias: 1 });
+  c.poly([[17.6, 9.4], [28.4, 9.4], [27.4, 20], [18.6, 20]], glowMat('#f0a040'), { tone: 3 });
+  c.ellipse([23, 15.4], 2, 3.4, glowMat('#fff4d0'), { tone: 5 });
+  for (const x of [17.8, 23, 28.2]) c.px1([x, 9.4], [x - (x - 23) * 0.1, 20], iron, { tone: 1 });
+  c.poly([[18, 20], [28, 20], [26.6, 22.6], [19.4, 22.6]], iron);
+  c.line([23, 22.6], [23, 26], 1.6, iron);
+  // la manito que sube a tocarlo: palma, dedo índice estirado y la manga
+  const skin = clothMat('#f0c09a');
+  c.poly([[10.4, 33.6], [13.6, 30.4], [16.4, 32], [13.4, 35]], clothMat('#5a7ad8'));
+  c.ellipse([15.6, 28.6], 3.6, 3, skin);
+  c.line([17, 26.6], [19.6, 23.2], 1.4, skin);
+  c.line([14.6, 26.2], [15.8, 24.4], 1.2, skin);
+  c.ellipse([20, 22.8], 1.2, 1.2, glowMat('#fff0c0'), { tone: 5 });
+}
+
+/** Tres chispas doradas en arco (la más grande en el medio, arriba). El juego pone el contador. */
+function threeSparks(c: IconCanvas) {
+  const spark = (x: number, y: number, r: number) => {
+    c.poly([[x, y - r], [x + r * 0.28, y - r * 0.28], [x + r, y], [x + r * 0.28, y + r * 0.28], [x, y + r], [x - r * 0.28, y + r * 0.28], [x - r, y], [x - r * 0.28, y - r * 0.28]], glowMat('#ffc070'), { tone: 3 });
+    c.poly([[x, y - r * 0.6], [x + r * 0.18, y - r * 0.18], [x + r * 0.6, y], [x + r * 0.18, y + r * 0.18], [x, y + r * 0.6], [x - r * 0.18, y + r * 0.18], [x - r * 0.6, y], [x - r * 0.18, y - r * 0.18]], glowMat('#fff4d0'), { tone: 5 });
+  };
+  // el arco de luz que las une
+  c.ring([20, 30], 14, 13, 1, glowMat('#ffd890'), { tone: 2 }, 200, 340);
+  spark(9.5, 23, 5.4);
+  spark(20, 12.5, 7.6);
+  spark(30.5, 23, 5.4);
 }
 
 /** El farol de Thor alzado: rayos ámbar alrededor, vidrio que brilla, jaula de hierro, el asa arriba. */

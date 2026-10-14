@@ -247,3 +247,21 @@ describe('Mundo 5: La Ciudad Dormida (mapa y objetos)', () => {
     expect(byName.has('portal_plata')).toBe(true);
   });
 }, 300_000);
+
+describe('Mundo 5, parte 6: los íconos para Alana', () => {
+  it('prender y chispas: 40 x 40, redondos, con el aro dorado', async () => {
+    const { skillIcons } = await import('../ui/icons2');
+    const ic = new Map(skillIcons().map((s) => [s.name, s.frames[0]]));
+    for (const n of ['prender', 'chispas']) {
+      const r = ic.get(n)!;
+      expect(r, n).toBeTruthy();
+      expect([r.w, r.h], n).toEqual([40, 40]);
+      // redondo: las esquinas transparentes; el aro dorado en el borde de arriba
+      expect(r.data[3], n).toBe(0);
+      expect(r.data[(39 * 40 + 39) * 4 + 3], n).toBe(0);
+      let gold = 0;
+      for (let y = 0; y < 5; y++) for (let x = 12; x < 28; x++) { const i = (y * 40 + x) * 4; if (r.data[i + 3] && r.data[i] > 180 && r.data[i + 1] > 120 && r.data[i + 2] < 140) gold++; }
+      expect(gold, n).toBeGreaterThan(4);
+    }
+  });
+});
