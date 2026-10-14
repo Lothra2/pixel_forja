@@ -523,6 +523,58 @@ cada capa es una tira de cuadros y se dibujan en orden (fondo, medio, frente). T
 
 Qué panel va en cada momento de `GUION_INTRO`, en `intro.notas`. Detalle en `docs/intro/INTRO.md`.
 
+### El final (encargo F13): las cinemáticas, la heroína celestial y el Ciclo 2
+
+**Las cinemáticas** (`manifest.cine_bajada` y `manifest.cine_fin`) van en el formato del intro: cada panel trae
+`{ w, h, notas, capas: [{ nombre, archivo, cuadros, fps, paralaje, bucle?, por_heroina? }] }`, una tira de cuadros por
+capa, en orden (fondo, medio, frente). Lo nuevo:
+
+- `bucle: false`: la capa pasa una vez y se queda en el último cuadro (la puerta que se abre, los ojos del Diablo).
+- `por_heroina: { rick, steph, sophie, alana }`: la misma capa dibujada para cada heroína (la escalera y las alas). El
+  `archivo` de la capa es la de Sophie, por si el perfil no tiene heroína.
+- `guion`: `[{ panel, desde, hasta, subtitulo?, sonido? }]` en segundos de la música, con los subtítulos del encargo.
+- `logo_hielo` y `logo_fin`: 16 cuadros en grilla de 4 x 4 (como `logo_fuego`), con `bucle_desde` (el cuadro desde el
+  que se repite: primero se arman, después laten).
+- `nieve_frente` (128 x 128, 8 cuadros en bucle): nieve que cruza delante, pega por los cuatro lados.
+- Audio: `cine_bajada_musica` (60 s, golpe y silencio a los 50.5 s, cuando cae el título), `cine_rugido` (grave, sin
+  grito) y `cine_fin_musica` (72 s, de Re menor a Do mayor, con el tema del Bosque desde los 36 s).
+
+| Panel | Tamaño | Qué se ve |
+|---|---|---|
+| `bajada_puerta` | 480 x 270 | La Puerta Negra se abre, sale luz de hielo, se apagan los braseros y crece la escarcha |
+| `bajada_escalera` | 480 x 540 | La escalera en zigzag hasta la niebla; la heroína y Thor chiquitos, de espaldas (`por_heroina`) |
+| `bajada_lago` | 480 x 270 | El lago negro con gigantes adentro mirando hacia arriba; nieve negra |
+| `bajada_ladrona` | 480 x 270 | La Ladrona con la última llama camina hacia el trono, lejos |
+| `bajada_diablo` | 480 x 270 | El Diablo de cerca: se le abren los ojos, la escarcha se le rompe de los cuernos, humo |
+| `bajada_titulo` | 480 x 270 | Negro con escarcha; encima `logo_hielo` |
+| `fin_cae` | 480 x 270 | El Diablo de rodillas, el hielo se raja con grietas de luz |
+| `fin_llama` | 480 x 270 | La llama vuelve a la Ladrona, que se vuelve la Primera Luz |
+| `fin_pisos` | 480 x 540 | La luz sube por los siete pisos y cada uno se prende (la cámara sube) |
+| `fin_amanecer` | 480 x 270 | Amanece en el Bosque GG: la familia y Thor frente a la casa |
+| `fin_alas` | 480 x 270 | La Primera Luz le da las alas a la heroína (`por_heroina`) |
+| `fin_titulo` | 480 x 270 | Encima `logo_fin`: "Fin" y, chiquito, "¿o no?" |
+
+**La heroína celestial** (en cada heroína de `personajes`, todo nuevo y aparte):
+
+- `capas.alas_detras.celestial`, `capas.alas_delante.celestial` y `capas.aura.celestial`: hojas como las de equipo
+  (un bloque por animación, 8 filas por dirección), para las 21 animaciones y `volar`. Orden de dibujo en
+  `capas.orden_celestial`: alas_detras, base, pecho, casco, arma, mano, alas_delante, aura.
+- `capas.pecho.tunica_celestial`: la túnica blanca y dorada. Su objeto va en `manifest.celestial.tunica` (íconos de 32 y
+  64, 8 cuadros, con casillero).
+- `anims.volar`: 8 cuadros a 10 fps con `elevacion` por cuadro (el juego sube el sprite sobre la sombra).
+- En cada capa de equipo de antes, `bloques.volar` trae su propio `archivo` y `columnas` (una hoja aparte por pieza):
+  `const hoja = bloque.archivo ?? capa.archivo`. Así las hojas de antes quedan igual.
+- `retrato_celestial` (40 x 40, con la aureola y las alas asomando).
+- `fx`: `lanza_luz` (32, en bucle, tramo del haz hacia la derecha para repetir en línea), `impacto_luz` (48, 8
+  cuadros), `estela_alas` (32, 6 cuadros) y `aura_celestial` (64, en bucle, al pie). Se ven mejor sumando luz.
+- `ui.habilidades`: `alas`, `lanza_luz` y `ciclo`. Audio: `alas_vuelo`, `lanza_luz` y `celestial_despierta`.
+
+**El Ciclo 2:** `ui.marco_ciclo` (36 x 24, nueve [8, 8, 8, 8]) para el número de ciclo en el HUD y `ui.logo_ciclo`
+(igual que `ui.logo`, en oro con un espiral).
+
+Láminas: `npx tsx scripts/lamina-celestial.ts` y `npx tsx scripts/lamina-cine.ts`. Detalle en
+`docs/entregas/abyss_celestial.md`.
+
 ### Hojas de personajes
 
 Un PNG por animación. Fila = dirección en el orden de `direcciones`. Columna = cuadro. Ancho = `cuadros * celda`, alto = `8 * celda`.

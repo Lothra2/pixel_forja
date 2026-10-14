@@ -432,3 +432,59 @@ function crossedSwords(c: IconCanvas) {
   sword(-1);
   sword(1);
 }
+
+/**
+ * Íconos de la heroína celestial y del Ciclo 2 (encargo F13): `alas` (dos alas de luz abiertas), `lanza_luz` (una
+ * lanza de luz en diagonal) y `ciclo` (un espiral dorado). Van aparte para no tocar los de antes.
+ */
+export function celestialSkillIcons(): UiSprite[] {
+  return [
+    { name: 'alas', frames: [skill('#ffe08a', openWings, '#fff6d0')] },
+    { name: 'lanza_luz', frames: [skill('#ffe08a', lightSpear, '#fff6d0')] },
+    { name: 'ciclo', frames: [skill('#e8b850', goldSpiral, '#ffd27a')] },
+  ];
+}
+
+/** Dos alas de luz abiertas: el borde dorado arriba y las plumas blancas en abanico, con un brillo al medio. */
+function openWings(c: IconCanvas) {
+  const feather = glowMat('#ffffff'), soft = clothMat('#e8eaf8'), gold = MAT.gold;
+  for (const s of [-1, 1]) {
+    const X = (x: number) => 20 + s * x;
+    // plumas largas en abanico, de afuera hacia adentro
+    for (let k = 0; k < 5; k++) {
+      const a = (-0.15 + k * 0.32), L = 13 - k * 1.4;
+      const bx = X(3 + k * 2.2), by = 14 + k * 0.6;
+      c.line([bx, by], [bx + s * Math.cos(a) * L, by + Math.sin(a) * L + 4], 2.4 - k * 0.15, k % 2 ? soft : feather, { tone: 4 });
+    }
+    // el borde del ala: arco dorado del hombro a la punta
+    c.line([X(2), 17], [X(8), 9], 2.4, gold);
+    c.line([X(8), 9], [X(16), 8], 2, gold);
+    c.line([X(16), 8], [X(17.5), 12], 1.6, gold);
+  }
+  c.circle([20, 18], 3.2, glowMat('#fff4c0'), { tone: 5 });
+}
+
+/** La lanza de luz: un haz en diagonal con punta de diamante, estela y destellos. */
+function lightSpear(c: IconCanvas) {
+  const core = glowMat('#ffffff'), halo = glowMat('#ffd860');
+  c.line([7, 33], [27, 13], 3.6, halo, { tone: 3 });
+  c.line([8, 32], [27, 13], 1.6, core, { tone: 5 });
+  c.poly([[24, 11], [33, 7], [29, 16]], halo, { tone: 4 });
+  c.poly([[26, 12], [31, 9], [28.5, 14]], core, { tone: 5 });
+  for (const [x, y, r] of [[12, 22, 2.4], [20, 31, 1.8], [7, 15, 1.6]] as [number, number, number][]) {
+    c.poly([[x, y - r], [x + r * 0.3, y - r * 0.3], [x + r, y], [x + r * 0.3, y + r * 0.3], [x, y + r], [x - r * 0.3, y + r * 0.3], [x - r, y], [x - r * 0.3, y - r * 0.3]], glowMat('#fff0b0'), { tone: 4 });
+  }
+}
+
+/** El espiral dorado del Ciclo: una vuelta y media que se cierra hacia el centro, con un punto de luz. */
+function goldSpiral(c: IconCanvas) {
+  let prev: P | null = null;
+  for (let t = 0; t <= 1; t += 0.02) {
+    const a = t * Math.PI * 3.4 - Math.PI / 2, r = 13 - t * 10.5;
+    const p: P = [20 + Math.cos(a) * r, 20 + Math.sin(a) * r];
+    if (prev) c.line(prev, p, 3 - t * 1.2, MAT.gold);
+    prev = p;
+  }
+  c.circle([20, 20], 2.4, glowMat('#fff4c0'), { tone: 5 });
+  c.poly([[20, 4.5], [23.5, 7], [20, 9.5]], MAT.gold, { bias: 1 });
+}

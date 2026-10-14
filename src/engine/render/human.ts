@@ -25,6 +25,8 @@ export interface RenderOptions {
   noOutline?: boolean;
   /** premium: los implementos nunca cuentan como cuerpo para encuadrar, aunque se dibujen en la capa del brazo */
   propsApart?: boolean;
+  /** devolver las articulaciones también en las animaciones clásicas (las alas de la heroína celestial se enganchan ahí) */
+  joints?: boolean;
 }
 
 /**

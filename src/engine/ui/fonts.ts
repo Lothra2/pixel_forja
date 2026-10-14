@@ -231,3 +231,28 @@ export function renderLogo(bold: ArrayBuffer): Raster[] {
   }
   return frames;
 }
+
+/**
+ * Máscara de un texto en una línea con la fuente de títulos, cada pixel de la grilla de Silkscreen a `px` pixeles
+ * (para los logos de las cinemáticas del final). 1 = letra. La altura es la de las mayúsculas y lo que baja.
+ */
+export function textoMascara(bold: ArrayBuffer, text: string, px: number): { w: number; h: number; mask: Uint8Array } {
+  const gl = rasterGlyphs(parse(bold), px);
+  const by = (ch: string) => gl.find((g) => g.ch === ch) ?? gl.find((g) => g.ch === ' ')!;
+  const chars = [...text];
+  const capTop = Math.min(...chars.filter((c) => c !== ' ').map((c) => by(c).top));
+  const bottom = Math.max(...chars.filter((c) => c !== ' ').map((c) => by(c).top + by(c).h));
+  const w = chars.reduce((a, c) => a + by(c).adv, 0), h = bottom - capTop;
+  const mask = new Uint8Array(w * h);
+  let x = 0;
+  for (const ch of chars) {
+    const g = by(ch);
+    for (let yy = 0; yy < g.h; yy++) for (let xx = 0; xx < g.w; xx++) {
+      if (!g.mask[yy * g.w + xx]) continue;
+      const X = x + g.left + xx, Y = g.top - capTop + yy;
+      if (X >= 0 && Y >= 0 && X < w && Y < h) mask[Y * w + X] = 1;
+    }
+    x += g.adv;
+  }
+  return { w, h, mask };
+}
