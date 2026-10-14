@@ -61,7 +61,7 @@ describe('pendientes del juego', () => {
     const rojo = premiumPortal('rojo');
     const reds = (r: { data: Uint8ClampedArray | Uint8Array }) => { let n = 0; for (let i = 0; i < r.data.length; i += 4) if (r.data[i + 3] && r.data[i] > 200 && r.data[i + 1] < 120) n++; return n; };
     expect(reds(rojo.anims.abrir.frames[0])).toBeLessThan(reds(rojo.anims.abrir.frames[7]));
-    expect(PORTAL_MUNDO).toEqual({ mundo1: 'verde', mundo2: 'violeta', mundo3: 'ambar', mundo4: 'rojo' });
+    expect(PORTAL_MUNDO).toEqual({ mundo1: 'verde', mundo2: 'violeta', mundo3: 'ambar', mundo4: 'rojo', mundo5: 'plata' });
   });
 
   it('cada mundo trae su portal premium (y los de siempre, azul y rojo, ya premium)', () => {

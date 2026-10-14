@@ -18,7 +18,7 @@ import { contactShadow } from './premium/contact';
  * Mundo 4. La luz trae radio 160.
  */
 
-export type PortalColor = 'azul' | 'rojo' | 'verde' | 'violeta' | 'ambar';
+export type PortalColor = 'azul' | 'rojo' | 'verde' | 'violeta' | 'ambar' | 'plata';
 
 interface Look {
   /** remolino: de lo más hondo (0) a lo más claro (4) */
@@ -29,7 +29,7 @@ interface Look {
   /** piedra del arco, de oscuro a claro (5 tonos) */
   stone: string[];
   /** algo de cada mundo sobre la piedra */
-  extra?: 'musgo' | 'gotea';
+  extra?: 'musgo' | 'gotea' | 'sueno';
   light: string;
 }
 
@@ -38,6 +38,9 @@ const LOOKS: Record<PortalColor, Look> = {
   rojo: { swirl: ['#1a0206', '#4a0810', '#9a1a22', '#e8483a', '#ffd0a0'], rune: '#ff5a3a', spark: '#ffb07a', stone: ['#0b1210', '#18221f', '#2a3632', '#3f4e48', '#5c6e68'], extra: 'gotea', light: '#ff4a32' },
   verde: { swirl: ['#04180c', '#0e4220', '#22883a', '#7ad85a', '#f0ffc0'], rune: '#ffd27a', spark: '#ffe8a0', stone: ['#14140f', '#26261c', '#3c3a2c', '#57543f', '#7a7458'], extra: 'musgo', light: '#8ae86a' },
   violeta: { swirl: ['#10061e', '#2e1258', '#6a32c0', '#b07aff', '#f0dcff'], rune: '#c8a0ff', spark: '#f0e0ff', stone: ['#1c1a20', '#322e36', '#4c4652', '#6c6574', '#958d9c'], light: '#b07aff' },
+  // el del Mundo 5 (La Ciudad Dormida): piedra clara de estatua con runas plateadas y un remolino lila y plata, como
+  // un sueño. Le cae polvo de sueño lila por la piedra y el remolino suelta motas que flotan hacia arriba
+  plata: { swirl: ['#140c2a', '#3a2a6e', '#7a62c8', '#c8bcf0', '#f8f6ff'], rune: '#f4f8ff', spark: '#f0e8ff', stone: ['#2c3240', '#464e60', '#666e82', '#8a91a0', '#a8aebb'], extra: 'sueno', light: '#c8b8ff' },
   ambar: { swirl: ['#1e0c02', '#5a2806', '#b86412', '#ffb35a', '#fff0c0'], rune: '#ffc070', spark: '#fff0c0', stone: ['#0b0f17', '#151b26', '#2c3646', '#4a586c', '#6a7a90'], light: '#ffb35a' },
 };
 
@@ -163,6 +166,15 @@ function arch(L: Look, lit: (id: number) => number, f: number): Raster {
     // piedra mojada: brillos verdes fríos sueltos
     if (a0[y * W + x] && hash(x, y, 93) > 0.975) put(r, x, y, '#6fb8a8', 150);
   }
+  if (L.extra === 'sueno') for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    // piedra de estatua: vetas de musgo plateado abajo y polvo de sueño lila asentado arriba de cada piedra
+    if (!a0[y * W + x]) continue;
+    const s = stoneAt(x, y);
+    if (!s) continue;
+    const top = s.id < 9 ? s.v > 0.8 : s.v < 0.16;
+    if (top && hash(x, y >> 1, 94) > 0.72) put(r, x, y, '#b89aff', 170);
+    else if (y > FLOOR - 14 && hash(x >> 1, y >> 1, 95) > 0.7) put(r, x, y, '#9aa8b8');
+  }
   // las runas
   for (const sp of runeSpots()) {
     const k = lit(sp.id);
@@ -232,6 +244,13 @@ function swirl(L: Look, open: number, f: number): Raster {
       if (t > 0.9) { put(r, x0 - 1, FLOOR, '#e8483a'); put(r, x0 + 1, FLOOR, '#e8483a'); }
     }
   }
+  // el sueño: motas lilas y plateadas que salen del remolino y suben despacio, titilando
+  if (L.extra === 'sueno' && open >= 0.6) for (let i = 0; i < 10; i++) {
+    const t = ((f + i * 7) % 12) / 12;
+    const x = CX - RI + 4 + hash(i, 4, 45) * (RI * 2 - 8) + Math.sin(t * Math.PI * 2 + i) * 2, y = FLOOR - 8 - t * 70 * open;
+    if (y < 8) continue;
+    put(r, x, y, i % 3 ? '#b89aff' : '#f4f0ff', Math.round(230 * Math.sin(t * Math.PI)));
+  }
   return r;
 }
 
@@ -272,7 +291,7 @@ export function premiumPortal(color: PortalColor): WorldObject {
 }
 
 /** El portal de cada mundo (el que se usa en `portal_llegada` y `portal_jefe` de ese mundo). */
-export const PORTAL_MUNDO: Record<string, PortalColor> = { mundo1: 'verde', mundo2: 'violeta', mundo3: 'ambar', mundo4: 'rojo' };
+export const PORTAL_MUNDO: Record<string, PortalColor> = { mundo1: 'verde', mundo2: 'violeta', mundo3: 'ambar', mundo4: 'rojo', mundo5: 'plata' };
 
 export function premiumPortals(colors: PortalColor[] = ['azul', 'rojo', 'verde', 'violeta', 'ambar']): WorldObject[] {
   return colors.map(premiumPortal);
