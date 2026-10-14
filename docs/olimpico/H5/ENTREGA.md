@@ -56,7 +56,13 @@ En el `kit.config.json` del juego, sumar los cuatro a `audio.sfx`:
   - **Cada efecto es distinto,** también de `esquiva`, `golpe`, `pistola`, `silbato`, `romper`, `paso_agua_0`, `red_voley` y `chapa`, por duración, brillo y volumen. `esquiva` y `golpe` son los que el juego usa hoy en esas jugadas.
   - **El evento `brazada`:** en las cuatro animaciones de nado, en sus cuadros, y llega al manifiesto del kit. Una brazada cabe entre dos manos del crol. El clavado sigue con sus eventos de siempre.
   - Deterministas, y el kit los exporta sin pendientes, con `escuchar.html`.
-- (se llena con la corrida final)
+- **Las de audio y de nado de antes** (`h2`, `h3`, `h4`, `effects`, `ui_audio`, `premium` y `sinprops`): en verde junto con la nueva, 108 de 108. Ninguna cuenta fija cambió.
+- **Los 4 temas de H4 y los 5 efectos de H3 salen iguales a `main`, muestra por muestra.** Lo comparé con un hash de cada uno en las dos ramas.
+- **La suite sin `custom.test.ts`:** 42 archivos, 443 de 443.
+- **`custom.test.ts`: 14 de 15.** Falla `se genera en menos de 5 minutos`: 356 s. Es lo mismo que pasó en E6. En esta máquina, hoy, `main` ya tarda entre 327 y 364 s. Los cuatro efectos suman menos de un segundo al kit. No subí el límite de 300 s: es tuyo.
+- **El esquema** `docs/kit-a-medida.schema.json` está regenerado.
+- **`tsc` limpio y `npm run build:sitio` limpio.** El kit del sitio sale con los cuatro efectos y sin `pendiente`.
+- **e2e de Playwright: 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
