@@ -483,3 +483,62 @@ export const USO_COCORA: Record<Color, string> = {
   oro: 'el sol de la mañana, el plátano maduro',
   bruma: 'la neblina que baja de las montañas',
 };
+
+/**
+ * La bahía de Hạ Long al mediodía (estilo `vietnam_bahia`): el agua esmeralda de la bahía, la piedra caliza gris de los
+ * islotes con su monte verde encima, el azul de la piscina flotante, la madera del muelle y el rojo de las banderas y
+ * de las velas de los juncos. `canal` es el esmeralda de la bahía y `azul` el agua de la piscina.
+ */
+export const VIETNAM_HALONG_MEDIODIA: Paleta = {
+  tinta: '#161c22',
+  sombra: '#2a3a40',
+  asfalto: '#4a5658',
+  asfalto_claro: '#768486',
+  cemento: '#a0aaa8',
+  cemento_claro: '#ccd4d0',
+  crema: '#efe6d0',
+  luz: '#fbfcf6',
+  amarillo: '#f4d24a',
+  ocre: '#c8964a',
+  terracota: '#9a5a36',
+  rojo: '#d8402e',
+  vino: '#7a2e26',
+  salmon: '#e89a7a',
+  menta: '#7ad6c0',
+  verde: '#4c9a54',
+  verde_oscuro: '#2a5e3e',
+  celeste: '#7cc0e4',
+  cielo: '#c4e2f0',
+  azul: '#2a78b4',
+  azul_noche: '#1e4268',
+  canal: '#2e9a92',
+  oro: '#f2a83a',
+  bruma: '#dce8e8',
+};
+
+export const USO_HALONG: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro',
+  sombra: 'la sombra honda de los islotes y del muelle',
+  asfalto: 'la piedra caliza en sombra, el casco de los juncos',
+  asfalto_claro: 'la piedra caliza a media luz',
+  cemento: 'la piedra caliza con luz, los islotes lejanos',
+  cemento_claro: 'la piedra con sol, los islotes en la calima',
+  crema: 'las casitas de la aldea flotante, la lona',
+  luz: 'la espuma, el borde de la piscina, las rayas',
+  amarillo: 'la estrella de la bandera, las franjas de la pared de llegada',
+  ocre: 'la madera del muelle con sol, las velas con luz',
+  terracota: 'la madera del muelle, las velas de los juncos',
+  rojo: 'la bandera de Vietnam, las corcheras',
+  vino: 'sombra del rojo y de las velas',
+  salmon: 'la piel',
+  menta: 'el agua esmeralda bajita, el reflejo',
+  verde: 'el monte de los islotes con luz',
+  verde_oscuro: 'el monte de los islotes en sombra',
+  celeste: 'el cielo alto, el agua de la piscina con luz',
+  cielo: 'el cielo bajo, la calima',
+  azul: 'el agua de la piscina',
+  azul_noche: 'el agua honda de la piscina, la sombra del azul',
+  canal: 'el agua esmeralda de la bahía',
+  oro: 'el sol en el agua, la vela con sol',
+  bruma: 'la calima de la bahía',
+};

@@ -4,7 +4,7 @@ import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Pa
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
 import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
-import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA } from './lugaresPaleta';
+import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG } from './lugaresPaleta';
 import { lugarDe } from './lugares';
 
 /**
@@ -525,10 +525,39 @@ const COLOMBIA_CAFETERA: Estilo = {
   letreros: ['VALLE DE COCORA', 'SALENTO, QUINDÍO'],
 };
 
+
+/** La bahía de Hạ Long al mediodía (lote E6). */
+const VIETNAM_BAHIA: Estilo = {
+  paleta: VIETNAM_HALONG_MEDIODIA,
+  uso: USO_HALONG,
+  horas: ['mediodia'],
+  iconos: [
+    { id: 'islotes', nombre: 'Los islotes de piedra caliza de Hạ Long: paredes grises casi verticales, la base comida por la marea y el monte verde encima', donde: 'cerca, en la bahía' },
+    { id: 'islotes_calima', nombre: 'Las filas de islotes en la calima, cada una más clara', donde: 'lejos' },
+    { id: 'bahia', nombre: 'El agua esmeralda de la bahía con el oleaje y el brillo del sol', donde: 'cerca, lejos y adelante de la piscina' },
+    { id: 'junco', nombre: 'Un junco de madera con las tres velas color ladrillo y sus listones', donde: 'cerca, anclado en la bahía' },
+    { id: 'aldea', nombre: 'La aldea flotante de pescadores: casitas de colores sobre balsas, la ropa colgada y un bote', donde: 'cerca' },
+    { id: 'muelle', nombre: 'El muelle flotante de atrás de la piscina, con los flotadores azules y la baranda de cuerda', donde: 'cerca, al pie' },
+    { id: 'letrero', nombre: 'El letrero VỊNH HẠ LONG en la banda roja', donde: 'cerca, en el muelle' },
+    { id: 'banderas', nombre: 'Las banderas de Vietnam, rojas con la estrella amarilla', donde: 'cerca, en el muelle' },
+    { id: 'salvavidas', nombre: 'La silla alta del salvavidas con la sombrilla roja y blanca', donde: 'cerca, en el muelle' },
+    { id: 'jueces', nombre: 'La mesa de los jueces con el cronómetro grande, en la llegada', donde: 'cerca, en la llegada' },
+    { id: 'piscina', nombre: 'La piscina flotante: el agua azul, las líneas del fondo, las corcheras rojas y blancas y la pared de llegada a cuadros', donde: 'piso' },
+  ],
+  vida: {
+    banderas: 'Las banderas que se mecen con la brisa del mar: 2 cuadros',
+    publico: 'La gente del muelle que levanta los brazos: 2 cuadros',
+    juncos: 'Los juncos chiquitos que navegan lejos, en la capa lejos',
+    gaviotas: 'Las gaviotas que planean sobre la bahía, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['VỊNH HẠ LONG'],
+};
+
 const ESTILOS: Record<string, Estilo> = {
   vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD,
   venezuela_playa: VENEZUELA_PLAYA, vietnam_montana: VIETNAM_MONTANA, colombia_caribe: COLOMBIA_CARIBE, venezuela_lago: VENEZUELA_LAGO,
-  colombia_cafetera: COLOMBIA_CAFETERA,
+  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA,
 };
 
 /** Los fondos de la capa cerca que son de Hội An (con su estilo). */
