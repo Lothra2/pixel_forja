@@ -283,6 +283,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     out[id] = entry;
   }
   manifest.atletas = out;
+  // girado (seoi nage): solo si alguna animación lo trae, así los kits sin judo salen iguales
+  if (JSON.stringify(out).includes('"girado":')) (manifest.notas as string[]).push('girado: [cuadro] true o false. En los cuadros con true el sprite viene dibujado mirando al otro lado: el juego lo espeja (flipX al revés de como esté) junto con sus datos de ese cuadro (x pasa a -x; en cajas y cuerpo, x pasa a -(x + w)). Si el último cuadro está girado, el personaje termina mirando al otro lado.');
   if (pelotasUsadas.size) {
     // en el orden de PELOTAS y de menor a mayor celda
     const kinds = Object.keys(PELOTAS) as PropKind[];

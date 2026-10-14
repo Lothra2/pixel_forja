@@ -143,6 +143,8 @@ describe('judo de verdad (lote B4B6 bis)', () => {
     expect(m.atletas.rick.vestuario).toEqual({ judo: 'judogi', judo_azul: 'judogi_azul' });
     expect(m.atletas.rick.packs.judo.anims.judo_throw.girado).toEqual([false, false, true, true, true, true, true, true, true, true]);
     expect(m.atletas.rick.packs.judo.anims.bow.girado).toBeUndefined();
+    // y la nota del manifiesto le explica al juego cómo espejar
+    expect((m.notas as string[]).some((n) => n.startsWith('girado:'))).toBe(true);
     // el blanco y el azul son de verdad distintos
     const png = (p: string) => files.find((x) => x.name === `atletas/rick/${p}.png`)!.bytes;
     expect(Buffer.from(png('judo')).equals(Buffer.from(png('judo_azul')))).toBe(false);

@@ -368,8 +368,8 @@ Ocho animaciones para pruebas que ya existen en el juego, en `src/engine/anim/pr
 |---|---|---|---|
 | `vault_fail` | 10, 12 | La garrocha no llega: clava, despega, se queda casi derecha con él colgado, se le devuelve, la suelta manoteando y cae de espalda | `aterriza` en el 8. `elevacion` como `pole_vault` |
 | `judo_grip` | 4, 10, en bucle | Guardia de judo: la mano cercana en la solapa y la lejana en la manga, tironeando | |
-| `judo_throw` | 10, 14 | Proyección: jala, se mete abajo, lo carga al hombro, se endereza y lo azota adelante, agarrado de la manga | `impacto` en el 6. `carga` del 3 al 5 |
-| `judo_thrown` | 10, 14 | El proyectado, cuadro a cuadro con `judo_throw`: agarrado, desequilibrado, por el aire y de espalda en el tatami | `aterriza` en el 6 |
+| `judo_throw` | 10, 14 | Seoi nage. Desde B4B6 bis, con el giro de verdad (ver abajo) | `impacto` en el 6. `carga` del 3 al 5. `girado` del 2 al 9 |
+| `judo_thrown` | 10, 14 | El proyectado, cuadro a cuadro con `judo_throw`. Desde B4B6 bis termina con el ukemi | `aterriza` e `impacto` en el 6 |
 | `dodge_jump` | 8, 14 | Quemado: salta recogiendo las rodillas al pecho para que el balón pase por debajo | `despegue` en el 2, `aterriza` en el 6. `elevacion` |
 | `bat_stance` | 4, 6, en bucle | Chapita: guardia de bateo con el palo sobre el hombro de atrás | `arma` en cada cuadro |
 | `bat_swing` | 6, 14 | Chapita: carga, paso, barrido plano con el palo a dos manos y remate sobre el otro hombro | `impacto` en el 3, con la estela. `arma` en cada cuadro |
@@ -380,6 +380,37 @@ Ocho animaciones para pruebas que ya existen en el juego, en `src/engine/anim/pr
 - **El tejo** es el arma del piso `tejo`. Va en `arma` hasta la `suelta`, y desde ahí el juego lo lanza por la parábola desde el `punto`.
 - **El rival del judo:** del cuadro 3 al 5 el juego dibuja `judo_thrown` con su pivote en la `carga` de quien proyecta, detrás de él (como `carried` en levantar). Antes, cada uno en su lugar, agarrados. Después, el proyectado queda tirado delante.
 - **La garrocha** sí va dibujada, como en `pole_vault`.
+
+## El judo de verdad: seoi nage con giro, o-soto-gari, ukemi, rei y judogi (lote B4B6 bis)
+
+Seis animaciones de judo en `src/engine/anim/judo.ts`. Las tres de B4B6 cambiaron y hay tres nuevas.
+
+| Animación | Cuadros, fps | Qué hace | Eventos y datos |
+|---|---|---|---|
+| `judo_grip` | 4, 10, en bucle | Kumikata: la mano cercana en la solapa y la lejana en la manga, tironeando | Igual que en B4B6 |
+| `judo_throw` | 10, 14 | Seoi nage: agarre, jalón, gira de espaldas, lo carga en la espalda, lo pasa por encima del hombro y lo azota adelante | `impacto` en el 6. `carga` del 3 al 5. `girado` del 2 al 9 |
+| `judo_thrown` | 10, 14 | Uke del seoi nage, cuadro a cuadro: agarrado, jalado, de puntillas, por el aire y de espalda con la palmada al tatami | `aterriza` e `impacto` en el 6. El `punto` del impacto es la mano de la palmada |
+| `osoto_gari` | 10, 14 | La barrida grande por fuera: agarre, paso al costado, la pierna pasa por detrás de la del rival, barre arriba y lo azota, sin soltar | `impacto` en el 6. Sin `carga` ni `girado` |
+| `osoto_gari_thrown` | 10, 14 | Uke del o-soto-gari: empujado atrás, barrido, vuela de espaldas y cae con la palmada | `aterriza` e `impacto` en el 6, con la mano |
+| `bow` | 6, 8 | Rei de pie: se inclina con las manos en los muslos, cierra los ojos y vuelve | |
+
+Las cuatro proyecciones son de lado: en las filas de frente y de espalda salen en la diagonal, como el salto largo, porque de frente no se ve quién va adelante.
+
+**`girado` (dato nuevo por cuadro).** Una lista con un `true` o `false` por cuadro. Sale solo en las animaciones que lo usan. En los cuadros con `true` el sprite está dibujado mirando al otro lado, y el juego lo espeja (`flipX` al revés de lo que tenga) junto con todos sus datos del cuadro: `x` pasa a `-x` en `manos`, `pies`, `cabeza`, `carga`, `punto` y los demás, y en `cajas` y `cuerpo` `x` pasa a `-(x + w)`.
+
+```js
+const g = an.girado?.[cuadro] ?? false;
+sprite.setFlipX(mira_izquierda !== g);
+const sx = (x) => ((mira_izquierda !== g) ? -x : x);
+```
+
+En `judo_throw` va `true` del cuadro 2 al 9: tori se mete de espaldas y termina así, de cara a donde cayó uke. Al terminar, el juego le cambia el lado al personaje. Uke no lleva `girado`: su vuelta por encima ya mira hacia donde lo tiran.
+
+**La carga en la espalda.** En el seoi nage la `carga` va arriba de la espalda de tori, no sobre las manos. Del 3 al 5 el juego dibuja a uke (`judo_thrown`) con su base ahí, igual que con `carried`. Con el espejo, la `carga` también se espeja.
+
+**El ukemi.** `judo_thrown` y `osoto_gari_thrown` terminan de espalda en el tatami con la palmada de la mano de afuera. El `impacto` del cuadro 6 trae su `punto` en esa mano (la que queda más abajo en el cuadro), con una chispita en el tatami. Ahí suena `caida_tatami`.
+
+**El judogi.** Va como uniforme de pack en el kit a medida, no en las fichas: `"vestuario": "judogi"` o `"judogi_azul"` en el pack. Ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#uniformes-por-pack-vestuario-lote-b4b6-bis).
 
 ## La arena: el kit jugando de verdad
 

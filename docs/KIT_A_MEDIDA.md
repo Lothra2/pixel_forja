@@ -52,7 +52,7 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `fichas` | Carpeta con `*.ficha.json` del estudio. El id es el nombre del archivo. Personas y animales | |
 | `personajes_incluidos` | Los que trae el motor: `familia` (de calle), `familia_rpg` (con su equipo de GG Abyss) o `heroes` | |
 | `equipos` | Archivo de equipos (abajo). Pasa al manifiesto tal cual | Sin equipos |
-| `packs` | Cada pack es un atlas por atleta: nombre y lista de animaciones, o `{ "anims": [...], "sin_props": true }` para que salga sin las pelotas dibujadas (ver abajo) | Obligatorio |
+| `packs` | Cada pack es un atlas por atleta: nombre y lista de animaciones, o `{ "anims": [...], "sin_props": true, "vestuario": "judogi" }` para que salga sin las pelotas dibujadas o con un uniforme (ver abajo) | Obligatorio |
 | `pruebas` | Qué packs carga cada prueba. Se copia al manifiesto para que el juego cargue solo lo que usa | No va |
 | `retratos` | 8 expresiones en 40 y 96 px (la 8 es burla) | Sí |
 | `cabecitas` | 12 x 12 para el minimapa, en `ui/cabecitas.png` | Sí |
@@ -147,6 +147,32 @@ if (o && !pelota.suelta) {
 | `catch` | 6 | todos | llega hasta el 2 y desde el 3 queda en el guante | no se suelta: `atrapa` en el 3 |
 
 La raqueta y el guante no se quitan. En Chapita y en Quemado la `clase` dice `beisbol`: el juego dibuja su chapa o su balón de goma en el mismo punto, como el cầu del Đá cầu en `futbol`.
+
+### Uniformes por pack (`vestuario`, lote B4B6 bis)
+
+Un pack puede vestir a todos los atletas con un uniforme del motor, sin tocar las fichas:
+
+```jsonc
+"packs": {
+  "judo": { "anims": ["judo_grip", "judo_throw", "judo_thrown", "osoto_gari", "osoto_gari_thrown", "bow"], "vestuario": "judogi" },
+  "judo_azul": { "anims": ["judo_grip", "judo_throw", "judo_thrown", "osoto_gari", "osoto_gari_thrown", "bow"], "vestuario": "judogi_azul" }
+},
+"pruebas": { "judo": ["base", "judo", "judo_azul"] }
+```
+
+| Uniforme | Qué es |
+|---|---|
+| `judogi` | Judogi blanco: chaqueta cruzada con solapa, pantalón largo, descalzo. El cinturón, del color del equipo |
+| `judogi_azul` | El mismo en azul, para el rival |
+
+- **El cinturón** sale del color del equipo del atleta (`equipos[].colores`) que más contrasta con el judogi. Sin equipo, negro.
+- **Sin sombreros:** se quitan gorras, cascos y sombreros. Las cintas de la cabeza y los rulos se quedan, porque son del personaje.
+- **Se quitan** el estampado, el emblema, el número y el texto del pecho, el brazalete, la capa y la armadura. El peinado, la cara, la barba y los lentes no cambian.
+- **La ficha manda:** si la ficha trae su propia variante para ese pack (`wardrobe.packs`), se usa la suya.
+- **El manifiesto** lo dice en `vestuario` de cada atleta: `{ "judo": "judogi", "judo_azul": "judogi_azul", "base": "ficha" }`.
+- Un uniforme que no existe da error con sugerencia, como las animaciones.
+
+El juego carga `judo` para el equipo de la persona y `judo_azul` para el rival. Cada pack es un atlas más por atleta.
 
 ### Equipos
 
