@@ -52,22 +52,25 @@ export class Mixer {
     this.buf = new Float32Array(loop ? this.n : this.n + Math.ceil(1.5 * RATE));
     this.rand = rng(seed);
   }
-  private put(i: number, v: number) {
-    if (this.loop) this.buf[((i % this.n) + this.n) % this.n] += v;
-    else if (i >= 0 && i < this.buf.length) this.buf[i] += v;
-  }
   add(no: Note) {
     const a = no.a ?? 0.005, d = no.d ?? 0.08, s = no.s ?? 0.7, r = no.r ?? 0.06;
     const total = no.dur + r, len = Math.ceil(total * RATE), start = Math.round(no.t * RATE);
     let ph = 0, lp = 0, hpPrev = 0, hpOut = 0, hold = 0;
     // la cuerda punteada: armónicos que se apagan más rápido cuanto más agudos
     const pl = no.wave === 'pluck' ? [1, 0.5, 0.33, 0.22, 0.12].map((amp, h) => ({ amp, h: h + 1, k: 2.2 + h * 2.4 })) : null;
+    // el glissando antes de empezar no cambia nada y después de llegar es una constante: se calcula una vez (da los
+    // mismos números que calcularlo en cada muestra)
+    const bend = no.bend, b0 = bend?.at ?? 0, bendFull = bend ? Math.pow(2, (bend.semis * 1) / 12) : 1;
+    // dónde cae cada muestra en el búfer (en bucle, da la vuelta)
+    const L = this.buf.length, N = this.n, loop = this.loop, buf = this.buf;
+    let at = loop ? ((start % N) + N) % N : start;
     for (let i = 0; i < len; i++) {
       const t = i / RATE;
       let f = no.f;
-      if (no.bend) {
-        const b0 = no.bend.at ?? 0, u = Math.min(1, Math.max(0, (t - b0) / no.bend.len));
-        f *= Math.pow(2, (no.bend.semis * (t >= b0 ? u : 0)) / 12);
+      if (bend && t >= b0) {
+        const q = (t - b0) / bend.len;
+        if (q >= 1) f *= bendFull;
+        else f *= Math.pow(2, (bend.semis * Math.max(0, q)) / 12);
       }
       if (no.vib && t >= (no.vib[2] ?? 0)) f *= Math.pow(2, (Math.sin(t * no.vib[0] * Math.PI * 2) * no.vib[1]) / 12);
       ph += f / RATE;
@@ -90,7 +93,9 @@ export class Mixer {
       else if (t < a + d) env = 1 - (1 - s) * ((t - a) / d);
       else if (t < no.dur) env = s;
       else env = s * Math.max(0, 1 - (t - no.dur) / r);
-      this.put(start + i, v * env * no.vol);
+      const x = v * env * no.vol;
+      if (loop) { buf[at] += x; if (++at === N) at = 0; }
+      else { if (at >= 0 && at < L) buf[at] += x; at++; }
     }
   }
   /** Golpes de batería. */

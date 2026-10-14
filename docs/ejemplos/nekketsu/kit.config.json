@@ -68,7 +68,9 @@
         "judo_thrown",
         "osoto_gari",
         "osoto_gari_thrown",
-        "bow"
+        "bow",
+        "vovinam_scissor",
+        "vovinam_scissored"
       ],
       "vestuario": "judogi"
     },
@@ -79,7 +81,9 @@
         "judo_thrown",
         "osoto_gari",
         "osoto_gari_thrown",
-        "bow"
+        "bow",
+        "vovinam_scissor",
+        "vovinam_scissored"
       ],
       "vestuario": "judogi_azul"
     },
@@ -108,7 +112,8 @@
       "pole_vault",
       "shot_put",
       "javelin",
-      "vault_fail"
+      "vault_fail",
+      "javelin_rayo"
     ],
     "kachinuki": [
       "stomp",
@@ -178,7 +183,8 @@
         "block",
         "serve",
         "vb_dive",
-        "vb_ready"
+        "vb_ready",
+        "spike_fuego"
       ],
       "sin_props": true
     },
@@ -190,7 +196,10 @@
         "chilena",
         "shot",
         "pass",
-        "slide"
+        "slide",
+        "shuttle_juggle",
+        "shuttle_kick_back",
+        "shuttle_kick_back_nekketsu"
       ],
       "sin_props": true
     },
@@ -206,7 +215,9 @@
       "anims": [
         "dribble",
         "shoot",
-        "dunk"
+        "dunk",
+        "dunk_big",
+        "tackle_nekketsu"
       ],
       "sin_props": true
     },
@@ -228,7 +239,11 @@
         "bat_stance",
         "bat_swing",
         "dodge_jump",
-        "tejo_throw"
+        "tejo_throw",
+        "bat_nekketsu",
+        "cap_pitch",
+        "dodge_throw",
+        "dodge_hit"
       ],
       "sin_props": true
     }
@@ -425,7 +440,10 @@
       "comuna",
       "carnaval",
       "pinos_dalat",
-      "liceo"
+      "liceo",
+      "parque_tao_dan",
+      "barrio_caracas",
+      "dojo_hanoi"
     ],
     "voces": [
       "rick",

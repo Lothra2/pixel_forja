@@ -43,7 +43,7 @@ export function packAtlas(frames: AtlasFrame[], cell: number, image: string, piv
   }
   const { cols, rows } = atlasGrid(frames.length, cell);
   const W = cols * cell, H = rows * cell;
-  if (H > MAX_ATLAS) throw new Error(`atlas ${image}: ${frames.length} cuadros de ${cell} no entran en ${MAX_ATLAS} x ${MAX_ATLAS} (harían falta ${H} px de alto). Partí el pack en dos`);
+  if (H > MAX_ATLAS) throw new Error(`atlas ${image}: ${frames.length} cuadros de ${cell} no entran en ${MAX_ATLAS} x ${MAX_ATLAS} (harían falta ${H} px de alto). Parte el pack en dos`);
   const png = createRaster(W, H);
   const json: TexturePackerHash = { frames: {}, meta: { app: 'PixelForja', version: '1', image, format: 'RGBA8888', size: { w: W, h: H }, scale: '1' } };
   frames.forEach((f, i) => {

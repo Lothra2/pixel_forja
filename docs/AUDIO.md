@@ -130,8 +130,12 @@ Para las cuatro pruebas que seguían con la música del chip. Igual que los de H
   - `carnaval`: el carnaval de Barranquilla. El gentío, la comparsa que se acerca y se va con tambora, llamador, alegre y maracas, los pitos, el grito cuando pasa la reina y la pólvora.
   - `pinos_dalat`: los pinos de Đà Lạt. El susurro alto de las agujas, el viento fresco más abajo, el chào mào ("chít-chít-chào-mào"), el tu hú lejos y una moto que baja la loma.
   - `liceo`: el patio del liceo en el recreo. Los niños que gritan y corren ("¡pásala!", "¡aquí!", las risas), el balón de goma contra el piso y la pared, todo con el eco del techo.
-- **Cómo están hechos los de H7:** el fondo (tráfico, agua, viento, lluvia, insectos) se funde en el empalme como los demás. Lo que pasa (motos, perros, campanas, gente, tambores) va en una capa de 12 s exactos que da la vuelta: un perro que ladra en el empalme suena entero, ni doble ni a medias. Al final se les quita lo que está por debajo de 70 Hz, que un parlante de teléfono no toca y solo le quitaría volumen a lo demás.
-- **Sin melodías:** el tema del mundo suena encima. Lo único con ritmo son los tambores de la comparsa, el parlante de la Comuna 13 y el picó de Cartagena, lejos y bajitos.
+- **Del lote B7H8**, los tres que faltaban, con los nombres de Rick:
+  - `parque_tao_dan`: el parque Tao Đàn en la mañana (Đá cầu). Los pájaros de las jaulas colgadas de los árboles que se contestan (chào mào y khướu), el toque del cầu de dos rondas de jugadores, cerca y lejos, una escoba de palito que barre hojas, unos señores que conversan en un banco y Saigón que se despierta detrás de los árboles.
+  - `barrio_caracas`: el barrio de Caracas de día (Chapita). Dos guacamayas que cruzan gritando, la camionetica que sube con su corneta, el pregón ("¡aguacateee!"), un radio con salsa lejos y apagado, los chamos que juegan con el "tac" del palo contra la chapa y un perro de la cuadra.
+  - `dojo_hanoi`: el dojo de Hanói en la tarde (el judo). Los pies que arrastran sobre el tatami, tres caídas con su palmada, un kiai, la voz del sensei y los que esperan al borde, todo con el eco del salón; afuera, la brisa del lago Hoàn Kiếm, la campana del templo de Ngọc Sơn y motos lejos.
+- **Cómo están hechos los de H7 y B7H8:** el fondo (tráfico, agua, viento, lluvia, insectos) se funde en el empalme como los demás. Lo que pasa (motos, perros, campanas, gente, tambores) va en una capa de 12 s exactos que da la vuelta: un perro que ladra en el empalme suena entero, ni doble ni a medias. Al final se les quita lo que está por debajo de 70 Hz, que un parlante de teléfono no toca y solo le quitaría volumen a lo demás.
+- **Sin melodías:** el tema del mundo suena encima. Lo único con ritmo son los tambores de la comparsa, el parlante de la Comuna 13, el picó de Cartagena y el radio del barrio de Caracas, lejos y bajitos.
 
 ## Voces en blips
 

@@ -271,11 +271,17 @@ export function renderPet3d(f: AnimalFicha, cell: CellSize, pose: QPose, view: P
   });
   const depth = new Float32Array(W * Hh).fill(-Infinity);
   const hits: (Hit | null)[] = new Array(W * Hh).fill(null);
-  for (let py = 0; py < Hh; py++)
-    for (let px = 0; px < W; px++) {
+  // solo los pixeles que caen en la caja de alguna pieza (con un pixel de margen): afuera no hay nada que pegar
+  let bx0 = Infinity, bx1 = -Infinity, bu0 = Infinity, bu1 = -Infinity;
+  for (const b of boxes) { bx0 = Math.min(bx0, b.x0); bx1 = Math.max(bx1, b.x1); bu0 = Math.min(bu0, b.u0); bu1 = Math.max(bu1, b.u1); }
+  const px0 = Math.max(0, Math.floor(bx0 * K + ox - 0.5) - 1), px1 = Math.min(W - 1, Math.ceil(bx1 * K + ox - 0.5) + 1);
+  const py0 = Math.max(0, Math.floor(oy - 0.5 - bu1 * K) - 1), py1 = Math.min(Hh - 1, Math.ceil(oy - 0.5 - bu0 * K) + 1);
+  for (let py = py0; py <= py1; py++)
+    for (let px = px0; px <= px1; px++) {
       // la mascota se dibuja un poco más grande que su esqueleto (K), como el de lado
       const sx = (px + 0.5 - ox) / K, su = (oy - (py + 0.5)) / K;
-      const o: V3 = add(add(mul([1, 0, 0], sx), mul(up, su)), mul(view3, -400));
+      // el origen del rayo, con las mismas cuentas que add(add(mul([1, 0, 0], sx), mul(up, su)), mul(view3, -400))
+      const o: V3 = [1 * sx + up[0] * su + view3[0] * -400, 0 * sx + up[1] * su + view3[1] * -400, 0 * sx + up[2] * su + view3[2] * -400];
       let best: Hit | null = null;
       for (let pi = 0; pi < capW.length; pi++) {
         const bx = boxes[pi];

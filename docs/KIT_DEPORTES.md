@@ -412,6 +412,43 @@ En `judo_throw` va `true` del cuadro 2 al 9: tori se mete de espaldas y termina 
 
 **El judogi.** Va como uniforme de pack en el kit a medida, no en las fichas: `"vestuario": "judogi"` o `"judogi_azul"` en el pack. Ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#uniformes-por-pack-vestuario-lote-b4b6-bis).
 
+## Los súper golpes y lo que faltaba de B4 a B6 (lote B7H8)
+
+Trece animaciones en `src/engine/anim/especiales.ts`. Los súper golpes son el golpe con la barra llena de cada deporte: el sprite trae el cuerpo, la chispa del contacto y la pelota o el implemento, y el juego pone el aura y el fuego encima. Cada uno trae un `impacto` o una `suelta` en el cuadro donde sale el golpe, con su `punto` en todas las filas.
+
+| Animación | Cuadros, fps | Qué hace | Eventos y datos |
+|---|---|---|---|
+| `dunk_big` | 12, 14 | Clavada Nekketsu: despega altísimo, molino con el balón, la clava (ahí se rompe el tablero), se cuelga del aro y ruge | `despegue` 2, `impacto` 6, `aterriza` 9. `elevacion` hasta 24 px a 48 |
+| `spike_fuego` | 13, 14 | Remate de fuego: carrera, despega más alto que `spike`, vuelta entera hacia adelante hecho bolita y la mata de arriba | `paso` 0, `despegue` 3, `impacto` 8, `aterriza` 10. `elevacion` y `desplazamiento` |
+| `shuttle_kick_back` | 8, 14 | Chilena del đá cầu: se echa atrás, la pierna pasa por encima en tijera y le pega al cầu arriba; cae de espalda | `despegue` 2, `impacto` 4 (el pie), `aterriza` 6 |
+| `shuttle_kick_back_nekketsu` | 10, 14 | La chilena Nekketsu: desde mucho más alto, con una vuelta entera hacia atrás antes del golpe, y cae de pie | `despegue` 2, `impacto` 5 (el pie), `aterriza` 8 |
+| `tackle_nekketsu` | 10, 14 | Tacleada en plancha: se lanza con los brazos adelante, vuela horizontal, choca, cae de barriga y se desliza | `despegue` 2, `impacto` 4, `aterriza` 6. `elevacion` y `desplazamiento` |
+| `bat_nekketsu` | 10, 14 | Batazo Nekketsu: pierna arriba, barrido con todo y la fuerza lo hace dar la vuelta completa | `impacto` 4. `girado` en 6 y 7. `arma` en cada cuadro |
+| `javelin_rayo` | 12, 14 | La lanza del Catatumbo: corre con la jabalina apuntando al cielo, se planta dos cuadros cargando el rayo y la suelta con todo | `paso` 0, `suelta` 8. `desplazamiento`. La jabalina va dibujada hasta la suelta |
+| `dodge_throw` | 6, 14 | Tiro del Quemado: rodilla arriba con el balón atrás, paso largo y lo suelta por arriba | `suelta` 3 |
+| `dodge_hit` | 6, 12 | El que recibe el balonazo: la cabeza atrás, sale disparado de espaldas y cae sentado viendo pajaritos | `aterriza` 3. `elevacion` |
+| `cap_pitch` | 6, 14 | Lanzamiento de la Chapita: de lado, brazo bajo a la altura de la cintura y golpe de muñeca | `suelta` 3 |
+| `shuttle_juggle` | 8, 12, en bucle | Dominar el cầu con el borde interno del pie, un pie y después el otro | `impacto` 0 (pie cercano) y 4 (pie lejano) |
+| `vovinam_scissor` | 10, 14 | Patada tijera del vovinam: salta, abre las piernas al cuello del rival, las cierra, gira y caen los dos; rueda y se levanta | `despegue` 2, `impacto` 4 (las piernas), `aterriza` 6. `elevacion` y `desplazamiento` |
+| `vovinam_scissored` | 10, 14 | El rival, cuadro a cuadro: en guardia, lo atrapan del cuello, lo tuercen y cae de espalda | `aterriza` 6 |
+
+**Las pelotas**, como en sus deportes: en un pack con `sin_props` no van en el sprite y salen en `objetos`.
+- `dunk_big`: el balón de básquet (`basquet`) del 0 al 6. En el `impacto` pasa por el aro.
+- `spike_fuego`: el de vóley (`voley`) del 3 al 8.
+- Las tres del đá cầu: el cầu sale como la pelota de fútbol (`futbol`), igual que en el pack `futbol`. El juego dibuja su cầu en ese punto.
+- `dodge_throw`: el balón de goma del Quemado sale como `voley`, porque es de ese tamaño. Va del 0 al 3, y en el 1 y el 2 va detrás de la cabeza (`detras` = 1).
+- `cap_pitch`: la chapa sale como `beisbol`, igual que en `pitch`. El juego dibuja su chapa en ese punto.
+
+**El palo del batazo** es el arma del piso `broomstick`, como en `bat_swing`: va en `arma` y el juego lo dibuja. En los cuadros 6 y 7, `girado` dice que está de espaldas a la chapa. El juego espeja el sprite y sus datos, y termina mirando hacia el mismo lado que empezó (ver `girado` en el judo).
+
+**La tijera del vovinam:**
+- El juego pone a `vovinam_scissored` de pie delante, a media celda, y los arranca juntos.
+- En el `impacto` las piernas cierran a la altura del cuello del rival.
+- En el `aterriza` caen los dos.
+- La tijera de verdad (đòn chân) es un derribo y no una patada: por eso tiene su rival, como las proyecciones del judo.
+
+**Las de lado:** `spike_fuego`, las dos chilenas del đá cầu, `tackle_nekketsu`, `javelin_rayo` y la tijera son de lado. En las filas de frente y de espalda salen en la diagonal, y `rumbo` lo dice.
+
 ## La arena: el kit jugando de verdad
 
 `arena.html` (en el sitio, el botón **Arena deportiva** del estudio) es un juego mínimo que usa el kit como lo haría el tuyo. Solo lee `manifest.json` y las hojas PNG: no importa nada del motor de PixelForja, y una prueba lo vigila. Si algo falla ahí, le falta al kit.
