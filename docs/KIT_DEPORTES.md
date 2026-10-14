@@ -447,7 +447,7 @@ Trece animaciones en `src/engine/anim/especiales.ts`. Los súper golpes son el g
 - En el `aterriza` caen los dos.
 - La tijera de verdad (đòn chân) es un derribo y no una patada: por eso tiene su rival, como las proyecciones del judo.
 
-**Las de lado:** `spike_fuego`, `tackle_nekketsu`, `javelin_rayo` y la tijera son de lado. En las filas de frente y de espalda salen en la diagonal, y `rumbo` lo dice.
+**Las de lado:** `spike_fuego`, las dos chilenas del đá cầu, `tackle_nekketsu`, `javelin_rayo` y la tijera son de lado. En las filas de frente y de espalda salen en la diagonal, y `rumbo` lo dice.
 
 ## La arena: el kit jugando de verdad
 

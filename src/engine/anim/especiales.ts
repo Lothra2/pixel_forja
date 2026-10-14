@@ -348,7 +348,7 @@ export const shuttleJuggle: AnimDef = {
  * en tijera y le pega al cầu arriba con el empeine (impacto), y cae de espalda amortiguando con las manos.
  */
 export const shuttleKickBack: AnimDef = {
-  name: 'shuttle_kick_back', pack: 'football', fps: 14, loop: false, views: ['side', 'front', 'back'],
+  name: 'shuttle_kick_back', pack: 'football', fps: 14, loop: false, lateral: true, views: ['side', 'front', 'back'],
   events: [{ type: 'despegue', phase: 2 / 8 }, { type: 'impacto', phase: 4 / 8, joint: 'footNear' }, { type: 'aterriza', phase: 6 / 8 }],
   build: (c) => {
     const L = c.L;
@@ -379,7 +379,7 @@ export const shuttleKickBack: AnimDef = {
  * `elevacion`: el juego pone el fuego.
  */
 export const shuttleKickBackNekketsu: AnimDef = {
-  name: 'shuttle_kick_back_nekketsu', pack: 'football', fps: 14, loop: false, views: ['side', 'front', 'back'],
+  name: 'shuttle_kick_back_nekketsu', pack: 'football', fps: 14, loop: false, lateral: true, views: ['side', 'front', 'back'],
   events: [{ type: 'despegue', phase: 2 / 10 }, { type: 'impacto', phase: 5 / 10, joint: 'footNear' }, { type: 'aterriza', phase: 8 / 10 }],
   build: (c) => {
     const L = c.L;

@@ -57,7 +57,7 @@ Con las 13 nuevas en el ejemplo, el kit tardó 308 s y se pasó del límite de 3
 - **Cada sonido se sintetiza una sola vez.** El glissando constante se calcula una vez y no en cada muestra.
 - **Thor traza rayos solo dentro de la caja de sus piezas.** Es un 42% más rápido y sale pixel a pixel igual.
 
-La prueba del kit completo pasó de 322 s a 288 s, con el kit en unos 274 s.
+La prueba del kit completo pasó de 322 s a 268 s, con el kit solo en unos 255 s: unos 45 s de margen para lo que viene.
 
 ## Cómo se usa (estudio y kit)
 
@@ -123,7 +123,11 @@ La prueba del kit completo pasó de 322 s a 288 s, con el kit en unos 274 s.
   - Imagen dorada `golden/b7h8.png`.
 - **`h7.test.ts`** ahora mira los primeros 19 ambientes, porque hay 3 más.
 - **El esquema** `docs/kit-a-medida.schema.json` está regenerado.
-- RESULTADOS_SUITE
+- **La suite sin `custom.test.ts`:** 47 archivos, 493 de 493. Las imágenes doradas de antes salen iguales, también con el motor más rápido.
+- **`custom.test.ts`: 15 de 15,** con las 13 nuevas y los 3 ambientes en el ejemplo, y el kit por debajo de 300 s.
+- **`tsc` limpio y `npm run build:sitio` limpio.**
+- **e2e de Playwright: 50 de 50.**
+- **`escuchar.html`** carga en Chromium sin errores.
 
 ## Para aprobar (todo en esta carpeta)
 
@@ -155,7 +159,8 @@ Qué mirar:
 5. **El batazo usa `girado`,** como el seoi nage, y termina mirando hacia el mismo lado que empezó.
 6. **El balón del Quemado sale como `voley`** en `objetos`, porque es de ese tamaño. El cầu sale como `futbol`, igual que en el pack `futbol`.
 7. **`dodge_hit` trae solo el `aterriza`.** El golpe lo decide el juego cuando el balón le llega.
-8. **Aceleré el motor en vez de subir el límite,** y corregí un mensaje de error que estaba en voseo ("Partí el pack en dos" pasó a "Parte el pack en dos").
+8. **Las vueltas en el aire son de lado** (`spike_fuego`, las dos chilenas, la tacleada y la tijera). De frente una vuelta hacia atrás no se nota, así que en esas filas salen en la diagonal, como el salto largo.
+9. **Aceleré el motor en vez de subir el límite,** y corregí un mensaje de error que estaba en voseo ("Partí el pack en dos" pasó a "Parte el pack en dos").
 
 ## Límites honestos
 
