@@ -6,7 +6,8 @@ import { RATE } from './sfx';
  * magia (campanitas y un colchón brillante). Todo sintetizado.
  */
 
-export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'catedral' | 'galerias' | 'eco' | 'puerto' | 'campana' | 'ciudad' | 'cajita' | 'jardin' | 'reloj' | 'abismo';
+export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'catedral' | 'galerias' | 'eco' | 'puerto' | 'campana' | 'ciudad' | 'cajita' | 'jardin' | 'reloj' | 'abismo'
+  | 'fragua' | 'lava' | 'jaulas' | 'fuelles' | 'bosque_ceniza' | 'carcel' | 'horno';
 
 function rng(seed: number) {
   let s = seed >>> 0 || 1;
@@ -70,7 +71,7 @@ function loopify(x: Float32Array, len: number): Float32Array {
 const SECONDS = 12, FADE = 1.5;
 
 /** El puerto dura 20 s (el encargo lo pide más largo: el agua contra los muelles necesita tiempo para no repetirse). */
-const LARGO: Partial<Record<AmbienceName, number>> = { puerto: 20, ciudad: 20, cajita: 14.4 };
+const LARGO: Partial<Record<AmbienceName, number>> = { puerto: 20, ciudad: 20, cajita: 14.4, fragua: 20, jaulas: 16 };
 
 export function ambience(name: AmbienceName): Float32Array {
   const secs = LARGO[name] ?? SECONDS;
@@ -255,6 +256,73 @@ export function ambience(name: AmbienceName): Float32Array {
     const tp = 4 + r() * 3;
     for (let j = 0; j < 5; j++) blip(buf, tp + j * (0.3 + j * 0.12), 0.05, 900 - j * 80, 700, 0.03 * (1 - j / 6), 10);
   }
+  // ---------- Mundo 6: La Fragua de las Luces ----------
+  const T = len / RATE + FADE;
+  /** lava que burbujea grave: borbotones que suben y revientan, muy graves */
+  const lavaBub = (n: number, vol: number) => { for (let k = 0; k < n; k++) { const t = r() * (T - 0.6), f = 50 + r() * 60; blip(buf, t, 0.35 + r() * 0.3, f, f * 1.8, vol, 3); blip(buf, t + 0.3, 0.06, 180 + r() * 120, 120, vol * 0.5, 9); } };
+  /** cadenas lejanas: tintineos cortos agrupados, con eco */
+  const cadenas = (n: number, vol: number) => { for (let k = 0; k < n; k++) { const t = r() * (T - 1); for (let j = 0; j < 3 + Math.floor(r() * 3); j++) { const f = 1800 + r() * 1400; blip(buf, t + j * 0.07, 0.15, f, f * 0.98, vol, 7); blip(buf, t + j * 0.07 + 0.35, 0.15, f, f * 0.98, vol * 0.3, 7); } } };
+  /** crujido de roca caliente: chasquidos secos sueltos */
+  const crujidos = (n: number, vol: number) => { for (let k = 0; k < n; k++) { const t = r() * (T - 0.2), s0 = Math.floor(t * RATE), m = Math.floor(0.02 * RATE); for (let i = 0; i < m && s0 + i < total; i++) buf[s0 + i] += (r() * 2 - 1) * vol * (1 - i / m); } };
+  if (name === 'fragua' || name === 'lava') {
+    // la fragua: un rumor hondo que respira, lava que burbujea grave, cadenas lejanas y la roca que cruje
+    const deep = lowpass(pink(total, r), 0.012);
+    for (let i = 0; i < total; i++) buf[i] += deep[i] * 1.8 * (0.7 + 0.3 * lfo(i, 1 / 5));
+    lavaBub(name === 'lava' ? 40 : 16, name === 'lava' ? 0.16 : 0.1);
+    cadenas(name === 'lava' ? 2 : 4, 0.03);
+    crujidos(name === 'lava' ? 10 : 14, 0.08);
+    if (name === 'lava') { const flow = bandpass(pink(total, r), (i) => 160 + 60 * lfo(i, 0.09), 0.8); for (let i = 0; i < total; i++) buf[i] += flow[i] * 0.7; }
+  }
+  if (name === 'jaulas') {
+    // las jaulas que se mecen (chirridos de cadena lentos) y, metidos bajito, los recuerdos de arriba: un grillo,
+    // una campanita, el eco de un cristal, una ola y la cajita de música
+    const deep = lowpass(pink(total, r), 0.01);
+    for (let i = 0; i < total; i++) buf[i] += deep[i] * 1.2;
+    for (let t = 0.4; t < T - 1; t += 2.6 + r() * 1.4) { const f = 700 + r() * 300; blip(buf, t, 0.5, f, f * 1.15, 0.025, 3); blip(buf, t + 0.6, 0.5, f * 1.15, f, 0.02, 3); }
+    cadenas(3, 0.025);
+    // el grillo (Bosque)
+    for (let j = 0; j < 3; j++) blip(buf, 1.2 + j * 0.09, 0.05, 4400, 4400, 0.012, 6);
+    // la campanita (Catedral)
+    for (const [m, v] of [[1, 0.025], [2.76, 0.01]] as [number, number][]) blip(buf, 4.2, 2.5, 587.3 * m, 587.3 * m, v, 2.5);
+    // el eco de un cristal (Galerías)
+    for (let e = 0; e < 4; e++) blip(buf, 7.4 + e * 0.38, 0.4, 2637, 2637, 0.02 * Math.pow(0.5, e), 5);
+    // una ola (Puerto)
+    { const s0 = Math.floor(10 * RATE), n = Math.floor(2.4 * RATE), w = lowpass(pink(n, r), 0.06); for (let i = 0; i < n && s0 + i < total; i++) buf[s0 + i] += w[i] * 0.5 * Math.sin((i / n) * Math.PI); }
+    // la cajita de música (Ciudad): las primeras notas de la canción de cuna
+    [392, 329.6, 392, 440, 392].forEach((f, i) => blip(buf, 13 + i * 0.5, 0.9, f * 2, f * 2, 0.018, 5));
+  }
+  if (name === 'fuelles') {
+    // los fuelles: el rumor de la fragua y un aire grande que entra y sale cada cuatro segundos
+    const deep = lowpass(pink(total, r), 0.012);
+    for (let i = 0; i < total; i++) buf[i] += deep[i] * 1.4;
+    const air = bandpass(pink(total, r), (i) => 220 + 260 * lfo(i, 0.25, -1.4), 0.9);
+    for (let i = 0; i < total; i++) buf[i] += air[i] * 0.6 * lfo(i, 0.25, -1.4) ** 3;
+    crujidos(10, 0.07);
+    lavaBub(8, 0.08);
+  }
+  if (name === 'bosque_ceniza') {
+    // el bosque de ceniza: brasas que crepitan finito y un viento seco, muy bajito
+    const wind = bandpass(pink(total, r), (i) => 500 + 300 * lfo(i, 0.06), 1.2);
+    for (let i = 0; i < total; i++) buf[i] += wind[i] * 0.25 * (0.4 + 0.6 * lfo(i, 0.09, 1));
+    crujidos(60, 0.05);
+    for (let k = 0; k < 12; k++) blip(buf, r() * (T - 0.2), 0.03, 3000 + r() * 1500, 2600, 0.015, 9);
+  }
+  if (name === 'carcel') {
+    // la cárcel: hierro que gotea frío, una reja que se mece y llaves que tintinean lejos
+    const deep = lowpass(pink(total, r), 0.01);
+    for (let i = 0; i < total; i++) buf[i] += deep[i] * 1.1;
+    for (let k = 0; k < 9; k++) { const t = r() * (T - 0.5); blip(buf, t, 0.12, 1400 + r() * 300, 900, 0.04, 8); }
+    for (let t = 1; t < T - 1; t += 4 + r() * 2) blip(buf, t, 0.9, 380, 410, 0.025, 3);
+    cadenas(4, 0.03);
+  }
+  if (name === 'horno') {
+    // el horno: un rugido sordo, grave y lejos, que crece y baja despacio
+    const roar = bandpass(pink(total, r), (i) => 90 + 50 * lfo(i, 0.07), 0.7);
+    for (let i = 0; i < total; i++) buf[i] += roar[i] * 1.3 * (0.6 + 0.4 * lfo(i, 1 / 6));
+    const deep = lowpass(pink(total, r), 0.008);
+    for (let i = 0; i < total; i++) buf[i] += deep[i] * 1.6;
+    crujidos(8, 0.06);
+  }
   buf = loopify(buf, len);
   // nivel parejo (todos los ambientes suenan parecido de fuerte)
   let peak = 0;
@@ -264,4 +332,4 @@ export function ambience(name: AmbienceName): Float32Array {
   return buf;
 }
 
-export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral', 'galerias', 'eco', 'puerto', 'campana', 'ciudad', 'cajita', 'jardin', 'reloj', 'abismo'];
+export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral', 'galerias', 'eco', 'puerto', 'campana', 'ciudad', 'cajita', 'jardin', 'reloj', 'abismo', 'fragua', 'lava', 'jaulas', 'fuelles', 'bosque_ceniza', 'carcel', 'horno'];

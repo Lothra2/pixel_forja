@@ -232,7 +232,7 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 /** efectos de sonido que suenan en bucle */
 const SFX_BUCLE = new Set<string>(['carrito_rodar']);
 /** músicas nuevas que suenan en bucle justo (ya traen el final pegado al principio) */
-const MUSICA_BUCLE = new Set<string>(['galerias', 'jefe_polilla', 'jefe_pez', 'capitan', 'jefe_rey', 'relojero']);
+const MUSICA_BUCLE = new Set<string>(['galerias', 'jefe_polilla', 'jefe_pez', 'capitan', 'jefe_rey', 'relojero', 'jefe_dragona', 'carcelero']);
 
 /**
  * Un jefe grande al kit: una hoja por animación (fila = dirección, columna = cuadro), celda y pivote reales, y en el

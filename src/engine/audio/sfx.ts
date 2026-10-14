@@ -119,6 +119,9 @@ export type SfxName =
   | 'ancla_golpe' | 'pez_emerge' | 'pez_mordida' | 'ola' | 'faro_prende'
   | 'farol_plaza_prender' | 'luz_robada' | 'chispa_recoger' | 'estatua_paso' | 'estatua_quieta' | 'gargola_despierta' | 'gargola_picada'
   | 'arena_sueno' | 'bostezo' | 'reloj_campanada' | 'aguja_barre' | 'rey_puno' | 'rey_pisoton' | 'rey_canta' | 'corona_rompe' | 'ciudad_despierta'
+  | 'fuelle_sopla' | 'grieta_rojo' | 'calor_sube' | 'acalorada' | 'jaula_abre' | 'luz_libre' | `luz_libre_${'bosque' | 'catedral' | 'galerias' | 'faro' | 'ciudad'}`
+  | 'thor_mojarse' | 'thor_sacude' | 'hollin_pega' | 'hollin_suelta' | 'salamandra_escupe' | 'salamandra_piedra' | 'cadena_gira' | 'farolero_paso'
+  | 'carcelero_llaves' | 'carcelero_portazo' | 'dragona_ruge' | 'dragona_aliento' | 'surtidor_chorro' | 'dragona_apagada' | 'cadenas_rompen' | 'puerta_negra'
   | `paso_${'pasto' | 'tierra' | 'piedra' | 'madera' | 'agua'}_${0 | 1 | 2}`;
 
 /** Efectos de sonido. */
@@ -309,8 +312,102 @@ export const SFX: Record<SfxName, () => Float32Array> = {
     ]);
     return b;
   }),
+  // ---------- Mundo 6: La Fragua de las Luces ----------
+  // el fuelle gigante: un soplido enorme y lento que se ve venir (el aire que entra y el golpe que sale, grave)
+  fuelle_sopla: () => aparte(9101, () => mix([
+    { wave: 'noise', f0: 260, f1: 520, dur: 0.9, a: 0.6, vol: 0.4, lp: 0.05 },
+    { wave: 'noise', f0: 700, f1: 250, dur: 1.1, at: 0.85, a: 0.05, vol: 0.55, lp: 0.08 },
+    { wave: 'sine', f0: 70, f1: 42, dur: 1.0, at: 0.85, a: 0.04, vol: 0.4 },
+    { wave: 'noise', f0: 2400, f1: 900, dur: 0.6, at: 0.9, a: 0.05, vol: 0.06, lp: 0.4 },
+  ])),
+  // las grietas al rojo: un siseo que crece y se apaga
+  grieta_rojo: () => aparte(9203, () => mix([{ wave: 'noise', f0: 5200, f1: 3600, dur: 0.9, a: 0.25, vol: 0.4, lp: 0.6 }, { wave: 'noise', f0: 900, f1: 500, dur: 0.8, a: 0.2, vol: 0.18, lp: 0.12 }, ...[0.2, 0.37, 0.55].map((at) => ({ wave: 'noise' as Wave, f0: 6000, dur: 0.02, at, vol: 0.12, lp: 0.8 }))])),
+  // el calor alto: un latido suave, dos golpecitos hondos
+  calor_sube: () => aparte(9301, () => mix([{ wave: 'sine', f0: 72, f1: 58, dur: 0.16, vol: 0.6 }, { wave: 'sine', f0: 66, f1: 54, dur: 0.2, at: 0.22, vol: 0.45 }, { wave: 'noise', f0: 400, f1: 200, dur: 0.4, a: 0.1, vol: 0.05, lp: 0.08 }])),
+  // acalorada: un resoplido de niña, tierno (el aire que sale y una vocalcita que baja)
+  acalorada: () => aparte(9403, () => mix([
+    { wave: 'noise', f0: 2600, f1: 1200, dur: 0.45, a: 0.03, vol: 0.4, lp: 0.25 },
+    { wave: 'triangle', f0: 520, f1: 380, dur: 0.35, at: 0.04, a: 0.03, vol: 0.22, vib: [6, 0.3] },
+    { wave: 'noise', f0: 1800, f1: 900, dur: 0.3, at: 0.5, a: 0.05, vol: 0.12, lp: 0.2 },
+  ])),
+  // la jaula que se abre: el candado que salta (un clac de metal) y una campanita
+  jaula_abre: () => aparte(9501, () => mix([
+    { wave: 'noise', f0: 4200, f1: 2600, dur: 0.05, vol: 0.4, lp: 0.7 }, { wave: 'square', f0: 1400, f1: 900, dur: 0.06, vol: 0.12, duty: 0.3 },
+    { wave: 'noise', f0: 2600, f1: 1800, dur: 0.06, at: 0.12, vol: 0.2, lp: 0.5 },
+    ...[['E6', 0.2], ['B6', 0.24]].map(([n, at]) => ({ wave: 'sine' as Wave, f0: NOTE(n as string), dur: 0.9, at: at as number, a: 0.004, vol: 0.16 })),
+  ])),
+  // la luz que sale libre: un suspiro alegre que sube (uno por luz, con el timbre de su mundo)
+  luz_libre: () => aparte(9601, () => luzLibre(['C5', 'E5', 'G5', 'C6'], 'triangle')),
+  luz_libre_bosque: () => aparte(9611, () => luzLibre(['G5', 'A5', 'C6', 'E6'], 'sine', true)),
+  luz_libre_catedral: () => aparte(9621, () => luzLibre(['D5', 'F#5', 'A5', 'D6'], 'triangle', false, true)),
+  luz_libre_galerias: () => aparte(9631, () => luzLibre(['E5', 'B5', 'E6', 'G6'], 'sine')),
+  luz_libre_faro: () => aparte(9641, () => luzLibre(['D5', 'F#5', 'A5', 'B5'], 'triangle')),
+  luz_libre_ciudad: () => aparte(9651, () => luzLibre(['G5', 'E5', 'G5', 'C6'], 'sine')),
+  // Thor se moja: un chapuzón chico
+  thor_mojarse: () => aparte(9701, () => mix([{ wave: 'noise', f0: 1800, f1: 600, dur: 0.35, vol: 0.5, lp: 0.3 }, ...[300, 420, 360].map((f, i) => ({ wave: 'sine' as Wave, f0: f, f1: f * 2.2, dur: 0.08, at: 0.04 + i * 0.06, vol: 0.18 })), { wave: 'noise', f0: 4000, f1: 2000, dur: 0.2, at: 0.12, vol: 0.12, lp: 0.6 }])),
+  // Thor se sacude: el pelo que bate rápido (pulsos de ruido) y las gotitas que caen
+  thor_sacude: () => aparte(9801, () => mix([
+    ...Array.from({ length: 10 }, (_, i) => ({ wave: 'noise' as Wave, f0: 2200, f1: 1400, dur: 0.05, at: i * 0.055, vol: 0.32 * (1 - i / 14), lp: 0.35 })),
+    ...Array.from({ length: 8 }, (_, i) => ({ wave: 'sine' as Wave, f0: 900 + ((i * 331) % 700), f1: 1600 + ((i * 197) % 800), dur: 0.04, at: 0.35 + i * 0.05, vol: 0.08 })),
+  ])),
+  // el hollín que se pega: un pff suave; y el que se suelta: un pff que se va con un pop chiquito
+  hollin_pega: () => aparte(9901, () => mix([{ wave: 'noise', f0: 1500, f1: 700, dur: 0.18, a: 0.01, vol: 0.45, lp: 0.2 }, { wave: 'sine', f0: 240, f1: 160, dur: 0.08, vol: 0.2 }])),
+  hollin_suelta: () => aparte(9911, () => mix([{ wave: 'noise', f0: 900, f1: 2200, dur: 0.22, a: 0.03, vol: 0.4, lp: 0.25 }, { wave: 'sine', f0: 500, f1: 900, dur: 0.06, at: 0.2, vol: 0.16 }])),
+  // la salamandra escupe: una inspiración cortita y un ptú de brasa
+  salamandra_escupe: () => aparte(10001, () => mix([{ wave: 'noise', f0: 1200, f1: 2600, dur: 0.2, a: 0.15, vol: 0.2, lp: 0.2 }, { wave: 'sine', f0: 380, f1: 160, dur: 0.12, at: 0.2, vol: 0.4 }, { wave: 'noise', f0: 3800, f1: 1600, dur: 0.25, at: 0.21, vol: 0.25, lp: 0.5 }])),
+  // la salamandra se vuelve piedra: un tsss de vapor
+  salamandra_piedra: () => aparte(10101, () => mix([{ wave: 'noise', f0: 6200, f1: 3400, dur: 1.1, a: 0.02, vol: 0.45, lp: 0.65 }, { wave: 'noise', f0: 800, f1: 400, dur: 0.6, vol: 0.12, lp: 0.1 }])),
+  // la cadena que gira: el silbido que da vueltas (sube y baja) con eslabones que tintinean
+  cadena_gira: () => aparte(10201, () => mix([
+    ...Array.from({ length: 4 }, (_, i) => ({ wave: 'noise' as Wave, f0: 500, f1: 1400, dur: 0.3, at: i * 0.3, a: 0.12, vol: 0.35, lp: 0.12 })),
+    ...Array.from({ length: 12 }, (_, i) => ({ wave: 'square' as Wave, f0: 2400 + (i % 3) * 300, dur: 0.02, at: i * 0.1 + 0.03, vol: 0.05, duty: 0.2 })),
+  ])),
+  // el farolero camina: hierro hueco (un tonk con eco corto)
+  farolero_paso: () => aparte(10301, () => mix([{ wave: 'sine', f0: 180, f1: 140, dur: 0.25, vol: 0.4 }, { wave: 'sine', f0: 452, f1: 430, dur: 0.3, vol: 0.12 }, { wave: 'noise', f0: 1600, f1: 700, dur: 0.06, vol: 0.2, lp: 0.4 }, { wave: 'sine', f0: 180, f1: 150, dur: 0.18, at: 0.14, vol: 0.12 }])),
+  // las llaves del Carcelero: un manojo que tintinea
+  carcelero_llaves: () => aparte(10401, () => mix([...Array.from({ length: 9 }, (_, i): Voice => ({ wave: 'sine', f0: 2600 + ((i * 457) % 1500), dur: 0.12, at: i * 0.045 + (i % 2) * 0.01, a: 0.002, vol: 0.18 })), { wave: 'noise', f0: 5000, f1: 3000, dur: 0.4, vol: 0.06, lp: 0.6 }])),
+  // el portazo: una reja de hierro enorme que se cierra (golpe hondo y el temblor del metal)
+  carcelero_portazo: () => aparte(10501, () => mix([{ wave: 'sine', f0: 80, f1: 34, dur: 0.8, vol: 0.85 }, { wave: 'noise', f0: 1400, f1: 200, dur: 0.6, vol: 0.4, lp: 0.2 }, ...[0.15, 0.3, 0.45].map((at, i) => ({ wave: 'sine' as Wave, f0: 320 - i * 20, dur: 0.4, at, vol: 0.08 * (1 - i * 0.25) }))])),
+  // la Dragona ruge: grave, largo, más de pena que de miedo (un vibrato lento y el aire)
+  dragona_ruge: () => aparte(10601, () => mix([
+    { wave: 'saw', f0: 110, f1: 82, dur: 1.6, a: 0.25, vol: 0.25, lp: 0.08, vib: [3.5, 0.6] },
+    { wave: 'triangle', f0: 220, f1: 150, dur: 1.5, a: 0.3, vol: 0.2, vib: [3.5, 0.5] },
+    { wave: 'noise', f0: 600, f1: 300, dur: 1.6, a: 0.3, vol: 0.25, lp: 0.08 },
+  ])),
+  // el aliento: toma aire (sube) y el fuego que sale como un viento caliente con chisporroteo
+  dragona_aliento: () => aparte(10701, () => mix([
+    { wave: 'noise', f0: 300, f1: 900, dur: 0.8, a: 0.6, vol: 0.25, lp: 0.08 },
+    { wave: 'noise', f0: 1600, f1: 900, dur: 1.4, at: 0.8, a: 0.06, vol: 0.55, lp: 0.15 },
+    { wave: 'sine', f0: 60, f1: 45, dur: 1.2, at: 0.8, vol: 0.3 },
+    ...Array.from({ length: 10 }, (_, i) => ({ wave: 'noise' as Wave, f0: 5000, dur: 0.015, at: 0.9 + i * 0.11, vol: 0.12, lp: 0.8 })),
+  ])),
+  // el surtidor: el chorro de agua que sube con fuerza y el vapor que se abre
+  surtidor_chorro: () => aparte(10801, () => mix([{ wave: 'noise', f0: 1200, f1: 3200, dur: 0.4, a: 0.02, vol: 0.5, lp: 0.35 }, { wave: 'noise', f0: 4200, f1: 2600, dur: 1.2, at: 0.3, a: 0.1, vol: 0.3, lp: 0.6 }, { wave: 'sine', f0: 90, f1: 140, dur: 0.3, vol: 0.25 }])),
+  // la Dragona apagada: un tsss largo y un suspiro
+  dragona_apagada: () => aparte(10901, () => mix([
+    { wave: 'noise', f0: 6000, f1: 3000, dur: 1.8, a: 0.03, vol: 0.45, lp: 0.6 },
+    { wave: 'triangle', f0: 260, f1: 140, dur: 1.2, at: 1.2, a: 0.2, vol: 0.25, vib: [4, 0.4] },
+    { wave: 'noise', f0: 900, f1: 400, dur: 1.2, at: 1.2, a: 0.3, vol: 0.15, lp: 0.08 },
+  ])),
+  // las cadenas que se rompen: eslabones que saltan y caen tintineando
+  cadenas_rompen: () => aparte(11001, () => mix([
+    { wave: 'noise', f0: 3800, f1: 1400, dur: 0.08, vol: 0.5, lp: 0.6 }, { wave: 'sine', f0: 120, f1: 60, dur: 0.3, vol: 0.4 },
+    ...Array.from({ length: 12 }, (_, i) => ({ wave: 'sine' as Wave, f0: 1800 + ((i * 389) % 1600), dur: 0.15, at: 0.15 + i * 0.07 + (i % 3) * 0.02, a: 0.002, vol: 0.14 * (1 - i / 16) })),
+  ])),
+  // la Puerta Negra: un viento frío que sale, muy bajito
+  puerta_negra: () => aparte(11101, () => mix([{ wave: 'noise', f0: 260, f1: 180, dur: 3, a: 1.2, vol: 0.4, lp: 0.03 }, { wave: 'noise', f0: 2200, f1: 1600, dur: 2.6, at: 0.3, a: 1, vol: 0.05, lp: 0.2 }, { wave: 'sine', f0: 55, dur: 3, a: 1.2, vol: 0.12 }]), 0.3),
   ...pasos(),
 };
+
+/** El suspiro alegre de una luz que sale: un arpegio que sube con brillo (y lo de su mundo: grillito, eco). */
+function luzLibre(notes: string[], w: Wave, cri = false, eco = false): Float32Array {
+  return mix([
+    { wave: 'noise', f0: 1800, f1: 4200, dur: 0.6, a: 0.2, vol: 0.12, lp: 0.2 },
+    ...notes.map((n, i) => ({ wave: w, f0: NOTE(n), dur: 0.6, at: 0.1 + i * 0.08, a: 0.02, vol: 0.2, vib: [6, 0.12] as [number, number] })),
+    ...(eco ? notes.map((n, i) => ({ wave: w, f0: NOTE(n), dur: 0.5, at: 0.5 + i * 0.08, a: 0.02, vol: 0.06 })) : []),
+    ...(cri ? [0.7, 0.78, 0.86].map((at) => ({ wave: 'sine' as Wave, f0: 4400, dur: 0.03, at, vol: 0.05 })) : []),
+  ]);
+}
 
 /** Pasos por superficie, 3 variantes cada uno (tono y largo un poco distintos). */
 function pasos() {
@@ -872,4 +969,90 @@ export function musicDespertar(): Float32Array {
   });
 }
 
-export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata, galerias: musicGalerias, jefe_polilla: musicJefePolilla, intro: musicIntro, jefe_pez: musicJefePez, capitan: musicCapitan, faro: musicFaro, jefe_rey: musicJefeRey, relojero: musicRelojero, despertar: musicDespertar };
+// ---------- Mundo 6: La Fragua de las Luces ----------
+
+/** Normaliza al pico de 0.5 (lo de este mundo va todo bajito). */
+function pico05(out: Float32Array): Float32Array { let m = 0; for (const v of out) m = Math.max(m, Math.abs(v)); if (m > 0) for (let i = 0; i < out.length; i++) out[i] *= 0.5 / m; return out; }
+/** Los tambores de fragua: un golpe de martillo en el yunque (grave y metálico a la vez). */
+const martillo = (at: number, vol = 1): Voice[] => [{ wave: 'sine', f0: 140, f1: 55, dur: 0.22, at, vol: 0.5 * vol }, { wave: 'noise', f0: 900, f1: 300, dur: 0.12, at, vol: 0.18 * vol, lp: 0.3 }, { wave: 'sine', f0: 1180, dur: 0.25, at, vol: 0.05 * vol }, { wave: 'sine', f0: 1660, dur: 0.18, at, vol: 0.03 * vol }];
+
+/**
+ * La Dragona de Brasa (en bucle, ~46 s): grande y triste. Arranca con un canto lento en Re menor sobre un colchón
+ * grave y el fuelle que respira; después entran los tambores de fragua y el bajo, y la melodía sube una octava con
+ * todo: se vuelve épica sin perder la pena.
+ */
+export function musicJefeDragona(): Float32Array {
+  return conSemilla(11201, () => {
+    const canto = ['D4', '-', '-', 'F4', 'E4', '-', 'D4', '-', 'C4', '-', 'A3', '-', 'D4', '-', '-', '-', 'F4', '-', 'G4', '-', 'A4', '-', '-', 'C5', 'Bb4', '-', 'A4', '-', 'G4', '-', 'F4', 'E4',
+      'D4', '-', '-', 'F4', 'E4', '-', 'D4', '-', 'C4', '-', 'E4', '-', 'F4', '-', 'G4', '-', 'A4', '-', '-', '-', 'G4', '-', 'F4', '-', 'E4', '-', 'C#4', '-', 'D4', '-', '-', '-'];
+    const alto = canto.map((n) => (n === '-' || n === '.' ? n : n.replace(/\d/, (d) => String(Number(d) + 1))));
+    const bajo = rep(['D2', '-', '-', '-', '-', '-', '-', '-', 'Bb1', '-', '-', '-', '-', '-', '-', '-', 'F2', '-', '-', '-', '-', '-', '-', '-', 'A1', '-', '-', '-', '-', '-', '-', '-'], 2);
+    const marcha = rep(['D2', 'D2', 'A2', 'D2', 'Bb1', 'Bb1', 'F2', 'Bb1', 'F2', 'F2', 'C3', 'F2', 'A1', 'A1', 'E2', 'A1'], 4);
+    const pad = rep(['D3', '-', '-', '-', '-', '-', '-', '-', 'D3', '-', '-', '-', '-', '-', '-', '-', 'C3', '-', '-', '-', '-', '-', '-', '-', 'C#3', '-', '-', '-', '-', '-', '-', '-'], 2);
+    const bpm = 72, beat = 60 / bpm / 2, seg = Math.round(64 * beat * RATE);
+    const a = song(bpm, 64, [{ wave: 'triangle', notes: canto, vol: 0.2, vib: [4, 0.25] }, { wave: 'sine', notes: bajo, vol: 0.3 }, { wave: 'triangle', notes: pad, vol: 0.08 }], '', 1);
+    const b = song(bpm, 64, [{ wave: 'square', notes: alto, vol: 0.09, duty: 0.25, vib: [4, 0.2] }, { wave: 'triangle', notes: canto, vol: 0.16 }, { wave: 'triangle', notes: marcha, vol: 0.28 }, { wave: 'sine', notes: pad, vol: 0.08 }], '', 1);
+    const out = new Float32Array(seg * 2);
+    for (let i = 0; i < a.length; i++) out[i % out.length] += a[i];
+    for (let i = 0; i < b.length; i++) out[(seg + i) % out.length] += b[i];
+    // el fuelle que respira (cada compás, un aire que entra y sale) en la primera parte
+    const fuelle = mix(Array.from({ length: 8 }, (_, i) => ({ wave: 'noise' as Wave, f0: 250, f1: 500, dur: beat * 6, at: i * beat * 8, a: beat * 3, vol: 0.08, lp: 0.05 })), 0);
+    for (let i = 0; i < fuelle.length; i++) out[i % out.length] += fuelle[i];
+    // los tambores de fragua en la segunda parte: martillo en el 1 y el 3, golpecitos en el medio
+    const tambor = mix(Array.from({ length: 64 }, (_, i) => (i % 4 === 0 ? martillo(i * beat, i % 8 === 0 ? 1 : 0.7) : i % 4 === 2 ? martillo(i * beat, 0.3) : [])).flat(), 0);
+    for (let i = 0; i < tambor.length; i++) out[(seg + i) % out.length] += tambor[i];
+    return pico05(out);
+  });
+}
+
+/** El Carcelero (corta, en bucle): martillos y cadenas con ritmo, en La menor, con un motivo de bajo que insiste. */
+export function musicCarcelero(): Float32Array {
+  return conSemilla(11301, () => {
+    const bpm = 108, beat = 60 / bpm / 2;
+    const bajo = rep(['A1', '.', 'A1', 'C2', '.', 'A1', 'E2', 'D2', 'A1', '.', 'A1', 'C2', '.', 'G1', 'G#1', '.'], 4);
+    const lead = rep(['.', '.', '.', '.', 'E4', '-', 'C4', '-', 'D4', '-', 'B3', '-', 'C4', '-', 'A3', '-'], 4);
+    const buf = song(bpm, 64, [{ wave: 'triangle', notes: bajo, vol: 0.32 }, { wave: 'square', notes: lead, vol: 0.08, duty: 0.25 }], '', 1);
+    const out = loopTo(buf, 64 * beat);
+    // martillos y cadenas: el martillo en los tiempos, las cadenas (tintineo) en el contratiempo
+    const golpes = mix(Array.from({ length: 64 }, (_, i) => (i % 4 === 0 ? martillo(i * beat, 0.9) : i % 4 === 3 ? [{ wave: 'noise' as Wave, f0: 6000, f1: 3500, dur: 0.05, at: i * beat, vol: 0.12, lp: 0.7 }, { wave: 'sine' as Wave, f0: 2600 + (i % 5) * 200, dur: 0.06, at: i * beat, vol: 0.05 }] : [])).flat(), 0);
+    for (let i = 0; i < golpes.length; i++) out[i % out.length] += golpes[i];
+    return pico05(out);
+  });
+}
+
+/**
+ * La liberación (36 s, no es bucle): el tema de victoria más grande. Las luces suben y con cada una entra un pedacito
+ * de la música de su mundo (el Bosque, la Catedral, las Galerías, el faro y la canción de cuna de la Ciudad), sobre un
+ * colchón que crece; al final todos juntos en Re mayor, y se calma.
+ */
+export function musicLiberacion(): Float32Array {
+  return conSemilla(11401, () => {
+    const out = new Float32Array(Math.round(36 * RATE));
+    const put = (b: Float32Array, at: number, k = 1) => { const s0 = Math.round(at * RATE); for (let i = 0; i < b.length && s0 + i < out.length; i++) out[s0 + i] += b[i] * k; };
+    // el colchón que crece: Re mayor, cuerdas suaves
+    put(song(80, 96, [{ wave: 'triangle', notes: rep(['D3', '-', '-', '-', '-', '-', '-', '-', 'B2', '-', '-', '-', '-', '-', '-', '-', 'G2', '-', '-', '-', '-', '-', '-', '-', 'A2', '-', '-', '-', '-', '-', '-', '-'], 3), vol: 0.2 }, { wave: 'sine', notes: rep(['F#4', '-', '-', '-', '-', '-', '-', '-', 'F#4', '-', '-', '-', '-', '-', '-', '-', 'D4', '-', '-', '-', '-', '-', '-', '-', 'E4', '-', '-', '-', '-', '-', '-', '-'], 3), vol: 0.07 }], '', 1), 0);
+    // los pedacitos de cada mundo, uno detrás del otro (el Bosque, la Catedral, las Galerías, el faro, la Ciudad)
+    const trozos: [string[], Wave, number][] = [
+      [['E5', '-', 'G5', '-', 'A5', '-', 'G5', 'E5', 'D5', '-', 'E5', '-', 'C5', '-', '-', '-'], 'square', 0.1],
+      [['D5', '-', 'F5', '-', 'A5', '-', '-', '-', 'G5', '-', 'F5', '-', 'E5', '-', '-', '-'], 'triangle', 0.16],
+      [['B4', '-', '-', '-', 'E5', '-', '-', '-', 'G5', '-', 'F#5', '-', 'E5', '-', '-', '-'], 'sine', 0.2],
+      [['D5', '-', 'F#5', '-', 'A5', '-', '-', '-', 'B5', '-', 'A5', '-', 'F#5', '-', '-', '-'], 'triangle', 0.16],
+      [['G5', '-', 'E5', '-', 'G5', '-', 'A5', '-', 'G5', '-', 'E5', '-', 'D5', '-', 'C5', '-'], 'sine', 0.2],
+    ];
+    trozos.forEach(([n, w, v], i) => {
+      put(song(96, 16, [{ wave: w, notes: n, vol: v, duty: 0.5, vib: [5, 0.12] }], '', 1), 1.5 + i * 3.6);
+      // cada luz sube: un brillito que sube al empezar su pedacito
+      put(mix(['C6', 'E6', 'G6', 'C7'].map((q, j) => ({ wave: 'sine' as Wave, f0: NOTE(q), dur: 0.4, at: j * 0.06, a: 0.004, vol: 0.06 }))), 1.3 + i * 3.6);
+    });
+    // todos juntos: el tema grande en Re mayor con los tambores de fragua ahora alegres
+    const grande = ['D5', '-', 'F#5', '-', 'A5', '-', 'D6', '-', 'C#6', '-', 'B5', '-', 'A5', '-', '-', '-', 'G5', '-', 'B5', '-', 'A5', '-', 'F#5', '-', 'E5', '-', 'F#5', '-', 'D5', '-', '-', '-'];
+    const bajo = rep(['D3', '-', 'A3', '-', 'B2', '-', 'F#3', '-', 'G2', '-', 'D3', '-', 'A2', '-', 'E3', '-'], 4);
+    put(song(96, 64, [{ wave: 'square', notes: [...grande, ...grande.map((n) => (n === '-' ? n : n.replace(/\d/, (d) => String(Number(d) - 1))))], vol: 0.1, duty: 0.5, vib: [5, 0.15] }, { wave: 'triangle', notes: [...grande, ...grande], vol: 0.14 }, { wave: 'triangle', notes: bajo, vol: 0.26 }], rep(['k', '.', 'h', '.', 's', '.', 'h', '.'], 8).join(''), 1), 20);
+    put(mix(Array.from({ length: 16 }, (_, i) => martillo(20 + i * (60 / 96), 0.35)).flat()), 0);
+    // se calma: desde los 31 s baja despacio
+    for (let i = 0; i < out.length; i++) { const t = i / RATE; if (t > 31) out[i] *= Math.max(0, 1 - (t - 31) / 5); if (t < 0.8) out[i] *= t / 0.8; }
+    return pico05(out);
+  });
+}
+
+export const MUSIC = { catedral: musicCatedral, bosque: musicBosque, jefe: musicJefe, victoria: musicVictoria, titulo: musicTitulo, amenaza: musicAmenaza, combate: musicCombate, fogata: musicFogata, galerias: musicGalerias, jefe_polilla: musicJefePolilla, intro: musicIntro, jefe_pez: musicJefePez, capitan: musicCapitan, faro: musicFaro, jefe_rey: musicJefeRey, relojero: musicRelojero, despertar: musicDespertar, jefe_dragona: musicJefeDragona, carcelero: musicCarcelero, liberacion: musicLiberacion };
