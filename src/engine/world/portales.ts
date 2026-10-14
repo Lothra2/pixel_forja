@@ -15,10 +15,10 @@ import { contactShadow } from './premium/contact';
  * Uno por mundo: `portal_verde` (verde y dorado, el Bosque), `portal_violeta` (la Catedral), `portal_ambar` (las
  * Galerías), `portal_rojo` (rojo que gotea, el Mundo 4) y `portal_azul` (el de siempre). La piedra del arco toma algo
  * de cada mundo: musgo en el Bosque, piedra clara en la Catedral, piedra azul en las Galerías y piedra mojada en el
- * Mundo 4. La luz trae radio 160. Después vinieron `portal_plata` (la Ciudad Dormida) y `portal_brasa` (la Fragua).
+ * Mundo 4. La luz trae radio 160. Después vinieron `portal_plata` (la Ciudad Dormida) , `portal_brasa` (la Fragua) y `portal_hielo` (el Corazón Helado).
  */
 
-export type PortalColor = 'azul' | 'rojo' | 'verde' | 'violeta' | 'ambar' | 'plata' | 'brasa';
+export type PortalColor = 'azul' | 'rojo' | 'verde' | 'violeta' | 'ambar' | 'plata' | 'brasa' | 'hielo';
 
 interface Look {
   /** remolino: de lo más hondo (0) a lo más claro (4) */
@@ -29,7 +29,7 @@ interface Look {
   /** piedra del arco, de oscuro a claro (5 tonos) */
   stone: string[];
   /** algo de cada mundo sobre la piedra */
-  extra?: 'musgo' | 'gotea' | 'sueno' | 'brasa';
+  extra?: 'musgo' | 'gotea' | 'sueno' | 'brasa' | 'hielo';
   light: string;
 }
 
@@ -44,6 +44,9 @@ const LOOKS: Record<PortalColor, Look> = {
   // el del Mundo 6 (La Fragua de las Luces): arco de obsidiana con brillos violeta, grietas naranjas que respiran con
   // las runas y un remolino rojo y dorado que suelta brasas que suben
   brasa: { swirl: ['#1a0402', '#5a1000', '#c03a10', '#ffb040', '#fff0a0'], rune: '#ff7020', spark: '#ffd890', stone: ['#0e0a10', '#1c1420', '#2a1e2e', '#3e3048', '#5a4a6a'], extra: 'brasa', light: '#ff7a30' },
+  // el del Mundo 7 (El Corazón Helado): arco de hielo negro con escarcha arriba de cada piedra, carámbanos que cuelgan
+  // del hueco, runas rojas como brasas y un remolino blanco y rojo que suelta copos y chispas
+  hielo: { swirl: ['#12040a', '#5a0c14', '#c8202a', '#d8ecff', '#ffffff'], rune: '#ff2a1a', spark: '#e8f4ff', stone: ['#05070c', '#0c1220', '#16203a', '#22304a', '#3a4a62'], extra: 'hielo', light: '#ff5040' },
   ambar: { swirl: ['#1e0c02', '#5a2806', '#b86412', '#ffb35a', '#fff0c0'], rune: '#ffc070', spark: '#fff0c0', stone: ['#0b0f17', '#151b26', '#2c3646', '#4a586c', '#6a7a90'], light: '#ffb35a' },
 };
 
@@ -205,6 +208,23 @@ function arch(L: Look, lit: (id: number) => number, f: number): Raster {
       }
     }
   }
+  if (L.extra === 'hielo') {
+    // hielo negro: escarcha clara en el canto de arriba de cada piedra y brillos blancos sueltos
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!a0[y * W + x]) continue;
+      const s = stoneAt(x, y);
+      if (!s) continue;
+      const top = s.id < 9 ? s.v > 0.8 : s.v < 0.14;
+      if (top && hash(x >> 1, y, 101) > 0.4) put(r, x, y, hash(x, y, 102) > 0.5 ? '#9ab8d8' : '#d0e4f6', 220);
+      else if (hash(x, y, 103) > 0.99) put(r, x, y, '#e8f4ff');
+    }
+    // los carámbanos que cuelgan del borde de adentro del arco (no tapan el hueco: son cortos)
+    for (let k = 0; k < 9; k++) {
+      const a = Math.PI - ((k + 0.5) * Math.PI) / 9, len = 3 + Math.round(hash(k, 1, 104) * 5);
+      const x0 = Math.round(CX + Math.cos(a) * (RI - 0.5)), y0 = Math.round(CY - Math.sin(a) * (RI - 0.5));
+      for (let t = 0; t < len; t++) { put(r, x0, y0 + t, t === len - 1 ? '#e8f4ff' : '#9ab8d8', 230); if (t < len / 2) put(r, x0 + 1, y0 + t, '#3a4a62', 230); }
+    }
+  }
   // las runas
   for (const sp of runeSpots()) {
     const k = lit(sp.id);
@@ -288,6 +308,14 @@ function swirl(L: Look, open: number, f: number): Raster {
     if (y < 6) continue;
     put(r, x, y, t < 0.35 ? '#fff0a0' : t < 0.7 ? '#ffb040' : '#c04010', Math.round(240 * (1 - t * 0.7)));
   }
+  // el hielo: copos blancos y chispas rojas que salen del remolino y suben, alternados
+  if (L.extra === 'hielo' && open >= 0.6) for (let i = 0; i < 12; i++) {
+    const t = ((f + i * 5) % 12) / 12;
+    const x = CX - RI + 4 + hash(i, 8, 49) * (RI * 2 - 8) + Math.sin(t * Math.PI * 2 + i) * 2.4, y = FLOOR - 6 - t * 76 * open;
+    if (y < 6) continue;
+    if (i % 2) put(r, x, y, t < 0.5 ? '#ff6a4a' : '#c8202a', Math.round(240 * (1 - t * 0.7)));
+    else { put(r, x, y, '#ffffff', Math.round(240 * (1 - t * 0.6))); if (t < 0.6) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) put(r, x + dx, y + dy, '#d8ecff', 120); }
+  }
   return r;
 }
 
@@ -328,7 +356,7 @@ export function premiumPortal(color: PortalColor): WorldObject {
 }
 
 /** El portal de cada mundo (el que se usa en `portal_llegada` y `portal_jefe` de ese mundo). */
-export const PORTAL_MUNDO: Record<string, PortalColor> = { mundo1: 'verde', mundo2: 'violeta', mundo3: 'ambar', mundo4: 'rojo', mundo5: 'plata', mundo6: 'brasa' };
+export const PORTAL_MUNDO: Record<string, PortalColor> = { mundo1: 'verde', mundo2: 'violeta', mundo3: 'ambar', mundo4: 'rojo', mundo5: 'plata', mundo6: 'brasa', mundo7: 'hielo' };
 
 export function premiumPortals(colors: PortalColor[] = ['azul', 'rojo', 'verde', 'violeta', 'ambar']): WorldObject[] {
   return colors.map(premiumPortal);
