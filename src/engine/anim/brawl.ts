@@ -470,6 +470,8 @@ export const HELD_ANIMS: Record<string, { kinds: FloorPropKind[]; default: Floor
   // la Chapita (lote B6): el palo de escoba a dos manos, o cualquier otro de batear
   bat_stance: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'swing'), default: 'broomstick' },
   bat_swing: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'swing'), default: 'broomstick' },
+  // el batazo Nekketsu (lote B7H8): el mismo palo, con la vuelta completa
+  bat_nekketsu: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'swing'), default: 'broomstick' },
   // el tejo (lote B6), en la mano hasta la suelta
   tejo_throw: { kinds: ['tejo'], default: 'tejo' },
 };

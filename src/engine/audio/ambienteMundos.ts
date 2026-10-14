@@ -428,6 +428,125 @@ const liceo: Ambiente = (buf, r) => {
   return c;
 };
 
+// ---------- lote B7H8 ----------
+
+/** Un pájaro cantor: una frase de notas cortas que suben y bajan (`notas` = [desde, hasta] en Hz), brillante. */
+function canto(c: Float32Array, t0: number, notas: [number, number][], vol: number, paso = 0.11) {
+  notas.forEach(([fa, fb], j) => pon(c, t0 + j * paso, suelto(paso * 0.9, (x) => voz(x, 0, paso * 0.8, fa, fb, 1, [1, 0.15], 0.01, 40, 0.004)), vol));
+}
+/** El toque del cầu: el golpe seco del empeine contra la base de goma y el soplo de las plumas. */
+function toqueCau(m: Mixer, t: number, vol: number) {
+  m.add({ t, dur: 0.004, f: 520, wave: 'sine', vol, s: 1, r: 0.04, bend: { semis: -5, len: 0.03 } });
+  m.add({ t, dur: 0.003, f: 2600, wave: 'noise', vol: vol * 0.6, s: 1, r: 0.03, lp: 0.45 });
+}
+/** Una escoba de palito que barre hojas: el "shhh" que sube y se corta. */
+const barrida = (r: () => number) => suelto(0.45, (x) => { for (let i = 0; i < x.length; i++) { const t = i / x.length; x[i] = (r() * 2 - 1) * Math.sin(Math.PI * t) * Math.pow(t, 0.4); } });
+
+/**
+ * El parque Tao Đàn en la mañana (Đá cầu): los pájaros en sus jaulas colgadas de los árboles (el café de los pájaros),
+ * el toque del cầu de los grupos que juegan en ronda, una escoba que barre hojas, los señores que conversan y
+ * Saigón que ya se despierta detrás de los árboles.
+ */
+const parqueTaoDan: Ambiente = (buf, r) => {
+  // la ciudad detrás de los árboles y las hojas que se mueven con la brisa
+  suma(buf, lowpass(pink(buf.length, r), 0.018), 0.32);
+  suma(buf, bandpass(pink(buf.length, r), (i) => 2200 + 700 * LFO(i, 0.07), 0.6), (i) => 0.08 + 0.1 * LFO(i, 1 / 6, 0.4));
+  const c = capa(), m = new Mixer(12, true, 713);
+  // los pájaros de las jaulas: el chào mào y el khướu, que se contestan
+  for (const t0 of [0.6, 4.1, 8.3]) canto(c, t0, [[2400, 2700], [2450, 2750], [2100, 2600], [2700, 2200]], 0.18);
+  for (const t0 of [2.2, 6.4, 10.6]) canto(c, t0, [[1800, 2300], [2300, 1900], [1700, 2500], [2500, 2600], [2600, 2100]], 0.13, 0.09);
+  for (const t0 of [3.3, 9.5]) canto(c, t0, [[3100, 3300], [3300, 3100], [3100, 3300]], 0.08, 0.07);
+  // dos rondas de đá cầu: el toque va de pie en pie, cerca y más lejos
+  for (const [t0, n, v] of [[0.9, 6, 0.32], [5.6, 5, 0.32], [2.4, 7, 0.16], [8.9, 6, 0.16]] as const)
+    for (let k = 0; k < n; k++) toqueCau(m, t0 + k * (0.42 + r() * 0.12), v * (0.8 + r() * 0.3));
+  // la escoba de palito barriendo las hojas
+  for (let k = 0; k < 6; k++) pon(c, 3.6 + k * 0.62, bandpass(barrida(r), () => 3800, 0.5), 0.1);
+  // los señores que conversan en un banco, bajito, y uno que se ríe
+  murmullo(c, 3, r, [100, 170], 0.18);
+  frase(c, 7.3, [['a', 0.09, 160, 150], ['a', 0.09, 155, 145], ['a', 0.12, 150, 130]], 0.22, r);
+  // una moto que pasa por la calle del parque y una bocina lejos
+  pon(c, 6.2, lejos(moto(3.4, 44, r), 0.3), 0.3);
+  bocina(m, 11.1, 460, 0.035, 2);
+  const mo = m.out();
+  for (let i = 0; i < LEN; i++) c[i] += mo[i];
+  return c;
+};
+
+/**
+ * El barrio de Caracas de día (Chapita): las guacamayas que cruzan gritando, la camionetica que sube la calle con su
+ * corneta, el vendedor que pregona, un radio con salsa lejos, los chamos jugando, un perro y el "tac" de la chapa
+ * contra el palo de escoba.
+ */
+const barrioCaracas: Ambiente = (buf, r) => {
+  // el valle: el tráfico de abajo y la brisa del Ávila
+  suma(buf, lowpass(pink(buf.length, r), 0.02), 0.38);
+  suma(buf, bandpass(pink(buf.length, r), (i) => 700 + 300 * LFO(i, 0.09), 0.8), 0.12);
+  const c = capa(), m = new Mixer(12, true, 714);
+  // las guacamayas: dos que pasan gritando "ráa-ráa", ásperas, de un lado al otro
+  for (const t0 of [1.1, 1.5, 7.8, 8.25]) {
+    const g = suelto(0.32, (x) => { voz(x, 0, 0.3, 1150, 900, 1, [1, 0.7, 0.5, 0.3], 0.08, 28, 0.01); for (let i = 0; i < x.length; i++) x[i] = Math.tanh(x[i] * 3 + (r() * 2 - 1) * 0.15 * Math.abs(x[i])); });
+    pon(c, t0, bandpass(g, () => 1600, 0.7), 0.16);
+  }
+  // la camionetica que sube forzada, con su corneta de dos tonos
+  pon(c, 3.0, lejos(moto(5.5, 34, r, 0.2), 0.25), 0.55);
+  for (const t of [4.4, 4.75]) { m.add({ t, dur: 0.28, f: 330, wave: 'square', duty: 0.5, vol: 0.05, a: 0.01, s: 0.9, r: 0.05, lp: 0.15 }); m.add({ t, dur: 0.28, f: 415, wave: 'square', duty: 0.5, vol: 0.04, a: 0.01, s: 0.9, r: 0.05, lp: 0.15 }); }
+  // el pregón: "¡a-gua-ca-teee!", largo al final
+  frase(c, 6.0, [['a', 0.1, 240, 250], ['u', 0.09, 260, 255], ['a', 0.1, 270, 265], ['a', 0.11, 275, 270], ['e', 0.55, 300, 240]], 0.32, r, 0.012);
+  // el radio de una casa: el bajo y la clave de la salsa, lejos y apagado (sin melodía)
+  const radio = new Mixer(12, true, 715), e = 60 / 96;
+  for (let b = 0; b < 19; b++) {
+    const t = b * e;
+    radio.add({ t: t + e * 0.5, dur: 0.18, f: b % 4 < 2 ? 98 : 110, wave: 'triangle', vol: 0.5, a: 0.01, s: 0.7, r: 0.08 });
+    if ([0, 1.5, 3, 5, 6].includes((b % 4) * 2) || b % 2 === 0) radio.add({ t, dur: 0.01, f: 2400, wave: 'sine', vol: 0.25, s: 1, r: 0.05 });
+  }
+  const rd = lowpass(lowpass(radio.out(), 0.08), 0.08);
+  for (let i = 0; i < LEN; i++) c[i] += rd[i] * 0.45;
+  // los chamos jugando chapita en la calle: los gritos y el tac del palo contra la chapa
+  murmullo(c, 4, r, [230, 380], 0.2, 0.8);
+  frase(c, 9.4, [['a', 0.08, 380, 400], ['e', 0.08, 400, 390], ['o', 0.3, 420, 330]], 0.4, r);
+  for (const t of [9.2, 2.6]) { m.add({ t, dur: 0.004, f: 1900, wave: 'square', duty: 0.3, vol: 0.12, s: 1, r: 0.03, lp: 0.5 }); m.add({ t, dur: 0.003, f: 5000, wave: 'noise', vol: 0.1, s: 1, r: 0.02 }); }
+  // un perro de la cuadra
+  pon(c, 10.6, ladrido(560, r), 0.3); pon(c, 10.9, ladrido(545, r), 0.26);
+  const mo = m.out();
+  for (let i = 0; i < LEN; i++) c[i] += mo[i];
+  return c;
+};
+
+/**
+ * El dojo de Hanói en la tarde (el judo): adentro, los pies que arrastran sobre el tatami, las palmadas del ukemi, un
+ * kiai y el piso de madera que cruje, todo con el eco del salón; afuera, por los ventanales, el viento en los árboles
+ * del lago Hoàn Kiếm, las motos lejos y la campana de un templo.
+ */
+const dojoHanoi: Ambiente = (buf, r) => {
+  // el salón: un rumor quieto, y la tarde de afuera por las ventanas
+  suma(buf, lowpass(pink(buf.length, r), 0.015), 0.3);
+  suma(buf, bandpass(pink(buf.length, r), (i) => 1800 + 600 * LFO(i, 0.05), 0.6), (i) => 0.14 + 0.1 * LFO(i, 1 / 6, 1.2));
+  suma(buf, bandpass(pink(buf.length, r), (i) => 500 + 150 * LFO(i, 0.08), 0.9), 0.14);
+  const c = capa(), m = new Mixer(12, true, 716);
+  // los pies que arrastran sobre el tatami (suri ashi): un roce corto y suave
+  for (let k = 0; k < 14; k++) pon(c, k * 0.86 + r() * 0.3, bandpass(suelto(0.18, (x) => { for (let i = 0; i < x.length; i++) x[i] = (r() * 2 - 1) * Math.sin((Math.PI * i) / x.length); }), () => 1400, 0.8), 0.13);
+  // las caídas: el cuerpo contra el tatami y la palmada seca justo encima
+  for (const [t, v] of [[2.2, 0.5], [5.9, 0.45], [9.4, 0.55]] as const) {
+    m.add({ t, dur: 0.01, f: 160, wave: 'sine', vol: v * 0.45, s: 1, r: 0.14, bend: { semis: -3, len: 0.1 } });
+    m.add({ t: t + 0.015, dur: 0.004, f: 3000, wave: 'noise', vol: v * 0.4, s: 1, r: 0.05, lp: 0.6 });
+  }
+  // un kiai y la voz del sensei, los dos con eco
+  frase(c, 3.8, [['e', 0.07, 240, 260], ['i', 0.28, 280, 220]], 0.35, r);
+  frase(c, 7.6, [['a', 0.1, 140, 135], ['i', 0.08, 130, 125], ['e', 0.2, 140, 120]], 0.2, r);
+  // los que esperan su turno al borde del tatami, en voz baja
+  murmullo(c, 3, r, [120, 220], 0.12);
+  // el piso de madera que cruje
+  for (const t of [1.0, 8.5]) pon(c, t, bandpass(suelto(0.3, (x) => { for (let i = 0; i < x.length; i++) x[i] = Math.sin((i / RATE) * 2 * Math.PI * (300 + 200 * Math.sin(i / 900))) * (r() < 0.3 ? 1 : 0.2) * Math.sin((Math.PI * i) / x.length); }), () => 500, 0.5), 0.06);
+  // afuera: la campana del templo de Ngọc Sơn y dos motos lejos
+  campana(m, 0.4, 196, 0.07);
+  pon(c, 4.6, lejos(moto(3.6, 48, r), 0.2), 0.22);
+  pon(c, 10.1, lejos(moto(2.8, 55, r), 0.2), 0.16);
+  const mo = m.out();
+  for (let i = 0; i < LEN; i++) c[i] += mo[i];
+  eco(c, 0.09, 0.35, 0.45);
+  return c;
+};
+
 /** Los ambientes de los mundos (lote H7), en el orden del pedido de Rick. */
 export const AMBIENTES_MUNDOS: Record<string, Ambiente> = {
   trafico_saigon: traficoSaigon,
@@ -440,4 +559,8 @@ export const AMBIENTES_MUNDOS: Record<string, Ambiente> = {
   carnaval,
   pinos_dalat: pinosDalat,
   liceo,
+  // lote B7H8
+  parque_tao_dan: parqueTaoDan,
+  barrio_caracas: barrioCaracas,
+  dojo_hanoi: dojoHanoi,
 };

@@ -68,7 +68,7 @@ describe('ambientes del resto de los mundos y acordes de victoria (lote H7)', ()
   const aco = Object.fromEntries([...ACORDES, 'victoria', 'victoria_banda'].map((n) => [n, renderSound('musica', n)]));
 
   it('los 10 ambientes y los 6 acordes están en el catálogo, después de lo de antes, y ninguno pisa un nombre', () => {
-    expect(AMBIENCE_NAMES).toEqual([...ANTES, ...AMBIENTES]);
+    expect(AMBIENCE_NAMES.slice(0, 19)).toEqual([...ANTES, ...AMBIENTES]);
     for (const n of AMBIENTES) expect(SONIDOS.ambientes, n).toContain(n);
     for (const n of ACORDES) { expect(SONIDOS.musica, n).toContain(n); expect(JINGLES, n).toContain(n); }
     for (const sec of ['ambientes', 'musica', 'sfx'] as const) expect(new Set(SONIDOS[sec]).size, sec).toBe(SONIDOS[sec].length);

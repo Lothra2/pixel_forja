@@ -873,6 +873,11 @@ const ANIM_LABELS: Record<string, [string, string]> = {
   vault_fail: ['Garrocha que no llega', 'Vault fail'], judo_grip: ['Agarre de solapa (judo)', 'Judo lapel grip'], judo_throw: ['Seoi nage (proyección de judo)', 'Seoi nage (judo throw)'], judo_thrown: ['Proyectado (judo)', 'Judo thrown'],
   dodge_jump: ['Saltar para esquivar', 'Dodge jump'], bat_stance: ['Guardia de bateo (Chapita)', 'Batting stance'], bat_swing: ['Batazo con palo de escoba', 'Broomstick swing'], tejo_throw: ['Lanzar el tejo', 'Tejo throw'],
   osoto_gari: ['O-soto-gari (barrida por fuera)', 'O-soto-gari'], osoto_gari_thrown: ['Barrido por o-soto-gari', 'Swept by o-soto-gari'], bow: ['Rei (saludo de judo)', 'Rei (judo bow)'],
+  dunk_big: ['Clavada Nekketsu', 'Nekketsu dunk'], spike_fuego: ['Remate de fuego', 'Fire spike'], tackle_nekketsu: ['Tacleada Nekketsu en plancha', 'Nekketsu diving tackle'],
+  bat_nekketsu: ['Batazo Nekketsu (vuelta completa)', 'Nekketsu swing (full spin)'], javelin_rayo: ['Lanza del rayo (jabalina)', 'Lightning javelin'],
+  shuttle_kick_back: ['Chilena de đá cầu', 'Đá cầu bicycle kick'], shuttle_kick_back_nekketsu: ['Chilena Nekketsu de đá cầu', 'Nekketsu đá cầu bicycle kick'],
+  shuttle_juggle: ['Dominar el cầu', 'Đá cầu juggle'], dodge_throw: ['Tiro del Quemado', 'Dodgeball throw'], dodge_hit: ['Balonazo (Quemado)', 'Hit by the dodgeball'],
+  cap_pitch: ['Lanzar la chapa', 'Bottle cap pitch'], vovinam_scissor: ['Patada tijera (vovinam)', 'Vovinam scissor kick'], vovinam_scissored: ['Atrapado por la tijera', 'Caught by the scissor kick'],
   bite: ['Morder', 'Bite'], bark: ['Ladrar', 'Bark'], howl: ['Aullar (escudo)', 'Howl (shield)'], pickup: ['Recoger botín', 'Pick up loot'], dig: ['Cavar', 'Dig'], hurt: ['Recibe golpe', 'Hurt'],
 };
 
