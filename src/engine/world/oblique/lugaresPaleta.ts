@@ -421,3 +421,65 @@ export const USO_MARACAIBO: Record<Color, string> = {
   oro: 'los bombillos de sodio, las ventanas',
   bruma: 'el resplandor de la ciudad en el cielo',
 };
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Lote E6: los escenarios de las seis pruebas que seguían pintadas por código
+
+/**
+ * El valle de Cocora, en el Eje Cafetero, en la mañana (estilo `colombia_cafetera`): el verde vivo del valle, las
+ * palmas de cera con el tronco gris claro y los anillos, la neblina que baja de las montañas, el tartán rojo de la pista
+ * y los colores de las fincas de Salento. `canal` es la montaña lejana azul verdosa y `bruma` la neblina.
+ */
+export const COLOMBIA_COCORA_MANANA: Paleta = {
+  tinta: '#1a1c1e',
+  sombra: '#2e3a34',
+  asfalto: '#4a5248',
+  asfalto_claro: '#767e70',
+  cemento: '#a8aa9c',
+  cemento_claro: '#d8d6c8',
+  crema: '#f0ead6',
+  luz: '#fbfaf2',
+  amarillo: '#f2cf4a',
+  ocre: '#c79a48',
+  terracota: '#a8553c',
+  rojo: '#cc4a34',
+  vino: '#7a2a2c',
+  salmon: '#e88a72',
+  menta: '#9ed6a0',
+  verde: '#5aa44a',
+  verde_oscuro: '#2e6a3a',
+  celeste: '#8cc4e4',
+  cielo: '#cfe6f0',
+  azul: '#3a6aa8',
+  azul_noche: '#26425e',
+  canal: '#5e8a8a',
+  oro: '#f6b23a',
+  bruma: '#e4ece6',
+};
+
+export const USO_COCORA: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro',
+  sombra: 'la sombra honda del monte y de la cerca',
+  asfalto: 'los anillos del tronco de las palmas, el caucho del Willys',
+  asfalto_claro: 'el tronco de las palmas en sombra, el alambre de la cerca',
+  cemento: 'el tronco de las palmas a media luz, las vacas',
+  cemento_claro: 'el tronco de las palmas con luz, la cera',
+  crema: 'las paredes encaladas de la finca',
+  luz: 'las rayas de la pista, la neblina con sol',
+  amarillo: 'el balcón amarillo, las flores, el loro orejiamarillo',
+  ocre: 'la madera de la cerca y del letrero, los bultos de café',
+  terracota: 'las tejas de barro, el tartán en sombra',
+  rojo: 'el tartán de la pista, las cerezas del café, la puerta',
+  vino: 'sombra del rojo y de las tejas',
+  salmon: 'la piel, las flores rosadas',
+  menta: 'el pasto con luz',
+  verde: 'el pasto del valle, las hojas del café',
+  verde_oscuro: 'el monte, las hojas de las palmas',
+  celeste: 'el cielo alto',
+  cielo: 'el cielo bajo de la mañana',
+  azul: 'el balcón azul, el Willys',
+  azul_noche: 'la montaña de más atrás',
+  canal: 'las montañas lejanas azul verdosas',
+  oro: 'el sol de la mañana, el plátano maduro',
+  bruma: 'la neblina que baja de las montañas',
+};

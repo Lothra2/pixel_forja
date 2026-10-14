@@ -4,7 +4,7 @@ import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Pa
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
 import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
-import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO } from './lugaresPaleta';
+import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA } from './lugaresPaleta';
 import { lugarDe } from './lugares';
 
 /**
@@ -498,9 +498,37 @@ const VENEZUELA_LAGO: Estilo = {
   letreros: ['CANCHA LA CHINITA', 'BARRIO SANTA LUCÍA'],
 };
 
+
+/** El valle de Cocora en la mañana (lote E6). */
+const COLOMBIA_CAFETERA: Estilo = {
+  paleta: COLOMBIA_COCORA_MANANA,
+  uso: USO_COCORA,
+  horas: ['manana'],
+  iconos: [
+    { id: 'palmas_cera', nombre: 'Las palmas de cera del Quindío, altísimas y finitas, con el tronco gris claro, los anillos y la copa chica de hojas que caen', donde: 'cerca, a lo largo de la pista' },
+    { id: 'cordillera', nombre: 'La cordillera en planos, azul y azul verdosa, cada vez más clara en la neblina', donde: 'lejos' },
+    { id: 'loma_palmas', nombre: 'La loma verde con el monte en manchones y las palmas de cera que asoman por encima', donde: 'lejos' },
+    { id: 'finca', nombre: 'Una finca de Salento: paredes blancas, zócalo rojo, techo de teja de barro y el balcón corrido de colores con las materas', donde: 'cerca, en la loma' },
+    { id: 'cafetal', nombre: 'El cafetal en hileras con las cerezas rojas', donde: 'cerca, al lado de la finca' },
+    { id: 'willys', nombre: 'El Willys de los cafeteros cargado de bultos de café y un racimo de plátano, con el conductor de sombrero aguadeño y ruana', donde: 'cerca, en el camino de tierra' },
+    { id: 'vacas', nombre: 'Las vacas que pastan en la loma', donde: 'cerca' },
+    { id: 'cerca', nombre: 'La cerca de palos y alambre a lo largo de la pista', donde: 'cerca, al pie' },
+    { id: 'letrero', nombre: 'El letrero de madera VALLE DE COCORA, SALENTO, QUINDÍO', donde: 'cerca, cerca de la salida' },
+    { id: 'pista', nombre: 'La pista de tartán rojo con las rayas de los carriles, la salida y la meta a cuadros', donde: 'piso' },
+  ],
+  vida: {
+    neblina: 'Las bandas de neblina que pasan despacio por delante de los cerros, en la capa lejos',
+    vacas: 'Las vacas que bajan la cabeza a comer y la levantan: 2 cuadros',
+    loros: 'Una pareja de loros orejiamarillos que cruza volando, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['VALLE DE COCORA', 'SALENTO, QUINDÍO'],
+};
+
 const ESTILOS: Record<string, Estilo> = {
   vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD,
   venezuela_playa: VENEZUELA_PLAYA, vietnam_montana: VIETNAM_MONTANA, colombia_caribe: COLOMBIA_CARIBE, venezuela_lago: VENEZUELA_LAGO,
+  colombia_cafetera: COLOMBIA_CAFETERA,
 };
 
 /** Los fondos de la capa cerca que son de Hội An (con su estilo). */
