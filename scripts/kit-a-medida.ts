@@ -10,7 +10,7 @@ import { dirname, join, basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildCustomKit, KIT_PARTS, type KitConfig, type KitPart, type TeamDef } from '../src/engine/kit/custom.ts';
 import { migrateFicha, validateFicha, type Ficha } from '../src/engine/sheet/ficha.ts';
-import { codificadorFfmpeg } from './codificador-ffmpeg.ts';
+import { codificadorFfmpeg, codificadorLoteFfmpeg } from './codificador-ffmpeg.ts';
 
 const args = process.argv.slice(2);
 const flag = (k: string) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
@@ -94,12 +94,14 @@ if (existsSync(out!) && readdirSync(out!).length) {
 
 // audio comprimido: OGG y M4A con ffmpeg, si la máquina lo tiene
 const codificar = cfg!.audio?.formato === 'comprimido' ? codificadorFfmpeg() : undefined;
+// todo el audio de una vez, con varios ffmpeg en paralelo (los mismos bytes que de a uno)
+const codificarLote = codificar ? codificadorLoteFfmpeg() : undefined;
 if (cfg!.audio?.formato === 'comprimido' && !codificar) console.warn('  aviso: no encuentro ffmpeg con libvorbis y aac. Los efectos salen en WAV y la música y los ambientes quedan pendientes');
 
 const t0 = Date.now();
 let res: ReturnType<typeof buildCustomKit>;
 try {
-  res = buildCustomKit(cfg!, { fichas, equipos, fuentes, escenarios, npc }, { quick: args.includes('--rapido'), solo, codificar, progress: (m) => console.log(`  ${m}`) });
+  res = buildCustomKit(cfg!, { fichas, equipos, fuentes, escenarios, npc }, { quick: args.includes('--rapido'), solo, codificar, codificarLote, progress: (m) => console.log(`  ${m}`) });
 } catch (e) { fail((e as Error).message); }
 rmSync(out!, { recursive: true, force: true });
 let bytes = 0;

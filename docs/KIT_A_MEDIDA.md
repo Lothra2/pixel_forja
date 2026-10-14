@@ -354,6 +354,14 @@ kit/
   audio/escuchar.html                 para oír todo el audio con un clic
 ```
 
+**Los atlas son una grilla pareja** (contrato desde B7H8, lo vigila `b7h8.test.ts`). Los de los atletas, los animales, las armas del piso y la comida:
+- Cada cuadro mide una celda (`w` y `h` = la celda), sin recorte (`trimmed: false`) y sin rotar.
+- Todos tienen el mismo pivote.
+- Van en el orden del manifiesto: animación por animación, fila por fila (en el orden de `filas`) y cuadro por cuadro, con el nombre `<anim>_<fila>_<cuadro>`.
+- Van de izquierda a derecha y de arriba abajo. El cuadro `i` está en `x = (i % columnas) * celda` y `y = floor(i / columnas) * celda`, con `columnas = meta.size.w / celda`.
+
+El juego puede armar el atlas sin el JSON: le alcanza con los nombres en orden y la celda. La excepción son las pelotas sueltas (`objetos/pelotas.json`), donde cada pelota mide `2r + 2`.
+
 El manifiesto sigue el contrato del kit:
 
 ```jsonc
