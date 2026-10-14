@@ -56,7 +56,7 @@ describe('equipos nacionales (lote C2)', () => {
 
 describe('gorros propios (catálogo C4)', () => {
   it('están los 6 del pedido y la máscara de la Marimonda (lote E5), y todos tienen pixeles en las 3 direcciones', () => {
-    expect([...GORROS_PROPIOS]).toEqual(['non_la', 'vueltiao', 'gorra_beisbol', 'casco_ciclista', 'sombrero_gaitero', 'rolos', 'marimonda']);
+    expect([...GORROS_PROPIOS]).toEqual(['non_la', 'vueltiao', 'gorra_beisbol', 'casco_ciclista', 'sombrero_gaitero', 'rolos', 'marimonda', 'ponchera']);
     for (const id of GORROS_PROPIOS) for (const dir of ['down', 'right', 'up'] as const) {
       expect(pixelesGorro(id, dir, { x: 20, y: 20, w: 20, h: 20 }).length, `${id} ${dir}`).toBeGreaterThan(10);
     }
