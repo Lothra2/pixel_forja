@@ -24,6 +24,9 @@ import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK, type BigMap } 
 import { catedralMap } from '../world/catedralMap';
 import { galeriasMap } from '../world/galeriasMap';
 import { puertoMap } from '../world/puertoMap';
+import { ciudadMap } from '../world/ciudadMap';
+import { thiefFigure } from '../world/ciudadObjectsB';
+import { sleepParticle } from '../world/ciudadObjects';
 import { marinerEyes } from '../world/puertoObjectsB';
 import { dustWarning, dustCloud, shadowEyes } from '../world/galeriasObjects';
 import { POLILLA_REINA_SPEC, POLILLA_CENIZA_SPEC } from '../boss/polilla';
@@ -88,6 +91,8 @@ export interface KitOptions {
   sinIntro?: boolean;
   /** sin el Mundo 4 (mapa, farol de Thor, enemigos y el Pez Farol) */
   sinMundo4?: boolean;
+  /** sin el Mundo 5 (mapa, enemigos, el Relojero y el Rey de Piedra) */
+  sinMundo5?: boolean;
 }
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
@@ -507,9 +512,27 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     };
   })() : null;
   if (puerto) log('puerto listo');
+  // el Mundo 5: La Ciudad Dormida, con sus faroles de plaza, las chispas de la luz robada y la ciudad que despierta
+  const ciudadBig = opts.sinMundo5 ? null : ciudadMap();
+  const ciudad = ciudadBig ? (() => {
+    const base = exportarMundo(ciudadBig, 'mundo5', 'La Ciudad Dormida', 'mundo/mundo5_agua.png', 'portal_plata');
+    const ps = sleepParticle(), pn = `mundo/particulas/${ps.name}.png`;
+    once(png(pn, strip(ps.frames)));
+    const objetos = base.objetos as Record<string, Record<string, unknown>>;
+    if (objetos.figura_ladrona) objetos.figura_ladrona.farolito = thiefFigure().farolito;
+    return {
+      ...base,
+      particulas: { ...parts, [ps.name]: { archivo: pn, w: ps.w, h: ps.h, cuadros: ps.frames.length, fps: ps.fps } },
+      faroles: { apagado: 'farol_plaza_apagado', prendido: 'farol_plaza_prendido', prenderse: 'farol_plaza_prenderse', robado: 'farol_plaza_robado', notas: 'Entidades farol_plaza (el poste, con `punto` = id del punto_guardado y `barrio` = nombre de la zona que alumbra). Arrancan apagados; la heroína los prende (botón ui.habilidades.prender). La Ladrona (figura_ladrona, anim robar en bucle, el hilo de luz va del farol hasta `farolito`) puede robarle la luz: farol_plaza_robado una vez y queda apagado, y la luz cae en tres chispas.' },
+      chispas: { objeto: 'chispa_luz', entidad: 'chispa', por_robo: 3, notas: 'Entidades chispa con `barrio`: al menos 6 por barrio con farol, caminables y lejos de las paredes. El juego elige tres del barrio del farol robado; Thor las rastrea (ui.habilidades.chispas lleva la cuenta).' },
+      estatuas: { entidad: 'estatua', objeto: 'estatua_ciudadano_<variante>', anims: { dormida: 'dormida', despertar: 'despertar', despierta: 'despierta' }, notas: 'Cada entidad estatua va en el mismo punto que su objeto en la capa objetos (son sólidas). Al vencer al Rey: despertar una vez y después despierta en bucle. También despiertan las casas (anim despierta: ventanas prendidas y toldos de colores), los puestos, los árboles de piedra y la fuente (anim corre).' },
+      notas_luz: 'Sin sombras horneadas con dirección: los objetos traen solo la sombra de contacto al pie (campo sombra). La luz es de los faroles de plaza (dorada, 320), las lámparas del trono (200), la cajita de música (lila, 40) y la corona del Rey (personajes.rey_de_piedra.luz_corona).',
+    };
+  })() : null;
+  if (ciudad) log('ciudad lista');
   // `mundo` sigue siendo el Bosque (un juego viejo lo lee así); `mundos` trae todos en orden de bajada
   manifest.mundo = bosque;
-  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : []), ...(puerto ? [{ id: 'mundo4', ...puerto }] : [])];
+  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : []), ...(puerto ? [{ id: 'mundo4', ...puerto }] : []), ...(ciudad ? [{ id: 'mundo5', ...ciudad }] : [])];
   log('mundo listo');
 
   let introLogo: Record<string, unknown> | null = null;
