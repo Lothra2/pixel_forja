@@ -22,6 +22,11 @@ export interface MovimientoAnim {
   eventos?: EventoJson[];
   avance?: number;
   elevacion?: number[];
+  /**
+   * Por cuadro, si el personaje está girado (lote B4B6 bis): en esos cuadros se dio vuelta (el seoi nage se mete de
+   * espaldas) y el juego espeja el sprite y sus datos (cajas, manos, carga...), igual que cuando mira al otro lado.
+   */
+  girado?: boolean[];
   /** saltos a un muro: de 0 a 1 por cuadro (1 cuando las patas tocan arriba). Para otro muro: subida * alto_del_muro */
   subida?: number[];
   /** entre qué altos de muro (pixeles) se ve bien el salto */
@@ -43,6 +48,7 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
   const out: MovimientoAnim = {};
   // elevación: cuánto sube el juego el sprite sobre su sombra en cada cuadro (en pixeles de la hoja)
   if (c.rise) out.elevacion = c.rise.map((v) => r2(v * k));
+  if (c.girado) out.girado = [...c.girado];
   if (c.rise && c.muro) {
     out.subida = c.rise.map((v) => r2(v / c.muro!.alto));
     out.muro_min = Math.round(c.muro.min * k);

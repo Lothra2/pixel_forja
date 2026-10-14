@@ -9,6 +9,7 @@ import { buildSportsKit, compactJson } from './sportskit';
 import { generarEscenario } from '../world/oblique';
 import { EFFECT_NAMES, expandEffects, renderEffect, effectSheet } from '../fx/catalog';
 import { encodeWav, RATE } from '../audio/sfx';
+import { UNIFORMES } from '../sheet/wardrobe';
 import { SONIDOS, renderSound, type SoundSection } from '../audio/catalogo';
 import { blip, vozDe, BLIPS, TIMBRES, type Voz, type Timbre } from '../audio/deporte';
 import { listenPage, type ListenEntry, type ListenVoice } from '../audio/escuchar';
@@ -90,13 +91,18 @@ export interface KitConfig {
   vehiculos?: boolean | string[];
 }
 
-/** Un pack en forma de objeto: sus animaciones y, si se pide, sin las pelotas dibujadas. */
-export interface PackDef { anims: string[]; sin_props?: boolean }
-const PACK_KEYS = ['anims', 'sin_props'];
+/**
+ * Un pack en forma de objeto: sus animaciones y, si se pide, sin las pelotas dibujadas o con un uniforme para todos
+ * (`vestuario`: uno de `UNIFORMES`, como el judogi).
+ */
+export interface PackDef { anims: string[]; sin_props?: boolean; vestuario?: string }
+const PACK_KEYS = ['anims', 'sin_props', 'vestuario'];
 /** Las animaciones de un pack, en cualquiera de las dos formas. */
 export const packAnims = (p: string[] | PackDef): string[] => (Array.isArray(p) ? p : p.anims);
 /** Los packs que salen sin pelotas. */
 export const packsSinProps = (packs: KitConfig['packs']): string[] => Object.entries(packs).filter(([, p]) => !Array.isArray(p) && p.sin_props === true).map(([k]) => k);
+/** El uniforme de cada pack que lo pide. */
+export const packsUniforme = (packs: KitConfig['packs']): Record<string, string> => Object.fromEntries(Object.entries(packs).flatMap(([k, p]) => (!Array.isArray(p) && typeof p.vestuario === 'string' ? [[k, p.vestuario]] : [])));
 
 /** Un equipo del archivo de equipos. Lo que no se usa para armar el kit pasa al manifiesto tal cual. */
 export interface TeamDef {
@@ -214,6 +220,7 @@ export function validateKitConfig(cfg: unknown): string[] {
     if (isObj(def)) {
       for (const k of Object.keys(def)) if (!PACK_KEYS.includes(k)) e.push(`packs.${p}.${k}: clave desconocida.${suggest(k, PACK_KEYS)} Hay ${PACK_KEYS.map((x) => `"${x}"`).join(' y ')}`);
       if (def.sin_props !== undefined && typeof def.sin_props !== 'boolean') e.push(`packs.${p}.sin_props: true o false`);
+      if (def.vestuario !== undefined && (typeof def.vestuario !== 'string' || !UNIFORMES[def.vestuario])) e.push(`packs.${p}.vestuario: "${String(def.vestuario)}" no es un uniforme del motor.${suggest(String(def.vestuario), Object.keys(UNIFORMES))} Hay ${Object.keys(UNIFORMES).map((x) => `"${x}"`).join(' y ')}`);
       list = def.anims; at = `packs.${p}.anims`;
     }
     if (!isStrList(list) || !(list as string[]).length) { e.push(`${at}: tiene que ser una lista de animaciones, o { "anims": [...], "sin_props": true }`); continue; }
@@ -350,11 +357,12 @@ export function kitConfigSchema(): Record<string, unknown> {
               properties: {
                 anims: list({ enum: ANIM_NAMES }, { minItems: 1 }),
                 sin_props: { type: 'boolean', description: 'true: el pack sale sin las pelotas dibujadas (futbol, voley, basquet, tenis, beisbol y la bala) porque el juego las mueve con su física. El cuerpo queda igual pixel a pixel y la posición de cada pelota va en el dato por cuadro `objetos`. Cada pelota quitada sale suelta, dibujada igual, en objetos/pelotas.png (`pelotas` del manifiesto). Lo agarrado (raqueta, bate, garrocha, jabalina, el guante) sí sale.' },
+                vestuario: { enum: Object.keys(UNIFORMES), description: 'Un uniforme para todos los atletas del pack, encima de su ropa: "judogi" (blanco) o "judogi_azul". El cinturón sale del color de su equipo. Si la ficha trae su propia variante para el pack (wardrobe), manda la de la ficha.' },
               },
             },
           ],
         },
-        description: 'Cada pack es un atlas por atleta: { "base": ["idle", "walk", "run"] }, o { "voley": { "anims": ["vb_bump", "spike"], "sin_props": true } } para que salga sin las pelotas dibujadas. Con `alias`, una animación sale con el nombre del juego.',
+        description: 'Cada pack es un atlas por atleta: { "base": ["idle", "walk", "run"] }, o { "voley": { "anims": ["vb_bump", "spike"], "sin_props": true } } para que salga sin las pelotas dibujadas, o { "judo": { "anims": [...], "vestuario": "judogi" } } con un uniforme para todos. Con `alias`, una animación sale con el nombre del juego.',
       },
       alias: { type: 'object', propertyNames: id, additionalProperties: { enum: ANIM_NAMES }, description: 'Nombres del juego para animaciones del motor que están en algún pack: { "burla_familia_gg": "burla_pulgar" }. Salen con el nombre del juego (una animación puede tener varios). Si el nombre termina en _<equipo>, solo la trae el atleta de ese equipo (como taunt_<id> solo su dueño).' },
       pruebas: { type: 'object', additionalProperties: list({ type: 'string' }), description: 'Qué packs carga cada prueba del juego. Se copia al manifiesto.' },
@@ -535,6 +543,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
   const files = buildSportsKit({
     athletes: humans, cells, cell: cfg.celda ?? 48, filas: cfg.filas, datos: parts.has('atletas') ? datos : false, atlas: true,
     packDefs: conAlias(Object.fromEntries(Object.entries(cfg.packs).map(([k, p]) => [k, packAnims(p)])), cfg.alias), sinProps: packsSinProps(cfg.packs),
+    uniformes: packsUniforme(cfg.packs), coloresEquipo: Object.fromEntries(Object.entries(inputs.equipos ?? {}).flatMap(([eq, t]) => (Array.isArray(t.colores) ? [[eq, t.colores as string[]]] : []))),
     packs: parts.has('atletas') ? Object.keys(cfg.packs) : [], quick: opts.quick, alias: cfg.alias,
     equipoDe: Object.fromEntries(Object.entries(inputs.equipos ?? {}).flatMap(([eq, t]) => t.atletas.map((a) => [a, eq]))),
     retratos: parts.has('retratos') && cfg.retratos !== false, cabecitas: parts.has('cabecitas') && cfg.cabecitas !== false,

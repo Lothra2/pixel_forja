@@ -131,6 +131,16 @@ export interface Pose {
   props?: PropState[];
   /** la forma de cada mano (burlas, saludos): ver HandShape */
   hands?: { near?: HandShape; far?: HandShape };
+  /**
+   * Cuadro girado (lote B4B6 bis): el personaje se dio vuelta a mitad de la animación (el seoi nage se mete de
+   * espaldas). La pose se piensa mirando hacia donde mira ahora, y el juego espeja el sprite y sus datos en ese cuadro.
+   */
+  girado?: boolean;
+  /**
+   * Dónde se apoya lo que se carga, si no es entre las manos: `back` = arriba de la espalda (el rival cargado a la
+   * espalda en el seoi nage). Exporta la `carga` como `load`, pero no levanta los brazos.
+   */
+  carryAt?: 'back';
 }
 
 export interface AnimClip {

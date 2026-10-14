@@ -938,6 +938,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     const top = Math.min(joints.handNear[1], joints.handFar[1]) - Math.floor(d.hand / 2);
     joints.carry = [(joints.handNear[0] + joints.handFar[0]) / 2, top];
   }
+  // cargado a la espalda: la base va arriba de la espalda, detrás de los hombros (sigue la inclinación del torso)
+  if (pose.carryAt === 'back') joints.carry = J(local(-Math.ceil(d.torsoW / 2), d.torsoH));
   const held = heldAt as { p: [number, number]; angle: number; behind: boolean } | null;
   // cada pelota como la pinta blob: de round(c - r) a round(c - r) + s - 1, así que su centro continuo es el borde + s / 2
   const balls = pelotas.map(({ kind, c, behind }): BallAt => {

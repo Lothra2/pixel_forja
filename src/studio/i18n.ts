@@ -870,8 +870,9 @@ const ANIM_LABELS: Record<string, [string, string]> = {
   climb_pole: ['Trepar el poste', 'Climb pole'], pole_idle: ['Quieto en el poste', 'Pole idle'], pole_punch: ['Golpe arriba desde el poste', 'Pole punch'], pole_slide: ['Deslizarse por el poste', 'Pole slide'],
   pole_kick_down: ['Patada abajo desde el poste', 'Pole kick down'], pole_shake: ['Sacudir el poste', 'Shake the pole'], grab_leg_up: ['Jalar del pie', 'Grab leg up'],
   sleep: ['Dormir enroscado', 'Sleep curled up'], scratch: ['Rascarse', 'Scratch'], jump_wall: ['Saltar a un muro', 'Jump onto a wall'],
-  vault_fail: ['Garrocha que no llega', 'Vault fail'], judo_grip: ['Agarre de solapa (judo)', 'Judo lapel grip'], judo_throw: ['Proyección de judo', 'Judo throw'], judo_thrown: ['Proyectado (judo)', 'Judo thrown'],
+  vault_fail: ['Garrocha que no llega', 'Vault fail'], judo_grip: ['Agarre de solapa (judo)', 'Judo lapel grip'], judo_throw: ['Seoi nage (proyección de judo)', 'Seoi nage (judo throw)'], judo_thrown: ['Proyectado (judo)', 'Judo thrown'],
   dodge_jump: ['Saltar para esquivar', 'Dodge jump'], bat_stance: ['Guardia de bateo (Chapita)', 'Batting stance'], bat_swing: ['Batazo con palo de escoba', 'Broomstick swing'], tejo_throw: ['Lanzar el tejo', 'Tejo throw'],
+  osoto_gari: ['O-soto-gari (barrida por fuera)', 'O-soto-gari'], osoto_gari_thrown: ['Barrido por o-soto-gari', 'Swept by o-soto-gari'], bow: ['Rei (saludo de judo)', 'Rei (judo bow)'],
   bite: ['Morder', 'Bite'], bark: ['Ladrar', 'Bark'], howl: ['Aullar (escudo)', 'Howl (shield)'], pickup: ['Recoger botín', 'Pick up loot'], dig: ['Cavar', 'Dig'], hurt: ['Recibe golpe', 'Hurt'],
 };
 
