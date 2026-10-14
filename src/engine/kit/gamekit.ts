@@ -27,6 +27,8 @@ import { puertoMap } from '../world/puertoMap';
 import { ciudadMap } from '../world/ciudadMap';
 import { fraguaMap } from '../world/fraguaMap';
 import { emberParticle } from '../world/fraguaObjectsB';
+import { corazonMap, ARENA_DIABLO } from '../world/corazonMap';
+import { snowParticle, blizzardParticle } from '../world/corazonObjectsB';
 import { JAULA_CANDADO } from '../world/fraguaObjects';
 import { thiefFigure } from '../world/ciudadObjectsB';
 import { sleepParticle } from '../world/ciudadObjects';
@@ -102,6 +104,8 @@ export interface KitOptions {
   sinMundo5?: boolean;
   /** sin el Mundo 6 (mapa, enemigos, el Carcelero y la Dragona de Brasa) */
   sinMundo6?: boolean;
+  /** sin el Mundo 7 (mapa, enemigos, la Reina Escarcha, el Guardián y el Diablo) */
+  sinMundo7?: boolean;
 }
 
 const LUZ_IDS_KIT = ['bosque', 'catedral', 'galerias', 'faro', 'ciudad'];
@@ -671,9 +675,29 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     };
   })() : null;
   if (fragua) log('fragua lista');
+  // el Mundo 7: El Corazón Helado, con el lago de hielo negro, los refugios de la ventisca y la arena del Diablo
+  const corazonBig = opts.sinMundo7 ? null : corazonMap();
+  const corazon = corazonBig ? (() => {
+    const base = exportarMundo(corazonBig, 'mundo7', 'El Corazón Helado', 'mundo/mundo7_agua.png', 'portal_hielo') as Record<string, unknown>;
+    const extra: Record<string, unknown> = {};
+    for (const p of [snowParticle(), blizzardParticle()]) { const n = `mundo/particulas/${p.name}.png`; once(png(n, strip(p.frames))); extra[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
+    delete base.reflejo;
+    return {
+      ...base,
+      particulas: { ...parts, ...extra },
+      agua_helada: { notas: 'La capa agua de este mundo son los agujeros de agua negra del lago (no se caminan: ya son sólidos en colision). Sin reflejo. La espuma es la escarcha de la orilla del agujero.' },
+      hogueras: { objeto: 'hoguera_hueso', notas: 'Las 5 entidades punto_guardado con hoguera: true son la fogata del piso (guardan, curan, calientan y son la tienda). El objeto hoguera_hueso va en la capa objetos justo arriba del punto. Luz cálida #ffb060 de radio 240: es la única luz tibia del piso, ahí se descongela la heroína.' },
+      refugios: { entidades: ['columna_hielo', 'gigante'], objetos: 'columna_hielo_<0..3> y gigante_congelado_<0..2> (y sus _b)', notas: 'Cada entidad columna_hielo o gigante es un refugio de la ventisca: el punto es el centro de la base sólida del objeto (prop objeto, mismo lugar que en la capa objetos) y `ancho` el ancho de esa base en px. El lado de sotavento (el contrario al viento) protege. Hay más en el Puente y en el Lago. Los gigantes traen la anim respira (2 cuadros a 1 fps, se les mueve un ojo): ponerla de vez en cuando, no siempre. Las columnas y los gigantes brillan apenas (luz fría chiquita).' },
+      hielo_fino: { entidad: 'hielo_fino', objeto: 'hielo_fino_<0..3>', anims: { quieto: 'quieto', cruje: 'cruje', roto: 'roto' }, notas: 'Rectángulos (x, y arriba a la izquierda, width y height múltiplos de 32) sobre el lago, siempre caminables. El juego llena cada parche con hielo_fino_<v> en cuadros de 64 (la variante por posición: (floor(x / 64) * 3 + floor(y / 64) * 5) % 4) y recorta el último si sobra. Si la heroína se queda parada: cruje (una vez) y después roto. Ningún camino obligado pasa por el hielo fino.' },
+      arena: { radio: ARENA_DIABLO.radio, braseros: { entidad: 'brasero_hueso', objeto: 'brasero_hueso', distancia: ARENA_DIABLO.brasero, anims: { apagado: 'apagado', prenderse: 'prenderse', prendido: 'prendido', congelado: 'congelado' } }, trono: 'trono_diablo', notas: 'Los 4 braseros de hueso van en diagonal a unos 170 px del centro de la arena, cada entidad en el mismo punto que su objeto. Arrancan apagados; la heroína los prende (prenderse una vez y después prendido); el aliento del Diablo los deja en congelado. El trono (entidad trono_diablo, mismo punto que su objeto) va al norte de la arena. La figura con alto: true al lado del trono es la Ladrona con la última llama (objeto figura_ultima_llama: idle y al vencer al Diablo irse).' },
+      frio: { notas: 'Todo el piso es oscuridad casi total. La ventisca de la zona con ventisca: siempre (El Puente de las Cadenas) no para nunca; en las demás va y viene. Partículas nuevas: nieve (nieve negra con ceniza) y ventisca (la raya de nieve de lado, para cuando sopla).' },
+      notas_luz: 'Sin sombras horneadas con dirección: los objetos traen solo la sombra de contacto al pie (campo sombra). La luz es de las hogueras de hueso (#ffb060, 240), los braseros de la arena prendidos (220), el trono (rojo, 260), la Ladrona (rojo chiquito), el farol de la heroína, sus luces compañeras y los ojos del Diablo (personajes.diablo.luz_ojos). Las columnas y los gigantes brillan apenas frío (70 y 140).',
+    };
+  })() : null;
+  if (corazon) log('corazón listo');
   // `mundo` sigue siendo el Bosque (un juego viejo lo lee así); `mundos` trae todos en orden de bajada
   manifest.mundo = bosque;
-  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : []), ...(puerto ? [{ id: 'mundo4', ...puerto }] : []), ...(ciudad ? [{ id: 'mundo5', ...ciudad }] : []), ...(fragua ? [{ id: 'mundo6', ...fragua }] : [])];
+  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : []), ...(puerto ? [{ id: 'mundo4', ...puerto }] : []), ...(ciudad ? [{ id: 'mundo5', ...ciudad }] : []), ...(fragua ? [{ id: 'mundo6', ...fragua }] : []), ...(corazon ? [{ id: 'mundo7', ...corazon }] : [])];
   log('mundo listo');
 
   let introLogo: Record<string, unknown> | null = null;
