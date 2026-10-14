@@ -99,7 +99,12 @@ export const packAnims = (p: string[] | PackDef): string[] => (Array.isArray(p) 
 export const packsSinProps = (packs: KitConfig['packs']): string[] => Object.entries(packs).filter(([, p]) => !Array.isArray(p) && p.sin_props === true).map(([k]) => k);
 
 /** Un equipo del archivo de equipos. Lo que no se usa para armar el kit pasa al manifiesto tal cual. */
-export interface TeamDef { nombre: string; atletas: string[]; mascota?: string; colores?: string[]; [k: string]: unknown }
+export interface TeamDef {
+  nombre: string; atletas: string[]; mascota?: string; colores?: string[];
+  /** la música del equipo, su acorde de victoria (`acorde_<equipo>`): una de `SONIDOS.musica` */
+  musica?: string;
+  [k: string]: unknown;
+}
 
 export const INCLUDED_CAST = ['familia', 'familia_rpg', 'heroes'] as const;
 export type IncludedCast = (typeof INCLUDED_CAST)[number];
@@ -429,6 +434,8 @@ export function validateTeams(teams: unknown, athletes: string[], animals: strin
       seen.set(a, id);
     });
     if (t.mascota !== undefined && !animals.includes(t.mascota as string)) e.push(`equipos.${id}.mascota: no hay ficha del animal "${t.mascota}".${suggest(String(t.mascota), animals)}`);
+    // la música del equipo (su acorde de victoria): tiene que ser una del motor, para que el kit la pueda exportar
+    if (t.musica !== undefined && (typeof t.musica !== 'string' || !SONIDOS.musica.includes(t.musica))) e.push(`equipos.${id}.musica: el motor no tiene la música "${t.musica}".${suggest(String(t.musica), SONIDOS.musica)}`);
   }
   return e;
 }
@@ -592,6 +599,11 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     }
     if (sinCodificar.length) warnings.push(`audio.sfx: sin codificador (ffmpeg) salen en WAV: ${sinCodificar.join(', ')}`);
     opts.progress?.(`audio: ${Object.values(sounds).reduce((n, v) => n + (v?.length ?? 0), 0)} sonidos${comprimido ? (opts.codificar ? ', comprimidos' : ', sin codificador') : ''}`);
+  }
+  // la música de cada equipo (su acorde de victoria) tiene que salir en el kit, o el juego no la encuentra
+  if (parts.has('audio')) {
+    const faltan = Object.entries(inputs.equipos ?? {}).filter(([, t]) => t.musica && !sounds.musica?.includes(t.musica)).map(([id, t]) => `${id} (${t.musica})`);
+    if (faltan.length) warnings.push(`equipos: la música de ${faltan.join(', ')} no va en audio.musica, así que el kit no la trae`);
   }
   // voces en blips: 4 variantes por personaje, el juego elige una por letra
   let voces: Record<string, ListenVoice> | undefined;

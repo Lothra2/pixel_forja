@@ -47,7 +47,24 @@ Todos en bucle sin corte y en mono, como los de H1. Cada uno dura sus compases e
 | `pana_dale` | Caracas | Joropo en Re mayor, 3/4 a 180. El arpa llanera lleva la melodía con el bordón en el 2 y el 3. El cuatro rasguea, arpegia y apaga, y las maracas no paran, con el acento que cambia entre 3/4 y 6/8 | 32 s |
 | `gaita_lago` | Maracaibo | Gaita zuliana en La menor, 6/8. El furro hace el "rum, rum-rum", la tambora alterna parche y palitos en el aro, la charrasca raspa y las maracas siguen. El coro canta en dos voces y en la segunda vuelta se dobla a la octava | 34.3 s |
 
-Saigón ya tenía `saigon_chay`, y la marcha de la ceremonia es `marcha_nekketsu`. `cafe_neblina` llegó en H4. Siguen pendientes del pedido `vestuario` y los `acorde_<equipo>`.
+Saigón ya tenía `saigon_chay`, y la marcha de la ceremonia es `marcha_nekketsu`. `cafe_neblina` llegó en H4 y los `acorde_<equipo>` en H7. Sigue pendiente del pedido `vestuario`.
+
+### El acorde de victoria de cada equipo (lote H7)
+
+Un remate corto por equipo para cuando gana: 4 compases, entre 3.9 y 5.2 s, sin bucle. Cada uno en el estilo de su gente y terminando en la tónica.
+
+| Id | Equipo | Qué es | Duración |
+|---|---|---|---|
+| `acorde_familia` | Familia GG | Fanfarria en Sol mayor con el cuatro venezolano rasgueando. La melodía cierra con dos Sol, uno grave y uno agudo: "G, G". Thor ladra al final (el mismo `ladrido` del kit) | 4.8 s |
+| `acorde_instituto` | Instituto Nekketsu | Rock japonés de los 80 como `tema_instituto`: power chords en La menor, Fa y Sol con palm mute, el lead que sube y el remate en La mayor con el bend y el platillo | 3.9 s |
+| `acorde_rong` | Rồng Sài Gòn | El đàn tranh sube en pentatónica de Sol, la sáo lo dobla, los tambores del festival repican y cierra el gong | 5.2 s |
+| `acorde_rolos` | Rolos de Chapinero | Torbellino andino en Re mayor, 3/4: la quena, el tiple rasgueado en octavas, el bombo andino y el chucho | 4.7 s |
+| `acorde_panas` | Los Panas de Caracas | Joropo en Re mayor como `pana_dale`: el arpa con su bordón, el cuatro y las maracas, que se callan de golpe en el remate | 4.5 s |
+| `acorde_maracuchos` | Maracuchos del Lago | Gaita zuliana en 6/8 como `gaita_lago`: el coro en terceras, furro, tambora, charrasca y maracas, y el remate en La mayor con un "rum" largo del furro | 4.7 s |
+
+**El acorde de cada equipo va en su ficha:** en el archivo de equipos, `"musica": "acorde_familia"`, como en el manifiesto del pedido. Pasa al manifiesto tal cual, así el juego lo busca por equipo: `m.audio.musica[m.equipos[ganador].musica]`.
+- La validación revisa que la música exista en el motor y sugiere el nombre si está mal escrito.
+- Si un equipo pide un acorde que no va en `audio.musica`, el kit avisa: el juego no lo encontraría.
 
 ### Los mundos de pelota (lote H3)
 
@@ -102,6 +119,19 @@ Para las cuatro pruebas que seguían con la música del chip. Igual que los de H
   - `mar`: para Hạ Long y Margarita. Un rumor grave que no para y tres olas en los 12 s. Cada una crece, revienta con un golpe ancho que se apaga despacio y se devuelve siseando por la arena. Una gaviota llama dos veces seguidas y otra más tarde. La última ola cae justo en el empalme del bucle, así que no se nota la vuelta.
   - `cafetal`: para Cocora. La brisa fresca de la montaña, pájaros que silban en frases cortas, la bandada de loros que pasa graznando y una vaca a lo lejos.
   - `llano`: para Apure. El viento abierto de la sabana al atardecer, las chicharras que crecen y bajan dos veces sin callarse nunca, el alcaraván dos veces ("cá-cá-cá-cáaa") y el ganado a lo lejos.
+- **Del lote H7**, los del resto de los mundos. Los nombres son los del pedido donde el pedido los traía (`trafico_saigon`, `llovizna_bogota`, `lago_noche`, `azotea_noche`, `comuna`, `liceo`):
+  - `trafico_saigon`: la calle de Saigón. El río de motos que no para (catorce que pasan, cerca y lejos, algunas acelerando), las bocinas que se contestan, el parlante del pan ("bánh mì nóng giòn đây", con los tonos del vietnamita) y la gente.
+  - `hoian_noche`: Hội An de noche. El río que lame los botes, los grillos, las ranas del arrozal ("ộp ộp"), un sampán que pasa remando, un tambor del festival lejos y turistas que conversan.
+  - `llovizna_bogota`: La Candelaria. La llovizna fina con sus gotitas, alguien que camina por el adoquín mojado, las palomas, dos campanadas de la iglesia y, en la cancha de tejo de la esquina, una mecha que revienta y el "¡eso!".
+  - `lago_noche`: la cancha del lago en Maracaibo. El calor quieto, los insectos de la noche, el lago que apenas se mueve, el trueno del relámpago del Catatumbo muy lejos y uno que bota el balón, con el chirrido de las zapatillas.
+  - `azotea_noche`: la azotea de Caracas. La ciudad que zumba abajo, los sapitos de la noche caraqueña (ese "tink" de vidrio), dos perros del cerro que se contestan con el rebote en los edificios, un helicóptero que cruza y una moto que sube la avenida.
+  - `atardecer_cartagena`: las azoteas de Cartagena. La brisa del mar entre las casas, el coche de caballos al trote por el adoquín, la palenquera que pregona ("¡alegría, cocadita!") y el picó de una casa, que retumba a través de la pared.
+  - `comuna`: la Comuna 13. El boom bap del parlante de los bailarines, el zumbido de las escaleras eléctricas, la gente que sube y mira, los aplausos cuando el b-boy remata, un perro y una moto que sube la loma.
+  - `carnaval`: el carnaval de Barranquilla. El gentío, la comparsa que se acerca y se va con tambora, llamador, alegre y maracas, los pitos, el grito cuando pasa la reina y la pólvora.
+  - `pinos_dalat`: los pinos de Đà Lạt. El susurro alto de las agujas, el viento fresco más abajo, el chào mào ("chít-chít-chào-mào"), el tu hú lejos y una moto que baja la loma.
+  - `liceo`: el patio del liceo en el recreo. Los niños que gritan y corren ("¡pásala!", "¡aquí!", las risas), el balón de goma contra el piso y la pared, todo con el eco del techo.
+- **Cómo están hechos los de H7:** el fondo (tráfico, agua, viento, lluvia, insectos) se funde en el empalme como los demás. Lo que pasa (motos, perros, campanas, gente, tambores) va en una capa de 12 s exactos que da la vuelta: un perro que ladra en el empalme suena entero, ni doble ni a medias. Al final se les quita lo que está por debajo de 70 Hz, que un parlante de teléfono no toca y solo le quitaría volumen a lo demás.
+- **Sin melodías:** el tema del mundo suena encima. Lo único con ritmo son los tambores de la comparsa, el parlante de la Comuna 13 y el picó de Cartagena, lejos y bajitos.
 
 ## Voces en blips
 
@@ -146,6 +176,9 @@ gallo.on('animationupdate', (anim, frame) => {
 // el ambiente del mundo, en bucle debajo de la música
 this.sound.play('mar', { loop: true, volume: 0.35 });
 
+// el acorde de victoria del equipo que ganó (va en su ficha de equipo)
+this.sound.play(m.equipos[ganador].musica);
+
 // un golpe distinto cada vez
 this.sound.play(Phaser.Utils.Array.GetRandom(['golpe_1', 'golpe_2', 'golpe_3']));
 
@@ -168,3 +201,4 @@ function hablar(scene, id, texto, cps = 18) {
 - **`victoria` y `victoria_banda`:** `victoria` es la fanfarria de GG Abyss y no se cambió para no tocar ese kit. Para Nekketsu va `victoria_banda`, que combina con la marcha.
 - **El agua es ruido filtrado y burbujas sintetizadas** (lote H5). El chapuzón y la brazada se reconocen por la forma (el golpe, el "shhh", las burbujas que suben y las gotas), pero son de videojuego, no grabaciones. Repetida en cada brazada, conviene variarle un poco el `rate` y el volumen en el juego para que no suene a máquina.
 - **Los ambientes son de 12 s.** En un juego de 2 o 3 minutos se oye la vuelta si uno pone atención: la gaviota y el alcaraván llaman siempre en el mismo segundo. Si molesta, el juego puede arrancar el ambiente en un punto al azar.
+- **La gente de los ambientes no dice nada.** El murmullo, los gritos del recreo, la palenquera y el parlante del pan son sílabas con las vocales en su lugar (una sierra por dos formantes), no palabras: se reconocen por el ritmo y la entonación. La voz hablada sigue fuera, como en el pedido.

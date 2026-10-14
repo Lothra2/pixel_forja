@@ -1185,7 +1185,13 @@
                       "champeta_murallas",
                       "cafe_neblina",
                       "halong_remos",
-                      "pajarillo_llano"
+                      "pajarillo_llano",
+                      "acorde_familia",
+                      "acorde_instituto",
+                      "acorde_rong",
+                      "acorde_rolos",
+                      "acorde_panas",
+                      "acorde_maracuchos"
                     ]
                   },
                   {
@@ -1216,7 +1222,17 @@
                       "magia",
                       "mar",
                       "cafetal",
-                      "llano"
+                      "llano",
+                      "trafico_saigon",
+                      "hoian_noche",
+                      "llovizna_bogota",
+                      "lago_noche",
+                      "azotea_noche",
+                      "atardecer_cartagena",
+                      "comuna",
+                      "carnaval",
+                      "pinos_dalat",
+                      "liceo"
                     ]
                   },
                   {
