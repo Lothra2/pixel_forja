@@ -20,6 +20,8 @@ function float(c: Ctx) {
 
 export const swim: AnimDef = {
   name: 'swim', pack: 'swim', fps: 10, loop: true, strideL: 2, lateral: true, views: ['side', 'front', 'back'],
+  // la mano de adelante entra al agua en el cuadro 0 y la otra en el 4
+  events: [{ type: 'brazada', phase: 0 }, { type: 'brazada', phase: 4 / 8 }],
   build: (c) => {
     const L = c.L;
     const fl = float(c);
@@ -53,6 +55,8 @@ export const swim: AnimDef = {
 /** Espalda: boca arriba, brazos estirados como aspas que entran detrás de la cabeza. Avanza con la cabeza primero. */
 export const swimBack: AnimDef = {
   name: 'swim_back', pack: 'swim', fps: 9, loop: true, strideL: 1.8, lateral: true, backward: true, views: ['side', 'front', 'back'],
+  // cada mano entra detrás de la cabeza: la de lejos en el cuadro 0 y la de cerca en el 4
+  events: [{ type: 'brazada', phase: 0 }, { type: 'brazada', phase: 4 / 8 }],
   build: (c) => {
     const L = c.L;
     const fl = float(c);
@@ -84,6 +88,8 @@ export const swimBack: AnimDef = {
  */
 export const swimBreast: AnimDef = {
   name: 'swim_breast', pack: 'swim', fps: 9, loop: true, strideL: 1.5, lateral: true, views: ['side', 'front', 'back'],
+  // la patada: los brazos se estiran y la cabeza vuelve al agua (cuadro 5)
+  events: [{ type: 'brazada', phase: 5 / 8 }],
   build: (c) => {
     const L = c.L, u = c.u;
     const fl = float(c);
@@ -120,6 +126,8 @@ export const swimBreast: AnimDef = {
  */
 export const swimFly: AnimDef = {
   name: 'swim_fly', pack: 'swim', fps: 10, loop: true, strideL: 2, lateral: true, views: ['side', 'front', 'back'],
+  // las dos manos entran juntas al frente y salpican (cuadro 0)
+  events: [{ type: 'brazada', phase: 0 }],
   build: (c) => {
     const L = c.L, u = c.u;
     const fl = float(c);

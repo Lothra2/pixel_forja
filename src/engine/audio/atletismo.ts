@@ -1,5 +1,6 @@
 import { Mixer, seq, rng, normalize } from './synth';
-import { sinDC, terceraAbajo, escala, acorde, raiz, quinta, maraca, rasgueo, tiempo } from './mundos';
+import { sinDC, terceraAbajo, escala, acorde, raiz, quinta, maraca, rasgueo, tiempo, efecto } from './mundos';
+import type { Note } from './synth';
 import { bandolina, tranh } from './pelota';
 
 /**
@@ -7,7 +8,9 @@ import { bandolina, tranh } from './pelota';
  * Cafetero (Vallas), la bahía de Hạ Long (Natación) y los Llanos de Apure (Jabalina). Champeta de picó, bambuco
  * acelerado con tiple y bandola, el canto de los remeros de Hạ Long con đàn bầu y un pajarillo llanero con arpa y
  * bandola. Todo sintetizado con código, cada pieza con su semilla: sale igual siempre. Los temas van en bucle sin
- * corte (el mezclador da la vuelta) y en mono, como los de H2 y H3.
+ * corte (el mezclador da la vuelta) y en mono, como los de H2 y H3. Y los efectos de la natación y la garrocha
+ * (lote H5): el chapuzón de la salida, la brazada, la bocina de la salida de natación y la garrocha que se clava y se
+ * dobla.
  */
 
 type Nota = { t: number; dur: number; f: number; units: number };
@@ -254,4 +257,79 @@ export const MUSIC_ATLETISMO = {
   cafe_neblina: temaBambuco,
   halong_remos: temaHaLong,
   pajarillo_llano: temaPajarillo,
+};
+
+// ---------- efectos de la natación y la garrocha (lote H5) ----------
+const N = (m: Mixer, n: Note) => m.add(n);
+/** Burbujas: "blup" cortos que suben de tono, cada vez más suaves. */
+function burbujas(m: Mixer, R: () => number, t0: number, t1: number, n: number, vol: number, f0 = 320) {
+  for (let k = 0; k < n; k++) {
+    const t = t0 + (t1 - t0) * (k / n) + R() * 0.02, f = f0 + R() * f0 * 1.6, v = vol * (0.55 + R() * 0.45) * Math.pow(0.8, k);
+    N(m, { t, dur: 0.012, f, wave: 'sine', vol: v, a: 0.002, s: 1, r: 0.03, bend: { semis: 7 + R() * 5, len: 0.03 } });
+  }
+}
+/** Gotas que caen de vuelta al agua: tics agudos y sueltos. */
+function gotas(m: Mixer, R: () => number, t0: number, t1: number, n: number, vol: number) {
+  for (let k = 0; k < n; k++) {
+    const t = t0 + R() * (t1 - t0), v = vol * (0.4 + R() * 0.6) * (1 - (t - t0) / (t1 - t0) * 0.6);
+    N(m, { t, dur: 0.002, f: 12000, wave: 'noise', vol: v, s: 1, r: 0.012, hp: 0.6 });
+    N(m, { t, dur: 0.006, f: 1400 + R() * 1800, wave: 'sine', vol: v * 0.5, s: 1, r: 0.02, bend: { semis: 5, len: 0.015 } });
+  }
+}
+
+export const SFX_ATLETISMO = {
+  /**
+   * El chapuzón de la salida (0.9 s): el cuerpo que pega plano contra el agua, el agua que se abre con un "shhh" grave,
+   * las burbujas que suben y las gotas que caen de vuelta. Va en el evento `impacto` de `dive`.
+   */
+  chapuzon: () => efecto(1.3, 61, (m, R) => {
+    N(m, { t: 0, dur: 0.012, f: 4000, wave: 'noise', vol: 1, s: 1, r: 0.07, lp: 0.55 });
+    N(m, { t: 0, dur: 0.02, f: 95, wave: 'sine', vol: 0.9, s: 1, r: 0.16, bend: { semis: -7, len: 0.12 } });
+    N(m, { t: 0.01, dur: 0.12, f: 1500, wave: 'noise', vol: 0.75, a: 0.02, d: 0.1, s: 0.5, r: 0.3, lp: 0.12 });
+    N(m, { t: 0.03, dur: 0.1, f: 6000, wave: 'noise', vol: 0.35, a: 0.02, s: 0.6, r: 0.25, hp: 0.35, lp: 0.6 });
+    // el agua que se vuelve a juntar debajo, mientras suben las burbujas y caen las gotas
+    N(m, { t: 0.15, dur: 0.35, f: 800, wave: 'noise', vol: 0.18, a: 0.05, d: 0.2, s: 0.6, r: 0.25, lp: 0.06 });
+    burbujas(m, R, 0.08, 0.55, 14, 0.4);
+    gotas(m, R, 0.18, 0.8, 22, 0.35);
+  }),
+  /**
+   * Una brazada de crol (0.35 s): la mano que entra al agua ("plof"), el jalón que empuja el agua y dos o tres burbujas.
+   * Corta y sin cola, para que se pueda tocar en cada brazada sin taparse (el juego le puede variar el `rate`).
+   */
+  brazada: () => efecto(0.6, 62, (m, R) => {
+    N(m, { t: 0, dur: 0.01, f: 2500, wave: 'noise', vol: 0.8, a: 0.004, s: 1, r: 0.06, lp: 0.35 });
+    N(m, { t: 0, dur: 0.015, f: 160, wave: 'sine', vol: 0.45, s: 1, r: 0.07, bend: { semis: -5, len: 0.05 } });
+    N(m, { t: 0.05, dur: 0.1, f: 900, wave: 'noise', vol: 0.4, a: 0.04, d: 0.05, s: 0.6, r: 0.12, lp: 0.07 });
+    burbujas(m, R, 0.06, 0.22, 3, 0.25, 420);
+    gotas(m, R, 0.08, 0.3, 5, 0.2);
+  }),
+  /**
+   * La bocina electrónica de la salida de natación (0.6 s): el "biiip" áspero del sistema de salida, con el zumbido
+   * del parlante. Distinta del ¡YA! de las otras pruebas, para que se reconozca la piscina.
+   */
+  salida_natacion: () => efecto(0.9, 63, (m) => {
+    const dur = 0.5;
+    N(m, { t: 0, dur, f: 830, wave: 'square', duty: 0.42, vol: 0.55, a: 0.006, s: 1, r: 0.05, lp: 0.6, vib: [55, 0.12, 0] });
+    N(m, { t: 0, dur, f: 1245, wave: 'saw', vol: 0.3, a: 0.006, s: 1, r: 0.05, lp: 0.5 });
+    N(m, { t: 0, dur, f: 415, wave: 'square', duty: 0.5, vol: 0.18, a: 0.006, s: 1, r: 0.05, lp: 0.4 });
+    N(m, { t: 0, dur: 0.02, f: 6000, wave: 'noise', vol: 0.25, s: 1, r: 0.02, hp: 0.4 });
+  }),
+  /**
+   * La garrocha (0.7 s): la punta que se clava en la cajita con un golpe de metal, la pértiga de fibra que se dobla
+   * con un "uuum" que sube, y el latigazo cuando se endereza y suelta al atleta. Va en el evento `despegue` de
+   * `pole_vault`: el latigazo cae 1/3 s después, justo en `suelta` (4 cuadros a 12 fps).
+   */
+  garrocha: () => efecto(1.2, 64, (m) => {
+    const SUELTA = 4 / 12;
+    N(m, { t: 0, dur: 0.008, f: 3000, wave: 'noise', vol: 0.7, s: 1, r: 0.04, lp: 0.4 });
+    N(m, { t: 0, dur: 0.015, f: 120, wave: 'sine', vol: 0.7, s: 1, r: 0.1, bend: { semis: -4, len: 0.06 } });
+    [[880, 0.4], [2310, 0.32], [3730, 0.2], [5200, 0.1]].forEach(([f, v], k) => N(m, { t: 0, dur: 0.003, f, wave: 'sine', vol: v, s: 1, r: 0.18 / (1 + k * 0.6) }));
+    // la pértiga que se dobla: un tono grave que sube, con el crujido de la fibra
+    N(m, { t: 0.03, dur: 0.27, f: 70, wave: 'triangle', vol: 0.55, a: 0.05, s: 0.9, r: 0.08, bend: { semis: 14, len: 0.29 }, vib: [9, 0.25, 0.05] });
+    N(m, { t: 0.03, dur: 0.27, f: 140, wave: 'saw', vol: 0.12, a: 0.07, s: 0.8, r: 0.08, lp: 0.15, bend: { semis: 14, len: 0.29 } });
+    N(m, { t: 0.05, dur: 0.24, f: 2500, wave: 'noise', vol: 0.12, a: 0.08, s: 0.7, r: 0.06, hp: 0.3, lp: 0.45 });
+    // el latigazo al enderezarse: un "fiuu" que sube y se va, con el "tung" de la pértiga
+    N(m, { t: SUELTA, dur: 0.12, f: 5000, wave: 'noise', vol: 0.5, a: 0.04, s: 0.8, r: 0.2, hp: 0.45, lp: 0.75, bend: { semis: 12, len: 0.15 } });
+    N(m, { t: SUELTA, dur: 0.02, f: 210, wave: 'triangle', vol: 0.35, s: 1, r: 0.25, vib: [14, 0.4, 0] });
+  }),
 };

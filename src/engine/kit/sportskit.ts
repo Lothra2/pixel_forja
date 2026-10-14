@@ -188,7 +188,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     ...(opts.filas ? { filas: rows } : {}),
     notas: [
       'Hojas: fila = dirección (orden de `direcciones`), columna = cuadro. El pivote es el punto de apoyo (pies) y no se mueve.',
-      'eventos: en qué cuadro cae cada paso, golpe (impacto), despegue, suelta (pelota, bala, jabalina, hechizo) y aterrizaje.',
+      'eventos: en qué cuadro cae cada paso, golpe (impacto), despegue, suelta (pelota, bala, jabalina, hechizo), aterrizaje y brazada (la mano entra al agua).',
       'avance: pixeles que avanza el cuerpo en un ciclo sin patinar. Ritmo = velocidad_del_juego * cuadros / (avance * fps).',
       'elevacion: pixeles que el juego sube el sprite en cada cuadro (saltos que no caben en la celda); la sombra queda en el piso.',
       'agua: fila de la superficie en la celda; el juego puede dibujar su piscina detrás y el nadador ya trae el tinte y las gotas.',
