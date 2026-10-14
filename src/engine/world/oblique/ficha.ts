@@ -4,7 +4,7 @@ import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Pa
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
 import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
-import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG, VENEZUELA_APURE_ATARDECER, USO_APURE } from './lugaresPaleta';
+import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG, VENEZUELA_APURE_ATARDECER, USO_APURE, VENEZUELA_BARRIO_TARDE, USO_BARRIO } from './lugaresPaleta';
 import { lugarDe } from './lugares';
 
 /**
@@ -581,10 +581,38 @@ const VENEZUELA_LLANO: Estilo = {
   letreros: ['LLANOS DE APURE'],
 };
 
+
+/** Una calle de barrio de Caracas en la tarde (lote E6). */
+const VENEZUELA_BARRIO: Estilo = {
+  paleta: VENEZUELA_BARRIO_TARDE,
+  uso: USO_BARRIO,
+  horas: ['tarde'],
+  iconos: [
+    { id: 'avila', nombre: 'El Ávila verde con las quebradas y el hotel Humboldt en la cima', donde: 'lejos' },
+    { id: 'ranchos', nombre: 'Los ranchos de ladrillo y bloque que suben por el cerro, con los tanques y las escaleras', donde: 'cerca, atrás' },
+    { id: 'casas', nombre: 'La fila de casas de la calle: frisadas y pintadas o de bloque, con las rejas, el zócalo y la platabanda con cabillas', donde: 'cerca' },
+    { id: 'casa_vecino', nombre: 'La casa verde pastel del vecino con la ventana de reja, el letrero HIELITOS y el tanque azul', donde: 'objeto casa_vecino, en x 640' },
+    { id: 'ventana_rota', nombre: 'La ventana rota: el vidrio estrellado con el hueco', donde: 'objeto ventana_rota, encima de la ventana' },
+    { id: 'abasto', nombre: 'El abasto de la esquina con la santamaría, el mostrador y el letrero ABASTO EL PANA', donde: 'cerca' },
+    { id: 'poste', nombre: 'El poste de luz con el transformador, el enredo de cables y los zapatos colgados', donde: 'cerca' },
+    { id: 'mango', nombre: 'El mango con los mangos maduros', donde: 'cerca' },
+    { id: 'gente', nombre: 'El señor de la silla con el radio, las comadres, los niños que miran y el perro de la acera', donde: 'cerca' },
+    { id: 'calle', nombre: 'El asfalto gastado con el home de tiza y la alcantarilla', donde: 'piso' },
+  ],
+  vida: {
+    ropa_tendida: 'La ropa tendida que se mece con la brisa: 2 cuadros',
+    vecinos: 'El señor que sube el radio, las comadres que señalan y los niños que brincan: 2 cuadros',
+    perro: 'El perro de la acera que se rasca: 2 cuadros',
+    zamuros: 'Los zamuros que dan vueltas sobre El Ávila, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['ABASTO EL PANA', 'HIELITOS', 'A 1 BS'],
+};
+
 const ESTILOS: Record<string, Estilo> = {
   vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD,
   venezuela_playa: VENEZUELA_PLAYA, vietnam_montana: VIETNAM_MONTANA, colombia_caribe: COLOMBIA_CARIBE, venezuela_lago: VENEZUELA_LAGO,
-  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA, venezuela_llano: VENEZUELA_LLANO,
+  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA, venezuela_llano: VENEZUELA_LLANO, venezuela_barrio: VENEZUELA_BARRIO,
 };
 
 /** Los fondos de la capa cerca que son de Hội An (con su estilo). */

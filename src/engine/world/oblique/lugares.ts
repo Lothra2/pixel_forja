@@ -14,6 +14,7 @@ import { MARACAIBO } from './maracaibo';
 import { COCORA } from './cocora';
 import { HALONG } from './halong';
 import { APURE } from './llanos';
+import { BARRIO } from './barrio';
 
 /**
  * Un lugar con todo su arte en un solo sitio (lote E4a): el fondo de la capa cerca, la capa lejos, sus pisos, lo de
@@ -56,7 +57,7 @@ export const LUGARES: Record<string, Lugar> = {
   // lote E5: los escenarios de los cuatro deportes de pelota
   playa_el_agua: MARGARITA, cancha_arcilla_dalat: DALAT, calle_carnaval_barranquilla: BARRANQUILLA, cancha_barrio_maracaibo: MARACAIBO,
   // lote E6: las seis pruebas que seguían pintadas por código
-  valle_cocora: COCORA, bahia_halong: HALONG, morichal_apure: APURE,
+  valle_cocora: COCORA, bahia_halong: HALONG, morichal_apure: APURE, calle_barrio_caracas: BARRIO,
 };
 
 /** El lugar del layout, si es uno de los del registro. */

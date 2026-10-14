@@ -1,5 +1,5 @@
 import type { Color, Paleta } from './paleta';
-import { VENEZUELA_MARGARITA_MEDIODIA, VENEZUELA_MARACAIBO_NOCHE, VENEZUELA_APURE_ATARDECER } from './lugaresPaleta';
+import { VENEZUELA_MARGARITA_MEDIODIA, VENEZUELA_MARACAIBO_NOCHE, VENEZUELA_APURE_ATARDECER, VENEZUELA_BARRIO_TARDE } from './lugaresPaleta';
 
 /**
  * El estilo `venezuela_ciudad`: Caracas de noche. La misma lista de 24 nombres de siempre, con los tonos de la noche:
@@ -65,7 +65,7 @@ export const USO_VENEZUELA: Record<Color, string> = {
 export const HORAS_VENEZUELA = ['noche'];
 
 /** Los lugares de Venezuela con paleta propia, por su fondo (`paralaje.cerca`): Playa El Agua y la cancha de Maracaibo. */
-export const PALETAS_LUGAR_VENEZUELA: Record<string, Paleta> = { playa_el_agua: VENEZUELA_MARGARITA_MEDIODIA, cancha_barrio_maracaibo: VENEZUELA_MARACAIBO_NOCHE, morichal_apure: VENEZUELA_APURE_ATARDECER };
+export const PALETAS_LUGAR_VENEZUELA: Record<string, Paleta> = { playa_el_agua: VENEZUELA_MARGARITA_MEDIODIA, cancha_barrio_maracaibo: VENEZUELA_MARACAIBO_NOCHE, morichal_apure: VENEZUELA_APURE_ATARDECER, calle_barrio_caracas: VENEZUELA_BARRIO_TARDE };
 
 /** La paleta de Venezuela: Caracas de noche, o la del lugar que trae la suya (Margarita, Maracaibo). */
 export function paletaVenezuela(_hora: string, _clima: string[] = [], tema?: string): Paleta {

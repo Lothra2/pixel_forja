@@ -601,3 +601,63 @@ export const USO_APURE: Record<Color, string> = {
   oro: 'el resplandor del sol, la luz del caney',
   bruma: 'la calima naranja del horizonte',
 };
+
+/**
+ * Un barrio de Caracas en la tarde (estilo `venezuela_barrio`): el bloque gris y el ladrillo rojo de los ranchos que
+ * suben por el cerro, las casas pintadas de verde pastel, rosado, amarillo y azul, el asfalto gastado de la calle y El
+ * Ávila verde detrás, con la luz dorada de la tarde. `menta` es el verde pastel de la casa del vecino y `canal` El Ávila
+ * en la calima.
+ */
+export const VENEZUELA_BARRIO_TARDE: Paleta = {
+  tinta: '#1c1620',
+  sombra: '#3a2c34',
+  asfalto: '#686270',
+  asfalto_claro: '#8a8288',
+  cemento: '#a49a92',
+  cemento_claro: '#cfc4b6',
+  crema: '#f2e2c4',
+  luz: '#fff6e4',
+  amarillo: '#f6cc4a',
+  ocre: '#d4903e',
+  terracota: '#b0583a',
+  rojo: '#d63c34',
+  vino: '#7e2c30',
+  salmon: '#ec7e9a',
+  menta: '#8ed2b0',
+  verde: '#4e9a48',
+  verde_oscuro: '#2a5a36',
+  celeste: '#6aaee6',
+  cielo: '#bcdcf2',
+  azul: '#2e62b0',
+  azul_noche: '#25365e',
+  canal: '#5a8a6e',
+  oro: '#f6a830',
+  bruma: '#e8dcc8',
+};
+
+export const USO_BARRIO: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro, las rejas',
+  sombra: 'la sombra honda de las puertas y de los cables',
+  asfalto: 'el asfalto de la calle',
+  asfalto_claro: 'el asfalto gastado, el bloque en sombra',
+  cemento: 'el bloque gris sin frisar',
+  cemento_claro: 'la acera, el bloque con luz',
+  crema: 'las paredes frisadas color crema',
+  luz: 'los brillos, la tiza del home',
+  amarillo: 'la casa amarilla, la luz de la tarde',
+  ocre: 'el ladrillo con sol',
+  terracota: 'el ladrillo de los ranchos',
+  rojo: 'los letreros, la pintura roja',
+  vino: 'sombra del rojo y del ladrillo',
+  salmon: 'la casa rosada, la trinitaria, la piel',
+  menta: 'la casa verde pastel del vecino',
+  verde: 'el mango, El Ávila con sol',
+  verde_oscuro: 'las hojas en sombra, El Ávila',
+  celeste: 'la casa azul, el cielo alto',
+  cielo: 'el cielo bajo de la tarde',
+  azul: 'los tanques de agua, las puertas azules',
+  azul_noche: 'sombra del azul',
+  canal: 'El Ávila en la calima',
+  oro: 'el sol de la tarde en las paredes, los mangos',
+  bruma: 'la calima de la tarde',
+};
