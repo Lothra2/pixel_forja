@@ -274,7 +274,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
   const bodies = big.map((b, i) => (useBodies(i) && b.full ? { y0: b.full.y0 - top, y1: b.full.y1 - top } : null));
   const mirrored = !!MIRRORED[view];
   // articulaciones en coordenadas de la celda final (espejadas si la vista es espejo)
-  const joints = premium && big.every((b) => b.joints)
+  const joints = (premium || opt.joints) && big.every((b) => b.joints)
     ? big.map((b) => Object.fromEntries(Object.entries(b.joints!).map(([k, [x, y]]) => [k, [mirrored ? cell - 1 - (x - left) : x - left, y - top]])) as Joints)
     : undefined;
   return {
@@ -366,7 +366,8 @@ export function cropClip(big: BigFrame[], cell: CellSize, fixed = false): { fram
 function mirrorBig(b: BigFrame): BigFrame {
   const W = b.raster.w;
   const fx = (box: BigFrame['body']) => (box ? { x0: W - 1 - box.x1, x1: W - 1 - box.x0, y0: box.y0, y1: box.y1 } : box);
-  return { ...b, raster: mirror(b.raster), pivotX: W - b.pivotX, body: fx(b.body), full: b.full === undefined ? undefined : fx(b.full), joints: undefined };
+  return { ...b, raster: mirror(b.raster), pivotX: W - b.pivotX, body: fx(b.body), full: b.full === undefined ? undefined : fx(b.full),
+    joints: b.joints ? (Object.fromEntries(Object.entries(b.joints).map(([k, [x, y]]) => [k, [W - 1 - x, y]])) as Joints) : undefined };
 }
 
 /** Caja para centrar: con el pelo si cabe en la celda; si no, el cuerpo (y la punta del pelo se recorta). */

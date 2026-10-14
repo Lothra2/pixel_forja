@@ -51,12 +51,13 @@ import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
 import { bitmapFonts, renderLogo } from '../ui/fonts';
 import { appIcons } from '../ui/appIcons';
 import { continuara } from '../ui/continuara';
-import { signIcons, hudIcons, rotateTablet, skillIcons } from '../ui/icons2';
+import { signIcons, hudIcons, rotateTablet, skillIcons, celestialSkillIcons } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
 import { renderBossSheets, clipSheet, KIT_DIRS, DIR_YAW, type BossSpec, type BossCache } from '../boss/sheet';
 import { MINO_SPEC } from '../boss/minotauro';
 import { GUARDIAN_SPEC } from '../boss/guardian';
+import { exportHeroeCelestial, celestialComun, NOTAS_CELESTIAL } from '../celestial/kit';
 
 /**
  * Kit del juego "GG Abyss": todo lo que el juego necesita, listo para Phaser, con un manifest.json que dice qué es
@@ -102,6 +103,8 @@ export interface KitOptions {
   sinMundo5?: boolean;
   /** sin el Mundo 6 (mapa, enemigos, el Carcelero y la Dragona de Brasa) */
   sinMundo6?: boolean;
+  /** sin lo celestial (alas, aureola, túnica, vuelo, sus efectos, íconos y audio) */
+  sinCelestial?: boolean;
 }
 
 const LUZ_IDS_KIT = ['bosque', 'catedral', 'galerias', 'faro', 'ciudad'];
@@ -173,7 +176,9 @@ export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'n
   /** la luz de la boca de la Dragona de Brasa (Mundo 6) */
   luz_boca?: { color: string; radius: number; notas: string };
   /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
-  capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
+  capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry>; alas_detras?: Record<string, CapaEntry>; alas_delante?: Record<string, CapaEntry>; aura?: Record<string, CapaEntry>; orden_celestial?: string[] };
+  /** retrato de la heroína celestial (encargo F13) */
+  retrato_celestial?: string }
 
 /** k: se dibuja en `cell` y se agranda por k a la manera de RotSprite (el jefe: 64 x 1.5 = celda 96). */
 function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void, k = 1): CharEntry {
@@ -310,6 +315,24 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const conCapas = !opts.sinCapas && !opts.quick;
     chars[id] = exportChar('personajes', id, conCapas ? sinEquipo(f) : f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log);
     if (conCapas) chars[id].capas = exportCapas(id, f, heroAnims, files, log, opts.cache);
+    // la heroína celestial (F13): el vuelo, las alas, la aureola y la túnica, en archivos nuevos
+    if (!opts.sinCelestial && fam) {
+      const hc = exportHeroeCelestial(id, f, heroAnims, conCapas, files, log, opts.cache);
+      chars[id].anims.volar = hc.volar;
+      chars[id].retrato_celestial = hc.retrato_celestial;
+      const cp = chars[id].capas;
+      if (cp) {
+        cp.alas_detras = { celestial: hc.alas_detras };
+        cp.alas_delante = { celestial: hc.alas_delante };
+        cp.aura = { celestial: hc.aura };
+        cp.orden_celestial = ['alas_detras', 'base', 'pecho', 'casco', 'arma', 'mano', 'alas_delante', 'aura'];
+        if (hc.tunica) cp.pecho.tunica_celestial = hc.tunica;
+        for (const [tipo, porClave] of Object.entries(hc.volarEquipo)) for (const [clave, b] of Object.entries(porClave)) {
+          const e = (cp as unknown as Record<string, Record<string, CapaEntry>>)[tipo]?.[clave];
+          if (e) e.bloques.volar = b;
+        }
+      }
+    }
   }
   const tiers = opts.thorTiers ?? [0, 1, 2, 3, 4, 5];
   for (const t of tiers) {
@@ -496,6 +519,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     addFx('aviso_cola', tailWarning(), 10, false);
     addFx('vapor_grande', bigSteam(), 12, false);
   }
+  const celeste = opts.sinCelestial ? null : celestialComun(files);
+  if (celeste) Object.assign(fx, celeste.fx);
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);
 
@@ -688,7 +713,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   for (const s of signIcons()) { const n = `ui/carteles/${s.name}.png`; files.push(png(n, s.frames[0])); carteles[s.name] = n; }
   ui.iconos_cartel = carteles;
   const habilidades: Record<string, string> = {};
-  for (const s of skillIcons()) { const n = `ui/habilidades/${s.name}.png`; files.push(png(n, s.frames[0])); habilidades[s.name] = n; }
+  for (const s of [...skillIcons(), ...(opts.sinCelestial ? [] : celestialSkillIcons())]) { const n = `ui/habilidades/${s.name}.png`; files.push(png(n, s.frames[0])); habilidades[s.name] = n; }
   ui.habilidades = habilidades;
   const dg = digitSheet();
   files.push(png('ui/numeros.png', dg.png));
@@ -751,8 +776,10 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   // las músicas nuevas que van en bucle no se apagan al final (las de antes quedan como estaban)
   for (const [n, fn] of Object.entries(MUSIC)) { const a = `audio/musica_${n}.wav`; files.push(file(a, encodeWav(fn(), undefined, MUSICA_BUCLE.has(n)), 'audio/wav')); audio[`musica_${n}`] = a; }
   for (const n of AMBIENCE_NAMES) { const a = `audio/ambiente_${n}.wav`; files.push(file(a, encodeWav(ambience(n), undefined, true), 'audio/wav')); audio[`ambiente_${n}`] = a; }
+  if (celeste) for (const [n, b] of Object.entries(celeste.audio)) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(b), 'audio/wav')); audio[n] = a; }
   manifest.audio = audio;
   log('audio listo');
+  if (celeste) manifest.celestial = { tunica: celeste.tunica, poderes: { alas: { icono: 'ui/habilidades/alas.png', anim: 'volar', fx: 'estela_alas', audio: 'alas_vuelo' }, lanza_luz: { icono: 'ui/habilidades/lanza_luz.png', fx: ['lanza_luz', 'impacto_luz'], audio: 'lanza_luz' } }, aura: 'aura_celestial', despierta: 'celestial_despierta', notas: NOTAS_CELESTIAL };
 
   // ---------- créditos y manifest ----------
   const creditTxt = ['GG Abyss: créditos del arte', '', 'Personajes, mundo, botín, interfaz y sonidos generados con PixelForja (código).', '', ...(opts.fonts ? ['Fuentes: Silkscreen, de Jason Kottke. SIL Open Font License 1.1 (https://openfontlicense.org).', ''] : []), ...credits].join('\n');
