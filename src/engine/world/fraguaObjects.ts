@@ -553,7 +553,7 @@ function ventObjects(): WorldObject[] {
   ];
 }
 
-/** Palanca (32 x 48): caja de hierro con el caño frío, la palanca con mango de madera. `arriba` (1) y `tirar` (8 a 10 fps). */
+/** Palanca del surtidor (`palanca_surtidor`, 32 x 48; `palanca` ya es la de los mundos 1 a 3): caja de hierro con el caño frío, la palanca con mango de madera. `arriba` (1) y `tirar` (8 a 10 fps). */
 function lever(a: number, f: number): Raster {
   const r = createRaster(32, 48), cx = 16;
   // el caño frío que sale de la caja y se mete al piso, con escarcha
@@ -580,7 +580,7 @@ function lever(a: number, f: number): Raster {
 
 function leverObject(): WorldObject {
   const tirar = [0, 0.1, 0.3, 0.6, 0.85, 1, 1, 1].map((a, f) => lever(a, f));
-  return grounded({ name: 'palanca', w: 32, h: 48, anchor: [16, 44], solid: [-10, -6, 20, 6], anims: { arriba: { frames: [lever(0, 0)], fps: 1, loop: true }, tirar: { frames: tirar, fps: 10, loop: false } } }, tirar[0]);
+  return grounded({ name: 'palanca_surtidor', w: 32, h: 48, anchor: [16, 44], solid: [-10, -6, 20, 6], anims: { arriba: { frames: [lever(0, 0)], fps: 1, loop: true }, tirar: { frames: tirar, fps: 10, loop: false } } }, tirar[0]);
 }
 
 /** Cadena de la Dragona (32 x 32, capa suelo): eslabones gruesos de hierro tirados en el piso, a lo largo (se repite en x). */

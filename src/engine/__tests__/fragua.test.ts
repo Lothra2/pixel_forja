@@ -4,6 +4,8 @@ import { fraguaMap, ARENA_DRAGONA, LAVA } from '../world/fraguaMap';
 import { JAULA_CANDADO } from '../world/fraguaObjects';
 import { TILE } from '../world/tiles';
 import { bigMapToTiled } from '../world/bosqueMap';
+import { choquesDeObjetos } from '../kit/gamekit';
+import { reactiveObjects } from '../world/reactions';
 
 describe('Mundo 6, parte 7: el portal brasa de La Fragua de las Luces', () => {
   it('portal_brasa en el formato de los nuevos, con grietas naranjas que se apagan', () => {
@@ -198,7 +200,7 @@ describe('Mundo 6: La Fragua de las Luces (mapa y objetos)', () => {
   it('cada postal: tres planos, nada repetido igual en la pantalla y algo que se mueve', () => {
     for (const p of m.premium.pantallas) {
       // las cuatro palancas de la arena son las del encargo (iguales a propósito: se tiran en el juego)
-      const objs = p.objetos.filter((o) => o !== 'palanca');
+      const objs = p.objetos.filter((o) => o !== 'palanca_surtidor');
       expect(objs.length, p.nombre).toBeGreaterThanOrEqual(5);
       const rep = objs.filter((o, i) => objs.indexOf(o) !== i);
       expect(rep, p.nombre).toEqual([]);
@@ -210,7 +212,7 @@ describe('Mundo 6: La Fragua de las Luces (mapa y objetos)', () => {
   it('los objetos del encargo a su medida, sus animaciones y la sombra de contacto nomás', () => {
     const tabla: [string, number, number][] = [
       ['fuente_fria', 96, 96], ['charco_frio', 64, 32], ['luz_libre_faro', 24, 24], ['grieta_brasa', 64, 64], ['grieta_brasa_3', 64, 64], ['fuelle_gigante_0', 192, 160], ['fuelle_gigante_1', 192, 160],
-      ['brasero_0', 32, 64], ['brasero_2', 32, 64], ['surtidor', 64, 64], ['surtidor_chorro', 64, 128], ['palanca', 32, 48], ['cadena_dragona', 32, 32], ['cadena_colgante_2', 128, 128], ['jaulas_frente_1', 128, 128], ['humo_frente_0', 128, 128],
+      ['brasero_0', 32, 64], ['brasero_2', 32, 64], ['surtidor', 64, 64], ['surtidor_chorro', 64, 128], ['palanca_surtidor', 32, 48], ['cadena_dragona', 32, 32], ['cadena_colgante_2', 128, 128], ['jaulas_frente_1', 128, 128], ['humo_frente_0', 128, 128],
       ['fondo_fragua_lejos_2', 512, 256], ['arbol_ceniza_3', 96, 128], ['puerta_negra', 256, 256], ['mural_6', 128, 96], ['figura_cargadora', 48, 64],
     ];
     for (const [n, w, h] of tabla) { const o = byName.get(n)!; expect(o, n).toBeTruthy(); expect([o.w, o.h], n).toEqual([w, h]); }
@@ -233,7 +235,9 @@ describe('Mundo 6: La Fragua de las Luces (mapa y objetos)', () => {
     for (const v of [0, 1]) { const f = byName.get(`fuelle_gigante_${v}`)!; expect([f.anims.soplar.frames.length, f.anims.soplar.fps]).toEqual([12, 10]); expect(f.anims.quieto && f.anims.dormido).toBeTruthy(); expect(f.solid).toBeTruthy(); }
     for (const v of [0, 1, 2]) { const b = byName.get(`brasero_${v}`)!; expect(b.light!.radius).toBe(180); expect(b.anims.apagado).toBeTruthy(); expect([b.solid![2], b.solid![3]]).toEqual([16, 8]); }
     expect(an('surtidor', 'chorro').frames.length).toBeGreaterThanOrEqual(10); expect(byName.get('surtidor')!.layer).toBe('suelo');
-    expect(an('palanca', 'tirar').frames.length).toBe(8); expect(an('palanca', 'arriba').frames.length).toBe(1);
+    expect(an('palanca_surtidor', 'tirar').frames.length).toBe(8); expect(an('palanca_surtidor', 'arriba').frames.length).toBe(1);
+    expect(byName.has('palanca')).toBe(false);
+    for (const e of m.entities.filter((q) => q.tipo === 'palanca')) { expect(e.props!.objeto).toBe('palanca_surtidor'); expect(m.decos.some((d) => d.sprite === 'palanca_surtidor' && d.x === e.x && d.y === e.y)).toBe(true); }
     for (const n of ['cadena_colgante_0', 'cadena_colgante_1', 'cadena_colgante_2', 'jaulas_frente_0', 'jaulas_frente_1', 'humo_frente_0', 'humo_frente_1']) { expect(byName.get(n)!.layer, n).toBe('frente'); const a = an(n, 'idle'); expect(a.fps).toBeGreaterThanOrEqual(2); expect(a.fps).toBeLessThanOrEqual(4); }
     for (const n of ['fondo_fragua_lejos_0', 'fondo_fragua_lejos_1', 'fondo_fragua_lejos_2']) expect(byName.get(n)!.layer).toBe('fondo');
     for (let v = 0; v < 4; v++) { const a = byName.get(`arbol_ceniza_${v}`)!; expect([a.anims.idle.frames.length, a.anims.idle.fps]).toEqual([4, 4]); expect(a.solid).toBeTruthy(); }
@@ -250,6 +254,21 @@ describe('Mundo 6: La Fragua de las Luces (mapa y objetos)', () => {
     }
   });
 }, 300_000);
+
+describe('Mundo 6, parte 8: ningún objeto pisa a otro de otro mundo', () => {
+  it('la palanca del surtidor no se llama como la palanca de los mundos 1 a 3, y el chequeo del kit encuentra los choques', () => {
+    const viejos = reactiveObjects();
+    expect(viejos.some((o) => o.name === 'palanca')).toBe(true);
+    const m6 = fraguaMap().objects;
+    expect(choquesDeObjetos([{ mundo: 'mundo1', objetos: viejos }, { mundo: 'mundo6', objetos: m6 }])).toEqual([]);
+    // un choque de verdad: mismo nombre, otro tamaño
+    const pal = viejos.find((o) => o.name === 'palanca')!;
+    const falso = { ...pal, w: pal.w + 2 };
+    expect(choquesDeObjetos([{ mundo: 'mundo1', objetos: [pal] }, { mundo: 'mundo6', objetos: [falso] }])).toHaveLength(1);
+    // y otras anims
+    expect(choquesDeObjetos([{ mundo: 'mundo1', objetos: [pal] }, { mundo: 'mundo6', objetos: [{ ...pal, anims: { arriba: pal.anims.arriba } }] }])).toHaveLength(1);
+  }, 300_000);
+});
 
 describe('Mundo 6, parte 6: los íconos para Alana', () => {
   it('sacudir, sacudir_seco, calor, jaula y palanca: 40 x 40, redondos, con el aro dorado', async () => {

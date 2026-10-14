@@ -384,7 +384,7 @@ ve por los huecos del abismo), `portal: portal_brasa`). Resumen de la entrega: `
   Dragona de Brasa", "La que guarda el fuego hecho de luces"), 4 `surtidor` (`id`) en diagonal a 130 px del centro,
   cada uno con su `palanca` (`surtidor` = id del surtidor) 48 px más afuera. Los objetos van en el mismo punto:
   `surtidor` (64 x 64, capa suelo, `quieto` y `chorro`), `surtidor_chorro` (64 x 128, el chorro alto que va encima,
-  12 a 12 fps, una vez) y `palanca` (32 x 48, `arriba` y `tirar` a 10 fps). 4 entidades `cadena` en el borde con
+  12 a 12 fps, una vez) y `palanca_surtidor` (32 x 48, `arriba` y `tirar` a 10 fps; la entidad sigue siendo `palanca`). 4 entidades `cadena` en el borde con
   `hacia_x`, `hacia_y` (el centro): el juego repite `cadena_dragona` (32 x 32, capa suelo, a lo largo en x) girada
   hasta la Dragona. Detrás, al norte, la **Puerta Negra**: entidad `puerta_negra` (`cerrada: true`, `destino: mundo7`)
   en el mismo punto que el objeto `puerta_negra` (256 x 256, sólido, `cerrada` y `latido` a 2 fps, luz fría de 90).

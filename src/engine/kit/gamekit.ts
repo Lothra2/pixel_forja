@@ -265,6 +265,22 @@ function exportBoss(spec: BossSpec, files: ExportFile[], log: (m: string) => voi
   return out;
 }
 
+/**
+ * Objetos de mundos distintos con el mismo nombre pero otra forma (otro tamaño, otras anims o otra cantidad de
+ * cuadros). El kit escribe cada archivo una sola vez y el juego guarda las texturas por nombre: si dos se llaman igual
+ * y no son el mismo objeto, uno pisa al otro. Devuelve los choques (vacío si no hay).
+ */
+export function choquesDeObjetos(mundos: { mundo: string; objetos: { name: string; w: number; h: number; anims: Record<string, { frames: unknown[] }> }[] }[]): string[] {
+  const visto = new Map<string, { mundo: string; forma: string }>(), out: string[] = [];
+  for (const { mundo, objetos } of mundos) for (const o of objetos) {
+    const forma = `${o.w}x${o.h} ${Object.entries(o.anims).map(([k, a]) => `${k}:${a.frames.length}`).sort().join(',')}`;
+    const p = visto.get(o.name);
+    if (!p) visto.set(o.name, { mundo, forma });
+    else if (p.forma !== forma) out.push(`${o.name}: ${p.mundo} (${p.forma}) y ${mundo} (${forma})`);
+  }
+  return out;
+}
+
 /** Arma todo el kit. Devuelve los archivos (rutas relativas a la carpeta del kit). */
 export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const log = opts.progress ?? (() => {});
@@ -537,7 +553,11 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   once(png('mundo/niebla_jirones.png', fogTexture('jirones', 256)));
   once(png('mundo/luz.png', lightTexture()));
   once(png('mundo/nube.png', cloudShadow()));
+  const formas: { mundo: string; objetos: BigMap['objects'] }[] = [];
   const exportarMundo = (big: BigMap, slug: string, nombre: string, agua: string, portal?: string) => {
+    formas.push({ mundo: slug, objetos: big.objects });
+    const choques = choquesDeObjetos(formas);
+    if (choques.length) throw new Error(`Objetos con el mismo nombre y distinta forma en mundos distintos: ${choques.join('; ')}`);
     const tiled = bigMapToTiled(big, 'suelo');
     once(json(`mundo/${big.name}.json`, tiled.json));
     once(png(agua, tiled.aguaPng));

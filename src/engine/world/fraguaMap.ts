@@ -587,8 +587,8 @@ export function fraguaMap(seed = 666): BigMap & { premium: FraguaReport } {
     const lx = acx + sx * u * (ARENA_DRAGONA.surtidor + ARENA_DRAGONA.palanca), ly = acy + sy * u * (ARENA_DRAGONA.surtidor + ARENA_DRAGONA.palanca);
     place('surtidor', Math.round(x), Math.round(y));
     entities.push({ tipo: 'surtidor', x: Math.round(x), y: Math.round(y), props: { id: `surtidor_${k}`, objeto: 'surtidor' } });
-    place('palanca', Math.round(lx), Math.round(ly));
-    entities.push({ tipo: 'palanca', x: Math.round(lx), y: Math.round(ly), props: { id: `palanca_${k}`, surtidor: `surtidor_${k}`, objeto: 'palanca' } });
+    place('palanca_surtidor', Math.round(lx), Math.round(ly));
+    entities.push({ tipo: 'palanca', x: Math.round(lx), y: Math.round(ly), props: { id: `palanca_${k}`, surtidor: `surtidor_${k}`, objeto: 'palanca_surtidor' } });
   });
   // las cadenas de la Dragona: del borde de la arena (norte, sur, este y oeste) hasta ella
   [[0, -1], [1, 0], [0, 1], [-1, 0]].forEach(([sx, sy], k) => {

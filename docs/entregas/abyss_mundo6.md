@@ -40,7 +40,7 @@ y las pruebas del taller en verde. Lo que el juego tiene que leer está todo en 
   4 `palanca`, 4 `cadena`, `puerta_negra`, `portal_jefe` (`destino: mundo7`) y los enemigos: 15 `hollin`, 7
   `salamandra_brasa`, 7 `farolero_cadenas` (5 con `jaula: true`) y `carcelero` (`elite: true`, "El Carcelero").
 - Objetos: `fuente_fria`, `charco_frio`, `jaula_luz_<luz>` (con `candado`), `luz_libre_<luz>`, `grieta_brasa` y
-  `grieta_brasa_0..3`, `fuelle_gigante_0..1` (y `_0_b`), `brasero_0..2`, `surtidor`, `surtidor_chorro`, `palanca`,
+  `grieta_brasa_0..3`, `fuelle_gigante_0..1` (y `_0_b`), `brasero_0..2`, `surtidor`, `surtidor_chorro`, `palanca_surtidor`,
   `cadena_dragona`, `boca_horno`, `puerta_negra`, `cadena_colgante_0..2`, `jaulas_frente_0..1`, `humo_frente_0..1`,
   `fondo_fragua_lejos_0..2`, `arbol_ceniza_0..3`, `yunque`, `pila_carbon_0..1`, `molde_0..1`, `carretilla_fragua`,
   `mural_6`, `figura_cargadora`, `portal_brasa`, y de más: `crisol`, `pila_jaulas_0..1`, `columna_basalto_0..2`,
@@ -113,10 +113,17 @@ y las pruebas del taller en verde. Lo que el juego tiene que leer está todo en 
   por cada luz además del general, la `boca_horno`, el `crisol`, las pilas de jaulas, las columnas de basalto y las
   celdas de la cárcel. Hay 51 jaulas (más los 5 faroleros con jaula).
 - **`palanca`** usa el efecto que ya estaba en el kit (no se cambió para no tocar el audio de los mundos de antes).
-- **Lo que se repite en una pantalla.** Las cuatro palancas de la arena son iguales a propósito (las del encargo).
+- **Lo que se repite en una pantalla.** Las cuatro palancas de la arena (`palanca_surtidor`) son iguales a propósito (las del encargo).
   Todo lo demás no se repite en ninguna postal, y eso lo revisa una prueba.
 - **La lámina de las postales simula la luz.** El kit trae las postales a pleno, como los otros mundos (y sin las
   jaulas ni las grietas, que las dibuja el juego).
 - **La lava se repite cada cuadro de 32** (es una tira de cuadros, como el agua): se diseñó pareja y con vetas finas
   para que no se note el patrón.
+- **Parte 8 (corrección de nombres, a pedido del juego):** la palanca de la arena se llamaba `palanca` y chocaba con la
+  `palanca` de los mundos 1 a 3 (otro tamaño y otras anims). Como el kit escribe cada archivo una sola vez, quedaba la
+  imagen vieja. Ahora es `palanca_surtidor` (las entidades siguen siendo `palanca`, con `objeto: palanca_surtidor`) y
+  `palanca_arriba.png` es la de siempre. El kit ahora se niega a armarse si dos objetos de mundos distintos se llaman
+  igual con otro tamaño, otras anims u otra cantidad de cuadros (`choquesDeObjetos`, con su prueba). Quedan choques
+  viejos que son solo de dibujo (mismo tamaño y anims): `cartel`, `aviso_jefe` y `aviso_carga` salen distintos en el
+  Bosque y en los otros mundos, y el kit usa los del Bosque en todos. No los toqué para no cambiar los mundos 1 a 5.
 - No abrí PR (no se pidió) y no toqué `main`, las ramas `claude/olimpico-*` ni ninguna otra rama.
