@@ -51,6 +51,7 @@ import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
 import { bitmapFonts, renderLogo } from '../ui/fonts';
 import { appIcons } from '../ui/appIcons';
 import { continuara } from '../ui/continuara';
+import { marcoCiclo, logoCiclo, MARCO_CICLO } from '../ui/ciclo';
 import { signIcons, hudIcons, rotateTablet, skillIcons, celestialSkillIcons } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
@@ -715,6 +716,10 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const habilidades: Record<string, string> = {};
   for (const s of [...skillIcons(), ...(opts.sinCelestial ? [] : celestialSkillIcons())]) { const n = `ui/habilidades/${s.name}.png`; files.push(png(n, s.frames[0])); habilidades[s.name] = n; }
   ui.habilidades = habilidades;
+  if (!opts.sinCelestial) {
+    files.push(png('ui/marco_ciclo.png', marcoCiclo()));
+    ui.marco_ciclo = { archivo: 'ui/marco_ciclo.png', w: MARCO_CICLO.w, h: MARCO_CICLO.h, cuadros: 1, nueve: MARCO_CICLO.nueve, notas: 'El número de ciclo en el HUD ("Ciclo 2"): se estira como los otros marcos; los espirales de las esquinas de arriba no se estiran.' };
+  }
   const dg = digitSheet();
   files.push(png('ui/numeros.png', dg.png));
   ui.numeros = { archivo: 'ui/numeros.png', w: dg.cw, h: dg.ch, caracteres: DIGITS, filas: dg.colors };
@@ -732,6 +737,11 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const logo = renderLogo(opts.fonts.bold);
     files.push(png('ui/logo.png', strip(logo)));
     ui.logo = { archivo: 'ui/logo.png', w: 288, h: 96, cuadros: logo.length, fps: 8, loop: true };
+    // el Ciclo 2 (F13): el mismo logo en oro con un espiral, para el título cuando la jugadora ya terminó
+    if (!opts.sinCelestial) {
+      files.push(png('ui/logo_ciclo.png', strip(logoCiclo(logo))));
+      ui.logo_ciclo = { archivo: 'ui/logo_ciclo.png', w: 288, h: 96, cuadros: logo.length, fps: 8, loop: true, notas: 'Igual que ui.logo (mismo tamaño y cuadros), en oro con un espiral que gira detrás.' };
+    }
     // el logo con fuego del intro: al doble, 16 cuadros en una grilla de 4 x 4 (una tira pasaría de 4096)
     if (!opts.sinIntro) {
       const lf = logoFuego(logo[0]), C = 4, lw = lf[0].w, lh = lf[0].h;

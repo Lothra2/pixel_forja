@@ -8,6 +8,8 @@
  *   sobre la sombra, y el ataque con las alas que se abren en el golpe.
  * - celestial_poderes.png: la lanza de luz repetida en línea con su impacto, la estela de plumas, el aura al pie,
  *   los íconos y los retratos celestiales.
+ * - celestial_ciclo.png (parte 4): el logo de siempre y el dorado del Ciclo 2 en tres cuadros, y el marco del ciclo
+ *   chico, estirado con su nueve y al triple.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createRaster, type Raster } from '../src/engine/core/raster.ts';
@@ -19,6 +21,9 @@ import { lanzaLuz, impactoLuz, estelaAlas, auraCelestial } from '../src/engine/c
 import { VOLAR_ELEVACION } from '../src/engine/anim/celestial.ts';
 import { celestialSkillIcons } from '../src/engine/ui/icons2.ts';
 import { EIGHT_VIEWS } from '../src/engine/render/clip.ts';
+import { readFileSync } from 'node:fs';
+import { renderLogo } from '../src/engine/ui/fonts.ts';
+import { logoCiclo, marcoCiclo, MARCO_CICLO } from '../src/engine/ui/ciclo.ts';
 
 const what = process.argv[2] ?? 'todo';
 const OUT = 'docs/entregas';
@@ -121,4 +126,22 @@ if (what === 'poderes' || what === 'todo') {
   celestialSkillIcons().forEach((s, i) => { over(img, s.frames[0], 620 + i * 48, 230); over(img, up(s.frames[0], 2), 600 + i * 70, 280); });
   HEROES.forEach((id, i) => over(img, up(retratoCelestial(familyFicha(id, true)), 2), 10 + i * 90, 470));
   save('celestial_poderes.png', img);
+}
+
+if (what === 'ciclo' || what === 'todo') {
+  const b = readFileSync('node_modules/@fontsource/silkscreen/files/silkscreen-latin-700-normal.woff');
+  const logo = renderLogo(b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer);
+  const oro = logoCiclo(logo);
+  const img = dark(288 * 2 + 30, 96 * 2 + 140);
+  over(img, logo[0], 10, 10); over(img, oro[0], 298, 10); over(img, oro[3], 10, 110); over(img, oro[6], 298, 110);
+  // el marco: chico, estirado con el nueve (como lo usa el HUD) y al triple
+  const m = marcoCiclo(), [l, rr, t, bb] = MARCO_CICLO.nueve;
+  const est = createRaster(90, 30);
+  for (let y = 0; y < est.h; y++) for (let x = 0; x < est.w; x++) {
+    const sx = x < l ? x : x >= est.w - rr ? m.w - (est.w - x) : l + ((x - l) % (m.w - l - rr));
+    const sy = y < t ? y : y >= est.h - bb ? m.h - (est.h - y) : t + ((y - t) % (m.h - t - bb));
+    est.data.set(m.data.subarray((sy * m.w + sx) * 4, (sy * m.w + sx) * 4 + 4), (y * est.w + x) * 4);
+  }
+  over(img, m, 10, 220); over(img, up(est, 2), 60, 220); over(img, up(m, 3), 260, 220);
+  save('celestial_ciclo.png', img);
 }
