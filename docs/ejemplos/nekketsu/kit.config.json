@@ -59,11 +59,30 @@
       "carried",
       "thrown_spin",
       "land_flat",
-      "slip_wet",
-      "judo_grip",
-      "judo_throw",
-      "judo_thrown"
+      "slip_wet"
     ],
+    "judo": {
+      "anims": [
+        "judo_grip",
+        "judo_throw",
+        "judo_thrown",
+        "osoto_gari",
+        "osoto_gari_thrown",
+        "bow"
+      ],
+      "vestuario": "judogi"
+    },
+    "judo_azul": {
+      "anims": [
+        "judo_grip",
+        "judo_throw",
+        "judo_thrown",
+        "osoto_gari",
+        "osoto_gari_thrown",
+        "bow"
+      ],
+      "vestuario": "judogi_azul"
+    },
     "armas": [
       "weapon_pick",
       "weapon_swing",
@@ -278,6 +297,11 @@
       "base",
       "armas",
       "beisbol"
+    ],
+    "judo": [
+      "base",
+      "judo",
+      "judo_azul"
     ]
   },
   "objetos": true,

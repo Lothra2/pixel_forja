@@ -14,19 +14,21 @@ function scale2x(src: IndexImage): IndexImage {
   const { w, h, idx } = src;
   const W = w * 2, H = h * 2;
   const out = new Int16Array(W * H);
-  const at = (x: number, y: number) => idx[Math.min(h - 1, Math.max(0, y)) * w + Math.min(w - 1, Math.max(0, x))];
-  for (let y = 0; y < h; y++)
+  // los vecinos fuera del borde repiten el borde: se resuelve por fila y por columna, sin funciones en el lazo
+  for (let y = 0; y < h; y++) {
+    const row = y * w, up = (y > 0 ? y - 1 : 0) * w, dn = (y < h - 1 ? y + 1 : h - 1) * w;
+    const o0 = 2 * y * W, o1 = o0 + W;
     for (let x = 0; x < w; x++) {
-      const P = at(x, y), A = at(x, y - 1), B = at(x + 1, y), C = at(x - 1, y), D = at(x, y + 1);
-      const e0 = C === A && C !== D && A !== B ? A : P;
-      const e1 = A === B && A !== C && B !== D ? B : P;
-      const e2 = D === C && D !== B && C !== A ? C : P;
-      const e3 = B === D && B !== A && D !== C ? D : P;
-      out[(2 * y) * W + 2 * x] = e0;
-      out[(2 * y) * W + 2 * x + 1] = e1;
-      out[(2 * y + 1) * W + 2 * x] = e2;
-      out[(2 * y + 1) * W + 2 * x + 1] = e3;
+      const xl = x > 0 ? x - 1 : 0, xr = x < w - 1 ? x + 1 : w - 1;
+      const P = idx[row + x], A = idx[up + x], B = idx[row + xr], C = idx[row + xl], D = idx[dn + x];
+      const o = 2 * x;
+      if (A === D || B === C) { out[o0 + o] = P; out[o0 + o + 1] = P; out[o1 + o] = P; out[o1 + o + 1] = P; continue; }
+      out[o0 + o] = C === A ? A : P;
+      out[o0 + o + 1] = A === B ? B : P;
+      out[o1 + o] = D === C ? C : P;
+      out[o1 + o + 1] = B === D ? D : P;
     }
+  }
   return { w: W, h: H, idx: out };
 }
 

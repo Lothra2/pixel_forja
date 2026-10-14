@@ -6,7 +6,7 @@ import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim, type RenderedClip, type 
 import { viewsForRows, frameDataOf, objetosOf, PELOTAS, PELOTA_IDS, pivotOf, FRAME_DATA_FIELDS, type FrameData, type FrameDataField } from '../export/frameData';
 import { packAtlas, atlasFrameName } from '../export/atlas';
 import { portraitSheet, headIcon, HEAD_ICON, PORTRAIT_BIG_SCALE } from './portraits';
-import { dressForPack, variantForPack } from '../sheet/wardrobe';
+import { dressForPack, dressWithUniform, variantForPack } from '../sheet/wardrobe';
 import type { CellSize, HumanFicha, AnimalFicha } from '../sheet/ficha';
 import { animsFor } from '../anim/registry';
 import { buildComidaAtlas, COMIDA_CELDA, COMIDA_PIVOTE, type Comida } from '../render/comida';
@@ -74,6 +74,10 @@ export interface SportsKitOptions {
    * dónde iba cada pelota sale en el dato `objetos` de la animación
    */
   sinProps?: readonly string[];
+  /** uniforme de cada pack (`vestuario` del kit a medida): pack -> uniforme de `UNIFORMES` */
+  uniformes?: Record<string, string>;
+  /** los colores de cada equipo (el cinturón del judogi sale de aquí) */
+  coloresEquipo?: Record<string, string[]>;
   cell?: CellSize;
   /** pocas animaciones por deporte (para pruebas rápidas) */
   quick?: boolean;
@@ -221,7 +225,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     const C = cells[id] ?? athletes[id].cell ?? cell;
     for (const pack of packs) {
       // vestuario por pack: la ficha puede traer una variante de ropa para este pack
-      const fp = dressForPack(f, pack);
+      const eq = opts.equipoDe?.[id];
+      const fp = opts.uniformes?.[pack] ? dressWithUniform(f, pack, opts.uniformes[pack], eq ? opts.coloresEquipo?.[eq] : undefined) : dressForPack(f, pack);
       const all = defs[pack] ?? [];
       // las propias de otro atleta (`taunt_kenji` en Rick) no se dibujan: cada uno trae solo las suyas
       const real = (a: string) => opts.alias?.[a] ?? a;
@@ -263,7 +268,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     // el número de la camiseta, para el HUD (de espalda el pelo largo lo puede tapar)
     if (f.outfit.number) entry.numero = f.outfit.number;
     if (opts.atlas) entry.packs = atlases; else entry.deportes = sports;
-    if (f.wardrobe) entry.vestuario = Object.fromEntries(packs.map((p) => [p, variantForPack(f, p) ?? 'ficha']));
+    // la ropa de cada pack: la variante de la ficha, el uniforme del pack (judogi) o la de la ficha
+    if (f.wardrobe || packs.some((p) => opts.uniformes?.[p])) entry.vestuario = Object.fromEntries(packs.map((p) => [p, variantForPack(f, p) ?? opts.uniformes?.[p] ?? 'ficha']));
     if (opts.retratos) {
       const sheet = portraitSheet(f);
       const archivo = `atletas/${id}/retratos.png`;
@@ -277,6 +283,8 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     out[id] = entry;
   }
   manifest.atletas = out;
+  // girado (seoi nage): solo si alguna animación lo trae, así los kits sin judo salen iguales
+  if (JSON.stringify(out).includes('"girado":')) (manifest.notas as string[]).push('girado: [cuadro] true o false. En los cuadros con true el sprite viene dibujado mirando al otro lado: el juego lo espeja (flipX al revés de como esté) junto con sus datos de ese cuadro (x pasa a -x; en cajas y cuerpo, x pasa a -(x + w)). Si el último cuadro está girado, el personaje termina mirando al otro lado.');
   if (pelotasUsadas.size) {
     // en el orden de PELOTAS y de menor a mayor celda
     const kinds = Object.keys(PELOTAS) as PropKind[];

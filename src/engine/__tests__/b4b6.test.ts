@@ -21,7 +21,8 @@ const PEDIDO: Record<string, [number, number, boolean, string[]]> = {
   vault_fail: [10, 12, false, ['aterriza']],
   judo_grip: [4, 10, true, []],
   judo_throw: [10, 14, false, ['impacto']],
-  judo_thrown: [10, 14, false, ['aterriza']],
+  // con la palmada del ukemi (lote B4B6 bis): un impacto de la mano en el mismo cuadro del aterriza
+  judo_thrown: [10, 14, false, ['aterriza', 'impacto']],
   dodge_jump: [8, 14, false, ['despegue', 'aterriza']],
   bat_stance: [4, 6, true, []],
   bat_swing: [6, 14, false, ['impacto']],
@@ -61,15 +62,9 @@ describe('la garrocha que no llega, el judo, el Quemado, la Chapita y el tejo (l
     expect(tiro.events![0].phase).toBe(cae.events![0].phase);
     const clips = viewsForRows(FIVE).map((v) => renderClip(f, 48, 'judo_throw', v, { props: true }));
     const { carga } = frameDataOf(clips, ['carga']);
-    for (const [r, fila] of carga!.entries()) {
-      // carga solo mientras lo tiene encima (cuadros 3 a 5): antes está de pie agarrado y después en el piso
-      expect(fila.map((p) => !!p), FIVE[r]).toEqual([false, false, false, true, true, true, false, false, false, false]);
-      // lo sube por encima de la cabeza (más arriba que el pecho en un chibi de 48) y lo baja de golpe al azotarlo
-      expect(fila[4]![1], FIVE[r]).toBeLessThan(-24);
-      expect(fila[5]![1], FIVE[r]).toBeGreaterThan(fila[4]![1] + 10);
-      // de lado, siempre adelante del cuerpo: cae delante de quien lo proyecta
-      if (r === 0) for (const k of [3, 4, 5]) expect(fila[k]![0], `cuadro ${k}`).toBeGreaterThan(4);
-    }
+    // carga solo mientras lo tiene encima (cuadros 3 a 5). Desde el lote B4B6 bis el seoi nage se mete de espaldas y
+    // lo carga a la espalda: el detalle (girado, la carga en la espalda, el ukemi) se prueba en judo.test.ts
+    for (const [r, fila] of carga!.entries()) expect(fila.map((p) => !!p), FIVE[r]).toEqual([false, false, false, true, true, true, false, false, false, false]);
   });
 
   it('la garrocha que no llega y el salto del Quemado suben con `elevacion` y vuelven al piso al aterrizar', () => {

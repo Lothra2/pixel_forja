@@ -1,6 +1,7 @@
 import type { Pose, PropState } from '../rig/pose';
 import { type AnimDef, type Ctx, P, feet } from './types';
-import { strain, fierce, spark, down } from './brawl';
+import { fierce, spark, down } from './brawl';
+import { judoGrip, judoThrow, judoThrown } from './judo';
 
 /**
  * Lo que faltaba de las pruebas del olímpico (lotes B4, B5 y B6 del pedido): la garrocha que no llega, el salto para
@@ -10,11 +11,10 @@ import { strain, fierce, spark, down } from './brawl';
  * Lo que se agarra o se lanza no va en el sprite, como en la pelea callejera:
  * - el palo de la Chapita es el arma del piso (`escoba`): el kit exporta `arma` por cuadro y el juego lo dibuja;
  * - el tejo también es un arma del piso (`tejo`): va en `arma` hasta la `suelta` y sale volando desde su `punto`;
- * - al rival del judo lo dibuja el juego con `judo_thrown`, con su base en la `carga` de quien lo proyecta.
+ * - el judo está en `judo.ts` (lote B4B6 bis): las proyecciones con su rival, el ukemi y el saludo.
  * La garrocha sí va dibujada, como en `pole_vault`.
  */
 
-const R = (c: Ctx, v: number) => Math.max(1, Math.round(v * c.u));
 const scared = { eyes: 'wide' as const, mouth: 'o' as const };
 
 // ---------------------------------------------------------------- B4: la garrocha que no llega
@@ -54,93 +54,6 @@ export const vaultFail: AnimDef = {
       arms: { near: { shoulder: 150, elbow: 30, spread: 30 }, far: { shoulder: 120, elbow: 40, spread: 30 } }, face: scared, fit: true });
     const fall = P(c, { ...flail, torso: -72, rise: Rr(4), arms: { near: { shoulder: 165, elbow: 30, spread: 30 }, far: { shoulder: 140, elbow: 30, spread: 30 } } });
     return [plant, take, { ...swing, fit: true }, { ...stall, fit: true }, { ...wobble, fit: true }, { ...back, fit: true }, flail, fall, down(c, 0, 'hurt'), down(c)];
-  },
-};
-
-// ---------------------------------------------------------------- B4: judo
-
-/** Judogi en guardia: rodillas dobladas, la mano cercana en la solapa del rival y la lejana en su manga. */
-function kumikata(c: Ctx, t = 0, e = 0): Pose {
-  const L = c.L;
-  return P(c, {
-    torso: 10 + t, x: Math.round((t / 4) * c.u),
-    legs: { near: { x: 0.3 * L, y: L - 1.6 }, far: { x: -0.32 * L, y: L - 1.4, toe: 10 } },
-    // solapa a la altura del pecho del rival (mano arriba y adelante); manga más abajo, a la altura del codo
-    arms: { near: { shoulder: 100, elbow: 45 + e }, far: { shoulder: 70, elbow: 55 + e } },
-    face: fierce, support: 'both',
-  });
-}
-
-/**
- * Agarre de solapa: la guardia del judo con las dos manos en el judogi del rival. Tironea un poco adelante y atrás,
- * buscando el desequilibrio. El rival hace lo mismo enfrente.
- */
-export const judoGrip: AnimDef = {
-  name: 'judo_grip', pack: 'martial', fps: 10, loop: true, steady: true, views: ['side', 'front', 'back'],
-  build: (c) => [kumikata(c, 0, 0), kumikata(c, 3, 10), kumikata(c, 1, 5), kumikata(c, -3, -5)],
-};
-
-/**
- * Proyección (seoi nage, en la vista de lado): desde el agarre jala al rival (lo desequilibra), se mete abajo de él
- * agachado, lo carga sobre el hombro, se endereza y lo azota adelante contra el tatami (impacto). Termina de pie
- * todavía agarrado de la manga, como se hace en el judo.
- *
- * El rival no va en el sprite: desde que lo carga hasta que cae, la `carga` de cada cuadro dice dónde va su base, y el
- * juego dibuja ahí a `judo_thrown`, que tiene los mismos 10 cuadros. En el seoi nage de verdad quien proyecta gira de
- * espaldas; de lado eso no se puede dibujar, así que se mete por debajo y lo pasa por encima del hombro.
- */
-export const judoThrow: AnimDef = {
-  name: 'judo_throw', pack: 'martial', fps: 14, loop: false, views: ['side', 'front', 'back'],
-  events: [{ type: 'impacto', phase: 6 / 10 }],
-  build: (c) => {
-    const L = c.L;
-    const grip = kumikata(c);
-    // kuzushi: se echa atrás y jala hacia él
-    const pull = P(c, { torso: -6, x: -c.u, legs: { near: { x: 0.25 * L, y: L - 1.2 }, far: { x: -0.4 * L, y: L - 1.0, toe: 10 } },
-      arms: { near: { shoulder: 80, elbow: 100 }, far: { shoulder: 50, elbow: 110 } }, face: strain, support: 'far' });
-    // se mete: agachado a fondo, la espalda contra el pecho del rival
-    const dip = P(c, { torso: 26, legs: feet(c, 0.95, 0.22), arms: { near: { shoulder: 140, elbow: 80 }, far: { shoulder: 120, elbow: 70 } }, face: strain, support: 'both' });
-    // lo carga: el rival ya está encima del hombro
-    const load = P(c, { torso: 18, legs: feet(c, 0.7, 0.24), arms: { near: { shoulder: 165, elbow: -5 }, far: { shoulder: 160, elbow: -5 } }, face: strain, support: 'both', load: true });
-    // se endereza con él arriba
-    const rise = P(c, { torso: 4, legs: feet(c, 0.3, 0.24), arms: { near: { shoulder: 172, elbow: -15 }, far: { shoulder: 170, elbow: -15 } }, face: strain, support: 'both', load: true });
-    // lo pasa por encima y lo baja adelante con todo el cuerpo
-    const over = P(c, { torso: 24, legs: { near: { x: 0.4 * L, y: L - 1.6 }, far: { x: -0.35 * L, y: L - 0.8, toe: 20 } },
-      arms: { near: { shoulder: 95, elbow: 0 }, far: { shoulder: 92, elbow: 0 } }, face: { eyes: 'angry', mouth: 'open' }, support: 'near', load: true });
-    // ¡tatami! el rival cae (impacto) y él sigue agachado sobre la proyección, agarrado de la manga
-    const slam = P(c, { torso: 34, x: -c.u, legs: { near: { x: 0.42 * L, y: L - 2.2 }, far: { x: -0.35 * L, y: L - 1.0, toe: 30 } },
-      arms: { near: { shoulder: 60, elbow: 0 }, far: { shoulder: 50, elbow: 10 } }, face: { eyes: 'angry', mouth: 'grin' }, support: 'near', props: [spark('handNear', 60)] });
-    const hold = { ...slam, torso: 30, props: [] };
-    const up = P(c, { torso: 14, legs: feet(c, 0.4, 0.24), arms: { near: { shoulder: 40, elbow: 10 }, far: { shoulder: 20, elbow: 20 } }, face: fierce, support: 'both' });
-    return [grip, pull, dip, load, rise, over, slam, hold, up, P(c, { ...up, torso: 6, legs: feet(c, 0.15, 0.22) })];
-  },
-};
-
-/**
- * Proyectado: la otra mitad de `judo_throw`, cuadro a cuadro. Agarrado y desequilibrado, sale de los pies, pasa por
- * el aire acostado y de cabeza, cae de espalda sobre el tatami (aterriza, junto con el impacto de quien lo proyecta),
- * rebota y queda tendido. Del cuadro 3 al 5 el juego lo pone con su base en la `carga` de quien lo proyecta.
- */
-export const judoThrown: AnimDef = {
-  name: 'judo_thrown', pack: 'martial', fps: 14, loop: false, lateral: true, views: ['side', 'front', 'back'],
-  events: [{ type: 'aterriza', phase: 6 / 10 }],
-  build: (c) => {
-    const L = c.L;
-    const grip = kumikata(c);
-    // lo jalan: se va adelante en puntas, con los brazos todavía agarrados
-    const pulled = P(c, { torso: 24, x: c.u, legs: { near: { x: 0.25 * L, y: L - 0.4, toe: 30 }, far: { x: -0.3 * L, y: L - 0.2, toe: 40 } },
-      arms: { near: { shoulder: 100, elbow: 30 }, far: { shoulder: 85, elbow: 30 } }, face: scared, support: 'near' });
-    const tip = { ...pulled, torso: 36, legs: { near: { x: 0.1 * L, y: L - 0.2, toe: 50 }, far: { x: -0.45 * L, y: L - 0.5, toe: 50 } } };
-    // en el aire: acostado boca abajo, después boca arriba con las piernas arriba (pasa por encima)
-    const air = (torso: number, nl: [number, number], fl: [number, number]): Pose => P(c, {
-      torso, legs: { near: { x: nl[0] * L, y: nl[1] * L, toe: 20 }, far: { x: fl[0] * L, y: fl[1] * L, toe: 20 } },
-      arms: { near: { shoulder: 150, elbow: 30, spread: 30 }, far: { shoulder: 130, elbow: 30, spread: 30 } }, face: scared, fit: true,
-    });
-    return [
-      grip, pulled, tip,
-      air(80, [-0.7, 0.2], [-0.6, 0.35]), air(150, [-0.3, -0.6], [-0.2, -0.5]), air(-120, [0.3, -0.7], [0.2, -0.6]),
-      down(c, 0, 'hurt'), down(c, R(c, 2), 'hurt'), down(c, 0, 'hurt'), down(c),
-    ];
   },
 };
 

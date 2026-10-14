@@ -46,6 +46,8 @@ export interface RenderedClip {
   fits: boolean;
   /** cuánto sube el juego el sprite en cada cuadro (saltos que no caben en la celda), en pixeles */
   rise?: number[];
+  /** por cuadro, si el personaje está girado (dado vuelta): el juego espeja ese cuadro. Solo si alguno lo está */
+  girado?: boolean[];
   /** fila de la superficie del agua en cada cuadro (nadar), o null si no hay agua */
   waterRows?: (number | null)[];
   /** encuadre fijo (premium): los cuadros que se salen de la celda */
@@ -162,6 +164,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
   const poseView: View = base === 'se' || base === 'ne' ? 'side' : base;
   let big: BigFrame[], fps: number, loop: boolean, steady: boolean, airborne: boolean[];
   let events: AnimEvent[] | undefined, stride: number | undefined, rise: number[] | undefined, travel: number[] | undefined;
+  let girado: boolean[] | undefined;
   let muro: RenderedClip['muro'];
   // garrocha o jabalina: largas, no marcan el piso (el control mide el cuerpo, como con el equipo de RPG)
   let longHeld: boolean[] = [];
@@ -270,6 +273,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     fps = def.fps; loop = def.loop; steady = !!def.steady;
     airborne = poses.map((p) => p.air > 0 || p.hipH !== undefined || (p.rise ?? 0) > 0);
     if (poses.some((p) => p.rise)) rise = poses.map((p) => Math.round(p.rise ?? 0));
+    if (poses.some((p) => p.girado)) girado = poses.map((p) => !!p.girado);
     longHeld = poses.map((p) => !!p.props?.some((q) => LONG_HELD.has(q.kind)));
     water = poses.map((p) => (p.water !== undefined ? { level: p.water, big: !!p.splash } : null));
   } else {
@@ -322,7 +326,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
     ...(wholes?.some(Boolean) ? { wholes } : {}), ...(held ? { held } : {}), ...(balls ? { balls } : {}),
     profile: premium ? 'premium' : 'classic',
     ...(overflow ? { overflow } : {}),
-    ...(rise ? { rise } : {}), ...(muro ? { muro } : {}),
+    ...(rise ? { rise } : {}), ...(muro ? { muro } : {}), ...(girado ? { girado } : {}),
     ...(water.some(Boolean) ? { waterRows: water.map((w) => (w ? cell - 2 - Math.round(w.level) : null)) } : {}),
     ...(events?.length ? { events } : {}), ...(stride ? { stride } : {}), ...(travel ? { travel } : {}),
     ...(lateral ? { heading: (asked === 'front' ? 'se' : 'ne') as ViewName } : {}), ...(joints ? { joints } : {}),

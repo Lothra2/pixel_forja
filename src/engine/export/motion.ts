@@ -22,6 +22,11 @@ export interface MovimientoAnim {
   eventos?: EventoJson[];
   avance?: number;
   elevacion?: number[];
+  /**
+   * Por cuadro, si el personaje está girado (lote B4B6 bis): en esos cuadros se dio vuelta (el seoi nage se mete de
+   * espaldas) y el juego espeja el sprite y sus datos (cajas, manos, carga...), igual que cuando mira al otro lado.
+   */
+  girado?: boolean[];
   /** saltos a un muro: de 0 a 1 por cuadro (1 cuando las patas tocan arriba). Para otro muro: subida * alto_del_muro */
   subida?: number[];
   /** entre qué altos de muro (pixeles) se ve bien el salto */
@@ -43,6 +48,7 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
   const out: MovimientoAnim = {};
   // elevación: cuánto sube el juego el sprite sobre su sombra en cada cuadro (en pixeles de la hoja)
   if (c.rise) out.elevacion = c.rise.map((v) => r2(v * k));
+  if (c.girado) out.girado = [...c.girado];
   if (c.rise && c.muro) {
     out.subida = c.rise.map((v) => r2(v / c.muro!.alto));
     out.muro_min = Math.round(c.muro.min * k);
@@ -75,7 +81,9 @@ export function motionOf8(clips: RenderedClip[], k = 1, sideClip?: RenderedClip)
       const name = c0joint(side, e) ?? contactJoint(j[e.cuadro], e.tipo === 'impacto' || e.tipo === 'paso' ? 'impacto' : 'suelta');
       if (!clips.every((c) => c.joints?.[e.cuadro])) continue;
       e.punto = clips.map((c) => {
-        const [x, y] = c.joints![e.cuadro][name] ?? c.joints![e.cuadro].head;
+        const jc = c.joints![e.cuadro];
+        // la mano más baja de esa fila (la que pega contra el piso)
+        const [x, y] = name === 'handLow' ? (jc.handNear[1] >= jc.handFar[1] ? jc.handNear : jc.handFar) : jc[name] ?? jc.head;
         return [Math.round((x - c.cell / 2) * k), Math.round((y - (c.cell - 2)) * k)];
       });
     }
@@ -85,9 +93,9 @@ export function motionOf8(clips: RenderedClip[], k = 1, sideClip?: RenderedClip)
 }
 
 /** La articulación que el evento dice que pega, si la dice. */
-function c0joint(c: RenderedClip, e: EventoJson): Exclude<keyof Joints, 'carry'> | undefined {
+function c0joint(c: RenderedClip, e: EventoJson): Exclude<keyof Joints, 'carry'> | 'handLow' | undefined {
   const ev = c.events?.find((x) => x.type === e.tipo && Math.min(c.frames.length - 1, Math.floor(x.phase * c.frames.length + 1e-6)) === e.cuadro);
-  return ev?.joint as Exclude<keyof Joints, 'carry'> | undefined;
+  return ev?.joint as Exclude<keyof Joints, 'carry'> | 'handLow' | undefined;
 }
 
 /** Qué pega: en un golpe, la mano o el pie que llega más adelante; en una suelta, la mano más alta (la que lanza). */
