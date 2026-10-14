@@ -86,6 +86,11 @@ Para las cuatro pruebas que seguían con la música del chip. Igual que los de H
   - `aro_basket`: 0.67 s, la canasta. El balón contra el tablero, el aro de hierro que suena y el "swish" de la red.
   - `aro_fallo`: 0.49 s, el tiro que pega en el aro y se sale. Empieza igual que `aro_basket` y en vez del swish trae el segundo toque del balón en el aro.
   - `chapa`: 0.25 s, la chapa golpeada por el palo de escoba. El "toc" de la madera, el "tin" de la lata y la chapa que sale silbando.
+- **Del lote H5**, la natación y la garrocha:
+  - `salida_natacion`: 0.58 s, la bocina electrónica de la salida. Un "biiip" áspero con el zumbido del parlante, un tono fijo de unos 415 Hz con sus armónicos. Va en el ¡YA! de la natación, en vez del blip de las otras pruebas, para que se reconozca la piscina.
+  - `chapuzon`: 0.84 s, el clavado de la salida. El cuerpo que pega plano contra el agua, el agua que se abre con un "shhh" grave, las burbujas que suben y las gotas que caen de vuelta. Va en el evento `impacto` de `dive` (cuadro 6).
+  - `brazada`: 0.32 s, una brazada. La mano que entra al agua ("plof"), el jalón y dos o tres burbujas. Va en el evento `brazada` de los nados: en `swim` y `swim_back` en los cuadros 0 y 4, en `swim_breast` en el 5 y en `swim_fly` en el 0. Cabe entre dos manos del crol sin taparse.
+  - `garrocha`: 0.67 s, el salto con pértiga. La punta que se clava en la cajita con un golpe de metal, la pértiga de fibra que se dobla con un "uuum" que sube, y el latigazo cuando se endereza. Va en el evento `despegue` de `pole_vault`: el latigazo cae 1/3 s después, justo en `suelta` (4 cuadros a 12 fps).
 - **Los de antes:** espadazo, golpe, critico, esquiva, bloqueo, pasos por superficie (`paso_<pasto|tierra|piedra|madera|agua>_<0|1|2>`), ladrido, interfaz (click, elegir, error...) y los de GG Abyss.
 
 ## Voces en blips
@@ -119,6 +124,10 @@ this.sound.play('pistola');
 this.sound.play('rebote_balon', { volume: 0.4 });
 this.sound.play(entra ? 'aro_basket' : 'aro_fallo');
 
+// la natación: la bocina en el ¡YA!, el chapuzón en el impacto del clavado y la brazada en cada mano que entra
+this.sound.play('salida_natacion');
+for (const ev of m.atletas[id].packs.natacion.anims.swim.eventos) if (ev.tipo === 'brazada' && cuadro === ev.cuadro) this.sound.play('brazada', { volume: 0.35, rate: 0.95 + Math.random() * 0.1 });
+
 // el gallo canta en el evento "canto" de su animación, y aletea en "aleteo"
 gallo.on('animationupdate', (anim, frame) => {
   for (const ev of m.animales.gallo.eventos[anim.key] ?? []) if (frame.index - 1 === ev.cuadro) this.sound.play(ev.tipo === 'canto' ? 'gallo' : 'aleteo');
@@ -144,3 +153,4 @@ function hablar(scene, id, texto, cps = 18) {
 - **Síntesis de 8 bits.** Suena a consola, no a banda real. Para Rick es una decisión de estilo: la marcha y el đàn tranh se reconocen, pero son chiptune.
 - **Mono a 22050 Hz.** La marcha de 60 s pesa 2.6 MB en WAV. Con `"formato": "comprimido"` en el `kit.config.json`, el kit la saca en OGG y M4A a 64 kbps, unos 520 KB (ver [KIT_A_MEDIDA.md](KIT_A_MEDIDA.md#efectos-y-audio)).
 - **`victoria` y `victoria_banda`:** `victoria` es la fanfarria de GG Abyss y no se cambió para no tocar ese kit. Para Nekketsu va `victoria_banda`, que combina con la marcha.
+- **El agua es ruido filtrado y burbujas sintetizadas** (lote H5). El chapuzón y la brazada se reconocen por la forma (el golpe, el "shhh", las burbujas que suben y las gotas), pero son de videojuego, no grabaciones. Repetida en cada brazada, conviene variarle un poco el `rate` y el volumen en el juego para que no suene a máquina.

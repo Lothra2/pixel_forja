@@ -52,6 +52,7 @@ Cada atleta trae su `celda` y su `pivote`. El pivote es el punto de apoyo (los p
 | `eventos[].tipo = suelta` | Sale la pelota, la bala, la jabalina o el efecto | Crea el proyectil en ese cuadro |
 | `eventos[].tipo = despegue` / `aterriza` | Deja el piso / vuelve al piso | Activa y apaga la física del salto, polvo al caer |
 | `eventos[].tipo = bote` | La pelota toca el piso (el `dribble`) | Sonido del bote |
+| `eventos[].tipo = brazada` | La mano entra al agua: en el crol y la espalda dos veces por ciclo (cuadros 0 y 4), en el pecho y la mariposa una (lote H5) | Sonido `brazada` |
 | `eventos[].tipo = atrapa` | La pelota llega a la mano o al guante y se queda | Apaga la física de la pelota: desde ahí la lleva el atleta |
 | `eventos[].punto` | En golpes, sueltas y atrapadas: dónde está la mano o el pie que pega, en pixeles desde el pivote, una entrada por fila | Saca la pelota, la bala o la chispa de ahí |
 | `avance` | Pixeles que avanza el cuerpo en un ciclo sin que el pie patine (medido de lado) | Avanza la animación por distancia: un ciclo completo cada `avance` recorrido. El pie no patina a ninguna velocidad |
