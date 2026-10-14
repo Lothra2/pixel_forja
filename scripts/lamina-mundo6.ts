@@ -171,10 +171,34 @@ async function puerta() {
   save('mundo6_puerta.png', up(r, 2));
 }
 
-void bossCache; // la usan las láminas de los enemigos y del jefe
+async function enemigos(conJefe: boolean) {
+  const { renderBossSheets } = await import('../src/engine/boss/sheet.ts');
+  const { renderClip } = await import('../src/engine/render/clip.ts');
+  const { familyFicha } = await import('../src/engine/rpg/family.ts');
+  const fr = await import('../src/engine/boss/fragua.ts');
+  const hero = renderClip(familyFicha('sophie', true), 48, 'idle', 'se', { props: true }).frames[0];
+  const specs = conJefe ? [] : [fr.HOLLIN_SPEC, fr.SALAMANDRA_SPEC, fr.FAROLERO_SPEC, fr.CARCELERO_SPEC];
+  const rows: { cell: number; pivot: [number, number]; frames: Raster[] }[] = [];
+  for (const s of specs) {
+    const { clips, pivot } = renderBossSheets(s, bossCache());
+    const pickF = (c: (typeof clips)[number]) => { const n = c.def.frames; return c.def.name === 'die' ? [Math.floor(n * 0.4), Math.floor(n * 0.7), n - 1] : c.def.windup ? [c.def.windup[1], Math.min(n - 1, c.def.windup[1] + 2)] : [0]; };
+    rows.push({ cell: s.cell, pivot, frames: clips.flatMap((c) => pickF(c).map((f) => c.frames[7][f])) });
+    console.log(`  ${s.id}: ${clips.map((c) => `${c.def.name} ${c.def.frames}`).join(', ')}`);
+  }
+  const W = Math.max(...rows.map((q) => 60 + q.frames.length * q.cell)), H = rows.reduce((a, q) => a + q.cell + 8, 0);
+  const r = floor(W, H);
+  let y = 0;
+  for (const q of rows) {
+    over(r, hero, 4, y + q.pivot[1] - 46);
+    q.frames.forEach((f, i) => over(r, f, 56 + i * q.cell, y));
+    y += q.cell + 8;
+  }
+  save(conJefe ? 'mundo6_dragona.png' : 'mundo6_enemigos.png', up(r, conJefe ? 1 : 2));
+}
 
 const all = what === 'todo';
 if (all || what === 'mapa') await mapa();
 if (all || what === 'jaulas') await jaulas();
 if (all || what === 'objetos') await objetos();
 if (all || what === 'puerta') await puerta();
+if (all || what === 'enemigos') await enemigos(false);

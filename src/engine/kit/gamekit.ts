@@ -38,6 +38,7 @@ import { MARINERO_NIEBLA_SPEC, CANGREJO_CENIZA_SPEC, MEDUSA_NEGRA_SPEC, CAPITAN_
 import { PEZ_FAROL_SPEC, biteWarning, waveWarning, wave, pezAntena } from '../boss/pez';
 import { SONAMBULO_SPEC, GARGOLA_SPEC, DUENDE_SPEC, RELOJERO_SPEC, diveShadow, sandProjectile, sandImpact, needleWarning } from '../boss/ciudad';
 import { REY_DE_PIEDRA_SPEC, reyCorona, fistWarning, crackGlow, lullabyNote } from '../boss/rey';
+import { HOLLIN_SPEC, SALAMANDRA_SPEC, FAROLERO_SPEC, CARCELERO_SPEC, faroleroJaula, emberProjectile, emberImpact, emberTrail, chainSpinWarning, chainLineWarning, steamPuff } from '../boss/fragua';
 import { bossPoses } from '../boss/anim';
 import { camMatrix } from '../boss/render';
 import { mv } from '../boss/sdf';
@@ -379,6 +380,27 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       });
     }
   }
+  // el Mundo 6: los hollines, las salamandras de brasa, los faroleros de cadenas y El Carcelero (a su celda)
+  if (!opts.sinMundo6) {
+    for (const [spec, extra] of [
+      [HOLLIN_SPEC, { tipo: 'enemigo', nombre: 'Hollín' }],
+      [SALAMANDRA_SPEC, { tipo: 'enemigo', nombre: 'Salamandra de Brasa' }],
+      [FAROLERO_SPEC, { tipo: 'enemigo', nombre: 'Farolero de Cadenas' }],
+      [CARCELERO_SPEC, { tipo: 'enemigo', nombre: 'El Carcelero', elite: true }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+    // dónde va la jaula del farolero (su luz), por dirección y por cuadro (pixeles desde el pivote, y hacia abajo)
+    for (const [name, entry] of Object.entries(chars.farolero_cadenas.anims)) {
+      const def = FAROLERO_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).jaula = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: FAROLERO_SPEC.elev });
+        return poses.map((p) => { const c = mv(M, faroleroJaula(FAROLERO_SPEC.cell, p)); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+    }
+    (chars.farolero_cadenas as unknown as Record<string, unknown>).notas = 'Los faroleros con jaula: true en el mapa llevan la jaula de luz a la espalda: la luz (color de su `luz`, radio 40) va en `jaula` de cada anim. En die la jaula cae al piso (cuadro 7) y se abre (cuadro 11, evento suelta): ahí sale luz_libre_<luz>. Los que no tienen jaula: true se dibujan igual pero sin luz.';
+    (chars.hollin as unknown as Record<string, unknown>).notas = 'pegado: en bucle encima de la heroína (dibujarlo en su pecho, chiquito). No vuela.';
+    (chars.salamandra_brasa as unknown as Record<string, unknown>).notas = 'walk deja rastro_brasa (fx, capa suelo) cada pocos pasos. piedra: cuando Thor la moja (negra y quieta, humea).';
+  }
   // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
   for (const id of NPCS) {
     const f = merchantFicha();
@@ -431,6 +453,15 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     addFx('aviso_puno', fistWarning(), 10, false);
     addFx('grieta_luz', crackGlow(), 8, true);
     addFx('nota_cuna', lullabyNote(), 6, true);
+  }
+  // el Mundo 6: la brasa de la salamandra, su rastro, los avisos de las cadenas y el vapor
+  if (!opts.sinMundo6) {
+    for (const { dir, frames } of rotate8(emberProjectile())) addFx(`proyectil_brasa_${dir}`, frames, 12, true);
+    addFx('impacto_brasa', emberImpact(), 14, false);
+    addFx('rastro_brasa', emberTrail(), 6, false);
+    addFx('aviso_cadena', chainSpinWarning(), 10, false);
+    addFx('aviso_linea_cadena', chainLineWarning(), 10, true);
+    addFx('vapor', steamPuff(), 12, false);
   }
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);
