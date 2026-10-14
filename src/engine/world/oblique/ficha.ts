@@ -4,7 +4,7 @@ import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Pa
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
 import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
-import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG, VENEZUELA_APURE_ATARDECER, USO_APURE, VENEZUELA_BARRIO_TARDE, USO_BARRIO, VENEZUELA_LICEO_MEDIODIA, USO_LICEO } from './lugaresPaleta';
+import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG, VENEZUELA_APURE_ATARDECER, USO_APURE, VENEZUELA_BARRIO_TARDE, USO_BARRIO, VENEZUELA_LICEO_MEDIODIA, USO_LICEO, COLOMBIA_CARTAGENA_ATARDECER, USO_CARTAGENA } from './lugaresPaleta';
 import { lugarDe } from './lugares';
 
 /**
@@ -635,10 +635,39 @@ const VENEZUELA_LICEO: Estilo = {
   letreros: ['U.E. LICEO EL ÁVILA', 'CANTINA', 'CARTELERA', 'ESTUDIAR', 'ES CRECER'],
 };
 
+
+/** Las azoteas de la ciudad amurallada de Cartagena al atardecer (lote E6). */
+const COLOMBIA_AMURALLADA: Estilo = {
+  paleta: COLOMBIA_CARTAGENA_ATARDECER,
+  uso: USO_CARTAGENA,
+  horas: ['atardecer'],
+  iconos: [
+    { id: 'bahia', nombre: 'La bahía al atardecer con el sol que toca el mar y el camino de oro', donde: 'lejos' },
+    { id: 'bocagrande', nombre: 'Las torres de Bocagrande en la calima', donde: 'lejos, a la izquierda' },
+    { id: 'popa', nombre: 'El cerro de La Popa con el convento arriba', donde: 'lejos' },
+    { id: 'castillo', nombre: 'El Castillo de San Felipe con las murallas en rampa y las garitas', donde: 'lejos' },
+    { id: 'torre_reloj', nombre: 'La Torre del Reloj: la puerta de tres arcos, la torre amarilla con el reloj y la cúpula', donde: 'cerca, entre los techos' },
+    { id: 'catedral', nombre: 'La catedral con el campanario y la cúpula a gajos', donde: 'cerca, entre los techos' },
+    { id: 'techos', nombre: 'Los techos de teja de barro de la ciudad vieja con las palmas', donde: 'cerca' },
+    { id: 'fachadas', nombre: 'Las fachadas coloniales de colores con los balcones de madera y las buganvillas que se derraman', donde: 'cerca y en el techo de enfrente' },
+    { id: 'azotea', nombre: 'La azotea de baldosas de barro con la cajita roja de la garrocha y la raya del borde', donde: 'cerca, donde las ponía el juego' },
+    { id: 'callejon', nombre: 'El callejón en sombra con el farol, las ventanas prendidas y la ropa tendida', donde: 'cerca, en el hueco' },
+    { id: 'techo_enfrente', nombre: 'El techo de enfrente con la colchoneta azul y el balcón grande de buganvillas', donde: 'objeto techo_enfrente, que el juego corre' },
+    { id: 'carrito', nombre: 'El carrito de frutas con la sombrilla de rayas', donde: 'objeto carrito_frutas, que el juego corre' },
+    { id: 'calle', nombre: 'La calle de adoquín', donde: 'piso' },
+  ],
+  vida: {
+    alcatraces: 'Los alcatraces que pasan en fila sobre la bahía, en la capa lejos',
+    veleros: 'Los veleros que cruzan la bahía despacio, en la capa lejos',
+  },
+  cajas: {},
+  letreros: [],
+};
+
 const ESTILOS: Record<string, Estilo> = {
   vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD,
   venezuela_playa: VENEZUELA_PLAYA, vietnam_montana: VIETNAM_MONTANA, colombia_caribe: COLOMBIA_CARIBE, venezuela_lago: VENEZUELA_LAGO,
-  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA, venezuela_llano: VENEZUELA_LLANO, venezuela_barrio: VENEZUELA_BARRIO, venezuela_liceo: VENEZUELA_LICEO,
+  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA, venezuela_llano: VENEZUELA_LLANO, venezuela_barrio: VENEZUELA_BARRIO, venezuela_liceo: VENEZUELA_LICEO, colombia_amurallada: COLOMBIA_AMURALLADA,
 };
 
 /** Los fondos de la capa cerca que son de Hội An (con su estilo). */

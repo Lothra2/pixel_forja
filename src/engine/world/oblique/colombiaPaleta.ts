@@ -1,5 +1,5 @@
 import type { Color, Paleta } from './paleta';
-import { COLOMBIA_CANDELARIA_TARDE, COLOMBIA_BARRANQUILLA_MEDIODIA, COLOMBIA_COCORA_MANANA } from './lugaresPaleta';
+import { COLOMBIA_CANDELARIA_TARDE, COLOMBIA_BARRANQUILLA_MEDIODIA, COLOMBIA_COCORA_MANANA, COLOMBIA_CARTAGENA_ATARDECER } from './lugaresPaleta';
 
 /**
  * El estilo `colombia_ladrillo`: los barrios de ladrillo de Medellín. La misma lista de 24 nombres que Vietnam, con los
@@ -61,7 +61,7 @@ export const USO_COLOMBIA: Record<Color, string> = {
 };
 
 /** Los lugares de Colombia con paleta propia, por su fondo (`paralaje.cerca`): la cancha de tejo y la calle del Carnaval. */
-export const PALETAS_LUGAR_COLOMBIA: Record<string, Paleta> = { cancha_tejo_candelaria: COLOMBIA_CANDELARIA_TARDE, calle_carnaval_barranquilla: COLOMBIA_BARRANQUILLA_MEDIODIA, valle_cocora: COLOMBIA_COCORA_MANANA };
+export const PALETAS_LUGAR_COLOMBIA: Record<string, Paleta> = { cancha_tejo_candelaria: COLOMBIA_CANDELARIA_TARDE, calle_carnaval_barranquilla: COLOMBIA_BARRANQUILLA_MEDIODIA, valle_cocora: COLOMBIA_COCORA_MANANA, azoteas_cartagena: COLOMBIA_CARTAGENA_ATARDECER };
 
 /** La paleta del estilo colombia para una hora. La Comuna 13 es de mañana. La cancha de tejo y la calle del Carnaval traen la suya. */
 export function paletaColombia(_hora: string, _clima: string[] = [], tema?: string): Paleta {

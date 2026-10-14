@@ -720,3 +720,63 @@ export const USO_LICEO: Record<Color, string> = {
   oro: 'el sol que entra de lado',
   bruma: 'la calima detrás de El Ávila',
 };
+
+/**
+ * La ciudad amurallada de Cartagena al atardecer (estilo `colombia_amurallada`): las fachadas coloniales amarillas,
+ * ocres, azules y turquesa encendidas por el sol bajo, el magenta de las buganvillas, la madera oscura de los balcones,
+ * la piedra coralina de las murallas y el cielo que va del violeta al naranja sobre el mar. `canal` es el mar y `salmon`
+ * la buganvilla.
+ */
+export const COLOMBIA_CARTAGENA_ATARDECER: Paleta = {
+  tinta: '#1c1420',
+  sombra: '#3a2434',
+  asfalto: '#584048',
+  asfalto_claro: '#7e6268',
+  cemento: '#b49a88',
+  cemento_claro: '#dcc4a8',
+  crema: '#f6e2bc',
+  luz: '#fff3dc',
+  amarillo: '#f6c64a',
+  ocre: '#d8913c',
+  terracota: '#b65a34',
+  rojo: '#d83e34',
+  vino: '#7a2634',
+  salmon: '#ec5a9a',
+  menta: '#7ad0b8',
+  verde: '#4a9450',
+  verde_oscuro: '#28543a',
+  celeste: '#8a8ed4',
+  cielo: '#f8b884',
+  azul: '#3c5cb0',
+  azul_noche: '#2a2c5c',
+  canal: '#5a6aa8',
+  oro: '#ffad3a',
+  bruma: '#f8946e',
+};
+
+export const USO_CARTAGENA: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro',
+  sombra: 'la sombra honda del callejón y de los balcones',
+  asfalto: 'el adoquín en sombra',
+  asfalto_claro: 'el adoquín de la calle',
+  cemento: 'la piedra coralina de las murallas en sombra',
+  cemento_claro: 'la piedra con sol, el andén',
+  crema: 'las fachadas crema, el pretil',
+  luz: 'la raya del borde, los brillos, las ventanas prendidas',
+  amarillo: 'las fachadas amarillas, la Torre del Reloj',
+  ocre: 'las fachadas ocre, la luz del atardecer',
+  terracota: 'las tejas y las baldosas de barro de las azoteas',
+  rojo: 'las puertas rojas, la cajita de la garrocha, las frutas',
+  vino: 'la madera oscura de los balcones',
+  salmon: 'las buganvillas, la piel',
+  menta: 'las fachadas turquesa',
+  verde: 'las hojas de las palmas y de las buganvillas',
+  verde_oscuro: 'las hojas en sombra',
+  celeste: 'el cielo alto violeta',
+  cielo: 'el cielo naranja del atardecer',
+  azul: 'las fachadas azules, la colchoneta',
+  azul_noche: 'el mar lejos, la sombra del azul',
+  canal: 'el mar Caribe al atardecer',
+  oro: 'el sol que se pone, el farol',
+  bruma: 'la calima naranja del horizonte',
+};
