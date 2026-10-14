@@ -1,6 +1,6 @@
 # Lote H6: los ambientes del mar, el cafetal y el llano
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/38
 Fecha: 2026-10-14
 
 ## Qué se hizo
