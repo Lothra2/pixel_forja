@@ -1,6 +1,6 @@
 # Lote E6: los escenarios de las seis pruebas que seguían pintadas por código
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/36
 Fecha: 2026-10-14
 
 ## Qué se hizo
