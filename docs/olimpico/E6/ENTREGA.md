@@ -158,7 +158,8 @@ npm run escenario -- docs/ejemplos/nekketsu/escenarios/cartagena.layout.json sal
   - `custom.test.ts`: el kit trae 21 escenarios, con la franja, el largo y la vista de los seis nuevos, y 58 PNG más (Cocora, Hạ Long y Apure 11 cada uno, los otros tres 8 y la palenquera).
 - **La suite sin `custom.test.ts`:** 41 archivos, 436 de 436.
 - **`custom.test.ts`: 14 de 15.** Falla `se genera en menos de 5 minutos`: el kit tardó 364 s. **No es de este lote:** en esta máquina, hoy, `main` sin E6 tarda 327 s (lo medí con la máquina libre), y con E6 339 s. Los seis escenarios y la palenquera suman unos 12 s. El grueso son los atletas (210 s) y el audio (51 s). No subí el límite de 300 s: es tuyo. Para correr el resto de los casos le subí el corte del `beforeAll` en una copia local, que no va en el PR.
-- **`tsc` limpio.**
+- **`tsc` limpio y `npm run build:sitio` limpio:** el kit del sitio sale con los seis nuevos, cada uno con sus 9 pruebas en verde.
+- **e2e de Playwright: 50 de 50.**
 
 **Las 9 pruebas** (en cada `verificacion.md`):
 - **Legibilidad**, contraste mediano y el peor (mínimo 2:1):
