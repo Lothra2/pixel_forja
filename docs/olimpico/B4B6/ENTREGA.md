@@ -1,6 +1,6 @@
 # Lote B4B6: la garrocha que no llega, el judo, el Quemado, la Chapita y el tejo
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/40
 Fecha: 2026-10-14
 
 ## Qué se hizo
