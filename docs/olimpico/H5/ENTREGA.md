@@ -1,6 +1,6 @@
 # Lote H5: los efectos de la natación y la garrocha
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/37
 Fecha: 2026-10-14
 
 ## Qué se hizo
