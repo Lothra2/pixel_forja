@@ -34,6 +34,7 @@ import { MINERO_PIEDRA_SPEC, SOMBRA_SPEC } from '../boss/mina';
 import { MARINERO_NIEBLA_SPEC, CANGREJO_CENIZA_SPEC, MEDUSA_NEGRA_SPEC, CAPITAN_AHOGADO_SPEC } from '../boss/puerto';
 import { PEZ_FAROL_SPEC, biteWarning, waveWarning, wave, pezAntena } from '../boss/pez';
 import { SONAMBULO_SPEC, GARGOLA_SPEC, DUENDE_SPEC, RELOJERO_SPEC, diveShadow, sandProjectile, sandImpact, needleWarning } from '../boss/ciudad';
+import { REY_DE_PIEDRA_SPEC, reyCorona, fistWarning, crackGlow, lullabyNote } from '../boss/rey';
 import { bossPoses } from '../boss/anim';
 import { camMatrix } from '../boss/render';
 import { mv } from '../boss/sdf';
@@ -158,6 +159,8 @@ export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'n
   /** vive en el agua: lo de abajo de la superficie viene teñido y translúcido en la hoja (el Pez Farol) */
   en_agua?: boolean;
   luz_antena?: { color: string; radius: number; notas: string };
+  /** la luz de la corona del Rey de Piedra (Mundo 5) */
+  luz_corona?: { color: string; radius: number; notas: string };
   /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
   capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry> } }
 
@@ -356,6 +359,16 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       [DUENDE_SPEC, { tipo: 'enemigo', nombre: 'Duende del Sueño' }],
       [RELOJERO_SPEC, { tipo: 'enemigo', nombre: 'El Relojero', elite: true }],
     ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+    chars.rey_de_piedra = exportBoss(REY_DE_PIEDRA_SPEC, files, log, opts.bossCache, opts.quick, { tipo: 'jefe', nombre: 'El Rey de Piedra', luz_corona: { color: '#fff0c0', radius: 260, notas: 'La luz robada de la ciudad, en la corona: lo más brillante de la pantalla. En die la corona se rompe (cuadro 5) y la luz sale volando hacia arriba: desde ahí corona es null y el juego hace volar la luz desde el último punto.' } } as Partial<CharEntry>);
+    // dónde va la luz de la corona, por dirección y por cuadro (pixeles desde el pivote, y hacia abajo; null si ya se fue)
+    for (const [name, entry] of Object.entries(chars.rey_de_piedra.anims)) {
+      const def = REY_DE_PIEDRA_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).corona = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: REY_DE_PIEDRA_SPEC.elev });
+        return poses.map((p) => { const l = reyCorona(REY_DE_PIEDRA_SPEC.cell, p); if (!l || (p.extra?.crown ?? 1) < 0.5) return null; const c = mv(M, l); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+    }
   }
   // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
   for (const id of NPCS) {
@@ -405,6 +418,10 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     for (const { dir, frames } of rotate8(sandProjectile())) addFx(`proyectil_arena_${dir}`, frames, 12, true);
     addFx('impacto_arena', sandImpact(), 14, false);
     addFx('aviso_aguja', needleWarning(), 10, true);
+    // el Rey de Piedra: dónde cae el puño (capa suelo), el brillo de las grietas y las notas de la canción de cuna
+    addFx('aviso_puno', fistWarning(), 10, false);
+    addFx('grieta_luz', crackGlow(), 8, true);
+    addFx('nota_cuna', lullabyNote(), 6, true);
   }
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);

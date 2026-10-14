@@ -117,7 +117,7 @@ async function enemigos(conJefe: boolean) {
   const { familyFicha } = await import('../src/engine/rpg/family.ts');
   const ciudad = await import('../src/engine/boss/ciudad.ts');
   const hero = renderClip(familyFicha('sophie', true), 48, 'idle', 'se', { props: true }).frames[0];
-  const specs = [ciudad.SONAMBULO_SPEC, ciudad.GARGOLA_SPEC, ciudad.DUENDE_SPEC, ciudad.RELOJERO_SPEC];
+  const specs = conJefe ? [(await import('../src/engine/boss/rey.ts')).REY_DE_PIEDRA_SPEC] : [ciudad.SONAMBULO_SPEC, ciudad.GARGOLA_SPEC, ciudad.DUENDE_SPEC, ciudad.RELOJERO_SPEC];
   const rows: { cell: number; pivot: [number, number]; frames: Raster[] }[] = [];
   for (const s of specs) {
     const { clips, pivot } = renderBossSheets(s, bossCache());
@@ -166,4 +166,5 @@ const all = what === 'todo';
 if (all || what === 'mapa') await mapa();
 if (all || what === 'estatuas') await estatuas();
 if (all || what === 'enemigos') await enemigos(false);
+if (all || what === 'jefe') await enemigos(true);
 if (all || what === 'ladrona') await ladrona();
