@@ -30,6 +30,13 @@ Los cinco puntos del pedido, en orden de prioridad:
 
 Lo de Nekketsu va en `docs/ejemplos/nekketsu/kit.config.json`: los packs `judo` y `judo_azul` y la prueba `judo`.
 
+**El kit, más rápido.** Con los dos packs de judo, el kit de ejemplo tardó 314 s y se pasó de los 300. No subí el límite: aceleré el motor sin cambiar ni un pixel.
+- El Scale2x del RotSprite, lo que más tiempo se comía, ya no calcula los bordes con min y max por cada vecino.
+- Los pares de capas que no llevan contorno entre sí se buscan en una tabla.
+- El lienzo lleva la caja de lo que se pintó, y los recorridos para las cajas, el cuerpo y el raster barren solo esa caja y no el lienzo completo.
+
+Todas las imágenes doradas salen iguales. La prueba del kit completo pasó de 328 s a 268 s.
+
 ## Cómo se usa (estudio y kit)
 
 **En el estudio:** las seis salen en Animar. `judo_throw` ahora se llama "Seoi nage (proyección de judo)", y están "O-soto-gari (barrida por fuera)", "Barrido por o-soto-gari" y "Rei (saludo de judo)". En el estudio los cuadros girados se ven sin espejar, como salen en el atlas.
@@ -73,7 +80,11 @@ Lo de Nekketsu va en `docs/ejemplos/nekketsu/kit.config.json`: los packs `judo` 
   - **Imagen dorada** `golden/judo.png`.
 - **`b4b6.test.ts` sigue en 7 de 7.** `judo_thrown` ahora trae `aterriza` e `impacto`. La imagen dorada `golden/b4b6.png` se regeneró y solo cambió la celda del judo.
 - **El esquema** `docs/kit-a-medida.schema.json` está regenerado, con `vestuario` como lista cerrada.
-- RESULTADOS_SUITE
+- **El Scale2x nuevo** sale idéntico al viejo en 3000 imágenes al azar.
+- **La suite sin `custom.test.ts`:** 46 archivos, 481 de 481. Las imágenes doradas de antes salen iguales, también con el render más rápido.
+- **`custom.test.ts`: 15 de 15,** con los packs `judo` y `judo_azul` en el ejemplo (18 atlas por atleta) y el kit por debajo de 300 s.
+- **`tsc` limpio y `npm run build:sitio` limpio.**
+- **e2e de Playwright: 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
