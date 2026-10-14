@@ -38,6 +38,7 @@ import { MARINERO_NIEBLA_SPEC, CANGREJO_CENIZA_SPEC, MEDUSA_NEGRA_SPEC, CAPITAN_
 import { PEZ_FAROL_SPEC, biteWarning, waveWarning, wave, pezAntena } from '../boss/pez';
 import { SONAMBULO_SPEC, GARGOLA_SPEC, DUENDE_SPEC, RELOJERO_SPEC, diveShadow, sandProjectile, sandImpact, needleWarning } from '../boss/ciudad';
 import { REY_DE_PIEDRA_SPEC, reyCorona, fistWarning, crackGlow, lullabyNote } from '../boss/rey';
+import { DRAGONA_SPEC, dragonaBoca, breathWarning, floorFire, tailWarning, bigSteam } from '../boss/dragona';
 import { HOLLIN_SPEC, SALAMANDRA_SPEC, FAROLERO_SPEC, CARCELERO_SPEC, faroleroJaula, emberProjectile, emberImpact, emberTrail, chainSpinWarning, chainLineWarning, steamPuff } from '../boss/fragua';
 import { bossPoses } from '../boss/anim';
 import { camMatrix } from '../boss/render';
@@ -397,6 +398,17 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
         return poses.map((p) => { const c = mv(M, faroleroJaula(FAROLERO_SPEC.cell, p)); return [Math.round(c[0]), Math.round(-c[1])]; });
       });
     }
+    // la Dragona de Brasa: dónde va la boca (luz y origen del aliento), por dirección y por cuadro (null si no se ve)
+    chars.dragona_brasa = exportBoss(DRAGONA_SPEC, files, log, opts.bossCache, opts.quick, { tipo: 'jefe', nombre: 'La Dragona de Brasa', luz_boca: { color: '#ff8a30', radius: 200, notas: 'La luz de la boca: más fuerte cuando jaw sube (attack, aliento, warcry). En aliento el chorro sale de `boca` hacia adelante (cuadros 9 a 15). Apagada y con la boca cerrada es null. En die el fuego pasa a dorado (#ffe080) desde el cuadro 8.' } } as Partial<CharEntry>);
+    for (const [name, entry] of Object.entries(chars.dragona_brasa.anims)) {
+      const def = DRAGONA_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).boca = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: DRAGONA_SPEC.elev });
+        return poses.map((p) => { const l = dragonaBoca(DRAGONA_SPEC.cell, p); if (!l) return null; const c = mv(M, l); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+    }
+    (chars.dragona_brasa as unknown as Record<string, unknown>).notas = 'Fase 1: idle, walk, attack (zarpazo, aviso 1 a 6), coletazo (medio círculo detrás, aviso 1 a 6, fx aviso_cola), aliento (aviso 1 a 8, fx aviso_aliento en línea y después fuego_piso). Fase 2: encendida (blindada, cubierta de llamas). Un surtidor la apaga: apagada (echada, gris, humea; ahí se le pega). warcry llama hollines. die: rompe las cadenas (suelta en el cuadro 5), el fuego pasa a dorado y queda una dragoncita dorada enroscada que ronronea (últimos cuadros).';
     (chars.farolero_cadenas as unknown as Record<string, unknown>).notas = 'Los faroleros con jaula: true en el mapa llevan la jaula de luz a la espalda: la luz (color de su `luz`, radio 40) va en `jaula` de cada anim. En die la jaula cae al piso (cuadro 7) y se abre (cuadro 11, evento suelta): ahí sale luz_libre_<luz>. Los que no tienen jaula: true se dibujan igual pero sin luz.';
     (chars.hollin as unknown as Record<string, unknown>).notas = 'pegado: en bucle encima de la heroína (dibujarlo en su pecho, chiquito). No vuela.';
     (chars.salamandra_brasa as unknown as Record<string, unknown>).notas = 'walk deja rastro_brasa (fx, capa suelo) cada pocos pasos. piedra: cuando Thor la moja (negra y quieta, humea).';
@@ -462,6 +474,11 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     addFx('aviso_cadena', chainSpinWarning(), 10, false);
     addFx('aviso_linea_cadena', chainLineWarning(), 10, true);
     addFx('vapor', steamPuff(), 12, false);
+    // la Dragona: el aviso del aliento (en línea), el piso ardiendo, el medio círculo de la cola y el vapor del surtidor
+    addFx('aviso_aliento', breathWarning(), 10, true);
+    addFx('fuego_piso', floorFire(), 10, true);
+    addFx('aviso_cola', tailWarning(), 10, false);
+    addFx('vapor_grande', bigSteam(), 12, false);
   }
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);

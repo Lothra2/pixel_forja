@@ -177,7 +177,7 @@ async function enemigos(conJefe: boolean) {
   const { familyFicha } = await import('../src/engine/rpg/family.ts');
   const fr = await import('../src/engine/boss/fragua.ts');
   const hero = renderClip(familyFicha('sophie', true), 48, 'idle', 'se', { props: true }).frames[0];
-  const specs = conJefe ? [] : [fr.HOLLIN_SPEC, fr.SALAMANDRA_SPEC, fr.FAROLERO_SPEC, fr.CARCELERO_SPEC];
+  const specs = conJefe ? [(await import('../src/engine/boss/dragona.ts')).DRAGONA_SPEC] : [fr.HOLLIN_SPEC, fr.SALAMANDRA_SPEC, fr.FAROLERO_SPEC, fr.CARCELERO_SPEC];
   const rows: { cell: number; pivot: [number, number]; frames: Raster[] }[] = [];
   for (const s of specs) {
     const { clips, pivot } = renderBossSheets(s, bossCache());
@@ -202,3 +202,4 @@ if (all || what === 'jaulas') await jaulas();
 if (all || what === 'objetos') await objetos();
 if (all || what === 'puerta') await puerta();
 if (all || what === 'enemigos') await enemigos(false);
+if (all || what === 'jefe') await enemigos(true);
