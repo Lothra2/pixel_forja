@@ -84,7 +84,7 @@ Los seis entran por el registro de lugares (`lugares.ts`), cada uno en su archiv
 | | |
 |---|---|
 | Ficha | `docs/ejemplos/nekketsu/npc/palenquera.ficha.json`: piel morena, trenzas, el pañuelo rojo con pepitas y la ponchera de aluminio con mangos, banano, patilla, guayabas y limones (`hat: "ponchera"`). La blusa amarilla con la franja azul y la falda roja |
-| `pregonar` | `llamar` del motor, de frente, con la mano arriba |
+| `pregonar` | `llamar` del motor, de frente, con la mano arriba y la campanita del pack `calle` |
 | `reclamar` | `reclama` del motor, de frente, con los brazos abiertos: lo que hace cuando un atleta le cae al lado |
 | En el kit | `npc/palenquera.png`, 48 x 48 por cuadro, ancla [24, 46]. La ponchera cabe entera en la celda |
 
@@ -135,11 +135,54 @@ npm run escenario -- docs/ejemplos/nekketsu/escenarios/cartagena.layout.json sal
 
 ## Pruebas
 
-(se llena con los números de la corrida final)
+- **Prueba nueva `e6.test.ts`, 15 casos:**
+  - Los seis pasan las 9 pruebas, sin avisos, con su estilo, su hora, su paleta de 24 colores distintos (y los 24 usados), sus íconos, sus letreros y su vida. El registro trae los seis al final, en ese orden.
+  - Cada lugar nuevo trae su paleta por su fondo, y las de Caracas, la Comuna 13 y Vietnam no cambian.
+  - A otra hora, cada uno queda pendiente y dice qué hora pinta.
+  - Los cinco de lado van sin inclinar y con el ancho de su prueba, con el piso pintado entero. El liceo va inclinado a 0.35.
+  - Cocora calza con `Vallas.ts`: TOP 228, los cuatro carriles, las cinco rayas de punta a punta, ningún carril encima de una raya, la salida y la meta a cuadros, y las copas de las palmas dentro de la cámara.
+  - Hạ Long calza con `Natacion.ts`: TOP 226, cada carril entre dos corcheras, las corcheras rojas y blancas, la marca de 15 m, la pared a cuadros y el agua sin un pixel de tinta.
+  - Apure calza con `Jabalina.ts`: la pista de tartán con sus bordes hasta x 380, la raya de foul, nada de tartán después del foul y la marca cada 100 px.
+  - El barrio calza con `Chapita.ts`: la casa en (640, 200) con su base en la fila 316, la ventana rota en la caja de `VENTANA`, encima de la sana, y el home de tiza.
+  - El liceo calza con `Quemado.ts`: la raya del medio amarilla, los dos cementerios, el techo y las cuatro lámparas.
+  - Cartagena calza con `Azoteas.ts`: la cajita roja en x 428, la raya blanca del borde en x 440, el techo de enfrente 16 px antes de su x con la colchoneta, el carrito centrado en x - 15 y apoyado en la calle, y la palenquera en x 432.
+  - La vida que va sobre lo pintado tapa entero: el cuadro 0 calza con la capa cerca y los demás cambian.
+  - Un actor en una x con decimales sale igual que en la x redondeada.
+  - El peso: luces, vida y objetos sin pasarse. Cocora y Hạ Long sin luces.
+  - La palenquera: `pregonar` y `reclamar`, la fila de arriba de la celda libre en todos los cuadros (la ponchera cabe) y la ponchera más ancha que la cabeza en las tres direcciones.
+  - Imágenes doradas `golden/lugares_e6.png` (los seis a los 2 segundos) y `golden/npc_e6.png` (la tira de la palenquera).
+- **Pruebas que tuve que tocar:**
+  - `e5.test.ts`: el registro ahora trae más lugares. La prueba mira los cuatro de E5.
+  - `calle.test.ts`: la palenquera va en la sección `npc`. Su imagen dorada `npc_c6a` sigue igual: la palenquera tiene la suya.
+  - `equipos.test.ts`: los gorros propios son 8.
+  - `custom.test.ts`: el kit trae 21 escenarios, con la franja, el largo y la vista de los seis nuevos, y 58 PNG más (Cocora, Hạ Long y Apure 11 cada uno, los otros tres 8 y la palenquera).
+- **La suite sin `custom.test.ts`:** 41 archivos, 436 de 436.
+- **`custom.test.ts`: 14 de 15.** Falla `se genera en menos de 5 minutos`: el kit tardó 364 s. **No es de este lote:** en esta máquina, hoy, `main` sin E6 tarda 327 s (lo medí con la máquina libre), y con E6 339 s. Los seis escenarios y la palenquera suman unos 12 s. El grueso son los atletas (210 s) y el audio (51 s). No subí el límite de 300 s: es tuyo. Para correr el resto de los casos le subí el corte del `beforeAll` en una copia local, que no va en el PR.
+- **`tsc` limpio.**
+
+**Las 9 pruebas** (en cada `verificacion.md`):
+- **Legibilidad**, contraste mediano y el peor (mínimo 2:1):
+  - `cocora`: 4.1:1 y 3.9:1, sobre el tartán.
+  - `halong`: 4.6:1 y 3.3:1, sobre el agua de la piscina.
+  - `llanos_apure`: 5.8:1 y 5.4:1.
+  - `barrio_caracas`: 5.4:1 y 3.1:1.
+  - `liceo_patio`: 6.3:1 y 4.5:1.
+  - `cartagena`: 4.9:1 y 2.9:1. El callejón estaba en 1.8:1 detrás de la palenquera y lo aclaré con el resplandor del farol.
+- **Peso, en la pantalla más cargada:** 0, 0, 1, 0, 4 y 3 luces (máx 12), 7, 8, 4, 5, 3 y 5 piezas animadas (máx 16) y 0, 0, 0, 2, 0 y 2 objetos.
+- **Paleta:** los 24 colores en los seis.
 
 ## Para aprobar (todo en esta carpeta)
 
-(se llena al generar los archivos)
+- `mismo_juego.png`: el hẻm aprobado al lado de los seis, enteros a los 2 segundos.
+- `camara_del_juego.png`: lo que ve la cámara de cada prueba con atletas del kit (zoom 1.5 en vallas, natación, jabalina y azoteas, 1.2 en la chapita y 1 en el quemado).
+- `cocora_vallas.gif`, 6 segundos: los cuatro salen de los tacos y pasan las vallas por su carril. La cámara sigue al que va adelante, pasa el letrero y llega a la finca.
+- `halong_natacion.gif`, 6 segundos: se tiran del poyete y nadan crol, con el agua de adelante tapándoles el cuerpo como en el juego. Atrás, las banderas, el público y el junco.
+- `llanos_apure_jabalina.gif`, 6 segundos: Rick corre por la pista de tartán, lanza en la raya de foul y la cámara sigue la jabalina por el sector, hasta el estero.
+- `barrio_caracas_chapita.gif`, 6 segundos: Kenji lanza la chapita, Rick le pega con el palo de escoba y la manda contra la casa del vecino. La ventana se rompe (aparece el objeto `ventana_rota`).
+- `liceo_patio_quemado.gif`, 6 segundos: Rick le tira la pelota a Kenji, que no la agarra y se va al cementerio.
+- `cartagena_azoteas.gif`, 6 segundos: Rick corre por la azotea, clava la garrocha y cae en la colchoneta de enfrente. Kenji no llega, cae al lado del carrito y la palenquera pasa de pregonar a reclamar.
+- `palenquera.png`: la tira de la palenquera al cuádruple, con `pregonar` y `reclamar`.
+- Una carpeta por escenario con sus postales a 0, 2 y 4 segundos, la imagen ampliada al doble, `ficha_arte.md` y `verificacion.md`.
 
 ## Decisiones que tomé sin preguntar
 
@@ -160,6 +203,7 @@ npm run escenario -- docs/ejemplos/nekketsu/escenarios/cartagena.layout.json sal
 - **Cada uno está medido para el ancho de su prueba.** Un layout más largo con el mismo fondo no está probado.
 - **El agua de adelante de la natación la sigue poniendo el juego.** El arte no puede tapar al nadador hasta la cintura, porque va detrás.
 - **En la chapita y las azoteas el juego tiene que mover los objetos.** Si los deja quietos, el techo de enfrente se queda a 5 m y el carrito no lo sigue.
+- **`pregonar` trae la campanita de `llamar`.** En la mano de la palenquera se lee como una tajada de fruta amarilla. Si no gusta, se cambia a otra animación en `kit.config.json` sin tocar el motor.
 - **Los GIF son una simulación** con los atletas del kit sobre el arte y la cámara de cada prueba. Las vallas, el agua de adelante y la jabalina los dibujé como los pinta el juego, pero el movimiento no es el del juego.
 
 ## Lo que necesita el siguiente lote
