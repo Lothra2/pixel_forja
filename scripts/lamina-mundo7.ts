@@ -11,9 +11,9 @@
  * - mundo7_enemigos.png y mundo7_diablo.png: al lado de la heroína (el Diablo también al lado de la Dragona).
  * - mundo7_iconos.png: los íconos nuevos a 40 y a 80.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { createRaster, blit, type Raster } from '../src/engine/core/raster.ts';
-import { encodePng } from '../src/engine/export/png.ts';
+import { encodePng, decodePng } from '../src/engine/export/png.ts';
 import { over } from '../src/engine/loot/canvas.ts';
 import { drawShadow } from '../src/engine/world/premium/shadow.ts';
 
@@ -26,6 +26,8 @@ const fill = (r: Raster, c: number[]) => { for (let i = 0; i < r.w * r.h; i++) r
 const down = (r: Raster, k: number) => { const o = createRaster(Math.floor(r.w / k), Math.floor(r.h / k)); for (let y = 0; y < o.h; y++) for (let x = 0; x < o.w; x++) for (let c = 0; c < 4; c++) { let v = 0; for (let j = 0; j < k; j++) for (let i = 0; i < k; i++) v += r.data[((y * k + j) * r.w + x * k + i) * 4 + c]; o.data[(y * o.w + x) * 4 + c] = v / (k * k); } return o; };
 /** piso de nieve sucia (para que se lea lo oscuro) */
 const floor = (w: number, h: number) => { const r = createRaster(w, h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const v = ((x >> 3) + (y >> 3)) % 2 ? [58, 64, 74] : [48, 54, 64]; r.data.set([...v, 255], (y * w + x) * 4); } return r; };
+
+const bossCache = () => { const cd = '.cache/jefes'; mkdirSync(cd, { recursive: true }); return { get: (k: string) => (existsSync(`${cd}/${k}.png`) ? decodePng(new Uint8Array(readFileSync(`${cd}/${k}.png`))) : null), set: (k: string, r: Raster) => writeFileSync(`${cd}/${k}.png`, encodePng(r)) }; };
 
 type Light = { x: number; y: number; r: number; c: string; k: number };
 /** La postal como se ve en el juego: la oscuridad de la zona y las luces que hay a la vista. */
@@ -149,6 +151,35 @@ async function trono() {
   save('mundo7_trono.png', up(r, 2));
 }
 
+async function enemigos(conJefe: boolean) {
+  const { renderBossSheets } = await import('../src/engine/boss/sheet.ts');
+  const { renderClip } = await import('../src/engine/render/clip.ts');
+  const { familyFicha } = await import('../src/engine/rpg/family.ts');
+  const hero = renderClip(familyFicha('sophie', true), 48, 'idle', 'se', { props: true }).frames[0];
+  const co = await import('../src/engine/boss/corazonJefes.ts');
+  const specs = conJefe ? [(await import('../src/engine/boss/dragona.ts')).DRAGONA_SPEC] : co.CORAZON_SPECS;
+  const rows: { cell: number; pivot: [number, number]; frames: Raster[] }[] = [];
+  for (const s of specs) {
+    const { clips, pivot } = renderBossSheets(s, bossCache());
+    const pickF = (c: (typeof clips)[number]) => { const n = c.def.frames; return c.def.name === 'die' ? [Math.floor(n * 0.4), Math.floor(n * 0.7), n - 1] : c.def.windup ? [c.def.windup[1], Math.min(n - 1, c.def.windup[1] + 2)] : [0]; };
+    const dirRow = conJefe && s.id === 'dragona_brasa' ? 7 : 7;
+    rows.push({ cell: s.cell, pivot, frames: clips.flatMap((c) => pickF(c).map((f) => c.frames[dirRow][f])) });
+    console.log(`  ${s.id}: ${clips.map((c) => `${c.def.name} ${c.def.frames}`).join(', ')}`);
+  }
+  const PER = 12;
+  const lines: { cell: number; pivot: [number, number]; frames: Raster[]; first: boolean }[] = [];
+  for (const q of rows) for (let i = 0; i < q.frames.length; i += PER) lines.push({ cell: q.cell, pivot: q.pivot, frames: q.frames.slice(i, i + PER), first: i === 0 });
+  const W = Math.max(...lines.map((q) => 60 + q.frames.length * q.cell)), H = lines.reduce((a, q) => a + q.cell + 8, 0);
+  const r = floor(W, H);
+  let y = 0;
+  for (const q of lines) {
+    over(r, hero, 4, y + q.pivot[1] - 46);
+    q.frames.forEach((f, i) => over(r, f, 56 + i * q.cell, y));
+    y += q.cell + 8;
+  }
+  save(conJefe ? 'mundo7_diablo.png' : 'mundo7_enemigos.png', up(r, conJefe ? 1 : 2));
+}
+
 async function iconos() {
   const { skillIcons } = await import('../src/engine/ui/icons2.ts');
   const ic = new Map(skillIcons().map((s) => [s.name, s.frames[0]]));
@@ -162,4 +193,5 @@ const all = what === 'todo';
 if (all || what === 'mapa') await mapa();
 if (all || what === 'objetos') await objetos();
 if (all || what === 'trono') await trono();
+if (all || what === 'enemigos') await enemigos(false);
 if (all || what === 'iconos') await iconos();

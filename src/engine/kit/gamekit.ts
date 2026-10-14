@@ -42,6 +42,8 @@ import { SONAMBULO_SPEC, GARGOLA_SPEC, DUENDE_SPEC, RELOJERO_SPEC, diveShadow, s
 import { REY_DE_PIEDRA_SPEC, reyCorona, fistWarning, crackGlow, lullabyNote } from '../boss/rey';
 import { DRAGONA_SPEC, dragonaBoca, breathWarning, floorFire, tailWarning, bigSteam } from '../boss/dragona';
 import { HOLLIN_SPEC, SALAMANDRA_SPEC, FAROLERO_SPEC, CARCELERO_SPEC, faroleroJaula, emberProjectile, emberImpact, emberTrail, chainSpinWarning, chainLineWarning, steamPuff } from '../boss/fragua';
+import { LOBO_SPEC, ESPECTRO_SPEC, DIABLILLO_SPEC, CABALLERO_SPEC, BRUJA_SPEC, SOMBRA_DEVORADORA_SPEC, iceProjectile, iceImpact, smallFireball, iceLanceWarning, crossWarning } from '../boss/corazon';
+import { REINA_SPEC, GUARDIAN_PUERTA_SPEC } from '../boss/corazonJefes';
 import { bossPoses } from '../boss/anim';
 import { camMatrix } from '../boss/render';
 import { mv } from '../boss/sdf';
@@ -433,6 +435,29 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     (chars.hollin as unknown as Record<string, unknown>).notas = 'pegado: en bucle encima de la heroína (dibujarlo en su pecho, chiquito). No vuela.';
     (chars.salamandra_brasa as unknown as Record<string, unknown>).notas = 'walk deja rastro_brasa (fx, capa suelo) cada pocos pasos. piedra: cuando Thor la moja (negra y quieta, humea).';
   }
+  // el Mundo 7: los lobos de escarcha, los espectros, los diablillos, los caballeros congelados, las brujas, las
+  // sombras devoradoras y los dos minijefes, la Reina Escarcha y el Guardián de la Puerta (a su celda)
+  if (!opts.sinMundo7) {
+    for (const [spec, extra] of [
+      [LOBO_SPEC, { tipo: 'enemigo', nombre: 'Lobo de Escarcha' }],
+      [ESPECTRO_SPEC, { tipo: 'enemigo', nombre: 'Espectro Helado', vuela: true }],
+      [DIABLILLO_SPEC, { tipo: 'enemigo', nombre: 'Diablillo' }],
+      [CABALLERO_SPEC, { tipo: 'enemigo', nombre: 'Caballero Congelado' }],
+      [BRUJA_SPEC, { tipo: 'enemigo', nombre: 'Bruja de Escarcha' }],
+      [SOMBRA_DEVORADORA_SPEC, { tipo: 'enemigo', nombre: 'Sombra Devoradora' }],
+      [REINA_SPEC, { tipo: 'enemigo', nombre: 'La Reina Escarcha', elite: true, vuela: true }],
+      [GUARDIAN_PUERTA_SPEC, { tipo: 'enemigo', nombre: 'El Guardián de la Puerta', elite: true }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+    const nota = (id: string, n: string) => { if (chars[id]) (chars[id] as unknown as Record<string, unknown>).notas = n; };
+    nota('lobo_escarcha', 'En manada (grupo en el mapa). attack es la mordida (aviso 1 a 4, salta: elevacion). run para rodear. aullar llama a la manada. Los ojos celestes brillan en lo oscuro. die: se deshace en nieve.');
+    nota('espectro_helado', 'Vuela (el pivote es el piso debajo). cast: el rayo de hielo (aviso 1 a 6, la bola crece entre las manos); suelta proyectil_rayo_hielo_<dir> desde el punto del impacto y al pegar impacto_rayo_hielo (el encargo los llama proyectil_hielo e impacto_hielo, pero esos nombres ya son del poder de hielo de las heroínas). die: se rompe en escarcha que sube.');
+    nota('diablillo', 'En bandas de 5 a 8. attack: tira la bolita de fuego (aviso 1 a 4, la bolita crece en la mano): proyectil_fuego_chico_<dir> y al pegar impacto_brasa. die: se apaga en humo.');
+    nota('caballero_congelado', 'bloquear (en bucle): el escudo al frente; de frente no le entra el golpe, hay que rodearlo. attack es un tajo (aviso 1 a 4); attack_heavy la espada al piso (aviso 1 a 7). die: la armadura cae vacía.');
+    nota('bruja_escarcha', 'cast (aviso 1 a 6) sirve para el muro y para curar: en el impacto el juego levanta el objeto muro_hielo (mundos[6].objetos: subir, quieto, romper; sólido mientras dura) o cura a los de alrededor. die: se vuelve nieve.');
+    nota('sombra_devoradora', 'attack: abre la boca enorme (aviso 1 a 4) y se tira a tragar: si toca a la heroína le quita una luz compañera (audio luz_comida). Ojos blancos que brillan apenas. die: se deshace en humo.');
+    nota('reina_escarcha', 'Minijefe del Lago (vuela). attack: tajo (aviso 1 a 4). cast: las lanzas de hielo (aviso 1 a 6): el juego pone aviso_lanza_hielo donde caen. warcry: la ventisca en la arena. dividirse: gira y se abre en tres; en el cuadro 10 (suelta) el juego pone los dos reflejos (la misma hoja, sin sombra y un poco transparentes). die: se rompe en mil cristales.');
+    nota('guardian_puerta', 'Minijefe de la Puerta del Trono. attack: el golpe en cruz (aviso 1 a 5, dos impactos: de lado y de arriba): el juego pone aviso_cruz en el piso. attack_heavy: la espada al piso (aviso 1 a 7). charge: la carga en línea (en bucle). Los ojos y las juntas de la armadura brillan rojo. die: cae de rodillas y se apaga.');
+  }
   // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
   for (const id of NPCS) {
     const f = merchantFicha();
@@ -445,6 +470,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   // ---------- poderes ----------
   const fx: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean; celda: number; w?: number; h?: number }> = {};
   const addFx = (name: string, frames: Raster[], fps: number, loop: boolean) => {
+    // dos efectos con el mismo nombre se pisarían (el kit escribe cada archivo una vez y el juego los busca por nombre)
+    if (fx[name]) throw new Error(`fx repetido: ${name}`);
     const a = `fx/${name}.png`;
     files.push(png(a, strip(frames)));
     // los que no son cuadrados (la ola, el aviso de la mordida) traen su ancho y su alto
@@ -499,6 +526,14 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     addFx('fuego_piso', floorFire(), 10, true);
     addFx('aviso_cola', tailWarning(), 10, false);
     addFx('vapor_grande', bigSteam(), 12, false);
+  }
+  // el Mundo 7: el rayo de hielo, la bolita del diablillo, las lanzas de la Reina y el golpe en cruz del Guardián
+  if (!opts.sinMundo7) {
+    for (const { dir, frames } of rotate8(iceProjectile())) addFx(`proyectil_rayo_hielo_${dir}`, frames, 12, true);
+    addFx('impacto_rayo_hielo', iceImpact(), 14, false);
+    for (const { dir, frames } of rotate8(smallFireball())) addFx(`proyectil_fuego_chico_${dir}`, frames, 12, true);
+    addFx('aviso_lanza_hielo', iceLanceWarning(), 10, false);
+    addFx('aviso_cruz', crossWarning(), 10, false);
   }
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);

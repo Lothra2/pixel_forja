@@ -380,6 +380,41 @@ function decals(): WorldObject[] {
 }
 const d0 = (a: number) => a;
 
+// ---------------------------------------------------------------- el muro de hielo de la bruja
+
+/**
+ * Muro de hielo (32 x 64, sólido mientras dura): un bloque de hielo filoso que sale del piso. `subir` (6 cuadros a 12
+ * fps: crece desde el piso con escarcha que salta), `quieto` (1) y `romper` (6 cuadros a 12 fps: se quiebra en
+ * pedazos que caen y se deshacen).
+ */
+function iceWall(): WorldObject {
+  const P = ['#16203a', '#22304a', '#3a4a62', '#6a8aac', '#9ab8d8', '#d0e4f6'];
+  const draw = (h: number, broken: number, f: number): Raster => {
+    const r = createRaster(32, 64), base = 60;
+    for (let y = Math.round(base - h); y < base; y++) {
+      const t = (base - y) / Math.max(1, h), hw = 13 - t * 3 + Math.sin(y * 0.5) * 0.8;
+      for (let x = Math.floor(16 - hw); x <= 16 + hw; x++) {
+        const u = (x + 0.5 - 16) / hw;
+        if (broken > 0 && crackDist(x, y, 7, 813) < broken * 2.4) continue;
+        if (broken > 0 && hash(x >> 2, y >> 2, 814) < broken * 0.8) continue;
+        put(r, x, y, tone(P, (u < -0.4 ? 0.85 : u < 0.3 ? 0.55 : 0.3) + (Math.abs(u + 0.4) < 0.08 ? 0.2 : 0) + (crackDist(x, y, 9, 815) < 0.6 ? 0.25 : 0), x, y, true));
+      }
+    }
+    // los picos de arriba
+    if (h > 20 && broken < 0.5) for (const [dx, ph] of [[-6, 8], [0, 14], [6, 10]] as [number, number][]) for (let t = 0; t < ph * (h / 56); t++) { const w = 3 * (1 - t / ph); for (let x = -w; x <= w; x++) put(r, 16 + dx + x, base - h - t, tone(P, 0.75 - x / 6, 0, 0)); }
+    // escarcha que salta al subir y pedazos que caen al romperse
+    if (h < 50 && broken === 0) for (let i = 0; i < 8; i++) put(r, 4 + hash(i, f, 816) * 24, base - 2 - hash(f, i, 817) * 10, '#ffffff', 220);
+    if (broken > 0) for (let i = 0; i < 12; i++) { const x = 4 + hash(i, 1, 818) * 24, y = base - 40 * (1 - broken) * hash(i, 2, 818) + broken * 4 - 4; ellipse(r, x, y, 2, 1.6, (u, v) => (u + v < -0.3 ? P[5] : P[3]), Math.round(255 * (1 - broken * 0.6))); }
+    outline(r, '#030406');
+    frostCap(r, 0.5, 819, f);
+    return r;
+  };
+  const subir = Array.from({ length: 6 }, (_, f) => draw(((f + 1) / 6) * 52, 0, f));
+  const quieto = draw(52, 0, 0);
+  const romper = Array.from({ length: 6 }, (_, f) => draw(52 - f * 4, (f + 1) / 6, f));
+  return grounded({ name: 'muro_hielo', w: 32, h: 64, anchor: [16, 60], solid: [-13, -10, 26, 12], anims: { subir: { frames: subir, fps: 12, loop: false }, quieto: { frames: [quieto], fps: 1, loop: true }, romper: { frames: romper, fps: 12, loop: false } } }, quieto, { spread: 2 });
+}
+
 // ---------------------------------------------------------------- las partículas
 
 /** Nieve negra (8 x 8, 4 cuadros a 6 fps): un copo que gira, a veces claro y a veces gris de ceniza. */
@@ -411,7 +446,7 @@ export const AGUA_HELADA = { base: '#081018', brillo: '#3a5a7a', espuma: '#d0e4f
 export function corazonObjectsB(): WorldObject[] {
   return [
     frozenChains(0), frozenChains(1), frozenChains(2), frontSnow(0), frontSnow(1), frontStalactites(0), frontStalactites(1),
-    farIce(0), farIce(1), farIce(2), mural7(), lastFlameFigure(), ...props(), ...decals(),
+    farIce(0), farIce(1), farIce(2), mural7(), lastFlameFigure(), iceWall(), ...props(), ...decals(),
   ];
 }
 
