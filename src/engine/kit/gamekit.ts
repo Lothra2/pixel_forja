@@ -747,7 +747,8 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   for (const s of signIcons()) { const n = `ui/carteles/${s.name}.png`; files.push(png(n, s.frames[0])); carteles[s.name] = n; }
   ui.iconos_cartel = carteles;
   const habilidades: Record<string, string> = {};
-  for (const s of skillIcons()) { const n = `ui/habilidades/${s.name}.png`; files.push(png(n, s.frames[0])); habilidades[s.name] = n; }
+  // el archivo va sin tildes ni eñes (compañeras > companeras.png); la llave del manifest queda como la pide el juego
+  for (const s of skillIcons()) { const n = `ui/habilidades/${s.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')}.png`; files.push(png(n, s.frames[0])); habilidades[s.name] = n; }
   ui.habilidades = habilidades;
   const dg = digitSheet();
   files.push(png('ui/numeros.png', dg.png));

@@ -264,3 +264,25 @@ describe('Mundo 7: El Corazón Helado (mapa y objetos)', () => {
     expect(nuevos.filter((o) => viejos.has(o.name)).map((o) => o.name)).toEqual([]);
   });
 }, 600_000);
+
+describe('Mundo 7, parte 6: los íconos para Alana', () => {
+  it('frio, compañeras, brasero y romper: 40 x 40, redondos, con el aro dorado', async () => {
+    const { skillIcons } = await import('../ui/icons2');
+    const ic = new Map(skillIcons().map((s) => [s.name, s.frames[0]]));
+    for (const n of ['frio', 'compañeras', 'brasero', 'romper']) {
+      const r = ic.get(n)!;
+      expect(r, n).toBeTruthy();
+      expect([r.w, r.h], n).toEqual([40, 40]);
+      expect(r.data[3], n).toBe(0);
+      expect(r.data[(39 * 40 + 39) * 4 + 3], n).toBe(0);
+      // el aro dorado: en el borde de arriba del medallón hay dorado
+      let oro = 0;
+      for (let y = 0; y < 6; y++) for (let x = 14; x < 26; x++) { const k = (y * 40 + x) * 4; if (r.data[k + 3] && r.data[k] > 180 && r.data[k + 1] > 130 && r.data[k + 2] < 120) oro++; }
+      expect(oro, n).toBeGreaterThan(3);
+    }
+    // el del frío tiene azul; el del brasero, fuego
+    const cuenta = (r: { data: Uint8ClampedArray | Uint8Array }, f: (R: number, G: number, B: number) => boolean) => { let n = 0; for (let i = 0; i < r.data.length; i += 4) if (r.data[i + 3] && f(r.data[i], r.data[i + 1], r.data[i + 2])) n++; return n; };
+    expect(cuenta(ic.get('frio')!, (R, _G, B) => B > 150 && R < 120)).toBeGreaterThan(20);
+    expect(cuenta(ic.get('brasero')!, (R, G, B) => R > 220 && G < 140 && B < 80)).toBeGreaterThan(8);
+  });
+});

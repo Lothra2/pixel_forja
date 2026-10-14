@@ -192,7 +192,83 @@ export function skillIcons(): UiSprite[] {
   out.push({ name: 'calor', frames: [skill('#e8b850', heatGauge, '#ffd27a')] });
   out.push({ name: 'jaula', frames: [skill('#e8b850', openCage, '#ffd27a')] });
   out.push({ name: 'palanca', frames: [skill('#e8b850', pullLever, '#ffd27a')] });
+  // Mundo 7: el medidor del frío, las luces compañeras, prender el brasero de hueso y romper la jaula de huesos
+  out.push({ name: 'frio', frames: [skill('#e8b850', coldGauge, '#ffd27a')] });
+  out.push({ name: 'compañeras', frames: [skill('#e8b850', companionLights, '#ffd27a')] });
+  out.push({ name: 'brasero', frames: [skill('#e8b850', lightBrazier, '#ffd27a')] });
+  out.push({ name: 'romper', frames: [skill('#e8b850', breakBones, '#ffd27a')] });
   return out;
+}
+
+/** El medidor del frío: un termómetro de vidrio con el azul que sube y un copo de nieve grande en el bulbo. */
+function coldGauge(c: IconCanvas) {
+  const glass = { hex: '#d8e8f0', kind: 'glass' as const };
+  c.poly([[16.6, 6], [23.4, 6], [23.4, 22], [16.6, 22]], glass, { tone: 3 });
+  c.circle([20, 27], 8, glass, { tone: 3 });
+  for (const y of [9, 12.4, 15.8, 19.2]) c.line([24, y], [27, y], 1, MAT.gold);
+  c.poly([[18.2, 11], [21.8, 11], [21.8, 22], [18.2, 22]], glowMat('#3a8ae8'), { tone: 3 });
+  c.circle([20, 27], 6.4, glowMat('#1e5ab0'), { tone: 2 });
+  // el copo: seis brazos con sus ramitas, blanco
+  const snow = glowMat('#ffffff');
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2 + Math.PI / 6, x1 = 20 + Math.cos(a) * 5, y1 = 27 + Math.sin(a) * 5;
+    c.line([20, 27], [x1, y1], 1.6, snow, { tone: 5 });
+    const mx = 20 + Math.cos(a) * 3, my = 27 + Math.sin(a) * 3;
+    c.line([mx, my], [mx + Math.cos(a + 0.9) * 1.6, my + Math.sin(a + 0.9) * 1.6], 0.8, snow, { tone: 5 });
+    c.line([mx, my], [mx + Math.cos(a - 0.9) * 1.6, my + Math.sin(a - 0.9) * 1.6], 0.8, snow, { tone: 5 });
+  }
+}
+
+/** Las luces compañeras: tres lucecitas de colores (verde, celeste y dorada) en círculo, con la estela que gira. */
+function companionLights(c: IconCanvas) {
+  c.ring([20, 20], 11, 11, 1, glowMat('#ffd890'), { tone: 2 }, 0, 360);
+  const cols = ['#9aff7a', '#8ae0ff', '#ffd060'];
+  cols.forEach((col, k) => {
+    const a = -Math.PI / 2 + (k / 3) * Math.PI * 2, x = 20 + Math.cos(a) * 11, y = 20 + Math.sin(a) * 11;
+    // la estela que dejan al girar
+    for (let t = 1; t <= 3; t++) { const b = a - t * 0.22; c.circle([20 + Math.cos(b) * 11, 20 + Math.sin(b) * 11], 2.4 - t * 0.5, glowMat(col), { tone: 2 }); }
+    c.circle([x, y], 4.2, glowMat(col), { tone: 3 });
+    c.circle([x, y], 2, glowMat('#ffffff'), { tone: 5 });
+  });
+  // la heroína chiquita en el medio (una silueta con su farolito)
+  c.circle([20, 18], 2.6, clothMat('#f0c09a'));
+  c.poly([[17.4, 21], [22.6, 21], [24, 27], [16, 27]], clothMat('#5a7ad8'));
+}
+
+/** Prender el brasero: el cuenco de piedra sobre tres cuernos, la llama que nace y la manito que lo toca. */
+function lightBrazier(c: IconCanvas) {
+  const stone = metalMat('#4a505e');
+  // las patas cruzadas y el cuenco
+  c.line([14, 33], [22, 21], 1.6, stone); c.line([28, 33], [20, 21], 1.6, stone); c.line([21, 33], [21, 21], 1.4, stone);
+  c.poly([[12.6, 17], [29.4, 17], [26.6, 22.4], [15.4, 22.4]], stone, { bias: 1 });
+  c.line([12.6, 17], [10, 13.4], 1.4, stone); c.line([29.4, 17], [32, 13.4], 1.4, stone);
+  // la llama que nace
+  c.poly([[21, 4.4], [25.4, 12], [24.6, 16], [21, 17.6], [17.4, 16], [16.6, 12]], glowMat('#ff6a20'), { tone: 3 });
+  c.poly([[21, 8.6], [23.4, 13], [21, 16], [18.6, 13]], glowMat('#ffd060'), { tone: 4 });
+  c.ellipse([21, 14.4], 1.4, 1.8, glowMat('#fff6d8'), { tone: 5 });
+  // la manito que llega desde abajo a la izquierda
+  const skin = clothMat('#f0c09a');
+  c.poly([[5.6, 31], [8.4, 27.8], [11.6, 29.4], [9, 32.6]], clothMat('#5a7ad8'));
+  c.ellipse([10.6, 27], 3.2, 2.6, skin);
+  c.line([12, 25.2], [14.6, 21.6], 1.4, skin);
+  c.ellipse([15, 21], 1.2, 1.2, glowMat('#ffd060'), { tone: 5 });
+}
+
+/** Romper la jaula: un puño que pega contra barrotes de hueso que se quiebran, con astillas que saltan. */
+function breakBones(c: IconCanvas) {
+  const bone = clothMat('#d8ccb4'), boneD = clothMat('#a89a80');
+  // los barrotes de hueso: dos enteros y el del medio quebrado
+  for (const x of [11, 29]) { c.line([x, 8], [x, 32], 2.4, bone); c.circle([x, 8], 2.2, bone); c.circle([x, 32], 2.2, boneD); }
+  c.line([20, 8], [19, 16], 2.4, bone); c.circle([20, 8], 2.2, bone);
+  c.line([21, 24], [20, 32], 2.4, bone); c.circle([20, 32], 2.2, boneD);
+  // las astillas que saltan y el destello del golpe
+  for (const [x, y, a] of [[14, 15, -2.4], [26, 14, -0.6], [27, 22, 0.4], [13, 23, 2.8]] as [number, number, number][]) c.line([x, y], [x + Math.cos(a) * 3, y + Math.sin(a) * 3], 1.2, bone);
+  for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; c.line([20 + Math.cos(a) * 4, 20 + Math.sin(a) * 4], [20 + Math.cos(a) * 6.4, 20 + Math.sin(a) * 6.4], 1, glowMat('#fff0c0'), { tone: 4 }); }
+  // el puño de frente, con los nudillos
+  const skin = clothMat('#f0c09a');
+  c.ellipse([20, 21], 5.4, 4.6, skin);
+  for (const x of [16.4, 19.2, 22, 24.6]) c.circle([x, 18], 1.6, skin);
+  c.poly([[16, 24], [24, 24], [23, 30], [17, 30]], clothMat('#5a7ad8'));
 }
 
 /** Thor sacudiéndose: la cabeza de frente con las orejas volando a los dos lados, rayitas de movimiento y gotas. */
