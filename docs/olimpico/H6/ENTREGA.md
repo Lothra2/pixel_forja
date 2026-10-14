@@ -51,7 +51,12 @@ En el `kit.config.json` del juego, sumar a `audio`:
     - Las chicharras: cada segundo del llano trae agudo, más que cualquier segundo del cafetal o del mar.
   - **Cada ambiente nuevo es distinto** de los otros dos y de los seis de antes, por brillo, cuánto cambia el volumen, nivel y agudos.
   - Deterministas, y el kit los exporta en bucle, de 12 s, sin pendientes y con `escuchar.html`.
-- (se llena con la corrida final)
+- **Los seis ambientes de antes salen iguales a `main`, muestra por muestra.** Lo comparé con un hash de cada uno en las dos ramas.
+- **La suite sin `custom.test.ts`:** 43 archivos, 451 de 451.
+- **`custom.test.ts`: 14 de 15.** Falla `se genera en menos de 5 minutos`: 340 s. Pasa lo mismo que en E6 y H5: en esta máquina, `main` ya tarda entre 327 y 364 s. Los tres ambientes suman unos segundos (la síntesis y ffmpeg). No subí el límite de 300 s: es tuyo.
+- **El esquema** `docs/kit-a-medida.schema.json` está regenerado.
+- **`tsc` limpio y `npm run build:sitio` limpio.** El kit del sitio sale con los tres ambientes comprimidos y sin `pendiente`.
+- **e2e de Playwright: 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
