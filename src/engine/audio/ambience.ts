@@ -6,7 +6,7 @@ import { RATE } from './sfx';
  * magia (campanitas y un colchón brillante). Todo sintetizado.
  */
 
-export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'catedral' | 'galerias' | 'eco' | 'puerto' | 'campana';
+export type AmbienceName = 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'catedral' | 'galerias' | 'eco' | 'puerto' | 'campana' | 'ciudad' | 'cajita' | 'jardin' | 'reloj' | 'abismo';
 
 function rng(seed: number) {
   let s = seed >>> 0 || 1;
@@ -70,7 +70,7 @@ function loopify(x: Float32Array, len: number): Float32Array {
 const SECONDS = 12, FADE = 1.5;
 
 /** El puerto dura 20 s (el encargo lo pide más largo: el agua contra los muelles necesita tiempo para no repetirse). */
-const LARGO: Partial<Record<AmbienceName, number>> = { puerto: 20 };
+const LARGO: Partial<Record<AmbienceName, number>> = { puerto: 20, ciudad: 20, cajita: 14.4 };
 
 export function ambience(name: AmbienceName): Float32Array {
   const secs = LARGO[name] ?? SECONDS;
@@ -201,6 +201,60 @@ export function ambience(name: AmbienceName): Float32Array {
     }
     for (const [m, v] of [[0.5, 0.02], [1, 0.03], [2, 0.01]] as [number, number][]) blip(buf, 2, 9, 293.66 * m, 293.66 * m, v, 1.2);
   }
+  if (name === 'ciudad') {
+    // la ciudad dormida: viento que pasa despacio entre calles vacías y, muy lejos, un tic tac que no para
+    const wind = bandpass(pink(total, r), (i) => 260 + 260 * lfo(i, 0.04) + 140 * lfo(i, 0.13, 1), 1.1);
+    for (let i = 0; i < total; i++) buf[i] += wind[i] * (0.35 + 0.65 * lfo(i, 0.06, 2) ** 2);
+    const hum = lowpass(pink(total, r), 0.01);
+    for (let i = 0; i < total; i++) buf[i] += hum[i] * 1.2;
+    for (let t = 0.3, k = 0; t < len / RATE + FADE; t += 1, k++) blip(buf, t, 0.05, k % 2 ? 1500 : 1900, k % 2 ? 1450 : 1850, 0.018, 9);
+    // un polvito que brilla de vez en cuando (campanitas finitas, casi nada)
+    for (let k = 0; k < 5; k++) { const f = [2637, 3136, 3520][k % 3]; blip(buf, 1.5 + k * 3.7 + r(), 1.2, f, f, 0.01, 4); }
+  }
+  if (name === 'cajita') {
+    // la cajita de música con la canción de cuna, lejana y un poco desafinada: cada nota es un plin metálico que
+    // se apaga, con la cuerda que se va acabando (el tempo cae apenas) y vuelve
+    const cuna = [392, 329.6, 392, 440, 392, 329.6, 392, 329.6, 293.7, 261.6, 0, 0, 329.6, 392, 523.3, 493.9, 440, 392, 440, 392, 293.7, 261.6, 0, 0];
+    const beat = 0.6, loopT = cuna.length * beat;
+    for (let t0 = 0; t0 < len / RATE + FADE; t0 += loopT) cuna.forEach((f, i) => {
+      if (!f) return;
+      const t = t0 + i * beat, det = 1 + Math.sin(i * 1.7) * 0.008;
+      blip(buf, t, 1.1, f * 2 * det, f * 2 * det, 0.07, 5);
+      blip(buf, t, 0.6, f * 4.02 * det, f * 4.02 * det, 0.02, 8);
+      if (i % 3 === 0) blip(buf, t, 1.2, f * det, f * det, 0.03, 4);
+    });
+    const hum = lowpass(pink(total, r), 0.012);
+    for (let i = 0; i < total; i++) buf[i] += hum[i] * 0.5;
+    buf = lowpass(buf, 0.35); // lejos
+  }
+  if (name === 'jardin') {
+    // los jardines de piedra: hojas de piedra que rozan (roces cortitos), muy bajito, y alguna piedrita que tintinea
+    const air = bandpass(pink(total, r), (i) => 900 + 400 * lfo(i, 0.07), 1.3);
+    for (let i = 0; i < total; i++) buf[i] += air[i] * 0.12 * lfo(i, 0.09, 1);
+    for (let k = 0; k < 16; k++) {
+      const t = r() * (SECONDS + FADE - 0.5), s0 = Math.floor(t * RATE), n = Math.floor((0.15 + r() * 0.2) * RATE);
+      const sc = bandpass(pink(n, r), () => 2400 + r() * 1200, 1.5);
+      for (let i = 0; i < n && s0 + i < total; i++) buf[s0 + i] += sc[i] * 0.25 * Math.sin((i / n) * Math.PI);
+    }
+    for (let k = 0; k < 4; k++) blip(buf, r() * (SECONDS + FADE - 1), 0.25, 2200 + r() * 600, 2000, 0.03, 9);
+  }
+  if (name === 'reloj') {
+    // la torre del reloj por dentro: tic tac cerca, el engranaje grande que gira y un golpe hondo cada cuatro
+    for (let t = 0.1, k = 0; t < len / RATE + FADE; t += 0.5, k++) { blip(buf, t, 0.04, k % 2 ? 1250 : 1750, k % 2 ? 1200 : 1700, 0.09, 10); blip(buf, t + 0.004, 0.03, 420, 380, 0.05, 10); }
+    for (let t = 0.9; t < len / RATE + FADE; t += 3) { blip(buf, t, 0.6, 85, 60, 0.12, 4); for (let j = 0; j < 6; j++) blip(buf, t + 0.1 + j * 0.06, 0.02, 900, 800, 0.03, 10); }
+    const hum = lowpass(pink(total, r), 0.015);
+    for (let i = 0; i < total; i++) buf[i] += hum[i] * 1.4 * (0.7 + 0.3 * lfo(i, 1 / 3));
+  }
+  if (name === 'abismo') {
+    // el puente sobre el abismo: viento hondo que sube del vacío, un tic tac muy lejos y una piedrita que cae y no llega
+    const deep = bandpass(pink(total, r), (i) => 120 + 80 * lfo(i, 0.05), 0.9);
+    for (let i = 0; i < total; i++) buf[i] += deep[i] * 0.9 * (0.5 + 0.5 * lfo(i, 0.083));
+    const hiss = bandpass(pink(total, r), (i) => 1600 + 600 * lfo(i, 0.11, 2), 1.2);
+    for (let i = 0; i < total; i++) buf[i] += hiss[i] * 0.06;
+    for (let t = 0.5, k = 0; t < len / RATE + FADE; t += 1, k++) blip(buf, t, 0.04, k % 2 ? 1500 : 1900, k % 2 ? 1450 : 1850, 0.008, 9);
+    const tp = 4 + r() * 3;
+    for (let j = 0; j < 5; j++) blip(buf, tp + j * (0.3 + j * 0.12), 0.05, 900 - j * 80, 700, 0.03 * (1 - j / 6), 10);
+  }
   buf = loopify(buf, len);
   // nivel parejo (todos los ambientes suenan parecido de fuerte)
   let peak = 0;
@@ -210,4 +264,4 @@ export function ambience(name: AmbienceName): Float32Array {
   return buf;
 }
 
-export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral', 'galerias', 'eco', 'puerto', 'campana'];
+export const AMBIENCE_NAMES: AmbienceName[] = ['bosque', 'agua', 'noche', 'viento', 'cueva', 'magia', 'catedral', 'galerias', 'eco', 'puerto', 'campana', 'ciudad', 'cajita', 'jardin', 'reloj', 'abismo'];

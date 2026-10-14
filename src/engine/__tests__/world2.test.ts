@@ -109,10 +109,11 @@ describe('mundo v2: atmósfera', () => {
     const c = cloudShadow();
     expect(Math.max(...Array.from({ length: c.w * c.h }, (_, i) => c.data[i * 4 + 3]))).toBeLessThanOrEqual(90);
   });
-  it('ambientes de 12 s (el del puerto, 20 s) que hacen bucle sin salto', () => {
+  it('ambientes de 12 s (el del puerto y el de la ciudad, 20 s; la cajita, 14.4) que hacen bucle sin salto', () => {
+    const largo: Record<string, number> = { puerto: 20, ciudad: 20, cajita: 14.4 };
     for (const n of AMBIENCE_NAMES) {
       const b = ambience(n);
-      expect(b.length, n).toBe((n === 'puerto' ? 20 : 12) * RATE);
+      expect(b.length, n).toBe(Math.floor((largo[n] ?? 12) * RATE));
       let avg = 0; for (let i = 1; i < b.length; i++) avg += Math.abs(b[i] - b[i - 1]); avg /= b.length;
       expect(Math.abs(b[0] - b[b.length - 1]), n).toBeLessThan(Math.max(0.05, avg * 4));
     }
