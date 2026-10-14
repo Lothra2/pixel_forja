@@ -251,7 +251,9 @@ Un juego puede ponerle su nombre a una animación del motor. El pack pide la del
       // un grupo en un solo sprite, uno al lado del otro, con el parlante
       "musicos": { "grupo": { "rapero": { "tocar": "rapear", "animar": "animar" }, "percusionista": { "tocar": "tamborear", "animar": "animar" } }, "parlante": true },
       // la Marimonda del Carnaval (lote E5): camina de lado y baila de frente
-      "marimonda": { "anims": { "caminar": "walk", "bailar": "dance" }, "vistas": { "caminar": "lado" } }
+      "marimonda": { "anims": { "caminar": "walk", "bailar": "dance" }, "vistas": { "caminar": "lado" } },
+      // la palenquera de Cartagena (lote E6): pregona y regaña al que le cae al lado
+      "palenquera": { "anims": { "pregonar": "llamar", "reclamar": "reclama" } }
     }
   }
   ```

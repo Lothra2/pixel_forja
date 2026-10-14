@@ -1,11 +1,12 @@
 /**
  * Gorros propios de PixelForja, dibujados con código sobre las cabezas LPC (que no los traen): el nón lá vietnamita, el
  * sombrero vueltiao, la gorra de béisbol, el casco de ciclista, el sombrero de gaitero zuliano y los rolos (el catálogo
- * C4 del pedido), y la máscara de la Marimonda del Carnaval de Barranquilla (lote E5). Van en el cuadro de 64 de LPC,
+ * C4 del pedido), la máscara de la Marimonda del Carnaval de Barranquilla (lote E5) y la ponchera de frutas de la palenquera
+ * de Cartagena con su pañuelo (lote E6). Van en el cuadro de 64 de LPC,
  * apoyados en la cima del pelo, de frente, de lado y de espalda. Se piden en `hat` como cualquier gorro LPC.
  */
 
-export const GORROS_PROPIOS = ['non_la', 'vueltiao', 'gorra_beisbol', 'casco_ciclista', 'sombrero_gaitero', 'rolos', 'marimonda'] as const;
+export const GORROS_PROPIOS = ['non_la', 'vueltiao', 'gorra_beisbol', 'casco_ciclista', 'sombrero_gaitero', 'rolos', 'marimonda', 'ponchera'] as const;
 export type GorroPropio = (typeof GORROS_PROPIOS)[number];
 export const esGorroPropio = (h: string | null | undefined): h is GorroPropio => !!h && (GORROS_PROPIOS as readonly string[]).includes(h);
 
@@ -107,6 +108,7 @@ export function pixelesGorro(id: GorroPropio, dir: 'down' | 'right' | 'up', cab:
     return out;
   }
   if (id === 'marimonda') return marimonda(dir, cab, color);
+  if (id === 'ponchera') return ponchera(dir, cab, color);
   // rolos: cilindros de colores sobre el pelo, en dos filas, con la redecilla
   const cols = ['#f08aa4', '#7fb8e8', '#f2d14c', '#9ed08a'];
   const fila = (y: number, n: number, dx: number) => {
@@ -167,5 +169,56 @@ function marimonda(dir: 'down' | 'right' | 'up', cab: Caja, color?: string | nul
   const [ex, ey] = pts[pts.length - 1];
   put(ex, ey + 1, tinta); put(ex - 1, ey + 1, tinta); put(ex + 1, ey + 1, tinta); put(ex, ey, yb);
   void ao; void as; void o;
+  return out;
+}
+
+/**
+ * La ponchera de la palenquera de Cartagena: el pañuelo amarrado en la cabeza (rojo con pepitas blancas si no se pide otro
+ * color) y encima la ponchera de aluminio, ancha y bajita, con el montón de frutas: los mangos, el banano, la patilla, las
+ * guayabas y los limones. Se ve igual de frente, de lado y de espalda (la ponchera es redonda), con su contorno.
+ */
+function ponchera(dir: 'down' | 'right' | 'up', cab: Caja, color?: string | null): PixelGorro[] {
+  const out: PixelGorro[] = [];
+  const put = (x: number, y: number, hex: string) => out.push({ x: Math.round(x), y: Math.round(y), hex });
+  const tinta = '#1e1418', blanco = '#fffaf0';
+  const [po, ps, pb, pl] = rampa(color ?? '#d83e34');
+  const [ao, as, ab, al] = rampa('#b8c0cc');
+  const cx = cab.x + cab.w / 2 - 0.5, top = cab.y + 1, rx = cab.w / 2 + 0.5;
+  // el pañuelo: tapa la cima del pelo y baja un poco por los lados, con el nudo atrás (de lado y de espalda)
+  for (let y = top; y <= top + 5; y++) {
+    const hw = rx * Math.sqrt(Math.max(0, 1 - ((top + 5 - y) / 6.5) ** 2)) + 0.5;
+    for (let x = Math.floor(cx - hw); x <= Math.ceil(cx + hw); x++) {
+      const borde = x <= cx - hw + 0.5 || x >= cx + hw - 0.5 || y === top + 5;
+      put(x, y, borde ? po : (x * 3 + y * 5) % 7 === 0 ? blanco : y < top + 2 ? pl : x > cx + 1 ? ps : pb);
+    }
+  }
+  if (dir === 'right') for (const [dx, dy] of [[-rx - 1, 3], [-rx - 2, 4], [-rx - 1, 5], [-rx - 2, 6]]) put(cx + dx, top + dy, dy % 2 ? ps : po);
+  if (dir === 'up') for (const [dx, dy] of [[-1, 5], [0, 6], [1, 5], [-2, 7], [2, 7]]) put(cx + dx, top + dy, dy === 7 ? po : ps);
+  // la ponchera: el aro de arriba con su brillo y el cuerpo que se cierra hasta apoyarse en el pañuelo
+  const bw = rx + 4, by = top - 1;
+  for (let j = 0; j < 3; j++) {
+    const hw = bw - j * 1.5;
+    for (let x = Math.floor(cx - hw); x <= Math.ceil(cx + hw); x++) {
+      const borde = x <= cx - hw + 0.5 || x >= cx + hw - 0.5 || j === 2;
+      put(x, by + j, borde ? ao : j === 0 ? al : x < cx - hw / 3 ? ab : x > cx + hw / 3 ? as : al);
+    }
+  }
+  // las frutas en montón, bajito para que quepa en la celda: de las de atrás a las de adelante
+  const fruta = (fx: number, fy: number, r: number, c: string) => {
+    const [o, s, b, l] = rampa(c);
+    for (let y = Math.floor(fy - r - 1); y <= fy + r + 1; y++) for (let x = Math.floor(fx - r - 1); x <= fx + r + 1; x++) {
+      const d = ((x - fx) ** 2 + (y - fy) ** 2) / (r * r);
+      if (d > 1.15 || y >= by) continue;
+      put(x, y, d > 0.7 ? o : x < fx && y < fy ? l : x > fx ? s : b);
+    }
+  };
+  fruta(cx - bw * 0.42, by - 1.5, 2.2, '#f2c230');
+  fruta(cx + bw * 0.42, by - 1.5, 2.2, '#e8902a');
+  fruta(cx, by - 1.8, 2.2, '#e84a3a');
+  fruta(cx - bw * 0.72, by - 0.5, 1.4, '#4aa83a');
+  fruta(cx + bw * 0.72, by - 0.5, 1.4, '#c8e04a');
+  fruta(cx - bw * 0.15, by - 0.8, 1.6, '#7ac04a');
+  // el banano acostado encima, con la punta oscura
+  for (let i = 0; i < 6; i++) put(cx + bw * 0.1 + i, by - 1 - Math.round(2 - (i - 2.5) ** 2 / 4), i === 5 ? tinta : i < 3 ? '#ffe27a' : '#f2c230');
   return out;
 }

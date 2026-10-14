@@ -4,7 +4,7 @@ import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Pa
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
 import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
-import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO } from './lugaresPaleta';
+import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG, VENEZUELA_APURE_ATARDECER, USO_APURE, VENEZUELA_BARRIO_TARDE, USO_BARRIO, VENEZUELA_LICEO_MEDIODIA, USO_LICEO, COLOMBIA_CARTAGENA_ATARDECER, USO_CARTAGENA } from './lugaresPaleta';
 import { lugarDe } from './lugares';
 
 /**
@@ -498,9 +498,176 @@ const VENEZUELA_LAGO: Estilo = {
   letreros: ['CANCHA LA CHINITA', 'BARRIO SANTA LUCÍA'],
 };
 
+
+/** El valle de Cocora en la mañana (lote E6). */
+const COLOMBIA_CAFETERA: Estilo = {
+  paleta: COLOMBIA_COCORA_MANANA,
+  uso: USO_COCORA,
+  horas: ['manana'],
+  iconos: [
+    { id: 'palmas_cera', nombre: 'Las palmas de cera del Quindío, altísimas y finitas, con el tronco gris claro, los anillos y la copa chica de hojas que caen', donde: 'cerca, a lo largo de la pista' },
+    { id: 'cordillera', nombre: 'La cordillera en planos, azul y azul verdosa, cada vez más clara en la neblina', donde: 'lejos' },
+    { id: 'loma_palmas', nombre: 'La loma verde con el monte en manchones y las palmas de cera que asoman por encima', donde: 'lejos' },
+    { id: 'finca', nombre: 'Una finca de Salento: paredes blancas, zócalo rojo, techo de teja de barro y el balcón corrido de colores con las materas', donde: 'cerca, en la loma' },
+    { id: 'cafetal', nombre: 'El cafetal en hileras con las cerezas rojas', donde: 'cerca, al lado de la finca' },
+    { id: 'willys', nombre: 'El Willys de los cafeteros cargado de bultos de café y un racimo de plátano, con el conductor de sombrero aguadeño y ruana', donde: 'cerca, en el camino de tierra' },
+    { id: 'vacas', nombre: 'Las vacas que pastan en la loma', donde: 'cerca' },
+    { id: 'cerca', nombre: 'La cerca de palos y alambre a lo largo de la pista', donde: 'cerca, al pie' },
+    { id: 'letrero', nombre: 'El letrero de madera VALLE DE COCORA, SALENTO, QUINDÍO', donde: 'cerca, cerca de la salida' },
+    { id: 'pista', nombre: 'La pista de tartán rojo con las rayas de los carriles, la salida y la meta a cuadros', donde: 'piso' },
+  ],
+  vida: {
+    neblina: 'Las bandas de neblina que pasan despacio por delante de los cerros, en la capa lejos',
+    vacas: 'Las vacas que bajan la cabeza a comer y la levantan: 2 cuadros',
+    loros: 'Una pareja de loros orejiamarillos que cruza volando, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['VALLE DE COCORA', 'SALENTO, QUINDÍO'],
+};
+
+
+/** La bahía de Hạ Long al mediodía (lote E6). */
+const VIETNAM_BAHIA: Estilo = {
+  paleta: VIETNAM_HALONG_MEDIODIA,
+  uso: USO_HALONG,
+  horas: ['mediodia'],
+  iconos: [
+    { id: 'islotes', nombre: 'Los islotes de piedra caliza de Hạ Long: paredes grises casi verticales, la base comida por la marea y el monte verde encima', donde: 'cerca, en la bahía' },
+    { id: 'islotes_calima', nombre: 'Las filas de islotes en la calima, cada una más clara', donde: 'lejos' },
+    { id: 'bahia', nombre: 'El agua esmeralda de la bahía con el oleaje y el brillo del sol', donde: 'cerca, lejos y adelante de la piscina' },
+    { id: 'junco', nombre: 'Un junco de madera con las tres velas color ladrillo y sus listones', donde: 'cerca, anclado en la bahía' },
+    { id: 'aldea', nombre: 'La aldea flotante de pescadores: casitas de colores sobre balsas, la ropa colgada y un bote', donde: 'cerca' },
+    { id: 'muelle', nombre: 'El muelle flotante de atrás de la piscina, con los flotadores azules y la baranda de cuerda', donde: 'cerca, al pie' },
+    { id: 'letrero', nombre: 'El letrero VỊNH HẠ LONG en la banda roja', donde: 'cerca, en el muelle' },
+    { id: 'banderas', nombre: 'Las banderas de Vietnam, rojas con la estrella amarilla', donde: 'cerca, en el muelle' },
+    { id: 'salvavidas', nombre: 'La silla alta del salvavidas con la sombrilla roja y blanca', donde: 'cerca, en el muelle' },
+    { id: 'jueces', nombre: 'La mesa de los jueces con el cronómetro grande, en la llegada', donde: 'cerca, en la llegada' },
+    { id: 'piscina', nombre: 'La piscina flotante: el agua azul, las líneas del fondo, las corcheras rojas y blancas y la pared de llegada a cuadros', donde: 'piso' },
+  ],
+  vida: {
+    banderas: 'Las banderas que se mecen con la brisa del mar: 2 cuadros',
+    publico: 'La gente del muelle que levanta los brazos: 2 cuadros',
+    juncos: 'Los juncos chiquitos que navegan lejos, en la capa lejos',
+    gaviotas: 'Las gaviotas que planean sobre la bahía, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['VỊNH HẠ LONG'],
+};
+
+
+/** Los Llanos de Apure al atardecer (lote E6). */
+const VENEZUELA_LLANO: Estilo = {
+  paleta: VENEZUELA_APURE_ATARDECER,
+  uso: USO_APURE,
+  horas: ['atardecer'],
+  iconos: [
+    { id: 'sol', nombre: 'El sol grande del atardecer llanero, cruzado por las nubes, con el resplandor sobre la sabana', donde: 'lejos' },
+    { id: 'horizonte', nombre: 'El horizonte plano del llano con las matas y los morichales chiquitos en silueta', donde: 'lejos' },
+    { id: 'morichales', nombre: 'Los morichales: palmas de moriche de tronco liso y copa redonda de abanicos, encendida del lado del sol', donde: 'cerca' },
+    { id: 'sabana', nombre: 'La sabana dorada con las matas de monte', donde: 'cerca' },
+    { id: 'caney', nombre: 'El caney de techo de palma con los chinchorros de colores, el farol y la tinaja', donde: 'cerca, detrás de la pista de impulso' },
+    { id: 'estero', nombre: 'El estero que refleja el cielo, con los juncos, los chigüires y las garzas blancas', donde: 'cerca' },
+    { id: 'ganado', nombre: 'El ganado que pasta y el llanero a caballo con el liqui liqui, el sombrero y el mecate', donde: 'cerca' },
+    { id: 'tranquera', nombre: 'La tranquera del hato con el cráneo de res y el letrero LLANOS DE APURE', donde: 'cerca' },
+    { id: 'campo', nombre: 'El campo de lanzamiento: la pista de impulso de tartán, la tabla de foul y el sector de caída con sus rayas cada 10 m', donde: 'piso' },
+  ],
+  vida: {
+    estero: 'Los chigüires que levantan la cabeza y la garza que pesca: 2 cuadros',
+    ganado: 'Las reses que comen y el caballo del llanero que da el paso: 2 cuadros',
+    garzas: 'Una bandada de garzas blancas en V que cruza el cielo, en la capa lejos',
+    corocoras: 'Una bandada de corocoras rojas que cruza para el otro lado, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['LLANOS DE APURE'],
+};
+
+
+/** Una calle de barrio de Caracas en la tarde (lote E6). */
+const VENEZUELA_BARRIO: Estilo = {
+  paleta: VENEZUELA_BARRIO_TARDE,
+  uso: USO_BARRIO,
+  horas: ['tarde'],
+  iconos: [
+    { id: 'avila', nombre: 'El Ávila verde con las quebradas y el hotel Humboldt en la cima', donde: 'lejos' },
+    { id: 'ranchos', nombre: 'Los ranchos de ladrillo y bloque que suben por el cerro, con los tanques y las escaleras', donde: 'cerca, atrás' },
+    { id: 'casas', nombre: 'La fila de casas de la calle: frisadas y pintadas o de bloque, con las rejas, el zócalo y la platabanda con cabillas', donde: 'cerca' },
+    { id: 'casa_vecino', nombre: 'La casa verde pastel del vecino con la ventana de reja, el letrero HIELITOS y el tanque azul', donde: 'objeto casa_vecino, en x 640' },
+    { id: 'ventana_rota', nombre: 'La ventana rota: el vidrio estrellado con el hueco', donde: 'objeto ventana_rota, encima de la ventana' },
+    { id: 'abasto', nombre: 'El abasto de la esquina con la santamaría, el mostrador y el letrero ABASTO EL PANA', donde: 'cerca' },
+    { id: 'poste', nombre: 'El poste de luz con el transformador, el enredo de cables y los zapatos colgados', donde: 'cerca' },
+    { id: 'mango', nombre: 'El mango con los mangos maduros', donde: 'cerca' },
+    { id: 'gente', nombre: 'El señor de la silla con el radio, las comadres, los niños que miran y el perro de la acera', donde: 'cerca' },
+    { id: 'calle', nombre: 'El asfalto gastado con el home de tiza y la alcantarilla', donde: 'piso' },
+  ],
+  vida: {
+    ropa_tendida: 'La ropa tendida que se mece con la brisa: 2 cuadros',
+    vecinos: 'El señor que sube el radio, las comadres que señalan y los niños que brincan: 2 cuadros',
+    perro: 'El perro de la acera que se rasca: 2 cuadros',
+    zamuros: 'Los zamuros que dan vueltas sobre El Ávila, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['ABASTO EL PANA', 'HIELITOS', 'A 1 BS'],
+};
+
+
+/** El patio techado de un liceo de Caracas al mediodía (lote E6). */
+const VENEZUELA_LICEO: Estilo = {
+  paleta: VENEZUELA_LICEO_MEDIODIA,
+  uso: USO_LICEO,
+  horas: ['mediodia'],
+  iconos: [
+    { id: 'techo', nombre: 'El techo de láminas visto por debajo, con las cerchas azules en zigzag y las lámparas', donde: 'cerca, arriba' },
+    { id: 'avila', nombre: 'El Ávila que se asoma entre el techo y el edificio', donde: 'lejos' },
+    { id: 'edificio', nombre: 'El edificio de las aulas: dos pisos crema con la franja azul, las romanillas y las puertas de madera numeradas', donde: 'cerca' },
+    { id: 'letrero', nombre: 'El letrero U.E. LICEO EL ÁVILA con los escudos tricolores', donde: 'cerca, donde lo ponía el juego' },
+    { id: 'bandera', nombre: 'La bandera de Venezuela con las ocho estrellas en su asta', donde: 'cerca' },
+    { id: 'gradas', nombre: 'Las gradas de concreto llenas de liceístas con la camisa beige y el pantalón azul', donde: 'cerca, a la izquierda' },
+    { id: 'cantina', nombre: 'La cantina con la reja, las empanadas, el jugo, la señora que vende y la cola', donde: 'cerca, a la derecha, con el letrero CANTINA' },
+    { id: 'cartelera', nombre: 'La cartelera de corcho, el reloj de pared, el mural ESTUDIAR ES CRECER y el bebedero', donde: 'cerca' },
+    { id: 'cancha', nombre: 'La cancha pintada de verde con el borde blanco, la raya amarilla del medio con el círculo y los dos cementerios rayados', donde: 'piso' },
+  ],
+  vida: {
+    publico: 'Los liceístas de las gradas que brincan y levantan los brazos: 2 cuadros',
+    cantina: 'La señora de la cantina que ofrece una empanada y la cola que se mueve: 2 cuadros',
+    bandera: 'La bandera que se mece: 2 cuadros',
+  },
+  cajas: {},
+  letreros: ['U.E. LICEO EL ÁVILA', 'CANTINA', 'CARTELERA', 'ESTUDIAR', 'ES CRECER'],
+};
+
+
+/** Las azoteas de la ciudad amurallada de Cartagena al atardecer (lote E6). */
+const COLOMBIA_AMURALLADA: Estilo = {
+  paleta: COLOMBIA_CARTAGENA_ATARDECER,
+  uso: USO_CARTAGENA,
+  horas: ['atardecer'],
+  iconos: [
+    { id: 'bahia', nombre: 'La bahía al atardecer con el sol que toca el mar y el camino de oro', donde: 'lejos' },
+    { id: 'bocagrande', nombre: 'Las torres de Bocagrande en la calima', donde: 'lejos, a la izquierda' },
+    { id: 'popa', nombre: 'El cerro de La Popa con el convento arriba', donde: 'lejos' },
+    { id: 'castillo', nombre: 'El Castillo de San Felipe con las murallas en rampa y las garitas', donde: 'lejos' },
+    { id: 'torre_reloj', nombre: 'La Torre del Reloj: la puerta de tres arcos, la torre amarilla con el reloj y la cúpula', donde: 'cerca, entre los techos' },
+    { id: 'catedral', nombre: 'La catedral con el campanario y la cúpula a gajos', donde: 'cerca, entre los techos' },
+    { id: 'techos', nombre: 'Los techos de teja de barro de la ciudad vieja con las palmas', donde: 'cerca' },
+    { id: 'fachadas', nombre: 'Las fachadas coloniales de colores con los balcones de madera y las buganvillas que se derraman', donde: 'cerca y en el techo de enfrente' },
+    { id: 'azotea', nombre: 'La azotea de baldosas de barro con la cajita roja de la garrocha y la raya del borde', donde: 'cerca, donde las ponía el juego' },
+    { id: 'callejon', nombre: 'El callejón en sombra con el farol, las ventanas prendidas y la ropa tendida', donde: 'cerca, en el hueco' },
+    { id: 'techo_enfrente', nombre: 'El techo de enfrente con la colchoneta azul y el balcón grande de buganvillas', donde: 'objeto techo_enfrente, que el juego corre' },
+    { id: 'carrito', nombre: 'El carrito de frutas con la sombrilla de rayas', donde: 'objeto carrito_frutas, que el juego corre' },
+    { id: 'calle', nombre: 'La calle de adoquín', donde: 'piso' },
+  ],
+  vida: {
+    alcatraces: 'Los alcatraces que pasan en fila sobre la bahía, en la capa lejos',
+    veleros: 'Los veleros que cruzan la bahía despacio, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['C. DE LAS DAMAS'],
+};
+
 const ESTILOS: Record<string, Estilo> = {
   vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD,
   venezuela_playa: VENEZUELA_PLAYA, vietnam_montana: VIETNAM_MONTANA, colombia_caribe: COLOMBIA_CARIBE, venezuela_lago: VENEZUELA_LAGO,
+  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA, venezuela_llano: VENEZUELA_LLANO, venezuela_barrio: VENEZUELA_BARRIO, venezuela_liceo: VENEZUELA_LICEO, colombia_amurallada: COLOMBIA_AMURALLADA,
 };
 
 /** Los fondos de la capa cerca que son de Hội An (con su estilo). */

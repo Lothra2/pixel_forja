@@ -4,7 +4,7 @@
  */
 
 import { VIETNAM_HOIAN_NOCHE } from './hoianPaleta';
-import { VIETNAM_DOJO_TARDE, VIETNAM_TAODAN_AMANECER, VIETNAM_DALAT_MANANA } from './lugaresPaleta';
+import { VIETNAM_DOJO_TARDE, VIETNAM_TAODAN_AMANECER, VIETNAM_DALAT_MANANA, VIETNAM_HALONG_MEDIODIA } from './lugaresPaleta';
 
 export const NOMBRES = [
   'tinta', 'sombra', 'asfalto', 'asfalto_claro', 'cemento', 'cemento_claro', 'crema', 'luz',
@@ -124,7 +124,7 @@ export const VIETNAM_ATARDECER: Paleta = {
 };
 
 /** Los lugares de Vietnam con paleta propia, por su fondo (`paralaje.cerca`): el dojo de Hà Nội, el parque Tao Đàn y la cancha de Đà Lạt. */
-export const PALETAS_LUGAR_VIETNAM: Record<string, Paleta> = { dojo_hanoi: VIETNAM_DOJO_TARDE, parque_tao_dan: VIETNAM_TAODAN_AMANECER, cancha_arcilla_dalat: VIETNAM_DALAT_MANANA };
+export const PALETAS_LUGAR_VIETNAM: Record<string, Paleta> = { dojo_hanoi: VIETNAM_DOJO_TARDE, parque_tao_dan: VIETNAM_TAODAN_AMANECER, cancha_arcilla_dalat: VIETNAM_DALAT_MANANA, bahia_halong: VIETNAM_HALONG_MEDIODIA };
 
 /**
  * La paleta del estilo vietnam para una hora y un clima. De noche es la de Hội An (estilo `vietnam_hoian`). El dojo de

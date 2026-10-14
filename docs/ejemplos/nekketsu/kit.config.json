@@ -460,6 +460,12 @@
         "vistas": {
           "caminar": "lado"
         }
+      },
+      "palenquera": {
+        "anims": {
+          "pregonar": "llamar",
+          "reclamar": "reclama"
+        }
       }
     }
   }

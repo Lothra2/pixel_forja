@@ -58,7 +58,7 @@ describe('los escenarios de los cuatro deportes de pelota (lote E5)', () => {
       // cada pixel de la escena sale de su paleta (y usa los 24)
       expect(r.pruebas[7].detalle, estilo).toMatch(/^24 colores usados/);
     }
-    expect(Object.keys(LUGARES).slice(3)).toEqual(['playa_el_agua', 'cancha_arcilla_dalat', 'calle_carnaval_barranquilla', 'cancha_barrio_maracaibo']);
+    expect(Object.keys(LUGARES).slice(3, 7)).toEqual(['playa_el_agua', 'cancha_arcilla_dalat', 'calle_carnaval_barranquilla', 'cancha_barrio_maracaibo']);
   });
 
   it('las otras horas no cambian: Caracas, la Comuna 13, la cancha de tejo y Vietnam siguen con su paleta, y cada lugar nuevo trae la suya por su fondo', () => {

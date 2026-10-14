@@ -66,7 +66,7 @@ describe('la gente de la calle (lote C6a)', () => {
     const { files, warnings } = buildCustomKit({ ...MIN, npc: CFG.npc }, { npc: FICHAS }, { quick: true, solo: ['npc'] });
     expect(warnings.filter((w) => w.startsWith('npc'))).toEqual([]);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes)).npc;
-    expect(Object.keys(m).sort()).toEqual(['bailarin_1', 'bailarin_2', 'bailarin_3', 'grafitero', 'marimonda', 'musicos', 'notas', 'pelado_1', 'pelado_2', 'pelota', 'vendedor_paletas']);
+    expect(Object.keys(m).sort()).toEqual(['bailarin_1', 'bailarin_2', 'bailarin_3', 'grafitero', 'marimonda', 'musicos', 'notas', 'palenquera', 'pelado_1', 'pelado_2', 'pelota', 'vendedor_paletas']);
     expect(m.bailarin_1).toMatchObject({ archivo: 'npc/bailarin_1.png', w: 48, h: 48, ancla: [24, 46], cuadros: 20, anims: { toprock: { desde: 0, cuadros: 8, loop: true }, molino: { desde: 8, cuadros: 8 }, reclama: { desde: 16, cuadros: 4, loop: false } } });
     expect(m.pelado_1.eventos).toEqual({ patear: [{ tipo: 'impacto', cuadro: 2 }] });
     expect(m.grafitero.anims.pintar.vista).toBe('espalda_tres_cuartos');
@@ -91,8 +91,8 @@ describe('la gente de la calle (lote C6a)', () => {
   });
 
   it('imagen dorada: las tiras de los NPC y la pelota', () => {
-    // los NPC de la Comuna 13 (la Marimonda del lote E5 tiene su imagen dorada en e5.test.ts)
-    const tiras = Object.entries(CFG.npc!.personajes).filter(([id]) => id !== 'marimonda').map(([id, d]) => (npcTira(id, d, FICHAS, 48) as { tira: ReturnType<typeof pelotaTira> }).tira);
+    // los NPC de la Comuna 13 (la Marimonda del lote E5 y la palenquera del E6 tienen su imagen dorada en e5 y e6.test.ts)
+    const tiras = Object.entries(CFG.npc!.personajes).filter(([id]) => id !== 'marimonda' && id !== 'palenquera').map(([id, d]) => (npcTira(id, d, FICHAS, 48) as { tira: ReturnType<typeof pelotaTira> }).tira);
     tiras.push(pelotaTira());
     const out = createRaster(Math.max(...tiras.map((t) => t.w)), tiras.reduce((s, t) => s + t.h, 0));
     let y = 0;
