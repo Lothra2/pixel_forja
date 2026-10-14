@@ -207,7 +207,7 @@ async function diablo() {
   frames.forEach((f, i) => over(r, f, 8 + (i % PER) * 192, top.h + Math.floor(i / PER) * 196));
   // los efectos
   let x = 8; const y0 = top.h + rows * 196 + 8;
-  const fxs: Raster[] = [d.novaWarning()[7], d.novaFire()[5], d.firePillar()[5], d.pillarWarning()[4], d.boneCage().quieta[0], d.boneCage().romper[3], d.redBeam()[0], d.beamWarning()[0], d.chargeWarning()[0]];
+  const fxs: Raster[] = [d.novaWarning()[7], d.novaFire()[5], d.firePillar()[5], d.pillarWarning()[4], d.boneCage().quieta[0], d.boneCage().romper[3], d.redBeam()[0], d.beamWarning()[0], d.chargeWarning()[0], d.bloodDrop()[2], d.bloodDrop()[4]];
   for (const f of fxs) { over(r, f, x, y0 + (f.h < 256 ? 256 - f.h : 0) / 2); x += f.w + 8; if (x > r.w - 64) break; }
   save('mundo7_diablo.png', r);
 }

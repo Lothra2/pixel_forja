@@ -53,7 +53,9 @@ function materials(ex: Record<string, number>, mouth: number): Record<string, Bo
     hornTip: { ramp: dark > 0.6 ? ['#06060a', '#0c0c14', '#14141e'] : ['#6a8aac', '#9ab8d8', '#d0e4f6', '#ffffff'], surface: 'horn', tex: 0.3 },
     frost: { ramp: dark > 0.6 ? ['#06060a', '#0c0c14'] : ['#9ab8d8', '#d0e4f6', '#ffffff'], surface: 'stone', tex: 0.4, scale: 1.4 },
     claw: { ramp: makeBossRamp(sh('#1c1414'), 5, { spread: 1.2 }), surface: 'horn', tex: 0.3 },
-    wing: { ramp: makeBossRamp(sh('#3a0c0a'), 6, { spread: 1.3, hue: 14 }), surface: 'leather', tex: 0.5, scale: 2.4 },
+    wing: { ramp: makeBossRamp(sh('#2a0408'), 6, { spread: 1.05, hue: -4 }), surface: 'leather', tex: 0.55, scale: 2.4 },
+    spine: { ramp: dark > 0.6 ? ['#06060a', '#0c0c14', '#14141e'] : makeBossRamp(mixHex('#7a6656', '#4a5468', cool * 0.5), 5, { spread: 1.5 }), surface: 'horn', tex: 0.3 },
+    blood: { ramp: dark > 0.6 ? ['#06060a', '#0c0608', '#140a0c'] : ['#2a0004', '#4a0008', '#6a0610', '#8a0a12', '#b8404a'], surface: 'horn', tex: 0.15 },
     wingBone: { ramp: makeBossRamp(sh('#24100c'), 5, { spread: 1.2 }), surface: 'horn', tex: 0.4 },
     eye: { ramp: ['#c01a10', '#ff2a1a', '#ffb090'], surface: 'glow' },
     socket: { ramp: ['#020102', '#0a0406'], surface: 'eye' },
@@ -79,11 +81,46 @@ export function diabloBoca(cell: number, pose: BossPose): V3 {
   return loc(j.headM, j.headC, mul([14, -6, 0], d.s * 1.3));
 }
 
+/** Dónde van los huesos del ala (marco del personaje): la raíz, el codo y las cuatro puntas de los dedos. */
+function wingGeom(d: BossDims, j: Joints, ex: Record<string, number>, z: -1 | 1, flap = 0): { root: V3; elbow: V3; tips: V3[] } {
+  const s = d.s, ch = j.chest, wing = ex.wing ?? 0.3, wrap = ex.wrap ?? 0;
+  const S = (v: V3): V3 => mul(v, s);
+  const root = loc(ch, j.pelvis, S([-12, 34, z * 9]));
+  // con wrap las alas vienen hacia adelante y lo tapan
+  // las alas son enormes: todo se agranda desde la raíz (más hacia los lados que hacia atrás); abiertas del todo
+  // vuelven al ancho de la celda
+  const R0: V3 = [-12, 34, 9], GR: V3 = [1, 1.12, 1.36 - 0.36 * Math.min(1, Math.max(0, (wing - 0.3) / 0.4))];
+  const big = (v: V3): V3 => [R0[0] + (v[0] - R0[0]) * GR[0], R0[1] + (v[1] - R0[1]) * GR[1], R0[2] + (v[2] - R0[2]) * GR[2]];
+  const W = (v0: V3): V3 => { const v = big(v0); return loc(ch, j.pelvis, S([v[0] * (1 - wrap) + wrap * (Math.abs(v[2]) * 0.55 + 4), v[1] - wrap * 6, v[2] * (1 - wrap * 0.55) * z])); };
+  const op = 0.45 + wing * 0.42;
+  const elbow = W([-22 - flap, 50 + wing * 8, 16 + op * 18]);
+  const tips = [W([-28, 72 + wing * 10, 20 + op * 30]), W([-38, 50 + wing * 6, 28 + op * 38]), W([-32, 24, 26 + op * 30]), W([-20, 12, 16 + op * 16])];
+  return { root, elbow, tips };
+}
+
+/** Las dos puntas de las alas (el dedo de más afuera), para que el juego tire gotas de sangre desde ahí. */
+export function diabloAlas(cell: number, pose: BossPose): [V3, V3] {
+  const d = diabloDims(cell), j = solveBiped(d, pose), ex = pose.extra ?? {};
+  return [wingGeom(d, j, ex, -1).tips[1], wingGeom(d, j, ex, 1).tips[1]];
+}
+
+/** Un marco con x a lo largo de `along` y la piel en el plano de `across`. */
+function frameAlong(along: V3, across: V3): M3 {
+  const x = norm(along), yv = norm(across);
+  const zz = norm([x[1] * yv[2] - x[2] * yv[1], x[2] * yv[0] - x[0] * yv[2], x[0] * yv[1] - x[1] * yv[0]]);
+  const yy: V3 = [zz[1] * x[2] - zz[2] * x[1], zz[2] * x[0] - zz[0] * x[2], zz[0] * x[1] - zz[1] * x[0]];
+  return [[x[0], yy[0], zz[0]], [x[1], yy[1], zz[1]], [x[2], yy[2], zz[2]]];
+}
+
+/** Los desgarrones: qué tiras faltan en cada paño del ala (izquierda y derecha, distintos). */
+const WING_TEARS: number[][][] = [[[5], [2], [2, 3]], [[4], [3, 4], [1, 2]]];
+const hashW = (x: number, y: number, s: number) => { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+
 function diabloScene(cell: number, pose: BossPose, sec?: Secondary): BossScene {
   const d = diabloDims(cell), s = d.s, j = solveBiped(d, pose), B = new Body();
   const S = (v: V3): V3 => mul(v, s);
   const ex = pose.extra ?? {}, ch = j.chest, hm = j.headM, body = j.body;
-  const mouth = pose.face?.mouth ?? 0, wing = ex.wing ?? 0.3, wrap = ex.wrap ?? 0;
+  const mouth = pose.face?.mouth ?? 0;
   // ---------- el cuerpo: la cadera, el torso enorme, los pectorales, la panza y el cuello grueso ----------
   B.ell(loc(body, j.pelvis, S([0, 4, 0])), S([13, 11, 15]), 'skin', 1, { rot: body, bump: 0.5 * s });
   B.ell(loc(ch, j.pelvis, S([0, 24, 0])), S([15, 17, 21]), 'skin', 1, { rot: ch, bump: 0.6 * s });
@@ -138,39 +175,73 @@ function diabloScene(cell: number, pose: BossPose, sec?: Secondary): BossScene {
       B.cone(tip, add(tip, add(mul(fwd, 5 * s), mv(ch, S([0, -1.6, 0])))), 1.3 * s, 0.2 * s, 'claw', g + 3);
     }
   }
-  // ---------- las alas de murciélago, rotas: los huesos y la piel desgarrada entre ellos ----------
-  for (const z of [-1, 1]) {
+  // ---------- las alas de murciélago, rotas: los huesos con espinas y garras, la piel desgarrada que sangra ----------
+  for (const z of [-1, 1] as const) {
     const g = z > 0 ? 50 : 52;
-    const flap = (sec?.flap ?? 0) * 4;
-    const root = loc(ch, j.pelvis, S([-12, 34, z * 9]));
-    // con wrap las alas vienen hacia adelante y lo tapan
-    const W = (v: V3): V3 => loc(ch, j.pelvis, S([v[0] * (1 - wrap) + wrap * (Math.abs(v[2]) * 0.55 + 4), v[1] - wrap * 6, v[2] * (1 - wrap * 0.55) * z]));
-    const op = 0.35 + wing * 0.65;
-    const elbow = W([-22 - flap, 50 + wing * 8, 16 + op * 18]);
-    const tips = [W([-28, 72 + wing * 10, 20 + op * 30]), W([-38, 50 + wing * 6, 28 + op * 38]), W([-32, 24, 26 + op * 30]), W([-20, 12, 16 + op * 16])];
+    const flap = Math.max(-3, Math.min(3, (sec?.flap ?? 0) * 4));
+    const { root, elbow, tips } = wingGeom(d, j, ex, z, flap);
     B.cone(root, elbow, 3.4 * s, 2.4 * s, 'wingBone', g);
     tips.forEach((t, i) => { if (i < 3) B.cone(elbow, t, 1.8 * s, 0.6 * s, 'wingBone', g); });
-    // la garrita del codo del ala
-    B.cone(elbow, add(elbow, S([0, 5, 0])), 1.4 * s, 0.2 * s, 'claw', g);
+    const blood: V3[] = [];
     // la piel entre los huesos: en abanico de tiras finas desde la base, con el borde festoneado (cada tira más
-    // corta en el medio entre dos huesos) y rota (faltan tiras en el último paño)
+    // corta en el medio entre dos huesos) y desgarrada (faltan tiras: por ahí chorrea)
     for (let i = 0; i < 3; i++) {
       const a = i === 0 ? root : elbow, b = tips[i], c = tips[i + 1];
       for (let q = 0; q <= 6; q++) {
         const t = q / 6;
-        if (i === 2 && (q === 2 || q === 3)) continue;
-        if (i === 1 && z > 0 && q === 4) continue;
         const edge = add(b, mul(sub(c, b), t));
-        const scallop = 1 - Math.sin(t * Math.PI) * 0.22;
+        const scallop = 1 - Math.sin(t * Math.PI) * 0.26;
         const tip = add(a, mul(sub(edge, a), scallop));
+        if (WING_TEARS[z > 0 ? 1 : 0][i].includes(q)) {
+          // el desgarrón: queda un pedacito de piel cerca del hueso y el borde roto sangra
+          const cut = add(a, mul(sub(tip, a), 0.42));
+          B.ell(mul(add(a, cut), 0.5), [Math.hypot(...sub(cut, a)) / 2, 1.4 * s, 0.9 * s], 'wing', g + 1, { rot: frameAlong(sub(cut, a), sub(c, b)) });
+          blood.push(cut);
+          continue;
+        }
         const mid = mul(add(a, tip), 0.5), len = Math.hypot(...sub(tip, a)) / 2;
-        const x = norm(sub(tip, a)), yv = norm(sub(c, b));
-        const zz = norm([x[1] * yv[2] - x[2] * yv[1], x[2] * yv[0] - x[0] * yv[2], x[0] * yv[1] - x[1] * yv[0]]);
-        const yy: V3 = [zz[1] * x[2] - zz[2] * x[1], zz[2] * x[0] - zz[0] * x[2], zz[0] * x[1] - zz[1] * x[0]];
-        const rot: M3 = [[x[0], yy[0], zz[0]], [x[1], yy[1], zz[1]], [x[2], yy[2], zz[2]]];
         const span = Math.hypot(...sub(c, b));
-        B.ell(mid, [len, Math.max(1.6 * s, span / 9), 0.9 * s], 'wing', g + 1, { rot });
+        B.ell(mid, [len, Math.max(1.6 * s, span / 9), 0.9 * s], 'wing', g + 1, { rot: frameAlong(sub(tip, a), sub(c, b)) });
       }
+    }
+    // el centro de la piel: las espinas apuntan para afuera de ahí
+    const mc = mul(add(add(tips[1], tips[2]), mul(elbow, 2)), 0.25);
+    const away = (p: V3, dir: V3): V3 => { const o = sub(p, mc), bd = norm(dir); const k2 = o[0] * bd[0] + o[1] * bd[1] + o[2] * bd[2]; return norm(sub(o, mul(bd, k2))); };
+    const spine = (p: V3, dir: V3, len: number, r0: number, bleed: boolean) => {
+      const o = away(p, dir), bd = norm(dir);
+      const tp = add(p, add(mul(o, len * s), mul(bd, len * 0.35 * s)));
+      B.cone(p, tp, r0 * s, 0.15 * s, 'spine', g + 2);
+      if (bleed) blood.push(add(p, mul(sub(tp, p), 0.55)));
+    };
+    // la hilera de espinas del borde de adelante (el brazo del ala y el primer dedo)
+    for (let k = 1; k <= 7; k++) { const t = k / 8; spine(add(root, mul(sub(elbow, root), t)), sub(elbow, root), 6 - t * 1.5, 1.5, k % 3 === 1); }
+    for (let k = 1; k <= 5; k++) { const t = k / 6; spine(add(elbow, mul(sub(tips[0], elbow), t)), sub(tips[0], elbow), 5.4 - t * 2, 1.3, k % 2 === 0); }
+    // y unas espinas más chicas en cada dedo del ala
+    for (let i = 1; i < 3; i++) for (let k = 1; k <= 3; k++) { const t = k / 4; spine(add(elbow, mul(sub(tips[i], elbow), t)), sub(tips[i], elbow), 3.6, 1, k === 2); }
+    // las garras curvas: en la punta de cada dedo y una grande en el codo del ala
+    const claw = (p: V3, dir: V3, len: number, r0: number) => {
+      const bd = norm(dir), c1 = add(p, mul(bd, len * 0.5 * s)), c2 = add(c1, add(mul(bd, len * 0.15 * s), [0, -len * 0.55 * s, 0]));
+      B.cone(p, c1, r0 * s, r0 * 0.6 * s, 'spine', g + 2);
+      B.cone(c1, c2, r0 * 0.6 * s, 0.15 * s, 'spine', g + 2);
+      blood.push(c1);
+    };
+    for (let i = 0; i < 3; i++) claw(tips[i], sub(tips[i], elbow), 7.5, 1.4);
+    claw(elbow, add(sub(elbow, root), [0, 6, 0]), 9, 1.9);
+    // la sangre oscura: hilos que cuelgan de los desgarrones, de las espinas y de las garras, y una gota que cae
+    // despacio por cada hilo; en los aletazos salpica un poco desde las puntas
+    const tt = (ex.t ?? 0) / 8;
+    blood.forEach((p, i) => {
+      const h = hashW(i * 7 + (z > 0 ? 3 : 0), 31, 77), L = (3 + h * 6) * s;
+      const end = add(p, [0, -L, 0]);
+      B.cone(p, end, 0.95 * s, 0.6 * s, 'blood', g + 3);
+      B.ell(end, S([1.1, 1.4, 1.1]), 'blood', g + 3);
+      const ph = (tt + h) % 1;
+      if (ph < 0.8) B.ell(add(end, [0, -(2 + ph * 12) * s, 0]), S([0.9, 1.2, 0.9]), 'blood', g + 3);
+    });
+    const fl = Math.min(1, Math.abs(flap) / 4 + (ex.splash ?? 0));
+    if (fl > 0.25) for (let k = 0; k < 4; k++) {
+      const t0 = tips[k % 3], o = away(t0, sub(t0, elbow));
+      B.ell(add(t0, add(mul(o, (1.5 + k * 1.2) * fl * s), [0, -(1 + k * 2) * fl * s, 0])), S([0.9, 0.9, 0.9]), 'blood', g + 3);
     }
   }
   // ---------- la cola gruesa con espinas y la punta en pala ----------
@@ -604,6 +675,34 @@ export function chargeWarning(): Raster[] {
       else put(r, x, y, '#2a0404', 70);
     }
     for (let k2 = 0; k2 < 2; k2++) { const cx = (k2 * 16 + (f * 32) / 6) % 32; for (let t = 0; t < 7; t++) for (const w of [0, 1]) { put(r, cx + t * 0.8 + w, 15.5 - t, '#ffb040', 230); put(r, cx + t * 0.8 + w, 15.5 + t, '#ffb040', 230); } }
+    return r;
+  });
+}
+
+/**
+ * `gota_sangre_diablo` (16 x 16, 6 cuadros, una vez): la gota oscura que cae de la punta del ala y salpica chiquito en
+ * el piso. El piso es la fila 13: el juego la pone con el pie ahí, debajo de la punta del ala.
+ */
+export function bloodDrop(): Raster[] {
+  const B0 = '#2a0004', B1 = '#4a0008', B2 = '#6a0610', B3 = '#8a0a12', HI = '#b8404a';
+  return Array.from({ length: 6 }, (_, f) => {
+    const r = createRaster(16, 16);
+    if (f < 4) {
+      // cae: la gota se estira un poco y deja una estela finita
+      const y = 1 + f * f * 0.9 + f * 1.6, len = 2 + Math.min(2, f);
+      for (let t = 0; t < len + 2; t++) put(r, 8, y - t - 1, t < 2 ? B1 : B0, Math.round(200 * (1 - t / (len + 2))));
+      put(r, 7, y, B2); put(r, 8, y, B3); put(r, 9, y, B2);
+      put(r, 7, y + 1, B1); put(r, 8, y + 1, B2); put(r, 9, y + 1, B1);
+      put(r, 8, y + 2, B1);
+      put(r, 7, y, HI, 160);
+    } else {
+      // salpica chiquito: una manchita y dos gotitas que saltan
+      const k = f - 4;
+      for (let x = 6 - k; x <= 10 + k; x++) put(r, x, 13, x === 8 ? B3 : B1, 220 - k * 60);
+      put(r, 7, 12, B2, 200 - k * 60); put(r, 9, 12, B2, 200 - k * 60);
+      put(r, 5 - k, 11 - k, B2, 200 - k * 70); put(r, 11 + k, 11 - k, B2, 200 - k * 70);
+      put(r, 8, 13, HI, 120 - k * 50);
+    }
     return r;
   });
 }

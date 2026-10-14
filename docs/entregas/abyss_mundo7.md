@@ -63,10 +63,10 @@ con `fondo_hielo_lejos_0..2` que se ve por el vacío del puente y del corazón)
   `charge`, `hit`, `die`.
 - `diablo` (192, `tipo: jefe`, `luz_ojos`): `idle`, `walk`, `attack` (`aviso` [1, 6]), `nova` (`aviso` [1, 8]),
   `charge`, `rayo` (`aviso` [1, 8]), `pilares` (`aviso` [1, 7]), `oscuridad`, `jaula` (`aviso` [1, 6]), `warcry`,
-  `aturdido`, `hit`, `die`, y en cada anim `ojos` y `boca` por dirección y por cuadro.
+  `aturdido`, `hit`, `die`, y en cada anim `ojos`, `boca` y `alas` por dirección y por cuadro.
 - `fx`: `proyectil_rayo_hielo_<dir>`, `impacto_rayo_hielo`, `proyectil_fuego_chico_<dir>`, `aviso_lanza_hielo`,
   `aviso_cruz`, `nova_fuego_diablo`, `aviso_nova`, `rayo_rojo`, `aviso_rayo`, `pilar_fuego`, `aviso_pilar`,
-  `jaula_huesos_subir`, `jaula_huesos_quieta`, `jaula_huesos_romper`, `aviso_carga_diablo`.
+  `jaula_huesos_subir`, `jaula_huesos_quieta`, `jaula_huesos_romper`, `aviso_carga_diablo`, `gota_sangre_diablo`.
 
 **Audio:** `ambiente_hielo`, `ambiente_bosque_hielo`, `ambiente_lago`, `ambiente_catacumbas`, `ambiente_ciudadela`,
 `ambiente_puente`, `ambiente_puerta`, `ambiente_trono`, `musica_reina_escarcha`, `musica_guardian`,
@@ -115,7 +115,14 @@ con `fondo_hielo_lejos_0..2` que se ve por el vacío del puente y del corazón)
   una a otra. El Lago trae
   `musica_pelea: reina_escarcha` y la Puerta `musica_pelea: guardian`. Las demás zonas, `musica: ninguna`.
 - **Tono.** Lo más oscuro del juego, demonios con cara de verdad, pero sin sangre ni vísceras: todos se deshacen en
-  nieve, escarcha, ceniza o humo, y todo lo que pega avisa antes. El rugido del Diablo es grave y entra suave, nunca un
+  nieve, escarcha, ceniza o humo, y todo lo que pega avisa antes. **La única excepción son las alas del Diablo**
+  (pedido de Sophie, decisión de Rick, después de la primera entrega): enormes y rotas, rojo vino casi negro, con
+  espinas en todo el borde de adelante y en cada dedo, garras curvas en las puntas y en el codo, y hilos de sangre
+  oscura (`#4a0008` a `#8a0a12`) que cuelgan de los desgarrones, las espinas y las garras, con una gota que cae
+  despacio en cada cuadro y salpica un poco en los aletazos. Nada de charcos ni pedazos, y el cuerpo sigue con sus
+  grietas de brasa. Abiertas del todo (nova, rayo, warcry) vuelven al ancho de la celda. `alas` trae las dos puntas
+  por dirección y por cuadro, para que el juego suelte `gota_sangre_diablo` (16, 6 cuadros, una vez: la gota llega y
+  salpica en la fila 13) mientras camina. El rugido del Diablo es grave y entra suave, nunca un
   grito de golpe. Todo el audio con pico de 0.6 o menos.
 
 ## Lo que falta o quedó distinto
@@ -129,5 +136,8 @@ con `fondo_hielo_lejos_0..2` que se ve por el vacío del puente y del corazón)
 - **Cosas de más.** El ambiente `ambiente_puerta` (la tabla no lo nombra), `boca` en el Diablo, el `muro_hielo` de la
   bruja, `aviso_lanza_hielo` y `aviso_cruz` para los minijefes, y 10 cofres (se pedían 8 o más).
 - **La lámina de las postales simula la luz.** El kit trae las postales a pleno, como los otros mundos.
+- **Las alas en las cinemáticas** (`bajada_diablo` y `fin_cae`) quedan para después del merge de
+  `origin/claude/abyss-celestial`, que es la que trae `src/engine/cine/diablo.ts`. El merge lo pidió la sesión del
+  juego pero el permiso de la sesión del taller lo frenó: falta que Rick lo autorice.
 - No abrí PR, no toqué `main`, las ramas `claude/olimpico-*` ni `claude/abyss-celestial`. El merge de
   `origin/claude/abyss-celestial` queda para cuando la sesión del juego lo pida.

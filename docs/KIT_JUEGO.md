@@ -487,12 +487,16 @@ Lo nuevo:
   quedan los ojos; los últimos 4 cuadros se repiten), `jaula` (6 de aviso), `warcry`, `aturdido` (en bucle, de
   rodillas y la piel enfriada: ahí se le pega), `hit` y `die` (`aterriza` en el 5, `suelta` en el 10: la última llama
   sale del pecho, y se deshace en ceniza y escarcha). En cada anim `ojos` (la luz de los ojos, `null` cuando la ceniza
-  le llega a la cara) y `boca` (de donde sale el rayo): 8 listas con un `[x, y]` por cuadro desde el pivote. `fx`:
+  le llega a la cara), `boca` (de donde sale el rayo): 8 listas con un `[x, y]` por cuadro desde el pivote, y `alas`
+  (las dos puntas de las alas: 8 listas con `[[x, y], [x, y]]` por cuadro). Las alas son lo único con sangre del
+  juego: hilos oscuros que gotean de los desgarrones y las espinas. Mientras camina, el juego suelta una gota desde una
+  punta cada tanto, la deja caer al piso y pone `gota_sangre_diablo` (16, 6 cuadros, una vez, con el piso en la fila
+  13). `fx`:
   `nova_fuego_diablo` (256, 10 cuadros, sale del pivote, con dos huecos para pasar: los ángulos en las notas del
   Diablo), `aviso_nova` (256, 8, capa suelo), `rayo_rojo` (32, 6 en bucle, se repite en línea desde `boca`),
   `aviso_rayo` (32, 6 en bucle, capa suelo), `pilar_fuego` (64 x 128, 12), `aviso_pilar` (64 x 32, 8, capa suelo),
-  `jaula_huesos_subir` (96, 8), `jaula_huesos_quieta` (96, 1) y `jaula_huesos_romper` (96, 8), y `aviso_carga_diablo`
-  (32, en bucle, en línea).
+  `jaula_huesos_subir` (96, 8), `jaula_huesos_quieta` (96, 1) y `jaula_huesos_romper` (96, 8), `aviso_carga_diablo`
+  (32, en bucle, en línea) y `gota_sangre_diablo` (16, 6).
 - **Audio:** `ambiente_hielo` (20 s), `ambiente_bosque_hielo`, `ambiente_lago`, `ambiente_catacumbas`,
   `ambiente_ciudadela`, `ambiente_puente`, `ambiente_puerta`, `ambiente_trono` (con el latido), `musica_reina_escarcha`
   y `musica_guardian` (en bucle), `musica_diablo_1` a `musica_diablo_3` y `musica_diablo_final` (en bucle, el mismo

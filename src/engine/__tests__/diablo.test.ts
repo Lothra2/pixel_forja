@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DIABLO_SPEC, diabloOjos, novaFire, novaWarning, redBeam, beamWarning, firePillar, pillarWarning, boneCage, chargeWarning, NOVA_HUECOS } from '../boss/diablo';
+import { DIABLO_SPEC, diabloOjos, novaFire, novaWarning, redBeam, beamWarning, firePillar, pillarWarning, boneCage, chargeWarning, bloodDrop, diabloAlas, NOVA_HUECOS } from '../boss/diablo';
 import { renderBossSheets } from '../boss/sheet';
 import { bossPoses } from '../boss/anim';
 
@@ -36,6 +36,25 @@ describe('Mundo 7: el Diablo', () => {
     expect(diabloOjos(192, dp[dp.length - 1])).toBeNull();
   });
 
+  it('las alas: dos puntas por cuadro a los lados y arriba, y la sangre oscura que chorrea solo de las alas', () => {
+    for (const a of D.anims) for (const p of bossPoses(a)) {
+      const [l, r] = diabloAlas(192, p);
+      // una de cada lado (z) y arriba del piso
+      expect(Math.sign(l[2]), a.name).toBe(-1);
+      expect(Math.sign(r[2]), a.name).toBe(1);
+      expect(Math.min(l[1], r[1]), a.name).toBeGreaterThan(20);
+    }
+    // en idle, de frente y de espaldas, hay pixeles de sangre (rojo vino) y caen gotas que se mueven entre cuadros
+    const quick = { ...D, anims: D.anims.filter((a) => a.name === 'idle').map((a) => ({ ...a, frames: 8 })) };
+    const { clips } = renderBossSheets(quick);
+    const wine = (f: { w: number; h: number; data: Uint8ClampedArray | Uint8Array }) => { const out: number[] = []; for (let i = 0; i < f.w * f.h; i++) { const R = f.data[i * 4], G = f.data[i * 4 + 1], B = f.data[i * 4 + 2]; if (f.data[i * 4 + 3] > 200 && R >= 0x3a && R <= 0xb8 && G <= 0x40 && B >= 0x06 && B <= 0x4a && R > G * 2.5 && B > G) out.push(i); } return out; };
+    for (const dir of [0, 4]) {
+      const a = wine(clips[0].frames[dir][0]), b = wine(clips[0].frames[dir][4]);
+      expect(a.length, `dir ${dir}`).toBeGreaterThan(15);
+      expect(a.join(',') === b.join(','), `dir ${dir}`).toBe(false);
+    }
+  });
+
   it('cabe en la celda en las 8 direcciones', () => {
     const quick = { ...D, anims: D.anims.map((a) => ({ ...a, frames: Math.min(a.frames, 6), events: undefined })) };
     const { clips } = renderBossSheets(quick);
@@ -53,6 +72,7 @@ describe('Mundo 7: el Diablo', () => {
     const j = boneCage();
     expect([sz(j.subir), sz(j.quieta), sz(j.romper)]).toEqual([[8, 96, 96], [1, 96, 96], [8, 96, 96]]);
     expect(sz(chargeWarning())[1]).toBe(32);
+    expect(sz(bloodDrop())).toEqual([6, 16, 16]);
     // el anillo de la nova deja pasar por los huecos: en el cuadro 6 no hay fuego en el centro de cada hueco
     const f = novaFire()[5];
     let anillo = 0;
