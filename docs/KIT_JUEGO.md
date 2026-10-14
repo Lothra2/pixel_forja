@@ -433,6 +433,78 @@ ve por los huecos del abismo), `portal: portal_brasa`). Resumen de la entrega: `
 - **Íconos:** `ui.habilidades.sacudir` y `sacudir_seco` (en gris, sin agua), `calor`, `jaula` y `palanca`.
   **Portal:** `portal_brasa`.
 
+### Mundo 7: El Corazón Helado (encargo F13)
+
+`manifest.mundos` trae `mundo7` (mapa `mundo/mundo7_corazon.json`, 120 x 110, con `fondo` (`fondo_hielo_lejos_0..2`, se
+ve por el vacío del puente y del corazón), `portal: portal_hielo`). Resumen de la entrega: `docs/entregas/abyss_mundo7.md`.
+Lo nuevo:
+
+- **El agua helada:** la capa `agua` son los agujeros de agua negra del lago (`mundo/mundo7_agua.png`), ya sólidos en
+  `colision`. Sin `reflejo`. La `espuma` es la escarcha de la orilla.
+- **Hogueras de hueso** (la fogata del piso): 5 `punto_guardado` con `hoguera: true` y `objeto: hoguera_hueso`. El
+  objeto (64 x 64, `idle` 8 a 8 fps, luz tibia `#ffb060` de 240) va en la capa objetos justo arriba del punto. Es la
+  única luz tibia del piso: ahí se descongela la heroína. La de La Escalera Helada trae `tutorial: true`.
+- **Refugios de la ventisca:** entidades `columna_hielo` y `gigante` con `objeto` (`columna_hielo_0..3`,
+  `gigante_congelado_0..2` y sus `_b`) y `ancho`. El punto es el centro de la base sólida del objeto (el mismo de la capa
+  objetos). El lado contrario al viento protege. Los gigantes traen `respira` (2 cuadros a 1 fps): ponerla de vez en
+  cuando. Columnas y gigantes brillan apenas frío (70 y 140).
+- **Hielo fino:** entidades `hielo_fino` (rectángulos en Tiled, múltiplos de 32) sobre el lago, siempre caminables y
+  nunca en un camino obligado. El juego llena cada parche con `hielo_fino_<v>` en cuadros de 64 (la variante por
+  posición, en las notas de `hielo_fino`): `quieto`, `cruje` (6 a 8 fps, una vez, si la heroína se queda parada) y
+  `roto`.
+- **El frío:** todo el piso es oscuridad casi total. En El Puente de las Cadenas la zona trae `ventisca: siempre`; en
+  las demás va y viene. Partículas nuevas `nieve` (nieve negra con ceniza) y `ventisca` (la raya de lado, para cuando
+  sopla).
+- **La arena del Diablo** (El Corazón Helado): `arena_jefe` (`radio: 256`), `jefe` (`diablo`, "El Diablo", "El que se
+  come la luz para no apagarse"), 4 `brasero_hueso` en diagonal a 170 px del centro, cada uno en el mismo punto que su
+  objeto (48 x 80: `apagado`, `prenderse` 8 a 12 fps, `prendido` 6 a 8 fps con luz `#ff7a30` de 220, y `congelado`).
+  Al norte el `trono_diablo` (256 x 256, sólido, `idle` 6 a 4 fps, las brasas laten; entidad en el mismo punto). Al lado,
+  la `figura` con `alto: true` y `objeto: figura_ultima_llama` (la Ladrona con la última llama: `idle` y `irse`).
+  `portal_jefe` con `destino: fin` (la cinemática de cierre la pone el juego).
+- **Entidades:** `portal_llegada` (`portal: portal_hielo`), `portal_volver` (mundo6), `mural` (`pieza: 7`, en Las
+  Catacumbas), `cofre` (2 `secreto` con `pista`, 2 `guardado_por`, 1 `tras_jefe`), `figura` (también en el Lago y la
+  Ciudadela), los minijefes `reina_escarcha` y `guardian_puerta` con `elite: true` y los enemigos en grupos grandes
+  (campo `grupo`).
+- **Zonas** con `ambiente` `hielo`, `lago`, `catacumbas`, `bosque_hielo`, `ciudadela`, `puente`, `puerta` y `trono`,
+  partícula `nieve` (`ventisca` en el Puente, `ceniza` en las Catacumbas, la Puerta y el Corazón), `musica: ninguna`
+  (El Lago trae `musica_pelea: reina_escarcha`, La Puerta `musica_pelea: guardian`, El Corazón `musica: diablo_1` y
+  `musica_fases: diablo_1,diablo_2,diablo_3,diablo_final`) y su `frente` (`cadena_helada_0..2`, `nieve_frente_0..1`,
+  `carambanos_frente_0..1`). Secretos: La Guarida del Lobo y La Cripta Sellada.
+- **Luz:** sin sombras horneadas con dirección, solo la de contacto al pie. La luz es de las hogueras, los braseros
+  prendidos, el trono (rojo, 260), la Ladrona (rojo chiquito), el farol de la heroína, sus luces compañeras y los ojos
+  del Diablo.
+- **Enemigos:** `lobo_escarcha` (48: `attack` mordida con 4 de aviso, `run`, `aullar` llama a la manada),
+  `espectro_helado` (48, `vuela`: `cast` con 6 de aviso suelta `proyectil_rayo_hielo_<dir>` y al pegar
+  `impacto_rayo_hielo`), `diablillo` (32: `attack` con 4 de aviso tira `proyectil_fuego_chico_<dir>`, al pegar
+  `impacto_brasa`), `caballero_congelado` (64: `bloquear` en bucle con el escudo al frente, `attack_heavy` con 7 de
+  aviso), `bruja_escarcha` (48: `cast` con 6 de aviso levanta el objeto `muro_hielo` (32 x 64, `subir`, `quieto`,
+  `romper`, sólido mientras dura) o cura) y `sombra_devoradora` (48: `attack` con 4 de aviso se traga una luz
+  compañera). Minijefes: `reina_escarcha` (64, `vuela`: `cast` las lanzas con `aviso_lanza_hielo`, `warcry` la
+  ventisca, `dividirse` suelta los dos reflejos en el cuadro 10) y `guardian_puerta` (64: `attack` el golpe en cruz con
+  dos impactos y `aviso_cruz`, `attack_heavy`, `charge` en bucle). Todos se deshacen en nieve, escarcha o humo.
+- **El Diablo** (`diablo`, 192, `tipo: jefe`, `luz_ojos` `#ff2a1a` de 120): `idle`, `walk`, `attack` (zarpazo, 6 de
+  aviso), `nova` (8 de aviso), `charge` (en bucle), `rayo` (8 de aviso), `pilares` (7 de aviso), `oscuridad` (solo
+  quedan los ojos; los últimos 4 cuadros se repiten), `jaula` (6 de aviso), `warcry`, `aturdido` (en bucle, de
+  rodillas y la piel enfriada: ahí se le pega), `hit` y `die` (`aterriza` en el 5, `suelta` en el 10: la última llama
+  sale del pecho, y se deshace en ceniza y escarcha). En cada anim `ojos` (la luz de los ojos, `null` cuando la ceniza
+  le llega a la cara) y `boca` (de donde sale el rayo): 8 listas con un `[x, y]` por cuadro desde el pivote. `fx`:
+  `nova_fuego_diablo` (256, 10 cuadros, sale del pivote, con dos huecos para pasar: los ángulos en las notas del
+  Diablo), `aviso_nova` (256, 8, capa suelo), `rayo_rojo` (32, 6 en bucle, se repite en línea desde `boca`),
+  `aviso_rayo` (32, 6 en bucle, capa suelo), `pilar_fuego` (64 x 128, 12), `aviso_pilar` (64 x 32, 8, capa suelo),
+  `jaula_huesos_subir` (96, 8), `jaula_huesos_quieta` (96, 1) y `jaula_huesos_romper` (96, 8), y `aviso_carga_diablo`
+  (32, en bucle, en línea).
+- **Audio:** `ambiente_hielo` (20 s), `ambiente_bosque_hielo`, `ambiente_lago`, `ambiente_catacumbas`,
+  `ambiente_ciudadela`, `ambiente_puente`, `ambiente_puerta`, `ambiente_trono` (con el latido), `musica_reina_escarcha`
+  y `musica_guardian` (en bucle), `musica_diablo_1` a `musica_diablo_3` y `musica_diablo_final` (en bucle, el mismo
+  tema cada vez más rápido y más fuerte), y los efectos `ventisca_viene`, `viento_fuerte` (en bucle), `frio_sube`,
+  `congelada`, `hielo_cruje`, `hielo_rompe`, `agua_helada`, `hoguera_prender`, `luz_comida`, `luz_vuelve`,
+  `lobo_aullido`, `lobo_mordida`, `espectro_rayo`, `diablillo_risa`, `diablillo_fuego`, `escudo_bloquea`,
+  `bruja_muro`, `bruja_cura`, `reina_lanzas`, `reina_ventisca`, `guardian_cruz`, `guardian_carga`, `diablo_ruge`,
+  `diablo_paso`, `diablo_nova`, `diablo_rayo`, `diablo_pilares`, `diablo_oscuridad`, `jaula_huesos`, `jaula_rompe`,
+  `brasero_hueso_prender`, `brasero_congela` y `diablo_cae`. Pico de 0.6 o menos.
+- **Íconos:** `ui.habilidades.frio`, `compañeras` (archivo `ui/habilidades/companeras.png`), `brasero` y `romper`.
+  **Portal:** `portal_hielo`.
+
 ### El intro (parte 4)
 
 `manifest.intro` trae los paneles pintados para el intro: `intro_bosque_noche`, `intro_corte_abismo`, `intro_ojos`,
