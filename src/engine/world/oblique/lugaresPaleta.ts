@@ -542,3 +542,62 @@ export const USO_HALONG: Record<Color, string> = {
   oro: 'el sol en el agua, la vela con sol',
   bruma: 'la calima de la bahía',
 };
+
+/**
+ * Los Llanos de Apure al atardecer (estilo `venezuela_llano`): el cielo que va del violeta al rosado y al naranja, la
+ * sabana dorada, las siluetas oscuras de los morichales, el rojo de las corocoras y el tartán de la pista de impulso.
+ * `canal` es el agua del estero con el cielo encima y `bruma` la calima naranja del horizonte.
+ */
+export const VENEZUELA_APURE_ATARDECER: Paleta = {
+  tinta: '#1e1418',
+  sombra: '#3a2428',
+  asfalto: '#5a3a34',
+  asfalto_claro: '#80584a',
+  cemento: '#a88a6e',
+  cemento_claro: '#d4b48c',
+  crema: '#f4dcb0',
+  luz: '#fff4dc',
+  amarillo: '#f8cc5a',
+  ocre: '#d09a40',
+  terracota: '#a85a34',
+  rojo: '#d4482e',
+  vino: '#7c2a30',
+  salmon: '#f08a6a',
+  menta: '#a6c86a',
+  verde: '#6a9a3a',
+  verde_oscuro: '#34582a',
+  celeste: '#8a9ad0',
+  cielo: '#f6b88a',
+  azul: '#4a5aa0',
+  azul_noche: '#2c3062',
+  canal: '#5e7a9a',
+  oro: '#ffae3a',
+  bruma: '#f49a6a',
+};
+
+export const USO_APURE: Record<Color, string> = {
+  tinta: 'contorno, lo más oscuro',
+  sombra: 'las siluetas de los morichales contra el sol',
+  asfalto: 'los troncos de las palmas, el ganado en sombra',
+  asfalto_claro: 'la madera del caney y de la tranquera',
+  cemento: 'el ganado, la paja seca en sombra',
+  cemento_claro: 'la paja con luz, el chigüire',
+  crema: 'las paredes de bahareque, el cielo encendido',
+  luz: 'las rayas de la pista, las garzas',
+  amarillo: 'la sabana con el sol, el sol',
+  ocre: 'el techo de palma del caney, la paja',
+  terracota: 'el tartán en sombra, la tierra del camino',
+  rojo: 'el tartán de la pista, las corocoras',
+  vino: 'sombra del rojo',
+  salmon: 'el cielo rosado, la piel',
+  menta: 'la sabana con luz',
+  verde: 'la sabana',
+  verde_oscuro: 'las hojas de los morichales, las matas',
+  celeste: 'el cielo alto violeta',
+  cielo: 'el cielo naranja del atardecer',
+  azul: 'el agua del estero en sombra, las matas lejanas',
+  azul_noche: 'el cielo de arriba, lo más lejos',
+  canal: 'el agua del estero',
+  oro: 'el resplandor del sol, la luz del caney',
+  bruma: 'la calima naranja del horizonte',
+};

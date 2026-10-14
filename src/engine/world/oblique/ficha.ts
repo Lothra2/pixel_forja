@@ -4,7 +4,7 @@ import { NOMBRES, USO_VIETNAM, USO_CIELO, VIETNAM_MANANA, paletaVietnam, type Pa
 import { COLOMBIA_MANANA, USO_COLOMBIA, paletaColombia } from './colombiaPaleta';
 import { VENEZUELA_NOCHE, USO_VENEZUELA, HORAS_VENEZUELA, paletaVenezuela } from './venezuelaPaleta';
 import { VIETNAM_HOIAN_NOCHE, USO_HOIAN, HORAS_HOIAN } from './hoianPaleta';
-import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG } from './lugaresPaleta';
+import { VIETNAM_DOJO_TARDE, USO_DOJO, VIETNAM_TAODAN_AMANECER, USO_TAODAN, COLOMBIA_CANDELARIA_TARDE, USO_CANDELARIA, VENEZUELA_MARGARITA_MEDIODIA, USO_MARGARITA, VIETNAM_DALAT_MANANA, USO_DALAT, COLOMBIA_BARRANQUILLA_MEDIODIA, USO_BARRANQUILLA, VENEZUELA_MARACAIBO_NOCHE, USO_MARACAIBO, COLOMBIA_COCORA_MANANA, USO_COCORA, VIETNAM_HALONG_MEDIODIA, USO_HALONG, VENEZUELA_APURE_ATARDECER, USO_APURE } from './lugaresPaleta';
 import { lugarDe } from './lugares';
 
 /**
@@ -554,10 +554,37 @@ const VIETNAM_BAHIA: Estilo = {
   letreros: ['VỊNH HẠ LONG'],
 };
 
+
+/** Los Llanos de Apure al atardecer (lote E6). */
+const VENEZUELA_LLANO: Estilo = {
+  paleta: VENEZUELA_APURE_ATARDECER,
+  uso: USO_APURE,
+  horas: ['atardecer'],
+  iconos: [
+    { id: 'sol', nombre: 'El sol grande del atardecer llanero, cruzado por las nubes, con el resplandor sobre la sabana', donde: 'lejos' },
+    { id: 'horizonte', nombre: 'El horizonte plano del llano con las matas y los morichales chiquitos en silueta', donde: 'lejos' },
+    { id: 'morichales', nombre: 'Los morichales: palmas de moriche de tronco liso y copa redonda de abanicos, encendida del lado del sol', donde: 'cerca' },
+    { id: 'sabana', nombre: 'La sabana dorada con las matas de monte', donde: 'cerca' },
+    { id: 'caney', nombre: 'El caney de techo de palma con los chinchorros de colores, el farol y la tinaja', donde: 'cerca, detrás de la pista de impulso' },
+    { id: 'estero', nombre: 'El estero que refleja el cielo, con los juncos, los chigüires y las garzas blancas', donde: 'cerca' },
+    { id: 'ganado', nombre: 'El ganado que pasta y el llanero a caballo con el liqui liqui, el sombrero y el mecate', donde: 'cerca' },
+    { id: 'tranquera', nombre: 'La tranquera del hato con el cráneo de res y el letrero LLANOS DE APURE', donde: 'cerca' },
+    { id: 'campo', nombre: 'El campo de lanzamiento: la pista de impulso de tartán, la tabla de foul y el sector de caída con sus rayas cada 10 m', donde: 'piso' },
+  ],
+  vida: {
+    estero: 'Los chigüires que levantan la cabeza y la garza que pesca: 2 cuadros',
+    ganado: 'Las reses que comen y el caballo del llanero que da el paso: 2 cuadros',
+    garzas: 'Una bandada de garzas blancas en V que cruza el cielo, en la capa lejos',
+    corocoras: 'Una bandada de corocoras rojas que cruza para el otro lado, en la capa lejos',
+  },
+  cajas: {},
+  letreros: ['LLANOS DE APURE'],
+};
+
 const ESTILOS: Record<string, Estilo> = {
   vietnam: VIETNAM, vietnam_hoian: VIETNAM_HOIAN, vietnam_dojo: VIETNAM_DOJO, vietnam_parque: VIETNAM_PARQUE, colombia_ladrillo: COLOMBIA_LADRILLO, colombia_colonial: COLOMBIA_COLONIAL, venezuela_ciudad: VENEZUELA_CIUDAD,
   venezuela_playa: VENEZUELA_PLAYA, vietnam_montana: VIETNAM_MONTANA, colombia_caribe: COLOMBIA_CARIBE, venezuela_lago: VENEZUELA_LAGO,
-  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA,
+  colombia_cafetera: COLOMBIA_CAFETERA, vietnam_bahia: VIETNAM_BAHIA, venezuela_llano: VENEZUELA_LLANO,
 };
 
 /** Los fondos de la capa cerca que son de Hội An (con su estilo). */
