@@ -79,6 +79,7 @@ La configuración pide además:
 - **Sonidos de H1:** pistola, silbato, golpes, chancleta, silla, pote, público...
 - **Sonidos de H2:** `gallo` (el kikirikí), `aleteo`, `mecha_tejo`, `toque_cau`, `caida_tatami` y `pitazo_largo`.
 - **Sonidos de H3:** `red_voley`, `rebote_balon`, `aro_basket` (la canasta), `aro_fallo` (el tiro que pega en el aro y se sale) y `chapa`.
+- **Sonidos de H2 corto:** `trueno` (el del rayo), `furro` (el Furrazo) y `corneta_moto`, y los ambientes del Cross `mercado`, `rio` y `estadio`.
 - **Voces:** los 8 atletas más `locutor` y `arbitro`.
 
 Ya no queda nada en `manifest.pendiente`. Para oír todo: `audio/escuchar.html` del kit, que en el sitio está en `kit_nekketsu/audio/escuchar.html`. Detalles en [docs/INTERFAZ.md](../../INTERFAZ.md) y [docs/AUDIO.md](../../AUDIO.md).

@@ -11,13 +11,15 @@ import { AMBIENTES_MUNDOS, sinGraves } from './ambienteMundos';
  * (lote H7, en `ambienteMundos.ts`): la calle de Saigón, Hội An de noche, La Candelaria con llovizna, el lago de
  * Maracaibo de noche, la azotea de Caracas, el atardecer de Cartagena, la Comuna 13, el carnaval, los pinos de Đà Lạt
  * y el patio del liceo. Y los del lote B7H8: el parque Tao Đàn en la mañana, el barrio de Caracas de día y el dojo de
- * Hanói en la tarde. Todo sintetizado.
+ * Hanói en la tarde. Y los del lote H2 corto: el mercado Bến Thành, el río Saigón y el estadio del final del Cross.
+ * Todo sintetizado.
  */
 
 export type AmbienceName =
   | 'bosque' | 'agua' | 'noche' | 'viento' | 'cueva' | 'magia' | 'mar' | 'cafetal' | 'llano'
   | 'trafico_saigon' | 'hoian_noche' | 'llovizna_bogota' | 'lago_noche' | 'azotea_noche' | 'atardecer_cartagena'
-  | 'comuna' | 'carnaval' | 'pinos_dalat' | 'liceo' | 'parque_tao_dan' | 'barrio_caracas' | 'dojo_hanoi';
+  | 'comuna' | 'carnaval' | 'pinos_dalat' | 'liceo' | 'parque_tao_dan' | 'barrio_caracas' | 'dojo_hanoi'
+  | 'mercado' | 'rio' | 'estadio';
 
 const SECONDS = 12, FADE = 1.5;
 

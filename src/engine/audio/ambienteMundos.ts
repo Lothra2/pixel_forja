@@ -1,12 +1,13 @@
 import { RATE } from './sfx';
 import { Mixer } from './synth';
 import { pink, bandpass, lowpass, highpass, voz } from './ambienteBase';
-import { tambora, maraca } from './mundos';
+import { tambora, maraca, bocina } from './mundos';
 
 /**
  * Los ambientes del resto de los mundos del olímpico (lote H7): la calle de Saigón, Hội An de noche, La Candelaria con
  * llovizna, la cancha del lago en Maracaibo, la azotea de Caracas, el atardecer de Cartagena, la Comuna 13, el
- * carnaval de Barranquilla, los pinos de Đà Lạt y el patio del liceo.
+ * carnaval de Barranquilla, los pinos de Đà Lạt y el patio del liceo. Después, los del lote B7H8 (el parque Tao Đàn, el
+ * barrio de Caracas y el dojo de Hanói) y los del lote H2 corto (el mercado Bến Thành, el río Saigón y el estadio).
  *
  * Cada uno tiene dos partes:
  * - el fondo continuo (tráfico, agua, viento, llovizna, insectos), que se escribe en `buf` (13.5 s) y el motor cierra
@@ -16,7 +17,8 @@ import { tambora, maraca } from './mundos';
  *   doble ni a medias.
  *
  * Sin melodías: el tema del mundo suena encima. Lo único con ritmo son los tambores de la comparsa, el parlante de los
- * bailarines de la Comuna 13 y el picó de Cartagena, lejos y bajitos.
+ * bailarines de la Comuna 13, el picó de Cartagena, el radio del barrio de Caracas y la barra del estadio, lejos y
+ * bajitos.
  */
 
 const LEN = 12 * RATE;
@@ -69,13 +71,6 @@ function moto(dur: number, f: number, R: () => number, acelera = 0): Float32Arra
     out[i] = lp2 * cerca * Math.min(1, t / 0.3, (dur - t) / 0.3);
   }
   return out;
-}
-/** La bocina de una moto: el pito eléctrico de dos tonos, "píp" o "píp-píp". */
-function bocina(m: Mixer, t: number, f: number, vol: number, veces: number) {
-  for (let k = 0; k < veces; k++) {
-    m.add({ t: t + k * 0.19, dur: 0.11, f, wave: 'square', duty: 0.4, vol, a: 0.004, s: 0.9, r: 0.03, lp: 0.22 });
-    m.add({ t: t + k * 0.19, dur: 0.11, f: f * 1.26, wave: 'square', duty: 0.4, vol: vol * 0.7, a: 0.004, s: 0.9, r: 0.03, lp: 0.2 });
-  }
 }
 
 /** Las vocales por sus dos formantes (Hz). */
@@ -547,7 +542,173 @@ const dojoHanoi: Ambiente = (buf, r) => {
   return c;
 };
 
-/** Los ambientes de los mundos (lote H7), en el orden del pedido de Rick. */
+// ---------- lote H2 corto ----------
+
+/** La cuchilla del carnicero contra la tabla: el golpe sordo de la madera, la tabla que suena y el filo que muerde. */
+function cuchilla(m: Mixer, t: number, vol: number) {
+  m.add({ t, dur: 0.008, f: 210, wave: 'sine', vol, s: 1, r: 0.07, bend: { semis: -5, len: 0.05 } });
+  m.add({ t, dur: 0.004, f: 1150, wave: 'sine', vol: vol * 0.55, s: 1, r: 0.05 });
+  m.add({ t, dur: 0.003, f: 9000, wave: 'noise', vol: vol * 0.5, s: 1, r: 0.025, lp: 0.6 });
+}
+/** Una bolsa plástica que se arruga: chasquidos sueltos y agudos, más seguidos en el medio. */
+const bolsa = (seg: number, r: () => number) => highpass(suelto(seg, (x) => {
+  for (let i = 0; i < x.length; i++) { const u = Math.sin((Math.PI * i) / x.length); x[i] = r() < 0.05 + 0.25 * u ? (r() * 2 - 1) * (0.4 + 0.6 * u) : 0; }
+}), 0.55);
+/** Una moneda que cae en la mano o en la lata: dos parciales de metal que se apagan, y un rebotito. */
+function moneda(m: Mixer, t: number, vol: number, f = 3400) {
+  for (const [dt, v] of [[0, 1], [0.06, 0.45]] as const) {
+    m.add({ t: t + dt, dur: 0.004, f, wave: 'sine', vol: vol * v, s: 1, r: 0.16 });
+    m.add({ t: t + dt, dur: 0.004, f: f * 1.47, wave: 'sine', vol: vol * v * 0.6, s: 1, r: 0.1 });
+    m.add({ t: t + dt, dur: 0.002, f: 12000, wave: 'noise', vol: vol * v * 0.4, s: 1, r: 0.01, hp: 0.6 });
+  }
+}
+/** El agua que pega contra el muelle o el casco: el chapoteo (ruido en banda que se apaga) y el "bong" hueco de la madera. */
+function chapoteo(r: () => number, f: number, hueco: number): Float32Array {
+  return suelto(0.4, (x) => {
+    const g = 2 * Math.sin((Math.PI * f) / RATE);
+    let lo = 0, ba = 0;
+    for (let i = 0; i < x.length; i++) {
+      const t = i / RATE, h = (r() * 2 - 1) - lo - 0.8 * ba; ba += g * h; lo += g * ba;
+      x[i] = ba * 0.6 * Math.min(1, t / 0.01) * Math.exp(-t * 11) + Math.sin(t * 2 * Math.PI * 190 * (1 - t * 0.3)) * hueco * Math.min(1, t / 0.003) * Math.exp(-t * 18);
+    }
+  });
+}
+
+/**
+ * El mercado Bến Thành (Saigón): el zumbido del techo alto y los ventiladores, la gente, las vendedoras que llaman
+ * cantando (con los tonos del vietnamita: suben, bajan, se quiebran), las bolsas plásticas, la cuchilla del puesto de
+ * carne contra la tabla, las monedas y, por las puertas, las motos que pasan afuera.
+ */
+const mercado: Ambiente = (buf, r) => {
+  // el galpón: un rumor grave, el lavado de la gente y los ventiladores del techo que giran
+  suma(buf, lowpass(pink(buf.length, r), 0.02), 0.32);
+  suma(buf, bandpass(pink(buf.length, r), (i) => 950 + 250 * LFO(i, 0.07), 0.8), (i) => 0.13 + 0.05 * LFO(i, 0.19, 1));
+  suma(buf, bandpass(pink(buf.length, r), () => 320, 0.4), (i) => 0.05 * (0.6 + 0.4 * Math.sin((i / RATE) * 4.3 * Math.PI * 2)));
+  const c = capa(), m = new Mixer(12, true, 717);
+  murmullo(c, 9, r, [120, 260], 0.2);
+  // las vendedoras: "mua đi chị ơi", "rẻ lắm": frases cantadas, la altura que sube, baja o se quiebra en cada sílaba
+  const llamadas: [number, [Vocal, number, number, number][], number][] = [
+    [0.8, [['u', 0.14, 300, 340], ['i', 0.12, 330, 300], ['i', 0.16, 290, 360], ['o', 0.32, 360, 300]], 0.42],
+    [3.9, [['e', 0.13, 260, 230], ['a', 0.2, 240, 300], ['a', 0.12, 300, 300], ['o', 0.3, 320, 250]], 0.36],
+    [6.6, [['a', 0.12, 340, 380], ['i', 0.14, 380, 330], ['o', 0.36, 330, 390]], 0.34],
+    [9.7, [['u', 0.12, 280, 320], ['a', 0.16, 310, 270], ['e', 0.12, 280, 330], ['a', 0.34, 330, 270]], 0.4],
+  ];
+  for (const [t, sil, v] of llamadas) frase(c, t, sil, v, r, 0.02);
+  // las bolsas plásticas, cerca y lejos
+  for (const [t, d, v] of [[1.7, 0.6, 0.09], [4.8, 0.45, 0.06], [7.3, 0.7, 0.08], [10.9, 0.5, 0.06]] as const) pon(c, t, bolsa(d, r), v);
+  // el puesto de carne: la cuchilla en ráfagas de golpes
+  for (const [t0, k] of [[2.3, 3], [8.2, 4]] as const) for (let j = 0; j < k; j++) cuchilla(m, t0 + j * 0.31, 0.3 - j * 0.03);
+  // las monedas del vuelto
+  moneda(m, 3.3, 0.06); moneda(m, 3.42, 0.05, 3900); moneda(m, 6.1, 0.05, 3600); moneda(m, 11.4, 0.05);
+  // afuera, por las puertas: tres motos que pasan y una bocina
+  for (const [t, f, v] of [[0.3, 46, 0.22], [5.2, 52, 0.18], [9.0, 40, 0.2]] as const) pon(c, t, lejos(moto(3.2, f, r), 0.18), v);
+  bocina(m, 6.0, 450, 0.025, 2);
+  const mo = m.out();
+  for (let i = 0; i < LEN; i++) c[i] += mo[i];
+  // el techo alto del galpón
+  eco(c, 0.08, 0.3, 0.35);
+  return c;
+};
+
+/**
+ * El río Saigón: el agua que lame el muelle y el casco de un bote, el motor diésel del ferry que espera, lejos (un
+ * "tuc-tuc" parejo), la sirena del ferry una vez con su eco en la otra orilla, los pájaros sobre el agua y la brisa.
+ */
+const rio: Ambiente = (buf, r) => {
+  // la brisa del río y el agua que se mueve
+  suma(buf, bandpass(pink(buf.length, r), (i) => 650 + 300 * LFO(i, 0.06) + 150 * LFO(i, 0.21, 1), 0.85), (i) => 0.14 + 0.12 * LFO(i, 0.083, 0.5));
+  suma(buf, lowpass(pink(buf.length, r), 0.05), (i) => 0.35 * (0.3 + 0.7 * LFO(i, 0.37) * LFO(i, 0.11, 2)));
+  const c = capa(), m = new Mixer(12, true, 718);
+  // el agua contra el muelle y el casco: chapoteos que van y vienen, unos con el "bong" de la madera
+  for (let k = 0; k < 30; k++) pon(c, k * 0.4 + r() * 0.25, chapoteo(r, 380 + r() * 500, r() < 0.35 ? 0.25 : 0), 0.22 + r() * 0.2);
+  // el motor del ferry, lejos: cada explosión es un golpe en banda (que se oiga arriba de 150 Hz), 7.5 por segundo
+  const motor = capa();
+  for (let k = 0; k < 90; k++) pon(motor, k / 7.5, bandpass(suelto(0.09, (x) => { for (let i = 0; i < x.length; i++) x[i] = (r() * 2 - 1) * Math.exp(-(i / RATE) * 45); }), () => 210, 0.35), k % 2 ? 0.7 : 1);
+  const mt = lowpass(motor, 0.3);
+  for (let i = 0; i < LEN; i++) c[i] += mt[i] * 0.55;
+  // la sirena del ferry, una vez: grave y ronca, con el eco de la otra orilla
+  const sirena = capa();
+  pon(sirena, 5.6, suelto(2.1, (x) => {
+    let ph = 0;
+    for (let i = 0; i < x.length; i++) {
+      const t = i / RATE; ph += (185 * (1 + 0.004 * Math.sin(t * 5 * Math.PI * 2))) / RATE;
+      const p = ph - Math.floor(ph);
+      x[i] = ((2 * p - 1) * 0.6 + Math.sin(ph * Math.PI * 2 * 2) * 0.3) * Math.min(1, t / 0.12, (2.1 - t) / 0.35);
+    }
+  }), 1);
+  eco(sirena, 0.55, 0.3, 0.5);
+  const sr = lowpass(sirena, 0.18);
+  for (let i = 0; i < LEN; i++) c[i] += sr[i] * 0.16;
+  // los pájaros sobre el agua: golondrinas que pasan chillando y una garza lejos
+  for (const t0 of [1.4, 7.9]) canto(c, t0, [[3600, 4100], [4000, 3500], [3700, 4200], [4100, 3600]], 0.06, 0.08);
+  for (const t0 of [3.6, 10.6]) canto(c, t0, [[3300, 3900], [3800, 3300], [3500, 4000]], 0.05, 0.07);
+  pon(c, 9.1, suelto(0.4, (x) => voz(x, 0, 0.35, 900, 650, 1, [1, 0.6, 0.35], 0.03, 25, 0.02)), 0.08);
+  const mo = m.out();
+  for (let i = 0; i < LEN; i++) c[i] += mo[i];
+  return c;
+};
+
+/** Una vuvuzela o corneta de la barra: una sierra ronca de unos 233 Hz que tiembla, varias juntas un poco desafinadas. */
+function vuvuzela(c: Float32Array, t0: number, dur: number, vol: number, r: () => number) {
+  for (let v = 0; v < 3; v++) {
+    const f = 233 * (1 + (r() - 0.5) * 0.025), d0 = r() * 0.06;
+    pon(c, t0 + d0, lowpass(suelto(dur, (x) => {
+      let ph = 0;
+      for (let i = 0; i < x.length; i++) {
+        const t = i / RATE; ph += (f * (1 + 0.006 * Math.sin(t * 6.5 * Math.PI * 2 + v))) / RATE;
+        x[i] = (2 * (ph - Math.floor(ph)) - 1) * Math.min(1, t / 0.05, (dur - t) / 0.08);
+      }
+    }), 0.3), vol);
+  }
+}
+
+/**
+ * El estadio, llegando al final del Cross: el público de un estadio grande que ruge en olas, aplausos, la barra con su
+ * bombo y las cornetas a lo lejos, un pitazo del árbitro y el parlante que anuncia, todo con el eco de las tribunas.
+ */
+const estadio: Ambiente = (buf, r) => {
+  // el público: un rumor ancho que no para
+  suma(buf, bandpass(pink(buf.length, r), (i) => 850 + 300 * LFO(i, 0.09), 0.7), (i) => 0.3 + 0.1 * LFO(i, 0.13, 1));
+  suma(buf, lowpass(pink(buf.length, r), 0.03), 0.3);
+  const c = capa(), m = new Mixer(12, true, 719);
+  murmullo(c, 14, r, [130, 300], 0.14, 0.5);
+  // las olas del rugido: el estadio entero que se levanta y baja
+  for (const [t, d, v] of [[0.6, 3.2, 0.6], [6.4, 4.2, 0.75]] as const) {
+    const g = suelto(d, (x) => { for (let i = 0; i < x.length; i++) { const u = i / x.length; x[i] = (r() * 2 - 1) * Math.pow(Math.sin(Math.PI * u), 1.5) * (1 - 0.4 * u); } });
+    pon(c, t, bandpass(g, (i) => 900 + 400 * Math.sin((Math.PI * i) / g.length), 0.6), v);
+  }
+  // los aplausos: sueltos todo el tiempo y en racha cuando ruge
+  for (let k = 0; k < 60; k++) m.drum('palmas', r() * 12, 0.08 + r() * 0.1);
+  for (let k = 0; k < 50; k++) m.drum('palmas', 1.4 + r() * 2, 0.12 + r() * 0.14);
+  // la barra, lejos: el bombo "pum, pum, pum-pum-pum" y las cornetas que contestan
+  const barra = new Mixer(12, true, 720);
+  for (let b = 0; b < 6; b++) for (const [dt, v] of [[0, 1], [0.5, 1], [1.0, 0.8], [1.25, 0.8], [1.5, 1]] as const) {
+    const t = b * 2 + dt;
+    // el bombo de la barra: el parche grave (que se oiga en un teléfono) y el mazo que pega
+    barra.add({ t, dur: 0.02, f: 125, wave: 'sine', vol: v * 0.5, s: 1, r: 0.2, bend: { semis: -5, len: 0.15 } });
+    barra.add({ t, dur: 0.01, f: 1000, wave: 'noise', vol: v * 0.45, s: 1, r: 0.07, lp: 0.2 });
+  }
+  const ba = barra.out();
+  const bl = lejos(ba, 0.25);
+  for (let i = 0; i < LEN; i++) c[i] += bl[i] * 0.45;
+  const cornetas = capa();
+  for (const t of [2.2, 4.2, 8.2, 10.2]) { vuvuzela(cornetas, t, 0.25, 0.5, r); vuvuzela(cornetas, t + 0.3, 0.25, 0.5, r); vuvuzela(cornetas, t + 0.6, 0.6, 0.55, r); }
+  const cl = lejos(cornetas, 0.35);
+  for (let i = 0; i < LEN; i++) c[i] += cl[i] * 0.22;
+  // el pitazo del árbitro, una vez
+  m.add({ t: 9.3, dur: 0.42, f: 2820, wave: 'sine', vol: 0.2, a: 0.015, s: 0.9, r: 0.06, vib: [31, 0.45, 0] });
+  // el parlante: el locutor que anuncia, por la bocina, con el eco largo de las tribunas
+  const pa = capa();
+  frase(pa, 4.6, [['a', 0.14, 150, 160], ['e', 0.12, 160, 150], ['o', 0.16, 150, 170], ['a', 0.42, 175, 140]], 1, r);
+  const pah = highpass(pa, 0.15);
+  for (let i = 0; i < LEN; i++) c[i] += Math.tanh(pah[i] * 5) * 0.05;
+  const mo = m.out();
+  for (let i = 0; i < LEN; i++) c[i] += mo[i];
+  eco(c, 0.27, 0.4, 0.5);
+  return c;
+};
+
+/** Los ambientes de los mundos (lote H7, y detrás los de B7H8 y H2 corto), en el orden del pedido de Rick. */
 export const AMBIENTES_MUNDOS: Record<string, Ambiente> = {
   trafico_saigon: traficoSaigon,
   hoian_noche: hoianNoche,
@@ -563,4 +724,8 @@ export const AMBIENTES_MUNDOS: Record<string, Ambiente> = {
   parque_tao_dan: parqueTaoDan,
   barrio_caracas: barrioCaracas,
   dojo_hanoi: dojoHanoi,
+  // lote H2 corto
+  mercado,
+  rio,
+  estadio,
 };

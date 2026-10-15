@@ -181,7 +181,7 @@ describe('súper golpes, Quemado, Chapita, đá cầu, vovinam y tres ambientes 
   });
 
   it('los tres ambientes nuevos están en el catálogo después de los de antes, van en bucle de 12 s y suenan parejo', () => {
-    expect(AMBIENCE_NAMES.slice(19)).toEqual(NUEVOS);
+    expect(AMBIENCE_NAMES.slice(19, 22)).toEqual(NUEVOS);
     for (const n of NUEVOS) {
       expect(SONIDOS.ambientes, n).toContain(n);
       const r = renderSound('ambientes', n), s = r.samples;

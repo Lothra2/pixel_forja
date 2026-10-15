@@ -126,12 +126,12 @@ describe('kit a medida (lote I): configuración', () => {
   });
 
   it('lo que todavía no genera vuelve como aviso y en manifest.pendiente', () => {
-    const { files, warnings } = buildCustomKit({ ...MIN, fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], audio: { sfx: ['trueno'], radio: ['noticias'] } }, {}, { quick: true, solo: ['cabecitas'] });
+    const { files, warnings } = buildCustomKit({ ...MIN, fx: ['estrellas_mareo', 'confeti_dorado'], animales: ['chiguire'], audio: { sfx: ['ventana_rota'], radio: ['noticias'] } }, {}, { quick: true, solo: ['cabecitas'] });
     expect(warnings).toEqual([
       'animales sin ficha (se saltan; las especies nuevas llegan con el lote C7): chiguire',
       'fx: todavía no existen (se saltan): confeti_dorado',
       'audio.radio: todavía no se genera, llega con el audio (lote H)',
-      'audio.sfx: todavía no existen, llegan con el lote H: trueno',
+      'audio.sfx: todavía no existen, llegan con el lote H: ventana_rota',
     ]);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(m.pendiente).toEqual(warnings);

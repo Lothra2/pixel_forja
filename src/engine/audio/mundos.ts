@@ -1,5 +1,6 @@
 import { Mixer, seq, hz, rng, normalize, trimTail, type Note } from './synth';
 import { RATE } from './sfx';
+import { highpass } from './ambienteBase';
 
 /**
  * Audio de los mundos (lote H2): un tema por mundo y los efectos de las aves y de los deportes tradicionales.
@@ -74,10 +75,30 @@ export function tambora(m: Mixer, t: number, vol: number, golpe: 'parche' | 'aro
     m.add({ t, dur: 0.004, f: 6000, wave: 'noise', vol: vol * 0.25, s: 1, r: 0.02, hp: 0.5 });
   }
 }
-/** Furro: el tambor de fricción de la gaita, un "rum" grave y áspero. */
-export function furro(m: Mixer, t: number, dur: number, vol: number, f = 62) {
-  m.add({ t, dur, f, wave: 'saw', vol, a: 0.03, d: 0.08, s: 0.65, r: 0.07, lp: 0.07, vib: [23, 0.5, 0], bend: { semis: 2, len: 0.07 } });
-  m.add({ t, dur, f: f * 2, wave: 'triangle', vol: vol * 0.35, a: 0.03, s: 0.6, r: 0.06, lp: 0.3, bend: { semis: 2, len: 0.07 } });
+/**
+ * Furro: el tambor de fricción de la gaita, un "rum" grave y áspero. Las opciones (lote H2 corto) sirven para tocarlo
+ * duro: `a` alarga el ataque (el "rum" que crece), `r` la cola, `lp` lo abre (más brillante y rasposo) y `aspero` suma
+ * el raspado de la mano mojada que frota la vara, un ruido grave que tiembla con el mismo gruñido. Sin opciones suena
+ * igual que siempre.
+ */
+export function furro(m: Mixer, t: number, dur: number, vol: number, f = 62, o: { a?: number; r?: number; lp?: number; aspero?: number } = {}) {
+  m.add({ t, dur, f, wave: 'saw', vol, a: o.a ?? 0.03, d: 0.08, s: 0.65, r: o.r ?? 0.07, lp: o.lp ?? 0.07, vib: [23, 0.5, 0], bend: { semis: 2, len: 0.07 } });
+  m.add({ t, dur, f: f * 2, wave: 'triangle', vol: vol * 0.35, a: o.a ?? 0.03, s: 0.6, r: o.r ?? 0.06, lp: 0.3, bend: { semis: 2, len: 0.07 } });
+  if (o.aspero) m.add({ t, dur, f: f * 9, wave: 'noise', vol: vol * o.aspero, a: o.a ?? 0.03, d: 0.1, s: 0.7, r: o.r ?? 0.07, lp: 0.12, vib: [23, 4, 0] });
+}
+/**
+ * La bocina de una moto: el pito eléctrico de dos tonos, "píp" o "píp-píp". Las opciones (lote H2 corto) cambian el
+ * paso entre pitos, lo que dura cada uno (uno para todos o uno por pito), la segunda voz (`segunda`: 1.26 es la
+ * tercera de la bocina de dos tonos, 1.01 es un solo pito un poco desafinado que bate), el filtro y el ancho de pulso
+ * (más angosto, más nasal). Sin opciones suena igual que siempre.
+ */
+export function bocina(m: Mixer, t: number, f: number, vol: number, veces: number, o: { paso?: number; dur?: number | number[]; segunda?: number; lp?: number; duty?: number } = {}) {
+  const paso = o.paso ?? 0.19, duty = o.duty ?? 0.4;
+  for (let k = 0; k < veces; k++) {
+    const dur = Array.isArray(o.dur) ? o.dur[k % o.dur.length] : o.dur ?? 0.11;
+    m.add({ t: t + k * paso, dur, f, wave: 'square', duty, vol, a: 0.004, s: 0.9, r: 0.03, lp: o.lp ?? 0.22 });
+    m.add({ t: t + k * paso, dur, f: f * (o.segunda ?? 1.26), wave: 'square', duty, vol: vol * 0.7, a: 0.004, s: 0.9, r: 0.03, lp: o.lp ?? 0.2 });
+  }
 }
 /** Rasgueo de cuatro: las cuerdas una tras otra en milisegundos. Apagado: corto y con el chasquido de la mano. */
 export function rasgueo(m: Mixer, t: number, notas: number[], vol: number, apagado = false) {
@@ -477,4 +498,77 @@ export const SFX_MUNDOS = {
     N(m, { t: 0, dur: 1.15, f: 5640, wave: 'sine', vol: 0.05, a: 0.015, s: 0.9, r: 0.08, vib: [31, 0.45, 0], bend: { semis: 0.6, len: 0.12 } });
     N(m, { t: 0, dur: 1.15, f: 6000, wave: 'noise', vol: 0.06, a: 0.015, s: 1, r: 0.08, hp: 0.6 });
   }),
+};
+
+// ---------- lote H2 corto: el trueno, el furrazo y la corneta de la moto ----------
+/**
+ * El trueno del Catatumbo (2.1 s), para el rayo (`rayo_cielo`): el chasquido seco del aire que se rasga, que pega de
+ * una (el golpe más fuerte cae en los primeros 30 ms, cuando el rayo toca el piso en el cuadro 2), el estampido grave
+ * y después el retumbo que rueda por el lago en tres o cuatro olas y se apaga.
+ */
+function trueno(): Float32Array {
+  const R = rng(47), n = Math.round(2.3 * RATE), sec = (i: number) => i / RATE;
+  // el chasquido: cuatro descargas seguidas, ruido blanco que se apaga en milisegundos
+  const crack = new Float32Array(n);
+  for (const [t0, v, k] of [[0, 1, 160], [0.009, 0.75, 120], [0.019, 0.9, 140], [0.034, 0.5, 90]] as const)
+    for (let i = Math.round(t0 * RATE); i < Math.round((t0 + 0.06) * RATE); i++) crack[i] += (R() * 2 - 1) * v * Math.exp(-(sec(i) - t0) * k);
+  // el estampido: un golpe grave que baja, con el aire que retumba
+  const golpe = new Float32Array(n);
+  let ph = 0, lp = 0;
+  for (let i = 0; i < Math.round(0.6 * RATE); i++) {
+    const t = sec(i);
+    ph += (95 * Math.pow(0.45, t / 0.25)) / RATE;
+    lp += ((R() * 2 - 1) - lp) * 0.08;
+    golpe[i] = (Math.sin(ph * Math.PI * 2) * 0.8 + lp * 2.2) * Math.min(1, t / 0.004) * Math.exp(-t * 7);
+  }
+  // el retumbo: ruido grave (dos pasa bajos) más una banda de 260 Hz para que se oiga en un teléfono, que rueda en
+  // olas (cada una más lejos y más bajita) y tiembla despacio
+  const retumbo = new Float32Array(n), olas = [[0.28, 1, 0.16], [0.7, 0.85, 0.22], [1.15, 0.6, 0.25], [1.62, 0.38, 0.3]];
+  let a = 0, b = 0, lo = 0, ba = 0, tiembla = 0;
+  const g = 2 * Math.sin((Math.PI * 260) / RATE);
+  for (let i = 0; i < n; i++) {
+    const t = sec(i), w = R() * 2 - 1;
+    a += (w - a) * 0.05; b += (a - b) * 0.05;
+    const h = w - lo - 0.9 * ba; ba += g * h; lo += g * ba;
+    if (i % 400 === 0) tiembla = 0.55 + R() * 0.45;
+    let env = 0;
+    for (const [c, v, ancho] of olas) env += v * Math.exp(-(((t - c) / ancho) ** 2));
+    env *= Math.min(1, t / 0.08) * Math.min(1, (2.3 - t) / 0.35);
+    retumbo[i] = (b * 6 + ba * 0.3) * env * (0.75 + 0.25 * tiembla);
+  }
+  const pk = (x: Float32Array) => { let p = 0; for (const v of x) p = Math.max(p, Math.abs(v)); return p || 1; };
+  const kc = 1 / pk(crack), kg = 0.6 / pk(golpe), kr = 0.5 / pk(retumbo);
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) out[i] = crack[i] * kc + golpe[i] * kg + retumbo[i] * kr;
+  return trimTail(normalize(sinDC(out, false), 0.85));
+}
+
+export const SFX_MUNDOS_H2C = {
+  /** El trueno del Catatumbo (2.1 s): el chasquido de una, el estampido y el retumbo que rueda por el lago. */
+  trueno,
+  /**
+   * El furrazo (1 s): el furro de la gaita tocado con todo. La palmada en el parche, el "rum" que crece un poquito y
+   * gruñe (dos furros casi iguales que baten) y el raspado de la mano que frota la vara. Va en el impacto de `play_drum`.
+   */
+  furro: () => {
+    const m = new Mixer(1.4, false, 48);
+    N(m, { t: 0, dur: 0.02, f: 92, wave: 'sine', vol: 0.55, s: 1, r: 0.22, bend: { semis: -7, len: 0.2 } });
+    N(m, { t: 0, dur: 0.006, f: 2200, wave: 'noise', vol: 0.3, s: 1, r: 0.03, lp: 0.2 });
+    furro(m, 0, 0.62, 0.8, 62, { a: 0.09, r: 0.36, lp: 0.2, aspero: 0.5 });
+    furro(m, 0.01, 0.58, 0.45, 62 * 1.012, { a: 0.11, r: 0.32, lp: 0.16 });
+    // el cuero que se satura cuando lo frotan duro: el gruñido áspero que se oye hasta en un teléfono
+    const b = normalize(sinDC(m.out(), false), 1);
+    for (let i = 0; i < b.length; i++) b[i] = Math.tanh(b[i] * 2);
+    return trimTail(normalize(b, 0.85));
+  },
+  /**
+   * La corneta de una moto de Saigón (0.56 s), una Honda Wave o una Dream: "pí-píii", un solo pito nasal y brillante
+   * (dos voces casi iguales que baten), el segundo más largo. Va cuando la moto pasa a `corneta` en el Cross.
+   */
+  corneta_moto: () => {
+    const m = new Mixer(0.9, false, 49);
+    bocina(m, 0, 440, 0.5, 2, { paso: 0.23, dur: [0.12, 0.27], segunda: 1.012, lp: 0.55, duty: 0.22 });
+    // el pulso angosto trae su componente continua: sin lo de abajo del pito, no suena un golpe sordo al empezar
+    return trimTail(normalize(highpass(m.out(), 0.04), 0.85));
+  },
 };
