@@ -351,7 +351,8 @@ export function tvNumbers(bold: ArrayBuffer): UiPiece[] {
   ];
 }
 
-export const UI_PARTS = ['dialogo', 'paneles', 'barras', 'marcos', 'banners', 'controles', 'minimapa', 'numeros'] as const;
+/** Las piezas de interfaz. Las ocho primeras son las retro de siempre; desde `medallas`, el envoltorio (lote G2, ver envoltorio.ts). */
+export const UI_PARTS = ['dialogo', 'paneles', 'barras', 'marcos', 'banners', 'controles', 'minimapa', 'numeros', 'medallas', 'podio', 'iconos', 'banderas', 'tarjetas', 'marco_vs', 'pantallas'] as const;
 export type UiPart = (typeof UI_PARTS)[number];
 
 /** Todas las piezas de interfaz pedidas. `equipos`: id -> [color principal, acento]; sin equipos, los 6 de partida. */

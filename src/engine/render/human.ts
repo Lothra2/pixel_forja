@@ -4,8 +4,8 @@ import { dimsFor, type Dims } from '../rig/dims';
 import { type Pose, type Arm, type Foot, type PropKind, type HandShape, solveTwoBone, WEAPON_KINDS } from '../rig/pose';
 
 const WEAPON_SET = new Set<PropKind>(WEAPON_KINDS);
-import { type Ramp, SHADOW, BASE, LIGHT, makeRamp } from '../color/ramp';
-import { LayerCanvas, Layer, finalizeOutlines, toRaster, packHex } from './canvas';
+import { type Ramp, SHADOW, BASE, LIGHT, OUTLINE, makeRamp } from '../color/ramp';
+import { LayerCanvas, Layer, finalizeOutlines, toRaster, toMatMap, packHex } from './canvas';
 import { Materials, PROP_COLORS } from './materials';
 import { Part, stroke, blob, rot, polygon } from './part';
 import { buildHeadImage, type View, type HeadImage } from './head';
@@ -34,6 +34,8 @@ export interface RenderOptions {
   sinPelotas?: boolean;
   /** uso interno de sinPelotas: el piso ya medido con las pelotas (fila del lienzo) */
   suelo?: number;
+  /** devolver también el material de cada pixel (`materiales`), para redibujar el cuadro más grande */
+  materiales?: boolean;
 }
 
 /** Una pelota dibujada: centro exacto (puede caer en medio pixel), diámetro sin el contorno y si va detrás del cuerpo. */
@@ -61,6 +63,11 @@ export interface BigFrame {
   pelotas?: BallAt[];
   /** fila del lienzo donde quedó el piso (para dibujar el mismo cuadro sin pelotas) */
   suelo?: number;
+  /**
+   * con `materiales`: el material de cada pixel del raster (índice en `nombres`; -1 vacío, -2 contorno) y el tono
+   * oscuro de cada material (el del contorno), en el mismo orden que `nombres`
+   */
+  materiales?: { mapa: Int16Array; nombres: string[]; oscuros: string[] };
 }
 
 export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 'shoulderNear' | 'shoulderFar' | 'handNear' | 'handFar' | 'neck' | 'head' | 'elbowNear' | 'elbowFar' | 'frente';
@@ -962,6 +969,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   });
   return {
     raster: toRaster(canvas, 0, 0, W, H, dx, dy), pivotX: canvas.ox, groundRow, body, full, whole, joints, suelo: groundCanvas,
+    ...(opt.materiales ? { materiales: { mapa: toMatMap(canvas, 0, 0, W, H, dx, dy), nombres: mats.names(), oscuros: mats.names().map((n) => mats.ramp(n)[OUTLINE]) } } : {}),
     ...(held ? { held: { x: J(held.p)[0], y: J(held.p)[1], angle: ((Math.round(held.angle) % 360) + 360) % 360, behind: held.behind } } : {}),
     ...(balls.length ? { pelotas: balls } : {}),
   };

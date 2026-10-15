@@ -41,6 +41,37 @@ Salen `ui/<pieza>.png` con su entrada en `manifest.ui.logo` y `manifest.ui.inter
 
 Todas las piezas son opacas o transparentes (sin mezcla). El centro de las 9-slice se repite sin costura, y hay una prueba que lo revisa.
 
+## El envoltorio (lote G2)
+
+Lo que rodea a las pruebas. Va en la misma lista de `ui.interfaz` y sale igual, con su entrada en `manifest.ui.interfaz`: con `"interfaz": true` salen todas. Se pueden pedir sueltas: `medallas`, `podio`, `iconos`, `banderas`, `tarjetas`, `marco_vs` y `pantallas`.
+
+| Pieza | Tamaño | Qué es |
+|---|---|---|
+| `medallas_16`, `medallas_32`, `medallas_64` | 3 cuadros cada una | Oro, plata y bronce (el orden va en `orden`): el disco con relieve y una estrella grabada, la cinta roja en V arriba. Las de 32 y 64 llevan un destello |
+| `bandera_<id>_16`, `bandera_<id>_32` | 18 x 15 y 34 x 26 | Quietas. Hay `vietnam`, `colombia`, `venezuela`, `japon`, `bogota` y `zulia`. El asta va a la izquierda |
+| `bandera_<id>_<tam>_ondea` | Las mismas, 8 cuadros a 10 fps | Ondeando: la tela quieta pegada al asta y la onda que crece hacia la punta, con pliegues de luz y sombra |
+| `podio` | 800 x 360 | El podio en el estadio de noche. La parte de 640 va de x 80 a 720. `puestos` dice dónde van los pies de cada uno (en 640: 1 en 320, 268; 2 en 240, 284; 3 en 400, 296, como el medallero), `mastiles` por dónde sube cada bandera y `calma` la franja de arriba, tranquila para el título |
+| `iconos_prueba`, `iconos_prueba_16` | 32 x 32 y 16 x 16, 18 cuadros | Un ícono por prueba en el orden de `orden`: un atleta del kit haciendo la jugada sobre un cuadrito de color. Los de 16 son los mismos reducidos sin mezclar colores |
+| `tarjeta_<equipo>` | 184 x 104 | La tarjeta de la selección: los colores del equipo, su bandera arriba a la izquierda y su escudo a la derecha. El nombre va en `texto` y las 4 caras de 40 en la franja oscura `retratos` |
+| `escudo_<equipo>` | 48 x 56 | El escudo solo, para lo que haga falta |
+| `marco_vs_4` | 800 x 360 | El VS de dos contra dos: partido en diagonal, azul y rojo, con cuatro marcos dorados. Los retratos grandes van en `huecos` (los dos primeros de un equipo), la palabra VS en `vs`, el nombre de la prueba en `texto`, y los nombres en la fila `nombres`. La costura blanca va de (440, 0) a (360, 360): pasa por el centro y cruza la VS por el medio (`costura`) |
+| `pantalla_pausa` | 800 x 360 | Un velo tramado (la pelea se ve por los huecos, sin alfa) con la placa del medio |
+| `pantalla_se_acabo` | 800 x 360 | Para "SE ACABÓ LA VAINA": la ciudad apagada bajo la lluvia, en plata |
+| `pantalla_otra_partidita` | 800 x 360 | Para "¿OTRA PARTIDITA?": rayos de arcade, el piso de cuadrícula y monedas |
+
+En las tres pantallas el título y las opciones los escribe el juego en `calma`, la franja tranquila del medio.
+
+**La bandera y el escudo de cada equipo** salen de `equipos.json`:
+
+```json
+"rolos_de_chapinero": { "nombre": "Rolos de Chapinero", "pais": "colombia", "bandera": "bogota", "escudo": { "emblema": "bicicleta" }, ... }
+```
+
+- `bandera`: una de las 6. Sin el campo, sale la de su `pais` si el motor la tiene.
+- `escudo`: un `emblema` de `letras` (con `texto`, de 1 a 3 letras), `llama`, `dragon`, `bicicleta`, `montana`, `rayo` o `estrella`. Sin el campo, sus iniciales.
+
+**Los íconos usan a los atletas del kit,** en el orden de los equipos, uno distinto por ícono. Las pruebas son: `cross_country`, `obstaculos`, `vallas`, `natacion`, `jabalina`, `azoteas`, `tamawari`, `da_cau`, `tejo`, `quemado`, `chapita`, `voley`, `tenis`, `futbol`, `basket`, `judo`, `kachinuki` y `pelea`.
+
 ## En Phaser
 
 ```js
@@ -84,5 +115,7 @@ this.add.sprite(320, 120, 'logo').play('logo');
 ## Límites honestos
 
 - **El texto lo pone el juego.** Banners, diálogos y marcador se escriben con las fuentes del kit, así sirven para cualquier idioma.
+- **Los fondos del envoltorio miden 800 x 360,** como las canchas: lo importante va en los 640 del medio y los lados son escenario.
+- **El dragón y la bicicleta de los escudos** son dibujos chicos: a 26 de ancho, en la tarjeta, se leen como forma más que como detalle.
 - **El logo usa Silkscreen.** Con nombres muy largos (más de unas 24 letras en 2 líneas) la letra queda chica. Un logo dibujado a mano llega con el lote G2 (envoltorio completo).
 - **Los paneles salen de dos colores por equipo:** `colores[0]` es el fondo y `colores[1]` el borde. Si un equipo no trae colores, no sale su panel.

@@ -14,6 +14,8 @@ import { SONIDOS, renderSound, type SoundSection } from '../audio/catalogo';
 import { blip, vozDe, BLIPS, TIMBRES, type Voz, type Timbre } from '../audio/deporte';
 import { listenPage, type ListenEntry, type ListenVoice } from '../audio/escuchar';
 import { retroUi, gameLogo, UI_PARTS, type UiPart, type UiPiece } from '../ui/retro';
+import { BANDERAS, EMBLEMAS } from '../ui/envoltorio';
+import { piezasEnvoltorio } from './envoltorioKit';
 import type { Raster } from '../core/raster';
 import { encodePng } from '../export/png';
 import { COMIDAS, type Comida } from '../render/comida';
@@ -109,6 +111,10 @@ export interface TeamDef {
   nombre: string; atletas: string[]; mascota?: string; colores?: string[];
   /** la música del equipo, su acorde de victoria (`acorde_<equipo>`): una de `SONIDOS.musica` */
   musica?: string;
+  /** la bandera de las tarjetas, si no es la de su `pais`: una de BANDERAS (vietnam, colombia, venezuela, japon, bogota, zulia) */
+  bandera?: string;
+  /** el escudo del equipo: un emblema de EMBLEMAS y, para `letras`, el texto. Sin esto, sus iniciales */
+  escudo?: { emblema: string; texto?: string };
   [k: string]: unknown;
 }
 
@@ -375,7 +381,7 @@ export function kitConfigSchema(): Record<string, unknown> {
         properties: {
           fuentes: { oneOf: [{ type: 'boolean' }, { type: 'object', additionalProperties: false, properties: { idiomas: list({ enum: IDIOMAS }) } }], description: 'Las tres fuentes bitmap (con vietnamita) en ui/fuentes.' },
           logo: { type: 'object', required: ['texto'], properties: { texto: { type: 'string', minLength: 1 } }, description: 'El logo animado del juego a partir de su nombre, en 320 x 112 y 160 x 56 (ui/logo.png y ui/logo_chico.png).' },
-          interfaz: { oneOf: [{ type: 'boolean' }, list({ enum: UI_PARTS })], description: 'Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador. true = todas.' },
+          interfaz: { oneOf: [{ type: 'boolean' }, list({ enum: UI_PARTS })], description: 'Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marco VS de 4 y fondos de pausa, fin y continuar. true = todas.' },
           vs_fondo: { type: 'boolean', description: 'La pantalla del VS: el fondo con los colores de cada par de equipos partidos en diagonal y rayos (ui/vs/), uno neutro, y las letras VS aparte para estrellarlas.' },
         },
       },
@@ -444,6 +450,13 @@ export function validateTeams(teams: unknown, athletes: string[], animals: strin
     if (t.mascota !== undefined && !animals.includes(t.mascota as string)) e.push(`equipos.${id}.mascota: no hay ficha del animal "${t.mascota}".${suggest(String(t.mascota), animals)}`);
     // la música del equipo (su acorde de victoria): tiene que ser una del motor, para que el kit la pueda exportar
     if (t.musica !== undefined && (typeof t.musica !== 'string' || !SONIDOS.musica.includes(t.musica))) e.push(`equipos.${id}.musica: el motor no tiene la música "${t.musica}".${suggest(String(t.musica), SONIDOS.musica)}`);
+    // la bandera y el escudo de las tarjetas (lote G2)
+    if (t.bandera !== undefined && !(BANDERAS as readonly string[]).includes(t.bandera as string)) e.push(`equipos.${id}.bandera: el motor no tiene la bandera "${t.bandera}".${suggest(String(t.bandera), BANDERAS)} Hay ${BANDERAS.join(', ')}`);
+    if (t.escudo !== undefined) {
+      const es = t.escudo as Record<string, unknown>;
+      if (!isObj(es) || !(EMBLEMAS as readonly string[]).includes(es.emblema as string)) e.push(`equipos.${id}.escudo: { "emblema": uno de ${EMBLEMAS.join(', ')} }.${suggest(String(isObj(es) ? es.emblema : es), EMBLEMAS)}`);
+      else if (es.texto !== undefined && (typeof es.texto !== 'string' || !es.texto.trim() || es.texto.length > 3)) e.push(`equipos.${id}.escudo.texto: de 1 a 3 letras`);
+    }
   }
   return e;
 }
@@ -680,6 +693,9 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
       const want = cfg.ui.interfaz === true ? UI_PARTS : cfg.ui.interfaz;
       const colors = Object.fromEntries(Object.entries(inputs.equipos ?? {}).filter(([, t]) => Array.isArray(t.colores) && t.colores.length >= 2).map(([id, t]) => [id, [t.colores![0], t.colores![1]] as [string, string]]));
       const pieces: UiPiece[] = retroUi(inputs.fuentes.bold, want, colors);
+      // el envoltorio (lote G2): medallas, podio, íconos, banderas, tarjetas, marco VS y pantallas retro
+      const delKit = [...Object.values(inputs.equipos ?? {}).flatMap((t) => t.atletas), ...Object.keys(humans)].filter((a, i, l) => humans[a] && l.indexOf(a) === i).map((a) => humans[a]);
+      pieces.push(...piezasEnvoltorio(want, { bold: inputs.fuentes.bold, atletas: delKit, equipos: inputs.equipos }));
       const it: Record<string, unknown> = {};
       for (const pc of pieces) it[pc.name] = { ...put(pc.name, pc.frames, pc.w, pc.h), ...(pc.fps ? { fps: pc.fps, loop: !!pc.loop } : {}), ...(pc.nueve ? { nueve: pc.nueve } : {}), ...(pc.tres ? { tres: pc.tres } : {}), ...(pc.extra ?? {}) };
       ui.interfaz = it;

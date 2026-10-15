@@ -166,6 +166,24 @@ export function finalizeOutlines(c: LayerCanvas, rules: OutlineRules): void {
       }
 }
 
+/**
+ * El material de cada pixel, con el mismo recorte que `toRaster`: -1 donde no hay nada y -2 en el contorno. Para
+ * redibujar un cuadro más grande sabiendo qué es pelo, qué es piel y qué es ropa (los retratos de 96).
+ */
+export function toMatMap(c: LayerCanvas, x0: number, y0: number, w: number, h: number, dx: number, dy: number): Int16Array {
+  const out = new Int16Array(w * h).fill(-1);
+  const r = c.region();
+  if (r) for (let y = r.y0; y <= r.y1; y++)
+    for (let x = r.x0; x <= r.x1; x++) {
+      const i = y * c.w + x;
+      if (!c.layer[i]) continue;
+      const X = x - x0 + dx, Y = y - y0 + dy;
+      if (X < 0 || Y < 0 || X >= w || Y >= h) continue;
+      out[Y * w + X] = c.mat[i];
+    }
+  return out;
+}
+
 export function toRaster(c: LayerCanvas, x0: number, y0: number, w: number, h: number, dx: number, dy: number): Raster {
   const out = createRaster(w, h);
   const r = c.region();
