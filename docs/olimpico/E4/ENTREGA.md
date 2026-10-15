@@ -50,9 +50,9 @@ Las 8 canchas que estaban a 640 ahora miden 800. La cancha va centrada en los 64
 - **El relámpago de Maracaibo** va en la nube del Catatumbo con la cámara centrada.
 - **Las luces nuevas:** Maracaibo tiene 9 prendidas (el farol de la calle y el bombillo del kiosco) y el liceo 6 (una lámpara más en cada margen).
 - **Las imágenes doradas** de e4a, e5, e6 y Hội An están regeneradas, después de mirar cada cancha entera.
-- **`custom.test.ts`:** las 8 canchas en el kit con `largo` 800 y `margen` 80. KIT.
-- **La suite completa:** SUITE.
-- **`tsc` limpio, `npm run build:sitio` limpio y e2e:** E2E.
+- **`custom.test.ts`: 15 de 15,** con las 8 canchas en el kit con `largo` 800 y `margen` 80. La prueba completa tardó 186 s, por debajo del límite de 300.
+- **La suite sin `custom.test.ts`:** 47 archivos, 493 de 493.
+- **`tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
