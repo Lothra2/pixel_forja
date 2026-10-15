@@ -1,6 +1,13 @@
 import { Pix } from '../../fx/pix';
 import { makeRamp } from '../../color/ramp';
-import type { Raster } from '../../core/raster';
+import { createRaster, blit, type Raster } from '../../core/raster';
+import { renderHuman, reachArm } from '../../render/human';
+import { makeCtx, P, type Ctx } from '../../anim/types';
+import { dimsFor } from '../../rig/dims';
+import { defaultAvatar } from '../../head3d/avatar';
+import { fichaFromAvatar } from '../../sheet/build';
+import type { HumanFicha } from '../../sheet/ficha';
+import type { Pose } from '../../rig/pose';
 
 /**
  * Vehículos y objetos de escenario en la vista inclinada del juego (lote D2): ferry, xích lô, motos, thúng chai,
@@ -79,6 +86,57 @@ function persona(o: Obl, x: number, y: number, z: number, ropa: string, piel: st
   if (gorro === 'non_la') { for (let j = 0; j < 3; j++) o.p.rect(hx - j * 2, hy - 3 + j, 1 + j * 4, 1, j === 2 ? go[1] : go[3 - (j & 1)]); }
 }
 
+// ------------------------------------------------------------------ la gente a escala de atleta (lote D3)
+
+/** Cómo se viste uno que maneja: piel, pelo, franela, pantalón y el gorro (el casco del color de la moto, el nón lá). */
+interface Pinta { piel: string; pelo: string; ropa: string; pantalon: string; gorro?: { id: string; color: string }; manga?: 'short' | 'long' }
+
+/** Una persona del motor (la misma de los atletas), a 48: el conductor del alto de un atleta, no un muñequito. */
+function fichaConductor(nombre: string, t: Pinta): HumanFicha {
+  const av = defaultAvatar();
+  const a = { ...av, skin: t.piel, hair: { ...av.hair, color: t.pelo }, lpc: { ...av.lpc!, ...(t.gorro ? { hat: t.gorro.id, hatColor: t.gorro.color } : {}) } };
+  const f = fichaFromAvatar(nombre, a, { sleeves: t.manga ?? 'short', bottom: 'pants', socks: 'low' }) as HumanFicha;
+  return { ...f, palette: { ...f.palette, top: makeRamp(t.ropa), bottom: makeRamp(t.pantalon) }, movementProfile: 'premium' } as HumanFicha;
+}
+
+const ctx48 = (f: HumanFicha): Ctx => makeCtx(dimsFor(48, f.body.proportions), f.body.proportions.build, 'side');
+
+/** El espejo de un cuadro: el motor dibuja de lado mirando a la derecha y los vehículos van a la izquierda. */
+function espejo(r: Raster): Raster {
+  const o = createRaster(r.w, r.h);
+  for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) { const a = (y * r.w + x) * 4, b = (y * r.w + (r.w - 1 - x)) * 4; for (let k = 0; k < 4; k++) o.data[b + k] = r.data[a + k]; }
+  return o;
+}
+
+/** La cadera de las poses sentadas sobre el piso del cuadro: solo cambia dónde queda el piso, la cadera se pega al asiento. */
+const CADERA = 12;
+
+/**
+ * Pinta a la persona sentada con la cadera en el punto de mundo (x, y, z) del vehículo, mirando a la izquierda. Sale
+ * del mismo dibujo que un atleta (el cuadro grande del motor, a 48: del mismo alto y con el mismo pixel), sin recortar a
+ * la celda, porque sentado en un vehículo alto los pies y la cabeza no caben en 48.
+ */
+function sentar(o: Obl, f: HumanFicha, pose: Pose, x: number, y: number, z: number) {
+  const b = renderHuman(f, 48, pose, 'side', { props: true }), hip = b.joints!.hip;
+  const [hx, hy] = o.s(x, y, z);
+  // el motor dibuja de lado mirando a la derecha: espejado, la cadera queda en w - 1 - x
+  blit(o.p.r, espejo(b.raster), hx - (b.raster.w - 1 - Math.round(hip[0])), hy - Math.round(hip[1]));
+}
+
+/**
+ * Sentado en la moto: la cadera en el asiento, los muslos adelante, los pies en los posapiés y las manos al manubrio.
+ * `torso` lo echa adelante (frenando), `pito` levanta el brazo de atrás reclamando y abre la boca.
+ */
+function poseMoto(c: Ctx, o: { torso?: number; pito?: boolean; bob?: number } = {}): Pose {
+  const t = o.torso ?? 8, mano = reachArm(c.d, t, [16, -7]);
+  return P(c, {
+    torso: t, hipH: CADERA + (o.bob ?? 0), head: { tilt: -Math.round(t / 3), dx: 0, dy: 0 },
+    legs: { near: { x: 11, y: 11, toe: 10 }, far: { x: 9, y: 11, toe: 10 } },
+    arms: { near: mano, far: o.pito ? { shoulder: 150, elbow: 60 } : { ...mano } },
+    face: o.pito ? { eyes: 'angry', mouth: 'open' } : { eyes: 'open', mouth: 'smile' },
+  });
+}
+
 export interface VehiculoHoja {
   id: string;
   /** tira de cuadros, todos de w × h */
@@ -116,38 +174,50 @@ export const MOTO_COLORES = { rojo: '#d43a2f', azul: '#2f6fd4', amarillo: '#e8b9
 export type MotoColor = keyof typeof MOTO_COLORES;
 
 /**
- * Moto con conductor (casco del color de la moto), de frente a la izquierda como en los layouts del hẻm.
- * `andando`: ruedas que giran, el conductor rebota y sale humito. `frenando`: la trompa baja, la luz de freno y el
- * polvo de la rueda. `corneta`: el conductor mira atrás y salen las rayitas del pito.
+ * Moto con conductor (casco del color de la moto), de frente a la izquierda como en los layouts del hẻm. A escala de
+ * atleta (lote D3): 52 de largo y el conductor es una persona del motor, de unos 40 px parada (32 sentada con el casco).
+ * `andando`: ruedas que giran, el conductor rebota y sale humito. `frenando`: la trompa baja, el conductor se va
+ * adelante, la luz de freno y el polvo de la rueda. `corneta`: pita con el brazo arriba y salen las rayitas del pito.
  */
 export function moto(color: MotoColor, k = K_INCLINACION): VehiculoHoja {
-  const L = 26, D = 6, c = R(MOTO_COLORES[color]);
+  const L = 52, D = 12, c = R(MOTO_COLORES[color]);
   const ropa = { rojo: '#f2efe6', azul: '#e8c25a', amarillo: '#5a6e8c', verde: '#c8503c' }[color];
+  const f = fichaConductor(`motorizado_${color}`, { piel: '#c58a62', pelo: '#2a2018', ropa, pantalon: '#2c3346', gorro: { id: 'casco_ciclista', color: MOTO_COLORES[color] } });
+  const cx = ctx48(f);
   const dibuja = (o: Obl, fase: number, opts: { bob?: number; frena?: boolean; pito?: number; humo?: number }) => {
-    const nose = opts.frena ? 1 : 0;
-    // ruedas: la de adelante a la izquierda (x chico)
-    o.rueda(5, D / 2, 4 - nose, 4, fase);
-    o.rueda(L - 5, D / 2, 4, 4, fase + 0.3);
-    // chasis: el cuerpo de la moto entre las ruedas, el asiento y el escudo de adelante
-    o.prism(6, 1, L - 12, D - 2, 5 - nose, 9 - nose, c);
-    o.prism(3, 1, 4, D - 2, 6 - nose, 13 - nose, c); // escudo y manubrio
-    o.prism(L - 12, 1, 9, D - 2, 9, 11, R('#2a2a30')); // asiento
-    o.prism(L - 4, 2, 4, 2, 5, 7, R('#9aa0aa')); // escape
-    // faro y luz de freno
-    const [fx, fy] = o.s(2, D / 2, 11 - nose); o.p.rect(fx, fy, 2, 2, '#ffe9a0');
-    const [bx, by] = o.s(L - 2, D / 2, 9); o.p.rect(bx, by, 2, 1, opts.frena ? '#ff3a2a' : '#8a2a22');
-    // conductor sentado, las manos al manubrio
-    const [mx, my] = o.s(4, D / 2, 13 - nose);
-    persona(o, L - 10, D / 2, 7 + (opts.bob ?? 0), ropa, '#c58a62', 'casco', MOTO_COLORES[color], { brazo: [mx + 1, my], sentado: false, mira: (opts.pito ?? 0) > 0 ? 1 : -1 });
+    const nose = opts.frena ? 2 : 0, negro = R('#2a2a30'), metal = R('#9aa0aa');
+    // la rueda de atrás y la de adelante, con el guardafango de adelante encima
+    o.rueda(43, D / 2, 8, 8, fase + 0.3);
+    o.rueda(9, D / 2, 8 - nose, 8, fase);
+    o.prism(3, 3, 12, D - 6, 15 - nose, 17 - nose, c);
+    // la horquilla del manubrio, del eje de adelante hasta el faro
+    const [ax, ay] = o.s(9, D / 2, 8 - nose), [bx0, by0] = o.s(14, D / 2, 27 - nose);
+    o.p.thick(ax, ay, bx0, by0, 1, '#5a5e66');
+    // el escudo de las piernas y el piso bajo donde van los pies (la moto de paso bajo de Saigón)
+    o.prism(13, 2, 6, D - 4, 10 - nose / 2, 26 - nose, c);
+    o.prism(18, 2, 11, D - 4, 8, 11, negro);
+    // la carrocería de atrás, que sube hasta el asiento, la parrilla y la luz
+    o.prism(27, 2, 20, D - 4, 9, 17, c);
+    o.prism(31, 2, 17, D - 4, 17, 19, c);
+    o.prism(25, 2, 20, D - 4, 19, 22, negro); // asiento
+    o.prism(44, 2, 6, D - 4, 22, 23, metal); // parrilla
+    o.prism(38, 10, 13, 2, 6, 8, metal); // escape
+    // el faro con su capota sobre el manubrio, y el manubrio de lado a lado
+    o.prism(10, 2, 9, D - 4, 26 - nose, 31 - nose, c);
+    o.prism(15, 0, 2, D, 30 - nose, 31 - nose, negro);
+    const [fx, fy] = o.s(9, D / 2, 30 - nose); o.p.rect(fx - 2, fy, 3, 3, '#ffe9a0');
+    const [lx, ly] = o.s(L - 2, D / 2, 18); o.p.rect(lx, ly, 3, 2, opts.frena ? '#ff3a2a' : '#8a2a22');
+    // el conductor sentado, con los pies en el piso de la moto y las manos al manubrio
+    sentar(o, f, poseMoto(cx, { torso: opts.frena ? 20 : 8, pito: !!opts.pito, bob: opts.bob }), 33, D / 2, 22 + (opts.bob ?? 0));
     // humo del escape
-    if (opts.humo) { const [hx, hy] = o.s(L + 1 + opts.humo, D / 2, 6 + opts.humo); o.p.disc(hx, hy, 1 + (opts.humo > 1 ? 1 : 0), '#c9c6c0'); }
+    if (opts.humo) { const [hx, hy] = o.s(L + 2 + opts.humo * 2, 10, 7 + opts.humo); o.p.disc(hx, hy, 1 + opts.humo, '#c9c6c0'); }
     // el pito: rayitas delante de la moto
-    if (opts.pito) { const [px, py] = o.s(-2, D / 2, 12); for (let j = 0; j < opts.pito; j++) { o.p.line(px - 2 - j * 3, py - 3 + j, px - 4 - j * 3, py - 4 - j, '#fff6c8'); o.p.line(px - 2 - j * 3, py + 1 + j, px - 4 - j * 3, py + 2 + j, '#fff6c8'); } }
+    if (opts.pito) { const [px, py] = o.s(-1, D / 2, 28); for (let j = 0; j < opts.pito; j++) { o.p.line(px - 2 - j * 4, py - 4 + j, px - 6 - j * 4, py - 6 - j, '#fff6c8'); o.p.line(px - 2 - j * 4, py + 2 + j, px - 6 - j * 4, py + 4 + j, '#fff6c8'); } }
     // polvo de la frenada
-    if (opts.frena) { const [dx, dy] = o.s(L - 3, D, 0); o.p.disc(dx + 3, dy - 1, 2, '#d8c8a8'); o.p.disc(dx + 6, dy - 2, 1, '#e8dcc4'); }
+    if (opts.frena) { const [dx, dy] = o.s(L - 6, D, 0); o.p.disc(dx + 5, dy - 2, 3, '#d8c8a8'); o.p.disc(dx + 10, dy - 4, 2, '#e8dcc4'); }
   };
-  const W = 44, H = 34, anc: [number, number] = [8, 28];
-  return hoja(`moto_${color}`, W, H, anc, { w: L, d: D, z: 20 }, [
+  const W = 84, H = 70, anc: [number, number] = [14, 54];
+  return hoja(`moto_${color}`, W, H, anc, { w: L, d: D, z: 46 }, [
     ['andando', 4, true, (i, o) => dibuja(o, i / 4, { bob: i % 2 ? 0 : 1, humo: (i % 4) + 1 > 3 ? 0 : (i % 4) + 1 }), 12],
     ['frenando', 3, false, (i, o) => dibuja(o, 0.1 * i, { frena: true }), 10],
     ['corneta', 4, true, (i, o) => dibuja(o, i / 4, { pito: 1 + (i % 3), bob: i % 2 }), 10],
@@ -157,31 +227,46 @@ export function moto(color: MotoColor, k = K_INCLINACION): VehiculoHoja {
 // ------------------------------------------------------------------ xích lô
 
 /**
- * Xích lô de frente a la izquierda: el pasajero va adelante en su asiento con capota, entre las dos ruedas de
- * adelante, y el que pedalea atrás, con nón lá, sobre la rueda de atrás. `andando`: ruedas y pedaleo.
+ * Xích lô de frente a la izquierda, a escala de atleta (lote D3): 68 de largo. El pasajero va adelante en su asiento con
+ * capota, entre las dos ruedas de adelante, y el que pedalea atrás, con nón lá, sobre la rueda de atrás. Los dos son
+ * personas del motor, del alto de un atleta. `andando`: ruedas y pedaleo.
  */
 export function xichLo(k = K_INCLINACION): VehiculoHoja {
-  const L = 34, D = 10, azul = R('#2f5fa8'), crema = R('#efe2c0'), rojo = R('#b8322a');
-  const W = 56, H = 40, anc: [number, number] = [8, 33];
-  return hoja('xich_lo', W, H, anc, { w: L, d: D, z: 26 }, [
+  const L = 68, D = 20, azul = R('#2f5fa8'), crema = R('#efe2c0'), rojo = R('#b8322a');
+  const pasajera = fichaConductor('pasajera_xich_lo', { piel: '#e0b08a', pelo: '#3a2418', ropa: '#e06a8a', pantalon: '#f2efe6' });
+  const chofer = fichaConductor('chofer_xich_lo', { piel: '#a8704a', pelo: '#1e1418', ropa: '#4a6a3a', pantalon: '#2c3346', gorro: { id: 'non_la', color: '#e6c77a' }, manga: 'long' });
+  const cp = ctx48(pasajera), cc = ctx48(chofer);
+  // la pasajera recostada: las manos en las piernas y los pies en el reposapiés de adelante
+  const sentada = P(cp, { torso: -10, hipH: CADERA, head: { tilt: 4, dx: 0, dy: 0 }, legs: { near: { x: 10, y: 8, toe: 20 }, far: { x: 8, y: 8, toe: 20 } }, arms: { near: { shoulder: 40, elbow: 80 }, far: { shoulder: 30, elbow: 90 } }, face: { eyes: 'happy', mouth: 'smile' } });
+  // el que pedalea: los pies en los pedales que giran y las manos en el manubrio de atrás de la capota
+  const pedalea = (i: number) => {
+    const a = (i / 4) * Math.PI * 2, mano = reachArm(cc.d, 16, [13, -3]);
+    return P(cc, { torso: 16, hipH: CADERA, head: { tilt: -4, dx: 0, dy: 0 },
+      legs: { near: { x: 6 + Math.cos(a) * 4, y: 17 + Math.sin(a) * 4, toe: 10 }, far: { x: 6 - Math.cos(a) * 4, y: 17 - Math.sin(a) * 4, toe: 10 } },
+      arms: { near: mano, far: { ...mano } }, face: { eyes: 'open', mouth: 'line' } });
+  };
+  const W = 104, H = 84, anc: [number, number] = [14, 62];
+  return hoja('xich_lo', W, H, anc, { w: L, d: D, z: 52 }, [
     ['andando', 4, true, (i, o) => {
       const f = i / 4;
-      o.rueda(5, D - 1, 5, 5, f); // la rueda de adelante de este lado
-      o.rueda(L - 4, D / 2, 5, 5, f + 0.25); // la de atrás
-      // el asiento del pasajero: la caja azul, el respaldo y la capota roja
-      o.prism(1, 1, 12, D - 2, 5, 10, azul);
-      o.prism(10, 1, 3, D - 2, 10, 17, crema);
-      o.prism(7, 1, 7, D - 2, 17, 19, rojo);
-      // el pasajero sentado, de cara a la izquierda
-      persona(o, 7, D / 2, 4, '#e06a8a', '#e0b08a', 'nada', '#000000', { sentado: true, mira: -1 });
-      // el cuadro de la bici de atrás
-      const [ax, ay] = o.s(12, D / 2, 8), [bx, by] = o.s(L - 4, D / 2, 5), [sx, sy] = o.s(L - 8, D / 2, 14);
-      o.p.thick(ax, ay, bx, by, 1, '#2a2a30'); o.p.thick(bx, by, sx, sy, 1, '#2a2a30'); o.p.rect(sx - 2, sy - 1, 4, 1, '#2a2a30');
-      // el que pedalea, con nón lá, las piernas al pedal que gira
-      const a = f * Math.PI * 2, [px, py] = o.s(L - 8, D / 2, 5);
-      persona(o, L - 8, D / 2, 6 + (i % 2), '#4a6a3a', '#a8704a', 'non_la', '#e6c77a', { brazo: o.s(12, D / 2, 12) as [number, number], mira: -1 });
-      o.p.line(sx, sy + 1, px + Math.round(Math.cos(a) * 3), py + Math.round(Math.sin(a) * 2), '#2c3346');
-      o.rueda(5, 1, 5, 5, f); // la rueda de adelante del otro lado, adelante de todo
+      // la rueda de adelante del otro lado (lejos), atrás de todo, y la de atrás
+      o.rueda(10, 2, 10, 10, f);
+      o.rueda(L - 8, D / 2, 10, 10, f + 0.25);
+      // el asiento de la pasajera: la caja azul, el respaldo crema, los costados y la capota roja que la cubre
+      o.prism(0, 2, 30, D - 4, 10, 22, azul);
+      o.prism(24, 2, 6, D - 4, 22, 44, crema);
+      o.prism(4, 1, 26, D - 2, 50, 54, rojo);
+      o.prism(26, 1, 4, D - 2, 44, 50, rojo);
+      // el reposapiés de adelante
+      o.prism(-2, 3, 6, D - 6, 6, 8, R('#5a5e66'));
+      sentar(o, pasajera, sentada, 16, D / 2, 23);
+      // la rueda de adelante de este lado, delante de la caja y de las piernas
+      o.rueda(10, D - 2, 10, 10, f);
+      // el cuadro de la bici de atrás: del asiento de la pasajera al eje de atrás y al sillín
+      const [ax, ay] = o.s(24, D / 2, 16), [bx, by] = o.s(L - 8, D / 2, 10), [sx, sy] = o.s(L - 16, D / 2, 28);
+      o.p.thick(ax, ay, bx, by, 1.4, '#2a2a30'); o.p.thick(bx, by, sx, sy, 1.4, '#2a2a30'); o.p.rect(sx - 4, sy - 2, 8, 2, '#2a2a30');
+      const [px, py] = o.s(L - 22, D / 2, 11); o.p.disc(px, py, 2, '#5a5e66');
+      sentar(o, chofer, pedalea(i), L - 16, D / 2, 30 + (i % 2));
     }, 10],
   ], k, -1);
 }

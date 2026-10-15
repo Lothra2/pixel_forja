@@ -264,6 +264,12 @@ Un juego puede ponerle su nombre a una animación del motor. El pack pide la del
 
   Hoy hay `ferry` (`andando`, `atracado`), `xich_lo` (`andando`), `moto_rojo`, `moto_azul`, `moto_amarillo` y `moto_verde` (`andando`, `frenando`, `corneta`), `bote_bambu` (`meciendo`), `metrocable` (`colgando`), `jacintos` (`flotando`) y `frutas_regadas`. Los demás del pedido vuelven como aviso.
 
+  **A escala de atleta (lote D3):** las motos y el xích lô traen gente del alto de un atleta de 48. El que maneja es una persona del motor (la misma de los atletas), de unos 40 px parada. Sentada en la moto, con el casco, mide unos 35 del asiento a la coronilla.
+  - La moto mide 52 de largo (huella 52 × 12 × 46) y el cuadro 84 × 70.
+  - El xích lô mide 68 (huella 68 × 20 × 52) y el cuadro 104 × 84.
+  - El `ancla` sigue siendo la esquina de atrás a la izquierda de la huella en el piso, y `mira` sigue en `izquierda`.
+  - Solo cambia el número del ancla dentro del cuadro, porque el cuadro es más grande. Si pones el vehículo con `ancla`, no tienes que tocar nada más. Si lo tenías escalado al doble, quítale la escala.
+
 - **NPC, la gente de la calle** (`npc`, lote C6a):
 
   ```jsonc
