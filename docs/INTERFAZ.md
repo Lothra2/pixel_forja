@@ -55,6 +55,7 @@ Lo que rodea a las pruebas. Va en la misma lista de `ui.interfaz` y sale igual, 
 | `tarjeta_<equipo>` | 184 x 104 | La tarjeta de la selección: los colores del equipo, su bandera arriba a la izquierda y su escudo a la derecha. El nombre va en `texto` y las 4 caras de 40 en la franja oscura `retratos` |
 | `escudo_<equipo>` | 48 x 56 | El escudo solo, para lo que haga falta |
 | `marco_vs_4` | 800 x 360 | El VS de dos contra dos: partido en diagonal, azul y rojo, con cuatro marcos dorados. Los retratos grandes van en `huecos` (los dos primeros de un equipo), la palabra VS en `vs`, el nombre de la prueba en `texto`, y los nombres en la fila `nombres`. La costura blanca va de (440, 0) a (360, 360): pasa por el centro y cruza la VS por el medio (`costura`) |
+| `marco_vs_2` | 800 x 360 | El VS de uno contra uno, con el mismo fondo y la misma costura. Un hueco de 96 por lado en `huecos` para el retrato grande a 1, sin escalar, con un marco ancho de 16 (`marco`): oro, la banda del color del lado con remaches y un filete junto al retrato. Los centros caen en x 230 y 570, donde el juego pone hoy los retratos. `vs`, `texto`, `nombres` y `frases` son los mismos del de 4 |
 | `pantalla_pausa` | 800 x 360 | Un velo tramado (la pelea se ve por los huecos, sin alfa) con la placa del medio |
 | `pantalla_se_acabo` | 800 x 360 | Para "SE ACABÓ LA VAINA": la ciudad apagada bajo la lluvia, en plata |
 | `pantalla_otra_partidita` | 800 x 360 | Para "¿OTRA PARTIDITA?": rayos de arcade, el piso de cuadrícula y monedas |

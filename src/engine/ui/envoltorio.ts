@@ -680,21 +680,17 @@ export const VS4 = {
 /** La x de la costura en la fila y. */
 export const costuraVs4 = (y: number) => VS4.costura[0][0] + ((VS4.costura[1][0] - VS4.costura[0][0]) * y) / VS4.h;
 
+const VS_AZUL = ['#0c1a4a', '#14286e', '#1a3a9a', '#2a5ad0'], VS_ROJO = ['#4a0c14', '#6e141e', '#9a1a2a', '#d02a3a'];
+
 /**
- * El marco del VS de 4 (dos contra dos, los capitanes de cada lado): la pantalla partida en diagonal, azul a la
- * izquierda y rojo a la derecha, con rayas de velocidad que salen del medio, la costura blanca, cuatro marcos
- * dorados con el hueco oscuro donde el juego pone los retratos de 96, y la franja de arriba para el nombre de la
- * prueba. La palabra VS, los nombres y las frases los escribe el juego.
+ * El fondo de los VS: la pantalla partida en diagonal, azul a la izquierda y rojo a la derecha, con la costura
+ * blanca simétrica sobre el centro de la imagen y rayas de velocidad que salen del medio.
  */
-export function marcoVs4(): UiPiece {
-  const { w: W, h: H } = VS4;
-  const p = new Pix(W, H);
-  const AZUL = ['#0c1a4a', '#14286e', '#1a3a9a', '#2a5ad0'], ROJO = ['#4a0c14', '#6e141e', '#9a1a2a', '#d02a3a'];
-  // la costura: en diagonal como el VS de la intro, pero simétrica sobre el centro de la imagen
+function fondoVs(p: Pix) {
   const costura = costuraVs4;
   const cx = 400, cy = 150;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const lado = x < costura(y) ? AZUL : ROJO;
+  for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
+    const lado = x < costura(y) ? VS_AZUL : VS_ROJO;
     const d = x - costura(y);
     if (Math.abs(d) < 3) { p.px(x, y, Math.abs(d) < 1.5 ? WHITE : '#c8d4ff'); continue; }
     // rayas de velocidad que salen del centro, más claras lejos
@@ -707,12 +703,36 @@ export function marcoVs4(): UiPiece {
     if (r > 330 && bayer(x, y) < (r - 330) / 200) k = Math.max(0, k - 1);
     p.px(x, y, lado[k]);
   }
-  // la franja del nombre de la prueba: placa oscura con borde dorado
-  const [tx, ty, tw, th] = VS4.texto;
+}
+
+/** La franja del nombre de la prueba: placa oscura con borde dorado. */
+function placaPrueba(p: Pix, [tx, ty, tw, th]: [number, number, number, number]) {
   for (let y = ty - 3; y < ty + th + 3; y++) for (let x = tx - 3; x < tx + tw + 3; x++) {
     const d = Math.min(x - (tx - 3), y - (ty - 3), tx + tw + 2 - x, ty + th + 2 - y);
     p.px(x, y, d === 0 ? INK : d < 3 ? (y < ty + th / 2 ? '#ffd84a' : '#e0a020') : '#0b0a1c');
   }
+}
+
+/** La placa oscura del nombre, centrada en x `cx` y en la fila `y`, de `ancho` de largo. */
+function placaNombre(p: Pix, cx: number, y: number, ancho: number) {
+  const x0 = cx - ancho / 2;
+  for (let yy = y - 9; yy < y + 9; yy++) for (let x = x0; x < x0 + ancho; x++) {
+    const d = Math.min(x - x0, yy - (y - 9), x0 + ancho - 1 - x, y + 8 - yy);
+    p.px(x, yy, d === 0 ? INK : d === 1 ? '#c8d4ff' : '#0b0a1c');
+  }
+}
+
+/**
+ * El marco del VS de 4 (dos contra dos, los capitanes de cada lado): la pantalla partida en diagonal, azul a la
+ * izquierda y rojo a la derecha, con rayas de velocidad que salen del medio, la costura blanca, cuatro marcos
+ * dorados con el hueco oscuro donde el juego pone los retratos de 96, y la franja de arriba para el nombre de la
+ * prueba. La palabra VS, los nombres y las frases los escribe el juego.
+ */
+export function marcoVs4(): UiPiece {
+  const { w: W, h: H } = VS4;
+  const p = new Pix(W, H);
+  fondoVs(p);
+  placaPrueba(p, VS4.texto);
   // los cuatro marcos: dorados, con el hueco oscuro
   for (const [hx, hy, hw, hh] of VS4.huecos) {
     for (let y = hy - 7; y < hy + hh + 7; y++) for (let x = hx - 7; x < hx + hw + 7; x++) {
@@ -726,14 +746,63 @@ export function marcoVs4(): UiPiece {
     for (const [ex, ey] of [[hx - 4, hy - 4], [hx + hw + 3, hy - 4], [hx - 4, hy + hh + 3], [hx + hw + 3, hy + hh + 3]]) { p.px(ex, ey, WHITE); }
   }
   // placas bajo cada marco para el nombre
-  for (const [hx, , hw] of VS4.huecos) for (let y = VS4.nombres - 9; y < VS4.nombres + 9; y++) for (let x = hx - 6; x < hx + hw + 6; x++) {
-    const d = Math.min(x - (hx - 6), y - (VS4.nombres - 9), hx + hw + 5 - x, VS4.nombres + 8 - y);
-    p.px(x, y, d === 0 ? INK : d === 1 ? '#c8d4ff' : '#0b0a1c');
-  }
+  for (const [hx, , hw] of VS4.huecos) placaNombre(p, hx + hw / 2, VS4.nombres, hw + 12);
   return {
     name: 'marco_vs_4', frames: [p.r], w: W, h: H,
     extra: { margen: VS4.margen, huecos: VS4.huecos, vs: VS4.vs, texto: VS4.texto, nombres: VS4.nombres, frases: VS4.frases, costura: VS4.costura,
       nota: 'Imagen de 800 x 360 (la parte de 640 de x 80 a 720). Los retratos grandes van en `huecos`: los dos primeros de un equipo, los dos últimos del otro. Los nombres centrados bajo cada hueco en y `nombres`.' },
+  };
+}
+
+// ---------------------------------------------------------------- marco VS de 1 contra 1
+
+/** Dónde va cada cosa en el VS de 1 contra 1 (coordenadas de la imagen de 800 x 360; la parte de 640 va de 80 a 720). */
+export const VS2 = {
+  w: 800, h: 360, margen: 80,
+  /**
+   * un hueco de 96 x 96 por lado, para el retrato grande a 1 (nítido, sin escalar). Los centros caen en x 230 y 570,
+   * donde el VS de hoy pone los retratos (150 y 490 en la parte de 640)
+   */
+  huecos: [[182, 102, 96, 96], [522, 102, 96, 96]] as [number, number, number, number][],
+  /** lo ancho del marco alrededor de cada hueco: por fuera mide 128 x 128 */
+  marco: 16,
+  vs: VS4.vs, texto: VS4.texto, nombres: VS4.nombres, frases: VS4.frases, costura: VS4.costura,
+  /** lo largo de la placa del nombre bajo cada marco */
+  placa: 176,
+};
+
+/**
+ * El marco del VS de 1 contra 1: el mismo fondo partido en diagonal del VS de 4, con un solo marco grande por lado.
+ * El marco es ancho, de 16: oro por fuera, una banda del color del lado con remaches y un filete de oro junto al
+ * retrato, para que el retrato de 96 a 1 llene la pantalla sin escalarlo a un tamaño que lo emborrone.
+ */
+export function marcoVs2(): UiPiece {
+  const { w: W, h: H, marco: M } = VS2;
+  const p = new Pix(W, H);
+  fondoVs(p);
+  placaPrueba(p, VS2.texto);
+  VS2.huecos.forEach(([hx, hy, hw, hh], i) => {
+    const lado = i === 0 ? VS_AZUL : VS_ROJO;
+    const x0 = hx - M, y0 = hy - M, x1 = hx + hw + M - 1, y1 = hy + hh + M - 1;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      if (x >= hx && x < hx + hw && y >= hy && y < hy + hh) { p.px(x, y, bayer(x, y) < 0.2 ? '#1a1a34' : '#10101e'); continue; }
+      const d = Math.min(x - x0, y - y0, x1 - x, y1 - y);
+      const oro = x - x0 + (y - y0) < (x1 - x0) ? '#ffd84a' : '#e0a020';
+      const c = d === 0 ? INK : d === 1 ? '#fff6c2' : d <= 5 ? oro : d === 6 ? '#9a6410' : d === 7 ? INK
+        : d <= 12 ? (d === 8 ? lado[3] : y < hy + hh / 2 ? lado[2] : lado[1]) : d === 13 ? INK : d === 14 ? '#e0a020' : INK;
+      p.px(x, y, c);
+    }
+    // remaches en la banda: en las esquinas y cada 24 por los lados
+    const r0 = x0 + 10, r1 = x1 - 10, s0 = y0 + 10, s1 = y1 - 10;
+    const remache = (x: number, y: number) => { p.rect(x - 1, y - 1, 3, 3, '#e0a020'); p.px(x - 1, y - 1, '#fff6c2'); p.px(x + 1, y + 1, '#9a6410'); };
+    for (let x = r0; x <= r1; x += 24) { remache(x, s0); remache(x, s1); }
+    for (let y = s0 + 24; y < s1; y += 24) { remache(r0, y); remache(r1, y); }
+    placaNombre(p, hx + hw / 2, VS2.nombres, VS2.placa);
+  });
+  return {
+    name: 'marco_vs_2', frames: [p.r], w: W, h: H,
+    extra: { margen: VS2.margen, huecos: VS2.huecos, marco: VS2.marco, vs: VS2.vs, texto: VS2.texto, nombres: VS2.nombres, frases: VS2.frases, costura: VS2.costura,
+      nota: 'Imagen de 800 x 360 (la parte de 640 de x 80 a 720). Un retrato grande por hueco, a 1: el primero del equipo de la izquierda (azul), el segundo del de la derecha (rojo). El nombre centrado bajo cada hueco en y `nombres`, la frase en y `frases`.' },
   };
 }
 
