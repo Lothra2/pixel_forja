@@ -287,7 +287,7 @@ const VIETNAM_HOIAN: Estilo = {
   uso: USO_HOIAN,
   horas: HORAS_HOIAN,
   iconos: [
-    { id: 'casas', nombre: 'Las casas amarillas de la ciudad vieja, de dos pisos, con la pared gastada', donde: 'cerca, de x 166 al final' },
+    { id: 'casas', nombre: 'Las casas amarillas de la ciudad vieja, de dos pisos, con la pared gastada', donde: 'cerca, de x 246 al final' },
     { id: 'tejas', nombre: 'Los techos de tejas de barro con el caballete de puntas curvas, y el alero entre los pisos', donde: 'cerca' },
     { id: 'madera', nombre: 'La planta baja de madera oscura: vanos abiertos con la tienda encendida, puertas plegables y celosías', donde: 'cerca' },
     { id: 'farol_puerta', nombre: 'Un farol en cada puerta y los racimos de faroles debajo del alero', donde: 'cerca' },

@@ -51,8 +51,11 @@ export function puntosPostal(E: Escena): Record<'inicio' | 'medio' | 'final', nu
   return { inicio: Math.max(0, Math.min(salida - 40, L.largo - W)), medio: mejor, final: Math.max(0, Math.min(meta + 50 - W, L.largo - W)) };
 }
 
-/** Una arena (sin salida ni meta) o un mundo de una pantalla, que la cámara recorre poco: sus postales van en el tiempo. */
-const unaPantalla = (E: Escena) => (!E.layout.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta') || E.layout.largo <= 640) && E.ancho - 640 <= 640;
+/**
+ * Una arena (sin salida ni meta) o un mundo de una pantalla, que la cámara recorre poco: sus postales van en el tiempo.
+ * Una cancha con margen (lote E4) sigue siendo de una pantalla: lo que cuenta es lo que queda sin los márgenes.
+ */
+const unaPantalla = (E: Escena) => (!E.layout.entidades.some((e) => e.tipo === 'salida' || e.tipo === 'meta') || E.layout.largo - 2 * (E.layout.margen ?? 0) <= 640) && E.ancho - 640 <= 640;
 
 export interface OpcionesExportar {
   /** postales/inicio, medio y final (para aprobar; el juego no las carga). Por defecto, sí. */
@@ -128,6 +131,7 @@ export function exportarEscena(E: Escena, verificacion?: string, o: OpcionesExpo
       franja: L.franja, largo: L.largo, hora: L.hora, clima: L.clima,
       inclinacion: E.inclinacion,
       ancho: E.ancho,
+      ...(L.margen ? { margen: L.margen, nota_margen: `la cancha va de x ${L.margen} a ${L.largo - L.margen} (los ${L.largo - 2 * L.margen} px del medio) y hay ${L.margen} px de escenario a cada lado: centra la cámara en la cancha. Las x del layout ya vienen corridas.` } : {}),
       ...(deLado(L) ? { vista: 'lado', nota_vista: `de lado: el dibujo va derecho (inclinación 0). El fondo (la capa cerca) va de la fila 0 a franja.atras (${FT}) y es transparente donde se ven lejos y el cielo. El piso va de la fila ${FT} al borde de abajo de la pantalla: la franja donde se paran los atletas (y del mundo = fila de pantalla - ${FT}) y lo de adelante. Las capas, los objetos y la vida se cargan igual que en la vista oblicua.` } : {}),
       nota_inclinacion: E.inclinacion ? `vista inclinada: px = x + ${E.inclinacion} * y (lo del fondo queda a la izquierda). Las capas largas miden ${E.ancho} px (largo + ${E.inclinacion} * fondo de la franja). Los objetos ya vienen corridos: corre a los atletas igual.` : undefined,
       capas: {

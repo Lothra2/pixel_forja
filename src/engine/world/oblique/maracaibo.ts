@@ -2,11 +2,11 @@ import { rng, grain, bayer } from '../../fx/pix';
 import { Lienzo } from './lienzo';
 import type { Color, Paleta } from './paleta';
 import { MAS_OSCURO } from './tonos';
-import type { CtxCerca } from './fachadas';
-import type { ObliqueLayout } from './layout';
+import { copa, type CtxCerca } from './fachadas';
+import { MARGEN_CANCHA as OX, type ObliqueLayout } from './layout';
 import type { Luz, Particula, VidaEscena } from './escena';
 import type { Lugar } from './lugares';
-import { recorte, soloAfuera, textoGrande, anchoTexto, malla, sentadita } from './pinceles';
+import { recorte, soloAfuera, textoGrande, anchoTexto, malla, sentadita, personita } from './pinceles';
 
 /**
  * La cancha de básquet de un barrio de Maracaibo de noche (estilo `venezuela_lago`), en la vista inclinada de la pelea,
@@ -15,23 +15,36 @@ import { recorte, soloAfuera, textoGrande, anchoTexto, malla, sentadita } from '
  * derecha, la nube de tormenta del Catatumbo con sus relámpagos. Cerca, la malla de la cancha sobre el muro pintado de
  * CANCHA LA CHINITA, los postes con los bombillos de sodio, la gradita con la gente y los gaiteros con su furro. El
  * piso es la cancha de concreto pintada, con las rayas donde las pone Basket.ts.
+ *
+ * Mide 800 (lote E4): la cancha va en los 640 del medio, de x 80 a 720, y la malla con su muro va de paral a paral (x 84
+ * a 752). A cada lado queda la calle del barrio, afuera de la malla: a la izquierda la casita con la vecina echada en su
+ * mecedora, el perro durmiendo y el poste de alumbrado con sus cables, y a la derecha el kiosco de los patacones y la
+ * chicha con el señor que despacha y un cliente sentado en su silla plástica.
  */
 
 export const CERCA_MARACAIBO = 'cancha_barrio_maracaibo';
 /** La franja de Basket.ts: el piso empieza en la fila 212 (FT) y tiene 104 de fondo (PROF). */
 const FT = 212;
-/** El muro de bloques pintado al pie de la malla, y la malla: la fila de arriba y los parales. */
-export const MURO = { top: 168 }, MALLA = { top: 74, postes: [4, 132, 268, 404, 540, 672] };
+/** El muro de bloques pintado al pie de la malla, y la malla: la fila de arriba y los parales (el primero y el último son las puntas). */
+export const MURO = { top: 168 }, MALLA = { top: 74, postes: [OX + 4, OX + 132, OX + 268, OX + 404, OX + 540, OX + 672] };
+/** De dónde a dónde va la malla con su muro: de paral a paral. Afuera es la calle. */
+const MALLA_X0 = MALLA.postes[0] - 1, MALLA_X1 = MALLA.postes[MALLA.postes.length - 1] + 2;
 /** Los postes de luz con su bombillo de sodio (x del poste y fila del bombillo). */
-export const POSTES_LUZ = [{ x: 96, y: 40 }, { x: 336, y: 34 }, { x: 600, y: 40 }];
+export const POSTES_LUZ = [{ x: OX + 96, y: 40 }, { x: OX + 336, y: 34 }, { x: OX + 600, y: 40 }];
 /** La gradita de concreto de la izquierda, con su gente. */
-export const GRADAS = { x0: 8, x1: 150, top: 176 };
+export const GRADAS = { x0: OX + 8, x1: OX + 150, top: 176 };
 /** Los gaiteros de la derecha: x de cada uno (furro, tambora, charrasca y cuatro). */
-export const GAITEROS = [520, 548, 576, 604];
+export const GAITEROS = [OX + 520, OX + 548, OX + 576, OX + 604];
 /** El letrero pintado en el muro. */
-export const LETRERO = { x: 196, y: 176 };
+export const LETRERO = { x: OX + 196, y: 176 };
 /** Las rayas de Basket.ts (x, y de mundo): la media cancha, el aro, el área y el arco de los 2 puntos. */
-export const CANCHA = { x0: 40, x1: 596, prof: 104, aro: { x: 566, y: 52 }, arco: 150 };
+export const CANCHA = { x0: OX + 40, x1: OX + 596, prof: 104, aro: { x: OX + 566, y: 52 }, arco: 150 };
+/** En el margen de la izquierda, afuera de la malla: la casita del barrio (de dónde a dónde y la fila de la platabanda). */
+export const CASITA = { x0: 0, x1: 58, top: 112 };
+/** El poste de alumbrado de la calle, al lado de la casita: x del poste y fila del bombillo. */
+export const FAROL = { x: 70, y: 58 };
+/** En el margen de la derecha, afuera de la malla: el kiosco de los patacones y la chicha, y la fila del techo. */
+export const KIOSCO = { x0: 758, x1: 794, top: 140 };
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Lo lejos: el Lago de Maracaibo con el puente, los balancines y el Catatumbo
@@ -121,18 +134,18 @@ export function lagoPuenteUrdaneta(pal: Paleta, w: number, h: number, seed: numb
 
 /** El muro de bloques al pie de la malla: pintado de crema y alumbrado por los bombillos, con la franja tricolor, el letrero y el mural. */
 function muro(C: Lienzo, seed: number) {
-  const { top } = MURO, W = C.w;
-  for (let y = top; y < FT; y++) for (let x = 0; x < W; x++) {
+  const { top } = MURO, X0 = MALLA_X0, W = MALLA_X1 - MALLA_X0;
+  for (let y = top; y < FT; y++) for (let x = X0; x < X0 + W; x++) {
     // los bloques con sus juntas, más alumbrados cerca de los postes
     const cerca = POSTES_LUZ.some((p) => Math.abs(x - p.x) < 70);
     const junta = (y - top) % 8 === 0 || (x + ((y - top) >> 3) * 10) % 20 === 0;
     C.p(x, y, y < top + 2 ? 'cemento_claro' : junta ? 'cemento_claro' : cerca || bayer(x, y) < 0.5 ? 'crema' : 'cemento_claro');
   }
   // la franja tricolor pintada abajo, a lo largo
-  for (let y = FT - 12; y < FT - 3; y++) for (let x = 0; x < W; x++) C.p(x, y, y < FT - 9 ? 'amarillo' : y < FT - 6 ? 'celeste' : 'rojo');
-  C.hl(0, FT - 3, W, 'cemento'); C.hl(0, FT - 2, W, 'asfalto_claro'); C.hl(0, FT - 1, W, 'asfalto');
+  for (let y = FT - 12; y < FT - 3; y++) for (let x = X0; x < X0 + W; x++) C.p(x, y, y < FT - 9 ? 'amarillo' : y < FT - 6 ? 'celeste' : 'rojo');
+  C.hl(X0, FT - 3, W, 'cemento'); C.hl(X0, FT - 2, W, 'asfalto_claro'); C.hl(X0, FT - 1, W, 'asfalto');
   // las manchas de humedad que bajan
-  C.drips(0, top + 2, W, 8, 'cemento_claro', seed, 0.08);
+  C.drips(X0, top + 2, W, 8, 'cemento_claro', seed, 0.08);
   // el letrero: CANCHA LA CHINITA en azul y BARRIO SANTA LUCÍA debajo
   const t1 = 'CANCHA LA CHINITA', w1 = anchoTexto(t1), t2 = 'BARRIO SANTA LUCÍA', w2 = anchoTexto(t2, 1);
   textoGrande(C, LETRERO.x, LETRERO.y + 1, t1, 'azul', 2, 'celeste');
@@ -212,21 +225,164 @@ function gaitero(C: Lienzo, x: number, base: number, que: 0 | 1 | 2 | 3, f: numb
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Los márgenes: la calle del barrio afuera de la malla
+
+/**
+ * Una pared de casa del barrio de noche: la fachada de su color, más oscura lejos del bombillo, la platabanda de concreto
+ * con el tanque de agua azul arriba y el zócalo oscuro. `luz` es la x del bombillo que la alumbra.
+ */
+function pared(C: Lienzo, x0: number, x1: number, top: number, c: Color, sombra: Color, luz: number, tanque: number) {
+  for (let y = top; y < FT; y++) for (let x = x0; x < x1; x++) {
+    const d = Math.hypot((x - luz) / 40, (y - (top + 30)) / 50);
+    C.p(x, y, y >= FT - 7 ? (y === FT - 7 ? 'cemento_claro' : 'verde_oscuro') : bayer(x, y) < 0.2 + d * 0.5 ? sombra : c);
+  }
+  C.f(x0, top - 4, x1 - x0, 4, 'cemento_claro'); C.hl(x0, top - 4, x1 - x0, 'luz'); C.hl(x0, top, x1 - x0, 'cemento');
+  // el tanque de agua en la platabanda, con su tapa
+  C.f(tanque, top - 16, 14, 12, 'azul'); C.vl(tanque, top - 16, 12, 'celeste'); C.hl(tanque, top - 16, 14, 'celeste'); C.f(tanque + 4, top - 18, 6, 2, 'azul_noche');
+  C.hl(tanque, top - 10, 14, 'azul_noche');
+}
+
+/** Una ventana de rejas con la luz de la sala prendida adentro (y la tele que alumbra celeste en una esquina). */
+function ventanaRejas(C: Lienzo, vx: number, vy: number, vw: number, vh: number) {
+  C.box(vx - 1, vy - 1, vw + 2, vh + 2, 'oro', 'crema');
+  for (let j = 0; j < vh; j++) for (let i = 0; i < vw; i++) if (bayer(vx + i, vy + j) < 0.3 + j / (vh * 2)) C.p(vx + i, vy + j, i > vw * 0.6 && j > vh * 0.45 ? 'celeste' : 'amarillo');
+  for (let i = 2; i < vw; i += 3) C.vl(vx + i, vy, vh, 'sombra');
+  for (let j = 7; j < vh; j += 8) C.hl(vx, vy + j, vw, 'sombra');
+  C.f(vx - 2, vy + vh + 1, vw + 4, 2, 'cemento_claro');
+}
+
+/**
+ * La casita del barrio en el margen de la izquierda, afuera de la malla: el palo de mango de atrás, la pared verde agua
+ * con su platabanda y el tanque, la ventana de rejas con la luz prendida, la puerta de hierro entreabierta, el bombillo
+ * del porche y la plaquita de la CALLE 72. Al frente la vecina echada en su mecedora de mimbre cogiendo fresco, las matas
+ * en sus potes y el perro durmiendo en la acera.
+ */
+function casita(C: Lienzo, seed: number) {
+  const { x0, x1, top } = CASITA, R = rng(seed);
+  // el palo de mango de atrás, que se asoma por encima de la platabanda (de noche, casi negro)
+  C.f(x0 + 40, top - 30, 5, 30, 'sombra'); C.ln(x0 + 42, top - 22, x0 + 30, top - 40, 'sombra'); C.ln(x0 + 43, top - 26, x0 + 54, top - 42, 'sombra');
+  copa(C, x0 + 34, top - 52, 30, seed + 1, ['tinta', 'verde_oscuro', 'verde']);
+  for (let k = 0; k < 9; k++) { const mx = x0 + 14 + Math.floor(R() * 44), my = top - 60 + Math.floor(R() * 34); if (C.has(mx, my)) { C.p(mx, my, 'ocre'); C.p(mx, my + 1, 'terracota'); } }
+  pared(C, x0, x1, top, 'menta', 'verde', x0 + 39, x0 + 6);
+  ventanaRejas(C, x0 + 4, top + 26, 20, 24);
+  // la puerta de hierro entreabierta, con la luz que sale por la rendija
+  const px = x0 + 32, ph = 44, py = FT - 7 - ph;
+  C.box(px - 1, py - 1, 18, ph + 1, 'azul_noche', 'crema');
+  C.f(px + 6, py, 3, ph, 'oro'); C.vl(px + 7, py, ph, 'amarillo');
+  for (let j = 4; j < ph; j += 6) C.hl(px + 10, py + j, 6, 'azul');
+  C.p(px + 11, py + ph / 2, 'oro');
+  // el bombillo del porche, pelado, con su halo
+  const bx = px + 7, by = py - 6;
+  C.p(bx, by, 'luz'); C.p(bx, by - 1, 'asfalto');
+  for (let j = -8; j <= 8; j++) for (let i = -10; i <= 10; i++) { const d = Math.hypot(i / 10, j / 8); if (d < 1 && (i || j) && bayer(bx + i, by + j) < (1 - d) * 0.45) C.p(bx + i, by + j, d < 0.4 ? 'amarillo' : 'oro'); }
+  // la plaquita azul de la calle en la esquina de la casa
+  C.box(x0 + 19, top + 4, 37, 10, 'azul', 'luz');
+  textoGrande(C, x0 + 22, top + 5, 'CALLE 72', 'luz', 1);
+  // las matas en sus potes al lado de la puerta: la sábila y la de flores
+  C.f(px + 18, FT - 8, 6, 6, 'terracota'); C.hl(px + 18, FT - 8, 6, 'ocre');
+  for (const [dx, h] of [[0, 8], [2, 11], [4, 9], [5, 6]] as const) C.ln(px + 19 + dx, FT - 8, px + 18 + dx * 1.5, FT - 8 - h, 'verde');
+  // la vecina en su mecedora de mimbre, de bata y con los rolos puestos
+  const mx = x0 + 10, asiento = FT - 9;
+  for (let i = -5; i <= 13; i++) C.p(mx + i, FT - 2 - Math.round(((i - 4) / 9) ** 2 * 2), 'ocre');
+  C.vl(mx - 3, asiento - 18, 18, 'ocre'); C.vl(mx - 2, asiento - 18, 18, 'terracota');
+  for (let j = asiento - 17; j < asiento; j += 2) C.p(mx - 2, j, 'crema');
+  C.ln(mx - 1, asiento + 1, mx - 3, FT - 3, 'ocre'); C.ln(mx + 8, asiento + 1, mx + 10, FT - 3, 'ocre');
+  sentadita(C, mx, asiento, { ropa: 'salmon', pant: 'salmon', pelo: 'cemento_claro', piel: 'terracota', alto: 18 }, false);
+  C.p(mx + 2, asiento - 17, 'celeste'); C.p(mx + 5, asiento - 17, 'amarillo');
+  // el perro echado en la acera, durmiendo con la cabeza en las patas
+  const dx = px - 6 + Math.floor(R() * 2);
+  C.f(dx, FT - 5, 11, 4, 'ocre'); C.hl(dx, FT - 5, 11, 'amarillo'); C.f(dx + 9, FT - 6, 4, 4, 'ocre'); C.p(dx + 12, FT - 6, 'terracota'); C.p(dx + 11, FT - 5, 'tinta');
+  C.hl(dx - 2, FT - 3, 3, 'ocre'); C.hl(dx + 1, FT - 1, 12, 'sombra');
+}
+
+/**
+ * El poste de alumbrado de la calle: el poste de concreto, el brazo curvo que sale hacia la calle y la lámpara de sodio
+ * con su halo, y los cables que van a la casita. No es de la cancha: es del barrio.
+ */
+function farol(C: Lienzo, x: number, y: number) {
+  // los cables que salen del poste: el de la luz, que baja a la casita, y el de arriba, que sigue la calle
+  for (let i = 0; i <= x; i++) { const t = i / x; C.p(x - i, y + 8 + Math.round(t * 56 + Math.sin(t * Math.PI) * 6), 'tinta'); C.p(x - i, y + 2 + Math.round(Math.sin(t * Math.PI) * 9), 'sombra'); }
+  C.f(x - 1, y, 4, FT - y, 'cemento'); C.vl(x - 1, y, FT - y, 'cemento_claro'); C.vl(x + 2, y, FT - y, 'asfalto_claro');
+  for (let j = y + 20; j < FT; j += 14) C.hl(x - 1, j, 4, 'asfalto_claro');
+  C.hl(x - 3, y + 8, 8, 'asfalto');
+  // el brazo curvo que se asoma a la calle y la lámpara de cabeza de cobra
+  for (let i = 0; i < 14; i++) C.p(x - i, y - Math.round(Math.sqrt(Math.max(0, 14 * 14 - (14 - i) ** 2)) * 0.35), 'cemento');
+  const lx = x - 18, ly = y - 3;
+  C.f(lx, ly - 2, 8, 3, 'asfalto'); C.hl(lx, ly - 2, 8, 'asfalto_claro'); C.hl(lx + 1, ly + 1, 6, 'luz'); C.hl(lx + 2, ly + 2, 4, 'amarillo');
+  for (let j = -6; j <= 16; j++) for (let i = -14; i <= 14; i++) {
+    const d = Math.hypot(i / 14, (j - 4) / 12);
+    if (d < 1 && bayer(lx + 4 + i, ly + j) < (1 - d) * 0.3 && !C.has(lx + 4 + i, ly + j)) C.p(lx + 4 + i, ly + j, d < 0.5 ? 'oro' : 'ocre');
+  }
+}
+
+/**
+ * El margen de la derecha, afuera de la malla: la casa de dos pisos color salmón con la ventana de arriba prendida y, al
+ * frente, el kiosco de los patacones y la chicha: la caseta de lata amarilla y roja con el techo de zinc y su tablita de
+ * PATACONES, el bombillo colgando, el señor que despacha detrás de la plancha humeando, el cliente parado en el
+ * mostrador y el otro sentado en su silla plástica comiéndose el suyo.
+ */
+function kiosco(C: Lienzo, seed: number) {
+  const { x0, x1, top } = KIOSCO, w = x1 - x0, mostrador = top + 34;
+  // la casa de atrás, con la ventana de arriba prendida y una matera colgando
+  pared(C, MALLA_X1 + 1, C.w, top - 40, 'salmon', 'vino', x0 + 24, x0 + 26);
+  ventanaRejas(C, x0 + 2, top - 33, 16, 14);
+  C.vl(x1 - 2, top - 34, 6, 'sombra'); C.f(x1 - 5, top - 28, 7, 4, 'terracota'); for (let j = 0; j < 8; j++) C.p(x1 - 5 + (j % 3) * 3, top - 24 + j, j % 2 ? 'verde_oscuro' : 'verde');
+  // adentro del kiosco, oscuro y alumbrado por el bombillo
+  for (let y = top + 6; y < mostrador; y++) for (let x = x0; x < x1; x++) C.p(x, y, bayer(x, y) < 0.35 - (y - top) / 120 ? 'ocre' : 'sombra');
+  // el señor que despacha, de franela blanca y gorra, detrás de la plancha
+  C.f(x0 + 12, top + 22, 10, 12, 'luz'); C.vl(x0 + 21, top + 22, 12, 'cemento_claro');
+  C.f(x0 + 14, top + 14, 6, 8, 'terracota'); C.p(x0 + 15, top + 17, 'tinta'); C.p(x0 + 18, top + 17, 'tinta'); C.vl(x0 + 19, top + 15, 7, 'vino');
+  C.f(x0 + 13, top + 12, 8, 3, 'rojo'); C.hl(x0 + 19, top + 14, 4, 'rojo');
+  C.ln(x0 + 22, top + 24, x0 + 27, top + 30, 'luz'); C.p(x0 + 27, top + 31, 'terracota');
+  // la plancha con los patacones y el humito, el pote de salsa y la jarra de chicha
+  C.f(x0 + 4, mostrador - 3, 20, 3, 'asfalto'); C.hl(x0 + 4, mostrador - 3, 20, 'asfalto_claro');
+  for (const i of [6, 12, 18]) { C.f(x0 + i, mostrador - 4, 4, 1, 'amarillo'); C.p(x0 + i + 1, mostrador - 5, 'ocre'); }
+  for (let j = 0; j < 8; j++) C.p(x0 + 9 + (j % 3) - 1 + Math.round(Math.sin(j)), mostrador - 6 - j * 2, j < 4 ? 'cemento_claro' : 'cemento');
+  C.f(x0 + 26, mostrador - 7, 3, 7, 'rojo'); C.p(x0 + 27, mostrador - 8, 'luz');
+  C.f(x0 + 30, mostrador - 8, 5, 8, 'crema'); C.hl(x0 + 30, mostrador - 8, 5, 'luz'); C.vl(x0 + 34, mostrador - 7, 7, 'cemento_claro');
+  // los costados de lata y el mostrador
+  C.f(x0 - 2, top + 4, 3, FT - top - 4, 'rojo'); C.vl(x0 - 2, top + 4, FT - top - 4, 'salmon');
+  C.f(x1 - 1, top + 4, 3, FT - top - 4, 'vino');
+  C.f(x0 - 2, mostrador, w + 4, 3, 'cemento_claro'); C.hl(x0 - 2, mostrador, w + 4, 'luz'); C.hl(x0 - 2, mostrador + 2, w + 4, 'cemento');
+  // el frente de lata amarilla con sus láminas y CHICHA pintado
+  for (let y = mostrador + 3; y < FT; y++) for (let x = x0; x < x1 - 1; x++) C.p(x, y, y >= FT - 3 ? 'vino' : (x - x0) % 9 === 0 ? 'ocre' : 'amarillo');
+  textoGrande(C, x1 - 3 - anchoTexto('CHICHA', 1), mostrador + 9, 'CHICHA', 'rojo', 1);
+  C.hl(x1 - 3 - anchoTexto('CHICHA', 1), mostrador + 15, anchoTexto('CHICHA', 1), 'azul');
+  // el techo de zinc ondulado que sale por los lados, con la tablita de PATACONES encima y el bombillo colgando
+  for (let j = 0; j < 6; j++) for (let x = x0 - 5; x < x1 + 5; x++) C.p(x, top - 1 + j, j === 5 ? 'asfalto' : (x + j) % 3 === 0 ? 'cemento' : j < 2 ? 'cemento_claro' : 'asfalto_claro');
+  const tw = anchoTexto('PATACONES', 1) + 4, tx = x0 + Math.round((w - tw) / 2);
+  C.vl(tx + 3, top - 4, 3, 'asfalto'); C.vl(tx + tw - 4, top - 4, 3, 'asfalto');
+  C.box(tx, top - 13, tw, 10, 'luz', 'rojo');
+  textoGrande(C, tx + 2, top - 11, 'PATACONES', 'rojo', 1);
+  C.vl(x0 + 24, top + 5, 4, 'tinta'); C.p(x0 + 24, top + 9, 'luz'); C.p(x0 + 24, top + 10, 'amarillo');
+  // el cliente parado en el mostrador, de espaldas, esperando el suyo
+  personita(C, x0 + 1, FT - 1, { ropa: 'verde', pant: 'azul', pelo: 'tinta', piel: 'terracota', alto: 28 });
+  // y el otro en su silla plástica roja, al lado del kiosco, con su patacón en la mano
+  const sx = x1 + 6, asiento = FT - 9, R = rng(seed);
+  C.f(sx - 2, asiento - 14, 2, 14, 'rojo'); C.f(sx - 2, asiento, 12, 2, 'rojo'); C.vl(sx - 1, asiento + 2, 7, 'vino'); C.vl(sx + 8, asiento + 2, 7, 'vino');
+  sentadita(C, sx, asiento, { ropa: R() < 0.5 ? 'celeste' : 'luz', pant: 'asfalto', pelo: 'tinta', piel: 'ocre', alto: 18 }, false);
+  C.f(sx - 3, asiento - 9, 4, 3, 'amarillo'); C.p(sx - 3, asiento - 10, 'oro');
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // La capa cerca completa
 
 export interface CuadroMaracaibo { publico?: number; gaiteros?: number }
 
 /** La cancha completa sobre la capa cerca (alto franja.atras). `q` dice el cuadro de cada cosa que se mueve. */
 export function pintarMaracaibo(C: Lienzo, seed: number, q: CuadroMaracaibo = {}) {
-  const W = C.w;
-  // la malla de arriba del muro: alambre en rombos (deja ver el Lago y el puente), el tubo de arriba y los parales
-  malla(C, 0, MALLA.top, W, MURO.top, 'asfalto', 10, 'asfalto_claro');
-  for (let x = 0; x < W; x++) { C.p(x, MALLA.top - 2, 'cemento'); C.p(x, MALLA.top - 1, 'asfalto_claro'); C.p(x, MALLA.top + 40, 'asfalto_claro'); }
+  // la malla de arriba del muro, de paral a paral: alambre en rombos (deja ver el Lago y el puente), el tubo de arriba y los parales
+  malla(C, MALLA_X0, MALLA.top, MALLA_X1, MURO.top, 'asfalto', 10, 'asfalto_claro');
+  for (let x = MALLA_X0; x < MALLA_X1; x++) { C.p(x, MALLA.top - 2, 'cemento'); C.p(x, MALLA.top - 1, 'asfalto_claro'); C.p(x, MALLA.top + 40, 'asfalto_claro'); }
   for (const px of MALLA.postes) { C.f(px - 1, MALLA.top - 4, 3, MURO.top - MALLA.top + 4, 'asfalto_claro'); C.vl(px - 1, MALLA.top - 4, MURO.top - MALLA.top + 4, 'cemento'); }
   muro(C, seed);
   for (const p of POSTES_LUZ) posteLuz(C, p.x, p.y);
   gradas(C, seed + 5, q.publico ?? 0);
   GAITEROS.forEach((x, i) => gaitero(C, x, FT - 2, i as 0 | 1 | 2 | 3, (q.gaiteros ?? 0) + (i % 2)));
+  // los dos márgenes, afuera de la malla: la casita con su farol a la izquierda y el kiosco a la derecha
+  casita(C, seed + 11);
+  farol(C, FAROL.x, FAROL.y);
+  kiosco(C, seed + 12);
 }
 
 export const fondoMaracaibo = (C: Lienzo, _x0: number, _x1: number, _base: number, ctx: CtxCerca) => pintarMaracaibo(C, ctx.seed);
@@ -239,9 +395,18 @@ const enArea = (x: number, y: number) => x >= CANCHA.aro.x - 70 && x < CANCHA.x1
 
 /** El concreto pintado: azul adentro de la cancha, naranja en el área y verde afuera, gastado y con grietas, y la luz de los bombillos. */
 export function concretoCancha(x: number, y: number, s: number): Color {
-  const xr = ((x % 960) + 960) % 960;
-  const dentro = xr >= CANCHA.x0 && xr < CANCHA.x1 && y < CANCHA.prof;
-  const base: Color = !dentro ? 'verde' : enArea(xr, y) ? 'ocre' : 'celeste';
+  // la textura va contada desde el borde de la cancha (x - OX), para que se vea igual que cuando medía 640
+  const xr = (((x - OX) % 960) + 960) % 960;
+  // afuera de la malla es la calle del barrio
+  if (x < MALLA_X0 || x >= MALLA_X1) {
+    // la acera pegada a las casas, el brocal y la calle de asfalto
+    // (el asfalto va claro, gastado y alumbrado: sobre el oscuro no se leen los atletas)
+    if (y < 12) return (xr + (y >> 2) * 4) % 16 === 0 || grain(xr >> 1, y, s + 3) < 0.05 ? 'cemento' : 'cemento_claro';
+    if (y < 14) return y === 12 ? 'luz' : 'cemento';
+    return grain(xr, y, s + 3) < 0.04 ? 'cemento_claro' : bayer(xr, y) < 0.12 ? 'asfalto_claro' : 'cemento';
+  }
+  const dentro = x >= CANCHA.x0 && x < CANCHA.x1 && y < CANCHA.prof;
+  const base: Color = !dentro ? 'verde' : enArea(x, y) ? 'ocre' : 'celeste';
   const n = grain(xr, y, s);
   // la pintura gastada: manchones donde asoma el concreto, más por donde se pisa
   if (grain(xr >> 3, y >> 2, s + 1) < 0.035 && bayer(xr, y) < 0.3) return 'cemento';
@@ -250,7 +415,7 @@ export function concretoCancha(x: number, y: number, s: number): Color {
   // la luz de los bombillos cae en charcos más claros
   // (de noche el `cielo` de la paleta es oscuro: la luz de cada color va a mano)
   const claro: Color = base === 'celeste' ? 'cemento_claro' : base === 'ocre' ? 'amarillo' : 'menta';
-  const luz = POSTES_LUZ.some((p) => Math.hypot((xr - p.x) / 2.2, y - 6) < 30);
+  const luz = POSTES_LUZ.some((p) => Math.hypot((x - p.x) / 2.2, y - 6) < 30);
   if (luz && bayer(xr, y) < 0.18) return claro;
   return n > 0.985 ? claro : base;
 }
@@ -270,7 +435,8 @@ export function rayasMaracaibo(P: Lienzo, _L: ObliqueLayout, seed: number) {
 
 /** Lo de abajo de la franja: el canto de la cancha, el concreto verde y una alcantarilla. */
 export function orillaMaracaibo(x: number, r: number, s: number): Color {
-  const xr = ((x % 960) + 960) % 960;
+  // contado desde el borde de la cancha: las alcantarillas quedan donde estaban, corridas con la cancha
+  const xr = (((x - OX) % 960) + 960) % 960;
   if (r === 0) return 'cemento_claro';
   if (r < 4) return 'cemento';
   if (r === 4) return 'asfalto';
@@ -282,9 +448,16 @@ export function orillaMaracaibo(x: number, r: number, s: number): Color {
 // Vida, luces y partículas
 
 /**
+ * Lo que se corre la capa lejos contra el mundo con la cámara parada en la cancha (x = OX, el juego la centra): la capa
+ * lejos va al 0.25 de la cámara (PARALAJE.lejos de escena.ts, que no se importa aquí para no armar un ciclo), así que el
+ * pixel x de lejos.png cae en el x de mundo x - OX * 0.25 + OX. Con OX 80 son 60 px.
+ */
+const CORRE_LEJOS = OX - OX * 0.25;
+
+/**
  * El relámpago del Catatumbo: 8 cuadros a 4 por segundo. Casi siempre nada; de pronto la nube se alumbra por dentro y
  * cae un rayo ramificado, se apaga y vuelve a parpadear. Solo se ve donde la capa cerca deja ver afuera (el cielo y los
- * huecos de la malla).
+ * huecos de la malla). `x` es de mundo; la nube se busca en lejos.png en `x - CORRE_LEJOS`.
  */
 function relampago(pal: Paleta, cerca: Lienzo, lejos: Lienzo, x: number, y: number, w: number, h: number, yLejos: number, seed: number): Lienzo[] {
   const R = rng(seed);
@@ -301,7 +474,7 @@ function relampago(pal: Paleta, cerca: Lienzo, lejos: Lienzo, x: number, y: numb
   // la nube alumbrada por dentro: solo sobre los pixeles de la nube de la capa lejos, blanca al centro y violeta afuera
   const nube = (L: Lienzo, cx: number, cy: number, k: number) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
-      if (!nubeEn.has(hex(lejos, x + i, y + j - yLejos))) continue;
+      if (!nubeEn.has(hex(lejos, x - CORRE_LEJOS + i, y + j - yLejos))) continue;
       const d = Math.hypot((i - cx) / (w * 0.42), (j - cy) / (h * 0.5));
       if (d < 1 && bayer(i, j) < (1 - d) * k) L.p(i, j, d < 0.35 ? 'luz' : d < 0.6 ? 'salmon' : 'cielo');
     }
@@ -317,8 +490,9 @@ export function vidaMaracaibo(pal: Paleta, L: ObliqueLayout, _k: number, seed: n
   const out: VidaEscena[] = [], quiere = (t: string) => L.vida.includes(t), W = capas.cerca.w, H = capas.cerca.h;
   const cuadro = (q: CuadroMaracaibo) => { const c = new Lienzo(W, H, pal); pintarMaracaibo(c, seed, q); return c; };
   if (quiere('relampago')) {
-    // sobre la nube del Catatumbo: la capa lejos va de la fila 12 (franja.atras - 30 - 170) y la cámara no se mueve
-    const yLejos = FT - 30 - 170, x = CATATUMBO.x0 + 10, y = yLejos + CATATUMBO.top - 4, w = 200, h = ORILLA_LAGO - CATATUMBO.top + 4;
+    // sobre la nube del Catatumbo: la capa lejos va de la fila 12 (franja.atras - 30 - 170) y, con la cámara parada en la
+    // cancha (x = OX), su x de lejos.png cae en el x de mundo + CORRE_LEJOS
+    const yLejos = FT - 30 - 170, x = CATATUMBO.x0 + 10 + CORRE_LEJOS, y = yLejos + CATATUMBO.top - 4, w = 200, h = ORILLA_LAGO - CATATUMBO.top + 4;
     // la misma capa lejos que pinta la escena (semilla + 39): el relámpago alumbra solo la nube
     const lejos = lagoPuenteUrdaneta(pal, 1280, 170, seed + 39);
     out.push({ id: 'relampago_catatumbo', tipo: 'relampago', capa: 'cerca', x, y, cuadros: relampago(pal, capas.cerca, lejos, x, y, w, h, yLejos, seed), fps: 4 });
@@ -338,14 +512,18 @@ export function vidaMaracaibo(pal: Paleta, L: ObliqueLayout, _k: number, seed: n
 
 export function lucesMaracaibo(pal: Paleta, _L: ObliqueLayout, _k: number): Luz[] {
   const out: Luz[] = POSTES_LUZ.flatMap((p) => [-14, 8].map((d) => ({ x: p.x + d, y: p.y + 6, color: pal.oro, radio: 80, latido: 0.05, encendida: true, nota: 'el bombillo de sodio del poste, que alumbra la cancha' })));
-  out.push({ x: CATATUMBO.x0 + 110, y: FT - 30 - 170 + 80, color: pal.salmon, radio: 70, parpadeo: 2, encendida: true, nota: 'el resplandor del relámpago del Catatumbo en la nube: prende y apaga con su vida' });
+  // la luz va en x de mundo, donde se ve la nube con la cámara en la cancha (lejos x + CORRE_LEJOS), igual que su vida
+  out.push({ x: CATATUMBO.x0 + 110 + CORRE_LEJOS, y: FT - 30 - 170 + 80, color: pal.salmon, radio: 70, parpadeo: 2, encendida: true, nota: 'el resplandor del relámpago del Catatumbo en la nube: prende y apaga con su vida' });
+  out.push({ x: FAROL.x - 14, y: FAROL.y, color: pal.oro, radio: 60, latido: 0.05, encendida: true, nota: 'el poste de alumbrado de la calle, afuera de la malla' });
+  out.push({ x: KIOSCO.x0 + 24, y: KIOSCO.top + 10, color: pal.amarillo, radio: 36, latido: 0.08, encendida: true, nota: 'el bombillo pelado del kiosco de los patacones' });
   return out;
 }
 
-export function particulasMaracaibo(pal: Paleta, _L: ObliqueLayout, _k: number): Particula[] {
+export function particulasMaracaibo(pal: Paleta, L: ObliqueLayout, _k: number): Particula[] {
   return [
     ...POSTES_LUZ.map((p) => ({ tipo: 'brillo', x0: p.x - 24, x1: p.x + 24, y0: p.y - 4, y1: p.y + 22, color: [pal.amarillo, pal.luz], cada: 0.5, vida: 0.6, nota: 'las polillas que dan vueltas alrededor del bombillo' })),
-    { tipo: 'calor', x0: 40, x1: 640, y0: 200, y1: 300, color: [pal.cemento_claro, pal.crema], cada: 1.2, sube: 6, vida: 1.6, nota: 'el calor que sube del concreto: ¡qué calor, primo!' },
+    { tipo: 'brillo', x0: FAROL.x - 30, x1: FAROL.x, y0: FAROL.y - 6, y1: FAROL.y + 16, color: [pal.amarillo, pal.luz], cada: 0.7, vida: 0.6, nota: 'las polillas del poste de alumbrado de la calle' },
+    { tipo: 'calor', x0: OX + 40, x1: L.largo, y0: 200, y1: 300, color: [pal.cemento_claro, pal.crema], cada: 1.2, sube: 6, vida: 1.6, nota: 'el calor que sube del concreto: ¡qué calor, primo!' },
   ];
 }
 

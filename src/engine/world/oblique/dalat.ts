@@ -3,10 +3,10 @@ import { Lienzo } from './lienzo';
 import type { Color, Paleta } from './paleta';
 import { MAS_OSCURO } from './tonos';
 import type { CtxCerca } from './fachadas';
-import type { ObliqueLayout } from './layout';
+import { MARGEN_CANCHA as OX, type ObliqueLayout } from './layout';
 import type { Luz, Particula, VidaEscena } from './escena';
 import type { Lugar } from './lugares';
-import { recorte, textoGrande, anchoTexto, malla, sentadita, sombraOval } from './pinceles';
+import { recorte, textoGrande, anchoTexto, malla, sentadita, personita, sombraOval } from './pinceles';
 
 /**
  * La cancha de tenis de arcilla de Đà Lạt en la mañana con neblina (estilo `vietnam_montana`), de lado, para el Tenis de
@@ -14,6 +14,10 @@ import { recorte, textoGrande, anchoTexto, malla, sentadita, sombraOval } from '
  * el gallo en la punta y una villa colonial francesa de techo empinado. Cerca, los pinos altísimos de tronco rojizo, el
  * pasto con las hortensias azules y rosadas, la malla verde de la cancha con su lona y el letrero, la silla del juez y
  * la banca de los jugadores. El piso es la arcilla roja barrida, con las rayas blancas donde las pone Tenis.ts.
+ *
+ * Mide 800 (lote E4): la cancha va en los 640 del medio, de x 80 a 720, y a cada lado hay 80 de pinar. A la izquierda la
+ * puerta de la malla, un pino en la neblina y la banca de madera con dos que vinieron a ver abrigados, con su termo de
+ * té. A la derecha un farol de hierro de los viejos de Đà Lạt y la señora de la bicicleta cargada de flores.
  */
 
 export const CERCA_DALAT = 'cancha_arcilla_dalat';
@@ -21,29 +25,39 @@ export const CERCA_DALAT = 'cancha_arcilla_dalat';
 const FT = 290;
 /** Filas del fondo: donde empieza el pasto de afuera, la base de la malla y la arcilla de atrás de la cancha. */
 export const PASTO = 252, BASE_MALLA = 276;
-/** La malla: de la fila de arriba a la base, y los parales (la red del juego va en x 320: ningún paral cae ahí). */
-export const MALLA = { top: 206, postes: [8, 128, 248, 392, 512, 632] };
+/** La malla: de la fila de arriba a la base, y los parales (la red del juego va en x 400: ningún paral cae ahí). */
+export const MALLA = { top: 206, postes: [8, OX + 8, OX + 128, OX + 248, OX + 392, OX + 512, OX + 632, 792] };
 /** La lona verde de la malla con el letrero, entre dos parales. */
-export const LONA = { x0: 392, x1: 512, y0: 232, y1: 250 };
-/** Los pinos: x del tronco, ancho, la fila de la base y si están lejos (en la neblina). */
+export const LONA = { x0: OX + 392, x1: OX + 512, y0: 232, y1: 250 };
+/** Los pinos: x del tronco, ancho, la fila de la base y si están lejos (en la neblina). El primero y el último van en los márgenes. */
 export const PINOS: { x: number; w: number; base: number; top: number; lejos?: boolean }[] = [
-  { x: 150, w: 5, base: 250, top: 96, lejos: true }, { x: 286, w: 4, base: 248, top: 120, lejos: true }, { x: 404, w: 5, base: 250, top: 104, lejos: true }, { x: 470, w: 4, base: 249, top: 126, lejos: true },
-  { x: 36, w: 11, base: 262, top: 26 }, { x: 590, w: 12, base: 264, top: 14 },
+  { x: 22, w: 5, base: 250, top: 110, lejos: true },
+  { x: OX + 150, w: 5, base: 250, top: 96, lejos: true }, { x: OX + 286, w: 4, base: 248, top: 120, lejos: true }, { x: OX + 404, w: 5, base: 250, top: 104, lejos: true }, { x: OX + 470, w: 4, base: 249, top: 126, lejos: true },
+  { x: 762, w: 4, base: 249, top: 100, lejos: true },
+  { x: OX + 36, w: 11, base: 262, top: 26 }, { x: OX + 590, w: 12, base: 264, top: 14 },
 ];
 /** La silla del juez de silla, al lado de la red. */
-export const SILLA_JUEZ = { x: 338, base: 288 };
+export const SILLA_JUEZ = { x: OX + 338, base: 288 };
 /** La banca de los jugadores. */
-export const BANCA = { x0: 196, x1: 248, asiento: 276 };
-/** Las rayas de Tenis.ts: de x 34 a 606 en la fila 298 (y 8) y de x 28 a 612 en la 322 (y 32); la red en x 320. */
-export const CANCHA = { atras: 8, adelante: 32, x0: 34, x1: 606, abre: 6, red: 320 };
+export const BANCA = { x0: OX + 196, x1: OX + 248, asiento: 276 };
+/** La banca de madera de los que vienen a ver, en el margen de la izquierda, y la puerta de la malla. */
+export const BANCA_VISITA = { x0: 8, x1: 50, asiento: 278 }, PUERTA = { x0: 54, x1: 74 };
+/** El farol de hierro y la bicicleta de las flores, en el margen de la derecha. */
+export const FAROL = { x: 728 }, BICI_FLORES = { x: 744 };
+/** Las rayas de Tenis.ts: de x 114 a 686 en la fila 298 (y 8) y de x 108 a 692 en la 322 (y 32); la red en x 400. */
+export const CANCHA = { atras: 8, adelante: 32, x0: OX + 34, x1: OX + 606, abre: 6, red: OX + 320 };
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Lo lejos: el lago Xuân Hương, las lomas de pinos, la catedral y la villa en la neblina
 
 /** Fila del agua del lago en la capa lejos (la capa va de la fila 90 a la 260 de la pantalla). */
 export const LAGO = 128;
-/** La catedral del gallo (Nhà thờ Con Gà) y la villa colonial, en x de lejos.png. */
-export const CATEDRAL = { x: 236, base: 104 }, VILLA = { x: 470, base: 112 };
+/**
+ * La catedral del gallo (Nhà thờ Con Gà) y la villa colonial, en x de lejos.png. Con la cancha a 800 se corrieron (antes
+ * 236 y 470): la capa lejos va a un cuarto de la cámara, y así caen en los huecos entre los pinos de atrás tanto con la
+ * cámara centrada en los 640 como en los 780 del iPhone o con los 800 enteros.
+ */
+export const CATEDRAL = { x: 264, base: 104 }, VILLA = { x: 556, base: 112 };
 
 /** Un pino lejano: la silueta angosta y puntuda, del color de su distancia (`luz` en el borde del lado del sol). */
 function pinoLejos(L: Lienzo, x: number, base: number, alto: number, c: Color, luz: Color) {
@@ -224,6 +238,97 @@ function bancaJugadores(C: Lienzo, f: number) {
   C.hl(cx - 1, piso - 10, 14, 'cemento');
 }
 
+/**
+ * La banca de madera de los que vienen a ver (margen de la izquierda): dos abrigados para el frío de la mañana, uno de
+ * suéter rojo y gorro de lana y la otra de chaqueta con bufanda, con el termo de té y los vasitos en la tabla.
+ */
+function bancaVisita(C: Lienzo) {
+  const { x0, x1, asiento } = BANCA_VISITA, piso = FT - 4;
+  sombraOval(C, (x0 + x1) / 2 + 2, piso, (x1 - x0) / 2 + 4, 2, 'vino', 0.45);
+  for (const px of [x0 + 3, x1 - 6]) { C.f(px, asiento + 3, 3, piso - asiento - 3, 'terracota'); C.vl(px + 2, asiento + 3, piso - asiento - 3, 'vino'); }
+  C.f(x0, asiento, x1 - x0, 3, 'ocre'); C.hl(x0, asiento, x1 - x0, 'amarillo'); C.hl(x0, asiento + 3, x1 - x0, 'vino');
+  // el espaldar de tablas
+  for (const y of [asiento - 9, asiento - 5]) { C.hl(x0, y, x1 - x0, 'ocre'); C.hl(x0, y + 1, x1 - x0, 'terracota'); }
+  for (const px of [x0 + 2, x1 - 4]) C.vl(px, asiento - 10, 10, 'vino');
+  sentadita(C, x0 + 6, asiento, { ropa: 'rojo', pant: 'azul_noche', pelo: 'tinta', piel: 'salmon', alto: 20 });
+  // el gorro de lana con su pompón
+  C.f(x0 + 8, asiento - 21, 5, 3, 'crema'); C.hl(x0 + 8, asiento - 19, 5, 'cemento_claro'); C.p(x0 + 10, asiento - 22, 'luz');
+  sentadita(C, x0 + 20, asiento, { ropa: 'azul', pant: 'sombra', pelo: 'sombra', piel: 'ocre', alto: 20 });
+  // la bufanda amarilla que le cuelga
+  C.hl(x0 + 21, asiento - 13, 7, 'amarillo'); C.vl(x0 + 22, asiento - 12, 4, 'amarillo'); C.p(x0 + 22, asiento - 8, 'oro');
+  // el termo rojo de té y los dos vasitos
+  const tx = x0 + 32;
+  C.f(tx, asiento - 9, 4, 9, 'rojo'); C.vl(tx + 3, asiento - 9, 9, 'vino'); C.hl(tx, asiento - 10, 4, 'luz'); C.hl(tx, asiento - 5, 4, 'crema');
+  for (const vx of [tx + 6, tx + 9]) { C.f(vx, asiento - 3, 2, 3, 'luz'); C.p(vx, asiento - 3, 'ocre'); }
+}
+
+/** La puerta de la malla, en el margen de la izquierda: el marco de tubo, el pasador y el candado abierto colgando. */
+function puertaMalla(C: Lienzo) {
+  const { x0, x1 } = PUERTA, top = MALLA.top + 12;
+  for (const px of [x0, x1]) { C.f(px - 1, top, 2, BASE_MALLA - top, 'asfalto'); C.vl(px - 1, top, BASE_MALLA - top, 'cemento'); }
+  C.f(x0 - 1, top - 1, x1 - x0 + 2, 2, 'asfalto'); C.hl(x0, top - 1, x1 - x0, 'cemento');
+  C.hl(x0, Math.round((top + BASE_MALLA) / 2), x1 - x0, 'asfalto');
+  // las bisagras y el pasador con el candado
+  for (const y of [top + 4, BASE_MALLA - 6]) C.f(x0 - 2, y, 3, 2, 'sombra');
+  C.f(x1 - 4, top + 26, 6, 2, 'cemento_claro'); C.f(x1 + 1, top + 28, 3, 3, 'oro'); C.p(x1 + 2, top + 27, 'asfalto');
+  // el letrerito blanco con el número de la cancha
+  C.box(x0 + 5, top + 6, 10, 7, 'luz', 'cemento'); C.f(x0 + 9, top + 8, 2, 3, 'rojo');
+}
+
+/**
+ * El farol de hierro de los viejos de Đà Lạt (margen de la derecha), afuera de la malla: el pie con su base de molduras,
+ * el palo verde oscuro, el brazo con volutas y la linterna de vidrio, apagada a esta hora.
+ */
+function farol(C: Lienzo) {
+  const x = FAROL.x, piso = BASE_MALLA - 1, top = 184;
+  C.f(x - 3, piso - 6, 7, 6, 'sombra'); C.hl(x - 3, piso - 6, 7, 'asfalto'); C.f(x - 2, piso - 9, 5, 3, 'sombra');
+  C.f(x - 1, top + 8, 3, piso - top - 17, 'sombra'); C.vl(x - 1, top + 8, piso - top - 17, 'asfalto');
+  for (let y = top + 30; y < piso - 10; y += 22) C.hl(x - 2, y, 5, 'asfalto');
+  // la linterna: el sombrerito, el vidrio crema con sus barras y el remate
+  C.f(x - 4, top + 6, 9, 2, 'sombra');
+  C.f(x - 3, top - 4, 7, 10, 'crema'); C.vl(x, top - 4, 10, 'asfalto'); C.vl(x - 3, top - 4, 10, 'sombra'); C.vl(x + 3, top - 4, 10, 'sombra');
+  C.p(x - 2, top - 2, 'luz');
+  for (let j = 0; j < 4; j++) C.hl(x - 4 + j, top - 5 - j, 9 - 2 * j, 'sombra');
+  C.p(x, top - 10, 'asfalto');
+  // las volutas debajo de la linterna
+  C.p(x - 3, top + 9, 'sombra'); C.p(x - 4, top + 10, 'sombra'); C.p(x + 3, top + 9, 'sombra'); C.p(x + 4, top + 10, 'sombra');
+}
+
+/**
+ * La bicicleta de las flores (margen de la derecha), parada en el pasto: las ruedas, el cuadro negro y las cestas de
+ * mimbre llenas de hortensias, rosas y margaritas, con la señora del nón lá y el suéter rosado que las vende.
+ */
+function biciFlores(C: Lienzo, seed: number) {
+  const x = BICI_FLORES.x, piso = BASE_MALLA - 1, R = rng(seed);
+  // las ruedas y el cuadro
+  for (const cx of [x + 6, x + 30]) {
+    for (let a = 0; a < 32; a++) { const t = (a / 32) * Math.PI * 2; C.p(Math.round(cx + Math.cos(t) * 6), Math.round(piso - 6 + Math.sin(t) * 6), 'sombra'); }
+    C.p(cx, piso - 6, 'cemento_claro');
+  }
+  C.ln(x + 6, piso - 6, x + 15, piso - 6, 'azul'); C.ln(x + 15, piso - 6, x + 12, piso - 15, 'azul'); C.ln(x + 12, piso - 15, x + 26, piso - 15, 'azul');
+  C.ln(x + 26, piso - 15, x + 30, piso - 6, 'azul'); C.ln(x + 15, piso - 6, x + 26, piso - 15, 'azul'); C.ln(x + 6, piso - 6, x + 12, piso - 15, 'azul_noche');
+  C.hl(x + 10, piso - 16, 4, 'sombra'); C.hl(x + 25, piso - 19, 5, 'sombra'); C.vl(x + 26, piso - 18, 3, 'asfalto');
+  // la cesta grande de atrás y la de adelante, de mimbre
+  for (const [bx, bw, bh] of [[x - 2, 15, 7], [x + 26, 9, 5]] as const) {
+    C.f(bx, piso - 16 - bh, bw, bh, 'ocre');
+    for (let i = 0; i < bw; i += 2) C.vl(bx + i, piso - 16 - bh, bh, 'terracota');
+    C.hl(bx, piso - 16 - bh, bw, 'amarillo'); C.hl(bx, piso - 17, bw, 'terracota');
+    // las flores que se salen de la cesta
+    for (let k = 0; k < bw * 1.6; k++) {
+      const fx = bx + Math.floor(R() * bw), fy = piso - 17 - bh - Math.floor(R() * 6);
+      C.vl(fx, fy, piso - 16 - bh - fy, 'verde');
+      C.d(fx, fy, 1.6, (['azul', 'celeste', 'rojo', 'salmon', 'amarillo', 'luz'] as Color[])[Math.floor(R() * 6)]);
+    }
+  }
+  // la señora, parada al lado con su nón lá
+  const px = x + 38;
+  personita(C, px, piso + 1, { ropa: 'salmon', pant: 'sombra', pelo: 'tinta', piel: 'salmon', pose: 0, alto: 26 });
+  const hy = piso + 1 - 26 + 1;
+  for (const [j, i0, w] of [[0, 4, 1], [1, 3, 3], [2, 2, 5], [3, 0, 9], [4, -2, 13]] as const) C.hl(px + i0, hy - 4 + j, w, j === 4 ? 'ocre' : 'crema');
+  // un ramito de hortensias en la mano
+  C.d(px - 2, piso - 12, 2, 'azul'); C.p(px - 3, piso - 13, 'celeste'); C.vl(px - 2, piso - 10, 3, 'verde');
+}
+
 /** La lona verde de la malla con el letrero de la cancha: SÂN QUẦN VỢT ĐÀ LẠT. */
 function lona(C: Lienzo) {
   const { x0, x1, y0, y1 } = LONA;
@@ -247,7 +352,10 @@ export function pintarDalat(C: Lienzo, seed: number, o: { f?: number } = {}) {
   // los pinos de atrás, en la neblina, y los de adelante, grandes
   for (const p of PINOS.filter((q) => q.lejos)) pino(C, p, seed + p.x);
   // las hortensias contra la malla, afuera
-  for (const [x, w, a, b] of [[60, 50, 'azul', 'celeste'], [136, 40, 'salmon', 'crema'], [260, 44, 'azul', 'celeste'], [344, 36, 'salmon', 'crema'], [530, 60, 'azul', 'celeste']] as const) hortensias(C, x, BASE_MALLA - 1, w, [a, b], seed + x);
+  for (const [x, w, a, b] of [[76, 26, 'salmon', 'crema'], [OX + 60, 50, 'azul', 'celeste'], [OX + 136, 40, 'salmon', 'crema'], [OX + 260, 44, 'azul', 'celeste'], [OX + 344, 36, 'salmon', 'crema'], [OX + 530, 60, 'azul', 'celeste'], [700, 24, 'celeste', 'luz']] as const) hortensias(C, x, BASE_MALLA - 1, w, [a, b], seed + x);
+  // afuera de la malla, en el margen de la derecha: el farol viejo y la bicicleta de las flores
+  farol(C);
+  biciFlores(C, seed + 5);
   // la arcilla de atrás de la cancha, hasta la franja, con el borde de concreto de la malla
   for (let y = BASE_MALLA; y < FT; y++) for (let x = 0; x < W; x++) C.p(x, y, y === BASE_MALLA ? 'cemento_claro' : y === BASE_MALLA + 1 ? 'cemento' : arcilla(x, y + 40, seed));
   // la malla: los parales y el alambre en rombos (deja ver lo de atrás), con el tubo de arriba
@@ -255,11 +363,13 @@ export function pintarDalat(C: Lienzo, seed: number, o: { f?: number } = {}) {
   for (let x = 0; x < W; x++) { C.p(x, MALLA.top - 1, 'asfalto'); C.p(x, MALLA.top, 'cemento'); }
   for (const px of MALLA.postes) { C.f(px - 1, MALLA.top - 3, 3, BASE_MALLA - MALLA.top + 3, 'asfalto'); C.vl(px - 1, MALLA.top - 3, BASE_MALLA - MALLA.top + 3, 'cemento'); C.f(px - 2, MALLA.top - 4, 5, 2, 'asfalto'); }
   lona(C);
+  puertaMalla(C);
   // los pinos grandes de adelante, afuera de la cancha, que tapan el borde de la malla
   for (const p of PINOS.filter((q) => !q.lejos)) pino(C, p, seed + p.x);
   bancaJugadores(C, o.f ?? 0);
   sillaJuez(C);
-  for (const x of [150, 470]) sombraOval(C, x, FT - 6, 30, 2, 'vino', 0.3);
+  bancaVisita(C);
+  for (const x of [OX + 150, OX + 470]) sombraOval(C, x, FT - 6, 30, 2, 'vino', 0.3);
 }
 
 export const fondoDalat = (C: Lienzo, _x0: number, _x1: number, _base: number, ctx: CtxCerca) => pintarDalat(C, ctx.seed);
@@ -293,7 +403,7 @@ export function rayasDalat(P: Lienzo, _L: ObliqueLayout, seed: number) {
     if (!polvo(red, y) && y % 2) P.p(Math.round(red + 3 * t), y, 'crema');
   }
   // una deslizada en la arcilla, cerca del fondo
-  for (const [cx, cy] of [[120, 20], [512, 14]] as const) for (let i = 0; i < 22; i++) { P.p(cx + i, cy + Math.round(i / 11), 'ocre'); if (i % 3) P.p(cx + i, cy + 1 + Math.round(i / 11), 'vino'); }
+  for (const [cx, cy] of [[OX + 120, 20], [OX + 512, 14]] as const) for (let i = 0; i < 22; i++) { P.p(cx + i, cy + Math.round(i / 11), 'ocre'); if (i % 3) P.p(cx + i, cy + 1 + Math.round(i / 11), 'vino'); }
 }
 
 /** Lo de adelante de la cancha: la arcilla, el bordillo de concreto y el pasto con agujas de pino y piñas caídas. */
@@ -303,7 +413,7 @@ export function orillaDalat(x: number, r: number, s: number): Color {
   if (r === 20) return 'cemento_claro';
   if (r < 23) return r === 22 ? 'asfalto_claro' : 'cemento';
   // las piñas
-  for (const px of [86, 310, 471, 702, 845]) { const d = Math.hypot(xr - px, (r - 26) * 1.4); if (d < 3) return d < 1.5 ? 'terracota' : 'vino'; }
+  for (const px of [24, OX + 86, OX + 310, OX + 471, OX + 702, OX + 845]) { const d = Math.hypot(xr - px, (r - 26) * 1.4); if (d < 3) return d < 1.5 ? 'terracota' : 'vino'; }
   const n = grain(xr, r, s + 3);
   if (n < 0.07) return 'ocre';
   return r === 23 ? 'verde_oscuro' : n > 0.9 ? 'menta' : 'verde';
@@ -337,13 +447,13 @@ export function vidaDalat(pal: Paleta, L: ObliqueLayout, _k: number, seed: numbe
 }
 
 export function lucesDalat(pal: Paleta, _L: ObliqueLayout, _k: number): Luz[] {
-  return [{ x: 120, y: 220, color: pal.amarillo, radio: 80, latido: 0.1, encendida: true, nota: 'el sol de la mañana que entra entre los pinos y la neblina' }, { x: 470, y: 230, color: pal.amarillo, radio: 70, latido: 0.08, encendida: true, nota: 'el sol de la mañana sobre la malla' }];
+  return [{ x: OX + 120, y: 220, color: pal.amarillo, radio: 80, latido: 0.1, encendida: true, nota: 'el sol de la mañana que entra entre los pinos y la neblina' }, { x: OX + 470, y: 230, color: pal.amarillo, radio: 70, latido: 0.08, encendida: true, nota: 'el sol de la mañana sobre la malla' }];
 }
 
-export function particulasDalat(pal: Paleta, _L: ObliqueLayout, _k: number): Particula[] {
+export function particulasDalat(pal: Paleta, L: ObliqueLayout, _k: number): Particula[] {
   return [
-    { tipo: 'neblina', x0: 0, x1: 640, y0: 150, y1: 240, color: [pal.bruma, pal.cielo], cada: 0.8, sube: 2, vida: 3, nota: 'jirones de neblina que flotan entre los pinos' },
-    { tipo: 'polvo', x0: 20, x1: 620, y0: 300, y1: 326, color: [pal.ocre, pal.terracota], cada: 1.4, sube: 4, vida: 0.8, nota: 'el polvo de arcilla que levantan los pasos' },
+    { tipo: 'neblina', x0: 0, x1: L.largo, y0: 150, y1: 240, color: [pal.bruma, pal.cielo], cada: 0.8, sube: 2, vida: 3, nota: 'jirones de neblina que flotan entre los pinos' },
+    { tipo: 'polvo', x0: OX + 20, x1: OX + 620, y0: 300, y1: 326, color: [pal.ocre, pal.terracota], cada: 1.4, sube: 4, vida: 0.8, nota: 'el polvo de arcilla que levantan los pasos' },
   ];
 }
 

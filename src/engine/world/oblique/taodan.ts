@@ -4,7 +4,7 @@ import type { Color, Paleta } from './paleta';
 import { drawText, textWidth, LINE_H } from './letras';
 import { MAS_OSCURO } from './tonos';
 import { copa, type CtxCerca } from './fachadas';
-import type { ObliqueLayout } from './layout';
+import { MARGEN_CANCHA as OX, type ObliqueLayout } from './layout';
 import type { Luz, Particula, VidaEscena } from './escena';
 import type { Lugar } from './lugares';
 
@@ -14,6 +14,11 @@ import type { Lugar } from './lugares';
  * bancos de piedra con los señores del café de los pájaros y sus jaulas colgadas, el grupo de tai chi y los abuelos
  * haciendo ejercicio en el pasto. Lejos, Saigón en la bruma rosada. El piso es la cancha de tierra apisonada, con las
  * rayas en el mismo sitio donde las pone DaCau.ts.
+ *
+ * Mide 800 (lote E4): la cancha va en los 640 del medio, de x 80 a 720, y a cada lado hay 80 de parque. A la izquierda
+ * otro dầu en la bruma y el cà phê cóc de la señora, con sus taburetes de plástico, el termo y un señor tomándose su
+ * café con la jaula colgada al lado. A la derecha otro dầu y el barrendero de naranja con su escoba de palma, el montón
+ * de hojas secas y el carrito de la basura.
  */
 
 export const CERCA_TAODAN = 'parque_tao_dan';
@@ -22,23 +27,29 @@ const FT = 290;
 /** Fila del pasto de atrás (donde se paran el tai chi y los bancos) y del camino que bordea la cancha. */
 export const PASTO = 256;
 const CAMINO = 282;
-/** Los troncos de los dầu: centro, ancho y dónde empiezan (debajo de la copa). */
-export const TRONCOS = [{ x: 64, w: 30, top: 40, base: 266 }, { x: 222, w: 18, top: 60, base: 250, lejos: true }, { x: 508, w: 34, top: 30, base: 268 }, { x: 632, w: 24, top: 50, base: 264 }];
+/** Los troncos de los dầu: centro, ancho y dónde empiezan (debajo de la copa). El primero y el último van en los márgenes. */
+export const TRONCOS = [
+  { x: 34, w: 16, top: 60, base: 250, lejos: true },
+  { x: OX + 64, w: 30, top: 40, base: 266 }, { x: OX + 222, w: 18, top: 60, base: 250, lejos: true }, { x: OX + 508, w: 34, top: 30, base: 268 }, { x: OX + 632, w: 24, top: 50, base: 264 },
+  { x: 778, w: 14, top: 64, base: 250, lejos: true },
+];
 /** El grupo de tai chi: x de cada uno, en el pasto de atrás. */
-export const TAI_CHI = [130, 158, 186, 214, 250];
+export const TAI_CHI = [OX + 130, OX + 158, OX + 186, OX + 214, OX + 250];
 /** El palo de las jaulas y el banco de piedra de los señores del café de los pájaros. */
-export const JAULAS = { x0: 404, x1: 468, y: 202 };
-export const BANCO = { x0: 406, x1: 466, asiento: 262 };
+export const JAULAS = { x0: OX + 404, x1: OX + 468, y: 202 };
+export const BANCO = { x0: OX + 406, x1: OX + 466, asiento: 262 };
 /** Los abuelos haciendo ejercicio, a la derecha. */
-export const ABUELOS = [556, 584];
-/** El letrero del parque, arriba de la red (que el juego pone en x 320 y llega a la fila 264). */
-export const LETRERO = { x: 254, y: 222 };
+export const ABUELOS = [OX + 556, OX + 584];
+/** El letrero del parque, arriba de la red (que el juego pone en x 400 y llega a la fila 264). */
+export const LETRERO = { x: OX + 254, y: 222 };
+/** El cà phê cóc del margen de la izquierda y el barrendero del margen de la derecha: x de la izquierda de cada uno. */
+export const CAFE_COC = { x: 6 }, BARRENDERO = { x: 734 };
 /** Dónde empiezan los rayos de sol (x en la fila RAYO_Y, debajo de la copa): bajan a la derecha 0.62 por fila. */
-export const RAYOS = [120, 300, 540], RAYO_Y = 136;
+export const RAYOS = [OX + 120, OX + 300, OX + 540], RAYO_Y = 136;
 /** La x del medio de un rayo en la fila y. */
 const enRayo = (x0: number, y: number) => x0 + Math.round((y - RAYO_Y) * 0.62) + 12;
-/** Las rayas de la cancha de DaCau.ts: de x 34 a 606 en la fila 298 (y 8) y de x 28 a 612 en la 322 (y 32); la red en x 320. */
-export const CANCHA = { atras: 8, adelante: 32, x0: 34, x1: 606, abre: 6, red: 320 };
+/** Las rayas de la cancha de DaCau.ts: de x 114 a 686 en la fila 298 (y 8) y de x 108 a 692 en la 322 (y 32); la red en x 400. */
+export const CANCHA = { atras: 8, adelante: 32, x0: OX + 34, x1: OX + 606, abre: 6, red: OX + 320 };
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Lo lejos: Saigón en la bruma del amanecer
@@ -62,13 +73,15 @@ export function saigonAmanecer(pal: Paleta, w: number, h: number, seed: number):
       x += tw + Math.floor(R() * 8);
     }
   }
-  // Landmark 81: la torre más alta, en escalones angostos que suben
-  const lx = 380;
+  // Landmark 81: la torre más alta, en escalones angostos que suben. Con la cancha a 800 las dos torres se corrieron 40 (la
+  // mitad del margen, porque la capa lejos va a un cuarto de la cámara): así caen entre los troncos se vea la cancha
+  // entera o centrada
+  const lx = 420;
   // (la Bitexco va a la izquierda de la Landmark, como se ven desde el parque)
   for (const [i, ww, top] of [[0, 22, 40], [3, 16, 22], [6, 10, 10], [8, 6, 4]] as const) torre(L, lx + i, ww, top, base, 'canal', 'cielo');
   L.vl(lx + 10, 0, 6, 'canal');
   // la Bitexco: el cuerpo que se angosta y el helipuerto que sale de lado
-  const bx = 300;
+  const bx = 340;
   for (let y = 30; y < base; y++) { const half = Math.round(5 + ((y - 30) / (base - 30)) * 6); L.hl(bx - half, y, half * 2, 'canal'); L.p(bx - half, y, 'cielo'); }
   L.f(bx - 2, 22, 4, 8, 'canal'); L.f(bx - 1, 48, 12, 3, 'canal'); L.hl(bx + 1, 48, 10, 'bruma');
   // la bruma que las borra hacia abajo
@@ -256,6 +269,65 @@ function letreroParque(C: Lienzo, x: number, y: number, texto: string) {
   for (let j = 0; j < T.h; j++) for (let i = 0; i < T.w; i++) if (T.has(i, j)) C.f(x + 6 + i * 2, y + (j - 2) * 2, 2, 2, 'luz');
 }
 
+/** Un taburete de plástico de los del café de la calle, bajito: el asiento y las patas abiertas. */
+function taburete(C: Lienzo, x: number, piso: number, c: Color) {
+  C.f(x, piso - 7, 8, 2, c); C.hl(x, piso - 5, 8, MAS_OSCURO[c]);
+  C.ln(x + 1, piso - 5, x, piso - 1, c); C.ln(x + 6, piso - 5, x + 7, piso - 1, c); C.f(x + 3, piso - 4, 2, 2, MAS_OSCURO[c]);
+}
+
+/**
+ * El cà phê cóc del margen de la izquierda: la señora sentada en su taburete detrás de la mesita, con el termo rojo de
+ * flores, la tetera y los vasos de cà phê sữa đá. Enfrente un señor en su taburete azul se toma el café, y al lado
+ * tiene la jaula de su pájaro colgada de un palito de bambú clavado en el pasto.
+ */
+function cafeCoc(C: Lienzo) {
+  const x = CAFE_COC.x, piso = PASTO + 14;
+  // el palito de bambú con la jaula del señor
+  const px = x + 62;
+  C.f(px, piso - 52, 2, 52, 'ocre'); C.vl(px + 1, piso - 52, 52, 'terracota'); for (let y = piso - 46; y < piso; y += 9) C.p(px, y, 'terracota');
+  C.hl(px - 8, piso - 52, 10, 'ocre');
+  jaula(C, px - 7, piso - 51, 'amarillo', 'rojo', 0);
+  // la señora del café: sentada bajito, con el pelo negro recogido y el nón lá
+  taburete(C, x + 2, piso, 'rojo');
+  sentadoBanco(C, x + 2, piso - 8, 'salmon', 'cafe');
+  C.f(x + 3, piso - 29, 5, 2, 'tinta'); C.p(x + 3, piso - 27, 'tinta'); C.p(x + 2, piso - 28, 'tinta');
+  for (const [j, i0, w] of [[0, 5, 1], [1, 4, 3], [2, 3, 5], [3, 1, 9], [4, -1, 13]] as const) C.hl(x + i0, piso - 34 + j, w, j === 4 ? 'ocre' : 'crema');
+  // la mesita de plástico azul con el termo, la tetera y los vasos
+  const mx = x + 16;
+  C.f(mx, piso - 11, 22, 2, 'azul'); C.hl(mx, piso - 9, 22, 'azul_noche');
+  for (const lx of [mx + 1, mx + 19]) C.f(lx, piso - 9, 2, 9, 'azul');
+  C.f(mx + 2, piso - 22, 6, 11, 'rojo'); C.vl(mx + 7, piso - 22, 11, 'vino'); C.hl(mx + 2, piso - 23, 6, 'luz'); C.p(mx + 4, piso - 18, 'amarillo'); C.p(mx + 5, piso - 16, 'luz');
+  C.f(mx + 10, piso - 16, 6, 5, 'cemento_claro'); C.hl(mx + 10, piso - 16, 6, 'luz'); C.hl(mx + 9, piso - 15, 2, 'cemento_claro'); C.hl(mx + 16, piso - 15, 2, 'cemento'); C.f(mx + 12, piso - 18, 2, 2, 'asfalto_claro');
+  for (const vx of [mx + 17, mx + 20]) { C.f(vx, piso - 15, 2, 4, 'luz'); C.vl(vx, piso - 13, 2, 'terracota'); }
+  // el señor en su taburete azul, con su café
+  taburete(C, x + 42, piso, 'azul');
+  sentadoBanco(C, x + 42, piso - 8, 'crema', 'cafe');
+}
+
+/**
+ * El barrendero del margen de la derecha: el uniforme naranja con la cinta que brilla, el nón lá, la escoba larga de
+ * palma barriendo las hojas secas de los dầu en un montón, y el carrito de la basura con su tapa.
+ */
+function barrendero(C: Lienzo) {
+  const x = BARRENDERO.x, piso = PASTO + 13;
+  // el montón de hojas secas
+  for (let i = 0; i < 16; i++) for (let j = 0; j < 4 - Math.abs(i - 8) / 3; j++) C.p(x - 4 + i, piso - 1 - j, (['ocre', 'terracota', 'oro', 'vino'] as Color[])[(i * 3 + j * 5) % 4]);
+  // el barrendero, con los brazos para adelante agarrando la escoba
+  persona(C, x + 12, piso, 'oro', 'oro', 'sombra', 1);
+  C.hl(x + 12, piso - 17, 7, 'luz'); C.hl(x + 13, piso - 5, 2, 'luz'); C.hl(x + 17, piso - 5, 2, 'luz');
+  for (const [j, i0, w] of [[0, 4, 1], [1, 3, 3], [2, 2, 5], [3, 0, 9], [4, -2, 13]] as const) C.hl(x + 12 + i0, piso - 35 + j, w, j === 4 ? 'ocre' : 'crema');
+  // la escoba de palma: el palo de las manos al piso y las varas abiertas en las hojas
+  C.ln(x + 6, piso - 23, x + 2, piso - 2, 'terracota');
+  for (let i = -4; i <= 4; i++) C.ln(x + 2, piso - 4, x + 2 + i, piso, i % 2 ? 'amarillo' : 'ocre');
+  // el carrito de la basura: la caja verde con su tapa, el manubrio y la rueda
+  const cx = x + 30;
+  C.f(cx, piso - 16, 18, 13, 'verde'); C.vl(cx + 17, piso - 16, 13, 'verde_oscuro'); C.hl(cx, piso - 4, 18, 'verde_oscuro');
+  C.f(cx - 1, piso - 18, 20, 2, 'verde_oscuro'); C.hl(cx - 1, piso - 18, 20, 'menta');
+  C.ln(cx + 18, piso - 14, cx + 24, piso - 22, 'asfalto'); C.hl(cx + 23, piso - 22, 3, 'asfalto');
+  C.d(cx + 5, piso - 2, 2.5, 'sombra'); C.p(cx + 5, piso - 2, 'cemento'); C.d(cx + 13, piso - 2, 2.5, 'sombra'); C.p(cx + 13, piso - 2, 'cemento');
+  C.p(cx + 4, piso - 19, 'ocre'); C.p(cx + 9, piso - 19, 'terracota');
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // La capa cerca completa
 
@@ -305,6 +377,9 @@ export function pintarTaodan(C: Lienzo, seed: number, vida: readonly string[] = 
   palJaulas(C, quieto('pajaros'));
   banco(C, BANCO.x0, BANCO.x1, BANCO.asiento);
   sentadoBanco(C, BANCO.x0 + 12, BANCO.asiento - 1, 'luz', 'cafe'); sentadoBanco(C, BANCO.x0 + 44, BANCO.asiento - 1, 'celeste', 'periodico');
+  // en los márgenes: el cà phê cóc a la izquierda y el barrendero a la derecha
+  cafeCoc(C);
+  barrendero(C);
   // los rayos de sol entre los troncos
   rayos(C, RAYOS, RAYO_Y, FT - 6);
 }

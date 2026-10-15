@@ -288,11 +288,15 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     // Voley.ts y Tenis.ts ponen el piso, y la de Futbol.ts y Basket.ts (212 a 316). Los de E6, con las medidas de su prueba
     const franjas: Record<string, [number, number]> = { tao_dan: [290, 330], candelaria: [286, 310], caracas_azotea: [246, 344], hoian: [246, 344], judo_hanoi: [246, 344], margarita: [290, 330], dalat: [290, 330], barranquilla: [212, 316], cancha_maracaibo: [212, 316], cocora: [228, 348], halong: [226, 346], llanos_apure: [226, 346], barrio_caracas: [296, 336], liceo_patio: [214, 314], cartagena: [340, 360] };
     const largos: Record<string, number> = { saigon_estadio: 1920, medellin_c13: 3600, cocora: 1720, halong: 1460, llanos_apure: 1560, barrio_caracas: 900, cartagena: 880 };
+    // las 8 canchas de una pantalla van a 800 con 80 de escenario a cada lado (lote E4)
+    const CANCHAS_800 = ['margarita', 'dalat', 'tao_dan', 'cancha_maracaibo', 'barranquilla', 'liceo_patio', 'candelaria', 'hoian'];
+    for (const id of CANCHAS_800) largos[id] = 800;
     for (const id of tramos) {
       expect(m.escenarios[id]).toBe(`escenarios/${id}/escenario.json`);
       const e = readJson(join(out, m.escenarios[id]));
       const [atras, adelante] = franjas[id] ?? [200, 330];
       expect(e).toMatchObject({ id, escala: 1, largo: largos[id] ?? (franjas[id] ? 640 : 3840), franja: { atras, adelante } });
+      if (CANCHAS_800.includes(id)) expect(e, id).toMatchObject({ margen: 80 });
       // las de lado lo dicen, con el dibujo derecho
       if (['tao_dan', 'candelaria', 'margarita', 'dalat', 'cocora', 'halong', 'llanos_apure', 'barrio_caracas', 'cartagena'].includes(id)) expect(e).toMatchObject({ vista: 'lado', inclinacion: 0, ancho: largos[id] ?? 640 });
       expect(readFileSync(join(out, `escenarios/${id}/verificacion.md`), 'utf8'), id).toMatch(/Las 9 pruebas pasan/);

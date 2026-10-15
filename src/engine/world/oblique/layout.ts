@@ -33,6 +33,9 @@ export interface Bajo extends Rango { z: number; tipo?: string }
 export interface Entidad { tipo: (typeof ENTIDADES)[number]; x?: number; y?: number; x0?: number; x1?: number; [k: string]: unknown }
 export interface RanuraDeco { x0: number; x1: number; capa: (typeof CAPAS_DECO)[number]; tema: string }
 
+/** El margen de las canchas de una pantalla (lote E4): 80 px de escenario a cada lado de los 640 de la cancha. */
+export const MARGEN_CANCHA = 80;
+
 export interface ObliqueLayout {
   id: string;
   nombre?: string;
@@ -42,6 +45,11 @@ export interface ObliqueLayout {
   vista?: (typeof VISTAS)[number];
   tramo?: number;
   largo: number;
+  /**
+   * Una cancha de una pantalla pintada más ancha que la pantalla: los px de escenario de más a cada lado. La cancha va en
+   * los `largo - 2 * margen` del medio, y el juego la centra (lote E4: 800 de largo, 80 de margen y la cancha en 640).
+   */
+  margen?: number;
   franja: { atras: number; adelante: number };
   hora: Hora;
   clima: string[];
@@ -74,7 +82,7 @@ export interface LayoutResult {
 const CAMPOS: Record<string, { req: string[]; opt: string[]; extra?: string[] }> = {
   raiz: {
     req: ['id', 'pais', 'largo', 'franja', 'hora', 'piso'],
-    opt: ['prueba', 'vista', 'tramo', 'clima', 'paralaje', 'huecos', 'plataformas', 'muros', 'escaleras', 'postes', 'agua', 'bajo', 'solidos', 'carriles', 'entidades', 'ranuras_deco', 'vida'],
+    opt: ['prueba', 'vista', 'tramo', 'margen', 'clima', 'paralaje', 'huecos', 'plataformas', 'muros', 'escaleras', 'postes', 'agua', 'bajo', 'solidos', 'carriles', 'entidades', 'ranuras_deco', 'vida'],
     extra: ['nombre', 'nota', 'version'],
   },
   piso: { req: ['x0', 'x1', 'tipo'], opt: ['y0', 'y1'], extra: ['nombre', 'nota'] },
@@ -114,6 +122,7 @@ export function validateLayout(raw: unknown): LayoutResult {
   if (L.hora !== undefined && !HORAS.includes(L.hora as never)) errores.push(`\`hora\` "${String(L.hora)}" no existe. Van: ${HORAS.join(', ')}.`);
   const largo = isNum(L.largo) && L.largo > 0 ? L.largo : 0;
   if (L.largo !== undefined && !largo) errores.push('`largo` tiene que ser un número mayor que 0.');
+  if (L.margen !== undefined && (!isNum(L.margen) || L.margen < 0 || (largo && 2 * L.margen >= largo))) errores.push('`margen` es un número de 0 para arriba, y los dos márgenes tienen que caber en el largo.');
   const fr = L.franja as { atras?: unknown; adelante?: unknown } | undefined;
   let D = 0;
   if (fr !== undefined) {

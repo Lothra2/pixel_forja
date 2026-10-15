@@ -233,7 +233,9 @@ export function renderEscena(L: ObliqueLayout, seed = 42, k = 0): Escena {
   const anclas: Anclas = nuevasAnclas();
 
   // cielo y ciudad lejana
-  const sky = cielo(pal, 640, 360, L.hora, seed, L.clima, L.paralaje.cerca);
+  // el cielo es de pantalla y se repite: una cancha con margen (lote E4) lo trae de su largo, para que en una pantalla
+  // más ancha que 640 (el iPhone muestra 780) no se vea el sol dos veces
+  const sky = cielo(pal, L.margen ? Math.max(640, L.largo) : 640, 360, L.hora, seed, L.clima, L.paralaje.cerca);
   const lejos = L.paralaje.lejos === 'valle_de_aburra' ? valleAburra(pal, TROZO, LEJOS_ALTO, seed + 39)
     : L.paralaje.lejos === 'avila_noche' ? avilaNoche(pal, TROZO, LEJOS_ALTO, seed + 39)
     : L.paralaje.lejos === 'rio_thu_bon_puente_japones' ? rioThuBon(pal, TROZO, LEJOS_ALTO, seed + 39)

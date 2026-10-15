@@ -83,20 +83,22 @@ describe('los escenarios de las pruebas nuevas (lote E4a)', () => {
     for (const [layout, E] of [[TAODAN, ET], [CAND, EC]] as const) {
       // pida lo que pida la opción, de lado va en 0
       expect(E.inclinacion).toBe(0);
-      expect(E.ancho).toBe(640);
+      // 800: la cancha en los 640 del medio y 80 de escenario a cada lado (lote E4)
+      expect(E.ancho).toBe(800);
       const r = generarEscenario(layout, { inclinacion: 0.35 });
       const ej = json(r, 'escenario.json'), FT = layout.franja.atras;
-      expect(ej).toMatchObject({ inclinacion: 0, ancho: 640, vista: 'lado', franja: layout.franja });
+      expect(ej).toMatchObject({ inclinacion: 0, ancho: 800, margen: 80, vista: 'lado', franja: layout.franja });
+      expect(ej.nota_margen).toMatch(/la cancha va de x 80 a 720/);
       expect(ej.nota_vista).toMatch(/de lado: el dibujo va derecho/);
       // las mismas capas de siempre: el fondo es la capa cerca, de la fila 0 a franja.atras, y el piso llega al borde de abajo
       expect(Object.keys(ej.capas)).toEqual(['cielo', 'lejos', 'tras_cerca', 'cerca', 'piso', 'objetos', 'frente']);
       expect(ej.capas.cerca).toMatchObject({ y: 0, archivos: ['cerca_0.png'] });
       expect(ej.capas.piso).toMatchObject({ y: FT, archivos: ['piso_0.png'] });
       const piso = decodePng(archivo(r, 'piso_0.png')), cerca = decodePng(archivo(r, 'cerca_0.png'));
-      expect([piso.w, piso.h]).toEqual([640, 360 - FT]);
-      expect([cerca.w, cerca.h]).toEqual([640, FT]);
-      // todo el piso pintado hasta abajo, y el frente libre
-      for (let y = 0; y < piso.h; y++) for (let x = 0; x < 640; x += 7) expect(piso.data[(y * 640 + x) * 4 + 3], `${x},${y}`).toBe(255);
+      expect([piso.w, piso.h]).toEqual([800, 360 - FT]);
+      expect([cerca.w, cerca.h]).toEqual([800, FT]);
+      // todo el piso pintado hasta abajo, también en los márgenes, y el frente libre
+      for (let y = 0; y < piso.h; y++) for (let x = 0; x < 800; x += 7) expect(piso.data[(y * 800 + x) * 4 + 3], `${x},${y}`).toBe(255);
       expect(E.frente.r.data.some((v, i) => i % 4 === 3 && v > 0)).toBe(false);
     }
     // la vista oblicua no trae el campo: los escenarios de antes salen igual
@@ -109,15 +111,18 @@ describe('los escenarios de las pruebas nuevas (lote E4a)', () => {
     const FT = TAODAN.franja.atras;
     // el piso de DaCau.ts es la fila 310: las filas de atletas 304 y 316 son los carriles
     expect(TAODAN.carriles.map((c: { y: number }) => FT + c.y)).toEqual([304, 316]);
-    // las rayas de atrás (fila 298) y de adelante (fila 322), de x 34 a 606 y de 28 a 612, donde las pone el juego
+    // las rayas de atrás (fila 298) y de adelante (fila 322), de x 114 a 686 y de 108 a 692 (las de DaCau.ts más el
+    // margen de 80), y nada en los márgenes
     const raya = (y: number, x0: number, x1: number) => { let n = 0; for (let x = x0; x <= x1; x++) if (es(VIETNAM_TAODAN_AMANECER, ET.piso.r, x, y, 'crema')) n++; return n / (x1 - x0 + 1); };
     expect(FT + CANCHA.atras).toBe(298);
     expect(FT + CANCHA.adelante).toBe(322);
-    expect(raya(CANCHA.atras, 34, 606)).toBeGreaterThan(0.7);
-    expect(raya(CANCHA.adelante, 28, 612)).toBeGreaterThan(0.7);
-    expect(raya(CANCHA.atras, 0, 30)).toBe(0);
+    expect([CANCHA.x0, CANCHA.x1, CANCHA.red]).toEqual([114, 686, 400]);
+    expect(raya(CANCHA.atras, 114, 686)).toBeGreaterThan(0.7);
+    expect(raya(CANCHA.adelante, 108, 692)).toBeGreaterThan(0.7);
+    expect(raya(CANCHA.atras, 0, 100)).toBe(0);
+    expect(raya(CANCHA.atras, 700, 799)).toBe(0);
     // la red la pone el juego: el arte no pinta nada oscuro en la columna de la red, arriba de la cancha
-    for (let y = 264; y < FT; y++) expect(['#1e1824', '#3a3040'], `fila ${y}`).not.toContain(hex(ET.cerca.r, 320, y));
+    for (let y = 264; y < FT; y++) expect(['#1e1824', '#3a3040'], `fila ${y}`).not.toContain(hex(ET.cerca.r, 400, y));
     // el tai chi va en la vida: la capa cerca va sin la gente que se mueve
     const tai = ET.vida.find((v) => v.id === 'tai_chi')!;
     expect(tai.cuadros).toHaveLength(4);
@@ -135,23 +140,26 @@ describe('los escenarios de las pruebas nuevas (lote E4a)', () => {
   it('la cancha de tejo calza con Tejo.ts: la caja de greda, el bocín, la raya y el letrero donde el juego escribe', () => {
     const FT = CAND.franja.atras;
     expect(CAND.carriles.map((c: { y: number }) => FT + c.y)).toEqual([296, 300]);
-    // la caja: de x 534 a 584, con el pie en la fila 300 (PISO), el palo de atrás hasta la 248 y la cara hasta la 250
+    // la caja: de x 614 a 664 (534 a 584 en las x de Tejo.ts), con el pie en la fila 300 (PISO), el palo de atrás hasta
+    // la 248 y la cara hasta la 250
     const caja = EC.objetos.find((o) => o.tipo === 'caja_greda')!;
-    expect(caja).toMatchObject({ x: 534, origen: 'solidos' });
+    expect(caja).toMatchObject({ x: 614, origen: 'solidos' });
     expect(caja.img.w).toBe(50);
     expect(caja.y + caja.img.h).toBe(CAJA.piso);
     const enCaja = (sx: number, sy: number) => hex(caja.img.r, sx - caja.x, sy - caja.y);
-    expect(enCaja(580, 248)).not.toBeNull();
-    expect(enCaja(580, 246)).toBeNull();
-    expect(enCaja(540, 298)).not.toBeNull();
-    expect(enCaja(540, 260)).toBeNull();
-    // el bocín: el aro de metal brillante en (548, 280)
+    expect(enCaja(660, 248)).not.toBeNull();
+    expect(enCaja(660, 246)).toBeNull();
+    expect(enCaja(620, 298)).not.toBeNull();
+    expect(enCaja(620, 260)).toBeNull();
+    // el bocín: el aro de metal brillante en (628, 280)
+    expect(CAJA.bocin).toEqual([628, 280]);
     expect([enCaja(CAJA.bocin[0] - 5, CAJA.bocin[1]), enCaja(CAJA.bocin[0] + 5, CAJA.bocin[1])]).toEqual([COLOMBIA_CANDELARIA_TARDE.cemento_claro, COLOMBIA_CANDELARIA_TARDE.cemento_claro]);
-    // la raya de lanzamiento en x 104
+    // la raya de lanzamiento en x 184
+    expect(RAYA).toBe(184);
     for (let y = 1; y < 23; y++) expect(hex(EC.piso.r, RAYA, y)).toBe(COLOMBIA_CANDELARIA_TARDE.ocre);
-    // el letrero claro donde el juego escribe CANCHA DE TEJO en (440, 205) con #3a2418: se lee
-    for (const [x, y] of [[440, 205], [410, 205], [470, 205]]) expect(contraste('#3a2418', hex(EC.cerca.r, x, y)!), `${x},${y}`).toBeGreaterThan(7);
-    expect(LETRERO).toMatchObject({ x: 380, y: 196, w: 120 });
+    // el letrero claro donde el juego escribe CANCHA DE TEJO en (520, 205) con #3a2418 (440 en las x de Tejo.ts): se lee
+    for (const [x, y] of [[520, 205], [490, 205], [550, 205]]) expect(contraste('#3a2418', hex(EC.cerca.r, x, y)!), `${x},${y}`).toBeGreaterThan(7);
+    expect(LETRERO).toMatchObject({ x: 460, y: 196, w: 120 });
     // la llovizna es de afuera: bajo techo el piso no se moja
     expect(EC.pisoMojado).toBeNull();
     expect(EC.particulas.find((p) => p.tipo === 'humo')).toMatchObject({ x0: CAJA.x - 14 });
@@ -179,10 +187,13 @@ describe('los escenarios de las pruebas nuevas (lote E4a)', () => {
     const v = VENTANALES[2];
     expect(EJ.cerca.has(v.x0 + 10, 150)).toBe(false);
     for (const cam of [0, 107, 247]) expect(VENTANALES.some((w) => TORRE.x - Math.floor(cam * 0.25) > w.x0 && TORRE.x - Math.floor(cam * 0.25) < w.x1), `cámara ${cam}`).toBe(true);
-    // Monserrate con su iglesia por la ventana grande de la cancha de tejo (la cámara del tejo no se mueve)
+    // Monserrate con su iglesia por la ventana grande de la cancha de tejo, con la cámara centrada: en x 10 (el iPhone
+    // muestra 780 de los 800) y en x 80 (la cancha en 640). La capa lejos corre a un cuarto de la cámara
     const yLejos = CAND.franja.atras - 30 - EC.lejos.h;
-    expect(MONSERRATE.x).toBeGreaterThan(VENTANAS[0].x0);
-    expect(MONSERRATE.x).toBeLessThan(VENTANAS[0].x1);
+    for (const cam of [10, 80]) {
+      expect(MONSERRATE.x - cam / 4, `cámara ${cam}`).toBeGreaterThan(VENTANAS[0].x0 - cam);
+      expect(MONSERRATE.x - cam / 4, `cámara ${cam}`).toBeLessThan(VENTANAS[0].x1 - cam);
+    }
     expect(yLejos + MONSERRATE.y - 12).toBeGreaterThan(VENTANAS[0].y0);
     expect(es(COLOMBIA_CANDELARIA_TARDE, EC.lejos.r, MONSERRATE.x - 7, MONSERRATE.y - 3, 'luz')).toBe(true);
   });
