@@ -132,6 +132,31 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
     for (const g of celdas(f.foot, px, py)) pieDe.set(g, id);
   };
   for (const d of m.decos) { const o = byName.get(d.sprite); if (o && !o.layer && d.sprite !== 'telarana') registrar(d.sprite, d.x, d.y); }
+  /** ¿la base parte en más pedazos el piso caminable de la ventana alrededor? */
+  const partePasillo = (base: number[], x0: number, y0: number, x1: number, y1: number) => {
+    const enBase = new Set(base);
+    const comps = (bloquea: boolean) => {
+      const seen = new Set<number>();
+      let n = 0;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const k = at(x, y);
+        if (k < 0 || m.solid[k] || enBase.has(k) || seen.has(k)) continue;
+        n++;
+        const q = [k]; seen.add(k);
+        while (q.length) {
+          const c = q.pop()!, cx = c % W, cy = Math.floor(c / W);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const X = cx + dx, Y = cy + dy, j = at(X, Y);
+            if (X < x0 || X > x1 || Y < y0 || Y > y1 || j < 0 || m.solid[j] || seen.has(j) || (bloquea && enBase.has(j))) continue;
+            if (!bloquea && enBase.has(j)) { seen.add(j); q.push(j); continue; }
+            seen.add(j); q.push(j);
+          }
+        }
+      }
+      return n;
+    };
+    return comps(true) > comps(false);
+  };
   const pocoAlcance = reach0.reduce((s, v) => s + v, 0);
   let alcanceActual = pocoAlcance;
   const informeMon: InformeAbyss['monumentos'] = [], sinLugar: string[] = [];
@@ -170,6 +195,8 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
           if (base) { if (!reach0[k] || camino[k] || m.terrain.tileKind[k] === 3 || m.terrain.tileKind[k] === 6) { bien = false; break; } tiles.push(k); }
         }
         if (!bien) continue;
+        // no parte el piso de alrededor: lo caminable cerca de la base sigue unido sin dar la vuelta (no tapa pasillos)
+        if (tiles.length && partePasillo(tiles, bx0 - 2, by0 - 2, bx1 + 2, by1 + 2)) continue;
         // no tapa entidades ni cristales con la imagen
         if (puntos.some(([ex, ey]) => ex >= ix0 - 8 && ex <= ix1 + 8 && ey >= iy0 - 8 && ey <= iy1 + 8)) continue;
         // huella: no pisa pies, no le pisan el pie, poco solape de cuerpos (y en los mundos estrictos, no tapa acantilados)

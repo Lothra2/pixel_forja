@@ -443,7 +443,10 @@ const ZONAS: { nombre: string; rect: Rect; props: Record<string, Prop>; frente: 
 /** Los barrios con farol de plaza (cada uno con su punto de guardado, sus chispas y su Ladrona). */
 const BARRIOS = ['La Puerta de la Ciudad', 'La Plaza de la Fuente', 'El Barrio de los Músicos', 'El Puente de los Faroles', 'El Palacio Dormido'];
 
-export function ciudadMap(seed = 555): BigMap & { premium: CiudadReport } {
+import { vidaAbyss, type InformeAbyss } from './abyss/index';
+import { RECETA_CIUDAD } from './abyss/recetas';
+
+export function ciudadMap(seed = 555, opts: { abyss?: boolean } = {}): BigMap & { premium: CiudadReport; abyss?: InformeAbyss } {
   const W = CIUDAD_W, H = CIUDAD_H;
   const d = makeDesign(seed);
   const terrain = paintCiudad(d, seed);
@@ -801,7 +804,8 @@ export function ciudadMap(seed = 555): BigMap & { premium: CiudadReport } {
     for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = Math.floor(k / W); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const j = at(x + dx, y + dy); if (j < 0 || reach[j] || solid[j]) continue; reach[j] = 1; q.push(j); } }
     for (let k = 0; k < W * H; k++) if (!reach[k]) solid[k] = 1;
   }
-  return map;
+  // abyss premium: piso con vida, un monumento por zona, criaturas nuevas y la luz de cada zona
+  return opts.abyss === false ? map : vidaAbyss(map, RECETA_CIUDAD);
 }
 
 /** Calcomanías por tipo de piso */

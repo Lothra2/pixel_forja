@@ -3,6 +3,7 @@ import { bosqueMonumentos } from './bosque';
 import { catedralMonumentos } from './catedral';
 import { galeriasMonumentos } from './galerias';
 import { puertoMonumentos } from './puerto';
+import { ciudadMonumentos } from './ciudad';
 
 /**
  * Las recetas de los siete mundos: cómo se repinta el piso, qué monumento va en cada zona y la luz de cada zona.
@@ -176,4 +177,45 @@ export const RECETA_PUERTO: RecetaMundo = {
   },
 };
 
-export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL, mundo3: GALERIAS, mundo4: RECETA_PUERTO };
+export const RECETA_CIUDAD: RecetaMundo = {
+  mundo: 'mundo5',
+  caminos: [],
+  niebla: '#b8a8d0',
+  piso: {
+    semilla: 505,
+    macro: { claro: '#c8a060', oscuro: '#1a1030', fuerza: 0.12 },
+    manchas: [
+      { color: '#4a3a70', kinds: [1, 2], cantidad: 0.12, escala: 50, fuerza: 0.3 },
+      { color: '#8a7040', kinds: [1, 2], cantidad: 0.1, escala: 36, fuerza: 0.25 },
+      { color: '#2a3a2a', kinds: [2], cantidad: 0.1, escala: 30, fuerza: 0.3 },
+      { color: '#0e0a18', kinds: [1, 2, 5], cantidad: 0.2, escala: 60, fuerza: 0.3 },
+    ],
+    grietas: { kinds: [1, 2, 5], densidad: 3, oscuro: '#08060e', canto: '#9a94aa' },
+    charcos: { kinds: [2], densidad: 0.4, fondo: '#1a1430', brillo: '#c8b0ff' },
+    sueltos: [
+      { kinds: [1, 2], densidad: 3, dibujo: 'petalo', colores: ['#a090d0', '#c8b0ff', '#8070b0'] },
+      { kinds: [1, 2], densidad: 1.2, dibujo: 'papel', colores: ['#d8ccb0', '#b8ac90'] },
+      { kinds: [1, 2], densidad: 2, dibujo: 'piedrita', colores: ['#4a4658', '#625e72', '#34313e'] },
+      { kinds: [1, 2], densidad: 2, dibujo: 'hoja', colores: ['#6a5a3a', '#8a6a40', '#5a4a6a'] },
+    ],
+    bordes: [1, 2, 5],
+  },
+  monumentos: ciudadMonumentos,
+  luz: {
+    mundo: { rayos: '-25,#f0c890,0.4', grado: '#1a1028,#ffd890,1.1,0.9' },
+    zonas: {
+      'La Puerta de la Ciudad': { rayos: '-25,#f0c890,0.45', grado: '#1a1028,#ffd890,1.08,0.9', particulas: 'polvo_sueno,polvo' },
+      'La Calle de los Panaderos': { rayos: '-30,#ffc880,0.5', grado: '#20140e,#ffd090,1.1,0.95', particulas: 'polvo_sueno,humo' },
+      'La Plaza de la Fuente': { rayos: '-20,#ffd890,0.55', grado: '#1a1028,#ffe0a0,1.08,0.95', particulas: 'polvo_sueno,brillos' },
+      'El Barrio de los Músicos': { rayos: '-15,#c8a8ff,0.4', grado: '#140c28,#d8c0ff,1.1,1.0', particulas: 'polvo_sueno,brillos' },
+      'Los Jardines de Piedra': { rayos: '-22,#c8c0e0,0.35', grado: '#101418,#d8d0f0,1.08,0.88', particulas: 'polvo_sueno,mariposas' },
+      'La Torre del Reloj': { rayos: '-35,#e0c8a0,0.45', grado: '#16101e,#f0d8b0,1.14,0.88', particulas: 'polvo_sueno,polvo' },
+      'El Puente de los Faroles': { rayos: '-10,#b89aff,0.3', grado: '#0c0820,#c8b0ff,1.16,1.0', particulas: 'polvo_sueno,luciernagas' },
+      'El Palacio Dormido': { rayos: '0,#ffd890,0.35', grado: '#1a1020,#ffe0a0,1.18,0.95', particulas: 'polvo_sueno,brillos' },
+      'El Corazón del Jardín': { rayos: '-10,#d0b0ff,0.4', grado: '#120c20,#e0c8ff,1.1,1.05', particulas: 'polvo_sueno,mariposas' },
+      'El Desván del Organillero': { rayos: '-40,#ffc070,0.5', grado: '#1a1008,#ffd090,1.1,0.95', particulas: 'polvo_sueno,polvo' },
+    },
+  },
+};
+
+export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL, mundo3: GALERIAS, mundo4: RECETA_PUERTO, mundo5: RECETA_CIUDAD };

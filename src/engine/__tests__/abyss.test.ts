@@ -5,6 +5,7 @@ import { bosqueMap } from '../world/bosqueMap';
 import { catedralMap } from '../world/catedralMap';
 import { galeriasMap } from '../world/galeriasMap';
 import { puertoMap } from '../world/puertoMap';
+import { ciudadMap } from '../world/ciudadMap';
 import { fogTexture } from '../world/atmosphere';
 import { FAUNA } from '../world/abyss/fauna';
 import { repeticion } from '../world/abyss/piso';
@@ -83,4 +84,5 @@ describe('abyss premium', () => {
   it('Mundo 2, la Catedral de las Raíces', () => { verificarAbyss(catedralMap(), 'mundo2'); }, 120000);
   it('Mundo 3, las Galerías del Eco', () => { verificarAbyss(galeriasMap(), 'mundo3'); }, 120000);
   it('Mundo 4, el Puerto Ahogado', () => { verificarAbyss(puertoMap(), 'mundo4'); }, 120000);
+  it('Mundo 5, la Ciudad Dormida', () => { verificarAbyss(ciudadMap(), 'mundo5'); }, 120000);
 });
