@@ -1,6 +1,6 @@
 # Lote B7: las técnicas de equipo, la atrapada del Quemado, la arena y la moto
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/43
 Fecha: 2026-10-15
 
 ## Qué se hizo
