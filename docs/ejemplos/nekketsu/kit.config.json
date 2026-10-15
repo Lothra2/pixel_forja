@@ -358,7 +358,10 @@
       "texto": "NEKKETSU OLYMPIC GG"
     },
     "interfaz": true,
-    "vs_fondo": true
+    "vs_fondo": true,
+    "intro": {
+      "espaldas": "kenji"
+    }
   },
   "escenarios": "escenarios/",
   "publico": {

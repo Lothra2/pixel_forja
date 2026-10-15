@@ -1023,13 +1023,25 @@
                   "banderas",
                   "tarjetas",
                   "marco_vs",
-                  "pantallas"
+                  "pantallas",
+                  "intro"
                 ]
               },
               "uniqueItems": true
             }
           ],
-          "description": "Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marco VS de 4 y fondos de pausa, fin y continuar. true = todas."
+          "description": "Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marco VS de 4 y fondos de pausa, fin y continuar; y las escenas de la intro: la azotea de Tokio con el atleta de espaldas, Bogotá con lluvia, Maracaibo con calor y el desayuno en Saigón. true = todas."
+        },
+        "intro": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "espaldas": {
+              "type": "string",
+              "description": "Id del atleta que sale de espaldas, redibujado a 3 con el gakuran al hombro, en la azotea de la intro (ui/intro_espaldas.png)."
+            }
+          },
+          "description": "Las escenas de la intro, con la parte \"intro\" de la interfaz."
         },
         "vs_fondo": {
           "type": "boolean",

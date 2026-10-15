@@ -8,9 +8,10 @@ import {
   type Bandera, type EquipoTarjeta, type EscudoDef, type FiguraDe, type Glifos,
 } from '../ui/envoltorio';
 import { halve } from './portraits';
+import { piezasIntro } from '../ui/intro';
 
 /** Las partes del envoltorio (lote G2) que se piden en `ui.interfaz`. */
-export const PARTES_ENVOLTORIO = ['medallas', 'podio', 'iconos', 'banderas', 'tarjetas', 'marco_vs', 'pantallas'] as const;
+export const PARTES_ENVOLTORIO = ['medallas', 'podio', 'iconos', 'banderas', 'tarjetas', 'marco_vs', 'pantallas', 'intro'] as const;
 export type ParteEnvoltorio = (typeof PARTES_ENVOLTORIO)[number];
 
 /** Un equipo como lo trae el archivo de equipos (solo lo que usa el envoltorio). */
@@ -52,7 +53,7 @@ export function figuraDe(atletas: HumanFicha[]): FiguraDe {
 }
 
 /** Las piezas del envoltorio pedidas. */
-export function piezasEnvoltorio(partes: readonly string[], o: { bold: ArrayBuffer; atletas: HumanFicha[]; equipos?: Record<string, EquipoEnvoltorio> }): UiPiece[] {
+export function piezasEnvoltorio(partes: readonly string[], o: { bold: ArrayBuffer; atletas: HumanFicha[]; equipos?: Record<string, EquipoEnvoltorio>; espaldas?: HumanFicha }): UiPiece[] {
   const want = new Set(partes);
   const glifos = glifosDe(o.bold);
   const out: UiPiece[] = [];
@@ -68,6 +69,8 @@ export function piezasEnvoltorio(partes: readonly string[], o: { bold: ArrayBuff
     out.push(...tarjetas(lista, glifos));
   }
   if (want.has('marco_vs')) out.push(marcoVs4());
+  // las escenas de la intro (lote intro); el atleta de espaldas, si la configuración dice cuál
+  if (want.has('intro')) out.push(...piezasIntro(o.espaldas));
   if (want.has('pantallas')) out.push(pantallaRetro('pausa'), pantallaRetro('se_acabo'), pantallaRetro('otra_partidita'));
   return out;
 }
