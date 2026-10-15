@@ -1,6 +1,6 @@
 # Lote ajustes: lo que no calzó del mapa, la intro y el VS
 Estado: entregado, pendiente de Rick
-PR:
+PR: https://github.com/Lothra2/pixel_forja/pull/54
 Fecha: 2026-10-15
 
 ## Qué se hizo
