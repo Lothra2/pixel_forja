@@ -106,7 +106,10 @@ Los dos se validan con sugerencias, como todo el kit.
   - **El kit a medida:** las piezas salen en `manifest.ui.interfaz` con su archivo, y se pueden pedir sueltas.
 - **`frameData.test.ts`:** la prueba de los retratos ahora pide que el grande ya no sea de bloques de 3 x 3.
 - **El esquema** `docs/kit-a-medida.schema.json` está regenerado: la lista de piezas de `ui.interfaz`.
-- Los resultados de la suite, de `custom.test.ts`, del build y del e2e están en el PR.
+- **`ui_audio.test.ts`:** las dos pruebas de G1 que contaban 8 piezas ahora saben de las 15.
+- **`custom.test.ts`:** el conteo de PNG suma las 46 piezas del envoltorio. 15 de 15 en 218 s, por debajo del límite de 300.
+- **La suite sin `custom.test.ts`:** 51 archivos, 523 de 523.
+- **`tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
