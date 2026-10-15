@@ -1,6 +1,6 @@
 # Lote G2: el envoltorio
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/49
 Fecha: 2026-10-15
 
 ## Qué se hizo
