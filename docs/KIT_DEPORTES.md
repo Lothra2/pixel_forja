@@ -449,6 +449,39 @@ Trece animaciones en `src/engine/anim/especiales.ts`. Los súper golpes son el g
 
 **Las de lado:** `spike_fuego`, las dos chilenas del đá cầu, `tackle_nekketsu`, `javelin_rayo` y la tijera son de lado. En las filas de frente y de espalda salen en la diagonal, y `rumbo` lo dice.
 
+## Las técnicas de equipo, la atrapada del Quemado, la arena y la moto (lote B7)
+
+Diez animaciones en `src/engine/anim/tecnicas.ts`. Seis son las técnicas de equipo de la pelea, una por equipo, con la barra llena. Cada una trae un `impacto` o una `suelta` en el cuadro donde sale el golpe, con su `punto` en las 5 filas.
+
+| Animación | Cuadros, fps | Qué hace | Eventos y datos |
+|---|---|---|---|
+| `play_drum` | 10, 12 | El Furrazo: toca el furro meneándose, lo levanta por encima de la cabeza y lo descarga adelante | `impacto` 7. `arma` (`furro`) en cada cuadro |
+| `bike_charge` | 10, 14 | La Ciclovía Infernal: pedalea cada vez más agachada, embiste con la bici y frena derrapando | `impacto` 5. `desplazamiento`. La bici va en el sprite |
+| `bike_charged` | 10, 14 | El que se come la bici, cuadro a cuadro con `bike_charge`: ve venir la bici, el golpe lo levanta y cae de espalda | `aterriza` 7. `elevacion` |
+| `cap_bat_power` | 12, 14 | Batazo de jonrón: anuncia el jonrón apuntando al cielo, pierna arriba, le pega con todo y se queda mirando cómo se va | `impacto` 6. `arma` (`broomstick`) en cada cuadro |
+| `chair_spin_throw` | 12, 14 | La silla plástica voladora: la levanta, da dos vueltas con los brazos estirados, la suelta y queda mareada | `suelta` 7. `girado` en 3 y 5. `arma` (`silla_plastica`) hasta la suelta |
+| `slipper_storm` | 12, 14 | El chancletazo supremo: tres chancletas seguidas, la última dando el paso, y termina con la mano en la cintura | `suelta` 3, 6 y 9. `arma` (`chancleta`) antes de cada una |
+| `comb_hair` | 12, 12 | El Copetazo: se peina el copete dos veces, baja la cabeza y embiste de cabeza | `impacto` 8 (la cabeza). `desplazamiento`. El peine va en el sprite |
+| `dodge_catch` | 6, 12 | Atrapar el balonazo del Quemado: agachado con los brazos adelante, lo abraza contra el pecho y se endereza | `impacto` y `atrapa` 2. El balón en `objetos` |
+| `beach_run` | 8, 12, en bucle | Correr en la arena del vóley: más pesado que `run`, rodillas altas, brazos anchos y paso corto | `paso` 0 y 4: ahí el juego levanta arena |
+| `traffic_dodge` | 6, 14 | Esquivar la moto del Cross: se asusta, salta de lado recogiendo las piernas, cae agachado y le reclama a la moto | `despegue` 1, `aterriza` 4. `elevacion` |
+
+**Una técnica por equipo, sin dibujarlas todas para todos.** En el ejemplo de Nekketsu van en el pack de pelea con un alias `tecnica_<equipo>`, igual que las burlas de equipo (`burla_<equipo>`): cada atleta trae solo la de su equipo, y el juego la busca como `tecnica_` más el equipo. `bike_charged` va sin alias, para todos, porque cualquiera puede recibirla. Si un juego prefiere los nombres del motor (`play_drum` y las otras), las pone en el pack sin alias y cada atleta trae las seis.
+
+**Lo que se agarra es un arma del piso** y va en `arma`: el juego la dibuja, como en la pelea callejera. Lo que sale volando (la silla, las chancletas) sale en la `suelta`, desde su `punto`, igual que `weapon_throw`. La chancleta, al armar el brazo, va detrás de la cabeza (`detras`). `HELD_ANIMS` dice el arma de cada una: el furro, el palo de escoba (o cualquiera de batear), la silla plástica y la chancleta.
+
+**La silla da dos vueltas:** en los cuadros 3 y 5, `girado` dice que está de espaldas. El juego espeja el sprite y sus datos, como en el batazo Nekketsu.
+
+**La ciclovía tiene su rival:**
+- El juego pone a `bike_charged` de pie delante y los arranca juntos.
+- En el `impacto` de la bici (cuadro 5) el rival recibe el golpe, en el 6 vuela de espaldas y en el 7 cae (`aterriza`).
+- El empujón hacia atrás lo pone el juego: el `desplazamiento` del motor solo va hacia adelante.
+- Las otras técnicas pegan con un golpe o con algo que vuela. El rival responde con lo de siempre (`fight_hit`, `ko_bounce`, `thrown_spin`) cuando le llega.
+
+**El balón del Quemado** sale como `voley` en `objetos`, igual que en `dodge_throw`: llega al pecho en el 2 y se queda en las manos hasta el final. Con esta animación el Quemado deja de usar `catch`, que es la atrapada del béisbol.
+
+**Las de lado:** `comb_hair` y `bike_charged` son de lado. En las filas de frente y de espalda salen en la diagonal, y `rumbo` lo dice.
+
 ## La arena: el kit jugando de verdad
 
 `arena.html` (en el sitio, el botón **Arena deportiva** del estudio) es un juego mínimo que usa el kit como lo haría el tuyo. Solo lee `manifest.json` y las hojas PNG: no importa nada del motor de PixelForja, y una prueba lo vigila. Si algo falla ahí, le falta al kit.

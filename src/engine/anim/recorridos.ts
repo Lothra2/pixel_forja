@@ -207,7 +207,7 @@ function bici(c: Ctx) {
 const bike = (c: Ctx, angle: number, extra: Partial<PropState> = {}): PropState => ({ kind: 'bike', at: 'ground', x: 3 * bikeU(c.u), angle, behind: false, ...extra });
 
 /** Pedalear el cuadro i de 8 con el torso t y la cadera a h sobre el asiento (parado en los pedales). */
-function pedalea(c: Ctx, i: number, torso: number, h0: number, face?: Pose['face']): Pose {
+export function pedalea(c: Ctx, i: number, torso: number, h0: number, face?: Pose['face']): Pose {
   const g = bici(c);
   // a 32 px un pixel más abajo y, con un cuerpo alto, lo que haga falta para que la cabeza quepa
   const h = h0 + Math.min(c.u < 0.8 ? -1 : 0, bikeDrop(c.d, g.seatH + h0));

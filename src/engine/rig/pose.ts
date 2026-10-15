@@ -33,6 +33,8 @@ export type PropKind =
   | 'held'
   /** lo que llevan en la mano los NPC de la calle (lote C6a) */
   | 'spray' | 'campana' | 'microfono' | 'paleta' | 'tambor'
+  /** el peine de bolsillo del copete (lote B7) */
+  | 'peine'
   | WeaponKind | OffhandKind | 'arrow';
 
 /** Armas de mano (RPG). */
