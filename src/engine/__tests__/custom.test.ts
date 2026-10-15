@@ -260,7 +260,8 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     expect(Object.keys(m.ui.fuentes)).toEqual(['fuente_ui', 'fuente_titulo', 'fuente_titulo_plata', 'notas']);
     expect(m.creditos).toBe('CREDITOS.txt');
     // los 63 efectos (56 del lote F y 7 de la pelea) y los sonidos del motor; lo del lote H queda pendiente
-    expect(Object.keys(m.fx)).toHaveLength(63);
+    // 63 y el rayo del cielo (lote rayo_cielo)
+    expect(Object.keys(m.fx)).toHaveLength(64);
     expect(m.fx.ko_grande).toMatchObject({ w: 640, h: 360, cuadros: 12 });
     expect(m.fx.chispa_golpe_pesado).toMatchObject({ archivo: 'fx/chispa_golpe_pesado.png', celda: 32, se_pega_a: 'mano' });
     expect(m.fx.pantalla_rota).toMatchObject({ w: 640, h: 360 });
@@ -328,7 +329,7 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
     // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b)
     // + Margarita, Đà Lạt, Barranquilla y Maracaibo, 8 cada uno, y la Marimonda (lote E5)
     // + Cocora, Hạ Long y Apure, 11 cada uno (pasan de 1280 de ancho: la capa cerca, el piso y el frente van en dos trozos), el barrio, el liceo y Cartagena, 8 cada uno, y la palenquera (lote E6)
-    expect(pngs.length).toBe(24 * 18 + 63 + 36 + 2 + 1 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 8 + 8 + 8 + 5 + 10 + 9 + 2 + 8 * 4 + 1 + 11 * 3 + 8 * 3 + 1);
+    expect(pngs.length).toBe(24 * 18 + 64 + 36 + 2 + 1 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 8 + 8 + 8 + 5 + 10 + 9 + 2 + 8 * 4 + 1 + 11 * 3 + 8 * 3 + 1);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

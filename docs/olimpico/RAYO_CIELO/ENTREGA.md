@@ -46,7 +46,10 @@ Ya no tienes que girar `rayo_catatumbo` 90°. Ese sigue igual, para cuando el ra
   - El golpe del 2 es el más gordo, y el 3, el 4 y el 5 no son iguales entre sí.
 - **`effects.test.ts`:** la imagen dorada `golden/efectos.png` cambió porque hay un efecto más. Comprobé que sin `rayo_cielo` sale igual, pixel a pixel, a la de antes.
 - **El esquema** `docs/kit-a-medida.schema.json` está regenerado (la lista de efectos).
-- **La suite completa** y lo demás, en el PR.
+- **`custom.test.ts` y el e2e de efectos:** subí los conteos de 63 a 64 efectos y un PNG más en el kit.
+- **La suite sin `custom.test.ts`:** 48 archivos, 496 de 496.
+- **`custom.test.ts`: 15 de 15,** en 195 s, por debajo del límite de 300.
+- **`tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
