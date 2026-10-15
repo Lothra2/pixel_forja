@@ -222,12 +222,24 @@ export function azotea(): UiPiece {
 
 // ---------------------------------------------------------------- Bogotá con lluvia
 
+/**
+ * La presentación de un equipo en Bogotá y en Maracaibo: cuatro huecos de 96 para los retratos, sobre la capa
+ * `intro_presentacion` (una franja con un marco por hueco y el fondo claro, para que la silueta se lea y el retrato
+ * no quede flotando sobre la buseta o la baranda). `nombres` es la fila del nombre bajo cada hueco.
+ */
+export const PRESENTA = {
+  huecos: [[188, 132, 96, 96], [296, 132, 96, 96], [404, 132, 96, 96], [512, 132, 96, 96]] as [number, number, number, number][],
+  marco: 6,
+  franja: [164, 116, 472, 152] as [number, number, number, number],
+  nombres: 252,
+};
+
 /** Dónde va cada cosa en Bogotá (coordenadas de la imagen). */
 export const BOGOTA = {
   /** el andén donde se paran las personas (y de los pies) */
   anden: 300,
-  /** cuatro huecos para presentar a un equipo (retratos de 96, por ejemplo en silueta y después de color) */
-  huecos: [[188, 150, 96, 96], [296, 150, 96, 96], [404, 150, 96, 96], [512, 150, 96, 96]] as [number, number, number, number][],
+  /** los huecos de la presentación (los mismos de Maracaibo, sobre intro_presentacion) */
+  huecos: PRESENTA.huecos,
   texto: [180, 14, 440, 34] as [number, number, number, number],
 };
 
@@ -331,7 +343,7 @@ export function bogota(): UiPiece {
   void r;
   return {
     name: 'intro_bogota', frames: [p.r], w: W, h: H,
-    extra: { margen: INTRO.margen, anden: BOGOTA.anden, huecos: BOGOTA.huecos, texto: BOGOTA.texto, nota: 'Bogotá con lluvia. La lluvia va aparte en intro_bogota_lluvia, encima de todo. `huecos` sirve para presentar a un equipo con sus retratos de 96 (en silueta y después de color).' },
+    extra: { margen: INTRO.margen, anden: BOGOTA.anden, huecos: BOGOTA.huecos, nombres: PRESENTA.nombres, texto: BOGOTA.texto, nota: 'Bogotá con lluvia. La lluvia va aparte en intro_bogota_lluvia, encima de todo. `huecos` sirve para presentar a un equipo con sus retratos de 96 (en silueta y después de color).' },
   };
 }
 
@@ -356,7 +368,7 @@ export function lluvia(cuadros = 4): UiPiece {
 
 // ---------------------------------------------------------------- Maracaibo con calor
 
-export const MARACAIBO = { malecon: 292, texto: [180, 14, 440, 34] as [number, number, number, number] };
+export const MARACAIBO = { malecon: 292, huecos: PRESENTA.huecos, texto: [180, 14, 440, 34] as [number, number, number, number] };
 
 /** La reverberación: las filas de y0 a y1 se corren un poco, distinto en cada cuadro. */
 function temblor(p: Pix, y0: number, y1: number, amp: number, fase: number) {
@@ -457,7 +469,7 @@ export function maracaibo(cuadros = 4): UiPiece {
   }
   return {
     name: 'intro_maracaibo', frames, w: W, h: H, fps: 6, loop: true,
-    extra: { margen: INTRO.margen, malecon: MARACAIBO.malecon, texto: MARACAIBO.texto, nota: 'Maracaibo con calor, 4 cuadros en bucle: el halo del sol late, los balancines cabecean y el horizonte y la calle reverberan. La gente va parada en el malecón (y `malecon`).' },
+    extra: { margen: INTRO.margen, malecon: MARACAIBO.malecon, huecos: MARACAIBO.huecos, nombres: PRESENTA.nombres, texto: MARACAIBO.texto, nota: 'Maracaibo con calor, 4 cuadros en bucle: el halo del sol late, los balancines cabecean y el horizonte y la calle reverberan. La gente va parada en el malecón (y `malecon`).' },
   };
 }
 
@@ -575,7 +587,51 @@ export function desayuno(): UiPiece {
   };
 }
 
+// ---------------------------------------------------------------- la presentación de un equipo
+
+/**
+ * La capa de la presentación, transparente salvo la franja: una franja oscura con borde de oro y rayas de velocidad
+ * y, en cada hueco, un marco dorado con el fondo claro y rayos de manga desde el centro. Así la silueta (el retrato
+ * teñido de oscuro) se lee, y el retrato de color queda enmarcado en vez de flotar sobre la escena. Debajo de cada
+ * hueco, una placa para el nombre. Sirve igual en Bogotá y en Maracaibo: los huecos son los mismos.
+ */
+export function presentacion(): UiPiece {
+  const p = new Pix(W, H);
+  const [fx, fy, fw, fh] = PRESENTA.franja, M = PRESENTA.marco;
+  const ORO = ['#fff6c2', '#ffd84a', '#e0a020', '#9a6410'];
+  // la franja
+  for (let y = fy; y < fy + fh; y++) for (let x = fx; x < fx + fw; x++) {
+    const d = Math.min(x - fx, y - fy, fx + fw - 1 - x, fy + fh - 1 - y);
+    const raya = (x - y * 2 + 2000) % 22 < 3;
+    p.px(x, y, d === 0 ? INK : d === 1 ? ORO[1] : d === 2 ? ORO[3] : raya ? '#232050' : '#181638');
+  }
+  for (const [hx, hy, hw, hh] of PRESENTA.huecos) {
+    const cx = hx + hw / 2, cy = hy + hh / 2;
+    // el marco
+    for (let y = hy - M; y < hy + hh + M; y++) for (let x = hx - M; x < hx + hw + M; x++) {
+      const d = Math.min(x - (hx - M), y - (hy - M), hx + hw + M - 1 - x, hy + hh + M - 1 - y);
+      if (d >= M) continue;
+      p.px(x, y, d === 0 ? INK : d === M - 1 ? INK : ORO[Math.min(3, d - 1 + (x + y > hx + hy + hw ? 1 : 0))]);
+    }
+    // el fondo claro con rayos desde el centro, para que la silueta oscura se lea
+    for (let y = hy; y < hy + hh; y++) for (let x = hx; x < hx + hw; x++) {
+      const a = Math.atan2(y - cy, x - cx), r = Math.hypot(x - cx, y - cy);
+      const rayo = Math.sin(a * 12) > 0.35;
+      p.px(x, y, r < 18 ? '#fffbe8' : rayo ? (bayer(x, y) < 0.5 ? '#ffe9a8' : '#fff2c8') : '#ffd98a');
+    }
+    // la placa del nombre
+    for (let y = PRESENTA.nombres - 9; y < PRESENTA.nombres + 9; y++) for (let x = hx - 4; x < hx + hw + 4; x++) {
+      const d = Math.min(x - (hx - 4), y - (PRESENTA.nombres - 9), hx + hw + 3 - x, PRESENTA.nombres + 8 - y);
+      p.px(x, y, d === 0 ? INK : d === 1 ? ORO[2] : '#0b0a1c');
+    }
+  }
+  return {
+    name: 'intro_presentacion', frames: [p.r], w: W, h: H,
+    extra: { huecos: PRESENTA.huecos, marco: PRESENTA.marco, franja: PRESENTA.franja, nombres: PRESENTA.nombres, nota: 'Va entre intro_bogota o intro_maracaibo y los retratos. Los retratos de 96 en `huecos` (en silueta con setTintFill y después de color), el nombre de cada uno centrado en y `nombres`.' },
+  };
+}
+
 /** Todas las piezas de la intro. El atleta de espaldas sale si se pasa su ficha. */
 export function piezasIntro(espaldasDe?: HumanFicha): UiPiece[] {
-  return [azotea(), ...(espaldasDe ? [espaldas(espaldasDe)] : []), bogota(), lluvia(), maracaibo(), desayuno(), desayunoMesa()];
+  return [azotea(), ...(espaldasDe ? [espaldas(espaldasDe)] : []), bogota(), lluvia(), maracaibo(), presentacion(), desayuno(), desayunoMesa()];
 }

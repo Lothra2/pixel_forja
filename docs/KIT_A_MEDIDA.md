@@ -362,7 +362,7 @@ kit/
                                       y el envoltorio: medallas_<tam>, bandera_<id>_<tam>[_ondea], podio, iconos_prueba[_16],
                                       tarjeta_<equipo>, escudo_<equipo>, marco_vs_4, marco_vs_2, pantalla_<id>, cinta_16, cinta_32,
                                       y el mapa: mapa_gira, mapa_gira_ruta, mapa_vietnam, mapa_colombia_venezuela, sellos_pasaporte,
-                                      y la intro: intro_azotea, intro_espaldas, intro_bogota[_lluvia], intro_maracaibo, intro_desayuno[_mesa]
+                                      y la intro: intro_azotea, intro_espaldas, intro_bogota[_lluvia], intro_maracaibo, intro_presentacion, intro_desayuno[_mesa]
   fx/<id>.png                         efectos
   audio/sfx/<n>.wav  audio/musica/<n>.wav  audio/ambiente/<n>.wav  audio/voz/<id>_<k>.wav
   audio/escuchar.html                 para oír todo el audio con un clic

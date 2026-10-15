@@ -41,6 +41,11 @@ describe('el mapa de la gira', () => {
     // sin países, sin oro
     expect(cuenta(mapaMundo([]).frames[0], ORO)).toBe(0);
     expect(m.extra).toMatchObject({ margen: 80, proyeccion: MAPA_MUNDO.proyeccion });
+    // la rosa de los vientos queda arriba de la barra del pasaporte del juego (y 311) y lejos de la ruta
+    const [rx, ry, rr] = m.extra!.rosa as [number, number, number];
+    expect(ry + rr).toBeLessThanOrEqual(270);
+    expect(rx - rr >= 80 && rx + rr <= 720).toBe(true);
+    for (const t of rutaMundo(PARADAS).extra!.tramos as [number, number][][]) for (const [x, y] of t) expect(Math.hypot(x - rx, y - ry)).toBeGreaterThan(rr + 20);
     for (let q = 3; q < r.data.length; q += 4) expect(r.data[q]).toBe(255);
   });
 

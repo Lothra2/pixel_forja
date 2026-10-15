@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { migrateFicha, type HumanFicha } from '../index';
 import type { Raster } from '../core/raster';
-import { azotea, espaldas, bogota, lluvia, maracaibo, desayuno, desayunoMesa, DESAYUNO, AZOTEA } from '../ui/intro';
+import { azotea, espaldas, bogota, lluvia, maracaibo, desayuno, desayunoMesa, presentacion, DESAYUNO, AZOTEA, PRESENTA } from '../ui/intro';
 import { buildCustomKit, type KitConfig } from '../kit/custom';
 import { ROOT } from './helpers';
 
@@ -79,6 +79,27 @@ describe('las escenas de la intro', () => {
     for (const f of me.frames) expect(alpha(f, 400, DESAYUNO.mesa + 30)).toBe(255);
   });
 
+  it('la presentación de un equipo: los mismos huecos en Bogotá y en Maracaibo, con marco y fondo claro, y nada afuera de la franja', () => {
+    const p = presentacion(), r = p.frames[0];
+    expect([p.name, r.w, r.h]).toEqual(['intro_presentacion', 800, 360]);
+    expect(bogota().extra!.huecos).toEqual(PRESENTA.huecos);
+    expect(maracaibo().extra!.huecos).toEqual(PRESENTA.huecos);
+    const lum = (x: number, y: number) => { const i = (y * 800 + x) * 4; return r.data[i] * 0.3 + r.data[i + 1] * 0.59 + r.data[i + 2] * 0.11; };
+    const [fx, fy, fw, fh] = PRESENTA.franja;
+    for (const [x, y, w, h] of PRESENTA.huecos) {
+      expect(x - PRESENTA.marco >= fx && x + w + PRESENTA.marco <= fx + fw && y - PRESENTA.marco >= fy && y + h + PRESENTA.marco <= fy + fh).toBe(true);
+      expect(x >= 80 && x + w <= 720).toBe(true);
+      // el fondo del hueco es claro (una silueta oscura se lee encima), el borde del marco es oscuro
+      for (const [dx, dy] of [[w / 2, h / 2], [10, 10], [w - 10, h - 10]]) expect(lum(x + dx, y + dy)).toBeGreaterThan(170);
+      expect(lum(x - PRESENTA.marco, y + h / 2)).toBeLessThan(40);
+      // la placa del nombre, oscura, bajo el hueco
+      expect(lum(x + w / 2, PRESENTA.nombres)).toBeLessThan(30);
+    }
+    for (let y = 0; y < 360; y++) for (let x = 0; x < 800; x++) if (x < fx || x >= fx + fw || y < fy || y >= fy + fh) expect(alpha(r, x, y)).toBe(0);
+    // la franja tapa lo de atrás: la buseta y la baranda no quedan entre los retratos
+    expect(alpha(r, 400, PRESENTA.huecos[0][1] + 96 + 2)).toBe(255);
+  });
+
   it('en el kit a medida: la parte "intro", con y sin el atleta de espaldas', () => {
     const D = join(ROOT, 'node_modules', '@fontsource', 'silkscreen', 'files');
     const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
@@ -86,7 +107,7 @@ describe('las escenas de la intro', () => {
     const base: KitConfig = { juego: 'Prueba', personajes_incluidos: ['familia'], packs: { base: ['idle'] }, ui: { interfaz: ['intro'], intro: { espaldas: 'rick' } } };
     const leer = (cfg: KitConfig) => { const { files } = buildCustomKit(cfg, { fuentes: SILK }, { quick: true, solo: ['interfaz'] }); return { files, m: JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes)) }; };
     const { files, m } = leer(base);
-    expect(Object.keys(m.ui.interfaz)).toEqual(['intro_azotea', 'intro_espaldas', 'intro_bogota', 'intro_bogota_lluvia', 'intro_maracaibo', 'intro_desayuno', 'intro_desayuno_mesa']);
+    expect(Object.keys(m.ui.interfaz)).toEqual(['intro_azotea', 'intro_espaldas', 'intro_bogota', 'intro_bogota_lluvia', 'intro_maracaibo', 'intro_presentacion', 'intro_desayuno', 'intro_desayuno_mesa']);
     expect(m.ui.interfaz.intro_espaldas).toMatchObject({ cuadros: 4, fps: 6, loop: true });
     expect(m.ui.interfaz.intro_desayuno).toMatchObject({ w: 800, h: 360, huecos: DESAYUNO.huecos, mesa: DESAYUNO.mesa });
     for (const e of Object.values<{ archivo: string }>(m.ui.interfaz)) expect(files.some((f) => f.name === e.archivo), e.archivo).toBe(true);
