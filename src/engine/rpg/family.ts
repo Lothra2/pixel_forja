@@ -32,7 +32,7 @@ interface Member {
 export const FAMILY_GG: Record<FamilyId, Member> = {
   rick: {
     name: 'Rick', skin: '#c98e70', hair: '#2e231f', eyes: '#3a2418', beard: '#7d736c', glasses: '#1e1e24',
-    lpc: { head: 'male_gaunt', hair: 'swept_back', brows: 'thick', nose: 'straight', beard: 'basic', glasses: 'nerd' },
+    lpc: { head: 'male_gaunt', hair: 'parted2', brows: 'thick', nose: 'straight', beard: 'basic', glasses: 'nerd' },
     outfit: { sleeves: 'short', bottom: 'pants', socks: 'low', shoes: 'tenis' },
     colors: { top: '#26272c', bottom: '#3a4256', shoes: '#e8e8ec', socks: '#f2f2f2' },
     mouth: 'smile', clase: 'paladin',

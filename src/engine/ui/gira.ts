@@ -266,17 +266,20 @@ export function mapaMundo(resaltados: readonly PaisGira[] = PAISES_GIRA): UiPiec
     rellenar(m, w, h, G.paises_mundo[id] ?? [], pr);
     resaltar(p, m);
   }
-  // la rosa de los vientos, en el Pacífico sur
-  const [rx, ry] = lugarEn(pr, 232, -12);
-  rosa(p, rx, ry, 20);
+  // la rosa de los vientos, en el Pacífico cerca del ecuador: arriba de la barra del pasaporte (y 311) y lejos de la ruta
+  const [rx, ry] = lugarEn(pr, ROSA.lon, ROSA.lat);
+  rosa(p, rx, ry, ROSA.r);
   return {
     name: 'mapa_gira', frames: [p.r], w, h,
     extra: {
-      margen: MAPA_MUNDO.margen, proyeccion: pr, resaltados,
+      margen: MAPA_MUNDO.margen, proyeccion: pr, resaltados, rosa: [rx, ry, ROSA.r + 3],
       nota: 'Imagen de 800 x 360; la parte de 640 va de x 80 a 720 y calza con el mapa del juego (longitud este de 90 a 300, latitud de 50 a -25). Para poner un lugar: x = (lon este - 90) * kx + 80, y = (50 - lat) * ky.',
     },
   };
 }
+
+/** Dónde va la rosa de los vientos (su centro en longitud este y latitud) y su radio: el borde de abajo queda en y 258. */
+export const ROSA = { lon: 232, lat: 1, r: 20 };
 
 /** Un tramo del vuelo: un arco que sube hacia el norte, más alto cuanto más largo, con un punto cada `paso` pixeles. */
 export function arco(a: [number, number], b: [number, number], paso = 5): [number, number][] {

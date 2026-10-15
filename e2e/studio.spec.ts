@@ -179,7 +179,7 @@ test('familia GG: avatares listos para abrir y modificar', async ({ page }, info
   await page.screenshot({ path: `${shots}/${tag}_25_familia.png`, fullPage: true });
   // Rick casual: abre en el creador con su peinado y lentes, y se puede cambiar
   await page.getByTestId('family-rick-casual').click();
-  await expect(page.getByTestId('av-lpcHair-swept_back')).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
+  await expect(page.getByTestId('av-lpcHair-parted2')).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
   await page.getByTestId('av-skin').locator('button').nth(2).click();
   await idle(page);
   await expect(page.getByTestId('preview-big')).toBeVisible({ timeout: 30000 });

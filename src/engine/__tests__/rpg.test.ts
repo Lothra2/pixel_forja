@@ -43,7 +43,7 @@ describe('RPG: clases, enemigos y exportación', () => {
         expect(qa.filter((r) => !r.ok).map((r) => `${id} ${r.clip}`)).toEqual([]);
       }
     }
-    expect(familyFicha('rick').avatar?.lpc).toMatchObject({ hair: 'swept_back', glasses: 'nerd', beard: 'basic' });
+    expect(familyFicha('rick').avatar?.lpc).toMatchObject({ hair: 'parted2', glasses: 'nerd', beard: 'basic' });
     expect(familyFicha('sophie', true).gear?.main).toBe('bow');
   }, 300000);
   it('la familia corre de frente y de espaldas sin saltitos, gira el torbellino y gatea en verde', () => {
@@ -65,7 +65,7 @@ describe('RPG: clases, enemigos y exportación', () => {
       const imgs = [1, 2, 3, 4, 5].map((t) => applyArmorTier(rick, line, t as 1));
       expect(new Set(imgs.map(px)).size, line).toBe(5);
       expect(imgs[4].outfit.armorGlow, line).toBeTruthy();
-      expect(imgs[4].avatar?.lpc?.hair).toBe('swept_back');
+      expect(imgs[4].avatar?.lpc?.hair).toBe('parted2');
       expect(validateFicha(imgs[4])).toEqual([]);
       const { qa } = renderPlan(imgs[4], { cell: 48, anims: ['idle', 'walk', 'attack'], views: EIGHT_VIEWS, props: true });
       expect(qa.filter((r) => !r.ok).map((r) => `${line} ${r.clip}`)).toEqual([]);
