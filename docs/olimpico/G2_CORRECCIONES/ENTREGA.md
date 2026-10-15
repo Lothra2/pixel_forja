@@ -1,6 +1,6 @@
 # Lote G2 correcciones: el nombre en la tarjeta y el VS de 1 contra 1
 Estado: entregado, pendiente de Rick
-PR:
+PR: https://github.com/Lothra2/pixel_forja/pull/50
 Fecha: 2026-10-15
 
 ## Qué se hizo
