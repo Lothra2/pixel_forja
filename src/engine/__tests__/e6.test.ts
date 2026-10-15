@@ -99,7 +99,8 @@ describe('los escenarios de las seis pruebas que faltaban (lote E6)', () => {
       for (let y = 0; y < E.piso.h; y++) for (let x = 0; x < E.piso.w; x += 11) expect(E.piso.r.data[(y * E.piso.w + x) * 4 + 3], `${layout.id} ${x},${y}`).toBe(255);
     }
     expect(EL).toMatchObject({ inclinacion: 0.35 });
-    expect(LIC.largo).toBe(640);
+    // el liceo es una cancha de una pantalla: 800 con la cancha en los 640 del medio (lote E4)
+    expect([LIC.largo, LIC.margen, EL.ancho]).toEqual([800, 80, 835]);
   });
 
   it('Cocora calza con Vallas.ts: TOP 228, los cuatro carriles, las rayas blancas, la salida y la meta a cuadros', () => {
@@ -168,10 +169,13 @@ describe('los escenarios de las seis pruebas que faltaban (lote E6)', () => {
     const P = VENEZUELA_LICEO_MEDIODIA, k = 0.35;
     expect(LIC.franja).toEqual({ atras: 214, adelante: 314 });
     expect(C_LICEO.prof).toBe(100);
+    // la cancha de Quemado.ts corrida el margen de 80: de x 120 a 640, el medio en 380 y los cementerios en las puntas
+    expect(C_LICEO).toMatchObject({ x0: 120, x1: 640, medio: 380, cementerios: [[84, 114], [646, 676]] });
     expect(columna(P, EL.piso.r, C_LICEO.medio - 1, 0, 99, ['amarillo'], k)).toBeGreaterThan(0.8);
     for (const [a] of C_LICEO.cementerios) expect(columna(P, EL.piso.r, a, 0, 99, ['crema'], k), `cementerio ${a}`).toBeGreaterThan(0.8);
     expect(LUGARES.patio_liceo_caracas.techado).toBe(true);
-    expect(EL.luces.filter((l) => l.encendida)).toHaveLength(4);
+    // las 4 lámparas del techo de la cancha y una más en cada margen (lote E4)
+    expect(EL.luces.filter((l) => l.encendida)).toHaveLength(6);
   });
 
   it('Cartagena calza con Azoteas.ts: TECHO 262, la cajita en x 428, la raya del borde en x 440, la calle en 352 y lo que corre cada ronda', () => {

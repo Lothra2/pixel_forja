@@ -94,37 +94,42 @@ describe('los escenarios de los cuatro deportes de pelota (lote E5)', () => {
       expect(layout.franja).toEqual({ atras: 290, adelante: 330 });
       // el piso de los dos es la fila 310: las filas 304 y 316 son los carriles
       expect(layout.carriles.map((c: { y: number }) => FT + c.y)).toEqual([304, 316]);
-      // las rayas de atrás (fila 298) y de adelante (fila 322), de x 34 a 606 y de 28 a 612
+      // las rayas de atrás (fila 298) y de adelante (fila 322), de x 114 a 686 y de 108 a 692: las de Voley.ts y
+      // Tenis.ts (34 a 606 y 28 a 612) más el margen de 80 (lote E4). En los márgenes no hay rayas
       expect(FT + cancha.atras).toBe(298);
       expect(FT + cancha.adelante).toBe(322);
-      expect(raya(pal, E.piso.r, cancha.atras, 34, 606, color), layout.id).toBeGreaterThan(0.85);
-      expect(raya(pal, E.piso.r, cancha.adelante, 28, 612, color), layout.id).toBeGreaterThan(0.85);
-      expect(raya(pal, E.piso.r, cancha.atras, 0, 30, color), layout.id).toBe(0);
-      // la red la pone el juego en x 320: el arte no pinta nada oscuro en esa columna arriba de la cancha
-      for (let y = 250; y < FT; y++) expect([pal.tinta, pal.sombra, pal.asfalto], `${layout.id} fila ${y}`).not.toContain(hex(E.cerca.r, 320, y));
-      // todo el piso pintado hasta abajo y el frente libre
-      for (let y = 0; y < E.piso.h; y++) for (let x = 0; x < 640; x += 7) expect(E.piso.r.data[(y * 640 + x) * 4 + 3], `${layout.id} ${x},${y}`).toBe(255);
+      expect([cancha.x0, cancha.x1, cancha.red]).toEqual([114, 686, 400]);
+      expect(raya(pal, E.piso.r, cancha.atras, 114, 686, color), layout.id).toBeGreaterThan(0.85);
+      expect(raya(pal, E.piso.r, cancha.adelante, 108, 692, color), layout.id).toBeGreaterThan(0.85);
+      expect(raya(pal, E.piso.r, cancha.atras, 0, 100, color), layout.id).toBe(0);
+      expect(raya(pal, E.piso.r, cancha.atras, 700, 799, color), layout.id).toBe(0);
+      // la red la pone el juego en x 400: el arte no pinta nada oscuro en esa columna arriba de la cancha
+      for (let y = 250; y < FT; y++) expect([pal.tinta, pal.sombra, pal.asfalto], `${layout.id} fila ${y}`).not.toContain(hex(E.cerca.r, 400, y));
+      // todo el piso pintado hasta abajo, también en los márgenes, y el frente libre
+      for (let y = 0; y < E.piso.h; y++) for (let x = 0; x < 800; x += 7) expect(E.piso.r.data[(y * 800 + x) * 4 + 3], `${layout.id} ${x},${y}`).toBe(255);
       expect(E.frente.r.data.some((v, i) => i % 4 === 3 && v > 0)).toBe(false);
       const ej = json(generarEscenario(layout), 'escenario.json');
-      expect(ej).toMatchObject({ inclinacion: 0, ancho: 640, vista: 'lado', franja: { atras: 290, adelante: 330 } });
+      expect(ej).toMatchObject({ inclinacion: 0, ancho: 800, margen: 80, vista: 'lado', franja: { atras: 290, adelante: 330 } });
     }
     // ninguna palma de Margarita toca la red, y la malla de Đà Lạt no tiene un paral en la columna de la red
-    for (const p of PALMAS) expect(Math.abs(p.x - 320), `palma ${p.x}`).toBeGreaterThan(80);
-    for (const x of MALLA.postes) expect(Math.abs(x - 320)).toBeGreaterThan(20);
+    for (const p of PALMAS) expect(Math.abs(p.x - 400), `palma ${p.x}`).toBeGreaterThan(80);
+    for (const x of MALLA.postes) expect(Math.abs(x - 400)).toBeGreaterThan(20);
   });
 
   it('Barranquilla calza con Futbol.ts: la franja, las rayas de tiza y los dos arcos de piedra en cada línea de gol', () => {
     const k = 0.35, P = COLOMBIA_BARRANQUILLA_MEDIODIA;
     expect(BAQ.franja).toEqual({ atras: 212, adelante: 316 });
-    expect(EB).toMatchObject({ inclinacion: 0.35, ancho: 676 });
+    // 800 de largo (lote E4) más lo que corre la inclinación: 800 + 0.35 * 104
+    expect(EB).toMatchObject({ inclinacion: 0.35, ancho: 836 });
+    expect(C_BAQ).toMatchObject({ gol: [106, 680], medio: 393 });
     // las líneas de gol y el medio, de tiza, donde las pinta el juego
     for (const x of [...C_BAQ.gol, C_BAQ.medio]) { let n = 0; for (let y = 0; y < 104; y++) if (hex(EB.piso.r, x + Math.round(k * y), y) === P.luz) n++; expect(n, `x ${x}`).toBeGreaterThan(80); }
-    expect(raya(P, EB.piso.r, 0, 26, 600, 'luz', k)).toBeGreaterThan(0.8);
+    expect(raya(P, EB.piso.r, 0, 106, 680, 'luz', k)).toBeGreaterThan(0.8);
     // los arcos: dos objetos cada uno, la columna de atrás (con la vara) en y 34 y la de adelante en y 70
     const arcos = EB.objetos.filter((o) => o.tipo === 'arco_piedra');
     expect(arcos.map((o) => [o.id, o.orden, o.origen])).toEqual([
-      ['arco_piedra_26_atras', ARCO.y0 + 1, 'entidades'], ['arco_piedra_600_atras', ARCO.y0 + 1, 'entidades'],
-      ['arco_piedra_26', ARCO.y1 + 1, 'entidades'], ['arco_piedra_600', ARCO.y1 + 1, 'entidades'],
+      ['arco_piedra_106_atras', ARCO.y0 + 1, 'entidades'], ['arco_piedra_680_atras', ARCO.y0 + 1, 'entidades'],
+      ['arco_piedra_106', ARCO.y1 + 1, 'entidades'], ['arco_piedra_680', ARCO.y1 + 1, 'entidades'],
     ]);
     for (const x of C_BAQ.gol) {
       // la columna de adelante se para en (x + 0.35 * 70, FT + 70) y sube 26 y un poco más
@@ -143,9 +148,11 @@ describe('los escenarios de los cuatro deportes de pelota (lote E5)', () => {
 
   it('Maracaibo calza con Basket.ts: la cancha azul, el área naranja, el relámpago solo en el cielo y ningún reflejo de neón', () => {
     const k = 0.35, P = VENEZUELA_MARACAIBO_NOCHE, en = (x: number, y: number) => hex(EX.piso.r, x + Math.round(k * y), y);
-    expect([P.celeste, P.cielo, P.cemento]).toContain(en(300, 70));
-    expect([P.ocre, P.amarillo, P.cemento]).toContain(en(560, 46));
-    expect([P.verde, P.menta, P.cemento]).toContain(en(20, 50));
+    // la cancha corrida 80 (lote E4): la media cancha de x 120 a 676 y el aro en 646
+    expect(C_MCBO).toMatchObject({ x0: 120, x1: 676, aro: { x: 646, y: 52 } });
+    expect([P.celeste, P.cielo, P.cemento]).toContain(en(380, 70));
+    expect([P.ocre, P.amarillo, P.cemento]).toContain(en(640, 46));
+    expect([P.verde, P.menta, P.cemento]).toContain(en(100, 50));
     expect(en(C_MCBO.x0, 50)).toBe(P.luz);
     // el piso no refleja neones (los colores del relámpago no caen en la cancha)
     for (let y = 0; y < EX.piso.h; y++) for (let x = 0; x < EX.piso.w; x += 3) expect(hex(EX.piso.r, x, y), `${x},${y}`).not.toBe(P.salmon);
@@ -156,10 +163,13 @@ describe('los escenarios de los cuatro deportes de pelota (lote E5)', () => {
     expect(lleno(rel.cuadros[0].r)).toBe(0);
     expect(lleno(rel.cuadros[5].r)).toBeGreaterThan(300);
     for (const c of rel.cuadros) for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) if (c.r.data[(y * c.w + x) * 4 + 3]) expect(EX.cerca.has(rel.x + x, rel.y + y), `${x},${y}`).toBe(false);
-    expect(rel.x).toBeGreaterThanOrEqual(CATATUMBO.x0);
+    // el relámpago va en la nube del Catatumbo con la cámara centrada en la cancha (x 80): la capa lejos corre a un
+    // cuarto, así que en pantalla va 60 más a la derecha que en la capa lejos
+    expect(rel.x).toBeGreaterThanOrEqual(CATATUMBO.x0 + 60);
     // de noche se lee: el contraste de los atletas contra la cancha
     expect(contraste('#1e1418', P.celeste)).toBeGreaterThan(3);
-    expect(EX.luces.filter((l) => l.encendida).length).toBe(7);
+    // las 7 de la cancha y, en los márgenes, el farol de la calle y el bombillo del kiosco
+    expect(EX.luces.filter((l) => l.encendida).length).toBe(9);
   });
 
   it('la vida que va sobre lo pintado tapa entero: el cuadro 0 calza con la capa cerca, y los otros cambian', () => {

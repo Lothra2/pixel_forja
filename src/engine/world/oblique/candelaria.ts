@@ -5,7 +5,7 @@ import { drawText } from './letras';
 import { MAS_CLARO, MAS_OSCURO } from './tonos';
 import { nueva, type Pieza } from './calle';
 import type { CtxCerca } from './fachadas';
-import type { ObliqueLayout } from './layout';
+import { MARGEN_CANCHA as OX, type ObliqueLayout } from './layout';
 import type { Luz, Particula, VidaEscena } from './escena';
 import type { Lugar } from './lugares';
 
@@ -16,6 +16,11 @@ import type { Lugar } from './lugares';
  * enfrente y Monserrate con su iglesia blanca (en la capa lejos), con la llovizna afuera. La gente con ruana en la banca,
  * el tablero de las reglas, la cajita de las mechas y el letrero donde el juego escribe CANCHA DE TEJO. Adelante, la
  * cancha de tierra con la raya y la caja de greda con el bocín en el mismo sitio donde la dibuja Tejo.ts.
+ *
+ * Mide 800 (lote E4): la cancha va en los 640 del medio, de x 80 a 720, y a cada lado hay 80 más de la cancha techada,
+ * con su pilar en la orilla y sus banderines. A la izquierda, una ventanita colonial y otra banca con dos que se toman su
+ * pola al lado de las canastas de cerveza. A la derecha, después del tablón, el portón de madera de la calle con su
+ * farol y un señor de ruana parado con su pola. Las x de Tejo.ts son las de aquí menos 80.
  */
 
 export const CERCA_CANDELARIA = 'cancha_tejo_candelaria';
@@ -23,30 +28,49 @@ export const CERCA_CANDELARIA = 'cancha_tejo_candelaria';
 const FT = 286;
 /** Filas del techo: la teja, la viga grande (el tirante de la cercha) y donde empieza la pared. */
 const TECHO = 52, VIGA = 60, PARED = 70, ZOCALO = 246;
-/** Los pilares de madera de la pared del fondo. */
-export const PILARES = [6, 252, 486, 628];
-/** Las ventanas coloniales: por la grande se ve Monserrate y la calle con las casas de enfrente. */
-export const VENTANAS = [{ x0: 148, x1: 236, y0: 112, y1: 204 }, { x0: 396, x1: 460, y0: 104, y1: 172 }];
-/** El letrero de madera clara donde el juego escribe CANCHA DE TEJO (en 440, 205, color #3a2418): el mismo sitio del fondo de antes. */
-export const LETRERO = { x: 380, y: 196, w: 120, h: 18 };
+/** Los pilares de madera de la pared del fondo: los cuatro de la cancha y uno en la orilla de cada margen. */
+export const PILARES = [6, OX + 6, OX + 252, OX + 486, OX + 628, 794];
+/**
+ * Las ventanas coloniales: por la grande se ve Monserrate y la calle con las casas de enfrente. La tercera es la
+ * ventanita del margen de la izquierda.
+ */
+export const VENTANAS = [{ x0: OX + 148, x1: OX + 236, y0: 112, y1: 204 }, { x0: OX + 396, x1: OX + 460, y0: 104, y1: 172 }, { x0: 36, x1: 52, y0: 120, y1: 172 }];
+/**
+ * El letrero de madera clara donde el juego escribe CANCHA DE TEJO (en 520, 205, color #3a2418, que en las x de Tejo.ts
+ * es 440): el mismo sitio del fondo de antes.
+ */
+export const LETRERO = { x: OX + 380, y: 196, w: 120, h: 18 };
 /** La banca de la gente con ruana, bajo la ventana grande. */
-export const BANCA = { x0: 130, x1: 366, asiento: 266 };
+export const BANCA = { x0: OX + 130, x1: OX + 366, asiento: 266 };
+/** La banca chiquita del margen de la izquierda, la de los que se toman su pola, con las canastas al lado. */
+export const BANCA_POLA = { x0: 32, x1: 78, canastas: 14 };
+/** El portón de la calle en el margen de la derecha: x de la izquierda, ancho y la fila de arriba. Y el señor parado. */
+export const PORTON = { x: 726, w: 38, top: 148, senor: 768 };
 /** El tablero de las reglas y el estante de las mechas, a la izquierda, detrás de los que esperan su turno. */
-export const TABLERO = { x: 22, y: 116, w: 90, h: 62 };
-/** Los bombillos colgados de la viga. */
-export const BOMBILLOS = [120, 330, 560];
-/** La caja de greda de Tejo.ts: CAJA 556, PISO 300, la cara de (534, 300) a (582, 250), el palo hasta la 248 y el bocín en (548, 280). */
-export const CAJA = { x: 556, piso: 300, bocin: [548, 280] as [number, number] };
-/** La raya de lanzamiento (LINEA de Tejo.ts). */
-export const RAYA = 104;
+export const TABLERO = { x: OX + 22, y: 116, w: 90, h: 62 };
+/** Los bombillos colgados de la viga: los tres de la cancha y uno en cada margen. */
+export const BOMBILLOS = [46, OX + 120, OX + 330, OX + 560, 752];
+/**
+ * La caja de greda de Tejo.ts: CAJA 556, PISO 300, la cara de (534, 300) a (582, 250), el palo hasta la 248 y el bocín
+ * en (548, 280). Aquí todo eso va 80 más allá: CAJA 636, la cara desde 614 y el bocín en (628, 280).
+ */
+export const CAJA = { x: OX + 556, piso: 300, bocin: [OX + 548, 280] as [number, number] };
+/** La raya de lanzamiento (LINEA 104 de Tejo.ts, más el margen). */
+export const RAYA = OX + 104;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Lo lejos: Monserrate y las casas de enfrente, con la llovizna
 
 /** Fila (de la capa lejos) donde empiezan los techos de las casas de enfrente. */
 export const TECHOS_LEJOS = 92;
-/** La punta de Monserrate en la capa lejos, con la iglesia blanca. */
-export const MONSERRATE = { x: 196, y: 50 };
+/**
+ * La punta de Monserrate en la capa lejos, con la iglesia blanca. La capa lejos corre a un cuarto de la cámara: con la
+ * cámara en x 10 (el iPhone muestra 780) o en x 80 (la cancha centrada en 640) la punta cae en la ventana grande si va
+ * corrida medio margen (196 + 40), no el margen entero.
+ */
+export const MONSERRATE = { x: OX / 2 + 196, y: 50 };
+/** El Cerro de Guadalupe, más allá, en la capa lejos. */
+const GUADALUPE = OX + 760;
 
 /** Una casa colonial de enfrente: pared de color, balcón de madera, ventanas con reja y el techo de teja. */
 function casaColonial(L: Lienzo, x: number, w: number, top: number, h: number, pared: Color, balcon: Color, seed: number) {
@@ -72,7 +96,7 @@ export function monserrateLlovizna(pal: Paleta, w: number, h: number, seed: numb
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) L.p(x, y, y < 14 ? (bayer(x, y) < y / 14 ? 'cielo' : 'celeste') : bayer(x, y) < 0.15 && grain(x >> 3, y >> 2, seed) < 0.5 ? 'cemento_claro' : 'cielo');
   // los cerros orientales: Monserrate empinado con su punta, y Guadalupe más allá, que dan la vuelta por el borde
   const cerro = (x: number) => {
-    const d = Math.min(Math.abs(x - MONSERRATE.x), w - Math.abs(x - MONSERRATE.x)), e = Math.min(Math.abs(x - 760), w - Math.abs(x - 760));
+    const d = Math.min(Math.abs(x - MONSERRATE.x), w - Math.abs(x - MONSERRATE.x)), e = Math.min(Math.abs(x - GUADALUPE), w - Math.abs(x - GUADALUPE));
     return Math.min(MONSERRATE.y + Math.round(d * 0.5 + (d > 40 ? (d - 40) * 0.15 : 0)), 58 + Math.round(e * 0.3), 80);
   };
   for (let x = 0; x < w; x++) for (let y = cerro(x); y < TECHOS_LEJOS; y++) {
@@ -96,8 +120,8 @@ export function monserrateLlovizna(pal: Paleta, w: number, h: number, seed: numb
   const anchos: number[] = [];
   for (let t = 0; t < w - 60;) { const cw = 46 + Math.floor(R() * 26); anchos.push(cw); t += cw; }
   anchos.push(w - anchos.reduce((a, b) => a + b, 0));
-  // la primera empieza un poco antes del 0: la vuelta cae en medio de una casa, no entre dos
-  let x = -24;
+  // la primera empieza un poco antes de la cancha: la vuelta cae en medio de una casa, no entre dos
+  let x = OX - 24;
   for (const cw of anchos) {
     const top = TECHOS_LEJOS + Math.floor(R() * 8), pared = paredes[Math.floor(R() * paredes.length)];
     casaColonial(L, x, cw, top, h - top, pared, R() < 0.6 ? 'verde' : 'azul', seed + x);
@@ -118,7 +142,7 @@ function techo(C: Lienzo, seed: number) {
   const W = C.w;
   // el entablado: tablas angostas que se van hacia el fondo, con la veta y alguna más oscura
   for (let y = 0; y < TECHO; y++) for (let x = 0; x < W; x++) {
-    const tabla = Math.floor(x / 7), jx = x % 7, tono = grain(tabla, 0, seed) < 0.3;
+    const tabla = Math.floor((x - OX + 140) / 7) - 20, jx = (x - OX + 140) % 7, tono = grain(tabla, 0, seed) < 0.3;
     C.p(x, y, jx === 0 ? 'sombra' : tono ? 'vino' : 'terracota');
   }
   // las vigas grandes de lado a lado, con las cabezas de los cabios asomadas debajo de la de arriba
@@ -130,7 +154,7 @@ function techo(C: Lienzo, seed: number) {
   C.f(0, TECHO, W, VIGA - TECHO + 4, 'terracota'); C.hl(0, TECHO, W, 'ocre'); C.hl(0, VIGA + 3, W, 'sombra');
   for (let x = 0; x < W; x += 3) if (grain(x, 0, seed + 4) < 0.3) C.p(x, TECHO + 3, 'vino');
   // el humo de las mechas que se queda pegado al techo
-  for (let y = TECHO - 14; y < VIGA + 6; y++) for (let x = 0; x < W; x++) if (bayer(x, y) < 0.05 * Math.max(0, Math.sin(x / 90 + 1)) && grain(x >> 3, y >> 2, seed + 6) < 0.5) C.p(x, y, 'bruma');
+  for (let y = TECHO - 14; y < VIGA + 6; y++) for (let x = 0; x < W; x++) if (bayer(x, y) < 0.05 * Math.max(0, Math.sin((x - OX) / 90 + 1)) && grain(x >> 3, y >> 2, seed + 6) < 0.5) C.p(x, y, 'bruma');
 }
 
 /** La pared colonial de cal, con las manchas de humedad, el pañete caído que deja ver el adobe y el zócalo verde. */
@@ -142,10 +166,11 @@ function pared(C: Lienzo, seed: number) {
     const humedad = y > ZOCALO - 34 && v < 0.2 + (y - (ZOCALO - 34)) / 120;
     C.p(x, y, humedad ? 'cemento_claro' : grain(x, y, seed) < 0.02 ? 'cemento_claro' : 'crema');
   }
-  // el pañete caído: se ven los adobes
-  const R = rng(seed + 3);
-  for (let k = 0; k < 4; k++) {
-    const cx = 40 + Math.floor(R() * (W - 80)), cy = PARED + 30 + Math.floor(R() * 120), rw = 8 + Math.floor(R() * 10), rh = 5 + Math.floor(R() * 6);
+  // el pañete caído: se ven los adobes. Cuatro en la cancha y uno arriba en cada margen
+  const R = rng(seed + 3), huecos: [number, number, number, number][] = [];
+  for (let k = 0; k < 4; k++) huecos.push([OX + 40 + Math.floor(R() * 560), PARED + 30 + Math.floor(R() * 120), 8 + Math.floor(R() * 10), 5 + Math.floor(R() * 6)]);
+  huecos.push([62, 98, 9, 5], [W - 22, 118, 8, 6]);
+  for (const [cx, cy, rw, rh] of huecos) {
     for (let j = -rh; j <= rh; j++) for (let i = -rw; i <= rw; i++) {
       const d = (i / rw) ** 2 + (j / rh) ** 2;
       if (d > 1 + (grain(cx + i, cy + j, seed) - 0.5) * 0.4) continue;
@@ -277,8 +302,17 @@ function bombillo(C: Lienzo, x: number) {
   for (let j = -8; j <= 8; j++) for (let i = -8; i <= 8; i++) { const d = Math.hypot(i, j); if (d > 4 && d < 8 && bayer(x + i, VIGA + 31 + j) < (8 - d) / 8 * 0.4 && C.has(x + i, VIGA + 31 + j)) C.p(x + i, VIGA + 31 + j, 'amarillo'); }
 }
 
-/** Una persona con ruana y sombrero sentada en la banca, con su tinto. `arriba` levanta el tinto (la vida). */
-function ruana(C: Lienzo, x: number, asiento: number, base: number, colorRuana: Color, raya: Color, sombrero: boolean, arriba: boolean, mujer: boolean) {
+/** Una pola: la botella de cerveza marrón con la etiqueta amarilla y la tapa. */
+function pola(C: Lienzo, x: number, y: number) {
+  C.f(x, y + 2, 3, 6, 'vino'); C.vl(x + 1, y, 2, 'vino'); C.p(x + 1, y - 1, 'oro');
+  C.hl(x, y + 4, 3, 'amarillo'); C.p(x, y + 3, 'salmon');
+}
+
+/**
+ * Una persona con ruana y sombrero sentada en la banca, con su tinto (o con su pola, si `cerveza`). `arriba` levanta el
+ * tinto o la pola (la vida).
+ */
+function ruana(C: Lienzo, x: number, asiento: number, base: number, colorRuana: Color, raya: Color, sombrero: boolean, arriba: boolean, mujer: boolean, cerveza = false) {
   const piel: Color = 'salmon';
   // las piernas: el pantalón o la falda, y los zapatos
   C.f(x + 1, asiento - 3, 12, 3, mujer ? 'vino' : 'azul_noche');
@@ -299,9 +333,102 @@ function ruana(C: Lienzo, x: number, asiento: number, base: number, colorRuana: 
   C.f(hx, hy, 6, 7, piel); C.vl(hx + 5, hy + 1, 5, MAS_OSCURO[piel]); C.p(hx + 1, hy + 3, 'tinta'); C.p(hx + 4, hy + 3, 'tinta');
   if (sombrero) { C.f(hx - 3, hy - 1, 12, 2, 'ocre'); C.hl(hx - 3, hy, 12, 'terracota'); C.f(hx, hy - 4, 6, 3, 'ocre'); C.hl(hx, hy - 2, 6, 'sombra'); }
   else { C.f(hx, hy - 1, 6, 3, mujer ? 'tinta' : 'sombra'); C.vl(hx - 1, hy, mujer ? 8 : 3, mujer ? 'tinta' : 'sombra'); if (mujer) C.vl(hx + 6, hy, 8, 'tinta'); }
-  // la mano con el tinto: abajo en el regazo o arriba brindando
-  if (arriba) { C.vl(x + 14, top - 8, 9, colorRuana); C.f(x + 13, top - 12, 3, 3, 'luz'); C.p(x + 14, top - 11, 'terracota'); C.p(x + 14, top - 9, piel); }
+  // la mano con el tinto (o la pola): abajo en el regazo o arriba brindando
+  if (cerveza) {
+    if (arriba) { C.vl(x + 14, top - 6, 7, colorRuana); pola(C, x + 13, top - 13); C.p(x + 14, top - 7, piel); }
+    else { pola(C, x + 5, top + 7); C.p(x + 4, top + 12, piel); }
+  } else if (arriba) { C.vl(x + 14, top - 8, 9, colorRuana); C.f(x + 13, top - 12, 3, 3, 'luz'); C.p(x + 14, top - 11, 'terracota'); C.p(x + 14, top - 9, piel); }
   else { C.f(x + 5, top + 12, 4, 3, 'luz'); C.p(x + 6, top + 12, 'terracota'); C.p(x + 4, top + 13, piel); }
+}
+
+/**
+ * Un señor parado con su ruana larga hasta las rodillas, el sombrero y la pola. `arriba` se la empina (la vida).
+ */
+function parado(C: Lienzo, x: number, base: number, colorRuana: Color, raya: Color, sombrero: boolean, arriba: boolean) {
+  const piel: Color = 'salmon', piernas = 26, top = base - piernas - 14;
+  // las piernas con el pantalón oscuro y los zapatos
+  for (const lx of [x + 3, x + 9]) { C.f(lx, base - piernas, 3, piernas - 1, 'azul_noche'); C.f(lx - 1, base - 2, 5, 2, 'sombra'); }
+  C.vl(x + 11, base - piernas, piernas - 2, 'sombra');
+  // la ruana que cae de los hombros, más larga parado, con las rayas y los flecos
+  for (let j = 0; j < 22; j++) {
+    const ancho = 10 + Math.round(j * 0.3), a = x + 7 - Math.floor(ancho / 2);
+    for (let i = 0; i < ancho; i++) C.p(a + i, top + j, (j === 7 || j === 16) ? raya : i === ancho - 1 ? MAS_OSCURO[colorRuana] : i === 0 ? MAS_CLARO[colorRuana] : colorRuana);
+  }
+  for (let i = 0; i < 16; i += 2) C.p(x - 1 + i, top + 22, MAS_OSCURO[colorRuana]);
+  C.p(x + 6, top, piel); C.p(x + 7, top, piel); C.p(x + 7, top + 1, piel);
+  const hx = x + 4, hy = top - 7;
+  C.f(hx, hy, 6, 7, piel); C.vl(hx + 5, hy + 1, 5, MAS_OSCURO[piel]); C.p(hx + 1, hy + 3, 'tinta'); C.p(hx + 4, hy + 3, 'tinta');
+  C.hl(hx + 1, hy + 6, 4, 'sombra');
+  if (sombrero) { C.f(hx - 3, hy - 1, 12, 2, 'ocre'); C.hl(hx - 3, hy, 12, 'terracota'); C.f(hx, hy - 4, 6, 3, 'ocre'); C.hl(hx, hy - 2, 6, 'sombra'); }
+  else { C.f(hx, hy - 1, 6, 3, 'sombra'); C.vl(hx - 1, hy, 3, 'sombra'); }
+  // la pola: empinada en la boca o en la mano por delante de la ruana
+  if (arriba) { C.ln(x + 13, top + 8, x + 11, top - 1, colorRuana); C.ln(hx + 5, hy + 5, hx + 9, hy - 1, 'vino'); C.ln(hx + 6, hy + 5, hx + 10, hy - 1, 'vino'); C.p(hx + 10, hy - 2, 'oro'); C.p(hx + 8, hy + 2, 'amarillo'); C.p(x + 11, top, piel); }
+  else { pola(C, x + 13, top + 8); C.p(x + 13, top + 14, piel); C.p(x + 14, top + 14, piel); }
+}
+
+/** Una canasta de cerveza de plástico con las botellas asomadas: las llenas con tapa, las vacías sin. */
+function canasta(C: Lienzo, x: number, base: number, color: Color, llena: boolean) {
+  const w = 16, h = 9;
+  C.f(x, base - h, w, h, color); C.hl(x, base - h, w, MAS_CLARO[color]); C.vl(x + w - 1, base - h, h, MAS_OSCURO[color]); C.hl(x, base - 1, w, MAS_OSCURO[color]);
+  // las rejillas del costado y el hueco para agarrarla
+  for (let i = x + 2; i < x + w - 2; i += 3) C.vl(i, base - h + 3, 4, MAS_OSCURO[color]);
+  C.f(x + 5, base - h + 1, 6, 2, MAS_OSCURO[color]);
+  // los picos de las botellas
+  for (let i = x + 1; i < x + w - 1; i += 3) { C.vl(i, base - h - 3, 3, 'vino'); if (llena) C.p(i, base - h - 4, 'oro'); }
+}
+
+/** El farol colonial de hierro con su brazo, prendido. */
+function farol(C: Lienzo, x: number, y: number) {
+  C.hl(x - 6, y, 7, 'asfalto'); C.vl(x - 6, y - 2, 5, 'asfalto');
+  C.f(x - 2, y + 1, 6, 2, 'asfalto'); C.f(x - 1, y + 3, 4, 6, 'amarillo'); C.vl(x, y + 3, 6, 'luz'); C.hl(x - 2, y + 9, 6, 'asfalto');
+  C.vl(x - 2, y + 3, 6, 'asfalto'); C.vl(x + 3, y + 3, 6, 'asfalto');
+}
+
+/**
+ * El portón de la calle: el marco de cal con el dintel de madera, las dos hojas de tablas con los clavos de hierro, una
+ * entreabierta que deja ver el zaguán oscuro, el umbral de piedra, la placa de la dirección y el farol.
+ */
+function porton(C: Lienzo, p: typeof PORTON) {
+  const { x, w, top } = p, piso = FT - 4, h = piso - top, mitad = Math.floor(w / 2);
+  // el marco de cal, un poquito salido de la pared, y el dintel
+  C.f(x - 5, top - 8, w + 10, h + 8, 'luz'); C.vl(x + w + 4, top - 8, h + 8, 'cemento_claro'); C.hl(x - 5, top - 8, w + 10, 'cemento_claro');
+  C.f(x - 2, top - 5, w + 4, 5, 'terracota'); C.hl(x - 2, top - 5, w + 4, 'ocre'); C.hl(x - 2, top - 1, w + 4, 'vino');
+  // el zaguán oscuro de atrás, con el piso de baldosa que se asoma
+  C.f(x, top, w, h, 'tinta');
+  for (let i = 0; i < w; i++) C.p(x + i, piso - 1, (i >> 2) % 2 ? 'vino' : 'terracota');
+  // la hoja de la izquierda, cerrada
+  const hoja = (hx: number, hw: number) => {
+    for (let y = top; y < piso; y++) for (let i = 0; i < hw; i++) C.p(hx + i, y, i % 6 === 5 ? 'vino' : grain((hx + i) >> 1, y >> 2, 31) < 0.04 ? 'vino' : 'terracota');
+    C.vl(hx, top, h, 'ocre'); C.vl(hx + hw - 1, top, h, 'sombra');
+    for (const y of [top + 4, top + Math.floor(h / 2), piso - 8]) C.hl(hx + 1, y, hw - 2, 'vino');
+    for (let y = top + 8; y < piso - 8; y += 10) for (let i = 3; i < hw - 2; i += 6) C.p(hx + i, y, 'asfalto');
+  };
+  hoja(x, mitad);
+  // la hoja de la derecha entreabierta: se ve más angosta y deja la rendija del zaguán
+  hoja(x + mitad + 7, w - mitad - 7);
+  C.vl(x + mitad, top, h, 'sombra');
+  // la aldaba y la cerradura de hierro
+  C.d(x + mitad - 4, top + 40, 2, 'asfalto'); C.p(x + mitad - 4, top + 40, 'cemento'); C.f(x + mitad - 3, top + 56, 2, 4, 'asfalto');
+  // el umbral de piedra
+  C.f(x - 3, piso - 2, w + 6, 2, 'cemento'); C.hl(x - 3, piso - 2, w + 6, 'cemento_claro');
+  // la placa azul de la dirección y el farol encima
+  C.box(x + mitad - 8, top - 18, 16, 7, 'azul', 'azul_noche'); C.hl(x + mitad - 5, top - 15, 10, 'luz');
+  farol(C, x + w + 10, top - 22);
+}
+
+/** El margen de la izquierda: la ventanita, la banca de los de la pola y las canastas de cerveza. `f` levanta las polas. */
+function margenPola(C: Lienzo, f = 0) {
+  const { x0, x1, canastas } = BANCA_POLA, asiento = BANCA.asiento, base = FT - 4;
+  // las canastas: dos apiladas, rojas y una amarilla de las vacías encima
+  canasta(C, canastas, base, 'rojo', true); canasta(C, canastas, base - 12, 'amarillo', false);
+  canasta(C, canastas + 1, base - 24, 'rojo', false);
+  // la banca chiquita
+  C.f(x0, asiento - 1, x1 - x0, 4, 'ocre'); C.hl(x0, asiento - 1, x1 - x0, 'amarillo'); C.hl(x0, asiento + 3, x1 - x0, 'sombra');
+  for (const px of [x0 + 3, x1 - 7]) { C.f(px, asiento + 3, 4, base - asiento - 3, 'terracota'); C.vl(px, asiento + 3, base - asiento - 3, 'ocre'); }
+  ruana(C, x0 + 3, asiento, base, 'cemento', 'vino', true, f % 2 === 1, false, true);
+  ruana(C, x0 + 25, asiento, base, 'vino', 'crema', false, f % 2 === 0, true, true);
+  // una pola vacía en el piso, al pie de la banca
+  pola(C, x1 - 2, base - 8);
 }
 
 /** La gente de la banca con ruana. `f` es el cuadro de la vida. */
@@ -310,7 +437,9 @@ function gente(C: Lienzo, seed: number, f = 0) {
   C.f(x0, asiento - 1, x1 - x0, 4, 'ocre'); C.hl(x0, asiento - 1, x1 - x0, 'amarillo'); C.hl(x0, asiento + 3, x1 - x0, 'sombra');
   for (const px of [x0 + 4, Math.round((x0 + x1) / 2), x1 - 8]) { C.f(px, asiento + 3, 4, base - asiento - 3, 'terracota'); C.vl(px, asiento + 3, base - asiento - 3, 'ocre'); }
   const R = rng(seed + 31), RUANAS: [Color, Color][] = [['asfalto_claro', 'crema'], ['terracota', 'ocre'], ['vino', 'cemento_claro'], ['cemento', 'asfalto'], ['ocre', 'terracota'], ['asfalto', 'rojo']];
-  for (let x = x0 + 6, n = 0; x < x1 - 16; n++) {
+  // empiezan en x0 + 3 y no en x0 + 6 como antes del margen: así las piernas oscuras no tapan a los atletas que esperan
+  // donde la prueba de legibilidad los pone (cada 64 px desde la x 24 del dibujo de 800)
+  for (let x = x0 + 3, n = 0; x < x1 - 16; n++) {
     const [c, r] = RUANAS[Math.floor(R() * RUANAS.length)], sombrero = R() < 0.55, mujer = !sombrero && R() < 0.6, paso = 20 + Math.floor(R() * 10);
     ruana(C, x, asiento, base, c, r, sombrero, (n + f) % 3 === 0, mujer);
     x += paso;
@@ -322,16 +451,20 @@ export function pintarCandelaria(C: Lienzo, seed: number, o: { f?: number; bande
   const f = o.f ?? 0;
   pared(C, seed);
   techo(C, seed);
-  tablon(C, 508, C.w, 150);
+  // el tablón va detrás de la caja hasta el borde de la cancha, no hasta el borde del dibujo
+  tablon(C, OX + 508, OX + 640, 150);
   for (const v of VENTANAS) ventanaColonial(C, v);
+  porton(C, PORTON);
   for (const x of PILARES) pilar(C, x);
   tablero(C, TABLERO);
-  estante(C, 22, 220);
+  estante(C, OX + 22, 220);
   letreroJuego(C, LETRERO);
-  afiche(C, 290, 118);
+  afiche(C, OX + 290, 118);
   if (o.banderines !== false) banderines(C, f);
   for (const x of BOMBILLOS) bombillo(C, x);
   gente(C, seed, f);
+  margenPola(C, f);
+  parado(C, PORTON.senor, FT - 4, 'asfalto_claro', 'rojo', true, f % 2 === 1);
 }
 
 export const fondoCandelaria = (C: Lienzo, _x0: number, _x1: number, _base: number, ctx: CtxCerca) => pintarCandelaria(C, ctx.seed);
@@ -341,12 +474,13 @@ export const fondoCandelaria = (C: Lienzo, _x0: number, _x1: number, _base: numb
 
 /** La tierra de la cancha: apisonada, gris parda, con las salpicaduras de greda cerca de la caja y las chapas regadas. */
 export function tierraCandelaria(x: number, y: number, s: number): Color {
-  const xr = ((x % 960) + 960) % 960;
+  // xc es la x de Tejo.ts (sin el margen): así la tierra sale igual que antes, solo corrida
+  const xc = x - OX, xr = ((xc % 960) + 960) % 960;
   const n = grain(xr, y, s);
   if (n < 0.002) return 'oro';
   if (n > 0.998) return 'cemento_claro';
-  // la greda que salta de la caja: más cerca, más manchas
-  const cerca = Math.max(0, (xr - 470) / 90);
+  // la greda que salta de la caja: más cerca, más manchas. Pasado el borde de la cancha (640 de Tejo.ts, 720 aquí) se acaba
+  const cerca = xc <= 640 ? Math.max(0, (xc - 470) / 90) : Math.max(0, (640 - 470) / 90 - (xc - 640) / 30);
   if (grain(xr >> 1, y >> 1, s + 3) < cerca * 0.22) return bayer(xr, y) < 0.5 ? 'cemento' : 'asfalto_claro';
   // la tierra parda apisonada, con manchones más claros y la huella de los que lanzan
   return grain(xr >> 3, y >> 1, s + 1) < 0.3 && bayer(xr, y) < 0.2 ? 'salmon' : grain(xr, y, s + 4) < 0.03 ? 'terracota' : 'ocre';
@@ -360,7 +494,7 @@ export function rayaCandelaria(P: Lienzo, L: ObliqueLayout, _seed: number) {
 
 /** Lo de adelante de la cancha: el borde de madera, el piso de cemento del galpón con aserrín y chapas. */
 export function orillaCandelaria(x: number, r: number, s: number): Color {
-  const xr = ((x % 960) + 960) % 960;
+  const xr = (((x - OX) % 960) + 960) % 960;
   if (r === 0) return 'ocre';
   if (r < 4) return r === 3 ? 'vino' : (xr % 48 === 0 ? 'vino' : 'terracota');
   if (r === 4) return 'sombra';
@@ -373,9 +507,10 @@ export function orillaCandelaria(x: number, r: number, s: number): Color {
 }
 
 /**
- * La caja de tejo vista de lado, con la geometría de Tejo.ts: el marco de madera en triángulo de (534, 300) a (582,
- * 300) y (582, 250), el palo de atrás de 578 a 584 hasta la fila 248, la cara de greda inclinada hacia el que lanza y el
- * bocín de metal en (548, 280). Las mechas y los tejos que caen los pinta el juego encima.
+ * La caja de tejo vista de lado, con la geometría de Tejo.ts (en sus x de 640: el layout la pone en x 614, 80 más allá):
+ * el marco de madera en triángulo de (534, 300) a (582, 300) y (582, 250), el palo de atrás de 578 a 584 hasta la fila
+ * 248, la cara de greda inclinada hacia el que lanza y el bocín de metal en (548, 280). Las mechas y los tejos que caen
+ * los pinta el juego encima.
  */
 export function cajaGreda(pal: Paleta, w: number, d: number, z: number): Pieza {
   const P = nueva(pal, w, d, z, 0), L = P.img, oy = z + d - 58, X = (sx: number) => sx - 534, Y = (sy: number) => sy - 242 + oy;
@@ -398,13 +533,11 @@ export function cajaGreda(pal: Paleta, w: number, d: number, z: number): Pieza {
   for (let sx = 534; sx <= 584; sx++) L.p(X(sx), Y(300), 'sombra');
   // la greda apisonada que sobresale del marco: la cara inclinada donde caen los tejos, la misma línea de Tejo.ts
   // (pasa por el bocín en 548, 280 con pendiente 1), con el filo de arriba claro
-  const cara = (sx: number) => CAJA.bocin[1] - (sx - CAJA.bocin[0]);
+  const [bx, by] = [CAJA.bocin[0] - OX, CAJA.bocin[1]], cara = (sx: number) => by - (sx - bx);
   for (let sx = 535; sx <= 577; sx++) {
     const top = cara(sx) - 1, fondo = Math.round(300 - ((sx - 534) * 50) / 48);
     for (let sy = top; sy < fondo; sy++) L.p(X(sx), Y(sy), sy === top ? 'cemento_claro' : sy === top + 1 ? 'cemento' : bayer(sx, sy) < 0.3 ? 'asfalto_claro' : 'cemento');
   }
-  // el bocín: el aro de metal enterrado en la greda
-  const [bx, by] = CAJA.bocin;
   // el bocín: el aro de metal brillante, con su sombra adentro
   L.ring(X(bx), Y(by) + 1, 5, pal.asfalto, 0.5, 1);
   L.ring(X(bx), Y(by), 5, pal.cemento_claro, 0.5, 1);

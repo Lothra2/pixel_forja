@@ -55,11 +55,11 @@ describe('Hội An de noche con el Tama-wari (lote E3c)', () => {
     expect(r.errores.join()).toMatch(/vietnam_hoian" todavía no tiene arte de manana \(hoy pinta: noche\)/);
   });
 
-  it('los dos postes del Tama-wari en x 110 y 530: la punta con el gancho en el z de la bola, antes que la bola y la base', () => {
+  it('los dos postes del Tama-wari en x 190 y 610 (110 y 530 más el margen): la punta con el gancho en el z de la bola, antes que la bola y la base', () => {
     const postes = E.objetos.filter((o) => o.tipo === 'poste_tamawari');
     expect(postes).toHaveLength(2);
     const bolas = L.entidades.filter((e) => e.npc === 'bola_tama');
-    for (const [i, x] of [110, 530].entries()) {
+    for (const [i, x] of [190, 610].entries()) {
       const p = postes[i], b = bolas[i];
       expect(b).toMatchObject({ x, y: 49, z: 170 });
       // el gancho del yugo: donde el juego pone el ancla de la bola_tama (16, 0)
@@ -79,12 +79,12 @@ describe('Hội An de noche con el Tama-wari (lote E3c)', () => {
     // y en objetos.json el juego encuentra el gancho
     const r = generarEscenario(RAW);
     const ob = JSON.parse(new TextDecoder().decode(r.archivos.find((a) => a.nombre === 'objetos.json')!.bytes));
-    expect(ob.objetos.filter((o: { gancho?: number[] }) => o.gancho).map((o: { gancho: number[] }) => o.gancho)).toEqual([[127, 125], [547, 125]]);
+    expect(ob.objetos.filter((o: { gancho?: number[] }) => o.gancho).map((o: { gancho: number[] }) => o.gancho)).toEqual([[207, 125], [627, 125]]);
   });
 
   it('el Tama-wari no es una carrera: ni pancartas ni línea de meta, aunque el layout traiga salida y meta', () => {
     expect(E.objetos.some((o) => o.tipo === 'pancarta')).toBe(false);
-    for (let y = 0; y < D; y++) for (let i = 0; i < 8; i++) expect(es(E.piso.r, 580 + i + Math.round(0.35 * y), y, 'tinta'), `meta ${y}`).toBe(false);
+    for (let y = 0; y < D; y++) for (let i = 0; i < 8; i++) expect(es(E.piso.r, 660 + i + Math.round(0.35 * y), y, 'tinta'), `meta ${y}`).toBe(false);
   });
 
   it('las cuerdas de faroles van de poste en poste, y los faroles se mecen en la vida (sin quedar dobles)', () => {
@@ -148,22 +148,25 @@ describe('Hội An de noche con el Tama-wari (lote E3c)', () => {
     expect(es(E.lejos.r, LUNA.x - 1, LUNA.y - 1, 'luz')).toBe(true);
     // la calle de piedra está seca: nada del reflejo del neón (en la acera sí hay pétalos de buganvilla)
     let reflejo = 0;
-    for (let y = 0; y < D; y++) for (let x = 0; x < 640; x++) if (es(E.piso.r, x, y, 'canal') || es(E.piso.r, x, y, 'menta') || (y >= 14 && es(E.piso.r, x, y, 'salmon'))) reflejo++;
+    for (let y = 0; y < D; y++) for (let x = 0; x < E.piso.w; x++) if (es(E.piso.r, x, y, 'canal') || es(E.piso.r, x, y, 'menta') || (y >= 14 && es(E.piso.r, x, y, 'salmon'))) reflejo++;
     expect(reflejo).toBe(0);
   });
 
   it('las postales de un mundo de una pantalla van a 0, 2 y 4 segundos', () => {
     const r = generarEscenario(RAW, { postales: true });
     const ej = JSON.parse(new TextDecoder().decode(r.archivos.find((a) => a.nombre === 'escenario.json')!.bytes));
-    expect(ej.postales).toEqual({ inicio: { archivo: 'postales/inicio.png', x: 0 }, medio: { archivo: 'postales/medio.png', x: 17 }, final: { archivo: 'postales/final.png', x: 34 } });
+    // 834 de ancho (800 más lo que corre la inclinación): el principio, el medio y el final de lo que la cámara recorre
+    expect(ej.postales).toEqual({ inicio: { archivo: 'postales/inicio.png', x: 0 }, medio: { archivo: 'postales/medio.png', x: 97 }, final: { archivo: 'postales/final.png', x: 194 } });
+    expect(ej).toMatchObject({ ancho: 834, margen: 80 });
     const [a, b] = ['inicio', 'medio'].map((n) => decodePng(r.archivos.find((f) => f.nombre === `postales/${n}.png`)!.bytes));
     expect(iguales(a, b)).toBe(false);
   });
 
   it('imagen dorada: Hội An de noche y con la vida a los 3 segundos', () => {
     const out = createRaster(640, 360 * 2);
-    blit(out, postal(E, 0, [], 640, 360, 0), 0, 0);
-    blit(out, postal(E, 34, [], 640, 360, 3), 0, 360);
+    // la cancha centrada (cámara en 80) y la vista de antes corrida el margen (114)
+    blit(out, postal(E, 80, [], 640, 360, 0), 0, 0);
+    blit(out, postal(E, 114, [], 640, 360, 3), 0, 360);
     const file = join(ROOT, 'golden', 'hoian_e3c.png');
     if (process.env.UPDATE_GOLDEN || !existsSync(file)) { writeFileSync(file, encodePng(out)); return; }
     const gold = decodePng(readFileSync(file));

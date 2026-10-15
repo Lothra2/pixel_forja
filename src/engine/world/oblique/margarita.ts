@@ -3,7 +3,7 @@ import { Lienzo } from './lienzo';
 import type { Color, Paleta } from './paleta';
 import { MAS_OSCURO } from './tonos';
 import type { CtxCerca } from './fachadas';
-import type { ObliqueLayout } from './layout';
+import { MARGEN_CANCHA as OX, type ObliqueLayout } from './layout';
 import type { Luz, Particula, VidaEscena } from './escena';
 import type { Lugar } from './lugares';
 import { recorte, textoGrande, anchoTexto, palmaCoco, sentadita, personita, sombraOval } from './pinceles';
@@ -14,6 +14,9 @@ import { recorte, textoGrande, anchoTexto, palmaCoco, sentadita, personita, somb
  * Cerca, la orilla con las olas que revientan, las palmas de coco, los toldos de colores con su gente y su cava, la
  * churuata de las empanadas con la bandera y el letrero de madera de PLAYA EL AGUA. El piso es la arena, con las cintas
  * de la cancha donde las pone Voley.ts.
+ *
+ * Mide 800 (lote E4): la cancha va en los 640 del medio, de x 80 a 720, y a cada lado hay 80 de playa. A la izquierda la
+ * torre del salvavidas y una palma, a la derecha otro toldo con su gente y otra palma.
  */
 
 export const CERCA_MARGARITA = 'playa_el_agua';
@@ -21,20 +24,24 @@ export const CERCA_MARGARITA = 'playa_el_agua';
 const FT = 290;
 /** Filas de la orilla (de la capa cerca): el agua bajita, donde revienta la ola, la espuma que sube y la arena mojada. */
 export const ORILLA_MAR = { agua: 212, rompe: 224, espuma: 230, mojada: 238, seca: 246 };
-/** Las palmas de coco: x de la base, alto e inclinación. La red del juego va en x 320: ninguna la toca. */
+/** Las palmas de coco: x de la base, alto e inclinación. La red del juego va en x 400: ninguna la toca. */
 export const PALMAS: { x: number; alto: number; lado: 1 | -1; base: number }[] = [
-  { x: 34, alto: 206, lado: 1, base: 262 }, { x: 214, alto: 170, lado: -1, base: 258 }, { x: 492, alto: 194, lado: 1, base: 262 }, { x: 612, alto: 214, lado: -1, base: 266 },
+  { x: 8, alto: 178, lado: 1, base: 264 },
+  { x: OX + 34, alto: 206, lado: 1, base: 262 }, { x: OX + 214, alto: 170, lado: -1, base: 258 }, { x: OX + 492, alto: 194, lado: 1, base: 262 }, { x: OX + 612, alto: 214, lado: -1, base: 266 },
+  { x: 788, alto: 186, lado: -1, base: 264 },
 ];
-/** Los toldos: x de la izquierda, ancho y colores de las rayas. */
-export const TOLDOS: { x: number; w: number; a: Color; b: Color }[] = [{ x: 62, w: 46, a: 'rojo', b: 'amarillo' }, { x: 520, w: 46, a: 'azul', b: 'luz' }];
+/** Los toldos: x de la izquierda, ancho y colores de las rayas. El último va en el margen de la derecha. */
+export const TOLDOS: { x: number; w: number; a: Color; b: Color }[] = [{ x: OX + 62, w: 46, a: 'rojo', b: 'amarillo' }, { x: OX + 520, w: 46, a: 'azul', b: 'luz' }, { x: 728, w: 46, a: 'verde', b: 'amarillo' }];
+/** La torre del salvavidas, en el margen de la izquierda: x de la izquierda. */
+export const SALVAVIDAS = { x: 30 };
 /** La fila del techo de los toldos. */
 const TOLDO_Y = 206;
 /** La churuata de las empanadas: de dónde a dónde, la fila del alero y la del mostrador. */
-export const CHURUATA = { x0: 360, x1: 462, alero: 196, mostrador: 238 };
+export const CHURUATA = { x0: OX + 360, x1: OX + 462, alero: 196, mostrador: 238 };
 /** El letrero de madera de la playa. */
-export const LETRERO = { x: 120, y: 214 };
-/** Las cintas de la cancha de Voley.ts: de x 34 a 606 en la fila 298 (y 8) y de x 28 a 612 en la 322 (y 32); la red en x 320. */
-export const CANCHA = { atras: 8, adelante: 32, x0: 34, x1: 606, abre: 6, red: 320 };
+export const LETRERO = { x: OX + 120, y: 214 };
+/** Las cintas de la cancha de Voley.ts: de x 114 a 686 en la fila 298 (y 8) y de x 108 a 692 en la 322 (y 32); la red en x 400. */
+export const CANCHA = { atras: 8, adelante: 32, x0: OX + 34, x1: OX + 606, abre: 6, red: OX + 320 };
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Lo lejos: el mar Caribe y el cerro
@@ -218,10 +225,10 @@ function genteToldo(C: Lienzo, t: (typeof TOLDOS)[number], i: number, f: number)
   // la silla plegable de rayas
   const sx = t.x + 6;
   C.ln(sx, piso - 10, sx + 10, piso, 'asfalto_claro'); C.ln(sx + 10, piso - 10, sx, piso, 'asfalto_claro');
-  C.f(sx - 1, piso - 11, 12, 2, i ? 'amarillo' : 'celeste');
-  sentadita(C, sx + 1, piso - 11, { ropa: i ? 'salmon' : 'luz', pant: i ? 'azul' : 'rojo', pelo: 'sombra', piel: 'ocre', sombrero: i ? undefined : 'amarillo', alto: 20 }, false);
+  C.f(sx - 1, piso - 11, 12, 2, (['celeste', 'amarillo', 'rojo'] as Color[])[i % 3]);
+  sentadita(C, sx + 1, piso - 11, { ropa: (['luz', 'salmon', 'amarillo'] as Color[])[i % 3], pant: (['rojo', 'azul', 'verde'] as Color[])[i % 3], pelo: i === 2 ? 'tinta' : 'sombra', piel: i === 2 ? 'terracota' : 'ocre', sombrero: i === 0 ? 'amarillo' : undefined, alto: 20 }, false);
   cava(C, t.x + 22, piso);
-  personita(C, t.x + t.w - 12, piso, { ropa: i ? 'rojo' : 'amarillo', pant: i ? 'azul_noche' : 'azul', pelo: 'tinta', piel: 'terracota', pose: f % 2 ? 1 : 0, alto: 30 });
+  personita(C, t.x + t.w - 12, piso, { ropa: (['amarillo', 'rojo', 'luz'] as Color[])[i % 3], pant: (['azul', 'azul_noche', 'rojo'] as Color[])[i % 3], pelo: 'tinta', piel: i === 2 ? 'ocre' : 'terracota', pose: f % 2 ? 1 : 0, alto: 30 });
 }
 
 /**
@@ -291,6 +298,36 @@ function vendedora(C: Lienzo, x: number, mostrador: number, f: number) {
   } else { C.hl(x + 4, base - 18, 2, 'vino'); C.vl(x - 1, base - 15, 8, 'salmon'); C.p(x - 1, base - 7, 'terracota'); }
 }
 
+/**
+ * La torre del salvavidas en sus cuatro patas de madera: la caseta blanca y roja con el techito, la escalera, la cruz,
+ * la bandera amarilla (se puede nadar) y el salvavidas colgado, con el salvavidas sentado mirando al mar.
+ */
+function torreSalvavidas(C: Lienzo, x: number) {
+  const piso = 262, w = 30, casa = 212, plat = casa + 18;
+  sombraOval(C, x + w / 2 + 8, piso - 1, w / 2 + 6, 3, 'cemento', 0.55);
+  // las patas en X, de madera
+  for (const px of [x + 2, x + w - 5]) { C.f(px, plat, 3, piso - plat, 'terracota'); C.vl(px, plat, piso - plat, 'ocre'); }
+  C.ln(x + 4, plat + 2, x + w - 4, piso - 4, 'terracota'); C.ln(x + w - 4, plat + 2, x + 4, piso - 4, 'terracota');
+  // la escalera de atrás, inclinada
+  C.ln(x + w + 6, piso - 1, x + w - 2, plat, 'ocre'); C.ln(x + w + 10, piso - 1, x + w + 2, plat, 'ocre');
+  for (let j = 4; j < piso - plat; j += 6) C.hl(x + w + 2 + Math.round(((piso - plat - j) / (piso - plat)) * -8) + 8, piso - j, 4, 'terracota');
+  // la plataforma y la caseta
+  C.f(x - 2, plat, w + 4, 3, 'ocre'); C.hl(x - 2, plat, w + 4, 'amarillo'); C.hl(x - 2, plat + 2, w + 4, 'vino');
+  C.box(x + 2, casa, w - 4, plat - casa, 'luz', 'cemento');
+  for (let y = casa + 1; y < plat; y += 4) C.hl(x + 3, y, w - 6, 'rojo');
+  C.f(x + 6, casa + 4, 10, 8, 'azul_noche');
+  // la cruz roja en la caseta
+  C.f(x + 20, casa + 6, 2, 6, 'rojo'); C.f(x + 18, casa + 8, 6, 2, 'rojo');
+  // el techito rojo a dos aguas
+  for (let j = 0; j < 5; j++) C.hl(x + 2 - j, casa - 5 + j, w - 4 + 2 * j, j === 4 ? 'vino' : 'rojo');
+  // el salvavidas sentado en la ventana, mirando al mar (la franela roja y la gorra)
+  C.f(x + 8, casa + 6, 6, 6, 'rojo'); C.f(x + 9, casa + 2, 4, 4, 'terracota'); C.hl(x + 8, casa + 1, 6, 'amarillo');
+  // la bandera amarilla en su palo y el salvavidas colgado de la baranda
+  C.vl(x + w - 3, casa - 22, 18, 'asfalto');
+  for (let j = 0; j < 6; j++) C.hl(x + w - 2, casa - 22 + j, 9 - Math.floor(j / 2), 'amarillo');
+  C.d(x - 1, plat + 8, 4, 'rojo'); C.d(x - 1, plat + 8, 2, 'luz');
+}
+
 /** Una toalla a rayas en la arena con alguien acostado tomando sol, con su sombrero de paja. */
 function toalla(C: Lienzo, x: number, y: number) {
   for (let j = 0; j < 6; j++) for (let i = 0; i < 34; i++) C.p(x + i + (5 - j), y + j, Math.floor(i / 4) % 2 ? 'salmon' : 'luz');
@@ -335,10 +372,11 @@ export function pintarMargarita(C: Lienzo, seed: number, q: CuadroMargarita = {}
   churuata(C, seed + 3, q.vendedora ?? 0);
   TOLDOS.forEach((t, i) => { toldo(C, t, q.toldos ?? 0); genteToldo(C, t, i, q.toldos ?? 0); });
   // en la arena de atrás: una toalla con alguien tomando sol y una pelota de playa
-  toalla(C, 244, 268);
-  pelotaPlaya(C, 300, 276);
+  toalla(C, OX + 244, 268);
+  pelotaPlaya(C, OX + 300, 276);
+  torreSalvavidas(C, SALVAVIDAS.x);
   // unos bañistas en el agua bajita, chiquitos, en la orilla de atrás
-  for (const [x, ropa] of [[262, 'rojo'], [282, 'amarillo']] as const) { C.f(x, ORILLA_MAR.agua + 2, 5, 6, ropa); C.f(x + 1, ORILLA_MAR.agua - 3, 4, 5, 'terracota'); C.hl(x + 1, ORILLA_MAR.agua - 3, 4, 'tinta'); for (let i = -2; i < 8; i++) C.p(x + i, ORILLA_MAR.agua + 8, 'luz'); }
+  for (const [x, ropa] of [[OX + 262, 'rojo'], [OX + 282, 'amarillo'], [756, 'azul']] as const) { C.f(x, ORILLA_MAR.agua + 2, 5, 6, ropa); C.f(x + 1, ORILLA_MAR.agua - 3, 4, 5, 'terracota'); C.hl(x + 1, ORILLA_MAR.agua - 3, 4, 'tinta'); for (let i = -2; i < 8; i++) C.p(x + i, ORILLA_MAR.agua + 8, 'luz'); }
   for (const p of PALMAS) palmaCoco(C, p.x, p.base, p.alto, p.lado, seed + p.x);
 }
 
@@ -361,7 +399,7 @@ export function cintasMargarita(P: Lienzo, _L: ObliqueLayout, _seed: number) {
   // huellas de pies en la arena de la cancha
   const R = rng(61);
   for (let k = 0; k < 40; k++) {
-    const x = 40 + Math.floor(R() * 560), y = 3 + Math.floor(R() * 34);
+    const x = OX + 40 + Math.floor(R() * 560), y = 3 + Math.floor(R() * 34);
     if (Math.abs(y - atras) < 2 || Math.abs(y - adelante) < 2) continue;
     P.p(x, y, 'cemento_claro'); P.p(x + 1, y, 'cemento'); P.p(x + 3, y + 1, 'cemento_claro'); P.p(x + 4, y + 1, 'cemento');
   }
@@ -419,10 +457,10 @@ export function lucesMargarita(_pal: Paleta, _L: ObliqueLayout, _k: number): Luz
   return [];
 }
 
-export function particulasMargarita(pal: Paleta, _L: ObliqueLayout, _k: number): Particula[] {
+export function particulasMargarita(pal: Paleta, L: ObliqueLayout, _k: number): Particula[] {
   return [
-    { tipo: 'brillo', x0: 0, x1: 640, y0: 208, y1: 226, color: [pal.luz, pal.cielo], cada: 0.3, vida: 0.5, nota: 'el sol del mediodía que brilla en el agua' },
-    { tipo: 'brillo', x0: 0, x1: 640, y0: 228, y1: 240, color: [pal.luz, pal.bruma], cada: 0.6, vida: 0.7, nota: 'la espuma de la ola que revienta' },
+    { tipo: 'brillo', x0: 0, x1: L.largo, y0: 208, y1: 226, color: [pal.luz, pal.cielo], cada: 0.3, vida: 0.5, nota: 'el sol del mediodía que brilla en el agua' },
+    { tipo: 'brillo', x0: 0, x1: L.largo, y0: 228, y1: 240, color: [pal.luz, pal.bruma], cada: 0.6, vida: 0.7, nota: 'la espuma de la ola que revienta' },
   ];
 }
 

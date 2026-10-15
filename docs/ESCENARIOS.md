@@ -136,6 +136,18 @@ Para las pruebas que el juego dibuja de lado (Đá cầu, Tejo, Vóley Playa y T
 - **`escenario.json` suma** `vista: "lado"` y `nota_vista`, y no quita nada. Un escenario oblicuo no trae el campo, así sale igual que antes.
 - **En el juego**, en vez de la imagen de fondo de la prueba: `queueEscenario(this, 'tao_dan')` en el preload, `pintarEscenario(this, 'tao_dan', 5000)` en el create y `arte.tick(dt, cam.scrollX, () => false)` cada cuadro. Los atletas siguen en su fila de siempre: la vista de lado no corre a nadie.
 
+## Canchas de 800 con margen (lote E4)
+
+Las canchas de una pantalla se pintan a 800 de ancho: la cancha va en los 640 del medio y hay 80 de escenario a cada lado (gradas, árboles, la calle). En un iPhone el juego muestra 780, así que los lados se ven y la cancha no se recorta arriba ni abajo.
+
+- **El campo `margen`** del layout dice cuántos px de escenario van a cada lado: `"largo": 800, "margen": 80`. Es opcional, y sin él todo sale como antes.
+- **Las x del layout ya vienen corridas:** la red, los arcos, las cajas y los postes van en las x de 800. En las x de 640 del juego es lo mismo menos el margen.
+- **`escenario.json`** trae `margen` y una nota que dice de dónde a dónde va la cancha. Úsalo para centrar la cámara. En las inclinadas no sirve dividir el ancho entre dos: el ancho trae lo que corre la inclinación (836 en Barranquilla), y el margen sigue siendo 80.
+- **El cielo** de una cancha con margen se pinta de su largo y no de 640. Si no, en una pantalla de 780 el cielo se repite y el sol sale dos veces.
+- **La capa lejos** corre a un cuarto de la cámara. Lo que tiene que caer en una ventana o detrás de algo (Monserrate en la cancha de tejo, la nube del Catatumbo en Maracaibo) va puesto para la cámara centrada: en x 10 (el iPhone) y en x 80 (la cancha en 640).
+- **Las postales** de una cancha con margen van al principio, al medio y al final de lo que se recorre, como las de una pantalla.
+- **Son 8:** Margarita, Đà Lạt, Tao Đàn, Maracaibo, Barranquilla, el patio del liceo, la cancha de tejo de La Candelaria y Hội An. El dojo sigue de 640 porque no estaba en el pedido.
+
 ## En Phaser
 
 ```js
@@ -272,7 +284,7 @@ Todas bloquean: si una falla, el escenario no sale.
   - **Solo al amanecer**, con su cielo (del celeste al durazno y al rosado, el sol recién salido a la izquierda). `canal` es la ciudad en la bruma.
   - **Fondo:** la bóveda de los dầu, los troncos claros y altísimos con sus raíces, los rayos de sol entre los troncos, el seto y el pasto, el letrero CÔNG VIÊN TAO ĐÀN, el palo con las jaulas de pájaros y el banco de piedra con los señores del café, el grupo de tai chi y los abuelos haciendo ejercicio.
   - **Lejos:** Landmark 81 y la Bitexco entre las torres, en la bruma rosada, con los árboles del parque delante.
-  - **El piso:** la `tierra` de este lugar es la cancha roja apisonada, con las rayas de `DaCau.ts` (de x 34 a 606 en la fila 298 y de 28 a 612 en la 322) y la del medio debajo de la red. La red la dibuja el juego. Adelante, el pasto y el camino de baldosas.
+  - **El piso:** la `tierra` de este lugar es la cancha roja apisonada, con las rayas de `DaCau.ts` (de x 114 a 686 en la fila 298 y de 108 a 692 en la 322: las del juego más el margen de 80) y la del medio debajo de la red. La red la dibuja el juego. Adelante, el pasto y el camino de baldosas.
   - **Vida:** `tai_chi` (4 cuadros), `abuelos_ejercicio` y `pajaros` (los de las jaulas saltan, y otros cruzan lejos). La capa cerca va sin lo que se mueve: la vida lo trae entero. `rayos_de_luz` son partículas de polvo que brilla en los rayos.
 - **El estilo `colombia_colonial`** (`paralaje.cerca: "cancha_tejo_candelaria"`, `paralaje.lejos: "monserrate_llovizna"`): la cancha de tejo de La Candelaria en la tarde nublada, de lado.
   - **Solo de tarde**, con el cielo tapado (`clima: ["nublado", "llovizna"]`). La paleta: la cal, la madera, la greda, el gris de la llovizna (`canal`), el verde de Monserrate y de las puertas coloniales y los colores de la bandera.
@@ -286,7 +298,7 @@ Todas bloquean: si una falla, el escenario no sale.
   - **Solo al mediodía.** La paleta: la arena clarita, el mar turquesa (`menta`) que se pone hondo hacia el horizonte (`canal`), el cielo limpio y los colores de los toldos.
   - **Fondo:** la orilla con la ola que revienta y la espuma que sube por la arena, cuatro palmas de coco (ninguna toca la red), dos toldos a rayas con su gente, la silla y la cava, la churuata de las empanadas con el techo de palma, el mostrador EMPANADAS y COCO FRÍO, la vitrina, la nevera y la bandera de Venezuela, el letrero de madera PLAYA EL AGUA, MARGARITA, una toalla con alguien tomando sol y una pelota de playa.
   - **Lejos:** el mar Caribe con el horizonte en la fila 186, el cerro verde de la punta de la playa con sus casitas, el morro de la izquierda, un peñero y dos veleros.
-  - **El piso:** la `arena` de este lugar, con las cintas azules de la cancha donde `Voley.ts` pone sus rayas (de x 34 a 606 en la fila 298 y de 28 a 612 en la 322). La red la dibuja el juego.
+  - **El piso:** la `arena` de este lugar, con las cintas azules de la cancha donde `Voley.ts` pone sus rayas (de x 114 a 686 en la fila 298 y de 108 a 692 en la 322: las del juego más el margen de 80). La red la dibuja el juego.
   - **Vida:** `olas` (4 cuadros), `toldos_viento` (2), `vendedor_empanadas` (2) y `alcatraces` (los pelícanos que cruzan en la capa lejos). Sin luces: es de día.
 - **El estilo `vietnam_montana`** (`paralaje.cerca: "cancha_arcilla_dalat"`, `paralaje.lejos: "lago_xuan_huong_pinos"`): la cancha de tenis de arcilla de Đà Lạt en la mañana con neblina, de lado.
   - **Solo de mañana.** La paleta: la arcilla roja, el verde de los pinos, la neblina (`bruma`), el lago (`canal`), las villas crema y las hortensias.
@@ -349,9 +361,9 @@ Todas bloquean: si una falla, el escenario no sale.
 ## Límites honestos
 
 - **Una sola hora pintada por escenario:** la del layout. El juego cambia de hora cambiando el layout y regenerando. `venezuela_ciudad`, `vietnam_hoian` y `venezuela_lago` solo saben pintar la noche, `vietnam_dojo` y `colombia_colonial` la tarde, `vietnam_parque` el amanecer, `vietnam_montana` la mañana, y `venezuela_playa` y `colombia_caribe` el mediodía. De E6: `colombia_cafetera` la mañana, `vietnam_bahia` y `venezuela_liceo` el mediodía, `venezuela_barrio` la tarde, y `venezuela_llano` y `colombia_amurallada` el atardecer.
-- **Los lugares de E4a y E5 son de una pantalla:** el dojo, Tao Đàn, la cancha de tejo, Margarita, Đà Lạt, Barranquilla y Maracaibo están puestos para un mundo de 640, como sus pruebas.
+- **Los lugares de E4a, E5 y E6 son de una pantalla:** el dojo está puesto para 640, y Tao Đàn, la cancha de tejo, Margarita, Đà Lạt, Barranquilla, Maracaibo y el liceo para 800 con margen de 80 (lote E4). Con otro largo, lo que va a los lados no se reparte solo.
 - **Los de E6 están puestos para el ancho de su prueba** (1720, 1460, 1560, 900, 640 y 880). Un layout más largo que su prueba no está probado: la pista, la piscina y el campo están medidos para ese ancho.
-- **El dibujo de Hội An es de una pantalla:** las casas, el río de la izquierda y los puestos están puestos para un mundo de 640. En un layout más largo con el mismo fondo, la última casa se estira hasta el final del ancho pintado.
+- **El dibujo de Hội An es de una pantalla:** las casas, el río de la izquierda y los puestos están puestos para un mundo de 800 con margen de 80. En un layout más largo con el mismo fondo, la última casa del margen se estira hasta el final del ancho pintado.
 - **El borde que avanza** lo mueve el juego: el arte trae el filo y el vacío, pero el murito del fondo, pintado en la capa cerca, sigue entero hasta el borde de antes.
 - **El aguacero es una capa encima del piso.** La lluvia que cae la pone el juego con el efecto `lluvia` del kit.
 - **La legibilidad se mide con el contorno de los atletas,** parados encima de la caja que tengan debajo, no con su ropa. Un equipo de ropa muy oscura sobre un fondo oscuro puede leerse peor de lo que dice la prueba.

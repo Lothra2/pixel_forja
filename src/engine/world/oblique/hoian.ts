@@ -5,8 +5,9 @@ import { nueva, type Pieza } from './calle';
 import { drawText, textWidth } from './letras';
 import { MAS_CLARO, MAS_OSCURO, corre } from './inclinada';
 import type { CtxCerca, PintorCerca } from './fachadas';
-import { depthOf, type ObliqueLayout } from './layout';
+import { MARGEN_CANCHA as OX, depthOf, type ObliqueLayout } from './layout';
 import type { Luz, Particula, VidaEscena } from './escena';
+import { personita, sentadita } from './pinceles';
 
 /**
  * Hội An de noche en el estilo `vietnam_hoian`: el río Thu Bồn con el puente japonés (Chùa Cầu) encendido al fondo
@@ -14,6 +15,11 @@ import type { Luz, Particula, VidaEscena } from './escena';
  * buganvilla y los puestos de faroles (cerca), la calle de piedra con el muelle de madera y el río de adelante con las
  * velitas en flores de papel. Los dos postes de bambú del Tama-wari, las cuerdas de faroles de seda sobre la calle y
  * los postes de faroles. La luz es la de los faroles: tibia, de abajo y de los lados.
+ *
+ * Mide 800 (lote E4): la cancha va en los 640 del medio, de x 80 a 720, y a cada lado hay 80 de Hội An. A la izquierda
+ * sigue el río, con otro bote de faroles amarrado al malecón y la señora que vende las velitas de papel. A la derecha
+ * sigue la calle: el resto del puesto de faroles, otra casa amarilla con su balcón y su buganvilla, y la vendedora de
+ * frutas con su gánh (la vara con las dos cestas).
  */
 
 /** Los fondos y temas de la capa cerca que son de Hội An. */
@@ -210,26 +216,36 @@ function nombre(L: Lienzo, x: number, y: number): Color | undefined {
 // Lo cerca: el río por la izquierda y las casas amarillas
 
 /** El río que se ve por la izquierda, antes de las casas: hasta dónde llega y las filas del agua y del malecón. */
-export const RIO = { x1: 166, agua: 216, malecon: 232 };
+export const RIO = { x1: OX + 166, agua: 216, malecon: 232 };
 /** Filas de las casas: el techo de la planta baja (el alero de tejas) y el alero grande de arriba. */
 const PB = 188, ALERO = 176, ARRIBA = 128;
 
 /** Lo que hay en cada vano de la planta baja: tienda de faroles, sastrería, comedor de cao lầu o puertas cerradas. */
 type Vano = 'faroles' | 'sastre' | 'comedor' | 'cerrado';
 interface Casa { x: number; w: number; techo: number; balcon: boolean; madera?: boolean; letrero?: string; enLetrero?: 'pared' | 'balcon'; vanos: Vano[] }
-/** Las cuatro casas de la ciudad vieja, de izquierda a derecha. La última sigue hasta el borde del ancho pintado. */
+/**
+ * Las casas de la ciudad vieja, de izquierda a derecha. La quinta es la del margen de la derecha (sin letrero, que la
+ * ficha no lo lleva) y sigue hasta el borde del ancho pintado.
+ */
 export const CASAS: Casa[] = [
-  { x: 166, w: 122, techo: 102, balcon: true, letrero: 'MAY ĐO', enLetrero: 'balcon', vanos: ['sastre', 'cerrado', 'sastre'] },
-  { x: 288, w: 104, techo: 108, balcon: false, madera: true, letrero: 'ĐÈN LỒNG', enLetrero: 'pared', vanos: ['faroles', 'faroles', 'faroles'] },
-  { x: 392, w: 132, techo: 96, balcon: true, letrero: 'CAO LẦU', enLetrero: 'balcon', vanos: ['comedor', 'faroles', 'comedor', 'cerrado'] },
-  { x: 524, w: 150, techo: 101, balcon: false, vanos: ['faroles', 'sastre', 'cerrado', 'comedor'] },
+  { x: OX + 166, w: 122, techo: 102, balcon: true, letrero: 'MAY ĐO', enLetrero: 'balcon', vanos: ['sastre', 'cerrado', 'sastre'] },
+  { x: OX + 288, w: 104, techo: 108, balcon: false, madera: true, letrero: 'ĐÈN LỒNG', enLetrero: 'pared', vanos: ['faroles', 'faroles', 'faroles'] },
+  { x: OX + 392, w: 132, techo: 96, balcon: true, letrero: 'CAO LẦU', enLetrero: 'balcon', vanos: ['comedor', 'faroles', 'comedor', 'cerrado'] },
+  { x: OX + 524, w: 150, techo: 101, balcon: false, vanos: ['faroles', 'sastre', 'cerrado', 'comedor'] },
+  { x: OX + 674, w: 80, techo: 104, balcon: true, vanos: ['faroles', 'comedor'] },
 ];
-/** Los dos puestos de faroles: el de la vendedora (x 320 del layout) y el del final. */
-export const PUESTOS = [{ x0: 292, x1: 374 }, { x0: 604, x1: 674 }];
+/** Los dos puestos de faroles: el de la vendedora (x 400 del layout) y el del final, que se mete en el margen de la derecha. */
+export const PUESTOS = [{ x0: OX + 292, x1: OX + 374 }, { x0: OX + 604, x1: OX + 674 }];
 /** Dónde está la gente en los balcones: x, ancho y fila de la baranda. */
 export const BALCONES = CASAS.filter((c) => c.balcon).map((c) => ({ x: c.x + 10, w: c.w - 20, baranda: ALERO - 16 }));
 /** El bote amarrado en el río de la izquierda: x de la proa y la fila del agua. */
-export const BOTE = { x: 56, y: RIO.agua + 11, w: 50 };
+export const BOTE = { x: OX + 56, y: RIO.agua + 11, w: 50 };
+/** El otro bote, amarrado quieto en el margen de la izquierda, más chiquito. */
+export const BOTE_AMARRADO = { x: 30, y: RIO.agua + 13, w: 42 };
+/** La señora de las velitas, arrodillada en el malecón del margen de la izquierda: x de la izquierda. */
+export const VENDEDORA_VELITAS = { x: 4 };
+/** La vendedora de frutas con su gánh, en la acera del margen de la derecha: x de la izquierda. */
+export const VENDEDORA_GANH = { x: 768 };
 
 /** Los faroles que alumbran las paredes: los de las puertas y los racimos debajo del alero grande. */
 function lucesPared() {
@@ -453,7 +469,7 @@ function buganvilla(C: Lienzo, cx: number, cy: number, rx: number, ry: number, c
 
 /** El árbol de la esquina del río, con la buganvilla enredada y dos faroles colgando de las ramas. */
 function arbol(C: Lienzo, seed: number) {
-  const tx = 176;
+  const tx = OX + 176;
   for (let y = 176; y < 246; y++) { const w = y > 236 ? 7 : 5; for (let i = 0; i < w; i++) C.p(tx - (w >> 1) + i, y, i === 0 ? 'asfalto' : i === w - 1 ? 'tinta' : 'sombra'); }
   C.ln(tx, 186, tx - 18, 168, 'sombra'); C.ln(tx + 1, 190, tx + 20, 172, 'sombra');
   const R = rng(seed);
@@ -497,8 +513,11 @@ export function velita(C: Lienzo, x: number, y: number, c: Color, f = 0) {
 }
 const VELA_COLORES: Color[] = ['salmon', 'rojo', 'crema', 'amarillo', 'salmon', 'menta'];
 
-/** El bote con faroles: casco de madera con la franja roja, el techito de bambú, faroles en la proa y adentro, y su reflejo. */
-export function boteFaroles(C: Lienzo, x: number, y: number, w: number, f = 0) {
+/**
+ * El bote con faroles: casco de madera con la franja roja, el techito de bambú, faroles en la proa y adentro, y su
+ * reflejo. Sin `remero` es el bote amarrado: nadie rema y lleva otro farol en la popa.
+ */
+export function boteFaroles(C: Lienzo, x: number, y: number, w: number, f = 0, remero = true) {
   const dy = f === 1 ? 1 : 0, yy = y + dy;
   // el reflejo
   for (let i = 4; i < w - 4; i++) for (let j = 1; j < 5; j++) if (bayer(x + i, yy + j) < 0.5 - j * 0.1) C.p(x + i, yy + j, 'sombra');
@@ -513,30 +532,89 @@ export function boteFaroles(C: Lienzo, x: number, y: number, w: number, f = 0) {
   // faroles: uno en la proa, colgado de su vara, y dos adentro
   C.vl(x + 5, yy - 14, 9, 'ocre'); farol(C, x + 5, yy - 14, 5, 6, 'rojo', 1);
   farol(C, x + 19, yy - 11, 5, 5, 'oro', 1); farol(C, x + 28, yy - 11, 5, 5, 'canal', 1);
+  if (!remero) { C.vl(x + w - 6, yy - 14, 9, 'ocre'); farol(C, x + w - 6, yy - 14, 5, 6, 'oro', 1); return; }
   // el que rema atrás, con su nón lá
   const rx = x + w - 10;
   C.f(rx, yy - 12, 4, 7, 'celeste'); C.vl(rx + 3, yy - 12, 7, 'azul'); C.hl(rx - 2, yy - 14, 8, 'crema'); C.hl(rx, yy - 15, 4, 'crema'); C.p(rx + 1, yy - 16, 'luz');
   C.ln(rx + 5, yy - 10, rx + 10, yy + 2, 'ocre');
 }
 
-/** El río de la izquierda: el agua con los reflejos, las velitas, el bote y el malecón de piedra con sus bolardos. */
+/** Un nón lá visto de frente, con la punta en (cx, y): el cono de paja con su lado claro y el ala de abajo. */
+function nonLa(C: Lienzo, cx: number, y: number) {
+  for (let j = 0; j < 5; j++) for (let i = -j * 1.5; i <= j * 1.5; i++) { const x = Math.round(cx + i); C.p(x, y + j, j === 4 ? 'ocre' : i < 0 ? 'luz' : 'crema'); }
+  C.hl(cx - 7, y + 5, 15, 'ocre');
+}
+
+/**
+ * La señora de las velitas, arrodillada en el malecón (piso es la fila donde se apoya): su áo bà ba, el nón lá y la nia
+ * (la cesta plana) llena de flores de papel con la vela, que le vende a la gente para soltarlas en el río.
+ */
+function vendedoraVelitas(C: Lienzo, x: number, piso: number) {
+  sentadita(C, x, piso - 6, { ropa: 'menta', pant: 'sombra', pelo: 'tinta', piel: 'ocre', alto: 18 }, false);
+  nonLa(C, x + 4, piso - 6 - 3 - 9 - 5 - 4);
+  // la nia en el piso con las velitas encima, y una en la mano
+  const nx = x + 12, ny = piso - 3;
+  C.f(nx, ny, 18, 3, 'terracota'); C.hl(nx, ny, 18, 'ocre'); for (let i = nx + 1; i < nx + 17; i += 3) C.p(i, ny + 1, 'vino');
+  for (const [i, c] of [[3, 'salmon'], [8, 'amarillo'], [13, 'rojo'], [5, 'crema'], [11, 'menta']] as [number, Color][]) velita(C, nx + i, ny - (i % 2 ? 1 : 3), c);
+  velita(C, x + 10, piso - 13, 'rojo');
+}
+
+/**
+ * La vendedora de frutas que pasa por la calle con su gánh: la vara de bambú en el hombro y una cesta colgando en cada
+ * punta, llenas de mangos, pitahayas y mangostinos. Va con su nón lá. `piso` es la fila de los pies.
+ */
+function vendedoraGanh(C: Lienzo, x: number, piso: number) {
+  const alto = 28, hombro = piso - Math.round(alto * 0.4) - Math.round(alto * 0.36) + 1;
+  // las cestas, primero las cuerdas y después el tejido con la fruta (detrás de ella va la de la derecha)
+  const cesta = (cx: number) => {
+    const top = piso - 13;
+    C.ln(cx - 6, top, cx, hombro - 1, 'sombra'); C.ln(cx + 6, top, cx, hombro - 1, 'sombra');
+    for (let j = 0; j < 9; j++) { const m = j > 5 ? j - 5 : 0; for (let i = -7 + m; i <= 7 - m; i++) C.p(cx + i, top + j, j === 0 ? 'ocre' : (i + j) % 2 ? 'terracota' : 'ocre'); }
+    for (const [i, c] of [[-4, 'amarillo'], [0, 'rojo'], [4, 'amarillo'], [-2, 'vino'], [2, 'salmon']] as [number, Color][]) { C.d(cx + i, top - 1 - (Math.abs(i) === 2 ? 1 : 0), 1.6, c); C.p(cx + i - 1, top - 2 - (Math.abs(i) === 2 ? 1 : 0), MAS_CLARO[c]); }
+    C.p(cx, top - 4, 'verde'); C.p(cx + 1, top - 5, 'verde');
+  };
+  cesta(x - 13); cesta(x + 21);
+  personita(C, x, piso, { ropa: 'salmon', pant: 'sombra', pelo: 'tinta', piel: 'ocre', alto, pose: 0 });
+  // la vara de bambú en el hombro, que se dobla un poquito con el peso
+  for (let i = -15; i <= 23; i++) { const y = hombro - 1 + Math.round(Math.abs(i - 4) / 12); C.p(x + i, y, 'terracota'); C.p(x + i, y + 1, 'vino'); }
+  C.p(x + 8, hombro + 1, 'ocre'); C.p(x + 8, hombro + 2, 'ocre');
+  nonLa(C, x + 4, hombro - 12);
+}
+
+/**
+ * El río de la izquierda: el agua con los reflejos, las velitas, el bote que se mece, el amarrado del margen y el malecón
+ * de piedra con sus bolardos, la señora de las velitas y el chamito que suelta la suya.
+ */
 function rioCerca(C: Lienzo, seed: number, conBote: boolean, boteF = 0) {
   const { x1, agua, malecon } = RIO, R = rng(seed + 13);
-  // los reflejos del puente y la orilla de enfrente siguen hasta aquí: rayas por grupos de columnas
+  // los reflejos del puente y la orilla de enfrente siguen hasta aquí: rayas por grupos de columnas. El puente está en la
+  // capa lejos, que corre a un cuarto: cuando el juego centra la cancha (corre OX) el puente queda 60 más a la derecha
+  // de lo que da la capa cerca, así que el reflejo se estira esos 60 y calza con las dos vistas
+  const largoReflejo = PUENTE.w - 8 + Math.round(OX * 0.75);
   aguaNoche(C, 0, x1, agua, malecon, seed + 5, (x) => {
     // debajo de la galería del puente: una raya por vano encendido, y los faroles rojos
     const i = x - PUENTE.x - 4;
-    if (i >= 0 && i < PUENTE.w - 8) return i % 10 === 5 ? 'rojo' : i % 10 > 2 && i % 10 < 8 ? 'oro' : undefined;
+    if (i >= 0 && i < largoReflejo) return i % 10 === 5 ? 'rojo' : i % 10 > 2 && i % 10 < 8 ? 'oro' : undefined;
     return grain(x >> 1, 0, seed + 4) < 0.1 ? 'oro' : undefined;
   });
-  for (let k = 0; k < 7; k++) { const x = 6 + Math.floor(R() * (x1 - 20)); if (x > BOTE.x - 6 && x < BOTE.x + BOTE.w + 6) continue; velita(C, x, agua + 4 + Math.floor(R() * 9), VELA_COLORES[k % VELA_COLORES.length]); }
+  const fuera = (x: number) => [BOTE, BOTE_AMARRADO].some((b) => x > b.x - 6 && x < b.x + b.w + 6);
+  for (let k = 0; k < 11; k++) { const x = 6 + Math.floor(R() * (x1 - 20)); if (fuera(x)) continue; velita(C, x, agua + 4 + Math.floor(R() * 9), VELA_COLORES[k % VELA_COLORES.length]); }
+  // el bote amarrado del margen, quieto, con su cabo al bolardo
+  boteFaroles(C, BOTE_AMARRADO.x, BOTE_AMARRADO.y, BOTE_AMARRADO.w, 0, false);
   if (conBote) boteFaroles(C, BOTE.x, BOTE.y, BOTE.w, boteF);
-  // el malecón: piedra con el canto encendido y los bolardos
+  // el malecón: piedra con el canto encendido y los bolardos (las juntas cuentan desde OX, como antes de ensanchar)
   for (let y = malecon; y < 246; y++) for (let x = 0; x < x1 + 4; x++) {
-    const r = y - malecon, fila = Math.floor(r / 5), jx = (x + fila * 9) % 18;
+    const r = y - malecon, fila = Math.floor(r / 5), jx = (x - OX + 18 * 5 + fila * 9) % 18;
     C.p(x, y, r === 0 ? 'crema' : r === 1 ? 'cemento_claro' : r % 5 === 0 || jx === 0 ? 'asfalto' : grain(x >> 1, y, seed) < 0.1 ? 'asfalto_claro' : 'cemento');
   }
-  for (let x = 12; x < x1; x += 38) { C.f(x, malecon - 7, 6, 7, 'cemento'); C.vl(x, malecon - 7, 7, 'cemento_claro'); C.hl(x, malecon - 7, 6, 'crema'); C.vl(x + 5, malecon - 7, 7, 'asfalto_claro'); }
+  for (let x = OX + 12 - 38 * 2; x < x1; x += 38) { C.f(x, malecon - 7, 6, 7, 'cemento'); C.vl(x, malecon - 7, 7, 'cemento_claro'); C.hl(x, malecon - 7, 6, 'crema'); C.vl(x + 5, malecon - 7, 7, 'asfalto_claro'); }
+  // el cabo del bote amarrado, del segundo bolardo a la proa, con su comba
+  const bx = OX + 12 - 38 + 3, by = malecon - 6, px = BOTE_AMARRADO.x + 1, py = BOTE_AMARRADO.y - 5;
+  for (let i = 0; i <= bx - px; i++) { const t = i / (bx - px); C.p(bx - i, Math.round(by + (py - by) * t + Math.sin(t * Math.PI) * 2), 'cemento_claro'); }
+  vendedoraVelitas(C, VENDEDORA_VELITAS.x, malecon + 12);
+  // un chamito agachado en el borde del malecón, soltando su velita en el agua
+  sentadita(C, VENDEDORA_VELITAS.x + 66, malecon + 4, { ropa: 'celeste', pant: 'azul', pelo: 'tinta', piel: 'ocre', alto: 14 }, false);
+  velita(C, VENDEDORA_VELITAS.x + 62, malecon - 2, 'amarillo');
 }
 
 /** Para la vida: sin la gente o sin el bote, y en qué cuadro van la gente (`f`) y el bote (`boteF`). */
@@ -550,10 +628,13 @@ export function pintarHoian(C: Lienzo, seed: number, o: OpcionesHoian = {}) {
   buganvilla(C, CASAS[0].x + 22, ARRIBA - 4, 22, 9, 26, seed + 61);
   buganvilla(C, CASAS[2].x + CASAS[2].w - 16, ALERO - 18, 18, 7, 14, seed + 62);
   buganvilla(C, CASAS[3].x + 20, ARRIBA - 6, 14, 6, 20, seed + 63);
+  buganvilla(C, CASAS[4].x + 30, ALERO - 18, 16, 7, 16, seed + 64);
   arbol(C, seed + 71);
   for (const [i, p] of PUESTOS.entries()) puestoFaroles(C, p.x0, Math.min(C.w, p.x1), seed + 80 + i);
   // matas en materas al pie de las casas
-  for (const x of [196, 382, 516, 590]) { C.f(x, 236, 8, 8, 'terracota'); C.hl(x, 236, 8, 'ocre'); C.hl(x, 243, 8, 'vino'); for (let k = 0; k < 9; k++) C.d(x + 1 + ((k * 5) % 7), 231 - (k % 3) * 2, 2, k % 3 ? 'verde' : 'verde_oscuro'); C.p(x + 3, 228, 'menta'); }
+  for (const x of [OX + 196, OX + 382, OX + 516, OX + 590]) { C.f(x, 236, 8, 8, 'terracota'); C.hl(x, 236, 8, 'ocre'); C.hl(x, 243, 8, 'vino'); for (let k = 0; k < 9; k++) C.d(x + 1 + ((k * 5) % 7), 231 - (k % 3) * 2, 2, k % 3 ? 'verde' : 'verde_oscuro'); C.p(x + 3, 228, 'menta'); }
+  // en el margen de la derecha: la vendedora de frutas que pasa con su gánh
+  vendedoraGanh(C, VENDEDORA_GANH.x, 245);
 }
 
 export const casasHoian: PintorCerca = (C, _x0, _x1, _base, ctx: CtxCerca) => pintarHoian(C, ctx.seed);
@@ -569,7 +650,7 @@ function luzPiso(x: number, y: number) {
   CHARCOS_LUZ ??= [
     ...CASAS.flatMap((c) => bahias(c).map((bx) => ({ x: bx, y: 2, rx: 30, ry: 26 }))),
     ...PUESTOS.map((p) => ({ x: (p.x0 + p.x1) / 2 - 8, y: 4, rx: 64, ry: 40 })),
-    ...[118, 222, 330, 436, 538].map((x) => ({ x, y: 46, rx: 40, ry: 22 })),
+    ...[118, 222, 330, 436, 538].map((x) => ({ x: OX + x, y: 46, rx: 40, ry: 22 })),
   ];
   let t = 0;
   for (const l of CHARCOS_LUZ) t = Math.max(t, 1 - Math.hypot((x - l.x) / l.rx, (y - l.y) / l.ry));
@@ -600,7 +681,7 @@ export function aceraHoian(x: number, y: number, s: number): Color {
   const jx = x % 40;
   if (jx === 39 || y === 0) return 'asfalto_claro';
   // pétalos de buganvilla caídos debajo de las matas
-  if (((x > 176 && x < 214) || (x > 492 && x < 530)) && grain(x, y, s + 33) < 0.035) return 'salmon';
+  if (((x > OX + 176 && x < OX + 214) || (x > OX + 492 && x < OX + 530) || (x > OX + 694 && x < OX + 732)) && grain(x, y, s + 33) < 0.035) return 'salmon';
   const luz = luzPiso(x, y);
   if (luz > 0.45 && bayer(x, y) < (luz - 0.45) * 2.2) return 'crema';
   return grain(x >> 2, y >> 1, s + 31) < 0.08 ? 'cemento' : 'cemento_claro';
@@ -864,7 +945,7 @@ export function lucesHoian(pal: Paleta, L: ObliqueLayout, k: number, cuerdas: { 
   if (!esHoian(L)) return [];
   const FT = L.franja.atras, out: Luz[] = [];
   for (const c of CASAS.slice(0, 3)) { const bx = bahias(c)[0]; out.push({ x: bx, y: ALERO + 18, color: pal.oro, radio: 24, latido: 0.6, encendida: true, nota: 'el farol de la puerta: alumbra la pared amarilla y la piedra' }); }
-  for (const p of PUESTOS) out.push({ x: Math.round((p.x0 + Math.min(p.x1, 640)) / 2), y: PB + 16, color: pal.oro, radio: 40, encendida: true, nota: 'el puesto de faroles' });
+  for (const p of PUESTOS) out.push({ x: Math.round((p.x0 + Math.min(p.x1, L.largo)) / 2), y: PB + 16, color: pal.oro, radio: 40, encendida: true, nota: 'el puesto de faroles' });
   for (const p of L.postes.filter((q) => q.tipo === 'poste_faroles')) out.push({ x: p.x + corre(k, p.y), y: FT + p.y - p.alto + 12, color: pal.rojo, radio: 32, latido: 0.8, encendida: true, nota: 'los faroles del poste' });
   for (const c of cuerdas) {
     const fs = c.faroles.filter((_, i) => i % Math.max(1, Math.floor(c.faroles.length / 3)) === 1).slice(0, 3);
