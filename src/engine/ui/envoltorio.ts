@@ -674,7 +674,11 @@ export const VS4 = {
   texto: [216, 22, 368, 34] as [number, number, number, number],
   /** la fila de los nombres (y del centro) bajo cada hueco, y la de las frases */
   nombres: 246, frases: 268,
+  /** la costura entre los dos equipos: de arriba a abajo, simétrica sobre el centro de la imagen (pasa por 400, 180) */
+  costura: [[440, 0], [360, 360]] as [[number, number], [number, number]],
 };
+/** La x de la costura en la fila y. */
+export const costuraVs4 = (y: number) => VS4.costura[0][0] + ((VS4.costura[1][0] - VS4.costura[0][0]) * y) / VS4.h;
 
 /**
  * El marco del VS de 4 (dos contra dos, los capitanes de cada lado): la pantalla partida en diagonal, azul a la
@@ -686,8 +690,8 @@ export function marcoVs4(): UiPiece {
   const { w: W, h: H } = VS4;
   const p = new Pix(W, H);
   const AZUL = ['#0c1a4a', '#14286e', '#1a3a9a', '#2a5ad0'], ROJO = ['#4a0c14', '#6e141e', '#9a1a2a', '#d02a3a'];
-  // la costura: de (410, 0) a (330, 360), como el VS de la intro corrido al centro de 800
-  const costura = (y: number) => 410 - (80 * y) / H;
+  // la costura: en diagonal como el VS de la intro, pero simétrica sobre el centro de la imagen
+  const costura = costuraVs4;
   const cx = 400, cy = 150;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const lado = x < costura(y) ? AZUL : ROJO;
@@ -728,7 +732,7 @@ export function marcoVs4(): UiPiece {
   }
   return {
     name: 'marco_vs_4', frames: [p.r], w: W, h: H,
-    extra: { margen: VS4.margen, huecos: VS4.huecos, vs: VS4.vs, texto: VS4.texto, nombres: VS4.nombres, frases: VS4.frases,
+    extra: { margen: VS4.margen, huecos: VS4.huecos, vs: VS4.vs, texto: VS4.texto, nombres: VS4.nombres, frases: VS4.frases, costura: VS4.costura,
       nota: 'Imagen de 800 x 360 (la parte de 640 de x 80 a 720). Los retratos grandes van en `huecos`: los dos primeros de un equipo, los dos últimos del otro. Los nombres centrados bajo cada hueco en y `nombres`.' },
   };
 }

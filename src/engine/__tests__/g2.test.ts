@@ -5,7 +5,7 @@ import { migrateFicha, isHuman, type HumanFicha } from '../index';
 import type { Raster } from '../core/raster';
 import { portrait, EXPRESSIONS } from '../kit/portraits';
 import {
-  medallas, banderas, podio, iconosPrueba, tarjetas, marcoVs4, pantallaRetro, iniciales, ICONOS_PRUEBA, BANDERAS, PODIO, VS4, PANTALLAS, TARJETA,
+  medallas, banderas, podio, iconosPrueba, tarjetas, marcoVs4, costuraVs4, pantallaRetro, iniciales, ICONOS_PRUEBA, BANDERAS, PODIO, VS4, PANTALLAS, TARJETA,
   type EquipoTarjeta,
 } from '../ui/envoltorio';
 import { glifosDe, figuraDe, banderaDe, PARTES_ENVOLTORIO } from '../kit/envoltorioKit';
@@ -179,7 +179,12 @@ describe('íconos de prueba, tarjetas, VS de 4 y pantallas', () => {
   it('el VS de 4: dos huecos a cada lado de la costura, oscuros, y el centro libre para la palabra VS', () => {
     const v = marcoVs4(), r = v.frames[0];
     expect([r.w, r.h]).toEqual([800, 360]);
-    const costura = (y: number) => 410 - (80 * y) / 360;
+    const costura = costuraVs4;
+    // la costura pasa por el centro de la imagen y por el centro de la palabra VS
+    expect(costura(180)).toBe(400);
+    const [vx, vy, vw, vh] = VS4.vs;
+    expect(Math.abs(costura(vy + vh / 2) - (vx + vw / 2))).toBeLessThan(8);
+    expect(lum(r, 400, 180)).toBeGreaterThan(200);
     VS4.huecos.forEach(([x, y, w, h], i) => {
       expect([w, h]).toEqual([96, 96]);
       expect(i < 2 ? x + w < costura(y + h) : x > costura(y)).toBe(true);
