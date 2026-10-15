@@ -57,7 +57,13 @@ panel de las heroínas o de Thor tenga los rojos de la sangre.
 
 Láminas rehechas: `docs/entregas/cine_bajada.png` y `docs/entregas/cine_fin.png`.
 
-Verificación: ver el final de este archivo.
+Verificación:
+
+- `npx tsc -b` limpio y `npm test` en verde: 46 archivos, 328 tests (los 325 de antes más 3 nuevos de las alas).
+- Kit regenerado. Contra `b684504`, los 2368 archivos siguen idénticos byte a byte y en el manifest solo cambia
+  `mundos` (suma `mundo7`). Contra el kit del merge cambian solo cuatro archivos: `cine/bajada_diablo_medio.png`,
+  `cine/fin_cae_medio.png`, `cine/fin_llama_fondo.png` y `manifest.json`, donde solo cambian las tres notas que
+  hablaban de sangre.
 
 ## Créditos y fotos
 
