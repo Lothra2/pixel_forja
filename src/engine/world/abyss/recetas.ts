@@ -4,6 +4,7 @@ import { catedralMonumentos } from './catedral';
 import { galeriasMonumentos } from './galerias';
 import { puertoMonumentos } from './puerto';
 import { ciudadMonumentos } from './ciudad';
+import { fraguaMonumentos } from './fragua';
 
 /**
  * Las recetas de los siete mundos: cómo se repinta el piso, qué monumento va en cada zona y la luz de cada zona.
@@ -218,4 +219,42 @@ export const RECETA_CIUDAD: RecetaMundo = {
   },
 };
 
-export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL, mundo3: GALERIAS, mundo4: RECETA_PUERTO, mundo5: RECETA_CIUDAD };
+export const RECETA_FRAGUA: RecetaMundo = {
+  mundo: 'mundo6',
+  niebla: '#a08070',
+  piso: {
+    semilla: 606,
+    macro: { claro: '#c86a30', oscuro: '#0a0606', fuerza: 0.12 },
+    manchas: [
+      { color: '#060404', kinds: [1, 2, 5], cantidad: 0.25, escala: 50, fuerza: 0.4 },
+      { color: '#5a5048', kinds: [2], cantidad: 0.12, escala: 30, fuerza: 0.3 },
+      { color: '#5a2a10', kinds: [2], cantidad: 0.08, escala: 36, fuerza: 0.3 },
+      { color: '#8a3010', kinds: [1, 2], cantidad: 0.05, escala: 20, fuerza: 0.3 },
+    ],
+    grietas: { kinds: [1, 2, 5], densidad: 3, oscuro: '#050202', canto: '#c85a20' },
+    sueltos: [
+      { kinds: [1, 2], densidad: 4, dibujo: 'carbon', colores: ['#141010', '#201814'] },
+      { kinds: [1, 2], densidad: 1.5, dibujo: 'clavo', colores: ['#5a5a64', '#6a3a1e'] },
+      { kinds: [1, 2, 5], densidad: 2, dibujo: 'piedrita', colores: ['#3a302a', '#4a3e36', '#2a221e'] },
+    ],
+    bordes: [1, 2, 5],
+  },
+  monumentos: fraguaMonumentos,
+  luz: {
+    mundo: { rayos: '0,#ff9040,0.3', grado: '#140806,#ffb060,1.15,1.05' },
+    zonas: {
+      'La Escalera de Ceniza': { rayos: '-15,#ffa060,0.35', grado: '#140a08,#ffb070,1.12,1.0', particulas: 'brasas,ceniza' },
+      'El Río de Lava': { rayos: '0,#ff7020,0.5', grado: '#1a0604,#ffa040,1.2,1.15', particulas: 'brasas,humo' },
+      'Las Jaulas Colgantes': { rayos: '-10,#ffc070,0.3', grado: '#140c06,#ffd090,1.14,1.05', particulas: 'brasas,brillos' },
+      'Los Fuelles': { rayos: '-20,#ff8040,0.35', grado: '#140806,#ffa060,1.16,1.05', particulas: 'brasas,humo' },
+      'El Bosque de Ceniza': { rayos: '-25,#c86a3a,0.25', grado: '#0e0806,#e09060,1.1,0.85', particulas: 'ceniza,brasas' },
+      'La Cárcel de las Luces': { rayos: '-5,#ffc070,0.3', grado: '#100806,#ffd090,1.15,1.0', particulas: 'brasas,polvo' },
+      'El Horno': { rayos: '0,#ff7020,0.45', grado: '#1a0804,#ffa040,1.2,1.12', particulas: 'brasas,humo' },
+      'El Corazón de la Fragua': { rayos: '0,#ff5a20,0.4', grado: '#1a0402,#ff9040,1.25,1.15', particulas: 'brasas,ceniza' },
+      'El Nido de Ceniza': { rayos: '0,#c86a3a,0.2', grado: '#0e0806,#e09060,1.1,0.9', particulas: 'ceniza,brasas' },
+      'La Alacena del Herrero': { rayos: '-30,#ffc070,0.35', grado: '#140c06,#ffd090,1.12,1.0', particulas: 'brasas,polvo' },
+    },
+  },
+};
+
+export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL, mundo3: GALERIAS, mundo4: RECETA_PUERTO, mundo5: RECETA_CIUDAD, mundo6: RECETA_FRAGUA };

@@ -413,7 +413,10 @@ export interface FraguaReport {
   pantallas: { nombre: string; x: number; y: number; objetos: string[] }[];
 }
 
-export function fraguaMap(seed = 666): BigMap & { premium: FraguaReport } {
+import { vidaAbyss, type InformeAbyss } from './abyss/index';
+import { RECETA_FRAGUA } from './abyss/recetas';
+
+export function fraguaMap(seed = 666, opts: { abyss?: boolean } = {}): BigMap & { premium: FraguaReport; abyss?: InformeAbyss } {
   const W = FRAGUA_W, H = FRAGUA_H;
   const d = makeDesign();
   const terrain = paintFragua(d, seed);
@@ -768,7 +771,8 @@ export function fraguaMap(seed = 666): BigMap & { premium: FraguaReport } {
     for (let k = 0; k < W * H; k++) if (!reach[k]) solid[k] = 1;
   }
   void JAULA_CANDADO;
-  return map;
+  // abyss premium: piso con vida, un monumento por zona, criaturas nuevas y la luz de cada zona
+  return opts.abyss === false ? map : vidaAbyss(map, RECETA_FRAGUA);
 }
 
 /** Calcomanías por tipo de piso */

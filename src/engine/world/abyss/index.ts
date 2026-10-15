@@ -192,11 +192,14 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
           const k = at(x, y);
           if (k < 0 || m.solid[k] || veto[k] || m.terrain.waterTiles[k]) { bien = false; break; }
           const base = y >= by0 && y <= by1 && x >= bx0 && x <= bx1;
-          if (base) { if (!reach0[k] || camino[k] || m.terrain.tileKind[k] === 3 || m.terrain.tileKind[k] === 6) { bien = false; break; } tiles.push(k); }
+          if (base) { if (!reach0[k] || (camino[k] && nivel < 2) || m.terrain.tileKind[k] === 3 || m.terrain.tileKind[k] === 6) { bien = false; break; } tiles.push(k); }
         }
         if (!bien) continue;
         // no parte el piso de alrededor: lo caminable cerca de la base sigue unido sin dar la vuelta (no tapa pasillos)
         if (tiles.length && partePasillo(tiles, bx0 - 2, by0 - 2, bx1 + 2, by1 + 2)) continue;
+        // nunca en un puente ni en un istmo: agua (o lava) a los dos lados, cerca
+        const aguaHacia = (dx: number, dy: number) => { for (let r = 1; r <= 4; r++) { const k = at(Math.floor(px / TILE) + dx * r, Math.floor((py - 1) / TILE) + dy * r); if (k >= 0 && m.terrain.waterTiles[k]) return true; } return false; };
+        if ((aguaHacia(0, -1) && aguaHacia(0, 1)) || (aguaHacia(-1, 0) && aguaHacia(1, 0))) continue;
         // no tapa entidades ni cristales con la imagen
         if (puntos.some(([ex, ey]) => ex >= ix0 - 8 && ex <= ix1 + 8 && ey >= iy0 - 8 && ey <= iy1 + 8)) continue;
         // huella: no pisa pies, no le pisan el pie, poco solape de cuerpos (y en los mundos estrictos, no tapa acantilados)
