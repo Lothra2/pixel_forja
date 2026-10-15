@@ -136,7 +136,7 @@ Qué mirar:
 4. **Los íconos llevan el sprite de un atleta y no una silueta.** Probé las siluetas blancas de las olimpiadas y el chibi no se lee: la cabeza grande se come los brazos. Cada ícono lleva a un atleta distinto, en el orden de los equipos.
 5. **El judo, el Kachinuki y la pelea llevan al rival recibiendo,** para que se lea el contacto.
 6. **El podio calza con tu medallero de hoy:** los cajones están donde ya pones a los atletas, y arriba queda libre para el título y el marcador.
-7. **El VS de 4 es dos contra dos,** azul y rojo como tu VS, partido en diagonal como el de la intro.
+7. **El VS de 4 es dos contra dos,** azul y rojo como tu VS, partido en diagonal como el de la intro. La costura blanca pasa por el centro de la pantalla y cruza la VS entre la V y la S (la corregí después de que la viste corrida a la izquierda). Su recorrido sale en el manifiesto como `costura`.
 8. **La pausa va tramada y no tapada.** Así se ve la pelea congelada detrás, sin alfa, como pide el kit.
 9. **"SE ACABÓ LA VAINA"** va de noche bajo la lluvia, en plata como su letra. **"¿OTRA PARTIDITA?"** va en arcade, con rayos, cuadrícula y monedas.
 10. **La bandera de Rolos es la de Bogotá y la de Maracuchos la del Zulia.** Eso inferí de tu lista de banderas. Colombia y Venezuela siguen saliendo para las pruebas.
