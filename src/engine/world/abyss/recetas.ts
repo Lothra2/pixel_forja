@@ -1,6 +1,7 @@
 import type { RecetaMundo } from './index';
 import { bosqueMonumentos } from './bosque';
 import { catedralMonumentos } from './catedral';
+import { galeriasMonumentos } from './galerias';
 
 /**
  * Las recetas de los siete mundos: cómo se repinta el piso, qué monumento va en cada zona y la luz de cada zona.
@@ -42,7 +43,7 @@ export const BOSQUE: RecetaMundo = {
       'Pradera de las Mariposas': { rayos: '-18,#fff0c0,0.7', grado: '#22302a,#fff2c8,1.04,1.18', particulas: 'mariposas,polen' },
       'El Abuelo Roble': { rayos: '-25,#ffd890,0.75', grado: '#1a2418,#ffd8a0,1.1,1.08', particulas: 'hojas,luciernagas' },
       'Bosque Profundo': { rayos: '-30,#b8e0c8,0.25', grado: '#0a141c,#a8c8e8,1.18,0.92', particulas: 'luciernagas,esporas,fuegos_fatuos,murcielagos' },
-      'Anillo de las Hadas': { rayos: '-10,#a8fff0,0.45', grado: '#0e1a24,#a8fff0,1.14,1.15', particulas: 'luciernagas_turquesa,brillos,fuegos_fatuos' },
+      'Anillo de las Hadas': { rayos: '-10,#a8fff0,0.45', grado: '#0e1a24,#a8fff0,1.14,1.15', particulas: 'luciernagas,luciernagas_turquesa,brillos,fuegos_fatuos' },
       'Claro Escondido': { rayos: '-15,#e8c8ff,0.5', grado: '#160e24,#e0c8ff,1.12,1.1', particulas: 'brillos,luciernagas,mariposas' },
       'Arroyo Cristalino': { rayos: '-20,#e0f4ff,0.5', grado: '#10202a,#e0f0ff,1.06,1.05', particulas: 'gotas,luciernagas' },
       'Lago Espejo': { rayos: '-24,#ffe9c0,0.55', grado: '#0e1e2a,#ffe8c8,1.06,1.06', particulas: 'luciernagas,mariposas' },
@@ -93,4 +94,43 @@ export const CATEDRAL: RecetaMundo = {
   },
 };
 
-export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL };
+export const GALERIAS: RecetaMundo = {
+  mundo: 'mundo3',
+  niebla: '#8aa8c8',
+  piso: {
+    semilla: 303,
+    macro: { claro: '#4a7aa0', oscuro: '#06080e', fuerza: 0.12 },
+    manchas: [
+      { color: '#0a1018', kinds: [0, 2], cantidad: 0.25, escala: 56, fuerza: 0.32 },
+      { color: '#2a5a7a', kinds: [0], cantidad: 0.08, escala: 28, fuerza: 0.35 },
+      { color: '#5a4a2a', kinds: [0], cantidad: 0.1, escala: 40, fuerza: 0.28 },
+      { color: '#1a2a3a', kinds: [3, 6], cantidad: 0.2, escala: 30, fuerza: 0.2 },
+    ],
+    grietas: { kinds: [0, 2, 5], densidad: 3, oscuro: '#05070c', canto: '#6a7a8e' },
+    charcos: { kinds: [0], densidad: 0.5, fondo: '#0e2a3a', brillo: '#76d0ea' },
+    sueltos: [
+      { kinds: [0, 2], densidad: 5, dibujo: 'piedrita', colores: ['#3a4250', '#4a5464', '#2a3038'] },
+      { kinds: [0], densidad: 3, dibujo: 'esquirla', colores: ['#3a9cc4', '#76d0ea', '#7c4cb2'] },
+      { kinds: [0], densidad: 1.5, dibujo: 'carbon', colores: ['#141418', '#1e1e24'] },
+      { kinds: [0, 2], densidad: 0.6, dibujo: 'clavo', colores: ['#6a4a30', '#5a5a64'] },
+    ],
+    bordes: [0, 2, 5],
+  },
+  monumentos: galeriasMonumentos,
+  luz: {
+    mundo: { rayos: '0,#8ae0ff,0', grado: '#060a14,#8ae0ff,1.14,0.95' },
+    zonas: {
+      'La Boca de la Mina': { rayos: '-20,#d8e8ff,0.55', grado: '#0a1018,#d0e8ff,1.08,0.92', particulas: 'polvo,gotas' },
+      'Los Rieles': { rayos: '0,#c8a070,0', grado: '#0c0c10,#ffd0a0,1.12,0.9', particulas: 'polvo' },
+      'La Sala del Eco': { rayos: '0,#a88aff,0.15', grado: '#0c0618,#c0a8ff,1.16,1.05', particulas: 'brillos,polvo' },
+      'El Puente Colgante': { rayos: '-5,#6a8ad8,0.2', grado: '#04060e,#8ab0ff,1.18,0.95', particulas: 'brasas_frias,gotas' },
+      'El Lago de Cristal': { rayos: '-10,#5ae8ff,0.3', grado: '#04101a,#8af0ff,1.12,1.08', particulas: 'brillos,gotas' },
+      'El Campamento Abandonado': { rayos: '0,#ffb35a,0', grado: '#100a06,#ffc080,1.1,0.95', particulas: 'humo,polvo' },
+      'La Cueva de la Reina': { rayos: '0,#b07aff,0.1', grado: '#0a0414,#c890ff,1.2,1.0', particulas: 'ceniza,brillos' },
+      'La Veta Escondida': { rayos: '0,#ffb35a,0.2', grado: '#100a04,#ffd080,1.12,1.1', particulas: 'brillos' },
+      'El Nicho del Minero': { rayos: '0,#ffb35a,0', grado: '#0c0a08,#ffc890,1.1,0.9', particulas: 'polvo,gotas' },
+    },
+  },
+};
+
+export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL, mundo3: GALERIAS };

@@ -44,6 +44,8 @@ export interface InformeAbyss {
   piso: InformePiso;
   monumentos: { zona: string; nombre: string; x: number; y: number; w: number; h: number; historia: string }[];
   sinLugar: string[];
+  /** partículas de cada zona antes y después (las de antes se quedan todas) */
+  particulas: Record<string, { antes: string; despues: string }>;
   /** el suelo quedó del mismo tamaño y con el mismo alfa (el agua sigue donde estaba) */
   mismoSuelo: boolean;
   /** cuadros que cambiaron de colisión (todos tienen que ser bases de monumentos que pasaron a sólido) */
@@ -237,12 +239,15 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
   }
 
   // ---------- 4. luz y partículas por zona ----------
+  const particulas: Record<string, { antes: string; despues: string }> = {};
   for (const z of m.zones) {
+    const antesP = String(z.props.particulas ?? '');
     const l = { ...rc.luz.mundo, ...(rc.luz.zonas[z.nombre] ?? {}) };
     const p: Record<string, Prop> = { ...z.props, rayos: l.rayos, grado: l.grado };
     if (rc.luz.zonas[z.nombre]?.particulas) p.particulas = rc.luz.zonas[z.nombre]!.particulas!;
     if (rc.luz.zonas[z.nombre]?.niebla !== undefined) p.niebla = rc.luz.zonas[z.nombre]!.niebla!;
     z.props = p;
+    particulas[z.nombre] = { antes: antesP, despues: String(p.particulas ?? '') };
   }
 
   // ---------- informe ----------
@@ -252,6 +257,6 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
   const despues = metasAlcanzables(m);
   const solidosNuevos: number[] = [];
   for (let i = 0; i < W * H; i++) if (m.solid[i] !== solidoAntes[i]) solidosNuevos.push(m.solid[i] ? i : -i - 1);
-  const abyss: InformeAbyss = { mundo: rc.mundo, piso, mismoSuelo: alfa(m.terrain.img.data) === alfaAntes && m.terrain.img.w === tamAntes[0] && m.terrain.img.h === tamAntes[1], solidosNuevos, monumentos: informeMon, sinLugar, criaturas, memoria: { monumentos: mp(memMon), fauna: mp(memFauna), total: mp(memMon + memFauna) }, alcance: { antes, despues } };
+  const abyss: InformeAbyss = { mundo: rc.mundo, piso, particulas, mismoSuelo: alfa(m.terrain.img.data) === alfaAntes && m.terrain.img.w === tamAntes[0] && m.terrain.img.h === tamAntes[1], solidosNuevos, monumentos: informeMon, sinLugar, criaturas, memoria: { monumentos: mp(memMon), fauna: mp(memFauna), total: mp(memMon + memFauna) }, alcance: { antes, despues } };
   return Object.assign(m, { abyss });
 }

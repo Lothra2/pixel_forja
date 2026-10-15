@@ -211,7 +211,10 @@ const ZONAS: { nombre: string; rect: [number, number, number, number]; props: Re
   { nombre: 'La Cueva de la Reina', rect: [64, 50, 98, 78], props: { musica: 'jefe', luz: '#b07aff', oscuridad: 0.85, niebla: 0.5, particulas: 'ceniza', ambiente: 'jefe' }, cristales: [0, 4, 0], muebles: [['roca_mina_1', 2], ['roca_mina_2', 2]], frente: ['estalactitas_frente_1'] },
 ];
 
-export function galeriasMap(seed = 333): BigMap & { premium: GaleriasReport } {
+import { vidaAbyss, type InformeAbyss } from './abyss/index';
+import { GALERIAS } from './abyss/recetas';
+
+export function galeriasMap(seed = 333, opts: { abyss?: boolean } = {}): BigMap & { premium: GaleriasReport; abyss?: InformeAbyss } {
   const W = GALERIAS_W, H = GALERIAS_H, r = rng(seed);
   const design = galeriasDesign(seed);
   const terrain = paintTerrain(design, GALERIAS_PALETTE);
@@ -483,7 +486,8 @@ export function galeriasMap(seed = 333): BigMap & { premium: GaleriasReport } {
     premium: { ramas: Object.entries(RAMAS).map(([id, b]) => ({ id, nombre: b.nombre, medio: b.medio })), secretos: ['veta_escondida', 'nicho_minero'], muebles: {}, pantallas: [], quitadosPorPaso: 0 },
   };
   poblar(map, r, seed);
-  return map;
+  // abyss premium: piso con vida, un monumento por zona, criaturas nuevas y la luz de cada zona
+  return opts.abyss === false ? map : vidaAbyss(map, GALERIAS);
 }
 
 const DECALS = ['grava_mina_0', 'grava_mina_1', 'grava_mina_2', 'astillas_0', 'astillas_1', 'esquirlas_cristal_0', 'esquirlas_cristal_1', 'esquirlas_cristal_2', 'escombro_chico_0', 'escombro_chico_1', 'escombro_chico_2', 'charco_negro_0', 'charco_negro_1'];

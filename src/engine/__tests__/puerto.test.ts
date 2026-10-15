@@ -37,7 +37,9 @@ describe('Mundo 4: El Puerto Ahogado (mapa y objetos)', () => {
     for (const [nombre, [osc, bruma, part, amb]] of Object.entries(want)) {
       const z = m.zones.find((q) => q.nombre === nombre)!;
       expect(z, nombre).toBeTruthy();
-      expect([z.props.oscuridad, z.props.niebla, z.props.particulas, z.props.ambiente], nombre).toEqual([osc, bruma, part, amb]);
+      expect([z.props.oscuridad, z.props.niebla, z.props.ambiente], nombre).toEqual([osc, bruma, amb]);
+      // abyss premium: cada zona conserva sus partículas de antes y puede sumar otras
+      for (const p of String(part).split(',')) expect(String(z.props.particulas).split(','), nombre).toContain(p);
       for (const f of String(z.props.frente).split(',')) expect(byName.get(f)?.layer, `${nombre}: ${f}`).toBe('frente');
     }
     expect(m.postales.length).toBe(8);

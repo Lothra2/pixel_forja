@@ -37,7 +37,9 @@ describe('Mundo 5: La Ciudad Dormida (mapa y objetos)', () => {
     for (const [nombre, [osc, bruma, amb]] of Object.entries(want)) {
       const z = m.zones.find((q) => q.nombre === nombre)!;
       expect(z, nombre).toBeTruthy();
-      expect([z.props.oscuridad, z.props.niebla, z.props.particulas, z.props.ambiente], nombre).toEqual([osc, bruma, 'polvo_sueno', amb]);
+      expect([z.props.oscuridad, z.props.niebla, z.props.ambiente], nombre).toEqual([osc, bruma, amb]);
+      // abyss premium: cada zona conserva el polvo de sueño y puede sumar otras partículas
+      expect(String(z.props.particulas).split(','), nombre).toContain('polvo_sueno');
       for (const f of String(z.props.frente).split(',')) expect(byName.get(f)?.layer, `${nombre}: ${f}`).toBe('frente');
     }
     const pal = m.zones.find((q) => q.nombre === 'El Palacio Dormido')!.props;

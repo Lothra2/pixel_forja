@@ -3,6 +3,7 @@ import type { BigMap } from '../world/bosqueMap';
 import { TILE } from '../world/tiles';
 import { bosqueMap } from '../world/bosqueMap';
 import { catedralMap } from '../world/catedralMap';
+import { galeriasMap } from '../world/galeriasMap';
 import { fogTexture } from '../world/atmosphere';
 import { FAUNA } from '../world/abyss/fauna';
 import { repeticion } from '../world/abyss/piso';
@@ -52,6 +53,8 @@ export function verificarAbyss(m: BigMap & { abyss?: InformeAbyss }, mundo: stri
   }
   // 4 y 5. cada zona con partículas conocidas, rayos y grado bien escritos
   for (const z of m.zones) {
+    const pz = a.particulas[z.nombre];
+    for (const p of pz.antes.split(',').filter(Boolean)) expect(pz.despues.split(','), `${z.nombre} perdió ${p}`).toContain(p);
     for (const p of String(z.props.particulas).split(',')) expect(PARTICULAS_ZONA as readonly string[], `${z.nombre}: ${p}`).toContain(p);
     const [ang, col, den] = String(z.props.rayos).split(',');
     expect(Math.abs(Number(ang)), z.nombre).toBeLessThanOrEqual(60); expect(col).toMatch(/^#[0-9a-f]{6}$/); expect(Number(den)).toBeGreaterThanOrEqual(0); expect(Number(den)).toBeLessThanOrEqual(1);
@@ -76,4 +79,5 @@ describe('abyss premium', () => {
 
   it('Mundo 1, el Bosque GG', () => { verificarAbyss(bosqueMap(), 'mundo1'); }, 120000);
   it('Mundo 2, la Catedral de las Raíces', () => { verificarAbyss(catedralMap(), 'mundo2'); }, 120000);
+  it('Mundo 3, las Galerías del Eco', () => { verificarAbyss(galeriasMap(), 'mundo3'); }, 120000);
 });
