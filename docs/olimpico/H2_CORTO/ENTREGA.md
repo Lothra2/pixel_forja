@@ -1,6 +1,6 @@
 # Lote H2 corto: seis sonidos que el juego ya tiene dónde poner
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/48
 Fecha: 2026-10-15
 
 ## Qué se hizo
