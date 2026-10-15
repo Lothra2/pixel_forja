@@ -1,6 +1,6 @@
 # Lote gira: el mapa de la gira, los mapas de región y los sellos del pasaporte
 Estado: entregado, pendiente de Rick
-PR:
+PR: https://github.com/Lothra2/pixel_forja/pull/52
 Fecha: 2026-10-15
 
 ## Qué se hizo
