@@ -48,6 +48,7 @@ Lo que rodea a las pruebas. Va en la misma lista de `ui.interfaz` y sale igual, 
 | Pieza | Tamaño | Qué es |
 |---|---|---|
 | `medallas_16`, `medallas_32`, `medallas_64` | 3 cuadros cada una | Oro, plata y bronce (el orden va en `orden`): el disco con relieve y una estrella grabada, la cinta roja en V arriba. Las de 32 y 64 llevan un destello |
+| `cinta_16`, `cinta_32` | 16 x 16 y 32 x 32 | La cinta de participación del cuarto puesto (`puesto: 4`): una escarapela de tela turquesa plisada con un botón crema, en el mismo sitio y del mismo tamaño que el disco de las medallas, con su cinta en V arriba. Sale con `medallas` |
 | `bandera_<id>_16`, `bandera_<id>_32` | 18 x 15 y 34 x 26 | Quietas. Hay `vietnam`, `colombia`, `venezuela`, `japon`, `bogota` y `zulia`. El asta va a la izquierda |
 | `bandera_<id>_<tam>_ondea` | Las mismas, 8 cuadros a 10 fps | Ondeando: la tela quieta pegada al asta y la onda que crece hacia la punta, con pliegues de luz y sombra |
 | `podio` | 800 x 360 | El podio en el estadio de noche. La parte de 640 va de x 80 a 720. `puestos` dice dónde van los pies de cada uno (en 640: 1 en 320, 268; 2 en 240, 284; 3 en 400, 296, como el medallero), `mastiles` por dónde sube cada bandera y `calma` la franja de arriba, tranquila para el título |
@@ -55,6 +56,7 @@ Lo que rodea a las pruebas. Va en la misma lista de `ui.interfaz` y sale igual, 
 | `tarjeta_<equipo>` | 184 x 104 | La tarjeta de la selección: los colores del equipo, su bandera arriba a la izquierda y su escudo a la derecha. El nombre va en `texto` y las 4 caras de 40 en la franja oscura `retratos` |
 | `escudo_<equipo>` | 48 x 56 | El escudo solo, para lo que haga falta |
 | `marco_vs_4` | 800 x 360 | El VS de dos contra dos: partido en diagonal, azul y rojo, con cuatro marcos dorados. Los retratos grandes van en `huecos` (los dos primeros de un equipo), la palabra VS en `vs`, el nombre de la prueba en `texto`, y los nombres en la fila `nombres`. La costura blanca va de (440, 0) a (360, 360): pasa por el centro y cruza la VS por el medio (`costura`) |
+| `marco_vs_2` | 800 x 360 | El VS de uno contra uno, con el mismo fondo y la misma costura. Un hueco de 96 por lado en `huecos` para el retrato grande a 1, sin escalar, con un marco ancho de 16 (`marco`): oro, la banda del color del lado con remaches y un filete junto al retrato. Los centros caen en x 230 y 570, donde el juego pone hoy los retratos. `vs`, `texto`, `nombres` y `frases` son los mismos del de 4 |
 | `pantalla_pausa` | 800 x 360 | Un velo tramado (la pelea se ve por los huecos, sin alfa) con la placa del medio |
 | `pantalla_se_acabo` | 800 x 360 | Para "SE ACABÓ LA VAINA": la ciudad apagada bajo la lluvia, en plata |
 | `pantalla_otra_partidita` | 800 x 360 | Para "¿OTRA PARTIDITA?": rayos de arcade, el piso de cuadrícula y monedas |

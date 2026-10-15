@@ -359,7 +359,7 @@ kit/
   ui/logo.png  ui/logo_chico.png      logo animado
   ui/<pieza>.png                      interfaz: dialogo, panel_<equipo>, barras, marcos, banner_<id>, control_<id>, minimapa, numeros,
                                       y el envoltorio: medallas_<tam>, bandera_<id>_<tam>[_ondea], podio, iconos_prueba[_16],
-                                      tarjeta_<equipo>, escudo_<equipo>, marco_vs_4, pantalla_<id>,
+                                      tarjeta_<equipo>, escudo_<equipo>, marco_vs_4, marco_vs_2, pantalla_<id>, cinta_16, cinta_32,
                                       y el mapa: mapa_gira, mapa_gira_ruta, mapa_vietnam, mapa_colombia_venezuela, sellos_pasaporte
   fx/<id>.png                         efectos
   audio/sfx/<n>.wav  audio/musica/<n>.wav  audio/ambiente/<n>.wav  audio/voz/<id>_<k>.wav
