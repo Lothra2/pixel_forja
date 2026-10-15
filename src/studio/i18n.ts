@@ -878,6 +878,10 @@ const ANIM_LABELS: Record<string, [string, string]> = {
   shuttle_kick_back: ['Chilena de đá cầu', 'Đá cầu bicycle kick'], shuttle_kick_back_nekketsu: ['Chilena Nekketsu de đá cầu', 'Nekketsu đá cầu bicycle kick'],
   shuttle_juggle: ['Dominar el cầu', 'Đá cầu juggle'], dodge_throw: ['Tiro del Quemado', 'Dodgeball throw'], dodge_hit: ['Balonazo (Quemado)', 'Hit by the dodgeball'],
   cap_pitch: ['Lanzar la chapa', 'Bottle cap pitch'], vovinam_scissor: ['Patada tijera (vovinam)', 'Vovinam scissor kick'], vovinam_scissored: ['Atrapado por la tijera', 'Caught by the scissor kick'],
+  play_drum: ['El Furrazo (técnica)', 'Furro slam (team move)'], bike_charge: ['La Ciclovía Infernal (técnica)', 'Bike charge (team move)'], bike_charged: ['Arrollado por la bici', 'Run over by the bike'],
+  cap_bat_power: ['Batazo de jonrón (técnica)', 'Home run swing (team move)'], chair_spin_throw: ['Silla plástica voladora (técnica)', 'Flying plastic chair (team move)'],
+  slipper_storm: ['Chancletazo supremo (técnica)', 'Slipper storm (team move)'], comb_hair: ['El Copetazo (técnica)', 'Pompadour headbutt (team move)'],
+  dodge_catch: ['Atrapar el balonazo (Quemado)', 'Dodgeball catch'], beach_run: ['Correr en la arena', 'Beach run'], traffic_dodge: ['Esquivar la moto', 'Traffic dodge'],
   bite: ['Morder', 'Bite'], bark: ['Ladrar', 'Bark'], howl: ['Aullar (escudo)', 'Howl (shield)'], pickup: ['Recoger botín', 'Pick up loot'], dig: ['Cavar', 'Dig'], hurt: ['Recibe golpe', 'Hurt'],
 };
 

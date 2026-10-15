@@ -474,4 +474,9 @@ export const HELD_ANIMS: Record<string, { kinds: FloorPropKind[]; default: Floor
   bat_nekketsu: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'swing'), default: 'broomstick' },
   // el tejo (lote B6), en la mano hasta la suelta
   tejo_throw: { kinds: ['tejo'], default: 'tejo' },
+  // las técnicas de equipo (lote B7): cada una con su arma, y la del jonrón con cualquiera de batear
+  play_drum: { kinds: ['furro'], default: 'furro' },
+  cap_bat_power: { kinds: FLOOR_PROP_KINDS.filter((k) => FLOOR_PROPS[k].uso === 'swing'), default: 'broomstick' },
+  chair_spin_throw: { kinds: ['silla_plastica'], default: 'silla_plastica' },
+  slipper_storm: { kinds: ['chancleta'], default: 'chancleta' },
 };

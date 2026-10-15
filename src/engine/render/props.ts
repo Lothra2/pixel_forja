@@ -157,6 +157,11 @@ export function drawHeld(part: Part, kind: PropKind, at: [number, number], angle
     // tambora colgada adelante, entre las dos manos: el cuero claro arriba y el aro rojo
     const w = Math.max(5, nn(8)), h = Math.max(3, nn(5));
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) part.set(Math.round(at[0] - w / 2 + i), Math.round(at[1] + j), j === 0 ? 'p_cream' : j === h - 1 || j === 1 ? 'p_red' : 'p_wood', i === 0 ? LIGHT : BASE);
+  } else if (kind === 'peine') {
+    // peine de bolsillo rojo (que se vea sobre el pelo): el lomo a lo largo de la mano y los dientes de un lado
+    const len = Math.max(3, nn(4));
+    stroke(part, dir(-1), dir(len - 1), 1, () => 'p_red');
+    for (let k = 0; k < len; k += 2) { const p = dir(k - 1), q = rot([0, 1], angle); part.set(Math.round(p[0] + q[0]), Math.round(p[1] + q[1]), 'p_white'); }
   } else if (kind === 'glove') {
     blob(part, at, Math.max(3, Math.round(4 * u)), 'p_brown');
   } else drawWeapon(part, kind, at, angle, u, dir, t, rest);

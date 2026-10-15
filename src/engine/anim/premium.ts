@@ -13,6 +13,7 @@ import { CALLE } from './calle';
 import { PRUEBAS } from './pruebas';
 import { JUDO_NUEVAS } from './judo';
 import { ESPECIALES } from './especiales';
+import { TECNICAS } from './tecnicas';
 
 /**
  * Animaciones premium: poses clave pensadas como las haría un animador, no fórmulas.
@@ -327,7 +328,7 @@ export const idle: AnimDef = {
   },
 };
 
-export const PREMIUM: AnimDef[] = [idle, walk, run, attack, attackHeavy, hit, block, cast, useItem, die, ...ATHLETICS_PREMIUM, ...SWIM_PREMIUM, ...NET_PREMIUM, ...FIGHT_PREMIUM, ...FOOTBALL_PREMIUM, ...BRAWL, ...PELEA, ...BURLAS, ...RECORRIDOS, ...TREPAR, ...CALLE, ...PRUEBAS, ...JUDO_NUEVAS, ...ESPECIALES];
+export const PREMIUM: AnimDef[] = [idle, walk, run, attack, attackHeavy, hit, block, cast, useItem, die, ...ATHLETICS_PREMIUM, ...SWIM_PREMIUM, ...NET_PREMIUM, ...FIGHT_PREMIUM, ...FOOTBALL_PREMIUM, ...BRAWL, ...PELEA, ...BURLAS, ...RECORRIDOS, ...TREPAR, ...CALLE, ...PRUEBAS, ...JUDO_NUEVAS, ...ESPECIALES, ...TECNICAS];
 const byName = new Map(PREMIUM.map((a) => [a.name, a]));
 
 /** La versión premium de una animación, si existe. */
