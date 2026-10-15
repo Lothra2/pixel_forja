@@ -94,7 +94,14 @@ describe('las escenas de la intro', () => {
       expect(lum(x - PRESENTA.marco, y + h / 2)).toBeLessThan(40);
       // la placa del nombre, oscura, bajo el hueco
       expect(lum(x + w / 2, PRESENTA.nombres)).toBeLessThan(30);
+      // la placa mide 112, centrada en el hueco, y los 108 px del texto a 1,5 (DON HERNANDO) caen en lo oscuro
+      const cx = x + w / 2;
+      expect(lum(cx - PRESENTA.placa / 2 + 2, PRESENTA.nombres)).toBeLessThan(30);
+      for (let yy = PRESENTA.nombres - 5; yy <= PRESENTA.nombres + 5; yy++) for (let xx = cx - 54; xx < cx + 54; xx++) expect(lum(xx, yy)).toBeLessThan(30);
     }
+    expect(PRESENTA.placa).toBe(112);
+    expect(p.extra!.placa).toBe(112);
+    expect(p.extra!.nombres).toBe(252);
     for (let y = 0; y < 360; y++) for (let x = 0; x < 800; x++) if (x < fx || x >= fx + fw || y < fy || y >= fy + fh) expect(alpha(r, x, y)).toBe(0);
     // la franja tapa lo de atrás: la buseta y la baranda no quedan entre los retratos
     expect(alpha(r, 400, PRESENTA.huecos[0][1] + 96 + 2)).toBe(255);

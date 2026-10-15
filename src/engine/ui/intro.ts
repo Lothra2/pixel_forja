@@ -232,6 +232,8 @@ export const PRESENTA = {
   marco: 6,
   franja: [164, 116, 472, 152] as [number, number, number, number],
   nombres: 252,
+  /** el ancho de cada placa del nombre, centrada en su hueco: a 1,5 caben 108 px de texto (DON HERNANDO) */
+  placa: 112,
 };
 
 /** Dónde va cada cosa en Bogotá (coordenadas de la imagen). */
@@ -619,15 +621,20 @@ export function presentacion(): UiPiece {
       const rayo = Math.sin(a * 12) > 0.35;
       p.px(x, y, r < 18 ? '#fffbe8' : rayo ? (bayer(x, y) < 0.5 ? '#ffe9a8' : '#fff2c8') : '#ffd98a');
     }
-    // la placa del nombre
-    for (let y = PRESENTA.nombres - 9; y < PRESENTA.nombres + 9; y++) for (let x = hx - 4; x < hx + hw + 4; x++) {
-      const d = Math.min(x - (hx - 4), y - (PRESENTA.nombres - 9), hx + hw + 3 - x, PRESENTA.nombres + 8 - y);
-      p.px(x, y, d === 0 ? INK : d === 1 ? ORO[2] : '#0b0a1c');
-    }
+  }
+  // las placas del nombre: a 112 se tocan con la vecina (los huecos van cada 108), así que forman una sola barra
+  // y cada placa se marca con una muesca arriba y abajo en el medio de cada separación, sin tocar la fila del texto
+  const h0 = PRESENTA.huecos[0], hN = PRESENTA.huecos[PRESENTA.huecos.length - 1], ny = PRESENTA.nombres;
+  const bx0 = h0[0] + h0[2] / 2 - PRESENTA.placa / 2, bx1 = hN[0] + hN[2] / 2 + PRESENTA.placa / 2;
+  const cortes = PRESENTA.huecos.slice(1).map(([hx], i) => (PRESENTA.huecos[i][0] + PRESENTA.huecos[i][2] + hx) / 2);
+  for (let y = ny - 9; y < ny + 9; y++) for (let x = bx0; x < bx1; x++) {
+    const d = Math.min(x - bx0, y - (ny - 9), bx1 - 1 - x, ny + 8 - y);
+    const muesca = (y <= ny - 7 || y >= ny + 6) && cortes.some((c) => x === c - 1 || x === c);
+    p.px(x, y, d === 0 ? INK : d === 1 || muesca ? ORO[2] : '#0b0a1c');
   }
   return {
     name: 'intro_presentacion', frames: [p.r], w: W, h: H,
-    extra: { huecos: PRESENTA.huecos, marco: PRESENTA.marco, franja: PRESENTA.franja, nombres: PRESENTA.nombres, nota: 'Va entre intro_bogota o intro_maracaibo y los retratos. Los retratos de 96 en `huecos` (en silueta con setTintFill y después de color), el nombre de cada uno centrado en y `nombres`.' },
+    extra: { huecos: PRESENTA.huecos, marco: PRESENTA.marco, franja: PRESENTA.franja, nombres: PRESENTA.nombres, placa: PRESENTA.placa, nota: 'Va entre intro_bogota o intro_maracaibo y los retratos. Los retratos de 96 en `huecos` (en silueta con setTintFill y después de color), el nombre de cada uno centrado en x hueco + 48 y en y `nombres`. Cada placa mide `placa` de ancho: a 1,5 caben 108 px de texto.' },
   };
 }
 
