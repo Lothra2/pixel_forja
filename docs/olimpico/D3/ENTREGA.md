@@ -1,6 +1,6 @@
 # Lote D3: los vehículos a escala de atleta
 Estado: entregado, pendiente de Rick
-PR: (se llena al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/45
 Fecha: 2026-10-15
 
 ## Qué se hizo
