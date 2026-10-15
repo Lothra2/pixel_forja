@@ -1,4 +1,4 @@
-import { Pix, sparkle, rng, bayer } from '../fx/pix';
+import { Pix, sparkle, star5, rng, bayer } from '../fx/pix';
 import { createRaster, type Raster } from '../core/raster';
 import { mixHex, type UiPiece } from './retro';
 
@@ -92,6 +92,66 @@ export function medallas(): UiPiece[] {
   return TAMANOS_MEDALLA.map((s) => ({
     name: `medallas_${s}`, frames: MEDALLAS.map((m) => medalla(m, s).r), w: s, h: s,
     extra: { orden: [...MEDALLAS], nota: 'Un cuadro por medalla: 0 oro, 1 plata, 2 bronce. La cinta arriba, el disco abajo.' },
+  }));
+}
+
+/** La tela de la cinta de participación: de la luz a la sombra, y el contorno al final. */
+export const TELA_CINTA = ['#eafcff', '#8ee0ee', '#38aac4', '#1a6c86', '#0a2a3a'] as const;
+export const TAMANOS_CINTA = [16, 32] as const;
+
+/**
+ * La cinta de participación de `s` x `s`, para el cuarto puesto: una escarapela de tela plisada en el mismo sitio y del
+ * mismo tamaño que el disco de las medallas, con su cinta en V arriba como ellas, pero de tela turquesa y sin metal.
+ * En el medio, un botón crema con una estrellita (a 32) o un punto (a 16). A 32 lleva un brillito suave, sin destello.
+ */
+export function cinta(s: number): Pix {
+  const p = new Pix(s, s);
+  const t = TELA_CINTA;
+  const k = s / 16;
+  // la cinta en V, igual que la de las medallas pero de la tela
+  const cy = s - 1 - Math.round(5.5 * k) - (s >= 32 ? 1 : 0), rad = 5.5 * k - 0.5;
+  const ancho = Math.max(1, Math.round(1.6 * k));
+  for (const lado of [-1, 1]) {
+    const x0 = s / 2 + lado * (s * 0.38), x1 = s / 2 + lado * (rad * 0.35);
+    const y1 = cy - rad * 0.7;
+    const n = Math.ceil(Math.hypot(x1 - x0, y1));
+    for (let i = 0; i <= n; i++) {
+      const u = i / n, x = x0 + (x1 - x0) * u, y = y1 * u;
+      for (let w = -ancho; w <= ancho; w++) p.px(x + w, y, Math.abs(w) === ancho ? t[3] : s >= 32 && w === 0 ? t[0] : t[2]);
+    }
+  }
+  // la escarapela: el borde ondulado y los pliegues en rayos, uno claro y uno oscuro
+  const cx = (s - 1) / 2;
+  const pliegues = s >= 32 ? 14 : 10;
+  const R = rad + 0.6;
+  for (let y = Math.floor(cy - R - 1); y <= Math.ceil(cy + R + 1); y++) for (let x = Math.floor(cx - R - 1); x <= Math.ceil(cx + R + 1); x++) {
+    const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+    const ond = R - (s >= 32 ? 1.3 : 0.8) * Math.abs(Math.sin((a * pliegues) / 2));
+    if (d > ond) continue;
+    const pl = Math.floor(((a + Math.PI) / (2 * Math.PI)) * pliegues) % 2;
+    // la luz de arriba a la izquierda aclara la mitad de los pliegues
+    const luz = -dx - dy > 0;
+    p.px(x, y, d > ond - 1 ? (luz ? t[1] : t[3]) : pl ? (luz ? t[1] : t[2]) : luz ? t[2] : t[3]);
+  }
+  // el botón del medio
+  const rb = rad * 0.5;
+  for (let y = Math.floor(cy - rb - 1); y <= Math.ceil(cy + rb + 1); y++) for (let x = Math.floor(cx - rb - 1); x <= Math.ceil(cx + rb + 1); x++) {
+    const d = Math.hypot(x - cx, y - cy);
+    if (d > rb + 0.3) continue;
+    p.px(x, y, d > rb - 0.8 ? t[4] : (x - cx) + (y - cy) < -rb * 0.4 ? '#fffbe8' : '#f0e2b8');
+  }
+  if (s >= 32) star5(p, Math.round(cx), Math.round(cy), '#e8c060', '#fff4c8', '#a07a24');
+  else p.px(Math.round(cx), Math.round(cy), '#c8a040');
+  p.outline(t[4]);
+  if (s >= 32) { p.px(Math.round(cx - R * 0.55), Math.round(cy - R * 0.55), t[0]); p.px(Math.round(cx - R * 0.55) + 1, Math.round(cy - R * 0.55), t[0]); }
+  return p;
+}
+
+/** La cinta de participación en 16 y 32, una pieza por tamaño. */
+export function cintas(): UiPiece[] {
+  return TAMANOS_CINTA.map((s) => ({
+    name: `cinta_${s}`, frames: [cinta(s).r], w: s, h: s,
+    extra: { puesto: 4, nota: `La cinta de participación del cuarto puesto. Mide y se ancla igual que un cuadro de medallas_${s}: la escarapela donde va el disco y la cinta arriba.` },
   }));
 }
 
