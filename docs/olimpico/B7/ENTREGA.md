@@ -97,10 +97,10 @@ El ejemplo `docs/ejemplos/nekketsu/kit.config.json` ya lo tiene así, con el pac
   - El ejemplo de Nekketsu le da una técnica a cada uno de los 6 equipos y valida.
   - Imagen dorada `golden/b7.png`.
 - **El esquema** `docs/kit-a-medida.schema.json` está regenerado.
-- **La suite sin `custom.test.ts`:** SUITE.
-- **`custom.test.ts`:** KIT.
+- **La suite sin `custom.test.ts`:** 48 archivos, 504 de 504. Las imágenes doradas de antes salen iguales.
+- **`custom.test.ts`: 15 de 15,** con las 10 nuevas en el ejemplo. La prueba completa tardó 197 s, por debajo del límite de 300.
 - **`tsc` limpio y `npm run build:sitio` limpio.**
-- **e2e de Playwright:** E2E.
+- **e2e de Playwright: 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
