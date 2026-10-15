@@ -159,7 +159,8 @@ describe('movimiento premium', () => {
     expect(cj.anims.walk.eventos).toBeUndefined();
   });
 
-  // arma el kit entero (mundos con la zona premium incluidos): con la máquina ocupada pasa de los 2 minutos
+  // arma el kit entero (mundos con la zona premium incluidos): con la máquina ocupada pasa de los 2 minutos.
+  // Solo tarda unos 220 s; con todas las pruebas a la vez (los 7 mapas de abyss.test en paralelo) llega a 430 s
   it('el kit del juego anota el perfil premium y el avance en el manifiesto', () => {
     const files = buildGameKit({ heroes: [], enemies: [], thorTiers: [], quick: true, sinMundo6: true, fichas: { rick: premium('rick') } });
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
@@ -172,7 +173,7 @@ describe('movimiento premium', () => {
     expect(rick.anims.walk.eventos).toHaveLength(2);
     expect(rick.anims.attack.eventos[0].tipo).toBe('impacto');
     expect(m.personajes.guardian_campana.perfil_movimiento).toBe('premium');
-  }, 300_000);
+  }, 600_000);
 
   it('atletismo: toda la familia pasa el control en 8 direcciones y 3 tamaños', () => {
     const casual = (id: 'rick' | 'steph' | 'sophie' | 'alana') => premium(id, false);

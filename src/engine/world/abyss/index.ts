@@ -134,6 +134,8 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
   if (m.marea) for (let i = 0; i < W * H; i++) if (m.marea.baja[i] || m.marea.alta[i]) vetos.forEach((v) => { v[i] = 1; });
   // los caminos: la base no los pisa (en el nivel estricto, ni el cuadro de al lado)
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if ((rc.caminos ?? [1]).includes(m.terrain.tileKind[at(x, y)])) NIVELES.forEach((nv, i) => marcaEn(caminos[i], x, y, nv.camino));
+  // las escaleras son camino obligado: la base nunca las pisa y en los niveles normales ni el cuadro de al lado
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m.terrain.tileKind[at(x, y)] === 5) { marcaEn(caminos[0], x, y, 1); marcaEn(caminos[1], x, y, 1); }
   const veto = vetos[0];
   // huellas de lo que ya está parado en el mapa (cuerpo y pie en celdas de 4 px, como el colocador premium):
   // un monumento no le tapa el pie a nadie, nadie le tapa el pie a él y dos cuerpos se pisan poco (12 %)
@@ -209,7 +211,7 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
           const k = at(x, y);
           if (k < 0 || m.solid[k] || veto[k] || m.terrain.waterTiles[k]) { bien = false; break; }
           const base = y >= by0 && y <= by1 && x >= bx0 && x <= bx1;
-          if (base) { if (!reach0[k] || (camino[k] && nivel < 2) || m.terrain.tileKind[k] === 3 || m.terrain.tileKind[k] === 6) { bien = false; break; } tiles.push(k); }
+          if (base) { if (!reach0[k] || (camino[k] && nivel < 2) || m.terrain.tileKind[k] === 3 || m.terrain.tileKind[k] === 5 || m.terrain.tileKind[k] === 6) { bien = false; break; } tiles.push(k); }
         }
         if (!bien) continue;
         // no parte el piso de alrededor: lo caminable cerca de la base sigue unido sin dar la vuelta (no tapa pasillos)
