@@ -1023,13 +1023,56 @@
                   "banderas",
                   "tarjetas",
                   "marco_vs",
-                  "pantallas"
+                  "pantallas",
+                  "mapa"
                 ]
               },
               "uniqueItems": true
             }
           ],
-          "description": "Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marco VS de 4 y fondos de pausa, fin y continuar. true = todas."
+          "description": "Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marco VS de 4 y fondos de pausa, fin y continuar; y el mapa de la gira: el mapa mundial, la ruta del avión, los mapas de Vietnam y de Colombia con Venezuela, y los sellos del pasaporte. true = todas."
+        },
+        "gira": {
+          "type": "object",
+          "required": [
+            "paradas"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "paradas": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "tokio",
+                  "ha_noi",
+                  "ha_long",
+                  "hue",
+                  "da_nang",
+                  "hoi_an",
+                  "nha_trang",
+                  "da_lat",
+                  "saigon",
+                  "can_tho",
+                  "bogota",
+                  "medellin",
+                  "eje_cafetero",
+                  "cali",
+                  "cartagena",
+                  "barranquilla",
+                  "santa_marta",
+                  "caracas",
+                  "maracaibo",
+                  "margarita",
+                  "llanos_apure",
+                  "merida",
+                  "canaima"
+                ]
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            }
+          },
+          "description": "Las paradas del vuelo de la gira, en orden. Con la parte \"mapa\" de la interfaz: resalta sus países en el mapa mundial y saca la ruta del avión entre ellas (ui/mapa_gira_ruta.png)."
         },
         "vs_fondo": {
           "type": "boolean",

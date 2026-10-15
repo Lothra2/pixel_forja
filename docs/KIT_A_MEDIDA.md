@@ -60,7 +60,8 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `animales` | Ids de animales: de las fichas, o los que vienen con el motor: `thor` y las aves `gallo` y `paloma`. La mascota de un equipo entra sola | No van |
 | `ui.fuentes` | `true` o `{ "idiomas": [...] }`: las tres fuentes bitmap con vietnamita | No van |
 | `ui.logo` | `{ "texto": "NOMBRE DEL JUEGO" }`: el logo animado en 320 x 112 y 160 x 56. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
-| `ui.interfaz` | `true` o la lista: `dialogo`, `paneles`, `barras`, `marcos`, `banners`, `controles`, `minimapa`, `numeros`, y el envoltorio: `medallas`, `podio`, `iconos`, `banderas`, `tarjetas`, `marco_vs`, `pantallas`. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
+| `ui.interfaz` | `true` o la lista: `dialogo`, `paneles`, `barras`, `marcos`, `banners`, `controles`, `minimapa`, `numeros`, y el envoltorio: `medallas`, `podio`, `iconos`, `banderas`, `tarjetas`, `marco_vs`, `pantallas` y `mapa`. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
+| `ui.gira` | `{ "paradas": [...] }`: los lugares del vuelo de la gira, en orden (`tokio`, `saigon`, `bogota`, `caracas`...). Resalta sus países en el mapa y saca la ruta del avión. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
 | `fx` | Efectos del catálogo general: `true` (los 56) o ids, bases y grupos. Ver abajo | No van |
 | `audio` | `{ "sfx": [...], "musica": [...], "ambientes": [...], "voces": [...] }` con los sonidos del motor, o `true` en cada sección. Ver abajo y [AUDIO.md](AUDIO.md) | No va |
 
@@ -358,7 +359,8 @@ kit/
   ui/logo.png  ui/logo_chico.png      logo animado
   ui/<pieza>.png                      interfaz: dialogo, panel_<equipo>, barras, marcos, banner_<id>, control_<id>, minimapa, numeros,
                                       y el envoltorio: medallas_<tam>, bandera_<id>_<tam>[_ondea], podio, iconos_prueba[_16],
-                                      tarjeta_<equipo>, escudo_<equipo>, marco_vs_4, pantalla_<id>
+                                      tarjeta_<equipo>, escudo_<equipo>, marco_vs_4, pantalla_<id>,
+                                      y el mapa: mapa_gira, mapa_gira_ruta, mapa_vietnam, mapa_colombia_venezuela, sellos_pasaporte
   fx/<id>.png                         efectos
   audio/sfx/<n>.wav  audio/musica/<n>.wav  audio/ambiente/<n>.wav  audio/voz/<id>_<k>.wav
   audio/escuchar.html                 para oír todo el audio con un clic

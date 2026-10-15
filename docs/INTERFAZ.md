@@ -72,6 +72,36 @@ En las tres pantallas el título y las opciones los escribe el juego en `calma`,
 
 **Los íconos usan a los atletas del kit,** en el orden de los equipos, uno distinto por ícono. Las pruebas son: `cross_country`, `obstaculos`, `vallas`, `natacion`, `jabalina`, `azoteas`, `tamawari`, `da_cau`, `tejo`, `quemado`, `chapita`, `voley`, `tenis`, `futbol`, `basket`, `judo`, `kachinuki` y `pelea`.
 
+## El mapa de la gira
+
+Va en `ui.interfaz` como la parte `mapa`. Las costas y las fronteras son de Natural Earth, que es de dominio público, simplificadas y guardadas en `src/engine/ui/geo.json`, que pesa 45 KB. Todo se pinta en pixel art:
+- **El mar** va en bandas de profundidad con trama, con la espuma y la línea de costa.
+- **La tierra** lleva su relieve: las cordilleras de verdad (Himalaya, Andes, Rocosas, Annamita, los Alpes del Japón), los desiertos donde van y la nieve solo en lo más alto.
+
+| Pieza | Tamaño | Qué es |
+|---|---|---|
+| `mapa_gira` | 800 x 360 | El Pacífico con Asia y América, la rejilla cada 15 grados y la rosa de los vientos. Los países de las paradas van con borde de oro (`resaltados`). Usa la misma proyección que el mapa del juego: la parte de 640, de x 80 a 720, es longitud este de 90 a 300 y latitud de 50 a -25. Para poner algo: x = (lon este − 90) · `kx` + 80, y = (50 − lat) · `ky`, con `kx` y `ky` en `proyeccion` |
+| `mapa_gira_ruta` | 800 x 360, transparente | La ruta del avión: un arco por tramo que sube hacia el norte, en rayitas blancas con borde oscuro, y un aro en cada parada. `paradas` dice dónde cae cada una. `tramos[i]` son los puntos del vuelo de la parada i a la siguiente, uno cada 5 px, para que el avión vuele por el mismo arco. Solo sale si hay dos paradas o más |
+| `mapa_vietnam`, `mapa_colombia_venezuela` | 320 x 360 | Los mapas de región, para las pruebas. Llevan los vecinos apagados con su frontera y los países de la gira resaltados, y se ven el lago de Maracaibo y el delta del Mekong. `lugares` dice dónde cae cada lugar del motor en la región. Dos caben lado a lado en la parte de 640 |
+| `sellos_pasaporte` | 128 x 40, 4 cuadros | Un sello por país (`orden`: japón, vietnam, colombia, venezuela), cada uno de una sola tinta (`tintas`): el Fuji con el sol, el nón lá, la taza de tinto y el tepuy con el Salto Ángel. La franja `texto` va vacía para que el juego escriba el país y la gira con esa misma tinta |
+
+**Las paradas** salen de `kit.config.json`:
+
+```json
+"ui": { "interfaz": true, "gira": { "paradas": ["tokio", "saigon", "bogota", "caracas"] } }
+```
+
+**Los lugares que conoce el motor:**
+
+| País | Lugares |
+|---|---|
+| Japón | `tokio` |
+| Vietnam | `ha_noi`, `ha_long`, `hue`, `da_nang`, `hoi_an`, `nha_trang`, `da_lat`, `saigon`, `can_tho` |
+| Colombia | `bogota`, `medellin`, `eje_cafetero`, `cali`, `cartagena`, `barranquilla`, `santa_marta` |
+| Venezuela | `caracas`, `maracaibo`, `margarita`, `llanos_apure`, `merida`, `canaima` |
+
+**Sin `gira`:** el mapa sale sin países resaltados y sin ruta.
+
 ## En Phaser
 
 ```js

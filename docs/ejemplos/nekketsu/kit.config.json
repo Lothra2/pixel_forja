@@ -358,7 +358,15 @@
       "texto": "NEKKETSU OLYMPIC GG"
     },
     "interfaz": true,
-    "vs_fondo": true
+    "vs_fondo": true,
+    "gira": {
+      "paradas": [
+        "tokio",
+        "saigon",
+        "bogota",
+        "caracas"
+      ]
+    }
   },
   "escenarios": "escenarios/",
   "publico": {
