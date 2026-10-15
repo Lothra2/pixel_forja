@@ -11,7 +11,6 @@ import {
 import { glifosDe, figuraDe, banderaDe, PARTES_ENVOLTORIO } from '../kit/envoltorioKit';
 import { halve } from '../kit/portraits';
 import { UI_PARTS } from '../ui/retro';
-import { bitmapFonts, drawText } from '../ui/fonts';
 import { buildCustomKit, validateTeams, type KitConfig } from '../kit/custom';
 import { ROOT } from './helpers';
 
@@ -161,36 +160,6 @@ describe('íconos de prueba, tarjetas, VS de 4 y pantallas', () => {
     }
   });
 
-  it('los 6 nombres cortos del juego caben a 2 en su placa, sin tocar la bandera, el escudo ni las caras', () => {
-    // como los escribe Select.ts: fuente_ui a 2, centrados en el medio de `texto`, teñidos con el color del equipo
-    // aclarado. Phaser centra la línea entera de 11, así que a 2 la línea arranca 11 arriba del centro
-    const ui = bitmapFonts(SILK.regular, SILK.bold).find((f) => f.name === 'fuente_ui')!;
-    const CORTOS: Record<string, string> = { familia_gg: 'FAMILIA GG', instituto_nekketsu: 'INSTITUTO', rong_sai_gon: 'RỒNG SÀI GÒN', rolos_de_chapinero: 'ROLOS', panas_de_caracas: 'PANAS', maracuchos_del_lago: 'MARACUCHOS' };
-    const lista: EquipoTarjeta[] = Object.entries(EQUIPOS).map(([id, t]) => ({ id, nombre: t.nombre, colores: t.colores, bandera: banderaDe(t), escudo: t.escudo as EquipoTarjeta['escudo'] }));
-    const ps = tarjetas(lista, glifosDe(SILK.bold));
-    const [tx, ty, tw, th] = TARJETA.texto, [nx, ny, nw, nh] = TARJETA.placa, [, ry, , rh] = TARJETA.retratos;
-    expect(TARJETA.retratos).toEqual([8, 32, 168, 48]);
-    expect(ny).toBe(ry + rh);
-    for (const e of lista) {
-      const nombre = CORTOS[e.id], r = ps.find((p) => p.name === `tarjeta_${e.id}`)!.frames[0];
-      const t = drawText(ui, nombre, 2);
-      expect(t.w - 8, nombre).toBeLessThanOrEqual(tw);
-      const X = Math.round(tx + tw / 2 - t.w / 2), Y = ty + th / 2 - t.h / 2;
-      const c = parseInt(e.colores[0].slice(1), 16), k = (v: number) => Math.round(v + (255 - v) * 0.55);
-      const claro = 0.3 * k((c >> 16) & 255) + 0.59 * k((c >> 8) & 255) + 0.11 * k(c & 255);
-      let tinta = 0;
-      for (let y = 0; y < t.h; y++) for (let x = 0; x < t.w; x++) {
-        if (!t.data[(y * t.w + x) * 4 + 3]) continue;
-        tinta++;
-        const cx = X + x, cy = Y + y;
-        // cada pixel del nombre cae sobre la placa oscura: ni bandera, ni escudo, ni la franja de las caras
-        expect(cx >= nx && cx < nx + nw && cy >= ny && cy < ny + nh, `${nombre} en ${cx},${cy}`).toBe(true);
-        expect(claro - lum(r, cx, cy), `${nombre} se lee en ${cx},${cy}`).toBeGreaterThan(90);
-      }
-      expect(tinta).toBeGreaterThan(100);
-    }
-  });
-
   it('las iniciales y la bandera por defecto salen del nombre y del país', () => {
     expect(iniciales('Los Panas de Caracas')).toBe('PC');
     expect(iniciales('Rồng Sài Gòn')).toBe('RS');
@@ -280,7 +249,7 @@ describe('el envoltorio en el kit a medida', () => {
     expect(ids.some((i) => i.startsWith('dialogo') || i === 'podio' || i.startsWith('iconos'))).toBe(false);
     expect(m.ui.interfaz.medallas_32).toMatchObject({ archivo: 'ui/medallas_32.png', w: 32, h: 32, cuadros: 3, orden: ['oro', 'plata', 'bronce'] });
     expect(m.ui.interfaz.bandera_vietnam_16_ondea).toMatchObject({ cuadros: 8, fps: 10, loop: true });
-    expect(m.ui.interfaz.tarjeta_gg).toMatchObject({ w: 184, h: 104, texto: TARJETA.texto, retratos: TARJETA.retratos, placa: TARJETA.placa, bandera: 'venezuela' });
+    expect(m.ui.interfaz.tarjeta_gg).toMatchObject({ w: 184, h: 104, texto: TARJETA.texto, retratos: TARJETA.retratos, bandera: 'venezuela' });
     for (const e of Object.values<{ archivo: string }>(m.ui.interfaz)) expect(files.some((f) => f.name === e.archivo), e.archivo).toBe(true);
     // `marco_vs` trae los dos marcos: el de 4 de siempre y el de 1 contra 1
     const vs = buildCustomKit({ ...cfg, ui: { interfaz: ['marco_vs'] } }, { fuentes: SILK, equipos }, { quick: true, solo: ['interfaz'] });

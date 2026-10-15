@@ -588,16 +588,10 @@ export interface EquipoTarjeta { id: string; nombre: string; colores: string[]; 
 /** Dónde va cada cosa en la tarjeta de 184 x 104 (lo exporta el manifiesto). */
 export const TARJETA = {
   w: 184, h: 104,
-  /**
-   * el nombre del equipo lo escribe el juego aquí: x, y, ancho, alto. Es la franja oscura de abajo, de lado a lado,
-   * para que quepa a 2 con la fuente del juego (el más ancho, RỒNG SÀI GÒN, ocupa 142). Centrado en y 91, la línea
-   * de 11 de la fuente a 2 va de 80 a 97 con los acentos dobles del vietnamita, sin tocar la franja de las caras.
-   */
-  texto: [8, 81, 168, 20] as [number, number, number, number],
+  /** el nombre del equipo lo escribe el juego aquí: x, y, ancho, alto */
+  texto: [42, 6, 104, 20] as [number, number, number, number],
   /** la franja de las caras: x, y, ancho, alto (las 4 de 40 x 40 en x 12, 52, 92, 132) */
   retratos: [8, 32, 168, 48] as [number, number, number, number],
-  /** la placa oscura del nombre, de la franja de las caras hasta el borde de abajo */
-  placa: [8, 80, 168, 20] as [number, number, number, number],
 };
 
 /** Las iniciales de un nombre de equipo, para el escudo de letras por defecto (sin "de", "del", "los"...). */
@@ -609,8 +603,7 @@ export function iniciales(nombre: string): string {
 /**
  * La tarjeta del equipo para la selección, de 184 x 104: el campo con los colores del equipo (en diagonal, con rayas
  * de velocidad), la bandera arriba a la izquierda, el escudo arriba a la derecha y el borde del color de acento. En
- * el medio, una franja más oscura y tranquila para las 4 caras que pone el juego. Abajo, la placa casi negra del
- * nombre, de lado a lado, con dos chevrones del acento en las puntas. El nombre lo escribe el juego en `texto`.
+ * el medio, una franja más oscura y tranquila para las 4 caras que pone el juego. El nombre lo escribe el juego.
  */
 export function tarjetaEquipo(eq: EquipoTarjeta, glifos?: Glifos): Pix {
   const { w: W, h: H } = TARJETA;
@@ -622,7 +615,6 @@ export function tarjetaEquipo(eq: EquipoTarjeta, glifos?: Glifos): Pix {
     return (x - cx) ** 2 + (y - cy) ** 2 <= R * R + 0.5;
   };
   const [rx, ry, rw, rh] = TARJETA.retratos;
-  const [nx, ny, nw, nh] = TARJETA.placa;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (!dentro(x, y)) continue;
     // el borde: tinta afuera, dos de acento, uno oscuro adentro
@@ -637,30 +629,24 @@ export function tarjetaEquipo(eq: EquipoTarjeta, glifos?: Glifos): Pix {
       p.px(x, y, borde ? mixHex(c1, '#000000', 0.2) : bayer(x, y) < 0.12 ? mixHex(c0, '#000000', 0.55) : mixHex(c0, '#000000', 0.68));
       continue;
     }
-    // la placa del nombre: casi negra con el tono del equipo, para que el nombre se lea con cualquier tinte claro
-    if (x >= nx && x < nx + nw && y >= ny && y < ny + nh) {
-      p.px(x, y, bayer(x, y) < 0.1 ? mixHex(c0, '#000000', 0.7) : mixHex(c0, '#000000', 0.8));
-      continue;
-    }
-    // el campo: el color principal en diagonal hacia el tercero, con rayas de velocidad del acento arriba
+    // el campo: el color principal en diagonal hacia el tercero, con rayas de velocidad del acento
     const t = (x + (H - y) * 0.8) / (W + H * 0.8);
     let col = t < 0.62 ? c0 : mixHex(c0, c2, 0.55);
     if (y < H / 2) col = mixHex(col, WHITE, 0.1 * (1 - y / (H / 2)));
-    const raya = ((x + y * 2) % 23 === 0 || (x + y * 2) % 23 === 1) && y < ry;
+    const raya = ((x + y * 2) % 23 === 0 || (x + y * 2) % 23 === 1) && y > ry + rh;
     p.px(x, y, raya ? mixHex(col, c1, 0.6) : col);
-  }
-  // dos chevrones del acento en las puntas de la placa, lejos del nombre (a 2 ocupa hasta 142 de ancho al centro)
-  const cy = ny + nh / 2;
-  const luz = (h: string) => { const n = parseInt(h.slice(1), 16); return 0.3 * ((n >> 16) & 255) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255); };
-  const chev = luz(c1) < 110 ? mixHex(c1, WHITE, 0.45) : c1;
-  for (let k = 0; k < 2; k++) for (let i = 0; i < 4; i++) {
-    const xi = nx + 3 + k * 4 + i, xd = nx + nw - 4 - k * 4 - i;
-    for (const dy of [-(3 - i), 3 - i]) { p.px(xi, Math.round(cy - 0.5 + dy), chev); p.px(xd, Math.round(cy - 0.5 + dy), chev); }
   }
   // la bandera arriba a la izquierda (la de 32) y el escudo arriba a la derecha
   if (eq.bandera) p.paste(bandera(eq.bandera, 32, null), 6, 4);
   const esc = escudo(eq.escudo ?? { emblema: 'letras', texto: iniciales(eq.nombre) }, eq.colores.length >= 2 ? eq.colores : [c0, c1], 26, glifos);
   p.paste(esc, W - 6 - esc.w, 3);
+  // abajo, el escudo grande como marca de agua en el color del campo
+  const marca = escudo(eq.escudo ?? { emblema: 'letras', texto: iniciales(eq.nombre) }, [mixHex(c0, WHITE, 0.12), mixHex(c0, WHITE, 0.2)], 30, glifos);
+  for (let y = 0; y < marca.h; y++) for (let x = 0; x < marca.w; x++) {
+    const X = W - 14 - marca.w + x, Y = ry + rh + 2 + y;
+    if (!marca.has(x, y) || Y >= H - 4 || !dentro(X, Y)) continue;
+    if (bayer(X, Y) < 0.5) p.px(X, Y, mixHex(c0, WHITE, 0.16));
+  }
   return p;
 }
 
@@ -668,7 +654,7 @@ export function tarjetaEquipo(eq: EquipoTarjeta, glifos?: Glifos): Pix {
 export function tarjetas(equipos: EquipoTarjeta[], glifos?: Glifos): UiPiece[] {
   const out: UiPiece[] = [];
   for (const eq of equipos) {
-    out.push({ name: `tarjeta_${eq.id}`, frames: [tarjetaEquipo(eq, glifos).r], w: TARJETA.w, h: TARJETA.h, extra: { texto: TARJETA.texto, retratos: TARJETA.retratos, placa: TARJETA.placa, ...(eq.bandera ? { bandera: eq.bandera } : {}) } });
+    out.push({ name: `tarjeta_${eq.id}`, frames: [tarjetaEquipo(eq, glifos).r], w: TARJETA.w, h: TARJETA.h, extra: { texto: TARJETA.texto, retratos: TARJETA.retratos, ...(eq.bandera ? { bandera: eq.bandera } : {}) } });
     const e = escudo(eq.escudo ?? { emblema: 'letras', texto: iniciales(eq.nombre) }, eq.colores.length >= 2 ? eq.colores : [eq.colores[0] ?? '#2a5bd7', '#f2c230'], 48, glifos);
     out.push({ name: `escudo_${eq.id}`, frames: [e.r], w: e.w, h: e.h });
   }
