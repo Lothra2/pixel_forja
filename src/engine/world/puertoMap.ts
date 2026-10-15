@@ -428,7 +428,10 @@ const ZONAS: { nombre: string; rect: [number, number, number, number]; props: Re
   { nombre: 'El Faro', rect: [64, 56, 108, 89], props: { luz: '#ffd890', oscuridad: 0.9, niebla: 0.5, particulas: 'ceniza', ambiente: 'jefe', musica: 'jefe_pez', musica_victoria: 'faro' }, frente: ['rocas_frente_0'] },
 ];
 
-export function puertoMap(seed = 444): BigMap & { premium: PuertoReport } {
+import { vidaAbyss, type InformeAbyss } from './abyss/index';
+import { RECETA_PUERTO } from './abyss/recetas';
+
+export function puertoMap(seed = 444, opts: { abyss?: boolean } = {}): BigMap & { premium: PuertoReport; abyss?: InformeAbyss } {
   const W = PUERTO_W, H = PUERTO_H;
   const d = makeDesign();
   const terrain = paintPuerto(d, seed);
@@ -729,7 +732,8 @@ export function puertoMap(seed = 444): BigMap & { premium: PuertoReport } {
     for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = Math.floor(k / W); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const j = at(x + dx, y + dy); if (j < 0 || reach[j] || solid[j]) continue; reach[j] = 1; q.push(j); } }
     for (let k = 0; k < W * H; k++) if (!reach[k]) solid[k] = 1;
   }
-  return map;
+  // abyss premium: piso con vida, un monumento por zona, criaturas nuevas y la luz de cada zona
+  return opts.abyss === false ? map : vidaAbyss(map, RECETA_PUERTO);
 }
 
 interface PoblarCtx {

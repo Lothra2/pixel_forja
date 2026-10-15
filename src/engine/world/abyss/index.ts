@@ -31,6 +31,8 @@ export interface RecetaMundo {
   monumentos: () => Monumento[];
   /** la luz del mundo (si a una zona le falta algo, el juego usa esta) y lo de cada zona */
   luz: { mundo: LuzZona; zonas: Record<string, Partial<LuzZona>> };
+  /** tipos de piso que son camino (la base no los pisa); por defecto [1]. En el Puerto todo el piso es tablas: [] */
+  caminos?: number[];
   /** no tapar acantilados ni rampas con el cuerpo (el Bosque premium lo exige) */
   estricto?: boolean;
   /** color de la niebla de este mundo (jirones teñidos) */
@@ -96,7 +98,9 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
   const byName = new Map(m.objects.map((o) => [o.name, o]));
   // lo que no se puede tapar ni pisar: entidades (con aire alrededor), parches de grietas o hielo fino, mareas, arenas.
   // Dos niveles: el estricto, y uno con menos aire para las zonas chicas (nunca tapa ni corta nada: eso lo mira el BFS)
-  const NIVELES = [{ ent: 2, arena: 96, camino: 1, aire: 1 }, { ent: 1, arena: 24, camino: 0, aire: 1 }, { ent: 1, arena: 24, camino: 0, aire: 0 }];
+  // el último nivel (pared) es para los rincones secretos chicos: el monumento se apoya contra la pared del fondo, con la
+  // base sobre roca que ya era sólida (no cambia la colisión) y un cuadro caminable de la zona justo delante
+  const NIVELES = [{ ent: 2, arena: 96, camino: 1, aire: 1, pared: false }, { ent: 1, arena: 24, camino: 0, aire: 1, pared: false }, { ent: 1, arena: 24, camino: 0, aire: 0, pared: false }, { ent: 1, arena: 24, camino: 0, aire: 0, pared: true }];
   const vetos = NIVELES.map(() => new Uint8Array(W * H)), caminos = NIVELES.map(() => new Uint8Array(W * H));
   const marcaEn = (v: Uint8Array, tx: number, ty: number, r: number) => { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const k = at(tx + dx, ty + dy); if (k >= 0) v[k] = 1; } };
   const marca = (tx: number, ty: number, r: number) => vetos.forEach((v) => marcaEn(v, tx, ty, r));
@@ -112,7 +116,7 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
   for (const c of m.cristales ?? []) { marca(Math.floor(c.x / TILE), Math.floor((c.y - 1) / TILE), 1); puntos.push([c.x, c.y]); }
   if (m.marea) for (let i = 0; i < W * H; i++) if (m.marea.baja[i] || m.marea.alta[i]) vetos.forEach((v) => { v[i] = 1; });
   // los caminos: la base no los pisa (en el nivel estricto, ni el cuadro de al lado)
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m.terrain.tileKind[at(x, y)] === 1) NIVELES.forEach((nv, i) => marcaEn(caminos[i], x, y, nv.camino));
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if ((rc.caminos ?? [1]).includes(m.terrain.tileKind[at(x, y)])) NIVELES.forEach((nv, i) => marcaEn(caminos[i], x, y, nv.camino));
   const veto = vetos[0];
   // huellas de lo que ya está parado en el mapa (cuerpo y pie en celdas de 4 px, como el colocador premium):
   // un monumento no le tapa el pie a nadie, nadie le tapa el pie a él y dos cuerpos se pisan poco (12 %)
@@ -142,7 +146,7 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
     const cands: { px: number; py: number; score: number; tiles: number[] }[] = [];
     const zx0 = Math.floor(z.x / TILE), zy0 = Math.floor(z.y / TILE), zx1 = Math.floor((z.x + z.w) / TILE), zy1 = Math.floor((z.y + z.h) / TILE);
     const zcx = z.x + z.w / 2, zcy = z.y + z.h / 2;
-    for (let ty = zy0 + 1; ty < zy1; ty++) for (let tx = zx0 + 1; tx < zx1; tx++) {
+    for (let ty = zy0 + (NIVELES[nivel].pared ? 0 : 1); ty < zy1; ty++) for (let tx = zx0 + 1; tx < zx1; tx++) {
       for (const dxp of [0, 16]) {
         const px = tx * TILE + dxp, py = ty * TILE + TILE - 4;
         const ix0 = px - o.anchor[0], iy0 = py - o.anchor[1], ix1 = ix0 + o.w, iy1 = iy0 + o.h;
@@ -152,6 +156,13 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
         const tiles: number[] = [];
         let bien = true;
         const aire = NIVELES[nivel].aire;
+        if (NIVELES[nivel].pared) {
+          // toda la base es pared (sólida, sin agua) y delante hay piso caminable de la zona, alcanzable y sin vetos
+          for (let x = bx0; x <= bx1 && bien; x++) for (let y = by0; y <= by1; y++) { const k = at(x, y); if (k < 0 || !m.solid[k] || m.terrain.waterTiles[k]) { bien = false; break; } }
+          const delante = at(Math.floor(px / TILE), by1 + 1);
+          if (bien && (delante < 0 || m.solid[delante] || !reach0[delante] || py + TILE > z.y + z.h || py < z.y)) bien = false;
+          if (!bien) continue;
+        } else
         for (let y = by0 - aire; y <= by1 + aire && bien; y++) for (let x = bx0 - aire; x <= bx1 + aire; x++) {
           const k = at(x, y);
           if (k < 0 || m.solid[k] || veto[k] || m.terrain.waterTiles[k]) { bien = false; break; }
@@ -176,13 +187,16 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
         const frac = tapa / Math.max(1, f.body.length);
         // cerca de un camino (a 2-5 cuadros) y no en el borde de la zona
         let dc = 9;
-        for (let r = 1; r <= 8 && dc === 9; r++) for (let dy = -r; dy <= r && dc === 9; dy++) for (let dx = -r; dx <= r; dx++) { const k = at(tx + dx, ty + dy); if (k >= 0 && m.terrain.tileKind[k] === 1) { dc = r; break; } }
+        for (let r = 1; r <= 8 && dc === 9; r++) for (let dy = -r; dy <= r && dc === 9; dy++) for (let dx = -r; dx <= r; dx++) { const k = at(tx + dx, ty + dy); if (k >= 0 && (rc.caminos ?? [1]).includes(m.terrain.tileKind[k])) { dc = r; break; } }
         // junto al agua si lo pide (a 2 o 3 cuadros de la orilla)
         let da = 0;
         if (mo.prefiere === 'agua') { da = 9; for (let r = 1; r <= 8 && da === 9; r++) for (let dy = -r; dy <= r && da === 9; dy++) for (let dx = -r; dx <= r; dx++) { const k = at(tx + dx, ty + dy); if (k >= 0 && m.terrain.waterTiles[k]) { da = r; break; } } }
+        // lejos de los otros monumentos (cada uno es el punto de su lugar): a menos de 5 cuadros no, a menos de 12 cuesta
+        const cerca = informeMon.reduce((mn, q) => Math.min(mn, Math.hypot(q.x - px, q.y - py) / TILE), 99);
+        if (cerca < 5) continue;
         // no dentro de otra zona más chica (no le tapa el lugar a otra)
         const ajena = m.zones.some((o2) => o2 !== z && o2.w * o2.h < z.w * z.h && px >= o2.x && px <= o2.x + o2.w && py >= o2.y && py <= o2.y + o2.h);
-        const score = frac * 3 + (mo.prefiere === 'agua' ? Math.abs(da - 2.5) * 0.3 : Math.abs(dc - 3) * 0.12) + (ajena ? 1.5 : 0) + Math.hypot((px - zcx) / z.w, (py - zcy) / z.h) * 0.8 + hash(tx, ty, 5) * 0.05;
+        const score = frac * 3 + (mo.prefiere === 'agua' ? Math.abs(da - 2.5) * 0.3 : Math.abs(dc - 3) * 0.12) + (ajena ? 1.5 : 0) + Math.max(0, 12 - cerca) * 0.15 + Math.hypot((px - zcx) / z.w, (py - zcy) / z.h) * 0.8 + hash(tx, ty, 5) * 0.05;
         cands.push({ px, py, score, tiles });
       }
     }

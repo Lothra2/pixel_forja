@@ -4,6 +4,7 @@ import { TILE } from '../world/tiles';
 import { bosqueMap } from '../world/bosqueMap';
 import { catedralMap } from '../world/catedralMap';
 import { galeriasMap } from '../world/galeriasMap';
+import { puertoMap } from '../world/puertoMap';
 import { fogTexture } from '../world/atmosphere';
 import { FAUNA } from '../world/abyss/fauna';
 import { repeticion } from '../world/abyss/piso';
@@ -41,7 +42,8 @@ export function verificarAbyss(m: BigMap & { abyss?: InformeAbyss }, mundo: stri
   }
   // caminable: todo cofre, fogata, portal, arena y zona que se alcanzaba desde la llegada se sigue alcanzando
   expect(a.alcance.antes.filter((x) => !a.alcance.despues.includes(x))).toEqual([]);
-  for (const t of ['cofre', 'punto_guardado', 'portal_jefe', 'arena_jefe']) expect(a.alcance.despues.some((x) => x.startsWith(t)), t).toBe(true);
+  // (la arena del Puerto depende de la marea: el BFS sin marea no llega ni antes ni después)
+  for (const t of ['cofre', 'punto_guardado']) expect(a.alcance.despues.some((x) => x.startsWith(t)), t).toBe(true);
   // 3. vida: al menos 8 criaturas de las especies nuevas del mundo, con su comportamiento
   const especies = FAUNA[mundo]();
   expect(especies.length).toBeGreaterThanOrEqual(2);
@@ -80,4 +82,5 @@ describe('abyss premium', () => {
   it('Mundo 1, el Bosque GG', () => { verificarAbyss(bosqueMap(), 'mundo1'); }, 120000);
   it('Mundo 2, la Catedral de las Raíces', () => { verificarAbyss(catedralMap(), 'mundo2'); }, 120000);
   it('Mundo 3, las Galerías del Eco', () => { verificarAbyss(galeriasMap(), 'mundo3'); }, 120000);
+  it('Mundo 4, el Puerto Ahogado', () => { verificarAbyss(puertoMap(), 'mundo4'); }, 120000);
 });

@@ -2,6 +2,7 @@ import type { RecetaMundo } from './index';
 import { bosqueMonumentos } from './bosque';
 import { catedralMonumentos } from './catedral';
 import { galeriasMonumentos } from './galerias';
+import { puertoMonumentos } from './puerto';
 
 /**
  * Las recetas de los siete mundos: cómo se repinta el piso, qué monumento va en cada zona y la luz de cada zona.
@@ -133,4 +134,46 @@ export const GALERIAS: RecetaMundo = {
   },
 };
 
-export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL, mundo3: GALERIAS };
+export const RECETA_PUERTO: RecetaMundo = {
+  mundo: 'mundo4',
+  caminos: [],
+  niebla: '#a0aaa8',
+  piso: {
+    semilla: 404,
+    macro: { claro: '#a8b0a0', oscuro: '#0a1214', fuerza: 0.1 },
+    manchas: [
+      { color: '#0a1418', kinds: [1, 2], cantidad: 0.3, escala: 50, fuerza: 0.32 },
+      { color: '#1e3a26', kinds: [1, 2, 5], cantidad: 0.14, escala: 34, fuerza: 0.3 },
+      { color: '#8a9490', kinds: [1, 2], cantidad: 0.08, escala: 24, fuerza: 0.22 },
+      { color: '#4a2a18', kinds: [2], cantidad: 0.05, escala: 30, fuerza: 0.25 },
+    ],
+    grietas: { kinds: [2, 5], densidad: 2, oscuro: '#060a0a', canto: '#7a8480' },
+    charcos: { kinds: [1, 2], densidad: 1, fondo: '#14262a', brillo: '#d8c890' },
+    sueltos: [
+      { kinds: [1, 2], densidad: 3, dibujo: 'concha', colores: ['#c8b8a8', '#a89080', '#e0d4c4'] },
+      { kinds: [2], densidad: 2, dibujo: 'piedrita', colores: ['#4a5250', '#5e6664', '#3a403e'] },
+      { kinds: [1, 2], densidad: 1, dibujo: 'clavo', colores: ['#6a3a1e', '#5a5a5a'] },
+      { kinds: [1, 2], densidad: 2, dibujo: 'hoja', colores: ['#1e3a26', '#2c542e', '#16301e'] },
+    ],
+    desgaste: { claro: '#5a6260', fuerza: 0.12 },
+    bordes: [1, 2, 5],
+  },
+  monumentos: puertoMonumentos,
+  luz: {
+    mundo: { rayos: '-10,#d8d0b0,0.2', grado: '#0e1618,#ffd890,1.1,0.8' },
+    zonas: {
+      'El Muelle de Llegada': { rayos: '-14,#c8d0c8,0.3', grado: '#101a1c,#e8e0c0,1.08,0.8', particulas: 'ceniza,gotas' },
+      'La Calle de las Redes': { rayos: '-10,#b8c0b8,0.2', grado: '#0c1416,#d8d0b0,1.1,0.8', particulas: 'ceniza,gotas' },
+      'El Mercado Hundido': { rayos: '-12,#b8c4bc,0.25', grado: '#0c1618,#d8d8c0,1.1,0.8', particulas: 'ceniza,gotas' },
+      'La Iglesia de la Campana Ahogada': { rayos: '-6,#ffd890,0.35', grado: '#0e1214,#ffe0a0,1.15,0.82', particulas: 'ceniza,polvo' },
+      'Los Botes Volteados': { rayos: '-16,#c0c8c8,0.25', grado: '#0a1416,#d0d8d0,1.08,0.8', particulas: 'ceniza,gotas' },
+      'El Astillero': { rayos: '-20,#d8c8a0,0.3', grado: '#140e0a,#e8d0a0,1.12,0.85', particulas: 'ceniza,polvo' },
+      'La Cueva de las Medusas': { rayos: '0,#8a5aff,0.15', grado: '#08061a,#c8a0ff,1.18,1.05', particulas: 'brillos,gotas' },
+      'El Faro': { rayos: '-30,#ffd890,0.7', grado: '#0e1214,#ffe090,1.2,0.9', particulas: 'ceniza,brillos' },
+      'El Patio de las Redes': { rayos: '-8,#ffc070,0.3', grado: '#120e0a,#ffd090,1.1,0.85', particulas: 'ceniza' },
+      'La Gruta del Ancla': { rayos: '0,#8a5aff,0.1', grado: '#08061a,#b890ff,1.15,1.0', particulas: 'brillos,gotas' },
+    },
+  },
+};
+
+export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL, mundo3: GALERIAS, mundo4: RECETA_PUERTO };
