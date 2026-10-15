@@ -563,6 +563,59 @@ function rayoCatatumbo(p: Pix, k: number) {
     for (let s = 0; s < 3; s++) { const nx = bx + 4 + R() * 4, ny = by + (R() - 0.5) * 10; p.line(bx, by, nx, ny, '#c8a8ff'); bx = nx; by = ny; }
   }
 }
+/** El camino del rayo del cielo: de arriba (y 0) al ancla (24, h - 1), zigzagueando y cerrando hacia el punto. */
+function caminoRayo(h: number, seed: number): [number, number][] {
+  const R = rng(seed), pts: [number, number][] = [];
+  let x = 24 + (R() - 0.5) * 14;
+  for (let y = 0; y < h - 1; y += 10) {
+    pts.push([Math.round(x), y]);
+    // se puede ir lejos arriba y se cierra abajo: los últimos 40 px van derecho al punto
+    const libre = Math.max(0, (h - 40 - y) / h);
+    x = 24 + Math.max(-18, Math.min(18, x - 24 + (R() - 0.5) * 18 * (0.4 + libre)));
+  }
+  pts.push([24, h - 1]);
+  return pts;
+}
+/**
+ * El rayo del Catatumbo que baja del cielo a un punto (la punta de la jabalina, un tablero): la guía baja en dos cuadros,
+ * pega en el 2 con el destello abajo, parpadea del 3 al 6 (dos caminos que se turnan) y se apaga en el 7. Mismos
+ * colores que `rayo_catatumbo`.
+ */
+function rayoCielo(p: Pix, k: number) {
+  const h = p.h, A = caminoRayo(h, 4242), B = caminoRayo(h, 977);
+  const trazo = (pts: [number, number][], hasta: number, grueso: number, glow: string, core?: string) => {
+    for (let i = 1; i < pts.length && pts[i - 1][1] < hasta; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], t = Math.min(1, (hasta - y0) / (y1 - y0));
+      const xe = x0 + (x1 - x0) * t, ye = y0 + (y1 - y0) * t;
+      if (grueso > 0) p.thick(x0, y0, xe, ye, grueso, glow);
+      if (core) p.line(x0, y0, xe, ye, core);
+    }
+  };
+  const ramas = (pts: [number, number][], seed: number, c: string) => {
+    const R = rng(seed);
+    for (const b of [3, 7, 11, 15]) {
+      if (b >= pts.length - 4) continue;
+      let [bx, by] = pts[b];
+      const lado = R() < 0.5 ? -1 : 1;
+      for (let s = 0; s < 4; s++) { const nx = bx + lado * (2 + R() * 4), ny = by + 5 + R() * 4; p.line(bx, by, nx, ny, c); bx = nx; by = ny; }
+    }
+  };
+  // el destello donde pega: un disco blanco con su aro morado y unas chispas cortas
+  const destello = (r: number) => {
+    p.disc(24, h - 3, r + 2, '#7a3ae0', 0.6); p.disc(24, h - 3, r, '#c8a8ff', 0.6); p.disc(24, h - 3, Math.max(1, r - 2), '#ffffff', 0.6);
+    for (const a of [-2.6, -2, -1.1, -0.5]) p.line(24 + Math.cos(a) * (r + 1), h - 3 + Math.sin(a) * (r + 1) * 0.6, 24 + Math.cos(a) * (r + 5), h - 3 + Math.sin(a) * (r + 5) * 0.6, '#c8a8ff');
+  };
+  if (k === 0) { trazo(A, h * 0.35, 0, '', '#c8a8ff'); return; }
+  if (k === 1) { trazo(A, h * 0.75, 0.6, '#7a3ae0', '#c8a8ff'); ramas(A, 5, '#7a3ae0'); return; }
+  if (k === 7) { trazo(A, h, 1.2, '#4a2a90'); destello(3); return; }
+  const pts = k === 2 || k % 2 === 1 ? A : B;
+  // el halo del golpe: el cuadro 2 es el más gordo
+  if (k === 2) trazo(pts, h, 4.2, '#4a2a90');
+  trazo(pts, h, k === 2 ? 2.6 : 2, '#7a3ae0');
+  trazo(pts, h, 0.9, '#c8a8ff', '#ffffff');
+  ramas(pts, 11 + k, '#c8a8ff');
+  destello(k === 2 ? 10 : k % 2 ? 6 : 5);
+}
 function ondaFurro(p: Pix, k: number, n: number) {
   for (let i = 0; i < 3; i++) {
     const u = ((k / n) + i / 3) % 1, r = new Pix(48, 48);
@@ -724,6 +777,7 @@ export const EFFECTS: EffectDef[] = [
   { id: 'calor', base: 'calor', grupo: 'clima', w: 64, h: 64, cuadros: 8, fps: 8, loop: true, ancla: [0, 0], se_pega_a: 'mosaico', capa: 'frente', draw: calor, uso: u('Reverbero del calor en mosaico, con poca opacidad (0.3) sobre el piso.', 'Tiling heat shimmer, at low opacity (0.3) over the ground.') },
 
   { id: 'rayo_catatumbo', base: 'rayo_catatumbo', grupo: 'tecnica', w: 128, h: 32, cuadros: 4, fps: 16, loop: true, ancla: [0, 16], se_pega_a: 'mano', capa: 'frente', draw: rayoCatatumbo, uso: u('Técnica: el rayo sale de la mano hacia la derecha. Espejar con flipX.', 'Special move: the bolt shoots right from the hand. Mirror with flipX.') },
+  { id: 'rayo_cielo', base: 'rayo_cielo', grupo: 'tecnica', w: 48, h: 256, cuadros: 8, fps: 16, loop: false, ancla: [24, 255], se_pega_a: 'objeto', capa: 'frente', draw: rayoCielo, uso: u('Técnica: el rayo baja del cielo al punto del ancla (la punta de la jabalina, el aro). Pega en el cuadro 2. Para que siga cargando, repetir del 3 al 6. No se gira.', 'Special move: the bolt comes down from the sky to the anchor point (the javelin tip, the hoop). It hits on frame 2. To keep it charging, loop frames 3 to 6. Do not rotate it.') },
   { id: 'onda_furro', base: 'onda_furro', grupo: 'tecnica', w: 48, h: 48, cuadros: 8, fps: 12, loop: true, ancla: [24, 24], se_pega_a: 'objeto', capa: 'frente', draw: ondaFurro, uso: u('Técnica: ondas de sonido desde el furro.', 'Special move: sound waves from the furro drum.') },
   { id: 'rafaga_abanico', base: 'rafaga_abanico', grupo: 'tecnica', w: 64, h: 32, cuadros: 6, fps: 14, loop: false, ancla: [0, 16], se_pega_a: 'mano', capa: 'frente', draw: rafaga, uso: u('Con `fan_gust`: el viento sale del abanico hacia la derecha.', 'With `fan_gust`: wind blows right from the fan.') },
   { id: 'vapor_termo', base: 'vapor_termo', grupo: 'tecnica', w: 16, h: 32, cuadros: 8, fps: 8, loop: true, ancla: [8, 31], se_pega_a: 'objeto', capa: 'frente', draw: vapor, uso: u('Vapor que sube del termo de tinto.', 'Steam rising from the coffee flask.') },
