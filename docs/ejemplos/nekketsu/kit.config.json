@@ -366,6 +366,9 @@
         "bogota",
         "caracas"
       ]
+    },
+    "intro": {
+      "espaldas": "kenji"
     }
   },
   "escenarios": "escenarios/",

@@ -104,6 +104,32 @@ Va en `ui.interfaz` como la parte `mapa`. Las costas y las fronteras son de Natu
 
 **Sin `gira`:** el mapa sale sin países resaltados y sin ruta.
 
+## Las escenas de la intro
+
+Va en `ui.interfaz` como la parte `intro`. Son fondos de 800 x 360, con la parte de 640 de x 80 a 720, y las capas que van encima. Las personas las pone el juego: los retratos de 96 en los `huecos` y los sprites donde quiera.
+
+| Pieza | Tamaño | Qué es |
+|---|---|---|
+| `intro_azotea` | 800 x 360 | La azotea del instituto en Tokio al atardecer: el sol con rayas de arcade entre la ciudad, la Torre de Tokio, la Skytree, la reja, el tanque y la caseta de la escalera. `pie` es dónde va el atleta de espaldas y `texto`, el cielo tranquilo |
+| `intro_espaldas` | 125 x 153 con Kenji, 4 cuadros a 6 fps en bucle | El atleta de `ui.intro.espaldas`, de espaldas y redibujado a 3 como el retrato grande, con el gakuran echado sobre los hombros ondeando al viento. La manga de la derecha vuela y la de la izquierda cuelga con su brazalete. `ancla` es el medio de los pies |
+| `intro_bogota` | 800 x 360 | Bogotá en la tarde con lluvia: Monserrate en la neblina, la cuadra de tiendas con sus toldos, los edificios de ladrillo, el andén mojado con charcos, la chaza del vendedor y la buseta parada. `anden` es la y de los pies. `huecos` son 4 de 96 para presentar a un equipo, en silueta y después de color |
+| `intro_bogota_lluvia` | 800 x 360, 4 cuadros a 10 fps, transparente | La lluvia en diagonal y las gotas que salpican en la calle, encima de todo |
+| `intro_maracaibo` | 800 x 360, 4 cuadros a 6 fps | Maracaibo al mediodía con calor: el sol blanco con su halo que late, el lago con el puente Rafael Urdaneta y los balancines en la calina, el malecón con palmeras y el carrito de raspados. El horizonte y la calle reverberan, y las palmeras y el carrito quedan quietos. `malecon` es la y de los pies |
+| `intro_desayuno` | 800 x 360 | El desayuno en un apartamento de Saigón: la pared verde clarito, la ventana con la reja de flores y la ciudad amaneciendo afuera, el calendario, la repisa con las latas de café y la foto con la bandera, y la mata. `huecos` son los 4 retratos de 96 sentados a la mesa |
+| `intro_desayuno_mesa` | 800 x 360, 4 cuadros a 6 fps, transparente arriba | La mesa de adelante: los cuatro cafés sữa đá con el phin goteando, el plato de arepas echando humito, el pan y el azúcar. Va encima de los retratos y les tapa los hombros |
+
+**En `kit.config.json`:**
+
+```json
+"ui": { "interfaz": true, "intro": { "espaldas": "kenji" } }
+```
+
+**Sin `intro.espaldas`:** salen las escenas, pero no el atleta de espaldas.
+
+**El orden de las capas:**
+- **En el desayuno:** `intro_desayuno`, los retratos `grande_feliz` en `huecos` y encima `intro_desayuno_mesa`.
+- **En Bogotá:** `intro_bogota`, la gente o los retratos, y encima `intro_bogota_lluvia`.
+
 ## En Phaser
 
 ```js

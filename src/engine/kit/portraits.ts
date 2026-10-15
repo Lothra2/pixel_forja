@@ -1,5 +1,5 @@
 import { createRaster, type Raster } from '../core/raster';
-import { renderHuman } from '../render/human';
+import { renderHuman, type BigFrame } from '../render/human';
 import { posesFor } from '../render/clip';
 import type { HumanFicha } from '../sheet/ficha';
 import type { EyeExpr, MouthExpr } from '../head/stamps';
@@ -100,18 +100,21 @@ const PIEL = new Set(['skin', 'face', 'ears']);
  */
 const DELANTE: Record<string, number> = { skin: 0, face: 0, ears: 0, top: 2, top2: 2, neck: 3, jacket: 3, armor: 3, trim: 4, jbutton: 4, armband: 4, hair: 5, beard: 5, accessory: 6 };
 
-/** El retrato grande redibujado a 96 (ver arriba). */
-function portraitBig(f: HumanFicha, face: { eyes: EyeExpr; mouth: MouthExpr }): Raster {
-  const pose = posesFor(f, 64, 'idle', 'front')[0];
-  const b = renderHuman(f, 64, { ...pose, face }, 'front', { noOutline: true, materiales: true });
-  const head = b.joints?.head ?? [b.pivotX, b.groundRow - 32];
-  const top = (b.whole ?? b.full ?? b.body)?.y0 ?? head[1] - 21;
-  const S = PORTRAIT_BIG / PORTRAIT_BIG_SCALE, N = PORTRAIT_BIG;
-  const x0 = Math.round(head[0] - S / 2), y0 = top - 1;
+/**
+ * Un pedazo de un cuadro (renderizado con `materiales` y sin contorno) redibujado a 3: Scale3x sobre el par (color,
+ * material), así cada pieza se suaviza sin mezclarse con la de al lado, y después el contorno de un pixel: afuera, el
+ * tono oscuro de la pieza que toca; adentro, una línea donde una pieza va delante de otra (el pelo sobre la cara).
+ * Es lo que hace el retrato grande, para cualquier recorte del cuerpo.
+ */
+export function aTres(b: BigFrame, x0: number, y0: number, w: number, h: number): Raster { return aTresConMaterial(b, x0, y0, w, h).r; }
+
+/** `aTres` y el material de cada pixel de la imagen a 3 ('' afuera). */
+export function aTresConMaterial(b: BigFrame, x0: number, y0: number, w: number, h: number): { r: Raster; mat: (i: number) => string } {
   const R = b.raster, { mapa, nombres, oscuros } = b.materiales!;
+  const W = w * 3, H = h * 3;
   // cada par (color, material) es un índice: así Scale3x mueve los dos juntos
-  const colores: number[] = [], materialDe: number[] = [], idx = new Int32Array(S * S).fill(-1), visto = new Map<number, number>();
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+  const colores: number[] = [], materialDe: number[] = [], idx = new Int32Array(w * h).fill(-1), visto = new Map<number, number>();
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const sx = x0 + x, sy = y0 + y;
     if (sx < 0 || sy < 0 || sx >= R.w || sy >= R.h) continue;
     const i = sy * R.w + sx;
@@ -120,19 +123,19 @@ function portraitBig(f: HumanFicha, face: { eyes: EyeExpr; mouth: MouthExpr }): 
     const k = c * 512 + (mapa[i] + 2);
     let n = visto.get(k);
     if (n === undefined) { n = colores.length; colores.push(c); materialDe.push(mapa[i]); visto.set(k, n); }
-    idx[y * S + x] = n;
+    idx[y * w + x] = n;
   }
-  const big = scale3xIdx(idx, S, S);
-  const out = createRaster(N, N);
+  const big = scale3xIdx(idx, w, h);
+  const out = createRaster(W, H);
   const mat = (i: number) => (big[i] < 0 ? '' : nombres[materialDe[big[i]]] ?? '?');
   const oscuro = (i: number): [number, number, number] => hexToRgb(oscuros[materialDe[big[i]]] ?? '#1e1418');
   const pon = (i: number, [r, g, bl]: [number, number, number]) => { out.data[i * 4] = r; out.data[i * 4 + 1] = g; out.data[i * 4 + 2] = bl; out.data[i * 4 + 3] = 255; };
-  for (let i = 0; i < N * N; i++) if (big[i] >= 0) { const c = colores[big[i]]; pon(i, [c >> 16, (c >> 8) & 255, c & 255]); }
+  for (let i = 0; i < W * H; i++) if (big[i] >= 0) { const c = colores[big[i]]; pon(i, [c >> 16, (c >> 8) & 255, c & 255]); }
   // el contorno de un pixel, decidido sobre la imagen sin contorno y pintado al final
-  const vecinos = (x: number, y: number) => [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].filter(([a, c]) => a >= 0 && c >= 0 && a < N && c < N).map(([a, c]) => c * N + a);
+  const vecinos = (x: number, y: number) => [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].filter(([a, c]) => a >= 0 && c >= 0 && a < W && c < H).map(([a, c]) => c * W + a);
   const lineas: [number, [number, number, number]][] = [];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const i = y * N + x, m = mat(i);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x, m = mat(i);
     if (!m) {
       // afuera: el tono oscuro de la pieza que toca (la que va más adelante si toca dos)
       const js = vecinos(x, y).filter((j) => mat(j));
@@ -146,6 +149,19 @@ function portraitBig(f: HumanFicha, face: { eyes: EyeExpr; mouth: MouthExpr }): 
     }
   }
   for (const [i, c] of lineas) pon(i, c);
+  return { r: out, mat };
+}
+
+/** El retrato grande redibujado a 96 (ver arriba). */
+function portraitBig(f: HumanFicha, face: { eyes: EyeExpr; mouth: MouthExpr }): Raster {
+  const pose = posesFor(f, 64, 'idle', 'front')[0];
+  const b = renderHuman(f, 64, { ...pose, face }, 'front', { noOutline: true, materiales: true });
+  const head = b.joints?.head ?? [b.pivotX, b.groundRow - 32];
+  const top = (b.whole ?? b.full ?? b.body)?.y0 ?? head[1] - 21;
+  const S = PORTRAIT_BIG / PORTRAIT_BIG_SCALE, N = PORTRAIT_BIG;
+  const x0 = Math.round(head[0] - S / 2), y0 = top - 1;
+  const { r: out, mat } = aTresConMaterial(b, x0, y0, S, S);
+  const pon = (i: number, [r, g, bl]: [number, number, number]) => { out.data[i * 4] = r; out.data[i * 4 + 1] = g; out.data[i * 4 + 2] = bl; out.data[i * 4 + 3] = 255; };
   // el brillo de los ojos abiertos: dos por dos blanco arriba a la izquierda del iris (los cerrados y los felices son
   // una rayita: no llevan). El iris se busca por el color de ojos de la ficha, en la franja de los ojos
   const [er, eg, eb] = hexToRgb(f.palette.eyes);
