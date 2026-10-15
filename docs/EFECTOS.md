@@ -188,7 +188,7 @@ bola.setFrame(m.fx.bola_tama.estados.indexOf('agrietada'));
 | Id | Tamaño | Cuadros | fps | Bucle | Se pega a | Capa | Para qué |
 |---|---|---|---|---|---|---|---|
 | `rayo_catatumbo` | 128 x 32 | 4 | 16 | sí | mano | frente | Técnica: el rayo sale de la mano hacia la derecha. Espejar con flipX. |
-| `rayo_cielo` | 48 x 256 | 8 | 16 | no | objeto | frente | Técnica: el rayo baja del cielo al punto del ancla (la punta de la jabalina, el aro). Pega en el cuadro 2. Para que siga cargando, repetir del 3 al 6. No se gira. |
+| `rayo_cielo` | 48 x 256 | 8 | 16 | no | objeto | frente | Técnica: el rayo baja del cielo al punto del ancla (la punta de la jabalina, el aro). Pega en el cuadro 2. Para que siga cargando, repetir del 3 al 6. No se gira. En la jabalina, el ancla va en el `punto` del `impacto` de `javelin_rayo` (cuadro 2), que es la punta en cada fila. |
 | `onda_furro` | 48 x 48 | 8 | 12 | sí | objeto | frente | Técnica: ondas de sonido desde el furro. |
 | `rafaga_abanico` | 64 x 32 | 6 | 14 | no | mano | frente | Con `fan_gust`: el viento sale del abanico hacia la derecha. |
 | `vapor_termo` | 16 x 32 | 8 | 8 | sí | objeto | frente | Vapor que sube del termo de tinto. |

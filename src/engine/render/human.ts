@@ -13,7 +13,7 @@ import { renderHeadModel, HEAD_STYLES } from '../head3d/render';
 import { modelFromAvatar } from '../head3d/avatar';
 import { lpcHead } from '../parts/lpc';
 import { rotSprite } from './rotsprite';
-import { drawBall, drawHeld, drawGround, isBall, ballSize, drawHeldFloorProp, FLOOR_PROPS, type FloorPropKind } from './props';
+import { drawBall, drawHeld, drawGround, isBall, ballSize, drawHeldFloorProp, heldTip, FLOOR_PROPS, type FloorPropKind } from './props';
 import { findLoot } from '../loot/catalog';
 import { handMaterials } from '../loot/render';
 
@@ -64,8 +64,11 @@ export interface BigFrame {
 }
 
 export type JointName = 'hip' | 'hipNear' | 'hipFar' | 'footNear' | 'footFar' | 'shoulderNear' | 'shoulderFar' | 'handNear' | 'handFar' | 'neck' | 'head' | 'elbowNear' | 'elbowFar' | 'frente';
-/** `carry`: dónde se apoya lo que se lleva (solo en las poses con `load`): entre las manos, arriba de las palmas */
-export type Joints = Record<JointName, [number, number]> & { carry?: [number, number] };
+/**
+ * `carry`: dónde se apoya lo que se lleva (solo en las poses con `load`): entre las manos, arriba de las palmas.
+ * `punta`: la punta del implemento en la mano (la jabalina, la garrocha, el bate), solo en los cuadros que lo traen.
+ */
+export type Joints = Record<JointName, [number, number]> & { carry?: [number, number]; punta?: [number, number] };
 
 /** Caja de lo que no es implemento, ya en coordenadas del cuadro grande. */
 /** Implementos largos que se sostienen (garrocha, jabalina): nunca marcan el piso. */
@@ -713,6 +716,8 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   const gearKind = (k: PropKind): PropKind | null =>
     k === 'sword' && gear && gear.main !== undefined ? gear.main : k === 'shield' && gear && gear.off !== undefined ? gear.off : k;
   let heldAt: { p: [number, number]; angle: number; behind: boolean } | null = null;
+  // la punta del primer implemento dibujado que la tiene (la jabalina): el juego pone ahí el rayo
+  let tipAt: [number, number] | null = null;
   // las pelotas dibujadas: centro pedido (en el lienzo, desde la cadera) y si van detrás
   const pelotas: { kind: PropKind; c: [number, number]; behind: boolean }[] = [];
   const drawAttached = (behind: boolean) => {
@@ -778,7 +783,10 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
         }
       }
       if (isBall(pr.kind)) { drawBall(part, pr.kind, p, d.u); pelotas.push({ kind: pr.kind, c: [p[0], p[1]], behind }); }
-      else drawHeld(part, pr.kind, p, ang, d.u, rest, pr.bend ?? 0);
+      else {
+        drawHeld(part, pr.kind, p, ang, d.u, rest, pr.bend ?? 0);
+        tipAt ??= heldTip(pr.kind, p, ang, d.u);
+      }
       // estela del golpe: arco claro de dos pixeles a lo largo del recorrido del filo, sin contorno
       const sm = pr.smear?.[viewIn];
       if (sm) {
@@ -944,6 +952,7 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
   }
   // cargado a la espalda: la base va arriba de la espalda, detrás de los hombros (sigue la inclinación del torso)
   if (pose.carryAt === 'back') joints.carry = J(local(-Math.ceil(d.torsoW / 2), d.torsoH));
+  if (tipAt) joints.punta = J(tipAt);
   const held = heldAt as { p: [number, number]; angle: number; behind: boolean } | null;
   // cada pelota como la pinta blob: de round(c - r) a round(c - r) + s - 1, así que su centro continuo es el borde + s / 2
   const balls = pelotas.map(({ kind, c, behind }): BallAt => {

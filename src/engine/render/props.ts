@@ -53,6 +53,18 @@ export function drawBall(part: Part, kind: PropKind, c: [number, number], u: num
 }
 
 /**
+ * La punta del implemento en la mano, donde la dibuja `drawHeld`: la de la jabalina, la de la garrocha, la del bate.
+ * null si el implemento no tiene una punta que el juego necesite (la raqueta, la espada).
+ */
+export function heldTip(kind: PropKind, at: [number, number], angle: number, u: number): [number, number] | null {
+  const nn = (v: number) => Math.max(1, Math.round(v * u));
+  const along = kind === 'javelin' ? nn(26) * 0.58 : kind === 'pole' ? nn(40) : kind === 'bat' ? Math.round(13 * u) : null;
+  if (along === null) return null;
+  const [x, y] = rot([along, 0], angle);
+  return [at[0] + x, at[1] + y];
+}
+
+/**
  * Implementos que se sostienen: el ángulo dice hacia dónde apunta (0 = derecha, 90 = abajo).
  * at = punto de agarre (mano).
  */

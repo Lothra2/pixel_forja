@@ -193,13 +193,15 @@ export const batNekketsu: AnimDef = {
 /**
  * La lanza del Catatumbo (`javelin_rayo`): corre con la jabalina en alto, apuntando al cielo con el brazo estirado; se
  * planta y la sostiene arriba dos cuadros mientras carga el rayo (ahí el juego pone el relámpago); la baja, cruza los
- * pasos, bloquea y la suelta con todo (suelta, con su `punto`). La jabalina va dibujada hasta la suelta, como en
+ * pasos, bloquea y la suelta con todo (suelta, con su `punto`). El `impacto` del cuadro 2 es donde cae el rayo: su
+ * `punto` es la punta de la jabalina en cada fila. La jabalina va dibujada hasta la suelta, como en
  * `javelin`. Con `desplazamiento`. De lado: de frente y de espalda sale en la diagonal.
  */
 export const javelinRayo: AnimDef = {
   name: 'javelin_rayo', pack: 'athletics', lateral: true, fps: 14, loop: false, views: ['side', 'front', 'back'],
   travel: { ref: 'sprint', k: [0.6, 0.6, 0.15, 0, 0.4, 0.6, 0.5, 0.25, 0.15, 0.1, 0.1, 0] },
-  events: [{ type: 'paso', phase: 0, foot: 'near' }, { type: 'suelta', phase: 8 / 12 }],
+  // el impacto del 2 es donde le cae el rayo: su `punto` es la punta de la jabalina en cada fila
+  events: [{ type: 'paso', phase: 0, foot: 'near' }, { type: 'impacto', phase: 2 / 12, joint: 'punta' }, { type: 'suelta', phase: 8 / 12 }],
   build: (c) => {
     const L = c.L, u = c.u;
     const jav = (side: number, front = true): PropState => ({ kind: 'javelin', at: 'handNear', angles: { side, se: side + 6, ne: side - 6, front: 90 + side * 0.4, back: -90 - side * 0.4 }, ...(front ? { front: true } : {}) });
