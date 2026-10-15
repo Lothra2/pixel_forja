@@ -29,17 +29,33 @@ function mirror(r: Raster): Raster {
 
 // ---------- bruma ----------
 
+function hash2(x: number, y: number, s: number): number {
+  let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+/** Ruido suave con celdas de cw x ch que se repite cada `period` px en x y en y. */
+function pnoise2(x: number, y: number, cw: number, ch: number, period: number, seed: number): number {
+  const nx = period / cw, ny = period / ch, gx = x / cw, gy = y / ch, x0 = Math.floor(gx), y0 = Math.floor(gy);
+  const fx = gx - x0, fy = gy - y0, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+  const wx = (v: number) => ((v % nx) + nx) % nx, wy = (v: number) => ((v % ny) + ny) % ny;
+  const a = hash2(wx(x0), wy(y0), seed), b = hash2(wx(x0 + 1), wy(y0), seed), c = hash2(wx(x0), wy(y0 + 1), seed), d = hash2(wx(x0 + 1), wy(y0 + 1), seed);
+  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+}
+
 /**
  * Textura de bruma que pega por los 4 lados (para hacerla correr en capas).
  * nubes: manchas grandes y suaves. jirones: hilos largos y horizontales que se arrastran por el suelo.
  */
-export function fogTexture(kind: 'nubes' | 'jirones', size = 256): Raster {
+export function fogTexture(kind: 'nubes' | 'jirones', size = 256, tinte?: [number, number, number]): Raster {
   const r = createRaster(size, size);
-  const col = kind === 'nubes' ? [176, 190, 214] : [196, 206, 226];
+  const col = tinte ?? (kind === 'nubes' ? [176, 190, 214] : [196, 206, 226]);
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     let v: number;
     if (kind === 'nubes') v = pnoise(x, y, 64, size, 11) * 0.55 + pnoise(x, y, 32, size, 13) * 0.3 + pnoise(x, y, 16, size, 17) * 0.15;
-    else v = pnoise(x * 0.5, y * 2, 32, size, 21) * 0.6 + pnoise(x * 0.5, y * 2, 16, size, 23) * 0.4; // estirado en x
+    // estirado en x: celdas anchas y bajas, que se repiten justo cada `size` en las dos direcciones (antes el estirado
+    // corría el período a 2 x size y quedaba una costura a los lados)
+    else v = pnoise2(x, y, 64, 16, size, 21) * 0.6 + pnoise2(x, y, 32, 8, size, 23) * 0.4;
     const t = Math.max(0, Math.min(1, (v - 0.42) / 0.36));
     const a = Math.round(t * t * (3 - 2 * t) * (kind === 'nubes' ? 150 : 120));
     // pixelado suave: alfa en escalones de 16 (se ve pixel art, no gradiente liso)

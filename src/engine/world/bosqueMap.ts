@@ -14,6 +14,8 @@ import { forestDecals, forestGroups, forestFront } from './premium/details';
 import { waterExtras, drawFoam, ESPUMA } from './water';
 import { lavaTile } from './fraguaObjectsB';
 import { withReactions, reactiveObjects } from './reactions';
+import { vidaAbyss, type InformeAbyss } from './abyss/index';
+import { BOSQUE } from './abyss/recetas';
 import { premiumWorld, type PremiumZone, type ZoneReport, type WorldPass, type WorldReport } from './premium/zone';
 
 /**
@@ -134,12 +136,14 @@ export const ANILLO_HUNDIDO = {
   entry: { x: 10.8, w: 2.2 },
 };
 
-export function bosqueMap(seed = 2024, opts: { premium?: boolean } = {}): BigMap & { piloto?: ZoneReport; mundo?: WorldReport } {
+export function bosqueMap(seed = 2024, opts: { premium?: boolean; abyss?: boolean } = {}): BigMap & { piloto?: ZoneReport; mundo?: WorldReport; abyss?: InformeAbyss } {
   const m = bosqueMapBase(seed);
   if (opts.premium === false) return m;
   const darkAt = (tx: number, ty: number) => bosqueDesign.dark.reduce((mx, z) => Math.max(mx, 1 - Math.hypot(tx - z.c[0], ty - z.c[1]) / z.r), 0);
   const { zonas, mundo } = premiumWorld(m, { ...bosqueDesign, pits: [ANILLO_HUNDIDO] }, [{ ...ZONA_PILOTO, darkAt }], { ...BOSQUE_PREMIUM, darkAt }, m.objects);
-  return { ...m, piloto: zonas[0], mundo: mundo ?? undefined };
+  const out = { ...m, piloto: zonas[0], mundo: mundo ?? undefined };
+  // abyss premium: piso con vida, un monumento por zona, criaturas nuevas y la luz de cada zona
+  return opts.abyss === false ? out : vidaAbyss(out, BOSQUE);
 }
 
 function bosqueMapBase(seed = 2024): BigMap {

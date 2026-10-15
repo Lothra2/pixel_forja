@@ -51,6 +51,9 @@ import { mv } from '../boss/sdf';
 import { introPanels, fuegoPared, humoGrande, logoFuego } from '../intro/intro';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
+import { FAUNA } from '../world/abyss/fauna';
+import { RECETAS } from '../world/abyss/recetas';
+import type { InformeAbyss } from '../world/abyss/index';
 import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
 import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
 import { bitmapFonts, renderLogo } from '../ui/fonts';
@@ -672,6 +675,23 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     once(png(`mundo/${slug}_vista.png`, half(renderBigMap(big, { entities: true }))));
     const postales: Record<string, string> = {};
     for (const p of big.postales) { const n = `mundo/postales/${p.nombre}.png`; once(png(n, cropView(full, p.x, p.y))); postales[p.nombre] = n; }
+    // abyss premium: las especies chicas de este mundo (con su comportamiento) y la niebla teñida del mundo
+    const critMundo: Record<string, unknown> = { ...crit };
+    for (const c of FAUNA[slug]?.() ?? []) {
+      const anims: Record<string, unknown> = {};
+      for (const [an, a] of Object.entries(c.anims)) { const n = `mundo/criaturas/${c.name}_${an}.png`; once(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
+      // `huye` es el mismo archivo que `huir` (el encargo lo nombra así; la rana y la ardilla usan `huir`)
+      anims.huye = anims.huir;
+      critMundo[c.name] = { w: c.w, h: c.h, anims, comportamiento: c.comportamiento, notas: c.nota };
+    }
+    const receta = RECETAS[slug];
+    let nieblaMundo: Record<string, string> = {};
+    if (receta?.niebla) {
+      const t = receta.niebla, rgbT: [number, number, number] = [parseInt(t.slice(1, 3), 16), parseInt(t.slice(3, 5), 16), parseInt(t.slice(5, 7), 16)];
+      once(png(`mundo/niebla_jirones_${slug}.png`, fogTexture('jirones', 256, rgbT)));
+      nieblaMundo = { jirones_mundo: `mundo/niebla_jirones_${slug}.png` };
+    }
+    const abyss = (big as BigMap & { abyss?: InformeAbyss }).abyss;
     const objManifest: Record<string, unknown> = {};
     for (const o of big.objects) {
       const anims: Record<string, unknown> = {};
@@ -689,8 +709,13 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
       mapa: `mundo/${big.name}.json`, nombre, ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
       agua, espuma: { archivo: `mundo/${big.name}_espuma.png`, capa: 'espuma', columnas: waterExtras(big).columnas, cuadros: ESPUMA.cuadros, fps: ESPUMA.fps }, reflejo: { capa: 'reflejo' },
       suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
-      vista: `mundo/${slug}_vista.png`, postales, objetos: objManifest, ...(portal ? { portal, portales: 'Portales premium (#40), 96 x 128 con apoyo abajo al centro: anims girar (12 a 12 fps), abrir (8), cerrar (6), y las capas sueltas arco (1) y remolino (12). `portal` es el de este mundo; portal_azul y portal_rojo siguen en todos.' } : {}), ...(big.meta?.fondo ? { fondo: big.meta.fondo.map((f) => ({ objeto: f.id, paralaje: f.paralaje })) } : {}), particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
-      niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', notas: 'Texturas de 256 que pegan por los 4 lados. Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla.' },
+      vista: `mundo/${slug}_vista.png`, postales, objetos: objManifest, ...(portal ? { portal, portales: 'Portales premium (#40), 96 x 128 con apoyo abajo al centro: anims girar (12 a 12 fps), abrir (8), cerrar (6), y las capas sueltas arco (1) y remolino (12). `portal` es el de este mundo; portal_azul y portal_rojo siguen en todos.' } : {}), ...(big.meta?.fondo ? { fondo: big.meta.fondo.map((f) => ({ objeto: f.id, paralaje: f.paralaje })) } : {}), particulas: parts, criaturas: critMundo, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
+      niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', ...nieblaMundo, notas: 'Texturas de 256 que pegan por los 4 lados (los jirones también: ya no hay costura cada 512). Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla. jirones_mundo (si está) es la misma forma teñida con el color de la niebla de este mundo: usarla en vez de jirones.' },
+      ...(abyss ? {
+        monumentos: Object.fromEntries(abyss.monumentos.map((p) => [p.nombre, { zona: p.zona, x: p.x, y: p.y, historia: p.historia }])),
+        luz_zonas: { defecto: receta ? { rayos: receta.luz.mundo.rayos, grado: receta.luz.mundo.grado } : undefined, notas: 'Cada zona del mapa trae rayos ("angulo,#color,densidad": grados desde la vertical, densidad 0 a 1, 0 = sin rayos) y grado ("#sombras,#luces,contraste,saturacion"). Si a una zona le falta, usar defecto.' },
+        criaturas_nuevas: { especies: (FAUNA[slug]?.() ?? []).map((c) => c.name), notas: 'Entidades criatura con `especie`. Anims quieto (bucle) y huir (= huye, mismo archivo). comportamiento: huye = radio en px al que se asusta, se_esconde = se mete en una grieta y desaparece (si no, corre fuera de la pantalla), corre = px/s, vuela = sale volando.' },
+      } : {}),
       referencia: 'tools/pixel_forja/scripts/visor/runtime.js anima todo esto en Canvas 2D: es la referencia para el juego.',
       notas: 'Orden de dibujo: capa fondo (paralaje) > agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > sombras horneadas (campo sombra; si no hay, la elipse de siempre) > objetos y personajes ordenados por y > capa frente (no va en el mapa: la zona la declara en su propiedad frente y el juego la pega a los bordes de la pantalla, con paralaje 1.15) > luces (aditivo) > sombras de nube. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',
     };
@@ -717,7 +742,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const base = exportarMundo(puertoBig, 'mundo4', 'El Puerto Ahogado', 'mundo/mundo4_agua.png', 'portal_rojo');
     return {
       ...base,
-      criaturas: { ...crit, marinero_ojos: { w: ojos.w, h: ojos.h, anims } },
+      criaturas: { ...(base.criaturas as Record<string, unknown>), marinero_ojos: { w: ojos.w, h: ojos.h, anims } },
       marea: {
         capas: { baja: 'marea_baja', alta: 'marea_alta' }, agua: 'agua_marea', flotante: 'muelle_flotante',
         notas: 'Capas de cuadros del mapa (1 = solo se camina con esa marea). En `colision` los dos van libres: con la marea alta el juego suma marea_baja a la colisión y dibuja agua_marea en esos cuadros; con la baja suma marea_alta y deja los muelles flotantes en `abajo` (al subir: anim subir y después arriba). Desde cualquier cuadro que se camina hay camino a un farol con las dos mareas.',
