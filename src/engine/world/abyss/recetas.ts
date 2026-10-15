@@ -5,6 +5,7 @@ import { galeriasMonumentos } from './galerias';
 import { puertoMonumentos } from './puerto';
 import { ciudadMonumentos } from './ciudad';
 import { fraguaMonumentos } from './fragua';
+import { corazonMonumentos } from './corazon';
 
 /**
  * Las recetas de los siete mundos: cómo se repinta el piso, qué monumento va en cada zona y la luz de cada zona.
@@ -257,4 +258,44 @@ export const RECETA_FRAGUA: RecetaMundo = {
   },
 };
 
-export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL, mundo3: GALERIAS, mundo4: RECETA_PUERTO, mundo5: RECETA_CIUDAD, mundo6: RECETA_FRAGUA };
+export const RECETA_CORAZON: RecetaMundo = {
+  mundo: 'mundo7',
+  niebla: '#a8bcd8',
+  piso: {
+    semilla: 707,
+    macro: { claro: '#9ab8d8', oscuro: '#04060c', fuerza: 0.12 },
+    manchas: [
+      { color: '#c8dcf0', kinds: [1, 2, 5], cantidad: 0.14, escala: 40, fuerza: 0.35 },
+      { color: '#4e5864', kinds: [1, 2], cantidad: 0.15, escala: 50, fuerza: 0.3 },
+      { color: '#060a14', kinds: [1, 2], cantidad: 0.15, escala: 60, fuerza: 0.35 },
+      { color: '#3a0a08', kinds: [2], cantidad: 0.03, escala: 24, fuerza: 0.3 },
+    ],
+    grietas: { kinds: [1, 2, 5], densidad: 3, oscuro: '#020306', canto: '#b8d0ea' },
+    charcos: { kinds: [1, 2], densidad: 0.5, fondo: '#0c1220', brillo: '#e8f4ff' },
+    sueltos: [
+      { kinds: [1, 2], densidad: 3, dibujo: 'esquirla', colores: ['#b8d0ea', '#e8f4ff', '#6a8aac'] },
+      { kinds: [2], densidad: 0.6, dibujo: 'hueso', colores: ['#968c7c', '#bcb2a0'] },
+      { kinds: [1, 2], densidad: 2, dibujo: 'piedrita', colores: ['#2a2e38', '#383e4a', '#1e2028'] },
+      { kinds: [1, 2], densidad: 0.5, dibujo: 'carbon', colores: ['#141418', '#1e1a1a'] },
+    ],
+    bordes: [1, 2, 5],
+  },
+  monumentos: corazonMonumentos,
+  luz: {
+    mundo: { rayos: '-8,#b8d0ea,0.3', grado: '#04060e,#b8d8ff,1.15,0.85' },
+    zonas: {
+      'La Escalera Helada': { rayos: '-10,#c8dcf0,0.4', grado: '#060a14,#c8e0ff,1.12,0.85', particulas: 'nieve,brillos' },
+      'El Lago de los Gigantes': { rayos: '-15,#9ab8d8,0.35', grado: '#04060e,#b0d0f0,1.15,0.85', particulas: 'nieve,brillos' },
+      'Las Catacumbas de Hielo': { rayos: '0,#6a8aac,0.1', grado: '#020306,#8aa8c8,1.2,0.8', particulas: 'ceniza,polvo' },
+      'El Bosque de Escarcha': { rayos: '-20,#b8d0ea,0.45', grado: '#060a12,#d0e8ff,1.12,0.9', particulas: 'nieve,brillos' },
+      'La Ciudadela Congelada': { rayos: '-12,#9ab8d8,0.3', grado: '#06080e,#c0d4ec,1.14,0.82', particulas: 'nieve,polvo' },
+      'El Puente de las Cadenas': { rayos: '-35,#d0e0f0,0.25', grado: '#060810,#d8e8ff,1.1,0.8', particulas: 'ventisca,nieve' },
+      'La Puerta del Trono': { rayos: '0,#ff5a3a,0.3', grado: '#0a0204,#ff8a6a,1.22,0.95', particulas: 'ceniza,brasas' },
+      'El Corazón Helado': { rayos: '0,#ff3a20,0.45', grado: '#0a0204,#ff7050,1.28,1.0', particulas: 'ceniza,brasas' },
+      'La Guarida del Lobo': { rayos: '-10,#9ab8d8,0.2', grado: '#04060c,#b0c8e0,1.12,0.85', particulas: 'nieve' },
+      'La Cripta Sellada': { rayos: '0,#6a8aac,0', grado: '#020306,#ff6a4a,1.2,0.85', particulas: 'ceniza,brasas_frias' },
+    },
+  },
+};
+
+export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL, mundo3: GALERIAS, mundo4: RECETA_PUERTO, mundo5: RECETA_CIUDAD, mundo6: RECETA_FRAGUA, mundo7: RECETA_CORAZON };

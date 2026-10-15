@@ -113,6 +113,9 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
     puntos.push([e.x, e.y]);
     if (e.tipo === 'arena_jefe') NIVELES.forEach((nv, i) => { const R = (Number(e.props?.radio ?? 192) + nv.arena) / TILE; const n = Math.ceil(R); for (let dy = -n; dy <= n; dy++) for (let dx = -n; dx <= n; dx++) if (dx * dx + dy * dy <= R * R) marcaEn(vetos[i], Math.floor(e.x / TILE) + dx, Math.floor(e.y / TILE) + dy, 0); });
   }
+  // los cuadros donde el juego puede cerrar un ramal (premium.ramas[].tapar) quedan caminables
+  const ramas = (m as BigMap & { premium?: { ramas?: { tapar?: [number, number][]; medio?: [number, number] }[] } }).premium?.ramas ?? [];
+  for (const r of ramas) { for (const [x, y] of r.tapar ?? []) marca(x, y, 1); if (r.medio) marca(r.medio[0], r.medio[1], 1); }
   for (const c of m.cristales ?? []) { marca(Math.floor(c.x / TILE), Math.floor((c.y - 1) / TILE), 1); puntos.push([c.x, c.y]); }
   if (m.marea) for (let i = 0; i < W * H; i++) if (m.marea.baja[i] || m.marea.alta[i]) vetos.forEach((v) => { v[i] = 1; });
   // los caminos: la base no los pisa (en el nivel estricto, ni el cuadro de al lado)

@@ -7,6 +7,7 @@ import { galeriasMap } from '../world/galeriasMap';
 import { puertoMap } from '../world/puertoMap';
 import { ciudadMap } from '../world/ciudadMap';
 import { fraguaMap } from '../world/fraguaMap';
+import { corazonMap } from '../world/corazonMap';
 import { fogTexture } from '../world/atmosphere';
 import { FAUNA } from '../world/abyss/fauna';
 import { repeticion } from '../world/abyss/piso';
@@ -87,4 +88,5 @@ describe('abyss premium', () => {
   it('Mundo 4, el Puerto Ahogado', () => { verificarAbyss(puertoMap(), 'mundo4'); }, 120000);
   it('Mundo 5, la Ciudad Dormida', () => { verificarAbyss(ciudadMap(), 'mundo5'); }, 120000);
   it('Mundo 6, la Fragua de las Luces', () => { verificarAbyss(fraguaMap(), 'mundo6'); }, 120000);
+  it('Mundo 7, el Corazón Helado', () => { verificarAbyss(corazonMap(), 'mundo7'); }, 120000);
 });

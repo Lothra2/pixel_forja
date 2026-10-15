@@ -469,7 +469,10 @@ export interface CorazonReport {
   pantallas: { nombre: string; x: number; y: number; objetos: string[] }[];
 }
 
-export function corazonMap(seed = 777): BigMap & { premium: CorazonReport } {
+import { vidaAbyss, type InformeAbyss } from './abyss/index';
+import { RECETA_CORAZON } from './abyss/recetas';
+
+export function corazonMap(seed = 777, opts: { abyss?: boolean } = {}): BigMap & { premium: CorazonReport; abyss?: InformeAbyss } {
   const W = CORAZON_W, H = CORAZON_H;
   const d = makeDesign();
   const terrain = paintCorazon(d, seed);
@@ -767,7 +770,8 @@ export function corazonMap(seed = 777): BigMap & { premium: CorazonReport } {
     for (let i = 0; i < q.length; i++) { const k = q[i], x = k % W, y = Math.floor(k / W); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const j = at(x + dx, y + dy); if (j < 0 || reach[j] || solid[j]) continue; reach[j] = 1; q.push(j); } }
     for (let k = 0; k < W * H; k++) if (!reach[k]) solid[k] = 1;
   }
-  return map;
+  // abyss premium: piso con vida, un monumento por zona, criaturas nuevas y la luz de cada zona
+  return opts.abyss === false ? map : vidaAbyss(map, RECETA_CORAZON);
 }
 
 /** Paralaje de los tres fondos del abismo helado (de lejos a cerca). */
