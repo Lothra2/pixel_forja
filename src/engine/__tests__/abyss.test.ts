@@ -56,6 +56,9 @@ export function verificarAbyss(m: BigMap & { abyss?: InformeAbyss }, mundo: stri
     expect(Object.keys(s.anims).sort()).toEqual(['huir', 'quieto']);
     expect(s.comportamiento.huye).toBeGreaterThan(0); expect(s.comportamiento.corre).toBeGreaterThan(0); expect(typeof s.comportamiento.se_esconde).toBe('boolean');
   }
+  // #34: ninguna criatura encima de otra
+  const crs = m.entities.filter((e) => e.tipo === 'criatura');
+  for (let i = 0; i < crs.length; i++) for (let j = i + 1; j < crs.length; j++) expect(Math.hypot(crs[i].x - crs[j].x, crs[i].y - crs[j].y), `${crs[i].props?.especie} y ${crs[j].props?.especie} en ${crs[i].x},${crs[i].y}`).toBeGreaterThanOrEqual(12);
   // 4 y 5. cada zona con partículas conocidas, rayos y grado bien escritos
   for (const z of m.zones) {
     const pz = a.particulas[z.nombre];

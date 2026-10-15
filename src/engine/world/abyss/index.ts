@@ -46,6 +46,8 @@ export interface InformeAbyss {
   piso: InformePiso;
   monumentos: { zona: string; nombre: string; x: number; y: number; w: number; h: number; historia: string }[];
   sinLugar: string[];
+  /** criaturas que estaban en el mismo punto y se corrieron (#34) */
+  encimadas: string[];
   /** partículas de cada zona antes y después (las de antes se quedan todas) */
   particulas: Record<string, { antes: string; despues: string }>;
   /** el suelo quedó del mismo tamaño y con el mismo alfa (el agua sigue donde estaba) */
@@ -112,6 +114,18 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
     NIVELES.forEach((nv, i) => marcaEn(vetos[i], Math.floor(e.x / TILE), Math.floor(e.y / TILE), nv.ent));
     puntos.push([e.x, e.y]);
     if (e.tipo === 'arena_jefe') NIVELES.forEach((nv, i) => { const R = (Number(e.props?.radio ?? 192) + nv.arena) / TILE; const n = Math.ceil(R); for (let dy = -n; dy <= n; dy++) for (let dx = -n; dx <= n; dx++) if (dx * dx + dy * dy <= R * R) marcaEn(vetos[i], Math.floor(e.x / TILE) + dx, Math.floor(e.y / TILE) + dy, 0); });
+  }
+  // cuellos de botella (puertas, pasos angostos): un cuadro caminable con pared a los dos lados. Delante y detrás de
+  // ellos no va nada
+  const solidoEn = (x: number, y: number) => { const k = at(x, y); return k < 0 || !!m.solid[k] || !!m.terrain.waterTiles[k]; };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (solidoEn(x, y)) continue;
+    const uno = (solidoEn(x - 1, y) && solidoEn(x + 1, y)) || (solidoEn(x, y - 1) && solidoEn(x, y + 1));
+    const dos = (solidoEn(x - 1, y) && solidoEn(x + 2, y)) || (solidoEn(x, y - 1) && solidoEn(x, y + 2));
+    // niveles normales: pasos de 1 y de 2 cuadros, con 2 de aire; el de último recurso en el piso: solo los de 1;
+    // el de pared no pisa el piso, así que no le hace falta
+    if (uno || dos) { marcaEn(vetos[0], x, y, 2); marcaEn(vetos[1], x, y, 2); }
+    if (uno) marcaEn(vetos[2], x, y, 1);
   }
   // los cuadros donde el juego puede cerrar un ramal (premium.ramas[].tapar) quedan caminables
   const ramas = (m as BigMap & { premium?: { ramas?: { tapar?: [number, number][]; medio?: [number, number] }[] } }).premium?.ramas ?? [];
@@ -257,6 +271,29 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
     if (!puesto) sinLugar.push(`${mo.zona} (${o.name})`);
   }
 
+  // ---------- 2b. #34: dos criaturas en el mismo punto (la rana y el pez del Bosque): se corre una, no se pierde ninguna ----------
+  const encimadas: string[] = [];
+  const crs = m.entities.filter((e) => e.tipo === 'criatura');
+  for (let i = 0; i < crs.length; i++) for (let j = i + 1; j < crs.length; j++) {
+    const a = crs[i], b = crs[j];
+    if (Math.hypot(a.x - b.x, a.y - b.y) >= 12) continue;
+    // la que va en el agua (pez) busca agua; la otra busca tierra libre
+    const mover = b.props?.especie === 'pez' ? b : a.props?.especie === 'pez' ? a : b;
+    const quiereAgua = mover.props?.especie === 'pez';
+    const tx = Math.floor(mover.x / TILE), ty = Math.floor(mover.y / TILE);
+    let hecho = false;
+    for (let r = 1; r <= 3 && !hecho; r++) for (let dy = -r; dy <= r && !hecho; dy++) for (let dx = -r; dx <= r && !hecho; dx++) {
+      const k = at(tx + dx, ty + dy);
+      if (k < 0 || Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const agua = !!m.terrain.waterTiles[k];
+      if (agua !== quiereAgua || (!agua && m.solid[k])) continue;
+      const nx = (tx + dx) * TILE + TILE / 2, ny = (ty + dy) * TILE + TILE / 2;
+      if (crs.some((c) => c !== mover && Math.hypot(c.x - nx, c.y - ny) < 24)) continue;
+      encimadas.push(`${a.props?.especie} y ${b.props?.especie} en ${mover.x},${mover.y}: ${mover.props?.especie} a ${nx},${ny}`);
+      mover.x = nx; mover.y = ny; hecho = true;
+    }
+  }
+
   // ---------- 3. las criaturas nuevas: cerca de los monumentos y de los caminos ----------
   const especies = FAUNA[rc.mundo]?.() ?? [];
   const reachF = reachable(m, Math.floor(ini.x / TILE), Math.floor(ini.y / TILE));
@@ -304,6 +341,6 @@ export function vidaAbyss<T extends BigMap>(m: T, rc: RecetaMundo): T & { abyss:
   const despues = metasAlcanzables(m);
   const solidosNuevos: number[] = [];
   for (let i = 0; i < W * H; i++) if (m.solid[i] !== solidoAntes[i]) solidosNuevos.push(m.solid[i] ? i : -i - 1);
-  const abyss: InformeAbyss = { mundo: rc.mundo, piso, particulas, mismoSuelo: alfa(m.terrain.img.data) === alfaAntes && m.terrain.img.w === tamAntes[0] && m.terrain.img.h === tamAntes[1], solidosNuevos, monumentos: informeMon, sinLugar, criaturas, memoria: { monumentos: mp(memMon), fauna: mp(memFauna), total: mp(memMon + memFauna) }, alcance: { antes, despues } };
+  const abyss: InformeAbyss = { mundo: rc.mundo, piso, particulas, encimadas, mismoSuelo: alfa(m.terrain.img.data) === alfaAntes && m.terrain.img.w === tamAntes[0] && m.terrain.img.h === tamAntes[1], solidosNuevos, monumentos: informeMon, sinLugar, criaturas, memoria: { monumentos: mp(memMon), fauna: mp(memFauna), total: mp(memMon + memFauna) }, alcance: { antes, despues } };
   return Object.assign(m, { abyss });
 }

@@ -509,6 +509,28 @@ Lo nuevo:
 - **Íconos:** `ui.habilidades.frio`, `compañeras` (archivo `ui/habilidades/companeras.png`), `brasero` y `romper`.
   **Portal:** `portal_hielo`.
 
+### Abyss premium: los siete mundos con vida (encargo premium)
+
+Lo que agrega a cada `mundos[i]` (nada de lo que había cambia de nombre ni de lugar):
+
+- **Piso:** los trozos `mundo/suelo/<mundo>_N.png` vienen repintados (variación grande de luz y tono, manchas de
+  material, desgaste de caminos, bordes mezclados, grietas, raíces, charcos y cosas sueltas). Mismo tamaño en pixeles,
+  mismo alfa (el agua está donde estaba) y misma colisión.
+- **Monumentos:** objetos `mon_<mundo>_<nombre>` en la capa `objetos`, uno por zona, de 64 x 64 a 128 x 160, con
+  `sombra` horneada (con dirección en los mundos 1 a 3, de contacto en los 4 a 7) y `solido` solo en la base (12 px de
+  alto). Son objetos normales: se dibujan ordenados por y como un árbol. `monumentos` dice zona, punto e historia.
+- **Criaturas nuevas:** dos especies por mundo en `criaturas` (solo las de ese mundo), con `quieto` y `huir` (`huye` es
+  el mismo archivo) y `comportamiento: { huye: radio px, se_esconde: bool, corre: px/s, vuela?: bool }`. Al menos 8 por
+  mundo como entidades `criatura` con `especie`. `criaturas_nuevas.especies` las lista.
+- **Luz por zona:** cada zona trae `rayos` (`"angulo,#color,densidad"`: grados desde la vertical, densidad 0 a 1, 0 sin
+  rayos) y `grado` (`"#sombras,#luces,contraste,saturacion"`, contraste y saturación entre 0.8 y 1.3). Si falta, usar
+  `luz_zonas.defecto` del mundo.
+- **Partículas por zona:** cada zona conserva las de antes y suma otras, siempre de las que el juego ya conoce
+  (`brasas`, `brasas_frias`, `brillos`, `ceniza`, `esporas`, `fuegos_fatuos`, `gotas`, `hojas`, `humo`, `luciernagas`,
+  `luciernagas_turquesa`, `mariposas`, `murcielagos`, `nieve`, `polen`, `polvo`, `polvo_sueno`, `ventisca`).
+- **Niebla:** `niebla_jirones.png` ya pega en las dos direcciones (no hay costura cada 512). `niebla.jirones_mundo` es la
+  misma forma teñida con el color de la niebla de cada mundo.
+
 ### El intro (parte 4)
 
 `manifest.intro` trae los paneles pintados para el intro: `intro_bosque_noche`, `intro_corte_abismo`, `intro_ojos`,
