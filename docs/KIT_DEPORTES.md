@@ -54,7 +54,7 @@ Cada atleta trae su `celda` y su `pivote`. El pivote es el punto de apoyo (los p
 | `eventos[].tipo = bote` | La pelota toca el piso (el `dribble`) | Sonido del bote |
 | `eventos[].tipo = brazada` | La mano entra al agua: en el crol y la espalda dos veces por ciclo (cuadros 0 y 4), en el pecho y la mariposa una (lote H5) | Sonido `brazada` |
 | `eventos[].tipo = atrapa` | La pelota llega a la mano o al guante y se queda | Apaga la física de la pelota: desde ahí la lleva el atleta |
-| `eventos[].punto` | En golpes, sueltas y atrapadas: dónde está la mano o el pie que pega, en pixeles desde el pivote, una entrada por fila | Saca la pelota, la bala o la chispa de ahí |
+| `eventos[].punto` | En golpes, sueltas y atrapadas: dónde está la mano o el pie que pega, en pixeles desde el pivote, una entrada por fila. Si la animación lo pide, otra parte: la frente en un cabezazo, la punta de la jabalina en `javelin_rayo` | Saca la pelota, la bala o la chispa de ahí |
 | `avance` | Pixeles que avanza el cuerpo en un ciclo sin que el pie patine (medido de lado) | Avanza la animación por distancia: un ciclo completo cada `avance` recorrido. El pie no patina a ninguna velocidad |
 | `desplazamiento` | En las acciones que avanzan: pixeles recorridos en cada cuadro desde el primero | Mueve el sprite eso hacia donde mira (interpolado entre cuadros) |
 | `rumbo` | En las pruebas de campo: hacia dónde va de verdad cada fila | De frente se dibuja la diagonal: muévelo hacia el `rumbo`, no hacia abajo |
@@ -424,7 +424,7 @@ Trece animaciones en `src/engine/anim/especiales.ts`. Los súper golpes son el g
 | `shuttle_kick_back_nekketsu` | 10, 14 | La chilena Nekketsu: desde mucho más alto, con una vuelta entera hacia atrás antes del golpe, y cae de pie | `despegue` 2, `impacto` 5 (el pie), `aterriza` 8 |
 | `tackle_nekketsu` | 10, 14 | Tacleada en plancha: se lanza con los brazos adelante, vuela horizontal, choca, cae de barriga y se desliza | `despegue` 2, `impacto` 4, `aterriza` 6. `elevacion` y `desplazamiento` |
 | `bat_nekketsu` | 10, 14 | Batazo Nekketsu: pierna arriba, barrido con todo y la fuerza lo hace dar la vuelta completa | `impacto` 4. `girado` en 6 y 7. `arma` en cada cuadro |
-| `javelin_rayo` | 12, 14 | La lanza del Catatumbo: corre con la jabalina apuntando al cielo, se planta dos cuadros cargando el rayo y la suelta con todo | `paso` 0, `suelta` 8. `desplazamiento`. La jabalina va dibujada hasta la suelta |
+| `javelin_rayo` | 12, 14 | La lanza del Catatumbo: corre con la jabalina apuntando al cielo, se planta dos cuadros cargando el rayo y la suelta con todo | `paso` 0, `impacto` 2 (su `punto` es la punta de la jabalina: ahí cae `rayo_cielo`), `suelta` 8. `desplazamiento`. La jabalina va dibujada hasta la suelta |
 | `dodge_throw` | 6, 14 | Tiro del Quemado: rodilla arriba con el balón atrás, paso largo y lo suelta por arriba | `suelta` 3 |
 | `dodge_hit` | 6, 12 | El que recibe el balonazo: la cabeza atrás, sale disparado de espaldas y cae sentado viendo pajaritos | `aterriza` 3. `elevacion` |
 | `cap_pitch` | 6, 14 | Lanzamiento de la Chapita: de lado, brazo bajo a la altura de la cintura y golpe de muñeca | `suelta` 3 |

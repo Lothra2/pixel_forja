@@ -68,7 +68,9 @@ export interface AnimEvent {
    */
   joint?: 'handNear' | 'handFar' | 'footNear' | 'footFar' | 'elbowNear' | 'elbowFar' | 'frente' | 'head'
     /** la mano más baja en cada fila (la palmada del ukemi contra el tatami): de espalda la cercana y la lejana se cruzan */
-    | 'handLow';
+    | 'handLow'
+    /** la punta del implemento en la mano (la jabalina): donde le cae el rayo */
+    | 'punta';
 }
 
 export function makeCtx(d: Dims, build: number, view: View): Ctx {

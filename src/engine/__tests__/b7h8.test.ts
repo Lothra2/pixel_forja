@@ -28,7 +28,7 @@ const PEDIDO: Record<string, [number, number, boolean, string[]]> = {
   shuttle_kick_back_nekketsu: [10, 14, false, ['despegue', 'impacto', 'aterriza']],
   tackle_nekketsu: [10, 14, false, ['despegue', 'impacto', 'aterriza']],
   bat_nekketsu: [10, 14, false, ['impacto']],
-  javelin_rayo: [12, 14, false, ['paso', 'suelta']],
+  javelin_rayo: [12, 14, false, ['paso', 'impacto', 'suelta']],
   dodge_throw: [6, 14, false, ['suelta']],
   dodge_hit: [6, 12, false, ['aterriza']],
   cap_pitch: [6, 14, false, ['suelta']],
