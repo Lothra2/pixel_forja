@@ -50,7 +50,9 @@ Las motos y el xích lô ahora traen gente del alto de un atleta. Antes los cond
   - Las 4 motos tienen colores distintos y el conductor rebota al andar.
   - Los 4 cuadros del xích lô son distintos: pedalea.
 - **`vehiculos.test.ts`:** las de siempre pasan: el contorno del motor en cada cuadro, las animaciones, el ferry. La imagen dorada `golden/vehiculos_d2.png` está regenerada: el ferry, el thúng chai, el metrocable, los jacintos y la fruta salen igual, y cambian las motos y el xích lô.
-- **La suite completa, `custom.test.ts`, el build y el e2e:** VERIF.
+- **La suite sin `custom.test.ts`:** 48 archivos, 497 de 497.
+- **`custom.test.ts`: 15 de 15,** en 190 s, por debajo del límite de 300.
+- **`tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
