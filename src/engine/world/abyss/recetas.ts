@@ -1,5 +1,6 @@
 import type { RecetaMundo } from './index';
 import { bosqueMonumentos } from './bosque';
+import { catedralMonumentos } from './catedral';
 
 /**
  * Las recetas de los siete mundos: cómo se repinta el piso, qué monumento va en cada zona y la luz de cada zona.
@@ -54,4 +55,42 @@ export const BOSQUE: RecetaMundo = {
   },
 };
 
-export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE };
+export const CATEDRAL: RecetaMundo = {
+  mundo: 'mundo2',
+  niebla: '#b8d0a8',
+  piso: {
+    semilla: 202,
+    macro: { claro: '#c8b060', oscuro: '#0e2a1e', fuerza: 0.11 },
+    manchas: [
+      { color: '#3a5a2a', kinds: [0, 2, 5], cantidad: 0.24, escala: 44, fuerza: 0.32 },
+      { color: '#0e1a1a', kinds: [0, 2], cantidad: 0.2, escala: 60, fuerza: 0.3 },
+      { color: '#8a7a2a', kinds: [2], cantidad: 0.07, escala: 24, fuerza: 0.28 },
+      { color: '#4a6a3a', kinds: [3, 6], cantidad: 0.25, escala: 30, fuerza: 0.25 },
+    ],
+    grietas: { kinds: [0, 2, 5], densidad: 6, oscuro: '#0c100e', canto: '#9aa08a' },
+    raices: { kinds: [0, 2], densidad: 0.9, colores: ['#22160e', '#4a321c', '#7a5a36'] },
+    charcos: { kinds: [0, 2], densidad: 0.6, fondo: '#1a3a34', brillo: '#8affe8' },
+    sueltos: [
+      { kinds: [0, 2, 5], densidad: 3, dibujo: 'piedrita', colores: ['#5a6058', '#6e746a', '#484c44'] },
+      { kinds: [0, 2], densidad: 1, dibujo: 'papel', colores: ['#a89a78', '#8a7e60'] },
+      { kinds: [0, 2], densidad: 3, dibujo: 'hoja', colores: ['#6a5a2a', '#8a7a3a', '#4a3a1a'] },
+      { kinds: [0, 2], densidad: 1.5, dibujo: 'esquirla', colores: ['#c8a040', '#3aa088', '#6a3aa0'] },
+    ],
+    bordes: [0, 2, 5],
+  },
+  monumentos: catedralMonumentos,
+  luz: {
+    mundo: { rayos: '-15,#d8f0a0,0.45', grado: '#1a2a22,#ffd9a0,1.12,0.9' },
+    zonas: {
+      'La Escalera Hundida': { rayos: '-12,#e8f0c8,0.55', grado: '#18241e,#ffe0b0,1.08,0.92', particulas: 'polvo,esporas' },
+      'El Atrio de las Luciérnagas': { rayos: '-8,#8affe8,0.4', grado: '#0e2420,#c8ffe0,1.1,0.95', particulas: 'luciernagas_turquesa,gotas' },
+      'Los Claustros Quebrados': { rayos: '-20,#d0e090,0.5', grado: '#1a2a1a,#ffd890,1.14,0.88', particulas: 'polvo,esporas,gotas' },
+      'La Capilla Escondida': { rayos: '-5,#ffd070,0.6', grado: '#1a1a10,#ffe0a0,1.12,0.95', particulas: 'luciernagas_turquesa,brillos' },
+      'La Nave Inundada': { rayos: '-18,#a0d0c0,0.35', grado: '#0a1a1e,#b0e0d0,1.1,0.85', particulas: 'gotas,luciernagas_turquesa' },
+      'La Forja Apagada': { rayos: '0,#ffb070,0.25', grado: '#1e140e,#ffc890,1.15,0.9', particulas: 'ceniza,polvo' },
+      'El Campanario Invertido': { rayos: '0,#c8a0ff,0.2', grado: '#140e1e,#ffd9a0,1.18,0.88', particulas: 'esporas,gotas' },
+    },
+  },
+};
+
+export const RECETAS: Record<string, RecetaMundo> = { mundo1: BOSQUE, mundo2: CATEDRAL };

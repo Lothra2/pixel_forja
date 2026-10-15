@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { BigMap } from '../world/bosqueMap';
 import { TILE } from '../world/tiles';
 import { bosqueMap } from '../world/bosqueMap';
+import { catedralMap } from '../world/catedralMap';
 import { fogTexture } from '../world/atmosphere';
 import { FAUNA } from '../world/abyss/fauna';
 import { repeticion } from '../world/abyss/piso';
@@ -74,4 +75,5 @@ describe('abyss premium', () => {
   });
 
   it('Mundo 1, el Bosque GG', () => { verificarAbyss(bosqueMap(), 'mundo1'); }, 120000);
+  it('Mundo 2, la Catedral de las Raíces', () => { verificarAbyss(catedralMap(), 'mundo2'); }, 120000);
 });

@@ -126,12 +126,15 @@ function hash(x: number, y: number, s: number): number {
 }
 
 /** Los objetos que usa la catedral: los suyos y unos pocos del bosque (cartel, juncos). */
+import { vidaAbyss, type InformeAbyss } from './abyss/index';
+import { CATEDRAL } from './abyss/recetas';
+
 export function catedralMapObjects(): WorldObject[] {
   const prestados = new Set(['cartel', 'aviso_jefe', 'aviso_carga']);
   return withReactions([...catedralObjects(), ...catedralPremiumObjects(), ...reactiveObjects().filter((o) => /^(palanca|reja_catedral|piedra_empujable|campana_chica)$/.test(o.name)), ...[...forestObjects(), ...landmarkObjects()].filter((o) => prestados.has(o.name)), ...premiumPortals(['azul', 'rojo', 'violeta'])]);
 }
 
-export function catedralMap(seed = 777, opts: { premium?: boolean } = {}): BigMap & { premium?: CatedralReport } {
+export function catedralMap(seed = 777, opts: { premium?: boolean; abyss?: boolean } = {}): BigMap & { premium?: CatedralReport; abyss?: InformeAbyss } {
   const premium = opts.premium !== false;
   const W = CATEDRAL_W, H = CATEDRAL_H, r = rng(seed);
   const design = premium ? catedralDesignPremium : catedralDesign;
@@ -386,5 +389,6 @@ export function catedralMap(seed = 777, opts: { premium?: boolean } = {}): BigMa
     const darkAt = (tx: number, ty: number) => design.dark.reduce((mx, z) => Math.max(mx, 1 - Math.hypot(tx - z.c[0], ty - z.c[1]) / z.r), 0);
     map.premium = premiumCatedral(map, { descansos, seed: seed + 11, darkAt });
   }
-  return map;
+  // abyss premium: piso con vida, un monumento por zona, criaturas nuevas y la luz de cada zona
+  return !premium || opts.abyss === false ? map : vidaAbyss(map, CATEDRAL);
 }
