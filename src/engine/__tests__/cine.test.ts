@@ -116,3 +116,27 @@ describe('la cinemática de cierre (F13, parte 2)', () => {
     expect(abajo(lf[15])).toBeGreaterThan(20);
   }, 60000);
 });
+
+describe('las alas del Diablo en las cinemáticas (las del juego, pedido de Sophie)', () => {
+  // la sangre de las alas: los rojos vino exactos de la paleta (#4a0008 a #8a0a12)
+  const SANGRE = ['#4a0008', '#6a0610', '#8a0a12'].map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+  const sangre = (r: Raster) => { const out: number[] = []; for (let i = 0; i < r.w * r.h; i++) if (r.data[i * 4 + 3] === 255 && SANGRE.some(([R, G, B]) => r.data[i * 4] === R && r.data[i * 4 + 1] === G && r.data[i * 4 + 2] === B)) out.push(i); return out; };
+  const capa = (p: CinePanel, n: string) => p.capas.find((c) => c.nombre === n)!;
+  const bajada = bajadaPanels(), fin = finPanels();
+  it('en bajada_diablo las alas sangran y gotean despacio (cambia entre cuadros)', () => {
+    const m = capa(bajada.find((p) => p.id === 'bajada_diablo')!, 'medio');
+    const a = sangre(m.frames[0]), b = sangre(m.frames[7]);
+    expect(a.length).toBeGreaterThan(100);
+    expect(a.join(',') === b.join(',')).toBe(false);
+  });
+  it('en fin_cae las alas caen y se rompen: bajan hacia el piso', () => {
+    const m = capa(fin.find((p) => p.id === 'fin_cae')!, 'medio');
+    const alto = (r: Raster) => { const s = sangre(r); return s.reduce((acc, i) => acc + Math.floor(i / r.w), 0) / Math.max(1, s.length); };
+    expect(sangre(m.frames[0]).length).toBeGreaterThan(40);
+    expect(alto(m.frames[7])).toBeGreaterThan(alto(m.frames[0]) + 10);
+  });
+  it('la sangre es solo del Diablo: ningún panel con las heroínas o Thor la tiene', () => {
+    for (const p of [...bajada, ...fin].filter((q) => !['bajada_diablo', 'fin_cae', 'fin_llama'].includes(q.id)))
+      for (const c of p.capas) for (const f of [...c.frames, ...Object.values(c.por_heroina ?? {}).flat()]) expect(sangre(f).length, `${p.id} ${c.nombre}`).toBe(0);
+  });
+});

@@ -7,8 +7,9 @@ import { caraDiablo, garra, cuerno, DIABLO } from './diablo';
 /**
  * La cinemática de la bajada al infierno (encargo F13, parte 1). Seis paneles en el formato del intro: 480 x 270 (la
  * escalera 480 x 540, la cámara baja), cada uno con sus capas para el paralaje. Es lo más oscuro del juego: frío,
- * negro y azul, con la brasa roja del Diablo como única luz caliente. Sin sangre y sin sustos de golpe: todo lo que
- * da miedo aparece de a poco.
+ * negro y azul, con la brasa roja del Diablo como única luz caliente. Sin sustos de golpe: todo lo que da miedo
+ * aparece de a poco. La única sangre es la de las alas del Diablo (las del juego, pedido de Sophie): oscura y gotea
+ * despacio.
  *
  * Una capa puede traer `por_heroina`: la misma capa dibujada para cada heroína (la escalera). El juego usa la de la
  * heroína del perfil.
@@ -490,7 +491,7 @@ function diabloPanel(): CinePanel {
   glow(fondo, 240, H, 300, 120, hex('#ff3a10'), 0.35);
   // medio: el Diablo, de cerca (8 cuadros a 5 fps, sin bucle): se le abren los ojos y la escarcha se le rompe de los cuernos
   const medio: Raster[] = [];
-  const caras = DIABLO_OJOS.map((o, f) => caraDiablo(W, H, o, DIABLO_ESCARCHA[f], 1));
+  const caras = DIABLO_OJOS.map((o, f) => caraDiablo(W, H, o, DIABLO_ESCARCHA[f], 1, f / 16)); // la sangre de las alas gotea despacio
   for (let f = 0; f < 8; f++) {
     const r = createRaster(W, H);
     pegar(r, caras[f].cara, 0, 0);
@@ -528,7 +529,7 @@ function diabloPanel(): CinePanel {
     for (let i = 0; i < 40; i++) { const fase = (hash(i, 1, 357) + f / 8) % 1; setPx(r, hash(i, 2, 357) * W + Math.sin(fase * 6 + i) * 6, H - fase * H, hex('#ff8a4a'), Math.round(200 * Math.sin(fase * Math.PI))); }
     frente.push(r);
   }
-  return { id: 'bajada_diablo', w: W, h: H, notas: 'El Diablo en su trono, de cerca: el primer plano más terrorífico del juego. 8 cuadros a 5 fps sin bucle (quedarse en el último): los ojos se abren de a poco (cuadro 2 a 6), la escarcha se le rompe de los cuernos y cae (capa frente), y exhala humo por la nariz. Las garras agarran los brazos del trono. Con `cine_rugido` en el cuadro 6.', capas: [
+  return { id: 'bajada_diablo', w: W, h: H, notas: 'El Diablo en su trono, de cerca: el primer plano más terrorífico del juego. 8 cuadros a 5 fps sin bucle (quedarse en el último): los ojos se abren de a poco (cuadro 2 a 6), la escarcha se le rompe de los cuernos y cae (capa frente), y exhala humo por la nariz. Las garras agarran los brazos del trono. Detrás, las alas del Diablo del juego (espinas, garras y la sangre oscura que gotea despacio, la única sangre del juego). Con `cine_rugido` en el cuadro 6.', capas: [
     { nombre: 'fondo', frames: [fondo], fps: 1, paralaje: 0.5 },
     { nombre: 'medio', frames: medio, fps: 5, paralaje: 0.85, bucle: false },
     { nombre: 'frente', frames: frente, fps: 5, paralaje: 1, bucle: false },

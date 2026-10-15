@@ -100,7 +100,7 @@ function cae(): CinePanel {
     // las grietas de luz se abren desde él, cada vez más largas y más brillantes
     grietasDeLuz(r, 240, 214, 40 + t * 240, 412, 11);
     halo(r, 240, 214, 60 + t * 160, 18 + t * 40, ORO.claro, 0.2 + t * 0.4);
-    const d = diabloRodillas(W, H, 240, 222, 0.95, 1 - t * 0.8, mixc(ORO.oro, ORO.blanco, t));
+    const d = diabloRodillas(W, H, 240, 222, 0.95, 1 - t * 0.8, mixc(ORO.oro, ORO.blanco, t), t, t * 0.6); // las alas caen y se rompen con él
     pegar(r, d, 0, 0);
     // luz desde abajo en el piso alrededor
     medio.push(r);
@@ -118,7 +118,7 @@ function cae(): CinePanel {
     }
     frente.push(r);
   }
-  return { id: 'fin_cae', w: W, h: H, notas: 'El Diablo cae de rodillas en la arena. Las grietas de su piel se apagan y el hielo se rompe alrededor con grietas de luz que se abren (8 cuadros a 6 fps, sin bucle). Delante saltan pedazos de hielo y chispas.', capas: [
+  return { id: 'fin_cae', w: W, h: H, notas: 'El Diablo cae de rodillas en la arena y sus alas (las del juego, con espinas, garras y sangre oscura) se desploman y se rompen con él: la piel se raja, se sueltan pedazos y un dedo se parte. Las grietas de su piel se apagan y el hielo se rompe alrededor con grietas de luz que se abren (8 cuadros a 6 fps, sin bucle). Delante saltan pedazos de hielo y chispas.', capas: [
     { nombre: 'fondo', frames: [fondo], fps: 1, paralaje: 0.4 },
     { nombre: 'medio', frames: medio, fps: 6, paralaje: 0.8, bucle: false },
     { nombre: 'frente', frames: frente, fps: 10, paralaje: 1 },
@@ -132,7 +132,7 @@ function llama(): CinePanel {
   vgrad(fondo, [[0, '#020307'], [0.5, '#070b16'], [1, '#0a1220']]);
   for (let y = 170; y < H; y++) for (let x = 0; x < W; x++) setPx(fondo, x, y, mixc(hex('#060c16'), hex('#122236'), clamp01((y - 170) / 100)));
   // el Diablo caído a la izquierda, ya apagado
-  const dia = diabloRodillas(W, H, 120, 226, 0.78, 0.06, hex('#3a4a6a'));
+  const dia = diabloRodillas(W, H, 120, 226, 0.78, 0.06, hex('#3a4a6a'), 1, 0.6); // las alas ya rotas, como quedaron en fin_cae
   pegar(fondo, dia, 0, 0);
   // la llama viaja en un arco del pecho del Diablo a las manos de la Ladrona, y ella se vuelve luz
   const N = 8, ini: [number, number] = [120, 170], fin: [number, number] = [372, 176];

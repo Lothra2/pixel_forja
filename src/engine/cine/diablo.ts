@@ -1,11 +1,12 @@
 import { createRaster, type Raster } from '../core/raster';
-import { type RGB, hex, mixc, clamp01, hash, vnoise, fbm, bayer, setPx, alphaAt, addLight, fillPoly, stroke, curva, ellipse, halo, contorno } from './pintura';
+import { type RGB, hex, mixc, clamp01, hash, vnoise, fbm, bayer, setPx, alphaAt, addLight, fillPoly, stroke, curva, ellipse, halo, contorno, pegar, canto } from './pintura';
 
 /**
  * El Diablo pintado para las cinemáticas (encargo F13). Diseño propio: rojo oscuro, enorme, cuernos que se abren hacia
  * arriba, cejas de hueso, pómulos con espinas, colmillos que bajan sobre el labio, grietas de brasa en la piel,
- * escarcha en los cuernos, alas de murciélago rotas detrás de los hombros y garras negras. Nada de sangre: lo que
- * brilla adentro es brasa.
+ * escarcha en los cuernos, alas de murciélago rotas detrás de los hombros y garras negras. Lo que brilla adentro es
+ * brasa. Las alas son las del Diablo del juego (Mundo 7, pedido de Sophie): espinas, garras y la sangre oscura que
+ * cuelga de ellas. Es la única sangre del juego, y solo en las alas.
  *
  * La cara es un relieve: una suma de bultos (frente, cejas, pómulos, hocico, nariz, mandíbula) con su altura, y la
  * luz sale de las normales de ese relieve: brasa naranja desde abajo y un canto frío desde arriba (el hielo).
@@ -39,33 +40,23 @@ function relieve(blobs: Blob[], x: number, y: number): number {
   return h < -1e8 ? -1 : h - hueco;
 }
 
-/** la cara, cuadro f (de 8): los ojos se abren de a poco y brillan; la escarcha de los cuernos se rompe */
+/** la cara, cuadro f (de 8): los ojos se abren de a poco y brillan; la escarcha de los cuernos se rompe; `goteo` (0 a 1) es la fase de la sangre de las alas */
 export interface CaraDiablo { cara: Raster; ojos: [number, number][]; narices: [number, number][] }
 
-export function caraDiablo(W: number, H: number, apertura: number, escarcha: number, semilla = 1): CaraDiablo {
+export function caraDiablo(W: number, H: number, apertura: number, escarcha: number, semilla = 1, goteo = 0): CaraDiablo {
   const r = createRaster(W, H);
   const cx = W / 2, cy = H * 0.56, s = H / 270; // a 270 de alto, todo en pixeles del panel
   const S = (v: number) => v * s;
-  // ---- detrás: las alas rotas, saliendo detrás de los hombros hacia los costados
+  // ---- detrás: las alas del juego (enormes, rotas, con espinas, garras y la sangre que gotea despacio)
   for (const side of [-1, 1]) {
-    const hombro: [number, number] = [cx + side * S(150), cy + S(95)];
-    const dedos: [number, number][] = [[cx + side * S(225), cy - S(95)], [cx + side * S(245), cy - S(20)], [cx + side * S(236), cy + S(45)]];
-    // la membrana: entre los dedos, con agujeros y bordes rotos
-    for (let k = 0; k < dedos.length; k++) {
-      const a = k === 0 ? [cx + side * S(170), cy - S(40)] as [number, number] : dedos[k - 1];
-      const b = dedos[k];
-      fillPoly(r, [hombro, a, [(a[0] + b[0]) / 2 - side * S(18), (a[1] + b[1]) / 2 + S(10)], b], (x, y) => {
-        const n = vnoise(x, y, S(9), 31 + semilla);
-        if (n < 0.18) return null; // agujeros
-        const d = Math.abs(x - hombro[0]) / S(110);
-        return mixc(hex('#0c0304'), hex('#260707'), clamp01(1 - d) * 0.6 + (n - 0.5) * 0.2);
-      });
-    }
-    // los huesos de los dedos del ala
-    curva(r, [hombro, [cx + side * S(185), cy - S(10)], [cx + side * S(200), cy - S(60)], dedos[0]], (t) => S(6) * (1 - t) + 1.5, hex('#240808'));
-    for (const d of dedos.slice(1)) curva(r, [[cx + side * S(185), cy - S(10)], [(cx + side * S(185) + d[0]) / 2, (cy - S(10) + d[1]) / 2 - S(8)], d], (t) => S(3.5) * (1 - t) + 1, hex('#2a0a0a'));
-    // garra en la punta del ala
-    stroke(r, dedos[0], [dedos[0][0] + side * S(8), dedos[0][1] - S(10)], S(2.4), DIABLO.cuerno[2], 0.6);
+    const X = (x: number, y: number): [number, number] => [cx + side * S(x), cy + S(y)];
+    const ala = createRaster(W, H);
+    const gotas = alaDiablo(ala, X(128, 72), X(168, -112), [X(226, -142), X(236, -62), X(228, 8), X(190, 70)], side, S(1.9), 30 + semilla + (side > 0 ? 1 : 0));
+    // el canto: frío arriba (el hielo) y brasa abajo, para que se recorten contra el fondo negro
+    canto(ala, [0, -1], DIABLO.frio, 0.3);
+    canto(ala, [0, 1], DIABLO.brasa, 0.45);
+    pegar(r, ala, 0, 0);
+    sangreAlas(r, gotas, goteo);
   }
   // ---- los hombros: enormes, con espinas de hueso
   for (const side of [-1, 1]) {
@@ -303,27 +294,24 @@ export function garra(r: Raster, x: number, y: number, side: number, k: number, 
 /**
  * El Diablo de rodillas, entero (para el cierre): de frente, la cabeza gacha (se ven los cuernos y la coronilla), los
  * hombros enormes con espinas, las dos manos apoyadas en el piso y las alas rotas caídas a los costados. `brasa` de 1
- * a 0: las grietas de brasa se apagan. `luz`: el color de la luz que le pega desde abajo (las grietas del piso).
+ * a 0: las grietas de brasa se apagan. `caida` de 0 a 1: las alas se desploman y se rompen con él; `goteo` es la fase
+ * de la sangre de las alas. `luz`: el color de la luz que le pega desde abajo (las grietas del piso).
  * (ox, oy) es el punto del piso entre las rodillas; k la escala (1 = unos 130 px de alto).
  */
-export function diabloRodillas(W: number, H: number, ox: number, oy: number, k: number, brasa: number, luz: RGB): Raster {
-  const r = createRaster(W, H);
+export function diabloRodillas(W: number, H: number, ox: number, oy: number, k: number, brasa: number, luz: RGB, caida = 0, goteo = 0): Raster {
+  let r = createRaster(W, H);
   const P = (x: number, y: number): [number, number] => [ox + x * k, oy + y * k];
   const piel = (y: number) => mixc(hex('#140405'), hex('#3a0c0a'), clamp01(0.25 + (y - oy) / (120 * k) * -0.2));
   const pielY = (_x: number, y: number) => piel(y);
-  // las alas: el codo arriba de los hombros y los dedos que bajan hasta el piso; la membrana entre dedo y dedo se
-  // curva hacia adentro y tiene agujeros (rota)
+  // las alas del juego, detrás: el codo arriba de los hombros y los dedos que bajan hasta el piso. Con `caida` se
+  // desploman: el codo baja, los dedos se abren sobre el hielo, la piel se rompe y un dedo se parte
+  const c = clamp01(caida);
+  const alas = createRaster(W, H);
+  const gotas: Goteo[] = [];
   for (const s of [-1, 1]) {
-    const hombro = P(s * 40, -94), codo = P(s * 74, -142);
-    const dedos: [number, number][] = [P(s * 118, -112), P(s * 128, -60), P(s * 116, -14), P(s * 84, 0)];
-    for (let i = 0; i < dedos.length; i++) {
-      const a = i === 0 ? hombro : dedos[i - 1], b = dedos[i];
-      const m: [number, number] = [(a[0] + b[0]) / 2 * 0.7 + codo[0] * 0.3, (a[1] + b[1]) / 2 * 0.7 + codo[1] * 0.3];
-      fillPoly(r, [codo, a, m, b], (x, y) => (vnoise(x, y, 6 * k, 12 + i) < 0.2 ? null : mixc(hex('#0c0304'), hex('#2a0808'), clamp01(vnoise(x, y, 11, 4) * 0.7 + (y - codo[1]) / (200 * k)))));
-    }
-    curva(r, [hombro, [(hombro[0] + codo[0]) / 2, codo[1] + 10 * k], codo], (t) => 4 * k * (1 - t * 0.4), hex('#1e0606'));
-    for (const d of dedos) stroke(r, codo, d, 1.4 * k, hex('#1e0606'), 0.6);
-    fillPoly(r, [[codo[0] - 3 * k, codo[1]], [codo[0] + s * 4 * k, codo[1] - 12 * k], [codo[0] + 3 * k, codo[1]]], hex('#3a2a28'));
+    const L = (a: [number, number], b: [number, number]) => lerp2(P(s * a[0], a[1]), P(s * b[0], b[1]), c);
+    const tips = [L([140, -130], [166, -60]), L([156, -68], [178, -20]), L([140, -16], [146, -2]), L([96, 0], [98, 1])];
+    gotas.push(...alaDiablo(alas, P(s * 40, -94), L([84, -160], [112, -106]), tips, s, k * 1.1, 60 + (s > 0 ? 1 : 0), c, oy + 1, clamp01((c - 0.55) / 0.45)));
   }
   // las rodillas en el piso
   for (const s of [-1, 1]) ellipse(r, ...P(s * 22, -6), 16 * k, 9 * k, pielY);
@@ -353,6 +341,9 @@ export function diabloRodillas(W: number, H: number, ox: number, oy: number, k: 
   }
   // los ojos: dos brasas chiquitas que miran al piso (se apagan)
   if (brasa > 0.15) for (const s of [-1, 1]) { const [x, y] = P(s * 8, -86); setPx(r, x, y, mixc(hex('#3a0806'), DIABLO.ojo, brasa)); setPx(r, x + s, y, mixc(hex('#3a0806'), DIABLO.ojo, brasa * 0.7)); }
+  // las alas van detrás (sin las grietas de brasa: son las del juego)
+  pegar(alas, r, 0, 0);
+  r = alas;
   contorno(r, hex('#040102'));
   // canto de luz desde abajo y de los costados (la luz de las grietas del piso)
   for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
@@ -361,6 +352,168 @@ export function diabloRodillas(W: number, H: number, ox: number, oy: number, k: 
     if (abajo) addLight(r, x, y, luz, 0.7);
     else if (lado) addLight(r, x, y, luz, 0.35 * clamp01((y - (oy - 140 * k)) / (140 * k)));
   }
+  // la sangre de las alas, encima de todo y sin la luz del piso (gotea hasta el hielo)
+  sangreAlas(r, gotas, goteo, 1, oy + 1);
   void fbm; void hash;
   return r;
+}
+
+// ---------------------------------------------------------------- las alas (las mismas del Diablo del juego)
+
+/**
+ * Las alas del Diablo pintadas para las cinemáticas: las mismas del juego (Mundo 7, pedido de Sophie). Enormes y rotas,
+ * rojo vino casi negro, con desgarrones; espinas en todo el borde de adelante (brazo del ala y primer dedo) y en cada
+ * dedo; garras curvas en cada punta y una grande en el codo. La sangre (lo único con sangre del juego, y solo en las
+ * alas) va aparte, en `sangreAlas`, para pintarla encima de lo que tape a las alas.
+ */
+export const ALA = {
+  piel: ['#080204', '#120307', '#1e040a', '#2c060d', '#3c0911', '#4e0d16'].map(hex),
+  hueso: ['#140806', '#24100c', '#3a1e16', '#5a3426'].map(hex),
+  espina: ['#1c1412', '#3a2c26', '#6a5648', '#9a8270', '#c8b49c'].map(hex),
+  sangre: ['#2a0004', '#4a0008', '#6a0610', '#8a0a12'].map(hex),
+  brillo: hex('#b8404a'),
+};
+
+type P2 = [number, number];
+const lerp2 = (a: P2, b: P2, t: number): P2 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+const sub2 = (a: P2, b: P2): P2 => [a[0] - b[0], a[1] - b[1]];
+const nrm2 = (v: P2): P2 => { const l = Math.hypot(v[0], v[1]) || 1; return [v[0] / l, v[1] / l]; };
+
+/** Dónde cuelga la sangre: el punto y el tamaño (k). */
+export interface Goteo { p: P2; k: number; h: number }
+
+/** Los desgarrones del juego (WING_TEARS): qué tiras faltan en cada paño (de 0 a 6 a lo largo del borde). */
+const DESGARRONES: number[][][] = [[[5], [2], [2, 3]], [[4], [3, 4], [1, 2]]];
+
+/**
+ * Un ala: `root` (la raíz en el hombro), `elbow` (el codo, arriba), `tips` (las cuatro puntas de los dedos, de la de
+ * arriba a la de abajo), `side` (-1 izquierda, 1 derecha) y `k` la escala (1 = el panel de 480 x 270 de cerca).
+ * `rotura` de 0 a 1: más agujeros, desgarrones nuevos y pedazos que se sueltan y caen hasta `piso` (si lo hay); con
+ * `quiebre` (0 a 1) el segundo dedo se parte y su punta cae al piso. Devuelve dónde cuelga la sangre.
+ */
+export function alaDiablo(r: Raster, root: P2, elbow: P2, tips: P2[], side: number, k: number, semilla: number, rotura = 0, piso?: number, quiebre = 0): Goteo[] {
+  const goteo: Goteo[] = [];
+  const lado = side > 0 ? 1 : 0;
+  const tt = tips.slice();
+  // el dedo que se parte: queda el muñón y la punta cae
+  let punta: { a: P2; b: P2 } | null = null;
+  if (quiebre > 0) {
+    const corte = lerp2(elbow, tips[1], 0.55);
+    if (piso !== undefined) {
+      const largo = Math.hypot(...sub2(tips[1], corte));
+      const caida = Math.min(1, quiebre * 1.3);
+      const a = lerp2(corte, [corte[0] + side * 10 * k, piso - 2 * k], caida);
+      const b = lerp2(tips[1], [a[0] + side * largo * 0.95, piso], caida);
+      punta = { a, b };
+    }
+    tt[1] = lerp2(tips[1], corte, Math.min(1, quiebre * 1.6));
+  }
+  const mc: P2 = [(tt[1][0] + tt[2][0] + elbow[0] * 2) / 4, (tt[1][1] + tt[2][1] + elbow[1] * 2) / 4];
+  // ---- la piel: tres paños (raíz o codo hasta dos puntas), con el borde festoneado y los desgarrones
+  for (let i = 0; i < 3; i++) {
+    const a = i === 0 ? root : elbow, b = tt[i], c = tt[i + 1];
+    const borde: P2[] = [];
+    for (let q = 0; q <= 12; q++) { const t = q / 12, e = lerp2(b, c, t); borde.push(lerp2(a, e, 1 - Math.sin(t * Math.PI) * 0.26 - (hash(q, i, semilla) - 0.5) * 0.05)); }
+    // los desgarrones: una cuña desde el borde hasta cerca del hueso (queda un pedacito de piel pegado)
+    const tiras = [...DESGARRONES[lado][i]];
+    for (let q = 0; q < 6; q++) if (hash(q, i + 10 * lado, semilla + 5) < rotura * 0.55 && !tiras.includes(q)) tiras.push(q);
+    const cunas: P2[][] = tiras.map((q) => {
+      const t0 = Math.max(0, q / 6 - 0.07), t1 = Math.min(1, q / 6 + 0.07), tm = q / 6;
+      const e0 = borde[Math.round(t0 * 12)], e1 = borde[Math.round(t1 * 12)], em = borde[Math.round(tm * 12)];
+      const fondo = lerp2(a, em, 0.42 - rotura * 0.12);
+      goteo.push({ p: lerp2(fondo, em, 0.12), k, h: hash(q, i, 71 + lado) });
+      return [e0, fondo, e1];
+    });
+    const dentro = (p: P2, t: P2[]) => {
+      const [A, B, C] = t, d = (u: P2, v: P2, w: P2) => (u[0] - w[0]) * (v[1] - w[1]) - (v[0] - w[0]) * (u[1] - w[1]);
+      const d1 = d(p, A, B), d2 = d(p, B, C), d3 = d(p, C, A);
+      return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+    };
+    fillPoly(r, [a, ...borde], (x, y) => {
+      const j = (vnoise(x, y, 3 * k, semilla + 40 + i) - 0.5) * 3 * k; // los bordes de los desgarrones, deshilachados
+      if (cunas.some((t) => dentro([x + j, y - j * 0.5], t))) return null;
+      const n = vnoise(x, y, 7 * k, semilla + 31 + i);
+      if (n < 0.1 + rotura * 0.22) return null; // agujeros
+      // cuero: arrugas finas, más oscuro hacia el borde y una vena que baja por el medio del paño
+      const dist = Math.hypot(x - a[0], y - a[1]) / Math.max(1, Math.hypot(...sub2(lerp2(b, c, 0.5), a)));
+      const arruga = vnoise(x, y, 2.5 * k, semilla + 50) * 0.5 + vnoise(x, y, 6 * k, semilla + 51) * 0.5;
+      let l = 0.68 - dist * 0.35 + (arruga - 0.5) * 0.5 + (n < 0.16 + rotura * 0.22 ? -0.25 : 0);
+      l += (bayer(x & 3, y & 3) - 0.5) * 0.18;
+      return ALA.piel[Math.max(0, Math.min(ALA.piel.length - 1, Math.floor(l * ALA.piel.length)))];
+    });
+    // el fondo de cada desgarrón: húmedo, rojo vino (solo cerca del hueso, donde se rompió)
+    for (const [e0, f, e1] of cunas) for (const e of [e0, e1]) stroke(r, f, lerp2(f, e, 0.18), 0.8 * k, ALA.sangre[1], 0.4 * k);
+  }
+  // ---- los huesos: el brazo del ala (grueso) y los dedos (finos)
+  const hueso = (t: number, d: number) => (d > 0.75 ? ALA.hueso[0] : d < 0.35 && t < 0.8 ? ALA.hueso[3] : t < 0.5 ? ALA.hueso[2] : ALA.hueso[1]);
+  curva(r, [root, lerp2(root, elbow, 0.5), elbow], (t) => (3.4 - t * 1) * k, hueso);
+  tt.forEach((t, i) => { if (i < 3) stroke(r, elbow, t, 1.9 * k, hueso, 0.7 * k); });
+  if (quiebre > 0) { const c = tt[1]; ellipse(r, c[0], c[1], 1.4 * k, 1.4 * k, ALA.hueso[2]); setPx(r, c[0], c[1], ALA.espina[3]); goteo.push({ p: c, k, h: 0.37 }); }
+  // ---- las espinas, para afuera de la piel
+  const espina = (p: P2, dir: P2, largo: number, r0: number, sangra: boolean, s: number) => {
+    const bd = nrm2(dir);
+    let o: P2 = [-bd[1], bd[0]];
+    if ((p[0] - mc[0]) * o[0] + (p[1] - mc[1]) * o[1] < 0) o = [-o[0], -o[1]];
+    const tp: P2 = [p[0] + (o[0] * largo + bd[0] * largo * 0.35) * k, p[1] + (o[1] * largo + bd[1] * largo * 0.35) * k];
+    const b0: P2 = [p[0] - bd[0] * r0 * k, p[1] - bd[1] * r0 * k], b1: P2 = [p[0] + bd[0] * r0 * k, p[1] + bd[1] * r0 * k];
+    fillPoly(r, [b0, tp, b1], (x, y) => { const t = clamp01(Math.hypot(x - p[0], y - p[1]) / (largo * k)); return ALA.espina[Math.min(4, Math.floor(1 + t * 3 + (hash(x, y, s) - 0.5) * 0.6))]; });
+    stroke(r, b0, tp, 0.5, ALA.espina[0]);
+    if (sangra) goteo.push({ p: lerp2(p, tp, 0.5), k, h: hash(s, 3, 9) });
+  };
+  for (let q = 1; q <= 7; q++) { const t = q / 8; espina(lerp2(root, elbow, t), sub2(elbow, root), 7 - t * 2, 1.7, q % 3 === 1, semilla + q); }
+  for (let q = 1; q <= 5; q++) { const t = q / 6; espina(lerp2(elbow, tt[0], t), sub2(tt[0], elbow), 6.2 - t * 2.4, 1.4, q % 2 === 0, semilla + 10 + q); }
+  for (let i = 1; i < 3; i++) for (let q = 1; q <= 3; q++) { const t = q / 4; if (i === 1 && quiebre > 0 && t > 0.5) continue; espina(lerp2(elbow, tt[i], t), sub2(tt[i], elbow), 4, 1.1, q === 2, semilla + 20 + i * 4 + q); }
+  // ---- las garras curvas: en la punta de cada dedo y una grande en el codo
+  const garraAla = (p: P2, dir: P2, largo: number, r0: number) => {
+    const bd = nrm2(dir);
+    const c1: P2 = [p[0] + bd[0] * largo * 0.5 * k, p[1] + bd[1] * largo * 0.5 * k];
+    const c2: P2 = [c1[0] + bd[0] * largo * 0.2 * k, c1[1] + (bd[1] * 0.2 + 0.6) * largo * k];
+    curva(r, [p, c1, c2], (t) => r0 * k * (1 - t) + 0.4, (t, d) => (d > 0.7 ? ALA.espina[0] : d < 0.3 && t < 0.6 ? ALA.espina[4] : t < 0.5 ? ALA.espina[2] : ALA.espina[1]));
+    goteo.push({ p: c1, k, h: hash(Math.round(p[0]), Math.round(p[1]), 12) });
+  };
+  for (let i = 0; i < 3; i++) if (!(i === 1 && quiebre > 0)) garraAla(tt[i], sub2(tt[i], elbow), 8, 1.5);
+  garraAla(elbow, [sub2(elbow, root)[0], sub2(elbow, root)[1] - 6], 10, 2.1);
+  // ---- el dedo partido, tirado en el piso
+  if (punta) {
+    stroke(r, punta.a, punta.b, 1.7 * k, hueso, 0.7 * k);
+    garraAla(punta.b, sub2(punta.b, punta.a), 7, 1.3);
+    goteo.push({ p: punta.a, k, h: 0.81 });
+  }
+  // ---- pedazos de piel que se sueltan y caen (al romperse)
+  if (rotura > 0.25 && piso !== undefined) for (let q = 0; q < 7; q++) {
+    const a = lerp2(lerp2(tt[1], tt[2], hash(q, 1, semilla + 90)), elbow, 0.2 + hash(q, 2, semilla + 90) * 0.4);
+    const cae = clamp01((rotura - 0.25 - hash(q, 3, semilla + 90) * 0.3) / 0.45);
+    if (cae <= 0) continue;
+    const x = a[0] + side * cae * (6 + hash(q, 4, semilla + 90) * 14) * k, y = a[1] + (piso - a[1] - 2 * k) * cae * cae;
+    const s = (2.5 + hash(q, 5, semilla + 90) * 3) * k, g = hash(q, 6, semilla + 90) * 6;
+    fillPoly(r, [[x - s, y], [x + Math.cos(g) * s * 0.4, y - s * 0.8], [x + s, y + Math.sin(g) * s * 0.3], [x - s * 0.2, y + s * 0.6]], ALA.piel[2 + (q % 3)]);
+  }
+  return goteo;
+}
+
+/**
+ * La sangre de las alas: un hilo oscuro que cuelga de cada punto (desgarrón, espina, garra), con la gota gorda al final
+ * y otra que se suelta y cae despacio. `t` de 0 a 1 es la fase del goteo (una vuelta = una gota por hilo); `largo`
+ * agranda los hilos; con `piso` las gotas que caen hasta ahí dejan una mancha chiquita.
+ */
+export function sangreAlas(r: Raster, gotas: Goteo[], t: number, largo = 1, piso?: number) {
+  for (const g of gotas) {
+    const k = g.k, L = (5 + g.h * 10) * k * largo;
+    const ondula = Math.sin(g.h * 20) * 1.2 * k;
+    const fin: P2 = [g.p[0] + ondula, g.p[1] + L];
+    curva(r, [g.p, [g.p[0] + ondula * 0.3, g.p[1] + L * 0.5], fin], (u) => (1.1 - u * 0.4) * k, (u, d) => (d > 0.65 ? ALA.sangre[0] : mixc(ALA.sangre[1], ALA.sangre[2], u)));
+    ellipse(r, fin[0], fin[1] + 0.5 * k, 1.1 * k, 1.5 * k, (_x, _y, d) => (d > 0.7 ? ALA.sangre[1] : d > 0.35 ? ALA.sangre[2] : ALA.sangre[3]));
+    setPx(r, fin[0] - Math.max(1, 0.4 * k), fin[1], ALA.brillo, 150);
+    // la gota que se suelta: estira el final del hilo, cae y (si llega al piso) mancha
+    const ph = (t + g.h) % 1;
+    const caida = (3 + ph * ph * 30) * k;
+    const yg = fin[1] + caida;
+    if (g.h > 0.45) continue; // no todos los hilos sueltan gota a la vez
+    if (ph < 0.85 && (piso === undefined || yg < piso)) {
+      ellipse(r, fin[0], yg, 0.8 * k, 1.2 * k, ALA.sangre[1]);
+      setPx(r, fin[0], yg, ALA.sangre[2]);
+    } else if (piso !== undefined && fin[1] < piso) {
+      ellipse(r, fin[0], piso, 2.2 * k, 0.7 * k, ALA.sangre[1], 200);
+    }
+  }
 }

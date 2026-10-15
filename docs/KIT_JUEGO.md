@@ -545,9 +545,9 @@ capa, en orden (fondo, medio, frente). Lo nuevo:
 | `bajada_escalera` | 480 x 540 | La escalera en zigzag hasta la niebla; la heroína y Thor chiquitos, de espaldas (`por_heroina`) |
 | `bajada_lago` | 480 x 270 | El lago negro con gigantes adentro mirando hacia arriba; nieve negra |
 | `bajada_ladrona` | 480 x 270 | La Ladrona con la última llama camina hacia el trono, lejos |
-| `bajada_diablo` | 480 x 270 | El Diablo de cerca: se le abren los ojos, la escarcha se le rompe de los cuernos, humo |
+| `bajada_diablo` | 480 x 270 | El Diablo de cerca: se le abren los ojos, la escarcha se le rompe de los cuernos, humo. Detrás, sus alas del juego gotean despacio |
 | `bajada_titulo` | 480 x 270 | Negro con escarcha; encima `logo_hielo` |
-| `fin_cae` | 480 x 270 | El Diablo de rodillas, el hielo se raja con grietas de luz |
+| `fin_cae` | 480 x 270 | El Diablo de rodillas, el hielo se raja con grietas de luz; sus alas se desploman y se rompen (pedazos que caen, un dedo partido) |
 | `fin_llama` | 480 x 270 | La llama vuelve a la Ladrona, que se vuelve la Primera Luz |
 | `fin_pisos` | 480 x 540 | La luz sube por los siete pisos y cada uno se prende (la cámara sube) |
 | `fin_amanecer` | 480 x 270 | Amanece en el Bosque GG: la familia y Thor frente a la casa |
@@ -571,6 +571,11 @@ capa, en orden (fondo, medio, frente). Lo nuevo:
 
 **El Ciclo 2:** `ui.marco_ciclo` (36 x 24, nueve [8, 8, 8, 8]) para el número de ciclo en el HUD y `ui.logo_ciclo`
 (igual que `ui.logo`, en oro con un espiral).
+
+El Diablo de las cinemáticas lleva las mismas alas que el del juego (Mundo 7, pedido de Sophie): enormes y rotas, rojo
+vino casi negro, espinas en el borde de adelante y en cada dedo, garras curvas, y la sangre oscura (`#4a0008` a
+`#8a0a12`) que cuelga y gotea. Es la única sangre del juego y está solo en las alas del Diablo (`bajada_diablo`,
+`fin_cae` y, ya rotas, `fin_llama`). Ningún panel con las heroínas o Thor la tiene (hay un test que lo revisa).
 
 Láminas: `npx tsx scripts/lamina-celestial.ts` y `npx tsx scripts/lamina-cine.ts`. Detalle en
 `docs/entregas/abyss_celestial.md`.

@@ -75,7 +75,7 @@ export function exportBajada(files: ExportFile[], bold?: ArrayBuffer): Record<st
   }
   out.audio = { musica: 'cine_bajada_musica', rugido: 'cine_rugido', latido: 'latido' };
   out.guion = GUION_BAJADA;
-  out.notas = `${NOTAS_FORMATO} La bajada es lo más oscuro del juego (sin sangre y sin sustos de golpe: lo que da miedo aparece de a poco). Se salta con un toque y se ve una vez por perfil. La música (60 s) crece hasta el título: golpe y silencio corto a los 50.5 s, ahí cae el logo con el rugido.`;
+  out.notas = `${NOTAS_FORMATO} La bajada es lo más oscuro del juego (sin sustos de golpe: lo que da miedo aparece de a poco; la única sangre es la de las alas del Diablo, oscura y que gotea despacio). Se salta con un toque y se ve una vez por perfil. La música (60 s) crece hasta el título: golpe y silencio corto a los 50.5 s, ahí cae el logo con el rugido.`;
   return out;
 }
 
