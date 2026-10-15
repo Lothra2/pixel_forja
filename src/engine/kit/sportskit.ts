@@ -5,7 +5,7 @@ import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim, type RenderedClip, type ViewName } from '../render/clip';
 import { viewsForRows, frameDataOf, objetosOf, PELOTAS, PELOTA_IDS, pivotOf, FRAME_DATA_FIELDS, type FrameData, type FrameDataField } from '../export/frameData';
 import { packAtlas, atlasFrameName } from '../export/atlas';
-import { portraitSheet, headIcon, HEAD_ICON, PORTRAIT_BIG_SCALE } from './portraits';
+import { portraitSheet, headIcon, HEAD_ICON } from './portraits';
 import { dressForPack, dressWithUniform, variantForPack } from '../sheet/wardrobe';
 import type { CellSize, HumanFicha, AnimalFicha } from '../sheet/ficha';
 import { animsFor } from '../anim/registry';
@@ -274,7 +274,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
       const sheet = portraitSheet(f);
       const archivo = `atletas/${id}/retratos.png`;
       files.push({ name: archivo, bytes: encodePng(sheet.png), mime: 'image/png' });
-      entry.retratos = { archivo, chico: sheet.chico, grande: sheet.grande, expresiones: sheet.expresiones, escala_grande: PORTRAIT_BIG_SCALE };
+      entry.retratos = { archivo, chico: sheet.chico, grande: sheet.grande, expresiones: sheet.expresiones, escala_grande: 1 };
     }
     if (opts.cabecitas) {
       entry.cabecita = `ui/cabecitas.png#${id}`;
@@ -300,7 +300,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     }
     manifest.pelotas = pelotas;
   }
-  if (opts.retratos) manifest.retratos = 'retratos.png: arriba los chicos de 40 x 40 (el i en x = i * 40), abajo los grandes de 96 x 96 (el i en x = i * 96, y = 40), en el orden de `expresiones`. El grande es la cabeza y los hombros escalados x3 entero.';
+  if (opts.retratos) manifest.retratos = 'retratos.png: arriba los chicos de 40 x 40 (el i en x = i * 40), abajo los grandes de 96 x 96 (el i en x = i * 96, y = 40), en el orden de `expresiones`. El grande es la cabeza y los hombros redibujados a 96, con contorno de un pixel (escala_grande 1: ya no es el sprite x3).';
   if (opts.cabecitas && heads.length) {
     files.push({ name: 'ui/cabecitas.png', bytes: encodePng(strip(heads, HEAD_ICON, HEAD_ICON)), mime: 'image/png' });
     manifest.cabecitas = { archivo: 'ui/cabecitas.png', celda: HEAD_ICON, orden: Object.keys(out) };

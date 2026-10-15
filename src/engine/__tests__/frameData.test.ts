@@ -112,7 +112,7 @@ describe('atlas', () => {
 });
 
 describe('retratos y cabecitas', () => {
-  it('8 expresiones en 40 y en 96; el grande es cabeza y hombros escalado x3 entero', () => {
+  it('8 expresiones en 40 y en 96; el grande es cabeza y hombros redibujado a 96, no el x3 a bloques', () => {
     const f = premium('rick');
     const s = portraitSheet(f);
     expect(s.expresiones).toEqual([...EXPRESSIONS]);
@@ -123,10 +123,15 @@ describe('retratos y cabecitas', () => {
     expect(new Set(small.map((p) => p.data.join(','))).size).toBe(EXPRESSIONS.length);
     const big = portrait(f, 'feliz', 'grande');
     expect([big.w, big.h]).toEqual([96, 96]);
+    // ya no son bloques de 3 x 3: hay bloques con más de un color (las curvas redondeadas y el contorno de un pixel)
     const k = PORTRAIT_BIG_SCALE;
-    for (let y = 0; y < 96; y++) for (let x = 0; x < 96; x++) for (let q = 0; q < 4; q++) {
-      expect(big.data[(y * 96 + x) * 4 + q]).toBe(big.data[((y - y % k) * 96 + x - x % k) * 4 + q]);
+    let mixtos = 0;
+    for (let y = 0; y < 96; y += k) for (let x = 0; x < 96; x += k) {
+      const c = new Set<string>();
+      for (let dy = 0; dy < k; dy++) for (let dx = 0; dx < k; dx++) c.add(hex(big, x + dx, y + dy) + alpha(big, x + dx, y + dy));
+      if (c.size > 1) mixtos++;
     }
+    expect(mixtos).toBeGreaterThan(150);
   });
 
   it('cabecita de 12 x 12, distinta para cada uno y sin colores inventados', () => {

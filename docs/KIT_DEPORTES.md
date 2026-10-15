@@ -149,13 +149,13 @@ Con `--datos` o `--atlas` el manifiesto escribe los arreglos de números en una 
 
 ```
 atletas/<id>/retratos.png
-"retratos": { "archivo": "atletas/rick/retratos.png", "chico": 40, "grande": 96, "expresiones": ["neutral", "feliz", "enojo", "triste", "susto", "cerrado", "dolor"], "escala_grande": 3 }
+"retratos": { "archivo": "atletas/rick/retratos.png", "chico": 40, "grande": 96, "expresiones": ["neutral", "feliz", "enojo", "triste", "susto", "cerrado", "dolor", "burla"], "escala_grande": 1 }
 ```
 
-La hoja tiene dos filas: arriba los 7 chicos de 40 x 40 (el `i` en `x = i * 40`), abajo los 7 grandes de 96 x 96 (el `i` en `x = i * 96`, `y = 40`), en el orden de `expresiones`. Las caras son los ojos y bocas del motor, los mismos del sprite.
+La hoja tiene dos filas: arriba los 8 chicos de 40 x 40 (el `i` en `x = i * 40`), abajo los 8 grandes de 96 x 96 (el `i` en `x = i * 96`, `y = 40`), en el orden de `expresiones`. Las caras son los ojos y bocas del motor, los mismos del sprite.
 
 - **Chico (40):** cabeza y torso, dibujado a celda 64 pixel a pixel.
-- **Grande (96):** cabeza y hombros. **No está dibujado a 96:** el motor dibuja personas hasta celda 64, donde el chibi entero mide unos 50 px. El grande es un recorte de 32 x 32 escalado **x3 entero**: nítido, sin colores mezclados, pero con el mismo detalle que el sprite.
+- **Grande (96):** cabeza y hombros, **redibujado a 96** (lote G2). El motor dibuja personas hasta celda 64 y las piezas LPC de la cabeza vienen a su tamaño, así que la forma sale del sprite: se agranda x3 con Scale3x (redondea las curvas sin inventar colores) y a 96 se dibujan el contorno de un pixel (afuera y entre el pelo y la cara, la ropa y la piel) y el brillo de los ojos abiertos. `escala_grande` vale 1: ya no es el sprite escalado. Antes era el recorte x3 a bloques, con el contorno de 3 pixeles.
 
 ### Cabecitas (`--cabecitas`, opción `cabecitas`)
 

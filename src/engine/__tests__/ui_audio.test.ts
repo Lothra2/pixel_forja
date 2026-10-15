@@ -33,7 +33,8 @@ describe('interfaz retro (lote G1)', () => {
     expect(pieces.filter((p) => p.name.startsWith('panel_'))).toHaveLength(6);
     for (const b of BANNERS) expect(by(`banner_${b}`), b).toBeDefined();
     for (const c of ['palanca', 'palanca_bola', 'a', 'b', 'c', 'especial', 'pausa']) expect(by(`control_${c}`).frames, c).toHaveLength(2);
-    expect(UI_PARTS).toHaveLength(8);
+    // las 8 retro de G1; desde ahí, las del envoltorio (lote G2, ver g2.test.ts)
+    expect(UI_PARTS.slice(0, 8)).toEqual(['dialogo', 'paneles', 'barras', 'marcos', 'banners', 'controles', 'minimapa', 'numeros']);
   });
 
   it('cada pieza: cuadros de su tamaño, nada vacío, pixeles nítidos, 9-slice con bordes que caben', () => {
@@ -169,7 +170,7 @@ describe('audio de la rebanada (lote H1)', () => {
 describe('kit a medida: interfaz, logo, sonidos de H1 y voces', () => {
   it('valida ui.interfaz y audio.voces con sugerencias', () => {
     expect(validateKitConfig({ ...MIN, ui: { interfaz: ['dialogo', 'banerz'] }, audio: { voces: { rick: { tono: 5, timbre: 'cuadrad' } } } } as unknown as KitConfig)).toEqual([
-      'ui.interfaz[1]: "banerz" no es una pieza de interfaz. ¿Quisiste decir "banners"? Hay dialogo, paneles, barras, marcos, banners, controles, minimapa, numeros',
+      'ui.interfaz[1]: "banerz" no es una pieza de interfaz. ¿Quisiste decir "banners"? Hay dialogo, paneles, barras, marcos, banners, controles, minimapa, numeros, medallas, podio, iconos, banderas, tarjetas, marco_vs, pantallas',
       'audio.voces.rick.tono: un número entre 0.3 y 3 (1 = 220 Hz)',
       'audio.voces.rick.timbre: "cuadrad" no es un timbre. ¿Quisiste decir "cuadrada"? Hay cuadrada, aguda, triangulo, sierra',
     ]);

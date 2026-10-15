@@ -38,6 +38,10 @@ export class Materials {
   id(name: string): number {
     return this.ids.get(name) ?? -1;
   }
+  /** los nombres en el orden de sus ids (el id i es names()[i]) */
+  names(): string[] {
+    return [...this.ids.keys()];
+  }
   paint(name: string, slot: number): Paint {
     const r = this.ramp(name);
     return { color: packHex(r[Math.max(0, Math.min(3, slot))]), dark: packHex(r[OUTLINE]), mat: this.id(name) };
