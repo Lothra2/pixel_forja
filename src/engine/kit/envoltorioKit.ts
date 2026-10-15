@@ -4,7 +4,7 @@ import type { HumanFicha } from '../sheet/ficha';
 import { textMask } from '../ui/fonts';
 import type { UiPiece } from '../ui/retro';
 import {
-  medallas, cintas, banderas, podio, iconosPrueba, tarjetas, marcoVs4, pantallaRetro, BANDERAS, iniciales,
+  medallas, cintas, banderas, podio, iconosPrueba, tarjetas, marcoVs4, marcoVs2, pantallaRetro, BANDERAS, iniciales,
   type Bandera, type EquipoTarjeta, type EscudoDef, type FiguraDe, type Glifos,
 } from '../ui/envoltorio';
 import { halve } from './portraits';
@@ -67,7 +67,7 @@ export function piezasEnvoltorio(partes: readonly string[], o: { bold: ArrayBuff
     }));
     out.push(...tarjetas(lista, glifos));
   }
-  if (want.has('marco_vs')) out.push(marcoVs4());
+  if (want.has('marco_vs')) out.push(marcoVs4(), marcoVs2());
   if (want.has('pantallas')) out.push(pantallaRetro('pausa'), pantallaRetro('se_acabo'), pantallaRetro('otra_partidita'));
   return out;
 }
