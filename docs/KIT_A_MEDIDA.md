@@ -358,7 +358,7 @@ kit/
   ui/logo.png  ui/logo_chico.png      logo animado
   ui/<pieza>.png                      interfaz: dialogo, panel_<equipo>, barras, marcos, banner_<id>, control_<id>, minimapa, numeros,
                                       y el envoltorio: medallas_<tam>, bandera_<id>_<tam>[_ondea], podio, iconos_prueba[_16],
-                                      tarjeta_<equipo>, escudo_<equipo>, marco_vs_4, pantalla_<id>
+                                      tarjeta_<equipo>, escudo_<equipo>, marco_vs_4, marco_vs_2, pantalla_<id>
   fx/<id>.png                         efectos
   audio/sfx/<n>.wav  audio/musica/<n>.wav  audio/ambiente/<n>.wav  audio/voz/<id>_<k>.wav
   audio/escuchar.html                 para oír todo el audio con un clic
