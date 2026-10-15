@@ -359,6 +359,14 @@
     },
     "interfaz": true,
     "vs_fondo": true,
+    "gira": {
+      "paradas": [
+        "tokio",
+        "saigon",
+        "bogota",
+        "caracas"
+      ]
+    },
     "intro": {
       "espaldas": "kenji"
     }

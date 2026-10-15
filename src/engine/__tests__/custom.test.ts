@@ -327,13 +327,13 @@ describe('kit a medida (lote I): el kit completo de Nekketsu', () => {
 
   it('ninguna imagen pasa de 4096 px', () => {
     const pngs = files.filter((n) => n.endsWith('.png'));
-    // atletas (24 x 18 hojas: los 17 packs, con las burlas del lote C5, voley y futbol sin pelotas del lote SP y keeper, basket, tennis y beisbol del lote SP2, judo y judo_azul del lote B4B6 bis, y los retratos) + efectos + logo e interfaz (36: un panel por equipo; más las 46 del envoltorio de G2: 3 medallas, 24 banderas, el podio, 2 tiras de íconos, 6 tarjetas, 6 escudos, el VS de 4 y 3 pantallas, y las 7 de la intro: la azotea, el atleta de espaldas, Bogotá, su lluvia, Maracaibo, el desayuno y su mesa) + armas y comida + las pelotas sueltas (SP2)
+    // atletas (24 x 18 hojas: los 17 packs, con las burlas del lote C5, voley y futbol sin pelotas del lote SP y keeper, basket, tennis y beisbol del lote SP2, judo y judo_azul del lote B4B6 bis, y los retratos) + efectos + logo e interfaz (36: un panel por equipo; más las 49 del envoltorio de G2: 3 medallas, las 2 cintas del cuarto puesto, 24 banderas, el podio, 2 tiras de íconos, 6 tarjetas, 6 escudos, el VS de 4, el de 1 contra 1 y 3 pantallas, y las 5 del mapa de la gira: el mundial, la ruta, los 2 de región y los sellos, y las 7 de la intro: la azotea, el atleta de espaldas, Bogotá, su lluvia, Maracaibo, el desayuno y su mesa) + armas y comida + las pelotas sueltas (SP2)
     // + cabecitas, 3 fuentes, neutro, letras y los 15 pares del VS + 2 del público + thor + los 15 escenarios: hẻm 21,
     // Bến Thành 17, río 17, azoteas 21, estadio 11, Comuna 13 14, Caracas 10, Hội An 8, y el dojo, Tao Đàn y la cancha de tejo 8 cada uno (lote E4a) + 3 perros y 2 gatos (lote C7)
     // + los 10 vehículos y objetos del lote D2 + los 8 NPC de la Comuna 13 y la pelota (lote C6a) + el gallo y la paloma (lote C7b)
     // + Margarita, Đà Lạt, Barranquilla y Maracaibo, 8 cada uno, y la Marimonda (lote E5)
     // + Cocora, Hạ Long y Apure, 11 cada uno (pasan de 1280 de ancho: la capa cerca, el piso y el frente van en dos trozos), el barrio, el liceo y Cartagena, 8 cada uno, y la palenquera (lote E6)
-    expect(pngs.length).toBe(24 * 18 + 64 + 36 + 46 + 7 + 2 + 1 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 8 + 8 + 8 + 5 + 10 + 9 + 2 + 8 * 4 + 1 + 11 * 3 + 8 * 3 + 1);
+    expect(pngs.length).toBe(24 * 18 + 64 + 36 + 49 + 5 + 7 + 2 + 1 + (4 + 2 + 15) + 2 + 1 + 21 + 17 + 17 + 21 + 11 + 14 + 10 + 8 + 8 + 8 + 8 + 5 + 10 + 9 + 2 + 8 * 4 + 1 + 11 * 3 + 8 * 3 + 1);
     for (const f of pngs) for (const s of pngSize(readFileSync(join(out, f)))) expect(s, f).toBeLessThanOrEqual(4096);
   });
 });

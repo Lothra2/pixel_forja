@@ -16,6 +16,7 @@ import { listenPage, type ListenEntry, type ListenVoice } from '../audio/escucha
 import { retroUi, gameLogo, UI_PARTS, type UiPart, type UiPiece } from '../ui/retro';
 import { BANDERAS, EMBLEMAS } from '../ui/envoltorio';
 import { piezasEnvoltorio } from './envoltorioKit';
+import { LUGARES_IDS, type Lugar } from '../ui/gira';
 import type { Raster } from '../core/raster';
 import { encodePng } from '../export/png';
 import { COMIDAS, type Comida } from '../render/comida';
@@ -77,7 +78,7 @@ export interface KitConfig {
   /** animales: de las fichas o del motor (thor, y las aves: gallo y paloma) */
   animales?: string[];
   /** fuentes, logo, la interfaz retro y la pantalla del VS (el fondo partido de cada par de equipos y las letras) */
-  ui?: { fuentes?: boolean | { idiomas?: string[] }; logo?: { texto: string }; interfaz?: boolean | UiPart[]; vs_fondo?: boolean; intro?: { espaldas?: string } };
+  ui?: { fuentes?: boolean | { idiomas?: string[] }; logo?: { texto: string }; interfaz?: boolean | UiPart[]; vs_fondo?: boolean; gira?: { paradas: string[] }; intro?: { espaldas?: string } };
   /** efectos del catálogo general: true = todos, o ids, bases (polvo_correr) y grupos (reaccion) */
   fx?: boolean | string[];
   /** sonidos del motor: true = todos, o la lista. Los nombres que todavía no existen vuelven como aviso (lote H) */
@@ -258,7 +259,12 @@ export function validateKitConfig(cfg: unknown): string[] {
   if (cfg.ui !== undefined) {
     if (!isObj(cfg.ui)) e.push('ui: tiene que ser un objeto');
     else {
-      for (const k of Object.keys(cfg.ui)) if (!['fuentes', 'logo', 'interfaz', 'vs_fondo', 'intro'].includes(k)) e.push(`ui.${k}: clave desconocida (hay "fuentes", "logo", "interfaz", "vs_fondo" e "intro")`);
+      for (const k of Object.keys(cfg.ui)) if (!['fuentes', 'logo', 'interfaz', 'vs_fondo', 'gira', 'intro'].includes(k)) e.push(`ui.${k}: clave desconocida (hay "fuentes", "logo", "interfaz", "vs_fondo", "gira" e "intro")`);
+      const gi = cfg.ui.gira;
+      if (gi !== undefined) {
+        if (!isObj(gi) || !isStrList(gi.paradas)) e.push('ui.gira: { "paradas": [lugares en el orden del vuelo] }');
+        else (gi.paradas as string[]).forEach((x, i) => { if (!(LUGARES_IDS as string[]).includes(x)) e.push(`ui.gira.paradas[${i}]: el motor no conoce el lugar "${x}".${suggest(x, LUGARES_IDS)} Hay ${LUGARES_IDS.join(', ')}`); });
+      }
       const ino = cfg.ui.intro;
       if (ino !== undefined && (!isObj(ino) || (ino.espaldas !== undefined && typeof ino.espaldas !== 'string'))) e.push('ui.intro: { "espaldas": "id del atleta que sale de espaldas en la azotea" }');
       const it = cfg.ui.interfaz;
@@ -383,7 +389,8 @@ export function kitConfigSchema(): Record<string, unknown> {
         properties: {
           fuentes: { oneOf: [{ type: 'boolean' }, { type: 'object', additionalProperties: false, properties: { idiomas: list({ enum: IDIOMAS }) } }], description: 'Las tres fuentes bitmap (con vietnamita) en ui/fuentes.' },
           logo: { type: 'object', required: ['texto'], properties: { texto: { type: 'string', minLength: 1 } }, description: 'El logo animado del juego a partir de su nombre, en 320 x 112 y 160 x 56 (ui/logo.png y ui/logo_chico.png).' },
-          interfaz: { oneOf: [{ type: 'boolean' }, list({ enum: UI_PARTS })], description: 'Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marco VS de 4 y fondos de pausa, fin y continuar; y las escenas de la intro: la azotea de Tokio con el atleta de espaldas, Bogotá con lluvia, Maracaibo con calor y el desayuno en Saigón. true = todas.' },
+          interfaz: { oneOf: [{ type: 'boolean' }, list({ enum: UI_PARTS })], description: 'Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas y la cinta del cuarto puesto, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marcos VS de 4 y de 1 contra 1 y fondos de pausa, fin y continuar; y el mapa de la gira: el mapa mundial, la ruta del avión, los mapas de Vietnam y de Colombia con Venezuela, y los sellos del pasaporte; y las escenas de la intro: la azotea de Tokio con el atleta de espaldas, Bogotá con lluvia, Maracaibo con calor y el desayuno en Saigón. true = todas.' },
+          gira: { type: 'object', required: ['paradas'], additionalProperties: false, properties: { paradas: list({ enum: LUGARES_IDS }, { minItems: 1 }) }, description: 'Las paradas del vuelo de la gira, en orden. Con la parte "mapa" de la interfaz: resalta sus países en el mapa mundial y saca la ruta del avión entre ellas (ui/mapa_gira_ruta.png).' },
           intro: { type: 'object', additionalProperties: false, properties: { espaldas: { type: 'string', description: 'Id del atleta que sale de espaldas, redibujado a 3 con el gakuran al hombro, en la azotea de la intro (ui/intro_espaldas.png).' } }, description: 'Las escenas de la intro, con la parte "intro" de la interfaz.' },
           vs_fondo: { type: 'boolean', description: 'La pantalla del VS: el fondo con los colores de cada par de equipos partidos en diagonal y rayos (ui/vs/), uno neutro, y las letras VS aparte para estrellarlas.' },
         },
@@ -700,7 +707,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
       const delKit = [...Object.values(inputs.equipos ?? {}).flatMap((t) => t.atletas), ...Object.keys(humans)].filter((a, i, l) => humans[a] && l.indexOf(a) === i).map((a) => humans[a]);
       const espaldasId = cfg.ui.intro?.espaldas;
       if (espaldasId && !humans[espaldasId]) throw new Error(`ui.intro.espaldas: no hay ficha de "${espaldasId}".${suggest(espaldasId, Object.keys(humans))}`);
-      pieces.push(...piezasEnvoltorio(want, { bold: inputs.fuentes.bold, atletas: delKit, equipos: inputs.equipos, espaldas: espaldasId ? humans[espaldasId] : undefined }));
+      pieces.push(...piezasEnvoltorio(want, { bold: inputs.fuentes.bold, atletas: delKit, equipos: inputs.equipos, paradas: cfg.ui.gira?.paradas as Lugar[] | undefined, espaldas: espaldasId ? humans[espaldasId] : undefined }));
       const it: Record<string, unknown> = {};
       for (const pc of pieces) it[pc.name] = { ...put(pc.name, pc.frames, pc.w, pc.h), ...(pc.fps ? { fps: pc.fps, loop: !!pc.loop } : {}), ...(pc.nueve ? { nueve: pc.nueve } : {}), ...(pc.tres ? { tres: pc.tres } : {}), ...(pc.extra ?? {}) };
       ui.interfaz = it;

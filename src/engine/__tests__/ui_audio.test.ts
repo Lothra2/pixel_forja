@@ -170,7 +170,7 @@ describe('audio de la rebanada (lote H1)', () => {
 describe('kit a medida: interfaz, logo, sonidos de H1 y voces', () => {
   it('valida ui.interfaz y audio.voces con sugerencias', () => {
     expect(validateKitConfig({ ...MIN, ui: { interfaz: ['dialogo', 'banerz'] }, audio: { voces: { rick: { tono: 5, timbre: 'cuadrad' } } } } as unknown as KitConfig)).toEqual([
-      'ui.interfaz[1]: "banerz" no es una pieza de interfaz. ¿Quisiste decir "banners"? Hay dialogo, paneles, barras, marcos, banners, controles, minimapa, numeros, medallas, podio, iconos, banderas, tarjetas, marco_vs, pantallas, intro',
+      'ui.interfaz[1]: "banerz" no es una pieza de interfaz. ¿Quisiste decir "banners"? Hay dialogo, paneles, barras, marcos, banners, controles, minimapa, numeros, medallas, podio, iconos, banderas, tarjetas, marco_vs, pantallas, mapa, intro',
       'audio.voces.rick.tono: un número entre 0.3 y 3 (1 = 220 Hz)',
       'audio.voces.rick.timbre: "cuadrad" no es un timbre. ¿Quisiste decir "cuadrada"? Hay cuadrada, aguda, triangulo, sierra',
     ]);
