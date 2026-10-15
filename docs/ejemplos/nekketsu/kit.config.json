@@ -415,7 +415,10 @@
       "chapuzon",
       "brazada",
       "salida_natacion",
-      "garrocha"
+      "garrocha",
+      "trueno",
+      "furro",
+      "corneta_moto"
     ],
     "musica": [
       "marcha_nekketsu",
@@ -459,7 +462,10 @@
       "liceo",
       "parque_tao_dan",
       "barrio_caracas",
-      "dojo_hanoi"
+      "dojo_hanoi",
+      "mercado",
+      "rio",
+      "estadio"
     ],
     "voces": [
       "rick",

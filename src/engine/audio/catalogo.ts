@@ -1,7 +1,7 @@
 import { SFX_NAMES, MUSIC_NAMES, renderSfx, renderMusic, type SfxName, type MusicName } from './sfx';
 import { ambience, AMBIENCE_NAMES, type AmbienceName } from './ambience';
 import { SFX_DEPORTE, MUSIC_DEPORTE } from './deporte';
-import { SFX_MUNDOS, MUSIC_MUNDOS } from './mundos';
+import { SFX_MUNDOS, MUSIC_MUNDOS, SFX_MUNDOS_H2C } from './mundos';
 import { SFX_PELOTA, MUSIC_PELOTA } from './pelota';
 import { MUSIC_ATLETISMO, SFX_ATLETISMO } from './atletismo';
 import { MUSIC_ACORDES } from './acordes';
@@ -11,10 +11,11 @@ import { MUSIC_ACORDES } from './acordes';
  * deporte (marcha, đàn tranh, pelea, público, golpes...) y los de los mundos (un tema por mundo, el gallo, el tejo,
  * el đá cầu, el tatami), los de los mundos de pelota (Barranquilla, Margarita, Đà Lạt, la red, el balón, el aro y la
  * chapa) y los de las pruebas de atletismo y natación (Cartagena, el Eje Cafetero, Hạ Long y Apure, el chapuzón, la
- * brazada, la bocina de la salida y la garrocha), los ambientes de todos los mundos y el acorde de victoria de cada uno
- * de los 6 equipos (`acorde_<equipo>`). Cada uno sale igual siempre.
+ * brazada, la bocina de la salida y la garrocha), el trueno del Catatumbo, el furrazo y la corneta de la moto (lote H2
+ * corto), los ambientes de todos los mundos y el acorde de victoria de cada uno de los 6 equipos (`acorde_<equipo>`).
+ * Cada uno sale igual siempre.
  */
-const SFX_EXTRA: Record<string, () => Float32Array> = { ...SFX_DEPORTE, ...SFX_MUNDOS, ...SFX_PELOTA, ...SFX_ATLETISMO };
+const SFX_EXTRA: Record<string, () => Float32Array> = { ...SFX_DEPORTE, ...SFX_MUNDOS, ...SFX_PELOTA, ...SFX_ATLETISMO, ...SFX_MUNDOS_H2C };
 const MUSIC_EXTRA: Record<string, () => Float32Array> = { ...MUSIC_DEPORTE, ...MUSIC_MUNDOS, ...MUSIC_PELOTA, ...MUSIC_ATLETISMO, ...MUSIC_ACORDES };
 export const SONIDOS = {
   sfx: [...SFX_NAMES, ...Object.keys(SFX_EXTRA)] as string[],
