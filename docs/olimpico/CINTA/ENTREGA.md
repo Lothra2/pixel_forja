@@ -1,6 +1,6 @@
 # Lote cinta: la cinta de participación del cuarto puesto
 Estado: entregado, pendiente de Rick
-PR:
+PR: https://github.com/Lothra2/pixel_forja/pull/51
 Fecha: 2026-10-15
 
 ## Qué se hizo
