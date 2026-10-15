@@ -1029,7 +1029,7 @@
               "uniqueItems": true
             }
           ],
-          "description": "Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marco VS de 4 y fondos de pausa, fin y continuar. true = todas."
+          "description": "Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas y la cinta del cuarto puesto, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marco VS de 4 y fondos de pausa, fin y continuar. true = todas."
         },
         "vs_fondo": {
           "type": "boolean",

@@ -48,6 +48,7 @@ Lo que rodea a las pruebas. Va en la misma lista de `ui.interfaz` y sale igual, 
 | Pieza | Tamaño | Qué es |
 |---|---|---|
 | `medallas_16`, `medallas_32`, `medallas_64` | 3 cuadros cada una | Oro, plata y bronce (el orden va en `orden`): el disco con relieve y una estrella grabada, la cinta roja en V arriba. Las de 32 y 64 llevan un destello |
+| `cinta_16`, `cinta_32` | 16 x 16 y 32 x 32 | La cinta de participación del cuarto puesto (`puesto: 4`): una escarapela de tela turquesa plisada con un botón crema, en el mismo sitio y del mismo tamaño que el disco de las medallas, con su cinta en V arriba. Sale con `medallas` |
 | `bandera_<id>_16`, `bandera_<id>_32` | 18 x 15 y 34 x 26 | Quietas. Hay `vietnam`, `colombia`, `venezuela`, `japon`, `bogota` y `zulia`. El asta va a la izquierda |
 | `bandera_<id>_<tam>_ondea` | Las mismas, 8 cuadros a 10 fps | Ondeando: la tela quieta pegada al asta y la onda que crece hacia la punta, con pliegues de luz y sombra |
 | `podio` | 800 x 360 | El podio en el estadio de noche. La parte de 640 va de x 80 a 720. `puestos` dice dónde van los pies de cada uno (en 640: 1 en 320, 268; 2 en 240, 284; 3 en 400, 296, como el medallero), `mastiles` por dónde sube cada bandera y `calma` la franja de arriba, tranquila para el título |

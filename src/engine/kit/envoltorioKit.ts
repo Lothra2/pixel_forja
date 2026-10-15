@@ -4,7 +4,7 @@ import type { HumanFicha } from '../sheet/ficha';
 import { textMask } from '../ui/fonts';
 import type { UiPiece } from '../ui/retro';
 import {
-  medallas, banderas, podio, iconosPrueba, tarjetas, marcoVs4, pantallaRetro, BANDERAS, iniciales,
+  medallas, cintas, banderas, podio, iconosPrueba, tarjetas, marcoVs4, pantallaRetro, BANDERAS, iniciales,
   type Bandera, type EquipoTarjeta, type EscudoDef, type FiguraDe, type Glifos,
 } from '../ui/envoltorio';
 import { halve } from './portraits';
@@ -56,7 +56,7 @@ export function piezasEnvoltorio(partes: readonly string[], o: { bold: ArrayBuff
   const want = new Set(partes);
   const glifos = glifosDe(o.bold);
   const out: UiPiece[] = [];
-  if (want.has('medallas')) out.push(...medallas());
+  if (want.has('medallas')) out.push(...medallas(), ...cintas());
   if (want.has('banderas')) out.push(...banderas());
   if (want.has('podio')) out.push(podio(glifos));
   if (want.has('iconos') && o.atletas.length) out.push(...iconosPrueba(figuraDe(o.atletas), halve));
