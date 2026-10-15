@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audio de H2 corto</title>
+<style>
+:root{--bg:#0f0d1a;--panel:#1b1830;--line:#2e2a4a;--text:#f2efff;--muted:#a49fc4;--accent:#ff8a3d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,sans-serif;padding:16px;max-width:900px;margin:0 auto}
+h1{font-size:22px;margin:4px 0 2px}p{color:var(--muted);margin:0 0 14px}
+h2{font-size:16px;margin:22px 0 8px;color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+button{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;cursor:pointer;min-height:56px}
+button.on{border-color:var(--accent);background:#2a2040}button small{display:block;color:var(--muted);font-size:12px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:1}
+.bar button{min-height:44px;padding:8px 14px;text-align:center}.main{background:var(--accent);color:#1a0d06;border:0;font-weight:700}
+input,select{font:inherit;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}
+.q{margin-top:4px;color:var(--text);opacity:.8}.voz{display:flex;gap:8px;flex-wrap:wrap}.voz input{flex:1 1 220px}
+</style></head><body>
+<h1>Audio de H2 corto</h1>
+<p>El trueno del rayo, el Furrazo, la corneta de la moto y tres ambientes del Cross. Toca cualquier sonido. "Tocar todo" los pasa en orden, cada ambiente unos segundos. Las dos vueltas sirven para oír el empalme del bucle.</p>
+<div class="bar"><button class="main" id="all">▶ Tocar todo</button><button id="stop">■ Parar</button><span id="now" style="color:var(--muted)"></span></div>
+<div id="list"></div>
+<div id="vozbox"></div>
+<script>
+const D={"secciones":{"sfx":[{"n":"trueno","f":["sfx/trueno.ogg","sfx/trueno.m4a"],"d":2.14,"b":false,"q":"El chasquido pega de una, en los primeros 20 ms. Después el retumbo rueda en olas y se apaga como a los 2 s."},{"n":"furro","f":["sfx/furro.ogg","sfx/furro.m4a"],"d":1.0,"b":false,"q":"El furro de la gaita tocado con todo: la palmada, el \"rum\" que crece un toque y gruñe, y el raspado de la mano."},{"n":"corneta_moto","f":["sfx/corneta_moto.ogg","sfx/corneta_moto.m4a"],"d":0.55,"b":false,"q":"\"Pí-píii\": finita y nasal, el segundo pito más largo. Las dos voces un pelo desafinadas baten."}],"ambientes":[{"n":"mercado","f":["ambiente/mercado.ogg","ambiente/mercado.m4a"],"d":12,"b":true,"q":"La gente, cuatro vendedoras que llaman cantadito, la cuchilla contra la tabla en el 2.3 y el 8.2, monedas, bolsas y motos afuera."},{"n":"rio","f":["ambiente/rio.ogg","ambiente/rio.m4a"],"d":12,"b":true,"q":"El agua contra el muelle y el bote, el tuc-tuc del ferry lejos, la sirena en el 5.6 con su eco, golondrinas y una garza."},{"n":"estadio","f":["ambiente/estadio.ogg","ambiente/estadio.m4a"],"d":12,"b":true,"q":"El público ruge en dos olas (en el 1 y en el 7), la barra con bombo y cornetas, el locutor en el 4.6 y el pitazo en el 9.3."},{"n":"mercado_dos_vueltas","f":["ambiente/mercado_dos_vueltas.ogg","ambiente/mercado_dos_vueltas.m4a"],"d":24,"b":false,"q":"Dos vueltas seguidas: el empalme cae en el segundo 12 y no se debería notar."},{"n":"rio_dos_vueltas","f":["ambiente/rio_dos_vueltas.ogg","ambiente/rio_dos_vueltas.m4a"],"d":24,"b":false,"q":"Dos vueltas seguidas: el empalme cae en el segundo 12 y no se debería notar."},{"n":"estadio_dos_vueltas","f":["ambiente/estadio_dos_vueltas.ogg","ambiente/estadio_dos_vueltas.m4a"],"d":24,"b":false,"q":"Dos vueltas seguidas: el empalme cae en el segundo 12 y no se debería notar."}]},"voces":{}};const T={"musica":"Música","sfx":"Efectos","ambientes":"Ambientes"};
+let cur=null,queue=[],timer=null;
+const $=(id)=>document.getElementById(id);
+const MIME={ogg:'audio/ogg',m4a:'audio/mp4',wav:'audio/wav'};const probe=new Audio();
+const pick=(fs)=>fs.find(f=>probe.canPlayType(MIME[f.split('.').pop()]||''))||fs[0];
+function stop(){if(cur){cur.pause();cur=null}clearTimeout(timer);queue=[];document.querySelectorAll('button.on').forEach(b=>b.classList.remove('on'));$('now').textContent=''}
+function play(item,btn,next){if(cur)cur.pause();document.querySelectorAll('button.on').forEach(b=>b.classList.remove('on'));
+ const a=new Audio(pick(item.f));cur=a;btn&&btn.classList.add('on');$('now').textContent=item.n;a.play().catch(()=>{});
+ const lim=item.b?Math.min(item.d,8):item.d;clearTimeout(timer);timer=setTimeout(()=>{a.pause();btn&&btn.classList.remove('on');next&&next()},lim*1000+250)}
+const list=$('list');
+for(const[s,items]of Object.entries(D.secciones)){const h=document.createElement('h2');h.textContent=T[s]||s;list.append(h);const g=document.createElement('div');g.className='grid';list.append(g);
+ for(const it of items){const b=document.createElement('button');b.innerHTML=it.n+'<small>'+it.d.toFixed(1)+' s'+(it.b?' · bucle':'')+'</small>'+(it.q?'<small class="q">'+it.q+'</small>':'');b.onclick=()=>{queue=[];play(it,b)};it.btn=b;g.append(b)}}
+$('all').onclick=()=>{stop();queue=Object.values(D.secciones).flat();const step=()=>{const it=queue.shift();if(it)play(it,it.btn,step);else stop()};step()};
+$('stop').onclick=stop;
+const ids=Object.keys(D.voces);
+if(ids.length){const box=$('vozbox');box.innerHTML='<h2>Voces</h2><div class="voz"><select id="vid">'+ids.map(i=>'<option>'+i+'</option>').join('')+'</select><input id="vtxt" value="¡Dale que vamos a ganar!"><button class="main" id="vsay">▶ Decir</button></div>';
+ $('vsay').onclick=()=>{stop();const files=D.voces[$('vid').value];const txt=$('vtxt').value;let i=0;
+  const tick=()=>{if(i>=txt.length)return;const ch=txt[i++];if(/[\p{L}\p{N}]/u.test(ch)){new Audio(files[(ch.charCodeAt(0))%files.length]).play().catch(()=>{})}timer=setTimeout(tick,/[.,!?¡¿]/.test(ch)?220:55)};tick()}}
+</script></body></html>
