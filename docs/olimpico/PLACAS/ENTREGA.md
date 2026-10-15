@@ -1,6 +1,6 @@
 # Lote placas: las placas del nombre de la presentación a 112
 Estado: entregado, pendiente de Rick
-PR:
+PR: https://github.com/Lothra2/pixel_forja/pull/55
 Fecha: 2026-10-15
 
 ## Qué se hizo
