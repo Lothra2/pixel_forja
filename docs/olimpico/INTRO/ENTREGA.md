@@ -1,6 +1,6 @@
 # Lote intro: las escenas de la intro con los retratos nuevos
 Estado: entregado, pendiente de Rick
-PR:
+PR: https://github.com/Lothra2/pixel_forja/pull/53
 Fecha: 2026-10-15
 
 ## Qué se hizo
