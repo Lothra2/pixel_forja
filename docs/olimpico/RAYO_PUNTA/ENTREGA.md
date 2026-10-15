@@ -1,6 +1,6 @@
 # Lote rayo_punta: la punta de la jabalina en javelin_rayo
 Estado: entregado, pendiente de Rick
-PR: (se completa al abrirlo)
+PR: https://github.com/Lothra2/pixel_forja/pull/47
 Fecha: 2026-10-15
 
 ## Qué se hizo
@@ -36,7 +36,7 @@ Los eventos quedan así:
 - **`b7h8.test.ts`:** sumé el `impacto` a lo que pide de `javelin_rayo`. La imagen dorada no cambió: el dibujo es el mismo.
 - **La suite sin `custom.test.ts`:** 51 archivos, 513 de 513.
 - **`custom.test.ts`: 15 de 15,** en 213 s, por debajo del límite de 300.
-- **`tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright.** Los números del build y del e2e están en el PR.
+- **`tsc` limpio, `npm run build:sitio` limpio y e2e de Playwright 50 de 50.**
 
 ## Para aprobar (todo en esta carpeta)
 
