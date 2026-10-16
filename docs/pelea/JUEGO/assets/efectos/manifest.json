@@ -1,1 +1,90 @@
-{}
+{
+ "golpe": {
+  "bucle": false,
+  "hoja": "golpe.png",
+  "w": 60,
+  "h": 58,
+  "ox": 30,
+  "oy": 29,
+  "cuadros": [
+   {
+    "ticks": 3
+   },
+   {
+    "ticks": 3
+   },
+   {
+    "ticks": 3
+   },
+   {
+    "ticks": 3
+   }
+  ]
+ },
+ "bloqueo": {
+  "bucle": false,
+  "hoja": "bloqueo.png",
+  "w": 48,
+  "h": 52,
+  "ox": 24,
+  "oy": 26,
+  "cuadros": [
+   {
+    "ticks": 3
+   },
+   {
+    "ticks": 3
+   },
+   {
+    "ticks": 3
+   },
+   {
+    "ticks": 3
+   }
+  ]
+ },
+ "polvo": {
+  "bucle": false,
+  "hoja": "polvo.png",
+  "w": 122,
+  "h": 32,
+  "ox": 61,
+  "oy": 30,
+  "cuadros": [
+   {
+    "ticks": 5
+   },
+   {
+    "ticks": 5
+   },
+   {
+    "ticks": 5
+   },
+   {
+    "ticks": 5
+   }
+  ]
+ },
+ "mareo": {
+  "bucle": true,
+  "hoja": "mareo.png",
+  "w": 40,
+  "h": 32,
+  "ox": 20,
+  "oy": 16,
+  "cuadros": [
+   {
+    "ticks": 5
+   },
+   {
+    "ticks": 5
+   },
+   {
+    "ticks": 5
+   },
+   {
+    "ticks": 5
+   }
+  ]
+ }
+}
