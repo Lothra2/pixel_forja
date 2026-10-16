@@ -247,6 +247,9 @@ def procesar(pid, hoja, n):
     else:
         esc, como = esc_h, 'altura'
     ff = ALTO[pid] / Hg / esc
+    # la escala pareja que midió el juego, cuadro a cuadro (sf2_escala.py): se aplica aquí, al bajar la hoja grande
+    from sf2_escala import factores
+    fac = factores(pid).get(hoja, {})
     out = []
     bg = fondo_de(a)
     for i, (x0, y0, x1, y1) in enumerate(cajas):
@@ -255,7 +258,7 @@ def procesar(pid, hoja, n):
         a_ = np.where(mascaras[i][..., None], a, bg)
         b = a_[max(0, y0 - pad):y1 + pad, max(0, x0 - pad):x1 + pad]
         o, mm = recortar(celdas(b, P), bg)
-        o, mm = bajar(o, mm, (y1 - y0) * ff / o.shape[0])
+        o, mm = bajar(o, mm, (y1 - y0) * ff * fac.get(i, 1) / o.shape[0])
         q = motas(a_paleta(o, mm, pal), pal, bg)
         ys, xs = np.where(q >= 0)
         q = q[ys.min():ys.max() + 1, xs.min():xs.max() + 1]

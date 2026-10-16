@@ -30,6 +30,20 @@ CIUDADES = {
     'celestial': {'ajuste': {'ciudad': 195}, 'piso_solo': True, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'],
                   'elementos': ['farol', 'mariposa_1', 'mariposa_2', 'estrella_fugaz', 'isla', 'grulla'],
                   'altos': [11, 9, 9, 10, 30, 16]},
+    # los seis mundos del lote E del juego (sus manifests ya existen allá: aquí solo salen los PNG con esos nombres).
+    # En Río, Guiza y el Polo Norte la ciudad va delante del agua (rio_atras): se para en el muro y el agua queda detrás
+    'china': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'],
+              'elementos': ['cometa_1', 'cometa_2', 'ave_1', 'ave_2'], 'altos': [12, 12, 6, 6]},
+    'italia': {'ajuste': {}, 'capas': ['cielo', 'ciudad', 'rio', 'muro', 'piso', 'frente'],
+               'elementos': ['gondola'], 'altos': [14]},
+    'usa': {'ajuste': {}, 'capas': ['cielo', 'ciudad', 'rio', 'muro', 'piso', 'frente'],
+            'elementos': ['carguero', 'remolcador', 'velero', 'ave_1', 'ave_2'], 'altos': [22, 16, 28, 6, 6]},
+    'brasil': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
+               'elementos': ['teleferico', 'guacamaya_1', 'guacamaya_2'], 'altos': [12, 8, 8]},
+    'egipto': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
+               'elementos': ['faluca', 'camello', 'halcon_1', 'halcon_2'], 'altos': [26, 20, 8, 8]},
+    'polo_norte': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
+                   'elementos': ['oso_1', 'oso_2'], 'altos': [16, 16]},
 }
 
 
@@ -44,23 +58,35 @@ def filas(m, umbral=0.02):
     return int(f.min()), int(f.max())
 
 
-def apilar(capas):
+def apilar(capas, rio_atras=False):
     """Cuánto bajar (o subir) cada capa para que se tapen bien una con otra."""
     dy = {}
     piso_top = int(np.where(capas['piso'][1].mean(1) > 0.5)[0].min())
     _, muro_bot = filas(capas['muro'][1])
     dy['muro'] = piso_top + 3 - muro_bot
     base = muro_bot + dy['muro']
-    if 'rio' in capas:
+    if rio_atras:
+        # la ciudad delante del agua: las dos se paran detrás del muro y los montes esconden su base tras el agua
+        _, rio_bot = filas(capas['rio'][1])
+        dy['rio'] = base - rio_bot
+        _, cbot = filas(capas['ciudad'][1])
+        dy['ciudad'] = base - cbot
+        rio_top, _ = filas(capas['rio'][1], 0.5)
+        if 'montes' in capas:
+            _, mbot = filas(capas['montes'][1])
+            dy['montes'] = rio_top + dy['rio'] + 6 - mbot
+        base = None
+    if 'rio' in capas and base is not None:
         _, rio_bot = filas(capas['rio'][1])
         dy['rio'] = base - rio_bot
         rio_top, _ = filas(capas['rio'][1], 0.5)
         base = rio_top + dy['rio'] + 6
-    _, cbot = filas(capas['ciudad'][1])
-    dy['ciudad'] = base - cbot
-    if 'montes' in capas:
-        mtop, mbot = filas(capas['montes'][1])
-        dy['montes'] = cbot + dy['ciudad'] - mbot
+    if base is not None:
+        _, cbot = filas(capas['ciudad'][1])
+        dy['ciudad'] = base - cbot
+        if 'montes' in capas:
+            mtop, mbot = filas(capas['montes'][1])
+            dy['montes'] = cbot + dy['ciudad'] - mbot
     # lo más alto (la cruz del Ávila, Monserrate, las torres) tiene que quedar a la vista con la cámara en reposo,
     # que muestra de la fila 38 del arte para abajo
     tope = int(46 * F)
@@ -130,7 +156,7 @@ def ciudad(nombre):
             llenas = m.mean(1) > 0.97
             m[:int(np.where(~llenas)[0].max()) + 1] = False
         crudas[n] = (a, m)
-    dy = apilar(crudas)
+    dy = apilar(crudas, c.get('rio_atras', False))
     bajadas = {}
     for n in c['capas']:
         a, m = crudas[n]

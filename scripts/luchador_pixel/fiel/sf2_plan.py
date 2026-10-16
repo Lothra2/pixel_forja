@@ -116,6 +116,23 @@ PROPIO = {
     ],
 }
 
+# lote F (lo que pidió el juego en su lote E): carrera, agarre y agarrado para los cinco, y el trote de Thor de
+# verdad (sus 6 cuadros de avanza eran casi iguales y patinaba)
+LOTE_F_HUMANO = [
+    ('carrera', 4, 'RUN FORWARD CYCLE', 'Running fast forward in a low fighting dash, body leaning forward, fists up. Frame 1: right leg pushing off, left knee high. Frame 2: both feet off the ground, legs apart. Frame 3: left leg pushing off, right knee high. Frame 4: both feet off the ground, legs apart'),
+    ('carrera_atras', 3, 'BACK DASH', 'A quick hop backward while still facing right, guard up. Frame 1: crouching slightly, pushing off. Frame 2: in the air hopping backward, knees bent, leaning back. Frame 3: landing on the toes in the fighting stance'),
+    ('agarre', 4, 'GRAB AND THROW', 'A wrestling throw of an invisible opponent, only this character drawn. Frame 1: reaching forward with both hands to grab. Frame 2: holding the collar of the invisible opponent with both hands, arms bent, pulling close. Frame 3: twisting the hips and swinging both arms up and over the shoulder to throw. Frame 4: follow-through after the throw, arms down behind, looking back'),
+    ('agarrado', 2, 'BEING GRABBED', 'Being grabbed by the collar by an invisible opponent in front, only this character drawn. Frame 1: pulled forward off balance, surprised, arms flailing, on tiptoes. Frame 2: lifted slightly off the ground, struggling, eyes shut'),
+]
+LOTE_F_THOR = [
+    ('trote', 8, 'DOG TROT CYCLE', 'A real dog trot cycle on four legs moving forward, head up, cape flowing back, every frame clearly different. Diagonal leg pairs move together: front left with back right, then front right with back left. Frame 1: front left and back right legs reaching forward, the other pair pushing back. Frame 2: first pair landing. Frame 3: legs passing under the body. Frame 4: first pair pushing back, second pair swinging forward. Frame 5: front right and back left legs reaching forward. Frame 6: second pair landing. Frame 7: legs passing under the body. Frame 8: second pair pushing back, first pair swinging forward'),
+    ('trote_atras', 6, 'BACKING UP CYCLE', 'Backing up step by step on four legs while still facing right, head low, growling, cape hanging, every frame clearly different with diagonal leg pairs: front left with back right stepping back, then front right with back left stepping back. Frame 1: first pair lifting. Frame 2: first pair stepping back. Frame 3: first pair landing. Frame 4: second pair lifting. Frame 5: second pair stepping back. Frame 6: second pair landing'),
+    ('carrera', 4, 'DOG GALLOP CYCLE', 'Full speed gallop forward, body stretched, ears back, cape straight back. Frame 1: all legs gathered under the body. Frame 2: front legs reaching far forward, hind legs pushing. Frame 3: fully stretched in the air, no paws touching. Frame 4: front paws landing, hind legs swinging forward'),
+    ('carrera_atras', 3, 'BACK HOP', 'A quick hop backward while still facing right, head up. Frame 1: crouching on the hind legs. Frame 2: in the air hopping backward. Frame 3: landing on all fours ready'),
+    ('agarre', 4, 'GRAB AND TOSS', 'Grabbing an invisible opponent with the jaws by the sleeve and tossing them, only the dog drawn. Frame 1: lunging forward, jaws open. Frame 2: jaws clamped on something invisible, pulling back, growling. Frame 3: swinging the head hard up and over to the side to toss. Frame 4: follow-through, head turned back, tail up'),
+    ('agarrado', 2, 'BEING GRABBED', 'Being grabbed by the scruff and lifted by an invisible opponent in front, only the dog drawn. Frame 1: front paws lifted off the ground, surprised, ears up. Frame 2: dangling, paws flailing, eyes shut'),
+]
+
 # qué hojas comunes se salta cada uno porque ya las tiene propias o ya existen
 YA_HECHAS = {'rick': {'puno_debil'}, 'sophie': {'avanza', 'agachado_patada'}}
 
@@ -153,11 +170,12 @@ def hojas(pid):
     base = [] if pid == 'thor' else HUMANO
     out = [propias.pop(h[0], h) for h in base]
     out += list(propias.values())
+    out += LOTE_F_THOR if pid == 'thor' else LOTE_F_HUMANO
     return [h for h in out if h[0] not in YA_HECHAS.get(pid, set())]
 
 
 def prompt(pid, n, titulo, cuadros):
-    pies = 'bottoms on the same baseline' if n not in ('aire', 'salto', 'salto_adelante') else 'all frames the same scale'
+    pies = 'bottoms on the same baseline' if n not in ('aire', 'salto', 'salto_adelante', 'carrera_atras') else 'all frames the same scale'
     return (f'Sprite sheet of a {titulo} animation for a Street Fighter 2 arcade fighting game, same exact character as the '
             f'reference image, same 16-bit pixel art style, same palette, same pixel size. {cuadros_n(n, pid)} frames in a single '
             f'horizontal row, evenly spaced, all the same size and scale, {pies}, every frame side view facing right. {cuadros}. '
