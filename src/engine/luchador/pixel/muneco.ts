@@ -26,6 +26,20 @@ export interface PiezaPixel {
   puntos?: Record<string, [number, number]>;
 }
 
+/**
+ * Un cuadro dibujado entero (una pose clave pintada completa, no armada con piezas). Se pone con su ancla sobre el
+ * pivote del luchador y puede girar entero o voltearse. Así las poses que las piezas no alcanzan quedan fieles.
+ */
+export interface DibujoPixel {
+  filas: string[];
+  /** el punto del dibujo que va sobre el pivote del luchador (el centro entre los pies, en el piso) */
+  ancla: [number, number];
+  /** los puntos del dibujo: puños, pies, cabeza */
+  puntos: Record<string, [number, number]>;
+  /** hasta qué fila es cabeza y hasta cuál cuerpo, para las cajas que reciben (lo de abajo son piernas) */
+  zonas: [number, number];
+}
+
 export interface MunecoPixel {
   nombre: string;
   paleta: string[];
@@ -42,6 +56,8 @@ export interface MunecoPixel {
   puntos: Record<string, { pieza: string; en: [number, number] }>;
   /** de qué zona es cada pieza, para las cajas que reciben */
   zonas: Record<string, Zona>;
+  /** las poses clave dibujadas enteras */
+  dibujos?: Record<string, DibujoPixel>;
 }
 
 export interface ParchePixel {
@@ -70,6 +86,10 @@ export interface PosePixel {
   suelo?: boolean;
   /** con `suelo`: cuántos pixeles queda por encima del piso (un rebote) */
   sobre?: number;
+  /** en vez de armar las piezas, pone este dibujo entero (girado con `raiz.giro` alrededor de su centro) */
+  dibujo?: string;
+  /** voltea el dibujo de izquierda a derecha */
+  espejo?: boolean;
 }
 
 export interface CuadroPixel {
@@ -144,7 +164,42 @@ export function componerPixel(m: MunecoPixel, pose: PosePixel, l: LienzoPixel): 
     return t;
   };
   const aLienzo = (q: [number, number]): [number, number] => [Math.round(q[0] - m.centro + l.ox), Math.round(q[1] - m.piso + l.oy)];
-  orden.forEach((n, oi) => {
+  const dib = pose.dibujo ? m.dibujos?.[pose.dibujo] : undefined;
+  if (pose.dibujo && !dib) throw new Error(`no hay dibujo ${pose.dibujo}`);
+  let puntosDib: Record<string, [number, number]> | null = null;
+  if (dib) {
+    let img = imagenPieza({ x: 0, y: 0, pivote: [0, 0], padre: null, filas: dib.filas });
+    const espejo = (x: number) => (pose.espejo ? img.w - x : x);
+    if (pose.espejo) ({ img } = estirar(img, -1, 0));
+    const cx = img.w / 2, cy = img.h / 2;
+    const ancla: [number, number] = [espejo(dib.ancla[0]), dib.ancla[1]];
+    const rs = rotSprite(img, r.giro ?? 0, cx, cy);
+    // el centro del dibujo en la hoja: el ancla cae en el pivote del luchador, más el corrimiento de la raíz
+    const C: [number, number] = [m.centro + (cx - ancla[0]) + (r.x ?? 0), m.piso + (cy - ancla[1]) + (r.y ?? 0)];
+    const x0 = Math.round(C[0] - rs.px - m.centro + l.ox), y0 = Math.round(C[1] - rs.py - m.piso + l.oy);
+    // las zonas por filas del dibujo: cabeza, cuerpo y piernas
+    const zonaDe = (fy: number) => (fy < dib.zonas[0] ? 'cabeza' : fy < dib.zonas[1] ? 'torso' : 'piernaC');
+    const ids = { cabeza: orden.indexOf('cabeza'), torso: orden.indexOf('torso'), piernaC: orden.indexOf('piernaC') };
+    const a = ((r.giro ?? 0) * Math.PI) / 180, cos = Math.cos(a), sin = Math.sin(a);
+    for (let y = 0; y < rs.img.h; y++)
+      for (let x = 0; x < rs.img.w; x++) {
+        const v = rs.img.idx[y * rs.img.w + x];
+        if (v < 0) continue;
+        const X = x0 + x, Y = y0 + y;
+        if (X < 0 || Y < 0 || X >= l.w || Y >= l.h) continue;
+        idx[Y * l.w + X] = v;
+        // la fila del dibujo de donde sale este pixel (deshaciendo el giro)
+        const dx = x + 0.5 - rs.px, dy = y + 0.5 - rs.py;
+        const fy = -dx * sin + dy * cos + cy;
+        pieza[Y * l.w + X] = ids[zonaDe(fy)];
+      }
+    puntosDib = {};
+    for (const [n, p] of Object.entries(dib.puntos)) {
+      const dx = espejo(p[0]) - cx, dy = p[1] - cy;
+      puntosDib[n] = [C[0] + dx * cos - dy * sin, C[1] + dx * sin + dy * cos];
+    }
+  }
+  if (!dib) orden.forEach((n, oi) => {
     if (pose.ocultar?.includes(n)) return;
     const p = pose.cambiar?.[n] ?? m.piezas[n];
     const t = trans(n);
@@ -194,7 +249,8 @@ export function componerPixel(m: MunecoPixel, pose: PosePixel, l: LienzoPixel): 
     });
   }
   const puntos: Record<string, [number, number]> = {};
-  for (const [n, pt] of Object.entries(m.puntos)) {
+  if (puntosDib) for (const [n, p] of Object.entries(puntosDib)) { const q = aLienzo(p); puntos[n] = [q[0], q[1] + dy]; }
+  else for (const [n, pt] of Object.entries(m.puntos)) {
     const en = pose.cambiar?.[pt.pieza]?.puntos?.[n] ?? pt.en;
     const q = aLienzo(trans(pt.pieza).f(en));
     puntos[n] = [q[0], q[1] + dy];
@@ -260,7 +316,8 @@ export function pintarAnimPixel(m: MunecoPixel, a: AnimPixel, l: LienzoPixel): A
       const [px, py] = rel(c.puntos[q.pega]);
       pega.push([px - 8, py - 7, 16, 14]);
       const brazo = q.pega === 'puñoC' ? 'antebrazoC' : q.pega === 'puñoL' ? 'antebrazoL' : q.pega === 'pieC' ? 'piernaC' : 'piernaL';
-      const b = cajaPiezas(c, l.ox, l.oy, [brazo]);
+      // el brazo o la pierna que pega también recibe; en un dibujo entero es la zona alrededor del golpe
+      const b = q.pose.dibujo ? [px - 10, py - 9, 20, 18] as Caja : cajaPiezas(c, l.ox, l.oy, [brazo]);
       if (b) recibe.push({ zona: 'brazo', caja: b });
     }
     if (!empuje) {

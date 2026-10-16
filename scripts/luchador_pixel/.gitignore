@@ -1,2 +1,4 @@
 salida/
 __pycache__/
+fiel/datos/fiel/*_partes.npy
+fiel/datos/poses/*.png

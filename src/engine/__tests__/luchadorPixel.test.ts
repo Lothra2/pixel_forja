@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { componerPixel, pintarAnimPixel, type AnimPixel, type MunecoPixel } from '../luchador/pixel/muneco';
-import { RICK_PIXEL, RICK_CARAS } from '../luchador/pixel/rick';
+import { RICK_PIXEL } from '../luchador/pixel/rick';
 import { SOPHIE_PIXEL } from '../luchador/pixel/sophie';
 import { ANIMS_RICK_PIXEL, ANIMS_SOPHIE_PIXEL } from '../luchador/pixel/golpesPixel';
 import { hexToRgb } from '../color/oklab';
 
 const LETRAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-const L = { w: 220, h: 220, ox: 110, oy: 200 };
+const L = { w: 420, h: 420, ox: 210, oy: 400 };
 const opacos = (c: { idx: Int16Array }) => c.idx.reduce((s, v) => s + (v >= 0 ? 1 : 0), 0);
 const caja = (c: { w: number; idx: Int16Array }) => {
   let x0 = Infinity, y0 = Infinity, x1 = -1, y1 = -1;
@@ -25,6 +25,14 @@ describe('luchador en pixel a mano', () => {
     }
     for (const pt of Object.values(m.puntos)) expect(m.piezas[pt.pieza]).toBeTruthy();
     for (const n of Object.keys(m.piezas)) expect(m.zonas[n], n).toBeTruthy();
+    // los dibujos de las poses clave: filas parejas, tonos de la paleta y el ancla dentro del dibujo
+    for (const [n, d] of Object.entries(m.dibujos ?? {})) {
+      const ancho = d.filas[0].length;
+      expect(d.filas.every((f) => f.length === ancho), n).toBe(true);
+      for (const f of d.filas) for (const ch of f) if (ch !== '.') expect(LETRAS.indexOf(ch), n).toBeLessThan(m.paleta.length);
+      expect(d.ancla[0], n).toBeGreaterThanOrEqual(0); expect(d.ancla[0], n).toBeLessThanOrEqual(ancho);
+      expect(d.ancla[1], n).toBe(d.filas.length);
+    }
   });
 
   it('en reposo la hoja se arma entera: pisa el piso, mide lo que mide y no le falta ningún pixel', () => {
@@ -37,10 +45,12 @@ describe('luchador en pixel a mano', () => {
       for (const p of Object.values(m.piezas)) p.filas.forEach((f, y) => { for (let x = 0; x < f.length; x++) if (f[x] !== '.') silueta.add(`${p.x + x},${p.y + y}`); });
       expect(opacos(c)).toBe(silueta.size);
     }
-    // Rick es como los de SF2 y Sophie mide dos tercios de él
-    expect(RICK_PIXEL.h).toBeGreaterThanOrEqual(100);
-    expect(SOPHIE_PIXEL.h / RICK_PIXEL.h).toBeGreaterThan(0.66);
-    expect(SOPHIE_PIXEL.h / RICK_PIXEL.h).toBeLessThan(0.8);
+    // las hojas fieles a la referencia: Rick casi 200 px y Sophie más baja, con la cabeza grande de anime
+    expect(RICK_PIXEL.h).toBeGreaterThanOrEqual(190);
+    expect(SOPHIE_PIXEL.h).toBeLessThan(RICK_PIXEL.h * 0.9);
+    // cada luchador trae sus poses clave dibujadas
+    expect(Object.keys(RICK_PIXEL.dibujos ?? {}).length).toBeGreaterThanOrEqual(11);
+    expect(Object.keys(SOPHIE_PIXEL.dibujos ?? {}).length).toBeGreaterThanOrEqual(11);
   });
 
   it('girar las piezas no inventa colores: todos los cuadros usan solo la paleta del luchador', () => {
@@ -90,11 +100,23 @@ describe('luchador en pixel a mano', () => {
     }
   });
 
-  it('Rick cae y queda tendido en el piso, con la cara de dolor', () => {
+  it('Rick cae volando y queda tendido en el piso', () => {
     const cae = ANIMS_RICK_PIXEL.cae();
     const ult = componerPixel(RICK_PIXEL, cae.cuadros[cae.cuadros.length - 1].pose, L), b = caja(ult);
     expect(b.w).toBeGreaterThan(b.h * 2);
     expect(b.y1).toBe(L.oy - 1);
-    expect(cae.cuadros.every((q) => q.pose.cambiar?.cabeza === RICK_CARAS.dolor)).toBe(true);
+    expect(cae.cuadros.map((q) => q.pose.dibujo)).toEqual(['vuela', 'vuela', 'vuela', 'tendido', 'tendido', 'tendido']);
+    // mientras vuela no toca el piso
+    const aire = caja(componerPixel(RICK_PIXEL, cae.cuadros[1].pose, L));
+    expect(aire.y1).toBeLessThan(L.oy - 20);
+  });
+
+  it('un dibujo girado o volteado se arma sin colores nuevos y sus puntos lo siguen', () => {
+    const recto = componerPixel(SOPHIE_PIXEL, { dibujo: 'patada' }, L);
+    const volteado = componerPixel(SOPHIE_PIXEL, { dibujo: 'patada', espejo: true }, L);
+    // volteado, el pie que pega queda del otro lado del ancla
+    expect(recto.puntos.pieL[0]).toBeGreaterThan(L.ox);
+    expect(volteado.puntos.pieL[0]).toBeLessThan(L.ox);
+    expect(opacos(volteado)).toBe(opacos(recto));
   });
 });
