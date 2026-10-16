@@ -90,6 +90,13 @@ export interface PosePixel {
   dibujo?: string;
   /** voltea el dibujo de izquierda a derecha */
   espejo?: boolean;
+  /**
+   * respira sin costuras: quita `k` filas que terminan en la fila `fila` de la hoja y baja lo de arriba. Así el pecho
+   * baja sobre la cintura (o el cuerpo sobre las rodillas) sin separar piezas ni abrir huecos.
+   */
+  respira?: { fila: number; k: number };
+  /** estelas detrás del cuadro: otra pose (o la misma corrida) pintada con trama, del color de la paleta */
+  estelas?: { pose: PosePixel; trama?: 2 | 4 }[];
 }
 
 export interface CuadroPixel {
@@ -248,12 +255,37 @@ export function componerPixel(m: MunecoPixel, pose: PosePixel, l: LienzoPixel): 
       }
     });
   }
+  // respira: las filas de arriba bajan `k` sobre la fila de corte, que se come las `k` filas de encima
+  let corte = -1, k = 0;
+  if (pose.respira && Math.round(pose.respira.k) > 0) {
+    k = Math.round(pose.respira.k);
+    corte = Math.min(l.h - 1, Math.round(pose.respira.fila - m.piso + l.oy + dy));
+    for (let y = corte; y >= 0; y--) {
+      const s = y - k;
+      for (let x = 0; x < l.w; x++) {
+        idx[y * l.w + x] = s >= 0 ? idx[s * l.w + x] : -1;
+        pieza[y * l.w + x] = s >= 0 ? pieza[s * l.w + x] : -1;
+      }
+    }
+  }
   const puntos: Record<string, [number, number]> = {};
-  if (puntosDib) for (const [n, p] of Object.entries(puntosDib)) { const q = aLienzo(p); puntos[n] = [q[0], q[1] + dy]; }
+  const baja = (q: [number, number]): [number, number] => [q[0], q[1] + dy + (k && q[1] + dy <= corte ? k : 0)];
+  if (puntosDib) for (const [n, p] of Object.entries(puntosDib)) puntos[n] = baja(aLienzo(p));
   else for (const [n, pt] of Object.entries(m.puntos)) {
     const en = pose.cambiar?.[pt.pieza]?.puntos?.[n] ?? pt.en;
-    const q = aLienzo(trans(pt.pieza).f(en));
-    puntos[n] = [q[0], q[1] + dy];
+    puntos[n] = baja(aLienzo(trans(pt.pieza).f(en)));
+  }
+  // las estelas van detrás, con trama: no reciben golpes ni cambian los puntos
+  for (const e of pose.estelas ?? []) {
+    const c = componerPixel(m, { ...e.pose, estelas: undefined }, l);
+    const t = e.trama ?? 2;
+    for (let y = 0; y < l.h; y++)
+      for (let x = 0; x < l.w; x++) {
+        const i = y * l.w + x;
+        if (idx[i] >= 0 || c.idx[i] < 0) continue;
+        if (t === 2 ? (x + y) % 2 : x % 2 || y % 2) continue;
+        idx[i] = c.idx[i];
+      }
   }
   return { w: l.w, h: l.h, idx, pieza, orden, puntos };
 }

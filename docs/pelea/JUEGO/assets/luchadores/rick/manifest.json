@@ -1,0 +1,3462 @@
+{
+ "id": "rick",
+ "nombre": "Rick",
+ "alto": 196,
+ "retrato": "retrato.png",
+ "anims": {
+  "guardia": {
+   "bucle": true,
+   "hoja": "guardia.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 8,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -196,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -173,
+        92,
+        113
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -29,
+      -187,
+      44,
+      187
+     ]
+    },
+    {
+     "ticks": 8,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -195,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -172,
+        92,
+        112
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -29,
+      -187,
+      44,
+      187
+     ]
+    },
+    {
+     "ticks": 8,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -194,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -171,
+        92,
+        111
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -29,
+      -187,
+      44,
+      187
+     ]
+    },
+    {
+     "ticks": 8,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -195,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -172,
+        92,
+        112
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -29,
+      -187,
+      44,
+      187
+     ]
+    }
+   ]
+  },
+  "avanza": {
+   "bucle": true,
+   "hoja": "avanza.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 6,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -195,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -172,
+        92,
+        112
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -29,
+      -186,
+      44,
+      186
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -204,
+        85,
+        48
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -48,
+        -156,
+        87,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -87,
+        89,
+        87
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -29,
+      -186,
+      44,
+      186
+     ]
+    },
+    {
+     "ticks": 7,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -62,
+        -197,
+        97,
+        47
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -57,
+        -150,
+        94,
+        66
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -93,
+        -84,
+        146,
+        84
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -29,
+      -186,
+      44,
+      186
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -204,
+        85,
+        48
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -48,
+        -156,
+        87,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -87,
+        89,
+        87
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -29,
+      -186,
+      44,
+      186
+     ]
+    }
+   ]
+  },
+  "retrocede": {
+   "bucle": true,
+   "hoja": "retrocede.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 7,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -204,
+        85,
+        48
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -48,
+        -156,
+        87,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -87,
+        89,
+        87
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -170,
+      70,
+      170
+     ]
+    },
+    {
+     "ticks": 7,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -62,
+        -197,
+        97,
+        47
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -57,
+        -150,
+        94,
+        66
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -93,
+        -84,
+        146,
+        84
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -170,
+      70,
+      170
+     ]
+    },
+    {
+     "ticks": 7,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -204,
+        85,
+        48
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -48,
+        -156,
+        87,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -87,
+        89,
+        87
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -170,
+      70,
+      170
+     ]
+    },
+    {
+     "ticks": 7,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -195,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -172,
+        92,
+        112
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -170,
+      70,
+      170
+     ]
+    }
+   ]
+  },
+  "agachado": {
+   "bucle": true,
+   "hoja": "agachado.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 10,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -23,
+        -135,
+        84,
+        40
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -28,
+        -95,
+        97,
+        58
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -55,
+        -37,
+        137,
+        37
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -109,
+      78,
+      109
+     ]
+    },
+    {
+     "ticks": 10,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -23,
+        -134,
+        84,
+        40
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -28,
+        -94,
+        97,
+        58
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -55,
+        -36,
+        137,
+        37
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -109,
+      78,
+      109
+     ]
+    }
+   ]
+  },
+  "salto": {
+   "bucle": false,
+   "hoja": "salto.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 4,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -23,
+        -135,
+        84,
+        40
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -28,
+        -95,
+        97,
+        58
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -55,
+        -37,
+        137,
+        37
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -109,
+      78,
+      109
+     ]
+    },
+    {
+     "ticks": 10,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -62,
+        -197,
+        97,
+        47
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -57,
+        -150,
+        94,
+        66
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -93,
+        -84,
+        146,
+        84
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -109,
+      78,
+      109
+     ]
+    },
+    {
+     "ticks": 14,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -204,
+        85,
+        48
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -48,
+        -156,
+        87,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -87,
+        89,
+        87
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -109,
+      78,
+      109
+     ]
+    },
+    {
+     "ticks": 10,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -62,
+        -197,
+        97,
+        47
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -57,
+        -150,
+        94,
+        66
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -93,
+        -84,
+        146,
+        84
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -109,
+      78,
+      109
+     ]
+    },
+    {
+     "ticks": 4,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -23,
+        -135,
+        84,
+        40
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -28,
+        -95,
+        97,
+        58
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -55,
+        -37,
+        137,
+        37
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -109,
+      78,
+      109
+     ]
+    }
+   ]
+  },
+  "puño_fuerte": {
+   "bucle": false,
+   "hoja": "puño_fuerte.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 3,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -53,
+        -184,
+        91,
+        43
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -45,
+        -141,
+        97,
+        63
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -67,
+        -78,
+        138,
+        78
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -35,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 2,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -50,
+        -184,
+        91,
+        43
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -42,
+        -141,
+        97,
+        63
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -64,
+        -78,
+        138,
+        78
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -35,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 2,
+     "fase": "activo",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -25,
+        -180,
+        136,
+        42
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -26,
+        -138,
+        137,
+        61
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -77,
+        150,
+        77
+       ]
+      },
+      {
+       "zona": "brazo",
+       "caja": [
+        97,
+        -148,
+        20,
+        18
+       ]
+      }
+     ],
+     "pega": [
+      [
+       85,
+       -153,
+       34,
+       28
+      ]
+     ],
+     "empuje": [
+      -35,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 2,
+     "fase": "activo",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -24,
+        -180,
+        136,
+        42
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -25,
+        -138,
+        137,
+        61
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -59,
+        -77,
+        150,
+        77
+       ]
+      },
+      {
+       "zona": "brazo",
+       "caja": [
+        98,
+        -148,
+        20,
+        18
+       ]
+      }
+     ],
+     "pega": [
+      [
+       86,
+       -153,
+       34,
+       28
+      ]
+     ],
+     "empuje": [
+      -35,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -26,
+        -180,
+        136,
+        42
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -27,
+        -138,
+        137,
+        61
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -61,
+        -77,
+        150,
+        77
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -35,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 4,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -34,
+        -194,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -34,
+        -171,
+        92,
+        111
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -35,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 4,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -195,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -172,
+        92,
+        112
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -35,
+      -155,
+      78,
+      155
+     ]
+    }
+   ]
+  },
+  "patada_aerea": {
+   "bucle": false,
+   "hoja": "patada_aerea.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 4,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -42,
+        -181,
+        88,
+        47
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -35,
+        -148,
+        90,
+        78
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -82,
+        -84,
+        137,
+        92
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -26,
+      -162,
+      72,
+      162
+     ]
+    },
+    {
+     "ticks": 18,
+     "fase": "activo",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -14,
+        -177,
+        129,
+        61
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -28,
+        -148,
+        142,
+        80
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -84,
+        -88,
+        147,
+        97
+       ]
+      },
+      {
+       "zona": "brazo",
+       "caja": [
+        101,
+        -127,
+        20,
+        18
+       ]
+      }
+     ],
+     "pega": [
+      [
+       89,
+       -132,
+       34,
+       28
+      ]
+     ],
+     "empuje": [
+      -26,
+      -162,
+      72,
+      162
+     ]
+    },
+    {
+     "ticks": 5,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -204,
+        85,
+        48
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -48,
+        -156,
+        87,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -87,
+        89,
+        87
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -26,
+      -162,
+      72,
+      162
+     ]
+    },
+    {
+     "ticks": 5,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -204,
+        85,
+        48
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -48,
+        -156,
+        87,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -87,
+        89,
+        87
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -26,
+      -162,
+      72,
+      162
+     ]
+    }
+   ]
+  },
+  "recibe_alto": {
+   "bucle": false,
+   "hoja": "recibe_alto.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 3,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -184,
+        77,
+        43
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -61,
+        -141,
+        128,
+        63
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -50,
+        -78,
+        108,
+        78
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    },
+    {
+     "ticks": 12,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -58,
+        -184,
+        77,
+        43
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -67,
+        -141,
+        128,
+        63
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -56,
+        -78,
+        108,
+        78
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    },
+    {
+     "ticks": 8,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -57,
+        -184,
+        77,
+        43
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -66,
+        -141,
+        128,
+        63
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -55,
+        -78,
+        108,
+        78
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -39,
+        -194,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -39,
+        -171,
+        92,
+        111
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -63,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -195,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -172,
+        92,
+        112
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    }
+   ]
+  },
+  "recibe_bajo": {
+   "bucle": false,
+   "hoja": "recibe_bajo.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 3,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -184,
+        77,
+        43
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -61,
+        -141,
+        128,
+        63
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -50,
+        -78,
+        108,
+        78
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    },
+    {
+     "ticks": 12,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -58,
+        -184,
+        77,
+        43
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -67,
+        -141,
+        128,
+        63
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -56,
+        -78,
+        108,
+        78
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    },
+    {
+     "ticks": 8,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -57,
+        -184,
+        77,
+        43
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -66,
+        -141,
+        128,
+        63
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -55,
+        -78,
+        108,
+        78
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -39,
+        -194,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -39,
+        -171,
+        92,
+        111
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -63,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -195,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -172,
+        92,
+        112
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -48,
+      -155,
+      102,
+      155
+     ]
+    }
+   ]
+  },
+  "onda": {
+   "bucle": false,
+   "hoja": "onda.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 4,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -62,
+        -163,
+        80,
+        38
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -65,
+        -125,
+        109,
+        55
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -96,
+        -70,
+        169,
+        70
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -65,
+        -163,
+        80,
+        38
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -68,
+        -125,
+        109,
+        55
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -99,
+        -70,
+        169,
+        70
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 3,
+     "fase": "activo",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -10,
+        -150,
+        105,
+        35
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -15,
+        -115,
+        109,
+        51
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -64,
+        -64,
+        146,
+        64
+       ]
+      },
+      {
+       "zona": "brazo",
+       "caja": [
+        81,
+        -123,
+        20,
+        18
+       ]
+      }
+     ],
+     "pega": [
+      [
+       69,
+       -128,
+       34,
+       28
+      ]
+     ],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 14,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -10,
+        -150,
+        105,
+        35
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -15,
+        -115,
+        109,
+        51
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -64,
+        -64,
+        146,
+        64
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 4,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -33,
+        -194,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -33,
+        -171,
+        92,
+        111
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -57,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 4,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -196,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -173,
+        92,
+        113
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    }
+   ]
+  },
+  "embestida": {
+   "bucle": false,
+   "hoja": "embestida.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 4,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -57,
+        -184,
+        91,
+        43
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -49,
+        -141,
+        97,
+        63
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -71,
+        -78,
+        138,
+        78
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 4,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -62,
+        -197,
+        97,
+        47
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -57,
+        -150,
+        94,
+        66
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -93,
+        -84,
+        146,
+        84
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "activo",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -25,
+        -180,
+        136,
+        42
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -26,
+        -138,
+        137,
+        61
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -77,
+        150,
+        77
+       ]
+      },
+      {
+       "zona": "brazo",
+       "caja": [
+        97,
+        -148,
+        20,
+        18
+       ]
+      }
+     ],
+     "pega": [
+      [
+       85,
+       -153,
+       34,
+       28
+      ]
+     ],
+     "empuje": [
+      -39,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "activo",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -23,
+        -180,
+        136,
+        42
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -24,
+        -138,
+        137,
+        61
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -77,
+        150,
+        77
+       ]
+      },
+      {
+       "zona": "brazo",
+       "caja": [
+        99,
+        -148,
+        20,
+        18
+       ]
+      }
+     ],
+     "pega": [
+      [
+       87,
+       -153,
+       34,
+       28
+      ]
+     ],
+     "empuje": [
+      -39,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "activo",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -21,
+        -180,
+        136,
+        42
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -22,
+        -138,
+        137,
+        61
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -56,
+        -77,
+        150,
+        77
+       ]
+      },
+      {
+       "zona": "brazo",
+       "caja": [
+        101,
+        -148,
+        20,
+        18
+       ]
+      }
+     ],
+     "pega": [
+      [
+       89,
+       -153,
+       34,
+       28
+      ]
+     ],
+     "empuje": [
+      -39,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 9,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -23,
+        -180,
+        136,
+        42
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -24,
+        -138,
+        137,
+        61
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -77,
+        150,
+        77
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -155,
+      78,
+      155
+     ]
+    },
+    {
+     "ticks": 9,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -33,
+        -194,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -33,
+        -171,
+        92,
+        111
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -57,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -155,
+      78,
+      155
+     ]
+    }
+   ]
+  },
+  "super": {
+   "bucle": false,
+   "hoja": "super.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 7,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -62,
+        -163,
+        80,
+        38
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -65,
+        -125,
+        109,
+        55
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -96,
+        -70,
+        169,
+        70
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 7,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -63,
+        -163,
+        80,
+        38
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -66,
+        -125,
+        109,
+        55
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -97,
+        -70,
+        169,
+        70
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 8,
+     "fase": "inicio",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -61,
+        -162,
+        80,
+        38
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -64,
+        -124,
+        109,
+        55
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -95,
+        -69,
+        169,
+        70
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 4,
+     "fase": "activo",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -8,
+        -150,
+        105,
+        35
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -13,
+        -115,
+        109,
+        51
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -62,
+        -64,
+        146,
+        64
+       ]
+      },
+      {
+       "zona": "brazo",
+       "caja": [
+        83,
+        -123,
+        20,
+        18
+       ]
+      }
+     ],
+     "pega": [
+      [
+       71,
+       -128,
+       34,
+       28
+      ]
+     ],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 15,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -8,
+        -150,
+        105,
+        35
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -13,
+        -115,
+        109,
+        51
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -62,
+        -64,
+        146,
+        64
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    },
+    {
+     "ticks": 15,
+     "fase": "recuperacion",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -32,
+        -194,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -32,
+        -171,
+        92,
+        111
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -56,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -54,
+      -139,
+      87,
+      139
+     ]
+    }
+   ]
+  },
+  "bloqueo": {
+   "bucle": false,
+   "hoja": "bloqueo.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 4,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -23,
+        -171,
+        84,
+        40
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -28,
+        -131,
+        97,
+        58
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -55,
+        -73,
+        137,
+        73
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -145,
+      78,
+      145
+     ]
+    },
+    {
+     "ticks": 8,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -27,
+        -171,
+        84,
+        40
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -32,
+        -131,
+        97,
+        58
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -59,
+        -73,
+        137,
+        73
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -145,
+      78,
+      145
+     ]
+    }
+   ]
+  },
+  "bloqueo_bajo": {
+   "bucle": false,
+   "hoja": "bloqueo_bajo.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 4,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -23,
+        -135,
+        84,
+        40
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -28,
+        -95,
+        97,
+        58
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -55,
+        -37,
+        137,
+        37
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -109,
+      78,
+      109
+     ]
+    },
+    {
+     "ticks": 8,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -26,
+        -135,
+        84,
+        40
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -31,
+        -95,
+        97,
+        58
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -58,
+        -37,
+        137,
+        37
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -18,
+      -109,
+      78,
+      109
+     ]
+    }
+   ]
+  },
+  "victoria": {
+   "bucle": true,
+   "hoja": "victoria.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 24,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -41,
+        -206,
+        87,
+        49
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -47,
+        -157,
+        83,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -57,
+        -88,
+        116,
+        88
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -171,
+      66,
+      171
+     ]
+    },
+    {
+     "ticks": 12,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -41,
+        -208,
+        87,
+        49
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -47,
+        -159,
+        83,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -57,
+        -90,
+        116,
+        88
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -171,
+      66,
+      171
+     ]
+    },
+    {
+     "ticks": 12,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -41,
+        -209,
+        87,
+        49
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -47,
+        -160,
+        83,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -57,
+        -91,
+        116,
+        88
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -171,
+      66,
+      171
+     ]
+    },
+    {
+     "ticks": 12,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -41,
+        -207,
+        87,
+        49
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -47,
+        -158,
+        83,
+        69
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -57,
+        -89,
+        116,
+        88
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -39,
+      -171,
+      66,
+      171
+     ]
+    }
+   ]
+  },
+  "cae": {
+   "bucle": false,
+   "hoja": "cae.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 6,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -75,
+        -164,
+        157,
+        50
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -98,
+        -153,
+        182,
+        67
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -84,
+        -115,
+        150,
+        80
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -80,
+      -167,
+      146,
+      167
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -99,
+        -182,
+        163,
+        26
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -117,
+        -156,
+        184,
+        38
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -96,
+        -118,
+        160,
+        48
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -80,
+      -167,
+      146,
+      167
+     ]
+    },
+    {
+     "ticks": 6,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -117,
+        -154,
+        160,
+        44
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -129,
+        -144,
+        177,
+        70
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -104,
+        -92,
+        162,
+        47
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -80,
+      -167,
+      146,
+      167
+     ]
+    },
+    {
+     "ticks": 4,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -135,
+        -88,
+        153,
+        20
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -140,
+        -68,
+        188,
+        30
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -156,
+        -38,
+        222,
+        38
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -80,
+      -167,
+      146,
+      167
+     ]
+    },
+    {
+     "ticks": 4,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -137,
+        -98,
+        153,
+        20
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -142,
+        -78,
+        188,
+        30
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -158,
+        -48,
+        222,
+        38
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -80,
+      -167,
+      146,
+      167
+     ]
+    },
+    {
+     "ticks": 30,
+     "fase": "golpeado",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -139,
+        -88,
+        153,
+        20
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -144,
+        -68,
+        188,
+        30
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -160,
+        -38,
+        222,
+        38
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -80,
+      -167,
+      146,
+      167
+     ]
+    }
+   ]
+  },
+  "levanta": {
+   "bucle": false,
+   "hoja": "levanta.png",
+   "w": 400,
+   "h": 340,
+   "ox": 200,
+   "oy": 325,
+   "cuadros": [
+    {
+     "ticks": 8,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -91,
+        -88,
+        153,
+        20
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -96,
+        -68,
+        188,
+        30
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -112,
+        -38,
+        222,
+        38
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -77,
+      -82,
+      150,
+      82
+     ]
+    },
+    {
+     "ticks": 12,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -23,
+        -135,
+        84,
+        40
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -28,
+        -95,
+        97,
+        58
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -55,
+        -37,
+        137,
+        37
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -77,
+      -82,
+      150,
+      82
+     ]
+    },
+    {
+     "ticks": 10,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -36,
+        -194,
+        54,
+        41
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -36,
+        -171,
+        92,
+        111
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -60,
+        -112,
+        118,
+        112
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -77,
+      -82,
+      150,
+      82
+     ]
+    }
+   ]
+  },
+  "onda_bola": {
+   "bucle": true,
+   "hoja": "onda_bola.png",
+   "w": 96,
+   "h": 64,
+   "ox": 64,
+   "oy": 32,
+   "cuadros": [
+    {
+     "ticks": 3,
+     "fase": "neutral",
+     "recibe": [],
+     "pega": [],
+     "empuje": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "ticks": 3,
+     "fase": "neutral",
+     "recibe": [],
+     "pega": [],
+     "empuje": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "ticks": 3,
+     "fase": "neutral",
+     "recibe": [],
+     "pega": [],
+     "empuje": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "ticks": 3,
+     "fase": "neutral",
+     "recibe": [],
+     "pega": [],
+     "empuje": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  "super_bola": {
+   "bucle": true,
+   "hoja": "super_bola.png",
+   "w": 144,
+   "h": 96,
+   "ox": 96,
+   "oy": 48,
+   "cuadros": [
+    {
+     "ticks": 3,
+     "fase": "neutral",
+     "recibe": [],
+     "pega": [],
+     "empuje": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "ticks": 3,
+     "fase": "neutral",
+     "recibe": [],
+     "pega": [],
+     "empuje": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "ticks": 3,
+     "fase": "neutral",
+     "recibe": [],
+     "pega": [],
+     "empuje": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "ticks": 3,
+     "fase": "neutral",
+     "recibe": [],
+     "pega": [],
+     "empuje": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  }
+ }
+}

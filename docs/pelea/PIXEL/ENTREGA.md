@@ -1,5 +1,5 @@
 # Lote piloto de pelea: Rick y Sophie fieles a su referencia
-Estado: entregado, pendiente de Rick (sexta versión: fiel a la imagen aprobada y en el escenario nuevo por capas)
+Estado: entregado, pendiente de Rick (séptima versión: cabezas parejas, más fluidez y el arte exportado al juego)
 PR: https://github.com/Lothra2/pixel_forja/pull/56
 Fecha: 2026-10-16
 
@@ -99,6 +99,67 @@ Lo que suma el motor (`luchador/pixel/parallax.ts`):
 - **Los pétalos caen** en dos profundidades: detrás de los luchadores y delante.
 - **El manifest** (`public/escenarios/japon/manifest.json`) trae todo eso en números, listo para el juego.
 
+### 6. Las cabezas ya no se deforman
+
+Rick vio que al animar la cabeza se deformaba.
+
+**La causa:**
+- Las poses que pedimos a Higgsfield traen la cara entre un 15 y un 22 % más chica que la guardia.
+- Cada golpe pasaba de la guardia a la pose y la cabeza se achicaba y volvía a crecer.
+
+**La solución** (`scripts/luchador_pixel/fiel/cabezas.py`):
+1. Busco la cara de la guardia dentro de cada pose, a varias escalas.
+2. Borro la cabeza de la pose.
+3. Pego la de la guardia a su tamaño, asentada en el mismo mentón y sin la raya del corte sobre el cuello.
+
+| Qué cara lleva | Poses |
+|---|---|
+| **La de grito** | Puño cargando, puño, onda cargando y onda |
+| **La normal** | Paso, paso largo y victoria. En Sophie: agachada, sube y sus cuatro patadas |
+| **La propia** | El bloqueo de Rick, porque los brazos le tapan la cara. Las que giran o van de cabeza, y las caras de dolor |
+
+### 7. Más fluidez, sin créditos
+
+| Qué | Cómo |
+|---|---|
+| **Respirar sin costuras** | La guardia ya no mueve piezas, que abrían rayas en el pecho. Recoge filas sobre el cinturón (Rick) o sobre las rodillas (Sophie) y el cuerpo baja entero |
+| **Estelas** | Detrás de cada golpe va la pose anterior con trama, en la misma paleta. La embestida deja dos estelas de Rick, y las mil patadas y la Tormenta dejan la pierna borrosa |
+| **Sin giros raros** | La voltereta ya no usa el giro de 350 grados, que deformaba la cara |
+| **La vuelta a la guardia** | Los golpes cierran con un cuadro de respiración en vez de saltar directo |
+
+### 8. Las animaciones que pidió el juego
+
+**Rick:**
+- retrocede;
+- agachado: el bloqueo con las piernas recogidas;
+- salto;
+- bloqueo bajo y recibe bajo;
+- levanta;
+- golpe en el aire;
+- **Embestida:** sale disparado con dos estelas;
+- **Súper Onda:** carga larga y suelta con estela fuerte.
+
+**Sophie:**
+- avanza y retrocede rebotando;
+- agachada;
+- patada: rodilla y patada alta;
+- bloqueo y bloqueo bajo;
+- recibe bajo;
+- cae: sale hecha bolita y rueda;
+- levanta;
+- **Tormenta:** tres rondas de mil patadas con estela doble y remate con la voladora.
+
+Todo sale con las poses que ya teníamos. Faltan la patada de Rick y el puño de Sophie: ahí el juego usa su respaldo, hasta que haya poses nuevas.
+
+### 9. El arte exportado al juego
+
+`docs/pelea/JUEGO/assets/` tiene la misma forma que `public/assets/` del juego. Lo arma `luchador/pixel/juego.ts`:
+- **Hojas:** una por animación, con los cuadros en fila.
+- **Manifest por luchador:** con ticks, fases y cajas desde el pivote.
+- **Retratos.**
+- **La onda y la súper onda como proyectiles.**
+- **El escenario.**
+
 ## Cómo se usa (estudio y kit)
 
 Todavía no está en el estudio ni en el kit. Desde el motor:
@@ -148,7 +209,12 @@ const c = componerPixel(SOPHIE_PIXEL, { dibujo: 'patada', espejo: true }, { w: 3
   - los faroles cambian entre ticks sin colores fuera de la paleta, y el muro sube pegado al piso;
   - los pétalos caen, se mecen y solo dependen del tick;
   - la cámara sigue el medio de los dos, respeta su rango y sube con el salto.
-- **La suite sin `custom.test.ts`:** 59 archivos, 580 de 580.
+- **`juegoPixel.test.ts`, 4 casos:**
+  - respirar no abre huecos y los pies no se mueven;
+  - las estelas van detrás, con trama y sin recibir golpes;
+  - están todas las animaciones nuevas, y el salto dura los 42 ticks que pide el juego;
+  - la exportación sigue el contrato: hojas en fila, cajas desde el pivote, retrato, proyectiles y saltos sin altura.
+- **La suite sin `custom.test.ts`:** 60 archivos, 584 de 584.
 - **`custom.test.ts`:** 15 de 15, con el kit en 231 s. El kit no cambia.
 - **`tsc` y `npm run build`:** limpios.
 

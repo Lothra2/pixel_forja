@@ -1,6 +1,7 @@
 import numpy as np, json, glob, os, sys
 sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import lib
+from cabezas import trasplantar
 import os
 S=os.path.join(os.path.dirname(os.path.abspath(__file__)),'datos')
 AIRE={'r_vuela','r_tendido','s_bolita','s_sube','s_patada','s_remolino','s_remolino2','s_victoria'}
@@ -38,7 +39,8 @@ def escribir(n,pref,const,dest):
     for f in sorted(glob.glob(f'{S}/poses/{pref}_*.npy')):
         nom=os.path.basename(f)[:-4]
         if nom.endswith('guardia'): continue
-        a=np.load(f); ancla,pts,zonas=medir(nom,a)
+        # la cabeza de la guardia en vez de la de la pose (ver cabezas.py)
+        a=trasplantar(nom,np.load(f)); ancla,pts,zonas=medir(nom,a)
         clave=nom[2:]
         L.append(f"  {clave}: {{")
         L.append(f"    ancla: [{ancla[0]:.1f}, {ancla[1]:.0f}], zonas: [{zonas[0]}, {zonas[1]}],")
