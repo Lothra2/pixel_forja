@@ -128,7 +128,7 @@ _CANON = {}
 ALTURA = {'guardia': 1.0, 'avanza': 1.0, 'retrocede': 1.0, 'agacha': 0.8, 'salto': 1.0, 'salto_adelante': 0.75,
           'puno_debil': 1.0, 'puno_fuerte': 0.97, 'patada_debil': 1.0, 'patada_fuerte': 1.0, 'agachado_puno': 0.75,
           'agachado_patada': 0.65, 'barrida': 0.62, 'aire': 0.8, 'recibe': 0.86, 'cae': 0.45, 'levanta': 0.75,
-          'mareado': 1.0, 'poder1': 1.0, 'poder2': 0.95, 'poder3': 1.0, 'victoria': 1.0, 'intro': 1.0}
+          'mareado': 0.9, 'poder1': 1.0, 'poder2': 0.95, 'poder3': 1.0, 'victoria': 1.0, 'intro': 1.0}
 ALTURA_THOR = {'agacha': 0.85, 'salto': 1.05, 'salto_adelante': 0.8, 'puno_fuerte': 1.25, 'patada_debil': 1.0,
                'patada_fuerte': 1.2, 'agachado_puno': 0.85, 'agachado_patada': 0.75, 'barrida': 0.6, 'aire': 0.95,
                'recibe': 1.0, 'cae': 0.75, 'levanta': 0.8, 'poder3': 1.15, 'victoria': 1.1}
@@ -187,7 +187,7 @@ def procesar(pid, hoja, n):
             escalas.append((corr, s))
     P = periodo_de(a[:, cajas[0][0]:cajas[-1][2]], Pg)
     # por altura: la mediana de los cuadros contra la guardia y lo que se espera de esta hoja
-    propia = {'thor': ALTURA_THOR, 'rick': {'poder2': 0.8, 'mareado': 0.95}}.get(pid, {})
+    propia = {'thor': ALTURA_THOR, 'rick': {'poder2': 0.7, 'mareado': 0.88}}.get(pid, {})
     esperada = propia.get(hoja, ALTURA.get(hoja, 1.0))
     esc_h = float(np.median([y1 - y0 for x0, y0, x1, y1 in cajas])) / (Hg * esperada)
     buenas = sorted([e for e in escalas if e[0] >= 0.62], reverse=True)
