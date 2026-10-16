@@ -78,6 +78,19 @@ function rickPuñoFuerte(): AnimPixel {
   };
 }
 
+function rickPatada(): AnimPixel {
+  // levanta la rodilla con el paso y estira la patada de costado, con la estela del paso
+  return {
+    nombre: 'patada', bucle: false,
+    cuadros: [
+      q(d('paso'), 4, 'inicio'), q({ respira: { fila: PANZA_RICK, k: 2 } }, 3, 'inicio'),
+      q(d('patada', { raiz: { x: 4 }, estelas: [fantasma(d('paso'))] }), 4, 'activo', 'pieL'),
+      q(d('patada', { raiz: { x: 3 } }), 9, 'recuperacion'), q({ respira: { fila: PANZA_RICK, k: 1 } }, 8, 'recuperacion'),
+    ],
+    golpe: { daño: 13, parada: 11, retroceso: 10, aturde: 16 },
+  };
+}
+
 function rickPuñoAereo(): AnimPixel {
   // en el aire: el puño estirado hacia abajo y adelante, hasta tocar el piso
   return {
@@ -162,7 +175,7 @@ function rickLevanta(): AnimPixel {
 
 export const ANIMS_RICK_PIXEL = {
   guardia: rickGuardia, avanza: rickAvanza, retrocede: rickRetrocede, agachado: rickAgachado, salto: rickSalto,
-  puño_fuerte: rickPuñoFuerte, patada_aerea: rickPuñoAereo, recibe_alto: rickRecibe, recibe_bajo: rickRecibeBajo,
+  puño_fuerte: rickPuñoFuerte, patada: rickPatada, patada_aerea: rickPuñoAereo, recibe_alto: rickRecibe, recibe_bajo: rickRecibeBajo,
   onda: rickOnda, embestida: rickEmbestida, super: rickSuper, bloqueo: rickBloqueo, bloqueo_bajo: rickBloqueoBajo,
   victoria: rickVictoria, cae: rickCae, levanta: rickLevanta,
 };
@@ -194,6 +207,19 @@ function sophieSalto(): AnimPixel {
       q(bolita(0, -150), 4, 'neutral'), q(bolita(90, -180), 4, 'neutral'), q(bolita(180, -192), 4, 'neutral'), q(bolita(270, -178), 4, 'neutral'), q(bolita(0, -140), 5, 'neutral'),
       q(d('sube', { raiz: { y: -60 } }), 6, 'neutral'), q(d('agacha'), 6, 'neutral'),
     ],
+  };
+}
+
+function sophiePuño(): AnimPixel {
+  // un puño rápido y derecho, con la estela de la guardia
+  return {
+    nombre: 'puño', bucle: false,
+    cuadros: [
+      q({ respira: { fila: RODILLA_SOPHIE, k: 2 } }, 3, 'inicio'),
+      q(d('puno', { raiz: { x: 3 }, estelas: [fantasma({ raiz: { x: -2 } })] }), 4, 'activo', 'puñoL'),
+      q(d('puno', { raiz: { x: 2 } }), 6, 'recuperacion'), q({ respira: { fila: RODILLA_SOPHIE, k: 1 } }, 6, 'recuperacion'),
+    ],
+    golpe: { daño: 7, parada: 7, retroceso: 6, aturde: 10 },
   };
 }
 
@@ -288,7 +314,7 @@ function sophieVictoria(): AnimPixel {
 
 export const ANIMS_SOPHIE_PIXEL = {
   guardia: sophieGuardia, avanza: () => sophieCamina('avanza', 2), retrocede: () => sophieCamina('retrocede', -2), agachado: sophieAgachada,
-  salto: sophieSalto, patada: sophiePatada, patada_voladora: sophiePatadaVoladora, mil_patadas: sophieMilPatadas, remolino: sophieRemolino,
+  salto: sophieSalto, puño: sophiePuño, patada: sophiePatada, patada_voladora: sophiePatadaVoladora, mil_patadas: sophieMilPatadas, remolino: sophieRemolino,
   super: sophieTormenta, recibe: sophieRecibe, recibe_bajo: () => ({ ...sophieRecibe(), nombre: 'recibe_bajo' }),
   bloqueo: () => sophieBloqueo('bloqueo', d('recibe')), bloqueo_bajo: () => sophieBloqueo('bloqueo_bajo', d('agacha')),
   cae: sophieCae, levanta: sophieLevanta, victoria: sophieVictoria,

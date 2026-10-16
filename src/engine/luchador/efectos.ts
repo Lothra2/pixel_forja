@@ -84,3 +84,44 @@ export function polvoCaida(): Raster[] {
     return null;
   }));
 }
+
+/**
+ * La estrella mágica de Alana: una estrella dorada de cinco puntas que gira, con el centro rosado y una estela de
+ * chispitas detrás. 48 x 32, 4 cuadros de 3 ticks; el centro de la estrella va en (32, 16).
+ */
+export function estrellaMagica(): Raster[] {
+  const W = 48, H = 32, cx = 32, cy = 16;
+  return [0, 1, 2, 3].map((t) => pintar(W, H, (x, y) => {
+    const dx = x + 0.5 - cx, dy = y + 0.5 - cy, d = Math.hypot(dx, dy);
+    const a = Math.atan2(dy, dx) + t * (Math.PI / 10);
+    // el borde de una estrella de cinco puntas: radio que va de 5 a 12
+    const r = 6 + 6 * Math.abs(Math.cos((a * 5) / 2)) ** 3;
+    if (d < 3) return '#ffffff';
+    if (d < 5) return '#ff8fc8';
+    if (d < r - 1.5) return d < r * 0.6 ? '#fff2a0' : '#ffd23a';
+    if (d < r) return '#d9922a';
+    // la estela: chispitas que quedan atrás y se apagan
+    if (dx < -10 && Math.abs(dy) < 6) {
+      const k = Math.floor((-dx - 10) / 4);
+      if ((x + y * 3 + t * 5) % 11 === 0 && k < 5) return k < 2 ? '#fff2a0' : '#ff8fc8';
+    }
+    return null;
+  }));
+}
+
+/**
+ * La onda del ladrido de Thor: tres arcos que se abren hacia adelante, blancos y celestes. 48 x 48, 4 cuadros de 3
+ * ticks; el centro de la onda va en (24, 24).
+ */
+export function ondaLadrido(): Raster[] {
+  const S = 48, c = S / 2;
+  return [0, 1, 2, 3].map((t) => pintar(S, S, (x, y) => {
+    const dx = x + 0.5 - c + 10, dy = y + 0.5 - c, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+    if (Math.abs(a) > 0.9 || dx < 0) return null;
+    for (let k = 0; k < 3; k++) {
+      const r = 8 + k * 8 + t * 2;
+      if (Math.abs(d - r) < 1.6 - k * 0.3) return k === 0 ? '#ffffff' : k === 1 ? '#bff0ff' : '#6ac8ff';
+    }
+    return null;
+  }));
+}

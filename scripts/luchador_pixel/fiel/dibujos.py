@@ -51,12 +51,13 @@ def escribir(n,pref,const,dest):
         L.append("  },")
     L.append("};")
     open(dest,'w').write('\n'.join(L)+'\n')
-for n,pref,const in (('rick','r','RICK_DIBUJOS'),('sophie','s','SOPHIE_DIBUJOS')):
-    escribir(n,pref,const,os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..','src')+f'/engine/luchador/pixel/{n}Dibujos.ts')
-    p=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..','src')+f'/engine/luchador/pixel/{n}.ts'
-    s=open(p).read()
-    if 'Dibujos' not in s:
-        s=s.replace("import type { MunecoPixel","import { "+const+" } from './"+n+"Dibujos';\nimport type { MunecoPixel",1)
-        s=s.replace(f"  nombre: '{n.capitalize()}',",f"  nombre: '{n.capitalize()}',\n  dibujos: {const},",1)
-        open(p,'w').write(s)
-    print(n, os.path.getsize(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..','src')+f'/engine/luchador/pixel/{n}Dibujos.ts'))
+if __name__=='__main__':
+    for n,pref,const in (('rick','r','RICK_DIBUJOS'),('sophie','s','SOPHIE_DIBUJOS')):
+        escribir(n,pref,const,os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..','src')+f'/engine/luchador/pixel/{n}Dibujos.ts')
+        p=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..','src')+f'/engine/luchador/pixel/{n}.ts'
+        s=open(p).read()
+        if 'Dibujos' not in s:
+            s=s.replace("import type { MunecoPixel","import { "+const+" } from './"+n+"Dibujos';\nimport type { MunecoPixel",1)
+            s=s.replace(f"  nombre: '{n.capitalize()}',",f"  nombre: '{n.capitalize()}',\n  dibujos: {const},",1)
+            open(p,'w').write(s)
+        print(n, os.path.getsize(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..','src')+f'/engine/luchador/pixel/{n}Dibujos.ts'))

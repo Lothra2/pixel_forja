@@ -33,7 +33,7 @@ def extraer(path, Px, Py):
     return out, cx, cy
 if __name__=='__main__':
     import os
-S=os.path.join(os.path.dirname(os.path.abspath(__file__)),'datos')
+    S=os.path.join(os.path.dirname(os.path.abspath(__file__)),'datos')
     for n,(px,py) in {'rick':(5.8,5.46),'sophie':(5.9,5.88)}.items():
         o,cx,cy=extraer(f'{S}/ref/{n}_ref.png',px,py)
         print(n,o.shape, 'gaps x',np.unique(np.diff(cx),return_counts=True),'y',np.unique(np.diff(cy),return_counts=True))

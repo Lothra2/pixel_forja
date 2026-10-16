@@ -2,3 +2,8 @@ salida/
 __pycache__/
 fiel/datos/fiel/*_partes.npy
 fiel/datos/poses/*.png
+fiel/datos/familia/crudo/
+escenario/datos/caracas/
+escenario/datos/hochiminh/
+escenario/datos/bogota/
+escenario/datos/celestial/

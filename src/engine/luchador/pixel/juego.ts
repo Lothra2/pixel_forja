@@ -37,6 +37,10 @@ export interface ManifestLuchadorJuego {
   nombre: string;
   alto: number;
   retrato?: string;
+  /** qué animación usa cada botón (para los luchadores nuevos) y qué proyectil sale de cada especial */
+  botones?: Record<string, string>;
+  /** los nombres de los poderes, como se muestran en el juego */
+  poderes?: Record<string, string>;
   anims: Record<string, AnimJuego>;
 }
 
@@ -107,12 +111,16 @@ export interface OpcionesJuego {
   retrato?: number;
   /** agrega los proyectiles de la onda */
   proyectiles?: boolean;
+  /** proyectiles propios: sus cuadros (mirando a la derecha), el centro y cuánto se agrandan */
+  bolas?: { nombre: string; cuadros: Raster[]; ox: number; oy: number; escala: number; ticks: number }[];
+  botones?: Record<string, string>;
+  poderes?: Record<string, string>;
 }
 
 /** Exporta todas las animaciones de un luchador al contrato del juego. */
 export function exportarLuchadorJuego(m: MunecoPixel, anims: Record<string, () => AnimPixel>, o: OpcionesJuego): ExportJuego {
   const hojas: Record<string, Raster> = {};
-  const out: ManifestLuchadorJuego = { id: o.id, nombre: o.nombre, alto: m.h, retrato: 'retrato.png', anims: {} };
+  const out: ManifestLuchadorJuego = { id: o.id, nombre: o.nombre, alto: m.h, retrato: 'retrato.png', botones: o.botones, poderes: o.poderes, anims: {} };
   for (const [nombre, f] of Object.entries(anims)) {
     let a = f();
     if (EN_EL_AIRE.has(nombre)) a = sinAltura(a);
@@ -130,17 +138,16 @@ export function exportarLuchadorJuego(m: MunecoPixel, anims: Record<string, () =
     };
     if (nombre === 'guardia') hojas['retrato.png'] = retrato(r.cuadros[0], o.retrato ?? Math.round(m.h * 0.36));
   }
-  if (o.proyectiles) {
-    const bola = ondaEnergia();
-    // la bola mide 48 x 32 con el centro en (32, 16): al doble para la onda y al triple para el súper
-    for (const [nombre, k, ticks] of [['onda_bola', 2, 3], ['super_bola', 3, 3]] as const) {
-      const cs = bola.map((b) => agrandar(b, k));
-      hojas[`${nombre}.png`] = tira(cs);
-      out.anims[nombre] = {
-        bucle: true, hoja: `${nombre}.png`, w: cs[0].w, h: cs[0].h, ox: 32 * k, oy: 16 * k,
-        cuadros: cs.map(() => ({ ticks, fase: 'neutral' as const, recibe: [], pega: [], empuje: [0, 0, 0, 0] as Caja })),
-      };
-    }
+  const bolas = [...(o.bolas ?? [])];
+  // la bola de la onda mide 48 x 32 con el centro en (32, 16): al doble para la onda y al triple para el súper
+  if (o.proyectiles) bolas.push({ nombre: 'onda_bola', cuadros: ondaEnergia(), ox: 32, oy: 16, escala: 2, ticks: 3 }, { nombre: 'super_bola', cuadros: ondaEnergia(), ox: 32, oy: 16, escala: 3, ticks: 3 });
+  for (const b of bolas) {
+    const cs = b.cuadros.map((c) => agrandar(c, b.escala));
+    hojas[`${b.nombre}.png`] = tira(cs);
+    out.anims[b.nombre] = {
+      bucle: true, hoja: `${b.nombre}.png`, w: cs[0].w, h: cs[0].h, ox: b.ox * b.escala, oy: b.oy * b.escala,
+      cuadros: cs.map(() => ({ ticks: b.ticks, fase: 'neutral' as const, recibe: [], pega: [], empuje: [0, 0, 0, 0] as Caja })),
+    };
   }
   return { manifest: out, hojas };
 }
