@@ -102,7 +102,22 @@ Los efectos de golpe:
 - Round one, two, three y Final round;
 - Fight, K.O., Perfect, You win, You lose, Time over y Double K.O.
 
-### 6. El juego (la otra sesión, Street_Family_Fighter_2, PR #3)
+### 6. El juego (la otra sesión, Street_Family_Fighter_2)
+
+**Link jugable:** https://claude.ai/artifact/Je7HZu69eZz93MZmHsycsX (es el mismo de siempre, ya actualizado).
+
+El Lote D del juego ya tiene todo este arte:
+- PR: https://github.com/Lothra2/Street_Family_Fighter_2/pull/4, encima del Lote C (PR #3);
+- los cinco quedaron balanceados con vida y daño por luchador, y ganan entre el 41 y el 58 % en 240 peleas por par;
+- usa los efectos, el logo, los fondos, el video, la música y las voces.
+
+Lo verifiqué yo:
+- corrí sus 57 pruebas y pasan;
+- el build sale bien;
+- lo probé con Playwright en iPhone (844x390), Galaxy S23 (780x360) e iPad (1180x820) sin errores;
+- se ven el selector con los retratos nuevos, el VS, la pelea en cada ciudad, las chispas, el polvo y el súper.
+
+Lo que hizo el juego antes, en su Lote C (PR #3):
 
 Lo que hizo el juego en su Lote C:
 - el selector estilo SF2;
