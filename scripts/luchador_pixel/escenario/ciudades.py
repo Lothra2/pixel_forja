@@ -31,16 +31,18 @@ CIUDADES = {
                   'elementos': ['farol', 'mariposa_1', 'mariposa_2', 'estrella_fugaz', 'isla', 'grulla'],
                   'altos': [11, 9, 9, 10, 30, 16]},
     # los seis mundos del lote E del juego (sus manifests ya existen allá: aquí solo salen los PNG con esos nombres).
-    # En Río, Guiza y el Polo Norte la ciudad va delante del agua (rio_atras): se para en el muro y el agua queda detrás
+    # En Río, Guiza y el Polo Norte la ciudad va delante del agua (rio_atras): se para en el muro y el agua queda detrás.
+    # Venecia, Río y Guiza llevan sus capas de fondo más arriba (ajuste, en pixeles de la maestra) para que el muro alto
+    # no tape los palacios, los edificios de Copacabana ni las pirámides
     'china': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'],
               'elementos': ['cometa_1', 'cometa_2', 'ave_1', 'ave_2'], 'altos': [12, 12, 6, 6]},
-    'italia': {'ajuste': {}, 'capas': ['cielo', 'ciudad', 'rio', 'muro', 'piso', 'frente'],
+    'italia': {'ajuste': {'ciudad': -176, 'rio': -110}, 'capas': ['cielo', 'ciudad', 'rio', 'muro', 'piso', 'frente'],
                'elementos': ['gondola'], 'altos': [14]},
     'usa': {'ajuste': {}, 'capas': ['cielo', 'ciudad', 'rio', 'muro', 'piso', 'frente'],
             'elementos': ['carguero', 'remolcador', 'velero', 'ave_1', 'ave_2'], 'altos': [22, 16, 28, 6, 6]},
-    'brasil': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
+    'brasil': {'ajuste': {'ciudad': -400}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                'elementos': ['teleferico', 'guacamaya_1', 'guacamaya_2'], 'altos': [12, 8, 8]},
-    'egipto': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
+    'egipto': {'ajuste': {'montes': -220, 'rio': -200, 'ciudad': -220}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                'elementos': ['faluca', 'camello', 'halcon_1', 'halcon_2'], 'altos': [26, 20, 8, 8]},
     'polo_norte': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                    'elementos': ['oso_1', 'oso_2'], 'altos': [16, 16]},
