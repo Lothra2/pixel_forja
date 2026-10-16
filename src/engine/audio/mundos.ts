@@ -126,7 +126,7 @@ export function flauta(m: Mixer, n: { t: number; dur: number; f: number; units: 
   m.add({ t: n.t, dur: 0.05, f: 6000, wave: 'noise', vol: vol * 0.22, a: 0.01, s: 1, r: 0.05, lp: 0.35 });
 }
 /** Acordeón: dos cuadradas un poco desafinadas que "baten", con el fuelle que entra suave. */
-function acordeon(m: Mixer, t: number, dur: number, f: number, vol: number) {
+export function acordeon(m: Mixer, t: number, dur: number, f: number, vol: number) {
   m.add({ t, dur, f, wave: 'square', duty: 0.5, vol, a: 0.015, d: 0.05, s: 0.85, r: 0.04, lp: 0.45, vib: [5.5, 0.06, 0.12] });
   m.add({ t, dur, f: f * 1.0045, wave: 'square', duty: 0.35, vol: vol * 0.7, a: 0.015, d: 0.05, s: 0.85, r: 0.04, lp: 0.4 });
 }

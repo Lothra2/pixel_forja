@@ -8,7 +8,13 @@
   "hochiminh": "musica/hochiminh.m4a",
   "bogota": "musica/bogota.m4a",
   "japon": "musica/japon.m4a",
-  "celestial": "musica/celestial.m4a"
+  "celestial": "musica/celestial.m4a",
+  "china": "musica/china.m4a",
+  "italia": "musica/italia.m4a",
+  "usa": "musica/usa.m4a",
+  "brasil": "musica/brasil.m4a",
+  "egipto": "musica/egipto.m4a",
+  "polo_norte": "musica/polo_norte.m4a"
  },
  "sfx": {
   "golpe_debil": [
@@ -138,6 +144,36 @@
   ],
   "titulo": [
    "voz/titulo.m4a"
+  ],
+  "golpe_lata": [
+   "sfx/golpe_lata.m4a"
+  ],
+  "vidrio": [
+   "sfx/vidrio.m4a"
+  ],
+  "madera": [
+   "sfx/madera.m4a"
+  ],
+  "teletransporte": [
+   "sfx/teletransporte.m4a"
+  ],
+  "furia_oscura": [
+   "sfx/furia_oscura.m4a"
+  ],
+  "counter": [
+   "voz/counter.m4a"
+  ],
+  "reversal": [
+   "voz/reversal.m4a"
+  ],
+  "escape": [
+   "voz/escape.m4a"
+  ],
+  "bonus_carro": [
+   "voz/bonus_carro.m4a"
+  ],
+  "bonus_barriles": [
+   "voz/bonus_barriles.m4a"
   ]
  }
 }

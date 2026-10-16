@@ -12,10 +12,12 @@ Sigue el contrato `docs/CONTRATO_ARTE.md` del juego (lote C):
 
 | Carpeta | Qué hay |
 |---|---|
-| `luchadores/<id>/` | Rick, Sophie, Alana, Steph y Thor con las 31 animaciones del contrato, 3 poderes, proyectiles, retrato y retrato grande |
-| `escenarios/` | Caracas, Ho Chi Minh, Bogotá, Japón y el Reino Celestial, con capas, actores y pétalos |
+| `luchadores/<id>/` | Rick, Sophie, Alana, Steph y Thor con las animaciones del contrato (más carrera, carrera_atras, agarre y agarrado), 3 poderes, proyectiles, retrato y retrato grande |
+| `luchadores/<id_malvado>/` | Solo `retrato.png` y `retrato_grande.png` de rick_oscuro, steph_oscura, sophie_oscura, alana_oscura y thor_infernal (las hojas son las mismas con otra paleta) |
+| `escenarios/` | Caracas, Ho Chi Minh, Bogotá, Japón y el Reino Celestial, con capas, actores y pétalos. Además China, Italia, USA, Brasil, Egipto y Polo Norte solo con sus PNG (los `manifest.json` de esos seis son del juego, no se pisan) |
+| `bonus/` | Los minijuegos: `carro_0.png` a `carro_5.png` (130 x 70), `barril.png` (26 x 32) y los pedazos de 8 x 8 (`pedazo_lata`, `pedazo_vidrio`, `pedazo_rueda`, `pedazo_madera`, `pedazo_aro`) |
 | `efectos/` | Chispa de golpe, chispa de bloqueo, polvo y estrellas de mareo, con su manifest |
-| `audio/` | 9 temas de música, 28 efectos y 12 frases del anunciador, en m4a y ogg, con `indice.json` |
+| `audio/` | 15 temas de música (las 5 ciudades, los 6 mundos nuevos, título, selector, VS y victoria), los efectos y las frases del anunciador, en m4a y ogg, con `indice.json` |
 | `video/intro.mp4` | El intro de 10 segundos (960 de ancho, 3,4 MB) |
 | `logo.png` | El logo en pixel, 560 x 326 |
 | `pantallas/` | Fondos en pixel del título (la familia), del VS y del intro, a 768 x 432 |
@@ -26,6 +28,13 @@ Sigue el contrato `docs/CONTRATO_ARTE.md` del juego (lote C):
 - **Movimiento:** guardia (respira en 4 cuadros), avanza y retrocede (6 cuadros), agacharse, agachado, bloqueo, bloqueo_bajo, salto, salto_adelante, cae, levanta, recibe_alto, recibe_bajo, recibe_aire, mareado, victoria e intro.
 - **Golpes:** puño_debil, puño_fuerte, patada_debil, patada_fuerte, agachado_puño_debil, agachado_puño_fuerte, agachado_patada_debil, agachado_patada_fuerte (la barrida, tumba), aire_puño y aire_patada.
 - **Poderes:** poder1, poder2 y poder3 (el súper), nombrados en `poderes`.
+- **Lote F:** carrera (4 cuadros en bucle), carrera_atras (el saltito atrás), agarre (sostiene y lanza, con `golpe` que tumba) y agarrado (2 cuadros). Thor además trota de verdad: su avanza son 8 cuadros con las patas en pares diagonales y su retrocede 6.
+
+### Escala pareja
+
+Todos los cuadros salen a la escala de la guardia desde la fuente (`sf2_escala.py`): la tabla que el juego medía en
+`src/logica/escalas.ts` ya está aplicada aquí, al bajar la hoja grande. Con este arte esa tabla tiene que quedar vacía,
+si no se escala dos veces.
 
 ### Campos nuevos en el manifest (opcionales, el juego puede ignorarlos)
 

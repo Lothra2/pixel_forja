@@ -77,6 +77,12 @@ def comunes():
         'mareado': dict(bucle=True, pasos=[c('mareado', 0, 10), c('mareado', 1, 10), c('mareado', 2, 10), c('mareado', 1, 10)]),
         'victoria': dict(bucle=True, pasos=[c('victoria', 0, 14), c('victoria', 1, 14), c('victoria', 2, 16), c('victoria', 3, 40)]),
         'intro': dict(bucle=False, pasos=[c('intro', 0, 16), c('intro', 1, 14), c('intro', 2, 14), c('intro', 3, 12)]),
+        # lote F: carrera (doble toque adelante), saltito atrás, agarre y el que es agarrado. Si la hoja no está, el
+        # juego usa su respaldo (avanza, retrocede, puño_fuerte y recibe_alto)
+        'carrera': dict(bucle=True, pasos=[c('carrera', i, 4) for i in range(4)]),
+        'carrera_atras': dict(bucle=False, pasos=[c('carrera_atras', 0, 3), c('carrera_atras', 1, 10), c('carrera_atras', 2, 6)]),
+        'agarre': dict(golpe=(13, FUERTE, 'medio', True), pega='frente', pasos=[c('agarre', 0, 4, 'inicio'), c('agarre', 1, 8, 'activo'), c('agarre', 2, 8, 'recuperacion'), c('agarre', 3, 12, 'recuperacion')]),
+        'agarrado': dict(bucle=False, pasos=[c('agarrado', 0, 8, 'golpeado'), c('agarrado', 1, 20, 'golpeado')]),
     }
 
 
@@ -190,6 +196,10 @@ def pega(img, ax, ay, modo):
 
 def exportar(pid):
     anims = {**comunes(), **poderes(pid)}
+    if pid == 'thor' and os.path.exists(os.path.join(D, 'thor', 'trote.png')):
+        # el trote de 8 cuadros con las patas en pares diagonales (los 6 de avanza eran casi iguales y patinaba)
+        anims['avanza'] = dict(bucle=True, pasos=[c('trote', i, 4) for i in range(8)])
+        anims['retrocede'] = dict(bucle=True, pasos=[c('trote_atras', i, 5) for i in range(6)])
     tiras = {}
     for a in anims.values():
         for p in a['pasos']:
@@ -388,6 +398,30 @@ def efectos_comunes():
     print('efectos', list(man))
 
 
+MALVADOS = {'rick': 'rick_oscuro', 'steph': 'steph_oscura', 'sophie': 'sophie_oscura', 'alana': 'alana_oscura',
+            'thor': 'thor_infernal'}
+
+
+def malvados():
+    """Los retratos de las versiones malvadas (el juego les cambia la paleta a las hojas): el busto de Higgsfield en
+    retrato_grande.png y su cabeza en retrato.png, al mismo tamaño que el retrato del luchador normal."""
+    for pid, mid in MALVADOS.items():
+        rg = retrato_grande(mid)
+        if rg is None:
+            continue
+        dir_ = os.path.join(SALE, 'luchadores', mid)
+        os.makedirs(dir_, exist_ok=True)
+        Image.fromarray(rg).save(os.path.join(dir_, 'retrato_grande.png'))
+        # la cabeza: el cuadrado de arriba del busto donde está la cara, al lado del retrato normal
+        normal = os.path.join(SALE, 'luchadores', pid, 'retrato.png')
+        lado = Image.open(normal).size[0] if os.path.exists(normal) else 80
+        ys, xs = np.where(rg[..., 3] > 0)
+        t = int(ys.min())
+        cara = Image.fromarray(rg).crop((24, t, 24 + 112, t + 112)).resize((lado, lado), Image.NEAREST)
+        cara.save(os.path.join(dir_, 'retrato.png'))
+        print('malvado', mid)
+
+
 def empaquetar():
     """Lo que no es de un luchador: los 5 escenarios, el logo, el video, el índice y el índice de audio con los nombres
     que pide el juego (docs/CONTRATO_ARTE.md de Street_Family_Fighter_2)."""
@@ -397,12 +431,27 @@ def empaquetar():
         if os.path.exists(dst):
             shutil.rmtree(dst)
         shutil.copytree(src, dst, ignore=shutil.ignore_patterns('_alineacion.json'))
+    # los seis mundos del lote E: solo los PNG, porque sus manifest.json los escribió el juego
+    for e in ('china', 'italia', 'usa', 'brasil', 'egipto', 'polo_norte'):
+        src, dst = os.path.join(RAIZ, 'public', 'escenarios', e), os.path.join(SALE, 'escenarios', e)
+        if not os.path.exists(os.path.join(src, 'piso.png')):
+            continue
+        if os.path.exists(dst):
+            shutil.rmtree(dst)
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns('_alineacion.json', 'manifest.json', 'extra_*'))
+    malvados()
     pant = os.path.join(SALE, 'pantallas')
     if os.path.exists(os.path.join(pant, 'logo.png')):
         shutil.copy(os.path.join(pant, 'logo.png'), os.path.join(SALE, 'logo.png'))
     json.dump({'luchadores': list(NOMBRES), 'escenarios': ['caracas', 'hochiminh', 'bogota', 'japon', 'celestial'],
                'ciudad': CIUDAD}, open(os.path.join(SALE, 'indice.json'), 'w'), ensure_ascii=False, indent=1)
-    # audio: los nombres del juego apuntan a los archivos de la banda sonora sintetizada y a la voz
+    indice_audio()
+    print('empaquetado: escenarios, logo, indice, audio')
+
+
+def indice_audio():
+    """Solo audio/indice.json: los nombres del juego apuntan a los archivos de la banda sonora sintetizada y a la voz.
+    Aparte de empaquetar() para poder rehacerlo sin volver a copiar escenarios ni exportar luchadores."""
     A = os.path.join(SALE, 'audio')
     m = lambda n: f'musica/{n}.m4a'
     f = lambda *ns: [f'sfx/{n}.m4a' for n in ns]
@@ -421,13 +470,18 @@ def empaquetar():
         'round': [v('round_1')], 'round_1': [v('round_1')], 'round_2': [v('round_2')], 'round_3': [v('round_3')],
         'round_final': [v('round_final')], 'fight': [v('fight')], 'ko': [v('ko')], 'ko_golpe': f('ko'), 'perfect': [v('perfect')],
         'gana': [v('gana')], 'pierde': [v('pierde')], 'tiempo': [v('tiempo')], 'doble_ko': [v('doble_ko')], 'titulo': [v('titulo')],
+        # lote E: los bonus (el carro, los barriles), el luchador oscuro y las voces nuevas del anunciador
+        'golpe_lata': f('golpe_lata'), 'vidrio': f('vidrio'), 'madera': f('madera'), 'teletransporte': f('teletransporte'),
+        'furia_oscura': f('furia_oscura'),
+        'counter': [v('counter')], 'reversal': [v('reversal')], 'escape': [v('escape')], 'bonus_carro': [v('bonus_carro')],
+        'bonus_barriles': [v('bonus_barriles')],
     }
-    musica = {n: m(n) for n in ('titulo', 'selector', 'vs', 'victoria', 'caracas', 'hochiminh', 'bogota', 'japon', 'celestial')}
+    musica = {n: m(n) for n in ('titulo', 'selector', 'vs', 'victoria', 'caracas', 'hochiminh', 'bogota', 'japon', 'celestial',
+                                'china', 'italia', 'usa', 'brasil', 'egipto', 'polo_norte')}
     faltan = [x for lst in list(sfx.values()) + [[y] for y in musica.values()] for x in lst if not os.path.exists(os.path.join(A, x))]
     if faltan:
         print('audio que falta:', faltan)
     json.dump({'musica': musica, 'sfx': sfx}, open(os.path.join(A, 'indice.json'), 'w'), ensure_ascii=False, indent=1)
-    print('empaquetado: escenarios, logo, indice, audio')
 
 
 if __name__ == '__main__':
