@@ -44,6 +44,14 @@ ESCALA_JUEGO = {
 }
 
 
+# lo que el juego midió con el lote F, cuadro a cuadro de la hoja (no de la anim): va encima de la tabla de arriba
+EXTRA = {
+    'rick': {'carrera': {0: 0.9}},
+    'thor': {'carrera': {1: 0.92}},
+    'sophie': {'avanza': {0: 0.92}, 'agarre': {0: 0.92}},
+}
+
+
 def factores(pid):
     """{hoja: {cuadro: factor}}. Si un cuadro de la hoja lo usan dos anims con factores distintos, va la media
     geométrica de los dos."""
@@ -56,7 +64,11 @@ def factores(pid):
         for k, p in enumerate(a['pasos']):
             f = v if not isinstance(v, list) else (v[k] if k < len(v) else 1)
             junta.setdefault(p['hoja'], {}).setdefault(p['i'], []).append(f)
-    return {h: {i: math.exp(sum(map(math.log, fs)) / len(fs)) for i, fs in cs.items()} for h, cs in junta.items()}
+    out = {h: {i: math.exp(sum(map(math.log, fs)) / len(fs)) for i, fs in cs.items()} for h, cs in junta.items()}
+    for h, cs in EXTRA.get(pid, {}).items():
+        for i, f in cs.items():
+            out.setdefault(h, {})[i] = out.get(h, {}).get(i, 1) * f
+    return out
 
 
 if __name__ == '__main__':

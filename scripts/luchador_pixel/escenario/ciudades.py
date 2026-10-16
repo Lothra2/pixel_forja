@@ -42,7 +42,7 @@ CIUDADES = {
             'elementos': ['carguero', 'remolcador', 'velero', 'ave_1', 'ave_2'], 'altos': [22, 16, 28, 6, 6]},
     'brasil': {'ajuste': {'ciudad': -400}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                'elementos': ['teleferico', 'guacamaya_1', 'guacamaya_2'], 'altos': [12, 8, 8]},
-    'egipto': {'ajuste': {'montes': -220, 'rio': -200, 'ciudad': -220}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
+    'egipto': {'ajuste': {'montes': -220, 'rio': -200, 'ciudad': -220, 'muro': 150}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                'elementos': ['faluca', 'camello', 'halcon_1', 'halcon_2'], 'altos': [26, 20, 8, 8]},
     'polo_norte': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                    'elementos': ['oso_1', 'oso_2'], 'altos': [16, 16]},
