@@ -142,6 +142,22 @@ pegaba a la otra. Ahora cada mancha va entera al cuadro donde cae su centro.
 
 Lo demás quedó igual, con el borde del pixel un poco más limpio. Commit 0fa2506.
 
+### 8. Lote F: todo lo que pidió el juego en su lote E
+
+El juego dejó su pedido en `docs/LOTE_E/PEDIDO_FORJA.md` de Street_Family_Fighter_2. Se hizo completo menos tres anims
+opcionales de los malvados (contraataque, paso del demonio y furia oscura), que el juego ya resuelve con código.
+
+| Pedido | Qué se entregó |
+|---|---|
+| Escala pareja en la fuente | La tabla que el juego medía cuadro a cuadro ahora se aplica al bajar cada hoja (`sf2_escala.py`). Alana acostada ya no sale al 62 % y Thor no crece al atacar. El juego borra su tabla. |
+| Trote de Thor | Avanza son 8 cuadros con las patas en pares diagonales y retrocede son 6. Ya no patina. |
+| Seis mundos | La Gran Muralla al amanecer, Venecia de noche, el puerto de Nueva York, Río de Janeiro, las pirámides de Guiza y el Polo Norte con aurora. Todos por capas, con sus extras: cometas dragón, góndola, barcos, teleférico, guacamayas, faluca, camello, halcones y osos polares. |
+| Minijuegos | El carro en 6 etapas de destrucción, el barril y los pedazos que vuelan. |
+| Versiones malvadas | Retratos propios: Rick Oscuro, Steph Oscura, Sophie y Alana como villanas traviesas (sin dar miedo) y Thor Infernal. |
+| Anims nuevas | Carrera, saltito atrás, agarre y agarrado para los cinco. |
+| Música | Un tema por mundo: China con erhu y gongs, Venecia con tarantela y mandolina, Nueva York funk, Río samba con batucada, Egipto con oud y darbuka, y el Polo Norte con celesta y cascabeles. |
+| Sonidos y voces | Lata, vidrio, madera, teletransporte y furia oscura. El anunciador dice Counter, Reversal, Escape, "Destroy the car!" y "Break the barrels!". |
+
 ## Cómo se hizo (para repetirlo)
 
 1. `scripts/luchador_pixel/fiel/sf2_plan.py`: el plan de las 125 hojas.
@@ -168,7 +184,8 @@ Lo demás quedó igual, con el borde del pixel un poco más limpio. Commit 0fa25
 | Video del intro (Grok) | 45 |
 | Voces del anunciador | 1,3 |
 | Fondo del título con cielo (outpaint que casi no agrandó, no se usó) | 2 |
-| **Total** | **unos 187 de los 400** |
+| Lote F: 6 maestras y 45 capas de mundos, carro y barril, 22 hojas nuevas, 5 retratos malvados y 5 voces | 80,7 |
+| **Total** | **unos 268 de los 400** |
 
 Lo que no se cobró:
 - **AutoSprite** falló otra vez: es la tercera vez y devolvieron los créditos. No lo intenté más.
