@@ -51,17 +51,8 @@ def guardia(pid):
     return pal, g, ref, caja, cabeza
 
 
-def separar(a, n):
-    """Los cuadros de la hoja, de izquierda a derecha: cajas (x0, y0, x1, y1) en la imagen grande."""
-    bg = fondo_de(a)
-    m = np.abs(a - bg).sum(2) > 45
-    m = cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)) > 0
-    k, lab, st, _ = cv2.connectedComponentsWithStats(m.astype(np.uint8), connectivity=8)
-    if k < 2:
-        return []
-    grande = st[1:, cv2.CC_STAT_AREA].max()
-    cajas = sorted([[st[i, 0], st[i, 1], st[i, 0] + st[i, 2], st[i, 1] + st[i, 3]] for i in range(1, k)
-                    if st[i, cv2.CC_STAT_AREA] >= 0.01 * grande])
+def _rangos(m, cajas, n):
+    """Los rangos en x de cada cuadro: las manchas juntas por x, o el corte por el valle de columnas si no salen n."""
     # se juntan las manchas que se pisan en x
     grupos = []
     for c in cajas:
@@ -75,8 +66,8 @@ def separar(a, n):
     gm = max(area(g) for g in grupos)
     grupos = [g for g in grupos if area(g) >= 0.06 * gm]
     if len(grupos) != n:
-        # no salió limpio (un pie toca el cuadro de al lado): se corta por el valle de columnas más cercano a cada
-        # borde esperado entre cuadros parejos
+        # no salió limpio (un pie o un bate se mete en el cuadro de al lado): se corta por el valle de columnas más
+        # cercano a cada borde esperado entre cuadros parejos
         x0, x1 = min(g[0] for g in grupos), max(g[2] for g in grupos)
         col = m[:, x0:x1].sum(0).astype(float)
         col = np.convolve(col, np.ones(9) / 9, mode='same')
@@ -88,18 +79,74 @@ def separar(a, n):
             lo, hi = max(1, b - v), min(len(col) - 1, b + v)
             cortes.append(x0 + lo + int(np.argmin(col[lo:hi])))
         cortes.append(x1)
-        grupos = []
-        for a_, b_ in zip(cortes[:-1], cortes[1:]):
-            ys = np.where(m[:, a_:b_].any(1))[0]
-            xs = np.where(m[:, a_:b_].any(0))[0]
-            grupos.append([a_ + xs.min(), ys.min(), a_ + xs.max() + 1, ys.max() + 1])
-        return grupos
+        return list(zip(cortes[:-1], cortes[1:]))
     while len(grupos) > n:
         h = [grupos[i + 1][0] - grupos[i][2] for i in range(len(grupos) - 1)]
         i = int(np.argmin(h))
         u, v = grupos[i], grupos[i + 1]
         grupos[i:i + 2] = [[min(u[0], v[0]), min(u[1], v[1]), max(u[2], v[2]), max(u[3], v[3])]]
-    return grupos
+    return [(g[0], g[2]) for g in grupos]
+
+
+def separar_mascaras(a, n):
+    """Los cuadros de la hoja, de izquierda a derecha: su caja (x0, y0, x1, y1) en la imagen grande y su máscara.
+
+    Cada mancha va entera al cuadro donde cae su centro, aunque se salga de su rango en x: así el pie o el bate que
+    se mete por encima del cuadro de al lado sigue pegado a su dueño y no aparece cortado ni suelto en el vecino.
+    Solo una mancha que de verdad toca al vecino (más ancha que un cuadro) se corta en el borde."""
+    bg = fondo_de(a)
+    m = np.abs(a - bg).sum(2) > 45
+    m = cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)) > 0
+    k, lab, st, cen = cv2.connectedComponentsWithStats(m.astype(np.uint8), connectivity=8)
+    if k < 2:
+        return [], []
+    grande = st[1:, cv2.CC_STAT_AREA].max()
+    fuertes = [i for i in range(1, k) if st[i, cv2.CC_STAT_AREA] >= 0.01 * grande]
+    cajas = sorted([[st[i, 0], st[i, 1], st[i, 0] + st[i, 2], st[i, 1] + st[i, 3]] for i in fuertes])
+    rangos = _rangos(m, cajas, n)
+    paso = np.mean([b - a_ for a_, b in rangos])
+    mascaras = [np.zeros(m.shape, bool) for _ in rangos]
+    es_fuerte = np.isin(lab, fuertes)
+    for i in range(1, k):
+        if st[i, cv2.CC_STAT_AREA] < 30:
+            continue
+        cx = cen[i][0]
+        j = min(range(len(rangos)), key=lambda r: 0 if rangos[r][0] <= cx < rangos[r][1] else
+                min(abs(cx - rangos[r][0]), abs(cx - rangos[r][1])))
+        pieza = lab == i
+        if st[i, cv2.CC_STAT_WIDTH] > 0.9 * paso:
+            corte = np.zeros(m.shape, bool)
+            corte[:, rangos[j][0]:rangos[j][1]] = True
+            pieza &= corte
+        mascaras[j] |= pieza
+    salen, mas = [], []
+    for j, mk in enumerate(mascaras):
+        if not mk.any():
+            continue
+        # la caja la marcan las manchas grandes, las chispas chiquitas solo cuentan si caen dentro
+        gr = mk & es_fuerte
+        if not gr.any():
+            continue
+        ys, xs = np.where(gr)
+        x0, y0, x1, y1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+        caja = np.zeros(m.shape, bool)
+        caja[y0:y1, x0:x1] = True
+        mk = mk & caja
+        salen.append([int(x0), int(y0), int(x1), int(y1)])
+        mas.append(mk)
+    # el borde suave del pixel (lo que no pasó el umbral) se recupera con un poco de margen, sin pisar al vecino
+    ker = np.ones((7, 7), np.uint8)
+    gordas = [cv2.dilate(mk.astype(np.uint8), ker) > 0 for mk in mas]
+    for j in range(len(gordas)):
+        for o in range(len(mas)):
+            if o != j:
+                gordas[j] &= ~mas[o]
+    return salen, gordas
+
+
+def separar(a, n):
+    """Los cuadros de la hoja, de izquierda a derecha: cajas (x0, y0, x1, y1) en la imagen grande."""
+    return separar_mascaras(a, n)[0]
 
 
 def cadera(q, aire):
@@ -173,7 +220,7 @@ def canon(pid):
 def procesar(pid, hoja, n):
     T, Hg, Pg, pal = canon(pid)
     a = leer_hoja(pid, hoja)
-    cajas = separar(a, n)
+    cajas, mascaras = separar_mascaras(a, n)
     if len(cajas) != n:
         print(f'  {hoja}: salieron {len(cajas)} cuadros y se pidieron {n}', flush=True)
         if len(cajas) < n:
@@ -204,7 +251,9 @@ def procesar(pid, hoja, n):
     bg = fondo_de(a)
     for i, (x0, y0, x1, y1) in enumerate(cajas):
         pad = 10
-        b = a[max(0, y0 - pad):y1 + pad, max(0, x0 - pad):x1 + pad]
+        # solo lo de este cuadro: lo del vecino que cae en la caja pasa a fondo
+        a_ = np.where(mascaras[i][..., None], a, bg)
+        b = a_[max(0, y0 - pad):y1 + pad, max(0, x0 - pad):x1 + pad]
         o, mm = recortar(celdas(b, P), bg)
         o, mm = bajar(o, mm, (y1 - y0) * ff / o.shape[0])
         q = motas(a_paleta(o, mm, pal), pal, bg)
