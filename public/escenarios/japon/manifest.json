@@ -1,0 +1,28 @@
+{
+  "id": "japon",
+  "nombre": "Castillo de noche",
+  "w": 611,
+  "h": 262,
+  "vista": { "w": 384, "h": 224 },
+  "escala": 2,
+  "piso": 244,
+  "capas": [
+    { "img": "cielo.png", "factor": 0.1, "dy": -30 },
+    { "img": "montes.png", "factor": 0.25 },
+    { "img": "castillo.png", "factor": 0.5, "luces": true },
+    { "img": "muro.png", "factor": 0.8, "factorY": 1, "luces": true },
+    { "img": "piso.png", "factor": 1, "luces": true, "perspectiva": { "arriba": 0.8 } }
+  ],
+  "frente": [
+    { "img": "frente.png", "factor": 1.2, "luces": true }
+  ],
+  "camara": { "x0": 19, "x1": 208, "y0": 0, "y1": 38 },
+  "notas": [
+    "Todo en pixeles del arte. Se dibuja a escala 2 (cada pixel del arte son 2 pixeles de pantalla), así la vista de 384 x 224 llena 768 x 448.",
+    "La cámara es la esquina de arriba a la izquierda de la vista en coordenadas del piso. En reposo va centrada (x 113, y 38) y los pies quedan en la fila 206 de la vista.",
+    "Cada capa empieza en x = 113.5 + (camara.x - 113.5) * factor. En y usa factorY si lo trae, si no el mismo factor con tope 1, y le suma dy: y = 38 + (camara.y - 38) * factorY + dy.",
+    "Perspectiva del piso: el factor de cada fila sube en línea recta desde 'arriba' (la primera fila con piso, la 190) hasta 1 en la fila 'piso' y sigue subiendo hacia abajo.",
+    "Luces: los tonos cálidos (r > 200, g > 110, b < 140, r - b > 90) pasan a su vecino de la paleta un 18 % más oscuro o un 15 % más claro, por grupos de 24 columnas.",
+    "Las capas del frente van delante de los luchadores. Los pétalos van en dos profundidades: 0.8 detrás de los luchadores y 1.2 delante."
+  ]
+}

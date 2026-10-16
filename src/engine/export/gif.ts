@@ -4,6 +4,8 @@ export interface GifOptions {
   scale?: number;
   /** color de fondo; si no se da, el fondo es transparente */
   background?: [number, number, number];
+  /** cuánto dura cada cuadro, en centésimas de segundo (si no se da, todos duran 1/fps) */
+  delays?: number[];
 }
 
 /** Escritor de bytes que crece solo. */
@@ -103,9 +105,9 @@ export function encodeGif(frames: Raster[], fps: number, opt: GifOptions = {}): 
   out.all([3, 1, 0, 0, 0]);
   const delay = Math.round(100 / fps);
   const transparent = !opt.background;
-  for (const idx of indexed) {
+  for (const [fi, idx] of indexed.entries()) {
     out.all([0x21, 0xf9, 4, ((transparent ? 2 : 1) << 2) | (transparent ? 1 : 0)]);
-    out.u16(delay);
+    out.u16(opt.delays ? Math.max(2, Math.round(opt.delays[fi] ?? delay)) : delay);
     out.byte(0);
     out.byte(0);
     out.byte(0x2c);

@@ -1,0 +1,23 @@
+{
+ "luchadores": [
+  "rick",
+  "sophie",
+  "alana",
+  "steph",
+  "thor"
+ ],
+ "escenarios": [
+  "caracas",
+  "hochiminh",
+  "bogota",
+  "japon",
+  "celestial"
+ ],
+ "ciudad": {
+  "rick": "caracas",
+  "sophie": "hochiminh",
+  "alana": "celestial",
+  "steph": "bogota",
+  "thor": "japon"
+ }
+}

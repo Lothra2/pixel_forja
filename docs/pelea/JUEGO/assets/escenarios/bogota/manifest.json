@@ -1,0 +1,193 @@
+{
+ "id": "bogota",
+ "w": 611,
+ "h": 262,
+ "vista": {
+  "w": 384,
+  "h": 224
+ },
+ "escala": 2,
+ "piso": 244,
+ "capas": [
+  {
+   "img": "cielo.png",
+   "factor": 0.1,
+   "dy": -30
+  },
+  {
+   "img": "montes.png",
+   "factor": 0.25
+  },
+  {
+   "img": "ciudad.png",
+   "factor": 0.5,
+   "luces": true
+  },
+  {
+   "img": "muro.png",
+   "factor": 0.8,
+   "factorY": 1,
+   "luces": true
+  },
+  {
+   "img": "piso.png",
+   "factor": 1,
+   "luces": true,
+   "perspectiva": {
+    "arriba": 0.8
+   }
+  }
+ ],
+ "frente": [
+  {
+   "img": "frente.png",
+   "factor": 1.2,
+   "luces": true
+  }
+ ],
+ "camara": {
+  "x0": 19,
+  "x1": 208,
+  "y0": 0,
+  "y1": 38
+ },
+ "nombre": "Bogotá, Plaza de Bolívar",
+ "actores": [
+  {
+   "img": [
+    "elementos/teleferico.png"
+   ],
+   "ticks": 60,
+   "tras": "montes",
+   "desde": [
+    318,
+    118
+   ],
+   "hasta": [
+    262,
+    62
+   ],
+   "duracion": 1300,
+   "modo": "vuelta"
+  },
+  {
+   "img": [
+    "elementos/paloma_1.png",
+    "elementos/paloma_2.png",
+    "elementos/paloma_3.png",
+    "elementos/paloma_2.png"
+   ],
+   "ticks": 5,
+   "tras": "ciudad",
+   "desde": [
+    -20,
+    92
+   ],
+   "hasta": [
+    630,
+    70
+   ],
+   "duracion": 900,
+   "vaiven": 2
+  },
+  {
+   "img": [
+    "elementos/paloma_1.png",
+    "elementos/paloma_2.png",
+    "elementos/paloma_3.png",
+    "elementos/paloma_2.png"
+   ],
+   "ticks": 5,
+   "tras": "ciudad",
+   "desde": [
+    -34,
+    98
+   ],
+   "hasta": [
+    616,
+    78
+   ],
+   "duracion": 900,
+   "desfase": 30,
+   "vaiven": 2
+  },
+  {
+   "img": [
+    "elementos/paloma_1.png",
+    "elementos/paloma_2.png",
+    "elementos/paloma_3.png",
+    "elementos/paloma_2.png"
+   ],
+   "ticks": 5,
+   "tras": "ciudad",
+   "desde": [
+    630,
+    64
+   ],
+   "hasta": [
+    -20,
+    86
+   ],
+   "duracion": 1000,
+   "desfase": 420,
+   "vaiven": 2
+  },
+  {
+   "img": [
+    "elementos/paloma_suelo.png"
+   ],
+   "ticks": 60,
+   "tras": "muro",
+   "desde": [
+    176,
+    161
+   ],
+   "hasta": [
+    176,
+    161
+   ],
+   "duracion": 600
+  },
+  {
+   "img": [
+    "elementos/paloma_suelo.png"
+   ],
+   "ticks": 60,
+   "tras": "muro",
+   "desde": [
+    452,
+    161
+   ],
+   "hasta": [
+    460,
+    161
+   ],
+   "duracion": 900,
+   "modo": "vuelta"
+  },
+  {
+   "img": [
+    "elementos/globos.png"
+   ],
+   "ticks": 60,
+   "tras": "ciudad",
+   "desde": [
+    430,
+    190
+   ],
+   "hasta": [
+    380,
+    -40
+   ],
+   "duracion": 2400,
+   "desfase": 800,
+   "vaiven": 4
+  }
+ ],
+ "petalos": false,
+ "notas": [
+  "Igual que el castillo japonés: mismas medidas, misma cámara y misma fórmula de paralaje (ver japon/manifest.json).",
+  "actores: extras que se mueven en coordenadas de la capa `tras` y a su velocidad, dibujados justo después de esa capa. Van de `desde` a `hasta` en `duracion` ticks (con `modo: vuelta` van y vuelven), cambian de cuadro cada `ticks` y suben y bajan `vaiven` pixeles. Se voltean cuando van hacia la izquierda.",
+  "agua: la capa se mece un pixel por fila como un reflejo. petalos: false no caen; dos tonos caen de esos colores."
+ ]
+}

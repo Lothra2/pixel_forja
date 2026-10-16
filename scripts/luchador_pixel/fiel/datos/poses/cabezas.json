@@ -1,0 +1,92 @@
+{
+ "r_paso": {
+  "escala": 0.98,
+  "y": 1,
+  "x": 39,
+  "dist": 0.161
+ },
+ "r_paso_largo": {
+  "escala": 0.78,
+  "y": 1,
+  "x": 63,
+  "dist": 0.168
+ },
+ "r_puno_carga": {
+  "escala": 0.78,
+  "y": 0,
+  "x": 68,
+  "dist": 0.17
+ },
+ "r_puno": {
+  "escala": 0.86,
+  "y": 0,
+  "x": 75,
+  "dist": 0.166
+ },
+ "r_onda_carga": {
+  "escala": 0.96,
+  "y": 1,
+  "x": 81,
+  "dist": 0.158
+ },
+ "r_onda": {
+  "escala": 0.98,
+  "y": 0,
+  "x": 80,
+  "dist": 0.158
+ },
+ "r_victoria": {
+  "escala": 0.82,
+  "y": 20,
+  "x": 43,
+  "dist": 0.175
+ },
+ "s_agacha": {
+  "escala": 0.96,
+  "y": 1,
+  "x": 52,
+  "dist": 0.106
+ },
+ "s_sube": {
+  "escala": 0.86,
+  "y": 5,
+  "x": 50,
+  "dist": 0.173
+ },
+ "s_patada": {
+  "escala": 0.84,
+  "y": 1,
+  "x": 47,
+  "dist": 0.122
+ },
+ "s_patada_alta": {
+  "escala": 0.82,
+  "y": 0,
+  "x": 38,
+  "dist": 0.122
+ },
+ "s_patada_media": {
+  "escala": 0.9,
+  "y": -2,
+  "x": 35,
+  "dist": 0.137
+ },
+ "s_patada_baja": {
+  "escala": 0.82,
+  "y": 0,
+  "x": 33,
+  "dist": 0.145
+ },
+ "r_patada": {
+  "escala": 0.76,
+  "y": -1,
+  "x": 31,
+  "dist": 0.174
+ },
+ "s_puno": {
+  "escala": 0.98,
+  "y": 1,
+  "x": 53,
+  "dist": 0.099
+ }
+}
