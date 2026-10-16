@@ -78,14 +78,19 @@ export function pintarAnim(f: LuchadorFicha, a: AnimLuchador, o: OpcionesPintar)
     const pc = pantalla(c.art.puño.cerca), pl = pantalla(c.art.puño.lejos);
     const pega: Caja[] = [];
     if (q.fase === 'activo' && q.pega) {
-      const [px, py] = q.pega === 'cerca' ? pc : pl;
-      pega.push([px - 6, py - 7, 16, 14]);
+      if (q.con === 'pie') {
+        const t = c.art.punta[q.pega];
+        pega.push([Math.round(t[0]) - 8, -Math.round(t[1]) - 7, 16, 14]);
+      } else {
+        const [px, py] = q.pega === 'cerca' ? pc : pl;
+        pega.push([px - 6, py - 7, 16, 14]);
+      }
     }
     if (!empuje) {
       const t = cajaGrupos(c, o.w, ['torso']);
       empuje = t ? [Math.round(t[0] + t[2] * 0.05), t[1] - 18, Math.round(t[2] * 0.9), -(t[1] - 18)] : [-12, -80, 24, 80];
     }
-    if (q.estela && previo) estela(c.r, c.ox, c.oy, previo, c, q.pega ?? 'cerca', f);
+    if (q.estela && previo) estela(c.r, c.ox, c.oy, previo, c, q.pega ?? 'cerca', f, q.con ?? 'puño');
     cuadros.push(c.r);
     datos.push({ ticks: q.ticks, fase: q.fase, recibe, pega, empuje, puño: { cerca: pc, lejos: pl } });
     previo = c;
@@ -102,8 +107,8 @@ export function pintarAnim(f: LuchadorFicha, a: AnimLuchador, o: OpcionesPintar)
  * La estela del golpe: un borrón de velocidad detrás del puño, desde donde estaba en el cuadro anterior. Va solo en los
  * pixeles vacíos (detrás del luchador), claro en el centro y del color de la piel en el borde, y se afina hacia atrás.
  */
-function estela(r: Raster, ox: number, oy: number, a: CuadroLuchador, b: CuadroLuchador, lado: 'cerca' | 'lejos', f: LuchadorFicha) {
-  const p0 = a.art.puño[lado], p1 = b.art.puño[lado];
+function estela(r: Raster, ox: number, oy: number, a: CuadroLuchador, b: CuadroLuchador, lado: 'cerca' | 'lejos', f: LuchadorFicha, con: 'puño' | 'pie') {
+  const p0 = con === 'pie' ? a.art.punta[lado] : a.art.puño[lado], p1 = con === 'pie' ? b.art.punta[lado] : b.art.puño[lado];
   const x0 = ox + p0[0], y0 = oy - p0[1], x1 = ox + p1[0], y1 = oy - p1[1];
   const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
   const borde = hexToRgb(f.colores.piel), centro: [number, number, number] = [255, 248, 228];

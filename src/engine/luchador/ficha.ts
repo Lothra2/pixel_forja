@@ -14,6 +14,8 @@ export interface LuchadorFicha {
   altura: number;
   /** 0 flaco, 0,5 atlético, 1 grandote */
   contextura: number;
+  /** cuántas cabezas mide de alto: 7 un adulto de SF2, 5 una niña de anime. Si no viene, 7 */
+  cabezas?: number;
   colores: {
     piel: string;
     pelo: string;
@@ -30,6 +32,8 @@ export interface LuchadorFicha {
     /** el marco de los lentes, o null sin lentes */
     lentes: string | null;
     muñequera: string | null;
+    /** el lazo del pelo, si lleva */
+    lazo?: string;
   };
   /** el traje por piezas. Si no viene, va el casual con los colores de arriba (camisa, short, zapato) */
   ropa?: Ropa;
@@ -41,11 +45,15 @@ export interface LuchadorFicha {
     volumen: number;
     /** barba: 0 afeitado, 1 de candado, 2 corta completa */
     barba: 0 | 1 | 2;
+    /** la cara: la de adulto de SF2 o la de niña de anime (cara redonda, ojos grandes) */
+    forma?: 'adulto' | 'niña';
+    /** el peinado: corto, o con flequillo y cola de caballo alta con lazo */
+    peinado?: 'corto' | 'cola';
   };
 }
 
-export type TorsoRopa = 'polo' | 'gi' | 'franelilla' | 'nada';
-export type PiernasRopa = 'short' | 'gi' | 'cargo';
+export type TorsoRopa = 'polo' | 'gi' | 'franelilla' | 'nada' | 'kimono';
+export type PiernasRopa = 'short' | 'gi' | 'cargo' | 'licra';
 export type PiesRopa = 'zapatillas' | 'descalzo' | 'botas';
 
 /**
@@ -71,7 +79,7 @@ export interface Ropa {
 }
 
 /** Los trajes de muestra. */
-export const TRAJES: Record<'gi' | 'calle' | 'casual', Ropa> = {
+export const TRAJES: Record<'gi' | 'calle' | 'casual' | 'agil', Ropa> = {
   gi: {
     torso: 'gi', piernas: 'gi', pies: 'descalzo',
     colores: { torso: '#b51f2c', ribete: '#7e121c', piernas: '#b51f2c', pies: '#e2a77c', cinturon: '#1e1a22', cintillo: '#f2efe8', guantes: '#22222c', vendas: '#efe9dc' },
@@ -79,6 +87,11 @@ export const TRAJES: Record<'gi' | 'calle' | 'casual', Ropa> = {
   calle: {
     torso: 'franelilla', piernas: 'cargo', pies: 'botas',
     colores: { torso: '#24242c', piernas: '#5e6a3c', pies: '#3a2c22', suela: '#1a1614', cinturon: '#4a3626', cintillo: '#c41e2c', guantes: '#c41e2c' },
+  },
+  /** el de Sophie: kimono corto turquesa cruzado, licra azul noche, zapatillas y cinturón rosado */
+  agil: {
+    torso: 'kimono', piernas: 'licra', pies: 'zapatillas',
+    colores: { torso: '#2fb4c8', ribete: '#f4f1ea', piernas: '#283462', pies: '#f4f2ee', suela: '#ff5c9a', cinturon: '#ff5c9a', cintillo: null, guantes: null },
   },
   casual: {
     torso: 'polo', piernas: 'short', pies: 'zapatillas',
@@ -149,4 +162,33 @@ export const RICK_LUCHADOR: LuchadorFicha = {
   },
   ropa: TRAJES.gi,
   cabeza: { entradas: 0.7, volumen: 0.6, barba: 2 },
+};
+
+/**
+ * Sophie como luchadora: una niña de anime de 5 cabezas, la cara redonda con ojos grandes, el pelo oscuro con flequillo
+ * y cola alta con lazo rosado, y el kimono turquesa (su color). Mide un poco más de dos tercios de Rick.
+ */
+export const SOPHIE_LUCHADORA: LuchadorFicha = {
+  id: 'sophie',
+  nombre: 'SOPHIE',
+  altura: 74,
+  contextura: 0.1,
+  cabezas: 4.6,
+  colores: {
+    piel: '#efc29c',
+    pelo: '#2a1a12',
+    canas: '#2a1a12',
+    barba: '#2a1a12',
+    barbaCanas: '#2a1a12',
+    ojos: '#4a2a1a',
+    camisa: '#2fb4c8',
+    short: '#283462',
+    zapato: '#f4f2ee',
+    suela: '#ff5c9a',
+    lentes: null,
+    muñequera: null,
+    lazo: '#ff5c9a',
+  },
+  ropa: TRAJES.agil,
+  cabeza: { entradas: 0, volumen: 0.8, barba: 0, forma: 'niña', peinado: 'cola' },
 };

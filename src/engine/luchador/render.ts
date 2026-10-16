@@ -32,9 +32,9 @@ const LUZ = norm([-0.35, 0.78, 0.52]);
 const MEDIO = norm([LUZ[0], LUZ[1], LUZ[2] + 1]);
 
 /** La suavidad de la unión dentro de cada grupo: el torso más duro, para que se marquen pectorales y abdominales. */
-const SUAVE: Partial<Record<Grupo, number>> = { torso: 0.9, cinto: 0.6, cintillo: 0.6 };
+const SUAVE: Partial<Record<Grupo, number>> = { torso: 0.9, cinto: 0.6, cintillo: 0.6, cola: 1.0 };
 /** Los accesorios se separan con línea aunque estén casi pegados a lo de atrás. */
-const ACCESORIO: ReadonlySet<Grupo> = new Set(['cinto', 'cintillo']);
+const ACCESORIO: ReadonlySet<Grupo> = new Set(['cinto', 'cintillo', 'cola']);
 
 const smin = (a: number, b: number, k: number) => {
   const h = Math.max(k - Math.abs(a - b), 0) / k;
@@ -63,6 +63,7 @@ function colorMat(col: LuchadorFicha['colores'], ropa: Ropa, m: Material): strin
     case 'cintillo': return r.cintillo ?? '#f2efe8';
     case 'guante': return r.guantes ?? col.muñequera ?? col.piel;
     case 'venda': return r.vendas ?? '#efe9dc';
+    case 'lazo': return col.lazo ?? '#ff5c9a';
     case 'pelo': return col.pelo;
     case 'canas': return col.canas;
     case 'barba': return col.barba;
@@ -139,11 +140,26 @@ export function pintarLuchador(f: LuchadorFicha, pose: Pose, o: OpcionesPintar):
       let v = (0.08 + 0.92 * lam) * (0.5 + 0.5 * ao);
       // el brillo de la piel, el de los músculos de SF2
       if (material === 'piel') v += 0.4 * Math.pow(Math.max(0, dot(n, MEDIO)), 14) * ao;
+      // el brillo del pelo de anime: una franja clara arriba
+      if (material === 'pelo') v += 0.55 * Math.pow(Math.max(0, dot(n, MEDIO)), 22);
       let b = v > 0.84 ? 5 : v > 0.62 ? 4 : v > 0.4 ? 3 : v > 0.2 ? 2 : 1;
+      // la tela con 4 tonos, como en SF2: el brillo queda para la piel, el pelo y los accesorios
+      if (b === 5 && (material === 'tela' || material === 'tela2' || material === 'calzado' || material === 'ribete')) b = 4;
       // los pliegues de la tela no van en la parte más oscura
       if (corre && b >= 2) b = Math.max(1, Math.min(5, b + corre));
       if (LEJOS.has(hit.g)) b = Math.max(1, b - 1);
       zbuf[i] = hit.z; grp[i] = hit.g; mat[i] = material; banda[i] = b;
+    }
+
+  // limpieza: un pixel suelto de otro tono en medio de su material pasa al tono de sus vecinos (menos ruido de render)
+  for (let py = 1; py < Hh - 1; py++)
+    for (let px = 1; px < W - 1; px++) {
+      const i = py * W + px;
+      if (!mat[i]) continue;
+      const vec = [i - 1, i + 1, i - W, i + W];
+      if (vec.some((q) => mat[q] !== mat[i] || grp[q] !== grp[i])) continue;
+      const b0 = banda[vec[0]];
+      if (banda[i] !== b0 && vec.every((q) => banda[q] === b0)) banda[i] = b0;
     }
 
   const out = createRaster(W, Hh);
@@ -168,7 +184,7 @@ export function pintarLuchador(f: LuchadorFicha, pose: Pose, o: OpcionesPintar):
       }
     }
 
-  cara(f, col, pose, art, out, { W, ox, oy, grp, linea });
+  cara(f, col, pose, art, out, { W, ox, oy, grp, linea, zbuf });
 
   // el contorno de afuera: un pixel alrededor, del color más oscuro de la pieza de al lado
   const borde: [number, string][] = [];
@@ -189,29 +205,58 @@ export function pintarLuchador(f: LuchadorFicha, pose: Pose, o: OpcionesPintar):
   return { r: out, ox, oy, art, grupos: grp };
 }
 
-/** Los rasgos de la cara, a pixel: ojo, ceja, lentes, boca. Solo donde se ve la cabeza. */
+/** Los rasgos de la cara, a pixel: ojo, ceja, lentes, boca. Solo donde se ve la cabeza de frente (no si está de espaldas). */
 function cara(f: LuchadorFicha, col: LuchadorFicha['colores'], pose: Pose, j: Articulaciones, out: Raster,
-  c: { W: number; ox: number; oy: number; grp: (Grupo | null)[]; linea: Uint8Array }) {
+  c: { W: number; ox: number; oy: number; grp: (Grupo | null)[]; linea: Uint8Array; zbuf: Float32Array }) {
   const hs = medidas(f).cabeza / 13.9;
   const H = j.cabeza, b = j.baseCabeza;
+  let zRasgo = 0;
   const pt = (x: number, y: number, z: number): [number, number] => {
     const p = enBase(H, b, x * hs, y * hs, z * hs);
+    zRasgo = p[2];
     return [Math.floor(c.ox + p[0]), Math.floor(c.oy - p[1])];
   };
+  // la cara se ve solo si la cabeza mira hacia la cámara
+  if (b.f[2] < -0.55) return;
   const set = (px: number, py: number, hex: string, sobreLinea = false) => {
     if (px < 0 || py < 0 || px >= c.W || py >= out.h) return;
     const i = py * c.W + px;
     if (c.grp[i] !== 'cabeza') return;
     if (c.linea[i] && !sobreLinea) return;
+    if (c.zbuf[i] - zRasgo > 3) return;
     const [r, g, bb] = hexToRgb(hex);
     out.data[i * 4] = r; out.data[i * 4 + 1] = g; out.data[i * 4 + 2] = bb; out.data[i * 4 + 3] = 255;
   };
   const pr = rampa6(col.pelo), sk = rampa6(col.piel);
   const oscuro = pr[0];
+  if (f.cabeza.forma === 'niña') {
+    // ojos grandes de anime: pestañas arriba, el blanco atrás, el iris adelante con su brillo
+    const [ex, ey] = pt(4.7, -0.6, 2.5);
+    const iris = col.ojos, irisO = rampa6(col.ojos)[1];
+    if (pose.cara === 'dolor' || pose.cara === 'feliz') {
+      // cerrados: > < o ^ ^
+      set(ex - 1, ey, oscuro); set(ex, ey + (pose.cara === 'feliz' ? -1 : 1), oscuro); set(ex + 1, ey, oscuro);
+    } else {
+      for (let dx = -2; dx <= 1; dx++) set(ex + dx, ey - 1, oscuro);
+      set(ex - 1, ey, '#ffffff'); set(ex, ey, iris); set(ex + 1, ey, oscuro);
+      set(ex - 1, ey + 1, '#e8e4ee'); set(ex, ey + 1, '#ffffff'); set(ex + 1, ey + 1, irisO);
+      if (pose.cara === 'grito') set(ex - 2, ey - 2, oscuro);
+    }
+    const [fx, fy] = pt(5.6, -0.6, -1.5);
+    set(fx, fy - 1, oscuro); set(fx, fy, pose.cara === 'dolor' || pose.cara === 'feliz' ? oscuro : iris);
+    // los cachetes rosados
+    const [cx, cy] = pt(3.6, -2.0, 3.6);
+    set(cx, cy, '#f39c9c'); set(cx + 1, cy, '#f39c9c');
+    const [mx, my] = pt(5.6, -2.7, 0.8);
+    if (pose.cara === 'serio') set(mx, my, sk[1]);
+    else if (pose.cara === 'feliz') { set(mx - 1, my, '#9a3040'); set(mx, my + 1, '#9a3040'); set(mx + 1, my, '#9a3040'); }
+    else { set(mx, my, '#5a1422'); set(mx - 1, my, '#5a1422'); set(mx, my + 1, '#d0485a'); set(mx - 1, my + 1, '#5a1422'); }
+    return;
+  }
   // el ojo de la cámara y la ceja encima
   const [ex, ey] = pt(4.4, 0.3, 2.2);
-  if (pose.cara === 'dolor') {
-    set(ex - 1, ey, oscuro); set(ex, ey, oscuro); set(ex + 1, ey + 1, oscuro);
+  if (pose.cara === 'dolor' || pose.cara === 'feliz') {
+    set(ex - 1, ey, oscuro); set(ex, ey, oscuro); set(ex + 1, ey + (pose.cara === 'dolor' ? 1 : -1), oscuro);
   } else {
     set(ex, ey, '#f4f0ea'); set(ex + 1, ey, col.ojos); set(ex + 1, ey + 1, oscuro);
   }
@@ -222,6 +267,7 @@ function cara(f: LuchadorFicha, col: LuchadorFicha['colores'], pose: Pose, j: Ar
   // la boca
   const [mx, my] = pt(5.3, -2.9, 0.9);
   if (pose.cara === 'serio') { set(mx - 1, my, sk[0]); set(mx, my, sk[0]); }
+  else if (pose.cara === 'feliz') { set(mx - 1, my, '#2a1214'); set(mx, my, '#f4f0ea'); set(mx + 1, my - 1, '#2a1214'); }
   else {
     set(mx - 1, my, '#2a1214'); set(mx, my, '#2a1214'); set(mx - 1, my + 1, '#2a1214'); set(mx, my + 1, '#5a1e22');
     if (pose.cara === 'dolor') set(mx - 1, my - 1, '#f4f0ea');

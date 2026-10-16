@@ -55,23 +55,30 @@ export interface Medidas {
   caderas: number;
   /** cuánto más gruesos los músculos (1 = atlético) */
   grosor: number;
+  /** cuánto más grandes las manos y los pies que lo real (SF2 y el anime los exageran) */
+  extremidad: number;
 }
 
 export function medidas(f: LuchadorFicha): Medidas {
   const H = f.altura, c = f.contextura;
+  // t: 0 un adulto de 7 cabezas, 1 una niña de 5 (cabeza grande, piernas y brazos más cortos, todo más fino)
+  const cab = f.cabezas ?? 7, t = Math.max(0, Math.min(1, (7 - cab) / 2));
+  const mix = (a: number, b: number) => a + (b - a) * t;
   return {
     H,
-    cabeza: H / 7,
-    tobillo: H * 0.035,
-    canilla: H * 0.245,
-    muslo: H * 0.245,
-    brazo: H * 0.2,
-    antebrazo: H * 0.175,
-    pie: H * 0.135,
-    columna: H * 0.19,
-    hombros: H * (0.11 + 0.035 * c),
-    caderas: H * 0.05,
-    grosor: 0.9 + 0.45 * c,
+    cabeza: H / cab,
+    tobillo: H * mix(0.035, 0.04),
+    canilla: H * mix(0.245, 0.215),
+    muslo: H * mix(0.245, 0.205),
+    brazo: H * mix(0.2, 0.175),
+    antebrazo: H * mix(0.175, 0.16),
+    // pies y manos grandes, como en SF2 y en el anime
+    pie: H * mix(0.165, 0.19),
+    columna: H * mix(0.19, 0.16),
+    hombros: H * mix(0.11 + 0.035 * c, 0.1),
+    caderas: H * mix(0.05, 0.055),
+    grosor: mix(0.9 + 0.45 * c, 0.62 + 0.2 * c),
+    extremidad: mix(1.15, 1.5),
   };
 }
 
@@ -80,7 +87,7 @@ export interface BrazoPose { mano: V3; codo: V3; puño?: boolean; /** giro del p
 /** Una pierna: dónde va el tobillo, hacia dónde apunta la rodilla, y el pie. */
 export interface PiernaPose { tobillo: V3; rodilla: V3; /** hacia dónde mira el pie (grados, 0 adelante, + hacia la cámara) */ pie?: number; /** la punta baja (+) o sube (-), grados */ punta?: number }
 
-export type Cara = 'serio' | 'grito' | 'dolor';
+export type Cara = 'serio' | 'grito' | 'dolor' | 'feliz';
 
 /** Una pose completa. Todo en pixeles: x adelante, y arriba desde el piso, z hacia la cámara. */
 export interface Pose {
@@ -98,6 +105,12 @@ export interface Pose {
   cara: Cara;
   /** el viento en la tela suelta (las puntas del cinturón y las colas del cintillo), una fase en radianes */
   viento?: number;
+  /** todo el cuerpo girado en el plano de la pantalla, en grados (+ hacia adelante, como una voltereta), sobre `centroGiro` */
+  rueda?: number;
+  /** todo el cuerpo girado sobre el eje vertical, en grados (la patada giratoria), sobre `centroGiro` */
+  vuelta?: number;
+  /** el punto sobre el que gira todo el cuerpo; si no viene, el centro de la cadera */
+  centroGiro?: V3;
 }
 
 /** Las articulaciones ya resueltas, en el mundo. */
@@ -172,10 +185,30 @@ export function resolver(m: Medidas, p: Pose): Articulaciones {
     return { rodilla: sol.medio, tobillo: sol.fin, punta, talon };
   };
   const bc_ = brazo('cerca'), bl = brazo('lejos'), pc = pierna('cerca'), pl = pierna('lejos');
-  return {
+  const j: Articulaciones = {
     pelvis, basePelvis: bp, pecho, basePecho: bc, cuello, cabeza, baseCabeza: bh, hombro,
     codo: { cerca: bc_.codo, lejos: bl.codo }, muñeca: { cerca: bc_.muñeca, lejos: bl.muñeca }, puño: { cerca: bc_.puño, lejos: bl.puño },
     cadera: caderaJ, rodilla: { cerca: pc.rodilla, lejos: pl.rodilla }, tobillo: { cerca: pc.tobillo, lejos: pl.tobillo },
     punta: { cerca: pc.punta, lejos: pl.punta }, talon: { cerca: pc.talon, lejos: pl.talon },
+  };
+  return girar(j, p.rueda ?? 0, p.vuelta ?? 0, p.centroGiro ?? pelvis);
+}
+
+/** Gira todo el esqueleto: `vuelta` sobre el eje vertical y después `rueda` en el plano de la pantalla, sobre un centro. */
+export function girar(j: Articulaciones, rueda: number, vuelta: number, c: V3): Articulaciones {
+  if (!rueda && !vuelta) return j;
+  const v = rad(vuelta), r = rad(-rueda);
+  const cv = Math.cos(v), sv = Math.sin(v), cr = Math.cos(r), sr = Math.sin(r);
+  const dir = (q: V3): V3 => {
+    const x1 = q[0] * cv - q[2] * sv, z1 = q[0] * sv + q[2] * cv;
+    return [x1 * cr - q[1] * sr, x1 * sr + q[1] * cr, z1];
+  };
+  const pt = (q: V3): V3 => add(c, dir(sub(q, c)));
+  const bs = (b: Base): Base => ({ f: dir(b.f), u: dir(b.u), r: dir(b.r) });
+  const par = (o: { cerca: V3; lejos: V3 }) => ({ cerca: pt(o.cerca), lejos: pt(o.lejos) });
+  return {
+    pelvis: pt(j.pelvis), basePelvis: bs(j.basePelvis), pecho: pt(j.pecho), basePecho: bs(j.basePecho), cuello: pt(j.cuello),
+    cabeza: pt(j.cabeza), baseCabeza: bs(j.baseCabeza), hombro: par(j.hombro), codo: par(j.codo), muñeca: par(j.muñeca),
+    puño: par(j.puño), cadera: par(j.cadera), rodilla: par(j.rodilla), tobillo: par(j.tobillo), punta: par(j.punta), talon: par(j.talon),
   };
 }
