@@ -41,59 +41,66 @@ export function con(base: Pose, cambio: Parcial<Pose>): Pose {
   return mezcla(base, cambio) as Pose;
 }
 
-/** La guardia de SF2: de lado, el pecho abierto a la cámara, rodillas dobladas, la mano de lejos adelante a la altura del mentón. */
+/**
+ * La guardia de SF2: de lado, el pecho abierto a la cámara, rodillas bien dobladas y la base ancha, el puño de lejos
+ * adelante a la altura del mentón y el de cerca guardando el pecho. El mentón abajo.
+ */
 export const GUARDIA: Pose = {
-  cadera: [0, 46, 0], giroCadera: 40, giroPecho: 32, inclina: 6, cabeza: { giro: 16, inclina: 4 },
-  cerca: { brazo: { mano: [12, 64, 8], codo: [0, 45, 14] }, pierna: { tobillo: [-19, 3.6, 6], rodilla: [0, 30, 22], pie: 45 } },
-  lejos: { brazo: { mano: [26, 72, -2], codo: [14, 50, -10] }, pierna: { tobillo: [18, 3.6, -5], rodilla: [30, 30, -6], pie: 8 } },
+  cadera: [0, 44, 0], giroCadera: 42, giroPecho: 30, inclina: 7, cabeza: { giro: 16, inclina: 8 },
+  cerca: { brazo: { mano: [13, 66, 10], codo: [-1, 48, 17] }, pierna: { tobillo: [-21, 3.6, 7], rodilla: [-2, 29, 24], pie: 48 } },
+  lejos: { brazo: { mano: [29, 74, -2], codo: [16, 54, -12] }, pierna: { tobillo: [20, 3.6, -6], rodilla: [33, 29, -7], pie: 8 } },
   cara: 'serio',
+  viento: 0,
 };
 
-/** La guardia respira: baja la cadera, los hombros y los puños, y vuelve (5 cuadros en ida y vuelta, como Ryu). */
+/** La guardia respira: baja la cadera, los hombros y los puños, y vuelve (6 cuadros en bucle, como Ryu). El cintillo y el cinturón se mueven. */
 export function animGuardia(): AnimLuchador {
-  const paso = (t: number): Pose => con(GUARDIA, {
-    cadera: [0, 46 - 2 * t, 0],
-    inclina: 6 + 2 * t,
-    cerca: { brazo: { mano: [12, 64 - 2.2 * t, 8], codo: [0, 45, 14] } },
-    lejos: { brazo: { mano: [26 - 0.6 * t, 72 - 2 * t, -2], codo: [14, 50, -10] } },
+  const paso = (t: number, i: number): Pose => con(GUARDIA, {
+    cadera: [0, 44 - 2 * t, 0],
+    inclina: 7 + 2 * t,
+    cerca: { brazo: { mano: [13, 66 - 2.2 * t, 10], codo: [-1, 48, 17] } },
+    lejos: { brazo: { mano: [29 - 0.6 * t, 74 - 2 * t, -2], codo: [16, 54, -12] } },
+    viento: (i / 6) * Math.PI * 2,
   });
   const ts = [0, 0.33, 0.7, 1, 0.66, 0.3];
-  return { nombre: 'guardia', bucle: true, cuadros: ts.map((t) => ({ pose: paso(t), ticks: 7, fase: 'neutral' as const })) };
+  return { nombre: 'guardia', bucle: true, cuadros: ts.map((t, i) => ({ pose: paso(t, i), ticks: 7, fase: 'neutral' as const })) };
 }
 
 /**
  * El puño fuerte de pie: el puño de atrás (el de la cámara) sale recto a la altura de la cara con todo el giro de la
- * cadera y el hombro, el talón de atrás se levanta y el otro puño se recoge al mentón. Grita.
- * Inicio 5, activo 4, recuperación 14 (como un puño fuerte de SF2).
+ * cadera y el hombro, el cuerpo se tira adelante, la pierna de atrás se estira con el talón arriba y el otro puño se
+ * recoge al mentón. Grita. Inicio 5, activo 4, recuperación 14 (como un puño fuerte de SF2).
  */
 export function animPuñoFuerte(): AnimLuchador {
   const carga = con(GUARDIA, {
-    cadera: [-1.5, 45, 0], giroCadera: 46, giroPecho: 44, inclina: 3, cabeza: { giro: 10, inclina: 6 },
-    cerca: { brazo: { mano: [5, 66, 11], codo: [-8, 52, 16] } },
-    lejos: { brazo: { mano: [22, 74, -4], codo: [12, 52, -10] } },
+    cadera: [-3, 43, 0], giroCadera: 50, giroPecho: 54, inclina: 2, cabeza: { giro: 6, inclina: 10 },
+    cerca: { brazo: { mano: [2, 68, 14], codo: [-11, 54, 18] } },
+    lejos: { brazo: { mano: [25, 76, -5], codo: [13, 56, -12] } },
+    viento: 0.4,
   });
   const sale = con(GUARDIA, {
-    cadera: [4, 45, 0], giroCadera: 26, giroPecho: 8, inclina: 12, cabeza: { giro: 18, inclina: 2 },
-    cerca: { brazo: { mano: [34, 76, 7], codo: [14, 70, 16] }, pierna: { tobillo: [-19, 3.6, 6], rodilla: [2, 30, 22], pie: 40, punta: 10 } },
-    lejos: { brazo: { mano: [16, 72, -4], codo: [6, 52, -10] } },
-    cara: 'grito',
+    cadera: [5, 43, 0], giroCadera: 24, giroPecho: 4, inclina: 14, cabeza: { giro: 20, inclina: 4 },
+    cerca: { brazo: { mano: [38, 78, 8], codo: [16, 72, 18] }, pierna: { tobillo: [-21, 3.6, 7], rodilla: [0, 29, 24], pie: 40, punta: 12 } },
+    lejos: { brazo: { mano: [18, 74, -5], codo: [7, 54, -12] } },
+    cara: 'grito', viento: 1.2,
   });
   const pega = con(GUARDIA, {
-    cadera: [8, 44, 0], giroCadera: 10, giroPecho: -14, inclina: 17, cabeza: { giro: 26, inclina: 0 },
-    cerca: { brazo: { mano: [62, 78, 2], codo: [34, 81, 12] }, pierna: { tobillo: [-17, 3.6, 6], rodilla: [4, 30, 22], pie: 30, punta: 28 } },
-    lejos: { brazo: { mano: [12, 72, -6], codo: [2, 54, -12] } },
-    cara: 'grito',
+    cadera: [11, 42, 0], giroCadera: 8, giroPecho: -18, inclina: 21, cabeza: { giro: 28, inclina: 2 },
+    cerca: { brazo: { mano: [70, 80, 2], codo: [38, 83, 12] }, pierna: { tobillo: [-19, 3.6, 7], rodilla: [4, 28, 22], pie: 28, punta: 34 } },
+    lejos: { brazo: { mano: [15, 74, -7], codo: [3, 56, -14] }, pierna: { tobillo: [20, 3.6, -6], rodilla: [36, 28, -7], pie: 8 } },
+    cara: 'grito', viento: 2.2,
   });
   const vuelve1 = con(GUARDIA, {
-    cadera: [6, 44.5, 0], giroCadera: 18, giroPecho: 0, inclina: 14, cabeza: { giro: 22, inclina: 2 },
-    cerca: { brazo: { mano: [46, 75, 5], codo: [22, 70, 15] }, pierna: { tobillo: [-17.5, 3.6, 6], rodilla: [3, 30, 22], pie: 34, punta: 18 } },
-    lejos: { brazo: { mano: [14, 72, -5], codo: [4, 53, -11] } },
-    cara: 'grito',
+    cadera: [8, 42.5, 0], giroCadera: 16, giroPecho: -4, inclina: 17, cabeza: { giro: 24, inclina: 4 },
+    cerca: { brazo: { mano: [52, 77, 5], codo: [26, 72, 16] }, pierna: { tobillo: [-20, 3.6, 7], rodilla: [2, 28, 23], pie: 34, punta: 22 } },
+    lejos: { brazo: { mano: [17, 74, -6], codo: [5, 55, -13] } },
+    cara: 'grito', viento: 3.0,
   });
   const vuelve2 = con(GUARDIA, {
-    cadera: [1, 45.5, 0], giroCadera: 32, giroPecho: 20, inclina: 8, cabeza: { giro: 18, inclina: 3 },
-    cerca: { brazo: { mano: [20, 68, 8], codo: [4, 50, 15] }, pierna: { tobillo: [-19, 3.6, 6], rodilla: [1, 30, 22], pie: 42, punta: 6 } },
-    lejos: { brazo: { mano: [22, 72, -3], codo: [11, 51, -10] } },
+    cadera: [3, 43.5, 0], giroCadera: 32, giroPecho: 18, inclina: 10, cabeza: { giro: 18, inclina: 6 },
+    cerca: { brazo: { mano: [22, 70, 9], codo: [5, 52, 17] }, pierna: { tobillo: [-21, 3.6, 7], rodilla: [-1, 29, 24], pie: 44, punta: 6 } },
+    lejos: { brazo: { mano: [24, 74, -3], codo: [12, 54, -12] } },
+    viento: 3.8,
   });
   return {
     nombre: 'puño_fuerte', bucle: false,
@@ -109,27 +116,28 @@ export function animPuñoFuerte(): AnimLuchador {
 }
 
 /**
- * Recibir un golpe arriba: la cabeza se va para atrás, el pecho se abre, los brazos se sueltan y la cara es de dolor.
- * El primer cuadro es el del impacto, el segundo se sostiene lo que dure el aturdimiento (lo pone el juego), el
- * tercero vuelve a la guardia.
+ * Recibir un golpe arriba: la cabeza se va para atrás de golpe, el pecho se abre, el cuerpo se dobla hacia atrás y los
+ * brazos se sueltan. El primer cuadro es el del impacto, el segundo se sostiene lo que dure el aturdimiento (lo pone
+ * el juego), el tercero vuelve a la guardia.
  */
 export function animRecibeAlto(): AnimLuchador {
   const golpe = con(GUARDIA, {
-    cadera: [-3, 46, 0], giroCadera: 48, giroPecho: 52, inclina: -12, ladeo: 4, cabeza: { giro: 6, inclina: -24 },
-    cerca: { brazo: { mano: [2, 58, 14], codo: [-10, 52, 16] }, pierna: { tobillo: [-19, 3.6, 6], rodilla: [-2, 30, 22], pie: 48 } },
-    lejos: { brazo: { mano: [20, 80, -8], codo: [6, 64, -14] }, pierna: { tobillo: [18, 3.6, -5], rodilla: [28, 30, -6], pie: 8 } },
-    cara: 'dolor',
+    cadera: [-4, 44, 0], giroCadera: 50, giroPecho: 56, inclina: -16, ladeo: 5, cabeza: { giro: 4, inclina: -30 },
+    cerca: { brazo: { mano: [0, 58, 17], codo: [-12, 54, 18] }, pierna: { tobillo: [-21, 3.6, 7], rodilla: [-4, 29, 24], pie: 50 } },
+    lejos: { brazo: { mano: [22, 84, -8], codo: [7, 68, -15] }, pierna: { tobillo: [20, 3.6, -6], rodilla: [30, 29, -7], pie: 8 } },
+    cara: 'dolor', viento: 1.6,
   });
   const atras = con(golpe, {
-    cadera: [-5, 45, 0], inclina: -17, cabeza: { giro: 4, inclina: -30 },
-    cerca: { brazo: { mano: [-2, 56, 15], codo: [-12, 50, 16] } },
-    lejos: { brazo: { mano: [16, 82, -9], codo: [3, 66, -14] } },
+    cadera: [-7, 43, 0], inclina: -22, cabeza: { giro: 2, inclina: -36 },
+    cerca: { brazo: { mano: [-5, 55, 18], codo: [-15, 52, 18] } },
+    lejos: { brazo: { mano: [17, 86, -9], codo: [3, 70, -15] } },
+    viento: 2.6,
   });
   const vuelve = con(GUARDIA, {
-    cadera: [-2, 45, 0], giroPecho: 40, inclina: -2, cabeza: { giro: 10, inclina: -6 },
-    cerca: { brazo: { mano: [8, 62, 10], codo: [-3, 46, 15] } },
-    lejos: { brazo: { mano: [22, 72, -4], codo: [11, 52, -11] } },
-    cara: 'dolor',
+    cadera: [-3, 43.5, 0], giroPecho: 40, inclina: -2, cabeza: { giro: 10, inclina: -6 },
+    cerca: { brazo: { mano: [9, 64, 12], codo: [-3, 48, 17] } },
+    lejos: { brazo: { mano: [24, 74, -4], codo: [12, 54, -12] } },
+    cara: 'dolor', viento: 3.6,
   });
   return {
     nombre: 'recibe_alto', bucle: false,
@@ -141,4 +149,31 @@ export function animRecibeAlto(): AnimLuchador {
   };
 }
 
-export const ANIMS_PILOTO = { guardia: animGuardia, puño_fuerte: animPuñoFuerte, recibe_alto: animRecibeAlto };
+/**
+ * La victoria: se para, abre el pecho a la cámara y levanta el puño de cerca bien alto, con el otro cerrado a la
+ * cintura. Grita, y el cintillo y el cinturón vuelan. Los dos últimos cuadros se alternan en bucle.
+ */
+export function animVictoria(): AnimLuchador {
+  const sube = con(GUARDIA, {
+    cadera: [0, 47, 0], giroCadera: 50, giroPecho: 58, inclina: -2, cabeza: { giro: 20, inclina: -6 },
+    cerca: { brazo: { mano: [-4, 90, 18], codo: [-10, 76, 24] }, pierna: { tobillo: [-15, 3.6, 7], rodilla: [-4, 30, 22], pie: 50 } },
+    lejos: { brazo: { mano: [12, 60, -10], codo: [0, 62, -18] }, pierna: { tobillo: [14, 3.6, -6], rodilla: [22, 30, -8], pie: 10 } },
+    cara: 'serio', viento: 0.5,
+  });
+  const arriba = (v: number): Pose => con(sube, {
+    cadera: [0, 48, 0], inclina: -6, cabeza: { giro: 22, inclina: -12 },
+    cerca: { brazo: { mano: [-8, 114, 12], codo: [-12, 96, 22] } },
+    cara: 'grito', viento: v,
+  });
+  return {
+    nombre: 'victoria', bucle: false,
+    cuadros: [
+      { pose: sube, ticks: 6, fase: 'neutral' },
+      { pose: arriba(1.4), ticks: 10, fase: 'neutral' },
+      { pose: arriba(2.6), ticks: 10, fase: 'neutral' },
+      { pose: arriba(3.8), ticks: 10, fase: 'neutral' },
+    ],
+  };
+}
+
+export const ANIMS_PILOTO = { guardia: animGuardia, puño_fuerte: animPuñoFuerte, recibe_alto: animRecibeAlto, victoria: animVictoria };

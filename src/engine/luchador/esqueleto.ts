@@ -69,9 +69,9 @@ export function medidas(f: LuchadorFicha): Medidas {
     antebrazo: H * 0.175,
     pie: H * 0.135,
     columna: H * 0.19,
-    hombros: H * (0.115 + 0.025 * c),
+    hombros: H * (0.11 + 0.035 * c),
     caderas: H * 0.05,
-    grosor: 1.0 + 0.4 * c,
+    grosor: 0.9 + 0.45 * c,
   };
 }
 
@@ -96,6 +96,8 @@ export interface Pose {
   cerca: { brazo: BrazoPose; pierna: PiernaPose };
   lejos: { brazo: BrazoPose; pierna: PiernaPose };
   cara: Cara;
+  /** el viento en la tela suelta (las puntas del cinturón y las colas del cintillo), una fase en radianes */
+  viento?: number;
 }
 
 /** Las articulaciones ya resueltas, en el mundo. */

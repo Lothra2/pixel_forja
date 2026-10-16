@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { hexToLab } from '../color/oklab';
 import { encodeGif } from '../export/gif';
-import { RICK_LUCHADOR, rampa6, pintarLuchador, GUARDIA, ANIMS_PILOTO, pintarAnim, chispaGolpe, conPose, type AnimRender } from '../index';
+import { RICK_LUCHADOR, TRAJES, rampa6, pintarLuchador, GUARDIA, ANIMS_PILOTO, pintarAnim, chispaGolpe, conPose, type AnimRender } from '../index';
 
-const O = { w: 128, h: 116, ox: 44, oy: 110 };
+const O = { w: 128, h: 136, ox: 48, oy: 130 };
 const opacos = (r: { w: number; h: number; data: Uint8ClampedArray }) => {
   let x0 = Infinity, y0 = Infinity, x1 = -1, y1 = -1, semi = 0;
   for (let y = 0; y < r.h; y++)
@@ -49,14 +49,16 @@ describe('el luchador estilo SF2 (piloto con Rick)', () => {
     expect(Buffer.from(pintarLuchador(RICK_LUCHADOR, GUARDIA, O).r.data).equals(Buffer.from(c.r.data))).toBe(true);
   }, 60000);
 
-  it('el traje alterno cambia la camisa y no la cara', () => {
-    const a = pintarLuchador(RICK_LUCHADOR, GUARDIA, O), b = pintarLuchador(RICK_LUCHADOR, GUARDIA, { ...O, colores: { camisa: '#2b4fae' } });
+  it('el traje alterno cambia el gi y no la cara', () => {
+    const azul = { ...TRAJES.gi, colores: { ...TRAJES.gi.colores, torso: '#2a48a8', piernas: '#2a48a8' } };
+    const a = pintarLuchador(RICK_LUCHADOR, GUARDIA, O), b = pintarLuchador(RICK_LUCHADOR, GUARDIA, { ...O, ropa: azul });
     let dif = 0, difCabeza = 0;
     for (let i = 0; i < a.grupos.length; i++) {
       if (a.r.data[i * 4] !== b.r.data[i * 4]) { dif++; if (a.grupos[i] === 'cabeza') difCabeza++; }
     }
     expect(dif).toBeGreaterThan(300);
-    expect(difCabeza).toBe(0);
+    // solo puede cambiar alguna línea de adentro donde el cuello toca la tela
+    expect(difCabeza).toBeLessThanOrEqual(4);
   }, 60000);
 
   it('las tres animaciones: tiempos de SF2, la caja que pega solo en los activos y delante, y los pies siempre en el piso', () => {
@@ -89,6 +91,46 @@ describe('el luchador estilo SF2 (piloto con Rick)', () => {
     const cab = (d: AnimRender['datos'][number]) => d.recibe.find((z) => z.zona === 'cabeza')!.caja[0];
     expect(cab(anims.recibe_alto.datos[1])).toBeLessThan(cab(anims.guardia.datos[0]) - 3);
   }, 120000);
+
+  it('los trajes por piezas: el gi abierto con cinturón y cintillo, la ropa de calle con botas, el casual sin accesorios', () => {
+    const cuenta = (c: ReturnType<typeof pintarLuchador>, g: string) => c.grupos.filter((x) => x === g).length;
+    const gi = pintarLuchador(RICK_LUCHADOR, GUARDIA, { ...O, ropa: TRAJES.gi });
+    const calle = pintarLuchador(RICK_LUCHADOR, GUARDIA, { ...O, ropa: TRAJES.calle });
+    const casual = pintarLuchador(RICK_LUCHADOR, GUARDIA, { ...O, ropa: TRAJES.casual });
+    expect(cuenta(gi, 'cinto')).toBeGreaterThan(20);
+    expect(cuenta(gi, 'cintillo')).toBeGreaterThan(20);
+    expect(cuenta(calle, 'cintillo')).toBeGreaterThan(20);
+    expect(cuenta(casual, 'cinto') + cuenta(casual, 'cintillo')).toBe(0);
+    // el gi abierto en V: hay piel en el torso. El polo lo tapa entero
+    const pielTorso = (c: ReturnType<typeof pintarLuchador>) => {
+      let n = 0;
+      const [r0, g0, b0] = [0xe2, 0xa7, 0x7c];
+      for (let i = 0; i < c.grupos.length; i++) {
+        if (c.grupos[i] !== 'torso') continue;
+        const d = Math.abs(c.r.data[i * 4] - r0) + Math.abs(c.r.data[i * 4 + 1] - g0) + Math.abs(c.r.data[i * 4 + 2] - b0);
+        if (d < 120 && c.r.data[i * 4 + 1] > c.r.data[i * 4 + 2]) n++;
+      }
+      return n;
+    };
+    expect(pielTorso(gi)).toBeGreaterThan(30);
+    expect(pielTorso(gi)).toBeGreaterThan(pielTorso(casual) * 3);
+    // las tres siluetas son distintas
+    const firma = (c: ReturnType<typeof pintarLuchador>) => Buffer.from(c.r.data).toString('base64');
+    expect(new Set([firma(gi), firma(calle), firma(casual)]).size).toBe(3);
+    // el viento mueve las colas del cintillo
+    const otro = pintarLuchador(RICK_LUCHADOR, { ...GUARDIA, viento: 2 }, { ...O, ropa: TRAJES.gi });
+    let distinto = 0;
+    for (let i = 0; i < gi.grupos.length; i++) if ((gi.grupos[i] === 'cintillo') !== (otro.grupos[i] === 'cintillo')) distinto++;
+    expect(distinto).toBeGreaterThan(5);
+  }, 60000);
+
+  it('la victoria levanta el puño por encima de la cabeza', () => {
+    const v = pintarAnim(RICK_LUCHADOR, ANIMS_PILOTO.victoria(), O);
+    expect(v.cuadros.length).toBe(4);
+    const d = v.datos[2];
+    const cabeza = d.recibe.find((z) => z.zona === 'cabeza')!.caja;
+    expect(d.puño.cerca[1]).toBeLessThan(cabeza[1]);
+  }, 60000);
 
   it('conPose cambia solo lo que se dice', () => {
     const p = conPose(GUARDIA, { cerca: { brazo: { mano: [1, 2, 3] } } });

@@ -1,21 +1,30 @@
 import { type V3, type Base, type Articulaciones, type Medidas, add, sub, mul, dot, norm, cross, lerp3, enBase } from './esqueleto';
-import type { LuchadorFicha } from './ficha';
+import { type LuchadorFicha, type Ropa, TRAJES } from './ficha';
 
 /**
  * Las piezas del cuerpo como volúmenes con distancia (SDF): conos redondeados para brazos y piernas, elipsoides para el
  * pecho, la cadera, la cabeza y los músculos. Las piezas del mismo grupo se funden suave entre sí (el deltoides con el
  * brazo, el pecho con el abdomen), y los grupos distintos se cortan en seco: ahí el render dibuja la línea de adentro,
  * como en los sprites de Capcom.
+ *
+ * El cuerpo es de peleador de SF2: hombros anchos, trapecios, pectorales, abdominales, dorsales, cintura angosta y
+ * muslos grandes. La ropa va por piezas encima (ver `Ropa`), con pliegues de tela pintados.
  */
 export type Grupo =
-  | 'torso' | 'cabeza'
+  | 'torso' | 'cabeza' | 'cinto' | 'cintillo'
   | 'brazoC' | 'antebrazoC' | 'brazoL' | 'antebrazoL'
   | 'musloC' | 'piernaC' | 'musloL' | 'piernaL';
 
 /** Los grupos del lado lejano van un tono más oscuros. */
 export const LEJOS: ReadonlySet<Grupo> = new Set(['brazoL', 'antebrazoL', 'musloL', 'piernaL']);
 
-export type Material = 'piel' | 'pliegue' | 'camisa' | 'cuello' | 'short' | 'zapato' | 'suela' | 'pelo' | 'canas' | 'barba' | 'barbaCanas' | 'muñequera';
+export type Material =
+  | 'piel' | 'pliegue' | 'tela' | 'ribete' | 'cuello' | 'tela2' | 'bolsillo' | 'calzado' | 'suela'
+  | 'cinturon' | 'cintillo' | 'guante' | 'venda'
+  | 'pelo' | 'canas' | 'barba' | 'barbaCanas';
+
+/** Un material, o un material con un corrimiento de tono (los pliegues de la tela: -2 la línea, +1 el filo con luz). */
+export type MatRes = Material | [Material, number];
 
 export interface Prim {
   t: 'cono' | 'eli';
@@ -23,7 +32,9 @@ export interface Prim {
   a?: V3; b?: V3; ra?: number; rb?: number;
   /** elipsoide: centro, radios sobre la base (f, u, r) */
   c?: V3; rad?: V3; base?: Base;
-  mat: Material | ((p: V3) => Material);
+  /** corte: solo la rebanada a menos de h del plano por c con normal n (el cintillo, el cinturón) */
+  corte?: { c: V3; n: V3; h: number };
+  mat: Material | ((p: V3) => MatRes);
   g: Grupo;
   /** para descartar rápido: caja en x e y */
   caja?: [number, number, number, number];
@@ -54,7 +65,8 @@ export function sdEli(p: V3, c: V3, r: V3, b: Base): number {
 }
 
 export function sdPrim(p: V3, q: Prim): number {
-  return q.t === 'cono' ? sdCono(p, q.a!, q.b!, q.ra!, q.rb!) : sdEli(p, q.c!, q.rad!, q.base!);
+  const d = q.t === 'cono' ? sdCono(p, q.a!, q.b!, q.ra!, q.rb!) : sdEli(p, q.c!, q.rad!, q.base!);
+  return q.corte ? Math.max(d, Math.abs(dot(sub(p, q.corte.c), q.corte.n)) - q.corte.h) : d;
 }
 
 /** Una base con f en una dirección dada y u lo más parecido posible a `arriba`. */
@@ -75,63 +87,191 @@ export function enCabeza(j: Articulaciones, p: V3): V3 {
   return [dot(q, b.f), dot(q, b.u), dot(q, b.r)];
 }
 
+const frac = (x: number) => x - Math.floor(x);
+
+/**
+ * Los pliegues de la tela a lo largo de un eje: líneas en diagonal alrededor de la pierna o el torso, con el filo de
+ * arriba con luz. `s` es la posición a lo largo (0 a 1), `th` el ángulo alrededor del eje, `n` cuántos pliegues.
+ */
+function pliegues(m: Material, s: number, th: number, n: number, tuerce = 0.22): MatRes {
+  // en espiral: cada pliegue cruza la tela en diagonal, como en el gi de SF2, y se curva un poco
+  const v = frac(s * n + th / Math.PI * 0.9 + tuerce * Math.sin(th * 2 + s * 4));
+  return v < 0.09 ? [m, -2] : v < 0.16 ? [m, 1] : m;
+}
+
+/** Posición a lo largo de un segmento (0 a 1) y ángulo alrededor de él. */
+function sobreEje(p: V3, a: V3, b: V3, ref: V3): [number, number] {
+  const ab = sub(b, a), l2 = dot(ab, ab) || 1;
+  const s = Math.max(0, Math.min(1, dot(sub(p, a), ab) / l2));
+  const bs = baseDe(ab, ref);
+  const q = sub(p, add(a, mul(ab, s)));
+  return [s, Math.atan2(dot(q, bs.r), dot(q, bs.u))];
+}
+
 /** Arma las piezas de un luchador en una pose ya resuelta. */
-export function piezas(f: LuchadorFicha, m: Medidas, j: Articulaciones): Prim[] {
+export function piezas(f: LuchadorFicha, m: Medidas, j: Articulaciones, viento = 0, ropa: Ropa = f.ropa ?? TRAJES.casual): Prim[] {
   const P: Prim[] = [];
   const s = m.grosor, k = m.H / 104, hs = m.cabeza / 13.9;
-  void hs;
   const bc = j.basePecho, bp = j.basePelvis, bh = j.baseCabeza;
+  const cin = (0.8 + 0.2 * s); // la cintura engorda menos que el resto
 
-  // ---- el torso con la camisa y el short
-  P.push(eli(enBase(j.pecho, bc, -0.3 * k, 1.5 * k, 0), [6.3 * s * k, 9.6 * k, 8.6 * s * k], bc, 'camisa', 'torso'));
-  P.push(eli(enBase(j.pecho, bc, 2.2 * k, 3.2 * k, 0), [4.2 * s * k, 4.6 * k, 7.6 * s * k], bc, 'camisa', 'torso'));
-  P.push(eli(lerp3(j.pelvis, j.pecho, 0.42), [5.4 * s * k, 7.8 * k, 7.6 * s * k], bc, 'camisa', 'torso'));
-  P.push(eli(enBase(j.pelvis, bp, 0, 0.6 * k, 0), [5.8 * k, 5.6 * k, 7.9 * s * k], bp, 'short', 'torso'));
-  for (const lado of ['cerca', 'lejos'] as const) {
-    const tr = enBase(j.pecho, bc, -0.8 * k, 8.4 * k, (lado === 'cerca' ? 1 : -1) * 3 * k);
-    P.push(cono(tr, j.hombro[lado], 3.3 * s * k, 3.6 * s * k, 'camisa', 'torso'));
+  // ---- el torso: caja del pecho, pectorales, dorsales, abdomen con sus cuadros, la cadera
+  const enPecho = (p: V3): V3 => { const q = sub(p, j.pecho); return [dot(q, bc.f), dot(q, bc.u), dot(q, bc.r)]; };
+  const torsoMat = (p: V3): MatRes => {
+    const [fx, uy, rz] = enPecho(p);
+    const az = Math.abs(rz);
+    switch (ropa.torso) {
+      case 'nada': return 'piel';
+      case 'gi': {
+        // el gi sin mangas, abierto en V en el pecho: la solapa es una banda más oscura en el borde
+        const ancho = (uy + 10 * k) * 0.62;
+        if (fx > 0.2 * k && uy > -10 * k) {
+          if (az < ancho - 1.6 * k) return 'piel';
+          if (az < ancho + 0.6 * k) return 'ribete';
+        }
+        // pliegues: diagonales hacia el cinturón, y en bolsa justo encima de él
+        if (uy < -9.5 * k) return pliegues('tela', (uy + 30 * k) / (6 * k), rz * 0.4, 1, 0.5);
+        return frac((uy * 0.3 + rz * 0.22 * Math.sign(fx + 0.1)) / k * 0.42) < 0.1 && fx > -2 * k ? ['tela', -2] : 'tela';
+      }
+      case 'franelilla':
+        // la franelilla: escote redondo y los hombros afuera
+        if (uy > 6.5 * k && fx > 1 * k && az < 5 * k) return 'piel';
+        if (uy > 8.5 * k && az > 5.5 * k) return 'piel';
+        return frac((uy * 0.25 - az * 0.12) / k * 0.5) < 0.08 ? ['tela', -2] : 'tela';
+      default:
+        return 'tela';
+    }
+  };
+  P.push(eli(enBase(j.pecho, bc, -0.5 * k, 1.5 * k, 0), [6.0 * s * k, 9.4 * k, 8.2 * s * k], bc, torsoMat, 'torso'));
+  for (const lado of [1, -1]) {
+    P.push(eli(enBase(j.pecho, bc, 2.6 * k, 3.6 * k, lado * 3.9 * k), [3.5 * s * k, 4.0 * k, 4.7 * s * k], bc, torsoMat, 'torso'));
+    P.push(eli(enBase(j.pecho, bc, -1.4 * k, 0.2 * k, lado * 7.0 * s * k), [4.2 * k, 7.6 * k, 2.6 * s * k], bc, torsoMat, 'torso'));
   }
-  // el cuello de la camisa (el del polo)
-  P.push(eli(enBase(j.cuello, bc, 0.4 * k, -0.6 * k, 0), [3.9 * k, 1.5 * k, 4.4 * k], bc, 'cuello', 'torso'));
+  const abd = lerp3(j.pelvis, j.pecho, 0.45);
+  P.push(eli(abd, [5.0 * s * k, 7.8 * k, 6.7 * cin * k], bc, torsoMat, 'torso'));
+  for (let fila = 0; fila < 3; fila++)
+    for (const lado of [1, -1])
+      P.push(eli(enBase(j.pecho, bc, 4.4 * s * k - fila * 0.25 * k, (-4.6 - fila * 3.1) * k, lado * 1.75 * k), [1.7 * k, 1.6 * k, 1.75 * k], bc, torsoMat, 'torso'));
+  // la cadera con lo de abajo
+  const pelvisMat = (p: V3): MatRes => {
+    const q = sub(p, j.pelvis);
+    return pliegues('tela2', dot(q, bp.u) / (8 * k) + 0.5, dot(q, bp.r) * 0.3, ropa.piernas === 'gi' ? 2 : 1);
+  };
+  P.push(eli(enBase(j.pelvis, bp, 0, 0.6 * k, 0), [6.0 * k, 5.8 * k, 7.8 * cin * k], bp, pelvisMat, 'torso'));
+  // trapecios: del cuello a los hombros, en pendiente
+  for (const lado of ['cerca', 'lejos'] as const) {
+    const tr = enBase(j.pecho, bc, -1.0 * k, 9.6 * k, (lado === 'cerca' ? 1 : -1) * 2.6 * k);
+    P.push(cono(tr, j.hombro[lado], 3.6 * s * k, 3.7 * s * k, ropa.torso === 'franelilla' || ropa.torso === 'nada' ? 'piel' : torsoMat, 'torso'));
+  }
+  if (ropa.torso === 'polo') P.push(eli(enBase(j.cuello, bc, 0.4 * k, -0.6 * k, 0), [4.1 * k, 1.5 * k, 4.6 * k], bc, 'cuello', 'torso'));
+
+  // ---- el cinturón, con el nudo y las dos puntas que cuelgan
+  if (ropa.colores.cinturon) {
+    const cc = lerp3(j.pelvis, j.pecho, 0.17);
+    P.push({ ...eli(cc, [5.6 * s * k, 4 * k, 7.4 * cin * k], bp, 'cinturon', 'cinto'), corte: { c: cc, n: bp.u, h: 1.5 * k } });
+    if (ropa.piernas === 'gi' || ropa.piernas === 'cargo') {
+      const nudo = enBase(cc, bp, 5.4 * s * k, -0.2 * k, 1.6 * k);
+      P.push(eli(nudo, [1.4 * k, 1.6 * k, 1.7 * k], bp, 'cinturon', 'cinto'));
+      if (ropa.piernas === 'gi')
+        for (const [i, lado] of [[0, 1], [1, -1]] as const) {
+          const vaiven = Math.sin(viento + i * 0.9);
+          const punta = add(nudo, add(mul(bp.f, (1.2 + 1.6 * vaiven) * k), add(mul(bp.u, -9.5 * k), mul(bp.r, (lado * 1.6 + 0.6 * vaiven) * k))));
+          P.push(cono(nudo, lerp3(nudo, punta, 0.55), 1.0 * k, 1.05 * k, 'cinturon', 'cinto'));
+          P.push(cono(lerp3(nudo, punta, 0.5), punta, 1.05 * k, 0.95 * k, 'cinturon', 'cinto'));
+        }
+    }
+  }
 
   // ---- los brazos
   for (const lado of ['cerca', 'lejos'] as const) {
     const gB: Grupo = lado === 'cerca' ? 'brazoC' : 'brazoL', gA: Grupo = lado === 'cerca' ? 'antebrazoC' : 'antebrazoL';
     const h = j.hombro[lado], c = j.codo[lado], w = j.muñeca[lado], pu = j.puño[lado];
     const dirB = norm(sub(c, h));
-    P.push(eli(add(h, mul(dirB, 1.2 * k)), [4.3 * s * k, 4.5 * s * k, 4.3 * s * k], baseDe(dirB, bc.u), 'camisa', gB));
-    P.push(cono(h, lerp3(h, c, 0.52), 4.5 * s * k, 4.1 * s * k, 'camisa', gB));
-    P.push(cono(h, c, 3.7 * s * k, 3.0 * s * k, 'piel', gB));
-    // el bíceps, hacia el lado de adentro del codo
-    P.push(eli(lerp3(h, c, 0.6), [5.0 * k, 3.1 * s * k, 2.9 * s * k], baseDe(dirB, bc.f), 'piel', gB));
-    const dirA = norm(sub(w, c));
-    P.push(cono(c, w, 3.2 * s * k, 2.4 * k, 'piel', gA));
-    P.push(eli(lerp3(c, w, 0.28), [4.8 * k, 3.6 * s * k, 3.3 * s * k], baseDe(dirA, bc.u), 'piel', gA));
-    if (f.colores.muñequera) P.push(cono(lerp3(c, w, 0.86), add(w, mul(dirA, 0.6 * k)), 2.85 * k, 2.8 * k, 'muñequera', gA));
-    // el puño
-    const bPu = baseDe(dirA, [0, 1, 0]);
-    // los dedos doblados: surcos de lado a lado en la parte de adelante del puño
-    const dedos = (p: V3): Material => {
-      const q = sub(p, pu), fx = dot(q, bPu.f) / k, uy = dot(q, bPu.u) / k;
-      return fx > 0.4 && uy < 2.2 && (((uy + 8) % 1.9) + 1.9) % 1.9 < 0.42 ? 'pliegue' : 'piel';
+    const piel: Material = 'piel';
+    // el deltoides (con la manga del polo, o el hombro del gi roto)
+    // en el gi la manga está arrancada: la tela tapa solo la punta del hombro, con el borde deshilachado
+    const roto = (p: V3): MatRes => {
+      const [sx, th] = sobreEje(p, add(h, mul(dirB, -2 * k)), c, bc.u);
+      const borde = 0.2 + 0.035 * Math.sin(th * 6);
+      return sx < borde - 0.04 ? 'tela' : sx < borde ? 'ribete' : 'piel';
     };
-    P.push(eli(pu, [4.3 * k, 3.9 * k, 3.5 * k], bPu, dedos, gA));
+    const hombroMat: Prim['mat'] = ropa.torso === 'polo' ? torsoMat : ropa.torso === 'gi' ? roto : piel;
+    P.push(eli(add(h, mul(dirB, 1.4 * k)), [5.0 * s * k, 5.0 * s * k, 4.8 * s * k], baseDe(dirB, bc.u), hombroMat, gB));
+    if (ropa.torso === 'polo') P.push(cono(h, lerp3(h, c, 0.52), 4.9 * s * k, 4.5 * s * k, 'tela', gB));
+    P.push(cono(h, c, 3.7 * s * k, 3.0 * s * k, piel, gB));
+    // el bíceps adelante y el tríceps atrás
+    P.push(eli(add(lerp3(h, c, 0.58), mul(baseDe(dirB, bc.f).u, 0.7 * k)), [5.4 * k, 3.4 * s * k, 3.2 * s * k], baseDe(dirB, bc.f), piel, gB));
+    P.push(eli(add(lerp3(h, c, 0.42), mul(baseDe(dirB, bc.f).u, -1.0 * k)), [5.2 * k, 3.0 * s * k, 3.0 * s * k], baseDe(dirB, bc.f), piel, gB));
+    const dirA = norm(sub(w, c));
+    P.push(cono(c, w, 3.4 * s * k, 2.5 * k, piel, gA));
+    P.push(eli(lerp3(c, w, 0.3), [5.0 * k, 3.8 * s * k, 3.4 * s * k], baseDe(dirA, bc.u), piel, gA));
+    const guante = ropa.colores.guantes;
+    if (guante) P.push(cono(lerp3(c, w, 0.8), add(w, mul(dirA, 0.8 * k)), 2.95 * k, 2.9 * k, 'guante', gA));
+    // el puño, con los dedos doblados
+    const bPu = baseDe(dirA, [0, 1, 0]);
+    const dedos = (p: V3): MatRes => {
+      const q = sub(p, pu), fx = dot(q, bPu.f) / k, uy = dot(q, bPu.u) / k;
+      const surco = fx > 0.4 && uy < 2.4 && frac((uy + 8) / 1.9) < 0.22;
+      if (guante) return surco ? ['guante', -2] : 'guante';
+      return surco ? 'pliegue' : 'piel';
+    };
+    P.push(eli(pu, [4.4 * k, 4.0 * k, 3.6 * k], bPu, dedos, gA));
   }
 
   // ---- las piernas
   for (const lado of ['cerca', 'lejos'] as const) {
     const gM: Grupo = lado === 'cerca' ? 'musloC' : 'musloL', gP: Grupo = lado === 'cerca' ? 'piernaC' : 'piernaL';
     const ca = j.cadera[lado], ro = j.rodilla[lado], to = j.tobillo[lado], pt = j.punta[lado], ta = j.talon[lado];
-    P.push(cono(ca, lerp3(ca, ro, 0.5), 5.9 * s * k, 5.2 * s * k, 'short', gM));
-    P.push(cono(ca, ro, 4.9 * s * k, 3.3 * k, 'piel', gM));
     const pieF = norm(sub(pt, ta));
-    const atras = norm(sub(mul(pieF, -1), mul(norm(sub(to, ro)), dot(mul(pieF, -1), norm(sub(to, ro))))));
-    P.push(cono(ro, to, 3.2 * k, 2.1 * k, 'piel', gP));
-    P.push(eli(add(lerp3(ro, to, 0.3), mul(atras, 1.1 * k)), [5.4 * k, 2.9 * s * k, 2.7 * s * k], baseDe(norm(sub(ro, to)), atras), 'piel', gP));
-    // la zapatilla y la suela
-    P.push(cono(add(ta, [0, 2.0 * k, 0]), add(pt, [0, 1.4 * k, 0]), 2.7 * k, 2.1 * k, 'zapato', gP));
-    P.push(cono(add(to, [0, 0.4 * k, 0]), add(lerp3(ta, pt, 0.35), [0, 2.6 * k, 0]), 2.5 * k, 2.6 * k, 'zapato', gP));
-    P.push(cono(add(ta, [0, 0.9 * k, 0]), add(pt, [0, 0.7 * k, 0]), 1.25 * k, 1.1 * k, 'suela', gP));
+    const ejeCan = norm(sub(to, ro));
+    const atras = norm(sub(mul(pieF, -1), mul(ejeCan, dot(mul(pieF, -1), ejeCan))));
+    const adelante = mul(atras, -1);
+    // el muslo, el cuádriceps adelante, la rodilla, la canilla y la pantorrilla
+    P.push(cono(ca, ro, 5.6 * s * k, 3.7 * k, 'piel', gM));
+    P.push(eli(add(lerp3(ca, ro, 0.5), mul(adelante, 1.4 * k)), [9.5 * k, 3.6 * s * k, 3.8 * s * k], baseDe(norm(sub(ro, ca)), adelante), 'piel', gM));
+    P.push(cono(ro, to, 3.4 * k, 2.2 * k, 'piel', gP));
+    P.push(eli(add(lerp3(ro, to, 0.3), mul(atras, 1.3 * k)), [6.0 * k, 3.1 * s * k, 3.0 * s * k], baseDe(norm(sub(ro, to)), atras), 'piel', gP));
+    // lo de abajo
+    const telaPierna = (a: V3, b: V3, n: number) => (p: V3): MatRes => { const [sx, th] = sobreEje(p, a, b, [0, 0, 1]); return pliegues('tela2', sx, th, n); };
+    if (ropa.piernas === 'short') P.push(cono(ca, lerp3(ca, ro, 0.5), 6.4 * s * k, 5.8 * s * k, telaPierna(ca, ro, 1.5), gM));
+    if (ropa.piernas === 'gi') {
+      // el pantalón del gi: ancho y suelto, se abre un poco abajo y termina sobre el tobillo
+      P.push(cono(ca, ro, 7.0 * s * k, 5.6 * s * k, telaPierna(ca, ro, 2.2), gM));
+      const ruedo = lerp3(ro, to, 0.9);
+      P.push(cono(ro, ruedo, 5.0 * s * k, 4.6 * k, telaPierna(ro, ruedo, 1.8), gP));
+    }
+    if (ropa.piernas === 'cargo') {
+      const bolsa = (p: V3): MatRes => {
+        const [sx, th] = sobreEje(p, ca, ro, [0, 0, 1]);
+        const lat = Math.abs(Math.sin(th));
+        if (sx > 0.45 && sx < 0.8 && lat > 0.75) return sx < 0.5 ? ['bolsillo', -1] : 'bolsillo';
+        return pliegues('tela2', sx, th, 2);
+      };
+      P.push(cono(ca, ro, 6.4 * s * k, 4.8 * s * k, bolsa, gM));
+      const baja = lerp3(ro, to, 0.62);
+      P.push(cono(ro, baja, 4.5 * k, 4.0 * k, telaPierna(ro, baja, 2), gP));
+    }
+    // los pies
+    if (ropa.pies === 'zapatillas') {
+      P.push(cono(add(ta, [0, 2.0 * k, 0]), add(pt, [0, 1.4 * k, 0]), 2.7 * k, 2.1 * k, 'calzado', gP));
+      P.push(cono(add(to, [0, 0.4 * k, 0]), add(lerp3(ta, pt, 0.35), [0, 2.6 * k, 0]), 2.5 * k, 2.6 * k, 'calzado', gP));
+      P.push(cono(add(ta, [0, 0.9 * k, 0]), add(pt, [0, 0.7 * k, 0]), 1.25 * k, 1.1 * k, 'suela', gP));
+    } else if (ropa.pies === 'botas') {
+      P.push(cono(lerp3(ro, to, 0.55), add(to, [0, 0.6 * k, 0]), 4.1 * k, 3.6 * k, (p: V3) => (frac(dot(sub(p, to), [0, 1, 0]) / (2.6 * k)) < 0.18 ? ['calzado', -1] : 'calzado'), gP));
+      P.push(cono(add(ta, [0, 2.2 * k, 0]), add(pt, [0, 1.6 * k, 0]), 3.0 * k, 2.4 * k, 'calzado', gP));
+      P.push(cono(add(ta, [0, 1.0 * k, 0]), add(pt, [0, 0.9 * k, 0]), 1.4 * k, 1.3 * k, 'suela', gP));
+    } else {
+      // descalzo, con las vendas en el tobillo
+      P.push(cono(add(ta, [0, 2.0 * k, 0]), add(pt, [0, 1.3 * k, 0]), 2.4 * k, 1.6 * k, (p: V3) => {
+        const sx = dot(sub(p, ta), pieF) / (m.pie || 1);
+        return sx > 0.82 && frac(dot(sub(p, ta), cross(pieF, [0, 1, 0])) / (1.3 * k)) < 0.3 ? 'pliegue' : 'piel';
+      }, gP));
+      P.push(cono(add(to, [0, 0.2 * k, 0]), add(lerp3(ta, pt, 0.4), [0, 1.9 * k, 0]), 2.4 * k, 2.3 * k, 'piel', gP));
+      if (ropa.colores.vendas) {
+        const vb = add(to, mul(ejeCan, -4.2 * k));
+        P.push(cono(vb, add(to, [0, 0.4 * k, 0]), 2.9 * k, 2.8 * k, (p: V3) => (frac(dot(sub(p, to), norm(add(ejeCan, mul(pieF, 0.4)))) / (1.4 * k)) < 0.25 ? ['venda', -1] : 'venda'), gP));
+      }
+    }
   }
 
   // ---- la cabeza
@@ -152,19 +292,32 @@ export function piezas(f: LuchadorFicha, m: Medidas, j: Articulaciones): Prim[] 
     }
     return 'piel';
   };
-  P.push(eli(enBase(H, bh, -0.3 * hs, 0.9 * hs, 0), [5.9 * hs, 6.5 * hs, 5.0 * hs], bh, matCabeza, 'cabeza'));
-  P.push(eli(enBase(H, bh, 2.0 * hs, -2.5 * hs, 0), [4.0 * hs, 3.7 * hs, 4.0 * hs], bh, matCabeza, 'cabeza'));
-  P.push(eli(enBase(H, bh, 3.7 * hs, -4.5 * hs, 0), [2.1 * hs, 1.8 * hs, 2.3 * hs], bh, matCabeza, 'cabeza'));
-  // la ceja (el hueso de la frente, marcado como en SF2)
-  P.push(eli(enBase(H, bh, 4.7 * hs, 1.5 * hs, 0), [1.3 * hs, 1.1 * hs, 3.5 * hs], bh, 'piel', 'cabeza'));
-  // la nariz
+  const skull = enBase(H, bh, -0.3 * hs, 0.9 * hs, 0), skullR: V3 = [5.9 * hs, 6.5 * hs, 5.0 * hs];
+  P.push(eli(skull, skullR, bh, matCabeza, 'cabeza'));
+  // la mandíbula ancha de peleador
+  P.push(eli(enBase(H, bh, 2.0 * hs, -2.6 * hs, 0), [4.1 * hs, 3.8 * hs, 4.3 * hs], bh, matCabeza, 'cabeza'));
+  P.push(eli(enBase(H, bh, 3.7 * hs, -4.6 * hs, 0), [2.2 * hs, 1.9 * hs, 2.5 * hs], bh, matCabeza, 'cabeza'));
+  P.push(eli(enBase(H, bh, 4.7 * hs, 1.5 * hs, 0), [1.4 * hs, 1.2 * hs, 3.6 * hs], bh, 'piel', 'cabeza'));
   P.push(cono(enBase(H, bh, 4.9 * hs, 0.6 * hs, 0), enBase(H, bh, 6.3 * hs, -1.4 * hs, 0), 0.9 * hs, 1.05 * hs, 'piel', 'cabeza'));
-  // la oreja del lado de la cámara
   P.push(eli(enBase(H, bh, -0.6 * hs, -0.3 * hs, 5.3 * hs), [1.5 * hs, 2.3 * hs, 1.1 * hs], bh, 'piel', 'cabeza'));
-  // el volumen del pelo, arriba y atrás
   P.push(eli(enBase(H, bh, -0.7 * hs, (2.4 + f.cabeza.volumen) * hs, 0), [6.1 * hs, (4.4 + f.cabeza.volumen * 1.2) * hs, 5.1 * hs], bh, matCabeza, 'cabeza'));
-  // el cuello
-  P.push(cono(enBase(j.cuello, bc, 0, -1 * k, 0), enBase(H, bh, -0.2 * hs, -3.4 * hs, 0), 3.4 * s * k, 3.0 * k, 'piel', 'cabeza'));
+  // el cuello grueso
+  P.push(cono(enBase(j.cuello, bc, 0, -1 * k, 0), enBase(H, bh, -0.2 * hs, -3.4 * hs, 0), 3.9 * s * k, 3.3 * k, 'piel', 'cabeza'));
+
+  // ---- el cintillo, con el nudo atrás y las dos colas al viento
+  if (ropa.colores.cintillo) {
+    const cy = enBase(H, bh, -0.3 * hs, 3.9 * hs, 0);
+    P.push({ ...eli(skull, [skullR[0] + 0.9 * hs, skullR[1] + 0.9 * hs, skullR[2] + 0.9 * hs], bh, 'cintillo', 'cintillo'), corte: { c: cy, n: norm(add(bh.u, mul(bh.f, -0.3))), h: 0.95 * hs } });
+    const nudo = enBase(H, bh, -6.4 * hs, 4.0 * hs, 0);
+    P.push(eli(nudo, [1.3 * hs, 1.5 * hs, 1.4 * hs], bh, 'cintillo', 'cintillo'));
+    for (const [i, lado] of [[0, 1], [1, -1]] as const) {
+      const a = viento * 1.3 + i * 1.1;
+      const mitad = enBase(nudo, bh, (-4.5 - 0.8 * Math.sin(a)) * hs, (-2.2 + 1.2 * Math.sin(a + 0.7)) * hs, lado * 1.2 * hs);
+      const punta = enBase(nudo, bh, (-8.5 - 1.2 * Math.sin(a + 1.2)) * hs, (-4.8 + 2.2 * Math.sin(a + 2.0) - i * 1.2) * hs, lado * 1.8 * hs);
+      P.push(cono(nudo, mitad, 0.95 * hs, 0.9 * hs, 'cintillo', 'cintillo'));
+      P.push(cono(mitad, punta, 0.9 * hs, 0.7 * hs, 'cintillo', 'cintillo'));
+    }
+  }
 
   for (const q of P) cajaDe(q);
   return P;

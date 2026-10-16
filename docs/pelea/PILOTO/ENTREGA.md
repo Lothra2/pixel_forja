@@ -1,131 +1,130 @@
 # Lote piloto de pelea: Rick estilo Street Fighter 2
-Estado: entregado, pendiente de Rick
+Estado: entregado, pendiente de Rick (segunda versión)
 PR: https://github.com/Lothra2/pixel_forja/pull/56
 Fecha: 2026-10-16
 
 ## Qué se hizo
 
-Es la fase 0 del módulo de pelea: la prueba del estilo. Hay **un luchador, Rick**, de lado, con **3 animaciones**: guardia, puño fuerte y recibir golpe. Me paro aquí para que apruebes el look antes de seguir.
+Es la fase 0 del módulo de pelea: la prueba del estilo. Hay **un luchador, Rick**, de lado, con **4 animaciones**: guardia, puño fuerte, recibir golpe y victoria. Me paro aquí para que apruebes el look antes de seguir.
+
+### Lo nuevo de la segunda versión
+
+Me pediste más estilo SF2, más fuertes y mejores trajes. Esto es lo que cambió:
+
+| Antes | Ahora |
+|---|---|
+| Cuerpo delgado | **Cuerpo de peleador:**<br>• hombros anchos y trapecios en pendiente;<br>• pectorales, dorsales y los seis cuadros del abdomen;<br>• deltoides, bíceps, tríceps y antebrazos gruesos;<br>• cintura angosta, cuádriceps y pantorrillas;<br>• cuello grueso y mandíbula ancha.<br>El torso se une más duro, así se marcan los músculos |
+| Polo y short | **Trajes por piezas, cada uno con sus colores.** Vienen 3 de muestra:<br>• **Gi:** el karategi sin mangas, abierto en V en el pecho, con la solapa marcada y las mangas arrancadas con el borde deshilachado. Pantalón ancho, cinturón con nudo y dos puntas que cuelgan, cintillo con nudo atrás y dos colas, guantes sin dedos, descalzo y con vendas.<br>• **Calle:** franelilla negra, pantalón cargo con bolsillos, correa, botas, guantes rojos y cintillo rojo.<br>• **Casual:** el polo y el short de antes, sin accesorios |
+| Tela lisa | **Pliegues de tela:**<br>• en diagonal, como en el gi de SF2, con la línea oscura y el filo con luz;<br>• en el gi bajan diagonales hacia el cinturón y se abolsan justo encima;<br>• en el pantalón se tuercen alrededor de la pierna |
+| Sin viento | **El cintillo y las puntas del cinturón se mueven** en cada cuadro: en la guardia respiran y en el golpe vuelan |
+| Contorno café | **Contorno más oscuro, sombras más rojas** y un **brillo en la piel**, el de los músculos de SF2 |
+| Golpes suaves | **Golpes con más fuerza:**<br>• base más ancha y rodillas más dobladas;<br>• el puño fuerte carga más, tira el cuerpo adelante y estira la pierna de atrás con el talón arriba;<br>• al recibir, el cuerpo se dobla para atrás de golpe |
+| | **Pose de victoria:** el puño arriba, el pecho a la cámara y el grito. Las colas vuelan en bucle |
+
+### Lo que ya traía la primera versión
 
 **Un cuerpo nuevo, no el chibi agrandado.** Es el módulo `src/engine/luchador/`.
-- **Proporciones de SF2:** 7 cabezas, 104 px parado y unos 96 en guardia. Es el tamaño de Ryu en una pantalla de 384 x 224.
-- **Se arma por volúmenes en 3D:**
-  - elipsoides para el pecho, la cadera, la cabeza y los músculos;
-  - conos redondeados para brazos y piernas.
-- **Las partes se funden o se cortan:** las del mismo grupo se funden suave, como el deltoides con el brazo. Las de grupos distintos se cortan en seco.
-- **La cámara mira de lado, sin inclinación, como SF2.** El aire de 3/4 sale de que la cadera y el pecho giran hacia la cámara.
-- **La luz se pinta en bandas:**
-  - cada material lleva 6 tonos: contorno, muy oscuro, sombra, base, luz y brillo;
-  - las sombras giran a rojo violeta y las luces a amarillo;
-  - la luz viene de arriba y de atrás del luchador, así el lado de adelante queda en sombra y se ve el volumen.
-- **Las líneas de adentro:** donde una parte pasa por delante de otra, como el brazo sobre el pecho, sale una línea oscura del color de esa parte. Es el truco de Capcom.
-- **El contorno de afuera** es de 1 pixel, del tono más oscuro de cada material.
-- **La cara se pinta a pixel por reglas:** el ojo, la ceja gruesa, los lentes transparentes con su patilla hasta la oreja y la boca. Tiene tres caras: serio, grito y dolor.
-
-**Rick sale de sus fotos:**
-- el pelo oscuro con entradas y las canas en las sienes;
-- la barba con la barbilla canosa y los lentes transparentes;
-- el polo rojo con su cuello, el short gris y las zapatillas blancas;
-- las muñequeras negras, que agregué yo.
-
-El traje alterno es azul, como el segundo jugador de SF2.
+- **Proporciones de SF2:** 7 cabezas, 104 px parado y 95 en guardia, como Ryu en una pantalla de 384 x 224.
+- **Volúmenes en 3D:** elipsoides y conos redondeados. Lo del mismo grupo se funde y los grupos distintos se cortan con una línea oscura, que es el truco de Capcom.
+- **La cámara mira de lado y sin inclinación, como SF2.** El aire de 3/4 sale de que la cadera y el pecho giran hacia la cámara.
+- **La luz en bandas de 6 tonos por material,** con el contorno de 1 px.
+- **La cara pintada a pixel:** ojo, ceja gruesa, lentes transparentes y boca, con tres caras: serio, grito y dolor.
+- **Rick sale de sus fotos:** las entradas, las canas en las sienes, la barba con la barbilla canosa y los lentes.
 
 **Las animaciones, con los tiempos a 60 por segundo:**
 
 | Animación | Cuadros | Tiempos |
 |---|---|---|
-| `guardia` | 6, en bucle | 7 ticks cada uno. Respira: baja la cadera y los puños, y vuelve |
-| `puño_fuerte` | 5 | Inicio 5, activo 4, recuperación 14, como un puño fuerte de SF2.<br>• Carga.<br>• El puño de atrás sale con todo el giro de cadera y hombro.<br>• Pega a la altura de la cara con el talón de atrás levantado: el pie gira sobre la punta.<br>• Vuelve.<br>Tiene estela de velocidad en el cuadro que sale y en el que pega |
-| `recibe_alto` | 3 | Impacto 3, el aguante 12 (el juego lo alarga con el aturdimiento) y la vuelta 6. La cabeza se va para atrás y la cara es de dolor |
+| `guardia` | 6, en bucle | 7 ticks cada uno |
+| `puño_fuerte` | 5 | Inicio 5, activo 4 y recuperación 14, con estela de velocidad |
+| `recibe_alto` | 3 | Impacto 3, aguante 12 (el juego lo alarga con el aturdimiento) y vuelta 6 |
+| `victoria` | 4 | 6, 10, 10 y 10 |
 
-**Los datos por cuadro** salen solos de los pixeles y del esqueleto:
-- **recibe**, la caja que se puede golpear, por zona: cabeza, cuerpo y piernas. En el puño fuerte se suma el brazo que pega, como en SF2, para que se le pueda contestar;
-- **pega**, la caja roja, solo en los cuadros activos y sobre el puño pintado;
-- **empuje**, para que dos luchadores no se encimen;
-- **ticks y fase** de cada cuadro, el centro de los puños para los efectos, y daño, pausa del impacto, retroceso y aturdimiento de referencia.
+**Los datos por cuadro:**
+- **recibe:** la caja que se puede golpear, por zona: cabeza, cuerpo, piernas, y el brazo que pega mientras está afuera;
+- **pega:** solo en los cuadros activos, sobre el puño pintado;
+- **empuje:** la que no deja que dos luchadores se encimen;
+- **ticks y fase** de cada cuadro, y los puños para los efectos.
 
-Todo va en pixeles desde el pivote, con y hacia abajo, como los datos por cuadro que ya usa el motor.
+**La chispa del golpe** son 4 cuadros de 48.
 
-**La chispa del golpe** son 4 cuadros de 48: el destello blanco, la estrella amarilla y naranja, el anillo roto y las chispitas.
-
-**Lo que sumé al motor sin quitar nada:** `encodeGif` acepta la duración de cada cuadro (`delays`), para que los GIF respeten los ticks.
+**Lo que sumé al motor sin quitar nada:** `encodeGif` acepta la duración de cada cuadro (`delays`).
 
 ## Cómo se usa (estudio y kit)
 
-Todavía no está en el estudio ni en el kit. El taller y la exportación son las fases 3 y 4, y van después de que apruebes el estilo.
+Todavía no está en el estudio ni en el kit. El taller y la exportación son las fases 3 y 4.
 
 Desde el motor:
 ```ts
-import { RICK_LUCHADOR, animPuñoFuerte, pintarAnim } from './engine';
-const a = pintarAnim(RICK_LUCHADOR, animPuñoFuerte(), { w: 128, h: 116, ox: 44, oy: 110 });
-// a.cuadros: los PNG. a.datos: cajas, fases y ticks. a.tiempos: { inicio: 5, activo: 4, recuperacion: 14 }
+import { RICK_LUCHADOR, TRAJES, animPuñoFuerte, pintarAnim } from './engine';
+const a = pintarAnim(RICK_LUCHADOR, animPuñoFuerte(), { w: 128, h: 136, ox: 48, oy: 130 });
+// con otro traje:
+const b = pintarAnim(RICK_LUCHADOR, animPuñoFuerte(), { w: 128, h: 136, ox: 48, oy: 130, ropa: TRAJES.calle });
 ```
 
-El traje alterno sale con `colores: { camisa: '#2b4fae', ... }` en las opciones.
+**Un traje propio** se arma con `torso` (`gi`, `franelilla`, `polo` o `nada`), `piernas` (`gi`, `cargo` o `short`) y `pies` (`descalzo`, `botas` o `zapatillas`). Cada pieza lleva su color. Los accesorios `cinturon`, `cintillo`, `guantes` y `vendas` van con color, o con null si no se ponen. El segundo jugador es el mismo traje con otros colores.
 
 ## Pruebas
 
-- **Prueba nueva `luchador.test.ts`, 7 casos:**
-  - **La rampa:** 6 tonos distintos, de oscuro a claro, también en el pelo casi negro.
-  - **La guardia:**
-    - mide de 90 a 104 de alto;
-    - tiene los pies en el piso y ningún pixel semitransparente;
-    - más del 90 % del borde es contorno oscuro;
-    - sale igual cada vez.
-  - **El traje alterno:** cambia la camisa y ni un pixel de la cabeza.
-  - **Las tres animaciones:**
+- **`luchador.test.ts`, 9 casos:**
+  - **La rampa:** 6 tonos distintos de oscuro a claro, también en el pelo casi negro.
+  - **La guardia:** mide de 90 a 104 de alto, con los pies en el piso, sin semitransparencias y con más del 90 % del borde de contorno oscuro. Sale igual cada vez.
+  - **El gi alterno:** cambia el color del gi y la cabeza queda igual. Solo puede cambiar alguna línea donde el cuello toca la tela.
+  - **Los trajes:**
+    - el gi trae cinturón y cintillo y se le ve la piel del pecho por la V;
+    - el de calle trae cintillo y el casual ningún accesorio;
+    - los tres se ven distintos;
+    - el viento mueve las colas del cintillo.
+  - **Las animaciones:**
     - el puño fuerte da inicio 5, activo 4 y recuperación 14;
-    - la caja que pega sale solo en los activos, bien delante del cuerpo y a la altura de la cara, y cae sobre el puño pintado;
+    - la caja que pega sale solo en los activos, delante del cuerpo, a la altura de la cara y sobre el puño pintado;
     - el brazo que pega también recibe;
-    - en todos los cuadros los pies quedan justo en el piso;
+    - los pies quedan en el piso en todos los cuadros;
     - al recibir, la cabeza se va para atrás.
-  - **`conPose`:** cambia solo lo que se le dice.
-  - **La chispa:** 4 cuadros de 48 que crecen y se apagan.
-  - **El GIF:** guarda la duración de cada cuadro.
-- **La suite sin `custom.test.ts`:** 57 archivos, 559 de 559.
-- **`custom.test.ts`:** 15 de 15, con el kit en 234 s. No cambia nada del kit.
+  - **La victoria:** el puño queda por encima de la cabeza.
+  - **`conPose`, la chispa y la duración de cada cuadro en el GIF.**
+- **La suite sin `custom.test.ts`:** 57 archivos, 561 de 561.
+- **`custom.test.ts`:** 15 de 15 (el kit no cambia).
 - **`tsc` y `npm run build:sitio`:** limpios.
 - **El e2e no lo corrí,** porque el estudio no cambia.
 
 ## Para aprobar (todo en esta carpeta)
 
-- **`rick_luchador.png`:** Rick en guardia contra Rick de azul, en un escenario de 384 x 224 a x3. Es la pantalla de SF2 a escala.
-- **`rick_vs_rick.gif`:** el puño fuerte que conecta, a x2 y a los tiempos reales. Trae la pausa del impacto de 13 ticks, la chispa, la sacudida del golpeado y el retroceso de 10 px.
-- **`rick_vs_rick_impacto.png`:** el cuadro del impacto a x3.
-- **`guardia.gif`, `puno_fuerte.gif` y `recibe_alto.gif`:** cada animación sola, a x3.
-- **`cuadros_y_cajas.png`:** todos los cuadros con su fase y sus ticks. Debajo de cada uno van sus cajas: azul recibe, rojo pega y amarillo empuje.
+- **`trajes.png`:** los tres trajes en guardia sobre el escenario, a x3, como una pantalla de selección.
+- **`rick_luchador.png`:** Rick de gi rojo contra Rick de gi azul, el segundo jugador, a x3.
+- **`rick_vs_rick.gif`:** el puño fuerte que conecta, a x2 y a los tiempos reales. Trae la pausa del impacto, la chispa, la sacudida y el retroceso.
+- **`rick_vs_rick_impacto.png`:** el cuadro del impacto, a x3.
+- **`guardia.gif`, `puno_fuerte.gif`, `recibe_alto.gif` y `victoria.gif`:** cada animación sola, a x3.
+- **`cuadros_y_cajas.png`:** todos los cuadros con su fase y sus ticks, y debajo sus cajas (azul recibe, rojo pega, amarillo empuje).
 
 Qué mirar:
-- ¿Se siente SF2?
-- ¿Se reconoce Rick?
-- ¿El puño fuerte pega con peso?
+- ¿Ahora sí se siente SF2?
+- ¿El gi te convence, o prefieres otro color o el de calle?
+- ¿Se reconoce Rick con cintillo y lentes?
 
 ## Decisiones que tomé sin preguntar
 
-1. **Por volúmenes en 3D y no pintado a mano.** Así un luchador nuevo sale de su ficha y cada golpe nuevo es una pose, no 600 cuadros dibujados. Lo que se pierde frente a Capcom lo pongo abajo.
-2. **Polo, short y zapatillas, como en tus fotos,** y no un gi. Rick peleando con su ropa se reconoce más. Las muñequeras son lo único inventado.
-3. **El escenario es solo un fondo de prueba,** un atardecer con ciudad y piso de tablas. No es parte del módulo.
-4. **El empuje es una caja fija** sacada del torso en guardia, como en SF2, donde casi no cambia.
-5. **Daño, pausa, retroceso y aturdimiento son de referencia:** 22, 13, 10 y 18. Los manda el juego.
+1. **El gi de Rick es rojo, con cinturón negro, cintillo blanco y guantes negros.** Es su color de siempre. El segundo jugador va de azul con cintillo rojo y guantes blancos.
+2. **Rick sigue con lentes peleando.** Es parte de cómo se le reconoce. Si los quieres fuera para la pelea, es una línea.
+3. **Contextura 0,85,** casi grandote. Rick con cuerpo de Ken, no de Zangief.
+4. **Pliegues en diagonal y no en anillos.** Probé anillos alrededor de la pierna y parecía armadura.
+5. **Volúmenes en 3D y no pintado a mano.** Así un luchador nuevo sale de su ficha y un golpe nuevo es una pose.
+6. **El escenario es solo un fondo de prueba.**
 
 ## Límites honestos
 
-- **No es Capcom a mano.** El sombreado sale de la luz, no de la mano de un artista:
-  - la anatomía es más simple que la de Ryu;
-  - la ropa no tiene pliegues;
+- **No es Capcom a mano:**
+  - los pliegues siguen un patrón y no se acomodan a cada pose como los dibujaría un artista;
   - los dedos son surcos.
 
-  Para llegar más cerca hacen falta pliegues de tela por pose y retoques a mano en los cuadros clave. El motor ya exporta a Aseprite para eso.
-- **La cara es chica:** unos 16 px, como en SF2. Se lee barba, lentes y canas, pero no es un retrato.
+  Retocar a mano los cuadros clave es lo que falta para llegar al nivel de Capcom, y el motor ya exporta a Aseprite.
+- **La cara es chica:** unos 16 px, como en SF2. Con cintillo, lentes y barba queda cargada.
+- **El pantalón del gi es ancho y en la rodilla hace bulto,** porque está armado con dos conos.
 - **Solo de lado y mirando a la derecha.** El otro lado es el espejo, como en SF2.
-- **3 animaciones de las ~45** que propuse para el repertorio.
-- **El render tarda unos 50 ms por cuadro.** Un luchador completo, de 300 a 400 cuadros, sale en unos 20 segundos.
+- **4 animaciones de las ~45** del repertorio.
 
 ## Lo que necesita el siguiente lote
 
-- **Tu aprobación del estilo**, o qué cambiar: más músculo, otra ropa, otra luz, la cara más grande.
-- **Si apruebas, la fase 1:** el cuerpo y la ropa. Eso trae:
-  - contexturas de flaco a grandote, y mujeres;
-  - pliegues de tela;
-  - más peinados y caras.
+- **Tu visto bueno al estilo,** o qué cambiar.
+- **Si apruebas, la fase 1:** más contexturas (de flaco a grandote, y mujeres), más trajes y más caras.
 - **Después, la fase 2:** el repertorio completo.
