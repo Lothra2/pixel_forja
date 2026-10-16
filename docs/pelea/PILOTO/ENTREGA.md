@@ -1,6 +1,6 @@
 # Lote piloto de pelea: Rick estilo Street Fighter 2
 Estado: entregado, pendiente de Rick
-PR:
+PR: https://github.com/Lothra2/pixel_forja/pull/56
 Fecha: 2026-10-16
 
 ## Qué se hizo
