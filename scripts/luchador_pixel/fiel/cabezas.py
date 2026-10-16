@@ -19,6 +19,7 @@ PLAN = {
     'r_onda_carga': 'grito', 'r_onda': 'grito', 'r_victoria': 'normal',
     's_agacha': 'normal', 's_sube': 'normal', 's_patada': 'normal', 's_patada_alta': 'normal',
     's_patada_media': 'normal', 's_patada_baja': 'normal',
+    'r_patada': 'normal', 's_puno': 'normal',
 }
 CARAS = {'rick': {'grito': [(69, 14, ["EE", " EE"]), (70, 26, [" AA ", "AAAA", "AKKA", "AHHA", " AA "])]}}
 CARA = 0.45  # la cara es la parte de adelante de la cabeza, desde este ancho
@@ -73,9 +74,11 @@ def buscar(T, P, LP):
     return best
 
 
-def medir():
-    out = {}
+def medir(todo=False):
+    out = {} if todo or not os.path.exists(JSON) else json.load(open(JSON))
     for nom in PLAN:
+        if nom in out:
+            continue
         n = 'rick' if nom[0] == 'r' else 'sophie'
         LP = paleta_lab(n)
         H0 = cabeza(n)
@@ -156,4 +159,6 @@ def trasplantar(nom, a):
 
 if __name__ == '__main__':
     if '--medir' in sys.argv or not os.path.exists(JSON):
+        medir(todo=True)
+    elif '--nuevas' in sys.argv:
         medir()

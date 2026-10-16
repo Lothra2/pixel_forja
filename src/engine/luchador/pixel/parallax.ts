@@ -28,6 +28,28 @@ export interface CapaParallax {
   frente?: boolean;
   /** Sus faroles titilan. */
   luces?: boolean;
+  /** Es agua: cada fila se mece un pixel a los lados, como el reflejo en un río. */
+  agua?: boolean;
+}
+
+/**
+ * Un extra que se mueve en el fondo: una guacamaya que cruza, el teleférico que sube, un bote que pasa por el río.
+ * Va en las coordenadas de la capa `tras` (y a su velocidad), dibujado justo después de esa capa.
+ */
+export interface ActorParallax {
+  cuadros: Raster[];
+  /** ticks por cuadro de su aleteo o su balanceo */
+  ticks: number;
+  tras: string;
+  desde: [number, number];
+  hasta: [number, number];
+  /** ticks que tarda en ir de `desde` a `hasta` */
+  duracion: number;
+  desfase?: number;
+  /** cuánto sube y baja mientras va (pixeles) */
+  vaiven?: number;
+  /** `ida`: vuelve a empezar al llegar. `vuelta`: va y vuelve (se voltea al volver). */
+  modo?: 'ida' | 'vuelta';
 }
 
 export interface EscenarioParallax {
@@ -42,6 +64,10 @@ export interface EscenarioParallax {
   titila: Map<number, [number, number]>;
   /** Los tonos rosados de los pétalos, del más oscuro al más claro. */
   rosas: [number, number, number][];
+  /** Los extras que se mueven. */
+  actores: ActorParallax[];
+  /** Si caen pétalos (o flores) y de qué tonos. */
+  conPetalos: boolean;
   /** Hasta dónde va la cámara. */
   camara: { x0: number; x1: number; y0: number; y1: number };
 }
@@ -53,7 +79,7 @@ const esLuz = (r: number, g: number, b: number) => r > 200 && g > 110 && b < 140
 const luz = (c: [number, number, number]) => 0.3 * c[0] + 0.55 * c[1] + 0.15 * c[2];
 
 /** Lee las capas, junta la paleta, arma la tabla de los faroles y el rango de la cámara. */
-export function prepararEscenario(capas: CapaParallax[], piso: number): EscenarioParallax {
+export function prepararEscenario(capas: CapaParallax[], piso: number, extra: { actores?: ActorParallax[]; petalos?: false | [string, string] } = {}): EscenarioParallax {
   const { w, h } = capas[0].img;
   for (const c of capas) if (c.img.w !== w || c.img.h !== h) throw new Error(`la capa ${c.nombre} no mide ${w} x ${h}`);
   const vistos = new Map<number, [number, number, number]>();
@@ -75,11 +101,12 @@ export function prepararEscenario(capas: CapaParallax[], piso: number): Escenari
   };
   const titila = new Map<number, [number, number]>();
   for (const c of paleta) if (esLuz(...c)) titila.set(clave(...c), [vecino(c, 0.82), vecino(c, 1.15)]);
-  const rosas = paleta.filter(([r, g, b]) => r > 200 && b > 150 && g < r - 30 && g > 90).sort((a, b) => luz(a) - luz(b));
+  const hex = (h: string): [number, number, number] => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const rosas = extra.petalos ? extra.petalos.map(hex) : paleta.filter(([r, g, b]) => r > 200 && b > 150 && g < r - 30 && g > 90).sort((a, b) => luz(a) - luz(b));
   // la cámara llega hasta donde la capa más rápida todavía cubre la vista
   const cx = (w - VISTA.w) / 2, rapido = Math.max(...capas.map((c) => c.factor));
   const r = cx / rapido;
-  return { w, h, piso, capas, paleta, titila, rosas, camara: { x0: Math.ceil(cx - r), x1: Math.floor(cx + r), y0: 0, y1: h - VISTA.h } };
+  return { w, h, piso, capas, paleta, titila, rosas, actores: extra.actores ?? [], conPetalos: extra.petalos !== false, camara: { x0: Math.ceil(cx - r), x1: Math.floor(cx + r), y0: 0, y1: h - VISTA.h } };
 }
 
 /** Dónde empieza una capa (o una fila del piso) para la cámara dada. */
@@ -118,7 +145,8 @@ function pintarCapa(e: EscenarioParallax, c: CapaParallax, cam: { x: number; y: 
   for (let y = 0; y < VISTA.h; y++) {
     const sy = y + oy;
     if (sy < 0 || sy >= e.h) continue;
-    const [ox] = origen(e, factorFila(e, c, sy), fy, cam);
+    let [ox] = origen(e, factorFila(e, c, sy), fy, cam);
+    if (c.agua) ox += Math.round(Math.sin(t * 0.07 + sy * 0.9) * 0.8);
     for (let x = 0; x < VISTA.w; x++) {
       const sx = x + ox;
       if (sx < 0 || sx >= e.w) continue;
@@ -135,6 +163,40 @@ function pintarCapa(e: EscenarioParallax, c: CapaParallax, cam: { x: number; y: 
       const di = (y * VISTA.w + x) * 4;
       dst.data[di] = r; dst.data[di + 1] = g; dst.data[di + 2] = b; dst.data[di + 3] = 255;
     }
+  }
+}
+
+/** Dónde está un extra en el tick `t` (en coordenadas de su capa), qué cuadro le toca y si va volteado. */
+export function posActor(a: ActorParallax, t: number): { x: number; y: number; cuadro: number; espejo: boolean } {
+  const k = t + (a.desfase ?? 0);
+  let u = (((k % a.duracion) + a.duracion) % a.duracion) / a.duracion;
+  let espejo = a.hasta[0] < a.desde[0];
+  if (a.modo === 'vuelta') {
+    const ciclo = Math.floor(k / a.duracion) % 2;
+    if (ciclo === 1) { u = 1 - u; espejo = !espejo; }
+  }
+  const x = a.desde[0] + (a.hasta[0] - a.desde[0]) * u;
+  const y = a.desde[1] + (a.hasta[1] - a.desde[1]) * u + Math.sin(k * 0.06) * (a.vaiven ?? 0);
+  return { x: Math.round(x), y: Math.round(y), cuadro: Math.floor(k / a.ticks) % a.cuadros.length, espejo };
+}
+
+function pintarActores(e: EscenarioParallax, capa: CapaParallax, cam: { x: number; y: number }, t: number, dst: Raster) {
+  for (const a of e.actores) {
+    if (a.tras !== capa.nombre) continue;
+    const [ox, oy0] = origen(e, capa.factor, capa.factorY ?? Math.min(1, capa.factor), cam);
+    const oy = oy0 + (capa.dy ?? 0);
+    const p = posActor(a, t);
+    const img = a.cuadros[p.cuadro];
+    const x0 = p.x - ox - (img.w >> 1), y0 = p.y - oy - (img.h >> 1);
+    for (let y = 0; y < img.h; y++)
+      for (let x = 0; x < img.w; x++) {
+        const si = (y * img.w + (p.espejo ? img.w - 1 - x : x)) * 4;
+        if (!img.data[si + 3]) continue;
+        const X = x0 + x, Y = y0 + y;
+        if (X < 0 || Y < 0 || X >= dst.w || Y >= dst.h) continue;
+        const di = (Y * dst.w + X) * 4;
+        dst.data[di] = img.data[si]; dst.data[di + 1] = img.data[si + 1]; dst.data[di + 2] = img.data[si + 2]; dst.data[di + 3] = 255;
+      }
   }
 }
 
@@ -175,8 +237,8 @@ export function pintarPetalos(e: EscenarioParallax, ps: Petalo[], dst: Raster) {
 /** Lo que va detrás de los luchadores: todas las capas menos el frente, y los pétalos de atrás. */
 export function pintarFondo(e: EscenarioParallax, cam: { x: number; y: number }, t: number): Raster {
   const r = createRaster(VISTA.w, VISTA.h);
-  for (const c of e.capas) if (!c.frente) pintarCapa(e, c, cam, t, r);
-  pintarPetalos(e, petalos(e, cam, t, 'atras'), r);
+  for (const c of e.capas) if (!c.frente) { pintarCapa(e, c, cam, t, r); pintarActores(e, c, cam, t, r); }
+  if (e.conPetalos) pintarPetalos(e, petalos(e, cam, t, 'atras'), r);
   return r;
 }
 
@@ -184,7 +246,7 @@ export function pintarFondo(e: EscenarioParallax, cam: { x: number; y: number },
 export function pintarFrente(e: EscenarioParallax, cam: { x: number; y: number }, t: number): Raster {
   const r = createRaster(VISTA.w, VISTA.h);
   for (const c of e.capas) if (c.frente) pintarCapa(e, c, cam, t, r);
-  pintarPetalos(e, petalos(e, cam, t, 'frente'), r);
+  if (e.conPetalos) pintarPetalos(e, petalos(e, cam, t, 'frente'), r);
   return r;
 }
 
@@ -202,8 +264,12 @@ export interface ManifestEscenario {
   w: number;
   h: number;
   piso: number;
-  capas: { img: string; factor: number; factorY?: number; dy?: number; luces?: boolean; perspectiva?: { arriba: number } }[];
+  capas: { img: string; factor: number; factorY?: number; dy?: number; luces?: boolean; agua?: boolean; perspectiva?: { arriba: number } }[];
   frente: { img: string; factor: number; luces?: boolean }[];
+  /** los extras que se mueven: sus cuadros por nombre de archivo */
+  actores?: { img: string[]; ticks: number; tras: string; desde: [number, number]; hasta: [number, number]; duracion: number; desfase?: number; vaiven?: number; modo?: 'ida' | 'vuelta' }[];
+  /** false: no caen pétalos. Dos tonos: caen de esos colores (el oscuro y el claro). Sin decir nada: pétalos rosados. */
+  petalos?: false | [string, string];
 }
 
 /** Arma el escenario desde su manifest y sus imágenes ya leídas (por nombre de archivo). */
@@ -211,7 +277,11 @@ export function escenarioDesdeManifest(m: ManifestEscenario, imgs: Record<string
   const capa = (c: ManifestEscenario['capas'][number], frente: boolean): CapaParallax => {
     const img = imgs[c.img];
     if (!img) throw new Error(`falta la imagen ${c.img}`);
-    return { nombre: c.img.replace(/\.png$/, ''), img, factor: c.factor, factorY: 'factorY' in c ? c.factorY : undefined, dy: 'dy' in c ? c.dy : undefined, luces: c.luces, perspectiva: 'perspectiva' in c ? c.perspectiva : undefined, frente };
+    return { nombre: c.img.replace(/\.png$/, ''), img, factor: c.factor, factorY: 'factorY' in c ? c.factorY : undefined, dy: 'dy' in c ? c.dy : undefined, luces: c.luces, agua: 'agua' in c ? c.agua : undefined, perspectiva: 'perspectiva' in c ? c.perspectiva : undefined, frente };
   };
-  return prepararEscenario([...m.capas.map((c) => capa(c, false)), ...m.frente.map((c) => capa(c, true))], m.piso);
+  const actores = (m.actores ?? []).map((a): ActorParallax => {
+    const cuadros = a.img.map((f) => { const r = imgs[f]; if (!r) throw new Error(`falta la imagen ${f}`); return r; });
+    return { cuadros, ticks: a.ticks, tras: a.tras.replace(/\.png$/, ''), desde: a.desde, hasta: a.hasta, duracion: a.duracion, desfase: a.desfase, vaiven: a.vaiven, modo: a.modo };
+  });
+  return prepararEscenario([...m.capas.map((c) => capa(c, false)), ...m.frente.map((c) => capa(c, true))], m.piso, { actores, petalos: m.petalos });
 }
