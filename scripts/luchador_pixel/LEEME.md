@@ -28,3 +28,26 @@ python3 scripts/luchador_pixel/fiel/rick_fiel.py
 python3 scripts/luchador_pixel/fiel/sophie_fiel.py
 python3 scripts/luchador_pixel/fiel/dibujos.py
 ```
+
+## El escenario japonés por capas
+
+Las capas salen de Higgsfield (`gpt_image_2_5`), pedidas solo con texto: primero la imagen maestra
+(`escenario/datos/maestra.png`) y después cada capa con la maestra de referencia y fondo magenta.
+Cada capa se pidió con la misma composición, así encajan una sobre otra.
+
+| Capa | Qué trae | Factor |
+|---|---|---|
+| `cielo` | la luna llena, las estrellas y las nubes | 0.1 |
+| `montes` | el monte Fuji y los cerros con el lago | 0.25 |
+| `castillo` | el castillo, el torii y los cerezos de atrás | 0.5 |
+| `muro` | el muro de tejas con los faroles y el estandarte | 0.8 |
+| `piso` | las tablas con el reflejo de los faroles, en perspectiva | 0.8 arriba, 1 en los pies |
+| `frente` | las ramas de cerezo y los faroles de piedra de adelante | 1.2 |
+
+`escenario/capas.py` quita el magenta, baja cada capa a su pixel real (unos 2,2 px de la imagen) y les pone
+una paleta común de 96 tonos. Escribe `public/escenarios/japon/<capa>.png` a 611 x 262:
+```
+python3 scripts/luchador_pixel/escenario/capas.py
+```
+El manifest (`public/escenarios/japon/manifest.json`) dice el factor de cada capa, la fila del piso, el rango
+de la cámara y cómo se calcula todo. El motor lo usa con `escenarioDesdeManifest` (`luchador/pixel/parallax.ts`).

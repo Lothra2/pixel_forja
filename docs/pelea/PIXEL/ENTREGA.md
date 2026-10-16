@@ -1,5 +1,5 @@
 # Lote piloto de pelea: Rick y Sophie fieles a su referencia
-Estado: entregado, pendiente de Rick (quinta versión, fiel a la imagen aprobada)
+Estado: entregado, pendiente de Rick (sexta versión: fiel a la imagen aprobada y en el escenario nuevo por capas)
 PR: https://github.com/Lothra2/pixel_forja/pull/56
 Fecha: 2026-10-16
 
@@ -27,6 +27,7 @@ Las piezas sirven para respirar en guardia, pero un brazo estirado o una patada 
 - **Cada pose se pidió con la guardia aprobada como referencia del personaje,** así sale el mismo Rick y la misma Sophie.
 - **Las poses las elegí yo,** según lo que pide cada movimiento.
 - **22 imágenes:** 10 de Rick y 12 de Sophie. Costaron 5,5 créditos. Sumando las dos referencias, el piloto gastó 6 créditos.
+- **El escenario costó 1,75 créditos:** la maestra (0,25) y las 6 capas (1,5). La prueba de AutoSprite falló del lado de Higgsfield y devolvieron los 3 créditos. En total el piloto lleva 7,75 créditos.
 - **Ninguna foto de la familia salió de `private/`:** todo se pidió con texto y con la referencia ya aprobada.
 
 Con cada imagen hice lo mismo que con la guardia:
@@ -74,9 +75,40 @@ Con cada imagen hice lo mismo que con la guardia:
 | `recibe` | Se encoge con los ojos apretados |
 | `victoria` | Brinca de alegría con el puño arriba |
 
+### 5. El escenario nuevo: el castillo de noche por capas
+
+Pediste un fondo premium al estilo SF2, por capas, donde lo de más atrás se mueve más lento. Así quedó:
+
+- **Primero una imagen maestra** y después **6 capas** pedidas con la maestra de referencia y fondo magenta, así encajan.
+- **Cada capa baja a su pixel real** y las 6 comparten una paleta de 96 tonos. Miden 611 x 262 y se ven al doble.
+
+| Capa | Qué trae | Cuánto se mueve |
+|---|---|---|
+| `cielo` | la luna llena, las estrellas y las nubes | 0.1 |
+| `montes` | el monte Fuji y los cerros con el lago | 0.25 |
+| `castillo` | el castillo, el torii y los cerezos de atrás | 0.5 |
+| `muro` | el muro de tejas con faroles y el estandarte | 0.8 |
+| `piso` | las tablas con el reflejo de los faroles | 0.8 al fondo, 1 en los pies |
+| `frente` | ramas de cerezo y faroles de piedra, delante de los luchadores | 1.2 |
+
+Lo que suma el motor (`luchador/pixel/parallax.ts`):
+- **La cámara sigue a los dos** y sube cuando Sophie salta. Llega hasta donde la capa más rápida todavía cubre la pantalla.
+- **El piso va en perspectiva:** cada fila tiene su velocidad y la de los pies va exacta con la cámara, así no resbala.
+- **El muro sube pegado al piso** y la luna se ve entera en reposo.
+- **Los faroles titilan** pasando a un tono vecino de la misma paleta. No aparece ningún color nuevo.
+- **Los pétalos caen** en dos profundidades: detrás de los luchadores y delante.
+- **El manifest** (`public/escenarios/japon/manifest.json`) trae todo eso en números, listo para el juego.
+
 ## Cómo se usa (estudio y kit)
 
 Todavía no está en el estudio ni en el kit. Desde el motor:
+```ts
+// el escenario: el manifest y sus PNG ya leídos
+const esc = escenarioDesdeManifest(manifest, imagenes);
+const cam = seguirCamara(esc, [xRick, xSophie], alturaDelSalto);
+const fondo = pintarFondoParallax(esc, cam, tick);  // detrás de los luchadores
+const frente = pintarFrenteParallax(esc, cam, tick); // delante
+```
 ```ts
 import { RICK_PIXEL, SOPHIE_PIXEL, ANIMS_RICK_PIXEL, ANIMS_SOPHIE_PIXEL, pintarAnimPixel, componerPixel } from './engine';
 const remolino = pintarAnimPixel(SOPHIE_PIXEL, ANIMS_SOPHIE_PIXEL.remolino(), { w: 320, h: 420, ox: 160, oy: 405 });
@@ -109,14 +141,23 @@ const c = componerPixel(SOPHIE_PIXEL, { dibujo: 'patada', espejo: true }, { w: 3
     - en los 8 cuadros del remolino la cabeza queda debajo de los dos pies.
   - **Rick:** vuela sin tocar el piso y termina tendido, más ancho que el doble de alto.
   - **Voltear un dibujo** pasa el pie al otro lado del ancla, sin perder ni sumar pixeles.
-- **La suite sin `custom.test.ts`:** 58 archivos, 574 de 574.
+- **`parallax.test.ts`, 6 casos:**
+  - las capas miden lo mismo, comparten paleta, van de lenta a rápida y el manifest coincide;
+  - en las cuatro puntas de la cámara el fondo cubre toda la pantalla y el frente no se sale de su imagen;
+  - la fila de los pies se corre igual que la cámara, la de arriba más lento y la de abajo más rápido;
+  - los faroles cambian entre ticks sin colores fuera de la paleta, y el muro sube pegado al piso;
+  - los pétalos caen, se mecen y solo dependen del tick;
+  - la cámara sigue el medio de los dos, respeta su rango y sube con el salto.
+- **La suite sin `custom.test.ts`:** 59 archivos, 580 de 580.
 - **`custom.test.ts`:** 15 de 15, con el kit en 231 s. El kit no cambia.
 - **`tsc` y `npm run build`:** limpios.
 
 ## Para aprobar (todo en esta carpeta)
 
-- **`rick_vs_sophie.gif`:** la pelea completa a 768 x 448 y a los tiempos reales. Es lo principal.
-- **`rick_y_sophie.png`:** los dos en guardia en el castillo.
+- **`rick_vs_sophie.mp4`:** la pelea completa en el escenario nuevo, con la cámara siguiéndolos, a los tiempos reales. Es lo principal. Pasó de GIF a video porque el GIF con el fondo vivo pesaba 38 MB.
+- **`escenario_japon.mp4`:** el escenario solo, con la cámara de punta a punta y subiendo, para ver el parallax.
+- **`escenario_izquierda.png` y `escenario_derecha_arriba.png`:** las dos puntas de la cámara.
+- **`rick_y_sophie.png`:** los dos en guardia en el castillo nuevo.
 - **`de_la_referencia_a_la_hoja.png`:** la referencia aprobada al lado de la hoja que sale de ella.
 - **`poses_clave_rick.png` y `poses_clave_sophie.png`:** todas las poses dibujadas.
 - **`pelea_1.png` a `pelea_6.png`:** seis momentos de la pelea.
@@ -136,8 +177,10 @@ Qué mirar:
 3. **Cada pose pasa a la paleta de la guardia.** Las poses nuevas traían tonos apenas distintos, y así un cuadro no cambia de color con el siguiente.
 4. **Igualé el tamaño de 7 poses** que salieron hasta un 30 % más grandes o un 10 % más chicas: el remolino de Sophie y 6 de Rick. Lo medí por las vendas, las zapatillas y la silueta.
 5. **Las piezas quedan solo para la guardia.** Ahí no giran, solo respiran, y se ven idénticas a la imagen.
-6. **El escenario y los efectos van al doble,** con su pixel de siempre. El castillo no se redibujó.
+6. **El escenario y los efectos van al doble.** El castillo dibujado por código sigue en el motor, pero la pelea usa el nuevo por capas.
 7. **La versión anterior por piezas a 108 px se reemplazó.** Las versiones por volúmenes siguen en el motor y en `docs/pelea/PILOTO/`.
+8. **El frente va a 1.2 y no más.** Más rápido obligaba a achicar el recorrido de la cámara o a mostrar el borde cortado de las ramas.
+9. **Las capas viven en `public/escenarios/japon/`,** así el estudio y el juego las leen igual. Las imágenes originales quedan en `scripts/luchador_pixel/escenario/datos/` para regenerarlas.
 
 ## Límites honestos
 
@@ -146,12 +189,14 @@ Qué mirar:
   - Un pixelartista lo emparejaría a mano en una pasada.
 - **Son pocos cuadros por movimiento: dos o tres poses clave.** SF2 usa 3 a 6 por golpe. El paso que sigue es pedir los cuadros intermedios de los golpes que más importan.
 - **El tamaño igualado tiene un margen de unos 5 %.** El remolino achicado quedó un poco más suave de borde que el resto.
-- **El GIF de la pelea pesa unos 14 MB.**
+- **Las nubes no se desplazan solas:** vienen pintadas dentro del cielo. Para que pasen hay que pedir el cielo sin nubes y las nubes aparte.
+- **Los faroles de piedra del frente resbalan un poco sobre el piso** al mover la cámara, porque van a 1.2 y el piso de abajo a 1.06. Casi no se nota.
+- **La pelea del video es una coreografía,** no el juego. El juego lo arma la otra sesión.
 - **Faltan movimientos para un juego completo:** agacharse, el salto normal y los golpes débiles y medios.
 
 ## Lo que necesita el siguiente lote
 
-- **Tu visto bueno a esta fidelidad,** o qué pose rehacer.
+- **Tu visto bueno a esta fidelidad y al escenario,** o qué pose o capa rehacer.
 - **Si apruebas:**
   - los cuadros intermedios de los especiales, unas 15 imágenes más, cerca de 4 créditos;
   - el repertorio completo;

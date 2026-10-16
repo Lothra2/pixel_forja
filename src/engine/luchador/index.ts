@@ -12,3 +12,4 @@ export { componerPixel, pintarPixel, pintarAnimPixel, type MunecoPixel, type Pie
 export { RICK_PIXEL, RICK_CARAS } from './pixel/rick';
 export { SOPHIE_PIXEL } from './pixel/sophie';
 export { apuntar as apuntarPixel, ANIMS_RICK_PIXEL, ANIMS_SOPHIE_PIXEL } from './pixel/golpesPixel';
+export { VISTA as VISTA_PARALLAX, prepararEscenario, escenarioDesdeManifest, pintarFondo as pintarFondoParallax, pintarFrente as pintarFrenteParallax, petalos as petalosParallax, seguirCamara, factorFila, estadoFarol, type CapaParallax, type EscenarioParallax, type ManifestEscenario } from './pixel/parallax';
