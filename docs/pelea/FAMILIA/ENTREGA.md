@@ -118,8 +118,6 @@ Lo verifiqué yo:
 - se ven el selector con los retratos nuevos, el VS, la pelea en cada ciudad, las chispas, el polvo y el súper.
 
 Lo que hizo el juego antes, en su Lote C (PR #3):
-
-Lo que hizo el juego en su Lote C:
 - el selector estilo SF2;
 - toque corto para débil y largo para fuerte, según la postura;
 - hitstop por fuerza, chispas, sacudida y súper con oscurecido;
@@ -127,6 +125,22 @@ Lo que hizo el juego en su Lote C:
 - la pantalla ajustada a iPhone, Galaxy S23 y tablets.
 
 Ahora recibe todo este arte.
+
+### 7. Arreglos después de aprobar
+
+Revisando cuadro por cuadro salió un error del cortador de hojas: partía la hoja por columnas, y cuando una pose se
+mete por encima de la de al lado (una pierna en la rueda, un bate estirado) le cortaba ese pedazo a una y se lo
+pegaba a la otra. Ahora cada mancha va entera al cuadro donde cae su centro.
+
+| Qué | Antes | Ahora |
+|---|---|---|
+| Steph, Voltereta Loca | le faltaban la pierna, el bate y una bota | entera |
+| Alana, Estrella Mágica | una varita suelta flotando | limpia |
+| Steph, puño fuerte | el bate cortado en la punta | completo |
+| Sophie, caer y recibir en el aire | al 70 % de su tamaño | a su tamaño |
+| Thor, mareado | más chiquito que su guardia | a la altura de la guardia |
+
+Lo demás quedó igual, con el borde del pixel un poco más limpio. Commit 0fa2506.
 
 ## Cómo se hizo (para repetirlo)
 
@@ -153,11 +167,13 @@ Ahora recibe todo este arte.
 | 3 cuadros clave del intro | 3 |
 | Video del intro (Grok) | 45 |
 | Voces del anunciador | 1,3 |
-| **Total** | **unos 185 de los 400** |
+| Fondo del título con cielo (outpaint que casi no agrandó, no se usó) | 2 |
+| **Total** | **unos 187 de los 400** |
 
 Lo que no se cobró:
 - **AutoSprite** falló otra vez: es la tercera vez y devolvieron los créditos. No lo intenté más.
 - **MiniMax rechazó tres veces el video del intro** por su filtro de contenido y devolvió los créditos. Con Grok salió a la primera.
+- **Un fondo de título nuevo con cielo libre** lo bloqueó el filtro (por el traje de Steph) y devolvió el crédito. El logo va arriba con un degradado oscuro detrás.
 
 ## Para aprobar
 
