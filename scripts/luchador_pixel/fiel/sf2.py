@@ -178,7 +178,7 @@ ALTURA = {'guardia': 1.0, 'avanza': 1.0, 'retrocede': 1.0, 'agacha': 0.8, 'salto
           'mareado': 0.9, 'poder1': 1.0, 'poder2': 0.95, 'poder3': 1.0, 'victoria': 1.0, 'intro': 1.0}
 ALTURA_THOR = {'agacha': 0.85, 'salto': 1.05, 'salto_adelante': 0.8, 'puno_fuerte': 1.25, 'patada_debil': 1.0,
                'patada_fuerte': 1.2, 'agachado_puno': 0.85, 'agachado_patada': 0.75, 'barrida': 0.6, 'aire': 0.95,
-               'recibe': 1.0, 'cae': 0.75, 'levanta': 0.8, 'poder3': 1.15, 'victoria': 1.1}
+               'recibe': 1.0, 'cae': 0.75, 'levanta': 0.8, 'poder3': 1.15, 'victoria': 1.1, 'mareado': 1.0}
 
 
 def leer_hoja(pid, hoja):
