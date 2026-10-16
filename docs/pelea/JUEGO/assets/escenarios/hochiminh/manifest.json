@@ -1,0 +1,174 @@
+{
+ "id": "hochiminh",
+ "w": 611,
+ "h": 262,
+ "vista": {
+  "w": 384,
+  "h": 224
+ },
+ "escala": 2,
+ "piso": 244,
+ "capas": [
+  {
+   "img": "cielo.png",
+   "factor": 0.1,
+   "dy": -30
+  },
+  {
+   "img": "ciudad.png",
+   "factor": 0.3,
+   "luces": true
+  },
+  {
+   "img": "rio.png",
+   "factor": 0.5,
+   "luces": true,
+   "agua": true
+  },
+  {
+   "img": "muro.png",
+   "factor": 0.8,
+   "factorY": 1,
+   "luces": true
+  },
+  {
+   "img": "piso.png",
+   "factor": 1,
+   "luces": true,
+   "perspectiva": {
+    "arriba": 0.8
+   }
+  }
+ ],
+ "frente": [
+  {
+   "img": "frente.png",
+   "factor": 1.2,
+   "luces": true
+  }
+ ],
+ "camara": {
+  "x0": 19,
+  "x1": 208,
+  "y0": 0,
+  "y1": 38
+ },
+ "nombre": "Ho Chi Minh de noche",
+ "actores": [
+  {
+   "img": [
+    "elementos/crucero.png"
+   ],
+   "ticks": 30,
+   "tras": "rio",
+   "desde": [
+    -40,
+    136
+   ],
+   "hasta": [
+    650,
+    136
+   ],
+   "duracion": 2600,
+   "vaiven": 0.6
+  },
+  {
+   "img": [
+    "elementos/sampan.png"
+   ],
+   "ticks": 30,
+   "tras": "rio",
+   "desde": [
+    650,
+    143
+   ],
+   "hasta": [
+    -40,
+    143
+   ],
+   "duracion": 1800,
+   "desfase": 700,
+   "vaiven": 0.8
+  },
+  {
+   "img": [
+    "elementos/ferry.png"
+   ],
+   "ticks": 30,
+   "tras": "rio",
+   "desde": [
+    -40,
+    131
+   ],
+   "hasta": [
+    650,
+    131
+   ],
+   "duracion": 3200,
+   "desfase": 1600,
+   "vaiven": 0.5
+  },
+  {
+   "img": [
+    "elementos/loto_1.png",
+    "elementos/loto_2.png"
+   ],
+   "ticks": 20,
+   "tras": "rio",
+   "desde": [
+    80,
+    147
+   ],
+   "hasta": [
+    560,
+    147
+   ],
+   "duracion": 3600,
+   "vaiven": 0.5
+  },
+  {
+   "img": [
+    "elementos/loto_1.png",
+    "elementos/loto_2.png"
+   ],
+   "ticks": 24,
+   "tras": "rio",
+   "desde": [
+    40,
+    145
+   ],
+   "hasta": [
+    520,
+    145
+   ],
+   "duracion": 3600,
+   "desfase": 1200,
+   "vaiven": 0.5
+  },
+  {
+   "img": [
+    "elementos/loto_2.png",
+    "elementos/loto_1.png"
+   ],
+   "ticks": 22,
+   "tras": "rio",
+   "desde": [
+    140,
+    149
+   ],
+   "hasta": [
+    600,
+    149
+   ],
+   "duracion": 3600,
+   "desfase": 2400,
+   "vaiven": 0.5
+  }
+ ],
+ "petalos": false,
+ "notas": [
+  "Igual que el castillo japonés: mismas medidas, misma cámara y misma fórmula de paralaje (ver japon/manifest.json).",
+  "actores: extras que se mueven en coordenadas de la capa `tras` y a su velocidad, dibujados justo después de esa capa. Van de `desde` a `hasta` en `duracion` ticks (con `modo: vuelta` van y vuelven), cambian de cuadro cada `ticks` y suben y bajan `vaiven` pixeles. Se voltean cuando van hacia la izquierda.",
+  "agua: la capa se mece un pixel por fila como un reflejo. petalos: false no caen; dos tonos caen de esos colores."
+ ]
+}

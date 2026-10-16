@@ -1,0 +1,247 @@
+{
+ "w": 611,
+ "h": 262,
+ "vista": {
+  "w": 384,
+  "h": 224
+ },
+ "escala": 2,
+ "piso": 244,
+ "capas": [
+  {
+   "img": "cielo.png",
+   "factor": 0.1,
+   "dy": -30,
+   "luces": true
+  },
+  {
+   "img": "montes.png",
+   "factor": 0.25,
+   "luces": true
+  },
+  {
+   "img": "ciudad.png",
+   "factor": 0.5
+  },
+  {
+   "img": "muro.png",
+   "factor": 0.8,
+   "factorY": 1,
+   "luces": true
+  },
+  {
+   "img": "piso.png",
+   "factor": 1,
+   "luces": true,
+   "perspectiva": {
+    "arriba": 0.8
+   }
+  }
+ ],
+ "frente": [
+  {
+   "img": "frente.png",
+   "factor": 1.2,
+   "luces": true
+  }
+ ],
+ "camara": {
+  "x0": 19,
+  "x1": 208,
+  "y0": 0,
+  "y1": 38
+ },
+ "id": "celestial",
+ "nombre": "Reino Celestial de Alana",
+ "actores": [
+  {
+   "img": [
+    "elementos/farol.png"
+   ],
+   "ticks": 60,
+   "tras": "ciudad",
+   "desde": [
+    60,
+    200
+   ],
+   "hasta": [
+    84,
+    -30
+   ],
+   "duracion": 1800,
+   "desfase": 0,
+   "vaiven": 3
+  },
+  {
+   "img": [
+    "elementos/farol.png"
+   ],
+   "ticks": 60,
+   "tras": "ciudad",
+   "desde": [
+    170,
+    200
+   ],
+   "hasta": [
+    194,
+    -30
+   ],
+   "duracion": 1800,
+   "desfase": 500,
+   "vaiven": 3
+  },
+  {
+   "img": [
+    "elementos/farol.png"
+   ],
+   "ticks": 60,
+   "tras": "ciudad",
+   "desde": [
+    300,
+    200
+   ],
+   "hasta": [
+    324,
+    -30
+   ],
+   "duracion": 1800,
+   "desfase": 250,
+   "vaiven": 3
+  },
+  {
+   "img": [
+    "elementos/farol.png"
+   ],
+   "ticks": 60,
+   "tras": "ciudad",
+   "desde": [
+    420,
+    200
+   ],
+   "hasta": [
+    444,
+    -30
+   ],
+   "duracion": 1800,
+   "desfase": 900,
+   "vaiven": 3
+  },
+  {
+   "img": [
+    "elementos/farol.png"
+   ],
+   "ticks": 60,
+   "tras": "ciudad",
+   "desde": [
+    540,
+    200
+   ],
+   "hasta": [
+    564,
+    -30
+   ],
+   "duracion": 1800,
+   "desfase": 650,
+   "vaiven": 3
+  },
+  {
+   "img": [
+    "elementos/mariposa_1.png",
+    "elementos/mariposa_2.png"
+   ],
+   "ticks": 6,
+   "tras": "muro",
+   "desde": [
+    -20,
+    150
+   ],
+   "hasta": [
+    630,
+    128
+   ],
+   "duracion": 1500,
+   "vaiven": 6
+  },
+  {
+   "img": [
+    "elementos/mariposa_1.png",
+    "elementos/mariposa_2.png"
+   ],
+   "ticks": 7,
+   "tras": "muro",
+   "desde": [
+    640,
+    140
+   ],
+   "hasta": [
+    -30,
+    158
+   ],
+   "duracion": 1700,
+   "desfase": 700,
+   "vaiven": 5
+  },
+  {
+   "img": [
+    "elementos/estrella_fugaz.png"
+   ],
+   "ticks": 60,
+   "tras": "cielo",
+   "desde": [
+    2400,
+    -60
+   ],
+   "hasta": [
+    -60,
+    70
+   ],
+   "duracion": 480,
+   "desfase": 0
+  },
+  {
+   "img": [
+    "elementos/isla.png"
+   ],
+   "ticks": 60,
+   "tras": "montes",
+   "desde": [
+    470,
+    70
+   ],
+   "hasta": [
+    490,
+    64
+   ],
+   "duracion": 1200,
+   "modo": "vuelta",
+   "vaiven": 3
+  },
+  {
+   "img": [
+    "elementos/grulla.png"
+   ],
+   "ticks": 60,
+   "tras": "ciudad",
+   "desde": [
+    -30,
+    80
+   ],
+   "hasta": [
+    640,
+    60
+   ],
+   "duracion": 1400,
+   "desfase": 300,
+   "vaiven": 4
+  }
+ ],
+ "petalos": [
+  "#f4b6d6",
+  "#fde4f1"
+ ],
+ "notas": [
+  "Igual que el castillo japonés: mismas medidas, misma cámara y misma fórmula de paralaje (ver japon/manifest.json).",
+  "actores: extras que se mueven en coordenadas de la capa `tras` y a su velocidad, dibujados justo después de esa capa. Van de `desde` a `hasta` en `duracion` ticks (con `modo: vuelta` van y vuelven), cambian de cuadro cada `ticks` y suben y bajan `vaiven` pixeles. Se voltean cuando van hacia la izquierda.",
+  "agua: la capa se mece un pixel por fila como un reflejo. petalos: false no caen; dos tonos caen de esos colores."
+ ]
+}

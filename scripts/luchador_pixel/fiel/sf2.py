@@ -1,0 +1,266 @@
+"""Las hojas SF2 (ver sf2_plan.py) a cuadros de pixel, a la escala y con la paleta de la guardia de cada luchador.
+
+Por hoja:
+1. Se separan los cuadros: lo que no es fondo, en grupos por columnas (cada cuadro es un grupo de manchas que se tocan
+   en x). Tiene que salir el número de cuadros que se pidió.
+2. Una sola escala para toda la hoja: la cara de la guardia se busca en cada cuadro y se toma la mediana de las escalas
+   que calzan bien. Si no calza ninguna (Thor, poses de espalda), sale del tamaño del pixel de la imagen.
+3. Cada cuadro se baja a su grilla, a la escala del arte, a la paleta de la guardia, y las poses de pie llevan la cabeza
+   exacta de la guardia (solo si la cara calza de verdad, como en familia.py).
+4. Se guarda la tira en datos/sf2/<id>/<hoja>.png (RGBA, colores de la paleta) con <hoja>.json: por cuadro su caja en
+   la tira, su ancla (el pivote: la cadera sobre el piso) y cuánto queda sobre el piso en la hoja.
+
+    python3 sf2.py                 # todas las hojas que estén bajadas
+    python3 sf2.py rick sophie     # solo esos
+"""
+import numpy as np, json, os, sys, glob, cv2
+from PIL import Image
+AQUI = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, AQUI)
+from familia import (PERSONAJES, celdas, recortar, bajar, a_paleta, motas, fondo_de, periodo_de, caja_cruda, cara_cruda,
+                     buscar_cara, cara_de, buscar, trasplante)
+from sf2_plan import hojas as plan_hojas, PREF
+from paleta import srgb2lab, kmeans
+
+D = os.path.join(AQUI, 'datos')
+HOJAS = os.path.join(D, 'familia', 'crudo', 'hojas')
+SALE = os.path.join(D, 'sf2')
+# las hojas cuyos cuadros van en el aire: el ancla es el centro de abajo de cada cuadro, sin altura
+AIRE = {'salto', 'salto_adelante', 'aire'}
+# las hojas donde la altura sobre el piso de la hoja se respeta (la caída vuela en arco)
+CON_ALTURA = {'cae'}
+# en estas no se pega la cabeza de la guardia (la cabeza va de lado, de espaldas o al revés)
+SIN_CABEZA = {'cae', 'levanta', 'salto_adelante', 'mareado', 'recibe'}
+
+
+def guardia(pid):
+    """La paleta, la guardia en pixel, la imagen grande de la guardia y la caja de su cara."""
+    if pid in ('rick', 'sophie'):
+        pal = json.load(open(f'{D}/fiel/{pid}_pal.json'))
+        g = np.load(f'{D}/fiel/{pid}_idx.npy').astype(int)
+        ref = np.asarray(Image.open(f'{D}/ref/{pid}_ref.png').convert('RGB')).astype(float)
+        caja = {'rick': (0.0, 0.2, 0.38, 0.72), 'sophie': (0.04, 0.34, 0.37, 1.0)}[pid]
+        cabeza = False
+    else:
+        c = PERSONAJES[pid]
+        pal = json.load(open(f'{D}/familia/{pid}/pal.json'))
+        g = np.load(f'{D}/familia/{pid}/guardia.npy').astype(int)
+        ref = np.asarray(Image.open(f'{D}/familia/crudo/{c["pref"]}_guardia.png').convert('RGB')).astype(float)
+        caja = c['cara']
+        cabeza = False
+    return pal, g, ref, caja, cabeza
+
+
+def separar(a, n):
+    """Los cuadros de la hoja, de izquierda a derecha: cajas (x0, y0, x1, y1) en la imagen grande."""
+    bg = fondo_de(a)
+    m = np.abs(a - bg).sum(2) > 45
+    m = cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)) > 0
+    k, lab, st, _ = cv2.connectedComponentsWithStats(m.astype(np.uint8), connectivity=8)
+    if k < 2:
+        return []
+    grande = st[1:, cv2.CC_STAT_AREA].max()
+    cajas = sorted([[st[i, 0], st[i, 1], st[i, 0] + st[i, 2], st[i, 1] + st[i, 3]] for i in range(1, k)
+                    if st[i, cv2.CC_STAT_AREA] >= 0.01 * grande])
+    # se juntan las manchas que se pisan en x
+    grupos = []
+    for c in cajas:
+        if grupos and c[0] <= grupos[-1][2] + 4:
+            u = grupos[-1]
+            grupos[-1] = [min(u[0], c[0]), min(u[1], c[1]), max(u[2], c[2]), max(u[3], c[3])]
+        else:
+            grupos.append(list(c))
+    # fuera los grupos chiquitos (chispas sueltas)
+    area = lambda g: (g[2] - g[0]) * (g[3] - g[1])
+    gm = max(area(g) for g in grupos)
+    grupos = [g for g in grupos if area(g) >= 0.06 * gm]
+    if len(grupos) != n:
+        # no salió limpio (un pie toca el cuadro de al lado): se corta por el valle de columnas más cercano a cada
+        # borde esperado entre cuadros parejos
+        x0, x1 = min(g[0] for g in grupos), max(g[2] for g in grupos)
+        col = m[:, x0:x1].sum(0).astype(float)
+        col = np.convolve(col, np.ones(9) / 9, mode='same')
+        paso = (x1 - x0) / n
+        cortes = [x0]
+        for k in range(1, n):
+            b = int(k * paso)
+            v = int(paso * 0.22)
+            lo, hi = max(1, b - v), min(len(col) - 1, b + v)
+            cortes.append(x0 + lo + int(np.argmin(col[lo:hi])))
+        cortes.append(x1)
+        grupos = []
+        for a_, b_ in zip(cortes[:-1], cortes[1:]):
+            ys = np.where(m[:, a_:b_].any(1))[0]
+            xs = np.where(m[:, a_:b_].any(0))[0]
+            grupos.append([a_ + xs.min(), ys.min(), a_ + xs.max() + 1, ys.max() + 1])
+        return grupos
+    while len(grupos) > n:
+        h = [grupos[i + 1][0] - grupos[i][2] for i in range(len(grupos) - 1)]
+        i = int(np.argmin(h))
+        u, v = grupos[i], grupos[i + 1]
+        grupos[i:i + 2] = [[min(u[0], v[0]), min(u[1], v[1]), max(u[2], v[2]), max(u[3], v[3])]]
+    return grupos
+
+
+def cadera(q, aire):
+    """El ancla del cuadro: x en la cadera (la franja del medio del cuerpo), y en el piso (abajo del todo)."""
+    op = q >= 0
+    ys, xs = np.where(op)
+    y0, y1 = ys.min(), ys.max()
+    if aire:
+        return float(xs.mean()), float(y1 + 1)
+    h = y1 - y0
+    banda = op[int(y0 + 0.45 * h):int(y0 + 0.62 * h) + 1]
+    yy, xx = np.where(banda)
+    if len(xx) == 0:
+        xx = xs
+    return float(np.median(xx)), float(y1 + 1)
+
+
+# la altura de la guardia nueva de cada uno en pixeles del arte (los demás cuadros salen a la misma escala)
+ALTO = {'rick': 188, 'sophie': 156, 'alana': 124, 'steph': 180, 'thor': 112}
+# la caja de la cara dentro de la guardia nueva (fracciones de su caja: y0, y1, x0, x1)
+CARA = {'rick': (0.0, 0.17, 0.42, 0.78), 'sophie': (0.03, 0.30, 0.38, 0.95), 'alana': (0.04, 0.36, 0.25, 0.85),
+        'steph': (0.0, 0.16, 0.38, 0.72), 'thor': (0.0, 0.42, 0.62, 1.0)}
+_CANON = {}
+# la altura que se espera de cada hoja comparada con la guardia (la mediana de sus cuadros). Sirve de control: si la
+# escala por la cara se aleja mucho de esto (o no hay cara), manda la altura
+ALTURA = {'guardia': 1.0, 'avanza': 1.0, 'retrocede': 1.0, 'agacha': 0.8, 'salto': 1.0, 'salto_adelante': 0.75,
+          'puno_debil': 1.0, 'puno_fuerte': 0.97, 'patada_debil': 1.0, 'patada_fuerte': 1.0, 'agachado_puno': 0.75,
+          'agachado_patada': 0.65, 'barrida': 0.62, 'aire': 0.8, 'recibe': 0.95, 'cae': 0.55, 'levanta': 0.75,
+          'mareado': 1.0, 'poder1': 1.0, 'poder2': 0.95, 'poder3': 1.0, 'victoria': 1.0, 'intro': 1.0}
+ALTURA_THOR = {'agacha': 0.85, 'salto': 1.05, 'salto_adelante': 0.8, 'puno_fuerte': 1.25, 'patada_debil': 1.0,
+               'patada_fuerte': 1.2, 'agachado_puno': 0.85, 'agachado_patada': 0.75, 'barrida': 0.6, 'aire': 0.95,
+               'recibe': 1.0, 'cae': 0.75, 'levanta': 0.8, 'poder3': 1.15, 'victoria': 1.1}
+
+
+def leer_hoja(pid, hoja):
+    return np.asarray(Image.open(os.path.join(HOJAS, f'{PREF[pid]}_{hoja}.png')).convert('RGB')).astype(float)
+
+
+def canon(pid):
+    """La guardia nueva: la cara que sirve de regla, cuánto mide, el tamaño de su pixel y la paleta de todo el luchador."""
+    if pid in _CANON:
+        return _CANON[pid]
+    a = leer_hoja(pid, 'guardia')
+    cajas = separar(a, 4)
+    x0, y0, x1, y1 = cajas[0]
+    H, W = y1 - y0, x1 - x0
+    c = CARA[pid]
+    T = a[y0 + int(H * c[0]):y0 + int(H * c[1]), x0 + int(W * c[2]):x0 + int(W * c[3])]
+    P = periodo_de(a[:, cajas[0][0]:cajas[-1][2]])
+    # la paleta: 64 tonos sacados de la guardia y de varias hojas más, para que no falten colores (bocas, suelas)
+    ff = ALTO[pid] / H
+    muestras = []
+    for hoja in ['guardia', 'avanza', 'puno_fuerte', 'cae', 'poder1', 'recibe', 'victoria']:
+        if not os.path.exists(os.path.join(HOJAS, f'{PREF[pid]}_{hoja}.png')):
+            continue
+        b = leer_hoja(pid, hoja)
+        for cx0, cy0, cx1, cy1 in separar(b, 4)[:4]:
+            o, mm = recortar(celdas(b[cy0:cy1, cx0:cx1], P), fondo_de(b))
+            o, mm = bajar(o, mm, (cy1 - cy0) * ff / o.shape[0])
+            muestras.append(o[mm])
+    X = np.concatenate(muestras)
+    L = srgb2lab(X)
+    C, lab = kmeans(L, 64)
+    rgb = np.array([np.median(X[lab == j], axis=0) if (lab == j).any() else [0, 0, 0] for j in range(64)])
+    orden = np.argsort(C[:, 0])
+    pal = ['#%02x%02x%02x' % tuple(int(v) for v in rgb[j]) for j in orden]
+    _CANON[pid] = (T, H, P, pal)
+    return _CANON[pid]
+
+
+def procesar(pid, hoja, n):
+    T, Hg, Pg, pal = canon(pid)
+    a = leer_hoja(pid, hoja)
+    cajas = separar(a, n)
+    if len(cajas) != n:
+        print(f'  {hoja}: salieron {len(cajas)} cuadros y se pidieron {n}', flush=True)
+        if len(cajas) < n:
+            return None
+    # una escala para toda la hoja: el tamaño de la cara contra la de la guardia nueva
+    escalas = []
+    for x0, y0, x1, y1 in cajas:
+        b = a[max(0, y0 - 8):y1 + 8, max(0, x0 - 8):x1 + 8]
+        corr, s, _ = buscar_cara(T, b)
+        if corr >= 0.5 and 0.55 <= s <= 1.6:
+            escalas.append((corr, s))
+    P = periodo_de(a[:, cajas[0][0]:cajas[-1][2]], Pg)
+    # por altura: la mediana de los cuadros contra la guardia y lo que se espera de esta hoja
+    esperada = (ALTURA_THOR if pid == 'thor' else {}).get(hoja, ALTURA.get(hoja, 1.0))
+    esc_h = float(np.median([y1 - y0 for x0, y0, x1, y1 in cajas])) / (Hg * esperada)
+    buenas = sorted([e for e in escalas if e[0] >= 0.62], reverse=True)
+    if buenas:
+        mejores = [s for c_, s in buenas[:max(2, len(buenas) // 2)]]
+        esc, como = float(np.median(mejores)), f'cara x{len(buenas)} {buenas[0][0]:.2f}'
+        if not 0.78 <= esc / esc_h <= 1.28:
+            esc, como = esc_h, f'altura (la cara daba {esc:.2f})'
+    else:
+        esc, como = esc_h, 'altura'
+    ff = ALTO[pid] / Hg / esc
+    out = []
+    bg = fondo_de(a)
+    for i, (x0, y0, x1, y1) in enumerate(cajas):
+        pad = 10
+        b = a[max(0, y0 - pad):y1 + pad, max(0, x0 - pad):x1 + pad]
+        o, mm = recortar(celdas(b, P), bg)
+        o, mm = bajar(o, mm, (y1 - y0) * ff / o.shape[0])
+        q = motas(a_paleta(o, mm, pal), pal, bg)
+        ys, xs = np.where(q >= 0)
+        q = q[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+        ax, ay = cadera(q, hoja in AIRE)
+        out.append({'q': q, 'ancla': [ax, ay], 'sobre': 0, 'nota': ''})
+    print(f'  {hoja:16s} {len(out)} cuadros  escala {esc:.2f} ({como})  alto {max(o["q"].shape[0] for o in out)}', flush=True)
+    return out, pal
+
+
+def guardar(pid, hoja, cuadros, pal):
+    os.makedirs(os.path.join(SALE, pid), exist_ok=True)
+    P = np.array([[int(c[i:i + 2], 16) for i in (1, 3, 5)] for c in pal], np.uint8)
+    H = max(c['q'].shape[0] for c in cuadros)
+    W = sum(c['q'].shape[1] + 2 for c in cuadros)
+    tira = np.zeros((H, W, 4), np.uint8)
+    info, x = [], 0
+    for c in cuadros:
+        q = c['q']
+        h, w = q.shape
+        y = H - h
+        rgba = np.zeros((h, w, 4), np.uint8)
+        rgba[q >= 0, :3] = P[q[q >= 0]]
+        rgba[q >= 0, 3] = 255
+        tira[y:y + h, x:x + w] = rgba
+        info.append({'caja': [x, y, w, h], 'ancla': [round(c['ancla'][0], 1), c['ancla'][1]], 'sobre': c['sobre']})
+        x += w + 2
+    Image.fromarray(tira).save(os.path.join(SALE, pid, f'{hoja}.png'), optimize=True)
+    json.dump(info, open(os.path.join(SALE, pid, f'{hoja}.json'), 'w'))
+
+
+def guardia_tira(pid):
+    """La guardia de siempre también como tira de un cuadro, con su ancla medida igual que los demás."""
+    pal, g, _, _, _ = guardia(pid)
+    ax, ay = cadera(g, False)
+    guardar(pid, 'guardia', [{'q': g, 'ancla': [ax, ay], 'sobre': 0}], pal)
+
+
+if __name__ == '__main__':
+    quien = [x for x in sys.argv[1:] if not x.startswith('--')] or list(PREF)
+    solo = [x[2:] for x in sys.argv[1:] if x.startswith('--')]
+    for pid in quien:
+        print(pid, flush=True)
+        todas = [(h[0], h[1]) for h in plan_hojas(pid)]
+        # las que se hicieron antes del plan
+        extra = {'rick': [('puno_debil', 4)], 'sophie': [('avanza', 6), ('agachado_patada', 4)]}.get(pid, [])
+        if not os.path.exists(os.path.join(HOJAS, f'{PREF[pid]}_guardia.png')):
+            print('  falta la guardia nueva')
+            continue
+        # las que se rehicieron con otra cantidad de cuadros
+        cambia = {('steph', 'barrida'): 4}
+        todas = [(h, cambia.get((pid, h), n)) for h, n in todas]
+        for hoja, n in todas + extra:
+            if solo and hoja not in solo:
+                continue
+            if not os.path.exists(os.path.join(HOJAS, f'{PREF[pid]}_{hoja}.png')):
+                continue
+            r = procesar(pid, hoja, n)
+            if r:
+                guardar(pid, hoja, *r)

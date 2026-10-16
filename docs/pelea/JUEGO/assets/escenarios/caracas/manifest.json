@@ -1,0 +1,161 @@
+{
+ "id": "caracas",
+ "w": 611,
+ "h": 262,
+ "vista": {
+  "w": 384,
+  "h": 224
+ },
+ "escala": 2,
+ "piso": 244,
+ "capas": [
+  {
+   "img": "cielo.png",
+   "factor": 0.1,
+   "dy": -30
+  },
+  {
+   "img": "montes.png",
+   "factor": 0.25
+  },
+  {
+   "img": "ciudad.png",
+   "factor": 0.5,
+   "luces": true
+  },
+  {
+   "img": "muro.png",
+   "factor": 0.8,
+   "factorY": 1,
+   "luces": true
+  },
+  {
+   "img": "piso.png",
+   "factor": 1,
+   "luces": true,
+   "perspectiva": {
+    "arriba": 0.8
+   }
+  }
+ ],
+ "frente": [
+  {
+   "img": "frente.png",
+   "factor": 1.2,
+   "luces": false
+  }
+ ],
+ "camara": {
+  "x0": 19,
+  "x1": 208,
+  "y0": 0,
+  "y1": 38
+ },
+ "nombre": "Caracas al atardecer",
+ "actores": [
+  {
+   "img": [
+    "elementos/teleferico.png"
+   ],
+   "ticks": 60,
+   "tras": "montes",
+   "desde": [
+    402,
+    116
+   ],
+   "hasta": [
+    345,
+    56
+   ],
+   "duracion": 1200,
+   "modo": "vuelta"
+  },
+  {
+   "img": [
+    "elementos/teleferico.png"
+   ],
+   "ticks": 60,
+   "tras": "montes",
+   "desde": [
+    345,
+    56
+   ],
+   "hasta": [
+    402,
+    116
+   ],
+   "duracion": 1200,
+   "desfase": 300,
+   "modo": "vuelta"
+  },
+  {
+   "img": [
+    "elementos/guacamaya_roja_1.png",
+    "elementos/guacamaya_roja_2.png",
+    "elementos/guacamaya_roja_3.png",
+    "elementos/guacamaya_roja_2.png"
+   ],
+   "ticks": 6,
+   "tras": "montes",
+   "desde": [
+    -30,
+    62
+   ],
+   "hasta": [
+    640,
+    40
+   ],
+   "duracion": 1100,
+   "vaiven": 3
+  },
+  {
+   "img": [
+    "elementos/guacamaya_roja_1.png",
+    "elementos/guacamaya_roja_2.png",
+    "elementos/guacamaya_roja_3.png",
+    "elementos/guacamaya_roja_2.png"
+   ],
+   "ticks": 6,
+   "tras": "montes",
+   "desde": [
+    -50,
+    72
+   ],
+   "hasta": [
+    620,
+    50
+   ],
+   "duracion": 1100,
+   "desfase": 40,
+   "vaiven": 3
+  },
+  {
+   "img": [
+    "elementos/guacamaya_azul_1.png",
+    "elementos/guacamaya_azul_2.png"
+   ],
+   "ticks": 8,
+   "tras": "montes",
+   "desde": [
+    640,
+    80
+   ],
+   "hasta": [
+    -30,
+    55
+   ],
+   "duracion": 1400,
+   "desfase": 500,
+   "vaiven": 4
+  }
+ ],
+ "petalos": [
+  "#c8860f",
+  "#ffe14a"
+ ],
+ "notas": [
+  "Igual que el castillo japonés: mismas medidas, misma cámara y misma fórmula de paralaje (ver japon/manifest.json).",
+  "actores: extras que se mueven en coordenadas de la capa `tras` y a su velocidad, dibujados justo después de esa capa. Van de `desde` a `hasta` en `duracion` ticks (con `modo: vuelta` van y vuelven), cambian de cuadro cada `ticks` y suben y bajan `vaiven` pixeles. Se voltean cuando van hacia la izquierda.",
+  "agua: la capa se mece un pixel por fila como un reflejo. petalos: false no caen; dos tonos caen de esos colores."
+ ]
+}

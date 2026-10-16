@@ -1,0 +1,143 @@
+{
+ "musica": {
+  "titulo": "musica/titulo.m4a",
+  "selector": "musica/selector.m4a",
+  "vs": "musica/vs.m4a",
+  "victoria": "musica/victoria.m4a",
+  "caracas": "musica/caracas.m4a",
+  "hochiminh": "musica/hochiminh.m4a",
+  "bogota": "musica/bogota.m4a",
+  "japon": "musica/japon.m4a",
+  "celestial": "musica/celestial.m4a"
+ },
+ "sfx": {
+  "golpe_debil": [
+   "sfx/golpe_debil_1.m4a",
+   "sfx/golpe_debil_2.m4a",
+   "sfx/golpe_debil_3.m4a"
+  ],
+  "golpe_fuerte": [
+   "sfx/golpe_fuerte_1.m4a",
+   "sfx/golpe_fuerte_2.m4a",
+   "sfx/golpe_fuerte_3.m4a"
+  ],
+  "golpe_poder": [
+   "sfx/golpe_fuerte_2.m4a",
+   "sfx/golpe_super.m4a"
+  ],
+  "golpe_super": [
+   "sfx/golpe_super.m4a"
+  ],
+  "bloqueo": [
+   "sfx/bloqueo.m4a"
+  ],
+  "barrida": [
+   "sfx/barrida.m4a"
+  ],
+  "silbido": [
+   "sfx/silbido_debil.m4a"
+  ],
+  "silbido_fuerte": [
+   "sfx/silbido_fuerte.m4a"
+  ],
+  "salto": [
+   "sfx/salto.m4a"
+  ],
+  "aterriza": [
+   "sfx/aterriza.m4a"
+  ],
+  "cae": [
+   "sfx/cae.m4a"
+  ],
+  "mareado": [
+   "sfx/mareo.m4a"
+  ],
+  "super": [
+   "sfx/super_flash.m4a"
+  ],
+  "lleno": [
+   "sfx/lleno.m4a"
+  ],
+  "proyectil": [
+   "sfx/poder_onda.m4a"
+  ],
+  "choque": [
+   "sfx/choque.m4a"
+  ],
+  "carga": [
+   "sfx/carga.m4a"
+  ],
+  "elige": [
+   "sfx/elige.m4a"
+  ],
+  "mueve": [
+   "sfx/mueve.m4a"
+  ],
+  "ruleta": [
+   "sfx/ruleta.m4a"
+  ],
+  "poder_rick": [
+   "sfx/poder_onda.m4a"
+  ],
+  "poder_sophie": [
+   "sfx/poder_hojas.m4a"
+  ],
+  "poder_alana": [
+   "sfx/poder_estrella.m4a"
+  ],
+  "poder_steph": [
+   "sfx/poder_pelota.m4a"
+  ],
+  "poder_thor": [
+   "sfx/poder_ladrido.m4a"
+  ],
+  "ladrido": [
+   "sfx/ladrido_corto.m4a"
+  ],
+  "trueno": [
+   "sfx/poder_trueno.m4a"
+  ],
+  "round": [
+   "voz/round_1.m4a"
+  ],
+  "round_1": [
+   "voz/round_1.m4a"
+  ],
+  "round_2": [
+   "voz/round_2.m4a"
+  ],
+  "round_3": [
+   "voz/round_3.m4a"
+  ],
+  "round_final": [
+   "voz/round_final.m4a"
+  ],
+  "fight": [
+   "voz/fight.m4a"
+  ],
+  "ko": [
+   "voz/ko.m4a"
+  ],
+  "ko_golpe": [
+   "sfx/ko.m4a"
+  ],
+  "perfect": [
+   "voz/perfect.m4a"
+  ],
+  "gana": [
+   "voz/gana.m4a"
+  ],
+  "pierde": [
+   "voz/pierde.m4a"
+  ],
+  "tiempo": [
+   "voz/tiempo.m4a"
+  ],
+  "doble_ko": [
+   "voz/doble_ko.m4a"
+  ],
+  "titulo": [
+   "voz/titulo.m4a"
+  ]
+ }
+}

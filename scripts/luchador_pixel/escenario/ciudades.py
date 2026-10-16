@@ -25,6 +25,11 @@ CIUDADES = {
     'bogota': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'],
                'elementos': ['paloma_1', 'paloma_2', 'paloma_3', 'paloma_suelo', 'teleferico', 'globos'],
                'altos': [8, 5, 7, 6, 10, 26]},
+    # el mundo celestial de Alana: islas que flotan donde las ciudades tienen montes, y un mar de nubes donde van los
+    # edificios. Su capa del piso trae la baranda pegada: se queda solo el mármol (piso_solo)
+    'celestial': {'ajuste': {'ciudad': 195}, 'piso_solo': True, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'],
+                  'elementos': ['farol', 'mariposa_1', 'mariposa_2', 'estrella_fugaz', 'isla', 'grulla'],
+                  'altos': [11, 9, 9, 10, 30, 16]},
 }
 
 
@@ -119,7 +124,12 @@ def ciudad(nombre):
     crudas, info = {}, {}
     for n in c['capas']:
         a = leer(n)
-        crudas[n] = (a, np.ones(a.shape[:2], bool) if n == 'cielo' else ~magenta(a))
+        m = np.ones(a.shape[:2], bool) if n == 'cielo' else ~magenta(a)
+        if n == 'piso' and c.get('piso_solo'):
+            # el piso es el tramo lleno que llega hasta abajo: lo de arriba de su último hueco (la baranda) se va
+            llenas = m.mean(1) > 0.97
+            m[:int(np.where(~llenas)[0].max()) + 1] = False
+        crudas[n] = (a, m)
     dy = apilar(crudas)
     bajadas = {}
     for n in c['capas']:
