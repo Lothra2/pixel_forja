@@ -16,14 +16,19 @@ REF = {
     'alana': '5191cceb-ee20-4dd6-8eb2-4f4a4170555c',
     'steph': 'fc6a70bf-a63b-4c68-b8c1-03de6629710c',
     'thor': 'b7ca83f9-eee1-4de9-85b3-88a12a3e39cb',
+    # los jefes del modo arcade (lote G): su diseño de Higgsfield hace de guardia de referencia
+    'kylan': '2b890d7b-fcec-44be-b0c1-e8254c0ad166',
+    'catatumbo': 'eb7067cf-44c5-4c3b-ac5d-09b7fb24b4b9',
 }
-PREF = {'rick': 'r', 'sophie': 'so', 'alana': 'a', 'steph': 's', 'thor': 't'}
+PREF = {'rick': 'r', 'sophie': 'so', 'alana': 'a', 'steph': 's', 'thor': 't', 'kylan': 'ky', 'catatumbo': 'ca'}
 DESC = {
     'rick': 'Red sleeveless gi with torn shoulders, black belt, white headband with tails, grey beard, glasses, black fingerless gloves, bandaged ankles, bare feet.',
     'sophie': 'Turquoise short kimono with white collar, pink sash belt, navy leggings, white sneakers with pink soles, ponytail with pink bow.',
     'alana': 'The little princess sorceress: short curly brown hair with a gold tiara, pink jeogori with rainbow striped sleeves, red ribbon bow, long lilac chima skirt with gold trim that always covers the legs, pink shoes, golden star wand. No magic effect drawn.',
     'steph': 'Woman with long black pigtails tipped red and blue, red and black cropped jacket, black and red shorts, fishnet tights, red and black striped socks, black combat boots, fingerless gloves, wooden baseball bat.',
     'thor': 'Fawn boxer dog superhero with black muzzle mask, white chest and paws, red cape, blue domino mask, blue harness with gold lightning bolt, blue leg bands.',
+    'kylan': 'Ky Lan, the mythical Vietnamese temple guardian lion-dog: golden scaled body with swirl patterns, a flowing mane and tail of jade green flames, one small golden horn, big round fierce eyes, curly golden whiskers, red collar with golden bells, white claws.',
+    'catatumbo': 'Huge muscular man, brown skin with tribal tattoos glowing electric blue, wild spiky white hair mane, short white beard, bare chest, a sash in Venezuelan flag colors (yellow, blue, red with white stars) at the waist, dark navy loose pants, bracers, bare feet.',
 }
 
 # movimientos comunes de los humanos: (hoja, cuadros, título, descripción de los cuadros)
@@ -116,6 +121,46 @@ PROPIO = {
     ],
 }
 
+# lote G: los dos jefes legendarios del modo arcade
+JEFES = {
+    'kylan': [
+        ('guardia', 4, 'IDLE FIGHTING STANCE', 'The ready stance idle loop on four legs, head up, proud, the jade flame mane flickering, the four frames almost identical, paws never move. Frame 1: neutral. Frame 2: chest rising, mane flames rising. Frame 3: chest highest. Frame 4: chest lowering'),
+        ('trote', 8, 'TROT CYCLE', 'A powerful lion trot cycle on four legs moving forward, head up, mane flames streaming back, every frame clearly different. Diagonal leg pairs move together: front left with back right, then front right with back left. Frame 1: front left and back right legs reaching forward. Frame 2: first pair landing. Frame 3: legs passing under the body. Frame 4: first pair pushing back. Frame 5: front right and back left legs reaching forward. Frame 6: second pair landing. Frame 7: legs passing under the body. Frame 8: second pair pushing back'),
+        ('trote_atras', 6, 'BACKING UP CYCLE', 'Backing up step by step on four legs while still facing right, head low, growling, every frame clearly different with diagonal leg pairs stepping back. Frame 1: first pair lifting. Frame 2: first pair stepping back. Frame 3: first pair landing. Frame 4: second pair lifting. Frame 5: second pair stepping back. Frame 6: second pair landing'),
+        ('agacha', 4, 'CROUCH AND BLOCK', 'Frame 1: lowering the body, front legs bending. Frame 2: crouched low to the ground, growling, ready to pounce. Frame 3: standing block, body braced and leaning back, front paw raised as a shield, mane flaring. Frame 4: crouched low block, head tucked'),
+        ('salto', 5, 'JUMP', 'Frame 1: crouching to jump. Frame 2: leaping up, front legs reaching up. Frame 3: in the air with legs tucked. Frame 4: at the peak, legs tucked, mane flying. Frame 5: falling, legs extending down to land'),
+        ('salto_adelante', 5, 'FORWARD FLIP JUMP', 'A forward flip through the air. Frame 1: leaping forward. Frame 2: curled in a ball rotating forward, mane flames around. Frame 3: curled ball upside down. Frame 4: curled ball finishing the rotation. Frame 5: uncurling, legs extending to land'),
+        ('puno_debil', 4, 'QUICK CLAW SWIPE', 'Frame 1: standing on all fours. Frame 2: raising one front paw. Frame 3: swiping the front paw forward fast at head height, claws out. Frame 4: paw coming back down'),
+        ('puno_fuerte', 4, 'REARING CLAW SLAM', 'Frame 1: rearing up on the hind legs, both front paws raised high, claws out. Frame 2: standing tall on the hind legs, roaring. Frame 3: slamming both front paws forward and down, body lunging forward. Frame 4: landing on all fours'),
+        ('patada_debil', 4, 'QUICK BITE', 'Frame 1: head pulled back, mouth closed. Frame 2: lunging the head forward, mouth opening. Frame 3: snapping bite forward at head height, jaws wide. Frame 4: pulling back'),
+        ('patada_fuerte', 5, 'TAIL WHIP', 'Frame 1: turning the body sideways, flame tail curling. Frame 2: spinning around, back toward the viewer. Frame 3: the jade flame tail whipping forward at head height in a wide arc. Frame 4: finishing the spin. Frame 5: back on all fours facing right'),
+        ('agachado_puno', 4, 'LOW CLAW ATTACKS', 'Every frame crouched low to the ground. Frame 1: low quick claw swipe forward at ankle height. Frame 2: paw pulled back, crouched. Frame 3: crouched, ready to spring. Frame 4: springing up with a rising headbutt straight up, horn first'),
+        ('agachado_patada', 4, 'LOW ANKLE BITE', 'Frame 1: crouched low. Frame 2: stretching the neck forward low. Frame 3: biting forward at ankle height, body low and long. Frame 4: pulling back'),
+        ('barrida', 5, 'SLIDING TACKLE', 'Frame 1: running low. Frame 2: diving forward low. Frame 3: sliding forward on the belly along the floor, front legs stretched forward. Frame 4: still sliding. Frame 5: getting back on all fours'),
+        ('aire', 4, 'JUMPING ATTACKS', 'Every frame in the air, no floor. Frame 1: in the air, front paw raised. Frame 2: in the air swiping the front paw down and forward. Frame 3: in the air, curled. Frame 4: in the air diving head first forward and down, horn forward'),
+        ('recibe', 4, 'GETTING HIT', 'Frame 1: hit in the face, head snapped back, eyes shut, roaring in pain. Frame 2: staggering back. Frame 3: hit in the belly, body curled, eyes shut. Frame 4: staggering'),
+        ('cae', 5, 'KNOCKDOWN', 'Frame 1: knocked off the feet, flying backward, legs flailing. Frame 2: airborne upside down, falling backward. Frame 3: hitting the floor on the back, bouncing. Frame 4: on the back with the paws up, dazed. Frame 5: on the side on the floor, still'),
+        ('levanta', 4, 'GETTING UP', 'Frame 1: on the side on the floor, lifting the head. Frame 2: rolling onto the belly. Frame 3: pushing up on the front legs. Frame 4: back on all fours, shaking the mane'),
+        ('mareado', 3, 'DIZZY STUN', 'Dazed and wobbling on four legs, swirly eyes, tongue out. Frame 1: leaning left. Frame 2: swaying. Frame 3: leaning right. No stars drawn'),
+        ('poder1', 5, 'JADE FLAME SPECIAL MOVE', 'Frame 1: planting all four paws, inhaling, chest puffed. Frame 2: head pulled back, mane flaring. Frame 3: roaring forward with the mouth wide open, head thrust forward. Frame 4: still roaring hard. Frame 5: closing the mouth. No fire drawn'),
+        ('poder2', 5, 'GUARDIAN LEAP SPECIAL MOVE', 'A rising pounce. Frame 1: crouched low, ready to spring. Frame 2: launching forward and up, body stretched diagonally upward, claws out. Frame 3: rising high in the air, front claws raised, horn forward. Frame 4: at the top, claws slashing. Frame 5: landing on all fours'),
+        ('poder3', 5, 'NINE DRAGONS SUPER MOVE', 'Frame 1: sitting back, head lowered, gathering power. Frame 2: rearing up on the hind legs, mane flames growing huge. Frame 3: roaring at the sky with the head thrown back, front paws raised. Frame 4: still roaring with all his power, mane blazing. Frame 5: slamming the front paws down, fierce. No dragons drawn'),
+        ('victoria', 4, 'VICTORY POSE', 'Frame 1: sitting proudly like a temple statue, chest out. Frame 2: roaring to the sky. Frame 3: one front paw raised regally. Frame 4: proud statue pose, bells shining'),
+        ('intro', 4, 'ROUND INTRO', 'Frame 1: sitting still like a stone temple statue. Frame 2: eyes opening, glowing. Frame 3: leaping down into a stance, mane igniting. Frame 4: fighting stance'),
+        ('carrera', 4, 'GALLOP CYCLE', 'Full speed gallop forward, body stretched, mane flames streaming back. Frame 1: all legs gathered under the body. Frame 2: front legs reaching far forward. Frame 3: fully stretched in the air. Frame 4: front paws landing'),
+        ('carrera_atras', 3, 'BACK HOP', 'A quick hop backward while still facing right. Frame 1: crouching on the hind legs. Frame 2: in the air hopping backward. Frame 3: landing on all fours ready'),
+        ('agarre', 4, 'GRAB AND TOSS', 'Grabbing an invisible opponent with the jaws and tossing them, only the lion-dog drawn. Frame 1: lunging forward, jaws open. Frame 2: jaws clamped on something invisible, pulling back. Frame 3: swinging the head hard up and over to toss. Frame 4: follow-through, head turned back'),
+        ('agarrado', 2, 'BEING GRABBED', 'Being grabbed by the mane and lifted by an invisible opponent in front, only the lion-dog drawn. Frame 1: front paws lifted off the ground, surprised. Frame 2: dangling, paws flailing, eyes shut'),
+    ],
+    'catatumbo': [
+        ('poder1', 5, 'LIGHTNING CALL SPECIAL MOVE', 'Frame 1: wide stance, one fist pulled back, gathering power, tattoos glowing. Frame 2: raising the right fist straight up to the sky. Frame 3: fist high to the sky, the other hand pointing forward at the enemy, shouting. Frame 4: holding the pose, hair standing up. Frame 5: lowering the arm. No lightning drawn'),
+        ('poder2', 5, 'THUNDER STEP SPECIAL MOVE', 'Frame 1: crouching, body tensing. Frame 2: body breaking into crackling blue electric sparks, fading. Frame 3: only a faint blue electric silhouette remains. Frame 4: reappearing from blue sparks, body forming again. Frame 5: back in the fighting stance'),
+        ('poder3', 5, 'ETERNAL STORM SUPER MOVE', 'Frame 1: crouching, fists at the sides, tattoos blazing blue, white hair flying up. Frame 2: rising, arms spreading. Frame 3: both arms raised to the stormy sky, roaring. Frame 4: arms high, the whole body glowing, mane standing up. Frame 5: slamming both fists down toward the ground. No lightning drawn'),
+        ('victoria', 4, 'VICTORY POSE', 'Frame 1: arms crossed over the chest, looking down at the enemy. Frame 2: laughing with the head back. Frame 3: one fist raised to the sky. Frame 4: fist raised, tattoos glowing'),
+        ('intro', 4, 'ROUND INTRO', 'Frame 1: standing with the back turned, looking over the shoulder. Frame 2: turning around, tattoos lighting up. Frame 3: cracking the knuckles. Frame 4: fighting stance'),
+    ],
+}
+
 # lote F (lo que pidió el juego en su lote E): carrera, agarre y agarrado para los cinco, y el trote de Thor de
 # verdad (sus 6 cuadros de avanza eran casi iguales y patinaba)
 LOTE_F_HUMANO = [
@@ -142,6 +187,10 @@ EFECTOS = [
     ('fx_onda', 'a glowing blue and white energy ball with a flame-like trailing tail, flying to the right, the flames flickering from frame to frame'),
     ('fx_super_onda', 'a huge glowing blue and white energy wave orb with crackling lightning around it and a long fiery trail, flying to the right, pulsing from frame to frame'),
     ('fx_hojas', 'a swirling tornado ball of bright green leaves and small pink petals flying to the right, spinning from frame to frame'),
+    ('fx_llama_jade', 'a ball of swirling jade green fire with a fiery tail flying to the right'),
+    ('fx_dragon_fuego', 'a fiery golden and green Chinese dragon made of flames diving straight down from the top, head first'),
+    ('fx_relampago', 'a huge vertical lightning bolt striking straight down from the top of the frame to the bottom, bright white and electric blue with branches'),
+    ('fx_tormenta', 'a dark storm cloud raining many thin blue lightning bolts down'),
     ('fx_selva', 'a huge wave of thorny green vines, big blooming pink and yellow flowers and leaves bursting forward to the right, growing from frame to frame'),
     ('fx_estrella', 'a spinning golden magic star with pink sparkles and a short rainbow trail flying to the right, rotating from frame to frame'),
     ('fx_corona', 'a giant shining golden comet star shaped like a crown with a long rainbow trail and sparkles flying to the right, pulsing from frame to frame'),
@@ -166,7 +215,9 @@ def efectos():
 
 
 def hojas(pid):
-    propias = {h[0]: h for h in PROPIO.get(pid, [])}
+    if pid == 'kylan':
+        return list(JEFES['kylan'])
+    propias = {h[0]: h for h in PROPIO.get(pid, []) + JEFES.get(pid, [])}
     base = [] if pid == 'thor' else HUMANO
     out = [propias.pop(h[0], h) for h in base]
     out += list(propias.values())

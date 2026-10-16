@@ -52,22 +52,52 @@ EXTRA = {
 }
 
 
-def factores(pid):
-    """{hoja: {cuadro: factor}}. Si un cuadro de la hoja lo usan dos anims con factores distintos, va la media
-    geométrica de los dos."""
-    anims = {**comunes(), **poderes(pid)}
+# lote G: la estatura. La tabla de arriba medía solo la cabeza y en patadas, saltos y caídas dejaba el cuerpo corto
+# (Rick "con enanismo"). El juego midió el largo de cabeza a pie por dentro de la silueta y esto va encima, por anim
+ESTATURA = {
+    'rick': {'patada_fuerte': [1.08, 1.08, 1, 1, 1], 'cae': [1, 1, 1.1, 1.14, 1.29],
+             'salto': [1.05, 1, 1.12, 1.12, 1], 'salto_adelante': [1, 1.25, 1.25, 1.25, 1.05], 'aire_puño': 1.12,
+             'aire_patada': [1.12, 1.05], 'levanta': [1.12, 1, 1.05, 1]},
+    'steph': {'patada_fuerte': [1.08, 1.08, 1.05, 1.08, 1], 'recibe_alto': 0.89, 'mareado': 0.92, 'carrera': 1.08,
+              'cae': [1, 1, 1.17, 1.14, 1.18], 'salto': [1, 1, 1.15, 1.15, 1], 'salto_adelante': [1, 1.2, 1.2, 1.2, 1],
+              'aire_patada': [1.12, 1]},
+    'sophie': {'puño_fuerte': 0.92, 'agarrado': 0.92, 'bloqueo': 0.91, 'cae': [1, 1, 1, 1.1, 1],
+               'patada_debil': [1, 1.06, 1.06, 1.06], 'salto': [1, 1, 1, 1, 0.92], 'salto_adelante': [1, 1.15, 1.1, 1.1, 1]},
+    'alana': {'patada_debil': 1.04, 'cae': [1, 1, 1.11, 1.1, 1.1], 'salto_adelante': [1, 1.12, 1.12, 1.12, 1]},
+    'thor': {'recibe_alto': [1, 1.1, 1.1], 'mareado': 0.95, 'agarre': 0.91, 'recibe_aire': 1.1,
+             'cae': [1.15, 1, 1.2, 1.2, 1], 'salto_adelante': [1, 1.1, 1.1, 1.1, 1]},
+}
+# la patada débil de Rick no va en la tabla: se redibujó con las piernas de largo normal (y la fuerte también, sus
+# factores de cabeza ya no aplican a la hoja nueva)
+REDIBUJADAS = {'rick': {'patada_debil', 'patada_fuerte'}}
+
+
+def _por_hoja(pid, tabla, anims):
     junta = {}
-    for nombre, v in ESCALA_JUEGO.get(pid, {}).items():
+    for nombre, v in tabla.get(pid, {}).items():
         a = anims.get(nombre)
         if a is None:
             continue
         for k, p in enumerate(a['pasos']):
             f = v if not isinstance(v, list) else (v[k] if k < len(v) else 1)
             junta.setdefault(p['hoja'], {}).setdefault(p['i'], []).append(f)
-    out = {h: {i: math.exp(sum(map(math.log, fs)) / len(fs)) for i, fs in cs.items()} for h, cs in junta.items()}
-    for h, cs in EXTRA.get(pid, {}).items():
+    return {h: {i: math.exp(sum(map(math.log, fs)) / len(fs)) for i, fs in cs.items()} for h, cs in junta.items()}
+
+
+def factores(pid):
+    """{hoja: {cuadro: factor}}. Si un cuadro de la hoja lo usan dos anims con factores distintos, va la media
+    geométrica de los dos."""
+    anims = {**comunes(), **poderes(pid)}
+    out = _por_hoja(pid, ESCALA_JUEGO, anims)
+    for tabla in (EXTRA, ):
+        for h, cs in tabla.get(pid, {}).items():
+            for i, f in cs.items():
+                out.setdefault(h, {})[i] = out.get(h, {}).get(i, 1) * f
+    for h, cs in _por_hoja(pid, ESTATURA, anims).items():
         for i, f in cs.items():
             out.setdefault(h, {})[i] = out.get(h, {}).get(i, 1) * f
+    for h in REDIBUJADAS.get(pid, ()):
+        out.pop(h, None)
     return out
 
 

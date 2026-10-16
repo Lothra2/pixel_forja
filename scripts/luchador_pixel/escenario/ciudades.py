@@ -44,6 +44,10 @@ CIUDADES = {
                'elementos': ['teleferico', 'guacamaya_1', 'guacamaya_2'], 'altos': [12, 8, 8]},
     'egipto': {'ajuste': {'montes': -220, 'rio': -200, 'ciudad': -220, 'muro': 150}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                'elementos': ['faluca', 'camello', 'halcon_1', 'halcon_2'], 'altos': [26, 20, 8, 8]},
+    # los mundos de los jefes (lote G): Hạ Long con su templo flotante y el Salto Ángel con la tormenta del Catatumbo.
+    # No llevan extras animados: el juego los pinta con código
+    'halong': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
+    'salto_angel': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
     'polo_norte': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                    'elementos': ['oso_1', 'oso_2'], 'altos': [16, 16]},
 }
@@ -174,7 +178,8 @@ def ciudad(nombre):
         print(nombre, n, 'dy', d, round(float(bajadas[n][1].mean()), 2), flush=True)
     # cada extra a su tamaño en la escena (la hoja los trae grandes)
     sprites = []
-    for i, (a, m) in enumerate(elementos(leer('elementos'))):
+    hoja_el = os.path.join(ENTRA, 'elementos.png')
+    for i, (a, m) in enumerate(elementos(leer('elementos')) if os.path.exists(hoja_el) else []):
         alto = c['altos'][i] if i < len(c['altos']) else 12
         k = alto / a.shape[0]
         w = max(1, int(round(a.shape[1] * k)))
