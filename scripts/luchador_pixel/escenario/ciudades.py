@@ -147,6 +147,10 @@ def ciudad(nombre):
     leer = lambda n: np.asarray(Image.open(os.path.join(ENTRA, n + '.png')).convert('RGB')).astype(float)
     maestra = leer('maestra')
     H, W = maestra.shape[:2]
+    # el tamaño del pixel del arte sale del ancho de la maestra: el escenario siempre queda de 611 de ancho (las
+    # maestras de Higgsfield en 2k son el doble de grandes que las de antes)
+    global F
+    F = W / 611
     crudas, info = {}, {}
     for n in c['capas']:
         a = leer(n)
