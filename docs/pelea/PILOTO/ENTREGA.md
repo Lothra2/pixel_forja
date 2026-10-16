@@ -1,5 +1,5 @@
 # Lote piloto de pelea: Rick contra Sophie en el castillo japonés
-Estado: entregado, pendiente de Rick (tercera versión, premium de dos jugadores)
+Estado: reemplazado por la cuarta versión, en pixel a mano (`docs/pelea/PIXEL/ENTREGA.md`)
 PR: https://github.com/Lothra2/pixel_forja/pull/56
 Fecha: 2026-10-16
 
