@@ -6,6 +6,9 @@
   "steph",
   "thor"
  ],
+ "jefes": [
+  "abuela"
+ ],
  "escenarios": [
   "caracas",
   "hochiminh",
@@ -17,13 +20,17 @@
   "usa",
   "brasil",
   "egipto",
-  "polo_norte"
+  "polo_norte",
+  "halong",
+  "salto_angel"
  ],
  "ciudad": {
   "rick": "caracas",
   "sophie": "hochiminh",
   "alana": "celestial",
   "steph": "bogota",
-  "thor": "japon"
+  "thor": "japon",
+  "abuela": "casa_abuela",
+  "bao": "halong"
  }
 }
