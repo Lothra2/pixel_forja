@@ -32,9 +32,9 @@
    "bucle": true,
    "hoja": "guardia.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 8,
@@ -202,9 +202,9 @@
    "bucle": true,
    "hoja": "avanza.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 5,
@@ -452,9 +452,9 @@
    "bucle": true,
    "hoja": "retrocede.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 5,
@@ -702,9 +702,9 @@
    "bucle": false,
    "hoja": "agacharse.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 3,
@@ -752,9 +752,9 @@
    "bucle": true,
    "hoja": "agachado.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 60,
@@ -802,9 +802,9 @@
    "bucle": false,
    "hoja": "bloqueo.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -892,9 +892,9 @@
    "bucle": false,
    "hoja": "bloqueo_bajo.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -982,9 +982,9 @@
    "bucle": false,
    "hoja": "salto.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 3,
@@ -1192,9 +1192,9 @@
    "bucle": false,
    "hoja": "salto_adelante.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -1402,9 +1402,9 @@
    "bucle": false,
    "hoja": "puño_debil.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 2,
@@ -1597,9 +1597,9 @@
    "bucle": false,
    "hoja": "puño_fuerte.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -1792,9 +1792,9 @@
    "bucle": false,
    "hoja": "patada_debil.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 3,
@@ -1987,9 +1987,9 @@
    "bucle": false,
    "hoja": "patada_fuerte.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -2222,9 +2222,9 @@
    "bucle": false,
    "hoja": "agachado_puño_debil.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 2,
@@ -2377,9 +2377,9 @@
    "bucle": false,
    "hoja": "agachado_puño_fuerte.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -2572,9 +2572,9 @@
    "bucle": false,
    "hoja": "agachado_patada_debil.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 2,
@@ -2727,9 +2727,9 @@
    "bucle": false,
    "hoja": "agachado_patada_fuerte.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -2962,9 +2962,9 @@
    "bucle": false,
    "hoja": "aire_puño.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 3,
@@ -3077,9 +3077,9 @@
    "bucle": false,
    "hoja": "aire_patada.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 3,
@@ -3192,9 +3192,9 @@
    "bucle": false,
    "hoja": "recibe_alto.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -3322,9 +3322,9 @@
    "bucle": false,
    "hoja": "recibe_bajo.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -3452,9 +3452,9 @@
    "bucle": false,
    "hoja": "recibe_aire.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 8,
@@ -3542,9 +3542,9 @@
    "bucle": false,
    "hoja": "cae.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 6,
@@ -3752,9 +3752,9 @@
    "bucle": false,
    "hoja": "levanta.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 6,
@@ -3922,9 +3922,9 @@
    "bucle": true,
    "hoja": "mareado.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 10,
@@ -4092,9 +4092,9 @@
    "bucle": true,
    "hoja": "victoria.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 14,
@@ -4103,37 +4103,37 @@
       {
        "zona": "cabeza",
        "caja": [
-        -40,
-        -174,
-        92,
-        42
+        -45,
+        -191,
+        102,
+        46
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -41,
-        -132,
-        97,
-        59
+        -46,
+        -145,
+        107,
+        65
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -46,
-        -73,
-        102,
-        73
+        -51,
+        -80,
+        112,
+        80
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -174,
+      -191,
       59,
-      174
+      191
      ]
     },
     {
@@ -4143,37 +4143,37 @@
       {
        "zona": "cabeza",
        "caja": [
-        -52,
-        -174,
-        80,
-        42
+        -57,
+        -191,
+        88,
+        46
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -42,
-        -132,
-        83,
-        59
+        -47,
+        -145,
+        92,
+        65
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -58,
-        -73,
-        106,
-        73
+        -64,
+        -80,
+        117,
+        80
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -174,
+      -191,
       59,
-      174
+      191
      ]
     },
     {
@@ -4183,37 +4183,37 @@
       {
        "zona": "cabeza",
        "caja": [
-        -33,
-        -202,
-        83,
-        49
+        -36,
+        -223,
+        91,
+        54
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -48,
-        -153,
-        89,
-        69
+        -53,
+        -169,
+        98,
+        76
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -49,
-        -84,
-        110,
-        84
+        -54,
+        -93,
+        121,
+        93
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -202,
+      -223,
       59,
-      202
+      223
      ]
     },
     {
@@ -4223,37 +4223,37 @@
       {
        "zona": "cabeza",
        "caja": [
-        -35,
-        -202,
-        83,
-        49
+        -38,
+        -223,
+        91,
+        54
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -50,
-        -153,
-        89,
-        69
+        -55,
+        -169,
+        98,
+        76
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -51,
-        -84,
-        112,
-        84
+        -56,
+        -93,
+        123,
+        93
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -202,
+      -223,
       59,
-      202
+      223
      ]
     }
    ]
@@ -4262,9 +4262,9 @@
    "bucle": false,
    "hoja": "intro.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 16,
@@ -4273,77 +4273,37 @@
       {
        "zona": "cabeza",
        "caja": [
-        -50,
-        -179,
-        85,
-        43
+        -54,
+        -193,
+        92,
+        47
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -34,
-        -136,
-        64,
-        61
+        -37,
+        -146,
+        69,
+        65
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -45,
-        -75,
-        84,
-        75
+        -48,
+        -81,
+        90,
+        81
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -179,
+      -193,
       59,
-      179
-     ]
-    },
-    {
-     "ticks": 14,
-     "fase": "neutral",
-     "recibe": [
-      {
-       "zona": "cabeza",
-       "caja": [
-        -42,
-        -173,
-        110,
-        42
-       ]
-      },
-      {
-       "zona": "cuerpo",
-       "caja": [
-        -36,
-        -131,
-        99,
-        59
-       ]
-      },
-      {
-       "zona": "piernas",
-       "caja": [
-        -58,
-        -72,
-        116,
-        72
-       ]
-      }
-     ],
-     "pega": [],
-     "empuje": [
-      -30,
-      -173,
-      59,
-      173
+      193
      ]
     },
     {
@@ -4354,36 +4314,76 @@
        "zona": "cabeza",
        "caja": [
         -47,
-        -175,
-        87,
-        42
+        -196,
+        124,
+        48
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -50,
-        -133,
-        96,
-        60
+        -40,
+        -148,
+        111,
+        66
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -56,
-        -73,
-        105,
-        73
+        -65,
+        -82,
+        131,
+        82
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -175,
+      -196,
       59,
-      175
+      196
+     ]
+    },
+    {
+     "ticks": 14,
+     "fase": "neutral",
+     "recibe": [
+      {
+       "zona": "cabeza",
+       "caja": [
+        -52,
+        -192,
+        95,
+        47
+       ]
+      },
+      {
+       "zona": "cuerpo",
+       "caja": [
+        -55,
+        -145,
+        105,
+        65
+       ]
+      },
+      {
+       "zona": "piernas",
+       "caja": [
+        -62,
+        -80,
+        115,
+        80
+       ]
+      }
+     ],
+     "pega": [],
+     "empuje": [
+      -30,
+      -192,
+      59,
+      192
      ]
     },
     {
@@ -4393,37 +4393,37 @@
       {
        "zona": "cabeza",
        "caja": [
-        -42,
-        -154,
-        95,
-        37
+        -50,
+        -181,
+        112,
+        44
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -41,
-        -117,
-        94,
-        53
+        -48,
+        -137,
+        110,
+        61
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -65,
-        -64,
-        129,
-        64
+        -77,
+        -76,
+        152,
+        76
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -154,
+      -181,
       59,
-      154
+      181
      ]
     }
    ]
@@ -4432,9 +4432,9 @@
    "bucle": true,
    "hoja": "carrera.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -4602,9 +4602,9 @@
    "bucle": false,
    "hoja": "carrera_atras.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 3,
@@ -4732,9 +4732,9 @@
    "bucle": false,
    "hoja": "agarre.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 4,
@@ -4927,9 +4927,9 @@
    "bucle": false,
    "hoja": "agarrado.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 8,
@@ -5017,9 +5017,9 @@
    "bucle": false,
    "hoja": "poder1.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 6,
@@ -5257,9 +5257,9 @@
    "bucle": false,
    "hoja": "poder2.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 6,
@@ -5528,9 +5528,9 @@
    "bucle": false,
    "hoja": "poder3.png",
    "w": 236,
-   "h": 214,
+   "h": 235,
    "ox": 118,
-   "oy": 208,
+   "oy": 229,
    "cuadros": [
     {
      "ticks": 8,
