@@ -272,6 +272,9 @@ def procesar(pid, hoja, n, ref=None):
             esc, como = esc_h, f'altura (la cara daba {esc:.2f})'
     else:
         esc, como = esc_h, 'altura'
+    if ref is not None:
+        # en la hoja de acostados manda el alto del cuadro parado: la cara de frente calza flojo y la achicaba
+        esc, como = esc_h, 'alto del parado'
     ff = ALTO[pid] / Hg / esc
     # la escala pareja que midió el juego, cuadro a cuadro (sf2_escala.py): se aplica aquí, al bajar la hoja grande
     from sf2_escala import factores
