@@ -173,11 +173,16 @@ def cadera(q, aire):
 # la altura de la guardia nueva de cada uno en pixeles del arte (los demás cuadros salen a la misma escala)
 ALTO = {'rick': 188, 'sophie': 156, 'alana': 124, 'steph': 180, 'thor': 112,
         # los jefes: la Abuela un poco más baja que Steph y ancha, Tío Bao como Rick
-        'abuela': 170, 'bao': 190}
+        'abuela': 170, 'bao': 190,
+        # Rosita, la bisabuela de verdad (jefa final): bajita y delgada, a la estatura de la Abuela
+        'rosita': 170,
+        # Andre, la más pesada de la familia, a la estatura de Steph
+        'andre': 180}
 # la caja de la cara dentro de la guardia nueva (fracciones de su caja: y0, y1, x0, x1)
 CARA = {'rick': (0.0, 0.17, 0.42, 0.78), 'sophie': (0.03, 0.30, 0.38, 0.95), 'alana': (0.04, 0.36, 0.25, 0.85),
         'steph': (0.0, 0.16, 0.38, 0.72), 'thor': (0.0, 0.42, 0.62, 1.0),
-        'abuela': (0.04, 0.24, 0.40, 0.80), 'bao': (0.08, 0.22, 0.45, 0.80)}
+        'abuela': (0.04, 0.24, 0.40, 0.80), 'bao': (0.08, 0.22, 0.45, 0.80), 'rosita': (0.03, 0.17, 0.40, 0.72),
+        'andre': (0.02, 0.18, 0.40, 0.75)}
 _CANON = {}
 # la altura que se espera de cada hoja comparada con la guardia (la mediana de sus cuadros). Sirve de control: si la
 # escala por la cara se aleja mucho de esto (o no hay cara), manda la altura

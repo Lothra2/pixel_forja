@@ -20,8 +20,12 @@ REF = {
     # nuevos de verdad: la Abuela (jefe final) y Tío Bao
     'abuela': '4e79c8bd-9e72-432c-ba53-4f62a012e183',
     'bao': '699e6240-1c26-4cd3-81b6-59d2893ec160',
+    # Rosita, la bisabuela de Rick (jefa final). Su diseño sale de una descripción en texto, sin subir sus fotos
+    'rosita': '14790617-21ba-46be-a796-cd9e70132c2f',
+    # Andre Panda, jugable (lote I): también desde una descripción en texto
+    'andre': '21bbeb0b-daa7-4fe2-9fb5-d560db6f73e7',
 }
-PREF = {'rick': 'r', 'sophie': 'so', 'alana': 'a', 'steph': 's', 'thor': 't', 'abuela': 'ab', 'bao': 'ba'}
+PREF = {'rick': 'r', 'sophie': 'so', 'alana': 'a', 'steph': 's', 'thor': 't', 'abuela': 'ab', 'bao': 'ba', 'rosita': 'ro', 'andre': 'an'}
 DESC = {
     'rick': 'Red sleeveless gi with torn shoulders, black belt, white headband with tails, grey beard, glasses, black fingerless gloves, bandaged ankles, bare feet.',
     'sophie': 'Turquoise short kimono with white collar, pink sash belt, navy leggings, white sneakers with pink soles, ponytail with pink bow.',
@@ -30,6 +34,8 @@ DESC = {
     'thor': 'Fawn boxer dog superhero with black muzzle mask, white chest and paws, red cape, blue domino mask, blue harness with gold lightning bolt, blue leg bands.',
     'abuela': 'Sweet but fearsome Venezuelan grandmother: short fluffy white curly hair, big round glasses, chubby and wide, a long pink house dress with lilac and white flowers covering below the knees, pink rubber flip-flops, always holding one pink flip-flop in her right hand like a weapon.',
     'bao': 'Skinny wiry Vietnamese market merchant: conical non la straw hat, faded brown ao ba ba shirt, wide black trousers rolled up to the knees, rubber sandals, thin mustache, sly grin, always holding a long wooden shoulder pole with a woven fruit basket hanging from each end, used like a fighting staff.',
+    'rosita': 'Tiny slender dignified Venezuelan great-grandmother about 85 years old: short soft white-grey hair swept up, cat-eye glasses with thin gold frames and black top rims, small gold hoop earrings, sweet smile, red Christmas knit sweater with a white snowflake pattern, white trousers, red slippers, a small round wooden arepa paddle in one hand.',
+    'andre': 'Cheerful chubby young Venezuelan woman with a wide strong body: long loose straight black hair, light tan skin, round face, a headband with little round black panda ears, soft black panda patches around the eyes like a panda mask, burgundy Venezuela national football team jersey with gold stripes on the shoulders and a cream V collar, black shorts, black and white football boots.',
 }
 
 # movimientos comunes de los humanos: (hoja, cuadros, título, descripción de los cuadros)
@@ -95,6 +101,25 @@ PROPIO = {
         ('victoria', 4, 'VICTORY POSE', 'Frame 1: resting the bat on both shoulders behind the neck, grinning. Frame 2: laughing with the head thrown back. Frame 3: blowing a kiss. Frame 4: pointing the bat forward with a wink'),
         ('intro', 4, 'ROUND INTRO', 'Frame 1: tapping the bat in her open palm. Frame 2: twirling the bat. Frame 3: swinging the bat to the shoulder with a cheeky smile. Frame 4: fighting stance'),
     ],
+    # Andre Panda: la más pesada de la familia, golpes de panda y de fútbol (la tijera es una chilena)
+    'andre': [
+        ('salto', 5, 'HEAVY JUMP', 'A lower, heavy jump. Frame 1: crouching to prepare, knees bent. Frame 2: taking off, arms up. Frame 3: in the air, knees tucked. Frame 4: at the peak, knees tucked, fists up. Frame 5: landing heavily, knees bent'),
+        ('puno_debil', 4, 'PANDA SWAT', 'Frame 1: fighting stance. Frame 2: lead hand pulling back with fingers curled like a paw. Frame 3: quick open-paw swat forward at face height, arm extended. Frame 4: arm retracting'),
+        ('puno_fuerte', 4, 'TWO-HANDED PANDA CLAW', 'Frame 1: both hands raised high like big panda paws, fingers curled, playful growl. Frame 2: swinging both paws forward and down. Frame 3: both arms fully extended forward clawing at chest height, leaning forward. Frame 4: recovering'),
+        ('patada_debil', 4, 'SHORT PASS KICK', 'A short football pass with the inside of the foot. Frame 1: stepping, kicking leg drawn back. Frame 2: swinging the leg forward, foot turned sideways. Frame 3: inside of the boot striking forward at shin height, leg extended, arms out for balance. Frame 4: leg coming back'),
+        ('patada_fuerte', 5, 'BICYCLE KICK', 'A spectacular football bicycle kick (chilena). Frame 1: jumping up and leaning back. Frame 2: body almost horizontal in the air, one leg swinging up. Frame 3: upside down in the air, kicking leg fully extended up and forward over her head, the other leg down. Frame 4: falling back, landing on the hands. Frame 5: back on her feet in stance. No ball drawn'),
+        ('agachado_puno', 4, 'CROUCHING PANDA SWATS', 'Every frame crouched low with knees bent. Frame 1: crouching, quick paw swat forward at knee height. Frame 2: pulling back. Frame 3: crouching, paw pulled back low. Frame 4: rising uppercut paw swipe straight up above the head, still low on bent legs'),
+        ('agachado_patada', 4, 'CROUCHING TOE POKE', 'Frame 1: crouching low in guard. Frame 2: still crouched, front foot sliding forward. Frame 3: crouched low, poking forward with the toe of the boot along the floor at ankle height. Frame 4: foot pulling back, still crouched'),
+        ('barrida', 5, 'SLIDING TACKLE', 'A football sliding tackle. Frame 1: running low. Frame 2: dropping to the floor sliding on one hip. Frame 3: sliding along the floor, front leg fully extended forward at ankle height, one hand on the floor. Frame 4: sliding to a stop. Frame 5: getting up to crouching guard'),
+        ('aire', 4, 'AIR SWAT AND VOLLEY', 'Every frame in the air, no floor. Frame 1: in the air with knees tucked, paw pulled back. Frame 2: in the air swatting diagonally down and forward with the arm extended. Frame 3: in the air with knees tucked, ready to kick. Frame 4: flying volley kick in the air, front leg fully extended diagonally down and forward'),
+        ('poder1', 5, 'BALL KICK SPECIAL MOVE', 'Frame 1: a football at her feet, stepping back. Frame 2: running up to the ball, kicking leg drawn back high. Frame 3: kicking hard, kicking leg fully extended forward at shin height, the ball already gone, arms out. Frame 4: follow-through, leg up. Frame 5: back in stance, fist pump. Only in frames 1 and 2 the ball is drawn on the floor'),
+        ('poder2', 5, 'GIANT SCISSORS SPECIAL MOVE', 'Holding a pair of giant shiny silver scissors as long as her body with both hands, blades pointing forward. Frame 1: scissors held up, blades open wide. Frame 2: lunging forward, blades snapping closed. Frame 3: blades open again, stepping forward. Frame 4: blades snapping closed, lunging. Frame 5: scissors open, determined grin'),
+        ('poder3', 5, 'GOAL BICYCLE KICK SUPER MOVE', 'Frame 1: tossing a football up with the knee. Frame 2: jumping very high and leaning back. Frame 3: upside down in the air, kicking leg fully extended up and forward, a powerful bicycle kick. Frame 4: falling back to the floor, arms out. Frame 5: on one knee shouting goal with both fists up. No ball, fire or effects drawn'),
+        ('victoria', 4, 'VICTORY POSE', 'Frame 1: shouting GOL with both arms wide open, running pose. Frame 2: sliding on her knees celebrating, fists up. Frame 3: kissing the badge on her jersey. Frame 4: making a funny panda face with both hands like paws, laughing'),
+        ('intro', 4, 'ROUND INTRO', 'Frame 1: juggling a football on her knee. Frame 2: catching the ball under her foot. Frame 3: adjusting the panda ears headband, playful wink. Frame 4: dropping into a wide heavy fighting stance'),
+        ('carrera', 4, 'PANDA ROLL', 'Rolling forward fast curled up in a tight ball like a panda, every frame clearly rotated further. Frame 1: curled ball, head at the top. Frame 2: curled ball rotated a quarter turn forward. Frame 3: curled ball upside down. Frame 4: curled ball rotated three quarters'),
+        ('techo_zinc', 4, 'ZINC SHEET OVER THE HEAD', 'Walking forward holding a big rusty corrugated zinc roof sheet flat over her head with both hands, arms raised, like a shield or umbrella. Frame 1: left foot forward. Frame 2: passing. Frame 3: right foot forward. Frame 4: passing. The zinc sheet is long, wavy and rusty red-brown'),
+    ],
     'thor': [
         ('guardia', 4, 'IDLE FIGHTING STANCE', 'The ready stance idle loop on four legs, head up, alert, panting with the tongue out, the four frames almost identical, paws never move. Frame 1: neutral. Frame 2: chest rising. Frame 3: chest highest, cape lifting a little. Frame 4: chest lowering'),
         ('avanza', 6, 'TROT FORWARD CYCLE', 'Trotting forward on four legs, head up, cape flowing. Six frames of a natural dog trot cycle with diagonal leg pairs moving together'),
@@ -138,6 +163,25 @@ JEFES = {
         ('victoria', 4, 'VICTORY POSE', 'Frame 1: biting into a mango, grinning. Frame 2: tipping his hat. Frame 3: counting money with a sly smile. Frame 4: pole on the shoulder, laughing'),
         ('intro', 4, 'ROUND INTRO', 'Frame 1: walking in with the pole and baskets on the shoulder. Frame 2: putting the baskets down. Frame 3: twirling the pole. Frame 4: fighting stance with the pole'),
     ],
+    # Rosita: golpes de abuela de verdad (pellizco, paletazo, pisotón con la pantufla, barrido con la escoba) y un salto
+    # cortico, nada de volteretas
+    'rosita': [
+        ('salto', 5, 'SHORT HOP', 'A small careful hop, not high. Frame 1: bending the knees a little. Frame 2: hopping up a little, arms out for balance. Frame 3: at the top of the small hop, feet together. Frame 4: coming down. Frame 5: landing softly, knees bent'),
+        ('salto_adelante', 5, 'SHORT FORWARD HOP', 'A small careful hop forward, not a flip. Frame 1: leaning forward, knees bent. Frame 2: hopping forward, arms out for balance. Frame 3: in the air moving forward, feet together. Frame 4: coming down forward. Frame 5: landing softly'),
+        ('puno_debil', 4, 'AFFECTIONATE PINCH', 'Frame 1: stance. Frame 2: free hand reaching forward. Frame 3: arm extended forward at cheek height pinching with two fingers, loving smile. Frame 4: pulling the hand back'),
+        ('puno_fuerte', 4, 'PADDLE SMACK', 'Frame 1: raising the wooden arepa paddle high behind her head. Frame 2: swinging the paddle forward and down. Frame 3: paddle fully extended forward at head height after a big smack, leaning forward. Frame 4: recovering'),
+        ('patada_debil', 4, 'SLIPPER STOMP', 'Frame 1: lifting one knee a little. Frame 2: foot up in the slipper. Frame 3: stomping the slipper down hard on the floor in front of her. Frame 4: back in stance'),
+        ('patada_fuerte', 5, 'BROOM SWEEP', 'Frame 1: grabbing a straw broom with both hands, held back. Frame 2: swinging the broom forward low. Frame 3: broom fully extended forward sweeping along the floor at ankle height, leaning forward. Frame 4: follow-through. Frame 5: back in stance with the broom gone'),
+        ('agachado_puno', 4, 'CROUCHING PADDLE HITS', 'Every frame crouched low with knees bent. Frame 1: crouching, poking forward with the paddle at knee height. Frame 2: pulling back. Frame 3: crouching, paddle pulled back low. Frame 4: rising paddle swing upward above the head, still low on bent legs'),
+        ('agachado_patada', 4, 'CROUCHING SLIPPER KICK', 'Frame 1: crouching low in guard. Frame 2: still crouched, one foot sliding forward. Frame 3: crouched low, the slipper foot extended straight forward along the floor at ankle height. Frame 4: foot pulling back, still crouched'),
+        ('barrida', 5, 'LOW BROOM SWEEP', 'Frame 1: crouching low holding a straw broom. Frame 2: swinging the broom low. Frame 3: crouched, broom fully extended forward sweeping the floor at ankle height. Frame 4: follow-through. Frame 5: back to crouching guard'),
+        ('aire', 4, 'HOP ATTACKS', 'Every frame in the air, a small hop. Frame 1: in the air, paddle raised. Frame 2: in the air smacking diagonally down and forward with the paddle. Frame 3: in the air, knees together. Frame 4: in the air kicking diagonally down and forward with the slipper foot'),
+        ('poder1', 5, 'FLYING AREPA THROW SPECIAL MOVE', 'Frame 1: picking up a big round arepa from the paddle with the free hand. Frame 2: winding up, the arepa held back behind her. Frame 3: throwing the arepa forward hard, arm fully extended, hand now empty. Frame 4: follow-through, pointing forward with the paddle. Frame 5: back in stance. No flying arepa drawn'),
+        ('poder2', 5, 'HAVE YOU EATEN COUNTER STANCE', 'A calm counter stance. Frame 1: stepping back, open palm starting forward. Frame 2: open palm extended forward at chest height like saying stop, the other hand holding the paddle back, wise calm face. Frame 3: same pose, eyes narrowed, ready. Frame 4: quick counter smack forward with the paddle. Frame 5: back in stance'),
+        ('poder3', 5, 'COME EAT FAMILY SUPER MOVE', 'Frame 1: taking out a small brass kitchen bell. Frame 2: raising the bell high above her head. Frame 3: ringing the bell hard, mouth wide open shouting. Frame 4: both arms raised, bell high, shouting with all her strength, glasses shining. Frame 5: hands on hips, satisfied smile. No effects drawn'),
+        ('victoria', 4, 'VICTORY POSE', 'Frame 1: adjusting her gold glasses with a sweet smile. Frame 2: offering a plate with a warm arepa. Frame 3: hand on the heart, laughing warmly. Frame 4: waving goodbye kindly'),
+        ('intro', 4, 'ROUND INTRO', 'Frame 1: walking in calmly, wiping her hands on a kitchen towel. Frame 2: folding the towel over her shoulder. Frame 3: picking up the wooden arepa paddle, tapping it on her palm. Frame 4: fighting stance with the paddle'),
+    ],
 }
 
 # lote F (lo que pidió el juego en su lote E): carrera, agarre y agarrado para los cinco, y el trote de Thor de
@@ -168,6 +212,9 @@ EFECTOS = [
     ('fx_hojas', 'a swirling tornado ball of bright green leaves and small pink petals flying to the right, spinning from frame to frame'),
     ('fx_chancla', 'a pink rubber flip-flop sandal spinning end over end through the air to the right, with small motion streaks'),
     ('fx_non_la', 'a conical Vietnamese straw hat spinning flat like a frisbee flying to the right'),
+    ('fx_balon', 'a football (soccer ball) with rainbow colored panels spinning while flying to the right, with small white motion streaks'),
+    ('fx_balon_fuego', 'a football (soccer ball) wrapped in roaring orange and yellow flames with a burgundy and gold trail, flying to the right'),
+    ('fx_arepa', 'a big round golden Venezuelan arepa, toasted with dark griddle marks, spinning while flying to the right, with white puffs of hot steam trailing behind it and a faint warm golden glow'),
     ('fx_selva', 'a huge wave of thorny green vines, big blooming pink and yellow flowers and leaves bursting forward to the right, growing from frame to frame'),
     ('fx_estrella', 'a spinning golden magic star with pink sparkles and a short rainbow trail flying to the right, rotating from frame to frame'),
     ('fx_corona', 'a giant shining golden comet star shaped like a crown with a long rainbow trail and sparkles flying to the right, pulsing from frame to frame'),
@@ -195,9 +242,11 @@ def hojas(pid):
     propias = {h[0]: h for h in PROPIO.get(pid, []) + JEFES.get(pid, [])}
     base = [] if pid == 'thor' else HUMANO
     out = [propias.pop(h[0], h) for h in base]
-    out += list(propias.values())
-    # los jefes no llevan carrera ni agarre: el juego usa su respaldo y se ahorran créditos
-    out += [] if pid in JEFES else LOTE_F_THOR if pid == 'thor' else LOTE_F_HUMANO
+    # los jefes no llevan carrera ni agarre: el juego usa su respaldo y se ahorran créditos. Una propia con el nombre
+    # de una del lote F la reemplaza (la carrera de Andre es rodar como pelota de panda)
+    lote_f = [] if pid in JEFES else LOTE_F_THOR if pid == 'thor' else LOTE_F_HUMANO
+    lote_f = [propias.pop(h[0], h) for h in lote_f]
+    out += list(propias.values()) + lote_f
     return [h for h in out if h[0] not in YA_HECHAS.get(pid, set())]
 
 

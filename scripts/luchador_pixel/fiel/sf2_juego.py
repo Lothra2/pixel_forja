@@ -20,11 +20,11 @@ FX = os.path.join(AQUI, 'datos', 'familia', 'crudo', 'hojas')
 RAIZ = os.path.abspath(os.path.join(AQUI, '..', '..', '..'))
 SALE = os.path.join(RAIZ, 'docs', 'pelea', 'JUEGO', 'assets')
 
-NOMBRES = {'rick': 'Rick', 'sophie': 'Sophie', 'alana': 'Alana', 'steph': 'Steph', 'thor': 'Thor'}
+NOMBRES = {'rick': 'Rick', 'sophie': 'Sophie', 'alana': 'Alana', 'steph': 'Steph', 'thor': 'Thor', 'andre': 'Andre Panda'}
 # los jefes del modo arcade (lote G): se exportan aparte, no van en la lista de luchadores del índice
-JEFES = {'abuela': 'La Abuela', 'bao': 'Tío Bao, el Comerciante'}
+JEFES = {'abuela': 'La Abuela', 'bao': 'Tío Bao, el Comerciante', 'rosita': 'Rosita'}
 CIUDAD = {'rick': 'caracas', 'sophie': 'hochiminh', 'alana': 'celestial', 'steph': 'bogota', 'thor': 'japon',
-          'abuela': 'casa_abuela', 'bao': 'halong'}
+          'abuela': 'casa_abuela', 'bao': 'halong', 'rosita': 'casa_rosita', 'andre': 'cancha'}
 PODERES = {
     'rick': [('Onda', 'fx_onda'), ('Embestida', None), ('Súper Onda', 'fx_super_onda')],
     'sophie': [('Ráfaga de Hojas', 'fx_hojas'), ('Mil Patadas', None), ('Furia de la Selva', 'fx_selva')],
@@ -33,15 +33,18 @@ PODERES = {
     'thor': [('Súper Ladrido', 'fx_ladrido'), ('Rayo Veloz', None), ('Aullido Trueno', 'fx_trueno')],
     'abuela': [('Chancletazo', 'fx_chancla'), ('¡Ven acá!', None), ('Lluvia de Chancletas', None)],
     'bao': [('Nón Lá Bumerán', 'fx_non_la'), ('Golpe de Vara', None), ('Lluvia de Mangos', None)],
+    'andre': [('Balonazo', 'fx_balon'), ('Tijeretazo', None), ('¡GOOOL VINOTINTO!', 'fx_balon_fuego')],
+    'rosita': [('Arepa Voladora', 'fx_arepa'), ('¿Ya comiste?', None), ('¡A comer, familia!', None)],
 }
 SONIDO_PODER = {'fx_onda': 'poder_onda', 'fx_super_onda': 'poder_onda', 'fx_hojas': 'poder_hojas', 'fx_selva': 'poder_hojas',
                 'fx_estrella': 'poder_estrella', 'fx_corona': 'poder_estrella', 'fx_pelota': 'poder_pelota',
                 'fx_ladrido': 'poder_ladrido', 'fx_trueno': 'poder_trueno', 'fx_chancla': 'poder_pelota',
-                'fx_non_la': 'poder_pelota'}
+                'fx_non_la': 'poder_pelota', 'fx_arepa': 'poder_pelota',
+                'fx_balon': 'poder_pelota', 'fx_balon_fuego': 'poder_onda'}
 # el alto de cada efecto en pixeles del arte (los luchadores miden unos 170)
 ALTO_FX = {'fx_onda': 46, 'fx_super_onda': 92, 'fx_hojas': 54, 'fx_selva': 120, 'fx_estrella': 44, 'fx_corona': 96,
            'fx_pelota': 26, 'fx_ladrido': 70, 'fx_trueno': 110, 'fx_golpe': 56, 'fx_bloqueo': 50, 'fx_polvo': 30, 'fx_mareo': 30,
-           'fx_chancla': 22, 'fx_non_la': 30}
+           'fx_chancla': 22, 'fx_non_la': 30, 'fx_arepa': 34, 'fx_balon': 26, 'fx_balon_fuego': 48}
 
 # golpes: (daño, nivel, tipo, tumba)
 DEBIL, FUERTE, PODER, SUPER = 'debil', 'fuerte', 'poder', 'super'
@@ -141,6 +144,21 @@ def poderes(pid):
         giro = [1, 2, 3, 2]
         P['poder2'] = dict(golpe=(5, PODER, 'medio', False), pega='ambos', multi=True, pasos=[c('poder2', 0, 5, 'inicio')] + [c('poder2', k, 4, 'activo', avance=4) for k in giro] + [c('poder2', 4, 12, 'recuperacion')])
         P['poder3'] = dict(golpe=(30, SUPER, 'alto', True), pasos=[c('poder3', 0, 8, 'inicio'), c('poder3', 1, 10, 'activo'), c('poder3', 2, 14, 'activo'), c('poder3', 3, 14, 'recuperacion'), c('poder3', 4, 12, 'recuperacion')])
+    elif pid == 'andre':
+        P['poder1'] = proyectil('poder1', 2, 'fx_balon', PODER, 12)
+        # Tijeretazo: las tijeras gigantes cortan en bucle mientras avanza (cuadros 1 a 4), pega varias veces
+        corte = [1, 2, 3, 4, 1, 2, 3, 4]
+        P['poder2'] = dict(golpe=(4, PODER, 'medio', False), pega='frente', multi=True, pasos=[c('poder2', 0, 5, 'inicio')] + [c('poder2', k, 3, 'activo', avance=2) for k in corte] + [c('poder2', 4, 12, 'recuperacion')])
+        # ¡GOOOL VINOTINTO!: la chilena suelta el balón en llamas en el cuadro de arriba
+        P['poder3'] = dict(golpe=(30, SUPER, 'medio', True), pega='frente', pasos=[c('poder3', 0, 8, 'inicio'), c('poder3', 1, 8, 'inicio'), bola('poder3', 2, 6, 'fx_balon_fuego'), c('poder3', 3, 12, 'recuperacion'), c('poder3', 4, 20, 'recuperacion')])
+        # la lámina de zinc sobre la cabeza (anim aparte, el juego decide cuándo sale)
+        P['techo_zinc'] = dict(bucle=True, pasos=[c('techo_zinc', i, 6) for i in range(4)])
+    elif pid == 'rosita':
+        P['poder1'] = proyectil('poder1', 2, 'fx_arepa', PODER, 13)
+        # ¿Ya comiste?: la mano extendida espera (el contraataque lo decide el juego) y el paletazo de vuelta
+        P['poder2'] = dict(golpe=(16, PODER, 'medio', True), pega='frente', pasos=[c('poder2', 0, 4, 'inicio'), c('poder2', 1, 12, 'recuperacion'), c('poder2', 2, 12, 'recuperacion'), c('poder2', 3, 6, 'activo', avance=2), c('poder2', 4, 10, 'recuperacion')])
+        # ¡A comer, familia!: la campana y el grito; el especial lo pinta el juego
+        P['poder3'] = dict(golpe=(32, SUPER, 'alto', True), pasos=[c('poder3', 0, 8, 'inicio'), c('poder3', 1, 10, 'inicio'), c('poder3', 2, 14, 'activo'), c('poder3', 3, 14, 'activo'), c('poder3', 4, 12, 'recuperacion')])
     for k, (nombre, fx) in zip(('poder1', 'poder2', 'poder3'), PODERES[pid]):
         P[k]['nombre'] = nombre
     return P
@@ -459,7 +477,7 @@ def empaquetar():
             shutil.rmtree(dst)
         shutil.copytree(src, dst, ignore=shutil.ignore_patterns('_alineacion.json'))
     # los seis mundos del lote E: solo los PNG, porque sus manifest.json los escribió el juego
-    for e in ('china', 'italia', 'usa', 'brasil', 'egipto', 'polo_norte', 'halong', 'salto_angel', 'casa_abuela'):
+    for e in ('china', 'italia', 'usa', 'brasil', 'egipto', 'polo_norte', 'halong', 'salto_angel', 'casa_abuela', 'casa_rosita', 'cancha'):
         src, dst = os.path.join(RAIZ, 'public', 'escenarios', e), os.path.join(SALE, 'escenarios', e)
         if not os.path.exists(os.path.join(src, 'piso.png')):
             continue
@@ -473,7 +491,7 @@ def empaquetar():
     jefes = [j for j in JEFES if os.path.exists(os.path.join(SALE, 'luchadores', j, 'manifest.json'))]
     # los jefes van también en luchadores: así el juego deja la silueta y usa el arte
     mundos = ['caracas', 'hochiminh', 'bogota', 'japon', 'celestial', 'china', 'italia', 'usa', 'brasil', 'egipto',
-              'polo_norte', 'halong', 'salto_angel', 'casa_abuela']
+              'polo_norte', 'halong', 'salto_angel', 'casa_abuela', 'casa_rosita', 'cancha']
     mundos = [e for e in mundos if os.path.exists(os.path.join(SALE, 'escenarios', e, 'piso.png'))]
     json.dump({'luchadores': list(NOMBRES) + jefes, 'jefes': jefes, 'escenarios': mundos,
                'ciudad': CIUDAD}, open(os.path.join(SALE, 'indice.json'), 'w'), ensure_ascii=False, indent=1)
