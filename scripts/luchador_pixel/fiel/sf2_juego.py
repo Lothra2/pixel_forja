@@ -493,7 +493,9 @@ def empaquetar():
     mundos = ['caracas', 'hochiminh', 'bogota', 'japon', 'celestial', 'china', 'italia', 'usa', 'brasil', 'egipto',
               'polo_norte', 'halong', 'salto_angel', 'casa_abuela', 'casa_rosita', 'cancha']
     mundos = [e for e in mundos if os.path.exists(os.path.join(SALE, 'escenarios', e, 'piso.png'))]
-    json.dump({'luchadores': list(NOMBRES) + jefes, 'jefes': jefes, 'escenarios': mundos,
+    # solo los que ya tienen arte: un luchador nuevo entra al índice cuando existe su manifest
+    jugables = [p for p in NOMBRES if os.path.exists(os.path.join(SALE, 'luchadores', p, 'manifest.json'))]
+    json.dump({'luchadores': jugables + jefes, 'jefes': jefes, 'escenarios': mundos,
                'ciudad': CIUDAD}, open(os.path.join(SALE, 'indice.json'), 'w'), ensure_ascii=False, indent=1)
     indice_audio()
     print('empaquetado: escenarios, logo, indice, audio')
