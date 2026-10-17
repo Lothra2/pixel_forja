@@ -278,7 +278,7 @@ def procesar(pid, hoja, n, ref=None):
     ff = ALTO[pid] / Hg / esc
     # la escala pareja que midió el juego, cuadro a cuadro (sf2_escala.py): se aplica aquí, al bajar la hoja grande
     from sf2_escala import factores
-    fac = factores(pid).get(hoja, {}) if ref is None else {}
+    fac = factores(pid).get(hoja, {}) if ref is None else LARGO_ACOSTADO.get(pid, {})
     out = []
     bg = fondo_de(a)
     for i, (x0, y0, x1, y1) in enumerate(cajas):
@@ -305,11 +305,16 @@ ACOSTADOS = {
     'steph': (3, {('cae', 3): 1, ('cae', 4): 2}),
     'sophie': (3, {('cae', 3): 1, ('cae', 4): 2}),
 }
+# Higgsfield no los dibuja exactos: a Rick y a Sophie acostados les faltaba largo y a Steph le sobraba. Cada cuadro de
+# la hoja va por un factor para que el largo acostado quede como el alto de la guardia, sin mover la cabeza más de un
+# 10 % (medido: Rick 166 y 177 contra 188, Sophie 145 y 143 contra 156, Steph 231 y 235 contra 180)
+LARGO_ACOSTADO = {'rick': {1: 1.1, 2: 1.06, 3: 1.06}, 'sophie': {1: 1.08, 2: 1.09}, 'steph': {1: 0.9, 2: 0.9}}
 
 
 def leer_tira(pid, hoja, pal):
     """La tira guardada de vuelta a cuadros de índices de la paleta."""
-    P = {tuple(int(c[i:i + 2], 16) for i in (1, 3, 5)): k for k, c in enumerate(pal)}
+    pa = np.array([[int(c[i:i + 2], 16) for i in (1, 3, 5)] for c in pal], float)
+    P = {tuple(v): k for k, v in enumerate(pa.astype(int))}
     img = np.asarray(Image.open(os.path.join(SALE, pid, f'{hoja}.png')).convert('RGBA'))
     out = []
     for c in json.load(open(os.path.join(SALE, pid, f'{hoja}.json'))):
@@ -317,7 +322,8 @@ def leer_tira(pid, hoja, pal):
         r = img[y:y + h, x:x + w]
         q = np.full((h, w), -1, int)
         op = r[..., 3] > 0
-        q[op] = [P[tuple(v)] for v in r[op][:, :3]]
+        # un color que no está en la paleta (tiras viejas de otra paleta) va al más cercano
+        q[op] = [P.get(tuple(int(x) for x in v), int(((pa - v) ** 2).sum(1).argmin())) for v in r[op][:, :3]]
         out.append({'q': q, 'ancla': c['ancla'], 'sobre': c['sobre']})
     return out
 
