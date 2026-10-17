@@ -229,7 +229,8 @@ def canon(pid):
 SIN_SUELTOS = {('bao', 'poder1')}
 
 
-def procesar(pid, hoja, n):
+def procesar(pid, hoja, n, ref=None):
+    """ref: el cuadro parado de la hoja que manda la escala (las hojas de acostados traen uno de referencia)."""
     T, Hg, Pg, pal = canon(pid)
     a = leer_hoja(pid, hoja)
     cajas, mascaras = separar_mascaras(a, n)
@@ -249,7 +250,7 @@ def procesar(pid, hoja, n):
             return None
     # una escala para toda la hoja: el tamaño de la cara contra la de la guardia nueva
     escalas = []
-    for x0, y0, x1, y1 in cajas:
+    for x0, y0, x1, y1 in (cajas if ref is None else [cajas[ref]]):
         b = a[max(0, y0 - 8):y1 + 8, max(0, x0 - 8):x1 + 8]
         corr, s, _ = buscar_cara(T, b)
         if corr >= 0.5 and 0.55 <= s <= 1.6:
@@ -259,6 +260,9 @@ def procesar(pid, hoja, n):
     propia = {'thor': ALTURA_THOR, 'rick': {'poder2': 0.7, 'mareado': 0.88}}.get(pid, {})
     esperada = propia.get(hoja, ALTURA.get(hoja, 1.0))
     esc_h = float(np.median([y1 - y0 for x0, y0, x1, y1 in cajas])) / (Hg * esperada)
+    if ref is not None:
+        # parado derecho mide un poco más que en guardia
+        esc_h = (cajas[ref][3] - cajas[ref][1]) / (Hg * 1.05)
     buenas = sorted([e for e in escalas if e[0] >= 0.62], reverse=True)
     if buenas:
         mejores = [s for c_, s in buenas[:max(2, len(buenas) // 2)]]
@@ -271,7 +275,7 @@ def procesar(pid, hoja, n):
     ff = ALTO[pid] / Hg / esc
     # la escala pareja que midió el juego, cuadro a cuadro (sf2_escala.py): se aplica aquí, al bajar la hoja grande
     from sf2_escala import factores
-    fac = factores(pid).get(hoja, {})
+    fac = factores(pid).get(hoja, {}) if ref is None else {}
     out = []
     bg = fondo_de(a)
     for i, (x0, y0, x1, y1) in enumerate(cajas):
@@ -288,6 +292,46 @@ def procesar(pid, hoja, n):
         out.append({'q': q, 'ancla': [ax, ay], 'sobre': 0, 'nota': ''})
     print(f'  {hoja:16s} {len(out)} cuadros  escala {esc:.2f} ({como})  alto {max(o["q"].shape[0] for o in out)}', flush=True)
     return out, pal
+
+
+# los acostados redibujados (Rick los vio "muy gordos": agrandar el cuadro arreglaba el largo pero no el grosor). La hoja
+# <pref>_acostado trae un cuadro parado de referencia y los acostados al largo de la estatura; cada uno reemplaza su
+# cuadro en la tira ya hecha: {pid: (cuadros de la hoja, {(tira, cuadro): cuadro de la hoja})}
+ACOSTADOS = {
+    'rick': (4, {('cae', 3): 1, ('cae', 4): 2, ('levanta', 0): 3}),
+    'steph': (3, {('cae', 3): 1, ('cae', 4): 2}),
+    'sophie': (3, {('cae', 3): 1, ('cae', 4): 2}),
+}
+
+
+def leer_tira(pid, hoja, pal):
+    """La tira guardada de vuelta a cuadros de índices de la paleta."""
+    P = {tuple(int(c[i:i + 2], 16) for i in (1, 3, 5)): k for k, c in enumerate(pal)}
+    img = np.asarray(Image.open(os.path.join(SALE, pid, f'{hoja}.png')).convert('RGBA'))
+    out = []
+    for c in json.load(open(os.path.join(SALE, pid, f'{hoja}.json'))):
+        x, y, w, h = c['caja']
+        r = img[y:y + h, x:x + w]
+        q = np.full((h, w), -1, int)
+        op = r[..., 3] > 0
+        q[op] = [P[tuple(v)] for v in r[op][:, :3]]
+        out.append({'q': q, 'ancla': c['ancla'], 'sobre': c['sobre']})
+    return out
+
+
+def acostados(pid):
+    n, cambios = ACOSTADOS[pid]
+    r = procesar(pid, 'acostado', n, ref=0)
+    if not r:
+        return
+    nuevos, pal = r
+    for hoja in sorted({h for h, _ in cambios}):
+        tira = leer_tira(pid, hoja, pal)
+        for (h, i), j in cambios.items():
+            if h == hoja:
+                tira[i] = nuevos[j]
+        guardar(pid, hoja, tira, pal)
+        print(f'  {hoja}: acostados {[i for (h, i) in cambios if h == hoja]} redibujados', flush=True)
 
 
 def guardar(pid, hoja, cuadros, pal):
@@ -340,3 +384,6 @@ if __name__ == '__main__':
             r = procesar(pid, hoja, n)
             if r:
                 guardar(pid, hoja, *r)
+        if pid in ACOSTADOS and os.path.exists(os.path.join(HOJAS, f'{PREF[pid]}_acostado.png')) and \
+                (not solo or {'cae', 'levanta', 'acostado'} & set(solo)):
+            acostados(pid)
