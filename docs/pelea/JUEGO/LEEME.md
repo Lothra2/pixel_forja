@@ -16,7 +16,7 @@ Sigue el contrato `docs/CONTRATO_ARTE.md` del juego (lote C):
 | `luchadores/abuela/` y `luchadores/bao/` | Los dos jefes: La Abuela (170 de alto, chancla_bola) y Tío Bao, el Comerciante (192 de alto, non_la_bola). Traen todo lo del contrato menos el lote F |
 | `luchadores/<id_malvado>/` | Solo `retrato.png` y `retrato_grande.png` de rick_oscuro, steph_oscura, sophie_oscura, alana_oscura y thor_infernal (las hojas son las mismas con otra paleta) |
 | `escenarios/` | Caracas, Ho Chi Minh, Bogotá, Japón y el Reino Celestial, con capas, actores y pétalos. Además China, Italia, USA, Brasil, Egipto, Polo Norte, Hạ Long, Salto Ángel y casa_abuela (el patio de la abuela de noche) solo con sus PNG (los `manifest.json` de esos mundos son del juego, no se pisan) |
-| `bonus/` | Los minijuegos: `carro_0.png` a `carro_5.png` (130 x 70), `barril.png` (26 x 32) y los pedazos de 8 x 8 (`pedazo_lata`, `pedazo_vidrio`, `pedazo_rueda`, `pedazo_madera`, `pedazo_aro`) |
+| `bonus/` | Los minijuegos: `carro_0.png` a `carro_5.png` (340 x 150, un sedán americano de los 70 de entero a aplastado, con la base en el mismo punto), las piezas que salen volando a su tamaño (`pieza_retrovisor`, `pieza_capo`, `pieza_puerta`, `pieza_caucho`, `pieza_parachoques`, `pieza_vidrio`), `barril.png` (26 x 32) y los pedazos de 8 x 8 del barril (`pedazo_lata`, `pedazo_vidrio`, `pedazo_rueda`, `pedazo_madera`, `pedazo_aro`) |
 | `efectos/` | Chispa de golpe, chispa de bloqueo, polvo y estrellas de mareo, con su manifest |
 | `audio/` | 15 temas de música (las 5 ciudades, los 6 mundos nuevos, título, selector, VS y victoria), los efectos y las frases del anunciador, en m4a y ogg, con `indice.json` |
 | `video/intro.mp4` | El intro de 10 segundos (960 de ancho, 3,4 MB) |
