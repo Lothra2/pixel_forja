@@ -5,12 +5,15 @@
   "alana",
   "steph",
   "thor",
+  "andre",
   "abuela",
-  "bao"
+  "bao",
+  "rosita"
  ],
  "jefes": [
   "abuela",
-  "bao"
+  "bao",
+  "rosita"
  ],
  "escenarios": [
   "caracas",
@@ -26,7 +29,8 @@
   "polo_norte",
   "halong",
   "salto_angel",
-  "casa_abuela"
+  "casa_abuela",
+  "casa_rosita"
  ],
  "ciudad": {
   "rick": "caracas",
@@ -35,6 +39,8 @@
   "steph": "bogota",
   "thor": "japon",
   "abuela": "casa_abuela",
-  "bao": "halong"
+  "bao": "halong",
+  "rosita": "casa_rosita",
+  "andre": "cancha"
  }
 }
