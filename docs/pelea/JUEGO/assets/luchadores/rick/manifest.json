@@ -31,9 +31,9 @@
   "guardia": {
    "bucle": true,
    "hoja": "guardia.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -201,9 +201,9 @@
   "avanza": {
    "bucle": true,
    "hoja": "avanza.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -451,9 +451,9 @@
   "retrocede": {
    "bucle": true,
    "hoja": "retrocede.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -701,9 +701,9 @@
   "agacharse": {
    "bucle": false,
    "hoja": "agacharse.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -751,9 +751,9 @@
   "agachado": {
    "bucle": true,
    "hoja": "agachado.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -801,9 +801,9 @@
   "bloqueo": {
    "bucle": false,
    "hoja": "bloqueo.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -891,9 +891,9 @@
   "bloqueo_bajo": {
    "bucle": false,
    "hoja": "bloqueo_bajo.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -981,9 +981,9 @@
   "salto": {
    "bucle": false,
    "hoja": "salto.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -1191,9 +1191,9 @@
   "salto_adelante": {
    "bucle": false,
    "hoja": "salto_adelante.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -1401,9 +1401,9 @@
   "puño_debil": {
    "bucle": false,
    "hoja": "puño_debil.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -1596,9 +1596,9 @@
   "puño_fuerte": {
    "bucle": false,
    "hoja": "puño_fuerte.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -1791,9 +1791,9 @@
   "patada_debil": {
    "bucle": false,
    "hoja": "patada_debil.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -1986,9 +1986,9 @@
   "patada_fuerte": {
    "bucle": false,
    "hoja": "patada_fuerte.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -2221,9 +2221,9 @@
   "agachado_puño_debil": {
    "bucle": false,
    "hoja": "agachado_puño_debil.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -2376,9 +2376,9 @@
   "agachado_puño_fuerte": {
    "bucle": false,
    "hoja": "agachado_puño_fuerte.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -2571,9 +2571,9 @@
   "agachado_patada_debil": {
    "bucle": false,
    "hoja": "agachado_patada_debil.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -2726,9 +2726,9 @@
   "agachado_patada_fuerte": {
    "bucle": false,
    "hoja": "agachado_patada_fuerte.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -2961,9 +2961,9 @@
   "aire_puño": {
    "bucle": false,
    "hoja": "aire_puño.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -3076,9 +3076,9 @@
   "aire_patada": {
    "bucle": false,
    "hoja": "aire_patada.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -3191,9 +3191,9 @@
   "recibe_alto": {
    "bucle": false,
    "hoja": "recibe_alto.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -3321,9 +3321,9 @@
   "recibe_bajo": {
    "bucle": false,
    "hoja": "recibe_bajo.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -3451,9 +3451,9 @@
   "recibe_aire": {
    "bucle": false,
    "hoja": "recibe_aire.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -3541,9 +3541,9 @@
   "cae": {
    "bucle": false,
    "hoja": "cae.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -3673,37 +3673,37 @@
       {
        "zona": "cabeza",
        "caja": [
-        -82,
-        -85,
-        176,
-        21
+        -86,
+        -59,
+        173,
+        15
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -107,
-        -64,
-        202,
-        29
+        -88,
+        -44,
+        175,
+        20
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -106,
-        -35,
-        200,
-        35
+        -96,
+        -24,
+        180,
+        24
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -85,
+      -59,
       59,
-      85
+      59
      ]
     },
     {
@@ -3713,37 +3713,37 @@
       {
        "zona": "cabeza",
        "caja": [
-        -88,
-        -85,
-        189,
-        21
+        -89,
+        -56,
+        177,
+        14
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -114,
-        -64,
-        215,
-        29
+        -90,
+        -42,
+        178,
+        19
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -113,
-        -35,
-        213,
-        35
+        -99,
+        -23,
+        185,
+        23
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -85,
+      -56,
       59,
-      85
+      56
      ]
     }
    ]
@@ -3751,9 +3751,9 @@
   "levanta": {
    "bucle": false,
    "hoja": "levanta.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -3763,37 +3763,37 @@
       {
        "zona": "cabeza",
        "caja": [
-        -63,
-        -101,
-        46,
-        25
+        -31,
+        -97,
+        47,
+        24
        ]
       },
       {
        "zona": "cuerpo",
        "caja": [
-        -92,
-        -76,
-        177,
-        34
+        -43,
+        -73,
+        92,
+        33
        ]
       },
       {
        "zona": "piernas",
        "caja": [
-        -84,
-        -42,
-        194,
-        42
+        -41,
+        -40,
+        165,
+        40
        ]
       }
      ],
      "pega": [],
      "empuje": [
       -30,
-      -101,
+      -97,
       59,
-      101
+      97
      ]
     },
     {
@@ -3921,9 +3921,9 @@
   "mareado": {
    "bucle": true,
    "hoja": "mareado.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -4091,9 +4091,9 @@
   "victoria": {
    "bucle": true,
    "hoja": "victoria.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -4261,9 +4261,9 @@
   "intro": {
    "bucle": false,
    "hoja": "intro.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -4431,9 +4431,9 @@
   "carrera": {
    "bucle": true,
    "hoja": "carrera.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -4601,9 +4601,9 @@
   "carrera_atras": {
    "bucle": false,
    "hoja": "carrera_atras.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -4731,9 +4731,9 @@
   "agarre": {
    "bucle": false,
    "hoja": "agarre.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -4926,9 +4926,9 @@
   "agarrado": {
    "bucle": false,
    "hoja": "agarrado.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -5016,9 +5016,9 @@
   "poder1": {
    "bucle": false,
    "hoja": "poder1.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -5256,9 +5256,9 @@
   "poder2": {
    "bucle": false,
    "hoja": "poder2.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
@@ -5527,9 +5527,9 @@
   "poder3": {
    "bucle": false,
    "hoja": "poder3.png",
-   "w": 236,
+   "w": 256,
    "h": 235,
-   "ox": 118,
+   "ox": 128,
    "oy": 229,
    "cuadros": [
     {
