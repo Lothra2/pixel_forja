@@ -149,8 +149,9 @@ def poderes(pid):
         # Tijeretazo: las tijeras gigantes cortan en bucle mientras avanza (cuadros 1 a 4), pega varias veces
         corte = [1, 2, 3, 4, 1, 2, 3, 4]
         P['poder2'] = dict(golpe=(4, PODER, 'medio', False), pega='frente', multi=True, pasos=[c('poder2', 0, 5, 'inicio')] + [c('poder2', k, 3, 'activo', avance=2) for k in corte] + [c('poder2', 4, 12, 'recuperacion')])
-        # ¡GOOOL VINOTINTO!: la chilena suelta el balón en llamas en el cuadro de arriba
-        P['poder3'] = dict(golpe=(30, SUPER, 'medio', True), pega='frente', pasos=[c('poder3', 0, 8, 'inicio'), c('poder3', 1, 8, 'inicio'), bola('poder3', 2, 6, 'fx_balon_fuego'), c('poder3', 3, 12, 'recuperacion'), c('poder3', 4, 20, 'recuperacion')])
+        # ¡GOOOL VINOTINTO!: la chilena; el balón en llamas lo lanza el juego desde el cuerpo (desde el pie pasaba por
+        # encima de las cabezas), así que el cuadro de arriba no trae bola
+        P['poder3'] = dict(golpe=(30, SUPER, 'medio', True), pega='frente', pasos=[c('poder3', 0, 8, 'inicio'), c('poder3', 1, 8, 'inicio'), c('poder3', 2, 6, 'activo'), c('poder3', 3, 12, 'recuperacion'), c('poder3', 4, 20, 'recuperacion')])
         # la lámina de zinc sobre la cabeza (anim aparte, el juego decide cuándo sale)
         P['techo_zinc'] = dict(bucle=True, pasos=[c('techo_zinc', i, 6) for i in range(4)])
     elif pid == 'rosita':
@@ -234,9 +235,7 @@ def pega(img, ax, ay, modo):
 # porque la punta más adelante es el pie, y medio trueno de Thor quedaba bajo el piso
 BOLA_FIJA = {('steph', 'poder1', 3): (70, -133), ('thor', 'poder3', 2): (58, -66),
              # Bao suelta el nón lá con la mano alta, a la altura del hombro
-             ('bao', 'poder1', 2): (92, -160),
-             # la chilena de Andre: el balón en llamas sale del pie, arriba, no de la mano en el piso
-             ('andre', 'poder3', 2): (24, -196)}
+             ('bao', 'poder1', 2): (92, -160)}
 
 
 def exportar(pid):
@@ -311,6 +310,9 @@ def exportar(pid):
         man['anims'][nombre] = an
         if nombre.startswith('poder'):
             fx = PODERES[pid][int(nombre[-1]) - 1][1]
+            # la bola del poder va aunque ningún cuadro la suelte (el juego la lanza por su cuenta, como la de Andre)
+            if fx:
+                bolas.add(fx)
             man['poderes'][nombre] = {'anim': nombre, 'nombre': a['nombre'], 'bola': fx and f'{fx[3:]}_bola',
                                       'sonido': SONIDO_PODER.get(fx, 'golpe_super' if nombre == 'poder3' else 'silbido_fuerte'),
                                       'costo': 100 if nombre == 'poder3' else (25 if nombre == 'poder1' else 35)}
