@@ -226,10 +226,23 @@ def canon(pid):
     return _CANON[pid]
 
 
+SIN_SUELTOS = {('bao', 'poder1')}
+
+
 def procesar(pid, hoja, n):
     T, Hg, Pg, pal = canon(pid)
     a = leer_hoja(pid, hoja)
     cajas, mascaras = separar_mascaras(a, n)
+    if (pid, hoja) in SIN_SUELTOS:
+        # lo que vuela suelto (el nón lá de Bao) lo pinta el juego como bola: en el cuadro queda solo el cuerpo
+        for i, (x0, y0, x1, y1) in enumerate(cajas):
+            k, lab, st, _ = cv2.connectedComponentsWithStats(mascaras[i].astype(np.uint8), connectivity=8)
+            if k > 2:
+                mayor = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
+                quedan = [j for j in range(1, k) if j == mayor or st[j, cv2.CC_STAT_AREA] < 0.02 * st[mayor, cv2.CC_STAT_AREA]]
+                mascaras[i] = np.isin(lab, quedan)
+                ys, xs = np.where(lab == mayor)
+                cajas[i] = [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]
     if len(cajas) != n:
         print(f'  {hoja}: salieron {len(cajas)} cuadros y se pidieron {n}', flush=True)
         if len(cajas) < n:
