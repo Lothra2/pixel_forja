@@ -5,10 +5,12 @@
   "alana",
   "steph",
   "thor",
-  "abuela"
+  "abuela",
+  "bao"
  ],
  "jefes": [
-  "abuela"
+  "abuela",
+  "bao"
  ],
  "escenarios": [
   "caracas",
@@ -23,7 +25,8 @@
   "egipto",
   "polo_norte",
   "halong",
-  "salto_angel"
+  "salto_angel",
+  "casa_abuela"
  ],
  "ciudad": {
   "rick": "caracas",

@@ -214,7 +214,9 @@ def pega(img, ax, ay, modo):
 
 # donde nace el proyectil cuando la punta medida no sirve (el juego lo midió a ojo): la pelota de Steph salía del piso
 # porque la punta más adelante es el pie, y medio trueno de Thor quedaba bajo el piso
-BOLA_FIJA = {('steph', 'poder1', 3): (70, -133), ('thor', 'poder3', 2): (58, -66)}
+BOLA_FIJA = {('steph', 'poder1', 3): (70, -133), ('thor', 'poder3', 2): (58, -66),
+             # Bao suelta el nón lá con la mano alta, a la altura del hombro
+             ('bao', 'poder1', 2): (92, -160)}
 
 
 def exportar(pid):

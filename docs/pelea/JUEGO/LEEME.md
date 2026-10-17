@@ -13,15 +13,16 @@ Sigue el contrato `docs/CONTRATO_ARTE.md` del juego (lote C):
 | Carpeta | Qué hay |
 |---|---|
 | `luchadores/<id>/` | Rick, Sophie, Alana, Steph y Thor con las animaciones del contrato (más carrera, carrera_atras, agarre y agarrado), 3 poderes, proyectiles, retrato y retrato grande |
+| `luchadores/abuela/` y `luchadores/bao/` | Los dos jefes: La Abuela (170 de alto, chancla_bola) y Tío Bao, el Comerciante (192 de alto, non_la_bola). Traen todo lo del contrato menos el lote F |
 | `luchadores/<id_malvado>/` | Solo `retrato.png` y `retrato_grande.png` de rick_oscuro, steph_oscura, sophie_oscura, alana_oscura y thor_infernal (las hojas son las mismas con otra paleta) |
-| `escenarios/` | Caracas, Ho Chi Minh, Bogotá, Japón y el Reino Celestial, con capas, actores y pétalos. Además China, Italia, USA, Brasil, Egipto y Polo Norte solo con sus PNG (los `manifest.json` de esos seis son del juego, no se pisan) |
+| `escenarios/` | Caracas, Ho Chi Minh, Bogotá, Japón y el Reino Celestial, con capas, actores y pétalos. Además China, Italia, USA, Brasil, Egipto, Polo Norte, Hạ Long, Salto Ángel y casa_abuela (el patio de la abuela de noche) solo con sus PNG (los `manifest.json` de esos mundos son del juego, no se pisan) |
 | `bonus/` | Los minijuegos: `carro_0.png` a `carro_5.png` (130 x 70), `barril.png` (26 x 32) y los pedazos de 8 x 8 (`pedazo_lata`, `pedazo_vidrio`, `pedazo_rueda`, `pedazo_madera`, `pedazo_aro`) |
 | `efectos/` | Chispa de golpe, chispa de bloqueo, polvo y estrellas de mareo, con su manifest |
 | `audio/` | 15 temas de música (las 5 ciudades, los 6 mundos nuevos, título, selector, VS y victoria), los efectos y las frases del anunciador, en m4a y ogg, con `indice.json` |
 | `video/intro.mp4` | El intro de 10 segundos (960 de ancho, 3,4 MB) |
 | `logo.png` | El logo en pixel, 560 x 326 |
 | `pantallas/` | Fondos en pixel del título (la familia), del VS y del intro, a 768 x 432 |
-| `indice.json` | Los 5 luchadores, los 5 escenarios y la ciudad de cada uno |
+| `indice.json` | Los luchadores (los 5 y los jefes que ya tienen arte), los jefes, los escenarios que existen y la ciudad de cada uno |
 
 ### Animaciones de cada luchador
 
