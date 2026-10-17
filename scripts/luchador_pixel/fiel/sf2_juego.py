@@ -469,7 +469,8 @@ def empaquetar():
     if os.path.exists(os.path.join(pant, 'logo.png')):
         shutil.copy(os.path.join(pant, 'logo.png'), os.path.join(SALE, 'logo.png'))
     jefes = [j for j in JEFES if os.path.exists(os.path.join(SALE, 'luchadores', j, 'manifest.json'))]
-    json.dump({'luchadores': list(NOMBRES), 'jefes': jefes, 'escenarios': ['caracas', 'hochiminh', 'bogota', 'japon', 'celestial', 'china',
+    # los jefes van también en luchadores: así el juego deja la silueta y usa el arte
+    json.dump({'luchadores': list(NOMBRES) + jefes, 'jefes': jefes, 'escenarios': ['caracas', 'hochiminh', 'bogota', 'japon', 'celestial', 'china',
                                                           'italia', 'usa', 'brasil', 'egipto', 'polo_norte', 'halong',
                                                           'salto_angel'],
                'ciudad': CIUDAD}, open(os.path.join(SALE, 'indice.json'), 'w'), ensure_ascii=False, indent=1)
