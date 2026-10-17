@@ -55,16 +55,16 @@ EXTRA = {
 # lote G: la estatura. La tabla de arriba medía solo la cabeza y en patadas, saltos y caídas dejaba el cuerpo corto
 # (Rick "con enanismo"). El juego midió el largo de cabeza a pie por dentro de la silueta y esto va encima, por anim
 ESTATURA = {
-    'rick': {'patada_fuerte': [1.08, 1.08, 1, 1, 1], 'cae': [1, 1, 1.1, 1.14, 1.29],
+    'rick': {'intro': [1.08, 1.12, 1.1, 1.18], 'victoria': 1.1, 'patada_fuerte': [1.08, 1.08, 1, 1, 1], 'cae': [1, 1, 1.1, 1.14, 1.29],
              'salto': [1.05, 1, 1.12, 1.12, 1], 'salto_adelante': [1, 1.25, 1.25, 1.25, 1.05], 'aire_puño': 1.12,
              'aire_patada': [1.12, 1.05], 'levanta': [1.12, 1, 1.05, 1]},
-    'steph': {'patada_fuerte': [1.08, 1.08, 1.05, 1.08, 1], 'recibe_alto': 0.89, 'mareado': 0.92, 'carrera': 1.08,
+    'steph': {'intro': [1, 1, 1, 1.05], 'victoria': [1, 1, 1.1, 1], 'patada_fuerte': [1.08, 1.08, 1.05, 1.08, 1], 'recibe_alto': 0.89, 'mareado': 0.92, 'carrera': 1.08,
               'cae': [1, 1, 1.17, 1.14, 1.18], 'salto': [1, 1, 1.15, 1.15, 1], 'salto_adelante': [1, 1.2, 1.2, 1.2, 1],
               'aire_patada': [1.12, 1]},
-    'sophie': {'puño_fuerte': 0.92, 'agarrado': 0.92, 'bloqueo': 0.91, 'cae': [1, 1, 1, 1.1, 1],
+    'sophie': {'victoria': [1, 1.07, 1.07, 1.07], 'puño_fuerte': 0.92, 'agarrado': 0.92, 'bloqueo': 0.91, 'cae': [1, 1, 1, 1.1, 1],
                'patada_debil': [1, 1.06, 1.06, 1.06], 'salto': [1, 1, 1, 1, 0.92], 'salto_adelante': [1, 1.15, 1.1, 1.1, 1]},
-    'alana': {'patada_debil': 1.04, 'cae': [1, 1, 1.11, 1.1, 1.1], 'salto_adelante': [1, 1.12, 1.12, 1.12, 1]},
-    'thor': {'recibe_alto': [1, 1.1, 1.1], 'mareado': 0.95, 'agarre': 0.91, 'recibe_aire': 1.1,
+    'alana': {'victoria': [1, 1.12, 1, 1.08], 'patada_debil': 1.04, 'cae': [1, 1, 1.11, 1.1, 1.1], 'salto_adelante': [1, 1.12, 1.12, 1.12, 1]},
+    'thor': {'intro': [1, 0.92, 1, 1], 'recibe_alto': [1, 1.1, 1.1], 'mareado': 0.95, 'agarre': 0.91, 'recibe_aire': 1.1,
              'cae': [1.15, 1, 1.2, 1.2, 1], 'salto_adelante': [1, 1.1, 1.1, 1.1, 1]},
     # la Abuela, medida por el juego con el arte de 1de73a8 (acostada salía al 60 %)
     'abuela': {'cae': [1.3, 1.35, 1.5, 1.55, 1.55], 'recibe_aire': [1.3, 1.4], 'victoria': [0.85, 0.85, 0.85, 0.8],
