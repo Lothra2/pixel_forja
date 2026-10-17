@@ -457,7 +457,7 @@ def empaquetar():
             shutil.rmtree(dst)
         shutil.copytree(src, dst, ignore=shutil.ignore_patterns('_alineacion.json'))
     # los seis mundos del lote E: solo los PNG, porque sus manifest.json los escribió el juego
-    for e in ('china', 'italia', 'usa', 'brasil', 'egipto', 'polo_norte', 'halong', 'salto_angel'):
+    for e in ('china', 'italia', 'usa', 'brasil', 'egipto', 'polo_norte', 'halong', 'salto_angel', 'casa_abuela'):
         src, dst = os.path.join(RAIZ, 'public', 'escenarios', e), os.path.join(SALE, 'escenarios', e)
         if not os.path.exists(os.path.join(src, 'piso.png')):
             continue
@@ -470,9 +470,10 @@ def empaquetar():
         shutil.copy(os.path.join(pant, 'logo.png'), os.path.join(SALE, 'logo.png'))
     jefes = [j for j in JEFES if os.path.exists(os.path.join(SALE, 'luchadores', j, 'manifest.json'))]
     # los jefes van también en luchadores: así el juego deja la silueta y usa el arte
-    json.dump({'luchadores': list(NOMBRES) + jefes, 'jefes': jefes, 'escenarios': ['caracas', 'hochiminh', 'bogota', 'japon', 'celestial', 'china',
-                                                          'italia', 'usa', 'brasil', 'egipto', 'polo_norte', 'halong',
-                                                          'salto_angel'],
+    mundos = ['caracas', 'hochiminh', 'bogota', 'japon', 'celestial', 'china', 'italia', 'usa', 'brasil', 'egipto',
+              'polo_norte', 'halong', 'salto_angel', 'casa_abuela']
+    mundos = [e for e in mundos if os.path.exists(os.path.join(SALE, 'escenarios', e, 'piso.png'))]
+    json.dump({'luchadores': list(NOMBRES) + jefes, 'jefes': jefes, 'escenarios': mundos,
                'ciudad': CIUDAD}, open(os.path.join(SALE, 'indice.json'), 'w'), ensure_ascii=False, indent=1)
     indice_audio()
     print('empaquetado: escenarios, logo, indice, audio')

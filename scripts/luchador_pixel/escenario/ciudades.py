@@ -48,6 +48,7 @@ CIUDADES = {
     # No llevan extras animados: el juego los pinta con código
     'halong': {'ajuste': {'montes': -260}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
     'salto_angel': {'ajuste': {'montes': -170}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
+    'casa_abuela': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
     'polo_norte': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                    'elementos': ['oso_1', 'oso_2'], 'altos': [16, 16]},
 }
