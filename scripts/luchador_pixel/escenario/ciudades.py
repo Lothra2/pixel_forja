@@ -51,7 +51,7 @@ CIUDADES = {
     # la casa va en espejo y un poco más arriba: así la ventana con la novela queda libre de la hamaca y del muro
     'casa_abuela': {'ajuste': {'ciudad': -160}, 'espejo': ['ciudad'], 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
     # la cocina de Rosita: la ventana de la pared (ciudad) es un hueco y por ahí se ven el cielo y el Ávila
-    'casa_rosita': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
+    'casa_rosita': {'ajuste': {'ciudad': -202}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
     'cancha': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
     'polo_norte': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                    'elementos': ['oso_1', 'oso_2'], 'altos': [16, 16]},

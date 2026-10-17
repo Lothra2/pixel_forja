@@ -231,7 +231,7 @@ def canon(pid):
     return _CANON[pid]
 
 
-SIN_SUELTOS = {('bao', 'poder1')}
+SIN_SUELTOS = {('bao', 'poder1'), ('rosita', 'poder1')}
 
 
 def procesar(pid, hoja, n, ref=None):

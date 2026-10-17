@@ -76,6 +76,9 @@ ESTATURA = {
     # números ya traen esa diferencia, medidos para que el resultado quede igual a lo que pidió el juego
     'bao': {'cae': [1.64, 1.43, 1.815, 1.85, 1.85], 'recibe_aire': [1.64, 1.43], 'intro': [1, 0.92, 1, 1],
             'poder3': [1, 0.87, 0.87, 1, 1], 'salto': [0.885, 1, 1.11, 1.11, 1], 'salto_adelante': [1, 1.2, 1.2, 1.15, 1]},
+    # Rosita: en la hoja de caída la cara no calza (va de lado) y la altura la dejaba a 0,7 de su escala (acostada medía
+    # 116 contra 170 de pie); el dibujo tiene buena proporción, así que va pareja toda la hoja. Levantándose igual
+    'rosita': {'cae': 1.42, 'levanta': 1.18},
 }
 # la patada débil de Rick no va en la tabla: se redibujó con las piernas de largo normal (y la fuerte también, sus
 # factores de cabeza ya no aplican a la hoja nueva)
