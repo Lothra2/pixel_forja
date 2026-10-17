@@ -4798,7 +4798,7 @@
     },
     {
      "ticks": 6,
-     "fase": "activo",
+     "fase": "recuperacion",
      "recibe": [
       {
        "zona": "cabeza",
@@ -4826,25 +4826,9 @@
         111,
         66
        ]
-      },
-      {
-       "zona": "brazo",
-       "caja": [
-        45,
-        -107,
-        20,
-        18
-       ]
       }
      ],
-     "pega": [
-      [
-       39,
-       -112,
-       34,
-       28
-      ]
-     ],
+     "pega": [],
      "empuje": [
       -31,
       -158,

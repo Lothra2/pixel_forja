@@ -155,8 +155,8 @@ def poderes(pid):
         P['techo_zinc'] = dict(bucle=True, pasos=[c('techo_zinc', i, 6) for i in range(4)])
     elif pid == 'rosita':
         P['poder1'] = proyectil('poder1', 2, 'fx_arepa', PODER, 13)
-        # ¿Ya comiste?: la mano extendida espera (el contraataque lo decide el juego) y el paletazo de vuelta
-        P['poder2'] = dict(golpe=(16, PODER, 'medio', True), pega='frente', pasos=[c('poder2', 0, 4, 'inicio'), c('poder2', 1, 12, 'recuperacion'), c('poder2', 2, 12, 'recuperacion'), c('poder2', 3, 6, 'activo', avance=2), c('poder2', 4, 10, 'recuperacion')])
+        # ¿Ya comiste?: la mano extendida espera; el contraataque lo da el juego con puño_fuerte, así que aquí no pega
+        P['poder2'] = dict(golpe=(16, PODER, 'medio', True), pasos=[c('poder2', 0, 4, 'inicio'), c('poder2', 1, 12, 'recuperacion'), c('poder2', 2, 12, 'recuperacion'), c('poder2', 3, 6, 'recuperacion', avance=2), c('poder2', 4, 10, 'recuperacion')])
         # ¡A comer, familia!: la campana y el grito; el especial lo pinta el juego
         P['poder3'] = dict(golpe=(32, SUPER, 'alto', True), pasos=[c('poder3', 0, 8, 'inicio'), c('poder3', 1, 10, 'inicio'), c('poder3', 2, 14, 'activo'), c('poder3', 3, 14, 'activo'), c('poder3', 4, 12, 'recuperacion')])
     for k, (nombre, fx) in zip(('poder1', 'poder2', 'poder3'), PODERES[pid]):
