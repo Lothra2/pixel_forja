@@ -70,6 +70,9 @@ ESTATURA = {
     'abuela': {'cae': [1.3, 1.35, 1.5, 1.55, 1.55], 'recibe_aire': [1.3, 1.4], 'victoria': [0.85, 0.85, 0.85, 0.8],
                'levanta': [0.85, 0.85, 0.85, 0.83], 'poder3': [1, 0.87, 0.9, 0.92, 0.92], 'salto': [1, 1, 1.1, 1.1, 1],
                'salto_adelante': [1, 1.2, 1.2, 1.15, 1]},
+    # Tío Bao, medido por el juego con el arte de 00fa071 (acostado medía 55 % de su estatura)
+    'bao': {'cae': [1.5, 1.6, 1.65, 1.7, 1.7], 'recibe_aire': [1.5, 1.6], 'intro': [1, 0.92, 1, 1],
+            'poder3': [1, 0.87, 0.87, 1, 1], 'salto': [1, 1, 1.1, 1.1, 1], 'salto_adelante': [1, 1.2, 1.2, 1.15, 1]},
 }
 # la patada débil de Rick no va en la tabla: se redibujó con las piernas de largo normal (y la fuerte también, sus
 # factores de cabeza ya no aplican a la hoja nueva)
