@@ -48,7 +48,8 @@ CIUDADES = {
     # No llevan extras animados: el juego los pinta con código
     'halong': {'ajuste': {'montes': -260}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
     'salto_angel': {'ajuste': {'montes': -170}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
-    'casa_abuela': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
+    # la casa va en espejo y un poco más arriba: así la ventana con la novela queda libre de la hamaca y del muro
+    'casa_abuela': {'ajuste': {'ciudad': -160}, 'espejo': ['ciudad'], 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
     'polo_norte': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                    'elementos': ['oso_1', 'oso_2'], 'altos': [16, 16]},
 }
@@ -166,6 +167,8 @@ def ciudad(nombre):
             # el piso es el tramo lleno que llega hasta abajo: lo de arriba de su último hueco (la baranda) se va
             llenas = m.mean(1) > 0.97
             m[:int(np.where(~llenas)[0].max()) + 1] = False
+        if n in c.get('espejo', ()):
+            a, m = a[:, ::-1].copy(), m[:, ::-1].copy()
         crudas[n] = (a, m)
     dy = apilar(crudas, c.get('rio_atras', False))
     bajadas = {}

@@ -115,9 +115,15 @@ def separar_mascaras(a, n):
                 min(abs(cx - rangos[r][0]), abs(cx - rangos[r][1])))
         pieza = lab == i
         if st[i, cv2.CC_STAT_WIDTH] > 0.9 * paso:
-            corte = np.zeros(m.shape, bool)
-            corte[:, rangos[j][0]:rangos[j][1]] = True
-            pieza &= corte
+            # dos cuadros pegados (la canasta de Bao toca el pie del vecino): cada rango se queda con su pedazo
+            x0_, x1_ = st[i, 0], st[i, 0] + st[i, 2]
+            for r, (ra, rb) in enumerate(rangos):
+                if rb <= x0_ or ra >= x1_:
+                    continue
+                corte = np.zeros(m.shape, bool)
+                corte[:, ra:rb] = True
+                mascaras[r] |= pieza & corte
+            continue
         mascaras[j] |= pieza
     salen, mas = [], []
     for j, mk in enumerate(mascaras):
