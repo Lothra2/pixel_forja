@@ -234,7 +234,9 @@ def pega(img, ax, ay, modo):
 # porque la punta más adelante es el pie, y medio trueno de Thor quedaba bajo el piso
 BOLA_FIJA = {('steph', 'poder1', 3): (70, -133), ('thor', 'poder3', 2): (58, -66),
              # Bao suelta el nón lá con la mano alta, a la altura del hombro
-             ('bao', 'poder1', 2): (92, -160)}
+             ('bao', 'poder1', 2): (92, -160),
+             # la chilena de Andre: el balón en llamas sale del pie, arriba, no de la mano en el piso
+             ('andre', 'poder3', 2): (24, -196)}
 
 
 def exportar(pid):
