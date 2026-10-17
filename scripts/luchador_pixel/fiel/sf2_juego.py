@@ -22,26 +22,26 @@ SALE = os.path.join(RAIZ, 'docs', 'pelea', 'JUEGO', 'assets')
 
 NOMBRES = {'rick': 'Rick', 'sophie': 'Sophie', 'alana': 'Alana', 'steph': 'Steph', 'thor': 'Thor'}
 # los jefes del modo arcade (lote G): se exportan aparte, no van en la lista de luchadores del índice
-JEFES = {'kylan': 'Kỳ Lân', 'catatumbo': 'Catatumbo'}
+JEFES = {'abuela': 'La Abuela', 'bao': 'Tío Bao, el Comerciante'}
 CIUDAD = {'rick': 'caracas', 'sophie': 'hochiminh', 'alana': 'celestial', 'steph': 'bogota', 'thor': 'japon',
-          'kylan': 'halong', 'catatumbo': 'salto_angel'}
+          'abuela': 'casa_abuela', 'bao': 'halong'}
 PODERES = {
     'rick': [('Onda', 'fx_onda'), ('Embestida', None), ('Súper Onda', 'fx_super_onda')],
     'sophie': [('Ráfaga de Hojas', 'fx_hojas'), ('Mil Patadas', None), ('Furia de la Selva', 'fx_selva')],
     'alana': [('Estrella Mágica', 'fx_estrella'), ('Giro de Princesa', None), ('Corona Estelar', 'fx_corona')],
     'steph': [('Jonrón', 'fx_pelota'), ('Voltereta Loca', None), ('Tornado de Bate', None)],
     'thor': [('Súper Ladrido', 'fx_ladrido'), ('Rayo Veloz', None), ('Aullido Trueno', 'fx_trueno')],
-    'kylan': [('Llama de Jade', 'fx_llama_jade'), ('Salto del Guardián', None), ('Nueve Dragones', 'fx_dragon_fuego')],
-    'catatumbo': [('Relámpago', 'fx_relampago'), ('Paso del Trueno', None), ('Tormenta Eterna', 'fx_tormenta')],
+    'abuela': [('Chancletazo', 'fx_chancla'), ('¡Ven acá!', None), ('Lluvia de Chancletas', None)],
+    'bao': [('Nón Lá Bumerán', 'fx_non_la'), ('Golpe de Vara', None), ('Lluvia de Mangos', None)],
 }
 SONIDO_PODER = {'fx_onda': 'poder_onda', 'fx_super_onda': 'poder_onda', 'fx_hojas': 'poder_hojas', 'fx_selva': 'poder_hojas',
                 'fx_estrella': 'poder_estrella', 'fx_corona': 'poder_estrella', 'fx_pelota': 'poder_pelota',
-                'fx_ladrido': 'poder_ladrido', 'fx_trueno': 'poder_trueno', 'fx_llama_jade': 'poder_onda',
-                'fx_dragon_fuego': 'poder_onda', 'fx_relampago': 'poder_trueno', 'fx_tormenta': 'poder_trueno'}
+                'fx_ladrido': 'poder_ladrido', 'fx_trueno': 'poder_trueno', 'fx_chancla': 'poder_pelota',
+                'fx_non_la': 'poder_pelota'}
 # el alto de cada efecto en pixeles del arte (los luchadores miden unos 170)
 ALTO_FX = {'fx_onda': 46, 'fx_super_onda': 92, 'fx_hojas': 54, 'fx_selva': 120, 'fx_estrella': 44, 'fx_corona': 96,
            'fx_pelota': 26, 'fx_ladrido': 70, 'fx_trueno': 110, 'fx_golpe': 56, 'fx_bloqueo': 50, 'fx_polvo': 30, 'fx_mareo': 30,
-           'fx_llama_jade': 52, 'fx_dragon_fuego': 120, 'fx_relampago': 200, 'fx_tormenta': 130}
+           'fx_chancla': 22, 'fx_non_la': 30}
 
 # golpes: (daño, nivel, tipo, tumba)
 DEBIL, FUERTE, PODER, SUPER = 'debil', 'fuerte', 'poder', 'super'
@@ -130,17 +130,17 @@ def poderes(pid):
         P['poder1'] = proyectil('poder1', 2, 'fx_ladrido', PODER, 11)
         P['poder2'] = dict(golpe=(13, PODER, 'medio', True), pega='frente', pasos=[c('poder2', 0, 6, 'inicio'), c('poder2', 1, 4, 'activo', avance=7), c('poder2', 2, 10, 'activo', avance=8), c('poder2', 3, 6, 'activo', avance=3), c('poder2', 4, 12, 'recuperacion', avance=1)])
         P['poder3'] = proyectil('poder3', 2, 'fx_trueno', SUPER, 30)
-    elif pid == 'kylan':
-        P['poder1'] = proyectil('poder1', 2, 'fx_llama_jade', PODER, 13)
-        # el salto que sube: avanza mientras sube y pega arriba
-        P['poder2'] = dict(golpe=(15, PODER, 'alto', True), pega='arriba', pasos=[c('poder2', 0, 6, 'inicio'), c('poder2', 1, 5, 'activo', avance=6), c('poder2', 2, 8, 'activo', avance=4), c('poder2', 3, 6, 'activo', avance=2), c('poder2', 4, 12, 'recuperacion')])
-        P['poder3'] = proyectil('poder3', 2, 'fx_dragon_fuego', SUPER, 32)
-    elif pid == 'catatumbo':
-        # el rayo cae del cielo sobre el rival: el juego lo pone donde está el otro, aquí solo sale en el cuadro activo
-        P['poder1'] = proyectil('poder1', 2, 'fx_relampago', PODER, 14)
-        # el paso del trueno no pega: se deshace en chispas y aparece detrás (lo mueve el juego)
-        P['poder2'] = dict(pasos=[c('poder2', 0, 4, 'inicio'), c('poder2', 1, 6, 'inicio'), c('poder2', 2, 10, 'inicio'), c('poder2', 3, 6, 'recuperacion'), c('poder2', 4, 8, 'recuperacion')])
-        P['poder3'] = proyectil('poder3', 3, 'fx_tormenta', SUPER, 34)
+    elif pid == 'abuela':
+        P['poder1'] = proyectil('poder1', 2, 'fx_chancla', PODER, 12)
+        # ¡Ven acá!: agarra la oreja con el brazo estirado; el jalón lo hace el juego
+        P['poder2'] = dict(golpe=(14, PODER, 'medio', False), pega='frente', pasos=[c('poder2', 0, 5, 'inicio'), c('poder2', 1, 8, 'activo'), c('poder2', 2, 10, 'recuperacion'), c('poder2', 3, 8, 'recuperacion'), c('poder2', 4, 8, 'recuperacion')])
+        # la lluvia de chancletas: basta la pose, las que caen las pinta el juego con chancla_bola
+        P['poder3'] = dict(golpe=(30, SUPER, 'alto', True), pasos=[c('poder3', 0, 8, 'inicio'), c('poder3', 1, 10, 'activo'), c('poder3', 2, 14, 'activo'), c('poder3', 3, 14, 'recuperacion'), c('poder3', 4, 12, 'recuperacion')])
+    elif pid == 'bao':
+        P['poder1'] = proyectil('poder1', 2, 'fx_non_la', PODER, 12)
+        giro = [1, 2, 3, 2]
+        P['poder2'] = dict(golpe=(5, PODER, 'medio', False), pega='ambos', multi=True, pasos=[c('poder2', 0, 5, 'inicio')] + [c('poder2', k, 4, 'activo', avance=4) for k in giro] + [c('poder2', 4, 12, 'recuperacion')])
+        P['poder3'] = dict(golpe=(30, SUPER, 'alto', True), pasos=[c('poder3', 0, 8, 'inicio'), c('poder3', 1, 10, 'activo'), c('poder3', 2, 14, 'activo'), c('poder3', 3, 14, 'recuperacion'), c('poder3', 4, 12, 'recuperacion')])
     for k, (nombre, fx) in zip(('poder1', 'poder2', 'poder3'), PODERES[pid]):
         P[k]['nombre'] = nombre
     return P
@@ -219,7 +219,7 @@ BOLA_FIJA = {('steph', 'poder1', 3): (70, -133), ('thor', 'poder3', 2): (58, -66
 
 def exportar(pid):
     anims = {**comunes(), **poderes(pid)}
-    if pid in ('thor', 'kylan') and os.path.exists(os.path.join(D, pid, 'trote.png')):
+    if pid == 'thor' and os.path.exists(os.path.join(D, pid, 'trote.png')):
         # el trote de 8 cuadros con las patas en pares diagonales (los 6 de avanza eran casi iguales y patinaba)
         anims['avanza'] = dict(bucle=True, pasos=[c('trote', i, 4) for i in range(8)])
         anims['retrocede'] = dict(bucle=True, pasos=[c('trote_atras', i, 5) for i in range(6)])

@@ -46,8 +46,8 @@ CIUDADES = {
                'elementos': ['faluca', 'camello', 'halcon_1', 'halcon_2'], 'altos': [26, 20, 8, 8]},
     # los mundos de los jefes (lote G): Hạ Long con su templo flotante y el Salto Ángel con la tormenta del Catatumbo.
     # No llevan extras animados: el juego los pinta con código
-    'halong': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
-    'salto_angel': {'ajuste': {}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
+    'halong': {'ajuste': {'montes': -260}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
+    'salto_angel': {'ajuste': {'montes': -170}, 'capas': ['cielo', 'montes', 'ciudad', 'muro', 'piso', 'frente'], 'elementos': [], 'altos': []},
     'polo_norte': {'ajuste': {}, 'rio_atras': True, 'capas': ['cielo', 'montes', 'rio', 'ciudad', 'muro', 'piso', 'frente'],
                    'elementos': ['oso_1', 'oso_2'], 'altos': [16, 16]},
 }

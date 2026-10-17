@@ -166,12 +166,12 @@ def cadera(q, aire):
 
 # la altura de la guardia nueva de cada uno en pixeles del arte (los demás cuadros salen a la misma escala)
 ALTO = {'rick': 188, 'sophie': 156, 'alana': 124, 'steph': 180, 'thor': 112,
-        # los jefes: más grandes que Rick y que Thor
-        'kylan': 150, 'catatumbo': 206}
+        # los jefes: la Abuela un poco más baja que Steph y ancha, Tío Bao como Rick
+        'abuela': 170, 'bao': 190}
 # la caja de la cara dentro de la guardia nueva (fracciones de su caja: y0, y1, x0, x1)
 CARA = {'rick': (0.0, 0.17, 0.42, 0.78), 'sophie': (0.03, 0.30, 0.38, 0.95), 'alana': (0.04, 0.36, 0.25, 0.85),
         'steph': (0.0, 0.16, 0.38, 0.72), 'thor': (0.0, 0.42, 0.62, 1.0),
-        'kylan': (0.0, 0.45, 0.6, 1.0), 'catatumbo': (0.0, 0.16, 0.45, 0.78)}
+        'abuela': (0.04, 0.24, 0.40, 0.80), 'bao': (0.08, 0.22, 0.45, 0.80)}
 _CANON = {}
 # la altura que se espera de cada hoja comparada con la guardia (la mediana de sus cuadros). Sirve de control: si la
 # escala por la cara se aleja mucho de esto (o no hay cara), manda la altura
@@ -237,7 +237,7 @@ def procesar(pid, hoja, n):
             escalas.append((corr, s))
     P = periodo_de(a[:, cajas[0][0]:cajas[-1][2]], Pg)
     # por altura: la mediana de los cuadros contra la guardia y lo que se espera de esta hoja
-    propia = {'thor': ALTURA_THOR, 'kylan': ALTURA_THOR, 'rick': {'poder2': 0.7, 'mareado': 0.88}}.get(pid, {})
+    propia = {'thor': ALTURA_THOR, 'rick': {'poder2': 0.7, 'mareado': 0.88}}.get(pid, {})
     esperada = propia.get(hoja, ALTURA.get(hoja, 1.0))
     esc_h = float(np.median([y1 - y0 for x0, y0, x1, y1 in cajas])) / (Hg * esperada)
     buenas = sorted([e for e in escalas if e[0] >= 0.62], reverse=True)
