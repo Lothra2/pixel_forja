@@ -79,6 +79,8 @@ ESTATURA = {
     # Rosita: en la hoja de caída la cara no calza (va de lado) y la altura la dejaba a 0,7 de su escala (acostada medía
     # 116 contra 170 de pie); el dibujo tiene buena proporción, así que va pareja toda la hoja. Levantándose igual
     'rosita': {'cae': 1.42, 'levanta': 1.18},
+    # Andre: igual, la caída por altura la dejaba chiquita (acostada 106 contra 182 de pie) y la pelota de panda también
+    'andre': {'cae': [1.3, 1.45, 1.45, 1.6, 1.6], 'levanta': [1.15, 1.1, 1.1, 1.1], 'carrera': 1.4},
 }
 # la patada débil de Rick no va en la tabla: se redibujó con las piernas de largo normal (y la fuerte también, sus
 # factores de cabeza ya no aplican a la hoja nueva)
