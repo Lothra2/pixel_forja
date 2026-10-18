@@ -1,12 +1,13 @@
 /**
- * Piloto de Forja 2 (fase 0b): Rick en `luchador` 160 y `cabezon` 48 con guardia, puño fuerte, patada fuerte y recibe.
+ * Piloto de Forja 2 (fase 0b): Rick en `cabezon` (SD) a 96, 64 y 48 con guardia, puño fuerte, patada fuerte y recibe.
+ * El `luchador` a 160 se rechazó (docs/forja2/PROGRESO.md).
  *   npx tsx scripts/forja2-piloto.ts
  * Escribe:
  * - docs/forja2/piloto/gif/<estilo>_<movimiento>_x1.gif y _x3.gif (los ticks de cada cuadro, 60 por segundo)
- * - docs/forja2/piloto/lamina_<movimiento>.png: JUEGO (Higgsfield), PIXEL, Forja 2 luchador, el premium chibi de hoy y
- *   Forja 2 cabezón, el mismo movimiento lado a lado
+ * - docs/forja2/piloto/lamina_<movimiento>.png: JUEGO (Higgsfield), PIXEL, Forja 2 cabezón a 96, 64 y 48 y el premium
+ *   chibi de hoy, el mismo movimiento, todos a la misma altura
  * - docs/forja2/piloto/calidad.md: el control de calidad y los segundos por cuadro
- * - docs/pelea/FORJA2/assets/luchadores/rick/: el contrato de pelea (hojas y manifest.json), al alto de JUEGO
+ * - docs/pelea/FORJA2/assets/luchadores/rick/: el contrato de pelea (hojas y manifest.json) del cabezón a 96
  */
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -44,9 +45,12 @@ const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.b
 const fuente: BitmapFont = bitmapFonts(ab(join(fontDir, 'silkscreen-latin-400-normal.woff')), ab(join(fontDir, 'silkscreen-latin-700-normal.woff')))[0];
 
 const pj = PERSONAJES.rick;
-const PILOTO: { id: string; cell: number; lz: Lienzo; k: number }[] = [
-  { id: 'luchador', cell: 160, lz: { w: 224, h: 168, pivot: [92, 162] }, k: 1 },
-  { id: 'cabezon', cell: 48, lz: { w: 64, h: 52, pivot: [26, 48] }, k: 3 },
+// el luchador a 160 se rechazó en el piloto (ver docs/forja2/PROGRESO.md): queda el cabezón en tres tamaños.
+// k: aumento para que en la lámina todos queden de la misma altura que el Rick de JUEGO (188 px)
+const PILOTO: { id: string; clave: string; cell: number; lz: Lienzo; k: number }[] = [
+  { id: 'cabezon', clave: 'cabezon96', cell: 96, lz: { w: 144, h: 104, pivot: [56, 98] }, k: 2 },
+  { id: 'cabezon', clave: 'cabezon64', cell: 64, lz: { w: 96, h: 70, pivot: [38, 65] }, k: 3 },
+  { id: 'cabezon', clave: 'cabezon48', cell: 48, lz: { w: 72, h: 52, pivot: [28, 48] }, k: 4 },
 ];
 
 const informes: Informe[] = [];
@@ -54,48 +58,40 @@ const tiempos: { estilo: string; cuadros: number; seg: number }[] = [];
 const f2: Record<string, Record<string, ResultadoAnim>> = {};
 for (const p of PILOTO) {
   const e = estilo(p.id), m = medidasDe(e, p.cell);
-  f2[p.id] = {};
+  f2[p.clave] = {};
   let n = 0, seg = 0;
   for (const nombre of MOVS) {
     const { mov, poses } = movimiento('pelea', nombre);
     const cs = muestrear(mov, poses, e, m);
     const r = exportarAnim(pj, e, m, p.cell, mov, cs, p.lz);
-    f2[p.id][nombre] = r;
+    f2[p.clave][nombre] = r;
     n += r.pintados.length; seg += r.pintados.reduce((a, q) => a + q.segundos, 0);
     const pegas = r.pega.map((c) => c);
-    informes.push(controlar(nombre, p.id, cs, r.pintados, p.lz.pivot, paleta(pj, e, p.cell, r.pintados), pegas, mov.bucle));
+    informes.push(controlar(nombre, p.clave, cs, r.pintados, p.lz.pivot, paleta(pj, e, p.cell, r.pintados), pegas, mov.bucle));
     const delays = cs.map((q) => Math.max(2, Math.round((q.ticks * 100) / 60)));
     const frames = r.pintados.map((q) => q.raster);
-    writeFileSync(join(OUT, 'gif', `${p.id}_${nombre}_x1.gif`), encodeGif(frames, 60, { background: FONDO, delays }));
-    writeFileSync(join(OUT, 'gif', `${p.id}_${nombre}_x3.gif`), encodeGif(frames, 60, { background: FONDO, delays, scale: 3 }));
+    writeFileSync(join(OUT, 'gif', `${p.clave}_${nombre}_x1.gif`), encodeGif(frames, 60, { background: FONDO, delays }));
+    writeFileSync(join(OUT, 'gif', `${p.clave}_${nombre}_x3.gif`), encodeGif(frames, 60, { background: FONDO, delays, scale: 3 }));
     console.log(`  ${p.id} ${nombre}: ${cs.length} cuadros`);
   }
-  tiempos.push({ estilo: `${p.id} ${p.cell}`, cuadros: n, seg });
+  tiempos.push({ estilo: p.clave, cuadros: n, seg });
 }
 
-// ---------- el contrato de pelea, al alto de JUEGO (188 px de Rick, lienzo 256 x 235, pivote 128, 229) ----------
+// ---------- el contrato de pelea: Rick cabezón a 96 (SD), en su propio lienzo ----------
 {
-  const e = estilo('luchador');
+  const p = PILOTO[0], e = estilo(p.id), m = medidasDe(e, p.cell);
   const juego = JSON.parse(readFileSync(join(JUEGO, 'manifest.json'), 'utf8'));
-  const alto: number = juego.alto;
-  const cell = Math.round(alto / e.alto);
-  const m = medidasDe(e, cell);
-  const g = juego.anims.guardia;
-  const lz: Lienzo = { w: g.w, h: g.h, pivot: [g.ox, g.oy] };
   const anims: Record<string, unknown> = {};
-  let n = 0, seg = 0;
   for (const nombre of MOVS) {
-    const { mov, poses } = movimiento('pelea', nombre);
-    const r = exportarAnim(pj, e, m, cell, mov, muestrear(mov, poses, e, m), lz);
+    const r = f2[p.clave][nombre];
     writeFileSync(join(CONTRATO, `${nombre}.png`), encodePng(r.hoja));
     anims[nombre] = r.anim;
-    n += r.pintados.length; seg += r.pintados.reduce((a, q) => a + q.segundos, 0);
   }
-  tiempos.push({ estilo: `luchador ${cell} (contrato, alto ${alto})`, cuadros: n, seg });
+  const alto = Math.round(m.H);
   const manifest = {
     id: 'rick', nombre: 'Rick', alto, ciudad: juego.ciudad, poderes: juego.poderes,
-    generado_con: 'PixelForja Forja 2 (piloto)', parcial: true,
-    notas: 'Piloto de Forja 2: solo guardia, puño_fuerte, patada_fuerte y recibe_alto. Mismo contrato que docs/pelea/JUEGO (ticks, fases y ventanas iguales); el resto de las animaciones, el retrato y los poderes siguen en JUEGO.',
+    generado_con: 'PixelForja Forja 2 (piloto SD)', parcial: true,
+    notas: `Piloto de Forja 2 en estilo SD (cabezón a ${p.cell}): solo guardia, puño_fuerte, patada_fuerte y recibe_alto, sin IA. Mismo contrato que docs/pelea/JUEGO (ticks, fases y ventanas iguales). Rick mide ${alto} px en vez de ${juego.alto}: para probarlo en el juego, su escala tiene que agrandarlo o los escenarios achicarse. El resto de las animaciones, el retrato y los poderes siguen en JUEGO.`,
     anims,
   };
   writeFileSync(join(CONTRATO, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
@@ -114,9 +110,8 @@ for (const nombre of MOVS) {
   filas.push({ titulo: 'JUEGO (Higgsfield, hoy en el juego) x1', frames: cortar(tiras(decodePng(new Uint8Array(readFileSync(join(JUEGO, jm.hoja)))), jm.w)), k: 1 });
   const px = pintarAnimPixel(RICK_PIXEL, (ANIMS_RICK_PIXEL as unknown as Record<string, () => Parameters<typeof pintarAnimPixel>[1]>)[PIXEL[nombre]](), { w: 400, h: 340, ox: 200, oy: 325 });
   filas.push({ titulo: 'PIXEL (guardia de Higgsfield por piezas) x1', frames: cortar(px.cuadros), k: 1 });
-  filas.push({ titulo: 'FORJA 2 luchador 160 x1', frames: cortar(f2.luchador[nombre].pintados.map((q) => q.raster)), k: 1 });
-  filas.push({ titulo: 'premium chibi de hoy (GG Abyss) 48 x3', frames: cortar(renderClip(familyFicha('rick'), 48, CHIBI[nombre], 'side', { props: true }).frames), k: 3 });
-  filas.push({ titulo: 'FORJA 2 cabezon 48 (retro3) x3', frames: cortar(f2.cabezon[nombre].pintados.map((q) => q.raster)), k: 3 });
+  for (const p of PILOTO) filas.push({ titulo: `FORJA 2 cabezon ${p.cell} (retro3) x${p.k}`, frames: cortar(f2[p.clave][nombre].pintados.map((q) => q.raster)), k: p.k });
+  filas.push({ titulo: 'premium chibi de hoy (GG Abyss) 48 x4', frames: cortar(renderClip(familyFicha('rick'), 48, CHIBI[nombre], 'side', { props: true }).frames), k: 4 });
   const sep = 8, titulo = 14;
   const anchoFila = (f: (typeof filas)[number]) => f.frames.reduce((a, r) => a + r.w * f.k + sep, sep);
   const W = Math.max(...filas.map(anchoFila));

@@ -74,7 +74,7 @@ export function pintarCuadro(pj: Personaje, e: EstiloDef, m: Medidas, cell: numb
   const body = armarCuerpo(e, m, j, esq, v, sec);
   const pintado = pintar({ piezas: body.pieces, materiales: materiales(pj, e, cell), suave: suavidad(m) }, { cell, ss: e.supersample, pivot, acabado: e.acabado, lienzo: lz ? [lz.w, lz.h] : undefined });
   const colCabeza: string[] = [];
-  const cabeza = pegarCabeza(pintado, pj, m, j, q.pose.cara, q.pose.cabeza.giro + q.pose.giroPecho * 0.35, q.pose.cabeza.inclina + q.pose.inclina * 0.3, pivot, colCabeza);
+  const cabeza = pegarCabeza(pintado, pj, e, m, j, q.pose.cara, q.pose.cabeza.giro + q.pose.giroPecho * 0.35, q.pose.cabeza.inclina + q.pose.inclina * 0.3, pivot, colCabeza);
   return { raster: pintado.raster, colCabeza, pintado, j, cabeza, segundos: (performance.now() - t0) / 1000 };
 }
 
@@ -82,12 +82,19 @@ export function pintarCuadro(pj: Personaje, e: EstiloDef, m: Medidas, cell: numb
  * La cabeza LPC, sin cambiarla: se elige la vista por el giro, se inclina con RotSprite y se pega con la barbilla en el
  * cuello. Lo que del cuerpo está más cerca de la cámara que la cabeza (un puño delante de la cara) queda encima.
  */
-function pegarCabeza(pt: Pintado, pj: Personaje, m: Medidas, j: Esqueleto, cara: Cara, giro: number, inclina: number, pivot: [number, number], cols: string[]) {
+function pegarCabeza(pt: Pintado, pj: Personaje, e: EstiloDef, m: Medidas, j: Esqueleto, cara: Cara, giro: number, inclina: number, pivot: [number, number], cols: string[]) {
   const c = pj.colores;
-  const vista = giro > 25 ? 'front34' : 'side';
+  const vista = e.cabezaVista ?? (giro > 25 ? 'front34' : 'side');
   const ex = CARA[cara];
   const hi = lpcHead(pj.cabeza, vista, { skin: c.piel, hair: c.pelo, eyes: c.ojos, beard: c.barba ?? c.pelo, glasses: '#1e1e24' }, ex.ojos, ex.boca);
   let img = hi.img, ax = hi.anchor.x, ay = hi.anchor.y;
+  // la cabeza LPC mide unos 20 px: en un estilo de cabeza más grande se agranda por un entero (sin redibujarla)
+  const k = Math.max(1, Math.round(m.cabeza / 20));
+  if (k > 1) {
+    const big = { w: img.w * k, h: img.h * k, idx: new Int16Array(img.w * k * img.h * k) };
+    for (let y = 0; y < big.h; y++) for (let x = 0; x < big.w; x++) big.idx[y * big.w + x] = img.idx[Math.floor(y / k) * img.w + Math.floor(x / k)];
+    img = big; ax = (ax + 0.5) * k - 0.5; ay = (ay + 0.5) * k - 0.5;
+  }
   // cabeceo: + hacia adelante (en pantalla, horario mirando a la derecha)
   const ang = Math.round(inclina);
   if (Math.abs(ang) >= 6) { const r = rotSprite(img, ang, ax + 0.5, ay + 0.5); img = r.img; ax = r.px - 0.5; ay = r.py - 0.5; }

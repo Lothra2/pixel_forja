@@ -5,13 +5,69 @@ El encargo completo está en `docs/PROMPT_FORJA2.md`. Rama: `claude/forja2` (sal
 | Fase | Estado | Puerta |
 |---|---|---|
 | 0. Base: merge de `abyss-premium` | Aprobada | @parent regeneró el kit desde fc44ab7: 3201 archivos, 0 diferencias |
-| 0b. Piloto (Rick `luchador` 160 y `cabezon` 48, 4 golpes) | En curso | |
+| 0b. Piloto (Rick, 4 golpes) | Entregado, esperando decisión | luchador 160 rechazado por Rick; cabezón SD a 96, 64 y 48 en láminas |
 | 1. Cuerpo (luchador, cabezon, nekketsu, anime; megaman si sobra) | Sin arrancar | |
 | 2. Movimiento | Sin arrancar | |
 | 3. Bibliotecas: exportador FORJA2 + PNG/JSON general, calle; rpg8 condicionada | Sin arrancar | |
 | 4. Poderes y efectos | Sin arrancar | |
 | 5. Estudio y exportación | Sin arrancar | |
 | 6. GG Abyss con Forja 2 | Sin arrancar | |
+
+## Piloto 0b
+
+### Qué se hizo
+
+- `src/engine/forja2/`: estilos como datos, esqueleto común (el del luchador con las medidas del estilo), formato de
+  movimiento (claves con ticks, curvas, arcos, pies clavados), principios aplicados por el motor (anticipación,
+  impacto único con estirón, sobrepaso, recuperación larga, cabeza que lidera, respiración, aplastón), cuerpo por
+  volúmenes SDF con vestuario como dato, pintor a 4x que baja a la celda con paleta fija, cabeza LPC sin cambiar
+  pegada con profundidad, control de calidad con números y exportación al contrato de pelea.
+- Los 4 movimientos salen del formato nuevo, con los ticks y las ventanas del contrato de JUEGO.
+- Entrega: `docs/forja2/piloto/lamina_<movimiento>.png` (JUEGO, PIXEL, Forja 2 cabezón a 96, 64 y 48, y el premium
+  chibi de hoy, todos a la misma altura), `docs/forja2/piloto/gif/` (x1 y x3) y `docs/forja2/piloto/calidad.md`.
+  Contrato: `docs/pelea/FORJA2/assets/luchadores/rick/` (cabezón a 96).
+
+### El luchador a 160: rechazado
+
+Rick lo vio y lo llamó patético: se ve de plástico y el pecho se lee como senos. Por la regla del piloto se paró.
+
+**Qué pasó con el pecho.** La abertura del gi eran dos elipsoides de piel (pectorales) metidos en el grupo del torso,
+con unión suave y salientes hacia adelante. Con la luz suave cada uno quedó como una cúpula iluminada con sombra
+abajo: dos senos. Después se cambió por una franja, pero el problema de fondo seguía.
+
+**¿Un torso en bloque con sección lo arregla?** Arreglaría los senos (pectorales planos, la V del gi como una zona
+del bloque y no como esferas), pero no vale la pena. Lo que hace que un luchador de SF2 se lea a 160 o 188 px es
+anatomía dibujada: cortes de músculo, pliegues duros de tela, siluetas exageradas pose por pose. Las primitivas con
+luz no lo dan, solo agregan piezas (abdominales, serratos, pliegues) y siguen pareciendo un muñeco 3D. Es la misma
+conclusión del luchador por volúmenes de antes de Higgsfield. Para luchadores grandes el arte de JUEGO es mejor.
+
+### El cabezón (SD)
+
+A Rick le gustó mucho a 48 para GG Abyss. En la lámina va a 96, 64 y 48. La cabeza LPC se agranda por un entero (x2 a
+96) sin redibujarla; el cuerpo se pinta a su tamaño. Retarget del estilo: la patada va a la altura de la cadera
+(piernas cortas) y la cabeza va siempre en 3/4 (si cambia de vista entre cuadros parpadea).
+
+### Control de calidad (cabezón)
+
+Pasan pivote (0 px), patina (0 px), altura (≤ 2 px), sueltos (0), salto (≤ 0,46), cajas (≥ 0,9) y paleta (0 colores
+de más) en los 12 casos. Falla la silueta (0,87 a 0,91, el tope es 0,95): todos los pixeles que fallan son del borde
+de la cabeza LPC (la cinta, la barba gris y el pelo contra el gris neutro); del cuerpo fallan 0. No se movió el tope.
+
+Segundos por cuadro: 0,20 a 96, 0,09 a 64, 0,05 a 48 (el luchador a 160 tardaba 0,88). El kit completo de un
+personaje cabezón (21 anims x 8 direcciones) saldría en un par de minutos sin caché; la caché por huella igual va
+antes de la fase 1, como se decidió.
+
+### Qué no salió bien
+
+- El luchador a 160: rechazado (arriba).
+- La patada SD se lee débil: la pierna sale horizontal pero corta y gruesa (el pantalón holgado en piernas tan cortas
+  hace un bulto). El chibi premium de hoy la lee mejor.
+- No hay chispa de impacto; el chibi premium de hoy sí la tiene. La estela del golpe casi no se ve. Va en la fase de
+  poderes y efectos.
+- A 96 la cabeza (LPC x2) tiene pixeles más gordos que el cuerpo: se nota la diferencia de resolución.
+- La recuperación del puño son varios cuadros casi iguales: falta un sobrepaso más visible en el cabezón.
+- La silueta de la cabeza LPC no llega al tope contra un fondo gris neutro (ver arriba).
+- No se probó en el juego.
 
 ## Decisiones de @parent al aprobar la fase 0
 

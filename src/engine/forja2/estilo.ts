@@ -46,6 +46,8 @@ export interface EstiloDef {
    * aire (un cabezón de piernas cortas patea más alto, relativo a su pierna, para que la patada se lea)
    */
   retarget?: { pieAlto?: number };
+  /** vista fija de la cabeza (el cabezón la lleva siempre en 3/4: que cambie entre cuadros se ve como un parpadeo) */
+  cabezaVista?: 'side' | 'front34';
   acabado: Acabado;
   /** a cuántas veces la celda se pinta antes de bajar (2 o 4) */
   supersample: number;
