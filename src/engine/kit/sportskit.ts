@@ -119,6 +119,7 @@ export interface SportAnimEntry extends FrameData {
   loop: boolean;
   eventos?: { tipo: string; cuadro: number; fase: number; pie?: string }[];
   avance?: number;
+  velocidad_natural?: number;
   elevacion?: number[];
   desplazamiento?: number[];
   rumbo?: string[];
@@ -237,7 +238,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
         const sinP = !!opts.sinProps?.includes(pack);
         const { clips, frames: n, side } = clips8(fp, C, real(a), views, sinP);
         const first = clips[0];
-        const m = motionOf8(clips, 1, side);
+        const m = motionOf8(clips, 1, side, { velocidadNatural: false });
         const entry: SportAnimEntry = { cuadros: n, fps: first.fps, loop: first.loop, ...m, ...(first.waterRows ? { agua: first.waterRows } : {}) };
         if (opts.atlas) {
           const blank = createRaster(C, C);
@@ -335,7 +336,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
         const side = views.includes('side') ? undefined : renderClip(f, cell, a, 'side', {});
         const n = Math.max(...clips.map((c) => c.frames.length));
         clips.forEach((cl, r) => { for (let i = 0; i < n; i++) frames.push({ name: atlasFrameName(a, rows[r], i), raster: cl.frames[i] ?? blank }); });
-        const entry: SportAnimEntry = { cuadros: n, fps: clips[0].fps, loop: clips[0].loop, ...motionOf8(clips, 1, side) };
+        const entry: SportAnimEntry = { cuadros: n, fps: clips[0].fps, loop: clips[0].loop, ...motionOf8(clips, 1, side, { velocidadNatural: false }) };
         if (fields.length) Object.assign(entry, frameDataOf(clips, fields));
         entries[a] = entry;
       }

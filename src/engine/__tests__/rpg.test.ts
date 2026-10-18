@@ -36,7 +36,8 @@ describe('RPG: clases, enemigos y exportación', () => {
       expect(casual.face.mouth, id).toBe('smile');
       expect(casual.gear?.main ?? null, id).toBeNull();
       expect(rpg.gear?.main, id).toBeTruthy();
-      expect(rpg.avatar?.lpc?.hair).toBe(casual.avatar?.lpc?.hair);
+      // con su clase lleva el pelo de GG Abyss si tiene uno propio (Rick: swept_back en GG Abyss, parted2 de calle)
+      expect(rpg.avatar?.lpc?.hair).toBe(FAMILY_GG[id].lpcRpg?.hair ?? casual.avatar?.lpc?.hair);
       for (const f of [casual, rpg]) {
         const { qa, missing } = renderPlan(f, { cell: 48, anims: ['idle', 'walk'], views: EIGHT_VIEWS, props: true });
         expect(missing).toEqual([]);
@@ -44,6 +45,7 @@ describe('RPG: clases, enemigos y exportación', () => {
       }
     }
     expect(familyFicha('rick').avatar?.lpc).toMatchObject({ hair: 'parted2', glasses: 'nerd', beard: 'basic' });
+    expect(familyFicha('rick', true).avatar?.lpc).toMatchObject({ hair: 'swept_back', glasses: 'nerd', beard: 'basic', ceno: false });
     expect(familyFicha('sophie', true).gear?.main).toBe('bow');
   }, 300000);
   it('la familia corre de frente y de espaldas sin saltitos, gira el torbellino y gatea en verde', () => {

@@ -27,7 +27,7 @@ export const EIGHT_VIEWS: ViewName[] = ['front', 'sw', 'left', 'nw', 'back', 'ne
 export const VIEW_SUFFIX: Record<ViewName, string> = {
   side: 'right', left: 'left', front: 'down', back: 'up', se: 'down_right', sw: 'down_left', ne: 'up_right', nw: 'up_left',
 };
-const MIRRORED: Partial<Record<ViewName, RenderView>> = { left: 'side', sw: 'se', nw: 'ne' };
+export const MIRRORED: Partial<Record<ViewName, RenderView>> = { left: 'side', sw: 'se', nw: 'ne' };
 /** Para las que avanzan de espaldas: cada vista lateral usa su espejo. */
 const BACKWARD: Partial<Record<ViewName, ViewName>> = { side: 'left', left: 'side', se: 'sw', sw: 'se', ne: 'nw', nw: 'ne' };
 
@@ -302,7 +302,7 @@ export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewNa
   const bodies = big.map((b, i) => (useBodies(i) && b.full ? { y0: b.full.y0 - top, y1: b.full.y1 - top } : null));
   const mirrored = !!MIRRORED[view];
   // articulaciones en coordenadas de la celda final (espejadas si la vista es espejo)
-  const joints = isHuman(f) && big.every((b) => b.joints)
+  const joints = (isHuman(f) || premium || opt.joints) && big.every((b) => b.joints)
     ? big.map((b) => Object.fromEntries(Object.entries(b.joints!).map(([k, [x, y]]) => [k, [mirrored ? cell - 1 - (x - left) : x - left, y - top]])) as Joints)
     : undefined;
   const clampX = (v: number) => Math.max(0, Math.min(cell - 1, v)), clampY = clampX;
@@ -355,7 +355,7 @@ function travelFor(f: Ficha, cell: CellSize, def: AnimDef, poses: Pose[]): numbe
  * Recorta la celda alrededor del pie de apoyo. Si una pose se sale por un lado, corre TODO el clip
  * lo mismo (así no salta entre cuadros). Si no cabe ni así, avisa.
  */
-function cropClip(big: BigFrame[], cell: CellSize, fixed = false): { frames: Raster[]; fits: boolean; top: number; left: number; overflow?: number[] } {
+export function cropClip(big: BigFrame[], cell: CellSize, fixed = false): { frames: Raster[]; fits: boolean; top: number; left: number; overflow?: number[] } {
   // solo el cuerpo decide el encuadre: un balón que sale disparado se recorta.
   // Si el cuerpo con el pelo cabe, se encuadra con el pelo (así no se corta la cabeza al caer acostado)
   const union = (full: boolean) => {

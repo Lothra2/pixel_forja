@@ -36,6 +36,8 @@ export interface RenderOptions {
   suelo?: number;
   /** devolver también el material de cada pixel (`materiales`), para redibujar el cuadro más grande */
   materiales?: boolean;
+  /** devolver las articulaciones también en las animaciones clásicas (las alas de la heroína celestial se enganchan ahí) */
+  joints?: boolean;
 }
 
 /** Una pelota dibujada: centro exacto (puede caer en medio pixel), diámetro sin el contorno y si va detrás del cuerpo. */

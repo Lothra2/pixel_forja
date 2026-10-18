@@ -11,7 +11,7 @@ import { bosqueMap } from '../src/engine/world/bosqueMap.ts';
 import { waterTile, chunks } from '../src/engine/world/paint.ts';
 import { creatures, fogTexture } from '../src/engine/world/atmosphere.ts';
 import { particles, lightTexture, cloudShadow } from '../src/engine/world/ambient.ts';
-import { ambience, AMBIENCE_NAMES } from '../src/engine/audio/ambience.ts';
+import { ambience, AMBIENTES_GG_ABYSS } from '../src/engine/audio/ambience.ts';
 import { encodeWav } from '../src/engine/audio/sfx.ts';
 import { encodePng } from '../src/engine/export/png.ts';
 import { createRaster, blit, type Raster } from '../src/engine/core/raster.ts';
@@ -63,7 +63,7 @@ png('fx/nube.png', cloudShadow());
 png('fx/niebla_nubes.png', fogTexture('nubes', 256));
 png('fx/niebla_jirones.png', fogTexture('jirones', 256));
 const audio: Record<string, string> = {};
-if (!args.includes('--sin-audio')) for (const n of AMBIENCE_NAMES) { const f = `a/${n}.wav`; write(f, encodeWav(ambience(n), undefined, true)); audio[n] = f; }
+if (!args.includes('--sin-audio')) for (const n of AMBIENTES_GG_ABYSS) { const f = `a/${n}.wav`; write(f, encodeWav(ambience(n), undefined, true)); audio[n] = f; }
 
 // datos del mundo (compactos): decos ordenadas por y como [sprite, x, y]
 const decos = [...m.decos].sort((a, b) => a.y - b.y).map((d) => [spriteIndex.get(d.sprite)!, d.x, d.y]);

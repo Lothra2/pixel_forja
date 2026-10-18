@@ -1,3 +1,4 @@
+import { premiumPortals } from './portales';
 import { createRaster, type Raster } from '../core/raster';
 import { over } from '../loot/canvas';
 import { TILE } from './tiles';
@@ -7,6 +8,15 @@ import { cobweb } from './atmosphere';
 import { bosqueDesign, LUGARES as L, BOSQUE_W, BOSQUE_H } from './bosque';
 import { forestObjects, type WorldObject } from './objects';
 import { landmarkObjects, fittedWaterfall, type WaterfallCol } from './landmarks';
+import { treesPremium } from './premium/trees';
+import { withShadow, drawShadow } from './premium/shadow';
+import { forestDecals, forestGroups, forestFront } from './premium/details';
+import { waterExtras, drawFoam, ESPUMA } from './water';
+import { lavaTile } from './fraguaObjectsB';
+import { withReactions, reactiveObjects } from './reactions';
+import { vidaAbyss, type InformeAbyss } from './abyss/index';
+import { BOSQUE } from './abyss/recetas';
+import { premiumWorld, type PremiumZone, type ZoneReport, type WorldPass, type WorldReport } from './premium/zone';
 
 /**
  * El Bosque GG armado: terreno pintado + lugares + bosque lleno + enemigos, cofres (varios secretos), fogatas de guardado,
@@ -32,6 +42,28 @@ export interface BigMap {
   zones: MapZone[];
   postales: Postal[];
   objects: WorldObject[];
+  /** datos del mundo para Tiled y el agua (el Bosque no los trae: usa los de siempre) */
+  meta?: { bioma: string; musica: string; nombre: string; agua?: string; fondo?: { id: string; paralaje: number }[]; /** brillos del agua y color de la espuma (Mundo 4) */ aguaBrillo?: string; espuma?: string; /** Mundo 6: la capa agua es lava (su propia hoja, sin reflejo) */ lava?: boolean };
+  /** cuadros que el diseño deja libres (claros de los lugares, puentes, vado, camino secreto): ahí no se planta nada */
+  libre?: Uint8Array;
+  /** cuánto bosque quiere el diseño en cada cuadro (menos de 0 nada, 1 o más bosque cerrado) */
+  densidad?: Float32Array;
+  /** por cuadro: 1 = agua quieta (lagos, pozos), donde el juego puede mostrar reflejos */
+  quieta?: Uint8Array;
+  /** Mundo 3: los cristales que se prenden (los dibuja el juego, apagados o prendidos, según el estado) */
+  cristales?: Cristal[];
+  /** Mundo 4: por cuadro, 1 = solo se camina con esa marea (baja: el barro; alta: los muelles flotantes) */
+  marea?: { baja: Uint8Array; alta: Uint8Array };
+}
+
+/** Un cristal del Mundo 3: `x`, `y` es el pie (el apoyo del objeto). Chico: `cristal_apagado_<forma>`; grande: `cristal_grande_*`. */
+export interface Cristal {
+  id: string;
+  x: number;
+  y: number;
+  color: 'cian' | 'violeta' | 'ambar';
+  forma: number;
+  grande: boolean;
 }
 
 function rng(seed: number) {
@@ -42,20 +74,86 @@ function rng(seed: number) {
 /** Todos los objetos que usa el mundo grande. */
 export function bosqueObjects(): WorldObject[] {
   // los objetos de la paleta vieja pasan por la corrección sombría; la flora v3 ya viene sombría
-  const graded = [...forestObjects(), ...landmarkObjects()].map((o) => ({
+  // los portales de siempre se cambian por los premium (#40), que no pasan por la corrección sombría
+  const graded = [...forestObjects(), ...landmarkObjects()].filter((o) => !o.name.startsWith('portal_')).map((o) => ({
     ...o, anims: Object.fromEntries(Object.entries(o.anims).map(([k, a]) => [k, { ...a, frames: a.frames.map((f) => gloomGrade(f)) }])),
   }));
   const web: WorldObject = { name: 'telarana', w: 40, h: 36, anchor: [6, 35], solid: null, anims: { idle: { frames: [cobweb()], fps: 1, loop: true } } };
-  return [...graded, ...floraV3(), web];
+  const base = [...graded, ...floraV3(), web];
+  // premium (piloto del Bosque Profundo): árboles por tamaño y forma, grupos armados, calcomanías y primer plano.
+  // Los que se paran en el piso traen su sombra horneada
+  const byName = new Map(base.map((o) => [o.name, o]));
+  const premium = [
+    ...treesPremium().map((t) => withShadow(t)),
+    ...forestGroups(byName).map((g) => withShadow(g, { length: 0.5, drop: 0.25 })),
+    // lo de la paleta vieja que usa el mundo premium, con su sombra horneada (`_p`). El original queda en el kit
+    // por si otro mundo lo usa
+    ...PREMIUM_COPIES.map((n) => { const o = byName.get(n)!; return withShadow({ ...o, name: `${n}_p`, base: n }, n.startsWith('arbusto') || n === 'helecho' || n === 'hongos' || n.startsWith('roca') ? { length: 0.5, drop: 0.25 } : {}); }),
+    ...forestDecals(), ...forestFront(),
+  ];
+  // el mundo que reacciona (2.9): animaciones nuevas en lo que ya había y los objetos que se usan
+  return withReactions([...base, ...premium, ...premiumPortals(['azul', 'rojo', 'verde']), ...reactiveObjects().filter((o) => /^(palanca|puerta_madera|piedra_empujable)$/.test(o.name))]);
 }
 
-export function bosqueMap(seed = 2024): BigMap {
+/** Objetos de siempre que el mundo premium usa con sombra horneada. */
+const PREMIUM_COPIES = ['hongo_gigante_azul', 'hongo_gigante_morado', 'arbol_hechizado_0', 'arbol_hechizado_1', 'arbol_hechizado_2', 'arbol_seco_0', 'arbol_seco_1', 'tronco_caido', 'arbusto_verde_0', 'arbusto_verde_1', 'arbusto_moras_0', 'arbusto_espinas_0', 'hongos', 'roca', 'roca_grande', 'sauce_v3', 'roble_otono_1', 'tocon', 'tocon_hongos'];
+
+/** El piloto premium: el Bosque Profundo con meseta, rampa, árboles variados, puntos focales y primer plano. */
+export const ZONA_PILOTO: Omit<PremiumZone, 'darkAt'> = {
+  nombre: 'Bosque Profundo',
+  rect: [2, 29, 30, 47],
+  // meseta al noreste del sendero, con su rampa de tierra en la punta suroeste
+  plateaus: [[[19.5, 29.6], [28.5, 29.6], [29.6, 33.5], [27.5, 36.2], [23.5, 35.4], [19.6, 33.4]]],
+  ramps: [{ x: 21.6, y: 34.1, w: 2.4 }],
+  seed: 3407,
+  // se quedan los carteles, fogatas, juncos y lugares que no son vegetación; lo demás se vuelve a colocar
+  keep: (s) => !/^(pino_|roble_|arbol_|arbusto_|roca|tocon|hongos|hongo_gigante|tronco_caido|telarana|helecho)/.test(s),
+  // pocos y repartidos: un lugar se nota cuando no compite con otro igual al lado
+  landmarks: [
+    { sprite: 'arbol_hechizado_2_p', n: 1 }, { sprite: 'arbol_hechizado_1_p', n: 1 },
+    { sprite: 'hongo_gigante_azul_p', n: 2 }, { sprite: 'hongo_gigante_morado_p', n: 1 },
+    { sprite: 'arbol_seco_0_p', n: 1 },
+  ],
+  // monte bajo (la lista pesa: más helechos y arbustos, pocos hongos; las piedras van en los grupos)
+  undergrowth: ['arbusto_verde_0_p', 'arbusto_verde_1_p', 'arbusto_moras_0_p', 'helecho', 'helecho', 'arbusto_verde_0_p', 'helecho', 'arbusto_verde_1_p', 'helecho', 'hongos_p'],
+  frente: ['frente_ramas_0', 'frente_ramas_1', 'frente_hojas_0'],
+};
+
+/** El resto del Bosque: misma receta para todo lo que no es el piloto. */
+export const BOSQUE_PREMIUM: Omit<WorldPass, 'darkAt'> = {
+  seed: 5113,
+  vegetation: /^(pino_\d|roble_\d|roble_grande|roble_otono|arbol_hechizado|arbol_seco|sauce_v3|arbusto_|hongos$|hongo_gigante|tocon|roca$|roca_grande|telarana|tronco_caido)/,
+  // lo que el diseño puso con intención (y los descubrimientos de las praderas) se muda cerca, no se pierde
+  relocate: /^(arbol_hechizado|arbol_seco|sauce_v3|roble_otono|hongo_gigante|tocon|roca$|roca_grande|tronco_caido)/,
+  stay: /^arbusto_espinas/,
+  undergrowth: ['arbusto_verde_0_p', 'arbusto_verde_1_p', 'arbusto_moras_0_p', 'helecho', 'helecho', 'arbusto_verde_0_p', 'helecho', 'arbusto_verde_1_p', 'helecho', 'hongos_p'],
+  frente: { 'Claro Escondido': ['frente_ramas_2', 'frente_hojas_1'], 'Anillo de las Hadas': ['frente_hojas_0', 'frente_hojas_1'] },
+};
+
+/** El Anillo de las Hadas hundido un nivel (2.8 del encargo), con la bajada donde llega el sendero. */
+export const ANILLO_HUNDIDO = {
+  poly: Array.from({ length: 20 }, (_, i) => [L.hadas[0] + 0.2 + Math.cos((i / 20) * Math.PI * 2) * 4.6, L.hadas[1] - 0.2 + Math.sin((i / 20) * Math.PI * 2) * 3.6] as TP),
+  entry: { x: 10.8, w: 2.2 },
+};
+
+export function bosqueMap(seed = 2024, opts: { premium?: boolean; abyss?: boolean } = {}): BigMap & { piloto?: ZoneReport; mundo?: WorldReport; abyss?: InformeAbyss } {
+  const m = bosqueMapBase(seed);
+  if (opts.premium === false) return m;
+  const darkAt = (tx: number, ty: number) => bosqueDesign.dark.reduce((mx, z) => Math.max(mx, 1 - Math.hypot(tx - z.c[0], ty - z.c[1]) / z.r), 0);
+  const { zonas, mundo } = premiumWorld(m, { ...bosqueDesign, pits: [ANILLO_HUNDIDO] }, [{ ...ZONA_PILOTO, darkAt }], { ...BOSQUE_PREMIUM, darkAt }, m.objects);
+  const out = { ...m, piloto: zonas[0], mundo: mundo ?? undefined };
+  // abyss premium: piso con vida, un monumento por zona, criaturas nuevas y la luz de cada zona
+  return opts.abyss === false ? out : vidaAbyss(out, BOSQUE);
+}
+
+function bosqueMapBase(seed = 2024): BigMap {
   const W = BOSQUE_W, H = BOSQUE_H, r = rng(seed);
   const terrain = paintTerrain(bosqueDesign);
   const objects = bosqueObjects();
   const byName = new Map(objects.map((o) => [o.name, o]));
   const solid = new Uint8Array(terrain.solid);
   const occ = new Uint8Array(W * H); // lugar ya usado (no poner árboles encima)
+  const libre = new Uint8Array(W * H); // lo que el diseño deja libre a propósito
   const decos: Deco[] = [], entities: Ent[] = [];
   const T = (t: number) => t * TILE + TILE / 2;
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= W || y >= H ? -1 : y * W + x);
@@ -78,7 +176,7 @@ export function bosqueMap(seed = 2024): BigMap {
     for (let dy = -reserve; dy <= reserve; dy++) for (let dx = -reserve; dx <= reserve; dx++) if (at(tx + dx, ty + dy) >= 0) occ[at(tx + dx, ty + dy)] = 1;
   };
   const placeT = (sprite: string, tx: number, ty: number, reserve = 0) => place(sprite, T(tx), ty * TILE + TILE - 4, reserve);
-  const reserve = (tx: number, ty: number, rad: number) => { for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) if (dx * dx + dy * dy <= rad * rad + 1 && at(tx + dx, ty + dy) >= 0) occ[at(tx + dx, ty + dy)] = 1; };
+  const reserve = (tx: number, ty: number, rad: number) => { for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) if (dx * dx + dy * dy <= rad * rad + 1 && at(tx + dx, ty + dy) >= 0) { occ[at(tx + dx, ty + dy)] = 1; libre[at(tx + dx, ty + dy)] = 1; } };
   /** lugar libre más cercano en espiral */
   const near = (tx: number, ty: number, maxR = 8): [number, number] => {
     for (let rad = 0; rad <= maxR; rad++) for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) {
@@ -128,7 +226,7 @@ export function bosqueMap(seed = 2024): BigMap {
     const cx = ((x0 + x1 + 1) / 2) * TILE;
     place('puente', cx, ty * TILE + TILE / 2 + 2);
     // el puente se camina: libre de este a oeste, con un cuadro de orilla a cada lado
-    for (let x = x0 - 1; x <= x1 + 1; x++) { solid[at(x, ty)] = 0; occ[at(x, ty)] = 1; occ[at(x, ty - 1)] = 1; occ[at(x, ty + 1)] = 1; }
+    for (let x = x0 - 1; x <= x1 + 1; x++) { solid[at(x, ty)] = 0; occ[at(x, ty)] = 1; occ[at(x, ty - 1)] = 1; occ[at(x, ty + 1)] = 1; libre[at(x, ty)] = libre[at(x, ty - 1)] = libre[at(x, ty + 1)] = 1; }
     return [x0, x1] as [number, number];
   };
 
@@ -164,8 +262,8 @@ export function bosqueMap(seed = 2024): BigMap {
     // vado: piedras para saltar de orilla a orilla
     const ty = L.vado[1];
     const [x0, x1] = riverSpan(ty, L.vado[0]);
-    for (let x = x0; x <= x1; x++) { place(`piedra_vado_${x % 2}`, T(x), ty * TILE + 22); solid[at(x, ty)] = 0; occ[at(x, ty)] = 1; }
-    occ[at(x0 - 1, ty)] = 1; occ[at(x1 + 1, ty)] = 1; solid[at(x0 - 1, ty)] = 0; solid[at(x1 + 1, ty)] = 0;
+    for (let x = x0; x <= x1; x++) { place(`piedra_vado_${x % 2}`, T(x), ty * TILE + 22); solid[at(x, ty)] = 0; occ[at(x, ty)] = 1; libre[at(x, ty)] = 1; }
+    occ[at(x0 - 1, ty)] = 1; occ[at(x1 + 1, ty)] = 1; solid[at(x0 - 1, ty)] = 0; solid[at(x1 + 1, ty)] = 0; libre[at(x0 - 1, ty)] = libre[at(x1 + 1, ty)] = 1;
   }
   {
     // cascada donde el río cae del acantilado
@@ -234,7 +332,7 @@ export function bosqueMap(seed = 2024): BigMap {
   for (let i = 0; i < secretPath.length - 1; i++) {
     const [a0, a1] = secretPath[i], [b0, b1] = secretPath[i + 1];
     const n = Math.ceil(Math.hypot(b0 - a0, b1 - a1) * 2);
-    for (let k = 0; k <= n; k++) { const x = Math.round(a0 + ((b0 - a0) * k) / n), y = Math.round(a1 + ((b1 - a1) * k) / n); occ[at(x, y)] = 1; solid[at(x, y)] = 0; }
+    for (let k = 0; k <= n; k++) { const x = Math.round(a0 + ((b0 - a0) * k) / n), y = Math.round(a1 + ((b1 - a1) * k) / n); occ[at(x, y)] = 1; solid[at(x, y)] = 0; libre[at(x, y)] = 1; }
   }
   reserve(ex, ey, 4);
   chest(ex, ey - 1, 'dorado', { secreto: true, pista: 'claro_escondido' });
@@ -484,7 +582,10 @@ export function bosqueMap(seed = 2024): BigMap {
     { nombre: 'campo_calabazas', x: T(L.calabazas[0]), y: T(L.calabazas[1]) },
     { nombre: 'las_alturas', x: T(L.alturas[0]), y: T(L.alturas[1]) },
   ];
-  return { name: 'mundo1_bosque', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects };
+  // agua quieta: los lagos (los ríos corren)
+  const quieta = new Uint8Array(W * H);
+  for (const l of bosqueDesign.lakes) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (Math.hypot((x + 0.5 - l.c[0]) / (l.rx + 1), (y + 0.5 - l.c[1]) / (l.ry + 1)) < 1) quieta[at(x, y)] = 1;
+  return { name: 'mundo1_bosque', w: W, h: H, terrain, solid, decos, entities, zones, postales, objects, libre, densidad: dens, quieta };
 }
 
 /** Desde dónde se puede llegar caminando (4 vecinos), empezando en un cuadro. */
@@ -513,6 +614,8 @@ export interface BigMapFiles {
   json: Record<string, unknown>;
   chunks: { name: string; x: number; y: number; img: Raster }[];
   aguaPng: Raster;
+  /** atlas de la espuma de orilla (capa espuma del mapa) */
+  espumaPng: Raster;
 }
 
 /** Exporta a Tiled: capas de imagen del suelo (trozos), agua animada, colisión, objetos, entidades, zonas y postales. */
@@ -528,6 +631,7 @@ export function surfaceTiles(m: BigMap): Uint8Array {
   const out = Uint8Array.from(m.terrain.tileKind, (k) => byKind[k] ?? 1);
   const objs = new Map(m.objects.map((o) => [o.name, o]));
   for (const d of m.decos) {
+    if (d.sprite.startsWith('puente_colgante') || d.sprite.startsWith('muelle')) { const k = Math.floor((d.y - 1) / TILE) * m.w + Math.floor(d.x / TILE); if (k >= 0 && k < out.length) out[k] = 4; continue; }
     if (d.sprite !== 'puente') continue;
     const o = objs.get(d.sprite)!;
     // el tablero del puente: todo el ancho y la franja del medio del alto
@@ -538,20 +642,26 @@ export function surfaceTiles(m: BigMap): Uint8Array {
   return out;
 }
 
+/** El cuadro de la capa agua: el agua de siempre, o la lava del Mundo 6. */
+export function aguaTile(m: BigMap, f: number, apagada = false): Raster {
+  return m.meta?.lava ? lavaTile(f, apagada) : waterTile(f, m.meta?.agua, m.meta?.aguaBrillo);
+}
+
 export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
   const parts = chunks(m.terrain.img, CHUNK).map((c, i) => ({ name: `${dir}/${m.name}_${i}.png`, ...c }));
   // agua: 4 cuadros en una tira; el cuadro 0 se anima por los 4
   const agua = createRaster(TILE * 5, TILE);
-  for (let f = 0; f < 4; f++) over(agua, waterTile(f), f * TILE, 0);
+  for (let f = 0; f < 4; f++) over(agua, aguaTile(m, f), f * TILE, 0);
   for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) { const k = (y * agua.w + 4 * TILE + x) * 4; agua.data[k] = 255; agua.data[k + 1] = 0; agua.data[k + 2] = 255; agua.data[k + 3] = 110; }
   const solidGid = 5; // el 5to cuadro de la tira es la marca de colisión
+  const water = waterExtras(m);
   let oid = 1, lid = 1;
   const props = (p?: Record<string, Prop>) => Object.entries(p ?? {}).map(([name, value]) => ({ name, type: typeof value === 'number' ? 'float' : typeof value === 'boolean' ? 'bool' : 'string', value }));
   const point = (name: string, type: string, x: number, y: number, p?: Record<string, Prop>) => ({ id: oid++, name, type, x, y, width: 0, height: 0, rotation: 0, visible: true, point: true, properties: props(p) });
   const json = {
     type: 'map', version: '1.10', tiledversion: '1.10.2', orientation: 'orthogonal', renderorder: 'right-down', infinite: false,
     width: m.w, height: m.h, tilewidth: TILE, tileheight: TILE,
-    properties: props({ bioma: 'bosque', musica: 'bosque', nombre: 'Bosque GG', trozo: CHUNK }),
+    properties: props({ bioma: m.meta?.bioma ?? 'bosque', musica: m.meta?.musica ?? 'bosque', nombre: m.meta?.nombre ?? 'Bosque GG', trozo: CHUNK, ...(m.meta?.fondo ? { fondo: m.meta.fondo.map((f) => `${f.id}:${f.paralaje}`).join(',') } : {}) }),
     tilesets: [{
       firstgid: 1, name: 'agua', image: 'agua.png', imagewidth: agua.w, imageheight: TILE, tilewidth: TILE, tileheight: TILE, columns: 5, tilecount: 5, margin: 0, spacing: 0,
       tiles: [{ id: 0, animation: [0, 1, 2, 3].map((f) => ({ tileid: f, duration: 220 })) }],
@@ -562,35 +672,58 @@ export function bigMapToTiled(m: BigMap, dir = 'suelo'): BigMapFiles {
       { id: lid++, name: 'colision', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.5, visible: false, data: Array.from(m.solid, (v) => (v ? solidGid : 0)) },
       // pasos: un valor por cuadro (no es un gráfico, se lee directo de data)
       { id: lid++, name: 'superficie', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.4, visible: false, data: Array.from(surfaceTiles(m)), properties: props({ valores: SUPERFICIES.map((n, i) => (i ? `${i} ${n}` : '')).filter(Boolean).join(', ') }) },
+      // espuma de la orilla (pieza del atlas por cuadro, animada) y agua quieta con reflejo
+      { id: lid++, name: 'espuma', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 1, visible: false, data: Array.from(water.espuma), properties: props({ atlas: `${m.name}_espuma.png`, columnas: water.columnas, filas: water.filas, cuadros: ESPUMA.cuadros, fps: ESPUMA.fps, notas: 'n > 0: pieza n - 1 del atlas; el cuadro f de la animación está f * filas * 32 px más abajo' }) },
+      { id: lid++, name: 'reflejo', type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.4, visible: false, data: Array.from(water.reflejo) },
       { id: lid++, name: 'objetos', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.decos.map((d) => point(d.sprite, 'deco', d.x, d.y, { sprite: d.sprite })) },
-      { id: lid++, name: 'entidades', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.entities.map((e) => point(e.tipo, e.tipo, e.x, e.y, e.props)) },
+      { id: lid++, name: 'entidades', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.entities.map((e) => ((e.tipo === 'grieta' || e.tipo === 'hielo_fino') && typeof e.props?.width === 'number' && typeof e.props?.height === 'number' ? { ...point(e.tipo, e.tipo, e.x, e.y, e.props), width: e.props.width, height: e.props.height, point: false } : point(e.tipo, e.tipo, e.x, e.y, e.props))) },
       { id: lid++, name: 'zonas', type: 'objectgroup', draworder: 'topdown', opacity: 0.3, visible: false, x: 0, y: 0, objects: m.zones.map((z) => ({ id: oid++, name: z.nombre, type: 'zona', x: z.x, y: z.y, width: z.w, height: z.h, rotation: 0, visible: true, properties: props(z.props) })) },
       { id: lid++, name: 'postales', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: false, x: 0, y: 0, objects: m.postales.map((p) => point(p.nombre, 'postal', p.x, p.y)) },
+      // Mundo 3: los cristales que se prenden al pegarles (solo en los mundos que los traen)
+      // Mundo 4: las mareas (por cuadro, 1 = solo se camina con esa marea; en `colision` los dos van libres)
+      ...(m.marea ? (['baja', 'alta'] as const).map((k) => ({ id: lid++, name: `marea_${k}`, type: 'tilelayer', width: m.w, height: m.h, x: 0, y: 0, opacity: 0.4, visible: false, data: Array.from(m.marea![k]), properties: props({ notas: k === 'baja' ? 'Solo se camina con la marea baja: con la alta se tapa de agua (objeto agua_marea) y es sólido.' : 'Solo se camina con la marea alta: los muelles flotantes suben (anim subir y arriba). Con la baja es sólido.' }) })) : []),
+      ...(m.cristales ? [{ id: lid++, name: 'cristales', type: 'objectgroup', draworder: 'topdown', opacity: 1, visible: true, x: 0, y: 0, objects: m.cristales.map((c) => point(c.id, c.grande ? 'cristal_grande' : 'cristal', c.x, c.y, { color: c.color, forma: c.forma, grande: c.grande })) }] : []),
     ],
   };
   (json as Record<string, unknown>).nextlayerid = 200;
   (json as Record<string, unknown>).nextobjectid = oid;
-  return { json, chunks: parts, aguaPng: agua };
+  return { json, chunks: parts, aguaPng: agua, espumaPng: water.atlas };
 }
 
 /** Vista completa: agua, suelo, objetos de suelo y luego el resto ordenado por profundidad (sin entidades). */
 export function renderBigMap(m: BigMap, opts: { entities?: boolean; frame?: number } = {}): Raster {
   const img = m.terrain.img, W = img.w, H = img.h;
   const out = createRaster(W, H);
-  const water = waterTile(opts.frame ?? 0);
+  const water = aguaTile(m, opts.frame ?? 0);
+  const byName = new Map(m.objects.map((o) => [o.name, o]));
+  // el abismo: los fondos (sin paralaje en la foto) donde no hay suelo ni agua
+  const fondos = (m.meta?.fondo ?? []).map((f) => byName.get(f.id)?.anims.idle.frames[0]).filter((f): f is Raster => !!f);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = (y * W + x) * 4, a = img.data[i + 3] / 255, w = ((y % TILE) * TILE + (x % TILE)) * 4;
-    for (let c = 0; c < 3; c++) out.data[i + c] = img.data[i + c] * a + water.data[w + c] * (1 - a);
+    let under = [water.data[w], water.data[w + 1], water.data[w + 2]];
+    if (fondos.length && a < 1 && !m.terrain.waterTiles[Math.floor(y / TILE) * m.w + Math.floor(x / TILE)]) {
+      under = [4, 6, 12];
+      for (const f of fondos) { const k = ((y % f.h) * f.w + (x % f.w)) * 4, fa = f.data[k + 3] / 255; for (let c = 0; c < 3; c++) under[c] = under[c] * (1 - fa) + f.data[k + c] * fa; }
+    }
+    for (let c = 0; c < 3; c++) out.data[i + c] = img.data[i + c] * a + under[c] * (1 - a);
     out.data[i + 3] = 255;
   }
-  const byName = new Map(m.objects.map((o) => [o.name, o]));
   const frameOf = (o: WorldObject) => { const a = o.anims.idle ?? o.anims.girar ?? Object.values(o.anims)[0]; return a.frames[Math.min(a.frames.length - 1, opts.frame ?? 0)]; };
+  drawFoam(out, m, opts.frame ?? 0);
   const ground = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'suelo');
-  const rest = m.decos.filter((d) => byName.get(d.sprite)?.layer !== 'suelo').sort((a, b) => a.y - b.y);
-  for (const d of [...ground, ...rest]) {
+  const front = m.decos.filter((d) => byName.get(d.sprite)?.layer === 'frente');
+  // los cristales del Mundo 3 se ven apagados (así arranca el juego)
+  const cris = (m.cristales ?? []).map((c) => ({ sprite: c.grande ? 'cristal_grande_apagado' : `cristal_apagado_${c.forma}`, x: c.x, y: c.y }));
+  const rest = [...m.decos, ...cris].filter((d) => { const l = byName.get(d.sprite)?.layer; return l !== 'suelo' && l !== 'frente'; }).sort((a, b) => a.y - b.y);
+  for (const d of ground) { const o = byName.get(d.sprite)!; over(out, frameOf(o), Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1])); }
+  // sombras horneadas: sobre el suelo y debajo de todo lo que se para en él (como las dibuja el juego)
+  for (const d of rest) { const o = byName.get(d.sprite)!; if (o.shadow) drawShadow(out, o.shadow, Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1])); }
+  for (const d of rest) {
     const o = byName.get(d.sprite)!;
     over(out, frameOf(o), Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1]));
   }
+  // primer plano: encima de todo
+  for (const d of front) { const o = byName.get(d.sprite)!; over(out, frameOf(o), Math.round(d.x - o.anchor[0]), Math.round(d.y - o.anchor[1])); }
   if (opts.entities) {
     const col: Record<string, string> = { enemigo: '#ff3a3a', jefe: '#ff00ff', cofre: '#ffd84a', jugador_inicio: '#3aff6a', thor_inicio: '#b5713a', portal_jefe: '#6cb4ff', portal_llegada: '#6cb4ff', rompible: '#c09460', cartel: '#ffffff', punto_guardado: '#ff8a1e' };
     for (const e of m.entities) {

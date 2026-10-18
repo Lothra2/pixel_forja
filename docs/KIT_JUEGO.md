@@ -103,16 +103,504 @@ Rick, Steph, Sophie y Alana salen con el perfil de movimiento premium:
 - El pivote no se mueve entre cuadros ni entre animaciones.
 - Cada animación que lo tiene trae:
   - `eventos`: en qué cuadro cae cada paso, golpe (`impacto`) o suelta.
-  - `avance`: pixeles por ciclo sin que el pie patine.
+  - `avance`: pixeles de la hoja que avanza el cuerpo en un ciclo completo (todos los cuadros, o sea dos pasos), sin
+    que el pie patine. Es la misma unidad para todos.
+  - `velocidad_natural`: px/s a los que el pie no patina con el fps de la hoja (`avance * fps / cuadros`).
 
 Qué hace el juego con eso:
 - Sonido de pisada en cada `paso`.
 - Daño y una pausa de 2 o 3 cuadros en el `impacto`.
-- El ritmo de caminar y correr se ajusta con `ritmo = velocidad * cuadros / (avance * fps)`, así los pies no patinan.
+- El ritmo de caminar y correr se ajusta con `ritmo = velocidad / velocidad_natural` (es la misma cuenta de antes:
+  `velocidad * cuadros / (avance * fps)`).
+
+Ojo con las proporciones chibi. La familia es cabezona y de piernas cortas (a celda 48 la pierna de Rick mide 8 px, la
+de Sophie 6 y la de Alana 4), así que el pie cubre poco. Por eso Alana tiene casi la mitad de avance que Sophie: la
+unidad es la misma, el cuerpo es otro. Con las velocidades del juego el ritmo exacto sale entre 3 y 11 veces, que a 8
+cuadros se ve como un borrón. Lo recomendado es lo que ya hace el juego: `ritmo = clamp(velocidad /
+velocidad_natural, 0.7, 1.5)` y aceptar que el pie patine un poco, como en cualquier RPG chibi.
+
+| Personaje | Anim | Cuadros a fps | Avance (px por ciclo) | velocidad_natural (px/s) |
+|---|---|---|---|---|
+| Rick | walk / run | 8 a 10 / 8 a 14 | 14.1 / 23.3 | 17.6 / 40.8 |
+| Steph | walk / run | 8 a 10 / 8 a 14 | 16.6 / 27.4 | 20.8 / 47.9 |
+| Sophie | walk / run | 8 a 10 / 8 a 14 | 13.2 / 21.8 | 16.5 / 38.1 |
+| Alana | walk / run | 8 a 10 / 8 a 14 | 7.8 / 12.9 | 9.8 / 22.6 |
+| Thor | walk / run | 8 a 9 / 8 a 14 | 18.9 / 56.7 | 21.3 / 99.2 |
+| Minotauro y guardián | walk / charge | 8 a 10 / 8 a 14 | 32 / 55.5 | 40 / 97.1 |
 
 Si una ficha del estudio llega en clásico, sale como siempre, sin esos campos.
 
 Todas las rutas son relativas a la carpeta del kit.
+
+### Jefes grandes (dibujados a su tamaño)
+
+El minotauro y el guardián de la campana ya no son jefes de 64 agrandados x1.5. Se dibujan a celda **128**, pixel
+por pixel, con el motor de jefes grandes (`src/engine/boss`).
+
+- `celda`: 128. `pivote`: medido en los pies de verdad en todas las direcciones y cuadros (hoy `[64, 104]` el
+  minotauro y `[64, 101]` el guardián). Cada jefe tiene el suyo: el juego lo lee del manifiesto.
+  En la vista de arriba lo que está delante de los pies baja en pantalla: por eso el pivote no está en la última fila.
+- Mismas animaciones y mismos fps de antes: `idle` 6, `walk` 10, `attack` 14, `hit` 12, `die` 8,
+  `attack_heavy` 12, `charge` 14, `warcry` 10, `leap` 12. Cambian los cuadros: `die` 16, `attack_heavy` 11,
+  `warcry` 10, `leap` 12.
+- `eventos`: `impacto` (con `punto`: dónde pega la cabeza del mazo en cada dirección, en pixeles desde el pivote),
+  `paso`, `grito`, `despegue`, `aterriza` y `suelta` (cuando suelta el mazo al liberarse).
+- `aviso`: `[desde, hasta]` cuadros de la preparación de los golpes fuertes. Dura al menos 4 cuadros y tiembla:
+  es lo que le da tiempo a Alana de esquivar. El juego puede pintar el aviso en el piso durante esos cuadros.
+- `avance` en `walk` y `charge`, como las heroínas.
+- `elevacion` en `leap`: cuánto sube el juego el sprite sobre su sombra en cada cuadro. El salto no se dibuja
+  dentro de la celda (no entraría): el dibujo queda a ras del piso y el juego lo levanta.
+- `die` termina en **liberado**: se le va el encantamiento en chispas violetas, suelta el mazo, se arrodilla y
+  queda tranquilo con los ojos tibios. No hay cuerpo tirado.
+- El guardián es un gólem de cobre con verdín y la campana colgando delante de la panza, que se mece con 2 cuadros
+  de retraso. Encantado, la visera, las runas de la campana y los brotes de las raíces brillan **violeta**; al final
+  de `die` pasan a **turquesa**. Trae además `libre` (8 cuadros, 6 fps, en bucle): parado y en paz, en turquesa,
+  sin el mazo, para mostrarlo después de la pelea junto a la `campana_libre` del mapa.
+
+Del lado del juego: el radio de golpe y la barra de vida se ajustan a la celda nueva (`celda` y `pivote` ya vienen
+en el manifiesto).
+
+### Mundos premium (el Bosque entero)
+
+Campos nuevos en `mundo.objetos` (opcionales: si no están, todo sigue como antes):
+
+- `sombra`: PNG del mismo tamaño que el objeto, negro con alfa. Se dibuja sobre el suelo y debajo de todos los
+  objetos y personajes, en la misma posición que el objeto. Si un objeto no la trae, se usa la elipse de siempre.
+- `capa: "frente"`: primer plano. No viene ubicado en el mapa: la zona lo declara en su propiedad `frente` (lista de
+  ids separados por coma) y el juego lo pega a los bordes de la pantalla mientras la heroína está en esa zona. Las
+  `frente_ramas_*` cuelgan del borde de arriba (apoyo arriba al centro) y las `frente_hojas_*` suben del borde de abajo
+  (apoyo abajo al centro). Se mueven con paralaje 1.15 respecto de la cámara y entran y salen con un fundido de medio
+  segundo al cambiar de zona. Ninguno es sólido. `capa: "fondo"`: debajo de todo, repetido por
+  toda la pantalla con su paralaje. Lo usa la Catedral para el abismo: el mundo trae `fondo: [{ objeto, paralaje }]`
+  en el manifiesto y el suelo es transparente donde no hay piso (ni agua). Detalle en `docs/mundos/CATEDRAL.md`.
+
+Agua (los dos mundos):
+- `espuma` en cada mundo del manifiesto: `{ archivo, capa: "espuma", columnas, cuadros: 4, fps: 5 }`. La capa
+  `espuma` del mapa trae por cuadro 0 (nada) o n: la pieza n - 1 del atlas (`columnas` por fila). El cuadro f de la
+  animación está `f * filas * 32` px más abajo (`filas` va en las propiedades de la capa). Se dibuja encima del suelo,
+  debajo de los objetos.
+- `reflejo: { capa: "reflejo" }`: por cuadro, 1 = agua quieta. Ahí el juego puede reflejar a la heroína y a los árboles
+  de la orilla (el sprite invertido, con alfa bajo y una ondita).
+
+### Un mundo que reacciona (2.9)
+
+Animaciones nuevas en los objetos de siempre (el reposo y el tamaño no cambian):
+
+| Objetos | Animación | Cuadros a fps | Cuándo |
+|---|---|---|---|
+| Todos los arbustos (también las copias `_p`) | `sacudir` | 6 a 12 (sin bucle) | La heroína pasa al lado o le pega. Sueltan dos hojitas |
+| `arbusto_moras_*` | `sin_moras` | 1 | Después de pegarle (sueltan moras que curan) |
+| `hongos`, `hongo_gigante_*`, `tocon_hongos` | `rebotar` | 6 a 12 (sin bucle) | Al pisarlos |
+| `flores_grandes_*` | `cerrar` y `abrir` | 4 y 4 a 8 (sin bucle) | Pasa un enemigo y después |
+| `nenufar`, `juncos` | `mecer` | 6 a 8 (sin bucle) | Al pasar por el agua al lado |
+| `charco`, `charco_chico_*` | `salpicar` | 6 a 12 (sin bucle) | Al pisarlo |
+| `antorcha`, `farol`, `candelabro_pie` | `apagada` y `prender` | 1, y 6 a 10 | Las apagadas se prenden al pasar con la luz |
+| `telarana` | `romper` | 6 a 12 (sin bucle) | Al pasar, queda colgando (último cuadro) |
+
+Objetos nuevos (en `mundo.objetos`):
+- `palanca` (32 x 32, sólida 12 x 6): `arriba`, `bajar` (8 a 10 fps), `abajo`. En los dos mundos.
+- `puerta_madera` (Bosque) y `reja_catedral` (Catedral), 64 x 64, sólidas cerradas: `cerrada`, `abrir` (9 cuadros), `abierta`.
+- `piedra_empujable` (32 x 32): `quieta` y `arrastrar` (6 a 6 fps). En los dos mundos.
+- `campana_chica` (Catedral, 32 x 48): `sonar` (8 a 10 fps). Ya va ubicada en los Claustros y en la Nave.
+
+La palanca, la puerta, la reja y la piedra no van ubicadas en los mapas: abren y cierran pasos, y eso lo decide el juego
+(dónde, qué abre cada palanca, qué tapa cada piedra). Están en el kit listas para usar.
+
+Criaturas chicas nuevas (en `mundo.criaturas`, como los cuervos): `rana`, `pez` y `ardilla`, de 16 x 16, con `quieto` (4 fps)
+y `huir` (10 a 12 fps). En el Bosque van como entidades `criatura` con `especie`: ranas en la orilla de los lagos,
+peces en el lago (el `huir` del pez es el salto fuera del agua) y ardillas al pie de los árboles.
+
+Sonidos nuevos (en `audio`, de 0.2 a 0.8 s y con pico de 0.5): `arbusto_sacudir`, `hongo_rebote`, `charco_pisar`,
+`rana_salto`, `palanca`, `puerta_abrir`, `reja_abrir`, `piedra_arrastrar`, `campana_chica` y `telarana_romper`.
+
+Objetos nuevos del Bosque:
+- Árboles `roble_t<tamaño>_<forma>` y `pino_t<tamaño>_<forma>` (tamaño 0, 1 o 2: 116, 146 y 182 px; forma 0, 1 o 2),
+  con `idle`, `tronco` y `copa` como los de siempre, y `sombra`.
+- Grupos: `claro_tronco_hongos`, `rocas_musgo_grupo`, `raices_expuestas`, `arbusto_flores_grupo`, y `helecho`.
+- Calcomanías con `capa: "suelo"`: `hojas_caidas_0..3`, `raiz_suelo_0..2`, `grieta_0..2`, `charco_chico_0..1`,
+  `flores_suelo_0..3`, `piedritas_0..2`.
+- Primer plano con `capa: "frente"`: `frente_ramas_0..2` (256 x 96, 9 cuadros) y `frente_hojas_0..1` (128 x 64).
+- Copias con sombra de objetos de siempre (`_p`): `hongo_gigante_azul_p`, `hongo_gigante_morado_p`,
+  `arbol_hechizado_1_p`, `arbol_hechizado_2_p`, `arbol_seco_0_p`, `arbol_seco_1_p`, `tronco_caido_p`,
+  `arbusto_verde_0_p`, `arbusto_verde_1_p`, `arbusto_moras_0_p`, `hongos_p`, `roca_p`, `roca_grande_p`. Son el mismo
+  dibujo con su `sombra` y traen `base` con el id original: todo lo que el juego decide por nombre (partículas,
+  reacciones, color de los ojos) se busca con `def.base ?? id`. Afuera de la zona premium se siguen usando los de
+  siempre hasta que le toque a cada zona.
+
+El mapa (`mundo1_bosque.json`) ya los trae ubicados en todo el Bosque, con la meseta y su rampa de tierra en el
+Bosque Profundo. Nada queda montado: el pie de cada objeto se ve siempre y dos cuerpos se pisan como mucho un 12 %.
+En el interior de las masas cerradas los árboles van en filas (dosel) y ahí sí se tapan el tronco entre ellos, como
+en cualquier bosque visto desde arriba. Lo que el diseño puso a mano (lugares, campamentos, ruinas, carteles,
+puentes, cofres y enemigos) no se movió. Zonas con primer plano declarado: Bosque Profundo, Claro Escondido y Anillo
+de las Hadas.
+La colisión sale del mapa como siempre. Detalle y reglas: `docs/mundos/PILOTO.md`.
+
+### Mundo 3: Las Galerías del Eco
+
+`manifest.mundos` trae ahora `mundo3` (mapa `mundo/mundo3_galerias.json`, 100 x 80, con `fondo`, `espuma`, `reflejo`
+como los otros). Detalle completo en `docs/mundos/GALERIAS.md`. Lo nuevo para el juego:
+
+- Capa de objetos **`cristales`** en el mapa y el campo `cristales` en el mundo del manifiesto: cada punto es el pie de
+  un cristal con `id`, `color`, `forma` (0 cian, 1 violeta, 2 ámbar) y `grande`. Arrancan apagados. Se dibujan con
+  `cristal_apagado_<forma>` / `cristal_prendido_<forma>` (anim `prenderse` de 8 cuadros a 14 fps, una vez) y los 4 de
+  la arena con `cristal_grande_apagado` / `cristal_grande_prendido`. Las luces (radio 80 y 180) ya vienen en el
+  objeto prendido. `golpearCristal`, `avanceLuz`, `reinaVulnerable` y `apagarConPolvo` usan estos puntos tal cual.
+- Entidades: 3 `punto_guardado` con `farol: true` (al lado de su `farol_minero`), `carrito` (`ruta` "x,y;x,y" en
+  cuadros, `empuja: thor`), `figura` (dónde se asoma en el Puente Colgante), `mural` (`pieza: 3`), cofres con
+  `secreto`/`pista`, y los enemigos `polilla_ceniza`, `minero_piedra` y `sombra`. El jefe es `polilla_reina` en su
+  `arena_jefe`, y el portal de salida va a `mundo4`.
+- Zonas con `ambiente` `galerias`, `agua`, `viento`, `eco` y `jefe`, partículas `polvo`, `brillos`, `brasas_frias`,
+  `humo` y `ceniza` (en `particulas` van `brasa_fria` y `ceniza`, nuevas, y las de siempre), y su `frente`
+  (`estalactitas_frente_0..1`, `cristales_techo_frente_0..1`).
+- Personajes nuevos en `personajes`: `polilla_ceniza` (48), `minero_piedra` (64), `sombra` (48) y `polilla_reina` (128,
+  `tipo: jefe`), con el mismo formato que los jefes grandes (eventos, `aviso`, pivote medido). Los que vuelan traen
+  `vuela: true`: el pivote es el punto del piso debajo de ellos. La sombra se dibuja normal y el juego la muestra solo
+  dentro de la luz (`sombraVisible`). Afuera se ve `sombra_ojos` (en `mundo.criaturas`, 16 x 8).
+- `fx`: `aviso_polvo` (96 x 96, 8 cuadros, va en el piso) y `nube_polvo` (96 x 96, 10 cuadros a 12 fps).
+- `audio`: `musica_galerias`, `musica_jefe_polilla`, `ambiente_galerias`, `ambiente_eco`, `cristal_prender`,
+  `cristal_apagar`, `polilla_aleteo`, `minero_golpe`, `sombra_aparece`, `carrito_rodar` (bucle) y `figura_irse`.
+
+### Mundo 4: El Puerto Ahogado (encargo F12)
+
+`manifest.mundos` trae `mundo4` (mapa `mundo/mundo4_puerto.json`, 110 x 90, con `fondo` (`fondo_mar_lejos_0..2`),
+`espuma`, `reflejo`, `portal: portal_rojo`). Resumen de la entrega: `docs/entregas/abyss_mundo4.md`. Lo nuevo:
+
+- **Mareas.** Capas de cuadros `marea_baja` (el barro del banco de arena: solo se camina con la marea baja) y
+  `marea_alta` (los muelles flotantes: solo con la alta). En `colision` van libres los dos: con la marea alta el juego
+  suma `marea_baja` a la colisión y dibuja `agua_marea` encima; con la baja suma `marea_alta` y deja los
+  `muelle_flotante` en `abajo` (al subir: `subir` y después `arriba`). El mundo trae `marea` con los nombres.
+- **Faroles del muelle** (la fogata del piso): 4 `punto_guardado` con `farol: true` y `objeto: farol_muelle`, y al
+  lado la entidad `farol_muelle` (el poste, `punto` = id). Arrancan apagados (`farol_muelle_apagado`); Thor los prende
+  (`farol_muelle_prenderse` una vez y después `farol_muelle_prendido`, luz ámbar de 180). El primero trae
+  `tutorial: true`.
+- **Entidades:** `portal_llegada` (rojo), `portal_volver` (mundo3), `portal_jefe` (`destino: mundo5`), `jefe`
+  (`enemigo: pez_farol`, `en_agua`, en el centro de la poza), `arena_jefe` (`radio: 208`, `agua: true`,
+  `poza: 128`: la poza de agua negra del centro es sólida en `colision`, el anillo de tablas `anillo_poza` que la
+  rodea hasta el radio se camina entero con las dos mareas y llega a la entrada de la arena), el minijefe `capitan_ahogado` con `elite: true`,
+  `campana_iglesia` (`suena_sola`), `mural` (`pieza: 4`), `figura` (una con `alto: true`: en lo alto del faro) y los
+  enemigos `marinero_niebla`, `cangrejo_ceniza` y `medusa_negra`.
+- **Zonas** con `ambiente` `puerto`, `campana`, `agua` y `jefe`, `musica: ninguna` (casi sin música: entra en las
+  peleas; el Faro trae `musica: jefe_pez` y `musica_victoria: faro`, el Astillero `musica_pelea: capitan`) y su
+  `frente` (`red_colgando_0..1`, `rocas_frente_0..1`, `vigas_frente_0..1`).
+- **Luz:** sin sombras horneadas con dirección. Los objetos traen solo la sombra de contacto al pie en `sombra`.
+- **El farol de Thor:** `personajes.thor_farol` y `thor_farol_apagado` (`capa_de: thor`): misma celda, pivote,
+  animaciones y cuadros que `thor`. Cada cuadro trae solo el farol: se dibuja encima de Thor (con cualquier
+  armadura). En `howl` el farol queda arriba (alzar el farol).
+- **Enemigos y jefe:** `marinero_niebla` (48, translúcido; fuera de la luz se ven los `marinero_ojos`, en
+  `criaturas` del mundo 4), `cangrejo_ceniza` (48), `medusa_negra` (48, `vuela`), `capitan_ahogado` (64, `elite`) y
+  `pez_farol` (128, `tipo: jefe`, `en_agua`, `luz_antena`). Mismo formato que los jefes grandes (eventos, `aviso`,
+  `elevacion`, pivote medido). `fx`: `aviso_mordida` (128 x 64, `w`/`h`), `aviso_ola` (32 x 32, en bucle, se repite
+  en línea) y `ola` (128 x 64, 12 fps). Cada anim del `pez_farol` trae `antena`: 8 listas (una por dirección, en
+  el orden de las filas de la hoja) con un `[x, y]` por cuadro, en píxeles desde el pivote (y hacia abajo), o `null`
+  cuando la luz está bajo el agua o apagada. Ahí va la luz del juego.
+- **Audio:** `ambiente_puerto` (20 s), `ambiente_campana`, `musica_jefe_pez`, `musica_capitan` (en bucle),
+  `musica_faro` (30 s), y los efectos `campana_lejos`, `campana_cerca`, `marea_sube`, `farol_prender`,
+  `farol_apagar`, `thor_alza_farol`, `marinero_se_deshace`, `cangrejo_tenaza`, `medusa_toca`, `ancla_golpe`,
+  `pez_emerge`, `pez_mordida`, `ola` y `faro_prende`. Todo con pico de 0.5.
+- **Pendientes:** `ui.habilidades.ataque` (#38), `ui.cinturon` nuevo de 190 x 44 y `ui.casillero_pocion` (#39), y
+  los portales premium de 96 x 128 (#40: `portal_azul`, `portal_rojo`, `portal_verde`, `portal_violeta`,
+  `portal_ambar`, con `girar`, `abrir`, `cerrar`, `arco` y `remolino`). Cada mundo dice el suyo en `portal`.
+  `ui.habilidades.farol` (#41: Thor alza el farol, rayos ámbar y aro dorado) y `farol_recarga` (el mismo en gris).
+
+### Mundo 5: La Ciudad Dormida (encargo F12)
+
+`manifest.mundos` trae `mundo5` (mapa `mundo/mundo5_ciudad.json`, 110 x 100, con `fondo` (`fondo_ciudad_lejos_0..2`, se ve
+por los huecos del abismo), `portal: portal_plata`). Resumen de la entrega: `docs/entregas/abyss_mundo5.md`. Lo nuevo:
+
+- **Faroles de plaza** (la fogata del piso): 5 `punto_guardado` con `farol_plaza: true` y `objeto: farol_plaza`, y al
+  lado la entidad `farol_plaza` (el poste, `punto` = id, `barrio` = nombre exacto de la zona que alumbra). Arrancan
+  apagados (`farol_plaza_apagado`). La heroína los prende con `ui.habilidades.prender`: `farol_plaza_prenderse` una
+  vez (12 cuadros, sube un anillo de luz) y después `farol_plaza_prendido` (luz dorada de 320). Si la Ladrona roba la
+  luz: `farol_plaza_robado` una vez (el hilo de luz se va para arriba) y queda apagado. El de la Puerta trae
+  `tutorial: true`. El mundo trae `faroles` con los nombres.
+- **La luz robada:** entidades `chispa` con `barrio` (8 por barrio con farol, caminables y lejos de las paredes). El
+  juego elige tres del barrio del farol robado y dibuja `chispa_luz` (16 x 16, luz de 50). Thor las rastrea. El
+  contador va con `ui.habilidades.chispas`. El mundo trae `chispas` con las notas.
+- **La Ladrona:** `figura_ladrona` (48 x 64): `idle`, `robar` (8 a 8 fps, en bucle) e `irse` (8 a 10 fps). En el
+  objeto viene `farolito`: por anim, el `[x, y]` del farolito en cada cuadro, en pixeles desde el apoyo (y hacia
+  abajo). El juego dibuja el hilo de luz del farol de plaza hasta ahí. Entidades `figura` con `barrio` (una o dos por
+  barrio con farol) y una con `alto: true` en el balcón del palacio.
+- **Estatuas:** entidades `estatua` con `variante` (0 a 9) y `objeto` (`estatua_ciudadano_<variante>`), en el mismo
+  punto que su objeto en la capa objetos (son sólidas). Anims `dormida`, `despertar` (12 a 12 fps, una vez) y
+  `despierta` (4 a 4 fps, respiran y saludan). Al vencer al Rey despiertan. También despiertan las casas
+  (`casa_ciudad_0..9`, anim `despierta`: ventanas `#ffc070` y toldos de colores), los puestos, los árboles de piedra,
+  el `organillo` y la fuente (`fuente_plaza`, anim `corre`). La torre del reloj tiene `parado` y `andando`.
+- **Entidades:** `portal_llegada` (`portal: portal_plata`), `portal_volver` (mundo4), `portal_jefe` (`destino:
+  mundo6`), `jefe` (`rey_de_piedra`), `arena_jefe` (`radio: 208`, `trono: true`), 4 `lampara_trono` a 150 px del centro
+  en diagonal (`lampara_trono_apagada`, `_prenderse` una vez, `_prendida` con luz de 200), `mural` (`pieza: 5`),
+  `cajita_musica`, `fuente`, `torre_reloj`, el minijefe `relojero` con `elite: true` y los enemigos
+  `sonambulo_piedra`, `gargola_dormida` y `duende_sueno`.
+- **Zonas** con `ambiente` `ciudad`, `cajita`, `jardin`, `reloj`, `abismo` y `jefe`, partícula `polvo_sueno` (en las
+  `particulas` del mundo 5), `musica: ninguna` (el Palacio trae `musica: jefe_rey` y `musica_victoria: despertar`, la
+  Torre `musica_pelea: relojero`) y su `frente` (`banderines_rotos_0..1`, `arco_calle_0..1`, `lampara_colgante_0..1`).
+- **Luz:** sin sombras horneadas con dirección, solo la sombra de contacto al pie. La luz es de los faroles de plaza,
+  las lámparas del trono, la cajita (lila, 40) y la corona del Rey.
+- **Enemigos y jefe:** `sonambulo_piedra` (48: `quieto` en la luz, `attack` con 4 cuadros de aviso con los ojos
+  celestes), `gargola_dormida` (48, `vuela`: `posada`, `despertar`, `attack` en picada con 6 de aviso), `duende_sueno`
+  (48), `relojero` (64, `elite`, `attack_heavy` con 8 de aviso, `warcry` da cuerda) y `rey_de_piedra` (128, `tipo:
+  jefe`, `luz_corona`). El Rey trae `idle`, `walk`, `attack` (puño), `attack_heavy` (pisotón con `elevacion`),
+  `barrido`, `warcry`, `aturdido`, `hit` y `die`, y en cada anim `corona`: 8 listas (una por dirección) con un `[x, y]`
+  por cuadro desde el pivote, o `null` cuando la corona ya se rompió (en `die` desde el cuadro 5). `fx`:
+  `sombra_picada` (48 x 24), `proyectil_arena_<dir>` (16), `impacto_arena` (32), `aviso_aguja` (32, en bucle, se
+  repite en línea), `aviso_puno` (96 x 48), `grieta_luz` (64) y `nota_cuna` (16).
+- **Audio:** `ambiente_ciudad` (20 s), `ambiente_cajita`, `ambiente_jardin`, `ambiente_reloj`, `ambiente_abismo`,
+  `musica_jefe_rey` y `musica_relojero` (en bucle), `musica_despertar` (30 s), y los efectos `farol_plaza_prender`,
+  `luz_robada`, `chispa_recoger`, `estatua_paso`, `estatua_quieta`, `gargola_despierta`, `gargola_picada`,
+  `arena_sueno`, `bostezo`, `reloj_campanada`, `aguja_barre`, `rey_puno`, `rey_pisoton`, `rey_canta`, `corona_rompe` y
+  `ciudad_despierta` (`figura_irse` es el de las Galerías). Todo con pico de 0.5.
+- **Íconos:** `ui.habilidades.prender` y `ui.habilidades.chispas`. **Portal:** `portal_plata`.
+
+### Mundo 6: La Fragua de las Luces (encargo F12)
+
+`manifest.mundos` trae `mundo6` (mapa `mundo/mundo6_fragua.json`, 110 x 100, con `fondo` (`fondo_fragua_lejos_0..2`, se
+ve por los huecos del abismo), `portal: portal_brasa`). Resumen de la entrega: `docs/entregas/abyss_mundo6.md`. Lo nuevo:
+
+- **La lava** va en la capa `agua` del mapa: la tira `agua` del mundo (`mundo/mundo6_agua.png`) son 4 cuadros de lava
+  que pegan por los cuatro lados, `espuma` es el borde que brilla (4 cuadros) y no hay `reflejo`. Ya es sólida en
+  `colision`. Es la luz grande del piso: el juego pone luz naranja (`#ff7020`) a lo largo de las orillas (la lava no
+  se oscurece ni se tiñe con las otras luces: brilla sola). Al vencer a la Dragona se cambia la tira por
+  `agua_apagada` (`mundo/mundo6_agua_apagada.png`, mismo formato: la lava hecha piedra con vetas tibias `#a05030`).
+- **Fuentes frías** (la fogata del piso): 5 `punto_guardado` con `fuente_fria: true` y `objeto: fuente_fria`. El
+  objeto `fuente_fria` (96 x 96, `idle` 6 a 6 fps, luz celeste de 220 que alumbra sin calentar) va en la capa objetos
+  justo arriba del punto. La de La Escalera de Ceniza trae `tutorial: true`.
+- **Jaulas** (las luces robadas): entidades `jaula` con `id`, `luz` (`bosque`, `catedral`, `galerias`, `faro`,
+  `ciudad`), `zona` (nombre exacto) y `objeto` (`jaula_luz_<luz>`). No van en la capa objetos: las dibuja el juego. El
+  punto de la entidad es el candado: la jaula va con su apoyo (`[16, 4]`, la argolla de arriba) en `(x - candado[0],
+  y - candado[1])`; `candado` viene en el objeto (`[0, 52]`). Anims `cerrada` (6 a 6 fps, luz de su color de 40),
+  `abrir` (10 a 12 fps, una vez: salta el candado, se abre la puertita y la luz sale por arriba) y `vacia` (2 a 2
+  fps). Al abrirse queda flotando `luz_libre_<luz>` (24 x 24, 8 a 8 fps, luz de 260). Las 8 de la sala del Carcelero
+  traen `carcel: true` (se abren todas juntas al vencerlo). El mundo trae `jaulas` con las notas.
+- **Grietas que respiran:** entidades `grieta` (rectángulos en Tiled: `x`, `y` arriba a la izquierda, `width` y
+  `height` de 64) con `fase` (0 a 1) y `zona`, siempre caminables. El juego llena cada parche con `grieta_brasa_<v>`
+  (64 x 64, capa suelo, 4 variantes que encajan; `grieta_brasa` es la 0): `apagada`, `aviso` (6 a 8 fps) y `caliente`
+  (6 a 6 fps). Con cada soplido de los fuelles: `aviso` y después `caliente`, corridas por `fase`.
+- **Fuelles:** entidades `fuelle` con `zona` y `objeto` (`fuelle_gigante_0`, `fuelle_gigante_1` y
+  `fuelle_gigante_0_b`), en el mismo punto que su objeto (192 x 160, sólido en la base). `quieto`, `soplar` (12 a 10
+  fps: se aplasta y sale un golpe de aire con brasas) y `dormido`. El juego los hace soplar a todos juntos y pone
+  `fuelle_sopla` 1 s antes de que las grietas se prendan.
+- **Charcos fríos:** el objeto `charco_frio` (64 x 32, capa suelo, `idle` 4 a 4 fps, luz celeste de 60) y la entidad
+  `charco_frio` (`id`, `zona`) en el mismo punto: ahí Thor se moja. Dos o más por zona y dos en el borde de la arena.
+- **La arena de la Dragona** (El Corazón de la Fragua): `arena_jefe` (`radio: 224`), `jefe` (`dragona_brasa`, "La
+  Dragona de Brasa", "La que guarda el fuego hecho de luces"), 4 `surtidor` (`id`) en diagonal a 130 px del centro,
+  cada uno con su `palanca` (`surtidor` = id del surtidor) 48 px más afuera. Los objetos van en el mismo punto:
+  `surtidor` (64 x 64, capa suelo, `quieto` y `chorro`), `surtidor_chorro` (64 x 128, el chorro alto que va encima,
+  12 a 12 fps, una vez) y `palanca_surtidor` (32 x 48, `arriba` y `tirar` a 10 fps; la entidad sigue siendo `palanca`). 4 entidades `cadena` en el borde con
+  `hacia_x`, `hacia_y` (el centro): el juego repite `cadena_dragona` (32 x 32, capa suelo, a lo largo en x) girada
+  hasta la Dragona. Detrás, al norte, la **Puerta Negra**: entidad `puerta_negra` (`cerrada: true`, `destino: mundo7`)
+  en el mismo punto que el objeto `puerta_negra` (256 x 256, sólido, `cerrada` y `latido` a 2 fps, luz fría de 90).
+  `portal_jefe` con `destino: mundo7`.
+- **La fragua apagada** (al vencer a la Dragona): los fuelles en `dormido`, los braseros (`brasero_0..2`, luz de 180)
+  en `apagado`, la boca del horno (`boca_horno`, 256 x 192, luz de 360) en `apagado`, la capa agua con `agua_apagada`
+  y las grietas apagadas.
+- **La Ladrona:** `figura_cargadora` (48 x 64, `idle` 4 a 4 fps caminando con tres jaulitas colgadas de un palo, e
+  `irse` 8 a 10 fps). Entidades `figura` con `zona` (El Río de Lava, Las Jaulas Colgantes, El Horno) y una con `alto:
+  true` delante de la Puerta Negra.
+- **Entidades:** `portal_llegada` (`portal: portal_brasa`), `portal_volver` (mundo5), `mural` (`pieza: 6`, en Las
+  Jaulas Colgantes), `cofre` (2 con `secreto`, 1 `guardado_por: carcelero`, 1 `tras_jefe`), el minijefe `carcelero`
+  con `elite: true` y los enemigos `hollin`, `salamandra_brasa` y `farolero_cadenas` (los que traen `jaula: true` y
+  `luz` cuentan como jaula).
+- **Zonas** con `ambiente` `fragua`, `lava`, `jaulas`, `fuelles`, `bosque_ceniza`, `carcel`, `horno` y `jefe`,
+  partícula `brasas` (en las `particulas` del mundo 6; El Bosque de Ceniza usa `ceniza`), `musica: ninguna` (El
+  Corazón trae `musica: jefe_dragona` y `musica_victoria: liberacion`, La Cárcel `musica_pelea: carcelero`) y su
+  `frente` (`cadena_colgante_0..2`, `jaulas_frente_0..1`, `humo_frente_0..1`). Secretos: El Nido de Ceniza y La
+  Alacena del Herrero.
+- **Luz:** sin sombras horneadas con dirección, solo la sombra de contacto al pie. Todo lleva un filo naranja abajo a
+  la derecha (el rebote del fuego). La luz es de la lava, los braseros, la boca del horno, las grietas, las jaulas,
+  las luces libres, las fuentes frías y la boca de la Dragona.
+- **Enemigos:** `hollin` (32: `idle`, `walk`, `attack` con 4 de aviso, `pegado` chiquito en bucle encima de la
+  heroína, `hit`, `die`), `salamandra_brasa` (48: `attack` escupe con 4 de aviso y la boca que brilla, `piedra` cuando
+  está mojada), `farolero_cadenas` (64: `attack`, `attack_heavy` gira la cadena con 8 de aviso, `die` se desarma y la
+  jaula cae y se abre; en cada anim `jaula`: 8 listas con un `[x, y]` por cuadro desde el pivote, para su luz) y
+  `carcelero` (64, `elite`: `attack`, `attack_heavy` lanza la cadena en línea con 8 de aviso, `jalar` en bucle,
+  `warcry` portazo, `die` se libera y queda un herrero viejito que saluda). `fx`: `proyectil_brasa_<dir>` (16),
+  `impacto_brasa` (32), `rastro_brasa` (32, capa suelo), `aviso_cadena` (128 x 64), `aviso_linea_cadena` (32, en
+  bucle, se repite en línea) y `vapor` (64).
+- **La Dragona de Brasa** (`dragona_brasa`, 128, `tipo: jefe`, `luz_boca`): `idle`, `walk`, `attack` (zarpazo, 6 de
+  aviso), `coletazo` (medio círculo detrás, 6 de aviso, `elevacion`), `aliento` (8 de aviso con el pecho al rojo y
+  después el chorro), `encendida` (fase 2, cubierta de llamas, en bucle), `warcry` (ruge al cielo, llama hollines),
+  `apagada` (echada, gris, humea: ahí se le pega), `hit` y `die` (rompe las cadenas, el fuego pasa a dorado y queda una
+  dragoncita dorada enroscada). En cada anim `boca`: 8 listas con un `[x, y]` por cuadro desde el pivote (la luz de la
+  boca y el origen del aliento), `null` cuando está apagada con la boca cerrada. `fx`: `aviso_aliento` (32, en bucle,
+  se repite en línea), `fuego_piso` (32, en bucle), `aviso_cola` (192 x 96, capa suelo, el medio círculo va arriba en
+  la hoja: girarlo para que quede detrás) y `vapor_grande` (96 x 128).
+- **Audio:** `ambiente_fragua` (20 s), `ambiente_lava`, `ambiente_jaulas` (con los recuerdos de arriba),
+  `ambiente_fuelles`, `ambiente_bosque_ceniza`, `ambiente_carcel`, `ambiente_horno`, `musica_jefe_dragona` y
+  `musica_carcelero` (en bucle), `musica_liberacion` (36 s), y los efectos `fuelle_sopla`, `grieta_rojo`,
+  `calor_sube`, `acalorada`, `jaula_abre`, `luz_libre` (y `luz_libre_<luz>`, uno por luz), `thor_mojarse`,
+  `thor_sacude`, `hollin_pega`, `hollin_suelta`, `salamandra_escupe`, `salamandra_piedra`, `cadena_gira`,
+  `farolero_paso`, `carcelero_llaves`, `carcelero_portazo`, `dragona_ruge`, `dragona_aliento`, `surtidor_chorro`,
+  `dragona_apagada`, `cadenas_rompen` y `puerta_negra` (`palanca` es el de siempre). Todo con pico de 0.5.
+- **Íconos:** `ui.habilidades.sacudir` y `sacudir_seco` (en gris, sin agua), `calor`, `jaula` y `palanca`.
+  **Portal:** `portal_brasa`.
+
+### Mundo 7: El Corazón Helado (encargo F13)
+
+`manifest.mundos` trae `mundo7` (mapa `mundo/mundo7_corazon.json`, 120 x 110, con `fondo` (`fondo_hielo_lejos_0..2`, se
+ve por el vacío del puente y del corazón), `portal: portal_hielo`). Resumen de la entrega: `docs/entregas/abyss_mundo7.md`.
+Lo nuevo:
+
+- **El agua helada:** la capa `agua` son los agujeros de agua negra del lago (`mundo/mundo7_agua.png`), ya sólidos en
+  `colision`. Sin `reflejo`. La `espuma` es la escarcha de la orilla.
+- **Hogueras de hueso** (la fogata del piso): 5 `punto_guardado` con `hoguera: true` y `objeto: hoguera_hueso`. El
+  objeto (64 x 64, `idle` 8 a 8 fps, luz tibia `#ffb060` de 240) va en la capa objetos justo arriba del punto. Es la
+  única luz tibia del piso: ahí se descongela la heroína. La de La Escalera Helada trae `tutorial: true`.
+- **Refugios de la ventisca:** entidades `columna_hielo` y `gigante` con `objeto` (`columna_hielo_0..3`,
+  `gigante_congelado_0..2` y sus `_b`) y `ancho`. El punto es el centro de la base sólida del objeto (el mismo de la capa
+  objetos). El lado contrario al viento protege. Los gigantes traen `respira` (2 cuadros a 1 fps): ponerla de vez en
+  cuando. Columnas y gigantes brillan apenas frío (70 y 140).
+- **Hielo fino:** entidades `hielo_fino` (rectángulos en Tiled, múltiplos de 32) sobre el lago, siempre caminables y
+  nunca en un camino obligado. El juego llena cada parche con `hielo_fino_<v>` en cuadros de 64 (la variante por
+  posición, en las notas de `hielo_fino`): `quieto`, `cruje` (6 a 8 fps, una vez, si la heroína se queda parada) y
+  `roto`.
+- **El frío:** todo el piso es oscuridad casi total. En El Puente de las Cadenas la zona trae `ventisca: siempre`; en
+  las demás va y viene. Partículas nuevas `nieve` (nieve negra con ceniza) y `ventisca` (la raya de lado, para cuando
+  sopla).
+- **La arena del Diablo** (El Corazón Helado): `arena_jefe` (`radio: 256`), `jefe` (`diablo`, "El Diablo", "El que se
+  come la luz para no apagarse"), 4 `brasero_hueso` en diagonal a 170 px del centro, cada uno en el mismo punto que su
+  objeto (48 x 80: `apagado`, `prenderse` 8 a 12 fps, `prendido` 6 a 8 fps con luz `#ff7a30` de 220, y `congelado`).
+  Al norte el `trono_diablo` (256 x 256, sólido, `idle` 6 a 4 fps, las brasas laten; entidad en el mismo punto). Al lado,
+  la `figura` con `alto: true` y `objeto: figura_ultima_llama` (la Ladrona con la última llama: `idle` y `irse`).
+  `portal_jefe` con `destino: fin` (la cinemática de cierre la pone el juego).
+- **Entidades:** `portal_llegada` (`portal: portal_hielo`), `portal_volver` (mundo6), `mural` (`pieza: 7`, en Las
+  Catacumbas), `cofre` (2 `secreto` con `pista`, 2 `guardado_por`, 1 `tras_jefe`), `figura` (también en el Lago y la
+  Ciudadela), los minijefes `reina_escarcha` y `guardian_puerta` con `elite: true` y los enemigos en grupos grandes
+  (campo `grupo`).
+- **Zonas** con `ambiente` `hielo`, `lago`, `catacumbas`, `bosque_hielo`, `ciudadela`, `puente`, `puerta` y `trono`,
+  partícula `nieve` (`ventisca` en el Puente, `ceniza` en las Catacumbas, la Puerta y el Corazón), `musica: ninguna`
+  (El Lago trae `musica_pelea: reina_escarcha`, La Puerta `musica_pelea: guardian`, El Corazón `musica: diablo_1` y
+  `musica_fases: diablo_1,diablo_2,diablo_3,diablo_final`) y su `frente` (`cadena_helada_0..2`, `nieve_frente_0..1`,
+  `carambanos_frente_0..1`). Secretos: La Guarida del Lobo y La Cripta Sellada.
+- **Luz:** sin sombras horneadas con dirección, solo la de contacto al pie. La luz es de las hogueras, los braseros
+  prendidos, el trono (rojo, 260), la Ladrona (rojo chiquito), el farol de la heroína, sus luces compañeras y los ojos
+  del Diablo.
+- **Enemigos:** `lobo_escarcha` (48: `attack` mordida con 4 de aviso, `run`, `aullar` llama a la manada),
+  `espectro_helado` (48, `vuela`: `cast` con 6 de aviso suelta `proyectil_rayo_hielo_<dir>` y al pegar
+  `impacto_rayo_hielo`), `diablillo` (32: `attack` con 4 de aviso tira `proyectil_fuego_chico_<dir>`, al pegar
+  `impacto_brasa`), `caballero_congelado` (64: `bloquear` en bucle con el escudo al frente, `attack_heavy` con 7 de
+  aviso), `bruja_escarcha` (48: `cast` con 6 de aviso levanta el objeto `muro_hielo` (32 x 64, `subir`, `quieto`,
+  `romper`, sólido mientras dura) o cura) y `sombra_devoradora` (48: `attack` con 4 de aviso se traga una luz
+  compañera). Minijefes: `reina_escarcha` (64, `vuela`: `cast` las lanzas con `aviso_lanza_hielo`, `warcry` la
+  ventisca, `dividirse` suelta los dos reflejos en el cuadro 10) y `guardian_puerta` (64: `attack` el golpe en cruz con
+  dos impactos y `aviso_cruz`, `attack_heavy`, `charge` en bucle). Todos se deshacen en nieve, escarcha o humo.
+- **El Diablo** (`diablo`, 192, `tipo: jefe`, `luz_ojos` `#ff2a1a` de 120): `idle`, `walk`, `attack` (zarpazo, 6 de
+  aviso), `nova` (8 de aviso), `charge` (en bucle), `rayo` (8 de aviso), `pilares` (7 de aviso), `oscuridad` (solo
+  quedan los ojos; los últimos 4 cuadros se repiten), `jaula` (6 de aviso), `warcry`, `aturdido` (en bucle, de
+  rodillas y la piel enfriada: ahí se le pega), `hit` y `die` (`aterriza` en el 5, `suelta` en el 10: la última llama
+  sale del pecho, y se deshace en ceniza y escarcha). En cada anim `ojos` (la luz de los ojos, `null` cuando la ceniza
+  le llega a la cara), `boca` (de donde sale el rayo): 8 listas con un `[x, y]` por cuadro desde el pivote, y `alas`
+  (las dos puntas de las alas: 8 listas con `[[x, y], [x, y]]` por cuadro). Las alas son lo único con sangre del
+  juego: hilos oscuros que gotean de los desgarrones y las espinas. Mientras camina, el juego suelta una gota desde una
+  punta cada tanto, la deja caer al piso y pone `gota_sangre_diablo` (16, 6 cuadros, una vez, con el piso en la fila
+  13). `fx`:
+  `nova_fuego_diablo` (256, 10 cuadros, sale del pivote, con dos huecos para pasar: los ángulos en las notas del
+  Diablo), `aviso_nova` (256, 8, capa suelo), `rayo_rojo` (32, 6 en bucle, se repite en línea desde `boca`),
+  `aviso_rayo` (32, 6 en bucle, capa suelo), `pilar_fuego` (64 x 128, 12), `aviso_pilar` (64 x 32, 8, capa suelo),
+  `jaula_huesos_subir` (96, 8), `jaula_huesos_quieta` (96, 1) y `jaula_huesos_romper` (96, 8), `aviso_carga_diablo`
+  (32, en bucle, en línea) y `gota_sangre_diablo` (16, 6).
+- **Audio:** `ambiente_hielo` (20 s), `ambiente_bosque_hielo`, `ambiente_lago`, `ambiente_catacumbas`,
+  `ambiente_ciudadela`, `ambiente_puente`, `ambiente_puerta`, `ambiente_trono` (con el latido), `musica_reina_escarcha`
+  y `musica_guardian` (en bucle), `musica_diablo_1` a `musica_diablo_3` y `musica_diablo_final` (en bucle, el mismo
+  tema cada vez más rápido y más fuerte), y los efectos `ventisca_viene`, `viento_fuerte` (en bucle), `frio_sube`,
+  `congelada`, `hielo_cruje`, `hielo_rompe`, `agua_helada`, `hoguera_prender`, `luz_comida`, `luz_vuelve`,
+  `lobo_aullido`, `lobo_mordida`, `espectro_rayo`, `diablillo_risa`, `diablillo_fuego`, `escudo_bloquea`,
+  `bruja_muro`, `bruja_cura`, `reina_lanzas`, `reina_ventisca`, `guardian_cruz`, `guardian_carga`, `diablo_ruge`,
+  `diablo_paso`, `diablo_nova`, `diablo_rayo`, `diablo_pilares`, `diablo_oscuridad`, `jaula_huesos`, `jaula_rompe`,
+  `brasero_hueso_prender`, `brasero_congela` y `diablo_cae`. Pico de 0.6 o menos.
+- **Íconos:** `ui.habilidades.frio`, `compañeras` (archivo `ui/habilidades/companeras.png`), `brasero` y `romper`.
+  **Portal:** `portal_hielo`.
+
+### Abyss premium: los siete mundos con vida (encargo premium)
+
+Lo que agrega a cada `mundos[i]` (nada de lo que había cambia de nombre ni de lugar):
+
+- **Piso:** los trozos `mundo/suelo/<mundo>_N.png` vienen repintados (variación grande de luz y tono, manchas de
+  material, desgaste de caminos, bordes mezclados, grietas, raíces, charcos y cosas sueltas). Mismo tamaño en pixeles,
+  mismo alfa (el agua está donde estaba) y misma colisión.
+- **Monumentos:** objetos `mon_<mundo>_<nombre>` en la capa `objetos`, uno por zona, de 64 x 64 a 128 x 160, con
+  `sombra` horneada (con dirección en los mundos 1 a 3, de contacto en los 4 a 7) y `solido` solo en la base (12 px de
+  alto). Son objetos normales: se dibujan ordenados por y como un árbol. `monumentos` dice zona, punto e historia.
+- **Criaturas nuevas:** dos especies por mundo en `criaturas` (solo las de ese mundo), con `quieto` y `huir` (`huye` es
+  el mismo archivo) y `comportamiento: { huye: radio px, se_esconde: bool, corre: px/s, vuela?: bool }`. Al menos 8 por
+  mundo como entidades `criatura` con `especie`. `criaturas_nuevas.especies` las lista.
+- **Luz por zona:** cada zona trae `rayos` (`"angulo,#color,densidad"`: grados desde la vertical, densidad 0 a 1, 0 sin
+  rayos) y `grado` (`"#sombras,#luces,contraste,saturacion"`, contraste y saturación entre 0.8 y 1.3). Si falta, usar
+  `luz_zonas.defecto` del mundo.
+- **Partículas por zona:** cada zona conserva las de antes y suma otras, siempre de las que el juego ya conoce
+  (`brasas`, `brasas_frias`, `brillos`, `ceniza`, `esporas`, `fuegos_fatuos`, `gotas`, `hojas`, `humo`, `luciernagas`,
+  `luciernagas_turquesa`, `mariposas`, `murcielagos`, `nieve`, `polen`, `polvo`, `polvo_sueno`, `ventisca`).
+- **Niebla:** `niebla_jirones.png` ya pega en las dos direcciones (no hay costura cada 512). `niebla.jirones_mundo` es la
+  misma forma teñida con el color de la niebla de cada mundo.
+
+### El intro (parte 4)
+
+`manifest.intro` trae los paneles pintados para el intro: `intro_bosque_noche`, `intro_corte_abismo`, `intro_ojos`,
+`intro_guardianes` e `intro_familia`. Cada uno trae `{ w, h, capas: [{ nombre, archivo, cuadros, fps, paralaje }] }`;
+cada capa es una tira de cuadros y se dibujan en orden (fondo, medio, frente). También trae:
+
+- `logo_fuego`: 16 cuadros en una grilla de 4 x 4 (`columnas: 4`). El cuadro i va en la columna i % 4 y la fila
+  floor(i / 4).
+- `fuego_pared`: 128 x 96, se repite a lo ancho.
+- `humo_grande`: 128 x 128.
+- `audio`: `musica_intro` (27 s, golpes en 9, 13 y 23 s y silencio de 22.5 a 23 s) y `latido` (1.2 s).
+
+Qué panel va en cada momento de `GUION_INTRO`, en `intro.notas`. Detalle en `docs/intro/INTRO.md`.
+
+### El final (encargo F13): las cinemáticas, la heroína celestial y el Ciclo 2
+
+**Las cinemáticas** (`manifest.cine_bajada` y `manifest.cine_fin`) van en el formato del intro: cada panel trae
+`{ w, h, notas, capas: [{ nombre, archivo, cuadros, fps, paralaje, bucle?, por_heroina? }] }`, una tira de cuadros por
+capa, en orden (fondo, medio, frente). Lo nuevo:
+
+- `bucle: false`: la capa pasa una vez y se queda en el último cuadro (la puerta que se abre, los ojos del Diablo).
+- `por_heroina: { rick, steph, sophie, alana }`: la misma capa dibujada para cada heroína (la escalera y las alas). El
+  `archivo` de la capa es la de Sophie, por si el perfil no tiene heroína.
+- `guion`: `[{ panel, desde, hasta, subtitulo?, sonido? }]` en segundos de la música, con los subtítulos del encargo.
+- `logo_hielo` y `logo_fin`: 16 cuadros en grilla de 4 x 4 (como `logo_fuego`), con `bucle_desde` (el cuadro desde el
+  que se repite: primero se arman, después laten).
+- `nieve_frente` (128 x 128, 8 cuadros en bucle): nieve que cruza delante, pega por los cuatro lados.
+- Audio: `cine_bajada_musica` (60 s, golpe y silencio a los 50.5 s, cuando cae el título), `cine_rugido` (grave, sin
+  grito) y `cine_fin_musica` (72 s, de Re menor a Do mayor, con el tema del Bosque desde los 36 s).
+
+| Panel | Tamaño | Qué se ve |
+|---|---|---|
+| `bajada_puerta` | 480 x 270 | La Puerta Negra se abre, sale luz de hielo, se apagan los braseros y crece la escarcha |
+| `bajada_escalera` | 480 x 540 | La escalera en zigzag hasta la niebla; la heroína y Thor chiquitos, de espaldas (`por_heroina`) |
+| `bajada_lago` | 480 x 270 | El lago negro con gigantes adentro mirando hacia arriba; nieve negra |
+| `bajada_ladrona` | 480 x 270 | La Ladrona con la última llama camina hacia el trono, lejos |
+| `bajada_diablo` | 480 x 270 | El Diablo de cerca: se le abren los ojos, la escarcha se le rompe de los cuernos, humo. Detrás, sus alas del juego gotean despacio |
+| `bajada_titulo` | 480 x 270 | Negro con escarcha; encima `logo_hielo` |
+| `fin_cae` | 480 x 270 | El Diablo de rodillas, el hielo se raja con grietas de luz; sus alas se desploman y se rompen (pedazos que caen, un dedo partido) |
+| `fin_llama` | 480 x 270 | La llama vuelve a la Ladrona, que se vuelve la Primera Luz |
+| `fin_pisos` | 480 x 540 | La luz sube por los siete pisos y cada uno se prende (la cámara sube) |
+| `fin_amanecer` | 480 x 270 | Amanece en el Bosque GG: la familia y Thor frente a la casa |
+| `fin_alas` | 480 x 270 | La Primera Luz le da las alas a la heroína (`por_heroina`) |
+| `fin_titulo` | 480 x 270 | Encima `logo_fin`: "Fin" y, chiquito, "¿o no?" |
+
+**La heroína celestial** (en cada heroína de `personajes`, todo nuevo y aparte):
+
+- `capas.alas_detras.celestial`, `capas.alas_delante.celestial` y `capas.aura.celestial`: hojas como las de equipo
+  (un bloque por animación, 8 filas por dirección), para las 21 animaciones y `volar`. Orden de dibujo en
+  `capas.orden_celestial`: alas_detras, base, pecho, casco, arma, mano, alas_delante, aura.
+- `capas.pecho.tunica_celestial`: la túnica blanca y dorada. Su objeto va en `manifest.celestial.tunica` (íconos de 32 y
+  64, 8 cuadros, con casillero).
+- `anims.volar`: 8 cuadros a 10 fps con `elevacion` por cuadro (el juego sube el sprite sobre la sombra).
+- En cada capa de equipo de antes, `bloques.volar` trae su propio `archivo` y `columnas` (una hoja aparte por pieza):
+  `const hoja = bloque.archivo ?? capa.archivo`. Así las hojas de antes quedan igual.
+- `retrato_celestial` (40 x 40, con la aureola y las alas asomando).
+- `fx`: `lanza_luz` (32, en bucle, tramo del haz hacia la derecha para repetir en línea), `impacto_luz` (48, 8
+  cuadros), `estela_alas` (32, 6 cuadros) y `aura_celestial` (64, en bucle, al pie). Se ven mejor sumando luz.
+- `ui.habilidades`: `alas`, `lanza_luz` y `ciclo`. Audio: `alas_vuelo`, `lanza_luz` y `celestial_despierta`.
+
+**El Ciclo 2:** `ui.marco_ciclo` (36 x 24, nueve [8, 8, 8, 8]) para el número de ciclo en el HUD y `ui.logo_ciclo`
+(igual que `ui.logo`, en oro con un espiral).
+
+El Diablo de las cinemáticas lleva las mismas alas que el del juego (Mundo 7, pedido de Sophie): enormes y rotas, rojo
+vino casi negro, espinas en el borde de adelante y en cada dedo, garras curvas, y la sangre oscura (`#4a0008` a
+`#8a0a12`) que cuelga y gotea. Es la única sangre del juego y está solo en las alas del Diablo (`bajada_diablo`,
+`fin_cae` y, ya rotas, `fin_llama`). Ningún panel con las heroínas o Thor la tiene (hay un test que lo revisa).
+
+Láminas: `npx tsx scripts/lamina-celestial.ts` y `npx tsx scripts/lamina-cine.ts`. Detalle en
+`docs/entregas/abyss_celestial.md`.
 
 ### Hojas de personajes
 

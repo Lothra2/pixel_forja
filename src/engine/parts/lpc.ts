@@ -52,6 +52,11 @@ export interface LpcLook {
   ears?: string | null;
   /** cuernos (demonios, bestias) */
   horns?: string | null;
+  /**
+   * cejas fruncidas en la cara de enojo y en el guiño (la cara malandra de los rivales). Por defecto sí; GG Abyss lo
+   * apaga (sus fichas se dibujan como antes de que existiera)
+   */
+  ceno?: boolean;
 }
 
 export const DEFAULT_LPC: LpcLook = { head: 'male', hair: 'parted', brows: 'thin', nose: null, beard: null, mustache: null, glasses: null };
@@ -247,7 +252,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
         if (!v) continue;
         if (lift && yy === d.h - 1 && !px[(yy - 1) * d.w + xx]) continue;
         // cejas fruncidas (enojo, guiño, la cara malandra): las puntas de adentro bajan un pixel, en V
-        const fruncir = (eyes === 'angry' || eyes === 'wink') && l.key.startsWith('brows/') && dir === 'down' && xx >= d.w * 0.3 && xx < d.w * 0.7 ? 1 : 0;
+        const fruncir = (eyes === 'angry' || eyes === 'wink') && look.ceno !== false && l.key.startsWith('brows/') && dir === 'down' && xx >= d.w * 0.3 && xx < d.w * 0.7 ? 1 : 0;
         const fx = d.x + xx + sh, fy = d.y + yy + shy + fruncir;
         if (fx >= x1) continue;
         // pelo larguísimo: en un sprite de juego se corta a la altura de la espalda (si no, barre el piso y no cabe)
@@ -261,7 +266,7 @@ export function lpcHead(look: LpcLook, view: 'front' | 'side' | 'back' | 'front3
   for (const p of gorro) idx[(p.y - y0) * w + (p.x - x0)] = entry(p.hex, 'hair', false);
   // cejas fruncidas encima de todo (también del flequillo, que las tapa): una raya en V sobre cada ojo, de la punta de
   // afuera arriba a la de adentro abajo, y el párpado que baja. Es la cara de enojo y la malandra de los rivales.
-  if ((eyes === 'angry' || eyes === 'wink') && dir === 'down' && !monster) {
+  if ((eyes === 'angry' || eyes === 'wink') && look.ceno !== false && dir === 'down' && !monster) {
     const cx = headDir.x + headDir.w / 2, ojos: [number, number][] = [];
     for (let fy = chinY - 12; fy <= chinY - 3; fy++) for (let fx = x0; fx < x1; fx++) {
       const v = idx[(fy - y0) * w + (fx - x0)];

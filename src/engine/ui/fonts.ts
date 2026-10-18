@@ -222,10 +222,11 @@ function pack(name: string, glyphs: Glyph[], pad: number, paint: (g: Glyph) => R
 }
 
 /** Las fuentes del juego a partir de los archivos de Silkscreen normal y negrita (woff o ttf). */
-export function bitmapFonts(regular: ArrayBuffer, bold: ArrayBuffer): BitmapFont[] {
+/** `chars`: qué letras van (por defecto todas, con el vietnamita; el kit de GG Abyss usa FONT_CHARS si no lo pide). */
+export function bitmapFonts(regular: ArrayBuffer, bold: ArrayBuffer, chars = ALL_FONT_CHARS): BitmapFont[] {
   const fr = parse(regular), fb = parse(bold);
   // ui: 1 pixel de fuente = 1 px; blanco con sombra de 1 px abajo a la derecha
-  const ui = rasterGlyphs(fr, 1);
+  const ui = rasterGlyphs(fr, 1, chars);
   const uiFont = pack('fuente_ui', ui, 0, (g) => {
     const r = createRaster(Math.max(1, g.w + 1), Math.max(1, g.h + 1));
     for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) if (g.mask[y * g.w + x]) r.data.set([0, 0, 0, 255], ((y + 1) * r.w + x + 1) * 4);
@@ -233,7 +234,7 @@ export function bitmapFonts(regular: ArrayBuffer, bold: ArrayBuffer): BitmapFont
     return r;
   }, 11, 8, 'Silkscreen', 8);
   // títulos: negrita al doble, relleno por filas (degradé), contorno de 1 px y sombra de 1 px
-  const titleGlyphs = rasterGlyphs(fb, 2);
+  const titleGlyphs = rasterGlyphs(fb, 2, chars);
   const titled = (name: string, ramp: string[], outline: string) => pack(name, titleGlyphs, 1, (g) => {
     const w = g.w + 3, h = g.h + 4, r = createRaster(Math.max(1, w), Math.max(1, h));
     const put = (x: number, y: number, c: number[]) => { if (x >= 0 && y >= 0 && x < w && y < h) r.data.set(c, (y * w + x) * 4); };
@@ -392,4 +393,29 @@ export function textMask(bytes: ArrayBuffer, text: string, px: number): { w: num
     x += g.adv;
   }
   return { w, h, mask, capTop: -top };
+}
+
+/**
+ * Máscara de un texto en una línea con la fuente de títulos, cada pixel de la grilla de Silkscreen a `px` pixeles
+ * (para los logos de las cinemáticas del final). 1 = letra. La altura es la de las mayúsculas y lo que baja.
+ */
+export function textoMascara(bold: ArrayBuffer, text: string, px: number): { w: number; h: number; mask: Uint8Array } {
+  const gl = rasterGlyphs(parse(bold), px);
+  const by = (ch: string) => gl.find((g) => g.ch === ch) ?? gl.find((g) => g.ch === ' ')!;
+  const chars = [...text];
+  const capTop = Math.min(...chars.filter((c) => c !== ' ').map((c) => by(c).top));
+  const bottom = Math.max(...chars.filter((c) => c !== ' ').map((c) => by(c).top + by(c).h));
+  const w = chars.reduce((a, c) => a + by(c).adv, 0), h = bottom - capTop;
+  const mask = new Uint8Array(w * h);
+  let x = 0;
+  for (const ch of chars) {
+    const g = by(ch);
+    for (let yy = 0; yy < g.h; yy++) for (let xx = 0; xx < g.w; xx++) {
+      if (!g.mask[yy * g.w + xx]) continue;
+      const X = x + g.left + xx, Y = g.top - capTop + yy;
+      if (X >= 0 && Y >= 0 && X < w && Y < h) mask[Y * w + X] = 1;
+    }
+    x += g.adv;
+  }
+  return { w, h, mask };
 }

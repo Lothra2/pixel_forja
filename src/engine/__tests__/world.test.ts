@@ -54,6 +54,10 @@ describe('interfaz tipo Diablo y audio', () => {
     expect(same(orb('vida', 2), orb('vida', 8))).toBe(false);
     // superficie viva para los niveles 1 a 9, cuatro pasos cada uno, y la ola de verdad se mueve
     expect(sp.find((s) => s.name === 'orbe_mana_ola')!.frames).toHaveLength(36);
+    // la flecha guía: 8 direcciones, todas distintas
+    const fl = sp.find((s) => s.name === 'flecha_guia')!.frames;
+    expect(fl).toHaveLength(8);
+    for (let i = 1; i < 8; i++) expect(same(fl[0], fl[i])).toBe(false);
     expect(same(orb('vida', 5, 0), orb('vida', 5, 1))).toBe(false);
     // el líquido crece con el nivel: se cuentan los pixeles rojizos dentro del vidrio
     const rojos = (n: number) => { const o = orb('vida', n); let c = 0; for (let i = 0; i < o.data.length; i += 4) if (o.data[i] > 70 && o.data[i] > o.data[i + 2] * 2 && o.data[i + 1] < 90) c++; return c; };
@@ -79,7 +83,9 @@ describe('interfaz tipo Diablo y audio', () => {
       const w = encodeWav(SFX[n]());
       expect(new TextDecoder().decode(w.slice(0, 4)), n).toBe('RIFF');
       const secs = (w.length - 44) / 2 / 22050;
-      expect(secs, n).toBeLessThan(2);
+      // los efectos en bucle (el carrito que rueda), las campanas y la marea duran lo que pide el encargo
+      const largo: Record<string, number> = { carrito_rodar: 3.05, campana_lejos: 4, campana_cerca: 4, marea_sube: 6.05, reloj_campanada: 4.3, rey_canta: 3.4, ciudad_despierta: 3.8, fuelle_sopla: 2.1, dragona_aliento: 2.3, dragona_apagada: 2.5, puerta_negra: 3.1, ventisca_viene: 2.7, viento_fuerte: 3.05, lobo_aullido: 2.2, diablo_ruge: 2.5, diablo_nova: 2.55, diablo_rayo: 2.1, diablo_oscuridad: 2.2, diablo_cae: 4.3 };
+      expect(secs, n).toBeLessThan(largo[n] ?? 2);
       expect(secs, n).toBeGreaterThan(0.02);
     }
     expect((encodeWav(MUSIC.bosque()).length - 44) / 2 / 22050).toBeGreaterThan(20);
@@ -90,11 +96,14 @@ describe('kit del juego', () => {
   it('arma personajes en 8 direcciones, mundo, botín, interfaz, audio y manifest; ninguna textura pasa de 4096', () => {
     const files = buildGameKit({ heroes: ['rick'], enemies: ['rata'], thorTiers: [0], quick: true, fichas: { prima: { ...familyFicha('steph', true), name: 'Prima' } } });
     const names = files.map((f) => f.name);
-    for (const n of ['manifest.json', 'personajes/rick_walk.png', 'personajes/retrato_rick.png', 'mascota/thor_walk.png', 'enemigos/minotauro_attack_heavy.png', 'mundo/mundo1_bosque.json', 'mundo/suelo/mundo1_bosque_0.png', 'mundo/agua.png', 'mundo/objetos/portal_azul_girar.png', 'mundo/objetos/abuelo_roble_v3_idle.png', 'mundo/objetos/arbol_hechizado_0_despierto.png', 'mundo/criaturas/cuervo_volar.png', 'mundo/niebla_nubes.png', 'mundo/particulas/luciernaga.png', 'mundo/luz.png', 'mundo/postales/cascada_y_vado.png', 'audio/ambiente_bosque.wav', 'ui/orbe_vida.png', 'botin/catalogo.json', 'audio/moneda.wav', 'audio/musica_jefe.wav', 'CREDITOS.txt', 'ui/icono_pausa.png', 'ui/girar_tablet.png', 'ui/carteles/peligro.png', 'mundo/objetos/campamento_fogata_idle.png', 'mundo/objetos/roble_0_copa.png', 'mundo/objetos/roble_0_tronco.png', 'mundo/postales/lago_espejo.png', 'audio/descubrir.wav', 'audio/paso_madera_0.wav', 'fx/proyectil_flecha_up.png', 'fx/impacto_flecha.png', 'fx/proyectil_naturaleza_left.png', 'fx/nova_naturaleza.png', 'ui/habilidades/llamar_thor.png', 'ui/continuara.png', 'audio/musica_titulo.wav', 'fx/tierra_cavada.png', 'mundo/objetos/pasto_alto_apartar_izq.png', 'mundo/objetos/abuelo_roble_v3_sonreir.png']) expect(names, n).toContain(n);
+    for (const n of ['manifest.json', 'personajes/rick_walk.png', 'personajes/retrato_rick.png', 'mascota/thor_walk.png', 'enemigos/minotauro_idle.png', 'enemigos/guardian_campana_idle.png', 'mundo/mundo1_bosque.json', 'mundo/suelo/mundo1_bosque_0.png', 'mundo/agua.png', 'mundo/objetos/portal_azul_girar.png', 'mundo/objetos/abuelo_roble_v3_idle.png', 'mundo/objetos/arbol_hechizado_0_despierto.png', 'mundo/criaturas/cuervo_volar.png', 'mundo/niebla_nubes.png', 'mundo/particulas/luciernaga.png', 'mundo/luz.png', 'mundo/postales/cascada_y_vado.png', 'audio/ambiente_bosque.wav', 'ui/orbe_vida.png', 'botin/catalogo.json', 'audio/moneda.wav', 'audio/musica_jefe.wav', 'CREDITOS.txt', 'ui/icono_pausa.png', 'ui/girar_tablet.png', 'ui/carteles/peligro.png', 'mundo/objetos/campamento_fogata_idle.png', 'mundo/objetos/roble_0_copa.png', 'mundo/objetos/roble_0_tronco.png', 'mundo/postales/lago_espejo.png', 'audio/descubrir.wav', 'audio/paso_madera_0.wav', 'fx/proyectil_flecha_up.png', 'fx/impacto_flecha.png', 'fx/proyectil_naturaleza_left.png', 'fx/nova_naturaleza.png', 'ui/habilidades/llamar_thor.png', 'ui/continuara.png', 'audio/musica_titulo.wav', 'fx/tierra_cavada.png', 'mundo/objetos/pasto_alto_apartar_izq.png', 'mundo/objetos/abuelo_roble_v3_sonreir.png']) expect(names, n).toContain(n);
     const m = JSON.parse(new TextDecoder().decode(files.find((f) => f.name === 'manifest.json')!.bytes));
     expect(m.direcciones).toEqual(['down', 'down_left', 'left', 'up_left', 'up', 'up_right', 'right', 'down_right']);
     expect(m.personajes.rick.anims.walk).toMatchObject({ archivo: 'personajes/rick_walk.png', cuadros: 8 });
     expect(m.personajes.minotauro.tipo).toBe('jefe');
+    // el mercader de las fogatas: un PNJ con su gesto, en 8 direcciones
+    expect(m.personajes.mercader).toMatchObject({ tipo: 'npc', nombre: 'Don Cachivache', celda: 48 });
+    expect(Object.keys(m.personajes.mercader.anims)).toEqual(expect.arrayContaining(['idle', 'cast']));
     // ficha exportada del estudio: entra como heroína nueva
     expect(m.personajes.prima).toMatchObject({ tipo: 'heroe', nombre: 'Prima', desde_estudio: true });
     expect(names).toContain('personajes/prima_walk.png');
@@ -108,10 +117,13 @@ describe('kit del juego', () => {
       expect(atlases[it.atlas], it.id).toBeDefined();
       for (const k of it.animated ? [`${it.icon}_0`, `${it.icon}_7`] : [it.icon]) expect(atlases[it.atlas], `${it.id} -> ${k}`).toHaveProperty([k]);
     }
-    // el jefe llena la pantalla: celda 96 y la hoja de 8 filas de 96
-    expect(m.personajes.minotauro).toMatchObject({ celda: 96, pivote: [48, 93] });
-    const mw = files.find((f) => f.name === 'enemigos/minotauro_walk.png')!.bytes;
-    expect((mw[20] << 24) | (mw[21] << 16) | (mw[22] << 8) | mw[23]).toBe(8 * 96);
+    // el minotauro se dibuja a su tamaño: celda 128 sin agrandar, hoja de 8 filas de 128 y pivote medido en los pies
+    expect(m.personajes.minotauro).toMatchObject({ celda: 128, perfil_movimiento: 'premium' });
+    expect(m.personajes.minotauro.pivote[0]).toBe(64);
+    expect(m.personajes.minotauro.pivote[1]).toBeGreaterThan(96);
+    const mw = files.find((f) => f.name === 'enemigos/minotauro_idle.png')!.bytes;
+    expect((mw[20] << 24) | (mw[21] << 16) | (mw[22] << 8) | mw[23]).toBe(8 * 128);
+    expect(m.personajes.guardian_campana).toMatchObject({ celda: 128, perfil_movimiento: 'premium' });
     expect(m.fx.onda_pisoton).toMatchObject({ celda: 96, cuadros: 8, fps: 16, loop: false });
     expect(m.mundo.objetos.aviso_carga).toMatchObject({ w: 32, h: 48, apoyo: [0, 24] });
     expect(Object.keys(m.app).sort()).toEqual(['apple_touch_180', 'favicon_32', 'icono_192', 'icono_512', 'icono_maskable_512']);
@@ -125,7 +137,7 @@ describe('kit del juego', () => {
     const walk = files.find((f) => f.name === 'personajes/rick_walk.png')!.bytes;
     const h = (walk[20] << 24) | (walk[21] << 16) | (walk[22] << 8) | walk[23];
     expect(h).toBe(8 * 48);
-  }, 240000);
+  }, 600000); // con el Mundo 4 (el mapa del puerto y el farol de Thor) el kit rápido tarda más
 });
 
 describe('cascada a la medida del acantilado', () => {

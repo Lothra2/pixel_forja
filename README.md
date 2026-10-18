@@ -18,7 +18,7 @@ de una foto. Sin IA y sin servidor: todo corre en tu equipo.
 - Exporta hoja PNG + JSON (Phaser), preajuste de Fútbol Familia GG, Aseprite, Godot 4, Unity,
   PNG por cuadro, GIF y la ficha del personaje.
 
-Detalle, decisiones y estado: [docs/PLAN.md](docs/PLAN.md). Cómo usar los sprites en Phaser, Expo, Unity y Godot: [docs/USO.md](docs/USO.md).
+Detalle, decisiones y estado: [docs/PLAN.md](docs/PLAN.md). Ramas y cómo se actualiza el kit de los juegos: [docs/RAMAS.md](docs/RAMAS.md). Cómo usar los sprites en Phaser, Expo, Unity y Godot: [docs/USO.md](docs/USO.md).
 
 ## Correr el estudio
 

@@ -285,16 +285,78 @@ function bar(w: number, h: number, kind: 'marco' | 'jefe' | 'xp' | 'vida_enemigo
   return r;
 }
 
-/** Cinturón de pociones: 4 casilleros con su número (1 a 4). */
+/**
+ * Cinturón de pociones (#39): 190 x 44, 5 casilleros de 36 con 5 px de borde. Acero cepillado con remaches dorados y
+ * SIN números (los pone el juego). Cada casillero es vidrio oscuro hundido.
+ */
+const STEEL = ['#1c1e26', '#353945', '#545a68', '#7a8190', '#a6adbb', '#d4dae4'];
 function beltBar(): Raster {
-  const r = framed(4 * 36 + 10, 44, 3);
-  for (let i = 0; i < 4; i++) {
-    const s = framed(34, 34, 2, { inset: true });
-    over(r, s, 5 + i * 36, 5);
-    // número chico arriba a la izquierda
-    const g = GLYPHS[String(i + 1)];
-    for (let y = 0; y < 7; y++) for (let x = 0; x < 5; x++) if (g[y][x] === '#') put(r, 8 + i * 36 + x, 7 + y, GOLD[2]);
+  const W = 5 * 36 + 10, H = 44, B = 5;
+  const r = createRaster(W, H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const e = Math.min(x, y, W - 1 - x, H - 1 - y);
+    if ((x < 1 || x > W - 2) && (y < 1 || y > H - 2)) continue;
+    let c: string;
+    if (e === 0) c = '#08070a';
+    else if (e === 1) c = y < H / 2 && x < W - 2 ? STEEL[5] : STEEL[2];
+    else {
+      // acero cepillado: vetas horizontales finas y la luz de arriba que se apaga hacia abajo
+      const v = hash(x >> 3, y, 7) * 0.5 + hash(x, y, 9) * 0.15;
+      const l = 0.75 - (y / H) * 0.45 + (v - 0.3) * 0.35;
+      c = STEEL[Math.max(1, Math.min(4, Math.round(l * 5)))];
+      if (e === B - 1) c = STEEL[1];
+    }
+    put(r, x, y, c);
   }
+  // casilleros hundidos (36 x 36 cada uno, pegados): vidrio oscuro con bisel invertido
+  for (let i = 0; i < 5; i++) {
+    const ox = B + i * 36, oy = B - 1;
+    for (let y = 0; y < 36; y++) for (let x = 0; x < 36; x++) {
+      const e = Math.min(x, y, 35 - x, 35 - y);
+      let c: string;
+      if (e === 0) c = '#08070a';
+      else if (e === 1) c = y < 18 && x < 34 ? STEEL[1] : STEEL[3];
+      else {
+        const n = hash((ox + x) >> 1, (oy + y) >> 1, 11);
+        c = n < 0.5 ? '#0e0d14' : '#13121a';
+        if (e === 2 && (y < 3 || x < 3)) c = '#050407';
+      }
+      put(r, ox + x, oy + y, c);
+    }
+    // brillo del vidrio arriba a la izquierda
+    for (let k = 0; k < 6; k++) put(r, ox + 4 + k, oy + 4, '#2a2a38');
+    for (let k = 0; k < 4; k++) put(r, ox + 4, oy + 5 + k, '#2a2a38');
+  }
+  // remaches dorados: en las esquinas y entre casilleros (arriba y abajo)
+  // remache abombado de 3 x 3: brillo arriba a la izquierda, sombra abajo a la derecha
+  const rivet = (x: number, y: number) => {
+    put(r, x + 1, y, GOLD[2]); put(r, x, y + 1, GOLD[2]); put(r, x + 1, y + 1, GOLD[3]); put(r, x + 2, y + 1, GOLD[1]); put(r, x + 1, y + 2, GOLD[1]);
+    put(r, x, y, GOLD[1]); put(r, x + 2, y, GOLD[1]); put(r, x, y + 2, GOLD[0]); put(r, x + 2, y + 2, GOLD[0]);
+  };
+  for (const x of [1, W - 4]) for (const y of [1, H - 4]) rivet(x, y);
+  for (let i = 1; i < 5; i++) { rivet(B + i * 36 - 2, 0); rivet(B + i * 36 - 2, H - 3); }
+  return r;
+}
+
+/** Casillero de poción suelto (#39, opcional): 36 x 36, acero con un hueco redondo de vidrio. */
+function potionSlot(): Raster {
+  const S = 36, r = createRaster(S, S), c = (S - 1) / 2;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const e = Math.min(x, y, S - 1 - x, S - 1 - y);
+    if ((x < 1 || x > S - 2) && (y < 1 || y > S - 2)) continue;
+    const d = Math.hypot(x - c, y - c);
+    let col: string;
+    if (e === 0) col = '#08070a';
+    else if (d < 12.5) {
+      // vidrio: oscuro y hondo, con un reflejo curvo arriba a la izquierda
+      const l = Math.hypot(x - c + 4, y - c + 4);
+      col = d > 11.5 ? '#050407' : l < 5 ? '#1e2030' : '#0f0e16';
+      if (Math.abs(d - 8.5) < 0.6 && x < c - 1 && y < c - 1) col = '#4a5068';
+    } else if (d < 14) col = y < c ? STEEL[4] : STEEL[1];
+    else col = STEEL[Math.max(1, Math.min(4, Math.round((0.8 - (y / S) * 0.5 + (hash(x >> 3, y, 7) - 0.5) * 0.2) * 5)))];
+    put(r, x, y, col);
+  }
+  for (const [x, y] of [[3, 3], [S - 5, 3], [3, S - 5], [S - 5, S - 5]]) { put(r, x, y, GOLD[3]); put(r, x + 1, y, GOLD[2]); put(r, x, y + 1, GOLD[2]); put(r, x + 1, y + 1, GOLD[0]); }
   return r;
 }
 
@@ -374,6 +436,40 @@ export function inventoryPanel(): { png: Raster; layout: InventoryLayout } {
   };
 }
 
+/**
+ * Flecha guía dorada para el borde de la pantalla: 8 cuadros en el orden de las direcciones del kit
+ * (down, down_left, left, up_left, up, up_right, right, down_right). Contorno oscuro, luz arriba y sombra abajo.
+ */
+export function guideArrow(size = 24): UiSprite {
+  const c = size / 2;
+  // la flecha apuntando a la derecha, en coordenadas centradas
+  const dentro = (lx: number, ly: number) => {
+    if (lx >= -9 && lx <= -1 && Math.abs(ly) <= 3) return true; // asta
+    if (lx >= -1 && lx <= 9 && Math.abs(ly) <= (9 - lx) * 0.85) return true; // punta
+    return false;
+  };
+  const frames: Raster[] = [];
+  for (let i = 0; i < 8; i++) {
+    const ang = ((i * 45 + 90) % 360) * (Math.PI / 180);
+    const ca = Math.cos(-ang), sa = Math.sin(-ang);
+    const r = createRaster(size, size);
+    const local = (x: number, y: number) => {
+      const dx = x + 0.5 - c, dy = y + 0.5 - c;
+      return [dx * ca - dy * sa, dx * sa + dy * ca] as const;
+    };
+    const en = (x: number, y: number) => x >= 0 && y >= 0 && x < size && y < size && dentro(...local(x, y));
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      if (en(x, y)) {
+        // luz y sombra según el lado de la pantalla (arriba claro, abajo oscuro), no según la flecha
+        const borde = !en(x, y - 1) ? 'arriba' : !en(x, y + 1) ? 'abajo' : '';
+        put(r, x, y, borde === 'arriba' ? '#fff0b8' : borde === 'abajo' ? '#a8741e' : '#ffd27a');
+      } else if (en(x + 1, y) || en(x - 1, y) || en(x, y + 1) || en(x, y - 1)) put(r, x, y, '#1a1008');
+    }
+    frames.push(r);
+  }
+  return { name: 'flecha_guia', frames };
+}
+
 /** Todos los sprites de la interfaz. */
 export function hudSprites(): UiSprite[] {
   const out: UiSprite[] = [];
@@ -383,6 +479,7 @@ export function hudSprites(): UiSprite[] {
   const olas = (k: 'vida' | 'mana') => Array.from({ length: 36 }, (_, i) => orb(k, Math.floor(i / 4) + 1, i % 4));
   out.push({ name: 'orbe_vida_ola', frames: olas('vida') });
   out.push({ name: 'orbe_mana_ola', frames: olas('mana') });
+  out.push(guideArrow());
   out.push({ name: 'panel', frames: [framed(48, 48, 4, { gold: true })], slice: [12, 12, 12, 12] });
   out.push({ name: 'panel_hundido', frames: [framed(24, 24, 3, { inset: true })], slice: [6, 6, 6, 6] });
   out.push({ name: 'tooltip', frames: [framed(24, 24, 2, { alpha: 235 })], slice: [6, 6, 6, 6] });
@@ -397,6 +494,7 @@ export function hudSprites(): UiSprite[] {
   out.push({ name: 'barra_xp', frames: [bar(8, 4, 'xp')], slice: [1, 1, 1, 1] });
   out.push({ name: 'barra_vida_enemigo', frames: [bar(8, 3, 'vida_enemigo')], slice: [1, 1, 1, 1] });
   out.push({ name: 'cinturon', frames: [beltBar()] });
+  out.push({ name: 'casillero_pocion', frames: [potionSlot()] });
   out.push({ name: 'estandarte', frames: [banner()], slice: [10, 10, 4, 4] });
   for (const k of ['bolsa', 'cerrar', 'ajustes', 'mapa', 'oro', 'calavera'] as const) out.push({ name: `icono_${k}`, frames: [icon(k)] });
   out.push({ name: 'cursor_guantelete', frames: [cursor('guantelete')] });

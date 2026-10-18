@@ -4,7 +4,7 @@ import { landmarkObjects } from '../world/landmarks';
 import { bosqueMap, bigMapToTiled, reachable, CHUNK } from '../world/bosqueMap';
 import { TILE } from '../world/tiles';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
-import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
+import { ambience, AMBIENCE_NAMES, AMBIENTES_GG_ABYSS } from '../audio/ambience';
 import { RATE } from '../audio/sfx';
 
 const small: TerrainDesign = {
@@ -82,7 +82,7 @@ describe('mundo v2: objetos y Bosque GG', () => {
     // Tiled: agua, suelo en trozos, colisión, objetos, entidades, zonas y postales
     const t = bigMapToTiled(m);
     const layers = (t.json.layers as { name: string }[]).map((l) => l.name);
-    expect(layers).toEqual(['agua', 'suelo', 'colision', 'superficie', 'objetos', 'entidades', 'zonas', 'postales']);
+    expect(layers).toEqual(['agua', 'suelo', 'colision', 'superficie', 'espuma', 'reflejo', 'objetos', 'entidades', 'zonas', 'postales']);
     // pasos: hay de los 5 tipos y el puente suena a madera
     const sup = (t.json.layers as { name: string; data?: number[] }[]).find((l) => l.name === 'superficie')!.data!;
     expect(new Set(sup)).toEqual(new Set([1, 2, 3, 4, 5]));
@@ -109,10 +109,11 @@ describe('mundo v2: atmósfera', () => {
     const c = cloudShadow();
     expect(Math.max(...Array.from({ length: c.w * c.h }, (_, i) => c.data[i * 4 + 3]))).toBeLessThanOrEqual(90);
   });
-  it('ambientes de 12 s que hacen bucle sin salto', () => {
-    for (const n of AMBIENCE_NAMES) {
+  it('ambientes de 12 s (el del puerto y el de la ciudad, 20 s; la cajita, 14.4) que hacen bucle sin salto', () => {
+    const largo: Record<string, number> = { puerto: 20, ciudad: 20, cajita: 14.4, fragua: 20, jaulas: 16, hielo: 20, puente: 16, trono: 16 };
+    for (const n of new Set([...AMBIENTES_GG_ABYSS, ...AMBIENCE_NAMES])) {
       const b = ambience(n);
-      expect(b.length, n).toBe(12 * RATE);
+      expect(b.length, n).toBe(Math.floor((largo[n] ?? 12) * RATE));
       let avg = 0; for (let i = 1; i < b.length; i++) avg += Math.abs(b[i] - b[i - 1]); avg /= b.length;
       expect(Math.abs(b[0] - b[b.length - 1]), n).toBeLessThan(Math.max(0.05, avg * 4));
     }
@@ -268,7 +269,7 @@ describe('taller entrega 2', () => {
     let pink = 0; for (let i = 0; i < nat.data.length; i += 4) if (nat.data[i] > 200 && nat.data[i + 1] < 160 && nat.data[i + 2] > 150) pink++;
     expect(pink).toBeGreaterThan(5);
     const sk = skillIcons();
-    expect(sk.map((s) => s.name)).toEqual(['lluvia_flechas', 'esquiva', 'llamar_thor', 'curar', 'torbellino', 'bloqueo', 'nova_fuego', 'rayo_canalizado']);
+    expect(sk.map((s) => s.name)).toEqual(['lluvia_flechas', 'esquiva', 'llamar_thor', 'curar', 'torbellino', 'bloqueo', 'nova_fuego', 'rayo_canalizado', 'ataque', 'farol', 'farol_recarga', 'prender', 'chispas', 'sacudir', 'sacudir_seco', 'calor', 'jaula', 'palanca', 'frio', 'compañeras', 'brasero', 'romper']);
     for (const s of sk) expect([s.frames[0].w, s.frames[0].h]).toEqual([40, 40]);
   });
 });
@@ -318,5 +319,13 @@ describe('taller entrega 3', () => {
     const secs = musicTitulo().length / RATE;
     expect(secs).toBeGreaterThanOrEqual(30);
     expect(secs).toBeLessThanOrEqual(45);
+  }, 60_000);
+  it('música por estados: amenaza, combate y fogata, cada una entre 15 y 45 s', async () => {
+    const { MUSIC, RATE } = await import('../audio/sfx');
+    for (const k of ['amenaza', 'combate', 'fogata'] as const) {
+      const secs = MUSIC[k]().length / RATE;
+      expect(secs, k).toBeGreaterThanOrEqual(15);
+      expect(secs, k).toBeLessThanOrEqual(45);
+    }
   }, 60_000);
 });

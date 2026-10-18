@@ -28,3 +28,29 @@ export function decodePng(bytes: Uint8Array | ArrayBuffer): Raster {
   }
   return { w, h, data: out };
 }
+
+/**
+ * PNG con paleta (sin pérdida) si la imagen tiene 256 colores o menos, contando la transparencia; si no, RGBA.
+ * El pixel art casi siempre entra y pesa la mitad.
+ */
+export function encodePngPaleta(r: Raster): Uint8Array {
+  const n = r.w * r.h;
+  const idx = new Uint8Array(n);
+  const mapa = new Map<number, number>();
+  const palette: number[][] = [];
+  const d = r.data;
+  for (let i = 0; i < n; i++) {
+    const a = d[i * 4 + 3];
+    // todo lo transparente es un solo color
+    const key = a === 0 ? 0 : ((d[i * 4] << 24) | (d[i * 4 + 1] << 16) | (d[i * 4 + 2] << 8) | a) >>> 0;
+    let k = mapa.get(key);
+    if (k === undefined) {
+      if (palette.length >= 256) return encodePng(r);
+      k = palette.length;
+      mapa.set(key, k);
+      palette.push(a === 0 ? [0, 0, 0, 0] : [d[i * 4], d[i * 4 + 1], d[i * 4 + 2], a]);
+    }
+    idx[i] = k;
+  }
+  return encode({ width: r.w, height: r.h, data: idx, channels: 1, depth: 8, palette });
+}

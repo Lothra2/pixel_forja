@@ -20,7 +20,10 @@ export interface EventoJson {
 /** Lo que el juego necesita para mover bien al personaje: eventos y avance (premium) y elevación de los saltos. */
 export interface MovimientoAnim {
   eventos?: EventoJson[];
+  /** pixeles de la hoja que avanza el cuerpo en un ciclo completo (todos los cuadros: dos pasos), sin que el pie patine */
   avance?: number;
+  /** px/s a los que el pie no patina con el fps de la hoja: avance * fps / cuadros. ritmo = velocidad_del_juego / velocidad_natural */
+  velocidad_natural?: number;
   elevacion?: number[];
   /**
    * Por cuadro, si el personaje está girado (lote B4B6 bis): en esos cuadros se dio vuelta (el seoi nage se mete de
@@ -43,8 +46,9 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 /**
  * Eventos y avance de un clip. k: escala de la hoja (el avance se mide en pixeles de la hoja final).
  * El cuadro es el que contiene la fase, así el juego no tiene que hacer cuentas.
+ * `velocidadNatural: false` deja afuera `velocidad_natural` (el kit deportivo sale como antes de que existiera).
  */
-export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
+export function motionOf(c: RenderedClip, k = 1, o: { velocidadNatural?: boolean } = {}): MovimientoAnim {
   const out: MovimientoAnim = {};
   // elevación: cuánto sube el juego el sprite sobre su sombra en cada cuadro (en pixeles de la hoja)
   if (c.rise) out.elevacion = c.rise.map((v) => r2(v * k));
@@ -61,7 +65,7 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
     ...(e.type === 'paso' && (e.joint === 'handNear' || e.joint === 'handFar') ? { mano: e.joint === 'handNear' ? 'cerca' as const : 'lejos' as const } : {}),
   }));
   if (c.profile !== 'premium') return out;
-  if (c.stride) out.avance = r2(c.stride * k);
+  if (c.stride) { out.avance = r2(c.stride * k); if (o.velocidadNatural !== false) out.velocidad_natural = r2((c.stride * k * c.fps) / c.frames.length); }
   if (c.travel) out.desplazamiento = c.travel.map((v) => r2(v * k));
   return out;
 }
@@ -70,9 +74,9 @@ export function motionOf(c: RenderedClip, k = 1): MovimientoAnim {
  * Movimiento de una hoja de 8 direcciones (o de las filas pedidas): se mide en la vista de lado (la que piensan las
  * poses) y se agrega el rumbo. `side` es el clip de lado para medir cuando las filas pedidas no lo traen.
  */
-export function motionOf8(clips: RenderedClip[], k = 1, sideClip?: RenderedClip): MovimientoAnim {
+export function motionOf8(clips: RenderedClip[], k = 1, sideClip?: RenderedClip, o: { velocidadNatural?: boolean } = {}): MovimientoAnim {
   const side = clips.find((c) => c.view === 'side') ?? sideClip ?? clips[0];
-  const out = motionOf(side, k);
+  const out = motionOf(side, k, o);
   const j = side.joints;
   if (j && out.eventos) {
     for (const e of out.eventos) {
@@ -115,7 +119,7 @@ export function movimientoJson(clips: RenderedClip[]) {
   return {
     perfil_movimiento: clips.some((c) => c.profile === 'premium') ? 'premium' as const : 'clasico' as const,
     celda: clips[0].cell,
-    notas: 'avance: pixeles que avanza el cuerpo en un ciclo sin que el pie patine. Ritmo de la animación = velocidad_del_juego * cuadros / (avance * fps). elevacion: pixeles que el juego sube el sprite en cada cuadro (la sombra queda en el piso).',
+    notas: 'avance: pixeles de la hoja que avanza el cuerpo en un ciclo completo (todos los cuadros, dos pasos) sin que el pie patine. velocidad_natural = avance * fps / cuadros (px/s). Ritmo de la animación = velocidad_del_juego / velocidad_natural. elevacion: pixeles que el juego sube el sprite en cada cuadro (la sombra queda en el piso).',
     anims: Object.fromEntries(premium.map((c) => [c.name, {
       cuadros: c.frames.length, fps: c.fps, loop: c.loop, ...motionOf(c),
       ...(c.profile === 'premium' && c.joints ? { articulaciones: c.joints } : {}),

@@ -16,15 +16,17 @@ function put(r: Raster, x: number, y: number, hex: string, a = 255) {
 }
 const frame = (w: number, h: number, draw: (r: Raster) => void) => { const r = createRaster(w, h); draw(r); return r; };
 
-function firefly(): Particle {
+/** Luciérnaga: amarilla en el Bosque, turquesa en la Catedral (los rastros de vida, PLAN.md F8). */
+function firefly(tono: 'amarilla' | 'turquesa' = 'amarilla'): Particle {
   const k = [0.4, 0.8, 1, 0.7];
+  const [nucleo, punta, halo] = tono === 'turquesa' ? ['#e0fff8', '#a8fff0', '#5ae0d0'] : ['#fffbd0', '#e8ff8a', '#d8ff6a'];
   return {
-    name: 'luciernaga', w: 8, h: 8, fps: 6,
+    name: tono === 'turquesa' ? 'luciernaga_turquesa' : 'luciernaga', w: 8, h: 8, fps: 6,
     frames: k.map((v) => frame(8, 8, (r) => {
-      put(r, 3, 3, '#fffbd0'); put(r, 4, 3, '#fffbd0'); put(r, 3, 4, '#fffbd0'); put(r, 4, 4, '#e8ff8a');
+      put(r, 3, 3, nucleo); put(r, 4, 3, nucleo); put(r, 3, 4, nucleo); put(r, 4, 4, punta);
       const a = Math.round(90 * v);
-      for (const [x, y] of [[2, 3], [5, 4], [3, 2], [4, 5], [2, 4], [5, 3], [3, 5], [4, 2]]) put(r, x, y, '#d8ff6a', a + 60);
-      if (v > 0.9) for (const [x, y] of [[1, 3], [6, 4], [3, 1], [4, 6]]) put(r, x, y, '#d8ff6a', 70);
+      for (const [x, y] of [[2, 3], [5, 4], [3, 2], [4, 5], [2, 4], [5, 3], [3, 5], [4, 2]]) put(r, x, y, halo, a + 60);
+      if (v > 0.9) for (const [x, y] of [[1, 3], [6, 4], [3, 1], [4, 6]]) put(r, x, y, halo, 70);
     })),
   };
 }
@@ -114,7 +116,9 @@ export function particles(): Particle[] {
   return [
     firefly(), leaf('verde'), leaf('otono'), butterfly('azul'), butterfly('naranja'), butterfly('rosa'),
     dotParticle('polen', ['#fff6c0', '#ffe88a']), dotParticle('brasa', ['#ffd27a', '#ff8a1e', '#d8401a'], 4, 8),
-    sparkle(), dotParticle('espora', ['#a8fff0', '#5ad8c8']), smoke(), dotParticle('polvo', ['#d8c8a8', '#bfae8e']), drop(), pawPrint(),
+    sparkle(), dotParticle('espora', ['#a8fff0', '#5ad8c8']), smoke(), dotParticle('polvo', ['#d8c8a8', '#bfae8e']), drop(), pawPrint(), firefly('turquesa'),
+    // Mundo 3: las brasas frías del Puente Colgante (motas azules) y la ceniza de la Cueva de la Reina
+    dotParticle('brasa_fria', ['#b8e0ff', '#6aa8f0', '#3a6ac8'], 4, 8), dotParticle('ceniza', ['#c8c0d0', '#8a8494']),
   ];
 }
 

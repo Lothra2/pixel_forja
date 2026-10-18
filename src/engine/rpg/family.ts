@@ -20,6 +20,8 @@ interface Member {
   name: string;
   skin: string; hair: string; eyes: string; beard?: string; glasses?: string;
   lpc: Partial<LpcLook>;
+  /** la cabeza con su clase de RPG (GG Abyss), si cambia: Rick de calle va con parted2 y en GG Abyss con swept_back */
+  lpcRpg?: Partial<LpcLook>;
   body?: BodyType;
   proportions?: Partial<Proportions>;
   outfit: Partial<HumanFicha['outfit']>;
@@ -33,6 +35,7 @@ export const FAMILY_GG: Record<FamilyId, Member> = {
   rick: {
     name: 'Rick', skin: '#c98e70', hair: '#2e231f', eyes: '#3a2418', beard: '#7d736c', glasses: '#1e1e24',
     lpc: { head: 'male_gaunt', hair: 'parted2', brows: 'thick', nose: 'straight', beard: 'basic', glasses: 'nerd' },
+    lpcRpg: { hair: 'swept_back' },
     outfit: { sleeves: 'short', bottom: 'pants', socks: 'low', shoes: 'tenis' },
     colors: { top: '#26272c', bottom: '#3a4256', shoes: '#e8e8ec', socks: '#f2f2f2' },
     mouth: 'smile', clase: 'paladin',
@@ -66,7 +69,9 @@ export const FAMILY_GG: Record<FamilyId, Member> = {
 
 /** Ficha de un miembro de la familia: casual o con su clase de RPG (se puede editar como cualquier otra). */
 export function familyFicha(id: FamilyId, rpg = false): HumanFicha {
-  const m = FAMILY_GG[id];
+  const m0 = FAMILY_GG[id];
+  // con su clase es la de GG Abyss: su cabeza de RPG y sin las cejas fruncidas de los rivales
+  const m = rpg ? { ...m0, lpc: { ...m0.lpc, ...m0.lpcRpg, ceno: false } } : m0;
   const b = defaultAvatar();
   const av = {
     ...b, skin: m.skin, kit: 'lpc' as const, body: m.body,

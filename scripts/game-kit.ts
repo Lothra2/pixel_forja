@@ -1,6 +1,6 @@
 /**
  * Kit del juego GG Abyss: genera todos los assets listos para Phaser en una carpeta, con su manifest.json.
- *   npx tsx scripts/game-kit.ts <carpeta> [--rapido] [--fichas <carpeta con *.ficha.json>] [--filas right,down_right,up_right,down,up]
+ *   npx tsx scripts/game-kit.ts <carpeta> [--rapido] [--fichas <carpeta con *.ficha.json>] [--filas right,down_right,up_right,down,up] [--vietnamita]
  * Desde el juego (PixelForja como submódulo en tools/pixel_forja):
  *   npx tsx tools/pixel_forja/scripts/game-kit.ts public/assets/kit --fichas fichas
  * Con --fichas, cada `<id>.ficha.json` exportado del estudio reemplaza al preset de ese id (rick, steph, sophie, alana)
@@ -10,6 +10,8 @@ import { mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync
 import { dirname, join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildGameKit } from '../src/engine/kit/gamekit.ts';
+import { encodePng, decodePng } from '../src/engine/export/png.ts';
+import type { Raster } from '../src/engine/core/raster.ts';
 import { migrateFicha, validateFicha, isHuman, type HumanFicha } from '../src/engine/sheet/ficha.ts';
 
 const args = process.argv.slice(2);
@@ -45,7 +47,30 @@ const fontDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'node_module
 const ab = (p: string) => { const b = readFileSync(p); return b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer; };
 const fonts = existsSync(fontDir) ? { regular: ab(join(fontDir, 'silkscreen-latin-400-normal.woff')), bold: ab(join(fontDir, 'silkscreen-latin-700-normal.woff')) } : undefined;
 if (!fonts) console.warn('  sin fuentes: falta node_modules/@fontsource/silkscreen (corre npm ci)');
-const files = buildGameKit({ quick, fichas, fonts, filas: flag('--filas')?.split(','), progress: (m) => console.log(`  ${m}`) });
+// las capas de equipo tardan en dibujarse: se guardan en .cache/capas (con --sin-cache se rehacen todas)
+const cacheDir = join(dirname(fileURLToPath(import.meta.url)), '..', '.cache', 'capas');
+const usarCache = !args.includes('--sin-cache');
+if (usarCache) mkdirSync(cacheDir, { recursive: true });
+const cache = usarCache ? {
+  get: (k: string) => {
+    const pj = join(cacheDir, `${k}.json`);
+    if (!existsSync(pj)) return undefined;
+    const pp = join(cacheDir, `${k}.png`);
+    return { meta: readFileSync(pj, 'utf8'), png: existsSync(pp) ? new Uint8Array(readFileSync(pp)) : new Uint8Array() };
+  },
+  set: (k: string, v: { png: Uint8Array; meta: string }) => {
+    if (v.png.length) writeFileSync(join(cacheDir, `${k}.png`), v.png);
+    writeFileSync(join(cacheDir, `${k}.json`), v.meta);
+  },
+} : undefined;
+// los jefes grandes también: cada cuadro se guarda en .cache/jefes con la huella de su escena
+const bossDir = join(dirname(fileURLToPath(import.meta.url)), '..', '.cache', 'jefes');
+if (usarCache) mkdirSync(bossDir, { recursive: true });
+const bossCache = usarCache ? {
+  get: (k: string) => { const p = join(bossDir, `${k}.png`); return existsSync(p) ? decodePng(new Uint8Array(readFileSync(p))) : null; },
+  set: (k: string, r: Raster) => writeFileSync(join(bossDir, `${k}.png`), encodePng(r)),
+} : undefined;
+const files = buildGameKit({ quick, fichas, fonts, cache, bossCache, sinCapas: args.includes('--sin-capas'), vietnamita: args.includes('--vietnamita'), filas: flag('--filas')?.split(','), progress: (m) => console.log(`  ${m}`) });
 rmSync(out, { recursive: true, force: true });
 let bytes = 0;
 for (const f of files) {

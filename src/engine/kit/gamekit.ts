@@ -1,5 +1,5 @@
 import { createRaster, blit, type Raster } from '../core/raster';
-import { encodePng } from '../export/png';
+import { encodePng, encodePngPaleta, decodePng } from '../export/png';
 import { motionOf8, type MovimientoAnim } from '../export/motion';
 import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim, type ViewName } from '../render/clip';
@@ -7,26 +7,68 @@ import { viewsForRows } from '../export/frameData';
 import type { Ficha, CellSize, HumanFicha } from '../sheet/ficha';
 import { familyFicha, thorFicha, FAMILY, FAMILY_GG, type FamilyId } from '../rpg/family';
 import { enemyFicha, enemyAnims, enemyCell, HERO_RPG_ANIMS, type EnemyId } from '../rpg/presets';
+import { merchantFicha, NPCS, NPC_ANIMS, NPC_NOMBRES } from '../rpg/npc';
+import { CAPAS_VERSION, capaDeObjeto, clipsBase, hojaCapa, huella, sinEquipo, variantes, type BloqueCapa, type ClipsBase, type TipoCapa } from './capas';
 import { PET_RPG_ANIMS } from '../anim/animal';
+import { lanternClip } from '../render/petLantern';
 import { renderFx, projectile8, rotate8, type FxElement } from '../fx/fx';
 import { scaleRaster } from '../render/rotsprite';
 import { arrowProjectile, arrowImpact } from '../fx/arrow';
 import { stompWave, dirtDig } from '../fx/stomp';
 import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
-import { isSpecial } from '../loot/render';
+import { isSpecial, handKindOf } from '../loot/render';
 import { TILE } from '../world/tiles';
-import { bosqueMap, bigMapToTiled, renderBigMap, cropView, CHUNK } from '../world/bosqueMap';
+import { ESPUMA, waterExtras } from '../world/water';
+import { smallCreatures } from '../world/reactions';
+import { bosqueMap, bigMapToTiled, renderBigMap, cropView, aguaTile, CHUNK, type BigMap } from '../world/bosqueMap';
+import { catedralMap } from '../world/catedralMap';
+import { galeriasMap } from '../world/galeriasMap';
+import { puertoMap } from '../world/puertoMap';
+import { ciudadMap } from '../world/ciudadMap';
+import { fraguaMap } from '../world/fraguaMap';
+import { emberParticle } from '../world/fraguaObjectsB';
+import { corazonMap, ARENA_DIABLO } from '../world/corazonMap';
+import { snowParticle, blizzardParticle } from '../world/corazonObjectsB';
+import { JAULA_CANDADO } from '../world/fraguaObjects';
+import { thiefFigure } from '../world/ciudadObjectsB';
+import { sleepParticle } from '../world/ciudadObjects';
+import { marinerEyes } from '../world/puertoObjectsB';
+import { dustWarning, dustCloud, shadowEyes } from '../world/galeriasObjects';
+import { POLILLA_REINA_SPEC, POLILLA_CENIZA_SPEC } from '../boss/polilla';
+import { MINERO_PIEDRA_SPEC, SOMBRA_SPEC } from '../boss/mina';
+import { MARINERO_NIEBLA_SPEC, CANGREJO_CENIZA_SPEC, MEDUSA_NEGRA_SPEC, CAPITAN_AHOGADO_SPEC } from '../boss/puerto';
+import { PEZ_FAROL_SPEC, biteWarning, waveWarning, wave, pezAntena } from '../boss/pez';
+import { SONAMBULO_SPEC, GARGOLA_SPEC, DUENDE_SPEC, RELOJERO_SPEC, diveShadow, sandProjectile, sandImpact, needleWarning } from '../boss/ciudad';
+import { REY_DE_PIEDRA_SPEC, reyCorona, fistWarning, crackGlow, lullabyNote } from '../boss/rey';
+import { DRAGONA_SPEC, dragonaBoca, breathWarning, floorFire, tailWarning, bigSteam } from '../boss/dragona';
+import { HOLLIN_SPEC, SALAMANDRA_SPEC, FAROLERO_SPEC, CARCELERO_SPEC, faroleroJaula, emberProjectile, emberImpact, emberTrail, chainSpinWarning, chainLineWarning, steamPuff } from '../boss/fragua';
+import { LOBO_SPEC, ESPECTRO_SPEC, DIABLILLO_SPEC, CABALLERO_SPEC, BRUJA_SPEC, SOMBRA_DEVORADORA_SPEC, iceProjectile, iceImpact, smallFireball, iceLanceWarning, crossWarning } from '../boss/corazon';
+import { REINA_SPEC, GUARDIAN_PUERTA_SPEC } from '../boss/corazonJefes';
+import { bossPoses } from '../boss/anim';
+import { camMatrix } from '../boss/render';
+import { DIABLO_SPEC, diabloOjos, diabloBoca, diabloAlas, bloodDrop, NOVA_HUECOS, novaFire, novaWarning, redBeam, beamWarning, firePillar, pillarWarning, boneCage, chargeWarning } from '../boss/diablo';
+import { mv } from '../boss/sdf';
+import { introPanels, fuegoPared, humoGrande, logoFuego } from '../intro/intro';
 import { particles, lightTexture, cloudShadow } from '../world/ambient';
 import { creatures, fogTexture } from '../world/atmosphere';
-import { ambience, AMBIENCE_NAMES } from '../audio/ambience';
+import { FAUNA } from '../world/abyss/fauna';
+import { RECETAS } from '../world/abyss/recetas';
+import type { InformeAbyss } from '../world/abyss/index';
+import { ambience, AMBIENTES_GG_ABYSS } from '../audio/ambience';
 import { hudSprites, digitSheet, DIGITS, inventoryPanel } from '../ui/hud';
-import { bitmapFonts, renderLogo } from '../ui/fonts';
+import { bitmapFonts, renderLogo, FONT_CHARS, ALL_FONT_CHARS } from '../ui/fonts';
 import { appIcons } from '../ui/appIcons';
 import { continuara } from '../ui/continuara';
-import { signIcons, hudIcons, rotateTablet, skillIcons } from '../ui/icons2';
+import { marcoCiclo, logoCiclo, MARCO_CICLO } from '../ui/ciclo';
+import { exportBajada, exportFin, audioCine } from '../cine/kit';
+import { signIcons, hudIcons, rotateTablet, skillIcons, celestialSkillIcons } from '../ui/icons2';
 import { SFX, SFX_NAMES, MUSIC, encodeWav } from '../audio/sfx';
 import { PET_ARMOR } from '../render/pet3d';
+import { renderBossSheets, clipSheet, KIT_DIRS, DIR_YAW, type BossSpec, type BossCache } from '../boss/sheet';
+import { MINO_SPEC } from '../boss/minotauro';
+import { GUARDIAN_SPEC } from '../boss/guardian';
+import { exportHeroeCelestial, celestialComun, NOTAS_CELESTIAL } from '../celestial/kit';
 
 /**
  * Kit del juego "GG Abyss": todo lo que el juego necesita, listo para Phaser, con un manifest.json que dice qué es
@@ -61,7 +103,38 @@ export interface KitOptions {
   fonts?: { regular: ArrayBuffer; bold: ArrayBuffer };
   /** avisa el avance (para la barra del estudio o la consola) */
   progress?: (msg: string) => void;
+  /** sin capas de equipo (las heroínas salen con su arma dibujada, como antes) */
+  sinCapas?: boolean;
+  /** las fuentes con todas las letras del vietnamita (lo de pelea-familia). Apagado, el kit sale igual que el de abyss-premium */
+  vietnamita?: boolean;
+  /** caché de capas de equipo (la línea de comandos la guarda en disco): son lentas de dibujar */
+  cache?: { get: (clave: string) => { png: Uint8Array; meta: string } | undefined; set: (clave: string, v: { png: Uint8Array; meta: string }) => void };
+  /** caché de cuadros de los jefes grandes (también lentos) */
+  bossCache?: BossCache;
+  /** sin el Mundo 3 (mapa, enemigos y la Polilla Reina): para pruebas rápidas de lo demás */
+  sinMundo3?: boolean;
+  /** sin el intro (paneles, fuego, humo y logo con fuego) */
+  sinIntro?: boolean;
+  /** sin el Mundo 4 (mapa, farol de Thor, enemigos y el Pez Farol) */
+  sinMundo4?: boolean;
+  /** sin el Mundo 5 (mapa, enemigos, el Relojero y el Rey de Piedra) */
+  sinMundo5?: boolean;
+  /** sin el Mundo 6 (mapa, enemigos, el Carcelero y la Dragona de Brasa) */
+  sinMundo6?: boolean;
+  /** sin el Mundo 7 (mapa, enemigos, la Reina Escarcha, el Guardián y el Diablo) */
+  sinMundo7?: boolean;
+  /** sin lo celestial (alas, aureola, túnica, vuelo, sus efectos, íconos y audio) */
+  sinCelestial?: boolean;
+  /** sin las cinemáticas del final (la bajada y el cierre) */
+  sinCine?: boolean;
 }
+
+/** GG Abyss dibuja las caras sin las cejas fruncidas de los rivales de pelea (como antes de que existieran). */
+function sinCeno(f: HumanFicha): HumanFicha {
+  return f.avatar?.lpc ? { ...f, avatar: { ...f.avatar, lpc: { ...f.avatar.lpc, ceno: false } } } : f;
+}
+
+const LUZ_IDS_KIT = ['bosque', 'catedral', 'galerias', 'faro', 'ciudad'];
 
 /** Hoja de una animación en 8 direcciones (o en las filas pedidas): fila = dirección, columna = cuadro. */
 function sheet8(f: Ficha, cell: CellSize, anim: string, k = 1, views: ViewName[] = EIGHT_VIEWS): { png: Raster; frames: number; fps: number; loop: boolean; premium: boolean; mov: MovimientoAnim } | null {
@@ -115,7 +188,27 @@ function portrait(f: Ficha, view: 'front' | 'se' = 'front', anim = 'idle'): Rast
   return out;
 }
 
-export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean } & MovimientoAnim>; perfil_movimiento?: 'premium'; clase?: string; retrato?: string; desde_estudio?: boolean }
+export interface CapaEntry { archivo: string; columnas: number; bloques: Record<string, BloqueCapa> }
+export interface CharEntry { tipo: 'heroe' | 'enemigo' | 'jefe' | 'mascota' | 'npc'; nombre: string; celda: number; pivote: [number, number]; anims: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean } & MovimientoAnim>; perfil_movimiento?: 'premium'; clase?: string; retrato?: string; desde_estudio?: boolean;
+  /** vuela: el cuerpo va en el aire y el pivote es el punto del piso debajo (donde va la sombra) */
+  vuela?: boolean;
+  /** capa que va encima de otro personaje, cuadro por cuadro (el farol de Thor: `capa_de: 'thor'`) */
+  capa_de?: string;
+  /** minijefe (el Capitán Ahogado) */
+  elite?: boolean;
+  /** vive en el agua: lo de abajo de la superficie viene teñido y translúcido en la hoja (el Pez Farol) */
+  en_agua?: boolean;
+  luz_antena?: { color: string; radius: number; notas: string };
+  /** la luz de la corona del Rey de Piedra (Mundo 5) */
+  luz_corona?: { color: string; radius: number; notas: string };
+  /** la luz de la boca de la Dragona de Brasa (Mundo 6) */
+  luz_boca?: { color: string; radius: number; notas: string };
+  /** la luz de los ojos del Diablo (Mundo 7) */
+  luz_ojos?: { color: string; radius: number; notas: string };
+  /** capas de equipo (héroes): la hoja base va sin arma ni mano libre; `defecto` es lo que lleva sin nada puesto */
+  capas?: { orden: TipoCapa[]; defecto: { arma: string | null; mano: string | null }; arma: Record<string, CapaEntry>; mano: Record<string, CapaEntry>; pecho: Record<string, CapaEntry>; casco: Record<string, CapaEntry>; alas_detras?: Record<string, CapaEntry>; alas_delante?: Record<string, CapaEntry>; aura?: Record<string, CapaEntry>; orden_celestial?: string[] };
+  /** retrato de la heroína celestial (encargo F13) */
+  retrato_celestial?: string }
 
 /** k: se dibuja en `cell` y se agranda por k a la manera de RotSprite (el jefe: 64 x 1.5 = celda 96). */
 function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims: string[], entry: Omit<CharEntry, 'anims' | 'celda' | 'pivote'>, files: ExportFile[], log: (m: string) => void, k = 1, views: ViewName[] = EIGHT_VIEWS): CharEntry {
@@ -133,12 +226,102 @@ function exportChar(prefix: string, id: string, f: Ficha, cell: CellSize, anims:
   return out;
 }
 
+/**
+ * Las capas de equipo de una heroína: arma, mano libre, pecho y casco (ver capas.ts). Cada una es una hoja PNG con un
+ * bloque por animación. Las que ya están en la caché (misma ficha, mismas animaciones, mismo dibujo base) no se redibujan.
+ */
+function exportCapas(id: string, f: HumanFicha, anims: string[], files: ExportFile[], log: (m: string) => void, cache?: KitOptions['cache']): NonNullable<CharEntry['capas']> {
+  const out: NonNullable<CharEntry['capas']> = { orden: ['pecho', 'casco', 'arma', 'mano'], defecto: { arma: f.gear?.main ?? null, mano: f.gear?.off ?? null }, arma: {}, mano: {}, pecho: {}, casco: {} };
+  // la huella del dibujo base: si cambia cómo se dibuja (el motor), cambian las capas
+  const base = sinEquipo(f);
+  const idle = sheet8(base, 48, 'idle');
+  const firma = huella(JSON.stringify({ v: CAPAS_VERSION, anims, idle: idle ? huella(String(Array.from(idle.png.data.subarray(0, 40000)))) : '' }));
+  let clips: ClipsBase | null = null;
+  let hechas = 0, deCache = 0;
+  for (const v of variantes(f)) {
+    const clave = huella(JSON.stringify({ firma, ficha: v.ficha, base }));
+    const nombre = `personajes/capas/${id}_${v.tipo}_${v.clave}.png`;
+    let entrada = cache?.get(clave);
+    if (entrada) deCache++;
+    else {
+      clips ??= clipsBase(f, anims);
+      const h = hojaCapa(clips, v.ficha, anims);
+      entrada = h ? { png: encodePng(h.png), meta: JSON.stringify({ columnas: h.columnas, bloques: h.bloques }) } : { png: new Uint8Array(), meta: 'null' };
+      cache?.set(clave, entrada);
+    }
+    hechas++;
+    const meta = JSON.parse(entrada.meta) as { columnas: number; bloques: Record<string, BloqueCapa> } | null;
+    if (!meta) continue;
+    // la caché guarda RGBA; al kit va con paleta (sin pérdida, la mitad de peso)
+    files.push(file(nombre, encodePngPaleta(decodePng(entrada.png)), 'image/png'));
+    out[v.tipo][v.clave] = { archivo: nombre, ...meta };
+  }
+  log(`personajes/${id}: ${hechas} capas de equipo (${deCache} de la caché)`);
+  return out;
+}
+
+/** Jefes dibujados a su tamaño final (motor de jefes grandes, src/engine/boss). */
+export const BIG_BOSSES: Partial<Record<EnemyId, BossSpec>> = { minotauro: MINO_SPEC, guardian_campana: GUARDIAN_SPEC };
+
+const r2 = (v: number) => Math.round(v * 100) / 100;
+/** efectos de sonido que suenan en bucle */
+const SFX_BUCLE = new Set<string>(['carrito_rodar', 'viento_fuerte']);
+/** músicas nuevas que suenan en bucle justo (ya traen el final pegado al principio) */
+const MUSICA_BUCLE = new Set<string>(['galerias', 'jefe_polilla', 'jefe_pez', 'capitan', 'jefe_rey', 'relojero', 'jefe_dragona', 'carcelero', 'reina_escarcha', 'guardian', 'diablo_1', 'diablo_2', 'diablo_3', 'diablo_final']);
+
+/**
+ * Un jefe grande al kit: una hoja por animación (fila = dirección, columna = cuadro), celda y pivote reales, y en el
+ * manifiesto los eventos (con el punto que pega en cada dirección), el aviso de los golpes fuertes, el avance de los
+ * pasos y la elevación de los saltos. quick: solo el reposo en 2 cuadros (pruebas).
+ */
+function exportBoss(spec: BossSpec, files: ExportFile[], log: (m: string) => void, cache?: BossCache, quick?: boolean, extra: Partial<CharEntry> = {}): CharEntry {
+  const s = quick ? { ...spec, anims: spec.anims.filter((a) => a.name === 'idle').map((a) => ({ ...a, frames: 2 })) } : spec;
+  const { clips, pivot } = renderBossSheets(s, cache, log);
+  const ds = spec.dims(spec.cell).s, cs = spec.cell / 128;
+  const out: CharEntry = { tipo: 'jefe', nombre: spec.id, celda: spec.cell, pivote: pivot, anims: {}, perfil_movimiento: 'premium', ...extra };
+  for (const c of clips) {
+    const name = `enemigos/${spec.id}_${c.def.name}.png`;
+    files.push(png(name, clipSheet(c, spec.cell)));
+    const n = c.def.frames;
+    const eventos = (c.def.events ?? []).filter((e) => e.frame < n).map((e) => ({
+      tipo: e.type as NonNullable<MovimientoAnim['eventos']>[number]['tipo'], cuadro: e.frame, fase: r2(e.frame / n),
+      ...(e.foot ? { pie: e.foot === 'near' ? ('cerca' as const) : ('lejos' as const) } : {}),
+      ...(c.strike?.[e.frame] ? { punto: c.strike[e.frame] } : {}),
+    }));
+    out.anims[c.def.name] = {
+      archivo: name, cuadros: n, fps: c.def.fps, loop: c.def.loop,
+      ...(eventos.length ? { eventos } : {}),
+      ...(c.def.stride ? { avance: r2(c.def.stride * ds), velocidad_natural: r2((c.def.stride * ds * c.def.fps) / n) } : {}),
+      ...(c.def.rise ? { elevacion: c.def.rise.slice(0, n).map((v) => r2(v * cs)) } : {}),
+      ...(c.def.windup ? { aviso: c.def.windup } : {}),
+    } as CharEntry['anims'][string];
+  }
+  log(`enemigos/${spec.id}: ${clips.length} animaciones a celda ${spec.cell}, pivote ${pivot.join(',')}`);
+  return out;
+}
+
+/**
+ * Objetos de mundos distintos con el mismo nombre pero otra forma (otro tamaño, otras anims o otra cantidad de
+ * cuadros). El kit escribe cada archivo una sola vez y el juego guarda las texturas por nombre: si dos se llaman igual
+ * y no son el mismo objeto, uno pisa al otro. Devuelve los choques (vacío si no hay).
+ */
+export function choquesDeObjetos(mundos: { mundo: string; objetos: { name: string; w: number; h: number; anims: Record<string, { frames: unknown[] }> }[] }[]): string[] {
+  const visto = new Map<string, { mundo: string; forma: string }>(), out: string[] = [];
+  for (const { mundo, objetos } of mundos) for (const o of objetos) {
+    const forma = `${o.w}x${o.h} ${Object.entries(o.anims).map(([k, a]) => `${k}:${a.frames.length}`).sort().join(',')}`;
+    const p = visto.get(o.name);
+    if (!p) visto.set(o.name, { mundo, forma });
+    else if (p.forma !== forma) out.push(`${o.name}: ${p.mundo} (${p.forma}) y ${mundo} (${forma})`);
+  }
+  return out;
+}
+
 /** Arma todo el kit. Devuelve los archivos (rutas relativas a la carpeta del kit). */
 export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const log = opts.progress ?? (() => {});
   const files: ExportFile[] = [];
   const heroes = opts.heroes ?? FAMILY;
-  const enemies = opts.enemies ?? (['rata', 'calabaza', 'goblin_arquero', 'trol'] as EnemyId[]);
+  const enemies = opts.enemies ?? (['rata', 'calabaza', 'goblin_arquero', 'trol', 'guardian_cobre', 'raicita', 'vigia_raices'] as EnemyId[]);
   const boss = opts.boss ?? 'minotauro';
   const heroAnims = opts.quick ? ['idle', 'walk', 'attack', 'hit', 'die'] : [...HERO_RPG_ANIMS];
   const credits = new Set<string>();
@@ -156,11 +339,31 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   for (const id of heroIds) {
     if (!/^[a-z0-9_]+$/.test(id)) throw new Error(`id de personaje inválido: "${id}" (usa minúsculas, números y _)`);
     const fam = FAMILY_GG[id as FamilyId];
-    const f = custom[id] ?? familyFicha(id as FamilyId, true);
+    const f = sinCeno(custom[id] ?? familyFicha(id as FamilyId, true));
     const c = creditsFor(f);
     if (c) credits.add(c);
     files.push(png(`personajes/retrato_${id}.png`, portrait(f)));
-    chars[id] = exportChar('personajes', id, f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log, 1, views);
+    const conCapas = !opts.sinCapas && !opts.quick;
+    chars[id] = exportChar('personajes', id, conCapas ? sinEquipo(f) : f, 48, heroAnims, { tipo: 'heroe', nombre: f.name || fam?.name || id, ...(fam ? { clase: fam.clase } : {}), retrato: `personajes/retrato_${id}.png`, ...(custom[id] ? { desde_estudio: true } : {}) }, files, log, 1, views);
+    if (conCapas) chars[id].capas = exportCapas(id, f, heroAnims, files, log, opts.cache);
+    // la heroína celestial (F13): el vuelo, las alas, la aureola y la túnica, en archivos nuevos
+    if (!opts.sinCelestial && fam) {
+      const hc = exportHeroeCelestial(id, f, heroAnims, conCapas, files, log, opts.cache);
+      chars[id].anims.volar = hc.volar;
+      chars[id].retrato_celestial = hc.retrato_celestial;
+      const cp = chars[id].capas;
+      if (cp) {
+        cp.alas_detras = { celestial: hc.alas_detras };
+        cp.alas_delante = { celestial: hc.alas_delante };
+        cp.aura = { celestial: hc.aura };
+        cp.orden_celestial = ['alas_detras', 'base', 'pecho', 'casco', 'arma', 'mano', 'alas_delante', 'aura'];
+        if (hc.tunica) cp.pecho.tunica_celestial = hc.tunica;
+        for (const [tipo, porClave] of Object.entries(hc.volarEquipo)) for (const [clave, b] of Object.entries(porClave)) {
+          const e = (cp as unknown as Record<string, Record<string, CapaEntry>>)[tipo]?.[clave];
+          if (e) e.bloques.volar = b;
+        }
+      }
+    }
   }
   const tiers = opts.thorTiers ?? [0, 1, 2, 3, 4, 5];
   for (const t of tiers) {
@@ -171,23 +374,176 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     chars[id] = exportChar('mascota', id, f, 48, anims, { tipo: 'mascota', nombre: t ? `Thor (${PET_ARMOR[t - 1].name.es})` : 'Thor' }, files, log, 1, views);
   }
   files.push(png('mascota/retrato_thor.png', portrait(thorFicha(0), 'se', 'sit')));
+  // el farol de Thor (Mundo 4): solo el farol, cuadro por cuadro, para dibujar encima de Thor con cualquier armadura
+  if (!opts.sinMundo4 && chars.thor) {
+    for (const [id, lit] of [['thor_farol', true], ['thor_farol_apagado', false]] as const) {
+      const anims: CharEntry['anims'] = {};
+      for (const [a, meta] of Object.entries(chars.thor.anims)) {
+        const clips = EIGHT_VIEWS.map((v) => lanternClip(thorFicha(0), 48, a, v, lit));
+        const n = Math.max(...clips.map((c) => c.frames.length));
+        const sh = createRaster(n * 48, 8 * 48);
+        clips.forEach((c, row) => c.frames.forEach((fr, i) => blit(sh, fr, i * 48, row * 48)));
+        const name = `mascota/${id}_${a}.png`;
+        files.push(png(name, sh));
+        anims[a] = { ...meta, archivo: name };
+      }
+      chars[id] = { tipo: 'mascota', nombre: lit ? 'Farol de Thor' : 'Farol de Thor (apagado)', celda: chars.thor.celda, pivote: chars.thor.pivote, anims, capa_de: 'thor', ...(chars.thor.perfil_movimiento ? { perfil_movimiento: chars.thor.perfil_movimiento } : {}) };
+      log(`mascota/${id}: ${Object.keys(anims).length} animaciones`);
+    }
+  }
   for (const id of enemies) {
-    const f = enemyFicha(id);
+    const f = sinCeno(enemyFicha(id));
     chars[id] = exportChar('enemigos', id, f, enemyCell(id), enemyAnims(id), { tipo: 'enemigo', nombre: id }, files, log, 1, views);
   }
-  {
-    const f = enemyFicha(boss);
-    // el jefe llena la pantalla: dibujado en 64 (ahí le caben los cuernos) y agrandado x1.5 a celda 96
-    chars[boss] = exportChar('enemigos', boss, f, 64, [...enemyAnims(boss), 'leap'], { tipo: 'jefe', nombre: boss }, files, log, 1.5, views);
+  // jefes: se dibujan a su tamaño final (celda 128, sin agrandar). Uno que todavía no tenga su versión grande sale
+  // como antes: dibujado en 64 y agrandado x1.5 a celda 96
+  for (const b of [boss, ...(opts.boss ? [] : (['guardian_campana'] as EnemyId[]))]) {
+    const spec = BIG_BOSSES[b];
+    if (spec) { chars[b] = exportBoss(spec, files, log, opts.bossCache, opts.quick); continue; }
+    const f = sinCeno(enemyFicha(b));
+    chars[b] = exportChar('enemigos', b, f, 64, [...enemyAnims(b), 'leap'], { tipo: 'jefe', nombre: b }, files, log, 1.5, views);
+  }
+  // el Mundo 3: enemigos y la Polilla Reina con el motor de volúmenes (a su celda, sin agrandar)
+  if (!opts.sinMundo3) {
+    for (const [spec, extra] of [
+      [POLILLA_CENIZA_SPEC, { tipo: 'enemigo', nombre: 'Polilla de Ceniza', vuela: true }],
+      [MINERO_PIEDRA_SPEC, { tipo: 'enemigo', nombre: 'Minero de Piedra' }],
+      [SOMBRA_SPEC, { tipo: 'enemigo', nombre: 'Sombra' }],
+      [POLILLA_REINA_SPEC, { tipo: 'jefe', nombre: 'Polilla Reina', vuela: true }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+  }
+  // el Mundo 4: los enemigos del puerto, el Capitán Ahogado y el Pez Farol (a su celda, sin agrandar)
+  if (!opts.sinMundo4) {
+    for (const [spec, extra] of [
+      [MARINERO_NIEBLA_SPEC, { tipo: 'enemigo', nombre: 'Marinero de Niebla' }],
+      [CANGREJO_CENIZA_SPEC, { tipo: 'enemigo', nombre: 'Cangrejo de Ceniza' }],
+      [MEDUSA_NEGRA_SPEC, { tipo: 'enemigo', nombre: 'Medusa Negra', vuela: true }],
+      [CAPITAN_AHOGADO_SPEC, { tipo: 'enemigo', nombre: 'El Capitán Ahogado', elite: true }],
+      [PEZ_FAROL_SPEC, { tipo: 'jefe', nombre: 'El Pez Farol', en_agua: true, luz_antena: { color: '#fff0c0', radius: 220, notas: 'La luz robada del faro, en la punta de la antena: lo más brillante de la pantalla. Se apaga en die (cuadro 9 en adelante).' } }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+    // #42: dónde va la luz de la antena del Pez Farol, por dirección y por cuadro (pixeles desde el pivote; null si no
+    // se ve: sumergida del todo o ya apagada), para que la luz del juego siga a la antena
+    for (const [name, entry] of Object.entries(chars.pez_farol.anims)) {
+      const def = PEZ_FAROL_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).antena = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: PEZ_FAROL_SPEC.elev });
+        return poses.map((p) => { const l = pezAntena(PEZ_FAROL_SPEC.cell, p); if (!l) return null; const c = mv(M, l); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+    }
+  }
+  // el Mundo 5: los sonámbulos de piedra, las gárgolas, los duendes del sueño y el Relojero (a su celda, sin agrandar)
+  if (!opts.sinMundo5) {
+    for (const [spec, extra] of [
+      [SONAMBULO_SPEC, { tipo: 'enemigo', nombre: 'Sonámbulo de Piedra' }],
+      [GARGOLA_SPEC, { tipo: 'enemigo', nombre: 'Gárgola Dormida', vuela: true }],
+      [DUENDE_SPEC, { tipo: 'enemigo', nombre: 'Duende del Sueño' }],
+      [RELOJERO_SPEC, { tipo: 'enemigo', nombre: 'El Relojero', elite: true }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+    chars.rey_de_piedra = exportBoss(REY_DE_PIEDRA_SPEC, files, log, opts.bossCache, opts.quick, { tipo: 'jefe', nombre: 'El Rey de Piedra', luz_corona: { color: '#fff0c0', radius: 260, notas: 'La luz robada de la ciudad, en la corona: lo más brillante de la pantalla. En die la corona se rompe (cuadro 5) y la luz sale volando hacia arriba: desde ahí corona es null y el juego hace volar la luz desde el último punto.' } } as Partial<CharEntry>);
+    // dónde va la luz de la corona, por dirección y por cuadro (pixeles desde el pivote, y hacia abajo; null si ya se fue)
+    for (const [name, entry] of Object.entries(chars.rey_de_piedra.anims)) {
+      const def = REY_DE_PIEDRA_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).corona = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: REY_DE_PIEDRA_SPEC.elev });
+        return poses.map((p) => { const l = reyCorona(REY_DE_PIEDRA_SPEC.cell, p); if (!l || (p.extra?.crown ?? 1) < 0.5) return null; const c = mv(M, l); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+    }
+  }
+  // el Mundo 6: los hollines, las salamandras de brasa, los faroleros de cadenas y El Carcelero (a su celda)
+  if (!opts.sinMundo6) {
+    for (const [spec, extra] of [
+      [HOLLIN_SPEC, { tipo: 'enemigo', nombre: 'Hollín' }],
+      [SALAMANDRA_SPEC, { tipo: 'enemigo', nombre: 'Salamandra de Brasa' }],
+      [FAROLERO_SPEC, { tipo: 'enemigo', nombre: 'Farolero de Cadenas' }],
+      [CARCELERO_SPEC, { tipo: 'enemigo', nombre: 'El Carcelero', elite: true }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+    // dónde va la jaula del farolero (su luz), por dirección y por cuadro (pixeles desde el pivote, y hacia abajo)
+    for (const [name, entry] of Object.entries(chars.farolero_cadenas.anims)) {
+      const def = FAROLERO_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).jaula = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: FAROLERO_SPEC.elev });
+        return poses.map((p) => { const c = mv(M, faroleroJaula(FAROLERO_SPEC.cell, p)); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+    }
+    // la Dragona de Brasa: dónde va la boca (luz y origen del aliento), por dirección y por cuadro (null si no se ve)
+    chars.dragona_brasa = exportBoss(DRAGONA_SPEC, files, log, opts.bossCache, opts.quick, { tipo: 'jefe', nombre: 'La Dragona de Brasa', luz_boca: { color: '#ff8a30', radius: 200, notas: 'La luz de la boca: más fuerte cuando jaw sube (attack, aliento, warcry). En aliento el chorro sale de `boca` hacia adelante (cuadros 9 a 15). Apagada y con la boca cerrada es null. En die el fuego pasa a dorado (#ffe080) desde el cuadro 8.' } } as Partial<CharEntry>);
+    for (const [name, entry] of Object.entries(chars.dragona_brasa.anims)) {
+      const def = DRAGONA_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).boca = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: DRAGONA_SPEC.elev });
+        return poses.map((p) => { const l = dragonaBoca(DRAGONA_SPEC.cell, p); if (!l) return null; const c = mv(M, l); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+    }
+    (chars.dragona_brasa as unknown as Record<string, unknown>).notas = 'Fase 1: idle, walk, attack (zarpazo, aviso 1 a 6), coletazo (medio círculo detrás, aviso 1 a 6, fx aviso_cola), aliento (aviso 1 a 8, fx aviso_aliento en línea y después fuego_piso). Fase 2: encendida (blindada, cubierta de llamas). Un surtidor la apaga: apagada (echada, gris, humea; ahí se le pega). warcry llama hollines. die: rompe las cadenas (suelta en el cuadro 5), el fuego pasa a dorado y queda una dragoncita dorada enroscada que ronronea (últimos cuadros).';
+    (chars.farolero_cadenas as unknown as Record<string, unknown>).notas = 'Los faroleros con jaula: true en el mapa llevan la jaula de luz a la espalda: la luz (color de su `luz`, radio 40) va en `jaula` de cada anim. En die la jaula cae al piso (cuadro 7) y se abre (cuadro 11, evento suelta): ahí sale luz_libre_<luz>. Los que no tienen jaula: true se dibujan igual pero sin luz.';
+    (chars.hollin as unknown as Record<string, unknown>).notas = 'pegado: en bucle encima de la heroína (dibujarlo en su pecho, chiquito). No vuela.';
+    (chars.salamandra_brasa as unknown as Record<string, unknown>).notas = 'walk deja rastro_brasa (fx, capa suelo) cada pocos pasos. piedra: cuando Thor la moja (negra y quieta, humea).';
+  }
+  // el Mundo 7: los lobos de escarcha, los espectros, los diablillos, los caballeros congelados, las brujas, las
+  // sombras devoradoras y los dos minijefes, la Reina Escarcha y el Guardián de la Puerta (a su celda)
+  if (!opts.sinMundo7) {
+    for (const [spec, extra] of [
+      [LOBO_SPEC, { tipo: 'enemigo', nombre: 'Lobo de Escarcha' }],
+      [ESPECTRO_SPEC, { tipo: 'enemigo', nombre: 'Espectro Helado', vuela: true }],
+      [DIABLILLO_SPEC, { tipo: 'enemigo', nombre: 'Diablillo' }],
+      [CABALLERO_SPEC, { tipo: 'enemigo', nombre: 'Caballero Congelado' }],
+      [BRUJA_SPEC, { tipo: 'enemigo', nombre: 'Bruja de Escarcha' }],
+      [SOMBRA_DEVORADORA_SPEC, { tipo: 'enemigo', nombre: 'Sombra Devoradora' }],
+      [REINA_SPEC, { tipo: 'enemigo', nombre: 'La Reina Escarcha', elite: true, vuela: true }],
+      [GUARDIAN_PUERTA_SPEC, { tipo: 'enemigo', nombre: 'El Guardián de la Puerta', elite: true }],
+    ] as [BossSpec, Partial<CharEntry>][]) chars[spec.id] = exportBoss(spec, files, log, opts.bossCache, opts.quick, extra);
+    const nota = (id: string, n: string) => { if (chars[id]) (chars[id] as unknown as Record<string, unknown>).notas = n; };
+    nota('lobo_escarcha', 'En manada (grupo en el mapa). attack es la mordida (aviso 1 a 4, salta: elevacion). run para rodear. aullar llama a la manada. Los ojos celestes brillan en lo oscuro. die: se deshace en nieve.');
+    nota('espectro_helado', 'Vuela (el pivote es el piso debajo). cast: el rayo de hielo (aviso 1 a 6, la bola crece entre las manos); suelta proyectil_rayo_hielo_<dir> desde el punto del impacto y al pegar impacto_rayo_hielo (el encargo los llama proyectil_hielo e impacto_hielo, pero esos nombres ya son del poder de hielo de las heroínas). die: se rompe en escarcha que sube.');
+    nota('diablillo', 'En bandas de 5 a 8. attack: tira la bolita de fuego (aviso 1 a 4, la bolita crece en la mano): proyectil_fuego_chico_<dir> y al pegar impacto_brasa. die: se apaga en humo.');
+    nota('caballero_congelado', 'bloquear (en bucle): el escudo al frente; de frente no le entra el golpe, hay que rodearlo. attack es un tajo (aviso 1 a 4); attack_heavy la espada al piso (aviso 1 a 7). die: la armadura cae vacía.');
+    nota('bruja_escarcha', 'cast (aviso 1 a 6) sirve para el muro y para curar: en el impacto el juego levanta el objeto muro_hielo (mundos[6].objetos: subir, quieto, romper; sólido mientras dura) o cura a los de alrededor. die: se vuelve nieve.');
+    nota('sombra_devoradora', 'attack: abre la boca enorme (aviso 1 a 4) y se tira a tragar: si toca a la heroína le quita una luz compañera (audio luz_comida). Ojos blancos que brillan apenas. die: se deshace en humo.');
+    nota('reina_escarcha', 'Minijefe del Lago (vuela). attack: tajo (aviso 1 a 4). cast: las lanzas de hielo (aviso 1 a 6): el juego pone aviso_lanza_hielo donde caen. warcry: la ventisca en la arena. dividirse: gira y se abre en tres; en el cuadro 10 (suelta) el juego pone los dos reflejos (la misma hoja, sin sombra y un poco transparentes). die: se rompe en mil cristales.');
+    nota('guardian_puerta', 'Minijefe de la Puerta del Trono. attack: el golpe en cruz (aviso 1 a 5, dos impactos: de lado y de arriba): el juego pone aviso_cruz en el piso. attack_heavy: la espada al piso (aviso 1 a 7). charge: la carga en línea (en bucle). Los ojos y las juntas de la armadura brillan rojo. die: cae de rodillas y se apaga.');
+    // el Diablo: dónde van los ojos (la luz que se ve en la oscuridad, null si no se ven), la boca (de donde sale el
+    // rayo) y las dos puntas de las alas (de donde caen las gotas), por dirección y por cuadro
+    chars.diablo = exportBoss(DIABLO_SPEC, files, log, opts.bossCache, opts.quick, { tipo: 'jefe', nombre: 'El Diablo', luz_ojos: { color: '#ff2a1a', radius: 120, notas: 'La luz de los ojos, en `ojos` de cada anim (el punto entre los dos ojos). Es lo único que se ve en oscuridad. En die los ojos se apagan cuando la ceniza le llega a la cara (desde ahí null).' } } as Partial<CharEntry>);
+    for (const [name, entry] of Object.entries(chars.diablo.anims)) {
+      const def = DIABLO_SPEC.anims.find((q) => q.name === name)!;
+      const poses = bossPoses({ ...def, frames: entry.cuadros });
+      (entry as unknown as Record<string, unknown>).ojos = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: DIABLO_SPEC.elev });
+        return poses.map((p) => { const l = diabloOjos(DIABLO_SPEC.cell, p); if (!l) return null; const c = mv(M, l); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+      (entry as unknown as Record<string, unknown>).boca = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: DIABLO_SPEC.elev });
+        return poses.map((p) => { const c = mv(M, diabloBoca(DIABLO_SPEC.cell, p)); return [Math.round(c[0]), Math.round(-c[1])]; });
+      });
+      (entry as unknown as Record<string, unknown>).alas = KIT_DIRS.map((dir) => {
+        const M = camMatrix({ yaw: DIR_YAW[dir], elev: DIABLO_SPEC.elev });
+        return poses.map((p) => diabloAlas(DIABLO_SPEC.cell, p).map((l) => { const c = mv(M, l); return [Math.round(c[0]), Math.round(-c[1])]; }));
+      });
+    }
+    nota('diablo', 'Jefe final (celda 192). attack: el zarpazo (aviso 1 a 6). nova: levanta los brazos (aviso 1 a 8, fx aviso_nova en el piso) y en el impacto sale nova_fuego_diablo desde el pivote: el anillo trae dos huecos por donde se pasa, en los ángulos ' + NOVA_HUECOS.map(([c, w]) => `${c} ± ${w}`).join(' y ') + ' rad (atan2 de dy/0.62 y dx en la imagen, 0 a la derecha, crece hacia abajo). charge: la carga encorvado (en bucle, fx aviso_carga_diablo en línea antes). rayo: abre la boca (aviso 1 a 8, fx aviso_rayo en línea) y sale rayo_rojo repetido en línea desde `boca` (por dirección y por cuadro, como los ojos; el juego lo hace girar). pilares: los puños al piso (aviso 1 a 7, fx aviso_pilar donde salen) y después pilar_fuego. oscuridad: se envuelve en sombra (solo quedan los ojos, los últimos 4 cuadros en bucle). jaula: señala a la heroína (aviso 1 a 6) y salen los huesos: jaula_huesos_subir, jaula_huesos_quieta (mientras está encerrada) y jaula_huesos_romper (el encargo los pide como jaula_huesos con subir, quieta y romper). warcry: ruge al cielo y llama demonios. aturdido (en bucle): de rodillas con los 4 braseros prendidos, la piel se enfría: ahí se le pega. die: cae de rodillas (aterriza, cuadro 5), se le rompe el hielo de los cuernos, la última llama sale del pecho (suelta, cuadro 10) y se deshace en ceniza y escarcha. Las alas (pedido de Sophie): espinas en los huesos, garras curvas y sangre oscura que chorrea de los desgarrones (solo en las alas). `alas` trae las dos puntas por dirección y por cuadro: mientras camina, el juego suelta una gota desde ahí cada tanto, la deja caer hasta el piso y pone gota_sangre_diablo con la fila 13 del fx en el piso (los cuadros 0 a 3 son el final de la caída y 4 y 5 el salpicón chiquito).');
+  }
+  // los que no pelean: el mercader de las fogatas (8 direcciones, para que mire a la heroína)
+  for (const id of NPCS) {
+    const f = sinCeno(merchantFicha());
+    const c = creditsFor(f);
+    if (c) credits.add(c);
+    chars[id] = exportChar('personajes', id, f, 48, NPC_ANIMS[id], { tipo: 'npc', nombre: NPC_NOMBRES[id] }, files, log, 1, views);
   }
   manifest.personajes = chars;
 
   // ---------- poderes ----------
-  const fx: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean; celda: number }> = {};
+  const fx: Record<string, { archivo: string; cuadros: number; fps: number; loop: boolean; celda: number; w?: number; h?: number }> = {};
   const addFx = (name: string, frames: Raster[], fps: number, loop: boolean) => {
+    // dos efectos con el mismo nombre se pisarían (el kit escribe cada archivo una vez y el juego los busca por nombre)
+    if (fx[name]) throw new Error(`fx repetido: ${name}`);
     const a = `fx/${name}.png`;
     files.push(png(a, strip(frames)));
-    fx[name] = { archivo: a, cuadros: frames.length, fps, loop, celda: frames[0].w };
+    // los que no son cuadrados (la ola, el aviso de la mordida) traen su ancho y su alto
+    fx[name] = { archivo: a, cuadros: frames.length, fps, loop, celda: frames[0].w, ...(frames[0].h !== frames[0].w ? { w: frames[0].w, h: frames[0].h } : {}) };
   };
   const elements: FxElement[] = ['fuego', 'hielo', 'sagrado', 'veneno', 'arcano', 'rayo', 'naturaleza'];
   for (const element of elements) {
@@ -205,6 +561,63 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   addFx('onda_pisoton', stompWave(96), 16, false);
   // tierra que tira Thor al cavar
   addFx('tierra_cavada', dirtDig(48), 10, false);
+  // la Polilla Reina: dónde va a caer el polvo (capa suelo) y la nube que apaga la luz donde cae
+  addFx('aviso_polvo', dustWarning(), 10, false);
+  addFx('nube_polvo', dustCloud(), 12, false);
+  // el Pez Farol: dónde va a morder (capa suelo), por dónde pasa la ola (se repite en línea) y la ola
+  if (!opts.sinMundo4) {
+    addFx('aviso_mordida', biteWarning(), 10, false);
+    addFx('aviso_ola', waveWarning(), 10, true);
+    addFx('ola', wave(), 12, false);
+  }
+  // el Mundo 5: la sombra de la picada de la gárgola (capa suelo), la arena del duende y la aguja del Relojero
+  if (!opts.sinMundo5) {
+    addFx('sombra_picada', diveShadow(), 10, false);
+    for (const { dir, frames } of rotate8(sandProjectile())) addFx(`proyectil_arena_${dir}`, frames, 12, true);
+    addFx('impacto_arena', sandImpact(), 14, false);
+    addFx('aviso_aguja', needleWarning(), 10, true);
+    // el Rey de Piedra: dónde cae el puño (capa suelo), el brillo de las grietas y las notas de la canción de cuna
+    addFx('aviso_puno', fistWarning(), 10, false);
+    addFx('grieta_luz', crackGlow(), 8, true);
+    addFx('nota_cuna', lullabyNote(), 6, true);
+  }
+  // el Mundo 6: la brasa de la salamandra, su rastro, los avisos de las cadenas y el vapor
+  if (!opts.sinMundo6) {
+    for (const { dir, frames } of rotate8(emberProjectile())) addFx(`proyectil_brasa_${dir}`, frames, 12, true);
+    addFx('impacto_brasa', emberImpact(), 14, false);
+    addFx('rastro_brasa', emberTrail(), 6, false);
+    addFx('aviso_cadena', chainSpinWarning(), 10, false);
+    addFx('aviso_linea_cadena', chainLineWarning(), 10, true);
+    addFx('vapor', steamPuff(), 12, false);
+    // la Dragona: el aviso del aliento (en línea), el piso ardiendo, el medio círculo de la cola y el vapor del surtidor
+    addFx('aviso_aliento', breathWarning(), 10, true);
+    addFx('fuego_piso', floorFire(), 10, true);
+    addFx('aviso_cola', tailWarning(), 10, false);
+    addFx('vapor_grande', bigSteam(), 12, false);
+  }
+  // el Mundo 7: el rayo de hielo, la bolita del diablillo, las lanzas de la Reina y el golpe en cruz del Guardián
+  if (!opts.sinMundo7) {
+    for (const { dir, frames } of rotate8(iceProjectile())) addFx(`proyectil_rayo_hielo_${dir}`, frames, 12, true);
+    addFx('impacto_rayo_hielo', iceImpact(), 14, false);
+    for (const { dir, frames } of rotate8(smallFireball())) addFx(`proyectil_fuego_chico_${dir}`, frames, 12, true);
+    addFx('aviso_lanza_hielo', iceLanceWarning(), 10, false);
+    addFx('aviso_cruz', crossWarning(), 10, false);
+    // el Diablo
+    addFx('nova_fuego_diablo', novaFire(), 12, false);
+    addFx('aviso_nova', novaWarning(), 10, false);
+    addFx('rayo_rojo', redBeam(), 14, true);
+    addFx('aviso_rayo', beamWarning(), 10, true);
+    addFx('pilar_fuego', firePillar(), 12, false);
+    addFx('aviso_pilar', pillarWarning(), 10, false);
+    const jaula = boneCage();
+    addFx('jaula_huesos_subir', jaula.subir, 14, false);
+    addFx('jaula_huesos_quieta', jaula.quieta, 1, true);
+    addFx('jaula_huesos_romper', jaula.romper, 14, false);
+    addFx('aviso_carga_diablo', chargeWarning(), 10, true);
+    addFx('gota_sangre_diablo', bloodDrop(), 12, false);
+  }
+  const celeste = opts.sinCelestial ? null : celestialComun(files);
+  if (celeste) Object.assign(fx, celeste.fx);
   manifest.fx = fx;
   log(`fx: ${Object.keys(fx).length}`);
 
@@ -230,8 +643,15 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     }
   }
   files.push(...exportLootWorld(UNIQUE_LOOT, 'botin/mundo'));
-  const catalog = lootCatalog(loot) as { items: { id: string; atlas?: string }[] };
-  for (const it of catalog.items) it.atlas = atlasOf.get(it.id);
+  const catalog = lootCatalog(loot) as { items: { id: string; atlas?: string; visual?: { capa: TipoCapa; clave: string } }[] };
+  const porId = new Map(loot.map((i) => [i.id, i]));
+  for (const it of catalog.items) {
+    it.atlas = atlasOf.get(it.id);
+    // la capa de equipo que se ve en la heroína con esto puesto
+    const li = porId.get(it.id);
+    const v = li ? capaDeObjeto(li as never, handKindOf(li)) : null;
+    if (v) it.visual = v;
+  }
   files.push(json('botin/catalogo.json', catalog));
   manifest.botin = {
     atlas, iconos: atlas.iconos, especiales: atlas.especiales,
@@ -240,49 +660,187 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   };
   log('botín listo');
 
-  // ---------- mundo 1: el Bosque GG grande ----------
-  const big = bosqueMap();
-  const tiled = bigMapToTiled(big, 'suelo');
-  files.push(json('mundo/mundo1_bosque.json', tiled.json));
-  files.push(png('mundo/agua.png', tiled.aguaPng));
-  for (const c of tiled.chunks) files.push(png(`mundo/${c.name}`, c.img));
-  // vista completa a la mitad (para mirar el mapa) y postales a tamaño real (lo que se ve en pantalla)
-  const full = renderBigMap(big);
-  files.push(png('mundo/mundo1_vista.png', half(renderBigMap(big, { entities: true }))));
-  const postales: Record<string, string> = {};
-  for (const p of big.postales) { const n = `mundo/postales/${p.nombre}.png`; files.push(png(n, cropView(full, p.x, p.y))); postales[p.nombre] = n; }
-  const objManifest: Record<string, unknown> = {};
-  for (const o of big.objects) {
-    const anims: Record<string, unknown> = {};
-    for (const [an, a] of Object.entries(o.anims)) {
-      const name = `mundo/objetos/${o.name}_${an}.png`;
-      files.push(png(name, strip(a.frames)));
-      anims[an] = { archivo: name, cuadros: a.frames.length, fps: a.fps, loop: a.loop };
-    }
-    objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, ...(o.solids ? { solidos: o.solids } : {}), ...(o.layer ? { capa: o.layer } : {}), ...(o.light ? { luz: o.light } : {}), ...(o.foam ? { espuma: o.foam } : {}), anims };
-  }
+  // ---------- mundos: el Bosque GG (mundo 1), la Catedral de las Raíces (mundo 2) y las Galerías del Eco (mundo 3) ----------
+  const hechos = new Set<string>();
+  const once = (f: ExportFile) => { if (!hechos.has(f.name)) { hechos.add(f.name); files.push(f); } };
   const parts: Record<string, unknown> = {};
-  for (const p of particles()) { const n = `mundo/particulas/${p.name}.png`; files.push(png(n, strip(p.frames))); parts[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
+  for (const p of particles()) { const n = `mundo/particulas/${p.name}.png`; once(png(n, strip(p.frames))); parts[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
   const crit: Record<string, unknown> = {};
-  for (const c of creatures()) {
+  for (const c of [...creatures(), ...smallCreatures(), shadowEyes()]) {
     const anims: Record<string, unknown> = {};
-    for (const [an, a] of Object.entries(c.anims)) { const n = `mundo/criaturas/${c.name}_${an}.png`; files.push(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
+    for (const [an, a] of Object.entries(c.anims)) { const n = `mundo/criaturas/${c.name}_${an}.png`; once(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
     crit[c.name] = { w: c.w, h: c.h, anims };
   }
-  files.push(png('mundo/niebla_nubes.png', fogTexture('nubes', 256)));
-  files.push(png('mundo/niebla_jirones.png', fogTexture('jirones', 256)));
-  files.push(png('mundo/luz.png', lightTexture()));
-  files.push(png('mundo/nube.png', cloudShadow()));
-  manifest.mundo = {
-    mapa: 'mundo/mundo1_bosque.json', nombre: 'Bosque GG', ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
-    agua: 'mundo/agua.png', suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
-    vista: 'mundo/mundo1_vista.png', postales, objetos: objManifest, particulas: parts, criaturas: crit, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
-    niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', notas: 'Texturas de 256 que pegan por los 4 lados. Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla.' },
-    referencia: 'tools/pixel_forja/scripts/visor/runtime.js anima todo esto en Canvas 2D: es la referencia para el juego.',
-    notas: 'Orden de dibujo: agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > objetos y personajes ordenados por y > luces (aditivo) > sombras de nubes. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',
+  once(png('mundo/niebla_nubes.png', fogTexture('nubes', 256)));
+  once(png('mundo/niebla_jirones.png', fogTexture('jirones', 256)));
+  once(png('mundo/luz.png', lightTexture()));
+  once(png('mundo/nube.png', cloudShadow()));
+  const formas: { mundo: string; objetos: BigMap['objects'] }[] = [];
+  const exportarMundo = (big: BigMap, slug: string, nombre: string, agua: string, portal?: string) => {
+    formas.push({ mundo: slug, objetos: big.objects });
+    const choques = choquesDeObjetos(formas);
+    if (choques.length) throw new Error(`Objetos con el mismo nombre y distinta forma en mundos distintos: ${choques.join('; ')}`);
+    const tiled = bigMapToTiled(big, 'suelo');
+    once(json(`mundo/${big.name}.json`, tiled.json));
+    once(png(agua, tiled.aguaPng));
+    once(png(`mundo/${big.name}_espuma.png`, tiled.espumaPng));
+    for (const c of tiled.chunks) once(png(`mundo/${c.name}`, c.img));
+    // vista completa a la mitad (para mirar el mapa) y postales a tamaño real (lo que se ve en pantalla)
+    const full = renderBigMap(big);
+    once(png(`mundo/${slug}_vista.png`, half(renderBigMap(big, { entities: true }))));
+    const postales: Record<string, string> = {};
+    for (const p of big.postales) { const n = `mundo/postales/${p.nombre}.png`; once(png(n, cropView(full, p.x, p.y))); postales[p.nombre] = n; }
+    // abyss premium: las especies chicas de este mundo (con su comportamiento) y la niebla teñida del mundo
+    const critMundo: Record<string, unknown> = { ...crit };
+    for (const c of FAUNA[slug]?.() ?? []) {
+      const anims: Record<string, unknown> = {};
+      for (const [an, a] of Object.entries(c.anims)) { const n = `mundo/criaturas/${c.name}_${an}.png`; once(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
+      // `huye` es el mismo archivo que `huir` (el encargo lo nombra así; la rana y la ardilla usan `huir`)
+      anims.huye = anims.huir;
+      critMundo[c.name] = { w: c.w, h: c.h, anims, comportamiento: c.comportamiento, notas: c.nota };
+    }
+    const receta = RECETAS[slug];
+    let nieblaMundo: Record<string, string> = {};
+    if (receta?.niebla) {
+      const t = receta.niebla, rgbT: [number, number, number] = [parseInt(t.slice(1, 3), 16), parseInt(t.slice(3, 5), 16), parseInt(t.slice(5, 7), 16)];
+      once(png(`mundo/niebla_jirones_${slug}.png`, fogTexture('jirones', 256, rgbT)));
+      nieblaMundo = { jirones_mundo: `mundo/niebla_jirones_${slug}.png` };
+    }
+    const abyss = (big as BigMap & { abyss?: InformeAbyss }).abyss;
+    const objManifest: Record<string, unknown> = {};
+    for (const o of big.objects) {
+      const anims: Record<string, unknown> = {};
+      for (const [an, a] of Object.entries(o.anims)) {
+        const name = `mundo/objetos/${o.name}_${an}.png`;
+        once(png(name, strip(a.frames)));
+        anims[an] = { archivo: name, cuadros: a.frames.length, fps: a.fps, loop: a.loop };
+      }
+      // sombra horneada (mismo tamaño que el objeto): el juego la dibuja debajo de todo, en vez de la elipse
+      let sombra: { sombra: string } | Record<string, never> = {};
+      if (o.shadow) { const n = `mundo/objetos/${o.name}_sombra.png`; once(png(n, o.shadow)); sombra = { sombra: n }; }
+      objManifest[o.name] = { w: o.w, h: o.h, apoyo: o.anchor, solido: o.solid, ...(o.solids ? { solidos: o.solids } : {}), ...(o.layer ? { capa: o.layer } : {}), ...(o.light ? { luz: o.light } : {}), ...(o.foam ? { espuma: o.foam } : {}), ...(o.base ? { base: o.base } : {}), ...sombra, anims };
+    }
+    return {
+      mapa: `mundo/${big.name}.json`, nombre, ancho: big.w, alto: big.h, cuadro: TILE, trozo: CHUNK,
+      agua, espuma: { archivo: `mundo/${big.name}_espuma.png`, capa: 'espuma', columnas: waterExtras(big).columnas, cuadros: ESPUMA.cuadros, fps: ESPUMA.fps }, reflejo: { capa: 'reflejo' },
+      suelo: tiled.chunks.map((c) => ({ archivo: `mundo/${c.name}`, x: c.x, y: c.y })),
+      vista: `mundo/${slug}_vista.png`, postales, objetos: objManifest, ...(portal ? { portal, portales: 'Portales premium (#40), 96 x 128 con apoyo abajo al centro: anims girar (12 a 12 fps), abrir (8), cerrar (6), y las capas sueltas arco (1) y remolino (12). `portal` es el de este mundo; portal_azul y portal_rojo siguen en todos.' } : {}), ...(big.meta?.fondo ? { fondo: big.meta.fondo.map((f) => ({ objeto: f.id, paralaje: f.paralaje })) } : {}), particulas: parts, criaturas: critMundo, luz: 'mundo/luz.png', nube: 'mundo/nube.png',
+      niebla: { nubes: 'mundo/niebla_nubes.png', jirones: 'mundo/niebla_jirones.png', ...nieblaMundo, notas: 'Texturas de 256 que pegan por los 4 lados (los jirones también: ya no hay costura cada 512). Dibujar a escala 2, corriendo con el viento (jirones 12 px/s, nubes 7 px/s con parallax 1.15), con alfa = zona.niebla. jirones_mundo (si está) es la misma forma teñida con el color de la niebla de este mundo: usarla en vez de jirones.' },
+      ...(abyss ? {
+        monumentos: Object.fromEntries(abyss.monumentos.map((p) => [p.nombre, { zona: p.zona, x: p.x, y: p.y, historia: p.historia }])),
+        luz_zonas: { defecto: receta ? { rayos: receta.luz.mundo.rayos, grado: receta.luz.mundo.grado } : undefined, notas: 'Cada zona del mapa trae rayos ("angulo,#color,densidad": grados desde la vertical, densidad 0 a 1, 0 = sin rayos) y grado ("#sombras,#luces,contraste,saturacion"). Si a una zona le falta, usar defecto.' },
+        criaturas_nuevas: { especies: (FAUNA[slug]?.() ?? []).map((c) => c.name), notas: 'Entidades criatura con `especie`. Anims quieto (bucle) y huir (= huye, mismo archivo). comportamiento: huye = radio en px al que se asusta, se_esconde = se mete en una grieta y desaparece (si no, corre fuera de la pantalla), corre = px/s, vuela = sale volando.' },
+      } : {}),
+      referencia: 'tools/pixel_forja/scripts/visor/runtime.js anima todo esto en Canvas 2D: es la referencia para el juego.',
+      notas: 'Orden de dibujo: capa fondo (paralaje) > agua (cuadros animados) > suelo (trozos de imagen, el agua es transparente) > objetos con capa suelo > sombras horneadas (campo sombra; si no hay, la elipse de siempre) > objetos y personajes ordenados por y > capa frente (no va en el mapa: la zona la declara en su propiedad frente y el juego la pega a los bordes de la pantalla, con paralaje 1.15) > luces (aditivo) > sombras de nube. Cada zona del mapa trae musica, ambiente, luz, oscuridad y particulas.',
+    };
   };
+  const bosque = exportarMundo(bosqueMap(), 'mundo1', 'Bosque GG', 'mundo/agua.png', 'portal_verde');
+  log('bosque listo');
+  const catedral = exportarMundo(catedralMap(), 'mundo2', 'La Catedral de las Raíces', 'mundo/mundo2_agua.png', 'portal_violeta');
+  log('catedral lista');
+  const galeriasBig = opts.sinMundo3 ? null : galeriasMap();
+  const galerias = galeriasBig ? {
+    ...exportarMundo(galeriasBig, 'mundo3', 'Las Galerías del Eco', 'mundo/mundo3_agua.png', 'portal_ambar'),
+    cristales: {
+      capa: 'cristales', total: galeriasBig.cristales!.filter((c) => !c.grande).length, grandes: galeriasBig.cristales!.filter((c) => c.grande).length,
+      objetos: { apagado: 'cristal_apagado_<forma>', prendido: 'cristal_prendido_<forma>', prenderse: 'anim prenderse de cristal_prendido_<forma>', grande_apagado: 'cristal_grande_apagado', grande_prendido: 'cristal_grande_prendido' },
+      notas: 'Capa de objetos `cristales` del mapa: cada punto es el pie del cristal (x, y) con id, color (cian, violeta, ambar), forma (0 cian, 1 violeta, 2 ámbar: forma y color van juntos) y grande. Arrancan apagados; el juego los dibuja apagados o prendidos según su estado (src/logic/abismo.ts). Son sólidos como el objeto (14 x 6 al pie; los grandes 30 x 10).',
+    },
+  } : null;
+  if (galerias) log('galerías listas');
+  // el Mundo 4: el Puerto Ahogado, con sus mareas
+  const puertoBig = opts.sinMundo4 ? null : puertoMap();
+  const puerto = puertoBig ? (() => {
+    const ojos = marinerEyes(), anims: Record<string, unknown> = {};
+    for (const [an, a] of Object.entries(ojos.anims)) { const n = `mundo/criaturas/${ojos.name}_${an}.png`; once(png(n, strip(a.frames))); anims[an] = { archivo: n, cuadros: a.frames.length, fps: a.fps, loop: a.loop }; }
+    const base = exportarMundo(puertoBig, 'mundo4', 'El Puerto Ahogado', 'mundo/mundo4_agua.png', 'portal_rojo');
+    return {
+      ...base,
+      criaturas: { ...(base.criaturas as Record<string, unknown>), marinero_ojos: { w: ojos.w, h: ojos.h, anims } },
+      marea: {
+        capas: { baja: 'marea_baja', alta: 'marea_alta' }, agua: 'agua_marea', flotante: 'muelle_flotante',
+        notas: 'Capas de cuadros del mapa (1 = solo se camina con esa marea). En `colision` los dos van libres: con la marea alta el juego suma marea_baja a la colisión y dibuja agua_marea en esos cuadros; con la baja suma marea_alta y deja los muelles flotantes en `abajo` (al subir: anim subir y después arriba). Desde cualquier cuadro que se camina hay camino a un farol con las dos mareas.',
+      },
+      faroles: { apagado: 'farol_muelle_apagado', prendido: 'farol_muelle_prendido', prenderse: 'farol_muelle_prenderse', notas: 'Entidades farol_muelle (el poste, con `punto` = id del punto_guardado). Arrancan apagados; Thor los prende. El primero (tutorial) enseña el farol de Thor.' },
+      notas_luz: 'Sin sombras horneadas con dirección: los objetos traen solo la sombra de contacto al pie (campo sombra). La sombra larga la hace el juego lejos de la luz que alumbra (el farol de Thor, los faroles del muelle y el faro).',
+    };
+  })() : null;
+  if (puerto) log('puerto listo');
+  // el Mundo 5: La Ciudad Dormida, con sus faroles de plaza, las chispas de la luz robada y la ciudad que despierta
+  const ciudadBig = opts.sinMundo5 ? null : ciudadMap();
+  const ciudad = ciudadBig ? (() => {
+    const base = exportarMundo(ciudadBig, 'mundo5', 'La Ciudad Dormida', 'mundo/mundo5_agua.png', 'portal_plata');
+    const ps = sleepParticle(), pn = `mundo/particulas/${ps.name}.png`;
+    once(png(pn, strip(ps.frames)));
+    const objetos = base.objetos as Record<string, Record<string, unknown>>;
+    if (objetos.figura_ladrona) objetos.figura_ladrona.farolito = thiefFigure().farolito;
+    return {
+      ...base,
+      particulas: { ...parts, [ps.name]: { archivo: pn, w: ps.w, h: ps.h, cuadros: ps.frames.length, fps: ps.fps } },
+      faroles: { apagado: 'farol_plaza_apagado', prendido: 'farol_plaza_prendido', prenderse: 'farol_plaza_prenderse', robado: 'farol_plaza_robado', notas: 'Entidades farol_plaza (el poste, con `punto` = id del punto_guardado y `barrio` = nombre de la zona que alumbra). Arrancan apagados; la heroína los prende (botón ui.habilidades.prender). La Ladrona (figura_ladrona, anim robar en bucle, el hilo de luz va del farol hasta `farolito`) puede robarle la luz: farol_plaza_robado una vez y queda apagado, y la luz cae en tres chispas.' },
+      chispas: { objeto: 'chispa_luz', entidad: 'chispa', por_robo: 3, notas: 'Entidades chispa con `barrio`: al menos 6 por barrio con farol, caminables y lejos de las paredes. El juego elige tres del barrio del farol robado; Thor las rastrea (ui.habilidades.chispas lleva la cuenta).' },
+      estatuas: { entidad: 'estatua', objeto: 'estatua_ciudadano_<variante>', anims: { dormida: 'dormida', despertar: 'despertar', despierta: 'despierta' }, notas: 'Cada entidad estatua va en el mismo punto que su objeto en la capa objetos (son sólidas). Al vencer al Rey: despertar una vez y después despierta en bucle. También despiertan las casas (anim despierta: ventanas prendidas y toldos de colores), los puestos, los árboles de piedra y la fuente (anim corre).' },
+      notas_luz: 'Sin sombras horneadas con dirección: los objetos traen solo la sombra de contacto al pie (campo sombra). La luz es de los faroles de plaza (dorada, 320), las lámparas del trono (200), la cajita de música (lila, 40) y la corona del Rey (personajes.rey_de_piedra.luz_corona).',
+    };
+  })() : null;
+  if (ciudad) log('ciudad lista');
+  // el Mundo 6: La Fragua de las Luces, con la lava en la capa agua, las jaulas, las grietas que respiran y los fuelles
+  const fraguaBig = opts.sinMundo6 ? null : fraguaMap();
+  const fragua = fraguaBig ? (() => {
+    const base = exportarMundo(fraguaBig, 'mundo6', 'La Fragua de las Luces', 'mundo/mundo6_agua.png', 'portal_brasa') as Record<string, unknown>;
+    // la lava apagada (después de la Dragona): misma tira que la de la lava, hecha piedra con vetas tibias
+    const ap = createRaster(TILE * 5, TILE);
+    for (let f = 0; f < 4; f++) blit(ap, aguaTile(fraguaBig, f, true), f * TILE, 0);
+    for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) { const k = (y * ap.w + 4 * TILE + x) * 4; ap.data[k] = 255; ap.data[k + 1] = 0; ap.data[k + 2] = 255; ap.data[k + 3] = 110; }
+    once(png('mundo/mundo6_agua_apagada.png', ap));
+    const pe = emberParticle(), pn = `mundo/particulas/${pe.name}.png`;
+    once(png(pn, strip(pe.frames)));
+    const objetos = base.objetos as Record<string, Record<string, unknown>>;
+    for (const [n, o] of Object.entries(objetos)) if (n.startsWith('jaula_luz_')) o.candado = JAULA_CANDADO;
+    delete base.reflejo;
+    return {
+      ...base,
+      agua_apagada: 'mundo/mundo6_agua_apagada.png',
+      lava: { notas: 'La capa agua de este mundo es lava (no se camina: ya es sólida en colision). La tira `agua` trae 4 cuadros de lava que pegan por los cuatro lados; `espuma` es el borde que brilla (4 cuadros). Sin reflejo. La luz grande del piso: poner luz naranja (#ff7020) a lo largo de las orillas. Al vencer a la Dragona se cambia la tira por `agua_apagada` (la lava hecha piedra, mismo formato) y la espuma se apaga.' },
+      particulas: { ...parts, [pe.name]: { archivo: pn, w: pe.w, h: pe.h, cuadros: pe.frames.length, fps: pe.fps } },
+      fuentes_frias: { objeto: 'fuente_fria', notas: 'Las 5 entidades punto_guardado con fuente_fria: true son la fogata del piso (guardan, curan, enfrían y son la tienda). El objeto fuente_fria va en la capa objetos justo arriba del punto. Luz celeste de radio 220 que alumbra sin calentar.' },
+      jaulas: { entidad: 'jaula', objeto: 'jaula_luz_<luz>', luz_libre: 'luz_libre_<luz>', luces: LUZ_IDS_KIT, anims: { cerrada: 'cerrada', abrir: 'abrir', vacia: 'vacia' }, notas: 'Entidades jaula (no van en la capa objetos: las dibuja el juego). El punto de la entidad es el candado: la jaula se dibuja con su apoyo en (x - candado[0], y - candado[1]) (candado viene en el objeto). Props: id, luz (bosque, catedral, galerias, faro, ciudad), zona (nombre exacto) y carcel: true en las 8 de la sala del Carcelero (se abren todas juntas al vencerlo). Al pegarle al candado: abrir una vez, después vacia en bucle, y queda flotando luz_libre_<luz> arriba de la jaula. Los farolero_cadenas con jaula: true y luz también cuentan como jaula.' },
+      grietas: { entidad: 'grieta', objeto: 'grieta_brasa_<0..3>', anims: { apagada: 'apagada', aviso: 'aviso', caliente: 'caliente' }, notas: 'Rectángulos (x, y arriba a la izquierda, width y height de 64 o 96) siempre caminables. El juego llena cada parche con grieta_brasa_<v> en cuadros de 64 (la variante por posición, encajan entre sí). Con cada soplido de los fuelles: aviso y después caliente, corrido por fase (0 a 1). Apagadas al vencer a la Dragona.' },
+      fuelles: { entidad: 'fuelle', objetos: 'fuelle_gigante_0, fuelle_gigante_1 y fuelle_gigante_0_b', anims: { quieto: 'quieto', soplar: 'soplar', dormido: 'dormido' }, notas: 'Cada entidad fuelle va en el mismo punto que su objeto (prop objeto). El juego los hace soplar a todos juntos (audio fuelle_sopla 1 s antes de que las grietas se prendan). Dormidos al vencer a la Dragona.' },
+      charcos: { entidad: 'charco_frio', objeto: 'charco_frio', notas: 'El objeto charco_frio (capa suelo) y la entidad en el mismo punto: ahí Thor se moja. Al menos 2 por zona y 2 en el borde de la arena.' },
+      arena: { surtidor: 'surtidor (capa suelo) y surtidor_chorro encima cuando sale el chorro', palanca: 'palanca (arriba, tirar)', cadena: 'cadena_dragona', notas: 'Entidades surtidor (id) y palanca (surtidor = id de su surtidor), cada una en el mismo punto que su objeto. Las 4 entidades cadena están en el borde de la arena con hacia_x, hacia_y (el centro): el juego repite cadena_dragona girada de ahí hasta la Dragona.' },
+      apagada: { notas: 'Al vencer a la Dragona: fuelles en dormido, braseros en apagado, la boca del horno en apagado, la capa agua cambia a agua_apagada y las grietas quedan apagadas.' },
+      notas_luz: 'Sin sombras horneadas con dirección: los objetos traen solo la sombra de contacto al pie (campo sombra). La luz es de la lava (orillas), los braseros (naranja 180), la boca del horno (360), las jaulas (su color, 40), las luces libres (260), las fuentes frías (celeste 220) y la boca de la Dragona (personajes.dragona_brasa.luz_boca).',
+    };
+  })() : null;
+  if (fragua) log('fragua lista');
+  // el Mundo 7: El Corazón Helado, con el lago de hielo negro, los refugios de la ventisca y la arena del Diablo
+  const corazonBig = opts.sinMundo7 ? null : corazonMap();
+  const corazon = corazonBig ? (() => {
+    const base = exportarMundo(corazonBig, 'mundo7', 'El Corazón Helado', 'mundo/mundo7_agua.png', 'portal_hielo') as Record<string, unknown>;
+    const extra: Record<string, unknown> = {};
+    for (const p of [snowParticle(), blizzardParticle()]) { const n = `mundo/particulas/${p.name}.png`; once(png(n, strip(p.frames))); extra[p.name] = { archivo: n, w: p.w, h: p.h, cuadros: p.frames.length, fps: p.fps }; }
+    delete base.reflejo;
+    return {
+      ...base,
+      particulas: { ...parts, ...extra },
+      agua_helada: { notas: 'La capa agua de este mundo son los agujeros de agua negra del lago (no se caminan: ya son sólidos en colision). Sin reflejo. La espuma es la escarcha de la orilla del agujero.' },
+      hogueras: { objeto: 'hoguera_hueso', notas: 'Las 5 entidades punto_guardado con hoguera: true son la fogata del piso (guardan, curan, calientan y son la tienda). El objeto hoguera_hueso va en la capa objetos justo arriba del punto. Luz cálida #ffb060 de radio 240: es la única luz tibia del piso, ahí se descongela la heroína.' },
+      refugios: { entidades: ['columna_hielo', 'gigante'], objetos: 'columna_hielo_<0..3> y gigante_congelado_<0..2> (y sus _b)', notas: 'Cada entidad columna_hielo o gigante es un refugio de la ventisca: el punto es el centro de la base sólida del objeto (prop objeto, mismo lugar que en la capa objetos) y `ancho` el ancho de esa base en px. El lado de sotavento (el contrario al viento) protege. Hay más en el Puente y en el Lago. Los gigantes traen la anim respira (2 cuadros a 1 fps, se les mueve un ojo): ponerla de vez en cuando, no siempre. Las columnas y los gigantes brillan apenas (luz fría chiquita).' },
+      hielo_fino: { entidad: 'hielo_fino', objeto: 'hielo_fino_<0..3>', anims: { quieto: 'quieto', cruje: 'cruje', roto: 'roto' }, notas: 'Rectángulos (x, y arriba a la izquierda, width y height múltiplos de 32) sobre el lago, siempre caminables. El juego llena cada parche con hielo_fino_<v> en cuadros de 64 (la variante por posición: (floor(x / 64) * 3 + floor(y / 64) * 5) % 4) y recorta el último si sobra. Si la heroína se queda parada: cruje (una vez) y después roto. Ningún camino obligado pasa por el hielo fino.' },
+      arena: { radio: ARENA_DIABLO.radio, braseros: { entidad: 'brasero_hueso', objeto: 'brasero_hueso', distancia: ARENA_DIABLO.brasero, anims: { apagado: 'apagado', prenderse: 'prenderse', prendido: 'prendido', congelado: 'congelado' } }, trono: 'trono_diablo', notas: 'Los 4 braseros de hueso van en diagonal a unos 170 px del centro de la arena, cada entidad en el mismo punto que su objeto. Arrancan apagados; la heroína los prende (prenderse una vez y después prendido); el aliento del Diablo los deja en congelado. El trono (entidad trono_diablo, mismo punto que su objeto) va al norte de la arena. La figura con alto: true al lado del trono es la Ladrona con la última llama (objeto figura_ultima_llama: idle y al vencer al Diablo irse).' },
+      frio: { notas: 'Todo el piso es oscuridad casi total. La ventisca de la zona con ventisca: siempre (El Puente de las Cadenas) no para nunca; en las demás va y viene. Partículas nuevas: nieve (nieve negra con ceniza) y ventisca (la raya de nieve de lado, para cuando sopla).' },
+      notas_luz: 'Sin sombras horneadas con dirección: los objetos traen solo la sombra de contacto al pie (campo sombra). La luz es de las hogueras de hueso (#ffb060, 240), los braseros de la arena prendidos (220), el trono (rojo, 260), la Ladrona (rojo chiquito), el farol de la heroína, sus luces compañeras y los ojos del Diablo (personajes.diablo.luz_ojos). Las columnas y los gigantes brillan apenas frío (70 y 140).',
+    };
+  })() : null;
+  if (corazon) log('corazón listo');
+  // `mundo` sigue siendo el Bosque (un juego viejo lo lee así); `mundos` trae todos en orden de bajada
+  manifest.mundo = bosque;
+  manifest.mundos = [{ id: 'mundo1', ...bosque }, { id: 'mundo2', ...catedral }, ...(galerias ? [{ id: 'mundo3', ...galerias }] : []), ...(puerto ? [{ id: 'mundo4', ...puerto }] : []), ...(ciudad ? [{ id: 'mundo5', ...ciudad }] : []), ...(fragua ? [{ id: 'mundo6', ...fragua }] : []), ...(corazon ? [{ id: 'mundo7', ...corazon }] : [])];
   log('mundo listo');
 
+  let introLogo: Record<string, unknown> | null = null;
   // ---------- interfaz ----------
   const ui: Record<string, unknown> = {};
   for (const s of [...hudSprites(), ...hudIcons(), rotateTablet()]) {
@@ -294,8 +852,13 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   for (const s of signIcons()) { const n = `ui/carteles/${s.name}.png`; files.push(png(n, s.frames[0])); carteles[s.name] = n; }
   ui.iconos_cartel = carteles;
   const habilidades: Record<string, string> = {};
-  for (const s of skillIcons()) { const n = `ui/habilidades/${s.name}.png`; files.push(png(n, s.frames[0])); habilidades[s.name] = n; }
+  // el archivo va sin tildes ni eñes (compañeras > companeras.png); la llave del manifest queda como la pide el juego
+  for (const s of [...skillIcons(), ...(opts.sinCelestial ? [] : celestialSkillIcons())]) { const n = `ui/habilidades/${s.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')}.png`; files.push(png(n, s.frames[0])); habilidades[s.name] = n; }
   ui.habilidades = habilidades;
+  if (!opts.sinCelestial) {
+    files.push(png('ui/marco_ciclo.png', marcoCiclo()));
+    ui.marco_ciclo = { archivo: 'ui/marco_ciclo.png', w: MARCO_CICLO.w, h: MARCO_CICLO.h, cuadros: 1, nueve: MARCO_CICLO.nueve, notas: 'El número de ciclo en el HUD ("Ciclo 2"): se estira como los otros marcos; los espirales de las esquinas de arriba no se estiran.' };
+  }
   const dg = digitSheet();
   files.push(png('ui/numeros.png', dg.png));
   ui.numeros = { archivo: 'ui/numeros.png', w: dg.cw, h: dg.ch, caracteres: DIGITS, filas: dg.colors };
@@ -304,7 +867,7 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   ui.inventario = { archivo: 'ui/inventario.png', w: inv.layout.w, h: inv.layout.h, cuadros: 1, layout: inv.layout };
   if (opts.fonts) {
     const fuentes: Record<string, unknown> = {};
-    for (const f of bitmapFonts(opts.fonts.regular, opts.fonts.bold)) {
+    for (const f of bitmapFonts(opts.fonts.regular, opts.fonts.bold, opts.vietnamita ? ALL_FONT_CHARS : FONT_CHARS)) {
       files.push(png(`ui/fuentes/${f.name}.png`, f.png));
       files.push(file(`ui/fuentes/${f.name}.fnt`, enc.encode(f.fnt), 'application/xml'));
       fuentes[f.name] = { png: `ui/fuentes/${f.name}.png`, fnt: `ui/fuentes/${f.name}.fnt`, alto_linea: f.lineHeight, base: f.base };
@@ -313,7 +876,45 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
     const logo = renderLogo(opts.fonts.bold);
     files.push(png('ui/logo.png', strip(logo)));
     ui.logo = { archivo: 'ui/logo.png', w: 288, h: 96, cuadros: logo.length, fps: 8, loop: true };
-    ui.fuentes = { ...fuentes, notas: 'BMFont XML: this.load.bitmapFont(nombre, png, fnt). fuente_ui (8 px, blanca con sombra, se tiñe con setTint; usar escala entera x2 o x3), fuente_titulo y fuente_titulo_plata (16 px, ya pintadas). Tienen ñ, tildes, ¡, ¿ y todas las letras del vietnamita.' };
+    // el Ciclo 2 (F13): el mismo logo en oro con un espiral, para el título cuando la jugadora ya terminó
+    if (!opts.sinCelestial) {
+      files.push(png('ui/logo_ciclo.png', strip(logoCiclo(logo))));
+      ui.logo_ciclo = { archivo: 'ui/logo_ciclo.png', w: 288, h: 96, cuadros: logo.length, fps: 8, loop: true, notas: 'Igual que ui.logo (mismo tamaño y cuadros), en oro con un espiral que gira detrás.' };
+    }
+    // el logo con fuego del intro: al doble, 16 cuadros en una grilla de 4 x 4 (una tira pasaría de 4096)
+    if (!opts.sinIntro) {
+      const lf = logoFuego(logo[0]), C = 4, lw = lf[0].w, lh = lf[0].h;
+      const grid = createRaster(lw * C, lh * Math.ceil(lf.length / C));
+      lf.forEach((fr, i) => blit(grid, fr, (i % C) * lw, Math.floor(i / C) * lh));
+      files.push(png('intro/logo_fuego.png', grid));
+      introLogo = { archivo: 'intro/logo_fuego.png', w: lw, h: lh, cuadros: lf.length, fps: 12, loop: true, columnas: C, notas: 'Cuadro i en la columna i % 4, fila floor(i / 4). El logo de siempre al doble, con 32 px de aire arriba para las llamas.' };
+    }
+    ui.fuentes = { ...fuentes, notas: 'BMFont XML: this.load.bitmapFont(nombre, png, fnt). fuente_ui (8 px, blanca con sombra, se tiñe con setTint; usar escala entera x2 o x3), fuente_titulo y fuente_titulo_plata (16 px, ya pintadas). Tienen ñ, tildes, ¡ y ¿' + (opts.vietnamita ? ' y todas las letras del vietnamita.' : '.') };
+  }
+  // ---------- el intro (parte 4): paneles en capas, fuego, humo y el logo con fuego ----------
+  if (!opts.sinIntro) {
+    const intro: Record<string, unknown> = {};
+    for (const p of introPanels()) {
+      intro[p.id] = {
+        w: p.w, h: p.h, notas: p.notas,
+        capas: p.capas.map((c) => { const n = `intro/${p.id}_${c.nombre}.png`; files.push(png(n, strip(c.frames))); return { nombre: c.nombre, archivo: n, cuadros: c.frames.length, fps: c.fps, paralaje: c.paralaje }; }),
+      };
+    }
+    const fp = fuegoPared(), hg = humoGrande();
+    files.push(png('intro/fuego_pared.png', strip(fp)), png('intro/humo_grande.png', strip(hg)));
+    intro.fuego_pared = { archivo: 'intro/fuego_pared.png', w: 128, h: 96, cuadros: fp.length, fps: 12, loop: true, notas: 'Pega de lado a lado: repetirla a lo ancho de la pantalla. Sin piedras.' };
+    intro.humo_grande = { archivo: 'intro/humo_grande.png', w: 128, h: 128, cuadros: hg.length, fps: 6, loop: false, notas: 'Cruza la pantalla delante de todo y se desvanece (el último cuadro ya casi no se ve).' };
+    if (introLogo) intro.logo_fuego = introLogo;
+    intro.audio = { musica: 'musica_intro', latido: 'latido' };
+    intro.notas = 'Paneles de 480 x 270 (el corte del abismo 480 x 540) para agrandar x2 o x3 entero. Cada capa es una tira de cuadros; dibujar fondo, medio y frente en ese orden, cada una corrida con su paralaje respecto de la cámara. La luz sale de abajo, del fuego. Momentos de GUION_INTRO: brasas y cueva > intro_bosque_noche e intro_corte_abismo, ojos > intro_ojos, guardianes > intro_guardianes, familia > intro_familia, titulo > logo_fuego sobre fuego_pared.';
+    manifest.intro = intro;
+    log('intro listo');
+  }
+  // ---------- las cinemáticas del final (F13): la bajada al infierno y el cierre ----------
+  if (!opts.sinCine) {
+    manifest.cine_bajada = exportBajada(files, opts.fonts?.bold);
+    manifest.cine_fin = exportFin(files, opts.fonts?.bold);
+    log('cinemáticas listas');
   }
   files.push(png('ui/continuara.png', continuara()));
   ui.continuara = { archivo: 'ui/continuara.png', w: 960, h: 540, cuadros: 1 };
@@ -325,11 +926,16 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
 
   // ---------- audio ----------
   const audio: Record<string, string> = {};
-  for (const n of SFX_NAMES) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(SFX[n]()), 'audio/wav')); audio[n] = a; }
-  for (const [n, fn] of Object.entries(MUSIC)) { const a = `audio/musica_${n}.wav`; files.push(file(a, encodeWav(fn()), 'audio/wav')); audio[`musica_${n}`] = a; }
-  for (const n of AMBIENCE_NAMES) { const a = `audio/ambiente_${n}.wav`; files.push(file(a, encodeWav(ambience(n), undefined, true), 'audio/wav')); audio[`ambiente_${n}`] = a; }
+  // los efectos en bucle (el carrito) no se apagan al final, como los ambientes
+  for (const n of SFX_NAMES) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(SFX[n](), undefined, SFX_BUCLE.has(n)), 'audio/wav')); audio[n] = a; }
+  // las músicas nuevas que van en bucle no se apagan al final (las de antes quedan como estaban)
+  for (const [n, fn] of Object.entries(MUSIC)) { const a = `audio/musica_${n}.wav`; files.push(file(a, encodeWav(fn(), undefined, MUSICA_BUCLE.has(n)), 'audio/wav')); audio[`musica_${n}`] = a; }
+  for (const n of AMBIENTES_GG_ABYSS) { const a = `audio/ambiente_${n}.wav`; files.push(file(a, encodeWav(ambience(n), undefined, true), 'audio/wav')); audio[`ambiente_${n}`] = a; }
+  if (!opts.sinCine) for (const [n, b] of Object.entries(audioCine(['bajada', 'fin']))) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(b), 'audio/wav')); audio[n] = a; }
+  if (celeste) for (const [n, b] of Object.entries(celeste.audio)) { const a = `audio/${n}.wav`; files.push(file(a, encodeWav(b), 'audio/wav')); audio[n] = a; }
   manifest.audio = audio;
   log('audio listo');
+  if (celeste) manifest.celestial = { tunica: celeste.tunica, poderes: { alas: { icono: 'ui/habilidades/alas.png', anim: 'volar', fx: 'estela_alas', audio: 'alas_vuelo' }, lanza_luz: { icono: 'ui/habilidades/lanza_luz.png', fx: ['lanza_luz', 'impacto_luz'], audio: 'lanza_luz' } }, aura: 'aura_celestial', despierta: 'celestial_despierta', notas: NOTAS_CELESTIAL };
 
   // ---------- créditos y manifest ----------
   const creditTxt = ['GG Abyss: créditos del arte', '', 'Personajes, mundo, botín, interfaz y sonidos generados con PixelForja (código).', '', ...(opts.fonts ? ['Fuentes: Silkscreen, de Jason Kottke. SIL Open Font License 1.1 (https://openfontlicense.org).', ''] : []), ...credits].join('\n');

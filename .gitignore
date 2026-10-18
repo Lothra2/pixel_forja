@@ -12,3 +12,4 @@ private
 public/kit_deportes
 # kit a medida de ejemplo para el visor (se arma en el build)
 public/kit_nekketsu
+.cache

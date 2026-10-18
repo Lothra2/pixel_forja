@@ -226,7 +226,11 @@ describe('kit deportivo con las opciones nuevas', () => {
   }, 120_000);
 
   it('el kit del juego también exporta solo las filas pedidas', () => {
-    const files = buildGameKit({ heroes: [], enemies: [], thorTiers: [], quick: true, fichas: { rick: premium('rick') }, filas: FIVE });
+    const files = buildGameKit({
+      heroes: [], enemies: [], thorTiers: [], quick: true, fichas: { rick: premium('rick') }, filas: FIVE,
+      // lo de GG Abyss que no tiene que ver con las filas (los mundos, la celestial, el cine) se salta: si no, no cabe en el tiempo
+      sinCapas: true, sinCelestial: true, sinIntro: true, sinCine: true, sinMundo3: true, sinMundo4: true, sinMundo5: true, sinMundo6: true, sinMundo7: true,
+    });
     const m = dec(files.find((f) => f.name === 'manifest.json')!.bytes);
     expect(m.direcciones).toEqual(FIVE);
     const walk = decodePng(files.find((f) => f.name === m.personajes.rick.anims.walk.archivo)!.bytes);

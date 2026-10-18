@@ -34,7 +34,7 @@ export type AvatarPart = 'look' | 'hair' | 'eyes' | 'brows' | 'nose' | 'beard' |
   | 'lpcHead' | 'lpcHair' | 'lpcBrows' | 'lpcNose' | 'lpcBeard' | 'lpcMustache' | 'lpcGlasses' | 'lpcHat'
   | 'lpcMonster' | 'lpcEars' | 'lpcHorns';
 
-const LPC_FIELD: Record<string, keyof LpcLook> = {
+const LPC_FIELD: Record<string, Exclude<keyof LpcLook, 'ceno'>> = {
   lpcHead: 'head', lpcHair: 'hair', lpcBrows: 'brows', lpcNose: 'nose', lpcBeard: 'beard', lpcMustache: 'mustache', lpcGlasses: 'glasses', lpcHat: 'hat',
   lpcMonster: 'head', lpcEars: 'ears', lpcHorns: 'horns',
 };
