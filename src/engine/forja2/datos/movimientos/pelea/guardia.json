@@ -1,0 +1,10 @@
+{
+  "nombre": "guardia", "pack": "pelea", "bucle": true, "base": "guardia",
+  "notas": "Respira y rebota en el sitio. 32 ticks como el contrato.",
+  "claves": [
+    { "ticks": 8, "fase": "neutral", "intermedios": 1, "pose": {} },
+    { "ticks": 8, "fase": "neutral", "intermedios": 1, "pose": { "cadera": { "baja": 0.16 }, "manos": { "lejos": { "alto": 17 }, "cerca": { "alto": 37 } } } },
+    { "ticks": 8, "fase": "neutral", "intermedios": 1, "pose": { "cadera": { "baja": 0.17 }, "inclina": 7, "manos": { "lejos": { "alto": 15 }, "cerca": { "alto": 35 } } } },
+    { "ticks": 8, "fase": "neutral", "intermedios": 1, "pose": { "cadera": { "baja": 0.155 }, "manos": { "lejos": { "alto": 18 }, "cerca": { "alto": 38 } } } }
+  ]
+}

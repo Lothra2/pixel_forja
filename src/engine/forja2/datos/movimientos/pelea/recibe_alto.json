@@ -1,0 +1,14 @@
+{
+  "nombre": "recibe_alto", "pack": "pelea", "bucle": false, "base": "guardia",
+  "notas": "Golpe en la cara: la cabeza se va para atrás primero y el cuerpo la sigue. 18 ticks como el contrato.",
+  "claves": [
+    { "ticks": 4, "fase": "golpeado", "pose": {
+      "cadera": { "x": -0.09, "baja": 0.16 }, "inclina": -18, "giroPecho": 58,
+      "cabeza": { "giro": 10, "inclina": -26 }, "cara": "dolor",
+      "manos": { "lejos": { "alcance": 0.62, "alto": 48, "abre": -32, "forma": "abierta" }, "cerca": { "alcance": 0.52, "alto": 28, "abre": 32, "forma": "abierta" } } } },
+    { "ticks": 10, "fase": "golpeado", "curva": "freno", "intermedios": 2, "pose": {
+      "cadera": { "x": -0.06, "baja": 0.17 }, "inclina": -9, "cabeza": { "giro": -5, "inclina": -10 }, "cara": "dolor",
+      "manos": { "lejos": { "alcance": 0.55, "alto": 30, "abre": -20 }, "cerca": { "alcance": 0.45, "alto": 35, "abre": 25 } } } },
+    { "ticks": 4, "fase": "golpeado", "pose": {} }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "guardia": {
+    "cadera": { "x": -0.02, "baja": 0.14 },
+    "giroCadera": 40, "giroPecho": 50, "inclina": 6,
+    "cabeza": { "giro": -25, "inclina": 4 },
+    "pies": {
+      "lejos": { "x": 0.38, "z": -0.1, "giro": 10, "rodilla": [1, 0.1, -0.3] },
+      "cerca": { "x": -0.36, "z": 0.14, "giro": 45, "rodilla": [0.8, 0, 0.6] }
+    },
+    "manos": {
+      "lejos": { "alcance": 0.6, "alto": 20, "abre": -15, "forma": "puno", "codo": [0, -1, -0.3] },
+      "cerca": { "alcance": 0.4, "alto": 40, "abre": 20, "forma": "puno", "codo": [-0.2, -1, 0.4] }
+    },
+    "cara": "serio"
+  }
+}

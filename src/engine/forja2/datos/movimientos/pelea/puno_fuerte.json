@@ -1,0 +1,20 @@
+{
+  "nombre": "puño_fuerte", "pack": "pelea", "bucle": false, "fuerza": 0.9, "base": "guardia",
+  "notas": "Directo con la mano de atrás. 22 ticks: 7 de inicio, 6 activos, 9 de recuperación, como el contrato.",
+  "golpe": { "daño": 11, "nivel": "fuerte", "tipo": "medio", "tumba": false, "pausa": 10, "aturde": 18, "multi": false },
+  "claves": [
+    { "ticks": 4, "fase": "inicio", "intermedios": 1, "pose": { "giroPecho": 62, "inclina": 4, "manos": { "cerca": { "alcance": 0.32, "alto": 32, "abre": 32 } } } },
+    { "ticks": 3, "fase": "inicio", "curva": "golpe", "anticipa": true, "pose": {
+      "giroPecho": 72, "giroCadera": 50, "cadera": { "x": -0.04, "baja": 0.17 },
+      "manos": { "cerca": { "alcance": 0.26, "alto": 26, "abre": 42 }, "lejos": { "alcance": 0.58, "alto": 14 } } } },
+    { "ticks": 6, "fase": "activo", "impacto": { "miembro": "mano", "lado": "cerca" }, "pose": {
+      "giroPecho": 8, "giroCadera": 22, "inclina": 14, "cadera": { "x": 0.06, "baja": 0.15 },
+      "cabeza": { "giro": -6, "inclina": 2 }, "cara": "grito",
+      "manos": { "cerca": { "alcance": 1, "alto": 4, "abre": -4, "codo": [0, -1, 0.2] }, "lejos": { "alcance": 0.36, "alto": 32, "abre": 12 } },
+      "pies": { "cerca": { "punta": 22 } } } },
+    { "ticks": 6, "fase": "recuperacion", "curva": "freno", "intermedios": 2, "pose": {
+      "giroPecho": 30, "inclina": 9, "cadera": { "x": 0.02 },
+      "manos": { "cerca": { "alcance": 0.62, "alto": 24, "abre": 8 } } } },
+    { "ticks": 3, "fase": "recuperacion", "pose": {} }
+  ]
+}
