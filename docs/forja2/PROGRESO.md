@@ -4,14 +4,36 @@ El encargo completo está en `docs/PROMPT_FORJA2.md`. Rama: `claude/forja2` (sal
 
 | Fase | Estado | Puerta |
 |---|---|---|
-| 0. Base: merge de `abyss-premium` | Hecha, esperando revisión | hash enviado a @parent |
-| 0b. Piloto (Rick `luchador` 160 y `cabezon` 48, 4 golpes) | Sin arrancar | espera visto bueno de la fase 0 |
-| 1. Cuerpo | Sin arrancar | |
+| 0. Base: merge de `abyss-premium` | Aprobada | @parent regeneró el kit desde fc44ab7: 3201 archivos, 0 diferencias |
+| 0b. Piloto (Rick `luchador` 160 y `cabezon` 48, 4 golpes) | En curso | |
+| 1. Cuerpo (luchador, cabezon, nekketsu, anime; megaman si sobra) | Sin arrancar | |
 | 2. Movimiento | Sin arrancar | |
-| 3. Bibliotecas | Sin arrancar | |
+| 3. Bibliotecas: exportador FORJA2 + PNG/JSON general, calle; rpg8 condicionada | Sin arrancar | |
 | 4. Poderes y efectos | Sin arrancar | |
 | 5. Estudio y exportación | Sin arrancar | |
 | 6. GG Abyss con Forja 2 | Sin arrancar | |
+
+## Decisiones de @parent al aprobar la fase 0
+
+- Los tres choques quedan como están: cada juego conserva su Rick. No se cambia el pelo de ninguno.
+- Plástico: el piloto lo ataca de entrada (supersampling 4x y bajar con paleta fija, textura de tela, menos especular,
+  contorno interior por grupo). Si el luchador a 160 se ve de plástico al final del piloto, se para.
+- A 48: `cabezon` va con acabado `retro3` desde el día 1 y se compara también contra el premium chibi de hoy. Si no
+  gana claro, GG Abyss se queda con lo de hoy y Forja 2 vive en 96 a 192. Lo decide @parent con Rick viendo la lámina.
+- Costo: se miden segundos por cuadro en el piloto y se propone un techo. La caché por huella de ficha, estilo y pose
+  es obligatoria antes de la fase 1.
+- Movimiento: los 4 movimientos del piloto ya salen del formato nuevo de claves (ticks, curvas, arcos) con el adaptador
+  de pose, no de AnimDef a mano.
+- Un solo dato de movimiento, con retarget de alcance, cajas y exageración por estilo.
+- Orden: piloto, cuerpo, pelea completa para los cinco, exportador FORJA2 más el PNG/JSON general, calle, y rpg8 para
+  GG Abyss solo si gana la comparación.
+
+### Pendientes (cortados por ahora, siguen en el encargo)
+
+- Estilo `retro8bit`.
+- Biblioteca `plataforma`.
+- Editor de poses mejorado.
+- `megaman` queda después de los otros cuatro estilos, si sobra tiempo.
 
 ## Fase 0: la base
 
