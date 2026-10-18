@@ -1,0 +1,10 @@
+{
+  "id": "gi",
+  "nombre": "Gi de karate sin mangas",
+  "notas": "Qué material lleva cada parte del cuerpo y qué piezas se agregan. Los colores salen del personaje.",
+  "torso": "gi", "pechoAbierto": "piel", "hombros": "gi", "brazos": "piel", "manos": "guante",
+  "piernas": "gi", "pantalonHolgado": 1.3, "pantalonLargo": 0.86, "pies": "piel",
+  "cinturon": { "mat": "cinturon", "ancho": 0.016, "colas": 0.11 },
+  "vendas": { "mat": "venda", "manos": false, "pies": true },
+  "cinta": { "mat": "cinta", "colas": 0.13 }
+}

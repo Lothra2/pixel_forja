@@ -5,16 +5,73 @@
   "alto": 0.9,
   "notas": "Adulto de SF2: hombros anchos, músculo marcado, pecho girado a la cámara. Medidas en fracciones del alto (H).",
   "huesos": {
-    "tobillo": 0.036, "canilla": 0.235, "muslo": 0.24, "columna": 0.2, "cuello": 0.11, "hombroAlto": 0.075,
-    "hombros": 0.125, "caderas": 0.055, "brazo": 0.185, "antebrazo": 0.17, "puno": 0.03, "pie": 0.15
+    "tobillo": 0.036,
+    "canilla": 0.235,
+    "muslo": 0.24,
+    "columna": 0.2,
+    "cuello": 0.11,
+    "hombroAlto": 0.075,
+    "hombros": 0.125,
+    "caderas": 0.055,
+    "brazo": 0.185,
+    "antebrazo": 0.17,
+    "puno": 0.03,
+    "pie": 0.15
   },
   "volumen": {
-    "pecho": [0.105, 0.085, 0.13], "cintura": [0.08, 0.07, 0.1], "pelvis": [0.085, 0.06, 0.105],
-    "cuello": 0.042, "trapecio": 0.05, "hombro": 0.055, "brazo": [0.042, 0.033], "biceps": 0.047,
-    "antebrazo": [0.04, 0.03], "mano": 0.042, "muslo": [0.068, 0.046], "canilla": [0.045, 0.03], "gemelo": 0.05,
-    "pie": [0.03, 0.022]
+    "pecho": [
+      0.1,
+      0.085,
+      0.115
+    ],
+    "cintura": [
+      0.07,
+      0.07,
+      0.085
+    ],
+    "pelvis": [
+      0.08,
+      0.06,
+      0.1
+    ],
+    "cuello": 0.042,
+    "trapecio": 0.05,
+    "hombro": 0.05,
+    "brazo": [
+      0.042,
+      0.033
+    ],
+    "biceps": 0.047,
+    "antebrazo": [
+      0.04,
+      0.03
+    ],
+    "mano": 0.042,
+    "muslo": [
+      0.068,
+      0.046
+    ],
+    "canilla": [
+      0.045,
+      0.03
+    ],
+    "gemelo": 0.05,
+    "pie": [
+      0.03,
+      0.022
+    ]
   },
-  "exagera": { "anticipa": 1.0, "punoImpacto": 1.2, "estira": 0.06, "aplasta": 0.05, "sobrepaso": 1.0, "respira": 0.006 },
+  "exagera": {
+    "anticipa": 1.0,
+    "punoImpacto": 1.2,
+    "estira": 0.06,
+    "aplasta": 0.05,
+    "sobrepaso": 1.0,
+    "respira": 0.006
+  },
   "acabado": "sf2",
-  "supersample": 4
+  "supersample": 4,
+  "retarget": {
+    "pieAlto": 1.0
+  }
 }

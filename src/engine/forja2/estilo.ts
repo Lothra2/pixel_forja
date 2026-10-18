@@ -41,6 +41,11 @@ export interface EstiloDef {
     /** amplitud de la respiración en reposo (fracción de H) */
     respira: number;
   };
+  /**
+   * retarget: cómo se adapta un mismo movimiento a estas proporciones. `pieAlto` multiplica la altura de los pies en el
+   * aire (un cabezón de piernas cortas patea más alto, relativo a su pierna, para que la patada se lea)
+   */
+  retarget?: { pieAlto?: number };
   acabado: Acabado;
   /** a cuántas veces la celda se pinta antes de bajar (2 o 4) */
   supersample: number;

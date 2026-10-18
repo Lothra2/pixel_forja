@@ -1,0 +1,28 @@
+{
+  "id": "rick",
+  "nombre": "Rick",
+  "notas": "Rick luchador del piloto de Forja 2: la cabeza LPC de siempre (sin lentes y con la cinta), el gi rojo del juego de pelea.",
+  "cabeza": {
+    "head": "male_gaunt",
+    "hair": "parted2",
+    "brows": "thick",
+    "nose": "straight",
+    "beard": "basic",
+    "mustache": null,
+    "glasses": null,
+    "hat": "headband_tied",
+    "hatColor": "#f2f0ea"
+  },
+  "colores": {
+    "piel": "#c98e70",
+    "pelo": "#2e231f",
+    "ojos": "#3a2418",
+    "barba": "#7d736c",
+    "gi": "#b3221c",
+    "cinturon": "#2a2428",
+    "guante": "#2c2b31",
+    "venda": "#e9e4da",
+    "cinta": "#f2f0ea"
+  },
+  "vestuario": "gi"
+}

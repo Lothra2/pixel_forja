@@ -1,23 +1,157 @@
 {
-  "nombre": "patada_fuerte", "pack": "pelea", "bucle": false, "fuerza": 1, "base": "guardia",
+  "nombre": "patada_fuerte",
+  "pack": "pelea",
+  "bucle": false,
+  "fuerza": 1,
+  "base": "guardia",
   "notas": "Patada alta con la pierna de atrás. 26 ticks: 7 de inicio, 6 activos, 13 de recuperación, como el contrato.",
-  "golpe": { "daño": 12, "nivel": "fuerte", "tipo": "medio", "tumba": false, "pausa": 10, "aturde": 18, "multi": false },
+  "golpe": {
+    "daño": 12,
+    "nivel": "fuerte",
+    "tipo": "medio",
+    "tumba": false,
+    "pausa": 10,
+    "aturde": 18,
+    "multi": false
+  },
   "claves": [
-    { "ticks": 4, "fase": "inicio", "intermedios": 1, "pose": {
-      "cadera": { "x": 0.16, "baja": 0.12 }, "giroCadera": 55, "inclina": 2,
-      "pies": { "cerca": { "punta": 30 } } } },
-    { "ticks": 3, "fase": "inicio", "curva": "golpe", "anticipa": true, "pose": {
-      "cadera": { "x": 0.22, "baja": 0.1 }, "giroCadera": 70, "giroPecho": 60, "inclina": -6,
-      "pies": { "cerca": { "x": 0.22, "alto": 0.5, "z": 0.1, "punta": 40, "rodilla": [1, 0.6, 0.3] } },
-      "manos": { "lejos": { "alto": 10, "abre": -25 }, "cerca": { "alcance": 0.5, "alto": -10, "abre": 30 } } } },
-    { "ticks": 6, "fase": "activo", "impacto": { "miembro": "pie", "lado": "cerca" }, "pose": {
-      "cadera": { "x": 0.22, "baja": 0.06 }, "giroCadera": 95, "giroPecho": 62, "inclina": -24,
-      "cabeza": { "giro": -15, "inclina": 12 }, "cara": "grito",
-      "pies": { "cerca": { "x": 1.05, "alto": 0.92, "z": 0, "punta": 10, "giro": 0, "rodilla": [0, 1, 0.3] } },
-      "manos": { "lejos": { "alcance": 0.55, "alto": 8, "abre": -35 }, "cerca": { "alcance": 0.55, "alto": -35, "abre": 25 } } } },
-    { "ticks": 7, "fase": "recuperacion", "curva": "freno", "intermedios": 1, "pose": {
-      "cadera": { "x": 0.18, "baja": 0.1 }, "giroCadera": 70, "giroPecho": 55, "inclina": -8,
-      "pies": { "cerca": { "x": 0.28, "alto": 0.45, "z": 0.1, "punta": 40, "rodilla": [1, 0.6, 0.3] } } } },
-    { "ticks": 6, "fase": "recuperacion", "pose": {} }
+    {
+      "ticks": 4,
+      "fase": "inicio",
+      "intermedios": 1,
+      "pose": {
+        "cadera": {
+          "x": 0.16,
+          "baja": 0.12
+        },
+        "giroCadera": 55,
+        "inclina": 2,
+        "pies": {
+          "cerca": {
+            "punta": 30
+          }
+        }
+      }
+    },
+    {
+      "ticks": 3,
+      "fase": "inicio",
+      "curva": "golpe",
+      "anticipa": true,
+      "pose": {
+        "cadera": {
+          "x": 0.22,
+          "baja": 0.1
+        },
+        "giroCadera": 70,
+        "giroPecho": 60,
+        "inclina": -6,
+        "pies": {
+          "cerca": {
+            "x": 0.22,
+            "alto": 0.5,
+            "z": 0.1,
+            "punta": 40,
+            "rodilla": [
+              1,
+              0.6,
+              0.3
+            ]
+          }
+        },
+        "manos": {
+          "lejos": {
+            "alto": 10,
+            "abre": -25
+          },
+          "cerca": {
+            "alcance": 0.5,
+            "alto": -10,
+            "abre": 30
+          }
+        }
+      }
+    },
+    {
+      "ticks": 6,
+      "fase": "activo",
+      "impacto": {
+        "miembro": "pie",
+        "lado": "cerca"
+      },
+      "pose": {
+        "cadera": {
+          "x": 0.22,
+          "baja": 0.06
+        },
+        "giroCadera": 95,
+        "giroPecho": 62,
+        "inclina": -30,
+        "cabeza": {
+          "giro": -15,
+          "inclina": 12
+        },
+        "cara": "grito",
+        "pies": {
+          "cerca": {
+            "x": 1.0,
+            "alto": 1.15,
+            "z": 0,
+            "punta": 10,
+            "giro": 0,
+            "rodilla": [
+              0,
+              1,
+              0.3
+            ]
+          }
+        },
+        "manos": {
+          "lejos": {
+            "alcance": 0.55,
+            "alto": 8,
+            "abre": -35
+          },
+          "cerca": {
+            "alcance": 0.55,
+            "alto": -35,
+            "abre": 25
+          }
+        }
+      }
+    },
+    {
+      "ticks": 7,
+      "fase": "recuperacion",
+      "curva": "freno",
+      "intermedios": 1,
+      "pose": {
+        "cadera": {
+          "x": 0.18,
+          "baja": 0.1
+        },
+        "giroCadera": 70,
+        "giroPecho": 55,
+        "inclina": -8,
+        "pies": {
+          "cerca": {
+            "x": 0.28,
+            "alto": 0.45,
+            "z": 0.1,
+            "punta": 40,
+            "rodilla": [
+              1,
+              0.6,
+              0.3
+            ]
+          }
+        }
+      }
+    },
+    {
+      "ticks": 6,
+      "fase": "recuperacion",
+      "pose": {}
+    }
   ]
 }

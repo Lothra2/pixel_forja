@@ -99,13 +99,13 @@ export function dirMano(alto: number, abre: number): V3 {
 }
 
 /** De la pose normalizada a la del esqueleto, en pixeles, con las medidas del estilo. */
-export function aEsqueleto(m: Medidas, p: PoseCompleta, x: Extras = {}): PoseEsq {
+export function aEsqueleto(m: Medidas, p: PoseCompleta, x: Extras = {}, rt: { pieAlto?: number } = {}): PoseEsq {
   const P = m.pierna;
   const cadera: V3 = [p.cadera.x * P, m.caderaAlta - p.cadera.baja * P - (x.aplasta ?? 0) * m.H, p.cadera.z * P];
   const pies = {} as PoseEsq['pies'];
   for (const l of ['cerca', 'lejos'] as Lado[]) {
     const q = p.pies[l];
-    const tob: V3 = [q.x * P, m.tobillo + q.alto * P, q.z * P];
+    const tob: V3 = [q.x * P, m.tobillo + q.alto * (rt.pieAlto ?? 1) * P, q.z * P];
     const rod: V3 = [cadera[0] + q.rodilla[0] * P * 2, cadera[1] + q.rodilla[1] * P * 2, cadera[2] + q.rodilla[2] * P * 2];
     pies[l] = { tobillo: tob, rodilla: rod, punta: q.punta, giro: q.giro, escala: x.escala?.pie?.[l] ?? 1, largo: 1 + (x.estira?.pie?.[l] ?? 0) };
   }
