@@ -6,13 +6,84 @@ El encargo completo está en `docs/PROMPT_FORJA2.md`. Rama: `claude/forja2` (sal
 |---|---|---|
 | 0. Base: merge de `abyss-premium` | Aprobada | @parent regeneró el kit desde fc44ab7: 3201 archivos, 0 diferencias |
 | 0b. Piloto (Rick, 4 golpes) | Cerrado | luchador 160 rechazado por Rick; cabezón SD rechazado por @parent; cuerpo SDF parado |
-| 0c. Movimiento de Forja 2 sobre el chibi de hoy | Entregado, esperando decisión | ver abajo |
-| 1. Cuerpo (luchador, cabezon, nekketsu, anime; megaman si sobra) | Sin arrancar | |
-| 2. Movimiento | Sin arrancar | |
-| 3. Bibliotecas: exportador FORJA2 + PNG/JSON general, calle; rpg8 condicionada | Sin arrancar | |
-| 4. Poderes y efectos | Sin arrancar | |
-| 5. Estudio y exportación | Sin arrancar | |
-| 6. GG Abyss con Forja 2 | Sin arrancar | |
+| 0c. Movimiento de Forja 2 sobre el chibi de hoy | Cerrado: la puerta no pasó | a 48 px no es claramente mejor |
+| 0d. Control del pie de apoyo y pie clavado sobre las animaciones de hoy | Entregado | ver abajo |
+| 1. Cuerpo (luchador, cabezon, nekketsu, anime; megaman si sobra) | Parada (no se abre) | |
+| 2. Movimiento | Parada (no se abre) | |
+| 3. Bibliotecas: exportador FORJA2 + PNG/JSON general, calle; rpg8 condicionada | Parada (no se abre) | |
+| 4. Poderes y efectos | Parada (no se abre) | |
+| 5. Estudio y exportación | Parada (no se abre) | |
+| 6. GG Abyss con Forja 2 | Parada (no se abre) | |
+
+## Veredicto final de Forja 2
+
+**Qué se probó.**
+- Un cuerpo nuevo por volúmenes SDF (el de los jefes) con estilos como datos.
+- Un formato de movimiento por claves con principios de animación aplicados por el motor.
+- El control de calidad con números.
+
+**Qué se paró y por qué.**
+- El cuerpo por volúmenes, en todos los tamaños.
+  - A 160 Rick lo rechazó: plástico, y el pecho se leía como senos.
+  - En SD, a 96, 64 y 48, pierde contra el premium chibi de hoy: el gi parece camuflaje, las extremidades no tienen
+    estructura y la cabeza va tiesa.
+- El motor de movimiento nuevo (piloto 0c). Sobre el mismo cuerpo gana en números, pero a la vista, a 48 px, no es
+  claramente mejor.
+- Las fases 1 a 6 no se abren.
+
+**Qué queda usable.**
+- El control de calidad con números: `forja2/calidad.ts` y `forja2/clavar.ts`.
+- El pie clavado: el interruptor `pieClavado` de `renderClip`, apagado por defecto.
+- Todo el código del piloto queda en la rama, documentado, sin borrar: estilos, esqueleto, formato de movimiento,
+  principios, adaptador al chibi y pintor SDF.
+
+## Piloto 0d: el pie de apoyo en las animaciones de hoy
+
+Entrega en `docs/forja2/piloto/0d/`:
+- `calidad_hoy.md`: la familia con su clase, las 21 animaciones del kit. Las que no avanzan se miden en las 8
+  direcciones; las que avanzan, de lado.
+- `calidad_despues.md`: lo mismo con el pie clavado.
+- `lamina_<caso>.png` y `gif/<caso>_x3.gif`: antes y después de las 4 animaciones que más patinaban, con una raya
+  amarilla en el pivote.
+- Se regenera con `npx tsx scripts/forja2-piloto-0d.ts`.
+
+**Cómo se mide.** Entre dos cuadros seguidos con el mismo pie apoyado, ese pie se tiene que mover en la hoja lo
+contrario de lo que el juego mueve el sprite: 0 en el sitio, el avance del ciclo en caminar y correr. Lo que sobra es
+el patinazo. El tope es 1 px. Un pie cuenta como apoyado si la pose lo marca y además está a nivel del piso.
+
+**Hoy.**
+- Patinan 48 de 80 animaciones medidas (4 personajes por 20; el torbellino no se mide porque gira de vista en cada
+  cuadro).
+- Los peores casos:
+  - `die` llega a 11,6 px de frente, pero es una caída: se desliza a propósito.
+  - `attack_thrust` 4,2.
+  - `hit` 3,4.
+  - `charge` 3,3: también se desliza a propósito.
+  - `nova` y `warcry` 2,4.
+- Caminar y correr pasan: 0,1 a 0,7 px contra su avance.
+
+**Con el pie clavado** (en el sitio, 8 direcciones, sin `charge` ni `die`):
+- De 41 animaciones que patinaban quedan 25.
+- Los pasos de más de 1 px bajan de 304 a 144.
+- Se arreglan del todo `attack`, `attack_heavy`, `cast` y `block_shield`. `leap` baja de 1,8 a 0,3 px (Sophie de 2 a
+  1,1) y `hit` de 3,4 a 1,2.
+- Mejoran a medias `attack_thrust` (4,2 a 3,2), `nova` (2,4 a 1,5) y `warcry` (2,3 a 1,5).
+- No cambian `dodge`, `shoot_bow`, `use_item`, `throw` y `summon`. Ahí los dos pies apoyados se abren en direcciones
+  contrarias (en la estocada pasa lo mismo), y eso solo se arregla cambiando la pose (el encargo no lo permite). El
+  corrimiento va al punto medio, así que ningún paso queda peor.
+- En `attack` y `attack_heavy` el corrimiento saca algunos pixeles del arma fuera de la celda (hasta 194 en toda una
+  animación de 8 direcciones). Para el kit habría que ver si la celda alcanza o limitar el corrimiento.
+
+**Dónde está el interruptor.**
+- `RenderOptions.pieClavado` (`src/engine/render/human.ts`), que usa `renderClip` en `src/engine/render/clip.ts`
+  (al principio de la función). Apagado, `renderClip` no corre nada nuevo.
+- La lógica está en `src/engine/forja2/clavar.ts`.
+- **No está conectado al kit.** Para llevarlo al kit real falta pasarlo por tres caminos que dibujan aparte, si no,
+  las capas quedan descuadradas contra la base:
+  - `sheet8` en `kit/gamekit.ts`;
+  - las capas de equipo en `kit/capas.ts`, con su llave de caché, para no reusar capas viejas sin clavar;
+  - las alas de la heroína celestial en `celestial/kit.ts`.
+  - Es poco trabajo, pero toca el kit, y eso se decide con Rick viendo el antes y después.
 
 ## Piloto 0c: el movimiento nuevo sobre el cuerpo de hoy
 

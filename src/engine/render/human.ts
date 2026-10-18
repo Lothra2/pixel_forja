@@ -38,6 +38,11 @@ export interface RenderOptions {
   materiales?: boolean;
   /** devolver las articulaciones también en las animaciones clásicas (las alas de la heroína celestial se enganchan ahí) */
   joints?: boolean;
+  /**
+   * pie clavado (Forja 2, piloto 0d): en las animaciones en el sitio corre cada cuadro entero para que el pie
+   * de apoyo no patine, sin cambiar poses ni tiempos. Apagado por defecto (todo sale como siempre)
+   */
+  pieClavado?: boolean;
 }
 
 /** Una pelota dibujada: centro exacto (puede caer en medio pixel), diámetro sin el contorno y si va detrás del cuerpo. */

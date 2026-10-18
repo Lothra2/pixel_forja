@@ -9,6 +9,7 @@ import { petPremiumAnim } from '../anim/petPremium';
 import type { Pose } from '../rig/pose';
 import { strideOf } from '../anim/stride';
 import { applyWater } from './water';
+import { clavarClip } from '../forja2/clavar';
 import { renderHuman, LONG_HELD, type BallAt, type BigFrame, type Joints, type RenderOptions, type RenderView } from './human';
 import { renderPet3d, type PetView } from './pet3d';
 import type { View } from './head';
@@ -154,6 +155,13 @@ export function scalePose(p: Pose, k: number): Pose {
 }
 
 export function renderClip(f: Ficha, cell: CellSize, name: string, asked: ViewName = 'side', opt: RenderOptions = {}): RenderedClip {
+  // pie clavado (apagado por defecto): se dibuja como siempre y después se corre cada cuadro entero
+  if (opt.pieClavado) {
+    const c = renderClip(f, cell, name, asked, { ...opt, pieClavado: false });
+    const pv: View = asked === 'front' ? 'front' : asked === 'back' ? 'back' : 'side';
+    // las que giran de vista en cada cuadro (el torbellino) no tienen un pie quieto que clavar
+    return isHuman(f) && !humanDef(f, name)?.spin ? clavarClip(c, posesFor(f, cell, name, pv)) : c;
+  }
   // de lado nomás (garrocha): de frente y de espalda se usa la diagonal más cercana
   const hd = humanDef(f, name);
   const lateral = !!hd?.lateral && (asked === 'front' || asked === 'back');
