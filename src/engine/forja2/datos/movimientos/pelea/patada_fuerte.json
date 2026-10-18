@@ -45,11 +45,11 @@
         },
         "giroCadera": 70,
         "giroPecho": 60,
-        "inclina": -6,
+        "inclina": -10,
         "pies": {
           "cerca": {
-            "x": 0.22,
-            "alto": 0.5,
+            "x": 0.2,
+            "alto": 0.55,
             "z": 0.1,
             "punta": 40,
             "rodilla": [
@@ -86,7 +86,7 @@
         },
         "giroCadera": 95,
         "giroPecho": 62,
-        "inclina": -30,
+        "inclina": -26,
         "cabeza": {
           "giro": -15,
           "inclina": 12
@@ -94,10 +94,10 @@
         "cara": "grito",
         "pies": {
           "cerca": {
-            "x": 1.0,
-            "alto": 1.15,
+            "x": 1.22,
+            "alto": 1.0,
             "z": 0,
-            "punta": 10,
+            "punta": 15,
             "giro": 0,
             "rodilla": [
               0,

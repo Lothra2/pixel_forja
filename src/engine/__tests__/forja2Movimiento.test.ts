@@ -123,3 +123,20 @@ describe('Forja 2: los principios los pone el motor', () => {
     expect(juntas(cs[0]).pelvis[1]).toBeLessThan(resolver(mL, aEsqueleto(mL, cs[0].pose)).pelvis[1]);
   });
 });
+
+describe('Forja 2 sobre el chibi de hoy (piloto 0c)', () => {
+  it('el adaptador deja clavados los pies apoyados y pone la chispa del impacto', async () => {
+    const { pintarChibi } = await import('../forja2/chibi');
+    const { familyFicha } = await import('../rpg/family');
+    const f = familyFicha('rick');
+    for (const n of ['puño_fuerte', 'patada_fuerte', 'recibe_alto']) {
+      const cs = cuadros(n, CABEZON, medidasDe(CABEZON, 48));
+      const r = pintarChibi(f, 48, cs);
+      expect(r.frames, n).toHaveLength(cs.length);
+      const lejos = r.joints.filter((_, i) => cs[i].pose.pies.lejos.alto <= 0.001).map((j) => Math.round(j!.footFar[0]));
+      expect(Math.max(...lejos) - Math.min(...lejos), n).toBeLessThanOrEqual(1);
+      const imp = cs.findIndex((q) => q.impacto);
+      if (imp >= 0) expect(r.poses[imp].props?.some((p) => p.kind === 'spark'), n).toBe(true);
+    }
+  });
+});

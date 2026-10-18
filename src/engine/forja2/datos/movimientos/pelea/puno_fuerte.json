@@ -21,11 +21,14 @@
       "intermedios": 1,
       "pose": {
         "giroPecho": 62,
-        "inclina": 4,
+        "inclina": 2,
+        "cadera": {
+          "x": -0.03
+        },
         "manos": {
           "cerca": {
-            "alcance": 0.32,
-            "alto": 32,
+            "alcance": 0.34,
+            "alto": 70,
             "abre": 32
           }
         }
@@ -39,19 +42,24 @@
       "pose": {
         "giroPecho": 72,
         "giroCadera": 50,
+        "inclina": -6,
         "cadera": {
-          "x": -0.04,
+          "x": -0.08,
           "baja": 0.17
+        },
+        "cabeza": {
+          "giro": 12,
+          "inclina": 8
         },
         "manos": {
           "cerca": {
-            "alcance": 0.26,
-            "alto": 26,
-            "abre": 42
+            "alcance": 0.38,
+            "alto": 150,
+            "abre": 30
           },
           "lejos": {
-            "alcance": 0.58,
-            "alto": 14
+            "alcance": 0.62,
+            "alto": 12
           }
         }
       }

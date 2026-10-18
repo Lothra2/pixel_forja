@@ -1,4 +1,4 @@
-import { base, enBase, ik2, girar, add, sub, mul, norm, type V3, type Base, type Articulaciones } from '../luchador/esqueleto';
+import { base, enBase, ik2, girar, add, sub, mul, norm, cross, dot, type V3, type Base, type Articulaciones } from '../luchador/esqueleto';
 import type { Medidas } from './estilo';
 
 /**
@@ -33,13 +33,26 @@ export interface PoseEsq {
 /** Las articulaciones de Forja 2: las del luchador más el ancho de los hombros ya girado. */
 export type Esqueleto = Articulaciones;
 
+/**
+ * La base de un segmento para pelear: `inclina` echa el eje de arriba hacia el rival (en el plano de la pantalla, x) y
+ * `ladeo` hacia la cámara; `giro` vuelve el frente hacia la cámara alrededor de ese eje. En la base del luchador la
+ * inclinación iba en el frente ya girado, y con el pecho girado 60 grados casi no se veía de lado.
+ */
+export function basePelea(giro: number, inclina = 0, ladeo = 0): Base {
+  const R = Math.PI / 180;
+  const u = norm([Math.sin(inclina * R), Math.cos(inclina * R) * Math.cos(ladeo * R), Math.cos(inclina * R) * Math.sin(ladeo * R)]);
+  const f0: V3 = [Math.cos(giro * R), 0, Math.sin(giro * R)];
+  const f = norm(sub(f0, mul(u, dot(f0, u))));
+  return { f, u, r: cross(f, u) };
+}
+
 export function resolver(m: Medidas, p: PoseEsq): Esqueleto {
-  const bp = base(p.giroCadera, p.inclina * 0.35);
-  const bc = base(p.giroPecho, p.inclina, p.ladeo);
+  const bp = basePelea(p.giroCadera, p.inclina * 0.35);
+  const bc = basePelea(p.giroPecho, p.inclina, p.ladeo);
   const pelvis = p.cadera;
   const pecho = add(add(pelvis, mul(bc.u, m.columna)), [0, p.respira, 0]);
   const cuello = enBase(pecho, bc, 0.03 * m.H, m.cuello, 0);
-  const bh = base(p.giroPecho * 0.35 + p.cabeza.giro, p.inclina * 0.3 + p.cabeza.inclina);
+  const bh = basePelea(p.giroPecho * 0.35 + p.cabeza.giro, p.inclina * 0.3 + p.cabeza.inclina);
   const cabeza = enBase(cuello, bh, 0.01 * m.H, m.cabeza * 0.5, 0);
   const hombro = {
     cerca: add(enBase(pecho, bc, -0.004 * m.H, m.hombroAlto, m.hombros), [0, p.respira * 0.5, 0]),

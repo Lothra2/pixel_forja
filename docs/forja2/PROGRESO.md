@@ -5,13 +5,55 @@ El encargo completo está en `docs/PROMPT_FORJA2.md`. Rama: `claude/forja2` (sal
 | Fase | Estado | Puerta |
 |---|---|---|
 | 0. Base: merge de `abyss-premium` | Aprobada | @parent regeneró el kit desde fc44ab7: 3201 archivos, 0 diferencias |
-| 0b. Piloto (Rick, 4 golpes) | Entregado, esperando decisión | luchador 160 rechazado por Rick; cabezón SD a 96, 64 y 48 en láminas |
+| 0b. Piloto (Rick, 4 golpes) | Cerrado | luchador 160 rechazado por Rick; cabezón SD rechazado por @parent; cuerpo SDF parado |
+| 0c. Movimiento de Forja 2 sobre el chibi de hoy | Entregado, esperando decisión | ver abajo |
 | 1. Cuerpo (luchador, cabezon, nekketsu, anime; megaman si sobra) | Sin arrancar | |
 | 2. Movimiento | Sin arrancar | |
 | 3. Bibliotecas: exportador FORJA2 + PNG/JSON general, calle; rpg8 condicionada | Sin arrancar | |
 | 4. Poderes y efectos | Sin arrancar | |
 | 5. Estudio y exportación | Sin arrancar | |
 | 6. GG Abyss con Forja 2 | Sin arrancar | |
+
+## Piloto 0c: el movimiento nuevo sobre el cuerpo de hoy
+
+Decisión de @parent después del 0b: el cuerpo nuevo por volúmenes se para en todos los tamaños, GG Abyss se queda con
+el premium chibi de hoy (rpg8 cortada), Street Family Fighter 2 sigue con Higgsfield. Lo que se prueba ahora es solo el
+movimiento: los mismos 4 movimientos del formato de claves y principios, dibujados con el cuerpo y el pintor del
+premium chibi de GG Abyss a 48, al lado de las animaciones de hoy de ese mismo chibi.
+
+Entrega: `docs/forja2/piloto/0c/lamina_<movimiento>.png` (fila 1 hoy, fila 2 Forja 2, x4),
+`docs/forja2/piloto/0c/gif/<movimiento>_x1.gif` y `_x3.gif` (los dos lado a lado, cada uno con sus tiempos) y
+`docs/forja2/piloto/0c/calidad.md`. Se regenera con `npx tsx scripts/forja2-piloto-0c.ts`.
+
+### Qué se reusó y qué es nuevo
+
+- Del chibi de hoy, sin cambiarlo: el cuerpo, la cabeza LPC, el pintor (`renderHuman` con implementos aparte), el
+  encuadre fijo del premium (`cropClip`), el vaivén del pelo y la chispa de impacto (`spark`).
+- De Forja 2: los 4 movimientos (JSON de claves con ticks y curvas), los principios (anticipación, impacto único,
+  sobrepaso, recuperación larga, cabeza que lidera, respiración, aplastón), el esqueleto 3D y el adaptador
+  `forja2/chibi.ts`: resuelve cada cuadro en 3D, lo proyecta de lado y saca la pose del chibi (torso, hombro y codo,
+  tobillo desde la cadera). El adaptador además clava los pies en el cuerpo de destino: dibuja, mide dónde quedó cada
+  pie apoyado y corrige el cuerpo y el pie de atrás hasta que queden en su pixel del primer cuadro.
+- Cambio en el esqueleto: la inclinación ahora va en el plano de la pantalla, hacia el rival. Antes iba en el frente del
+  pecho ya girado, y con el pecho a 60 grados de lado se veía menos de la mitad.
+
+### Números (detalle en calidad.md)
+
+- Control de calidad: Forja 2 pasa todo en los 4 movimientos. El de hoy falla patina en 3 de 4 (el pie de apoyo se
+  corre 2 a 4 px) y el salto de silueta en el puño (0,62).
+- El golpe medido: puño de Forja 2 con recogido de 11,8 px antes del impacto (hoy 2,4), arco de 11,1 px (hoy 1,2) y
+  sobrepaso de la cabeza de 1,8 px (hoy 0,6). La patada sale pareja: alcance 10,7 contra 9,3, sin recogido en ninguna.
+- Tiempos: Forja 2 usa los ticks del contrato de pelea (puño 22, patada 26, recibe 18, guardia 32); hoy son 34, 39, 30
+  y 60 (a su fps). Forja 2 es más seco y rápido.
+- Segundos por cuadro: 0,001 a 0,009 en las dos filas (el chibi pinta en milisegundos; el 3D del adaptador no pesa).
+
+### Veredicto honesto
+
+En números gana Forja 2: pies clavados, anticipación y arco que se miden, tiempos de juego de pelea. A la vista, a 48 px,
+la diferencia es chica: el puño se nota algo más pesado (el puño se va atrás y el cuerpo sigue de largo), pero la patada
+de hoy se lee un poco mejor (sube más y sostiene la pierna estirada varios cuadros). No es "claramente mejor" a simple
+vista. Lo que sí deja claro es que el control de calidad y el pie clavado sirven aunque no se cambie ningún movimiento:
+las animaciones de hoy patinan y nadie lo había medido.
 
 ## Piloto 0b
 
