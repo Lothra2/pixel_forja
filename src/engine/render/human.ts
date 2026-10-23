@@ -460,7 +460,9 @@ export function renderHuman(f: HumanFicha, cell: CellSize, pose: Pose, viewIn: R
     const num = armor ? undefined : f.outfit.number;
     const text = armor ? undefined : f.outfit.chestText?.toUpperCase();
     if (num && !side && Math.abs(theta) < 20 && (!text || view === 'back')) {
-      const digits = num.slice(0, 2).split('').filter((ch) => DIGITS[ch]);
+      // hasta 3 cifras (los jugadores del Calamar llevan 456). Si las 3 no caben en el pecho no va ninguna: cortado
+      // diría otro número
+      const digits = num.slice(0, 3).split('').filter((ch) => DIGITS[ch]);
       const wNum = digits.length * 4 - 1;
       if (digits.length && d.torsoW >= wNum + 1) {
         // primero donde iba siempre; si la cabeza lo tapa, más abajo o con los números bajitos

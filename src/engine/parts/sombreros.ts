@@ -6,7 +6,7 @@
  * apoyados en la cima del pelo, de frente, de lado y de espalda. Se piden en `hat` como cualquier gorro LPC.
  */
 
-export const GORROS_PROPIOS = ['non_la', 'vueltiao', 'gorra_beisbol', 'casco_ciclista', 'sombrero_gaitero', 'rolos', 'marimonda', 'ponchera'] as const;
+export const GORROS_PROPIOS = ['non_la', 'vueltiao', 'gorra_beisbol', 'casco_ciclista', 'sombrero_gaitero', 'rolos', 'marimonda', 'ponchera', 'mascara_circulo', 'mascara_triangulo', 'mascara_cuadrado', 'mascara_front_man'] as const;
 export type GorroPropio = (typeof GORROS_PROPIOS)[number];
 export const esGorroPropio = (h: string | null | undefined): h is GorroPropio => !!h && (GORROS_PROPIOS as readonly string[]).includes(h);
 
@@ -109,6 +109,7 @@ export function pixelesGorro(id: GorroPropio, dir: 'down' | 'right' | 'up', cab:
   }
   if (id === 'marimonda') return marimonda(dir, cab, color);
   if (id === 'ponchera') return ponchera(dir, cab, color);
+  if (id.startsWith('mascara_')) return mascaraGuardia(id, dir, cab, color);
   // rolos: cilindros de colores sobre el pelo, en dos filas, con la redecilla
   const cols = ['#f08aa4', '#7fb8e8', '#f2d14c', '#9ed08a'];
   const fila = (y: number, n: number, dx: number) => {
@@ -220,5 +221,62 @@ function ponchera(dir: 'down' | 'right' | 'up', cab: Caja, color?: string | null
   fruta(cx - bw * 0.15, by - 0.8, 1.6, '#7ac04a');
   // el banano acostado encima, con la punta oscura
   for (let i = 0; i < 6; i++) put(cx + bw * 0.1 + i, by - 1 - Math.round(2 - (i - 2.5) ** 2 / 4), i === 5 ? tinta : i < 3 ? '#ffe27a' : '#f2c230');
+  return out;
+}
+
+/**
+ * La capucha con máscara de los guardias del Juego del Calamar: la capucha de tela (rosada si no se pide otro color) que
+ * tapa toda la cabeza y deja la cara en un óvalo, y encima la máscara negra brillante con su figura blanca: círculo
+ * (obrero), triángulo (soldado) o cuadrado (jefe). La del Front Man es la capucha negra y la máscara de facetas, sin figura.
+ * De lado se ve la máscara de perfil, un poco salida; de espalda solo la capucha con su costura.
+ */
+function mascaraGuardia(id: GorroPropio, dir: 'down' | 'right' | 'up', cab: Caja, color?: string | null): PixelGorro[] {
+  const out: PixelGorro[] = [];
+  const put = (x: number, y: number, hex: string) => out.push({ x: Math.round(x), y: Math.round(y), hex });
+  const tinta = '#141016', blanco = '#fbf7f2';
+  const front = id === 'mascara_front_man';
+  const [o, s, b, l] = rampa(color ?? (front ? '#2a2830' : '#e0457b'));
+  const cx = cab.x + cab.w / 2 - 0.5, top = cab.y - 1, H = Math.max(14, cab.h + 2), rx = cab.w / 2 + 1.5, ry = H / 2, cy = top + ry;
+  // la capucha: un óvalo que cubre pelo, orejas y cuello
+  for (let y = Math.floor(cy - ry - 1); y <= cy + ry + 1; y++) for (let x = Math.floor(cx - rx - 1); x <= cx + rx + 1; x++) {
+    const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+    if (d > 1) continue;
+    const costura = dir === 'up' && Math.abs(x - cx) < 0.6 && y < cy + ry * 0.6;
+    put(x, y, d > 0.8 ? tinta : costura ? s : y < cy - ry * 0.45 && x < cx + 1 ? l : x > cx + rx * 0.35 ? s : b);
+  }
+  if (dir === 'up') return out;
+  // la máscara: óvalo negro de frente, perfil salido de lado
+  const mx = dir === 'down' ? cx : cx + rx * 0.42, my = top + H * 0.56;
+  const ex = dir === 'down' ? rx * 0.72 : rx * 0.6, ey = ry * 0.68;
+  for (let y = Math.floor(my - ey - 1); y <= my + ey + 1; y++) for (let x = Math.floor(mx - ex - 1); x <= mx + ex + 2; x++) {
+    const d = ((x - mx) / ex) ** 2 + ((y - my) / ey) ** 2;
+    if (d > 1) continue;
+    let c = d > 0.82 ? '#050407' : '#1d1b22';
+    // el brillo de arriba a la izquierda
+    if (d < 0.5 && x < mx - ex * 0.3 && y < my - ey * 0.25) c = '#4a4756';
+    if (front) {
+      // facetas: planos en diagonal, más claros arriba, con el brillo del filo
+      const f = Math.floor((x - mx + (y - my) * 0.7) / 2.2);
+      c = d > 0.82 ? '#050407' : y < my - 1 ? (f % 2 ? '#6c6a7c' : '#3a3846') : f % 2 ? '#24222c' : '#0e0c12';
+      if (Math.abs(x - mx) < 0.6 && y > my - ey + 1) c = '#8a889c';
+    }
+    put(x, y, c);
+  }
+  if (front) {
+    // las rendijas de los ojos
+    if (dir === 'down') { for (const dx of [-3, -2, 2, 3]) put(mx + dx, my - 1, '#000000'); }
+    else { put(mx + 1, my - 1, '#000000'); put(mx + 2, my - 1, '#000000'); }
+    return out;
+  }
+  // la figura blanca
+  const fx = dir === 'down' ? mx : mx + 1, fy = my;
+  if (id === 'mascara_circulo') {
+    for (const [dx, dy] of [[-1, -2], [0, -2], [1, -2], [-2, -1], [2, -1], [-2, 0], [2, 0], [-2, 1], [2, 1], [-1, 2], [0, 2], [1, 2]]) put(fx + dx, fy + dy, blanco);
+  } else if (id === 'mascara_triangulo') {
+    for (const [dx, dy] of [[0, -2], [-1, -1], [1, -1], [-1, 0], [1, 0], [-2, 1], [2, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2]]) put(fx + dx, fy + dy, blanco);
+  } else {
+    for (let k = -2; k <= 2; k++) { put(fx + k, fy - 2, blanco); put(fx + k, fy + 2, blanco); put(fx - 2, fy + k, blanco); put(fx + 2, fy + k, blanco); }
+  }
+  void o;
   return out;
 }
