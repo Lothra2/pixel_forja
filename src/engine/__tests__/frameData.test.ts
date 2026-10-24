@@ -112,7 +112,7 @@ describe('atlas', () => {
 });
 
 describe('retratos y cabecitas', () => {
-  it('8 expresiones en 40 y en 96; el grande es cabeza y hombros redibujado a 96, no el x3 a bloques', () => {
+  it('8 expresiones en 40 y en 96; el grande suave es cabeza y hombros redibujado a 96, el puro (por defecto) el x3 a bloques', () => {
     const f = premium('rick');
     const s = portraitSheet(f);
     expect(s.expresiones).toEqual([...EXPRESSIONS]);
@@ -121,17 +121,25 @@ describe('retratos y cabecitas', () => {
     for (const p of small) { expect([p.w, p.h]).toEqual([40, 40]); expect(opaqueBox(p)).not.toBeNull(); }
     // cada expresión cambia la cara
     expect(new Set(small.map((p) => p.data.join(','))).size).toBe(EXPRESSIONS.length);
-    const big = portrait(f, 'feliz', 'grande');
-    expect([big.w, big.h]).toEqual([96, 96]);
-    // ya no son bloques de 3 x 3: hay bloques con más de un color (las curvas redondeadas y el contorno de un pixel)
     const k = PORTRAIT_BIG_SCALE;
-    let mixtos = 0;
-    for (let y = 0; y < 96; y += k) for (let x = 0; x < 96; x += k) {
-      const c = new Set<string>();
-      for (let dy = 0; dy < k; dy++) for (let dx = 0; dx < k; dx++) c.add(hex(big, x + dx, y + dy) + alpha(big, x + dx, y + dy));
-      if (c.size > 1) mixtos++;
-    }
-    expect(mixtos).toBeGreaterThan(150);
+    const mixtos = (big: ReturnType<typeof portrait>) => {
+      let n = 0;
+      for (let y = 0; y < 96; y += k) for (let x = 0; x < 96; x += k) {
+        const c = new Set<string>();
+        for (let dy = 0; dy < k; dy++) for (let dx = 0; dx < k; dx++) c.add(hex(big, x + dx, y + dy) + alpha(big, x + dx, y + dy));
+        if (c.size > 1) n++;
+      }
+      return n;
+    };
+    // suave: ya no son bloques de 3 x 3, hay bloques con más de un color (las curvas redondeadas y el contorno de un pixel)
+    const suave = portrait(f, 'feliz', 'grande', 'suave');
+    expect([suave.w, suave.h]).toEqual([96, 96]);
+    expect(mixtos(suave)).toBeGreaterThan(150);
+    // puro (por defecto, y el de la hoja): cada bloque de 3 x 3 es un solo pixel del sprite
+    const puro = portrait(f, 'feliz', 'grande');
+    expect([puro.w, puro.h]).toEqual([96, 96]);
+    expect(mixtos(puro)).toBe(0);
+    expect(s.estilo).toBe('puro');
   });
 
   it('cabecita de 12 x 12, distinta para cada uno y sin colores inventados', () => {

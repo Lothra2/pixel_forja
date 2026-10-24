@@ -901,8 +901,18 @@
       "description": "Qué packs carga cada prueba del juego. Se copia al manifiesto."
     },
     "retratos": {
-      "type": "boolean",
-      "description": "Retratos de 8 expresiones en 40 y 96. Sin valor: sí."
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "enum": [
+            "puro",
+            "suave"
+          ]
+        }
+      ],
+      "description": "Retratos de 8 expresiones en 40 y 96. Sin valor o true: sí, el grande en pixel puro (el sprite x3 exacto). \"suave\": el grande redibujado a 96 con contorno de un pixel."
     },
     "cabecitas": {
       "type": "boolean",
