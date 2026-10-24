@@ -108,8 +108,9 @@ export const P_SIT: AnimalAnimDef = {
   build: (d) => {
     const L = legL(d);
     return Array.from({ length: 8 }, (_, i) => Q(d, {
-      pitch: -32,
-      legs: { rn: { x: 0.55 * L, y: 0.15 * L }, rf: { x: 0.45 * L, y: 0.15 * L }, fn: { x: 0.25 * L, y: L - 0.2 }, ff: { x: 0.05 * L, y: L - 0.2 } },
+      // bien parado (52°) y las patas de adelante sin estirar del todo: el anca y la cola apoyan en el piso
+      pitch: -52,
+      legs: { rn: { x: 0.55 * L, y: 0.1 * L }, rf: { x: 0.45 * L, y: 0.1 * L }, fn: { x: 0.25 * L, y: 0.68 * (L - 0.2) }, ff: { x: 0.05 * L, y: 0.68 * (L - 0.2) } },
       head: { angle: 28 }, tail: -10 + Math.sin((i / 8) * TAU) * 8, eyes: i === 5 ? 'closed' : 'open', mouth: i >= 2 && i <= 4 ? 'tongue' : 'closed',
     }));
   },

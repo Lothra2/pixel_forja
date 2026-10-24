@@ -54,7 +54,7 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `equipos` | Archivo de equipos (abajo). Pasa al manifiesto tal cual | Sin equipos |
 | `packs` | Cada pack es un atlas por atleta: nombre y lista de animaciones, o `{ "anims": [...], "sin_props": true, "vestuario": "judogi" }` para que salga sin las pelotas dibujadas o con un uniforme (ver abajo) | Obligatorio |
 | `pruebas` | Qué packs carga cada prueba. Se copia al manifiesto para que el juego cargue solo lo que usa | No va |
-| `retratos` | 8 expresiones en 40 y 96 px (la 8 es burla) | Sí |
+| `retratos` | 8 expresiones en 40 y 96 px (la 8 es burla). `true` o `"puro"`: el grande es el sprite x3 exacto; `"suave"`: redibujado a 96 con contorno de un pixel | Sí (puro) |
 | `cabecitas` | 12 x 12 para el minimapa, en `ui/cabecitas.png` | Sí |
 | `objetos` | Armas del piso: `true` (las 19) o la lista | No van |
 | `animales` | Ids de animales: de las fichas, o los que vienen con el motor: `thor` y las aves `gallo` y `paloma`. La mascota de un equipo entra sola | No van |

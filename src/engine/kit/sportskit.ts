@@ -5,7 +5,7 @@ import { creditsFor, type ExportFile } from '../export/bundle';
 import { renderClip, EIGHT_VIEWS, VIEW_SUFFIX, hasAnim, type RenderedClip, type ViewName } from '../render/clip';
 import { viewsForRows, frameDataOf, objetosOf, PELOTAS, PELOTA_IDS, pivotOf, FRAME_DATA_FIELDS, type FrameData, type FrameDataField } from '../export/frameData';
 import { packAtlas, atlasFrameName } from '../export/atlas';
-import { portraitSheet, headIcon, HEAD_ICON } from './portraits';
+import { portraitSheet, headIcon, HEAD_ICON, type EstiloRetrato } from './portraits';
 import { dressForPack, dressWithUniform, variantForPack } from '../sheet/wardrobe';
 import type { CellSize, HumanFicha, AnimalFicha } from '../sheet/ficha';
 import { animsFor } from '../anim/registry';
@@ -93,8 +93,9 @@ export interface SportsKitOptions {
    * El atleta trae `packs` en vez de `deportes`
    */
   atlas?: boolean;
-  /** hoja de retratos por atleta: 8 expresiones en 40 x 40 y 96 x 96 */
-  retratos?: boolean;
+  /** hoja de retratos por atleta: 8 expresiones en 40 x 40 y 96 x 96. true o 'puro': el grande es el sprite x3
+   *  exacto; 'suave': redibujado a 96 con Scale3x y contorno de un pixel */
+  retratos?: boolean | EstiloRetrato;
   /** cabecitas de 12 x 12 de todos los atletas en ui/cabecitas.png */
   cabecitas?: boolean;
   /** las armas del piso (pelea callejera) en objetos/armas.png + .json, con su entrada en `objetos`: todas o las de la lista */
@@ -271,10 +272,10 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     // la ropa de cada pack: la variante de la ficha, el uniforme del pack (judogi) o la de la ficha
     if (f.wardrobe || packs.some((p) => opts.uniformes?.[p])) entry.vestuario = Object.fromEntries(packs.map((p) => [p, variantForPack(f, p) ?? opts.uniformes?.[p] ?? 'ficha']));
     if (opts.retratos) {
-      const sheet = portraitSheet(f);
+      const sheet = portraitSheet(f, opts.retratos === 'suave' ? 'suave' : 'puro');
       const archivo = `atletas/${id}/retratos.png`;
       files.push({ name: archivo, bytes: encodePng(sheet.png), mime: 'image/png' });
-      entry.retratos = { archivo, chico: sheet.chico, grande: sheet.grande, expresiones: sheet.expresiones, escala_grande: 1 };
+      entry.retratos = { archivo, chico: sheet.chico, grande: sheet.grande, expresiones: sheet.expresiones, escala_grande: 1, estilo: sheet.estilo };
     }
     if (opts.cabecitas) {
       entry.cabecita = `ui/cabecitas.png#${id}`;
@@ -300,7 +301,7 @@ export function buildSportsKit(opts: SportsKitOptions = {}): ExportFile[] {
     }
     manifest.pelotas = pelotas;
   }
-  if (opts.retratos) manifest.retratos = 'retratos.png: arriba los chicos de 40 x 40 (el i en x = i * 40), abajo los grandes de 96 x 96 (el i en x = i * 96, y = 40), en el orden de `expresiones`. El grande es la cabeza y los hombros redibujados a 96, con contorno de un pixel (escala_grande 1: ya no es el sprite x3).';
+  if (opts.retratos) manifest.retratos = 'retratos.png: arriba los chicos de 40 x 40 (el i en x = i * 40), abajo los grandes de 96 x 96 (el i en x = i * 96, y = 40), en el orden de `expresiones`. El grande es la cabeza y los hombros: con estilo "puro", el sprite a celda 64 agrandado x3 exacto (cada pixel un bloque de 3 x 3); con estilo "suave", redibujado a 96 con contorno de un pixel. escala_grande 1: se dibuja tal cual.';
   if (opts.cabecitas && heads.length) {
     files.push({ name: 'ui/cabecitas.png', bytes: encodePng(strip(heads, HEAD_ICON, HEAD_ICON)), mime: 'image/png' });
     manifest.cabecitas = { archivo: 'ui/cabecitas.png', celda: HEAD_ICON, orden: Object.keys(out) };

@@ -11,7 +11,10 @@ import { hexToRgb } from '../color/oklab';
  * al sprite.
  *
  * - chico: 40 x 40, dibujado a celda 64 y recortado desde arriba del pelo (cabeza y torso, nítido, pixel a pixel).
- * - grande: 96 x 96, redibujado a 96 (lote G2). El motor dibuja personas hasta celda 64 y las piezas LPC de la
+ * - grande: 96 x 96. Dos estilos (`EstiloRetrato`):
+ *   - puro (por defecto): la cabeza y los hombros del personaje a celda 64, 32 x 32 con su contorno,
+ *     agrandados x3 exacto. Cada pixel es un bloque de 3 x 3: es el mismo pixel del sprite, como viene de la forja.
+ *   - suave: redibujado a 96 (lote G2). El motor dibuja personas hasta celda 64 y las piezas LPC de la
  *   cabeza vienen a su tamaño, así que no hay de dónde sacar más detalle. Se dibuja la cabeza y los hombros a celda
  *   64 sin contorno y con el material de cada pixel; se agranda x3 con Scale3x (redondea las curvas y las diagonales
  *   sin inventar colores, sobre color y material juntos para que no se desalineen); y a 96 se dibuja el contorno de
@@ -152,7 +155,7 @@ export function aTresConMaterial(b: BigFrame, x0: number, y0: number, w: number,
   return { r: out, mat };
 }
 
-/** El retrato grande redibujado a 96 (ver arriba). */
+/** El retrato grande suave, redibujado a 96 (ver arriba). */
 function portraitBig(f: HumanFicha, face: { eyes: EyeExpr; mouth: MouthExpr }): Raster {
   const pose = posesFor(f, 64, 'idle', 'front')[0];
   const b = renderHuman(f, 64, { ...pose, face }, 'front', { noOutline: true, materiales: true });
@@ -191,8 +194,18 @@ export function expressionFace(f: HumanFicha, expr: Expression): { eyes: EyeExpr
   return expr === 'burla' && f.face.base?.mouth === face.mouth ? { ...face, mouth: 'tongue' } : face;
 }
 
-export function portrait(f: HumanFicha, expr: Expression, size: 'chico' | 'grande' = 'chico'): Raster {
-  if (size === 'grande') return portraitBig(f, expressionFace(f, expr));
+/** Cómo sale el retrato grande: puro (el sprite x3 exacto, por defecto) o suave (Scale3x y contorno de un pixel). */
+export type EstiloRetrato = 'puro' | 'suave';
+
+/** El retrato grande puro: la cabeza y los hombros a celda 64 (32 x 32, desde un pixel sobre el pelo), x3 exacto. */
+function portraitBigPuro(f: HumanFicha, face: { eyes: EyeExpr; mouth: MouthExpr }): Raster {
+  const { r, head, top } = faceFrame(f, 64, face);
+  const S = PORTRAIT_BIG / PORTRAIT_BIG_SCALE;
+  return scaleInt(crop(r, Math.round(head[0] - S / 2), top - 1, S), PORTRAIT_BIG_SCALE);
+}
+
+export function portrait(f: HumanFicha, expr: Expression, size: 'chico' | 'grande' = 'chico', estilo: EstiloRetrato = 'puro'): Raster {
+  if (size === 'grande') return estilo === 'suave' ? portraitBig(f, expressionFace(f, expr)) : portraitBigPuro(f, expressionFace(f, expr));
   const { r, head, top } = faceFrame(f, 64, expressionFace(f, expr));
   return crop(r, Math.round(head[0] - PORTRAIT_SMALL / 2), top - 2, PORTRAIT_SMALL);
 }
@@ -240,10 +253,10 @@ export function headIcon(f: HumanFicha): Raster {
  * Hoja de retratos: dos filas, la de arriba con los 8 chicos (40 x 40) y la de abajo con los 8 grandes (96 x 96), en
  * el orden de EXPRESSIONS. El chico i está en (i * 40, 0); el grande i en (i * 96, 40).
  */
-export function portraitSheet(f: HumanFicha): { png: Raster; chico: number; grande: number; expresiones: Expression[] } {
+export function portraitSheet(f: HumanFicha, estilo: EstiloRetrato = 'puro'): { png: Raster; chico: number; grande: number; expresiones: Expression[]; estilo: EstiloRetrato } {
   const png = createRaster(EXPRESSIONS.length * PORTRAIT_BIG, PORTRAIT_SMALL + PORTRAIT_BIG);
   EXPRESSIONS.forEach((e, i) => {
-    const small = portrait(f, e, 'chico'), big = portrait(f, e, 'grande');
+    const small = portrait(f, e, 'chico'), big = portrait(f, e, 'grande', estilo);
     for (const [img, ox, oy] of [[small, i * PORTRAIT_SMALL, 0], [big, i * PORTRAIT_BIG, PORTRAIT_SMALL]] as [Raster, number, number][]) {
       for (let y = 0; y < img.h; y++) for (let x = 0; x < img.w; x++) {
         const s = (y * img.w + x) * 4, d = ((oy + y) * png.w + ox + x) * 4;
@@ -251,5 +264,5 @@ export function portraitSheet(f: HumanFicha): { png: Raster; chico: number; gran
       }
     }
   });
-  return { png, chico: PORTRAIT_SMALL, grande: PORTRAIT_BIG, expresiones: [...EXPRESSIONS] };
+  return { png, chico: PORTRAIT_SMALL, grande: PORTRAIT_BIG, expresiones: [...EXPRESSIONS], estilo };
 }

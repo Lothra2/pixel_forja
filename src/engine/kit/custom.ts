@@ -69,8 +69,8 @@ export interface KitConfig {
   alias?: Record<string, string>;
   /** qué packs carga cada prueba del juego (se copia al manifiesto) */
   pruebas?: Record<string, string[]>;
-  /** retratos de 8 expresiones (sin valor: sí) */
-  retratos?: boolean;
+  /** retratos de 8 expresiones (sin valor: sí). true o 'puro': el grande es el sprite x3 exacto; 'suave': redibujado a 96 */
+  retratos?: boolean | 'puro' | 'suave';
   /** cabecitas de 12 x 12 (sin valor: sí) */
   cabecitas?: boolean;
   /** armas del piso y comida de la pelea: true = todo, o la lista (ids, o "comida" para toda la comida) */
@@ -250,7 +250,8 @@ export function validateKitConfig(cfg: unknown): string[] {
       (list as string[]).forEach((p, i) => { if (!packs.includes(p)) e.push(`pruebas.${t}[${i}]: el pack "${p}" no está en packs.${suggest(p, packs)}`); });
     }
   }
-  for (const k of ['retratos', 'cabecitas'] as const) if (cfg[k] !== undefined && typeof cfg[k] !== 'boolean') e.push(`${k}: true o false`);
+  if (cfg.retratos !== undefined && typeof cfg.retratos !== 'boolean' && cfg.retratos !== 'puro' && cfg.retratos !== 'suave') e.push('retratos: true, false, "puro" o "suave"');
+  if (cfg.cabecitas !== undefined && typeof cfg.cabecitas !== 'boolean') e.push('cabecitas: true o false');
   if (cfg.objetos !== undefined && typeof cfg.objetos !== 'boolean') {
     if (!isStrList(cfg.objetos)) e.push('objetos: true o una lista de armas del piso y comida');
     else (cfg.objetos as string[]).forEach((o, i) => { if (!OBJETOS.includes(o)) e.push(`objetos[${i}]: "${o}" no es un arma del piso ni una comida.${suggest(o, OBJETOS)}`); });
@@ -380,7 +381,7 @@ export function kitConfigSchema(): Record<string, unknown> {
       },
       alias: { type: 'object', propertyNames: id, additionalProperties: { enum: ANIM_NAMES }, description: 'Nombres del juego para animaciones del motor que están en algún pack: { "burla_familia_gg": "burla_pulgar" }. Salen con el nombre del juego (una animación puede tener varios). Si el nombre termina en _<equipo>, solo la trae el atleta de ese equipo (como taunt_<id> solo su dueño).' },
       pruebas: { type: 'object', additionalProperties: list({ type: 'string' }), description: 'Qué packs carga cada prueba del juego. Se copia al manifiesto.' },
-      retratos: { type: 'boolean', description: 'Retratos de 8 expresiones en 40 y 96. Sin valor: sí.' },
+      retratos: { oneOf: [{ type: 'boolean' }, { enum: ['puro', 'suave'] }], description: 'Retratos de 8 expresiones en 40 y 96. Sin valor o true: sí, el grande en pixel puro (el sprite x3 exacto). "suave": el grande redibujado a 96 con contorno de un pixel.' },
       cabecitas: { type: 'boolean', description: 'Cabecitas de 12 x 12 para el minimapa. Sin valor: sí.' },
       objetos: { oneOf: [{ type: 'boolean' }, list({ enum: OBJETOS })], description: 'Armas del piso y comida de la pelea (peso "comida", con humito): true = todo, o la lista. "comida" pide toda la comida.' },
       animales: list(id, { description: 'Animales: los de las fichas, y los que trae el motor: thor y las aves (gallo, paloma).' }),
@@ -576,7 +577,7 @@ export function buildCustomKit(cfg: KitConfig, inputs: KitInputs = {}, opts: Cus
     uniformes: packsUniforme(cfg.packs), coloresEquipo: Object.fromEntries(Object.entries(inputs.equipos ?? {}).flatMap(([eq, t]) => (Array.isArray(t.colores) ? [[eq, t.colores as string[]]] : []))),
     packs: parts.has('atletas') ? Object.keys(cfg.packs) : [], quick: opts.quick, alias: cfg.alias,
     equipoDe: Object.fromEntries(Object.entries(inputs.equipos ?? {}).flatMap(([eq, t]) => t.atletas.map((a) => [a, eq]))),
-    retratos: parts.has('retratos') && cfg.retratos !== false, cabecitas: parts.has('cabecitas') && cfg.cabecitas !== false,
+    retratos: parts.has('retratos') && cfg.retratos !== false ? (cfg.retratos === 'suave' ? 'suave' : 'puro') : false, cabecitas: parts.has('cabecitas') && cfg.cabecitas !== false,
     objetos: obj.armas, comida: obj.comida,
     animales: parts.has('animales') ? keptAnimals : undefined,
     fuentes: parts.has('fuentes') && cfg.ui?.fuentes ? inputs.fuentes : undefined,

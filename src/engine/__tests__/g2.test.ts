@@ -28,13 +28,13 @@ const rgb = (r: Raster, x: number, y: number) => { const i = (y * r.w + x) * 4; 
 const lum = (r: Raster, x: number, y: number) => { const [a, b, c] = rgb(r, x, y); return a * 0.3 + b * 0.59 + c * 0.11; };
 const igual = (a: Raster, b: Raster) => a.w === b.w && a.h === b.h && Buffer.from(a.data).equals(Buffer.from(b.data));
 
-describe('retratos grandes redibujados a 96 (lote G2)', () => {
-  it('los 24 atletas en las 8 expresiones: 96 x 96, distintas entre sí y con el contorno de un pixel', () => {
+describe('retratos grandes: suave (redibujado a 96, lote G2) y puro (x3 exacto, por defecto)', () => {
+  it('suave: los 24 atletas en las 8 expresiones: 96 x 96, distintas entre sí y con el contorno de un pixel', () => {
     expect(ATLETAS).toHaveLength(24);
     const malos: string[] = [];
     for (const id of ATLETAS) {
       const f = FICHAS[id];
-      const grandes = EXPRESSIONS.map((e) => portrait(f, e, 'grande'));
+      const grandes = EXPRESSIONS.map((e) => portrait(f, e, 'grande', 'suave'));
       for (const [k, g] of grandes.entries()) {
         if (g.w !== 96 || g.h !== 96) malos.push(`${id} ${EXPRESSIONS[k]}: ${g.w}x${g.h}`);
         // el contorno de afuera es de un pixel: el que sigue hacia adentro ya no es del mismo color. Con el x3 de antes
@@ -51,6 +51,28 @@ describe('retratos grandes redibujados a 96 (lote G2)', () => {
         if (fino / borde < 0.3) malos.push(`${id} ${EXPRESSIONS[k]}: contorno grueso (${fino}/${borde})`);
       }
       if (new Set(grandes.map((g) => Buffer.from(g.data).toString('base64'))).size !== EXPRESSIONS.length) malos.push(`${id}: hay expresiones iguales`);
+    }
+    expect(malos).toEqual([]);
+  }, 300_000);
+
+  it('el grande puro (por defecto) es el sprite x3 exacto: cada bloque de 3 x 3 de un solo color, y sonríe en feliz', () => {
+    const malos: string[] = [];
+    for (const id of ATLETAS.slice(0, 8)) {
+      const f = FICHAS[id];
+      for (const e of EXPRESSIONS) {
+        const g = portrait(f, e, 'grande');
+        if (g.w !== 96 || g.h !== 96) { malos.push(`${id} ${e}: ${g.w}x${g.h}`); continue; }
+        for (let by = 0; by < 32; by++) for (let bx = 0; bx < 32; bx++) {
+          const i0 = ((by * 3) * 96 + bx * 3) * 4;
+          for (let k = 1; k < 9; k++) {
+            const i = ((by * 3 + Math.floor(k / 3)) * 96 + bx * 3 + (k % 3)) * 4;
+            if (g.data[i] !== g.data[i0] || g.data[i + 1] !== g.data[i0 + 1] || g.data[i + 2] !== g.data[i0 + 2] || g.data[i + 3] !== g.data[i0 + 3]) { malos.push(`${id} ${e}: bloque ${bx},${by} mezclado`); by = 32; break; }
+          }
+        }
+      }
+      // las caras distintas se notan también en puro
+      const datos = EXPRESSIONS.map((e) => Buffer.from(portrait(f, e, 'grande').data).toString('base64'));
+      if (new Set(datos).size !== EXPRESSIONS.length) malos.push(`${id}: hay expresiones iguales en puro`);
     }
     expect(malos).toEqual([]);
   }, 300_000);

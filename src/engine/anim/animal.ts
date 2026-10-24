@@ -112,9 +112,11 @@ export const A_SIT: AnimalAnimDef = {
   name: 'sit', fps: 6, loop: true, steady: true,
   build: (d) => {
     const L = d.legUpper + d.legLower;
+    // el cuerpo bien parado (52°) y las patas de adelante sin estirar del todo: así lo más bajo es el anca y la cola,
+    // que apoyan en el piso. Con 32° y las patas estiradas, el que apoyaba era la pata y el anca quedaba en el aire
     const sit = (b: number, i: number) => Q(d, {
-      pitch: -32,
-      legs: { rn: { x: 0.55 * L, y: 0.15 * L }, rf: { x: 0.45 * L, y: 0.15 * L }, fn: { x: 0.25 * L, y: L - 0.2 }, ff: { x: 0.05 * L, y: L - 0.2 } },
+      pitch: -52,
+      legs: { rn: { x: 0.55 * L, y: 0.1 * L }, rf: { x: 0.45 * L, y: 0.1 * L }, fn: { x: 0.25 * L, y: 0.68 * (L - 0.2) }, ff: { x: 0.05 * L, y: 0.68 * (L - 0.2) } },
       head: { angle: 28, dy: b }, tail: -10, eyes: i === 5 ? 'closed' : 'open',
     });
     return [0, 0, 1, 1, 1, 1, 0, 0].map(sit);

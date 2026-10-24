@@ -149,13 +149,14 @@ Con `--datos` o `--atlas` el manifiesto escribe los arreglos de números en una 
 
 ```
 atletas/<id>/retratos.png
-"retratos": { "archivo": "atletas/rick/retratos.png", "chico": 40, "grande": 96, "expresiones": ["neutral", "feliz", "enojo", "triste", "susto", "cerrado", "dolor", "burla"], "escala_grande": 1 }
+"retratos": { "archivo": "atletas/rick/retratos.png", "chico": 40, "grande": 96, "expresiones": ["neutral", "feliz", "enojo", "triste", "susto", "cerrado", "dolor", "burla"], "escala_grande": 1, "estilo": "puro" }
 ```
 
 La hoja tiene dos filas: arriba los 8 chicos de 40 x 40 (el `i` en `x = i * 40`), abajo los 8 grandes de 96 x 96 (el `i` en `x = i * 96`, `y = 40`), en el orden de `expresiones`. Las caras son los ojos y bocas del motor, los mismos del sprite.
 
 - **Chico (40):** cabeza y torso, dibujado a celda 64 pixel a pixel.
-- **Grande (96):** cabeza y hombros, **redibujado a 96** (lote G2). El motor dibuja personas hasta celda 64 y las piezas LPC de la cabeza vienen a su tamaño, así que la forma sale del sprite: se agranda x3 con Scale3x (redondea las curvas sin inventar colores) y a 96 se dibujan el contorno de un pixel (afuera y entre el pelo y la cara, la ropa y la piel) y el brillo de los ojos abiertos. `escala_grande` vale 1: ya no es el sprite escalado. Antes era el recorte x3 a bloques, con el contorno de 3 pixeles.
+- **Grande (96), estilo `puro` (por defecto):** cabeza y hombros del personaje a celda 64 (32 x 32, con su contorno) agrandados **x3 exacto**: cada pixel es un bloque de 3 x 3, el mismo pixel del sprite. Así el retrato combina con el juego en pixel puro, sin pixeles de tamaños distintos.
+- **Grande (96), estilo `suave`** (en la config, `"retratos": "suave"`): cabeza y hombros **redibujados a 96** (lote G2). El motor dibuja personas hasta celda 64 y las piezas LPC de la cabeza vienen a su tamaño, así que la forma sale del sprite: se agranda x3 con Scale3x (redondea las curvas sin inventar colores) y a 96 se dibujan el contorno de un pixel (afuera y entre el pelo y la cara, la ropa y la piel) y el brillo de los ojos abiertos. `escala_grande` vale 1: ya no es el sprite escalado. Antes era el recorte x3 a bloques, con el contorno de 3 pixeles.
 
 ### Cabecitas (`--cabecitas`, opción `cabecitas`)
 
