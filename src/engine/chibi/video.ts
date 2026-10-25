@@ -101,20 +101,44 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
   const ox = Math.round(W / 2 - m.w / 2), oy = PISO_VIDEO - m.h;
   const col = colores(look);
   const cuerpo = capa(W, H, false);
+  // clase de cada pixel del cuerpo en la celda (para decidir qué va delante de la cabeza)
+  const clase = new Array<string>(W * H).fill('.');
   // estampados de la ropa de arriba: rayas y cuadros siguen la grilla del molde
   const pat = look.arriba.estampado ?? 'liso';
   const c2 = hex(look.arriba.color2 ?? '#f4f2ee');
+  // los estampados con dibujo (gg, número, corazón...) van como un solo emblema en el pecho: sembrados por pixel
+  // salen como puntos sueltos que bailan de un cuadro a otro
+  let emblema: Set<number> | null = null;
+  if (pat !== 'liso' && pat !== 'rayas' && pat !== 'cuadros') {
+    const pecho: [number, number][] = [];
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.filas[y][x] === 'C') pecho.push([x, y]);
+    if (pecho.length >= 8) {
+      const y0 = Math.min(...pecho.map((p) => p[1]));
+      const arriba = pecho.filter((p) => p[1] <= y0 + 3);
+      const cx = Math.round(arriba.reduce((s, p) => s + p[0], 0) / arriba.length), cy = y0 + 1;
+      emblema = new Set([[0, 0], [1, 0], [0, 1], [1, 1]].map(([dx, dy]) => (cy + dy) * m.w + cx + dx));
+    }
+  }
+  const RELLENO = new Set(['A', 'B', 'C', 'c', 'D', 'd', 'L', 'P']);
+  const suelto = (x: number, y: number) => {
+    const inf = m.cabeza;
+    if (!inf || ((inf.k % 4) + 4) % 4 !== 0 || y >= inf.chin[1]) return false;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (RELLENO.has(m.filas[y + dy]?.[x + dx] ?? '.')) return false;
+    return true;
+  };
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const ch = m.filas[y][x];
     if (ch === '.' || CABEZA.has(ch)) continue;
+    // contorno suelto a la altura de la cabeza (las tiras de la cinta de Ryu): no es del cuerpo
+    if (ch === 'K' && suelto(x, y)) continue;
     let v = col[ch] ?? NEGRO;
     if ((ch === 'C' || ch === 'c') && pat !== 'liso') {
       if (pat === 'rayas' && y % 3 === 0) v = ch === 'c' ? sombra(c2) : c2;
       else if (pat === 'cuadros' && (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0) v = mezcla(v, c2, 0.5);
-      else if ((pat === 'puntos' || pat === 'copos' || pat === 'flores' || pat === 'estrella' || pat === 'corazon') && (x * 3 + y * 5) % 7 === 0) v = c2;
-      else if (pat === 'numero' || pat === 'gg') { if ((x + y) % 11 === 0) v = c2; }
+      else if (emblema?.has(y * m.w + x)) v = ch === 'c' ? sombra(c2) : c2;
     }
     cuerpo.col[(oy + y) * W + ox + x] = v;
+    clase[(oy + y) * W + ox + x] = ch;
   }
   // pixeles sueltos (restos de las tiras de la cinta del video): fuera
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -142,16 +166,29 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
     };
     const [axr, ayr] = ancla(cab.cara, cab.cuello[0], cab.cuello[1] - 1);
     // el mentón del molde está una fila debajo de la cara; el de la cabeza pintada, en su última fila
-    const dx = ox + cx - axr, dy = oy + cy - ayr - 2;
+    const dx = ox + cx - axr, dy = oy + cy - ayr - 3;
     const atras = capa(W, H); pegar(atras, cab.atras, dx, dy, k, esp);
     const cara = capa(W, H); pegar(cara, cab.cara, dx, dy, k, esp);
     capas.push(atras, cara);
   }
   // el cuerpo del molde ya trae su contorno: va encima de la cabeza (los puños tapan la cara como en el video)
   const img = juntar([...capas], W, H, 1);
+  // delante de la cabeza solo pasan brazos y puños (y su contorno); el cuello y los hombros van debajo
+  const brazo = (i: number) => clase[i] === 'A' || clase[i] === 'B';
+  const delante = (i: number) => {
+    if (brazo(i)) return true;
+    if (clase[i] !== 'K') return false;
+    const x = i % W, y = (i - x) / W;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const xx = x + dx, yy = y + dy;
+      if (xx >= 0 && yy >= 0 && xx < W && yy < H && brazo(yy * W + xx)) return true;
+    }
+    return false;
+  };
   for (let i = 0; i < W * H; i++) {
     const v = cuerpo.col[i];
     if (v === VACIO) continue;
+    if (img.data[i * 4 + 3] && !delante(i)) continue;
     img.data[i * 4] = (v >> 16) & 255; img.data[i * 4 + 1] = (v >> 8) & 255; img.data[i * 4 + 2] = v & 255; img.data[i * 4 + 3] = 255;
   }
   // islas chiquitas despegadas del muñeco (puntas de pelo o restos del calco al girar la cabeza): fuera

@@ -228,8 +228,9 @@ function pintarCaraLado(look: ChibiLook, gesto: Gesto, mujer: boolean, P: Pinta,
     const b = hex(look.barba.color), bS = sombra(b);
     const e = look.barba.estilo;
     const B = (x: number, y: number, v = b) => { if (libre(x, y)) P(x, y, e === 'sombra' ? mezcla(piel, b, 0.45) : v); };
-    if (e === 'barba' || e === 'sombra') { for (let x = 3; x <= 10; x++) B(x, 9, x <= 4 ? bS : b); B(4, 8); B(5, 8, bS); for (let y = 6; y <= 8; y++) B(4, y, bS); }
-    if (e === 'bigote' || e === 'candado' || e === 'barba') { B(7, 8); B(8, 8); B(9, 8); }
+    // barba: la quijada y la patilla; con lentes no lleva bigote (no cabe en 12 pixeles sin ensuciar la cara)
+    if (e === 'barba' || e === 'sombra') { for (let x = 4; x <= 10; x++) B(x, 9, x <= 5 ? bS : b); B(4, 8, bS); for (let y = 7; y <= 8; y++) B(4, y, bS); }
+    if (e === 'bigote' || e === 'candado' || (e === 'barba' && !look.lentes)) { B(7, 8); B(8, 8); B(9, 8); }
     if (e === 'candado' || e === 'chivo') { B(7, 9); B(8, 9); B(9, 9); }
   }
   // boca
@@ -250,7 +251,8 @@ function pintarCaraLado(look: ChibiLook, gesto: Gesto, mujer: boolean, P: Pinta,
   if (look.lentes && gesto !== 'ko') {
     const fr = hex(look.lentes.color);
     const e = look.lentes.estilo;
-    const vidrio = (x: number, y: number) => { if (libre(x, y)) P(x, y, e === 'sol' ? hex('#1c1a22') : mezcla(G(x, y), hex('#e8f6ff'), 0.55)); };
+    // vidrio transparente: a este tamaño un tinte claro se ve como ruido, se deja la piel y solo se marca el marco
+    const vidrio = (x: number, y: number) => { if (e === 'sol' && libre(x, y)) P(x, y, hex('#1c1a22')); };
     for (const [a, b2] of [[5, 7], [9, 10]] as [number, number][]) {
       for (let x = a; x <= b2; x++) P(x, 6, fr);
       vidrio(a, 7); vidrio(b2, 7); if (b2 - a > 1) vidrio(a + 1, 8);

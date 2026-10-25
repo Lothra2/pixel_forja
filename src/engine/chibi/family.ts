@@ -25,7 +25,7 @@ const BASE: Record<MiembroId, Base> = {
   rick: {
     ...d, nombre: 'Rick', contextura: 'hombre', piel: '#c98e70',
     pelo: { estilo: 'atras', color: '#2e231f' }, ojos: { estilo: 'punto', color: '#3a2418' }, cejas: { estilo: 'gruesas' }, boca: 'sonrisa',
-    barba: { estilo: 'barba', color: '#b8b2aa' }, lentes: { estilo: 'cuadrados', color: '#1e1e24' },
+    barba: { estilo: 'barba', color: '#8e8780' }, lentes: { estilo: 'cuadrados', color: '#1e1e24' },
     poder: { estilo: 'bola', color: '#4ab8ff', color2: '#e8fbff' },
   },
   steph: {
