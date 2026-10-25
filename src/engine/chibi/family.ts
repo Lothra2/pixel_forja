@@ -25,7 +25,7 @@ const BASE: Record<MiembroId, Base> = {
   rick: {
     ...d, nombre: 'Rick', contextura: 'hombre', piel: '#c98e70',
     pelo: { estilo: 'atras', color: '#2e231f' }, ojos: { estilo: 'punto', color: '#3a2418' }, cejas: { estilo: 'gruesas' }, boca: 'sonrisa',
-    barba: { estilo: 'barba', color: '#8e8780' }, lentes: { estilo: 'cuadrados', color: '#1e1e24' },
+    barba: { estilo: 'barba', color: '#746d67' }, lentes: { estilo: 'cuadrados', color: '#1e1e24' },
     poder: { estilo: 'bola', color: '#4ab8ff', color2: '#e8fbff' },
   },
   steph: {
@@ -60,8 +60,8 @@ const BASE: Record<MiembroId, Base> = {
   },
   rosita: {
     ...d, nombre: 'Rosita', contextura: 'abuela', piel: '#e2b494',
-    pelo: { estilo: 'recogido', color: '#dcd8d2' }, ojos: { estilo: 'felices', color: '#3a2418' }, cejas: { estilo: 'finas', color: '#a8a29a' }, boca: 'sonrisa',
-    lentes: { estilo: 'gato', color: '#c8a040' }, aretes: { estilo: 'aro', color: '#e8b830' },
+    pelo: { estilo: 'recogido', color: '#b3ada6' }, ojos: { estilo: 'felices', color: '#3a2418' }, cejas: { estilo: 'finas', color: '#a8a29a' }, boca: 'sonrisa',
+    lentes: { estilo: 'gato', color: '#9a7428' }, aretes: { estilo: 'aro', color: '#e8b830' },
     poder: { estilo: 'arepa', color: '#f2d79a', color2: '#c89650' },
   },
 };

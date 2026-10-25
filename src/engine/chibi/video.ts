@@ -37,17 +37,29 @@ const GESTOS: Record<string, Gesto> = {
 };
 
 /** Colores de cada parte del molde para un muñeco. */
+const lum = (v: number) => ((v >> 16) & 255) * 0.3 + ((v >> 8) & 255) * 0.59 + (v & 255) * 0.11;
+/** La ropa muy oscura se pierde contra el contorno negro: se sube hasta que se lea (como la ropa oscura de SF2). */
+function legible(v: number): number {
+  const l = lum(v);
+  return l >= 58 ? v : mezcla(v, hex('#b8bccc'), Math.min(0.6, (58 - l) / (184 - l)));
+}
+/** La sombra de un color, sin caer en el negro del contorno. */
+function sombraLegible(v: number): number {
+  const s = sombra(v);
+  return lum(s) >= 34 ? s : mezcla(v, NEGRO, 0.32);
+}
+
 function colores(look: ChibiLook): Record<string, number> {
   const piel = hex(look.piel);
-  const arriba = look.arriba.estilo === 'nada' ? piel : hex(look.arriba.color);
-  const abajo = hex(look.abajo.color);
-  const zapato = look.zapatos.estilo === 'descalzo' ? piel : hex(look.zapatos.color);
-  const guante = look.guantes ? hex(look.guantes) : piel;
+  const arriba = look.arriba.estilo === 'nada' ? piel : legible(hex(look.arriba.color));
+  const abajo = legible(hex(look.abajo.color));
+  const zapato = look.zapatos.estilo === 'descalzo' ? piel : legible(hex(look.zapatos.color));
+  const guante = look.guantes ? legible(hex(look.guantes)) : piel;
   const cint = look.accesorio?.estilo === 'cinturon' ? hex(look.accesorio.color)
     : ['gi', 'gi_sin_mangas', 'kimono'].includes(look.arriba.estilo) ? hex(look.arriba.color3 ?? '#33251c')
-    : sombra(abajo);
+    : sombraLegible(abajo);
   return {
-    K: NEGRO, A: piel, P: zapato, C: arriba, c: sombra(arriba), D: abajo, d: sombra(abajo), L: cint, B: guante,
+    K: NEGRO, A: piel, P: zapato, C: arriba, c: sombraLegible(arriba), D: abajo, d: sombraLegible(abajo), L: cint, B: guante,
     W: hex('#f4f2ee'), F: hex('#fbfaf2'),
   };
 }
@@ -91,6 +103,45 @@ function quitarIslas(img: Raster, min: number): void {
   }
   const mayor = tam.indexOf(Math.max(...tam));
   for (let i = 0; i < w * h; i++) if (grupo[i] >= 0 && grupo[i] !== mayor && tam[grupo[i]] < min) data[i * 4 + 3] = 0;
+}
+
+/** Tapa los grupos de pixeles transparentes encerrados por el muñeco de hasta `max` pixeles. */
+function taparHuecos(img: Raster, max: number): void {
+  const { w, h, data } = img;
+  const fuera = new Uint8Array(w * h);
+  const pila: number[] = [];
+  for (let x = 0; x < w; x++) pila.push(x, (h - 1) * w + x);
+  for (let y = 0; y < h; y++) pila.push(y * w, y * w + w - 1);
+  while (pila.length) {
+    const i = pila.pop()!;
+    if (fuera[i] || data[i * 4 + 3]) continue;
+    fuera[i] = 1;
+    const x = i % w, y = (i - x) / w;
+    if (x > 0) pila.push(i - 1); if (x < w - 1) pila.push(i + 1); if (y > 0) pila.push(i - w); if (y < h - 1) pila.push(i + w);
+  }
+  const visto = new Uint8Array(w * h);
+  for (let s0 = 0; s0 < w * h; s0++) {
+    if (fuera[s0] || data[s0 * 4 + 3] || visto[s0]) continue;
+    const grupo: number[] = []; const q = [s0]; visto[s0] = 1;
+    while (q.length) {
+      const i = q.pop()!; grupo.push(i);
+      const x = i % w, y = (i - x) / w;
+      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1])
+        if (j >= 0 && !visto[j] && !data[j * 4 + 3] && !fuera[j]) { visto[j] = 1; q.push(j); }
+    }
+    if (grupo.length > max) continue;
+    for (const i of grupo) {
+      const x = i % w, y = (i - x) / w;
+      const cuenta = new Map<number, number>();
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+        const j = (yy * w + xx) * 4; if (!data[j + 3]) continue;
+        const v = (data[j] << 16) | (data[j + 1] << 8) | data[j + 2]; cuenta.set(v, (cuenta.get(v) ?? 0) + 1);
+      }
+      let mejor = 0, n = -1; for (const [v, c] of cuenta) if (c > n) { n = c; mejor = v; }
+      data[i * 4] = (mejor >> 16) & 255; data[i * 4 + 1] = (mejor >> 8) & 255; data[i * 4 + 2] = mejor & 255; data[i * 4 + 3] = 255;
+    }
+  }
 }
 
 /** Pinta un molde del video vestido con el muñeco, mirando a la derecha (o espejado). */
@@ -152,7 +203,11 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
   // la cabeza del familiar en el lugar y con el giro de la del molde
   const info = m.cabeza;
   if (info) {
-    const vista = info.espalda ? 'espalda' : info.frente ? 'frente' : 'lado';
+    // cuánta cara se ve en el molde: en los giros el video muestra la cabeza de espaldas o de tres cuartos por detrás
+    let pelo = 0, carne = 0;
+    for (const f of m.filas) for (const ch of f) { if (ch === 'H' || ch === 'h' || ch === 'R' || ch === 'r') pelo++; else if (ch === 'S' || ch === 'E') carne++; }
+    const ve = carne / Math.max(1, pelo + carne);
+    const vista = info.frente ? 'frente' : info.espalda || ve < 0.07 ? 'espalda' : ve < 0.2 ? 'espalda34' : 'lado';
     const cab = pintarCabezaVideo(look, vista, gesto);
     const k = ((info.k % 4) + 4) % 4;
     const esp = info.cara < 0;
@@ -173,6 +228,8 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
   }
   // el cuerpo del molde ya trae su contorno: va encima de la cabeza (los puños tapan la cara como en el video)
   const img = juntar([...capas], W, H, 1);
+  const cabezaM = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) if (img.data[i * 4 + 3]) cabezaM[i] = 1;
   // delante de la cabeza solo pasan brazos y puños (y su contorno); el cuello y los hombros van debajo
   const brazo = (i: number) => clase[i] === 'A' || clase[i] === 'B';
   const delante = (i: number) => {
@@ -192,7 +249,27 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
     img.data[i * 4] = (v >> 16) & 255; img.data[i * 4 + 1] = (v >> 8) & 255; img.data[i * 4 + 2] = v & 255; img.data[i * 4 + 3] = 255;
   }
   // islas chiquitas despegadas del muñeco (puntas de pelo o restos del calco al girar la cabeza): fuera
+  // el cuello: lo que queda vacío entre la cabeza (arriba) y el cuerpo (abajo) se rellena con piel y su contorno
+  {
+    const piel = col.A;
+    const op = (i: number) => img.data[i * 4 + 3] > 0;
+    const marca = new Uint8Array(W * H);
+    for (let y = 1; y < H - 1; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; if (op(i)) continue;
+      let arriba = false, abajo = false;
+      for (let d = 1; d <= 2; d++) { if (y - d >= 0 && cabezaM[(y - d) * W + x]) arriba = true; if (y + d < H && cuerpo.col[(y + d) * W + x] !== VACIO) abajo = true; }
+      if (arriba && abajo) marca[i] = 1;
+    }
+    for (let i = 0; i < W * H; i++) if (marca[i]) {
+      const x = i % W;
+      const borde = x === 0 || x === W - 1 || (!op(i - 1) && !marca[i - 1]) || (!op(i + 1) && !marca[i + 1]);
+      const v = borde ? NEGRO : piel;
+      img.data[i * 4] = (v >> 16) & 255; img.data[i * 4 + 1] = (v >> 8) & 255; img.data[i * 4 + 2] = v & 255; img.data[i * 4 + 3] = 255;
+    }
+  }
   quitarIslas(img, 12);
+  // huequitos encerrados (entre el mentón y los hombros, o donde el calco dejó un pixel vacío): se tapan con el color de al lado
+  taparHuecos(img, 4);
   if (espejo) for (let y = 0; y < H; y++) for (let x = 0; x < W / 2; x++) for (let c = 0; c < 4; c++) { const a = (y * W + x) * 4 + c, b = (y * W + W - 1 - x) * 4 + c; const t = img.data[a]; img.data[a] = img.data[b]; img.data[b] = t; }
   // puntos: manos (guantes), pies y cabeza
   const busca = (chs: string, masDer: boolean): [number, number] => {

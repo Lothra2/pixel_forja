@@ -115,7 +115,8 @@ const M: Record<Peinado, string[]> = {
     '....HHHH............', '....HHH.............', '....HH..............', '....................', '....................',
   ],
   recogido: [
-    '....................', '....................', '....................', '......HHH...........', '.....HHlHHHH........',
+    // moño chiquito atrás y arriba (antes parecía un gorro de cocinero)
+    '....................', '....................', '....................', '....................', '....HHlH............',
     '.....HHHHHHHHHH.....', '....HHHHHHHHHHHH....', '....HHHHHHHHHlHH....', '....HHHHHHHHHHxx....', '....HHHHHxxxxxxx....',
     '....HHH.............', '....HH..............', '....H...............', '....................', '....................',
   ],
@@ -172,9 +173,15 @@ export function pintarCabezaVideo(look: ChibiLook, vistaPedida: Vista, gesto: Ge
     for (let y = 9; y < largo; y++) for (let x = 1; x <= 10; x++) P(cara, x, y, pelo, 1);
     if (est === 'cola' || est === 'trenzas') { for (let y = 4; y < 13; y++) { P(cara, 5, y, pelo, 1); P(cara, 6, y, pelo, 1); } P(cara, 5, 4, acento); P(cara, 6, 4, acento); }
     if (est === 'colitas') for (const x of [-2, 13]) for (let y = 4; y < 10; y++) { P(cara, x, y, pelo, 1); P(cara, x + (x < 0 ? 1 : -1), y, pelo, 1); }
-    if (est === 'mono' || est === 'recogido') for (let y = -3; y < 0; y++) for (let x = 4; x <= 7; x++) P(cara, x, y, pelo, 1);
+    if (est === 'mono') for (let y = -3; y < 0; y++) for (let x = 4; x <= 7; x++) P(cara, x, y, pelo, 1);
+    if (est === 'recogido') for (let x = 4; x <= 7; x++) P(cara, x, -1, pelo, 1);
     if (est === 'puntas' || est === 'erizo') for (let x = 1; x <= 10; x += 2) P(cara, x, -1, pelo, 1);
     if (est === 'afro' || est === 'rizos') for (let y = -2; y <= 9; y++) { P(cara, -1, y, pelo, 1); P(cara, 12, y, pelo, 1); }
+    // tres cuartos por detrás: asoma una tira de cara y la oreja del lado de adelante
+    if (vistaPedida === 'espalda34') {
+      for (let y = 5; y <= 9; y++) { P(cara, 11, y, y === 9 ? pielS : piel, 0); if (y >= 6) P(cara, 10, y, piel, 0); }
+      P(cara, 9, 7, pielS, 0);
+    }
   }
 
   if (look.gorro) pintarGorroVideo(look, vista, (x, y, v, s = 1) => P(cara, x, y, v, s), (x, y) => { const i = (mg + y) * W + mg + x; if (i >= 0 && i < cara.col.length) cara.col[i] = VACIO; });
@@ -261,7 +268,8 @@ function pintarCaraLado(look: ChibiLook, gesto: Gesto, mujer: boolean, P: Pinta,
       if (e === 'gato') { P(a - 1, 5, fr); P(b2 + (b2 === 10 ? 1 : 0), 5, fr); }
     }
     P(8, 6, fr);
-    for (let x = 2; x <= 4; x++) if (libre(x, 6) || G(x, 6) === hex(look.pelo.color)) P(x, 6, fr);
+    // la patita solo asoma un pixel: entera parecía una franja cruzando la cara
+    if (libre(4, 6)) P(4, 6, fr);
   }
 }
 
@@ -285,7 +293,8 @@ function pintarFrente(look: ChibiLook, gesto: Gesto, mujer: boolean, cara: Capa,
   if (est === 'puntas' || est === 'erizo') for (let x = 1; x <= 10; x += 3) { P(cara, x, -1, pelo, 1); P(cara, x + 1, -1, pelo, 1); }
   if (est === 'afro' || est === 'rizos') for (let y = -2; y <= 9; y++) for (const x of [-1, 12, -2, 13]) if (est === 'afro' || (x === -1 || x === 12)) P(cara, x, y, pelo, 1);
   if (est === 'afro' || est === 'rizos') for (let x = 0; x <= 11; x++) { P(cara, x, -1, pelo, 1); if (est === 'afro') P(cara, x, -2, pelo, 1); }
-  if (est === 'mono' || est === 'recogido') for (let y = -3; y < 0; y++) for (let x = 4; x <= 7; x++) P(cara, x, y, pelo, 1);
+  if (est === 'mono') for (let y = -3; y < 0; y++) for (let x = 4; x <= 7; x++) P(cara, x, y, pelo, 1);
+  if (est === 'recogido') for (let x = 4; x <= 7; x++) P(cara, x, -1, pelo, 1);
   if (est === 'colitas') for (const x of [-2, 13]) for (let y = 3; y < 10; y++) { P(atras, x, y, pelo, 1); P(atras, x + (x < 0 ? 1 : -1), y, pelo, 1); }
   if (est === 'largo' || est === 'ondas') for (let y = 6; y < 14; y++) for (const x of [-1, 0, 11, 12]) P(atras, x, y, pelo, 1);
   if (est === 'cola') { P(cara, -1, 3, acento); P(atras, -2, 4, pelo, 1); P(atras, -2, 5, pelo, 1); }
