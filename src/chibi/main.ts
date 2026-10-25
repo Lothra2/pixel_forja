@@ -133,7 +133,7 @@ function montarFamilia(s: HTMLElement) {
   const grilla = h('div', { class: 'familia' });
   for (const id of MIEMBROS) {
     let traje: TrajeId = 'siempre';
-    const rep = reproductor(familiar(id, traje), 32, 'reposo', 4, 'card-sprite');
+    const rep = reproductor(familiar(id, traje), 32, 'reposo', 3, 'card-sprite');
     const anims = id === 'thor' ? ['reposo', 'caminar', 'correr', 'ladrar', 'victoria'] : ['reposo', 'caminar', 'poder', 'antiaereo', 'uppercut', 'torbellino', 'victoria'];
     let ai = 0;
     rep.el.title = lang === 'es' ? 'Tócalo para cambiar de movimiento' : 'Tap to change move';

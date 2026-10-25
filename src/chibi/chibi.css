@@ -64,8 +64,9 @@ input[type='number'] { width: 70px; }
 .familia { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 8px; min-width: 0; }
 .card h3 { margin: 0; font-size: 15px; }
-.card-escena { display: grid; place-items: end center; border-radius: 10px; padding: 0; overflow: hidden; height: 190px; background: linear-gradient(#5aa8f0 0 80%, #a86a40 80% 100%); }
-.card-sprite { cursor: pointer; max-width: 100%; height: auto !important; }
+/* el muñeco se pega abajo: si no cabe, lo que se corta es el cielo de arriba (espacio para saltos), nunca el cuerpo */
+.card-escena { display: flex; align-items: flex-end; justify-content: center; border-radius: 10px; padding: 0; overflow: hidden; height: 190px; background: linear-gradient(#5aa8f0 0 calc(100% - 22px), #a86a40 calc(100% - 22px) 100%); }
+.card-sprite { cursor: pointer; flex: none; }
 
 /* tienda */
 .tienda { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 14px; align-items: start; }

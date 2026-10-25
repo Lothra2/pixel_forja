@@ -326,7 +326,8 @@ function pintarGorroVideo(look: ChibiLook, vista: 'lado' | 'frente' | 'espalda',
     case 'gorra': case 'gorra_atras': {
       limpiaArriba(0); domo(3, c1);
       const atras = g.estilo === 'gorra_atras';
-      if (lado) for (let i = 0; i < 4; i++) P(atras ? -1 - i : 12 + i, 2, c2);
+      // la visera es del color de la gorra un poco más oscura: blanca parecía un pixel suelto
+      if (lado) for (let i = 0; i < 3; i++) P(atras ? -1 - i : 12 + i, 2, sombra(c1));
       else if ((vista === 'frente') !== atras) for (let x = 0; x <= 11; x++) P(x, 3, c2);
       P(lado ? 7 : 5, 0, luz(c1), 0);
       break;
@@ -345,7 +346,8 @@ function pintarGorroVideo(look: ChibiLook, vista: 'lado' | 'frente' | 'espalda',
     case 'vincha': {
       // como la de Ryu: dos filas en la frente y las tiras atrás
       for (let x = -1; x <= 12; x++) { P(x, 3, c1); P(x, 4, x % 4 === 0 ? sombra(c1) : c1); }
-      if (lado) for (let i = 1; i <= 4; i++) { P(-1 - i, 4 + Math.floor(i / 2), c1); P(-1 - i, 5 + Math.floor(i / 1.5), sombra(c1)); }
+      // dos tiras cortas y pegadas que caen hacia atrás (sin rulos sueltos)
+      if (lado) for (const [x, y, s] of [[-2, 4, 0], [-3, 5, 0], [-4, 5, 0], [-2, 5, 1], [-3, 6, 1], [-4, 7, 1]] as const) P(x, y, s ? sombra(c1) : c1);
       break;
     }
     case 'cintillo': for (let x = 0; x <= 11; x++) P(x, 1, c1, 0); break;

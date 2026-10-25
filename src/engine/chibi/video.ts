@@ -68,6 +68,30 @@ function desgirar(x: number, y: number, w: number, h: number, k: number): [numbe
 
 export interface PintadoMolde { img: Raster; ancla: [number, number]; puntos: Record<Punto, [number, number]>; hurt: [number, number, number, number] }
 
+/** Borra los grupos de pixeles de menos de `min` que no tocan al grupo más grande. */
+function quitarIslas(img: Raster, min: number): void {
+  const { w, h, data } = img;
+  const grupo = new Int32Array(w * h).fill(-1);
+  const tam: number[] = [];
+  for (let i = 0; i < w * h; i++) {
+    if (!data[i * 4 + 3] || grupo[i] >= 0) continue;
+    const g = tam.length; let n = 0; const pila = [i]; grupo[i] = g;
+    while (pila.length) {
+      const j = pila.pop()!; n++;
+      const x = j % w, y = (j - x) / w;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx, yy = y + dy;
+        if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+        const k = yy * w + xx;
+        if (data[k * 4 + 3] && grupo[k] < 0) { grupo[k] = g; pila.push(k); }
+      }
+    }
+    tam.push(n);
+  }
+  const mayor = tam.indexOf(Math.max(...tam));
+  for (let i = 0; i < w * h; i++) if (grupo[i] >= 0 && grupo[i] !== mayor && tam[grupo[i]] < min) data[i * 4 + 3] = 0;
+}
+
 /** Pinta un molde del video vestido con el muñeco, mirando a la derecha (o espejado). */
 export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: Gesto = 'normal'): PintadoMolde {
   const m = MOLDES[id];
@@ -129,6 +153,8 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
     if (v === VACIO) continue;
     img.data[i * 4] = (v >> 16) & 255; img.data[i * 4 + 1] = (v >> 8) & 255; img.data[i * 4 + 2] = v & 255; img.data[i * 4 + 3] = 255;
   }
+  // islas chiquitas despegadas del muñeco (puntas de pelo o restos del calco al girar la cabeza): fuera
+  quitarIslas(img, 12);
   if (espejo) for (let y = 0; y < H; y++) for (let x = 0; x < W / 2; x++) for (let c = 0; c < 4; c++) { const a = (y * W + x) * 4 + c, b = (y * W + W - 1 - x) * 4 + c; const t = img.data[a]; img.data[a] = img.data[b]; img.data[b] = t; }
   // puntos: manos (guantes), pies y cabeza
   const busca = (chs: string, masDer: boolean): [number, number] => {

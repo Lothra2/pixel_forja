@@ -34,6 +34,30 @@ describe('chibi: moldes calcados del video', () => {
     }
   });
 
+  it('ningún cuadro de la pelea trae pixeles sueltos ni poses de destello', () => {
+    const islas = (r: Raster) => {
+      const g = new Int32Array(r.w * r.h).fill(-1); let n = 0;
+      for (let s = 0; s < r.w * r.h; s++) {
+        if (!r.data[s * 4 + 3] || g[s] >= 0) continue;
+        n++; g[s] = n; const pila = [s];
+        while (pila.length) {
+          const j = pila.pop()!, x = j % r.w, y = (j - x) / r.w;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx, yy = y + dy, k = yy * r.w + xx;
+            if (xx >= 0 && yy >= 0 && xx < r.w && yy < r.h && r.data[k * 4 + 3] && g[k] < 0) { g[k] = n; pila.push(k); }
+          }
+        }
+      }
+      return n;
+    };
+    for (const p of Object.values(MOLDES)) expect(p.filas.join('')).not.toMatch(/[WF]/);
+    for (const m of ['rick', 'sophie'] as const) for (const t of TRAJES) {
+      const l = familiar(m, t);
+      for (const c of clipsDe(l).filter((x) => x.grupo === 'pelea'))
+        pintarClip(l, 32, c).forEach((q, i) => expect(islas(q.img), `${m} ${t} ${c.id} ${i}`).toBe(1));
+    }
+  });
+
   it('los cuadros del video usan la celda del video y los golpes traen caja', () => {
     const l = defaultLook();
     const golpe = clipsDe(l).find((c) => c.id === 'golpe_debil')!;
