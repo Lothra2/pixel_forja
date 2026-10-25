@@ -1,5 +1,5 @@
 import { familiar, MIEMBROS, TRAJES, NOMBRE_MIEMBRO, NOMBRE_TRAJE, paqueteChibi, hojaChibi, type ChibiLook, type Talla, type Grupo } from '../engine/chibi';
-import { h, lienzo, tr, lang } from './dibujo';
+import { h, lienzo, tr, lang, guardarArchivo, botonArchivo } from './dibujo';
 
 /**
  * Exportar para juegos: se eligen los muñecos (la familia con sus trajes, los tuyos y el de la tienda), las tallas y
@@ -43,9 +43,8 @@ export function montarExportar(s: HTMLElement, ctx: Ctx) {
     const looks = lista().filter(([k]) => elegidos.has(k)).map(([, , f]) => f());
     if (!looks.length || !tallas.size || !grupos.size) { salida.append(h('p', { class: 'nota' }, lang === 'es' ? 'Elige al menos un muñeco, una talla y un grupo.' : 'Pick at least one chibi, one size and one group.')); return; }
     const { zip, archivos } = paqueteChibi(looks, [...tallas], [...grupos]);
-    const url = URL.createObjectURL(new Blob([zip as BlobPart], { type: 'application/zip' }));
-    const a = h('a', { href: url, download: 'munecos_chibi.zip', class: 'btn' }, lang === 'es' ? 'Descargar el zip' : 'Download zip');
-    a.click();
+    void guardarArchivo('munecos_chibi.zip', zip);
+    const a = botonArchivo('munecos_chibi.zip', zip);
     const { hoja, manifest } = hojaChibi(looks[0], [...tallas][0], [...grupos]);
     const c = lienzo(hoja);
     const img = h('img', { src: c.toDataURL('image/png'), class: 'px hoja-prev', alt: 'hoja de sprites' });

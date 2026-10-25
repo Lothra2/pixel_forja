@@ -86,3 +86,26 @@ export function alTick(f: (tick: number) => void): () => void {
   return () => suscriptores.delete(f);
 }
 export const ahora = () => tick;
+
+/**
+ * Entrega un archivo al usuario. Dentro de un artifact de claude.ai usa la capacidad de descargas (pide confirmación);
+ * en una página normal hace la descarga de siempre con un enlace.
+ */
+type ClaudeDescargas = { save(r: { filename: string; data: Blob }): Promise<unknown> };
+const descargas: Promise<ClaudeDescargas | null> = (() => {
+  const cl = (globalThis as { claude?: { use?: (n: string) => Promise<unknown> } }).claude;
+  if (!cl?.use) return Promise.resolve(null);
+  return Promise.race([cl.use('downloads') as Promise<ClaudeDescargas | null>, new Promise<null>((r) => setTimeout(() => r(null), 10000))]).catch(() => null);
+})();
+export async function guardarArchivo(nombre: string, bytes: Uint8Array, tipo = 'application/zip'): Promise<void> {
+  const blob = new Blob([bytes as BlobPart], { type: tipo });
+  const d = await descargas;
+  if (d) { try { await d.save({ filename: nombre, data: blob }); } catch { /* el usuario dijo que no o no se puede aquí */ } return; }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+/** Botón que vuelve a entregar el archivo. */
+export const botonArchivo = (nombre: string, bytes: Uint8Array) =>
+  h('button', { class: 'btn', onclick: () => void guardarArchivo(nombre, bytes) }, lang === 'es' ? 'Descargar el zip' : 'Download zip');

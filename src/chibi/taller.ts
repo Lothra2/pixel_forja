@@ -2,7 +2,7 @@ import {
   ASSETS, CATEGORIAS, asset, pintarAsset, escenarios, cuadroElemento, paqueteEscenario, clipsDe, pintarClip, NOMBRES_CAPA,
   type ChibiLook, type Escenario, type Elemento, type CuadroPintado, type Clip,
 } from '../engine/chibi';
-import { h, canvasPixel, dibujar, lienzo, tr, lang, alTick, guardar, leer } from './dibujo';
+import { h, canvasPixel, dibujar, lienzo, tr, lang, alTick, guardar, leer, guardarArchivo, botonArchivo } from './dibujo';
 
 /**
  * El taller de escenarios: se arranca de un escenario listo (o de cero), se arrastran assets desde la paleta a la
@@ -198,10 +198,8 @@ export function montarTaller(s: HTMLElement, ctx0: Ctx) {
   const exportar = () => {
     salida.innerHTML = '';
     const zip = paqueteEscenario(esc);
-    const blob = new Blob([zip as BlobPart], { type: 'application/zip' });
-    const url = URL.createObjectURL(blob);
-    const a = h('a', { href: url, download: `escenario_${esc.id}.zip`, class: 'btn' }, lang === 'es' ? 'Descargar el zip' : 'Download zip');
-    a.click();
+    void guardarArchivo(`escenario_${esc.id}.zip`, zip);
+    const a = botonArchivo(`escenario_${esc.id}.zip`, zip);
     const img = vista.toDataURL('image/png');
     salida.append(h('p', { class: 'nota' }, lang === 'es'
       ? `Paquete listo (${Math.round(zip.length / 1024)} KB): una imagen por capa con lo quieto, tiras para lo que se mueve y escenario.json con el parallax y el piso. Si tu navegador no descargó, usa este botón:`
