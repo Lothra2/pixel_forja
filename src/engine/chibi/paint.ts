@@ -55,6 +55,17 @@ export function mezcla(a: number, b: number, t: number): number {
   return (ch(16) << 16) | (ch(8) << 8) | ch(0);
 }
 
+const lum = (v: number) => ((v >> 16) & 255) * 0.3 + ((v >> 8) & 255) * 0.59 + (v & 255) * 0.11;
+/** Lo muy oscuro (ropa, pelo) se pierde contra el contorno negro: se sube hasta que se lea (como en SF2). */
+export function legible(v: number): number {
+  const l = lum(v);
+  return l >= 58 ? v : mezcla(v, hex('#b8bccc'), Math.min(0.6, (58 - l) / (184 - l)));
+}
+/** La sombra de un color, sin caer en el negro del contorno. */
+export function sombraLegible(v: number): number {
+  const s = sombra(v);
+  return lum(s) >= 34 ? s : mezcla(v, CONTORNO, 0.32);
+}
 export function pon(c: Capa, x: number, y: number, v: number, som = 1): void {
   x = Math.floor(x); y = Math.floor(y);
   if (x < 0 || y < 0 || x >= c.w || y >= c.h) return;

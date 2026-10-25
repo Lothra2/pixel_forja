@@ -334,7 +334,6 @@ function montarMovimientos(s: HTMLElement) {
       const grid = h('div', { class: 'movs' });
       for (const c of cs) {
         const r = reproductor(estado.look, 32, c.id, 3, 'mov');
-        r.opciones.raiz = false;
         reps.push(r);
         const video = c.cuadros.some((q) => q.p.molde);
         grid.append(h('figure', { class: 'mov-card' }, r.el, h('figcaption', {}, tr(c.nombre), h('small', { class: video ? 'tag v' : 'tag' }, video ? t('video') : t('piezas')))));

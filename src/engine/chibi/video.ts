@@ -1,8 +1,8 @@
 import { createRaster, type Raster } from '../core/raster';
 import type { ChibiLook } from './look';
 import type { Gesto } from './head';
-import { pintarCabezaVideo } from './cabezaVideo';
-import { capa, pegar, juntar, hex, sombra, mezcla, VACIO, type Capa } from './paint';
+import { vestirCabezaMolde, MARGEN } from './cabezaMolde';
+import { capa, hex, sombra, mezcla, VACIO, legible, sombraLegible } from './paint';
 import type { Clip, Cuadro, Punto } from './clips';
 import DATA from './video/moldes.json';
 
@@ -37,18 +37,6 @@ const GESTOS: Record<string, Gesto> = {
 };
 
 /** Colores de cada parte del molde para un muñeco. */
-const lum = (v: number) => ((v >> 16) & 255) * 0.3 + ((v >> 8) & 255) * 0.59 + (v & 255) * 0.11;
-/** La ropa muy oscura se pierde contra el contorno negro: se sube hasta que se lea (como la ropa oscura de SF2). */
-function legible(v: number): number {
-  const l = lum(v);
-  return l >= 58 ? v : mezcla(v, hex('#b8bccc'), Math.min(0.6, (58 - l) / (184 - l)));
-}
-/** La sombra de un color, sin caer en el negro del contorno. */
-function sombraLegible(v: number): number {
-  const s = sombra(v);
-  return lum(s) >= 34 ? s : mezcla(v, NEGRO, 0.32);
-}
-
 function colores(look: ChibiLook): Record<string, number> {
   const piel = hex(look.piel);
   const arriba = look.arriba.estilo === 'nada' ? piel : legible(hex(look.arriba.color));
@@ -62,21 +50,6 @@ function colores(look: ChibiLook): Record<string, number> {
     K: NEGRO, A: piel, P: zapato, C: arriba, c: sombraLegible(arriba), D: abajo, d: sombraLegible(abajo), L: cint, B: guante,
     W: hex('#f4f2ee'), F: hex('#fbfaf2'),
   };
-}
-
-/** Punto (x, y) de la grilla derecha (cabeza arriba) llevado a la grilla original girada k veces. */
-function desgirar(x: number, y: number, w: number, h: number, k: number): [number, number] {
-  // la grilla derecha salió de girar la original k veces a la izquierda; se deshace girando a la derecha
-  let px = x, py = y, W = w, H = h;
-  // dimensiones de la grilla derecha
-  if (k % 2) { W = h; H = w; }
-  for (let i = 0; i < k; i++) {
-    // un giro a la derecha: (x, y) -> (H - 1 - y, x), y las dimensiones se cruzan
-    const nx = H - 1 - py, ny = px;
-    px = nx; py = ny;
-    const t = W; W = H; H = t;
-  }
-  return [px, py];
 }
 
 export interface PintadoMolde { img: Raster; ancla: [number, number]; puntos: Record<Punto, [number, number]>; hurt: [number, number, number, number] }
@@ -145,15 +118,13 @@ function taparHuecos(img: Raster, max: number): void {
 }
 
 /** Pinta un molde del video vestido con el muñeco, mirando a la derecha (o espejado). */
-export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: Gesto = 'normal'): PintadoMolde {
+export function pintarMolde(look: ChibiLook, id: string, espejo = false, _gesto: Gesto = 'normal'): PintadoMolde {
   const m = MOLDES[id];
   if (!m) throw new Error(`No hay molde "${id}"`);
   const [W, H] = CELDA_VIDEO;
   const ox = Math.round(W / 2 - m.w / 2), oy = PISO_VIDEO - m.h;
   const col = colores(look);
   const cuerpo = capa(W, H, false);
-  // clase de cada pixel del cuerpo en la celda (para decidir qué va delante de la cabeza)
-  const clase = new Array<string>(W * H).fill('.');
   // estampados de la ropa de arriba: rayas y cuadros siguen la grilla del molde
   const pat = look.arriba.estampado ?? 'liso';
   const c2 = hex(look.arriba.color2 ?? '#f4f2ee');
@@ -170,18 +141,9 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
       emblema = new Set([[0, 0], [1, 0], [0, 1], [1, 1]].map(([dx, dy]) => (cy + dy) * m.w + cx + dx));
     }
   }
-  const RELLENO = new Set(['A', 'B', 'C', 'c', 'D', 'd', 'L', 'P']);
-  const suelto = (x: number, y: number) => {
-    const inf = m.cabeza;
-    if (!inf || ((inf.k % 4) + 4) % 4 !== 0 || y >= inf.chin[1]) return false;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (RELLENO.has(m.filas[y + dy]?.[x + dx] ?? '.')) return false;
-    return true;
-  };
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const ch = m.filas[y][x];
     if (ch === '.' || CABEZA.has(ch)) continue;
-    // contorno suelto a la altura de la cabeza (las tiras de la cinta de Ryu): no es del cuerpo
-    if (ch === 'K' && suelto(x, y)) continue;
     let v = col[ch] ?? NEGRO;
     if ((ch === 'C' || ch === 'c') && pat !== 'liso') {
       if (pat === 'rayas' && y % 3 === 0) v = ch === 'c' ? sombra(c2) : c2;
@@ -189,7 +151,6 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
       else if (emblema?.has(y * m.w + x)) v = ch === 'c' ? sombra(c2) : c2;
     }
     cuerpo.col[(oy + y) * W + ox + x] = v;
-    clase[(oy + y) * W + ox + x] = ch;
   }
   // pixeles sueltos (restos de las tiras de la cinta del video): fuera
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -199,75 +160,26 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H && cuerpo.col[yy * W + xx] !== VACIO) vecinos++; }
     if (!vecinos) cuerpo.col[i] = VACIO;
   }
-  const capas: Capa[] = [];
-  // la cabeza del familiar en el lugar y con el giro de la del molde
-  const info = m.cabeza;
-  if (info) {
-    // cuánta cara se ve en el molde: en los giros el video muestra la cabeza de espaldas o de tres cuartos por detrás
-    let pelo = 0, carne = 0;
-    for (const f of m.filas) for (const ch of f) { if (ch === 'H' || ch === 'h' || ch === 'R' || ch === 'r') pelo++; else if (ch === 'S' || ch === 'E') carne++; }
-    const ve = carne / Math.max(1, pelo + carne);
-    const vista = info.frente ? 'frente' : info.espalda || ve < 0.07 ? 'espalda' : ve < 0.2 ? 'espalda34' : 'lado';
-    const cab = pintarCabezaVideo(look, vista, gesto);
-    const k = ((info.k % 4) + 4) % 4;
-    const esp = info.cara < 0;
-    // dónde queda el mentón del molde en la grilla original
-    const [cx, cy] = desgirar(info.chin[0], info.chin[1], m.w, m.h, k);
-    // el ancla de la cabeza pintada (centro de abajo), girada igual que la del molde
-    const ancla = (src: Capa, ax: number, ay: number): [number, number] => {
-      let x = esp ? src.w - 1 - ax : ax, y = ay, w = src.w, h = src.h;
-      for (let i = 0; i < k; i++) { const nx = h - 1 - y, ny = x; x = nx; y = ny; const t = w; w = h; h = t; }
-      return [x, y];
-    };
-    const [axr, ayr] = ancla(cab.cara, cab.cuello[0], cab.cuello[1] - 1);
-    // el mentón del molde está una fila debajo de la cara; el de la cabeza pintada, en su última fila
-    const dx = ox + cx - axr, dy = oy + cy - ayr - 3;
-    const atras = capa(W, H); pegar(atras, cab.atras, dx, dy, k, esp);
-    const cara = capa(W, H); pegar(cara, cab.cara, dx, dy, k, esp);
-    capas.push(atras, cara);
-  }
-  // el cuerpo del molde ya trae su contorno: va encima de la cabeza (los puños tapan la cara como en el video)
-  const img = juntar([...capas], W, H, 1);
-  const cabezaM = new Uint8Array(W * H);
-  for (let i = 0; i < W * H; i++) if (img.data[i * 4 + 3]) cabezaM[i] = 1;
-  // delante de la cabeza solo pasan brazos y puños (y su contorno); el cuello y los hombros van debajo
-  const brazo = (i: number) => clase[i] === 'A' || clase[i] === 'B';
-  const delante = (i: number) => {
-    if (brazo(i)) return true;
-    if (clase[i] !== 'K') return false;
-    const x = i % W, y = (i - x) / W;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const xx = x + dx, yy = y + dy;
-      if (xx >= 0 && yy >= 0 && xx < W && yy < H && brazo(yy * W + xx)) return true;
+  // la cabeza: la del molde en cada cuadro (mismo tamaño, lugar, giro y gesto que en el video) con los colores y rasgos del
+  // familiar. Lo que se le agrega (pelo largo, colas) va detrás del cuerpo; gorros y moños, encima de lo vacío.
+  const img = createRaster(W, H);
+  const pon1 = (i: number, v: number) => { img.data[i * 4] = (v >> 16) & 255; img.data[i * 4 + 1] = (v >> 8) & 255; img.data[i * 4 + 2] = v & 255; img.data[i * 4 + 3] = 255; };
+  const cab = vestirCabezaMolde(look, m);
+  const deCabeza = (detras: boolean) => {
+    if (!cab) return;
+    for (let Y = 0; Y < cab.h; Y++) for (let X = 0; X < cab.w; X++) {
+      const j = Y * cab.w + X, v = cab.col[j];
+      if (v === VACIO || (cab.atras[j] === 1) !== detras) continue;
+      const x = ox + X - MARGEN, y = oy + Y - MARGEN;
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      if (!detras && cuerpo.col[y * W + x] !== VACIO && !cab.propio[j]) continue;
+      pon1(y * W + x, v);
     }
-    return false;
   };
-  for (let i = 0; i < W * H; i++) {
-    const v = cuerpo.col[i];
-    if (v === VACIO) continue;
-    if (img.data[i * 4 + 3] && !delante(i)) continue;
-    img.data[i * 4] = (v >> 16) & 255; img.data[i * 4 + 1] = (v >> 8) & 255; img.data[i * 4 + 2] = v & 255; img.data[i * 4 + 3] = 255;
-  }
-  // islas chiquitas despegadas del muñeco (puntas de pelo o restos del calco al girar la cabeza): fuera
-  // el cuello: lo que queda vacío entre la cabeza (arriba) y el cuerpo (abajo) se rellena con piel y su contorno
-  {
-    const piel = col.A;
-    const op = (i: number) => img.data[i * 4 + 3] > 0;
-    const marca = new Uint8Array(W * H);
-    for (let y = 1; y < H - 1; y++) for (let x = 0; x < W; x++) {
-      const i = y * W + x; if (op(i)) continue;
-      let arriba = false, abajo = false;
-      for (let d = 1; d <= 2; d++) { if (y - d >= 0 && cabezaM[(y - d) * W + x]) arriba = true; if (y + d < H && cuerpo.col[(y + d) * W + x] !== VACIO) abajo = true; }
-      if (arriba && abajo) marca[i] = 1;
-    }
-    for (let i = 0; i < W * H; i++) if (marca[i]) {
-      const x = i % W;
-      const borde = x === 0 || x === W - 1 || (!op(i - 1) && !marca[i - 1]) || (!op(i + 1) && !marca[i + 1]);
-      const v = borde ? NEGRO : piel;
-      img.data[i * 4] = (v >> 16) & 255; img.data[i * 4 + 1] = (v >> 8) & 255; img.data[i * 4 + 2] = v & 255; img.data[i * 4 + 3] = 255;
-    }
-  }
-  quitarIslas(img, 12);
+  deCabeza(true);
+  for (let i = 0; i < W * H; i++) if (cuerpo.col[i] !== VACIO) pon1(i, cuerpo.col[i]);
+  deCabeza(false);
+  quitarIslas(img, 40);
   // huequitos encerrados (entre el mentón y los hombros, o donde el calco dejó un pixel vacío): se tapan con el color de al lado
   taparHuecos(img, 4);
   if (espejo) for (let y = 0; y < H; y++) for (let x = 0; x < W / 2; x++) for (let c = 0; c < 4; c++) { const a = (y * W + x) * 4 + c, b = (y * W + W - 1 - x) * 4 + c; const t = img.data[a]; img.data[a] = img.data[b]; img.data[b] = t; }

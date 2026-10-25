@@ -19,23 +19,29 @@ export function reproductor(look: ChibiLook, talla: Talla, clipId: string, escal
   let C: Clip = clips.find((c) => c.id === clipId) ?? clips[0];
   let cuadros: CuadroPintado[] = pintarClip(L, talla, C);
   const w = cuadros[0].img.w, hgt = cuadros[0].img.h;
-  const extra = talla === 48 ? 40 : 20; // espacio para saltos
+  // espacio para los saltos reales del video (el más alto sube 68 pixeles)
+  const extra = talla === 48 ? 144 : 72;
   const el = canvasPixel(w, hgt + extra, escala, clase);
   const ctx = el.getContext('2d')!;
   let i = 0, t = 0, avance = 0, visible = true, ultimoDibujo = -1;
-  const opciones: Reproductor['opciones'] = { velocidad: 1, pausa: false, cajas: false, espejo: false, raiz: false, fondo: null };
+  const opciones: Reproductor['opciones'] = { velocidad: 1, pausa: false, cajas: false, espejo: false, raiz: true, fondo: null };
   const io = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver((es) => { visible = es.some((e) => e.isIntersecting); }) : null;
   io?.observe(el);
   const pintar = () => {
     const q = cuadros[i];
     ctx.clearRect(0, 0, el.width, el.height);
     if (opciones.fondo) opciones.fondo(ctx);
-    // sombra en el piso (no sube con el salto)
+    // el avance real del video: los que no son bucle cruzan centrados en su recorrido; los bucles dan la vuelta al borde
+    let ox = 0;
+    if (opciones.raiz) {
+      const total = cuadros.reduce((s, q) => s + q.dx, 0);
+      if (!C.loop) ox = Math.round(avance - total / 2);
+      else { const r = w * 0.7; ox = Math.round((((avance + r / 2) % r) + r) % r - r / 2); }
+    }
+    // sombra en el piso (no sube con el salto, sí avanza)
     const [ax, ay] = q.ancla;
     ctx.fillStyle = 'rgba(40,20,30,0.28)';
-    ctx.beginPath(); ctx.ellipse(ax, ay + extra - 0.5, 8 * (talla === 48 ? 2 : 1), 2 * (talla === 48 ? 2 : 1), 0, 0, Math.PI * 2); ctx.fill();
-    let ox = 0;
-    if (opciones.raiz) { ox = ((avance % (w * 0.6)) + w * 0.6) % (w * 0.6) - w * 0.3; }
+    ctx.beginPath(); ctx.ellipse(ax + ox, ay + extra - 0.5, 8 * (talla === 48 ? 2 : 1), 2 * (talla === 48 ? 2 : 1), 0, 0, Math.PI * 2); ctx.fill();
     const oy = extra - Math.max(-extra, Math.min(extra, q.dy));
     dibujar(ctx, q.img, ox, oy, opciones.espejo);
     if (opciones.cajas) {
