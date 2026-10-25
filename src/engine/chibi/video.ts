@@ -14,7 +14,7 @@ import DATA from './video/moldes.json';
  * molde y se pone la cabeza del familiar en el mismo lugar y girada igual. Los puños quedan por delante de la cara.
  */
 
-interface InfoCabeza { k: number; chin: [number, number]; top: number; ancho: number; espalda: boolean; cara: number }
+interface InfoCabeza { k: number; chin: [number, number]; top: number; ancho: number; espalda: boolean; cara: number; frente?: boolean }
 interface Molde { w: number; h: number; filas: string[]; cabeza: InfoCabeza | null; espejo: boolean }
 type CuadroMolde = [string, number, number, number, boolean];
 interface Datos { poses: Record<string, Molde>; clips: Record<string, { loop: boolean; cuadros: CuadroMolde[] }>; nombres: Record<string, string>; golpes: Record<string, string[]>; extra: { poder_suelta: string } }
@@ -33,6 +33,7 @@ const GESTOS: Record<string, Gesto> = {
   golpe_debil: 'golpe', antiaereo: 'golpe', poder: 'golpe', barrida: 'golpe', agarrar: 'esfuerzo', uppercut_corto: 'golpe', uppercut: 'golpe',
   torbellino: 'golpe', golpeado_aire: 'dolor', recibir_poder: 'dolor', salto_patada: 'golpe', patada_agachado: 'golpe', caer: 'dolor', ko: 'ko',
   victoria: 'feliz', festejo: 'feliz', levantarse: 'dolor',
+  golpe_agachado: 'golpe', golpe_barril: 'golpe', patada_giro: 'golpe', shoryuken_barril: 'golpe', perfect: 'feliz',
 };
 
 /** Colores de cada parte del molde para un muñeco. */
@@ -127,7 +128,7 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, gesto: 
   // la cabeza del familiar en el lugar y con el giro de la del molde
   const info = m.cabeza;
   if (info) {
-    const vista = info.espalda ? 'espalda' : 'lado';
+    const vista = info.espalda ? 'espalda' : info.frente ? 'frente' : 'lado';
     const cab = pintarCabezaVideo(look, vista, gesto);
     const k = ((info.k % 4) + 4) % 4;
     const esp = info.cara < 0;
@@ -184,6 +185,9 @@ export const CLIPS_VIDEO_NOMBRES: Record<string, [string, string]> = {
   salto_adelante: ['Salto adelante', 'Forward jump'], salto_patada: ['Salto con patada', 'Jump kick'], recibir_poder: ['Recibe el poder', 'Hit by fireball'],
   patada_agachado: ['Patada agachado', 'Crouching kick'], caer: ['Caer', 'Knockdown'], levantarse: ['Levantarse', 'Get up'], ko: ['KO', 'KO'],
   victoria: ['Victoria', 'Victory'], festejo: ['Festejo', 'Celebrate'],
+  // del segundo video (el bonus de los barriles)
+  golpe_agachado: ['Golpe agachado', 'Crouching punch'], golpe_barril: ['Golpe al barril', 'Barrel punch'],
+  patada_giro: ['Patada con giro', 'Spin kick'], shoryuken_barril: ['Uppercut al barril', 'Barrel uppercut'], perfect: ['¡Perfect!', 'Perfect!'],
 };
 const GOLPES = D.golpes, N = D.nombres;
 
@@ -197,7 +201,7 @@ export function clipsVideo(): Clip[] {
       const dx = i === 0 ? 0 : x - prevX;
       prevX = x;
       const q: Cuadro = { p: { molde: pose, espejo: esp, gesto: GESTOS[id] }, t, dx, dy };
-      if (GOLPES[id]?.includes(pose)) q.golpe = ['golpe_debil', 'uppercut', 'golpe_fuerte'].includes(id) || (id === 'uppercut_corto' && GOLPES[id][0] === pose) ? 'manoD' : 'pieD';
+      if (GOLPES[id]?.includes(pose)) q.golpe = ['golpe_debil', 'uppercut', 'golpe_fuerte', 'golpe_agachado', 'golpe_barril', 'shoryuken_barril'].includes(id) || (id === 'uppercut_corto' && GOLPES[id][0] === pose) ? 'manoD' : 'pieD';
       if (id === 'poder' && pose === D.extra.poder_suelta && !c.cuadros.slice(0, i).some((x) => x[0] === pose)) q.fx = { id: 'poder', en: 'manoD', dx: 4 };
       if ((id === 'caer' || id === 'ko') && i === c.cuadros.length - 1) q.fx = { id: 'polvo', en: 'centro' };
       return q;

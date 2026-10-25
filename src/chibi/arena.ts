@@ -66,7 +66,7 @@ interface Luchador {
 }
 const MOV: Record<string, { daño: number; tumba?: boolean; nombre?: string }> = {
   golpe_debil: { daño: 4 }, golpe_fuerte: { daño: 8 }, patada_fuerte: { daño: 9 }, barrida: { daño: 8, tumba: true }, antiaereo: { daño: 12, tumba: true },
-  uppercut: { daño: 14, tumba: true }, uppercut_corto: { daño: 10 }, torbellino: { daño: 6 }, salto_patada: { daño: 8 }, patada_agachado: { daño: 6 }, agarrar: { daño: 12, tumba: true },
+  uppercut: { daño: 14, tumba: true }, uppercut_corto: { daño: 10 }, torbellino: { daño: 6 }, salto_patada: { daño: 8 }, patada_agachado: { daño: 6 }, golpe_agachado: { daño: 5 }, agarrar: { daño: 12, tumba: true },
 };
 const LIBRES = new Set(['reposo', 'caminar', 'caminar_atras', 'agachado', 'bloquear', 'caminar_guardia']);
 
@@ -84,8 +84,8 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
   const pintarAyuda = () => {
     ayuda.innerHTML = modo === 'pelea'
       ? (lang === 'es'
-        ? '<b>Jugador 1:</b> A D caminar · W saltar (con D salta adelante) · S agacharse · atrás bloquea · <b>J</b> golpe · <b>K</b> patada (abajo: barrida) · <b>L</b> poder · <b>U</b> uppercut · <b>I</b> torbellino · <b>O</b> patada antiaérea · <b>H</b> agarrar (de cerca)'
-        : '<b>Player 1:</b> A D walk · W jump (with D forward jump) · S crouch · back blocks · <b>J</b> punch · <b>K</b> kick (down: sweep) · <b>L</b> fireball · <b>U</b> uppercut · <b>I</b> hurricane · <b>O</b> anti-air · <b>H</b> throw (close)')
+        ? '<b>Jugador 1:</b> A D caminar · W saltar (con D salta adelante) · S agacharse · atrás bloquea · <b>J</b> golpe (abajo: golpe agachado) · <b>K</b> patada (abajo: barrida) · <b>L</b> poder · <b>U</b> uppercut · <b>I</b> torbellino · <b>O</b> patada antiaérea · <b>H</b> agarrar (de cerca)'
+        : '<b>Player 1:</b> A D walk · W jump (with D forward jump) · S crouch · back blocks · <b>J</b> punch (down: crouching punch) · <b>K</b> kick (down: sweep) · <b>L</b> fireball · <b>U</b> uppercut · <b>I</b> hurricane · <b>O</b> anti-air · <b>H</b> throw (close)')
         + (dosJugadores ? (lang === 'es' ? '<br><b>Jugador 2:</b> flechas · 1 golpe · 2 patada · 3 poder · 4 uppercut · 5 torbellino' : '<br><b>Player 2:</b> arrows · 1 punch · 2 kick · 3 fireball · 4 uppercut · 5 hurricane') : '')
       : (lang === 'es' ? 'Flechas o WASD para caminar en 8 direcciones · Shift corre · Espacio saluda · Thor te sigue.' : 'Arrows or WASD to walk in 8 directions · Shift runs · Space waves · Thor follows you.');
   };
@@ -204,7 +204,7 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
       else if (e.anti) poner(L, 'antiaereo');
       else if (e.patada && e.aba) poner(L, 'barrida');
       else if (e.patada) poner(L, e.arr ? 'salto_patada' : 'patada_fuerte');
-      else if (e.golpe) poner(L, e.aba ? 'patada_agachado' : Math.random() < 0.5 ? 'golpe_debil' : 'golpe_fuerte');
+      else if (e.golpe) poner(L, e.aba ? 'golpe_agachado' : Math.random() < 0.5 ? 'golpe_debil' : 'golpe_fuerte');
       else if (e.arr) poner(L, e.adelante ? 'salto_adelante' : 'saltar');
       else if (e.aba) poner(L, L.bloqueando ? 'bloquear' : 'agachado');
       else if (e.adelante) poner(L, 'caminar');
@@ -238,6 +238,7 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
         if (L.clip.id === 'caer' || L.clip.id === 'lanzado') poner(L, L.vida > 0 ? 'levantarse' : 'ko');
         else if (L.clip.id === 'ko') L.i = L.cuadros.length - 1;
         else if (L.clip.id === 'victoria') L.i = 0;
+        else if (L.clip.id === 'perfect') L.i = L.cuadros.length - 1;
         else poner(L, 'reposo');
       }
     }
@@ -301,7 +302,9 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
       const gana = p1.vida >= p2.vida ? p1 : p2, pierde = gana === p1 ? p2 : p1;
       if (pierde.vida > 0) pierde.vida = 0;
       if (pierde.clip.id !== 'ko') poner(pierde, 'ko');
-      setTimeout(() => { if (gana.clip.id !== 'ko') poner(gana, 'victoria'); cartelTxt = `${gana.nombre.toUpperCase()} WINS`; cartel = 120; }, 1400);
+      // sin un rasguño: el festejo de frente del bonus de los barriles
+      const perfecto = gana.vida >= 100;
+      setTimeout(() => { if (gana.clip.id !== 'ko') poner(gana, perfecto ? 'perfect' : 'victoria'); cartelTxt = perfecto ? 'PERFECT' : `${gana.nombre.toUpperCase()} WINS`; cartel = 120; }, 1400);
       setTimeout(() => { ronda++; reiniciar(); }, 5200);
     }
     // cámara: al medio de los dos, sin salirse del escenario
