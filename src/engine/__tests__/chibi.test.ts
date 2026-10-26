@@ -4,7 +4,8 @@ import {
   paqueteChibi, hojaChibi, escenarios, pintarEscenario, paqueteEscenario, ASSETS, pintarAsset, EFECTOS, efecto,
 } from '../chibi';
 import type { Raster } from '../core/raster';
-import { cuadroRepeticion, REP, pintarMuelle, MUELLE } from '../chibi/repeticion';
+import { cuadroRepeticion, REP, pintarMuelle, MUELLE, piezas, camara, dibujoLuchador, cantidadDibujos } from '../chibi/repeticion';
+import { pintorFamilia, moldeDeDibujo } from '../chibi/repeticionFamilia';
 
 const pixeles = (r: Raster) => { let n = 0; for (let i = 3; i < r.data.length; i += 4) if (r.data[i]) n++; return n; };
 
@@ -128,14 +129,55 @@ describe('chibi: la pelea del video reconstruida', () => {
   });
 });
 
+describe('chibi: la familia en la pelea del video', () => {
+  it('cada dibujo de Ryu y Ken que sale en la pelea tiene su molde dentro del dibujo', () => {
+    const usados = new Set<string>();
+    for (let k = 0; k < REP.cuadros; k++) for (const [t, i] of piezas(k)) if (t === 'r' || t === 'k') usados.add(t + i);
+    for (const quien of ['ryu', 'ken'] as const) for (let i = 0; i < cantidadDibujos(quien); i++) {
+      if (!usados.has(quien[0] + i)) continue;
+      const md = moldeDeDibujo(quien, i), d = dibujoLuchador(quien, i);
+      expect(md, quien + i).not.toBeNull();
+      expect(md!.x).toBeGreaterThanOrEqual(0); expect(md!.y).toBeGreaterThanOrEqual(0);
+      expect(md!.x + md!.molde.w).toBeLessThanOrEqual(d.w); expect(md!.y + md!.molde.h).toBeLessThanOrEqual(d.h);
+      expect(md!.molde.cabeza, quien + i).not.toBeNull();
+    }
+  });
+  it('los familiares caen donde estaban Ryu y Ken y el resto del cuadro queda igual', () => {
+    const pintor = pintorFamilia({ ryu: familiar('rick', 'pelea'), ken: familiar('steph', 'pelea') });
+    for (const k of [0, 118, 294, 476, 700]) {
+      const a = cuadroRepeticion(k), b = cuadroRepeticion(k, { pintor });
+      const [cx, cy] = camara(k), [ox, oy] = MUELLE.origen;
+      const cajas = piezas(k).filter((p) => p[0] === 'r' || p[0] === 'k').map(([t, i, x, y]) => {
+        const d = dibujoLuchador(t === 'r' ? 'ryu' : 'ken', i);
+        return [x - ox - cx - 8, y - oy - cy - 8, x - ox - cx + d.w + 8, y - oy - cy + d.h + 8];
+      });
+      let cambian = 0;
+      for (let y = 0; y < 320; y++) for (let x = 0; x < 180; x++) {
+        const o = (y * 180 + x) * 4;
+        if (a.data[o] === b.data[o] && a.data[o + 1] === b.data[o + 1] && a.data[o + 2] === b.data[o + 2]) continue;
+        cambian++;
+        expect(cajas.some(([x0, y0, x1, y1]) => x >= x0 && x < x1 && y >= y0 && y < y1), `cuadro ${k} (${x},${y})`).toBe(true);
+      }
+      expect(cambian, `cuadro ${k}`).toBeGreaterThan(100);
+    }
+  });
+  it('el HUD lleva los nombres de la familia en lugar de RYU y KEN', () => {
+    const a = cuadroRepeticion(0), b = cuadroRepeticion(0, { nombres: ['Rick', 'Steph'] });
+    let dif = 0; for (let i = 0; i < a.data.length; i++) if (a.data[i] !== b.data[i]) dif++;
+    expect(dif).toBeGreaterThan(100);
+    const c = cuadroRepeticion(0, { hud: false, nombres: ['Rick', 'Steph'] }), d = cuadroRepeticion(0, { hud: false });
+    expect(Buffer.from(c.data).equals(Buffer.from(d.data))).toBe(true);
+  });
+});
+
 describe('chibi: saltos y movimientos con el avance del video', () => {
   const clip = (id: string) => clipsVideo().find((c) => c.id === id)!;
   it('los saltos despegan y aterrizan en el piso; adelante avanza y atrás retrocede', () => {
     for (const id of ['saltar', 'salto_adelante', 'salto_atras']) {
       const q = clip(id).cuadros;
-      expect(q[0].dy, id).toBeLessThanOrEqual(4);
-      expect(q[q.length - 1].dy, id).toBeLessThanOrEqual(1);
-      expect(Math.max(...q.map((x) => x.dy)), id).toBeGreaterThan(40);
+      expect(q[0].dy ?? 0, id).toBeLessThanOrEqual(4);
+      expect(q[q.length - 1].dy ?? 0, id).toBeLessThanOrEqual(1);
+      expect(Math.max(...q.map((x) => x.dy ?? 0)), id).toBeGreaterThan(40);
     }
     const avance = (id: string) => clip(id).cuadros.reduce((s, q) => s + (q.dx ?? 0), 0);
     expect(avance('salto_adelante')).toBeGreaterThan(40);

@@ -15,7 +15,7 @@ import DATA from './video/moldes.json';
  */
 
 interface InfoCabeza { k: number; chin: [number, number]; top: number; ancho: number; espalda: boolean; cara: number; frente?: boolean }
-interface Molde { w: number; h: number; filas: string[]; cabeza: InfoCabeza | null; espejo: boolean }
+export interface Molde { w: number; h: number; filas: string[]; cabeza: InfoCabeza | null; espejo: boolean }
 type CuadroMolde = [string, number, number, number, boolean];
 interface Datos { poses: Record<string, Molde>; clips: Record<string, { loop: boolean; cuadros: CuadroMolde[] }>; nombres: Record<string, string>; golpes: Record<string, string[]>; extra: { poder_suelta: string } }
 const D = DATA as unknown as Datos;
@@ -123,6 +123,38 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, _gesto:
   if (!m) throw new Error(`No hay molde "${id}"`);
   const [W, H] = CELDA_VIDEO;
   const ox = Math.round(W / 2 - m.w / 2), oy = PISO_VIDEO - m.h;
+  const img = vestirMolde(look, m, W, H, ox, oy);
+  if (espejo) espejar(img);
+  // puntos: manos (guantes), pies y cabeza
+  const busca = (chs: string, masDer: boolean): [number, number] => {
+    let best: [number, number] | null = null;
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (chs.includes(m.filas[y][x])) {
+      if (!best || (masDer ? x > best[0] : x < best[0])) best = [x, y];
+    }
+    const p: [number, number] = best ? [ox + best[0], oy + best[1]] : [W / 2, PISO_VIDEO - 10];
+    return espejo ? [W - p[0], p[1]] : p;
+  };
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (img.data[(y * W + x) * 4 + 3]) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  const cabeza = busca('HhRrSE', true);
+  return {
+    img, ancla: [Math.floor(W / 2), PISO_VIDEO],
+    puntos: { manoD: busca('B', true), manoT: busca('B', false), pieD: busca('P', true), pieT: busca('P', false), cabeza, centro: [(x0 + x1) / 2, (y0 + y1) / 2], util: busca('B', true) },
+    hurt: [x0, y0, Math.max(1, x1 - x0 + 1), Math.max(1, y1 - y0 + 1)],
+  };
+}
+
+/** Da vuelta una imagen de izquierda a derecha. */
+export function espejar(img: Raster): void {
+  const { w: W, h: H } = img;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W / 2; x++) for (let c = 0; c < 4; c++) { const a = (y * W + x) * 4 + c, b = (y * W + W - 1 - x) * 4 + c; const t = img.data[a]; img.data[a] = img.data[b]; img.data[b] = t; }
+}
+
+/**
+ * Viste un molde con el muñeco en una imagen de `W`×`H` con el molde en (ox, oy), mirando a la derecha: cada parte con
+ * los colores del muñeco y la cabeza del familiar en el lugar y con el giro de la del molde.
+ */
+export function vestirMolde(look: ChibiLook, m: Molde, W: number, H: number, ox: number, oy: number): Raster {
   const col = colores(look);
   const cuerpo = capa(W, H, false);
   // estampados de la ropa de arriba: rayas y cuadros siguen la grilla del molde
@@ -182,24 +214,7 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, _gesto:
   quitarIslas(img, 40);
   // huequitos encerrados (entre el mentón y los hombros, o donde el calco dejó un pixel vacío): se tapan con el color de al lado
   taparHuecos(img, 4);
-  if (espejo) for (let y = 0; y < H; y++) for (let x = 0; x < W / 2; x++) for (let c = 0; c < 4; c++) { const a = (y * W + x) * 4 + c, b = (y * W + W - 1 - x) * 4 + c; const t = img.data[a]; img.data[a] = img.data[b]; img.data[b] = t; }
-  // puntos: manos (guantes), pies y cabeza
-  const busca = (chs: string, masDer: boolean): [number, number] => {
-    let best: [number, number] | null = null;
-    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (chs.includes(m.filas[y][x])) {
-      if (!best || (masDer ? x > best[0] : x < best[0])) best = [x, y];
-    }
-    const p: [number, number] = best ? [ox + best[0], oy + best[1]] : [W / 2, PISO_VIDEO - 10];
-    return espejo ? [W - p[0], p[1]] : p;
-  };
-  let x0 = W, y0 = H, x1 = -1, y1 = -1;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (img.data[(y * W + x) * 4 + 3]) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
-  const cabeza = busca('HhRrSE', true);
-  return {
-    img, ancla: [Math.floor(W / 2), PISO_VIDEO],
-    puntos: { manoD: busca('B', true), manoT: busca('B', false), pieD: busca('P', true), pieT: busca('P', false), cabeza, centro: [(x0 + x1) / 2, (y0 + y1) / 2], util: busca('B', true) },
-    hurt: [x0, y0, Math.max(1, x1 - x0 + 1), Math.max(1, y1 - y0 + 1)],
-  };
+  return img;
 }
 
 /** Animaciones calcadas del video, en el formato de clips del motor (dx avance, dy altura, ticks a 60). */
