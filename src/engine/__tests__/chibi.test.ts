@@ -4,6 +4,7 @@ import {
   paqueteChibi, hojaChibi, escenarios, pintarEscenario, paqueteEscenario, ASSETS, pintarAsset, EFECTOS, efecto,
 } from '../chibi';
 import type { Raster } from '../core/raster';
+import { cuadroRepeticion, REP, pintarMuelle, MUELLE } from '../chibi/repeticion';
 
 const pixeles = (r: Raster) => { let n = 0; for (let i = 3; i < r.data.length; i += 4) if (r.data[i]) n++; return n; };
 
@@ -107,5 +108,42 @@ describe('chibi: escenarios y assets', () => {
 
   it('cada asset pinta cada variante', () => {
     for (const a of ASSETS) for (const v of a.variantes) expect(pixeles(pintarAsset(a.id, v, 0, 200)), `${a.id} ${v}`).toBeGreaterThan(0);
+  });
+});
+
+describe('chibi: la pelea del video reconstruida', () => {
+  it('trae los 789 cuadros y cada uno pinta la pantalla completa del video', () => {
+    expect(REP.cuadros).toBe(789);
+    for (const k of [0, 128, 400, 700]) {
+      const r = cuadroRepeticion(k);
+      expect([r.w, r.h]).toEqual([180, 320]);
+      expect(pixeles(r)).toBe(180 * 320);
+    }
+  });
+  it('el muelle se pinta con cualquier cámara y los barriles rotos cambian el fondo', () => {
+    const a = pintarMuelle(0, 68, 0, false), b = pintarMuelle(0, 68, 0, true);
+    let dif = 0; for (let i = 0; i < a.data.length; i++) if (a.data[i] !== b.data[i]) dif++;
+    expect(dif).toBeGreaterThan(200);
+    expect(MUELLE.w).toBeGreaterThan(180);
+  });
+});
+
+describe('chibi: saltos y movimientos con el avance del video', () => {
+  const clip = (id: string) => clipsVideo().find((c) => c.id === id)!;
+  it('los saltos despegan y aterrizan en el piso; adelante avanza y atrás retrocede', () => {
+    for (const id of ['saltar', 'salto_adelante', 'salto_atras']) {
+      const q = clip(id).cuadros;
+      expect(q[0].dy, id).toBeLessThanOrEqual(4);
+      expect(q[q.length - 1].dy, id).toBeLessThanOrEqual(1);
+      expect(Math.max(...q.map((x) => x.dy)), id).toBeGreaterThan(40);
+    }
+    const avance = (id: string) => clip(id).cuadros.reduce((s, q) => s + (q.dx ?? 0), 0);
+    expect(avance('salto_adelante')).toBeGreaterThan(40);
+    expect(avance('salto_atras')).toBeLessThan(-40);
+    expect(Math.abs(avance('saltar'))).toBeLessThan(1);
+  });
+  it('la torbellino vuelve al piso', () => {
+    const q = clip('torbellino').cuadros;
+    expect(q[q.length - 1].dy).toBe(0);
   });
 });

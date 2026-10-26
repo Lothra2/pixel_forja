@@ -11,6 +11,7 @@ import { reproductor, type Reproductor } from './reproductor';
 import { montarArena } from './arena';
 import { montarTaller } from './taller';
 import { montarExportar } from './exportar';
+import { montarVideo } from './video';
 
 /**
  * Forja Chibi: el segmento de muñecos calcados del video. Familia, tienda para armar el muñeco, todas las
@@ -19,7 +20,7 @@ import { montarExportar } from './exportar';
 
 const T: Record<string, [string, string]> = {
   sub: ['Muñecos calcados del video, para muchos juegos', 'Video-traced chibis for many games'],
-  familia: ['Familia', 'Family'], tienda: ['Tienda', 'Shop'], movs: ['Movimientos', 'Moves'], arena: ['Arena', 'Arena'], taller: ['Taller de escenarios', 'Stage workshop'], exportar: ['Exportar', 'Export'],
+  original: ['El video', 'The video'], familia: ['Familia', 'Family'], tienda: ['Tienda', 'Shop'], movs: ['Movimientos', 'Moves'], arena: ['Arena', 'Arena'], taller: ['Taller de escenarios', 'Stage workshop'], exportar: ['Exportar', 'Export'],
   editar: ['Abrir en la tienda', 'Open in shop'], pelear: ['Pelear con este', 'Fight with this one'],
   nombre: ['Nombre', 'Name'], guardar: ['Guardar en mis muñecos', 'Save to my chibis'], azar: ['Sorpréndeme', 'Surprise me'], mios: ['Mis muñecos', 'My chibis'],
   vacio: ['Todavía no guardaste ninguno.', 'You have not saved any yet.'], anim: ['Animación', 'Animation'], vel: ['Velocidad', 'Speed'], cajas: ['Cajas de golpe', 'Hitboxes'],
@@ -83,12 +84,12 @@ function miniatura(r: Raster, caja: number, escala: number): HTMLCanvasElement {
 
 // ------------------------------------------------------------------ estructura
 const app = document.getElementById('app')!;
-const pestañas: [string, string][] = [['familia', '👪'], ['tienda', '🛍'], ['movs', '🎞'], ['arena', '🥊'], ['taller', '🏗'], ['exportar', '📦']];
+const pestañas: [string, string][] = [['original', '🎬'], ['familia', '👪'], ['tienda', '🛍'], ['movs', '🎞'], ['arena', '🥊'], ['taller', '🏗'], ['exportar', '📦']];
 const secciones: Record<string, HTMLElement> = {};
 const montadas = new Set<string>();
 const alMostrar: Record<string, () => void> = {};
-let actual = (location.hash.slice(1) || leer('pf.chibi.tab', 'familia')) as string;
-if (!pestañas.some(([k]) => k === actual)) actual = 'familia';
+let actual = (location.hash.slice(1) || leer('pf.chibi.tab', 'original')) as string;
+if (!pestañas.some(([k]) => k === actual)) actual = 'original';
 
 function cabecera() {
   return h('header', { class: 'top' },
@@ -111,6 +112,7 @@ function montar(k: string) {
   if (montadas.has(k)) return;
   montadas.add(k);
   const s = secciones[k];
+  if (k === 'original') montarVideo(s);
   if (k === 'familia') montarFamilia(s);
   if (k === 'tienda') montarTienda(s);
   if (k === 'movs') montarMovimientos(s);

@@ -139,3 +139,10 @@ input[type='number'] { width: 70px; }
   .tienda, .taller, .export { grid-template-columns: minmax(0, 1fr); }
   .prev { position: static; }
 }
+
+/* el video vertical, como el original */
+.pantalla.vertical canvas { width: min(400px, 100%) !important; aspect-ratio: 180 / 320; }
+.controles-video { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.controles-video .rango { flex: 1 1 180px; min-width: 0; }
+.controles-video .reloj { font-variant-numeric: tabular-nums; }
+.pantalla.cuadrada canvas { width: min(540px, 100%) !important; aspect-ratio: 1 / 1; }

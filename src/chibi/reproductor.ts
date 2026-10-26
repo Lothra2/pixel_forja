@@ -19,9 +19,15 @@ export function reproductor(look: ChibiLook, talla: Talla, clipId: string, escal
   let C: Clip = clips.find((c) => c.id === clipId) ?? clips[0];
   let cuadros: CuadroPintado[] = pintarClip(L, talla, C);
   const w = cuadros[0].img.w, hgt = cuadros[0].img.h;
-  // espacio para los saltos reales del video (el más alto sube 68 pixeles)
-  const extra = talla === 48 ? 144 : 72;
+  // espacio arriba para lo que sube el movimiento (los saltos del video suben hasta 68 pixeles); el reposo no necesita
+  const altoDe = (qs: CuadroPintado[]) => { const m = Math.max(0, ...qs.map((q) => q.dy)); return m ? Math.ceil(m + 4) : 0; };
+  let extra = altoDe(cuadros);
   const el = canvasPixel(w, hgt + extra, escala, clase);
+  const ajustar = () => {
+    const e = altoDe(cuadros);
+    if (e === extra) return;
+    extra = e; el.height = hgt + extra; el.style.height = `${(hgt + extra) * escala}px`;
+  };
   const ctx = el.getContext('2d')!;
   let i = 0, t = 0, avance = 0, visible = true, ultimoDibujo = -1;
   const opciones: Reproductor['opciones'] = { velocidad: 1, pausa: false, cajas: false, espejo: false, raiz: true, fondo: null };
@@ -72,6 +78,7 @@ export function reproductor(look: ChibiLook, talla: Talla, clipId: string, escal
       if (clip2) C = clips.find((c) => c.id === clip2) ?? clips[0];
       else if (!clips.includes(C)) C = clips.find((c) => c.id === C.id) ?? clips[0];
       cuadros = pintarClip(L, talla, C);
+      ajustar();
       i = 0; t = 0; avance = 0; ultimoDibujo = -1; pintar();
     },
     clip: () => C,

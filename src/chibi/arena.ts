@@ -3,6 +3,7 @@ import {
   type ChibiLook, type CuadroPintado, type Clip, type Escenario, type Efecto, type MiembroId,
 } from '../engine/chibi';
 import { h, canvasPixel, dibujar, lienzo, tr, lang, alTick } from './dibujo';
+import { pintarMuelle, MUELLE } from '../engine/chibi/repeticion';
 
 /**
  * La arena: pelea 1 contra la compu (o contra otra persona en el mismo teclado) con los movimientos calcados del
@@ -10,7 +11,12 @@ import { h, canvasPixel, dibujar, lienzo, tr, lang, alTick } from './dibujo';
  * Todo consume lo mismo que exporta el paquete: cuadros con ticks, avance, altura, cajas y efectos.
  */
 
-const VW = 320, VH = 180;
+let VW = 320, VH = 180;
+
+/** El muelle de Ken tal cual el video: se ve con el encuadre del video (180 de ancho) y la cámara se corre igual. */
+const MUELLE_KEN: Escenario = { id: 'muelle_ken', nombre: ['Muelle de Ken (el del video)', "Ken's pier (from the video)"], w: MUELLE.w, h: 180, piso: 160, capas: [] };
+/** Fila de la pantalla del video donde empieza la vista de la arena (así el piso cae donde pisan Ryu y Ken). */
+const FILA_VIDEO = 33;
 
 interface Ctx { look: () => ChibiLook; oyente: (f: () => void) => void }
 
@@ -73,7 +79,7 @@ const LIBRES = new Set(['reposo', 'caminar', 'caminar_atras', 'agachado', 'bloqu
 export function montarArena(s: HTMLElement, ctx0: Ctx) {
   const lienzoJuego = canvasPixel(VW, VH, 3, 'juego');
   const g = lienzoJuego.getContext('2d')!;
-  const escs = escenarios();
+  const escs = [MUELLE_KEN, ...escenarios()];
   let esc = escs[0];
   let modo: 'pelea' | 'paseo' = 'pelea';
   let dosJugadores = false;
@@ -111,7 +117,21 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
   const tactil = h('div', { class: 'tactil' },
     h('div', { class: 'cruz' }, boton('arriba', '▲'), boton('izq', '◀'), boton('der', '▶'), boton('abajo', '▼')),
     h('div', { class: 'acciones' }, boton('golpe', 'J'), boton('patada', 'K'), boton('poder', 'L'), boton('upper', 'U'), boton('torbe', 'I'), boton('anti', 'O')));
-  s.append(h('h2', {}, lang === 'es' ? 'Arena' : 'Arena'), barra, h('div', { class: 'pantalla' }, lienzoJuego), tactil, ayuda);
+  const marco = h('div', { class: 'pantalla' }, lienzoJuego);
+  s.append(h('h2', {}, lang === 'es' ? 'Arena' : 'Arena'), barra, marco, tactil, ayuda);
+  // el muelle del video usa su propio encuadre (más angosto, como el video)
+  const muelleImg = { r: null as ReturnType<typeof pintarMuelle> | null, d: null as ImageData | null };
+  let rotos = false;
+  const enMuelle = () => modo === 'pelea' && esc.id === 'muelle_ken';
+  function encuadre() {
+    const w = enMuelle() ? 180 : 320;
+    if (w === VW && lienzoJuego.width === w) return;
+    VW = w; VH = 180;
+    lienzoJuego.width = VW; lienzoJuego.height = VH;
+    lienzoJuego.style.width = `${VW * 3}px`; lienzoJuego.style.height = `${VH * 3}px`;
+    g.imageSmoothingEnabled = false;
+    marco.classList.toggle('cuadrada', VW === 180);
+  }
 
   // ---- teclado
   const teclas: Record<string, boolean> = {};
@@ -150,6 +170,7 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
   const chispa = (x: number, y: number, id: string) => { const e = efecto(id, p1.look, 32); if (e) chispas.push({ x, y, e, f: 0, t: 0, esp: false }); };
 
   function reiniciar() {
+    encuadre(); rotos = false;
     const L1 = ctx0.look();
     let L2 = familiar(rival.id, 'pelea');
     if (L2.nombre === L1.nombre) L2 = familiar(rival.id === 'steph' ? 'rick' : 'steph', 'pelea');
@@ -205,7 +226,7 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
       else if (e.patada && e.aba) poner(L, 'barrida');
       else if (e.patada) poner(L, e.arr ? 'salto_patada' : 'patada_fuerte');
       else if (e.golpe) poner(L, e.aba ? 'golpe_agachado' : Math.random() < 0.5 ? 'golpe_debil' : 'golpe_fuerte');
-      else if (e.arr) poner(L, e.adelante ? 'salto_adelante' : 'saltar');
+      else if (e.arr) poner(L, e.adelante ? 'salto_adelante' : e.atras ? 'salto_atras' : 'saltar');
       else if (e.aba) poner(L, L.bloqueando ? 'bloquear' : 'agachado');
       else if (e.adelante) poner(L, 'caminar');
       else if (e.atras) poner(L, L.bloqueando && Math.abs(otro.x - L.x) < 60 && !libre(otro) ? 'bloquear' : 'caminar_atras');
@@ -307,6 +328,10 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
       setTimeout(() => { if (gana.clip.id !== 'ko') poner(gana, perfecto ? 'perfect' : 'victoria'); cartelTxt = perfecto ? 'PERFECT' : `${gana.nombre.toUpperCase()} WINS`; cartel = 120; }, 1400);
       setTimeout(() => { ronda++; reiniciar(); }, 5200);
     }
+    // en el muelle, si tumban a alguien contra los barriles, se rompen (como en el video)
+    if (esc.id === 'muelle_ken' && !rotos) for (const L of [p1, p2]) {
+      if (['caer', 'ko', 'lanzado'].includes(L.clip.id) && L.x > 176 && L.x < 220 && (L.cuadros[L.i]?.dy ?? 9) < 4) { rotos = true; sonar('caer'); }
+    }
     // cámara: al medio de los dos, sin salirse del escenario
     const objetivo = Math.max(0, Math.min(esc.w - VW, (p1.x + p2.x) / 2 - VW / 2));
     cam += (objetivo - cam) * 0.15;
@@ -315,17 +340,18 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
   const dibujarLuchador = (L: Luchador) => {
     const q = L.cuadros[L.i];
     const sx = L.x - cam;
-    g.fillStyle = 'rgba(40,20,30,0.3)';
+    // la sombra del video es una elipse marrón sólida; en los otros escenarios, transparente
+    g.fillStyle = esc.id === 'muelle_ken' ? '#764220' : 'rgba(40,20,30,0.3)';
     g.beginPath(); g.ellipse(Math.round(sx), PISO() + 0.5, 8, 2, 0, 0, Math.PI * 2); g.fill();
     const esp = L.mira < 0;
     const x = esp ? sx - (q.img.w - q.ancla[0]) : sx - q.ancla[0];
     dibujar(g, q.img, x, PISO() - q.ancla[1] - q.dy, esp);
   };
-  const barraVida = (x: number, v: number, der: boolean) => {
-    g.fillStyle = '#100c14'; g.fillRect(x - 1, 9, 122, 9);
-    g.fillStyle = '#e8202a'; g.fillRect(x, 10, 120, 7);
-    const w = Math.max(0, Math.round(120 * v / 100));
-    g.fillStyle = '#f4e030'; g.fillRect(der ? x : x + 120 - w, 10, w, 7);
+  const barraVida = (x: number, v: number, der: boolean, bw = 120) => {
+    g.fillStyle = '#100c14'; g.fillRect(x - 1, 9, bw + 2, 9);
+    g.fillStyle = '#e8202a'; g.fillRect(x, 10, bw, 7);
+    const w = Math.max(0, Math.round(bw * v / 100));
+    g.fillStyle = '#f4e030'; g.fillRect(der ? x : x + bw - w, 10, w, 7);
   };
   const texto = (txt: string, x: number, y: number, size: number, col = '#f6f1e3', centro = false) => {
     g.font = `700 ${size}px Silkscreen, monospace`; g.textBaseline = 'top';
@@ -337,22 +363,27 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
   const pintarPelea = () => {
     g.clearRect(0, 0, VW, VH);
     g.save(); g.translate(0, VH - esc.h);
-    dibujarEscenario(g, esc, tick, cam, 'piso');
+    if (esc.id === 'muelle_ken') {
+      if (!muelleImg.d) { muelleImg.d = g.createImageData(VW, VH); }
+      muelleImg.r = pintarMuelle(Math.floor(tick / 2), Math.round(cam) - 1, FILA_VIDEO, rotos, VW, VH, muelleImg.r ?? undefined);
+      muelleImg.d.data.set(muelleImg.r.data); g.putImageData(muelleImg.d, 0, 0);
+    } else dibujarEscenario(g, esc, tick, cam, 'piso');
     const orden = [p1, p2].sort((a, b) => (a.golpeado ? -1 : 0) - (b.golpeado ? -1 : 0));
     for (const L of orden) dibujarLuchador(L);
     for (const p of proyectiles) { const img = p.e.frames[Math.floor(p.f / p.e.t) % p.e.frames.length]; dibujar(g, img, p.x - cam - (p.dir === 1 ? p.e.centro[0] : img.w - p.e.centro[0]), p.y - p.e.centro[1], p.dir < 0); }
     for (const c of chispas) { const img = c.e.frames[c.f]; if (img) dibujar(g, img, c.x - cam - c.e.centro[0], c.y - c.e.centro[1], c.esp); }
-    dibujarEscenario(g, esc, tick, cam, 'frente', 'frente');
+    if (esc.id !== 'muelle_ken') dibujarEscenario(g, esc, tick, cam, 'frente', 'frente');
     g.restore();
     // HUD como el del video: barras amarillas, KO al medio, nombres y reloj
-    barraVida(16, p1.vida, false); barraVida(VW - 136, p2.vida, true);
+    const bw = Math.min(120, VW / 2 - 24), mx = VW === 320 ? 16 : 8;
+    barraVida(mx, p1.vida, false, bw); barraVida(VW - mx - bw, p2.vida, true, bw);
     g.fillStyle = '#100c14'; g.fillRect(VW / 2 - 13, 7, 26, 13);
     g.fillStyle = '#f6f1e3'; g.fillRect(VW / 2 - 12, 8, 24, 11);
     texto('KO', VW / 2, 9, 8, '#2f4ab8', true);
-    texto(p1.nombre.toUpperCase().slice(0, 12), 16, 20, 8, '#5aa8f0');
-    const n2 = p2.nombre.toUpperCase().slice(0, 12);
+    texto(p1.nombre.toUpperCase().slice(0, VW === 320 ? 12 : 7), mx, 20, 8, '#5aa8f0');
+    const n2 = p2.nombre.toUpperCase().slice(0, VW === 320 ? 12 : 7);
     g.font = '700 8px Silkscreen, monospace';
-    texto(n2, VW - 16 - g.measureText(n2).width, 20, 8, '#5aa8f0');
+    texto(n2, VW - mx - g.measureText(n2).width, 20, 8, '#5aa8f0');
     texto(String(Math.ceil(reloj / 60)).padStart(2, '0'), VW / 2, 21, 10, '#f6f1e3', true);
     if (cartel > 0) texto(cartelTxt, VW / 2, 70, 16, cartelTxt === 'FIGHT!' ? '#f4c430' : '#f6f1e3', true);
   };
