@@ -1,5 +1,5 @@
 import { createRaster, type Raster } from '../core/raster';
-import type { ChibiLook } from './look';
+import type { ChibiLook, Contextura } from './look';
 import type { Gesto } from './head';
 import { vestirCabezaMolde, MARGEN } from './cabezaMolde';
 import { capa, hex, sombra, mezcla, VACIO, legible, sombraLegible } from './paint';
@@ -33,6 +33,8 @@ const GESTOS: Record<string, Gesto> = {
   golpe_debil: 'golpe', antiaereo: 'golpe', poder: 'golpe', barrida: 'golpe', agarrar: 'esfuerzo', uppercut_corto: 'golpe', uppercut: 'golpe',
   torbellino: 'golpe', golpeado_aire: 'dolor', recibir_poder: 'dolor', salto_patada: 'golpe', patada_agachado: 'golpe', caer: 'dolor', ko: 'ko',
   victoria: 'feliz', festejo: 'feliz', levantarse: 'dolor',
+  hoja_golpe: 'golpe', hoja_patada: 'golpe', hoja_patada_baja: 'golpe', hoja_barrida: 'golpe', hoja_hadouken: 'golpe', hoja_shoryuken: 'golpe',
+  hoja_golpeado: 'dolor', hoja_lanzado: 'dolor', hoja_caida: 'dolor',
   golpe_agachado: 'golpe', golpe_barril: 'golpe', patada_giro: 'golpe', shoryuken_barril: 'golpe', perfect: 'feliz',
 };
 
@@ -119,8 +121,9 @@ function taparHuecos(img: Raster, max: number): void {
 
 /** Pinta un molde del video vestido con el muñeco, mirando a la derecha (o espejado). */
 export function pintarMolde(look: ChibiLook, id: string, espejo = false, _gesto: Gesto = 'normal'): PintadoMolde {
-  const m = MOLDES[id];
-  if (!m) throw new Error(`No hay molde "${id}"`);
+  const m0 = MOLDES[id];
+  if (!m0) throw new Error(`No hay molde "${id}"`);
+  const m = moldeDeTalla(m0, look.contextura).molde;
   const [W, H] = CELDA_VIDEO;
   const ox = Math.round(W / 2 - m.w / 2), oy = PISO_VIDEO - m.h;
   const img = vestirMolde(look, m, W, H, ox, oy);
@@ -142,6 +145,64 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, _gesto:
     puntos: { manoD: busca('B', true), manoT: busca('B', false), pieD: busca('P', true), pieT: busca('P', false), cabeza, centro: [(x0 + x1) / 2, (y0 + y1) / 2], util: busca('B', true) },
     hurt: [x0, y0, Math.max(1, x1 - x0 + 1), Math.max(1, y1 - y0 + 1)],
   };
+}
+
+/** Cuántas líneas de cuerpo pierden las niñas y los niños (la cabeza queda del mismo tamaño). */
+const ACORTAR: Partial<Record<Contextura, number>> = { nino: 2, pequena: 4 };
+const tallas = new WeakMap<Molde, Map<number, { molde: Molde; dx: number; dy: number }>>();
+
+/**
+ * El molde con el cuerpo más corto para los niños: se quitan las líneas más repetidas del torso y las piernas (nunca
+ * el cinturón, los pies ni el borde), en la dirección en que va el cuerpo desde la cabeza (de pie, de cabeza o
+ * acostado). `dx`/`dy` dicen cuánto correr el molde para que los pies queden donde estaban.
+ */
+export function moldeDeTalla(m: Molde, contextura: Contextura): { molde: Molde; dx: number; dy: number } {
+  const n = ACORTAR[contextura] ?? 0;
+  if (!n || !m.cabeza) return { molde: m, dx: 0, dy: 0 };
+  let porN = tallas.get(m);
+  if (!porN) { porN = new Map(); tallas.set(m, porN); }
+  const hecho = porN.get(n);
+  if (hecho) return hecho;
+  const g = m.filas.map((f) => [...f]);
+  let hx = 0, hy = 0, hn = 0, bx = 0, by = 0, bn = 0, h0x = m.w, h1x = -1, h0y = m.h, h1y = -1;
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    const c = g[y][x];
+    if (c === '.') continue;
+    if (CABEZA.has(c) && c !== 'k') { hx += x; hy += y; hn++; h0x = Math.min(h0x, x); h1x = Math.max(h1x, x); h0y = Math.min(h0y, y); h1y = Math.max(h1y, y); }
+    else if (!CABEZA.has(c)) { bx += x; by += y; bn++; }
+  }
+  if (!hn || !bn) { const r = { molde: m, dx: 0, dy: 0 }; porN.set(n, r); return r; }
+  const vx = bx / bn - hx / hn, vy = by / bn - hy / hn;
+  const vertical = Math.abs(vy) >= Math.abs(vx);
+  const largo = vertical ? m.h : m.w, ancho = vertical ? m.w : m.h;
+  const en = (i: number, j: number) => (vertical ? g[i][j] : g[j][i]);
+  // líneas candidatas: del lado del cuerpo, lejos de la cabeza y de la punta (pies)
+  const desde = vertical ? (vy > 0 ? h1y + 2 : 2) : (vx > 0 ? h1x + 2 : 2);
+  const hasta = vertical ? (vy > 0 ? m.h - 3 : h0y - 2) : (vx > 0 ? m.w - 3 : h0x - 2);
+  const cand: [number, number][] = [];
+  for (let i = desde; i < Math.min(hasta, largo - 1); i++) {
+    let pies = 0, cinto = 0, dif = 0;
+    for (let j = 0; j < ancho; j++) { const c = en(i, j); if (c === 'P') pies++; if (c === 'L') cinto++; if (c !== en(i + 1, j)) dif++; }
+    if (pies || cinto >= 2) continue;
+    cand.push([dif, i]);
+  }
+  cand.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const quitar: number[] = [];
+  for (const [, i] of cand) { if (quitar.length >= n) break; if (quitar.every((q) => Math.abs(q - i) > 1)) quitar.push(i); }
+  if (quitar.length < n) for (const [, i] of cand) { if (quitar.length >= n) break; if (!quitar.includes(i)) quitar.push(i); }
+  const fuera = new Set(quitar), k = quitar.length;
+  const filas = vertical
+    ? m.filas.filter((_, y) => !fuera.has(y))
+    : m.filas.map((f) => [...f].filter((_, x) => !fuera.has(x)).join(''));
+  // si se quitó antes de la cabeza, la cabeza se corre
+  const antes = quitar.filter((i) => i < (vertical ? h0y : h0x)).length;
+  const cab = { ...m.cabeza, chin: [...m.cabeza.chin] as [number, number] };
+  if (vertical) { cab.chin[1] -= antes; cab.top -= antes; } else cab.chin[0] -= antes;
+  const molde: Molde = { ...m, filas, w: vertical ? m.w : m.w - k, h: vertical ? m.h - k : m.h, cabeza: cab };
+  // los pies quedan quietos: de pie bajan las líneas quitadas; acostado hacia la derecha se corre igual
+  const r = { molde, dx: !vertical && vx > 0 ? k : 0, dy: vertical && vy > 0 ? k : 0 };
+  porN.set(n, r);
+  return r;
 }
 
 /** Da vuelta una imagen de izquierda a derecha. */
@@ -226,6 +287,12 @@ export const CLIPS_VIDEO_NOMBRES: Record<string, [string, string]> = {
   salto_adelante: ['Salto adelante', 'Forward jump'], salto_patada: ['Salto con patada', 'Jump kick'], recibir_poder: ['Recibe el poder', 'Hit by fireball'],
   patada_agachado: ['Patada agachado', 'Crouching kick'], caer: ['Caer', 'Knockdown'], levantarse: ['Levantarse', 'Get up'], ko: ['KO', 'KO'],
   victoria: ['Victoria', 'Victory'], festejo: ['Festejo', 'Celebrate'],
+  // la hoja de sprites de Ryu: cada fila es una animación limpia, cuadro por cuadro
+  hoja_reposo: ['Hoja · Reposo', 'Sheet · Idle'], hoja_guardia: ['Hoja · Guardia', 'Sheet · Guard'], hoja_caminar: ['Hoja · Caminar', 'Sheet · Walk'],
+  hoja_retroceder: ['Hoja · Retroceder', 'Sheet · Walk back'], hoja_golpe: ['Hoja · Golpe', 'Sheet · Punch'], hoja_patada: ['Hoja · Patada alta', 'Sheet · High kick'],
+  hoja_patada_baja: ['Hoja · Patada baja', 'Sheet · Low kick'], hoja_barrida: ['Hoja · Barrida', 'Sheet · Sweep'], hoja_hadouken: ['Hoja · Hadouken', 'Sheet · Hadouken'],
+  hoja_shoryuken: ['Hoja · Shoryuken', 'Sheet · Shoryuken'], hoja_golpeado: ['Hoja · Golpeado', 'Sheet · Hit'], hoja_lanzado: ['Hoja · Lanzado', 'Sheet · Thrown'],
+  hoja_caida: ['Hoja · Caída', 'Sheet · Knockdown'],
   // del segundo video (el bonus de los barriles)
   golpe_agachado: ['Golpe agachado', 'Crouching punch'], golpe_barril: ['Golpe al barril', 'Barrel punch'],
   patada_giro: ['Patada con giro', 'Spin kick'], shoryuken_barril: ['Uppercut al barril', 'Barrel uppercut'], perfect: ['¡Perfect!', 'Perfect!'],

@@ -14,13 +14,14 @@ export function montarVideo(s: HTMLElement) {
   const img = g.createImageData(REP.ancho, REP.alto);
   let k = 0, jugando = true, vel = 1, acum = 0, hud = true, letreros = true, pintado = -1;
   // quién pelea: Ryu y Ken del video, o dos de la familia haciendo lo mismo cuadro por cuadro
-  let conFamilia = false, pintor: PintorLuchador | undefined, nombres: [string, string] | undefined;
+  let conFamilia = false, pintor: PintorLuchador | undefined, nombres: [string, string] | undefined, poder: [string, string] | undefined;
   const lados: [MiembroId, TrajeId][] = [['rick', 'pelea'], ['steph', 'pelea']];
   const vestir = () => {
     if (conFamilia) {
       const [a, b] = lados.map(([m, tj]) => familiar(m, tj));
       pintor = pintorFamilia({ ryu: a, ken: b }); nombres = [a.nombre, b.nombre];
-    } else { pintor = undefined; nombres = undefined; }
+      poder = a.poder ? [a.poder.color, a.poder.color2 ?? '#ffffff'] : undefined;
+    } else { pintor = undefined; nombres = undefined; poder = undefined; }
     pintado = -1; pintar();
   };
   const elegir = (n: 0 | 1) => {
@@ -49,14 +50,14 @@ export function montarVideo(s: HTMLElement) {
   }
   function pintar() {
     if (pintado === k) return;
-    const r = cuadroRepeticion(k, { hud, letreros, pintor, nombres });
+    const r = cuadroRepeticion(k, { hud, letreros, pintor, nombres, poder });
     img.data.set(r.data); g.putImageData(img, 0, 0); pintado = k;
   }
   s.append(
     h('h2', {}, es ? 'El video, cuadro por cuadro' : 'The video, frame by frame'),
     h('p', { class: 'nota' }, es
-      ? 'La pelea completa de Ryu contra Ken reconstruida desde el video: el muelle de Ken con el barco que se mece, la bandera, la gente que saluda y los barriles que se rompen; la cámara con su temblor; y cada dibujo de los luchadores en su pixel exacto. Medido contra el video: 99,85% de los pixeles iguales en los 789 cuadros. Con «La familia», dos de la casa hacen la misma pelea pixel por pixel.'
-      : 'The whole Ryu vs Ken fight rebuilt from the video: Ken\'s pier with the rocking boat, the flag, the waving crowd and the barrels that break; the camera with its shake; and every fighter drawing on its exact pixel. Measured against the video: 99.85% identical pixels across all 789 frames. With "The family", two of us fight the same fight pixel by pixel.'),
+      ? 'La pelea completa de Ryu contra Ken reconstruida desde el video: el muelle de Ken con el barco que se mece, la bandera, la gente que saluda y los barriles que se rompen; la cámara con su temblor; y cada dibujo de los luchadores en su pixel exacto. Medido contra el video: 99,85% de los pixeles iguales en los 789 cuadros. Con «La familia», dos de la casa hacen la misma pelea pixel por pixel: el lado de Ryu sale de su hoja de sprites limpia, las niñas con su tamaño y el poder con el color de cada uno.'
+      : 'The whole Ryu vs Ken fight rebuilt from the video: Ken\'s pier with the rocking boat, the flag, the waving crowd and the barrels that break; the camera with its shake; and every fighter drawing on its exact pixel. Measured against the video: 99.85% identical pixels across all 789 frames. With "The family", two of us fight the same fight pixel by pixel: Ryu\'s side comes from his clean sprite sheet, the girls at their own size and the fireball in each one\'s color.'),
     h('div', { class: 'chips' }, chipQuien(false, es ? 'Ryu contra Ken' : 'Ryu vs Ken'), chipQuien(true, es ? 'La familia' : 'The family')),
     eleccion,
     h('div', { class: 'pantalla vertical' }, lienzo),

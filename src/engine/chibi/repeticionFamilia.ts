@@ -1,7 +1,7 @@
 import type { Raster } from '../core/raster';
 import type { ChibiLook } from './look';
 import { MARGEN } from './cabezaMolde';
-import { MOLDES, vestirMolde, espejar, type Molde } from './video';
+import { MOLDES, vestirMolde, espejar, moldeDeTalla, type Molde } from './video';
 import type { PintorLuchador } from './repeticion';
 import DATA from './video/repeticionMoldes.json';
 
@@ -33,10 +33,12 @@ export function pintorFamilia(looks: { ryu: ChibiLook; ken: ChibiLook }): Pintor
     if (!v) {
       const md = moldeDeDibujo(quien, i);
       if (!md) return false;
-      const { molde: m } = md;
+      // los niños con el cuerpo más corto y los pies donde estaban
+      const t = moldeDeTalla(md.molde, looks[quien].contextura), m = t.molde;
       const img = vestirMolde(looks[quien], m, m.w + 2 * PAD, m.h + 2 * PAD, PAD, PAD);
       if (md.espejo) espejar(img);
-      v = { img, x: md.x - PAD, y: md.y - PAD };
+      const dx = md.espejo ? md.molde.w - m.w - t.dx : t.dx;
+      v = { img, x: md.x + dx - PAD, y: md.y + t.dy - PAD };
       hechos.set(clave, v);
     }
     const { img } = v, x0 = sx + v.x, y0 = sy + v.y;

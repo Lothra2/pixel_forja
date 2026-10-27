@@ -6,6 +6,9 @@ import {
 import type { Raster } from '../core/raster';
 import { cuadroRepeticion, REP, pintarMuelle, MUELLE, piezas, camara, dibujoLuchador, cantidadDibujos } from '../chibi/repeticion';
 import { pintorFamilia, moldeDeDibujo } from '../chibi/repeticionFamilia';
+import { moldeDeTalla } from '../chibi/video';
+import REPM from '../chibi/video/repeticionMoldes.json';
+const MOLDES_REP = REPM.poses as Record<string, unknown>;
 
 const pixeles = (r: Raster) => { let n = 0; for (let i = 3; i < r.data.length; i += 4) if (r.data[i]) n++; return n; };
 
@@ -130,15 +133,27 @@ describe('chibi: la pelea del video reconstruida', () => {
 });
 
 describe('chibi: la familia en la pelea del video', () => {
-  it('cada dibujo de Ryu y Ken que sale en la pelea tiene su molde dentro del dibujo', () => {
+  it('Ryu sale de su hoja de sprites limpia y las niñas tienen el cuerpo más corto', () => {
+    let limpios = 0;
+    for (let i = 0; i < cantidadDibujos('ryu'); i++) if (moldeDeDibujo('ryu', i)?.molde && /^h\d+$/.test(String(Object.entries(MOLDES_REP).find(([, v]) => v === moldeDeDibujo('ryu', i)!.molde)?.[0]))) limpios++;
+    expect(limpios).toBeGreaterThan(400);
+    const md = moldeDeDibujo('ryu', 0)!;
+    const sophie = moldeDeTalla(md.molde, familiar('sophie', 'pelea').contextura), alana = moldeDeTalla(md.molde, familiar('alana', 'pelea').contextura);
+    expect(sophie.molde.h).toBe(md.molde.h - 2); expect(alana.molde.h).toBe(md.molde.h - 4);
+    expect(moldeDeTalla(md.molde, 'adulto').molde).toBe(md.molde);
+    // la cabeza no cambia: las mismas filas de arriba
+    expect(alana.molde.filas.slice(0, 10)).toEqual(md.molde.filas.slice(0, 10));
+  });
+  it('cada dibujo de Ryu y Ken que sale en la pelea tiene su molde sobre el dibujo', () => {
     const usados = new Set<string>();
     for (let k = 0; k < REP.cuadros; k++) for (const [t, i] of piezas(k)) if (t === 'r' || t === 'k') usados.add(t + i);
     for (const quien of ['ryu', 'ken'] as const) for (let i = 0; i < cantidadDibujos(quien); i++) {
       if (!usados.has(quien[0] + i)) continue;
       const md = moldeDeDibujo(quien, i), d = dibujoLuchador(quien, i);
       expect(md, quien + i).not.toBeNull();
-      expect(md!.x).toBeGreaterThanOrEqual(0); expect(md!.y).toBeGreaterThanOrEqual(0);
-      expect(md!.x + md!.molde.w).toBeLessThanOrEqual(d.w); expect(md!.y + md!.molde.h).toBeLessThanOrEqual(d.h);
+      // el sprite limpio de la hoja puede pasarse un poco donde el video perdía pixeles (gi blanco sobre el barco blanco, o Ken tapando)
+      expect(md!.x).toBeGreaterThanOrEqual(-6); expect(md!.y).toBeGreaterThanOrEqual(-6);
+      expect(md!.x + md!.molde.w).toBeLessThanOrEqual(d.w + 6); expect(md!.y + md!.molde.h).toBeLessThanOrEqual(d.h + 6);
       expect(md!.molde.cabeza, quien + i).not.toBeNull();
     }
   });
@@ -149,7 +164,7 @@ describe('chibi: la familia en la pelea del video', () => {
       const [cx, cy] = camara(k), [ox, oy] = MUELLE.origen;
       const cajas = piezas(k).filter((p) => p[0] === 'r' || p[0] === 'k').map(([t, i, x, y]) => {
         const d = dibujoLuchador(t === 'r' ? 'ryu' : 'ken', i);
-        return [x - ox - cx - 8, y - oy - cy - 8, x - ox - cx + d.w + 8, y - oy - cy + d.h + 8];
+        return [x - ox - cx - 10, y - oy - cy - 10, x - ox - cx + d.w + 10, y - oy - cy + d.h + 10];
       });
       let cambian = 0;
       for (let y = 0; y < 320; y++) for (let x = 0; x < 180; x++) {

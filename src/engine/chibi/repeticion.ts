@@ -137,7 +137,8 @@ export function camara(k: number): [number, number] { return (DATA.camara as [nu
 export type PintorLuchador = (quien: 'ryu' | 'ken', dibujo: number, dst: Raster, sx: number, sy: number) => boolean;
 
 /** Pinta el cuadro `k` de la pelea tal cual el video (o con otro pintor para los luchadores). */
-export function cuadroRepeticion(k: number, opc: { pintor?: PintorLuchador; hud?: boolean; letreros?: boolean; nombres?: [string, string] } = {}): Raster {
+export function cuadroRepeticion(k: number, opc: { pintor?: PintorLuchador; hud?: boolean; letreros?: boolean; nombres?: [string, string]; poder?: [string, string] } = {}): Raster {
+  const tinte = opc.poder ? tintePoder(opc.poder) : null;
   const [cx, cy] = camara(k);
   const out = pintarMuelle(k, cx, cy, k >= MUELLE.rotura);
   const [ox, oy] = MUELLE.origen;
@@ -168,7 +169,7 @@ export function cuadroRepeticion(k: number, opc: { pintor?: PintorLuchador; hud?
         if (!m[j]) continue;
         const x = sx + (j % img.w), y = sy + Math.floor(j / img.w);
         if (tapa && enCajaNombre(x, y)) continue;
-        put(x, y, pal[m[j] - 1]);
+        put(x, y, t === 'e' && tinte ? tinte(pal[m[j] - 1]) : pal[m[j] - 1]);
       }
     }
   }
@@ -177,6 +178,29 @@ export function cuadroRepeticion(k: number, opc: { pintor?: PintorLuchador; hud?
     nombreHud(out, opc.nombres[1], NOMBRE_X[1], true);
   }
   return out;
+}
+
+/**
+ * La bola de fuego del video es azul: con otro poder se pinta con sus colores (oscuro al color, claro al brillo).
+ * Las chispas de los golpes (amarillas y blancas) no se tocan.
+ */
+function tintePoder([c1, c2]: [string, string]) {
+  const a = hexRGB(c1.replace('#', '')), b = hexRGB(c2.replace('#', ''));
+  const cache = new Map<string, [number, number, number]>();
+  return (c: [number, number, number]): [number, number, number] => {
+    const [r, g, bl] = c;
+    if (!(bl > r + 30 && bl >= g)) return c;
+    const k = c.join(',');
+    let v = cache.get(k);
+    if (!v) {
+      const l = Math.min(1, (0.3 * r + 0.59 * g + 0.11 * bl) / 220);
+      const mez = (x: number, y: number, t: number) => Math.round(x + (y - x) * t);
+      // de oscuro (mitad del color) a color, y de color a brillo
+      v = l < 0.5 ? a.map((x) => mez(x * 0.45, x, l * 2)) as [number, number, number] : a.map((x, i) => mez(x, b[i], (l - 0.5) * 2)) as [number, number, number];
+      cache.set(k, v);
+    }
+    return v;
+  };
 }
 
 // ------------------------------------------------------------------ nombres del HUD
