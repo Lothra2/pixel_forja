@@ -272,7 +272,7 @@ export function clipsVideo(): Clip[] {
       prevX = x;
       const q: Cuadro = { p: { molde: pose, espejo: esp, gesto: GESTOS[id] }, t, dx, dy };
       if (GOLPES[id]?.includes(pose)) q.golpe = ['golpe_debil', 'uppercut', 'golpe_fuerte', 'golpe_agachado', 'golpe_barril', 'shoryuken_barril'].includes(id) || (id === 'uppercut_corto' && GOLPES[id][0] === pose) ? 'manoD' : 'pieD';
-      if (id === 'poder' && pose === D.extra.poder_suelta && !c.cuadros.slice(0, i).some((x) => x[0] === pose)) q.fx = { id: 'poder', en: 'manoD', dx: 4 };
+      if (id === 'poder' && pose === D.extra.poder_suelta && !c.cuadros.slice(0, i).some((x) => x[0] === pose)) { q.fx = { id: 'poder', en: 'manoD', dx: 4 }; q.sonido = 'poder'; }
       if ((id === 'caer' || id === 'ko') && i === c.cuadros.length - 1) q.fx = { id: 'polvo', en: 'centro' };
       return q;
     });
@@ -291,6 +291,55 @@ export function clipsVideo(): Clip[] {
   A('patada_fuerte', 'Patada fuerte', 'Strong kick', false, [[N.patadaf1, 4], [N.patadaf2, 10, { golpe: 'pieD', sonido: 'whoosh_fuerte' }], [N.patadaf3, 6]], 'golpe');
   A('mareado', 'Mareado', 'Dizzy', true, [[N.recibe1, 10, { fx: { id: 'mareo', en: 'cabeza', dy: -6 } }], [N.recibe3, 10]], 'ko');
   A('lanzado', 'Lo lanzan', 'Thrown', false, [[N.lanz1, 6, { dy: 10, dx: -3 }], [N.lanz2, 4, { dy: 18, dx: -4 }], [N.lanz3, 4, { dy: 18, dx: -4 }], [N.lanz4, 4, { dy: 10, dx: -4 }], [N.lanz5, 20, { apoyar: true, fx: { id: 'polvo', en: 'centro' } }]], 'dolor');
+  // ---- los estilos de los otros luchadores clásicos, armados con las poses limpias de Ryu (h#) y de Ken (kc#)
+  type Ex = Partial<Cuadro>;
+  const P = (pose: string, t: number, extra?: Ex): [string, number, Ex?] => [pose, t, extra];
+  const rep = (n: number, fr: [string, number, Ex?][]) => Array.from({ length: n }, () => fr).flat();
+  const copia = (de: string, id: string, es: string, en: string, f: (q: Cuadro, i: number) => Cuadro) => { const c = out.find((x) => x.id === de); if (c) out.push({ ...c, id, nombre: [es, en], cuadros: c.cuadros.map(f) }); };
+  const GIRO = ['kc2', 'kc3', 'kc4', 'kc5', 'kc6', 'kc7', 'kc8'];
+  // Ken: el shoryuken con chispas de fuego en el puño
+  copia('uppercut', 'shoryuken_ken', 'Shoryuken de fuego', 'Fire shoryuken', (q, i) => (q.golpe ? { ...q, fx: { id: 'estela_manos', en: 'manoD', dx: 2 } } : i === 4 ? { ...q, sonido: 'whoosh_fuerte' } : q));
+  // Chun-Li
+  A('kikoken', 'Kikoken', 'Kikoken', false, [P('h33', 4), P('h34', 4), P('h35', 4), P('h36', 6, { fx: { id: 'kikoken', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 14), P('h47', 4)], 'golpe');
+  A('patadas_relampago', 'Patadas relámpago', 'Lightning legs', false, [P('h22', 3), ...rep(4, [P('h23', 2, { golpe: 'pieD' }), P('h24', 2, { golpe: 'pieD', fx: { id: 'estela_patada', en: 'pieD' } }), P('h25', 2, { golpe: 'pieD', sonido: 'whoosh' }), P('h24', 2, { golpe: 'pieD' })]), P('h22', 4)], 'golpe');
+  A('patada_giratoria', 'Patada giratoria', 'Spinning bird kick', false, [P('kc19', 3), ...rep(2, GIRO.map((g, i) => P(g, 3, { dy: 14, dx: 5, golpe: i % 2 ? 'pieD' : undefined }))), P('kc57', 4, { dy: 0 }), P('h47', 3)], 'golpe');
+  A('patada_alta', 'Patada alta', 'High kick', false, [P('h22', 3), P('h23', 3), P('h24', 8, { golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('h25', 4), P('h27', 4)], 'golpe');
+  // Guile
+  A('sonic_boom', 'Sonic Boom', 'Sonic Boom', false, [P('h33', 3), P('h34', 3), P('h36', 5, { fx: { id: 'sonic', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 10), P('h47', 4)], 'golpe');
+  copia('antiaereo', 'flash_kick', 'Flash Kick', 'Flash Kick', (q, i) => ({ ...q, dy: (q.dy ?? 0) + (i > 2 && i < 12 ? 10 : 0), fx: q.golpe ? { id: 'estela_patada', en: 'pieD' } : q.fx }));
+  // Blanka
+  A('electricidad', 'Electricidad', 'Electricity', false, [P('h46', 4, { fx: { id: 'rayo_blanka', en: 'centro' }, sonido: 'poder' }), P('h47', 6), P('h46', 6), P('h47', 6)], 'bravo');
+  A('rodar', 'Rodar', 'Rolling attack', false, [P('kc19', 3), ...rep(4, [P('h6', 3, { dx: 8, golpe: 'cuerpo' }), P('h7', 3, { dx: 8, golpe: 'cuerpo' }), P('h8', 3, { dx: 8, golpe: 'cuerpo' })]), P('h9', 4), P('h47', 4)], 'golpe');
+  A('rodar_alto', 'Rodar hacia arriba', 'Vertical roll', false, [P('kc19', 3), P('h6', 4, { dy: 14, golpe: 'cuerpo' }), P('h7', 4, { dy: 30, golpe: 'cuerpo' }), P('h8', 4, { dy: 36, golpe: 'cuerpo' }), P('h6', 4, { dy: 30 }), P('h7', 4, { dy: 14 }), P('h9', 6, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 4)], 'golpe');
+  A('mordida', 'Mordida', 'Bite', false, [P('h50', 4), P('h51', 6, { golpe: 'manoD' }), P('h52', 8), P('h47', 4)], 'esfuerzo');
+  // E. Honda
+  A('cien_manos', 'Cien manos', 'Hundred hand slap', false, [P('h55', 2), ...rep(5, [P('h56', 2, { golpe: 'manoD', fx: { id: 'estela_manos', en: 'manoD', dx: 4 } }), P('h55', 2, { golpe: 'manoD' })]), P('h47', 4)], 'golpe');
+  A('cabezazo', 'Cabezazo', 'Headbutt', false, [P('kc19', 4), P('kc16', 6, { dx: 14, dy: 6, golpe: 'cabeza', sonido: 'whoosh_fuerte' }), P('kc16', 6, { dx: 14, dy: 5, golpe: 'cabeza' }), P('kc16', 5, { dx: 8, dy: 2 }), P('h47', 6)], 'golpe');
+  A('sumo_pisoton', 'Pisotón de sumo', 'Sumo stomp', false, [P('h53', 5), P('kc17', 6, { dy: 18 }), P('kc17', 6, { dy: 30 }), P('kc17', 6, { dy: 18 }), P('h53', 8, { dy: 0, golpe: 'pieD', fx: { id: 'polvo', en: 'centro' }, sonido: 'caer' }), P('h47', 4)], 'golpe');
+  // Zangief
+  A('lariat', 'Lariat', 'Lariat', false, [...rep(2, GIRO.map((g, i) => P(g, 3, { golpe: i % 2 ? undefined : 'manoD' }))), P('h47', 4)], 'golpe');
+  A('golpe_oso', 'Golpe de oso', 'Bear punch', false, [P('h15', 4), P('h16', 4), P('h17', 8, { dy: 8, golpe: 'manoD', sonido: 'whoosh_fuerte' }), P('h18', 6, { dy: 10 }), P('h21', 6, { dy: 0 }), P('h47', 4)], 'golpe');
+  A('piledriver', 'Piledriver', 'Piledriver', false, [P('h50', 4), P('h51', 4), P('kc15', 5, { dy: 12 }), P('kc16', 5, { dy: 26 }), P('kc17', 5, { dy: 30 }), P('kc16', 5, { dy: 18 }), P('kc15', 4, { dy: 6 }), P('h9', 10, { dy: 0, fx: { id: 'polvo', en: 'centro' }, sonido: 'caer' }), P('h47', 4)], 'esfuerzo');
+  // Dhalsim
+  A('yoga_fire', 'Yoga Fire', 'Yoga Fire', false, [P('h33', 4), P('h34', 4), P('h36', 6, { fx: { id: 'yoga_fire', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 12), P('h47', 4)], 'golpe');
+  A('yoga_flame', 'Yoga Flame', 'Yoga Flame', false, [P('h33', 4), P('h34', 3), P('h36', 4, { fx: { id: 'yoga_flame', en: 'manoD', dx: 12 }, sonido: 'poder' }), P('h37', 18), P('h47', 4)], 'golpe');
+  // Balrog
+  A('puno_carrera', 'Puño con carrera', 'Dash straight', false, [P('h38', 2, { dx: 8 }), P('h39', 2, { dx: 8 }), P('h40', 2, { dx: 8 }), P('h41', 2, { dx: 8 }), P(N.golpef1, 2, { dx: 4 }), P(N.golpef2, 8, { dx: 6, golpe: 'manoD', sonido: 'whoosh_fuerte' }), P(N.golpef3, 6), P('h47', 3)], 'golpe');
+  A('gancho_giro', 'Gancho con giro', 'Turn punch', false, [P('kc3', 3), P('kc5', 3), P('kc7', 3), P('kc2', 3), P(N.golpef2, 10, { dx: 8, golpe: 'manoD', sonido: 'whoosh_fuerte' }), P(N.golpef3, 6)], 'golpe');
+  A('gancho_subida', 'Gancho', 'Dash upper', false, [P('h15', 4), P('h16', 5, { dy: 6, golpe: 'manoD', sonido: 'whoosh_fuerte' }), P('h17', 8, { dy: 12, golpe: 'manoD' }), P('h20', 6, { dy: 6 }), P('h21', 6, { dy: 0 }), P('h47', 3)], 'golpe');
+  // Vega
+  A('garra', 'Garra', 'Claw', false, [P('h55', 3), P('h56', 8, { golpe: 'manoD', fx: { id: 'garra', en: 'manoD', dx: 7 }, sonido: 'whoosh_fuerte' }), P('h56', 3), P('h55', 4)], 'golpe');
+  A('rodar_vega', 'Rodar', 'Roll', false, [P('kc19', 2), P('h6', 3, { dx: 10 }), P('h7', 3, { dx: 10 }), P('h8', 3, { dx: 10 }), P('h9', 4, { dx: 4 }), P('h47', 4)]);
+  A('clavado', 'Clavado', 'Dive', false, [P('kc19', 3), P('kc15', 5, { dy: 26, dx: 4 }), P('kc15', 5, { dy: 44, dx: 6 }), P('kc47', 4, { dy: 40, dx: 8 }), P('kc48', 7, { dy: 26, dx: 14, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('kc48', 6, { dy: 10, dx: 10, golpe: 'pieD' }), P('kc57', 6, { dy: 0 }), P('h47', 4)], 'golpe');
+  // Sagat
+  A('tiger_shot', 'Tiger Shot', 'Tiger Shot', false, [P('h33', 3), P('h34', 3), P('h36', 6, { fx: { id: 'tiger', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 12), P('h47', 4)], 'golpe');
+  A('tiger_shot_bajo', 'Tiger Shot bajo', 'Low Tiger Shot', false, [P('h53', 4), P('h54', 6, { fx: { id: 'tiger_bajo', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h54', 10), P('h53', 4), P('h47', 3)], 'golpe');
+  copia('uppercut', 'tiger_uppercut', 'Tiger Uppercut', 'Tiger Uppercut', (q) => q);
+  A('tiger_knee', 'Tiger Knee', 'Tiger Knee', false, [P('kc19', 3), P('kc47', 8, { dy: 12, dx: 16, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('kc48', 8, { dy: 8, dx: 10, golpe: 'pieD' }), P('kc57', 5, { dy: 0 }), P('h47', 3)], 'golpe');
+  // M. Bison
+  A('psycho_crusher', 'Psycho Crusher', 'Psycho Crusher', false, [P('kc15', 4, { dy: 6, sonido: 'poder' }), ...rep(3, [P('h7', 5, { dy: 10, dx: 14, golpe: 'cuerpo', fx: { id: 'llama_psycho', en: 'centro', dx: -6 } }), P('h8', 5, { dy: 10, dx: 14, golpe: 'cuerpo', fx: { id: 'llama_psycho', en: 'centro', dx: -6 } })]), P('h9', 6, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 4)], 'golpe');
+  A('patada_tijera', 'Patada tijera', 'Scissor kick', false, [P('kc19', 3), P('kc47', 5, { dy: 14, dx: 10, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('h24', 6, { dy: 18, dx: 12, golpe: 'pieD' }), P('kc48', 6, { dy: 12, dx: 10, golpe: 'pieD' }), P('kc57', 6, { dy: 0 }), P('h47', 4)], 'golpe');
+  A('cabezazo_bison', 'Cabezazo', 'Head stomp', false, [P('h22', 3), P('kc16', 6, { dx: 10, dy: 4, golpe: 'cabeza', sonido: 'whoosh_fuerte' }), P('kc16', 4, { dx: 4, dy: 0 }), P('h47', 4)], 'golpe');
   // correr: la caminata del video a doble ritmo
   const cam = out.find((c) => c.id === 'caminar');
   if (cam) out.push({ id: 'correr', nombre: ['Correr', 'Run'], grupo: 'beat', loop: true, cuadros: cam.cuadros.map((q) => ({ ...q, t: Math.max(2, Math.round(q.t / 2)), dx: (q.dx ?? 0) * 1.6 })) });

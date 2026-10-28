@@ -1,6 +1,6 @@
 import {
-  familiar, MIEMBROS, NOMBRE_MIEMBRO, clipsDe, pintarClip, efecto, escenarios, cuadroElemento, asset,
-  type ChibiLook, type CuadroPintado, type Clip, type Escenario, type Efecto, type MiembroId,
+  familiar, MIEMBROS, NOMBRE_MIEMBRO, clipsDe, pintarClip, efecto, escenarios, cuadroElemento, asset, ESTILOS, ESTILO_DE, movimiento, PROYECTILES, DANO,
+  type ChibiLook, type CuadroPintado, type Clip, type Escenario, type Efecto, type MiembroId, type EstiloId,
 } from '../engine/chibi';
 import { h, canvasPixel, dibujar, lienzo, tr, lang, alTick } from './dibujo';
 import { pintarMuelle, MUELLE } from '../engine/chibi/repeticion';
@@ -64,16 +64,15 @@ function dibujarEscenario(ctx: CanvasRenderingContext2D, esc: Escenario, tick: n
 
 // ------------------------------------------------------------------ luchador
 interface Luchador {
-  look: ChibiLook; nombre: string;
+  look: ChibiLook; nombre: string; estilo: EstiloId;
   x: number; mira: 1 | -1;
   clip: Clip; cuadros: CuadroPintado[]; i: number; t: number;
   vida: number; bloqueando: boolean; golpeado: boolean; pegó: boolean; cpu: boolean; espera: number; quieto: number;
   tecla: Record<string, boolean>;
 }
-const MOV: Record<string, { daño: number; tumba?: boolean; nombre?: string }> = {
-  golpe_debil: { daño: 4 }, golpe_fuerte: { daño: 8 }, patada_fuerte: { daño: 9 }, barrida: { daño: 8, tumba: true }, antiaereo: { daño: 12, tumba: true },
-  uppercut: { daño: 14, tumba: true }, uppercut_corto: { daño: 10 }, torbellino: { daño: 6 }, salto_patada: { daño: 8 }, patada_agachado: { daño: 6 }, golpe_agachado: { daño: 5 }, agarrar: { daño: 12, tumba: true },
-};
+/** Daño de lo que viaja o se queda prendido (por efecto); lo que no esté pega 10. */
+const DANO_PROY: Record<string, { daño: number; tumba?: boolean }> = { kikoken: { daño: 9 }, tiger: { daño: 11 }, yoga_flame: { daño: 12, tumba: true }, rayo_blanka: { daño: 11, tumba: true } };
+const AZAR = 'azar';
 const LIBRES = new Set(['reposo', 'caminar', 'caminar_atras', 'agachado', 'bloquear', 'caminar_guardia']);
 
 export function montarArena(s: HTMLElement, ctx0: Ctx) {
@@ -83,15 +82,20 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
   let esc = escs[0];
   let modo: 'pelea' | 'paseo' = 'pelea';
   let dosJugadores = false;
-  const rival = { id: 'steph' as MiembroId };
+  const rival = { id: 'steph' as MiembroId, estilo: AZAR as EstiloId | typeof AZAR };
+  let estiloP1: EstiloId = 'ryu';
+  const opcionesEstilo = (extra?: HTMLElement) => [...(extra ? [extra] : []), ...ESTILOS.map((e) => h('option', { value: e.id }, e.nombre[0]))];
+  const selEstilo = h('select', { onchange: () => { estiloP1 = selEstilo.value as EstiloId; pintarAyuda(); reiniciar(); } }, ...opcionesEstilo());
+  const selEstiloRival = h('select', { onchange: () => { rival.estilo = selEstiloRival.value as EstiloId | typeof AZAR; reiniciar(); } }, ...opcionesEstilo(h('option', { value: AZAR }, lang === 'es' ? 'Al azar' : 'Random')));
   const selEsc = h('select', { onchange: () => { esc = escs.find((e) => e.id === selEsc.value)!; reiniciar(); } }, ...escs.map((e) => h('option', { value: e.id }, tr(e.nombre))));
   const selRival = h('select', { onchange: () => { rival.id = selRival.value as MiembroId; reiniciar(); } }, ...MIEMBROS.filter((m) => m !== 'thor').map((m) => h('option', { value: m, selected: m === 'steph' }, NOMBRE_MIEMBRO[m])));
   const ayuda = h('p', { class: 'nota teclas' });
   const pintarAyuda = () => {
+    const [sp, su, st] = ESTILO_DE[estiloP1].especiales;
     ayuda.innerHTML = modo === 'pelea'
       ? (lang === 'es'
-        ? '<b>Jugador 1:</b> A D caminar · W saltar (con D salta adelante) · S agacharse · atrás bloquea · <b>J</b> golpe (abajo: golpe agachado) · <b>K</b> patada (abajo: barrida) · <b>L</b> poder · <b>U</b> uppercut · <b>I</b> torbellino · <b>O</b> patada antiaérea · <b>H</b> agarrar (de cerca)'
-        : '<b>Player 1:</b> A D walk · W jump (with D forward jump) · S crouch · back blocks · <b>J</b> punch (down: crouching punch) · <b>K</b> kick (down: sweep) · <b>L</b> fireball · <b>U</b> uppercut · <b>I</b> hurricane · <b>O</b> anti-air · <b>H</b> throw (close)')
+        ? `<b>Jugador 1:</b> A D caminar · W saltar (con D salta adelante) · S agacharse · atrás bloquea · <b>J</b> golpe (abajo: golpe agachado) · <b>K</b> patada (abajo: barrida) · <b>L</b> ${sp} · <b>U</b> ${su} · <b>I</b> ${st} · <b>O</b> antiaéreo · <b>H</b> agarrar (de cerca)`
+        : `<b>Player 1:</b> A D walk · W jump (with D forward jump) · S crouch · back blocks · <b>J</b> punch (down: crouching punch) · <b>K</b> kick (down: sweep) · <b>L</b> ${sp} · <b>U</b> ${su} · <b>I</b> ${st} · <b>O</b> anti-air · <b>H</b> throw (close)`)
         + (dosJugadores ? (lang === 'es' ? '<br><b>Jugador 2:</b> flechas · 1 golpe · 2 patada · 3 poder · 4 uppercut · 5 torbellino' : '<br><b>Player 2:</b> arrows · 1 punch · 2 kick · 3 fireball · 4 uppercut · 5 hurricane') : '')
       : (lang === 'es' ? 'Flechas o WASD para caminar en 8 direcciones · Shift corre · Espacio saluda · Thor te sigue.' : 'Arrows or WASD to walk in 8 directions · Shift runs · Space waves · Thor follows you.');
   };
@@ -101,7 +105,9 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
       h('button', { class: 'chip on', onclick: (e: Event) => { modo = 'pelea'; marcar(e); reiniciar(); } }, lang === 'es' ? 'Pelea' : 'Fight'),
       h('button', { class: 'chip', onclick: (e: Event) => { modo = 'paseo'; marcar(e); reiniciar(); } }, lang === 'es' ? 'Paseo desde arriba' : 'Top-down walk')),
     h('label', {}, lang === 'es' ? 'Escenario' : 'Stage', selEsc),
+    h('label', {}, lang === 'es' ? 'Estilo' : 'Style', selEstilo),
     h('label', {}, lang === 'es' ? 'Rival' : 'Rival', selRival),
+    h('label', {}, lang === 'es' ? 'Estilo rival' : 'Rival style', selEstiloRival),
     h('label', { class: 'check' }, h('input', { type: 'checkbox', onchange: (e: Event) => { dosJugadores = (e.target as HTMLInputElement).checked; pintarAyuda(); reiniciar(); } }), lang === 'es' ? 'Dos jugadores' : 'Two players'),
     h('button', { class: 'btn sec2', onclick: () => reiniciar() }, lang === 'es' ? 'Reiniciar' : 'Restart'),
   );
@@ -148,12 +154,12 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
   // ---- estado de la pelea
   let p1: Luchador, p2: Luchador;
   let tick = 0, cam = 0, ronda = 1, cartel = 0, cartelTxt = '', fin = 0, reloj = 99 * 60;
-  const proyectiles: { x: number; y: number; dir: number; e: Efecto; dueño: Luchador; vivo: boolean; f: number }[] = [];
+  const proyectiles: { x: number; y: number; dir: number; e: Efecto; dueño: Luchador; vivo: boolean; f: number; d: { daño: number; tumba?: boolean } }[] = [];
   const chispas: { x: number; y: number; e: Efecto; f: number; t: number; esp: boolean }[] = [];
   const PISO = () => esc.piso;
-  const nuevo = (look: ChibiLook, x: number, mira: 1 | -1, cpu: boolean): Luchador => {
+  const nuevo = (look: ChibiLook, x: number, mira: 1 | -1, cpu: boolean, estilo: EstiloId): Luchador => {
     const c = clipsDe(look).find((k) => k.id === 'reposo')!;
-    return { look, nombre: look.nombre, x, mira, clip: c, cuadros: pintarClip(look, 32, c), i: 0, t: 0, vida: 100, bloqueando: false, golpeado: false, pegó: false, cpu, espera: 30, quieto: 0, tecla: {} };
+    return { look, nombre: look.nombre, estilo, x, mira, clip: c, cuadros: pintarClip(look, 32, c), i: 0, t: 0, vida: 100, bloqueando: false, golpeado: false, pegó: false, cpu, espera: 30, quieto: 0, tecla: {} };
   };
   const poner = (L: Luchador, id: string) => {
     const c = clipsDe(L.look).find((k) => k.id === id);
@@ -174,8 +180,9 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
     const L1 = ctx0.look();
     let L2 = familiar(rival.id, 'pelea');
     if (L2.nombre === L1.nombre) L2 = familiar(rival.id === 'steph' ? 'rick' : 'steph', 'pelea');
-    p1 = nuevo(L1, esc.w / 2 - 50, 1, false);
-    p2 = nuevo(L2, esc.w / 2 + 50, -1, !dosJugadores);
+    const e2 = rival.estilo === AZAR ? ESTILOS[Math.floor(Math.random() * ESTILOS.length)].id : rival.estilo;
+    p1 = nuevo(L1, esc.w / 2 - 50, 1, false, estiloP1);
+    p2 = nuevo(L2, esc.w / 2 + 50, -1, !dosJugadores, e2);
     proyectiles.length = 0; chispas.length = 0;
     cam = esc.w / 2 - VW / 2; cartel = 90; cartelTxt = `ROUND ${ronda}`; fin = 0; reloj = 99 * 60;
     paseoReiniciar();
@@ -218,14 +225,15 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
     L.bloqueando = libre(L) && e.atras && !e.arr;
     if (libre(L) && fin === 0 && cartel <= 30) {
       const cerca = Math.abs(otro.x - L.x) < 30;
-      if (e.agarra && cerca && libre(otro)) { poner(L, 'agarrar'); poner(otro, 'lanzado'); otro.mira = L.mira === 1 ? -1 : 1; otro.vida -= MOV.agarrar.daño; sonar('lanzar'); }
-      else if (e.poder) { poner(L, 'poder'); sonar('poder'); }
-      else if (e.upper) poner(L, 'uppercut');
-      else if (e.torbe) poner(L, 'torbellino');
-      else if (e.anti) poner(L, 'antiaereo');
-      else if (e.patada && e.aba) poner(L, 'barrida');
-      else if (e.patada) poner(L, e.arr ? 'salto_patada' : 'patada_fuerte');
-      else if (e.golpe) poner(L, e.aba ? 'golpe_agachado' : Math.random() < 0.5 ? 'golpe_debil' : 'golpe_fuerte');
+      const mv = (b: Parameters<typeof movimiento>[1]) => movimiento(L.estilo, b);
+      if (e.agarra && cerca && libre(otro)) { const ag = mv('agarrar'); poner(L, ag); poner(otro, 'lanzado'); otro.mira = L.mira === 1 ? -1 : 1; otro.vida -= (DANO[ag] ?? DANO.agarrar).daño; sonar('lanzar'); }
+      else if (e.poder) poner(L, mv('poder'));
+      else if (e.upper) poner(L, mv('upper'));
+      else if (e.torbe) poner(L, mv('torbe'));
+      else if (e.anti) poner(L, mv('anti'));
+      else if (e.patada && e.aba) poner(L, mv('barrida'));
+      else if (e.patada) poner(L, e.arr ? mv('salto_patada') : mv('patada'));
+      else if (e.golpe) poner(L, e.aba ? mv('golpe_agachado') : Math.random() < 0.5 ? mv('golpe') : mv('golpe_fuerte'));
       else if (e.arr) poner(L, e.adelante ? 'salto_adelante' : e.atras ? 'salto_atras' : 'saltar');
       else if (e.aba) poner(L, L.bloqueando ? 'bloquear' : 'agachado');
       else if (e.adelante) poner(L, 'caminar');
@@ -245,10 +253,11 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
       if (L.i + 1 < L.cuadros.length) {
         L.i++;
         const n = L.cuadros[L.i];
-        if (n.fx?.id === 'poder') {
+        if (n.fx && PROYECTILES.has(n.fx.id)) {
           const x = L.mira === 1 ? L.x - n.ancla[0] + n.fx.x : L.x + (n.ancla[0] - n.fx.x);
-          proyectiles.push({ x, y: PISO() - n.dy - (n.ancla[1] - n.fx.y), dir: L.mira, e: efecto('poder', L.look, 32)!, dueño: L, vivo: true, f: 0 });
-        } else if (n.fx && n.fx.id !== 'poder') {
+          const ef = efecto(n.fx.id, L.look, 32);
+          if (ef) proyectiles.push({ x, y: PISO() - n.dy - (n.ancla[1] - n.fx.y), dir: L.mira, e: ef, dueño: L, vivo: true, f: 0, d: DANO_PROY[n.fx.id] ?? { daño: 10 } });
+        } else if (n.fx) {
           const x = L.mira === 1 ? L.x - n.ancla[0] + n.fx.x : L.x + (n.ancla[0] - n.fx.x);
           const ef = efecto(n.fx.id, L.look, 32);
           if (ef) chispas.push({ x, y: PISO() - n.dy - (n.ancla[1] - n.fx.y), e: ef, f: 0, t: 0, esp: L.mira < 0 });
@@ -269,7 +278,7 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
       const a = caja(L, ahora.hit), b = caja(otro, otro.cuadros[otro.i].hurt);
       if (choca(a, b)) {
         L.pegó = true;
-        const m = MOV[L.clip.id] ?? { daño: 5 };
+        const m = DANO[L.clip.id] ?? { daño: 5 };
         const cx = (Math.max(a[0], b[0]) + Math.min(a[0] + a[2], b[0] + b[2])) / 2, cy = (Math.max(a[1], b[1]) + Math.min(a[1] + a[3], b[1] + b[3])) / 2;
         if (otro.bloqueando) { chispa(cx, cy, 'chispa_bloqueo'); otro.vida -= 1; sonar('bloqueo'); otro.x -= 3 * otro.mira; }
         else {
@@ -298,6 +307,7 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
     for (const p of proyectiles) {
       if (!p.vivo) continue;
       p.x += (p.e.vel ?? 2.4) * p.dir; p.f++;
+      if (p.e.dura && p.f > p.e.dura) { p.vivo = false; continue; }
       const otro = p.dueño === p1 ? p2 : p1;
       const ec = p.e.frames[0];
       const a = [p.x - ec.w / 2, p.y - ec.h / 2, ec.w * 0.7, ec.h * 0.7];
@@ -307,9 +317,9 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
         const dis = efecto('poder_disipa', p.dueño.look, 32)!;
         chispas.push({ x: p.x, y: p.y, e: dis, f: 0, t: 0, esp: false });
         if (otro.bloqueando) { otro.vida -= 2; sonar('bloqueo'); }
-        else { otro.vida -= 10; sonar('golpe_fuerte'); otro.mira = p.dir === 1 ? -1 : 1; poner(otro, otro.vida <= 0 ? 'ko' : 'recibir_poder'); }
+        else { otro.vida -= p.d.daño; sonar('golpe_fuerte'); otro.mira = p.dir === 1 ? -1 : 1; poner(otro, otro.vida <= 0 ? 'ko' : p.d.tumba ? 'caer' : 'recibir_poder'); }
       }
-      if (p.x < cam - 40 || p.x > cam + VW + 40) p.vivo = false;
+      if (!p.e.dura && (p.x < cam - 40 || p.x > cam + VW + 40)) p.vivo = false;
     }
     // proyectiles que chocan entre sí se deshacen
     const vivos = proyectiles.filter((p) => p.vivo);
@@ -380,10 +390,16 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
     g.fillStyle = '#100c14'; g.fillRect(VW / 2 - 13, 7, 26, 13);
     g.fillStyle = '#f6f1e3'; g.fillRect(VW / 2 - 12, 8, 24, 11);
     texto('KO', VW / 2, 9, 8, '#2f4ab8', true);
-    texto(p1.nombre.toUpperCase().slice(0, VW === 320 ? 12 : 7), mx, 20, 8, '#5aa8f0');
-    const n2 = p2.nombre.toUpperCase().slice(0, VW === 320 ? 12 : 7);
+    const largo = VW === 320 ? 12 : 7;
+    texto(p1.nombre.toUpperCase().slice(0, largo), mx, 20, 8, '#5aa8f0');
+    // el estilo debajo del nombre, sin la inicial (M. Bison → BISON) para que quepa en el encuadre angosto
+    const estiloHud = (L: Luchador) => ESTILO_DE[L.estilo].nombre[0].replace(/^[A-Z]\. /, '').toUpperCase().slice(0, largo);
+    texto(estiloHud(p1), mx, 29, 8, '#f4c430');
     g.font = '700 8px Silkscreen, monospace';
+    const n2 = p2.nombre.toUpperCase().slice(0, largo), s2 = estiloHud(p2);
     texto(n2, VW - mx - g.measureText(n2).width, 20, 8, '#5aa8f0');
+    g.font = '700 8px Silkscreen, monospace';
+    texto(s2, VW - mx - g.measureText(s2).width, 29, 8, '#f4c430');
     texto(String(Math.ceil(reloj / 60)).padStart(2, '0'), VW / 2, 21, 10, '#f6f1e3', true);
     if (cartel > 0) texto(cartelTxt, VW / 2, 70, 16, cartelTxt === 'FIGHT!' ? '#f4c430' : '#f6f1e3', true);
   };

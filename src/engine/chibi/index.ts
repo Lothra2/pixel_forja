@@ -14,3 +14,4 @@ export * from './stage/stages';
 export { pintarMolde, clipsVideo, escala2x, MOLDES, CELDA_VIDEO, PISO_VIDEO, CLIPS_VIDEO_NOMBRES } from './video';
 export { pintarCabezaVideo } from './cabezaVideo';
 export { paint } from './paintExport';
+export { ESTILOS, ESTILO_DE, movimiento, PROYECTILES, DANO, type EstiloId, type Boton, type Estilo } from './estilos';

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   MIEMBROS, TRAJES, familiar, defaultLook, clipsDe, pintarClip, MOLDES, CELDA_VIDEO, CLIPS_VIDEO_NOMBRES, clipsVideo,
-  paqueteChibi, hojaChibi, escenarios, pintarEscenario, paqueteEscenario, ASSETS, pintarAsset, EFECTOS, efecto,
+  paqueteChibi, hojaChibi, escenarios, pintarEscenario, paqueteEscenario, ASSETS, pintarAsset, EFECTOS, efecto, ESTILOS, movimiento, PROYECTILES,
 } from '../chibi';
 import type { Raster } from '../core/raster';
 import { cuadroRepeticion, REP, pintarMuelle, MUELLE, piezas, camara, dibujoLuchador, cantidadDibujos } from '../chibi/repeticion';
@@ -202,5 +202,30 @@ describe('chibi: saltos y movimientos con el avance del video', () => {
   it('la torbellino vuelve al piso', () => {
     const q = clip('torbellino').cuadros;
     expect(q[q.length - 1].dy).toBe(0);
+  });
+});
+
+describe('chibi: los estilos de los doce luchadores', () => {
+  it('cada botón de cada estilo lleva a un clip que existe y sus efectos se pintan', () => {
+    const look = familiar('rick', 'pelea');
+    const ids = new Set(clipsDe(look).map((c) => c.id));
+    const botones = ['golpe', 'golpe_fuerte', 'golpe_agachado', 'patada', 'patada_fuerte', 'patada_agachado', 'barrida', 'salto_patada', 'poder', 'upper', 'torbe', 'anti', 'agarrar'] as const;
+    expect(ESTILOS.length).toBe(12);
+    for (const e of ESTILOS) for (const b of botones) {
+      const id = movimiento(e.id, b);
+      expect(ids.has(id), `${e.id}.${b} → ${id}`).toBe(true);
+      const cu = pintarClip(look, 32, clipsDe(look).find((c) => c.id === id)!);
+      for (const q of cu) if (q.fx) expect(efecto(q.fx.id, look, 32), `${id} fx ${q.fx.id}`).not.toBeNull();
+      // los especiales pegan: tienen caja de golpe o lanzan algo (el rodar de Vega es solo para acercarse, como en el juego)
+      if ((b === 'poder' || b === 'upper' || b === 'torbe') && id !== 'rodar_vega') expect(cu.some((q) => q.hit || (q.fx && PROYECTILES.has(q.fx.id))), `${e.id}.${b} ${id} no pega`).toBe(true);
+    }
+  });
+  it('los proyectiles de cada estilo viajan o se quedan un rato', () => {
+    const look = familiar('rick', 'pelea');
+    for (const id of PROYECTILES) {
+      const e = efecto(id, look, 32)!;
+      expect(e, id).not.toBeNull();
+      expect((e.vel ?? 2.4) > 0 || (e.dura ?? 0) > 0, `${id} ni viaja ni dura`).toBe(true);
+    }
   });
 });

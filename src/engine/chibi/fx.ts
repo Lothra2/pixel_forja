@@ -18,6 +18,8 @@ export interface Efecto {
   vel?: number;
   /** Centro del efecto dentro de la imagen. */
   centro: [number, number];
+  /** Cuántos ticks vive un proyectil que se queda en su sitio (llama, electricidad). */
+  dura?: number;
 }
 
 const px = (r: Raster, x: number, y: number, v: number, a = 255) => {
@@ -304,6 +306,122 @@ export function sombraPiso(talla: Talla, ancho = 1): Raster {
   return r;
 }
 
+
+// ------------------------------------------------------------------ los poderes de los otros estilos
+const NEG = hex('#100c14');
+/** Un proyectil con el dibujo del poder de un muñeco pero con otros colores y otra velocidad. */
+function poderCon(id: string, estilo: Poder, c1: string, c2: string, vel: number, talla: Talla): Efecto {
+  const e = poder({ poder: { estilo, color: c1, color2: c2 } }, talla);
+  return { ...e, id, vel };
+}
+/** Sonic Boom: una media luna amarilla que vibra. */
+export function sonic(talla: Talla): Efecto {
+  const k = talla === 32 ? 1 : 1.45;
+  const W = Math.round(20 * k), H = Math.round(20 * k), cx = W * 0.6, cy = H / 2;
+  const frames: Raster[] = [];
+  for (let f = 0; f < 2; f++) {
+    const c = capa(W, H);
+    const rx = (4 + f * 0.6) * k, ry = 8 * k;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry, d = dx * dx + dy * dy;
+      const dx2 = (x + 0.5 - cx + 2.2 * k) / rx, d2 = dx2 * dx2 + dy * dy;
+      if (d <= 1 && d2 > 1) pon(c, x, y, x + 0.5 > cx ? hex('#fff6c0') : hex('#f4d442'), 0);
+    }
+    const s = deCapa(c); const r = createRaster(W, H); r.data.set(s.data);
+    for (let i = 0; i < 3; i++) px(r, cx - 6 * k - i * 3, cy + (i % 2 ? -3 : 3) * k, hex('#f4d442'), 170);
+    frames.push(r);
+  }
+  return { id: 'sonic', frames, t: 3, loop: true, vel: 3, centro: [Math.round(cx), Math.round(cy)] };
+}
+/** Yoga Flame: una lengua de fuego que se queda delante y titila. */
+export function yogaFlame(talla: Talla): Efecto {
+  const k = talla === 32 ? 1 : 1.45;
+  const W = Math.round(30 * k), H = Math.round(18 * k), cy = H / 2;
+  const frames: Raster[] = [];
+  for (let f = 0; f < 3; f++) {
+    const c = capa(W, H);
+    const largo = (24 + (f % 2) * 3) * k;
+    const lengua = (ancho: number, len: number, v: number) => poligono(c, [[2 * k, cy - ancho], [2 * k, cy + ancho], [len, cy + ancho * 0.25 + (f === 1 ? 1 : 0)], [len + 3 * k, cy - 1], [len, cy - ancho * 0.7]], v, 0);
+    lengua(6 * k, largo, hex('#d83020')); lengua(4 * k, largo - 4 * k, hex('#ff8a2a')); lengua(2 * k, largo - 9 * k, hex('#ffd040'));
+    pon(c, 4 * k, cy, hex('#fff4c0'), 0); pon(c, 6 * k, cy - 1, hex('#fff4c0'), 0);
+    const s = deCapa(c); const r = createRaster(W, H); r.data.set(s.data);
+    for (let i = 0; i < 4; i++) px(r, largo - 2 + ((i * 5 + f * 3) % 7), cy - 7 * k + ((i * 3 + f) % 5), hex('#ffd040'), 200);
+    frames.push(r);
+  }
+  return { id: 'yoga_flame', frames, t: 3, loop: true, vel: 0, dura: 20, centro: [Math.round(4 * k), Math.round(cy)] };
+}
+/** La electricidad de Blanka: rayitos azules alrededor del cuerpo. */
+export function rayoBlanka(talla: Talla): Efecto {
+  const k = talla === 32 ? 1 : 1.45;
+  const W = Math.round(34 * k), H = Math.round(36 * k), cx = W / 2, cy = H / 2;
+  const frames: Raster[] = [];
+  let sem = 7;
+  const az = () => { sem = (sem * 1103515245 + 12345) & 0x7fffffff; return sem / 0x7fffffff; };
+  for (let f = 0; f < 4; f++) {
+    const r = createRaster(W, H);
+    for (let b = 0; b < 7; b++) {
+      const a = (b / 7) * Math.PI * 2 + f * 0.4;
+      let x = cx + Math.cos(a) * 7 * k, y = cy + Math.sin(a) * 9 * k;
+      for (let s = 0; s < 6; s++) {
+        px(r, x, y, s % 2 ? hex('#7ad8ff') : hex('#e8f8ff'));
+        x += Math.cos(a) * 1.6 * k + (az() - 0.5) * 2.4; y += Math.sin(a) * 1.6 * k + (az() - 0.5) * 2.4;
+      }
+    }
+    frames.push(r);
+  }
+  return { id: 'rayo_blanka', frames, t: 2, loop: true, vel: 0, dura: 22, centro: [Math.round(cx), Math.round(cy)] };
+}
+/** Estela de un golpe repetido (patadas relámpago, cien manos): rayitas blancas que se desvanecen. */
+export function estelaGolpe(talla: Talla, vertical = false): Efecto {
+  const k = talla === 32 ? 1 : 1.45;
+  const W = Math.round(16 * k), H = Math.round(14 * k);
+  const frames: Raster[] = [];
+  for (let f = 0; f < 2; f++) {
+    const r = createRaster(W, H);
+    for (let i = 0; i < 3; i++) {
+      const L = (5 - f * 2) * k;
+      for (let s = 0; s < L; s++) {
+        const x = vertical ? 3 * k + i * 4 * k + (f ? 1 : 0) : 2 * k + s + f * 2, y = vertical ? 2 * k + s + f * 2 : 3 * k + i * 4 * k + (f ? 1 : 0);
+        px(r, x, y, s === 0 ? hex('#ffffff') : hex('#d8e0ec'), 230 - s * 30);
+      }
+    }
+    frames.push(r);
+  }
+  return { id: vertical ? 'estela_patada' : 'estela_manos', frames, t: 3, loop: false, centro: [Math.round(W / 2), Math.round(H / 2)] };
+}
+/** Llamas moradas del Psycho Crusher: quedan atrás y se apagan. */
+export function llamaPsycho(talla: Talla): Efecto {
+  const k = talla === 32 ? 1 : 1.45;
+  const W = Math.round(14 * k), H = Math.round(16 * k), cx = W / 2;
+  const frames: Raster[] = [];
+  for (let f = 0; f < 3; f++) {
+    const c = capa(W, H);
+    const h = (12 - f * 3) * k;
+    poligono(c, [[cx - 5 * k, H - 2], [cx + 5 * k, H - 2], [cx + 2 * k, H - 2 - h * 0.6], [cx, H - 2 - h], [cx - 2 * k, H - 2 - h * 0.6]], hex('#8a3ad8'), 0);
+    poligono(c, [[cx - 2.5 * k, H - 2], [cx + 2.5 * k, H - 2], [cx, H - 2 - h * 0.6]], hex('#e0b8ff'), 0);
+    const s = deCapa(c); const r = createRaster(W, H); r.data.set(s.data);
+    frames.push(r);
+  }
+  return { id: 'llama_psycho', frames, t: 4, loop: false, centro: [Math.round(cx), H - 2] };
+}
+/** La garra de Vega: tres tajos blancos. */
+export function garra(talla: Talla): Efecto {
+  const k = talla === 32 ? 1 : 1.45;
+  const W = Math.round(16 * k), H = Math.round(16 * k);
+  const frames: Raster[] = [];
+  for (let f = 0; f < 2; f++) {
+    const r = createRaster(W, H);
+    for (let i = 0; i < 3; i++) for (let s = 0; s < 10 * k - f * 3; s++) {
+      const x = 2 * k + s + f, y = 2 * k + i * 4 * k + s * 0.5 + f;
+      px(r, x, y, hex(s % 3 ? '#ffffff' : '#c8d8e8'), 240 - s * 12);
+      if (s === 0) px(r, x - 1, y, NEG);
+    }
+    frames.push(r);
+  }
+  return { id: 'garra', frames, t: 3, loop: false, centro: [Math.round(W / 2), Math.round(H / 2)] };
+}
+void NEG;
+
 /** Busca un efecto por id para un muñeco. */
 export function efecto(id: string, look: Pick<ChibiLook, 'poder'>, talla: Talla): Efecto | null {
   if (id === 'poder') return poder(look, talla);
@@ -315,7 +433,19 @@ export function efecto(id: string, look: Pick<ChibiLook, 'poder'>, talla: Talla)
   if (id === 'estela') return estela(talla);
   if (id === 'salpica') return salpica(talla);
   if (id.startsWith('emote_')) return emote(id.slice(6) as Emote, talla);
+  // los poderes de los otros estilos
+  if (id === 'sonic') return sonic(talla);
+  if (id === 'kikoken') return poderCon('kikoken', 'bola', '#5ab0ff', '#eaf6ff', 1.7, talla);
+  if (id === 'tiger' || id === 'tiger_bajo') return poderCon(id, 'fuego', '#ff8a2a', '#fff0b0', 3, talla);
+  if (id === 'yoga_fire') return poderCon('yoga_fire', 'fuego', '#ff5a2a', '#ffd060', 2.2, talla);
+  if (id === 'yoga_flame') return yogaFlame(talla);
+  if (id === 'rayo_blanka') return rayoBlanka(talla);
+  if (id === 'estela_patada') return estelaGolpe(talla, true);
+  if (id === 'estela_manos') return estelaGolpe(talla, false);
+  if (id === 'llama_psycho') return llamaPsycho(talla);
+  if (id === 'garra') return garra(talla);
   return null;
 }
-export const EFECTOS = ['poder', 'poder_disipa', 'chispa', 'chispa_bloqueo', 'polvo', 'mareo', 'estela', 'salpica', ...EMOTES.map((e) => `emote_${e}`)];
+export const EFECTOS = ['poder', 'poder_disipa', 'chispa', 'chispa_bloqueo', 'polvo', 'mareo', 'estela', 'salpica', ...EMOTES.map((e) => `emote_${e}`),
+  'sonic', 'kikoken', 'tiger', 'yoga_fire', 'yoga_flame', 'rayo_blanka', 'estela_patada', 'estela_manos', 'llama_psycho', 'garra'];
 void luz;
