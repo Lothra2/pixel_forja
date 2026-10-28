@@ -22,6 +22,31 @@ interface Datos { poses: Record<string, Molde>; clips: Record<string, { loop: bo
 const D = DATA as unknown as Datos;
 
 export const MOLDES = D.poses;
+
+/**
+ * Las extremidades de goma de Dhalsim: a un molde de golpe o de patada se le repite la columna del antebrazo o de la
+ * pierna `n` veces, así el puño o el pie llegan más lejos con el mismo dibujo. `banda` son las filas del miembro y
+ * `x0` la columna que se repite; `mas` son otros trozos (el pie que va de punta) que viajan enteros con la punta.
+ * Se rellena el mismo ancho a la izquierda para que el cuerpo no se corra al centrar el molde.
+ */
+interface Estirada { banda: [number, number]; x0: number; mas?: [number, number, number][] }
+export const ESTIRADAS: Record<string, Estirada> = {
+  h56: { banda: [10, 14], x0: 15 }, // puño de pie
+  h24: { banda: [18, 20], x0: 17, mas: [[13, 17, 21]] }, // patada de pie: la pierna y el pie en punta
+  h54: { banda: [17, 22], x0: 20 }, // patada agachado
+};
+export function estirarMolde(m: Molde, e: Estirada, n: number): Molde {
+  const filas = m.filas.map((f, y) => {
+    const dentro = (y >= e.banda[0] && y <= e.banda[1]) ? e.x0 : (e.mas ?? []).find(([a, b]) => y >= a && y <= b)?.[2] ?? -1;
+    const cuerpo = dentro < 0 ? f + '.'.repeat(n) : f.slice(0, dentro) + (y >= e.banda[0] && y <= e.banda[1] ? f[e.x0].repeat(n) : '.'.repeat(n)) + f.slice(dentro);
+    return '.'.repeat(n) + cuerpo;
+  });
+  const cabeza = m.cabeza ? { ...m.cabeza, chin: [m.cabeza.chin[0] + n, m.cabeza.chin[1]] as [number, number] } : null;
+  return { w: m.w + 2 * n, h: m.h, filas, cabeza, espejo: m.espejo };
+}
+/** Cuánto se estira: hasta 16 columnas, lo que cabe en la celda del video. */
+export const ESTIRES = [4, 8, 12, 16];
+for (const [id, e] of Object.entries(ESTIRADAS)) for (const n of ESTIRES) MOLDES[`${id}_e${n}`] = estirarMolde(MOLDES[id], e, n);
 /** Celda de los moldes a 32 (ancho, alto) y la línea del piso. */
 export const CELDA_VIDEO: [number, number] = [56, 48];
 export const PISO_VIDEO = 44;
@@ -121,12 +146,21 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, _gesto:
     const p: [number, number] = best ? [ox + best[0], oy + best[1]] : [W / 2, PISO_VIDEO - 10];
     return espejo ? [W - p[0], p[1]] : p;
   };
+  // el pie que pega: el pixel de pie, piel o pantalón que más adelante llega (el pie de apoyo nunca es el que patea);
+  // se toma el medio de esa columna
+  const punta = (): [number, number] => {
+    let bx = -1, ya = 0, yb = 0;
+    for (let x = m.w - 1; x >= 0 && bx < 0; x--) for (let y = 0; y < m.h; y++) if ('PAdD'.includes(m.filas[y][x])) { if (bx < 0) { bx = x; ya = y; } yb = y; }
+    if (bx < 0) return busca('P', true);
+    const p: [number, number] = [ox + bx, oy + Math.round((ya + yb) / 2)];
+    return espejo ? [W - p[0], p[1]] : p;
+  };
   let x0 = W, y0 = H, x1 = -1, y1 = -1;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (img.data[(y * W + x) * 4 + 3]) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
   const cabeza = busca('HhRrSE', true);
   return {
     img, ancla: [Math.floor(W / 2), PISO_VIDEO],
-    puntos: { manoD: busca('B', true), manoT: busca('B', false), pieD: busca('P', true), pieT: busca('P', false), cabeza, centro: [(x0 + x1) / 2, (y0 + y1) / 2], util: busca('B', true) },
+    puntos: { manoD: busca('B', true), manoT: busca('B', false), pieD: punta(), pieT: busca('P', false), cabeza, centro: [(x0 + x1) / 2, (y0 + y1) / 2], util: busca('B', true) },
     hurt: [x0, y0, Math.max(1, x1 - x0 + 1), Math.max(1, y1 - y0 + 1)],
   };
 }
@@ -298,11 +332,11 @@ export function clipsVideo(): Clip[] {
   const copia = (de: string, id: string, es: string, en: string, f: (q: Cuadro, i: number) => Cuadro) => { const c = out.find((x) => x.id === de); if (c) out.push({ ...c, id, nombre: [es, en], cuadros: c.cuadros.map(f) }); };
   const GIRO = ['kc2', 'kc3', 'kc4', 'kc5', 'kc6', 'kc7', 'kc8'];
   // Ken: el shoryuken con chispas de fuego en el puño
-  copia('uppercut', 'shoryuken_ken', 'Shoryuken de fuego', 'Fire shoryuken', (q, i) => (q.golpe ? { ...q, fx: { id: 'estela_manos', en: 'manoD', dx: 2 } } : i === 4 ? { ...q, sonido: 'whoosh_fuerte' } : q));
+  copia('uppercut', 'shoryuken_ken', 'Shoryuken de fuego', 'Fire shoryuken', (q, i) => (q.golpe ? { ...q, fx: { id: 'fuego_puno', en: 'manoD', dx: 1 } } : i === 4 ? { ...q, sonido: 'whoosh_fuerte' } : q));
   // Chun-Li
   A('kikoken', 'Kikoken', 'Kikoken', false, [P('h33', 4), P('h34', 4), P('h35', 4), P('h36', 6, { fx: { id: 'kikoken', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 14), P('h47', 4)], 'golpe');
   A('patadas_relampago', 'Patadas relámpago', 'Lightning legs', false, [P('h22', 3), ...rep(4, [P('h23', 2, { golpe: 'pieD' }), P('h24', 2, { golpe: 'pieD', fx: { id: 'estela_patada', en: 'pieD' } }), P('h25', 2, { golpe: 'pieD', sonido: 'whoosh' }), P('h24', 2, { golpe: 'pieD' })]), P('h22', 4)], 'golpe');
-  A('patada_giratoria', 'Patada giratoria', 'Spinning bird kick', false, [P('kc19', 3), ...rep(2, GIRO.map((g, i) => P(g, 3, { dy: 14, dx: 5, golpe: i % 2 ? 'pieD' : undefined }))), P('kc57', 4, { dy: 0 }), P('h47', 3)], 'golpe');
+  A('patada_giratoria', 'Patada giratoria', 'Spinning bird kick', false, [P('kc19', 3), ...rep(2, GIRO.map((g, i) => P(g, 3, { dy: 14, dx: 5, golpe: i % 2 ? 'pieD' : undefined, fx: i % 2 ? { id: 'estela_patada', en: 'pieD' } : undefined }))), P('kc56', 4, { dy: 0 }), P('h47', 3)], 'golpe');
   A('patada_alta', 'Patada alta', 'High kick', false, [P('h22', 3), P('h23', 3), P('h24', 8, { golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('h25', 4), P('h27', 4)], 'golpe');
   // Guile
   A('sonic_boom', 'Sonic Boom', 'Sonic Boom', false, [P('h33', 3), P('h34', 3), P('h36', 5, { fx: { id: 'sonic', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 10), P('h47', 4)], 'golpe');
@@ -314,14 +348,19 @@ export function clipsVideo(): Clip[] {
   A('mordida', 'Mordida', 'Bite', false, [P('h50', 4), P('h51', 6, { golpe: 'manoD' }), P('h52', 8), P('h47', 4)], 'esfuerzo');
   // E. Honda
   A('cien_manos', 'Cien manos', 'Hundred hand slap', false, [P('h55', 2), ...rep(5, [P('h56', 2, { golpe: 'manoD', fx: { id: 'estela_manos', en: 'manoD', dx: 4 } }), P('h55', 2, { golpe: 'manoD' })]), P('h47', 4)], 'golpe');
-  A('cabezazo', 'Cabezazo', 'Headbutt', false, [P('kc19', 4), P('kc16', 6, { dx: 14, dy: 6, golpe: 'cabeza', sonido: 'whoosh_fuerte' }), P('kc16', 6, { dx: 14, dy: 5, golpe: 'cabeza' }), P('kc16', 5, { dx: 8, dy: 2 }), P('h47', 6)], 'golpe');
-  A('sumo_pisoton', 'Pisotón de sumo', 'Sumo stomp', false, [P('h53', 5), P('kc17', 6, { dy: 18 }), P('kc17', 6, { dy: 30 }), P('kc17', 6, { dy: 18 }), P('h53', 8, { dy: 0, golpe: 'pieD', fx: { id: 'polvo', en: 'centro' }, sonido: 'caer' }), P('h47', 4)], 'golpe');
+  A('cabezazo', 'Cabezazo', 'Headbutt', false, [P('kc19', 4), P('h7', 6, { dx: 14, dy: 8, golpe: 'cabeza', sonido: 'whoosh_fuerte', fx: { id: 'estela_manos', en: 'centro', dx: -8 } }), P('h7', 6, { dx: 14, dy: 7, golpe: 'cabeza', fx: { id: 'estela_manos', en: 'centro', dx: -8 } }), P('h7', 5, { dx: 8, dy: 3 }), P('h9', 5, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 5)], 'golpe');
+  A('sumo_pisoton', 'Pisotón de sumo', 'Sumo stomp', false, [P('h53', 5), P('kc17', 6, { dy: 18 }), P('kc17', 6, { dy: 30 }), P('kc17', 6, { dy: 18 }), P('h53', 8, { dy: 0, golpe: 'cuerpo', fx: { id: 'polvo', en: 'centro' }, sonido: 'caer' }), P('h47', 4)], 'golpe');
   // Zangief
-  A('lariat', 'Lariat', 'Lariat', false, [...rep(2, GIRO.map((g, i) => P(g, 3, { golpe: i % 2 ? undefined : 'manoD' }))), P('h47', 4)], 'golpe');
+  A('lariat', 'Lariat', 'Lariat', false, [...rep(2, GIRO.map((g, i) => P(g, 3, { golpe: i % 2 ? undefined : 'manoD', fx: i % 2 ? undefined : { id: 'estela_manos', en: 'manoD' } }))), P('h47', 4)], 'golpe');
   A('golpe_oso', 'Golpe de oso', 'Bear punch', false, [P('h15', 4), P('h16', 4), P('h17', 8, { dy: 8, golpe: 'manoD', sonido: 'whoosh_fuerte' }), P('h18', 6, { dy: 10 }), P('h21', 6, { dy: 0 }), P('h47', 4)], 'golpe');
   A('piledriver', 'Piledriver', 'Piledriver', false, [P('h50', 4), P('h51', 4), P('kc15', 5, { dy: 12 }), P('kc16', 5, { dy: 26 }), P('kc17', 5, { dy: 30 }), P('kc16', 5, { dy: 18 }), P('kc15', 4, { dy: 6 }), P('h9', 10, { dy: 0, fx: { id: 'polvo', en: 'centro' }, sonido: 'caer' }), P('h47', 4)], 'esfuerzo');
   // Dhalsim
   A('yoga_fire', 'Yoga Fire', 'Yoga Fire', false, [P('h33', 4), P('h34', 4), P('h36', 6, { fx: { id: 'yoga_fire', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 12), P('h47', 4)], 'golpe');
+  const est = (base: string, n: number) => `${base}_e${n}`;
+  A('yoga_golpe', 'Puño estirado', 'Stretch punch', false, [P('h55', 2), P(est('h56', 4), 2), P(est('h56', 12), 2, { golpe: 'manoD' }), P(est('h56', 16), 6, { golpe: 'manoD', sonido: 'whoosh' }), P(est('h56', 8), 2), P('h55', 3)], 'golpe');
+  A('yoga_golpe_fuerte', 'Puño estirado fuerte', 'Strong stretch punch', false, [P('h55', 3), P(est('h56', 8), 2), P(est('h56', 16), 10, { golpe: 'manoD', sonido: 'whoosh_fuerte' }), P(est('h56', 12), 2), P(est('h56', 4), 2), P('h55', 4)], 'golpe');
+  A('yoga_patada', 'Patada estirada', 'Stretch kick', false, [P('h22', 3), P('h23', 2), P(est('h24', 8), 2, { golpe: 'pieD' }), P(est('h24', 16), 8, { golpe: 'pieD', sonido: 'whoosh_fuerte' }), P(est('h24', 8), 2), P('h25', 3), P('h27', 3)], 'golpe');
+  A('yoga_patada_baja', 'Patada baja estirada', 'Low stretch kick', false, [P('h53', 3), P(est('h54', 8), 2, { golpe: 'pieD' }), P(est('h54', 16), 8, { golpe: 'pieD', sonido: 'whoosh_fuerte' }), P(est('h54', 8), 2), P('h53', 4)], 'golpe');
   A('yoga_flame', 'Yoga Flame', 'Yoga Flame', false, [P('h33', 4), P('h34', 3), P('h36', 4, { fx: { id: 'yoga_flame', en: 'manoD', dx: 12 }, sonido: 'poder' }), P('h37', 18), P('h47', 4)], 'golpe');
   // Balrog
   A('puno_carrera', 'Puño con carrera', 'Dash straight', false, [P('h38', 2, { dx: 8 }), P('h39', 2, { dx: 8 }), P('h40', 2, { dx: 8 }), P('h41', 2, { dx: 8 }), P(N.golpef1, 2, { dx: 4 }), P(N.golpef2, 8, { dx: 6, golpe: 'manoD', sonido: 'whoosh_fuerte' }), P(N.golpef3, 6), P('h47', 3)], 'golpe');
@@ -330,16 +369,16 @@ export function clipsVideo(): Clip[] {
   // Vega
   A('garra', 'Garra', 'Claw', false, [P('h55', 3), P('h56', 8, { golpe: 'manoD', fx: { id: 'garra', en: 'manoD', dx: 7 }, sonido: 'whoosh_fuerte' }), P('h56', 3), P('h55', 4)], 'golpe');
   A('rodar_vega', 'Rodar', 'Roll', false, [P('kc19', 2), P('h6', 3, { dx: 10 }), P('h7', 3, { dx: 10 }), P('h8', 3, { dx: 10 }), P('h9', 4, { dx: 4 }), P('h47', 4)]);
-  A('clavado', 'Clavado', 'Dive', false, [P('kc19', 3), P('kc15', 5, { dy: 26, dx: 4 }), P('kc15', 5, { dy: 44, dx: 6 }), P('kc47', 4, { dy: 40, dx: 8 }), P('kc48', 7, { dy: 26, dx: 14, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('kc48', 6, { dy: 10, dx: 10, golpe: 'pieD' }), P('kc57', 6, { dy: 0 }), P('h47', 4)], 'golpe');
+  A('clavado', 'Clavado', 'Dive', false, [P('kc19', 3), P('kc15', 5, { dy: 26, dx: 4 }), P('kc15', 5, { dy: 44, dx: 6 }), P('kc47', 4, { dy: 40, dx: 8 }), P('kc48', 7, { dy: 26, dx: 14, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('kc48', 6, { dy: 10, dx: 10, golpe: 'pieD' }), P('kc56', 6, { dy: 0 }), P('h47', 4)], 'golpe');
   // Sagat
   A('tiger_shot', 'Tiger Shot', 'Tiger Shot', false, [P('h33', 3), P('h34', 3), P('h36', 6, { fx: { id: 'tiger', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 12), P('h47', 4)], 'golpe');
   A('tiger_shot_bajo', 'Tiger Shot bajo', 'Low Tiger Shot', false, [P('h53', 4), P('h54', 6, { fx: { id: 'tiger_bajo', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h54', 10), P('h53', 4), P('h47', 3)], 'golpe');
   copia('uppercut', 'tiger_uppercut', 'Tiger Uppercut', 'Tiger Uppercut', (q) => q);
-  A('tiger_knee', 'Tiger Knee', 'Tiger Knee', false, [P('kc19', 3), P('kc47', 8, { dy: 12, dx: 16, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('kc48', 8, { dy: 8, dx: 10, golpe: 'pieD' }), P('kc57', 5, { dy: 0 }), P('h47', 3)], 'golpe');
+  A('tiger_knee', 'Tiger Knee', 'Tiger Knee', false, [P('kc19', 3), P('kc47', 8, { dy: 12, dx: 16, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('kc48', 8, { dy: 8, dx: 10, golpe: 'pieD' }), P('kc56', 5, { dy: 0 }), P('h47', 3)], 'golpe');
   // M. Bison
   A('psycho_crusher', 'Psycho Crusher', 'Psycho Crusher', false, [P('kc15', 4, { dy: 6, sonido: 'poder' }), ...rep(3, [P('h7', 5, { dy: 10, dx: 14, golpe: 'cuerpo', fx: { id: 'llama_psycho', en: 'centro', dx: -6 } }), P('h8', 5, { dy: 10, dx: 14, golpe: 'cuerpo', fx: { id: 'llama_psycho', en: 'centro', dx: -6 } })]), P('h9', 6, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 4)], 'golpe');
-  A('patada_tijera', 'Patada tijera', 'Scissor kick', false, [P('kc19', 3), P('kc47', 5, { dy: 14, dx: 10, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('h24', 6, { dy: 18, dx: 12, golpe: 'pieD' }), P('kc48', 6, { dy: 12, dx: 10, golpe: 'pieD' }), P('kc57', 6, { dy: 0 }), P('h47', 4)], 'golpe');
-  A('cabezazo_bison', 'Cabezazo', 'Head stomp', false, [P('h22', 3), P('kc16', 6, { dx: 10, dy: 4, golpe: 'cabeza', sonido: 'whoosh_fuerte' }), P('kc16', 4, { dx: 4, dy: 0 }), P('h47', 4)], 'golpe');
+  A('patada_tijera', 'Patada tijera', 'Scissor kick', false, [P('kc19', 3), P('kc47', 5, { dy: 14, dx: 10, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('h24', 6, { dy: 18, dx: 12, golpe: 'pieD' }), P('kc48', 6, { dy: 12, dx: 10, golpe: 'pieD' }), P('kc56', 6, { dy: 0 }), P('h47', 4)], 'golpe');
+  A('cabezazo_bison', 'Pisotón de cabeza', 'Head stomp', false, [P('kc19', 3), P('kc15', 4, { dy: 16, dx: 6, sonido: 'whoosh' }), P('kc16', 4, { dy: 30, dx: 8 }), P('kc17', 6, { dy: 22, dx: 10, golpe: 'pieD' }), P('kc17', 6, { dy: 8, dx: 8, golpe: 'pieD' }), P('kc56', 5, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 3)], 'golpe');
   // correr: la caminata del video a doble ritmo
   const cam = out.find((c) => c.id === 'caminar');
   if (cam) out.push({ id: 'correr', nombre: ['Correr', 'Run'], grupo: 'beat', loop: true, cuadros: cam.cuadros.map((q) => ({ ...q, t: Math.max(2, Math.round(q.t / 2)), dx: (q.dx ?? 0) * 1.6 })) });

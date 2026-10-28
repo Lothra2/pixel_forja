@@ -6,7 +6,7 @@ import {
 import type { Raster } from '../core/raster';
 import { cuadroRepeticion, REP, pintarMuelle, MUELLE, piezas, camara, dibujoLuchador, cantidadDibujos } from '../chibi/repeticion';
 import { pintorFamilia, moldeDeDibujo } from '../chibi/repeticionFamilia';
-import { moldeDeTalla } from '../chibi/video';
+import { moldeDeTalla, pintarMolde } from '../chibi/video';
 import REPM from '../chibi/video/repeticionMoldes.json';
 const MOLDES_REP = REPM.poses as Record<string, unknown>;
 
@@ -227,5 +227,26 @@ describe('chibi: los estilos de los doce luchadores', () => {
       expect(e, id).not.toBeNull();
       expect((e.vel ?? 2.4) > 0 || (e.dura ?? 0) > 0, `${id} ni viaja ni dura`).toBe(true);
     }
+  });
+});
+
+describe('chibi: las extremidades de goma de Dhalsim y el pie que patea', () => {
+  it('el molde estirado es más ancho, la mano llega n columnas más lejos y los pies quedan donde estaban', () => {
+    const look = familiar('rick', 'pelea');
+    const base = pintarMolde(look, 'h56'), largo = pintarMolde(look, 'h56_e16');
+    expect(MOLDES.h56_e16.w).toBe(MOLDES.h56.w + 32);
+    expect(largo.puntos.manoD[0]).toBe(base.puntos.manoD[0] + 16);
+    expect(largo.puntos.pieT).toEqual(base.puntos.pieT);
+    const pat = pintarMolde(look, 'h24'), patL = pintarMolde(look, 'h24_e16');
+    expect(patL.puntos.pieD[0]).toBe(pat.puntos.pieD[0] + 16);
+    expect(patL.puntos.manoD).toEqual(pat.puntos.manoD);
+  });
+  it('el punto del pie es el pie que patea, no el de apoyo', () => {
+    const look = familiar('rick', 'pelea');
+    const p = pintarMolde(look, 'h24');
+    // la punta del pie que patea está por delante de la mano y por encima del piso
+    expect(p.puntos.pieD[0]).toBeGreaterThan(p.puntos.manoD[0]);
+    expect(p.puntos.pieD[1]).toBeLessThan(40);
+    expect(p.puntos.pieT[1]).toBeGreaterThan(40);
   });
 });

@@ -30,7 +30,7 @@ export const ESTILOS: Estilo[] = [
   { id: 'blanka', nombre: ['Blanka', 'Blanka'], movs: { poder: 'electricidad', torbe: 'rodar', upper: 'rodar_alto', anti: 'electricidad', agarrar: 'mordida' }, especiales: ['Electricidad', 'Rodar hacia arriba', 'Rodar'] },
   { id: 'honda', nombre: ['E. Honda', 'E. Honda'], movs: { poder: 'cien_manos', torbe: 'cabezazo', upper: 'sumo_pisoton', anti: 'cien_manos' }, especiales: ['Cien manos', 'Pisotón de sumo', 'Cabezazo'] },
   { id: 'zangief', nombre: ['Zangief', 'Zangief'], movs: { poder: 'lariat', torbe: 'lariat', upper: 'golpe_oso', anti: 'patada_alta', agarrar: 'piledriver' }, especiales: ['Lariat', 'Golpe de oso', 'Lariat'] },
-  { id: 'dhalsim', nombre: ['Dhalsim', 'Dhalsim'], movs: { poder: 'yoga_fire', torbe: 'yoga_flame', upper: 'yoga_flame', anti: 'patada_alta' }, especiales: ['Yoga Fire', 'Yoga Flame', 'Yoga Flame'] },
+  { id: 'dhalsim', nombre: ['Dhalsim', 'Dhalsim'], movs: { golpe: 'yoga_golpe', golpe_fuerte: 'yoga_golpe_fuerte', patada: 'yoga_patada', patada_fuerte: 'yoga_patada', patada_agachado: 'yoga_patada_baja', barrida: 'yoga_patada_baja', poder: 'yoga_fire', torbe: 'yoga_flame', upper: 'yoga_flame', anti: 'yoga_patada' }, especiales: ['Yoga Fire', 'Yoga Flame', 'Yoga Flame'] },
   { id: 'balrog', nombre: ['Balrog', 'Balrog'], movs: { poder: 'puno_carrera', torbe: 'gancho_giro', upper: 'gancho_subida', anti: 'gancho_subida' }, especiales: ['Puño con carrera', 'Gancho', 'Gancho con giro'] },
   { id: 'vega', nombre: ['Vega', 'Vega'], movs: { poder: 'garra', torbe: 'rodar_vega', upper: 'clavado', anti: 'clavado' }, especiales: ['Garra', 'Clavado', 'Rodar'] },
   { id: 'sagat', nombre: ['Sagat', 'Sagat'], movs: { poder: 'tiger_shot', torbe: 'tiger_shot_bajo', upper: 'tiger_uppercut', anti: 'tiger_knee' }, especiales: ['Tiger Shot', 'Tiger Uppercut', 'Tiger Shot bajo'] },
@@ -58,5 +58,6 @@ export const DANO: Record<string, { daño: number; tumba?: boolean }> = {
   puno_carrera: { daño: 12, tumba: true }, gancho_giro: { daño: 13, tumba: true }, gancho_subida: { daño: 11, tumba: true },
   garra: { daño: 9 }, clavado: { daño: 12, tumba: true },
   tiger_uppercut: { daño: 14, tumba: true }, tiger_knee: { daño: 10 },
+  yoga_golpe: { daño: 5 }, yoga_golpe_fuerte: { daño: 9 }, yoga_patada: { daño: 9 }, yoga_patada_baja: { daño: 8, tumba: true },
   psycho_crusher: { daño: 13, tumba: true }, patada_tijera: { daño: 11, tumba: true }, cabezazo_bison: { daño: 10 },
 };

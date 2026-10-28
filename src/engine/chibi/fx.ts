@@ -379,15 +379,33 @@ export function estelaGolpe(talla: Talla, vertical = false): Efecto {
   for (let f = 0; f < 2; f++) {
     const r = createRaster(W, H);
     for (let i = 0; i < 3; i++) {
-      const L = (5 - f * 2) * k;
+      const L = (9 - f * 3) * k;
       for (let s = 0; s < L; s++) {
-        const x = vertical ? 3 * k + i * 4 * k + (f ? 1 : 0) : 2 * k + s + f * 2, y = vertical ? 2 * k + s + f * 2 : 3 * k + i * 4 * k + (f ? 1 : 0);
-        px(r, x, y, s === 0 ? hex('#ffffff') : hex('#d8e0ec'), 230 - s * 30);
+        const x = vertical ? 2 * k + i * 5 * k + (f ? 1 : 0) : 1 * k + s + f * 3, y = vertical ? 1 * k + s + f * 3 : 2 * k + i * 5 * k + (f ? 1 : 0);
+        px(r, x, y, s < 2 ? hex('#ffffff') : hex('#d8e0ec'), 240 - s * 18);
+        if (i === 1) px(r, vertical ? x + 1 : x, vertical ? y : y + 1, hex('#ffffff'), 150 - s * 12);
       }
     }
     frames.push(r);
   }
   return { id: vertical ? 'estela_patada' : 'estela_manos', frames, t: 3, loop: false, centro: [Math.round(W / 2), Math.round(H / 2)] };
+}
+/** Fuego en el puño (el shoryuken de Ken): una llama que sube y se apaga en tres cuadros. */
+export function fuegoPuno(talla: Talla): Efecto {
+  const k = talla === 32 ? 1 : 1.45;
+  const W = Math.round(14 * k), H = Math.round(16 * k), cx = W / 2, cy = H * 0.62;
+  const frames: Raster[] = [];
+  for (let f = 0; f < 3; f++) {
+    const c = capa(W, H);
+    const h = (10 - f * 2.5) * k, a = (5 - f) * k;
+    poligono(c, [[cx - a, cy + 3 * k], [cx + a, cy + 3 * k], [cx + a * 0.6, cy - h * 0.5], [cx + (f % 2 ? 1 : -1) * k, cy - h], [cx - a * 0.6, cy - h * 0.5]], hex('#e83a1a'), 0);
+    poligono(c, [[cx - a * 0.6, cy + 3 * k], [cx + a * 0.6, cy + 3 * k], [cx, cy - h * 0.55]], hex('#ff9a2a'), 0);
+    poligono(c, [[cx - a * 0.3, cy + 2 * k], [cx + a * 0.3, cy + 2 * k], [cx, cy - h * 0.25]], hex('#fff0a0'), 0);
+    const s = deCapa(c); const r = createRaster(W, H); r.data.set(s.data);
+    px(r, cx + (f - 1) * 3 * k, cy - h - 2 * k, hex('#ff9a2a'), 220); px(r, cx - (f - 1) * 2 * k, cy - h - 1, hex('#fff0a0'), 200);
+    frames.push(r);
+  }
+  return { id: 'fuego_puno', frames, t: 3, loop: false, centro: [Math.round(cx), Math.round(cy)] };
 }
 /** Llamas moradas del Psycho Crusher: quedan atrás y se apagan. */
 export function llamaPsycho(talla: Talla): Efecto {
@@ -443,9 +461,10 @@ export function efecto(id: string, look: Pick<ChibiLook, 'poder'>, talla: Talla)
   if (id === 'estela_patada') return estelaGolpe(talla, true);
   if (id === 'estela_manos') return estelaGolpe(talla, false);
   if (id === 'llama_psycho') return llamaPsycho(talla);
+  if (id === 'fuego_puno') return fuegoPuno(talla);
   if (id === 'garra') return garra(talla);
   return null;
 }
 export const EFECTOS = ['poder', 'poder_disipa', 'chispa', 'chispa_bloqueo', 'polvo', 'mareo', 'estela', 'salpica', ...EMOTES.map((e) => `emote_${e}`),
-  'sonic', 'kikoken', 'tiger', 'yoga_fire', 'yoga_flame', 'rayo_blanka', 'estela_patada', 'estela_manos', 'llama_psycho', 'garra'];
+  'sonic', 'kikoken', 'tiger', 'yoga_fire', 'yoga_flame', 'rayo_blanka', 'estela_patada', 'estela_manos', 'llama_psycho', 'garra', 'fuego_puno'];
 void luz;
