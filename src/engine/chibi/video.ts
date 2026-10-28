@@ -33,8 +33,8 @@ const GESTOS: Record<string, Gesto> = {
   golpe_debil: 'golpe', antiaereo: 'golpe', poder: 'golpe', barrida: 'golpe', agarrar: 'esfuerzo', uppercut_corto: 'golpe', uppercut: 'golpe',
   torbellino: 'golpe', golpeado_aire: 'dolor', recibir_poder: 'dolor', salto_patada: 'golpe', patada_agachado: 'golpe', caer: 'dolor', ko: 'ko',
   victoria: 'feliz', festejo: 'feliz', levantarse: 'dolor',
-  hoja_golpe: 'golpe', hoja_patada: 'golpe', hoja_patada_baja: 'golpe', hoja_barrida: 'golpe', hoja_hadouken: 'golpe', hoja_shoryuken: 'golpe',
-  hoja_golpeado: 'dolor', hoja_lanzado: 'dolor', hoja_caida: 'dolor',
+  hoja_golpe: 'golpe', hoja_patada: 'golpe', hoja_agarrar: 'esfuerzo', hoja_agachado: 'golpe', hoja_barrida: 'golpe', hoja_hadouken: 'golpe', hoja_shoryuken: 'golpe',
+  hoja_antiaereo: 'golpe', hoja_golpeado: 'dolor', hoja_caida: 'dolor', hoja_victoria: 'feliz',
   golpe_agachado: 'golpe', golpe_barril: 'golpe', patada_giro: 'golpe', shoryuken_barril: 'golpe', perfect: 'feliz',
 };
 
@@ -250,10 +250,10 @@ export const CLIPS_VIDEO_NOMBRES: Record<string, [string, string]> = {
   patada_agachado: ['Patada agachado', 'Crouching kick'], caer: ['Caer', 'Knockdown'], levantarse: ['Levantarse', 'Get up'], ko: ['KO', 'KO'],
   victoria: ['Victoria', 'Victory'], festejo: ['Festejo', 'Celebrate'],
   // la hoja de sprites de Ryu: cada fila es una animación limpia, cuadro por cuadro
-  hoja_reposo: ['Hoja · Reposo', 'Sheet · Idle'], hoja_guardia: ['Hoja · Guardia', 'Sheet · Guard'], hoja_caminar: ['Hoja · Caminar', 'Sheet · Walk'],
-  hoja_retroceder: ['Hoja · Retroceder', 'Sheet · Walk back'], hoja_golpe: ['Hoja · Golpe', 'Sheet · Punch'], hoja_patada: ['Hoja · Patada alta', 'Sheet · High kick'],
-  hoja_patada_baja: ['Hoja · Patada baja', 'Sheet · Low kick'], hoja_barrida: ['Hoja · Barrida', 'Sheet · Sweep'], hoja_hadouken: ['Hoja · Hadouken', 'Sheet · Hadouken'],
-  hoja_shoryuken: ['Hoja · Shoryuken', 'Sheet · Shoryuken'], hoja_golpeado: ['Hoja · Golpeado', 'Sheet · Hit'], hoja_lanzado: ['Hoja · Lanzado', 'Sheet · Thrown'],
+  hoja_reposo: ['Hoja · Reposo', 'Sheet · Idle'], hoja_victoria: ['Hoja · Victoria', 'Sheet · Victory'], hoja_caminar: ['Hoja · Caminar', 'Sheet · Walk'],
+  hoja_golpe: ['Hoja · Golpe', 'Sheet · Punch'], hoja_agarrar: ['Hoja · Agarrar', 'Sheet · Grab'], hoja_patada: ['Hoja · Patada alta', 'Sheet · High kick'],
+  hoja_agachado: ['Hoja · Agachado', 'Sheet · Crouch'], hoja_barrida: ['Hoja · Barrida', 'Sheet · Sweep'], hoja_hadouken: ['Hoja · Hadouken', 'Sheet · Hadouken'],
+  hoja_shoryuken: ['Hoja · Shoryuken', 'Sheet · Shoryuken'], hoja_antiaereo: ['Hoja · Patada antiaérea', 'Sheet · Anti-air kick'], hoja_golpeado: ['Hoja · Golpeado', 'Sheet · Hit'],
   hoja_caida: ['Hoja · Caída', 'Sheet · Knockdown'],
   // del segundo video (el bonus de los barriles)
   golpe_agachado: ['Golpe agachado', 'Crouching punch'], golpe_barril: ['Golpe al barril', 'Barrel punch'],
