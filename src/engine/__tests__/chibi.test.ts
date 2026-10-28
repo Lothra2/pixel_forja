@@ -6,7 +6,7 @@ import {
 import type { Raster } from '../core/raster';
 import { cuadroRepeticion, REP, pintarMuelle, MUELLE, piezas, camara, dibujoLuchador, cantidadDibujos } from '../chibi/repeticion';
 import { pintorFamilia, moldeDeDibujo } from '../chibi/repeticionFamilia';
-import { moldeDeTalla, pintarMolde } from '../chibi/video';
+import { moldeDeTalla, pintarMolde, moldeDeSilueta } from '../chibi/video';
 import REPM from '../chibi/video/repeticionMoldes.json';
 const MOLDES_REP = REPM.poses as Record<string, unknown>;
 
@@ -248,5 +248,39 @@ describe('chibi: las extremidades de goma de Dhalsim y el pie que patea', () => 
     expect(p.puntos.pieD[0]).toBeGreaterThan(p.puntos.manoD[0]);
     expect(p.puntos.pieD[1]).toBeLessThan(40);
     expect(p.puntos.pieT[1]).toBeGreaterThan(40);
+  });
+});
+
+describe('chibi: las poses dibujadas y las siluetas de los estilos', () => {
+  it('cada pose dibujada tiene cabeza, cuerpo y puntos de mano y pie', () => {
+    const look = familiar('rick', 'pelea');
+    for (const id of ['sonic_brazo', 'electrico', 'bola1', 'bola2', 'palma1', 'palma2', 'lariat1', 'lariat2', 'torpedo_honda', 'torpedo_bison', 'giratoria1', 'giratoria2']) {
+      const m = MOLDES[id];
+      expect(m, id).toBeTruthy();
+      expect(m.filas.some((f) => f.includes('H')), `${id} sin pelo`).toBe(true);
+      expect(m.filas.some((f) => /[CD]/.test(f)), `${id} sin ropa`).toBe(true);
+      expect(m.filas.every((f) => f.length === m.w), `${id} filas parejas`).toBe(true);
+      const p = pintarMolde(look, id);
+      expect(p.hurt[2]).toBeGreaterThan(8); expect(p.hurt[3]).toBeGreaterThan(8);
+    }
+    // la mano abierta (M) cuenta como mano: el sonic boom sale del brazo estirado, la palma de Honda pega adelante
+    const sonic = pintarMolde(look, 'sonic_brazo'), palma = pintarMolde(look, 'palma1'), guardia = pintarMolde(look, 'h47');
+    const alcance = (p: ReturnType<typeof pintarMolde>) => p.puntos.manoD[0] - p.puntos.pieT[0];
+    expect(alcance(sonic)).toBeGreaterThan(alcance(guardia) + 4);
+    expect(alcance(palma)).toBeGreaterThan(alcance(guardia) + 4);
+    // los torpedos llevan la cabeza adelante y derecha
+    expect(MOLDES.torpedo_honda.cabeza?.recto).toBe(true);
+    expect(pintarMolde(look, 'torpedo_honda').puntos.cabeza[0]).toBeGreaterThan(pintarMolde(look, 'torpedo_honda').puntos.pieT[0] + 10);
+  });
+  it('la silueta ancha agrega dos columnas y la flaca quita dos, sin tocar la altura', () => {
+    const m = MOLDES.h47;
+    const ancho = moldeDeSilueta(m, 'fornido'), flaco = moldeDeSilueta(m, 'flaco');
+    expect(ancho.w).toBe(m.w + 2); expect(flaco.w).toBe(m.w - 2);
+    expect(ancho.h).toBe(m.h); expect(flaco.h).toBe(m.h);
+    expect(moldeDeSilueta(MOLDES.torpedo_honda, 'fornido')).toBe(MOLDES.torpedo_honda);
+    const look = familiar('rick', 'pelea');
+    const a = pintarMolde({ ...look, silueta: 'fornido' }, 'h47'), b = pintarMolde(look, 'h47');
+    expect(a.hurt[2]).toBe(b.hurt[2] + 2);
+    expect(a.puntos.pieT[1]).toBe(b.puntos.pieT[1]);
   });
 });

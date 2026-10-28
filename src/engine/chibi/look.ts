@@ -8,6 +8,8 @@ export const TALLAS: Talla[] = [32, 48];
 
 export type Especie = 'humano' | 'perro';
 export type Contextura = 'adulto' | 'hombre' | 'mujer' | 'robusta' | 'nino' | 'pequena' | 'abuela';
+/** Silueta extra de un estilo de pelea sobre el cuerpo del video: ancho (Zangief, Honda) o flaco (Dhalsim). */
+export type Silueta = 'fornido' | 'flaco';
 
 export type Peinado =
   | 'corto' | 'puntas' | 'atras' | 'raya' | 'rapado' | 'calvo' | 'afro' | 'rizos' | 'largo' | 'cola'
@@ -40,6 +42,8 @@ export interface ChibiLook {
   nombre: string;
   especie: Especie;
   contextura: Contextura;
+  /** Solo en la arena: la silueta del estilo elegido. */
+  silueta?: Silueta;
   piel: string;
   pelo: { estilo: Peinado; color: string; color2?: string };
   ojos: { estilo: Ojos; color: string };

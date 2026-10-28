@@ -1,11 +1,12 @@
 import { createRaster, type Raster } from '../core/raster';
-import type { ChibiLook, Contextura } from './look';
+import type { ChibiLook, Contextura, Silueta } from './look';
 import type { Gesto } from './head';
 import { MARGEN } from './cabezaMolde';
 import { recolorMolde, VACIO_RC } from './recolor';
 import { hex, sombra, mezcla } from './paint';
 import type { Clip, Cuadro, Punto } from './clips';
 import DATA from './video/moldes.json';
+import { posesDibujadas } from './posesDibujadas';
 
 /**
  * Los moldes del video: cada pose de Ryu y Ken calcada pixel por pixel del video de referencia (@DAVE.XP, chibis de
@@ -15,7 +16,7 @@ import DATA from './video/moldes.json';
  * molde y se pone la cabeza del familiar en el mismo lugar y girada igual. Los puños quedan por delante de la cara.
  */
 
-interface InfoCabeza { k: number; chin: [number, number]; top: number; ancho: number; espalda: boolean; cara: number; frente?: boolean }
+interface InfoCabeza { k: number; chin: [number, number]; top: number; ancho: number; espalda: boolean; cara: number; frente?: boolean; recto?: boolean }
 export interface Molde { w: number; h: number; filas: string[]; cabeza: InfoCabeza | null; espejo: boolean }
 type CuadroMolde = [string, number, number, number, boolean];
 interface Datos { poses: Record<string, Molde>; clips: Record<string, { loop: boolean; cuadros: CuadroMolde[] }>; nombres: Record<string, string>; golpes: Record<string, string[]>; extra: { poder_suelta: string } }
@@ -47,6 +48,8 @@ export function estirarMolde(m: Molde, e: Estirada, n: number): Molde {
 /** Cuánto se estira: hasta 16 columnas, lo que cabe en la celda del video. */
 export const ESTIRES = [4, 8, 12, 16];
 for (const [id, e] of Object.entries(ESTIRADAS)) for (const n of ESTIRES) MOLDES[`${id}_e${n}`] = estirarMolde(MOLDES[id], e, n);
+// las poses dibujadas para los estilos (torpedo, sonic boom, lariat, bola, palmas, electricidad, patada giratoria)
+Object.assign(MOLDES, posesDibujadas(MOLDES));
 /** Celda de los moldes a 32 (ancho, alto) y la línea del piso. */
 export const CELDA_VIDEO: [number, number] = [56, 48];
 export const PISO_VIDEO = 44;
@@ -132,7 +135,7 @@ function taparHuecos(img: Raster, max: number): void {
 export function pintarMolde(look: ChibiLook, id: string, espejo = false, _gesto: Gesto = 'normal'): PintadoMolde {
   const m0 = MOLDES[id];
   if (!m0) throw new Error(`No hay molde "${id}"`);
-  const m = moldeDeTalla(m0, look.contextura).molde;
+  const m = moldeDeSilueta(moldeDeTalla(m0, look.contextura).molde, look.silueta);
   const [W, H] = CELDA_VIDEO;
   const ox = Math.round(W / 2 - m.w / 2), oy = PISO_VIDEO - m.h;
   const img = vestirMolde(look, m, W, H, ox, oy);
@@ -160,9 +163,39 @@ export function pintarMolde(look: ChibiLook, id: string, espejo = false, _gesto:
   const cabeza = busca('HhRrSE', true);
   return {
     img, ancla: [Math.floor(W / 2), PISO_VIDEO],
-    puntos: { manoD: busca('B', true), manoT: busca('B', false), pieD: punta(), pieT: busca('P', false), cabeza, centro: [(x0 + x1) / 2, (y0 + y1) / 2], util: busca('B', true) },
+    puntos: { manoD: busca('BM', true), manoT: busca('BM', false), pieD: punta(), pieT: busca('P', false), cabeza, centro: [(x0 + x1) / 2, (y0 + y1) / 2], util: busca('BM', true) },
     hurt: [x0, y0, Math.max(1, x1 - x0 + 1), Math.max(1, y1 - y0 + 1)],
   };
+}
+
+/**
+ * La silueta de un estilo: ancho (Zangief, Honda) repite dos veces la columna del medio de cada fila, flaco (Dhalsim)
+ * quita las dos del medio. Donde el medio es un hueco entre las piernas, el hueco se abre o se cierra. Solo con el
+ * cuerpo de pie bajo la cabeza; acostado o de cabeza el molde queda igual.
+ */
+const siluetas = new WeakMap<Molde, Map<Silueta, Molde>>();
+export function moldeDeSilueta(m: Molde, s?: Silueta): Molde {
+  if (!s || !m.cabeza || m.cabeza.recto) return m;
+  let c = siluetas.get(m);
+  if (!c) { c = new Map(); siluetas.set(m, c); }
+  const hecho = c.get(s);
+  if (hecho) return hecho;
+  // de pie: la cabeza (pelo) arriba del cuerpo
+  let yCab = -1, yCue = m.h;
+  for (let y = 0; y < m.h; y++) for (const ch of m.filas[y]) { if (ch === 'H') yCab = Math.max(yCab, y); if ('CDLP'.includes(ch)) yCue = Math.min(yCue, y); }
+  if (yCab < 0 || yCue <= yCab - 6) { c.set(s, m); return m; }
+  const filas = m.filas.map((f) => {
+    const a = f.search(/[^.]/), b = f.length - 1 - [...f].reverse().findIndex((ch) => ch !== '.');
+    if (a < 0) return s === 'fornido' ? f + '..' : f.slice(2);
+    const mid = Math.floor((a + b) / 2);
+    // una fila angosta (la punta del pelo) solo se corre un pixel hacia el medio
+    if (b - a < 4) return s === 'fornido' ? '.' + f + '.' : b < f.length - 1 && a > 0 ? f.slice(1, -1) : f.slice(2);
+    return s === 'fornido' ? f.slice(0, mid) + f[mid] + f[mid] + f.slice(mid) : f.slice(0, mid - 1) + f.slice(mid + 1);
+  });
+  const w = Math.max(...filas.map((f) => f.length));
+  const out: Molde = { ...m, w, filas: filas.map((f) => f.padEnd(w, '.')) };
+  c.set(s, out);
+  return out;
 }
 
 /** Cuántas líneas de cuerpo pierden las niñas y los niños (la cabeza queda del mismo tamaño). */
@@ -330,28 +363,27 @@ export function clipsVideo(): Clip[] {
   const P = (pose: string, t: number, extra?: Ex): [string, number, Ex?] => [pose, t, extra];
   const rep = (n: number, fr: [string, number, Ex?][]) => Array.from({ length: n }, () => fr).flat();
   const copia = (de: string, id: string, es: string, en: string, f: (q: Cuadro, i: number) => Cuadro) => { const c = out.find((x) => x.id === de); if (c) out.push({ ...c, id, nombre: [es, en], cuadros: c.cuadros.map(f) }); };
-  const GIRO = ['kc2', 'kc3', 'kc4', 'kc5', 'kc6', 'kc7', 'kc8'];
   // Ken: el shoryuken con chispas de fuego en el puño
   copia('uppercut', 'shoryuken_ken', 'Shoryuken de fuego', 'Fire shoryuken', (q, i) => (q.golpe ? { ...q, fx: { id: 'fuego_puno', en: 'manoD', dx: 1 } } : i === 4 ? { ...q, sonido: 'whoosh_fuerte' } : q));
   // Chun-Li
   A('kikoken', 'Kikoken', 'Kikoken', false, [P('h33', 4), P('h34', 4), P('h35', 4), P('h36', 6, { fx: { id: 'kikoken', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 14), P('h47', 4)], 'golpe');
   A('patadas_relampago', 'Patadas relámpago', 'Lightning legs', false, [P('h22', 3), ...rep(4, [P('h23', 2, { golpe: 'pieD' }), P('h24', 2, { golpe: 'pieD', fx: { id: 'estela_patada', en: 'pieD' } }), P('h25', 2, { golpe: 'pieD', sonido: 'whoosh' }), P('h24', 2, { golpe: 'pieD' })]), P('h22', 4)], 'golpe');
-  A('patada_giratoria', 'Patada giratoria', 'Spinning bird kick', false, [P('kc19', 3), ...rep(2, GIRO.map((g, i) => P(g, 3, { dy: 14, dx: 5, golpe: i % 2 ? 'pieD' : undefined, fx: i % 2 ? { id: 'estela_patada', en: 'pieD' } : undefined }))), P('kc56', 4, { dy: 0 }), P('h47', 3)], 'golpe');
+  A('patada_giratoria', 'Patada giratoria', 'Spinning bird kick', false, [P('kc19', 3), P('kc15', 3, { dy: 8, dx: 2 }), ...rep(4, [P('giratoria1', 3, { dy: 16, dx: 5, golpe: 'pieD', fx: { id: 'estela_patada', en: 'pieD' }, sonido: 'whoosh' }), P('giratoria2', 3, { dy: 17, dx: 5, golpe: 'pieD' })]), P('kc17', 3, { dy: 8, dx: 2 }), P('kc56', 4, { dy: 0 }), P('h47', 3)], 'golpe');
   A('patada_alta', 'Patada alta', 'High kick', false, [P('h22', 3), P('h23', 3), P('h24', 8, { golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('h25', 4), P('h27', 4)], 'golpe');
   // Guile
-  A('sonic_boom', 'Sonic Boom', 'Sonic Boom', false, [P('h33', 3), P('h34', 3), P('h36', 5, { fx: { id: 'sonic', en: 'manoD', dx: 4 }, sonido: 'poder' }), P('h37', 10), P('h47', 4)], 'golpe');
+  A('sonic_boom', 'Sonic Boom', 'Sonic Boom', false, [P('h33', 3), P('h34', 3), P('sonic_brazo', 5, { fx: { id: 'sonic', en: 'manoD', dx: 5 }, sonido: 'poder' }), P('sonic_brazo', 8), P('h37', 4), P('h47', 4)], 'golpe');
   copia('antiaereo', 'flash_kick', 'Flash Kick', 'Flash Kick', (q, i) => ({ ...q, dy: (q.dy ?? 0) + (i > 2 && i < 12 ? 10 : 0), fx: q.golpe ? { id: 'estela_patada', en: 'pieD' } : q.fx }));
   // Blanka
-  A('electricidad', 'Electricidad', 'Electricity', false, [P('h46', 4, { fx: { id: 'rayo_blanka', en: 'centro' }, sonido: 'poder' }), P('h47', 6), P('h46', 6), P('h47', 6)], 'bravo');
-  A('rodar', 'Rodar', 'Rolling attack', false, [P('kc19', 3), ...rep(4, [P('h6', 3, { dx: 8, golpe: 'cuerpo' }), P('h7', 3, { dx: 8, golpe: 'cuerpo' }), P('h8', 3, { dx: 8, golpe: 'cuerpo' })]), P('h9', 4), P('h47', 4)], 'golpe');
-  A('rodar_alto', 'Rodar hacia arriba', 'Vertical roll', false, [P('kc19', 3), P('h6', 4, { dy: 14, golpe: 'cuerpo' }), P('h7', 4, { dy: 30, golpe: 'cuerpo' }), P('h8', 4, { dy: 36, golpe: 'cuerpo' }), P('h6', 4, { dy: 30 }), P('h7', 4, { dy: 14 }), P('h9', 6, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 4)], 'golpe');
+  A('electricidad', 'Electricidad', 'Electricity', false, [P('electrico', 3, { fx: { id: 'rayo_blanka', en: 'centro' }, sonido: 'poder' }), ...rep(3, [P('electrico', 3, { dx: 1 }), P('electrico', 3, { dx: -1 })]), P('h47', 4)], 'bravo');
+  A('rodar', 'Rodar', 'Rolling attack', false, [P('bola1', 3), ...rep(6, [P('bola1', 3, { dx: 8, dy: 2, golpe: 'cuerpo' }), P('bola2', 3, { dx: 8, dy: 0, golpe: 'cuerpo', fx: { id: 'polvo', en: 'centro', dx: -6 } })]), P('bola1', 3), P('h47', 4)], 'golpe');
+  A('rodar_alto', 'Rodar hacia arriba', 'Vertical roll', false, [P('bola1', 3), P('bola2', 4, { dy: 14, dx: 2, golpe: 'cuerpo' }), P('bola1', 4, { dy: 30, dx: 2, golpe: 'cuerpo' }), P('bola2', 4, { dy: 36, dx: 2, golpe: 'cuerpo' }), P('bola1', 4, { dy: 30, dx: 2 }), P('bola2', 4, { dy: 14, dx: 2 }), P('bola1', 6, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 4)], 'golpe');
   A('mordida', 'Mordida', 'Bite', false, [P('h50', 4), P('h51', 6, { golpe: 'manoD' }), P('h52', 8), P('h47', 4)], 'esfuerzo');
   // E. Honda
-  A('cien_manos', 'Cien manos', 'Hundred hand slap', false, [P('h55', 2), ...rep(5, [P('h56', 2, { golpe: 'manoD', fx: { id: 'estela_manos', en: 'manoD', dx: 4 } }), P('h55', 2, { golpe: 'manoD' })]), P('h47', 4)], 'golpe');
-  A('cabezazo', 'Cabezazo', 'Headbutt', false, [P('kc19', 4), P('h7', 6, { dx: 14, dy: 8, golpe: 'cabeza', sonido: 'whoosh_fuerte', fx: { id: 'estela_manos', en: 'centro', dx: -8 } }), P('h7', 6, { dx: 14, dy: 7, golpe: 'cabeza', fx: { id: 'estela_manos', en: 'centro', dx: -8 } }), P('h7', 5, { dx: 8, dy: 3 }), P('h9', 5, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 5)], 'golpe');
+  A('cien_manos', 'Cien manos', 'Hundred hand slap', false, [P('h55', 2), ...rep(5, [P('palma1', 2, { golpe: 'manoD', fx: { id: 'estela_manos', en: 'manoD', dx: 3 } }), P('palma2', 2, { golpe: 'manoD' })]), P('h47', 4)], 'golpe');
+  A('cabezazo', 'Cabezazo', 'Headbutt', false, [P('kc19', 4), ...rep(3, [P('torpedo_honda', 3, { dx: 14, dy: 8, golpe: 'cabeza', sonido: 'whoosh_fuerte', fx: { id: 'estela_manos', en: 'centro', dx: -14 } }), P('torpedo_honda', 3, { dx: 14, dy: 7, golpe: 'cabeza' })]), P('torpedo_honda', 4, { dx: 6, dy: 3 }), P('h9', 5, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 5)], 'golpe');
   A('sumo_pisoton', 'Pisotón de sumo', 'Sumo stomp', false, [P('h53', 5), P('kc17', 6, { dy: 18 }), P('kc17', 6, { dy: 30 }), P('kc17', 6, { dy: 18 }), P('h53', 8, { dy: 0, golpe: 'cuerpo', fx: { id: 'polvo', en: 'centro' }, sonido: 'caer' }), P('h47', 4)], 'golpe');
   // Zangief
-  A('lariat', 'Lariat', 'Lariat', false, [...rep(2, GIRO.map((g, i) => P(g, 3, { golpe: i % 2 ? undefined : 'manoD', fx: i % 2 ? undefined : { id: 'estela_manos', en: 'manoD' } }))), P('h47', 4)], 'golpe');
+  A('lariat', 'Lariat', 'Lariat', false, [...rep(5, [P('lariat1', 3, { dx: 2, golpe: 'manoD', fx: { id: 'estela_manos', en: 'manoD' }, sonido: 'whoosh' }), P('kc4', 3, { dx: 2 }), P('lariat2', 3, { dx: 2, golpe: 'manoD', fx: { id: 'estela_manos', en: 'manoT' } }), P('kc7', 3, { dx: 2 })]), P('h47', 4)], 'golpe');
   A('golpe_oso', 'Golpe de oso', 'Bear punch', false, [P('h15', 4), P('h16', 4), P('h17', 8, { dy: 8, golpe: 'manoD', sonido: 'whoosh_fuerte' }), P('h18', 6, { dy: 10 }), P('h21', 6, { dy: 0 }), P('h47', 4)], 'golpe');
   A('piledriver', 'Piledriver', 'Piledriver', false, [P('h50', 4), P('h51', 4), P('kc15', 5, { dy: 12 }), P('kc16', 5, { dy: 26 }), P('kc17', 5, { dy: 30 }), P('kc16', 5, { dy: 18 }), P('kc15', 4, { dy: 6 }), P('h9', 10, { dy: 0, fx: { id: 'polvo', en: 'centro' }, sonido: 'caer' }), P('h47', 4)], 'esfuerzo');
   // Dhalsim
@@ -376,7 +408,7 @@ export function clipsVideo(): Clip[] {
   copia('uppercut', 'tiger_uppercut', 'Tiger Uppercut', 'Tiger Uppercut', (q) => q);
   A('tiger_knee', 'Tiger Knee', 'Tiger Knee', false, [P('kc19', 3), P('kc47', 8, { dy: 12, dx: 16, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('kc48', 8, { dy: 8, dx: 10, golpe: 'pieD' }), P('kc56', 5, { dy: 0 }), P('h47', 3)], 'golpe');
   // M. Bison
-  A('psycho_crusher', 'Psycho Crusher', 'Psycho Crusher', false, [P('kc15', 4, { dy: 6, sonido: 'poder' }), ...rep(3, [P('h7', 5, { dy: 10, dx: 14, golpe: 'cuerpo', fx: { id: 'llama_psycho', en: 'centro', dx: -6 } }), P('h8', 5, { dy: 10, dx: 14, golpe: 'cuerpo', fx: { id: 'llama_psycho', en: 'centro', dx: -6 } })]), P('h9', 6, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 4)], 'golpe');
+  A('psycho_crusher', 'Psycho Crusher', 'Psycho Crusher', false, [P('kc15', 4, { dy: 6, sonido: 'poder' }), ...rep(4, [P('torpedo_bison', 4, { dy: 10, dx: 14, golpe: 'manoD', fx: { id: 'llama_psycho', en: 'centro', dx: -10 } }), P('torpedo_bison', 4, { dy: 11, dx: 14, golpe: 'manoD', fx: { id: 'llama_psycho', en: 'centro', dx: 2 } })]), P('h9', 6, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 4)], 'golpe');
   A('patada_tijera', 'Patada tijera', 'Scissor kick', false, [P('kc19', 3), P('kc47', 5, { dy: 14, dx: 10, golpe: 'pieD', sonido: 'whoosh_fuerte' }), P('h24', 6, { dy: 18, dx: 12, golpe: 'pieD' }), P('kc48', 6, { dy: 12, dx: 10, golpe: 'pieD' }), P('kc56', 6, { dy: 0 }), P('h47', 4)], 'golpe');
   A('cabezazo_bison', 'Pisotón de cabeza', 'Head stomp', false, [P('kc19', 3), P('kc15', 4, { dy: 16, dx: 6, sonido: 'whoosh' }), P('kc16', 4, { dy: 30, dx: 8 }), P('kc17', 6, { dy: 22, dx: 10, golpe: 'pieD' }), P('kc17', 6, { dy: 8, dx: 8, golpe: 'pieD' }), P('kc56', 5, { dy: 0, fx: { id: 'polvo', en: 'centro' } }), P('h47', 3)], 'golpe');
   // correr: la caminata del video a doble ritmo

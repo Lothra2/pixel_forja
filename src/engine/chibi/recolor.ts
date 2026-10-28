@@ -10,7 +10,7 @@ import { MARGEN } from './cabezaMolde';
  * borde del pelo. Nada se reconstruye: lo que no se puede decir en dos pixeles no se dibuja.
  */
 
-export interface MoldeRecolor { w: number; h: number; filas: string[]; cabeza: { cara: number; espalda: boolean } | null }
+export interface MoldeRecolor { w: number; h: number; filas: string[]; cabeza: { cara: number; espalda: boolean; recto?: boolean } | null }
 
 const NEGRO = hex('#100c14');
 export const VACIO_RC = -1;
@@ -63,7 +63,7 @@ export function paletaMolde(look: ChibiLook): Record<string, number> {
   const banda = g && BANDAS.has(g.estilo) ? subir(hex(g.color), 50) : cubre && g.color2 ? subir(hex(g.color2), 50) : null;
   return {
     K: NEGRO, k: NEGRO, E: NEGRO, H: pelo, h: peloH, R: banda ?? pelo, r: banda ? sombra(banda) : pelo,
-    S: piel, A: piel, P: zap, C: arr, c: arrS, D: aba, d: abaS, L: cint, B: gua, W: hex('#f4f2ee'), F: hex('#fbfaf2'),
+    S: piel, A: piel, M: piel, P: zap, C: arr, c: arrS, D: aba, d: abaS, L: cint, B: gua, W: hex('#f4f2ee'), F: hex('#fbfaf2'),
   };
 }
 
@@ -94,7 +94,8 @@ export function recolorMolde(look: ChibiLook, m: MoldeRecolor, tinte?: (x: numbe
     if (CAB.has(ch) && ch !== 'k') { hx += x; hy += y; hn++; } else if (!CAB.has(ch)) { bx += x; by += y; bn++; }
   }
   let k = 0;
-  if (hn && bn) { const vx = bx / bn - hx / hn, vy = by / bn - hy / hn; k = Math.abs(vy) >= Math.abs(vx) ? (vy > 0 ? 0 : 2) : vx > 0 ? 1 : 3; }
+  // `recto`: la cabeza va derecha aunque el cuerpo esté acostado (cabezazo, torpedo)
+  if (hn && bn && !m.cabeza.recto) { const vx = bx / bn - hx / hn, vy = by / bn - hy / hn; k = Math.abs(vy) >= Math.abs(vx) ? (vy > 0 ? 0 : 2) : vx > 0 ? 1 : 3; }
   const U = girar(base, k), C = girar(col0, k);
   const H = U.length, W = U[0].length;
   const en = (x: number, y: number) => (x >= 0 && y >= 0 && x < W && y < H ? U[y][x] : '.');

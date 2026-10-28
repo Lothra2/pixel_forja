@@ -10,6 +10,8 @@ export type Boton = 'golpe' | 'golpe_fuerte' | 'golpe_agachado' | 'patada' | 'pa
 export interface Estilo {
   id: EstiloId;
   nombre: [string, string];
+  /** La silueta del estilo sobre el cuerpo del familiar: ancho o flaco. */
+  silueta?: 'fornido' | 'flaco';
   /** Clip por botón; lo que no esté sale del estilo base (Ryu). */
   movs: Partial<Record<Boton, string>>;
   /** Cómo se llaman los tres especiales en la pantalla (poder, upper, torbe). */
@@ -28,9 +30,9 @@ export const ESTILOS: Estilo[] = [
   { id: 'chunli', nombre: ['Chun-Li', 'Chun-Li'], movs: { poder: 'kikoken', upper: 'patadas_relampago', torbe: 'patada_giratoria', anti: 'patada_alta', patada: 'patada_alta' }, especiales: ['Kikoken', 'Patadas relámpago', 'Patada giratoria'] },
   { id: 'guile', nombre: ['Guile', 'Guile'], movs: { poder: 'sonic_boom', upper: 'flash_kick', anti: 'flash_kick', torbe: 'patada_alta' }, especiales: ['Sonic Boom', 'Flash Kick', 'Patada alta'] },
   { id: 'blanka', nombre: ['Blanka', 'Blanka'], movs: { poder: 'electricidad', torbe: 'rodar', upper: 'rodar_alto', anti: 'electricidad', agarrar: 'mordida' }, especiales: ['Electricidad', 'Rodar hacia arriba', 'Rodar'] },
-  { id: 'honda', nombre: ['E. Honda', 'E. Honda'], movs: { poder: 'cien_manos', torbe: 'cabezazo', upper: 'sumo_pisoton', anti: 'cien_manos' }, especiales: ['Cien manos', 'Pisotón de sumo', 'Cabezazo'] },
-  { id: 'zangief', nombre: ['Zangief', 'Zangief'], movs: { poder: 'lariat', torbe: 'lariat', upper: 'golpe_oso', anti: 'patada_alta', agarrar: 'piledriver' }, especiales: ['Lariat', 'Golpe de oso', 'Lariat'] },
-  { id: 'dhalsim', nombre: ['Dhalsim', 'Dhalsim'], movs: { golpe: 'yoga_golpe', golpe_fuerte: 'yoga_golpe_fuerte', patada: 'yoga_patada', patada_fuerte: 'yoga_patada', patada_agachado: 'yoga_patada_baja', barrida: 'yoga_patada_baja', poder: 'yoga_fire', torbe: 'yoga_flame', upper: 'yoga_flame', anti: 'yoga_patada' }, especiales: ['Yoga Fire', 'Yoga Flame', 'Yoga Flame'] },
+  { id: 'honda', nombre: ['E. Honda', 'E. Honda'], silueta: 'fornido', movs: { poder: 'cien_manos', torbe: 'cabezazo', upper: 'sumo_pisoton', anti: 'cien_manos' }, especiales: ['Cien manos', 'Pisotón de sumo', 'Cabezazo'] },
+  { id: 'zangief', nombre: ['Zangief', 'Zangief'], silueta: 'fornido', movs: { poder: 'lariat', torbe: 'lariat', upper: 'golpe_oso', anti: 'patada_alta', agarrar: 'piledriver' }, especiales: ['Lariat', 'Golpe de oso', 'Lariat'] },
+  { id: 'dhalsim', nombre: ['Dhalsim', 'Dhalsim'], silueta: 'flaco', movs: { golpe: 'yoga_golpe', golpe_fuerte: 'yoga_golpe_fuerte', patada: 'yoga_patada', patada_fuerte: 'yoga_patada', patada_agachado: 'yoga_patada_baja', barrida: 'yoga_patada_baja', poder: 'yoga_fire', torbe: 'yoga_flame', upper: 'yoga_flame', anti: 'yoga_patada' }, especiales: ['Yoga Fire', 'Yoga Flame', 'Yoga Flame'] },
   { id: 'balrog', nombre: ['Balrog', 'Balrog'], movs: { poder: 'puno_carrera', torbe: 'gancho_giro', upper: 'gancho_subida', anti: 'gancho_subida' }, especiales: ['Puño con carrera', 'Gancho', 'Gancho con giro'] },
   { id: 'vega', nombre: ['Vega', 'Vega'], movs: { poder: 'garra', torbe: 'rodar_vega', upper: 'clavado', anti: 'clavado' }, especiales: ['Garra', 'Clavado', 'Rodar'] },
   { id: 'sagat', nombre: ['Sagat', 'Sagat'], movs: { poder: 'tiger_shot', torbe: 'tiger_shot_bajo', upper: 'tiger_uppercut', anti: 'tiger_knee' }, especiales: ['Tiger Shot', 'Tiger Uppercut', 'Tiger Shot bajo'] },

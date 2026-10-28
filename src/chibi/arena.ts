@@ -157,7 +157,8 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
   const proyectiles: { x: number; y: number; dir: number; e: Efecto; dueño: Luchador; vivo: boolean; f: number; d: { daño: number; tumba?: boolean } }[] = [];
   const chispas: { x: number; y: number; e: Efecto; f: number; t: number; esp: boolean }[] = [];
   const PISO = () => esc.piso;
-  const nuevo = (look: ChibiLook, x: number, mira: 1 | -1, cpu: boolean, estilo: EstiloId): Luchador => {
+  const nuevo = (look0: ChibiLook, x: number, mira: 1 | -1, cpu: boolean, estilo: EstiloId): Luchador => {
+    const look = { ...look0, silueta: ESTILO_DE[estilo].silueta };
     const c = clipsDe(look).find((k) => k.id === 'reposo')!;
     return { look, nombre: look.nombre, estilo, x, mira, clip: c, cuadros: pintarClip(look, 32, c), i: 0, t: 0, vida: 100, bloqueando: false, golpeado: false, pegó: false, cpu, espera: 30, quieto: 0, tecla: {} };
   };
@@ -187,7 +188,7 @@ export function montarArena(s: HTMLElement, ctx0: Ctx) {
     cam = esc.w / 2 - VW / 2; cartel = 90; cartelTxt = `ROUND ${ronda}`; fin = 0; reloj = 99 * 60;
     paseoReiniciar();
   }
-  ctx0.oyente(() => { if (modo === 'pelea' && p1) { p1.look = ctx0.look(); p1.nombre = p1.look.nombre; poner(p1, 'reposo'); } });
+  ctx0.oyente(() => { if (modo === 'pelea' && p1) { p1.look = { ...ctx0.look(), silueta: ESTILO_DE[p1.estilo].silueta }; p1.nombre = p1.look.nombre; poner(p1, 'reposo'); } });
 
   // ---- control de cada luchador: jugador o compu
   const entrada = (L: Luchador, otro: Luchador) => {
