@@ -1,8 +1,9 @@
 import { createRaster, type Raster } from '../core/raster';
 import type { ChibiLook, Contextura } from './look';
 import type { Gesto } from './head';
-import { vestirCabezaMolde, MARGEN } from './cabezaMolde';
-import { capa, hex, sombra, mezcla, VACIO, legible, sombraLegible } from './paint';
+import { MARGEN } from './cabezaMolde';
+import { recolorMolde, VACIO_RC } from './recolor';
+import { hex, sombra, mezcla } from './paint';
 import type { Clip, Cuadro, Punto } from './clips';
 import DATA from './video/moldes.json';
 
@@ -26,7 +27,6 @@ export const CELDA_VIDEO: [number, number] = [56, 48];
 export const PISO_VIDEO = 44;
 
 const CABEZA = new Set(['H', 'h', 'R', 'r', 'S', 'E', 'k']);
-const NEGRO = hex('#100c14');
 
 /** Gestos de la cara por animación (el molde no trae cara: la pone el familiar). */
 const GESTOS: Record<string, Gesto> = {
@@ -37,22 +37,6 @@ const GESTOS: Record<string, Gesto> = {
   hoja_golpeado: 'dolor', hoja_lanzado: 'dolor', hoja_caida: 'dolor',
   golpe_agachado: 'golpe', golpe_barril: 'golpe', patada_giro: 'golpe', shoryuken_barril: 'golpe', perfect: 'feliz',
 };
-
-/** Colores de cada parte del molde para un muñeco. */
-function colores(look: ChibiLook): Record<string, number> {
-  const piel = hex(look.piel);
-  const arriba = look.arriba.estilo === 'nada' ? piel : legible(hex(look.arriba.color));
-  const abajo = legible(hex(look.abajo.color));
-  const zapato = look.zapatos.estilo === 'descalzo' ? piel : legible(hex(look.zapatos.color));
-  const guante = look.guantes ? legible(hex(look.guantes)) : piel;
-  const cint = look.accesorio?.estilo === 'cinturon' ? hex(look.accesorio.color)
-    : ['gi', 'gi_sin_mangas', 'kimono'].includes(look.arriba.estilo) ? hex(look.arriba.color3 ?? '#33251c')
-    : sombraLegible(abajo);
-  return {
-    K: NEGRO, A: piel, P: zapato, C: arriba, c: sombraLegible(arriba), D: abajo, d: sombraLegible(abajo), L: cint, B: guante,
-    W: hex('#f4f2ee'), F: hex('#fbfaf2'),
-  };
-}
 
 export interface PintadoMolde { img: Raster; ancla: [number, number]; puntos: Record<Punto, [number, number]>; hurt: [number, number, number, number] }
 
@@ -216,8 +200,6 @@ export function espejar(img: Raster): void {
  * los colores del muñeco y la cabeza del familiar en el lugar y con el giro de la del molde.
  */
 export function vestirMolde(look: ChibiLook, m: Molde, W: number, H: number, ox: number, oy: number): Raster {
-  const col = colores(look);
-  const cuerpo = capa(W, H, false);
   // estampados de la ropa de arriba: rayas y cuadros siguen la grilla del molde
   const pat = look.arriba.estampado ?? 'liso';
   const c2 = hex(look.arriba.color2 ?? '#f4f2ee');
@@ -234,44 +216,24 @@ export function vestirMolde(look: ChibiLook, m: Molde, W: number, H: number, ox:
       emblema = new Set([[0, 0], [1, 0], [0, 1], [1, 1]].map(([dx, dy]) => (cy + dy) * m.w + cx + dx));
     }
   }
-  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
-    const ch = m.filas[y][x];
-    if (ch === '.' || CABEZA.has(ch)) continue;
-    let v = col[ch] ?? NEGRO;
+  const tinte = (x: number, y: number, ch: string, v: number) => {
     if ((ch === 'C' || ch === 'c') && pat !== 'liso') {
-      if (pat === 'rayas' && y % 3 === 0) v = ch === 'c' ? sombra(c2) : c2;
-      else if (pat === 'cuadros' && (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0) v = mezcla(v, c2, 0.5);
-      else if (emblema?.has(y * m.w + x)) v = ch === 'c' ? sombra(c2) : c2;
+      if (pat === 'rayas' && y % 3 === 0) return ch === 'c' ? sombra(c2) : c2;
+      if (pat === 'cuadros' && (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0) return mezcla(v, c2, 0.5);
+      if (emblema?.has(y * m.w + x)) return ch === 'c' ? sombra(c2) : c2;
     }
-    cuerpo.col[(oy + y) * W + ox + x] = v;
-  }
-  // pixeles sueltos (restos de las tiras de la cinta del video): fuera
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = y * W + x;
-    if (cuerpo.col[i] === VACIO) continue;
-    let vecinos = 0;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H && cuerpo.col[yy * W + xx] !== VACIO) vecinos++; }
-    if (!vecinos) cuerpo.col[i] = VACIO;
-  }
-  // la cabeza: la del molde en cada cuadro (mismo tamaño, lugar, giro y gesto que en el video) con los colores y rasgos del
-  // familiar. Lo que se le agrega (pelo largo, colas) va detrás del cuerpo; gorros y moños, encima de lo vacío.
+    return v;
+  };
+  // el sprite tal cual con los colores del muñeco y sus rasgos encima (ver recolor.ts)
+  const rc = recolorMolde(look, m, tinte);
   const img = createRaster(W, H);
   const pon1 = (i: number, v: number) => { img.data[i * 4] = (v >> 16) & 255; img.data[i * 4 + 1] = (v >> 8) & 255; img.data[i * 4 + 2] = v & 255; img.data[i * 4 + 3] = 255; };
-  const cab = vestirCabezaMolde(look, m);
-  const deCabeza = (detras: boolean) => {
-    if (!cab) return;
-    for (let Y = 0; Y < cab.h; Y++) for (let X = 0; X < cab.w; X++) {
-      const j = Y * cab.w + X, v = cab.col[j];
-      if (v === VACIO || (cab.atras[j] === 1) !== detras) continue;
-      const x = ox + X - MARGEN, y = oy + Y - MARGEN;
-      if (x < 0 || y < 0 || x >= W || y >= H) continue;
-      if (!detras && cuerpo.col[y * W + x] !== VACIO && !cab.propio[j]) continue;
-      pon1(y * W + x, v);
-    }
-  };
-  deCabeza(true);
-  for (let i = 0; i < W * H; i++) if (cuerpo.col[i] !== VACIO) pon1(i, cuerpo.col[i]);
-  deCabeza(false);
+  for (let Y = 0; Y < rc.h; Y++) for (let X = 0; X < rc.w; X++) {
+    const v = rc.col[Y][X];
+    if (v === VACIO_RC) continue;
+    const x = ox + X - MARGEN, y = oy + Y - MARGEN;
+    if (x >= 0 && y >= 0 && x < W && y < H) pon1(y * W + x, v);
+  }
   quitarIslas(img, 40);
   // huequitos encerrados (entre el mentón y los hombros, o donde el calco dejó un pixel vacío): se tapan con el color de al lado
   taparHuecos(img, 4);
