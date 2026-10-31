@@ -13,7 +13,7 @@ import { piezasTenis } from '../ui/tenis';
 import { mapaMundo, rutaMundo, mapaRegion, sellos, LUGARES, PAISES_GIRA, type Lugar, type PaisGira } from '../ui/gira';
 
 /** Las partes del envoltorio (lote G2) que se piden en `ui.interfaz`. */
-export const PARTES_ENVOLTORIO = ['medallas', 'podio', 'iconos', 'banderas', 'tarjetas', 'marco_vs', 'pantallas', 'mapa', 'intro'] as const;
+export const PARTES_ENVOLTORIO = ['medallas', 'podio', 'iconos', 'banderas', 'tarjetas', 'marco_vs', 'pantallas', 'mapa', 'intro', 'tenis'] as const;
 export type ParteEnvoltorio = (typeof PARTES_ENVOLTORIO)[number];
 
 /** Un equipo como lo trae el archivo de equipos (solo lo que usa el envoltorio). */
