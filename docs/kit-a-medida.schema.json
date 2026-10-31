@@ -1036,13 +1036,14 @@
                   "pantallas",
                   "mapa",
                   "intro",
-                  "tenis"
+                  "tenis",
+                  "bordes"
                 ]
               },
               "uniqueItems": true
             }
           ],
-          "description": "Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas y la cinta del cuarto puesto, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marcos VS de 4 y de 1 contra 1 y fondos de pausa, fin y continuar; y el mapa de la gira: el mapa mundial, la ruta del avión, los mapas de Vietnam y de Colombia con Venezuela, y los sellos del pasaporte; y las escenas de la intro: la azotea de Tokio con el atleta de espaldas, Bogotá con lluvia, Maracaibo con calor y el desayuno en Saigón; y la cancha de tenis vista desde atrás (tenis_fondo y tenis_red). true = todas."
+          "description": "Piezas de interfaz retro en ui/: caja de diálogo, paneles por equipo, barras, marcos de retrato, banners, controles táctiles, minimapa y números de marcador; y el envoltorio: medallas y la cinta del cuarto puesto, podio, íconos de prueba, banderas, tarjetas y escudos de equipo, marcos VS de 4 y de 1 contra 1 y fondos de pausa, fin y continuar; y el mapa de la gira: el mapa mundial, la ruta del avión, los mapas de Vietnam y de Colombia con Venezuela, y los sellos del pasaporte; y las escenas de la intro: la azotea de Tokio con el atleta de espaldas, Bogotá con lluvia, Maracaibo con calor y el desayuno en Saigón; y la cancha de tenis vista desde atrás (tenis_fondo y tenis_red); y los bordes de las canchas (borde_<escenario>: bancas, mesa de jueces, sombrillas, lo que rodea la cancha). true = todas."
         },
         "gira": {
           "type": "object",

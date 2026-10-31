@@ -60,7 +60,7 @@ npx tsx tools/pixel_forja/scripts/kit-a-medida.ts public/assets/kit --config kit
 | `animales` | Ids de animales: de las fichas, o los que vienen con el motor: `thor` y las aves `gallo` y `paloma`. La mascota de un equipo entra sola | No van |
 | `ui.fuentes` | `true` o `{ "idiomas": [...] }`: las tres fuentes bitmap con vietnamita | No van |
 | `ui.logo` | `{ "texto": "NOMBRE DEL JUEGO" }`: el logo animado en 320 x 112 y 160 x 56. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
-| `ui.interfaz` | `true` o la lista: `dialogo`, `paneles`, `barras`, `marcos`, `banners`, `controles`, `minimapa`, `numeros`, y el envoltorio: `medallas`, `podio`, `iconos`, `banderas`, `tarjetas`, `marco_vs`, `pantallas`, `mapa`, `intro` y `tenis`. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
+| `ui.interfaz` | `true` o la lista: `dialogo`, `paneles`, `barras`, `marcos`, `banners`, `controles`, `minimapa`, `numeros`, y el envoltorio: `medallas`, `podio`, `iconos`, `banderas`, `tarjetas`, `marco_vs`, `pantallas`, `mapa`, `intro`, `tenis` y `bordes`. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
 | `ui.gira` | `{ "paradas": [...] }`: los lugares del vuelo de la gira, en orden (`tokio`, `saigon`, `bogota`, `caracas`...). Resalta sus países en el mapa y saca la ruta del avión. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
 | `ui.intro` | `{ "espaldas": "kenji" }`: el atleta que sale de espaldas en la azotea de la intro. Ver [INTERFAZ.md](INTERFAZ.md) | No va |
 | `fx` | Efectos del catálogo general: `true` (los 56) o ids, bases y grupos. Ver abajo | No van |
@@ -363,7 +363,8 @@ kit/
                                       tarjeta_<equipo>, escudo_<equipo>, marco_vs_4, marco_vs_2, pantalla_<id>, cinta_16, cinta_32,
                                       y el mapa: mapa_gira, mapa_gira_ruta, mapa_vietnam, mapa_colombia_venezuela, sellos_pasaporte,
                                       y la intro: intro_azotea, intro_espaldas, intro_bogota[_lluvia], intro_maracaibo, intro_presentacion, intro_desayuno[_mesa],
-                                      y el tenis en vertical: tenis_fondo, tenis_red
+                                      y el tenis en vertical: tenis_fondo, tenis_red,
+                                      y los bordes de cancha: borde_margarita, borde_cancha_maracaibo, borde_barranquilla, borde_tao_dan, borde_liceo_patio
   fx/<id>.png                         efectos
   audio/sfx/<n>.wav  audio/musica/<n>.wav  audio/ambiente/<n>.wav  audio/voz/<id>_<k>.wav
   audio/escuchar.html                 para oír todo el audio con un clic
