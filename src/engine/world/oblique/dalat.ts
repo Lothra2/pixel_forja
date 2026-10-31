@@ -155,7 +155,7 @@ export function lagoXuanHuong(pal: Paleta, w: number, h: number, seed: number): 
  * Un pino de Đà Lạt (thông ba lá): el tronco recto y rojizo con la corteza en placas, y la copa en racimos de agujas
  * que se abren como un paraguas irregular en el tercio de arriba, con ramas que asoman entre los racimos.
  */
-function pino(C: Lienzo, p: (typeof PINOS)[number], seed: number) {
+export function pino(C: Lienzo, p: (typeof PINOS)[number], seed: number) {
   const R = rng(seed), { x, w, base, top, lejos } = p;
   const corteza: [Color, Color, Color] = lejos ? ['cemento', 'asfalto_claro', 'asfalto_claro'] : ['ocre', 'terracota', 'vino'];
   const alto = base - top, copaAbajo = top + Math.round(alto * (lejos ? 0.5 : 0.46));
@@ -200,7 +200,7 @@ function racimo(C: Lienzo, cx: number, cy: number, r: number, c: [Color, Color, 
 }
 
 /** Una mata de hortensias (cẩm tú cầu): las bolas de flores azules, celestes o rosadas sobre las hojas. */
-function hortensias(C: Lienzo, x: number, base: number, w: number, flor: [Color, Color], seed: number) {
+export function hortensias(C: Lienzo, x: number, base: number, w: number, flor: [Color, Color], seed: number) {
   const R = rng(seed);
   for (let i = 0; i < w; i += 3) { const hh = 6 + Math.floor(R() * 5); for (let j = 0; j < hh; j++) for (let q = 0; q < 4; q++) C.p(x + i + q, base - j, j > hh - 2 ? 'verde' : bayer(x + i + q, base - j) < 0.3 ? 'verde' : 'verde_oscuro'); }
   for (let k = 0; k < w / 6; k++) {

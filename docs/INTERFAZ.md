@@ -132,6 +132,25 @@ Va en `ui.interfaz` como la parte `intro`. Son fondos de 800 x 360, con la parte
 - **En Bogotá:** `intro_bogota`, y si se presenta un equipo, `intro_presentacion` con los retratos en sus `huecos`. Encima de todo va `intro_bogota_lluvia`.
 - **En Maracaibo:** `intro_maracaibo`, `intro_presentacion` y los retratos.
 
+## La cancha de tenis vista desde atrás
+
+Va en `ui.interfaz` como la parte `tenis`. Es el tenis con la cámara detrás de tu equipo, como el del Switch Sports: la cancha se ve en profundidad y el juego pone encima a los atletas del pack de tenis con sus filas `up` (los nuestros, de espaldas) y `down` (ellos, de frente), escalados con la misma proyección.
+
+| Pieza | Tamaño | Qué es |
+|---|---|---|
+| `tenis_fondo` | 800 x 360 | Đà Lạt por la mañana: el cielo con bruma, el lago Xuân Hương y los pinos lejanos, la malla del fondo con la lona del club, la arcilla roja con sus líneas, la grada con público a los dos lados, las vallas, las macetas con hortensias, los pinos cercanos, los faroles, la silla del juez, las bancas y los recogepelotas. Sin la red. La parte de 640 va de x 80 a 720 |
+| `tenis_red` | 800 x 360, transparente (la red ocupa de x 297 a 503, filas 170 a 187) | La red sola con sus dos palos, para ponerla encima de los jugadores de atrás y debajo de los de adelante |
+
+**La proyección** (va en `extra.proyeccion` de `tenis_fondo`, en coordenadas del png de 800): la cancha de dobles mide 200 de ancho (x de -100 a 100) y 400 de largo (d de 0, tu fondo, a 400, el de ellos). `s(d) = 480 / (480 + d)`, `x_png = 400 + x * s * 1.35`, `y_png = -135.6 + 457.6 * s`. Con eso tu línea de fondo cae en la fila 322, la de ellos en la 114 y la red en la 211. `extra.cancha` trae las cuatro esquinas de la cancha en el png y `extra.red`, dónde va la red. `tenis_red` trae `fila`, `x0`, `x1` y `alto` para pegarla donde toca.
+
+**En `kit.config.json`:**
+
+```json
+"ui": { "interfaz": ["tenis"] }
+```
+
+**En el juego:** `tenis_fondo` va a -80 de x en un lienzo de 640 (o centrado si la pantalla es más ancha), la red va en `fila` con profundidad entre los jugadores de atrás y los de adelante, y la pelota y los jugadores se dibujan con la misma `proyeccion`.
+
 ## En Phaser
 
 ```js

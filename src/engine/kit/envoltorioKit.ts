@@ -9,6 +9,7 @@ import {
 } from '../ui/envoltorio';
 import { halve } from './portraits';
 import { piezasIntro } from '../ui/intro';
+import { piezasTenis } from '../ui/tenis';
 import { mapaMundo, rutaMundo, mapaRegion, sellos, LUGARES, PAISES_GIRA, type Lugar, type PaisGira } from '../ui/gira';
 
 /** Las partes del envoltorio (lote G2) que se piden en `ui.interfaz`. */
@@ -80,6 +81,8 @@ export function piezasEnvoltorio(partes: readonly string[], o: { bold: ArrayBuff
   }
   // las escenas de la intro (lote intro); el atleta de espaldas, si la configuración dice cuál
   if (want.has('intro')) out.push(...piezasIntro(o.espaldas));
+  // la cancha de tenis vista desde atrás (lote TENIS_V)
+  if (want.has('tenis')) out.push(...piezasTenis());
   if (want.has('pantallas')) out.push(pantallaRetro('pausa'), pantallaRetro('se_acabo'), pantallaRetro('otra_partidita'));
   return out;
 }
