@@ -151,6 +151,26 @@ Va en `ui.interfaz` como la parte `tenis`. Es el tenis con la cámara detrás de
 
 **En el juego:** `tenis_fondo` va a -80 de x en un lienzo de 640 (o centrado si la pantalla es más ancha), la red va en `fila` con profundidad entre los jugadores de atrás y los de adelante, y la pelota y los jugadores se dibujan con la misma `proyeccion`.
 
+## Los bordes de las canchas
+
+Va en `ui.interfaz` como la parte `bordes`. Las canchas a 800 del lote E4 se pintan lisas alrededor, y el juego ponía poco o nada al borde: estas piezas traen lo que rodea una cancha de verdad, en la paleta de cada lugar y con los pinceles de la casa. Son transparentes, de 800 x 360 (la parte de 640 de x 80 a 720), y se pegan en (-80, 0). `extra.corte` es la fila que las parte en dos: lo de arriba va detrás de los atletas (encima del piso) y lo de abajo, delante de todos (la franja del frente, donde nadie camina).
+
+| Pieza | Corte | Qué trae |
+|---|---|---|
+| `borde_margarita` | 300 | El vóley playa: detrás (filas 238 a 296) las sombrillas con la gente en las toallas, la cava, la silla del árbitro pegada a la red, las banderas de las esquinas, el fotógrafo y el salvavidas; adelante (324 a 360) la toalla con el sombrero, las chancletas, el balde con la pala, el castillito y las huellas |
+| `borde_cancha_maracaibo` | 312 | El básquet de noche: la acera de adelante (320 a 360) con la banca de cada equipo y sus morrales, la mesa de control con el marcador y la campana, el carrito de balones, los conos, el niño con la bandera y el perro echado |
+| `borde_barranquilla` | 312 | El fútbol del carnaval: la acera (320 a 360) con los niños sentados en el borde, las bancas, los tamboreros con la marimonda, el carrito de raspao con su cola, el confeti y las serpentinas |
+| `borde_tao_dan` | 316 | El đá cầu del parque: detrás (236 a 262) la banca del parque, la bicicleta, la vendedora con sus canastas y la cesta de volantes; adelante (326 a 360) los bolsos, el abuelo del tai chi, las palomas y los niños sentados |
+| `borde_liceo_patio` | 312 | El quemado del liceo: el concreto de adelante (320 a 360) con la banca y los morrales de todos, la profe con el pito y el botellón, los que esperan en fila, los conos, una pelota y la rayuela |
+
+**En `kit.config.json`:**
+
+```json
+"ui": { "interfaz": ["bordes"] }
+```
+
+**En Phaser:** la misma imagen dos veces con `setCrop`: de la fila 0 a `corte` con profundidad justo encima del piso del escenario, y de `corte` para abajo con una profundidad mayor que la de cualquier atleta.
+
 ## En Phaser
 
 ```js
