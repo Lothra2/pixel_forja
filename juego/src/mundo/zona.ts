@@ -103,7 +103,7 @@ const TEMATICAS: Record<string, Tematica> = {
     piso: 'arenisca', parches: ['arenisca', 'arena'], ambiente: 'cripta', oscuridad: 0.78,
     borde: [], disperso: [{ t: ['tumba'], p: ['canopos', 'guardian', 'trampa', 'obelisco', 'altar'] }, { t: ['desierto'], p: ['jarr', 'vasij', 'hueso'] }],
     grande: [{ t: ['tumba'], p: ['columna', 'sarcofago'] }], luces: [{ t: ['tumba'], p: ['antorcha', 'brasero'] }],
-    muroX: ['tum_muro', ['liso', 'signos', 'nicho', 'roto']], muroY: ['cue_muro', ['y', 'y_alta']],
+    muroX: ['tum_muro', ['liso', 'signos', 'nicho', 'roto']], muroY: ['tum_muro', ['liso_y', 'signos_y', 'nicho_y', 'roto_y']],
   },
   selva: {
     piso: 'selva', parches: ['selva', 'pantano', 'tierra'], camino: 'tierra', ambiente: 'selva', oscuridad: 0.5,

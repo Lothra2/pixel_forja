@@ -83,7 +83,7 @@ function armarTomas() {
   if (tomasListas) return; tomasListas = true;
   const T0 = (dur: number, f: (t: number, k: number) => void) => TOMAS.push({ dur, dibujar: f });
   // 1: el valle
-  T0(7, (t) => { const m = escena('bosque', 5).mapa; pintarMapa(m, 30 + t * 14, 300 + t * 4, t, undefined, 1.8); oscuridad(0.35); lluvia(t, 0.5); });
+  T0(7, (t) => { const m = escena('bosque', 5).mapa; pintarMapa(m, 30 + t * 14, 300 + t * 4, t, undefined, 1.8); oscuridad(0.18); lluvia(t, 0.5); });
   // 2: la abadía con monjes encapuchados
   T0(7, (t) => { const m = escena('catedral', 2).mapa; const aP = pintarMapa(m, -40 + t * 10, 330 - t * 6, t, (aP) => [0, 1, 2].map((i) => { const [x, y] = aP(9 + i * 3, 12); return { prof: 21 + i * 3, draw: () => dibujar(ctx, cuadrosMonstruo('cultista', 'quieto', 's')[Math.floor(t * 5) % 4], x, y) }; }), 1.8); void aP; oscuridad(0.55, [[W * 0.3, H * 0.5, 160], [W * 0.7, H * 0.45, 160]]); });
   // 3: el voto
@@ -167,9 +167,9 @@ export function menuPrincipal(t: number, hayPartidas: boolean): string | null {
 }
 
 // ------------------------------------------------------------------ elegir héroe
-export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): { accion: 'jugar' | 'crear' | 'borrar' | 'volver' | null; sel: number } {
+export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): { accion: 'jugar' | 'crear' | 'borrar' | 'volver' | 'dificultad' | null; sel: number } {
   dibujarFondoMenu(t);
-  let accion: 'jugar' | 'crear' | 'borrar' | 'volver' | null = null;
+  let accion: 'jugar' | 'crear' | 'borrar' | 'volver' | 'dificultad' | null = null;
   const x = Math.max(20, W / 2 - 420), y = 40, w = 360, h = H - 120;
   marco(x, y, w, h, 0.9);
   texto(T('Tus héroes', 'Your heroes'), x + w / 2, y + 30, { alin: 'center', tam: 18, color: '#e0c890', fuente: TITULO });
@@ -179,7 +179,7 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
     ctx.fillStyle = i === sel ? 'rgba(120,80,30,0.35)' : enc ? 'rgba(80,60,30,0.25)' : 'rgba(0,0,0,0.3)'; ctx.fillRect(x + 12, yy, w - 24, 58);
     const fs = cuadrosHeroe(hr.clase, 'quieto', 'so'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], x + 44, yy + 56, 0.62);
     texto(hr.nombre, x + 80, yy + 22, { tam: 16, color: '#f0e0b0', fuente: TITULO });
-    texto(`${TT(CLASES.find((c) => c.id === hr.clase)!.nombre)} · ${T('Nivel', 'Level')} ${hr.nivel} · ${T('Acto', 'Act')} ${hr.acto}`, x + 80, yy + 42, { tam: 12, color: '#a09070' });
+    texto(`${TT(CLASES.find((c) => c.id === hr.clase)!.nombre)} · ${T('Nivel', 'Level')} ${hr.nivel} · ${T('Acto', 'Act')} ${hr.acto}${hr.dificultad ? ' · ' + [T('Normal', 'Normal'), T('Pesadilla', 'Nightmare'), T('Infierno', 'Hell')][hr.dificultad] : ''}`, x + 80, yy + 42, { tam: 12, color: hr.dificultad ? '#ff8060' : '#a09070' });
     if (enc && E.clicIzq) { sel = i; E.clicIzq = false; Sonido.efecto('click'); }
   });
   if (!heroes.length) texto(T('Todavía no hay héroes.', 'No heroes yet.'), x + w / 2, y + 90, { alin: 'center', color: '#a09070' });
@@ -188,6 +188,7 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
     const hr = heroes[sel];
     const fs = cuadrosHeroe(hr.clase, 'quieto', 's'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], bx + 140, by + 30, 2);
     if (boton(T('Jugar', 'Play'), bx + 40, by + 80, 200, 38, { tam: 16 })) accion = 'jugar';
+    if ((hr.actosHechos ?? []).includes(5) && (hr.dificultad ?? 0) < 2 && boton(hr.dificultad ? T('Bajar al Infierno', 'Descend into Hell') : T('Empezar Pesadilla', 'Begin Nightmare'), bx + 40, by + 268, 200, 30, { tam: 13, color: '#ff8060' })) accion = 'dificultad';
     if (boton((window as any).__borrar === hr.id ? T('¿Seguro? Clic otra vez', 'Sure? Click again') : T('Borrar', 'Delete'), bx + 40, by + 128, 200, 30, { tam: 13, color: (window as any).__borrar === hr.id ? '#ff6060' : undefined })) accion = 'borrar';
   }
   if (boton(T('Crear héroe nuevo', 'Create new hero'), bx + 40, by + 178, 200, 34, { tam: 14 })) accion = 'crear';

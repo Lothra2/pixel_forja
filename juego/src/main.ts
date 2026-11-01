@@ -98,6 +98,14 @@ async function irAZona(id: string, entrada: string) {
   const frase = ENTRADA_ZONA[id];
   if (frase && !(j as any).vistas?.has(id)) { ((j as any).vistas ??= new Set()).add(id); msg(j, frase, '#c0a0a0'); }
   msg(j, ZONAS[id].nombre, '#e0c890');
+  if (z.tipo !== 'pueblo') pista('fuera', ['Clic izquierdo sobre un monstruo para pegarle. Clic derecho lanza tu poder. 1 a 4 toma pociones.', 'Left click a monster to strike it. Right click casts your power. 1 to 4 drinks potions.']);
+  if (z.tipo === 'mazmorra') pista('mazmorra', ['Está oscuro aquí abajo. Si te ves mal, B abre un portal al campamento.', 'It is dark down here. If things go badly, B opens a portal to camp.']);
+}
+function pista(id: string, txt: [string, string]) {
+  if (!j) return;
+  const d = j.heroe.d as any; d.pistas ??= {};
+  if (d.pistas[id]) return; d.pistas[id] = 1;
+  msg(j, txt, '#80d0ff');
 }
 
 async function empezarPartida(d: DatosHeroe) {
@@ -218,7 +226,7 @@ function controlar(jj: Juego, dt: number) {
   }
   // llegar a cosas
   const llega = (x: number, y: number, r = 1.6) => dist(h.x, h.y, x, y) <= r;
-  if (h.recoger && llega(h.recoger.x, h.recoger.y, 1.3)) { recogerSuelo(jj, h.recoger); h.recoger = null; h.camino = null; }
+  if (h.recoger && llega(h.recoger.x, h.recoger.y, 1.3)) { recogerSuelo(jj, h.recoger); h.recoger = null; h.camino = null; pista('botin', ['Pulsa I para ver tu inventario. Clic derecho sobre un objeto para ponértelo.', 'Press I for your inventory. Right click an item to equip it.']); }
   if (h.hablar && llega(h.hablar.x, h.hablar.y, 2)) { hablarCon(jj, h.hablar.npc); h.hablar = null; h.camino = null; }
   if (h.usar && llega(h.usar.cx + 0.5, h.usar.cy + 0.5, 2.2 + Math.max(h.usar.hw, h.usar.hh) / 2)) { usarObjeto(jj, h.usar); h.usar = null; h.camino = null; }
   if ((h as any).salida && llega((h as any).salida.cx + 0.5, (h as any).salida.cy + 0.5, 2.5)) { const s = (h as any).salida as Salida; (h as any).salida = null; zonaPendiente = { id: s.destino, entrada: s.entrada }; }
@@ -291,7 +299,7 @@ function procesarEventos(jj: Juego) {
     else if (e.tipo === 'jefe_muerto') { Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); msg(jj, ['El sello se rompe. Algo escapa hacia lo alto.', 'The seal breaks. Something escapes upward.'], '#ffb060'); guardar(); }
     else if (e.tipo === 'muerte') { Sonido.musica(null as any); tEstado = 0; }
     else if (e.tipo === 'spawn') { import('./juego/mundo').then((mm) => { const m = mm.crearMonstruo(MONSTRUOS[e.dato.id], jj.zona.nivel + 1, e.dato.x, e.dato.y, 1, jj.heroe.d.dificultad); m.estado = 'perseguir'; m.objetivo = jj.heroe; m.acc = 'morir'; (m as any).surgiendo = 1.2; jj.monstruos.push(m); }); }
-    else if (e.tipo === 'nivel') guardar();
+    else if (e.tipo === 'nivel') { guardar(); pista('nivel', ['Subiste de nivel: pulsa C para tus atributos y T para tus habilidades.', 'Level up: press C for attributes and T for skills.']); }
     else if (e.tipo === 'mision_hecha') guardar();
   }
 }
@@ -340,6 +348,7 @@ function paso(dt: number) {
       sel = r.sel;
       dibujarCursor('senalar');
       if (r.accion === 'jugar' && heroes[sel]) { E.clicIzq = false; empezarPartida(JSON.parse(JSON.stringify(heroes[sel]))); }
+      if (r.accion === 'dificultad' && heroes[sel]) { E.clicIzq = false; const hr = heroes[sel]; hr.dificultad = (hr.dificultad ?? 0) + 1; hr.acto = 1; hr.zona = 'a1_refugio'; hr.misiones = {}; hr.actosHechos = []; hr.viajes = ['a1_refugio']; guardarPartidas(); }
       if (r.accion === 'crear') { estado = 'crear'; selClase = null; E.clicIzq = false; }
       if (r.accion === 'volver' || pulso('Escape')) { estado = 'menu'; E.clicIzq = false; }
       if (r.accion === 'borrar' && heroes[sel]) { E.clicIzq = false; if ((window as any).__borrar === heroes[sel].id) { heroes.splice(sel, 1); sel = 0; guardarPartidas(); (window as any).__borrar = null; } else (window as any).__borrar = heroes[sel].id; }

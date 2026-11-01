@@ -20,7 +20,7 @@ const { NPCS } = await import('../src/datos/npcs.ts');
 
 const SALIDA = join(aqui, '../public/assets');
 mkdirSync(SALIDA, { recursive: true });
-const GRUPOS = (process.env.GRUPOS ?? 'h,m,n,w,o,p').split(',');
+const GRUPOS = (process.env.GRUPOS ?? 'h,m,n,b,w,o,p').split(',');
 const { PODERES, DIRS_PODER } = await import(join(raiz, 'poderes.ts'));
 const SOLO = process.env.SOLO?.split(',');
 
@@ -43,6 +43,14 @@ if (GRUPOS.includes('m')) for (const m of [...MONSTRUOS, ...extras.MONSTRUOS_EXT
 if (GRUPOS.includes('n')) for (const n of Object.values(NPCS) as any[]) {
   if (SOLO && !SOLO.includes(n.id)) continue;
   for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'n', clave: `${n.id}/quieto/${dir}`, tipo: 'personaje', cuerpo: n.cuerpo, equipo: n.equipo, dir, acc: 'quieto', cuadros: CUADROS.quieto });
+}
+const { BESTIAS } = await import(join(raiz, 'catalogo/bestias.ts'));
+if (GRUPOS.includes('b')) for (const bs of BESTIAS as any[]) {
+  if (SOLO && !SOLO.includes(bs.id)) continue;
+  for (const acc of ['quieto', 'caminar', 'atacar', 'morir', 'especial']) {
+    const id = `mon_${bs.id}_${acc}`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue;
+    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'b', clave: `${bs.id}/${acc}/${dir}`, tipo: 'objeto', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
+  }
 }
 const objMeta: Record<string, any> = {};
 const poderMeta: Record<string, any> = {};
@@ -126,11 +134,11 @@ for (const g of GRUPOS) {
   const js = jobs.filter((j) => j.grupo === g);
   if (!js.length) continue;
   // borrar lo viejo del grupo si se hornea completo
-  if (!SOLO) { if (g !== 'n') man[g] = {}; for (const k of Object.keys(man.atlas)) if (k.startsWith(g + '_')) delete man.atlas[k]; }
+  if (!SOLO) { if (g !== 'n' && g !== 'b') man[g] = {}; for (const k of Object.keys(man.atlas)) if (k.startsWith(g + '_')) delete man.atlas[k]; }
   const items: { j: Job; f: number; c: any }[] = [];
   for (const j of js) (resultados.get(j.id_job) ?? []).forEach((c, f) => items.push({ j, f, c }));
   // un juego de atlas por entidad (clase, monstruo, tema) para bajar solo lo que hace falta
-  const sub = (j: Job) => g === 'w' ? 'w' : g === 'o' ? (objMeta[j.clave]?.tema ?? 'x') : g === 'p' ? 'p' : j.clave.split('/')[0];
+  const sub = (j: Job) => g === 'w' ? 'w' : g === 'b' ? j.clave.split('/')[0] : g === 'o' ? (objMeta[j.clave]?.tema ?? 'x') : g === 'p' ? 'p' : j.clave.split('/')[0];
   const porSub = new Map<string, typeof items>();
   for (const it of items) { const k = sub(it.j); if (!porSub.has(k)) porSub.set(k, []); porSub.get(k)!.push(it); }
   const listas: Record<string, any[]> = {};
@@ -167,7 +175,7 @@ for (const g of GRUPOS) {
   }
   for (const [k, fs] of Object.entries(listas)) {
     if (g === 'o') man.o[k] = { f: fs, ...objMeta[k] };
-    else man[g === 'n' ? 'm' : g][k] = fs;
+    else man[g === 'n' || g === 'b' ? 'm' : g][k] = fs;
   }
 }
 if (GRUPOS.includes('w')) man.wm = { ...(man.wm ?? {}), ...poderMeta };

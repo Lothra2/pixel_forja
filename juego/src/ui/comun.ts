@@ -115,25 +115,51 @@ export function icono(o: Objeto, x: number, y: number, w: number, h: number, t =
       ctx.restore(); return;
     }
   }
-  // armaduras y joyas: dibujo simple con su color de material
+  // armaduras y joyas: dibujadas según el tipo y el material de la pieza
   const fam = b?.familia ?? '';
-  const metal = /placa|oro|hierro|acero|bronce/.test(JSON.stringify(b?.visual ?? {}));
-  const oro = /oro/.test(JSON.stringify(b?.visual ?? {}));
-  const c1 = oro ? '#c09030' : metal ? '#8a929c' : '#6a4a2c', c2 = oro ? '#f0d070' : metal ? '#c0c8d0' : '#9a7048';
-  ctx.fillStyle = c1; ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
-  const fill = (path: () => void) => { ctx.beginPath(); path(); ctx.fill(); ctx.stroke(); };
-  if (b?.ranura === 'torso') fill(() => { ctx.moveTo(cx - w * 0.38, cy - h * 0.38); ctx.lineTo(cx - w * 0.12, cy - h * 0.42); ctx.lineTo(cx, cy - h * 0.34); ctx.lineTo(cx + w * 0.12, cy - h * 0.42); ctx.lineTo(cx + w * 0.38, cy - h * 0.38); ctx.lineTo(cx + w * 0.3, cy + h * 0.4); ctx.lineTo(cx - w * 0.3, cy + h * 0.4); ctx.closePath(); });
-  else if (b?.ranura === 'cabeza') fill(() => { ctx.arc(cx, cy + 2, w * 0.34, Math.PI, 0); ctx.lineTo(cx + w * 0.34, cy + h * 0.25); ctx.lineTo(cx - w * 0.34, cy + h * 0.25); ctx.closePath(); });
-  else if (b?.ranura === 'izq' && fam === 'orbe') { ctx.fillStyle = '#6040c0'; fill(() => ctx.arc(cx, cy, w * 0.32, 0, Math.PI * 2)); }
-  else if (b?.ranura === 'izq' && fam === 'libro') fill(() => ctx.rect(cx - w * 0.3, cy - h * 0.3, w * 0.6, h * 0.6));
-  else if (b?.ranura === 'izq') fill(() => { ctx.moveTo(cx - w * 0.36, cy - h * 0.38); ctx.lineTo(cx + w * 0.36, cy - h * 0.38); ctx.lineTo(cx + w * 0.32, cy + h * 0.1); ctx.lineTo(cx, cy + h * 0.42); ctx.lineTo(cx - w * 0.32, cy + h * 0.1); ctx.closePath(); });
-  else if (b?.ranura === 'manos') { fill(() => ctx.rect(cx - w * 0.3, cy - h * 0.1, w * 0.26, h * 0.4)); fill(() => ctx.rect(cx + w * 0.04, cy - h * 0.1, w * 0.26, h * 0.4)); fill(() => ctx.rect(cx - w * 0.32, cy - h * 0.34, w * 0.3, h * 0.26)); fill(() => ctx.rect(cx + w * 0.02, cy - h * 0.34, w * 0.3, h * 0.26)); }
-  else if (b?.ranura === 'pies') { fill(() => { ctx.rect(cx - w * 0.34, cy - h * 0.36, w * 0.24, h * 0.56); }); fill(() => ctx.rect(cx + w * 0.06, cy - h * 0.36, w * 0.24, h * 0.56)); fill(() => ctx.rect(cx - w * 0.38, cy + h * 0.12, w * 0.34, h * 0.18)); fill(() => ctx.rect(cx + w * 0.02, cy + h * 0.12, w * 0.34, h * 0.18)); }
-  else if (b?.ranura === 'cinturon') { fill(() => ctx.rect(x + 3, cy - 4, w - 6, 8)); ctx.fillStyle = c2; ctx.fillRect(cx - 4, cy - 5, 8, 10); }
-  else if (b?.ranura === 'anillo') { ctx.strokeStyle = '#d0a040'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy + 2, 6, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = colorObj(o); ctx.fillRect(cx - 2, cy - 7, 5, 4); }
-  else if (b?.ranura === 'amuleto') { ctx.strokeStyle = '#a08040'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy - 6, 6, 0, Math.PI); ctx.stroke(); ctx.fillStyle = '#d0a040'; ctx.beginPath(); ctx.arc(cx, cy + 4, 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = colorObj(o); ctx.fillRect(cx - 2, cy + 2, 4, 4); }
-  else fill(() => ctx.rect(cx - 6, cy - 6, 12, 12));
-  if (b && b.ranura !== 'anillo' && b.ranura !== 'amuleto') { ctx.fillStyle = c2; ctx.globalAlpha = 0.4; ctx.fillRect(cx - w * 0.2, cy - h * 0.25, w * 0.1, h * 0.3); }
+  const vis = JSON.stringify(b?.visual ?? {});
+  const oro = /oro/.test(vis), osc = /oscura|negro|negra/.test(vis), hueso = /hueso/.test(vis);
+  const metal = /placa|hierro|acero|bronce|malla|oro/.test(vis);
+  const tela = /tela|vestido|tunica|capucha|turbante/.test(vis) && !metal;
+  const tono = oro ? ['#5a3a10', '#c8962e', '#ffe8a0'] : hueso ? ['#4a4232', '#b0a585', '#efe6cc'] : osc ? ['#121318', '#3c4048', '#8c939c'] : metal ? ['#2a2e34', '#7c8590', '#dfe6ee'] : tela ? (/roja/.test(vis) ? ['#2a0808', '#7a1e1a', '#c05040'] : /azul/.test(vis) ? ['#0a1028', '#283b64', '#6a86c0'] : /verde/.test(vis) ? ['#0a1a0a', '#2a462c', '#6a9a60'] : /morada/.test(vis) ? ['#1a0a24', '#482b5c', '#9070b0'] : ['#1a1510', '#5a4a38', '#a89880']) : ['#1e120a', '#6e472a', '#b08a60'];
+  const grad = () => { const g = ctx.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, tono[2]); g.addColorStop(0.45, tono[1]); g.addColorStop(1, tono[0]); return g; };
+  ctx.lineJoin = 'round'; ctx.lineWidth = 1.2; ctx.strokeStyle = '#050403';
+  const forma = (path: () => void, brillo = true) => { ctx.beginPath(); path(); ctx.fillStyle = grad(); ctx.fill(); ctx.stroke(); if (brillo && (metal || oro)) { ctx.save(); ctx.clip(); ctx.globalAlpha = 0.35; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w * 0.3, h); ctx.restore(); } };
+  const remaches = (pts: [number, number][]) => { if (!metal) return; for (const [a, c] of pts) { ctx.fillStyle = tono[2]; ctx.fillRect(a - 1, c - 1, 2, 2); } };
+  const costura = (x0: number, y0: number, x1: number, y1: number) => { if (metal) return; ctx.save(); ctx.setLineDash([2, 2]); ctx.strokeStyle = tono[2]; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.restore(); };
+  const W2 = w * 0.5, H2 = h * 0.5;
+  if (b?.ranura === 'torso') {
+    forma(() => { ctx.moveTo(cx - W2 * 0.82, cy - H2 * 0.62); ctx.quadraticCurveTo(cx - W2 * 0.4, cy - H2 * 0.86, cx - W2 * 0.26, cy - H2 * 0.82); ctx.quadraticCurveTo(cx, cy - H2 * 0.55, cx + W2 * 0.26, cy - H2 * 0.82); ctx.quadraticCurveTo(cx + W2 * 0.4, cy - H2 * 0.86, cx + W2 * 0.82, cy - H2 * 0.62); ctx.lineTo(cx + W2 * 0.86, cy - H2 * 0.1); ctx.lineTo(cx + W2 * 0.56, cy - H2 * 0.14); ctx.lineTo(cx + W2 * 0.6, cy + H2 * 0.84); ctx.lineTo(cx - W2 * 0.6, cy + H2 * 0.84); ctx.lineTo(cx - W2 * 0.56, cy - H2 * 0.14); ctx.lineTo(cx - W2 * 0.86, cy - H2 * 0.1); ctx.closePath(); });
+    if (/malla/.test(vis)) { ctx.save(); ctx.globalAlpha = 0.3; ctx.strokeStyle = '#000'; for (let k = -h; k < h; k += 4) { ctx.beginPath(); ctx.moveTo(cx - W2 * 0.5, cy + k * 0.3); ctx.lineTo(cx + W2 * 0.5, cy + k * 0.3 + 2); ctx.stroke(); } ctx.restore(); }
+    if (/placas/.test(vis)) { ctx.strokeStyle = tono[0]; for (const k of [0.1, 0.35, 0.6]) { ctx.beginPath(); ctx.moveTo(cx - W2 * 0.55, cy + H2 * k); ctx.quadraticCurveTo(cx, cy + H2 * (k + 0.12), cx + W2 * 0.55, cy + H2 * k); ctx.stroke(); } remaches([[cx - W2 * 0.5, cy - H2 * 0.4], [cx + W2 * 0.5, cy - H2 * 0.4]]); }
+    costura(cx, cy - H2 * 0.6, cx, cy + H2 * 0.8);
+    ctx.fillStyle = tono[0]; ctx.fillRect(cx - W2 * 0.6, cy + H2 * 0.32, W2 * 1.2, 3);
+  } else if (b?.ranura === 'cabeza') {
+    const tipo = (b.visual as any).cabeza?.tipo ?? 'casco';
+    if (tipo === 'capucha' || tipo === 'turbante') forma(() => { ctx.moveTo(cx - W2 * 0.7, cy + H2 * 0.7); ctx.quadraticCurveTo(cx - W2 * 0.9, cy - H2 * 0.6, cx, cy - H2 * 0.8); ctx.quadraticCurveTo(cx + W2 * 0.9, cy - H2 * 0.6, cx + W2 * 0.7, cy + H2 * 0.7); ctx.lineTo(cx + W2 * 0.35, cy + H2 * 0.3); ctx.quadraticCurveTo(cx, cy - H2 * 0.3, cx - W2 * 0.35, cy + H2 * 0.3); ctx.closePath(); }, false);
+    else if (tipo === 'corona' || tipo === 'diadema' || tipo === 'aro') { forma(() => { ctx.moveTo(cx - W2 * 0.75, cy + H2 * 0.3); for (let k = 0; k <= 4; k++) { const xx = cx - W2 * 0.75 + (k * W2 * 1.5) / 4; ctx.lineTo(xx, cy - H2 * (k % 2 ? 0.1 : 0.6)); } ctx.lineTo(cx + W2 * 0.75, cy + H2 * 0.3); ctx.closePath(); }); ctx.fillStyle = '#c03040'; ctx.fillRect(cx - 2, cy - 2, 4, 4); }
+    else if (tipo === 'cuernos') { forma(() => { ctx.arc(cx, cy + H2 * 0.2, W2 * 0.6, Math.PI, 0); ctx.lineTo(cx + W2 * 0.6, cy + H2 * 0.5); ctx.lineTo(cx - W2 * 0.6, cy + H2 * 0.5); ctx.closePath(); }); ctx.fillStyle = '#d8ccb0'; for (const sg of [-1, 1]) { ctx.beginPath(); ctx.moveTo(cx + sg * W2 * 0.5, cy - H2 * 0.1); ctx.quadraticCurveTo(cx + sg * W2 * 1.0, cy - H2 * 0.3, cx + sg * W2 * 0.8, cy - H2 * 0.9); ctx.lineTo(cx + sg * W2 * 0.4, cy - H2 * 0.3); ctx.closePath(); ctx.fill(); ctx.stroke(); } }
+    else { forma(() => { ctx.moveTo(cx - W2 * 0.68, cy + H2 * 0.6); ctx.lineTo(cx - W2 * 0.7, cy - H2 * 0.05); ctx.quadraticCurveTo(cx - W2 * 0.66, cy - H2 * 0.8, cx, cy - H2 * 0.82); ctx.quadraticCurveTo(cx + W2 * 0.66, cy - H2 * 0.8, cx + W2 * 0.7, cy - H2 * 0.05); ctx.lineTo(cx + W2 * 0.68, cy + H2 * 0.6); ctx.closePath(); }); if (tipo === 'yelmo' || tipo === 'gran_yelmo' || tipo === 'mascara') { ctx.fillStyle = '#000'; ctx.fillRect(cx - W2 * 0.5, cy - H2 * 0.08, W2, 3); ctx.fillRect(cx - 1, cy - H2 * 0.08, 2, H2 * 0.5); } else { ctx.strokeStyle = tono[0]; ctx.beginPath(); ctx.moveTo(cx, cy - H2 * 0.8); ctx.lineTo(cx, cy + H2 * 0.2); ctx.stroke(); } remaches([[cx - W2 * 0.55, cy + H2 * 0.4], [cx + W2 * 0.55, cy + H2 * 0.4]]); }
+  } else if (b?.ranura === 'izq' && fam === 'orbe') { const g = ctx.createRadialGradient(cx - 4, cy - 4, 1, cx, cy, W2 * 0.7); g.addColorStop(0, '#f0e0ff'); g.addColorStop(0.4, '#8050d0'); g.addColorStop(1, '#180830'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, W2 * 0.65, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+  else if (b?.ranura === 'izq' && fam === 'libro') { forma(() => ctx.rect(cx - W2 * 0.6, cy - H2 * 0.75, W2 * 1.2, H2 * 1.5), false); ctx.fillStyle = '#d8c8a0'; ctx.fillRect(cx + W2 * 0.45, cy - H2 * 0.7, 3, H2 * 1.4); ctx.strokeStyle = '#c0a040'; ctx.strokeRect(cx - W2 * 0.35, cy - H2 * 0.35, W2 * 0.7, H2 * 0.5); }
+  else if (b?.ranura === 'izq') {
+    const t2 = (b.visual as any).izq?.tipo ?? 'escudo_redondo';
+    if (t2 === 'escudo_redondo' || t2 === 'rodela') forma(() => ctx.ellipse(cx, cy, W2 * 0.82, H2 * 0.82, 0, 0, Math.PI * 2));
+    else if (t2 === 'escudo_torre') forma(() => ctx.rect(cx - W2 * 0.7, cy - H2 * 0.85, W2 * 1.4, H2 * 1.7));
+    else forma(() => { ctx.moveTo(cx - W2 * 0.8, cy - H2 * 0.8); ctx.lineTo(cx + W2 * 0.8, cy - H2 * 0.8); ctx.lineTo(cx + W2 * 0.7, cy + H2 * 0.1); ctx.quadraticCurveTo(cx + W2 * 0.4, cy + H2 * 0.7, cx, cy + H2 * 0.9); ctx.quadraticCurveTo(cx - W2 * 0.4, cy + H2 * 0.7, cx - W2 * 0.7, cy + H2 * 0.1); ctx.closePath(); });
+    if (t2 === 'escudo_calavera') { ctx.fillStyle = '#e0d8c0'; ctx.beginPath(); ctx.arc(cx, cy - 2, W2 * 0.3, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#000'; ctx.fillRect(cx - 5, cy - 4, 3, 3); ctx.fillRect(cx + 2, cy - 4, 3, 3); }
+    else { ctx.fillStyle = tono[2]; ctx.beginPath(); ctx.arc(cx, cy - 2, W2 * 0.18, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    remaches([[cx - W2 * 0.6, cy - H2 * 0.6], [cx + W2 * 0.6, cy - H2 * 0.6], [cx, cy + H2 * 0.6]]);
+  } else if (b?.ranura === 'manos') {
+    for (const sg of [-1, 1]) forma(() => { const ox = cx + sg * W2 * 0.42; ctx.moveTo(ox - W2 * 0.3, cy + H2 * 0.8); ctx.lineTo(ox - W2 * 0.32, cy - H2 * 0.1); ctx.lineTo(ox - W2 * 0.36, cy - H2 * 0.75); ctx.lineTo(ox - W2 * 0.14, cy - H2 * 0.82); ctx.lineTo(ox + W2 * 0.08, cy - H2 * 0.8); ctx.lineTo(ox + W2 * 0.3, cy - H2 * 0.6); ctx.lineTo(ox + W2 * 0.4, cy - H2 * 0.15); ctx.lineTo(ox + W2 * 0.3, cy + H2 * 0.8); ctx.closePath(); });
+    ctx.fillStyle = tono[0]; ctx.fillRect(cx - W2 * 0.8, cy + H2 * 0.4, W2 * 1.6, 2);
+  } else if (b?.ranura === 'pies') {
+    for (const sg of [-1, 1]) forma(() => { const ox = cx + sg * W2 * 0.42; ctx.moveTo(ox - W2 * 0.25, cy - H2 * 0.85); ctx.lineTo(ox + W2 * 0.2, cy - H2 * 0.85); ctx.lineTo(ox + W2 * 0.22, cy + H2 * 0.35); ctx.lineTo(ox + W2 * 0.48, cy + H2 * 0.55); ctx.lineTo(ox + W2 * 0.48, cy + H2 * 0.82); ctx.lineTo(ox - W2 * 0.28, cy + H2 * 0.82); ctx.closePath(); });
+    ctx.fillStyle = tono[0]; ctx.fillRect(cx - W2 * 0.9, cy + H2 * 0.7, W2 * 1.9, 2);
+  } else if (b?.ranura === 'cinturon') { forma(() => ctx.rect(x + 2, cy - 5, w - 4, 10), false); const hb = /oro/.test(vis) ? '#e0b040' : '#a0a8b0'; ctx.strokeStyle = hb; ctx.lineWidth = 2; ctx.strokeRect(cx - 5, cy - 6, 10, 12); ctx.lineWidth = 1; for (let k = x + 6; k < x + w - 6; k += 6) { ctx.fillStyle = tono[2]; ctx.fillRect(k, cy - 1, 1, 2); } }
+  else if (b?.ranura === 'anillo') { ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(cx, cy + 2, 6, 5, 0, 0, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = '#d0a040'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = o.rareza === 'normal' ? '#c03030' : colorObj(o); ctx.beginPath(); ctx.arc(cx, cy - 4, 3, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); }
+  else if (b?.ranura === 'amuleto') { ctx.strokeStyle = '#a08040'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx - 7, cy - 9); ctx.quadraticCurveTo(cx, cy, cx + 7, cy - 9); ctx.stroke(); ctx.fillStyle = '#d0a040'; ctx.beginPath(); ctx.moveTo(cx, cy - 2); ctx.lineTo(cx + 6, cy + 4); ctx.lineTo(cx, cy + 10); ctx.lineTo(cx - 6, cy + 4); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = o.rareza === 'normal' ? '#3060c0' : colorObj(o); ctx.fillRect(cx - 2, cy + 2, 4, 4); }
+  else forma(() => ctx.rect(cx - 6, cy - 6, 12, 12));
   ctx.restore();
 }
 
