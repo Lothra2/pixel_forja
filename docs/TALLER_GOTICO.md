@@ -37,6 +37,28 @@ abierto trae el arte original, todos piden los archivos del juego. Por eso todo 
 - Paisajes armados con semilla: cementerio, cueva, templo de la selva, catedral, campamento, pueblo en ruinas,
   desierto, tumba, infierno, montaña nevada, páramo y bosque, catacumbas, santuario arcano y fortaleza.
 
+## Versión 2 (lo que cambió)
+
+- Sombras como en los renders de la época: mapa de sombras desde la luz con penumbra que se abre con la distancia
+  (dura al pie, suave lejos) y oclusión de contacto (lo que se oscurece al pie de muros, cajas y personas).
+  `fijarCalidad(0)` es el borrador rápido para editar, `1` la calidad buena, `2` o `3` además promedia 4 o 9 rayos
+  por pixel.
+- Masa orgánica: `masa(comps, { mat, suave })` con `hueso(a, b, r0, r1)` y `bulto(c, radios)` que se funden con
+  unión suave y cada uno con su material. Así se arman cuerpos, músculos, troncos, raíces, capas y pelo.
+- Cuerpos (`cuerpo.ts`): `personaje(cuerpo, equipo, dir, accion, cuadro)` y `personajeEscena(...)` (con la luz del
+  arma viva). Anatomía con músculos y cara, ropa y armadura por capas (torso, piernas, pies, manos, cabeza, hombros,
+  cinturón, capa con pliegues, tabardo), 18 armas con agarre real (la hoja sale del puño hacia el pulgar y en las
+  armas a dos manos la izquierda se cierra sobre el mango), escudos, orbe, libro y antorcha. Terror: fauces, costillas,
+  heridas, garras, espectros que flotan. Acciones: quieto, caminar, correr, atacar, lanzar, herido y morir.
+- Armas vivas: `equipo.arma.encanto` en fuego, hielo, rayo, veneno, sombra, luz o sangre. Se anima cuadro a cuadro.
+- Héroes originales con 3 niveles de equipo (`HEROES`): berserker, templario, arcanista, cazadora, nigromante, monje,
+  druida y alquimista. Monstruos humanoides (`MONSTRUOS`) con jefes; bestias en `catalogo/bestias.ts`.
+- Arsenal: `arma_<tipo>[_<encanto>]` (flota, suelo, clavada) y `maniqui_<clase>_<nivel>`.
+- Tema `misterio`: espejos, árbol de rostros, manos de la tierra, pozo de almas, trono de huesos, carne viva, ojos en la
+  oscuridad, círculos de invocación, puerta sellada, reliquia, libro maldito, estatua doliente.
+- `poderes.ts`: 58 efectos con alfa (`pintarPoder(id, dir, cuadro)`, `paquetePoderes()`).
+- `hud.ts`: HUD e interfaz completa original con `hudJson()` de zonas en 800×600 y `paqueteHud()`.
+
 ## Cómo usar la exportación en el juego
 
 `catalogo.json` lista cada objeto con su archivo, tamaño, ancla, cuadros, huella y si bloquea.

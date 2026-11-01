@@ -55,6 +55,10 @@ M.cu_escama = { rampa: ['#0a0c08', '#141810', '#1f2518', '#2b3321', '#38422b', '
 M.cu_roca = { rampa: ['#0e0c0b', '#1c1916', '#2b2621', '#3b342d', '#4c443a', '#5e5448', '#706557', '#837767'], ruido: 0.45, escala: 0.35 };
 M.cu_lava = { rampa: ['#7a1a04', '#c03a08', '#f07010', '#ffb030', '#fff090'], ruido: 0.4, escala: 0.5, emite: true };
 M.cu_venda = { rampa: ['#221e16', '#373024', '#4f4634', '#695e47', '#83775b', '#9c9072', '#b3a88a'], ruido: 0.3, escala: 1.1, patron: (p) => ((Math.floor(p[2] * 1.1 + p[0] * 0.35 + p[1] * 0.2) % 2) ? -0.09 : 0.04) };
+M.cu_sombra = { rampa: ['#12061c', '#2a0e40', '#4a1a6c', '#7a34a8', '#b070e0'], ruido: 0.45, escala: 0.5, emite: true };
+M.cu_rayo = { rampa: ['#3050c0', '#6090ff', '#b0d0ff', '#f0f8ff'], ruido: 0.2, escala: 1, emite: true };
+M.cu_sangre_viva = { rampa: ['#3a0204', '#6a0408', '#a00c10', '#d02820', '#ff6040'], ruido: 0.3, escala: 0.6, emite: true };
+M.cu_luz_santa = { rampa: ['#806020', '#c09838', '#f0d060', '#fff4c0', '#ffffff'], ruido: 0.15, escala: 0.6, emite: true };
 M.cu_ectoplasma = { rampa: ['#204a60', '#3a7a90', '#68b0c0', '#a8e0e8', '#e8ffff'], ruido: 0.3, escala: 0.4, emite: true };
 
 // ------------------------------------------------------------------ tipos
@@ -79,6 +83,12 @@ export interface Cuerpo {
   oseo?: boolean;
   /** Carne podrida o vendas: tono por parche. */
   parches?: string;
+  /** Terror: boca abierta (fauces) o colmillos, costillas bajo la piel, heridas con sangre, garras largas, flota sin piernas. */
+  boca?: 'fauces' | 'colmillos';
+  demacrado?: boolean;
+  heridas?: boolean;
+  garras?: boolean;
+  flota?: boolean;
 }
 export type Pieza_ = Pieza;
 export interface Equipo {
@@ -90,11 +100,17 @@ export interface Equipo {
   hombros?: { tipo: 'pieles' | 'cuero' | 'placas' | 'puas' | 'huesos'; mat: string };
   cinturon?: { mat: string; hebilla?: string };
   capa?: { mat: string; largo?: number; forro?: string };
-  arma?: { tipo: TipoArma; mat?: string; mango?: string; gema?: string };
+  arma?: { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto };
   izq?: { tipo: 'escudo_redondo' | 'escudo_cometa' | 'escudo_torre' | 'rodela' | 'escudo_calavera' | 'orbe' | 'libro' | 'antorcha' | 'arma'; mat?: string; mat2?: string; arma?: TipoArma };
   /** Tabardo o faldón con color de la orden. */
   tabardo?: { mat: string; borde?: string };
 }
+/** Armas vivas: el encantamiento arde, escarcha, chispea, gotea o humea sobre la hoja en cada cuadro. */
+export type Encanto = 'fuego' | 'hielo' | 'rayo' | 'veneno' | 'sombra' | 'sagrado' | 'sangre';
+export const ENCANTOS: [Encanto, string, string, string][] = [
+  ['fuego', 'de fuego', 'of fire', '#ff7a20'], ['hielo', 'de escarcha', 'of frost', '#80c8ff'], ['rayo', 'del trueno', 'of thunder', '#a0c0ff'],
+  ['veneno', 'de ponzoña', 'of venom', '#60e040'], ['sombra', 'de las sombras', 'of shadows', '#9040d0'], ['sagrado', 'de la luz', 'of light', '#ffe080'], ['sangre', 'sangrienta', 'of blood', '#e02020'],
+];
 export type TipoArma = 'espada' | 'cimitarra' | 'mandoble' | 'hacha' | 'hacha_doble' | 'maza' | 'martillo' | 'mangual' | 'lanza' | 'alabarda' | 'guadana'
   | 'baculo' | 'cetro' | 'varita' | 'daga' | 'garras' | 'arco' | 'ballesta' | 'puno' | 'nada';
 
@@ -293,6 +309,16 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], inf: number, mat?: strin
 }
 
 // ------------------------------------------------------------------ el personaje completo
+/** El personaje como escena: si su arma está encantada, la luz del encantamiento tiñe lo que tiene cerca. */
+export function personajeEscena(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } {
+  const piezas = personaje(cu, eq, dir, acc, f);
+  const en = eq.arma?.encanto;
+  if (!en || !eq.arma) return { piezas };
+  const e = esqueleto(cu, dir, acc, f, eq.arma.tipo);
+  const [a, b] = filoDe(e, eq.arma.tipo, e.brazos[0]);
+  return { piezas, resplandor: { c: mez(a, b, 0.5), r: 15 * e.S, color: ENCANTOS.find((x) => x[0] === en)![3] } };
+}
+
 export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): Pieza[] {
   const tipoArma = eq.arma?.tipo ?? 'nada';
   const e = esqueleto(cu, dir, acc, f, tipoArma);
@@ -303,9 +329,37 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   // carne (o huesos)
   if (cu.oseo) ps.push(...huesos(e, cu));
   else {
-    let carne = partes(e, cu, todo, 0);
+    let carne = partes(e, cu, cu.flota ? todo.filter((p) => p !== 'pantorrilla' && p !== 'pie') : todo, 0);
     if (cu.parches) carne = carne.map((c, i) => (i % 3 === 1 ? { ...c, mat: cu.parches } : c));
+    if (cu.demacrado) for (let k = 0; k < 5; k++) for (const s of [1, -1]) {
+      // costillas que se marcan bajo la piel del pecho
+      const z = e.zc + (8.6 + k * 2) * S, w = (4.9 - Math.abs(k - 2) * 0.3) * A;
+      carne.push(hueso(T(-0.5 * S, s * w, z), T(3.3 * A, s * 1.2 * A, z - 2 * S), 0.55 * S, 0.45 * S, { mat: cu.piel, k: 0.5 }));
+    }
     ps.push(masa(carne, { mat: cu.piel, suave: 1.6 }));
+  }
+  // terror: fauces con dientes, heridas, garras y jirones de ectoplasma bajo el que flota
+  if (cu.boca) {
+    const g = cu.boca === 'fauces';
+    ps.push(elipsoide(...cab(3.55 * H, 0, cz - 2.2 * H), (g ? 1.1 : 0.7) * H, (g ? 1.9 : 1.6) * H, (g ? 1.5 : 0.5) * H, { mat: 'cu_tela_negra' }));
+    const filas: [number, number][] = g ? [[-1.1, 1], [-3.2, -1]] : [[-1.7, 1]];
+    for (const [z, sg] of filas) for (let k = -2; k <= 2; k++) {
+      const base = cab((3.9 - Math.abs(k) * 0.25) * H, k * 0.65 * H, cz + z * H), punta = cab((3.95 - Math.abs(k) * 0.25) * H, k * 0.62 * H, cz + (z - sg * (Math.abs(k) === 2 && !g ? 1.6 : 0.9)) * H);
+      ps.push(palo(base, punta, 0.28 * H, { mat: 'cu_hueso', r1: 0.04 }));
+    }
+  }
+  if (cu.heridas) for (let k = 0; k < 5; k++) {
+    const sgn = k % 2 ? 1 : -1;
+    ps.push(elipsoide(...T((3.4 + (k % 3) * 0.2) * A, sgn * (1 + k * 0.5) * A, e.zc + (5 + k * 2.6) * S), 0.6 * S, 1.4 * S, (1 + (k % 2)) * S, { mat: 'sangre' }));
+  }
+  if (cu.garras) for (const b of e.brazos) for (const k of [-1, 0, 1]) {
+    const lado = nor(cruz(b.d2, [0, 0, 1])), base = add(b.mano, lado, k * 0.9 * S);
+    const medio = add(add(base, b.d2, 3 * S), lado, k * 0.6 * S), punta = add(add(add(medio, b.d2, 2.6 * S), lado, k * 0.4 * S), [0, 0, -0.9 * S]);
+    ps.push(palo(base, medio, 0.4 * S, { mat: 'cu_hueso', r1: 0.3 * S }), palo(medio, punta, 0.3 * S, { mat: 'cu_hueso', r1: 0.05 }));
+  }
+  if (cu.flota) for (let k = 0; k < 7; k++) {
+    const u = ((f + k * 1.3) % 8) / 8, an = k * 0.9 + u * 2;
+    ps.push(elipsoide(...e.W(Math.cos(an) * 3 * A - u * 3 * S, Math.sin(an) * 3 * A, Math.max(1, e.zc - 14 * S - u * 6 * S)), 1.2 * S * (1 - u * 0.6), 1.2 * S * (1 - u * 0.6), 2.2 * S, { mat: 'cu_ectoplasma' }));
   }
   // ojos (un poco hundidos bajo las cejas) y boca
   const ojo = cu.ojos ?? 'cu_ojo', brilla = MATERIALES[ojo]?.emite;
@@ -443,7 +497,10 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   }
   if (cu.alas) ps.push(...alas(e, cu.alas, acc, f));
   // ---- armas y mano izquierda
-  if (eq.arma && eq.arma.tipo !== 'nada' && eq.arma.tipo !== 'puno') ps.push(...arma(e, eq.arma.tipo, e.brazos[0], eq.arma.mat ?? 'cu_placa', eq.arma.mango ?? 'cu_cuero', eq.arma.gema));
+  if (eq.arma && eq.arma.tipo !== 'nada' && eq.arma.tipo !== 'puno') {
+    ps.push(...arma(e, eq.arma.tipo, e.brazos[0], eq.arma.mat ?? 'cu_placa', eq.arma.mango ?? 'cu_cuero', eq.arma.gema));
+    if (eq.arma.encanto) { const [a, b] = filoDe(e, eq.arma.tipo, e.brazos[0]); ps.push(...encantar(a, b, eq.arma.encanto, f, e.S, 7)); }
+  }
   if (eq.izq) ps.push(...manoIzq(e, eq.izq, eq.arma?.tipo));
   void R;
   return ps;
@@ -577,17 +634,34 @@ function tocado(e: Esqueleto, cu: Cuerpo, c: NonNullable<Equipo['cabeza']>): Pie
     }
     case 'gorro': ps.push(masa([bC(-0.4, 0, 2.2, [4.4, 4.1, 3.0]), bC(-0.4, 0, 1.1, [4.6, 4.3, 1.3], c.mat2 ?? c.mat)], { mat: c.mat, suave: 1 })); break;
     case 'casco': {
-      ps.push(masa([bC(-0.3, 0, 1.6, [4.7, 4.3, 4.5]), bC(-0.3, 0, 0.5, [4.9, 4.5, 1.4], c.mat, 0.6)], { mat: c.mat, suave: 0.8 }));
-      ps.push(caja(...cab(4.0 * H, 0, cz - 1.8 * H), 0.9 * H, 0.9 * H, 4 * H, { mat: c.mat, giro: ga, tono: 0.1 })); // nasal
+      // capacete puntiagudo con nasal y cota de malla que cae sobre la nuca: facetado, no una bola
+      const P = (fw: number, rt: number, up: number): V3 => cab(fw * H, rt * H, cz + up * H);
+      const anillo = (r: number, up: number, n = 8, fw0 = 0) => Array.from({ length: n }, (_, k) => { const a = (k / n) * Math.PI * 2 + Math.PI / n; return P(fw0 + Math.cos(a) * r, Math.sin(a) * r * 0.94, up); });
+      ps.push(poliedro([...anillo(4.85, 0.2), ...anillo(4.5, 2.6), P(-1.4, 0, 7.4)], { mat: c.mat }));
+      ps.push(poliedro([...anillo(5.0, 0.0), ...anillo(5.0, 0.9)], { mat: c.mat2 ?? c.mat, tono: 0.06 }));
+      ps.push(caja(...P(4.6, 0, -3.4), 0.9 * H, 1.0 * H, 3.8 * H, { mat: c.mat, giro: ga, tono: 0.1 })); // nasal
+      ps.push(masa([bulto(P(-1.6, 0, -2.6), [3.6 * H, 4.6 * H, 3.4 * H], { ejes: ejesCab, mat: 'cu_malla' }), bulto(e.T(-1.2 * S, 0, e.hombroZ + 1.4 * S), [3.4 * S, 5.6 * S, 1.6 * S], { ejes: e.ejesT, mat: 'cu_malla' })], { mat: 'cu_malla', suave: 1.4 }));
       break;
     }
     case 'yelmo': case 'gran_yelmo': {
       const g = c.tipo === 'gran_yelmo';
-      ps.push(masa([bC(-0.1, 0, g ? 0.4 : 0.9, g ? [5.0, 4.6, 6.0] : [4.9, 4.5, 5.3]), bC(1.6, 0, -1.6, [3.4, 3.8, 3.2])], { mat: c.mat, suave: g ? 0.6 : 1.4 }));
-      ps.push(caja(...cab(4.55 * H, 0, cz + 0.1 * H), 1.0 * H, 6.2 * H, 0.8 * H, { mat: 'cu_tela_negra', giro: ga })); // visera
-      if (!g) for (let i = -1; i <= 1; i++) ps.push(caja(...cab(4.7 * H, i * 0.9 * H, cz - 2.6 * H), 0.6 * H, 0.35 * H, 1.6 * H, { mat: 'cu_tela_negra', giro: ga }));
-      ps.push(caja(...cab(0.5 * H, 0, cz + 5.0 * H), 7 * H, 0.9 * H, 0.9 * H, { mat: c.mat2 ?? c.mat, giro: ga, tono: 0.12 })); // cresta
-      if (c.mat2 === 'cu_oro') ps.push(caja(...cab(4.6 * H, 0, cz - 3 * H), 0.6 * H, 0.9 * H, 5 * H, { mat: 'cu_oro', giro: ga }));
+      const P = (fw: number, rt: number, up: number): V3 => cab(fw * H, rt * H, cz + up * H);
+      const anillo = (r: number, up: number, fwk = 1, n = 8) => Array.from({ length: n }, (_, k) => { const a = (k / n) * Math.PI * 2 + Math.PI / n; return P(Math.cos(a) * r * fwk, Math.sin(a) * r * 0.92, up); });
+      if (g) {
+        // yelmo de barril: tapa plana, costado recto y una arista al frente
+        ps.push(poliedro([...anillo(5.0, -4.4), ...anillo(5.1, 3.9), ...anillo(4.3, 5.2)], { mat: c.mat }));
+        ps.push(poliedro([P(5.0, 0.6, -4.4), P(5.0, -0.6, -4.4), P(5.6, 0, -1), P(5.6, 0, 3.6), P(4.6, 0.6, 5.0), P(4.6, -0.6, 5.0)], { mat: c.mat, tono: 0.08 }));
+        ps.push(caja(...P(5.25, 0, 0.6), 0.9 * H, 7.6 * H, 0.75 * H, { mat: 'cu_tela_negra', giro: ga }));
+        for (let k = -2; k <= 2; k++) if (k) ps.push(caja(...P(5.2, k * 1.1, -2.4), 0.7 * H, 0.45 * H, 0.45 * H, { mat: 'cu_tela_negra', giro: ga }));
+        if (c.mat2) ps.push(poliedro([...anillo(5.15, 3.0), ...anillo(5.15, 3.8)], { mat: c.mat2 }), caja(...P(5.55, 0, -3.6), 0.5 * H, 0.9 * H, 7 * H, { mat: c.mat2, giro: ga }));
+      } else {
+        // yelmo cerrado con visera en pico: facetas que agarran la luz
+        ps.push(poliedro([...anillo(4.7, -4.0, 1.02), ...anillo(5.0, 0.6, 1.05), ...anillo(4.1, 4.4), P(-0.4, 0, 6.1), P(6.2, 0, -0.6)], { mat: c.mat }));
+        ps.push(caja(...P(5.05, 0, 0.75), 1.2 * H, 6.6 * H, 0.7 * H, { mat: 'cu_tela_negra', giro: ga })); // ranura de los ojos
+        for (let k = -1; k <= 1; k++) ps.push(caja(...P(5.0, k * 1.0, -2.4), 0.8 * H, 0.35 * H, 1.5 * H, { mat: 'cu_tela_negra', giro: ga }));
+        ps.push(poliedro([P(0.6, 0.45, 6.0), P(0.6, -0.45, 6.0), P(-4.6, 0.45, 4.4), P(-4.6, -0.45, 4.4), P(2.6, 0, 6.8), P(-3.0, 0, 6.4)], { mat: c.mat2 ?? c.mat, tono: 0.12 })); // cresta
+        if (c.mat2 === 'cu_oro') ps.push(poliedro([...anillo(4.95, -3.6, 1.02), ...anillo(4.95, -2.9, 1.02)], { mat: 'cu_oro' }));
+      }
       break;
     }
     case 'cuernos': {
@@ -692,6 +766,103 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
   return ps;
 }
 
+/** El tramo vivo del arma (la hoja, la cabeza o la gema) desde la mano a lo largo de su eje. */
+function filoDe(e: Esqueleto, tipo: TipoArma, b: Brazo): [V3, V3] {
+  const S = e.S, en = (k: number) => add(b.mano, b.eje, k * S);
+  switch (tipo) {
+    case 'espada': case 'cimitarra': return [en(2), en(23)];
+    case 'mandoble': return [en(2), en(33)];
+    case 'daga': return [en(1), en(9.5)];
+    case 'hacha': return [en(16), en(23)];
+    case 'hacha_doble': return [en(24), en(31)];
+    case 'maza': case 'mangual': return [en(13), en(18)];
+    case 'martillo': return [en(21), en(27)];
+    case 'lanza': case 'alabarda': return [en(26), en(36)];
+    case 'guadana': return [en(24), en(31)];
+    case 'garras': return [en(1), en(9)];
+    case 'varita': return [en(5), en(11)];
+    case 'baculo': case 'cetro': { const t: V3 = add([b.mano[0], b.mano[1], b.mano[2] + (tipo === 'cetro' ? 12 : 26) * S], e.F, 2.4); return [t, add(t, [0, 0, 4 * S])]; }
+    case 'arco': case 'ballesta': { const c = e.brazos[1].mano; return [add(c, [0, 0, -12 * S]), add(c, [0, 0, 12 * S])]; }
+    default: return [b.mano, en(4)];
+  }
+}
+
+/**
+ * Lo vivo del arma: piezas que brillan solas y cambian en cada cuadro (llamas que suben, escarcha que destella,
+ * arcos que saltan, gotas que caen, humo de sombra que gira, runas de luz que laten, sangre que chorrea).
+ */
+export function encantar(a: V3, b: V3, en: Encanto, f: number, S = 1, semilla = 1): Pieza[] {
+  const ps: Pieza[] = [];
+  const h = (i: number) => { const x = Math.sin(i * 127.1 + semilla * 311.7) * 43758.5453; return x - Math.floor(x); };
+  const L = len(sub(b, a)), n = Math.max(3, Math.round(L / (2.4 * S)));
+  const nucleo: Record<Encanto, string> = { fuego: 'fuego', hielo: 'cu_ojo_hielo', rayo: 'cu_rayo', veneno: 'fuego_verde', sombra: 'cu_sombra', sagrado: 'cu_luz_santa', sangre: 'cu_sangre_viva' };
+  // el filo brilla
+  ps.push(palo(a, b, 0.42 * S, { mat: nucleo[en], r1: 0.25 * S }));
+  const ciclo = (i: number) => ((f + h(i) * 8) % 8) / 8;
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n, p = mez(a, b, t), u = ciclo(i);
+    switch (en) {
+      case 'fuego': {
+        // lengua de fuego que sube y se adelgaza; una brasa que se va
+        const alto = (2.2 + 2.6 * Math.sin(u * Math.PI)) * S;
+        ps.push(elipsoide(p[0] + (h(i + 9) - 0.5) * 0.8, p[1] + (h(i + 5) - 0.5) * 0.8, p[2] + alto * 0.55, 0.85 * S, 0.85 * S, alto * 0.55, { mat: u < 0.5 ? 'fuego' : 'lava' }));
+        if (i % 2 === 0) ps.push(esfera(p[0] + (h(i + 3) - 0.5) * 3 * S, p[1] + (h(i + 4) - 0.5) * 3 * S, p[2] + (3 + u * 9) * S, 0.35 * S * (1 - u * 0.6), { mat: 'fuego' }));
+        break;
+      }
+      case 'hielo': {
+        // cristales fijos a lo largo de la hoja y un destello que recorre
+        const lado: V3 = [(h(i) - 0.5), (h(i + 1) - 0.5), 0.6 + h(i + 2)];
+        const tip = add(p, nor(lado), (1.6 + h(i + 3) * 1.8) * S);
+        ps.push(poliedro([add(p, [0.5 * S, 0, 0]), add(p, [-0.5 * S, 0, 0]), add(p, [0, 0.5 * S, 0]), add(p, [0, -0.5 * S, 0]), tip], { mat: 'hielo' }));
+        if (Math.abs(t - ((f % 8) / 8)) < 0.12) ps.push(esfera(...add(tip, [0, 0, 0.3]), 0.5 * S, { mat: 'cu_ojo_hielo' }));
+        if (i % 3 === 0) ps.push(esfera(p[0] + (h(i + 7) - 0.5) * 2 * S, p[1] + (h(i + 8) - 0.5) * 2 * S, p[2] - (1 + u * 6) * S, 0.25 * S, { mat: 'cu_ojo_hielo' }));
+        break;
+      }
+      case 'rayo': {
+        // arcos en zigzag que cambian cada cuadro
+        const q = mez(a, b, Math.min(1, t + 0.3));
+        let prev = p;
+        for (let k = 1; k <= 3; k++) {
+          const m = mez(p, q, k / 3), j = (s: number) => (h(i * 17 + k * 5 + f * 31 + s) - 0.5) * 4.4 * S;
+          const nx: V3 = k === 3 ? q : [m[0] + j(1), m[1] + j(2), m[2] + j(3)];
+          ps.push(palo(prev, nx, 0.32 * S, { mat: 'cu_rayo' }));
+          prev = nx;
+        }
+        break;
+      }
+      case 'veneno': {
+        // gotas que cuelgan, se estiran y caen
+        if (i % 2) break;
+        const caida = u * 12 * S;
+        ps.push(elipsoide(p[0], p[1], p[2] - 0.8 * S - caida, 0.5 * S, 0.5 * S, (0.7 + (u < 0.3 ? u * 2 : 0.3)) * S, { mat: 'fuego_verde' }));
+        ps.push(esfera(p[0] + (h(i + 2) - 0.5) * 2 * S, p[1] + (h(i + 3) - 0.5) * 2 * S, p[2] + (1 + u * 5) * S, 0.45 * S * (1 - u), { mat: 'fuego_verde' }));
+        break;
+      }
+      case 'sombra': {
+        // jirones que giran alrededor de la hoja
+        const ang = u * Math.PI * 2 + i, r = 1.8 * S;
+        ps.push(elipsoide(p[0] + Math.cos(ang) * r, p[1] + Math.sin(ang) * r, p[2] + Math.sin(ang * 2) * r * 0.6 + u * 2 * S, 1.1 * S, 1.1 * S, 0.6 * S, { mat: 'cu_sombra' }));
+        break;
+      }
+      case 'sagrado': {
+        // runas que laten a lo largo de la hoja y chispas doradas
+        const late = 0.5 + 0.5 * Math.sin((f / 8) * Math.PI * 2 + i * 1.3);
+        ps.push(esfera(...p, (0.8 + late * 0.6) * S, { mat: 'cu_luz_santa' }));
+        if (i === 0) for (let k = 0; k < 8; k++) { const an = (k / 8) * Math.PI * 2 + f * 0.4; ps.push(esfera(p[0] + Math.cos(an) * 3.2 * S, p[1] + Math.sin(an) * 3.2 * S, p[2] + Math.sin(an * 2) * 0.6 * S, 0.35 * S, { mat: 'luz_vela' })); }
+        if (i % 2 === 0) ps.push(esfera(p[0] + (h(i + 1) - 0.5) * 4 * S, p[1] + (h(i + 2) - 0.5) * 4 * S, p[2] + (1 + u * 7) * S, 0.3 * S, { mat: 'luz_vela' }));
+        break;
+      }
+      case 'sangre': {
+        if (i % 2) break;
+        const caida = u * 10 * S;
+        ps.push(elipsoide(p[0], p[1], p[2] - 0.6 * S - caida, 0.45 * S, 0.45 * S, (0.6 + Math.min(0.6, u * 1.5)) * S, { mat: 'cu_sangre_viva' }));
+        break;
+      }
+    }
+  }
+  return ps;
+}
+
 function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArma): Pieza[] {
   const { S, F } = e;
   const b = e.brazos[1];
@@ -729,4 +900,36 @@ function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArm
     case 'arma': if (iz.arma) ps.push(...arma(e, iz.arma, b, iz.mat ?? 'cu_placa', iz.mat2 ?? 'cu_cuero')); break;
   }
   return ps;
+}
+
+// ------------------------------------------------------------------ armas sueltas (botín, exhibición, piso)
+/**
+ * Un arma sola, sin quien la empuñe: 'flota' gira despacio en el aire (8 cuadros, como el botín que se muestra),
+ * 'suelo' queda tirada en el piso y 'clavada' entra de punta en la tierra. Si tiene encantamiento, arde o brilla.
+ */
+export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; gema?: string; encanto?: Encanto }, pose: 'flota' | 'suelo' | 'clavada', f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } {
+  const largo: Partial<Record<TipoArma, number>> = { espada: 24, cimitarra: 24, mandoble: 34, daga: 10, hacha: 23, hacha_doble: 31, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 31, garras: 9, varita: 11, baculo: 30, cetro: 16, arco: 30, ballesta: 16 };
+  const L = largo[tipo] ?? 20;
+  let mano: V3, eje: V3, F: V3 = [1, 0, 0];
+  if (pose === 'flota') {
+    const a = (f / 8) * Math.PI * 2;
+    F = [Math.cos(a), Math.sin(a), 0];
+    eje = nor([F[0] * 0.75, F[1] * 0.75, 1]);
+    mano = [0, 0, 14 + Math.sin(a) * 1.5];
+    if (tipo === 'baculo' || tipo === 'cetro') mano = [0, 0, 30];
+  } else if (pose === 'suelo') {
+    eje = nor([1, -0.35, 0]); F = nor([0.35, 1, 0]);
+    mano = [-L * 0.45, L * 0.16, 1.4];
+    if (tipo === 'baculo' || tipo === 'cetro') { mano = [0, 0, 30]; }
+  } else {
+    eje = [0, 0, -1]; mano = [0, 0, L * 0.72]; F = nor([1, -1, 0]);
+  }
+  const R: V3 = [F[1], -F[0], 0];
+  const b: Brazo = { s: 1, hom: mano, codo: mano, mun: mano, mano, d1: eje, d2: eje, eje };
+  const e = { S: 1, A: 1, F, R, zc: 0, hombroZ: 0, cz: 0, brazos: [b, { ...b, mano: tipo === 'arco' || tipo === 'ballesta' ? mano : mano }] } as unknown as Esqueleto;
+  const piezas = arma(e, tipo, b, o.mat ?? 'cu_placa', o.mango ?? 'cu_cuero', o.gema);
+  if (!o.encanto) return { piezas };
+  const [a, z] = filoDe(e, tipo, b);
+  piezas.push(...encantar(a, z, o.encanto, f, 1, 3));
+  return { piezas, resplandor: { c: mez(a, z, 0.5), r: 18, color: ENCANTOS.find((x) => x[0] === o.encanto)![3] } };
 }

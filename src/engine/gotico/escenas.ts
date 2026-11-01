@@ -31,6 +31,16 @@ function kit(m: MapaGotico, seed: number): Kit {
   const W = m.ancho * 5, H = m.alto * 5;
   const ocupado = new Uint8Array(W * H);
   const pick = <T,>(xs: T[]) => xs[Math.floor(r() * xs.length)];
+  // árboles y plantas: cada uno con su propia semilla (el árbol crece distinto con cada una), nunca repetida en el mapa;
+  // lo demás (rocas, lápidas, muebles) reusa un puñado de semillas y así el paquete trae menos tiras
+  const usadas = new Set<number>();
+  const semilla = (d: ObjetoDef) => {
+    if (d.tema !== 'arboles' && !/arbol|pino|palm|helech|arbust|ceiba/.test(d.id)) return 1 + Math.floor(r() * 60);
+    let s = 1 + Math.floor(r() * 999983);
+    while (usadas.has(s)) s = 1 + Math.floor(r() * 999983);
+    usadas.add(s);
+    return s;
+  };
   const k: Kit = {
     m, r, W, H,
     buscar: (temas, palabras, sin) => REGISTRO.filter((d) => temas.includes(d.tema) && (!palabras || palabras.some((p) => d.id.includes(p))) && !(sin ?? []).some((p) => d.id.includes(p))),
@@ -43,7 +53,7 @@ function kit(m: MapaGotico, seed: number): Kit {
       if (x0 < 0 || y0 < 0 || x0 + hw > W || y0 + hh > H) return false;
       for (let y = y0; y < y0 + hh; y++) for (let x = x0; x < x0 + hw; x++) if (ocupado[y * W + x]) return false;
       for (let y = y0; y < y0 + hh; y++) for (let x = x0; x < x0 + hw; x++) ocupado[y * W + x] = 1;
-      m.objetos.push({ id: d.id, v: vv, seed: 1 + Math.floor(r() * 60), cx: Math.round(cx), cy: Math.round(cy) });
+      m.objetos.push({ id: d.id, v: vv, seed: semilla(d), cx: Math.round(cx), cy: Math.round(cy) });
       return true;
     },
     regar: (ds, n, x0, y0, x1, y1, filtro) => {
@@ -77,7 +87,9 @@ function borde(k: Kit, ds: ObjetoDef[], eje: 'x' | 'y', fijo: number, desde: num
   for (let t = desde; t < hasta; t += paso) k.poner(e[0], eje === 'x' ? t : fijo, eje === 'x' ? fijo : t, e[1]);
 }
 const sinNieve = (v: string) => !/nevad|nieve|seco|desnud|muert|quem/.test(v);
-const ARBOLES_MUERTOS = (k: Kit) => k.buscar(['arboles', 'campo'], ['muert', 'seco', 'quem', 'torc']);
+const ARBOLES_MUERTOS = (k: Kit) => k.buscar(['arboles', 'campo'], ['muert', 'seco', 'quem', 'torc', 'paramo']);
+/** Árboles de la selva (los de selva.ts y los gigantes, palmeras y helechos del taller de árboles). */
+const SELVA = (k: Kit, extra: string[]) => [...k.buscar(['selva'], ['arbol', 'palma', 'helecho', ...extra]), ...k.buscar(['arboles'], ['arbol_selva', 'palmera', 'helecho', 'pantano'])];
 
 export const PAISAJES: Paisaje[] = [
   { id: 'cementerio', nombre: ['Cementerio', 'Graveyard'], ambiente: 'noche', tam: [5, 5], armar: (k) => {
@@ -100,6 +112,7 @@ export const PAISAJES: Paisaje[] = [
     k.poner(k.buscar(['cueva'], ['entrada', 'boca'])[0] ?? k.buscar(['comun'], ['cueva'])[0], 14, 1);
     k.regar(k.buscar(['cueva'], ['estalag', 'columna', 'cristal', 'roca', 'piedra', 'escomb']), 14, 2, 2, k.W - 1, k.H - 1);
     k.regar(k.buscar(['cueva'], ['hueso', 'calav', 'costill', 'hongo', 'telar', 'raiz']), 10, 2, 2, k.W - 1, k.H - 1);
+    k.regar(k.buscar(['arboles'], ['arbol_hongo', 'hongo_gigante']), 2, 3, 3, k.W - 3, k.H - 3);
     k.regar(k.buscar(['cueva'], ['antorcha', 'tiki', 'fuego']), 3, 3, 3, k.W - 3, k.H - 3);
     k.regar(k.buscar(['cueva'], ['charco', 'pozo', 'agua', 'lago']), 1, 6, 6, k.W - 6, k.H - 6);
   } },
@@ -107,8 +120,8 @@ export const PAISAJES: Paisaje[] = [
     k.piso('selva'); k.piso('arenisca', 2, 2, 4, 4); k.piso('arenisca', 2, 4, 4, 6);
     k.poner(k.buscar(['templo_selva'], ['piram'])[0], 15, 13);
     k.regar(k.buscar(['templo_selva'], ['colum', 'idolo', 'estatua', 'cabeza', 'jaguar', 'brasero', 'altar', 'orbe']), 10, 7, 6, 24, 28);
-    k.regar(k.buscar(['selva', 'arboles'], ['arbol', 'palma', 'helecho', 'ceiba']), 12, 0, 0, k.W, 8);
-    k.regar(k.buscar(['selva', 'arboles'], ['arbol', 'palma', 'helecho', 'enred']), 8, 0, 0, 8, k.H);
+    k.regar(SELVA(k, ['ceiba']), 12, 0, 0, k.W, 8);
+    k.regar(SELVA(k, ['enred']), 8, 0, 0, 8, k.H);
     k.regar(k.buscar(['selva'], ['totem', 'calav', 'antorcha', 'hongo', 'capullo']), 6, 0, 0, k.W, k.H);
   } },
   { id: 'catedral', nombre: ['Catedral', 'Cathedral'], ambiente: 'cripta', tam: [5, 5], armar: (k) => {
@@ -168,15 +181,16 @@ export const PAISAJES: Paisaje[] = [
   { id: 'nieve', nombre: ['Montaña nevada', 'Snowy highlands'], ambiente: 'nieve', tam: [6, 6], armar: (k) => {
     k.piso('nieve');
     k.regar(k.buscar(['nieve'], ['pino', 'arbol']), 10, 0, 0, k.W, k.H);
-    k.regar(k.buscar(['arboles'], ['pino']), 6, 0, 0, k.W, k.H, (v) => v.includes('nevad'));
+    k.regar(k.buscar(['arboles'], ['pino', 'abeto', 'nevado']), 8, 0, 0, k.W, k.H, (v) => v.includes('nevad'));
     k.regar(k.buscar(['nieve'], ['roca', 'ventis']), 8, 0, 0, k.W, k.H);
     k.regar(k.buscar(['nieve'], ['barric', 'catapul', 'torre', 'totem', 'estand', 'poste', 'tronco', 'jaula', 'trineo', 'altar']), 10, 3, 3, k.W - 3, k.H - 3);
   } },
   { id: 'bosque', nombre: ['Páramo y bosque', 'Moor & forest'], ambiente: 'dia', tam: [6, 6], armar: (k) => {
     k.piso('pasto'); k.piso('camino', 0, 3, 6, 4);
-    const arb = k.buscar(['arboles'], ['roble', 'pino', 'abedul', 'sauce'], ['muert', 'tocon', 'seco', 'quem', 'jaula']);
+    // mezcla de especies y edades (cada árbol con su semilla: ninguno sale igual)
+    const arb = k.buscar(['arboles'], ['roble', 'haya', 'pino', 'abedul', 'abeto', 'alamo', 'cipres', 'sauce'], ['muert', 'tocon', 'seco', 'quem', 'jaula']);
     k.regar(arb, 10, 0, 0, k.W, 13, sinNieve); k.regar(arb, 6, 0, 21, k.W, k.H, sinNieve);
-    k.regar(k.buscar(['arboles'], ['arbust', 'helech', 'hongo', 'zarza', 'flor', 'tocon', 'tronco', 'pasto']), 14, 0, 0, k.W, k.H, sinNieve);
+    k.regar(k.buscar(['arboles'], ['arbust', 'acebo', 'enebro', 'brezo', 'helech', 'hongos', 'zarza', 'flor', 'tocon', 'tronco', 'raices', 'pasto']), 16, 0, 0, k.W, k.H, sinNieve);
     k.regar(k.buscar(['campo'], ['roca', 'penasco', 'menhir', 'mojon', 'muro_ruina', 'cerca_rota', 'letrero', 'esqueleto', 'craneo', 'fogata']), 8, 0, 0, k.W, k.H);
   } },
   { id: 'catacumbas', nombre: ['Catacumbas', 'Catacombs'], ambiente: 'cripta', tam: [5, 5], armar: (k) => {

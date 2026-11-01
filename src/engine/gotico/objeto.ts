@@ -9,10 +9,11 @@ import { pintarEscena, medirEscena, calidad, type Escena, type Pieza, type Rende
 export type Tema =
   | 'campamento' | 'campo' | 'cementerio' | 'cueva' | 'monasterio' | 'catacumbas' | 'pueblo' | 'desierto' | 'tumba' | 'cloaca'
   | 'selva' | 'templo_selva' | 'infierno' | 'nieve' | 'hielo' | 'fortaleza' | 'arcano' | 'comun' | 'armas' | 'muebles' | 'arboles' | 'casas'
-  | 'personajes' | 'monstruos';
+  | 'personajes' | 'monstruos' | 'misterio';
 
 export const TEMAS: [Tema, string, string][] = [
   ['personajes', 'Personajes (8 direcciones)', 'Characters (8 directions)'], ['monstruos', 'Monstruos (8 direcciones)', 'Monsters (8 directions)'],
+  ['misterio', 'Misterio y terror', 'Mystery & horror'],
   ['comun', 'Lo de siempre (cofres, portales, pozos)', 'Shared (chests, portals, wells)'],
   ['campamento', 'Campamento', 'Encampment'], ['campo', 'Campo y páramo', 'Wilderness'], ['arboles', 'Árboles y plantas', 'Trees & plants'],
   ['casas', 'Casas y edificios', 'Houses & buildings'], ['pueblo', 'Pueblo en ruinas', 'Ruined village'], ['muebles', 'Muebles y mesas', 'Furniture & tables'],
