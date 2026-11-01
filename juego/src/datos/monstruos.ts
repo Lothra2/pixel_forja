@@ -101,7 +101,7 @@ export const MONSTRUOS: Record<string, DefMonstruo> = Object.fromEntries([
 
 /** Monstruos de cada zona (por id de zona). Los primeros son los más comunes. */
 export const POBLACION: Record<string, string[]> = {
-  paramo: ['zombi', 'lobo_sombrio', 'necrofago', 'bandido', 'penitente', 'jabali_demonio'],
+  paramo: ['zombi', 'zombi', 'lobo_sombrio', 'necrofago', 'bandido', 'penitente'],
   cementerio: ['esqueleto', 'esqueleto_arquero', 'zombi', 'aparecida', 'murcielago_gigante', 'ahogado'],
   cueva_hambre: ['arana_cueva', 'necrofago', 'murcielago_gigante', 'arana_cueva'],
   abadia1: ['penitente', 'cultista', 'monja_hueca', 'sin_rostro', 'gargola', 'guardia_corrupto'],

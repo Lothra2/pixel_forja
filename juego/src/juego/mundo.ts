@@ -172,7 +172,7 @@ function crearNpcs(z: Zona): Npc[] {
 // ------------------------------------------------------------------ monstruos
 function escalar(def: DefMonstruo, nivel: number) {
   const k = nivel - 1;
-  return { vida: Math.max(4, Math.round(def.vida * 0.6 * (1 + k * 0.32) * (1 + k * 0.012))), dano: [Math.max(1, Math.round(def.dano[0] * 0.85 * (1 + k * 0.17))), Math.max(1, Math.round(def.dano[1] * 0.85 * (1 + k * 0.17)))] as [number, number], defensa: Math.round(def.def + nivel * 7), xp: Math.round(def.xp * Math.pow(nivel, 1.18)) };
+  return { vida: Math.max(4, Math.round(def.vida * 0.6 * (1 + k * 0.32) * (1 + k * 0.012))), dano: [Math.max(1, Math.round(def.dano[0] * (k < 6 ? 0.6 : 0.75) * (1 + k * 0.17))), Math.max(1, Math.round(def.dano[1] * (k < 6 ? 0.6 : 0.75) * (1 + k * 0.17)))] as [number, number], defensa: Math.round(def.def + nivel * 7), xp: Math.round(def.xp * Math.pow(nivel, 1.18)) };
 }
 export function crearMonstruo(def: DefMonstruo, nivel: number, x: number, y: number, calidad = 0, dif = 0): Monstruo {
   const s = escalar(def, nivel + dif * 0);
@@ -231,7 +231,7 @@ function poblar(z: Zona, d: DatosHeroe): Monstruo[] {
       }
       continue;
     }
-    const n = Math.max(1, Math.round((dm.ia === 'enjambre' ? 5 : dm.ia === 'bruto' ? 2 : 3) * s.fuerza));
+    const n = Math.max(1, Math.round((dm.ia === 'enjambre' ? (z.nivel < 6 ? 3 : 5) : dm.ia === 'bruto' ? 2 : z.nivel < 6 ? 2 : 3) * s.fuerza));
     for (let i = 0; i < n; i++) { const q = libreCerca(z, s.cx + entre(-2.5, 2.5), s.cy + entre(-2.5, 2.5)); out.push(crearMonstruo(i > 0 && R() < 0.3 ? MONSTRUOS[elegir(pool)] : dm, nivel, q[0] + 0.5, q[1] + 0.5, 0, dif)); }
   }
   return out;
@@ -975,7 +975,7 @@ function iniciarAtaque(j: Juego, m: Monstruo, obj: Ent, distancia: boolean) {
   const lanza = distancia && (m.def.ia === 'mago' || m.def.ia === 'invocador' || m.def.jefe) && (MONSTRUOS[m.def.id]?.ia !== 'distancia');
   m.acc = lanza && hayLanzar(m) ? 'lanzar' : 'atacar'; m.t = 0;
   m.dur = (m.def.jefe ? 0.9 : 0.8) / (m.mods.includes('rapido') ? 1.4 : 1); m.golpeEn = m.dur * 0.55; m.golpeo = false;
-  m.cd = entre(0.5, 1.2) + (distancia ? 0.6 : 0);
+  m.cd = (m.def.jefe || m.def.ia === 'jefe' ? entre(0.5, 1.1) : entre(0.9, 1.7)) + (distancia ? 0.6 : 0);
   (m as any).aDist = distancia; m.objetivo = obj;
 }
 const hayLanzar = (m: Monstruo) => !!(m.def.ia === 'mago' || m.def.ia === 'invocador' || m.def.jefe || m.def.id === 'cultista' || m.def.id === 'monja_hueca');
