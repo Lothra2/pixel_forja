@@ -43,8 +43,8 @@ describe('interfaz del taller gótico (hud)', () => {
       expect(sinPisarse(zonas), id).toEqual([]);
     }
     expect(firma(H.panelPersonaje('es').img)).not.toBe(firma(H.panelPersonaje('en').img));
-    expect(H.panelInventario('es').zonas.filter((z) => z.tipo === 'casillero')).toHaveLength(40);
-    expect(H.panelInventario('es').zonas.filter((z) => z.tipo === 'equipo')).toHaveLength(10);
+    expect(H.panelInventario('es').zonas.filter((z) => z.tipo === 'casillero')).toHaveLength(50);
+    expect(H.panelInventario('es').zonas.filter((z) => z.tipo === 'equipo')).toHaveLength(11);
     expect(H.panelHabilidades('es').zonas.filter((z) => z.tipo === 'habilidad')).toHaveLength(18);
   });
 
