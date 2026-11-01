@@ -213,10 +213,35 @@ export const PAISAJES: Paisaje[] = [
 ];
 
 /** Arma un paisaje con su semilla. */
-export function generarPaisaje(id: string, seed = 1): MapaGotico {
+/**
+ * Quién vive en cada paisaje: monstruos (y en el campamento, gente del lugar) que se ponen quietos en celdas libres,
+ * mirando a cualquier lado, para que el lugar se vea habitado. Los ids que no existan se saltan.
+ */
+export const HABITANTES: Record<string, string[]> = {
+  cementerio: ['mon_esqueleto', 'mon_zombi', 'mon_aparecida', 'mon_necrofago', 'mon_esqueleto_arquero'],
+  cueva: ['mon_arana_cueva', 'mon_murcielago_gigante', 'mon_lobo_sombrio', 'mon_trol_pantano'],
+  templo: ['mon_brujo_diablillo', 'mon_diablillo', 'mon_trol_pantano', 'mon_escorpion_gigante'],
+  catedral: ['mon_cultista', 'mon_sacerdote_caido', 'mon_penitente', 'mon_sin_rostro'],
+  campamento: ['per_templario_novato', 'per_cazadora_novato', 'per_druida_novato', 'per_alquimista_novato'],
+  pueblo: ['mon_zombi', 'mon_bandido', 'mon_necrofago', 'mon_aparecida'],
+  desierto: ['mon_momia', 'mon_escorpion_gigante', 'mon_bandido'],
+  tumba: ['mon_momia', 'mon_esqueleto', 'mon_cangrejo_cripta'],
+  infierno: ['mon_diablillo', 'mon_perro_infernal', 'mon_desollado', 'mon_caballero_abismo'],
+  nieve: ['mon_lobo_sombrio', 'mon_satiro', 'mon_espectro'],
+  bosque: ['mon_lobo_sombrio', 'mon_jabali_demonio', 'mon_bandido', 'mon_bruja'],
+  catacumbas: ['mon_esqueleto', 'mon_esqueleto_arquero', 'mon_carcelero', 'mon_caballero_muerto'],
+  arcano: ['mon_sin_rostro', 'mon_espectro', 'mon_gargola'],
+  fortaleza: ['mon_caballero_espectral', 'mon_gargola', 'mon_guardia_corrupto'],
+};
+
+export function generarPaisaje(id: string, seed = 1, o: { habitantes?: number } = {}): MapaGotico {
   const p = PAISAJES.find((x) => x.id === id) ?? PAISAJES[0];
   const m = crearMapa(p.tam[0], p.tam[1], 'pasto', p.nombre[0]);
   m.ambiente = p.ambiente;
-  p.armar(kit(m, seed));
+  const k = kit(m, seed);
+  p.armar(k);
+  const n = o.habitantes ?? Math.round(p.tam[0] * p.tam[1] / 6);
+  const seres = (HABITANTES[p.id] ?? []).map((x) => REGISTRO.find((d) => d.id === `${x}_quieto`)).filter((d): d is ObjetoDef => !!d);
+  if (n > 0 && seres.length) k.regar(seres, n, 3, 3, k.W - 3, k.H - 3);
   return m;
 }
