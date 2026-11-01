@@ -61,7 +61,7 @@ interface Tematica {
   muroX?: [string, string[]]; muroY?: [string, string[]];
   deco?: Sel[]; vinetas?: string[];
 }
-const vivo = (v: string) => !/nevad|nieve|seco|desnud|muert|quem|otono/.test(v);
+
 const TEMATICAS: Record<string, Tematica> = {
   paramo: {
     piso: 'pasto_seco', parches: ['pasto', 'tierra', 'pasto_seco'], camino: 'camino', ambiente: 'atardecer', oscuridad: 0.45,
@@ -253,7 +253,7 @@ function exterior(def: DefZona, semilla: number): Zona {
   }
   // salidas en los lados y el camino que las une pasando por el centro
   const puntos: [number, number][] = [];
-  const lados = def.salidas.map((s) => s.lado);
+
   const enLado = (lado: string): [number, number] => {
     for (let i = 0; i < 200; i++) {
       const u = 0.3 + r() * 0.4;

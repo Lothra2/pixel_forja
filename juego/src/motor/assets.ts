@@ -9,7 +9,7 @@ export interface Cuadro {
   hoja?: [number, number, number, number];
 }
 export interface ObjMeta { f: Cuadro[]; t: number; hu: [number, number]; b: number; tema: string; luz: [number, string, number] | 0; plano: number }
-interface Manifiesto { atlas: Record<string, [string, number, number]>; h: Record<string, any[]>; m: Record<string, any[]>; o: Record<string, any>; p: Record<string, any[]>; i?: Record<string, any[]> }
+interface Manifiesto { atlas: Record<string, [string, number, number]>; h: Record<string, any[]>; m: Record<string, any[]>; o: Record<string, any>; p: Record<string, any[]>; i?: Record<string, any[]>; w?: Record<string, any[]>; wm?: Record<string, any> }
 
 let man: Manifiesto | null = null;
 const imgs = new Map<string, HTMLImageElement | ImageBitmap>();
@@ -70,7 +70,7 @@ export function objetoMeta(id: string, v: string): ObjMeta | null {
   return o;
 }
 /** Atlas que usa una lista de claves. */
-export function atlasDe(grupo: 'h' | 'm' | 'p' | 'o' | 'i', claves: string[]): Set<string> {
+export function atlasDe(grupo: 'h' | 'm' | 'p' | 'o' | 'i' | 'w', claves: string[]): Set<string> {
   const s = new Set<string>();
   const g = (man as any)?.[grupo] ?? {};
   for (const k of claves) {
@@ -81,7 +81,7 @@ export function atlasDe(grupo: 'h' | 'm' | 'p' | 'o' | 'i', claves: string[]): S
   return s;
 }
 /** Todas las claves de un grupo que empiezan con un prefijo (p. ej. 'zombi/'). */
-export function clavesCon(grupo: 'h' | 'm' | 'p' | 'o' | 'i', prefijo: string): string[] {
+export function clavesCon(grupo: 'h' | 'm' | 'p' | 'o' | 'i' | 'w', prefijo: string): string[] {
   return Object.keys((man as any)?.[grupo] ?? {}).filter((k) => k.startsWith(prefijo));
 }
 

@@ -16,7 +16,10 @@
     "samples": "tsx scripts/render-samples.ts",
     "entregables": "tsx scripts/deliverables.ts",
     "kit": "tsx scripts/game-kit.ts",
-    "deportes": "tsx scripts/sports-kit.ts"
+    "deportes": "tsx scripts/sports-kit.ts",
+    "juego": "vite --config juego/vite.config.ts",
+    "juego:build": "vite build --config juego/vite.config.ts",
+    "juego:hornear": "tsx juego/hornear/hornear.mts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
