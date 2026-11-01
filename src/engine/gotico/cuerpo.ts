@@ -925,11 +925,13 @@ export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; ge
     eje = [0, 0, -1]; mano = [0, 0, L * 0.72]; F = nor([1, -1, 0]);
   }
   const R: V3 = [F[1], -F[0], 0];
+  // las armas cortas se muestran más grandes para que se lean como botín
+  const SS = L < 14 ? 1.7 : 1;
   const b: Brazo = { s: 1, hom: mano, codo: mano, mun: mano, mano, d1: eje, d2: eje, eje };
-  const e = { S: 1, A: 1, F, R, zc: 0, hombroZ: 0, cz: 0, brazos: [b, { ...b, mano: tipo === 'arco' || tipo === 'ballesta' ? mano : mano }] } as unknown as Esqueleto;
+  const e = { S: SS, A: SS, F, R, zc: 0, hombroZ: 0, cz: 0, brazos: [b, { ...b, mano: tipo === 'arco' || tipo === 'ballesta' ? mano : mano }] } as unknown as Esqueleto;
   const piezas = arma(e, tipo, b, o.mat ?? 'cu_placa', o.mango ?? 'cu_cuero', o.gema);
   if (!o.encanto) return { piezas };
   const [a, z] = filoDe(e, tipo, b);
-  piezas.push(...encantar(a, z, o.encanto, f, 1, 3));
+  piezas.push(...encantar(a, z, o.encanto, f, SS, 3));
   return { piezas, resplandor: { c: mez(a, z, 0.5), r: 18, color: ENCANTOS.find((x) => x[0] === o.encanto)![3] } };
 }
