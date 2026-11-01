@@ -146,3 +146,18 @@ input[type='number'] { width: 70px; }
 .controles-video .rango { flex: 1 1 180px; min-width: 0; }
 .controles-video .reloj { font-variant-numeric: tabular-nums; }
 .pantalla.cuadrada canvas { width: min(540px, 100%) !important; aspect-ratio: 1 / 1; }
+
+/* taller gótico */
+.gotico { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .gotico { grid-template-columns: minmax(0, 1fr); } }
+.gotico-vista { overflow: auto; max-height: 78vh; background: #0b0a0c; border-radius: 10px; border: 1px solid rgba(255,255,255,.08); }
+.gotico-mapa { display: block; cursor: crosshair; }
+.gotico-barra { flex-wrap: wrap; }
+.gotico-paleta .assets { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); max-height: 70vh; overflow: auto; }
+.gotico-paleta .asset canvas, .gotico-paleta .asset .vacio { width: 64px; height: 64px; background: #1a1714; border-radius: 6px; }
+.gotico-paleta .asset.on { outline: 2px solid #f4c430; }
+.gotico-paleta .asset span { font-size: 11px; line-height: 1.15; }
+.gotico-props { margin-top: 10px; }
+.gotico-vista { position: relative; }
+.gotico-aviso { position: sticky; left: 12px; bottom: 12px; display: inline-block; margin: -44px 0 0 12px; padding: 6px 10px; border-radius: 8px; background: rgba(20,16,22,.85); color: #f4c430; font-size: 13px; }
+.gotico-aviso[hidden] { display: none; }

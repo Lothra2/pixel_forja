@@ -10,6 +10,7 @@ import { h, canvasPixel, dibujar, lienzo, tr, lang, setLang, guardar, leer } fro
 import { reproductor, type Reproductor } from './reproductor';
 import { montarArena } from './arena';
 import { montarTaller } from './taller';
+import { montarGotico } from './gotico';
 import { montarExportar } from './exportar';
 import { montarVideo } from './video';
 
@@ -20,7 +21,7 @@ import { montarVideo } from './video';
 
 const T: Record<string, [string, string]> = {
   sub: ['Muñecos calcados del video, para muchos juegos', 'Video-traced chibis for many games'],
-  original: ['El video', 'The video'], familia: ['Familia', 'Family'], tienda: ['Tienda', 'Shop'], movs: ['Movimientos', 'Moves'], arena: ['Arena', 'Arena'], taller: ['Taller de escenarios', 'Stage workshop'], exportar: ['Exportar', 'Export'],
+  original: ['El video', 'The video'], familia: ['Familia', 'Family'], tienda: ['Tienda', 'Shop'], movs: ['Movimientos', 'Moves'], arena: ['Arena', 'Arena'], taller: ['Taller de escenarios', 'Stage workshop'], gotico: ['Taller gótico', 'Gothic workshop'], exportar: ['Exportar', 'Export'],
   editar: ['Abrir en la tienda', 'Open in shop'], pelear: ['Pelear con este', 'Fight with this one'],
   nombre: ['Nombre', 'Name'], guardar: ['Guardar en mis muñecos', 'Save to my chibis'], azar: ['Sorpréndeme', 'Surprise me'], mios: ['Mis muñecos', 'My chibis'],
   vacio: ['Todavía no guardaste ninguno.', 'You have not saved any yet.'], anim: ['Animación', 'Animation'], vel: ['Velocidad', 'Speed'], cajas: ['Cajas de golpe', 'Hitboxes'],
@@ -84,7 +85,7 @@ function miniatura(r: Raster, caja: number, escala: number): HTMLCanvasElement {
 
 // ------------------------------------------------------------------ estructura
 const app = document.getElementById('app')!;
-const pestañas: [string, string][] = [['original', '🎬'], ['familia', '👪'], ['tienda', '🛍'], ['movs', '🎞'], ['arena', '🥊'], ['taller', '🏗'], ['exportar', '📦']];
+const pestañas: [string, string][] = [['original', '🎬'], ['familia', '👪'], ['tienda', '🛍'], ['movs', '🎞'], ['arena', '🥊'], ['taller', '🏗'], ['gotico', '🏰'], ['exportar', '📦']];
 const secciones: Record<string, HTMLElement> = {};
 const montadas = new Set<string>();
 const alMostrar: Record<string, () => void> = {};
@@ -118,6 +119,7 @@ function montar(k: string) {
   if (k === 'movs') montarMovimientos(s);
   if (k === 'arena') montarArena(s, { look: () => estado.look, oyente: (f) => oyentes.add(f) });
   if (k === 'taller') montarTaller(s, { look: () => estado.look });
+  if (k === 'gotico') montarGotico(s);
   if (k === 'exportar') montarExportar(s, { look: () => estado.look, mios: () => estado.mios });
 }
 
