@@ -587,6 +587,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     let s = 0, nn = 0, p: V3 = sm[0].p;
     for (const q of sm) if (q.mat === matId) { s += q.s; if (!nn) p = q.p; nn++; }
     s /= nn;
+    if (!Number.isFinite(s)) s = 0.5;
     const m = MATERIALES[matId] ?? MATERIALES.piedra;
     const R = rampa(m, matId);
     // la rampa con 3 tonos intermedios entre cada par de colores (paleta de 256 de la época) y trama suave
