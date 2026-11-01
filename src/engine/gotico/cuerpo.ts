@@ -577,17 +577,34 @@ function tocado(e: Esqueleto, cu: Cuerpo, c: NonNullable<Equipo['cabeza']>): Pie
     }
     case 'gorro': ps.push(masa([bC(-0.4, 0, 2.2, [4.4, 4.1, 3.0]), bC(-0.4, 0, 1.1, [4.6, 4.3, 1.3], c.mat2 ?? c.mat)], { mat: c.mat, suave: 1 })); break;
     case 'casco': {
-      ps.push(masa([bC(-0.3, 0, 1.6, [4.7, 4.3, 4.5]), bC(-0.3, 0, 0.5, [4.9, 4.5, 1.4], c.mat, 0.6)], { mat: c.mat, suave: 0.8 }));
-      ps.push(caja(...cab(4.0 * H, 0, cz - 1.8 * H), 0.9 * H, 0.9 * H, 4 * H, { mat: c.mat, giro: ga, tono: 0.1 })); // nasal
+      // capacete puntiagudo con nasal y cota de malla que cae sobre la nuca: facetado, no una bola
+      const P = (fw: number, rt: number, up: number): V3 => cab(fw * H, rt * H, cz + up * H);
+      const anillo = (r: number, up: number, n = 8, fw0 = 0) => Array.from({ length: n }, (_, k) => { const a = (k / n) * Math.PI * 2 + Math.PI / n; return P(fw0 + Math.cos(a) * r, Math.sin(a) * r * 0.94, up); });
+      ps.push(poliedro([...anillo(4.85, 0.2), ...anillo(4.5, 2.6), P(-1.4, 0, 7.4)], { mat: c.mat }));
+      ps.push(poliedro([...anillo(5.0, 0.0), ...anillo(5.0, 0.9)], { mat: c.mat2 ?? c.mat, tono: 0.06 }));
+      ps.push(caja(...P(4.6, 0, -3.4), 0.9 * H, 1.0 * H, 3.8 * H, { mat: c.mat, giro: ga, tono: 0.1 })); // nasal
+      ps.push(masa([bulto(P(-1.6, 0, -2.6), [3.6 * H, 4.6 * H, 3.4 * H], { ejes: ejesCab, mat: 'cu_malla' }), bulto(e.T(-1.2 * S, 0, e.hombroZ + 1.4 * S), [3.4 * S, 5.6 * S, 1.6 * S], { ejes: e.ejesT, mat: 'cu_malla' })], { mat: 'cu_malla', suave: 1.4 }));
       break;
     }
     case 'yelmo': case 'gran_yelmo': {
       const g = c.tipo === 'gran_yelmo';
-      ps.push(masa([bC(-0.1, 0, g ? 0.4 : 0.9, g ? [5.0, 4.6, 6.0] : [4.9, 4.5, 5.3]), bC(1.6, 0, -1.6, [3.4, 3.8, 3.2])], { mat: c.mat, suave: g ? 0.6 : 1.4 }));
-      ps.push(caja(...cab(4.55 * H, 0, cz + 0.1 * H), 1.0 * H, 6.2 * H, 0.8 * H, { mat: 'cu_tela_negra', giro: ga })); // visera
-      if (!g) for (let i = -1; i <= 1; i++) ps.push(caja(...cab(4.7 * H, i * 0.9 * H, cz - 2.6 * H), 0.6 * H, 0.35 * H, 1.6 * H, { mat: 'cu_tela_negra', giro: ga }));
-      ps.push(caja(...cab(0.5 * H, 0, cz + 5.0 * H), 7 * H, 0.9 * H, 0.9 * H, { mat: c.mat2 ?? c.mat, giro: ga, tono: 0.12 })); // cresta
-      if (c.mat2 === 'cu_oro') ps.push(caja(...cab(4.6 * H, 0, cz - 3 * H), 0.6 * H, 0.9 * H, 5 * H, { mat: 'cu_oro', giro: ga }));
+      const P = (fw: number, rt: number, up: number): V3 => cab(fw * H, rt * H, cz + up * H);
+      const anillo = (r: number, up: number, fwk = 1, n = 8) => Array.from({ length: n }, (_, k) => { const a = (k / n) * Math.PI * 2 + Math.PI / n; return P(Math.cos(a) * r * fwk, Math.sin(a) * r * 0.92, up); });
+      if (g) {
+        // yelmo de barril: tapa plana, costado recto y una arista al frente
+        ps.push(poliedro([...anillo(5.0, -4.4), ...anillo(5.1, 3.9), ...anillo(4.3, 5.2)], { mat: c.mat }));
+        ps.push(poliedro([P(5.0, 0.6, -4.4), P(5.0, -0.6, -4.4), P(5.6, 0, -1), P(5.6, 0, 3.6), P(4.6, 0.6, 5.0), P(4.6, -0.6, 5.0)], { mat: c.mat, tono: 0.08 }));
+        ps.push(caja(...P(5.25, 0, 0.6), 0.9 * H, 7.6 * H, 0.75 * H, { mat: 'cu_tela_negra', giro: ga }));
+        for (let k = -2; k <= 2; k++) if (k) ps.push(caja(...P(5.2, k * 1.1, -2.4), 0.7 * H, 0.45 * H, 0.45 * H, { mat: 'cu_tela_negra', giro: ga }));
+        if (c.mat2) ps.push(poliedro([...anillo(5.15, 3.0), ...anillo(5.15, 3.8)], { mat: c.mat2 }), caja(...P(5.55, 0, -3.6), 0.5 * H, 0.9 * H, 7 * H, { mat: c.mat2, giro: ga }));
+      } else {
+        // yelmo cerrado con visera en pico: facetas que agarran la luz
+        ps.push(poliedro([...anillo(4.7, -4.0, 1.02), ...anillo(5.0, 0.6, 1.05), ...anillo(4.1, 4.4), P(-0.4, 0, 6.1), P(6.2, 0, -0.6)], { mat: c.mat }));
+        ps.push(caja(...P(5.05, 0, 0.75), 1.2 * H, 6.6 * H, 0.7 * H, { mat: 'cu_tela_negra', giro: ga })); // ranura de los ojos
+        for (let k = -1; k <= 1; k++) ps.push(caja(...P(5.0, k * 1.0, -2.4), 0.8 * H, 0.35 * H, 1.5 * H, { mat: 'cu_tela_negra', giro: ga }));
+        ps.push(poliedro([P(0.6, 0.45, 6.0), P(0.6, -0.45, 6.0), P(-4.6, 0.45, 4.4), P(-4.6, -0.45, 4.4), P(2.6, 0, 6.8), P(-3.0, 0, 6.4)], { mat: c.mat2 ?? c.mat, tono: 0.12 })); // cresta
+        if (c.mat2 === 'cu_oro') ps.push(poliedro([...anillo(4.95, -3.6, 1.02), ...anillo(4.95, -2.9, 1.02)], { mat: 'cu_oro' }));
+      }
       break;
     }
     case 'cuernos': {
