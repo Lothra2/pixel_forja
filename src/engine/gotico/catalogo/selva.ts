@@ -27,7 +27,8 @@ function rotarZ(ps: Pieza[], g: number): Pieza[] {
   return ps.map((p): Pieza => {
     if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => [R(n), d] as [V3, number]), pts: p.pts.map(R) };
     if (p.k === 'cono') return { ...p, o: R(p.o), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
-    return { ...p, c: R(p.c), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+    if (p.k === 'elip') return { ...p, c: R(p.c), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+    return p;
   });
 }
 /** Agrega a cada variante su gemela a lo largo del eje y (`<variante>_y`): las mismas piezas giradas -90°. */

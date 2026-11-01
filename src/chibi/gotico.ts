@@ -41,7 +41,7 @@ export function montarGotico(s: HTMLElement) {
   const punto = (e: MouseEvent): [number, number] => { const r = lienzo.getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * lienzo.width, ((e.clientY - r.top) / r.height) * lienzo.height]; };
 
   // ---- héroe: camina hacia donde se hace clic con la tecla H o en modo héroe, en 8 direcciones
-  const heroe = { activo: false, clase: 'per_paladin', x: 40, y: 40, meta: null as [number, number] | null, dir: 's' as Dir };
+  const heroe = { activo: false, clase: 'per_templario', x: 40, y: 40, meta: null as [number, number] | null, dir: 's' as Dir };
   const rumbo = (dx: number, dy: number): Dir => {
     // ángulo sobre el piso: 0 = +x (abajo a la derecha en pantalla)
     const a = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;

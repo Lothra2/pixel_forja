@@ -19,8 +19,8 @@ export const NOMBRE_DIR: Record<Dir, [string, string]> = {
   n: ['Norte (de espalda)', 'North (back)'], ne: ['Noreste', 'Northeast'], e: ['Este', 'East'], se: ['Sureste', 'Southeast'],
 };
 
-export type Accion = 'quieto' | 'caminar' | 'atacar' | 'lanzar' | 'morir';
-export const CUADROS: Record<Accion, number> = { quieto: 4, caminar: 8, atacar: 8, lanzar: 8, morir: 8 };
+export type Accion = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'lanzar' | 'herido' | 'morir';
+export const CUADROS: Record<Accion, number> = { quieto: 4, caminar: 8, correr: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8 };
 
 /** Ángulos en grados. Brazos: adelante (+) / atrás (-), afuera, codo. Piernas: adelante/atrás, rodilla. */
 export interface Pose {
@@ -52,6 +52,20 @@ export function pose(acc: Accion, f: number, arma: 'una' | 'dos' | 'arco' | 'bac
     p.bajar = 1.2 - Math.abs(c) * 1.2; p.torso = 8; p.giroTorso = -s * 8;
     if (arma === 'dos') { p.hombroD = [30, 8, 50]; p.hombroI = [36, 14, 58]; }
     if (arma === 'arco') { p.hombroI = [s * 18 + 10, 8, 20]; }
+  } else if (acc === 'correr') {
+    // zancada larga, el cuerpo adelante, brazos que bombean y una fase en el aire (cuadros 2 y 6)
+    const s = Math.sin(t), c = Math.cos(t);
+    p.caderaD = [s * 42 + 6, 10 + Math.max(0, -c) * 70]; p.caderaI = [-s * 42 + 6, 10 + Math.max(0, c) * 70];
+    p.hombroD = [-s * 45 + 10, 10, 70]; p.hombroI = [s * 45 + 10, 10, 70];
+    p.bajar = 2.6 - Math.abs(s) * 2.2; p.torso = 18; p.giroTorso = -s * 12; p.cabeza = -8;
+    if (arma === 'dos') { p.hombroD = [36 - s * 6, 8, 60]; p.hombroI = [42 - s * 6, 14, 64]; }
+    if (arma === 'baculo') p.hombroD = [20 - s * 8, 10, 60];
+  } else if (acc === 'herido') {
+    // el golpe lo echa atrás: retrocede, encoge y vuelve
+    const k = [0.5, 1, 0.75, 0.3][f % 4];
+    p.torso = -14 * k; p.cabeza = -16 * k; p.avanza = -2.6 * k; p.bajar = 1.6 * k; p.giroTorso = 10 * k;
+    p.hombroD = [lerp(12, -25, k), lerp(12, 34, k), lerp(25, 60, k)]; p.hombroI = [lerp(10, -15, k), lerp(12, 40, k), lerp(22, 70, k)];
+    p.caderaD = [lerp(8, 24, k), lerp(10, 30, k)]; p.caderaI = [lerp(-6, -14, k), lerp(6, 10, k)];
   } else if (acc === 'atacar') {
     // cuadros clave como se anima a mano: carga (0-2), arriba (3), golpe (4), seguimiento (5), vuelta (6-7)
     const K = {

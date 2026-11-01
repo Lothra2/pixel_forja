@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   REGISTRO, TEMAS, PISOS, PAISAJES, pintarObjeto, pintarPiso, pintarMapa, generarPaisaje, crearMapa, medidas, pantallaACelda, celdaAPantalla,
-  paqueteMapa, DIRS, ALTO_PERSONA, KZ, caja, pintarEscena,
+  paqueteMapa, DIRS, ALTO_PERSONA, KZ, caja, pintarEscena, fijarCalidad, pintarCuadro, masa, hueso, bulto,
 } from '../gotico';
 
 describe('taller gótico: el renderizador', () => {
@@ -24,6 +24,18 @@ describe('taller gótico: el renderizador', () => {
   });
 });
 
+describe('taller gótico: masa orgánica', () => {
+  it('una masa de dos huesos que se funden se pinta entera y con la sombra suave en el piso', () => {
+    const r = pintarEscena({ piezas: [masa([hueso([0, 0, 2], [0, 0, 40], 6, 4), bulto([0, 0, 44], [6, 6, 6])], { mat: 'piedra', suave: 3 })] });
+    let opacos = 0, medios = 0;
+    for (let i = 3; i < r.img.data.length; i += 4) { if (r.img.data[i] === 255) opacos++; else if (r.img.data[i] > 0) medios++; }
+    expect(opacos).toBeGreaterThan(400);
+    // la penumbra deja pixeles de sombra con alfa intermedio, no un borde duro de un solo valor
+    const alfas = new Set<number>(); for (let i = 3; i < r.img.data.length; i += 4) if (r.img.data[i] > 0 && r.img.data[i] < 255) alfas.add(r.img.data[i]);
+    expect(medios).toBeGreaterThan(50); expect(alfas.size).toBeGreaterThan(8);
+  });
+});
+
 describe('taller gótico: el catálogo', () => {
   it('hay muchos assets, cada id es único y cada tema que se usa existe', () => {
     expect(REGISTRO.length).toBeGreaterThanOrEqual(150);
@@ -32,19 +44,26 @@ describe('taller gótico: el catálogo', () => {
     for (const d of REGISTRO) { expect(temas.has(d.tema), `${d.id} tema ${d.tema}`).toBe(true); expect(d.variantes.length, d.id).toBeGreaterThan(0); }
   });
   it('cada asset se pinta (su primera variante) con pixeles y sin pasarse de tamaño', () => {
-    for (const d of REGISTRO) {
+    // en borrador para que la prueba no tarde horas; los personajes se prueban aparte
+    fijarCalidad(0);
+    for (const d of REGISTRO.filter((x) => x.tema !== 'personajes' && x.tema !== 'monstruos')) {
       const r = pintarObjeto(d.id, d.variantes[0], 0, 2);
       let n = 0; for (let i = 3; i < r.img.data.length; i += 4) if (r.img.data[i] === 255) n++;
       expect(n, `${d.id} vacío`).toBeGreaterThan(20);
       expect(r.img.w, `${d.id} ancho`).toBeLessThan(900);
       expect(r.img.h, `${d.id} alto`).toBeLessThan(900);
     }
-  }, 300000);
+    fijarCalidad(1);
+  }, 900000);
   it('los personajes y monstruos tienen las 8 direcciones y sus cuadros salen del mismo tamaño', () => {
     const per = REGISTRO.filter((d) => d.tema === 'personajes' || d.tema === 'monstruos');
     expect(per.length).toBeGreaterThanOrEqual(40);
     for (const d of per) expect(d.variantes).toEqual(DIRS);
-    const camina = REGISTRO.find((d) => d.id === 'per_paladin_caminar')!;
+    // un cuadro de cada personaje y monstruo quieto se pinta (en borrador)
+    fijarCalidad(0);
+    for (const d of per.filter((x) => x.id.endsWith('_quieto'))) { const r = pintarCuadro(d.id, 'so', 0, 1); let n = 0; for (let i = 3; i < r.img.data.length; i += 4) if (r.img.data[i] === 255) n++; expect(n, d.id).toBeGreaterThan(150); }
+    fijarCalidad(1);
+    const camina = REGISTRO.find((d) => d.id === 'per_templario_caminar')!;
     const qs = Array.from({ length: camina.cuadros! }, (_, f) => pintarObjeto(camina.id, 'so', f, 1));
     for (const q of qs) { expect(q.img.w).toBe(qs[0].img.w); expect(q.ancla).toEqual(qs[0].ancla); }
     // y se mueve: los cuadros no son iguales

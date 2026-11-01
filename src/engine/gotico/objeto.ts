@@ -1,5 +1,5 @@
 import { rng } from '../core/rng';
-import { pintarEscena, medirEscena, type Escena, type Pieza, type Render, type Ambiente, type V3, caja, cilindro, elipsoide, esfera, palo, poliedro } from './render';
+import { pintarEscena, medirEscena, calidad, type Escena, type Pieza, type Render, type Ambiente, type V3, caja, cilindro, elipsoide, esfera, palo, poliedro } from './render';
 
 /**
  * Cómo se define un asset del taller gótico: una función que arma las piezas 3D para una variante, un cuadro de
@@ -62,7 +62,8 @@ export const objeto = (id: string) => { const d = REGISTRO.find((x) => x.id === 
 export function pintarObjeto(id: string, v?: string, f = 0, seed = 1, amb?: Ambiente): Render {
   const d = objeto(id);
   const vv = v ?? d.variantes[0];
-  const k = `${id}|${vv}|${f}|${seed}|${amb ? JSON.stringify(amb) : ''}`;
+  const q = calidad();
+  const k = `${id}|${vv}|${f}|${seed}|${amb ? JSON.stringify(amb) : ''}|${q}`;
   let r = cache.get(k);
   if (r) return r;
   const escena = (ff: number): Escena => { const a = d.armar(vv, ff, herramientas(seed)); return Array.isArray(a) ? { piezas: a, sinSombra: d.plano } : { sinSombra: d.plano, ...a }; };
@@ -74,7 +75,7 @@ export function pintarObjeto(id: string, v?: string, f = 0, seed = 1, amb?: Ambi
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const e of escenas) { const q = medirEscena(e); if (!q) continue; x0 = Math.min(x0, q.x0); y0 = Math.min(y0, q.y0); x1 = Math.max(x1, q.x1); y1 = Math.max(y1, q.y1); }
     const fijo = { w: Math.ceil(x1 - x0) + 4, h: Math.ceil(y1 - y0) + 4, ax: Math.floor(-x0) + 2, ay: Math.floor(-y0) + 2 };
-    escenas.forEach((e, i) => cache.set(`${id}|${vv}|${i}|${seed}|${amb ? JSON.stringify(amb) : ''}`, pintarEscena(e, amb, fijo)));
+    escenas.forEach((e, i) => cache.set(`${id}|${vv}|${i}|${seed}|${amb ? JSON.stringify(amb) : ''}|${q}`, pintarEscena(e, amb, fijo)));
     return cache.get(k)!;
   }
   r = pintarEscena(escena(f), amb);
@@ -82,3 +83,13 @@ export function pintarObjeto(id: string, v?: string, f = 0, seed = 1, amb?: Ambi
   return r;
 }
 export const limpiarCache = () => cache.clear();
+/** Un solo cuadro sin pintar el resto de la animación (para miniaturas): su tamaño es el propio, no el común. */
+export function pintarCuadro(id: string, v?: string, f = 0, seed = 1, amb?: Ambiente): Render {
+  const d = objeto(id);
+  const vv = v ?? d.variantes[0];
+  if ((d.cuadros ?? 1) === 1) return pintarObjeto(id, vv, 0, seed, amb);
+  const k = `cuadro|${id}|${vv}|${f}|${seed}|${amb ? JSON.stringify(amb) : ''}|${calidad()}`;
+  let r = cache.get(k);
+  if (!r) { const a = d.armar(vv, f, herramientas(seed)); r = pintarEscena(Array.isArray(a) ? { piezas: a, sinSombra: d.plano } : { sinSombra: d.plano, ...a }, amb); cache.set(k, r); }
+  return r;
+}
