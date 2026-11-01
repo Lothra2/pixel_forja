@@ -112,7 +112,8 @@ function edificio(C: Lienzo, seed: number) {
   // el zócalo de abajo
   C.f(0, base - 10, W, 10, 'cemento'); C.hl(0, base - 10, W, 'cemento_claro');
   // el piso del pasillo detrás de la cancha, en concreto
-  for (let y = base; y < FT; y++) for (let x = 0; x < W; x++) C.p(x, y, y === base ? 'sombra' : (x + y) % 23 === 0 ? 'cemento' : 'cemento_claro');
+  // las juntas del concreto van derechas en el mundo: en la vista inclinada se corren 0.35 por fila, igual que la cancha
+  for (let y = base; y < FT; y++) for (let x = 0; x < W; x++) C.p(x, y, y === base ? 'sombra' : (x - Math.round(0.35 * (y - FT)) + 2300) % 23 === 0 ? 'cemento' : 'cemento_claro');
 }
 
 /** El letrero del liceo pintado en la pared, con el escudo, y el mural con los colores de la bandera. */
@@ -272,7 +273,8 @@ export function pisoLiceo(x: number, y: number, s: number): Color {
   const { x0, x1, prof } = CANCHA, dentro = x >= x0 && x <= x1 && y >= 0 && y < prof;
   const n = grain(x, y, s);
   if (dentro) return n < 0.04 ? 'verde_oscuro' : grain(x >> 3, y >> 2, s + 1) < 0.1 ? 'menta' : 'verde';
-  return n < 0.05 ? 'cemento' : (x + y) % 29 === 0 ? 'cemento' : 'cemento_claro';
+  // las juntas de las losas: derechas en x y en y (el motor inclina el piso después, y quedan paralelas a la cancha)
+  return n < 0.05 ? 'cemento' : x % 29 === 0 || y % 25 === 0 ? 'cemento' : 'cemento_claro';
 }
 
 /** Las rayas del quemado donde las pintaba Quemado.ts: el borde blanco, la raya amarilla del medio, el círculo y los cementerios rayados. */
@@ -296,7 +298,7 @@ export function rayasLiceo(P: Lienzo, _L: ObliqueLayout, seed: number) {
 export function orillaLiceo(x: number, r: number, s: number): Color {
   if (r === 0) return 'cemento';
   if (r === 1) return 'asfalto_claro';
-  return (x + r * 2) % 37 === 0 ? 'cemento' : grain(x, r, s) < 0.04 ? 'cemento' : 'cemento_claro';
+  return x % 37 === 0 || r % 25 === 24 ? 'cemento' : grain(x, r, s) < 0.04 ? 'cemento' : 'cemento_claro';
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
