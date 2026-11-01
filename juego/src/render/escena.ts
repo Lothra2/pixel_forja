@@ -7,6 +7,7 @@ import { colorObj, baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
 import { cuadrosVivos } from '../motor/pintor';
 import { R } from '../nucleo/azar';
+import { recolectar, sombras, reflejos, luces, destello, destelloColor } from './luces';
 
 export const cam = { x: 0, y: 0 };
 export const aPant = (x: number, y: number): [number, number] => [(x - y) * 16 - cam.x + W / 2, (x + y) * 8 - cam.y + (H - 96) / 2];
@@ -47,10 +48,6 @@ export function framesMonstruo(sprite: string, acc: string, dir: string): Cuadro
   return f;
 }
 
-const sombra = (x: number, y: number, r: number, a = 0.45) => {
-  ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.ellipse(x, y, r * 15, r * 7.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-};
 
 // chispas de las armas vivas (en pantalla)
 const chispas: { x: number; y: number; vx: number; vy: number; t: number; c: string }[] = [];
@@ -76,6 +73,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   cam.x = (h.x - h.y) * 16 + sx; cam.y = (h.x + h.y) * 8 + sy;
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   picks = [];
+  recolectar(j, tiempo, aPant, W, H);
   // explorar
   const btx = Math.floor(h.x / 5), bty = Math.floor(h.y / 5);
   for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const X = btx + dx, Y = bty + dy; if (X >= 0 && Y >= 0 && X < z.tw && Y < z.th && dx * dx + dy * dy <= 10) z.explorado[Y * z.tw + X] = 1; }
@@ -274,7 +272,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   const q = fs[Math.min(fs.length - 1, i)];
   const esc = e.escala;
 
-  if (!e.muerto) sombra(px, py, (e.radio / 0.45) * 0.9 * esc, 0.4);
+  if (!e.muerto) sombras(ctx, e, q, px, py, esc);
   let ok: boolean;
   if (e.destello > 0) ok = dibujarTenido(ctx, q, px, py, '#ffffff', 0.55, esc);
   else if (e.congelado > 0) ok = dibujarTenido(ctx, q, px, py, '#70b8ff', 0.55, esc);
@@ -283,6 +281,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   else if (e.tinte && e.tipo !== 'heroe') ok = dibujarTenido(ctx, q, px, py, e.tinte, e.tipo === 'invocado' ? 0.35 : 0.3, esc);
   else if (e.muerto && e.tMuerto > 60) { ctx.globalAlpha = Math.max(0.25, 1 - (e.tMuerto - 60) / 400); ok = dibujar(ctx, q, px, py, esc); ctx.globalAlpha = 1; }
   else ok = dibujar(ctx, q, px, py, esc);
+  if (ok && !e.muerto) reflejos(ctx, e, q, px, py, esc);
   // únicos y jefes: aura
   if (!e.muerto && e.tipo === 'monstruo' && m.calidad >= 2) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.18 + Math.sin(tiempo * 4) * 0.06;
@@ -338,9 +337,9 @@ function dibujarPortal(j: Juego, t: number) {
 }
 
 function dibujarLuz(j: Juego, t: number) {
-  const z = j.zona, h = j.heroe;
+  const z = j.zona;
   if (luz.width !== W || luz.height !== H) { luz.width = W; luz.height = H; brillo.width = W; brillo.height = H; }
-  const oscuro = Math.min(0.97, z.oscuridad + (z.tipo === 'pueblo' ? -0.1 : 0.08));
+  const oscuro = Math.min(0.97, z.oscuridad + (z.tipo === 'pueblo' ? -0.1 : 0.08)) * (1 - destello * 0.5);
   lctx.globalCompositeOperation = 'source-over';
   lctx.clearRect(0, 0, W, H);
   lctx.fillStyle = `rgba(0,0,0,${oscuro})`; lctx.fillRect(0, 0, W, H);
@@ -355,26 +354,15 @@ function dibujarLuz(j: Juego, t: number) {
     const g = bctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)');
     bctx.globalAlpha = a; bctx.fillStyle = g; bctx.fillRect(x - r, y - r, r * 2, r * 2); bctx.globalAlpha = 1;
   };
-  const [hx, hy] = aPant(h.x, h.y);
-  const osc = (j as any).oscurece ?? 0;
-  const rLuz = ((z.tipo === 'pueblo' ? 420 : 210) + h.c.radio_luz * 18 + Math.sin(t * 7) * 3) * (osc > 0 ? 0.55 + 0.45 * Math.max(0, 1 - Math.sin((osc / 3.5) * Math.PI)) : 1);
-  hueco(hx, hy - 20, rLuz, 1);
-  // fuegos y cosas que alumbran
-  for (const o of z.objetos) {
-    const meta = objetoMeta(o.id, o.v); if (!meta || !meta.luz) continue;
-    const [px, py] = aPant(o.cx + 0.5, o.cy + 0.5);
-    if (px < -300 || px > W + 300 || py < -300 || py > H + 300) continue;
-    const r = Math.min(260, meta.luz[0] * 1.3) * (0.93 + Math.sin(t * 9 + o.cx) * 0.04 + R() * 0.03);
-    hueco(px, py - meta.luz[2] * 1.2, r, 0.95);
-    const lc: any = meta.luz[1]; tinte(px, py - meta.luz[2] * 1.2, r * 0.8, Array.isArray(lc) ? `rgb(${lc.join(',')})` : String(lc).includes(',') ? `rgb(${lc})` : lc, 0.22);
+  for (const l of luces) {
+    const cy = l.y - Math.min(40, l.h * 0.45);
+    hueco(l.x, cy, l.r, l.blanca ? 1 : Math.min(1, 0.55 + l.k * 0.45));
+    if (!l.blanca) tinte(l.x, l.y - Math.min(30, l.h * 0.3), l.r * 0.85, `rgb(${l.c[0]},${l.c[1]},${l.c[2]})`, Math.min(0.5, 0.18 + l.k * 0.28));
   }
-  for (const p of j.proyectiles) { const [px, py] = aPant(p.x, p.y); hueco(px, py - 34, 90, 0.8); tinte(px, py - 34, 70, p.elem === 'frio' ? '#4080ff' : p.elem === 'rayo' ? '#c0c0ff' : p.elem === 'veneno' ? '#40ff40' : p.elem === 'sombra' ? '#8040ff' : p.elem === 'luz' ? '#ffe0a0' : '#ff7020', 0.35); }
-  for (const e of j.efectos) { const [px, py] = aPant(e.x, e.y); const k = Math.max(0, 1 - e.t / (e.dur ?? 1)); hueco(px, py - 20, 150 * e.escala * k + 20, 0.8 * k); }
-  for (const a of j.areas) if (a.retraso <= 0 && a.elem === 'fuego') { const [px, py] = aPant(a.x, a.y); hueco(px, py, a.radio * 30, 0.7); tinte(px, py, a.radio * 30, '#ff5010', 0.3); }
-  if (h.c.vivo) tinte(hx, hy - 40, 90, COLOR_VIVO[h.c.vivo][0], 0.25);
-  if (j.portal) { const pz = (j as any).portalZona === z.id ? aPant(j.portal.x, j.portal.y) : z.tipo === 'pueblo' && z.entradas.portal ? aPant(z.entradas.portal[0] + 0.5, z.entradas.portal[1] - 1) : null; if (pz) { hueco(pz[0], pz[1] - 40, 140, 0.9); tinte(pz[0], pz[1] - 40, 110, '#4080ff', 0.35); } }
   ctx.drawImage(luz, 0, 0);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(brillo, 0, 0); ctx.restore();
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(brillo, 0, 0);
+  if (destello > 0.02) { ctx.globalAlpha = destello * 0.16; ctx.fillStyle = `rgb(${destelloColor[0]},${destelloColor[1]},${destelloColor[2]})`; ctx.fillRect(0, 0, W, H); }
+  ctx.restore();
   // niebla de guerra: lo no explorado se ve negro del todo
   ctx.fillStyle = '#000';
   for (let by = 0; by < z.th; by++) for (let bx = 0; bx < z.tw; bx++) {
