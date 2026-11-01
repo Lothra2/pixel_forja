@@ -1,4 +1,5 @@
 import { registrar } from '../objeto';
+import { pintarEscena } from '../render';
 import { DIRS, CUADROS, type Accion } from '../figura';
 import { personajeEscena, type Cuerpo, type Equipo } from '../cuerpo';
 
@@ -17,7 +18,7 @@ const madera = 'madera', lisa = 'madera_lisa';
 export const HEROES: Heroe[] = [
   {
     id: 'berserker', nombre: ['Berserker', 'Berserker'], descripcion: ['Guerrero del norte que pelea con hachas a dos manos y rugidos.', 'Northern warrior with two-handed axes and war cries.'],
-    cuerpo: { genero: 'h', alto: 1.03, ancho: 1.14, musculo: 0.95, piel: 'cu_piel', pelo: 'cu_pelo_negro', peinado: 'melena', barba: 'trenzada' },
+    cuerpo: { presentacion: 'rugido', genero: 'h', alto: 1.03, ancho: 1.14, musculo: 0.95, piel: 'cu_piel', pelo: 'cu_pelo_negro', peinado: 'melena', barba: 'trenzada' },
     niveles: [
       { piernas: { tipo: 'pantalon', mat: 'cu_tela_parda' }, pies: { tipo: 'vendas', mat: 'cu_tela_blanca' }, cinturon: { mat: 'cu_cuero' }, arma: { tipo: 'hacha', mat: 'hierro_oxido', mango: madera } },
       { piernas: { tipo: 'pantalon', mat: 'cu_cuero_negro' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, manos: { tipo: 'brazales', mat: 'cu_cuero' }, hombros: { tipo: 'pieles', mat: 'cu_pelaje' }, cinturon: { mat: 'cu_cuero', hebilla: 'cu_placa' }, cabeza: { tipo: 'cuernos', mat: 'cu_placa_oscura' }, arma: { tipo: 'hacha_doble', mat: 'cu_placa_oscura', mango: madera } },
@@ -26,7 +27,7 @@ export const HEROES: Heroe[] = [
   },
   {
     id: 'templario', nombre: ['Templario', 'Templar'], descripcion: ['Caballero de la luz: espada, escudo y auras sagradas.', 'Knight of light: sword, shield and holy auras.'], magia: true,
-    cuerpo: { genero: 'h', ancho: 1.06, musculo: 0.6, piel: 'cu_piel_clara', pelo: 'cu_pelo_castano', peinado: 'corto', barba: 'corta' },
+    cuerpo: { presentacion: 'guardia', genero: 'h', ancho: 1.06, musculo: 0.6, piel: 'cu_piel_clara', pelo: 'cu_pelo_castano', peinado: 'corto', barba: 'corta' },
     niveles: [
       { torso: { tipo: 'malla', mat: 'cu_malla' }, piernas: { tipo: 'pantalon', mat: 'cu_tela_parda' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, cinturon: { mat: 'cu_cuero' }, tabardo: { mat: 'cu_tela_blanca' }, arma: { tipo: 'espada', mat: 'cu_placa' }, izq: { tipo: 'escudo_redondo', mat: madera, mat2: 'hierro' } },
       { torso: { tipo: 'placas', mat: 'cu_placa', mat2: 'cu_malla' }, piernas: { tipo: 'grebas', mat: 'cu_placa', mat2: 'cu_malla' }, pies: { tipo: 'sabatones', mat: 'cu_placa' }, manos: { tipo: 'guanteletes', mat: 'cu_placa' }, hombros: { tipo: 'placas', mat: 'cu_placa' }, cabeza: { tipo: 'casco', mat: 'cu_placa' }, tabardo: { mat: 'cu_tela_azul', borde: 'cu_oro' }, capa: { mat: 'cu_tela_azul' }, arma: { tipo: 'espada', mat: 'cu_placa' }, izq: { tipo: 'escudo_cometa', mat: 'cu_tela_azul', mat2: 'cu_oro' } },
@@ -35,7 +36,7 @@ export const HEROES: Heroe[] = [
   },
   {
     id: 'arcanista', nombre: ['Arcanista', 'Arcanist'], descripcion: ['Hechicera del fuego, el hielo y el rayo.', 'Sorceress of fire, frost and lightning.'], magia: true,
-    cuerpo: { genero: 'm', ancho: 0.9, musculo: 0.15, piel: 'cu_piel_clara', pelo: 'cu_pelo_rojo', peinado: 'largo' },
+    cuerpo: { presentacion: 'conjuro', genero: 'm', ancho: 0.9, musculo: 0.15, piel: 'cu_piel_clara', pelo: 'cu_pelo_rojo', peinado: 'largo' },
     niveles: [
       { torso: { tipo: 'vestido', mat: 'cu_tela_parda' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, cinturon: { mat: 'cu_cuero' }, arma: { tipo: 'varita', mango: madera } },
       { torso: { tipo: 'vestido', mat: 'cu_tela_morada' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, cinturon: { mat: 'cu_oro', hebilla: 'magia' }, cabeza: { tipo: 'diadema', mat: 'cu_oro' }, arma: { tipo: 'baculo', mango: lisa } },
@@ -44,7 +45,7 @@ export const HEROES: Heroe[] = [
   },
   {
     id: 'cazadora', nombre: ['Cazadora', 'Huntress'], descripcion: ['Arquera de los bosques: flechas, lanzas y trampas.', 'Forest archer: arrows, spears and traps.'],
-    cuerpo: { genero: 'm', alto: 1.02, ancho: 0.95, musculo: 0.45, piel: 'cu_piel_morena', pelo: 'cu_pelo_rubio', peinado: 'cola' },
+    cuerpo: { presentacion: 'apunta', genero: 'm', alto: 1.02, ancho: 0.95, musculo: 0.45, piel: 'cu_piel_morena', pelo: 'cu_pelo_rubio', peinado: 'cola' },
     niveles: [
       { torso: { tipo: 'camisa', mat: 'cu_tela_verde' }, piernas: { tipo: 'calzas', mat: 'cu_tela_parda' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, cinturon: { mat: 'cu_cuero' }, arma: { tipo: 'arco', mango: madera } },
       { torso: { tipo: 'cuero', mat: 'cu_cuero' }, piernas: { tipo: 'calzas', mat: 'cu_tela_verde' }, pies: { tipo: 'botas_altas', mat: 'cu_cuero' }, manos: { tipo: 'guantes', mat: 'cu_cuero' }, hombros: { tipo: 'cuero', mat: 'cu_cuero' }, cinturon: { mat: 'cu_cuero_negro' }, capa: { mat: 'cu_tela_verde', largo: 0.8 }, arma: { tipo: 'arco', mango: lisa } },
@@ -53,7 +54,7 @@ export const HEROES: Heroe[] = [
   },
   {
     id: 'nigromante', nombre: ['Nigromante', 'Necromancer'], descripcion: ['Señor de los huesos: invoca muertos y maldice.', 'Bone lord: raises the dead and curses.'], magia: true,
-    cuerpo: { genero: 'h', ancho: 0.9, musculo: 0.1, piel: 'cu_piel_palida', pelo: 'cu_pelo_blanco', peinado: 'largo' },
+    cuerpo: { presentacion: 'invoca', genero: 'h', ancho: 0.9, musculo: 0.1, piel: 'cu_piel_palida', pelo: 'cu_pelo_blanco', peinado: 'largo' },
     niveles: [
       { torso: { tipo: 'tunica', mat: 'cu_tela_negra' }, piernas: { tipo: 'pantalon', mat: 'cu_tela_negra' }, pies: { tipo: 'botas', mat: 'cu_cuero_negro' }, cinturon: { mat: 'cu_cuero' }, arma: { tipo: 'daga', mat: 'cu_hueso' } },
       { torso: { tipo: 'tunica', mat: 'cu_tela_negra' }, piernas: { tipo: 'tunica_larga', mat: 'cu_tela_negra' }, pies: { tipo: 'botas', mat: 'cu_cuero_negro' }, hombros: { tipo: 'huesos', mat: 'cu_hueso' }, cinturon: { mat: 'cu_cuero_negro', hebilla: 'cu_hueso' }, arma: { tipo: 'daga', mat: 'cu_hueso' }, izq: { tipo: 'escudo_calavera', mat: 'cu_cuero_negro', mat2: 'cu_hueso' } },
@@ -62,7 +63,7 @@ export const HEROES: Heroe[] = [
   },
   {
     id: 'monje', nombre: ['Monje', 'Monk'], descripcion: ['Peleador de puños y patadas veloces con poder de los vientos.', 'Fist fighter with lightning-fast kicks and wind power.'],
-    cuerpo: { genero: 'h', ancho: 0.98, musculo: 0.75, piel: 'cu_piel_morena', peinado: 'calvo', pelo: 'cu_pelo_negro' },
+    cuerpo: { presentacion: 'kata', genero: 'h', ancho: 0.98, musculo: 0.75, piel: 'cu_piel_morena', peinado: 'calvo', pelo: 'cu_pelo_negro' },
     niveles: [
       { torso: { tipo: 'sin_mangas', mat: 'cu_tela_parda' }, piernas: { tipo: 'faldon', mat: 'cu_tela_parda', mat2: 'cu_tela_parda' }, pies: { tipo: 'sandalias', mat: 'cu_cuero' }, manos: { tipo: 'vendas', mat: 'cu_tela_blanca' }, cinturon: { mat: 'cu_tela_negra' }, arma: { tipo: 'puno' } },
       { torso: { tipo: 'sin_mangas', mat: 'cu_tela_roja' }, piernas: { tipo: 'faldon', mat: 'cu_tela_roja', mat2: 'cu_tela_parda' }, pies: { tipo: 'sandalias', mat: 'cu_cuero' }, manos: { tipo: 'vendas', mat: 'cu_tela_blanca' }, cinturon: { mat: 'cu_oro' }, arma: { tipo: 'garras', mat: 'cu_placa' } },
@@ -71,7 +72,7 @@ export const HEROES: Heroe[] = [
   },
   {
     id: 'druida', nombre: ['Druida', 'Druid'], descripcion: ['Guardián del bosque: lobos, raíces y tormentas.', 'Forest warden: wolves, roots and storms.'], magia: true,
-    cuerpo: { genero: 'h', ancho: 1.08, musculo: 0.5, piel: 'cu_piel', pelo: 'cu_pelo_castano', peinado: 'largo', barba: 'larga' },
+    cuerpo: { presentacion: 'naturaleza', genero: 'h', ancho: 1.08, musculo: 0.5, piel: 'cu_piel', pelo: 'cu_pelo_castano', peinado: 'largo', barba: 'larga' },
     niveles: [
       { torso: { tipo: 'tunica', mat: 'cu_tela_verde' }, piernas: { tipo: 'pantalon', mat: 'cu_cuero' }, pies: { tipo: 'sandalias', mat: 'cu_cuero' }, cinturon: { mat: 'cuerda' }, arma: { tipo: 'baculo', mango: madera, gema: 'fuego_verde' } },
       { torso: { tipo: 'cuero', mat: 'cu_cuero' }, piernas: { tipo: 'faldon', mat: 'cu_pelaje', mat2: 'cu_cuero' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, hombros: { tipo: 'pieles', mat: 'cu_pelaje' }, capa: { mat: 'cu_pelaje' }, cinturon: { mat: 'cu_cuero' }, cabeza: { tipo: 'cuernos', mat: 'cu_cuero' }, arma: { tipo: 'baculo', mango: 'corteza', gema: 'fuego_verde' } },
@@ -80,7 +81,7 @@ export const HEROES: Heroe[] = [
   },
   {
     id: 'alquimista', nombre: ['Alquimista', 'Alchemist'], descripcion: ['Tiradora de ballesta con bombas, venenos y pociones.', 'Crossbow shooter with bombs, poisons and potions.'], magia: true,
-    cuerpo: { genero: 'm', ancho: 0.95, musculo: 0.3, piel: 'cu_piel', pelo: 'cu_pelo_negro', peinado: 'trenzas' },
+    cuerpo: { presentacion: 'frasco', genero: 'm', ancho: 0.95, musculo: 0.3, piel: 'cu_piel', pelo: 'cu_pelo_negro', peinado: 'trenzas' },
     niveles: [
       { torso: { tipo: 'camisa', mat: 'cu_tela_blanca' }, piernas: { tipo: 'pantalon', mat: 'cu_tela_parda' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, manos: { tipo: 'guantes', mat: 'cu_cuero' }, cinturon: { mat: 'cu_cuero' }, arma: { tipo: 'ballesta', mat: 'hierro', mango: madera } },
       { torso: { tipo: 'cuero', mat: 'cu_cuero' }, piernas: { tipo: 'calzas', mat: 'cu_tela_negra' }, pies: { tipo: 'botas_altas', mat: 'cu_cuero' }, manos: { tipo: 'guantes', mat: 'cu_cuero_negro' }, cinturon: { mat: 'cu_cuero_negro', hebilla: 'cu_oro' }, cabeza: { tipo: 'gorro', mat: 'cu_cuero', mat2: 'cu_cuero_negro' }, capa: { mat: 'cu_tela_parda', largo: 0.9 }, arma: { tipo: 'ballesta', mat: 'cu_placa', mango: lisa } },
@@ -126,6 +127,7 @@ export const MONSTRUOS: Monstruo[] = [
 const ACCIONES: [Accion, [string, string]][] = [
   ['quieto', ['quieto', 'idle']], ['caminar', ['camina', 'walk']], ['correr', ['corre', 'run']], ['atacar', ['ataca', 'attack']],
   ['lanzar', ['lanza hechizo', 'cast']], ['herido', ['recibe golpe', 'get hit']], ['morir', ['muere', 'death']],
+  ['presentar', ['se presenta', 'showcase']],
 ];
 const NIVELES: [string, [string, string]][] = [['novato', ['novato', 'novice']], ['', ['veterano', 'veteran']], ['leyenda', ['leyenda', 'legend']]];
 
@@ -141,6 +143,7 @@ for (const h of HEROES) NIVELES.forEach(([n, [es, en]], i) => {
 });
 for (const m of MONSTRUOS) for (const [acc, [aes, aen]] of ACCIONES) {
   if (acc === 'lanzar' && !m.magia) continue;
+  if (acc === 'presentar') continue;
   if (acc === 'correr' && (m.jefe || m.cuerpo.oseo)) continue;
   const h = m.huella ?? 1;
   registrar({
@@ -148,4 +151,20 @@ for (const m of MONSTRUOS) for (const [acc, [aes, aen]] of ACCIONES) {
     variantes: [...DIRS], cuadros: CUADROS[acc], t: acc === 'quieto' ? 6 : 3, huella: [h, h], bloquea: true,
     armar: (v, f) => personajeEscena(m.cuerpo, m.equipo, v as (typeof DIRS)[number], acc, f),
   });
+}
+
+/** Luz de cada clase para su retrato (un fuego o un brillo que la alumbra desde abajo y adelante). */
+const LUZ_CLASE: Record<string, string> = { berserker: '#ff6020', templario: '#ffe090', arcanista: '#70b0ff', cazadora: '#a0c0ff', nigromante: '#60e080', monje: '#ffb040', druida: '#80e060', alquimista: '#c060ff' };
+
+/**
+ * Retrato grande de un héroe para la pantalla de selección y la intro: pintado a escala (no agrandado), en su pose de
+ * presentación, con supersampleo y la luz de su clase. `escala` multiplica el alto (2.5 ≈ 190 px), `nivel` 0 novato,
+ * 1 veterano, 2 leyenda.
+ */
+export function retratoHeroe(id: string, nivel = 2, cuadro = 0, o: { escala?: number; dir?: (typeof DIRS)[number]; ss?: number } = {}) {
+  const h = HEROES.find((x) => x.id === id) ?? HEROES[0];
+  const k = o.escala ?? 2.5;
+  const e = personajeEscena({ ...h.cuerpo, alto: (h.cuerpo.alto ?? 1) * k }, h.niveles[Math.max(0, Math.min(2, nivel))], o.dir ?? 'so', 'presentar', cuadro);
+  const luz = { c: [20 * k, -8 * k, 6 * k] as [number, number, number], r: 70 * k, color: LUZ_CLASE[h.id] ?? '#ffb060' };
+  return pintarEscena({ ...e, resplandor: e.resplandor ?? luz, ss: o.ss ?? 2 });
 }

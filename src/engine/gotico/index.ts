@@ -10,6 +10,6 @@ export * from './objeto';
 export * from './pisos';
 export * from './mapa';
 export * from './escenas';
-export { figura, pose, DIRS, NOMBRE_DIR, CUADROS, type Dir, type Accion, type Atuendo } from './figura';
+export { figura, pose, zancada, DIRS, NOMBRE_DIR, CUADROS, type Dir, type Accion, type Atuendo } from './figura';
 export { personaje, esqueleto, type Cuerpo, type Equipo, type TipoArma } from './cuerpo';
 export { HEROES, MONSTRUOS, type Heroe, type Monstruo } from './catalogo/personajes';
