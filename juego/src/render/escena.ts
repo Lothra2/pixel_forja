@@ -8,6 +8,7 @@ import { cuadrosVivos } from '../motor/pintor';
 import { R } from '../nucleo/azar';
 
 export const cam = { x: 0, y: 0 };
+const BESTIAS_IDS = new Set(['lobo_sombrio', 'jabali_demonio', 'perro_infernal', 'arana_reina', 'arana_cueva', 'escorpion_gigante', 'gusano_de_arena', 'golem_de_piedra', 'gargola', 'murcielago_gigante', 'demonio_alado', 'dragon_oseo', 'cangrejo_cripta']);
 export const aPant = (x: number, y: number): [number, number] => [(x - y) * 16 - cam.x + W / 2, (x + y) * 8 - cam.y + (H - 96) / 2];
 export const aMundo = (sx: number, sy: number): [number, number] => {
   const X = sx - W / 2 + cam.x, Y = sy - (H - 96) / 2 + cam.y;
@@ -192,6 +193,29 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   ctx.restore();
   // luz y oscuridad
   dibujarLuz(j, tiempo);
+  // números de daño (encima de la oscuridad para que se lean)
+  ctx.textAlign = 'center';
+  for (const n of j.numeros) {
+    const [px, py] = aPant(n.x, n.y);
+    const k = 1 - n.t / 1.1;
+    ctx.globalAlpha = Math.max(0, Math.min(1, k * 1.6));
+    ctx.font = `bold ${n.grande ? 18 : 13}px Georgia, serif`;
+    const yy = py - n.z - (n.grande ? Math.sin(Math.min(1, n.t * 5) * Math.PI) * 6 : 0);
+    ctx.fillStyle = '#000'; ctx.fillText(n.txt, px + 1, yy + 1); ctx.fillStyle = n.color; ctx.fillText(n.txt, px, yy);
+  }
+  ctx.globalAlpha = 1; ctx.textAlign = 'left';
+  // salidas sin puerta: un rastro de luz en el piso con el nombre del lugar
+  for (const sa of z.salidas) {
+    if (sa.obj) continue;
+    const [px, py] = aPant(sa.cx + 0.5, sa.cy + 0.5);
+    if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const k = 0.25 + Math.sin(tiempo * 2.5) * 0.08;
+    const g = ctx.createRadialGradient(px, py, 4, px, py, 48); g.addColorStop(0, `rgba(255,190,90,${k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(px, py, 48, 24, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.font = '12px Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText('» ' + sa.nombre[opciones.idi] + ' «', px + 1, py - 29); ctx.fillStyle = '#e8c070'; ctx.fillText('» ' + sa.nombre[opciones.idi] + ' «', px, py - 30); ctx.textAlign = 'left';
+  }
   // clima
   clima(j, dt, tiempo);
 }
@@ -249,7 +273,8 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (e.tipo === 'monstruo' && m.estado === 'surgir') return;
   const q = fs[Math.min(fs.length - 1, i)];
   const esc = e.escala;
-  if (!e.muerto) sombra(px, py, (e.radio / 0.45) * 0.9 * esc, 0.4);
+  const bestia = e.tipo !== 'heroe' && e.tipo !== 'npc' && BESTIAS_IDS.has((e as Monstruo).def?.sprite);
+  if (!e.muerto && !bestia) sombra(px, py, (e.radio / 0.45) * 0.9 * esc, 0.4);
   let ok: boolean;
   if (e.destello > 0) ok = dibujarTenido(ctx, q, px, py, '#ffffff', 0.55, esc);
   else if (e.congelado > 0) ok = dibujarTenido(ctx, q, px, py, '#70b8ff', 0.55, esc);

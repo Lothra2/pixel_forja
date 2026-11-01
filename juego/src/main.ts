@@ -4,10 +4,11 @@ import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto } from './mo
 import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
+import { dibujarFinal } from './ui/menus';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
 import { abrirTienda } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
-import { dibujarMundo, picks, aMundo, aPant, type Pick } from './render/escena';
+import { dibujarMundo, picks, aMundo, aPant, opciones as opcionesRender, type Pick } from './render/escena';
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
@@ -18,7 +19,8 @@ import { CLASES } from './datos/clases';
 import { dist, R, elegir } from './nucleo/azar';
 import { pasable, type ObjZ, type Salida } from './mundo/zona';
 
-type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona';
+type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona' | 'final';
+let finalT = 0;
 let estado: Estado = 'carga';
 let tEstado = 0, tiempo = 0;
 let cargaK = 0, cargaMsg = '';
@@ -296,6 +298,7 @@ function procesarEventos(jj: Juego) {
     else if (e.tipo === 'salir') { guardar(); Sonido.musica('menu'); estado = 'seleccion'; j = null; cargarPartidas(); return; }
     else if (e.tipo === 'opciones') { opcionesDesde = 'juego'; estado = 'opciones'; ui.izq = null; }
     else if (e.tipo === 'mision') { const m = MISIONES.find((q) => q.id === e.dato); if (m) { msg(jj, [`Misión cumplida: ${m.nombre[0]}. Vuelve al campamento.`, `Quest fulfilled: ${m.nombre[1]}. Return to camp.`], '#80ff80'); Sonido.efecto('mision'); } }
+    else if (e.tipo === 'jefe_muerto' && e.dato === 'senor_demonio') { guardar(); setTimeout(() => { estado = 'final'; finalT = 0; Sonido.musica('intro'); }, 4000); }
     else if (e.tipo === 'jefe_muerto') { Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); msg(jj, ['El sello se rompe. Algo escapa hacia lo alto.', 'The seal breaks. Something escapes upward.'], '#ffb060'); guardar(); }
     else if (e.tipo === 'muerte') { Sonido.musica(null as any); tEstado = 0; }
     else if (e.tipo === 'spawn') { import('./juego/mundo').then((mm) => { const m = mm.crearMonstruo(MONSTRUOS[e.dato.id], jj.zona.nivel + 1, e.dato.x, e.dato.y, 1, jj.heroe.d.dificultad); m.estado = 'perseguir'; m.objetivo = jj.heroe; m.acc = 'morir'; (m as any).surgiendo = 1.2; jj.monstruos.push(m); }); }
@@ -321,6 +324,11 @@ function paso(dt: number) {
   switch (estado) {
     case 'carga': pantallaCarga(cargaK, cargaMsg, tiempo); break;
     case 'zona': pantallaCarga(cargaK, cargaMsg, tiempo); break;
+    case 'final': {
+      finalT += dt;
+      if (dibujarFinal(finalT) || (finalT > 3 && (pulso('Escape') || E.clicIzq))) { estado = 'juego'; E.clicIzq = false; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); }
+      break;
+    }
     case 'intro': {
       introT += dt;
       if (dibujarIntro(introT) || (tEstado > 0.5 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) { estado = 'menu'; tEstado = 0; Sonido.musica('menu'); try { localStorage.setItem('marca.intro', '1'); } catch { /* */ } }
@@ -372,6 +380,7 @@ function paso(dt: number) {
     case 'juego': {
       const jj = j!;
       if (zonaPendiente) { const z = zonaPendiente; zonaPendiente = null; if (z.entrada === '__portal') { const p = jj.portal!; irAZona(z.id, 'centro').then(() => { jj.heroe.x = p.x + 1; jj.heroe.y = p.y + 1; }); } else irAZona(z.id, z.entrada); break; }
+      opcionesRender.idi = IDI;
       const pausa = ui.izq === 'menu' || ui.confirmar;
       if (!pausa) actualizar(jj, dt);
       dibujarMundo(jj, dt, tiempo);
@@ -380,7 +389,6 @@ function paso(dt: number) {
       if (opciones.brillo < 0.95 || opciones.brillo > 1.05) { ctx.save(); ctx.globalCompositeOperation = opciones.brillo > 1 ? 'lighter' : 'source-over'; ctx.fillStyle = opciones.brillo > 1 ? `rgba(40,36,30,${(opciones.brillo - 1) * 0.6})` : `rgba(0,0,0,${(1 - opciones.brillo) * 0.5})`; ctx.fillRect(0, 0, W, H); ctx.restore(); }
       if (ui.mapa) dibujarMapa(jj, true); else dibujarMapa(jj, false);
       dibujarArriba(jj, pickEncima?.tipo === 'monstruo' ? pickEncima.ref : null);
-      if (pickEncima?.tipo === 'npc') texto(TT((window as any).__npcs?.[pickEncima.ref.npc]?.nombre ?? ['', '']), 0, 0);
       ui.sobreUI = false;
       dibujarPaneles(jj, tiempo);
       dibujarBarra(jj, tiempo);
@@ -392,6 +400,8 @@ function paso(dt: number) {
       const firma = firmaVisual(jj.heroe.d);
       if (firma !== (jj as any).firma) { (jj as any).firma = firma; pintarHeroe(jj.heroe.d.clase, cuerpoDe(jj.heroe.d.clase), equipoVisual(jj.heroe.d), firma); }
       procesarEventos(jj);
+      // capa de combate de la música según cuántos monstruos despiertos hay cerca
+      if (Math.floor(tiempo * 2) !== Math.floor((tiempo - dt) * 2)) { let n = 0; for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado === 'perseguir' && dist(m.x, m.y, jj.heroe.x, jj.heroe.y) < 12) n++; Sonido.combate(Math.min(1, n / 6)); }
       guardadoT += dt; if (guardadoT > 45) { guardadoT = 0; guardar(); }
       jj.heroe.d.jugado += dt;
       dibujarCursor(pickEncima?.tipo === 'monstruo' ? 'atacar' : pickEncima?.tipo === 'npc' ? 'hablar' : pickEncima ? 'agarrar' : 'senalar');

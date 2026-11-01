@@ -27,9 +27,9 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 
 ## Qué falta o se puede mejorar
 
-- Las bestias no humanoides (perros infernales, arañas, dragón de huesos) todavía no llegaron del motor; cuando lleguen entran a los actos.
+- Las bestias del motor ya están en los actos: lobos, jabalíes, arañas, escorpiones, gárgolas, murciélagos, gólems, perros de la Herida, demonios alados, la Madre del Pozo, la Boca de Arena y Varnhul, el dragón de huesos. Pesan bastante, así que la primera vez que entras a sus zonas tarda un poco más en cargar.
 - Los íconos de armaduras en el inventario son dibujos simples; las armas sí usan el arsenal del motor.
-- No hay dificultad Pesadilla ni multijugador.
+- Al vencer el acto 5 se abren Pesadilla e Infierno desde la lista de héroes. No hay multijugador.
 - Las partidas viven en el navegador donde se jugó (si se borran los datos del sitio se pierden).
 
 ## Para desarrollar

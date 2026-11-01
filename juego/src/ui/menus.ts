@@ -281,3 +281,31 @@ export function pantallaCarga(k: number, msg: string, t: number) {
   ctx.strokeStyle = '#5a4a30'; ctx.strokeRect(x + 0.5, y + 0.5, w, 12);
   texto(msg, W / 2, y + 34, { alin: 'center', tam: 13, color: '#a09070' });
 }
+
+// ------------------------------------------------------------------ el final
+const FINAL: [string, string][] = [
+  ['Ozmaren cae. La sed se apaga como una vela bajo el agua.', 'Ozmaren falls. The thirst goes out like a candle under water.'],
+  ['La Marca en tu piel se pone gris y fría.', 'The Mark on your skin turns grey and cold.'],
+  ['En Velmora, por primera vez en mil inviernos, las campanas callan.', 'In Velmora, for the first time in a thousand winters, the bells fall silent.'],
+  ['Pero esa noche Tomás despierta gritando. Dibuja una sola cosa, una y otra vez.', 'But that night Tomas wakes up screaming. He draws one thing, over and over.'],
+  ['Una segunda brasa. Todavía en el cielo. Esperando.', 'A second ember. Still in the sky. Waiting.'],
+];
+/** Devuelve true cuando terminó. */
+export function dibujarFinal(t: number): boolean {
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  const dur = 6, i = Math.floor(t / dur);
+  brasas(t, 40, i < 3);
+  if (i >= FINAL.length) {
+    const k = Math.min(1, (t - FINAL.length * dur) / 2);
+    logo(W / 2, H * 0.42, k, t, Math.min(56, W / 16));
+    texto(T('Fin del primer legado', 'End of the first legacy'), W / 2, H * 0.55, { alin: 'center', tam: 18, color: `rgba(220,200,160,${k})`, fuente: TITULO });
+    texto(T('Ahora puedes empezar la Pesadilla desde la lista de héroes.', 'You can now begin Nightmare from the hero list.'), W / 2, H * 0.62, { alin: 'center', tam: 13, color: '#8a7a60' });
+    return t > FINAL.length * dur + 7;
+  }
+  const tl = t - i * dur, k = Math.min(1, tl / 1.2, (dur - tl) / 1.2);
+  if (i === 4) { const g = ctx.createRadialGradient(W * 0.7, H * 0.2, 0, W * 0.7, H * 0.2, 40 + Math.sin(t * 6) * 4); g.addColorStop(0, `rgba(255,200,120,${k})`); g.addColorStop(0.3, `rgba(255,90,20,${0.6 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+  ctx.globalAlpha = Math.max(0, k);
+  envolver(TT(FINAL[i]), Math.min(720, W - 80), 22).forEach((l, n) => texto(l, W / 2, H / 2 + n * 30, { alin: 'center', tam: 22, color: '#e8dcc0', fuente: TITULO }));
+  ctx.globalAlpha = 1;
+  return false;
+}

@@ -331,6 +331,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     j.sacudida = Math.max(j.sacudida, total > h.vidaMax * 0.15 ? 0.35 : 0.12);
     if (total > h.vidaMax * 0.08 && h.acc !== 'atacar' && h.acc !== 'lanzar') { h.acc = 'herido'; h.t = 0; h.dur = 0.3 / (1 + h.c.vel_recuperar / 100); }
     sonar(j, total > h.vidaMax * 0.1 ? 'dolor_heroe' : 'golpe_carne');
+    if (R() < 0.06) desgastar(j, elegir(['cabeza', 'torso', 'izq', 'manos', 'pies', 'cinturon']));
     // espinas
     if (g.fuente && g.fuente.tipo === 'monstruo' && (h.c.espinas || h.buffs.aura_espinas)) {
       const esp = h.c.espinas + (h.buffs.aura_espinas ? total * (h.buffs.aura_espinas.bonos.espinas_pct ?? 0) / 100 : 0);
@@ -416,6 +417,13 @@ function morirHeroe(j: Juego) {
   j.eventos.push({ tipo: 'muerte' });
 }
 
+function desgastar(j: Juego, cas: string) {
+  const o = (j.heroe.d.equipo as any)[cas] as Objeto | undefined;
+  if (!o || !o.durabMax || o.stats.some((s) => s[0] === 'durabilidad_infinita') || o.durab <= 0) return;
+  o.durab -= 1;
+  if (o.durab === 3) msg(j, [`${o.nombre[0]} está por romperse. Repáralo con el herrero.`, `${o.nombre[1]} is about to break. Have the smith repair it.`], '#ffb040');
+  if (o.durab <= 0) { o.durab = 0; msg(j, [`¡${o.nombre[0]} se rompió! Ya no sirve hasta repararlo.`, `${o.nombre[1]} broke! It is useless until repaired.`], '#ff5040'); sonar(j, 'negado'); recalc(j); }
+}
 export function recalc(j: Juego) {
   const h = j.heroe;
   const b: Record<string, number> = {};
@@ -519,6 +527,7 @@ function resolverHabilidad(j: Juego) {
         if (hb.bonos?.empuje) g.empuje = 1;
         if (hb.id === 'ejecucion' && obj.vida < obj.vidaMax * 0.25 && obj.calidad < 3) { g.min *= 3; g.max *= 3; }
         const d = danar(j, obj, g);
+        if (R() < 0.04) desgastar(j, 'arma');
         if (d > 0 && h.c.vivo) particulas(j, obj.x, obj.y, 8, h.c.vivo === 'fuego' ? 'brasa' : 'chispa', COLOR_ELEM[h.c.vivo], 1.2, 40);
       }
       if (!basico && hb.efecto) efecto(j, efectoDe(hb.efecto, hb.elem), obj.x, obj.y, efectoDir);
