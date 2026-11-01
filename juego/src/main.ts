@@ -12,7 +12,7 @@ import { dibujarMundo, picks, aMundo, aPant, opciones as opcionesRender, type Pi
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
-import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA } from './mundo/actos';
+import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA, PAGINAS } from './mundo/actos';
 import { POBLACION, MONSTRUOS } from './datos/monstruos';
 import { GENTE } from './datos/npcs';
 import { CLASES } from './datos/clases';
@@ -278,6 +278,12 @@ function usarObjeto(jj: Juego, o: ObjZ) {
       Sonido.susurro(); jj.sacudida = 0.5;
     } else if (R() < 0.25) { h.vida = h.vidaMax; h.mana = h.c.manaMax; msg(jj, ['Santuario de la Vigilia: te sientes entero.', 'Vigil Shrine: you feel whole.'], '#a0ffa0'); }
     else { const s = elegir(tipos); h.buffs['santuario'] = { t: 90, bonos: s.b as any, hab: 'santuario' }; recalc(jj); msg(jj, s.m as [string, string], '#a0c0ff'); }
+  } else if (o.tag === 'libro') {
+    const d = h.d as any; d.paginas ??= 0;
+    const i = Math.min(PAGINAS.length - 1, d.paginas);
+    if (d.paginas < PAGINAS.length) d.paginas++;
+    ui.dialogoTexto = TT(PAGINAS[i]); ui.izq = 'pagina' as any; (ui as any).paginaN = i + 1;
+    Sonido.efecto('abrir'); Sonido.susurro(); o.tag = undefined;
   } else if (o.tag === 'pozo') {
     if (o.v === 'seco') return;
     o.v = 'seco'; if (o.id.includes('vida')) h.vida = h.vidaMax; else h.mana = h.c.manaMax; Sonido.efecto('pocion');
@@ -412,7 +418,7 @@ function paso(dt: number) {
 function etiquetaPick(jj: Juego, p: Pick) {
   if (p.tipo === 'npc') { const n = (p.ref as Npc); import('./datos/npcs').then(() => { }); texto(TT(npcsNombre(n.npc)), (p.x0 + p.x1) / 2, p.y0 - 6, { alin: 'center', color: '#e0e0ff' }); }
   else if (p.tipo === 'salida') tooltip([[TT((p.ref as Salida).nombre), '#ffd060']], (p.x0 + p.x1) / 2, p.y0 + 20);
-  else if (p.tipo === 'objeto') { const o = p.ref as ObjZ; const n = o.id === 'com_piedra_viaje' ? T('Piedra de viaje', 'Travel stone') : o.tag === 'baul' ? T('Baúl compartido', 'Shared chest') : o.tag === 'cofre' ? T('Cofre', 'Chest') : o.tag === 'santuario' ? T('Santuario', 'Shrine') : o.tag === 'pozo' ? T('Pozo', 'Well') : o.tag === 'romper' ? T('Urna', 'Urn') : ''; if (n) texto(n, (p.x0 + p.x1) / 2, p.y0 - 4, { alin: 'center', color: '#c0c0ff' }); }
+  else if (p.tipo === 'objeto') { const o = p.ref as ObjZ; const n = o.id === 'com_piedra_viaje' ? T('Piedra de viaje', 'Travel stone') : o.tag === 'baul' ? T('Baúl compartido', 'Shared chest') : o.tag === 'cofre' ? T('Cofre', 'Chest') : o.tag === 'santuario' ? T('Santuario', 'Shrine') : o.tag === 'pozo' ? T('Pozo', 'Well') : o.tag === 'romper' ? T('Urna', 'Urn') : o.tag === 'libro' ? T('Libro maldito', 'Cursed book') : ''; if (n) texto(n, (p.x0 + p.x1) / 2, p.y0 - 4, { alin: 'center', color: '#c0c0ff' }); }
   else if (p.tipo === 'portal') texto(T('Portal', 'Portal'), (p.x0 + p.x1) / 2, p.y0 - 4, { alin: 'center', color: '#80b0ff' });
   void jj;
 }

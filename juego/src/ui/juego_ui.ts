@@ -208,7 +208,7 @@ export function dibujarArriba(j: Juego, encima: Monstruo | null) {
   for (let i = j.mensajes.length - 1; i >= 0; i--) {
     const m = j.mensajes[i];
     ctx.globalAlpha = Math.min(1, 7 - m.t);
-    texto(TT(m.txt), 14, y, { color: m.color, tam: 14 });
+    texto(TT(m.txt), ui.izq ? 334 : 14, y, { color: m.color, tam: 14 });
     ctx.globalAlpha = 1; y -= 18;
   }
 }
@@ -248,6 +248,7 @@ function dibujarPanel(j: Juego, p: PanelId, x: number, t: number) {
     case 'viaje': return panelViaje(j, x, y);
     case 'misiones': return panelMisiones(j, x, y);
     case 'menu': return panelMenu(j, x, y);
+    case 'pagina' as any: { marco(x, y, 320, 432); titulo(T('Página arrancada', 'Torn page'), x, y, 320); texto(`${(ui as any).paginaN} / 9`, x + 160, y + 58, { alin: 'center', tam: 11, color: '#806a50' }); envolver(ui.dialogoTexto ?? '', 270, 15).forEach((l, i) => texto(l, x + 25, y + 90 + i * 22, { tam: 15, color: '#d8c49a', fuente: TITULO })); if (boton(T('Cerrar', 'Close'), x + 120, y + 380, 80, 28, { tam: 13 })) { ui.izq = null; E.clicIzq = false; } return; }
   }
 }
 

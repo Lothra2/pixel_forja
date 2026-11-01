@@ -545,6 +545,7 @@ function pueblo(def: DefZona, semilla: number): Zona {
 
 export function generarZona(def: DefZona, semilla: number): Zona {
   const z = def.tipo === 'pueblo' ? pueblo(def, semilla) : def.tipo === 'mazmorra' ? mazmorra(def, semilla) : exterior(def, semilla);
+  for (const o of z.objetos) if (o.id === 'mis_libro_maldito') o.tag = 'libro';
   // asegurar que toda entrada caiga en celda libre
   for (const k of Object.keys(z.entradas)) z.entradas[k] = libreCerca(z, z.entradas[k][0], z.entradas[k][1]);
   return z;

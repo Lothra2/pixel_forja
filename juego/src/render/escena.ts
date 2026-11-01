@@ -122,7 +122,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
       }
       if (alfa < 1) { ctx.globalAlpha = alfa; dibujar(ctx, q, px, py); ctx.globalAlpha = 1; } else dibujar(ctx, q, px, py);
     } });
-    if (o.tag === 'cofre' || o.tag === 'santuario' || o.tag === 'pozo' || o.tag === 'baul' || o.tag === 'romper' || o.id === 'com_piedra_viaje') picks.push({ tipo: 'objeto', ref: o, x0: px - q.ax, y0: py - q.ay, x1: px - q.ax + q.w, y1: py - q.ay + q.h, prof });
+    if (o.tag === 'libro' || o.tag === 'cofre' || o.tag === 'santuario' || o.tag === 'pozo' || o.tag === 'baul' || o.tag === 'romper' || o.id === 'com_piedra_viaje') picks.push({ tipo: 'objeto', ref: o, x0: px - q.ax, y0: py - q.ay, x1: px - q.ax + q.w, y1: py - q.ay + q.h, prof });
   }
   // salidas (las puertas/escaleras ya están como objetos; aquí solo la zona de clic)
   for (const s of z.salidas) { const [px, py] = aPant(s.cx + 0.5, s.cy + 0.5); picks.push({ tipo: 'salida', ref: s, x0: px - 40, y0: py - 60, x1: px + 40, y1: py + 20, prof: s.cx + s.cy - 2 }); }
@@ -341,10 +341,10 @@ function dibujarPortal(j: Juego, t: number) {
 function dibujarLuz(j: Juego, t: number) {
   const z = j.zona, h = j.heroe;
   if (luz.width !== W || luz.height !== H) { luz.width = W; luz.height = H; brillo.width = W; brillo.height = H; }
-  const osc = Math.min(0.97, z.oscuridad + (z.tipo === 'pueblo' ? -0.1 : 0.08));
+  const oscuro = Math.min(0.97, z.oscuridad + (z.tipo === 'pueblo' ? -0.1 : 0.08));
   lctx.globalCompositeOperation = 'source-over';
   lctx.clearRect(0, 0, W, H);
-  lctx.fillStyle = `rgba(0,0,0,${osc})`; lctx.fillRect(0, 0, W, H);
+  lctx.fillStyle = `rgba(0,0,0,${oscuro})`; lctx.fillRect(0, 0, W, H);
   lctx.globalCompositeOperation = 'destination-out';
   bctx.clearRect(0, 0, W, H);
   const hueco = (x: number, y: number, r: number, k = 1) => {
@@ -357,7 +357,8 @@ function dibujarLuz(j: Juego, t: number) {
     bctx.globalAlpha = a; bctx.fillStyle = g; bctx.fillRect(x - r, y - r, r * 2, r * 2); bctx.globalAlpha = 1;
   };
   const [hx, hy] = aPant(h.x, h.y);
-  const rLuz = (z.tipo === 'pueblo' ? 420 : 210) + h.c.radio_luz * 18 + Math.sin(t * 7) * 3;
+  const osc = (j as any).oscurece ?? 0;
+  const rLuz = ((z.tipo === 'pueblo' ? 420 : 210) + h.c.radio_luz * 18 + Math.sin(t * 7) * 3) * (osc > 0 ? 0.55 + 0.45 * Math.max(0, 1 - Math.sin((osc / 3.5) * Math.PI)) : 1);
   hueco(hx, hy - 20, rLuz, 1);
   // fuegos y cosas que alumbran
   for (const o of z.objetos) {

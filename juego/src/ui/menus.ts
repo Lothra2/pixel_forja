@@ -131,12 +131,15 @@ export function dibujarIntro(t: number): boolean {
   // fundidos
   const f = Math.min(1, tl / 1.2, (tm.dur - tl) / 1.2);
   ctx.fillStyle = `rgba(0,0,0,${1 - Math.max(0, f)})`; ctx.fillRect(0, 0, W, H);
-  // la voz (texto)
-  const linea = INTRO[i];
-  if (linea && i < INTRO.length) {
-    const k = Math.min(1, Math.max(0, (tl - 0.8) / 1.2), Math.max(0, (tm.dur - tl - 0.4) / 1));
+  // la voz (texto): la toma de la brasa lleva dos líneas
+  const LINEAS: number[][] = [[0], [1], [2], [3, 4], [5], [6], [7], [8], []];
+  const ls = LINEAS[i] ?? [];
+  if (ls.length) {
+    const parte = ls.length > 1 ? (tl < tm.dur / 2 ? 0 : 1) : 0;
+    const d0 = ls.length > 1 ? (parte ? tm.dur / 2 : 0) : 0, d1 = ls.length > 1 ? (parte ? tm.dur : tm.dur / 2) : tm.dur;
+    const k = Math.min(1, Math.max(0, (tl - d0 - 0.6) / 1), Math.max(0, (d1 - tl - 0.3) / 0.8));
     ctx.globalAlpha = k;
-    envolver(TT(linea), Math.min(720, W - 80), 20).forEach((l, n) => texto(l, W / 2, H - 90 + n * 26, { alin: 'center', tam: 20, color: '#e8dcc0', fuente: TITULO }));
+    envolver(TT(INTRO[ls[parte]]), Math.min(720, W - 80), 20).forEach((l, n) => texto(l, W / 2, H - 90 + n * 26, { alin: 'center', tam: 20, color: '#e8dcc0', fuente: TITULO }));
     ctx.globalAlpha = 1;
   }
   texto(T('Clic o Esc para saltar', 'Click or Esc to skip'), W - 16, H - 14, { alin: 'right', tam: 11, color: '#5a5040' });

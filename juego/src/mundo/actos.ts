@@ -179,3 +179,16 @@ export const INTRO: [string, string][] = [
   ['Los que sobrevivieron llevan ceniza en la piel. La llaman la Marca.', 'Those who survived carry ash on their skin. They call it the Mark.'],
   ['Tú también la tienes.', 'You bear it too.'],
 ];
+
+/** Páginas arrancadas del diario del primer abad: se encuentran en libros malditos y cuentan el secreto. */
+export const PAGINAS: [string, string][] = [
+  ['«Día uno. Cavamos donde cayó. La tierra estaba tibia a veinte palmos. El hermano Ulric dice que oyó un latido.»', '"Day one. We dug where it fell. The earth was warm twenty spans down. Brother Ulric says he heard a heartbeat."'],
+  ['«No es una piedra. Es un pedazo de algo. Cuando le rezamos, se enfría. Cuando callamos, crece.»', '"It is not a stone. It is a piece of something. When we pray to it, it cools. When we fall silent, it grows."'],
+  ['«Decidimos cantar. Siete voces, siete cantos, siete pozos. Uno por cada pedazo. Nadie fuera del claustro debe saberlo.»', '"We decided to sing. Seven voices, seven songs, seven wells. One for each piece. No one outside the cloister must know."'],
+  ['«Ulric dejó de cantar una noche. Lo encontramos con la boca llena de ceniza. Sonreía.»', '"Ulric stopped singing one night. We found him with his mouth full of ash. He was smiling."'],
+  ['«Los reyes del sur aceptaron un pedazo a cambio de oro. No entendieron. Uno de ellos ya no proyecta sombra.»', '"The southern kings took a piece in exchange for gold. They did not understand. One of them no longer casts a shadow."'],
+  ['«La Marca aparece en los que la miran demasiado. Es una llave. Si todas las brasas se juntan, la llave abre.»', '"The Mark appears on those who look at it too long. It is a key. If all the embers come together, the key opens."'],
+  ['«El nombre. No lo escribiré. Basta decir que tiene sed, y que la sed no se apaga matándolo. Se apaga olvidándolo.»', '"The name. I will not write it. Enough to say it is thirsty, and that the thirst is not quenched by killing it. It is quenched by forgetting it."'],
+  ['«Si lees esto, la abadía cayó. Busca al niño que no habla. Él lo vio todo, y por eso le quitamos la voz.»', '"If you read this, the abbey has fallen. Seek the child who does not speak. He saw everything, and that is why we took his voice."'],
+  ['«Cayó una segunda brasa. No cayó aquí. Sigue cayendo. Tarda mil años en llegar.»', '"A second ember fell. It did not fall here. It is still falling. It takes a thousand years to arrive."'],
+];

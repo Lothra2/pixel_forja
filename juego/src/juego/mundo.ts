@@ -749,6 +749,19 @@ export function actualizar(j: Juego, dt: number) {
       Sonido.susurro();
     }
   }
+  // terror: cada tanto la luz se encoge y algo se escucha
+  (j as any).oscurece = Math.max(0, ((j as any).oscurece ?? 0) - dt);
+  if (j.zona.tipo !== 'pueblo' && j.zona.oscuridad > 0.4 && R() < dt / 70) {
+    (j as any).oscurece = 3.5;
+    const frases: [string, string][] = [
+      [`Alguien susurró «${h.d.nombre}».`, `Someone whispered "${h.d.nombre}".`], ['Las llamas se encogen. Algo respira detrás de ti.', 'The flames shrink. Something breathes behind you.'],
+      ['Se escucha una campana. Muy lejos. Debajo.', 'A bell rings. Far away. Below.'], ['La Marca en tu brazo arde un instante.', 'The Mark on your arm burns for a moment.'],
+      ['Pasos. Se detienen cuando te detienes.', 'Footsteps. They stop when you stop.'], ['Un niño ríe en la oscuridad.', 'A child laughs in the dark.'],
+      ['Huele a cera derretida y a pelo quemado.', 'It smells of melted wax and burnt hair.'], ['Algo cae del techo. Es tibio.', 'Something drips from above. It is warm.'],
+    ];
+    msg(j, elegir(frases), '#b08080');
+    Sonido.susurro();
+  }
   // latido con poca vida
   Sonido.latido(!h.muerto && h.vida < h.vidaMax * 0.3);
 }
