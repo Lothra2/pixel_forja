@@ -1,5 +1,5 @@
 import {
-  REGISTRO, TEMAS, PISOS, PAISAJES, AMBIENTES, pintarObjeto, pintarPiso, pintarMapa, medidas, pantallaACelda, celdaAPantalla, crearMapa, generarPaisaje,
+  REGISTRO, TEMAS, PISOS, PAISAJES, AMBIENTES, pintarObjeto, pintarCuadro, fijarCalidad, limpiarCache, pintarPiso, pintarMapa, medidas, pantallaACelda, celdaAPantalla, crearMapa, generarPaisaje,
   paqueteMapa, paqueteCatalogo, CELDA, DIRS, type MapaGotico, type ObjEnMapa, type AmbienteId, type Dir,
 } from '../engine/gotico';
 import type { Raster } from '../engine/core/raster';
@@ -16,6 +16,9 @@ const T = (es: string, en: string) => (lang === 'es' ? es : en);
 type Pincel = { tipo: 'piso'; id: string; v: number } | { tipo: 'objeto'; id: string; v: string } | { tipo: 'borrar' } | { tipo: 'elegir' };
 
 export function montarGotico(s: HTMLElement) {
+  // para editar en vivo se pinta en borrador (sombra dura, rápido); "Calidad alta" pinta con sombras suaves
+  let alta = leer<boolean>('pf.gotico.alta', false);
+  fijarCalidad(alta ? 1 : 0);
   let mapa: MapaGotico = leer<MapaGotico | null>('pf.gotico.mapa', null) ?? generarPaisaje('cementerio', 1);
   // si el mapa guardado usa objetos que ya no existen, se limpian
   mapa.objetos = mapa.objetos.filter((o) => REGISTRO.some((d) => d.id === o.id));
@@ -170,8 +173,11 @@ export function montarGotico(s: HTMLElement) {
       for (const p of PISOS) for (let v = 0; v < Math.min(p.variantes, 2); v++) boton(`p|${p.id}|${v}`, tr(p.nombre), `${tr(p.nombre)}${p.variantes > 1 ? ' ' + (v + 1) : ''}`, () => pintarPiso(p.id, v, 0), () => { pincel = { tipo: 'piso', id: p.id, v }; });
     } else {
       for (const d of REGISTRO.filter((x) => x.tema === temaSel)) {
-        const vs = temaSel === 'personajes' || temaSel === 'monstruos' ? [d.variantes[0]] : d.variantes;
-        for (const v of vs) boton(`o|${d.id}|${v}`, `${tr(d.nombre)} · ${v}`, vs.length > 1 ? `${tr(d.nombre)} · ${v.replace(/_/g, ' ')}` : tr(d.nombre), () => pintarObjeto(d.id, v, 0, 3).img, () => { pincel = { tipo: 'objeto', id: d.id, v }; });
+        const seres = temaSel === 'personajes' || temaSel === 'monstruos';
+        // de los personajes y monstruos se muestra la pose quieta; las otras acciones se eligen al usarlos
+        if (seres && !d.id.endsWith('_quieto')) continue;
+        const vs = seres ? ['so'] : d.variantes;
+        for (const v of vs) boton(`o|${d.id}|${v}`, `${tr(d.nombre)} · ${v}`, vs.length > 1 ? `${tr(d.nombre)} · ${v.replace(/_/g, ' ')}` : tr(d.nombre), () => pintarCuadro(d.id, v, 0, 3).img, () => { pincel = { tipo: 'objeto', id: d.id, v }; });
       }
     }
     paleta.append(grid);
@@ -196,12 +202,15 @@ export function montarGotico(s: HTMLElement) {
     salida.append(estado);
     await new Promise((r) => setTimeout(r, 30));
     let zip: Uint8Array, nombre: string;
+    // lo que se exporta sale siempre en calidad alta
+    fijarCalidad(1);
     if (que === 'mapa') { zip = paqueteMapa(mapa); nombre = `mapa_gotico_${mapa.nombre.replace(/\W+/g, '_').toLowerCase()}.zip`; }
     else {
       const temas = que === 'tema' && temaSel !== 'pisos' ? [temaSel] : null;
       zip = await paqueteCatalogo(temas, (a, b) => { estado.textContent = `${T('Pintando', 'Rendering')} ${a} / ${b}`; });
       nombre = temas ? `gotico_${temas[0]}.zip` : 'gotico_catalogo_completo.zip';
     }
+    fijarCalidad(alta ? 1 : 0);
     estado.textContent = `${nombre} · ${Math.round(zip.length / 1024)} KB`;
     void guardarArchivo(nombre, zip);
     salida.append(botonArchivo(nombre, zip));
@@ -216,6 +225,7 @@ export function montarGotico(s: HTMLElement) {
     check(T('Animar', 'Animate'), animar, (v) => { animar = v; }),
     check(T('Celdas', 'Grid'), cuadricula, (v) => { cuadricula = v; }),
     check('×2', zoom === 2, (v) => { zoom = v ? 2 : 1; ajustar(); }),
+    check(T('Calidad alta (sombras suaves, más lento)', 'High quality (soft shadows, slower)'), alta, (v) => { alta = v; guardar('pf.gotico.alta', v); fijarCalidad(v ? 1 : 0); limpiarCache(); aviso.hidden = false; esperar = 2; pintarPaleta(); }),
   );
   const barra2 = h('div', { class: 'arena-bar gotico-barra' }, barraH,
     h('label', {}, T('Héroe', 'Hero'), selClase), btnHeroe,
