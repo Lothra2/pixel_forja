@@ -49,7 +49,7 @@ if (GRUPOS.includes('b')) for (const bs of BESTIAS as any[]) {
   if (SOLO && !SOLO.includes(bs.id)) continue;
   for (const acc of ['quieto', 'caminar', 'atacar', 'morir', 'especial']) {
     const id = `mon_${bs.id}_${acc}`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue;
-    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'b', clave: `${bs.id}/${acc}/${dir}`, tipo: 'objeto', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
+    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'b', clave: `${bs.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
   }
 }
 const objMeta: Record<string, any> = {};

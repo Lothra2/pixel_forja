@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '../../src/engine/gotico');
 for (const f of readdirSync(join(raiz, 'catalogo'))) await import(join(raiz, 'catalogo', f));
-const { pintarObjeto } = await import(join(raiz, 'objeto.ts'));
+const { pintarObjeto, objeto, herramientas } = await import(join(raiz, 'objeto.ts'));
 const { pintarPiso } = await import(join(raiz, 'pisos.ts'));
 const { pintarEscena, aPantalla } = await import(join(raiz, 'render.ts'));
 const { personajeEscena, esqueleto } = await import(join(raiz, 'cuerpo.ts'));
@@ -36,6 +36,9 @@ parentPort!.on('message', (job: any) => {
       }
     } else if (job.tipo === 'objeto') {
       for (let f = 0; f < job.cuadros; f++) { const r = pintarObjeto(job.id, job.v, f, job.seed); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
+    } else if (job.tipo === 'bestia') {
+      const d = objeto(job.id);
+      for (let f = 0; f < job.cuadros; f++) { const a = d.armar(job.v, f, herramientas(1)); const esc = Array.isArray(a) ? { piezas: a } : a; const r = pintarEscena({ ...esc, sinSombra: true }); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
     } else if (job.tipo === 'poder') {
       for (let f = 0; f < job.cuadros; f++) { const r = pintarPoder(job.id, job.dir, f); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
     } else if (job.tipo === 'piso') {

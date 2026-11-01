@@ -9,7 +9,6 @@ import { cuadrosVivos } from '../motor/pintor';
 import { R } from '../nucleo/azar';
 
 export const cam = { x: 0, y: 0 };
-const BESTIAS_IDS = new Set(['lobo_sombrio', 'jabali_demonio', 'perro_infernal', 'arana_reina', 'arana_cueva', 'escorpion_gigante', 'gusano_de_arena', 'golem_de_piedra', 'gargola', 'murcielago_gigante', 'demonio_alado', 'dragon_oseo', 'cangrejo_cripta']);
 export const aPant = (x: number, y: number): [number, number] => [(x - y) * 16 - cam.x + W / 2, (x + y) * 8 - cam.y + (H - 96) / 2];
 export const aMundo = (sx: number, sy: number): [number, number] => {
   const X = sx - W / 2 + cam.x, Y = sy - (H - 96) / 2 + cam.y;
@@ -274,8 +273,8 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (e.tipo === 'monstruo' && m.estado === 'surgir') return;
   const q = fs[Math.min(fs.length - 1, i)];
   const esc = e.escala;
-  const bestia = e.tipo !== 'heroe' && e.tipo !== 'npc' && BESTIAS_IDS.has((e as Monstruo).def?.sprite);
-  if (!e.muerto && !bestia) sombra(px, py, (e.radio / 0.45) * 0.9 * esc, 0.4);
+
+  if (!e.muerto) sombra(px, py, (e.radio / 0.45) * 0.9 * esc, 0.4);
   let ok: boolean;
   if (e.destello > 0) ok = dibujarTenido(ctx, q, px, py, '#ffffff', 0.55, esc);
   else if (e.congelado > 0) ok = dibujarTenido(ctx, q, px, py, '#70b8ff', 0.55, esc);
