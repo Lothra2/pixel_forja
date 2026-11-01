@@ -63,6 +63,8 @@ const GESTOS: Record<string, Gesto> = {
   victoria: 'feliz', festejo: 'feliz', levantarse: 'dolor',
   hoja_golpe: 'golpe', hoja_patada: 'golpe', hoja_agarrar: 'esfuerzo', hoja_agachado: 'golpe', hoja_barrida: 'golpe', hoja_hadouken: 'golpe', hoja_shoryuken: 'golpe',
   hoja_antiaereo: 'golpe', hoja_golpeado: 'dolor', hoja_caida: 'dolor', hoja_victoria: 'feliz',
+  hoja_ken_shoryuken: 'golpe', hoja_ken_hadouken: 'golpe', hoja_ken_tatsumaki: 'golpe', hoja_ken_golpe: 'golpe', hoja_ken_patada_baja: 'golpe', hoja_ken_golpe_agachado: 'golpe',
+  hoja_ken_golpeado: 'dolor', hoja_ken_caida: 'dolor', hoja_ken_levantarse: 'dolor', hoja_ken_victoria: 'feliz',
   golpe_agachado: 'golpe', golpe_barril: 'golpe', patada_giro: 'golpe', shoryuken_barril: 'golpe', perfect: 'feliz',
 };
 
@@ -322,6 +324,14 @@ export const CLIPS_VIDEO_NOMBRES: Record<string, [string, string]> = {
   hoja_agachado: ['Hoja · Agachado', 'Sheet · Crouch'], hoja_barrida: ['Hoja · Barrida', 'Sheet · Sweep'], hoja_hadouken: ['Hoja · Hadouken', 'Sheet · Hadouken'],
   hoja_shoryuken: ['Hoja · Shoryuken', 'Sheet · Shoryuken'], hoja_antiaereo: ['Hoja · Patada antiaérea', 'Sheet · Anti-air kick'], hoja_golpeado: ['Hoja · Golpeado', 'Sheet · Hit'],
   hoja_caida: ['Hoja · Caída', 'Sheet · Knockdown'],
+  // la hoja de sprites de Ken
+  hoja_ken_shoryuken: ['Hoja Ken · Shoryuken', 'Ken sheet · Shoryuken'], hoja_ken_voltereta: ['Hoja Ken · Salto con voltereta', 'Ken sheet · Flip jump'],
+  hoja_ken_levantarse: ['Hoja Ken · Levantarse', 'Ken sheet · Get up'], hoja_ken_hadouken: ['Hoja Ken · Hadouken', 'Ken sheet · Hadouken'],
+  hoja_ken_giro: ['Hoja Ken · Giro', 'Ken sheet · Spin'], hoja_ken_tatsumaki: ['Hoja Ken · Tatsumaki', 'Ken sheet · Hurricane kick'],
+  hoja_ken_caida: ['Hoja Ken · Caída', 'Ken sheet · Knockdown'], hoja_ken_victoria: ['Hoja Ken · Victoria', 'Ken sheet · Victory'],
+  hoja_ken_golpeado: ['Hoja Ken · Golpeado', 'Ken sheet · Hit'], hoja_ken_golpe: ['Hoja Ken · Golpe', 'Ken sheet · Punch'],
+  hoja_ken_patada_baja: ['Hoja Ken · Patada baja', 'Ken sheet · Low kick'], hoja_ken_golpe_agachado: ['Hoja Ken · Golpe agachado', 'Ken sheet · Crouching punch'],
+  hoja_ken_agachado: ['Hoja Ken · Agachado', 'Ken sheet · Crouch'], hoja_ken_guardia: ['Hoja Ken · Guardia', 'Ken sheet · Guard'], hoja_ken_reposo: ['Hoja Ken · Reposo', 'Ken sheet · Idle'],
   // del segundo video (el bonus de los barriles)
   golpe_agachado: ['Golpe agachado', 'Crouching punch'], golpe_barril: ['Golpe al barril', 'Barrel punch'],
   patada_giro: ['Patada con giro', 'Spin kick'], shoryuken_barril: ['Uppercut al barril', 'Barrel uppercut'], perfect: ['¡Perfect!', 'Perfect!'],
@@ -345,6 +355,9 @@ export function clipsVideo(): Clip[] {
     });
     // en los bucles el primer cuadro devuelve lo avanzado por el ciclo
     if (c.loop && cuadros.length > 1) cuadros[0].dx = Math.max(0, c.cuadros[c.cuadros.length - 1][2] - c.cuadros[0][2]) / (c.cuadros.length - 1) || 0;
+    // un bucle que no camina (reposo, guardia, victoria) no avanza: lo que mide el video es el temblor del calco y,
+    // sumado vuelta tras vuelta, deslizaba al muñeco quieto
+    if (c.loop && Math.abs(cuadros.reduce((s, q) => s + (q.dx ?? 0), 0)) < 4) for (const q of cuadros) q.dx = 0;
     out.push({ id, nombre: CLIPS_VIDEO_NOMBRES[id] ?? [id, id], grupo: 'pelea', loop: c.loop, cuadros });
   }
   // los que faltan en el video se arman con poses del video
