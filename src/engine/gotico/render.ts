@@ -361,7 +361,7 @@ export function medirEscena(esc: Escena): { x0: number; y0: number; x1: number; 
   let zmax = 0;
   for (const p of ps) { const c = p.k === 'masa' ? p.esf[2] + p.esf[3] : p.k === 'conv' ? Math.max(...p.pts.map((q) => q[2])) : p.k === 'elip' ? p.c[2] + Math.max(...p.r) : Math.max(p.o[2], p.o[2] + p.ez[2] * p.h) + Math.max(p.r0, p.r1); zmax = Math.max(zmax, c); }
   // la sombra se estira hacia abajo a la derecha de la luz
-  if (!esc.sinSombra) { const off = aPantalla([-LUZ[0] / LUZ[2] * zmax, -LUZ[1] / LUZ[2] * zmax, 0]); X0 = Math.min(X0, X0 + off[0]); X1 = Math.max(X1, X1 + off[0]); Y1 = Math.max(Y1, Y1 + off[1]); Y0 = Math.min(Y0, Y0 + off[1]); X0 -= 6; X1 += 6; Y1 += 4; }
+  if (!esc.sinSombra && SOMBRA_PISO) { const off = aPantalla([-LUZ[0] / LUZ[2] * zmax, -LUZ[1] / LUZ[2] * zmax, 0]); X0 = Math.min(X0, X0 + off[0]); X1 = Math.max(X1, X1 + off[0]); Y1 = Math.max(Y1, Y1 + off[1]); Y0 = Math.min(Y0, Y0 + off[1]); X0 -= 6; X1 += 6; Y1 += 4; }
   return { x0: X0, y0: Y0, x1: X1, y1: Y1, zmax };
 }
 
@@ -497,6 +497,9 @@ function oclusion(a: Alturas | null, p: V3, n: V3): number {
  * penumbra y oclusión de contacto. 2 o 3: además cuatro o nueve rayos por pixel promediados (más fino y más lento).
  */
 let CALIDAD = 1;
+/** Con false no se pinta la sombra en el piso (sprites más chicos; el juego pone su propia sombra al vuelo). */
+let SOMBRA_PISO = true;
+export const fijarSombraPiso = (si: boolean) => { SOMBRA_PISO = si; };
 export const fijarCalidad = (n: number) => { CALIDAD = Math.max(0, Math.min(3, Math.round(n))); };
 export const calidad = () => CALIDAD;
 
@@ -545,7 +548,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
       const o: V3 = [(S + D) / 2, (S - D) / 2, z0];
       const hit = cand.length ? impacto(cand, o, VISTA) : null;
       if (!hit) {
-        if (esc.sinSombra) continue;
+        if (esc.sinSombra || !SOMBRA_PISO) continue;
         const t = o[2] / -VISTA[2];
         const g = add(o, VISTA, t);
         const lz = luzDe([g[0], g[1], 0.6], giro, 0.25);
