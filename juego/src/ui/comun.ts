@@ -109,7 +109,7 @@ export function icono(o: Objeto, x: number, y: number, w: number, h: number, t =
     const meta = objetoMeta(`arma_${b.arma}${o.vivo ? ENC[o.vivo] ?? '' : ''}`, 'flota') ?? objetoMeta(`arma_${b.arma}`, 'flota');
     if (meta && meta.f.length) {
       const q = meta.f[o.vivo ? Math.floor(t * 12) % meta.f.length : 0];
-      const k = Math.min((w - 4) / q.w, (h - 4) / q.h, 1.4);
+      const k = Math.min((w - 2) / q.w, (h - 2) / q.h, 2.2);
       ctx.imageSmoothingEnabled = false;
       dibujar(ctx, q, cx - (q.w / 2 - q.ax) * k, cy - (q.h / 2 - q.ay) * k, k);
       ctx.restore(); return;

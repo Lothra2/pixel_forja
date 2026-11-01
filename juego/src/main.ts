@@ -5,6 +5,7 @@ import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
+import { abrirTienda } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, type Pick } from './render/escena';
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
@@ -191,6 +192,15 @@ function controlar(jj: Juego, dt: number) {
         else usarHabilidad(jj, h.d.der, obj ? obj.x : mx, obj ? obj.y : my, obj);
       }
     } else (h as any).usarDer = false;
+  }
+  // táctil: el botón usa la habilidad sobre el enemigo más cercano
+  if ((ui as any).tactilHab) {
+    const lado = (ui as any).tactilHab as 'izq' | 'der'; (ui as any).tactilHab = null;
+    let best: Monstruo | null = null, bd = 10;
+    for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado !== 'surgir') { const d = dist(m.x, m.y, h.x, h.y); if (d < bd) { bd = d; best = m; } }
+    const hb = habilidadDe(h.d[lado]);
+    if (best && hb.tipo === 'golpe' && !(h.d[lado] === 'ataque' && h.c.distancia)) { h.objetivo = best; (h as any).usarDer = lado === 'der'; }
+    else usarHabilidad(jj, h.d[lado], best ? best.x : h.x + 3, best ? best.y : h.y + 3, best);
   }
   // perseguir y atacar
   if (h.objetivo) {
@@ -406,6 +416,7 @@ async function arrancar() {
   (window as any).__juego = () => j;
   (window as any).__estado = () => estado;
   import('./juego/mundo').then((m) => { (window as any).__mundo = m; });
+  (window as any).__U = { hablarCon, abrirTienda, ui };
   (window as any).__ir = (id: string, e: string) => irAZona(id, e);
   (window as any).__aPant = (x: number, y: number) => { const [a, b] = aPant(x, y); const r = (document.getElementById('juego') as HTMLCanvasElement).getBoundingClientRect(); return [r.left + a * r.width / W, r.top + b * r.height / H]; };
 }

@@ -319,6 +319,7 @@ function exterior(def: DefZona, semilla: number): Zona {
   k.regar(t.grande, Math.floor((area / 900) * dens), 3, 3, z.W - 3, z.H - 3);
   k.regar(t.disperso, Math.floor((area / 260) * dens), 2, 2, z.W - 2, z.H - 2);
   k.regar(t.luces, Math.floor(area / 2600), 4, 4, z.W - 4, z.H - 4);
+  if (def.tipo === 'exterior') k.regar([{ t: ['misterio' as Tema], p: ['arbol_rostros', 'manos', 'ojos', 'estatua', 'pozo'] }], 2 + Math.floor(area / 5000), 4, 4, z.W - 4, z.H - 4);
   // salidas reales
   def.salidas.forEach((s, i) => {
     const [cx, cy] = puntos[i];
@@ -480,8 +481,15 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   if (!z.entradas.arriba) z.entradas.arriba = [p0[0], p0[1] + 2];
   if (def.piedraViaje) { const o = k.poner('com_piedra_viaje', p0[0] + 4, p0[1] + 3, 'apagada', true); if (o) z.marcas.push({ tipo: 'viaje', cx: o.cx, cy: o.cy }); }
   colocarInteractivos(k, 2 + Math.floor(area / 3500), 1 + Math.floor(area / 7000));
-  sembrar(k, Math.floor(area / 420), [p0]);
-  if (def.jefe) z.spawns.push({ cx: pN[0], cy: pN[1] + 2, tipo: 'jefe', fuerza: 1 });
+  sembrar(k, Math.floor(area / 260), [p0]);
+  if (def.jefe) {
+    z.spawns.push({ cx: pN[0], cy: pN[1] + 2, tipo: 'jefe', fuerza: 1 });
+    // la sala del jefe: cosas que no deberían existir
+    const mis = ['mis_trono_huesos', 'mis_manos', 'mis_ojos_oscuridad', 'mis_carne_viva', 'mis_estatua_doliente', 'mis_pozo_almas', 'mis_reliquia', 'mis_libro_maldito', 'mis_espejo'];
+    for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2 + r(); k.poner(mis[i % mis.length], pN[0] + Math.cos(a) * (4 + r() * 3), pN[1] + 2 + Math.sin(a) * (4 + r() * 3)); }
+  }
+  // en las mazmorras a veces asoman ojos en la oscuridad
+  k.regar([{ t: ['misterio' as Tema], p: ['ojos', 'manos', 'espejo', 'libro', 'arbol_rostros'] }], 2 + Math.floor(area / 3000), 1, 1, z.W - 1, z.H - 1, enSuelo);
   return z;
 }
 

@@ -145,7 +145,7 @@ export function dibujarBarra(j: Juego, t: number) {
   }
   // experiencia
   const zx = Z('barra_experiencia'); const x0 = xpPara(h.d.nivel), x1 = xpPara(h.d.nivel + 1);
-  ctx.fillStyle = '#c0a040'; ctx.fillRect(bx + zx.x, by + zx.y + 1, zx.w * Math.min(1, (h.d.xp - x0) / Math.max(1, x1 - x0)), zx.h - 2);
+  ctx.fillStyle = '#c0a040'; ctx.fillRect(bx + zx.x, by + zx.y + 1, zx.w * Math.max(0, Math.min(1, (h.d.xp - x0) / Math.max(1, x1 - x0))), zx.h - 2);
   if (dentro(bx + zx.x, by + zx.y - 3, zx.w, zx.h + 6)) texto(`${T('Experiencia', 'Experience')}: ${h.d.xp.toLocaleString()} / ${x1.toLocaleString()}`, W / 2, by + zx.y - 8, { alin: 'center', color: '#fff' });
   // aguante = barra de correr (indicador)
   const za = Z('barra_aguante'); ctx.fillStyle = h.correr ? '#b0a040' : '#606060'; ctx.fillRect(bx + za.x + 1, by + za.y + 2, za.w - 2, za.h - 4);
@@ -169,7 +169,19 @@ export function dibujarBarra(j: Juego, t: number) {
   // puntos para repartir
   if (h.d.puntosAtrib > 0) { const z = Z('boton_personaje'); ctx.fillStyle = Math.floor(t * 2) % 2 ? '#ffd060' : '#a07020'; ctx.fillRect(bx + z.x + z.w - 6, by + z.y, 6, 6); }
   if (h.d.puntosHab > 0) { const z = Z('boton_habilidades'); ctx.fillStyle = Math.floor(t * 2) % 2 ? '#ffd060' : '#a07020'; ctx.fillRect(bx + z.x + z.w - 6, by + z.y, 6, 6); }
-  ui.sobreUI = E.y > by + 56 || dentro(bx, by, 130, BAR_H) || dentro(bx + 670, by, 130, BAR_H);
+  // táctil: botones grandes para la tablet
+  if (E.tactil) {
+    const r = 34, bx2 = W - 70, by2 = by - 50;
+    for (const [i, lado, txt] of [[0, 'der', T('Poder', 'Skill')], [1, 'izq', T('Golpe', 'Hit')]] as [number, 'izq' | 'der', string][]) {
+      const cx = bx2 - i * 84, cy = by2 - i * 30;
+      ctx.save(); ctx.globalAlpha = 0.75; ctx.fillStyle = '#1a1410'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+      iconoHab(habilidadDe(h.d[lado]), cx - 18, cy - 18, 36);
+      texto(txt, cx, cy + r + 12, { alin: 'center', tam: 11 });
+      if (E.clicIzq && Math.hypot(E.x - cx, E.y - cy) < r) { E.clicIzq = false; (ui as any).tactilHab = lado; }
+    }
+    if (dentro(bx2 - 130, by2 - 70, 170, 130)) ui.sobreUI = true;
+  }
+  ui.sobreUI = ui.sobreUI || E.y > by + 56 || dentro(bx, by, 130, BAR_H) || dentro(bx + 670, by, 130, BAR_H);
 }
 export function alternar(p: PanelId, lado: 'izq' | 'der') {
   if (lado === 'izq') ui.izq = ui.izq === p ? null : p; else ui.der = ui.der === p ? null : p;
@@ -404,7 +416,7 @@ function panelHabs(j: Juego, x: number, y: number) {
     texto(TT(hb.nombre), x + 68, yy + 16, { color: n ? '#f0e0b0' : '#908070' });
     texto(n ? `${T('Nivel', 'Level')} ${n}${h.c.mas_habilidades ? ` (+${h.c.mas_habilidades})` : ''}` : `${T('Requiere nivel', 'Requires level')} ${hb.nivelReq}`, x + 68, yy + 32, { tam: 11, color: '#a09070' });
     if (puede && boton('+', x + 270, yy + 8, 30, 28, { tam: 18 })) { d.habs[hb.id] = n + 1; d.puntosHab--; Sonido.efecto('click'); recalc(j); if (d.izq === 'ataque' && hb.tipo !== 'pasiva' && hb.tipo !== 'aura' && n === 0 && hb.anim === 'atacar') {/* nada */} if (d.der === 'ataque' && n === 0 && hb.tipo !== 'pasiva') d.der = hb.id; E.clicIzq = false; }
-    if (dentro(x + 16, yy, 250, 44)) mostrarAyudaHab(j, hb, x + 160, yy);
+    if (dentro(x + 16, yy, 250, 44)) mostrarAyudaHab(j, hb, x > W / 2 ? x - 170 : x + 490, yy + 40);
   });
 }
 function mostrarAyudaHab(j: Juego, hb: Habilidad, x: number, y: number) {
