@@ -6,8 +6,8 @@ import { BASES, CONJUNTOS } from '../datos/objetos_datos';
 import type { Clase, Elemento } from './tipos_objetos';
 import { crearBase, crearPocion, crearPergamino, baseDe, type Objeto } from './objetos';
 
-export type Casilla = 'cabeza' | 'torso' | 'arma' | 'izq' | 'manos' | 'cinturon' | 'pies' | 'amuleto' | 'anillo1' | 'anillo2';
-export const CASILLAS: Casilla[] = ['cabeza', 'torso', 'arma', 'izq', 'manos', 'cinturon', 'pies', 'amuleto', 'anillo1', 'anillo2'];
+export type Casilla = 'cabeza' | 'torso' | 'arma' | 'izq' | 'manos' | 'cinturon' | 'pies' | 'amuleto' | 'anillo1' | 'anillo2' | 'talisman';
+export const CASILLAS: Casilla[] = ['cabeza', 'torso', 'arma', 'izq', 'manos', 'cinturon', 'pies', 'amuleto', 'anillo1', 'anillo2', 'talisman'];
 export interface EnBolsa { o: Objeto; x: number; y: number; /** bolsa 0, 1 o 2 */ b?: number }
 export interface DatosHeroe {
   v: 1;
@@ -97,6 +97,7 @@ export interface Calc {
   distancia: boolean; dosManos: boolean; tipoArma: string;
   fuego_pct: number; invocados_pct: number;
   vivo?: Elemento;
+  valor: number;
   conjuntos: Record<string, number>;
 }
 
@@ -160,7 +161,7 @@ export function calcular(h: DatosHeroe, buffs: Record<string, number> = {}): Cal
     golpe_aplastante: st.golpe_aplastante ?? 0, herida_abierta: st.herida_abierta ?? 0, ralentizar: st.ralentizar ?? 0, aturdir: st.aturdir ?? 0, perforar: st.perforar ?? 0,
     vida_por_muerte: st.vida_por_muerte ?? 0, mana_por_muerte: st.mana_por_muerte ?? 0,
     distancia, dosManos: !!ba?.dosManos, tipoArma: ba?.arma ?? 'puno', fuego_pct: st.fuego_pct ?? 0, invocados_pct: st.invocados_pct ?? 0,
-    vivo: arma?.vivo, conjuntos,
+    vivo: arma?.vivo, conjuntos, valor: Math.min(100, st.valor ?? 0),
   };
 }
 

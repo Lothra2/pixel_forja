@@ -1,7 +1,7 @@
 // Tipos del botín: bases, afijos, únicos, conjuntos, gemas y runas. Los datos van en datos/objetos_datos.ts.
 import type { Equipo, TipoArma } from '../../../src/engine/gotico/cuerpo';
 
-export type Ranura = 'cabeza' | 'torso' | 'arma' | 'izq' | 'manos' | 'cinturon' | 'pies' | 'amuleto' | 'anillo';
+export type Ranura = 'cabeza' | 'torso' | 'arma' | 'izq' | 'manos' | 'cinturon' | 'pies' | 'amuleto' | 'anillo' | 'talisman';
 /** Elementos de daño. 'sangre' es daño físico que sangra con el tiempo. */
 export type Elemento = 'fisico' | 'fuego' | 'frio' | 'rayo' | 'veneno' | 'sombra' | 'luz' | 'sangre';
 export type Clase = 'berserker' | 'templario' | 'arcanista' | 'cazadora' | 'nigromante' | 'monje' | 'druida' | 'alquimista';
@@ -34,6 +34,7 @@ export type Stat =
   | 'perforar' // % de que el proyectil atraviese
   | 'durabilidad_infinita' // 1 = indestructible
   | 'reduc_req' // % menos requisitos
+  | 'valor' // % resistencia al terror (los sustos encogen menos la luz y llegan menos)
   | 'huecos'; // agujeros para gemas y runas (se aplica al crear)
 
 export interface RangoStat { stat: Stat; min: number; max: number }

@@ -5,7 +5,8 @@ import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '..
 import { HABILIDADES, INVOCADOS, ATAQUE, type Habilidad } from '../datos/clases';
 import { GENTE } from '../datos/npcs';
 import { calcular, nivelHab, xpPara, recoger, type DatosHeroe, type Calc } from './heroe';
-import { botin, crearObjeto, valorPocion, type Objeto, type Caida } from './objetos';
+import { botin, crearObjeto, crearUnicoId, valorPocion, type Objeto, type Caida } from './objetos';
+import { TALISMAN_JEFE } from '../datos/talismanes';
 import type { Elemento } from './tipos_objetos';
 import { R, entre, elegir, clamp, dist, hashTxt } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
@@ -368,6 +369,8 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   const cal = m.def.jefe ? 4 : m.calidad;
   const caidas = botin(m.nivel, cal, h.c.hallazgo, h.c.oro_extra);
   if (m.def.jefe) caidas.push({ obj: crearObjeto(m.nivel, R() < 0.5 ? 'unico' : 'raro') }, { obj: crearObjeto(m.nivel, 'raro') });
+  const tj = TALISMAN_JEFE[m.def.id]; if (tj) { const o = crearUnicoId(tj, m.nivel); if (o) caidas.push({ obj: o }); }
+  if (m.calidad >= 2 && !m.def.jefe && R() < 0.25) caidas.push({ obj: crearObjeto(m.nivel, R() < 0.3 ? 'raro' : 'magico', (b) => b.ranura === 'talisman') });
   soltar(j, m.x, m.y, caidas);
   if (m.mods.includes('ardiente')) { j.areas.push({ x: m.x, y: m.y, radio: 2, dano: [m.dano[0], m.dano[1] * 1.2], elem: 'fuego', t: 0, dur: 0.4, tick: 1, prox: 0.3, deHeroe: false, efecto: 'explosion_fuego', retraso: 0.3 }); efecto(j, 'explosion_fuego', m.x, m.y); }
   if (m.mods.includes('helado')) { efecto(j, 'nova_escarcha', m.x, m.y); for (let a = 0; a < 8; a++) disparar(j, m, m.x + Math.cos(a * 0.785), m.y + Math.sin(a * 0.785), { min: m.dano[0] * 0.5, max: m.dano[1] * 0.5, elem: 'frio', deHeroe: false }, 'saeta_hielo', 8); }
@@ -751,8 +754,8 @@ export function actualizar(j: Juego, dt: number) {
   }
   // terror: cada tanto la luz se encoge y algo se escucha
   (j as any).oscurece = Math.max(0, ((j as any).oscurece ?? 0) - dt);
-  if (j.zona.tipo !== 'pueblo' && j.zona.oscuridad > 0.4 && R() < dt / 70) {
-    (j as any).oscurece = 3.5;
+  if (j.zona.tipo !== 'pueblo' && j.zona.oscuridad > 0.4 && R() < (dt / 70) * (1 - h.c.valor / 120)) {
+    (j as any).oscurece = 3.5 * (1 - h.c.valor / 150);
     const frases: [string, string][] = [
       [`Alguien susurró «${h.d.nombre}».`, `Someone whispered "${h.d.nombre}".`], ['Las llamas se encogen. Algo respira detrás de ti.', 'The flames shrink. Something breathes behind you.'],
       ['Se escucha una campana. Muy lejos. Debajo.', 'A bell rings. Far away. Below.'], ['La Marca en tu brazo arde un instante.', 'The Mark on your arm burns for a moment.'],

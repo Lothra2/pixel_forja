@@ -22,6 +22,7 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 - Botín con rarezas normal, mágico, raro, de conjunto, único y legendario. Unos 130 tipos de objeto, 114 afijos, 48 únicos, 6 conjuntos, 35 gemas, 20 runas y 10 palabras rúnicas. **Armas vivas** de fuego, hielo, rayo, veneno, sombra, luz y sangre que arden en la mano y en el inventario.
 - Lo que te pones cambia el dibujo del héroe de verdad: el juego lo vuelve a pintar en segundo plano ("Forjando tu equipo").
 - Inventario de la Forja: el héroe se ve de verdad con su equipo, armas en 3D, objetos de su tamaño real, fondo por rareza, durabilidad, gemas engarzadas, flechas de mejor o peor que lo puesto, tres bolsas de 10x5 y botón para ordenar.
+- Talismanes: el casillero extra lleva amuletos de hueso, cera y ceniza con afijos propios (radio de luz, hallazgo, resistencia al terror, +1 a habilidades). Cada jefe de acto suelta siempre su talismán único.
 - Tiendas (comprar, vender con clic derecho, reparar), la vidente para apostar, baúl compartido entre héroes, piedras de viaje, portales.
 - Oscuridad real con radio de luz, niebla, lluvia, nieve y ceniza, sangre que queda en el piso, cadáveres, sacudida de cámara, susurros y visiones que asoman al borde de la luz. Música y sonidos hechos con WebAudio, distintos por acto.
 - Misterio: 9 páginas arrancadas del diario del primer abad escondidas en libros malditos de las mazmorras, momentos de terror donde la luz se encoge y algo te nombra, y un final con su giro después de vencer a Ozmaren.

@@ -259,7 +259,7 @@ function dibujarPanel(j: Juego, p: PanelId, x: number, t: number) {
 }
 
 // ---------------- inventario (el panel de la Forja con el héroe real y armas 3D)
-const CAS_HUD: Record<string, Casilla | null> = { casco: 'cabeza', pecho: 'torso', arma: 'arma', mano_libre: 'izq', guantes: 'manos', cinturon: 'cinturon', botas: 'pies', amuleto: 'amuleto', anillo_izq: 'anillo1', anillo_der: 'anillo2', talisman: null };
+const CAS_HUD: Record<string, Casilla | null> = { casco: 'cabeza', pecho: 'torso', arma: 'arma', mano_libre: 'izq', guantes: 'manos', cinturon: 'cinturon', botas: 'pies', amuleto: 'amuleto', anillo_izq: 'anillo1', anillo_der: 'anillo2', talisman: 'talisman' };
 let cacheInv: { k: string; c: HTMLCanvasElement } | null = null;
 function panelInv(j: Juego, x: number, y: number, t: number) {
   const h = j.heroe, d = h.d;

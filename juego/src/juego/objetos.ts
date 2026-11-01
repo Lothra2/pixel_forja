@@ -1,5 +1,6 @@
 // Botín: crear objetos (normales, mágicos, raros, de conjunto, únicos, legendarios), pociones, gemas, runas y oro.
 import { BASES, PREFIJOS, SUFIJOS, UNICOS, CONJUNTOS, GEMAS, RUNAS, PALABRAS, NOMBRES_RAROS } from '../datos/objetos_datos';
+import '../datos/talismanes';
 import type { Base, Elemento, Stat, Ranura, Afijo } from './tipos_objetos';
 import { R, entero, elegir, clamp } from '../nucleo/azar';
 
@@ -35,6 +36,12 @@ export interface Objeto {
 let uid = Date.now() % 100000;
 export const nuevoUid = () => ++uid;
 export const BASE_POR_ID = new Map(BASES.map((b) => [b.id, b]));
+export function crearUnicoId(id: string, nivel: number): Objeto | null {
+  const u = UNICOS.find((x) => x.id === id); const b = u && BASE_POR_ID.get(u.base); if (!u || !b) return null;
+  const o = crearBase(b, Math.max(nivel, u.nivel)); o.rareza = 'unico'; o.nombre = [...u.nombre] as [string, string]; o.lore = u.lore;
+  for (const st of u.stats) o.stats.push([st.stat, rollStat(st.min, st.max)]);
+  o.precio = b.precio * 10; return o;
+}
 export const baseDe = (o: Objeto): Base | undefined => BASE_POR_ID.get(o.base);
 
 const familiaDonde = (b: Base): string[] => {
@@ -48,6 +55,7 @@ const familiaDonde = (b: Base): string[] => {
   if (b.ranura === 'cinturon') out.push('cinturon');
   if (b.ranura === 'anillo') out.push('anillo', 'joya');
   if (b.ranura === 'amuleto') out.push('amuleto', 'joya');
+  if (b.ranura === 'talisman') return ['talisman'];
   return out;
 };
 const rollStat = (min: number, max: number) => Math.round(min + (max - min) * R());
@@ -277,7 +285,7 @@ export const NOMBRE_STAT: Record<string, [string, string]> = {
   radio_luz: ['+{v} radio de luz', '+{v} to Light Radius'], precision: ['+{v} índice de ataque', '+{v} to Attack Rating'], reduc_dano: ['Daño reducido {v}%', 'Damage Reduced by {v}%'],
   espinas: ['El atacante recibe {v} de daño', 'Attacker Takes {v} Damage'], vida_por_muerte: ['+{v} vida por cada muerte', '+{v} Life after each Kill'], mana_por_muerte: ['+{v} maná por cada muerte', '+{v} Mana after each Kill'],
   golpe_aplastante: ['{v}% de golpe aplastante', '{v}% Crushing Blow'], herida_abierta: ['{v}% de herida abierta', '{v}% Open Wounds'], ralentizar: ['Ralentiza al objetivo {v}%', 'Slows Target by {v}%'], aturdir: ['{v}% de aturdir', '{v}% Chance to Stun'],
-  perforar: ['{v}% de perforar', '{v}% Piercing Attack'], durabilidad_infinita: ['Indestructible', 'Indestructible'], reduc_req: ['Requisitos -{v}%', 'Requirements -{v}%'],
+  perforar: ['{v}% de perforar', '{v}% Piercing Attack'], valor: ['{v}% resistencia al terror', '{v}% Terror Resistance'], durabilidad_infinita: ['Indestructible', 'Indestructible'], reduc_req: ['Requisitos -{v}%', 'Requirements -{v}%'],
 };
 export function textoStat(s: string, v: number, idi: 0 | 1): string {
   const t = NOMBRE_STAT[s]; if (!t) return `${s} ${v}`;

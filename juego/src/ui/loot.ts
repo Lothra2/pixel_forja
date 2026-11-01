@@ -29,6 +29,7 @@ export function aLoot(o: Objeto): LootItem {
     else if (b.ranura === 'pies') base = { cat: 'armor', slot: 'boots', line: linea === 'tunica' ? 'cuero' : linea, tier };
     else if (b.ranura === 'cinturon') base = { cat: 'armor', slot: 'belt', line: /placa|malla/.test(vis) ? 'placas' : 'cuero', tier };
     else if (b.ranura === 'anillo') base = { cat: 'jewel', icon: o.rareza === 'normal' ? 'ring_band' : 'ring' };
+    else if (b.ranura === 'talisman') base = { cat: 'jewel', icon: 'charm_small' };
     else if (b.ranura === 'amuleto') base = { cat: 'jewel', icon: o.rareza === 'raro' || o.rareza === 'unico' ? 'amulet_pendant' : 'amulet' };
     else if (b.ranura === 'izq') {
       const t = (b.visual as any).izq?.tipo ?? '';
