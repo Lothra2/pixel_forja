@@ -8,7 +8,7 @@ import { crearBase, crearPocion, crearPergamino, baseDe, type Objeto } from './o
 
 export type Casilla = 'cabeza' | 'torso' | 'arma' | 'izq' | 'manos' | 'cinturon' | 'pies' | 'amuleto' | 'anillo1' | 'anillo2';
 export const CASILLAS: Casilla[] = ['cabeza', 'torso', 'arma', 'izq', 'manos', 'cinturon', 'pies', 'amuleto', 'anillo1', 'anillo2'];
-export interface EnBolsa { o: Objeto; x: number; y: number }
+export interface EnBolsa { o: Objeto; x: number; y: number; /** bolsa 0, 1 o 2 */ b?: number }
 export interface DatosHeroe {
   v: 1;
   id: string;
@@ -36,14 +36,14 @@ export interface DatosHeroe {
   vidaActual?: number; manaActual?: number;
   dificultad: number;
 }
-export const BOLSA_W = 10, BOLSA_H = 4;
+export const BOLSA_W = 10, BOLSA_H = 5, BOLSAS = 3;
 
 export function nuevoHeroe(clase: Clase, nombre: string): DatosHeroe {
   const c = CLASES.find((x) => x.id === clase)!;
   const h: DatosHeroe = {
     v: 1, id: `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`, nombre, clase, nivel: 1, xp: 0,
     fue: c.base.fue, des: c.base.des, vit: c.base.vit, ene: c.base.ene, puntosAtrib: 0, puntosHab: 1, habs: {},
-    izq: 'ataque', der: 'ataque', atajos: Array(8).fill(null), equipo: {}, bolsa: [], cinturon: [null, null, null, null], oro: 80, acto: 1, zona: 'a1_refugio',
+    izq: 'ataque', der: 'ataque', atajos: Array(10).fill(null), equipo: {}, bolsa: [], cinturon: [null, null, null, null], oro: 80, acto: 1, zona: 'a1_refugio',
     viajes: ['a1_refugio'], misiones: {}, muertes: 0, creado: Date.now(), jugado: 0, actosHechos: [], dificultad: 0,
   };
   // arma inicial con el aspecto del novato
@@ -53,7 +53,7 @@ export function nuevoHeroe(clase: Clase, nombre: string): DatosHeroe {
   if (b) { const o = crearBase(b, 1); o.vis = nov.arma; o.durab = o.durabMax; h.equipo.arma = o; }
   // la habilidad de clase con que arranca (como un don): la primera de la primera rama
   const primera = HABILIDADES.find((x) => x.clase === clase && x.nivelReq === 1 && x.tipo !== 'pasiva' && x.tipo !== 'aura' && x.tipo !== 'buff');
-  if (primera) { h.habs[primera.id] = 1; h.der = primera.id; }
+  if (primera) { h.habs[primera.id] = 1; h.der = primera.id; h.atajos[0] = primera.id; }
   h.cinturon = [crearPocion('vida', 0), crearPocion('vida', 0), crearPocion('mana', 0), crearPocion('mana', 0)];
   meterEnBolsa(h, crearPergamino('portal'));
   meterEnBolsa(h, crearPergamino('portal'));
@@ -61,17 +61,17 @@ export function nuevoHeroe(clase: Clase, nombre: string): DatosHeroe {
 }
 
 // ------------------------------------------------------------------ bolsa
-export function lugarLibre(h: DatosHeroe, w: number, hh: number, bolsa = h.bolsa, BW = BOLSA_W, BH = BOLSA_H): [number, number] | null {
-  for (let x = 0; x <= BW - w; x++) for (let y = 0; y <= BH - hh; y++) if (libre(bolsa, x, y, w, hh)) return [x, y];
+export function lugarLibre(h: DatosHeroe, w: number, hh: number, bolsa = h.bolsa, BW = BOLSA_W, BH = BOLSA_H, bolsas = BOLSAS): [number, number, number] | null {
+  for (let b = 0; b < bolsas; b++) for (let x = 0; x <= BW - w; x++) for (let y = 0; y <= BH - hh; y++) if (libre(bolsa, x, y, w, hh, undefined, b)) return [x, y, b];
   return null;
 }
-export function libre(bolsa: EnBolsa[], x: number, y: number, w: number, h: number, salvo?: Objeto): boolean {
-  return !bolsa.some((b) => b.o !== salvo && x < b.x + b.o.w && x + w > b.x && y < b.y + b.o.h && y + h > b.y);
+export function libre(bolsa: EnBolsa[], x: number, y: number, w: number, h: number, salvo?: Objeto, bb = 0): boolean {
+  return !bolsa.some((b) => (b.b ?? 0) === bb && b.o !== salvo && x < b.x + b.o.w && x + w > b.x && y < b.y + b.o.h && y + h > b.y);
 }
 export function meterEnBolsa(h: DatosHeroe, o: Objeto): boolean {
   const p = lugarLibre(h, o.w, o.h);
   if (!p) return false;
-  h.bolsa.push({ o, x: p[0], y: p[1] });
+  h.bolsa.push({ o, x: p[0], y: p[1], b: p[2] });
   return true;
 }
 /** Las pociones van primero al cinturón. */

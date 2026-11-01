@@ -112,6 +112,9 @@ function pista(id: string, txt: [string, string]) {
 
 async function empezarPartida(d: DatosHeroe) {
   olvidarZonas();
+  // atajos: los que no tengan, se llenan con las habilidades aprendidas
+  while (d.atajos.length < 10) d.atajos.push(null);
+  for (const id of Object.keys(d.habs)) { const hb = habilidadDe(id); if (hb.tipo !== 'pasiva' && !d.atajos.includes(id)) { const i = d.atajos.findIndex((a) => !a); if (i >= 0) d.atajos[i] = id; } }
   j = crearJuego(d, IDI);
   ui.cofre = cargarCofre();
   const zid = ZONAS[d.zona] ? d.zona : PUEBLO_DE[d.acto] ?? 'a1_refugio';
@@ -159,7 +162,8 @@ function controlar(jj: Juego, dt: number) {
   if (pulso('r')) h.correr = !h.correr;
   if (pulso('b')) abrirPortal(jj);
   for (let i = 1; i <= 4; i++) if (pulso(String(i))) usarPocion(jj, i - 1);
-  for (let k = 1; k <= 8; k++) if (pulso('F' + k) && ui.der !== 'elegirHab') { const id = h.d.atajos[k - 1]; if (id) { h.d.der = id; recalc(jj); } }
+  for (let k = 1; k <= 10; k++) if (pulso('F' + k) && ui.der !== 'elegirHab') { const id = h.d.atajos[k - 1]; if (id) { h.d.der = id; recalc(jj); } }
+  for (const [tecla, k] of [['5', 0], ['6', 1], ['7', 2], ['8', 3], ['9', 4], ['0', 5]] as [string, number][]) if (pulso(tecla)) { const id = h.d.atajos[k]; if (id) { h.d.der = id; recalc(jj); Sonido.efecto('click'); } }
   if (pulso('Escape')) {
     if (h.muerto) { revivir(jj); return; }
     if (ui.izq || ui.der || ui.mapa) { ui.izq = ui.der = null; ui.mapa = false; } else ui.izq = 'menu';
