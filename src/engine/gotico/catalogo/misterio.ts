@@ -157,7 +157,7 @@ registrar(
       // velas negras en las puntas
       for (let i = 0; i < 7; i++) { const an = (i / 7) * Math.PI * 2; const x = Math.cos(an) * (R + 3), y = Math.sin(an) * (R + 3); ps.push(a.cilindro(x, y, 0, 1.1, 5 + (i % 3), { mat: 'negro' }), a.elipsoide(x, y, 6.2 + (i % 3) + (f % 2) * 0.3, 0.6, 0.6, 1.2 + late * 0.5, { mat: 'luz_vela' })); }
       // algo que asoma en el centro
-      ps.push(a.elipsoide(0, 0, 1 + late * 3, 6 * late, 6 * late, 2 + late * 6, { mat: v === 'fuego' ? 'lava' : 'cu_sombra' }));
+      ps.push(a.elipsoide(0, 0, 1 + late * 3, 0.6 + 6 * late, 0.6 + 6 * late, 2 + late * 6, { mat: v === 'fuego' ? 'lava' : 'cu_sombra' }));
       return { piezas: ps, resplandor: { c: [0, 0, 4], r: 50, color: v === 'sangre' ? '#c01818' : v === 'sombra' ? '#7030c0' : '#ff6a10' } };
     },
   },

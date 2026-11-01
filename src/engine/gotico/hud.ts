@@ -695,9 +695,9 @@ export function orbe(tipo: TipoOrbe, nivel: number, cuadro = 0, r = RADIO_ORBE):
     const nz = Math.sqrt(1 - d2), lu = dx * LUZ[0] + dy * LUZ[1] + nz * LUZ[2];
     let ys = ySup(px);
     // menisco: el líquido trepa un poco por el vidrio en los bordes
-    const semi = Math.sqrt(Math.max(0.0001, 1 - ((ys - c) / r) ** 2));
-    const borde = Math.abs(dx) / semi;
-    if (borde > 0.8) ys -= ((borde - 0.8) / 0.2) ** 2 * 2.2;
+    const semi = Math.sqrt(Math.max(0, 1 - ((ys - c) / r) ** 2));
+    const borde = semi > 0.2 ? Math.abs(dx) / semi : 0;
+    if (borde > 0.8) ys -= Math.min(3, ((borde - 0.8) / 0.2) ** 2 * 2.2);
     const prof = py - ys;
     let col: C3;
     if (prof >= 0 && nivel > 0) {

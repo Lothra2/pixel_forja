@@ -601,3 +601,16 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   }
   return { img, ancla: [ax, ay] };
 }
+
+/** Gira piezas alrededor del eje vertical (grados): sirve para sacar la variante que corre a lo largo de y. */
+export function girarPiezas(ps: Pieza[], grados: number): Pieza[] {
+  const a = (grados * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+  const R = (v: V3): V3 => [v[0] * c - v[1] * s, v[0] * s + v[1] * c, v[2]];
+  return ps.map((p): Pieza => {
+    if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => [R(n), d] as [V3, number]), pts: p.pts.map(R) };
+    if (p.k === 'cono') return { ...p, o: R(p.o), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+    if (p.k === 'elip') return { ...p, c: R(p.c), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+    const comps = p.comps.map((q): Comp => (q.f === 'hueso' ? hueso(R(q.a), R(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k }) : { ...q, c: R(q.c), sc: R(q.sc), ex: R(q.ex), ey: R(q.ey), ez: R(q.ez) }));
+    return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave });
+  });
+}

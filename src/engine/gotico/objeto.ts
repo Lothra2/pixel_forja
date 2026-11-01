@@ -1,5 +1,5 @@
 import { rng } from '../core/rng';
-import { pintarEscena, medirEscena, calidad, type Escena, type Pieza, type Render, type Ambiente, type V3, caja, cilindro, elipsoide, esfera, palo, poliedro } from './render';
+import { pintarEscena, medirEscena, calidad, girarPiezas, type Escena, type Pieza, type Render, type Ambiente, type V3, caja, cilindro, elipsoide, esfera, palo, poliedro } from './render';
 
 /**
  * Cómo se define un asset del taller gótico: una función que arma las piezas 3D para una variante, un cuadro de
@@ -93,4 +93,24 @@ export function pintarCuadro(id: string, v?: string, f = 0, seed = 1, amb?: Ambi
   let r = cache.get(k);
   if (!r) { const a = d.armar(vv, f, herramientas(seed)); r = pintarEscena(Array.isArray(a) ? { piezas: a, sinSombra: d.plano } : { sinSombra: d.plano, ...a }, amb); cache.set(k, r); }
   return r;
+}
+
+/**
+ * Agrega a un objeto ya registrado las variantes que corren a lo largo de y (<variante>_y): la misma pieza girada
+ * 90 grados, con la huella girada sola por el sufijo.
+ */
+export function conVarianteY(...ids: string[]) {
+  for (const id of ids) {
+    const d = REGISTRO.find((x) => x.id === id);
+    if (!d || d.variantes.some((v) => v.endsWith('_y'))) continue;
+    const base = d.armar, vs = [...d.variantes];
+    d.variantes = [...vs, ...vs.map((v) => v + '_y')];
+    d.armar = (v, f, a) => {
+      if (!v.endsWith('_y')) return base(v, f, a);
+      const r = base(v.slice(0, -2), f, a);
+      if (Array.isArray(r)) return girarPiezas(r, 90);
+      const res = r.resplandor ? { ...r.resplandor, c: [-r.resplandor.c[1], r.resplandor.c[0], r.resplandor.c[2]] as V3 } : undefined;
+      return { ...r, piezas: girarPiezas(r.piezas, 90), resplandor: res };
+    };
+  }
 }
