@@ -290,7 +290,8 @@ export function rayasLiceo(P: Lienzo, _L: ObliqueLayout, seed: number) {
   for (const [a, b] of cementerios) {
     for (let x = a; x <= b; x++) { raya(x, 0, 'crema'); raya(x, prof - 1, 'crema'); }
     for (let y = 0; y < prof; y++) raya(a, y, 'crema');
-    for (let y = 10; y < prof; y += 14) for (let i = 0; i <= b - a; i++) raya(a + i, Math.round(y - (8 * i) / (b - a)), 'crema');
+    // el rayado va en la misma diagonal que la inclinación (bajando a la derecha), para no pelear con las juntas del piso
+    for (let y = 2; y < prof; y += 14) for (let i = 0; i <= b - a; i++) raya(a + i, Math.round(y + (8 * i) / (b - a)), 'crema');
   }
 }
 
