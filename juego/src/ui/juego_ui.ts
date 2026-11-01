@@ -610,6 +610,7 @@ export function dibujarMapa(j: Juego, grande: boolean) {
   const p = (x: number, y: number): [number, number] => [cx + (x - h.x - (y - h.y)) * esc * 0.5, cy + (x - h.x + (y - h.y)) * esc * 0.25];
   ctx.save();
   if (!grande) { ctx.beginPath(); ctx.rect(W - 180, 0, 180, 160); ctx.clip(); ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(W - 180, 0, 180, 160); }
+  else { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, H - BAR_H + 56); }
   ctx.globalAlpha = grande ? 0.75 : 0.85;
   for (let by = 0; by < z.th; by++) for (let bx = 0; bx < z.tw; bx++) {
     if (!z.explorado[by * z.tw + bx] || !z.pisos[by * z.tw + bx]) continue;

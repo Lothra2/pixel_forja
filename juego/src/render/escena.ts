@@ -3,7 +3,8 @@ import { ctx, W, H } from '../nucleo/lienzo';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto } from '../juego/mundo';
 import { CUADROS, DIRS } from '../juego/mundo';
-import { colorObj } from '../juego/objetos';
+import { colorObj, baseDe } from '../juego/objetos';
+import { icono } from '../ui/comun';
 import { cuadrosVivos } from '../motor/pintor';
 import { R } from '../nucleo/azar';
 
@@ -313,10 +314,11 @@ function dibujarBotinSuelo(s: any, px: number, py: number, t: number) {
   ctx.globalAlpha = 1;
   if (s.oro) { for (let i = 0; i < 5; i++) { ctx.fillStyle = i % 2 ? '#c09030' : '#f0d070'; ctx.fillRect(px - 6 + i * 2.5, py - 4 - (i % 3) - salto, 4, 3); } }
   else {
-    ctx.fillStyle = col; ctx.strokeStyle = '#000';
-    ctx.save(); ctx.translate(px, py - 5 - salto); ctx.rotate(0.7);
-    const w = 4 + (s.o.w - 1) * 2, hh = 6 + (s.o.h - 1) * 5;
-    ctx.fillRect(-w / 2, -hh / 2, w, hh); ctx.strokeRect(-w / 2, -hh / 2, w, hh); ctx.restore();
+    const b = baseDe(s.o);
+    const ENCS: Record<string, string> = { fuego: '_fuego', frio: '_hielo', rayo: '_rayo', veneno: '_veneno', sombra: '_sombra', luz: '_sagrado', sangre: '_sangre' };
+    const meta = b?.arma && b.arma !== 'puno' ? (objetoMeta(`arma_${b.arma}${s.o.vivo ? ENCS[s.o.vivo] ?? '' : ''}`, 'suelo') ?? objetoMeta(`arma_${b.arma}`, 'suelo')) : null;
+    if (meta && meta.f.length) dibujar(ctx, meta.f[Math.floor(t * 25 / meta.t) % meta.f.length], px, py - salto);
+    else { ctx.translate(0, -salto); icono(s.o, px - 11, py - 20, 22, 22, t); }
     if (s.o.rareza === 'unico' || s.o.rareza === 'legendario' || s.o.rareza === 'conjunto' || s.o.tipo === 'runa') {
       ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.25 + Math.sin(t * 4) * 0.1;
       const g = ctx.createLinearGradient(px, py - 120, px, py); g.addColorStop(0, col + '00'); g.addColorStop(1, col + 'ff');

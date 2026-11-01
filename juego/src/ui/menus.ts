@@ -202,9 +202,9 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   const cx = W / 2, cy = H * 0.5;
   // fogata
   const fog = objetoMeta('camp_fogata', 'grande');
-  const pisoF = cuadrosPiso('tierra', 1); for (let i = -2; i <= 2; i++) for (let k = -2; k <= 2; k++) { const px = cx + (i - k) * 80, py = cy + (i + k) * 40; if (pisoF[0]) dibujar(ctx, pisoF[0], px, py); }
+  const pisoF = cuadrosPiso('tierra', 1); for (let i = -4; i <= 4; i++) for (let k = -4; k <= 4; k++) { const px = cx + (i - k) * 80, py = cy + (i + k) * 40; if (pisoF[0]) dibujar(ctx, pisoF[0], px, py); }
   let accion: 'crear' | 'volver' | null = null;
-  const pos = CLASES.map((_, i) => { const a = Math.PI * 0.95 + (i / (CLASES.length - 1)) * Math.PI * 1.1; return [cx + Math.cos(a) * W * 0.36, cy - 20 + Math.sin(a) * H * 0.22 + 60] as [number, number]; });
+  const pos = CLASES.map((_, i) => { const a = Math.PI * 1.0 + (i / (CLASES.length - 1)) * Math.PI * 1.0; return [cx + Math.cos(a) * W * 0.4, cy + Math.sin(a) * H * 0.22 + 70] as [number, number]; });
   const orden = CLASES.map((c, i) => ({ c, i, y: pos[i][1] })).sort((a, b) => a.y - b.y);
   if (fog) dibujar(ctx, fog.f[Math.floor(t * 25 / fog.t) % fog.f.length], cx, cy + 60);
   let enc: number | null = null;
@@ -224,7 +224,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
     if (sobre && E.clicIzq) { sel = i; E.clicIzq = false; Sonido.efecto('click'); }
   }
   // luz del fuego
-  ctx.save(); const g = ctx.createRadialGradient(cx, cy + 40, 30, cx, cy + 40, Math.max(W, H) * 0.6); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.5, 'rgba(0,0,0,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0.95)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.save(); const g = ctx.createRadialGradient(cx, cy + 40, 30, cx, cy + 40, Math.max(W, H) * 0.6); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.75, 'rgba(0,0,0,0.25)'); g.addColorStop(1, 'rgba(0,0,0,0.85)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter'; const g2 = ctx.createRadialGradient(cx, cy + 40, 0, cx, cy + 40, 260 + Math.sin(t * 8) * 8); g2.addColorStop(0, 'rgba(255,120,40,0.35)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H); ctx.restore();
   brasas(t, 30);
   texto(T('Elige a tu héroe', 'Choose your hero'), W / 2, 34, { alin: 'center', tam: 22, color: '#e0c890', fuente: TITULO });

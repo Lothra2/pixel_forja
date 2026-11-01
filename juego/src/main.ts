@@ -82,7 +82,7 @@ function atlasZona(zid: string): Set<string> {
   // invocaciones del héroe
   for (const id of ['esqueleto', 'esqueleto_arquero', 'ogro', 'necrofago', 'espectro']) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
   // armas del arsenal para íconos
-  for (const k of Object.keys(m.o)) if (k.startsWith('arma_') && k.endsWith('|flota')) for (const e of m.o[k].f) s.add(e[0]);
+  for (const k of Object.keys(m.o)) if (k.startsWith('arma_') && (k.endsWith('|flota') || k.endsWith('|suelo'))) for (const e of m.o[k].f) s.add(e[0]);
   return s;
 }
 async function irAZona(id: string, entrada: string) {
@@ -139,7 +139,7 @@ function etiquetasBotin(jj: Juego) {
     const txt = s.oro ? `${s.oro} ${T('de oro', 'gold')}` : TT(s.o!.nombre);
     const w = ctx.measureText(txt).width + 10, hh = 16;
     let x = px - w / 2, y = py - 28;
-    for (let k = 0; k < 8 && usadas.some(([a, b, c, d]) => x < a + c && x + w > a && y < b + d && y + hh > b); k++) y -= hh + 1;
+    for (let k = 0; k < 40 && usadas.some(([a, b, c, d]) => x < a + c && x + w > a && y < b + d && y + hh > b); k++) y -= hh + 1;
     usadas.push([x, y, w, hh]);
     const encima = E.x >= x && E.x <= x + w && E.y >= y && E.y <= y + hh;
     ctx.fillStyle = encima ? 'rgba(40,40,80,0.85)' : 'rgba(0,0,0,0.7)'; ctx.fillRect(x, y, w, hh);
