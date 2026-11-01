@@ -37,6 +37,9 @@ hacia arriba. El origen (0,0,0) es el centro de la huella en el piso: ahí se ap
 - `a.elipsoide(x, y, z, rx, ry, rz, { mat, giro?, incl? })` y `a.esfera(x, y, z, r, { mat })`: centro y radios.
 - `a.poliedro([[x,y,z], ...], { mat })`: la cáscara convexa de esos puntos (techos de dos aguas, cuñas, pirámides,
   hojas de espada, gemas).
+- - `masa([hueso(a, b, r0, r1, { mat?, k? }), bulto(c, [rx, ry, rz], { mat?, eje?, ejes? }), ...], { mat, suave })`:
+  formas orgánicas que se funden (troncos, raíces, cuerpos, carne). `suave` de 1.5 a 4. Cada componente puede llevar
+  su material. Cuesta más pintar que una caja: úsala donde la forma lo pide.
 - `resta: true`: la pieza cava (puertas, ventanas, nichos). Cava solo las piezas armadas antes que ella; lo que
   se arma después se ve dentro del hueco.
 - `tono`: suma o resta brillo a esa pieza (-0.3 a 0.3) para variar sin otro material.
