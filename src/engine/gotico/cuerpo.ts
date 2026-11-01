@@ -901,3 +901,35 @@ function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArm
   }
   return ps;
 }
+
+// ------------------------------------------------------------------ armas sueltas (botín, exhibición, piso)
+/**
+ * Un arma sola, sin quien la empuñe: 'flota' gira despacio en el aire (8 cuadros, como el botín que se muestra),
+ * 'suelo' queda tirada en el piso y 'clavada' entra de punta en la tierra. Si tiene encantamiento, arde o brilla.
+ */
+export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; gema?: string; encanto?: Encanto }, pose: 'flota' | 'suelo' | 'clavada', f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } {
+  const largo: Partial<Record<TipoArma, number>> = { espada: 24, cimitarra: 24, mandoble: 34, daga: 10, hacha: 23, hacha_doble: 31, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 31, garras: 9, varita: 11, baculo: 30, cetro: 16, arco: 30, ballesta: 16 };
+  const L = largo[tipo] ?? 20;
+  let mano: V3, eje: V3, F: V3 = [1, 0, 0];
+  if (pose === 'flota') {
+    const a = (f / 8) * Math.PI * 2;
+    F = [Math.cos(a), Math.sin(a), 0];
+    eje = nor([F[0] * 0.75, F[1] * 0.75, 1]);
+    mano = [0, 0, 14 + Math.sin(a) * 1.5];
+    if (tipo === 'baculo' || tipo === 'cetro') mano = [0, 0, 30];
+  } else if (pose === 'suelo') {
+    eje = nor([1, -0.35, 0]); F = nor([0.35, 1, 0]);
+    mano = [-L * 0.45, L * 0.16, 1.4];
+    if (tipo === 'baculo' || tipo === 'cetro') { mano = [0, 0, 30]; }
+  } else {
+    eje = [0, 0, -1]; mano = [0, 0, L * 0.72]; F = nor([1, -1, 0]);
+  }
+  const R: V3 = [F[1], -F[0], 0];
+  const b: Brazo = { s: 1, hom: mano, codo: mano, mun: mano, mano, d1: eje, d2: eje, eje };
+  const e = { S: 1, A: 1, F, R, zc: 0, hombroZ: 0, cz: 0, brazos: [b, { ...b, mano: tipo === 'arco' || tipo === 'ballesta' ? mano : mano }] } as unknown as Esqueleto;
+  const piezas = arma(e, tipo, b, o.mat ?? 'cu_placa', o.mango ?? 'cu_cuero', o.gema);
+  if (!o.encanto) return { piezas };
+  const [a, z] = filoDe(e, tipo, b);
+  piezas.push(...encantar(a, z, o.encanto, f, 1, 3));
+  return { piezas, resplandor: { c: mez(a, z, 0.5), r: 18, color: ENCANTOS.find((x) => x[0] === o.encanto)![3] } };
+}
