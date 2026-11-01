@@ -1,6 +1,6 @@
-import { registrar, type Arma, type Pieza, type V3 } from '../objeto';
+import { registrar, type Arma, type ObjetoDef, type Pieza, type V3 } from '../objeto';
 import { MATERIALES } from '../materiales';
-import { ruido } from '../render';
+import { ruido, type Escena } from '../render';
 
 /**
  * Selva y pantano: árboles enormes con raíces de tabla, palmeras, helechos gigantes, lianas, telarañas y capullos,
@@ -20,6 +20,33 @@ const jit = (a: Arma, k: number) => (a.r() - 0.5) * 2 * k;
 /** Punto mirando hacia el ángulo `phi`: R hacia adelante, `lado` a la derecha, a la altura z. */
 const frente = (phi: number, R: number, lado: number, z: number, cx = 0, cy = 0): V3 => [cx + Math.cos(phi) * R - Math.sin(phi) * lado, cy + Math.sin(phi) * R + Math.cos(phi) * lado, z];
 
+/** Gira todas las piezas `g` grados alrededor del eje vertical (el origen queda en su lugar). */
+function rotarZ(ps: Pieza[], g: number): Pieza[] {
+  const c = Math.cos((g * Math.PI) / 180), s = Math.sin((g * Math.PI) / 180);
+  const R = (v: V3): V3 => [v[0] * c - v[1] * s, v[0] * s + v[1] * c, v[2]];
+  return ps.map((p): Pieza => {
+    if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => [R(n), d] as [V3, number]), pts: p.pts.map(R) };
+    if (p.k === 'cono') return { ...p, o: R(p.o), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+    return { ...p, c: R(p.c), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+  });
+}
+/** Agrega a cada variante su gemela a lo largo del eje y (`<variante>_y`): las mismas piezas giradas -90°. */
+const EJE_Y = ['sel_lianas', 'sel_muelle'];
+const conEjes = (...ds: ObjetoDef[]) => ds.map((d) => (EJE_Y.includes(d.id) ? dosEjes(d) : d));
+function dosEjes(d: ObjetoDef): ObjetoDef {
+  const hp = d.huellaPor ? Object.fromEntries(Object.entries(d.huellaPor).flatMap(([k, [w, h]]) => [[k, [w, h]], [k + '_y', [h, w]]])) as Record<string, [number, number]> : undefined;
+  return {
+    ...d, huellaPor: hp, variantes: [...d.variantes, ...d.variantes.map((v) => v + '_y')],
+    armar: (v, f, a) => {
+      if (!v.endsWith('_y')) return d.armar(v, f, a);
+      const r = d.armar(v.slice(0, -2), f, a);
+      if (Array.isArray(r)) return rotarZ(r, -90);
+      const e: Escena = { ...r, piezas: rotarZ(r.piezas, -90) };
+      if (r.resplandor) { const [x, y, z] = r.resplandor.c; e.resplandor = { ...r.resplandor, c: [y, -x, z] }; }
+      return e;
+    },
+  };
+}
 /** Una hoja plana entre dos puntos (elipsoide orientado a lo largo del tramo). */
 function hoja(a: Arma, p: V3, q: V3, ancho: number, grueso: number, mat: string, tono?: number): Pieza {
   const dx = q[0] - p[0], dy = q[1] - p[1], dz = q[2] - p[2];
@@ -76,7 +103,7 @@ function juncos(a: Arma, ps: Pieza[], x: number, y: number, n: number, alto: num
   }
 }
 
-registrar(
+registrar(...conEjes(
   // ------------------------------------------------------------------ árbol de la selva
   {
     id: 'sel_arbol', nombre: ['Árbol de la selva', 'Jungle tree'], tema: 'selva', variantes: ['alto', 'ancho', 'raices'], huella: [3, 3], bloquea: true,
@@ -401,7 +428,7 @@ registrar(
   },
   // ------------------------------------------------------------------ charco del pantano (piso animado)
   {
-    id: 'sel_charco', nombre: ['Agua del pantano', 'Marsh water'], tema: 'selva', variantes: ['chico', 'grande'], huella: [4, 4], bloquea: false, plano: true, cuadros: 6, t: 4,
+    id: 'sel_charco', nombre: ['Agua del pantano', 'Marsh water'], tema: 'selva', variantes: ['chico', 'grande'], huella: [4, 4], huellaPor: { grande: [6, 6] }, bloquea: false, plano: true, cuadros: 6, t: 4,
     armar: (v, f, a) => {
       const ps: Pieza[] = [];
       const R = v === 'grande' ? 40 : 24;
@@ -422,9 +449,9 @@ registrar(
       return ps;
     },
   },
-);
+));
 
-registrar(
+registrar(...conEjes(
   // ------------------------------------------------------------------ choza en pilotes
   {
     id: 'sel_choza_pilotes', nombre: ['Choza en pilotes', 'Stilt hut'], tema: 'selva', variantes: ['entera', 'en_ruinas'], huella: [6, 6], bloquea: true,
@@ -746,4 +773,4 @@ registrar(
       return ps;
     },
   },
-);
+));

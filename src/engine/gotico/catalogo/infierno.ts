@@ -1,6 +1,6 @@
-import { registrar, type Arma, type Pieza, type V3 } from '../objeto';
+import { registrar, type Arma, type ObjetoDef, type Pieza, type V3 } from '../objeto';
 import { MATERIALES } from '../materiales';
-import { ruido } from '../render';
+import { ruido, type Escena } from '../render';
 
 /**
  * Infierno: lagos y grietas de lava, agujas de obsidiana, montañas de huesos, empalados, braseros de hierro,
@@ -33,6 +33,33 @@ const jit = (a: Arma, k: number) => (a.r() - 0.5) * 2 * k;
 const frente = (phi: number, R: number, lado: number, z: number, cx = 0, cy = 0): V3 => [cx + Math.cos(phi) * R - Math.sin(phi) * lado, cy + Math.sin(phi) * R + Math.cos(phi) * lado, z];
 const P = 'infierno_piedra', O = 'infierno_obsidiana', H = 'infierno_hierro', K = 'infierno_costra';
 
+/** Gira todas las piezas `g` grados alrededor del eje vertical (el origen queda en su lugar). */
+function rotarZ(ps: Pieza[], g: number): Pieza[] {
+  const c = Math.cos((g * Math.PI) / 180), s = Math.sin((g * Math.PI) / 180);
+  const R = (v: V3): V3 => [v[0] * c - v[1] * s, v[0] * s + v[1] * c, v[2]];
+  return ps.map((p): Pieza => {
+    if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => [R(n), d] as [V3, number]), pts: p.pts.map(R) };
+    if (p.k === 'cono') return { ...p, o: R(p.o), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+    return { ...p, c: R(p.c), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+  });
+}
+/** Agrega a cada variante su gemela a lo largo del eje y (`<variante>_y`): las mismas piezas giradas -90°. */
+const EJE_Y = ['inf_muro_carne', 'inf_cerca_pinchos', 'inf_cadenas', 'inf_grieta_lava'];
+const conEjes = (...ds: ObjetoDef[]) => ds.map((d) => (EJE_Y.includes(d.id) ? dosEjes(d) : d));
+function dosEjes(d: ObjetoDef): ObjetoDef {
+  const hp = d.huellaPor ? Object.fromEntries(Object.entries(d.huellaPor).flatMap(([k, [w, h]]) => [[k, [w, h]], [k + '_y', [h, w]]])) as Record<string, [number, number]> : undefined;
+  return {
+    ...d, huellaPor: hp, variantes: [...d.variantes, ...d.variantes.map((v) => v + '_y')],
+    armar: (v, f, a) => {
+      if (!v.endsWith('_y')) return d.armar(v, f, a);
+      const r = d.armar(v.slice(0, -2), f, a);
+      if (Array.isArray(r)) return rotarZ(r, -90);
+      const e: Escena = { ...r, piezas: rotarZ(r.piezas, -90) };
+      if (r.resplandor) { const [x, y, z] = r.resplandor.c; e.resplandor = { ...r.resplandor, c: [y, -x, z] }; }
+      return e;
+    },
+  };
+}
 function llama(a: Arma, ps: Pieza[], x: number, y: number, z: number, s: number, f: number, mat = 'fuego') {
   const fr = (k: number) => Math.sin((f / 6) * PI2 + k * 2.1);
   for (let k = 0; k < 4; k++) {
@@ -62,10 +89,10 @@ function cadena(a: Arma, ps: Pieza[], p: V3, largo: number, mat = 'hierro') {
   return [p[0], p[1], p[2] - n * 3.2] as V3;
 }
 
-registrar(
+registrar(...conEjes(
   // ------------------------------------------------------------------ lago de lava
   {
-    id: 'inf_lago_lava', nombre: ['Lago de lava', 'Lava pool'], tema: 'infierno', variantes: ['chico', 'grande'], huella: [5, 5], bloquea: true, plano: true, cuadros: 6, t: 3,
+    id: 'inf_lago_lava', nombre: ['Lago de lava', 'Lava pool'], tema: 'infierno', variantes: ['chico', 'grande'], huella: [4, 4], huellaPor: { grande: [6, 6] }, bloquea: true, plano: true, cuadros: 6, t: 3,
     armar: (v, f, a) => {
       const ps: Pieza[] = [];
       const R = v === 'grande' ? 40 : 24, ph = (f / 6) * PI2;
@@ -302,9 +329,9 @@ registrar(
       return { piezas: ps, resplandor: { c: [0, 0, 8], r: 36, color: col } };
     },
   },
-);
+));
 
-registrar(
+registrar(...conEjes(
   // ------------------------------------------------------------------ estatua de demonio
   {
     id: 'inf_estatua_demonio', nombre: ['Estatua de demonio', 'Demon statue'], tema: 'infierno', variantes: ['entera', 'rota'], huella: [3, 3], bloquea: true,
@@ -564,4 +591,4 @@ registrar(
       return { piezas: ps, resplandor: { c: [e[0] * 6, e[1] * 6, zc], r: 44, color: '#ff3a2a' } };
     },
   },
-);
+));

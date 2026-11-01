@@ -427,8 +427,8 @@ registrar({
       g.caja(0, -2, z, 21, 46, 3, { mat: 'tela', tono: -0.15 });
       z += 3;
     }
-    g.elip(0, 0, z, 13, 27, 3.5, { mat: 'paja', tono: -0.1 });
-    for (let i = 0; i < 14; i++) g.palo([(a.r() - 0.5) * 24, (a.r() - 0.5) * 50, z + 0.5], [(a.r() - 0.5) * 30, (a.r() - 0.5) * 56, z + 0.3], 0.6, { mat: 'paja', tono: 0.05 });
+    g.elip(0, 0, z, 13, 27, 3.5, { mat: 'paja', tono: -0.22 });
+    for (let i = 0; i < 14; i++) g.palo([(a.r() - 0.5) * 24, (a.r() - 0.5) * 50, z + 0.5], [(a.r() - 0.5) * 30, (a.r() - 0.5) * 56, z + 0.3], 0.6, { mat: 'paja', tono: -0.12 });
     if (v !== 'con_huesos') {
       g.sub(1, 8, z + 2.6, 8, 4, 'y').poli([[-11, -12, 0], [10, -14, 0], [-12, 12, 0], [11, 14, 0], [-9, -10, 1.6], [8, -12, 1.4], [-10, 10, 1.4], [9, 12, 1.8], [0, 0, 3]], { mat: 'tela', tono: -0.2 });
       g.elip(0, -20, z + 2.5, 6, 4, 2, { mat: 'tela', tono: -0.1 });
@@ -479,18 +479,19 @@ function cajon(g: G, tono: number, abierto = false) {
   g.caja(-3, 0, 12.6, 22, 2, 0.8, { mat: 'hierro_oxido' }); g.caja(-8, 0, 12.6, 2, 9, 0.8, { mat: 'hierro_oxido' });
 }
 registrar({
-  id: 'cat_ataudes_apilados', nombre: ['Ataúdes apilados', 'Stacked coffins'], tema: 'catacumbas', variantes: ['dos', 'tres', 'caidos'], huella: [4, 2], bloquea: true,
+  id: 'cat_ataudes_apilados', nombre: ['Ataúdes apilados', 'Stacked coffins'], tema: 'catacumbas', variantes: ['dos', 'tres', 'caidos'], huella: [4, 3], bloquea: true,
   armar: (v, _f, a) => {
-    const ps: Pieza[] = [], g = new G(a, ps);
-    const n = v === 'dos' ? 2 : 3;
+    const ps: Pieza[] = [], g = new G(a, ps).sub(0, v === 'caidos' ? -10 : 0, 0);
+    const n = v === 'tres' ? 3 : 2;
     tierra(g, 34, 14, 3);
-    for (let i = 0; i < (v === 'caidos' ? 2 : n); i++) cajon(g.sub((a.r() - 0.5) * 4, (a.r() - 0.5) * 3, i * 12.6, (a.r() - 0.5) * 8), (a.r() - 0.5) * 0.1);
+    for (let i = 0; i < n; i++) cajon(g.sub((a.r() - 0.5) * 6, (a.r() - 0.5) * 4, i * 12.6, (a.r() - 0.5) * 12), i % 2 ? 0.06 : -0.06);
     if (v === 'caidos') {
-      cajon(g.sub(6, 19, 4, 18, -24, 'x'), -0.04);
-      const c = g.sub(-6, 24, 0, -15);
+      const c = g.sub(-2, 22, 0, -8 + (a.r() - 0.5) * 8);
       cajon(c, 0.02, true);
-      esqueleto(c.sub(0, 0, 2.2, 90).sub(0, 0, 0), 1.5);
-      g.sub(-24, 38, 0, 40, -70, 'x').poli([[-28, -6, 0], [-28, 6, 0], [-14, -9.5, 0], [-14, 9.5, 0], [30, -5.5, 0], [30, 5.5, 0], [-28, -6, 1.8], [-28, 6, 1.8], [-14, -9.5, 1.8], [-14, 9.5, 1.8], [30, -5.5, 1.8], [30, 5.5, 1.8]], { mat: 'madera_vieja', tono: 0.05 });
+      esqueleto(c.sub(1, 0, 2, -90), 1.5);
+      cajon(g.sub(6, 2, 33.5, 14, 12, 'x').sub(0, 0, -8), 0.1);
+      huesos(g, 3, 20, 4, 0, 34);
+      calavera(g.sub(26, 30, 0, 50), 3.2);
     }
     return ps;
   },

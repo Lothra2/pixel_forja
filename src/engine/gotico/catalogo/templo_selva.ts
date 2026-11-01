@@ -1,6 +1,6 @@
-import { registrar, type Arma, type Pieza, type V3 } from '../objeto';
+import { registrar, type Arma, type ObjetoDef, type Pieza, type V3 } from '../objeto';
 import { MATERIALES } from '../materiales';
-import { ruido } from '../render';
+import { ruido, type Escena } from '../render';
 
 /**
  * Templos de la selva: pirámides escalonadas, muros con bandas de glifos, columnas de serpiente, ídolos, jaguares de
@@ -38,6 +38,33 @@ const jit = (a: Arma, k: number) => (a.r() - 0.5) * 2 * k;
 const frente = (phi: number, R: number, lado: number, z: number, cx = 0, cy = 0): V3 => [cx + Math.cos(phi) * R - Math.sin(phi) * lado, cy + Math.sin(phi) * R + Math.cos(phi) * lado, z];
 const C = 'templo_selva_caliza', L = 'templo_selva_lisa', M = 'templo_selva_musgo';
 
+/** Gira todas las piezas `g` grados alrededor del eje vertical (el origen queda en su lugar). */
+function rotarZ(ps: Pieza[], g: number): Pieza[] {
+  const c = Math.cos((g * Math.PI) / 180), s = Math.sin((g * Math.PI) / 180);
+  const R = (v: V3): V3 => [v[0] * c - v[1] * s, v[0] * s + v[1] * c, v[2]];
+  return ps.map((p): Pieza => {
+    if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => [R(n), d] as [V3, number]), pts: p.pts.map(R) };
+    if (p.k === 'cono') return { ...p, o: R(p.o), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+    return { ...p, c: R(p.c), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
+  });
+}
+/** Agrega a cada variante su gemela a lo largo del eje y (`<variante>_y`): las mismas piezas giradas -90°. */
+const EJE_Y = ['tem_muro_glifos', 'tem_puerta', 'tem_calzada', 'tem_muro_musgo', 'tem_escalinata'];
+const conEjes = (...ds: ObjetoDef[]) => ds.map((d) => (EJE_Y.includes(d.id) ? dosEjes(d) : d));
+function dosEjes(d: ObjetoDef): ObjetoDef {
+  const hp = d.huellaPor ? Object.fromEntries(Object.entries(d.huellaPor).flatMap(([k, [w, h]]) => [[k, [w, h]], [k + '_y', [h, w]]])) as Record<string, [number, number]> : undefined;
+  return {
+    ...d, huellaPor: hp, variantes: [...d.variantes, ...d.variantes.map((v) => v + '_y')],
+    armar: (v, f, a) => {
+      if (!v.endsWith('_y')) return d.armar(v, f, a);
+      const r = d.armar(v.slice(0, -2), f, a);
+      if (Array.isArray(r)) return rotarZ(r, -90);
+      const e: Escena = { ...r, piezas: rotarZ(r.piezas, -90) };
+      if (r.resplandor) { const [x, y, z] = r.resplandor.c; e.resplandor = { ...r.resplandor, c: [y, -x, z] }; }
+      return e;
+    },
+  };
+}
 /**
  * Banda de glifos tallada en una cara: `cara` 'y' es la cara +y (corre a lo largo de x, en y = c), 'x' la cara +x.
  * Sobresale un poco y tiene cartuchos con huecos al azar.
@@ -90,7 +117,7 @@ function liana(a: Arma, ps: Pieza[], p: V3, largo: number, sale: V3 = [0, 1, 0])
   for (let k = 1; k <= 3; k++) { const t = k / 4; ps.push(a.elipsoide(p[0] + (q[0] - p[0]) * t + sale[0], p[1] + (q[1] - p[1]) * t + sale[1], p[2] + (q[2] - p[2]) * t, 2, 2, 1.6, { mat: 'templo_selva_follaje', tono: 0.08 })); }
 }
 
-registrar(
+registrar(...conEjes(
   // ------------------------------------------------------------------ pirámide escalonada
   {
     id: 'tem_piramide', nombre: ['Pirámide escalonada', 'Stepped pyramid'], tema: 'templo_selva', variantes: ['entera', 'en_ruinas'], huella: [15, 15], bloquea: true,
@@ -104,17 +131,17 @@ registrar(
         ps.push(a.poliedro([[-h, -h, z0], [h, -h, z0], [-h, h, z0], [h, h, z0], [-h + 6, -h + 6, z0 + 14], [h - 6, -h + 6, z0 + 14], [-h + 6, h - 6, z0 + 14], [h - 6, h - 6, z0 + 14]], { mat: C, tono: -0.02 }));
         ps.push(a.caja(0, 0, z0 + 14, s - 12, s - 12, 8, { mat: C, tono: 0.02 }), a.caja(0, 0, z0 + 21, s - 10, s - 10, 3, { mat: L, tono: 0.07 }));
         // glifos en el tablero, en las caras que se ven, a los lados de la escalera
-        if (i < 4) {
-          banda(a, ps, 'y', h - 6, -h + 14, -28, z0 + 15, 6, 22);
-          banda(a, ps, 'y', h - 6, 28, h - 14, z0 + 15, 6, 22);
-          banda(a, ps, 'x', h - 6, -h + 14, h - 14, z0 + 15, 6, 26);
+        if (i < 3) {
+          banda(a, ps, 'y', h - 6, -h + 14, -28, z0 + 15, 6, 24);
+          banda(a, ps, 'y', h - 6, 28, h - 14, z0 + 15, 6, 24);
+          banda(a, ps, 'x', h - 6, -h + 14, h - 14, z0 + 15, 6, 30);
         }
       });
       const top = tamanos.length * hT;
       // escalinata al frente (+y)
-      const nE = 22, yb = 116, yt = tamanos[tamanos.length - 1] / 2;
+      const nE = 18, yb = 116, yt = tamanos[tamanos.length - 1] / 2;
       for (let i = 0; i < nE; i++) {
-        if (ruina && (i === 6 || i === 7 || i === 15)) { ps.push(a.caja(jit(a, 8), yb - (yb - yt) * (i / nE) - 4, (top * i) / nE, 30, 6, 2, { mat: C, tono: -0.1, giro: jit(a, 6) })); continue; }
+        if (ruina && (i === 5 || i === 6 || i === 12)) { ps.push(a.caja(jit(a, 8), yb - (yb - yt) * (i / nE) - 4, (top * i) / nE, 30, 6, 2, { mat: C, tono: -0.1, giro: jit(a, 6) })); continue; }
         const y = yb - (yb - yt) * (i / nE), z = (top * i) / nE;
         ps.push(a.caja(0, y / 2, z, 40, y, top / nE + 0.2, { mat: L, tono: i % 2 ? -0.02 : 0.03 }));
       }
@@ -179,7 +206,7 @@ registrar(
   },
   // ------------------------------------------------------------------ muro con glifos
   {
-    id: 'tem_muro_glifos', nombre: ['Muro de glifos', 'Glyph wall'], tema: 'templo_selva', variantes: ['entero', 'roto', 'esquina'], huella: [5, 1], bloquea: true,
+    id: 'tem_muro_glifos', nombre: ['Muro de glifos', 'Glyph wall'], tema: 'templo_selva', variantes: ['entero', 'roto', 'esquina'], huella: [5, 2], huellaPor: { esquina: [5, 5] }, bloquea: true,
     armar: (v, _f, a) => {
       const ps: Pieza[] = [];
       const H = 92;
@@ -360,9 +387,9 @@ registrar(
       return ps;
     },
   },
-);
+));
 
-registrar(
+registrar(...conEjes(
   // ------------------------------------------------------------------ escalinata de piedra
   {
     id: 'tem_escalinata', nombre: ['Escalinata de piedra', 'Stone stairs'], tema: 'templo_selva', variantes: ['entera', 'rota'], huella: [3, 4], bloquea: false,
@@ -421,12 +448,12 @@ registrar(
       ps.push(a.cilindro(0, 0, 8, 7, 24, { mat: L, r1: 6 }));
       for (let k = 0; k < 4; k++) { const g = (k / 4) * PI2 + Math.PI / 4; ps.push(a.caja(Math.cos(g) * 6.4, Math.sin(g) * 6.4, 12, 3, 3, 16, { mat: L, giro: deg(g), tono: 0.08 })); }
       ps.push(a.cilindro(0, 0, 32, 6, 4, { mat: L, r1: 10 }), a.cilindro(0, 0, 35.5, 8.6, 0.6, { mat: 'negro' }));
-      for (let k = 0; k < 4; k++) { const g = (k / 4) * PI2; ps.push(a.poliedro([[Math.cos(g) * 9, Math.sin(g) * 9, 35], [Math.cos(g + 0.25) * 9, Math.sin(g + 0.25) * 9, 35], [Math.cos(g + 0.12) * 8, Math.sin(g + 0.12) * 8, 43]], { mat: L, tono: 0.05 })); }
+      for (let k = 0; k < 4; k++) { const g = (k / 4) * PI2; ps.push(a.poliedro([[Math.cos(g) * 9, Math.sin(g) * 9, 35], [Math.cos(g + 0.25) * 9, Math.sin(g + 0.25) * 9, 35], [Math.cos(g + 0.12) * 10, Math.sin(g + 0.12) * 10, 39.5]], { mat: L, tono: 0.05 })); }
       musgo(a, ps, 0, 0, 8, 10, 2);
-      if (v === 'apagado') { ps.push(a.esfera(0, 0, 40.5, 5.5, { mat: 'marmol_negro' })); return ps; }
+      if (v === 'apagado') { ps.push(a.esfera(0, 0, 41.5, 6.5, { mat: 'marmol_negro' })); return ps; }
       const m = v === 'verde' ? 'fuego_verde' : 'magia', col = v === 'verde' ? '#7af06a' : '#b46ae8';
-      const ph = (f / 6) * PI2, zo = 44 + Math.sin(ph) * 1.5;
-      ps.push(a.esfera(0, 0, zo, 5.5, { mat: m, tono: -0.1 + Math.sin(ph) * 0.08 }), a.esfera(-1.6, 1.6, zo + 1.6, 2.2, { mat: m, tono: 0.3 }));
+      const ph = (f / 6) * PI2, zo = 47 + Math.sin(ph) * 1.5;
+      ps.push(a.esfera(0, 0, zo, 7, { mat: m, tono: -0.12 + Math.sin(ph) * 0.08 }), a.esfera(1.5, 3.5, zo + 2.5, 2.6, { mat: m, tono: 0.3 }));
       for (let k = 0; k < 3; k++) { const g = ph + (k / 3) * PI2; ps.push(a.esfera(Math.cos(g) * 10, Math.sin(g) * 10, zo + Math.sin(g * 2) * 3, 1, { mat: m, tono: 0.15 })); }
       return { piezas: ps, resplandor: { c: [0, 0, zo], r: 30, color: col } };
     },
@@ -516,4 +543,4 @@ registrar(
       return ps;
     },
   },
-);
+));

@@ -239,7 +239,7 @@ registrar(
       esquinas(a, ps, -LX / 2 + 4.5, LY / 2, 0, Z);
       esquinas(a, ps, LX / 2, -LY / 2 + 4.5, 0, Z);
       const t: Techo = { eje: 'x', cx: 0, cy: 0, z: Z, L: LX, W: LY, H: 46, al: 9, alL: 7, g: 8 };
-      techo(a, ps, t, 'paja', pie, { tono: mus ? -0.3 : -0.18 });
+      techo(a, ps, t, 'paja', pie, { tono: mus ? -0.46 : -0.38 });
       const fy = cara(a, 'y', LY / 2), fx = cara(a, 'x', LX / 2);
       // chimenea de piedra pegada al hastial
       ps.push(fx.bx(16, 7, 0, 22, 14, 44, { mat: pie, tono: 0.04 }), fx.bx(16, 5, 44, 15, 10, 70, { mat: pie, tono: 0.04 }), fx.bx(16, 5, 114, 18, 13, 3, { mat: 'piedra_gris' }), fx.bx(16, 5, 116.5, 9, 6, 1, { mat: 'negro' }));
@@ -313,18 +313,18 @@ registrar(
       ps.push(a.caja(0, 0, 0, LX + 4, LY + 4, 7, { mat: 'piedra' }));
       ps.push(a.caja(0, 0, 7, LX, LY, Z - 7, { mat: 'madera_vieja', tono: ab ? -0.08 : 0.02 }));
       const t: Techo = { eje: 'x', cx: 0, cy: 0, z: Z, L: LX, W: LY, H: 54, al: 12, alL: 6, g: 8 };
-      techo(a, ps, t, 'paja', 'madera_vieja', { tono: ab ? -0.3 : -0.18 });
+      techo(a, ps, t, 'paja', 'madera_vieja', { tono: ab ? -0.46 : -0.36 });
       const fy = cara(a, 'y', LY / 2), fx = cara(a, 'x', LX / 2);
       for (let u = -LX / 2 + 2; u <= LX / 2; u += 24) ps.push(fy.bx(u, 1.5, 7, 5, 3, Z - 7, { mat: 'corteza' }));
       for (const u of [-LY / 2 + 2, 0, LY / 2 - 2]) ps.push(fx.bx(u, 1.5, 7, 5, 3, Z - 7, { mat: 'corteza' }));
       // cuernos de madera cruzados en las puntas de la cumbrera
       for (const s of [-1, 1]) for (const k of [-1, 1]) ps.push(a.palo([s * (LX / 2 + 6), k * 10, Z + 44], [s * (LX / 2 + 9), -k * 8, Z + 76], 2.2, { mat: 'madera', r1: 1.2 }));
       // respiradero de humo sobre la cumbrera
-      ps.push(a.caja(-30, 0, Z + 50, 16, 14, 10, { mat: 'negro' }), techo4(a, -30, 0, Z + 60, 22, 22, 9, { mat: 'paja', tono: -0.25 }));
+      ps.push(a.caja(-30, 0, Z + 50, 16, 14, 10, { mat: 'negro' }), techo4(a, -30, 0, Z + 60, 22, 22, 9, { mat: 'paja', tono: -0.4 }));
       // porche con su techito sobre la puerta
       puerta(a, ps, fy, 10, 28, 50, ab ? 'rota' : 'cerrada', { hoja: 'madera' });
       for (const s of [-1, 1]) ps.push(a.caja(10 + s * 20, LY / 2 + 18, 0, 4, 4, 48, { mat: 'corteza' }));
-      ps.push(a.poliedro([[-16, LY / 2, 58], [36, LY / 2, 58], [-16, LY / 2 + 24, 46], [36, LY / 2 + 24, 46], [-16, LY / 2, 63], [36, LY / 2, 63], [-16, LY / 2 + 24, 50], [36, LY / 2 + 24, 50]], { mat: 'paja', tono: ab ? -0.3 : -0.2 }));
+      ps.push(a.poliedro([[-16, LY / 2, 58], [36, LY / 2, 58], [-16, LY / 2 + 24, 46], [36, LY / 2 + 24, 46], [-16, LY / 2, 63], [36, LY / 2, 63], [-16, LY / 2 + 24, 50], [36, LY / 2 + 24, 50]], { mat: 'paja', tono: ab ? -0.46 : -0.38 }));
       for (const u of [-58, 62]) ventana(a, ps, fy, u, 22, 12, 12, { marco: 'madera_vieja', tablas: ab, sinCruz: true });
       ventana(a, ps, fx, 0, 22, 12, 12, { marco: 'madera_vieja', sinCruz: true });
       if (ab) {
@@ -377,9 +377,9 @@ registrar(
       ps.push(a.palo([ux, yA, 66], [ux, ys + 2, 66], 1.2, { mat: 'hierro' }), a.palo([ux, yA, 54], [ux, yA + 16, 66], 0.9, { mat: 'hierro' }));
       ps.push(a.palo([ux - 8, ys, 66], [ux - 8 + (ab ? 3 : 0), ys, ab ? 56 : 60], 0.5, { mat: 'hierro' }));
       if (!ab) ps.push(a.palo([ux + 8, ys, 66], [ux + 8, ys, 60], 0.5, { mat: 'hierro' }));
-      ps.push(a.caja(ux, ys, 45, 20, 2, 15, { mat: 'madera', incl: inc, inclEje: 'y', tono: 0.05 }));
-      ps.push(a.caja(ux, ys, 44, 22, 2.4, 1.5, { mat: 'madera_vieja', incl: inc, inclEje: 'y' }));
-      ps.push(a.cilindro(ux - 1, ys + 1.2, 48, 3, 7, { mat: 'bronce', incl: inc, inclEje: 'y' }), a.cilindro(ux + 3, ys + 1.2, 51, 1.8, 1, { mat: 'bronce', eje: [0, 1, 0] }));
+      ps.push(a.caja(ux, ys, 42, 24, 2, 18, { mat: 'madera', incl: inc, inclEje: 'y', tono: 0.12 }));
+      ps.push(a.caja(ux, ys, 41, 26, 2.4, 1.5, { mat: 'madera_vieja', incl: inc, inclEje: 'y' }));
+      ps.push(a.cilindro(ux - 1, ys + 1.4, 46, 3.6, 9, { mat: 'oro', incl: inc, inclEje: 'y', tono: -0.2 }), a.cilindro(ux + 4, ys + 1.4, 51, 2.2, 1, { mat: 'oro', eje: [0, 1, 0], tono: -0.2 }));
       if (!ab) {
         barril(a, ps, -62, yA + 12); barril(a, ps, -46, yA + 10); barril(a, ps, LX / 2 + 12, -30);
         ps.push(a.caja(30, yA + 10, 9, 26, 7, 2, { mat: 'madera_lisa' }), a.caja(20, yA + 10, 0, 3, 6, 9, { mat: 'madera' }), a.caja(40, yA + 10, 0, 3, 6, 9, { mat: 'madera' }));
@@ -537,7 +537,7 @@ registrar(
       }
       if (!rota) {
         for (const sx of [-1, 1]) for (const sy of [-1, 1]) ps.push(a.caja(sx * 24, sy * 24, ZT, 3.5, 3.5, 30, { mat: 'madera' }));
-        ps.push(piramide(a, 0, 0, ZT + 30, 66, 32, { mat: 'paja', tono: -0.22 }), a.cilindro(0, 0, ZT + 58, 3, 8, { mat: 'paja', r1: 0.5, tono: -0.3 }));
+        ps.push(piramide(a, 0, 0, ZT + 30, 66, 32, { mat: 'paja', tono: -0.36 }), a.cilindro(0, 0, ZT + 58, 3, 8, { mat: 'paja', r1: 0.5, tono: -0.3 }));
         ps.push(a.cilindro(-12, -12, ZT, 5, 4, { mat: 'hierro', r1: 6 }), a.elipsoide(-12, -12, ZT + 4, 4, 4, 2, { mat: 'casas_brasa', tono: -0.2 }));
       } else {
         ps.push(a.caja(-24, -24, ZT, 3.5, 3.5, 30, { mat: 'madera' }), a.caja(-24, 24, ZT, 3.5, 3.5, 18, { mat: 'madera', incl: 10 }));
@@ -579,7 +579,7 @@ registrar(
         ps.push(a.cilindro(0, 0, 50, 37.5, 2, { mat: 'madera', r1: 37.5 }), a.cilindro(0, 0, 50.5, 36, 3, { mat: 'negro', resta: true }));
       } else ps.push(a.cilindro(0, 0, 0, 33, 6, { mat: 'piedra' }), a.cilindro(0, 0, 0, 30, 104, { mat: ab ? 'piedra_musgo' : 'piedra_bloques', r1: 21 }));
       const roof = v === 'madera' ? 'paja' : 'pizarra';
-      ps.push(a.cilindro(0, 0, 104, 24, 4, { mat: 'madera' }), a.cilindro(0, 0, 108, 25, 30, { mat: roof, r1: 1.5, tono: roof === 'paja' ? -0.22 : 0 }), a.esfera(0, 0, 139, 2.5, { mat: 'hierro' }));
+      ps.push(a.cilindro(0, 0, 104, 24, 4, { mat: 'madera' }), a.cilindro(0, 0, 108, 25, 30, { mat: roof, r1: 1.5, tono: roof === 'paja' ? -0.36 : 0 }), a.esfera(0, 0, 139, 2.5, { mat: 'hierro' }));
       // puerta y ventanitas hacia la cámara
       const pv = (g: number, z: number, w: number, h: number, luz?: boolean) => {
         const r = (g * Math.PI) / 180, R = 30 - 9 * (z / 104), x = Math.cos(r) * R, y = Math.sin(r) * R;
@@ -609,7 +609,7 @@ registrar(
       ps.push(a.caja(0, -LY / 2 + 3, 0, LX, 6, Z, { mat: 'madera_vieja' }));
       for (const s of [-1, 1]) ps.push(a.caja(s * (LX / 2 - 3), 0, 0, 6, LY, Z, { mat: 'madera_vieja', tono: 0.03 }));
       const t: Techo = { eje: 'x', cx: 0, cy: 0, z: Z, L: LX, W: LY, H: 34, al: 7, alL: 6, g: 6 };
-      techo(a, ps, t, 'paja', 'madera_vieja', { tono: ab ? -0.32 : -0.2 });
+      techo(a, ps, t, 'paja', 'madera_vieja', { tono: ab ? -0.46 : -0.36 });
       const fx = cara(a, 'x', LX / 2);
       entramadoHastial(a, ps, fx, LY, Z, 34, 'madera');
       for (const x of [-35, 0, 35]) ps.push(a.caja(x, -4, 0, 3, LY - 14, 34, { mat: 'madera' }), a.caja(x, -4, 34, 3, LY - 14, 2.5, { mat: 'madera_vieja' }));
@@ -669,7 +669,7 @@ registrar(
         for (const z of [2, DH / 2 - 1.5, DH - 5]) ps.push(fy.bx(u, -1.5, z, DW / 2 - 2, 1.2, 3, { mat: 'madera', tono: -0.04 }));
         ps.push(viga(a, fy.pt(u - (s * DW) / 4 + s * 2, -1.5, 5), fy.pt(u + (s * DW) / 4 - s * 2, -1.5, DH / 2 - 2), 3, 1.2, fy.nv, { mat: 'madera', tono: -0.04 }), viga(a, fy.pt(u - (s * DW) / 4 + s * 2, -1.5, DH / 2 + 2), fy.pt(u + (s * DW) / 4 - s * 2, -1.5, DH - 5), 3, 1.2, fy.nv, { mat: 'madera', tono: -0.04 }));
       } else {
-        ps.push(a.elipsoide(-6, L / 2 - 14, 2, 14, 10, 14, { mat: 'paja', tono: -0.2 }), a.elipsoide(10, L / 2 - 10, 2, 9, 8, 9, { mat: 'paja', tono: -0.25 }));
+        ps.push(a.elipsoide(-6, L / 2 - 14, 2, 14, 10, 14, { mat: 'paja', tono: -0.2 }), a.elipsoide(10, L / 2 - 10, 2, 9, 8, 9, { mat: 'paja', tono: -0.4 }));
         ps.push(fy.bx(-DW / 2 - 12, 3.5, 0, DW / 2, 2, DH, { mat: 'madera', tono: 0.06, giro: ab ? 0 : 0 }));
         if (!ab) ps.push(fy.bx(DW / 2 + 12, 3.5, 0, DW / 2, 2, DH, { mat: 'madera', tono: 0.06 }));
         else ps.push(viga(a, [DW / 2, L / 2 + 8, 0.5], [DW / 2 + 10, L / 2 + 30, 0.5], DW / 2 - 4, 2, [0, 0, 1], { mat: 'madera' }));
@@ -761,7 +761,7 @@ registrar(
       ps.push(a.cilindro(0, 0, 0, 27, 34, { mat: 'casas_revoque', r1: 26, tono: ab ? -0.18 : -0.08 }));
       for (let k = 0; k < 12; k++) { const r = (k / 12) * Math.PI * 2 + 0.2; ps.push(a.palo([Math.cos(r) * 27.4, Math.sin(r) * 27.4, 0], [Math.cos(r) * 26.4, Math.sin(r) * 26.4, 32], 1.4, { mat: 'madera_vieja' })); }
       ps.push(a.cilindro(0, 0, 10, 27.8, 2, { mat: 'madera_vieja', r1: 27.6 }), a.cilindro(0, 0, 22, 27.5, 2, { mat: 'madera_vieja', r1: 27.2 }));
-      const tt = ab ? -0.32 : -0.2;
+      const tt = ab ? -0.46 : -0.36;
       ps.push(a.cilindro(0, 0, 25, 37, 8, { mat: 'paja', r1: 33, tono: tt }), a.cilindro(0, 0, 32, 33.5, 46, { mat: 'paja', r1: 2, tono: tt }));
       // puerta hacia la cámara con cortina de cuero
       const g = 62, r = (g * Math.PI) / 180, cx = Math.cos(r) * 27, cy = Math.sin(r) * 27;

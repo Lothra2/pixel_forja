@@ -344,7 +344,7 @@ registrar({
   id: 'cem_sarcofago', nombre: ['Sarcófago', 'Sarcophagus'], tema: 'cementerio', variantes: ['efigie', 'liso', 'abierto', 'roto'], huella: [2, 4], bloquea: true,
   armar: (v, _f, a) => {
     const ps: Pieza[] = [], g = new G(a, ps);
-    const m = v === 'liso' ? 'marmol' : 'cem_lapida';
+    const m = v === 'liso' ? 'marmol_negro' : 'cem_lapida';
     g.caja(0, 0, 0, 30, 68, 4, { mat: m, tono: -0.08 });
     g.caja(0, 0, 4, 26, 64, 17, { mat: m });
     g.caja(0, 0, 19, 28, 66, 2.5, { mat: m, tono: 0.04 });
@@ -795,7 +795,7 @@ registrar({
 function muroCem(g: G, largo: number, alto: number, roto: boolean) {
   const a = g.a;
   g.caja(0, 0, 0, largo + 2, 15, 4, { mat: 'cem_lapida', tono: -0.08 });
-  g.caja(0, 0, 0, largo, 12, alto, { mat: a.r() < 0.75 ? 'piedra_bloques' : 'piedra_musgo' });
+  g.caja(0, 0, 0, largo, 12, alto, { mat: 'piedra_bloques', tono: (a.r() - 0.5) * 0.08 });
   g.caja(0, 0, alto, largo + 2, 15, 1.6, { mat: 'cem_lapida' });
   g.poli([[-largo / 2 - 1, -7.5, alto + 1.6], [largo / 2 + 1, -7.5, alto + 1.6], [-largo / 2 - 1, 7.5, alto + 1.6], [largo / 2 + 1, 7.5, alto + 1.6], [-largo / 2 - 1, 0, alto + 5], [largo / 2 + 1, 0, alto + 5]], { mat: 'cem_lapida', tono: 0.04 });
   for (let i = 0; i < 4; i++) g.caja(-largo / 2 + 6 + a.r() * (largo - 12), 6.5, 6 + a.r() * (alto - 14), 6 + a.r() * 4, 3, 4 + a.r() * 2, { mat: 'piedra', resta: true });
@@ -804,7 +804,7 @@ function muroCem(g: G, largo: number, alto: number, roto: boolean) {
     g.poli([[c - 18, -12, alto + 8], [c + 20, -12, alto + 8], [c - 18, 12, alto + 8], [c + 20, 12, alto + 8], [c - 2, -12, alto * 0.35], [c + 4, 12, alto * 0.4], [c - 9, 0, alto * 0.6], [c + 12, 0, alto * 0.55]], { mat: 'piedra', resta: true });
     for (let i = 0; i < 7; i++) g.caja(c + (a.r() - 0.5) * 24, 8 + a.r() * 10, 0, 4 + a.r() * 5, 4 + a.r() * 4, 2 + a.r() * 4, { mat: a.r() < 0.6 ? 'piedra_bloques' : 'cem_lapida', giro: a.r() * 90, incl: (a.r() - 0.5) * 30 });
   }
-  for (let i = 0; i < 5; i++) g.elip(-largo / 2 + a.r() * largo, 6.2, a.r() * alto * 0.5, 3 + a.r() * 4, 1.2, 2 + a.r() * 5, { mat: a.r() < 0.5 ? 'musgo' : 'hojas', tono: -0.1 });
+  for (let i = 0; i < 4; i++) g.elip(-largo / 2 + a.r() * largo, 6.2, a.r() * alto * 0.4, 2 + a.r() * 3, 1.2, 2 + a.r() * 3, { mat: a.r() < 0.5 ? 'musgo' : 'hojas', tono: -0.1 });
   matas(g, 5, largo / 2, 8);
 }
 registrar({
