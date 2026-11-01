@@ -172,7 +172,7 @@ function crearNpcs(z: Zona): Npc[] {
 // ------------------------------------------------------------------ monstruos
 function escalar(def: DefMonstruo, nivel: number) {
   const k = nivel - 1;
-  return { vida: Math.round(def.vida * (1 + k * 0.32) * (1 + k * 0.012)), dano: [Math.round(def.dano[0] * (1 + k * 0.17)), Math.round(def.dano[1] * (1 + k * 0.17))] as [number, number], defensa: Math.round(def.def + nivel * 7), xp: Math.round(def.xp * Math.pow(nivel, 1.18)) };
+  return { vida: Math.max(4, Math.round(def.vida * 0.6 * (1 + k * 0.32) * (1 + k * 0.012))), dano: [Math.max(1, Math.round(def.dano[0] * 0.85 * (1 + k * 0.17))), Math.max(1, Math.round(def.dano[1] * 0.85 * (1 + k * 0.17)))] as [number, number], defensa: Math.round(def.def + nivel * 7), xp: Math.round(def.xp * Math.pow(nivel, 1.18)) };
 }
 export function crearMonstruo(def: DefMonstruo, nivel: number, x: number, y: number, calidad = 0, dif = 0): Monstruo {
   const s = escalar(def, nivel + dif * 0);

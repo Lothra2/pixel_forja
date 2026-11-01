@@ -332,7 +332,7 @@ function paso(dt: number) {
       if (r.accion === 'jugar' && heroes[sel]) { E.clicIzq = false; empezarPartida(JSON.parse(JSON.stringify(heroes[sel]))); }
       if (r.accion === 'crear') { estado = 'crear'; selClase = null; E.clicIzq = false; }
       if (r.accion === 'volver' || pulso('Escape')) { estado = 'menu'; E.clicIzq = false; }
-      if (r.accion === 'borrar' && heroes[sel]) { E.clicIzq = false; if (confirm(T(`¿Borrar a ${heroes[sel].nombre} para siempre?`, `Delete ${heroes[sel].nombre} forever?`))) { heroes.splice(sel, 1); sel = 0; guardarPartidas(); } }
+      if (r.accion === 'borrar' && heroes[sel]) { E.clicIzq = false; if ((window as any).__borrar === heroes[sel].id) { heroes.splice(sel, 1); sel = 0; guardarPartidas(); (window as any).__borrar = null; } else (window as any).__borrar = heroes[sel].id; }
       break;
     }
     case 'crear': {
@@ -405,6 +405,9 @@ async function arrancar() {
   aplicarMusicaEstado();
   (window as any).__juego = () => j;
   (window as any).__estado = () => estado;
+  import('./juego/mundo').then((m) => { (window as any).__mundo = m; });
+  (window as any).__ir = (id: string, e: string) => irAZona(id, e);
+  (window as any).__aPant = (x: number, y: number) => { const [a, b] = aPant(x, y); const r = (document.getElementById('juego') as HTMLCanvasElement).getBoundingClientRect(); return [r.left + a * r.width / W, r.top + b * r.height / H]; };
 }
 function aplicarMusicaEstado() { Sonido.musica(estado === 'intro' ? 'intro' : estado === 'juego' && j ? (MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any) : 'menu'); }
 void lugarEn; void COFRE_W; void COFRE_H; void crearObjeto; void dibujarPaneles;

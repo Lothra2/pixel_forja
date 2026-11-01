@@ -114,9 +114,9 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     items.push({ prof, draw: () => {
       // transparencia si tapa al héroe
       let alfa = 1;
-      if (o.bloquea && alto > 70) {
+      if (alto > 60) {
         const [hx, hy] = aPant(h.x, h.y);
-        if (prof > h.x + h.y && hx > px - q.ax && hx < px - q.ax + q.w && hy - 40 > py - q.ay && hy - 40 < py - q.ay + q.h) alfa = 0.4;
+        if (prof > h.x + h.y && hx > px - q.ax && hx < px - q.ax + q.w && hy - 30 > py - q.ay && hy - 30 < py - q.ay + q.h * 0.85) alfa = 0.45;
       }
       if (alfa < 1) { ctx.globalAlpha = alfa; dibujar(ctx, q, px, py); ctx.globalAlpha = 1; } else dibujar(ctx, q, px, py);
     } });
@@ -339,7 +339,7 @@ function dibujarLuz(j: Juego, t: number) {
     if (px < -300 || px > W + 300 || py < -300 || py > H + 300) continue;
     const r = Math.min(260, meta.luz[0] * 1.3) * (0.93 + Math.sin(t * 9 + o.cx) * 0.04 + R() * 0.03);
     hueco(px, py - meta.luz[2] * 1.2, r, 0.95);
-    tinte(px, py - meta.luz[2] * 1.2, r * 0.8, meta.luz[1], 0.22);
+    const lc: any = meta.luz[1]; tinte(px, py - meta.luz[2] * 1.2, r * 0.8, Array.isArray(lc) ? `rgb(${lc.join(',')})` : String(lc).includes(',') ? `rgb(${lc})` : lc, 0.22);
   }
   for (const p of j.proyectiles) { const [px, py] = aPant(p.x, p.y); hueco(px, py - 34, 90, 0.8); tinte(px, py - 34, 70, p.elem === 'frio' ? '#4080ff' : p.elem === 'rayo' ? '#c0c0ff' : p.elem === 'veneno' ? '#40ff40' : p.elem === 'sombra' ? '#8040ff' : p.elem === 'luz' ? '#ffe0a0' : '#ff7020', 0.35); }
   for (const e of j.efectos) { const [px, py] = aPant(e.x, e.y); const k = Math.max(0, 1 - e.t / (e.dur ?? 1)); hueco(px, py - 20, 150 * e.escala * k + 20, 0.8 * k); }

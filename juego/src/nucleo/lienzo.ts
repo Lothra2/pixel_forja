@@ -5,9 +5,9 @@ export let W = 960, H = 540, ESCALA = 1;
 
 export function ajustar() {
   const ww = window.innerWidth, wh = window.innerHeight;
-  let k = Math.max(1, Math.round(wh / 620));
-  let h = wh / k;
-  if (h < 500) { k = wh / 500; h = 500; }
+  // altura lógica cerca de 620 (como los juegos de 800x600): en pantallas grandes se agranda
+  const k = Math.max(wh / 640, 0.78);
+  const h = wh / k;
   const w = ww / k;
   W = Math.round(Math.min(Math.max(w, 640), 1600));
   H = Math.round(h);
@@ -52,7 +52,7 @@ export function instalarEntrada() {
   lienzo.addEventListener('wheel', (e) => { E.rueda += Math.sign(e.deltaY); e.preventDefault(); }, { passive: false });
   window.addEventListener('keydown', (e) => {
     gesto();
-    if ((document.activeElement as HTMLElement)?.id === 'nombre') return;
+    if ((document.activeElement as HTMLElement)?.id === 'nombre' && e.key !== 'Enter' && e.key !== 'Escape') return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     if (!E.teclas.has(k)) E.pulsadas.add(k);
     E.teclas.add(k); E.shift = e.shiftKey; E.ctrl = e.ctrlKey; E.alt = e.altKey;

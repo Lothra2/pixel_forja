@@ -31,7 +31,7 @@ let cursoresC: Record<string, { c: HTMLCanvasElement; a: [number, number] }> | n
 let orbes: Record<string, HTMLCanvasElement[]> | null = null;
 export function prepararHud() {
   if (!cursoresC) { cursoresC = {}; for (const c of cursores()) cursoresC[c.id] = { c: rasterACanvas(c.img), a: c.ancla }; }
-  if (!orbes) { orbes = {}; for (const t of ['vida', 'mana', 'veneno', 'helado'] as const) { orbes[t + '1'] = []; orbes[t + '0'] = []; for (let f = 0; f < 8; f++) { orbes[t + '1'].push(rasterACanvas(orbe(t, 1, f))); orbes[t + '0'].push(rasterACanvas(orbe(t, 0, f))); } } }
+  if (!orbes) { orbes = {}; for (const t of ['vida', 'mana', 'veneno', 'helado'] as const) { orbes[t + '1'] = []; orbes[t + '0'] = []; for (let f = 0; f < 8; f++) { orbes[t + '1'].push(rasterACanvas(orbe(t, 0.985, f))); orbes[t + '0'].push(rasterACanvas(orbe(t, 0, f))); } } }
 }
 export function dibujarCursor(tipo: string) {
   if (ui.mano) { icono(ui.mano, E.x - 14, E.y - 14, ui.mano.w * 29, ui.mano.h * 29); return; }

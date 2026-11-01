@@ -51,6 +51,9 @@ export function nuevoHeroe(clase: Clase, nombre: string): DatosHeroe {
   const tipo = nov.arma?.tipo;
   const b = BASES.filter((x) => x.arma === tipo && x.escalon === 0 && (!x.clase || x.clase === clase)).sort((a, b) => a.nivel - b.nivel)[0];
   if (b) { const o = crearBase(b, 1); o.vis = nov.arma; o.durab = o.durabMax; h.equipo.arma = o; }
+  // la habilidad de clase con que arranca (como un don): la primera de la primera rama
+  const primera = HABILIDADES.find((x) => x.clase === clase && x.nivelReq === 1 && x.tipo !== 'pasiva' && x.tipo !== 'aura' && x.tipo !== 'buff');
+  if (primera) { h.habs[primera.id] = 1; h.der = primera.id; }
   h.cinturon = [crearPocion('vida', 0), crearPocion('vida', 0), crearPocion('mana', 0), crearPocion('mana', 0)];
   meterEnBolsa(h, crearPergamino('portal'));
   meterEnBolsa(h, crearPergamino('portal'));

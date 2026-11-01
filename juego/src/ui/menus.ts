@@ -19,7 +19,8 @@ export const aplicarVolumen = () => Sonido.volumen(opciones.general, opciones.mu
 interface Escena { mapa: MapaGotico; seed: number }
 const escenas = new Map<string, Escena>();
 function escena(id: string, seed = 3): Escena { const k = id + seed; let e = escenas.get(k); if (!e) { e = { mapa: generarPaisaje(id, seed), seed }; escenas.set(k, e); } return e; }
-function pintarMapa(m: MapaGotico, camX: number, camY: number, t: number, extra?: (aP: (x: number, y: number) => [number, number]) => { prof: number; draw: () => void }[]) {
+function pintarMapa(m: MapaGotico, camX: number, camY: number, t: number, extra?: (aP: (x: number, y: number) => [number, number]) => { prof: number; draw: () => void }[], zoom = 1) {
+  ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(zoom, zoom); ctx.translate(-W / 2, -H / 2);
   const aP = (x: number, y: number): [number, number] => [(x - y) * 16 - camX + W / 2, (x + y) * 8 - camY + H / 2];
   const f25 = Math.floor(t * 25);
   for (let by = 0; by < m.alto; by++) for (let bx = 0; bx < m.ancho; bx++) {
@@ -36,6 +37,7 @@ function pintarMapa(m: MapaGotico, camX: number, camY: number, t: number, extra?
   if (extra) items.push(...extra(aP));
   items.sort((a, b) => a.prof - b.prof);
   for (const i of items) i.draw();
+  ctx.restore();
   return aP;
 }
 function oscuridad(k: number, luces: [number, number, number][] = []) {
@@ -81,11 +83,11 @@ function armarTomas() {
   if (tomasListas) return; tomasListas = true;
   const T0 = (dur: number, f: (t: number, k: number) => void) => TOMAS.push({ dur, dibujar: f });
   // 1: el valle
-  T0(7, (t) => { const m = escena('bosque', 5).mapa; pintarMapa(m, 30 + t * 14, 300 + t * 4, t); oscuridad(0.35); lluvia(t, 0.5); });
+  T0(7, (t) => { const m = escena('bosque', 5).mapa; pintarMapa(m, 30 + t * 14, 300 + t * 4, t, undefined, 1.8); oscuridad(0.35); lluvia(t, 0.5); });
   // 2: la abadía con monjes encapuchados
-  T0(7, (t) => { const m = escena('catedral', 2).mapa; const aP = pintarMapa(m, -40 + t * 10, 330 - t * 6, t, (aP) => [0, 1, 2].map((i) => { const [x, y] = aP(9 + i * 3, 12); return { prof: 21 + i * 3, draw: () => dibujar(ctx, cuadrosMonstruo('cultista', 'quieto', 's')[Math.floor(t * 5) % 4], x, y) }; })); void aP; oscuridad(0.55, [[W * 0.3, H * 0.5, 160], [W * 0.7, H * 0.45, 160]]); });
+  T0(7, (t) => { const m = escena('catedral', 2).mapa; const aP = pintarMapa(m, -40 + t * 10, 330 - t * 6, t, (aP) => [0, 1, 2].map((i) => { const [x, y] = aP(9 + i * 3, 12); return { prof: 21 + i * 3, draw: () => dibujar(ctx, cuadrosMonstruo('cultista', 'quieto', 's')[Math.floor(t * 5) % 4], x, y) }; }), 1.8); void aP; oscuridad(0.55, [[W * 0.3, H * 0.5, 160], [W * 0.7, H * 0.45, 160]]); });
   // 3: el voto
-  T0(6, (t) => { const m = escena('catedral', 7).mapa; pintarMapa(m, 60 - t * 6, 340, t); oscuridad(0.72, [[W / 2, H / 2, 200]]); });
+  T0(6, (t) => { const m = escena('catedral', 7).mapa; pintarMapa(m, 60 - t * 6, 340, t, undefined, 1.8); oscuridad(0.72, [[W / 2, H / 2, 200]]); });
   // 4-5: el cielo se abre y la brasa cae
   T0(10, (t) => {
     ctx.fillStyle = '#05040a'; ctx.fillRect(0, 0, W, H);
@@ -101,11 +103,11 @@ function armarTomas() {
     ctx.fillRect(W * 0.38, H * 0.62, 30, H * 0.2); ctx.beginPath(); ctx.moveTo(W * 0.37, H * 0.62); ctx.lineTo(W * 0.38 + 15, H * 0.52); ctx.lineTo(W * 0.4 + 16, H * 0.62); ctx.fill();
   });
   // 6: el claustro y la brasa en el piso; campanas
-  T0(7, (t) => { const m = escena('catedral', 11).mapa; pintarMapa(m, 0, 300 + t * 3, t); oscuridad(0.7, [[W / 2, H * 0.55, 220 + Math.sin(t * 9) * 10]]); const g = ctx.createRadialGradient(W / 2, H * 0.55, 0, W / 2, H * 0.55, 40); g.addColorStop(0, 'rgba(255,220,120,1)'); g.addColorStop(0.3, 'rgba(255,100,20,0.8)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(W / 2 - 40, H * 0.55 - 40, 80, 80); if (Math.floor(t * 0.7) !== Math.floor((t - 1 / 60) * 0.7)) Sonido.efecto('campana', { vol: 0.8 }); });
+  T0(7, (t) => { const m = escena('catedral', 11).mapa; pintarMapa(m, 0, 300 + t * 3, t, undefined, 1.8); oscuridad(0.7, [[W / 2, H * 0.55, 220 + Math.sin(t * 9) * 10]]); const g = ctx.createRadialGradient(W / 2, H * 0.55, 0, W / 2, H * 0.55, 40); g.addColorStop(0, 'rgba(255,220,120,1)'); g.addColorStop(0.3, 'rgba(255,100,20,0.8)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(W / 2 - 40, H * 0.55 - 40, 80, 80); if (Math.floor(t * 0.7) !== Math.floor((t - 1 / 60) * 0.7)) Sonido.efecto('campana', { vol: 0.8 }); });
   // 7: los muertos se levantan
-  T0(8, (t) => { const m = escena('cementerio', 4).mapa; pintarMapa(m, 20 + t * 6, 320, t, (aP) => [[8, 10], [13, 9], [16, 14], [10, 15]].map(([x, y], i) => { const [px, py] = aP(x, y); const fs = cuadrosMonstruo('zombi', t > 2 + i ? 'caminar' : 'morir', 's'); const f = t > 2 + i ? Math.floor(t * 8) % 8 : Math.max(0, 7 - Math.floor((t - i * 0.5) * 4)); return { prof: x + y, draw: () => dibujar(ctx, fs[Math.max(0, Math.min(fs.length - 1, f))], px, py) }; })); oscuridad(0.6); lluvia(t, 0.6); });
+  T0(8, (t) => { const m = escena('cementerio', 4).mapa; pintarMapa(m, 20 + t * 6, 320, t, (aP) => [[8, 10], [13, 9], [16, 14], [10, 15]].map(([x, y], i) => { const [px, py] = aP(x, y); const fs = cuadrosMonstruo('zombi', t > 2 + i ? 'caminar' : 'morir', 's'); const f = t > 2 + i ? Math.floor(t * 8) % 8 : Math.max(0, 7 - Math.floor((t - i * 0.5) * 4)); return { prof: x + y, draw: () => dibujar(ctx, fs[Math.max(0, Math.min(fs.length - 1, f))], px, py) }; }), 1.8); oscuridad(0.6); lluvia(t, 0.6); });
   // 8: los sobrevivientes
-  T0(7, (t) => { const m = escena('campamento', 6).mapa; pintarMapa(m, 60 - t * 8, 380, t); oscuridad(0.5, [[W / 2, H / 2, 260]]); brasas(t, 25); });
+  T0(7, (t) => { const m = escena('campamento', 6).mapa; pintarMapa(m, 60 - t * 8, 380, t, undefined, 1.8); oscuridad(0.5, [[W / 2, H / 2, 260]]); brasas(t, 25); });
   // 9: tú
   T0(8, (t) => {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
@@ -186,7 +188,7 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
     const hr = heroes[sel];
     const fs = cuadrosHeroe(hr.clase, 'quieto', 's'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], bx + 140, by + 30, 2);
     if (boton(T('Jugar', 'Play'), bx + 40, by + 80, 200, 38, { tam: 16 })) accion = 'jugar';
-    if (boton(T('Borrar', 'Delete'), bx + 40, by + 128, 200, 30, { tam: 13 })) accion = 'borrar';
+    if (boton((window as any).__borrar === hr.id ? T('¿Seguro? Clic otra vez', 'Sure? Click again') : T('Borrar', 'Delete'), bx + 40, by + 128, 200, 30, { tam: 13, color: (window as any).__borrar === hr.id ? '#ff6060' : undefined })) accion = 'borrar';
   }
   if (boton(T('Crear héroe nuevo', 'Create new hero'), bx + 40, by + 178, 200, 34, { tam: 14 })) accion = 'crear';
   if (boton(T('Volver', 'Back'), bx + 40, by + 222, 200, 30, { tam: 13 })) accion = 'volver';
