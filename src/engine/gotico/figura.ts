@@ -19,8 +19,10 @@ export const NOMBRE_DIR: Record<Dir, [string, string]> = {
   n: ['Norte (de espalda)', 'North (back)'], ne: ['Noreste', 'Northeast'], e: ['Este', 'East'], se: ['Sureste', 'Southeast'],
 };
 
-export type Accion = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'lanzar' | 'herido' | 'morir';
-export const CUADROS: Record<Accion, number> = { quieto: 4, caminar: 8, correr: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8 };
+export type Accion = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'lanzar' | 'herido' | 'morir' | 'presentar';
+/** Cómo se presenta cada héroe en la pantalla de selección. */
+export type Presentacion = 'rugido' | 'guardia' | 'conjuro' | 'apunta' | 'invoca' | 'kata' | 'naturaleza' | 'frasco';
+export const CUADROS: Record<Accion, number> = { quieto: 4, caminar: 8, correr: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8, presentar: 8 };
 
 /** Ángulos en grados. Brazos: adelante (+) / atrás (-), afuera, codo. Piernas: adelante/atrás, rodilla. */
 export interface Pose {
@@ -33,9 +35,46 @@ export interface Pose {
   caderaD: [number, number]; caderaI: [number, number];
   /** Tumbado (morir): cuánto se fue al piso, 0..1. */
   caida: number;
+  /** Pisada real: la cadera baja hasta que el pie de apoyo toca el piso (caminar y correr); vuelo levanta en la carrera. */
+  suelo?: boolean;
+  vuelo?: number;
 }
 
-export function pose(acc: Accion, f: number, arma: 'una' | 'dos' | 'arco' | 'baculo' | 'garras' | 'nada' = 'una'): Pose {
+/**
+ * Ciclo de una pierna en la marcha (p de 0 a 1, 0 = el talón toca el piso adelante). Devuelve [muslo, rodilla] en
+ * grados. Apoyo: el muslo pasa de adelante hacia atrás a ritmo parejo (así el pie plantado no patina); la rodilla
+ * amortigua al pisar y se dobla al despegar. Vuelo: la rodilla sube y la pierna vuelve adelante.
+ */
+export const APOYO = { caminar: 0.6, correr: 0.38 } as const;
+function piernaMarcha(p: number, correr: boolean): [number, number] {
+  p = ((p % 1) + 1) % 1;
+  const ap = correr ? APOYO.correr : APOYO.caminar;
+  const ade = correr ? 24 : 25, atr = correr ? 30 : 25;
+  if (p < ap) {
+    const u = p / ap;
+    const muslo = ade - (ade + atr) * u;
+    const rodilla = correr ? 16 + 24 * Math.sin(Math.PI * u) : 4 + 14 * Math.sin(Math.PI * Math.min(1, u / 0.35)) * (u < 0.35 ? 1 : 0) + (u > 0.65 ? 16 * (u - 0.65) / 0.35 : 0);
+    return [muslo, rodilla];
+  }
+  const w = (p - ap) / (1 - ap), suave = 0.5 - 0.5 * Math.cos(Math.PI * w);
+  const muslo = -atr + (ade + atr) * suave + (correr ? 14 * Math.sin(Math.PI * w) : 4 * Math.sin(Math.PI * w));
+  const rodilla = correr ? 20 + 92 * Math.sin(Math.PI * Math.min(1, w * 1.12)) : 4 + 44 * Math.sin(Math.PI * Math.min(1, w * 1.25));
+  return [muslo, Math.max(2, rodilla)];
+}
+/** Largos del muslo y la pierna (adulto de alto 1). */
+const LARGO_MUSLO = 14.5, LARGO_PIERNA = 14;
+/**
+ * Cuánto avanza el cuerpo en un ciclo completo (8 cuadros) de caminar o correr, en unidades del mundo para un cuerpo
+ * de alto 1: es lo que recorre el pie plantado mientras está apoyado, dividido por la parte del ciclo que apoya. El juego
+ * mueve al personaje a esa velocidad (zancada × alto por ciclo) y los pies no patinan.
+ */
+export function zancada(acc: 'caminar' | 'correr', alto = 1): number {
+  const correr = acc === 'correr', ap = correr ? APOYO.correr : APOYO.caminar;
+  const x = (p: number) => { const [m, r] = piernaMarcha(p, correr); const a1 = (m * Math.PI) / 180, a2 = ((m - r) * Math.PI) / 180; return LARGO_MUSLO * Math.sin(a1) + LARGO_PIERNA * Math.sin(a2); };
+  return ((x(0) - x(ap - 1e-6)) / ap) * alto;
+}
+
+export function pose(acc: Accion, f: number, arma: 'una' | 'dos' | 'arco' | 'baculo' | 'garras' | 'nada' = 'una', estilo: Presentacion = 'guardia'): Pose {
   const p: Pose = { torso: 4, giroTorso: 0, cabeza: 0, bajar: 0, avanza: 0, hombroD: [8, 10, 18], hombroI: [6, 10, 16], caderaD: [2, 4], caderaI: [-2, 4], caida: 0 };
   const t = (f / CUADROS[acc]) * Math.PI * 2;
   if (acc === 'quieto') {
@@ -45,21 +84,37 @@ export function pose(acc: Accion, f: number, arma: 'una' | 'dos' | 'arco' | 'bac
     if (arma === 'dos') { p.hombroD = [30, 8, 50]; p.hombroI = [38, 14, 60]; }
     if (arma === 'arco') { p.hombroI = [55, 10, 10]; p.hombroD = [40, 18, 70]; p.giroTorso = 25; }
     if (arma === 'baculo') p.hombroD = [20, 10, 55];
-  } else if (acc === 'caminar') {
-    const s = Math.sin(t), c = Math.cos(t);
-    p.caderaD = [s * 30, 6 + Math.max(0, -c) * 38]; p.caderaI = [-s * 30, 6 + Math.max(0, c) * 38];
-    p.hombroD = [-s * 26 + 6, 8, 22 + Math.max(0, -s) * 18]; p.hombroI = [s * 26 + 6, 8, 22 + Math.max(0, s) * 18];
-    p.bajar = 1.2 - Math.abs(c) * 1.2; p.torso = 8; p.giroTorso = -s * 8;
-    if (arma === 'dos') { p.hombroD = [30, 8, 50]; p.hombroI = [36, 14, 58]; }
-    if (arma === 'arco') { p.hombroI = [s * 18 + 10, 8, 20]; }
-  } else if (acc === 'correr') {
-    // zancada larga, el cuerpo adelante, brazos que bombean y una fase en el aire (cuadros 2 y 6)
-    const s = Math.sin(t), c = Math.cos(t);
-    p.caderaD = [s * 42 + 6, 10 + Math.max(0, -c) * 70]; p.caderaI = [-s * 42 + 6, 10 + Math.max(0, c) * 70];
-    p.hombroD = [-s * 45 + 10, 10, 70]; p.hombroI = [s * 45 + 10, 10, 70];
-    p.bajar = 2.6 - Math.abs(s) * 2.2; p.torso = 18; p.giroTorso = -s * 12; p.cabeza = -8;
-    if (arma === 'dos') { p.hombroD = [36 - s * 6, 8, 60]; p.hombroI = [42 - s * 6, 14, 64]; }
-    if (arma === 'baculo') p.hombroD = [20 - s * 8, 10, 60];
+  } else if (acc === 'caminar' || acc === 'correr') {
+    const correr = acc === 'correr', u = f / CUADROS[acc];
+    p.caderaD = piernaMarcha(u, correr); p.caderaI = piernaMarcha(u + 0.5, correr);
+    p.suelo = true;
+    // brazos: cada uno acompaña a la pierna contraria; al correr van doblados y bombean
+    const lim = (v: number) => Math.max(-38, Math.min(40, v));
+    const sD = lim(-p.caderaI[0] * (correr ? 1.4 : 0.75)), sI = lim(-p.caderaD[0] * (correr ? 1.4 : 0.75));
+    p.hombroD = [sD + (correr ? 12 : 4), correr ? 12 : 8, correr ? 82 + sD * 0.3 : 14 + Math.max(0, sD) * 0.6];
+    p.hombroI = [sI + (correr ? 12 : 4), correr ? 12 : 8, correr ? 82 + sI * 0.3 : 14 + Math.max(0, sI) * 0.6];
+    // el torso se adelanta y gira contra la cadera; la cabeza se mantiene mirando al frente
+    const giro = Math.sin(u * Math.PI * 2);
+    p.torso = correr ? 16 : 6; p.giroTorso = -giro * (correr ? 10 : 6); p.cabeza = correr ? -10 : -2;
+    // en la carrera hay una fase en el aire justo después del despegue de cada pie
+    if (correr) { const q = u % 0.5; p.vuelo = q > APOYO.correr ? Math.sin((Math.PI * (q - APOYO.correr)) / (0.5 - APOYO.correr)) * 2.2 : 0; }
+    if (arma === 'dos') { p.hombroD = [30 + giro * 4, 8, 50]; p.hombroI = [36 + giro * 4, 14, 58]; }
+    if (arma === 'arco') p.hombroI = [sI * 0.6 + 10, 8, 30];
+    if (arma === 'baculo') p.hombroD = [18 + sD * 0.3, 10, 55];
+  } else if (acc === 'presentar') {
+    // la pose de cada clase en la pantalla de selección: un ciclo de 8 cuadros que respira y se luce
+    const r = Math.sin(t), k = 0.5 + 0.5 * Math.sin(t - Math.PI / 2);
+    p.caderaD = [14, 18]; p.caderaI = [-12, 10]; p.bajar = 1 + r * 0.5;
+    switch (estilo) {
+      case 'rugido': p.caderaD = [24, 30]; p.caderaI = [-22, 22]; p.bajar = 3 + k; p.torso = lerp(-6, 14, k); p.cabeza = lerp(-22, 6, k); p.hombroD = [lerp(150, 120, k), 32, 20]; p.hombroI = [lerp(140, 100, k), 40, 30]; break;
+      case 'guardia': p.caderaD = [20, 22]; p.caderaI = [-18, 14]; p.bajar = 2; p.torso = 4 + r; p.hombroD = [70 + r * 3, 14, 40]; p.hombroI = [55, 22, 70]; p.giroTorso = 16; break;
+      case 'conjuro': p.caderaD = [8, 8]; p.caderaI = [-6, 6]; p.bajar = 0.4 - k * 1.6; p.torso = -4; p.cabeza = -10; p.hombroD = [40 + r * 4, 26, 30]; p.hombroI = [100 + k * 30, 30, 20]; break;
+      case 'apunta': p.caderaD = [18, 18]; p.caderaI = [-14, 10]; p.hombroI = [82, 6, 6]; p.hombroD = [72, 12, 120 + k * 20]; p.giroTorso = 30; p.torso = 4; break;
+      case 'invoca': p.caderaD = [10, 10]; p.caderaI = [-8, 8]; p.cabeza = lerp(14, -6, k); p.torso = lerp(10, -4, k); p.hombroD = [lerp(60, 115, k), 55, 30]; p.hombroI = [lerp(60, 115, k), 55, 30]; break;
+      case 'kata': { const g = f % 4 < 2; p.caderaD = [30, 48]; p.caderaI = [-26, 40]; p.bajar = 4.5; p.torso = 8; p.giroTorso = g ? 22 : -22; p.hombroD = g ? [92, 6, 6] : [40, 20, 120]; p.hombroI = g ? [40, 20, 120] : [92, 6, 6]; break; }
+      case 'naturaleza': p.caderaD = [12, 12]; p.caderaI = [-10, 8]; p.cabeza = -14 - r * 3; p.hombroD = [20, 10, 55]; p.hombroI = [lerp(50, 80, k), 70, 10]; break;
+      case 'frasco': p.caderaD = [14, 16]; p.caderaI = [-12, 10]; p.hombroD = [60, 10, 40]; p.hombroI = [lerp(50, 150, Math.max(0, Math.sin(t))), 20, lerp(60, 20, k)]; p.giroTorso = 12; break;
+    }
   } else if (acc === 'herido') {
     // el golpe lo echa atrás: retrocede, encoge y vuelve
     const k = [0.5, 1, 0.75, 0.3][f % 4];

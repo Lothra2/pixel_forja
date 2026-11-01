@@ -79,6 +79,8 @@ export interface Cuerpo {
   cabeza?: number;
   /** Alas de demonio o murciélago. */
   alas?: string;
+  /** Cómo se luce en la pantalla de selección (acción presentar). */
+  presentacion?: import('./figura').Presentacion;
   /** Solo huesos (esqueletos): costillar, columna, cráneo y huesos largos con nudos en las articulaciones. */
   oseo?: boolean;
   /** Carne podrida o vendas: tono por parche. */
@@ -143,7 +145,7 @@ const ejesDe = (fn: Fn, o: [number, number, number]): [V3, V3, V3] => {
 export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada'): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   const tipo = dos(arma) || arma === 'ballesta' ? 'dos' : arma === 'arco' ? 'arco' : arma === 'baculo' || arma === 'lanza' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
-  const P = pose(acc, f, tipo as 'una');
+  const P = pose(acc, f, tipo as 'una', cu.presentacion);
   const th = rad(RUMBO[dir]);
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
   const W: Fn = (fw, rt, up) => [F[0] * fw + R[0] * rt, F[1] * fw + R[1] * rt, up];
@@ -155,7 +157,9 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
     return W(nf - 4 * P.caida, rt, nz);
   };
   const Wc: Fn = (fw, rt, up) => caer(W(fw + P.avanza, rt, up));
-  const zc = (31 - P.bajar) * S;
+  // la pisada: en la marcha la cadera baja hasta que el tobillo de apoyo queda a la altura del piso (sin pies flotando)
+  const extension = ([hz, rod]: [number, number]) => 14.5 * Math.cos(rad(hz)) + 14 * Math.cos(rad(hz - rod));
+  const zc = P.suelo ? (Math.max(extension(P.caderaD), extension(P.caderaI)) + 2.4 + (P.vuelo ?? 0)) * S : (31 - P.bajar) * S;
   const tor = rad(P.torso + (cu.joroba ?? 0) * 18), gir = rad(P.giroTorso);
   const T: Fn = (fw, rt, up) => {
     const f2 = fw * Math.cos(gir) - rt * Math.sin(gir), r2 = fw * Math.sin(gir) + rt * Math.cos(gir);
