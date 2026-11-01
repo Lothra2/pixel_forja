@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#000000" />
+    <title>La Marca de Ceniza</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+      canvas#juego { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); image-rendering: pixelated; image-rendering: crisp-edges; cursor: none; background: #000; }
+      #nombre { position: absolute; display: none; font: 16px Georgia, serif; background: #0d0a08; color: #e8d8b0; border: 1px solid #6a5030; padding: 4px 8px; outline: none; z-index: 2; }
+    </style>
+  </head>
+  <body>
+    <canvas id="juego"></canvas>
+    <input id="nombre" maxlength="16" autocomplete="off" spellcheck="false" />
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
