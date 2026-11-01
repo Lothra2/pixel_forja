@@ -20,7 +20,8 @@ const { NPCS } = await import('../src/datos/npcs.ts');
 
 const SALIDA = join(aqui, '../public/assets');
 mkdirSync(SALIDA, { recursive: true });
-const GRUPOS = (process.env.GRUPOS ?? 'h,m,n,o,p').split(',');
+const GRUPOS = (process.env.GRUPOS ?? 'h,m,n,w,o,p').split(',');
+const { PODERES, DIRS_PODER } = await import(join(raiz, 'poderes.ts'));
 const SOLO = process.env.SOLO?.split(',');
 
 interface Job { id_job: number; grupo: string; clave: string; tipo: string; [k: string]: any }
@@ -44,6 +45,12 @@ if (GRUPOS.includes('n')) for (const n of Object.values(NPCS) as any[]) {
   for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'n', clave: `${n.id}/quieto/${dir}`, tipo: 'personaje', cuerpo: n.cuerpo, equipo: n.equipo, dir, acc: 'quieto', cuadros: CUADROS.quieto });
 }
 const objMeta: Record<string, any> = {};
+const poderMeta: Record<string, any> = {};
+if (GRUPOS.includes('w')) for (const p of PODERES as any[]) {
+  if (SOLO && !SOLO.includes(p.id)) continue;
+  poderMeta[p.id] = { t: p.t, bucle: p.bucle ? 1 : 0, dir: p.direccional ? 1 : 0, tipo: p.tipo, elem: p.elemento };
+  for (const dir of p.direccional ? DIRS_PODER : ['s']) jobs.push({ id_job: nid++, grupo: 'w', clave: `${p.id}/${dir}`, tipo: 'poder', id: p.id, dir, cuadros: p.cuadros });
+}
 if (GRUPOS.includes('o')) for (const d of REGISTRO) {
   if (d.tema === 'personajes' || d.tema === 'monstruos') continue;
   if (SOLO && !SOLO.includes(d.id)) continue;
@@ -123,7 +130,7 @@ for (const g of GRUPOS) {
   const items: { j: Job; f: number; c: any }[] = [];
   for (const j of js) (resultados.get(j.id_job) ?? []).forEach((c, f) => items.push({ j, f, c }));
   // un juego de atlas por entidad (clase, monstruo, tema) para bajar solo lo que hace falta
-  const sub = (j: Job) => g === 'o' ? (objMeta[j.clave]?.tema ?? 'x') : g === 'p' ? 'p' : j.clave.split('/')[0];
+  const sub = (j: Job) => g === 'w' ? 'w' : g === 'o' ? (objMeta[j.clave]?.tema ?? 'x') : g === 'p' ? 'p' : j.clave.split('/')[0];
   const porSub = new Map<string, typeof items>();
   for (const it of items) { const k = sub(it.j); if (!porSub.has(k)) porSub.set(k, []); porSub.get(k)!.push(it); }
   const listas: Record<string, any[]> = {};
@@ -163,5 +170,6 @@ for (const g of GRUPOS) {
     else man[g === 'n' ? 'm' : g][k] = fs;
   }
 }
+if (GRUPOS.includes('w')) man.wm = { ...(man.wm ?? {}), ...poderMeta };
 writeFileSync(manPath, JSON.stringify(man));
 console.log('listo en', ((Date.now() - t0) / 1000).toFixed(0), 's');

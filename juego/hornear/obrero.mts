@@ -9,7 +9,8 @@ for (const f of readdirSync(join(raiz, 'catalogo'))) await import(join(raiz, 'ca
 const { pintarObjeto } = await import(join(raiz, 'objeto.ts'));
 const { pintarPiso } = await import(join(raiz, 'pisos.ts'));
 const { pintarEscena, aPantalla } = await import(join(raiz, 'render.ts'));
-const { personaje, esqueleto } = await import(join(raiz, 'cuerpo.ts'));
+const { personajeEscena, esqueleto } = await import(join(raiz, 'cuerpo.ts'));
+const { pintarPoder } = await import(join(raiz, 'poderes.ts'));
 const extra = await import('../src/motor/hoja.ts');
 
 type Cuadro = { w: number; h: number; ax: number; ay: number; data: Uint8ClampedArray; hoja?: number[] };
@@ -28,13 +29,15 @@ parentPort!.on('message', (job: any) => {
     const out: Cuadro[] = [];
     if (job.tipo === 'personaje') {
       for (let f = 0; f < job.cuadros; f++) {
-        const r = pintarEscena({ piezas: personaje(job.cuerpo, job.equipo, job.dir, job.acc, f), sinSombra: true });
+        const r = pintarEscena({ ...personajeEscena(job.cuerpo, job.equipo, job.dir, job.acc, f), sinSombra: true });
         const c = recortar(r.img, r.ancla[0], r.ancla[1]);
         c.hoja = extra.hojaDe(esqueleto, aPantalla, job.cuerpo, job.equipo, job.dir, job.acc, f);
         out.push(c);
       }
     } else if (job.tipo === 'objeto') {
       for (let f = 0; f < job.cuadros; f++) { const r = pintarObjeto(job.id, job.v, f, job.seed); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
+    } else if (job.tipo === 'poder') {
+      for (let f = 0; f < job.cuadros; f++) { const r = pintarPoder(job.id, job.dir, f); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
     } else if (job.tipo === 'piso') {
       for (let f = 0; f < job.cuadros; f++) { const r = pintarPiso(job.id, job.v, f); out.push({ w: r.w, h: r.h, ax: 80, ay: 40, data: r.data }); }
     }

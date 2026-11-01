@@ -6,8 +6,6 @@ export interface MonstruoExtra { id: string; nombre: [string, string]; cuerpo: C
 
 export const MONSTRUOS_EXTRA: MonstruoExtra[] = [
   // Acto 1: el valle de Velmora y la abadía
-  { id: 'penitente', nombre: ['Penitente', 'Penitent'], cuerpo: { piel: 'cu_piel_palida', parches: 'cu_piel_gris', ojos: 'cu_ojo_brasa', joroba: 0.5, musculo: 0.3, peinado: 'calvo' },
-    equipo: { torso: { tipo: 'harapos', mat: 'cu_tela_parda' }, piernas: { tipo: 'tunica_larga', mat: 'cu_tela_parda' }, cabeza: { tipo: 'capucha', mat: 'cu_tela_negra' }, cinturon: { mat: 'cuerda' }, arma: { tipo: 'mangual', mat: 'hierro_oxido', mango: 'madera_vieja' } } },
   { id: 'monja_hueca', nombre: ['Monja hueca', 'Hollow nun'], magia: true, cuerpo: { genero: 'm', piel: 'cu_piel_palida', ojos: 'cu_ojo_hielo', musculo: 0, ancho: 0.9, peinado: 'calvo' },
     equipo: { torso: { tipo: 'vestido', mat: 'cu_tela_negra' }, piernas: { tipo: 'tunica_larga', mat: 'cu_tela_negra' }, cabeza: { tipo: 'capucha', mat: 'cu_tela_blanca' }, manos: { tipo: 'vendas', mat: 'cu_venda' }, izq: { tipo: 'libro', mat: 'cu_cuero_negro' }, arma: { tipo: 'varita', mango: 'cu_hueso', gema: 'cu_ojo_hielo' } } },
   { id: 'ahogado', nombre: ['Ahogado', 'Drowned'], cuerpo: { piel: 'cu_piel_azul', parches: 'cu_piel_verde', ojos: 'cu_ojo_verde', grasa: 0.9, joroba: 0.4, ancho: 1.15, peinado: 'largo', pelo: 'cu_pelo_negro' },
@@ -38,8 +36,6 @@ export const MONSTRUOS_EXTRA: MonstruoExtra[] = [
     cuerpo: { oseo: true, alto: 1.6, ancho: 1.3, piel: 'cu_hueso', ojos: 'cu_ojo_hielo' },
     equipo: { torso: { tipo: 'placas', mat: 'cu_placa', mat2: 'cu_ojo_hielo' }, hombros: { tipo: 'puas', mat: 'cu_ojo_hielo' }, cabeza: { tipo: 'corona', mat: 'cu_placa', mat2: 'cu_ojo_hielo' }, capa: { mat: 'cu_tela_azul' }, arma: { tipo: 'mandoble', mat: 'cu_ojo_hielo' } } },
   // Acto 5: la Herida (infierno)
-  { id: 'carcelero', nombre: ['Carcelero del abismo', 'Abyss jailer'], cuerpo: { piel: 'cu_piel_roja', ojos: 'cu_ojo_brasa', cuernos: 'demonio', alto: 1.25, ancho: 1.3, musculo: 0.9, cola: 'cu_piel_roja', peinado: 'calvo' },
-    equipo: { piernas: { tipo: 'taparrabo', mat: 'cu_cuero_negro' }, cinturon: { mat: 'cu_cuero_negro', hebilla: 'hierro_oxido' }, manos: { tipo: 'guanteletes', mat: 'cu_placa_oscura' }, arma: { tipo: 'martillo', mat: 'cu_placa_oscura', mango: 'cu_placa_oscura' } } },
 ];
 
 /** El equipo con que arranca cada clase: el nivel novato del motor. */
