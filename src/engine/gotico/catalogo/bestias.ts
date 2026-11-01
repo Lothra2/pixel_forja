@@ -35,10 +35,13 @@ M.be_piedra_garg = { rampa: ['#0f100f', '#1b1d1b', '#292c29', '#383c37', '#484d4
 M.be_membrana = { rampa: ['#0b0809', '#151012', '#1f181b', '#2b2125', '#382b30', '#46363c'], ruido: 0.45, escala: 0.7 };
 M.be_membrana_roja = { rampa: ['#0a0303', '#140605', '#1f0a08', '#2b0f0b', '#38150f', '#461b13'], ruido: 0.45, escala: 0.6 };
 M.be_demonio = { rampa: ['#070303', '#0f0605', '#180908', '#220d0b', '#2d120e', '#3a1812', '#481e17', '#57261d', '#672f24'], ruido: 0.28, escala: 0.45, brillo: 0.2 };
-M.be_murcielago = { rampa: ['#0a0807', '#14100d', '#201914', '#2c221b', '#3a2d23', '#49392c'], ruido: 0.55, escala: 1.6 };
+M.be_murcielago = { rampa: ['#0d0a09', '#1a1411', '#281f19', '#372b22', '#47382c', '#584637', '#6a5543'], ruido: 0.5, escala: 1.6 };
+M.be_membrana_murc = { rampa: ['#100b0b', '#1c1314', '#2a1c1d', '#3a2627', '#4b3132', '#5d3d3d'], ruido: 0.35, escala: 0.8 };
+M.be_piedra_ala = { rampa: ['#0b0c0b', '#151715', '#20231f', '#2c302b', '#393e38', '#474d45'], ruido: 0.4, escala: 0.55 };
 M.be_lobo = { rampa: ['#08090b', '#101216', '#191c21', '#23272d', '#2e333a', '#3a4048', '#474e57', '#565e68'], ruido: 0.45, escala: 1.5, patron: (p) => (ruido(p[0] * 3, p[1] * 3, p[2] * 1.2) - 0.5) * 0.25 };
 M.be_quitina_negra = { rampa: ['#050505', '#0b0a0a', '#131110', '#1c1917', '#26221f', '#312c28', '#3e3832', '#4c453e'], ruido: 0.22, escala: 0.8, brillo: 0.45 };
 M.be_junta = { rampa: ['#0a0403', '#160807', '#240d0a', '#33120d', '#431810'], ruido: 0.2, escala: 0.8, brillo: 0.3 };
+M.be_caparazon = { rampa: ['#0d0c0b', '#1a1815', '#29251f', '#39342b', '#4a4337', '#5c5344', '#6e6452', '#807561'], ruido: 0.3, escala: 0.7, brillo: 0.3 };
 M.be_lava_fria = { rampa: ['#100403', '#200806', '#360d08', '#4e140b', '#661c0e'], ruido: 0.3, escala: 0.5 };
 M.be_hueso_viejo = { rampa: ['#141210', '#24201b', '#38322a', '#4e463a', '#665c4c', '#7f735f', '#978a73', '#ada087', '#c2b69c'], ruido: 0.28, escala: 0.8 };
 
@@ -234,7 +237,7 @@ function cuadrupedo(q: Cuad, d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const mand = cmp(cab, T(H(1, 0, jab ? -3.5 : -2.6), Ry(P.mand)));
   // ---- patas: dos huesos con IK al tobillo y la mano o pezuña en el piso (o colgando al morir)
   const piezas: Pieza[] = [];
-  const pasoL = 13 * S * pt, alzaL = 4.6 * S;
+  const pasoL = 14 * S * pt, alzaL = 6 * S;
   for (const del of [true, false]) for (const s of [1, -1]) {
     const raiz = ap(cuerpo, del ? B(12.5, s * 5.6 * g, -3) : B(-13.6, s * 5 * g, -1.5));
     const l1 = (del ? 10 : 10.8) * S * pt, l2 = (del ? 10.5 : 11.6) * S * pt, l3 = (del ? 3.6 : 7) * S * pt;
@@ -304,7 +307,7 @@ function bocaYOjos(c: CtxCuad, o: { largo: number; lengua: string; ojoX: number;
 }
 
 const PERRO: Cuad = {
-  S: 1, pata: 1, gordo: 1, piel: 'be_carbon', hocico: 'be_cuerno', ojos: 'cu_ojo_brasa', cabeza: 'perro', cola: 1, ataque: 'mordida',
+  S: 0.95, pata: 1.28, gordo: 0.92, piel: 'be_carbon', hocico: 'be_cuerno', ojos: 'cu_ojo_brasa', cabeza: 'perro', cola: 1, ataque: 'mordida',
   deco: (c) => {
     const { cuerpo, cab, S } = c;
     const lava = c.muerte > 0.85 ? 'be_lava_fria' : 'cu_lava';
@@ -327,7 +330,7 @@ const PERRO: Cuad = {
 };
 
 const LOBO: Cuad = {
-  S: 0.93, pata: 1.12, gordo: 0.84, piel: 'be_lobo', vientre: 'be_lobo', hocico: 'cu_tela_negra', ojos: 'cu_ojo_hielo', cabeza: 'lobo', cola: 1.1, colaGruesa: 2.6, ataque: 'mordida',
+  S: 0.86, pata: 1.34, gordo: 0.8, piel: 'be_lobo', vientre: 'be_lobo', hocico: 'cu_tela_negra', ojos: 'cu_ojo_hielo', cabeza: 'lobo', cola: 1.1, colaGruesa: 2.6, ataque: 'mordida',
   deco: (c) => {
     const { cuerpo, cab, S } = c;
     const ps = bocaYOjos(c, { largo: 11.5, lengua: 'be_garganta', ojoX: 5.2, ojoY: 2.3, ojoZ: 1.8, ojoR: 0.75 });
@@ -347,7 +350,7 @@ const LOBO: Cuad = {
   },
 };
 const JABALI: Cuad = {
-  S: 1.08, pata: 0.78, gordo: 1.22, piel: 'be_jabali', hocico: 'be_hocico', ojos: 'cu_ojo_brasa', cabeza: 'jabali', cola: 0.45, colaGruesa: 1.1, ataque: 'embestida',
+  S: 1.08, pata: 0.92, gordo: 1.18, piel: 'be_jabali', hocico: 'be_hocico', ojos: 'cu_ojo_brasa', cabeza: 'jabali', cola: 0.45, colaGruesa: 1.1, ataque: 'embestida',
   deco: (c) => {
     const { cuerpo, cab, mand, S } = c;
     const ps: Pieza[] = [];
@@ -385,12 +388,12 @@ interface Pata { cadera: V3; reposo: V3; l1: number; l2: number; fase: number; r
  * grupos de cuatro que alternan), la rodilla sube por encima del cuerpo y el último tramo baja curvado a la punta.
  * `rizo` (0..1) las encoge hacia el vientre como una araña muerta.
  */
-function patasArac(W: Tr, cuerpo: Tr, patas: Pata[], o: { paso: number; alza: number; mat: string; junta: string; caminar: boolean; ph: number; rizo: number; espinas?: boolean }): Pieza[] {
+function patasArac(W: Tr, cuerpo: Tr, patas: Pata[], o: { paso: number; alza: number; mat: string; junta: string; caminar: boolean; ph: number; rizo: number; espinas?: boolean; deLado?: boolean }): Pieza[] {
   const ps: Pieza[] = [];
   for (const pa of patas) {
     const cad = ap(cuerpo, pa.cadera);
     const st = o.caminar ? paso(o.ph + pa.fase, o.paso, o.alza, 0.5) : { x: 0, z: 0, vuelo: 0 };
-    let tip = ap(W, [pa.reposo[0] + st.x, pa.reposo[1], pa.reposo[2] + st.z]);
+    let tip = ap(W, o.deLado ? [pa.reposo[0], pa.reposo[1] + st.x, pa.reposo[2] + st.z] : [pa.reposo[0] + st.x, pa.reposo[1], pa.reposo[2] + st.z]);
     if (pa.alzaExtra) tip = add(tip, mv(W.m, pa.alzaExtra));
     const afuera = nor([tip[0] - cad[0], tip[1] - cad[1], 0]);
     if (o.rizo > 0) {
@@ -648,13 +651,14 @@ function gusano(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const L = (q: V3) => ap(W, q);
   const ps: Pieza[] = [];
   const atras: V3 = [-1, 0, 0];
-  // carne y placas en tres masas (las uniones quedan bajo un anillo)
-  for (let g = 0; g < 3; g++) {
+  // carne y placas en masas de tres tramos (las uniones quedan bajo un anillo)
+  const G = 3;
+  for (let g = 0; g < N / G; g++) {
     const cs: Comp[] = [];
-    for (let i = g * 6; i < Math.min(N, g * 6 + 7); i++) {
+    for (let i = g * G; i < Math.min(N, g * G + G + 1); i++) {
       const s = i / N, a = pts[i], b = pts[i + 1] ?? pts[i], r = rad0(s), rb = rad0((i + 1) / N);
       if (Math.max(a[2], b[2]) < -r - 2) continue;
-      if (i < g * 6 + 6 && i < N - 1) cs.push(hueso(L(a), L(b), r, rb, { mat: 'be_gusano' }));
+      if (i < g * G + G && i < N - 1) cs.push(hueso(L(a), L(b), r, rb, { mat: 'be_gusano' }));
       const t = tans[Math.min(i, N - 1)];
       cs.push(bulto(L(a), [4.6, r + 2.6, r + 2.6], { eje: mv(W.m, t), mat: 'be_gusano_placa', k: 0.8, tono: (i % 2) * -0.04 }));
     }
@@ -803,7 +807,7 @@ function golem(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const brilla = apaga > 0.7 ? 'be_lava_fria' : 'runa';
   if (derrumbe < 0) {
     // cada parte es una masa de rocas apenas fundidas
-    rocas.forEach((r, q) => ps.push(r.mat === 'musgo' ? elipEjes(r.c, r.r, r.e, r.mat, -0.2) : roca(r.c, r.r.map((x) => x * 1.08) as V3, r.e, r.mat, q, r.tono)));
+    rocas.forEach((r, q) => ps.push(r.mat === 'musgo' ? elipEjes(r.c, r.r, r.e, r.mat, -0.32) : roca(r.c, r.r.map((x) => x * 1.08) as V3, r.e, r.mat, q, r.tono)));
     // ojos y runas que brillan
     for (const s of [1, -1]) ps.push(elipsoide(...ap(cabT, [7.4, s * 3, 0.8]), 1.5, 1.9, 1, { mat: apaga > 0.5 ? 'cu_ojo' : 'runa' }));
     const glifo: [number, number][][] = [[[8, 36], [0, 30], [-8, 36], [0, 42], [8, 36]], [[0, 26], [0, 44]], [[-6, 22], [6, 22]], [[-11, 30], [-13, 24]], [[11, 30], [13, 24]]];
@@ -980,7 +984,7 @@ function gargola(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     ps.push(masa([hueso(a, b, 1.5, 1, { mat: 'be_cuerno' }), hueso(b, e, 1, 0.15, { mat: 'be_cuerno' })], { mat: 'be_cuerno', suave: 0.5 }));
     ps.push(elipsoide(...ap(cabT, [5.6, s * 2, 1.6]), 0.8, 1, 0.6, { mat: muerte > 0.6 ? 'cu_ojo' : 'cu_ojo_brasa' }));
     // alas de piedra
-    ps.push(...ala({ raiz: ap(tor, [-2, s * 5, 19]), adel: nor(mv(tor.m, [1, 0, 0.3])), der: mv(W.m, [0, 1, 0]), arriba: [0, 0, 1], lado: s, L1: 12, L2: 13, Ld: 16, abre, bate, lag, hueso: P, membrana: P, grueso: 1.3, carne: true, dedos: 4, semilla: s > 0 ? 3 : 4 }).map((pz) => pz));
+    ps.push(...ala({ raiz: ap(tor, [-2, s * 5, 19]), adel: nor(mv(tor.m, [1, 0, 0.3])), der: mv(W.m, [0, 1, 0]), arriba: [0, 0, 1], lado: s, L1: 13, L2: 14, Ld: 20, abre, bate, lag, hueso: P, membrana: 'be_piedra_ala', grueso: 1.3, carne: true, dedos: 4, semilla: s > 0 ? 3 : 4 }).map((pz) => pz));
   }
   const cola: Comp[] = [];
   let prev = ap(pel, [-5, 0, -1]);
@@ -996,7 +1000,7 @@ bestia('gargola', ['Gárgola', 'Gargoyle'], [2, 2], gargola);
 // ------------------------------------------------------------------ murciélago gigante
 function murcielago(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const W = mundo(d), ph = f / CUADROS[acc], P = 'be_murcielago';
-  let z = 30, av = 0, pitch = 10, roll = 0, abre = 1, bate = 0, lag = 0, mand = 6, muerte = 0;
+  let z = 28, av = 0, pitch = 10, roll = 0, abre = 1, bate = 0, lag = 0, mand = 6, muerte = 0;
   if (acc === 'quieto') { bate = Math.cos(ph * TAU) * 50 + 5; lag = -Math.sin(ph * TAU) * 22; z = 30 + Math.sin(ph * TAU) * 2.5; }
   else if (acc === 'caminar') { bate = Math.cos(ph * TAU * 2) * 55 + 5; lag = -Math.sin(ph * TAU * 2) * 24; z = 30 + Math.sin(ph * TAU * 2) * 3; pitch = 22; }
   else if (acc === 'atacar') {
@@ -1024,7 +1028,7 @@ function murcielago(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     // patas que cuelgan atrás
     const c0 = ap(cu, [-4, s * 2, -2]), p1 = ap(cu, [-8, s * 2.4, -4]);
     ps.push(palo(c0, p1, 0.6, { mat: 'be_hocico', r1: 0.4 }));
-    ps.push(...ala({ raiz: ap(cu, [1.5, s * 3, 1.2]), adel: nor(mv(cu.m, [1, 0, 0])), der: mv(cu.m, [0, 1, 0]), arriba: mv(cu.m, [0, 0, 1]), lado: s, L1: 6.5, L2: 7.5, Ld: 10.5, abre, bate, lag, hueso: 'be_hocico', membrana: 'be_membrana', grueso: 0.5, dedos: 4, rota: 0.2, semilla: s > 0 ? 2 : 5 }));
+    ps.push(...ala({ raiz: ap(cu, [1.5, s * 3, 1.2]), adel: nor(mv(cu.m, [1, 0, 0])), der: mv(cu.m, [0, 1, 0]), arriba: mv(cu.m, [0, 0, 1]), lado: s, L1: 6.5, L2: 7.5, Ld: 10.5, abre, bate, lag, hueso: 'be_hocico', membrana: 'be_membrana_murc', grueso: 0.55, dedos: 4, rota: 0.2, semilla: s > 0 ? 2 : 5 }));
   }
   return ps;
 }
@@ -1094,7 +1098,7 @@ function demonio(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     const mw = ap(W, mano[i]); mw[2] = Math.max(mw[2], 3);
     const [codo, m2] = ik(h, mw, 30, 30, add(mv(tor.m, [-1, s * 0.5, -0.4]), [0, 0, 0]));
     manos.push([codo, m2]);
-    cs.push(hueso(h, codo, 7, 5.4, m), bulto(mez(h, codo, 0.45), [11, 7.4, 7.6], { eje: sub(codo, h), mat: P }), hueso(codo, m2, 5.6, 4, m), bulto(mez(codo, m2, 0.3), [10, 6.8, 6.4], { eje: sub(m2, codo), mat: P }));
+    ps.push(masa([bT(tor, [0, s * 25, 41], [11, 10.5, 10.5], m), hueso(h, codo, 7, 5.4, m), bulto(mez(h, codo, 0.45), [11, 7.4, 7.6], { eje: sub(codo, h), mat: P }), hueso(codo, m2, 5.6, 4, m), bulto(mez(codo, m2, 0.3), [10, 6.8, 6.4], { eje: sub(m2, codo), mat: P })], { mat: P, suave: 3 }));
   }
   // piernas de corvejón con muslos y pantorrillas
   const pezu: [V3, V3, V3, V3][] = [];
@@ -1105,7 +1109,7 @@ function demonio(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     const [rod, t2] = ik(cad, tob, 31, 30, mv(pel.m, [1, 0, 0.1]));
     if (len(sub(t2, tob)) > 0.5) suelo = add(suelo, sub(t2, tob));
     pezu.push([cad, rod, t2, suelo]);
-    cs.push(hueso(cad, rod, 9.5, 6.4, m), bulto(mez(cad, rod, 0.42), [15, 9.5, 9.5], { eje: sub(rod, cad), mat: P }), hueso(rod, t2, 5.8, 3.8, m), bulto(mez(rod, t2, 0.3), [10, 6, 5.8], { eje: sub(t2, rod), mat: P }));
+    ps.push(masa([bT(pel, [-2, s * 8, -1], [9, 8, 9], m), hueso(cad, rod, 9.5, 6.4, m), bulto(mez(cad, rod, 0.42), [15, 9.5, 9.5], { eje: sub(rod, cad), mat: P }), hueso(rod, t2, 5.8, 3.8, m), bulto(mez(rod, t2, 0.3), [10, 6, 5.8], { eje: sub(t2, rod), mat: P })], { mat: P, suave: 3 }));
   }
   ps.push(masa(cs, { mat: P, suave: 3 }));
   for (const [, , t2, suelo] of pezu) {
@@ -1283,3 +1287,47 @@ function dragon(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   return muerte > 0.9 ? ps : { piezas: ps, resplandor: { c: corazon, r: 34, color: '#70d0f0' } };
 }
 bestia('dragon_oseo', ['Dragón de huesos', 'Bone dragon'], [6, 6], dragon, ['aliento', 'breath']);
+
+// ------------------------------------------------------------------ cangrejo de cripta
+/** Cangrejo pálido de las criptas: caparazón ancho con una calavera grabada, ojos en pedúnculos, una pinza enorme y anda de costado. */
+function cangrejo(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
+  const W = mundo(d), ph = f / CUADROS[acc], C = 'be_caparazon', Q = { mat: C };
+  let z = 0, roll = 0, pitch = 0, lado = 0, pinza = 0.3, brazo = 0, rizo = 0, muerte = 0;
+  if (acc === 'quieto') { const b = Math.sin(ph * TAU); z = b * 0.4; pinza = 0.3 + b * 0.25; brazo = b * 4; }
+  else if (acc === 'caminar') { z = -Math.abs(Math.cos(ph * TAU * 2)) * 0.6; roll = Math.sin(ph * TAU * 2) * 3; lado = Math.sin(ph * TAU) * 1.2; }
+  else if (acc === 'atacar') { pinza = K([0.3, 0.9, 1, 1, 0, 0, 0.2, 0.3], f); brazo = K([0, 18, 30, 34, -6, -10, -2, 0], f); pitch = K([0, -4, -8, -8, 6, 8, 3, 0], f); }
+  else if (acc === 'morir') { z = K([0, 2, 0, -2, -4, -5, -5.5, -5.5], f); roll = K([0, 10, 40, 90, 140, 170, 180, 180], f); rizo = K([0, 0.2, 0.4, 0.6, 0.8, 1, 1, 1], f); pinza = 0.6; brazo = K([0, 20, 10, 0, -10, -20, -20, -20], f); muerte = K([0, 0, 0.2, 0.5, 0.8, 1, 1, 1], f); }
+  const zb = 13 + (acc === 'morir' ? K([0, 3, 4, 3, 1, 0, 0, 0], f) : 0);
+  const cuerpo = cmp(W, T([0, lado, zb + z], Ry(pitch), Rx(roll)));
+  const ps: Pieza[] = [];
+  const cs: Comp[] = [bT(cuerpo, [0, 0, 0], [14, 20, 6.5], Q), bT(cuerpo, [3, 0, 3], [9, 14, 4], { mat: C, tono: 0.05 }), bT(cuerpo, [-4, 0, -3], [10, 15, 4], { mat: 'be_quitina_parda' })];
+  // calavera grabada en el lomo: cuencas y nariz hundidas en tono oscuro
+  for (const s of [1, -1]) cs.push(bT(cuerpo, [3, s * 4, 6.4], [2.6, 2.4, 1], { mat: 'be_junta', k: 0.4 }));
+  cs.push(bT(cuerpo, [-1, 0, 6.6], [1.4, 1.2, 0.8], { mat: 'be_junta', k: 0.4 }));
+  for (let k = -2; k <= 2; k++) cs.push(bT(cuerpo, [-4.5, k * 1.9, 6], [1, 0.8, 0.8], { mat: 'be_junta', k: 0.3 }));
+  for (const s of [1, -1]) for (let k = 0; k < 4; k++) cs.push(bT(cuerpo, [8 - k * 5, s * 18.5, 1], [2.2, 2, 2], { mat: C, k: 0.6 }));
+  ps.push(masa(cs, { mat: C, suave: 1.6 }));
+  for (const s of [1, -1]) {
+    // ojos en pedúnculos
+    const p0 = ap(cuerpo, [12, s * 3, 4]), p1 = ap(cuerpo, [14, s * 4, 10]);
+    ps.push(palo(p0, p1, 0.8, { mat: C }), esfera(...p1, 1.4, { mat: muerte > 0.6 ? 'cu_ojo' : 'cu_ojo_verde' }));
+    // pinzas: la derecha enorme
+    const g = s > 0 ? 1.6 : 1, h0 = ap(cuerpo, [12, s * 12, 0]);
+    const br = cmp(cuerpo, T([12, s * 12, 0], Rz(s * (25 - brazo * 0.4)), Ry(-20 - brazo * 0.8)));
+    const codo = ap(br, [8 * g, 0, 0]);
+    const ant = cmp(br, T([8 * g, 0, 0], Rz(-s * 55), Ry(30 + brazo * 0.5)));
+    const mano = cmp(ant, T([5 * g, 0, 0], Ry(-15)));
+    const dMov = cmp(mano, T([7 * g, s * 1.2 * g, 1 * g], Ry(-pinza * 35)));
+    ps.push(masa([hueso(h0, codo, 2.2 * g, 2 * g, Q), bulto(codo, [2.2 * g, 2.2 * g, 2.2 * g], Q), hueso(codo, ap(ant, [5 * g, 0, 0]), 2 * g, 2.6 * g, Q),
+      bT(mano, [3 * g, 0, 0], [5.5 * g, 3.4 * g, 3.8 * g], Q), hT(mano, [6 * g, 0, -1.2 * g], [12 * g, 0, -1.6 * g], 1.6 * g, 0.4 * g, { mat: 'be_quitina_parda' }),
+      hT(dMov, [0, 0, 0], [6 * g, 0, -0.4 * g], 1.4 * g, 0.3 * g, { mat: 'be_quitina_parda' })], { mat: C, suave: 0.9 }));
+  }
+  const patas: Pata[] = [];
+  for (const s of [1, -1]) for (let i = 0; i < 4; i++) {
+    const a = rad(60 + i * 25), R = 32;
+    patas.push({ cadera: [(7 - i * 4.5), s * 15, -1], reposo: [Math.cos(a) * R * 0.7, s * Math.sin(a) * R, 0], l1: 14, l2: 18, fase: (i % 2 === 0) === (s < 0) ? 0 : 0.5, r: 1.6 });
+  }
+  ps.push(...patasArac(W, cuerpo, patas, { paso: 10, alza: 5, mat: C, junta: 'be_quitina_parda', caminar: acc === 'caminar', ph, rizo, deLado: true }));
+  return ps;
+}
+bestia('cangrejo_cripta', ['Cangrejo de cripta', 'Crypt crab'], [3, 3], cangrejo);

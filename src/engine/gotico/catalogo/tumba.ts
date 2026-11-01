@@ -1,4 +1,4 @@
-import { registrar, type Arma, type Pieza, type V3 } from '../objeto';
+import { conVarianteY, registrar, type Arma, type Pieza, type V3 } from '../objeto';
 import { MATERIALES } from '../materiales';
 import { ruido } from '../render';
 
@@ -516,3 +516,5 @@ registrar(
     },
   },
 );
+
+conVarianteY('tum_muro');

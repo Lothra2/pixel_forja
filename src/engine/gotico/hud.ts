@@ -4,6 +4,9 @@ import { encodePng } from '../export/png';
 import { renderLoot } from '../loot/render';
 import { baseWeapon, baseArmor, baseOffhand, findLoot, rollItem, modText, SET_NAME, SET_BONUS, type LootItem } from '../loot/catalog';
 import type { Rarity } from '../loot/materials';
+import { pintarEscena } from './render';
+import { personajeEscena, armaSuelta, type Cuerpo, type Equipo, type TipoArma, type Encanto } from './cuerpo';
+import { HEROES } from './catalogo/personajes';
 
 /**
  * Interfaz del taller gótico: la barra de abajo con los orbes de vida y maná, el cinturón de pociones, los botones
@@ -692,9 +695,9 @@ export function orbe(tipo: TipoOrbe, nivel: number, cuadro = 0, r = RADIO_ORBE):
     const nz = Math.sqrt(1 - d2), lu = dx * LUZ[0] + dy * LUZ[1] + nz * LUZ[2];
     let ys = ySup(px);
     // menisco: el líquido trepa un poco por el vidrio en los bordes
-    const semi = Math.sqrt(Math.max(0.0001, 1 - ((ys - c) / r) ** 2));
-    const borde = Math.abs(dx) / semi;
-    if (borde > 0.8) ys -= ((borde - 0.8) / 0.2) ** 2 * 2.2;
+    const semi = Math.sqrt(Math.max(0, 1 - ((ys - c) / r) ** 2));
+    const borde = semi > 0.2 ? Math.abs(dx) / semi : 0;
+    if (borde > 0.8) ys -= Math.min(3, ((borde - 0.8) / 0.2) ** 2 * 2.2);
     const prof = py - ys;
     let col: C3;
     if (prof >= 0 && nivel > 0) {
@@ -1854,47 +1857,26 @@ function siluetaObjeto(l: Lienzo, it: LootItem, x: number, y: number, w: number,
 // ------------------------------------------------------------------------------------------------ objetos de ejemplo
 
 const L = (id: string): LootItem => findLoot(id) ?? baseWeapon('sword', 1);
-/** Objetos de ejemplo para el inventario de muestra (del motor de botín). */
-export function objetosDeMuestra() {
-  return {
-    equipo: {
-      casco: baseArmor('helm', 'placas', 4), amuleto: L('collar_de_thor'), arma: L('filo_del_alba'), mano_libre: L('escudo_de_la_casa_gg'),
-      pecho: baseArmor('chest', 'malla', 4), guantes: L('guanteletes_del_titan'), cinturon: L('cinto_del_gigante'), botas: L('botas_de_siete_leguas'),
-      anillo_izq: L('anillo_del_ojo_eterno'), anillo_der: L('sello_del_liche'),
-    } as Record<string, LootItem>,
-    bolsa: [
-      { it: rollItem(baseWeapon('axe', 2), 'magic', 7), x: 0, y: 0, w: 2, h: 2 },
-      { it: rollItem(baseArmor('helm', 'cuero', 2), 'rare', 3), x: 2, y: 0, w: 2, h: 2 },
-      { it: L('beso_de_la_vibora'), x: 4, y: 0, w: 2, h: 2 },
-      { it: { ...baseOffhand('orb', 2) }, x: 6, y: 0, w: 2, h: 2 },
-      { it: rollItem({ id: 'ring', name: { es: 'Anillo', en: 'Ring' }, rarity: 'normal', base: { cat: 'jewel', icon: 'ring' }, level: 10, stats: { mods: [] } }, 'magic', 11), x: 8, y: 0, w: 1, h: 1 },
-      { it: { id: 'gema', name: { es: 'Rubí', en: 'Ruby' }, rarity: 'normal', base: { cat: 'gem', kind: 'ruby', grade: 'flawless' }, level: 1, stats: { mods: [] } } as LootItem, x: 9, y: 0, w: 1, h: 1 },
-      { it: { id: 'pocion', name: { es: 'Poción', en: 'Potion' }, rarity: 'normal', base: { cat: 'potion', kind: 'health', size: 'greater' }, level: 1, stats: { mods: [] } } as LootItem, x: 8, y: 1, w: 1, h: 1 },
-      { it: { id: 'pocion2', name: { es: 'Poción', en: 'Potion' }, rarity: 'normal', base: { cat: 'potion', kind: 'mana', size: 'greater' }, level: 1, stats: { mods: [] } } as LootItem, x: 9, y: 1, w: 1, h: 1 },
-      { it: { id: 'pergamino', name: { es: 'Pergamino', en: 'Scroll' }, rarity: 'normal', base: { cat: 'consumable', icon: 'scroll_portal' }, level: 1, stats: { mods: [] } } as LootItem, x: 0, y: 2, w: 1, h: 1 },
-      { it: { id: 'llave', name: { es: 'Llave', en: 'Key' }, rarity: 'normal', base: { cat: 'consumable', icon: 'key' }, level: 1, stats: { mods: [] } } as LootItem, x: 1, y: 2, w: 1, h: 1 },
-      { it: { id: 'runa', name: { es: 'Runa', en: 'Rune' }, rarity: 'normal', base: { cat: 'rune', index: 6 }, level: 1, stats: { mods: [] } } as LootItem, x: 0, y: 3, w: 1, h: 1 },
-      { it: rollItem(baseArmor('boots', 'placas', 3), 'rare', 5), x: 2, y: 2, w: 2, h: 2 },
-      { it: L('corona_del_rey_caido'), x: 4, y: 2, w: 2, h: 2 },
-      { it: { id: 'amatista', name: { es: 'Amatista', en: 'Amethyst' }, rarity: 'normal', base: { cat: 'gem', kind: 'amethyst', grade: 'perfect' }, level: 1, stats: { mods: [] } } as LootItem, x: 7, y: 3, w: 1, h: 1 },
-    ],
-  };
-}
+const HEROE_MUESTRA = { cuerpo: HEROES[1].cuerpo, equipo: HEROES[1].niveles[2] };
 
-/** Casilleros del equipo en coordenadas del panel. */
+/** Casilleros del equipo en coordenadas del panel (con el héroe de verdad en el nicho del medio). */
 export const EQUIPO: { id: string; x: number; y: number; w: number; h: number; es: string; en: string }[] = [
-  { id: 'casco', x: 131, y: 40, w: 58, h: 58, es: 'Cabeza', en: 'Head' },
-  { id: 'amuleto', x: 199, y: 54, w: 29, h: 29, es: 'Amuleto', en: 'Amulet' },
-  { id: 'arma', x: 20, y: 54, w: 58, h: 116, es: 'Arma', en: 'Weapon' },
-  { id: 'mano_libre', x: 242, y: 54, w: 58, h: 116, es: 'Escudo o mano libre', en: 'Shield or off-hand' },
-  { id: 'pecho', x: 131, y: 106, w: 58, h: 87, es: 'Pecho', en: 'Chest' },
-  { id: 'guantes', x: 20, y: 178, w: 58, h: 58, es: 'Guantes', en: 'Gloves' },
-  { id: 'cinturon', x: 131, y: 201, w: 58, h: 29, es: 'Cinturón', en: 'Belt' },
-  { id: 'botas', x: 242, y: 178, w: 58, h: 58, es: 'Botas', en: 'Boots' },
-  { id: 'anillo_izq', x: 92, y: 201, w: 29, h: 29, es: 'Anillo', en: 'Ring' },
-  { id: 'anillo_der', x: 199, y: 201, w: 29, h: 29, es: 'Anillo', en: 'Ring' },
+  { id: 'arma', x: 14, y: 40, w: 44, h: 92, es: 'Arma', en: 'Weapon' },
+  { id: 'guantes', x: 14, y: 138, w: 44, h: 44, es: 'Guantes', en: 'Gloves' },
+  { id: 'casco', x: 62, y: 40, w: 40, h: 40, es: 'Cabeza', en: 'Head' },
+  { id: 'pecho', x: 62, y: 84, w: 40, h: 56, es: 'Pecho', en: 'Chest' },
+  { id: 'cinturon', x: 62, y: 144, w: 40, h: 38, es: 'Cinturón', en: 'Belt' },
+  { id: 'amuleto', x: 218, y: 40, w: 40, h: 30, es: 'Amuleto', en: 'Amulet' },
+  { id: 'anillo_izq', x: 218, y: 74, w: 40, h: 30, es: 'Anillo', en: 'Ring' },
+  { id: 'anillo_der', x: 218, y: 108, w: 40, h: 30, es: 'Anillo', en: 'Ring' },
+  { id: 'talisman', x: 218, y: 142, w: 40, h: 40, es: 'Talismán', en: 'Talisman' },
+  { id: 'mano_libre', x: 262, y: 40, w: 44, h: 92, es: 'Escudo o mano libre', en: 'Shield or off-hand' },
+  { id: 'botas', x: 262, y: 138, w: 44, h: 44, es: 'Botas', en: 'Boots' },
 ];
-const BOLSA = { x: 15, y: 252, cols: 10, filas: 4 } as const;
+/** El nicho donde se ve el héroe con todo lo que lleva puesto. */
+export const NICHO = { x: 106, y: 38, w: 108, h: 146 } as const;
+/** La bolsa: 10x5 casilleros de 29 px y tres bolsas con pestañas. */
+export const BOLSA = { x: 15, y: 234, cols: 10, filas: 5, bolsas: 3 } as const;
 
 const SILUETAS: Record<string, LootItem> = {
   casco: baseArmor('helm', 'placas', 2), amuleto: { id: 'a', name: { es: '', en: '' }, rarity: 'normal', base: { cat: 'jewel', icon: 'amulet' }, level: 1, stats: { mods: [] } },
@@ -1902,41 +1884,235 @@ const SILUETAS: Record<string, LootItem> = {
   cinturon: baseArmor('belt', 'cuero', 2), botas: baseArmor('boots', 'placas', 2),
   anillo_izq: { id: 'r', name: { es: '', en: '' }, rarity: 'normal', base: { cat: 'jewel', icon: 'ring' }, level: 1, stats: { mods: [] } },
   anillo_der: { id: 'r', name: { es: '', en: '' }, rarity: 'normal', base: { cat: 'jewel', icon: 'ring' }, level: 1, stats: { mods: [] } },
+  talisman: { id: 't', name: { es: '', en: '' }, rarity: 'normal', base: { cat: 'jewel', icon: 'amulet' }, level: 1, stats: { mods: [] } },
 };
 
-/** Inventario: muñeco de equipo (10 casilleros) y bolsa de 10x4. vacio = sin objetos (con siluetas). */
-export function panelInventario(idioma: Idioma = 'es', o: { vacio?: boolean; oro?: number } = {}): Panel {
+/** Un arma 3D del motor para el inventario: de pie, de frente, pintada al tamaño exacto de su casilla. */
+export interface Arma3D { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto }
+const cacheArma3D = new Map<string, Raster>();
+export function iconoArma3D(a: Arma3D, w: number, h: number, cuadro = 0): Raster {
+  const k = `${JSON.stringify(a)}|${w}|${h}|${cuadro % 8}`;
+  const c = cacheArma3D.get(k);
+  if (c) return c;
+  const pinta = (escala: number) => { const e = armaSuelta(a.tipo, { ...a, escala }, 'icono', cuadro); return pintarEscena({ piezas: e.piezas, resplandor: e.resplandor, sinSombra: true, ss: 1 }).img; };
+  const r1 = pinta(1);
+  const k1 = Math.min((w - 4) / Math.max(1, r1.w), (h - 4) / Math.max(1, r1.h));
+  let r = pinta(Math.max(0.5, k1 * 0.96));
+  if (r.w > w || r.h > h) r = centrado(r, Math.min(w, r.w), Math.min(h, r.h));
+  cacheArma3D.set(k, r);
+  return r;
+}
+
+/** Un objeto en la bolsa: dónde está, cuánto ocupa y lo que se dibuja encima (cantidad, durabilidad, engastes, si es mejor). */
+export interface ObjetoInv {
+  it: LootItem; x: number; y: number; w: number; h: number;
+  arma3d?: Arma3D;
+  cantidad?: number;
+  /** durabilidad 0..1 (sin valor = no se gasta) */
+  durabilidad?: number;
+  /** engastes: null vacío o lo engastado ('rubi', 'zafiro', 'esmeralda', 'amatista', 'diamante', 'topacio', 'runa') */
+  engastes?: (string | null)[];
+  /** comparado con lo que lleva puesto: 1 mejor, -1 peor */
+  compara?: 1 | -1 | 0;
+  nuevo?: boolean;
+}
+
+const COLOR_GEMA: Record<string, C3> = { rubi: [220, 40, 40], zafiro: [60, 110, 240], esmeralda: [40, 200, 90], amatista: [170, 70, 220], diamante: [235, 240, 255], topacio: [240, 200, 60], runa: [210, 170, 90] };
+
+/** Fondo de la rareza bajo un objeto: degradé del color, borde fino y un halo para lo único y los conjuntos. */
+function fondoRareza(l: Lienzo, it: LootItem, x: number, y: number, w: number, h: number) {
+  const rz = RAREZA_DE[it.rarity];
+  if (rz === 'normal') { for (let j = 1; j < h - 1; j++) for (let i = 1; i < w - 1; i++) l.mul(x + i, y + j, 0.92); return; }
+  const col = COLOR_RAREZA[rz];
+  for (let j = 1; j < h - 1; j++) for (let i = 1; i < w - 1; i++) {
+    const g = Math.max(0, 1 - Math.hypot((i - w / 2) / (w * 0.62), (j - h / 2) / (h * 0.62)));
+    l.px(x + i, y + j, escalar(col, 0.32), 0.18 + g * 0.22);
+  }
+  for (let i = 1; i < w - 1; i++) { l.px(x + i, y + 1, col, 0.45); l.px(x + i, y + h - 2, col, 0.35); }
+  for (let j = 1; j < h - 1; j++) { l.px(x + 1, y + j, col, 0.45); l.px(x + w - 2, y + j, col, 0.35); }
+  if (rz === 'unico' || rz === 'set') for (let j = 2; j < h - 2; j++) for (let i = 2; i < w - 2; i++) { const borde = Math.min(i, j, w - 1 - i, h - 1 - j); if (borde < 4) l.suma(x + i, y + j, col, (4 - borde) * 0.035); }
+}
+
+/** Achica un raster promediando (para que los íconos no se corten ni se salgan de su casilla). */
+function reducir(r: Raster, w: number, h: number): Raster {
+  const o = createRaster(Math.max(1, w), Math.max(1, h));
+  const kx = r.w / o.w, ky = r.h / o.h;
+  for (let y = 0; y < o.h; y++) for (let x = 0; x < o.w; x++) {
+    let a = 0, rr = 0, g = 0, b = 0, n = 0;
+    for (let j = Math.floor(y * ky); j < Math.min(r.h, Math.ceil((y + 1) * ky)); j++) for (let i = Math.floor(x * kx); i < Math.min(r.w, Math.ceil((x + 1) * kx)); i++) {
+      const q = (j * r.w + i) * 4, al = r.data[q + 3] / 255;
+      rr += r.data[q] * al; g += r.data[q + 1] * al; b += r.data[q + 2] * al; a += al; n++;
+    }
+    const d = (y * o.w + x) * 4;
+    if (a > 0) { o.data[d] = rr / a; o.data[d + 1] = g / a; o.data[d + 2] = b / a; o.data[d + 3] = a / n >= 0.43 ? 255 : Math.round((a / n) * 255); }
+  }
+  return o;
+}
+
+/** El ícono de un objeto ocupando su rectángulo: armas en 3D del motor, lo demás con el motor de botín (sin salirse). */
+function iconoEn(l: Lienzo, o: { it: LootItem; arma3d?: Arma3D }, x: number, y: number, w: number, h: number, cuadro = 0) {
+  let r: Raster;
+  if (o.arma3d) r = iconoArma3D(o.arma3d, w, h, cuadro);
+  else {
+    const ic = renderLoot(o.it, { px: Math.min(w, h) >= 50 ? 64 : 32, noAura: true });
+    const k = Math.min(1, (w - 2) / ic.w, (h - 2) / ic.h);
+    r = k < 1 ? reducir(ic, Math.floor(ic.w * k), Math.floor(ic.h * k)) : ic;
+  }
+  const px = x + Math.floor((w - r.w) / 2), py = y + Math.floor((h - r.h) / 2);
+  sombraDe(l, r, px, py, 2, 0.55);
+  l.pegar(r, px, py);
+}
+
+/** Lo que va encima del objeto: engastes, durabilidad, cantidad, flecha de comparación y chispa de nuevo. */
+function marcasObjeto(l: Lienzo, o: ObjetoInv, x: number, y: number, w: number, h: number, cuadro = 0) {
+  if (o.engastes?.length) {
+    const n = o.engastes.length, paso = Math.min(9, (w - 6) / n), x0 = x + Math.round((w - paso * (n - 1)) / 2);
+    o.engastes.forEach((g, k) => {
+      const cx = Math.round(x0 + k * paso), cy = y + h - 9;
+      for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) { const d = Math.hypot(i, j); if (d <= 3.2) l.px(cx + i, cy + j, d > 2.3 ? P.hierro[1] : g ? escalar(COLOR_GEMA[g] ?? [200, 200, 200], 0.55 + (j < 0 ? 0.35 : 0) + (i < 0 ? 0.1 : 0)) : P.piedra[0]); }
+      if (g) l.px(cx - 1, cy - 1, [255, 255, 255], 0.8);
+    });
+  }
+  if (o.durabilidad !== undefined) {
+    const bw = w - 8, f = clamp(o.durabilidad), col: C3 = f > 0.5 ? [90, 190, 80] : f > 0.25 ? [220, 180, 60] : [220, 60, 50];
+    l.rect(x + 4, y + h - 3, bw, 2, [10, 8, 8], 0.8); l.rect(x + 4, y + h - 3, Math.max(1, Math.round(bw * f)), 2, col);
+  }
+  if (o.cantidad && o.cantidad > 1) texto(l, x + w - 2, y + h - 10, String(o.cantidad), [240, 232, 210], { alin: 'der', sombra: TXT.negro });
+  if (o.compara) {
+    const col: C3 = o.compara > 0 ? [90, 230, 90] : [230, 70, 60], cx = x + w - 6, cy = y + 6;
+    for (let j = 0; j < 4; j++) for (let i = -j; i <= j; i++) l.px(cx + i, o.compara > 0 ? cy - 2 + j : cy + 2 - j, col);
+  }
+  if (o.nuevo) { const b = 0.5 + 0.5 * Math.sin(cuadro * 0.8); for (const [i, j] of [[0, -2], [0, 2], [-2, 0], [2, 0], [0, -1], [0, 1], [-1, 0], [1, 0], [0, 0]]) l.suma(x + 6 + i, y + 6 + j, [255, 240, 180], 0.4 + b * 0.5); }
+}
+
+/** Objetos de ejemplo para el inventario de muestra (del motor de botín y del arsenal 3D). */
+export function objetosDeMuestra() {
+  const cosa = (id: string, es: string, en: string, base: Record<string, unknown>): LootItem => ({ id, name: { es, en }, rarity: 'normal', base, level: 1, stats: { mods: [] } }) as unknown as LootItem;
+  return {
+    equipo: {
+      casco: { it: L('corona_del_rey_caido') }, amuleto: { it: L('collar_de_thor') },
+      arma: { it: L('filo_del_alba'), arma3d: { tipo: 'espada', mat: 'cu_oro', encanto: 'sagrado' } as Arma3D },
+      mano_libre: { it: L('escudo_de_la_casa_gg') }, pecho: { it: baseArmor('chest', 'placas', 5) }, guantes: { it: L('guanteletes_del_titan') },
+      cinturon: { it: L('cinto_del_gigante') }, botas: { it: L('botas_de_siete_leguas') },
+      anillo_izq: { it: L('anillo_del_ojo_eterno') }, anillo_der: { it: L('sello_del_liche') },
+      talisman: { it: rollItem(cosa('talisman', 'Talismán', 'Talisman', { cat: 'jewel', icon: 'amulet' }), 'magic', 12) },
+    } as Record<string, { it: LootItem; arma3d?: Arma3D }>,
+    bolsa: [
+      { it: L('beso_de_la_vibora'), arma3d: { tipo: 'espada', mat: 'cu_placa_oscura', encanto: 'fuego' }, x: 0, y: 0, w: 1, h: 3, durabilidad: 0.9, engastes: ['rubi'], compara: 1, nuevo: true },
+      { it: rollItem(baseWeapon('sword', 3), 'rare', 4), arma3d: { tipo: 'mandoble', mat: 'cu_placa', encanto: 'hielo' }, x: 1, y: 0, w: 2, h: 4, durabilidad: 0.62, engastes: ['zafiro', null, null], compara: 1 },
+      { it: rollItem(baseWeapon('axe', 3), 'magic', 7), arma3d: { tipo: 'hacha', mat: 'cu_placa', mango: 'madera' }, x: 3, y: 0, w: 2, h: 3, durabilidad: 0.3, compara: -1 },
+      { it: rollItem(baseArmor('chest', 'malla', 4), 'rare', 3), x: 5, y: 0, w: 2, h: 3, durabilidad: 0.8, engastes: [null, null] },
+      { it: rollItem(baseArmor('helm', 'placas', 3), 'rare', 5), x: 7, y: 0, w: 2, h: 2, durabilidad: 0.55, compara: -1 },
+      { it: rollItem(baseOffhand('shield_kite', 3), 'magic', 6), x: 7, y: 2, w: 2, h: 3, durabilidad: 0.95, engastes: ['esmeralda', 'amatista'] },
+      { it: baseArmor('boots', 'cuero', 2), x: 3, y: 3, w: 2, h: 2, durabilidad: 0.4 },
+      { it: rollItem(baseWeapon('sword', 2), 'magic', 8), arma3d: { tipo: 'daga', mat: 'cu_hueso', encanto: 'veneno' }, x: 0, y: 3, w: 1, h: 2, durabilidad: 1 },
+      { it: cosa('pocion_vida', 'Poción de vida', 'Life potion', { cat: 'potion', kind: 'health', size: 'greater' }), x: 9, y: 0, w: 1, h: 1, cantidad: 6 },
+      { it: cosa('pocion_mana', 'Poción de maná', 'Mana potion', { cat: 'potion', kind: 'mana', size: 'greater' }), x: 9, y: 1, w: 1, h: 1, cantidad: 4 },
+      { it: cosa('pocion_rejuv', 'Poción de rejuvenecer', 'Rejuvenation potion', { cat: 'potion', kind: 'rejuv', size: 'normal' }), x: 9, y: 2, w: 1, h: 1, cantidad: 2 },
+      { it: cosa('rubi', 'Rubí', 'Ruby', { cat: 'gem', kind: 'ruby', grade: 'flawless' }), x: 5, y: 3, w: 1, h: 1 },
+      { it: cosa('amatista', 'Amatista', 'Amethyst', { cat: 'gem', kind: 'amethyst', grade: 'perfect' }), x: 6, y: 3, w: 1, h: 1 },
+      { it: cosa('runa', 'Runa', 'Rune', { cat: 'rune', index: 6 }), x: 5, y: 4, w: 1, h: 1, cantidad: 3 },
+      { it: cosa('pergamino', 'Pergamino de regreso', 'Return scroll', { cat: 'consumable', icon: 'scroll_portal' }), x: 9, y: 3, w: 1, h: 1, cantidad: 12 },
+      { it: cosa('llave', 'Llave', 'Key', { cat: 'consumable', icon: 'key' }), x: 9, y: 4, w: 1, h: 1, cantidad: 3 },
+      { it: rollItem(cosa('anillo', 'Anillo', 'Ring', { cat: 'jewel', icon: 'ring' }), 'rare', 11), x: 6, y: 4, w: 1, h: 1, compara: 1, nuevo: true },
+    ] as ObjetoInv[],
+  };
+}
+
+export interface OpcInventario {
+  vacio?: boolean; oro?: number;
+  /** el héroe que se ve en el nicho (por omisión un templario leyenda) */
+  heroe?: { cuerpo: Cuerpo; equipo: Equipo };
+  /** lo que lleva puesto por casillero y lo que hay en la bolsa activa */
+  equipo?: Record<string, { it: LootItem; arma3d?: Arma3D }>;
+  bolsa?: ObjetoInv[];
+  /** bolsa activa (0..2) */
+  bolsaActiva?: number;
+  /** resumen de estadísticas del héroe */
+  resumen?: { danio: [number, number]; defensa: number; res: [number, number, number, number]; peso: [number, number] };
+  cuadro?: number;
+}
+
+const cacheHeroe = new Map<string, Raster>();
+/** El héroe con su equipo, casi al doble de tamaño (pintado así, no agrandado), mirando de frente y respirando. */
+export function heroeEnNicho(cuerpo: Cuerpo, equipo: Equipo, cuadro = 0): Raster {
+  const k = JSON.stringify([cuerpo, equipo, cuadro % 4]);
+  const c = cacheHeroe.get(k);
+  if (c) return c;
+  const e = personajeEscena({ ...cuerpo, alto: (cuerpo.alto ?? 1) * 1.9 }, equipo, 'so', 'quieto', cuadro % 4);
+  const r = pintarEscena({ ...e, sinSombra: true, ss: 1 }).img;
+  cacheHeroe.set(k, r);
+  return r;
+}
+
+/** Inventario: el héroe en su nicho con 11 casilleros de equipo alrededor, resumen, tres bolsas de 10x5 y oro. */
+export function panelInventario(idioma: Idioma = 'es', o: OpcInventario = {}): Panel {
   const { l, zonas } = marcoPanel(idioma === 'es' ? 'Inventario' : 'Inventory');
-  const W = PANEL.w;
-  // silueta grabada del héroe detrás del equipo
-  const fig = new Mascara(W, PANEL.h);
-  fig.disco(160, 68, 17);
-  for (let y = 86; y < 240; y++) { const w = y < 120 ? 26 + (y - 86) * 0.9 : y < 200 ? 56 - (y - 120) * 0.25 : 36; for (let x = -w; x <= w; x++) if (Math.abs(x) > w - 1.5 || y === 239) fig.set(160 + x, y); }
-  grabar(l, fig, 0, 0, 0.6);
+  const W = PANEL.w, cuadro = o.cuadro ?? 0;
   const muestra = objetosDeMuestra();
+  // ---- el nicho del héroe: arco de piedra oscura con la luz de una antorcha y su sombra en el piso
+  const N = NICHO;
+  piedra(l, N.x, N.y, N.w, N.h, { luz: 0.1, contraste: 0.6, grietas: 2, semilla: 41 });
+  for (let j = 0; j < N.h; j++) for (let i = 0; i < N.w; i++) {
+    const dx = (i - N.w / 2) / (N.w * 0.55), dy = (j - N.h * 0.42) / (N.h * 0.6);
+    const g = Math.max(0, 1 - Math.hypot(dx, dy));
+    l.suma(N.x + i, N.y + j, [255, 170, 90], g * g * 0.13);
+    if (j < 22 && Math.hypot(i - N.w / 2, (j - 22) * 2.3) > N.w / 2 - 1) l.mul(N.x + i, N.y + j, 0.35);
+  }
+  sombraInterna(l, N.x, N.y, N.w, N.h, 6, 0.6);
+  bisel(l, N.x - 2, N.y - 2, N.w + 4, N.h + 4, P.hierro, 2, { hundido: true });
+  if (!o.vacio) {
+    const hh = o.heroe ?? HEROE_MUESTRA;
+    const fig = heroeEnNicho(hh.cuerpo, hh.equipo, cuadro);
+    const k = Math.min(1, (N.h - 10) / fig.h), f1 = k < 1 ? reducir(fig, Math.floor(fig.w * k), Math.floor(fig.h * k)) : fig;
+    const f2 = f1.w > N.w - 4 ? centrado(f1, N.w - 4, f1.h) : f1;
+    // sombra suave en el piso del nicho
+    const sx = N.x + N.w / 2, sy = N.y + N.h - 8;
+    for (let j = -6; j <= 6; j++) for (let i = -34; i <= 34; i++) { const d = Math.hypot(i / 34, j / 6); if (d < 1) l.mul(sx + i, sy + j, 0.55 + 0.45 * d); }
+    l.pegar(f2, N.x + Math.floor((N.w - f2.w) / 2), N.y + N.h - f2.h - 6);
+  }
+  zonas.push({ id: 'heroe', tipo: 'info', x: N.x, y: N.y, w: N.w, h: N.h, es: 'Tu héroe', en: 'Your hero' });
+  // ---- casilleros del equipo
+  const eq = o.equipo ?? muestra.equipo;
   for (const e of EQUIPO) {
     casillero(l, e.x, e.y, e.w, e.h, { luzFondo: 0.15 });
-    if (o.vacio) siluetaObjeto(l, SILUETAS[e.id], e.x, e.y, e.w, e.h);
-    else pegarObjeto(l, muestra.equipo[e.id], e.x + 2, e.y + 2, e.w - 4, e.h - 4);
+    const it = eq[e.id];
+    if (o.vacio || !it) siluetaObjeto(l, SILUETAS[e.id], e.x, e.y, e.w, e.h);
+    else { fondoRareza(l, it.it, e.x + 1, e.y + 1, e.w - 2, e.h - 2); iconoEn(l, it, e.x + 2, e.y + 2, e.w - 4, e.h - 4, cuadro); }
     zonas.push({ id: `equipo_${e.id}`, tipo: 'equipo', x: e.x, y: e.y, w: e.w, h: e.h, es: e.es, en: e.en });
   }
-  // la bolsa
+  // ---- resumen de estadísticas
+  const R = o.resumen ?? { danio: [34, 78] as [number, number], defensa: 412, res: [45, 30, 62, 20] as [number, number, number, number], peso: [42, 120] as [number, number] };
+  const ys = 190;
+  placa(l, 14, ys, W - 28, 28);
+  texto(l, 22, ys + 4, idioma === 'es' ? 'Daño' : 'Damage', TXT.tenue); texto(l, 22, ys + 15, `${R.danio[0]}-${R.danio[1]}`, TXT.oro);
+  texto(l, 96, ys + 4, idioma === 'es' ? 'Defensa' : 'Defense', TXT.tenue); texto(l, 96, ys + 15, String(R.defensa), TXT.oro);
+  texto(l, 168, ys + 4, idioma === 'es' ? 'Resistencias' : 'Resistances', TXT.tenue);
+  const colRes: C3[] = [[240, 110, 50], [110, 170, 255], [250, 230, 90], [110, 220, 90]];
+  R.res.forEach((v, k) => texto(l, 168 + k * 33, ys + 15, String(v), colRes[k]));
+  zonas.push({ id: 'resumen', tipo: 'info', x: 14, y: ys, w: W - 28, h: 28, es: 'Resumen', en: 'Summary' });
+  // ---- pestañas de las bolsas y ordenar
+  const act = o.bolsaActiva ?? 0, yt = BOLSA.y - 14;
+  for (let b = 0; b < BOLSA.bolsas; b++) { pestana(l, BOLSA.x + b * 40, yt, 38, 13, ['I', 'II', 'III'][b], b === act); zonas.push({ id: `bolsa_pestana_${b + 1}`, tipo: 'pestana', x: BOLSA.x + b * 40, y: yt, w: 38, h: 13, es: `Bolsa ${b + 1}`, en: `Bag ${b + 1}` }); }
+  botonTexto(l, W - 15 - 70, yt - 1, 70, 14, idioma === 'es' ? 'Ordenar' : 'Sort');
+  zonas.push({ id: 'ordenar', tipo: 'boton', x: W - 15 - 70, y: yt - 1, w: 70, h: 14, es: 'Ordenar la bolsa', en: 'Sort the bag' });
+  // ---- la bolsa
   rejilla(l, BOLSA.x, BOLSA.y, BOLSA.cols, BOLSA.filas);
-  if (!o.vacio) for (const b of muestra.bolsa) {
-    const x = BOLSA.x + b.x * CELDA_INV, y = BOLSA.y + b.y * CELDA_INV;
-    pegarObjeto(l, b.it, x + 1, y + 1, b.w * CELDA_INV - 1, b.h * CELDA_INV - 1);
+  const bolsa = o.vacio ? [] : o.bolsa ?? muestra.bolsa;
+  for (const b of bolsa) {
+    const x = BOLSA.x + b.x * CELDA_INV, y = BOLSA.y + b.y * CELDA_INV, w = b.w * CELDA_INV + 1, h = b.h * CELDA_INV + 1;
+    fondoRareza(l, b.it, x + 1, y + 1, w - 2, h - 2);
+    iconoEn(l, b, x + 2, y + 2, w - 4, h - 4, cuadro);
+    marcasObjeto(l, b, x + 1, y + 1, w - 2, h - 2, cuadro);
   }
   for (let j = 0; j < BOLSA.filas; j++) for (let i = 0; i < BOLSA.cols; i++) zonas.push({ id: `bolsa_${i}_${j}`, tipo: 'casillero', x: BOLSA.x + i * CELDA_INV, y: BOLSA.y + j * CELDA_INV, w: CELDA_INV, h: CELDA_INV });
-  // oro y lema
-  const yo = BOLSA.y + BOLSA.filas * CELDA_INV + 12;
-  placa(l, 20, yo, 130, 20);
-  picto(l, 'oro', 26, yo + 6, P.laton);
-  texto(l, 38, yo + 7, (o.oro ?? 12450).toLocaleString('es-VE'), TXT.oro);
-  zonas.push({ id: 'oro', tipo: 'boton', x: 20, y: yo, w: 130, h: 20, es: 'Soltar oro', en: 'Drop gold' });
-  texto(l, 300, yo + 7, idioma === 'es' ? 'Peso 42 / 120' : 'Weight 42 / 120', TXT.tenue, { alin: 'der' });
-  const lema = idioma === 'es' ? 'Forjados en la misma llama' : 'Forged in the same flame';
-  texto(l, W / 2, yo + 34, lema, P.laton[4], { alin: 'centro', sombra: P.piedra[0] });
-  l.pegar(escudoGG(1), 26, yo + 22); l.pegar(escudoGG(1), W - 54, yo + 22);
+  // ---- oro y peso
+  const yo = BOLSA.y + BOLSA.filas * CELDA_INV + 8;
+  placa(l, 15, yo, 140, 20);
+  picto(l, 'oro', 21, yo + 6, P.laton);
+  texto(l, 34, yo + 7, (o.oro ?? 12450).toLocaleString(idioma === 'es' ? 'es-VE' : 'en-US'), TXT.oro);
+  zonas.push({ id: 'oro', tipo: 'boton', x: 15, y: yo, w: 140, h: 20, es: 'Soltar oro', en: 'Drop gold' });
+  texto(l, W - 17, yo + 7, `${idioma === 'es' ? 'Peso' : 'Weight'} ${R.peso[0]} / ${R.peso[1]}`, TXT.tenue, { alin: 'der' });
   return { img: l.r, zonas };
 }
 

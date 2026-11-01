@@ -132,14 +132,16 @@ registrar(
     },
   },
   {
-    id: 'mis_ojos_oscuridad', nombre: ['Ojos en la oscuridad', 'Eyes in the dark'], tema: 'misterio', variantes: ['par', 'muchos'], cuadros: 8, t: 4, huella: [1, 1], bloquea: false, plano: true,
+    id: 'mis_ojos_oscuridad', nombre: ['Ojos en la oscuridad', 'Eyes in the dark'], tema: 'misterio', variantes: ['par', 'muchos'], cuadros: 8, t: 4, huella: [1, 1], bloquea: false,
     armar: (v, f, a) => {
       const ps: Pieza[] = [], n = v === 'muchos' ? 6 : 1;
       for (let i = 0; i < n; i++) {
         const x = (a.r() - 0.5) * 30, y = (a.r() - 0.5) * 30, z = 18 + a.r() * 30, fase = Math.floor(a.r() * 8);
+        // una silueta negra encorvada que apenas se adivina, y sus ojos encima
+        ps.push(masa([bulto([x - 3, y - 3, z - 14], [6, 6, 14], { mat: 'cu_tela_negra' }), bulto([x - 1, y - 1, z], [4, 4, 4.5], { mat: 'cu_tela_negra' }), hueso([x - 3, y - 3, z - 8], [x + 2, y + 2, z - 20], 1.6, 1.2, { mat: 'cu_tela_negra' })], { mat: 'cu_tela_negra', suave: 3 }));
         if ((f + fase) % 8 === 7) continue; // parpadea
         const mat = a.r() < 0.5 ? 'cu_ojo_brasa' : a.r() < 0.5 ? 'cu_ojo_verde' : 'cu_ojo_hielo';
-        for (const s of [-1, 1]) ps.push(a.elipsoide(x + s * 1.6, y - s * 1.6, z, 0.7, 0.7, 0.45, { mat }));
+        for (const s of [-1, 1]) ps.push(a.elipsoide(x + 1.6 + s * 1.6, y + 1.6 - s * 1.6, z, 0.8, 0.8, 0.55, { mat }));
       }
       return ps.length ? ps : [a.esfera(0, 0, -50, 0.01, { mat: 'negro' })];
     },
@@ -155,7 +157,7 @@ registrar(
       // velas negras en las puntas
       for (let i = 0; i < 7; i++) { const an = (i / 7) * Math.PI * 2; const x = Math.cos(an) * (R + 3), y = Math.sin(an) * (R + 3); ps.push(a.cilindro(x, y, 0, 1.1, 5 + (i % 3), { mat: 'negro' }), a.elipsoide(x, y, 6.2 + (i % 3) + (f % 2) * 0.3, 0.6, 0.6, 1.2 + late * 0.5, { mat: 'luz_vela' })); }
       // algo que asoma en el centro
-      ps.push(a.elipsoide(0, 0, 1 + late * 3, 6 * late, 6 * late, 2 + late * 6, { mat: v === 'fuego' ? 'lava' : 'cu_sombra' }));
+      ps.push(a.elipsoide(0, 0, 1 + late * 3, 0.6 + 6 * late, 0.6 + 6 * late, 2 + late * 6, { mat: v === 'fuego' ? 'lava' : 'cu_sombra' }));
       return { piezas: ps, resplandor: { c: [0, 0, 4], r: 50, color: v === 'sangre' ? '#c01818' : v === 'sombra' ? '#7030c0' : '#ff6a10' } };
     },
   },
