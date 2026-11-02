@@ -604,13 +604,13 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       const peto = partes(e, cu, ['abdomen', 'pecho'], 1.5, to.mat);
       ps.push(masa(peto, { mat: to.mat, suave: 2.4 }));
       for (let i = 0; i < 3; i++) ps.push(cilindro(...(e.Pv ?? e.W)(0, 0, e.zc - 2 * S - i * 2.6 * S), (5.6 + i * 0.35) * A, 2.4 * S, { mat: to.mat, r1: (5.3 + i * 0.35) * A, tono: -i * 0.03 }));
-      ps.push(elipsoide(...T(4.9 * A, 0, e.zc + 15.2 * S), 0.6, 4.4 * A, 0.7, { mat: 'cu_oro', giro: 0 }));
+      ps.push(elipsoide(...T(4.9 * A, 0, e.zc + 15.2 * S), 0.6, 4.4 * A, 0.7, { mat: acentoDe(to.linea), giro: 0 }));
       // brazos de placa: brazal superior, codera con aleta y remache, para que el brazo lea como armadura y no como maniquí
       for (const b of e.brazos) {
         const lado = nor(cruz(b.d1, [0, 0, 1]));
         ps.push(masa([hueso(mez(b.hom, b.codo, 0.28), mez(b.hom, b.codo, 0.86), 2.15 * A, 1.9 * A, { mat: to.mat })], { mat: to.mat }));
         ps.push(masa([bulto(b.codo, [2.2 * A, 2.2 * A, 2.0 * S], { eje: b.d1, mat: to.mat, tono: 0.06 }), bulto(add(add(b.codo, lado, b.s * 1.2 * A), b.d1, -0.4 * S), [0.8 * A, 2.0 * A, 1.7 * S], { eje: b.d1, mat: to.mat, tono: 0.1 })], { mat: to.mat, suave: 0.6 }));
-        ps.push(esfera(...add(b.codo, lado, b.s * 2.1 * A), 0.45, { mat: 'cu_oro' }));
+        ps.push(esfera(...add(b.codo, lado, b.s * 2.1 * A), 0.45, { mat: acentoDe(to.linea) }));
       }
     }
     if (to.tipo === 'cuero') ps.push(palo(T(4.2 * A, 4.5 * A, e.zc + 17 * S), T(4.4 * A, -4 * A, e.zc + 3 * S), 0.55 * S, { mat: 'cu_cuero_negro' }));
@@ -633,14 +633,14 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     // guanteletes: brazal acampanado hacia el puño y nudillos de placa
     if (mn.tipo === 'guanteletes') for (const b of e.brazos) {
       ps.push(masa([hueso(mez(b.codo, b.mun, 0.25), mez(b.codo, b.mun, 1.02), 1.75 * A, 2.15 * A, { mat: mn.mat, tono: 0.04 })], { mat: mn.mat }));
-      ps.push(cilindro(...add(b.mun, b.d2, -0.6 * S), 2.25 * A, 0.7 * S, { mat: mn.mat === 'cu_oro' ? 'cu_placa' : 'cu_oro', r1: 2.3 * A, eje: b.d2 }));
+      ps.push(cilindro(...add(b.mun, b.d2, -0.6 * S), 2.25 * A, 0.7 * S, { mat: mn.linea ? acentoDe(mn.linea) : mn.mat === 'cu_oro' ? 'cu_placa' : 'cu_oro', r1: 2.3 * A, eje: b.d2 }));
     }
   }
   // ---- hombreras
   if (eq.hombros) for (const b of e.brazos) {
     const h = eq.hombros, c = add(b.hom, [0, 0, 1.4 * S]);
     const fuera = nor(sub(b.hom, T(0, 0, e.hombroZ)));
-    if (h.tipo === 'placas') { ps.push(masa([bulto(add(c, fuera, 0.8), [4.4 * A, 4.0 * A, 3.0 * S], { mat: h.mat }), bulto(add(c, fuera, 1.6), [3.6 * A, 3.4 * A, 2.0 * S], { mat: h.mat, tono: 0.05 })], { mat: h.mat, suave: 0.8 })); ps.push(elipsoide(...add(add(c, fuera, 3.6 * A), [0, 0, -0.6]), 0.5, 0.5, 0.5, { mat: 'cu_oro' })); }
+    if (h.tipo === 'placas') { ps.push(masa([bulto(add(c, fuera, 0.8), [4.4 * A, 4.0 * A, 3.0 * S], { mat: h.mat }), bulto(add(c, fuera, 1.6), [3.6 * A, 3.4 * A, 2.0 * S], { mat: h.mat, tono: 0.05 })], { mat: h.mat, suave: 0.8 })); ps.push(elipsoide(...add(add(c, fuera, 3.6 * A), [0, 0, -0.6]), 0.5, 0.5, 0.5, { mat: acentoDe(h.linea) })); }
     else if (h.tipo === 'puas') {
       ps.push(masa([bulto(add(c, fuera, 0.8 * A), [3.8 * A, 3.4 * A, 2.2 * S], { mat: h.mat }), bulto(add(add(c, fuera, 1.6 * A), [0, 0, -1.6 * S]), [3.2 * A, 3.0 * A, 1.4 * S], { mat: h.mat, tono: -0.05 })], { mat: h.mat, suave: 0.9 }));
       for (let i = 0; i < 3; i++) { const base = add(add(c, fuera, (1 + i * 1.3) * A), [0, 0, (1.2 - i * 0.6) * S]); ps.push(palo(base, add(add(base, fuera, (2.5 + i) * A), [0, 0, (6.5 - i * 1.6) * S]), (1.1 - i * 0.15) * A, { mat: h.mat === 'cu_hueso' ? 'cu_hueso' : h.mat, r1: 0.08 })); }
@@ -711,6 +711,8 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     ps.push(masa([hueso(a, b, 1.8 * A, 1.3 * A, { mat: cu.cola }), hueso(b, c, 1.3 * A, 0.8 * A, { mat: cu.cola }), hueso(c, d, 0.8 * A, 0.3 * A, { mat: cu.cola })], { mat: cu.cola, suave: 1.2 }));
   }
   if (cu.alas) ps.push(...alas(e, cu.alas, acc, f));
+  // ---- las formas de las líneas épicas sobre cada pieza (escamas, crestas, filigrana, lava, alas, percebes...)
+  ps.push(...adornos(e, cu, eq, f));
   // ---- armas y mano izquierda
   if (eq.arma && eq.arma.tipo !== 'nada' && eq.arma.tipo !== 'puno') {
     ps.push(...arma(e, eq.arma.tipo, e.brazos[0], eq.arma.mat ?? 'cu_placa', eq.arma.mango ?? 'cu_cuero', eq.arma.gema));
@@ -1111,7 +1113,8 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
         else ps.push(palo(arr, abj, 0.15 * S, { mat: 'cuerda' }));
         // la flecha: del culatín en la cuerda, apoyada sobre el puño izquierdo, con la punta delante del arco
         const apoyo = add(c, arriba, 1.1 * S), punta = add(apoyo, tiro, 6 * S);
-        if (e.pose?.flecha !== false && (tira || len(sub(m, culatin)) < 6 * S)) {
+        // (los arcos nuevos sueltos, sin quien los tense, no llevan la flecha que flotaría delante)
+        if (e.pose?.flecha !== false && (tira || len(sub(m, culatin)) < 6 * S) && (tipo === 'arco' || e.ejesT)) {
           ps.push(palo(culatin, punta, 0.3 * S, { mat: 'madera_lisa' }));
           ps.push(poliedro([add(punta, arriba, 0.8), add(punta, arriba, -0.8), add(punta, tiro, 2.5 * S)], { mat }));
         }
@@ -1131,6 +1134,202 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
       break;
     }
     default: ps.push(...armaEpica(e, tipo, b, mat, mango, gema)); break;
+  }
+  return ps;
+}
+
+/** El marco de una hoja en el puño: el canto (ancho de la hoja) y el plano (hacia donde mira su cara). */
+function marcoArma(dd: V3, F: V3): [V3, V3] {
+  let canto = nor(cruz(dd, F)); if (!isFinite(canto[0]) || len(cruz(dd, F)) < 0.2) canto = nor(cruz(dd, [0, 0, 1]));
+  return [canto, nor(cruz(canto, dd))];
+}
+interface Ctrl { p: V3; an: number; gr: number; w: V3 }
+/**
+ * Lámina de masa: una línea media muestreada cada `paso` con bultos chatos orientados a su tangente (ancho hacia
+ * `w`, grueso hacia la cara). Los anchos y gruesos se interpolan entre los puntos de control, así la hoja se afina,
+ * se ensancha o se curva sin aristas duras: el lomo y el filo quedan como una lente.
+ */
+function cinta(ctrl: Ctrl[], mat: string, paso: number, tono?: number): Comp[] {
+  const cs: Comp[] = [];
+  for (let i = 0; i < ctrl.length - 1; i++) {
+    const A = ctrl[i], B = ctrl[i + 1], d = sub(B.p, A.p), L = len(d), n = Math.max(1, Math.round(L / paso)), t = nor(d);
+    for (let j = 0; j < n; j++) {
+      const u = (j + 0.5) / n, w0 = nor(mez(A.w, B.w, u));
+      const w = nor(sub(w0, [t[0] * dot3(w0, t), t[1] * dot3(w0, t), t[2] * dot3(w0, t)]));
+      cs.push(bulto(mez(A.p, B.p, u), [(L / n) * 1.1, A.an + (B.an - A.an) * u, A.gr + (B.gr - A.gr) * u], { ejes: [t, w, cruz(t, w)], mat, tono }));
+    }
+  }
+  return cs;
+}
+/** Cadena de huesos por una polilínea, con el radio que va de r0 a r1. */
+function cadenaHuesos(pts: V3[], r0: number, r1: number, mat: string, tono?: number): Comp[] {
+  return pts.slice(1).map((q, i) => hueso(pts[i], q, r0 + (r1 - r0) * (i / (pts.length - 1)), r0 + (r1 - r0) * ((i + 1) / (pts.length - 1)), { mat, tono }));
+}
+
+/**
+ * El arsenal épico: katana, estoque, falcata, tridente, lucero del alba, jabalina, gran báculo, orbe de mano, katar,
+ * hoz y lanza del dragón (los arcos nuevos van con el arco). Todo en masa: hojas de bultos chatos que se afinan,
+ * empuñaduras forradas, guardas y cunas de huesos que se funden, cabezas con púas que nacen de la bola.
+ */
+function armaEpica(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string, gema?: string): Pieza[] {
+  const { S, F } = e;
+  const dd = b.eje, m = b.mano, ps: Pieza[] = [];
+  const [canto, plano] = marcoArma(dd, F);
+  /** Punto en unidades de S: k a lo largo del arma, c hacia el canto, p hacia la cara. */
+  const P = (k: number, c = 0, p = 0): V3 => add(add(add(m, dd, k * S), canto, c * S), plano, p * S);
+  /** Hoja recta o curva por puntos [k, corrimiento de canto, ancho, grueso]. */
+  const hoja = (pts: [number, number, number, number][], mt = mat, extra: Comp[] = [], suave = 0.3) => masa([...cinta(pts.map(([k, c, an, gr]) => ({ p: P(k, c), an: an * S, gr: gr * S, w: canto })), mt, 1.05 * S), ...extra], { mat: mt, suave: suave * S });
+  const un = (cs: Comp[], mt: string, suave = 0.35) => masa(cs, { mat: mt, suave: suave * S });
+  const ejesH: [V3, V3, V3] = [dd, canto, plano];
+  const guarn = mat === 'cu_oro' ? 'cu_placa_oscura' : 'cu_oro';
+  switch (tipo) {
+    case 'katana': {
+      // tsuka larga con el encordado en rombos, kashira, tsuba en óvalo, habaki y la hoja con su sori y su kissaki
+      const tsuka: Comp[] = [hueso(P(-7.2), P(-0.3), 0.74 * S, 0.7 * S, { mat: mango })];
+      for (let i = 0; i < 5; i++) tsuka.push(bulto(P(-6.4 + i * 1.3), [0.42 * S, 0.86 * S, 0.86 * S], { eje: dd, mat: mango, tono: 0.08 }));
+      ps.push(un(tsuka, mango, 0.25));
+      ps.push(un([bulto(P(-7.6), [0.6 * S, 0.84 * S, 0.84 * S], { eje: dd, mat: guarn }), hueso(P(0.35), P(1.7), 0.66 * S, 0.6 * S, { mat: guarn })], guarn, 0.2));
+      ps.push(un([bulto(P(0.05), [0.32 * S, 2.1 * S, 1.75 * S], { ejes: ejesH, mat: 'cu_placa_oscura' }), bulto(P(0.05), [0.24 * S, 2.28 * S, 1.92 * S], { ejes: ejesH, mat: guarn })], 'cu_placa_oscura', 0.15));
+      const sori = 2.0, L = 26.2;
+      ps.push(hoja([0.6, 3, 8, 13, 18, 22, 24.4, 25.5, 26.2].map((k) => { const u = k / L; return [k, sori * u * u, k > 24.4 ? 0.82 - ((k - 24.4) / 1.8) * 0.74 : 0.95 - u * 0.12, 0.32 - u * 0.1]; })));
+      break;
+    }
+    case 'estoque': {
+      // pomo en gota, puño con alambre, cazoleta, gavilanes con remates, guardamano en arco y la hoja larga y fina
+      const puno: Comp[] = [hueso(P(-4.6), P(-0.4), 0.55 * S, 0.62 * S, { mat: mango })];
+      for (let i = 0; i < 4; i++) puno.push(bulto(P(-4 + i * 1.1), [0.3 * S, 0.68 * S, 0.68 * S], { eje: dd, mat: mango, tono: 0.08 }));
+      ps.push(un(puno, mango, 0.2));
+      const g: Comp[] = [bulto(P(-5.15), [0.95 * S, 0.82 * S, 0.82 * S], { eje: dd, mat }), bulto(P(0.5), [0.55 * S, 1.8 * S, 1.8 * S], { ejes: ejesH, mat }), hueso(P(0.3, 3.4), P(0.3, -3.4), 0.3 * S, 0.3 * S, { mat })];
+      for (const s of [1, -1]) g.push(bulto(P(0.3 + s * 0.3, s * 3.65), [0.5 * S, 0.5 * S, 0.5 * S], { mat }));
+      g.push(...cadenaHuesos(Array.from({ length: 7 }, (_, i) => { const t = i / 6; return P(0.3 - 5.2 * t, 1.7 + Math.sin(Math.PI * t) * 1.4 - t * 1.5); }), 0.28 * S, 0.24 * S, mat));
+      for (const s of [1, -1]) g.push(...cadenaHuesos(Array.from({ length: 6 }, (_, i) => { const a = (i / 5) * Math.PI * 2; return P(1.2 + Math.sin(a) * 0.85, s * (1.05 + Math.cos(a) * 0.75)); }), 0.17 * S, 0.17 * S, mat));
+      ps.push(un(g, mat, 0.3));
+      ps.push(hoja([[0.9, 0, 0.6, 0.38], [6, 0, 0.5, 0.33], [14, 0, 0.42, 0.29], [22, 0, 0.32, 0.23], [26.2, 0, 0.17, 0.13], [27.6, 0, 0.05, 0.05]]));
+      break;
+    }
+    case 'falcata': {
+      // pomo en cabeza de ave que se cierra con el guardamano; la hoja estrecha junto al puño que se ensancha y se vence adelante
+      ps.push(un([hueso(P(-4.4), P(-0.2), 0.62 * S, 0.66 * S, { mat: mango })], mango));
+      const g: Comp[] = [...cadenaHuesos([P(-4.3), P(-5.3, 0.5), P(-5.8, 1.5), P(-5.4, 2.4)], 0.8 * S, 0.22 * S, mat), bulto(P(-5.5, 1.3), [0.6 * S, 0.7 * S, 0.62 * S], { mat })];
+      g.push(...cadenaHuesos(Array.from({ length: 7 }, (_, i) => { const t = i / 6; return P(-0.1 - 5.0 * t, 1.2 + Math.sin(Math.PI * t) * 1.1 + t * 0.9); }), 0.3 * S, 0.26 * S, mat));
+      g.push(bulto(P(0.25), [0.55 * S, 1.45 * S, 0.9 * S], { ejes: ejesH, mat }));
+      ps.push(un(g, mat, 0.3));
+      const ks = [0.6, 3, 6, 9, 12, 14.5, 17, 19, 20.4, 21.4], an = [0.85, 0.8, 1.05, 1.5, 1.85, 1.95, 1.7, 1.1, 0.55, 0.08], gr = [0.34, 0.33, 0.32, 0.3, 0.28, 0.26, 0.24, 0.2, 0.15, 0.06];
+      ps.push(hoja(ks.map((k, i) => [k, -0.5 * Math.sin((Math.PI * k) / 21.4) + 1.7 * Math.pow(k / 21.4, 3), an[i], gr[i]])));
+      // acanaladuras en las dos caras
+      for (const s of [1, -1]) ps.push(un([hueso(P(2, -0.35, s * 0.27), P(13, -0.1, s * 0.25), 0.13 * S, 0.1 * S, { mat, tono: -0.2 })], mat, 0.1));
+      break;
+    }
+    case 'tridente': {
+      ps.push(un([hueso(P(-18), P(26.6), 0.72 * S, 0.66 * S, { mat: mango })], mango, 0.2));
+      ps.push(un([hueso(P(-2.6), P(2.6), 0.84 * S, 0.84 * S, { mat: 'cu_cuero' }), bulto(P(-2.6), [0.4 * S, 0.95 * S, 0.95 * S], { eje: dd, mat: 'cu_cuero', tono: 0.06 }), bulto(P(2.6), [0.4 * S, 0.95 * S, 0.95 * S], { eje: dd, mat: 'cu_cuero', tono: 0.06 })], 'cu_cuero', 0.2));
+      ps.push(un([bulto(P(-18.3), [1.0 * S, 0.78 * S, 0.78 * S], { eje: dd, mat })], mat));
+      const c: Comp[] = [hueso(P(25.8), P(28.4), 0.8 * S, 0.98 * S, { mat }), bulto(P(26), [0.42 * S, 1.12 * S, 1.12 * S], { eje: dd, mat, tono: 0.06 }), hueso(P(28.2), P(36.4), 0.64 * S, 0.3 * S, { mat }), bulto(P(37.2), [1.5 * S, 0.88 * S, 0.3 * S], { ejes: ejesH, mat })];
+      for (const s of [1, -1]) {
+        c.push(...cadenaHuesos([P(28.3), P(28.7, s * 1.8), P(29.6, s * 3.1), P(31.4, s * 3.5), P(34.6, s * 3.3)], 0.66 * S, 0.32 * S, mat));
+        c.push(bulto(P(35.6, s * 3.2), [1.3 * S, 0.72 * S, 0.28 * S], { ejes: ejesH, mat }));
+        c.push(hueso(P(35.2, s * 3.0), P(34.0, s * 2.15), 0.3 * S, 0.08 * S, { mat }), hueso(P(36.2, s * 0.45), P(35.0, s * 1.15), 0.26 * S, 0.07 * S, { mat }));
+      }
+      ps.push(un(c, mat, 0.32));
+      break;
+    }
+    case 'maza_estrella': {
+      const asta: Comp[] = [hueso(P(-3), P(13.6), 0.8 * S, 0.74 * S, { mat: mango })];
+      for (let i = 0; i < 4; i++) asta.push(bulto(P(-2.2 + i * 1.45), [0.36 * S, 0.92 * S, 0.92 * S], { eje: dd, mat: mango, tono: 0.08 }));
+      ps.push(un(asta, mango, 0.25));
+      const cab: Comp[] = [bulto(P(-3.4), [1.0 * S, 1.0 * S, 1.0 * S], { mat }), hueso(P(12.6), P(14.4), 0.95 * S, 1.25 * S, { mat }), bulto(P(16.6), [2.7 * S, 2.7 * S, 2.7 * S], { mat })];
+      for (const s of [1, -1]) cab.push(hueso(P(9.4, s * 0.82), P(13.4, s * 0.95), 0.3 * S, 0.36 * S, { mat }));
+      // púas repartidas en la esfera (espiral de Fibonacci), sin las que miran al mango
+      const N = 14, C = P(16.6);
+      for (let i = 0; i < N; i++) {
+        const z = 1 - (2 * (i + 0.5)) / N, r = Math.sqrt(1 - z * z), a = i * 2.39996;
+        if (z < -0.55) continue;
+        const dir = nor(add(add([dd[0] * z, dd[1] * z, dd[2] * z], canto, Math.cos(a) * r), plano, Math.sin(a) * r));
+        cab.push(hueso(add(C, dir, 2.0 * S), add(C, dir, 4.9 * S), 0.78 * S, 0.06 * S, { mat }));
+      }
+      ps.push(un(cab, mat, 0.45));
+      break;
+    }
+    case 'jabalina': {
+      ps.push(un([hueso(P(-15), P(20.6), 0.5 * S, 0.46 * S, { mat: mango })], mango, 0.2));
+      ps.push(un([hueso(P(-1.9), P(1.9), 0.64 * S, 0.64 * S, { mat: 'cu_cuero' }), ...[-1.9, 0, 1.9].map((k) => bulto(P(k), [0.3 * S, 0.74 * S, 0.74 * S], { eje: dd, mat: 'cu_cuero', tono: 0.08 }))], 'cu_cuero', 0.2));
+      ps.push(un([hueso(P(-15), P(-16.6), 0.5 * S, 0.1 * S, { mat }), hueso(P(19.8), P(22), 0.52 * S, 0.64 * S, { mat })], mat, 0.2));
+      ps.push(hoja([[21.6, 0, 0.55, 0.32], [23, 0, 1.15, 0.3], [24.8, 0, 1.25, 0.28], [26.5, 0, 0.9, 0.24], [27.8, 0, 0.4, 0.16], [28.6, 0, 0.06, 0.06]], mat, [hueso(P(21.6), P(27.4), 0.32 * S, 0.1 * S, { mat })]));
+      break;
+    }
+    case 'hoz': {
+      ps.push(un([hueso(P(-3.6), P(4.4), 0.66 * S, 0.62 * S, { mat: mango }), bulto(P(-3.9), [0.8 * S, 0.88 * S, 0.88 * S], { eje: dd, mat: mango, tono: -0.05 })], mango, 0.3));
+      ps.push(un([hueso(P(4.0), P(5.5), 0.74 * S, 0.7 * S, { mat }), bulto(P(4.1), [0.3 * S, 0.84 * S, 0.84 * S], { eje: dd, mat, tono: 0.06 })], mat, 0.15));
+      // la media luna en el plano del arma: arranca de la virola, sube y se vuelve hacia atrás afinándose (filo por dentro)
+      const C = P(5.6, 0, 4.4);
+      const dirG = (g: number): V3 => nor(add([-plano[0] * Math.cos(rad(g)), -plano[1] * Math.cos(rad(g)), -plano[2] * Math.cos(rad(g))], dd, Math.sin(rad(g))));
+      const gs = [0, 25, 50, 80, 110, 140, 165, 190, 208], an = [1.0, 1.08, 1.05, 0.95, 0.82, 0.62, 0.42, 0.22, 0.05];
+      ps.push(masa(cinta(gs.map((g, i) => ({ p: add(C, dirG(g), (4.5 - (g / 208) * 0.8) * S), an: an[i] * S, gr: (0.3 - i * 0.026) * S, w: dirG(g) })), mat, 1.0 * S), { mat, suave: 0.25 * S }));
+      break;
+    }
+    case 'orbe_mano': {
+      ps.push(un([hueso(P(-2.6), P(1.6), 0.6 * S, 0.68 * S, { mat: mango }), bulto(P(-2.9), [0.75 * S, 0.75 * S, 0.75 * S], { mat })], mango, 0.25));
+      const cuna: Comp[] = [bulto(P(2.0), [0.85 * S, 1.3 * S, 1.3 * S], { eje: dd, mat })];
+      for (let i = 0; i < 4; i++) {
+        const a = rad(45 + i * 90), r = nor(add([canto[0] * Math.cos(a), canto[1] * Math.cos(a), canto[2] * Math.cos(a)], plano, Math.sin(a)));
+        const Q = (k: number, d: number) => add(P(k), r, d * S);
+        cuna.push(...cadenaHuesos([Q(2.2, 0.9), Q(4.0, 2.5), Q(6.3, 2.6), Q(8.1, 1.2)], 0.52 * S, 0.12 * S, mat));
+      }
+      ps.push(un(cuna, mat, 0.35));
+      ps.push(esfera(...P(5.6), 2.15 * S, { mat: gema ?? 'magia' }));
+      break;
+    }
+    case 'katar': {
+      const g: Comp[] = [];
+      for (const s of [1, -1]) g.push(hueso(P(-4.4, s * 1.5), P(0.9, s * 1.55), 0.38 * S, 0.4 * S, { mat }), bulto(P(-4.6, s * 1.5), [0.5 * S, 0.5 * S, 0.5 * S], { mat }));
+      ps.push(un(g, mat, 0.25));
+      ps.push(un([hueso(P(-1, 1.5), P(-1, -1.5), 0.5 * S, 0.5 * S, { mat: mango }), hueso(P(-2.7, 1.5), P(-2.7, -1.5), 0.45 * S, 0.45 * S, { mat: mango })], mango, 0.2));
+      ps.push(hoja([[1.2, 0, 1.75, 0.42], [3, 0, 1.6, 0.4], [6, 0, 1.25, 0.34], [9, 0, 0.85, 0.26], [11.4, 0, 0.42, 0.18], [13.2, 0, 0.06, 0.06]], mat, [bulto(P(1.3), [0.8 * S, 1.9 * S, 0.62 * S], { ejes: ejesH, mat }), hueso(P(1.6), P(11.8), 0.36 * S, 0.1 * S, { mat })]));
+      break;
+    }
+    case 'lanza_dragon': {
+      ps.push(un([hueso(P(-18), P(27.8), 0.76 * S, 0.7 * S, { mat: mango }), hueso(P(-18), P(-20.6, 0.7), 0.7 * S, 0.1 * S, { mat })], mango, 0.25));
+      for (const k of [-12, -6, 6, 12, 18, 24]) ps.push(un([bulto(P(k), [0.5 * S, 0.98 * S, 0.98 * S], { eje: dd, mat: 'cu_oro' })], 'cu_oro'));
+      // la cabeza del dragón: cráneo, hocico y mandíbula abierta, cuernos y cresta hacia atrás, y las alas (orejetas)
+      const cab: Comp[] = [
+        bulto(P(28.8, 0, 0.3), [1.9 * S, 1.3 * S, 1.45 * S], { ejes: ejesH, mat }), hueso(P(29.8, 0, 0.55), P(31.6, 0, 0.35), 1.0 * S, 0.62 * S, { mat }),
+        hueso(P(29.4, 0, -0.5), P(31.0, 0, -0.9), 0.7 * S, 0.4 * S, { mat }), hueso(P(28.2, 0, 1.2), P(25.8, 0, 1.5), 0.36 * S, 0.08 * S, { mat: 'cu_cuerno' }),
+      ];
+      for (const s of [1, -1]) {
+        cab.push(...cadenaHuesos([P(28.6, s * 0.8, 1.0), P(27.4, s * 1.4, 1.8), P(26.0, s * 1.8, 2.0)], 0.5 * S, 0.08 * S, 'cu_cuerno'));
+        for (let i = 0; i < 3; i++) {
+          const x = nor(add([-dd[0] * 0.75, -dd[1] * 0.75, -dd[2] * 0.75], canto, s * (0.55 + i * 0.2)));
+          cab.push(bulto(P(27.3 - i * 0.7, s * (2.1 + i * 0.55), -0.2), [(2.0 - i * 0.35) * S, 0.85 * S, 0.22 * S], { ejes: [x, nor(cruz(plano, x)), plano], mat, tono: -i * 0.04 }));
+        }
+      }
+      ps.push(un(cab, mat, 0.4));
+      for (const s of [1, -1]) ps.push(esfera(...P(29.9, s * 0.78, 0.85), 0.3 * S, { mat: 'cu_ojo_brasa' }));
+      // la hoja flamígera sale de las fauces
+      const ks = [31.2, 32.6, 34, 35.4, 36.8, 38.2, 39.6, 40.6, 41.4];
+      ps.push(hoja(ks.map((k, i) => [k, 0.45 * Math.sin((k - 31.2) * 0.95), 1.35 - (i / (ks.length - 1)) * 1.0 - (i === ks.length - 1 ? 0.3 : 0), 0.34 - i * 0.034])));
+      break;
+    }
+    case 'gran_baculo': {
+      const [pie, tope, up] = varaDe(e, m, 1.06);
+      let ex = nor(cruz(up, F)); if (len(cruz(up, F)) < 0.2) ex = nor(cruz(up, [1, 0, 0]));
+      const ey = cruz(up, ex), gv = rad(e.pose?.giroVara ?? 0);
+      // vara nudosa con un leve serpenteo y dos nudos
+      const N = 7, vs: Comp[] = [];
+      const Q = (t: number) => add(mez(pie, tope, t), ex, Math.sin(t * 9) * 0.3 * S * Math.sin(Math.PI * t));
+      for (let i = 0; i < N; i++) vs.push(hueso(Q(i / N), Q((i + 1) / N), (0.8 + 0.12 * (i / N)) * S, (0.8 + 0.12 * ((i + 1) / N)) * S, { mat: mango }));
+      for (const t of [0.36, 0.63]) vs.push(bulto(Q(t), [1.05 * S, 1.05 * S, 1.3 * S], { eje: up, mat: mango, tono: -0.05 }));
+      // corona: tres ramas que suben, se abren y se cierran sobre la gema
+      for (let i = 0; i < 3; i++) {
+        const a = gv + rad(i * 120), r = nor(add([ex[0] * Math.cos(a), ex[1] * Math.cos(a), ex[2] * Math.cos(a)], ey, Math.sin(a)));
+        const R = (h: number, d: number) => add(add(tope, up, h * S), r, d * S);
+        vs.push(...cadenaHuesos([R(-0.4, 0.3), R(2.4, 2.0), R(5.2, 3.0), R(7.8, 1.9), R(9.0, 0.3)], 0.9 * S, 0.14 * S, mango));
+      }
+      ps.push(masa(vs, { mat: mango, suave: 0.6 * S }));
+      ps.push(un([bulto(add(tope, up, -0.8 * S), [0.6 * S, 1.3 * S, 1.3 * S], { eje: up, mat }), bulto(Q(0.66), [0.5 * S, 1.2 * S, 1.2 * S], { eje: up, mat })], mat, 0.2));
+      ps.push(esfera(...add(tope, up, 5.2 * S), 2.2 * S, { mat: gema ?? 'magia' }));
+      break;
+    }
+    default: break;
   }
   return ps;
 }
@@ -1316,7 +1515,8 @@ function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArm
  * 'suelo' queda tirada en el piso y 'clavada' entra de punta en la tierra. Si tiene encantamiento, arde o brilla.
  */
 export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; gema?: string; encanto?: Encanto; escala?: number }, pose: 'flota' | 'suelo' | 'clavada' | 'icono', f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } {
-  const largo: Partial<Record<TipoArma, number>> = { espada: 24, cimitarra: 24, mandoble: 34, daga: 10, hacha: 23, hacha_doble: 31, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 31, garras: 9, varita: 11, baculo: 30, cetro: 16, arco: 30, ballesta: 16 };
+  const largo: Partial<Record<TipoArma, number>> = { espada: 24, cimitarra: 24, mandoble: 34, daga: 10, hacha: 23, hacha_doble: 31, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 31, garras: 9, varita: 11, baculo: 30, cetro: 16, arco: 30, ballesta: 16,
+    katana: 27, estoque: 28, falcata: 22, tridente: 38, maza_estrella: 21, arco_largo: 39, arco_corto: 26, jabalina: 29, gran_baculo: 34, orbe_mano: 11, katar: 13, hoz: 13, lanza_dragon: 42 };
   const L = largo[tipo] ?? 20;
   let mano: V3, eje: V3, F: V3 = [1, 0, 0];
   if (pose === 'flota') {
@@ -1324,14 +1524,16 @@ export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; ge
     F = [Math.cos(a), Math.sin(a), 0];
     eje = nor([F[0] * 0.75, F[1] * 0.75, 1]);
     mano = [0, 0, 14 + Math.sin(a) * 1.5];
-    if (tipo === 'baculo' || tipo === 'cetro') mano = [0, 0, 30];
+    if (esVara(tipo)) mano = [0, 0, 30];
+    if (tipo === 'arco_largo') mano = [0, 0, 21];
   } else if (pose === 'suelo') {
     eje = nor([1, -0.35, 0]); F = nor([0.35, 1, 0]);
     mano = [-L * 0.45, L * 0.16, 1.4];
-    if (tipo === 'baculo' || tipo === 'cetro') { mano = [0, 0, 30]; }
+    if (esVara(tipo)) { mano = [0, 0, 30]; }
   } else if (pose === 'icono') {
     // para el inventario: de pie; las hojas de frente a la cámara, las cabezas de hacha, martillo o guadaña de perfil
-    const deLado = ['hacha', 'hacha_doble', 'martillo', 'guadana', 'alabarda', 'mangual', 'maza'].includes(tipo);
+    // (los arcos nuevos y la hoz de perfil, para que se lea la curva de las palas y la media luna)
+    const deLado = ['hacha', 'hacha_doble', 'martillo', 'guadana', 'alabarda', 'mangual', 'maza', 'hoz', 'arco_largo', 'arco_corto', 'maza_estrella'].includes(tipo);
     eje = [0, 0, 1]; F = deLado ? nor([1, -1, 0]) : nor([1, 1, 0]); mano = [0, 0, 0];
   } else {
     eje = [0, 0, -1]; mano = [0, 0, L * 0.72]; F = nor([1, -1, 0]);

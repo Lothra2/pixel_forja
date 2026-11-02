@@ -17,7 +17,7 @@ import {
  */
 
 const M = MATERIALES;
-M.c2_agua = { rampa: ['#05090c', '#0a1218', '#101c24', '#182832', '#223644', '#2e4656', '#3e5a6a'], ruido: 0.2, escala: 0.08, brillo: 1 };
+M.c2_agua = { rampa: ['#04070a', '#081016', '#0d1820', '#13222c', '#1b2e3a', '#253c4a', '#344e5c'], ruido: 0.2, escala: 0.08, brillo: 0.9 };
 M.c2_agua_turquesa = { rampa: ['#041012', '#081c20', '#0e2a30', '#163c42', '#205056', '#2e666a', '#428082'], ruido: 0.2, escala: 0.08, brillo: 1 };
 M.c2_agua_negra = { rampa: ['#020203', '#050507', '#09090c', '#0f0f13', '#16161c', '#202028'], ruido: 0.12, escala: 0.06, brillo: 1.1 };
 M.c2_reflejo = { rampa: ['#141a1e', '#1e282e', '#2a363e', '#38464e', '#4a5a62', '#5e6e74'], ruido: 0.4, escala: 0.25, brillo: 0.6, patron: (p) => Math.sin((p[0] - p[1]) * 0.9) * 0.08 };
@@ -705,7 +705,10 @@ function paredesHueco(a: Arma, ps: Pieza[], cont: [number, number][], D: number,
       while (z > -D) { const fr = -z / D, rz = entre(a, 5, 8); off += (a.r() - 0.4) * 2.5; ps.push(pena(a, x + (dx / dl) * off, y + (dy / dl) * off, z - rz * 0.4, entre(a, 6, 9), entre(a, 4, 6), rz, { mat, tono: -fr * 0.6 + (a.r() - 0.5) * 0.1, n: 7 })); z -= rz * entre(a, 1.1, 1.4); }
     }
   }
-  ps.push(a.caja(cx, cy, -D - 4, 300, 300, 4, { mat: fondo }));
+  // el fondo: solo la parte que se ve por la boca (la boca corrida por el rayo de la cámara hasta esa hondura)
+  const k = Math.sqrt(1.5) * (D + 2), fp: V3[] = [];
+  for (const [x, y] of cont) for (const z of [-D - 4, -D]) fp.push([cx + (x - cx) * 1.25 - k, cy + (y - cy) * 1.25 - k, z]);
+  ps.push(a.poliedro(fp, { mat: fondo }));
 }
 
 registrar(
@@ -818,14 +821,14 @@ registrar(
       const mat = v === 'turquesa' ? 'c2_agua_turquesa' : 'c2_agua';
       // escalones de piedra de colada que bajan hacia la cámara, cada uno con su charquito
       for (let k = 0; k < n; k++) {
-        const z = (n - 1 - k) * 6 + 1, cx = -16 + k * 11 + (a.r() - 0.5) * 4, cy = -14 + k * 9 + (a.r() - 0.5) * 4, rx = 18 - k * 1.5 + a.r() * 4, ry = 13 + a.r() * 4;
-        ps.push(masa([bulto([cx, cy, z * 0.5], [rx + 3, ry + 3, z * 0.5 + 1.5], { giro: 30 }), bulto([cx + 4, cy + 4, z * 0.4], [rx * 0.7, ry * 0.7, z * 0.45 + 1], { giro: 10 })], { mat: 'c2_gour', suave: 2.5 }));
+        const z = (n - 1 - k) * 2.6 + 1, cx = -22 + k * 16 + (a.r() - 0.5) * 6, cy = 14 - k * 13 + (a.r() - 0.5) * 6, rx = 14 - k + a.r() * 4, ry = 11 + a.r() * 3;
+        ps.push(masa([bulto([cx, cy, 0], [rx + 3, ry + 3, z + 0.6], { giro: 30 }), bulto([cx + 5, cy + 3, 0], [rx * 0.7, ry * 0.8, z + 0.3], { giro: 10 })], { mat: 'c2_gour', suave: 2 }));
         if (v !== 'seca') {
           const os: Ovalo[] = [[cx - 1, cy - 1, rx - 1, ry - 2, 30]];
-          charco(a, ps, os, mat, 'c2_gour', z + 1.6);
-          ps.push(a.elipsoide(cx - 2 + Math.sin(f * 1.5 + k) * 3, cy, z + 1.62, 3, 0.6, 0.05, { mat, tono: 0.3, giro: -45 }));
+          charco(a, ps, os, mat, 'c2_gour', z + 0.9);
+          ps.push(a.elipsoide(cx - 2 + Math.sin(f * 1.5 + k) * 3, cy, z + 0.92, 3, 0.6, 0.05, { mat, tono: 0.3, giro: -45 }));
           // el hilo que se derrama al de abajo
-          if (k < n - 1) ps.push(a.palo([cx + rx * 0.6, cy + ry * 0.5, z + 1.4], [cx + rx * 0.7 + 2, cy + ry * 0.6 + 2, z - 4.5], 0.8, { mat, tono: 0.2 }));
+          if (k < n - 1) ps.push(a.palo([cx + rx * 0.6, cy + ry * 0.5, z + 1.4], [cx + rx * 0.7 + 3, cy + ry * 0.6 + 3, z - 2.6], 0.8, { mat, tono: 0.2 }));
         } else ps.push(a.elipsoide(cx - 1, cy - 1, z + 1.2, rx - 2, ry - 3, 1, { mat: 'c2_gour', tono: -0.15 }));
       }
       for (let i = 0; i < 3; i++) ps.push(masa(espeleo(a, [entre(a, -30, -16), entre(a, -26, -10), 0], entre(a, 10, 30), entre(a, 3, 5), { mat: 'sub_caliza' }), { mat: 'sub_caliza', suave: 2 }));
@@ -854,11 +857,11 @@ registrar(
     },
   },
   {
-    id: 'cue2_puente_cuerda', nombre: ['Puente de cuerda sobre la grieta', 'Rope bridge over a chasm'], tema: 'cueva', variantes: ['entero', 'roto', 'viejo'], huella: [5, 6], bloquea: false,
+    id: 'cue2_puente_cuerda', nombre: ['Puente de cuerda sobre la grieta', 'Rope bridge over a chasm'], tema: 'cueva', variantes: ['entero', 'roto', 'viejo', 'entero_y', 'roto_y', 'viejo_y'], huella: [5, 6], bloquea: false,
     armar: (v, _f, a) => {
       const fm = forma(a, 4), ps: Pieza[] = [];
+      const ejeY = v.endsWith('_y'); v = v.replace('_y', '');
       const W = entre(a, 16, 21), cont = contornoOrg(a, W, entre(a, 42, 48), 14);
-      paredesHueco(a, ps, cont, 120, fm % 2 ? 'sub_roca' : 'sub_roca_humeda');
       const X = W + 9, sag = entre(a, 4, 7), Z = 22;
       // postes a los dos lados
       for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
@@ -889,7 +892,11 @@ registrar(
         else cuerda(a, ps, hp, hq, 0.5, sag + 2, 10);
         if (!(v === 'roto' && sy === 1)) for (let i = 1; i < 6; i++) { const x = -X + (i / 6) * X * 2, top: V3 = [x, sy * 9, Z - 2 - Math.sin((i / 6) * PI) * (sag + 2)]; ps.push(a.palo(top, [x, sy * 8, deck(x)], 0.3, { mat: 'sub_cuerda' })); }
       }
-      ps.push(...recorte(a, semisDe(cont)));
+      // la variante a lo largo de y gira el puente y la boca, pero las paredes y el recorte se arman ya girados
+      const br = ejeY ? mover(ps.splice(0), [0, 0, 0], 90) : ps.splice(0);
+      const boca: [number, number][] = ejeY ? cont.map(([x, y]) => [-y, x]) : cont;
+      paredesHueco(a, ps, boca, 120, fm % 2 ? 'sub_roca' : 'sub_roca_humeda');
+      ps.push(...br, ...recorte(a, semisDe(boca)));
       return ps;
     },
   },
@@ -910,4 +917,4 @@ registrar(
     },
   },
 );
-conVarianteY('cue2_estalactitas', 'cue2_telarana', 'cue2_raices', 'cue2_puente_cuerda');
+conVarianteY('cue2_estalactitas', 'cue2_telarana', 'cue2_raices');

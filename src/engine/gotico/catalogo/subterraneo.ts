@@ -354,12 +354,13 @@ export function bordeVacio(a: Arma, ps: Pieza[], v: string, o: { mat: string; ma
       if (a.r() < 0.4) ps.push(a.caja(x - t.n[0] * entre(a, 6, 12), y - t.n[1] * entre(a, 6, 12), 0.03, entre(a, 6, 12), 0.7, 0.3, { mat: 'negro', giro: giro + (a.r() - 0.5) * 30 }));
       if (visto) {
         // el acantilado: lajas que bajan, se meten hacia adentro y se oscurecen
-        let z = -6, off = sal;
+        // el perfil del acantilado depende de la hondura (igual para todo el tramo), así la pared sale entera
+        let z = -6 + (k % 2) * -4;
         while (z > -D) {
-          const fr = -z / D, rz = entre(a, 6, 10) * (1 - fr * 0.3);
-          off += (a.r() - 0.55) * 4 - 0.6;
-          ps.push(pena(a, x + t.n[0] * off + ux * (a.r() - 0.5) * 5, y + t.n[1] * off + uy * (a.r() - 0.5) * 5, z - rz * 0.4, entre(a, 7, 10), entre(a, 5, 8), rz, { mat: o.mat, giro: giro + (a.r() - 0.5) * 30, tono: -fr * 0.55 + (a.r() - 0.5) * 0.1, n: 8 }));
-          z -= rz * entre(a, 1.1, 1.5);
+          const fr = -z / D, rz = entre(a, 6, 9) * (1 - fr * 0.25);
+          const off = Math.sin(z * 0.07 + 1.3) * 4 + Math.sin(z * 0.19) * 2 - fr * 8 + (a.r() - 0.5) * 3;
+          ps.push(pena(a, x + t.n[0] * off + ux * (a.r() - 0.5) * 4, y + t.n[1] * off + uy * (a.r() - 0.5) * 4, z - rz * 0.4, entre(a, 9, 12), entre(a, 6, 8), rz, { mat: o.mat, giro: giro + (a.r() - 0.5) * 24, tono: -fr * 0.6 + (a.r() - 0.5) * 0.1, n: 8 }));
+          z -= rz * entre(a, 1.0, 1.3);
         }
       }
       o.extra?.([x + t.n[0] * sal, y + t.n[1] * sal, -3], t.n, u);

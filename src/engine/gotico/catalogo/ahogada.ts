@@ -50,7 +50,7 @@ M.ahg_sal = { rampa: ['#353833', '#4f534b', '#6a6e63', '#85897c', '#9fa293', '#b
 M.ahg_percebe = { rampa: ['#1d1f1b', '#33352e', '#4c4d43', '#66675a', '#808070', '#9a9986', '#b1af9b'], ruido: 0.4, escala: 1.3 };
 M.ahg_alga = { rampa: ['#050806', '#0b110a', '#121b0f', '#1a2614', '#233219', '#2d3f1e', '#394c25'], ruido: 0.4, escala: 0.7, brillo: 0.45, patron: (p) => (Math.sin(p[2] * 1.3 + p[0] * 0.4) > 0.7 ? -0.08 : 0) };
 M.ahg_alga_parda = { rampa: ['#0a0805', '#151008', '#21190c', '#2e2311', '#3c2e16', '#4b3a1c', '#5a4623'], ruido: 0.4, escala: 0.7, brillo: 0.45 };
-M.ahg_bronce = { rampa: ['#0a1311', '#11201c', '#192f29', '#234036', '#305345', '#406855', '#567f68', '#72987f'], ruido: 0.35, escala: 0.3, brillo: 0.45, patron: (p) => { const v = ruido(p[0] * 0.18, p[1] * 0.18, p[2] * 0.5); return v > 0.64 ? -0.16 : v < 0.3 ? 0.06 : 0; } };
+M.ahg_bronce = { rampa: ['#090f0d', '#0f1916', '#162420', '#1f302a', '#2a3e35', '#384e41', '#4a6150', '#627664'], ruido: 0.35, escala: 0.3, brillo: 0.45, patron: (p) => { const v = ruido(p[0] * 0.18, p[1] * 0.18, p[2] * 0.5); return v > 0.64 ? -0.16 : v < 0.3 ? 0.06 : 0; } };
 M.ahg_bronce_viejo = { rampa: ['#140e08', '#22180d', '#332413', '#46321a', '#5a4223', '#6e532d', '#83653a'], ruido: 0.3, escala: 0.3, brillo: 0.6 };
 M.ahg_madera = { rampa: ['#0a0908', '#13110e', '#1d1a15', '#28231c', '#332d24', '#3f372c', '#4c4235', '#5a4f40'], ruido: 0.22, escala: 0.3, patron: tablas(5) };
 M.ahg_madera_lisa = { rampa: ['#0a0908', '#13110e', '#1d1a15', '#28231c', '#332d24', '#3f372c', '#4c4235', '#5a4f40'], ruido: 0.25, escala: 0.25, patron: (p) => (ruido(p[0] * 0.15, p[1] * 0.15, p[2] * 0.9) - 0.5) * 0.25 };
@@ -68,7 +68,7 @@ M.ahg_ventosa = { rampa: ['#2a1e22', '#45333a', '#634c52', '#82676c', '#a08488',
 M.ahg_pez = { rampa: ['#10161a', '#1d262c', '#2d3940', '#3f4e56', '#54646c', '#6c7c83', '#87979b', '#a6b3b5'], ruido: 0.25, escala: 0.8, brillo: 0.9, patron: (p) => (Math.sin((p[0] + p[1]) * 2.2) > 0.4 ? -0.05 : 0) };
 M.ahg_lodo = { rampa: ['#080908', '#10120f', '#191c16', '#22261e', '#2c3027', '#373b30'], ruido: 0.45, escala: 0.25, brillo: 0.4 };
 M.ahg_arena = { rampa: ['#17150f', '#252117', '#342f21', '#443d2c', '#554c37', '#665c43'], ruido: 0.4, escala: 0.3 };
-M.ahg_hierro = { rampa: ['#0d0a08', '#18120e', '#251b14', '#33251a', '#433020', '#553c28', '#684a31'], ruido: 0.55, escala: 0.45, brillo: 0.15 };
+M.ahg_hierro = { rampa: ['#0b0a09', '#151210', '#201a16', '#2c231d', '#392d24', '#48382c', '#584535'], ruido: 0.3, escala: 0.45, brillo: 0.25 };
 M.ahg_soga = { rampa: ['#17140d', '#282215', '#3a321f', '#4d432a', '#605436'], ruido: 0.4, escala: 0.9 };
 M.ahg_vidrio = { rampa: ['#08141a', '#0f2430', '#1a3a46', '#2a5660', '#467a80', '#76a8a8'], ruido: 0.3, escala: 0.3, brillo: 0.8 };
 M.ahg_luz = { rampa: ['#a0601c', '#d08a2a', '#f0b448', '#ffd884', '#fff2cc', '#fffbf0'], ruido: 0.25, escala: 0.3, emite: true };
@@ -80,7 +80,14 @@ const P = 'ahg_piedra', PL = 'ahg_piedra_lisa', W = 'ahg_madera', WL = 'ahg_made
 const hr = (n: number) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 const lat = (d: V3): V3 => nor(Math.abs(d[2]) > 0.9 ? cruz(d, [1, 0, 0]) : cruz(d, [0, 0, 1]));
 /** Agua quieta en el piso: una mancha chata de bultos (el borde sale irregular). */
-const charco = (a: Arma, rx: number, ry: number, o: { x?: number; y?: number; mat?: string; n?: number } = {}) => manto(a, rx, ry, o.n ?? 6, o.mat ?? AG, 0.7, { x: o.x, y: o.y, tono: 0 });
+function charco(a: Arma, rx: number, ry: number, o: { x?: number; y?: number; mat?: string; n?: number } = {}): Pieza {
+  const cs: Comp[] = [], n = o.n ?? 6;
+  for (let i = 0; i < n; i++) {
+    const t = a.r() * TAU, q = Math.sqrt(a.r()) * 0.55;
+    cs.push(bulto([(o.x ?? 0) + Math.cos(t) * rx * q, (o.y ?? 0) + Math.sin(t) * ry * q, 0], [rx * (0.45 + a.r() * 0.2), ry * (0.45 + a.r() * 0.2), 0.45], { giro: jit(a, 20) }));
+  }
+  return masa(cs, { mat: o.mat ?? AG, suave: 1.2 });
+}
 /** Anillos de onda en el agua: un aro de gotas chatas que se abre con el cuadro. */
 function ondas(ps: Pieza[], c: V3, r0: number, f: number, n: number, k = 2, mat = 'ahg_espuma') {
   for (let j = 0; j < k; j++) {
@@ -217,6 +224,21 @@ function casco(a: Arma, ps: Pieza[], o: OpcCasco) {
   }
   return { pt, ancho, borda, quilla };
 }
+/** Cadena gruesa de ancla: eslabones ovalados con el ojo hueco, cada uno cruzado al anterior. */
+function eslabones(a: Arma, ps: Pieza[], pts: V3[], paso: number, grueso: number, mat = HI) {
+  const largos = [0];
+  for (let i = 1; i < pts.length; i++) largos.push(largos[i - 1] + len(sub(pts[i], pts[i - 1])));
+  const total = largos[largos.length - 1], n = Math.max(1, Math.floor(total / paso));
+  let j = 0;
+  for (let i = 0; i < n; i++) {
+    const sd = (i + 0.5) * (total / n);
+    while (j < pts.length - 2 && largos[j + 1] < sd) j++;
+    const t = (sd - largos[j]) / Math.max(1e-6, largos[j + 1] - largos[j]), c = mez(pts[j], pts[j + 1], t), d = nor(sub(pts[j + 1], pts[j]));
+    const l = lat(d), w = i % 2 ? l : cruz(d, l), z = cruz(d, w), Lk = total / n;
+    ps.push({ k: 'elip', c, ex: d, ey: w, ez: z, r: [Lk * 0.68, Lk * 0.42 + grueso * 0.3, grueso], mat, tono: jit(a, 0.05) } as Pieza);
+    ps.push({ k: 'elip', c, ex: d, ey: w, ez: z, r: [Lk * 0.42, Lk * 0.17, grueso * 1.6], mat, resta: true } as Pieza);
+  }
+}
 /** Punta astillada de un palo roto: lascas que salen del corte hacia `d`. */
 function astillas(a: Arma, ps: Pieza[], c: V3, d: V3, r: number) {
   const dd = nor(d), u = lat(dd), w = cruz(dd, u);
@@ -250,14 +272,16 @@ function campana(a: Arma, ps: Pieza[], c: V3, arriba: V3, R: number, o: { mat?: 
   const up = nor(arriba), u = lat(up), w = cruz(up, u), mat = o.mat ?? BR, H = R * 1.25;
   const A = (t: number): V3 => add(c, up, t * H);
   const cs: Comp[] = [
-    hueso(A(0.02), A(0.1), R * 0.98, R * 0.86, { mat }), hueso(A(0.1), A(0.35), R * 0.86, R * 0.68, { mat }), hueso(A(0.35), A(0.72), R * 0.68, R * 0.6, { mat }),
+    hueso(A(0.06), A(0.14), R * 0.92, R * 0.8, { mat }), hueso(A(0.14), A(0.35), R * 0.8, R * 0.66, { mat }), hueso(A(0.35), A(0.72), R * 0.68, R * 0.6, { mat }),
     hueso(A(0.72), A(0.86), R * 0.6, R * 0.5, { mat }), bulto(A(0.86), [R * 0.5, R * 0.5, R * 0.22], { ejes: [u, w, up], mat }),
   ];
   ps.push(masa(cs, { mat, suave: R * 0.12 }));
+  // la boca es plana: se corta lo que la masa redondea más allá del labio
+  ps.push(a.cilindro(...add(c, up, -R * 1.5), R * 1.6, R * 1.5, { mat, eje: up, resta: true }));
   // el anillo del labio, más grueso y claro
-  ps.push(a.cilindro(...add(c, up, -0.2), R * 1.02, H * 0.1, { mat, r1: R * 0.9, eje: up, tono: 0.05 }));
+  ps.push(a.cilindro(...c, R * 1.03, H * 0.1, { mat, r1: R * 0.9, eje: up, tono: 0.05 }));
   // hueca: cava la masa y el anillo
-  ps.push(a.cilindro(...add(c, up, -1), R * 0.86, H * 0.8, { mat: 'negro', r1: R * 0.45, eje: up, resta: true }));
+  ps.push(a.cilindro(...add(c, up, -1), R * 0.84, H * 0.8, { mat: 'negro', r1: R * 0.45, eje: up, resta: true }));
   ps.push(a.cilindro(...add(c, up, H * 0.3), R * 0.5, H * 0.5, { mat: 'negro', r1: R * 0.3, eje: up }));
   // franjas en relieve (inscripciones) y el asa
   for (const t of [0.3, 0.68]) ps.push(a.cilindro(...A(t), R * (t < 0.5 ? 0.72 : 0.62), H * 0.035, { mat, eje: up, tono: 0.08 }));
@@ -282,7 +306,7 @@ interface Pose { pel: V3; pecho: V3; cab: V3; hom: [V3, V3]; codo: [V3, V3]; man
 function figura(p: Pose, mat: string, s = 1, o: { capucha?: boolean; sinCabeza?: boolean; manto?: string } = {}): Pieza[] {
   const S = (v: V3): V3 => esc(v, s), cs: Comp[] = [], m = { mat };
   const pel = S(p.pel), pe = S(p.pecho), cab = S(p.cab);
-  cs.push(bulto(pel, [6 * s, 7.5 * s, 5 * s], m), hueso(pel, pe, 6.5 * s, 7.5 * s, m), bulto(pe, [5.5 * s, 9 * s, 6.5 * s], m));
+  cs.push(bulto(pel, [5 * s, 6.5 * s, 4.5 * s], m), hueso(pel, pe, 5 * s, 6 * s, m), bulto(pe, [4.6 * s, 7.8 * s, 5.5 * s], m));
   if (!o.sinCabeza) {
     cs.push(hueso(pe, mez(pe, cab, 0.6), 2.6 * s, 2.3 * s, m), bulto(cab, [3.9 * s, 3.4 * s, 4.4 * s], { ...m, eje: sub(cab, pe) }));
     if (o.capucha) cs.push(bulto(add(cab, sub(pe, cab), 0.08), [5.2 * s, 5 * s, 5.6 * s], { mat: o.manto ?? mat, eje: sub(cab, pe) }));
@@ -298,7 +322,9 @@ function figura(p: Pose, mat: string, s = 1, o: { capucha?: boolean; sinCabeza?:
   const tu = p.tunica ?? 1, tm = o.manto ?? mat;
   if (tu > 0) {
     const r0 = S(p.rod[0]), r1 = S(p.rod[1]), bajo = mez(r0, r1, 0.5), cint = mez(pel, pe, 0.15);
-    cs.push(hueso(cint, mez(cint, bajo, 0.55), 7.5 * s, 9 * s, { mat: tm }), hueso(mez(cint, bajo, 0.5), add(bajo, [0, 0, -bajo[2] * 0.85 * tu]), 9 * s, 10.5 * s * tu + 1, { mat: tm }));
+    cs.push(hueso(cint, mez(cint, bajo, 0.55), 6 * s, 6.6 * s, { mat: tm }), hueso(mez(cint, bajo, 0.5), add(bajo, [0, 0, -bajo[2] * 0.85 * tu]), 6.6 * s, 8 * s * tu + 1, { mat: tm }));
+    // pliegues: tres husos que caen por delante y a los costados
+    for (const k of [-1, 0, 1]) cs.push(hueso(add(cint, [3 * s, k * 4 * s, -2 * s]), add(bajo, [3.5 * s, k * 6 * s, -bajo[2] * 0.8 * tu]), 1.6 * s, 2.4 * s, { mat: tm, k: 1.2 * s }));
   }
   ps.push(masa(cs, { mat, suave: 1.6 * s }));
   return ps;
@@ -425,8 +451,9 @@ registrar(
         let prev: V3 = [0, 0, 2];
         for (let i = 1; i <= 6; i++) { const an = (i / 6) * 1.25, q: V3 = [s * Math.sin(an) * 36, 0, 36 - Math.cos(an) * 34]; cs.push(hueso(prev, q, 4.6 - i * 0.3, 4.4 - i * 0.35, { mat: HI })); prev = q; }
         // uña: pala de hierro que se abre a los lados de la punta del brazo
-        const t = prev, d = nor([s * Math.sin(1.25), 0, Math.cos(1.25) * 0.4 + 0.6]);
-        cs.push(bulto(add(t, d, -3), [7, 8.5, 2.2], { mat: HI, ejes: [d, [0, 1, 0], cruz(d, [0, 1, 0])] }), hueso(add(t, d, -2), add(t, d, 9), 3, 0.4, { mat: HI }));
+        const t = prev, d = nor([s * 36 * Math.cos(1.25), 0, 34 * Math.sin(1.25)]), nn: V3 = nor(cruz(d, [0, s, 0])), y: V3 = [0, 1, 0];
+        const pal: V3[] = [add(add(t, d, -12), nn, 0), add(add(t, d, -5), y, 8), add(add(t, d, -5), y, -8), add(t, d, 8)];
+        loc.push(a.poliedro([...pal.map((q) => add(q, nn, 1.3)), ...pal.map((q) => add(q, nn, -1.3))], { mat: HI, tono: 0.04 }));
       }
       loc.push(masa(cs, { mat: HI, suave: 2.5 }));
       for (let i = 0; i < 5; i++) percebes(a, loc, [jit(a, 4), elegir(a, [-3.5, 3.5]), 6 + a.r() * H * 0.5], [0, 1, 0], 4, 3);
@@ -436,7 +463,7 @@ registrar(
       if (v === 'tumbada') ps = mover(loc, a.r() * 360, [0, 0, 4], 0, 88);
       else if (v === 'clavada') ps = mover(loc, a.r() * 360, [0, 0, -16], jit(a, 14), 12 + a.r() * 10);
       else ps = mover(loc, a.r() * 360, [0, 0, v === 'con_cadena' ? -6 : -3], jit(a, 5), jit(a, 5));
-      if (v === 'con_cadena') { const pts: V3[] = [[0, 0, H], [10, 8, H * 0.5], [20, 14, 2], [28, 2, 1.5], [20, -10, 1.5], [6, -14, 1.5]]; cadena(a, ps, pts, 6, 1.6, HI); }
+      if (v === 'con_cadena') { const pts: V3[] = [[0, 0, H], [10, 8, H * 0.5], [20, 14, 2], [28, 2, 1.5], [20, -10, 1.5], [6, -14, 1.5]]; eslabones(a, ps, pts, 6, 1.6); }
       ps.push(charco(a, 30, 26), suelo(a));
       return ps;
     },
@@ -449,7 +476,7 @@ registrar(
       if (v === 'montón') { pts = []; for (let i = 0; i < 30; i++) { const an = i * 0.9 + a.r() * 0.3, r = 12 - i * 0.3; pts.push([Math.cos(an) * r, Math.sin(an) * r, 2 + i * 0.32]); } }
       else if (v === 'que_sube') pts = [[-34, jit(a, 6), 1.5], [-12, jit(a, 8), 1.5], [8, jit(a, 6), 2], [22, 0, 18], [30, 0, 52], [33, 0, 90]];
       else { pts = []; for (let i = 0; i <= 8; i++) pts.push([-36 + i * 9, Math.sin(i * 1.2 + a.r()) * 7, 1.6]); }
-      cadena(a, ps, pts, 6.5, 1.7, HI);
+      eslabones(a, ps, pts, 6.5, 1.7);
       if (v === 'enredada') { const ag = algas(pts.filter((_, i) => i % 2 === 0).map((p) => add(p, [0, 0, 1])), 12, 0.8, 0, 1, a.seed, { arriba: true, mat: 'ahg_alga_parda' }); if (ag) ps.push(ag); }
       for (let i = 0; i < 3; i++) { const p = pts[Math.floor(a.r() * pts.length)]; percebes(a, ps, p, [0, 0, 1], 3, 2.5); }
       ps.push(charco(a, 30, 16), suelo(a));
@@ -573,3 +600,107 @@ registrar(
     },
   },
 );
+
+// ------------------------------------------------------------------ 3. la catedral ahogada: columnas, arcos, santos
+/** Fuste gótico (haz de baquetones) con basa y capitel; devuelve la altura del capitel. */
+function fuste(a: Arma, ps: Pieza[], c: V3, alto: number, r: number, o: { roto?: number; haz?: boolean } = {}) {
+  const h = alto * (o.roto ?? 1);
+  ps.push(a.cilindro(c[0], c[1], c[2], r * 1.55, 3, { mat: P, r1: r * 1.4 }), a.cilindro(c[0], c[1], c[2] + 3, r * 1.3, 2.5, { mat: PL, r1: r * 1.1 }));
+  ps.push(a.cilindro(c[0], c[1], c[2] + 5, r, h - 5, { mat: PL }));
+  if (o.haz !== false) for (let k = 0; k < 4; k++) { const an = (k / 4) * TAU + PI / 4; ps.push(a.cilindro(c[0] + Math.cos(an) * r * 0.9, c[1] + Math.sin(an) * r * 0.9, c[2] + 5, r * 0.42, h - 5, { mat: PL, tono: 0.04 })); }
+  if ((o.roto ?? 1) >= 1) {
+    ps.push(a.cilindro(c[0], c[1], c[2] + h, r * 1.05, 5, { mat: PL, r1: r * 1.55 }), a.caja(c[0], c[1], c[2] + h + 5, r * 3.3, r * 3.3, 3, { mat: P }));
+    // hojas talladas en el capitel
+    for (let k = 0; k < 6; k++) { const an = (k / 6) * TAU; ps.push(a.elipsoide(c[0] + Math.cos(an) * r * 1.2, c[1] + Math.sin(an) * r * 1.2, c[2] + h + 2.5, 1.6, 1.6, 2.6, { mat: PL, giro: (an * 180) / PI, tono: 0.05 })); }
+  } else {
+    // corte quebrado: lajas que suben del tope
+    for (let k = 0; k < 3; k++) ps.push(pena(a, c[0] + jit(a, r * 0.5), c[1] + jit(a, r * 0.5), c[2] + h - 1, r * 0.8, r * 0.7, 2 + a.r() * 4, { mat: PL }));
+  }
+  return c[2] + h + 8;
+}
+registrar(
+  {
+    id: 'ahg_columna_percebes', nombre: ['Columna con percebes', 'Barnacled column'], tema: TEMA, variantes: ['entera', 'rota', 'inclinada', 'con_algas', 'caida'], cuadros: 8, t: 5, huella: [2, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const loc: Pieza[] = [], alto = 84 + a.r() * 24, r = 4.5;
+      if (v === 'caida') {
+        // tambores sueltos tirados en el agua
+        const g = a.r() * 360;
+        for (let i = 0; i < 4; i++) { const p = polar(g, -30 + i * 16 + jit(a, 2), r * 1.3); loc.push(a.cilindro(p[0], p[1], r * 1.3, r * 1.3, 14, { mat: PL, eje: [Math.cos(rad(g + jit(a, 12))), Math.sin(rad(g + jit(a, 12))), jit(a, 0.1)] })); percebes(a, loc, add(p, [0, 0, r * 2.4]), [0, 0, 1], 4, 3); }
+        const ps = [...loc, charco(a, 36, 28)];
+        fuste(a, ps, [polar(g, 40)[0], polar(g, 40)[1], -2], 22, r, { roto: 0.6 });
+        return [...ps, suelo(a)];
+      }
+      const top = fuste(a, loc, [0, 0, -2], alto, r, { roto: v === 'rota' ? 0.4 + a.r() * 0.25 : 1 });
+      // percebes y la línea de marea: la mitad de abajo cubierta
+      for (let i = 0; i < 7; i++) { const an = a.r() * TAU, z = 3 + a.r() * alto * 0.35; percebes(a, loc, [Math.cos(an) * r * 1.3, Math.sin(an) * r * 1.3, z], [Math.cos(an), Math.sin(an), 0.1], 5, 3.5); }
+      costra(a, loc, [r * 1.2, 0, 10], [1, 0, 0], 8, 'ahg_alga');
+      costra(a, loc, [0, r * 1.2, 16], [0, 1, 0], 7);
+      const nA = v === 'con_algas' ? 9 : v === 'rota' ? 0 : 4;
+      const ag = algas(Array.from({ length: nA }, (_, k) => polar((k / nA) * 360 + jit(a, 15), r * 1.6, top - 3)), v === 'con_algas' ? 34 : 18, 0.8, f, 8, a.seed);
+      if (ag) loc.push(ag);
+      const ps = v === 'inclinada' ? mover(loc, a.r() * 360, [0, 0, -4], 7 + a.r() * 5, 0) : mover(loc, a.r() * 360);
+      ps.push(charco(a, 16, 14), suelo(a));
+      return ps;
+    },
+  },
+  {
+    id: 'ahg_arco_hundido', nombre: ['Arco ojival hundido', 'Sunken pointed arch'], tema: TEMA, variantes: ['entero', 'partido', 'con_campana', 'con_algas'], cuadros: 8, t: 5, huella: [5, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], luz = 26, hP = 52 + a.r() * 10;
+      const tops: V3[] = [];
+      for (const s of [-1, 1]) tops.push(...[fuste(a, ps, [0, s * luz, -4], hP, 4.2)].map((z) => [0, s * luz, z] as V3));
+      // dovelas: dos arcos de círculo que se cruzan en punta
+      const n = 7, R = luz * 1.6;
+      for (const s of [-1, 1]) for (let i = 0; i < n; i++) {
+        if (v === 'partido' && s > 0 && i > 2) continue;
+        const t0 = i / n, t1 = (i + 1) / n, A0 = Math.acos(1 - luz / R * 1), an0 = t0 * A0, an1 = t1 * A0;
+        const P0: V3 = [0, s * (luz - R * (1 - Math.cos(an0))), tops[0][2] + R * Math.sin(an0)], P1: V3 = [0, s * (luz - R * (1 - Math.cos(an1))), tops[0][2] + R * Math.sin(an1)];
+        const d = nor(sub(P1, P0)), up = nor(cruz([1, 0, 0], d)), Ld = len(sub(P1, P0));
+        const q = [add(P0, up, -3.5), add(P1, up, -3.5), add(P1, up, 3.5), add(P0, up, 3.5)];
+        ps.push(a.poliedro([...q.map((x) => add(x, [5, 0, 0])), ...q.map((x) => add(x, [-5, 0, 0]))], { mat: P, tono: jit(a, 0.05) }));
+        if (Ld < 0) break;
+      }
+      if (v === 'partido') for (let i = 0; i < 4; i++) ps.push(pena(a, jit(a, 10), luz * 0.5 + jit(a, 12), 2, 5, 4, 3, { mat: P }));
+      if (v === 'con_campana') {
+        const th = onda(f, 8) * 12, cl: Pieza[] = [];
+        campana(a, cl, [0, 0, -21], [0, 0, 1], 11, { badajo: [Math.sin(rad(-th * 2)) * 7, 0, -19] });
+        ps.push(...transformar([...cl, a.palo([0, 0, 0], [0, 0, -5], 0.7, { mat: HI })], ejeAng([0, 1, 0], th), [0, 0, tops[0][2] + R * Math.sin(Math.acos(1 - luz / R)) - 4]));
+      }
+      const ag = algas(Array.from({ length: v === 'con_algas' ? 10 : 4 }, () => [jit(a, 3), jit(a, luz), tops[0][2] + 8 + a.r() * 18] as V3), v === 'con_algas' ? 26 : 14, 0.7, f, 8, a.seed);
+      if (ag) ps.push(ag);
+      for (const s of [-1, 1]) percebes(a, ps, [5, s * luz, 8], [1, 0, 0], 6, 4);
+      ps.push(charco(a, 22, 36), suelo(a));
+      return ps;
+    },
+  },
+  {
+    id: 'ahg_estatua_santo', nombre: ['Estatua de santo carcomida', 'Salt-eaten saint statue'], tema: TEMA, variantes: ['orante', 'con_libro', 'bendice', 'con_llave', 'decapitado'], huella: [2, 2], bloquea: true,
+    armar: (v, _f, a) => {
+      const loc: Pieza[] = [], z0 = 12;
+      // pedestal gótico
+      loc.push(a.caja(0, 0, 0, 22, 22, 4, { mat: P }), a.caja(0, 0, 4, 18, 18, 7, { mat: PL }), a.caja(0, 0, 11, 20, 20, 2, { mat: P, tono: 0.04 }));
+      const pose = POSES[v === 'con_libro' ? 'libro' : v === 'bendice' ? 'bendice' : v === 'con_llave' ? 'llave' : 'orante'];
+      const fig = figura(pose, 'ahg_piedra_lisa', 1.02, { capucha: v !== 'decapitado' && a.r() < 0.6, sinCabeza: v === 'decapitado' });
+      loc.push(...transformar(fig, ID3, [0, 0, z0]));
+      if (v === 'con_libro') loc.push(a.caja(9.5, 0, z0 + 40, 4, 9, 6, { mat: PL, giro: 0, incl: -30, inclEje: 'y', tono: 0.06 }));
+      if (v === 'con_llave') loc.push(a.palo([8, -9, z0 + 40], [8, -9, z0 + 58], 0.9, { mat: 'ahg_bronce' }), a.caja(8, -9, z0 + 56, 1.2, 5, 4, { mat: 'ahg_bronce' }));
+      if (v !== 'decapitado') {
+        // la cara comida por la sal: costra blanca, huecos donde estaban los ojos y la boca
+        const cab: V3 = [pose.cab[0] * 1.02 + 3.8, 0, pose.cab[2] * 1.02 + z0];
+        loc.push(a.elipsoide(cab[0] + 0.3, -1.3, cab[2] + 0.6, 1.2, 1.1, 1.3, { mat: 'negro', resta: true }), a.elipsoide(cab[0] + 0.3, 1.3, cab[2] + 0.2, 1.4, 1.2, 1.5, { mat: 'negro', resta: true }), a.elipsoide(cab[0], 0.4, cab[2] - 2.4, 1.3, 1.8, 1.4, { mat: 'negro', resta: true }));
+        costra(a, loc, add(cab, [0.2, jit(a, 1.5), -0.5]), [1, 0, 0.2], 4.2);
+        costra(a, loc, add(cab, [-1, 2, 2]), [0.3, 1, 0.5], 3);
+      } else for (let i = 0; i < 3; i++) loc.push(pena(a, jit(a, 3), jit(a, 3), z0 + 49 + a.r() * 2, 2.8, 3.4, 1.4, { mat: PL }));
+      // la túnica también: chorreones de sal y percebes desde el pedestal
+      for (let i = 0; i < 3; i++) costra(a, loc, [5.5, jit(a, 6), z0 + 8 + a.r() * 26], [1, 0, 0], 4 + a.r() * 3, a.r() < 0.4 ? 'ahg_alga' : 'ahg_sal');
+      for (let i = 0; i < 4; i++) { const an = a.r() * TAU; percebes(a, loc, [Math.cos(an) * 10, Math.sin(an) * 10, 2 + a.r() * 9], [Math.cos(an), Math.sin(an), 0], 6, 4); }
+      const ag = algas([[jit(a, 6), jit(a, 6), z0 + 46], [0, 9, z0 + 37]], 14, 0.55, 0, 1, a.seed);
+      if (ag) loc.push(ag);
+      const ps = mover(loc, 45 + jit(a, 30), [0, 0, -1], jit(a, 3), jit(a, 3));
+      ps.push(charco(a, 20, 18), suelo(a));
+      return ps;
+    },
+  },
+);
+const ID3: M3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];

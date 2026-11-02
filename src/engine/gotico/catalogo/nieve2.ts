@@ -641,7 +641,7 @@ registrar(
 function ahorcado(a: Arma, ps: Pieza[], p: V3, largo: number, cu = CUERPOS.muerto, eq = EQUIPOS.preso, s = 0.95) {
   const pie = p[2] - largo - 62 * s;
   ps.push(a.palo(p, add(p, [0, 0, -largo]), 0.35, { mat: 'cuerda' }));
-  ps.push(...cuerpo({ cu, eq, acc: 'herido', f: 1, dir: elegir(a, ['s', 'so', 'se']), m: rotM(0, jit(a, 6), jit(a, 6)), t: [p[0], p[1], pie], s }));
+  ps.push(...cuerpo({ cu, eq, acc: 'herido', f: 2, dir: elegir(a, ['s', 'so', 'se']), m: rotM(0, jit(a, 6), jit(a, 6)), t: [p[0], p[1], pie], s }));
 }
 /** Jaula de hierro colgante (barrotes, aros, fondo), opcionalmente con un esqueleto acurrucado adentro. */
 function jaula(a: Arma, ps: Pieza[], c: V3, r: number, h: number, o: { preso?: 'esqueleto' | 'muerto' | 'vivo'; mat?: string; abierta?: boolean } = {}) {
@@ -753,7 +753,7 @@ registrar(
         tronco(a, ps, [8, 4, 4], [40, 16, 5], 4, { mat: 'corteza_muerta' }); ps.push(a.elipsoide(24, 10, 9, 12, 3, 1.4, { mat: N, giro: 20 }));
       } else {
         const ramas = arbolMuerto(a, ps, { H: v === 'alto' ? 120 : v === 'ahorcado' ? 112 : 84, mat: 'corteza_muerta', cubre: N, ramas: v === 'alto' ? 9 : 7, torsion: v === 'retorcido' ? 2.2 : 1 });
-        if (v === 'ahorcado') { const bien = ramas.filter((r) => r[0][2] > 72 && r[0][2] < 100); const pun = (r: [V3, V3]) => Math.abs(r[0][0] - r[0][1]); const [p, d] = (bien.length ? bien : ramas).reduce((m, r) => (pun(r) > pun(m) ? r : m)); const q = add(p, nor([d[0], d[1], 0]), 5); ahorcado(a, ps, q, Math.max(3, q[2] - 74)); }
+        if (v === 'ahorcado') { const bien = ramas.filter((r) => r[0][2] > 72 && r[0][2] < 100); const pun = (r: [V3, V3]) => Math.abs(r[0][0] - r[0][1]); const [p, d] = (bien.length ? bien : ramas).reduce((m, r) => (pun(r) > pun(m) ? r : m)); const q = add(p, nor([d[0], d[1], 0]), 9); ahorcado(a, ps, q, Math.max(3, q[2] - 74)); }
         if (v === 'cuervos') for (const [p, d] of ramas.slice(0, 4)) cuervo(ps, add(p, [0, 0, 1]), deg(Math.atan2(d[1], d[0])) + 90, false, 1.2);
       }
       ps.push(suelo(a));
