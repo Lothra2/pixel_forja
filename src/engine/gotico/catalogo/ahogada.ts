@@ -17,7 +17,7 @@ import {
  * Escala: una persona mide 61 (75 px). Cada objeto tiene de 3 a 6 variantes y cambia con la semilla.
  */
 
-const TEMA = 'ahogada' as string as Tema;
+const TEMA: Tema = 'ahogada';
 
 // ------------------------------------------------------------------ materiales
 const M = MATERIALES;
@@ -1015,7 +1015,7 @@ function pilote(a: Arma, ps: Pieza[], x: number, y: number, alto: number, r = 2)
 }
 registrar(
   dosEjes({
-    id: 'ahg_puerta_hundida', nombre: ['Puerta de casa hundida', 'Sunken house door'], tema: TEMA, variantes: ['cerrada', 'abierta', 'tapiada', 'con_ventana', 'con_farol'], cuadros: 8, t: 4, huella: [3, 1], bloquea: true,
+    id: 'ahg_puerta_hundida', nombre: ['Puerta de casa hundida', 'Sunken house door'], tema: TEMA, variantes: ['abierta', 'tapiada', 'con_farol'], cuadros: 8, t: 4, huella: [3, 1], bloquea: true,
     armar: (v, f, a) => {
       const ps: Pieza[] = [], Ww = 44, H = 62 + a.r() * 12, hun = 6 + a.r() * 6;
       // muro de la casa con la puerta ojival, hundido hasta la rodilla
@@ -1048,7 +1048,7 @@ registrar(
     },
   }),
   dosEjes({
-    id: 'ahg_escalera_agua', nombre: ['Escalera que baja al agua', 'Stairs into the water'], tema: TEMA, variantes: ['recta', 'rota', 'con_baranda', 'con_arco'], cuadros: 8, t: 5, huella: [4, 2], bloquea: false,
+    id: 'ahg_escalera_agua', nombre: ['Escalera que baja al agua', 'Stairs into the water'], tema: TEMA, variantes: ['rota', 'con_baranda', 'con_arco'], cuadros: 8, t: 5, huella: [4, 2], bloquea: false,
     armar: (v, f, a) => {
       const ps: Pieza[] = [], n = 9, paso = 6.5, alto = 4.2, ancho = 22;
       // los escalones bajan hacia +x y se meten en el agua (lo de abajo del piso no se ve)
@@ -1077,7 +1077,7 @@ registrar(
     },
   }),
   dosEjes({
-    id: 'ahg_muelle', nombre: ['Muelle de tablones', 'Plank pier'], tema: TEMA, variantes: ['tramo', 'punta', 'roto', 'con_bote'], cuadros: 8, t: 5, huella: [5, 2], bloquea: false,
+    id: 'ahg_muelle', nombre: ['Muelle de tablones', 'Plank pier'], tema: TEMA, variantes: ['punta', 'roto', 'con_bote'], cuadros: 8, t: 5, huella: [5, 2], bloquea: false,
     armar: (v, f, a) => {
       const ps: Pieza[] = [], L = 80, A = 24, z = 12;
       for (const x of [-34, -6, 22]) for (const y of [-10, 10]) { if (v === 'roto' && x > 10 && y > 0) continue; pilote(a, ps, x, y, z + (v === 'punta' && x > 20 ? 10 : 0)); }
