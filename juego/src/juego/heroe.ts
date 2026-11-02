@@ -1,7 +1,8 @@
 // El héroe que se guarda: clase, atributos, habilidades, equipo, bolsa y progreso. Y el cálculo de sus números.
-import { vestir } from './visual';
+import { equipoDeInventario, type Puesto } from '../../../src/engine/gotico/apariencia';
+import { aLoot, arma3dDe } from '../ui/loot';
 import { HEROES } from '../../../src/engine/gotico/catalogo/personajes';
-import type { Equipo, Encanto } from '../../../src/engine/gotico/cuerpo';
+import type { Equipo } from '../../../src/engine/gotico/cuerpo';
 import { CLASES, HABILIDADES, habilidad, type Habilidad } from '../datos/clases';
 import { BASES, CONJUNTOS } from '../datos/objetos_datos';
 import type { Clase, Elemento } from './tipos_objetos';
@@ -183,28 +184,29 @@ export function cumpleReq(h: DatosHeroe, c: Calc, o: Objeto): boolean {
 export const reqNivel = (o: Objeto) => (o.rareza === 'normal' || o.rareza === 'gris' ? (baseDe(o)?.req.nivel ?? 1) : Math.max(baseDe(o)?.req.nivel ?? 1, Math.floor(o.nivel * (o.rareza === 'magico' ? 0.6 : o.rareza === 'raro' ? 0.75 : 0.85))));
 
 // ------------------------------------------------------------------ cómo se ve
-const ENC: Partial<Record<Elemento, Encanto>> = { fuego: 'fuego', frio: 'hielo', rayo: 'rayo', veneno: 'veneno', sombra: 'sombra', luz: 'sagrado', sangre: 'sangre' };
+// La Forja traduce lo equipado en el inventario a lo que se ve en el cuerpo (mismo diseño, línea y colores que el ícono).
+const CAS_PUESTO: Record<string, Casilla> = { casco: 'cabeza', pecho: 'torso', arma: 'arma', mano_libre: 'izq', guantes: 'manos', cinturon: 'cinturon', botas: 'pies' };
+/** Las casillas equipadas en el formato de la Forja ({it, arma3d}). */
+export function puestosDe(h: DatosHeroe): Record<string, Puesto> {
+  const out: Record<string, Puesto> = {};
+  for (const [k, c] of Object.entries(CAS_PUESTO)) { const o = h.equipo[c]; if (o) out[k] = { it: aLoot(o), arma3d: arma3dDe(o) }; }
+  return out;
+}
+/** Lo que lleva debajo cuando una casilla está vacía: la ropa de novato de su clase, sin armas. */
+export function ropaBase(clase: Clase): Equipo { const e: Equipo = JSON.parse(JSON.stringify(HEROES.find((x) => x.id === clase)!.niveles[0])); delete e.arma; delete e.izq; return e; }
 export function equipoVisual(h: DatosHeroe): Equipo {
-  const nov = HEROES.find((x) => x.id === h.clase)!.niveles[0];
-  const eq: Equipo = JSON.parse(JSON.stringify(nov));
-  delete eq.arma; delete eq.izq;
-  for (const c of CASILLAS) {
-    const o = h.equipo[c]; if (!o) continue;
-    const b = baseDe(o); if (!b) continue;
-    const vis = (o.vis ? { arma: o.vis } : b.visual) as Equipo;
-    if (c === 'arma') {
-      eq.arma = vis.arma ? { ...vis.arma } : b.arma ? { tipo: b.arma } : undefined;
-      if (eq.arma && o.vivo && ENC[o.vivo]) eq.arma.encanto = ENC[o.vivo];
-    } else Object.assign(eq, vestir(vis, o, b, h.nivel));
-  }
+  const eq = equipoDeInventario(puestosDe(h), ropaBase(h.clase));
   if (!eq.arma) eq.arma = { tipo: 'puno' };
+  // capa de los únicos y legendarios (no hay casilla de capa en el inventario)
+  const t = h.equipo.torso;
+  if (t && !eq.capa && (t.rareza === 'unico' || t.rareza === 'legendario' || t.rareza === 'conjunto')) eq.capa = { mat: t.rareza === 'conjunto' ? 'cu_tela_verde' : t.rareza === 'legendario' ? 'cu_tela_roja' : 'cu_tela_negra', largo: 1, forro: t.rareza === 'legendario' ? 'cu_oro' : 'cu_tela_negra' };
   return eq;
 }
+/** JSON con las claves ordenadas: dos equipos iguales dan la misma firma aunque se armen en otro orden. */
+const canon = (v: any): string => (Array.isArray(v) ? `[${v.map(canon).join(',')}]` : v && typeof v === 'object' ? `{${Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',')}}` : JSON.stringify(v));
 export function firmaVisual(h: DatosHeroe): string {
-  const eq = equipoVisual(h);
-  const nov = HEROES.find((x) => x.id === h.clase)!.niveles[0];
-  const s = JSON.stringify(eq);
-  return s === JSON.stringify(nov) ? 'base' : s;
+  const s = canon(equipoVisual(h));
+  return s === canon(HEROES.find((x) => x.id === h.clase)!.niveles[0]) ? 'base' : s;
 }
 export const cuerpoDe = (clase: Clase) => HEROES.find((x) => x.id === clase)!.cuerpo;
 

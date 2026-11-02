@@ -411,7 +411,7 @@ function paso(dt: number) {
       if (progresoPintura < 1) texto(`${T('Forjando tu equipo', 'Forging your gear')} ${Math.round(progresoPintura * 100)}%`, 12, 20, { tam: 11, color: '#a08050' });
       // pintar al héroe nuevo si cambió el equipo
       const firma = firmaVisual(jj.heroe.d);
-      if (firma !== (jj as any).firma) { (jj as any).firma = firma; pintarHeroe(jj.heroe.d.clase, cuerpoDe(jj.heroe.d.clase), equipoVisual(jj.heroe.d), firma); }
+      if (firma !== (jj as any).firma) { (jj as any).firma = firma; pintarHeroe(jj.heroe.d.clase, cuerpoDe(jj.heroe.d.clase), equipoVisual(jj.heroe.d), firma, jj.heroe.dir); }
       procesarEventos(jj);
       // capa de combate de la música según cuántos monstruos despiertos hay cerca
       if (Math.floor(tiempo * 2) !== Math.floor((tiempo - dt) * 2)) { let n = 0; for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado === 'perseguir' && dist(m.x, m.y, jj.heroe.x, jj.heroe.y) < 12) n++; Sonido.combate(Math.min(1, n / 6)); }

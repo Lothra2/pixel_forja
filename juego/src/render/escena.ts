@@ -5,7 +5,7 @@ import type { Juego, Ent, Monstruo, Efecto } from '../juego/mundo';
 import { CUADROS, DIRS, ZANCADA, ALTO_CLASE } from '../juego/mundo';
 import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
-import { cuadrosVivos } from '../motor/pintor';
+import { cuadrosVivos, cambioVisible } from '../motor/pintor';
 import { R } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { fuegoOzmaren } from './fuego';
@@ -293,7 +293,9 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
 
   if (!e.muerto) sombras(ctx, e, q, px, py, esc);
   let ok: boolean;
-  if (e.destello > 0) ok = dibujarTenido(ctx, q, px, py, '#ffffff', 0.55, esc);
+  const cambio = e.tipo === 'heroe' ? performance.now() / 1000 - cambioVisible : 9;
+  if (cambio < 0.45) ok = dibujarTenido(ctx, q, px, py, '#fff2d0', 0.7 * (1 - cambio / 0.45), esc);
+  else if (e.destello > 0) ok = dibujarTenido(ctx, q, px, py, '#ffffff', 0.55, esc);
   else if (e.congelado > 0) ok = dibujarTenido(ctx, q, px, py, '#70b8ff', 0.55, esc);
   else if (e.frio > 0) ok = dibujarTenido(ctx, q, px, py, '#5090e0', 0.3, esc);
   else if (e.veneno > 0) ok = dibujarTenido(ctx, q, px, py, '#40c030', 0.3, esc);

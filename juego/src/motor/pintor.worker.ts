@@ -2,11 +2,16 @@
 import { personajeEscena, esqueleto } from '../../../src/engine/gotico/cuerpo';
 import { pintarEscena, aPantalla, fijarCalidad } from '../../../src/engine/gotico/render';
 import { hojaDe } from './hoja';
+import { tinte } from '../../../src/engine/gotico/apariencia';
+
+/** Los materiales teñidos se registran al vuelo en el hilo principal: aquí hay que volver a crearlos. */
+function tenir(equipo: any) { for (const m of JSON.stringify(equipo).matchAll(/cu_tinte_(tela|cuero|metal)_([0-9a-f]{6})/g)) tinte('#' + m[2], m[1] as any); }
 
 self.onmessage = (ev: MessageEvent) => {
   const { id, cuerpo, equipo, acc, dir, cuadros, calidad } = ev.data;
   try {
     fijarCalidad(calidad ?? 1);
+    tenir(equipo);
     const out: any[] = [];
     const bufs: ArrayBuffer[] = [];
     for (let f = 0; f < cuadros; f++) {

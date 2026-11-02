@@ -9,7 +9,7 @@ import { NPCS } from '../datos/npcs';
 import { MISIONES, ZONAS, PUEBLO_DE } from '../mundo/actos';
 import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
-import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa } from '../juego/heroe';
+import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, ropaBase, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa } from '../juego/heroe';
 import { recalc, usarPocion, abrirPortal, costoMana, danoHab, habilidadDe, msg, frascosMax, ventanaCombo, cadaveresCerca, MAX_CARGAS, colorElem, type Juego, type Monstruo } from '../juego/mundo';
 import { Sonido } from '../audio/sonido';
 import { R, entero, elegir } from '../nucleo/azar';
@@ -360,7 +360,7 @@ function panelInv(j: Juego, x: number, y: number, t: number) {
       return { it: aLoot(e.o), arma3d: arma3dDe(e.o), x: e.x, y: e.y, w: e.o.w, h: e.o.h, durabilidad: e.o.durabMax ? e.o.durab / e.o.durabMax : undefined, engastes: e.o.huecos ? Array.from({ length: e.o.huecos }, (_, i) => gemaDe(e.o.engarces[i])) : undefined, compara } as ObjetoInv;
     });
     const ocup = d.bolsa.reduce((s2, e) => s2 + e.o.w * e.o.h, 0);
-    const p = panelInventario(IDI ? 'en' : 'es', { heroe: { cuerpo: cuerpoDe(d.clase), equipo: equipoVisual(d) }, equipo, bolsa, bolsaActiva: act, oro: d.oro, resumen: { danio: h.c.dano, defensa: h.c.def, res: [h.c.res.fuego, h.c.res.frio, h.c.res.rayo, h.c.res.veneno], peso: [ocup, BOLSA_W * BOLSA_H * 3] }, cuadro: 0 });
+    const p = panelInventario(IDI ? 'en' : 'es', { heroe: { cuerpo: cuerpoDe(d.clase), equipo: equipoVisual(d), ropaBase: ropaBase(d.clase) }, equipo, bolsa, bolsaActiva: act, oro: d.oro, resumen: { danio: h.c.dano, defensa: h.c.def, res: [h.c.res.fuego, h.c.res.frio, h.c.res.rayo, h.c.res.veneno], peso: [ocup, BOLSA_W * BOLSA_H * 3] }, cuadro: 0 });
     cacheInv = { k: firma, c: rasterACanvas(p.img) };
   }
   ctx.drawImage(cacheInv.c, x, y);
