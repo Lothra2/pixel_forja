@@ -1,6 +1,8 @@
 // Prueba de conectividad: genera cada zona con N semillas (50 por defecto) y falla si una salida, el jefe o la piedra de
 // viaje quedan aislados de la entrada, o si una piedra cae en el vacío. Necesita el servidor de desarrollo:
 //   (cd juego && npx vite --port 5190) y luego: node juego/herramientas/conectividad.cjs [semillas]
+// Si el Playwright del repo no encuentra su navegador, córrelo desde una carpeta fuera del repo (usa el Playwright del sistema).
+// Reinicia el servidor después de muchos cambios en caliente: módulos viejos pueden esconder zonas.
 const { chromium } = require('playwright');
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage();
