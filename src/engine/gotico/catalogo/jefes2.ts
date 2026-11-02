@@ -38,7 +38,7 @@ M.j2_labio = { rampa: ['#0c0a0d', '#151217', '#201b22', '#2c252e', '#38303a'], r
 M.j2_bio = { rampa: ['#08403e', '#0e6660', '#18908a', '#38bcae', '#7ae2cc', '#c8fbec'], ruido: 0.35, escala: 0.35, emite: true };
 M.j2_agua = { rampa: ['#020506', '#040a0d', '#071014', '#0b171b', '#101f23', '#16282c', '#1f3437'], ruido: 0.2, escala: 0.07, brillo: 0.8 };
 M.j2_espuma = { rampa: ['#2e3c3e', '#465859', '#617474', '#7e9090', '#9cacaa'], ruido: 0.5, escala: 0.6 };
-M.j2_marmol = { rampa: ['#1c1b1a', '#2f2d2b', '#46433f', '#605c56', '#7c776f', '#98928a', '#b3aca2', '#cbc4b8', '#e0d9cc'], ruido: 0.1, escala: 0.08, brillo: 0.4, patron: (p) => { const v = ruido(p[0] * 0.05 + p[2] * 0.08, p[1] * 0.05, p[2] * 0.03); return Math.abs(v - 0.5) < 0.018 ? -0.14 : 0; } };
+M.j2_marmol = { rampa: ['#161514', '#25231f', '#36332e', '#4a4640', '#605b53', '#777168', '#8f887d', '#a69e92', '#bbb3a5', '#cdc5b6'], ruido: 0.14, escala: 0.08, brillo: 0.45, patron: (p) => { const v = ruido(p[0] * 0.05 + p[2] * 0.08, p[1] * 0.05, p[2] * 0.03); return (Math.abs(v - 0.5) < 0.018 ? -0.14 : 0) + (ruido(p[0] * 0.04, p[1] * 0.04, p[2] * 0.04) > 0.62 ? -0.08 : 0); } };
 M.j2_oro = { rampa: ['#1e1307', '#33220c', '#4d3512', '#6b4b19', '#8a6322', '#a97d2e', '#c69a3e', '#ddb758', '#f0d688', '#fcefc4'], ruido: 0.1, escala: 0.25, brillo: 1.1 };
 M.j2_oro_viejo = { rampa: ['#150e07', '#25190c', '#392712', '#4f3818', '#674a21', '#805d2b', '#987237'], ruido: 0.25, escala: 0.35, brillo: 0.7 };
 M.j2_vacio = { rampa: ['#000000', '#020104', '#06030c', '#0c0618', '#140a26', '#1e1036'], ruido: 0.7, escala: 0.5, emite: true };
@@ -416,7 +416,7 @@ function grietasVacio(t: Tr, c: V3, r: V3, n: number, sem: number, brillo: numbe
     for (let i = 0; i <= pasos; i++) {
       const cv = Math.cos(v), p: V3 = [c[0] + r[0] * cv * Math.cos(u) * 1.01, c[1] + r[1] * cv * Math.sin(u) * 1.01, c[2] + r[2] * Math.sin(v) * 1.01];
       const wp = ap(t, p);
-      if (prev) { const g = (o.grueso ?? 1.4) * (1 - i / (pasos + 2)), d = sub(wp, prev); ps.push(elipE(mez(prev, wp, 0.5), d, [len(d) * 0.58 + g * 0.4, g * 1.6, g * 1.6], 'j2_borde_vacio', brillo - 0.2), elipE(mez(prev, wp, 0.5), d, [len(d) * 0.6 + g * 0.3, g, g * 1.9], 'j2_vacio')); }
+      if (prev) { const g = (o.grueso ?? 1.4) * (1 - i / (pasos + 2)), d = sub(wp, prev); ps.push(elipE(mez(prev, wp, 0.5), d, [len(d) * 0.58 + g * 0.5, g * 1.9, g * 1.5], 'j2_oro', 0.05), elipE(mez(prev, wp, 0.5), d, [len(d) * 0.6 + g * 0.3, g * 0.95, g * 1.9], 'j2_vacio'), elipE(mez(prev, wp, 0.5), d, [len(d) * 0.4, g * 0.4, g * 2], 'j2_borde_vacio', brillo * 0.3 - 0.3)); }
       prev = wp;
       u += du + (hr(q + 10 + i) - 0.5) * 0.5; v += dv + (hr(q + 20 + i) - 0.5) * 0.45;
     }
@@ -475,7 +475,7 @@ function aunSaar(acc: Acc, f: number): Res {
   const MB = 'j2_marmol', OR = 'j2_oro', mM: OpcComp = { mat: MB }, mO: OpcComp = { mat: OR };
   const cuerpoT = T([px, py, 30 + pz], Rz(ty * 0.4), Ry(tp * 0.3), Rx(tr * 0.5));
   const tor = cmp(cuerpoT, T([0, 0, 92], Rz(ty * 0.6), Ry(tp * 0.7), Rx(tr)));
-  const cabT = cmp(tor, T([8, 0, 118], Ry(cab - tp * 0.4)));
+  const cabT0 = cmp(tor, T([8, 0, 120], Ry(cab - tp * 0.4))), cabT: Tr = { o: cabT0.o, m: [esc(cabT0.m[0], 1.3), esc(cabT0.m[1], 1.3), esc(cabT0.m[2], 1.3)] };
   const fz = (k: number) => 0.5 + 0.5 * Math.sin(w * 2 + k * 2.3);
 
   // ---- el faldón de mármol: cae de la cintura en pliegues y se afina en punta (no toca el piso)
@@ -489,8 +489,10 @@ function aunSaar(acc: Acc, f: number): Res {
       for (let i = 0; i <= 4; i++) { const t = i / 4, r = lerp(37, 5, Math.pow(t, 0.85)), z = 96 - t * 86, x = cola * t * t; pts.push(ap(cuerpoT, [x + Math.cos(a) * r, Math.sin(a) * r * 1.1, z])); }
       for (let i = 0; i < 4; i++) cs.push(hueso(pts[i], pts[i + 1], 5.5 - i, 4.8 - i, { mat: k % 3 === 0 ? OR : MB }));
     }
-    ps.push(masa(cs, { mat: MB, suave: 5 }));
-    ps.push(...grietasVacio(cuerpoT, [cola * 0.3, 0, 60], [26, 29, 30], 3, 3, brillo, { frente: 0.6, grueso: 1.4 }));
+    ps.push(masa(cs, { mat: MB, suave: 6.5 }));
+    // al partirse, la cara del corte muestra el vacío
+    if (frag > 0) ps.push(elipE(ap(cuerpoT, [0, 0, 100]), cuerpoT.m[0], [30, 32, 5], 'j2_vacio', 0, cuerpoT.m[1]), elipE(ap(cuerpoT, [0, 0, 99]), cuerpoT.m[0], [33, 35, 4], 'j2_borde_vacio', brillo * 0.2 - 0.2, cuerpoT.m[1]));
+    ps.push(...grietasVacio(cuerpoT, [cola * 0.3, 0, 60], [26, 29, 30], 4, 3, brillo, { frente: 0.6, grueso: 1.9 }));
     // esquirlas que flotan bajo la punta, girando
     for (let k = 0; k < 5; k++) { const a = hr(k) * TAU + w * 0.5, z = 10 + hr(k * 3) * 14 + Math.sin(w + k) * 3; const c = ap(cuerpoT, [cola + Math.cos(a) * 10, Math.sin(a) * 10, z - 30]); ps.push(poliedro([add(c, [3, 0, 0]), add(c, [-2, 2.5, 0.5]), add(c, [-1, -2.5, -0.5]), add(c, [0, 0, 4.5]), add(c, [0.5, 0, -3.5])], { mat: k % 2 ? OR : MB })); }
   }
@@ -499,15 +501,23 @@ function aunSaar(acc: Acc, f: number): Res {
     const ps = nuevo(ap(tor, [0, 0, 50]), 2);
     const cs: Comp[] = [
       bT(cuerpoT, [0, 0, 92], [30, 36, 16], mM), bT(tor, [2, 0, 14], [26, 32, 18], mM), bT(tor, [4, 0, 50], [32, 46, 30], mM), bT(tor, [-8, 0, 76], [28, 48, 20], mM),
-      hT(tor, [0, 0, 92], [6, 0, 118], 14, 12, mM), bT(tor, [12, 0, 32], [16, 24, 12], mO), bT(tor, [-24, 0, 60], [10, 30, 24], mO),
+      hT(tor, [0, 0, 92], [6, 0, 118], 14, 12, mM), bT(tor, [12, 0, 32], [16, 24, 12], mO), bT(tor, [-24, 0, 60], [10, 30, 24], mO), bT(tor, [-30, 0, 42], [10, 42, 44], mM),
     ];
+    // al partirse, cada hombro con su muñón y su hombrera es un trozo aparte
+    const lado = new Map<number, Comp[]>([[1, []], [-1, []]]), psL = new Map<number, Pieza[]>();
+    for (const s of [1, -1]) psL.set(s, frag > 0 ? nuevo(ap(tor, [-2, s * 56, 72]), s > 0 ? 21 : 22) : ps);
     for (const s of [1, -1]) {
-      cs.push(bT(tor, [-4, s * 46, 82], [18, 18, 16], mM), hT(tor, [-4, s * 12, 92], [-4, s * 42, 86], 12, 13, mM), bT(tor, [-2, s * 50, 92], [16, 16, 8], mO));
-      cs.push(bT(tor, [16, s * 30, 40], [12, 12, 18], mO), bT(tor, [-10, s * 30, 30], [14, 14, 20], mM));
-      // muñones de los brazos: el húmero roto a medio camino
-      cs.push(hT(tor, [-4, s * 50, 78], [2, s * 64, 52], 13, 10, mM));
+      const cl = frag > 0 ? lado.get(s)! : cs;
+      cl.push(bT(tor, [-2, s * 50, 78], [17, 16, 18], mM), hT(tor, [-4, s * 50, 78], [2, s * 64, 52], 13, 10, mM));
+      cs.push(hT(tor, [-4, s * 12, 92], [-4, s * 42, 86], 12, 13, mM), bT(tor, [20, s * 18, 64], [12, 16, 10], mM), hT(tor, [16, s * 6, 88], [4, s * 40, 87], 5, 5, mM), hT(tor, [-2, s * 10, 90], [6, s * 6, 116], 8, 6, mM));
+      // el manto de mármol que cae de los hombros por la espalda
+      cs.push(hT(tor, [-16, s * 38, 84], [-28, s * 44, 20], 8, 12, mM));
+      cs.push(bT(tor, [-10, s * 30, 30], [14, 14, 20], mM));
     }
     ps.push(masa(cs, { mat: MB, suave: 4 }));
+    if (frag > 0) for (const s of [1, -1]) psL.get(s)!.push(masa(lado.get(s)!, { mat: MB, suave: 4 }));
+    // hombreras de oro: placas chatas y curvas, agrietadas
+    for (const s of [1, -1]) for (let k = 0; k < 2; k++) { const n0 = nor(mv(tor.m, [0, s * (0.5 + k * 0.35), 1 - k * 0.25])), e0 = nor(sub(tor.m[0], esc(n0, pto(tor.m[0], n0)))); psL.get(s)!.push({ k: 'elip', c: ap(tor, [-2, s * (50 + k * 6), 92 - k * 8]), ex: e0, ey: cruz(n0, e0), ez: n0, r: [20 - k * 3, 15 - k * 2, 3.4], mat: OR, tono: k * 0.04 } as Pieza); }
     // la boca vertical: se cava el pecho, adentro el vacío; labios de oro y dientes que miran adentro
     const ab = 3 + boca * 9, bz = 52, bx = 30;
     ps.push({ ...elipE(ap(tor, [bx + 4, 0, bz]), tor.m[2], [30, ab + 2, 12], MB, 0, tor.m[1]), resta: true } as Pieza);
@@ -522,10 +532,11 @@ function aunSaar(acc: Acc, f: number): Res {
     ps.push(masa(lab, { mat: OR, suave: 1.6 }));
     // el corazón de la sed: una luz chica al fondo de la boca que late
     ps.push(esfera(...ap(tor, [bx - 10, 0, bz]), 2 + brillo * 2.5 * fz(0), { mat: 'j2_luz', tono: -0.2 + brillo * 0.2 }));
-    ps.push(...grietasVacio(tor, [4, 0, 50], [32, 46, 30], 7, 11, brillo, { frente: 0, grueso: 1.5, largo: 6 }));
+    ps.push(...grietasVacio(tor, [4, 0, 50], [32, 46, 30], 8, 11, brillo, { frente: 0, grueso: 2.2, largo: 6 }));
+    ps.push(...grietasVacio(tor, [-2, 0, 78], [24, 50, 18], 3, 19, brillo, { frente: 1.2, grueso: 1.8 }));
     ps.push(...grietasVacio(tor, [-8, 0, 76], [28, 48, 20], 3, 13, brillo, { frente: PI, grueso: 1.3 }));
     // los cortes de los muñones: vacío y lascas de mármol
-    for (const s of [1, -1]) { const e = ap(tor, [2, s * 64, 52]), d = nor(sub(e, ap(tor, [-4, s * 50, 78]))); ps.push(elipE(add(e, d, 0.5), d, [1.4, 9.5, 9.5], 'j2_vacio'), elipE(add(e, d, 0.2), d, [1.2, 10.5, 10.5], 'j2_borde_vacio', brillo * 0.2 - 0.2)); for (let k = 0; k < 3; k++) { const a = hr(k + s) * TAU; ps.push(poliedro([add(e, lat(d), 0), add(add(e, lat(d), 9 * Math.cos(a)), cruz(d, lat(d)), 9 * Math.sin(a)), add(add(add(e, lat(d), 7 * Math.cos(a + 0.6)), cruz(d, lat(d)), 7 * Math.sin(a + 0.6)), d, 5 + hr(k) * 6), add(e, d, 2)], { mat: MB })); } }
+    for (const s of [1, -1]) { const e = ap(tor, [2, s * 64, 52]), d = nor(sub(e, ap(tor, [-4, s * 50, 78]))), ps = psL.get(s)!; ps.push(elipE(add(e, d, 0.5), d, [1.4, 9.5, 9.5], 'j2_vacio'), elipE(add(e, d, 0.2), d, [1.2, 10.5, 10.5], 'j2_borde_vacio', brillo * 0.2 - 0.2)); for (let k = 0; k < 3; k++) { const a = hr(k + s) * TAU; ps.push(poliedro([add(e, lat(d), 0), add(add(e, lat(d), 9 * Math.cos(a)), cruz(d, lat(d)), 9 * Math.sin(a)), add(add(add(e, lat(d), 7 * Math.cos(a + 0.6)), cruz(d, lat(d)), 7 * Math.sin(a + 0.6)), d, 5 + hr(k) * 6), add(e, d, 2)], { mat: MB })); } }
   }
   // ---- la cabeza larga, lisa y ciega
   {
@@ -570,12 +581,12 @@ function aunSaar(acc: Acc, f: number): Res {
   for (const t of trozos) {
     if (frag <= 0 && caer <= 0) { ps.push(...t.ps); continue; }
     const fuera = nor(add(sub(t.c, centroCuerpo), [hr(t.sem) - 0.5, hr(t.sem + 1) - 0.5, 0.3])), sep = 22 + hr(t.sem * 3) * 30;
-    const eje = nor([hr(t.sem * 5) - 0.5, hr(t.sem * 7) - 0.5, hr(t.sem * 9) - 0.5]), ang = (20 + hr(t.sem * 11) * 50) * frag * (hr(t.sem) < 0.5 ? 1 : -1);
+    const eje = nor([hr(t.sem * 5) - 0.5, hr(t.sem * 7) - 0.5, hr(t.sem * 9) - 0.5]), ang = (t.sem === 1 ? 12 : 16 + hr(t.sem * 11) * 24) * frag * (hr(t.sem) < 0.5 ? 1 : -1);
     let c1 = add(add(t.c, fuera, sep * frag), [0, 0, 14 * frag + Math.sin(w + t.sem) * 3 * frag]);
     // al caer: cada trozo baja hasta apoyarse (los más grandes quedan más altos) y se acuesta
-    const piso = t.sem === 2 ? 30 : t.sem === 1 ? 22 : t.sem === 3 ? 18 : t.sem === 4 ? 6 : 8;
+    const piso = t.sem === 2 ? 30 : t.sem === 1 ? 22 : t.sem === 3 ? 18 : t.sem === 4 ? 6 : t.sem > 20 ? 18 : 8;
     c1 = [c1[0] + fuera[0] * caer * 20, c1[1] + fuera[1] * caer * 20, lerp(c1[2], piso, caer * caer)];
-    const giro = rotM3(eje, ang + caer * 50 * (hr(t.sem * 13) < 0.5 ? 1 : -1));
+    const giro = rotM3(eje, ang + caer * (t.sem === 1 ? 70 : 30) * (hr(t.sem * 13) < 0.5 ? 1 : -1));
     ps.push(...transformar(transformar(t.ps, I3, esc(t.c, -1)), giro, c1));
   }
   // ---- la sed: luz y ceniza que se arremolinan hacia la boca desde todo alrededor
@@ -596,7 +607,7 @@ function aunSaar(acc: Acc, f: number): Res {
   if (golpe > 0.2) { const c: V3 = [px + 118, -12, 1]; ps.push(...aro(c, 10 + golpe * 26, [0, 0, 1], 'j2_luz_oro', -0.1 - golpe * 0.2, 1.4, 0.3)); for (let k = 0; k < 7; k++) { const a = (k / 7) * TAU; ps.push(esfera(c[0] + Math.cos(a) * 14 * golpe, c[1] + Math.sin(a) * 14 * golpe, 2 + golpe * 8 * hr(k), 1.6, { mat: 'j2_marmol' })); } }
   // ---- en la muerte, ceniza dorada que cae de los trozos
   if (frag > 0) for (let k = 0; k < 16; k++) { const u = (ph + hr(k * 2.1)) % 1; ps.push(esfera(px + (hr(k) - 0.5) * 160, py + (hr(k * 3) - 0.5) * 160, 220 - u * 200, 0.9, { mat: k % 2 ? 'j2_ceniza' : 'j2_luz_oro', tono: -u * 0.3 })); }
-  const luzC = acc === 'morir' && caer > 0.5 ? undefined : { c: add(bocaW, [8 + Math.sin(w) * 3, 0, Math.cos(w * 2) * 4]) as V3, r: (60 + brillo * 40) * (1 + 0.1 * Math.sin(w * 2 + 0.7)), color: sed > 0.3 ? '#fff0c8' : '#e8dcc0' };
+  const luzC = acc === 'morir' && caer > 0.5 ? undefined : { c: add(bocaW, [10 + Math.sin(w) * 3, 0, Math.cos(w * 2) * 4]) as V3, r: (34 + brillo * 30) * (1 + 0.12 * Math.sin(w * 2 + 0.7)), color: sed > 0.3 ? '#fff0c8' : '#e8dcc0' };
   return { piezas: ps, resplandor: luzC };
 }
 /** Matriz de giro alrededor de un eje (grados). */

@@ -1415,12 +1415,12 @@ reg({
       ps.push(a.palo([rx + 4, 0, -1], [rx + 4, 0, 26], 1.1, { mat: 'par_madera_negra' }), a.palo([rx + 4, -7, 19], [rx + 4, 7, 20], 0.9, { mat: 'par_madera_negra' }));
     } else {
       // el pozo: piso hundido, bordes de tierra amontonada, los muertos adentro con cal
-      disco(a, ps, 0, 0, -6, rx, ry, 0.6, 'ext_barro', { ruido: 0.1 });
-      for (let i = 0; i < 14; i++) { const t = (i / 14) * PI2; ps.push(a.elipsoide(Math.cos(t) * (rx + 3), Math.sin(t) * (ry + 3), -2, 9 + a.r() * 3, 7, 6 + a.r() * 2, { mat: 'ext_tierra', giro: grad(t) + 90, tono: az(a, 0.05) })); }
+      disco(a, ps, 0, 0, 0.3, rx, ry, 0.8, 'ext_barro', { ruido: 0.1, tono: -0.25 });
+      for (let i = 0; i < 14; i++) { const t = (i / 14) * PI2; ps.push(a.elipsoide(Math.cos(t) * (rx + 3), Math.sin(t) * (ry + 3), 1, 9 + a.r() * 3, 7, 7 + a.r() * 2, { mat: 'ext_tierra', giro: grad(t) + 90, tono: az(a, 0.05) })); }
       ps.push(a.elipsoide(-rx - 8, -6, 3, 12, 10, 6, { mat: 'ext_tierra', tono: 0.05 }));
       const nc = v === 'con_cuerpos' ? 5 : 2;
-      for (let i = 0; i < nc; i++) cadaver(a, ps, elegir(a, ['campesino', 'campesino', 'soldado'] as const), [entre(a, -16, 16), entre(a, -9, 9), -5.5], a.r() * 360, { s: 0.92, huesos: v === 'abierta' && i === 0 });
-      for (let i = 0; i < 5; i++) ps.push(a.elipsoide(az(a, rx * 0.7), az(a, ry * 0.7), -5, 5 + a.r() * 4, 3 + a.r() * 3, 0.8, { mat: 'par_flor_blanca', giro: a.r() * 180, tono: 0.05 }));
+      for (let i = 0; i < nc; i++) cadaver(a, ps, elegir(a, ['campesino', 'campesino', 'soldado'] as const), [entre(a, -16, 16), entre(a, -9, 9), 0.6], a.r() * 360, { s: 0.92, huesos: v === 'abierta' && i === 0 });
+      for (let i = 0; i < 5; i++) ps.push(a.elipsoide(az(a, rx * 0.7), az(a, ry * 0.7), 1.2, 5 + a.r() * 4, 3 + a.r() * 3, 0.8, { mat: 'par_flor_blanca', giro: a.r() * 180, tono: 0.05 }));
       ps.push(a.palo([-rx - 8, -6, 6], [-rx - 4, -2, 30], 0.8, { mat: 'madera' }), a.caja(-rx - 8, -6, 2, 6, 1.2, 8, { mat: 'ext_hierro', giro: 40, incl: -15 }));
       if (v === 'con_cuerpos') for (let i = 0; i < 2; i++) ave(a, ps, [entre(a, -10, 10), entre(a, -6, 6), 0], a.r() * PI2, 1, 'posado');
     }

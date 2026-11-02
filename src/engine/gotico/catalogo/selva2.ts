@@ -737,14 +737,14 @@ reg({
   id: 'sel2_trampa', nombre: ['Trampa de estacas', 'Spike pit trap'], tema: 'selva', variantes: ['abierta', 'tapada', 'con_victima'], huella: [3, 3], bloquea: false,
   armar: (v, _f, a) => {
     const ps: Pieza[] = [];
-    sueloS(a, ps, 34, 30, { matas: 4 });
     const R = 18;
+    sueloS(a, ps, 36, 32, { matas: 4, manchas: 0 });
     // el pozo: piso hundido oscuro, borde de tierra y las estacas afiladas
-    disco(a, ps, 0, 0, -6, R, R * 0.8, 0.6, 'negro', { ruido: 0.1 });
-    for (let i = 0; i < 12; i++) { const t = (i / 12) * PI2; ps.push(a.elipsoide(Math.cos(t) * (R + 2), Math.sin(t) * (R * 0.8 + 2), -1.5, 7, 5, 3.5, { mat: 'sel2_suelo', giro: grad(t) + 90, tono: 0.05 })); }
+    disco(a, ps, 0, 0, 0.4, R, R * 0.8, 0.6, 'negro', { ruido: 0.1 });
+    for (let i = 0; i < 12; i++) { const t = (i / 12) * PI2; ps.push(a.elipsoide(Math.cos(t) * (R + 2), Math.sin(t) * (R * 0.8 + 2), 1, 7, 5, 4.5, { mat: 'sel2_suelo', giro: grad(t) + 90, tono: 0.05 })); }
     if (v === 'tapada') { for (let i = 0; i < 8; i++) ps.push(a.palo([-R, -R * 0.7 + i * 5, 0.6], [R, -R * 0.7 + i * 5 + az(a, 3), 0.6], 0.8, { mat: 'sel2_bambu', tono: -0.1 })); for (let i = 0; i < 14; i++) hoja(a, ps, [az(a, R * 0.8), az(a, R * 0.6), 1.2], [Math.cos(i), Math.sin(i), 0], 9, 3, 0, i % 2 ? 'sel2_hoja' : 'hojas_otono'); return ps; }
-    for (let i = 0; i < 16; i++) { const p: V = [az(a, R * 0.75), az(a, R * 0.6), -6], q = mas(p, [az(a, 2), az(a, 2), 10 + a.r() * 5]); ps.push(a.palo(p, q, 0.9, { mat: 'sel2_bambu', r1: 0.05 })); }
-    if (v === 'con_victima') { cadaver(a, ps, 'explorador', [0, 0, -2], a.r() * 360, { sangre: 0.8, bruces: true, s: 0.95 }); }
+    for (let i = 0; i < 16; i++) { const p: V = [az(a, R * 0.75), az(a, R * 0.6), 0.5], q = mas(p, [az(a, 2), az(a, 2), 7 + a.r() * 5]); ps.push(a.palo(p, q, 0.9, { mat: 'sel2_bambu', r1: 0.05 })); }
+    if (v === 'con_victima') { cadaver(a, ps, 'explorador', [0, 0, 2], a.r() * 360, { sangre: 0.8, bruces: true, s: 0.95 }); }
     for (let i = 0; i < 4; i++) ps.push(a.palo([az(a, R), R * 0.8 + 2, 0.6], [az(a, R), R * 0.8 - 6, -3], 0.7, { mat: 'sel2_bambu', tono: -0.15 }));
     return ps;
   },
