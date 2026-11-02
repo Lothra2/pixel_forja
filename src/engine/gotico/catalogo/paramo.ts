@@ -599,14 +599,12 @@ reg({
     if (v === 'cruz') {
       sillar(a, ps, 0, 0, -1, 16, 16, 7, a.r() * 20, 'par_sillar');
       sillar(a, ps, 0, 0, 5.5, 11, 11, 5, a.r() * 20, 'par_sillar');
-      // cruz de piedra con anillo (gastada y con liquen)
+      // cruz de piedra con anillo (gastada y con liquen): la cruz es una masa y el anillo un collar de tramos
       ps.push(masa([
-        hueso([0, 0, 10], [0, 0, 58], 3.2, 2.6), hueso([-1, -12, 44], [-1, 12, 44], 2.6, 2.6),
-        bulto([0, 0, 44], [2.6, 5, 5]), bulto([1.6, 3, 30], [1, 2, 2.4], { mat: 'ext_liquen', k: 0.4 }), bulto([1.6, -1, 52], [1, 2, 1.6], { mat: 'ext_liquen', k: 0.4 }),
-      ], { mat: 'ext_roca_fria', suave: 1.4 }));
-      ps.push(a.cilindro(0, 0, 44, 8, 1.8, { mat: 'ext_roca_fria', eje: [1, 0, 0] }), a.cilindro(0, 0, 44, 6.4, 2.4, { mat: 'ext_roca_fria', eje: [1, 0, 0], resta: true }));
-      ps.push(a.cilindro(-0.9, 0, 44, 8, 1.8, { mat: 'ext_roca_fria', eje: [1, 0, 0] }), a.cilindro(-1.1, 0, 44, 6.4, 2.4, { mat: 'ext_roca_fria', eje: [1, 0, 0], resta: true }));
-      ps.push(a.palo([0, 0, 10], [0, 0, 58], 3, { mat: 'ext_roca_fria' }), a.palo([-1, -12, 44], [-1, 12, 44], 2.5, { mat: 'ext_roca_fria' }));
+        hueso([0, 0, 10], [0, 0, 58], 3.2, 2.6), hueso([0, -12, 44], [0, 12, 44], 2.6, 2.4), bulto([0, 0, 44], [2.8, 4.5, 4.5]),
+        bulto([2.6, 1, 28], [1, 2, 2.6], { mat: 'ext_liquen', k: 0.4 }), bulto([2.4, -1, 52], [1, 1.6, 1.6], { mat: 'ext_liquen', k: 0.4 }), bulto([0, 0, 12], [4, 4, 2.5], { mat: 'ext_musgo', k: 1 }),
+      ], { mat: 'par_sillar', suave: 1.2 }));
+      for (let i = 0; i < 12; i++) { const t0 = (i / 12) * PI2, t1 = ((i + 1) / 12) * PI2; if (a.r() < 0.12) continue; ps.push(a.palo([0, Math.cos(t0) * 7.5, 44 + Math.sin(t0) * 7.5], [0, Math.cos(t1) * 7.5, 44 + Math.sin(t1) * 7.5], 1.3, { mat: 'par_sillar', tono: -0.03 })); }
       ps.push(a.palo([3, -3, 40], [3.5, -2, 30], 0.35, { mat: 'cuerda' }), a.esfera(3.5, -2, 29.5, 0.9, { mat: 'madera' }));
       for (let i = 0; i < 6; i++) velas.push(polar((i / 6) * PI2 + 0.3, 10 + a.r() * 2, 0));
     }
