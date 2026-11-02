@@ -13,7 +13,7 @@ import { abrirTienda } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, opciones as opcionesRender, type Pick } from './render/escena';
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
-import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa } from './juego/heroe';
+import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
 import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA } from './mundo/actos';
 import { POBLACION, MONSTRUOS } from './datos/monstruos';
@@ -267,7 +267,7 @@ function usarObjeto(jj: Juego, o: ObjZ) {
     o.v = o.v.endsWith('_y') ? 'abriendo_y' : 'abriendo'; o.tag = undefined; o.dato = { abre: jj.t };
     Sonido.efecto('cofre');
     const bueno = /ornado|noble|sarcofago|gg/.test(o.id) ? 2 : 1;
-    setTimeout(() => soltar(jj, o.cx + 0.5, o.cy + 1.2, botin(jj.zona.nivel, bueno, h.c.hallazgo, h.c.oro_extra)), 450);
+    setTimeout(() => soltar(jj, o.cx + 0.5, o.cy + 1.2, botin(nivelEnDificultad(jj.zona.nivel, h.d.dificultad), bueno, h.c.hallazgo, h.c.oro_extra)), 450);
     if (R() < 0.12) { // terror: el cofre era una trampa
       msg(jj, ['Del cofre sale un grito.', 'A scream comes from the chest.'], '#ff6060'); Sonido.susurro(); jj.sacudida = 0.4;
     }
@@ -327,7 +327,7 @@ function procesarEventos(jj: Juego) {
     else if (e.tipo === 'jefe_muerto' && e.dato === 'aun_saar') { guardar(); setTimeout(() => { if (finalDe(jj.heroe.d)) { estado = 'final'; finalT = 0; Sonido.musica('intro'); } else empezarRevelacion(true); }, 4000); }
     else if (e.tipo === 'jefe_muerto') { Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); msg(jj, ['El sello se rompe. Algo escapa hacia lo alto.', 'The seal breaks. Something escapes upward.'], '#ffb060'); guardar(); }
     else if (e.tipo === 'muerte') { Sonido.musica(null as any); tEstado = 0; }
-    else if (e.tipo === 'spawn') { import('./juego/mundo').then((mm) => { const m = mm.crearMonstruo(MONSTRUOS[e.dato.id], jj.zona.nivel + 1, e.dato.x, e.dato.y, 1, jj.heroe.d.dificultad); m.estado = 'perseguir'; m.objetivo = jj.heroe; m.acc = 'morir'; (m as any).surgiendo = 1.2; jj.monstruos.push(m); }); }
+    else if (e.tipo === 'spawn') { import('./juego/mundo').then((mm) => { const m = mm.crearMonstruo(MONSTRUOS[e.dato.id], nivelEnDificultad(jj.zona.nivel, jj.heroe.d.dificultad) + 1, e.dato.x, e.dato.y, 1, jj.heroe.d.dificultad); m.estado = 'perseguir'; m.objetivo = jj.heroe; m.acc = 'morir'; (m as any).surgiendo = 1.2; jj.monstruos.push(m); }); }
     else if (e.tipo === 'nivel') { guardar(); pista('nivel', ['Subiste de nivel: pulsa C para tus atributos y T para tus habilidades.', 'Level up: press C for attributes and T for skills.']); }
     else if (e.tipo === 'mision_hecha') { guardar(); const m = MISIONES.find((q) => q.id === e.dato); if (m?.cierraActo && m.acto < 7) entreActoPendiente = m.acto; }
     else if (e.tipo === 'heraldo_huye') guardar();

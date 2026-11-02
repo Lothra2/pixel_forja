@@ -107,7 +107,21 @@ export interface Calc {
   st: Record<string, number>;
 }
 
-export const xpPara = (n: number) => (n <= 1 ? 0 : Math.round(220 * Math.pow(n - 1, 2.5)));
+/** Nivel máximo del héroe. */
+export const NIVEL_MAX = 100;
+/**
+ * Experiencia para llegar al nivel n: rápida hasta 30, media hasta 70 y larga hasta 100. La base es la curva de
+ * siempre; después de 30 y después de 70 se le suman tramos que crecen de a poco.
+ */
+export const xpPara = (n: number) => {
+  if (n <= 1) return 0;
+  const base = 220 * Math.pow(n - 1, 2.5);
+  const medio = n > 30 ? 1 + Math.pow((n - 30) / 40, 2) * 1.6 : 1;
+  const largo = n > 70 ? 1 + Math.pow((n - 70) / 30, 2) * 1.4 : 1;
+  return Math.round(base * medio * largo);
+};
+/** Nivel de los monstruos de una zona según la dificultad: Normal como está, Pesadilla hasta ~80 e Infierno hasta 100. */
+export const nivelEnDificultad = (nivel: number, dif: number) => (dif >= 2 ? Math.min(100, Math.round(60 + nivel * 0.65)) : dif === 1 ? Math.round(30 + nivel * 0.8) : nivel);
 export const nivelHab = (h: DatosHeroe, id: string, c?: Calc) => (h.habs[id] ? h.habs[id] + (c?.mas_habilidades ?? 0) : 0);
 const v2 = (b: [number, number] | undefined, n: number) => (b ? b[0] + b[1] * (n - 1) : 0);
 
@@ -148,7 +162,7 @@ export function calcular(h: DatosHeroe, buffs: Record<string, number> = {}): Cal
   const elem: Partial<Record<Elemento, number>> = {};
   for (const [k, e] of [['dano_fuego', 'fuego'], ['dano_frio', 'frio'], ['dano_rayo', 'rayo'], ['dano_veneno', 'veneno'], ['dano_sombra', 'sombra'], ['dano_luz', 'luz'], ['dano_sangre', 'sangre']] as [string, Elemento][]) if (st[k]) elem[e] = st[k];
   const resTodo = st.res_todo ?? 0;
-  const pen = [0, -20, -50][h.dificultad] ?? 0;
+  const pen = [0, -40, -100][h.dificultad] ?? 0;
   const res = {
     fisico: 0, fuego: Math.min(75, (st.res_fuego ?? 0) + resTodo + pen), frio: Math.min(75, (st.res_frio ?? 0) + resTodo + pen), rayo: Math.min(75, (st.res_rayo ?? 0) + resTodo + pen),
     veneno: Math.min(75, (st.res_veneno ?? 0) + resTodo + pen), sombra: Math.min(75, (st.res_sombra ?? 0) + resTodo + pen), luz: Math.min(75, resTodo + pen), sangre: 0,

@@ -11,7 +11,7 @@ import { MONSTRUOS } from '../datos/monstruos';
 import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist } from '../juego/historia';
 import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
-import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, ropaBase, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa } from '../juego/heroe';
+import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, ropaBase, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa, nivelEnDificultad } from '../juego/heroe';
 import { recalc, usarPocion, abrirPortal, costoMana, danoHab, habilidadDe, msg, frascosMax, ventanaCombo, cadaveresCerca, MAX_CARGAS, colorElem, type Juego, type Monstruo } from '../juego/mundo';
 import { Sonido } from '../audio/sonido';
 import { R, entero } from '../nucleo/azar';
@@ -718,7 +718,7 @@ function panelCofre(j: Juego, x: number, y: number, t: number) {
 
 // ---------------- tiendas
 export function abrirTienda(j: Juego, tipo: 'herrero' | 'curandera' | 'vidente') {
-  const h = j.heroe, nivel = Math.max(1, Math.min(70, Math.max(h.d.nivel, ZONAS[j.zona.id].nivel) + 2));
+  const h = j.heroe, nivel = Math.max(1, Math.min(100, Math.max(h.d.nivel, nivelEnDificultad(ZONAS[j.zona.id].nivel, h.d.dificultad)) + 2));
   ui.tiendaTipo = tipo; ui.tienda = [];
   const meter = (o: Objeto) => { const p = lugarEn(ui.tienda, o, 10, 10); if (p) ui.tienda.push({ o, x: p[0], y: p[1] }); };
   if (tipo === 'curandera') {

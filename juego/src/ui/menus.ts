@@ -308,7 +308,7 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
     const hr = heroes[sel];
     const fs = cuadrosHeroe(hr.clase, 'quieto', 's'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], bx + 140, by + 30, 2);
     if (boton(T('Jugar', 'Play'), bx + 40, by + 80, 200, 38, { tam: 16 })) accion = 'jugar';
-    if ((hr.actosHechos ?? []).includes(5) && (hr.dificultad ?? 0) < 2 && boton(hr.dificultad ? T('Bajar al Infierno', 'Descend into Hell') : T('Empezar Pesadilla', 'Begin Nightmare'), bx + 40, by + 268, 200, 30, { tam: 13, color: '#ff8060' })) accion = 'dificultad';
+    if ((hr.actosHechos ?? []).includes(7) && (hr.dificultad ?? 0) < 2 && boton(hr.dificultad ? T('Bajar al Infierno', 'Descend into Hell') : T('Empezar Pesadilla', 'Begin Nightmare'), bx + 40, by + 268, 200, 30, { tam: 13, color: '#ff8060' })) accion = 'dificultad';
     if (boton((window as any).__borrar === hr.id ? T('¿Seguro? Clic otra vez', 'Sure? Click again') : T('Borrar', 'Delete'), bx + 40, by + 128, 200, 30, { tam: 13, color: (window as any).__borrar === hr.id ? '#ff6060' : undefined })) accion = 'borrar';
   }
   if (boton(T('Crear héroe nuevo', 'Create new hero'), bx + 40, by + 178, 200, 34, { tam: 14 })) accion = 'crear';

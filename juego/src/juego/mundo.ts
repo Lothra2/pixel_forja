@@ -4,7 +4,7 @@ import { ZONAS, POBL_ZONA, MISIONES, FRASE_JEFE } from '../mundo/actos';
 import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '../datos/monstruos';
 import { HABILIDADES, INVOCADOS, ATAQUE, type Habilidad } from '../datos/clases';
 import { GENTE } from '../datos/npcs';
-import { calcular, nivelHab, xpPara, recoger, type DatosHeroe, type Calc } from './heroe';
+import { calcular, nivelHab, xpPara, recoger, NIVEL_MAX, nivelEnDificultad, type DatosHeroe, type Calc } from './heroe';
 import { botin, crearObjeto, crearUnicoId, legendariaJefe, valorPocion, type Objeto, type Caida } from './objetos';
 import { TALISMAN_JEFE } from '../datos/talismanes';
 import type { Elemento } from './tipos_objetos';
@@ -205,12 +205,13 @@ function escalar(def: DefMonstruo, nivel: number) {
 }
 export function crearMonstruo(def: DefMonstruo, nivel: number, x: number, y: number, calidad = 0, dif = 0): Monstruo {
   const s = escalar(def, nivel + dif * 0);
-  const mv = [1, 3, 4, 1, 1][calidad] * (def.jefe ? 1 : 1) * [1, 2.2, 3.6][dif];
-  const md = [1, 1.5, 1.8, 1, 1][calidad] * [1, 1.6, 2.4][dif];
+  // el nivel ya trae la dificultad (Pesadilla e Infierno suben de nivel): aquí solo un empujón extra
+  const mv = [1, 3, 4, 1, 1][calidad] * (def.jefe ? 1 : 1) * ([1, 1.35, 1.7][dif] ?? 1);
+  const md = [1, 1.5, 1.8, 1, 1][calidad] * ([1, 1.15, 1.3][dif] ?? 1);
   const m: Monstruo = {
     ...(nueva({ tipo: 'monstruo', x, y, vel: def.vel, radio: 0.42 * (def.huella ?? 1), escala: def.escala ?? 1, tinte: def.tinte }) as Ent), tipo: 'monstruo',
     def, nivel, dano: [Math.round(s.dano[0] * md), Math.round(s.dano[1] * md)], defensa: s.defensa, res: { ...(def.res ?? {}) }, calidad, nombre: def.nombre, mods: [],
-    objetivo: null, estado: def.surge ? 'surgir' : 'dormido', cd: entre(0.5, 1.5), pensar: R(), camino: null, ox: x, oy: y, xp: Math.round(s.xp * [1, 3, 5, 10, 1][calidad] * [1, 2.5, 5][dif]), invocaCd: entre(3, 6), fase: 0,
+    objetivo: null, estado: def.surge ? 'surgir' : 'dormido', cd: entre(0.5, 1.5), pensar: R(), camino: null, ox: x, oy: y, xp: Math.round(s.xp * [1, 3, 5, 10, 1][calidad] * ([1, 1.4, 1.8][dif] ?? 1)), invocaCd: entre(3, 6), fase: 0,
   };
   m.vidaMax = m.vida = Math.round(s.vida * mv);
   m.dir = elegir(DIRS);
@@ -222,7 +223,7 @@ function poblar(z: Zona, d: DatosHeroe): Monstruo[] {
   if (!pool.length) return out;
   const def = ZONAS[z.id];
   const dif = d.dificultad;
-  const nivel = z.nivel + dif * 25;
+  const nivel = nivelEnDificultad(z.nivel, dif);
   for (const s of z.spawns) {
     if (s.tipo === 'jefe') {
       const dm = MONSTRUOS[def.jefe!]; if (!dm) continue;
@@ -475,9 +476,9 @@ export function soltar(j: Juego, x: number, y: number, caidas: Caida[]) {
 }
 export function ganarXp(j: Juego, xp: number) {
   const h = j.heroe;
-  if (h.d.nivel >= 70) return;
+  if (h.d.nivel >= NIVEL_MAX) return;
   h.d.xp += xp;
-  while (h.d.xp >= xpPara(h.d.nivel + 1) && h.d.nivel < 70) {
+  while (h.d.xp >= xpPara(h.d.nivel + 1) && h.d.nivel < NIVEL_MAX) {
     h.d.nivel++; h.d.puntosAtrib += 5; h.d.puntosHab += 1;
     recalc(j); h.vida = h.vidaMax; h.mana = h.c.manaMax;
     efecto(j, 'subida_nivel', h.x, h.y, 0, 1);
