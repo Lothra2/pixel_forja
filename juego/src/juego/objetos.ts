@@ -6,7 +6,7 @@ import type { Base, Elemento, Stat, Ranura, Afijo, Unico } from './tipos_objetos
 import { R, entero, elegir, clamp } from '../nucleo/azar';
 
 export type Rareza = 'normal' | 'magico' | 'raro' | 'conjunto' | 'unico' | 'legendario' | 'gris';
-export type TipoObj = 'equipo' | 'pocion' | 'gema' | 'runa' | 'pergamino';
+export type TipoObj = 'equipo' | 'pocion' | 'gema' | 'runa' | 'pergamino' | 'thor';
 export interface Objeto {
   uid: number;
   tipo: TipoObj;
@@ -23,6 +23,8 @@ export interface Objeto {
   vivo?: Elemento;
   lore?: [string, string];
   conjunto?: string;
+  /** Equipo de Thor: el tramo de la barda (1 a 5). */
+  tramo?: number;
   palabra?: string;
   w: number; h: number;
   /** Pociones: 'vida' | 'mana' | 'rejuv'; tamaño 0..4. */
@@ -315,4 +317,23 @@ export const NOMBRE_STAT: Record<string, [string, string]> = {
 export function textoStat(s: string, v: number, idi: 0 | 1): string {
   const t = NOMBRE_STAT[s]; if (!t) return `${s} ${v}`;
   return t[idi].replace('{v}', String(v)).replace('+-', '-');
+}
+
+// ------------------------------------------------------------------ equipo de Thor
+const NOMBRE_BARDA: [string, string][] = [['', ''], ['Placa dorada y pañuelo', 'Gold Tag and Bandana'], ['Peto de cuero', 'Leather Breastplate'], ['Malla con hombreras', 'Mail with Pauldrons'], ['Barda de placas', 'Plate Barding'], ['Barda de la Casa GG', 'Barding of House GG']];
+const NOMBRE_COLLAR: [string, string][] = [['Collar de cuero', 'Leather Collar'], ['Collar tachonado', 'Studded Collar'], ['Collar de plata', 'Silver Collar'], ['Collar de los guardianes', 'Guardian Collar']];
+const TRAMO_NIVEL = [1, 6, 15, 30, 50, 75];
+/** Un collar o una barda para Thor. La barda sube su armadura a un tramo; el collar le da daño, vida y velocidad. */
+export function crearObjetoThor(clase: 'collar' | 'barda', nivel: number): Objeto {
+  if (clase === 'barda') {
+    let t = 0; for (let i = 0; i < TRAMO_NIVEL.length; i++) if (nivel >= TRAMO_NIVEL[i]) t = i;
+    const tramo = Math.max(1, Math.min(5, t + (R() < 0.3 ? 1 : 0)));
+    const rareza: Rareza = tramo === 5 ? 'legendario' : tramo >= 3 ? 'raro' : 'magico';
+    return { uid: nuevoUid(), tipo: 'thor', base: 'thor_barda', rareza, nombre: [...NOMBRE_BARDA[tramo]] as [string, string], nivel, stats: [], durab: 0, durabMax: 0, huecos: 0, engarces: [], w: 2, h: 2, precio: 400 + tramo * 900, tramo };
+  }
+  const g = Math.min(3, Math.floor(nivel / 25));
+  const k = 1 + nivel / 40;
+  const stats: [string, number][] = [['thor_dano', Math.round((8 + R() * 10) * k)], ['thor_vida', Math.round((8 + R() * 12) * k)]];
+  if (R() < 0.4) stats.push(['thor_vel', Math.round(5 + R() * 10)]);
+  return { uid: nuevoUid(), tipo: 'thor', base: 'thor_collar', rareza: stats.length > 2 ? 'raro' : 'magico', nombre: [...NOMBRE_COLLAR[g]] as [string, string], nivel, stats, durab: 0, durabMax: 0, huecos: 0, engarces: [], w: 1, h: 1, precio: 300 + nivel * 25 };
 }

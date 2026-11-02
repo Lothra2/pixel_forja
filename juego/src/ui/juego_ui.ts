@@ -3,7 +3,7 @@
 import { ctx, W, H, E, pulso } from '../nucleo/lienzo';
 import { barraInferior, orbe, zonasBarra, ladoOrbe, barraJefe, cursores, cartelMuerte, panelInventario, EQUIPO as EQUIPO_HUD, CELDA_INV, BOLSA as BOLSA_HUD, type ObjetoInv } from '../../../src/engine/gotico/hud';
 import { aLoot, arma3dDe } from './loot';
-import { texto, T, TT, IDI, marco, titulo, boton, dentro, icono, lineasObjeto, tooltip, cacheRaster, rasterACanvas, envolver, ancho, TITULO } from './comun';
+import { texto, T, TT, IDI, marco, titulo, boton, dentro, icono, iconoThor, lineasObjeto, tooltip, cacheRaster, rasterACanvas, envolver, ancho, TITULO } from './comun';
 import { CLASES, HABILIDADES, habilidadesDe, ATAQUE, TIERS, type Habilidad } from '../datos/clases';
 import { NPCS } from '../datos/npcs';
 import { MISIONES, ZONAS, PUEBLO_DE, daMision, type Mision, type Premio } from '../mundo/actos';
@@ -12,7 +12,8 @@ import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho,
 import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
 import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, ropaBase, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa, nivelEnDificultad } from '../juego/heroe';
-import { recalc, usarPocion, abrirPortal, costoMana, danoHab, habilidadDe, msg, frascosMax, ventanaCombo, cadaveresCerca, MAX_CARGAS, colorElem, type Juego, type Monstruo } from '../juego/mundo';
+import { recalc, usarPocion, abrirPortal, costoMana, danoHab, habilidadDe, msg, frascosMax, ventanaCombo, cadaveresCerca, MAX_CARGAS, colorElem, thorDe, tramoThor, type Juego, type Monstruo } from '../juego/mundo';
+import { cuadrosMonstruo, dibujar as dibujarCuadro } from '../motor/assets';
 import { Sonido } from '../audio/sonido';
 import { R, entero } from '../nucleo/azar';
 
@@ -384,7 +385,49 @@ function panelInv(j: Juego, x: number, y: number, t: number) {
     }
   }
   rejillaObjetos(j, h.d.bolsa, x + BOLSA_HUD.x, y + BOLSA_HUD.y, BOLSA_W, BOLSA_H, t, 'bolsa', act);
-  void t;
+  panelThor(j, x - 128, y + 40, t);
+}
+/** El panel de Thor, pegado al inventario: su retrato, sus stats y sus dos casillas (collar y barda). */
+function panelThor(j: Juego, x: number, y: number, t: number) {
+  const h = j.heroe, d = h.d, th = (d.thor ??= {});
+  const W2 = 122, H2 = 236;
+  marco(x, y, W2, H2);
+  titulo('Thor', x, y - 6, W2);
+  // retrato: su sprite del tramo actual, quieto mirando al frente
+  const m = thorDe(j), tr = tramoThor(d);
+  const fs = cuadrosMonstruo(m?.def.sprite ?? `thor_${tr}`, 'quieto', 's');
+  ctx.fillStyle = '#0a0806'; ctx.fillRect(x + 8, y + 30, W2 - 16, 74);
+  if (fs.length) { const q = fs[Math.floor(t * 4) % fs.length]; ctx.save(); ctx.imageSmoothingEnabled = false; dibujarCuadro(ctx, q, x + W2 / 2, y + 96, 1.4); ctx.restore(); }
+  else texto(T('descansando', 'resting'), x + W2 / 2, y + 66, { color: '#a09070', tam: 10, alin: 'center' });
+  // stats
+  let ly = y + 116;
+  const linea = (a: string, col = '#d8ccb0') => { texto(a, x + 10, ly, { color: col, tam: 10 }); ly += 13; };
+  linea(`${T('Nivel', 'Level')} ${d.nivel}  ·  ${T('tramo', 'tier')} ${tr}`);
+  if (m) { linea(`${T('Vida', 'Life')} ${Math.round(m.vida)} / ${m.vidaMax}`); linea(`${T('Daño', 'Damage')} ${Math.round(m.dano[0])}-${Math.round(m.dano[1])}`); }
+  else linea(T(`Vuelve en ${Math.ceil(th.descanso ?? 0)} s`, `Back in ${Math.ceil(th.descanso ?? 0)} s`), '#c0a070');
+  // casillas
+  const cas: [('collar' | 'barda'), number, number, number][] = [['collar', x + 14, y + 168, 40], ['barda', x + 64, y + 160, 48]];
+  for (const [tipo, cx, cy, s] of cas) {
+    const o = tipo === 'collar' ? th.collar : th.bardaObj;
+    ctx.fillStyle = '#0d0a08'; ctx.fillRect(cx, cy, s, s); ctx.strokeStyle = '#5a4630'; ctx.strokeRect(cx + 0.5, cy + 0.5, s - 1, s - 1);
+    if (o) iconoThor(o, cx, cy, s, s, t);
+    else texto(tipo === 'collar' ? T('collar', 'collar') : T('barda', 'barding'), cx + s / 2, cy + s / 2 + 3, { color: '#6a5a40', tam: 9, alin: 'center' });
+    if (!dentro(cx, cy, s, s)) continue;
+    const vale = ui.mano && ui.mano.tipo === 'thor' && ui.mano.base === `thor_${tipo}`;
+    if (ui.mano) { ctx.strokeStyle = vale ? '#40ff40' : '#ff4040'; ctx.strokeRect(cx + 1, cy + 1, s - 2, s - 2); }
+    else if (o) ui.encima = { o, x: cx + s / 2, y: cy, comparar: false };
+    if (E.clicIzq) { E.clicIzq = false; ponerThor(j, tipo); }
+  }
+}
+/** Pone (o saca) el collar o la barda de Thor con lo que hay en la mano. */
+function ponerThor(j: Juego, tipo: 'collar' | 'barda', o?: Objeto) {
+  const th = (j.heroe.d.thor ??= {}); const nuevo = o ?? ui.mano;
+  if (nuevo && !(nuevo.tipo === 'thor' && nuevo.base === `thor_${tipo}`)) { Sonido.efecto('negado'); return null; }
+  const viejo = (tipo === 'collar' ? th.collar : th.bardaObj) ?? null;
+  if (tipo === 'collar') th.collar = nuevo ?? undefined; else { th.bardaObj = nuevo ?? undefined; th.barda = nuevo?.tramo ?? 0; }
+  if (!o) ui.mano = viejo;
+  Sonido.efecto('equipar');
+  return viejo;
 }
 const GEMA_HUD: Record<string, string> = { rubi: 'rubi', zafiro: 'zafiro', topacio: 'topacio', esmeralda: 'esmeralda', amatista: 'amatista', diamante: 'diamante', calavera: 'diamante' };
 function gemaDe(id?: string): string | null { if (!id) return null; const k = Object.keys(GEMA_HUD).find((g) => id.startsWith(g)); return k ? GEMA_HUD[k] : 'runa'; }
@@ -429,6 +472,8 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
     ctx.globalAlpha = 1;
     if (!cumpleReq(j.heroe.d, j.heroe.c, b.o) && b.o.tipo === 'equipo') { ctx.fillStyle = 'rgba(200,20,20,0.32)'; ctx.fillRect(ox + 1, oy + 1, b.o.w * C - 1, b.o.h * C - 1); }
   }
+  // el equipo de Thor lleva su ícono propio de la Forja encima del que pinta el panel
+  if (tipo === 'bolsa') for (const b of lista) if (b.o.tipo === 'thor') { const ox = x + b.x * C + 1, oy = y + b.y * C + 1, w = b.o.w * C - 2, hh = b.o.h * C - 2; ctx.fillStyle = '#0e0b09'; ctx.fillRect(ox, oy, w, hh); ctx.fillStyle = colorObj(b.o) + '30'; ctx.fillRect(ox, oy, w, hh); iconoThor(b.o, ox, oy, w, hh, t); }
   // la bolsa la pinta el panel de la Forja: encima, en rojo, lo que el héroe todavía no puede llevar
   if (tipo === 'bolsa') for (const b of lista) if (b.o.tipo === 'equipo' && !cumpleReq(j.heroe.d, j.heroe.c, b.o)) { ctx.fillStyle = 'rgba(200,20,20,0.32)'; ctx.fillRect(x + b.x * C + 1, y + b.y * C + 1, b.o.w * C - 2, b.o.h * C - 2); ctx.strokeStyle = 'rgba(255,60,60,0.7)'; ctx.strokeRect(x + b.x * C + 1.5, y + b.y * C + 1.5, b.o.w * C - 3, b.o.h * C - 3); }
   if (!dentro(x, y, cw * C, ch * C)) return;
@@ -466,6 +511,11 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
     const o = bajo.o;
     if (o.tipo === 'pocion') { const i = j.heroe.d.cinturon.findIndex((c) => !c); if (i >= 0) { quitar(bajo); j.heroe.d.cinturon[i] = o; } else { quitar(bajo); j.heroe.d.cinturon.push(o); usarPocion(j, j.heroe.d.cinturon.length - 1); j.heroe.d.cinturon.length = 4; } return; }
     if (o.base === 'pergamino_portal') { abrirPortal(j); return; }
+    if (o.tipo === 'thor') { // ponérselo a Thor: lo que tenía vuelve a la bolsa
+      quitar(bajo); const viejo = ponerThor(j, o.base === 'thor_collar' ? 'collar' : 'barda', o);
+      if (viejo) { const p = lugarBolsa(todos, viejo); if (p) todos.push({ o: viejo, x: p[0], y: p[1], b: p[2] }); else ui.mano = viejo; }
+      return;
+    }
     if (o.tipo === 'equipo') { // equipar rápido
       const r = baseDe(o)!.ranura; const cas: Casilla = r === 'anillo' ? (j.heroe.d.equipo.anillo1 ? 'anillo2' : 'anillo1') : (r as Casilla);
       quitar(bajo); ui.mano = o; clicEquipo(j, cas);

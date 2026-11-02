@@ -31,7 +31,7 @@ export interface DatosHeroe {
   viajes: string[];
   misiones: Record<string, number>;
   /** Thor, el perro de la familia: segundos que le faltan para volver si cayó, y su barda propia (tramo 0 a 5) si tiene. */
-  thor?: { descanso?: number; barda?: number };
+  thor?: { descanso?: number; barda?: number; collar?: Objeto; bardaObj?: Objeto };
   muertes: number;
   creado: number;
   jugado: number;

@@ -87,6 +87,8 @@ function atlasZona(zid: string): Set<string> {
   for (const id of mons) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
   if (def.tipo === 'pueblo') for (const n of GENTE[def.acto] ?? []) for (const a of atlasDe('m', clavesCon('m', `${n}/`))) s.add(a);
   for (const a of atlasDe('w', Object.keys(m.w ?? {}))) s.add(a);
+  // íconos del equipo de Thor
+  for (const a of atlasDe('o', ['thor_icono_collar|icono', 'thor_icono_barda|icono', 'thor_icono_collar|suelo'])) s.add(a);
   // invocaciones del héroe
   for (const id of ['esqueleto', 'esqueleto_arquero', 'ogro', 'necrofago', 'espectro', `thor_${tramoThor(j!.heroe.d)}`, `thor_${Math.min(5, tramoThor(j!.heroe.d) + 1)}`]) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
   // armas del arsenal para íconos

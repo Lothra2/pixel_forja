@@ -102,7 +102,19 @@ function icono3D(o: Objeto, x: number, y: number, w: number, h: number): boolean
   ctx.drawImage(c, Math.round(x + (w - c.width) / 2), Math.round(y + (h - c.height) / 2));
   return true;
 }
+/** Ícono horneado de la Forja para el equipo de Thor (collar animado, barda fija). */
+export function iconoThor(o: Objeto, x: number, y: number, w: number, h: number, t = 0): boolean {
+  const m = objetoMeta(o.base === 'thor_collar' ? 'thor_icono_collar' : 'thor_icono_barda', 'icono'); if (!m || !m.f.length) return false;
+  const q = m.f[Math.floor((t * 25) / (m.t ?? 3)) % m.f.length]; if (!q) return false;
+  const k = Math.min((w - 4) / q.w, (h - 4) / q.h, 2);
+  ctx.save(); ctx.imageSmoothingEnabled = false;
+  if (o.tramo === 5 || o.rareza === 'legendario') { ctx.globalAlpha = 0.35 + Math.sin(t * 3) * 0.1; ctx.fillStyle = '#ffb040'; ctx.fillRect(x + 1, y + 1, w - 2, h - 2); ctx.globalAlpha = 1; }
+  const ok = dibujar(ctx, q, x + w / 2 - (q.w / 2 - q.ax) * k, y + h / 2 - (q.h / 2 - q.ay) * k, k);
+  if (o.tramo) { ctx.font = `bold 9px ${TITULO}`; ctx.fillStyle = '#ffd890'; ctx.textAlign = 'right'; ctx.fillText(['', 'I', 'II', 'III', 'IV', 'V'][o.tramo], x + w - 3, y + h - 3); }
+  ctx.restore(); return ok;
+}
 export function icono(o: Objeto, x: number, y: number, w: number, h: number, t = 0) {
+  if (o.tipo === 'thor' && iconoThor(o, x, y, w, h, t)) return;
   if (icono3D(o, x, y, w, h)) return;
   const b = baseDe(o);
   const cx = x + w / 2, cy = y + h / 2;
@@ -202,6 +214,14 @@ export function lineasObjeto(o: Objeto, h?: { nivel: number; fue: number; des: n
   if (o.tipo === 'pocion') out.push([T('Clic derecho o 1-4 para beber', 'Right click or 1-4 to drink'), '#a0a0a0']);
   if (o.tipo === 'gema' || o.tipo === 'runa') out.push([T('Se engarza en un objeto con huecos', 'Can be socketed into an item'), '#a0a0a0']);
   if (o.tipo === 'pergamino') out.push([T('Clic derecho: abre un portal al campamento', 'Right click: opens a portal to camp'), '#a0a0a0']);
+  if (o.tipo === 'thor') {
+    out.push([T('Equipo de Thor', 'Thor\'s gear'), '#9ec8ff']);
+    if (o.tramo) out.push([T(`Armadura de tramo ${o.tramo}: más vida y menos daño recibido`, `Tier ${o.tramo} armor: more life and less damage taken`), '#e8e0d0']);
+    const NOM: Record<string, [string, string]> = { thor_dano: ['% de daño de Thor', '% Thor damage'], thor_vida: ['% de vida de Thor', '% Thor life'], thor_vel: ['% de velocidad de Thor', '% Thor speed'] };
+    for (const [k, v] of o.stats) if (NOM[k]) out.push([`+${v}${T(NOM[k][0], NOM[k][1])}`, '#8080ff']);
+    out.push([T('Clic derecho: se lo pones a Thor', 'Right click: put it on Thor'), '#a0a0a0']);
+    return out;
+  }
   if (o.dano) out.push([`${b?.dosManos ? T('Daño a dos manos', 'Two-hand damage') : T('Daño', 'Damage')}: ${o.dano[0]} ${T('a', 'to')} ${o.dano[1]}`, '#e8e0d0']);
   if (o.def) out.push([`${T('Defensa', 'Defense')}: ${o.def}`, '#e8e0d0']);
   if (b?.bloqueo) out.push([`${T('Bloqueo', 'Block')}: ${b.bloqueo}%`, '#e8e0d0']);

@@ -5,7 +5,7 @@ import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '..
 import { HABILIDADES, INVOCADOS, ATAQUE, type Habilidad } from '../datos/clases';
 import { GENTE } from '../datos/npcs';
 import { calcular, nivelHab, xpPara, recoger, NIVEL_MAX, nivelEnDificultad, type DatosHeroe, type Calc } from './heroe';
-import { botin, crearObjeto, crearUnicoId, legendariaJefe, valorPocion, type Objeto, type Caida } from './objetos';
+import { botin, crearObjeto, crearUnicoId, legendariaJefe, valorPocion, crearObjetoThor, type Objeto, type Caida } from './objetos';
 import { TALISMAN_JEFE } from '../datos/talismanes';
 import type { Elemento } from './tipos_objetos';
 import { R, entre, elegir, clamp, dist, hashTxt } from '../nucleo/azar';
@@ -456,6 +456,8 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   if (m.def.jefe) caidas.push({ obj: crearObjeto(m.nivel, R() < 0.5 ? 'unico' : 'raro') }, { obj: crearObjeto(m.nivel, 'raro') });
   const tj = TALISMAN_JEFE[m.def.id]; if (tj) { const o = crearUnicoId(tj, m.nivel); if (o) caidas.push({ obj: o }); }
   const lj = legendariaJefe(m.def.id, m.nivel, cal); if (lj) caidas.push({ obj: lj });
+  // equipo de Thor: collares y bardas de los únicos y los jefes
+  if ((m.def.jefe && R() < 0.3) || (m.calidad >= 2 && !m.def.jefe && R() < 0.07)) caidas.push({ obj: crearObjetoThor(R() < 0.5 ? 'collar' : 'barda', m.nivel) });
   if (m.calidad >= 2 && !m.def.jefe && R() < 0.25) caidas.push({ obj: crearObjeto(m.nivel, R() < 0.3 ? 'raro' : 'magico', (b) => b.ranura === 'talisman') });
   soltar(j, m.x, m.y, caidas);
   if (m.mods.includes('ardiente')) { j.areas.push({ x: m.x, y: m.y, radio: 2, dano: [m.dano[0], m.dano[1] * 1.2], elem: 'fuego', t: 0, dur: 0.4, tick: 1, prox: 0.3, deHeroe: false, efecto: 'explosion_fuego', retraso: 0.3 }); efecto(j, 'explosion_fuego', m.x, m.y); }
@@ -647,11 +649,14 @@ const conCollar = (h: Heroe) => Object.values(h.d.equipo).some((o) => o && (o as
 /** Stats de Thor: suben con el nivel del héroe, su tramo de armadura y el Collar de Thor del Legado GG. */
 function statsThor(j: Juego, m: Monstruo) {
   const h = j.heroe, n = h.d.nivel, tr = tramoThor(h.d), col = conCollar(h) ? 1.3 : 1;
+  const st = (id: string) => (h.d.thor?.collar?.stats ?? []).filter(([k2]) => k2 === id).reduce((a, [, v]) => a + v, 0);
   const k = (1 + tr * 0.12) * col * (1 + h.c.invocados_pct / 200);
+  const kd = 1 + st('thor_dano') / 100, kv = 1 + st('thor_vida') / 100;
   const pct = m.vidaMax ? m.vida / m.vidaMax : 1;
-  m.vidaMax = Math.round((70 + n * 24) * k); m.vida = Math.max(1, Math.round(m.vidaMax * pct));
-  m.dano = [(3 + n * 1.0) * k, (5 + n * 1.7) * k];
-  m.vel = 5.2 * (col > 1 ? 1.1 : 1);
+  m.vidaMax = Math.round((70 + n * 24) * k * kv); m.vida = Math.max(1, Math.round(m.vidaMax * pct));
+  m.dano = [(3 + n * 1.0) * k * kd, (5 + n * 1.7) * k * kd];
+  m.vel = 5.2 * (col > 1 ? 1.1 : 1) * (1 + st('thor_vel') / 100);
+  (m as any).firmaCollar = h.d.thor?.collar?.uid ?? 0;
   (m as any).nivelThor = n; (m as any).tramoThor = tr; (m as any).collarThor = col;
   const sp = spriteThor(tr); m.def = { ...m.def, sprite: sp.sprite }; m.tinte = sp.tinte; m.escala = sp.escala;
 }
@@ -674,7 +679,7 @@ function actualizarThor(j: Juego, dt: number) {
   if (t.descanso && t.descanso > 0) { t.descanso -= dt; if (j.zona.tipo === 'pueblo') t.descanso = 0; if (t.descanso > 0) return; }
   let m = thorDe(j);
   if (!m) { if (h.muerto) return; m = crearThor(j); efecto(j, 'circulo_invocacion', m.x, m.y, 0, 0.6); return; }
-  if ((m as any).nivelThor !== h.d.nivel || (m as any).tramoThor !== tramoThor(h.d) || (m as any).collarThor !== (conCollar(h) ? 1.3 : 1)) statsThor(j, m);
+  if ((m as any).nivelThor !== h.d.nivel || (m as any).tramoThor !== tramoThor(h.d) || (m as any).collarThor !== (conCollar(h) ? 1.3 : 1) || (m as any).firmaCollar !== (h.d.thor?.collar?.uid ?? 0)) statsThor(j, m);
   // ladrido protector: escudo para el héroe cuando está en apuros o rodeado
   (m as any).cdLadrido -= dt;
   if ((m as any).cdLadrido <= 0 && !h.muerto) {

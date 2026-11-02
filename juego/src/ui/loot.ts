@@ -21,6 +21,7 @@ export function aLoot(o: Objeto): LootItem {
   else if (o.tipo === 'gema') { const g = Object.keys(GEMA).find((x) => o.base.startsWith(x)) ?? 'rubi'; base = { cat: 'gem', kind: GEMA[g], grade: GRADO(o.base) }; }
   else if (o.tipo === 'runa') { const r = RUNAS.find((x) => x.id === o.base); base = { cat: 'rune', index: ((r?.orden ?? 1) - 1) % 12 }; }
   else if (o.tipo === 'pergamino') base = { cat: 'consumable', icon: 'scroll_portal' };
+  else if (o.tipo === 'thor') base = o.base === 'thor_collar' ? { cat: 'jewel', icon: 'amulet' } : { cat: 'armor', slot: 'chest', line: 'placas', tier: Math.min(5, o.tramo ?? 1) };
   else if (b) {
     const vis = JSON.stringify(b.visual);
     const linea = /placas/.test(vis) ? 'placas' : /malla/.test(vis) ? 'malla' : /cuero/.test(vis) ? 'cuero' : 'tunica';
