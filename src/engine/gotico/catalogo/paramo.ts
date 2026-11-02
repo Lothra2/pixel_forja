@@ -624,7 +624,7 @@ reg({
 });
 
 // ------------------------------------------------------------------ agua: arroyos, puentes y charcos
-interface OpcCauce { curva?: number; piedras?: number; juncos?: number; sinBordes?: boolean; empalme?: boolean; ciclo?: number }
+interface OpcCauce { curva?: number; piedras?: number; juncos?: number; sinBordes?: boolean; empalme?: boolean; ciclo?: number; tramos?: number; pasoRuido?: number }
 /** Cauce a lo largo de x (de -L/2 a L/2), ancho `w`, que serpentea `curva`; espuma que corre con el cuadro. */
 function cauce(a: Arma, ps: Pieza[], L: number, w: number, f: number, nc: number, o: OpcCauce = {}) {
   const off = cauceCamino(a, ps, (s) => ({ p: [s - L / 2, 0], d: [1, 0], l: [0, 1] }), L, w, f, nc, o);
@@ -634,15 +634,16 @@ function cauce(a: Arma, ps: Pieza[], L: number, w: number, f: number, nc: number
  * El cauce sobre un camino de largo `Lt` (`en(s)` da el punto, la tangente río abajo y la normal izquierda). Con
  * `empalme`, a 11 o menos de cada punta (los 2 que pasan del borde de la baldosa y el último tramo) el centro no
  * serpentea y el ancho es justo `w`: así un tramo pega con el siguiente (recto, _y o codo) sin escalón. `ciclo` es
- * el largo en que se repite la espuma (la misma velocidad en todos los tramos).
+ * el largo en que se repite la espuma (la misma velocidad en todos los tramos); `tramos` cuántos poliedros arman el
+ * cauce y `pasoRuido` cada cuánto largo cambia el ancho (por defecto, un tramo).
  */
 function cauceCamino(a: Arma, ps: Pieza[], en: (s: number) => { p: [number, number]; d: [number, number]; l: [number, number] }, Lt: number, w: number, f: number, nc: number, o: OpcCauce = {}) {
-  const n = 10, fase = a.r() * PI2, cv = o.curva ?? 6, cic = o.ciclo ?? Lt;
+  const n = o.tramos ?? 10, fase = a.r() * PI2, cv = o.curva ?? 6, cic = o.ciclo ?? Lt, pr = o.pasoRuido ?? Lt / n;
   const fija = (s: number) => { if (!o.empalme) return 1; const u = Math.min(1, Math.max(0, (Math.min(s, Lt - s) - 11) / 14)); return u * u * (3 - 2 * u); };
   const off = (s: number) => Math.sin(((s - Lt / 2) / Lt) * Math.PI * 1.4 + fase) * cv * fija(s);
   const P = (s: number, k: number, z: number): V => { const q = en(s), m = off(s) + k; return [q.p[0] + q.l[0] * m, q.p[1] + q.l[1] * m, z]; };
   for (let i = 0; i < n; i++) {
-    const s0 = (i / n) * Lt, s1 = s0 + Lt / n + 0.5, w0 = w * (1 + (0.2 * ruido(i * 0.7, fase, 1) - 0.1) * fija(s0)), w1 = w * (1 + (0.2 * ruido((i + 1) * 0.7, fase, 1) - 0.1) * fija(s1));
+    const s0 = (i / n) * Lt, s1 = s0 + Lt / n + 0.5, w0 = w * (1 + (0.2 * ruido((s0 / pr) * 0.7, fase, 1) - 0.1) * fija(s0)), w1 = w * (1 + (0.2 * ruido(((s0 + Lt / n) / pr) * 0.7, fase, 1) - 0.1) * fija(s1));
     if (!o.sinBordes) ps.push(a.poliedro([P(s0, -w0 / 2 - 5, -0.3), P(s1, -w1 / 2 - 5, -0.3), P(s0, w0 / 2 + 5, -0.3), P(s1, w1 / 2 + 5, -0.3), P(s0, -w0 / 2 - 3, 0.8), P(s1, -w1 / 2 - 3, 0.8), P(s0, w0 / 2 + 3, 0.8), P(s1, w1 / 2 + 3, 0.8)], { mat: 'ext_barro', tono: az(a, 0.05) }));
     ps.push(a.poliedro([P(s0, -w0 / 2, -0.2), P(s1, -w1 / 2, -0.2), P(s0, w0 / 2, -0.2), P(s1, w1 / 2, -0.2), P(s0, -w0 / 2, 1.1), P(s1, -w1 / 2, 1.1), P(s0, w0 / 2, 1.1), P(s1, w1 / 2, 1.1)], { mat: 'ext_agua_lluvia', tono: -0.04 }));
   }
@@ -657,7 +658,8 @@ function cauceCamino(a: Arma, ps: Pieza[], en: (s: number) => { p: [number, numb
   for (let i = 0; i < (o.juncos ?? 3); i++) { const s = Lt / 2 + az(a, Lt * 0.45), sg = a.r() < 0.5 ? 1 : -1, p = P(s, sg * (w / 2 + 2), 0); juncos(a, ps, p[0], p[1], 6 + Math.floor(a.r() * 5), 14); }
   return off;
 }
-/** Cauce del codo (`codo_n/e/s/o`, ver `codoArco`): el arco de radio 40 y 2 de recta de más en cada punta, como el recto. */
+/** Cauce del codo (`codo_n/e/s/o`, ver `codoArco`): el arco de radio 40 y 2 de recta de más en cada punta, como el recto.
+ * Va en tramos más cortos que el recto para que las cuerdas sigan el arco, con el ancho cambiando al mismo paso. */
 function cauceCodo(a: Arma, ps: Pieza[], v: string, w: number, f: number, nc: number, o: OpcCauce = {}) {
   const C = codoArco(v), ext = 2;
   const en = (s: number) => {
@@ -684,7 +686,7 @@ reg({
       const m = codoArco(v).en(0.5), q: Pieza[] = [];
       sueloP(a, q, 40, 24, { matas: 6, piedras: 0, manchas: 3, giro: grad(Math.atan2(m.d[1], m.d[0])) });
       ps.push(...mover(q, [m.p[0], m.p[1], 0]));
-      cauceCodo(a, ps, v, 18, f, 6, { piedras: 2, juncos: 3, empalme: true, ciclo: 84 });
+      cauceCodo(a, ps, v, 18, f, 6, { piedras: 2, juncos: 3, empalme: true, ciclo: 84, tramos: 20, pasoRuido: 8.4 });
       return ps;
     }
     sueloP(a, ps, 44, 22, { matas: 6, piedras: 0, manchas: 3 });

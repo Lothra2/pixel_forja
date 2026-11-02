@@ -334,8 +334,10 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const groups: Record<string, typeof loot> = {
     iconos: loot.filter((i) => !isSpecial(i.rarity)),
     especiales: loot.filter((i) => uniqueIds.has(i.id)),
-    armadura_n5: loot.filter((i) => isSpecial(i.rarity) && !uniqueIds.has(i.id)),
   };
+  // las armaduras de nivel 5 (con las líneas épicas son muchas) van en atlas de a 60 (una fila de 8 cuadros por objeto) para no pasar de 4096 px
+  const n5 = loot.filter((i) => isSpecial(i.rarity) && !uniqueIds.has(i.id));
+  for (let k = 0; k * 60 < n5.length; k++) groups[k ? `armadura_n5_${k + 1}` : 'armadura_n5'] = n5.slice(k * 60, (k + 1) * 60);
   const atlasOf = new Map<string, string>();
   const atlas: Record<string, Record<number, string>> = {};
   for (const [g, items] of Object.entries(groups)) {
