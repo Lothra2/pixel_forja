@@ -215,7 +215,8 @@ export function lineasObjeto(o: Objeto, h?: { nivel: number; fue: number; des: n
   if (o.vivo) out.push([T(`Arma viva: ${({ fuego: 'arde', frio: 'congela', rayo: 'chispea', veneno: 'supura', sombra: 'devora la luz', luz: 'resplandece', sangre: 'sangra', fisico: '' } as any)[o.vivo]}`, `Living weapon: ${({ fuego: 'burns', frio: 'freezes', rayo: 'sparks', veneno: 'festers', sombra: 'eats the light', luz: 'shines', sangre: 'bleeds', fisico: '' } as any)[o.vivo]}`), '#ffb060']);
   if (o.tipo === 'pocion') out.push([T('Clic derecho o 1-4 para beber', 'Right click or 1-4 to drink'), '#a0a0a0']);
   if (o.tipo === 'gema' || o.tipo === 'runa') out.push([T('Se engarza en un objeto con huecos', 'Can be socketed into an item'), '#a0a0a0']);
-  if (o.tipo === 'pergamino') out.push([T('Clic derecho: abre un portal al campamento', 'Right click: opens a portal to camp'), '#a0a0a0']);
+  if (o.base === 'pergamino_olvido') out.push([T('Clic derecho: reinicia tus habilidades y atributos', 'Right click: resets your skills and attributes'), '#c8a060']);
+  else if (o.tipo === 'pergamino') out.push([T('Clic derecho: abre un portal al campamento', 'Right click: opens a portal to camp'), '#a0a0a0']);
   if (o.tipo === 'thor') {
     out.push([T('Equipo de Thor', 'Thor\'s gear'), '#9ec8ff']);
     if (o.tramo) out.push([T(`Armadura de tramo ${o.tramo}: más vida y menos daño recibido`, `Tier ${o.tramo} armor: more life and less damage taken`), '#e8e0d0']);

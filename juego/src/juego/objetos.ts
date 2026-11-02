@@ -225,7 +225,8 @@ export function crearRuna(nivel: number): Objeto {
   const r = cand.length ? cand[Math.floor(cand.length * (1 - Math.pow(R(), 0.35)))] ?? ru : ru;
   return { uid: nuevoUid(), tipo: 'runa', base: r.id, rareza: 'normal', nombre: [`Runa ${r.nombre[0]}`, `${r.nombre[1]} Rune`], nivel: r.nivel, stats: [], durab: 0, durabMax: 0, huecos: 0, engarces: [], w: 1, h: 1, precio: 100 + r.orden * 80 };
 }
-export function crearPergamino(tipo: 'portal'): Objeto {
+export function crearPergamino(tipo: 'portal' | 'olvido'): Objeto {
+  if (tipo === 'olvido') return { uid: nuevoUid(), tipo: 'pergamino', base: 'pergamino_olvido', rareza: 'unico', nombre: ['Lágrima del Olvido', 'Tear of Oblivion'], nivel: 1, stats: [], durab: 0, durabMax: 0, huecos: 0, engarces: [], w: 1, h: 1, precio: 5000, lore: ['Una gota que no moja. Quien la bebe olvida cómo pelear, y aprende de nuevo.', 'A drop that does not wet. Whoever drinks it forgets how to fight, and learns anew.'] };
   return { uid: nuevoUid(), tipo: 'pergamino', base: `pergamino_${tipo}`, rareza: 'normal', nombre: tipo === 'portal' ? ['Pergamino de regreso', 'Scroll of Return'] : ['Pergamino de lectura', 'Scroll of Reading'], nivel: 1, stats: [], durab: 0, durabMax: 0, huecos: 0, engarces: [], w: 1, h: 1, precio: 50 };
 }
 

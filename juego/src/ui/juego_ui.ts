@@ -511,6 +511,7 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
     const o = bajo.o;
     if (o.tipo === 'pocion') { const i = j.heroe.d.cinturon.findIndex((c) => !c); if (i >= 0) { quitar(bajo); j.heroe.d.cinturon[i] = o; } else { quitar(bajo); j.heroe.d.cinturon.push(o); usarPocion(j, j.heroe.d.cinturon.length - 1); j.heroe.d.cinturon.length = 4; } return; }
     if (o.base === 'pergamino_portal') { abrirPortal(j); return; }
+    if (o.base === 'pergamino_olvido') { quitar(bajo); olvidar(j); return; }
     if (o.tipo === 'thor') { // ponérselo a Thor: lo que tenía vuelve a la bolsa
       quitar(bajo); const viejo = ponerThor(j, o.base === 'thor_collar' ? 'collar' : 'barda', o);
       if (viejo) { const p = lugarBolsa(todos, viejo); if (p) todos.push({ o: viejo, x: p[0], y: p[1], b: p[2] }); else ui.mano = viejo; }
@@ -851,6 +852,19 @@ function revisarMisiones(j: Juego, id = ui.npc ?? '') {
   if (o.lateral) { (ui as any).oferta = o.id; ui.dialogoTexto = TT(o.pedido); }
   else { aceptar(d, o); ui.dialogoTexto = TT(o.pedido); Sonido.efecto('mision'); }
 }
+/** La Lágrima del Olvido: devuelve todos los puntos de atributo y de habilidad (queda solo la habilidad con que arrancó la clase). */
+function olvidar(j: Juego) {
+  const d = j.heroe.d, base = CLASES.find((c) => c.id === d.clase)!.base;
+  d.puntosAtrib += (d.fue - base.fue) + (d.des - base.des) + (d.vit - base.vit) + (d.ene - base.ene);
+  d.fue = base.fue; d.des = base.des; d.vit = base.vit; d.ene = base.ene;
+  const primera = HABILIDADES.find((x) => x.clase === d.clase && x.nivelReq === 1 && x.tipo !== 'pasiva' && x.tipo !== 'aura' && x.tipo !== 'buff');
+  const gastados = Object.values(d.habs).reduce((a, b) => a + b, 0);
+  d.puntosHab += gastados - (primera ? 1 : 0);
+  d.habs = primera ? { [primera.id]: 1 } : {};
+  d.izq = 'ataque'; d.der = primera?.id ?? 'ataque'; d.atajos = Array(10).fill(null); if (primera) d.atajos[0] = primera.id; d.aura = undefined;
+  recalc(j); Sonido.efecto('mision');
+  msg(j, ['Olvidas todo lo que sabías pelear. Tus puntos esperan.', 'You forget everything you knew of fighting. Your points await.'], '#c8a060');
+}
 function darPremio(j: Juego, p: Premio) {
   const d = j.heroe.d;
   if (p.habilidad) d.puntosHab += p.habilidad;
@@ -858,6 +872,7 @@ function darPremio(j: Juego, p: Premio) {
   if (p.oro) d.oro += p.oro;
   if (p.vida) d.vit += Math.round(p.vida / 3);
   if (p.objeto) { const o = crearObjeto(Math.max(d.nivel, 5), p.objeto); if (!recoger(d, o)) j.suelo.push({ o, oro: 0, x: j.heroe.x + 1, y: j.heroe.y + 1, t: 0, id: Date.now() }); }
+  if (p.olvido) { const o = crearPergamino('olvido'); if (!recoger(d, o)) j.suelo.push({ o, oro: 0, x: j.heroe.x + 1, y: j.heroe.y - 1, t: 0, id: Date.now() + 1 }); msg(j, ['Te dieron una Lágrima del Olvido. Bébela para repartir de nuevo tus habilidades y atributos.', 'You received a Tear of Oblivion. Drink it to reassign your skills and attributes.'], '#c8a060'); }
 }
 function entregar(j: Juego, m: Mision, opcion?: number) {
   const d = j.heroe.d;

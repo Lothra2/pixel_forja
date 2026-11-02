@@ -123,7 +123,7 @@ export const PUEBLO_DE: Record<number, string> = { 1: 'a1_refugio', 2: 'a2_oasis
 export const MUSICA_ACTO = (acto: number, tipo: string) => (tipo === 'pueblo' ? `campamento${acto}` : tipo === 'mazmorra' ? (acto === 1 ? 'mazmorra' : `mazmorra${acto}`) : `acto${acto}`);
 
 // ------------------------------------------------------------------ misiones
-export interface Premio { habilidad?: number; atributos?: number; vida?: number; oro?: number; objeto?: 'raro' | 'unico' | 'conjunto'; resistencia?: number }
+export interface Premio { habilidad?: number; atributos?: number; vida?: number; oro?: number; objeto?: 'raro' | 'unico' | 'conjunto'; resistencia?: number; /** Una Lágrima del Olvido: reinicia habilidades y atributos. */ olvido?: boolean }
 export interface OpcionMision { texto: [string, string]; hecho: [string, string]; premio: Premio }
 export type FinalElegido = 'destruir' | 'absorber';
 export interface Mision {
@@ -201,7 +201,7 @@ export const MISIONES: Mision[] = [
   { id: 'm2_rey', acto: 2, nombre: ['El Rey sin Sombra', 'The Shadowless King'], cierraActo: true,
     pedido: ['Khamer-Ul despertó. Su sombra se fue con la brasa hace mil años y ahora volvió a buscarla. Baja a las tumbas y quítale lo que le queda.', 'Khamer-Ul has woken. His shadow left with the ember a thousand years ago and now it has come back for it. Go down to the tombs and take what remains.'],
     hecho: ['Segundo sello roto, pero la brasa escapó otra vez. Ahora va hacia el río, hacia Yhuantl. La capitana Oyá tiene barco. Te espera en Kesh.', 'Second seal broken, but the ember escaped again. Now it heads for the river, to Yhuantl. Captain Oya has a ship. She waits for you at Kesh.'],
-    objetivo: { tipo: 'matar', zona: 'a2_tumbas2', monstruo: 'rey_sin_sombra' }, premio: { habilidad: 1, objeto: 'unico' } },
+    objetivo: { tipo: 'matar', zona: 'a2_tumbas2', monstruo: 'rey_sin_sombra' }, premio: { habilidad: 1, objeto: 'unico', olvido: true } },
   { id: 'm2_nombres', acto: 2, lateral: true, da: 'nahla', nombre: ['El nombre de Samira', 'Samira\'s Name'],
     pedido: ['Mi hija Samira murió de fiebre antes de la brasa. Grabamos su nombre en el Pozo de los Nombres, como manda la costumbre, para que los reyes de abajo la recuerden. Ayer fui a rezarle y su piedra estaba lisa. Algo allá abajo está borrando a nuestros muertos. Encuéntralo.', 'My daughter Samira died of fever before the ember. We carved her name into the Well of Names, as custom demands, so the kings below would remember her. Yesterday I went to pray and her stone was smooth. Something down there is erasing our dead. Find it.'],
     hecho: ['Gracias.', 'Thank you.'],
@@ -279,7 +279,7 @@ export const MISIONES: Mision[] = [
   { id: 'm4_rey', acto: 4, nombre: ['El trono vacío', 'The Empty Throne'], cierraActo: true,
     pedido: ['Hjaldur dejó el trono de hielo. Los muertos de la montaña lo siguen. Si no vuelve a sentarse, que no se levante nunca más. Tú eliges cómo.', 'Hjaldur left the ice throne. The mountain dead follow him. If he will not sit again, make sure he never stands again. You choose how.'],
     hecho: ['Cuatro sellos. Queda uno: la Herida, donde cayó la sed del dios que tiene hambre. Auren te espera en el Bastión. Que la nieve te guarde.', 'Four seals. One remains: the Wound, where the thirst of the starving god fell. Auren awaits you at the Bastion. May the snow keep you.'],
-    objetivo: { tipo: 'matar', zona: 'a4_hielo2', monstruo: 'rey_escarcha' }, premio: { habilidad: 1, atributos: 5, objeto: 'unico' } },
+    objetivo: { tipo: 'matar', zona: 'a4_hielo2', monstruo: 'rey_escarcha' }, premio: { habilidad: 1, atributos: 5, objeto: 'unico', olvido: true } },
   { id: 'm4_nino', acto: 4, lateral: true, da: 'nino_nieve', nombre: ['El corazón del niño', 'The Child\'s Heart'],
     pedido: ['El niño de la nieve te toma la mano. Su piel no está fría, está vacía. «Los gigantes cavaron en la Veta Madre buscando mi corazón. Es rojo y está tibio. Uno grande se lo quedó. Tráemelo, por favor. Quiero saber cómo se siente tener frío.»', 'The snow child takes your hand. His skin is not cold, it is empty. "The giants dug in the Mother Lode looking for my heart. It is red and warm. A big one kept it. Bring it to me, please. I want to know how it feels to be cold."'],
     hecho: ['El niño espera.', 'The child waits.'],
@@ -354,7 +354,7 @@ export const MISIONES: Mision[] = [
   { id: 'm6_campana', acto: 6, nombre: ['La Campana que Ahoga', 'The Drowning Bell'], cierraActo: true,
     pedido: ['La última sacerdotisa de Ysmeral se ató a la campana mayor para que la ciudad no se hundiera. Se hundió igual. Ahora son una sola cosa, y cada vez que toca, el mar se acerca un palmo. Haz que deje de tocar.', 'The last priestess of Ysmeral bound herself to the great bell so the city would not sink. It sank anyway. Now they are one thing, and every time it tolls, the sea draws a span closer. Make it stop tolling.'],
     hecho: ['La campana calló y la marea volvió de golpe. Mi barco flota. Pero mira el cielo, al norte. Se está rompiendo como un vidrio, y detrás hay escalones de oro. Auren dice que conoce esa escalera. Dice que lleva a un trono.', 'The bell went silent and the tide came back all at once. My ship floats. But look at the sky, to the north. It is breaking like glass, and behind it are steps of gold. Auren says he knows that stair. He says it leads to a throne.'],
-    objetivo: { tipo: 'matar', zona: 'a6_catedral2', monstruo: 'campana_ahoga' }, premio: { habilidad: 1, atributos: 5, objeto: 'unico' } },
+    objetivo: { tipo: 'matar', zona: 'a6_catedral2', monstruo: 'campana_ahoga' }, premio: { habilidad: 1, atributos: 5, objeto: 'unico', olvido: true } },
   { id: 'm6_faro', acto: 6, lateral: true, da: 'tarn', nombre: ['La luz de los dientes', 'The Light of Teeth'],
     pedido: ['En la costa hay un faro apagado. Su lámpara está hecha de dientes, y alguien la sigue limpiando cada noche. Es el farero, ahogado hace siglos. Mientras él cuide esa lámpara, ningún barco va a encontrar esta costa. Ni los nuestros.', 'On the coast there is a dark lighthouse. Its lamp is made of teeth, and someone still cleans it every night. It is the keeper, drowned centuries ago. As long as he tends that lamp, no ship will find this coast. Not even ours.'],
     hecho: ['Volviste del faro.', 'You came back from the lighthouse.'],
