@@ -184,8 +184,6 @@ export interface Monstruo67 extends Monstruo {
   inclina?: (acc: Accion, f: number) => number;
   /** Saca los muslos de la carne (la cola los reemplaza). */
   sinMuslos?: boolean;
-  /** Acción especial y su nombre. */
-  especial?: [string, string];
   descripcion: [string, string];
 }
 
@@ -858,4 +856,299 @@ for (const m of MONSTRUOS67) for (const [acc, [aes, aen]] of ACCIONES) {
     armar: (v, f) => escenaMonstruo(m, v as Dir, acc, f),
   });
 }
-export const BESTIAS67: { id: string; nombre: [string, string]; huella: [number, number]; jefe: boolean }[] = [];
+
+// ================================================================== BESTIAS (marco propio, como bestias.ts)
+type AccB = 'quieto' | 'caminar' | 'atacar' | 'herido' | 'morir';
+const CUADROS_B: Record<AccB, number> = { quieto: 4, caminar: 8, atacar: 8, herido: 4, morir: 8 };
+const NOMBRES_B: Record<AccB, [string, string]> = { quieto: ['quieto', 'idle'], caminar: ['camina', 'walk'], atacar: ['ataca', 'attack'], herido: ['recibe golpe', 'get hit'], morir: ['muere', 'death'] };
+type M3 = [V3, V3, V3];
+/** Marco rígido: origen y matriz (columnas: adónde van x adelante, y derecha, z arriba). */
+interface Tr { o: V3; m: M3 }
+const I3: M3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+const mm = (a: M3, b: M3): M3 => [ap(a, b[0]), ap(a, b[1]), ap(a, b[2])];
+const apT = (t: Tr, p: V3): V3 => add(t.o, ap(t.m, p));
+const cmp = (a: Tr, b: Tr): Tr => ({ o: apT(a, b.o), m: mm(a.m, b.m) });
+/** Alabeo: la derecha sube con g > 0. */
+const Rx = (g: number): M3 => { const c = Math.cos(rad(g)), s = Math.sin(rad(g)); return [[1, 0, 0], [0, c, s], [0, -s, c]]; };
+/** Cabeceo: la nariz baja con g > 0. */
+const Ry = (g: number): M3 => { const c = Math.cos(rad(g)), s = Math.sin(rad(g)); return [[c, 0, -s], [0, 1, 0], [s, 0, c]]; };
+/** Guiñada: gira hacia la derecha con g > 0. */
+const Rz = (g: number): M3 => { const c = Math.cos(rad(g)), s = Math.sin(rad(g)); return [[c, s, 0], [-s, c, 0], [0, 0, 1]]; };
+const T = (o: V3, ...ms: M3[]): Tr => ({ o, m: ms.reduce(mm, I3) });
+const RUMBO: Record<Dir, number> = { se: 0, s: 45, so: 90, o: 135, no: 180, n: 225, ne: 270, e: 315 };
+/** El marco del mundo para una dirección del juego (se = 0°, s = 45°, ... e = 315°). */
+const mundo = (d: Dir): Tr => { const th = rad(RUMBO[d]); return { o: [0, 0, 0], m: [[Math.cos(th), Math.sin(th), 0], [Math.sin(th), -Math.cos(th), 0], [0, 0, 1]] }; };
+const ejesT = (t: Tr): [V3, V3, V3] => [nor(t.m[0]), nor(t.m[1]), nor(t.m[2])];
+const bT = (t: Tr, c: V3, r: V3, o: OpcComp = {}) => bulto(apT(t, c), r, { ...o, ejes: ejesT(t) });
+const hT = (t: Tr, a: V3, b: V3, r0: number, r1: number, o: OpcComp = {}) => hueso(apT(t, a), apT(t, b), r0, r1, o);
+/** Dos huesos que llegan de `a` a `t` doblando hacia `doblez`: la articulación del medio y el punto alcanzado. */
+function ik(a: V3, t: V3, l1: number, l2: number, doblez: V3): [V3, V3] {
+  const d = sub(t, a), L = len(d), dn = L > 1e-6 ? esc(d, 1 / L) : [0, 0, -1] as V3;
+  const Lc = clamp(L, Math.abs(l1 - l2) + 0.05, (l1 + l2) * 0.998);
+  const ca = (l1 * l1 + Lc * Lc - l2 * l2) / (2 * l1 * Lc), sa = Math.sqrt(Math.max(0, 1 - ca * ca));
+  let pp = sub(doblez, esc(dn, dot(doblez, dn)));
+  if (len(pp) < 1e-6) pp = [0, 0, 1];
+  pp = nor(pp);
+  return [add(add(a, dn, l1 * ca), pp, l1 * sa), add(a, dn, Lc)];
+}
+/** Pie en un ciclo de marcha: en apoyo va de adelante hacia atrás por el piso, en vuelo sube y vuelve adelante. */
+function paso(fase: number, largo: number, alto: number, apoyo = 0.55): { x: number; z: number } {
+  const p = ((fase % 1) + 1) % 1;
+  if (p < apoyo) return { x: largo / 2 - largo * (p / apoyo), z: 0 };
+  const u = (p - apoyo) / (1 - apoyo);
+  return { x: -largo / 2 + largo * suav(u), z: alto * Math.sin(PI * u) };
+}
+/** Diente, espina o garra: cono de `a` hacia `b`. */
+const pua = (a: V3, b: V3, r: number, mat: string, tono = 0) => palo(a, b, r, { mat, r1: r * 0.12, tono });
+/** Corta lo que quedó bajo el piso (se arma al final). */
+const bajoPiso = () => ({ ...cilindro(0, 0, -60, 300, 60, { mat: 'm67_agua_negra' }), resta: true } as Pieza);
+/** Bloque con las aristas biseladas en un marco: base centrada en `c`, medidas `d`. */
+function bloque(t: Tr, c: V3, d: V3, bis: number, mat: string, tono = 0): Pieza {
+  const pts: V3[] = [];
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [0, 1]) {
+    const x = c[0] + sx * d[0] / 2, y = c[1] + sy * d[1] / 2, z = c[2] + sz * d[2], zz = sz ? -bis : bis;
+    pts.push(apT(t, [x - sx * bis, y, z]), apT(t, [x, y - sy * bis, z]), apT(t, [x, y, z + zz]));
+  }
+  return poliedro(pts, { mat, tono });
+}
+
+export const BESTIAS67: { id: string; nombre: [string, string]; huella: [number, number]; jefe: boolean; descripcion: [string, string] }[] = [];
+function bestia67(id: string, nombre: [string, string], descripcion: [string, string], huella: [number, number], armar: (d: Dir, acc: AccB, f: number) => Res) {
+  BESTIAS67.push({ id, nombre, huella, jefe: false, descripcion });
+  for (const acc of Object.keys(CUADROS_B) as AccB[]) {
+    const [es, en] = NOMBRES_B[acc];
+    registrar({
+      id: `mon_${id}_${acc}`, nombre: [`${nombre[0]} · ${es}`, `${nombre[1]} · ${en}`], tema: 'monstruos',
+      variantes: [...DIRS], cuadros: CUADROS_B[acc], t: acc === 'quieto' ? 6 : 3, huella, bloquea: true,
+      armar: (v, f) => armar(v as Dir, acc, f),
+    });
+  }
+}
+
+// ================================================================== 9. CANGREJO RELICARIO
+interface PataC { cadera: V3; reposo: V3; l1: number; l2: number; fase: number; r: number }
+/** Patas de cangrejo: la rodilla alta, el último tramo baja en punta; `rizo` las encoge bajo el cuerpo. */
+function patasCangrejo(W: Tr, cuerpo: Tr, patas: PataC[], caminar: boolean, ph: number, rizo: number): Pieza[] {
+  const ps: Pieza[] = [];
+  for (const pa of patas) {
+    const cad = apT(cuerpo, pa.cadera);
+    const st = caminar ? paso(ph + pa.fase, 13, 8, 0.5) : { x: 0, z: 0 };
+    let tip = apT(W, [pa.reposo[0] + st.x, pa.reposo[1], pa.reposo[2] + st.z]);
+    if (rizo > 0) tip = mez(tip, apT(cuerpo, [pa.cadera[0] * 0.6, pa.cadera[1] * 1.9, pa.cadera[2] + 9]), rizo);
+    tip[2] = Math.max(tip[2], pa.r * 0.4);
+    const afuera = nor([tip[0] - cad[0], tip[1] - cad[1], 0]);
+    const [rod, fin] = ik(cad, tip, pa.l1, pa.l2, nor(add(ap(cuerpo.m, [0, 0, 1]), afuera, 0.4)));
+    const medio = add(mez(rod, fin, 0.45), add(esc(afuera, 0.5), [0, 0, 0.8]), pa.l2 * 0.08), r = pa.r;
+    ps.push(masa([
+      bulto(cad, [r * 1.5, r * 1.3, r * 1.2], { eje: sub(rod, cad), mat: 'm67_caparazon' }), hueso(cad, rod, r * 1.25, r * 1.05, { mat: 'm67_caparazon' }), bulto(rod, [r * 1.15, r * 1.1, r * 1.1], { mat: 'm67_pinza' }),
+      hueso(rod, medio, r * 1.0, r * 0.8, { mat: 'm67_caparazon' }), bulto(medio, [r * 0.85, r * 0.85, r * 0.85], { mat: 'm67_pinza' }), hueso(medio, fin, r * 0.75, r * 0.2, { mat: 'm67_caparazon', tono: -0.05 }),
+    ], { mat: 'm67_caparazon', suave: r * 0.4 }));
+    // espinas en el muslo de la pata y la punta oscura
+    for (const t of [0.35, 0.7]) { const b = mez(cad, rod, t); ps.push(pua(b, add(add(b, [0, 0, r * 1.8]), afuera, r * 0.6), r * 0.4, 'm67_pinza')); }
+  }
+  return ps;
+}
+/** Una pinza: brazo, antebrazo, la mano gruesa, el dedo fijo y el dedo que se abre hacia arriba. */
+function pinzaC(cuerpo: Tr, s: number, k: number, alza: number, abre: number): { ps: Pieza[]; punta: V3 } {
+  const br = cmp(cuerpo, T([15, s * 10, -1], Rz(s * (38 - alza * 0.3)), Ry(-22 - alza)));
+  const L1 = 10 * k, L2 = 9 * k;
+  const ant = cmp(br, T([L1, 0, 0], Rz(-s * (72 - alza * 0.6)), Ry(8 + alza * 0.3)));
+  const mano = cmp(ant, T([L2, 0, 0], Rz(-s * 8)));
+  const dF = cmp(mano, T([9 * k, -s * 1 * k, -1.6 * k], Rz(s * 4))), dM = cmp(mano, T([9 * k, s * 0.4 * k, 1.8 * k], Ry(-abre * 38)));
+  const C = { mat: 'm67_caparazon' };
+  const ps: Pieza[] = [masa([
+    hT(br, [0, 0, 0], [L1, 0, 0], 2.6 * k, 2.4 * k, C), bT(br, [L1, 0, 0], [2.7 * k, 2.7 * k, 2.7 * k], { mat: 'm67_pinza' }), hT(ant, [0, 0, 0], [L2, 0, 0], 2.6 * k, 3.2 * k, C),
+    bT(mano, [4.5 * k, 0, 0], [7 * k, 4.2 * k, 4.8 * k], C), bT(mano, [5 * k, 0, 2.6 * k], [5 * k, 2.6 * k, 1.6 * k], { mat: 'm67_caparazon', tono: 0.06 }),
+    hT(dF, [0, 0, 0], [8.5 * k, s * 0.6 * k, -0.4 * k], 2.2 * k, 0.35 * k, { mat: 'm67_pinza' }), hT(dM, [0, 0, 0], [8.5 * k, -s * 0.4 * k, -1 * k], 2.1 * k, 0.35 * k, { mat: 'm67_pinza' }),
+  ], { mat: 'm67_caparazon', suave: 0.8 * k })];
+  // dientes del filo de la pinza y espinas del brazo
+  for (let i = 0; i < 3; i++) ps.push(pua(apT(dF, [(2 + i * 2.2) * k, 0, 0.9 * k]), apT(dF, [(2.3 + i * 2.2) * k, 0, 2 * k]), 0.55 * k, 'm67_percebe'));
+  for (let i = 0; i < 3; i++) ps.push(pua(apT(br, [(2 + i * 3) * k, 0, 2 * k]), apT(br, [(1 + i * 3) * k, s * 1 * k, 4.4 * k]), 0.7 * k, 'm67_pinza'));
+  ps.push(...costra(apT(mano, [3 * k, s * 2 * k, 3.4 * k]), ap(mano.m, [0, s * 0.5, 1]), 0.75 * k, 3, 60 + s));
+  return { ps, punta: apT(mano, [16 * k, 0, 0]) };
+}
+/** El relicario: zócalo, muros de bronce con arcadas y santos, cornisa, techo de tejas, pináculos, crestería y el rosetón. */
+function relicario(Q: Tr, ps: Pieza[], w: number, sem: number): { techo: V3; arriba: V3 } {
+  const L = 34, An = 24, Hb = 14, OR = 'm67_oro_reliquia';
+  ps.push(bloque(Q, [0, 0, 0], [L + 3, An + 3, 2.6], 0.8, OR, -0.05));
+  ps.push(bloque(Q, [0, 0, 2.6], [L, An, Hb], 1.2, 'm67_bronce'));
+  ps.push(bloque(Q, [0, 0, 2.6 + Hb], [L + 2.6, An + 2.6, 1.8], 0.6, OR));
+  const z0 = 4.4 + Hb, zr = z0 + 11, Lx = L / 2 + 1.6, Ay = An / 2 + 1.8;
+  ps.push(poliedro([[Lx, Ay, z0], [Lx, -Ay, z0], [-Lx, Ay, z0], [-Lx, -Ay, z0], [Lx, 0, zr], [-Lx, 0, zr], [Lx, Ay, z0 + 0.8], [-Lx, -Ay, z0 + 0.8]].map((q) => apT(Q, q as V3)), { mat: 'm67_tejas' }));
+  // la cumbrera dorada y la crestería de flores de lis
+  ps.push(palo(apT(Q, [-Lx, 0, zr]), apT(Q, [Lx, 0, zr]), 0.9, { mat: OR }));
+  for (let k = -3; k <= 3; k++) { const b = apT(Q, [k * 4.6, 0, zr + 0.4]); ps.push(pua(b, apT(Q, [k * 4.6, 0, zr + 3.4 + (k % 2 ? 0 : 1.2)]), 0.9, OR), esfera(...apT(Q, [k * 4.6, 0, zr + 1.6]), 0.9, { mat: OR })); }
+  // pináculos en las esquinas
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    const b: V3 = [sx * (L / 2), sy * (An / 2), 2.6];
+    ps.push(palo(apT(Q, b), apT(Q, [b[0], b[1], z0 + 3]), 1.5, { mat: OR }), pua(apT(Q, [b[0], b[1], z0 + 3]), apT(Q, [b[0], b[1], z0 + 8.5]), 1.6, OR), esfera(...apT(Q, [b[0], b[1], z0 + 2.4]), 1.9, { mat: OR }));
+  }
+  // arcadas en los costados: nicho oscuro, columnas, arco y un santo chico adentro
+  for (const sy of [-1, 1]) for (const x of [-11, 0, 11]) {
+    const y = sy * (An / 2 + 0.05), zc = 2.6 + Hb * 0.48;
+    ps.push(elipE(apT(Q, [x, y, zc]), ap(Q.m, [0, 0, 1]), [5.4, 3.2, 0.5], 'm67_agua_negra', 0, ap(Q.m, [1, 0, 0])));
+    ps.push(palo(apT(Q, [x - 3.6, y + sy * 0.4, 3.4]), apT(Q, [x - 3.6, y + sy * 0.4, zc + 2.2]), 0.65, { mat: OR }), palo(apT(Q, [x + 3.6, y + sy * 0.4, 3.4]), apT(Q, [x + 3.6, y + sy * 0.4, zc + 2.2]), 0.65, { mat: OR }));
+    let prev = apT(Q, [x - 3.6, y + sy * 0.4, zc + 2.2]);
+    for (let i = 1; i <= 5; i++) { const a = PI - (i / 5) * PI, q = apT(Q, [x + Math.cos(a) * 3.6, y + sy * 0.4, zc + 2.2 + Math.sin(a) * 3.6]); ps.push(palo(prev, q, 0.6, { mat: OR })); prev = q; }
+    ps.push(masa([bulto(apT(Q, [x, y - sy * 0.2, zc - 1.6]), [1.3, 0.9, 3], { mat: OR }), bulto(apT(Q, [x, y - sy * 0.1, zc + 2.4]), [1, 1, 1.1], { mat: OR, tono: 0.05 })], { mat: OR, suave: 0.5 }));
+  }
+  // el rosetón del frente con la reliquia que brilla adentro, y la cruz del muro
+  const rc = apT(Q, [Lx + 0.1, 0, z0 + 3.8]), nx = ap(Q.m, [1, 0, 0]);
+  ps.push(...aro(rc, 3.2, nx, OR, 0, 0.8), elipE(rc, nx, [0.4, 3, 3], 'm67_agua_negra'), esfera(...add(rc, nx, 0.2), 1.4, { mat: 'm67_bio' }));
+  for (let k = 0; k < 6; k++) { const a = (k / 6) * TAU; ps.push(palo(rc, add(rc, add(esc(ap(Q.m, [0, 1, 0]), Math.cos(a)), ap(Q.m, [0, 0, 1]), Math.sin(a)), 3), 0.35, { mat: OR })); }
+  ps.push(palo(apT(Q, [L / 2 + 0.3, 0, 4.5]), apT(Q, [L / 2 + 0.3, 0, 14.5]), 0.9, { mat: OR }), palo(apT(Q, [L / 2 + 0.3, -3.6, 11]), apT(Q, [L / 2 + 0.3, 3.6, 11]), 0.9, { mat: OR }));
+  // percebes, algas que cuelgan de la cornisa y chorreados de cera
+  for (const [q, n0, k, mj] of [[[6, 6, z0 + 5.2], [0, 0.5, 1], 6, 2], [[-9, -7, z0 + 3.6], [0, -0.5, 1], 5, 2], [[-15, 10, 6], [-0.3, 1, 0], 4, 1], [[14, -12, 4], [0.3, -1, 0], 4, 2], [[-17.5, 0, 10], [-1, 0, 0], 4, 1]] as [V3, V3, number, number][]) ps.push(...costra(apT(Q, q), nor(ap(Q.m, n0)), 1.1, k, sem + k * 3, mj));
+  for (let k = 0; k < 7; k++) { const x = -15 + k * 5, sy = k % 2 ? 1 : -1; ps.push(...alga(apT(Q, [x, sy * (An / 2 + 1.4), z0 - 0.5]), [0, 0, -1], 7 + hr(k) * 6, 0.8, w + k, k * 7, k % 3 === 0)); }
+  return { techo: apT(Q, [7, 0, zr + 0.6]), arriba: ap(Q.m, [0, 0, 1]) };
+}
+function cangrejo(d: Dir, acc: AccB, f: number): Res {
+  const W = mundo(d), n = CUADROS_B[acc], ph = f / n, w = ph * TAU;
+  let av = 0, z = 0, pitch = 0, roll = 0, yaw = 0, rizo = 0, muerte = 0, vuelca = 0, llama = 1;
+  let alzaD = 0, abreD = 0.3, alzaI = 0, abreI = 0.3;
+  if (acc === 'quieto') { const b = Math.sin(w); z = b * 0.5; alzaD = b * 4; abreD = 0.25 + 0.2 * Math.sin(w + 1); alzaI = -b * 3; abreI = 0.3 + 0.2 * Math.sin(w * 2); }
+  else if (acc === 'caminar') { z = -Math.abs(Math.cos(w * 2)) * 0.9; roll = Math.sin(w * 2) * 2.6; yaw = Math.sin(w) * 3; alzaD = Math.sin(w) * 5; alzaI = -Math.sin(w) * 5; }
+  else if (acc === 'atacar') {
+    // levanta la pinza grande, abierta, y la descarga adelante cerrándola de golpe
+    av = K([0, -2, -4, -4, 7, 9, 4, 1], f); pitch = K([0, -5, -10, -12, 8, 11, 4, 0], f); z = K([0, 1, 3, 3, -1, -2, -1, 0], f);
+    alzaD = K([0, 20, 42, 50, -12, -18, -6, 0], f); abreD = K([0.3, 0.8, 1, 1, 0.1, 0, 0.2, 0.3], f); alzaI = K([0, 6, 10, 10, 0, -4, 0, 0], f); llama = K([1, 1, 1.1, 1.1, 0.7, 0.8, 1, 1], f);
+  } else if (acc === 'herido') {
+    const k = [0.6, 1, 0.6, 0.2][f % 4];
+    av = -4 * k; pitch = -10 * k; roll = 6 * k; alzaD = 18 * k; alzaI = 14 * k; abreD = 0.9; abreI = 0.9; llama = 1 - 0.5 * k;
+  } else if (acc === 'morir') {
+    z = K([0, 2, 0, -4, -8, -10, -11, -11], f); pitch = K([0, -10, -4, 2, 4, 4, 4, 4], f); roll = K([0, 6, -4, -8, -10, -12, -12, -12], f);
+    rizo = K([0, 0.15, 0.35, 0.6, 0.82, 0.95, 1, 1], f); alzaD = K([0, 30, 10, -10, -20, -24, -24, -24], f); abreD = K([0.3, 1, 0.8, 0.5, 0.4, 0.4, 0.4, 0.4], f); alzaI = alzaD * 0.8;
+    muerte = K([0, 0, 0.1, 0.3, 0.6, 0.85, 1, 1], f); vuelca = K([0, 0, 0.1, 0.3, 0.6, 0.85, 1, 1], f); llama = K([1, 1.3, 1, 0.6, 0.2, 0, 0, 0], f);
+  }
+  const zb = 15, cuerpo = cmp(W, T([av, 0, zb + z], Rz(yaw), Ry(pitch), Rx(roll)));
+  const ps: Pieza[] = [];
+  const C = { mat: 'm67_caparazon' };
+  // ---- el cuerpo que asoma adelante del relicario: caparazón ancho con el borde dentado, ojos en pedúnculos y la boca
+  ps.push(masa([bT(cuerpo, [6, 0, 0], [14, 17, 6.5], C), bT(cuerpo, [17, 0, 1.4], [5, 10, 3.6], C), bT(cuerpo, [4, 0, -3], [12, 14, 4], { mat: 'm67_pinza' })], { mat: 'm67_caparazon', suave: 2 }));
+  for (let k = -3; k <= 3; k++) { const a = rad(k * 22), b = apT(cuerpo, [6 + Math.cos(a) * 14, Math.sin(a) * 17, 1.2]); ps.push(pua(b, add(b, nor(add(ap(cuerpo.m, [Math.cos(a), Math.sin(a), 0]), ap(cuerpo.m, [0, 0, 1]), 0.4)), 3.4 - Math.abs(k) * 0.3), 1.1, 'm67_pinza')); }
+  const ojo = muerte > 0.6 ? 'cu_ojo' : 'm67_ojo_mar';
+  for (const s of [1, -1]) {
+    const a = apT(cuerpo, [19, s * 4, 3]), b = apT(cuerpo, [21 + Math.sin(w + s) * 0.6, s * 5.5, 9 - muerte * 4]);
+    ps.push(palo(a, b, 0.9, { mat: 'm67_caparazon', r1: 0.7 }), esfera(...b, 1.5, { mat: ojo }));
+    // piezas de la boca que se mueven
+    ps.push(elipE(apT(cuerpo, [21.5, s * 1.6, -1.5 + Math.sin(w * 2 + s) * 0.4]), ap(cuerpo.m, [0, 0, -1]), [2.4, 1.4, 0.6], 'm67_pinza', 0.05, ap(cuerpo.m, [1, 0, 0])));
+  }
+  // ---- pinzas: la derecha enorme, la izquierda chica
+  const pD = pinzaC(cuerpo, 1, 1.35, alzaD, abreD), pI = pinzaC(cuerpo, -1, 0.85, alzaI, abreI);
+  ps.push(...pD.ps, ...pI.ps);
+  // ---- ocho patas, en tetrápodo
+  const angs = [58, 86, 112, 138], patas: PataC[] = [];
+  for (const s of [1, -1]) for (let i = 0; i < 4; i++) {
+    const a = rad(angs[i]), R = 37;
+    patas.push({ cadera: [8 - i * 5, s * 13, -2], reposo: [4 + Math.cos(a) * R + av * 0.4, s * Math.sin(a) * R, 0], l1: 18, l2: 24, fase: ((i % 2 === 0) === (s < 0) ? 0 : 0.5) + i * 0.04, r: 2.2 });
+  }
+  ps.push(...patasCangrejo(W, cuerpo, patas, acc === 'caminar', ph, rizo));
+  // ---- el relicario sobre el lomo (al morir se vuelca de costado) y la vela encendida arriba
+  let Q = cmp(cuerpo, T([-8, 0, 3], Ry(4 + (acc === 'caminar' ? Math.sin(w * 2) * 1.5 : 0)), Rx(acc === 'caminar' ? Math.sin(w * 2) * 1.4 : acc === 'herido' ? -4 * (1 - f / 4) : 0)));
+  if (vuelca > 0) Q = cmp(cmp(cuerpo, T([-8, 14, 3], Rx(-104 * vuelca))), T([0, -14, 0]));
+  const { techo, arriba } = relicario(Q, ps, w, 3);
+  const vela0 = techo, velaT = add(vela0, arriba, 9);
+  ps.push(cilindro(...add(vela0, arriba, -1), 3.4, 1.4, { mat: 'm67_bronce_vivo', r1: 3.8, eje: arriba }));
+  ps.push(cilindro(...vela0, 2.4, 9, { mat: 'cera', r1: 2.2, eje: arriba }));
+  ps.push(...aro(add(velaT, arriba, -0.2), 2.2, arriba, 'cera', 0.06, 0.7));
+  // chorreados de cera por la vela y por el techo
+  const lv = lat(arriba);
+  for (let k = 0; k < 4; k++) { const a = hr(k + 9) * TAU, u = add(esc(lv, Math.cos(a)), cruz(arriba, lv), Math.sin(a)), l = 3 + hr(k) * 4; ps.push(masa([hueso(add(add(velaT, u, 2.3), arriba, -0.4), add(add(velaT, u, 2.45), arriba, -l), 0.7, 0.55, { mat: 'cera' }), bulto(add(add(velaT, u, 2.45), arriba, -l), [0.8, 0.8, 0.9], { mat: 'cera' })], { mat: 'cera', suave: 0.4 })); }
+  for (const sy of [1, -1]) { const b = add(vela0, ap(Q.m, [0, sy * 3.5, -0.6]), 1), e2 = add(b, ap(Q.m, [0, sy * 6, -4.4]), 1); ps.push(masa([hueso(b, e2, 0.9, 0.6, { mat: 'cera' }), bulto(e2, [1, 1, 0.8], { mat: 'cera' })], { mat: 'cera', suave: 0.4 })); }
+  ps.push(palo(velaT, add(velaT, arriba, 1.3), 0.25, { mat: 'cu_tela_negra' }));
+  let resplandor: Res['resplandor'];
+  if (llama > 0.05) {
+    // la llama: lengua que tiembla, se inclina con el movimiento y tiene el centro claro
+    const vi = acc === 'caminar' ? -0.5 : acc === 'atacar' ? K([0, 0.2, 0.3, 0.3, -0.8, -0.6, -0.2, 0], f) : acc === 'herido' ? 0.8 : 0, tiem = Math.sin(w * 3 + 1) * 0.35;
+    const ld = nor(add(add(arriba, ap(cuerpo.m, [1, 0, 0]), vi), ap(cuerpo.m, [0, 1, 0]), tiem));
+    const fc = add(velaT, ld, 2.6 * llama + 1);
+    ps.push(elipE(fc, ld, [3.3 * llama, 1.5 * llama, 1.5 * llama], 'fuego', 0, lat(ld)), elipE(add(fc, ld, -0.7), ld, [1.9 * llama, 0.9 * llama, 0.9 * llama], 'luz_vela', 0, lat(ld)), esfera(...add(fc, ld, 2.6 * llama), 0.6 * llama, { mat: 'fuego', tono: -0.1 }));
+    resplandor = { c: fc, r: 34 + 8 * llama + Math.sin(w * 3) * 2, color: '#ffb468' };
+  }
+  if (acc === 'morir' && f >= 4) for (let k = 0; k < 5; k++) { const u = (k / 5 + ph * 0.5) % 1; ps.push(elipE(add(add(velaT, [0, 0, 1 + u * 16]), ap(W.m, [Math.sin(k * 2) * 2, Math.cos(k * 3) * 2, 0]), 1), [0, 0, 1], [1.4 + u * 2, 1.2 + u * 1.6, 1.2 + u * 1.6], 'm67_humo', -u * 0.15)); }
+  if (acc === 'atacar' && f >= 5 && f <= 6) { const pc: V3 = [pD.punta[0], pD.punta[1], 1]; ps.push(...aro(pc, 6 + (f - 5) * 5, [0, 0, 1], 'm67_agua_negra', 0.1, 1.2, 0.3, f)); for (let k = 0; k < 6; k++) { const a = (k / 6) * TAU; ps.push(esfera(pc[0] + Math.cos(a) * 6, pc[1] + Math.sin(a) * 6, 2 + hr(k) * 5, 0.9, { mat: k % 2 ? 'm67_agua_negra' : 'm67_bio' })); } }
+  ps.push(bajoPiso());
+  return { piezas: ps, resplandor };
+}
+bestia67('cangrejo_relicario', ['Cangrejo relicario', 'Reliquary crab'], ['Cangrejo enorme que lleva un relicario de iglesia por caparazón, con una vela encendida arriba.', 'A huge crab wearing a church reliquary as its shell, a lit candle on top.'], [4, 4], cangrejo);
+
+// ================================================================== 10. MANO DORADA
+/** La mano de oro (derecha, la palma abajo, los dedos hacia x): curvas por dedo (0 recto, 1 cerrado, <0 se abre hacia atrás). */
+function manoDorada(H: Tr, curl: number[], abreDedos: number, pulgar: number, brillo: number, sem: number): Pieza[] {
+  const OR = 'm67_oro', P = (q: V3) => apT(H, q), X = ap(H.m, [1, 0, 0]), Z = ap(H.m, [0, 0, 1]);
+  const cs: Comp[] = [
+    bT(H, [1, 0, 0], [7.2, 6.2, 2.5], { mat: OR }), bT(H, [0, 0, 0.9], [6, 5.6, 2.2], { mat: OR }), bT(H, [-3.6, 0, -0.5], [4.2, 5, 2.6], { mat: OR }),
+    hT(H, [-10, 0, 0.3], [-4, 0, 0.3], 3.5, 4, { mat: OR }), bT(H, [-1, -4.4, -0.8], [4, 2.6, 2.4], { mat: OR }),
+  ];
+  // tendones del dorso
+  for (const k of [-1.5, -0.5, 0.5, 1.5]) cs.push(hT(H, [-3, k * 1.3, 2], [5.8, k * 2.8, 1.8], 0.7, 0.7, { mat: OR, k: 0.6 }));
+  const ps: Pieza[] = [];
+  const largos = [13.5, 15, 14, 11], radios = [1.75, 1.85, 1.7, 1.5];
+  let anillo: [V3, V3, number] | null = null;
+  [-1.5, -0.5, 0.5, 1.5].forEach((k, i) => {
+    const c = curl[i], L = largos[i], r = radios[i];
+    let d = nor(ap(H.m, [1, k * abreDedos * 0.35, 0])), p = P([6.4, k * 2.9, 0.2]);
+    const eje = nor(cruz(d, Z));
+    const fr = [0.44, 0.31, 0.25], gr = [55, 70, 50];
+    for (let j = 0; j < 3; j++) {
+      d = nor(rotarV(d, eje, -rad(gr[j] * c)));
+      const q = add(p, d, L * fr[j]);
+      cs.push(hueso(p, q, r * (1 - j * 0.16), r * (0.86 - j * 0.2), { mat: OR }), bulto(p, [r * 1.08, r * 1.08, r * 1.02], { mat: OR }));
+      if (j === 2) ps.push(elipE(add(mez(p, q, 0.6), cruz(eje, d), -r * 0.62), d, [L * fr[j] * 0.32, r * 0.6, 0.35], 'm67_oro_viejo', 0.12, eje));
+      if (j === 0 && i === 1) anillo = [mez(p, q, 0.45), d, r];
+      p = q;
+    }
+  });
+  // el pulgar: sale del costado y se cierra hacia la palma
+  const tb = P([0.5, -5.6, -0.6]), d0 = nor(ap(H.m, [0.55, -0.75, -0.25])), dc = nor(ap(H.m, [0.5, 0.75, -0.6]));
+  const d1 = nor(mez(d0, dc, pulgar * 0.6)), tm = add(tb, d1, 5.6), d2 = nor(mez(d0, dc, pulgar)), tt = add(tm, d2, 4.6);
+  cs.push(hueso(tb, tm, 2, 1.6, { mat: OR }), bulto(tm, [1.7, 1.7, 1.7], { mat: OR }), hueso(tm, tt, 1.6, 0.8, { mat: OR }));
+  ps.unshift(masa(cs, { mat: OR, suave: 1.1 }));
+  // el anillo con la piedra de luz
+  if (anillo) { const [ac, ad, ar] = anillo as [V3, V3, number]; ps.push(...aro(ac, ar + 0.35, ad, 'm67_oro_viejo', 0, 0.75)); ps.push(esfera(...add(ac, Z, ar + 0.9), 0.95, { mat: brillo > 0.1 ? 'm67_luz' : 'm67_oro_viejo' })); }
+  // el corte de la muñeca: el vacío, el borde morado y lascas de oro
+  ps.push(elipE(P([-10.3, 0, 0.3]), X, [0.9, 3.4, 3.4], 'm67_vacio'), ...aro(P([-10.1, 0, 0.3]), 3.6, X, 'm67_borde_vacio', brillo * 0.2 - 0.25, 0.55));
+  for (let k = 0; k < 4; k++) { const a = hr(sem * 3 + k) * TAU, q = P([-10.8 - hr(k + sem) * 2, Math.cos(a) * 3.6, 0.3 + Math.sin(a) * 3.6]); ps.push(poliedro([q, add(q, X, -2 - hr(k) * 2), add(q, lat(X), 1), add(q, Z, 0.9)], { mat: OR })); }
+  // grietas del vacío por el dorso y un dedo
+  ps.push(...grieta([P([-7, 1.8, 3]), P([-3.5, 0.6, 3.1]), P([-0.5, 1.6, 3.2]), P([3, 0.2, 2.9]), P([5.5, -1.4, 2.4])], 0.55, { oro: false, luz: brillo }));
+  ps.push(...grieta([P([-5, -2.6, 2.8]), P([-2, -3.6, 2.6]), P([0.5, -4.8, 1.8])], 0.45, { oro: false }));
+  return ps;
+}
+function rotarV(v: V3, k: V3, a: number): V3 { const c = Math.cos(a), s = Math.sin(a); return add(add(esc(v, c), cruz(k, v), s), k, dot(k, v) * (1 - c)); }
+function mano(d: Dir, acc: AccB, f: number): Res {
+  const W = mundo(d), n = CUADROS_B[acc], ph = f / n, w = ph * TAU;
+  let px = 0, pz = 24, pitch = 8, roll = 0, yaw = 0, abreD = 0.15, pulgar = 0.3, brillo = 0.45, muerte = 0, golpe = 0;
+  let curl = [0, 1, 2, 3].map((i) => 0.25 + 0.2 * Math.sin(w + i * 0.8));
+  if (acc === 'quieto') { pz = 24 + Math.sin(w) * 1.5; roll = Math.sin(w) * 3; }
+  else if (acc === 'caminar') { pz = 22 + Math.sin(w * 2) * 1; pitch = 16; yaw = Math.sin(w) * 4; curl = [0, 1, 2, 3].map((i) => 0.35 + 0.4 * Math.sin(w * 2 - i * 1.2)); abreD = 0.25; }
+  else if (acc === 'atacar') {
+    // sube, se abre mostrando la palma y cae adelante cerrándose en un puño que aplasta contra el piso
+    pz = K([24, 31, 38, 41, 26, 9, 13, 21], f); px = K([0, -3, -6, -6, 6, 12, 8, 3], f); pitch = K([8, -20, -45, -55, 20, 38, 22, 10], f);
+    const c = K([0.3, 0.05, -0.15, -0.2, 0.7, 1.05, 0.95, 0.45], f); curl = [c, c * 1.02, c * 0.98, c]; abreD = K([0.15, 0.5, 0.9, 1, 0.3, 0, 0, 0.1], f); pulgar = K([0.3, 0, -0.2, -0.2, 0.7, 1, 0.9, 0.4], f);
+    golpe = K([0, 0, 0, 0, 0, 1, 0.6, 0], f); brillo = K([0.45, 0.6, 0.8, 0.9, 1, 1.2, 0.8, 0.5], f);
+  } else if (acc === 'herido') {
+    const k = [0.6, 1, 0.6, 0.2][f % 4];
+    pz = 24 + 4 * k; px = -5 * k; pitch = 8 - 28 * k; roll = 10 * k; curl = curl.map((c) => c - 0.45 * k); abreD = 0.15 + 0.6 * k; brillo = 0.45 + 0.9 * k;
+  } else if (acc === 'morir') {
+    // cae, se da vuelta con la palma arriba y los dedos se encogen como una araña muerta; el vacío se apaga
+    pz = K([24, 28, 20, 11, 6, 4.5, 4, 4], f); roll = K([0, 15, 60, 120, 165, 178, 180, 180], f); pitch = K([8, -10, 10, 16, 8, 4, 3, 3], f);
+    const c = K([0.3, -0.25, 0.1, 0.5, 0.85, 1, 1.05, 1.05], f); curl = [c, c * 0.95, c * 1.05, c]; pulgar = K([0.3, -0.2, 0.2, 0.6, 0.9, 1, 1, 1], f);
+    brillo = K([0.6, 1.4, 1.2, 0.8, 0.5, 0.2, 0.05, 0], f); muerte = K([0, 0, 0.2, 0.4, 0.6, 0.8, 1, 1], f);
+  }
+  const S = 1.15, H0 = cmp(W, T([px, 0, pz], Rz(yaw), Ry(pitch), Rx(roll)));
+  const H: Tr = { o: H0.o, m: [esc(H0.m[0], S), esc(H0.m[1], S), esc(H0.m[2], S)] };
+  const ps = manoDorada(H, curl, abreD, pulgar, brillo, 7);
+  // polvo de oro y luz que gotea del corte
+  const corte = apT(H, [-10.5, 0, 0.3]);
+  if (muerte < 0.9) for (let i = 0; i < 7; i++) { const u = (ph * (acc === 'quieto' ? 1 : 2) + hr(i * 1.9)) % 1; ps.push(esfera(...cae(add(corte, [(hr(i) - 0.5) * 3, (hr(i * 3) - 0.5) * 3, 0]), u, corte[2]), 0.7 * (1 - u * 0.4), { mat: i % 3 ? 'm67_luz_oro' : 'm67_luz', tono: -u * 0.35 })); }
+  // el golpe: onda de luz dorada en el piso y lascas de mármol que saltan
+  if (golpe > 0.2) {
+    const c0 = apT(W, [px + 16, 0, 0.8]);
+    ps.push(...aro(c0, 6 + golpe * 9, [0, 0, 1], 'm67_luz_oro', -0.1 - (1 - golpe) * 0.3, 1.2, 0.25, f), ...aro(c0, 3 + golpe * 4, [0, 0, 1], 'm67_luz', -0.2, 0.8, 0.4, f + 3));
+    for (let k = 0; k < 7; k++) { const a = (k / 7) * TAU + 0.3, r = 7 + golpe * 6 * hr(k), q: V3 = add(c0, [Math.cos(a) * r, Math.sin(a) * r, 1 + golpe * 7 * hr(k * 2)]); ps.push(poliedro([q, add(q, [1.6, 0.3, 0]), add(q, [0, 1.4, 0.4]), add(q, [0.3, 0, 1.6])], { mat: 'm67_marmol' })); }
+  }
+  ps.push(bajoPiso());
+  const luz = muerte < 0.85 ? { c: golpe > 0.2 ? apT(W, [px + 16, 0, 6]) : corte, r: 14 + brillo * 10 + golpe * 14, color: '#f4e0b0' } : undefined;
+  return { piezas: ps, resplandor: luz };
+}
+bestia67('mano_dorada', ['Mano dorada', 'Golden hand'], ['Mano de oro cortada que flota, agarra y aplasta; una menor de las manos de Aun-Saar.', 'A severed golden hand that floats, grabs and crushes; a lesser one of Aun-Saar’s hands.'], [2, 2], mano);
