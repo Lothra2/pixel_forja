@@ -295,6 +295,8 @@ function aplicarMods(m: Monstruo) {
     if (id === 'rapido') m.vel *= 1.5;
     if (id === 'piel_piedra') m.defensa *= 3;
     if (id === 'fuerte') { m.dano = [m.dano[0] * 1.5, m.dano[1] * 1.5]; }
+    // espectral: medio fuera de este mundo, los golpes físicos lo atraviesan a medias
+    if (id === 'espectral') m.res = { ...m.res, fisico: Math.max(m.res.fisico ?? 0, 35) };
     if (id === 'ardiente') m.res.fuego = 75;
     if (id === 'helado') m.res.frio = 75;
     if (id === 'electrico') m.res.rayo = 75;
@@ -384,14 +386,17 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   let crit = false;
   if (g.critico && R() * 100 < g.critico) crit = true;
   for (let [e, d] of partes) {
-    if (crit && (e === 'fisico' || e === 'sangre')) d *= 2;
+    // el crítico dobla lo físico y la sangre, y el daño elemental del arma también sube (×1.5)
+    if (crit) d *= e === 'fisico' || e === 'sangre' ? 2 : 1.5;
     let res = 0;
     if (v.tipo === 'heroe') { res = h.c.res[e] ?? 0; if (e === 'fisico') res = h.c.reduc_dano; }
     else { const m = v as Monstruo; res = m.res[e] ?? 0; if (m.maldicion) { res += m.maldicion.res; if (e === 'fisico' && m.maldicion.amplificar) res -= m.maldicion.amplificar; } }
     if (g.fuente && g.fuente.tipo === 'monstruo' && (g.fuente as Monstruo).maldicion?.debilitar) d *= 1 - (g.fuente as Monstruo).maldicion!.debilitar / 100;
     d *= 1 - clamp(res, -100, 95) / 100;
     if (e === 'veneno') { v.veneno = Math.max(v.veneno, 2.5); v.venenoDps = Math.max(v.venenoDps, d / 2.5); total += d * 0.2; continue; }
-    if (e === 'frio') { v.frio = Math.max(v.frio, 2.5 + (v.tipo === 'heroe' ? 0 : 1)); if (R() < 0.15 && v.tipo !== 'heroe' && !(v as Monstruo).def.jefe) v.congelado = 1.2; }
+    if (e === 'frio') { v.frio = Math.max(v.frio, 2.5 + (v.tipo === 'heroe' ? 0 : 1)); if (v.tipo !== 'heroe' && R() < 0.15 && !(v as Monstruo).def.jefe) v.congelado = 1.2; else if (v.tipo === 'heroe' && R() < 0.06 * (1 - clamp(res, 0, 90) / 100)) v.congelado = Math.max(v.congelado, 0.6); }
+    // quemadura: el fuego sigue ardiendo un rato (20 % más en 2 s)
+    if (e === 'fuego' && d > 0) { (v as any).quema = 2; (v as any).quemaDps = Math.max((v as any).quemaDps ?? 0, d * 0.1); }
     if (e === 'sangre') v.sangrado = Math.max(v.sangrado, 3);
     total += d;
   }
@@ -417,7 +422,8 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     if (g.robo && g.deHeroe) h.vida = Math.min(h.vidaMax, h.vida + total * g.robo / 100);
     if (g.deHeroe && h.c.robo_mana) h.mana = Math.min(h.c.manaMax, h.mana + total * h.c.robo_mana / 100);
   }
-  if (g.aturdir && v.tipo !== 'heroe' && R() * 100 < g.aturdir) v.aturdido = 1;
+  // aturdir: nunca a los jefes; al héroe solo un momento
+  if (g.aturdir && !esJefe(v) && R() * 100 < g.aturdir) v.aturdido = v.tipo === 'heroe' ? Math.max(v.aturdido, 0.5) : 1;
   if (g.lento) v.frio = Math.max(v.frio, 2);
   if (g.empuje && v.tipo !== 'heroe' && g.fuente && !(v as Monstruo).def.jefe) { const dx = v.x - g.fuente.x, dy = v.y - g.fuente.y, l = Math.hypot(dx, dy) || 1; for (let k = 0; k < 6; k++) { const nx = v.x + (dx / l) * 0.35, ny = v.y + (dy / l) * 0.35; if (pasable(j.zona, nx, ny)) { v.x = nx; v.y = ny; } } }
   // sangre y reacción
@@ -1206,6 +1212,8 @@ function actualizarHeroe(j: Juego, dt: number) {
   const h = j.heroe;
   h.t += dt; h.destello = Math.max(0, h.destello - dt);
   if (h.muerto) return;
+  // congelado o aturdido: un momento sin poder hacer nada
+  if (h.congelado > 0 || h.aturdido > 0) { h.congelado = Math.max(0, h.congelado - dt); h.aturdido = Math.max(0, h.aturdido - dt); h.acc = 'quieto'; h.camino = null; h.destino = null; return; }
   for (const k of Object.keys(h.recargas)) h.recargas[k] = Math.max(0, h.recargas[k] - dt);
   // buffs
   let cambio = false;
@@ -1237,6 +1245,7 @@ function actualizarHeroe(j: Juego, dt: number) {
   h.vida = Math.min(h.vidaMax, h.vida + regV * dt);
   h.mana = Math.min(h.c.manaMax, h.mana + h.c.manaMax * 0.025 * (1 + h.c.regen_mana / 100) * dt);
   if (h.veneno > 0) { h.veneno -= dt; h.vida -= h.venenoDps * dt; if (h.vida <= 0) { h.vida = 1; } }
+  if ((h as any).quema > 0) { (h as any).quema -= dt; h.vida -= (h as any).quemaDps * dt; if ((h as any).quema <= 0) (h as any).quemaDps = 0; if (h.vida <= 0) h.vida = 1; }
   if (h.sangrado > 0) { h.sangrado -= dt; h.vida -= h.vidaMax * 0.01 * dt; if (h.vida <= 0) morirHeroe(j); }
   if (h.frio > 0) h.frio -= dt;
   // salto o carga
@@ -1292,6 +1301,7 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
   const h = j.heroe;
   if (m.veneno > 0) { m.veneno -= dt; m.vida -= m.venenoDps * dt; if (Math.floor(m.veneno * 2) !== Math.floor((m.veneno + dt) * 2)) particulas(j, m.x, m.y, 2, 'humo', '#60a040', 0.5, 30); if (m.vida <= 0) { morirMonstruo(j, m); return; } }
   if (m.sangrado > 0) { m.sangrado -= dt; m.vida -= m.vidaMax * 0.02 * dt; if (m.vida <= 0) { morirMonstruo(j, m); return; } }
+  if ((m as any).quema > 0) { (m as any).quema -= dt; m.vida -= (m as any).quemaDps * dt; if (R() < dt * 6) particulas(j, m.x, m.y, 1, 'brasa', '#ff7020', 0.4, 40 * m.escala); if ((m as any).quema <= 0) (m as any).quemaDps = 0; if (m.vida <= 0) { morirMonstruo(j, m); return; } }
   if (m.maldicion) { m.maldicion.t -= dt; if (m.maldicion.t <= 0) m.maldicion = undefined; }
   if (m.marca && m.marca > 0) { m.marca -= dt; if (Math.floor(m.marca * 2) !== Math.floor((m.marca + dt) * 2)) particulas(j, m.x, m.y, 1, 'pluma', '#ffc860', 0.3, 70 * m.escala); }
   if (m.dueno && m.tVida !== undefined) { m.tVida -= dt; if (m.tVida <= 0) { m.vida = 0; m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; efecto(j, 'circulo_invocacion', m.x, m.y, 0, 0.5); return; } }
@@ -1434,6 +1444,11 @@ function golpeMonstruo(j: Juego, m: Monstruo) {
   const g: Golpe = { min: m.dano[0], max: m.dano[1], elem: 'fisico', deHeroe: !!m.dueno, fuente: m, extra: {} };
   if (m.def.elem && m.def.elem !== 'fisico') g.extra![m.def.elem] = (m.dano[0] + m.dano[1]) * 0.25;
   if (m.mods.includes('ardiente')) g.extra!.fuego = (g.extra!.fuego ?? 0) + m.dano[1] * 0.5;
+  // los brutos y los jefes a veces te aturden un instante; el espectral pega con sombra
+  if (m.mods.includes('fuerte') || m.def.jefe) g.aturdir = 6;
+  if (m.mods.includes('espectral')) g.extra!.sombra = (g.extra!.sombra ?? 0) + m.dano[1] * 0.4;
+  // maldito: sus golpes te roban maná y te vuelven lento
+  if (m.mods.includes('maldito') && obj.tipo === 'heroe') { const hh = obj as Heroe; hh.mana = Math.max(0, hh.mana - hh.c.manaMax * 0.05); hh.frio = Math.max(hh.frio, 1.5); }
   if (m.mods.includes('helado')) g.extra!.frio = (g.extra!.frio ?? 0) + m.dano[1] * 0.4;
   if (m.mods.includes('electrico')) g.extra!.rayo = (g.extra!.rayo ?? 0) + m.dano[1] * 0.5;
   if (m.dueno) { g.sinFallo = true; g.precision = undefined; }

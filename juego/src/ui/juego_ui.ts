@@ -965,9 +965,18 @@ function panelMenu(j: Juego, x: number, y: number) {
 // ------------------------------------------------------------------ mapa (Tab) y minimapa
 export function dibujarMapa(j: Juego, grande: boolean) {
   const z = j.zona, h = j.heroe;
-  const esc = grande ? 3.2 : 1.4;
-  const cx = grande ? W / 2 : W - 90, cy = grande ? (H - BAR_H) / 2 : 80;
-  const p = (x: number, y: number): [number, number] => [cx + (x - h.x - (y - h.y)) * esc * 0.5, cy + (x - h.x + (y - h.y)) * esc * 0.25];
+  // el grande llena la pantalla con la zona entera y se centra en ella (no en el héroe)
+  const esc = grande ? Math.min((W - 80) / ((z.W + z.H) * 0.5), (H - BAR_H - 70) / ((z.W + z.H) * 0.25)) : 1.4;
+  const cx = grande ? W / 2 : W - 90, cy = grande ? (H - BAR_H) / 2 + 10 : 80;
+  const ox = grande ? z.W / 2 : h.x, oy = grande ? z.H / 2 : h.y;
+  const p = (x: number, y: number): [number, number] => [cx + (x - ox - (y - oy)) * esc * 0.5, cy + (x - ox + (y - oy)) * esc * 0.25];
+  // etiquetas que no se encimen: si chocan con otra se corren hacia abajo, y si no hay lugar no se ponen
+  const puestas: [number, number, number, number][] = [];
+  const etiqueta = (t: string, x: number, y: number, color: string, tam = 10) => {
+    const w = ancho(t, tam) + 6;
+    for (let k = 0; k < 4; k++) { const yy = y + k * (tam + 3), r: [number, number, number, number] = [x - w / 2, yy - tam, w, tam + 3];
+      if (!puestas.some((q) => r[0] < q[0] + q[2] && r[0] + r[2] > q[0] && r[1] < q[1] + q[3] && r[1] + r[3] > q[1])) { puestas.push(r); texto(t, x, yy, { alin: 'center', tam, color }); return; } }
+  };
   ctx.save();
   if (!grande) { ctx.beginPath(); ctx.rect(W - 180, 0, 180, 160); ctx.clip(); ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(W - 180, 0, 180, 160); }
   else { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, H - BAR_H + 56); }
@@ -986,12 +995,12 @@ export function dibujarMapa(j: Juego, grande: boolean) {
     ctx.stroke();
     ctx.fillStyle = 'rgba(80,70,50,0.12)'; ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.lineTo(e, f); ctx.lineTo(g, hh); ctx.closePath(); ctx.fill();
   }
-  for (const s of z.salidas) { const [a, b] = p(s.cx, s.cy); if (!z.explorado[Math.floor(s.cy / 5) * z.tw + Math.floor(s.cx / 5)]) continue; ctx.fillStyle = '#ffd060'; ctx.fillRect(a - 2, b - 2, 5, 5); if (grande) texto(TT(s.nombre), a, b - 6, { alin: 'center', tam: 11, color: '#ffd060' }); }
+  for (const s of z.salidas) { const [a, b] = p(s.cx, s.cy); if (!z.explorado[Math.floor(s.cy / 5) * z.tw + Math.floor(s.cx / 5)]) continue; ctx.fillStyle = '#ffd060'; ctx.fillRect(a - 2, b - 2, 5, 5); if (grande) etiqueta(TT(s.nombre), a, b - 6, '#ffd060', 11); }
   for (const m of z.marcas) if (m.tipo === 'viaje') { const [a, b] = p(m.cx, m.cy); if (z.explorado[Math.floor(m.cy / 5) * z.tw + Math.floor(m.cx / 5)]) { ctx.fillStyle = '#60a0ff'; ctx.fillRect(a - 3, b - 3, 6, 6); } }
   for (const m of j.monstruos) if (!m.muerto && (m.calidad >= 2 || m.dueno) && dist2(m.x, m.y, h.x, h.y) < 400) { const [a, b] = p(m.x, m.y); ctx.fillStyle = m.dueno ? '#40ff40' : '#ff4020'; ctx.fillRect(a - 1, b - 1, 3, 3); }
-  for (const n of j.npcs) { const [a, b] = p(n.x, n.y); ctx.fillStyle = '#e0e0ff'; ctx.fillRect(a - 1, b - 1, 3, 3); if (grande) texto(TT(NPCS[n.npc].nombre), a, b - 5, { alin: 'center', tam: 10, color: '#c0c0ff' }); }
+  for (const n of j.npcs) { const [a, b] = p(n.x, n.y); ctx.fillStyle = '#e0e0ff'; ctx.fillRect(a - 1, b - 1, 3, 3); if (grande) etiqueta(TT(NPCS[n.npc].nombre), a, b - 5, '#c0c0ff'); }
   ctx.globalAlpha = 1;
-  ctx.fillStyle = '#ff3030'; ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
+  { const [hx, hy] = p(h.x, h.y); ctx.fillStyle = '#ff3030'; ctx.beginPath(); ctx.arc(hx, hy, grande ? 4 : 3, 0, Math.PI * 2); ctx.fill(); }
   ctx.restore();
   if (!grande) { ctx.strokeStyle = '#5a4a30'; ctx.strokeRect(W - 180.5, -1, 181, 161); texto(TT(z.nombre), W - 90, 154, { alin: 'center', tam: 10, color: '#c0a060', max: 170 }); }
   else texto(TT(z.nombre), W / 2, 30, { alin: 'center', tam: 18, color: '#c0a060', fuente: TITULO });

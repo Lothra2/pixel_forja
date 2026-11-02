@@ -14,7 +14,7 @@ export type Musica =
   | 'menu' | 'intro'
   | 'campamento1' | 'campamento2' | 'campamento3' | 'campamento4' | 'campamento5' | 'campamento6' | 'campamento7'
   | 'acto1' | 'acto2' | 'acto3' | 'acto4' | 'acto5' | 'acto6' | 'acto7'
-  | 'mazmorra' | 'jefe' | null;
+  | 'mazmorra' | 'mazmorra2' | 'mazmorra3' | 'mazmorra4' | 'mazmorra5' | 'mazmorra6' | 'mazmorra7' | 'jefe' | null;
 
 type IdAmbiente = 'lluvia' | 'viento' | 'fuego' | 'cueva' | 'selva' | 'infierno' | 'nada';
 interface OpcionesEfecto { pan?: number; vol?: number; tono?: number; dist?: number }
@@ -1434,6 +1434,13 @@ const PISTAS: Record<Exclude<Musica, null>, Pista> = {
     perc: 'lejano', percVol: 0.3, textura: 'goteo', texturaVol: 0.3,
     prog: [[0, 1, 0, 0], [0, 0, 1, 6], [0, 3, 1, 0]],
   }),
+  // mazmorras de cada acto: la misma calma de la de Velmora, con el color de su tierra
+  mazmorra2: pista({ bpm: 50, raiz: 38, escala: FRIGIO_DOM, dron: 'arena', dronVol: 0.12, pads: [], mel: 'flauta', melVol: 0.06, densidad: 0.15, registro: 7, silencio: 0.5, campana: 0.1, perc: 'lejano', percVol: 0.25, textura: 'viento', texturaVol: 0.25, prog: [[0, 1, 0, 0], [0, 0, 1, 6], [0, 3, 1, 0]] }),
+  mazmorra3: pista({ bpm: 54, raiz: 36, escala: DORICO, dron: 'selva', dronVol: 0.12, pads: [], mel: 'pulsado', melVol: 0.07, densidad: 0.18, registro: 7, silencio: 0.45, campana: 0.08, perc: 'lejano', percVol: 0.3, textura: 'insectos', texturaVol: 0.25, prog: [[0, 1, 0, 0], [0, 0, 1, 6], [0, 3, 1, 0]] }),
+  mazmorra4: pista({ bpm: 48, raiz: 40, escala: EOLIO, dron: 'hielo', dronVol: 0.13, pads: [], mel: 'cristal', melVol: 0.06, densidad: 0.14, registro: 7, silencio: 0.5, campana: 0.15, perc: 'lejano', percVol: 0.2, textura: 'goteo', texturaVol: 0.3, prog: [[0, 1, 0, 0], [0, 0, 1, 6], [0, 3, 1, 0]] }),
+  mazmorra5: pista({ bpm: 56, raiz: 34, escala: LOCRIO, dron: 'distorsion', dronVol: 0.12, pads: [], mel: 'pulsado', melVol: 0.07, densidad: 0.2, registro: 7, silencio: 0.4, campana: 0.05, perc: 'lejano', percVol: 0.35, textura: 'fuego', texturaVol: 0.3, disonante: true, prog: [[0, 1, 0, 0], [0, 0, 1, 6], [0, 3, 1, 0]] }),
+  mazmorra6: pista({ bpm: 46, raiz: 37, escala: FRIGIO, dron: 'organo', dronVol: 0.11, pads: [], mel: 'arco', melVol: 0.06, densidad: 0.14, registro: 7, silencio: 0.5, campana: 0.25, perc: 'lejano', percVol: 0.2, textura: 'goteo', texturaVol: 0.35, prog: [[0, 1, 0, 0], [0, 0, 1, 6], [0, 3, 1, 0]] }),
+  mazmorra7: pista({ bpm: 50, raiz: 41, escala: ARMONICA, dron: 'organo', dronVol: 0.12, pads: ['coro'], padVol: 0.04, mel: 'cristal', melVol: 0.07, densidad: 0.16, registro: 7, silencio: 0.45, campana: 0.2, perc: 'lejano', percVol: 0.25, textura: 'viento', texturaVol: 0.2, prog: [[0, 1, 0, 0], [0, 0, 1, 6], [0, 3, 1, 0]] }),
   jefe: pista({
     bpm: 78, raiz: 33, escala: FRIGIO, dron: 'distorsion', dronVol: 0.13, pads: ['coro'], padVol: 0.05,
     mel: 'metal', melVol: 0.09, densidad: 0.5, registro: 7, silencio: 0.1, bajo: 0.15, campana: 0.1,

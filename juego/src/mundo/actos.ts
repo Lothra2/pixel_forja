@@ -120,7 +120,7 @@ export const POBL_ZONA: Record<string, string> = {
   a5_llanuras: 'llanuras_ceniza', a5_abismo1: 'santuario1', a5_abismo2: 'santuario2', a5_rio: 'llanuras_ceniza', a5_fragua: 'santuario1', a5_santuario1: 'santuario1', a5_santuario2: 'santuario2',
 };
 export const PUEBLO_DE: Record<number, string> = { 1: 'a1_refugio', 2: 'a2_oasis', 3: 'a3_muelle', 4: 'a4_fortin', 5: 'a5_bastion' };
-export const MUSICA_ACTO = (acto: number, tipo: string) => (tipo === 'pueblo' ? `campamento${acto}` : tipo === 'mazmorra' ? (acto === 1 ? 'mazmorra' : `acto${acto}`) : `acto${acto}`);
+export const MUSICA_ACTO = (acto: number, tipo: string) => (tipo === 'pueblo' ? `campamento${acto}` : tipo === 'mazmorra' ? (acto === 1 ? 'mazmorra' : `mazmorra${acto}`) : `acto${acto}`);
 
 // ------------------------------------------------------------------ misiones
 export interface Premio { habilidad?: number; atributos?: number; vida?: number; oro?: number; objeto?: 'raro' | 'unico' | 'conjunto'; resistencia?: number }
