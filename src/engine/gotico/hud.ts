@@ -2063,9 +2063,8 @@ export function heroeEnNicho(cuerpo: Cuerpo, equipo: Equipo, cuadro = 0): Raster
   const c = cacheHeroe.get(k);
   if (c) return c;
   const z = 1.9, e = personajeEscena({ ...cuerpo, alto: (cuerpo.alto ?? 1) * z }, equipo, 'so', 'quieto', cuadro % 4);
-  // luz de antorcha cálida al frente y arriba, como la del nicho, para que el metal y la cara lean
-  const luz = { c: [22 * z, -10 * z, 30 * z] as [number, number, number], r: 80 * z, color: '#ffc080' };
-  const r = recortarAlfa(pintarEscena({ ...e, resplandor: e.resplandor ?? luz, sinSombra: true, ss: 2 }).img, 24, 2);
+  // sin luz extra: el resplandor del motor tiñe los colores hacia su tono y lavaba las armaduras oscuras (la demoníaca salía color arena)
+  const r = recortarAlfa(pintarEscena({ ...e, sinSombra: true, ss: 2 }).img, 24, 2);
   cacheHeroe.set(k, r);
   return r;
 }
