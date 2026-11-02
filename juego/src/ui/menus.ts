@@ -78,7 +78,7 @@ export function logo(x: number, y: number, k: number, t: number, tam = 54) {
 
 // ------------------------------------------------------------------ intro
 // Cinemática por tomas: cada una con su cámara (paneo, zoom lento, sacudida), luz que titila y ceniza.
-const SPRITE_OZMAREN = 'senor_demonio';
+const SPRITE_OZMAREN = 'jefe_ozmaren';
 const TOMAS: { dur: number; dibujar: (t: number, k: number) => void; lineas: number[] }[] = [];
 let tomasListas = false;
 const suave = (u: number) => u * u * (3 - 2 * u);

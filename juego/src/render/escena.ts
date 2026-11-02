@@ -278,6 +278,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   else if (e.tipo === 'npc') fs = cuadrosMonstruo((e as any).npc, 'quieto', e.dir);
   else {
     if ((m as any).surgiendo > 0) acc = 'morir';
+    if (acc === 'lanzar' && m.def.sprite.startsWith('jefe_') && ((m as any).fase ?? 0) >= 1) acc = 'especial' as any;
     fs = framesMonstruo(m.def.sprite, acc, e.dir);
   }
   if (!fs.length) return;

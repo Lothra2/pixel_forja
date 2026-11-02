@@ -96,6 +96,13 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     if (!dentro(px, py, 300)) continue;
     L.push({ x: px, y: py, h: 20, r: a.radio * 32 + 40, c: COLOR_ELEM[a.elem] ?? COLOR_ELEM.fuego, k: 0.6 + Math.sin(t * 11 + a.x) * 0.08 });
   }
+  // Ozmaren arde: una luz naranja que palpita, más fuerte cuando abre el pecho
+  for (const m of j.monstruos) {
+    if (m.muerto || m.def.sprite !== 'jefe_ozmaren') continue;
+    const [px, py] = aPant(m.x, m.y); if (!dentro(px, py, 400)) continue;
+    const abre = m.acc === 'lanzar' || m.acc === 'atacar' ? 1 : 0;
+    L.push({ x: px, y: py, h: 120, r: 300 + abre * 120, c: [255, 110, 30], k: 0.75 + Math.sin(t * 4) * 0.15 + abre * 0.2 });
+  }
   // botín en el piso: luz del color de su rareza
   for (const sl of j.suelo) {
     const o = sl.o; if (!o) continue;
@@ -145,6 +152,8 @@ function influencias(e: Ent, px: number, py: number): Influencia[] {
 
 /** Sombras del personaje: una por cada luz cercana, estiradas lejos de ella y más suaves con la distancia. */
 export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: number, py: number, esc: number) {
+  // Khamer-Ul no tiene sombra: es su maldición
+  if ((e as any).def?.sprite === 'jefe_rey_sin_sombra') return;
   // sombra de contacto, siempre: ancla los pies al piso
   const rr = (e.radio / 0.45) * 0.9 * esc;
   ctx.save(); ctx.globalAlpha = 0.32; ctx.fillStyle = '#000';
