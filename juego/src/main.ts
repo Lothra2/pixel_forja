@@ -1,6 +1,7 @@
 // Réquiem de Ceniza: arranque, estados (carga, intro, menú, elegir, crear, juego) y el control del héroe.
 import { ctx, W, H, E, ajustar, instalarEntrada, finCuadro, pulso, alPrimerGesto } from './nucleo/lienzo';
-import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto, objetoMeta } from './motor/assets';
+import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto, objetoMeta, liberarAtlas, precargar, marcarCuadro } from './motor/assets';
+import * as Assets from './motor/assets';
 import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
@@ -104,8 +105,15 @@ async function irAZona(id: string, entrada: string) {
   await new Promise((r) => setTimeout(r, 30));
   entrarZona(j, id, entrada);
   historiaEntrar(j);
-  await asegurar(atlasZona(id), (h, t) => { cargaK = t ? h / t : 1; });
+  const atl = atlasZona(id);
+  // primero soltar lo viejo que no hace falta (partidas largas: sin esto el navegador se queda sin recursos)
+  liberarAtlas(atl);
+  await asegurar(atl, (h, t) => { cargaK = t ? h / t : 1; });
   const z = ZONAS[id];
+  // el jefe de las zonas vecinas se baja en segundo plano, para que nunca aparezca sin cuerpo
+  const vecinos = new Set<string>();
+  for (const sa of z.salidas) { const dj = ZONAS[sa.destino]?.jefe; if (!dj) continue; for (const sp of [MONSTRUOS[dj]?.sprite, MONSTRUOS[MONSTRUOS[dj]?.invoca ?? '']?.sprite]) if (sp) for (const a of atlasDe('m', clavesCon('m', `${sp}/`))) vecinos.add(a); }
+  precargar(vecinos);
   Sonido.musica(MUSICA_ACTO(z.acto, z.tipo) as any);
   Sonido.ambiente(z.tipo === 'mazmorra' ? 'cueva' : z.lluvia ? 'lluvia' : z.acto === 3 ? 'selva' : z.acto === 5 ? 'infierno' : z.tipo === 'pueblo' ? 'fuego' : 'viento');
   guardar();
@@ -382,6 +390,7 @@ let ultimo = performance.now();
 let introT = 0;
 (window as any).__introA = (s: number) => { introT = s; };
 function cuadro(ahora: number) {
+  marcarCuadro(ahora);
   const dt = Math.min(0.05, (ahora - ultimo) / 1000); ultimo = ahora;
   tiempo += dt; tEstado += dt;
   try { paso(dt); } catch (e) { console.error(e); }
@@ -543,6 +552,7 @@ async function arrancar() {
   (window as any).__estado = () => estado;
   import('./juego/mundo').then((m) => { (window as any).__mundo = m; });
   (window as any).__U = { hablarCon, abrirTienda, ui };
+  (window as any).__A = Assets;
   // ganchos para las pruebas del build de producción
   Promise.all([import('./juego/heroe'), import('./juego/objetos'), import('./datos/objetos_datos'), import('./motor/pintor')]).then(([H, O, D, P]) => { (window as any).__T = { H, O, D, P }; });
   (window as any).__ir = (id: string, e: string) => irAZona(id, e);

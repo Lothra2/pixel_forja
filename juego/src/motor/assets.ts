@@ -26,21 +26,74 @@ export async function cargarManifiesto(): Promise<void> {
 }
 export const manifiesto = () => man!;
 
+// Descargas: como mucho MAX_DESCARGAS a la vez, con reintentos de espera creciente.
+// Si un atlas falla del todo, se borra de `cargando` y se vuelve a pedir pasado un rato
+// (antes la promesa resuelta quedaba ahí y el atlas no volvía a bajar nunca: jefe sin cuerpo).
+const MAX_DESCARGAS = 6;
+const REINTENTOS = 5;
+let activas = 0;
+const cola: (() => void)[] = [];
+const fallo = new Map<string, number>();
+const usado = new Map<string, number>();
+/** Hora del cuadro actual, para el LRU sin llamar a performance.now() en cada dibujo. */
+let ahoraCuadro = 0;
+export const marcarCuadro = (t: number) => { ahoraCuadro = t; };
+const turno = () => new Promise<void>((ok) => { if (activas < MAX_DESCARGAS) { activas++; ok(); } else cola.push(() => { activas++; ok(); }); });
+const soltarTurno = () => { activas--; const s = cola.shift(); if (s) s(); };
+function bajar(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((ok) => {
+    const im = new Image();
+    im.onload = () => ok(im);
+    im.onerror = () => ok(null);
+    im.src = url;
+  });
+}
 export function cargarAtlas(nombre: string): Promise<void> {
   if (imgs.has(nombre)) return Promise.resolve();
   let p = cargando.get(nombre);
   if (p) return p;
   const archivo = man!.atlas[nombre]?.[0];
   if (!archivo) return Promise.resolve();
-  p = new Promise<void>((ok) => {
-    const im = new Image();
-    im.onload = () => { imgs.set(nombre, im); ok(); };
-    im.onerror = () => { console.warn('no cargó', archivo); ok(); };
-    im.src = BASE + archivo;
-  });
+  const f = fallo.get(nombre);
+  if (f && performance.now() - f < 4000) return Promise.resolve();
+  p = (async () => {
+    for (let i = 0; i < REINTENTOS; i++) {
+      if (i) await new Promise((r) => setTimeout(r, 300 * 2 ** i));
+      await turno();
+      const im = await bajar(BASE + archivo + (i ? `?r=${i}` : ''));
+      soltarTurno();
+      if (im) { imgs.set(nombre, im); usado.set(nombre, performance.now()); fallo.delete(nombre); cargando.delete(nombre); return; }
+    }
+    console.warn('no cargó', archivo);
+    fallo.set(nombre, performance.now());
+    cargando.delete(nombre);
+  })();
   cargando.set(nombre, p);
   return p;
 }
+const bytesAtlas = (n: string) => { const a = man?.atlas[n]; return a ? a[1] * a[2] * 4 : 0; };
+/** Memoria de atlas decodificados en MB (aprox.). */
+export const memoriaAtlas = () => { let t = 0; for (const n of imgs.keys()) t += bytesAtlas(n); return t / 1e6; };
+/** Libera atlas que no están en `mantener`, del menos usado al más reciente, hasta quedar bajo el tope (MB).
+ *  Lo de la zona anterior suele sobrevivir si cabe, así volver atrás no recarga nada. */
+export function liberarAtlas(mantener: Set<string>, topeMB = 600): string[] {
+  let total = memoriaAtlas() * 1e6;
+  const tope = topeMB * 1e6;
+  if (total <= tope) return [];
+  const ahora = performance.now();
+  const cand = [...imgs.keys()].filter((n) => !mantener.has(n) && ahora - (usado.get(n) ?? 0) > 5000).sort((a, b) => (usado.get(a) ?? 0) - (usado.get(b) ?? 0));
+  const fuera = new Set<string>();
+  for (const n of cand) { if (total <= tope) break; total -= bytesAtlas(n); fuera.add(n); }
+  if (!fuera.size) return [];
+  for (const n of fuera) { const im = imgs.get(n); imgs.delete(n); usado.delete(n); if (im instanceof HTMLImageElement) im.src = ''; }
+  // los cuadros guardan la imagen: soltarla para que se pueda recoger y se vuelva a pedir al dibujar
+  const limpiar = (q: Cuadro) => { if (q.img && fuera.has(q.atlas)) q.img = null; };
+  for (const l of cuadros.values()) l.forEach(limpiar);
+  for (const o of objetos.values()) o.f.forEach(limpiar);
+  return [...fuera];
+}
+/** Pide atlas en segundo plano (p. ej. el jefe de la zona siguiente). */
+export function precargar(nombres: Iterable<string>) { for (const n of nombres) if (!imgs.has(n)) cargarAtlas(n); }
 export const atlasListo = (n: string) => imgs.has(n);
 export async function asegurar(nombres: Iterable<string>, progreso?: (h: number, t: number) => void) {
   const ns = [...new Set(nombres)].filter((n) => !imgs.has(n));
@@ -92,6 +145,7 @@ export function dibujar(c: CanvasRenderingContext2D, q: Cuadro | undefined, x: n
   if (!q) return false;
   let im = q.img;
   if (!im) { im = imgs.get(q.atlas) ?? null; if (!im) { cargarAtlas(q.atlas); return false; } q.img = im; }
+  usado.set(q.atlas, ahoraCuadro);
   if (escala === 1) c.drawImage(im, q.x, q.y, q.w, q.h, Math.round(x - q.ax), Math.round(y - q.ay), q.w, q.h);
   else c.drawImage(im, q.x, q.y, q.w, q.h, x - q.ax * escala, y - q.ay * escala, q.w * escala, q.h * escala);
   return true;
@@ -104,6 +158,7 @@ export function dibujarTenido(c: CanvasRenderingContext2D, q: Cuadro | undefined
   if (!q) return false;
   let im = q.img;
   if (!im) { im = imgs.get(q.atlas) ?? null; if (!im) { cargarAtlas(q.atlas); return false; } q.img = im; }
+  usado.set(q.atlas, ahoraCuadro);
   if (tmp.width < q.w || tmp.height < q.h) { tmp.width = Math.max(tmp.width, q.w); tmp.height = Math.max(tmp.height, q.h); }
   tctx.globalCompositeOperation = 'copy';
   tctx.drawImage(im, q.x, q.y, q.w, q.h, 0, 0, q.w, q.h);
