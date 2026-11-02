@@ -1890,7 +1890,7 @@ const SILUETAS: Record<string, LootItem> = {
 };
 
 /** Un arma 3D del motor para el inventario: de pie, de frente, pintada al tamaño exacto de su casilla. */
-export interface Arma3D { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto }
+export interface Arma3D { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto; /** nivel del arsenal elemental (forma forjada) */ nivel?: 1 | 2 | 3 | 4 | 5 }
 const cacheArma3D = new Map<string, Raster>();
 export function iconoArma3D(a: Arma3D, w: number, h: number, cuadro = 0): Raster {
   const k = `${JSON.stringify(a)}|${w}|${h}|${cuadro % 8}`;

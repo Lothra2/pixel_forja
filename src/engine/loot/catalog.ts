@@ -5,6 +5,7 @@ import { JEWEL_ICONS, POTION_KINDS, POTION_SIZES, CONSUMABLE_ICONS, GEM_GRADES, 
 import { ARMOR_LINES, ARMOR_LINES_EPICAS, ARMOR_MOD_EPICO, ARMOR_SLOTS, ARMOR_TIERS, type ArmorLineEpica } from './armor';
 import { PET_ARMOR } from '../render/pet3d';
 import { earlyLoot } from './early';
+import { allArsenal } from './arsenal';
 import { ARMOR_EVOLUTION, SLOT_NAMES, type ArmorLine, type ArmorSlot, type ArmorTier, type TierLook } from './armor';
 
 /**
@@ -61,6 +62,8 @@ export interface LootItem {
   twoHanded?: boolean;
   /** franja de niveles en la que cae esta base (las del arsenal épico y las líneas épicas llegan al 100) */
   levelRange?: [number, number];
+  /** arsenal elemental: familia, nivel (1 común a 5 mítica) y elemento, para la forma forjada en 3D (ver arsenal.ts) */
+  arsenal?: { familia: string; nivel: 1 | 2 | 3 | 4 | 5; elemento?: 'fuego' | 'hielo' | 'veneno' | 'rayo' | 'sombra' | 'sagrado' | 'sangre'; mat?: string; mango?: string };
 }
 
 export const STAT_LABELS: Record<StatKey, { es: string; en: string }> = {
@@ -103,6 +106,7 @@ export const WEAPON_NAMES: Record<WeaponIcon, { es: string; en: string }> = {
   scythe: { es: 'Guadaña', en: 'Scythe' }, bow: { es: 'Arco corto', en: 'Short Bow' }, longbow: { es: 'Arco largo', en: 'Long Bow' }, crossbow: { es: 'Ballesta', en: 'Crossbow' },
   falcata: { es: 'Falcata', en: 'Falcata' }, katar: { es: 'Katar', en: 'Katar' }, sickle: { es: 'Hoz', en: 'Sickle' }, hand_orb: { es: 'Orbe de mano', en: 'Hand Orb' },
   trident: { es: 'Tridente', en: 'Trident' }, greatstaff: { es: 'Gran báculo', en: 'Greatstaff' }, dragon_lance: { es: 'Lanza del dragón', en: 'Dragon Lance' },
+  cestus: { es: 'Cesto', en: 'Cestus' }, flask: { es: 'Frasco', en: 'Flask' },
 };
 
 export const OFFHAND_NAMES: Record<OffhandIcon, { es: string; en: string }> = {
@@ -117,12 +121,13 @@ export const JEWEL_NAMES: Record<JewelIcon, { es: string; en: string }> = {
 };
 
 // daño base [min, max] y velocidad (golpes por segundo) de cada arma normal
-const W_BASE: Record<WeaponIcon, [number, number, number]> = {
+export const W_BASE: Record<WeaponIcon, [number, number, number]> = {
   sword: [3, 8, 1.2], scimitar: [2, 9, 1.3], katana: [4, 9, 1.25], rapier: [2, 7, 1.45], dagger: [1, 5, 1.6], kris: [2, 5, 1.6], axe: [3, 9, 1.15],
   hatchet: [2, 6, 1.4], mace: [3, 7, 1.15], morning_star: [4, 9, 1.1], flail: [2, 11, 1.0], warhammer: [5, 10, 1.0], scepter: [3, 8, 1.15], club: [2, 6, 1.2],
   wand: [1, 5, 1.4], claw: [2, 6, 1.5], javelin: [3, 8, 1.3], greatsword: [8, 18, 0.95], greataxe: [9, 19, 0.9], maul: [10, 22, 0.8], staff: [3, 9, 1.1],
   spear: [5, 14, 1.0], halberd: [7, 17, 0.9], scythe: [6, 18, 0.95], bow: [2, 7, 1.3], longbow: [3, 10, 1.1], crossbow: [6, 14, 0.85],
   falcata: [4, 10, 1.15], katar: [3, 7, 1.55], sickle: [2, 7, 1.45], hand_orb: [2, 6, 1.3], trident: [6, 15, 0.95], greatstaff: [4, 11, 1.05], dragon_lance: [8, 19, 0.9],
+  cestus: [2, 6, 1.6], flask: [4, 9, 1.0],
 };
 
 const GRADE_NAME = [{ es: '', en: '' }, { es: ' reforzada', en: 'Reinforced ' }, { es: ' de élite', en: 'Elite ' }];
@@ -492,9 +497,9 @@ export function allPetArmor(): LootItem[] {
   }));
 }
 
-/** Todo el botín del juego: bases (y el arsenal épico), armaduras (y las líneas épicas), joyas y consumibles, armaduras de mascota, mágicos y raros de nivel bajo, legendarios y set. */
+/** Todo el botín del juego: bases (y el arsenal épico), armaduras (y las líneas épicas), joyas y consumibles, armaduras de mascota, mágicos y raros de nivel bajo, legendarios y set, y el arsenal elemental (360 bases y 60 legendarias). */
 export function allLoot(): LootItem[] {
-  return [...allBases(), ...allArmor(), ...allBasesEpicas(), ...allArmorEpica(), ...allMisc(), ...allPetArmor(), ...earlyLoot(), ...UNIQUE_LOOT];
+  return [...allBases(), ...allArmor(), ...allBasesEpicas(), ...allArmorEpica(), ...allMisc(), ...allPetArmor(), ...earlyLoot(), ...UNIQUE_LOOT, ...allArsenal()];
 }
 
 export { gemMat, glowMat };

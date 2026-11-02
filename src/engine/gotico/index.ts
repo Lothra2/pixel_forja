@@ -16,3 +16,7 @@ export { HEROES, MONSTRUOS, type Heroe, type Monstruo } from './catalogo/persona
 export { JEFES } from './catalogo/jefes';
 export { JEFES2 } from './catalogo/jefes2';
 export { equipoDeInventario, tinte, type Puesto } from './apariencia';
+// luz dinámica de cada poder (para que el juego prenda luces con sombras)
+export { LUZ_EFECTO, EFECTOS_NUEVOS, luzEfectosJson, intensidadLuz, rgbLuz, type LuzEfecto } from './luz_efectos';
+export { PALETAS as PALETAS_GORE, SUPERFICIES as SUPERFICIES_GORE, GIBS as PEDAZOS_GORE, cuerpo as cadaverConPose, POSES as POSES_CADAVER, type Paleta as PaletaGore } from './catalogo/gore';
+export { LUCES_HORROR, veloSangre, VELO_NIVELES, type LuzHorror } from './catalogo/horror';

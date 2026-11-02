@@ -70,7 +70,7 @@ const bossCache = usarCache ? {
   get: (k: string) => { const p = join(bossDir, `${k}.png`); return existsSync(p) ? decodePng(new Uint8Array(readFileSync(p))) : null; },
   set: (k: string, r: Raster) => writeFileSync(join(bossDir, `${k}.png`), encodePng(r)),
 } : undefined;
-const files = buildGameKit({ quick, fichas, fonts, cache, bossCache, sinCapas: args.includes('--sin-capas'), progress: (m) => console.log(`  ${m}`) });
+const files = buildGameKit({ quick, fichas, fonts, cache, bossCache, sinCapas: args.includes('--sin-capas'), goreHorror: args.includes('--gore'), progress: (m) => console.log(`  ${m}`) });
 rmSync(out, { recursive: true, force: true });
 let bytes = 0;
 for (const f of files) {

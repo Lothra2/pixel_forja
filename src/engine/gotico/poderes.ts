@@ -17,11 +17,12 @@ import { zipSync } from 'fflate';
 import { createRaster, type Raster } from '../core/raster';
 import { rng, hashString } from '../core/rng';
 import { encodePng } from '../export/png';
+import { luzEfectosJson } from './luz_efectos';
 
 // ---------------------------------------------------------------------------------------------------------------
 // tipos públicos
 
-export type Elemento = 'fuego' | 'hielo' | 'rayo' | 'veneno' | 'hueso' | 'sagrado' | 'sombra' | 'naturaleza' | 'arcano' | 'fisico';
+export type Elemento = 'fuego' | 'hielo' | 'rayo' | 'veneno' | 'hueso' | 'sagrado' | 'sombra' | 'naturaleza' | 'arcano' | 'fisico' | 'sangre';
 export type TipoPoder = 'proyectil' | 'area' | 'aura' | 'rayo' | 'impacto' | 'invocacion' | 'buff' | 'muro' | 'lluvia';
 
 export interface Poder {
@@ -205,6 +206,25 @@ class Lienzo {
         let f = k * Math.exp(-3 * (d / ancho) * (d / ancho));
         if (mod) f *= mod(Math.atan2(dy, dx));
         if (f > 0.002) this.suma((py * LW + px) * 4, c, f);
+      }
+    }
+  }
+  /** anillo de materia (aire comprimido, borde de humo): igual que `anillo` pero se compone con alfa */
+  aro(x: number, y: number, rx: number, ancho: number, c: C, a: number, aplast = 2, mod?: (a: number) => number): void {
+    if (a <= 0.003 || rx <= 0) return;
+    ancho = Math.max(0.6, ancho);
+    const m = ancho * 1.7;
+    const bx = this.caja(x - rx - m, y - (rx + m) / aplast, x + rx + m, y + (rx + m) / aplast);
+    if (!bx) return;
+    for (let py = bx[1]; py <= bx[3]; py++) {
+      const dy = (py + 0.5 - y) * aplast;
+      for (let px = bx[0]; px <= bx[2]; px++) {
+        const dx = px + 0.5 - x;
+        const d = Math.hypot(dx, dy) - rx;
+        if (d > m || d < -m) continue;
+        let f = a * Math.exp(-3 * (d / ancho) * (d / ancho));
+        if (mod) f *= mod(Math.atan2(dy, dx));
+        if (f > 0.004) this.sobre((py * LW + px) * 4, c, Math.min(1, f));
       }
     }
   }
@@ -457,10 +477,12 @@ function dibujaRayo(L: Lienzo, pts: V3[], pal: C[], k: number, g = 1, k1 = k): v
 /** explosión de fuego (sirve para la bola de fuego y para el meteoro) */
 function explosion(L: Lienzo, R: () => number, v: number, s: number): void {
   const e = sale(v, 3), fin = Math.pow(1 - v, 1.5);
-  // piso: charco y onda
+  // piso: quemadura que queda, charco de luz y onda de choque que deforma
+  const [cx, cy] = L.P([0, 0, 0]);
+  L.mancha(cx, cy, 24 * s * sale(v * 3), 12 * s * sale(v * 3), [0.06, 0.04, 0.03], 0.55 * suave(0, 0.2, v), 4.1, 1.3, 0.6);
   L.piso([0, 0, 0], (30 + 30 * e) * s, FUEGO[2], 1.3 * fin);
   const ph0 = R() * 10;
-  L.aroPiso([0, 0, 0], (10 + 62 * e) * s, 3 + 6 * v, FUEGO[2], 0.8 * Math.pow(1 - v, 2.2) * suave(0, 0.12, v), (a) => 0.35 + 0.65 * ruido(a * 2.5 + ph0, v * 2));
+  ondaChoque(L, (10 + 62 * e) * s, 3 + 5 * v, FUEGO[1], 0.85 * Math.pow(1 - v, 2.2) * suave(0, 0.12, v), ph0, 0.35);
   // humo (detrás del fuego)
   for (let i = 0; i < 16; i++) {
     const a = R() * TAU, el = R() * 0.9, d = (0.45 + R() * 0.55) * 34 * s, ph = R();
@@ -482,6 +504,10 @@ function explosion(L: Lienzo, R: () => number, v: number, s: number): void {
     L.bola([0, 0, 12 * s], 34 * s, FUEGO[1], 1.4 * k);
     L.bola([0, 0, 12 * s], 14 * s, FUEGO[0], 3 * k);
   }
+  // el aire empujado por el fogonazo y pavesas que planean después
+  const [ex, ey] = L.P([0, 0, 14 * s]);
+  ondaAire(L, ex, ey, (10 + 52 * e) * s, 2 + 3 * v, FUEGO[1], 0.6 * Math.pow(1 - v, 2.5), ph0 + 1);
+  pavesas(L, R, 16, [0, 0, 10 * s], v, 40 * s, FUEGO, 0.9);
   // esquirlas encendidas con gravedad
   for (let i = 0; i < 26; i++) {
     const a = R() * TAU, up = 0.3 + R() * 0.9, sp = (40 + R() * 70) * s, lt = 0.5 + R() * 0.5;
@@ -553,6 +579,176 @@ function runaPiso(L: Lienzo, g: number, x: number, y: number, a: number, s: numb
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// piezas premium: ondas que deforman, sangre, astillas, rayos de luz
+
+/**
+ * Onda de choque sobre el piso que parece deformar el aire: detrás del frente una banda oscura (aire comprimido, es
+ * materia), el frente de luz roto por ruido (nunca un círculo perfecto), un filo caliente y un halo tenue afuera.
+ */
+function ondaChoque(L: Lienzo, rw: number, ancho: number, c: C, k: number, sem: number, oscuro = 0.3, p: V3 = [0, 0, 0]): void {
+  if (k <= 0.01 || rw <= 0.5) return;
+  const [x, y] = L.P([p[0], p[1], 0]);
+  const R = rw * S2;
+  // el frente se rompe en jirones: ruido de dos escalas que además corre con el radio (no gira igual en cada cuadro)
+  const mod = (a: number) => 0.12 + 0.88 * suave(0.28, 0.72, fbm(Math.cos(a) * 3.2 + sem, Math.sin(a) * 3.2 + rw * 0.04));
+  const mod2 = (a: number) => 0.3 + 0.7 * ruido(Math.cos(a) * 5 + sem * 1.7, Math.sin(a) * 5 - rw * 0.05);
+  if (oscuro > 0) L.aro(x, y, R - ancho * 1.6, ancho * 1.6, [0.03, 0.025, 0.03], oscuro * Math.min(1, k * 1.4), 2, mod2);
+  L.anillo(x, y, R * 1.05, ancho * 3.2, c, k * 0.16);
+  L.anillo(x, y, R, ancho, c, k, 2, mod);
+  L.anillo(x, y, R + ancho * 0.25, Math.max(0.6, ancho * 0.3), mezcla(c, BLANCO, 0.65), k * 0.9, 2, (a) => mod(a) * mod2(a));
+}
+
+/** onda en el aire (de frente a la cámara, apenas aplastada): el golpe que "empuja" la vista */
+function ondaAire(L: Lienzo, x: number, y: number, r: number, ancho: number, c: C, k: number, sem: number): void {
+  if (k <= 0.01 || r <= 0.5) return;
+  // solo quedan arcos sueltos (nunca la burbuja entera), más fuertes a los costados que arriba y abajo
+  const mod = (a: number) => suave(0.42, 0.78, fbm(Math.cos(a) * 3 + sem, Math.sin(a) * 3 + r * 0.05)) * (0.45 + 0.55 * Math.abs(Math.cos(a)));
+  L.aro(x, y, r - ancho * 1.4, ancho * 1.3, [0.03, 0.025, 0.035], 0.2 * Math.min(1, k * 1.3), 1.12, mod);
+  L.anillo(x, y, r, ancho, c, k * 0.8, 1.12, mod);
+  L.anillo(x, y, r + ancho * 0.3, Math.max(0.6, ancho * 0.3), mezcla(c, BLANCO, 0.6), k * 0.6, 1.12, mod);
+}
+
+/** paletas de líquidos: brillo húmedo, cuerpo, sombra, mancha seca */
+const SANGRE: C[] = [[0.86, 0.32, 0.27], [0.44, 0.02, 0.03], [0.26, 0.01, 0.018], [0.16, 0.008, 0.012]];
+const BILIS: C[] = [[0.78, 1, 0.5], [0.3, 0.55, 0.06], [0.16, 0.32, 0.03], [0.1, 0.18, 0.03]];
+
+/**
+ * Salpicadura de líquido (sangre, bilis): gotas con gravedad que se estiran con la velocidad, cuajos gordos, brillo
+ * húmedo arriba a la izquierda y manchas alargadas donde caen. `T` es el tiempo del efecto (0..~1).
+ */
+function salpicar(L: Lienzo, R: () => number, o: {
+  n: number; C0: V3; T: number; vel: [number, number]; sube: [number, number]; g?: number; rumbo?: number; abre?: number;
+  r?: [number, number]; pal?: C[]; manchas?: boolean; al?: number;
+}): void {
+  const pal = o.pal ?? SANGRE, g = o.g ?? 120, al = o.al ?? 1;
+  const gs: { p: V3; q: V3; r: number; land: V3 | null; lt: number; a: number }[] = [];
+  for (let i = 0; i < o.n; i++) {
+    const a = o.rumbo === undefined ? R() * TAU : o.rumbo + (R() - 0.5) * 2 * (o.abre ?? 0.6);
+    const sp = lerp(o.vel[0], o.vel[1], R()), up = lerp(o.sube[0], o.sube[1], R());
+    const r = lerp(o.r?.[0] ?? 0.8, o.r?.[1] ?? 2, R() * R());
+    const z0 = o.C0[2];
+    const pos = (t: number): V3 => [o.C0[0] + Math.cos(a) * sp * t, o.C0[1] + Math.sin(a) * sp * t, z0 + up * sp * t - g * t * t];
+    const b = up * sp, tl = (b + Math.sqrt(b * b + 4 * g * Math.max(0.1, z0))) / (2 * g);
+    const t = Math.min(o.T, tl);
+    gs.push({ p: pos(t), q: pos(Math.max(0, t - 0.016 - r * 0.006)), r, land: o.T >= tl ? pos(tl) : null, lt: o.T - tl, a });
+  }
+  if (o.manchas !== false)
+    for (const g2 of gs) if (g2.land) {
+      const [x, y] = L.P([g2.land[0], g2.land[1], 0]);
+      const s = Math.min(1, g2.lt * 9 + 0.35);
+      // la mancha se alarga hacia donde iba la gota
+      const sx = Math.abs(Math.cos(g2.a - Math.PI / 4)) * 0.6 + 0.7;
+      L.mancha(x, y, (1.2 + g2.r * 2.1) * s * sx, (0.7 + g2.r * 1.0) * s, pal[3], 0.9 * al, x * 0.13, y * 0.13, 0.75);
+      if (g2.r > 1.4) L.mancha(x - 0.4, y - 0.3, (0.6 + g2.r) * s * sx, (0.35 + g2.r * 0.5) * s, pal[2], 0.8 * al, y * 0.2, x * 0.2, 0.6);
+    }
+  gs.sort((a, b) => a.p[0] + a.p[1] - b.p[0] - b.p[1]);
+  for (const g2 of gs) if (!g2.land) {
+    const [xa, ya] = L.P(g2.p), [xb, yb] = L.P(g2.q);
+    L.capsula(xb, yb, xa, ya, g2.r * 0.45, g2.r, pal[2], al);
+    L.capsula(lerp(xb, xa, 0.4), lerp(yb, ya, 0.4), xa, ya, g2.r * 0.3, g2.r * 0.75, pal[1], al);
+    L.capsula(xa - g2.r * 0.3, ya - g2.r * 0.35, xa - g2.r * 0.3, ya - g2.r * 0.35, g2.r * 0.28, g2.r * 0.28, pal[0], al * 0.9);
+  }
+}
+
+/** astillas de hueso que giran y caen (y quedan en el piso) */
+function astillas(L: Lienzo, R: () => number, n: number, C0: V3, T: number, vel: [number, number], g = 110, c: C = [0.84, 0.8, 0.68], al = 1): void {
+  const os: C = [c[0] * 0.5, c[1] * 0.47, c[2] * 0.42], cl: C = [Math.min(1, c[0] * 1.15), Math.min(1, c[1] * 1.15), Math.min(1, c[2] * 1.18)];
+  const ps: { p: V3; ang: number; l: number; w: number; quieto: boolean }[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = R() * TAU, sp = lerp(vel[0], vel[1], R()), up = 0.2 + R() * 1.1, spin = (R() - 0.5) * 30, l = 2 + R() * 4.5, w = 0.6 + R() * 0.7;
+    const b = up * sp, tl = (b + Math.sqrt(b * b + 4 * g * Math.max(0.1, C0[2]))) / (2 * g);
+    const t = Math.min(T, tl);
+    ps.push({ p: [C0[0] + Math.cos(a) * sp * t, C0[1] + Math.sin(a) * sp * t, Math.max(0, C0[2] + b * t - g * t * t)], ang: R() * TAU + spin * t, l, w, quieto: T >= tl });
+  }
+  ps.sort((a, b) => a.p[0] + a.p[1] - b.p[0] - b.p[1]);
+  for (const s of ps) {
+    const [x, y] = L.P(s.p);
+    const dx = Math.cos(s.ang) * s.l, dy = Math.sin(s.ang) * s.l * (s.quieto ? 0.5 : 1);
+    L.capsula(x - dx / 2, y - dy / 2, x + dx / 2, y + dy / 2, s.w + 0.45, s.w * 0.3 + 0.35, os, al);
+    L.capsula(x - dx / 2, y - dy / 2, x + dx / 2, y + dy / 2, s.w, s.w * 0.25, c, al);
+    L.capsula(x - dx / 2 - 0.3, y - dy / 2 - 0.4, x + dx * 0.1 - 0.3, y + dy * 0.1 - 0.4, s.w * 0.35, s.w * 0.2, cl, al);
+  }
+}
+
+/** rayos de luz desparejos (god rays) desde un punto de pantalla: largos y anchos distintos, nunca una estrella perfecta */
+function rayosLuz(L: Lienzo, R: () => number, x: number, y: number, n: number, largo: number, pal: C[], k: number, giro = 0): void {
+  if (k <= 0.01) return;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU + (R() - 0.5) * (TAU / n) * 0.8 + giro, l = largo * (0.35 + R() * 0.75), w = 1 + R() * 2.4, kk = k * (0.5 + R() * 0.6);
+    const ex = x + Math.cos(a) * l, ey = y + Math.sin(a) * l * 0.85;
+    L.trazo(x, y, ex, ey, w * 1.6, 0.5, pal[2], kk * 0.35, 0);
+    L.trazo(x, y, lerp(x, ex, 0.7), lerp(y, ey, 0.7), w * 0.5, 0.4, pal[0], kk * 1.1, 0);
+  }
+}
+
+/** brasas que caen despacio planeando (pavesas después de un golpe de luz o de fuego) */
+function pavesas(L: Lienzo, R: () => number, n: number, C0: V3, v: number, rad: number, pal: C[], k: number): void {
+  for (let i = 0; i < n; i++) {
+    const a = R() * TAU, d = Math.sqrt(R()) * rad, z = C0[2] + 10 + R() * 30, ph = R() * TAU, t0 = R() * 0.3;
+    const t = c01((v - t0) / (1 - t0));
+    if (t <= 0) continue;
+    const p: V3 = [C0[0] + Math.cos(a) * d * sale(t, 2) + Math.sin(t * 9 + ph) * 3, C0[1] + Math.sin(a) * d * sale(t, 2), Math.max(0, z * (1 - t * 0.8))];
+    const [x, y] = L.P(p);
+    const fl = 0.6 + 0.4 * Math.sin(t * 25 + ph);
+    L.luz(x, y, 1.1, pal[0], k * fl * campana(t, 0, 0.1, 1) * 1.2);
+    L.luz(x, y, 3, pal[2], k * fl * campana(t, 0, 0.1, 1) * 0.25);
+  }
+}
+
+/** virote de ballesta: asta corta y gruesa, aletas de cuero rígidas, virola y punzón de hierro con filo que brilla */
+function dibujaVirote(L: Lienzo, cola: V3, punta: V3, al = 1): void {
+  const [xa, ya] = L.P(cola), [xb, yb] = L.P(punta);
+  const dx = xb - xa, dy = yb - ya, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, nx = -uy, ny = ux;
+  const aleta = (s: number, c: C) => L.poli([[xa + ux * 0.5, ya + uy * 0.5], [xa + ux * 5, ya + uy * 5], [xa + ux * 1.5 + nx * 2.3 * s, ya + uy * 1.5 + ny * 2.3 * s], [xa - ux * 0.5 + nx * 2.3 * s, ya - uy * 0.5 + ny * 2.3 * s]], c, al);
+  aleta(1, [0.28, 0.2, 0.13]); aleta(-1, [0.52, 0.42, 0.3]);
+  L.capsula(xa, ya, xb - ux * 4, yb - uy * 4, 1.25, 1.25, [0.22, 0.14, 0.08], al);
+  L.capsula(xa - nx * 0.4, ya - ny * 0.4, xb - ux * 4 - nx * 0.4, yb - uy * 4 - ny * 0.4, 0.45, 0.45, [0.5, 0.37, 0.22], al);
+  L.capsula(xb - ux * 5.2, yb - uy * 5.2, xb - ux * 3.4, yb - uy * 3.4, 1.65, 1.65, [0.28, 0.28, 0.31], al);
+  const sg = Math.sign(-ny || 1);
+  L.poli([[xb + ux * 3, yb + uy * 3], [xb - ux * 3.5 + nx * 2.6, yb - uy * 3.5 + ny * 2.6], [xb - ux * 2.4, yb - uy * 2.4], [xb - ux * 3.5 - nx * 2.6, yb - uy * 3.5 - ny * 2.6]], [0.32, 0.33, 0.38], al);
+  L.poli([[xb + ux * 3, yb + uy * 3], [xb - ux * 3.5 + nx * 2.6 * sg, yb - uy * 3.5 + ny * 2.6 * sg], [xb - ux * 2.4, yb - uy * 2.4]], [0.76, 0.79, 0.85], al);
+  L.trazo(xb + ux * 3, yb + uy * 3, xb - ux * 2, yb - uy * 2, 0.5, 0.4, BLANCO, 0.35 * al, 0);
+}
+
+/**
+ * Golpe de luz sagrada (castigo e impacto sagrado): sello quemado, onda rota en el piso, fogonazo en capas, destello
+ * en cruz de lente, rayos desparejos que giran, onda en el aire, pavesas doradas y chispas. `cielo`: además una
+ * columna que baja de arriba en los primeros cuadros (la anticipación del castigo).
+ */
+function estallidoSagrado(c: Cx, s: number, cielo: boolean): void {
+  const { L, v } = c, R = c.R(), C0: V3 = [0, 0, 32];
+  const env = Math.pow(1 - v, 1.5), e = sale(v, 2.5);
+  const [x, y] = L.P(C0), [cx, cy] = L.P([0, 0, 0]);
+  L.mancha(cx, cy, 15 * s * sale(v * 3), 7.5 * s * sale(v * 3), [0.1, 0.07, 0.03], 0.45 * (1 - suave(0.7, 1, v)), 2, 5, 0.5);
+  L.piso([0, 0, 0], 30 * s, SAGRADO[2], 0.8 * env);
+  ondaChoque(L, (10 + 44 * e) * s, 2.5 + 3 * v, SAGRADO[1], 0.9 * Math.pow(1 - v, 1.8), 4.4, 0.22);
+  if (cielo) {
+    const k = 1 - suave(0.05, 0.5, v);
+    L.rayo3([0, 0, 0], [0, 0, 130], 9 * s, 16 * s, SAGRADO[3], 0.35 * k, 0);
+    L.rayo3([0, 0, 0], [0, 0, 124], 3.5 * s, 6 * s, SAGRADO[1], 0.7 * k, 0);
+    L.rayo3([0, 0, 0], [0, 0, 112], 1.2 * s, 2.2 * s, BLANCO, 1.3 * k, 0);
+  }
+  L.luz(x, y, 36 * s, SAGRADO[3], 0.55 * env);
+  L.luz(x, y, 14 * s, SAGRADO[1], 1.4 * env);
+  L.luz(x, y, 5 * s, SAGRADO[0], 3 * Math.pow(1 - v, 2.2));
+  const kc = Math.pow(1 - v, 2.4), lh = 44 * s * (0.6 + e), lv = 16 * s * (0.6 + e);
+  for (const sd of [-1, 1]) {
+    L.trazo(x, y, x + sd * lh, y, 1.6, 0.4, SAGRADO[1], 0.8 * kc, 0);
+    L.trazo(x, y, x + sd * lh * 0.6, y, 0.6, 0.3, BLANCO, 1.2 * kc, 0);
+    L.trazo(x, y, x, y + sd * lv, 1.2, 0.4, SAGRADO[1], 0.7 * kc, 0);
+  }
+  rayosLuz(L, rng(c.sem + 77), x, y, 13, 44 * s * (0.5 + e), SAGRADO, 1.1 * env, v * 0.6);
+  ondaAire(L, x, y, (6 + 34 * e) * s, 1.8 + 2 * v, SAGRADO[1], 0.8 * env, 2.9);
+  pavesas(L, c.R(3), 18, C0, v, 34 * s, SAGRADO, 1);
+  for (let i = 0; i < 14; i++) {
+    const a = R() * TAU, up = R() - 0.2, sp = (40 + R() * 40) * s;
+    const pos = (t: number): V3 => [Math.cos(a) * sp * t, Math.sin(a) * sp * t, 32 + up * sp * t - 50 * t * t];
+    const p0 = pos(v * 0.9), p1 = pos(Math.max(0, v * 0.9 - 0.06));
+    if (p0[2] > 0) L.rayo3(p0, p1, 0.8, 0.5, SAGRADO[0], 1.4 * (1 - v), 0);
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
 // los efectos
 
 interface Def {
@@ -589,10 +785,12 @@ const DEFS: Def[] = [
         L.bola(c.fw(7 - s * 30, ond, z + Math.cos(s * 5 - ph * 2) * s * 2 + s * 3), 4.6 * (1 - s) + 1.2, rampa(FUEGO, 0.3 + s * 0.7), 0.36 * Math.pow(1 - s, 1.2));
       }
       L.rayo3(H, c.fw(-18, 0, z + 1), 1.6, 0.6, FUEGO[1], 0.7, 0);
+      // núcleo en capas: halo rojo oscuro, cuerpo naranja, corazón casi blanco que late
+      L.bola(H, 22, FUEGO[3], 0.25);
       L.bola(H, 15, FUEGO[3], 0.35);
-      L.bola(H, 6.5, FUEGO[2], 0.9 * (0.92 + 0.08 * Math.sin(ph * 2)));
-      L.bola(c.fw(8, 0, z), 3.2, FUEGO[1], 1.0);
-      L.bola(c.fw(8.5, 0, z), 1.6, FUEGO[0], 1.4);
+      L.bola(H, 8, FUEGO[2], 0.9 * (0.92 + 0.08 * Math.sin(ph * 2)));
+      L.bola(c.fw(8, 0, z), 4, FUEGO[1], 1.0);
+      L.bola(c.fw(8.5, 0, z), 2, FUEGO[0], 1.6 * (0.9 + 0.1 * Math.sin(ph * 4)));
       for (let i = 0; i < 10; i++) {
         const t = frac(c.u * 2 + R()), l = (R() - 0.5) * 12, zz = (R() - 0.5) * 7;
         const p = c.fw(-2 - t * 36, l * t, z + zz * t + t * 6), q = c.fw(-5 - t * 36, l * t, z + zz * t + t * 6);
@@ -1029,7 +1227,7 @@ const DEFS: Def[] = [
       }
       if (f >= 1) {
         const t = (f - 1) / (c.n - 1);
-        L.aroPiso([0, 0, 0], 8 + 60 * sale(t, 2), 3 + 5 * t, RAYO[1], 0.9 * Math.pow(1 - t, 1.5));
+        ondaChoque(L, 8 + 60 * sale(t, 2), 3 + 5 * t, RAYO[1], 0.9 * Math.pow(1 - t, 1.5), 8.3, 0.3);
         L.piso([0, 0, 0], 22, RAYO[2], 0.6 * (1 - t));
         const [cx, cy] = L.P([0, 0, 0]);
         L.mancha(cx, cy, 20, 10, [0.06, 0.05, 0.06], 0.5 * suave(0, 0.2, t) * (1 - suave(0.7, 1, t)), 3, 1);
@@ -1205,47 +1403,30 @@ const DEFS: Def[] = [
       for (let i = 0; i < 10; i++) {
         const t = frac(u + R()), a = R() * TAU, rr = R() * 30;
         const [x, y] = L.P([Math.cos(a) * rr, Math.sin(a) * rr, 4 + t * 26]);
-        L.anillo(x, y, 1.4 + t * 1.6, 0.6, VENENO[1], 0.5 * Math.sin(t * Math.PI), 1);
+        L.anillo(x, y, 1 + t * 1.2, 0.5, VENENO[1], 0.28 * Math.sin(t * Math.PI), 1);
         L.luz(x - 0.6, y - 0.6, 0.6, VENENO[0], 0.5 * Math.sin(t * Math.PI));
       }
     },
   },
   {
     id: 'estallido_cadaver', nombre: ['Estallido de cadáver', 'Corpse burst'], elemento: 'hueso', tipo: 'impacto', cuadros: 12, t: 2,
+    // el cadáver revienta: fogonazo de fuego, onda que empuja, niebla roja, sangre a chorros, costillas y trozos de
+    // carne que giran y quedan en el piso, y pavesas
     pinta: (c) => {
       const { L, v } = c, R = c.R(), C0: V3 = [0, 0, 10];
-      const T = v * 1.1;
-      if (v < 0.3) { const k = 1 - v / 0.3; L.bola(C0, 30, [0.9, 0.3, 0.1], 1.1 * k); L.bola(C0, 10, [1, 0.75, 0.4], 2.2 * k); L.piso([0, 0, 0], 40, [0.8, 0.25, 0.1], k); }
+      const [x, y] = L.P([0, 0, 18]);
+      if (v < 0.3) { const k = 1 - v / 0.3; L.bola(C0, 30, [0.9, 0.3, 0.1], 1.1 * k); L.bola(C0, 10, [1, 0.75, 0.4], 2.2 * k); L.piso([0, 0, 0], 40, [0.8, 0.25, 0.1], k); ondaAire(L, x, y, 8 + 50 * sale(v, 2), 2.2, [1, 0.45, 0.2], 0.8 * k, 6.6); }
+      ondaChoque(L, 8 + 52 * sale(v, 2.2), 3 + 3 * v, [0.9, 0.3, 0.1], 0.8 * Math.pow(1 - v, 2), 6.1, 0.4);
       for (let i = 0; i < 12; i++) {
         const a = R() * TAU, d = R() * 30 * sale(v), z = 10 + R() * 22 * sale(v) + v * 10;
-        L.humo3([Math.cos(a) * d, Math.sin(a) * d, z], 8 + v * 12, [0.36, 0.05, 0.04], 0.5 * campana(v, 0, 0.15, 1), i * 2, v);
+        L.humo3([Math.cos(a) * d, Math.sin(a) * d, z], 8 + v * 12, i % 3 ? SANGRE[2] : [0.2, 0.15, 0.13], 0.5 * campana(v, 0, 0.15, 1), i * 2, v);
       }
-      const gotas: { p: V3; q: V3; r: number; hueso: boolean; land: V3 | null; lt: number }[] = [];
-      for (let i = 0; i < 34; i++) {
-        const a = R() * TAU, up = 0.2 + R() * 1.1, sp = 35 + R() * 55, hueso = i < 9;
-        const pos = (t: number): V3 => [Math.cos(a) * sp * t, Math.sin(a) * sp * t, 10 + up * sp * t - 110 * t * t];
-        const tl = (up * sp + Math.sqrt(up * up * sp * sp + 4 * 110 * 10)) / 220;
-        const t = Math.min(T, tl);
-        gotas.push({ p: pos(t), q: pos(Math.max(0, t - 0.04)), r: hueso ? 1.6 : 1 + R() * 1.4, hueso, land: T >= tl ? pos(tl) : null, lt: T - tl });
+      if (v > 0.04) {
+        salpicar(L, c.R(2), { n: 46, C0, T: v * 1.1, vel: [35, 90], sube: [0.2, 1.3], r: [0.9, 2.6], g: 110 });
+        astillas(L, c.R(3), 9, C0, v * 1.1, [30, 70], 110);
+        astillas(L, c.R(4), 8, C0, v * 1.1, [25, 60], 110, [0.5, 0.08, 0.08]);
       }
-      for (const g of gotas) if (g.land) {
-        const [x, y] = L.P([g.land[0], g.land[1], 0]);
-        const s = Math.min(1, g.lt * 8);
-        if (!g.hueso && g.r > 1.4) L.mancha(x, y, (1.5 + g.r * 1.8) * s, (0.8 + g.r * 0.9) * s, [0.3, 0.02, 0.02], 0.85, x * 0.1, y * 0.1, 0.7);
-      }
-      gotas.sort((a, b) => a.p[0] + a.p[1] - b.p[0] - b.p[1]);
-      if (v > 0.05) for (const g of gotas) {
-        const [xa, ya] = L.P(g.p), [xb, yb] = L.P(g.q);
-        if (g.hueso) {
-          if (g.land) { L.capsula(xa - 2, ya, xa + 2, ya - 1, 1, 0.8, [0.78, 0.74, 0.62], 1); continue; }
-          const ang = v * 20 + g.r * 7, dx = Math.cos(ang) * 3, dy = Math.sin(ang) * 3;
-          L.capsula(xa - dx, ya - dy, xa + dx, ya + dy, 1.2, 0.8, [0.82, 0.78, 0.66], 1);
-          L.capsula(xa - dx * 0.7 - 0.4, ya - dy * 0.7 - 0.4, xa + dx * 0.4 - 0.4, ya + dy * 0.4 - 0.4, 0.4, 0.4, [0.95, 0.93, 0.85], 1);
-        } else if (!g.land) {
-          L.capsula(xb, yb, xa, ya, g.r * 0.7, g.r, [0.38, 0.02, 0.03], 1);
-          L.capsula(xa - 0.4, ya - 0.5, xa - 0.4, ya - 0.5, g.r * 0.35, g.r * 0.35, [0.75, 0.2, 0.18], 1);
-        }
-      }
+      pavesas(L, c.R(5), 10, C0, v, 30, FUEGO, 0.8);
     },
   },
 
@@ -1308,28 +1489,8 @@ const DEFS: Def[] = [
   },
   {
     id: 'castigo', nombre: ['Castigo', 'Smite flash'], elemento: 'sagrado', tipo: 'impacto', cuadros: 8, t: 2,
-    pinta: (c) => {
-      const { L, v } = c, R = c.R(), C0: V3 = [0, 0, 34];
-      const env = Math.pow(1 - v, 1.6), e = sale(v, 2.5);
-      const [x, y] = L.P(C0);
-      L.piso([0, 0, 0], 26, SAGRADO[2], 0.7 * env);
-      L.aroPiso([0, 0, 0], 10 + 34 * e, 2.5, SAGRADO[1], 0.9 * env);
-      L.luz(x, y, 34, SAGRADO[3], 0.5 * env);
-      L.anillo(x, y, 6 + 32 * e, 2 + 2 * v, SAGRADO[1], 0.8 * env, 1);
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * TAU + 0.12, l = (i % 2 ? 16 : 30) * (0.6 + 0.8 * e);
-        L.trazo(x, y, x + Math.cos(a) * l, y + Math.sin(a) * l * 0.9, 2.2, 0.5, SAGRADO[1], 1.5 * env, 0);
-        L.trazo(x, y, x + Math.cos(a) * l * 0.7, y + Math.sin(a) * l * 0.63, 0.8, 0.5, SAGRADO[0], 1.8 * env, 0);
-      }
-      L.luz(x, y, 12, SAGRADO[1], 1.6 * env);
-      L.luz(x, y, 5, SAGRADO[0], 3 * env);
-      for (let i = 0; i < 16; i++) {
-        const a = R() * TAU, up = R() - 0.3, sp = 40 + R() * 40;
-        const pos = (t: number): V3 => [Math.cos(a) * sp * t, Math.sin(a) * sp * t, 34 + up * sp * t - 40 * t * t];
-        const p0 = pos(v * 0.9), p1 = pos(Math.max(0, v * 0.9 - 0.06));
-        L.rayo3(p0, p1, 0.8, 0.5, SAGRADO[0], 1.4 * (1 - v), 0);
-      }
-    },
+    // golpe de luz: la columna baja del cielo (anticipación), fogonazo en capas, cruz de lente, onda y pavesas
+    pinta: (c) => estallidoSagrado(c, 1, true),
   },
   {
     id: 'chispas_curacion', nombre: ['Chispas de curación', 'Healing sparkles'], elemento: 'sagrado', tipo: 'buff', cuadros: 14, t: 2,
@@ -1369,23 +1530,25 @@ const DEFS: Def[] = [
       const [cx, cy] = L.P([0, 0, 33]);
       const rx = 38, ry = 50;
       L.piso([0, 0, 0], 28, SAGRADO[2], 0.45);
-      L.aroPiso([0, 0, 0], 26, 2, SAGRADO[1], 0.7);
+      L.aroPiso([0, 0, 0], 26, 2, SAGRADO[1], 0.7, (a) => 0.25 + 0.75 * suave(0.3, 0.7, fbm(Math.cos(a) * 3 + Math.cos(ph) * 0.7, Math.sin(a) * 3 + Math.sin(ph) * 0.7)));
       const banda = frac(u) * 2.6 - 1.3;
       const col: C = mezcla(SAGRADO[1], BLANCO, 0.25);
       L.campo(cx - rx * 1.3, cy - ry * 1.3, cx + rx * 1.3, cy + ry * 1.3, (dx, dy) => {
         const u2 = dx / rx, v2 = dy / ry, q = Math.hypot(u2, v2);
         if (q > 1.3) return 0;
         let k = 0;
+        // energía que corre por la cáscara: el filo se enciende a jirones
+        const th = Math.atan2(v2, u2), flujo = 0.3 + 0.7 * suave(0.25, 0.75, fbm(Math.cos(th) * 2.6 + Math.cos(ph) * 0.8, Math.sin(th) * 2.6 + Math.sin(ph) * 0.8 + q * 1.5));
         if (q < 1) {
           const nz = Math.sqrt(1 - q * q);
-          k += 0.06 + 0.9 * Math.pow(1 - nz, 2.2);
+          k += 0.06 + 0.9 * Math.pow(1 - nz, 2.2) * flujo;
           const hx = Math.abs(Math.sin(dx * 0.32 + dy * 0.55 + ph * 0) * Math.sin(dx * 0.32 - dy * 0.55));
           k += (1 - suave(0, 0.18, hx)) * 0.18 * (1 - nz * 0.6);
           const b = (v2 + u2 * 0.3 - banda) / 0.12;
           k += Math.exp(-b * b) * 0.35 * nz;
           k *= suave(1.0, 0.96, q) ;
         }
-        k += Math.exp(-Math.max(0, q - 0.98) * 14) * 0.35 * suave(0.85, 1, q);
+        k += Math.exp(-Math.max(0, q - 0.98) * 14) * 0.35 * suave(0.85, 1, q) * flujo;
         return k;
       }, col, cx, cy);
       L.luz(cx - rx * 0.42, cy - ry * 0.5, 7, BLANCO, 0.5);
@@ -1456,7 +1619,7 @@ const DEFS: Def[] = [
       }
       L.mancha(cx, cy, 14, 7, [0.1, 0.08, 0.06], 0.6 * (1 - suave(0.6, 1, v)), 2, 2);
       if (v < 0.25) L.piso([0, 0, 0], 30, [1, 0.95, 0.8], 0.8 * (1 - v / 0.25));
-      L.aroPiso([0, 0, 0], Rw, 3 + 4 * v, [1, 0.95, 0.85], 0.7 * Math.pow(1 - v, 2));
+      ondaChoque(L, Rw, 3 + 4 * v, [1, 0.92, 0.8], 0.75 * Math.pow(1 - v, 2), 2.2, 0.4);
       const ps: { a: number; r: number; o: number }[] = [];
       for (let i = 0; i < 30; i++) ps.push({ a: (i / 30) * TAU + R() * 0.2, r: R(), o: (R() - 0.5) * 8 });
       ps.sort((p, q) => Math.cos(p.a) + Math.sin(p.a) - Math.cos(q.a) - Math.sin(q.a));
@@ -1488,8 +1651,8 @@ const DEFS: Def[] = [
         if (t <= 0 || t >= 1) continue;
         const e = sale(t, 2), k = Math.pow(1 - t, 1.3);
         L.aroPiso([0, 0, 0], 12 + 70 * e, 3 + 4 * t, ROJO[3], 0.5 * k);
-        L.aroPiso([0, 0, 0], 12 + 70 * e, 1.4, ROJO[1], 1.1 * k);
-        L.anillo(hx, hy, 8 + 40 * e, 1.5 + t * 2, ROJO[1], 0.7 * k, 1.15, (a) => 0.3 + 0.7 * Math.pow(Math.abs(Math.cos(a)), 0.7));
+        ondaChoque(L, 12 + 70 * e, 1.8 + 2 * t, ROJO[1], 1.1 * k, 2 + j * 1.3, 0.3);
+        ondaAire(L, hx, hy, 8 + 40 * e, 1.5 + t * 2, ROJO[1], 0.75 * k, 3 + j * 0.7);
       }
       for (let i = 0; i < 16; i++) {
         const a = R() * TAU, d = 10 + R() * 40 * sale(v), z = R() * 30 + v * 30;
@@ -1662,6 +1825,7 @@ const DEFS: Def[] = [
         const [x, y] = L.P(pt(vis));
         if (v < 0.6) destello(L, x, y, 3, ROJO[0], fin);
       }
+      if (v > 0.15) salpicar(L, c.R(2), { n: 18, C0: c.fw(20, 0, 34), T: (v - 0.15) * 0.6, vel: [25, 60], sube: [0, 0.8], rumbo: Math.atan2(c.fy, c.fx) + 0.6, abre: 1.1, r: [0.7, 1.6] });
     },
   },
   {
@@ -1918,29 +2082,19 @@ const DEFS: Def[] = [
   })),
   // ============================== golpes y sangre
   {
-    id: 'salpicadura_sangre', nombre: ['Salpicadura de sangre', 'Blood splat'], elemento: 'fisico', tipo: 'impacto', cuadros: 8, t: 2,
+    id: 'salpicadura_sangre', nombre: ['Salpicadura de sangre', 'Blood splat'], elemento: 'sangre', tipo: 'impacto', cuadros: 8, t: 2,
+    // golpe húmedo: apenas un fogonazo rojo, niebla de sangre que cae, un chorro hacia un lado y gotas sueltas que
+    // se estiran en el aire y dejan manchas alargadas en el piso
     pinta: (c) => {
-      const { L, v } = c, R = c.R();
-      const T = v * 0.75;
-      L.humo3([0, 0, 32], 6 + 14 * sale(v), [0.42, 0.03, 0.03], 0.5 * Math.pow(1 - v, 1.5), 3, v);
-      const gs: { p: V3; q: V3; r: number; land: V3 | null; lt: number }[] = [];
-      for (let i = 0; i < 26; i++) {
-        const a = R() * TAU, up = (R() - 0.2) * 0.9, sp = 25 + R() * 45;
-        const pos = (t: number): V3 => [Math.cos(a) * sp * t, Math.sin(a) * sp * t, 32 + up * sp * t - 120 * t * t];
-        const b = up * sp, tl = (b + Math.sqrt(b * b + 4 * 120 * 32)) / 240;
-        const t = Math.min(T, tl);
-        gs.push({ p: pos(t), q: pos(Math.max(0, t - 0.035)), r: 1.1 + R() * 1.5, land: T >= tl ? pos(tl) : null, lt: T - tl });
+      const { L, v } = c, R = c.R(), C0: V3 = [0, 0, 32];
+      const [x, y] = L.P(C0);
+      if (v < 0.25) { const k = 1 - v / 0.25; L.luz(x, y, 10, [0.7, 0.05, 0.05], 0.8 * k); L.luz(x, y, 3, [1, 0.75, 0.7], 1.2 * k); }
+      for (let i = 0; i < 6; i++) {
+        const a = R() * TAU, d = 4 + R() * 12 * sale(v);
+        L.humo3([Math.cos(a) * d, Math.sin(a) * d, 32 - v * 12 + (R() - 0.5) * 8], 5 + 9 * sale(v), mezcla(SANGRE[2], SANGRE[1], R()), 0.5 * Math.pow(1 - v, 1.5), i * 2.3, v);
       }
-      for (const g of gs) if (g.land) {
-        const [x, y] = L.P([g.land[0], g.land[1], 0]);
-        const s = Math.min(1, g.lt * 10 + 0.3);
-        L.mancha(x, y, (1.5 + g.r * 2.2) * s, (0.8 + g.r * 1.1) * s, [0.3, 0.02, 0.02], 0.9 * (1 - suave(0.85, 1, v) * 0.4), x * 0.13, y * 0.13, 0.6);
-      }
-      for (const g of gs) if (!g.land) {
-        const [xa, ya] = L.P(g.p), [xb, yb] = L.P(g.q);
-        L.capsula(xb, yb, xa, ya, g.r * 0.5, g.r, [0.4, 0.02, 0.03], 1);
-        L.capsula(xa - 0.3, ya - 0.4, xa - 0.3, ya - 0.4, g.r * 0.35, g.r * 0.35, [0.78, 0.22, 0.2], 1);
-      }
+      salpicar(L, c.R(2), { n: 30, C0, T: v * 0.8, vel: [35, 80], sube: [-0.1, 0.7], rumbo: 0.3, abre: 0.9, r: [0.9, 2.4], g: 130 });
+      salpicar(L, c.R(3), { n: 18, C0, T: v * 0.8, vel: [15, 50], sube: [0, 1.1], r: [0.7, 1.8], g: 130 });
     },
   },
   {
@@ -1950,9 +2104,13 @@ const DEFS: Def[] = [
       const CH: C[] = [[1, 1, 0.9], [1, 0.85, 0.45], [1, 0.55, 0.15], [0.5, 0.2, 0.05]];
       const env = Math.pow(1 - v, 2);
       const [x, y] = L.P(C0);
-      L.luz(x, y, 16, CH[2], 0.5 * env);
-      L.luz(x, y, 5, CH[0], 2.6 * env);
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) L.trazo(x, y, x + dx * 14 * (0.6 + v), y + dy * 9 * (0.6 + v), 1, 0.5, CH[0], 1.6 * env, 0);
+      // humo de metal caliente (detrás)
+      L.humo(x + 2, y - 4 - v * 10, 3 + 8 * v, [0.2, 0.19, 0.19], 0.35 * campana(v, 0.1, 0.35, 1), 5, v);
+      L.luz(x, y, 16, CH[2], 0.55 * env);
+      L.luz(x, y, 6, CH[1], 1.2 * env);
+      L.luz(x, y, 2.5, CH[0], 2.6 * env);
+      rayosLuz(L, rng(c.sem + c.f * 31), x, y, 7, 18 * (0.6 + v), CH, 1.3 * env);
+      ondaAire(L, x, y, 3 + 16 * sale(v, 2), 1, CH[1], 0.6 * env, 4.1);
       for (let i = 0; i < 20; i++) {
         const d = unit([R() - 0.5, R() - 0.5, R() * 0.9 - 0.2]), sp = 60 + R() * 70, lt = 0.6 + R() * 0.4;
         const T = v / lt;
@@ -1961,28 +2119,31 @@ const DEFS: Def[] = [
         const p0 = pos(v * 0.5), p1 = pos(Math.max(0, v * 0.5 - 0.07));
         L.rayo3(p0, p1, 0.75, 0.5, rampa(CH, 0.1 + T * 0.7), 1.8 * (1 - T), 0.1);
       }
+      // gotitas de metal fundido: caen en arco y se enfrían del blanco al rojo
+      for (let i = 0; i < 7; i++) {
+        const a = R() * TAU, sp = 25 + R() * 35, up = 0.3 + R() * 0.8;
+        const pos = (t: number): V3 => [Math.cos(a) * sp * t, Math.sin(a) * sp * t, Math.max(0, 36 + up * sp * t - 140 * t * t)];
+        const p0 = pos(v * 0.6), p1 = pos(Math.max(0, v * 0.6 - 0.03));
+        L.rayo3(p0, p1, 0.9, 0.6, rampa(CH, 0.2 + v * 0.8), 1.4 * (1 - v * 0.7), 0.2);
+      }
     },
   },
   {
     id: 'chispas_carne', nombre: ['Chispas (carne)', 'Hit sparks (flesh)'], elemento: 'fisico', tipo: 'impacto', cuadros: 6, t: 2,
+    // golpe en carne: fogonazo rojo corto, onda de aire, niebla de sangre y gotas con gravedad que manchan el piso
     pinta: (c) => {
       const { L, v } = c, R = c.R(), C0: V3 = [0, 0, 34];
       const env = Math.pow(1 - v, 2);
       const [x, y] = L.P(C0);
-      L.luz(x, y, 12, [0.8, 0.12, 0.08], 0.7 * env);
-      L.luz(x, y, 4, [1, 0.7, 0.6], 1.6 * env);
-      L.humo(x, y, 5 + 10 * v, [0.45, 0.04, 0.04], 0.5 * (1 - v), 2, v);
-      for (let i = 0; i < 14; i++) {
-        const d = unit([R() - 0.5, R() - 0.5, R() * 0.8 - 0.1]), sp = 40 + R() * 40, r = 0.7 + R() * 0.9;
-        const pos = (t: number): V3 => add(C0, [d[0] * sp * t, d[1] * sp * t, d[2] * sp * t - 100 * t * t]);
-        const p0 = pos(v * 0.5), p1 = pos(Math.max(0, v * 0.5 - 0.04));
-        const [xa, ya] = L.P(p0), [xb, yb] = L.P(p1);
-        L.capsula(xb, yb, xa, ya, r * 0.5, r, [0.45, 0.03, 0.03], 1 - suave(0.6, 1, v));
-      }
-      for (let i = 0; i < 6; i++) {
+      L.humo(x, y + v * 3, 4 + 9 * v, SANGRE[2], 0.5 * (1 - v), 2, v);
+      L.luz(x, y, 12, [0.8, 0.1, 0.06], 0.7 * env);
+      L.luz(x, y, 4, [1, 0.75, 0.65], 1.7 * env);
+      ondaAire(L, x, y, 7 + 14 * sale(v, 2), 1.2, [1, 0.4, 0.3], 0.5 * env, 1.3);
+      for (let i = 0; i < 5; i++) {
         const a = R() * TAU, l = 6 + 10 * sale(v);
-        L.trazo(x, y, x + Math.cos(a) * l, y + Math.sin(a) * l, 0.9, 0.5, [1, 0.55, 0.45], 1.2 * env, 0);
+        L.trazo(x, y, x + Math.cos(a) * l, y + Math.sin(a) * l, 0.9, 0.5, [1, 0.55, 0.45], 1.1 * env, 0);
       }
+      salpicar(L, c.R(2), { n: 20, C0, T: v * 0.55, vel: [35, 75], sube: [-0.1, 0.8], r: [0.7, 1.7], g: 120 });
     },
   },
   ...(
@@ -2048,6 +2209,302 @@ const DEFS: Def[] = [
       }
     },
   },
+  // ============================== nuevos: proyectiles e impactos por elemento (van al lado de los de siempre)
+  {
+    id: 'virote', nombre: ['Virote', 'Crossbow bolt'], elemento: 'fisico', tipo: 'proyectil', cuadros: 4, t: 2, dir: true, bucle: true,
+    pinta: (c) => {
+      const { L } = c, z = ALTO_VUELO, R = c.R();
+      const ond = Math.sin(c.u * TAU) * 0.25;
+      // aire cortado: dos hilos tenues que se abren detrás
+      for (const l of [-1.6, 1.6]) {
+        const [xa, ya] = L.P(c.fw(-9, l * 0.4, z)), [xb, yb] = L.P(c.fw(-46, l * 2.2, z + 1));
+        L.trazo(xa, ya, xb, yb, 0.9, 0.5, [0.8, 0.82, 0.86], 0.2, 0);
+      }
+      for (let i = 0; i < 3; i++) {
+        const t = frac(c.u + i / 3 + R() * 0.1), [x, y] = L.P(c.fw(-12 - t * 30, (R() - 0.5) * 4, z + (R() - 0.5) * 3));
+        L.luz(x, y, 0.8, [0.9, 0.9, 0.9], 0.35 * (1 - t));
+      }
+      dibujaVirote(L, c.fw(-11, ond, z), c.fw(11, 0, z));
+    },
+  },
+  {
+    id: 'saeta_sagrada', nombre: ['Saeta sagrada', 'Holy lance'], elemento: 'sagrado', tipo: 'proyectil', cuadros: 6, t: 2, dir: true, bucle: true,
+    pinta: (c) => {
+      const { L } = c, z = ALTO_VUELO, ph = c.u * TAU, R = c.R();
+      const H = c.fw(16, 0, z), T = c.fw(-20, 0, z);
+      L.piso(c.fw(6, 0, 0), 22, SAGRADO[2], 0.35);
+      // cintas de luz en hélice detrás (estela)
+      for (let w = 0; w < 2; w++) {
+        let prev: V3 | null = null;
+        for (let i = 0; i <= 16; i++) {
+          const s = i / 16, a = s * 9 - ph * 2 + w * Math.PI;
+          const p = c.fw(-12 - s * 34, Math.cos(a) * (1 + s * 3), z + Math.sin(a) * (1 + s * 2.5));
+          if (prev) L.rayo3(prev, p, 1 + s * 1.4, 1 + s * 1.4, rampa(SAGRADO, 0.2 + s * 0.7), 0.5 * Math.pow(1 - s, 1.5), 0.5 * Math.pow(Math.max(0, 1 - s - 1 / 16), 1.5));
+          prev = p;
+        }
+      }
+      // halo y cuerpo en capas: borde dorado oscuro, cuerpo dorado, alma blanca
+      L.bola(c.fw(4, 0, z), 20, SAGRADO[3], 0.45, 1.3, 1);
+      L.rayo3(c.fw(-30, 0, z), H, 1.5, 7, SAGRADO[3], 0.2, 0.5);
+      L.rayo3(T, H, 2.4, 6, SAGRADO[2], 0.6, 0.9);
+      L.rayo3(T, H, 1.1, 2.8, SAGRADO[1], 0.9, 1.2);
+      L.rayo3(c.fw(-14, 0, z), c.fw(15, 0, z), 0.55, 1.2, BLANCO, 1.3, 1.9);
+      // alas de luz que aletean junto a la cola
+      for (const sd of [-1, 1]) for (let k = 0; k < 2; k++) {
+        const b = c.fw(-6 - k * 6, 0, z), ab = 0.6 + 0.25 * Math.sin(ph * 2 + k);
+        const t2 = c.fw(-15 - k * 7, sd * 9 * ab, z + 6 * ab - k * 2);
+        L.rayo3(b, t2, 1.4, 0.4, SAGRADO[1], 0.6 - k * 0.2, 0);
+        L.rayo3(b, t2, 0.5, 0.3, SAGRADO[0], 0.9 - k * 0.3, 0);
+      }
+      // punta: destello que respira
+      const [hx, hy] = L.P(H);
+      L.luz(hx, hy, 10, SAGRADO[2], 0.8);
+      L.luz(hx, hy, 4, SAGRADO[0], 1.6 * (0.9 + 0.1 * Math.sin(ph * 2)));
+      destello(L, hx, hy, 6 + 2 * Math.sin(ph * 2), SAGRADO[0], 0.9);
+      // motas que se desprenden y caen
+      for (let i = 0; i < 8; i++) {
+        const t = frac(c.u * 2 + R()), l = (R() - 0.5) * 10;
+        const [x, y] = L.P(c.fw(-6 - t * 40, l * t, z - t * t * 14 + (R() - 0.5) * 4));
+        L.luz(x, y, 1, SAGRADO[0], 1.1 * (1 - t));
+        L.luz(x, y, 2.6, SAGRADO[2], 0.25 * (1 - t));
+      }
+    },
+  },
+  {
+    id: 'saeta_veneno', nombre: ['Saeta de veneno', 'Venom glob'], elemento: 'veneno', tipo: 'proyectil', cuadros: 6, t: 2, dir: true, bucle: true,
+    pinta: (c) => {
+      const { L } = c, z = ALTO_VUELO, ph = c.u * TAU, R = c.R();
+      const H = c.fw(8, 0, z);
+      L.piso(H, 16, VENENO[2], 0.3);
+      // vapor tóxico detrás (materia, más oscuro en el borde)
+      for (let i = 0; i < 6; i++) {
+        const t = frac(c.u + i / 6);
+        L.humo3(c.fw(-4 - t * 34, (R() - 0.5) * 7, z + 2 + t * 7), 3 + t * 7, mezcla([0.12, 0.2, 0.05], [0.28, 0.4, 0.1], R()), 0.42 * campana(t, 0, 0.12, 1), i * 2.3, t);
+      }
+      // gotas que chorrean y caen
+      for (let i = 0; i < 6; i++) {
+        const t = frac(c.u * 1.5 + R()), l = (R() - 0.5) * 6;
+        const p = c.fw(-2 - t * 26, l, z - 1 - t * t * 30), q = c.fw(-2 - t * 26, l, z + 2 - t * t * 30);
+        if (p[2] < 1) continue;
+        const [xa, ya] = L.P(p), [xb, yb] = L.P(q);
+        L.capsula(xb, yb, xa, ya, 0.4, 1, BILIS[2], 1 - t * 0.5);
+        L.luz(xa, ya, 1.4, VENENO[1], 0.5 * (1 - t));
+      }
+      L.bola(H, 14, VENENO[3], 0.45);
+      L.bola(H, 8, VENENO[2], 0.5);
+      // la gota: cola que se adelgaza y cuerpo viscoso que tiembla
+      const [hx, hy] = L.P(H);
+      for (let k = 3; k >= 1; k--) {
+        const [x, y] = L.P(c.fw(8 - k * 5, Math.sin(ph + k) * 0.8, z + Math.cos(ph * 2 + k) * 0.6));
+        L.mancha(x, y, 4.2 - k * 0.9, 3.4 - k * 0.7, BILIS[2], 1, k * 3 + Math.cos(ph) * 0.4, Math.sin(ph) * 0.4, 0.5);
+      }
+      L.mancha(hx, hy, 7.4 + Math.sin(ph * 2) * 0.5, 6 - Math.sin(ph * 2) * 0.4, BILIS[3], 1, Math.cos(ph) * 0.6, Math.sin(ph) * 0.6, 0.45);
+      L.mancha(hx - 0.3, hy - 0.3, 6.2, 5, BILIS[2], 1, 2 + Math.cos(ph) * 0.6, Math.sin(ph) * 0.6, 0.45);
+      L.mancha(hx - 0.8, hy - 0.8, 4.4, 3.4, BILIS[1], 1, 3 + Math.cos(ph) * 0.6, 1 + Math.sin(ph) * 0.6, 0.5);
+      L.luz(hx + 1, hy + 0.8, 4.5, VENENO[1], 0.9);
+      L.luz(hx + 0.6, hy + 0.4, 2, VENENO[0], 1.1);
+      L.luz(hx - 2.6, hy - 2.4, 1.1, BLANCO, 1.3);
+      // burbujas que revientan alrededor
+      for (let i = 0; i < 4; i++) {
+        const t = frac(c.u + i / 4), a = R() * TAU;
+        L.anillo(hx + Math.cos(a) * 5, hy + Math.sin(a) * 4 - t * 4, 0.8 + t * 1.4, 0.5, VENENO[1], 0.7 * (1 - t), 1);
+      }
+    },
+  },
+  {
+    id: 'impacto_rayo', nombre: ['Impacto de rayo', 'Lightning impact'], elemento: 'rayo', tipo: 'impacto', cuadros: 8, t: 2,
+    pinta: (c) => {
+      const { L, v, f } = c, R = c.R(), C0: V3 = [0, 0, 30], Rf = rng(c.sem + f * 4517);
+      const e = sale(v, 2.2), fin = Math.pow(1 - v, 1.3);
+      const [x, y] = L.P(C0), [cx, cy] = L.P([0, 0, 0]);
+      // quemadura en el piso (queda)
+      L.mancha(cx, cy, 16 * sale(v * 3), 8 * sale(v * 3), [0.05, 0.05, 0.07], 0.55 * (1 - suave(0.75, 1, v)), 3, 2);
+      L.piso([0, 0, 0], 34, RAYO[2], 0.9 * fin);
+      ondaChoque(L, 10 + 46 * e, 2.4 + 2 * v, RAYO[1], 0.9 * Math.pow(1 - v, 1.6), 3.1, 0.25);
+      // fogonazo
+      if (v < 0.3) { const k = 1 - v / 0.3; L.luz(x, y, 30, RAYO[2], 1.1 * k); L.luz(x, y, 9, RAYO[0], 2.6 * k); ondaAire(L, x, y, 8 + 40 * e, 2, RAYO[1], 0.8 * k, 1.7); }
+      // ramas que salen del golpe y chisporrotean (otro azar por cuadro)
+      const nr = v < 0.5 ? 7 : 4;
+      for (let i = 0; i < nr; i++) {
+        const d = unit([Rf() - 0.5, Rf() - 0.5, (Rf() - 0.6) * 0.8]), l = (14 + Rf() * 26) * (0.5 + e);
+        dibujaRayo(L, zigzag(C0, add(C0, mul(d, l)), Rf, 0.3, 4), RAYO, fin * (0.8 + Rf() * 0.4), 0.7, 0);
+      }
+      // arcos que trepan por el piso al final
+      for (let i = 0; i < 3; i++) {
+        const a = Rf() * TAU, rr = 6 + Rf() * 22, b = Rf() * TAU, l = 6 + Rf() * 10;
+        const o: V3 = [Math.cos(a) * rr, Math.sin(a) * rr, 0.5];
+        dibujaRayo(L, zigzag(o, add(o, [Math.cos(b) * l, Math.sin(b) * l, 0]), Rf, 0.3, 3, true), RAYO, 0.7 * campana(v, 0.2, 0.5, 1), 0.5, 0.1);
+      }
+      // chispas con gravedad
+      for (let i = 0; i < 18; i++) {
+        const a = R() * TAU, sp = 40 + R() * 60, up = 0.2 + R() * 0.9, lt = 0.5 + R() * 0.5;
+        const T = v / lt;
+        if (T >= 1) continue;
+        const pos = (q: number): V3 => [Math.cos(a) * sp * q, Math.sin(a) * sp * q, 30 + up * sp * q - 120 * q * q];
+        const p0 = pos(T * lt * 0.8), p1 = pos(Math.max(0, T * lt * 0.8 - 0.05));
+        if (p0[2] < 0) continue;
+        L.rayo3(p0, p1, 0.7, 0.4, RAYO[0], 1.5 * (1 - T), 0);
+      }
+      humareda(L, c.R(3), 4, 0, 0, 8, 6, 26, v * 0.7, 0.3 * suave(0.15, 0.4, v) * (1 - v), [0.2, 0.2, 0.25], 4, 10);
+    },
+  },
+  {
+    id: 'impacto_veneno', nombre: ['Impacto de veneno', 'Venom splash'], elemento: 'veneno', tipo: 'impacto', cuadros: 8, t: 2,
+    pinta: (c) => {
+      const { L, v } = c, R = c.R(), C0: V3 = [0, 0, 30];
+      const e = sale(v, 2), fin = Math.pow(1 - v, 1.2);
+      const [x, y] = L.P(C0), [cx, cy] = L.P([0, 0, 0]);
+      // charco ácido que chisporrotea
+      L.mancha(cx, cy, 18 * sale(v * 2.5), 9 * sale(v * 2.5), BILIS[3], 0.8 * (1 - suave(0.8, 1, v)), 1.3, 2.4, 0.6);
+      L.mancha(cx, cy - 0.5, 11 * sale(v * 2.5), 5.5 * sale(v * 2.5), BILIS[2], 0.8 * (1 - suave(0.8, 1, v)), 4.3, 1.1, 0.6);
+      L.piso([0, 0, 0], 26, VENENO[2], 0.6 * fin);
+      ondaChoque(L, 6 + 30 * e, 2, VENENO[1], 0.6 * Math.pow(1 - v, 2), 5.2, 0.2);
+      if (v < 0.3) { const k = 1 - v / 0.3; L.luz(x, y, 18, VENENO[2], 0.9 * k); L.luz(x, y, 6, VENENO[0], 1.8 * k); }
+      // vapor que sube del ácido
+      for (let i = 0; i < 7; i++) {
+        const a = R() * TAU, d = R() * 14 * e, t = c01(v * 1.3 - R() * 0.2);
+        L.humo3([Math.cos(a) * d, Math.sin(a) * d, 4 + t * 26], 5 + t * 9, mezcla([0.16, 0.26, 0.06], [0.34, 0.46, 0.12], R()), 0.45 * Math.sin(t * Math.PI), i * 2.1, t);
+      }
+      salpicar(L, c.R(2), { n: 26, C0, T: v * 0.7, vel: [30, 70], sube: [-0.1, 0.9], pal: BILIS, r: [0.7, 1.8], g: 130 });
+      // burbujas que revientan en el charco
+      for (let i = 0; i < 6; i++) {
+        const t = frac(v * 2 + R()), a = R() * TAU, rr = R() * 14;
+        const [bx, by] = L.P([Math.cos(a) * rr, Math.sin(a) * rr, 0]);
+        L.anillo(bx, by - 1, 0.8 + t * 2, 0.5, VENENO[1], 0.8 * (1 - t) * suave(0.1, 0.3, v), 1.6);
+      }
+    },
+  },
+  {
+    id: 'impacto_sagrado', nombre: ['Impacto sagrado', 'Holy impact'], elemento: 'sagrado', tipo: 'impacto', cuadros: 8, t: 2,
+    pinta: (c) => estallidoSagrado(c, 0.8, false),
+  },
+  {
+    id: 'impacto_hueso', nombre: ['Impacto de hueso', 'Bone shatter'], elemento: 'hueso', tipo: 'impacto', cuadros: 8, t: 2,
+    pinta: (c) => {
+      const { L, v } = c, R = c.R(), C0: V3 = [0, 0, 32];
+      const fin = Math.pow(1 - v, 1.3);
+      const [x, y] = L.P(C0);
+      L.piso([0, 0, 0], 20, ALMA[2], 0.5 * fin);
+      if (v < 0.3) { const k = 1 - v / 0.3; L.luz(x, y, 16, ALMA[2], 0.9 * k); L.luz(x, y, 5, ALMA[0], 1.8 * k); ondaAire(L, x, y, 6 + 26 * sale(v, 2), 1.6, ALMA[1], 0.7 * k, 2.2); }
+      // polvo de hueso
+      for (let i = 0; i < 6; i++) {
+        const a = R() * TAU, d = 6 + R() * 16 * sale(v);
+        L.humo3([Math.cos(a) * d, Math.sin(a) * d, 26 + R() * 10 + v * 8], 4 + 8 * sale(v), [0.62, 0.58, 0.5], 0.4 * campana(v, 0, 0.2, 1), i * 2.7, v);
+      }
+      // espíritus que se deshacen
+      for (let w = 0; w < 4; w++) {
+        const a0 = R() * TAU;
+        let prev: V3 | null = null;
+        for (let i = 0; i <= 8; i++) {
+          const s = i / 8, a = a0 + s * 2, rr = (4 + s * 22) * sale(v);
+          const p: V3 = [Math.cos(a) * rr, Math.sin(a) * rr, 32 + s * 12 * sale(v)];
+          if (prev) L.rayo3(prev, p, 0.9, 0.9, ALMA[1], 0.6 * fin * (1 - s), 0.6 * fin * (1 - s - 0.12));
+          prev = p;
+        }
+      }
+      astillas(L, c.R(4), 16, C0, v * 0.7, [30, 75]);
+    },
+  },
+  {
+    id: 'nova_sangre', nombre: ['Nova de sangre', 'Blood nova'], elemento: 'sangre', tipo: 'area', cuadros: 14, t: 2,
+    pinta: (c) => {
+      const { L, v } = c, R = c.R();
+      const e = sale(v, 2), Rw = 8 + 72 * e, fade = Math.pow(1 - v, 0.9) * suave(0, 0.08, v + 0.03);
+      const [cx, cy] = L.P([0, 0, 0]);
+      // charco central que se extiende
+      L.mancha(cx, cy, 20 * sale(v * 2), 10 * sale(v * 2), SANGRE[3], 0.85, 2.2, 1.4, 0.7);
+      L.mancha(cx - 1, cy - 0.5, 12 * sale(v * 2), 6 * sale(v * 2), SANGRE[2], 0.8 * (1 - v * 0.5), 5.1, 0.3, 0.6);
+      L.piso([0, 0, 0], Rw * 0.9, [0.5, 0.02, 0.03], 0.35 * fade);
+      if (v < 0.22) { const k = 1 - v / 0.22; L.bola([0, 0, 26], 26, [0.6, 0.02, 0.04], 1.2 * k); L.bola([0, 0, 26], 9, [1, 0.6, 0.55], 1.6 * k); }
+      ondaChoque(L, Rw, 3 + 4 * v, [0.9, 0.08, 0.08], 0.9 * fade, 7.7, 0.4);
+      // niebla carmesí que acompaña al frente
+      const ps: { a: number; r: number }[] = [];
+      for (let i = 0; i < 26; i++) ps.push({ a: (i / 26) * TAU + R() * 0.2, r: R() });
+      ps.sort((p, q) => Math.cos(p.a) + Math.sin(p.a) - Math.cos(q.a) - Math.sin(q.a));
+      for (const p of ps) L.humo3([Math.cos(p.a) * Rw * 0.95, Math.sin(p.a) * Rw * 0.95, 4 + p.r * 8], 6 + 6 * v + p.r * 3, mezcla(SANGRE[2], SANGRE[1], p.r), 0.5 * fade, p.a * 4, v * 2);
+      // la ola: chorros radiales que suben y caen en anillo
+      salpicar(L, c.R(5), { n: 70, C0: [0, 0, 10], T: v * 0.95, vel: [65, 120], sube: [0.25, 0.8], r: [0.9, 2.4], g: 140 });
+      salpicar(L, c.R(6), { n: 24, C0: [0, 0, 24], T: v * 0.8, vel: [15, 40], sube: [0.6, 1.4], r: [1.2, 2.6], g: 150 });
+    },
+  },
+  {
+    id: 'maldicion_sombra', nombre: ['Maldición de sombra', 'Shadow curse'], elemento: 'sombra', tipo: 'area', cuadros: 14, t: 2,
+    pinta: (c) => {
+      const { L, v } = c, R = c.R();
+      const env = suave(0, 0.2, v) * (1 - suave(0.7, 1, v)), Rw = 30, rot = v * 1.2;
+      const [cx, cy] = L.P([0, 0, 0]);
+      // oscuridad que se come el piso
+      L.piso([0, 0, 0], Rw * 1.2, SOMBRA[3], 0.45 * env);
+      L.mancha(cx, cy, Rw * S2 * 0.95 * sale(v * 2), Rw * S2 * 0.47 * sale(v * 2), [0.02, 0.005, 0.035], 0.85 * env, 1.7 + v, 0.4, 1.1);
+      // sello que se quema hacia adentro: anillos rotos y runas
+      const quema = sale(c01(v / 0.4), 2);
+      const jiron = (a: number, k: number) => suave(0.3, 0.7, fbm(Math.cos(a) * 3 + k, Math.sin(a) * 3 + v * 1.5));
+      L.aroPiso([0, 0, 0], Rw, 1.2, SOMBRA[1], 1.2 * env, (a) => suave(0, 0.04, quema - (frac((a + Math.PI) / TAU + 0.25))) * (0.2 + 0.8 * jiron(a, 0)));
+      L.aroPiso([0, 0, 0], Rw * 0.72, 0.9, SOMBRA[2], 0.9 * env, (a) => jiron(a, 5));
+      L.aroPiso([0, 0, 0], Rw, 4, SOMBRA[3], 0.4 * env, (a) => jiron(a, 9));
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * TAU + rot;
+        if (frac(i / 9 + 0.25) > quema) continue;
+        runaPiso(L, i + 3, Math.cos(a) * Rw * 0.86, Math.sin(a) * Rw * 0.86, a, 2.3, SOMBRA[1], 0.9 * env * (0.6 + 0.4 * Math.sin(v * 12 + i)));
+      }
+      // zarcillos de humo negro que suben y se enroscan hacia el centro
+      for (let w = 0; w < 8; w++) {
+        const a0 = (w / 8) * TAU + R() * 0.5, h = 40 + R() * 34, t0 = R() * 0.3;
+        const g = sale(c01((v - t0) / 0.5), 2) * env;
+        if (g <= 0.02) continue;
+        let prev: V3 | null = null;
+        for (let i = 0; i <= 10; i++) {
+          const s = i / 10, a = a0 + s * 1.6 + Math.sin(v * 6 + w) * 0.2, rr = Rw * (0.95 - s * 0.6);
+          const p: V3 = [Math.cos(a) * rr, Math.sin(a) * rr, s * h * g];
+          L.humo3(p, (4.5 - s * 2.5) * (0.6 + g * 0.6), [0.07, 0.03, 0.1], 0.55 * g * (1 - s * 0.6), w * 3 + s * 2, v * 2);
+          if (prev) {
+            L.rayo3(prev, p, 3, 3, SOMBRA[3], 0.4 * g * (1 - s), 0.4 * g * (1 - s - 0.1));
+            L.rayo3(prev, p, 0.8, 0.8, SOMBRA[1], 0.8 * g * (1 - s), 0.8 * g * (1 - s - 0.1));
+          }
+          prev = p;
+        }
+      }
+      // motas que caen hacia el sello (al revés que la luz)
+      for (let i = 0; i < 12; i++) {
+        const t = frac(v * 1.6 + R()), a = R() * TAU, rr = R() * Rw;
+        const [x, y] = L.P([Math.cos(a) * rr * (1 - t * 0.5), Math.sin(a) * rr * (1 - t * 0.5), 50 * (1 - t)]);
+        L.luz(x, y, 1, SOMBRA[0], 0.9 * env * Math.sin(t * Math.PI));
+      }
+    },
+  },
+  {
+    id: 'aura_furia', nombre: ['Aura de furia', 'Fury aura'], elemento: 'sangre', tipo: 'aura', cuadros: 12, t: 2, bucle: true,
+    pinta: (c) => {
+      const { L, u } = c, R = c.R(), ph = u * TAU;
+      const FURIA: C[] = [[1, 0.85, 0.6], [1, 0.38, 0.14], [0.82, 0.1, 0.05], [0.36, 0.02, 0.02]];
+      const pul = 0.8 + 0.2 * Math.sin(ph * 2);
+      L.piso([0, 0, 0], 30, FURIA[3], 0.55 * pul);
+      L.aroPiso([0, 0, 0], 27, 4.5, FURIA[3], 0.45);
+      L.aroPiso([0, 0, 0], 27, 1.4, FURIA[1], 0.8 * pul, (a) => 0.1 + 0.9 * suave(0.3, 0.7, fbm(Math.cos(a) * 3 + Math.cos(ph) * 0.5, Math.sin(a) * 3 + Math.sin(ph) * 0.5)));
+      // bruma de sangre baja (materia) y lenguas en el borde
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * TAU + ph / 10;
+        L.humo3([Math.cos(a) * 25, Math.sin(a) * 25, 3], 6 + 2 * Math.sin(ph + i), [0.25, 0.03, 0.03], 0.3, i * 2.1 + Math.cos(ph) * 0.4, Math.sin(ph) * 0.4);
+      }
+      const ls: [number, number, number, number, number][] = [];
+      for (let i = 0; i < 11; i++) { const a = (i / 11) * TAU + R() * 0.4, rr = 24 + R() * 5; ls.push([Math.cos(a) * rr, Math.sin(a) * rr, 12 + R() * 12, 4 + R() * 2.5, R()]); }
+      ls.sort((a, b) => a[0] + a[1] - b[0] - b[1]);
+      for (const [x, y, h, w, f0] of ls) llama(L, x, y, 0, h, w, frac(u * 2 + f0), 0.4, FURIA);
+      // calor que sube (hilos que ondulan) y brasas rojas
+      for (let i = 0; i < 6; i++) {
+        const t = frac(u + i / 6), a = R() * TAU, rr = 6 + R() * 16;
+        let prev: V3 | null = null;
+        for (let k = 0; k <= 6; k++) {
+          const s = k / 6, z = (t * 40 + s * 18);
+          const p: V3 = [Math.cos(a) * rr + Math.sin(z * 0.3 + ph) * 2, Math.sin(a) * rr, z];
+          if (prev) L.rayo3(prev, p, 0.7, 0.7, FURIA[2], 0.22 * Math.sin(t * Math.PI) * (1 - s), 0);
+          prev = p;
+        }
+      }
+      brasas(L, c.R(4), 14, 0, 0, 24, 2, 60, u, 0.9, FURIA);
+    },
+  },
+
 ];
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -2180,6 +2637,13 @@ Animación: cuadro = floor(tiempo * 25 / t) % cuadros (o el último si no es buc
 Dirección: ángulo atan2(dy, dx) en el piso; 0° = se, 45° = s, 90° = so, 135° = o, 180° = no, 225° = n, 270° = ne,
 315° = e. Los proyectiles se dibujan quietos sobre su ancla: el juego los mueve.
 Los efectos son luz: se ven bien con mezcla normal (alfa), y mejor todavía con mezcla aditiva usando color * alfa.
+Los que tienen mucha materia (sangre, hueso, humo, flechas) van con mezcla normal: lo dice luz_efectos.json (mezcla).
+
+luz_efectos.json: la luz dinámica de cada efecto (color, radio, intensidad, curva por cuadro, altura, parpadeo,
+enVuelo, fogonazo al lanzar, impacto sugerido, sombra, prioridad). Ver luz_efectos.ts.
+
+Ids nuevos (al lado de los de siempre, no reemplazan a nadie): virote, saeta_sagrada, saeta_veneno, impacto_rayo,
+impacto_veneno, impacto_sagrado, impacto_hueso, nova_sangre, maldicion_sombra, aura_furia.
 `;
 
 /** Zip con una tira PNG por poder más poderes.json y LEEME.txt. */
@@ -2197,6 +2661,7 @@ export function paquetePoderes(): Uint8Array {
   }
   const enc = new TextEncoder();
   files['poderes.json'] = enc.encode(JSON.stringify({ formato: 'pixelforja-gotico-poderes', version: 1, cuadros_por_segundo: 25, persona_px: 75, direcciones: DIRS_PODER, poderes: lista }, null, 1));
+  files['luz_efectos.json'] = enc.encode(JSON.stringify(luzEfectosJson(), null, 1));
   files['LEEME.txt'] = enc.encode(LEEME);
   return zipSync(files, { level: 6 });
 }

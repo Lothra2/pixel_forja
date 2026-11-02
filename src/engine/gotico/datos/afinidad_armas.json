@@ -1,0 +1,302 @@
+{
+  "espada": {
+    "berserker": "neutra",
+    "templario": "afin",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "mandoble": {
+    "berserker": "afin",
+    "templario": "afin",
+    "arcanista": "torpe",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "torpe",
+    "druida": "neutra",
+    "alquimista": "torpe"
+  },
+  "cimitarra": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "katana": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "torpe",
+    "alquimista": "neutra"
+  },
+  "estoque": {
+    "berserker": "torpe",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "torpe",
+    "alquimista": "neutra"
+  },
+  "daga": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "afin",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "afin"
+  },
+  "katar": {
+    "berserker": "neutra",
+    "templario": "torpe",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "afin",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "garra": {
+    "berserker": "neutra",
+    "templario": "torpe",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "afin",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "hacha": {
+    "berserker": "afin",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "gran_hacha": {
+    "berserker": "afin",
+    "templario": "neutra",
+    "arcanista": "torpe",
+    "cazadora": "torpe",
+    "nigromante": "torpe",
+    "monje": "torpe",
+    "druida": "neutra",
+    "alquimista": "torpe"
+  },
+  "maza": {
+    "berserker": "neutra",
+    "templario": "afin",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "lucero": {
+    "berserker": "neutra",
+    "templario": "afin",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "torpe",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "martillo": {
+    "berserker": "afin",
+    "templario": "neutra",
+    "arcanista": "torpe",
+    "cazadora": "torpe",
+    "nigromante": "torpe",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "torpe"
+  },
+  "mangual": {
+    "berserker": "afin",
+    "templario": "afin",
+    "arcanista": "torpe",
+    "cazadora": "torpe",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "torpe",
+    "alquimista": "neutra"
+  },
+  "lanza": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "afin",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "afin",
+    "alquimista": "neutra"
+  },
+  "alabarda": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "torpe",
+    "cazadora": "neutra",
+    "nigromante": "torpe",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "torpe"
+  },
+  "tridente": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "guadana": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "afin",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "torpe"
+  },
+  "hoz": {
+    "berserker": "neutra",
+    "templario": "torpe",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "afin",
+    "monje": "neutra",
+    "druida": "afin",
+    "alquimista": "neutra"
+  },
+  "jabalina": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "afin",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "arco_corto": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "afin",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "arco_largo": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "afin",
+    "nigromante": "torpe",
+    "monje": "torpe",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "ballesta": {
+    "berserker": "neutra",
+    "templario": "neutra",
+    "arcanista": "neutra",
+    "cazadora": "afin",
+    "nigromante": "neutra",
+    "monje": "torpe",
+    "druida": "torpe",
+    "alquimista": "afin"
+  },
+  "baculo": {
+    "berserker": "torpe",
+    "templario": "neutra",
+    "arcanista": "afin",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "afin",
+    "druida": "afin",
+    "alquimista": "neutra"
+  },
+  "gran_baculo": {
+    "berserker": "torpe",
+    "templario": "neutra",
+    "arcanista": "afin",
+    "cazadora": "torpe",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "afin",
+    "alquimista": "torpe"
+  },
+  "varita": {
+    "berserker": "torpe",
+    "templario": "torpe",
+    "arcanista": "afin",
+    "cazadora": "neutra",
+    "nigromante": "afin",
+    "monje": "torpe",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "orbe": {
+    "berserker": "torpe",
+    "templario": "neutra",
+    "arcanista": "afin",
+    "cazadora": "torpe",
+    "nigromante": "neutra",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "cetro": {
+    "berserker": "torpe",
+    "templario": "afin",
+    "arcanista": "neutra",
+    "cazadora": "torpe",
+    "nigromante": "afin",
+    "monje": "neutra",
+    "druida": "neutra",
+    "alquimista": "neutra"
+  },
+  "cestus": {
+    "berserker": "neutra",
+    "templario": "torpe",
+    "arcanista": "torpe",
+    "cazadora": "neutra",
+    "nigromante": "torpe",
+    "monje": "afin",
+    "druida": "torpe",
+    "alquimista": "neutra"
+  },
+  "frascos": {
+    "berserker": "torpe",
+    "templario": "torpe",
+    "arcanista": "neutra",
+    "cazadora": "neutra",
+    "nigromante": "neutra",
+    "monje": "torpe",
+    "druida": "neutra",
+    "alquimista": "afin"
+  }
+}
