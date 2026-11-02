@@ -7,6 +7,7 @@ import type { Rarity } from '../loot/materials';
 import { pintarEscena } from './render';
 import { personajeEscena, armaSuelta, type Cuerpo, type Equipo, type TipoArma, type Encanto } from './cuerpo';
 import { HEROES } from './catalogo/personajes';
+import { iconoObjeto3D, iconoDeLoot, iconoDeArma, type Icono3D } from './iconos3d';
 
 /**
  * Interfaz del taller gótico: la barra de abajo con los orbes de vida y maná, el cinturón de pociones, los botones
@@ -1907,6 +1908,8 @@ export function iconoArma3D(a: Arma3D, w: number, h: number, cuadro = 0): Raster
 export interface ObjetoInv {
   it: LootItem; x: number; y: number; w: number; h: number;
   arma3d?: Arma3D;
+  /** el objeto pintado en 3D por el motor (si falta, se deduce del botín con `iconoDeLoot`) */
+  icono3d?: Icono3D;
   cantidad?: number;
   /** durabilidad 0..1 (sin valor = no se gasta) */
   durabilidad?: number;
@@ -1950,9 +1953,11 @@ function reducir(r: Raster, w: number, h: number): Raster {
 }
 
 /** El ícono de un objeto ocupando su rectángulo: armas en 3D del motor, lo demás con el motor de botín (sin salirse). */
-function iconoEn(l: Lienzo, o: { it: LootItem; arma3d?: Arma3D }, x: number, y: number, w: number, h: number, cuadro = 0) {
+function iconoEn(l: Lienzo, o: { it: LootItem; arma3d?: Arma3D; icono3d?: Icono3D }, x: number, y: number, w: number, h: number, cuadro = 0) {
   let r: Raster;
-  if (o.arma3d) r = iconoArma3D(o.arma3d, w, h, cuadro);
+  const d3 = o.icono3d ?? (o.arma3d ? iconoDeArma(o.arma3d) : iconoDeLoot(o.it));
+  if (d3) r = iconoObjeto3D(d3, w, h, cuadro);
+  else if (o.arma3d) r = iconoArma3D(o.arma3d, w, h, cuadro);
   else {
     const ic = renderLoot(o.it, { px: Math.min(w, h) >= 50 ? 64 : 32, noAura: true });
     const k = Math.min(1, (w - 2) / ic.w, (h - 2) / ic.h);
