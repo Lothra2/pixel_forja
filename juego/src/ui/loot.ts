@@ -43,8 +43,10 @@ export function aLoot(o: Objeto): LootItem {
       base = { cat: 'offhand', icon: b.familia === 'orbe' ? 'orb' : b.familia === 'libro' ? 'tome' : t === 'escudo_torre' ? 'shield_tower' : t === 'escudo_cometa' ? 'shield_kite' : t === 'rodela' ? 'buckler' : t === 'escudo_calavera' ? 'shrunken_head' : 'shield_round' };
     }
   }
+  // líneas épicas de la Forja: la pieza entera con su línea (el motor ya trae sus colores y adornos)
+  if (b?.linea && base.cat === 'armor') base = { ...base, line: b.linea, tier: 5 };
   // bases míticas (escalón 3): la armadura viene teñida con los colores de su tierra (Ysmeral o la Corona)
-  if (b?.tinte && base.cat === 'armor') diseno = { ...(diseno ?? {}), base: b.tinte.base, ...(b.tinte.ribete ? { trim: b.tinte.ribete } : {}), ...(b.tinte.gema ? { gem: b.tinte.gema } : {}) };
+  else if (b?.tinte && base.cat === 'armor') diseno = { ...(diseno ?? {}), base: b.tinte.base, ...(b.tinte.ribete ? { trim: b.tinte.ribete } : {}), ...(b.tinte.gema ? { gem: b.tinte.gema } : {}) };
   else if (b?.tinte && base.cat === 'offhand' && b.familia === 'escudo' && !diseno?.face) { diseno = { ...(diseno ?? {}), face: b.tinte.base }; grado = 5; }
   // conjuntos: todas las piezas con la misma línea, el mismo grado y el mismo color (en el ícono y en el cuerpo)
   let extra: any = {};
@@ -52,7 +54,9 @@ export function aLoot(o: Objeto): LootItem {
   if (asp && b) {
     const a = asp.aspecto, pz = asp.piezas.find((p) => p.nombre[0] === o.nombre[0]);
     extra = { set: asp.id, flavor: { es: asp.lore[0], en: asp.lore[1] } };
-    if (a && base.cat === 'armor') {
+    const epica = a && !['tunica', 'cuero', 'malla', 'placas', 'metal'].includes(a.linea);
+    if (a && epica && base.cat === 'armor') { base = { ...base, line: a.linea, tier: 5 }; delete extra.flavor; diseno = /corona|diadema|aro/.test(JSON.stringify(b.visual)) ? { helm: 'crown' } : undefined; }
+    else if (a && base.cat === 'armor') {
       // 'metal': la línea legendaria del motor teñida con el color del conjunto (pide flavor); las demás, su línea con el color
       base = { ...base, line: a.linea === 'metal' ? 'placas' : a.linea, tier: a.grado };
       diseno = { ...(diseno ?? {}), base: a.color, ...(a.ribete ? { trim: a.ribete } : {}), ...(a.gema ? { gem: a.gema } : {}), ...(a.brillo ? { glow: a.brillo } : {}) };

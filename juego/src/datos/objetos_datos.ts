@@ -3,6 +3,7 @@
 import type {
   Afijo, Base, Clase, Conjunto, Gema, Palabra, RangoStat, Ranura, Runa, Stat, Unico,
 } from '../juego/tipos_objetos';
+import { armaduraDeLinea, type LineaCuerpo } from '../../../src/engine/gotico/cuerpo';
 
 type TipoArma = NonNullable<Base['arma']>;
 type Visual = Base['visual'];
@@ -338,6 +339,80 @@ export const BASES_MITICAS: Base[] = [
   piezaMitica('cenidor_aureo', 'Ceñidor áureo', 'Golden Girdle', 'cenidor_placas', 84, 2.0, { cinturon: { mat: 'cu_oro', hebilla: 'marmol' } }, AUREA),
 ];
 BASES.push(...BASES_MITICAS);
+
+// ------------------------------------------------------------------ arsenal épico de la Forja
+// Formas nuevas (katana, tridente, katar...) que reusan la familia de una base de élite para afijos, palabras rúnicas,
+// clase y alcance. Dos rangos: mítico (Ysmeral, desde el nivel 55) y ancestral (la Corona, desde el 78).
+function armaEpica(id: string, es: string, en: string, tipo: TipoArma, ref: string, nivel: number, k: number, mat: string, mango?: string, gema?: string): Base {
+  const b = armaMitica(id, es, en, ref, nivel, k, mat, mango, gema);
+  b.arma = tipo; (b.visual as any).arma.tipo = tipo;
+  if (tipo === 'jabalina') delete b.dosManos;
+  if (tipo === 'tridente' || tipo === 'gran_baculo' || tipo === 'lanza_dragon') b.dosManos = true;
+  return b;
+}
+export const BASES_EPICAS: Base[] = [
+  // ---------------- míticas (Ysmeral)
+  armaEpica('katana_bruma', 'Katana de la bruma salada', 'Salt Mist Katana', 'katana', 'hoja_ceniza_negra', 60, 1.5, 'acero', 'cu_tela_azul', 'cristal'),
+  armaEpica('estoque_coral', 'Estoque de coral', 'Coral Rapier', 'estoque', 'hoja_ceniza_negra', 57, 1.45, 'roca_roja', 'cu_escama'),
+  armaEpica('falcata_coral', 'Falcata de coral', 'Coral Falcata', 'falcata', 'hoz_rey_dormido', 62, 1.55, 'roca_roja', 'cu_escama', 'cristal'),
+  armaEpica('tridente_ahogado', 'Tridente de los ahogados', 'Trident of the Drowned', 'tridente', 'lanza_obsidiana', 64, 1.55, 'bronce', 'madera_vieja', 'cristal'),
+  armaEpica('lucero_percebes', 'Lucero con percebes', 'Barnacled Morning Star', 'maza_estrella', 'maza_penitencia', 60, 1.5, 'hierro_oxido', 'cuerda'),
+  armaEpica('arco_largo_ballena', 'Arco largo de ballena', 'Whalebone Longbow', 'arco_largo', 'arco_cuervo', 64, 1.55, 'cu_hueso', 'cuerda'),
+  armaEpica('arco_corto_raya', 'Arco corto de la raya', 'Ray Shortbow', 'arco_corto', 'arco_cuervo', 57, 1.4, 'negro', 'cu_escama'),
+  armaEpica('jabalina_arponera', 'Jabalina arponera', 'Harpoon Javelin', 'jabalina', 'lanza_obsidiana', 58, 1.3, 'acero', 'madera_vieja'),
+  armaEpica('gran_baculo_coral', 'Gran báculo de coral', 'Great Coral Staff', 'gran_baculo', 'baculo_astro_caido', 64, 1.6, 'roca_roja', 'cu_escama', 'cristal'),
+  armaEpica('orbe_caracola', 'Caracola de mano', 'Hand Conch', 'orbe_mano', 'varita_susurro', 60, 1.55, 'marmol', 'cu_escama', 'magia'),
+  armaEpica('katar_fosa', 'Katar de la fosa', 'Trench Katar', 'katar', 'garras_dragon_palido', 62, 1.55, 'cu_quitina', 'cu_escama', 'cristal'),
+  armaEpica('hoz_sal', 'Hoz de sal', 'Salt Sickle', 'hoz', 'hacha_escarcha_negra', 58, 1.45, 'marmol', 'corteza_muerta', 'cristal'),
+  armaEpica('lanza_dragon_marino', 'Lanza del dragón marino', 'Sea Dragon Lance', 'lanza_dragon', 'lanza_obsidiana', 68, 1.6, 'cu_escama', 'bronce', 'cristal'),
+  // ---------------- ancestrales (la Corona)
+  armaEpica('katana_ocaso', 'Katana del ocaso dorado', 'Golden Dusk Katana', 'katana', 'hoja_ceniza_negra', 80, 2.15, 'cu_oro', 'cu_tela_negra', 'luz_vela'),
+  armaEpica('estoque_marmol', 'Estoque de mármol', 'Marble Rapier', 'estoque', 'hoja_ceniza_negra', 78, 2.05, 'marmol', 'cu_oro', 'runa'),
+  armaEpica('falcata_espejismo', 'Falcata del espejismo', 'Mirage Falcata', 'falcata', 'hoz_rey_dormido', 84, 2.2, 'oro', 'cu_tela_blanca', 'cristal'),
+  armaEpica('tridente_sed', 'Tridente de la sed', 'Trident of Thirst', 'tridente', 'lanza_obsidiana', 88, 2.2, 'oro', 'marmol_negro', 'fuego'),
+  armaEpica('lucero_aureo', 'Lucero áureo', 'Golden Morning Star', 'maza_estrella', 'maza_penitencia', 82, 2.15, 'cu_oro', 'marmol', 'luz_vela'),
+  armaEpica('arco_largo_cielo', 'Arco largo del cielo roto', 'Broken Sky Longbow', 'arco_largo', 'arco_cuervo', 86, 2.2, 'cu_oro', 'cuerda'),
+  armaEpica('arco_corto_islas', 'Arco corto de las islas', 'Isles Shortbow', 'arco_corto', 'arco_cuervo', 80, 2.05, 'marmol', 'cu_oro'),
+  armaEpica('jabalina_aurea', 'Jabalina del peregrino dorado', 'Golden Pilgrim Javelin', 'jabalina', 'lanza_obsidiana', 80, 2.0, 'cu_oro', 'marmol', 'luz_vela'),
+  armaEpica('gran_baculo_vacio', 'Gran báculo del vacío', 'Great Void Staff', 'gran_baculo', 'baculo_astro_caido', 88, 2.25, 'marmol_negro', 'cu_oro', 'magia'),
+  armaEpica('orbe_sediento', 'Orbe sediento', 'Thirsting Orb', 'orbe_mano', 'varita_susurro', 84, 2.2, 'oro', 'cu_oro', 'fuego'),
+  armaEpica('katar_marmol', 'Katar de mármol vivo', 'Living Marble Katar', 'katar', 'garras_dragon_palido', 86, 2.2, 'marmol', 'cu_oro', 'luz_vela'),
+  armaEpica('hoz_jardin', 'Hoz del jardín de piedra', 'Stone Garden Sickle', 'hoz', 'hacha_escarcha_negra', 82, 2.1, 'marmol_negro', 'cu_oro', 'runa'),
+  armaEpica('lanza_dragon_aurea', 'Lanza del dragón de oro', 'Golden Dragon Lance', 'lanza_dragon', 'lanza_obsidiana', 90, 2.25, 'cu_oro', 'marmol', 'fuego'),
+];
+BASES.push(...BASES_EPICAS);
+
+// Las 6 líneas épicas de armadura: coraza (con grebas y hombreras), yelmo, guantes y botas, cada una en su franja de nivel.
+const TINTE_LINEA: Record<LineaCuerpo, NonNullable<Base['tinte']>> = {
+  ahogada: AHOGADA, escamas: { base: '#3c5a3a', ribete: '#b8a060' }, elfica: { base: '#9ab8a0', ribete: '#e8e0c0' },
+  draconica: { base: '#6a1c14', ribete: '#c89040' }, demoniaca: { base: '#2a0c10', ribete: '#c03020' }, celestial: { base: '#e8e4d8', ribete: '#f0c860' },
+};
+function piezaLinea(linea: LineaCuerpo, id: string, es: string, en: string, ref: string, nivel: number, k: number, parte: 'torso' | 'cabeza' | 'manos' | 'pies'): Base {
+  const a = armaduraDeLinea(linea, nivel >= 75 ? 4 : nivel >= 55 ? 3 : 2) as any;
+  const visual: any = parte === 'torso' ? { torso: a.torso, piernas: a.piernas, hombros: a.hombros } : { [parte]: a[parte] };
+  const b = piezaMitica(id, es, en, ref, nivel, k, visual, TINTE_LINEA[linea]);
+  b.linea = linea;
+  return b;
+}
+const LINEAS: [LineaCuerpo, string, string, number, number, string, string][] = [
+  // línea, nombre es, nombre en, nivel de la coraza, k de la coraza, adjetivo es (masc), adjetivo es (fem)
+  ['ahogada', 'ahogad', 'Drowned', 50, 0.95, 'ahogado', 'ahogada'],
+  ['escamas', 'de escamas', 'Scale', 56, 1.15, 'de escamas', 'de escamas'],
+  ['elfica', 'élfic', 'Elven', 62, 1.3, 'élfico', 'élfica'],
+  ['draconica', 'dracónic', 'Draconic', 72, 1.4, 'dracónico', 'dracónica'],
+  ['demoniaca', 'demoníac', 'Demonic', 82, 1.6, 'demoníaco', 'demoníaca'],
+  ['celestial', 'celestial', 'Celestial', 86, 1.7, 'celestial', 'celestial'],
+];
+export const BASES_LINEA: Base[] = LINEAS.flatMap(([l, , en, nv, k, m, f]) => {
+  const pl = (s: string) => (s.startsWith('de ') ? s : s === 'celestial' ? 'celestiales' : s + 's');
+  return [
+    piezaLinea(l, `coraza_${l}`, `Coraza ${f}`, `${en} Cuirass`, nv >= 80 ? 'armadura_ultimo_rey' : 'placas_obsidiana', nv, k, 'torso'),
+    piezaLinea(l, `yelmo_${l}`, `Yelmo ${m}`, `${en} Helm`, 'gran_yelmo_herida', nv - 8, k * 0.92, 'cabeza'),
+    piezaLinea(l, `guanteletes_${l}`, `Guanteletes ${pl(m)}`, `${en} Gauntlets`, 'guanteletes_verdugo', nv - 12, k * 0.9, 'manos'),
+    piezaLinea(l, `botas_${l}`, `Botas ${pl(f)}`, `${en} Boots`, 'sabatones_obsidiana', nv - 10, k * 0.9, 'pies'),
+  ];
+});
+BASES.push(...BASES_LINEA);
 
 // ------------------------------------------------------------------ afijos
 // El juego compone en español "<Base> <prefijo> <sufijo>" (Espada larga Ardiente del Lobo)

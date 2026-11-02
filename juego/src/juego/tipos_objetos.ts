@@ -1,5 +1,5 @@
 // Tipos del botín: bases, afijos, únicos, conjuntos, gemas y runas. Los datos van en datos/objetos_datos.ts.
-import type { Equipo, TipoArma } from '../../../src/engine/gotico/cuerpo';
+import type { Equipo, LineaCuerpo, TipoArma } from '../../../src/engine/gotico/cuerpo';
 
 export type Ranura = 'cabeza' | 'torso' | 'arma' | 'izq' | 'manos' | 'cinturon' | 'pies' | 'amuleto' | 'anillo' | 'talisman';
 /** Elementos de daño. 'sangre' es daño físico que sangra con el tiempo. */
@@ -73,6 +73,8 @@ export interface Base {
   arma?: TipoArma;
   /** Color propio del ícono (bases míticas): la armadura se tiñe con él. */
   tinte?: { base: string; ribete?: string; gema?: string };
+  /** Línea épica de armadura de la Forja (escamas, dracónica, élfica, demoníaca, celestial, ahogada): el cuerpo y el ícono la usan enteros. */
+  linea?: LineaCuerpo;
 }
 
 export interface Afijo {
@@ -119,7 +121,7 @@ export interface PiezaConjunto {
 }
 /** Cómo se ve el conjunto puesto: todas las piezas con la misma línea, el mismo grado y el mismo color. */
 export interface AspectoConjunto {
-  linea: 'tunica' | 'cuero' | 'malla' | 'placas' | 'metal'; grado: 1 | 2 | 3 | 4 | 5; color: string;
+  linea: 'tunica' | 'cuero' | 'malla' | 'placas' | 'metal' | LineaCuerpo; grado: 1 | 2 | 3 | 4 | 5; color: string;
   /** Opcionales: ribete metálico, gema del pecho y brillo (para que el conjunto se vea único en el ícono). */
   ribete?: string; gema?: string; brillo?: string;
 }

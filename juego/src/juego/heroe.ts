@@ -150,8 +150,10 @@ export function calcular(h: DatosHeroe, buffs: Record<string, number> = {}): Cal
   vidaMax *= 1 + (st.vida_pct ?? 0) / 100;
   let manaMax = cl.base.mana + (h.nivel - 1) * cl.manaNivel + (ene - cl.base.ene) * cl.porEne + (st.mana ?? 0);
   manaMax *= 1 + (st.mana_pct ?? 0) / 100;
-  const distancia = !!ba?.distancia || ba?.arma === 'arco' || ba?.arma === 'ballesta';
-  const bonoAtr = distancia || ba?.arma === 'daga' || ba?.arma === 'garras' ? des * 1 + fue * 0.25 : fue * 1 + (ba?.arma === 'lanza' ? des * 0.5 : 0);
+  // la familia manda en el juego (las armas épicas de la Forja tienen forma propia pero juegan como su familia)
+  const fam = ba?.ranura === 'arma' ? ba.familia : ba?.arma;
+  const distancia = !!ba?.distancia || fam === 'arco' || fam === 'ballesta';
+  const bonoAtr = distancia || fam === 'daga' || fam === 'garras' ? des * 1 + fue * 0.25 : fue * 1 + (fam === 'lanza' ? des * 0.5 : 0);
   const base: [number, number] = arma?.dano && !(arma.durabMax > 0 && arma.durab <= 0) ? [arma.dano[0], arma.dano[1]] : [1, 3];
   // dano_pct de objetos ya está en el arma; dano_pct de otras cosas (buffs, pasivas, auras) suma aquí
   let pctExtra = 0; for (const c of Object.keys(h.equipo) as Casilla[]) if (c !== 'arma') for (const [k, v] of h.equipo[c]!.stats) if (k === 'dano_pct') pctExtra += v;
@@ -181,7 +183,7 @@ export function calcular(h: DatosHeroe, buffs: Record<string, number> = {}): Cal
     espinas: st.espinas ?? 0, reduc_dano: Math.min(50, st.reduc_dano ?? 0), mas_habilidades: mas,
     golpe_aplastante: st.golpe_aplastante ?? 0, herida_abierta: st.herida_abierta ?? 0, ralentizar: st.ralentizar ?? 0, aturdir: st.aturdir ?? 0, perforar: st.perforar ?? 0,
     vida_por_muerte: st.vida_por_muerte ?? 0, mana_por_muerte: st.mana_por_muerte ?? 0,
-    distancia, dosManos: !!ba?.dosManos, tipoArma: ba?.arma ?? 'puno', fuego_pct: st.fuego_pct ?? 0, invocados_pct: st.invocados_pct ?? 0,
+    distancia, dosManos: !!ba?.dosManos, tipoArma: fam ?? 'puno', fuego_pct: st.fuego_pct ?? 0, invocados_pct: st.invocados_pct ?? 0,
     vivo: arma?.vivo, conjuntos, valor: Math.min(100, st.valor ?? 0), st,
   };
 }
