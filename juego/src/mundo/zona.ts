@@ -1,5 +1,6 @@
 // Zonas del mundo: exteriores grandes armados con paisajes del motor como viñetas, mazmorras de cuartos y pasillos
 // con muros del tema, y campamentos seguros. Todo con semilla. Celdas de juego de 32x16 (5x5 por baldosa).
+import './actos67';
 import { REGISTRO, huellaDe, generarPaisaje, type ObjetoDef, type Tema, type AmbienteId } from '../../../src/engine/gotico/index';
 import { rng, clamp } from '../nucleo/azar';
 
@@ -152,6 +153,36 @@ const TEMATICAS: Record<string, Tematica> = {
     borde: [], disperso: [{ t: ['cueva'], p: ['estalag', 'roca', 'escomb', 'hueso', 'costill', 'hongo', 'telar', 'raiz', 'cristal', 'poza'] }],
     grande: [{ t: ['cueva'], p: ['columna'] }], luces: [{ t: ['cueva'], p: ['antorcha', 'hongos'] }],
     muroX: ['cue_muro', ['x', 'x_alta']], muroY: ['cue_muro', ['y', 'y_alta']],
+  },
+  // acto 6: la ciudad ahogada (afuera) y su catedral (adentro). Mezclan lo nuevo de la Forja con lo que existe
+  ahogada: {
+    piso: 'lajas_musgo', parches: ['agua', 'pantano', 'ladrillo_cloaca'], camino: 'empedrado', ambiente: 'noche', oscuridad: 0.6,
+    borde: [{ t: ['ahogada' as Tema], p: ['casco', 'ruina', 'muro'] }, { t: ['cementerio'], p: ['muro'] }, { t: ['arboles'], p: ['muert', 'seco'] }],
+    disperso: [{ t: ['ahogada' as Tema], p: [''] }, { t: ['cloaca'], p: ['charco', 'barril', 'desague'] }, { t: ['cementerio'], p: ['losa', 'cruz', 'urna', 'ataud'] }, { t: ['campo'], p: ['craneo', 'esqueleto', 'muro_ruina'] }],
+    grande: [{ t: ['ahogada' as Tema], p: ['campana', 'casco', 'torre', 'estatua', 'ancla'] }, { t: ['cementerio'], p: ['mausoleo', 'angel'] }],
+    luces: [{ t: ['ahogada' as Tema], p: ['farol', 'vela'] }, { t: ['cementerio'], p: ['farol', 'velas'] }],
+    vinetas: ['cementerio'],
+  },
+  catedral_ahogada: {
+    piso: 'baldosa_catedral', parches: ['agua', 'lajas_musgo'], ambiente: 'cripta', oscuridad: 0.82,
+    borde: [], disperso: [{ t: ['ahogada' as Tema], p: [''] }, { t: ['monasterio'], p: ['banco', 'estatua', 'pila', 'charco', 'campana'] }, { t: ['cloaca'], p: ['charco', 'reja'] }],
+    grande: [{ t: ['ahogada' as Tema], p: ['campana', 'pilar', 'organo'] }, { t: ['monasterio'], p: ['pilar'] }], luces: [{ t: ['monasterio'], p: ['brasero', 'antorcha'] }],
+    muroX: ['mon_muro_vitral', ['izq', 'izq_roto']], muroY: ['mon_muro_vitral', ['der', 'der_roto']],
+    deco: [{ t: ['monasterio'], p: ['altar'] }],
+  },
+  // acto 7: islas de oro sobre el vacío y el interior del trono
+  celestial: {
+    piso: 'arenisca', parches: ['arcano', 'fortaleza', 'arenisca'], camino: 'fortaleza', ambiente: 'dia', oscuridad: 0.4,
+    borde: [{ t: ['celestial' as Tema], p: ['nube', 'roca', 'isla'] }, { t: ['arcano'], p: ['pilar_estrella'] }, { t: ['fortaleza'], p: ['pilar', 'cristales'] }],
+    disperso: [{ t: ['celestial' as Tema], p: [''] }, { t: ['arcano'], p: ['atril', 'pasarela', 'brasero'] }, { t: ['fortaleza'], p: ['cristales', 'baldosa_runa', 'estatua_angel'] }, { t: ['desierto'], p: ['colum', 'obelis', 'ruina'] }],
+    grande: [{ t: ['celestial' as Tema], p: ['estatua', 'arco', 'trono', 'columna'] }, { t: ['fortaleza'], p: ['estatua_angel', 'pilar'] }, { t: ['desierto'], p: ['estatua', 'colum'] }],
+    luces: [{ t: ['celestial' as Tema], p: ['luz', 'brasero'] }, { t: ['arcano'], p: ['brasero'] }, { t: ['fortaleza'], p: ['brasero'] }],
+  },
+  celestial_interior: {
+    piso: 'fortaleza', parches: ['arcano', 'arenisca'], ambiente: 'cripta', oscuridad: 0.68,
+    borde: [], disperso: [{ t: ['celestial' as Tema], p: [''] }, { t: ['fortaleza'], p: ['cristales', 'baldosa_runa', 'estatua_angel'] }, { t: ['arcano'], p: ['atril', 'estante', 'cofre'] }],
+    grande: [{ t: ['fortaleza'], p: ['pilar', 'estatua_angel'] }], luces: [{ t: ['fortaleza'], p: ['brasero'] }, { t: ['arcano'], p: ['brasero'] }],
+    muroX: ['for_muro_runas', ['recto', 'roto', 'torre']], muroY: ['for_muro_runas', ['recto_y', 'roto_y', 'torre_y']],
   },
   // temas nuevos de la Forja: cada lista mezcla lo nuevo (cuando llegue) con lo que ya existe, así funcionan desde hoy
   mina: {

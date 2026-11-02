@@ -12,8 +12,8 @@
 
 export type Musica =
   | 'menu' | 'intro'
-  | 'campamento1' | 'campamento2' | 'campamento3' | 'campamento4' | 'campamento5'
-  | 'acto1' | 'acto2' | 'acto3' | 'acto4' | 'acto5'
+  | 'campamento1' | 'campamento2' | 'campamento3' | 'campamento4' | 'campamento5' | 'campamento6' | 'campamento7'
+  | 'acto1' | 'acto2' | 'acto3' | 'acto4' | 'acto5' | 'acto6' | 'acto7'
   | 'mazmorra' | 'jefe' | null;
 
 type IdAmbiente = 'lluvia' | 'viento' | 'fuego' | 'cueva' | 'selva' | 'infierno' | 'nada';
@@ -1380,6 +1380,28 @@ const PISTAS: Record<Exclude<Musica, null>, Pista> = {
     bpm: 54, raiz: 37, escala: FRIGIO, dron: 'oscuro', dronVol: 0.1, arp: 'laud', arpVol: 0.08,
     mel: 'arco', melVol: 0.06, densidad: 0.2, silencio: 0.55, textura: 'fuego', texturaVol: 0.3,
     prog: [[0, 1, 0, 6], [0, 5, 1, 0], [0, 3, 1, 6]],
+  }),
+  // acto 6: la ciudad ahogada, campanas bajo el agua y lluvia
+  campamento6: pista({
+    bpm: 52, raiz: 36, escala: EOLIO, dron: 'suave', dronVol: 0.1, arp: 'laud', arpVol: 0.07,
+    mel: 'flauta', melVol: 0.06, densidad: 0.2, silencio: 0.6, campana: 0.35, textura: 'lluvia', texturaVol: 0.25,
+    prog: [[0, 5, 3, 4], [0, 3, 5, 6], [0, 5, 6, 4]],
+  }),
+  acto6: pista({
+    bpm: 50, raiz: 34, escala: FRIGIO, dron: 'organo', dronVol: 0.1, pads: ['coro'], padVol: 0.04,
+    mel: 'arco', melVol: 0.08, densidad: 0.25, registro: 7, campana: 0.6, perc: 'lejano', percVol: 0.3,
+    textura: 'lluvia', texturaVol: 0.25, prog: [[0, 1, 5, 0], [0, 6, 1, 0], [0, 3, 1, 5]],
+  }),
+  // acto 7: la corona del dios sediento, coro y cristal sobre el vacío
+  campamento7: pista({
+    bpm: 50, raiz: 38, escala: DORICO, dron: 'suave', dronVol: 0.1, arp: 'laud', arpVol: 0.07,
+    mel: 'cristal', melVol: 0.06, densidad: 0.2, silencio: 0.6, textura: 'viento', texturaVol: 0.2,
+    prog: [[0, 3, 4, 0], [0, 6, 3, 4], [0, 4, 6, 0]],
+  }),
+  acto7: pista({
+    bpm: 46, raiz: 33, escala: LOCRIO, dron: 'distorsion', dronVol: 0.1, pads: ['coro', 'organo'], padVol: 0.05,
+    mel: 'cristal', melVol: 0.08, densidad: 0.3, registro: 21, campana: 0.25, perc: 'latido', percVol: 0.35, disonante: true,
+    textura: 'viento', texturaVol: 0.22, prog: [[0, 1, 4, 0], [0, 4, 1, 6], [0, 6, 4, 1]],
   }),
   acto1: pista({
     bpm: 58, raiz: 38, escala: EOLIO, dron: 'organo', pads: ['organo'], padVol: 0.04,

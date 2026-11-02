@@ -824,7 +824,7 @@ function panelDialogo(j: Juego, x: number, y: number) {
 function panelViaje(j: Juego, x: number, y: number) {
   const d = j.heroe.d;
   marco(x, y, 320, 432); titulo(T('Piedras de viaje', 'Travel stones'), x, y, 320);
-  const actos = [1, 2, 3, 4, 5].filter((a) => d.viajes.some((v) => ZONAS[v]?.acto === a));
+  const actos = [1, 2, 3, 4, 5, 6, 7].filter((a) => d.viajes.some((v) => ZONAS[v]?.acto === a));
   // una pestaña por acto: con tantas piedras no caben todas juntas
   let act = (ui as any).viajeActo ?? ZONAS[j.zona.id]?.acto ?? 1;
   if (!actos.includes(act)) act = actos[actos.length - 1] ?? 1;
