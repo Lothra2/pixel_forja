@@ -20,9 +20,10 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 - Luces de verdad: cada fuego, flecha, hechizo y explosión alumbra lo que tiene cerca y tiñe a los personajes con su color. Cada luz proyecta sombras de los personajes, estiradas lejos de ella. Las explosiones dan un destello.
 - Los pies ya no patinan: la animación de caminar y correr avanza con la distancia real (con botas rápidas el paso se acelera).
 - El equipo cambia el dibujo según su rareza: raro trae ribetes de oro, conjunto viste su orden, único cambia a un tema sagrado, oscuro, de sangre o arcano con capa y hombreras, y legendario brilla y le da al héroe un aura de luz.
-- Unas 12 habilidades por clase en 3 ramas, con sinergias, pasivas, auras, invocaciones, maldiciones, saltos, cargas, torbellino, bombas, torretas y cuervos. Cada habilidad usa los poderes del motor.
+- 30 habilidades por clase en 3 ramas de 10, que se abren a los niveles 1, 6, 12, 18, 24 y una definitiva a nivel 30, con requisitos y sinergias. Árbol nuevo con ayuda de valores actuales y del siguiente nivel.
+- Cada clase juega distinto: furia del berserker, una sola aura del templario, cargas de fuego, hielo y rayo de la arcanista, halcón y trampas de la cazadora, cadáveres del nigromante, combos del monje, formas de lobo y oso del druida, y frascos de la alquimista. Un indicador en la barra muestra cada uno.
 - 5 actos con 26 zonas: el valle de Velmora (páramo, cueva, camposanto, abadía, catacumbas y el Pozo de la Brasa), el desierto de Sahrim y sus tumbas, la selva de Yhuantl y su templo, los picos helados de Hrimgard y la Herida.
-- 10 misiones con premios y 6 jefes con fases, frases propias e invocaciones. Campeones y únicos con nombres generados y modificadores.
+- 10 misiones con premios y jefes con fases. Los jefes grandes (el Verdugo, la Abadesa, Khamer-Ul que no tiene sombra, Madre Ciénaga, Hjaldur y Ozmaren con su fuego) son modelos propios de la Forja, frases propias e invocaciones. Campeones y únicos con nombres generados y modificadores.
 - Botín con rarezas normal, mágico, raro, de conjunto, único y legendario. Unos 130 tipos de objeto, 114 afijos, 48 únicos, 6 conjuntos, 35 gemas, 20 runas y 10 palabras rúnicas. **Armas vivas** de fuego, hielo, rayo, veneno, sombra, luz y sangre que arden en la mano y en el inventario.
 - Lo que te pones cambia el dibujo del héroe de verdad: el juego lo vuelve a pintar en segundo plano ("Forjando tu equipo").
 - Inventario de la Forja: el héroe se ve de verdad con su equipo, armas en 3D, objetos de su tamaño real, fondo por rareza, durabilidad, gemas engarzadas, flechas de mejor o peor que lo puesto, tres bolsas de 10x5 y botón para ordenar.
@@ -35,7 +36,7 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 ## Qué falta o se puede mejorar
 
 - Las bestias del motor ya están en los actos: lobos, jabalíes, arañas, escorpiones, gárgolas, murciélagos, gólems, perros de la Herida, demonios alados, la Madre del Pozo, la Boca de Arena y Varnhul, el dragón de huesos. La primera vez que entras a una zona nueva tarda unos segundos en cargar sus dibujos.
-- Los íconos de armaduras en el inventario son dibujos simples; las armas sí usan el arsenal del motor.
+- Cofres de madera, hierro, malditos y relicarios que se abren con su animación, oro que cae en montones, haces de luz bajo el botín y salas de jefe con su tesoro. Íconos 3D en tienda y baúl.
 - Al vencer el acto 5 se abren Pesadilla e Infierno desde la lista de héroes. No hay multijugador.
 - Las partidas viven en el navegador donde se jugó (si se borran los datos del sitio se pierden).
 
