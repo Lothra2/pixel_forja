@@ -269,7 +269,9 @@ function poblar(z: Zona, d: DatosHeroe): Monstruo[] {
       for (let i = 0; i < (esActo ? 4 : 5); i++) { const q = libreCerca(z, s.cx + entre(-4, 4), s.cy + entre(-4, 4)); out.push(crearMonstruo(MONSTRUOS[elegir(pool)], nivel, q[0] + 0.5, q[1] + 0.5, 0, dif)); }
       continue;
     }
-    const id = R() < 0.55 ? pool[0] : elegir(pool);
+    let id = R() < 0.55 ? pool[0] : elegir(pool);
+    // en la Corona los campeones suelen ser ángeles sedientos (vuelan y escupen luz)
+    if (s.tipo === 'campeon' && pool.includes('angel_sediento') && R() < 0.5) id = 'angel_sediento';
     const dm = MONSTRUOS[id]; if (!dm) continue;
     if (s.tipo === 'unico' || s.tipo === 'campeon') {
       const cal = s.tipo === 'unico' ? 2 : 1;
@@ -287,7 +289,8 @@ function poblar(z: Zona, d: DatosHeroe): Monstruo[] {
       }
       continue;
     }
-    const n = Math.max(1, Math.round((dm.ia === 'enjambre' ? (z.nivel < 6 ? 3 : 5) : dm.ia === 'bruto' ? 2 : z.nivel < 6 ? 2 : 3) * s.fuerza));
+    // los sedientos van en manadas de 5 a 8; las manos doradas, de a dos o tres
+    const n = dm.id === 'sediento' ? 5 + Math.floor(R() * 4) : dm.id === 'mano_dorada' ? 2 + Math.floor(R() * 2) : Math.max(1, Math.round((dm.ia === 'enjambre' ? (z.nivel < 6 ? 3 : 5) : dm.ia === 'bruto' ? 2 : z.nivel < 6 ? 2 : 3) * s.fuerza));
     for (let i = 0; i < n; i++) { const q = libreCerca(z, s.cx + entre(-2.5, 2.5), s.cy + entre(-2.5, 2.5)); out.push(crearMonstruo(i > 0 && R() < 0.3 ? MONSTRUOS[elegir(pool)] : dm, nivel, q[0] + 0.5, q[1] + 0.5, 0, dif)); }
   }
   return out;

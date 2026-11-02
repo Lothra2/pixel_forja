@@ -52,16 +52,27 @@ PUEBLO_DE[7] = 'a7_campamento';
 const M = (m: DefMonstruo) => m;
 const JEFES: DefMonstruo[] = [
   M({ id: 'campana_ahoga', sprite: 'jefe_campana_ahoga', nombre: ['La Campana que Ahoga', 'The Drowning Bell'], vida: 6200, dano: [34, 66], elem: 'frio', def: 120, vel: 2.2, ia: 'jefe', rango: 9, proyectil: 'hielo', xp: 42000, jefe: true, sonido: 'metal', res: { frio: 70, rayo: 30 }, invoca: 'ahogado', huella: 3.5, area: 3, escala: 1.15 }),
-  M({ id: 'aun_saar', sprite: 'jefe_aun_saar', nombre: ['Aun-Saar, el Dios Sediento', 'Aun-Saar, the Thirsting God'], vida: 7800, dano: [44, 88], elem: 'luz', def: 150, vel: 2.4, ia: 'jefe', rango: 10, proyectil: 'luz', xp: 80000, jefe: true, sonido: 'carne', res: { luz: 70, fuego: 50, sombra: 50 }, invoca: 'caballero_abismo', huella: 5, area: 3.5, escala: 0.7 }),
+  M({ id: 'aun_saar', sprite: 'jefe_aun_saar', nombre: ['Aun-Saar, el Dios Sediento', 'Aun-Saar, the Thirsting God'], vida: 7800, dano: [44, 88], elem: 'luz', def: 150, vel: 2.4, ia: 'jefe', rango: 10, proyectil: 'luz', xp: 80000, jefe: true, sonido: 'carne', res: { luz: 70, fuego: 50, sombra: 50 }, invoca: 'mano_dorada', huella: 5, area: 3.5, escala: 0.7 }),
 ];
 for (const j of JEFES) (MONSTRUOS as Record<string, DefMonstruo>)[j.id] = j;
 
-POBLACION.costa = ['ahogado', 'cangrejo_cripta', 'hombre_cienaga', 'esqueleto', 'murcielago_gigante'];
-POBLACION.barrio = ['ahogado', 'monja_hueca', 'aparecida', 'sin_rostro', 'cangrejo_cripta', 'espectro'];
-POBLACION.catedral_ahogada = ['ahogado', 'monja_hueca', 'sacerdote_caido', 'caballero_espectral', 'sin_rostro', 'aparecida'];
-POBLACION.cielo = ['demonio_alado', 'gargola', 'segador', 'caballero_abismo', 'golem_de_piedra'];
-POBLACION.islas = ['gargola', 'golem_de_piedra', 'demonio_alado', 'espectro', 'lich'];
-POBLACION.trono = ['caballero_abismo', 'lich', 'segador', 'demonio_alado', 'hechicera_sangre'];
+// monstruos propios de Ysmeral y de la Corona (la Forja, catalogo/monstruos67.ts). La vida y el daño base ya son de su acto.
+(MONSTRUOS as Record<string, DefMonstruo>)['ahogado_campanero'] = M({ id: 'ahogado_campanero', sprite: 'ahogado_campanero', nombre: ['Ahogado campanero', 'Drowned bell-ringer'], vida: 130, dano: [14, 26], elem: 'frio', def: 36, vel: 2.0, ia: 'bruto', xp: 90, sonido: 'metal', res: { frio: 50, fuego: -20 } });
+(MONSTRUOS as Record<string, DefMonstruo>)['marinero_percebe'] = M({ id: 'marinero_percebe', sprite: 'marinero_percebe', nombre: ['Marinero de percebes', 'Barnacled sailor'], vida: 110, dano: [15, 27], def: 40, vel: 2.4, ia: 'normal', xp: 85, sonido: 'hueso', res: { frio: 40, fisico: 15 } });
+(MONSTRUOS as Record<string, DefMonstruo>)['sirena_hueca'] = M({ id: 'sirena_hueca', sprite: 'sirena_hueca', nombre: ['Sirena hueca', 'Hollow siren'], vida: 70, dano: [12, 22], elem: 'frio', def: 22, vel: 2.6, ia: 'distancia', rango: 8, proyectil: 'hielo', xp: 90, sonido: 'carne', res: { frio: 60 } });
+(MONSTRUOS as Record<string, DefMonstruo>)['sacerdote_marea'] = M({ id: 'sacerdote_marea', sprite: 'sacerdote_marea', nombre: ['Sacerdote de la marea', 'Tide priest'], vida: 95, dano: [12, 22], elem: 'frio', def: 28, vel: 2.2, ia: 'invocador', rango: 8, proyectil: 'hielo', invoca: 'ahogado', xp: 120, sonido: 'carne', res: { frio: 60, sombra: 30 } });
+(MONSTRUOS as Record<string, DefMonstruo>)['cangrejo_relicario'] = M({ id: 'cangrejo_relicario', sprite: 'cangrejo_relicario', nombre: ['Cangrejo relicario', 'Reliquary crab'], vida: 220, dano: [18, 32], def: 70, vel: 1.8, ia: 'bruto', xp: 150, sonido: 'metal', huella: 2.5, res: { fisico: 30, frio: 50 } });
+(MONSTRUOS as Record<string, DefMonstruo>)['suplicante_animado'] = M({ id: 'suplicante_animado', sprite: 'suplicante_animado', nombre: ['Suplicante animado', 'Animated supplicant'], vida: 180, dano: [20, 36], elem: 'sombra', def: 60, vel: 2.0, ia: 'normal', xp: 150, sonido: 'metal', res: { fisico: 25, sombra: 40 } });
+(MONSTRUOS as Record<string, DefMonstruo>)['angel_sediento'] = M({ id: 'angel_sediento', sprite: 'angel_sediento', nombre: ['Ángel sediento', 'Thirsting angel'], vida: 210, dano: [22, 40], elem: 'luz', def: 60, vel: 3.2, ia: 'normal', rango: 7, proyectil: 'luz', xp: 190, sonido: 'carne', huella: 2, res: { luz: 60, fuego: 30 } });
+(MONSTRUOS as Record<string, DefMonstruo>)['guardian_halo'] = M({ id: 'guardian_halo', sprite: 'guardian_halo', nombre: ['Guardián del halo', 'Halo warden'], vida: 170, dano: [22, 38], elem: 'luz', def: 64, vel: 2.6, ia: 'normal', rango: 6, proyectil: 'luz', xp: 170, sonido: 'metal', res: { luz: 60, fisico: 20 } });
+(MONSTRUOS as Record<string, DefMonstruo>)['sediento'] = M({ id: 'sediento', sprite: 'sediento', nombre: ['Sediento', 'Thirster'], vida: 60, dano: [12, 22], elem: 'sangre', def: 20, vel: 4.6, ia: 'enjambre', xp: 60, sonido: 'carne', res: { sangre: 40 } });
+(MONSTRUOS as Record<string, DefMonstruo>)['mano_dorada'] = M({ id: 'mano_dorada', sprite: 'mano_dorada', nombre: ['Mano dorada', 'Golden hand'], vida: 240, dano: [26, 46], elem: 'luz', def: 80, vel: 2.2, ia: 'bruto', xp: 200, sonido: 'metal', huella: 2, res: { fisico: 30, luz: 50 } });
+POBLACION.costa = ['marinero_percebe', 'ahogado_campanero', 'cangrejo_relicario', 'sirena_hueca', 'ahogado'];
+POBLACION.barrio = ['ahogado_campanero', 'sirena_hueca', 'marinero_percebe', 'sacerdote_marea', 'cangrejo_relicario'];
+POBLACION.catedral_ahogada = ['ahogado_campanero', 'sacerdote_marea', 'sirena_hueca', 'marinero_percebe', 'monja_hueca'];
+POBLACION.cielo = ['suplicante_animado', 'sediento', 'angel_sediento', 'guardian_halo', 'mano_dorada'];
+POBLACION.islas = ['sediento', 'suplicante_animado', 'guardian_halo', 'angel_sediento', 'mano_dorada'];
+POBLACION.trono = ['guardian_halo', 'suplicante_animado', 'mano_dorada', 'angel_sediento', 'sediento'];
 Object.assign(POBL_ZONA, {
   a6_costa: 'costa', a6_faro: 'catedral_ahogada', a6_arrecife: 'costa', a6_barrio1: 'barrio', a6_criptas: 'catedral_ahogada', a6_criptas2: 'catedral_ahogada', a6_barrio2: 'barrio', a6_catedral1: 'catedral_ahogada', a6_catedral2: 'catedral_ahogada',
   a7_cielo: 'cielo', a7_boveda: 'trono', a7_islas1: 'islas', a7_islas2: 'islas', a7_relicario: 'trono', a7_jardin: 'islas', a7_escaleras: 'trono', a7_trono: 'trono',
