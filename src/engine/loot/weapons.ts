@@ -12,14 +12,20 @@ export type WeaponIcon =
   | 'sword' | 'scimitar' | 'katana' | 'rapier' | 'dagger' | 'kris' | 'axe' | 'hatchet' | 'mace' | 'morning_star' | 'flail'
   | 'warhammer' | 'scepter' | 'club' | 'wand' | 'claw' | 'javelin'
   // dos manos
-  | 'greatsword' | 'greataxe' | 'maul' | 'staff' | 'spear' | 'halberd' | 'scythe' | 'bow' | 'longbow' | 'crossbow';
+  | 'greatsword' | 'greataxe' | 'maul' | 'staff' | 'spear' | 'halberd' | 'scythe' | 'bow' | 'longbow' | 'crossbow'
+  // el arsenal épico
+  | 'falcata' | 'katar' | 'sickle' | 'hand_orb' | 'trident' | 'greatstaff' | 'dragon_lance';
 
 export const WEAPON_ICONS: WeaponIcon[] = [
   'sword', 'scimitar', 'katana', 'rapier', 'dagger', 'kris', 'axe', 'hatchet', 'mace', 'morning_star', 'flail', 'warhammer', 'scepter', 'club', 'wand', 'claw', 'javelin',
   'greatsword', 'greataxe', 'maul', 'staff', 'spear', 'halberd', 'scythe', 'bow', 'longbow', 'crossbow',
 ];
 
-export const TWO_HANDED: WeaponIcon[] = ['greatsword', 'greataxe', 'maul', 'staff', 'spear', 'halberd', 'scythe', 'bow', 'longbow', 'crossbow'];
+/** Las armas nuevas del arsenal épico (las clásicas siguen en `WEAPON_ICONS`). */
+export const WEAPON_ICONS_EPICAS: WeaponIcon[] = ['falcata', 'katar', 'sickle', 'hand_orb', 'trident', 'greatstaff', 'dragon_lance'];
+export const ALL_WEAPON_ICONS: WeaponIcon[] = [...WEAPON_ICONS, ...WEAPON_ICONS_EPICAS];
+
+export const TWO_HANDED: WeaponIcon[] = ['greatsword', 'greataxe', 'maul', 'staff', 'spear', 'halberd', 'scythe', 'bow', 'longbow', 'crossbow', 'trident', 'greatstaff', 'dragon_lance'];
 
 export type Accent = 'none' | 'runes' | 'cracks' | 'frost' | 'flames' | 'veins' | 'stars' | 'leaves' | 'lightning' | 'holy' | 'drip';
 
@@ -504,6 +510,89 @@ const DRAW: Record<WeaponIcon, (x: Ctx) => void> = {
     if (d.gem) c.circle(C, 0.7, gemMat(d.gem));
     c.poly(A.pts([[7, 1], [8.4, 1], [8.4, 3.6], [7, 3.6]]), MAT.iron);
     if (d.glow) for (const p of [pts[1], pts[11]]) c.dot(p, glowMat(d.glow), { tone: 5 });
+  },
+  falcata: (x) => {
+    const { c, A, d } = x;
+    // pomo en cabeza de ave que se cierra con el guardamano y la hoja que se ensancha y se vence adelante
+    c.line(A.p(1.4, 0), A.p(0.2, -2.4), 1.3, d.pommel);
+    grip(x, 2.2, 7.2, 0.95);
+    c.line(A.p(7.6, -1.4), A.p(0.8, -2.6), 0.6, d.guard);
+    blade(x, 8.4, 30, 1.2, 3.6, { curve: 2.6, taper: 1.5 });
+    guard(x, 7.2, 1.9);
+    if (d.accent && d.accent !== 'none') accent(x, d.accent, 10, 26, 1.4, 2.6);
+  },
+  katar: (x) => {
+    const { c, A, d } = x;
+    // empuñadura en H (dos barras y dos travesaños) y la hoja ancha en triángulo
+    for (const v of [-2.6, 2.6]) c.poly(A.pts([[1, v - 0.55], [9.4, v - 0.55], [9.4, v + 0.55], [1, v + 0.55]]), d.guard);
+    for (const u of [3.4, 6]) c.poly(A.pts([[u, -2.2], [u + 1.1, -2.2], [u + 1.1, 2.2], [u, 2.2]]), d.grip);
+    const g = c.poly(A.pts([[9.2, -2.9], [24, -1.1], [31.5, 0], [24, 1.1], [9.2, 2.9]]), d.blade);
+    c.px1(A.p(10, 0), A.p(29.5, 0), d.edge ?? d.blade, { tone: 5, group: g }, true);
+    c.poly(A.pts([[8.8, -3.2], [10, -3.2], [10, 3.2], [8.8, 3.2]]), d.guard);
+    if (d.gem) c.circle(A.p(9.4, 0), 0.9, gemMat(d.gem));
+    if (d.accent && d.accent !== 'none') accent(x, d.accent, 11, 26, 1.4);
+  },
+  sickle: (x) => {
+    const { c, A, d } = x;
+    haft(x, 1, 15, 0.95);
+    pommel(x, 0.8, 1.3);
+    band(x, 14, 0.95, d.guard);
+    // media luna que sube de la virola y se vuelve hacia atrás
+    const C = A.p(19.5, -6.5), pts: P[] = [], inner: P[] = [];
+    for (let i = 0; i <= 12; i++) { const a = (-150 + i * 22) * (Math.PI / 180), R = 8 - i * 0.18; pts.push([C[0] + Math.cos(a) * R, C[1] + Math.sin(a) * R]); inner.push([C[0] + Math.cos(a) * (R - 2.2 * (1 - i / 12) - 0.3), C[1] + Math.sin(a) * (R - 2.2 * (1 - i / 12) - 0.3)]); }
+    const g = c.poly([...pts, ...inner.reverse()], d.blade);
+    for (let i = 0; i < 12; i++) c.px1(pts[i], pts[i + 1], d.edge ?? d.blade, { tone: 5, group: g }, true);
+    if (d.glow) for (let i = 2; i < 11; i += 3) c.dot(pts[i], glowMat(d.glow), { tone: 4 }, true);
+  },
+  hand_orb: (x) => {
+    const { c, A, d } = x;
+    pommel(x, 1.4, 1.2);
+    grip(x, 2.2, 9.6, 1);
+    band(x, 9.6, 1.1, d.guard);
+    // cuna de garras y el orbe grande que brilla
+    const C = A.p(17, 0);
+    for (const s of [-1, 1]) { c.line(A.p(10.6, s * 1.2), A.p(15, s * 4.6), 1.1, d.guard); c.line(A.p(15, s * 4.6), A.p(20.6, s * 2.8), 0.9, d.guard); }
+    c.circle(C, 4.4, gemMat(d.gem ?? '#9a3ad8'));
+    c.circle(A.p(16, -1.2), 1.4, glowMat(d.glow ?? '#e0c8ff'));
+    if (d.floating) crystal(x, A.p(24.6, -2.4), 1.4, 0.8, d.glow ?? '#e0c8ff');
+  },
+  trident: (x) => {
+    const { c, A, d } = x;
+    haft(x, -1, 24.4, 0.75);
+    grip(x, 8, 13, 0.9);
+    band(x, 23.4, 0.9, d.guard);
+    c.poly(A.pts([[23.8, -3.8], [25.2, -3.8], [25.2, 3.8], [23.8, 3.8]]), d.blade);
+    for (const v of [-3.2, 0, 3.2]) {
+      const L = v ? 0 : 1.6;
+      const g = c.poly(A.pts([[24.8, v - 0.55], [30.4 + L, v - 0.42], [32.2 + L, v], [30.4 + L, v + 0.42], [24.8, v + 0.55]]), d.blade);
+      c.px1(A.p(25.4, v), A.p(31.4 + L, v), d.edge ?? d.blade, { tone: 5, group: g }, true);
+    }
+    if (d.accent && d.accent !== 'none') accent(x, d.accent, 25, 31, 0.5);
+  },
+  greatstaff: (x) => {
+    const { c, A, d } = x;
+    haft(x, -1, 24, 1.1);
+    for (const u of [8, 14, 20]) band(x, u, 1.1, d.guard);
+    // corona de ramas que abraza una gema grande
+    const C = A.p(28, 0);
+    c.ring(C, 4.6, 4.6, 1.3, d.shape === 'bone' ? MAT.bone : d.haft, {}, 90, 360);
+    for (const s of [-1, 1]) c.line(A.p(23.6, s * 1), A.p(26.4, s * 4), 1.3, d.shape === 'bone' ? MAT.bone : d.haft);
+    c.circle(C, 2.8, gemMat(d.gem ?? '#2f62e6'));
+    c.circle(A.p(27.4, -0.8), 1.1, glowMat(d.glow ?? '#9fe8ff'));
+    if (d.floating) crystal(x, A.p(33.4, -3), 1.5, 0.9, d.glow ?? '#9fe8ff');
+    if (d.accent && d.accent !== 'none') accent(x, d.accent, 3, 22, 1);
+  },
+  dragon_lance: (x) => {
+    const { c, A, d } = x;
+    haft(x, -1, 24, 0.8);
+    for (const u of [4, 10, 16]) band(x, u, 0.8, d.guard);
+    // cabeza de dragón con alas en el cubo y la hoja flamígera que sale de las fauces
+    for (const s of [-1, 1]) c.poly(A.pts([[21.6, 0], [24.4, s * 0.8], [20.6, s * 4.6], [19.6, s * 3.6]]), d.blade, { bias: s < 0 ? 1 : -1 });
+    c.ellipse(A.p(24.4, 0), 2.4, 1.6, d.blade, {}, DIAG);
+    c.dot(A.p(25, -0.8), glowMat(d.glow ?? '#ff8a2a'), { tone: 5 }, true);
+    const y: Ctx = { ...x, d: { ...x.d, shape: 'flame' } };
+    blade(y, 25.6, 33.6, 1.2, 2.2, { taper: 0.6 });
+    if (d.accent && d.accent !== 'none') accent(x, d.accent, 26, 32, 0.6);
   },
 };
 

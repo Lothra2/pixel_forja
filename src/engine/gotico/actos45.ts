@@ -136,7 +136,12 @@ export interface OpcCuerpo { cu: Cuerpo; eq: Equipo; acc?: Accion; f?: number; d
  */
 export function cuerpo(o: OpcCuerpo): Pieza[] {
   // tendido, el tabardo y la capa se pararían en el aire: se le sacan
-  const eq = o.acc === 'morir' && (o.f ?? 0) >= 5 ? { ...o.eq, tabardo: undefined, capa: undefined } : o.eq;
+  const tendido = o.acc === 'morir' && (o.f ?? 0) >= 5;
+  const eq: Equipo = tendido ? {
+    ...o.eq, tabardo: undefined, capa: undefined,
+    torso: o.eq.torso?.tipo === 'harapos' || o.eq.torso?.tipo === 'vestido' || o.eq.torso?.tipo === 'tunica' ? { ...o.eq.torso, tipo: 'camisa' } : o.eq.torso,
+    piernas: o.eq.piernas && ['faldon', 'tunica_larga', 'taparrabo'].includes(o.eq.piernas.tipo) ? { ...o.eq.piernas, tipo: 'pantalon' } : o.eq.piernas,
+  } : o.eq;
   let ps = personaje(o.cu, eq, o.dir ?? 'se', o.acc ?? 'quieto', o.f ?? 0);
   if (o.centrar !== false) { const [lo, hi] = envolver(ps); ps = transformar(ps, ID, [-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, 0]); }
   return transformar(ps, o.m ?? ID, o.t ?? [0, 0, 0], o.s ?? 1);
@@ -200,7 +205,9 @@ export function manto(a: Arma, rx: number, ry: number, n: number, mat: string, a
   const cs: Comp[] = [];
   for (let i = 0; i < n; i++) {
     const t = a.r() * TAU, q = Math.sqrt(a.r()) * 0.6;
-    cs.push(bulto([(o.x ?? 0) + Math.cos(t) * rx * q, (o.y ?? 0) + Math.sin(t) * ry * q, 0], [rx * (0.35 + a.r() * 0.25), ry * (0.35 + a.r() * 0.25), alto * (0.5 + a.r() * 0.6)], { giro: a.r() * 180 }));
+    // el bulto se hunde bajo el piso: solo asoma su casquete (un elipsoide muy chato se pinta mal en la masa)
+    const m = Math.min(rx, ry), bx = m * 0.4 + rx * (0.25 + a.r() * 0.2), by = m * 0.4 + ry * (0.25 + a.r() * 0.2), h = alto * (0.5 + a.r() * 0.6), cz = Math.max(h, 0.55 * Math.min(bx, by));
+    cs.push(bulto([(o.x ?? 0) + Math.cos(t) * rx * q, (o.y ?? 0) + Math.sin(t) * ry * q, h - cz], [bx * (cz > h ? 1.08 : 1), by * (cz > h ? 1.08 : 1), cz], { giro: jit(a, 12) }));
   }
   return masa(cs, { mat, tono: o.tono ?? -0.06, suave: Math.min(rx, ry) * 0.3 });
 }
@@ -407,4 +414,66 @@ export function pellejo(a: Arma, c: V3, ancho: number, alto: number, normal: V3,
   for (const s of [-1, 1]) for (const t of [-1, 1]) cs.push(hueso(P(s * ancho * 0.25, t * alto * 0.28), P(s * ancho * 0.5, t * alto * 0.5 + jit(a, 2)), 1.6, 0.8));
   cs.push(hueso(P(0, alto * 0.38), P(jit(a, 2), alto * 0.55), 2.2, 1.6), hueso(P(0, -alto * 0.38), P(jit(a, 2), -alto * 0.6), 1.4, 0.4));
   return masa(cs, { mat, suave: 2 });
+}
+
+// ------------------------------------------------------------------ árbol muerto
+export interface OpcArbol { H: number; mat: string; cubre?: string; brasa?: string; ramas?: number; x?: number; y?: number; torsion?: number; grueso?: number }
+/**
+ * Árbol muerto de masa: tronco que se tuerce, raíces que agarran el piso, ramas en dos tramos con ramitas, nieve (o
+ * ceniza) fundida encima de cada rama y vetas encendidas si `brasa`. Devuelve los puntos de las ramas (para colgar
+ * cosas o posar cuervos) como [punto, dirección].
+ */
+export function arbolMuerto(a: Arma, ps: Pieza[], o: OpcArbol): [V3, V3][] {
+  const x0 = o.x ?? 0, y0 = o.y ?? 0, H = o.H, tor = o.torsion ?? 1, r0 = (o.grueso ?? 1) * (H * 0.045 + 2), cs: Comp[] = [], ramas: [V3, V3][] = [];
+  const fx = a.r() * TAU, fy = a.r() * TAU;
+  const eje = (t: number): V3 => [x0 + Math.sin(t * 2.6 * tor + fx) * H * 0.07 * t, y0 + Math.sin(t * 2.1 * tor + fy) * H * 0.07 * t, H * t];
+  for (let i = 0; i < 5; i++) cs.push(hueso(eje((i / 5) * 0.8), eje(((i + 1) / 5) * 0.8), r0 * (1 - (i / 5) * 0.65), r0 * (1 - ((i + 1) / 5) * 0.65)));
+  for (let k = 0; k < 6; k++) { const an = (k / 6) * TAU + a.r() * 0.6, L = r0 * (2.4 + a.r() * 1.6); cs.push(hueso([x0 + Math.cos(an) * r0 * 0.4, y0 + Math.sin(an) * r0 * 0.4, r0 * 0.9], [x0 + Math.cos(an) * L, y0 + Math.sin(an) * L, -1], r0 * 0.5, r0 * 0.14)); }
+  const n = o.ramas ?? 7;
+  for (let i = 0; i < n; i++) {
+    const t = 0.42 + (i / n) * 0.42 + jit(a, 0.03), b = eje(t), an = (i * 2.4 + a.r() * 0.8) % TAU, L = H * (0.3 + a.r() * 0.18) * (1.1 - t * 0.4);
+    const d1: V3 = nor([Math.cos(an), Math.sin(an), 0.55 + a.r() * 0.5]), m = add(b, d1, L * 0.55);
+    const d2: V3 = nor(add(d1, [jit(a, 0.5), jit(a, 0.5), 0.3])), q = add(m, d2, L * 0.45);
+    const rb = r0 * (0.5 - t * 0.25);
+    cs.push(hueso(b, m, rb, rb * 0.55), hueso(m, q, rb * 0.55, 0.4));
+    for (let k = 0; k < 2; k++) { const w = mez(b, q, 0.55 + k * 0.25), dd = nor(add(d2, [jit(a, 0.9), jit(a, 0.9), 0.5])); cs.push(hueso(w, add(w, dd, L * 0.22), rb * 0.3, 0.3)); }
+    if (o.cubre) { const sl = Math.max(0.6, rb * 0.55); cs.push(bulto(add(mez(b, m, 0.55), [0, 0, rb * 0.75]), [L * 0.2, sl * 1.4, sl], { eje: [d1[0], d1[1], d1[2] * 0.4], mat: o.cubre, k: 0.6 })); }
+    ramas.push([mez(b, m, 0.7), d1]);
+  }
+  if (o.cubre) for (let i = 0; i < 3; i++) { const t = 0.5 + i * 0.15, c = eje(t); cs.push(bulto(add(c, [jit(a, r0 * 0.3), jit(a, r0 * 0.3), r0 * 0.3]), [r0 * 0.5, r0 * 0.45, r0 * 0.35], { mat: o.cubre })); }
+  if (o.brasa) for (let i = 0; i < 9; i++) { const t = 0.05 + a.r() * 0.6, c = eje(t), an = a.r() * TAU, rr = r0 * (1 - t * 0.65); cs.push(bulto(add(c, [Math.cos(an) * rr * 0.92, Math.sin(an) * rr * 0.92, 0]), [rr * 0.22, rr * 0.22, rr * 0.6 + 1], { mat: o.brasa, k: 0.3 })); }
+  ps.push(masa(cs, { mat: o.mat, suave: Math.max(1.2, r0 * 0.35) }));
+  return ramas;
+}
+
+/** Las mismas piezas todas de un solo material (estatuas de hielo, de piedra, de obsidiana), con su tono de cada parte. */
+export function rematerial(ps: Pieza[], mat: string, k = 0.5): Pieza[] {
+  return ps.map((p): Pieza => (p.k === 'masa' ? masa(p.comps.map((q) => ({ ...q, mat, tono: (q.tono ?? 0) * k })), { mat, tono: p.tono, suave: p.suave }) : { ...p, mat, tono: (p.tono ?? 0) * k }));
+}
+
+/** Jaula de hierro (barrotes, aros, fondo y gancho), con alguien adentro o vacía; `c` es el centro del fondo. */
+export function jaula(a: Arma, ps: Pieza[], c: V3, r: number, h: number, o: { preso?: 'esqueleto' | 'muerto' | 'vivo'; mat?: string; abierta?: boolean } = {}) {
+  const mat = o.mat ?? 'hierro_oxido', n = 9;
+  ps.push(a.cilindro(c[0], c[1], c[2], r + 0.6, 1.4, { mat }), a.cilindro(c[0], c[1], c[2] + h, r + 0.4, 1.2, { mat }), a.cilindro(c[0], c[1], c[2] + h * 0.5, r + 0.5, 0.9, { mat }));
+  for (let i = 0; i < n; i++) { if (o.abierta && (i === 1 || i === 2)) continue; const t = (i / n) * TAU; ps.push(a.palo([c[0] + Math.cos(t) * r, c[1] + Math.sin(t) * r, c[2]], [c[0] + Math.cos(t) * r * 0.9, c[1] + Math.sin(t) * r * 0.9, c[2] + h], 0.5, { mat })); }
+  for (let i = 0; i < 4; i++) { const t = (i / 4) * TAU + 0.4; ps.push(a.palo([c[0] + Math.cos(t) * r * 0.9, c[1] + Math.sin(t) * r * 0.9, c[2] + h], [c[0], c[1], c[2] + h + r * 0.7], 0.45, { mat })); }
+  if (o.abierta) ps.push(...transformar([a.caja(0, 0, 0, 0.6, r * 0.9, h * 0.9, { mat })], rotM(60), [c[0] + r * 0.6, c[1] + r * 1.2, c[2] + 1]));
+  const s = h / 62;
+  if (o.preso === 'esqueleto') ps.push(...cuerpo({ cu: CUERPOS.esqueleto, eq: EQUIPOS.nada, acc: 'morir', f: 3, s: s * 0.95, t: [c[0], c[1], c[2] + 1.2] }));
+  else if (o.preso) ps.push(...cuerpo({ cu: o.preso === 'vivo' ? CUERPOS.palido : CUERPOS.muerto, eq: EQUIPOS.preso, acc: o.preso === 'vivo' ? 'herido' : 'morir', f: o.preso === 'vivo' ? 2 : 3, dir: 'se', s: s * (o.preso === 'vivo' ? 0.85 : 0.95), t: [c[0], c[1], c[2] + 1.2] }));
+}
+/** Cuerpo colgado de una soga (o cadena) desde `p`, los brazos caídos. */
+export function colgado(a: Arma, ps: Pieza[], p: V3, largo: number, cu: Cuerpo = CUERPOS.muerto, eq: Equipo = EQUIPOS.preso, s = 0.95, mat = 'cuerda') {
+  if (mat === 'cuerda') ps.push(a.palo(p, add(p, [0, 0, -largo]), 0.35, { mat })); else cadena(a, ps, [p, add(p, [0, 0, -largo])], 2.2, 0.45, mat);
+  ps.push(...cuerpo({ cu, eq, acc: 'herido', f: 2, dir: elegir(a, ['s', 'so', 'se']), m: rotM(0, jit(a, 6), jit(a, 6)), t: [p[0], p[1], p[2] - largo - 62 * s], s }));
+}
+/** Losa irregular plana (lagos, charcos, pozos): cuñas convexas desde el centro hasta un contorno con ruido. */
+export function losa(a: Arma, R: number, ry: number, z0: number, z1: number, mat: string, n = 12, o: { x?: number; y?: number; tono?: number } = {}): Pieza[] {
+  const rr = Array.from({ length: n }, () => 0.78 + a.r() * 0.3), ps: Pieza[] = [], x = o.x ?? 0, y = o.y ?? 0;
+  for (let i = 0; i < n; i++) {
+    const t0 = (i / n) * TAU, t1 = ((i + 1) / n) * TAU, k0 = rr[i], k1 = rr[(i + 1) % n];
+    const q = [[x, y], [x + Math.cos(t0) * R * k0, y + Math.sin(t0) * ry * k0], [x + Math.cos(t1) * R * k1, y + Math.sin(t1) * ry * k1]];
+    ps.push(a.poliedro(q.flatMap(([u, w]) => [[u, w, z0], [u, w, z1]] as V3[]), { mat, tono: o.tono }));
+  }
+  return ps;
 }

@@ -1,6 +1,6 @@
-import type { Arma } from './objeto';
+import { registrar, type Arma, type Tema } from './objeto';
 import { MATERIALES } from './materiales';
-import { masa, hueso, bulto, ruido, type Comp, type Pieza, type V3 } from './render';
+import { masa, hueso, bulto, ruido, caja, type Comp, type Pieza, type V3 } from './render';
 
 /**
  * Kit de la muerte: lo que comparten el cementerio nuevo (`cementerio2`), la cripta (`cripta`) y las catacumbas
@@ -19,13 +19,18 @@ M.mu_piedra_clara = { rampa: ['#1a1917', '#2d2b27', '#43403a', '#5b574f', '#7570
 M.mu_marmol = { rampa: ['#1e1d1c', '#33312e', '#4c4945', '#67635d', '#837e76', '#9f998f', '#b8b1a5', '#cdc6b8'], ruido: 0.16, escala: 0.1, brillo: 0.2, patron: (p) => (ruido(p[0] * 0.07 + p[2] * 0.14, p[1] * 0.07, p[2] * 0.03) > 0.74 ? -0.2 : 0) + mugre(0.26, 16, 0.2)(p) };
 M.mu_marmol_negro = { rampa: ['#09090a', '#131214', '#1e1c20', '#2a272c', '#38343a', '#48434b', '#5b555e'], ruido: 0.15, escala: 0.1, brillo: 0.35, patron: (p) => (ruido(p[0] * 0.08 + p[2] * 0.1, p[1] * 0.08, 3) > 0.76 ? 0.2 : 0) };
 M.mu_granito = { rampa: ['#0e0f10', '#1a1b1d', '#27292c', '#36383c', '#46494d', '#585b60', '#6c6f73'], ruido: 0.6, escala: 0.9, patron: mugre(0.15, 12, 0.1) };
-M.mu_bloques = { rampa: ['#121110', '#1f1d1a', '#2e2b26', '#3f3b34', '#524c43', '#665f54', '#7b7366'], ruido: 0.3, escala: 0.22, patron: (p, n) => { const al = 7, la = 13; const fila = Math.floor(p[2] / al); const u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0]; const m = (v: number, s: number) => ((v % s) + s) % s; if (Math.abs(n[2]) < 0.7) { if (m(p[2], al) < 0.9) return -0.32; if (m(u + (fila % 2) * la * 0.5, la) < 0.9) return -0.28; } return mugre(0.2, 18)(p) + (ruido(Math.floor((u + (fila % 2) * la * 0.5) / la) * 1.7, fila * 2.3, 5) - 0.5) * 0.2; } };
+/** Sillares: hiladas de `al` con juntas, cada una corrida media pieza, más la mugre que sube. */
+const sillares = (la: number, al: number) => (p: V3, n: V3) => { const fila = Math.floor(p[2] / al); const u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0]; const m = (v: number, s: number) => ((v % s) + s) % s; if (Math.abs(n[2]) < 0.7) { if (m(p[2], al) < 0.9) return -0.34; if (m(u + (fila % 2) * la * 0.5, la) < 0.9) return -0.3; } return mugre(0.2, 18)(p) + (ruido(Math.floor((u + (fila % 2) * la * 0.5) / la) * 1.7, fila * 2.3, 5) - 0.5) * 0.24; };
+M.mu_bloques = { rampa: ['#121110', '#1f1d1a', '#2e2b26', '#3f3b34', '#524c43', '#665f54', '#7b7366'], ruido: 0.3, escala: 0.22, patron: sillares(13, 7) };
+M.mu_bloques_frio = { rampa: ['#0f1012', '#1b1d20', '#292c30', '#393d42', '#4b5056', '#5f656b', '#757b80'], ruido: 0.3, escala: 0.22, patron: sillares(16, 8) };
+M.mu_bloques_toba = { rampa: ['#110e0b', '#1e1913', '#2c241b', '#3c3124', '#4d3f2f', '#5f4e3b', '#725e48'], ruido: 0.45, escala: 0.25, patron: sillares(11, 6) };
 M.mu_toba = { rampa: ['#110e0b', '#1e1913', '#2c241b', '#3c3124', '#4d3f2f', '#5f4e3b', '#725e48'], ruido: 0.5, escala: 0.2, patron: (p) => (ruido(p[0] * 0.05, p[1] * 0.05, p[2] * 0.4) - 0.5) * 0.3 - Math.max(0, 1 - p[2] / 12) * 0.15 };
 M.mu_ladrillo = { rampa: ['#170d0a', '#28160f', '#3a2015', '#4d2b1c', '#613725', '#76442e'], ruido: 0.3, escala: 0.35, patron: (p, n) => { const m = (v: number, s: number) => ((v % s) + s) % s; const u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0]; const f = Math.floor(p[2] / 4); if (m(p[2], 4) < 0.8) return -0.35; if (m(u + (f % 2) * 4, 8) < 0.8) return -0.3; return (ruido(Math.floor((u + (f % 2) * 4) / 8) * 2.1, f * 1.3, 2) - 0.5) * 0.3; } };
+M.mu_piedra_musgo = { rampa: ['#111410', '#1e241b', '#2d3528', '#3e4737', '#525a48', '#676e5a', '#7f8670'], ruido: 0.45, escala: 0.22, patron: mugre(0.18, 14, 0.2) };
 M.mu_musgo = { rampa: ['#0d120a', '#172012', '#22301a', '#2e3f22', '#3b4f2b', '#4a6035'], ruido: 0.7, escala: 0.6 };
 M.mu_liquen = { rampa: ['#1d1d12', '#2f2f1c', '#444328', '#5a5835', '#706d44'], ruido: 0.6, escala: 0.8 };
 M.mu_hierro = { rampa: ['#0a0a0b', '#141415', '#1f1f21', '#2c2c2f', '#3b3b3f', '#4d4c50', '#625f60'], ruido: 0.3, escala: 0.6, brillo: 0.3, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5) > 0.7 ? 0.08 : 0) };
-M.mu_oxido = { rampa: ['#140b07', '#24130b', '#371d10', '#4c2915', '#62361c', '#784525'], ruido: 0.6, escala: 0.7 };
+M.mu_oxido = { rampa: ['#120b08', '#1f130d', '#2e1c12', '#3d2617', '#4d311d', '#5e3c24'], ruido: 0.6, escala: 0.7 };
 M.mu_pluma = { rampa: ['#060608', '#0c0c10', '#14141a', '#1e1e27', '#2a2a36', '#3a3a4a'], ruido: 0.2, escala: 0.8, brillo: 0.5 };
 M.mu_tierra = { rampa: ['#0d0907', '#18110c', '#241a12', '#322419', '#412f21', '#523c2b'], ruido: 0.6, escala: 0.35, patron: (p) => (ruido(p[0] * 0.45, p[1] * 0.45, p[2] * 0.45) - 0.5) * 0.3 };
 M.mu_cal = { rampa: ['#3a3832', '#56534b', '#737066', '#918d82', '#aeaa9e', '#c6c2b5'], ruido: 0.35, escala: 0.3 };
@@ -48,6 +53,15 @@ M.mu_madera = { rampa: ['#0f0d0a', '#1b1712', '#28221b', '#372e24', '#463b2e', '
 M.mu_hoja_seca = { rampa: ['#140d07', '#22160c', '#332112', '#452d18', '#573a1f'], ruido: 0.6, escala: 0.6 };
 M.mu_flor = { rampa: ['#160c12', '#25131d', '#361c2a', '#472637', '#583143'], ruido: 0.5, escala: 0.6 };
 M.mu_hueso = { rampa: ['#1d1913', '#322b21', '#4a4131', '#655943', '#807257', '#9a8b6d', '#b2a385', '#c6b99c'], ruido: 0.22, escala: 0.7 };
+/** Pared de cabezas de fémur apiladas: cada celda es una bola de hueso con la junta negra alrededor. */
+M.mu_pared_huesos = { rampa: ['#0e0c09', '#1d1912', '#342d21', '#4d4432', '#685c45', '#82755a', '#9b8c6e', '#b2a283'], ruido: 0.18, escala: 0.6, patron: (p, n) => {
+  const c = 2.6, u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : Math.abs(n[2]) > 0.7 ? p[0] : p[0], w = Math.abs(n[2]) > 0.7 ? p[1] : p[2];
+  const fila = Math.floor(w / c), uu = u + (fila % 2) * c * 0.5, col = Math.floor(uu / c);
+  const du = uu - (col + 0.5) * c, dw = w - (fila + 0.5) * c, d = Math.hypot(du, dw) / (c * 0.5);
+  const h = ruido(col * 3.7, fila * 5.1, 9);
+  if (d > 0.92 + h * 0.08) return -0.55;
+  return 0.12 - d * d * 0.32 + (h - 0.5) * 0.3 + (du < 0 && dw > 0 ? 0.06 : -0.04);
+} };
 M.mu_osario = { rampa: ['#100e0b', '#1c1914', '#2a251d', '#393228', '#4a4133'], ruido: 0.5, escala: 0.5 };
 M.mu_agua = { rampa: ['#05070a', '#0a1016', '#111a22', '#1a2630', '#26343f', '#36454f'], ruido: 0.2, escala: 0.15, brillo: 1 };
 M.mu_carne_seca = { rampa: ['#140b08', '#24140e', '#361f15', '#492b1d', '#5c3826', '#6f4630'], ruido: 0.45, escala: 0.5 };
@@ -116,6 +130,8 @@ export class G {
 const norm3 = (v: V3): V3 => { const l = Math.hypot(...v) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
 const cruz = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 
+/** Corta todo lo que quedó debajo del piso (z < 0): la cámara lo vería asomar por delante del suelo. Va última. */
+export const bajoTierra = (ps: Pieza[]) => { ps.push(caja(0, 0, -80, 600, 600, 80, { mat: 'negro', resta: true })); };
 /** Grupo raíz de un armado y su lista de piezas. */
 export const raiz = (a: Arma, giro = 0) => { const ps: Pieza[] = []; const g0 = new G(a, ps); return { ps, g: giro ? g0.sub(0, 0, 0, giro) : g0 }; };
 /** Variantes de pared: la que termina en `_der` corre a lo largo de y con la cara hacia +x. */
@@ -407,4 +423,24 @@ export function figuraVelada(g: G, h: number, o: { mat: string; pose?: 'pie' | '
   // la cara en sombra dentro de la capucha
   if (pose !== 'cubre_cara') s.elip(2.6, 0, zh - 0.4, 1.2, 1.8, 2.3, { mat: 'negro', tono: 0.1 });
   return zh * k;
+}
+
+// ------------------------------------------------------------------ registro
+type Resultado = Pieza[] | { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } | void;
+/**
+ * Registrador para un tema: el armado recibe la variante, el cuadro, el grupo raíz y las herramientas; si no
+ * devuelve nada se toman las piezas del grupo.
+ */
+export function hacerObj(tema: Tema) {
+  return (id: string, nombre: [string, string], variantes: string[], huella: [number, number], bloquea: boolean, armar: (v: string, f: number, g: G, a: Arma) => Resultado, extra: { cuadros?: number; t?: number; huellaPor?: Record<string, [number, number]>; plano?: boolean } = {}) =>
+    registrar({ id, nombre, tema, variantes, huella, bloquea, ...extra, armar: (v, f, a) => { const { ps, g } = raiz(a); const r = armar(v, f, g, a); bajoTierra(ps); return r ? r : ps; } });
+}
+/** Calavera barata (sin masa) para paredes enteras de cráneos, mirando +x. */
+export function calaveraSimple(g: G, r = 3, mat = 'mu_hueso', tono = 0) {
+  const a = g.a, t = tono + (a.r() - 0.5) * 0.12;
+  g.elip(0, 0, r, r * 1.05, r * 0.9, r * 0.92, { mat, tono: t });
+  g.elip(r * 0.55, 0, r * 0.5, r * 0.55, r * 0.68, r * 0.5, { mat, tono: t - 0.03 });
+  for (const s of [-1, 1]) g.esf(r * 0.88, s * r * 0.38, r * 0.78, r * 0.3, { mat: 'negro' });
+  g.elip(r * 1.02, 0, r * 0.48, r * 0.12, r * 0.14, r * 0.18, { mat: 'negro' });
+  g.caja(r * 0.98, 0, r * 0.12, r * 0.2, r * 0.66, r * 0.14, { mat: 'negro' });
 }

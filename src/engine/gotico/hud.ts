@@ -1896,7 +1896,11 @@ export function iconoArma3D(a: Arma3D, w: number, h: number, cuadro = 0): Raster
   const k = `${JSON.stringify(a)}|${w}|${h}|${cuadro % 8}`;
   const c = cacheArma3D.get(k);
   if (c) return c;
-  const pinta = (escala: number) => { const e = armaSuelta(a.tipo, { ...a, escala }, 'icono', cuadro); return pintarEscena({ piezas: e.piezas, resplandor: e.resplandor, sinSombra: true, ss: 1 }).img; };
+  // las armas de masa (el arsenal épico) se miden por lo que se pinta: la caja de una masa es la de su esfera y dejaría aire
+  const pinta = (escala: number) => {
+    const e = armaSuelta(a.tipo, { ...a, escala }, 'icono', cuadro), img = pintarEscena({ piezas: e.piezas, resplandor: e.resplandor, sinSombra: true, ss: 1 }).img;
+    return e.piezas.some((p) => p.k === 'masa') ? recortarAlfa(img, 0, 1) : img;
+  };
   const r1 = pinta(1);
   const k1 = Math.min((w - 4) / Math.max(1, r1.w), (h - 4) / Math.max(1, r1.h));
   let r = pinta(Math.max(0.5, k1 * 0.96));

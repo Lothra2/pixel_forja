@@ -1,8 +1,8 @@
 import { MAT, gemMat, glowMat, metalMat, crystalMat, GEM_COLORS, type Rarity, type GemColor } from './materials';
 import type { WeaponIcon, WeaponDesign } from './weapons';
-import { TWO_HANDED, WEAPON_ICONS } from './weapons';
+import { TWO_HANDED, WEAPON_ICONS, WEAPON_ICONS_EPICAS, ALL_WEAPON_ICONS } from './weapons';
 import { JEWEL_ICONS, POTION_KINDS, POTION_SIZES, CONSUMABLE_ICONS, GEM_GRADES, GEM_KINDS, RUNE_COUNT, OFFHAND_ICONS, type OffhandIcon, type OffhandDesign, type JewelIcon, type JewelDesign, type PotionKind, type PotionSize, type ConsumableIcon, type GemGrade } from './misc';
-import { ARMOR_LINES, ARMOR_SLOTS, ARMOR_TIERS } from './armor';
+import { ARMOR_LINES, ARMOR_LINES_EPICAS, ARMOR_MOD_EPICO, ARMOR_SLOTS, ARMOR_TIERS, type ArmorLineEpica } from './armor';
 import { PET_ARMOR } from '../render/pet3d';
 import { earlyLoot } from './early';
 import { ARMOR_EVOLUTION, SLOT_NAMES, type ArmorLine, type ArmorSlot, type ArmorTier, type TierLook } from './armor';
@@ -59,6 +59,8 @@ export interface LootItem {
   set?: string;
   /** dos manos */
   twoHanded?: boolean;
+  /** franja de niveles en la que cae esta base (las del arsenal épico y las líneas épicas llegan al 100) */
+  levelRange?: [number, number];
 }
 
 export const STAT_LABELS: Record<StatKey, { es: string; en: string }> = {
@@ -99,6 +101,8 @@ export const WEAPON_NAMES: Record<WeaponIcon, { es: string; en: string }> = {
   javelin: { es: 'Jabalina', en: 'Javelin' }, greatsword: { es: 'Mandoble', en: 'Greatsword' }, greataxe: { es: 'Hacha doble', en: 'Great Axe' },
   maul: { es: 'Gran martillo', en: 'Maul' }, staff: { es: 'Báculo', en: 'Staff' }, spear: { es: 'Lanza', en: 'Spear' }, halberd: { es: 'Alabarda', en: 'Halberd' },
   scythe: { es: 'Guadaña', en: 'Scythe' }, bow: { es: 'Arco corto', en: 'Short Bow' }, longbow: { es: 'Arco largo', en: 'Long Bow' }, crossbow: { es: 'Ballesta', en: 'Crossbow' },
+  falcata: { es: 'Falcata', en: 'Falcata' }, katar: { es: 'Katar', en: 'Katar' }, sickle: { es: 'Hoz', en: 'Sickle' }, hand_orb: { es: 'Orbe de mano', en: 'Hand Orb' },
+  trident: { es: 'Tridente', en: 'Trident' }, greatstaff: { es: 'Gran báculo', en: 'Greatstaff' }, dragon_lance: { es: 'Lanza del dragón', en: 'Dragon Lance' },
 };
 
 export const OFFHAND_NAMES: Record<OffhandIcon, { es: string; en: string }> = {
@@ -118,6 +122,7 @@ const W_BASE: Record<WeaponIcon, [number, number, number]> = {
   hatchet: [2, 6, 1.4], mace: [3, 7, 1.15], morning_star: [4, 9, 1.1], flail: [2, 11, 1.0], warhammer: [5, 10, 1.0], scepter: [3, 8, 1.15], club: [2, 6, 1.2],
   wand: [1, 5, 1.4], claw: [2, 6, 1.5], javelin: [3, 8, 1.3], greatsword: [8, 18, 0.95], greataxe: [9, 19, 0.9], maul: [10, 22, 0.8], staff: [3, 9, 1.1],
   spear: [5, 14, 1.0], halberd: [7, 17, 0.9], scythe: [6, 18, 0.95], bow: [2, 7, 1.3], longbow: [3, 10, 1.1], crossbow: [6, 14, 0.85],
+  falcata: [4, 10, 1.15], katar: [3, 7, 1.55], sickle: [2, 7, 1.45], hand_orb: [2, 6, 1.3], trident: [6, 15, 0.95], greatstaff: [4, 11, 1.05], dragon_lance: [8, 19, 0.9],
 };
 
 const GRADE_NAME = [{ es: '', en: '' }, { es: ' reforzada', en: 'Reinforced ' }, { es: ' de élite', en: 'Elite ' }];
@@ -132,7 +137,7 @@ export function gradeDesign(icon: WeaponIcon | OffhandIcon, grade: 1 | 2 | 3): W
 }
 
 // nombres femeninos en español (para "reforzada")
-const FEM = new Set(['sword', 'scimitar', 'katana', 'dagger', 'axe', 'hatchet', 'mace', 'wand', 'claw', 'javelin', 'greataxe', 'spear', 'halberd', 'scythe', 'crossbow', 'shield_round', 'shrunken_head']);
+const FEM = new Set(['sword', 'scimitar', 'katana', 'dagger', 'axe', 'hatchet', 'mace', 'wand', 'claw', 'javelin', 'greataxe', 'spear', 'halberd', 'scythe', 'crossbow', 'shield_round', 'shrunken_head', 'falcata', 'sickle', 'dragon_lance']);
 const fem = (icon: WeaponIcon | OffhandIcon) => FEM.has(icon);
 
 export function baseWeapon(icon: WeaponIcon, grade: 1 | 2 | 3 = 1): LootItem {
@@ -145,6 +150,29 @@ export function baseWeapon(icon: WeaponIcon, grade: 1 | 2 | 3 = 1): LootItem {
     id: `${icon}_${grade}`, rarity: 'normal', base: { cat: 'weapon', icon }, grade, design: gradeDesign(icon, grade),
     name: { es: n.es + gEs, en: GRADE_NAME[grade - 1].en + n.en }, level: GRADE_LVL[grade - 1],
     stats: { damage: [Math.round(mn * k), Math.round(mx * k)], speed: sp, mods: [] }, twoHanded: TWO_HANDED.includes(icon),
+  };
+}
+
+/**
+ * Los rangos de las bases de arma hasta el nivel 100: los tres grados clásicos (normal, reforzada, élite) y dos más
+ * para los actos 5 a 7. El daño sube con el nivel (k ≈ 1 + 0.06 por nivel, como los grados clásicos).
+ */
+export const RANGOS_ARMA = {
+  normal: { nivel: [1, 17] as [number, number], k: 1 }, reforzada: { nivel: [18, 35] as [number, number], k: 1.9 }, elite: { nivel: [36, 54] as [number, number], k: 3.2 },
+  mitica: { nivel: [55, 77] as [number, number], k: 4.6 }, ancestral: { nivel: [78, 100] as [number, number], k: 6.6 },
+};
+export type RangoEpico = 'mitica' | 'ancestral';
+/** Una base de arma mítica (nivel 55) o ancestral (nivel 78), con su aspecto: mitril y oro pálido, u obsidiana con runas encendidas. */
+export function baseWeaponEpica(icon: WeaponIcon, rango: RangoEpico): LootItem {
+  const [mn, mx, sp] = W_BASE[icon];
+  const r = RANGOS_ARMA[rango], n = WEAPON_NAMES[icon], f = fem(icon);
+  const design: WeaponDesign = rango === 'mitica'
+    ? { ...gradeDesign(icon, 3), blade: MAT.mithril, edge: MAT.silver, guard: MAT.palegold, pommel: MAT.palegold, gem: GEM_COLORS.sapphire, glow: null }
+    : { ...gradeDesign(icon, 3), blade: MAT.obsidian, edge: metalMat('#ff9a6a'), guard: MAT.gold, pommel: MAT.gold, gem: GEM_COLORS.ruby, glow: '#ff7a1a', accent: 'runes' };
+  return {
+    id: `${icon}_${rango}`, rarity: 'normal', base: { cat: 'weapon', icon }, grade: 3, design,
+    name: rango === 'mitica' ? { es: `${n.es} ${f ? 'mítica' : 'mítico'}`, en: `Mythic ${n.en}` } : { es: `${n.es} ancestral`, en: `Ancestral ${n.en}` },
+    level: r.nivel[0], levelRange: r.nivel, stats: { damage: [Math.round(mn * r.k), Math.round(mx * r.k)], speed: sp, mods: [] }, twoHanded: TWO_HANDED.includes(icon),
   };
 }
 
@@ -168,8 +196,17 @@ export function baseArmor(slot: ArmorSlot, line: ArmorLine, tier: ArmorTier): Lo
     id: `armor_${line}_${slot}_${tier}`, rarity: tier >= 5 ? 'legendary' : tier === 4 ? 'rare' : 'normal',
     base: { cat: 'armor', slot, line, tier },
     name: slot === 'chest' ? t.name : { es: `${slotName.es} (${t.name.es})`, en: `${slotName.en} (${t.name.en})` },
-    level: t.level, stats: { defense: Math.max(1, Math.round(t.defense * share[slot])), mods: tier >= 4 ? [{ stat: 'allRes', value: tier === 5 ? 15 : 8 }] : [] },
+    level: t.level, stats: { defense: Math.max(1, Math.round(t.defense * share[slot])), mods: [...(tier >= 4 ? [{ stat: 'allRes' as StatKey, value: tier === 5 ? 15 : 8 }] : []), ...modsEpicos(line, slot, t.level)] },
+    ...(esLineaEpica(line) ? { levelRange: [t.level, tier < 5 ? (ARMOR_EVOLUTION[line] as TierLook[])[tier].level - 1 : 100] as [number, number] } : {}),
   };
+}
+
+const esLineaEpica = (l: ArmorLine): l is ArmorLineEpica => (ARMOR_LINES_EPICAS as ArmorLine[]).includes(l);
+/** Lo propio de una línea épica en una pieza, escalado con su nivel (el pecho lleva el valor entero, el resto un poco menos). */
+function modsEpicos(line: ArmorLine, slot: ArmorSlot, level: number): Mod[] {
+  if (!esLineaEpica(line)) return [];
+  const k = slot === 'chest' ? 1 : slot === 'helm' || slot === 'pants' ? 0.75 : 0.55;
+  return ARMOR_MOD_EPICO[line].map((x) => ({ stat: x.stat, value: Math.max(1, Math.round(x.k * level * k)) }));
 }
 
 // ---------- mágicos y raros al azar ----------
@@ -379,6 +416,21 @@ export function allBases(): LootItem[] {
   return out;
 }
 
+/** El arsenal épico: las armas nuevas en sus tres grados y todas las armas en sus rangos mítico y ancestral (nivel 55 a 100). */
+export function allBasesEpicas(): LootItem[] {
+  const out: LootItem[] = [];
+  for (const g of [1, 2, 3] as const) for (const w of WEAPON_ICONS_EPICAS) out.push(baseWeapon(w, g));
+  for (const r of ['mitica', 'ancestral'] as const) for (const w of ALL_WEAPON_ICONS) out.push(baseWeaponEpica(w, r));
+  return out;
+}
+
+/** Las líneas épicas de armadura: 6 líneas x 7 piezas x 5 niveles (nivel 35 a 100). */
+export function allArmorEpica(): LootItem[] {
+  const out: LootItem[] = [];
+  for (const line of ARMOR_LINES_EPICAS) for (const slot of ARMOR_SLOTS) for (const t of ARMOR_TIERS) out.push(baseArmor(slot, line, t));
+  return out;
+}
+
 /** Todas las piezas de armadura: 4 líneas x 7 piezas x 5 niveles. */
 export function allArmor(): LootItem[] {
   const out: LootItem[] = [];
@@ -440,9 +492,9 @@ export function allPetArmor(): LootItem[] {
   }));
 }
 
-/** Todo el botín del juego: bases, armaduras, joyas y consumibles, armaduras de mascota, mágicos y raros de nivel bajo, legendarios y set. */
+/** Todo el botín del juego: bases (y el arsenal épico), armaduras (y las líneas épicas), joyas y consumibles, armaduras de mascota, mágicos y raros de nivel bajo, legendarios y set. */
 export function allLoot(): LootItem[] {
-  return [...allBases(), ...allArmor(), ...allMisc(), ...allPetArmor(), ...earlyLoot(), ...UNIQUE_LOOT];
+  return [...allBases(), ...allArmor(), ...allBasesEpicas(), ...allArmorEpica(), ...allMisc(), ...allPetArmor(), ...earlyLoot(), ...UNIQUE_LOOT];
 }
 
 export { gemMat, glowMat };

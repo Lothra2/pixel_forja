@@ -34,6 +34,7 @@ M.sub_madera_mina = { rampa: ['#110c08', '#1e150e', '#2d2015', '#3d2c1d', '#4f3a
 } };
 M.sub_cuerda = { rampa: ['#1c160d', '#2f2515', '#45371f', '#5c4a2b', '#745e38', '#8c7247'], ruido: 0.45, escala: 1.1, patron: (p) => (Math.sin((p[0] + p[1] + p[2]) * 2.2) > 0.3 ? 0.06 : -0.06) };
 M.sub_telarana = { rampa: ['#3a3935', '#53514c', '#6d6a63', '#88847b', '#a39e94', '#bdb8ad'], ruido: 0.25, escala: 0.8 };
+M.sub_fondo = { rampa: ['#000000', '#030304', '#060609'], ruido: 0.2, escala: 0.2 };
 M.sub_vapor = { rampa: ['#2c2c30', '#3c3c42', '#505058', '#68686e', '#828288', '#a0a0a4'], ruido: 0.55, escala: 0.22, emite: true };
 
 // ------------------------------------------------------------------ vectores
@@ -311,3 +312,84 @@ export function paredRoca(a: Arma, ps: Pieza[], pts: [number, number][], alto: n
     }
   }
 }
+
+// ------------------------------------------------------------------ bordes de un vacío (para delinear islas y simas)
+/**
+ * Variantes de borde por hacia dónde queda el vacío (en pantalla). Rectos: 'se' (vacío hacia +x), 'so' (+y),
+ * 'ne' (-y), 'no' (-x). Puntas de tierra (el vacío rodea dos lados): 's', 'e', 'n', 'o'. Rincones (el vacío solo en
+ * un cuadrante): 'is', 'ie', 'in', 'io'. Con los doce se delinea cualquier isla sobre la grilla de baldosas.
+ */
+export const BORDES = ['se', 'so', 'ne', 'no', 's', 'e', 'n', 'o', 'is', 'ie', 'in', 'io'];
+type Tramo = { p: [number, number]; q: [number, number]; n: [number, number] };
+export function tramosBorde(v: string, L: number, T = 40): { tramos: Tramo[]; semis: Semi[]; convexo: boolean } {
+  const SE = (y0: number, y1: number): Tramo => ({ p: [L, y0], q: [L, y1], n: [1, 0] });
+  const SO = (x0: number, x1: number): Tramo => ({ p: [x0, L], q: [x1, L], n: [0, 1] });
+  const NE = (x0: number, x1: number): Tramo => ({ p: [x0, -L], q: [x1, -L], n: [0, -1] });
+  const NO = (y0: number, y1: number): Tramo => ({ p: [-L, y0], q: [-L, y1], n: [-1, 0] });
+  const s = (t: Tramo): Semi => [-t.n[0], -t.n[1], -L];
+  const m: Record<string, [Tramo[], boolean]> = {
+    se: [[SE(-T, T)], true], so: [[SO(-T, T)], true], ne: [[NE(-T, T)], true], no: [[NO(-T, T)], true],
+    s: [[SE(-T, L), SO(-T, L)], false], n: [[NE(-L, T), NO(-L, T)], false], e: [[SE(-L, T), NE(-T, L)], false], o: [[SO(-L, T), NO(-T, L)], false],
+    is: [[SE(L, T), SO(L, T)], true], in: [[NO(-T, -L), NE(-T, -L)], true], ie: [[SE(-T, -L), NE(L, T)], true], io: [[NO(L, T), SO(-T, -L)], true],
+  };
+  const [tramos, convexo] = m[v] ?? m.se;
+  return { tramos, semis: tramos.map(s), convexo };
+}
+/**
+ * El borde de un vacío sobre una baldosa (80×80, ancla al centro): labio de lajas al ras del piso, el acantilado
+ * que baja y se pierde en la oscuridad (solo donde la cámara lo ve) y lo que cuelga. `extra` recibe cada estación
+ * del labio (punto y normal hacia el vacío) para colgar raíces, cadenas o niebla.
+ */
+export function bordeVacio(a: Arma, ps: Pieza[], v: string, o: { mat: string; matLabio?: string; L?: number; D?: number; fondo?: string; extra?: (p: V3, n: [number, number], z: number) => void }) {
+  const L = o.L ?? 34, D = o.D ?? 110, { tramos, semis, convexo } = tramosBorde(v, L);
+  for (const t of tramos) {
+    const len = Math.hypot(t.q[0] - t.p[0], t.q[1] - t.p[1]), st = Math.max(2, Math.round(len / 11));
+    const ux = (t.q[0] - t.p[0]) / len, uy = (t.q[1] - t.p[1]) / len, giro = (Math.atan2(uy, ux) * 180) / PI;
+    const visto = t.n[0] + t.n[1] > 0;
+    for (let k = 0; k <= st; k++) {
+      const u = k / st, x = t.p[0] + (t.q[0] - t.p[0]) * u, y = t.p[1] + (t.q[1] - t.p[1]) * u;
+      const sal = (a.r() - 0.5) * 5;
+      // el labio: lajas chatas al ras, un poco hacia adentro, con la arista rota
+      ps.push(pena(a, x + t.n[0] * (sal - 3), y + t.n[1] * (sal - 3), -2.2, entre(a, 7, 10), entre(a, 6, 9), 3.2, { mat: o.matLabio ?? o.mat, giro: giro + (a.r() - 0.5) * 20, tono: 0.04, n: 10 }));
+      if (a.r() < 0.35) ps.push(pena(a, x - t.n[0] * entre(a, 8, 16), y - t.n[1] * entre(a, 8, 16), 0, entre(a, 1.5, 3), entre(a, 1.2, 2.5), entre(a, 0.8, 1.6), { mat: o.mat, n: 6 }));
+      if (a.r() < 0.4) ps.push(a.caja(x - t.n[0] * entre(a, 6, 12), y - t.n[1] * entre(a, 6, 12), 0.03, entre(a, 6, 12), 0.7, 0.3, { mat: 'negro', giro: giro + (a.r() - 0.5) * 30 }));
+      if (visto) {
+        // el acantilado: lajas que bajan, se meten hacia adentro y se oscurecen
+        // el perfil del acantilado depende de la hondura (igual para todo el tramo), así la pared sale entera
+        let z = -6 + (k % 2) * -4;
+        while (z > -D) {
+          const fr = -z / D, rz = entre(a, 6, 9) * (1 - fr * 0.25);
+          const off = Math.sin(z * 0.07 + 1.3) * 4 + Math.sin(z * 0.19) * 2 - fr * 8 + (a.r() - 0.5) * 3;
+          ps.push(pena(a, x + t.n[0] * off + ux * (a.r() - 0.5) * 4, y + t.n[1] * off + uy * (a.r() - 0.5) * 4, z - rz * 0.4, entre(a, 9, 12), entre(a, 6, 8), rz, { mat: o.mat, giro: giro + (a.r() - 0.5) * 24, tono: -fr * 0.6 + (a.r() - 0.5) * 0.1, n: 8 }));
+          z -= rz * entre(a, 1.0, 1.3);
+        }
+      }
+      o.extra?.([x + t.n[0] * sal, y + t.n[1] * sal, -3], t.n, u);
+    }
+  }
+  if (o.fondo) ps.push(a.caja(0, 0, -D - 60, 600, 600, 4, { mat: o.fondo }));
+  ps.push(...recorte(a, semis, convexo));
+}
+
+/** Paredes de un hueco (sima, grieta ancha): lajas que bajan por los lados que la cámara ve, y el fondo negro. */
+export function paredesHueco(a: Arma, ps: Pieza[], cont: [number, number][], D: number, mat = 'sub_roca', fondo = 'sub_fondo') {
+  const n = cont.length;
+  let cx = 0, cy = 0; for (const [x, y] of cont) { cx += x / n; cy += y / n; }
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = cont[i], [x1, y1] = cont[(i + 1) % n], mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+    // el labio de la boca
+    ps.push(pena(a, mx + (mx - cx) * 0.08, my + (my - cy) * 0.08, -1.6, entre(a, 5, 8), entre(a, 4, 6), 2.8, { mat, giro: (Math.atan2(y1 - y0, x1 - x0) * 180) / PI, tono: 0.05, n: 8 }));
+    if ((cx - mx) + (cy - my) <= 0) continue; // esta pared mira para atrás: no se ve
+    const L = Math.hypot(x1 - x0, y1 - y0), st = Math.max(1, Math.round(L / 10));
+    for (let k = 0; k <= st; k++) {
+      const u = k / st, x = x0 + (x1 - x0) * u, y = y0 + (y1 - y0) * u, dx = cx - x, dy = cy - y, dl = Math.hypot(dx, dy) || 1;
+      let z = -4, off = entre(a, 0, 3);
+      while (z > -D) { const fr = -z / D, rz = entre(a, 5, 8); off += (a.r() - 0.4) * 2.5; ps.push(pena(a, x + (dx / dl) * off, y + (dy / dl) * off, z - rz * 0.4, entre(a, 6, 9), entre(a, 4, 6), rz, { mat, tono: -fr * 0.6 + (a.r() - 0.5) * 0.1, n: 7 })); z -= rz * entre(a, 1.1, 1.4); }
+    }
+  }
+  // el fondo: solo la parte que se ve por la boca (la boca corrida por el rayo de la cámara hasta esa hondura)
+  const k = Math.sqrt(1.5) * (D + 2), fp: V3[] = [];
+  for (const [x, y] of cont) for (const z of [-D - 4, -D]) fp.push([cx + (x - cx) * 1.25 - k, cy + (y - cy) * 1.25 - k, z]);
+  ps.push(a.poliedro(fp, { mat: fondo }));
+}
+

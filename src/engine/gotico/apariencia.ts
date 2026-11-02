@@ -1,12 +1,12 @@
 import { MATERIALES } from './materiales';
-import type { Equipo } from './cuerpo';
-import { iconoDeLoot, type Icono3D, type Linea } from './iconos3d';
+import { armaduraDeLinea, LINEAS_CUERPO, MAT_LINEA, type Equipo, type LineaCuerpo } from './cuerpo';
+import { iconoDeLoot, arma3dDeLoot, type Icono3D, type Linea } from './iconos3d';
 import type { LootItem } from '../loot/catalog';
 
 /**
  * Lo que el jugador lleva puesto en el inventario es lo que se ve en su cuerpo: cada objeto equipado se traduce
  * a la pieza de `Equipo` que arma cuerpo.ts, con su línea (tela, cuero, malla, placas, hueso, sagrado, oscuro,
- * legendario), su nivel y sus colores reales del diseño del botín. Lo que no está equipado cae a la ropa base.
+ * legendario y las épicas: escamas, dracónica, élfica, demoníaca, celestial y ahogada), su nivel y sus colores reales del diseño del botín. Lo que no está equipado cae a la ropa base.
  *
  * Uso: `equipoDeInventario(puesto, base)` donde `puesto` son las casillas del inventario (casco, pecho, guantes,
  * cinturon, botas, arma, mano_libre...) y `base` es la ropa de debajo de la clase (por ejemplo su nivel novato).
@@ -43,12 +43,15 @@ function matDe(linea: Linea | undefined, d: Icono3D, parte: 'tela' | 'cuero' | '
     case 'sagrado': return { mat: 'cu_placa', mat2: 'cu_oro' };
     case 'oscuro': return { mat: 'cu_placa_oscura', mat2: 'cu_malla' };
     case 'legendario': return { mat: color && parte === 'metal' ? tinte(color, 'metal') : color ? tinte(color, parte) : 'cu_oro', mat2: 'cu_oro' };
+    case 'escamas': case 'draconica': case 'elfica': case 'demoniaca': case 'celestial': case 'ahogada': return { mat: MAT_LINEA[linea].placa, mat2: MAT_LINEA[linea].base };
     default: return { mat: 'cu_cuero' };
   }
 }
 
 const descDe = (p: Puesto): Icono3D | null => p.icono3d ?? iconoDeLoot(p.it);
-const duro = (l?: Linea) => l === 'placas' || l === 'sagrado' || l === 'oscuro' || l === 'legendario';
+/** Las líneas épicas: cada pieza sale con sus formas propias (ver `armaduraDeLinea`). */
+const epica = (l?: Linea): l is LineaCuerpo => !!l && (LINEAS_CUERPO as string[]).includes(l);
+const duro = (l?: Linea) => l === 'placas' || l === 'sagrado' || l === 'oscuro' || l === 'legendario' || epica(l);
 
 /** Traduce las casillas del inventario a lo que se ve puesto en el cuerpo. */
 export function equipoDeInventario(puesto: Partial<Record<string, Puesto | undefined>>, base: Equipo = {}): Equipo {
@@ -58,6 +61,7 @@ export function equipoDeInventario(puesto: Partial<Record<string, Puesto | undef
   if (cab) {
     const m = matDe(cab.linea, cab), n = cab.nivel ?? 2;
     if (cab.pieza === 'corona') e.cabeza = { tipo: 'corona', mat: cab.metal && esHex(cab.metal) ? tinte(cab.metal, 'metal') : 'cu_oro', mat2: cab.gema && esHex(cab.gema) ? tinte(cab.gema, 'metal') : undefined };
+    else if (epica(cab.linea)) e.cabeza = armaduraDeLinea(cab.linea, n).cabeza;
     else if (cab.pieza === 'capucha' || cab.linea === 'tela') e.cabeza = { tipo: 'capucha', mat: m.mat };
     else if (cab.linea === 'hueso') e.cabeza = { tipo: 'calavera', mat: 'cu_hueso' };
     else if (cab.linea === 'cuero' || cab.linea === 'tachonado') e.cabeza = { tipo: 'casco', mat: m.mat };
@@ -68,7 +72,13 @@ export function equipoDeInventario(puesto: Partial<Record<string, Puesto | undef
   const pe = puesto.pecho && descDe(puesto.pecho);
   if (pe) {
     const m = matDe(pe.linea, pe), n = pe.nivel ?? 2;
-    switch (pe.linea) {
+    if (epica(pe.linea)) {
+      // las épicas: coraza, grebas y (desde el nivel 2) hombreras de la línea; la celestial con su tabardo blanco
+      const a = armaduraDeLinea(pe.linea, n);
+      e.torso = a.torso; e.piernas = a.piernas;
+      if (n >= 2) e.hombros = a.hombros;
+      if (a.tabardo) e.tabardo = a.tabardo;
+    } else switch (pe.linea) {
       case 'tela': e.torso = { tipo: 'tunica', mat: m.mat }; break;
       case 'cuero': e.torso = { tipo: 'cuero', mat: m.mat }; break;
       case 'tachonado': e.torso = { tipo: 'cuero_tachonado', mat: m.mat }; break;
@@ -76,7 +86,7 @@ export function equipoDeInventario(puesto: Partial<Record<string, Puesto | undef
       case 'hueso': e.torso = { tipo: 'placas', mat: 'cu_hueso', mat2: 'cu_cuero_negro' }; break;
       default: e.torso = { tipo: 'placas', mat: m.mat, mat2: m.mat2 === 'cu_oro' ? 'cu_malla' : m.mat2 ?? 'cu_malla' };
     }
-    if (duro(pe.linea) || pe.linea === 'hueso') {
+    if (epica(pe.linea)) { /* ya armada */ } else if (duro(pe.linea) || pe.linea === 'hueso') {
       e.piernas = { tipo: 'grebas', mat: pe.linea === 'hueso' ? 'cu_hueso' : m.mat, mat2: 'cu_malla' };
       if (n >= 3) e.hombros = { tipo: pe.linea === 'hueso' ? 'huesos' : pe.linea === 'oscuro' && n >= 4 ? 'puas' : 'placas', mat: pe.linea === 'sagrado' || pe.linea === 'legendario' ? 'cu_oro' : m.mat };
       if (pe.linea === 'sagrado') e.tabardo = { mat: 'cu_tela_blanca', borde: 'cu_oro' };
@@ -87,21 +97,26 @@ export function equipoDeInventario(puesto: Partial<Record<string, Puesto | undef
   }
   // ---- manos, cintura y pies
   const gu = puesto.guantes && descDe(puesto.guantes);
-  if (gu) { const m = matDe(gu.linea, gu); e.manos = { tipo: duro(gu.linea) || gu.linea === 'malla' ? 'guanteletes' : gu.linea === 'tela' ? 'vendas' : 'guantes', mat: gu.linea === 'malla' ? 'cu_placa' : m.mat }; }
+  if (gu && epica(gu.linea)) e.manos = armaduraDeLinea(gu.linea).manos;
+  else if (gu) { const m = matDe(gu.linea, gu); e.manos = { tipo: duro(gu.linea) || gu.linea === 'malla' ? 'guanteletes' : gu.linea === 'tela' ? 'vendas' : 'guantes', mat: gu.linea === 'malla' ? 'cu_placa' : m.mat }; }
   const ci = puesto.cinturon && descDe(puesto.cinturon);
-  if (ci) { const m = matDe(ci.linea, ci, 'cuero'); e.cinturon = { mat: duro(ci.linea) ? 'cu_cuero_negro' : m.mat, hebilla: (ci.nivel ?? 2) >= 4 || duro(ci.linea) ? 'cu_oro' : 'cu_placa' }; }
+  if (ci && epica(ci.linea)) e.cinturon = armaduraDeLinea(ci.linea).cinturon;
+  else if (ci) { const m = matDe(ci.linea, ci, 'cuero'); e.cinturon = { mat: duro(ci.linea) ? 'cu_cuero_negro' : m.mat, hebilla: (ci.nivel ?? 2) >= 4 || duro(ci.linea) ? 'cu_oro' : 'cu_placa' }; }
   const bo = puesto.botas && descDe(puesto.botas);
-  if (bo) { const m = matDe(bo.linea, bo); e.pies = { tipo: duro(bo.linea) ? 'sabatones' : bo.linea === 'tela' ? 'botas' : (bo.nivel ?? 2) >= 3 ? 'botas_altas' : 'botas', mat: duro(bo.linea) ? m.mat : m.mat }; }
+  if (bo && epica(bo.linea)) e.pies = armaduraDeLinea(bo.linea).pies;
+  else if (bo) { const m = matDe(bo.linea, bo); e.pies = { tipo: duro(bo.linea) ? 'sabatones' : bo.linea === 'tela' ? 'botas' : (bo.nivel ?? 2) >= 3 ? 'botas_altas' : 'botas', mat: duro(bo.linea) ? m.mat : m.mat }; }
   // ---- armas: la de la mano es la misma que pinta el ícono
   const ar = puesto.arma;
-  if (ar?.arma3d) e.arma = { ...ar.arma3d } as Equipo['arma'];
+  // (sin arma3d explícita, la base del botín dice qué arma del motor es: así toda arma nueva sale en la mano)
+  const ar3 = ar?.arma3d ?? (ar ? arma3dDeLoot(ar.it) : null);
+  if (ar3) e.arma = { ...ar3 } as Equipo['arma'];
   else if (base.arma) e.arma = base.arma;
   const izq = puesto.mano_libre && descDe(puesto.mano_libre);
   if (izq) {
     const cara = esHex(izq.color) ? tinte(izq.color, 'tela') : undefined;
     // misma regla que el ícono (iconoDeLoot): solo se pinta la cara con su color si el ícono también lo hace; si no, el material de su línea
-    const cara2 = cara ?? (izq.linea === 'cuero' ? 'madera' : izq.linea === 'oscuro' ? 'cu_placa_oscura' : izq.linea === 'sagrado' ? 'cu_tela_blanca' : izq.linea === 'malla' ? 'cu_placa' : undefined);
-    const borde = duro(izq.linea) ? 'cu_oro' : izq.linea === 'malla' ? 'cu_placa' : 'hierro';
+    const cara2 = cara ?? (epica(izq.linea) ? MAT_LINEA[izq.linea].placa : izq.linea === 'cuero' ? 'madera' : izq.linea === 'oscuro' ? 'cu_placa_oscura' : izq.linea === 'sagrado' ? 'cu_tela_blanca' : izq.linea === 'malla' ? 'cu_placa' : undefined);
+    const borde = epica(izq.linea) ? (MAT_LINEA[izq.linea].acento === 'cu_percebe' ? 'cu_bronce' : MAT_LINEA[izq.linea].acento) : duro(izq.linea) ? 'cu_oro' : izq.linea === 'malla' ? 'cu_placa' : 'hierro';
     switch (izq.pieza) {
       case 'escudo_redondo': e.izq = { tipo: izq.variante === 'rodela' ? 'rodela' : 'escudo_redondo', mat: cara2 ?? (izq.linea === 'cuero' ? 'madera' : 'cu_placa'), mat2: borde }; break;
       case 'escudo_cometa': e.izq = { tipo: 'escudo_cometa', mat: cara2 ?? 'cu_placa', mat2: borde }; break;
