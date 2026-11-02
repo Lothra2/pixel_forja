@@ -1,7 +1,7 @@
 import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, type Comp, type Pieza, type V3 } from './render';
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
-import { pose, type Dir, type Accion } from './figura';
+import { pose, CUADROS, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 
 /**
  * Cuerpos orgánicos para personajes y monstruos humanoides: el mismo esqueleto con articulaciones de figura.ts,
@@ -133,95 +133,206 @@ interface Pierna { s: number; cad: V3; rod: V3; tob: V3; talon: V3; punta: V3 }
 interface Brazo { s: number; hom: V3; codo: V3; mun: V3; mano: V3; d1: V3; d2: V3; /** eje del arma que empuña: del puño a la punta */ eje: V3 }
 export interface Esqueleto {
   S: number; A: number; F: V3; R: V3; zc: number; hombroZ: number; cz: number;
+  /** W: marco del cuerpo (mira hacia F); Pv: marco de la pelvis (sigue su giro, ladeo y corrimiento); T: del torso; cab: de la cabeza. */
   W: Fn; T: Fn; cab: Fn; ejesT: [V3, V3, V3]; ejesCab: [V3, V3, V3];
   piernas: Pierna[]; brazos: Brazo[]; caida: number;
+  Pv?: Fn; pose?: Pose;
+  /** Báculo: eje de la vara (del puño hacia el remate). */
+  vara?: V3;
 }
 const ejesDe = (fn: Fn, o: [number, number, number]): [V3, V3, V3] => {
   const c = fn(...o), ex = nor(sub(fn(o[0] + 1, o[1], o[2]), c)), up = nor(sub(fn(o[0], o[1], o[2] + 1), c));
   const ey = nor(cruz(up, ex)), ez = cruz(ex, ey);
   return [ex, ey, ez];
 };
+/** Cinemática inversa de dos huesos: de la raíz `a` hacia `b`, con el codo o la rodilla hacia el polo `pol`. */
+function ik2(a: V3, b: V3, L1: number, L2: number, pol: V3): [V3, V3] {
+  const dv = sub(b, a), dist = Math.max(0.01, Math.min(len(dv), L1 + L2 - 0.02)), dir = nor(dv);
+  const ca = Math.max(-1, Math.min(1, (L1 * L1 + dist * dist - L2 * L2) / (2 * L1 * dist))), sa = Math.sqrt(1 - ca * ca);
+  let per = sub(pol, [dir[0] * dot3(pol, dir), dir[1] * dot3(pol, dir), dir[2] * dot3(pol, dir)]);
+  if (len(per) < 1e-4) per = cruz(dir, [0, 0, 1]);
+  per = nor(per);
+  return [add(add(a, dir, L1 * ca), per, L1 * sa), add(a, dir, dist)];
+}
+/** Gira v alrededor del eje k (unitario) en `ang` radianes. */
+const rotar = (v: V3, k: V3, ang: number): V3 => {
+  const c = Math.cos(ang), s = Math.sin(ang), kv = cruz(k, v), d = dot3(k, v);
+  return [v[0] * c + kv[0] * s + k[0] * d * (1 - c), v[1] * c + kv[1] * s + k[1] * d * (1 - c), v[2] * c + kv[2] * s + k[2] * d * (1 - c)];
+};
+/** Hasta dónde llega el arma desde el puño (para que la cabeza del arma toque el piso). */
+const LARGO_ARMA: Partial<Record<TipoArma, number>> = { espada: 23, cimitarra: 23, mandoble: 33, daga: 9.5, hacha: 21, hacha_doble: 29, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 30, varita: 10 };
 
-export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada'): Esqueleto {
+/** Qué lleva la mano izquierda, para la pose: un escudo o un objeto en la mano (si la derecha no la ocupa). */
+function manoDe(arma: TipoArma, izq?: IzqTipo): ManoPose | undefined {
+  if (!izq || izq === 'arma' || dos(arma) || arma === 'arco' || arma === 'ballesta') return undefined;
+  return izq.startsWith('escudo') || izq === 'rodela' ? 'escudo' : 'objeto';
+}
+type IzqTipo = NonNullable<Equipo['izq']>['tipo'];
+
+export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
-  const tipo = dos(arma) || arma === 'ballesta' ? 'dos' : arma === 'arco' ? 'arco' : arma === 'baculo' || arma === 'lanza' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
-  const P = pose(acc, f, tipo as 'una', cu.presentacion);
+  const tipo = arma === 'ballesta' ? 'ballesta' : dos(arma) ? 'dos' : arma === 'arco' ? 'arco' : arma === 'baculo' || arma === 'lanza' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
+  const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo));
   const th = rad(RUMBO[dir]);
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
   const W: Fn = (fw, rt, up) => [F[0] * fw + R[0] * rt, F[1] * fw + R[1] * rt, up];
+  // la caída de morir: el cuerpo gira alrededor de los pies hacia caidaDir (0 adelante, 180 de espaldas, ±90 de costado)
+  const cd = rad(P.caidaDir ?? 0), D: V3 = [F[0] * Math.cos(cd) + R[0] * Math.sin(cd), F[1] * Math.cos(cd) + R[1] * Math.sin(cd), 0], Q: V3 = [-D[1], D[0], 0];
   const caer = (q: V3): V3 => {
     if (!P.caida) return q;
-    const a = rad(-82 * P.caida);
-    const fw = q[0] * F[0] + q[1] * F[1], rt = q[0] * R[0] + q[1] * R[1];
-    const nf = fw * Math.cos(a) - q[2] * Math.sin(a), nz = Math.max(0.6, fw * Math.sin(a) + q[2] * Math.cos(a));
-    return W(nf - 4 * P.caida, rt, nz);
+    const a = rad(82 * P.caida);
+    const al = q[0] * D[0] + q[1] * D[1], pe = q[0] * Q[0] + q[1] * Q[1];
+    const na = al * Math.cos(a) + q[2] * Math.sin(a) - 4 * P.caida, nz = Math.max(0.6, -al * Math.sin(a) + q[2] * Math.cos(a));
+    return [D[0] * na + Q[0] * pe, D[1] * na + Q[1] * pe, nz];
   };
-  const Wc: Fn = (fw, rt, up) => caer(W(fw + P.avanza, rt, up));
+  const plant = !!P.plantado && !P.caida;
+  // con los pies plantados `avanza` corre la cadera (los pies quedan); si no, mueve todo el cuerpo
+  const Wc: Fn = (fw, rt, up) => caer(W(fw + (plant ? 0 : P.avanza), rt, up));
+  const L1 = 14.5 * S, L2 = 14 * S;
   // la pisada: en la marcha la cadera baja hasta que el tobillo de apoyo queda a la altura del piso (sin pies flotando)
   const extension = ([hz, rod]: [number, number]) => 14.5 * Math.cos(rad(hz)) + 14 * Math.cos(rad(hz - rod));
-  const zc = P.suelo ? (Math.max(extension(P.caderaD), extension(P.caderaI)) + 2.4 + (P.vuelo ?? 0)) * S : (31 - P.bajar) * S;
-  const tor = rad(P.torso + (cu.joroba ?? 0) * 18), gir = rad(P.giroTorso);
-  const T: Fn = (fw, rt, up) => {
-    const f2 = fw * Math.cos(gir) - rt * Math.sin(gir), r2 = fw * Math.sin(gir) + rt * Math.cos(gir);
-    const dz = up - zc;
-    return Wc(f2 * Math.cos(tor) + dz * Math.sin(tor), r2, zc + dz * Math.cos(tor) - f2 * Math.sin(tor));
+  let zc = P.suelo ? (Math.max(extension(P.caderaD), extension(P.caderaI)) + 2.4 + (P.vuelo ?? 0)) * S : (31 - P.bajar) * S;
+  const zc0 = zc;
+  // ---- pelvis: corrimiento (el peso pasa a una pierna), giro y ladeo; los pies quedan donde están
+  const adel = plant ? P.avanza * S : 0, lat = (P.lateral ?? 0) * S, gC = rad(P.giroCadera ?? 0), lC = rad(P.ladeoCadera ?? 0);
+  const pvL = (fw: number, rt: number, up: number): V3 => {
+    const dz = up - zc, f2 = fw * Math.cos(gC) - rt * Math.sin(gC), r2 = fw * Math.sin(gC) + rt * Math.cos(gC);
+    return [f2 + adel, r2 * Math.cos(lC) - dz * Math.sin(lC) + lat, zc + r2 * Math.sin(lC) + dz * Math.cos(lC)];
   };
+  const mueve = plant || !!(adel || lat || gC || lC || P.abre);
+  // ---- tobillos: donde los ponen los ángulos (o plantados en el piso)
+  const piso = 2.4 * S;
+  const lados: [number, [number, number], number][] = [[1, P.caderaD, 0], [-1, P.caderaI, 1]];
+  const tobs: V3[] = [], rods: V3[] = [];
+  for (const [s, [hz, rod], i] of lados) {
+    const a1 = rad(hz), a2 = rad(hz - rod);
+    const rodl: V3 = [Math.sin(a1) * L1, s * 3.6 * A, zc0 - Math.cos(a1) * L1];
+    let tob: V3 = [rodl[0] + Math.sin(a2) * L2, rodl[1], rodl[2] - Math.cos(a2) * L2];
+    if (plant) tob = [P.pasos ? P.pasos[i] * S : tob[0], s * 3.6 * A, piso + ((P.alza?.[i] ?? 0) + (P.puntillas?.[i] ?? 0) * 2.2) * S];
+    if (P.abre) tob[1] += s * P.abre[i] * S;
+    tobs.push(tob); rods.push(rodl);
+  }
+  if (mueve) {
+    // si una pierna no llega a su pie, la cadera baja (el peso se hunde) en vez de que el pie flote
+    const LM = (L1 + L2) * 0.995;
+    let baja = 0;
+    lados.forEach(([s], i) => {
+      const h = pvL(0, s * 3.6 * A, zc), t = tobs[i], hor = Math.hypot(t[0] - h[0], t[1] - h[1]);
+      if (hor < LM) baja = Math.max(baja, h[2] - (t[2] + Math.sqrt(LM * LM - hor * hor)));
+    });
+    zc -= baja;
+  }
+  const tor = rad(P.torso + (cu.joroba ?? 0) * 18), gir = rad(P.giroTorso), lad = rad(P.ladeo ?? 0);
+  // un punto del torso: girado sobre la vertical, ladeado e inclinado hacia adelante desde la cadera (que se corre con la pelvis)
+  const Tl = (fw: number, rt: number, up: number): V3 => {
+    const f2 = fw * Math.cos(gir) - rt * Math.sin(gir), r2 = fw * Math.sin(gir) + rt * Math.cos(gir);
+    const dz = up - zc, r3 = r2 * Math.cos(lad) + dz * Math.sin(lad), z3 = dz * Math.cos(lad) - r2 * Math.sin(lad);
+    return [f2 * Math.cos(tor) + z3 * Math.sin(tor) + adel, r3 + lat, zc + z3 * Math.cos(tor) - f2 * Math.sin(tor)];
+  };
+  const T: Fn = (fw, rt, up) => Wc(...Tl(fw, rt, up));
+  const Pv: Fn = (fw, rt, up) => Wc(...pvL(fw, rt, up));
   const hombroZ = zc + 16.5 * S;
   const cz = hombroZ + 7.6 * S - (cu.joroba ?? 0) * 2 * S;
-  const cabeza = rad(P.cabeza - (cu.joroba ?? 0) * 25);
-  const cab: Fn = (fw, rt, up) => { const dz = up - hombroZ; return T(fw * Math.cos(cabeza) + dz * Math.sin(cabeza) + (cu.joroba ?? 0) * 3 * S, rt, hombroZ + dz * Math.cos(cabeza) - fw * Math.sin(cabeza)); };
+  const cabeza = rad(P.cabeza - (cu.joroba ?? 0) * 25), gCab = rad(P.giroCabeza ?? 0), lCab = rad(P.ladeoCabeza ?? 0);
+  // la cabeza gira sobre el cuello, se ladea y cabecea; todo sobre el torso
+  const cab: Fn = (fw, rt, up) => {
+    const dz = up - hombroZ, f1 = fw * Math.cos(gCab) - rt * Math.sin(gCab), r1 = fw * Math.sin(gCab) + rt * Math.cos(gCab);
+    const r2 = r1 * Math.cos(lCab) + dz * Math.sin(lCab), z2 = dz * Math.cos(lCab) - r1 * Math.sin(lCab);
+    return T(f1 * Math.cos(cabeza) + z2 * Math.sin(cabeza) + (cu.joroba ?? 0) * 3 * S, r2, hombroZ + z2 * Math.cos(cabeza) - f1 * Math.sin(cabeza));
+  };
+  // ---- piernas
   const piernas: Pierna[] = [];
-  for (const [s, [hz, rod]] of [[1, P.caderaD], [-1, P.caderaI]] as [number, [number, number]][]) {
-    const cad: V3 = [0, s * 3.6 * A, zc];
-    const a1 = rad(hz), a2 = rad(hz - rod), L1 = 14.5 * S, L2 = 14 * S;
-    const rodl: V3 = [cad[0] + Math.sin(a1) * L1, cad[1], cad[2] - Math.cos(a1) * L1];
-    const tob: V3 = [rodl[0] + Math.sin(a2) * L2, rodl[1], rodl[2] - Math.cos(a2) * L2];
-    const pz = Math.max(1.1 * S, tob[2] - 1.6 * S);
-    piernas.push({ s, cad: Wc(...cad), rod: Wc(...rodl), tob: Wc(...tob), talon: Wc(tob[0] - 1.2 * S, tob[1], Math.max(1.1 * S, tob[2] - 2.2 * S)), punta: Wc(tob[0] + 4.6 * S, tob[1] * 1.04, pz - 0.2 * S) });
-  }
+  lados.forEach(([s, [hz, rod], i]) => {
+    let cad: V3, rodl: V3, tob: V3;
+    if (mueve) {
+      cad = pvL(0, s * 3.6 * A, zc); tob = tobs[i];
+      // la rodilla va hacia donde apunta el pie
+      const pg = rad(s * (P.pieGiro?.[i] ?? 0));
+      [rodl, tob] = ik2(cad, tob, L1, L2, [Math.cos(pg), Math.sin(pg) + s * 0.12, 0]);
+    } else {
+      cad = [0, s * 3.6 * A, zc];
+      const a1 = rad(hz), a2 = rad(hz - rod);
+      rodl = [Math.sin(a1) * L1, cad[1], zc - Math.cos(a1) * L1];
+      tob = [rodl[0] + Math.sin(a2) * L2, rodl[1], rodl[2] - Math.cos(a2) * L2];
+    }
+    // el pie: punta hacia adelante (abierta con pieGiro); en puntillas el talón sube y la punta queda en el piso
+    const pg = rad(s * (P.pieGiro?.[i] ?? 0)), fd: V3 = [Math.cos(pg), Math.sin(pg), 0];
+    const pz = Math.max(1.1 * S, tob[2] - 1.6 * S), tip = plant ? P.puntillas?.[i] ?? 0 : 0;
+    const talon: V3 = [tob[0] - fd[0] * 1.2 * S, tob[1] - fd[1] * 1.2 * S, Math.max(1.1 * S, tob[2] - 2.2 * S)];
+    const punta: V3 = [tob[0] + fd[0] * 4.6 * S * (1 - tip * 0.25), tob[1] * 1.04 + fd[1] * 4.6 * S, tip > 0 ? Math.max(0.6 * S, pz - 0.2 * S - tip * 2.2 * S) : pz - 0.2 * S];
+    piernas.push({ s, cad: Wc(...cad), rod: Wc(...rodl), tob: Wc(...tob), talon: Wc(...talon), punta: Wc(...punta) });
+  });
+  // ---- brazos: por ángulos (con giro del brazo) o con la mano a un punto (cinemática inversa)
   const brazos: Brazo[] = [];
-  for (const [s, [adel, afuera, codo]] of [[1, P.hombroD], [-1, P.hombroI]] as [number, [number, number, number]][]) {
-    const h0: V3 = [0, s * 6.4 * A, hombroZ];
-    const a1 = rad(adel), b1 = rad(afuera) * s, L1 = 11.5 * S, L2 = 10.2 * S;
-    const d1: V3 = [Math.sin(a1) * Math.cos(b1), Math.sin(b1), -Math.cos(a1) * Math.cos(b1)];
-    const c: V3 = add(h0, d1, L1);
-    const a2 = rad(adel + codo);
-    const d2: V3 = [Math.sin(a2) * Math.cos(b1 * 0.5), Math.sin(b1 * 0.5), -Math.cos(a2) * Math.cos(b1 * 0.5)];
-    const mu: V3 = add(c, d2, L2), ma: V3 = add(c, d2, L2 + 1.9 * S);
-    const hW = T(...h0), cW = T(...c), mW = T(...mu), maW = T(...ma);
+  const LB1 = 11.5 * S, LB2 = 10.2 * S;
+  const brazosP: [number, AngBrazo, [number, number, number] | undefined, [number, number, number] | undefined, number][] = [[1, P.hombroD, P.manoD, P.codoD, 0], [-1, P.hombroI, P.manoI, P.codoI, 1]];
+  for (const [s, ang, meta, polo, i] of brazosP) {
+    const h0: V3 = [0, s * 6.4 * A, hombroZ + (P.hombros?.[i] ?? 0) * S];
+    let hW: V3, cW: V3, mW: V3, maW: V3;
+    if (meta) {
+      const hB = Tl(...h0), obj: V3 = [meta[0] * S, meta[1] * A, meta[2] * S];
+      const pol: V3 = polo ? [polo[0], polo[1], polo[2]] : [-0.35, s * 0.8, -0.5];
+      const [cB, maB] = ik2(hB, obj, LB1, LB2 + 1.9 * S, pol);
+      const muB = add(maB, nor(sub(maB, cB)), -1.9 * S);
+      hW = Wc(...hB); cW = Wc(...cB); mW = Wc(...muB); maW = Wc(...maB);
+    } else {
+      const [adelA, afuera, codo, giro = 0] = ang;
+      const a1 = rad(adelA), b1 = rad(afuera) * s;
+      const d1: V3 = [Math.sin(a1) * Math.cos(b1), Math.sin(b1), -Math.cos(a1) * Math.cos(b1)];
+      const c: V3 = add(h0, d1, LB1);
+      const a2 = rad(adelA + codo);
+      let d2: V3 = [Math.sin(a2) * Math.cos(b1 * 0.5), Math.sin(b1 * 0.5), -Math.cos(a2) * Math.cos(b1 * 0.5)];
+      if (giro) d2 = rotar(d2, d1, rad(s * giro));
+      const mu: V3 = add(c, d2, LB2), ma: V3 = add(c, d2, LB2 + 1.9 * S);
+      hW = T(...h0); cW = T(...c); mW = T(...mu); maW = T(...ma);
+    }
     brazos.push({ s, hom: hW, codo: cW, mun: mW, mano: maW, d1: nor(sub(cW, hW)), d2: nor(sub(mW, cW)), eje: [0, 0, 1] });
   }
   // ---- el agarre: la hoja sale del puño cerrado casi en ángulo recto con el antebrazo (hacia donde apunta el pulgar)
-  const L1 = 11.5 * S, L2 = 10.2 * S + 1.9 * S;
-  for (const b of brazos) b.eje = ejeAgarre(b.d2, F, arma, b.s);
+  const L2m = LB2 + 1.9 * S;
+  for (const b of brazos) b.eje = ejeAgarre(b.d2, F, arma, b.s, b.s > 0 ? P.munecaD ?? 0 : 0);
   const der = brazos[0], izq = brazos[1];
-  // armas a dos manos, lanzas y ballestas: la mano izquierda se cierra sobre el mango (cinemática inversa de dos huesos)
+  const dirW = (v: V3): V3 => { const o = Wc(0, 0, 10), q = Wc(v[0], v[1], 10 + v[2]); return nor(sub(q, o)); };
+  if (P.armaD) {
+    // el arma apunta a donde la pose dice; si la cabeza del arma busca el piso, se ajusta al largo del arma
+    let [pa, ya] = P.armaD;
+    const L = LARGO_ARMA[arma], k = Math.max(0, Math.min(1, P.pisoArma ?? 0));
+    if (L && k > 0 && !P.caida) {
+      const hz = der.mano[2], c = (1.2 * S - hz) / (L * S);
+      if (Math.abs(c) <= 1) pa = pa + (((Math.acos(c) * 180) / Math.PI) - pa) * k;
+    }
+    der.eje = dirW([Math.sin(rad(pa)) * Math.cos(rad(ya)), Math.sin(rad(pa)) * Math.sin(rad(ya)), Math.cos(rad(pa))]);
+  }
+  // armas a dos manos, lanzas y ballestas: la mano izquierda se cierra sobre el mango (cinemática inversa de dos huesos);
+  // la pose puede correr el agarre por el mango (agarreI) o soltarlo (pegaI)
   const separa = arma === 'lanza' || arma === 'alabarda' || arma === 'guadana' ? 11 : dos(arma) ? 4.8 : arma === 'ballesta' ? -9 : 0;
-  if (separa && !P.caida) {
-    const meta = arma === 'ballesta' ? add(add(der.mano, F, 7 * S), R, 2.5 * S) : add(der.mano, der.eje, -separa * S);
+  const agarre = P.agarreI ?? separa, pega = Math.max(0, Math.min(1, P.pegaI ?? (agarre ? 1 : 0)));
+  if (agarre && pega > 0 && !P.caida && arma !== 'arco' && arma !== 'nada' && arma !== 'puno') {
+    let meta = arma === 'ballesta' ? add(add(der.mano, F, 7 * S), R, 2.5 * S) : add(der.mano, der.eje, -agarre * S);
+    if (pega < 1) meta = mez(izq.mano, meta, pega);
     const afuera = nor(add(R, [0, 0, 0], izq.s));
     const pol = nor(add([0, 0, -1], afuera, 0.8));
-    const h = izq.hom, dv = sub(meta, h), dist = Math.min(len(dv), L1 + L2 - 0.05), dir = nor(dv);
-    const ca = Math.max(-1, Math.min(1, (L1 * L1 + dist * dist - L2 * L2) / (2 * L1 * dist))), sa = Math.sqrt(1 - ca * ca);
-    const per = nor(sub(pol, [dir[0] * dot3(pol, dir), dir[1] * dot3(pol, dir), dir[2] * dot3(pol, dir)]));
-    const codo = add(add(h, dir, L1 * ca), per, L1 * sa), mano = add(h, dir, dist);
+    const [codo, mano] = ik2(izq.hom, meta, LB1, L2m, pol);
     const d2 = nor(sub(mano, codo));
-    Object.assign(izq, { codo, mano, mun: add(mano, d2, -1.9 * S), d1: nor(sub(codo, h)), d2, eje: der.eje });
+    Object.assign(izq, { codo, mano, mun: add(mano, d2, -1.9 * S), d1: nor(sub(codo, izq.hom)), d2, eje: der.eje });
   }
-  return { S, A, F, R, zc, hombroZ, cz, W: Wc, T, cab, ejesT: ejesDe(T, [0, 0, zc + 10]), ejesCab: ejesDe(cab, [0, 0, cz]), piernas, brazos, caida: P.caida };
+  // el báculo: casi vertical en la mano, o inclinado como diga la pose
+  const vara = P.vara ? dirW([Math.sin(rad(P.vara[0])), Math.sin(rad(P.vara[1])), Math.cos(rad(P.vara[0])) * Math.cos(rad(P.vara[1]))]) : undefined;
+  return { S, A, F, R, zc, hombroZ, cz, W: Wc, T, cab, ejesT: ejesDe(T, [0, 0, zc + 10]), ejesCab: ejesDe(cab, [0, 0, cz]), piernas, brazos, caida: P.caida, Pv, pose: P, vara };
 }
 
 const dot3 = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 /**
  * Eje del arma en el puño: el antebrazo girado hacia el pulgar. Una espada con el brazo colgando apunta adelante y un
- * poco abajo; en el tajo sigue al brazo. Las garras siguen el antebrazo; la lanza va casi horizontal.
+ * poco abajo; en el tajo sigue al brazo. Las garras siguen el antebrazo; la lanza va casi horizontal. La muñeca suma
+ * grados al ángulo del agarre (el arma se adelanta o se atrasa al antebrazo).
  */
-function ejeAgarre(d2: V3, F: V3, arma: TipoArma, s: number): V3 {
+function ejeAgarre(d2: V3, F: V3, arma: TipoArma, s: number, muneca = 0): V3 {
   void s;
   let pul = sub(F, [d2[0] * dot3(F, d2), d2[1] * dot3(F, d2), d2[2] * dot3(F, d2)]);
   if (len(pul) < 0.25) pul = sub([0, 0, 1], [d2[0] * d2[2], d2[1] * d2[2], d2[2] * d2[2]]);
   pul = nor(pul);
-  const a = rad(arma === 'garras' || arma === 'puno' ? 0 : arma === 'lanza' || arma === 'alabarda' ? 82 : dos(arma) ? 58 : arma === 'daga' || arma === 'varita' ? 55 : 66);
+  const a = rad((arma === 'garras' || arma === 'puno' ? 0 : arma === 'lanza' || arma === 'alabarda' ? 82 : dos(arma) ? 58 : arma === 'daga' || arma === 'varita' ? 55 : 66) + muneca);
   return nor(add([d2[0] * Math.cos(a), d2[1] * Math.cos(a), d2[2] * Math.cos(a)], pul, Math.sin(a)));
 }
 
@@ -237,22 +348,25 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], inf: number, mat?: strin
   const bT = (fw: number, rt: number, up: number, r: V3, k?: number) => bulto(T(fw, rt, up), [r[0] + inf, r[1] + inf, r[2] + inf], { ejes: ejesT, mat, k });
   const zc = e.zc, hz = e.hombroZ;
   if (tiene('pelvis')) {
-    cs.push(bulto(e.W(0, 0, zc + 0.6 * S), [3.7 * A + inf, (mujer ? 5.6 : 4.9) * A + inf, 4.1 * S + inf], { ejes: ejesDe(e.W, [0, 0, zc]), mat }));
-    for (const s of [1, -1]) cs.push(bulto(e.W(-2.3 * A, s * 2.4 * A, zc - 0.8 * S), [2.6 * A + inf, 2.7 * A + inf, 3.2 * S + inf], { ejes: ejesDe(e.W, [0, 0, zc]), mat }));
+    const Pv = e.Pv ?? e.W, ejesP = ejesDe(Pv, [0, 0, zc]);
+    cs.push(bulto(Pv(0, 0, zc + 0.6 * S), [3.7 * A + inf, (mujer ? 5.6 : 4.9) * A + inf, 4.1 * S + inf], { ejes: ejesP, mat }));
+    for (const s of [1, -1]) cs.push(bulto(Pv(-2.3 * A, s * 2.4 * A, zc - 0.8 * S), [2.6 * A + inf, 2.7 * A + inf, 3.2 * S + inf], { ejes: ejesP, mat }));
   }
   if (tiene('abdomen')) {
     cs.push(bT(0.5 * S + gr * 1.5, 0, zc + 6.2 * S, [3.4 * A + gr * 2.2, (mujer ? 4.0 : 4.4) * A + gr * 1.2, 4.6 * S]));
     if (mu > 0.55 && inf < 0.2) for (let i = 0; i < 3; i++) for (const s of [1, -1]) cs.push(bT(3.1 * A, s * 1.25 * A, zc + (4.2 + i * 2.5) * S, [0.9 * A, 1.3 * A, 1.15 * S], 1.2));
   }
   if (tiene('pecho')) {
-    cs.push(bT(0.2 * S, 0, zc + 12.3 * S, [4.0 * A + gr, (mujer ? 4.9 : 5.7 + mu * 0.6) * A, 5.4 * S]));
+    const rs = e.pose?.respira ?? 0;
+    cs.push(bT((0.2 + rs * 0.35) * S, 0, zc + (12.3 + rs * 0.3) * S, [(4.0 + rs * 0.45) * A + gr, (mujer ? 4.9 : 5.7 + mu * 0.6 + rs * 0.3) * A, (5.4 + rs * 0.25) * S]));
     if (mujer) for (const s of [1, -1]) cs.push(bT(3.3 * A, s * 2.2 * A, zc + 12.4 * S, [2.0 * A, 1.9 * A, 1.9 * S]));
     else for (const s of [1, -1]) cs.push(bT(2.7 * A, s * 2.6 * A, zc + 13.6 * S, [(1.5 + mu * 0.7) * A, (2.5 + mu * 0.6) * A, (2.1 + mu * 0.4) * S], 1.6));
   }
   if (tiene('hombros')) for (const s of [1, -1]) {
     // trapecio del cuello al hombro y el deltoides sobre la cabeza del brazo
     const b = e.brazos.find((x) => x.s === s)!;
-    cs.push(hueso(T(-0.6 * S, s * 1.4 * A, hz + 3 * S), T(-0.2 * S, s * 5.4 * A, hz + 0.8 * S), (1.7 + mu * 0.6) * A + inf, (1.4 + mu * 0.3) * A + inf, o));
+    const sube = (e.pose?.hombros?.[s > 0 ? 0 : 1] ?? 0) * S;
+    cs.push(hueso(T(-0.6 * S, s * 1.4 * A, hz + 3 * S + sube * 0.3), T(-0.2 * S, s * 5.4 * A, hz + 0.8 * S + sube), (1.7 + mu * 0.6) * A + inf, (1.4 + mu * 0.3) * A + inf, o));
     cs.push(bulto(add(b.hom, b.d1, 1.4 * S), [(3.0 + mu * 0.6) * A + inf, (2.5 + mu * 0.5) * A + inf, (2.5 + mu * 0.5) * A + inf], { eje: b.d1, mat }));
   }
   if (tiene('cuello')) cs.push(hueso(T(-0.3 * S, 0, hz + 0.4 * S), cab(0.2 * S, 0, e.cz - 2.6 * S), (1.9 + mu * 0.5) * S + inf, (1.7 + mu * 0.2) * S + inf, o));
@@ -318,14 +432,14 @@ export function personajeEscena(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f
   const piezas = personaje(cu, eq, dir, acc, f);
   const en = eq.arma?.encanto;
   if (!en || !eq.arma) return { piezas };
-  const e = esqueleto(cu, dir, acc, f, eq.arma.tipo);
+  const e = esqueleto(cu, dir, acc, f, eq.arma.tipo, eq.izq?.tipo);
   const [a, b] = filoDe(e, eq.arma.tipo, e.brazos[0]);
   return { piezas, resplandor: { c: mez(a, b, 0.5), r: 15 * e.S, color: ENCANTOS.find((x) => x[0] === en)![3] } };
 }
 
 export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): Pieza[] {
   const tipoArma = eq.arma?.tipo ?? 'nada';
-  const e = esqueleto(cu, dir, acc, f, tipoArma);
+  const e = esqueleto(cu, dir, acc, f, tipoArma, eq.izq?.tipo);
   const { S, A, T, cab, ejesCab, F, R } = e;
   const H = (cu.cabeza ?? 1) * S, cz = e.cz;
   const ps: Pieza[] = [];
@@ -409,7 +523,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       // peto curvo, espaldar, faldares y el borde dorado
       const peto = partes(e, cu, ['abdomen', 'pecho'], 1.5, to.mat);
       ps.push(masa(peto, { mat: to.mat, suave: 2.4 }));
-      for (let i = 0; i < 3; i++) ps.push(cilindro(...e.W(0, 0, e.zc - 2 * S - i * 2.6 * S), (5.6 + i * 0.35) * A, 2.4 * S, { mat: to.mat, r1: (5.3 + i * 0.35) * A, tono: -i * 0.03 }));
+      for (let i = 0; i < 3; i++) ps.push(cilindro(...(e.Pv ?? e.W)(0, 0, e.zc - 2 * S - i * 2.6 * S), (5.6 + i * 0.35) * A, 2.4 * S, { mat: to.mat, r1: (5.3 + i * 0.35) * A, tono: -i * 0.03 }));
       ps.push(elipsoide(...T(4.9 * A, 0, e.zc + 15.2 * S), 0.6, 4.4 * A, 0.7, { mat: 'cu_oro', giro: 0 }));
       // brazos de placa: brazal superior, codera con aleta y remache, para que el brazo lea como armadura y no como maniquí
       for (const b of e.brazos) {
@@ -427,8 +541,9 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     if (tb.borde) ps.push(caja(...T(4.6 * A + 1.4 + sobre, 0, e.zc - 10 * S), 0.5, 1.2 * A, 26 * S, { mat: tb.borde, giro: angulo(e.ejesT[0]), incl: -inclinacion(e.ejesT[2], e.ejesT[0]), inclEje: 'y' }));
   }
   if (eq.cinturon) {
-    ps.push(cilindro(...e.W(0, 0, e.zc + 1.6 * S), (4.6 + (cu.grasa ?? 0) * 1.5) * A, 2.2 * S, { mat: eq.cinturon.mat, r1: (4.8 + (cu.grasa ?? 0) * 1.5) * A }));
-    ps.push(caja(...e.W(4.7 * A, 0, e.zc + 1.4 * S), 0.9, 2.4 * S, 2.6 * S, { mat: eq.cinturon.hebilla ?? 'cu_oro', giro: angulo(F) }));
+    ps.push(cilindro(...(e.Pv ?? e.W)(0, 0, e.zc + 1.6 * S), (4.6 + (cu.grasa ?? 0) * 1.5) * A, 2.2 * S, { mat: eq.cinturon.mat, r1: (4.8 + (cu.grasa ?? 0) * 1.5) * A }));
+    const Pv = e.Pv ?? e.W;
+    ps.push(caja(...Pv(4.7 * A, 0, e.zc + 1.4 * S), 0.9, 2.4 * S, 2.6 * S, { mat: eq.cinturon.hebilla ?? 'cu_oro', giro: angulo(sub(Pv(1, 0, e.zc), Pv(0, 0, e.zc))) }));
   }
   // ---- manos
   if (eq.manos) {
@@ -469,13 +584,16 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
         pc.push(bC(1.4, 0, 3.3, [2.8, 3.5, 1.4], 1.4)); // flequillo arriba de la frente
         for (const s of [1, -1]) pc.push(bC(0.2, s * 3.0, 0.4, [2.6, 1.0, 2.6], 1.2)); // patillas
       }
+      // el pelo largo cuelga del cráneo y sus puntas se arrastran con la inercia (pelo de la pose)
+      const [pa, pl] = e.pose?.pelo ?? [0, 0];
+      const Tp = (fw: number, rt: number, up: number, k = 1) => T(fw - pa * k * S, rt + pl * k * S, up + Math.max(0, pa) * k * 0.3 * S);
       if (cu.peinado === 'largo' || cu.peinado === 'melena') {
         const ancho = cu.peinado === 'melena' ? 1.3 : 1;
-        pc.push(hueso(cab(-2.6 * H, 0, cz + 1 * H), T(-4.4 * S, 0, e.hombroZ - (cu.peinado === 'melena' ? 4 : 8) * S), 3.6 * H * ancho, 2.6 * H * ancho));
-        for (const s of [1, -1]) pc.push(hueso(cab(-0.6 * H, s * 3.4 * H, cz), T(-1.5 * S, s * 4.2 * A, e.hombroZ - 2.5 * S), 1.8 * H * ancho, 1.4 * H * ancho));
+        pc.push(hueso(cab(-2.6 * H, 0, cz + 1 * H), Tp(-4.4 * S, 0, e.hombroZ - (cu.peinado === 'melena' ? 4 : 8) * S), 3.6 * H * ancho, 2.6 * H * ancho));
+        for (const s of [1, -1]) pc.push(hueso(cab(-0.6 * H, s * 3.4 * H, cz), Tp(-1.5 * S, s * 4.2 * A, e.hombroZ - 2.5 * S, 0.5), 1.8 * H * ancho, 1.4 * H * ancho));
       }
-      if (cu.peinado === 'cola') { const a = cab(-3.4 * H, 0, cz + 1.6 * H), b = T(-5.6 * S, 0, e.hombroZ - 2 * S), c = T(-6 * S, 0, e.hombroZ - 11 * S); pc.push(hueso(a, b, 1.6 * H, 1.3 * H), hueso(b, c, 1.3 * H, 0.5 * H)); }
-      if (cu.peinado === 'trenzas') for (const s of [1, -1]) for (let i = 0; i < 4; i++) pc.push(bulto(mez(cab(-1.2 * H, s * 3.4 * H, cz - 1 * H), T(0.5 * S, s * 4.4 * A, e.hombroZ - 8 * S), i / 3.5), [1.2 * H, 1.1 * H, 1.5 * H], { k: 0.5 }));
+      if (cu.peinado === 'cola') { const a = cab(-3.4 * H, 0, cz + 1.6 * H), b = Tp(-5.6 * S, 0, e.hombroZ - 2 * S, 0.5), c = Tp(-6 * S, 0, e.hombroZ - 11 * S, 1.6); pc.push(hueso(a, b, 1.6 * H, 1.3 * H), hueso(b, c, 1.3 * H, 0.5 * H)); }
+      if (cu.peinado === 'trenzas') for (const s of [1, -1]) for (let i = 0; i < 4; i++) pc.push(bulto(mez(cab(-1.2 * H, s * 3.4 * H, cz - 1 * H), Tp(0.5 * S, s * 4.4 * A, e.hombroZ - 8 * S), i / 3.5), [1.2 * H, 1.1 * H, 1.5 * H], { k: 0.5 }));
       if (cu.peinado === 'mono') pc.push(bulto(cab(-2.8 * H, 0, cz + 3.6 * H), [2.3 * H, 2.3 * H, 2.1 * H]));
     }
     if (pc.length) ps.push(masa(pc.map((c) => ({ ...c, mat: cu.pelo })), { mat: cu.pelo, suave: 1.4 }));
@@ -508,7 +626,8 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   // ---- cola y alas
   if (cu.cola) {
     const ondea = Math.sin((f / 8) * Math.PI * 2) * 2;
-    const a = e.W(-3.5 * A, 0, e.zc), b = e.W(-9 * S, ondea, e.zc - 8 * S), c = e.W(-15 * S, -ondea, e.zc - 14 * S), d = e.W(-20 * S, ondea * 1.4, 2 * S);
+    const Pv = e.Pv ?? e.W;
+    const a = Pv(-3.5 * A, 0, e.zc), b = Pv(-9 * S, ondea, e.zc - 8 * S), c = Pv(-15 * S, -ondea, e.zc - 14 * S), d = Pv(-20 * S, ondea * 1.4, 2 * S);
     ps.push(masa([hueso(a, b, 1.8 * A, 1.3 * A, { mat: cu.cola }), hueso(b, c, 1.3 * A, 0.8 * A, { mat: cu.cola }), hueso(c, d, 0.8 * A, 0.3 * A, { mat: cu.cola })], { mat: cu.cola, suave: 1.2 }));
   }
   if (cu.alas) ps.push(...alas(e, cu.alas, acc, f));
@@ -518,7 +637,96 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     if (eq.arma.encanto) { const [a, b] = filoDe(e, eq.arma.tipo, e.brazos[0]); ps.push(...encantar(a, b, eq.arma.encanto, f, e.S, 7)); }
   }
   if (eq.izq) ps.push(...manoIzq(e, eq.izq, eq.arma?.tipo));
-  void R;
+  if (e.pose?.objetoI === 'frasco') ps.push(...frasco(e, acc === 'presentar' ? f / CUADROS.presentar : 0));
+  if (acc === 'presentar' && cu.presentacion) ps.push(...efectos(cu, eq, e, dir, f));
+  void R; void F;
+  return ps;
+}
+
+/** Un frasco de vidrio con poción que brilla, en la mano izquierda; al agitarlo el líquido se mueve. */
+function frasco(e: Esqueleto, u: number): Pieza[] {
+  const { S } = e, b = e.brazos[1];
+  const base = add(add(b.mano, [0, 0, 1.4 * S]), b.d2, 0.4 * S);
+  const sacude = Math.sin(u * Math.PI * 2 * 6) * (u > 0.1 && u < 0.38 ? 1 : 0);
+  const ps: Pieza[] = [];
+  ps.push(esfera(...base, 1.9 * S, { mat: 'vidrio' }));
+  ps.push(esfera(...add(base, [sacude * 0.4 * S, 0, -0.35 * S + Math.abs(sacude) * 0.3 * S]), 1.45 * S, { mat: 'fuego_verde' }));
+  const cuello = add(base, [0, 0, 1.8 * S]);
+  ps.push(palo(cuello, add(cuello, [0, 0, 1.8 * S]), 0.65 * S, { mat: 'vidrio' }), esfera(...add(cuello, [0, 0, 2.2 * S]), 0.7 * S, { mat: 'madera' }));
+  return ps;
+}
+
+/**
+ * Lo que acompaña la presentación de cada clase (acción secundaria): el sigilo de luz que dibuja la mano y sale
+ * disparado, las almas que suben a la garra, hojas que arrastra el viento, el polvo del hachazo contra el piso,
+ * burbujas del frasco agitado y el destello del saludo con la espada.
+ */
+function efectos(cu: Cuerpo, eq: Equipo, e: Esqueleto, dir: Dir, f: number): Pieza[] {
+  const n = CUADROS.presentar, u = f / n, S = e.S, ps: Pieza[] = [];
+  const tipo = eq.arma?.tipo ?? 'nada';
+  const mano = (q: number, i: number) => esqueleto(cu, dir, 'presentar', q * n, tipo, eq.izq?.tipo).brazos[i].mano;
+  const h = (i: number) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+  switch (cu.presentacion) {
+    case 'conjuro': {
+      // el sigilo queda escrito en el aire detrás de la mano y, al lanzarlo, vuela adelante y se apaga
+      const u0 = 0.16, u1 = Math.min(u, 0.6);
+      if (u < u0 || u > 0.8) break;
+      const vuela = u > 0.62 ? (u - 0.62) / 0.18 : 0;
+      for (let q = u0; q <= u1 + 1e-6; q += 0.0125) {
+        const c = add(mano(q, 1), e.F, vuela * 16 * S);
+        ps.push(esfera(...c, (0.55 - vuela * 0.35) * S * (0.7 + 0.3 * Math.sin(q * 60)), { mat: 'magia' }));
+      }
+      break;
+    }
+    case 'invoca': {
+      // jirones de alma que suben en espiral desde el piso hacia la garra mientras la levanta
+      if (u < 0.08 || u > 0.84) break;
+      const m = e.brazos[manoDe(tipo, eq.izq?.tipo) === 'escudo' ? 0 : 1].mano, piso: V3 = [m[0], m[1], 0.8];
+      const fuerza = Math.sin(Math.PI * (u - 0.08) / 0.76);
+      for (let k = 0; k < 6; k++) {
+        const t = ((u * 2 + k / 6) % 1), a = k * 2.1 + u * 9, r = (3.2 - t * 2.2) * S;
+        const c = add(mez(piso, m, t), [Math.cos(a) * r, Math.sin(a) * r, 0]);
+        ps.push(elipsoide(...c, 0.9 * S * fuerza, 0.9 * S * fuerza, 1.8 * S * fuerza, { mat: 'cu_ectoplasma' }));
+      }
+      break;
+    }
+    case 'naturaleza': {
+      // hojas que el viento hace girar alrededor, más fuerte cuando abre los brazos
+      const viento = 0.4 + 0.6 * Math.sin(Math.PI * Math.min(1, Math.max(0, (u - 0.1) / 0.75)));
+      for (let k = 0; k < 9; k++) {
+        const a = k * 0.7 + u * Math.PI * 2 * (k % 2 ? 1 : 2), r = (10 + h(k) * 6) * S * viento, z = e.zc + (-6 + h(k + 3) * 34) * S + Math.sin(a * 2) * 2 * S;
+        ps.push(elipsoide(...e.W(Math.cos(a) * r, Math.sin(a) * r, z), 1.8 * S, 1 * S, 0.45 * S, { mat: k % 3 ? 'hojas' : 'hojas_otono', giro: (a * 180) / Math.PI }));
+      }
+      break;
+    }
+    case 'rugido': {
+      // el hachazo contra el piso levanta polvo y piedritas que se abren y caen
+      if (u < 0.5 || u > 0.72 || tipo === 'nada') break;
+      const [, punta] = filoDe(e, tipo, e.brazos[0]), c: V3 = [punta[0], punta[1], 0.8];
+      const t = (u - 0.5) / 0.22;
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2 + h(k), r = (2 + t * 7) * S * (0.6 + h(k + 1) * 0.6), z = (Math.sin(Math.PI * Math.min(1, t * 1.3)) * (2 + h(k + 2) * 4) + 0.6) * S;
+        ps.push(esfera(c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r, z, (k % 2 ? 0.9 : 1.4) * S * (1 - t * 0.6), { mat: k % 2 ? 'roca' : 'tierra' }));
+      }
+      break;
+    }
+    case 'frasco': {
+      // burbujas que suben del frasco mientras lo agita y lo mira
+      if (u < 0.12 || u > 0.7) break;
+      const b = add(e.brazos[1].mano, [0, 0, 5 * S]);
+      for (let k = 0; k < 4; k++) { const t = ((u * 5 + k / 4) % 1); ps.push(esfera(b[0] + (h(k) - 0.5) * 2 * S, b[1] + (h(k + 1) - 0.5) * 2 * S, b[2] + t * 6 * S, 0.45 * S * (1 - t * 0.5), { mat: 'fuego_verde' })); }
+      break;
+    }
+    case 'guardia': {
+      // destello en la punta de la espada durante el saludo
+      if (u < 0.28 || u > 0.46 || tipo === 'nada') break;
+      const [, punta] = filoDe(e, tipo, e.brazos[0]);
+      const k = Math.sin(Math.PI * (u - 0.28) / 0.18);
+      ps.push(esfera(...punta, 1.2 * S * k, { mat: 'luz_vela' }));
+      for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2 + u * 6; ps.push(palo(punta, add(punta, [Math.cos(a) * 3 * S * k, Math.sin(a) * 3 * S * k, (i % 2 ? 1 : -1) * 3 * S * k]), 0.2 * S, { mat: 'luz_vela', r1: 0.05 })); }
+      break;
+    }
+  }
   return ps;
 }
 
@@ -563,8 +771,8 @@ const inclinacion = (up: V3, fw: V3) => (Math.asin(Math.max(-1, Math.min(1, -(up
 function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Accion, f: number): Pieza {
   const { S, A } = e;
   const cs: Comp[] = [];
-  const z0 = e.zc + 2.5 * S, z1 = Math.max(1.2 * S, e.zc + 2.5 * S - largo * S);
-  cs.push(hueso(e.W(0, 0, z0), e.W(0.2 * S, 0, (z0 + z1) / 2), 4.6 * A, 4.4 * A * vuelo, { mat }));
+  const z0 = e.zc + 2.5 * S, z1 = Math.max(1.2 * S, e.zc + 2.5 * S - largo * S), Pv = e.Pv ?? e.W;
+  cs.push(hueso(Pv(0, 0, z0), Pv(0.2 * S, 0, (z0 + z1) / 2), 4.6 * A, 4.4 * A * vuelo, { mat }));
   for (const p of e.piernas) {
     // la tela baja por cada pierna hasta el largo y se abre en el ruedo
     const t = Math.min(1, (z0 - z1) / Math.max(1, z0 - p.tob[2]));
@@ -572,8 +780,9 @@ function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Ac
     const ruedo: V3 = [bajo[0], bajo[1], Math.max(z1, bajo[2])];
     cs.push(hueso(p.cad, ruedo, 4.0 * A, 3.6 * A * vuelo, { mat }));
   }
-  const vaiven = acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.5 : 0;
-  cs.push(hueso(e.W(-1 * S, 0, z0 - 3 * S), e.W(-2.2 * S - vaiven, 0, z1 + 1.5 * S), 3.8 * A, 4.2 * A * vuelo, { mat }));
+  // la tela de atrás se arrastra con la inercia del cuerpo (capa de la pose) o se mece al caminar
+  const tela = e.pose?.capa, vaiven = tela ? (tela[0] - 0.8) * 0.6 : acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.5 : 0, lado = tela ? tela[1] * 0.6 : 0;
+  cs.push(hueso(Pv(-1 * S, 0, z0 - 3 * S), e.W(-2.2 * S - vaiven, lado * S, z1 + 1.5 * S), 3.8 * A, 4.2 * A * vuelo, { mat }));
   return masa(cs, { mat, suave: 3.2 });
 }
 
@@ -583,7 +792,10 @@ function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Ac
  */
 function capa(e: Esqueleto, mat: string, largo: number, acc: Accion, f: number): Pieza {
   const { S, A, T } = e;
-  const ondea = acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.6 + 2.6 : acc === 'atacar' ? 2.2 : acc === 'morir' ? 0 : 0.7;
+  // la capa se arrastra atrás y al costado con la inercia del cuerpo (la pose la calcula); en el ruedo pesa más
+  const tela = e.pose?.capa;
+  const ondea = tela ? tela[0] : acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.6 + 2.6 : acc === 'atacar' ? 2.2 : acc === 'morir' ? 0 : 0.7;
+  const ladea = tela ? tela[1] : 0;
   const zTop = e.hombroZ + 1.2 * S, zBot = Math.max(2.2 * S, e.zc - 26 * S * largo + 12 * S);
   const N = 7, cs: Comp[] = [];
   const fila = (t: number, k: number): V3 => {
@@ -592,7 +804,8 @@ function capa(e: Esqueleto, mat: string, largo: number, acc: Accion, f: number):
     if (t <= 0.25) return T(-3.8 * A - pliegue * 0.3 - t * 4, k * (4.4 + t * 2) * A, zTop - t * (zTop - e.zc - 6 * S) * 4);
     const u = (t - 0.25) / 0.75;
     const z = e.zc + 6 * S + (zBot - e.zc - 6 * S) * u;
-    return e.W(-5.2 * S - (ondea + 1.2) * u - pliegue, k * (5.6 + u * 1.6) * A, z);
+    const pv = e.Pv ?? e.W, base = sub(pv(0, 0, e.zc), e.W(0, 0, e.zc));
+    return add(e.W(-5.2 * S - (ondea + 1.2) * u - pliegue, k * (5.6 + u * 1.6) * A + ladea * u * u * S, z + Math.max(0, ondea - 2.5) * u * u * 0.8 * S), base, 1 - u * 0.5);
   };
   for (let c = 0; c < N; c++) {
     const k = -1 + (2 * c) / (N - 1);
@@ -746,10 +959,14 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
     case 'baculo': case 'cetro': {
       // el báculo va casi vertical en la mano, con el remate arriba
       const lg = tipo === 'cetro' ? 0.45 : 1;
-      const pie: V3 = add([m[0], m[1], Math.max(0.5, m[2] - 24 * S * lg)], F, 1.2), tope: V3 = add([m[0], m[1], m[2] + 26 * S * lg], F, 2.4);
+      const [pie, tope, up] = varaDe(e, m, lg);
       ps.push(palo(pie, tope, 0.85 * S, { mat: mango, r1: 0.75 * S }));
-      if (tipo === 'baculo') { for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2; ps.push(palo(add(tope, [0, 0, -1 * S]), add(tope, [Math.cos(a) * 2.6 * S, Math.sin(a) * 2.6 * S, 3.4 * S]), 0.55 * S, { mat: mango, r1: 0.3 * S })); } gemaArriba(add(tope, [0, 0, 2.4 * S]), 2.1 * S); }
-      else { ps.push(cilindro(...tope, 1.4 * S, 2 * S, { mat: 'cu_oro', r1: 2.2 * S })); gemaArriba(add(tope, [0, 0, 3.4 * S]), 1.7 * S); }
+      // el remate de cuatro puntas gira sobre el eje de la vara (giroVara)
+      const gv = rad(e.pose?.giroVara ?? 0);
+      let ex = nor(cruz(up, F)); if (len(cruz(up, F)) < 0.2) ex = nor(cruz(up, [1, 0, 0]));
+      const ey = cruz(up, ex);
+      if (tipo === 'baculo') { for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2 + gv; ps.push(palo(add(tope, up, -1 * S), add(add(add(tope, ex, Math.cos(a) * 2.6 * S), ey, Math.sin(a) * 2.6 * S), up, 3.4 * S), 0.55 * S, { mat: mango, r1: 0.3 * S })); } gemaArriba(add(tope, up, 2.4 * S), 2.1 * S); }
+      else { ps.push(cilindro(...tope, 1.4 * S, 2 * S, { mat: 'cu_oro', r1: 2.2 * S })); gemaArriba(add(tope, up, 3.4 * S), 1.7 * S); }
       break;
     }
     case 'varita': ps.push(palo(en(-1.5 * S), en(10 * S), 0.5 * S, { mat: mango, r1: 0.3 * S })); gemaArriba(en(10.5 * S), 1 * S); break;
@@ -763,23 +980,37 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
         const arr: V3 = [c[0], c[1], c[2] + 15 * S], abj: V3 = [c[0], c[1], c[2] - 15 * S], comba = add(c, F, 3.4 * S);
         const pts = [arr, add(add(comba, [0, 0, 9 * S]), F, -0.8 * S), comba, add(add(comba, [0, 0, -9 * S]), F, -0.8 * S), abj];
         for (let i = 0; i < 4; i++) ps.push(palo(pts[i], pts[i + 1], (i === 1 || i === 2 ? 0.75 : 0.55) * S, { mat: mango, r1: (i === 1 || i === 2 ? 0.75 : 0.55) * S }));
-        ps.push(palo(arr, m, 0.15 * S, { mat: 'cuerda' }), palo(m, abj, 0.15 * S, { mat: 'cuerda' }));
-        ps.push(palo(m, add(comba, F, 2 * S), 0.3 * S, { mat: 'madera_lisa' }), poliedro([add(add(comba, F, 2 * S), [0, 0, 0.8]), add(add(comba, F, 2 * S), [0, 0, -0.8]), add(comba, F, 4.5 * S)], { mat }));
+        const tensa = e.pose?.tensa !== false;
+        if (tensa) ps.push(palo(arr, m, 0.15 * S, { mat: 'cuerda' }), palo(m, abj, 0.15 * S, { mat: 'cuerda' }));
+        else ps.push(palo(arr, abj, 0.15 * S, { mat: 'cuerda' }));
+        if (tensa && e.pose?.flecha !== false) ps.push(palo(m, add(comba, F, 2 * S), 0.3 * S, { mat: 'madera_lisa' }), poliedro([add(add(comba, F, 2 * S), [0, 0, 0.8]), add(add(comba, F, 2 * S), [0, 0, -0.8]), add(comba, F, 4.5 * S)], { mat }));
       } else {
         // la ballesta va al frente, entre las dos manos, apuntando hacia adelante
-        const d = e.brazos[0].mano, cc = mez(c, d, 0.5), lado = nor(cruz(F, [0, 0, 1]));
-        const atras = add(cc, F, -5 * S), frente = add(cc, F, 9 * S);
+        // con las dos manos va entre ellas apuntando adelante; con la izquierda libre cuelga de la derecha en la dirección del puño
+        const suelta = (e.pose?.pegaI ?? 1) < 0.5, ap = suelta ? dd : F;
+        const d = e.brazos[0].mano, cc = suelta ? add(d, dd, 2 * S) : mez(c, d, 0.5);
+        let lado = nor(cruz(ap, [0, 0, 1])); if (len(cruz(ap, [0, 0, 1])) < 0.2) lado = nor(cruz(ap, F));
+        const atras = add(cc, ap, -5 * S), frente = add(cc, ap, 9 * S);
         ps.push(palo(atras, frente, 1.0 * S, { mat: mango }), caja(...add(atras, [0, 0, -2.4 * S]), 1.6 * S, 1.4 * S, 3 * S, { mat: mango, giro: angulo(F) }));
-        const pal = add(frente, F, -1.5 * S);
-        ps.push(palo(add(add(pal, lado, 7.5 * S), F, -2 * S), pal, 0.7 * S, { mat, r1: 0.9 * S }), palo(pal, add(add(pal, lado, -7.5 * S), F, -2 * S), 0.9 * S, { mat, r1: 0.7 * S }));
-        ps.push(palo(add(add(pal, lado, 7.5 * S), F, -2 * S), add(cc, F, -1 * S), 0.15 * S, { mat: 'cuerda' }), palo(add(cc, F, -1 * S), add(add(pal, lado, -7.5 * S), F, -2 * S), 0.15 * S, { mat: 'cuerda' }));
-        ps.push(palo(add(cc, [0, 0, 1 * S]), add(add(frente, F, 1.5 * S), [0, 0, 1 * S]), 0.35 * S, { mat: 'madera_lisa' }));
+        const pal = add(frente, ap, -1.5 * S);
+        ps.push(palo(add(add(pal, lado, 7.5 * S), ap, -2 * S), pal, 0.7 * S, { mat, r1: 0.9 * S }), palo(pal, add(add(pal, lado, -7.5 * S), ap, -2 * S), 0.9 * S, { mat, r1: 0.7 * S }));
+        ps.push(palo(add(add(pal, lado, 7.5 * S), ap, -2 * S), add(cc, ap, -1 * S), 0.15 * S, { mat: 'cuerda' }), palo(add(cc, ap, -1 * S), add(add(pal, lado, -7.5 * S), ap, -2 * S), 0.15 * S, { mat: 'cuerda' }));
+        ps.push(palo(add(cc, [0, 0, 1 * S]), add(add(frente, ap, 1.5 * S), [0, 0, 1 * S]), 0.35 * S, { mat: 'madera_lisa' }));
       }
       break;
     }
     default: break;
   }
   return ps;
+}
+
+/** La vara del báculo o el cetro por la mano: [pie, tope, eje]; casi vertical salvo que la pose la incline. */
+function varaDe(e: Esqueleto, m: V3, lg: number): [V3, V3, V3] {
+  const S = e.S;
+  if (!e.vara) return [add([m[0], m[1], Math.max(0.5, m[2] - 24 * S * lg)], e.F, 1.2), add([m[0], m[1], m[2] + 26 * S * lg], e.F, 2.4), [0, 0, 1]];
+  const v = e.vara, pie = add(m, v, -24 * S * lg);
+  if (pie[2] < 0.5) { const k = (m[2] - 0.5) / Math.max(0.01, m[2] - pie[2]); pie[0] = m[0] + (pie[0] - m[0]) * k; pie[1] = m[1] + (pie[1] - m[1]) * k; pie[2] = 0.5; }
+  return [pie, add(m, v, 26 * S * lg), v];
 }
 
 /** El tramo vivo del arma (la hoja, la cabeza o la gema) desde la mano a lo largo de su eje. */
@@ -797,8 +1028,8 @@ function filoDe(e: Esqueleto, tipo: TipoArma, b: Brazo): [V3, V3] {
     case 'guadana': return [en(24), en(31)];
     case 'garras': return [en(1), en(9)];
     case 'varita': return [en(5), en(11)];
-    case 'baculo': case 'cetro': { const t: V3 = add([b.mano[0], b.mano[1], b.mano[2] + (tipo === 'cetro' ? 12 : 26) * S], e.F, 2.4); return [t, add(t, [0, 0, 4 * S])]; }
-    case 'arco': case 'ballesta': { const c = e.brazos[1].mano; return [add(c, [0, 0, -12 * S]), add(c, [0, 0, 12 * S])]; }
+    case 'baculo': case 'cetro': { const [, t, up] = varaDe(e, b.mano, tipo === 'cetro' ? 0.45 : 1); return [t, add(t, up, 4 * S)]; }
+    case 'arco': case 'ballesta': { if (tipo === 'ballesta' && (e.pose?.pegaI ?? 1) < 0.5) return [b.mano, add(b.mano, b.eje, 11 * S)]; const c = e.brazos[1].mano; return [add(c, [0, 0, -12 * S]), add(c, [0, 0, 12 * S])]; }
     default: return [b.mano, en(4)];
   }
 }
@@ -880,10 +1111,20 @@ export function encantar(a: V3, b: V3, en: Encanto, f: number, S = 1, semilla = 
 }
 
 function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArma): Pieza[] {
-  const { S, F } = e;
+  const { S } = e;
   const b = e.brazos[1];
   const ps: Pieza[] = [];
   if (dos(derecha) || derecha === 'arco' || derecha === 'ballesta') return ps;
+  // la cara del escudo mira hacia donde mira el torso y se abre hacia afuera entre 10° y 45°: la apertura se elige por
+  // dirección (fija en todos los cuadros de esa dirección) para que la cámara vea la cara y nunca el canto
+  let F = e.F;
+  if (!e.caida) {
+    const C: V3 = [Math.SQRT1_2, Math.SQRT1_2, 0], izqC = -dot3(e.R, C), adeC = dot3(e.F, C);
+    let ab = 10, mejor = -1;
+    for (let g = 10; g <= 45; g += 5) { const v = Math.abs(adeC * Math.cos(rad(g)) + izqC * Math.sin(rad(g))); if (v > mejor + 1e-6) { mejor = v; ab = g; } }
+    const [ex, ey] = e.ejesT, fh = nor([ex[0] * Math.cos(rad(ab)) + ey[0] * Math.sin(rad(ab)), ex[1] * Math.cos(rad(ab)) + ey[1] * Math.sin(rad(ab)), 0]);
+    if (isFinite(fh[0]) && len([fh[0], fh[1], 0]) > 0.5) F = fh;
+  }
   const c = add(add(b.mano, F, 1.2 * S), [0, 0, 2.2 * S]);
   const mat = iz.mat ?? 'madera', m2 = iz.mat2 ?? 'cu_placa';
   const ga = angulo(F);
