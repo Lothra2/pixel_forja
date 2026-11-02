@@ -46,7 +46,7 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
   for (const o of obreros) o.terminate();
   obreros = [];
   if (firma === 'base') { vivos = null; progresoPintura = 1; return; }
-  const clave = clase + '|' + firma;
+  const clave = 'v2|' + clase + '|' + firma;
   const cache = await leer(clave);
   if (yo !== trabajo) return;
   if (cache) { const m = new Map<string, Cuadro[]>(); for (const [k, fs] of Object.entries(cache as Record<string, any[]>)) m.set(k, fs.map(aCuadro)); vivos = m; progresoPintura = 1; return; }

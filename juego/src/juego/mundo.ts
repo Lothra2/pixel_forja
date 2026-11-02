@@ -10,6 +10,11 @@ import { TALISMAN_JEFE } from '../datos/talismanes';
 import type { Elemento } from './tipos_objetos';
 import { R, entre, elegir, clamp, dist, hashTxt } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
+import { zancada } from '../../../src/engine/gotico/figura';
+
+/** Celdas que avanza un ciclo completo de caminar o correr (cuerpo de alto 1), según la pisada del motor. */
+export const ZANCADA = { caminar: zancada('caminar') / 16, correr: zancada('correr') / 16 };
+export const ALTO_CLASE: Record<string, number> = { berserker: 1.03, cazadora: 1.02 };
 
 export type Dir = 's' | 'so' | 'o' | 'no' | 'n' | 'ne' | 'e' | 'se';
 export type Accion = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'lanzar' | 'herido' | 'morir';
@@ -31,6 +36,8 @@ export interface Ent {
   dur: number; golpeEn: number; golpeo: boolean;
   vida: number; vidaMax: number;
   vel: number;
+  /** Distancia caminada en celdas: mueve la animación de los pies para que no patinen. */
+  recorrido?: number;
   radio: number;
   muerto: boolean; tMuerto: number;
   frio: number; congelado: number; veneno: number; venenoDps: number; aturdido: number; miedo: number; sangrado: number;
@@ -775,10 +782,12 @@ function moverHacia(j: Juego, e: Ent, tx: number, ty: number, vel: number, dt: n
   const paso = Math.min(l, vel * dt);
   const nx = e.x + (dx / l) * paso, ny = e.y + (dy / l) * paso;
   e.dir = dirDe(dx, dy);
+  const x0 = e.x, y0 = e.y;
   if (pasable(j.zona, nx, ny)) { e.x = nx; e.y = ny; }
   else if (pasable(j.zona, nx, e.y)) e.x = nx;
   else if (pasable(j.zona, e.x, ny)) e.y = ny;
   else return true;
+  e.recorrido = (e.recorrido ?? 0) + Math.hypot(e.x - x0, e.y - y0);
   return l <= paso + 0.01;
 }
 
@@ -852,8 +861,10 @@ function actualizarHeroe(j: Juego, dt: number) {
     const [tx, ty] = h.camino[0];
     if (moverHacia(j, h, tx, ty, vel, dt)) h.camino.shift();
     if (h.acc !== (h.correr ? 'correr' : 'caminar')) { h.acc = h.correr ? 'correr' : 'caminar'; }
-    h.pasoT += dt * vel;
-    if (h.pasoT > 1.6) { h.pasoT = 0; sonar(j, 'paso', h.x, h.y, 0.35); }
+    // un paso por cada pie que apoya: media zancada
+    const medio = (h.correr ? ZANCADA.correr : ZANCADA.caminar) * (ALTO_CLASE[h.d.clase] ?? 1) / 2;
+    const pie = Math.floor((h.recorrido ?? 0) / medio);
+    if (pie !== h.pasoT) { h.pasoT = pie; sonar(j, 'paso', h.x, h.y, h.correr ? 0.4 : 0.3); }
     if (!h.camino.length) h.camino = null;
   } else if (h.acc === 'caminar' || h.acc === 'correr') h.acc = 'quieto';
 }

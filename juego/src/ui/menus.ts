@@ -1,7 +1,7 @@
 // Fuera del juego: intro, menú principal, elegir y crear héroe, opciones y pantalla de carga.
 import { ctx, W, H, E } from '../nucleo/lienzo';
 import { texto, T, TT, IDI, boton, marco, dentro, envolver, TITULO, fijarIdioma } from './comun';
-import { cuadrosHeroe, cuadrosPiso, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo, type Cuadro } from '../motor/assets';
+import { cuadrosHeroe, cuadrosPiso, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
 import { generarPaisaje, type MapaGotico } from '../../../src/engine/gotico/index';
 import { CLASES } from '../datos/clases';
 import { INTRO } from '../mundo/actos';
@@ -199,58 +199,8 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
   return { accion, sel };
 }
 
-// ------------------------------------------------------------------ crear héroe: las ocho clases alrededor del fuego
-export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' | 'volver' | null; sel: number | null } {
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-  const cx = W / 2, cy = H * 0.5;
-  // fogata
-  const fog = objetoMeta('camp_fogata', 'grande');
-  const pisoF = cuadrosPiso('tierra', 1); for (let i = -4; i <= 4; i++) for (let k = -4; k <= 4; k++) { const px = cx + (i - k) * 80, py = cy + (i + k) * 40; if (pisoF[0]) dibujar(ctx, pisoF[0], px, py); }
-  let accion: 'crear' | 'volver' | null = null;
-  const pos = CLASES.map((_, i) => { const a = Math.PI * 1.0 + (i / (CLASES.length - 1)) * Math.PI * 1.0; return [cx + Math.cos(a) * W * 0.4, cy + Math.sin(a) * H * 0.22 + 70] as [number, number]; });
-  const orden = CLASES.map((c, i) => ({ c, i, y: pos[i][1] })).sort((a, b) => a.y - b.y);
-  if (fog) dibujar(ctx, fog.f[Math.floor(t * 25 / fog.t) % fog.f.length], cx, cy + 60);
-  let enc: number | null = null;
-  for (const { c, i } of orden) {
-    const [x, y] = pos[i];
-    const dir = sel === i ? 's' : ((Math.atan2(cy + 60 - y, cx - x) * 180) / Math.PI);
-    const dn = typeof dir === 'string' ? dir : (['se', 's', 'so', 'o', 'no', 'n', 'ne', 'e'])[Math.round(((dir % 360) + 360) % 360 / 45) % 8];
-    const acc = sel === i ? 'atacar' : 'quieto';
-    const fs = cuadrosHeroe(c.id, acc, dn);
-    const q: Cuadro | undefined = fs[acc === 'atacar' ? Math.floor(t * 10) % fs.length : Math.floor(t * 6) % Math.max(1, fs.length)];
-    const sobre = dentro(x - 30, y - 90, 60, 100);
-    if (sobre) enc = i;
-    ctx.globalAlpha = sobre || sel === i ? 1 : 0.75;
-    if (q) dibujar(ctx, q, x, y, 1.15);
-    ctx.globalAlpha = 1;
-    texto(TT(c.nombre), x, y + 22, { alin: 'center', tam: 13, color: sel === i ? '#ffd080' : sobre ? '#fff' : '#a09070', fuente: TITULO });
-    if (sobre && E.clicIzq) { sel = i; E.clicIzq = false; Sonido.efecto('click'); }
-  }
-  // luz del fuego
-  ctx.save(); const g = ctx.createRadialGradient(cx, cy + 40, 30, cx, cy + 40, Math.max(W, H) * 0.6); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.75, 'rgba(0,0,0,0.25)'); g.addColorStop(1, 'rgba(0,0,0,0.85)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.globalCompositeOperation = 'lighter'; const g2 = ctx.createRadialGradient(cx, cy + 40, 0, cx, cy + 40, 260 + Math.sin(t * 8) * 8); g2.addColorStop(0, 'rgba(255,120,40,0.35)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H); ctx.restore();
-  brasas(t, 30);
-  texto(T('Elige a tu héroe', 'Choose your hero'), W / 2, 34, { alin: 'center', tam: 22, color: '#e0c890', fuente: TITULO });
-  const ver = enc ?? sel;
-  if (ver !== null) {
-    const c = CLASES[ver];
-    const w = Math.min(520, W - 40), x = W / 2 - w / 2, y = H - 150;
-    marco(x, y, w, 120, 0.9);
-    texto(TT(c.nombre), x + 16, y + 26, { tam: 18, color: '#ffd080', fuente: TITULO });
-    envolver(TT(c.descripcion), w - 32, 13).forEach((l, n) => texto(l, x + 16, y + 46 + n * 16, { tam: 13 }));
-    envolver(TT(c.historia), w - 32, 12).slice(0, 2).forEach((l, n) => texto(l, x + 16, y + 82 + n * 15, { tam: 12, color: '#a09070' }));
-    texto(`${T('Fue', 'Str')} ${c.base.fue} · ${T('Des', 'Dex')} ${c.base.des} · ${T('Vit', 'Vit')} ${c.base.vit} · ${T('Ene', 'Ene')} ${c.base.ene}`, x + w - 16, y + 26, { alin: 'right', tam: 12, color: '#c0b090' });
-  }
-  const inp = document.getElementById('nombre') as HTMLInputElement;
-  if (sel !== null) {
-    const r = (document.getElementById('juego') as HTMLCanvasElement).getBoundingClientRect();
-    const k = r.width / W;
-    inp.style.display = 'block'; inp.style.left = `${r.left + (W / 2 - 110) * k}px`; inp.style.top = `${r.top + 56 * k}px`; inp.style.width = `${220 * k - 16}px`; inp.placeholder = T('Nombre del héroe', 'Hero name');
-    if (boton(T('Crear', 'Create'), W / 2 + 120, 54, 90, 30, { activo: inp.value.trim().length > 0 }) && inp.value.trim()) accion = 'crear';
-  } else inp.style.display = 'none';
-  if (boton(T('Volver', 'Back'), 16, 16, 90, 30, { tam: 13 })) accion = 'volver';
-  return { accion, sel };
-}
+// crear héroe: ver seleccion.ts
+export { dibujarCrear } from './seleccion';
 
 // ------------------------------------------------------------------ opciones
 export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {

@@ -150,23 +150,32 @@ export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: nu
   if (!silueta(q, '#000')) return;
   const n = lista.length;
   const norm = n > 2 ? Math.sqrt(2 / n) : 1;
-  for (const s of lista) {
-    // eje de la altura: hacia afuera de la luz, sobre el piso. Eje del ancho: perpendicular, también en el piso.
-    const cx = -s.gx * s.len, cy = -s.gy * 0.5 * s.len;
-    let ux = -s.gy, uy = s.gx; if (ux < 0) { ux = -ux; uy = -uy; }
-    const ax = ux, ay = uy * 0.5;
-    const alfa = Math.min(0.72, s.a * norm);
-    // tres copias corridas: bordes suaves y la punta más difusa
-    for (let c = 0; c < 3; c++) {
-      const k = 1 + (c - 1) * 0.07;
-      ctx.save();
-      ctx.globalAlpha = alfa / (c === 1 ? 2 : 4);
-      ctx.translate(px + (c - 1) * 0.8, py);
-      ctx.transform(ax, ay, cx * k, cy * k, 0, 0);
-      ctx.drawImage(tmp, 0, 0, q.w, q.h, -q.ax * esc, -q.ay * esc, q.w * esc, q.h * esc);
-      ctx.restore();
-    }
+  for (const s of lista) dibujarSombra(ctx, q, px, py, esc, s.gx, s.gy, s.len, Math.min(0.72, s.a * norm));
+}
+
+/** Sombra de una silueta ya preparada en el lienzo de trabajo: (gx, gy) es la dirección lejos de la luz en el piso. */
+function dibujarSombra(ctx: CanvasRenderingContext2D, q: Cuadro, px: number, py: number, esc: number, gx: number, gy: number, len: number, alfa: number) {
+  // eje de la altura: hacia afuera de la luz, sobre el piso. Eje del ancho: perpendicular, también en el piso.
+  const cx = -gx * len, cy = -gy * 0.5 * len;
+  let ux = -gy, uy = gx; if (ux < 0) { ux = -ux; uy = -uy; }
+  const ax = ux, ay = uy * 0.5;
+  // tres copias corridas: bordes suaves y la punta más difusa
+  for (let c = 0; c < 3; c++) {
+    const k = 1 + (c - 1) * 0.07;
+    ctx.save();
+    ctx.globalAlpha = alfa / (c === 1 ? 2 : 4);
+    ctx.translate(px + (c - 1) * 0.8, py);
+    ctx.transform(ax, ay, cx * k, cy * k, 0, 0);
+    ctx.drawImage(tmp, 0, 0, q.w, q.h, -q.ax * esc, -q.ay * esc, q.w * esc, q.h * esc);
+    ctx.restore();
   }
+}
+
+/** Sombra de un sprite suelto (menús): una luz en (lx, ly) de pantalla a la altura lh. */
+export function sombraSuelta(ctx: CanvasRenderingContext2D, q: Cuadro | undefined, px: number, py: number, esc: number, lx: number, ly: number, lh: number, alfa: number) {
+  if (!q || !q.img || !silueta(q, '#000')) return;
+  const gx = px - lx, gy = (py - ly) * 2, d = Math.hypot(gx, gy) || 1;
+  dibujarSombra(ctx, q, px, py, esc, gx / d, gy / d, Math.max(0.45, Math.min(2.2, (d / lh) * 0.95)), alfa);
 }
 
 /** Reflejo de las luces de color sobre el cuerpo: el lado que mira a la luz se enciende con su color. */

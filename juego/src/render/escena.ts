@@ -2,7 +2,7 @@
 import { ctx, W, H } from '../nucleo/lienzo';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto } from '../juego/mundo';
-import { CUADROS, DIRS } from '../juego/mundo';
+import { CUADROS, DIRS, ZANCADA, ALTO_CLASE } from '../juego/mundo';
 import { colorObj, baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
 import { cuadrosVivos } from '../motor/pintor';
@@ -26,8 +26,18 @@ export interface Pick { tipo: 'monstruo' | 'npc' | 'suelo' | 'objeto' | 'salida'
 export let picks: Pick[] = [];
 export const opciones = { mostrarObjetos: false, idi: 0 as 0 | 1 };
 
-const fr = (acc: string, t: number, dur: number) => {
+/** Celdas por ciclo de pasos para este cuerpo: zancada del motor por su alto y su escala. */
+function zancadaDe(e: Ent, acc: string): number {
+  const base = acc === 'correr' ? ZANCADA.correr : ZANCADA.caminar;
+  const za = manifiesto().za as Record<string, number> | undefined;
+  if (e.tipo === 'heroe') return base * (za?.[(e as any).d?.clase] ?? ALTO_CLASE[(e as any).d?.clase] ?? 1);
+  const m = e as Monstruo;
+  const alto = za?.[m.def?.sprite];
+  return base * (alto ?? 0.9) * (m.escala ?? 1);
+}
+const fr = (acc: string, t: number, dur: number, e?: Ent, accPies?: string) => {
   const n = CUADROS[acc as keyof typeof CUADROS] ?? 8;
+  if (e && (acc === 'caminar' || acc === 'correr')) return Math.floor(((e.recorrido ?? 0) / zancadaDe(e, accPies ?? acc)) * n) % n;
   if (acc === 'quieto') return Math.floor(t * 6) % n;
   if (acc === 'caminar') return Math.floor(t * 11) % n;
   if (acc === 'correr') return Math.floor(t * 14) % n;
@@ -267,7 +277,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   let i: number;
   if (e.tipo === 'monstruo' && (m as any).surgiendo > 0) i = Math.max(0, fs.length - 1 - Math.floor((1.2 - (m as any).surgiendo) * 7));
   else if ((e as any).estado === 'surgir') return;
-  else i = fr(acc, e.t, e.dur);
+  else i = fr(acc, e.t, e.dur, e, acc === 'correr' && e.tipo !== 'heroe' && !cuadrosMonstruo(m.def.sprite, 'correr', e.dir).length ? 'caminar' : acc);
   if (e.tipo === 'monstruo' && m.estado === 'surgir') return;
   const q = fs[Math.min(fs.length - 1, i)];
   const esc = e.escala;

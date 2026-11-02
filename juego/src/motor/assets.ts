@@ -9,7 +9,7 @@ export interface Cuadro {
   hoja?: [number, number, number, number];
 }
 export interface ObjMeta { f: Cuadro[]; t: number; hu: [number, number]; b: number; tema: string; luz: [number, string, number] | 0; plano: number }
-interface Manifiesto { atlas: Record<string, [string, number, number]>; h: Record<string, any[]>; m: Record<string, any[]>; o: Record<string, any>; p: Record<string, any[]>; i?: Record<string, any[]>; w?: Record<string, any[]>; wm?: Record<string, any> }
+interface Manifiesto { atlas: Record<string, [string, number, number]>; h: Record<string, any[]>; m: Record<string, any[]>; o: Record<string, any>; p: Record<string, any[]>; i?: Record<string, any[]>; w?: Record<string, any[]>; wm?: Record<string, any>; r?: Record<string, any[]>; za?: Record<string, number> }
 
 let man: Manifiesto | null = null;
 const imgs = new Map<string, HTMLImageElement | ImageBitmap>();
@@ -49,7 +49,7 @@ export async function asegurar(nombres: Iterable<string>, progreso?: (h: number,
   await Promise.all(ns.map((n) => cargarAtlas(n).then(() => progreso?.(++h, ns.length))));
 }
 
-function lista(grupo: 'h' | 'm' | 'p' | 'i', clave: string): Cuadro[] {
+function lista(grupo: 'h' | 'm' | 'p' | 'i' | 'r', clave: string): Cuadro[] {
   const k = grupo + ':' + clave;
   let c = cuadros.get(k);
   if (!c) { const raw = (man as any)?.[grupo]?.[clave]; c = raw ? raw.map(aCuadro) : []; cuadros.set(k, c!); }
@@ -58,6 +58,8 @@ function lista(grupo: 'h' | 'm' | 'p' | 'i', clave: string): Cuadro[] {
 export const cuadrosHeroe = (clase: string, acc: string, dir: string) => lista('h', `${clase}/${acc}/${dir}`);
 export const cuadrosMonstruo = (id: string, acc: string, dir: string) => lista('m', `${id}/${acc}/${dir}`);
 export const cuadrosPiso = (id: string, v: number) => lista('p', `${id}|${v}`);
+/** Retrato grande de la clase en su pose de presentación (nivel 0 novato, 2 leyenda). */
+export const cuadrosRetrato = (id: string, nivel: number) => lista('r', `${id}/${nivel}`);
 export const cuadrosIcono = (id: string) => lista('i', id);
 export function objetoMeta(id: string, v: string): ObjMeta | null {
   const k = `${id}|${v}`;

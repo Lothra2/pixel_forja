@@ -12,6 +12,7 @@ const { pintarEscena, aPantalla } = await import(join(raiz, 'render.ts'));
 const { personajeEscena, esqueleto } = await import(join(raiz, 'cuerpo.ts'));
 const { pintarPoder } = await import(join(raiz, 'poderes.ts'));
 const extra = await import('../src/motor/hoja.ts');
+const { HEROES } = await import(join(raiz, 'catalogo/personajes.ts'));
 
 type Cuadro = { w: number; h: number; ax: number; ay: number; data: Uint8ClampedArray; hoja?: number[] };
 
@@ -33,6 +34,15 @@ parentPort!.on('message', (job: any) => {
         const c = recortar(r.img, r.ancla[0], r.ancla[1]);
         c.hoja = extra.hojaDe(esqueleto, aPantalla, job.cuerpo, job.equipo, job.dir, job.acc, f);
         out.push(c);
+      }
+    } else if (job.tipo === 'retrato') {
+      // como retratoHeroe del motor, pero sin sombra: el juego le pone la suya con sus luces
+      const h = HEROES.find((x: any) => x.id === job.id), k = 2.4;
+      const LUZ: Record<string, string> = { berserker: '#ff6020', templario: '#ffe090', arcanista: '#70b0ff', cazadora: '#a0c0ff', nigromante: '#60e080', monje: '#ffb040', druida: '#80e060', alquimista: '#c060ff' };
+      for (let f = 0; f < job.cuadros; f++) {
+        const e = personajeEscena({ ...h.cuerpo, alto: (h.cuerpo.alto ?? 1) * k }, h.niveles[job.nivel], 'so', 'presentar', f);
+        const r = pintarEscena({ ...e, resplandor: e.resplandor ?? { c: [20 * k, -8 * k, 6 * k], r: 70 * k, color: LUZ[h.id] ?? '#ffb060' }, ss: 2, sinSombra: true });
+        out.push(recortar(r.img, r.ancla[0], r.ancla[1]));
       }
     } else if (job.tipo === 'objeto') {
       for (let f = 0; f < job.cuadros; f++) { const r = pintarObjeto(job.id, job.v, f, job.seed); out.push(recortar(r.img, r.ancla[0], r.ancla[1])); }
