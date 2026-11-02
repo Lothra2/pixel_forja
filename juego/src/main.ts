@@ -449,6 +449,8 @@ async function arrancar() {
   (window as any).__estado = () => estado;
   import('./juego/mundo').then((m) => { (window as any).__mundo = m; });
   (window as any).__U = { hablarCon, abrirTienda, ui };
+  // ganchos para las pruebas del build de producción
+  Promise.all([import('./juego/heroe'), import('./juego/objetos'), import('./datos/objetos_datos'), import('./motor/pintor')]).then(([H, O, D, P]) => { (window as any).__T = { H, O, D, P }; });
   (window as any).__ir = (id: string, e: string) => irAZona(id, e);
   (window as any).__aPant = (x: number, y: number) => { const [a, b] = aPant(x, y); const r = (document.getElementById('juego') as HTMLCanvasElement).getBoundingClientRect(); return [r.left + a * r.width / W, r.top + b * r.height / H]; };
 }
