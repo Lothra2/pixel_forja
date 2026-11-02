@@ -140,7 +140,8 @@ async function empezarPartida(d: DatosHeroe) {
 let mantenerT = 0, derT = 0;
 function encimaDe(): Pick | null {
   let best: Pick | null = null;
-  const prio = (p: Pick) => (p.tipo === 'monstruo' ? 4 : p.tipo === 'npc' ? 3 : p.tipo === 'portal' ? 2.5 : p.tipo === 'suelo' ? 3.5 : p.tipo === 'objeto' ? 2 : 1);
+  // las etiquetas del botín ganan: si el nombre está a la vista, el clic es para recogerlo (antes un monstruo detrás se lo robaba)
+  const prio = (p: Pick) => (p.tipo === 'suelo' ? 5 : p.tipo === 'monstruo' ? 4 : p.tipo === 'npc' ? 3 : p.tipo === 'portal' ? 2.5 : p.tipo === 'objeto' ? 2 : 1);
   for (const p of picks) if (E.x >= p.x0 && E.x <= p.x1 && E.y >= p.y0 && E.y <= p.y1) if (!best || prio(p) > prio(best) || (prio(p) === prio(best) && p.prof > best.prof)) best = p;
   return best;
 }
@@ -420,6 +421,8 @@ function paso(dt: number) {
       break;
     }
     case 'seleccion': {
+      // el héroe elegido se pinta con su equipo (el mismo pintor del juego, así además queda listo en caché al entrar)
+      if (heroes[sel]) { const d = heroes[sel]; const f = firmaVisual(d); if ((window as any).__firmaSel !== f) { (window as any).__firmaSel = f; pintarHeroe(d.clase, cuerpoDe(d.clase), equipoVisual(d), f, 's'); } }
       const r = dibujarSeleccion(tiempo, heroes, sel);
       sel = r.sel;
       dibujarCursor('senalar');

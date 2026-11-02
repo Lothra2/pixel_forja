@@ -265,7 +265,9 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   // salidas sin puerta: un rastro de luz en el piso con el nombre del lugar
   for (const sa of z.salidas) {
     if (sa.obj) continue;
-    const [px, py] = aPant(sa.cx + 0.5, sa.cy + 0.5);
+    // la etiqueta va sobre piso firme: un poco hacia adentro de la salida, no flotando en el vacío del borde
+    const adentro = z.entradas['salida_' + sa.destino] ?? [sa.cx, sa.cy];
+    const [px, py] = aPant((sa.cx + adentro[0]) / 2 + 0.5, (sa.cy + adentro[1]) / 2 + 0.5);
     if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     const k = 0.25 + Math.sin(tiempo * 2.5) * 0.08;

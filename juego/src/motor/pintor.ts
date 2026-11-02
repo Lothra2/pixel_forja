@@ -14,6 +14,9 @@ export let progresoPintura = 1;
 /** Momento del último cambio visible (para el destello sobre el héroe). */
 export let cambioVisible = -10;
 
+/** Los cuadros pintados solo si son de esta firma (para no mostrar el héroe anterior mientras se pinta el nuevo). */
+export const cuadrosDeFirma = (firma: string, acc: string, dir: string) => (firma === firmaVivos ? cuadrosVivos(acc, dir) : nuevosVivos && firma === firmaActual ? nuevosVivos.get(acc + '/' + dir) ?? null : null);
+let firmaVivos = '';
 export const cuadrosVivos = (acc: string, dir: string) => nuevosVivos?.get(acc + '/' + dir) ?? vivos?.get(acc + '/' + dir) ?? null;
 
 function aCuadro(f: any): Cuadro {
@@ -53,7 +56,7 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
   const clave = 'v6|' + clase + '|' + firma;
   const cache = await leer(clave);
   if (yo !== trabajo) return;
-  if (cache) { const m = new Map<string, Cuadro[]>(); for (const [k, fs] of Object.entries(cache as Record<string, any[]>)) m.set(k, fs.map(aCuadro)); vivos = m; nuevosVivos = null; progresoPintura = 1; cambioVisible = performance.now() / 1000; return; }
+  if (cache) { const m = new Map<string, Cuadro[]>(); for (const [k, fs] of Object.entries(cache as Record<string, any[]>)) m.set(k, fs.map(aCuadro)); vivos = m; firmaVivos = firma; nuevosVivos = null; progresoPintura = 1; cambioVisible = performance.now() / 1000; return; }
   // prioridad: quieto y caminar hacia donde mira, después quieto, caminar y correr en todas, al final el resto
   const trabajos: { acc: string; dir: string; n: number }[] = [];
   const N_ = Object.fromEntries(ACCS) as Record<string, number>;
@@ -86,6 +89,6 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
     }
   });
   if (yo !== trabajo) return;
-  if (nuevos.size) { vivos = nuevos; nuevosVivos = null; escribir(clave, crudos); }
+  if (nuevos.size) { vivos = nuevos; firmaVivos = firma; nuevosVivos = null; escribir(clave, crudos); }
   progresoPintura = 1;
 }

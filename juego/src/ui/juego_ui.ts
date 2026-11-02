@@ -822,6 +822,9 @@ function panelTienda(j: Juego, x: number, y: number, t: number) {
     let costo = 0; for (const o of Object.values(h.d.equipo)) if (o && o.durabMax) costo += Math.round((o.durabMax - o.durab) * (o.precio / o.durabMax) * 0.4 + (o.durab < o.durabMax ? 2 : 0));
     if (boton(`${T('Reparar todo', 'Repair all')} (${costo})`, x + 150, y + 44 + 10 * CELDA_INV + 6, 156, 26, { tam: 12, activo: costo > 0 && h.d.oro >= costo })) { if (costo > 0 && h.d.oro >= costo) { h.d.oro -= costo; for (const o of Object.values(h.d.equipo)) if (o) o.durab = o.durabMax; Sonido.efecto('reparar'); recalc(j); } E.clicIzq = false; }
   }
+  // cómo se usa la tienda, siempre a la vista
+  texto(ui.tiendaTipo === 'vidente' ? T('Clic izquierdo: apostar por un objeto', 'Left click: gamble for an item') : T('Clic izquierdo: comprar', 'Left click: buy'), x + 18, y + 44 + 10 * CELDA_INV + 44, { tam: 11, color: '#c0b090' });
+  texto(T('Clic derecho en tu bolsa: vender', 'Right click in your bag: sell'), x + 18, y + 44 + 10 * CELDA_INV + 58, { tam: 11, color: '#c0b090' });
   if (ui.mano && dentro(x, y, 320, 432)) texto(T('Clic para vender', 'Click to sell'), x + 160, y + 425, { alin: 'center', tam: 11, color: '#e8c050' });
   if (boton(T('Cerrar', 'Close'), x + 230, y + 395, 76, 26, { tam: 12 })) { ui.izq = null; ui.der = null; E.clicIzq = false; }
 }

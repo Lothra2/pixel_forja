@@ -946,6 +946,8 @@ export function generarZona(def: DefZona, semilla: number): Zona {
   for (const o of z.objetos) if (o.id === 'mis_libro_maldito') o.tag = 'libro';
   // asegurar que toda entrada caiga en celda libre
   for (const k of Object.keys(z.entradas)) z.entradas[k] = libreCerca(z, z.entradas[k][0], z.entradas[k][1]);
+  // los pisos 'fortaleza' y 'arcano' parecen de prueba (círculos tachados): se cambian por baldosa de catedral y arenisca
+  for (const t of z.pisos) if (t && (t.id === 'fortaleza' || t.id === 'arcano')) t.id = t.id === 'fortaleza' ? 'baldosa_catedral' : 'arenisca';
   conectar(z);
   return z;
 }

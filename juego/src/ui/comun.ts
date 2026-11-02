@@ -99,6 +99,8 @@ function icono3D(o: Objeto, x: number, y: number, w: number, h: number): boolean
     if (!c) return false;
     iconos3d.set(k, c); if (iconos3d.size > 300) iconos3d.delete(iconos3d.keys().next().value!);
   }
+  // las armas largas son finas (astas de 1 o 2 px): un contorno claro suave las hace legibles sobre la celda oscura
+  if (d.arma || o.tipo === 'equipo' && baseDe(o)?.ranura === 'arma') { ctx.save(); ctx.shadowColor = 'rgba(255,225,170,0.75)'; ctx.shadowBlur = 3; ctx.drawImage(c, Math.round(x + (w - c.width) / 2), Math.round(y + (h - c.height) / 2)); ctx.shadowBlur = 0; ctx.globalAlpha = 0.6; ctx.drawImage(c, Math.round(x + (w - c.width) / 2), Math.round(y + (h - c.height) / 2)); ctx.restore(); return true; }
   ctx.drawImage(c, Math.round(x + (w - c.width) / 2), Math.round(y + (h - c.height) / 2));
   return true;
 }

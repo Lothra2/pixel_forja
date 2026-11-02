@@ -1,4 +1,5 @@
 // Fuera del juego: intro, menú principal, elegir y crear héroe, opciones y pantalla de carga.
+import { cuadrosDeFirma } from '../motor/pintor';
 import { ctx, W, H, E } from '../nucleo/lienzo';
 import { texto, T, TT, IDI, boton, marco, dentro, envolver, TITULO, fijarIdioma } from './comun';
 import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
@@ -306,7 +307,9 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
   const bx = W / 2 + 40, by = H * 0.35;
   if (heroes[sel]) {
     const hr = heroes[sel];
-    const fs = cuadrosHeroe(hr.clase, 'quieto', 's'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], bx + 140, by + 30, 2);
+    // con su equipo si el pintor ya lo tiene; si no, el cuerpo horneado mientras tanto
+    const vivo = cuadrosDeFirma((window as any).__firmaSel ?? '', 'quieto', 's');
+    const fs = vivo?.length ? vivo : cuadrosHeroe(hr.clase, 'quieto', 's'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], bx + 140, by + 30, 2);
     if (boton(T('Jugar', 'Play'), bx + 40, by + 80, 200, 38, { tam: 16 })) accion = 'jugar';
     if ((hr.actosHechos ?? []).includes(7) && (hr.dificultad ?? 0) < 2 && boton(hr.dificultad ? T('Bajar al Infierno', 'Descend into Hell') : T('Empezar Pesadilla', 'Begin Nightmare'), bx + 40, by + 268, 200, 30, { tam: 13, color: '#ff8060' })) accion = 'dificultad';
     if (boton((window as any).__borrar === hr.id ? T('¿Seguro? Clic otra vez', 'Sure? Click again') : T('Borrar', 'Delete'), bx + 40, by + 128, 200, 30, { tam: 13, color: (window as any).__borrar === hr.id ? '#ff6060' : undefined })) accion = 'borrar';
