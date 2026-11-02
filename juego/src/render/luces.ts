@@ -21,6 +21,10 @@ export interface Luz {
   de?: Ent;
   /** Antorcha del héroe: alumbra pero no tiñe de color. */
   blanca?: boolean;
+  /** Alumbra pero no proyecta sombras (lo que lleva el héroe encima). */
+  sinSombra?: boolean;
+  /** Identidad estable entre cuadros, para suavizar las sombras. */
+  id?: string;
 }
 
 export const COLOR_ELEM: Record<string, [number, number, number]> = {
@@ -31,6 +35,8 @@ export const COLOR_ELEM: Record<string, [number, number, number]> = {
 const hex = (c: [number, number, number], a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
 const LUZ_RAREZA: Record<string, [number, number, number]> = { raro: [255, 230, 90], conjunto: [90, 230, 90], unico: [210, 170, 90], legendario: [255, 110, 40] };
+const ids = new WeakMap<object, string>(); let nId = 0;
+const idDe = (o: object) => { let v = ids.get(o); if (!v) { v = 'x' + nId++; ids.set(o, v); } return v; };
 export let luces: Luz[] = [];
 (window as any).__luces = () => luces;
 /** Destello global de la escena (explosiones grandes), 0 a 1. */
@@ -47,14 +53,14 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   const [hx, hy] = aPant(h.x, h.y);
   const osc = (j as any).oscurece ?? 0;
   const rLuz = ((z.tipo === 'pueblo' ? 420 : 210) + h.c.radio_luz * 18 + Math.sin(t * 7) * 3) * (osc > 0 ? 0.55 + 0.45 * Math.max(0, 1 - Math.sin((osc / 3.5) * Math.PI)) : 1);
-  L.push({ x: hx, y: hy, h: 55, r: rLuz, c: [255, 210, 150], k: 1, de: h, blanca: true });
+  L.push({ x: hx, y: hy, h: 55, r: rLuz, c: [255, 210, 150], k: 1, de: h, blanca: true, sinSombra: true });
   if (h.c.vivo) {
     const cv = COLOR_ELEM[h.c.vivo === 'luz' ? 'sagrado' : h.c.vivo] ?? COLOR_ELEM.fuego;
-    L.push({ x: hx + 10, y: hy, h: 40, r: 120, c: cv, k: 0.55 + Math.sin(t * 13) * 0.08, de: h });
+    L.push({ x: hx + 10, y: hy, h: 40, r: 120, c: cv, k: 0.55 + Math.sin(t * 13) * 0.08, de: h, sinSombra: true });
   }
   // equipo legendario: el héroe mismo da una luz de su color
   const au = auraEquipo(h.d.equipo as any);
-  if (au) L.push({ x: hx, y: hy, h: 45, r: 110 + au.k * 70, c: au.color, k: (0.35 + au.k * 0.35) * (0.85 + Math.sin(t * 3) * 0.15), de: h });
+  if (au) L.push({ x: hx, y: hy, h: 45, r: 110 + au.k * 70, c: au.color, k: (0.35 + au.k * 0.35) * (0.85 + Math.sin(t * 3) * 0.15), de: h, sinSombra: true });
   // fuegos y objetos que alumbran
   for (const o of z.objetos) {
     const meta = objetoMeta(o.id, o.v); if (!meta || !meta.luz) continue;
@@ -63,7 +69,7 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const lc: any = meta.luz[1];
     const c: [number, number, number] = Array.isArray(lc) ? [lc[0], lc[1], lc[2]] : String(lc).includes(',') ? (String(lc).split(',').map(Number) as any) : [255, 150, 60];
     const r = Math.min(260, meta.luz[0] * 1.3) * (0.93 + Math.sin(t * 9 + o.cx) * 0.04 + R() * 0.03);
-    L.push({ x: px, y: py, h: Math.max(20, meta.luz[2] * 1.2), r, c, k: 0.9 });
+    L.push({ x: px, y: py, h: Math.max(20, meta.luz[2] * 1.2), r, c, k: 0.9, id: `o${o.cx},${o.cy}` });
   }
   // proyectiles: luces que viajan
   for (const p of j.proyectiles) {
@@ -72,7 +78,7 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const el = (manifiesto().wm?.[p.efecto]?.elem as string) ?? p.elem;
     const c = COLOR_ELEM[p.elem === 'rayo' || el === 'rayo' ? 'rayo' : p.elem && p.elem !== 'fisico' ? p.elem : el] ?? COLOR_ELEM.fisico;
     const fuerte = el === 'rayo' || p.elem === 'rayo' ? 1.35 : p.arco ? 0.5 : 1;
-    L.push({ x: px, y: py, h: Math.max(18, (p.z ?? 0) * 1.2 + 30), r: 200 * fuerte + Math.sin(t * 30 + p.x) * 10, c, k: Math.min(1, 0.85 * fuerte) });
+    L.push({ id: idDe(p), x: px, y: py, h: Math.max(18, (p.z ?? 0) * 1.2 + 30), r: 200 * fuerte + Math.sin(t * 30 + p.x) * 10, c, k: Math.min(1, 0.85 * fuerte) });
   }
   // hechizos y explosiones: luz que se apaga; los impactos dan un destello
   let fl = 0; let flc: [number, number, number] = destelloColor;
@@ -85,41 +91,41 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const k = Math.max(0, 1 - e.t / dur);
     const impacto = meta && !meta.bucle && (meta.tipo === 'impacto' || meta.tipo === 'lluvia' || meta.tipo === 'area');
     const golpe = impacto ? Math.max(0, 1 - e.t / 0.25) : 0;
-    L.push({ x: px, y: py, h: 40 + (e.z ?? 0), r: (150 * (e.escala ?? 1)) * (0.4 + k * 0.6) + 40 + golpe * 120, c, k: Math.min(1, 0.45 * k + golpe * 0.8) });
+    L.push({ id: idDe(e), x: px, y: py, h: 40 + (e.z ?? 0), r: (150 * (e.escala ?? 1)) * (0.4 + k * 0.6) + 40 + golpe * 120, c, k: Math.min(1, 0.45 * k + golpe * 0.8) });
     if (impacto && meta.elem !== 'fisico' && meta.elem !== 'hueso') { const f = golpe * Math.min(1, (e.escala ?? 1)); if (f > fl) { fl = f; flc = c; } }
     if (e.id === 'arco_cadena' && (e as any).x2 !== undefined) {
       const [bx, by] = aPant((e as any).x2, (e as any).y2);
-      L.push({ x: (px + bx) / 2, y: (py + by) / 2, h: 34, r: 220, c: COLOR_ELEM.rayo, k: k });
+      L.push({ id: idDe(e) + 'b', x: (px + bx) / 2, y: (py + by) / 2, h: 34, r: 220, c: COLOR_ELEM.rayo, k: k });
     }
   }
   for (const a of j.areas) if (a.retraso <= 0 && a.elem && a.elem !== 'fisico') {
     const [px, py] = aPant(a.x, a.y);
     if (!dentro(px, py, 300)) continue;
-    L.push({ x: px, y: py, h: 20, r: a.radio * 32 + 40, c: COLOR_ELEM[a.elem] ?? COLOR_ELEM.fuego, k: 0.6 + Math.sin(t * 11 + a.x) * 0.08 });
+    L.push({ id: idDe(a), x: px, y: py, h: 20, r: a.radio * 32 + 40, c: COLOR_ELEM[a.elem] ?? COLOR_ELEM.fuego, k: 0.6 + Math.sin(t * 11 + a.x) * 0.08 });
   }
   // Ozmaren arde: una luz naranja que palpita, más fuerte cuando abre el pecho
   for (const m of j.monstruos) {
     if (m.muerto || m.def.sprite !== 'jefe_ozmaren') continue;
     const [px, py] = aPant(m.x, m.y); if (!dentro(px, py, 400)) continue;
     const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
-    for (const l of lucesOzmaren(px, py, 195 * (m.escala ?? 1), t, furia)) L.push({ x: l.x, y: l.y, h: l.h, r: l.r, c: [255, 95 + Math.round(l.k * 40), 25], k: l.k, de: m });
+    for (const [i, l] of lucesOzmaren(px, py, 195 * (m.escala ?? 1), t, furia).entries()) L.push({ id: 'oz' + i, x: l.x, y: l.y, h: l.h, r: l.r, c: [255, 95 + Math.round(l.k * 40), 25], k: l.k, de: m });
   }
   // grietas de lava del piso: brillan y respiran
   for (const mk of z.marcas) if (mk.tipo === 'lava' && mk.cx % 2 === 0) {
     const [px, py] = aPant(mk.cx + 0.5, mk.cy + 0.5); if (!dentro(px, py, 200)) continue;
-    L.push({ x: px, y: py, h: 8, r: 110, c: [255, 80, 20], k: 0.35 + 0.25 * Math.sin(t * 1.7 + mk.cx * 0.7) + R() * 0.08 });
+    L.push({ id: `lv${mk.cx},${mk.cy}`, x: px, y: py, h: 8, r: 110, c: [255, 80, 20], k: 0.35 + 0.25 * Math.sin(t * 1.7 + mk.cx * 0.7) + R() * 0.08 });
   }
   // botín en el piso: luz del color de su rareza
   for (const sl of j.suelo) {
     const o = sl.o; if (!o) continue;
     const c = LUZ_RAREZA[o.rareza]; if (!c) continue;
     const [px, py] = aPant(sl.x, sl.y); if (!dentro(px, py, 120)) continue;
-    L.push({ x: px, y: py, h: 30, r: o.rareza === 'legendario' ? 130 : o.rareza === 'unico' ? 110 : 80, c, k: 0.5 + Math.sin(t * 3 + sl.id) * 0.08 });
+    L.push({ x: px, y: py, h: 30, r: o.rareza === 'legendario' ? 130 : o.rareza === 'unico' ? 110 : 80, c, k: 0.5 + Math.sin(t * 3 + sl.id) * 0.08, sinSombra: true });
   }
   // portal
   if (j.portal) {
     const pz = (j as any).portalZona === z.id ? aPant(j.portal.x, j.portal.y) : z.tipo === 'pueblo' && z.entradas.portal ? aPant(z.entradas.portal[0] + 0.5, z.entradas.portal[1] - 1) : null;
-    if (pz) L.push({ x: pz[0], y: pz[1], h: 40, r: 160, c: [70, 130, 255], k: 0.8 });
+    if (pz) L.push({ id: 'portal', x: pz[0], y: pz[1], h: 40, r: 160, c: [70, 130, 255], k: 0.8 });
   }
   luces = L;
   destello = Math.max(destello * 0.82, fl); destelloColor = fl > 0 ? flc : destelloColor;
@@ -141,10 +147,10 @@ function silueta(q: Cuadro, relleno: string | CanvasGradient): boolean {
 }
 
 interface Influencia { l: Luz; f: number; gx: number; gy: number; d: number }
-function influencias(e: Ent, px: number, py: number): Influencia[] {
+function influencias(e: Ent, px: number, py: number, paraSombra = false): Influencia[] {
   const out: Influencia[] = [];
   for (const l of luces) {
-    if (l.de === e) continue;
+    if (l.de === e || (paraSombra && l.sinSombra)) continue;
     const gx = px - l.x, gy = (py - l.y) * 2; // piso sin aplastar
     const d = Math.hypot(gx, gy);
     if (d >= l.r) continue;
@@ -153,10 +159,12 @@ function influencias(e: Ent, px: number, py: number): Influencia[] {
     out.push({ l, f, gx, gy, d });
   }
   out.sort((a, b) => b.f - a.f);
-  return out.slice(0, 3);
+  return paraSombra ? out.slice(0, 5) : out.slice(0, 3);
 }
 
-/** Sombras del personaje: una por cada luz cercana, estiradas lejos de ella y más suaves con la distancia. */
+const estadoSombras = new Map<number, { t: number; s: Map<string, { gx: number; gy: number; len: number; a: number }> }>();
+export const olvidarSombras = () => estadoSombras.clear();
+/** Sombras del personaje: una por cada luz fija cercana, estiradas lejos de ella y más suaves con la distancia. */
 export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: number, py: number, esc: number) {
   // Khamer-Ul no tiene sombra: es su maldición
   if ((e as any).def?.sprite === 'jefe_rey_sin_sombra') return;
@@ -165,13 +173,29 @@ export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: nu
   ctx.save(); ctx.globalAlpha = 0.32; ctx.fillStyle = '#000';
   ctx.beginPath(); ctx.ellipse(px, py, rr * 11, rr * 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   if (!q.img) return;
-  const inf = influencias(e, px, py);
-  const lista: { gx: number; gy: number; len: number; a: number }[] = [];
-  for (const i of inf) {
+  // sombras suavizadas: cada luz fija tiene su sombra por entidad, que gira y se estira despacio (~150 ms) y aparece
+  // o se apaga con fundido, así no saltan de una luz a otra al caminar ni titilan con el fuego
+  const ahora = performance.now() / 1000;
+  if (estadoSombras.size > 600) estadoSombras.clear();
+  let est = estadoSombras.get(e.id);
+  if (!est) { est = { t: ahora, s: new Map() }; estadoSombras.set(e.id, est); }
+  const dt = Math.min(0.2, Math.max(0, ahora - est.t)); est.t = ahora;
+  const kk = 1 - Math.exp(-dt / 0.15);
+  const vistos = new Set<string>();
+  for (const i of influencias(e, px, py, true)) {
     if (i.d < 6) continue;
-    const len = Math.max(0.45, Math.min(2.2, (i.d / i.l.h) * 0.95));
-    lista.push({ gx: i.gx / i.d, gy: i.gy / i.d, len, a: Math.min(1, 1.1 * i.f) });
+    const id = i.l.id ?? 'anon';
+    vistos.add(id);
+    const len = Math.max(0.45, Math.min(2.2, (i.d / i.l.h) * 0.95)), a = Math.min(1, 1.1 * i.f);
+    const gx = i.gx / i.d, gy = i.gy / i.d;
+    const v = est.s.get(id);
+    if (!v) est.s.set(id, { gx, gy, len, a: a * kk });
+    else { v.gx += (gx - v.gx) * kk; v.gy += (gy - v.gy) * kk; v.len += (len - v.len) * kk; v.a += (a - v.a) * kk; }
   }
+  for (const [id, v] of est.s) if (!vistos.has(id)) { v.a -= v.a * kk; if (v.a < 0.01) est.s.delete(id); }
+  const lista: { gx: number; gy: number; len: number; a: number }[] = [];
+  for (const v of est.s.values()) { const n = Math.hypot(v.gx, v.gy) || 1; lista.push({ gx: v.gx / n, gy: v.gy / n, len: v.len, a: v.a }); }
+  lista.sort((x, y) => y.a - x.a); lista.length = Math.min(lista.length, 3);
   if (sol > 0) lista.push({ gx: 0.55, gy: -0.83, len: 0.85, a: sol * 0.7 });
   if (!lista.length) return;
   if (!silueta(q, '#000')) return;

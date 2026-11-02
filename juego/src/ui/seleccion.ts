@@ -29,9 +29,14 @@ export function firmaRama(clase: string, rama: number): Habilidad | undefined {
   return mejor;
 }
 
-const parts: { x: number; y: number; vx: number; vy: number; t: number; d: number; c: string; s: number }[] = [];
+const parts: { x: number; y: number; vx: number; vy: number; t: number; d: number; c: string; s: number; atras?: boolean; ang?: number }[] = [];
 let ultima = -1, tCambio = 0, nivelVista = 0;
-function particulas(f: Ficha, cx: number, cy: number, dt: number, t: number) {
+/** Las partículas del aura en dos pasadas: `atras` se dibuja antes del héroe y la de adelante después. */
+function particulas(f: Ficha, cx: number, cy: number, dt: number, t: number, pasada: 'atras' | 'adelante') {
+  if (pasada === 'atras') emitir(f, cx, cy, dt, t);
+  dibujarParts(f, t, pasada === 'atras');
+}
+function emitir(f: Ficha, cx: number, cy: number, dt: number, t: number) {
   const c = `rgb(${f.luz[0]},${f.luz[1]},${f.luz[2]})`;
   const n = f.part === 'viento' ? 3 : 2;
   for (let i = 0; i < n; i++) if (R() < 0.6 && parts.length < 160) {
@@ -39,7 +44,7 @@ function particulas(f: Ficha, cx: number, cy: number, dt: number, t: number) {
     switch (f.part) {
       case 'brasas': parts.push({ x, y: cy + 10, vx: (R() - 0.5) * 20, vy: -40 - R() * 60, t: 0, d: 2 + R() * 2, c: R() < 0.5 ? '#ff8030' : '#ffd060', s: 2 }); break;
       case 'motas': parts.push({ x, y, vx: 0, vy: -8 - R() * 10, t: 0, d: 2 + R() * 2, c: '#fff0c0', s: 2 }); break;
-      case 'chispas': { const a = R() * Math.PI * 2; parts.push({ x: cx + Math.cos(a) * 70, y: cy - 110 + Math.sin(a) * 40, vx: -Math.sin(a) * 60, vy: Math.cos(a) * 30, t: 0, d: 0.8 + R(), c: R() < 0.3 ? '#ffffff' : c, s: 2 }); break; }
+      case 'chispas': { const a = R() * Math.PI * 2; parts.push({ x: cx, y: cy - 60 - R() * 100, vx: 0, vy: -6, t: 0, d: 1.2 + R(), c: R() < 0.3 ? '#ffffff' : c, s: 2, ang: a }); break; }
       case 'hojas': parts.push({ x: cx + (R() - 0.5) * 400, y: cy - 300, vx: 15 + R() * 20, vy: 30 + R() * 20, t: 0, d: 6, c: R() < 0.5 ? '#6a7a30' : '#9a7030', s: 3 }); break;
       case 'bruma': parts.push({ x, y: cy - R() * 30, vx: (R() - 0.5) * 12, vy: -6, t: 0, d: 3 + R() * 2, c: '#50c080', s: 14 }); break;
       case 'viento': parts.push({ x: cx - 220, y: cy - R() * 220, vx: 260 + R() * 120, vy: -10, t: 0, d: 1.6, c: '#ffe0b0', s: 1 }); break;
@@ -47,18 +52,27 @@ function particulas(f: Ficha, cx: number, cy: number, dt: number, t: number) {
       case 'burbujas': parts.push({ x: cx + (R() - 0.5) * 160, y: cy, vx: (R() - 0.5) * 8, vy: -20 - R() * 30, t: 0, d: 3, c: R() < 0.5 ? '#c080ff' : '#80ff90', s: 3 }); break;
     }
   }
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  // avanzar: las chispas orbitan alrededor del cuerpo; el resto queda delante o detrás al azar desde que nace
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i]; p.t += dt; if (p.t > p.d) { parts.splice(i, 1); continue; }
-    p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.atras === undefined) p.atras = R() < 0.5;
+    if (p.ang !== undefined) { p.ang += dt * 2.6; p.y += p.vy * dt; p.atras = Math.sin(p.ang) < 0; p.vx = cx + Math.cos(p.ang) * 70; }
+    else { p.x += p.vx * dt; p.y += p.vy * dt; }
     if (f.part === 'hojas') p.vx += Math.sin(t * 2 + p.y * 0.05) * 20 * dt;
     if (f.part === 'luciernagas') { p.vx += (R() - 0.5) * 40 * dt; p.vy += (R() - 0.5) * 40 * dt; }
-    const k = Math.sin((p.t / p.d) * Math.PI);
+  }
+}
+function dibujarParts(f: Ficha, t: number, atras: boolean) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const p of parts) {
+    if (!!p.atras !== atras) continue;
+    const x = p.ang !== undefined ? p.vx : p.x, y = p.ang !== undefined ? p.y + Math.sin(p.ang) * 22 : p.y;
+    const k = Math.sin((p.t / p.d) * Math.PI) * (atras ? 0.75 : 1);
     ctx.globalAlpha = f.part === 'bruma' ? k * 0.12 : f.part === 'luciernagas' ? k * (0.5 + 0.5 * Math.sin(t * 9 + p.x)) : k * 0.85;
     ctx.fillStyle = p.c;
-    if (f.part === 'viento') { ctx.fillRect(p.x, p.y, 26, 1); }
-    else if (f.part === 'bruma' || f.part === 'burbujas') { ctx.beginPath(); ctx.arc(p.x, p.y, p.s * (f.part === 'bruma' ? 1 + p.t / p.d : 1), 0, Math.PI * 2); f.part === 'burbujas' ? (ctx.strokeStyle = p.c, ctx.stroke()) : ctx.fill(); }
-    else ctx.fillRect(p.x, p.y, p.s, p.s);
+    if (f.part === 'viento') { ctx.fillRect(x, y, 26, 1); }
+    else if (f.part === 'bruma' || f.part === 'burbujas') { ctx.beginPath(); ctx.arc(x, y, p.s * (f.part === 'bruma' ? 1 + p.t / p.d : 1), 0, Math.PI * 2); f.part === 'burbujas' ? (ctx.strokeStyle = p.c, ctx.stroke()) : ctx.fill(); }
+    else ctx.fillRect(x, y, p.s, p.s);
   }
   ctx.restore();
 }
@@ -118,6 +132,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   sombraSuelta(ctx, q, cx, cy, escQ, fx, fy, 70, 0.55 * k);
   sombraSuelta(ctx, q, cx, cy, escQ, cx - 60, cy + 40, 140, 0.25 * k);
   ctx.globalAlpha = k;
+  particulas(f, cx, cy, dt, t, 'atras');
   if (q) dibujar(ctx, q, cx - (1 - k) * 40, cy, escQ);
   ctx.globalAlpha = 1;
   // luz: oscuridad alrededor, el fuego y el color de la clase
@@ -128,7 +143,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   const g2 = ctx.createRadialGradient(fx, fy - 20, 0, fx, fy - 20, 240 + Math.sin(t * 8) * 8); g2.addColorStop(0, 'rgba(255,120,40,0.3)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
   const g3 = ctx.createRadialGradient(cx, cy - 120, 0, cx, cy - 120, 260); g3.addColorStop(0, `rgba(${lc},${0.08 * k})`); g3.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g3; ctx.fillRect(0, 0, W, H);
   ctx.restore();
-  particulas(f, cx, cy, dt, t);
+  particulas(f, cx, cy, dt, t, 'adelante');
   // nombre y frase sobre el héroe
   texto(TT(c.nombre).toUpperCase(), cx, angosto ? 60 : 70, { alin: 'center', tam: 34, color: `rgb(${lc})`, fuente: TITULO });
   texto('« ' + TT(f.frase) + ' »', cx, angosto ? 84 : 96, { alin: 'center', tam: 15, color: '#d8c8a0' });

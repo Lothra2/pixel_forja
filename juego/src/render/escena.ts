@@ -8,7 +8,8 @@ import { icono } from '../ui/comun';
 import { cuadrosVivos, cambioVisible } from '../motor/pintor';
 import { R } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
-import { fuegoOzmaren } from './fuego';
+import { fuegoOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
+const ES_FUEGO = /fogata|hoguera|brasero|pira|antorcha|fuego|caldero|hogar/;
 import { recolectar, sombras, reflejos, luces, destello, destelloColor } from './luces';
 
 export const cam = { x: 0, y: 0 };
@@ -136,6 +137,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
         if (prof > h.x + h.y && hx > px - q.ax && hx < px - q.ax + q.w && hy - 30 > py - q.ay && hy - 30 < py - q.ay + q.h * 0.85) alfa = 0.45;
       }
       if (alfa < 1) { ctx.globalAlpha = alfa; dibujar(ctx, q, px, py); ctx.globalAlpha = 1; } else dibujar(ctx, q, px, py);
+      // fuego vivo sobre fogatas, braseros, piras y antorchas
+      if (meta.luz && ES_FUEGO.test(o.id) && !/^(arma_|mis_)/.test(o.id) && !/apagad/.test(o.v)) fuegoMundo(ctx, px, py - meta.luz[2] * 1.1, Math.max(0.3, Math.min(1.3, meta.luz[0] / 160)), tiempo, cam.x, cam.y);
     } });
     if (o.tag === 'libro' || o.tag === 'cofre' || o.tag === 'santuario' || o.tag === 'pozo' || o.tag === 'baul' || o.tag === 'romper' || o.id === 'com_piedra_viaje') picks.push({ tipo: 'objeto', ref: o, x0: px - q.ax, y0: py - q.ay, x1: px - q.ax + q.w, y1: py - q.ay + q.h, prof });
   }
@@ -165,6 +168,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   }
   items.sort((a, b) => a.prof - b.prof);
   for (const it of items) it.draw();
+  dibujarFuegosMundo(ctx, tiempo, cam.x, cam.y);
   // portal
   if (j.portal && j.portal.destino) dibujarPortal(j, tiempo);
   // poderes y efectos
@@ -292,6 +296,8 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   const esc = e.escala;
 
   if (!e.muerto) sombras(ctx, e, q, px, py, esc);
+  // la mitad de atrás del aura va antes del cuerpo
+  if (e.tipo === 'heroe' && !e.muerto) auraHeroe(j, px, py, tiempo, true);
   let ok: boolean;
   const cambio = e.tipo === 'heroe' ? performance.now() / 1000 - cambioVisible : 9;
   if (cambio < 0.45) ok = dibujarTenido(ctx, q, px, py, '#fff2d0', 0.7 * (1 - cambio / 0.45), esc);
@@ -312,23 +318,8 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   }
   // arma viva del héroe
   if (ok && e.tipo === 'heroe' && j.heroe.c.vivo && !e.muerto) armaViva(q, px, py, j.heroe.c.vivo, tiempo);
-  // aura del héroe (botón derecho)
-  if (e.tipo === 'heroe' && !e.muerto) {
-    const au = Object.values(j.heroe.buffs).find((b) => b.t > 9000);
-    const ae = auraEquipo(j.heroe.d.equipo as any);
-    if (ae) {
-      ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      const c = ae.color, pul = 0.5 + Math.sin(tiempo * 2.4) * 0.5;
-      const g = ctx.createRadialGradient(px, py - 40, 6, px, py - 40, 60); g.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${0.16 * ae.k + 0.06 * pul})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g; ctx.fillRect(px - 60, py - 100, 120, 120);
-      ctx.globalAlpha = 0.25 + 0.2 * pul * ae.k; ctx.strokeStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.ellipse(px, py, 26 + pul * 4, 13 + pul * 2, 0, 0, Math.PI * 2); ctx.stroke();
-      for (let k = 0; k < 3; k++) { const a = tiempo * 1.7 + k * 2.1; ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(px + Math.cos(a) * 24, py - 10 - ((tiempo * 30 + k * 23) % 70), 2, 2); }
-      ctx.restore();
-    }
-    if (au) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.25 + Math.sin(tiempo * 3) * 0.08; ctx.strokeStyle = '#ffe0a0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, py, 34, 17, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
-    if (j.heroe.escudoHueso > 0) for (let k = 0; k < 4; k++) { const a = tiempo * 3 + k * 1.57; ctx.fillStyle = '#e0d8c0'; ctx.fillRect(px + Math.cos(a) * 20, py - 30 + Math.sin(a) * 10, 3, 6); }
-  }
+  // aura del héroe: la mitad de adelante, encima del cuerpo
+  if (e.tipo === 'heroe' && !e.muerto) auraHeroe(j, px, py, tiempo, false);
   // zona de clic
   if (!e.muerto && e.tipo !== 'heroe') picks.push({ tipo: e.tipo === 'npc' ? 'npc' : 'monstruo', ref: e, x0: px - q.ax * esc + q.w * esc * 0.2, y0: py - q.ay * esc, x1: px - q.ax * esc + q.w * esc * 0.8, y1: py + 6, prof: e.x + e.y });
   // frase del jefe
@@ -337,6 +328,25 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
 
 const PILAR: Record<string, string> = { magico: 'magico', raro: 'raro', conjunto: 'conjunto', unico: 'unico', legendario: 'legendario' };
 const GEMAS = ['rubi', 'zafiro', 'topacio', 'esmeralda', 'amatista', 'diamante'];
+/** Aura del héroe partida por profundidad: los anillos del piso en dos mitades y lo que orbita según su lado. */
+function auraHeroe(j: Juego, px: number, py: number, tiempo: number, atras: boolean) {
+  const au = Object.values(j.heroe.buffs).find((b) => b.t > 9000);
+  const ae = auraEquipo(j.heroe.d.equipo as any);
+  // mitad trasera del anillo: de PI a 2PI (arriba en pantalla); delantera: de 0 a PI
+  const a0 = atras ? Math.PI : 0, a1 = atras ? Math.PI * 2 : Math.PI;
+  if (ae) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const c = ae.color, pul = 0.5 + Math.sin(tiempo * 2.4) * 0.5;
+    if (!atras) { const g = ctx.createRadialGradient(px, py - 40, 6, px, py - 40, 60); g.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${0.16 * ae.k + 0.06 * pul})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(px - 60, py - 100, 120, 120); }
+    ctx.globalAlpha = 0.25 + 0.2 * pul * ae.k; ctx.strokeStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(px, py, 26 + pul * 4, 13 + pul * 2, 0, a0, a1); ctx.stroke();
+    for (let k = 0; k < 3; k++) { const a = tiempo * 1.7 + k * 2.1; if ((Math.sin(a) < 0) !== atras) continue; ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(px + Math.cos(a) * 24, py - 10 - ((tiempo * 30 + k * 23) % 70) + Math.sin(a) * 8, 2, 2); }
+    ctx.restore();
+  }
+  if (au) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.25 + Math.sin(tiempo * 3) * 0.08; ctx.strokeStyle = '#ffe0a0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, py, 34, 17, 0, a0, a1); ctx.stroke(); ctx.restore(); }
+  if (j.heroe.escudoHueso > 0) for (let k = 0; k < 4; k++) { const a = tiempo * 3 + k * 1.57; if ((Math.sin(a) < 0) !== atras) continue; ctx.fillStyle = '#e0d8c0'; ctx.fillRect(px + Math.cos(a) * 20, py - 30 + Math.sin(a) * 10, 3, 6); }
+}
+
 function dibujarBotinSuelo(s: any, px: number, py: number, t: number) {
   const k = Math.min(1, s.t * 3);
   const salto = (1 - k) * 18 * Math.sin(k * Math.PI);
