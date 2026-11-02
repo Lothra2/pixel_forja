@@ -233,7 +233,9 @@ export function crearMonstruo(def: DefMonstruo, nivel: number, x: number, y: num
   // el nivel ya trae la dificultad (Pesadilla e Infierno suben de nivel): aquí solo un empujón extra
   // los jefes de mazmorra (ia jefe sin ser de acto) salen como únicos: con 4 veces la vida duraban casi como uno de acto
   const mv = [1, 3, 4, 1, 1][calidad] * (def.ia === 'jefe' && !def.jefe ? 0.6 : 1) * ([1, 1.35, 1.7][dif] ?? 1);
-  const md = [1, 1.5, 1.8, 0.7, 0.7][calidad] * ([1, 1.15, 1.3][dif] ?? 1);
+  // acto 1 en Normal: los monstruos pegan un 25 % menos hasta el nivel 8 y vuelven a lo normal hacia el 14 (para los que empiezan)
+  const suave = dif === 0 && nivel < 14 ? 0.75 + 0.25 * clamp((nivel - 8) / 6, 0, 1) : 1;
+  const md = [1, 1.5, 1.8, 0.7, 0.7][calidad] * ([1, 1.15, 1.3][dif] ?? 1) * suave;
   const m: Monstruo = {
     ...(nueva({ tipo: 'monstruo', x, y, vel: def.vel, radio: 0.42 * (def.huella ?? 1), escala: def.escala ?? 1, tinte: def.tinte }) as Ent), tipo: 'monstruo',
     def, nivel, dano: [Math.round(s.dano[0] * md), Math.round(s.dano[1] * md)], defensa: s.defensa, res: { ...(def.res ?? {}) }, calidad, nombre: def.nombre, mods: [],
@@ -250,6 +252,12 @@ function poblar(z: Zona, d: DatosHeroe): Monstruo[] {
   const def = ZONAS[z.id];
   const dif = d.dificultad;
   const nivel = nivelEnDificultad(z.nivel, dif);
+  // el grupo más cercano a una entrada de una zona de inicio es uno solo, para no recibir al héroe de nivel 1 con una paliza
+  let primero: (typeof z.spawns)[number] | null = null;
+  if (z.nivel < 6 && dif === 0 && d.nivel <= 3) {
+    let bd = 1e9;
+    for (const s of z.spawns) if (s.tipo !== 'jefe' && s.tipo !== 'unico' && s.tipo !== 'campeon') for (const e of Object.values(z.entradas)) { const dd = dist(s.cx, s.cy, e[0], e[1]); if (dd < bd) { bd = dd; primero = s; } }
+  }
   for (const s of z.spawns) {
     if (s.tipo === 'jefe') {
       const dm = MONSTRUOS[def.jefe!]; if (!dm) continue;
@@ -291,7 +299,7 @@ function poblar(z: Zona, d: DatosHeroe): Monstruo[] {
     }
     // los sedientos van en manadas de 5 a 8; las manos doradas, de a dos o tres
     const n = dm.id === 'sediento' ? 5 + Math.floor(R() * 4) : dm.id === 'mano_dorada' ? 2 + Math.floor(R() * 2) : Math.max(1, Math.round((dm.ia === 'enjambre' ? (z.nivel < 6 ? 3 : 5) : dm.ia === 'bruto' ? 2 : z.nivel < 6 ? 2 : 3) * s.fuerza));
-    for (let i = 0; i < n; i++) { const q = libreCerca(z, s.cx + entre(-2.5, 2.5), s.cy + entre(-2.5, 2.5)); out.push(crearMonstruo(i > 0 && R() < 0.3 ? MONSTRUOS[elegir(pool)] : dm, nivel, q[0] + 0.5, q[1] + 0.5, 0, dif)); }
+    for (let i = 0; i < (s === primero ? 1 : n); i++) { const q = libreCerca(z, s.cx + entre(-2.5, 2.5), s.cy + entre(-2.5, 2.5)); out.push(crearMonstruo(i > 0 && R() < 0.3 ? MONSTRUOS[elegir(pool)] : dm, nivel, q[0] + 0.5, q[1] + 0.5, 0, dif)); }
   }
   return out;
 }
@@ -406,6 +414,11 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     if (e === 'sangre') v.sangrado = Math.max(v.sangrado, 3);
     total += d;
   }
+  // núcleo expuesto de Ozmaren: doble daño
+  const nucleo = v.tipo !== 'heroe' && (v as any).nucleoT > 0 && !!g.deHeroe;
+  if (nucleo) total *= 2;
+  // la arcanista desvía a su maná un cuarto del daño que recibe ("una mente que no se quiebra")
+  if (v.tipo === 'heroe' && h.d.clase === 'arcanista' && total > 0 && h.mana > 0) { const a = Math.min(h.mana, total * 0.25); h.mana -= a; total -= a; }
   // escudo de hueso
   if (v.tipo === 'heroe' && h.escudoHueso > 0) { const a = Math.min(h.escudoHueso, total); h.escudoHueso -= a; total -= a; if (a > 0) particulas(j, v.x, v.y, 3, 'chispa', '#e0d8c0'); }
   if (g.aplastar && v.tipo !== 'heroe' && R() * 100 < g.aplastar) total += v.vida * ((v as Monstruo).calidad >= 3 ? 0.05 : 0.25);
@@ -424,7 +437,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   v.vida -= total;
   v.destello = 0.12;
   if (total > 0) {
-    numero(j, v, total, v.tipo === 'heroe' ? '#ff4040' : crit ? '#ffe040' : COLOR_ELEM[g.elem], crit);
+    numero(j, v, total, v.tipo === 'heroe' ? '#ff4040' : crit || nucleo ? '#ffe040' : COLOR_ELEM[g.elem], crit || nucleo);
     if (g.robo && g.deHeroe) h.vida = Math.min(h.vidaMax, h.vida + total * g.robo / 100);
     if (g.deHeroe && h.c.robo_mana) h.mana = Math.min(h.c.manaMax, h.mana + total * h.c.robo_mana / 100);
   }
@@ -1383,6 +1396,12 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
   // surgir del piso
   if (m.estado === 'surgir') { if (dist(m.x, m.y, h.x, h.y) < 7 && !h.muerto) { m.estado = 'perseguir'; m.objetivo = h; m.acc = 'morir'; m.t = 0; (m as any).surgiendo = 1.2; particulas(j, m.x, m.y, 12, 'humo', '#3a3026', 1, 4); sonar(j, 'grunido', m.x, m.y); } return; }
   if ((m as any).surgiendo > 0) { (m as any).surgiendo -= dt; return; }
+  if ((m as any).nucleoT > 0) {
+    // Ozmaren con el pecho abierto: quieto, el núcleo de lava a la vista y recibe el doble de daño
+    const o = m as any; o.nucleoT -= dt; m.acc = 'especial' as any; if (m.t >= m.dur) m.t = 0;
+    if (o.nucleoT <= 0) { m.acc = 'quieto'; m.t = 0; m.cd = 0.3; msg(j, ['Ozmaren cierra el pecho.', 'Ozmaren closes its chest.'], '#c08060'); }
+    return;
+  }
   if (m.acc === 'herido') { if (m.t >= m.dur) { m.acc = 'quieto'; m.t = 0; } return; }
   if (m.acc === 'atacar' || m.acc === 'lanzar') {
     if (!m.golpeo && m.t >= m.golpeEn) { m.golpeo = true; golpeMonstruo(j, m); }
@@ -1449,6 +1468,18 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
       m.acc = 'lanzar'; m.t = 0; m.dur = 0.7; m.golpeEn = 0.4; m.golpeo = true;
       for (let k = 0; k < (m.def.jefe ? 3 : 2); k++) { const q = libreCerca(j.zona, m.x + entre(-2, 2), m.y + entre(-2, 2)); const nm = crearMonstruo(MONSTRUOS[m.def.invoca], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); nm.estado = 'perseguir'; nm.objetivo = h; nm.acc = 'morir'; nm.t = 0; (nm as any).surgiendo = 1; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', q[0] + 0.5, q[1] + 0.5, 0, 0.7); }
       sonar(j, 'invocar', m.x, m.y);
+      return;
+    }
+  }
+  // Ozmaren abre el pecho cada tanto: suelta una ola de fuego (aviso) y queda expuesto unos segundos
+  if (m.def.id === 'senor_demonio' && dh < 12) {
+    const o = m as any; o.nucleoCd = (o.nucleoCd ?? 8) - dt;
+    if (o.nucleoCd <= 0) {
+      o.nucleoCd = m.fase >= 2 ? 13 : 16; o.nucleoT = 4.5;
+      m.acc = 'especial' as any; m.t = 0; m.dur = 0.9;
+      for (let a = 0; a < 10; a++) disparar(j, m, m.x + Math.cos(a * 0.628), m.y + Math.sin(a * 0.628), { min: m.dano[0] * 0.45, max: m.dano[1] * 0.45, elem: 'fuego', deHeroe: false, fuente: m }, 'saeta_fuego', 6);
+      efecto(j, 'grito_guerra', m.x, m.y, 0, 1.6); j.sacudida = 0.4; sonar(j, 'rugido_jefe', m.x, m.y);
+      msg(j, ['¡Ozmaren abre el pecho! Su núcleo queda expuesto: pégale ahora.', 'Ozmaren opens its chest! Its core is exposed: strike now.'], '#ffc060');
       return;
     }
   }
@@ -1625,7 +1656,8 @@ export function caminarA(j: Juego, x: number, y: number) {
 export function beberPocion(j: Juego, o: Objeto) {
   const h = j.heroe; if (h.muerto) return;
   const v = valorPocion(o);
-  if (o.pocion === 'vida') { (h as any).curando = { t: 4, v: v / 4 }; }
+  // hasta el nivel 5 la poción cura en 2 s en vez de 4: al empezar se muere por llegar tarde, no por falta de pociones
+  if (o.pocion === 'vida') { const tc = h.d.nivel <= 5 ? 2 : 4; (h as any).curando = { t: tc, v: v / tc }; }
   else if (o.pocion === 'mana') { (h as any).cargando = { t: 3, v: v / 3 }; }
   else { h.vida = Math.min(h.vidaMax, h.vida + h.vidaMax * v / 100); h.mana = Math.min(h.c.manaMax, h.mana + h.c.manaMax * v / 100); }
   sonar(j, 'pocion');
