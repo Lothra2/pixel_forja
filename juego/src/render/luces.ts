@@ -5,6 +5,7 @@ import { manifiesto, objetoMeta } from '../motor/assets';
 import type { Juego, Ent } from '../juego/mundo';
 import { R } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
+import { lucesOzmaren } from './fuego';
 
 export interface Luz {
   /** Punto del piso bajo la luz, en pantalla. */
@@ -100,8 +101,13 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   for (const m of j.monstruos) {
     if (m.muerto || m.def.sprite !== 'jefe_ozmaren') continue;
     const [px, py] = aPant(m.x, m.y); if (!dentro(px, py, 400)) continue;
-    const abre = m.acc === 'lanzar' || m.acc === 'atacar' ? 1 : 0;
-    L.push({ x: px, y: py, h: 120, r: 300 + abre * 120, c: [255, 110, 30], k: 0.75 + Math.sin(t * 4) * 0.15 + abre * 0.2 });
+    const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
+    for (const l of lucesOzmaren(px, py, 195 * (m.escala ?? 1), t, furia)) L.push({ x: l.x, y: l.y, h: l.h, r: l.r, c: [255, 95 + Math.round(l.k * 40), 25], k: l.k, de: m });
+  }
+  // grietas de lava del piso: brillan y respiran
+  for (const mk of z.marcas) if (mk.tipo === 'lava' && mk.cx % 2 === 0) {
+    const [px, py] = aPant(mk.cx + 0.5, mk.cy + 0.5); if (!dentro(px, py, 200)) continue;
+    L.push({ x: px, y: py, h: 8, r: 110, c: [255, 80, 20], k: 0.35 + 0.25 * Math.sin(t * 1.7 + mk.cx * 0.7) + R() * 0.08 });
   }
   // botín en el piso: luz del color de su rareza
   for (const sl of j.suelo) {
@@ -171,20 +177,22 @@ export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: nu
   if (!silueta(q, '#000')) return;
   const n = lista.length;
   const norm = n > 2 ? Math.sqrt(2 / n) : 1;
-  for (const s of lista) dibujarSombra(ctx, q, px, py, esc, s.gx, s.gy, s.len, Math.min(0.72, s.a * norm));
+  // los sprites gigantes (jefes) se dibujan con menos sombras y una sola copia: son caros
+  const grande = q.w * q.h * esc * esc > 50000;
+  for (const s of grande ? lista.slice(0, 2) : lista) dibujarSombra(ctx, q, px, py, esc, s.gx, s.gy, s.len, Math.min(0.72, s.a * norm), grande ? 1 : 3);
 }
 
 /** Sombra de una silueta ya preparada en el lienzo de trabajo: (gx, gy) es la dirección lejos de la luz en el piso. */
-function dibujarSombra(ctx: CanvasRenderingContext2D, q: Cuadro, px: number, py: number, esc: number, gx: number, gy: number, len: number, alfa: number) {
+function dibujarSombra(ctx: CanvasRenderingContext2D, q: Cuadro, px: number, py: number, esc: number, gx: number, gy: number, len: number, alfa: number, copias = 3) {
   // eje de la altura: hacia afuera de la luz, sobre el piso. Eje del ancho: perpendicular, también en el piso.
   const cx = -gx * len, cy = -gy * 0.5 * len;
   let ux = -gy, uy = gx; if (ux < 0) { ux = -ux; uy = -uy; }
   const ax = ux, ay = uy * 0.5;
   // tres copias corridas: bordes suaves y la punta más difusa
-  for (let c = 0; c < 3; c++) {
+  for (let c = copias === 1 ? 1 : 0; c < (copias === 1 ? 2 : 3); c++) {
     const k = 1 + (c - 1) * 0.07;
     ctx.save();
-    ctx.globalAlpha = alfa / (c === 1 ? 2 : 4);
+    ctx.globalAlpha = copias === 1 ? alfa : alfa / (c === 1 ? 2 : 4);
     ctx.translate(px + (c - 1) * 0.8, py);
     ctx.transform(ax, ay, cx * k, cy * k, 0, 0);
     ctx.drawImage(tmp, 0, 0, q.w, q.h, -q.ax * esc, -q.ay * esc, q.w * esc, q.h * esc);
@@ -202,7 +210,7 @@ export function sombraSuelta(ctx: CanvasRenderingContext2D, q: Cuadro | undefine
 /** Reflejo de las luces de color sobre el cuerpo: el lado que mira a la luz se enciende con su color. */
 export function reflejos(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: number, py: number, esc: number) {
   if (!q.img) return;
-  const inf = influencias(e, px, py).filter((i) => !i.l.blanca).slice(0, 2);
+  const inf = influencias(e, px, py).filter((i) => !i.l.blanca).slice(0, q.w * q.h * esc * esc > 50000 ? 1 : 2);
   for (const i of inf) {
     const fuerza = Math.min(0.5, i.f * 0.6);
     if (fuerza < 0.06) continue;

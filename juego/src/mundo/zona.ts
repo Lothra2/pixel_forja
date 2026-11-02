@@ -495,6 +495,12 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     // la sala del jefe: cosas que no deberían existir
     const mis = ['mis_trono_huesos', 'mis_manos', 'mis_ojos_oscuridad', 'mis_carne_viva', 'mis_estatua_doliente', 'mis_pozo_almas', 'mis_reliquia', 'mis_libro_maldito', 'mis_espejo'];
     for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2 + r(); k.poner(mis[i % mis.length], pN[0] + Math.cos(a) * (4 + r() * 3), pN[1] + 2 + Math.sin(a) * (4 + r() * 3)); }
+    // la sala de Ozmaren: el piso se raja y deja ver la lava
+    if (def.jefe === 'senor_demonio') {
+      const bx = Math.floor(pN[0] / 5), by = Math.floor((pN[1] + 2) / 5);
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const X = bx + dx, Y = by + dy; if (dx * dx + dy * dy > 5 || X < 0 || Y < 0 || X >= z.tw || Y >= z.th || !z.pisos[Y * z.tw + X]) continue; z.pisos[Y * z.tw + X] = { id: 'lava_grietas', v: Math.floor(r() * 3) }; }
+      for (let i = 0; i < 14; i++) { const a = r() * Math.PI * 2, d = 2 + r() * 10; z.marcas.push({ tipo: 'lava', cx: Math.round(pN[0] + Math.cos(a) * d), cy: Math.round(pN[1] + 2 + Math.sin(a) * d) }); }
+    }
     // y el tesoro que guardaba
     const tesoro: [string, string][] = [['tesoro_pila', 'grande'], ['tesoro_pila', 'chica'], ['saco_monedas', 'derramado'], ['caliz', 'volcado'], ['corona_suelo', 'con_calavera'], ['jarron_oro', 'de_pie'], ['oro_monton', 'mediano'], ['saco_monedas', 'cerrado']];
     tesoro.forEach(([id, v], i) => { const a = (i / tesoro.length) * Math.PI * 2 + 0.3; k.poner(id, pN[0] + Math.cos(a) * 7.5, pN[1] + 2 + Math.sin(a) * 6, v); });

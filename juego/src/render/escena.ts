@@ -8,6 +8,7 @@ import { icono } from '../ui/comun';
 import { cuadrosVivos } from '../motor/pintor';
 import { R } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
+import { fuegoOzmaren } from './fuego';
 import { recolectar, sombras, reflejos, luces, destello, destelloColor } from './luces';
 
 export const cam = { x: 0, y: 0 };
@@ -300,6 +301,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   else if (e.muerto && e.tMuerto > 60) { ctx.globalAlpha = Math.max(0.25, 1 - (e.tMuerto - 60) / 400); ok = dibujar(ctx, q, px, py, esc); ctx.globalAlpha = 1; }
   else ok = dibujar(ctx, q, px, py, esc);
   if (ok && !e.muerto) reflejos(ctx, e, q, px, py, esc);
+  if (ok && !e.muerto && !(window as any).__sinFuego && e.tipo === 'monstruo' && m.def.sprite === 'jefe_ozmaren') fuegoOzmaren(ctx, m, q, px, py, esc, tiempo, cam.x, cam.y);
   // únicos y jefes: aura
   if (!e.muerto && e.tipo === 'monstruo' && m.calidad >= 2) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.18 + Math.sin(tiempo * 4) * 0.06;
@@ -368,6 +370,13 @@ function dibujarPortal(j: Juego, t: number) {
   picks.push({ tipo: 'portal', ref: p, x0: px - 22, y0: py - 90, x1: px + 22, y1: py + 6, prof: 1e9 });
 }
 
+const SPR_HUECO = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d')!; const g = x.createRadialGradient(64, 64, 64 * 0.15, 64, 64, 64); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(0.6, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); return c; })();
+const sprTintes = new Map<string, HTMLCanvasElement>();
+function sprTinte(col: string): HTMLCanvasElement {
+  let c = sprTintes.get(col);
+  if (!c) { c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d')!; const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); sprTintes.set(col, c); if (sprTintes.size > 200) sprTintes.delete(sprTintes.keys().next().value!); }
+  return c;
+}
 function dibujarLuz(j: Juego, t: number) {
   const z = j.zona;
   if (luz.width !== W || luz.height !== H) { luz.width = W; luz.height = H; brillo.width = W; brillo.height = H; }
@@ -377,15 +386,9 @@ function dibujarLuz(j: Juego, t: number) {
   lctx.fillStyle = `rgba(0,0,0,${oscuro})`; lctx.fillRect(0, 0, W, H);
   lctx.globalCompositeOperation = 'destination-out';
   bctx.clearRect(0, 0, W, H);
-  const hueco = (x: number, y: number, r: number, k = 1) => {
-    const g = lctx.createRadialGradient(x, y, r * 0.15, x, y, r);
-    g.addColorStop(0, `rgba(0,0,0,${k})`); g.addColorStop(0.6, `rgba(0,0,0,${k * 0.55})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-    lctx.fillStyle = g; lctx.fillRect(x - r, y - r, r * 2, r * 2);
-  };
-  const tinte = (x: number, y: number, r: number, c: string, a: number) => {
-    const g = bctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)');
-    bctx.globalAlpha = a; bctx.fillStyle = g; bctx.fillRect(x - r, y - r, r * 2, r * 2); bctx.globalAlpha = 1;
-  };
+  // degradados pintados una vez y escalados: mucho más baratos que crear uno por luz y por cuadro
+  const hueco = (x: number, y: number, r: number, k = 1) => { lctx.globalAlpha = Math.min(1, k); lctx.drawImage(SPR_HUECO, x - r, y - r, r * 2, r * 2); lctx.globalAlpha = 1; };
+  const tinte = (x: number, y: number, r: number, c: string, a: number) => { bctx.globalAlpha = a; bctx.drawImage(sprTinte(c), x - r, y - r, r * 2, r * 2); bctx.globalAlpha = 1; };
   for (const l of luces) {
     const cy = l.y - Math.min(40, l.h * 0.45);
     hueco(l.x, cy, l.r, l.blanca ? 1 : Math.min(1, 0.55 + l.k * 0.45));
