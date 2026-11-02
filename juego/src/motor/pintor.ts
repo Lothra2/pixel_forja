@@ -5,8 +5,9 @@ import Obrero from './pintor.worker.ts?worker&inline';
 const ACCS: [string, number][] = [['quieto', 4], ['caminar', 8], ['correr', 8], ['atacar', 8], ['lanzar', 8], ['herido', 4], ['morir', 8]];
 const DIRS = ['s', 'so', 'o', 'no', 'n', 'ne', 'e', 'se'];
 let vivos: Map<string, Cuadro[]> | null = null;
-/** Lo nuevo que ya está listo: cada animación se cambia apenas se termina de pintar. */
+/** Lo nuevo que ya está listo: cada animación se cambia cuando está pintada en las 8 direcciones (antes se mezclaban). */
 let nuevosVivos: Map<string, Cuadro[]> | null = null;
+const accListas = new Set<string>();
 let firmaActual = 'base';
 let trabajo = 0;
 let obreros: Worker[] = [];
@@ -17,7 +18,7 @@ export let cambioVisible = -10;
 /** Los cuadros pintados solo si son de esta firma (para no mostrar el héroe anterior mientras se pinta el nuevo). */
 export const cuadrosDeFirma = (firma: string, acc: string, dir: string) => (firma === firmaVivos ? cuadrosVivos(acc, dir) : nuevosVivos && firma === firmaActual ? nuevosVivos.get(acc + '/' + dir) ?? null : null);
 let firmaVivos = '';
-export const cuadrosVivos = (acc: string, dir: string) => nuevosVivos?.get(acc + '/' + dir) ?? vivos?.get(acc + '/' + dir) ?? null;
+export const cuadrosVivos = (acc: string, dir: string) => (accListas.has(acc) ? nuevosVivos?.get(acc + '/' + dir) : null) ?? vivos?.get(acc + '/' + dir) ?? (vivos ? null : nuevosVivos?.get(acc + '/' + dir)) ?? null;
 
 function aCuadro(f: any): Cuadro {
   const c = document.createElement('canvas'); c.width = f.w; c.height = f.h;
@@ -45,6 +46,9 @@ async function escribir(k: string, v: any) {
   } catch { /* sin espacio */ }
 }
 
+const recordar = (clase: string, clave: string) => { try { localStorage.setItem('pintor.ultima|' + clase, clave); } catch { /* sin almacenamiento */ } };
+const ultima = (clase: string) => { try { return localStorage.getItem('pintor.ultima|' + clase); } catch { return null; } };
+
 /** Pide los cuadros para este cuerpo y equipo. firma 'base' = usar lo horneado. */
 export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma: string, dirPref = 's') {
   if (firma === firmaActual) return;
@@ -52,11 +56,17 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
   const yo = ++trabajo;
   for (const o of obreros) o.terminate();
   obreros = [];
-  if (firma === 'base') { vivos = null; nuevosVivos = null; progresoPintura = 1; cambioVisible = performance.now() / 1000; return; }
+  if (firma === 'base') { vivos = null; nuevosVivos = null; accListas.clear(); progresoPintura = 1; cambioVisible = performance.now() / 1000; return; }
   const clave = 'v7|' + clase + '|' + firma;
   const cache = await leer(clave);
   if (yo !== trabajo) return;
-  if (cache) { const m = new Map<string, Cuadro[]>(); for (const [k, fs] of Object.entries(cache as Record<string, any[]>)) m.set(k, fs.map(aCuadro)); vivos = m; firmaVivos = firma; nuevosVivos = null; progresoPintura = 1; cambioVisible = performance.now() / 1000; return; }
+  const aMapa = (c: Record<string, any[]>) => { const m = new Map<string, Cuadro[]>(); for (const [k, fs] of Object.entries(c)) m.set(k, fs.map(aCuadro)); return m; };
+  if (cache) { vivos = aMapa(cache); firmaVivos = firma; nuevosVivos = null; accListas.clear(); progresoPintura = 1; cambioVisible = performance.now() / 1000; recordar(clase, clave); return; }
+  // sin nada pintado todavía (partida recién abierta): mostrar el último héroe completo de esta clase en vez del horneado
+  if (!vivos) { const ult = ultima(clase); const c2 = ult ? await leer(ult) : null; if (yo !== trabajo) return; if (c2) { vivos = aMapa(c2); firmaVivos = ult!.slice(('v7|' + clase + '|').length); } }
+  // si el equipo cambia varias veces seguidas, esperar a que se quede quieto antes de pintar
+  await new Promise((r) => setTimeout(r, 350));
+  if (yo !== trabajo) return;
   // prioridad: quieto y caminar hacia donde mira, después quieto, caminar y correr en todas, al final el resto
   const trabajos: { acc: string; dir: string; n: number }[] = [];
   const N_ = Object.fromEntries(ACCS) as Record<string, number>;
@@ -65,7 +75,8 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
   for (const acc of ['quieto', 'caminar', 'correr']) for (const dir of DIRS) poner(acc, dir);
   for (const [acc] of ACCS) for (const dir of DIRS) poner(acc, dir);
   const nuevos = new Map<string, Cuadro[]>();
-  nuevosVivos = nuevos;
+  nuevosVivos = nuevos; accListas.clear();
+  const faltan: Record<string, number> = {}; for (const t of trabajos) faltan[t.acc] = (faltan[t.acc] ?? 0) + 1;
   const crudos: Record<string, any[]> = {};
   let hechos = 0, sig = 0;
   progresoPintura = 0;
@@ -79,7 +90,8 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
       w.onmessage = (ev) => {
         const m = ev.data;
         if (m.id !== yo) return;
-        if (!m.error) { nuevos.set(m.acc + '/' + m.dir, m.out.map(aCuadro)); crudos[m.acc + '/' + m.dir] = m.out; if (nuevos.size === 1) cambioVisible = performance.now() / 1000; }
+        if (!m.error) { nuevos.set(m.acc + '/' + m.dir, m.out.map(aCuadro)); crudos[m.acc + '/' + m.dir] = m.out; }
+        if (--faltan[m.acc] <= 0) { accListas.add(m.acc); if (m.acc === 'quieto') cambioVisible = performance.now() / 1000; }
         hechos++; progresoPintura = hechos / trabajos.length;
         if (hechos >= trabajos.length) fin();
         dar();
@@ -89,6 +101,6 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
     }
   });
   if (yo !== trabajo) return;
-  if (nuevos.size) { vivos = nuevos; firmaVivos = firma; nuevosVivos = null; escribir(clave, crudos); }
+  if (nuevos.size) { vivos = nuevos; firmaVivos = firma; nuevosVivos = null; accListas.clear(); escribir(clave, crudos); recordar(clase, clave); }
   progresoPintura = 1;
 }

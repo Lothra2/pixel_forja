@@ -29,7 +29,7 @@ export const manifiesto = () => man!;
 // Descargas: como mucho MAX_DESCARGAS a la vez, con reintentos de espera creciente.
 // Si un atlas falla del todo, se borra de `cargando` y se vuelve a pedir pasado un rato
 // (antes la promesa resuelta quedaba ahí y el atlas no volvía a bajar nunca: jefe sin cuerpo).
-const MAX_DESCARGAS = 6;
+const MAX_DESCARGAS = 4;
 const REINTENTOS = 5;
 let activas = 0;
 const cola: (() => void)[] = [];
@@ -76,7 +76,7 @@ const bytesAtlas = (n: string) => { const a = man?.atlas[n]; return a ? a[1] * a
 export const memoriaAtlas = () => { let t = 0; for (const n of imgs.keys()) t += bytesAtlas(n); return t / 1e6; };
 /** Libera atlas que no están en `mantener`, del menos usado al más reciente, hasta quedar bajo el tope (MB).
  *  Lo de la zona anterior suele sobrevivir si cabe, así volver atrás no recarga nada. */
-export function liberarAtlas(mantener: Set<string>, topeMB = 600): string[] {
+export function liberarAtlas(mantener: Set<string>, topeMB = 500): string[] {
   let total = memoriaAtlas() * 1e6;
   const tope = topeMB * 1e6;
   if (total <= tope) return [];

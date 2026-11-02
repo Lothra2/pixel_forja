@@ -225,7 +225,7 @@ function controlar(jj: Juego, dt: number) {
     if (E.clicIzq && !E.shift) colchon = null;
     if (E.clicIzq) {
       mantenerT = 0; mantenerMonstruo = false;
-      h.objetivo = null; h.recoger = null; h.hablar = null; h.usar = null; (h as any).salida = null; (h as any).portal = false;
+      h.objetivo = null; (h as any).usarDer = false; h.recoger = null; h.hablar = null; h.usar = null; (h as any).salida = null; (h as any).portal = false;
       const p = pickEncima;
       // Shift + clic: atacar en el sitio hacia el cursor, sin caminar
       if (E.shift) { h.camino = null; h.destino = null; enSitio(jj, 'izq', mx, my, p?.tipo === 'monstruo' ? p.ref as Monstruo : null, true); }
@@ -253,10 +253,17 @@ function controlar(jj: Juego, dt: number) {
         derT = 0.05;
         const p = pickEncima;
         const obj = p?.tipo === 'monstruo' ? (p.ref as Monstruo) : null;
-        if (E.clicDer) { h.objetivo = null; (h as any).usarDer = false; h.camino = null; h.destino = null; }
-        enSitio(jj, 'der', obj ? obj.x : mx, obj ? obj.y : my, obj, E.clicDer);
+        // golpe cuerpo a cuerpo sobre un monstruo: camina hasta él y pega, igual que el izquierdo (Mayúscula: siempre en el sitio)
+        const hbD = habilidadDe(h.d.der);
+        const cuerpo = hbD.tipo === 'golpe' && !esDistancia(jj, hbD) && !(h.d.der === 'ataque' && h.c.distancia);
+        if (obj && cuerpo && !E.shift) {
+          if (E.clicDer || !h.objetivo || h.objetivo.muerto) { h.objetivo = obj; (h as any).usarDer = true; h.recoger = null; h.hablar = null; h.usar = null; (h as any).salida = null; }
+        } else if (!(cuerpo && !E.shift && !E.clicDer && h.objetivo && (h as any).usarDer)) {
+          if (E.clicDer) { h.objetivo = null; (h as any).usarDer = false; h.camino = null; h.destino = null; }
+          enSitio(jj, 'der', obj ? obj.x : mx, obj ? obj.y : my, obj, E.clicDer);
+        }
       }
-    } else (h as any).usarDer = false;
+    } else if (!h.objetivo) (h as any).usarDer = false;
   }
   // táctil: el botón usa la habilidad sobre el enemigo más cercano
   if ((ui as any).tactilHab) {
@@ -558,6 +565,7 @@ async function arrancar() {
   (window as any).__ir = (id: string, e: string) => irAZona(id, e);
   (window as any).__historia = { entreacto: (n: number) => empezarEntreacto(n), revelacion: (luegoFinal = false) => empezarRevelacion(luegoFinal), final: () => { estado = 'final'; finalT = 0; }, t: (s: number) => { entreT = s; revT = s; finalT = s; } };
   (window as any).__aPant = (x: number, y: number) => { const [a, b] = aPant(x, y); const r = (document.getElementById('juego') as HTMLCanvasElement).getBoundingClientRect(); return [r.left + a * r.width / W, r.top + b * r.height / H]; };
+  (window as any).__pick = () => pickEncima && { tipo: pickEncima.tipo, id: (pickEncima.ref as any)?.def?.id };
 }
 function aplicarMusicaEstado() { Sonido.musica(estado === 'intro' ? 'intro' : estado === 'juego' && j ? (MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any) : 'menu'); }
 void lugarEn; void COFRE_W; void COFRE_H; void crearObjeto; void dibujarPaneles;
