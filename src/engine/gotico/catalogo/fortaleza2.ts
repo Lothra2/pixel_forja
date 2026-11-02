@@ -62,7 +62,7 @@ function muro(a: Arma, ps: Pieza[], L: number, T: number, H: number, o: { almena
 }
 /** Vela encendida (con su llamita que tiembla). */
 function vela(a: Arma, ps: Pieza[], c: V3, h: number, f: number) {
-  ps.push(a.cilindro(c[0], c[1], c[2], 0.9, h, { mat: 'cera' }), a.elipsoide(c[0], c[1], c[2] + h + 1.1, 0.5, 0.5, 1.1 + onda(f, 8, c[0] + c[1]) * 0.3, { mat: 'luz_vela' }));
+  ps.push(a.cilindro(c[0], c[1], c[2], 0.9, h, { mat: 'cera' }), a.elipsoide(c[0], c[1], c[2] + h + 1.1, 0.5, 0.5, 1.2 + onda(f, 8, c[0] + c[1]) * 0.8, { mat: 'luz_vela' }), a.esfera(c[0] + onda(f, 8, c[1]) * 0.4, c[1], c[2] + h + 2.6 + onda(f, 8, c[0]) * 0.8, 0.35, { mat: 'luz_vela', tono: 0.2 }));
 }
 /** Escudo de armas colgado o apoyado, cara hacia n. */
 function escudoCometa(a: Arma, ps: Pieza[], c: V3, s: number, n: V3, mat = 'tela_azul') {

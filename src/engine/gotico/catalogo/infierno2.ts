@@ -309,6 +309,8 @@ registrar(
       if (v === 'partido') { for (let i = 0; i < 7; i++) ps.push(pena(a, 20 + jit(a, 10), -14 + jit(a, 10), 3, 3 + a.r() * 6, 3 + a.r() * 4, 3 + a.r() * 4, { mat: HU })); ps.push(a.caja(-4, -4, 10, 4, 40, 50, { mat: HU, resta: true, giro: 30 })); }
       if (v === 'lava') { charca(a, ps, 14, 10, f, { x: 22, y: 14 }); for (let i = 0; i < 3; i++) { const u = ciclo(f + i * 2.6, 8); ps.push(a.elipsoide(20 + u * 6, 8, 12 - u * 10, 1.2, 1.2, 2.2, { mat: 'lava' })); } }
       ps.push(...roca(a, [-16, -12, 6], [10, 8, 7], { mat: R0, n: 4 }));
+      // brasas que escapan por las cuencas
+      for (let i = 0; i < 3; i++) { const u = ciclo(f + i * 2.7, 8); ps.push(a.esfera(8 + Math.cos(i * 2) * 4 + u * 4, 4 + Math.sin(i * 2) * 4, 24 + u * 26, 0.7 * (1 - u * 0.5), { mat: 'fuego', tono: 0.2 - u * 0.3 })); }
       ps.push(suelo(a));
       return v === 'lava' ? { piezas: ps, resplandor: { c: [16, 8, 12], r: 46, color: LUZ } } : ps;
     },
