@@ -15,7 +15,7 @@ import { TAU, PI, rad, add, sub, esc, len, nor, cruz, mez, ciclo, onda, jit, ele
  * sobre el vacío no echa sombra al piso (no hay piso).
  */
 
-const TEMA = 'celestial' as string as Tema;
+const TEMA: Tema = 'celestial';
 
 // ------------------------------------------------------------------ materiales
 const M = MATERIALES;
@@ -321,7 +321,7 @@ registrar(
     },
   },
   dosEjes({
-    id: 'cel_balaustrada', nombre: ['Balaustrada de mármol', 'Marble balustrade'], tema: TEMA, variantes: ['entera', 'rota', 'con_jarron', 'caida'], huella: [5, 1], bloquea: true,
+    id: 'cel_balaustrada', nombre: ['Balaustrada de mármol', 'Marble balustrade'], tema: TEMA, variantes: ['entera', 'rota', 'con_jarron'], huella: [5, 1], bloquea: true,
     armar: (v, _f, a) => {
       const ps: Pieza[] = [], L = 80;
       ps.push(a.caja(0, 0, 0, L, 8, 3, { mat: ML }));
