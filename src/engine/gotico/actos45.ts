@@ -136,7 +136,12 @@ export interface OpcCuerpo { cu: Cuerpo; eq: Equipo; acc?: Accion; f?: number; d
  */
 export function cuerpo(o: OpcCuerpo): Pieza[] {
   // tendido, el tabardo y la capa se pararían en el aire: se le sacan
-  const eq = o.acc === 'morir' && (o.f ?? 0) >= 5 ? { ...o.eq, tabardo: undefined, capa: undefined } : o.eq;
+  const tendido = o.acc === 'morir' && (o.f ?? 0) >= 5;
+  const eq: Equipo = tendido ? {
+    ...o.eq, tabardo: undefined, capa: undefined,
+    torso: o.eq.torso?.tipo === 'harapos' || o.eq.torso?.tipo === 'vestido' || o.eq.torso?.tipo === 'tunica' ? { ...o.eq.torso, tipo: 'camisa' } : o.eq.torso,
+    piernas: o.eq.piernas && ['faldon', 'tunica_larga', 'taparrabo'].includes(o.eq.piernas.tipo) ? { ...o.eq.piernas, tipo: 'pantalon' } : o.eq.piernas,
+  } : o.eq;
   let ps = personaje(o.cu, eq, o.dir ?? 'se', o.acc ?? 'quieto', o.f ?? 0);
   if (o.centrar !== false) { const [lo, hi] = envolver(ps); ps = transformar(ps, ID, [-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, 0]); }
   return transformar(ps, o.m ?? ID, o.t ?? [0, 0, 0], o.s ?? 1);

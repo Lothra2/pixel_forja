@@ -170,14 +170,14 @@ registrar(
           cs.push(hM(pie, w, entre(a, 7, 10) * k * s, rc * s * 0.7, { mat }));
           if (!rota) cs.push(hM(w, top, rc * s * 0.7, entre(a, 7, 11) * k * s, { mat }));
         }
-        if (rota) cs.push(hM([x + lean, y, H], [x + lean * 1.2, y, H - (H - cintura) * 0.55], 15 * k * s, rc * s * 0.8, { mat }));
+        if (rota) cs.push(bulto([x + lean, y - lean * 0.5, cintura + 2], [rc * s * 1.5, rc * s * 1.4, 4], { mat, tono: 0.12 }));
         for (let i = 0; i < 3; i++) cs.push(bulto([x + lean * 0.8 + (a.r() - 0.5) * 4, y + (a.r() - 0.5) * 4, cintura + entre(a, -14, 14)], [rc * s * 1.4, rc * s * 1.2, entre(a, 3, 7)], { mat, k: 2.5, giro: a.r() * 180 }));
       };
       if (v === 'doble') { tallo(-9, -5, 0.8, false); tallo(10, 7, 0.65, a.r() < 0.4); }
       else tallo(0, 0, 1, v === 'quebrada');
       cs.push(bulto([0, 0, 0], [24 * k, 21 * k, 4], { mat, giro: a.r() * 180 }));
       ps.push(masa(cs, { mat, suave: 4 }));
-      for (let i = 0; i < 6; i++) { const t = (i / 6) * 2 * PI + a.r(); penasco(a, ps, [Math.cos(t) * 13 * k, Math.sin(t) * 13 * k, H + 2 + a.r() * 5], [entre(a, 11, 16) * k, entre(a, 9, 13) * k, entre(a, 4, 7)], { mat: 'sub_roca', n: 1, tono: -0.06 }); }
+      if (v !== 'quebrada') for (let i = 0; i < 6; i++) { const t = (i / 6) * 2 * PI + a.r(); penasco(a, ps, [Math.cos(t) * 13 * k, Math.sin(t) * 13 * k, H + 2 + a.r() * 5], [entre(a, 11, 16) * k, entre(a, 9, 13) * k, entre(a, 4, 7)], { mat: 'sub_roca', n: 1, tono: -0.06 }); }
       if (v === 'quebrada') {
         // el tramo de abajo partido y el pedazo tumbado
         const t = a.r() * PI * 0.5 + PI * 0.25;

@@ -645,47 +645,54 @@ export function bestiaMuerta(a: Arma, ps: Pieza[], tipo: TipoBestia, p: V, giro:
   const s = (o.s ?? 1) * (tipo === 'camello' ? 1.15 : tipo === 'jabali' ? 0.6 : tipo === 'ciervo' ? 0.8 : 1);
   const mat = tipo === 'caballo' ? elegir(a, ['ext_pelo_caballo', 'ext_pelo_negro']) : tipo === 'camello' ? 'ext_pelo_camello' : tipo === 'buey' ? elegir(a, ['ext_pelo_caballo', 'ext_pelo_negro']) : 'ext_pelo_caballo';
   const m = marco(p, giro);
-  // tendido sobre el lado derecho: y local hacia arriba es el lomo
+  // tendido de costado: el lomo hacia -y, la panza y las patas hacia +y, el ancho del animal queda vertical
   const W = (x: number, y: number, z: number) => m.T([x * s, y * s, z * s]);
+  const X = (v: V) => m.D(v);
   const cs: Comp[] = [];
-  const R = 9.5;
-  cs.push(bulto(W(0, 0, R * 0.92), [20 * s, 9 * s, R * s], { eje: m.D([1, 0, 0.02]) }));
-  cs.push(bulto(W(-11, -1, R * 0.95), [10 * s, 9.5 * s, R * 1.02 * s], { eje: m.D([1, 0, 0]) }));
-  if (tipo === 'camello') cs.push(bulto(W(1, -6, R * 1.05), [8 * s, 5 * s, 6 * s], { eje: m.D([1, -0.3, 0]) }));
-  // cuello y cabeza (echados hacia atrás, como caen)
-  const cu0: V = [16, 1, R * 1.1], cu1: V = tipo === 'camello' ? [30, 8, 5] : [26, 6, 5.5], cab: V = tipo === 'camello' ? [35, 14, 4] : [31, 12, 4.5];
-  cs.push(hueso(W(...cu0), W(...cu1), 5.5 * s, (tipo === 'camello' ? 3 : 4.2) * s));
-  cs.push(hueso(W(...cu1), W(...cab), (tipo === 'camello' ? 3 : 4) * s, 2.6 * s));
-  cs.push(bulto(W(...cab), [(tipo === 'buey' ? 5 : 5.5) * s, 3 * s, 3.2 * s], { eje: m.D(nrm([cab[0] - cu1[0], cab[1] - cu1[1], 0])) }));
-  // patas: las de arriba tiesas al aire, las de abajo en el piso
-  const patas: [V, V][] = [[[11, 3, R * 0.9], [22, 20, R * 1.3]], [[11, -3, R * 0.5], [24, 14, 2.5]], [[-13, 3, R * 0.9], [-20, 24, R * 1.4]], [[-13, -3, R * 0.5], [-26, 16, 2.5]]];
-  const largo = tipo === 'camello' ? 1.25 : tipo === 'buey' ? 0.8 : 1;
+  const cam = tipo === 'camello';
+  cs.push(bulto(W(0, 0, 7.4), [19 * s, 9.6 * s, 7.4 * s], { eje: X([1, 0, 0]) }));
+  cs.push(bulto(W(-11, -0.5, 7.8), [10 * s, 10.4 * s, 8 * s], { eje: X([1, 0, 0]) }));
+  cs.push(bulto(W(10, 0.8, 7.2), [9 * s, 9.2 * s, 7.1 * s], { eje: X([1, 0.1, 0]) }));
+  if (cam) cs.push(bulto(W(-1, -10, 7.6), [8.5 * s, 5.5 * s, 5.5 * s], { eje: X([1, 0, 0]) }));
+  // cuello y cabeza tendidos en el piso
+  const cu0: V = [16, -3, 7.6], cu1: V = cam ? [27, -14, 5.2] : [27, -6, 5.4], cab: V = cam ? [33, -5, 3.6] : [34, -3, 3.8];
+  cs.push(hueso(W(...cu0), W(...cu1), 5.6 * s, (cam ? 3 : 4.4) * s));
+  cs.push(hueso(W(...cu1), W(...cab), (cam ? 3 : 4.2) * s, 2.7 * s));
+  const dc = nrm([cab[0] - cu1[0], cab[1] - cu1[1], 0]);
+  cs.push(bulto(W(cab[0] + dc[0] * 2.5, cab[1] + dc[1] * 2.5, cab[2]), [(tipo === 'buey' ? 5.2 : 6) * s, (tipo === 'buey' ? 3.8 : 3.3) * s, 2.7 * s], { eje: X(dc) }));
+  // patas tiesas: las de arriba despegadas del piso, las de abajo apoyadas
+  const largo = cam ? 1.25 : tipo === 'buey' ? 0.85 : tipo === 'jabali' ? 0.7 : 1;
+  const patas: [V, V][] = [[[11, 6, 10.5], [18, 27, 11]], [[11, 6, 4], [21, 25, 2.4]], [[-12, 6, 10.5], [-19, 28, 11.5]], [[-12, 6, 4], [-24, 24, 2.4]]];
+  const finDe = (c0: V, c1: V): V => [c0[0] + (c1[0] - c0[0]) * largo, c0[1] + (c1[1] - c0[1]) * largo, c1[2]];
   for (const [c0, c1] of patas) {
-    const fin = mas(c0, mas(c1, c0, -1), largo), rod = mez(c0, fin, 0.5);
-    cs.push(hueso(W(...c0), W(...rod), 3.6 * s, 2.2 * s), hueso(W(...rod), W(...fin), 2.2 * s, 1.5 * s));
+    const fin = finDe(c0, c1), rod = mas(mez(c0, fin, 0.48), [az(a, 1.5), 0, 0]);
+    cs.push(hueso(W(...c0), W(...rod), 3.8 * s, 2.3 * s), hueso(W(...rod), W(...fin), 2.2 * s, 1.5 * s));
   }
   ps.push(masa(cs, { mat, suave: 2.6 * s }));
-  // pezuñas, orejas, cuernos, crin
-  for (const [c0, c1] of patas) { const fin = mas(c0, mas(c1, c0, -1), largo); const q = W(...fin); ps.push(a.esfera(q[0], q[1], q[2], 1.9 * s, { mat: 'negro', tono: 0.15 })); }
-  const qc = W(...cab);
-  if (tipo === 'buey' || tipo === 'ciervo') for (const sd of [-1, 1]) {
-    const b0 = W(cab[0] - 2, cab[1] + 1, cab[2] + sd * 2.5);
-    if (tipo === 'buey') ps.push(a.palo(b0, W(cab[0] - 3, cab[1] + 6, cab[2] + sd * 7), 1.2 * s, { mat: 'ext_hueso', r1: 0.3 * s }));
-    else { const t = W(cab[0] - 6, cab[1] + 10, cab[2] + sd * 6); ps.push(a.palo(b0, t, 0.7 * s, { mat: 'ext_hueso', r1: 0.4 * s }), a.palo(mez(b0, t, 0.5), W(cab[0] - 1, cab[1] + 9, cab[2] + sd * 8), 0.5 * s, { mat: 'ext_hueso', r1: 0.2 * s })); }
-  } else for (const sd of [-1, 1]) { const b0 = W(cab[0] - 3, cab[1] + 1.5, cab[2] + sd * 2); ps.push(a.palo(b0, W(cab[0] - 5, cab[1] + 4, cab[2] + sd * 3), 1 * s, { mat, r1: 0.3 * s })); }
-  ps.push(a.esfera(qc[0], qc[1], qc[2] + 1.2 * s, 0.7 * s, { mat: 'negro' }));
-  if (tipo === 'caballo') for (let i = 0; i < 5; i++) { const q0 = W(16 + i * 2.2, 4 + i * 1, R * 1.2 - i * 0.6); ps.push(a.palo(q0, mas(q0, m.D([az(a, 2), 3, -1]), s), 1.2 * s, { mat: 'cu_pelo_negro', r1: 0.4 * s })); }
+  for (const [c0, c1] of patas) { const q = W(...finDe(c0, c1)); ps.push(a.esfera(q[0], q[1], q[2], 1.9 * s, { mat: cam ? 'ext_cuero_seco' : 'negro', tono: 0.15 })); }
+  // orejas, cuernos, ojo, crin, cola
+  const qc = W(cab[0] - dc[0] * 2, cab[1] - dc[1] * 2, cab[2]);
+  if (tipo === 'buey') for (const sd of [-1, 1]) ps.push(a.palo(mas(qc, X([0, -2, sd * 2]), s), mas(qc, X([-2, -7, sd * 6]), s), 1.3 * s, { mat: 'ext_hueso', r1: 0.3 * s }));
+  else if (tipo === 'ciervo') for (const sd of [-1, 1]) { const b0 = mas(qc, X([0, -2, sd * 2]), s), t = mas(qc, X([-6, -11, sd * 7]), s); ps.push(a.palo(b0, t, 0.75 * s, { mat: 'ext_hueso', r1: 0.4 * s }), a.palo(mez(b0, t, 0.5), mas(qc, X([0, -10, sd * 9]), s), 0.5 * s, { mat: 'ext_hueso', r1: 0.2 * s })); }
+  else for (const sd of [-1, 1]) ps.push(a.palo(mas(qc, X([-1, -2, sd * 1.5]), s), mas(qc, X([-3, -5, sd * 2.5]), s), 1 * s, { mat, r1: 0.3 * s }));
+  const ojo = mas(W(cab[0] + dc[0] * 2, cab[1] + dc[1] * 2, cab[2]), X([0, -1.5, 2.4]), s);
+  ps.push(a.esfera(ojo[0], ojo[1], ojo[2], 0.7 * s, { mat: 'negro' }));
+  if (tipo === 'caballo') for (let i = 0; i < 6; i++) { const q0 = W(17 + i * 1.8, -6 - i * 1.4, 6.5 - i * 0.3); ps.push(a.palo(q0, mas(q0, X([az(a, 1.5), -3.5, az(a, 1)]), s), 1.3 * s, { mat: 'cu_pelo_negro', r1: 0.4 * s })); }
+  { const c0 = W(-20, -2, 6); ps.push(a.palo(c0, mas(c0, X([-6, 4 + az(a, 3), -4]), s), (tipo === 'caballo' ? 1.6 : 0.8) * s, { mat: tipo === 'caballo' ? 'cu_pelo_negro' : mat, r1: 0.4 * s })); }
   if (o.podrida) {
-    // el costado abierto: hueco oscuro y las costillas a la vista
-    const c = W(-3, 7, R * 1.25), d = m.D([1, 0, 0]);
-    ps.push(a.elipsoide(c[0], c[1], c[2], 13 * s * o.podrida, 6 * s, 3.5 * s, { mat: 'ext_carne_seca', giro: giro, tono: -0.1 }));
-    for (let i = 0; i < 6; i++) { const q = mas(c, d, (i - 2.5) * 3.4 * s * o.podrida); ps.push(a.palo(mas(q, m.D([0, -3, 4]), s), mas(q, m.D([0, 3, 4.5]), s), 0.6 * s, { mat: 'ext_hueso' }), a.palo(mas(q, m.D([0, 3, 4.5]), s), mas(q, m.D([0, 6, -3]), s), 0.55 * s, { mat: 'ext_hueso' })); }
+    // el costado de arriba abierto: carne seca, hueco oscuro y las costillas a la vista
+    const c = W(-1, 1, 13.5), d = X([1, 0, 0]);
+    ps.push(a.elipsoide(c[0], c[1], c[2], 11 * s * o.podrida, 7 * s, 2.5 * s, { mat: 'ext_carne_seca', giro: giro, tono: -0.05 }));
+    ps.push(a.elipsoide(c[0], c[1], c[2] + 0.8 * s, 8.5 * s * o.podrida, 5 * s, 2 * s, { mat: 'negro', giro: giro }));
+    for (let i = 0; i < 6; i++) { const q = mas(c, d, (i - 2.5) * 3.2 * s * o.podrida); const top = mas(q, X([0, -1, 4.2]), s); ps.push(a.palo(mas(q, X([0, -7, -1]), s), top, 0.65 * s, { mat: 'ext_hueso' }), a.palo(top, mas(q, X([0, 6, 0.5]), s), 0.6 * s, { mat: 'ext_hueso', r1: 0.4 * s })); }
   }
   if (o.carga) {
-    for (const [x, z] of [[-4, R * 2], [5, R * 1.9]] as [number, number][]) { const q = W(x, 2, z); ps.push(a.elipsoide(q[0], q[1], q[2], 6 * s, 5 * s, 4.5 * s, { mat: elegir(a, ['tela', 'tela_roja', 'ext_tela_sucia']), giro: giro + az(a, 20) })); }
-    const q = W(0, 0, R * 2.2); ps.push(a.palo(mas(q, m.D([-8, 0, 0]), s), mas(q, m.D([8, 0, 0]), s), 0.6 * s, { mat: 'cuerda' }));
+    // la carga se le cayó al costado del lomo: fardos, un tapete enrollado y la cuerda
+    for (const [x, y] of [[-6, -17], [5, -16]] as [number, number][]) { const q = W(x, y, 4.5); ps.push(a.elipsoide(q[0], q[1], q[2], 6.5 * s, 4.8 * s, 4.5 * s, { mat: elegir(a, ['ext_tela_sucia', 'tela', 'tela_roja']), giro: giro + az(a, 25), tono: az(a, 0.1) })); }
+    const q = W(1, -12, 12); ps.push(a.cilindro(q[0], q[1], q[2], 3 * s, 22 * s, { mat: elegir(a, ['tela_roja', 'tela_azul']), eje: X([1, 0.2, -0.1]) }));
+    ps.push(a.palo(W(-12, -10, 9), W(10, -12, 10), 0.6 * s, { mat: 'cuerda' }));
   }
 }
 M.ext_pelo_caballo = { rampa: ['#0f0906', '#1c110b', '#2b1a10', '#3b2416', '#4c2f1c', '#5e3b24', '#70482d'], ruido: 0.35, escala: 0.9, brillo: 0.15, patron: (p) => (ruido(p[0] * 0.35, p[1] * 0.35, p[2] * 0.35) - 0.5) * 0.2 };
 M.ext_pelo_negro = { rampa: ['#070707', '#0f0e0d', '#191715', '#23201d', '#2e2a26', '#3a3530'], ruido: 0.35, escala: 0.9, brillo: 0.2 };
-M.ext_pelo_camello = { rampa: ['#1d140b', '#302213', '#46321c', '#5d4426', '#755731', '#8c6a3d', '#a27d4b'], ruido: 0.4, escala: 0.9, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.3) - 0.5) * 0.22 };
+M.ext_pelo_camello = { rampa: ['#17110b', '#271d13', '#38291b', '#4a3824', '#5c472e', '#6e5739', '#806745'], ruido: 0.4, escala: 0.9, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.3) - 0.5) * 0.22 };

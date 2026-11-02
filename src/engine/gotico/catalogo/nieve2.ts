@@ -171,7 +171,10 @@ registrar(
       }
       if (v === 'mano') {
         // un brazo helado que sale de la nieve, los dedos abiertos
-        const brazo = [masa([hueso([6, 10, 0], [7, 9, 11], 2.4, 2), hueso([7, 9, 11], [5, 7.5, 19], 2, 1.6), bulto([4.6, 7.2, 21], [1.8, 2.3, 2.3]), ...[0, 1, 2, 3].map((k) => hueso([4.6, 7.2, 21.5], [3.2 + k * 1.1, 5.4 + k * 1.2, 25.5 + (k % 2)], 0.6, 0.4)), hueso([5.5, 8.2, 20.5], [7.5, 9.5, 23], 0.6, 0.4)], { mat: 'cu_piel_gris', suave: 0.9 })];
+        const K = 1.5, Q = (x: number, y: number, z: number): V3 => [6 + x * K, 9 + y * K, z * K];
+        const brazo = [masa([hueso(Q(0, 0, -1), Q(0.6, -0.6, 7), 1.7, 1.4), hueso(Q(0.6, -0.6, 7), Q(-0.4, -1.4, 12), 1.4, 1.1), bulto(Q(-0.6, -1.6, 13.4), [1.5, 1.9, 1.7]),
+          ...[0, 1, 2, 3].map((k) => hueso(Q(-0.6 + (k - 1.5) * 0.7, -1.6 + (k - 1.5) * 0.5, 14.4), Q(-1 + (k - 1.5) * 1.5, -2.4 + (k - 1.5) * 1.1, 17.6 + (k % 2) * 0.6), 0.5, 0.36, { k: 0.2 })),
+          hueso(Q(0.4, -1, 13.4), Q(1.8, -0.6, 15.6), 0.5, 0.38, { k: 0.2 })], { mat: 'cu_piel_gris', suave: 0.9 })];
         ps.push(...tenir(brazo, 'nie2_m', '#5a7a90', 0.35, -0.1));
         ps.push(a.cilindro(6, 10, 0.5, 3.4, 4, { mat: 'cu_tela_parda', r1: 2.6 }));
         ps.push(a.cilindro(-6, -4, 0, 2.8, 8, { mat: 'hierro_oxido', r1: 2.4, incl: 40 }), a.elipsoide(-6, -2, 6, 3.2, 3.2, 2.4, { mat: 'hierro_oxido', tono: -0.1 }));
