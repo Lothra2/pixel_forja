@@ -67,7 +67,7 @@ export interface Proyectil {
   deHeroe: boolean; perfora: boolean; explota: number; efecto: string; golpeados: Set<number>; buscador: boolean; radio: number;
   arco?: { x0: number; y0: number; x1: number; y1: number; t: number; T: number; n?: number };
   hab?: Habilidad; nivelHab?: number; mult?: number; lento?: number; t: number; rebota?: number;
-  /** Abanicos: golpes de la misma salva por monstruo (la 2.ª flecha y siguientes al mismo blanco hacen 40 %). */
+  /** Abanicos: golpes de la misma salva por monstruo (la 2.ª flecha y siguientes al mismo blanco hacen 60 %). */
   salva?: Map<number, number>;
 }
 export interface Area { x: number; y: number; radio: number; dano: [number, number]; elem: Elemento; t: number; dur: number; tick: number; prox: number; deHeroe: boolean; efecto: string; retraso: number; caida?: boolean }
@@ -889,7 +889,7 @@ function resolverHabilidad(j: Juego) {
       const cnt = golpes;
       const circ = !!hb.circulo;
       const abanico = circ ? Math.PI * 2 : cnt > 1 ? Math.min(hb.id === 'tormenta_virotes' ? 1.6 : 1.2, 0.18 * cnt) : 0;
-      // con un abanico contra un jefe grande todas las flechas le daban al mismo: ahora la primera pega entera y las demás al 40 %
+      // con un abanico contra un jefe grande todas las flechas le daban al mismo: ahora la primera pega entera y las demás al 60 %
       const salva = cnt > 1 && !circ && !hb.buscador ? new Map<number, number>() : undefined;
       for (let k = 0; k < cnt; k++) {
         const a = cnt === 1 ? base : circ ? base + (k / cnt) * Math.PI * 2 : base - abanico / 2 + (abanico * k) / (cnt - 1);
@@ -1332,7 +1332,9 @@ function actualizarHeroe(j: Juego, dt: number) {
   // fuera de combate (5 s sin pegar ni recibir) el héroe se repone despacio: 1.5 % de su vida por segundo
   const regV = h.c.regen_vida + (j.zona.tipo === 'pueblo' ? h.vidaMax * 0.05 : j.t - h.tCombate > 5 ? h.vidaMax * 0.015 : 0);
   h.vida = Math.min(h.vidaMax, h.vida + regV * dt);
-  h.mana = Math.min(h.c.manaMax, h.mana + h.c.manaMax * 0.025 * (1 + h.c.regen_mana / 100) * dt);
+  // en Normal el maná vuelve más rápido al principio: el doble en el nivel 1 y normal desde el 25
+  const temprano = h.d.dificultad === 0 ? 1 + Math.max(0, 25 - h.d.nivel) / 24 : 1;
+  h.mana = Math.min(h.c.manaMax, h.mana + h.c.manaMax * 0.025 * temprano * (1 + h.c.regen_mana / 100) * dt);
   if (h.veneno > 0) { h.veneno -= dt; h.vida -= h.venenoDps * dt; if (h.vida <= 0) { h.vida = 1; } }
   if ((h as any).quema > 0) { (h as any).quema -= dt; h.vida -= (h as any).quemaDps * dt; if ((h as any).quema <= 0) (h as any).quemaDps = 0; if (h.vida <= 0) h.vida = 1; }
   if (h.sangrado > 0) { h.sangrado -= dt; h.vida -= h.vidaMax * 0.01 * dt; if (h.vida <= 0) morirHeroe(j); }
@@ -1470,9 +1472,9 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
     // los jefes llamaban 3 cada 9 s hasta 14 alrededor: eso, y no el jefe, era lo que mataba (sobre todo al cuerpo a cuerpo)
     m.invocaCd = m.def.jefe ? 12 : 7;
     const cuantos = j.monstruos.filter((o) => !o.muerto && !o.dueno && dist(o.x, o.y, m.x, m.y) < 8).length;
-    if (cuantos < (m.def.jefe ? 8 : 9)) {
+    if (cuantos < (m.def.id === 'abadesa' ? 4 : m.def.jefe ? 8 : 9)) {
       m.acc = 'lanzar'; m.t = 0; m.dur = 0.7; m.golpeEn = 0.4; m.golpeo = true;
-      for (let k = 0; k < 2; k++) { const q = libreCerca(j.zona, m.x + entre(-2, 2), m.y + entre(-2, 2)); const nm = crearMonstruo(MONSTRUOS[m.def.invoca], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); nm.estado = 'perseguir'; nm.objetivo = h; nm.acc = 'morir'; nm.t = 0; (nm as any).surgiendo = 1; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', q[0] + 0.5, q[1] + 0.5, 0, 0.7); }
+      for (let k = 0; k < (m.def.id === 'abadesa' ? 1 : 2); k++) { const q = libreCerca(j.zona, m.x + entre(-2, 2), m.y + entre(-2, 2)); const nm = crearMonstruo(MONSTRUOS[m.def.invoca], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); nm.estado = 'perseguir'; nm.objetivo = h; nm.acc = 'morir'; nm.t = 0; (nm as any).surgiendo = 1; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', q[0] + 0.5, q[1] + 0.5, 0, 0.7); }
       sonar(j, 'invocar', m.x, m.y);
       return;
     }
@@ -1566,7 +1568,7 @@ function golpeMonstruo(j: Juego, m: Monstruo) {
     const pg: Golpe = { ...g, elem: m.def.proyectil === 'flecha' || m.def.proyectil === 'lanza' ? 'fisico' : e, extra: {} };
     if (pg.elem !== 'fisico') { pg.min *= 1.1; pg.max *= 1.1; }
     const cnt = m.def.jefe ? 3 : 1;
-    for (let k = 0; k < cnt; k++) { const a = Math.atan2(obj.y - m.y, obj.x - m.x) + (k - (cnt - 1) / 2) * 0.25; disparar(j, m, m.x + Math.cos(a) * 5, m.y + Math.sin(a) * 5, pg, efectoProy(m.def.proyectil), m.def.proyectil === 'flecha' ? 12 : 8); }
+    for (let k = 0; k < cnt; k++) { const a = Math.atan2(obj.y - m.y, obj.x - m.x) + (k - (cnt - 1) / 2) * 0.25; disparar(j, m, m.x + Math.cos(a) * 5, m.y + Math.sin(a) * 5, pg, efectoProy(m.def.proyectil), m.def.proyectil === 'flecha' ? 12 : m.def.id === 'monja_hueca' && m.nivel < 25 ? 5.5 : 8); }
     sonar(j, m.def.proyectil === 'flecha' ? 'flecha' : m.def.proyectil === 'hielo' ? 'hielo_lanzar' : m.def.proyectil === 'fuego' ? 'fuego_lanzar' : 'sombra', m.x, m.y, 0.7);
     return;
   }
@@ -1613,7 +1615,7 @@ function actualizarProyectiles(j: Juego, dt: number) {
       if (dist(e.x, e.y, p.x, p.y) < e.radio + p.radio) {
         p.golpeados.add(e.id);
         const ks = p.salva ? (p.salva.get(e.id) ?? 0) : 0; if (p.salva) p.salva.set(e.id, ks + 1);
-        const fs = ks ? 0.4 : 1;
+        const fs = ks ? 0.6 : 1;
         const g: Golpe = { min: p.dano[0] * fs, max: p.dano[1] * fs, elem: p.elem, deHeroe: p.deHeroe, fuente: p.deHeroe ? j.heroe : undefined, sinFallo: p.elem !== 'fisico' || !p.deHeroe ? p.elem !== 'fisico' : false, precision: p.deHeroe ? j.heroe.c.precision : undefined, critico: p.deHeroe ? j.heroe.c.critico : 0 };
         if (p.deHeroe && (p.efecto === 'flecha' || p.efecto === 'flecha_fuego' || p.efecto === 'flecha_hielo' || p.efecto === 'virote')) { g.extra = Object.fromEntries(Object.entries(j.heroe.c.elem).map(([k, v]) => [k, (v as number) * fs])); g.robo = j.heroe.c.robo_vida; }
         if (!p.deHeroe) { g.fuente = undefined; for (const m of j.monstruos) if (!m.muerto && dist(m.x, m.y, p.x, p.y) < 30) { g.fuente = m; break; } }
