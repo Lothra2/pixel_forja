@@ -73,6 +73,8 @@ function atlasZona(zid: string): Set<string> {
   const s = new Set<string>();
   const ids = new Set<string>();
   if (z) for (const o of z.objetos) ids.add(`${o.id}|${o.v}`);
+  // piezas que cambian de variante con la historia (la catedral): todas sus variantes
+  if (z) for (const sa of z.salidas) for (const o of sa.piezas ?? []) for (const k of Object.keys(m.o)) if (k.startsWith(o.id + '|')) ids.add(k);
   // por tema si todavía no hay zona
   for (const k of Object.keys(m.o)) if (ids.has(k)) for (const e of m.o[k].f) s.add(e[0]);
   for (const a of atlasDe('p', Object.keys(m.p))) s.add(a);
@@ -248,7 +250,11 @@ function controlar(jj: Juego, dt: number) {
   if (h.hablar && llega(h.hablar.x, h.hablar.y, 2)) { hablarCon(jj, h.hablar.npc); h.hablar = null; h.camino = null; }
   if (h.usar && llega(h.usar.cx + 0.5, h.usar.cy + 0.5, 2.2 + Math.max(h.usar.hw, h.usar.hh) / 2)) { usarObjeto(jj, h.usar); h.usar = null; h.camino = null; }
   // puertas selladas por la historia: la variante del objeto sigue a la misión y no se puede pasar antes
-  for (const s of jj.zona.salidas) if (s.sello && s.obj) { const abierta = estadoMision(h.d, s.sello) > 0; const v = abierta ? (s.obj.v === 'sellada' ? (objetoMeta(s.obj.id, 'abierta') ? 'abierta' : s.obj.v) : s.obj.v) : (objetoMeta(s.obj.id, 'sellada') ? 'sellada' : s.obj.v); if (v !== s.obj.v) s.obj.v = v; }
+  for (const s of jj.zona.salidas) if (s.sello && s.obj) {
+    // sellada hasta aceptar la misión, entera después y herida cuando se cumple la otra (la catedral tras la Abadesa)
+    const quiere = estadoMision(h.d, s.sello) === 0 ? 'sellada' : s.herida && estadoMision(h.d, s.herida) === 3 ? 'herida' : 'entera';
+    for (const o of s.piezas ?? [s.obj]) { const v = objetoMeta(o.id, quiere) ? quiere : quiere === 'entera' && objetoMeta(o.id, 'abierta') ? 'abierta' : o.v; if (v !== o.v) o.v = v; }
+  }
   if ((h as any).salida && llega((h as any).salida.cx + 0.5, (h as any).salida.cy + 0.5, 2.5)) {
     const s = (h as any).salida as Salida; (h as any).salida = null;
     if (s.sello && estadoMision(h.d, s.sello) === 0) msg(jj, ['La puerta está sellada. Alguien en el Refugio sabrá qué hacer.', 'The door is sealed. Someone at the Refuge will know what to do.']);

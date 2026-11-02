@@ -80,10 +80,18 @@ function armaViva(q: Cuadro, x: number, y: number, elem: string, t: number) {
   }
 }
 
+let camAlzada = 0;
 export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   const z = j.zona, h = j.heroe;
   const sx = j.sacudida > 0 ? (R() - 0.5) * j.sacudida * 12 : 0, sy = j.sacudida > 0 ? (R() - 0.5) * j.sacudida * 8 : 0;
-  cam.x = (h.x - h.y) * 16 + sx; cam.y = (h.x + h.y) * 8 + sy;
+  // frente a la pieza ancla (la catedral), la cámara sube suave para que se vean las torres
+  let alzar = 0;
+  for (const sa of z.salidas) if (sa.piezas?.length) {
+    const fa = sa.piezas[sa.piezas.length - 1], dy = h.y - fa.cy, dx = Math.abs(h.x - fa.cx);
+    if (dy > -2 && dy < 26 && dx < 16) alzar = Math.max(alzar, 190 * Math.min(1, (26 - dy) / 12) * Math.min(1, (16 - dx) / 6));
+  }
+  camAlzada += (alzar - camAlzada) * Math.min(1, dt * 2.5);
+  cam.x = (h.x - h.y) * 16 + sx; cam.y = (h.x + h.y) * 8 + sy - camAlzada;
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   picks = [];
   recolectar(j, tiempo, aPant, W, H);

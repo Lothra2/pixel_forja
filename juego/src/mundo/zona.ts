@@ -5,7 +5,7 @@ import { REGISTRO, huellaDe, generarPaisaje, type ObjetoDef, type Tema, type Amb
 import { rng, clamp } from '../nucleo/azar';
 
 export interface ObjZ { id: string; v: string; cx: number; cy: number; hw: number; hh: number; bloquea: boolean; tag?: string; dato?: any }
-export interface Salida { cx: number; cy: number; destino: string; entrada: string; nombre: [string, string]; obj?: ObjZ; /** Misión que hay que haber aceptado para pasar (si no, la puerta está sellada). */ sello?: string }
+export interface Salida { cx: number; cy: number; destino: string; entrada: string; nombre: [string, string]; obj?: ObjZ; /** Misión que hay que haber aceptado para pasar (si no, la puerta está sellada). */ sello?: string; /** Misión que, cumplida, deja la pieza herida. */ herida?: string; /** Piezas que cambian de variante con la historia. */ piezas?: ObjZ[] }
 export interface Spawn { cx: number; cy: number; tipo: 'grupo' | 'jefe' | 'unico' | 'campeon'; fuerza: number }
 export interface Zona {
   id: string;
@@ -53,7 +53,7 @@ export interface DefZona {
    * Pieza ancla en el centro del mapa (la catedral del camposanto): `id` entera o en `piezas` de adelante hacia atrás.
    * Su puerta es la salida hacia `salida`; con `sello`, la puerta está sellada hasta aceptar esa misión. `cerca` se riega alrededor.
    */
-  ancla?: { id: string; piezas?: string[]; salida: string; sello?: string; cerca?: Sel[] };
+  ancla?: { piezas: [string, number, number][]; puerta: [number, number]; salida: string; sello?: string; herida?: string; cerca?: Sel[] };
   /** Pueblo amurallado: murallas de fortaleza en los bordes de atrás y portones en las salidas. */
   amurallado?: boolean;
 }
@@ -422,24 +422,27 @@ function exterior(def: DefZona, semilla: number): Zona {
       x = clamp(x, 2, z.W - 3); y = clamp(y, 2, z.H - 3);
     }
   };
-  // la pieza ancla: la catedral en el centro, con la puerta mirando al frente (+y) y la salida justo en la puerta
-  let anclaObj: ObjZ | null = null;
+  // la pieza ancla: la catedral en el centro, por piezas con su desplazamiento (la Forja da el ancla de cada una);
+  // la puerta es la salida y el pie de la escalinata, el punto de llegada
+  let anclaObj: ObjZ | null = null; const anclaPiezas: ObjZ[] = [];
   const anc = def.ancla, ia = anc ? def.salidas.findIndex((s) => s.destino === anc.salida) : -1;
   if (anc) {
-    const ids = REGISTRO.some((d) => d.id === anc.id) ? [anc.id] : (anc.piezas ?? []).filter((id) => REGISTRO.some((d) => d.id === id));
-    let y = centro[1] - 4, primero = true;
-    for (const id of ids) {
-      const d = REGISTRO.find((q) => q.id === id)!;
-      const v = d.variantes.includes('sellada') && anc.sello ? 'sellada' : d.variantes.find((q) => q !== 'sellada') ?? d.variantes[0];
+    const [ax, ay] = [centro[0], centro[1] + 2];
+    for (const [id, dx, dy] of anc.piezas) {
+      const d = REGISTRO.find((q) => q.id === id); if (!d) continue;
+      const v = anc.sello && d.variantes.includes('sellada') ? 'sellada' : d.variantes[0];
       const [hw, hh] = huellaDe(d, v);
-      const o = k.poner(d, centro[0], y - (hh - 1) / 2, v, true);
-      if (o && primero) { anclaObj = o; if (ia >= 0) puntos[ia] = [centro[0], y + 2]; }
-      for (let yy = Math.floor(y - hh - 1); yy <= y + 1; yy++) for (let xx = Math.floor(centro[0] - hw / 2 - 1); xx <= centro[0] + hw / 2 + 1; xx++) if (xx >= 0 && yy >= 0 && xx < z.W && yy < z.H) k.reserva[yy * z.W + xx] = 1;
-      y -= hh; primero = false;
+      const o = k.poner(d, ax + dx, ay + dy, v, true);
+      if (!o) continue;
+      anclaPiezas.push(o); anclaObj ??= o;
+      for (let yy = Math.floor(ay + dy - hh / 2 - 1); yy <= ay + dy + hh / 2 + 1; yy++) for (let xx = Math.floor(ax + dx - hw / 2 - 1); xx <= ax + dx + hw / 2 + 1; xx++) if (xx >= 0 && yy >= 0 && xx < z.W && yy < z.H) k.reserva[yy * z.W + xx] = 1;
     }
-    if (anclaObj && anc.cerca) k.regar(anc.cerca, 14, centro[0] - 18, centro[1] - 26, centro[0] + 18, centro[1] + 12, undefined, 6);
+    if (anclaObj && ia >= 0) puntos[ia] = [ax + anc.puerta[0], ay + anc.puerta[1]];
+    // la catedral es un hito: se ve desde lejos, así que su terreno (y lo que tapan las torres detrás) ya cuenta como visto
+    if (anclaObj && z.explorado) for (let by = Math.floor((ay - 30) / 5); by <= Math.floor((ay + 12) / 5); by++) for (let bx = Math.floor((ax - 30) / 5); bx <= Math.floor((ax + 12) / 5); bx++) if (bx >= 0 && by >= 0 && bx < tw && by < th) z.explorado[by * tw + bx] = 1;
+    if (anclaObj && anc.cerca) k.regar(anc.cerca, 18, ax - 20, ay - 22, ax + 20, ay + 16, undefined, 5);
   }
-  for (const p of puntos) camino(p, anclaObj && ia >= 0 && p === puntos[ia] ? [p[0], p[1] + 6] : centro);
+  for (const p of puntos) camino(anclaObj && ia >= 0 && p === puntos[ia] ? [p[0], p[1] + 1] : p, anclaObj && ia >= 0 && p === puntos[ia] ? [p[0], p[1] + 8] : centro);
   if (def.rio) rioDeLava(k, r, def.rio === 'arroyo');
   // viñetas: paisajes del motor estampados donde haya lugar
   const vin = def.vinetas ?? t.vinetas ?? [];
@@ -484,7 +487,7 @@ function exterior(def: DefZona, semilla: number): Zona {
   def.salidas.forEach((s, i) => {
     const [cx, cy] = puntos[i];
     const sal: Salida = { cx, cy, destino: s.destino, entrada: s.entrada, nombre: s.nombre };
-    if (i === ia && anclaObj) { sal.obj = anclaObj; if (anc!.sello) sal.sello = anc!.sello; }
+    if (i === ia && anclaObj) { sal.obj = anclaObj; sal.piezas = anclaPiezas; if (anc!.sello) sal.sello = anc!.sello; if (anc!.herida) sal.herida = anc!.herida; }
     else if (s.lado === 'abajo') {
       // entrada a una mazmorra: una boca de cripta o cueva
       const boca = def.tema === 'desierto' ? 'tum_entrada' : def.tema === 'cementerio' ? 'cem_entrada_cripta' : def.tema === 'nieve' ? 'cue_entrada' : def.tema === 'selva' ? 'tem_escalinata' : def.tema === 'infierno' ? 'inf_portal_rojo' : 'com_cueva';

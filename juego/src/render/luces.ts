@@ -71,6 +71,13 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const r = Math.min(260, meta.luz[0] * 1.3) * (0.93 + Math.sin(t * 9 + o.cx) * 0.04 + R() * 0.03);
     L.push({ x: px, y: py, h: Math.max(20, meta.luz[2] * 1.2), r, c, k: 0.9, id: `o${o.cx},${o.cy}` });
   }
+  // la pieza ancla del mapa (la catedral): luna fría encima para que se lea de lejos, y el latido rojo de sus vitrales
+  for (const sa of z.salidas) if (sa.piezas?.length) {
+    const fa = sa.piezas[sa.piezas.length - 1], [px, py] = aPant(fa.cx + 0.5, fa.cy - 4);
+    if (!dentro(px, py, 700)) continue;
+    L.push({ id: 'ancla0', x: px, y: py - 120, h: 260, r: 520, c: [150, 165, 210], k: 0.55, sinSombra: true });
+    L.push({ id: 'ancla1', x: px, y: py - 60, h: 90, r: 260, c: [255, 50, 40], k: 0.25 + 0.15 * (0.5 + 0.5 * Math.sin(t * 1.4)), sinSombra: true });
+  }
   // proyectiles: luces que viajan
   for (const p of j.proyectiles) {
     const [px, py] = aPant(p.x, p.y);
