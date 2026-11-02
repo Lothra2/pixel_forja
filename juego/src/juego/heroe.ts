@@ -36,6 +36,8 @@ export interface DatosHeroe {
   actosHechos: number[];
   vidaActual?: number; manaActual?: number;
   dificultad: number;
+  /** Aura activa (solo una a la vez). Opcional: las partidas viejas no la tienen. */
+  aura?: string;
 }
 export const BOLSA_W = 10, BOLSA_H = 5, BOLSAS = 3;
 
@@ -100,6 +102,8 @@ export interface Calc {
   vivo?: Elemento;
   valor: number;
   conjuntos: Record<string, number>;
+  /** Todos los bonos sumados (objetos, buffs y pasivas): para las mecánicas de clase que leen claves propias. */
+  st: Record<string, number>;
 }
 
 export const xpPara = (n: number) => (n <= 1 ? 0 : Math.round(220 * Math.pow(n - 1, 2.5)));
@@ -162,7 +166,7 @@ export function calcular(h: DatosHeroe, buffs: Record<string, number> = {}): Cal
     golpe_aplastante: st.golpe_aplastante ?? 0, herida_abierta: st.herida_abierta ?? 0, ralentizar: st.ralentizar ?? 0, aturdir: st.aturdir ?? 0, perforar: st.perforar ?? 0,
     vida_por_muerte: st.vida_por_muerte ?? 0, mana_por_muerte: st.mana_por_muerte ?? 0,
     distancia, dosManos: !!ba?.dosManos, tipoArma: ba?.arma ?? 'puno', fuego_pct: st.fuego_pct ?? 0, invocados_pct: st.invocados_pct ?? 0,
-    vivo: arma?.vivo, conjuntos, valor: Math.min(100, st.valor ?? 0),
+    vivo: arma?.vivo, conjuntos, valor: Math.min(100, st.valor ?? 0), st,
   };
 }
 

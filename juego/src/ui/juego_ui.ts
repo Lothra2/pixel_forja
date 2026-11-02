@@ -3,14 +3,14 @@
 import { ctx, W, H, E, pulso } from '../nucleo/lienzo';
 import { barraInferior, orbe, zonasBarra, ladoOrbe, barraJefe, cursores, cartelMuerte, panelInventario, EQUIPO as EQUIPO_HUD, CELDA_INV, BOLSA as BOLSA_HUD, type ObjetoInv } from '../../../src/engine/gotico/hud';
 import { aLoot, arma3dDe } from './loot';
-import { texto, T, TT, IDI, marco, titulo, boton, dentro, icono, lineasObjeto, tooltip, cacheRaster, rasterACanvas, envolver, TITULO } from './comun';
-import { CLASES, HABILIDADES, habilidadesDe, ATAQUE, type Habilidad } from '../datos/clases';
+import { texto, T, TT, IDI, marco, titulo, boton, dentro, icono, lineasObjeto, tooltip, cacheRaster, rasterACanvas, envolver, ancho, TITULO } from './comun';
+import { CLASES, HABILIDADES, habilidadesDe, ATAQUE, TIERS, type Habilidad } from '../datos/clases';
 import { NPCS } from '../datos/npcs';
 import { MISIONES, ZONAS, PUEBLO_DE } from '../mundo/actos';
 import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
 import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa } from '../juego/heroe';
-import { recalc, usarPocion, abrirPortal, costoMana, danoHab, habilidadDe, msg, type Juego, type Monstruo } from '../juego/mundo';
+import { recalc, usarPocion, abrirPortal, costoMana, danoHab, habilidadDe, msg, frascosMax, ventanaCombo, cadaveresCerca, MAX_CARGAS, colorElem, type Juego, type Monstruo } from '../juego/mundo';
 import { Sonido } from '../audio/sonido';
 import { R, entero, elegir } from '../nucleo/azar';
 
@@ -102,6 +102,14 @@ export function iconoHab(hb: Habilidad, x: number, y: number, s: number, apagado
     case 'racimo': for (const [a, b] of [[-6, 4], [6, 4], [0, -6]]) { ctx.beginPath(); ctx.arc(a, b, 6, 0, Math.PI * 2); ctx.fill(); } break;
     case 'torre': ctx.fillRect(-6, -6, 12, 18); ctx.fillRect(-10, -10, 20, 5); L([0, -10, 12, -14]); break;
     case 'moneda': ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke(); texto('G', -4, 5, { tam: 13, color: '#fff6e0', sombra: false }); break;
+    case 'corona': ctx.beginPath(); ctx.moveTo(-13, 9); ctx.lineTo(-13, -7); ctx.lineTo(-6, 1); ctx.lineTo(0, -12); ctx.lineTo(6, 1); ctx.lineTo(13, -7); ctx.lineTo(13, 9); ctx.closePath(); ctx.fill(); ctx.fillRect(-13, 11, 26, 3); break;
+    case 'estrella': ctx.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 6 : 14, a = -Math.PI / 2 + i * Math.PI / 5; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); ctx.fill(); break;
+    case 'campana': ctx.beginPath(); ctx.moveTo(-11, 8); ctx.quadraticCurveTo(-10, -13, 0, -13); ctx.quadraticCurveTo(10, -13, 11, 8); ctx.closePath(); ctx.fill(); ctx.fillRect(-13, 8, 26, 3); ctx.beginPath(); ctx.arc(0, 13, 3, 0, Math.PI * 2); ctx.fill(); break;
+    case 'ala': for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-12, 10 - i * 2); ctx.quadraticCurveTo(-2, -4 - i * 3, 13 - i * 3, -12 + i * 6); ctx.stroke(); } break;
+    case 'colmillo': for (const sx of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sx * 11, -12); ctx.quadraticCurveTo(sx * 2, -10, sx * 4, 13); ctx.quadraticCurveTo(sx * 9, 0, sx * 11, -12); ctx.fill(); } break;
+    case 'loto': for (let a = -2; a <= 2; a++) { ctx.save(); ctx.rotate(a * 0.5); ctx.beginPath(); ctx.ellipse(0, -4, 4, 10, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); } L([-13, 10, 13, 10]); break;
+    case 'cepo': ctx.beginPath(); ctx.arc(0, 2, 12, Math.PI, 0); ctx.stroke(); for (let i = -2; i <= 2; i++) L([i * 5, 2, i * 5 + 1, -5]); L([-14, 6, 14, 6]); break;
+    case 'tumba': ctx.beginPath(); ctx.moveTo(-9, 13); ctx.lineTo(-9, -4); ctx.arc(0, -4, 9, Math.PI, 0); ctx.lineTo(9, 13); ctx.stroke(); L([0, -6, 0, 6]); L([-4, -2, 4, -2]); break;
     default: ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
   }
   ctx.restore();
@@ -163,6 +171,8 @@ export function dibujarBarra(j: Juego, t: number) {
       if (E.clicIzq) { E.clicIzq = false; if (id) { h.d.der = id; recalc(j); Sonido.efecto('click'); } else { ui.izq = null; ui.der = 'elegirHab'; ui.elegirLado = 'der'; } }
     }
   }
+  // recurso de la clase (furia, aura, cargas, presas, cadáveres, combo, forma, frascos)
+  { const z1 = Z('atajo_f1'), zd = Z('habilidad_der'); recursoClase(j, bx + z1.x, by + z1.y - 17, zd.x + zd.w - z1.x); }
   // botones chicos
   const botones: [string, PanelId | 'mapa', 'izq' | 'der'][] = [['boton_personaje', 'pers', 'izq'], ['boton_inventario', 'inv', 'der'], ['boton_habilidades', 'habs', 'der'], ['boton_mapa', 'mapa', 'der'], ['boton_menu', 'menu', 'izq']];
   for (const [id, p, lado] of botones) {
@@ -188,6 +198,80 @@ export function dibujarBarra(j: Juego, t: number) {
     if (dentro(bx2 - 130, by2 - 70, 170, 130)) ui.sobreUI = true;
   }
   ui.sobreUI = ui.sobreUI || E.y > by + 56 || dentro(bx, by, 130, BAR_H) || dentro(bx + 670, by, 130, BAR_H);
+}
+/** Indicador chico de la mecánica de clase, arriba de los atajos. */
+function recursoClase(j: Juego, x: number, y: number, w: number) {
+  const h = j.heroe, d = h.d, hh = 13, t = j.t;
+  let ayuda: [string, string] = ['', ''];
+  const fondo = () => { ctx.fillStyle = 'rgba(8,6,5,0.85)'; ctx.fillRect(x, y, w, hh); ctx.strokeStyle = '#4a3c28'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, hh - 1); };
+  const etiqueta = (s: string, col = '#c8b890') => texto(s, x + 5, y + 10, { tam: 10, color: col, sombra: false });
+  const pips = (n: number, max: number, x0: number, col: (i: number) => string, vacio = '#2a2420') => { for (let i = 0; i < max; i++) { ctx.fillStyle = i < n ? col(i) : vacio; ctx.fillRect(x0 + i * 13, y + 3, 10, hh - 6); } };
+  const barra = (k: number, x0: number, col: string) => { const bw = x + w - 5 - x0; ctx.fillStyle = '#2a2420'; ctx.fillRect(x0, y + 3, bw, hh - 6); ctx.fillStyle = col; ctx.fillRect(x0, y + 3, bw * Math.max(0, Math.min(1, k)), hh - 6); };
+  switch (d.clase) {
+    case 'berserker': {
+      fondo(); etiqueta(`${T('Furia', 'Fury')} ${Math.round(h.furia)}`, h.furia >= 100 ? '#ffb070' : '#c8b890');
+      barra(h.furia / 100, x + 62, h.furiaFija > 0 ? (Math.floor(t * 6) % 2 ? '#ff6020' : '#ffa040') : '#c02810');
+      ayuda = [T('Furia: sube al pegar y al recibir golpes, se apaga fuera de combate. Más furia, más daño.', 'Fury: rises when you hit and get hit, fades out of combat. More fury, more damage.'), ''];
+      break;
+    }
+    case 'templario': {
+      fondo();
+      const a = d.aura && h.buffs[d.aura] ? habilidadDe(d.aura) : null;
+      etiqueta(a ? `${T('Aura', 'Aura')}: ${TT(a.nombre)}` : T('Sin aura activa', 'No active aura'), a ? '#ffe0a0' : '#807060');
+      if (a && h.auraPot > 0) texto(`+${Math.round(h.auraPot)}%`, x + w - 5, y + 10, { tam: 10, alin: 'right', color: '#ffd060', sombra: false });
+      ayuda = [T('Solo un aura activa a la vez. Ponla en el botón derecho para encenderla.', 'Only one aura active at a time. Set it on the right button to light it.'), ''];
+      break;
+    }
+    case 'arcanista': {
+      fondo(); etiqueta(T('Cargas', 'Charges'));
+      pips(h.cargas.length, MAX_CARGAS, x + 52, (i) => colorElem(h.cargas[i]));
+      ayuda = [T('Cada hechizo de fuego, escarcha o rayo guarda una carga. Las cargas suben el daño de su elemento y algunas habilidades las gastan.', 'Every fire, frost or lightning spell stores a charge. Charges raise their element\'s damage and some skills spend them.'), ''];
+      break;
+    }
+    case 'cazadora': {
+      fondo();
+      const hal = j.monstruos.some((m) => m.dueno && !m.muerto && m.invocaId === 'halcon');
+      const marcados = j.monstruos.filter((m) => !m.muerto && !m.dueno && (m.marca ?? 0) > 0).length;
+      etiqueta(`${hal ? T('Halcón', 'Hawk') : T('Sin halcón', 'No hawk')} · ${T('Marcados', 'Marked')} ${marcados} · ${T('Trampas', 'Traps')} ${j.torretas.length}`, hal ? '#ffd080' : '#a09070');
+      ayuda = [T('Tu halcón y algunas flechas marcan presas: las marcadas reciben más daño.', 'Your hawk and some arrows mark prey: marked prey takes more damage.'), ''];
+      break;
+    }
+    case 'nigromante': {
+      fondo();
+      const c = cadaveresCerca(j, h.x, h.y, 12).length;
+      etiqueta(`${T('Cadáveres', 'Corpses')}: ${c}`, c ? '#e0d8c0' : '#807060');
+      pips(Math.min(6, c), 6, x + w - 6 * 13 - 2, () => '#d8d0b8');
+      ayuda = [T('Los muertos quedan en el suelo un rato: puedes levantarlos, comerlos o reventarlos.', 'The dead stay on the ground for a while: you can raise them, eat them or burst them.'), ''];
+      break;
+    }
+    case 'monje': {
+      fondo(); etiqueta(T('Combo', 'Combo'));
+      const vivo = h.combo.paso > 0 && (j.t - h.combo.t <= ventanaCombo(h) || !!h.buffs.loto_dorado);
+      pips(vivo ? h.combo.paso : 0, 3, x + 48, (i) => (i === 2 ? '#ffd060' : '#e0c080'));
+      if (vivo && !h.buffs.loto_dorado) { const k = 1 - (j.t - h.combo.t) / ventanaCombo(h); ctx.fillStyle = '#806030'; ctx.fillRect(x + 90, y + hh - 3, (w - 95) * k, 2); }
+      texto(T('el tercero remata', 'third one finishes'), x + w - 5, y + 10, { tam: 9, alin: 'right', color: '#807060', sombra: false });
+      ayuda = [T('Tres golpes cuerpo a cuerpo seguidos: el tercero es un remate con una onda.', 'Three melee blows in a row: the third is a finisher with a shockwave.'), ''];
+      break;
+    }
+    case 'druida': {
+      fondo();
+      const f = h.buffs.forma_oso ? 'forma_oso' : h.buffs.forma_lobo ? 'forma_lobo' : null;
+      etiqueta(f ? `${T('Forma', 'Form')}: ${f === 'forma_oso' ? T('oso', 'bear') : T('lobo', 'wolf')}` : T('Forma humana', 'Human form'), f ? '#e0c080' : '#a09070');
+      if (f) barra(h.buffs[f].t / 300, x + 90, f === 'forma_oso' ? '#806040' : '#8090a0');
+      ayuda = [T('Piel de lobo y piel de oso cambian tu cuerpo. Algunas habilidades solo se usan transformado.', 'Wolfskin and Bearhide change your body. Some skills only work while transformed.'), ''];
+      break;
+    }
+    case 'alquimista': {
+      fondo(); etiqueta(T('Frascos', 'Flasks'));
+      const max = frascosMax(h);
+      pips(Math.floor(h.frascos), Math.min(10, max), x + 50, () => (h.buffs.panacea_negra ? '#80ff60' : '#ff9040'));
+      if (h.frascos < max) { const i = Math.floor(h.frascos); ctx.fillStyle = '#804020'; ctx.fillRect(x + 50 + i * 13, y + 3 + (hh - 6) * (1 - h.frascoT / 4), 10, (hh - 6) * (h.frascoT / 4)); }
+      ayuda = [T('Las bombas gastan frascos. Se rellenan solos con el tiempo.', 'Bombs use flasks. They refill on their own over time.'), ''];
+      break;
+    }
+  }
+  if (dentro(x, y, w, hh)) ui.sobreUI = true;
+  if (ayuda[0] && dentro(x, y, w, hh)) tooltip(envolver(ayuda[0], 260, 13).map((s) => [s, '#e0d0a0'] as [string, string]), x + w / 2, y);
 }
 export function alternar(p: PanelId, lado: 'izq' | 'der') {
   if (lado === 'izq') ui.izq = ui.izq === p ? null : p; else ui.der = ui.der === p ? null : p;
@@ -440,52 +524,184 @@ function panelPers(j: Juego, x: number, y: number) {
   if (Object.keys(c.conjuntos).length) texto(T('Bonos de conjunto activos', 'Set bonuses active'), x + 18, y + 408, { tam: 12, color: '#40d040' });
 }
 
-// ---------------- árbol de habilidades
-function panelHabs(j: Juego, x: number, y: number) {
-  const h = j.heroe, d = h.d;
-  marco(x, y, 320, 432); titulo(T('Habilidades', 'Skills'), x, y, 320);
-  const cl = CLASES.find((q) => q.id === d.clase)!;
-  cl.ramas.forEach((r, i) => { if (boton(TT(r), x + 12 + i * 100, y + 38, 96, 24, { tam: 12, color: ui.ramaHab === i ? '#ffe090' : undefined })) { ui.ramaHab = i; E.clicIzq = false; } });
-  texto(`${T('Puntos', 'Points')}: ${d.puntosHab}`, x + 160, y + 80, { alin: 'center', color: d.puntosHab ? '#ffd060' : '#a09070' });
-  const lista = habilidadesDe(d.clase).filter((hb) => hb.rama === ui.ramaHab).sort((a, b) => a.nivelReq - b.nivelReq);
-  lista.forEach((hb, i) => {
-    const yy = y + 92 + i * 52;
-    const n = d.habs[hb.id] ?? 0, puede = puedeAprender(d, hb);
-    iconoHab(hb, x + 16, yy, 44, n === 0 && !puede);
-    texto(TT(hb.nombre), x + 68, yy + 16, { color: n ? '#f0e0b0' : '#908070' });
-    texto(n ? `${T('Nivel', 'Level')} ${n}${h.c.mas_habilidades ? ` (+${h.c.mas_habilidades})` : ''}` : `${T('Requiere nivel', 'Requires level')} ${hb.nivelReq}`, x + 68, yy + 32, { tam: 11, color: '#a09070' });
-    if (puede && boton('+', x + 270, yy + 8, 30, 28, { tam: 18 })) { d.habs[hb.id] = n + 1; d.puntosHab--; Sonido.efecto('click'); recalc(j); if (d.izq === 'ataque' && hb.tipo !== 'pasiva' && hb.tipo !== 'aura' && n === 0 && hb.anim === 'atacar') {/* nada */} if (d.der === 'ataque' && n === 0 && hb.tipo !== 'pasiva') d.der = hb.id; if (n === 0 && hb.tipo !== 'pasiva' && !d.atajos.includes(hb.id)) { const libreI = d.atajos.findIndex((a) => !a); if (libreI >= 0) d.atajos[libreI] = hb.id; } E.clicIzq = false; }
-    if (dentro(x + 16, yy, 250, 44)) mostrarAyudaHab(j, hb, x > W / 2 ? x - 170 : x + 490, yy + 40);
+// ---------------- árbol de habilidades: tres columnas (una por rama), filas por nivel 1/6/12/18/24/30
+const PANEL_W = 320, PANEL_H = 432;
+const ICONO = 34, FILA = 54, COL = 94, ARBOL_X = 28, ARBOL_Y = 72;
+/** Posición (centro) de cada habilidad de la clase en el árbol, relativa al panel. */
+function posArbol(clase: string): Map<string, [number, number]> {
+  const pos = new Map<string, [number, number]>();
+  const todas = habilidadesDe(clase as any);
+  for (const r of [0, 1, 2] as const) TIERS.forEach((t, fila) => {
+    const hs = todas.filter((hb) => hb.rama === r && hb.nivelReq === t);
+    const cx = ARBOL_X + r * COL;
+    hs.forEach((hb, i) => pos.set(hb.id, [cx + (hs.length === 1 ? COL / 2 : i === 0 ? 25 : COL - 25), ARBOL_Y + fila * FILA + ICONO / 2 + 4]));
   });
+  // las que no caen en una fila (por si acaso) van a la fila más cercana
+  for (const hb of todas) if (!pos.has(hb.id)) { const f = TIERS.reduce((b, t, i) => (Math.abs(t - hb.nivelReq) < Math.abs(TIERS[b] - hb.nivelReq) ? i : b), 0); pos.set(hb.id, [ARBOL_X + hb.rama * COL + COL / 2, ARBOL_Y + f * FILA + ICONO / 2 + 4]); }
+  return pos;
 }
-function mostrarAyudaHab(j: Juego, hb: Habilidad, x: number, y: number) {
-  const h = j.heroe, n = Math.max(1, nivelHab(h.d, hb.id, h.c));
-  const l: [string, string][] = [[TT(hb.nombre), '#f0d080']];
-  for (const s of envolver(TT(hb.desc), 260, 13)) l.push([s, '#d0c0a0']);
-  if (hb.req?.length) l.push([`${T('Requiere', 'Requires')}: ${hb.req.map((r) => TT(HABILIDADES.find((q) => q.id === r)!.nombre)).join(', ')}`, '#c08060']);
-  if (hb.mana[0]) l.push([`${T('Maná', 'Mana')}: ${costoMana(j, hb).toFixed(1)}`, '#8090ff']);
-  if (hb.dano) { const d = danoHab(j, hb, n); l.push([`${T('Daño', 'Damage')}: ${d[0]} - ${d[1]}`, '#e0e0e0']); }
-  if (hb.mult) l.push([`${T('Daño del arma', 'Weapon damage')}: ${Math.round(hb.mult[0] + hb.mult[1] * (n - 1))}%`, '#e0e0e0']);
-  for (const [k, b] of Object.entries(hb.bonos ?? {})) { const v = Math.round((b[0] + b[1] * (n - 1)) * 10) / 10; if (['miedo', 'aturdir', 'empuje', 'tempestad', 'huracan', 'escarcha'].includes(k)) continue; l.push([textoStat(k, v, IDI).replace(/^\+?(.+)$/, (m) => m), '#7c94ff']); }
-  if (hb.sinergias?.length) l.push([`${T('Sinergias', 'Synergies')}: ${hb.sinergias.map(([s, p]) => `${TT(HABILIDADES.find((q) => q.id === s)!.nombre)} +${p}%`).join(', ')}`, '#40d040']);
-  if (hb.tipo === 'aura') l.push([T('Ponla en el botón derecho para activarla', 'Set it on the right button to activate'), '#a0a0a0']);
-  tooltip(l, x, y);
+function aprender(j: Juego, hb: Habilidad) {
+  const d = j.heroe.d, n = d.habs[hb.id] ?? 0;
+  d.habs[hb.id] = n + 1; d.puntosHab--; Sonido.efecto('click'); recalc(j);
+  if (n === 0 && hb.tipo !== 'pasiva') {
+    if (d.der === 'ataque') d.der = hb.id;
+    if (hb.tipo === 'aura' && !d.aura) d.aura = hb.id;
+    if (!d.atajos.includes(hb.id)) { const libreI = d.atajos.findIndex((a) => !a); if (libreI >= 0) d.atajos[libreI] = hb.id; }
+  }
+}
+function panelHabs(j: Juego, x: number, y: number) {
+  const h = j.heroe, d = h.d, t = performance.now() / 1000;
+  marco(x, y, PANEL_W, PANEL_H); titulo(T('Habilidades', 'Skills'), x, y, PANEL_W);
+  const cl = CLASES.find((q) => q.id === d.clase)!;
+  const pos = posArbol(d.clase);
+  const lista = habilidadesDe(d.clase);
+  // cabeceras de rama y guías de fila
+  cl.ramas.forEach((r, i) => {
+    const cx = x + ARBOL_X + i * COL;
+    const pts = lista.filter((hb) => hb.rama === i).reduce((s, hb) => s + (d.habs[hb.id] ?? 0), 0);
+    ctx.fillStyle = i % 2 ? 'rgba(255,240,200,0.025)' : 'rgba(0,0,0,0.18)'; ctx.fillRect(cx + 1, y + ARBOL_Y - 22, COL - 2, TIERS.length * FILA + 18);
+    texto(TT(r), cx + COL / 2, y + ARBOL_Y - 8, { alin: 'center', tam: 13, color: pts ? '#f0d890' : '#a09070', fuente: TITULO, max: COL - 6 });
+  });
+  TIERS.forEach((tv, f) => {
+    const yy = y + ARBOL_Y + f * FILA + ICONO / 2 + 8;
+    const alcanzado = d.nivel >= tv;
+    texto(String(tv), x + 15, yy, { alin: 'center', tam: 12, color: alcanzado ? '#d8c08a' : '#5a4c3a', negrita: true });
+    if (f > 0) { ctx.fillStyle = 'rgba(90,74,48,0.35)'; ctx.fillRect(x + 6, y + ARBOL_Y + f * FILA - 6, PANEL_W - 12, 1); }
+  });
+  // líneas de requisitos
+  ctx.save(); ctx.lineWidth = 2;
+  for (const hb of lista) for (const rq of hb.req ?? []) {
+    const a = pos.get(rq), b = pos.get(hb.id); if (!a || !b) continue;
+    const ok = (d.habs[rq] ?? 0) > 0;
+    ctx.strokeStyle = ok ? ((d.habs[hb.id] ?? 0) > 0 ? '#c8a050' : '#8a7040') : '#3a3026';
+    // baja por su propia columna hasta justo encima del destino (así no cruza otros iconos) y entra en codo
+    ctx.beginPath(); ctx.moveTo(x + a[0], y + a[1] + ICONO / 2); ctx.lineTo(x + a[0], y + b[1] - ICONO / 2 - 7);
+    ctx.lineTo(x + b[0], y + b[1] - ICONO / 2 - 3); ctx.lineTo(x + b[0], y + b[1] - ICONO / 2); ctx.stroke();
+  }
+  ctx.restore();
+  // iconos
+  let encima: Habilidad | null = null, encimaY = 0;
+  for (const hb of lista) {
+    const p = pos.get(hb.id)!; const ix = x + p[0] - ICONO / 2, iy = y + p[1] - ICONO / 2;
+    const n = d.habs[hb.id] ?? 0, puede = puedeAprender(d, hb);
+    const bloqueado = n === 0 && !puede;
+    const sobre = dentro(ix, iy, ICONO, ICONO);
+    if (hb.definitiva) { ctx.fillStyle = bloqueado ? '#3a1a10' : '#8a3010'; ctx.fillRect(ix - 3, iy - 3, ICONO + 6, ICONO + 6); ctx.strokeStyle = bloqueado ? '#5a3a20' : '#ffb040'; ctx.lineWidth = 1; ctx.strokeRect(ix - 2.5, iy - 2.5, ICONO + 5, ICONO + 5); }
+    iconoHab(hb, ix, iy, ICONO, bloqueado);
+    if (bloqueado) { ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(ix, iy, ICONO, ICONO); }
+    if (hb.tipo === 'pasiva') { ctx.strokeStyle = bloqueado ? '#303848' : '#7c94ff'; ctx.lineWidth = 1; ctx.strokeRect(ix + 2.5, iy + 2.5, ICONO - 5, ICONO - 5); }
+    if (puede) { ctx.save(); ctx.globalAlpha = 0.55 + Math.sin(t * 5) * 0.35; ctx.strokeStyle = '#ffe070'; ctx.lineWidth = 2; ctx.strokeRect(ix - 1, iy - 1, ICONO + 2, ICONO + 2); ctx.restore(); }
+    if (sobre) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(ix - 0.5, iy - 0.5, ICONO + 1, ICONO + 1); encima = hb; encimaY = iy + ICONO / 2; }
+    // nivel
+    if (n > 0 || puede) {
+      const extra = n > 0 ? h.c.mas_habilidades : 0;
+      const s = String(n + extra), bw = Math.max(13, ancho(s, 10) + 5);
+      ctx.fillStyle = 'rgba(8,6,4,0.9)'; ctx.fillRect(ix + ICONO - bw + 3, iy + ICONO - 9, bw, 12);
+      ctx.strokeStyle = n > 0 ? '#a08850' : '#5a4a30'; ctx.lineWidth = 1; ctx.strokeRect(ix + ICONO - bw + 3.5, iy + ICONO - 8.5, bw - 1, 11);
+      texto(s, ix + ICONO + 3 - bw / 2, iy + ICONO + 1, { alin: 'center', tam: 10, color: extra ? '#7c94ff' : n > 0 ? '#ffe8a0' : '#908070', sombra: false });
+    }
+    if (sobre && E.clicIzq) { E.clicIzq = false; if (puede) aprender(j, hb); else Sonido.efecto('negado'); }
+  }
+  // pie: puntos y ayuda
+  const py = y + PANEL_H - 22;
+  ctx.fillStyle = '#1a1510'; ctx.fillRect(x + 10, py - 14, PANEL_W - 20, 22);
+  texto(`${T('Puntos', 'Points')}: ${d.puntosHab}`, x + 18, py + 1, { tam: 13, color: d.puntosHab ? '#ffd060' : '#a09070', negrita: !!d.puntosHab });
+  texto(d.puntosHab ? T('Clic en un icono que brilla', 'Click a glowing icon') : T('Pasa el ratón para ver detalles', 'Hover for details'), x + PANEL_W - 18, py + 1, { tam: 11, alin: 'right', color: '#807060' });
+  if (encima) tooltipAl(lineasHab(j, encima, true), x - 6, encimaY);
+}
+/** Tooltip pegado a la izquierda de x (para paneles del lado derecho), centrado en y. */
+function tooltipAl(lineas: [string, string][], xDer: number, yc: number) {
+  let w = 0; for (const [s] of lineas) w = Math.max(w, ancho(s, 12));
+  w += 20; const hh = lineas.length * 15 + 12;
+  let tx = xDer - w; if (tx < 4) tx = Math.min(W - w - 4, xDer + PANEL_W + 12);
+  const ty = Math.max(4, Math.min(H - BAR_H - hh - 4, yc - hh / 2));
+  ctx.fillStyle = 'rgba(6,5,4,0.95)'; ctx.fillRect(tx, ty, w, hh);
+  ctx.strokeStyle = '#5a4a30'; ctx.lineWidth = 1; ctx.strokeRect(tx + 0.5, ty + 0.5, w - 1, hh - 1);
+  lineas.forEach(([s, c], i) => { if (s) texto(s, tx + 10, ty + 18 + i * 15, { color: c, tam: 12 }); else { ctx.fillStyle = '#3a3024'; ctx.fillRect(tx + 10, ty + 11 + i * 15, w - 20, 1); } });
+}
+const ETIQ: Record<string, [string, string]> = {
+  esquiva: ['+{v}% de esquiva', '+{v}% dodge'], vida_pct: ['+{v}% de vida', '+{v}% life'], mana_pct: ['+{v}% de maná', '+{v}% mana'],
+  fuego_pct: ['+{v}% de daño de fuego', '+{v}% fire damage'], frio_pct: ['+{v}% de daño de escarcha', '+{v}% frost damage'], rayo_pct: ['+{v}% de daño de rayo', '+{v}% lightning damage'],
+  veneno_pct: ['+{v}% de daño de veneno', '+{v}% poison damage'], sombra_pct: ['+{v}% de daño de sombra', '+{v}% shadow damage'], invocados_pct: ['+{v}% de vida y daño de invocados', '+{v}% summon life and damage'],
+  espinas_pct: ['Devuelve {v}% del daño recibido', 'Returns {v}% of damage taken'], enemigo_res: ['Resistencias enemigas {v}%', 'Enemy resistances {v}%'], enemigo_def: ['Defensa enemiga {v}%', 'Enemy defense {v}%'],
+  escudo_hueso: ['Absorbe {v} de daño', 'Absorbs {v} damage'], amplificar: ['+{v}% de daño físico recibido', '+{v}% physical damage taken'], debilitar: ['Los enemigos pegan {v}% menos', 'Enemies hit {v}% softer'],
+  lento: ['Enemigos {v}% más lentos', 'Enemies {v}% slower'], potencia_aura: ['+{v}% de potencia del aura activa', '+{v}% active aura power'], furia_gana: ['+{v}% de furia ganada', '+{v}% fury gained'],
+  furia_dano: ['+{v}% de daño extra con furia llena', '+{v}% extra damage at full fury'], furia_grito: ['+{v} de furia por grito', '+{v} fury per shout'], resonancia: ['+{v}% de daño por carga guardada', '+{v}% damage per stored charge'],
+  marca: ['Marca la presa {v} s', 'Marks prey for {v} s'], marca_pct: ['+{v}% de daño a presas marcadas', '+{v}% damage to marked prey'], combo_pct: ['+{v}% de daño del remate', '+{v}% finisher damage'],
+  combo_ventana: ['+{v} s para encadenar el combo', '+{v} s to chain the combo'], maldicion_dur: ['+{v}% de duración de maldiciones', '+{v}% curse duration'], sifon: ['Cura {v}% del daño hecho a los malditos', 'Heals {v}% of damage dealt to the cursed'],
+  res: ['Resistencias enemigas -{v}%', 'Enemy resistances -{v}%'], cura_pct: ['Cura {v}% de la vida', 'Heals {v}% of life'], mana_pct_cura: ['Recupera {v}% del maná', 'Restores {v}% of mana'],
+  frascos_max: ['+{v} frascos', '+{v} flasks'], frascos_vel: ['+{v}% de velocidad de relleno', '+{v}% refill speed'], bomba_radio: ['+{v}% de radio de las bombas', '+{v}% bomb radius'],
+  robo_golpe: ['Cura {v}% del daño del golpe', 'Heals {v}% of the blow\'s damage'],
+};
+const SIN_NUMERO: Record<string, [string, string]> = {
+  miedo: ['Asusta y hace huir', 'Frightens and makes flee'], aturdir: ['Aturde', 'Stuns'], empuje: ['Empuja', 'Knocks back'], congelar: ['Congela o deja clavado', 'Freezes or pins in place'],
+  escarcha: ['Congela a quien te pega', 'Freezes whoever hits you'], condena: ['Los malditos revientan al morir', 'The cursed burst when they die'], tempestad: ['', ''], huracan: ['', ''],
+};
+const TIPO_HAB: Record<string, [string, string]> = { pasiva: ['Pasiva', 'Passive'], aura: ['Aura', 'Aura'], buff: ['Hechizo de apoyo', 'Support spell'], invocar: ['Invocación', 'Summon'], maldicion: ['Maldición', 'Curse'], trampa: ['Trampa', 'Trap'], bomba: ['Bomba', 'Bomb'] };
+function valoresHab(j: Juego, hb: Habilidad, k: number, col: string): [string, string][] {
+  const out: [string, string][] = [];
+  const v = (b: [number, number] | undefined) => (b ? Math.round((b[0] + b[1] * (k - 1)) * 10) / 10 : 0);
+  if (hb.mana[0] || hb.mana[1]) out.push([`${T('Maná', 'Mana')}: ${Math.max(0, hb.mana[0] + hb.mana[1] * (k - 1)).toFixed(1)}`, '#8090ff']);
+  if (hb.dano) { const dd = danoHab(j, hb, k); out.push([`${T('Daño', 'Damage')}: ${dd[0]} - ${dd[1]}`, col]); }
+  if (hb.mult) out.push([`${T('Daño del arma', 'Weapon damage')}: ${Math.round(v(hb.mult))}%`, col]);
+  if (hb.n && v(hb.n) > 1) out.push([`${T('Cantidad', 'Count')}: ${Math.round(v(hb.n))}`, col]);
+  if (hb.max && hb.id !== 'coto_caza') out.push([`${T('Máximo', 'Maximum')}: ${Math.max(1, Math.floor(v(hb.max)))}`, col]);
+  if (hb.duracion && hb.tipo !== 'pasiva' && hb.id !== 'forma_lobo' && hb.id !== 'forma_oso') out.push([`${T('Duración', 'Duration')}: ${v(hb.duracion)} s`, col]);
+  for (const [s, b] of Object.entries(hb.bonos ?? {})) {
+    if (s in SIN_NUMERO) continue;
+    let x = v(b); if (s === 'frascos_max') x = Math.floor(x);
+    const e = ETIQ[s]; out.push([e ? TT(e).replace('{v}', String(x)).replace('+-', '-') : textoStat(s, x, IDI), '#7c94ff']);
+  }
+  return out;
+}
+/** Líneas de ayuda de una habilidad: qué hace, valores ahora y al siguiente nivel, requisitos y sinergias. */
+function lineasHab(j: Juego, hb: Habilidad, conSiguiente: boolean): [string, string][] {
+  const h = j.heroe, d = h.d, base = d.habs[hb.id] ?? 0, extra = base ? h.c.mas_habilidades : 0, n = base + extra;
+  const cl = CLASES.find((q) => q.id === d.clase)!;
+  const l: [string, string][] = [[TT(hb.nombre), hb.definitiva ? '#ffb040' : '#f0d080']];
+  const tipo = TIPO_HAB[hb.tipo] ?? [T('Activa', 'Active'), T('Activa', 'Active')];
+  l.push([`${hb.definitiva ? T('Definitiva', 'Ultimate') + ' · ' : ''}${TT(tipo)} · ${TT(cl.ramas[hb.rama])}${hb.recarga ? ` · ${T('Recarga', 'Cooldown')} ${hb.recarga} s` : ''}`, '#a09070']);
+  for (const s of envolver(TT(hb.desc).replace(/^(Definitiva|Ultimate)\. /, ''), 250, 12)) l.push([s, '#d0c0a0']);
+  const marcas = Object.keys(hb.bonos ?? {}).map((k) => SIN_NUMERO[k]).filter((x) => x && x[0]).map((x) => TT(x!));
+  if (marcas.length) l.push([marcas.join(' · '), '#c0a0ff']);
+  if (hb.id === 'ataque') return l;
+  if (n > 0) { l.push(['', '']); l.push([`${T('Nivel actual', 'Current level')}: ${base}${extra ? ` (+${extra})` : ''}`, '#f0e0b0']); l.push(...valoresHab(j, hb, n, '#e0e0e0')); }
+  if (conSiguiente && base < 20) { l.push(['', '']); l.push([`${T('Siguiente nivel', 'Next level')}: ${base + 1}`, '#c0b090']); l.push(...valoresHab(j, hb, n + 1, '#b0b0b0').map(([s, c]) => [s, c === '#7c94ff' ? '#6070c0' : c === '#8090ff' ? '#6070c0' : c] as [string, string])); }
+  // requisitos
+  const reqs: [string, string][] = [];
+  const nivelPide = hb.nivelReq + base;
+  if (base < 20 && d.nivel < nivelPide) reqs.push([`${T('Requiere nivel', 'Requires level')} ${nivelPide}`, '#ff6060']);
+  for (const r of hb.req ?? []) { const o = HABILIDADES.find((q) => q.id === r); if (o) reqs.push([`${T('Requiere', 'Requires')}: ${TT(o.nombre)}`, (d.habs[r] ?? 0) > 0 ? '#70b070' : '#ff6060']); }
+  if (hb.forma) reqs.push([hb.forma === 'lobo' ? T('Solo en forma de lobo', 'Wolf form only') : hb.forma === 'oso' ? T('Solo en forma de oso', 'Bear form only') : T('Solo transformado', 'Only while transformed'), '#d0a060']);
+  if (hb.furia) reqs.push([`${T('Pide', 'Needs')} ${hb.furia} ${T('de furia', 'fury')}`, '#ff8060']);
+  if (reqs.length) { l.push(['', '']); l.push(...reqs); }
+  if (hb.sinergias?.length) {
+    l.push(['', '']); l.push([T('Sinergias', 'Synergies'), '#40d040']);
+    for (const [s, p] of hb.sinergias) { const o = HABILIDADES.find((q) => q.id === s); if (!o) continue; const tiene = d.habs[s] ?? 0; l.push([`${TT(o.nombre)}: +${p}% ${T('por nivel', 'per level')}${tiene ? ` (${T('ahora', 'now')} +${p * tiene}%)` : ''}`, tiene ? '#60e060' : '#409040']); }
+  }
+  if (hb.tipo === 'aura') l.push([T('Solo un aura activa: ponla en el botón derecho', 'One active aura: set it on the right button'), '#a0a0a0']);
+  if (puedeAprender(d, hb)) l.push([base === 0 ? T('Clic para aprender', 'Click to learn') : T('Clic para subir un nivel', 'Click to raise a level'), '#ffd060']);
+  return l;
 }
 function panelElegir(j: Juego, x: number, y: number) {
   const h = j.heroe;
   const lista: Habilidad[] = [ATAQUE, ...habilidadesDe(h.d.clase).filter((hb) => (h.d.habs[hb.id] ?? 0) > 0 && hb.tipo !== 'pasiva' && (ui.elegirLado === 'der' || hb.tipo !== 'aura'))];
-  marco(x, y, 320, 432); titulo(ui.elegirLado === 'izq' ? T('Botón izquierdo', 'Left button') : T('Botón derecho', 'Right button'), x, y, 320);
+  marco(x, y, PANEL_W, PANEL_H); titulo(ui.elegirLado === 'izq' ? T('Botón izquierdo', 'Left button') : T('Botón derecho', 'Right button'), x, y, PANEL_W);
   texto(T('Pasa el ratón y pulsa F1-F10 para un atajo', 'Hover and press F1-F10 for a hotkey'), x + 160, y + 52, { alin: 'center', tam: 11, color: '#a09070' });
+  let encima: Habilidad | null = null, ey = 0;
   lista.forEach((hb, i) => {
-    const xx = x + 16 + (i % 5) * 58, yy = y + 64 + Math.floor(i / 5) * 58;
-    iconoHab(hb, xx, yy, 48);
-    const fk = h.d.atajos.indexOf(hb.id); if (fk >= 0) texto(`F${fk + 1}`, xx + 2, yy + 46, { tam: 10, color: '#ffd060' });
-    if (dentro(xx, yy, 48, 48)) {
-      mostrarAyudaHab(j, hb, xx + 24, yy);
+    const xx = x + 16 + (i % 6) * 48, yy = y + 64 + Math.floor(i / 6) * 50, s = 42;
+    iconoHab(hb, xx, yy, s);
+    if (hb.definitiva) { ctx.strokeStyle = '#ffb040'; ctx.lineWidth = 1; ctx.strokeRect(xx - 1.5, yy - 1.5, s + 3, s + 3); }
+    if (hb.id === h.d[ui.elegirLado]) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(xx - 0.5, yy - 0.5, s + 1, s + 1); }
+    const fk = h.d.atajos.indexOf(hb.id); if (fk >= 0) texto(`F${fk + 1}`, xx + 2, yy + s - 2, { tam: 10, color: '#ffd060' });
+    if (dentro(xx, yy, s, s)) {
+      encima = hb; ey = yy + s / 2;
       if (E.clicIzq) { h.d[ui.elegirLado] = hb.id; ui.der = null; E.clicIzq = false; Sonido.efecto('click'); recalc(j); }
       for (let k = 1; k <= 10; k++) if (pulso('F' + k)) { h.d.atajos = h.d.atajos.map((a) => (a === hb.id ? null : a)); h.d.atajos[k - 1] = hb.id; }
     }
   });
+  if (encima) tooltipAl(lineasHab(j, encima, false), x - 6, ey);
 }
 
 // ---------------- cofre compartido

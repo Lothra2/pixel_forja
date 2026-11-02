@@ -295,7 +295,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   else if (e.congelado > 0) ok = dibujarTenido(ctx, q, px, py, '#70b8ff', 0.55, esc);
   else if (e.frio > 0) ok = dibujarTenido(ctx, q, px, py, '#5090e0', 0.3, esc);
   else if (e.veneno > 0) ok = dibujarTenido(ctx, q, px, py, '#40c030', 0.3, esc);
-  else if (e.tinte && e.tipo !== 'heroe') ok = dibujarTenido(ctx, q, px, py, e.tinte, e.tipo === 'invocado' ? 0.35 : 0.3, esc);
+  else if (e.tinte) ok = dibujarTenido(ctx, q, px, py, e.tinte, e.tipo === 'invocado' ? 0.35 : e.tipo === 'heroe' ? 0.22 : 0.3, esc);
   else if (e.muerto && e.tMuerto > 60) { ctx.globalAlpha = Math.max(0.25, 1 - (e.tMuerto - 60) / 400); ok = dibujar(ctx, q, px, py, esc); ctx.globalAlpha = 1; }
   else ok = dibujar(ctx, q, px, py, esc);
   if (ok && !e.muerto) reflejos(ctx, e, q, px, py, esc);

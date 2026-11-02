@@ -41,7 +41,7 @@ export interface Ent {
   radio: number;
   muerto: boolean; tMuerto: number;
   frio: number; congelado: number; veneno: number; venenoDps: number; aturdido: number; miedo: number; sangrado: number;
-  maldicion?: { amplificar: number; debilitar: number; lento: number; t: number; res: number };
+  maldicion?: { amplificar: number; debilitar: number; lento: number; t: number; res: number; sifon?: number; condena?: boolean };
   destello: number;
   escala: number; tinte?: string;
 }
@@ -55,6 +55,8 @@ export interface Monstruo extends Ent {
   misionUnico?: string;
   dueno?: boolean; invocaId?: string; tVida?: number;
   habla?: string;
+  /** Presa marcada (cazadora): segundos que le quedan, recibe más daño del héroe y los suyos. */
+  marca?: number;
 }
 export interface Proyectil {
   x: number; y: number; z: number; vx: number; vy: number; vida: number; dano: [number, number]; elem: Elemento;
@@ -68,6 +70,8 @@ export interface Numero { x: number; y: number; z: number; txt: string; color: s
 export interface Efecto { id: string; x: number; y: number; t: number; dir: number; escala: number; z?: number; seguir?: Ent; dur?: number }
 export interface Particula { x: number; y: number; z: number; vx: number; vy: number; vz: number; t: number; dur: number; color: string; tam: number; tipo: 'chispa' | 'humo' | 'sangre' | 'brasa' | 'nieve' | 'hoja' | 'pluma' | 'ceniza'; grav: number }
 export interface Mancha { x: number; y: number; r: number; color: string; t: number; tipo: 'sangre' | 'quemado' | 'hielo' | 'veneno' }
+/** Torretas y trampas. Las minas (mina = radio de la explosión) esperan a que algo las pise. */
+export interface Torreta { x: number; y: number; t: number; dur: number; dano: [number, number]; cd: number; hab?: string; elem?: Elemento; mina?: number; raiz?: boolean; efecto?: string }
 export interface Npc extends Ent { npc: string; hablando: boolean }
 export interface Portal { x: number; y: number; destino: string; x2?: number; y2?: number; t: number }
 
@@ -87,6 +91,20 @@ export interface Heroe extends Ent {
   tempestad: number; huracan: number;
   pasoT: number; regen: number;
   ultimoGolpe: number;
+  // ---- mecánicas de clase (se reinician al cambiar de zona o cargar)
+  /** Berserker: furia 0-100. */
+  furia: number; furiaFija: number; tCombate: number;
+  /** Monje: pasos del combo (0-2) y cuándo fue el último golpe. */
+  combo: { paso: number; t: number };
+  /** Arcanista: cargas elementales guardadas (hasta 3). */
+  cargas: Elemento[];
+  /** Alquimista: frascos listos y avance del relleno. */
+  frascos: number; frascoT: number;
+  /** Templario: potencia con que se armó el aura activa. */
+  auraPot: number;
+  /** Qué habilidad mueve el huracán activo (galerna u ojo del tifón). */
+  huracanHab: string;
+  avisos: Record<string, number>;
 }
 
 export interface Juego {
@@ -111,8 +129,8 @@ export interface Juego {
   visiones: { x: number; y: number; t: number; sprite: string; dir: Dir }[];
   eventos: { tipo: string; dato?: any }[];
   idi: 0 | 1;
-  cuervos: { x: number; y: number; t: number; dur: number; dano: [number, number]; objetivo: Monstruo | null; ang: number }[];
-  torretas: { x: number; y: number; t: number; dur: number; dano: [number, number]; cd: number }[];
+  cuervos: { x: number; y: number; t: number; dur: number; dano: [number, number]; objetivo: Monstruo | null; ang: number; marca?: boolean }[];
+  torretas: Torreta[];
   cadaveres: number;
 }
 
@@ -126,7 +144,9 @@ export function crearJuego(d: DatosHeroe, idi: 0 | 1): Juego {
     ...(nueva({ tipo: 'heroe', vel: 5.2, radio: 0.4 }) as Ent), tipo: 'heroe', d, c, mana: d.manaActual ?? c.manaMax, vida: d.vidaActual ?? c.vidaMax, vidaMax: c.vidaMax,
     camino: null, destino: null, objetivo: null, recoger: null, hablar: null, usar: null, habActual: 'ataque', correr: true, buffs: {}, recargas: {}, escudoHueso: 0,
     torbellino: 0, salto: null, tempestad: 0, huracan: 0, pasoT: 0, regen: 0, ultimoGolpe: 0,
+    furia: 0, furiaFija: 0, tCombate: -99, combo: { paso: 0, t: -99 }, cargas: [], frascos: 0, frascoT: 0, auraPot: 0, huracanHab: 'huracan', avisos: {},
   };
+  h.frascos = frascosMax(h);
   const j: Juego = {
     zona: null as unknown as Zona, heroe: h, monstruos: [], npcs: [], proyectiles: [], areas: [], suelo: [], numeros: [], efectos: [], particulas: [], manchas: [], portal: null,
     t: 0, sacudida: 0, mensajes: [], jefe: null, tirado: new Set(), visiones: [], eventos: [], idi, cuervos: [], torretas: [], cadaveres: 0,
@@ -147,6 +167,7 @@ export function entrarZona(j: Juego, zid: string, entrada: string) {
   }
   j.zona = viva.z; j.monstruos = viva.monstruos; j.suelo = viva.suelo; j.manchas = viva.manchas;
   j.proyectiles = []; j.areas = []; j.efectos = []; j.particulas = []; j.numeros = []; j.cuervos = []; j.torretas = [];
+  reiniciarMecanicas(j.heroe);
   // invocados vienen con el héroe
   const invocados = (zonasVivas.get(j.heroe.d.zona)?.monstruos ?? []).filter((m) => m.dueno && !m.muerto);
   for (const m of invocados) { const i = (zonasVivas.get(j.heroe.d.zona)!.monstruos).indexOf(m); if (i >= 0) zonasVivas.get(j.heroe.d.zona)!.monstruos.splice(i, 1); }
@@ -273,6 +294,38 @@ const COLOR_ELEM: Record<Elemento, string> = { fisico: '#ffffff', fuego: '#ff803
 const SONIDO_ELEM: Record<Elemento, string> = { fisico: 'golpe_carne', fuego: 'fuego_impacto', frio: 'hielo_impacto', rayo: 'rayo', veneno: 'veneno', sombra: 'sombra', luz: 'luz', sangre: 'golpe_carne' };
 export const colorElem = (e: Elemento) => COLOR_ELEM[e];
 
+// ------------------------------------------------------------------ mecánicas de clase
+/** Bono sumado de objetos, buffs y pasivas (claves propias de las habilidades). */
+export const bono = (h: Heroe, k: string) => h.c.st?.[k] ?? 0;
+export const frascosMax = (h: Heroe) => 4 + Math.floor(bono(h, 'frascos_max'));
+export const ventanaCombo = (h: Heroe) => 1.8 + bono(h, 'combo_ventana');
+export const MAX_CARGAS = 3;
+const CONSUME_CARGAS = new Set(['descarga_prismatica', 'sol_negro', 'edad_hielo', 'furia_firmamento']);
+export function reiniciarMecanicas(h: Heroe) {
+  h.furia = 0; h.furiaFija = 0; h.tCombate = -99; h.combo = { paso: 0, t: -99 }; h.cargas = []; h.frascoT = 0;
+  if (h.c) h.frascos = frascosMax(h);
+}
+/** Mensaje que no se repite seguido (para avisos al mantener apretado el botón). */
+function aviso(j: Juego, txt: [string, string], color = '#e0d0a0') {
+  const h = j.heroe, k = txt[0];
+  if ((h.avisos[k] ?? -99) > j.t - 1.5) return;
+  h.avisos[k] = j.t; msg(j, txt, color);
+}
+export function ganarFuria(j: Juego, v: number) {
+  const h = j.heroe; if (h.d.clase !== 'berserker') return;
+  h.furia = Math.min(100, h.furia + v * (1 + bono(h, 'furia_gana') / 100)); h.tCombate = j.t;
+}
+/** Cadáveres de monstruos que todavía sirven (no usados, no invocados). */
+export function cadaveresCerca(j: Juego, x: number, y: number, r: number): Monstruo[] {
+  return j.monstruos.filter((m) => m.muerto && !m.dueno && !(m as any).usado && m.tMuerto < 590 && dist(m.x, m.y, x, y) <= r).sort((a, b) => dist(a.x, a.y, x, y) - dist(b.x, b.y, x, y));
+}
+function usarCadaver(m: Monstruo) { (m as any).usado = true; m.tMuerto = 999; }
+/** Gasta las cargas de un elemento (o todas) y dice cuántas eran. */
+function gastarCargas(h: Heroe, e?: Elemento): Elemento[] {
+  const fuera = h.cargas.filter((c) => !e || c === e); h.cargas = h.cargas.filter((c) => e && c !== e); return fuera;
+}
+const mios = (j: Juego, id?: string) => j.monstruos.filter((m) => m.dueno && !m.muerto && (!id || m.invocaId === id));
+
 function sonar(j: Juego, id: string, x?: number, y?: number, vol = 1) {
   const h = j.heroe;
   let pan = 0, d = 0;
@@ -322,7 +375,15 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   if (v.tipo === 'heroe' && h.escudoHueso > 0) { const a = Math.min(h.escudoHueso, total); h.escudoHueso -= a; total -= a; if (a > 0) particulas(j, v.x, v.y, 3, 'chispa', '#e0d8c0'); }
   if (g.aplastar && v.tipo !== 'heroe' && R() * 100 < g.aplastar) total += v.vida * ((v as Monstruo).calidad >= 3 ? 0.05 : 0.25);
   if (g.herida && R() * 100 < g.herida) v.sangrado = 4;
+  // presas marcadas, sifón de vida y furia
+  if (v.tipo !== 'heroe' && g.deHeroe) {
+    const m = v as Monstruo;
+    if (m.marca && m.marca > 0) total *= 1 + (20 + bono(h, 'marca_pct') + (h.buffs.caceria_salvaje ? 20 : 0)) / 100;
+    if (m.maldicion?.sifon && total > 0) h.vida = Math.min(h.vidaMax, h.vida + total * m.maldicion.sifon / 100);
+    h.tCombate = j.t;
+  }
   total = Math.max(0, total);
+  if (v.tipo === 'heroe' && total > 0) ganarFuria(j, 3);
   v.vida -= total;
   v.destello = 0.12;
   if (total > 0) {
@@ -362,6 +423,12 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; m.vida = 0;
   const h = j.heroe;
   if (m.dueno) { j.cadaveres++; return; }
+  // condena del osario: el maldito revienta al morir
+  if (m.maldicion?.condena && !(m as any).usado) {
+    usarCadaver(m);
+    const hb = habilidadDe('condena_osario'), dh = danoHab(j, hb, Math.max(1, nivelHab(h.d, hb.id, h.c)));
+    j.areas.push({ x: m.x, y: m.y, radio: 2.5, dano: [dh[0] * 0.6 + m.vidaMax * 0.15, dh[1] * 0.6 + m.vidaMax * 0.25], elem: 'fuego', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: 'estallido_cadaver', retraso: 0.05 });
+  }
   sonar(j, m.def.sonido === 'hueso' ? 'muerte_esqueleto' : m.calidad >= 3 ? 'rugido_jefe' : 'muerte_monstruo', m.x, m.y);
   j.manchas.push({ x: m.x, y: m.y, r: 0.8 + R() * 0.8 * m.escala, color: m.def.sonido === 'hueso' ? '#4a4436' : '#3a0606', t: 0, tipo: 'sangre' });
   if (j.manchas.length > 160) j.manchas.shift();
@@ -458,7 +525,11 @@ export function danoHab(j: Juego, hb: Habilidad, n: number): [number, number] {
   if (!hb.dano) return [0, 0];
   let k = Math.pow(1 + hb.dano[2], n - 1);
   for (const [sid, pct] of hb.sinergias ?? []) k *= 1 + (pct * (j.heroe.d.habs[sid] ?? 0)) / 100;
-  if (hb.elem === 'fuego') k *= 1 + j.heroe.c.fuego_pct / 100;
+  const h = j.heroe;
+  if (hb.elem === 'fuego') k *= 1 + h.c.fuego_pct / 100;
+  else k *= 1 + bono(h, hb.elem + '_pct') / 100;
+  // resonancia: cada carga del mismo elemento suma daño
+  if (h.d.clase === 'arcanista' && !CONSUME_CARGAS.has(hb.id)) { const c = h.cargas.filter((e) => e === hb.elem).length; k *= 1 + c * (6 + bono(h, 'resonancia')) / 100; }
   // la energía da un poco de poder a los hechizos
   if (hb.anim === 'lanzar') k *= 1 + j.heroe.c.ene / 400;
   return [Math.round(hb.dano[0] * k), Math.round(hb.dano[1] * k)];
@@ -469,7 +540,8 @@ function golpeArma(j: Juego, mult: number, elemHab?: Elemento, extraHab?: [numbe
   const extra: Partial<Record<Elemento, number>> = { ...c.elem };
   if (h.buffs.aura_llama) extra.fuego = (extra.fuego ?? 0) + (h.buffs.aura_llama.bonos.dano_fuego ?? 0);
   if (extraHab && elemHab) extra[elemHab] = (extra[elemHab] ?? 0) + entre(extraHab[0], extraHab[1]);
-  return { min: c.dano[0] * mult, max: c.dano[1] * mult, elem: 'fisico', precision: c.precision, critico: c.critico, robo: c.robo_vida, aturdir: c.aturdir, aplastar: c.golpe_aplastante, herida: c.herida_abierta, lento: c.ralentizar, deHeroe: true, fuente: h, extra };
+  const fk = h.d.clase === 'berserker' ? 1 + (h.furia / 100) * (15 + bono(h, 'furia_dano')) / 100 : 1;
+  return { min: c.dano[0] * mult * fk, max: c.dano[1] * mult * fk, elem: 'fisico', precision: c.precision, critico: c.critico, robo: c.robo_vida, aturdir: c.aturdir, aplastar: c.golpe_aplastante, herida: c.herida_abierta, lento: c.ralentizar, deHeroe: true, fuente: h, extra };
 }
 /** Velocidad de ataque/lanzamiento: duración de la animación. */
 export const durAtaque = (h: Heroe) => clamp(0.62 / (1 + h.c.vel_ataque / 100), 0.25, 1);
@@ -488,19 +560,34 @@ export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj:
   if (hb.tipo === 'pasiva') return false;
   const n = basico ? 1 : nivelHab(h.d, id, h.c);
   if (!basico && n <= 0) return false;
+  // auras: solo una activa a la vez; usarla la vuelve el aura activa
+  if (hb.tipo === 'aura') { if (h.d.aura !== id) { h.d.aura = id; sonar(j, 'luz'); } return false; }
   if ((h.recargas[id] ?? 0) > 0) return false;
+  // requisitos de las mecánicas de clase
+  if (hb.forma) {
+    const ok = hb.forma === 'lobo' ? !!h.buffs.forma_lobo : hb.forma === 'oso' ? !!h.buffs.forma_oso : !!(h.buffs.forma_lobo || h.buffs.forma_oso);
+    if (!ok) { aviso(j, hb.forma === 'lobo' ? ['Solo puedo hacerlo como lobo.', 'I can only do that as a wolf.'] : hb.forma === 'oso' ? ['Solo puedo hacerlo como oso.', 'I can only do that as a bear.'] : ['Tengo que estar transformado.', 'I must be transformed.']); return false; }
+  }
+  if (hb.furia && h.furia < hb.furia) { aviso(j, ['Necesito más furia.', 'I need more fury.'], '#ff8060'); return false; }
+  if (hb.id === 'descarga_prismatica' && !h.cargas.length) { aviso(j, ['No tengo cargas guardadas.', 'I have no stored charges.'], '#c0a0ff'); return false; }
+  if (hb.id === 'picada' && !mios(j, 'halcon').length) { aviso(j, ['Mi halcón no está conmigo.', 'My hawk is not with me.']); return false; }
+  const conFrascos = hb.tipo === 'bomba' && h.d.clase === 'alquimista' && !h.buffs.panacea_negra;
+  if (conFrascos && h.frascos < 1) { aviso(j, ['No me quedan frascos.', 'I have no flasks left.'], '#ffb040'); return false; }
   const costo = basico ? 0 : costoMana(j, hb);
-  if (h.mana < costo) { sonar(j, 'mana_falta'); msg(j, ['No tengo suficiente maná.', 'Not enough mana.'], '#8080ff'); return false; }
-  // auras: se activan al ponerlas en el botón derecho, no se lanzan
-  if (hb.tipo === 'aura') return false;
-  const melee = (hb.tipo === 'golpe' && !(basico && h.c.distancia)) || hb.tipo === 'salto' && false;
+  if (h.mana < costo) { if ((h.avisos.mana ?? -99) < j.t - 1.5) { h.avisos.mana = j.t; sonar(j, 'mana_falta'); msg(j, ['No tengo suficiente maná.', 'Not enough mana.'], '#8080ff'); } return false; }
+  const melee = hb.tipo === 'golpe' && !(basico && h.c.distancia);
   if (melee) {
     if (!obj) return false;
     if (dist(h.x, h.y, obj.x, obj.y) > rangoMelee(h) + obj.radio) return false;
   }
-  if (hb.req && hb.tipo === 'golpe' && hb.id === 'golpe_escudo' && !h.d.equipo.izq) { msg(j, ['Necesito un escudo.', 'I need a shield.']); return false; }
+  if (hb.id === 'golpe_escudo' && !h.d.equipo.izq) { aviso(j, ['Necesito un escudo.', 'I need a shield.']); return false; }
   h.mana -= costo;
   if (hb.recarga) h.recargas[id] = hb.recarga;
+  if (hb.tipo === 'bomba' && h.d.clase === 'alquimista') {
+    const usa = hb.id === 'gran_crisol' ? Math.floor(h.frascos) : 1;
+    (h as any).frascosUsados = hb.id === 'gran_crisol' && !conFrascos ? frascosMax(h) : usa;
+    if (conFrascos) h.frascos = Math.max(0, h.frascos - usa);
+  }
   h.dir = dirDe(tx - h.x, ty - h.y);
   const anim = basico ? 'atacar' : hb.anim;
   h.acc = anim; h.t = 0; h.golpeo = false;
@@ -514,6 +601,41 @@ export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj:
   return true;
 }
 
+/** Monje: suma un paso al combo. Devuelve true si este golpe es el remate. */
+function pasoCombo(j: Juego, hb: Habilidad): boolean {
+  const h = j.heroe;
+  if (j.t - h.combo.t > ventanaCombo(h) && !h.buffs.loto_dorado) h.combo.paso = 0;
+  h.combo.paso += hb.id === 'puno_eco' ? 2 : 1; h.combo.t = j.t;
+  if (hb.id === 'puno_dios') h.combo.paso = 3;
+  if (h.combo.paso >= 3) { h.combo.paso = 0; return true; }
+  return false;
+}
+const EFECTO_REMATE: Partial<Record<Elemento, string>> = { fuego: 'explosion_fuego', frio: 'nova_escarcha', rayo: 'trueno', luz: 'castigo', fisico: 'onda_aterrizaje' };
+function rematar(j: Juego, x: number, y: number, hb: Habilidad, mult: number) {
+  const h = j.heroe, g = golpeArma(j, 0.6 * Math.max(1, mult));
+  const veces = hb.id === 'puno_dios' ? 3 : 1;
+  for (let k = 0; k < veces; k++) j.areas.push({ x, y, radio: 2.4 + k * 1.4, dano: [g.min, g.max], elem: hb.elem === 'sangre' ? 'fisico' : hb.elem, t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: EFECTO_REMATE[hb.elem] ?? 'onda_aterrizaje', retraso: 0.01 + k * 0.18 });
+  j.numeros.push({ x: h.x, y: h.y, z: 80, txt: j.idi ? 'Finisher!' : '¡Remate!', color: '#ffd060', t: 0, grande: true });
+  j.sacudida = Math.max(j.sacudida, 0.3);
+}
+/** Invoca un aliado. tVida: si es temporal (no cuenta para el máximo). */
+function crearInvocado(j: Juego, invId: string, n: number, x: number, y: number, tVida?: number, extra = 1): Monstruo | null {
+  const h = j.heroe, inv = INVOCADOS[invId]; if (!inv) return null;
+  if (!pasable(j.zona, x, y)) { const q = libreCerca(j.zona, x, y); x = q[0] + 0.5; y = q[1] + 0.5; }
+  const kk = (1 + n * 0.15) * (1 + h.c.invocados_pct / 100) * extra;
+  const def: DefMonstruo = { ...(MONSTRUOS[inv.sprite] ?? MONSTRUOS.esqueleto), id: invId, sprite: inv.sprite, vida: inv.vida, dano: inv.dano, vel: inv.vel, ia: inv.distancia ? 'distancia' : 'normal', proyectil: inv.proyectil, rango: inv.distancia ? 7 : undefined, elem: (inv.elem as Elemento) ?? 'fisico', tinte: inv.tinte, escala: inv.escala, res: {}, xp: 0, jefe: false };
+  const m = crearMonstruo(def, h.d.nivel, x, y, 0, 0);
+  m.tipo = 'invocado'; m.dueno = true; m.invocaId = invId; m.estado = 'deambular';
+  m.vidaMax = m.vida = Math.round(inv.vida * kk * (1 + h.d.nivel * 0.12)); m.dano = [inv.dano[0] * kk * (1 + h.d.nivel * 0.08), inv.dano[1] * kk * (1 + h.d.nivel * 0.08)];
+  m.tinte = inv.tinte; m.escala = inv.escala ?? 1; m.tVida = tVida;
+  j.monstruos.push(m);
+  efecto(j, 'circulo_invocacion', x, y, 0, 0.8);
+  return m;
+}
+const golpeSimple = (j: Juego, d: [number, number], elem: Elemento): Golpe => ({ min: d[0], max: d[1], elem, deHeroe: true, fuente: j.heroe, sinFallo: true });
+const enRadio = (j: Juego, x: number, y: number, r: number) => enemigosDe(j, true).filter((e) => dist(e.x, e.y, x, y) <= r + e.radio) as Monstruo[];
+const esJefe = (e: Ent) => !!(e as Monstruo).def?.jefe;
+
 /** Lo que pasa en el cuadro del golpe. */
 function resolverHabilidad(j: Juego) {
   const h = j.heroe;
@@ -526,31 +648,53 @@ function resolverHabilidad(j: Juego) {
   const golpes = Math.round(val(hb.n, n)) || 1;
   const prec = (hb.bonos?.precision ? val(hb.bonos.precision, n) : 0);
   const efectoDir = DIRS.indexOf(h.dir);
+  const reembolso = () => { h.mana += costoMana(j, hb); if (hb.recarga) h.recargas[hb.id] = 0; };
+  // gritos del berserker: dan furia
+  if (h.d.clase === 'berserker' && hb.rama === 1 && !basico) ganarFuria(j, 12 + bono(h, 'furia_grito'));
   switch (hb.tipo) {
     case 'golpe': {
       if (basico && h.c.distancia) { const g = golpeArma(j, 1); disparar(j, h, tx, ty, g, h.c.tipoArma === 'ballesta' ? 'virote' : 'flecha', 16, { perfora: R() * 100 < h.c.perforar }); break; }
       if (!obj || obj.muerto) break;
+      const remate = h.d.clase === 'monje' && pasoCombo(j, hb);
+      const kRem = remate ? 1.5 + bono(h, 'combo_pct') / 100 : 1;
+      const kFur = hb.id === 'ejecucion' ? 1 + h.furia / 100 : 1;
+      let total = 0;
       for (let k = 0; k < golpes; k++) {
-        const g = golpeArma(j, mult, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? dh : undefined);
+        const g = golpeArma(j, mult * kRem * kFur, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? dh : undefined);
         if (prec) g.precision! += prec;
         if (hb.bonos?.aturdir) g.aturdir = 100;
         if (hb.bonos?.empuje) g.empuje = 1;
         if (hb.id === 'ejecucion' && obj.vida < obj.vidaMax * 0.25 && obj.calidad < 3) { g.min *= 3; g.max *= 3; }
         const d = danar(j, obj, g);
+        total += d;
+        if (d > 0) ganarFuria(j, 5);
         if (R() < 0.04) desgastar(j, 'arma');
         if (d > 0 && h.c.vivo) particulas(j, obj.x, obj.y, 8, h.c.vivo === 'fuego' ? 'brasa' : 'chispa', COLOR_ELEM[h.c.vivo], 1.2, 40);
       }
+      if (hb.bonos?.robo_golpe && total > 0) h.vida = Math.min(h.vidaMax, h.vida + total * val(hb.bonos.robo_golpe, n) / 100);
+      if (hb.id === 'corte_sello' && total > 0) { h.buffs.aura_avivada = { t: val(hb.duracion, n), bonos: { potencia_aura: val(hb.bonos?.potencia_aura, n) }, hab: 'corte_sello' }; recalc(j); }
       if (!basico && hb.efecto) efecto(j, efectoDe(hb.efecto, hb.elem), obj.x, obj.y, efectoDir);
-      if (hb.explota) { j.areas.push({ x: obj.x, y: obj.y, radio: hb.explota, dano: dh, elem: hb.elem, t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: '', retraso: 0 }); efecto(j, hb.elem === 'luz' ? 'castigo' : 'explosion_fuego', obj.x, obj.y, 0, 1.2); }
-      if (h.buffs.aura_fuerza || basico) {/* nada */}
+      if (hb.explota) { j.areas.push({ x: obj.x, y: obj.y, radio: hb.explota, dano: [dh[0] * kRem, dh[1] * kRem], elem: hb.elem, t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: '', retraso: 0 }); efecto(j, hb.elem === 'luz' ? 'castigo' : hb.elem === 'rayo' ? 'trueno' : hb.elem === 'fisico' ? 'onda_aterrizaje' : 'explosion_fuego', obj.x, obj.y, 0, hb.explota / 2); }
+      if (remate) rematar(j, obj.x, obj.y, hb, mult);
       break;
     }
     case 'proyectil': {
-      const cnt = golpes;
-      const abanico = hb.id === 'mil_palmas' ? Math.PI * 2 : cnt > 1 ? Math.min(1.2, 0.18 * cnt) : 0;
       const base = Math.atan2(ty - h.y, tx - h.x);
+      if (hb.id === 'descarga_prismatica') {
+        const cs = gastarCargas(h);
+        const k = 1 + cs.length * 0.25;
+        cs.forEach((e, i) => {
+          const a = base + (i - (cs.length - 1) / 2) * 0.22;
+          disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, golpeSimple(j, [dh[0] * k, dh[1] * k], e), e === 'fuego' ? 'bola_fuego' : e === 'frio' ? 'saeta_hielo' : 'chispa_cargada', 12, { explota: hb.explota ?? 0, hab: hb, nivelHab: n, vida: 1.6 });
+        });
+        efecto(j, 'destello_teleporte', h.x, h.y, 0, 0.7);
+        break;
+      }
+      const cnt = golpes;
+      const circ = !!hb.circulo;
+      const abanico = circ ? Math.PI * 2 : cnt > 1 ? Math.min(hb.id === 'tormenta_virotes' ? 1.6 : 1.2, 0.18 * cnt) : 0;
       for (let k = 0; k < cnt; k++) {
-        const a = cnt === 1 ? base : hb.id === 'mil_palmas' ? (k / cnt) * Math.PI * 2 : base - abanico / 2 + (abanico * k) / (cnt - 1);
+        const a = cnt === 1 ? base : circ ? base + (k / cnt) * Math.PI * 2 : base - abanico / 2 + (abanico * k) / (cnt - 1);
         const g: Golpe = hb.mult ? golpeArma(j, mult, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? dh : undefined) : { min: dh[0], max: dh[1], elem: hb.elem, deHeroe: true, fuente: h, sinFallo: true };
         if (prec && g.precision !== undefined) g.precision += prec;
         disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, g, efectoDe(hb.efecto, hb.elem), hb.vel ?? 12, { perfora: !!hb.perfora || R() * 100 < h.c.perforar, explota: hb.explota ?? 0, buscador: !!hb.buscador, hab: hb, nivelHab: n, vida: hb.id === 'martillo_bendito' ? 2.4 : hb.id === 'orbe_glacial' ? 1.4 : 1.6, rebota: hb.id === 'chispa' ? 1 : 0 });
@@ -559,28 +703,111 @@ function resolverHabilidad(j: Juego) {
     }
     case 'nova': {
       const r = hb.radio ?? 4;
+      let d0: [number, number] = dh, congela = 0;
+      if (hb.mult) { const fu = h.furia; h.furia = 0; const g = golpeArma(j, mult * (1 + fu / 50)); d0 = [g.min, g.max]; }
+      if (hb.id === 'edad_hielo') { const u = gastarCargas(h, 'frio').length; d0 = [d0[0] * (1 + 0.35 * u), d0[1] * (1 + 0.35 * u)]; congela = 2 + 0.6 * u; }
       efecto(j, efectoDe(hb.efecto, hb.elem), h.x, h.y, 0, r / 4);
-      for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, h.x, h.y) <= r) { danar(j, e, { min: dh[0], max: dh[1], elem: hb.elem, deHeroe: true, fuente: h, sinFallo: true, aturdir: hb.bonos?.aturdir ? 60 : 0 }); }
-      j.sacudida = Math.max(j.sacudida, 0.2);
+      let total = 0;
+      for (const e of enRadio(j, h.x, h.y, r)) {
+        total += danar(j, e, { ...golpeSimple(j, d0, hb.elem), aturdir: hb.bonos?.aturdir ? 60 : 0 });
+        if (congela && !esJefe(e)) e.congelado = congela;
+        if (hb.id === 'canto_invierno' && !esJefe(e)) e.miedo = val(hb.duracion, n);
+      }
+      if (hb.id === 'rio_carmesi') h.vida = Math.min(h.vidaMax, h.vida + Math.min(total * 0.4, h.vidaMax * 0.5));
+      if (hb.id === 'canto_invierno') ganarFuria(j, 100);
+      if (hb.id === 'rugido_primigenio') { for (const m of mios(j)) m.vida = Math.min(m.vidaMax, m.vida + m.vidaMax * 0.3); h.vida = Math.min(h.vidaMax, h.vida + h.vidaMax * 0.15); }
+      if (hb.elem === 'sangre') particulas(j, h.x, h.y, 24, 'sangre', '#a00810', 2, 20);
+      j.sacudida = Math.max(j.sacudida, hb.definitiva ? 0.6 : 0.2);
       break;
     }
     case 'area': {
       const r = hb.radio ?? 3;
       let ax = tx, ay = ty;
       if (dist(ax, ay, h.x, h.y) > 12) { const a = Math.atan2(ty - h.y, tx - h.x); ax = h.x + Math.cos(a) * 12; ay = h.y + Math.sin(a) * 12; }
+      if (hb.enHeroe) { ax = h.x; ay = h.y; }
+      const dur = val(hb.duracion, n) || 0.1;
+      const golpeArea = (x: number, y: number, rr: number, d: [number, number], ef: string, retraso: number, elem: Elemento = hb.elem, caida = false) => j.areas.push({ x, y, radio: rr, dano: d, elem, t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: ef, retraso, caida });
+      // ---- cadáveres
       if (hb.id === 'explosion_cadaver') {
-        const cad = j.monstruos.filter((m) => m.muerto && m.tMuerto < 120 && !(m as any).usado).sort((a, b) => dist(a.x, a.y, ax, ay) - dist(b.x, b.y, ax, ay))[0];
-        if (!cad || dist(cad.x, cad.y, ax, ay) > 4) { msg(j, ['No hay un cadáver cerca.', 'No corpse nearby.']); h.mana += costoMana(j, hb); break; }
-        (cad as any).usado = true; cad.tMuerto = 999;
+        const cad = cadaveresCerca(j, ax, ay, 4)[0];
+        if (!cad) { aviso(j, ['No hay un cadáver cerca.', 'No corpse nearby.']); reembolso(); break; }
+        usarCadaver(cad);
         const k = cad.vidaMax * 0.5;
-        j.areas.push({ x: cad.x, y: cad.y, radio: r, dano: [dh[0] + k * 0.6, dh[1] + k], elem: 'fuego', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: '', retraso: 0 });
+        golpeArea(cad.x, cad.y, r, [dh[0] + k * 0.6, dh[1] + k], '', 0, 'fuego');
         efecto(j, 'estallido_cadaver', cad.x, cad.y, 0, 1.2); particulas(j, cad.x, cad.y, 30, 'sangre', '#700808', 2.2); j.sacudida = 0.3;
         break;
       }
-      const dur = val(hb.duracion, n) || 0.1;
-      if (hb.id === 'meteoro') { j.areas.push({ x: ax, y: ay, radio: r, dano: dh, elem: 'fuego', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: 'meteoro', retraso: 0.9, caida: true }); j.areas.push({ x: ax, y: ay, radio: r * 0.8, dano: [dh[0] * 0.15, dh[1] * 0.15], elem: 'fuego', t: 0, dur: dur, tick: 0.5, prox: 0, deHeroe: true, efecto: 'crater_ardiente', retraso: 1.0 }); efecto(j, 'meteoro', ax, ay, 0, 1.3, 0, 1.2); break; }
-      if (hb.id === 'cielo_abierto') { const cn = Math.round(val(hb.n, n)); for (let k = 0; k < cn; k++) { const a = R() * Math.PI * 2, rr = R() * r; j.areas.push({ x: h.x + Math.cos(a) * rr, y: h.y + Math.sin(a) * rr, radio: 1.6, dano: dh, elem: 'luz', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: 'pilar_luz', retraso: k * 0.15 }); } break; }
+      if (hb.id === 'cosecha_osario') {
+        const cads = cadaveresCerca(j, ax, ay, 6).slice(0, Math.round(val(hb.n, n)));
+        if (!cads.length) { aviso(j, ['No hay cadáveres cerca.', 'No corpses nearby.']); reembolso(); break; }
+        cads.forEach((cad, i) => { usarCadaver(cad); const k = cad.vidaMax * 0.4; golpeArea(cad.x, cad.y, r, [dh[0] + k * 0.6, dh[1] + k], 'estallido_cadaver', 0.01 + i * 0.22, 'fuego'); particulas(j, cad.x, cad.y, 16, 'sangre', '#700808', 1.8); });
+        j.sacudida = 0.4;
+        break;
+      }
+      if (hb.id === 'lamento_osario') {
+        cadaveresCerca(j, h.x, h.y, r).forEach((cad, i) => { usarCadaver(cad); golpeArea(cad.x, cad.y, 2.5, dh, 'prision_hueso', 0.01 + i * 0.08); });
+        const cn = Math.round(val(hb.n, n));
+        for (let k = 0; k < cn; k++) { const a = (k / cn) * Math.PI * 2; disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, golpeSimple(j, [dh[0] * 0.5, dh[1] * 0.5], 'sombra'), 'lanza_hueso', 13, { perfora: true, vida: 1.2 }); }
+        j.sacudida = 0.5;
+        break;
+      }
+      if (hb.id === 'festin_tumba') {
+        const cad = cadaveresCerca(j, ax, ay, 4)[0];
+        if (!cad) { aviso(j, ['No hay un cadáver cerca.', 'No corpse nearby.']); reembolso(); break; }
+        usarCadaver(cad);
+        h.vida = Math.min(h.vidaMax, h.vida + h.vidaMax * val(hb.bonos?.cura_pct, n) / 100);
+        h.mana = Math.min(h.c.manaMax, h.mana + h.c.manaMax * val(hb.bonos?.mana_pct_cura, n) / 100);
+        efecto(j, 'estallido_cadaver', cad.x, cad.y, 0, 0.6); efecto(j, 'chispas_curacion', h.x, h.y);
+        particulas(j, cad.x, cad.y, 14, 'sangre', '#600808', 1.2);
+        break;
+      }
+      if (hb.id === 'ofrenda') {
+        const ms = mios(j).filter((m) => dist(m.x, m.y, ax, ay) < 5);
+        if (!ms.length) { aviso(j, ['No tengo siervos cerca de ahí.', 'I have no servants near there.']); reembolso(); break; }
+        ms.forEach((m, i) => { golpeArea(m.x, m.y, r, [dh[0] + m.vidaMax * 0.3, dh[1] + m.vidaMax * 0.5], 'estallido_cadaver', 0.01 + i * 0.12, 'sombra'); m.vida = 0; m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; });
+        j.sacudida = 0.4;
+        break;
+      }
+      // ---- halcón
+      if (hb.id === 'picada') {
+        const hal = mios(j, 'halcon')[0];
+        if (hal) { hal.x = ax; hal.y = ay; }
+        efecto(j, 'tajo_garras', ax, ay, 0, 1.3);
+        for (const e of enRadio(j, ax, ay, r)) { danar(j, e, golpeSimple(j, dh, 'fisico')); e.marca = Math.max(e.marca ?? 0, 6); }
+        break;
+      }
+      // ---- cargas del arcanista
+      if (hb.id === 'meteoro' || hb.id === 'sol_negro') {
+        let d = dh;
+        if (hb.id === 'sol_negro') { const u = gastarCargas(h, 'fuego').length; d = [dh[0] * (1 + 0.35 * u), dh[1] * (1 + 0.35 * u)]; }
+        j.areas.push({ x: ax, y: ay, radio: r, dano: d, elem: 'fuego', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: 'meteoro', retraso: 0.9, caida: true });
+        j.areas.push({ x: ax, y: ay, radio: r * 0.8, dano: [d[0] * 0.15, d[1] * 0.15], elem: 'fuego', t: 0, dur, tick: 0.5, prox: 0, deHeroe: true, efecto: 'crater_ardiente', retraso: 1.0 });
+        efecto(j, 'meteoro', ax, ay, 0, hb.id === 'sol_negro' ? 1.8 : 1.3, 0, 1.2);
+        break;
+      }
+      if (hb.id === 'furia_firmamento') {
+        const u = gastarCargas(h, 'rayo').length;
+        const cn = Math.round(val(hb.n, n)) + u * 3;
+        const blancos = enRadio(j, h.x, h.y, r);
+        for (let k = 0; k < cn; k++) {
+          const e = blancos.length ? blancos[k % blancos.length] : null;
+          const a = R() * Math.PI * 2, rr = R() * r * 0.7;
+          golpeArea(e ? e.x : h.x + Math.cos(a) * rr, e ? e.y : h.y + Math.sin(a) * rr, 1.4, dh, 'relampago', 0.05 + k * 0.1, 'rayo');
+        }
+        sonar(j, 'trueno'); j.sacudida = 0.5;
+        break;
+      }
       if (hb.id === 'lluvia_flechas') { const g = golpeArma(j, mult); j.areas.push({ x: ax, y: ay, radio: r, dano: [g.min * 0.5, g.max * 0.5], elem: 'fisico', t: 0, dur, tick: 0.3, prox: 0.2, deHeroe: true, efecto: 'lluvia_flechas', retraso: 0.2 }); break; }
+      // ---- varios golpes repartidos (columnas, rayos, rocas)
+      if (hb.n) {
+        const cn = Math.round(val(hb.n, n));
+        const roca = hb.efecto === 'meteoro';
+        for (let k = 0; k < cn; k++) {
+          const a = R() * Math.PI * 2, rr = R() * r * 0.85;
+          golpeArea(ax + Math.cos(a) * rr, ay + Math.sin(a) * rr, roca ? 2 : 1.6, dh, roca ? 'crater_ardiente' : efectoDe(hb.efecto, hb.elem), (roca ? 0.4 : 0.05) + k * (roca ? 0.25 : 0.15), hb.elem, roca);
+        }
+        break;
+      }
       j.areas.push({ x: ax, y: ay, radio: r, dano: [dh[0] / Math.max(1, dur * 2), dh[1] / Math.max(1, dur * 2)], elem: hb.elem, t: 0, dur, tick: 0.5, prox: 0, deHeroe: true, efecto: efectoDe(hb.efecto, hb.elem), retraso: 0.1 });
       break;
     }
@@ -598,25 +825,38 @@ function resolverHabilidad(j: Juego) {
       break;
     }
     case 'invocar': {
-      const inv = INVOCADOS[hb.invoca!]; if (!inv) break;
+      const invId = hb.invoca!; if (!INVOCADOS[invId]) break;
+      // temporales: marcha de la fosa, legión de la ceniza, despertar del bosque
+      if (hb.id === 'marcha_fosa') {
+        const cads = cadaveresCerca(j, tx, ty, hb.radio ?? 6).slice(0, Math.floor(val(hb.max, n)));
+        if (!cads.length) { aviso(j, ['No hay cadáveres cerca.', 'No corpses nearby.']); reembolso(); break; }
+        cads.forEach((cad, i) => { usarCadaver(cad); crearInvocado(j, i % 2 ? 'arquero' : 'esqueleto', n, cad.x, cad.y, val(hb.duracion, n)); });
+        break;
+      }
+      if (hb.id === 'legion_ceniza') {
+        const cn = Math.floor(val(hb.max, n));
+        for (let k = 0; k < cn; k++) { const a = (k / cn) * Math.PI * 2; crearInvocado(j, k % 2 ? 'arquero' : 'esqueleto', n, h.x + Math.cos(a) * 2, h.y + Math.sin(a) * 2, val(hb.duracion, n), 1.5); }
+        j.sacudida = 0.4;
+        break;
+      }
+      if (hb.id === 'despertar_bosque') {
+        for (const m of mios(j, 'arbol')) { m.vida = 0; m.muerto = true; m.acc = 'morir'; m.t = 0; }
+        crearInvocado(j, 'arbol', n, tx, ty, val(hb.duracion, n), 1.3);
+        efecto(j, 'estallido_enredaderas', h.x, h.y, 0, 2);
+        for (const e of enRadio(j, h.x, h.y, hb.radio ?? 6)) { if (!esJefe(e)) e.congelado = 1.5; e.maldicion = { amplificar: 0, debilitar: 0, lento: 60, t: 6, res: 0 }; }
+        break;
+      }
       const max = Math.max(1, Math.floor(val(hb.max, n)));
-      const mios = j.monstruos.filter((m) => m.dueno && !m.muerto && m.invocaId === hb.invoca);
+      const fijos = mios(j, invId).filter((m) => m.tVida === undefined);
       let x = tx, y = ty;
       if (hb.id === 'alzar_esqueleto' || hb.id === 'mago_hueso') {
-        const cad = j.monstruos.filter((m) => m.muerto && !m.dueno && !(m as any).usado).sort((a, b) => dist(a.x, a.y, tx, ty) - dist(b.x, b.y, tx, ty))[0];
-        if (!cad || dist(cad.x, cad.y, tx, ty) > 5) { msg(j, ['Necesito un cadáver.', 'I need a corpse.']); h.mana += costoMana(j, hb); break; }
-        (cad as any).usado = true; cad.tMuerto = 999; x = cad.x; y = cad.y;
+        const cad = cadaveresCerca(j, tx, ty, 5)[0];
+        if (!cad) { aviso(j, ['Necesito un cadáver.', 'I need a corpse.']); reembolso(); break; }
+        usarCadaver(cad); x = cad.x; y = cad.y;
       }
-      if (mios.length >= max) { const viejo = mios[0]; viejo.vida = 0; viejo.muerto = true; viejo.acc = 'morir'; viejo.t = 0; }
-      if (!pasable(j.zona, x, y)) { const q = libreCerca(j.zona, x, y); x = q[0] + 0.5; y = q[1] + 0.5; }
-      const kk = (1 + n * 0.15) * (1 + h.c.invocados_pct / 100);
-      const def: DefMonstruo = { ...(MONSTRUOS[inv.sprite] ?? MONSTRUOS.esqueleto), id: hb.invoca!, sprite: inv.sprite, vida: inv.vida, dano: inv.dano, vel: inv.vel, ia: inv.distancia ? 'distancia' : 'normal', proyectil: inv.proyectil, rango: inv.distancia ? 7 : undefined, elem: (inv.elem as Elemento) ?? 'fisico', tinte: inv.tinte, escala: inv.escala, res: {}, xp: 0, jefe: false };
-      const m = crearMonstruo(def, h.d.nivel, x, y, 0, 0);
-      m.tipo = 'invocado'; m.dueno = true; m.invocaId = hb.invoca; m.estado = 'deambular';
-      m.vidaMax = m.vida = Math.round(inv.vida * kk * (1 + h.d.nivel * 0.12)); m.dano = [inv.dano[0] * kk * (1 + h.d.nivel * 0.08), inv.dano[1] * kk * (1 + h.d.nivel * 0.08)];
-      m.tinte = inv.tinte; m.escala = inv.escala ?? 1;
-      j.monstruos.push(m);
-      efecto(j, 'circulo_invocacion', x, y, 0, 0.8);
+      if (hb.id === 'llamar_halcon') { x = h.x + 0.5; y = h.y + 0.5; }
+      if (fijos.length >= max) { const viejo = fijos[0]; viejo.vida = 0; viejo.muerto = true; viejo.acc = 'morir'; viejo.t = 0; }
+      crearInvocado(j, invId, n, x, y);
       break;
     }
     case 'buff': {
@@ -625,7 +865,22 @@ function resolverHabilidad(j: Juego) {
       for (const [k, b] of Object.entries(hb.bonos ?? {})) bonos[k] = val(b, n);
       if (hb.id === 'armadura_hueso') { h.escudoHueso = bonos.escudo_hueso ?? 20; }
       if (hb.id === 'tempestad') h.tempestad = dur;
-      if (hb.id === 'huracan') h.huracan = dur;
+      if (bonos.huracan) { h.huracan = dur; h.huracanHab = hb.id; }
+      if (hb.id === 'forma_lobo') delete h.buffs.forma_oso;
+      if (hb.id === 'forma_oso') delete h.buffs.forma_lobo;
+      if (bonos.cura_pct) { h.vida = Math.min(h.vidaMax, h.vida + h.vidaMax * bonos.cura_pct / 100); delete bonos.cura_pct; particulas(j, h.x, h.y, 12, 'chispa', '#80ff90', 0.6, 40); }
+      if (hb.id === 'destilar') h.frascos = frascosMax(h);
+      if (hb.id === 'ira_jarl') {
+        const g = golpeArma(j, mult);
+        for (const e of enRadio(j, h.x, h.y, hb.radio ?? 4.5)) danar(j, e, { ...g, sinFallo: true, aturdir: 50 });
+        h.furia = 100; h.furiaFija = dur; h.tCombate = j.t;
+        efecto(j, 'onda_aterrizaje', h.x, h.y, 0, 2); j.sacudida = 0.7; sonar(j, 'golpe_metal');
+      }
+      if ((hb.id === 'coro_sellos' || hb.id === 'ascenso_espiritu') && hb.dano) {
+        for (const e of enRadio(j, h.x, h.y, hb.radio ?? 6)) danar(j, e, golpeSimple(j, dh, 'luz'));
+        efecto(j, 'pilar_luz', h.x, h.y, 0, 1.4); efecto(j, 'castigo', h.x, h.y, 0, 2); j.sacudida = 0.4;
+      }
+      if (hb.id === 'caceria_salvaje') for (const e of enRadio(j, h.x, h.y, hb.radio ?? 9)) e.marca = Math.max(e.marca ?? 0, dur);
       h.buffs[hb.id] = { t: dur, bonos, hab: hb.id };
       efecto(j, efectoDe(hb.efecto, hb.elem), h.x, h.y, 0, 1);
       recalc(j);
@@ -638,13 +893,19 @@ function resolverHabilidad(j: Juego) {
       break;
     }
     case 'maldicion': {
-      const r = hb.radio ?? 3, dur = val(hb.duracion, n);
-      efecto(j, hb.id === 'enredadera' ? 'estallido_enredaderas' : 'prision_hueso', tx, ty, 0, r / 3);
-      for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, tx, ty) <= r) {
-        const m = e as Monstruo;
-        m.maldicion = { amplificar: val(hb.bonos?.amplificar, n), debilitar: val(hb.bonos?.debilitar, n), lento: val(hb.bonos?.lento, n), t: dur, res: 0 };
-        if (hb.bonos?.miedo && !m.def.jefe) m.miedo = dur;
-        if (hb.dano) danar(j, m, { min: dh[0], max: dh[1], elem: hb.elem, deHeroe: true, fuente: h, sinFallo: true });
+      const r = hb.radio ?? 3, dur = val(hb.duracion, n) * (1 + bono(h, 'maldicion_dur') / 100);
+      const cx = hb.enHeroe ? h.x : tx, cy = hb.enHeroe ? h.y : ty;
+      const ef = hb.efecto === 'raices' ? 'estallido_enredaderas' : hb.elem === 'frio' ? 'nova_escarcha' : hb.elem === 'veneno' ? 'nube_veneno' : hb.efecto === 'onda' ? 'grito_guerra' : 'prision_hueso';
+      efecto(j, ef, cx, cy, 0, r / 3);
+      const b = hb.bonos ?? {};
+      const maldice = !!(b.amplificar || b.debilitar || b.lento || b.res || b.sifon || b.condena);
+      for (const e of enRadio(j, cx, cy, r)) {
+        const m = e;
+        if (b.marca) m.marca = Math.max(m.marca ?? 0, val(b.marca, n));
+        if (b.congelar && !esJefe(m)) m.congelado = Math.max(m.congelado, val(hb.duracion, n));
+        if (maldice) m.maldicion = { amplificar: val(b.amplificar, n), debilitar: val(b.debilitar, n), lento: val(b.lento, n), t: dur, res: -val(b.res, n), sifon: b.sifon ? val(b.sifon, n) : undefined, condena: !!b.condena };
+        if (b.miedo && !esJefe(m)) m.miedo = dur;
+        if (hb.dano) danar(j, m, golpeSimple(j, dh, hb.elem));
       }
       break;
     }
@@ -671,22 +932,37 @@ function resolverHabilidad(j: Juego) {
       break;
     }
     case 'bomba': {
-      const cn = hb.id === 'bomba_cluster' ? 1 : 1;
-      for (let k = 0; k < cn; k++) j.proyectiles.push({ x: h.x, y: h.y, z: 30, vx: 0, vy: 0, vida: 9, dano: dh, elem: hb.elem, deHeroe: true, perfora: false, explota: hb.radio ?? 2, efecto: 'frasco', golpeados: new Set(), buscador: false, radio: 0.4, t: 0, arco: { x0: h.x, y0: h.y, x1: tx, y1: ty, t: 0, T: 0.6, n: hb.id === 'bomba_cluster' ? Math.round(val(hb.n, n)) : 0 }, hab: hb, nivelHab: n });
+      const usados = (h as any).frascosUsados ?? 1;
+      let d = dh, radio = (hb.radio ?? 2) * (1 + bono(h, 'bomba_radio') / 100);
+      if (hb.id === 'gran_crisol') { d = [dh[0] * (1 + 0.25 * usados), dh[1] * (1 + 0.25 * usados)]; radio *= 1 + 0.06 * usados; }
+      j.proyectiles.push({ x: h.x, y: h.y, z: 30, vx: 0, vy: 0, vida: 9, dano: d, elem: hb.elem, deHeroe: true, perfora: false, explota: radio, efecto: 'frasco', golpeados: new Set(), buscador: false, radio: 0.4, t: 0, arco: { x0: h.x, y0: h.y, x1: tx, y1: ty, t: 0, T: 0.6, n: hb.id === 'bomba_cluster' ? Math.round(val(hb.n, n)) : 0 }, hab: hb, nivelHab: n });
       break;
     }
     case 'trampa': {
-      const max = Math.floor(val(hb.max, n));
-      if (j.torretas.length >= max) j.torretas.shift();
-      j.torretas.push({ x: tx, y: ty, t: 0, dur: val(hb.duracion, n), dano: dh, cd: 0.5 });
+      const minaR = hb.explota;
+      const nueva = (x: number, y: number, elem: Elemento = hb.elem, ef = efectoDe(hb.efecto, hb.elem)): Torreta => ({ x, y, t: 0, dur: val(hb.duracion, n), dano: dh, cd: 0.5, hab: hb.id, elem, mina: minaR, raiz: !!hb.bonos?.congelar, efecto: ef });
+      if (hb.id === 'coto_caza') {
+        j.torretas = j.torretas.filter((t) => t.hab !== hb.id);
+        const cn = Math.round(val(hb.n, n));
+        for (let k = 0; k < cn; k++) { const a = (k / cn) * Math.PI * 2; let x = tx + Math.cos(a) * 2.6, y = ty + Math.sin(a) * 2.6; if (!pasable(j.zona, x, y)) { const q = libreCerca(j.zona, x, y); x = q[0] + 0.5; y = q[1] + 0.5; } j.torretas.push(nueva(x, y, k % 2 ? 'rayo' : 'fuego', k % 2 ? 'campo_estatico' : 'explosion_fuego')); efecto(j, 'glifo_trampa', x, y, 0, 0.7); }
+        break;
+      }
+      const max = Math.floor(val(hb.max, n)) || 1;
+      const propias = j.torretas.filter((t) => (t.hab ?? 'torreta') === hb.id);
+      if (propias.length >= max) j.torretas.splice(j.torretas.indexOf(propias[0]), 1);
+      j.torretas.push(nueva(tx, ty));
       efecto(j, 'glifo_trampa', tx, ty);
       break;
     }
     case 'cuervos': {
       const cn = Math.round(val(hb.n, n));
-      for (let k = 0; k < cn; k++) j.cuervos.push({ x: h.x, y: h.y, t: 0, dur: val(hb.duracion, n), dano: dh, objetivo: null, ang: (k / cn) * Math.PI * 2 });
+      for (let k = 0; k < cn; k++) j.cuervos.push({ x: h.x, y: h.y, t: 0, dur: val(hb.duracion, n), dano: dh, objetivo: null, ang: (k / cn) * Math.PI * 2, marca: hb.id === 'cielo_halcones' });
       break;
     }
+  }
+  // arcanista: cada hechizo de fuego, escarcha o rayo guarda una carga
+  if (h.d.clase === 'arcanista' && !basico && hb.anim === 'lanzar' && (hb.elem === 'fuego' || hb.elem === 'frio' || hb.elem === 'rayo') && !CONSUME_CARGAS.has(hb.id)) {
+    h.cargas.push(hb.elem); if (h.cargas.length > MAX_CARGAS) h.cargas.shift();
   }
 }
 const EFECTOS: Record<string, string> = {
@@ -695,7 +971,7 @@ const EFECTOS: Record<string, string> = {
   nova_hielo: 'nova_escarcha', nova_viento: 'tornado', onda: 'grito_guerra', polvo: 'onda_aterrizaje', tajo: 'chispas_carne', sangre: 'salpicadura_sangre', meteoro: 'meteoro',
   martillo: 'castigo', jabalina: 'chispa_cargada', viento: 'tornado', tornado: 'tornado', torbellino: 'torbellino', cadaver: 'estallido_cadaver', invocar: 'circulo_invocacion',
   aura_roja: 'aura_sagrada', aura_azul: 'escudo_divino', aura_gris: 'escudo_divino', aura_verde: 'chispas_curacion', aura_fuego: 'aura_sagrada', aura_morada: 'aura_sagrada', huesos_giran: 'prision_hueso', raices: 'estallido_enredaderas',
-  maldicion: 'prision_hueso', lluvia_flechas: 'lluvia_flechas',
+  maldicion: 'prision_hueso', lluvia_flechas: 'lluvia_flechas', cuervos: 'tajo_garras',
 };
 export function efectoDe(e: string, elem: Elemento): string {
   if (e === 'flecha' && elem === 'fuego') return 'flecha_fuego';
@@ -724,12 +1000,23 @@ export function actualizar(j: Juego, dt: number) {
     const tx = c.objetivo ? c.objetivo.x : h.x + Math.cos(c.ang + j.t) * 2, ty = c.objetivo ? c.objetivo.y : h.y + Math.sin(c.ang + j.t) * 2;
     const dx = tx - c.x, dy = ty - c.y, l = Math.hypot(dx, dy) || 1;
     c.x += (dx / l) * Math.min(l, 8 * dt); c.y += (dy / l) * Math.min(l, 8 * dt);
-    if (c.objetivo && l < 0.6 && Math.floor(c.t * 3) !== Math.floor((c.t - dt) * 3)) danar(j, c.objetivo, { min: c.dano[0], max: c.dano[1], elem: 'fisico', deHeroe: true, fuente: h, sinFallo: true });
+    if (c.objetivo && l < 0.6 && Math.floor(c.t * 3) !== Math.floor((c.t - dt) * 3)) { danar(j, c.objetivo, { min: c.dano[0], max: c.dano[1], elem: 'fisico', deHeroe: true, fuente: h, sinFallo: true }); if (c.marca) c.objetivo.marca = Math.max(c.objetivo.marca ?? 0, 4); }
   }
   j.cuervos = j.cuervos.filter((c) => c.t < c.dur);
   for (const tr of j.torretas) {
     tr.t += dt; tr.cd -= dt;
-    if (tr.cd <= 0) { const m = masCercano(j, tr.x, tr.y, 9, new Set()); if (m) { disparar(j, { ...h, x: tr.x, y: tr.y } as Ent, m.x, m.y, { min: tr.dano[0], max: tr.dano[1], elem: 'fisico', deHeroe: true, fuente: h, sinFallo: true }, 'flecha', 15); sonar(j, 'virote', tr.x, tr.y, 0.5); } tr.cd = 0.55; }
+    if (tr.mina) {
+      // mina o cepo: espera a que algo la pise
+      if (tr.cd <= 0) { tr.cd = 1.5; efecto(j, 'glifo_trampa', tr.x, tr.y, 0, 0.5, 0, 1.5); }
+      if (enRadio(j, tr.x, tr.y, 0.9).length) {
+        const r = tr.mina, el = tr.elem ?? 'fuego';
+        for (const e of enRadio(j, tr.x, tr.y, r)) { danar(j, e, golpeSimple(j, tr.dano, el)); if (tr.raiz && !esJefe(e)) e.congelado = Math.max(e.congelado, 2); }
+        efecto(j, tr.efecto ?? 'explosion_fuego', tr.x, tr.y, 0, r / 2); sonar(j, el === 'rayo' ? 'trueno' : el === 'veneno' ? 'veneno' : tr.raiz ? 'golpe_metal' : 'explosion', tr.x, tr.y, 0.8);
+        j.sacudida = Math.max(j.sacudida, 0.2); tr.t = tr.dur;
+      }
+      continue;
+    }
+    if (tr.cd <= 0) { const m = masCercano(j, tr.x, tr.y, 9, new Set()); if (m) { const el = tr.elem ?? 'fisico'; disparar(j, { ...h, x: tr.x, y: tr.y } as Ent, m.x, m.y, golpeSimple(j, tr.dano, el), el === 'fisico' ? 'flecha' : tr.efecto ?? 'chispa_cargada', 15); sonar(j, el === 'rayo' ? 'rayo' : 'virote', tr.x, tr.y, 0.5); } tr.cd = 0.55; }
   }
   j.torretas = j.torretas.filter((t) => t.t < t.dur);
   // efectos, números, partículas
@@ -776,6 +1063,26 @@ export function actualizar(j: Juego, dt: number) {
   Sonido.latido(!h.muerto && h.vida < h.vidaMax * 0.3);
 }
 
+/** Furia, combo, frascos y formas. */
+function actualizarMecanicas(j: Juego, dt: number) {
+  const h = j.heroe, cl = h.d.clase;
+  if (cl === 'berserker') {
+    if (h.furiaFija > 0) { h.furiaFija -= dt; h.furia = 100; }
+    else if (j.t - h.tCombate > 4) h.furia = Math.max(0, h.furia - 12 * dt);
+  }
+  if (cl === 'monje' && h.combo.paso > 0 && j.t - h.combo.t > ventanaCombo(h) && !h.buffs.loto_dorado) h.combo.paso = 0;
+  if (cl === 'alquimista') {
+    const max = frascosMax(h);
+    if (h.frascos < max) { h.frascoT += dt * (1 + bono(h, 'frascos_vel') / 100); if (h.frascoT >= 4) { h.frascoT = 0; h.frascos = Math.min(max, h.frascos + 1); } } else { h.frascos = max; h.frascoT = 0; }
+  }
+  // formas del druida: el cuerpo cambia de tamaño y de tono
+  const lobo = !!h.buffs.forma_lobo, oso = !!h.buffs.forma_oso;
+  const esc = oso ? 1.15 : lobo ? 1.06 : 1;
+  if (h.escala !== esc) { h.escala = esc; if (esc !== 1) { efecto(j, 'transformacion_bestia', h.x, h.y, 0, 1); particulas(j, h.x, h.y, 16, 'humo', oso ? '#604028' : '#707888', 1.2, 20); } }
+  h.tinte = oso ? '#7a5030' : lobo ? '#8898b0' : undefined;
+  if ((lobo || oso) && R() < dt * 3) particulas(j, h.x + entre(-0.3, 0.3), h.y + entre(-0.3, 0.3), 1, 'ceniza', oso ? '#a07040' : '#a0b0c8', 0.3, 40);
+}
+
 function moverHacia(j: Juego, e: Ent, tx: number, ty: number, vel: number, dt: number): boolean {
   const dx = tx - e.x, dy = ty - e.y, l = Math.hypot(dx, dy);
   if (l < 0.05) return true;
@@ -799,22 +1106,26 @@ function actualizarHeroe(j: Juego, dt: number) {
   // buffs
   let cambio = false;
   for (const [k, b] of Object.entries(h.buffs)) { if (b.t < 9000) { b.t -= dt; if (b.t <= 0) { delete h.buffs[k]; cambio = true; } } }
-  if (cambio) recalc(j);
-  // aura en el botón derecho
+  if (cambio) { recalc(j); cambio = false; }
+  // aura activa: solo una. Poner un aura en el botón derecho (o usarla) la vuelve la activa, y sigue aunque cambies de botón.
   const der = habilidadDe(h.d.der);
-  const auraId = der.tipo === 'aura' && nivelHab(h.d, der.id, h.c) > 0 ? der.id : null;
-  for (const k of Object.keys(h.buffs)) if (h.buffs[k].t > 9000 && k !== auraId) { delete h.buffs[k]; cambio = true; }
-  if (auraId && !h.buffs[auraId]) { const n = nivelHab(h.d, auraId, h.c); const bonos: Record<string, number> = {}; for (const [k, b] of Object.entries(der.bonos ?? {})) bonos[k] = val(b, n); h.buffs[auraId] = { t: 99999, bonos, hab: auraId }; recalc(j); }
+  if (der.tipo === 'aura' && nivelHab(h.d, der.id, h.c) > 0 && h.d.aura !== der.id) h.d.aura = der.id;
+  const auraHb = h.d.aura ? habilidadDe(h.d.aura) : null;
+  const auraId = auraHb && auraHb.tipo === 'aura' && auraHb.clase === h.d.clase && nivelHab(h.d, auraHb.id, h.c) > 0 ? auraHb.id : null;
+  const pot = auraId ? bono(h, 'potencia_aura') : 0;
+  for (const k of Object.keys(h.buffs)) if (h.buffs[k].t > 9000 && (k !== auraId || Math.abs(h.auraPot - pot) > 0.01)) { delete h.buffs[k]; cambio = true; }
+  if (auraId && auraHb && !h.buffs[auraId]) { const n = nivelHab(h.d, auraId, h.c); const bonos: Record<string, number> = {}; for (const [k, b] of Object.entries(auraHb.bonos ?? {})) bonos[k] = val(b, n) * (1 + pot / 100); h.buffs[auraId] = { t: 99999, bonos, hab: auraId }; h.auraPot = pot; cambio = true; }
   if (cambio) recalc(j);
-  // aura que daña y convicción
-  if (auraId) {
-    const n = nivelHab(h.d, auraId, h.c);
-    if (der.id === 'aura_llama' && Math.floor(j.t * 2) !== Math.floor((j.t - dt) * 2)) { const dh = danoHab(j, der, n); for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, h.x, h.y) < (der.radio ?? 5)) danar(j, e, { min: dh[0] * 0.5, max: dh[1] * 0.5, elem: 'fuego', deHeroe: true, fuente: h, sinFallo: true }); }
-    if (der.id === 'aura_conviccion') for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, h.x, h.y) < (der.radio ?? 7)) { const m = e as Monstruo; m.maldicion = { amplificar: 0, debilitar: 0, lento: 0, ...(m.maldicion ?? {}), t: 0.5, res: val(der.bonos?.enemigo_res, n) * -1 * -1 }; }
+  // aura que daña y aura de sentencia
+  if (auraId && auraHb) {
+    const n = nivelHab(h.d, auraId, h.c), kp = 1 + pot / 100;
+    if (auraHb.dano && Math.floor(j.t * 2) !== Math.floor((j.t - dt) * 2)) { const dh = danoHab(j, auraHb, n); for (const e of enRadio(j, h.x, h.y, auraHb.radio ?? 5)) danar(j, e, { min: dh[0] * 0.5 * kp, max: dh[1] * 0.5 * kp, elem: auraHb.elem, deHeroe: true, fuente: h, sinFallo: true }); }
+    if (auraId === 'aura_conviccion') for (const e of enRadio(j, h.x, h.y, auraHb.radio ?? 7)) { e.maldicion = { amplificar: 0, debilitar: 0, lento: 0, ...(e.maldicion ?? {}), t: Math.max(0.5, e.maldicion?.t ?? 0), res: val(auraHb.bonos?.enemigo_res, n) * kp }; }
   }
   // tempestad y huracán
   if (h.tempestad > 0) { h.tempestad -= dt; if (R() < dt * 2.5) { const m = masCercano(j, h.x, h.y, 6, new Set()); if (m) { const hb = habilidadDe('tempestad'), dh = danoHab(j, hb, nivelHab(h.d, 'tempestad', h.c)); efecto(j, 'relampago', m.x, m.y, 0, 1); danar(j, m, { min: dh[0], max: dh[1], elem: 'rayo', deHeroe: true, fuente: h, sinFallo: true }); sonar(j, 'trueno', m.x, m.y, 0.6); } } }
-  if (h.huracan > 0) { h.huracan -= dt; if (Math.floor(j.t * 2) !== Math.floor((j.t - dt) * 2)) { const hb = habilidadDe('huracan'), dh = danoHab(j, hb, nivelHab(h.d, 'huracan', h.c)); for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, h.x, h.y) < 5) danar(j, e, { min: dh[0] / 2, max: dh[1] / 2, elem: 'frio', deHeroe: true, fuente: h, sinFallo: true }); particulas(j, h.x, h.y, 6, 'nieve', '#e0f0ff', 2, 20); } }
+  if (h.huracan > 0) { h.huracan -= dt; if (Math.floor(j.t * 2) !== Math.floor((j.t - dt) * 2)) { const hb = habilidadDe(h.huracanHab), dh = danoHab(j, hb, Math.max(1, nivelHab(h.d, hb.id, h.c))); for (const e of enRadio(j, h.x, h.y, hb.radio ?? 5)) danar(j, e, { min: dh[0] / 2, max: dh[1] / 2, elem: 'frio', deHeroe: true, fuente: h, sinFallo: true }); particulas(j, h.x, h.y, 6, 'nieve', '#e0f0ff', 2, 20); } }
+  actualizarMecanicas(j, dt);
   // regeneración
   h.regen += dt;
   const regV = h.c.regen_vida + (j.zona.tipo === 'pueblo' ? h.vidaMax * 0.05 : 0);
@@ -832,9 +1143,10 @@ function actualizarHeroe(j: Juego, dt: number) {
     if (k >= 1) {
       const hb = s.hab, n = (h as any).saltoN, mult = (h as any).saltoMult;
       const r = hb.radio ?? 1.8;
-      for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, h.x, h.y) <= r + (hb.tipo === 'carga' ? 0.6 : 0)) { const g = golpeArma(j, mult); if (hb.tipo === 'carga') g.empuje = 1; danar(j, e, g); }
+      const extra = hb.dano ? danoHab(j, hb, n) : undefined;
+      for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, h.x, h.y) <= r + (hb.tipo === 'carga' ? 0.6 : 0)) { const g = golpeArma(j, mult, hb.elem !== 'fisico' ? hb.elem : undefined, extra); if (hb.tipo === 'carga') g.empuje = 1; if (danar(j, e, g) > 0) ganarFuria(j, 4); }
       efecto(j, hb.tipo === 'salto' ? 'onda_aterrizaje' : 'polvo_carga', h.x, h.y, DIRS.indexOf(h.dir));
-      j.sacudida = 0.3; sonar(j, 'golpe_metal'); void n;
+      j.sacudida = 0.3; sonar(j, 'golpe_metal');
       h.salto = null; h.acc = 'quieto';
     }
     return;
@@ -844,7 +1156,7 @@ function actualizarHeroe(j: Juego, dt: number) {
     const [tx, ty] = (h as any).torbDir;
     if (moverHacia(j, h, tx, ty, 4.5, dt)) h.torbellino = Math.min(h.torbellino, 0.05);
     h.acc = 'atacar'; h.dir = DIRS[Math.floor(j.t * 16) % 8];
-    if (Math.floor(j.t * 5) !== Math.floor((j.t - dt) * 5)) for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, h.x, h.y) < 2.2) danar(j, e, golpeArma(j, (h as any).torbMult));
+    if (Math.floor(j.t * 5) !== Math.floor((j.t - dt) * 5)) for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, h.x, h.y) < 2.2) { if (danar(j, e, golpeArma(j, (h as any).torbMult)) > 0) ganarFuria(j, 2); }
     if (Math.floor(j.t * 6) !== Math.floor((j.t - dt) * 6)) sonar(j, 'tajo', h.x, h.y, 0.5);
     if (h.torbellino <= 0) { h.acc = 'quieto'; h.destino = null; }
     return;
@@ -876,7 +1188,8 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
   if (m.veneno > 0) { m.veneno -= dt; m.vida -= m.venenoDps * dt; if (Math.floor(m.veneno * 2) !== Math.floor((m.veneno + dt) * 2)) particulas(j, m.x, m.y, 2, 'humo', '#60a040', 0.5, 30); if (m.vida <= 0) { morirMonstruo(j, m); return; } }
   if (m.sangrado > 0) { m.sangrado -= dt; m.vida -= m.vidaMax * 0.02 * dt; if (m.vida <= 0) { morirMonstruo(j, m); return; } }
   if (m.maldicion) { m.maldicion.t -= dt; if (m.maldicion.t <= 0) m.maldicion = undefined; }
-  if (m.dueno && m.tVida !== undefined) { m.tVida -= dt; }
+  if (m.marca && m.marca > 0) { m.marca -= dt; if (Math.floor(m.marca * 2) !== Math.floor((m.marca + dt) * 2)) particulas(j, m.x, m.y, 1, 'pluma', '#ffc860', 0.3, 70 * m.escala); }
+  if (m.dueno && m.tVida !== undefined) { m.tVida -= dt; if (m.tVida <= 0) { m.vida = 0; m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; efecto(j, 'circulo_invocacion', m.x, m.y, 0, 0.5); return; } }
   if (m.congelado > 0) { m.congelado -= dt; return; }
   if (m.aturdido > 0) { m.aturdido -= dt; m.acc = 'herido'; return; }
   if (m.frio > 0) m.frio -= dt;
@@ -1031,6 +1344,7 @@ function golpeMonstruo(j: Juego, m: Monstruo) {
   } else danar(j, obj, g);
   if (m.mods.includes('vampiro')) m.vida = Math.min(m.vidaMax, m.vida + (m.dano[0] + m.dano[1]) * 0.3);
   if (m.dueno && m.invocaId === 'golem') { const h = j.heroe; h.vida = Math.min(h.vidaMax, h.vida + (m.dano[0] + m.dano[1]) * 0.2); }
+  if (m.dueno && m.invocaId === 'halcon' && obj.tipo === 'monstruo') (obj as Monstruo).marca = Math.max((obj as Monstruo).marca ?? 0, 4);
   sonar(j, 'tajo', m.x, m.y, 0.5);
 }
 
@@ -1067,6 +1381,8 @@ function actualizarProyectiles(j: Juego, dt: number) {
         const g: Golpe = { min: p.dano[0], max: p.dano[1], elem: p.elem, deHeroe: p.deHeroe, fuente: p.deHeroe ? j.heroe : undefined, sinFallo: p.elem !== 'fisico' || !p.deHeroe ? p.elem !== 'fisico' : false, precision: p.deHeroe ? j.heroe.c.precision : undefined, critico: p.deHeroe ? j.heroe.c.critico : 0 };
         if (p.deHeroe && (p.efecto === 'flecha' || p.efecto === 'flecha_fuego' || p.efecto === 'flecha_hielo' || p.efecto === 'virote')) { g.extra = { ...j.heroe.c.elem }; g.robo = j.heroe.c.robo_vida; }
         if (!p.deHeroe) { g.fuente = undefined; for (const m of j.monstruos) if (!m.muerto && dist(m.x, m.y, p.x, p.y) < 30) { g.fuente = m; break; } }
+        if (p.deHeroe && p.hab?.bonos?.empuje) g.empuje = 1;
+        if (p.deHeroe && p.hab?.bonos?.marca && e.tipo === 'monstruo') (e as Monstruo).marca = Math.max((e as Monstruo).marca ?? 0, val(p.hab.bonos.marca, p.nivelHab ?? 1));
         danar(j, e, g);
         if (p.explota) { explotar(j, p); p.vida = 0; break; }
         if (!p.perfora) { p.vida = 0; efecto(j, p.elem === 'fuego' ? 'explosion_fuego' : p.elem === 'frio' ? 'estallido_esquirlas' : p.elem === 'fisico' ? 'chispas_carne' : 'chispas_metal', p.x, p.y, 0, 0.5); break; }
@@ -1078,7 +1394,12 @@ function actualizarProyectiles(j: Juego, dt: number) {
 function explotar(j: Juego, p: Proyectil) {
   const r = p.explota || 1.5;
   efecto(j, p.elem === 'frio' ? 'nova_escarcha' : p.elem === 'veneno' ? 'nube_veneno' : 'explosion_fuego', p.x, p.y, 0, r / 2);
-  for (const e of enemigosDe(j, p.deHeroe)) if (dist(e.x, e.y, p.x, p.y) < r + e.radio) danar(j, e, { min: p.dano[0], max: p.dano[1], elem: p.elem, deHeroe: p.deHeroe, fuente: p.deHeroe ? j.heroe : undefined, sinFallo: true });
+  for (const e of enemigosDe(j, p.deHeroe)) if (dist(e.x, e.y, p.x, p.y) < r + e.radio) {
+    danar(j, e, { min: p.dano[0], max: p.dano[1], elem: p.elem, deHeroe: p.deHeroe, fuente: p.deHeroe ? j.heroe : undefined, sinFallo: true });
+    if (p.hab?.bonos?.miedo && !esJefe(e)) e.miedo = val(p.hab.duracion, p.nivelHab ?? 1);
+  }
+  if (p.hab?.id === 'frasco_peste' || p.hab?.id === 'bomba_humo') { const d = val(p.hab.duracion, p.nivelHab ?? 1); j.areas.push({ x: p.x, y: p.y, radio: r * 0.9, dano: [p.dano[0] * 0.25, p.dano[1] * 0.25], elem: 'veneno', t: 0, dur: d, tick: 0.5, prox: 0.5, deHeroe: true, efecto: 'nube_veneno', retraso: 0.05 }); }
+  if (p.hab?.id === 'gran_crisol') j.areas.push({ x: p.x, y: p.y, radio: r * 0.7, dano: [p.dano[0] * 0.08, p.dano[1] * 0.08], elem: 'fuego', t: 0, dur: 4, tick: 0.5, prox: 0.5, deHeroe: true, efecto: 'crater_ardiente', retraso: 0.05 });
   j.sacudida = Math.max(j.sacudida, 0.15);
   sonar(j, p.elem === 'frio' ? 'hielo_impacto' : 'explosion', p.x, p.y, 0.8);
   if (p.elem === 'fuego') j.manchas.push({ x: p.x, y: p.y, r: r * 0.6, color: '#141008', t: 0, tipo: 'quemado' });
