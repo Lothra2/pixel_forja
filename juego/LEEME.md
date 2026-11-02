@@ -33,6 +33,15 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 - Misterio: 9 páginas arrancadas del diario del primer abad escondidas en libros malditos de las mazmorras, momentos de terror donde la luz se encoge y algo te nombra, y un final con su giro después de vencer a Ozmaren.
 - Español e inglés, volumen, brillo y pantalla completa. Las partidas se guardan solas en el navegador.
 
+## Lo grande nuevo (noviembre)
+
+- **7 actos y 68 zonas.** Velmora, Sahrim, Yhuantl, Hrimgard, la Herida, Ysmeral la Ciudad Ahogada y la Corona del Dios Sediento. Cada acto tiene su pueblo, su cadena principal y 2 o 3 mazmorras laterales con mini jefe y cofre de tesoro. Los mapas cambian en cada partida.
+- **Historia de siete actos.** 42 misiones (3 principales y 3 secundarias por acto, muchas con elección), diálogos que cambian según lo que hiciste, diarios de cada sello, fantasmas que repiten su última escena y cinemáticas entre actos.
+- **Vesperio, el Pregonero de la Sed.** Aparece antes de cada jefe y escapa, hasta la pelea final en la Fragua de Ozmaren.
+- **La revelación y los finales.** Tras Ozmaren descubres qué es la Marca y eliges destruir o absorber la brasa. Eso cambia diálogos en los actos 6 y 7 y el final después de Aun-Saar, el Dios Sediento: La Hoguera o La Corona de Ceniza.
+- **70 armas legendarias** en 8 escalones (nivel 6 a 90), todas armas vivas. Cada jefe suelta la suya. Hay 7 conjuntos más el Legado GG de la familia (Rick, Steph, Sophie, Alana y Thor). Lo que no puedes usar todavía sale en rojo con "Requiere nivel X".
+- **Nivel 100 y tres dificultades.** Normal, Pesadilla (monstruos hasta ~80, resistencias -40) e Infierno (hasta 100, resistencias -100). La siguiente se abre al terminar el acto 7.
+
 ## Qué falta o se puede mejorar
 
 - Las bestias del motor ya están en los actos: lobos, jabalíes, arañas, escorpiones, gárgolas, murciélagos, gólems, perros de la Herida, demonios alados, la Madre del Pozo, la Boca de Arena y Varnhul, el dragón de huesos. La primera vez que entras a una zona nueva tarda unos segundos en cargar sus dibujos.
