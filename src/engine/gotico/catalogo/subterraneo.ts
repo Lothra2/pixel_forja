@@ -311,3 +311,60 @@ export function paredRoca(a: Arma, ps: Pieza[], pts: [number, number][], alto: n
     }
   }
 }
+
+// ------------------------------------------------------------------ bordes de un vacío (para delinear islas y simas)
+/**
+ * Variantes de borde por hacia dónde queda el vacío (en pantalla). Rectos: 'se' (vacío hacia +x), 'so' (+y),
+ * 'ne' (-y), 'no' (-x). Puntas de tierra (el vacío rodea dos lados): 's', 'e', 'n', 'o'. Rincones (el vacío solo en
+ * un cuadrante): 'is', 'ie', 'in', 'io'. Con los doce se delinea cualquier isla sobre la grilla de baldosas.
+ */
+export const BORDES = ['se', 'so', 'ne', 'no', 's', 'e', 'n', 'o', 'is', 'ie', 'in', 'io'];
+type Tramo = { p: [number, number]; q: [number, number]; n: [number, number] };
+export function tramosBorde(v: string, L: number, T = 40): { tramos: Tramo[]; semis: Semi[]; convexo: boolean } {
+  const SE = (y0: number, y1: number): Tramo => ({ p: [L, y0], q: [L, y1], n: [1, 0] });
+  const SO = (x0: number, x1: number): Tramo => ({ p: [x0, L], q: [x1, L], n: [0, 1] });
+  const NE = (x0: number, x1: number): Tramo => ({ p: [x0, -L], q: [x1, -L], n: [0, -1] });
+  const NO = (y0: number, y1: number): Tramo => ({ p: [-L, y0], q: [-L, y1], n: [-1, 0] });
+  const s = (t: Tramo): Semi => [-t.n[0], -t.n[1], -L];
+  const m: Record<string, [Tramo[], boolean]> = {
+    se: [[SE(-T, T)], true], so: [[SO(-T, T)], true], ne: [[NE(-T, T)], true], no: [[NO(-T, T)], true],
+    s: [[SE(-T, L), SO(-T, L)], false], n: [[NE(-L, T), NO(-L, T)], false], e: [[SE(-L, T), NE(-T, L)], false], o: [[SO(-L, T), NO(-T, L)], false],
+    is: [[SE(L, T), SO(L, T)], true], in: [[NO(-T, -L), NE(-T, -L)], true], ie: [[SE(-T, -L), NE(L, T)], true], io: [[NO(L, T), SO(-T, -L)], true],
+  };
+  const [tramos, convexo] = m[v] ?? m.se;
+  return { tramos, semis: tramos.map(s), convexo };
+}
+/**
+ * El borde de un vacío sobre una baldosa (80×80, ancla al centro): labio de lajas al ras del piso, el acantilado
+ * que baja y se pierde en la oscuridad (solo donde la cámara lo ve) y lo que cuelga. `extra` recibe cada estación
+ * del labio (punto y normal hacia el vacío) para colgar raíces, cadenas o niebla.
+ */
+export function bordeVacio(a: Arma, ps: Pieza[], v: string, o: { mat: string; matLabio?: string; L?: number; D?: number; fondo?: string; extra?: (p: V3, n: [number, number], z: number) => void }) {
+  const L = o.L ?? 34, D = o.D ?? 110, { tramos, semis, convexo } = tramosBorde(v, L);
+  for (const t of tramos) {
+    const len = Math.hypot(t.q[0] - t.p[0], t.q[1] - t.p[1]), st = Math.max(2, Math.round(len / 11));
+    const ux = (t.q[0] - t.p[0]) / len, uy = (t.q[1] - t.p[1]) / len, giro = (Math.atan2(uy, ux) * 180) / PI;
+    const visto = t.n[0] + t.n[1] > 0;
+    for (let k = 0; k <= st; k++) {
+      const u = k / st, x = t.p[0] + (t.q[0] - t.p[0]) * u, y = t.p[1] + (t.q[1] - t.p[1]) * u;
+      const sal = (a.r() - 0.5) * 5;
+      // el labio: lajas chatas al ras, un poco hacia adentro, con la arista rota
+      ps.push(pena(a, x + t.n[0] * (sal - 3), y + t.n[1] * (sal - 3), -2.2, entre(a, 7, 10), entre(a, 6, 9), 3.2, { mat: o.matLabio ?? o.mat, giro: giro + (a.r() - 0.5) * 20, tono: 0.04, n: 10 }));
+      if (a.r() < 0.35) ps.push(pena(a, x - t.n[0] * entre(a, 8, 16), y - t.n[1] * entre(a, 8, 16), 0, entre(a, 1.5, 3), entre(a, 1.2, 2.5), entre(a, 0.8, 1.6), { mat: o.mat, n: 6 }));
+      if (a.r() < 0.4) ps.push(a.caja(x - t.n[0] * entre(a, 6, 12), y - t.n[1] * entre(a, 6, 12), 0.03, entre(a, 6, 12), 0.7, 0.3, { mat: 'negro', giro: giro + (a.r() - 0.5) * 30 }));
+      if (visto) {
+        // el acantilado: lajas que bajan, se meten hacia adentro y se oscurecen
+        let z = -6, off = sal;
+        while (z > -D) {
+          const fr = -z / D, rz = entre(a, 6, 10) * (1 - fr * 0.3);
+          off += (a.r() - 0.55) * 4 - 0.6;
+          ps.push(pena(a, x + t.n[0] * off + ux * (a.r() - 0.5) * 5, y + t.n[1] * off + uy * (a.r() - 0.5) * 5, z - rz * 0.4, entre(a, 7, 10), entre(a, 5, 8), rz, { mat: o.mat, giro: giro + (a.r() - 0.5) * 30, tono: -fr * 0.55 + (a.r() - 0.5) * 0.1, n: 8 }));
+          z -= rz * entre(a, 1.1, 1.5);
+        }
+      }
+      o.extra?.([x + t.n[0] * sal, y + t.n[1] * sal, -3], t.n, u);
+    }
+  }
+  if (o.fondo) ps.push(a.caja(0, 0, -D - 60, 600, 600, 4, { mat: o.fondo }));
+  ps.push(...recorte(a, semis, convexo));
+}

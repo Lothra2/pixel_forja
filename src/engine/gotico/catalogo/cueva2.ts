@@ -53,7 +53,7 @@ function grupoEstal(a: Arma, fm: number): [number, number, number, number, numbe
   else if (fm === 1) { g.push([-6 + j(), -4, entre(a, 44, 54), 7, 0.25], [7 + j(), 5, entre(a, 36, 48), 6.5, 0.3], [12, -9, entre(a, 10, 16), 3.5, 0.4], [-14, 9, entre(a, 7, 12), 3, 0.4]); }
   else if (fm === 2) { for (let i = 0; i < 6; i++) { const u = i / 5; g.push([-20 + u * 40 + j(), (a.r() - 0.5) * 8, 48 * Math.pow(1 - Math.abs(u - 0.35) * 1.2, 1.2) + 8, 6.5 - Math.abs(u - 0.35) * 5, 0.25]); } }
   else if (fm === 3) { for (let i = 0; i < 8; i++) { const t = (i / 8) * 2 * PI + a.r() * 0.6, d = i === 0 ? 0 : entre(a, 7, 17); g.push([Math.cos(t) * d, Math.sin(t) * d, i === 0 ? entre(a, 30, 38) : entre(a, 12, 30), i === 0 ? 6 : entre(a, 3, 5), 0.5]); } }
-  else if (fm === 4) { g.push([0, 0, entre(a, 26, 32), 12, 0.15], [11, -8, entre(a, 30, 40), 3.2, 0.2], [-10, 10, entre(a, 24, 32), 2.8, 0.25], [9, 11, 9, 3.5, 0.3]); }
+  else if (fm === 4) { g.push([0, 0, entre(a, 34, 42), 8, 0.15], [11, -8, entre(a, 30, 40), 3.2, 0.2], [-10, 10, entre(a, 24, 32), 2.8, 0.25], [9, 11, 9, 3.5, 0.3]); }
   else { const lado = a.r() < 0.5 ? 1 : -1; for (let i = 0; i < 3; i++) g.push([-8 + i * 8 + j(), lado * (i - 1) * 4, entre(a, 30, 50) - i * 6, 6 - i, 1.1]); g.push([14, -10, 12, 3.5, 0.4], [-14, 6, 8, 3, 0.4]); }
   return g;
 }
@@ -71,8 +71,8 @@ registrar(
         if (rota) { const t = a.r() * 2 * PI, L = h * k * rota; const p: V3 = [x + Math.cos(t) * (r + 4), y + Math.sin(t) * (r + 4), r * 0.4]; ps.push(masa([hM(p, [p[0] + Math.cos(t + 0.4) * L, p[1] + Math.sin(t + 0.4) * L, r * 0.3], r * 0.75, 0.6)], { mat, suave: 1 })); }
       }
       // derrame de colada que une los pies
-      cs.push(bulto([0, 0, 0], [entre(a, 16, 22), entre(a, 14, 19), 3], { mat, giro: a.r() * 180 }));
-      ps.push(masa(cs, { mat, suave: 2.6 }));
+      cs.push(bulto([0, 0, 0], [entre(a, 16, 22), entre(a, 14, 19), 2], { mat, giro: a.r() * 180 }));
+      ps.push(masa(cs, { mat, suave: 2 }));
       if (v === 'humeda') {
         for (let i = 0; i < 3; i++) { const t = a.r() * 2 * PI, d = entre(a, 14, 22); ps.push(a.elipsoide(Math.cos(t) * d, Math.sin(t) * d, 0, entre(a, 4, 8), entre(a, 3, 6), 0.9, { mat: 'c2_agua', giro: a.r() * 180 })); }
       }
@@ -218,4 +218,255 @@ registrar(
     },
   },
 );
-conVarianteY('cue2_estalactitas');
+
+/** Charco hecho de varios óvalos de agua que se funden (orilla orgánica, no un óvalo solo). */
+type Ovalo = [number, number, number, number, number];
+const dentro = (os: Ovalo[], x: number, y: number, m = 0.9) => os.some(([cx, cy, rx, ry, g]) => { const c = Math.cos(rad(g)), s = Math.sin(rad(g)), dx = x - cx, dy = y - cy, u = (dx * c + dy * s) / rx, w = (-dx * s + dy * c) / ry; return u * u + w * w < m * m; });
+function charco(a: Arma, ps: Pieza[], os: Ovalo[], mat: string, borde = 'c2_gour', z = 1) {
+  for (const [cx, cy, rx, ry, g] of os) ps.push(a.elipsoide(cx, cy, z - 1.6, rx + 2.2, ry + 2.2, 1.6, { mat: 'sub_tierra', giro: g, tono: -0.05 }));
+  // labio de colada (gour) alrededor: bultos chatos fundidos que siguen la orilla
+  const cs: Comp[] = [];
+  for (const [cx, cy, rx, ry, g] of os) {
+    const n = Math.round((rx + ry) / 3.5), c = Math.cos(rad(g)), s = Math.sin(rad(g));
+    for (let i = 0; i < n; i++) { const t = (i / n) * 2 * PI, lx = Math.cos(t) * (rx + 0.8), ly = Math.sin(t) * (ry + 0.8), x = cx + lx * c - ly * s, y = cy + lx * s + ly * c; if (dentro(os, x, y, 0.97)) continue; cs.push(bulto([x, y, z - 0.2], [entre(a, 2.2, 3.6), entre(a, 1.6, 2.4), entre(a, 0.9, 1.6)], { giro: (t * 180) / PI + g + 90 })); }
+  }
+  if (cs.length) ps.push(masa(cs, { mat: borde, suave: 1.4 }));
+  for (const [cx, cy, rx, ry, g] of os) ps.push(a.elipsoide(cx, cy, z - 0.8, rx, ry, 0.8, { mat, giro: g }));
+}
+/** El reflejo de un espeleotema en el agua: en pantalla queda espejado hacia abajo, en el piso corre hacia +x+y. */
+function reflejo(a: Arma, ps: Pieza[], os: Ovalo[], bx: number, by: number, h: number, r: number, f: number, mat = 'c2_reflejo', z = 1.02) {
+  const K = Math.sqrt(1.5), n = Math.max(3, Math.round(h / 4));
+  for (let i = 0; i < n; i++) {
+    const u = (i + 0.5) / n, d = u * h * K, rr = Math.max(0.5, r * Math.pow(1 - u, 0.85)), w = Math.sin(f * 1.3 + i * 0.9) * 0.6 * u;
+    const x = bx + d + w, y = by + d - w;
+    if (!dentro(os, x, y, 0.92)) continue;
+    ps.push(a.elipsoide(x, y, z, (h * K) / n * 0.75, rr, 0.08, { mat, giro: 45, tono: -u * 0.1 }));
+  }
+}
+
+registrar(
+  {
+    id: 'cue2_drusa', nombre: ['Geoda de cristales', 'Crystal geode'], tema: 'cueva', variantes: ['azul', 'verde', 'rojo'], cuadros: 4, t: 5, huella: [2, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const fm = forma(a, 4), ti = TINTE[v], ps: Pieza[] = [], pulso = onda(f, 4) * 0.1;
+      const R = entre(a, 14, 19), mat = fm % 2 ? 'sub_roca' : 'sub_roca_humeda';
+      const boca: V3 = fm === 2 ? [0.25, 0.25, 1] : fm === 1 ? [0.2, 1, 0.45] : [1, 0.3, 0.45];
+      const bl = Math.hypot(...boca), bn: V3 = [boca[0] / bl, boca[1] / bl, boca[2] / bl];
+      const c: V3 = [0, 0, R * 0.7];
+      if (fm === 3) {
+        // partida en dos mitades que se abrieron
+        for (const l of [-1, 1]) {
+          const o: V3 = [l * 9, -l * 4, R * 0.6];
+          ps.push(roca(a, o, [R * 0.7, R * 0.8, R * 0.7], { mat, n: 4 }));
+          ps.push(a.elipsoide(o[0] + l * 3, o[1] - l * 1, o[2] + 1, R * 0.62, R * 0.62, R * 0.6, { mat, resta: true }));
+          ps.push(a.elipsoide(o[0] + l * 4, o[1] - l * 1, o[2] + 1, R * 0.55, R * 0.55, R * 0.52, { mat: ti.luz, tono: -0.25 + pulso }));
+          for (let i = 0; i < 9; i++) { const t = a.r() * 2 * PI, w = a.r() * 2 - 1, q = Math.sqrt(1 - w * w), d: V3 = [Math.cos(t) * q, Math.sin(t) * q, w]; ps.push(prisma(a, [o[0] + l * 4 + d[0] * R * 0.5, o[1] - l + d[1] * R * 0.5, o[2] + 1 + d[2] * R * 0.5], [-d[0], -d[1], -d[2] + 0.3], entre(a, 4, 8), entre(a, 1.2, 2.2), i % 3 ? ti.cr : ti.luz, i % 3 ? 0 : pulso)); }
+        }
+      } else {
+        ps.push(roca(a, c, [R, R * 0.9, R * 0.8], { mat, n: 5 }));
+        // la boca: un hueco que se abre hacia la cámara, tapizado de cristales que miran hacia afuera
+        const hc = add(c, bn, R * 0.75);
+        ps.push(a.elipsoide(hc[0], hc[1], hc[2], R * 0.72, R * 0.72, R * 0.62, { mat, resta: true }));
+        ps.push(a.elipsoide(...add(c, bn, R * 0.45), R * 0.42, R * 0.42, R * 0.38, { mat: ti.luz, tono: -0.2 + pulso }));
+        for (let i = 0; i < 16; i++) {
+          const t = a.r() * 2 * PI, w = a.r() * 2 - 1, q = Math.sqrt(1 - w * w), d: V3 = [Math.cos(t) * q, Math.sin(t) * q, w];
+          if (d[0] * bn[0] + d[1] * bn[1] + d[2] * bn[2] > 0.55) continue;
+          const b = add(hc, d, R * 0.66);
+          ps.push(prisma(a, b, [bn[0] - d[0] * 0.8, bn[1] - d[1] * 0.8, bn[2] - d[2] * 0.8 + 0.2], entre(a, 5, 11), entre(a, 1.4, 2.6), i % 4 === 0 ? ti.luz : ti.cr, i % 4 === 0 ? pulso : (a.r() - 0.5) * 0.15));
+        }
+      }
+      piedras(a, ps, 6, 24, mat);
+      for (let i = 0; i < 3; i++) { const t = a.r() * 2 * PI; ps.push(prisma(a, [Math.cos(t) * 20, Math.sin(t) * 20, 0], [Math.cos(t) * 0.5, Math.sin(t) * 0.5, 1], entre(a, 3, 6), 1.2, ti.cr)); }
+      ps.push(suelo(a));
+      return { piezas: ps, resplandor: { c: add(c, bn, R * 1.1), r: 32, color: ti.col } };
+    },
+  },
+  {
+    id: 'cue2_cristal_gigante', nombre: ['Cristal gigante', 'Giant crystal'], tema: 'cueva', variantes: ['azul', 'verde', 'rojo'], cuadros: 4, t: 5, huella: [3, 3], bloquea: true,
+    armar: (v, f, a) => {
+      const fm = forma(a, 5), ti = TINTE[v], ps: Pieza[] = [], pulso = onda(f, 4) * 0.1;
+      const L = entre(a, 58, 88) * (fm === 4 ? 0.7 : 1), r = entre(a, 7, 10), inc = fm === 1 ? 26 : entre(a, 3, 14), g = a.r() * 360;
+      const dir: V3 = [Math.cos(rad(g)) * Math.sin(rad(inc)), Math.sin(rad(g)) * Math.sin(rad(inc)), Math.cos(rad(inc))];
+      // la roca madre de donde brota
+      for (let i = 0; i < 5; i++) { const t = (i / 5) * 2 * PI + a.r(); penasco(a, ps, [Math.cos(t) * 12, Math.sin(t) * 11, 3], [entre(a, 8, 12), entre(a, 7, 10), entre(a, 5, 8)], { mat: 'sub_roca', n: 1 }); }
+      ps.push(prisma(a, [0, 0, -2], dir, L, r, ti.cr));
+      if (fm === 4) ps.push(prisma(a, [3, -2, -2], [dir[0] + 0.4, dir[1] - 0.3, 1], L * 0.8, r * 0.8, ti.cr, 0.05));
+      // vetas de luz adentro: prismas finos emisivos que asoman por las caras
+      ps.push(prisma(a, add([0, 0, 4], dir, 2), dir, L * 0.82, r * 0.38, ti.luz, pulso - 0.15));
+      const n = 6 + fm;
+      for (let i = 0; i < n; i++) {
+        const t = (i / n) * 2 * PI + a.r() * 0.7, d = entre(a, 6, 15), s = entre(a, 0.3, 0.9);
+        ps.push(prisma(a, [Math.cos(t) * d, Math.sin(t) * d, 1], [Math.cos(t) * s + dir[0], Math.sin(t) * s + dir[1], 1], entre(a, 10, 30), entre(a, 2, 4.5), i % 3 === 1 ? ti.luz : ti.cr, i % 3 === 1 ? pulso : (a.r() - 0.5) * 0.1));
+      }
+      for (let i = 0; i < 6; i++) { const t = a.r() * 2 * PI, d = entre(a, 18, 26); ps.push(a.caja(Math.cos(t) * d * 0.5, Math.sin(t) * d * 0.5, 0.05, 0.8, d * 0.6, 0.25, { mat: 'negro', giro: (t * 180) / PI + 90 })); }
+      piedras(a, ps, 6, 28);
+      ps.push(suelo(a));
+      return { piezas: ps, resplandor: { c: add([0, 0, 10], dir, L * 0.35), r: 48, color: ti.col } };
+    },
+  },
+  {
+    id: 'cue2_cristales_suelo', nombre: ['Cristales entre las grietas', 'Crystals in floor cracks'], tema: 'cueva', variantes: ['azul', 'verde', 'rojo'], cuadros: 4, t: 5, huella: [3, 3], bloquea: false,
+    armar: (v, f, a) => {
+      const fm = forma(a, 4), ti = TINTE[v], ps: Pieza[] = [], pulso = onda(f, 4) * 0.12;
+      // grietas que se ramifican y en ellas brotan los cristales bajos
+      const ramas = 3 + fm;
+      for (let i = 0; i < ramas; i++) {
+        let p: [number, number] = [(a.r() - 0.5) * 10, (a.r() - 0.5) * 10], t = a.r() * 2 * PI;
+        for (let k = 0; k < 4; k++) {
+          const L = entre(a, 6, 10), q: [number, number] = [p[0] + Math.cos(t) * L, p[1] + Math.sin(t) * L];
+          ps.push(a.caja((p[0] + q[0]) / 2, (p[1] + q[1]) / 2, 0.02, L + 1, 1.6 - k * 0.25, 0.35, { mat: ti.luz, giro: (t * 180) / PI, tono: -0.3 + pulso }));
+          for (const l of [-1, 1]) ps.push(pena(a, (p[0] + q[0]) / 2 - Math.sin(t) * l * 2, (p[1] + q[1]) / 2 + Math.cos(t) * l * 2, 0.2, L * 0.5, 1.8, 0.8, { mat: 'sub_roca', giro: (t * 180) / PI, n: 6 }));
+          if (a.r() < 0.7) for (let j = 0; j < 2; j++) { const u = a.r(), b: V3 = [p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u, -1]; ps.push(prisma(a, b, [(a.r() - 0.5) * 1.2, (a.r() - 0.5) * 1.2, 1], entre(a, 4, 11), entre(a, 1, 2.2), a.r() < 0.3 ? ti.luz : ti.cr, pulso * 0.5)); }
+          p = q; t += (a.r() - 0.5) * 1.2;
+        }
+      }
+      ps.push(suelo(a));
+      return { piezas: ps, resplandor: { c: [0, 0, 4], r: 34, color: ti.col } };
+    },
+  },
+  {
+    id: 'cue2_charca', nombre: ['Charca subterránea', 'Underground pool'], tema: 'cueva', variantes: ['clara', 'turquesa', 'cristal'], cuadros: 6, t: 4, huella: [4, 4], bloquea: true,
+    armar: (v, f, a) => {
+      const fm = forma(a, 5), ps: Pieza[] = [];
+      const mat = v === 'turquesa' ? 'c2_agua_turquesa' : 'c2_agua';
+      const os: Ovalo[] = [[0, 0, entre(a, 20, 26), entre(a, 14, 18), a.r() * 180]];
+      for (let i = 0; i < 2 + (fm % 3); i++) { const t = a.r() * 2 * PI; os.push([Math.cos(t) * 14, Math.sin(t) * 11, entre(a, 8, 14), entre(a, 6, 10), a.r() * 180]); }
+      charco(a, ps, os, mat);
+      // espeleotemas en la orilla del fondo: se reflejan en el agua
+      const cs: Comp[] = [];
+      const ref: [number, number, number, number][] = [];
+      for (let i = 0; i < 2 + (fm % 3); i++) {
+        const t = entre(a, PI * 1.05, PI * 1.55), [cx, cy, rx, ry] = os[0], bx = cx + Math.cos(t) * (rx + 3), by = cy + Math.sin(t) * (ry + 3);
+        const h = entre(a, 14, 44), r = entre(a, 3, 6);
+        cs.push(...espeleo(a, [bx, by, 0], h, r, { mat: 'sub_caliza', curva: 0.2 }));
+        ref.push([bx, by, h, r]);
+      }
+      ps.push(masa(cs, { mat: 'sub_caliza', suave: 2 }));
+      for (const [bx, by, h, r] of ref) reflejo(a, ps, os, bx, by, h, r, f);
+      let luz: { c: V3; r: number; color: string } | undefined;
+      if (v === 'cristal') {
+        const [cx, cy, rx, ry] = os[0], bx = cx - rx * 0.5, by = cy + ry + 2;
+        for (let i = 0; i < 4; i++) ps.push(prisma(a, [bx + (a.r() - 0.5) * 6, by + (a.r() - 0.5) * 4, 0], [(a.r() - 0.5) * 0.8, (a.r() - 0.2) * 0.6, 1], entre(a, 8, 20), entre(a, 1.6, 3), i % 2 ? 'sub_luz_azul' : 'sub_cristal_azul'));
+        reflejo(a, ps, os, bx, by, 16, 2.4, f, 'sub_luz_azul', 1.03);
+        luz = { c: [bx, by, 8], r: 40, color: '#5aaef0' };
+      }
+      // ondas de una gota y destellos que se corren
+      const [cx, cy] = os[1] ?? os[0], R = 1 + (f % 6) * 2.4;
+      ps.push(a.cilindro(cx, cy, 0.9, R, 0.2, { mat, tono: 0.3 - (f % 6) * 0.05 }), a.cilindro(cx, cy, 0.9, Math.max(0.3, R - 1), 0.25, { mat }));
+      for (let i = 0; i < 3; i++) { const x = (a.r() - 0.5) * 20 + Math.sin(f * 1.05 + i) * 2, y = (a.r() - 0.5) * 14; if (dentro(os, x, y, 0.8)) ps.push(a.elipsoide(x, y, 1, 3.5, 0.7, 0.06, { mat, tono: 0.35, giro: -45 })); }
+      piedras(a, ps, 7, 34, 'sub_roca');
+      ps.push(suelo(a));
+      return luz ? { piezas: ps, resplandor: luz } : ps;
+    },
+  },
+  {
+    id: 'cue2_lago_negro', nombre: ['Lago de agua negra', 'Black water lake'], tema: 'cueva', variantes: ['orilla', 'isla', 'ojos', 'barca'], cuadros: 8, t: 4, huella: [9, 7], bloquea: true,
+    armar: (v, f, a) => {
+      const fm = forma(a, 4), ps: Pieza[] = [], mat = 'c2_agua_negra';
+      const os: Ovalo[] = [[0, 0, entre(a, 48, 58), entre(a, 34, 42), entre(a, -15, 15)]];
+      for (let i = 0; i < 3 + fm; i++) { const t = (i / (3 + fm)) * 2 * PI + a.r(); os.push([Math.cos(t) * 34, Math.sin(t) * 24, entre(a, 16, 26), entre(a, 12, 18), a.r() * 180]); }
+      charco(a, ps, os, mat, 'sub_roca_humeda', 0.6);
+      // la orilla: peñascos, estalagmitas que se reflejan y lajas que entran al agua
+      const cs: Comp[] = [];
+      for (let i = 0; i < 14; i++) {
+        const t = (i / 14) * 2 * PI + a.r() * 0.3, [, , rx, ry] = os[0], R = 1.18 + a.r() * 0.15, x = Math.cos(t) * rx * R, y = Math.sin(t) * ry * R;
+        if (dentro(os, x, y, 1.02)) continue;
+        if (t > PI * 0.9 && t < PI * 1.7 && a.r() < 0.6) { const h = entre(a, 14, 46), r = entre(a, 3, 6); cs.push(...espeleo(a, [x, y, 0], h, r, { mat: 'sub_caliza' })); reflejo(a, ps, os, x, y, h, r, f, 'c2_reflejo', 0.62); }
+        else penasco(a, ps, [x, y, 2], [entre(a, 5, 10), entre(a, 4, 8), entre(a, 3, 7)], { mat: a.r() < 0.5 ? 'sub_roca_humeda' : 'sub_roca', n: 1 });
+      }
+      if (cs.length) ps.push(masa(cs, { mat: 'sub_caliza', suave: 2 }));
+      // brillos lentos sobre el agua quieta
+      for (let i = 0; i < 6; i++) { const x = (a.r() - 0.5) * 70 + Math.sin(f * 0.8 + i) * 3, y = (a.r() - 0.5) * 50; if (dentro(os, x, y, 0.85)) ps.push(a.elipsoide(x, y, 0.62, entre(a, 3, 7), 0.5, 0.05, { mat: 'c2_reflejo', giro: -45, tono: -0.1 })); }
+      let luz: { c: V3; r: number; color: string } | undefined;
+      if (v === 'isla') {
+        penasco(a, ps, [6, -4, 3], [16, 13, 6], { mat: 'sub_roca_humeda', n: 3 });
+        ps.push(...cadaver({ piel: 'cu_hueso', oseo: true }, { torso: { tipo: 'harapos', mat: 'cu_tela_parda' } }, 'e', [4, -6, 7], a.r() * 40));
+        ps.push(a.cilindro(-4, -10, 6, 1, 14, { mat: 'madera_vieja' }), a.cilindro(-4, -10, 18, 1.6, 2, { mat: 'hierro' }));
+        luz = { c: [-4, -10, 22], r: 30, color: '#ffa040' };
+        llama(a, ps, -4, -10, 19.5, f, 8, 0.8);
+      } else if (v === 'ojos') {
+        // algo grande y quieto bajo el agua: un lomo, dos ojos que parpadean y la onda que deja
+        const x = entre(a, -10, 10), y = entre(a, -6, 6), ab = (f % 8) === 5 ? 0.15 : 1;
+        ps.push(masa([bulto([x - 10, y - 4, -2], [16, 9, 4.5], { giro: 30 }), bulto([x + 2, y + 2, -1.5], [7, 6, 3.2])], { mat: 'cu_quitina', suave: 3 }));
+        for (const l of [-1, 1]) ps.push(a.elipsoide(x + 5 + l * 2.2, y + 4 - l * 2.2, 1.4, 1.3, 1.3, 0.9 * ab, { mat: 'cu_ojo_verde' }));
+        const R = 6 + (f % 8) * 3;
+        ps.push(a.cilindro(x, y, 0.55, R, 0.15, { mat: 'c2_reflejo', tono: 0.1 - (f % 8) * 0.03 }), a.cilindro(x, y, 0.55, R - 1, 0.2, { mat }));
+        luz = { c: [x + 5, y + 4, 4], r: 18, color: '#60e070' };
+      } else if (v === 'barca') {
+        // un bote podrido medio hundido, con el remo flotando
+        const g = entre(a, -30, 30), b: Pieza[] = [];
+        b.push(masa([bulto([0, 0, 2], [16, 6, 4]), bulto([12, 0, 3], [6, 4, 4])], { mat: 'madera_vieja', suave: 2 }));
+        b.push(a.elipsoide(0, 0, 4.5, 14, 4.8, 3, { mat: 'madera_vieja', resta: true }), a.elipsoide(0, 0, 1.5, 13, 4.2, 1, { mat: 'c2_agua_negra' }));
+        for (let i = 0; i < 3; i++) b.push(viga(a, [-8 + i * 7, -5, 4], [-8 + i * 7, 5, 4], 2.4, 1.2, 'madera_vieja'));
+        ps.push(...mover(b, [-6, 6, -1.2], g, 12));
+        ps.push(viga(a, [10, 18, 0.7], [26, 10, 0.7], 1.6, 0.8, 'madera_vieja'), a.elipsoide(25, 10, 0.8, 3, 1.6, 0.5, { mat: 'madera_vieja', giro: -27 }));
+      }
+      ps.push(suelo(a));
+      return luz ? { piezas: ps, resplandor: luz } : ps;
+    },
+  },
+);
+
+/** Hongo gigante: tallo curvo de masa, sombrero con láminas que brillan debajo y manchas. */
+function hongo(a: Arma, ps: Pieza[], x: number, y: number, h: number, R: number, ti: { lam: string; luz: string }, tipo: number) {
+  const cs: Comp[] = [], dx = (a.r() - 0.5) * h * 0.35, dy = (a.r() - 0.5) * h * 0.35, top: V3 = [x + dx, y + dy, h];
+  const mid: V3 = [x + dx * 0.3 + (a.r() - 0.5) * 4, y + dy * 0.3 + (a.r() - 0.5) * 4, h * 0.5];
+  const rt = Math.max(2, R * 0.17);
+  cs.push(bulto([x, y, 1.5], [rt * 2.2, rt * 2, rt * 1.4]), hM([x, y, 1], mid, rt * 1.5, rt * 1.05), hM(mid, top, rt * 1.05, rt * 0.9));
+  for (let i = 0; i < 4; i++) { const t = a.r() * 2 * PI; cs.push(hM([x, y, 1.5], [x + Math.cos(t) * rt * 3.4, y + Math.sin(t) * rt * 3.4, 0], rt * 0.8, rt * 0.3)); }
+  ps.push(masa(cs, { mat: 'c2_tallo', suave: rt * 0.9 }));
+  // anillo del tallo
+  ps.push(a.elipsoide(...mez(mid, top, 0.7), rt * 2, rt * 2, rt * 0.4, { mat: 'c2_tallo', tono: -0.08 }));
+  const capH = tipo === 1 ? R * 0.75 : tipo === 2 ? R * 0.35 : R * 0.5;
+  const cap = masa([bulto([top[0], top[1], top[2] + capH * 0.25], [R, R * 0.94, capH], { giro: a.r() * 180 }), bulto([top[0] + (a.r() - 0.5) * R * 0.4, top[1] + (a.r() - 0.5) * R * 0.4, top[2] + capH * 0.6], [R * 0.6, R * 0.55, capH * 0.6])], { mat: tipo === 2 ? 'c2_sombrero_rojo' : 'c2_sombrero', suave: R * 0.25 });
+  ps.push(cap);
+  // las láminas: un disco que brilla bajo el ala (se ve porque el ala es más angosta abajo)
+  ps.push(a.elipsoide(top[0], top[1], top[2] + capH * 0.12, R * 0.94, R * 0.88, capH * 0.22, { mat: ti.lam }));
+  for (let i = 0; i < 6 + Math.round(R / 3); i++) { const t = a.r() * 2 * PI, d = Math.sqrt(a.r()) * R * 0.75; ps.push(a.esfera(top[0] + Math.cos(t) * d, top[1] + Math.sin(t) * d, top[2] + capH * 0.25 + capH * Math.sqrt(Math.max(0, 1 - (d / R) ** 2)) * 0.95, entre(a, 0.6, 1.3) * (R / 14 + 0.5), { mat: ti.luz, tono: -0.1 })); }
+  return top;
+}
+
+registrar(
+  {
+    id: 'cue2_hongo_gigante', nombre: ['Hongos gigantes luminosos', 'Giant glowing mushrooms'], tema: 'cueva', variantes: ['azul', 'verde', 'ambar'], cuadros: 6, t: 4, huella: [3, 3], bloquea: true,
+    armar: (v, f, a) => {
+      const fm = forma(a, 5), ti = TINTE[v], ps: Pieza[] = [];
+      const lista: [number, number, number, number][] = fm === 0 ? [[0, 0, entre(a, 62, 78), entre(a, 18, 24)]]
+        : fm === 1 ? [[-6, -4, entre(a, 54, 66), 17], [12, 8, entre(a, 30, 40), 11]]
+          : fm === 2 ? [[-8, 2, entre(a, 46, 58), 14], [9, -9, entre(a, 36, 46), 12], [8, 13, 18, 7]]
+            : fm === 3 ? [[0, 0, entre(a, 40, 48), 22]] : [[-10, -6, 70, 15], [6, 4, 44, 12], [14, -10, 24, 8], [-4, 14, 14, 6]];
+      let alto: V3 = [0, 0, 0];
+      for (const [x, y, h, R] of lista) { const t = hongo(a, ps, x, y, h, R, ti, fm === 3 ? 2 : a.r() < 0.4 ? 1 : 0); if (t[2] > alto[2]) alto = t; }
+      // esporas que suben despacio
+      for (let i = 0; i < 9; i++) { const ox = (a.r() - 0.5) * 40, oy = (a.r() - 0.5) * 40, ph = a.r(), u = (ph + f / 6) % 1; ps.push(a.esfera(ox + Math.sin(u * 6 + i) * 2, oy, 6 + u * alto[2] * 1.1, 0.6 + (1 - u) * 0.4, { mat: ti.luz, tono: -u * 0.3 })); }
+      piedras(a, ps, 5, 26);
+      ps.push(a.elipsoide(0, 0, 0, 22, 19, 0.8, { mat: 'sub_tierra' }));
+      ps.push(suelo(a));
+      return { piezas: ps, resplandor: { c: [alto[0], alto[1], alto[2] * 0.75], r: 52, color: ti.col } };
+    },
+  },
+  {
+    id: 'cue2_hongos_luz', nombre: ['Alfombra de hongos luminosos', 'Glowing mushroom patch'], tema: 'cueva', variantes: ['azul', 'verde', 'ambar'], huella: [3, 3], bloquea: false,
+    armar: (v, _f, a) => {
+      const fm = forma(a, 4), ti = TINTE[v], ps: Pieza[] = [];
+      ps.push(a.elipsoide(0, 0, 0, 24, 20, 1, { mat: 'sub_tierra', giro: a.r() * 180 }));
+      if (fm % 2 === 0) {
+        // un tronco podrido o una raíz caída con hongos de repisa
+        const g = a.r() * 180, L = entre(a, 28, 40);
+        const p: V3 = [-Math.cos(rad(g)) * L / 2, -Math.sin(rad(g)) * L / 2, 3.5], q: V3 = [Math.cos(rad(g)) * L / 2, Math.sin(rad(g)) * L / 2, 3];
+        ps.push(masa([hM(p, q, 4.5, 3.8), bulto(p, [3, 6, 6], { eje: [q[0] - p[0], q[1] - p[1], 0] })], { mat: 'c2_raiz', suave: 2 }));
+        for (let i = 0; i < 7; i++) { const u = a.r(), c = mez(p, q, u), t = rad(g) + (a.r() < 0.5 ? PI / 2 : -PI / 2) + (a.r() - 0.5); ps.push(a.elipsoide(c[0] + Math.cos(t) * 4.2, c[1] + Math.sin(t) * 4.2, c[2] + entre(a, -1, 2.5), entre(a, 2, 3.5), entre(a, 2, 3.5), 0.8, { mat: i % 2 ? ti.lam : 'c2_sombrero', giro: (t * 180) / PI })); }
+      } else penasco(a, ps, [(a.r() - 0.5) * 8, (a.r() - 0.5) * 8, 4], [10, 8, 7], { mat: 'sub_roca_humeda', n: 2 });
+      const n = 16 + fm * 3;
+      for (let i = 0; i < n; i++) {
+        const t = a.r() * 2 * PI, d = 4 + Math.sqrt(a.r()) * 18, x = Math.cos(t) * d, y = Math.sin(t) * d, h = entre(a, 2.5, 8), R = entre(a, 1.2, 3.2);
+        const dx = (a.r() - 0.5) * 2, dy = (a.r() - 0.5) * 2;
+        ps.push(a.palo([x, y, 0], [x + dx, y + dy, h], R * 0.28, { mat: 'c2_tallo', r1: R * 0.22 }));
+        ps.push(a.elipsoide(x + dx, y + dy, h, R, R, R * (a.r() < 0.5 ? 0.45 : 0.8), { mat: a.r() < 0.55 ? ti.luz : 'c2_sombrero', tono: -0.15 }));
+        ps.push(a.elipsoide(x + dx, y + dy, h - R * 0.15, R * 0.9, R * 0.9, R * 0.2, { mat: ti.lam, tono: -0.1 }));
+      }
+      ps.push(suelo(a));
+      return { piezas: ps, resplandor: { c: [0, 0, 5], r: 34, color: ti.col } };
+    },
+  },
+);

@@ -25,7 +25,7 @@ M.mu_ladrillo = { rampa: ['#170d0a', '#28160f', '#3a2015', '#4d2b1c', '#613725',
 M.mu_musgo = { rampa: ['#0d120a', '#172012', '#22301a', '#2e3f22', '#3b4f2b', '#4a6035'], ruido: 0.7, escala: 0.6 };
 M.mu_liquen = { rampa: ['#1d1d12', '#2f2f1c', '#444328', '#5a5835', '#706d44'], ruido: 0.6, escala: 0.8 };
 M.mu_hierro = { rampa: ['#0a0a0b', '#141415', '#1f1f21', '#2c2c2f', '#3b3b3f', '#4d4c50', '#625f60'], ruido: 0.3, escala: 0.6, brillo: 0.3, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5) > 0.7 ? 0.08 : 0) };
-M.mu_oxido = { rampa: ['#140b07', '#24130b', '#371d10', '#4c2915', '#62361c', '#784525'], ruido: 0.6, escala: 0.7 };
+M.mu_oxido = { rampa: ['#120b08', '#1f130d', '#2e1c12', '#3d2617', '#4d311d', '#5e3c24'], ruido: 0.6, escala: 0.7 };
 M.mu_pluma = { rampa: ['#060608', '#0c0c10', '#14141a', '#1e1e27', '#2a2a36', '#3a3a4a'], ruido: 0.2, escala: 0.8, brillo: 0.5 };
 M.mu_tierra = { rampa: ['#0d0907', '#18110c', '#241a12', '#322419', '#412f21', '#523c2b'], ruido: 0.6, escala: 0.35, patron: (p) => (ruido(p[0] * 0.45, p[1] * 0.45, p[2] * 0.45) - 0.5) * 0.3 };
 M.mu_cal = { rampa: ['#3a3832', '#56534b', '#737066', '#918d82', '#aeaa9e', '#c6c2b5'], ruido: 0.35, escala: 0.3 };

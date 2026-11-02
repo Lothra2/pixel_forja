@@ -13,13 +13,13 @@ import './cuerpo';
 // ------------------------------------------------------------------ materiales de los exteriores
 const M = MATERIALES;
 /** Grieta: el ruido "de cresta" (|ruido - 0.5| chico) traza líneas finas que se cortan como piedra partida. */
-const grieta = (p: V3, k: number, ancho = 0.035) => Math.abs(ruido(p[0] * k + p[2] * k * 0.3, p[1] * k, p[2] * k * 0.35) - 0.5) < ancho && ruido(p[0] * k * 0.5 + 9, p[1] * k * 0.5, p[2] * k * 0.5) > 0.42;
+const grieta = (p: V3, k: number, ancho = 0.035) => Math.abs(ruido(p[0] * k + p[2] * k * 0.3, p[1] * k - p[2] * k * 0.2, p[2] * k * 0.25 + 3.3) - 0.5) < ancho * 0.8 && ruido(p[0] * k * 0.4 + 9, p[1] * k * 0.4, p[2] * k * 0.4) > 0.5;
 M.ext_roca = {
   rampa: ['#0f0f0e', '#1c1b19', '#2b2926', '#3c3934', '#4f4b44', '#635e55', '#787166', '#8d8576'], ruido: 0.4, escala: 0.16,
   patron: (p) => (grieta(p, 0.11) ? -0.32 : 0) + (grieta(p, 0.27, 0.03) ? -0.16 : 0) + (ruido(p[0] * 0.05, p[1] * 0.05, p[2] * 0.05) - 0.5) * 0.3 + (ruido(p[0] * 0.9, p[1] * 0.9, p[2] * 0.9) > 0.8 ? 0.1 : 0),
 };
 M.ext_roca_fria = {
-  rampa: ['#0d0f10', '#181b1d', '#25292c', '#343a3d', '#454c4f', '#586063', '#6c7477', '#82898b'], ruido: 0.4, escala: 0.16,
+  rampa: ['#0c0d0e', '#16181a', '#212427', '#2d3133', '#3a3f41', '#484d4f', '#575c5d', '#676b6b'], ruido: 0.42, escala: 0.16,
   patron: (p) => (grieta(p, 0.12) ? -0.3 : 0) + (ruido(p[0] * 0.05, p[1] * 0.05, p[2] * 0.06) - 0.5) * 0.32 + (ruido(p[0] * 1.1, p[1] * 1.1, p[2] * 1.1) > 0.82 ? 0.12 : 0),
 };
 /** Arenisca erosionada: estratos horizontales que ondulan, con vetas más claras y grietas. */
@@ -51,7 +51,7 @@ M.ext_pasto = {
 };
 M.ext_pasto_seco = { rampa: ['#17120b', '#271f12', '#3a2e1a', '#4d3e23', '#614e2d', '#755f38', '#8a7144'], ruido: 0.45, escala: 0.8, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.6) - 0.5) * 0.3 };
 M.ext_brezo = { rampa: ['#0f0a0f', '#1a111a', '#271a27', '#352335', '#432d43', '#523852', '#614461'], ruido: 0.6, escala: 0.9, patron: (p) => (ruido(p[0] * 0.8, p[1] * 0.8, p[2] * 0.8) > 0.65 ? 0.14 : 0) };
-M.ext_brezo_flor = { rampa: ['#1d0f1f', '#2e1832', '#422346', '#572e5c', '#6c3a71', '#814886', '#965799'], ruido: 0.55, escala: 1.1, patron: (p) => (ruido(p[0] * 1.2, p[1] * 1.2, p[2] * 1.2) > 0.6 ? 0.12 : -0.04) };
+M.ext_brezo_flor = { rampa: ['#170e18', '#241626', '#332035', '#422a44', '#523553', '#624163', '#724e72'], ruido: 0.55, escala: 1.1, patron: (p) => (ruido(p[0] * 1.2, p[1] * 1.2, p[2] * 1.2) > 0.6 ? 0.12 : -0.04) };
 M.ext_aulaga = { rampa: ['#2a1f06', '#43320a', '#5e4710', '#7a5d17', '#94731f', '#ab8829'], ruido: 0.55, escala: 1.2 };
 M.ext_madera_gris = {
   rampa: ['#100f0d', '#1c1a17', '#2a2722', '#39352e', '#49443b', '#5a5449', '#6b6457', '#7c7465'], ruido: 0.22, escala: 0.35,

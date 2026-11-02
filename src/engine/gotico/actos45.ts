@@ -205,7 +205,8 @@ export function manto(a: Arma, rx: number, ry: number, n: number, mat: string, a
   const cs: Comp[] = [];
   for (let i = 0; i < n; i++) {
     const t = a.r() * TAU, q = Math.sqrt(a.r()) * 0.6;
-    cs.push(bulto([(o.x ?? 0) + Math.cos(t) * rx * q, (o.y ?? 0) + Math.sin(t) * ry * q, 0], [rx * (0.35 + a.r() * 0.25), ry * (0.35 + a.r() * 0.25), alto * (0.5 + a.r() * 0.6)], { giro: a.r() * 180 }));
+    const m = Math.min(rx, ry);
+    cs.push(bulto([(o.x ?? 0) + Math.cos(t) * rx * q, (o.y ?? 0) + Math.sin(t) * ry * q, 0], [m * 0.4 + rx * (0.25 + a.r() * 0.2), m * 0.4 + ry * (0.25 + a.r() * 0.2), alto * (0.5 + a.r() * 0.6)], { giro: jit(a, 12) }));
   }
   return masa(cs, { mat, tono: o.tono ?? -0.06, suave: Math.min(rx, ry) * 0.3 });
 }
