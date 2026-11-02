@@ -14,8 +14,12 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 
 ## Qué hay
 
-- Intro propio con voz escrita y el título que se enciende. Menú con fondo vivo del campamento.
-- 8 clases (Berserker, Templario, Arcanista, Cazadora, Nigromante, Monje, Druida, Alquimista), elegidas alrededor del fuego.
+- Intro de cine de casi un minuto y medio: la cámara se mueve, la ceniza cae, la brasa baja como un meteoro sobre la abadía con destello y sacudida, y Ozmaren aparece entre relámpagos. El texto se escribe solo. Se salta con clic o Esc.
+- Selección de clase nueva: cada clase se presenta en grande con su pose y su luz, con su ficha de rol, dificultad, atributos, mecánica propia y las tres ramas con su habilidad estrella. Se puede ver al héroe como novato o como leyenda.
+- 8 clases (Berserker, Templario, Arcanista, Cazadora, Nigromante, Monje, Druida, Alquimista).
+- Luces de verdad: cada fuego, flecha, hechizo y explosión alumbra lo que tiene cerca y tiñe a los personajes con su color. Cada luz proyecta sombras de los personajes, estiradas lejos de ella. Las explosiones dan un destello.
+- Los pies ya no patinan: la animación de caminar y correr avanza con la distancia real (con botas rápidas el paso se acelera).
+- El equipo cambia el dibujo según su rareza: raro trae ribetes de oro, conjunto viste su orden, único cambia a un tema sagrado, oscuro, de sangre o arcano con capa y hombreras, y legendario brilla y le da al héroe un aura de luz.
 - Unas 12 habilidades por clase en 3 ramas, con sinergias, pasivas, auras, invocaciones, maldiciones, saltos, cargas, torbellino, bombas, torretas y cuervos. Cada habilidad usa los poderes del motor.
 - 5 actos con 26 zonas: el valle de Velmora (páramo, cueva, camposanto, abadía, catacumbas y el Pozo de la Brasa), el desierto de Sahrim y sus tumbas, la selva de Yhuantl y su templo, los picos helados de Hrimgard y la Herida.
 - 10 misiones con premios y 6 jefes con fases, frases propias e invocaciones. Campeones y únicos con nombres generados y modificadores.
