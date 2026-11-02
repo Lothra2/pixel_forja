@@ -1115,10 +1115,14 @@ function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArm
   const b = e.brazos[1];
   const ps: Pieza[] = [];
   if (dos(derecha) || derecha === 'arco' || derecha === 'ballesta') return ps;
-  // la cara del escudo mira hacia donde mira el torso, abierta unos 30° hacia afuera (nunca de canto); en el piso, la del cuerpo
+  // la cara del escudo mira hacia donde mira el torso y se abre hacia afuera entre 10° y 45°: la apertura se elige por
+  // dirección (fija en todos los cuadros de esa dirección) para que la cámara vea la cara y nunca el canto
   let F = e.F;
   if (!e.caida) {
-    const [ex, ey] = e.ejesT, fh = nor([ex[0] * Math.cos(rad(30)) + ey[0] * Math.sin(rad(30)), ex[1] * Math.cos(rad(30)) + ey[1] * Math.sin(rad(30)), 0]);
+    const C: V3 = [Math.SQRT1_2, Math.SQRT1_2, 0], izqC = -dot3(e.R, C), adeC = dot3(e.F, C);
+    let ab = 10, mejor = -1;
+    for (let g = 10; g <= 45; g += 5) { const v = Math.abs(adeC * Math.cos(rad(g)) + izqC * Math.sin(rad(g))); if (v > mejor + 1e-6) { mejor = v; ab = g; } }
+    const [ex, ey] = e.ejesT, fh = nor([ex[0] * Math.cos(rad(ab)) + ey[0] * Math.sin(rad(ab)), ex[1] * Math.cos(rad(ab)) + ey[1] * Math.sin(rad(ab)), 0]);
     if (isFinite(fh[0]) && len([fh[0], fh[1], 0]) > 0.5) F = fh;
   }
   const c = add(add(b.mano, F, 1.2 * S), [0, 0, 2.2 * S]);

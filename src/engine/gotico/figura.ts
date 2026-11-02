@@ -145,11 +145,11 @@ function brazoEscudo(p: Pose, acc: Accion, u: number, mano: ManoPose) {
   }
   delete p.manoI; delete p.codoI;
   const gi = mano === 'escudo' ? 24 : 14, br = Math.sin(u * TAU), resp = p.respira ?? 0;
-  if (acc === 'quieto') p.hombroI = [22 + resp * 1.5, 14, 82 + resp * 2, gi];
-  else if (acc === 'caminar') p.hombroI = [22 + br * 2.5, 14, 84 - br * 2, gi];
-  else if (acc === 'correr') p.hombroI = [26 + br * 4, 16, 90 - br * 3, gi];
-  else if (acc === 'atacar') p.hombroI = [26 + p.giroTorso * 0.25, 16, 84 - p.giroTorso * 0.2, gi];
-  else if (acc === 'herido') p.hombroI = [18 - p.torso * 0.4, 18 + (p.ladeo ?? 0), 80, gi - 4];
+  if (acc === 'quieto') p.hombroI = [20 + resp * 1.5, 14, 72 + resp * 2, gi];
+  else if (acc === 'caminar') p.hombroI = [20 + br * 2.5, 14, 74 - br * 2, gi];
+  else if (acc === 'correr') p.hombroI = [24 + br * 3.5, 16, 76 - br * 3, gi];
+  else if (acc === 'atacar') p.hombroI = [24 + p.giroTorso * 0.25, 16, 74 - p.giroTorso * 0.2, gi];
+  else if (acc === 'herido') p.hombroI = [16 - p.torso * 0.4, 18 + (p.ladeo ?? 0), 72, gi - 4];
 }
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const TAU = Math.PI * 2;
@@ -646,7 +646,11 @@ function morir(p: Pose, f: number, arma: ArmaPose, estilo?: Presentacion) {
     p.hombroI = T3([[28, 40, 65], [3, 14, 22], [2, 14, 16], [0, 12, 12], [25, 26, 24], [62, 44, 26], [14, 56, 36], [10, 52, 30]]);
     p.munecaD = tab([-10, 20, 25, 30, 10, -20, 10, 0]);
     // de rodillas el arma se le cae de punta al piso
-    if (i >= 2 && i <= 4 && arma !== 'arco' && arma !== 'garras' && arma !== 'nada' && arma !== 'baculo') { p.armaD = [150, 20]; p.pisoArma = 1; }
+    if (arma !== 'arco' && arma !== 'garras' && arma !== 'nada' && arma !== 'baculo') {
+      if (i === 2 || i === 3) { p.armaD = [150, 20]; p.pisoArma = 1; }
+      // al irse de bruces la suelta: queda casi tendida hacia adelante y al costado
+      if (i === 4) p.armaD = [78, 50];
+    }
   } else if (modo === 'espaldas') {
     // el golpe la echa atrás: da un paso, la barbilla se recoge en la caída y la cabeza golpea al llegar
     p.caidaDir = 180;
