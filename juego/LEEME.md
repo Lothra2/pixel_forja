@@ -37,6 +37,7 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 
 - **7 actos y 68 zonas.** Velmora, Sahrim, Yhuantl, Hrimgard, la Herida, Ysmeral la Ciudad Ahogada y la Corona del Dios Sediento. Cada acto tiene su pueblo, su cadena principal y 2 o 3 mazmorras laterales con mini jefe y cofre de tesoro. Los mapas cambian en cada partida.
 - **Historia de siete actos.** 42 misiones (3 principales y 3 secundarias por acto, muchas con elección), diálogos que cambian según lo que hiciste, diarios de cada sello, fantasmas que repiten su última escena y cinemáticas entre actos.
+- **Criptas, catacumbas y camposantos nuevos.** 98 objetos de muerte del taller: nichos con calaveras, sarcófagos de obispo, osarios, mausoleos, lápidas con musgo. Cada mazmorra elige al azar su par de muros, así dos criptas no se ven iguales.
 - **Vesperio, el Pregonero de la Sed.** Aparece antes de cada jefe y escapa, hasta la pelea final en la Fragua de Ozmaren.
 - **La revelación y los finales.** Tras Ozmaren descubres qué es la Marca y eliges destruir o absorber la brasa. Eso cambia diálogos en los actos 6 y 7 y el final después de Aun-Saar, el Dios Sediento: La Hoguera o La Corona de Ceniza.
 - **70 armas legendarias** en 8 escalones (nivel 6 a 90), todas armas vivas. Cada jefe suelta la suya. Hay 7 conjuntos más el Legado GG de la familia (Rick, Steph, Sophie, Alana y Thor). Lo que no puedes usar todavía sale en rojo con "Requiere nivel X".
