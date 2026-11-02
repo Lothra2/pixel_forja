@@ -67,6 +67,8 @@ export interface Proyectil {
   deHeroe: boolean; perfora: boolean; explota: number; efecto: string; golpeados: Set<number>; buscador: boolean; radio: number;
   arco?: { x0: number; y0: number; x1: number; y1: number; t: number; T: number; n?: number };
   hab?: Habilidad; nivelHab?: number; mult?: number; lento?: number; t: number; rebota?: number;
+  /** Abanicos: golpes de la misma salva por monstruo (la 2.ª flecha y siguientes al mismo blanco hacen 40 %). */
+  salva?: Map<number, number>;
 }
 export interface Area { x: number; y: number; radio: number; dano: [number, number]; elem: Elemento; t: number; dur: number; tick: number; prox: number; deHeroe: boolean; efecto: string; retraso: number; caida?: boolean }
 export interface Suelo { o: Objeto | null; oro: number; x: number; y: number; t: number; id: number }
@@ -418,7 +420,8 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   const nucleo = v.tipo !== 'heroe' && (v as any).nucleoT > 0 && !!g.deHeroe;
   if (nucleo) total *= 2;
   // la arcanista desvía a su maná un cuarto del daño que recibe ("una mente que no se quiebra")
-  if (v.tipo === 'heroe' && h.d.clase === 'arcanista' && total > 0 && h.mana > 0) { const a = Math.min(h.mana, total * 0.25); h.mana -= a; total -= a; }
+  // paga con maná el 30 % del daño, pero solo con el maná por encima del 25 %: así nunca la deja sin hechizos
+  if (v.tipo === 'heroe' && h.d.clase === 'arcanista' && total > 0) { const libre = h.mana - h.c.manaMax * 0.25; if (libre > 0) { const a = Math.min(libre, total * 0.3); h.mana -= a; total -= a; } }
   // escudo de hueso
   if (v.tipo === 'heroe' && h.escudoHueso > 0) { const a = Math.min(h.escudoHueso, total); h.escudoHueso -= a; total -= a; if (a > 0) particulas(j, v.x, v.y, 3, 'chispa', '#e0d8c0'); }
   if (g.aplastar && v.tipo !== 'heroe' && R() * 100 < g.aplastar) total += v.vida * ((v as Monstruo).calidad >= 3 ? 0.05 : 0.25);
@@ -886,11 +889,13 @@ function resolverHabilidad(j: Juego) {
       const cnt = golpes;
       const circ = !!hb.circulo;
       const abanico = circ ? Math.PI * 2 : cnt > 1 ? Math.min(hb.id === 'tormenta_virotes' ? 1.6 : 1.2, 0.18 * cnt) : 0;
+      // con un abanico contra un jefe grande todas las flechas le daban al mismo: ahora la primera pega entera y las demás al 40 %
+      const salva = cnt > 1 && !circ && !hb.buscador ? new Map<number, number>() : undefined;
       for (let k = 0; k < cnt; k++) {
         const a = cnt === 1 ? base : circ ? base + (k / cnt) * Math.PI * 2 : base - abanico / 2 + (abanico * k) / (cnt - 1);
         const g: Golpe = hb.mult ? golpeArma(j, mult, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? dh : undefined) : { min: dh[0], max: dh[1], elem: hb.elem, deHeroe: true, fuente: h, sinFallo: true };
         if (prec && g.precision !== undefined) g.precision += prec;
-        disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, g, efectoDe(hb.efecto, hb.elem), hb.vel ?? 12, { perfora: !!hb.perfora || R() * 100 < h.c.perforar, explota: hb.explota ?? 0, buscador: !!hb.buscador, hab: hb, nivelHab: n, vida: hb.id === 'martillo_bendito' ? 2.4 : hb.id === 'orbe_glacial' ? 1.4 : 1.6, rebota: hb.id === 'chispa' ? 1 : 0 });
+        disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, g, efectoDe(hb.efecto, hb.elem), hb.vel ?? 12, { perfora: !!hb.perfora || R() * 100 < h.c.perforar, explota: hb.explota ?? 0, buscador: !!hb.buscador, hab: hb, nivelHab: n, vida: hb.id === 'martillo_bendito' ? 2.4 : hb.id === 'orbe_glacial' ? 1.4 : 1.6, rebota: hb.id === 'chispa' ? 1 : 0, salva });
       }
       break;
     }
@@ -1462,11 +1467,12 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
   // invocar
   if (m.def.invoca && m.invocaCd > 0) m.invocaCd -= dt;
   if (m.def.invoca && m.invocaCd <= 0 && (m.def.ia === 'invocador' || m.def.jefe) && dh < 10) {
-    m.invocaCd = m.def.jefe ? 9 : 7;
+    // los jefes llamaban 3 cada 9 s hasta 14 alrededor: eso, y no el jefe, era lo que mataba (sobre todo al cuerpo a cuerpo)
+    m.invocaCd = m.def.jefe ? 12 : 7;
     const cuantos = j.monstruos.filter((o) => !o.muerto && !o.dueno && dist(o.x, o.y, m.x, m.y) < 8).length;
-    if (cuantos < (m.def.jefe ? 14 : 9)) {
+    if (cuantos < (m.def.jefe ? 8 : 9)) {
       m.acc = 'lanzar'; m.t = 0; m.dur = 0.7; m.golpeEn = 0.4; m.golpeo = true;
-      for (let k = 0; k < (m.def.jefe ? 3 : 2); k++) { const q = libreCerca(j.zona, m.x + entre(-2, 2), m.y + entre(-2, 2)); const nm = crearMonstruo(MONSTRUOS[m.def.invoca], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); nm.estado = 'perseguir'; nm.objetivo = h; nm.acc = 'morir'; nm.t = 0; (nm as any).surgiendo = 1; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', q[0] + 0.5, q[1] + 0.5, 0, 0.7); }
+      for (let k = 0; k < 2; k++) { const q = libreCerca(j.zona, m.x + entre(-2, 2), m.y + entre(-2, 2)); const nm = crearMonstruo(MONSTRUOS[m.def.invoca], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); nm.estado = 'perseguir'; nm.objetivo = h; nm.acc = 'morir'; nm.t = 0; (nm as any).surgiendo = 1; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', q[0] + 0.5, q[1] + 0.5, 0, 0.7); }
       sonar(j, 'invocar', m.x, m.y);
       return;
     }
@@ -1477,7 +1483,7 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
     if (o.nucleoCd <= 0) {
       o.nucleoCd = m.fase >= 2 ? 13 : 16; o.nucleoT = 4.5;
       m.acc = 'especial' as any; m.t = 0; m.dur = 0.9;
-      for (let a = 0; a < 10; a++) disparar(j, m, m.x + Math.cos(a * 0.628), m.y + Math.sin(a * 0.628), { min: m.dano[0] * 0.45, max: m.dano[1] * 0.45, elem: 'fuego', deHeroe: false, fuente: m }, 'saeta_fuego', 6);
+      for (let a = 0; a < 10; a++) disparar(j, m, m.x + Math.cos(a * 0.628), m.y + Math.sin(a * 0.628), { min: m.dano[0] * 0.3, max: m.dano[1] * 0.3, elem: 'fuego', deHeroe: false, fuente: m }, 'saeta_fuego', 6);
       efecto(j, 'grito_guerra', m.x, m.y, 0, 1.6); j.sacudida = 0.4; sonar(j, 'rugido_jefe', m.x, m.y);
       msg(j, ['¡Ozmaren abre el pecho! Su núcleo queda expuesto: pégale ahora.', 'Ozmaren opens its chest! Its core is exposed: strike now.'], '#ffc060');
       return;
@@ -1606,8 +1612,10 @@ function actualizarProyectiles(j: Juego, dt: number) {
       if (p.golpeados.has(e.id)) continue;
       if (dist(e.x, e.y, p.x, p.y) < e.radio + p.radio) {
         p.golpeados.add(e.id);
-        const g: Golpe = { min: p.dano[0], max: p.dano[1], elem: p.elem, deHeroe: p.deHeroe, fuente: p.deHeroe ? j.heroe : undefined, sinFallo: p.elem !== 'fisico' || !p.deHeroe ? p.elem !== 'fisico' : false, precision: p.deHeroe ? j.heroe.c.precision : undefined, critico: p.deHeroe ? j.heroe.c.critico : 0 };
-        if (p.deHeroe && (p.efecto === 'flecha' || p.efecto === 'flecha_fuego' || p.efecto === 'flecha_hielo' || p.efecto === 'virote')) { g.extra = { ...j.heroe.c.elem }; g.robo = j.heroe.c.robo_vida; }
+        const ks = p.salva ? (p.salva.get(e.id) ?? 0) : 0; if (p.salva) p.salva.set(e.id, ks + 1);
+        const fs = ks ? 0.4 : 1;
+        const g: Golpe = { min: p.dano[0] * fs, max: p.dano[1] * fs, elem: p.elem, deHeroe: p.deHeroe, fuente: p.deHeroe ? j.heroe : undefined, sinFallo: p.elem !== 'fisico' || !p.deHeroe ? p.elem !== 'fisico' : false, precision: p.deHeroe ? j.heroe.c.precision : undefined, critico: p.deHeroe ? j.heroe.c.critico : 0 };
+        if (p.deHeroe && (p.efecto === 'flecha' || p.efecto === 'flecha_fuego' || p.efecto === 'flecha_hielo' || p.efecto === 'virote')) { g.extra = Object.fromEntries(Object.entries(j.heroe.c.elem).map(([k, v]) => [k, (v as number) * fs])); g.robo = j.heroe.c.robo_vida; }
         if (!p.deHeroe) { g.fuente = undefined; for (const m of j.monstruos) if (!m.muerto && dist(m.x, m.y, p.x, p.y) < 30) { g.fuente = m; break; } }
         if (p.deHeroe && p.hab?.bonos?.empuje) g.empuje = 1;
         if (p.deHeroe && p.hab?.bonos?.marca && e.tipo === 'monstruo') (e as Monstruo).marca = Math.max((e as Monstruo).marca ?? 0, val(p.hab.bonos.marca, p.nivelHab ?? 1));
