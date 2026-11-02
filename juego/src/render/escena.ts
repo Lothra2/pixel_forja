@@ -81,6 +81,35 @@ function armaViva(q: Cuadro, x: number, y: number, elem: string, t: number) {
 }
 
 let camAlzada = 0;
+/** La puerta abierta de la catedral: un cono de luz roja que sale sobre el piso hacia +y y brasas y ceniza que salen y suben. */
+function puertaCatedral(j: Juego, dt: number, t: number) {
+  for (const sa of j.zona.salidas) {
+    const fa = sa.piezas?.[sa.piezas.length - 1]; if (!fa || fa.v === 'sellada') continue;
+    const [px, py] = aPant(fa.cx + 0.5, fa.cy + 1.5); if (px < -300 || px > W + 300 || py < -200 || py > H + 300) continue;
+    const pulso = 0.5 + 0.5 * Math.sin(t * 1.4);
+    // el cono: del umbral hacia +y (abajo a la izquierda en pantalla), abriéndose
+    const [ex, ey] = aPant(fa.cx + 0.5, fa.cy + 8), ux = 16, uy = 8; // +x en pantalla, para el ancho
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createLinearGradient(px, py, ex, ey);
+    g.addColorStop(0, `rgba(255,70,24,${0.42 + pulso * 0.15})`); g.addColorStop(0.5, `rgba(255,50,16,${0.18 + pulso * 0.07})`); g.addColorStop(1, 'rgba(255,40,10,0)');
+    ctx.fillStyle = g; ctx.beginPath();
+    ctx.moveTo(px - ux * 0.9, py - uy * 0.9); ctx.lineTo(px + ux * 0.9, py + uy * 0.9);
+    ctx.lineTo(ex + ux * 2.6, ey + uy * 2.6); ctx.lineTo(ex - ux * 2.6, ey - uy * 2.6); ctx.closePath(); ctx.fill();
+    // resplandor en el umbral
+    const r = ctx.createRadialGradient(px, py - 10, 2, px, py - 10, 60);
+    r.addColorStop(0, `rgba(255,120,60,${0.35 + pulso * 0.2})`); r.addColorStop(1, 'rgba(255,40,10,0)');
+    ctx.fillStyle = r; ctx.fillRect(px - 60, py - 70, 120, 120);
+    ctx.restore();
+    // brasas y ceniza que salen por la puerta y suben
+    if (j.particulas.length < 700) {
+      const n = (dt * 18) + (Math.random() < (dt * 18) % 1 ? 1 : 0);
+      for (let i = 0; i < Math.floor(n); i++) {
+        const ceniza = Math.random() < 0.3;
+        j.particulas.push({ x: fa.cx + 0.5 + (Math.random() - 0.5) * 1.6, y: fa.cy + 1.6, z: 6 + Math.random() * 30, vx: (Math.random() - 0.5) * 0.5, vy: 0.6 + Math.random() * 1.1, vz: ceniza ? 8 + Math.random() * 8 : 20 + Math.random() * 30, t: 0, dur: ceniza ? 2.2 + Math.random() : 1.2 + Math.random() * 0.8, color: ceniza ? '#8a8078' : Math.random() < 0.5 ? '#ff5020' : '#ffa040', tam: ceniza ? 2 : 1.5, tipo: ceniza ? 'humo' : 'brasa' } as any);
+      }
+    }
+  }
+}
 export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   const z = j.zona, h = j.heroe;
   const sx = j.sacudida > 0 ? (R() - 0.5) * j.sacudida * 12 : 0, sy = j.sacudida > 0 ? (R() - 0.5) * j.sacudida * 8 : 0;
@@ -221,6 +250,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   ctx.restore();
   // luz y oscuridad
   dibujarLuz(j, tiempo);
+  puertaCatedral(j, dt, tiempo);
   // números de daño (encima de la oscuridad para que se lean)
   ctx.textAlign = 'center';
   for (const n of j.numeros) {

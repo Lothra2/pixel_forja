@@ -673,7 +673,9 @@ function statsThor(j: Juego, m: Monstruo) {
   const h = j.heroe, n = h.d.nivel, tr = tramoThor(h.d), col = conCollar(h) ? 1.3 : 1;
   const st = (id: string) => (h.d.thor?.collar?.stats ?? []).filter(([k2]) => k2 === id).reduce((a, [, v]) => a + v, 0);
   const k = (1 + tr * 0.12) * col * (1 + h.c.invocados_pct / 200);
-  const kd = 1 + st('thor_dano') / 100, kv = 1 + st('thor_vida') / 100;
+  // después del 40 Thor escala más rápido: al 80 pega cerca de la mitad del ataque básico del héroe
+  const tarde = 1 + Math.max(0, n - 40) * 0.012;
+  const kd = (1 + st('thor_dano') / 100) * tarde, kv = 1 + st('thor_vida') / 100;
   const pct = m.vidaMax ? m.vida / m.vidaMax : 1;
   m.vidaMax = Math.round((70 + n * 24) * k * kv); m.vida = Math.max(1, Math.round(m.vidaMax * pct));
   m.dano = [(3 + n * 1.0) * k * kd, (5 + n * 1.7) * k * kd];
