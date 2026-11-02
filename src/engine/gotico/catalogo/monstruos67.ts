@@ -50,6 +50,7 @@ M.m67_estola = { rampa: ['#110c05', '#1f1709', '#30240f', '#433315', '#58431d', 
 M.m67_soga = { rampa: ['#110d09', '#1f1810', '#2f2418', '#403221', '#52412b', '#645036'], ruido: 0.3, escala: 0.7, brillo: 0.25, patron: (p) => (Math.sin((p[0] + p[1]) * 2.6 + p[2] * 3.4) > 0.4 ? 0.07 : -0.04) };
 M.m67_agua_negra = { rampa: ['#010203', '#03070a', '#071016', '#0c1920', '#13242d', '#1e3540'], ruido: 0.2, escala: 0.25, brillo: 1.1 };
 M.m67_escama_muerta = { rampa: ['#0d0f10', '#181c1e', '#252a2c', '#33393b', '#43494a', '#555b5b', '#6a706e', '#828783', '#9da09a'], ruido: 0.1, escala: 0.5, brillo: 0.7, patron: (p) => { const u = Math.sin(p[0] * 2.6 + Math.sin(p[2] * 2.1) * 1.5) * Math.sin(p[2] * 2.6 + p[1] * 1.3); return u > 0.55 ? -0.12 : u < -0.7 ? 0.06 : 0; } };
+M.m67_pez = { rampa: ['#121416', '#22272a', '#353b3e', '#4a5154', '#61686a', '#7a8180', '#949a97', '#adb2ac', '#c6c9c1'], ruido: 0.08, escala: 0.4, brillo: 0.9, patron: (p) => (Math.sin(p[0] * 3.1 + p[1] * 2.2 + p[2] * 2.7) > 0.75 ? -0.1 : 0) };
 M.m67_aleta = { rampa: ['#0c0b0a', '#181614', '#26221f', '#35302b', '#453f38', '#575047'], ruido: 0.3, escala: 0.6, brillo: 0.3, patron: (p) => (Math.sin((p[0] - p[1]) * 3 + p[2] * 0.5) > 0.5 ? -0.07 : 0) };
 M.m67_oro_reliquia = { rampa: ['#100b05', '#1f1609', '#33240e', '#493414', '#61461b', '#7c5b25', '#977331', '#b08c42', '#c8a65a'], ruido: 0.2, escala: 0.4, brillo: 0.85, patron: (p) => { const v = ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5); return v > 0.7 ? -0.16 : 0; } };
 M.m67_caparazon = { rampa: ['#090504', '#140a08', '#21110d', '#2f1913', '#3e2219', '#4f2c20', '#613829', '#754633', '#89563f'], ruido: 0.25, escala: 0.6, brillo: 0.5, patron: (p) => (ruido(p[0] * 0.8, p[1] * 0.8, p[2] * 0.8) > 0.7 ? -0.1 : 0) };
@@ -66,8 +67,8 @@ M.m67_borde_vacio = { rampa: ['#1a0e30', '#2c1850', '#46287a', '#6a48a8', '#9a80
 M.m67_luz = { rampa: ['#9c988e', '#c4bfb2', '#e2ddd0', '#f4f1e8', '#fdfcf8', '#ffffff'], ruido: 0.25, escala: 0.3, emite: true };
 M.m67_luz_oro = { rampa: ['#7a5418', '#a87a26', '#d2a440', '#ecc868', '#fae4a4', '#fff6dc'], ruido: 0.3, escala: 0.3, emite: true };
 M.m67_lanza = { rampa: ['#b0a888', '#d4cdb0', '#ece6d0', '#faf6e8', '#ffffff'], ruido: 0.2, escala: 0.25, emite: true };
-M.m67_piel_seca = { rampa: ['#100d0a', '#1d1813', '#2c251d', '#3c3328', '#4e4334', '#615442', '#756651', '#8a7961', '#9e8c72'], ruido: 0.3, escala: 0.45, patron: (p) => (Math.sin(p[2] * 4.2 + ruido(p[0] * 0.8, p[1] * 0.8, p[2] * 0.3) * 4) > 0.8 ? -0.1 : 0) };
-M.m67_tela_ceniza = { rampa: ['#0e0d0b', '#1a1815', '#28251f', '#37332b', '#474238', '#585246'], ruido: 0.4, escala: 0.8, patron: (p) => (ruido(p[0] * 0.4, p[1] * 0.4, p[2] * 0.1) > 0.66 ? -0.12 : 0) };
+M.m67_piel_seca = { rampa: ['#12100d', '#221e19', '#342e27', '#474036', '#5c5447', '#72695a', '#89806f', '#a09784', '#b6ad99', '#c9c1ad'], ruido: 0.3, escala: 0.45, patron: (p) => (Math.sin(p[2] * 4.2 + ruido(p[0] * 0.8, p[1] * 0.8, p[2] * 0.3) * 4) > 0.8 ? -0.1 : 0) };
+M.m67_tela_ceniza = { rampa: ['#100f0d', '#1d1b18', '#2c2924', '#3c3831', '#4d483f', '#5f594e', '#716a5e'], ruido: 0.4, escala: 0.8, patron: (p) => (ruido(p[0] * 0.4, p[1] * 0.4, p[2] * 0.1) > 0.66 ? -0.12 : 0) };
 M.m67_ojo_hundido = { rampa: ['#030202', '#0a0806', '#14100b'], ruido: 0, escala: 1 };
 M.m67_diente = { rampa: ['#2a2418', '#463c28', '#66583c', '#8a7a56', '#ad9c74', '#cbbb94'], ruido: 0.15, escala: 0.8, brillo: 0.6 };
 M.m67_polvo_marmol = { rampa: ['#3a383c', '#535156', '#6c6a6f', '#858388', '#9e9ca0'], ruido: 0.5, escala: 0.4 };
@@ -195,7 +196,10 @@ function sacarMuslos(ps: Pieza[], e: Esqueleto): Pieza[] {
   const dSeg = (c: V3, a: V3, b: V3): [number, number] => { const ab = sub(b, a), t = clamp(dot(sub(c, a), ab) / Math.max(1e-6, dot(ab, ab)), 0, 1); return [len(sub(c, add(a, ab, t))), t]; };
   const comps = p0.comps.filter((q) => {
     const c = q.f === 'hueso' ? mez(q.a, q.b, 0.5) : q.c;
-    for (const p of e.piernas) { const [d, t] = dSeg(c, p.cad, p.rod); if (d < 5 * e.S && t > 0.3) return false; }
+    for (const p of e.piernas) {
+      const [d, t] = dSeg(c, p.cad, p.rod);
+      if ((d < 5 * e.S && t > 0.3) || dSeg(c, p.rod, p.tob)[0] < 4 * e.S || dSeg(c, p.tob, p.punta)[0] < 3.5 * e.S) return false;
+    }
     return true;
   });
   return [masa(comps, { mat: p0.mat, tono: p0.tono, suave: p0.suave }), ...ps.slice(1)];
@@ -285,19 +289,19 @@ function campanero(c: Ctx): Res {
   for (const k of [-1, 0, 1]) ps.push(palo(fin, add(add(fin, [0, 0, -2.6 * S]), lat(fw), k * 1.4 * S), 0.55 * S, { mat: 'm67_soga', r1: 0.15 * S }));
   ps.push(...alga(cabo[3], add(fw, [0, 0, -1]), 7 * S, 0.7 * S, w, 3, true));
   // ---- la campanita en la derecha: el mango en el puño y la campana más allá de los nudillos
-  const b = e.brazos[0], ax = ejeMano(c, acc === 'atacar' ? 25 : 40), so = lat(ax), so2 = cruz(ax, so);
+  // (en reposo la boca mira adelante y abajo, así se lee la campana; al pegar sigue al puño)
+  const b = e.brazos[0], ax = acc === 'atacar' || acc === 'morir' ? ejeMano(c, 35) : nor(add(add(e.F, [0, 0, -0.9]), b.d2, 0.6)), so = lat(ax), so2 = cruz(ax, so);
   const at = (k: number) => add(b.mano, ax, k * S);
   ps.push(palo(at(-2.4), at(3), 0.75 * S, { mat: 'madera_vieja' }), esfera(...at(-2.7), 1.1 * S, { mat: 'm67_bronce_vivo' }));
-  // la campana: cabeza chica, hombro, cuerpo que se abre y el labio grueso; la boca hueca con el badajo
-  const bell: Comp[] = [bulto(at(3.6), [1.2 * S, 2.3 * S, 2.3 * S], { eje: ax, mat: 'm67_bronce' }), hueso(at(4), at(8.2), 2.6 * S, 3.4 * S, { mat: 'm67_bronce' }), hueso(at(8.2), at(10.6), 3.4 * S, 5.4 * S, { mat: 'm67_bronce' }), bulto(at(10.6), [0.95 * S, 5.6 * S, 5.6 * S], { eje: ax, mat: 'm67_bronce_vivo', tono: -0.08 })];
-  ps.push(masa(bell, { mat: 'm67_bronce', suave: 0.7 }));
-  ps.push({ ...elipE(at(11.6), ax, [3 * S, 4.6 * S, 4.6 * S], 'm67_bronce', 0, so), resta: true } as Pieza);
-  ps.push(elipE(at(8.4), ax, [0.5 * S, 2.6 * S, 2.6 * S], 'm67_agua_negra', 0, so));
-  // el badajo que golpea adentro
+  // la campana: cabeza redonda, cuerpo, el vuelo que se abre y el labio; adentro oscuro con el badajo
+  ps.push(masa([bulto(at(3.9), [1.5 * S, 2.5 * S, 2.5 * S], { eje: ax, mat: 'm67_bronce' }), hueso(at(4.2), at(8.4), 2.7 * S, 3.2 * S, { mat: 'm67_bronce' })], { mat: 'm67_bronce', suave: 0.5 }));
+  ps.push(cilindro(...at(8.2), 3.2 * S, 2.8 * S, { mat: 'm67_bronce', r1: 5.2 * S, eje: ax }));
+  ps.push(...aro(at(11), 5 * S, ax, 'm67_bronce_vivo', -0.05, 0.85 * S));
+  ps.push(elipE(at(10.6), ax, [0.35 * S, 4.5 * S, 4.5 * S], 'm67_agua_negra', -0.1, so));
   const bad = (acc === 'atacar' ? K([0, 0, 0.5, 1, -1, -0.6, 0.3, 0], f) : Math.sin(w * 2)) * 1.6 * S;
-  ps.push(palo(at(8.4), add(at(10.6), so, bad), 0.45 * S, { mat: 'm67_hierro_mar' }), esfera(...add(at(10.9), so, bad), 1.3 * S, { mat: 'm67_bronce_vivo' }));
+  ps.push(palo(at(8.4), add(at(10.8), so, bad), 0.45 * S, { mat: 'm67_hierro_mar' }), esfera(...add(at(11.3), so, bad), 1.3 * S, { mat: 'm67_bronce_vivo' }));
   ps.push(...costra(add(at(7), so2, 3.2 * S), so2, 0.8 * S, 3, 41));
-  ps.push(esfera(...add(at(8.6), so, -3.8 * S), 0.8 * S, { mat: 'm67_bio' }), esfera(...add(at(6.6), so2, -3.2 * S), 0.65 * S, { mat: 'm67_bio' }));
+  ps.push(esfera(...add(at(8.6), so, -3.6 * S), 0.8 * S, { mat: 'm67_bio' }), esfera(...add(at(6.6), so2, -3 * S), 0.65 * S, { mat: 'm67_bio' }));
   // ---- percebes en el hombro izquierdo y la espalda; ampollas de ahogado; agua de mar que gotea
   const hi = e.brazos[1].hom;
   ps.push(...costra(add(hi, up, 1.6 * S), nor(add(up, sub(hi, e.T(0, 0, e.hombroZ)), 0.1)), 0.95 * S, 5, 7, 2));
@@ -306,10 +310,10 @@ function campanero(c: Ctx): Res {
   for (const [ang, z] of [[30, 6], [-40, 3], [160, 4]] as [number, number][]) { const [q, nq] = enTorso(c, ang, z, 0.8); ps.push(elipE(q, nq, [0.9 * S, 1.3 * S, 1.3 * S], 'm67_piel_ahogada', 0.12)); }
   ps.push(...gotas(c, e.cab(3 * H, 0, e.cz - 4.4 * H), 2, 5), ...gotas(c, at(11), 2, 9));
   // el pelo: hebras de algas pegadas al cráneo pelado; manchas de lividez en el vientre y los costados
-  for (let k = 0; k < 7; k++) { const [q, nq] = enCabeza(c, 120 + k * 22, 1.4 + (k % 2) * 1.2, 4); ps.push(...alga(q, add(nq, [0, 0, -0.6]), (7 + hr(k) * 6) * S, 0.75 * S, w + k, k * 3, k === 2 || k === 5)); }
+  for (let k = 0; k < 9; k++) { const [q, nq] = enCabeza(c, 70 + k * 27.5, 1.4 + (k % 2) * 1.4, 4); ps.push(...alga(q, add(esc(nq, 0.5), [0, 0, -1]), (7 + hr(k) * 6) * S, 0.75 * S, w + k, k * 3, k === 2 || k === 5)); }
   for (const [ang, z] of [[50, 3], [-70, 7], [110, 9], [-150, 4]] as [number, number][]) { const [q, nq] = enTorso(c, ang, z, 1.4); ps.push(elipE(q, [0, 0, 1], [2.6 * S, 2 * S, 0.5 * S], 'm67_lividez', 0, cruz(nq, [0, 0, 1]))); }
   // ---- el tañido: al pegar la campana suelta ondas de luz de mar
-  let resplandor: Res['resplandor'] = c.muerte < 0.8 ? { c: e.cab(4 * H, 0, e.cz), r: 12 * S, color: '#58d0b8' } : undefined;
+  let resplandor: Res['resplandor'] = c.muerte < 0.8 ? { c: e.cab(6 * H, 0, e.cz - 3 * H), r: 8 * S, color: '#58d0b8' } : undefined;
   if (acc === 'atacar' && f >= 4 && f <= 6) {
     const k = (f - 3) / 3;
     for (let j = 0; j < 3; j++) ps.push(...aro(at(11 + j * 1.5), (6 + k * 4 + j * 3) * S, ax, 'm67_bio', -0.05 - k * 0.25 - j * 0.12, 1.1 * S, 0.3, j * 9 + f));
@@ -331,7 +335,7 @@ function marinero(c: Ctx): Res {
   ps.push(...costra(cr2, ncr2, 0.75 * S, 3, 2));
   for (const [ang, z, k, mj, sem] of [[30, 13, 5, 2, 3], [-70, 10, 4, 1, 4], [170, 14, 6, 2, 5], [100, 6, 3, 0, 6]] as [number, number, number, number, number][]) {
     const [q, nq] = enTorso(c, ang, z, -0.6);
-    ps.push(...costra(q, nq, 0.9 * S, k, sem, mj));
+    ps.push(...costra(q, nq, 1.05 * S, k + 1, sem, mj));
   }
   for (const b of e.brazos) ps.push(...costra(add(b.hom, up, 1.4 * S), nor(add(up, sub(b.hom, e.T(0, 0, e.hombroZ)), 0.6)), 0.85 * S, 4, 8 + b.s, b.s > 0 ? 1 : 2));
   const bi = e.brazos[1];
@@ -361,7 +365,7 @@ function marinero(c: Ctx): Res {
   const nc = cuello(c, 0.2);
   ps.push(masa([bulto(add(nc, e.F, 1.8 * S), [2.4 * S, 3.4 * A, 1.4 * S], { eje: e.F, mat: 'm67_tela_ahogada' }), hueso(add(nc, e.F, 2.6 * S), add(add(nc, e.F, 3.6 * S), [0, 0, -6 * S]), 1.3 * S, 0.5 * S, { mat: 'm67_tela_ahogada' })], { mat: 'm67_tela_ahogada', suave: 0.8 }));
   ps.push(...gotas(c, add(nc, e.F, 3.6 * S), 1, 7));
-  return { piezas: ps, resplandor: c.muerte < 0.8 ? { c: e.cab(4 * H, 0, e.cz), r: 9 * S, color: '#58d0b8' } : undefined };
+  return { piezas: ps, resplandor: c.muerte < 0.8 ? { c: e.cab(5 * H, 0, e.cz), r: 6 * S, color: '#58d0b8' } : undefined };
 }
 
 // ================================================================== 3. SIRENA HUECA
@@ -394,13 +398,16 @@ function colaSirena(c: Ctx, ps: Pieza[]): void {
   for (let k = 0; k < 11; k++) {
     const i = 1 + Math.floor(hr(k * 3.3) * (pts.length - 2.2)), t = hr(k * 5.1), a = pts[i], bb = pts[i + 1], tg = nor(sub(bb, a));
     const u = lat(tg), v = cruz(tg, u), ang = hr(k * 7.7) * TAU, nrm = add(esc(u, Math.cos(ang)), v, Math.sin(ang));
-    const r = rC(i) * (1 - t) + rC(i + 1) * t, L = (4.2 + hr(k) * 2.6) * S, sale = hr(k * 9) < 0.35;
+    const r = rC(i) * (1 - t) + rC(i + 1) * t, L = (5.5 + hr(k) * 3) * S, sale = hr(k * 9) < 0.55;
     const dirPez = nor(add(add(tg, nrm, sale ? 0.9 : 0.15), lat(tg), hr(k * 4) - 0.5));
     const c0 = add(mez(a, bb, t), nrm, r * (sale ? 0.9 : 0.75));
-    ps.push(elipE(c0, dirPez, [L * 0.5, 1.15 * S, 1.6 * S], 'm67_escama_muerta', (hr(k * 2) - 0.5) * 0.25, nrm));
-    const colaP = add(c0, dirPez, -L * 0.5);
-    ps.push(poliedro([colaP, add(add(colaP, dirPez, -2.2 * S), nrm, 1.6 * S), add(add(colaP, dirPez, -2.2 * S), nrm, -1.6 * S), add(colaP, cruz(dirPez, nrm), 0.3 * S)], { mat: 'm67_aleta' }));
-    ps.push(esfera(...add(add(c0, dirPez, L * 0.32), nrm, 0.9 * S), 0.55 * S, { mat: k % 3 ? 'm67_percebe' : 'm67_bio' }));
+    const lado = cruz(dirPez, nrm);
+    ps.push(masa([bulto(c0, [L * 0.5, 1.2 * S, 1.9 * S], { ejes: [dirPez, lado, nrm], mat: 'm67_pez' }), bulto(add(c0, dirPez, L * 0.3), [L * 0.22, 1.1 * S, 1.6 * S], { ejes: [dirPez, lado, nrm], mat: 'm67_pez', tono: 0.06 })], { mat: 'm67_pez', suave: 0.5 }));
+    const colaP = add(c0, dirPez, -L * 0.48);
+    ps.push(poliedro([colaP, add(add(colaP, dirPez, -2.6 * S), nrm, 2 * S), add(add(colaP, dirPez, -2.2 * S), nrm, -1.8 * S), add(colaP, lado, 0.35 * S), add(colaP, lado, -0.35 * S)], { mat: 'm67_aleta' }));
+    // el ojo blanco de pescado muerto y la boca abierta
+    for (const sg of [1, -1]) ps.push(esfera(...add(add(add(c0, dirPez, L * 0.36), lado, sg * 1 * S), nrm, 0.5 * S), 0.6 * S, { mat: k % 4 ? 'cu_hueso' : 'm67_bio' }));
+    ps.push(elipE(add(c0, dirPez, L * 0.5), nrm, [0.9 * S, 0.6 * S, 0.5 * S], 'm67_agua_negra', 0, lado));
   }
   // la aleta del final: rayos rotos en abanico
   const fin = pts[pts.length - 1], tgf = nor(sub(fin, pts[pts.length - 2])), uf = nor(add(lat(tgf), [0, 0, 0.6]));
@@ -421,6 +428,14 @@ function sirena(c: Ctx): Res {
   const { e, S, A, H, acc, f, w } = c;
   const ps: Pieza[] = [];
   colaSirena(c, ps);
+  // el pelo: hebras largas de algas que caen del cráneo
+  for (let k = 0; k < 11; k++) { const [q, nq] = enCabeza(c, 60 + k * 24, 1.2 + (k % 3) * 1, 4); ps.push(...alga(q, add(esc(nq, 0.45), [0, 0, -1]), (11 + hr(k) * 8) * S, 0.8 * S, w + k * 0.7, k * 5, k % 4 === 1)); }
+  // la carne que falta: huecos negros en el costado y la espalda con las costillas cruzando
+  for (const [ang, z0] of [[-60, 9], [140, 11]] as [number, number][]) {
+    const [q, nq] = enTorso(c, ang, z0, 0.3), u = cruz(nq, [0, 0, 1]);
+    ps.push(elipE(q, [0, 0, 1], [3.6 * S, 2.6 * S, 1 * S], 'm67_agua_negra', 0, u));
+    for (let i = 0; i < 3; i++) { const z = (z0 - 2.4 + i * 2.2); const [a1] = enTorso(c, ang - 22, z + 0.6, 0.4), [a2] = enTorso(c, ang + 22, z - 0.6, 0.4); ps.push(palo(a1, a2, 0.55 * S, { mat: 'm67_hueso_mar' })); }
+  }
   // costillas y clavículas que asoman, jirones de algas por los hombros
   const up = e.ejesT[2];
   for (const s of [1, -1]) ps.push(...alga(add(e.brazos[s > 0 ? 0 : 1].hom, up, 1 * S), add(esc(e.F, 0.3), e.R, s), 9 * S, 0.7 * S, w, 10 + s, s > 0));
@@ -429,7 +444,8 @@ function sirena(c: Ctx): Res {
   // la boca: en el chillido se abre de par en par
   const grita = acc === 'lanzar' ? K([0, 0.2, 0.4, 0.6, 1, 0.8, 0.5, 0.2], f) : acc === 'herido' ? 0.7 : acc === 'atacar' ? K([0, 0.3, 0.6, 0.8, 1, 0.6, 0.3, 0], f) : 0.15;
   ps.push(elipE(e.cab(3.4 * H, 0, e.cz - 2.4 * H - grita * 0.8 * H), e.ejesCab[1], [1.4 * H, 0.8 * H, (0.8 + grita * 1.7) * H], 'm67_vacio', 0, e.ejesCab[2]));
-  let resplandor: Res['resplandor'] = c.muerte < 0.8 ? { c: e.cab(5 * H, 0, e.cz), r: 12 * S, color: '#58d0b8' } : undefined;
+  for (let k = -2; k <= 2; k++) ps.push(palo(e.cab(3.75 * H, k * 0.55 * H, e.cz - 1.7 * H), e.cab(3.8 * H, k * 0.5 * H, e.cz - 2.6 * H), 0.26 * H, { mat: 'cu_hueso', r1: 0.04 }));
+  let resplandor: Res['resplandor'] = c.muerte < 0.8 ? { c: e.cab(6 * H, 0, e.cz - 4 * H), r: 9 * S, color: '#58d0b8' } : undefined;
   // lanzar: agua negra que se junta en la mano y sale en chorro
   if (acc === 'lanzar') {
     const b = e.brazos[0], m0 = add(b.mano, b.d2, 2 * S);
@@ -469,16 +485,19 @@ function varaDe(e: Esqueleto, m: V3, lg: number): [V3, V3, V3] {
   return [pie, add(m, v, 26 * S * lg), v];
 }
 /** Una mano ahogada que sale del agua del piso, con la palma arriba y los dedos que se cierran. */
-function manoAhogada(c0: V3, alto: number, s: number, cierra: number, sem: number, F: V3): Pieza[] {
-  const up: V3 = [0, 0, 1], u = nor(add(F, [hr(sem) - 0.5, hr(sem + 1) - 0.5, 0], 0.8)), v = cruz(up, u);
-  const mun = add(c0, [0, 0, alto]), codo = add(c0, [0, 0, Math.max(0, alto - 9 * s)]);
-  const cs: Comp[] = [hueso(add(c0, [0, 0, -2]), codo, 1.9 * s, 1.7 * s, { mat: 'm67_piel_ahogada' }), hueso(codo, mun, 1.7 * s, 1.3 * s, { mat: 'm67_piel_ahogada' }), bulto(add(mun, up, 1.6 * s), [1.2 * s, 2.2 * s, 2 * s], { eje: u, mat: 'm67_piel_ahogada' })];
+function manoAhogada(c0: V3, alto: number, s: number, cierra: number, sem: number, fuera: V3): Pieza[] {
+  // el brazo sale inclinado hacia afuera; la palma mira arriba y adentro y los dedos se abren como garras
+  const ax = nor(add([0, 0, 1], fuera, 0.45 + hr(sem) * 0.2)), v = nor(cruz([0, 0, 1], fuera)), pn = nor(cruz(v, ax));
+  const codo = add(c0, ax, Math.max(0.5, alto - 8 * s)), mun = add(c0, ax, alto), pal = add(mun, ax, 1.8 * s);
+  const P = 'm67_piel_ahogada';
+  const cs: Comp[] = [hueso(add(c0, [0, 0, -2]), codo, 1.6 * s, 1.4 * s, { mat: P }), hueso(codo, mun, 1.4 * s, 1.05 * s, { mat: P }), bulto(pal, [2.2 * s, 2.3 * s, 0.9 * s], { ejes: [ax, v, pn], mat: P })];
   for (let k = -1.5; k <= 1.5; k += 1) {
-    const b = add(add(mun, up, 3.2 * s), v, k * 0.95 * s), d1 = nor(add(up, u, cierra * 0.9 + 0.1)), m1 = add(b, d1, 2.6 * s), d2 = nor(add(d1, u, cierra * 1.6)), t = add(m1, d2, 2.2 * s);
-    cs.push(hueso(b, m1, 0.6 * s, 0.5 * s), hueso(m1, t, 0.5 * s, 0.3 * s));
+    const b = add(add(pal, ax, 1.9 * s), v, k * 1.05 * s), d1 = nor(add(add(ax, v, k * 0.38), pn, cierra * 0.8)), m1 = add(b, d1, 2.8 * s), d2 = nor(add(d1, pn, cierra * 1.5 + 0.2)), t = add(m1, d2, 2.5 * s);
+    cs.push(hueso(b, m1, 0.6 * s, 0.5 * s, { mat: P }), hueso(m1, t, 0.5 * s, 0.22 * s, { mat: P }));
   }
-  cs.push(hueso(add(add(mun, up, 1.4 * s), v, -2 * s), add(add(add(mun, up, 3.6 * s), v, -2.6 * s), u, cierra * 1.6 * s), 0.6 * s, 0.35 * s));
-  return [masa(cs, { mat: 'm67_piel_ahogada', suave: 0.8 * s })];
+  const pb = add(add(pal, v, -2 * s), ax, -0.6 * s), pm = add(add(pb, v, -1.6 * s), ax, 1.6 * s);
+  cs.push(hueso(pb, pm, 0.65 * s, 0.5 * s, { mat: P }), hueso(pm, add(add(pm, ax, 1.6 * s), pn, (0.6 + cierra) * s), 0.5 * s, 0.25 * s, { mat: P }));
+  return [masa(cs, { mat: P, suave: 0.6 * s }), ...aro(add(c0, [0, 0, 0.6]), 2.4 * s, [0, 0, 1], 'm67_bio_tenue', 0, 0.5 * s, 0.3, sem)];
 }
 function sacerdote(c: Ctx): Res {
   const { e, S, A, H, acc, f, w } = c;
@@ -526,8 +545,17 @@ function sacerdote(c: Ctx): Res {
   if (vivo) { ps.push(elipE(fc, colg, [2.6 * S, 1.8 * S, 1.8 * S], 'm67_bio', brilla * 0.3 - 0.15)); ps.push(esfera(...fc, 1 * S, { mat: 'm67_ojo_mar' })); }
   else ps.push(elipE(fc, colg, [2.4 * S, 1.6 * S, 1.6 * S], 'm67_agua_negra'));
   void pie;
-  // ---- estola con conchas, algas del cinto y gotas
-  for (const s of [1, -1]) { const [q, nq] = enTorso(c, s * 24, 13, 1.4); ps.push(elipE(q, [0, 0, 1], [1.4 * S, 1.2 * S, 0.6 * S], 'cu_concha', 0, nq)); }
+  // ---- la estola: dos franjas bordadas que bajan del cuello por el pecho hasta las rodillas, con conchas cosidas
+  for (const s of [1, -1]) {
+    const pts: V3[] = [enTorso(c, s * 40, 17.5, 1.3)[0], enTorso(c, s * 26, 12, 1.4)[0], enTorso(c, s * 22, 5, 1.5)[0], enTorso(c, s * 20, 0, 2.1)[0]];
+    const ruedo = e.piernas[s > 0 ? 0 : 1], bajo = add(mez(pts[3], ruedo.rod, 0.75), e.F, 2.6 * S);
+    pts.push(bajo, add(bajo, [0, 0, -5 * S]));
+    const cs: Comp[] = [];
+    for (let i = 0; i < pts.length - 1; i++) cs.push(hueso(pts[i], pts[i + 1], 1.25 * S, 1.25 * S, { mat: 'm67_estola' }));
+    ps.push(masa(cs, { mat: 'm67_estola', suave: 0.5 }));
+    ps.push(elipE(add(pts[2], enTorso(c, s * 22, 5)[1], 1.2 * S), [0, 0, 1], [1.5 * S, 1.3 * S, 0.6 * S], 'cu_concha', 0, enTorso(c, s * 22, 5)[1]));
+    ps.push(palo(add(pts[5], [0, 0, 0.4 * S]), add(pts[5], [0, 0, -0.6 * S]), 1.5 * S, { mat: 'm67_bronce' }));
+  }
   ps.push(...alga(e.W(4 * A, 3 * A, e.zc + 1 * S), e.F, 9 * S, 0.7 * S, w, 31, true), ...alga(e.W(1 * A, -4.6 * A, e.zc + 1 * S), e.R, 8 * S, 0.7 * S, w, 32));
   ps.push(...gotas(c, add(fc, colg, 4 * S), 2, 13, 0.6));
   // ---- la invocación: un círculo de luz de mar en el piso y manos ahogadas que salen del agua
@@ -538,7 +566,7 @@ function sacerdote(c: Ctx): Res {
     ps.push(elipE(add(cen2, [0, 0, -0.2]), e.F, [(9 + k * 8) * S, (9 + k * 8) * S, 0.5], 'm67_agua_negra'));
     for (let j = 0; j < 3; j++) {
       const a = (j / 3) * TAU + 0.6, q = add(cen2, [Math.cos(a) * 7 * S, Math.sin(a) * 7 * S, 0]), sube = clamp(k * 1.4 - j * 0.2, 0, 1);
-      if (sube > 0.05) ps.push(...manoAhogada(q, sube * 14 * S, S, 0.2 + sube * 0.6, j * 7, e.F));
+      if (sube > 0.05) ps.push(...manoAhogada(q, sube * 15 * S, 1.3 * S, 0.15 + sube * 0.5, j * 7, nor(sub(q, cen2))));
     }
     for (let i = 0; i < 6; i++) { const u = (c.ph + hr(i)) % 1; ps.push(esfera(cen2[0] + (hr(i * 3) - 0.5) * 18 * S, cen2[1] + (hr(i * 5) - 0.5) * 18 * S, (2 + u * 26) * S, 0.6 * S, { mat: 'm67_bio' })); }
     resplandor = { c: lerp(0, 1, k) > 0.5 ? add(cen2, [0, 0, 8 * S]) : fc, r: (22 + k * 12) * S, color: '#5ad8c0' };
@@ -553,13 +581,25 @@ function suplicante(c: Ctx): Res {
   const ps: Pieza[] = [];
   const brillo = acc === 'herido' ? 1 : acc === 'morir' ? K([0.4, 1, 1.4, 1.2, 0.9, 0.5, 0.2, 0], f) : acc === 'atacar' ? K([0.3, 0.4, 0.6, 0.8, 1, 0.7, 0.5, 0.3], f) : 0.35 + 0.1 * Math.sin(w);
   const luz = brillo > 0.15 ? 0.4 + brillo * 0.6 : 0;
+  // ---- pliegues del manto de piedra: crestas que bajan de la cintura al ruedo
+  const Pv = e.Pv ?? e.W, z0 = e.zc + 2 * S;
+  for (let k = 0; k < 9; k++) {
+    const a = rad(-160 + k * 40), p = e.piernas[Math.cos(a) * Math.sin(a) > 0 ? 0 : 1];
+    const arriba = Pv(Math.cos(a) * 5 * A, Math.sin(a) * 5 * A, z0), bajo = add(mez(p.cad, p.tob, 0.95), e.W(Math.cos(a) * 3.6 * A * 1.25, Math.sin(a) * 3.6 * A * 1.25, 0), 1);
+    ps.push(masa([hueso(arriba, mez(arriba, [bajo[0], bajo[1], Math.max(2 * S, bajo[2])], 0.55), 0.9 * S, 1.2 * S, { mat: 'm67_marmol_gris' }), hueso(mez(arriba, [bajo[0], bajo[1], Math.max(2 * S, bajo[2])], 0.55), [bajo[0], bajo[1], Math.max(2 * S, bajo[2])], 1.2 * S, 1.6 * S, { mat: 'm67_marmol_gris' })], { mat: 'm67_marmol_gris', suave: 0.6 }));
+  }
+  // ---- la espada de piedra rota que todavía cuelga del cinto
+  const vaina0 = Pv(1 * S, -4.6 * A, e.zc + 1 * S), vaina1 = add(vaina0, nor(add(esc(e.F, -0.5), [0, 0, -1])), 9 * S);
+  ps.push(palo(vaina0, add(vaina0, nor(add(esc(e.F, 0.5), [0, 0, 1])), 4 * S), 0.6 * S, { mat: 'm67_marmol' }), palo(add(vaina0, e.F, 0.2), add(vaina0, e.R, 0), 0.4 * S, { mat: 'm67_oro' }));
+  ps.push(palo(add(vaina0, e.F, -0.0), vaina1, 0.9 * S, { mat: 'm67_marmol_gris', r1: 0.8 * S }), elipE(vaina1, sub(vaina1, vaina0), [0.6 * S, 1 * S, 1 * S], 'm67_vacio'));
+  ps.push(palo(add(add(vaina0, e.R, -0.8 * S), [0, 0, 0.4 * S]), add(add(vaina0, e.R, 0.8 * S), [0, 0, 0.4 * S]), 0.45 * S, { mat: 'm67_oro' }));
   // ---- grietas de vacío con canto de oro: la cara (por el ojo), el pecho, la espalda, los brazos y una pierna
   const caraP: V3[] = [];
   for (let i = 0; i <= 5; i++) { const t = i / 5; caraP.push(e.cab((3.7 - Math.abs(t - 0.4) * 1.2) * H, (-2.6 + t * 4.2) * H, e.cz + (3.2 - t * 6) * H + Math.sin(i * 2.1) * 0.5 * H)); }
-  ps.push(...grieta(caraP, 0.42 * S, { luz }));
+  ps.push(...grieta(caraP, 0.5 * S, { luz }));
   const pecho: V3[] = [];
   for (let i = 0; i <= 6; i++) { const t = i / 6, [q] = enTorso(c, -30 + t * 55 + Math.sin(i * 2.7) * 10, 17 - t * 13, 1.1); pecho.push(q); }
-  ps.push(...grieta(pecho, 0.55 * S, { luz }));
+  ps.push(...grieta(pecho, 0.65 * S, { luz }));
   const esp: V3[] = [];
   for (let i = 0; i <= 5; i++) { const t = i / 5, [q] = enTorso(c, 160 + t * 40 + Math.sin(i * 1.9) * 12, 16 - t * 12, 1.1); esp.push(q); }
   ps.push(...grieta(esp, 0.5 * S));
@@ -592,13 +632,16 @@ function suplicante(c: Ctx): Res {
 
 // ================================================================== 6. ÁNGEL SEDIENTO
 /** Un ala de piedra rota: hueso del brazo con el borde de oro, plumas largas en capas y una rotura con el vacío. */
-function alaPiedra(c: Ctx, s: number, bate: number, rota: number, abre: number, caida: number): Pieza[] {
+function alaPiedra(c: Ctx, s: number, bate: number, rota: number, abre: number): Pieza[] {
   const { e, S, A } = c;
   const ps: Pieza[] = [];
-  const raiz = e.T(-3.4 * A, s * 2.8 * A, e.hombroZ - 1.5 * S);
-  const codo = e.T((-9 - abre * 2) * S, s * (9 + abre * 6 + bate * 2) * S, e.hombroZ + (11 + bate * 5 + abre * 2) * S);
-  const mun = e.T((-11 - abre * 3) * S, s * (18 + abre * 9 + bate * 3) * S, e.hombroZ + (17 + bate * 7 + abre * 3) * S);
-  const punta = e.T((-14 - abre * 2) * S, s * (25 + abre * 10 + bate * 3) * S, e.hombroZ + (12 + bate * 9) * S);
+  const raiz = e.T(-3.4 * A, s * 2.8 * A, e.hombroZ - 1.5 * S), k = 1.25;
+  // la entera se abre hacia arriba y afuera; la rota cuelga sin fuerza desde el codo
+  const codo = rota ? e.T((-10 - abre) * S * k, s * (9 + abre * 4) * S * k, e.hombroZ + (5 + bate * 2 + abre * 3) * S * k)
+    : e.T((-8 - abre * 2) * S * k, s * (10 + abre * 5 + bate * 2) * S * k, e.hombroZ + (9 + bate * 4 + abre * 3) * S * k);
+  const mun = rota ? e.T((-12 - abre) * S * k, s * (15 + abre * 5) * S * k, e.hombroZ + (-4 + bate * 2 + abre * 5) * S * k)
+    : e.T((-10 - abre * 3) * S * k, s * (20 + abre * 6 + bate * 2) * S * k, e.hombroZ + (11 + bate * 6 + abre * 5) * S * k);
+  const punta = e.T((-12 - abre * 2) * S * k, s * (29 + abre * 6 + bate * 2) * S * k, e.hombroZ + (6 + bate * 8 + abre * 6) * S * k);
   // el plano del ala y hacia dónde caen las plumas (abajo y atrás)
   const nrm = nor(cruz(sub(mun, raiz), sub(codo, raiz)));
   const cuelga = nor(add(add([0, 0, -1], esc(e.F, -1), 0.35), esc(e.R, s), 0.15 * (1 - abre)));
@@ -611,7 +654,7 @@ function alaPiedra(c: Ctx, s: number, bate: number, rota: number, abre: number, 
   for (const [a, b] of huesoA) ps.push(palo(add(a, [0, 0, 1.3 * S]), add(b, [0, 0, 1.2 * S]), 0.5 * S, { mat: 'm67_oro' }));
   // plumas: primarias desde la muñeca (si el ala está entera), secundarias del codo a la muñeca y cobertoras arriba
   const filas: { a: V3; b: V3; n: number; L0: number; L1: number; tono: number }[] = [
-    { a: raiz, b: codo, n: 5, L0: 8, L1: 12, tono: 0.03 }, { a: codo, b: mun, n: 6, L0: 13, L1: 17, tono: 0 },
+    { a: raiz, b: codo, n: 5, L0: 8, L1: 12, tono: 0.03 }, { a: codo, b: mun, n: 7, L0: 13, L1: 17, tono: 0 },
   ];
   if (!rota) filas.push({ a: mun, b: punta, n: 5, L0: 19, L1: 14, tono: -0.03 });
   let idx = 0;
@@ -619,14 +662,14 @@ function alaPiedra(c: Ctx, s: number, bate: number, rota: number, abre: number, 
     idx++;
     if (hr(idx * 3.3 + s) < 0.12) continue; // faltan plumas
     const t = (i + 0.5) / fl.n, base = mez(fl.a, fl.b, t), L = lerp(fl.L0, fl.L1, t) * S * (0.85 + hr(idx) * 0.3);
-    const d = nor(add(cuelga, sub(fl.b, fl.a), 0.12 + i * 0.02));
-    const rotaP = hr(idx * 7.1 + s) < 0.22 ? 0.55 : 1;
-    const cc = add(add(base, d, L * 0.5 * rotaP), [0, 0, -caida * base[2] * 0.0]);
-    ps.push(elipE(cc, d, [L * 0.5 * rotaP, 2.1 * S, 0.7 * S], 'm67_marmol', fl.tono + (hr(idx) - 0.5) * 0.08, cruz(nrm, d)));
-    if (rotaP < 1) ps.push(elipE(add(cc, d, L * 0.5 * rotaP), d, [0.4 * S, 1.6 * S, 0.5 * S], 'm67_vacio', 0, cruz(nrm, d)));
+    const d = nor(add(cuelga, nor(sub(fl.b, fl.a)), 0.25 + i * 0.05));
+    const rotaP = hr(idx * 7.1 + s) < 0.22 ? 0.55 : 1, L2 = L * k;
+    const cc = add(base, d, L2 * 0.5 * rotaP);
+    ps.push(elipE(cc, d, [L2 * 0.5 * rotaP, 2.6 * S * k, 0.8 * S], 'm67_marmol', fl.tono + (hr(idx) - 0.5) * 0.08, cruz(nrm, d)));
+    if (rotaP < 1) ps.push(elipE(add(cc, d, L2 * 0.5 * rotaP), d, [0.4 * S, 1.6 * S, 0.5 * S], 'm67_vacio', 0, cruz(nrm, d)));
   }
   // cobertoras: escamas de piedra sobre el hueso
-  for (let i = 0; i < 6; i++) { const t = (i + 0.5) / 6, q = mez(raiz, mun, t), d = nor(add(cuelga, sub(mun, raiz), 0.3)); ps.push(elipE(add(q, d, 2.4 * S), d, [3.6 * S, 2.2 * S, 0.9 * S], 'm67_marmol', 0.05, cruz(nrm, d))); }
+  for (let i = 0; i < 7; i++) { const t = (i + 0.5) / 7, q = mez(raiz, mun, t), d = nor(add(cuelga, nor(sub(mun, raiz)), 0.3)); ps.push(elipE(add(q, d, 2.4 * S), d, [3.6 * S, 2.2 * S, 0.9 * S], 'm67_marmol', 0.05, cruz(nrm, d))); }
   // la rotura: el vacío en la muñeca y lascas
   if (rota) {
     const d = nor(sub(mun, codo));
@@ -642,7 +685,7 @@ function angel(c: Ctx): Res {
   // alas: baten lento (piedra), se abren al atacar y se rompen al morir
   const bate = acc === 'quieto' ? Math.sin(w) * 0.5 : acc === 'caminar' || acc === 'correr' ? Math.sin(w * 2) * 0.9 : acc === 'herido' ? -0.6 : 0;
   const abre = acc === 'atacar' ? K([0, 0.4, 0.8, 1, 0.9, 0.6, 0.3, 0], f) : acc === 'herido' ? 0.6 : acc === 'morir' ? K([0, 0.6, 0.4, 0.1, 0, 0, 0, 0], f) : 0.1;
-  for (const s of [1, -1]) ps.push(...alaPiedra(c, s, bate - (acc === 'morir' ? c.muerte * 1.2 : 0), s > 0 ? 1 : 0, abre, 0));
+  for (const s of [1, -1]) ps.push(...alaPiedra(c, s, bate - (acc === 'morir' ? c.muerte * 1.2 : 0), s > 0 ? 1 : 0, abre));
   // ---- ciego: una cicatriz de vacío donde irían los ojos
   const cic: V3[] = [];
   for (let i = 0; i <= 5; i++) { const t = -1 + (i / 5) * 2; cic.push(e.cab((3.75 - t * t * 0.8) * H, t * 2.4 * H, e.cz + 0.3 * H + Math.sin(i * 1.7) * 0.25 * H)); }
@@ -653,14 +696,14 @@ function angel(c: Ctx): Res {
   const bc = e.T(4.2 * A, 0, e.zc + 11.5 * S), alto = 7.4 * S, ab = (0.8 + abreB * 2.2) * S;
   ps.push({ ...elipE(add(bc, fwT, 1.4 * S), upT, [alto, ab + 0.4 * S, 3.6 * S], 'm67_marmol', 0, izqT), resta: true } as Pieza);
   ps.push(elipE(add(bc, fwT, -1.2 * S), upT, [alto * 0.95, ab + 0.2 * S, 2.4 * S], 'm67_vacio', 0, izqT));
-  ps.push(esfera(...add(bc, fwT, -1.6 * S), (0.9 + abreB * 0.8) * S, { mat: 'm67_luz', tono: -0.2 + abreB * 0.2 }));
+  ps.push(elipE(add(bc, fwT, -1 * S), upT, [(2 + abreB * 2.5) * S, (0.6 + abreB * 0.7) * S, 1 * S], 'm67_luz', -0.2 + abreB * 0.2, izqT));
   const lab: Comp[] = [];
   for (const s of [1, -1]) {
     let prev: V3 | null = null;
     for (let i = 0; i <= 8; i++) {
       const t = -1 + i / 4, q = add(add(add(bc, upT, t * alto), izqT, s * (ab + 0.5 * S) * Math.sqrt(Math.max(0, 1 - t * t)) + s * 0.3 * S), fwT, (0.6 - Math.abs(t) * 0.6) * S);
       if (prev) lab.push(hueso(prev, q, 0.75 * S, 0.75 * S, { mat: 'm67_oro' }));
-      if (i > 0 && i < 8) ps.push(palo(q, add(add(q, izqT, -s * (1.1 + abreB * 0.7) * S), fwT, -0.4 * S), 0.35 * S, { mat: 'm67_diente', r1: 0.06 }));
+      if (i > 0 && i < 8) ps.push(palo(q, add(add(q, izqT, -s * (1.6 + abreB * 0.9) * S), fwT, -0.2 * S), 0.6 * S, { mat: 'm67_diente', r1: 0.08 }));
       prev = q;
     }
   }
@@ -678,14 +721,16 @@ function guardian(c: Ctx): Res {
   const { e, S, A, H, acc, f, w } = c;
   const ps: Pieza[] = [];
   // ---- el halo roto: aro de oro blanco atrás de la cabeza con un tramo que falta, la luz adentro y un trozo suelto
-  const centro = e.cab(-4.2 * H, 0, e.cz + 3.4 * H), nn = nor(add(e.ejesCab[0], [0, 0, 0.45])), u = nor(cruz([0, 0, 1], nn)), v = cruz(nn, u);
-  const R = 7.6 * H, N = 26, gira = (acc === 'herido' ? 0.4 : 0) + Math.sin(w) * 0.04, apaga = c.muerte;
+  const centro = e.cab(-5 * H, 0, e.cz + 3.6 * H), nn = nor(add(e.ejesCab[0], [0, 0, 0.25])), u = nor(cruz([0, 0, 1], nn)), v = cruz(nn, u);
+  const R = 8.6 * H, N = 28, gira = (acc === 'herido' ? 0.4 : 0) + Math.sin(w) * 0.04, apaga = c.muerte;
   for (let i = 0; i < N; i++) {
     const a0 = (i / N) * TAU + gira, a1 = ((i + 1) / N) * TAU + gira;
     if (a0 % TAU > 0.55 * PI && a0 % TAU < 0.9 * PI) continue; // el pedazo que falta
     const p0 = add(add(centro, u, Math.cos(a0) * R), v, Math.sin(a0) * R), p1 = add(add(centro, u, Math.cos(a1) * R), v, Math.sin(a1) * R);
-    ps.push(palo(p0, p1, 0.85 * S, { mat: 'cu_oro_blanco', tono: (hr(i) - 0.5) * 0.08 }));
-    if (apaga < 0.7) ps.push(palo(add(p0, nn, -0.7 * S), add(p1, nn, -0.7 * S), 0.45 * S, { mat: 'm67_luz', tono: -0.15 }));
+    ps.push(palo(p0, p1, 1.1 * S, { mat: 'cu_oro_blanco', tono: (hr(i) - 0.5) * 0.08 }));
+    if (apaga < 0.7) ps.push(palo(add(add(p0, nn, -0.9 * S), sub(centro, p0), 0.1), add(add(p1, nn, -0.9 * S), sub(centro, p1), 0.1), 0.75 * S, { mat: 'm67_luz', tono: -0.1 }));
+    // rayos cortos hacia afuera, como el halo de los santos
+    if (i % 3 === 0) ps.push(palo(add(add(centro, u, Math.cos(a0) * (R + 1.2 * S)), v, Math.sin(a0) * (R + 1.2 * S)), add(add(centro, u, Math.cos(a0) * (R + (3.5 + (i % 2) * 2) * S)), v, Math.sin(a0) * (R + (3.5 + (i % 2) * 2) * S)), 0.55 * S, { mat: 'cu_oro_blanco', r1: 0.1 }));
   }
   // el trozo roto que flota fuera de lugar, y la grieta de vacío en el canto
   const a = 0.72 * PI + Math.sin(w) * 0.05, q0 = add(add(centro, u, Math.cos(a) * (R + 2.2 * S)), v, Math.sin(a) * (R + 2.2 * S)), q1 = add(add(centro, u, Math.cos(a + 0.22) * (R + 2.6 * S)), v, Math.sin(a + 0.22) * (R + 2.6 * S));
@@ -744,6 +789,7 @@ const guardianEq: Equipo = (() => {
   eq.cabeza = { tipo: 'gran_yelmo', mat: 'cu_oro_blanco', mat2: 'm67_oro' };
   eq.arma = { tipo: 'lanza', mat: 'm67_lanza', mango: 'm67_lanza', encanto: 'sagrado' };
   eq.capa = { mat: 'cu_tela_blanca', largo: 0.9 };
+  delete eq.tabardo;
   return eq;
 })();
 
@@ -757,12 +803,12 @@ export const MONSTRUOS67: Monstruo67[] = [
   {
     id: 'marinero_percebe', nombre: ['Marinero percebe', 'Barnacled sailor'], descripcion: ['Esqueleto con costra de percebes y mejillones; tira el garfio de abordaje.', 'A skeleton crusted with barnacles and mussels; swings a boarding hook.'],
     cuerpo: { oseo: true, alto: 1.02, piel: 'm67_hueso_mar', ojos: 'm67_ojo_mar' },
-    equipo: { cinturon: { mat: 'm67_soga', hebilla: 'm67_bronce' }, cabeza: { tipo: 'gorro', mat: 'm67_tela_ahogada', mat2: 'm67_tela_ahogada' }, arma: { tipo: 'hoz', mat: 'm67_hierro_mar', mango: 'madera_vieja' } },
+    equipo: { cinturon: { mat: 'm67_soga', hebilla: 'm67_bronce' }, arma: { tipo: 'hoz', mat: 'm67_hierro_mar', mango: 'madera_vieja' } },
     extra: marinero,
   },
   {
     id: 'sirena_hueca', nombre: ['Sirena hueca', 'Hollow siren'], magia: true, descripcion: ['Torso de mujer descarnado sobre una cola de peces muertos; flota, chilla y lanza agua negra.', 'A fleshless woman’s torso on a tail of dead fish; floats, shrieks and hurls black water.'],
-    cuerpo: { genero: 'm', flota: true, demacrado: true, garras: true, alto: 1.06, ancho: 0.86, musculo: 0, joroba: 0.3, piel: 'm67_piel_hueca', parches: 'm67_hueso_mar', ojos: 'm67_ojo_mar', pelo: 'm67_alga', peinado: 'melena' },
+    cuerpo: { genero: 'm', demacrado: true, garras: true, alto: 1.06, ancho: 0.86, musculo: 0, joroba: 0.3, piel: 'm67_piel_hueca', ojos: 'm67_ojo_mar', peinado: 'calvo' },
     equipo: { arma: { tipo: 'puno' } },
     extra: sirena, sinMuslos: true, pose: deslizar,
     vuelo: (acc, f) => (acc === 'morir' ? lerp(8, 0, clamp(f / 5, 0, 1)) : 8 + Math.sin((f / CUADROS[acc]) * TAU) * 1.5),
@@ -771,19 +817,19 @@ export const MONSTRUOS67: Monstruo67[] = [
   {
     id: 'sacerdote_marea', nombre: ['Sacerdote de la marea', 'Tide priest'], magia: true, descripcion: ['Clérigo ahogado con la mitra rota y un báculo con farol; invoca manos del agua.', 'A drowned cleric with a broken mitre and a lantern crosier; calls hands out of the water.'],
     cuerpo: { alto: 1.08, musculo: 0.1, demacrado: true, joroba: 0.35, piel: 'm67_piel_ahogada', ojos: 'm67_ojo_mar', pelo: 'm67_alga', peinado: 'largo', barba: 'larga' },
-    equipo: { torso: { tipo: 'tunica', mat: 'm67_tela_sacerdote' }, piernas: { tipo: 'tunica_larga', mat: 'm67_tela_sacerdote' }, tabardo: { mat: 'm67_estola', borde: 'm67_bronce' }, capa: { mat: 'm67_tela_ahogada', largo: 0.85 }, cinturon: { mat: 'm67_soga', hebilla: 'm67_bronce' }, arma: { tipo: 'baculo', mango: 'm67_bronce', gema: 'm67_bronce' } },
+    equipo: { torso: { tipo: 'tunica', mat: 'm67_tela_sacerdote' }, piernas: { tipo: 'tunica_larga', mat: 'm67_tela_sacerdote' }, capa: { mat: 'm67_tela_ahogada', largo: 0.85 }, cinturon: { mat: 'm67_soga', hebilla: 'm67_bronce' }, arma: { tipo: 'baculo', mango: 'm67_bronce', gema: 'm67_bronce' } },
     extra: sacerdote,
   },
   {
     id: 'suplicante_animado', nombre: ['Suplicante animado', 'Animated supplicant'], descripcion: ['Estatua de los que intentaron antes; cruje al moverse y el vacío asoma por sus grietas.', 'A statue of those who tried before; it creaks as it moves and the void shows through its cracks.'],
-    cuerpo: { alto: 1.06, ancho: 1.04, musculo: 0.45, joroba: 0.35, piel: 'm67_marmol', ojos: 'm67_marmol', peinado: 'calvo' },
-    equipo: { torso: { tipo: 'tunica', mat: 'm67_marmol_gris' }, piernas: { tipo: 'faldon', mat: 'm67_marmol_gris', mat2: 'm67_marmol_gris' }, cabeza: { tipo: 'capucha', mat: 'm67_marmol_gris' }, cinturon: { mat: 'm67_oro', hebilla: 'm67_oro' } },
+    cuerpo: { alto: 1.08, ancho: 0.96, musculo: 0.3, joroba: 0.5, piel: 'm67_marmol', ojos: 'm67_marmol', pelo: 'm67_marmol_gris', peinado: 'largo', barba: 'corta' },
+    equipo: { torso: { tipo: 'vestido', mat: 'm67_marmol_gris' }, cinturon: { mat: 'm67_oro', hebilla: 'm67_oro' } },
     extra: suplicante,
   },
   {
     id: 'angel_sediento', nombre: ['Ángel sediento', 'Thirsting angel'], descripcion: ['Ángel de mármol sin ojos, con alas de piedra rotas y una boca vertical en el pecho; vuela bajo.', 'An eyeless marble angel with broken stone wings and a vertical mouth in its chest; flies low.'],
     cuerpo: { alto: 1.5, ancho: 1, musculo: 0.55, cabeza: 0.95, piel: 'm67_marmol', ojos: 'm67_marmol', pelo: 'm67_marmol', peinado: 'corto' },
-    equipo: { piernas: { tipo: 'tunica_larga', mat: 'm67_marmol_gris' }, cinturon: { mat: 'm67_oro', hebilla: 'm67_oro' }, manos: { tipo: 'brazales', mat: 'm67_oro' }, arma: { tipo: 'garras', mat: 'm67_oro' } },
+    equipo: { piernas: { tipo: 'tunica_larga', mat: 'm67_marmol_gris' }, cinturon: { mat: 'm67_oro', hebilla: 'm67_oro' }, arma: { tipo: 'garras', mat: 'm67_oro' } },
     extra: angel, pose: deslizar, huella: 2,
     vuelo: (acc, f) => (acc === 'morir' ? lerp(12, 0, clamp(f / 4, 0, 1)) : 12 + Math.sin((f / CUADROS[acc]) * TAU) * 2),
     inclina: (acc) => (acc === 'caminar' ? 10 : acc === 'correr' ? 18 : 0),
