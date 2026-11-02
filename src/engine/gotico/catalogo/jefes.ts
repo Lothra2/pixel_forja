@@ -620,15 +620,16 @@ function ozmaren(acc: Acc, f: number): Res {
     bH([-2, 0, 4], [10.5, 9, 9.5]), bH([9, 4.6, 7], [5, 4.6, 3.2]), bH([9, -4.6, 7], [5, 4.6, 3.2]), bH([13, 0, -0.5], [10, 5.6, 5]),
     bH([15, 0, 4], [8, 2.6, 2.6]), bH([8, 6.8, 0.5], [5.5, 3.2, 3.6]), bH([8, -6.8, 0.5], [5.5, 3.2, 3.6]), bH([21, 0, 0.5], [3.6, 3.8, 3.6]), bH([-9, 0, -5], [8, 9, 8]),
   ];
+  const dientes: Comp[] = [];
   for (const s of [1, -1]) {
     for (let k = 0; k < 3; k++) ch.push(hueso(HP([-6 - k * 4, s * (4 + k * 2.5), 11 - k * 2]), HP([-10 - k * 6, s * (7 + k * 4.5), 26 - k * 4]), (2.4 - k * 0.4) * hs, 0.3, { ...mc, k: 1 }));
     for (let k = 0; k < 5; k++) {
       const x = 9 + k * 3, y = s * (5.4 - k * 0.7), lar = k === 1 ? 10 : k === 4 ? 7 : 4 + (k % 2) * 1.5;
-      ch.push(hueso(HP([x, y, -3.2]), HP([x + 0.9, y * 0.9, -3.2 - lar]), (k === 1 || k === 4 ? 1.25 : 0.95) * hs, 0.18, { mat: 'cu_hueso', k: 0.35 }));
+      dientes.push(hueso(HP([x, y, -3.2]), HP([x + 0.9, y * 0.9, -3.2 - lar]), (k === 1 || k === 4 ? 1.25 : 0.95) * hs, 0.18, { mat: 'cu_hueso', k: 0.35 }));
     }
   }
   ch.push(hueso(HP([-4, 0, 12]), HP([-10, 0, 28]), 2.6 * hs, 0.3, { ...mc, k: 1 }));
-  ps.push(masa(ch, { mat: PF, suave: 1.8 }));
+  ps.push(masa(ch, { mat: PF, suave: 1.8 }), masa(dientes, { mat: 'cu_hueso', suave: 0.3 }));
   for (const s of [1, -1]) {
     ps.push(elipE(HP([13.4, s * 4.8, 3.2]), mv(cabT.m, [1, s * 0.4, 0]), [1.6 * hs, 3 * hs, 2 * hs], 'negro', 0, mv(cabT.m, [0, s, 0.5])));
     ps.push(elipE(HP([22.5, s * 1.4, 1.2]), cabT.m[0], [0.8 * hs, 0.6 * hs, 1.2 * hs], 'negro'));
@@ -658,10 +659,11 @@ function ozmaren(acc: Acc, f: number): Res {
   for (const s of [1, -1]) {
     const pts: V3[] = [[0, s * 8, 8], [-8, s * 21, 14], [-10, s * 33, 27], [-3, s * 38, 43], [10, s * 35, 55], [18, s * 28, 58]].map((q) => HP(q as V3));
     const rr = [6.4, 5.6, 4.4, 3.1, 1.6, 0.3].map((r) => r * hs);
-    const hc: Comp[] = [];
-    for (let i = 0; i < 5; i++) hc.push(hueso(pts[i], pts[i + 1], rr[i], rr[i + 1]));
-    for (let i = 0; i < 4; i++) { const r = lerp(rr[i], rr[i + 1], 0.5); hc.push(bulto(mez(pts[i], pts[i + 1], 0.5), [r * 0.5, r * 1.12, r * 1.12], { eje: sub(pts[i + 1], pts[i]), mat: CU, k: 1 })); }
-    ps.push(masa(hc, { mat: CU, suave: 1.3 }));
+    // en dos masas (la base y la punta) que se tocan en una junta redonda: así cada una envuelve menos aire
+    const hc: Comp[] = [], hp: Comp[] = [];
+    for (let i = 0; i < 5; i++) (i < 3 ? hc : hp).push(hueso(pts[i], pts[i + 1], rr[i], rr[i + 1]));
+    for (let i = 0; i < 4; i++) { const r = lerp(rr[i], rr[i + 1], 0.5); (i < 3 ? hc : hp).push(bulto(mez(pts[i], pts[i + 1], 0.5), [r * 0.5, r * 1.12, r * 1.12], { eje: sub(pts[i + 1], pts[i]), mat: CU, k: 1 })); }
+    ps.push(masa(hc, { mat: CU, suave: 1.3 }), masa(hp, { mat: CU, suave: 1.3 }));
     if (arde) ps.push(llamaOrg(mez(pts[2], pts[3], 0.4), [0, 0, 1], 28 + ruge * 10 + columna * 10, 3.4, f, nC, 80 + s, { viento }));
   }
   // fuego grande que sale de la espalda, entre los omóplatos
