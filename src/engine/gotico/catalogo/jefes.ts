@@ -135,8 +135,9 @@ function grietas(t: Tr, c: V3, r: V3, n: number, semilla: number, mat: string, o
     for (let i = 0; i <= pasos; i++) {
       const cv = Math.cos(v), p: V3 = [c[0] + r[0] * cv * Math.cos(u) * 1.02, c[1] + r[1] * cv * Math.sin(u) * 1.02, c[2] + r[2] * Math.sin(v) * 1.02];
       const w = ap(t, p);
-      if (prev) ps.push(palo(prev, w, (o.grueso ?? 0.55) * (1 - i / (pasos + 2)), { mat }));
-      prev = w;
+      // une de a dos pasos (mismo recorrido, la mitad de las piezas)
+      if (prev && (i % 2 === 0 || i === pasos)) { ps.push(palo(prev, w, (o.grueso ?? 0.55) * (1 - i / (pasos + 2)), { mat })); prev = w; }
+      if (!prev) prev = w;
       u += du + (hr(q + 10 + i) - 0.5) * 0.5; v += dv + (hr(q + 20 + i) - 0.5) * 0.4;
     }
   }
@@ -498,8 +499,7 @@ function ozmaren(acc: Acc, f: number): Res {
   }
   for (const [codo, mano, s] of manosA) {
     const fw = nor(sub(mano, codo)), lat = nor(cruz(fw, [0, 0, 1])), aba = nor(cruz(lat, fw));
-    ps.push(masa([bulto(add(mano, fw, 4), [8, 6.5, 4], { eje: fw, mat: O }), bulto(add(mano, fw, 1), [5, 7, 4.5], { eje: fw, mat: O })], m));
-    ps.push(masa([bulto(add(mano, fw, 5), [10, 8.5, 5], { eje: fw, mat: O })], m));
+    ps.push(elipE(add(mano, fw, 5), fw, [10, 8.5, 5], O), elipE(add(mano, fw, 1), fw, [5, 7, 4.5], O));
     for (const k of [-1.5, -0.5, 0.5, 1.5]) {
       const b0 = add(add(mano, fw, 12), lat, k * 4.2), cu = add(add(b0, fw, 12 - Math.abs(k) * 2), aba, 4), tip = add(add(add(cu, fw, 13 - Math.abs(k) * 2.5), aba, 9), lat, k * 1.5);
       ps.push(palo(b0, cu, 2.4, { mat: 'jf_garra', r1: 1.7, tono: -0.1 }), palo(cu, tip, 1.75, { mat: 'jf_garra', r1: 0.15, tono: 0.05 }));
@@ -560,7 +560,7 @@ function ozmaren(acc: Acc, f: number): Res {
   }
   for (const [suelo, s] of pezu) {
     const fw = nor([Math.cos(rad(ty * 0.3)), Math.sin(rad(ty * 0.3)), 0]), lat: V3 = [-fw[1], fw[0], 0];
-    ps.push(masa([bulto(add(add(suelo, fw, 5), lat, 3.6), [9.5, 5, 6], { eje: fw, mat: 'jf_cuerno' }), bulto(add(add(suelo, fw, 5), lat, -3.6), [9.5, 5, 6], { eje: fw, mat: 'jf_cuerno' }), bulto(add(suelo, [0, 0, 6]), [8, 8.5, 5], { mat: 'jf_cuerno' })], { mat: 'jf_cuerno', suave: 1 }));
+    ps.push(elipE(add(add(suelo, fw, 5), lat, 3.6), fw, [9.5, 5, 6], 'jf_cuerno'), elipE(add(add(suelo, fw, 5), lat, -3.6), fw, [9.5, 5, 6], 'jf_cuerno'), elipE(add(suelo, [0, 0, 6]), fw, [8, 8.5, 5], 'jf_cuerno'));
     if (suelo[2] < 1.5) for (let k = 0; k < 6; k++) {
       // grietas del piso: rayas de lava que salen de la pezuña
       const a = hr(k * 13 + s * 7) * TAU, r0 = 9, r1 = 18 + hr(k * 3 + s) * 16, q0 = add(suelo, [Math.cos(a) * r0, Math.sin(a) * r0, 0]), mid = add(suelo, [Math.cos(a + 0.25) * (r0 + r1) / 2, Math.sin(a + 0.25) * (r0 + r1) / 2, 0]), q1 = add(suelo, [Math.cos(a - 0.1) * r1, Math.sin(a - 0.1) * r1, 0]);
@@ -591,7 +591,8 @@ function ozmaren(acc: Acc, f: number): Res {
   for (const s of [1, -1]) {
     const mj = cmp(cabT, T(esc([2, s * 6.5, -4], hs), Rz(s * mand * 34), Ry(mand * 44)));
     const J = (q: V3) => ap(mj, esc(q, hs));
-    ps.push(masa([hueso(J([0, 0, 0]), J([18, -s * 4, -2.5]), 5.6 * hs, 3.4 * hs, m), bulto(J([6, 0, -2.4]), [7.5 * hs, 4.4 * hs, 4.4 * hs], { ejes: ejesDe(mj), mat: O }), bulto(J([15, -s * 3, -3]), [3.6 * hs, 3 * hs, 3 * hs], { ejes: ejesDe(mj), mat: O })], { mat: O, suave: 1.5 }));
+    const [jx, jy, jz] = ejesDe(mj), elJ = (c: V3, r: V3): Pieza => ({ k: 'elip', c: J(c), ex: jx, ey: jy, ez: jz, r: esc(r, hs), mat: O }) as Pieza;
+    ps.push(palo(J([0, 0, 0]), J([18, -s * 4, -2.5]), 5.6 * hs, { mat: O, r1: 3.4 * hs }), esfera(...J([0, 0, 0]), 5.6 * hs, m), elJ([6, 0, -2.4], [7.5, 4.4, 4.4]), elJ([15, -s * 3, -3], [3.6, 3, 3]), esfera(...J([18, -s * 4, -2.5]), 3.4 * hs, m));
     for (let k = 0; k < 6; k++) ps.push(pua(J([4.5 + k * 2.3, -s * (0.6 + k * 0.6), 1.2]), J([5 + k * 2.3, -s * (0.8 + k * 0.6), 1.2 + (k === 5 ? 9 : 3.4 + (k % 2) * 1.6)]), 1.05, 'cu_hueso'));
     ps.push(pua(J([17, -s * 3.8, -1]), J([20, -s * 1, 10]), 1.9, 'jf_garra'));
     for (let k = 0; k < 3; k++) ps.push(esquirla(J([4 + k * 4, s * 1.5, -3]), mv(mj.m, [0.2, s * 0.6, -1]), 4 + k, 1.2, 160 + k + s, O, 0.1));
@@ -606,10 +607,9 @@ function ozmaren(acc: Acc, f: number): Res {
   for (const s of [1, -1]) {
     const pts: V3[] = [[0, s * 8, 8], [-8, s * 21, 14], [-10, s * 33, 27], [-3, s * 38, 43], [10, s * 35, 55], [18, s * 28, 58]].map((q) => HP(q as V3));
     const rr = [6.4, 5.6, 4.4, 3.1, 1.6, 0.3].map((r) => r * hs);
-    const hs2: Comp[] = [];
-    for (let i = 0; i < 5; i++) hs2.push(hueso(pts[i], pts[i + 1], rr[i], rr[i + 1], { mat: 'jf_cuerno' }));
-    for (let i = 0; i < 4; i++) hs2.push(bulto(mez(pts[i], pts[i + 1], 0.5), [rr[i] * 0.9, rr[i] * 1.12, rr[i] * 1.12], { eje: sub(pts[i + 1], pts[i]), mat: 'jf_cuerno', k: 0.5 }));
-    ps.push(masa(hs2, { mat: 'jf_cuerno', suave: 1.2 }));
+    // tramos de cono con una esfera en cada codo y un anillo abultado en el medio de cada tramo
+    for (let i = 0; i < 5; i++) ps.push(palo(pts[i], pts[i + 1], rr[i], { mat: 'jf_cuerno', r1: rr[i + 1] }), esfera(...pts[i], rr[i], { mat: 'jf_cuerno' }));
+    for (let i = 0; i < 4; i++) ps.push(elipE(mez(pts[i], pts[i + 1], 0.5), sub(pts[i + 1], pts[i]), [rr[i] * 0.9, rr[i] * 1.12, rr[i] * 1.12], 'jf_cuerno'));
     for (let k = 0; k < 3; k++) ps.push(pua(HP([-6 - k * 4, s * (4 + k * 2.5), 11 - k * 2]), HP([-10 - k * 6, s * (7 + k * 4.5), 26 - k * 4]), (2.4 - k * 0.4) * hs, 'jf_cuerno'));
   }
   ps.push(pua(HP([-4, 0, 12]), HP([-10, 0, 28]), 2.6 * hs, 'jf_cuerno'));

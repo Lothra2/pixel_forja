@@ -194,6 +194,7 @@ function tinte(base: string, tipo: 'tela' | 'cuero' | 'liso' | 'metal' | 'esmalt
   return id;
 }
 M.ic_acero = { patron: (p, n) => cepillado(p) + reflejo(n), rampa: ['#0c0d10', '#171a1f', '#252930', '#353b44', '#48505b', '#5e6874', '#78838f', '#96a1ac', '#b9c2ca', '#e2e7eb'], ruido: 0.05, escala: 0.5, brillo: 0.85 };
+M.ic_acero_escudo = { patron: (p, n) => cepillado(p) * 0.6 + reflejo(n, 1.7) - 0.42, rampa: ['#06070a', '#0d1016', '#151a22', '#1e2530', '#29323f', '#364252', '#465468', '#5a6a80', '#7a8aa0', '#a8b6c6', '#e2eaf2'], ruido: 0.04, escala: 0.5, brillo: 1.1 };
 M.ic_acero_mate = { patron: (p, n) => cepillado(p) + reflejo(n, 0.7), rampa: ['#0c0d10', '#171a1f', '#252930', '#353b44', '#48505b', '#5e6874', '#78838f', '#96a1ac', '#b4bdc6'], ruido: 0.06, escala: 0.5, brillo: 0.7 };
 M.ic_hierro = { rampa: ['#0b0b0c', '#161719', '#232427', '#323438', '#43464b', '#575a60', '#6e7177', '#8a8d92'], ruido: 0.22, escala: 0.6, brillo: 0.4 };
 M.ic_hierro_negro = { patron: (p, n) => cepillado(p) + reflejo(n), rampa: ['#050506', '#0b0b0e', '#131318', '#1c1c23', '#26262f', '#33333d', '#44444f', '#5e5e6a', '#868694'], ruido: 0.1, escala: 0.6, brillo: 0.7 };
@@ -609,21 +610,24 @@ function capucha(t: Taller, e: Estilo) {
       // capuchón: la cabeza, la coronilla que sube atrás y la punta que se dobla y cae
       t.bul([0, -0.4, 2.6], [5.0, 5.4, 5.6], mat),
       t.hue([0, -1.0, 5.8], [0, -3.8, 9.9], 3.1, 1.25, mat),
-      t.hue([0, -3.8, 9.9], [0.4, -7.0, 8.4], 1.25, 0.8, mat, 0.6),
-      t.hue([0.4, -7.0, 8.4], [1.0, -8.8, 3.4], 0.8, 0.42, mat, 0.5),
-      // cuello y esclavina acampanada (el ruedo se corta recto abajo)
-      t.bul([0, -0.4, -1.6], [5.0, 4.8, 2.4], mat),
+      t.hue([0, -3.8, 9.9], [0.6, -7.6, 9.2], 1.3, 0.95, mat, 0.6),
+      t.hue([0.6, -7.6, 9.2], [1.5, -9.9, 4.4], 0.95, 0.5, mat, 0.5),
+    ];
+    // pliegues del capuchón que bajan de la coronilla a los costados
+    for (const sx of [-1, 1]) comps.push(t.hue([sx * 2.4, -1.6, 7.0], [sx * 4.9, 0.4, -0.4], 0.7, 0.95, mat, 0.9, sx > 0 ? -0.04 : 0.03));
+    t.masa(comps, mat, 1.5);
+    // cuello y esclavina acampanada, en una masa aparte (pinta más rápido y el capuchón la tapa en la unión)
+    const capa: Comp[] = [
+      t.bul([0, -0.4, -1.4], [5.0, 4.8, 2.6], mat),
       t.bul([0, -0.2, -4.0], [7.0, 6.0, 2.4], mat),
       t.bul([0, 0.1, -6.2], [8.9, 7.3, 1.5], mat),
     ];
     // pliegues: crestas que bajan del cuello al ruedo y se abren
     for (let k = -2; k <= 2; k++) {
       const a = rad(90 + k * 30);
-      comps.push(t.hue([Math.cos(a) * 4.2, Math.sin(a) * 4.0 - 0.4, -1.4], [Math.cos(a) * 8.9, Math.sin(a) * 7.4, -6.9], 0.5, 1.2, mat, 0.8, (k & 1) ? -0.05 : 0.04));
+      capa.push(t.hue([Math.cos(a) * 4.2, Math.sin(a) * 4.0 - 0.4, -1.4], [Math.cos(a) * 8.9, Math.sin(a) * 7.4, -6.9], 0.5, 1.2, mat, 0.8, (k & 1) ? -0.05 : 0.04));
     }
-    // pliegues del capuchón que bajan de la coronilla a los costados
-    for (const sx of [-1, 1]) comps.push(t.hue([sx * 2.4, -1.6, 7.0], [sx * 4.9, 0.4, -0.4], 0.7, 0.95, mat, 0.9, sx > 0 ? -0.04 : 0.03));
-    t.masa(comps, mat, 1.5);
+    t.masa(capa, mat, 1.5);
     // la abertura: se cava honda y se llena de sombra
     t.elip([0, 5.4, 1.4], [3.5, 3.4, 4.5], { mat: 'ic_hueco', resta: true });
     t.elip([0, 2.2, 1.2], [3.5, 1.2, 4.4], { mat: 'ic_hueco' });
@@ -635,7 +639,7 @@ function capucha(t: Taller, e: Estilo) {
       const a = rad(-90 + i * 360 / 14), sa = Math.sin(a);
       pts.push([Math.cos(a) * 3.95, 4.15 + sa * 0.7 + (1 - Math.abs(Math.cos(a))) * 0.2, 1.4 + sa * 4.7 + Math.pow(Math.max(0, sa), 6) * 0.9]);
     }
-    if (e.forro) for (let i = 0; i < 14; i++) t.elip(pts[i], [1.25, 1.0, 1.25], { mat: e.forro, rot: [0, i * 25.7, 0], tono: (i & 1) * 0.05 });
+    if (e.forro) for (let i = 0; i < 28; i++) { const q = mez(pts[i >> 1], pts[(i >> 1) + 1], (i & 1) * 0.5); t.elip(q, [1.15, 0.95, 1.15], { mat: e.forro, rot: [0, i * 12.9, 0], tono: (i % 3) * 0.04 - 0.04 }); }
     else for (let i = 0; i < 14; i++) { t.cil(pts[i], pts[i + 1], 0.72, 0.72, { mat: borde }); t.esf(pts[i], 0.72, { mat: borde }); }
     if (e.ribete && !e.forro && L !== 'tela') for (let k = 0; k < 7; k++) { const a = rad(-90 + k * 30); t.esf([Math.cos(a) * 9.1, Math.sin(a) * 7.5 + 0.3, -6.4], 0.45, { mat: e.borde }); }
     const ojos = L === 'oscuro' || L === 'hueso' || L === 'legendario' || e.n >= 5 ? e.luz ?? tinte(e.luzHex, 'luz') : null;
@@ -644,6 +648,25 @@ function capucha(t: Taller, e: Estilo) {
     if (e.n >= 3) { t.cil([0, 5.2, -3.4], [0, 5.9, -3.4], 1.25, 1.1, { mat: metalJoya(e) }); if (e.n >= 4) gemaEngastada(t, [0, 5.9, -3.4], 0.8, e, { engaste: metalJoya(e) }); }
     if (L === 'hueso') for (const sx of [-1, 1]) t.masa([t.hue([sx * 3.8, -0.6, 5.0], [sx * 6.6, 0.0, 8.8], 1.1, 0.75, 'ic_hueso'), t.hue([sx * 6.6, 0.0, 8.8], [sx * 6.2, 1.4, 12.0], 0.75, 0.12, 'ic_hueso')], 'ic_hueso', 0.6);
   });
+}
+/**
+ * Cuerno de carnero: nace en `base`, sube, va hacia atrás, baja por detrás de la oreja y se enrolla hacia adelante en
+ * espiral (el plano de la espiral mira hacia afuera y un poco al frente). Cada tramo empieza grueso y termina fino:
+ * las estrías anulares del cuerno; la punta es más clara.
+ */
+function cuernoCarnero(t: Taller, base: V3, lado: 1 | -1, k: number) {
+  const b = rad(38), nrm: V3 = [lado * Math.cos(b), Math.sin(b), 0], f: V3 = [-lado * Math.sin(b), Math.cos(b), 0];
+  const N = 18, a0 = 100, R0 = 4.4 * k;
+  const dir = (a: number): V3 => add(mul(f, Math.cos(rad(a))), [0, 0, 1], Math.sin(rad(a)));
+  const c = add(base, dir(a0), -R0);
+  const pts: V3[] = [], rs: number[] = [];
+  for (let i = 0; i <= N; i++) {
+    const u = i / N, a = a0 + u * 380, R = R0 * (1 - u * 0.68);
+    pts.push(add(add(c, dir(a), R), nrm, (u * 2.4 + Math.sin(u * Math.PI) * 2.0) * k));
+    rs.push((1.85 - u * 1.45) * k);
+  }
+  const oscuro = tinte('#4a3c2c', 'cuero'), medio = tinte('#6a5a44', 'cuero'), claro = tinte('#b0a080', 'cuero');
+  t.masa(pts.slice(1).map((q, i) => t.hue(pts[i], q, rs[i] * 1.2, rs[i + 1] * 0.8, i > N * 0.78 ? claro : i > N * 0.5 ? medio : oscuro, 0.1 * k)), oscuro, 0.25 * k);
 }
 function casco(t: Taller, e: Estilo) {
   const L = e.linea;
@@ -686,10 +709,7 @@ function casco(t: Taller, e: Estilo) {
       for (const sx of [-1, 1]) { t.elip([sx * 2.1, 6.0, 1.5], [1.25, 1.2, 1.15], { mat: 'ic_hueco', resta: true }); t.elip([sx * 2.1, 5.2, 1.5], [1.1, 0.6, 1.0], { mat: e.n >= 4 ? (e.luz ?? tinte(e.luzHex, 'luz')) : 'ic_hueco' }); }
       t.elip([0, 8.3, -2.2], [0.7, 0.8, 0.8], { mat: 'ic_hueco', resta: true });
       for (let k = -2; k <= 2; k++) t.cil([k * 0.9, 7.6 - Math.abs(k) * 0.5, -4.2], [k * 0.95, 7.8 - Math.abs(k) * 0.5, -5.8], 0.42, 0.08, { mat: h });
-      for (const sx of [-1, 1]) {
-        const pts: V3[] = []; for (let i = 0; i <= 6; i++) { const a = (i / 6) * Math.PI * 1.5; pts.push([sx * (5.2 + i * 0.55), -1 - Math.sin(a) * 4.6, 3.6 + Math.cos(a) * 4.2 - 2.6]); }
-        t.masa(pts.slice(1).map((q, i) => t.hue(pts[i], q, 1.7 - i * 0.22, 1.5 - i * 0.22, tinte('#8a7a5a', 'mate'))), tinte('#8a7a5a', 'mate'), 0.6);
-      }
+      for (const sx of [-1, 1]) cuernoCarnero(t, [sx * 4.5, -0.8, 4.2], sx as 1 | -1, 1);
       if (e.n >= 3) t.cil([0, 0, -2.8], [0, 0, -1.6], 6.0, 6.1, { mat: e.correa });
       return;
     }
@@ -915,35 +935,47 @@ function hombreras(t: Taller, e: Estilo) {
 }
 
 // ------------------------------------------------------------------ grebas (piernas)
+/**
+ * Grebas (las piernas): cadera con su cinto y dos piernas lisas. Las blandas llevan rodilleras, correas y costuras;
+ * las de placas, quijote, lamas, rodillera con aleta y greba con arista (ver `piernaPlaca`).
+ */
 function grebas(t: Taller, e: Estilo) {
   const L = e.linea, duro = L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario';
   const tela = L === 'malla' ? 'ic_malla' : duro ? (L === 'sagrado' ? tinte('#d8d0c0', 'tela') : 'ic_malla') : e.base;
   t.en([0, 0, 0], [18, -6, 0], () => {
-    const comps: Comp[] = [t.hue([0, 0, 22], [0, 0, 19.5], 6.8, 6.9, tela)];
-    for (const sx of [-1, 1]) comps.push(t.hue([sx * 3.4, 0, 19.5], [sx * 3.9, 0.6, 10.4], 3.7, 2.9, tela), t.hue([sx * 3.9, 0.6, 10.4], [sx * 4.1, 0, 1.0], 2.8, 2.2, tela));
-    t.masa(comps, tela, 2);
-    t.cil([0, 0, 21.6], [0, 0, 23.4], 6.95, 7.0, { mat: e.correa });
-    t.caja([0, 6.95, 22.5], [2.0, 0.6, 2.2], { mat: e.hebilla });
-    if (duro) for (const sx of [-1, 1]) {
-      t.cil([sx * 3.6, 0.3, 18.6], [sx * 3.9, 0.7, 12.0], 3.9, 3.3, { mat: e.base });
-      t.esf([sx * 3.95, 1.4, 10.6], 2.5, { mat: e.base, tono: 0.06 });
-      t.elip([sx * 5.2, 1.4, 10.6], [0.6, 2.2, 2.2], { mat: e.base, tono: 0.02, rot: [0, 0, sx * -12] });
-      t.cil([sx * 4.0, 0.5, 9.0], [sx * 4.1, 0.1, 1.2], 3.0, 2.5, { mat: e.base });
-      t.caja([sx * 4.05, 3.1, 5.2], [0.8, 0.8, 7.0], { mat: e.base, tono: 0.08, rot: [0, -4, 0] });
-      if (e.ribete) { t.aro([sx * 3.6, 0.3, 18.6], 3.95, 0.3, { mat: e.borde, n: 14 }); t.aro([sx * 4.1, 0.1, 1.3], 2.55, 0.3, { mat: e.borde, n: 12 }); }
-      if (e.remaches) t.esf([sx * 3.95, 3.9, 10.6], 0.5, { mat: e.remache });
-      if (L === 'oscuro') pua(t, [sx * 3.95, 3.6, 10.8], [0, 1, 0.3], 3, 0.8, 'ic_hierro_negro');
-      if (L === 'legendario' || (L === 'oscuro' && e.luz)) t.caja([sx * 4.05, 3.6, 5.2], [0.3, 0.3, 4.2], { mat: e.luz!, tono: tonoLuz(e) });
+    const comps: Comp[] = [t.bul([0, 0, 20.4], [6.6, 4.6, 3.0], tela)];
+    for (const sx of [-1, 1]) {
+      comps.push(t.hue([sx * 3.3, 0, 19.6], [sx * 3.9, 0.4, 11], 3.55, 2.95, tela));
+      if (!duro) comps.push(t.hue([sx * 3.9, 0.4, 11], [sx * 4.1, 0, 1.6], 2.95, 2.4, tela));
+    }
+    t.masa(comps, tela, 1.4);
+    // el cinto: banda ovalada con la hebilla al frente
+    t.poli([...anilloPts(6.75, 4.85, 20.6, 16), ...anilloPts(6.8, 4.9, 22.4, 16)], { mat: e.correa });
+    t.caja([0, 4.95, 21.5], [2.2, 0.6, 2.4], { mat: e.hebilla });
+    t.caja([0, 5.2, 21.5], [1.1, 0.3, 1.2], { mat: e.correa });
+    if (duro) {
+      for (const sx of [-1, 1]) t.en([sx * 3.95, 0.35, 0], [0, 0, sx * -2], () => {
+        piernaPlaca(t, e, { z0: 1.0, rod: 10.6, muslo: 19.4, r: 2.9, lado: sx as 1 | -1 });
+        if (L === 'oscuro') pua(t, [0, 3.2, 10.8], [0, 1, 0.3], 3, 0.8, 'ic_hierro_negro');
+        if (L === 'legendario' || (L === 'oscuro' && e.luz)) t.caja([0, 3.25, 5.4], [0.3, 0.3, 4.0], { mat: e.luz!, tono: tonoLuz(e) });
+      });
     } else {
       for (const sx of [-1, 1]) {
-        if (L === 'cuero' || L === 'tachonado' || L === 'hueso') t.masa([t.bul([sx * 3.95, 1.2, 10.6], [2.4, 1.6, 2.4], e.base2)], e.base2, 1);
-        if (e.tachas) for (let k = 0; k < 3; k++) t.esf([sx * 3.6, 3.3, 17 - k * 2.4], 0.5, { mat: e.remache });
-        if (L === 'hueso') t.elip([sx * 4.0, 2.4, 5.4], [1.3, 1.0, 4.0], { mat: 'ic_hueso' });
-        for (let k = 0; k < 3; k++) t.cil([sx * 4.1, 0.1, 2.0 + k * 1.6], [sx * 4.1, 0.1, 2.6 + k * 1.6], 2.4, 2.4, { mat: e.correa });
-        if (L === 'tela' && e.ribete) t.aro([sx * 4.1, 0, 1.2], 2.3, 0.3, { mat: e.borde, n: 12 });
+        const x = sx * 4.0;
+        // rodilleras
+        if (L === 'malla') { t.elip([x, 2.5, 10.8], [2.4, 1.6, 2.2], { mat: 'ic_acero', tono: 0.06 }); t.elip([x + sx * 2.2, 1.6, 10.8], [0.35, 1.5, 1.7], { mat: 'ic_acero', rot: [sx * 30, 0, 0] }); }
+        else if (L === 'hueso') t.elip([x, 2.6, 10.8], [2.2, 1.5, 2.2], { mat: 'ic_hueso' });
+        else if (L !== 'tela') { t.elip([x, 2.3, 10.8], [2.5, 1.45, 2.4], { mat: e.base2, tono: 0.05 }); t.cil([x, 0.4, 10.6], [x, 0.4, 11.2], 3.05, 3.05, { mat: e.correa }); }
+        // correas en la canilla, costura del costado y las tachas
+        if (L !== 'tela') for (let k = 0; k < 2; k++) t.cil([x, 0.15, 4.0 + k * 2.4], [x, 0.15, 4.8 + k * 2.4], 2.7 - k * 0.1, 2.7 - k * 0.1, { mat: e.correa });
+        if (L === 'cuero' || L === 'tachonado') t.cil([x + sx * 3.25, 0.2, 18.8], [x + sx * 2.55, 0.4, 12.4], 0.2, 0.2, { mat: e.costura });
+        if (e.tachas) for (let k = 0; k < 3; k++) t.esf([x - sx * 0.6, 3.2, 17.6 - k * 2.3], 0.5, { mat: e.remache });
+        if (L === 'hueso') t.elip([x, 2.4, 5.4], [1.3, 1.0, 3.6], { mat: 'ic_hueso' });
+        // el ruedo de abajo
+        t.cil([x, 0, 1.2], [x, 0, 2.1], 2.55, 2.45, { mat: L === 'tela' ? (e.ribete ? e.borde : e.base2) : e.correa });
       }
     }
-    if (e.n >= 4) gemaEngastada(t, [0, 7.4, 22.5], 0.95, e, { engaste: e.hebilla });
+    if (e.n >= 4) gemaEngastada(t, [0, 5.4, 21.5], 0.95, e, { engaste: e.hebilla });
   });
 }
 
@@ -954,13 +986,17 @@ function caraEscudo(e: Estilo, color?: string): string {
     case 'tela': return tinte(color ?? '#2a3a7a', 'esmalte');
     case 'cuero': case 'tachonado': return color ? tinte(color, 'cuero') : e.base;
     case 'hueso': return 'ic_madera';
-    case 'malla': return color ? tinte(color, 'esmalte') : 'ic_acero_mate';
-    case 'placas': return color ? tinte(color, 'esmalte') : 'ic_acero_mate';
+    case 'malla': return color ? tinte(color, 'esmalte') : 'ic_acero_escudo';
+    case 'placas': return color ? tinte(color, 'esmalte') : 'ic_acero_escudo';
     case 'sagrado': return 'ic_esmalte';
     case 'oscuro': return 'ic_hierro_negro';
     case 'legendario': return e.base;
   }
 }
+/** Los escudos de metal (malla, placas, sagrado, oscuro, legendario) llevan bisel, campo, filete y remaches. */
+const escudoMetal = (e: Estilo) => e.linea === 'malla' || e.linea === 'placas' || e.linea === 'sagrado' || e.linea === 'oscuro' || e.linea === 'legendario';
+/** El bisel de un escudo de metal: acero pulido que contrasta con el campo (pintado o de acero oscuro). */
+const biselEscudo = (e: Estilo) => (e.linea === 'oscuro' ? 'ic_hierro_negro' : e.linea === 'sagrado' ? 'ic_esmalte' : 'ic_acero');
 /** Emblema al frente (en el plano x-z, sobresale hacia +y desde `y0`). */
 function emblema(t: Taller, e: Estilo, y0: number, k = 1, z0 = 0) {
   const L = e.linea;
@@ -992,9 +1028,30 @@ function emblema(t: Taller, e: Estilo, y0: number, k = 1, z0 = 0) {
 function escudoRedondo(t: Taller, e: Estilo, d: Icono3D) {
   const R = d.variante === 'rodela' ? 8 : 11, cara = caraEscudo(e, d.color);
   t.en([0, 0, 0], [22, -8, 0], () => {
+    const borde = e.linea === 'tela' || e.linea === 'cuero' || e.linea === 'hueso' ? (e.n >= 3 ? 'ic_bronce' : 'ic_hierro') : e.borde;
+    if (escudoMetal(e)) {
+      // escudo de metal: bisel en cono del canto al campo, campo apenas abombado, filete, remaches y umbo con su pestaña
+      const bis = biselEscudo(e), rc = R - 2.8, k = R / 11;
+      t.cil([0, -1.4, 0], [0, -0.3, 0], R - 0.4, R, { mat: bis, tono: -0.08 });
+      t.cil([0, -0.4, 0], [0, 1.3, 0], R - 0.5, rc, { mat: bis, tono: 0.02 });
+      t.elip([0, 1.25, 0], [rc, 1.2, rc], { mat: cara });
+      t.aro([0, -0.4, 0], R, 0.9, { mat: borde, eje: 'y', n: 24 });
+      t.aro([0, 1.3, 0], rc, 0.3, { mat: e.ribete ? e.borde : bis, eje: 'y', n: 22, tono: 0.06 });
+      for (let i = 0; i < 12; i++) { const a = rad(i * 30 + 15), r = R - 1.6; t.esf([Math.cos(a) * r, 0.75, Math.sin(a) * r], 0.5 * k, { mat: e.remache, tono: 0.05 }); }
+      if (e.linea === 'sagrado' || e.linea === 'legendario' || e.linea === 'oscuro') emblema(t, e, 2.2, d.variante === 'rodela' ? 0.62 : 0.85);
+      else {
+        const um = e.borde;
+        t.cil([0, 1.6, 0], [0, 2.4, 0], 4.2 * k, 4.0 * k, { mat: um, tono: -0.04 });
+        t.elip([0, 2.3, 0], [3.0 * k, 2.6 * k, 3.0 * k], { mat: um, tono: 0.06 });
+        for (let i = 0; i < 6; i++) { const a = rad(i * 60); t.esf([Math.cos(a) * 3.6 * k, 2.45, Math.sin(a) * 3.6 * k], 0.36 * k, { mat: e.remache, tono: 0.1 }); }
+        if (e.n >= 4) gemaEngastada(t, [0, 4.6 * k + 0.3, 0], 1.0 * k, e, { engaste: um });
+      }
+      if (e.linea === 'oscuro') for (let i = 0; i < 6; i++) { const a = rad(i * 60 + 30); pua(t, [Math.cos(a) * (R - 1.6), 0.8, Math.sin(a) * (R - 1.6)], [Math.cos(a) * 0.3, 1, Math.sin(a) * 0.3], 2.8, 0.65, 'ic_hierro_negro'); }
+      if (e.linea === 'legendario' || (e.luz && e.linea !== 'oscuro')) t.aro([0, 1.45, 0], rc - 0.8, 0.28, { mat: e.luz ?? tinte(e.luzHex, 'luz'), eje: 'y', n: 20, tono: tonoLuz(e) });
+      return;
+    }
     t.cil([0, -1.4, 0], [0, -0.2, 0], R - 0.4, R, { mat: e.linea === 'hueso' ? 'ic_madera' : cara, tono: -0.05 });
     t.elip([0, -0.2, 0], [R - 0.2, 1.9, R - 0.2], { mat: cara });
-    const borde = e.linea === 'tela' || e.linea === 'cuero' || e.linea === 'hueso' ? (e.n >= 3 ? 'ic_bronce' : 'ic_hierro') : e.borde;
     t.aro([0, -0.4, 0], R, 0.85, { mat: borde, eje: 'y', n: 22 });
     if (e.remaches || e.tachas) for (let k = 0; k < 12; k++) { const a = rad(k * 30 + 15), r = R - 1.7; t.esf([Math.cos(a) * r, -0.2 + 1.9 * Math.sqrt(Math.max(0, 1 - (r / R) ** 2)) + 0.1, Math.sin(a) * r], 0.5, { mat: e.remache }); }
     if (e.linea === 'hueso') for (let k = 0; k < 6; k++) { const a = rad(k * 60); t.cil([Math.cos(a) * 3, 1.4, Math.sin(a) * 3], [Math.cos(a) * (R - 1.5), 0.6, Math.sin(a) * (R - 1.5)], 0.7, 0.5, { mat: 'ic_hueso' }); }
@@ -1018,14 +1075,19 @@ function escudoCometa(t: Taller, e: Estilo, d: Icono3D) {
   const cont: [number, number][] = [];
   for (let i = 0; i <= 8; i++) { const u = i / 8; const z = top - (top - punta) * u, w = heater ? W * Math.cos(Math.pow(u, 1.6) * Math.PI / 2) : W * (u < 0.3 ? 1 - u * 0.15 : (1 - u) / 0.7 * 0.955); cont.push([w, z]); }
   t.en([0, 0, 0], [22, -8, 0], () => {
-    const pts: V3[] = [];
-    for (const [w, z] of cont) for (const sx of [-1, 1]) { pts.push([sx * w, -0.8, z], [sx * w, 0.3, z]); pts.push([sx * w * 0.5, 0.3 + 1.3 * (w / W), z]); }
-    pts.push([0, 1.7, top - 1]);
-    t.poli(pts, { mat: cara });
+    const metal = escudoMetal(e), cuerpo = (f: number, fz: number, dy: number): V3[] => {
+      const zc = (top + punta) / 2, pts: V3[] = [];
+      for (const [w, z] of cont) { const zz = zc + (z - zc) * fz; for (const sx of [-1, 1]) { pts.push([sx * w * f, 0.3 + dy, zz]); pts.push([sx * w * f * 0.5, 0.3 + 1.3 * (w / W) + dy, zz]); if (!dy) pts.push([sx * w, -0.8, z]); } }
+      pts.push([0, 1.7 + dy, zc + (top - 1 - zc) * fz]);
+      return pts;
+    };
+    t.poli(cuerpo(1, 1, 0), { mat: metal ? biselEscudo(e) : cara, tono: metal ? 0.02 : 0 });
+    // escudo de metal: el campo va un escalón más alto que el bisel del borde
+    if (metal) t.poli(cuerpo(0.8, 0.86, 0.42), { mat: cara });
     const borde = e.linea === 'tela' || e.linea === 'cuero' || e.linea === 'hueso' ? (e.n >= 3 ? 'ic_bronce' : 'ic_hierro') : e.borde;
     for (const sx of [-1, 1]) for (let i = 0; i < cont.length - 1; i++) t.cil([sx * cont[i][0], 0.3, cont[i][1]], [sx * cont[i + 1][0], 0.3, cont[i + 1][1]], 0.7, 0.7, { mat: borde });
     t.cil([-W, 0.3, top], [W, 0.3, top], 0.75, 0.75, { mat: borde });
-    if (e.remaches || e.tachas) for (const sx of [-1, 1]) for (let i = 1; i < cont.length - 1; i += 2) t.esf([sx * (cont[i][0] - 1.3), 0.9 + 0.8 * (cont[i][0] / W), cont[i][1]], 0.45, { mat: e.remache });
+    if (e.remaches || e.tachas || metal) for (const sx of [-1, 1]) for (let i = 1; i < cont.length - 1; i += metal ? 1 : 2) t.esf([sx * (cont[i][0] - 1.15), 0.75 + 0.75 * (cont[i][0] / W), cont[i][1]], 0.45, { mat: e.remache, tono: 0.05 });
     emblema(t, e, 1.4, heater ? 0.85 : 0.95, (top + punta) / 2 + 2);
     if (e.linea === 'oscuro') { for (const sx of [-1, 1]) pua(t, [sx * W * 0.95, 0.4, top - 0.4], [sx * 0.7, 0.3, 1], 4, 0.7, 'ic_hierro_negro'); pua(t, [0, 0.3, punta + 0.6], [0, 0.2, -1], 3.5, 0.7, 'ic_hierro_negro'); }
     if (e.linea === 'legendario' || (e.luz && e.linea === 'sagrado')) for (const sx of [-1, 1]) t.cil([sx * (W - 2), 1.2, top - 2], [sx * 1.6, 1.4, punta + 5], 0.3, 0.3, { mat: e.luz ?? tinte(e.luzHex, 'luz'), tono: tonoLuz(e) });
@@ -1036,7 +1098,15 @@ function escudoTorre(t: Taller, e: Estilo, d: Icono3D) {
   t.en([0, 0, 0], [24, -6, 0], () => {
     const pts: V3[] = [];
     for (let i = 0; i <= 6; i++) { const a = rad(-60 + i * 20), x = Math.sin(a) * W / Math.sin(rad(60)), y = Math.cos(a) * 3.2 - 1.6; for (const z of [bot, top - Math.abs(x) * 0.25]) pts.push([x, y, z], [x, y - 1.0, z]); }
-    t.poli(pts, { mat: cara });
+    const metal = escudoMetal(e);
+    t.poli(pts, { mat: metal ? biselEscudo(e) : cara, tono: metal ? 0.02 : 0 });
+    if (metal) {
+      // el campo, un escalón más alto y metido adentro del bisel, con su fila de remaches alrededor
+      const campo: V3[] = [];
+      for (let i = 0; i <= 6; i++) { const a = rad(-60 + i * 20), x = Math.sin(a) * W * 0.8 / Math.sin(rad(60)), y = Math.cos(a) * 3.2 - 1.2; for (const z of [bot + 2.2, top - 2.2 - Math.abs(x) * 0.25]) campo.push([x, y, z], [x, y - 1.2, z]); }
+      t.poli(campo, { mat: cara });
+      for (const sx of [-1, 1]) filaRemaches(t, [sx * (W - 1.1), Math.cos(rad(54)) * 3.2 - 0.9, bot + 1.2], [sx * (W - 1.1), Math.cos(rad(54)) * 3.2 - 0.9, top - 1.4 - W * 0.25], 7, 0.42, e.remache);
+    }
     const borde = e.linea === 'tela' || e.linea === 'cuero' || e.linea === 'hueso' ? (e.n >= 3 ? 'ic_bronce' : 'ic_hierro') : e.borde;
     for (let i = 0; i < 6; i++) { const a0 = rad(-60 + i * 20), a1 = rad(-40 + i * 20); const x0 = Math.sin(a0) * W / Math.sin(rad(60)), x1 = Math.sin(a1) * W / Math.sin(rad(60)); for (const zf of [(x: number) => top - Math.abs(x) * 0.25, () => bot]) t.cil([x0, Math.cos(a0) * 3.2 - 1.5, zf(x0)], [x1, Math.cos(a1) * 3.2 - 1.5, zf(x1)], 0.7, 0.7, { mat: borde }); }
     for (const sx of [-1, 1]) t.cil([sx * W, -1.5, bot], [sx * W, -1.5, top - W * 0.25], 0.75, 0.75, { mat: borde });
