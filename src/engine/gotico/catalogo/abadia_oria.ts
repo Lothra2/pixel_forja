@@ -17,12 +17,13 @@ import {
  * Es demasiado grande para un solo sprite (la prueba del catálogo pide menos de 900 px de lado), así que va en tres
  * piezas que encajan a lo largo de y, todas con la misma variante y el mismo cuadro:
  *
- *   abo_catedral_cabecera  huella 13×5   ancla en (cx, cy - 7)
- *   abo_catedral_nave      huella 13×9   ancla en (cx, cy)
- *   abo_catedral_fachada   huella 13×5   ancla en (cx, cy + 7)
+ *   abo_catedral_cabecera  huella 13×8   ancla en (cx, cy - 9)   crucero, transepto, aguja partida, girola y capillas
+ *   abo_catedral_nave      huella 13×9   ancla en (cx, cy)       cinco tramos con arbotantes (y la punta caída de la aguja)
+ *   abo_catedral_fachada   huella 13×5   ancla en (cx, cy + 7)   las dos torres, el rosetón y el pórtico triple
  *
- * (cx, cy) es la celda del centro de la nave; la puerta central queda en la celda (cx, cy + 9) y la escalinata baja a
- * (cx, cy + 10). El orden de dibujo por cx + cy ya las pinta bien (cabecera, nave, fachada). `CATEDRAL` lo trae en datos.
+ * (cx, cy) es la celda del centro de la nave: la huella total es 13×22 celdas, de (cx - 6, cy - 12) a (cx + 6, cy + 9).
+ * La puerta central queda en la celda (cx, cy + 8) y la escalinata baja a (cx, cy + 9). El orden de dibujo por cx + cy
+ * ya las pinta bien (cabecera, nave, fachada). `CATEDRAL` trae lo mismo en datos.
  *
  * Además: árbol muerto con ramas en garra, grupos de lápidas, niebla baja que se arrastra, muro del camposanto con
  * verja (y su variante a lo largo de y) y el farol de hierro de luz roja.
@@ -266,7 +267,7 @@ const YT0 = 80, YT1 = 122; // las torres (fondo y frente)
 const XT = 53;     // centro de cada torre
 const LT = 42;     // lado de la torre
 const YX0 = -72, YX1 = -120; // crucero (entre y0 e y1)
-const XB = 82;     // hastial del transepto
+const XB = 74;     // hastial del transepto
 const YAB = -136;  // centro del ábside
 const PILAS = [64, 36, 8, -20, -48];
 const BAHIAS = [50, 22, -6, -34, -61];
@@ -507,9 +508,9 @@ function nave(g: G, st: Estado) {
   for (const y of BAHIAS) { ventanal(alto(y), 0, 17, 136, 42, TM, st.luz, S, 3); ventanal(bajo(y), 0, 12, 24, 32, TM, st.luz, S, 2, st.v === 'sellada' && (y === 22 || y === -34)); }
   // estribos y arbotantes a los dos lados
   for (const y of PILAS) {
-    estribo(cara(g, XL, y, -90), 0, 7, XE - XL - 2, 184, SG, { pin: 40, garg: true });
+    estribo(cara(g, XL, y, -90), 0, 6, XE - XL - 4, 184, SG, { pin: 40, garg: true });
     arbotante(g, XL + 1, XC, y, 166, 192, SG);
-    estribo(cara(g, -XL, y, 90), 0, 7, XE - XL - 2, 184, SG, { pin: 40 });
+    estribo(cara(g, -XL, y, 90), 0, 6, XE - XL - 4, 184, SG, { pin: 40 });
     arbotante(g, -XL - 1, -XC, y, 166, 192, SG);
   }
   mensulas(cara(g, XC, (y0 + y1) / 2, -90), -(y0 - y1) / 2, (y0 - y1) / 2, HC - 3, L);
@@ -518,13 +519,14 @@ function nave(g: G, st: Estado) {
   tejado(g, true, 0, XC, HC + 2, ZR, y1 - 4, y0);
   for (const s of [-1, 1]) g.poli([[s * (XL + 3.5), y0, HL], [s * (XL + 3.5), y1, HL], [s * (XL + 3.5), y0, HL + 3], [s * (XL + 3.5), y1, HL + 3], [s * XC, y0, ZL], [s * XC, y1, ZL], [s * XC, y0, ZL + 3], [s * XC, y1, ZL + 3]], { mat: 'abo_pizarra', tono: s > 0 ? 0.04 : 0 });
   // el tramo hundido: el agujero, las vigas al aire, lo que cayó adentro y las brasas
-  const H0 = -12, H1 = 30;
+  const H0 = -24, H1 = 36;
   if (st.herida) {
     const hueco = (q: [number, number][]) => g.poli(q.flatMap(([s, y]) => [enTecho(s, y, -5), enTecho(s, y, 4)]), { mat: 'abo_pizarra', resta: true });
-    hueco([[0.12, H0 + 6], [0.45, H0], [0.86, H0 + 9], [0.8, H0 + 26], [0.25, H0 + 28]]);
-    hueco([[0.2, H0 + 22], [0.62, H0 + 20], [0.7, H1], [0.35, H1 + 2]]);
-    for (let y = H0 - 2; y <= H1 + 3; y += 4.4) {
-      const sb = a.r() < 0.4 ? 1 : 0.35 + a.r() * 0.45, p0 = enTecho(-0.02, y, -3.4), p1 = enTecho(sb, y, -3.4);
+    hueco([[0.08, H0 + 8], [0.45, H0], [0.9, H0 + 10], [0.88, H0 + 34], [0.15, H0 + 36]]);
+    hueco([[0.14, H0 + 30], [0.66, H0 + 28], [0.72, H1], [0.3, H1 + 2]]);
+    for (let y = H0 - 2; y <= H1 + 3; y += 5.6) {
+      if (a.r() < 0.25) continue;
+      const sb = a.r() < 0.3 ? 1 : 0.25 + a.r() * 0.5, p0 = enTecho(-0.02, y, -3.4), p1 = enTecho(sb, y, -3.4);
       viga(g, p0, p1, 2, 2.6, { mat: 'abo_madera_quemada', tono: (a.r() - 0.5) * 0.1 });
       if (sb < 1) g.esf(p1[0], p1[1], p1[2], 1.4, { mat: 'abo_brasa', tono: -0.2 + st.p * 0.25 });
     }
@@ -533,7 +535,9 @@ function nave(g: G, st: Estado) {
     viga(g, [-XC + TM, H0 + 4, HC - 6], [XC - TM, H0 + 6, HC - 6], 3.4, 3.4, { mat: 'abo_madera_quemada' });
     viga(g, [-XC + TM, H0 + 24, HC - 6], [6, H0 + 20, 120], 3.4, 3.4, { mat: 'abo_madera_quemada' });
     for (let i = 0; i < 4; i++) viga(g, [rr(a, -20, 10), rr(a, H0, H1), 10.5], [rr(a, -20, 20), rr(a, H0, H1), 10 + rr(a, 2, 30)], 3, 3, { mat: 'abo_madera_quemada' });
-    for (let i = 0; i < 9; i++) g.elip(rr(a, -22, 18), rr(a, H0, H1), 10.3, 3 + a.r() * 4, 2 + a.r() * 3, 0.9, { mat: 'abo_brasa', tono: -0.35 + st.p * 0.3 + a.r() * 0.1, giro: a.r() * 90 });
+    for (let i = 0; i < 12; i++) g.elip(rr(a, -24, 20), rr(a, H0, H1), 10.3, 3 + a.r() * 5, 2 + a.r() * 4, 1.2 + a.r() * 2, { mat: 'abo_brasa', tono: -0.3 + st.p * 0.3 + a.r() * 0.1, giro: a.r() * 90 });
+    // el fuego que sigue ardiendo adentro: lenguas que suben y bajan con el pulso
+    for (let i = 0; i < 7; i++) { const x = rr(a, -22, 12), y = rr(a, H0 + 4, H1 - 4), h = (24 + a.r() * 40) * (0.75 + 0.35 * Math.sin((st.f / 8) * TAU + i * 1.7)); g.cil(x, y, 10, 3 + a.r() * 3, h, { mat: 'abo_llama', r1: 0.3, tono: -0.1 + a.r() * 0.15 }); }
     cascotes(g, 12, 18, 18, 'abo_pizarra', -4, (H0 + H1) / 2, 2.4);
     for (let i = 0; i < 8; i++) { const p = enTecho(rr(a, 0.05, 0.3), rr(a, H0 + 2, H1), 1.4); g.caja(p[0], p[1], p[2], 4.4, 3.4, 0.8, { mat: 'abo_pizarra', giro: a.r() * 60, incl: rr(a, 20, 60), tono: 0.05 }); }
     cascotes(g, 10, 8, 20, 'abo_pizarra', XE + 10, (H0 + H1) / 2, 2.2);
@@ -541,8 +545,8 @@ function nave(g: G, st: Estado) {
   }
   // la punta de la aguja del crucero, caída sobre el tejado (en la herida se metió por el hueco)
   const rk = 7.9;
-  const B: V3 = st.herida ? [4, -66, sobreTecho(4) + rk] : [5, -70, sobreTecho(5) + rk];
-  const Ep: V3 = st.herida ? [16, 6, 206] : [27, 10, sobreTecho(27) + 1];
+  const B: V3 = st.herida ? [5, -36, sobreTecho(5) + rk] : [5, -70, sobreTecho(5) + rk];
+  const Ep: V3 = st.herida ? [17, 12, 200] : [27, 10, sobreTecho(27) + 1];
   const ej = sub3(Ep, B), Lp = Math.hypot(...ej);
   g.cil(B[0], B[1], B[2], rk, Lp, { mat: 'abo_plomo', r1: 0.6, eje: ej, tono: 0.03 });
   for (let i = 1; i < 4; i++) { const p = mix(B, Ep, i * 0.22); g.cil(p[0], p[1], p[2], rk * (1 - i * 0.22) + 0.5, 1.4, { mat: 'abo_plomo', eje: ej, tono: 0.08 }); }
@@ -560,8 +564,8 @@ function nave(g: G, st: Estado) {
     const x = 10 + Math.sin(f0) * 10 + u * 22, y = (H0 + H1) / 2 + Math.cos(f0 * 1.3) * 12 + Math.sin(u * 7 + f0) * 5, z = 236 + u * 120;
     g.elip(x, y, z, 1.1 * (1 - u * 0.5), 1.1 * (1 - u * 0.5), 1.8 * (1 - u * 0.4), { mat: 'abo_chispa', tono: -0.1 - u * 0.35 });
   }
-  const c: V3 = st.herida ? [14, (H0 + H1) / 2, 214] : [XC + 4, 8, 150];
-  return { piezas: g.ps, resplandor: st.lit ? { c, r: (st.herida ? 86 : 62) + st.p * 24, color: st.p > 0.5 ? '#ff4a1c' : '#c42410' } : undefined };
+  const c: V3 = st.herida ? [8, (H0 + H1) / 2, 190] : [XC + 4, 8, 150];
+  return { piezas: g.ps, resplandor: st.lit ? { c, r: (st.herida ? 96 : 62) + st.p * 28, color: st.p > 0.5 ? '#ff4a1c' : '#c42410' } : undefined };
 }
 
 // ------------------------------------------------------------------ la cabecera: crucero, transepto, aguja, girola y capillas
@@ -577,13 +581,12 @@ function cabecera(g: G, st: Estado) {
   for (const s of [-1, 1]) g.caja(s * (XB - TM / 2), ya, 0, TM, YX0 - YX1, HC, { mat: S });
   const tr = cara(g, XB, ya, -90), trN = (x: number) => cara(g, x, YX0, 0);
   desgaste(tr, -20, 20, 10, 200, S, 4);
-  desgaste(trN(71), -9, 9, 10, 190, S, 2);
+  desgaste(trN(66), -6, 6, 10, 190, S, 1);
   roseton(tr, 0, 168, 21, TM, st.luz, S, 10);
   for (const x of [-11, 11]) ventanal(tr, x, 11, 30, 64, TM, st.luz, S, 2);
-  ventanal(trN(71.5), 0, 10, 40, 98, TM, st.luz, S, 2);
+  ventanal(trN(66), 0, 9, 40, 98, TM, st.luz, S, 1);
   for (const yy of [YX0, YX1]) estribo(cara(g, XB, yy, -90), 0, 10, 12, 220, SG, { pin: 44, garg: yy === YX0 });
-  estribo(cara(g, 61, YX0, 0), 0, 6, 10, 205, SG, { pin: 40, garg: true });
-  mensulas(cara(g, 72, YX0, 0), -10, 10, HC - 3, L);
+  mensulas(cara(g, 66, YX0, 0), -8, 8, HC - 3, L);
   tejado(g, false, ya, (YX0 - YX1) / 2, HC + 2, ZR, -XB + 2, XB - 2);
   tejado(g, true, 0, XC, HC + 2, ZR, YAB, YX0 + 2);
   for (const s of [-1, 1]) hastial(cara(g, s * XB, ya, s > 0 ? -90 : 90), (YX0 - YX1) / 2 + 4, HC, ZR + 12, TM + 2, S);
@@ -634,7 +637,7 @@ function cabecera(g: G, st: Estado) {
   for (let i = 0; i < 5; i++) { const t = a.r() * TAU, r = rk * 0.6; g.palo([Math.cos(t) * r, ya + Math.sin(t) * r, zb + Hb - 12], [Math.cos(t) * r * 1.3, ya + Math.sin(t) * r * 1.3, zb + Hb + 3 + a.r() * 9], 0.9, { mat: 'abo_madera_quemada' }); }
   // base sucia, hiedra, sillares caídos y pasto
   base(tr, -22, 22, 140, 2);
-  base(trN(71), -9, 9, 110, 1);
+  base(trN(66), -7, 7, 110, 1);
   base(radial(RC + 12, -18), -7, 7, 60, 2);
   base(radial(RC + 12, -54), -7, 7, 60, 1);
   cascotes(g, 8, 14, 10, SG, XB + 18, ya, 3);
@@ -670,11 +673,11 @@ function obj(id: string, nombre: [string, string], variantes: string[], huella: 
 
 // ------------------------------------------------------------------ árbol muerto en garra
 /** Curva que sale de `p` con rumbo `az`, sube con `el0` y se va doblando `curl` (se cierra como un dedo). */
-function curva(p: V3, az: number, el0: number, curl: number, L: number, n: number, bamb: number, a: Arma): V3[] {
+function curva(p: V3, az: number, el0: number, curl: number, L: number, n: number, bamb: number, a: Arma, gira = 0): V3[] {
   const pts: V3[] = [p];
   let q = p;
   for (let i = 1; i <= n; i++) {
-    const s = i / n, el = el0 - curl * s, az2 = az + Math.sin(s * 5 + bamb) * 0.25 + (a.r() - 0.5) * 0.2;
+    const s = i / n, el = el0 - curl * s * s, az2 = az + gira * s * s + Math.sin(s * 5 + bamb) * 0.25 + (a.r() - 0.5) * 0.2;
     const d: V3 = [Math.cos(az2) * Math.cos(el), Math.sin(az2) * Math.cos(el), Math.sin(el)];
     q = [q[0] + d[0] * L / n, q[1] + d[1] * L / n, q[2] + d[2] * L / n];
     pts.push(q);
@@ -685,7 +688,7 @@ function arbolGarra(g: G, alto: number, gr: number, o: { tor: number; brazos: nu
   const a = g.a, cs: Comp[] = [], nT = 7, hT = alto * (o.partido ? 0.5 : 0.46), fase = a.r() * TAU, inc = o.inclina ?? 0, puntas: V3[] = [];
   const tr: V3[] = [];
   for (let i = 0; i <= nT; i++) { const t = i / nT; tr.push([Math.sin(t * 3 + fase) * 5 * o.tor + inc * t * t * hT, Math.cos(t * 2.4 + fase) * 4 * o.tor, t * hT - (i === 0 ? 2 : 0)]); }
-  const rad = (t: number) => gr * (1 - t * 0.5);
+  const rad = (t: number) => gr * (1 - t * 0.5 + Math.max(0, 0.25 - t) * 1.6);
   for (let i = 1; i <= nT; i++) cs.push(g.hu(tr[i - 1], tr[i], rad((i - 1) / nT), rad(i / nT)));
   // vetas que se retuercen alrededor del tronco
   for (let k = 0; k < 3; k++) for (let i = 0; i < nT; i++) {
@@ -701,14 +704,14 @@ function arbolGarra(g: G, alto: number, gr: number, o: { tor: number; brazos: nu
   const nb = o.brazos;
   for (let i = 0; i < nb; i++) {
     const t = o.partido ? 0.45 + a.r() * 0.5 : 0.62 + (i / nb) * 0.38, base = tr[Math.min(nT, Math.round(t * nT))];
-    const az = (i / nb) * TAU + fase + a.r() * 0.5, Lb = alto * (0.3 + a.r() * 0.12), r0 = gr * 0.55;
-    const br = curva(base, az, 1.05 + a.r() * 0.3, 0.75, Lb, 4, a.r() * 6, a);
+    const az = (i / nb) * TAU + fase + a.r() * 0.5, Lb = alto * (0.3 + a.r() * 0.12), r0 = gr * 0.58;
+    const br = curva(base, az, 0.5 + a.r() * 0.35, -0.45, Lb, 4, a.r() * 6, a);
     for (let k = 1; k < br.length; k++) cs.push(g.hu(br[k - 1], br[k], r0 * (1 - (k - 1) / 4 * 0.5), r0 * (1 - k / 4 * 0.5)));
     const mano = br[br.length - 1], rd = r0 * 0.48, nd = 3 + Math.floor(a.r() * 2);
     for (let d = 0; d < nd; d++) {
-      const azd = az + (d - (nd - 1) / 2) * 0.55 + (a.r() - 0.5) * 0.2;
-      const dedo = curva(mano, azd, 0.7 + a.r() * 0.3, 2.2 + a.r() * 0.6, Lb * (0.45 + a.r() * 0.15), 4, a.r() * 6, a);
-      for (let k = 1; k < dedo.length; k++) cs.push(g.hu(dedo[k - 1], dedo[k], rd * (1 - (k - 1) / 4 * 0.75), Math.max(0.35, rd * (1 - k / 4 * 0.85))));
+      const sp = d - (nd - 1) / 2, azd = az + sp * 0.62 + (a.r() - 0.5) * 0.2;
+      const dedo = curva(mano, azd, 1.05 + a.r() * 0.3, 2.3 + a.r() * 0.5, Lb * (0.62 + a.r() * 0.2), 5, a.r() * 6, a, -sp * 0.9);
+      for (let k = 1; k < dedo.length; k++) cs.push(g.hu(dedo[k - 1], dedo[k], rd * (1 - (k - 1) / 5 * 0.7), Math.max(0.35, rd * (1 - k / 5 * 0.85))));
       puntas.push(dedo[2]);
     }
     // ramitas secas a mitad de brazo
@@ -721,7 +724,7 @@ function arbolGarra(g: G, alto: number, gr: number, o: { tor: number; brazos: nu
 }
 obj('abo_arbol_muerto', ['Árbol muerto en garra', 'Clawed dead tree'], ['garra', 'retorcido', 'partido', 'inclinado', 'con_cuervos'], [2, 2], true, (v, _f, g, a) => {
   monticulo(g, 16, 14, 2.2, 'mu_tierra', 4, 0, 0, 7);
-  const alto = 120 + a.r() * 50, gr = 6.5 + a.r() * 2.5;
+  const alto = 145 + a.r() * 50, gr = 7 + a.r() * 2.5;
   const puntas = arbolGarra(g.sub(0, 0, 0, a.r() * 360), alto, gr, { tor: v === 'retorcido' ? 1.5 : 0.7, brazos: v === 'partido' ? 3 : v === 'garra' ? 5 : 4, inclina: v === 'inclinado' ? 0.5 : 0, partido: v === 'partido' });
   if (v === 'con_cuervos') { const altas = [...puntas].sort((p, q) => q[2] - p[2]); for (let i = 0; i < 3 && i < altas.length; i++) { const p = altas[i * 2 % altas.length]; cuervo(g.sub(p[0], p[1], p[2] - 0.6, a.r() * 360), elegir(a, ['posado', 'grazna'] as const), Math.floor(a.r() * 8), 8, 0.8); } }
   musgo(g.sub(0, 0, 0, 30), 3, -5, 5, gr * 0.9, 1, 12, 'abo_musgo');
@@ -781,17 +784,14 @@ obj('abo_niebla', ['Niebla baja del camposanto', 'Low graveyard mist'], ['baja',
     const ph = a.r(), vel = v === 'remanso' ? 0.5 : 1, u = (ph + (f / 8) * vel) % 1, k = Math.sin(u * Math.PI);
     const Lj = rr(a, 30, 56) * (v === 'jirones' ? 0.75 : 1), r = rr(a, 7, 12) * (v === 'espesa' ? 1.25 : 1), yy = rr(a, -30, 30);
     const xx = v === 'remanso' ? (u - 0.5) * 30 : -42 + u * 84, x = xx * cd - yy * sd, y = xx * sd + yy * cd;
-    const fase = a.r() * TAU, hebras = v === 'jirones' ? 3 : 2;
-    // velo de abajo: dos o tres lenguas chatas
-    for (let j = 0; j < 3; j++) { const o = (j - 1) * 0.3; g.elip(x + cd * o * Lj, y + sd * o * Lj, 0.4, Lj * 0.32 * (0.6 + k * 0.4), r * (0.55 + 0.25 * Math.sin(fase + j + f * 0.8)), 0.9 + k * 0.6, { mat: 'abo_niebla', giro: dir / GR + Math.sin(fase + j) * 14, tono: -0.42 + k * 0.12 }); }
-    // hebras que ondulan arriba del velo
-    for (let hb = 0; hb < hebras; hb++) {
-      const off = (a.r() - 0.5) * r * 1.4, z = 1.6 + a.r() * 3.2, m = 6;
-      for (let s = 0; s < m; s++) {
-        const t = (s + 0.5) / m - 0.5, kk = Math.sin((t + 0.5) * Math.PI), w = off + Math.sin(t * 6 + fase + (f / 8) * TAU) * r * 0.3;
-        if (kk * k < 0.15) continue;
-        g.elip(x + cd * t * Lj - sd * w, y + sd * t * Lj + cd * w, z + Math.sin(t * 4 + fase) * 0.8, (Lj / m) * 0.7, Math.max(0.8, r * 0.18 * kk * k + 0.5), 0.5 + kk * k * 0.5, { mat: 'abo_niebla', giro: dir / GR + Math.cos(t * 6 + fase) * 18, tono: -0.3 + kk * k * 0.16 });
-      }
+    const fase = a.r() * TAU, nb = v === 'espesa' ? 34 : v === 'jirones' ? 18 : 26;
+    // copos chatos repartidos en el jirón: densos en el medio y ralos en el borde (una trama, no una mancha)
+    for (let q = 0; q < nb; q++) {
+      const t = a.r() - 0.5, w = (a.r() + a.r() - 1) * r, dens = k * (1 - 4 * t * t) * (1 - (w / r) ** 2), tira = a.r();
+      const ond = Math.sin(t * 6 + fase + (f / 8) * TAU) * r * 0.25, xx2 = cd * t * Lj - sd * (w + ond), yy2 = sd * t * Lj + cd * (w + ond);
+      const tam = 2 + a.r() * 3 + dens * 3, z = 0.4 + a.r() * (1.2 + dens * 3), gi = (a.r() - 0.5) * 40, ex = a.r();
+      if (tira > dens * 1.25) continue;
+      g.elip(x + xx2, y + yy2, z, tam * (1.4 + ex), tam, 0.5 + dens * 0.9, { mat: 'abo_niebla', giro: dir / GR + gi, tono: -0.42 + dens * 0.22 });
     }
   }
 }, { cuadros: 8, t: 4, plano: true });
