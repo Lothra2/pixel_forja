@@ -1230,7 +1230,8 @@ function actualizarHeroe(j: Juego, dt: number) {
   actualizarMecanicas(j, dt);
   // regeneración
   h.regen += dt;
-  const regV = h.c.regen_vida + (j.zona.tipo === 'pueblo' ? h.vidaMax * 0.05 : 0);
+  // fuera de combate (5 s sin pegar ni recibir) el héroe se repone despacio: 1.5 % de su vida por segundo
+  const regV = h.c.regen_vida + (j.zona.tipo === 'pueblo' ? h.vidaMax * 0.05 : j.t - h.tCombate > 5 ? h.vidaMax * 0.015 : 0);
   h.vida = Math.min(h.vidaMax, h.vida + regV * dt);
   h.mana = Math.min(h.c.manaMax, h.mana + h.c.manaMax * 0.025 * (1 + h.c.regen_mana / 100) * dt);
   if (h.veneno > 0) { h.veneno -= dt; h.vida -= h.venenoDps * dt; if (h.vida <= 0) { h.vida = 1; } }
@@ -1330,7 +1331,8 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
       if (m.calidad >= 3 || m.def.jefe || m.def.ia === 'jefe') { j.jefe = m; if (!(m as any).hablo) { (m as any).hablo = true; const fr = FRASE_JEFE[m.def.id]; if (fr) { msg(j, fr, '#ff6040'); m.habla = fr[j.idi]; (m as any).hablaT = 4; } sonar(j, 'rugido_jefe'); Sonido.musica('jefe'); } }
       else if (R() < 0.3) sonar(j, m.def.sonido === 'hueso' ? 'golpe_hueso' : 'grunido', m.x, m.y, 0.6);
       // el grupo despierta junto
-      for (const o of j.monstruos) if (!o.muerto && !o.dueno && o.estado !== 'perseguir' && o.estado !== 'surgir' && dist(o.x, o.y, m.x, m.y) < 5) { o.estado = 'perseguir'; o.objetivo = h; }
+      // el grupo despierta junto, pero no entero: los más cercanos sí, los demás a veces (llegan después cuando te vean)
+      for (const o of j.monstruos) if (!o.muerto && !o.dueno && o.estado !== 'perseguir' && o.estado !== 'surgir') { const d2 = dist(o.x, o.y, m.x, m.y); if (d2 < 2.5 || (d2 < 5 && R() < 0.4)) { o.estado = 'perseguir'; o.objetivo = h; } }
     } else {
       // deambular cerca de su lugar
       if (m.pensar <= 0) { m.pensar = entre(2, 5); m.estado = R() < 0.5 ? 'deambular' : 'dormido'; (m as any).dest = [m.ox + entre(-3, 3), m.oy + entre(-3, 3)]; }
@@ -1546,6 +1548,17 @@ export function usarPocion(j: Juego, i: number) {
 }
 export function curarEnTiempo(j: Juego, dt: number) {
   const h = j.heroe as any;
+  // el cinturón se rellena solo desde la bolsa: cada hueco toma una poción (vida primero en los tres primeros)
+  if (!h.muerto && (h.tCinturon = (h.tCinturon ?? 0) - dt) <= 0) {
+    h.tCinturon = 0.5;
+    const d = h.d;
+    for (let i = 0; i < d.cinturon.length; i++) if (!d.cinturon[i]) {
+      const pref = i < 3 ? 'vida' : 'mana';
+      let idx = d.bolsa.findIndex((b: any) => b.o.tipo === 'pocion' && b.o.pocion === pref);
+      if (idx < 0) idx = d.bolsa.findIndex((b: any) => b.o.tipo === 'pocion');
+      if (idx >= 0) { d.cinturon[i] = d.bolsa[idx].o; d.bolsa.splice(idx, 1); }
+    }
+  }
   if (h.curando) { h.vida = Math.min(h.vidaMax, h.vida + h.curando.v * dt); h.curando.t -= dt; if (h.curando.t <= 0) h.curando = null; }
   if (h.cargando) { h.mana = Math.min(h.c.manaMax, h.mana + h.cargando.v * dt); h.cargando.t -= dt; if (h.cargando.t <= 0) h.cargando = null; }
 }
