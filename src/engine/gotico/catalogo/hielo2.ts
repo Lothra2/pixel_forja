@@ -197,7 +197,7 @@ registrar(
       for (const s of [-1, 1]) racimo(a, ps, [s * 20, 0, 2], 3, 28, 3, H2, 0.5);
       carambanos(a, ps, [-18, 10, 17], [18, 10, 17], 8, 8, 1);
       let res: string | null = null;
-      if (v === 'ofrenda') { ps.push(...atrapado(cuerpo({ cu: CUERPOS.muerto, eq: EQUIPOS.preso, acc: 'morir', f: 7, dir: 'e', m: rotM(0), s: 0.62, t: [0, 0, 20] }), 0.25)); }
+      if (v === 'ofrenda') { const u = ciclo(f, 8); ps.push(a.esfera(-18 + u * 36, 10.6, 20, 0.7 + Math.sin(u * PI) * 0.5, { mat: 'hie2_luz' })); ps.push(...atrapado(cuerpo({ cu: CUERPOS.muerto, eq: EQUIPOS.preso, acc: 'morir', f: 7, dir: 'e', m: rotM(0), s: 0.62, t: [0, 0, 20] }), 0.25)); }
       else if (v === 'sangre') { ps.push(...losa(a, 12, 7, 20, 20.6, 'cu_sangre_viva', 7, { tono: -0.3 + onda(f, 8) * 0.1 })); craneo(a, ps, [6, 3, 23.5], 3, 45); for (let i = 0; i < 3; i++) { const u = ciclo(f + i * 2.6, 8); ps.push(a.elipsoide(-6 + i * 6, 10.4, 18 - u * 16, 0.5, 0.5, 1, { mat: 'cu_sangre_viva' })); } res = '#c01818'; }
       else if (v === 'orbe') { const z = 34 + onda(f, 8) * 2; ps.push(a.esfera(0, 0, z, 4.4, { mat: 'hie2_luz' })); for (let i = 0; i < 6; i++) { const t = (i / 6) * TAU + ciclo(f, 8) * TAU; ps.push(prisma(a, [Math.cos(t) * 9, Math.sin(t) * 9, z - 3], [0, 0, 1], 6, 1, H2, 0.2, 4)); } ps.push(a.cilindro(0, 0, 20, 3, 6, { mat: H2, r1: 1.4 })); res = '#80d0ec'; }
       else { for (let i = 0; i < 5; i++) { const brillo = 0.5 + 0.5 * onda(f, 8, i * 1.2); ps.push(a.caja(-12 + i * 6, 8.2, 8, 3, 0.5, 5, { mat: 'hie2_luz_violeta', tono: -0.4 + brillo * 0.4 })); } ps.push(a.cilindro(0, 0, 20.2, 7, 0.4, { mat: 'hie2_luz_violeta', tono: -0.3 + onda(f, 8) * 0.15 })); res = '#a888ec'; }
@@ -558,6 +558,7 @@ registrar(
       const R = 16;
       for (let i = 0; i < 12; i++) { const t = (i / 12) * TAU; ps.push(pena(a, Math.cos(t) * (R + 3), Math.sin(t) * (R + 3), 3, 5 + a.r() * 2, 4 + a.r() * 2, 3.6 + a.r() * 3, { mat: elegir(a, [H2, 'hie2_roca']), giro: deg(t) })); }
       ps.push(a.cilindro(0, 0, 0.4, R, 0.6, { mat: v === 'luz' ? 'hie2_luz' : 'hie2_agua', tono: v === 'luz' ? -0.3 + onda(f, 8) * 0.15 : 0 }));
+      if (v === 'abierto') { const u = ciclo(f, 8); ps.push(a.cilindro(jit(a, 4), jit(a, 4), 0.9, 2 + u * 10, 0.15, { mat: H2, tono: 0.2 - u * 0.3 })); ps.push(a.cilindro(0, 0, 0.92, 1.5 + ((u + 0.5) % 1) * 10, 0.12, { mat: H2, tono: 0.1 - ((u + 0.5) % 1) * 0.3 })); }
       if (v === 'sellado') { ps.push(a.cilindro(0, 0, 0, R + 1, 3, { mat: H2 })); for (let i = 0; i < 4; i++) { const t = (i / 4) * PI; ps.push(a.palo([Math.cos(t) * R, Math.sin(t) * R, 3.2], [-Math.cos(t) * R, -Math.sin(t) * R, 3.2], 1, { mat: 'hierro_oxido' })); } }
       if (v === 'luz') for (let i = 0; i < 5; i++) { const u = ciclo(f + i * 1.6, 8), t = i * 1.3 + u * 3; ps.push(a.elipsoide(Math.cos(t) * 6, Math.sin(t) * 6, 2 + u * 30, 1.8 * (1 - u * 0.5), 1.8 * (1 - u * 0.5), 3, { mat: 'hie2_luz', tono: 0.1 - u * 0.4 })); }
       ps.push(suelo(a));

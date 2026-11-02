@@ -1,6 +1,6 @@
 import { registrar, conVarianteY, type Arma, type Pieza, type V3 } from '../objeto';
 import { MATERIALES } from '../materiales';
-import { masa, hueso as hM, bulto, ruido, type Comp } from '../render';
+import { masa, hueso as hM, bulto } from '../render';
 import {
   PI, rad, add, mez, onda, entre, forma, suelo, mover, pena, piedras, prisma, viga, cuerda, cadena, calavera, huesoL, llama, farol, cadaver,
   penasco, paredRoca, recorte, semisDe, contornoOrg, paredesHueco,
@@ -820,4 +820,43 @@ registrar(
     },
   },
 );
-conVarianteY('min_riel', 'min_riel_fin', 'min_riel_cruce', 'min_puntal', 'min_galeria', 'min_pared_veta', 'min_linternas_cuerda', 'min_cartel', 'min_andamio');
+registrar(
+  {
+    id: 'min_tren', nombre: ['Tren de vagonetas', 'Mine cart train'], tema: 'mina', variantes: ['cargado', 'mixto', 'descarrilado'], huella: [5, 2], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [], fm = forma(a, 4);
+      viaX(a, ps, -40, 40, { faltan: fm === 3 ? 0.15 : 0 });
+      const cargas: Carga[] = v === 'cargado' ? ['carbon', 'carbon'] : [(['oro', 'hierro', 'carbon'] as Carga[])[fm % 3], 'vacia'];
+      for (let i = 0; i < 2; i++) {
+        const x = -15 + i * 30, des = v === 'descarrilado' && i === 1;
+        ps.push(...mover(vagoneta(a, cargas[i], des ? 1 : 0), [x, des ? 6 : 0, des ? 3 : 1.8], des ? entre(a, 15, 30) : (a.r() - 0.5) * 2, des ? 12 : 0));
+      }
+      // el enganche: barra y cadena entre las dos
+      ps.push(a.palo([-2, 0, 7], [2, 0, 7], 0.7, { mat: RIEL }));
+      cadena(a, ps, [-1.5, 0, 7.4], [v === 'descarrilado' ? 4 : 1.5, v === 'descarrilado' ? 4 : 0, 7.4], 2.4, 0.35, { comba: 1 });
+      if (v === 'descarrilado') piedras(a, ps, 6, 16, 'min_carbon', 20, 10);
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+  {
+    id: 'min_bomba', nombre: ['Bomba de agua y abrevadero', 'Water pump and trough'], tema: 'mina', variantes: ['con_agua', 'seca'], cuadros: 4, t: 5, huella: [3, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], fm = forma(a, 3);
+      // la bomba de palanca sobre su tubo y la batea de tablas
+      ps.push(a.cilindro(0, 0, 0, 2.6, 22, { mat: RIEL, r1: 2.2 }), a.cilindro(0, 0, 22, 3, 3, { mat: RIEL }), a.palo([0, 0, 16], [5, 0, 16], 0.9, { mat: RIEL }), a.palo([5, 0, 16], [6, 0, 13], 0.8, { mat: RIEL }));
+      const ang = rad(entre(a, 10, 35));
+      ps.push(a.palo([0, 0, 24], [-Math.cos(ang) * 16, 0, 24 + Math.sin(ang) * 16], 0.8, { mat: RIEL }), a.palo([-Math.cos(ang) * 16, 0, 24 + Math.sin(ang) * 16], [-Math.cos(ang) * 18, 0, 25 + Math.sin(ang) * 16], 1.2, { mat: 'madera' }));
+      const B: Pieza[] = [a.caja(0, 0, 0, 30, 12, 9, { mat: MAD }), a.caja(0, 0, 1.5, 27, 9.6, 9, { mat: MAD, resta: true })];
+      for (const sx of [-15, 15]) B.push(viga(a, [sx, -6.5, 0], [sx, -6.5, 10], 2, 2, 'madera_vieja'), viga(a, [sx, 6.5, 0], [sx, 6.5, 10], 2, 2, 'madera_vieja'));
+      if (v === 'con_agua') { B.push(a.caja(0, 0, 1.5, 27, 9.6, 6 + onda(f, 4) * 0.1, { mat: 'c2_agua' in MATERIALES ? 'c2_agua' : 'agua' })); }
+      ps.push(...mover(B, [10, 14, 0], 0));
+      if (v === 'con_agua') { const u = (f % 4) / 4; ps.push(a.esfera(6, 0, 12 - u * 4, 0.7, { mat: 'agua', tono: 0.3 })); ps.push(a.elipsoide(14, 6, 0, 10, 6, 0.6, { mat: 'agua_sucia' })); }
+      if (fm >= 1) barril(a, ps, -12, 10, 0, 5, 12, {});
+      if (fm === 2) ps.push(a.cilindro(-4, 14, 0, 3.4, 6.5, { mat: MAD, r1: 4 }), a.cilindro(-4, 14, 1, 3, 6, { mat: MAD, resta: true }));
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+);
+conVarianteY('min_tren', 'min_riel', 'min_riel_fin', 'min_riel_cruce', 'min_puntal', 'min_galeria', 'min_pared_veta', 'min_linternas_cuerda', 'min_cartel', 'min_andamio');

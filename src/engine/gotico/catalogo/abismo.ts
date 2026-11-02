@@ -2,7 +2,7 @@ import { registrar, conVarianteY, type Arma, type Pieza, type V3 } from '../obje
 import { MATERIALES } from '../materiales';
 import { masa, hueso as hM, bulto, ruido, type Comp, type Escena } from '../render';
 import {
-  PI, rad, add, mez, onda, entre, forma, mover, pena, penasco, rocaComps, espeleo, prisma, viga, cadena, calavera, huesoL, llama, farol, cadaver,
+  PI, rad, add, mez, onda, entre, forma, mover, pena, penasco, espeleo, prisma, viga, cadena, calavera, huesoL, farol, cadaver,
   bordeVacio, BORDES,
 } from './subterraneo';
 
@@ -491,7 +491,7 @@ registrar(
       ps.push(a.caja(0, 0, -400, 600, 600, 386, { mat: 'abi_vacio', resta: true }));
       for (let i = 0; i < 5; i++) { const t = (i / 5) * 2 * PI + a.r(); jiron(a, ps, [Math.cos(t) * 18 * s, Math.sin(t) * 18 * s, -10], 36 * s, 6 * s, (t * 180) / PI + 90, 'abi_niebla', -0.1); }
       for (let i = 0; i < 5; i++) { const z = entre(a, -90, -20); ps.push(pena(a, entre(a, -20, 20) * s, entre(a, -20, 20) * s, z, entre(a, 2, 5), entre(a, 2, 4), entre(a, 2, 4), { mat: 'abi_marmol', tono: fundido(z, 120) })); }
-      return flota(hundir(ps, 40), ojos ? { c: [10, 0, 20], r: 40, color: ojos === 'abi_ojo' ? '#e0a030' : '#b070f0' } : undefined);
+      return flota(ps, ojos ? { c: [10, 0, 20], r: 40, color: ojos === 'abi_ojo' ? '#e0a030' : '#b070f0' } : undefined);
     },
   },
   {
@@ -614,3 +614,286 @@ function cajaHierro(a: Arma, ps: Pieza[], c: V3) {
   ps.push(a.caja(c[0], c[1], c[2], 14, 9, 8, { mat: 'abi_madera', giro: 20 }), a.cilindro(c[0], c[1], c[2] + 8, 4.5, 14, { mat: 'abi_madera', eje: [Math.cos(rad(20)), Math.sin(rad(20)), 0], tono: 0.05 }));
   for (const k of [-5, 0, 5]) ps.push(a.caja(c[0] + Math.cos(rad(20)) * k, c[1] + Math.sin(rad(20)) * k, c[2], 1.2, 9.6, 12, { mat: 'abi_hierro', giro: 20 }));
 }
+
+registrar(
+  {
+    id: 'abi_jaula', nombre: ['Jaula colgada sobre el vacío', 'Cage hanging over the void'], tema: 'abismo', variantes: ['esqueleto', 'alma', 'abierta'], cuadros: 8, t: 6, huella: [2, 2], bloquea: false,
+    armar: (v, f, a) => {
+      const fm = forma(a, 3), ps: Pieza[] = [], sw = onda(f, 8) * 4, z0 = entre(a, 10, 30), R = entre(a, 8, 10), H = entre(a, 22, 28);
+      const j: Pieza[] = [];
+      // barrotes, aros, la cúpula y el piso de chapa
+      const n = 10;
+      for (let i = 0; i < n; i++) { const t = (i / n) * 2 * PI; if (v === 'abierta' && (i === 1 || i === 2)) continue; j.push(a.palo([Math.cos(t) * R, Math.sin(t) * R, 0], [Math.cos(t) * R, Math.sin(t) * R, H], 0.5, { mat: 'abi_hierro' }), a.palo([Math.cos(t) * R, Math.sin(t) * R, H], [0, 0, H + R * 0.7], 0.5, { mat: 'abi_hierro' })); }
+      for (const z of [0.4, H * 0.5, H]) for (let i = 0; i < n; i++) { const t0 = (i / n) * 2 * PI, t1 = ((i + 1) / n) * 2 * PI; j.push(a.palo([Math.cos(t0) * R, Math.sin(t0) * R, z], [Math.cos(t1) * R, Math.sin(t1) * R, z], 0.6, { mat: 'abi_hierro' })); }
+      j.push(a.cilindro(0, 0, -0.6, R, 1.2, { mat: 'abi_hierro', tono: -0.1 }));
+      if (v === 'abierta') j.push(...mover([a.palo([0, 0, 0], [0, 0, H], 0.5, { mat: 'abi_hierro' }), a.palo([0, 0, 0], [6, 0, 0], 0.5, { mat: 'abi_hierro' }), a.palo([0, 0, H], [6, 0, H], 0.5, { mat: 'abi_hierro' }), a.palo([6, 0, 0], [6, 0, H], 0.5, { mat: 'abi_hierro' })], [Math.cos(0.6) * R, Math.sin(0.6) * R, 0], 70));
+      if (v === 'esqueleto') { calavera(a, j, 2, 2, 0.6, 1, 50); huesoL(a, j, [-4, 3, 1], [4, -4, 1], 1); huesoL(a, j, [-5, -2, 1.2], [2, 6, 3], 0.9); for (let k = 0; k < 4; k++) j.push(a.palo([-2 + k * 1.2, -3, 1], [-1 + k * 1.2, 2, 5], 0.6, { mat: 'hueso' })); }
+      if (v === 'alma') { const z = H * 0.4 + onda(f, 8) * 1.5; j.push(masa([bulto([0, 0, z], [3.5, 3, 7]), bulto([0.6, 0, z + 8], [2.6, 2.4, 3])], { mat: 'abi_alma', suave: 1.5 })); j.push(a.esfera(2.6, -0.8, z + 8.4, 0.5, { mat: 'negro' }), a.esfera(2.6, 0.9, z + 8.4, 0.5, { mat: 'negro' })); }
+      ps.push(...mover(j, [sw, 0, z0], fm * 20 + sw * 2, sw * 1.2, 'y'));
+      cadena(a, ps, [sw * 0.98, 0, z0 + H + R * 0.7], [0, 0, 170], 6, 0.8, { mat: 'abi_hierro' });
+      return flota(ps, v === 'alma' ? { c: [sw, 0, z0 + H * 0.5], r: 26, color: '#a090e0' } : undefined);
+    },
+  },
+  {
+    id: 'abi_farol', nombre: ['Farol de fuego del vacío', 'Void-fire lantern'], tema: 'abismo', variantes: ['violeta', 'verde', 'apagado'], cuadros: 6, t: 3, huella: [1, 1], bloquea: true,
+    armar: (v, f, a) => {
+      const fm = forma(a, 3), ps: Pieza[] = [], H = entre(a, 42, 52);
+      // poste de hierro torcido con su brazo en voluta
+      const lean = (a.r() - 0.5) * 6;
+      ps.push(pena(a, 0, 0, 1, 6, 5, 3, { mat: 'abi_roca_alta' }), a.palo([0, 0, 0], [lean * 0.4, 0, H * 0.5], 1.2, { mat: 'abi_hierro' }), a.palo([lean * 0.4, 0, H * 0.5], [lean, 0, H], 1, { mat: 'abi_hierro' }));
+      const b = fm === 2 ? -1 : 1;
+      for (let i = 0; i < 6; i++) { const t0 = (i / 6) * PI, t1 = ((i + 1) / 6) * PI; ps.push(a.palo([lean + b * (5 - Math.cos(t0) * 5), 0, H + Math.sin(t0) * 4], [lean + b * (5 - Math.cos(t1) * 5), 0, H + Math.sin(t1) * 4], 0.7, { mat: 'abi_hierro' })); }
+      const top: V3 = [lean + b * 10, 0, H];
+      const luz = v === 'verde' ? 'fuego_verde' : 'abi_fuego';
+      const c = farol(a, ps, top, f, { luz, apagado: v === 'apagado', mat: 'abi_hierro', s: 1.1 });
+      if (fm === 1) calavera(a, ps, 0, 6, 0, 0.8, 40);
+      if (v === 'apagado') return ps;
+      return { piezas: ps, resplandor: { c, r: 40, color: v === 'verde' ? '#60d060' : '#a060e0' } };
+    },
+  },
+  {
+    id: 'abi_espiral', nombre: ['Remolino de escombros', 'Debris vortex'], tema: 'abismo', variantes: ['piedras', 'sillares', 'almas'], cuadros: 12, t: 3, huella: [4, 4], bloquea: false,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], n = v === 'almas' ? 12 : 18;
+      // todo gira hacia el centro y baja; lo que llega al fondo se apaga
+      for (let i = 0; i < n; i++) {
+        const ph = a.r(), u = (ph + f / 12) % 1, t = ph * 20 + u * 2 * PI * 1.5, r = 34 * (1 - u * 0.85), z = 10 - u * 120, k = Math.min(1, u * 8);
+        const c: V3 = [Math.cos(t) * r, Math.sin(t) * r, z], tono = fundido(z, 150);
+        if (v === 'almas') { ps.push(a.elipsoide(...c, 1.6 * k, 1.6 * k, 3.4 * k, { mat: 'abi_alma', tono: tono * 0.8, incl: 30, giro: (t * 180) / PI })); continue; }
+        if (v === 'sillares' && i % 2) ps.push(...mover([sillar(a, [0, 0, -2], 6 * k, 5 * k, 4 * k, 0, 'abi_sillar', 0.3, tono)], c, (t * 180) / PI + u * 300, u * 180));
+        else ps.push(...mover([pena(a, 0, 0, 0, entre(a, 2, 5) * k, entre(a, 2, 4) * k, entre(a, 1.5, 3.5) * k, { mat: ROCA, tono })], c, u * 400, u * 200));
+      }
+      for (let i = 0; i < 3; i++) { const t = (f / 12) * 2 * PI + i * 2.1; jiron(a, ps, [Math.cos(t) * 20, Math.sin(t) * 20, -20 - i * 20], 50, 7, (t * 180) / PI + 90, 'abi_niebla', -0.1); }
+      return flota(ps, v === 'almas' ? { c: [0, 0, -30], r: 40, color: '#9080d0' } : undefined);
+    },
+  },
+  {
+    id: 'abi_cristal_vacio', nombre: ['Cristales del vacío', 'Void crystals'], tema: 'abismo', variantes: ['suelo', 'flotante', 'borde'], cuadros: 6, t: 5, huella: [3, 3], bloquea: true,
+    armar: (v, f, a) => {
+      const fm = forma(a, 4), ps: Pieza[] = [], pulso = onda(f, 6) * 0.1, z0 = v === 'flotante' ? 24 + onda(f, 6) * 2 : 0;
+      if (v === 'flotante') ps.push(...mover([pena(a, 0, 0, 0, 12, 10, 5, { mat: 'abi_roca_alta', n: 12 }), masa(espeleo(a, [0, 0, -2], 20, 8, { mat: ROCA, dir: -1, anillos: false }), { mat: ROCA, suave: 2, tono: -0.15 })], [0, 0, z0 - 2], a.r() * 360));
+      else for (let i = 0; i < 4; i++) { const t = (i / 4) * 2 * PI + a.r(); penasco(a, ps, [Math.cos(t) * 10, Math.sin(t) * 9, 2], [entre(a, 7, 10), entre(a, 6, 9), entre(a, 4, 7)], { mat: 'abi_roca_alta', n: 1 }); }
+      const n = 7 + fm;
+      for (let i = 0; i < n; i++) {
+        const t = (i / n) * 2 * PI + a.r(), d = i === 0 ? 0 : entre(a, 3, 10), s = i === 0 ? 0.1 : entre(a, 0.3, 0.8), L = (i === 0 ? entre(a, 34, 48) : entre(a, 10, 26)) * (v === 'flotante' ? 0.7 : 1);
+        const base: V3 = [Math.cos(t) * d, Math.sin(t) * d, z0];
+        ps.push(prisma(a, base, [Math.cos(t) * s, Math.sin(t) * s, 1], L, i === 0 ? 5 : entre(a, 2, 3.5), 'abi_obsidiana'));
+        if (i % 2 === 0) ps.push(prisma(a, add(base, [0, 0, 1], 2), [Math.cos(t) * s, Math.sin(t) * s, 1], L * 0.8, i === 0 ? 1.8 : 0.9, 'abi_runa', pulso - 0.2));
+      }
+      if (v === 'flotante') for (let i = 0; i < 3; i++) ps.push(prisma(a, [0, 0, z0 - 8], [(a.r() - 0.5), (a.r() - 0.5), -1], entre(a, 8, 16), 2, 'abi_obsidiana'));
+      const luz = { c: [0, 0, z0 + 16] as V3, r: 40, color: '#a060e0' };
+      return v === 'flotante' ? flota(ps, luz) : { piezas: ps, resplandor: luz };
+    },
+  },
+  {
+    id: 'abi_puerta', nombre: ['Puerta que da a la nada', 'Doorway to nowhere'], tema: 'abismo', variantes: ['piedra', 'rota', 'abierta'], cuadros: 8, t: 4, huella: [3, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const fm = forma(a, 3), ps: Pieza[] = [], sx = 11, hj = 34;
+      arcoOjival(a, ps, sx, hj, 0, v === 'rota' ? 3 : 0);
+      ps.push(sillar(a, [0, 0, -1], 40, 12, 3, 0, 'abi_sillar', 0.1));
+      // del otro lado del vano no hay nada: un fondo negro con estrellas que titilan
+      ps.push(a.poliedro([[-sx + 1, -0.5, 0], [sx - 1, -0.5, 0], [-sx + 1, 0.5, 0], [sx - 1, 0.5, 0], [-sx + 1, -0.5, hj], [sx - 1, -0.5, hj], [-sx + 1, 0.5, hj], [sx - 1, 0.5, hj], [0, -0.5, hj + sx * 1.6], [0, 0.5, hj + sx * 1.6]], { mat: 'abi_vacio' }));
+      for (let i = 0; i < 14; i++) { const x = entre(a, -sx + 2, sx - 2), z = entre(a, 3, hj + sx * 1.2 - Math.abs(x) * 1.2); if ((i + f) % 5 === 0) continue; ps.push(a.esfera(x, 0.8, z, entre(a, 0.25, 0.6), { mat: 'abi_estrella', tono: (a.r() - 0.5) * 0.3 })); }
+      if (fm >= 1) for (let i = 0; i < 4; i++) { const u = ((f / 8) + i / 4) % 1; ps.push(a.esfera(entre(a, -6, 6), 1 + u * 8, 10 + u * 20, 0.5, { mat: 'abi_runa', tono: -u * 0.4 })); }
+      if (v === 'abierta') ps.push(...mover([a.caja(0, 0, 0, 20, 2, hj + 8, { mat: 'abi_madera' }), a.caja(0, 1.2, hj * 0.5, 2.4, 1, 2.4, { mat: 'abi_hierro' }), ...[6, 20, 34].map((z) => a.caja(0, 1.1, z, 20, 0.8, 1.6, { mat: 'abi_hierro' }))], [-sx + 1, 10, 0], 70));
+      for (let i = 0; i < 3; i++) ps.push(sillar(a, [entre(a, -20, 20), entre(a, 6, 14), 0], entre(a, 4, 7), entre(a, 4, 6), entre(a, 3, 5), a.r() * 90, 'abi_sillar', 0.3));
+      return { piezas: ps, resplandor: { c: [0, 6, 22], r: 24, color: '#7050b0' } };
+    },
+  },
+  {
+    id: 'abi_almas', nombre: ['Almas que caen', 'Falling souls'], tema: 'abismo', variantes: ['caen', 'suben', 'manos'], cuadros: 12, t: 4, huella: [3, 3], bloquea: false,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], n = v === 'manos' ? 7 : 5;
+      for (let i = 0; i < n; i++) {
+        const ph = a.r(), u = (ph + f / 12) % 1, x = entre(a, -26, 26), y = entre(a, -26, 26);
+        if (v === 'manos') {
+          // brazos de alma que suben del fondo, se estiran y se hunden
+          const sube = Math.sin(u * PI), base: V3 = [x, y, -90], top: V3 = [x + Math.sin(u * 4) * 4, y, -60 + sube * 70];
+          ps.push(masa([hM(base, mez(base, top, 0.5), 2.6, 2), hM(mez(base, top, 0.5), top, 2, 1.6), bulto(top, [2.2, 2, 2.6])], { mat: 'abi_alma', suave: 1.5, tono: -0.2 - (1 - sube) * 0.3 }));
+          for (let k = 0; k < 4; k++) ps.push(a.palo(top, [top[0] + (k - 1.5) * 1.3, top[1], top[2] + 3.6 * (0.5 + sube * 0.5)], 0.5, { mat: 'abi_alma', tono: -0.2 }));
+          continue;
+        }
+        const z = v === 'caen' ? 60 - u * 170 : -110 + u * 170, k = Math.sin(u * PI);
+        // una figura que se retuerce: cuerpo que se afina en cola, cabeza con la boca abierta y brazos
+        const c: V3 = [x + Math.sin(u * 6 + i) * 4, y, z], cola = v === 'caen' ? 1 : -1;
+        ps.push(masa([bulto(c, [3 * k + 0.5, 2.6 * k + 0.5, 5 * k + 0.5]), hM(c, [c[0] + Math.sin(u * 9) * 3, c[1], c[2] + cola * 12 * k], 2.4 * k + 0.3, 0.3), bulto([c[0], c[1], c[2] - cola * 7 * k], [2.4 * k + 0.4, 2.2 * k + 0.4, 2.8 * k + 0.4]), hM([c[0], c[1], c[2] - cola * 3 * k], [c[0] + 5 * k, c[1] - 2, c[2] - cola * 9 * k], 1 * k + 0.2, 0.5), hM([c[0], c[1], c[2] - cola * 3 * k], [c[0] - 5 * k, c[1] + 2, c[2] - cola * 9 * k], 1 * k + 0.2, 0.5)], { mat: 'abi_alma', suave: 1.5, tono: -0.1 - (1 - k) * 0.4 }));
+        ps.push(a.esfera(c[0] + 1.4 * k, c[1] - 0.8, c[2] - cola * 7.4 * k, 0.5 * k + 0.1, { mat: 'negro' }), a.esfera(c[0] + 1.4 * k, c[1] + 0.8, c[2] - cola * 7.4 * k, 0.5 * k + 0.1, { mat: 'negro' }));
+      }
+      return flota(ps, { c: [0, 0, -20], r: 46, color: '#8070c0' });
+    },
+  },
+  {
+    id: 'abi_torre_invertida', nombre: ['Torre invertida', 'Inverted tower'], tema: 'abismo', variantes: ['entera', 'rota'], cuadros: 8, t: 5, huella: [4, 4], bloquea: true,
+    armar: (v, f, a) => {
+      const fm = forma(a, 3), ps: Pieza[] = [], r = entre(a, 14, 17), H = entre(a, 70, 90), z0 = 40 + onda(f, 8) * 2;
+      // los cimientos arriba, con su terrón de roca arrancado, y la torre colgando cabeza abajo hacia el vacío
+      isla(a, ps, r + 10, 8, { liquen: false });
+      for (let i = 0; i < ps.length; i++) ps[i] = mover([ps[i]], [0, 0, z0 + 10], 0, 180)[0];
+      for (let z = 0, k = 0; z < H; z += 7, k++) {
+        const n = 11;
+        for (let i = 0; i < n; i++) { const t = (i / n) * 2 * PI + (k % 2) * (PI / n), roto = v === 'rota' && z > H * 0.6 && Math.cos(t - 1) > 0.2; if (roto) continue; ps.push(sillar(a, [Math.cos(t) * r, Math.sin(t) * r, z0 - z - 7], 8.4, 6, 7, (t * 180) / PI + 90, 'abi_sillar', 0.12, fundido(z0 - z, 160))); }
+        if (k % 4 === 2) { const t = 0.6 + k; ps.push(a.poliedro([[Math.cos(t) * (r + 3.5), Math.sin(t) * (r + 3.5), z0 - z], [Math.cos(t + 0.25) * (r + 3.5), Math.sin(t + 0.25) * (r + 3.5), z0 - z], [Math.cos(t) * (r + 3.5), Math.sin(t) * (r + 3.5), z0 - z - 6], [Math.cos(t + 0.25) * (r + 3.5), Math.sin(t + 0.25) * (r + 3.5), z0 - z - 6], [Math.cos(t + 0.12) * (r + 3.5), Math.sin(t + 0.12) * (r + 3.5), z0 - z + 3]], { mat: 'abi_vacio' })); }
+      }
+      // el chapitel apuntando abajo
+      if (v === 'entera') ps.push(a.poliedro([...Array.from({ length: 8 }, (_, i) => [Math.cos((i / 8) * 2 * PI) * (r + 3), Math.sin((i / 8) * 2 * PI) * (r + 3), z0 - H] as V3), [0, 0, z0 - H - r * 2.6]], { mat: 'pizarra', tono: fundido(z0 - H, 120) }));
+      else for (let i = 0; i < 6; i++) { const z = z0 - H - entre(a, 10, 80) - ((f / 8) * 12) % 12; ps.push(sillar(a, [entre(a, -r, r), entre(a, -r, r), z], 7, 5, 6, a.r() * 90 + f * 8, 'abi_sillar', 0.3, fundido(z, 140))); }
+      if (fm) cadena(a, ps, [r * 0.6, 0, z0 + 12], [r * 0.6, 0, 170], 8, 1, { mat: 'abi_hierro' });
+      return flota(ps);
+    },
+  },
+  {
+    id: 'abi_balaustrada', nombre: ['Baranda rota al borde', 'Broken balustrade'], tema: 'abismo', variantes: ['entera', 'rota', 'caida'], huella: [5, 1], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [];
+      ps.push(sillar(a, [0, 0, 0], 80, 7, 3, 0, 'abi_sillar', 0.08));
+      for (let i = 0; i < 9; i++) {
+        const x = -36 + i * 9;
+        if (v !== 'entera' && i >= 4 && i <= 6) { if (v === 'caida' && i === 5) ps.push(...mover([a.cilindro(0, 0, 0, 2, 12, { mat: 'abi_marmol', r1: 1.4 })], [x + 4, 6, 2], 30, 90)); continue; }
+        // balaustre torneado: bulbo abajo, cuello arriba
+        ps.push(masa([bulto([x, 0, 6], [2.6, 2.6, 4]), hM([x, 0, 3], [x, 0, 15], 1.6, 1.3), bulto([x, 0, 14], [1.8, 1.8, 1.4])], { mat: 'abi_marmol', suave: 1.2, tono: (a.r() - 0.5) * 0.1 }));
+      }
+      const tramo = (x0: number, x1: number) => ps.push(sillar(a, [(x0 + x1) / 2, 0, 16], x1 - x0, 6, 3.4, (a.r() - 0.5) * 2, 'abi_marmol', 0.12));
+      if (v === 'entera') tramo(-40, 40);
+      else { tramo(-40, -6); tramo(22, 40); if (v === 'caida') ps.push(sillar(a, [6, 8, 1.2], 24, 6, 3.4, 20, 'abi_marmol', 0.2)); }
+      for (const x of [-40, 40]) ps.push(sillar(a, [x, 0, 0], 8, 8, 20, 0, 'abi_sillar', 0.1), sillar(a, [x, 0, 20], 9, 9, 3, 0, 'abi_sillar', 0.1));
+      return ps;
+    },
+  },
+  {
+    id: 'abi_estrellas', nombre: ['Estrellas en el fondo del vacío', 'Stars in the void below'], tema: 'abismo', variantes: ['pocas', 'nebulosa', 'cumulo'], cuadros: 8, t: 6, huella: [5, 5], bloquea: false,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], n = v === 'pocas' ? 14 : 30;
+      // lejos, muy abajo: puntos que titilan y una nebulosa que apenas se mueve
+      for (let i = 0; i < n; i++) { const x = entre(a, -40, 40), y = entre(a, -40, 40), z = entre(a, -220, -120), tw = (i + f) % 6 === 0 ? -0.4 : 0; ps.push(a.esfera(x, y, z, v === 'cumulo' && i < 10 ? entre(a, 0.6, 1) : entre(a, 0.3, 0.6), { mat: 'abi_estrella', tono: tw + (a.r() - 0.5) * 0.3 })); }
+      if (v !== 'pocas') for (let i = 0; i < 4; i++) jiron(a, ps, [entre(a, -24, 24), entre(a, -24, 24), entre(a, -200, -150)], 60, 14, entre(a, 0, 180) + f * 1.5, 'abi_niebla', -0.2);
+      return flota(ps);
+    },
+  },
+  {
+    id: 'abi_raices', nombre: ['Raíces que cuelgan de la nada', 'Roots hanging from nowhere'], tema: 'abismo', variantes: ['pocas', 'maraña', 'con_cuerpo'], cuadros: 8, t: 6, huella: [3, 3], bloquea: false,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], n = v === 'maraña' ? 9 : 5;
+      for (let i = 0; i < n; i++) {
+        let p: V3 = [entre(a, -24, 24), entre(a, -24, 24), 160], r = entre(a, 2, 4.5);
+        const largo = entre(a, 180, 290), seg = 12, ph = a.r() * 6;
+        const cs: Comp[] = [];
+        for (let k = 0; k < seg; k++) { const u = (k + 1) / seg, q: V3 = [p[0] + Math.sin(u * 5 + ph) * 3 + onda(f, 8, ph) * u * 2, p[1] + Math.cos(u * 4 + ph) * 3, 160 - largo * u]; cs.push(hM(p, q, r, r * 0.88, { tono: fundido(q[2], 150) })); p = q; r *= 0.88; }
+        ps.push(masa(cs, { mat: 'corteza_muerta', suave: 1.5 }));
+      }
+      if (v === 'con_cuerpo') { const sw = onda(f, 8) * 3; ps.push(...mover(cadaver({ piel: 'cu_hueso', oseo: true }, { torso: { tipo: 'harapos', mat: 'cu_tela_negra' } }, 's', [0, 0, 0], 0, 2), [sw, 0, 10], 30, 160)); ps.push(a.palo([sw, 0, 12], [0, 0, 60], 0.8, { mat: 'corteza_muerta' })); }
+      return flota(ps);
+    },
+  },
+  {
+    id: 'abi_reliquia', nombre: ['Reliquia que flota', 'Floating relic'], tema: 'abismo', variantes: ['orbe', 'craneo', 'libro'], cuadros: 8, t: 4, huella: [2, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], z = 30 + onda(f, 8) * 3;
+      // pedestal flotante de tres piedras que giran despacio y la reliquia arriba
+      for (let i = 0; i < 3; i++) { const t = (i / 3) * 2 * PI + (f / 8) * 0.8; ps.push(sillar(a, [Math.cos(t) * 9, Math.sin(t) * 9, z - 18 + i * 2], 6, 6, 5, (t * 180) / PI, 'abi_sillar', 0.25)); }
+      ps.push(sillar(a, [0, 0, z - 12], 12, 12, 4, (f / 8) * 30, 'abi_obsidiana', 0.15));
+      if (v === 'orbe') { ps.push(a.esfera(0, 0, z + 2, 6.5, { mat: 'abi_runa', tono: onda(f, 8) * 0.1 })); for (let i = 0; i < 3; i++) { const t0 = (f / 8) * 2 * PI + i * 2.1; for (let k = 0; k < 12; k++) { const u0 = (k / 12) * 2 * PI, u1 = ((k + 1) / 12) * 2 * PI; ps.push(a.palo([Math.cos(u0) * 8 * Math.cos(t0), Math.cos(u0) * 8 * Math.sin(t0), z + 2 + Math.sin(u0) * 8], [Math.cos(u1) * 8 * Math.cos(t0), Math.cos(u1) * 8 * Math.sin(t0), z + 2 + Math.sin(u1) * 8], 0.3, { mat: 'abi_hierro' })); } } }
+      else if (v === 'craneo') { calavera(a, ps, 0, 0, z - 9, 2.2, 45 + f * 6, 'oro'); ps.push(a.esfera(2.4, 2.4, z - 1.5, 0.9, { mat: 'abi_runa' })); }
+      else { ps.push(...mover([a.caja(0, 0, 0, 12, 9, 2.6, { mat: 'cu_cuero_negro' in MATERIALES ? 'cu_cuero_negro' : 'cuero' }), a.caja(0, 0, 2.6, 11, 8.4, 1, { mat: 'cu_tela_blanca' in MATERIALES ? 'cu_tela_blanca' : 'tela' }), a.caja(0, 0, 3.4, 4, 4, 0.3, { mat: 'abi_runa' })], [0, 0, z - 6], 20 + f * 4, 20)); }
+      return flota(ps, { c: [0, 0, z], r: 30, color: '#b070f0' });
+    },
+  },
+  {
+    id: 'abi_campana', nombre: ['Campana del abismo', 'Bell of the abyss'], tema: 'abismo', variantes: ['colgada', 'rajada'], cuadros: 8, t: 6, huella: [3, 3], bloquea: false,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], sw = onda(f, 8) * 6, z0 = entre(a, 10, 24);
+      // una campana de bronce enorme que se mece colgada de una cadena que viene de arriba
+      const b: Pieza[] = [];
+      const perfil: [number, number][] = [[18, 0], [17, 3], [14, 8], [12, 16], [11.5, 24], [9, 30], [5, 33], [0, 34]];
+      for (let i = 0; i < perfil.length - 1; i++) { const [r0, z1] = perfil[i], [r1, z2] = perfil[i + 1]; b.push(a.cilindro(0, 0, z1, r0, z2 - z1, { mat: 'bronce', r1, tono: -0.05 })); }
+      b.push(a.cilindro(0, 0, -0.5, 16, 26, { mat: 'bronce', r1: 10, resta: true }));
+      b.push(a.palo([0, 0, 30], [0, 0, 4], 1.2, { mat: 'abi_hierro' }), a.esfera(0, 0, 3, 3.4, { mat: 'abi_hierro' }));
+      b.push(a.cilindro(0, 0, 4, 18.2, 1.6, { mat: 'bronce', tono: 0.08 }), a.cilindro(0, 0, 20, 11.8, 1.2, { mat: 'bronce', tono: 0.08 }));
+      if (v === 'rajada') b.push(a.caja(14, 4, 2, 1, 1.2, 14, { mat: 'negro', giro: 20, incl: 10 }));
+      ps.push(...mover(b, [sw, 0, z0], 0, sw * 2, 'y'));
+      cadena(a, ps, [sw * 1.05, 0, z0 + 34], [0, 0, 170], 10, 1.4, { mat: 'abi_hierro' });
+      return flota(ps);
+    },
+  },
+  {
+    id: 'abi_tentaculos', nombre: ['Tentáculos del vacío', 'Void tentacles'], tema: 'abismo', variantes: ['uno', 'varios', 'borde'], cuadros: 8, t: 4, huella: [3, 3], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], n = v === 'uno' ? 1 : 3;
+      // en la variante del borde la tierra queda atrás y los tentáculos suben del vacío de adelante
+      for (let i = 0; i < n; i++) {
+        const x = n === 1 ? 0 : v === 'borde' ? entre(a, 6, 26) : entre(a, -20, 20), y = n === 1 ? 0 : entre(a, -20, 20), ph = a.r() * 6, H = entre(a, 50, 80) * (i ? 0.7 : 1), cs: Comp[] = [];
+        let p: V3 = [x, y, -120], r = entre(a, 10, 13) * (i ? 0.7 : 1);
+        const seg = 12;
+        for (let k = 0; k < seg; k++) { const u = (k + 1) / seg, q: V3 = [x + Math.sin(u * 4 + ph + f * 0.6) * u * 14, y + Math.cos(u * 3 + ph + f * 0.5) * u * 10, -120 + (H + 120) * u]; cs.push(hM(p, q, r, r * 0.86, { tono: fundido(q[2], 110) })); if (k % 2 === 1 && u > 0.4) cs.push(bulto(mez(p, q, 0.5), [r * 0.5, r * 0.5, r * 0.4], { mat: 'abi_runa', tono: -0.4 })); p = q; r *= 0.86; }
+        ps.push(masa(cs, { mat: 'cu_quitina' in MATERIALES ? 'cu_quitina' : 'abi_obsidiana', suave: 2 }));
+      }
+      if (v === 'borde') { const b: Pieza[] = []; bordeVacio(a, b, 'se', { mat: ROCA, matLabio: 'abi_roca_alta', D: 140 }); ps.push(...mover(b, [-38, 0, 0], 0)); }
+      for (let i = 0; i < 2; i++) jiron(a, ps, [entre(a, -10, 10), entre(a, -10, 10), -40 - i * 30], 50, 8, entre(a, 0, 180), 'abi_niebla', -0.1);
+      return flota(ps, { c: [0, 0, 20], r: 30, color: '#a060e0' });
+    },
+  },
+  {
+    id: 'abi_costillar', nombre: ['Costillar colosal', 'Colossal ribcage'], tema: 'abismo', variantes: ['hundido', 'craneo'], huella: [6, 4], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [], H = entre(a, 50, 64), W = entre(a, 34, 40);
+      // el espinazo de algo enorme que la nada se tragó hasta la mitad: arcos de costillas que salen del vacío
+      for (let i = 0; i < 7; i++) {
+        const x = -42 + i * 13, h = H * (1 - Math.abs(i - 2.5) * 0.12) * entre(a, 0.9, 1.05), rota = a.r() < 0.2;
+        for (const l of [-1, 1]) { const cs: Comp[] = []; let p: V3 = [x, l * W * 0.7, -30]; for (let k = 1; k <= 6; k++) { const t = (k / 6) * PI * 0.5 * (rota && l === 1 ? 0.6 : 1), q: V3 = [x + Math.sin(t) * 3, l * W * Math.cos(t) * 0.9, -30 + Math.sin(t) * (h + 30)]; cs.push(hM(p, q, 3.4 - k * 0.25, 3.1 - k * 0.25)); p = q; } ps.push(masa(cs, { mat: 'hueso', suave: 1.2 })); }
+        ps.push(sillar(a, [x, 0, H * (1 - Math.abs(i - 2.5) * 0.12) - 4], 9, 7, 7, 0, 'hueso', 0.4));
+      }
+      if (v === 'craneo') { const cs: Comp[] = [bulto([54, 0, 18], [16, 11, 11], { giro: 0 }), bulto([70, 0, 12], [12, 7, 6]), bulto([46, 0, 26], [8, 10, 6])]; ps.push(masa(cs, { mat: 'hueso', suave: 3 })); for (const l of [-1, 1]) ps.push(a.esfera(60, l * 8, 20, 3.4, { mat: 'negro' })); for (let k = 0; k < 5; k++) ps.push(a.poliedro([[66 + k * 3, 6.5, 8], [68 + k * 3, 6.5, 8], [67 + k * 3, 7.5, 2]], { mat: 'hueso', tono: 0.1 })); }
+      ps.push(a.caja(0, 0, -400, 600, 600, 386, { mat: 'abi_vacio', resta: true }));
+      for (let i = 0; i < 5; i++) { const t = (i / 5) * 2 * PI; jiron(a, ps, [Math.cos(t) * 40, Math.sin(t) * 26, -10], 50, 7, (t * 180) / PI + 90, 'abi_niebla', -0.1); }
+      return flota(hundir(ps, 30));
+    },
+  },
+);
+registrar(
+  {
+    id: 'abi_mano', nombre: ['Mano colosal que sale del vacío', 'Colossal hand from the void'], tema: 'abismo', variantes: ['abierta', 'orbe', 'isla', 'puno'], cuadros: 8, t: 5, huella: [4, 4], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], s = entre(a, 1.6, 2), g = 30 + entre(a, -25, 25), mat = a.r() < 0.5 ? 'abi_marmol' : 'abi_roca_alta';
+      // antebrazo con la muñeca, palma y dedos que se doblan según la variante
+      const cs: Comp[] = [hM([0, 0, -60], [0, 0, 18 * s], 8 * s, 6.5 * s), bulto([0.5 * s, 0, 24 * s], [6.5 * s, 9 * s, 6 * s])];
+      const cierra = v === 'puno' ? 1 : v === 'orbe' ? 0.45 : 0.15;
+      for (let k = 0; k < 4; k++) {
+        const y = (-6 + k * 4) * s, b: V3 = [2 * s, y, 28 * s], m: V3 = [4 * s, y * 1.05, (37 - cierra * 4) * s], t: V3 = [(4 + cierra * 8) * s, y * 1.05, (43 - cierra * 14) * s], p: V3 = [(2 + cierra * 10) * s, y, (46 - cierra * 22) * s];
+        cs.push(hM(b, m, 2 * s, 1.8 * s), hM(m, t, 1.8 * s, 1.6 * s), hM(t, p, 1.6 * s, 1.3 * s));
+      }
+      cs.push(hM([0, 8.5 * s, 22 * s], [5 * s, 12 * s, 30 * s], 2.6 * s, 2.1 * s), hM([5 * s, 12 * s, 30 * s], [7 * s + cierra * 4 * s, (11 - cierra * 6) * s, 35 * s], 2.1 * s, 1.7 * s));
+      const mano: Pieza[] = [masa(cs, { mat, suave: 1.5 * s })];
+      for (let i = 0; i < 3; i++) mano.push(a.caja(entre(a, -4, 4) * s, entre(a, -6, 6) * s, entre(a, -10, 20) * s, 0.5 * s, entre(a, 3, 6) * s, 0.4 * s, { mat: 'negro', giro: 90, incl: entre(a, -40, 40) }));
+      if (v === 'orbe') mano.push(a.esfera(3 * s, 0, 34 * s + onda(f, 8) * 1.2, 5 * s, { mat: 'abi_runa', tono: onda(f, 8) * 0.1 }));
+      if (v === 'isla') { const b: Pieza[] = []; isla(a, b, 9 * s, 8 * s, { liquen: true }); arbolMuerto(a, b, 0, 0, 22 * s); mano.push(...mover(b, [2 * s, 0, 37 * s], 0)); }
+      ps.push(...mover(mano, [0, 0, -12], g, entre(a, -12, 4)));
+      ps.push(a.caja(0, 0, -400, 600, 600, 386, { mat: 'abi_vacio', resta: true }));
+      for (let i = 0; i < 5; i++) { const t = (i / 5) * 2 * PI + a.r(); jiron(a, ps, [Math.cos(t) * 14 * s, Math.sin(t) * 14 * s, -10], 30 * s, 5 * s, (t * 180) / PI + 90, 'abi_niebla', -0.1); }
+      return flota(ps, v === 'orbe' ? { c: [0, 0, 34 * s], r: 44, color: '#b070f0' } : undefined);
+    },
+  },
+  {
+    id: 'abi_trono', nombre: ['Trono frente al vacío', 'Throne facing the void'], tema: 'abismo', variantes: ['vacio', 'rey', 'roto'], cuadros: 8, t: 5, huella: [4, 4], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], R = entre(a, 22, 26), fm = forma(a, 3);
+      isla(a, ps, R, R * 1.8, { raices: fm === 1 });
+      // gradas, el sitial de obsidiana con respaldo alto en punta y los brazos
+      for (let i = 0; i < 2; i++) ps.push(sillar(a, [2 - i * 2, 0, i * 3], 26 - i * 6, 24 - i * 6, 3, 0, 'abi_sillar', 0.1));
+      const T: Pieza[] = [sillar(a, [0, 0, 6], 12, 14, 8, 0, 'abi_obsidiana', 0.06)];
+      T.push(a.poliedro([[-7, -7, 14], [-4, -7, 14], [-7, 7, 14], [-4, 7, 14], [-7, -6, 46], [-4, -6, 46], [-7, 6, 46], [-4, 6, 46], [-5.5, 0, 58]], { mat: 'abi_obsidiana' }));
+      if (v !== 'roto') for (const l of [-1, 1]) T.push(sillar(a, [0, l * 7.5, 14], 12, 2.6, 8, 0, 'abi_obsidiana', 0.1), a.esfera(6, l * 7.5, 22.5, 1.6, { mat: 'abi_runa' }));
+      else T.push(sillar(a, [0, -7.5, 14], 12, 2.6, 8, 0, 'abi_obsidiana', 0.2), a.caja(-5.5, 0, 30, 4, 14, 1.2, { mat: 'abi_vacio', resta: true }));
+      for (let k = 0; k < 4; k++) T.push(a.caja(-3.8, 0, 22 + k * 7, 0.5, 6 - k, 1, { mat: 'abi_runa', tono: onda(f, 8, k) * 0.1 - 0.1 }));
+      if (v === 'rey') {
+        // el rey que espera: huesos con manto y corona, mirando la nada
+        T.push(masa([bulto([-1, 0, 20], [4, 6, 7]), hM([-1, 0, 14], [6, -3, 14], 2.2, 2), hM([-1, 0, 14], [6, 3, 14], 2.2, 2), hM([6, -3, 14], [8, -3, 1], 1.8, 1.6), hM([6, 3, 14], [8, 3, 1], 1.8, 1.6)], { mat: 'cu_tela_morada' in MATERIALES ? 'cu_tela_morada' : 'tela_morada', suave: 2 }));
+        calavera(a, T, 0, 0, 26, 1.1, 0);
+        for (let k = 0; k < 5; k++) { const t = (k / 5) * 2 * PI; T.push(a.palo([Math.cos(t) * 3.2, Math.sin(t) * 3.2, 30], [Math.cos(t) * 3.6, Math.sin(t) * 3.6, 34], 0.6, { mat: 'oro', r1: 0.2 })); }
+        T.push(a.cilindro(0, 0, 29.6, 3.6, 1.2, { mat: 'oro' }));
+        for (const l of [-1, 1]) T.push(a.palo([3, l * 6.5, 17], [6, l * 7.5, 22], 0.8, { mat: 'hueso' }));
+      }
+      ps.push(...mover(T, [-2, 0, 6], entre(a, 20, 70)));
+      return flota(mover(ps, [0, 0, onda(f, 8) * 1.4], 0), { c: [0, 0, 30], r: 30, color: '#a060e0' });
+    },
+  },
+);
+conVarianteY('abi_puente', 'abi_escalera', 'abi_balaustrada', 'abi_costillar');

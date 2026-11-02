@@ -25,6 +25,20 @@ const ARMAS: [TipoArma, string, string, { mat: string; mango: string; gema?: str
   ['cetro', 'Cetro', 'Scepter', { mat: 'cu_oro', mango: 'cu_oro', gema: 'cu_luz_santa' }],
   ['arco', 'Arco', 'Bow', { mat: 'cu_placa', mango: 'madera_lisa' }],
   ['ballesta', 'Ballesta', 'Crossbow', { mat: 'cu_placa', mango: 'madera' }],
+  // arsenal épico (actos 6 y 7, niveles altos)
+  ['katana', 'Katana', 'Katana', { mat: 'cu_placa', mango: 'cu_cuero_negro' }],
+  ['estoque', 'Estoque', 'Rapier', { mat: 'cu_placa', mango: 'cu_oro' }],
+  ['falcata', 'Falcata', 'Falcata', { mat: 'cu_placa_oscura', mango: 'cu_hueso' }],
+  ['tridente', 'Tridente', 'Trident', { mat: 'cu_bronce', mango: 'madera_lisa' }],
+  ['maza_estrella', 'Lucero del alba', 'Morning star', { mat: 'cu_placa_oscura', mango: 'madera' }],
+  ['arco_largo', 'Arco largo', 'Longbow', { mat: 'cu_placa', mango: 'madera_lisa' }],
+  ['arco_corto', 'Arco recurvo', 'Recurve bow', { mat: 'cu_cuerno', mango: 'madera' }],
+  ['jabalina', 'Jabalina', 'Javelin', { mat: 'cu_placa', mango: 'madera_lisa' }],
+  ['gran_baculo', 'Gran báculo', 'Greatstaff', { mat: 'cu_oro', mango: 'madera', gema: 'magia' }],
+  ['orbe_mano', 'Orbe', 'Orb', { mat: 'cu_oro', mango: 'cu_oro', gema: 'magia' }],
+  ['katar', 'Katar', 'Katar', { mat: 'cu_placa', mango: 'cu_cuero' }],
+  ['hoz', 'Hoz', 'Sickle', { mat: 'cu_placa_oscura', mango: 'madera_vieja' }],
+  ['lanza_dragon', 'Lanza del dragón', 'Dragon lance', { mat: 'cu_draco', mango: 'cu_hueso_demonio' }],
 ];
 const ENC: [Encanto | '', string, string][] = [['', '', ''], ...ENCANTOS.map(([id, es, en]) => [id, es, en] as [Encanto, string, string])];
 

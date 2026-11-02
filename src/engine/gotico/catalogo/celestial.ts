@@ -1,7 +1,7 @@
 import { registrar, type Arma, type ObjetoDef, type Tema } from '../objeto';
 import { MATERIALES } from '../materiales';
 import { masa, hueso, bulto, ruido, type Comp, type Pieza, type V3, type Escena } from '../render';
-import { TAU, PI, rad, add, sub, esc, len, nor, cruz, mez, ciclo, onda, jit, elegir, polar, rotM, ejeAng, transformar, roca, pena, craneo, tela, catenaria, cadena, fuego } from '../actos45';
+import { TAU, PI, rad, add, sub, esc, len, nor, cruz, mez, ciclo, onda, jit, elegir, polar, rotM, transformar, roca, pena, craneo, tela, catenaria, cadena, fuego } from '../actos45';
 
 /**
  * Acto 7, La Corona del Dios Sediento: un cielo roto. Islas de ruinas de mármol blanco y oro que flotan sobre el
@@ -48,7 +48,6 @@ M.cel_hueso = { rampa: ['#2a2620', '#443e33', '#615848', '#7f745f', '#9c9077', '
 const MA = 'cel_marmol', ML = 'cel_marmol_losas', OR = 'cel_oro', OV = 'cel_oro_viejo', PE = 'cel_piedra', RO = 'cel_roca';
 
 // ------------------------------------------------------------------ ayudas
-const hr = (n: number) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 const lat = (d: V3): V3 => nor(Math.abs(d[2]) > 0.9 ? cruz(d, [1, 0, 0]) : cruz(d, [0, 0, 1]));
 const mover = (ps: Pieza[], giro: number, t: V3 = [0, 0, 0], ix = 0, iy = 0) => transformar(ps, rotM(giro, ix, iy), t);
 const ID3: [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -600,7 +599,7 @@ registrar(
       if (v === 'con_ceniza' || v === 'entera') loc.push(a.cilindro(0, 0, 46, 24, 2, { mat: 'cel_ceniza', r1: 25 }));
       if (v === 'rajada') { loc.push(a.caja(26, 6, 40, 14, 4, 40, { mat: OR, resta: true, giro: 25 })); for (let i = 0; i < 3; i++) loc.push(lasca(a, [34 + jit(a, 6), jit(a, 12), 2], 3, OR)); }
       let ps: Pieza[] = v === 'volcada' ? transformar(loc, rotM(a.r() * 360, 0, 74), [-30, 0, 30]) : loc;
-      if (v === 'volcada') { ps = ps.map((p) => p); for (let i = 0; i < 10; i++) craneo(a, ps, [20 + a.r() * 26, jit(a, 20), 2.5], 3, a.r() * 360, { mat: 'cel_hueso', mandibula: false, incl: jit(a, 30) }); }
+      if (v === 'volcada') { for (let i = 0; i < 10; i++) craneo(a, ps, [20 + a.r() * 26, jit(a, 20), 2.5], 3, a.r() * 360, { mat: 'cel_hueso', mandibula: false, incl: jit(a, 30) }); }
       // la sed: polvo de oro que sube del fondo y se pierde, sin llenarla nunca
       for (let i = 0; i < 8; i++) { const u = ciclo(f + i, 8), an = (i / 8) * TAU; ps.push(a.esfera(Math.cos(an) * 14 * (1 - u * 0.5), Math.sin(an) * 14 * (1 - u * 0.5), (v === 'volcada' ? 10 : 50) + u * 40, 0.7 * (1 - u * 0.6), { mat: 'cel_luz_oro', tono: -u * 0.4 })); }
       return ps;
@@ -814,7 +813,7 @@ registrar(
       ps.push(a.caja(0, 0, 96, 16, 66, 8, { mat: ML }), a.poliedro([[-8, -34, 104], [8, -34, 104], [-8, 34, 104], [8, 34, 104], [-8, 0, 124], [8, 0, 124]], { mat: MA }));
       ps.push(a.cilindro(8.5, 0, 110, 6, 1, { mat: OR, eje: [1, 0, 0] }));
       // las hojas de oro: cerradas, abiertas hacia adentro, rotas o mostrando el vacío
-      if (v !== 'rota' || true) for (const s of [-1, 1]) {
+      for (const s of [-1, 1]) {
         const ab = v === 'abierta' ? 70 : v === 'rota' ? (s > 0 ? 85 : 8) : 0, hoja: Pieza[] = [a.caja(0, s * 10.5, 0, 2.4, 21, 84, { mat: OR })];
         for (let i = 0; i < 4; i++) hoja.push(a.caja(1.4, s * 10.5, 8 + i * 20, 0.8, 17, 14, { mat: OV }));
         if (v === 'rota' && s > 0) hoja.push(a.caja(0, s * 10, 40, 4, 12, 50, { mat: OR, resta: true, giro: 30 }));
@@ -831,7 +830,7 @@ registrar(
       ps.push(a.caja(0, 0, 0, 34, 22, 4, { mat: ML }), a.caja(0, 0, 4, 28, 16, 18, { mat: MA }), a.caja(0, 0, 22, 32, 20, 3, { mat: ML }), a.caja(14.2, 0, 8, 0.8, 12, 10, { mat: OR }));
       if (v === 'roto') { ps.push(a.caja(10, 6, 14, 16, 12, 20, { mat: MA, resta: true, giro: 30 })); for (let i = 0; i < 4; i++) ps.push(lasca(a, [18 + jit(a, 6), jit(a, 14), 1], 3)); }
       if (v === 'con_cuenco' || v === 'con_ofrendas') { ps.push(a.cilindro(0, 0, 25, 4, 3, { mat: OR, r1: 9 }), a.cilindro(0, 0, 27, 8, 3, { mat: OR, resta: true })); ps.push(a.cilindro(0, 0, 27.4, 7.6, 0.5, { mat: 'cel_ceniza' })); }
-      if (v === 'con_ofrendas') { for (let i = 0; i < 3; i++) craneo(a, ps, [-9 + i * 9, 6, 27.5], 2.4, 30 + jit(a, 20), { mat: 'cel_hueso', mandibula: false }); for (let i = 0; i < 4; i++) ps.push(a.cilindro(jit(a, 12), -6 + jit(a, 2), 25, 0.8, 3 + a.r() * 3, { mat: 'cera' }), a.elipsoide(0, 0, 0, 0.1, 0.1, 0.1, { mat: 'negro' })); }
+      if (v === 'con_ofrendas') { for (let i = 0; i < 3; i++) craneo(a, ps, [-9 + i * 9, 6, 27.5], 2.4, 30 + jit(a, 20), { mat: 'cel_hueso', mandibula: false }); for (let i = 0; i < 4; i++) ps.push(a.cilindro(jit(a, 12), -6 + jit(a, 2), 25, 0.8, 3 + a.r() * 3, { mat: 'cera' })); }
       for (let i = 0; i < 2; i++) vetaOro(a, ps, [14.2, jit(a, 8), 12], [1, 0, 0], 8);
       // una luz blanca muy débil sobre el cuenco vacío
       ps.push(a.esfera(0, 0, 34 + k * 2, 1 + k * 0.6, { mat: 'cel_luz', tono: -0.3 + k * 0.3 }));
@@ -850,6 +849,121 @@ registrar(
       for (let i = 0; i < 5; i++) { const ph = ciclo(f, 8) * TAU * 0.25 + i * 1.25, r = 32 + i * 3; ps.push(...transformar([a.caja(0, 0, 0, 10, 6, 5, { mat: ML })], rotM((ph * 180) / PI * 2, jit(a, 20), jit(a, 20)), [Math.cos(ph) * r, Math.sin(ph) * r, z0 + 40 + i * 20 + Math.sin(ph * 3) * 3])); }
       if (v === 'flotante') { const cs: Comp[] = []; for (let i = 0; i < 4; i++) cs.push(bulto([jit(a, 4), jit(a, 4), -8 - i * 14], [24 - i * 5, 22 - i * 5, 10], { mat: RO })); ps.push(masa(cs, { mat: RO, suave: 5 })); }
       return { piezas: ps, sinSombra: v === 'flotante' };
+    },
+  },
+);
+
+// ------------------------------------------------------------------ 6. piezas sueltas para armar el cielo roto
+registrar(
+  {
+    id: 'cel_isla_roca', nombre: ['Isla de roca desnuda', 'Bare floating rock'], tema: TEMA, variantes: ['chica', 'mediana', 'con_raices', 'con_cadena'], cuadros: 8, t: 5, huella: [3, 3], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], r = v === 'chica' ? 14 : 24, dz = onda(f, 8, a.r() * 3) * 1.5;
+      isla(a, ps, r, f, 8, { hondo: r * 1.8 });
+      ps.push(...roca(a, [jit(a, 4), jit(a, 4), 1], [r * 0.5, r * 0.4, r * 0.3], { mat: RO, facetas: 2 }));
+      if (v === 'con_raices') for (let i = 0; i < 3; i++) { const cs: Comp[] = []; let p: V3 = [jit(a, r * 0.6), jit(a, r * 0.6), 0]; for (let k = 0; k < 5; k++) { const q = add(p, [jit(a, 4), jit(a, 4), 5]); cs.push(hueso(p, q, 1.6 - k * 0.25, 1.3 - k * 0.25, { mat: OV })); p = q; } ps.push(masa(cs, { mat: OV, suave: 0.6 })); }
+      if (v === 'con_cadena') { const pts = catenaria([0, 0, 2], [60, 30, 70], 6, 8); cadena(a, ps, pts, 5, 1.1, OR); }
+      return { piezas: transformar(ps, ID3, [0, 0, dz]), sinSombra: true };
+    },
+  },
+  {
+    id: 'cel_pedestal_vacio', nombre: ['Pedestal vacío', 'Empty pedestal'], tema: TEMA, variantes: ['cuadrado', 'redondo', 'con_pies', 'roto'], huella: [2, 2], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [];
+      if (v === 'redondo') ps.push(a.cilindro(0, 0, 0, 10, 3, { mat: ML }), a.cilindro(0, 0, 3, 7.5, 20, { mat: MA }), a.cilindro(0, 0, 23, 10, 3, { mat: OR }));
+      else ps.push(a.caja(0, 0, 0, 20, 20, 3, { mat: ML }), a.caja(0, 0, 3, 15, 15, 20, { mat: MA }), a.caja(0, 0, 23, 19, 19, 3, { mat: OR }));
+      // de la estatua solo quedan los pies, cortados en los tobillos
+      if (v === 'con_pies') for (const s of [-1, 1]) ps.push(masa([bulto([1.5, s * 3.5, 27.4], [4, 1.8, 1.4], { mat: MA }), hueso([-0.5, s * 3.5, 27], [-0.5, s * 3.5, 33], 1.8, 1.6, { mat: MA })], { mat: MA, suave: 0.8 }));
+      if (v === 'roto') { ps.push(a.caja(6, 6, 12, 12, 12, 20, { mat: MA, resta: true, giro: 30 })); for (let i = 0; i < 3; i++) ps.push(lasca(a, [12 + jit(a, 4), jit(a, 10), 1], 2.5)); }
+      vetaOro(a, ps, [7.6, 0, 12], [1, 0, 0], 8);
+      return ps;
+    },
+  },
+  {
+    id: 'cel_obelisco_oro', nombre: ['Obelisco con oro', 'Gilded obelisk'], tema: TEMA, variantes: ['entero', 'partido', 'caido', 'flotante'], cuadros: 8, t: 5, huella: [2, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const loc: Pieza[] = [];
+      const H = v === 'partido' ? 60 : 110, b = 8, t = 5;
+      loc.push(a.poliedro([[-b, -b, 0], [b, -b, 0], [-b, b, 0], [b, b, 0], [-t, -t, H], [t, -t, H], [-t, t, H], [t, t, H]], { mat: MA }));
+      if (v !== 'partido') loc.push(a.poliedro([[-t, -t, H], [t, -t, H], [-t, t, H], [t, t, H], [0, 0, H + 10]], { mat: OR }));
+      else for (let i = 0; i < 3; i++) loc.push(pena(a, jit(a, 3), jit(a, 3), H, 5, 4, 3 + a.r() * 4, { mat: MA }));
+      // inscripciones de oro en franjas
+      for (let i = 0; i < 6; i++) { const z = 14 + i * 12; if (z > H - 6) break; const w = b - (b - t) * (z / H); loc.push(a.caja(w + 0.1, 0, z, 0.6, w * 1.2, 5, { mat: OR, tono: -0.05 })); }
+      let ps: Pieza[];
+      if (v === 'caido') ps = transformar(loc, rotM(a.r() * 360, 0, 86), [-H / 2, 0, b]);
+      else if (v === 'flotante') ps = transformar(loc, rotM(ciclo(f, 8) * 45, jit(a, 6), jit(a, 6)), [0, 0, 18 + onda(f, 8) * 2.5]);
+      else ps = transformar(loc, ID3, [0, 0, 0]);
+      if (v !== 'flotante') ps.push(a.caja(0, 0, 0, 22, 22, 3, { mat: ML }));
+      return { piezas: ps, sinSombra: v === 'flotante' };
+    },
+  },
+  {
+    id: 'cel_lanza_angel', nombre: ['Lanzas de ángeles clavadas', 'Spears of fallen angels'], tema: TEMA, variantes: ['una', 'tres', 'con_yelmo', 'rotas'], huella: [2, 2], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [], n = v === 'tres' || v === 'rotas' ? 3 : 1;
+      for (let i = 0; i < n; i++) {
+        const base: V3 = n > 1 ? [jit(a, 12), jit(a, 12), 0] : [0, 0, 0], d = nor([jit(a, 0.35), jit(a, 0.35), 1]), L = v === 'rotas' && a.r() < 0.6 ? 26 + a.r() * 20 : 70;
+        ps.push(a.palo(add(base, d, -8), add(base, d, L), 0.9, { mat: OR }));
+        if (L >= 70) { const tip = add(base, d, L); ps.push(a.poliedro([add(tip, lat(d), 3), add(tip, lat(d), -3), add(add(tip, d, 18), [0, 0, 0]), add(tip, cruz(d, lat(d)), 0.8), add(tip, cruz(d, lat(d)), -0.8)], { mat: 'cel_luz_oro', tono: -0.2 })); ps.push(a.palo(add(add(tip, d, -1), lat(d), -5), add(add(tip, d, -1), lat(d), 5), 0.8, { mat: OR })); }
+        ps.push(a.elipsoide(...base, 4, 4, 1, { mat: 'cel_marmol' }));
+      }
+      if (v === 'con_yelmo') ps.push(masa([bulto([7, 4, 5], [4.6, 4, 5], { mat: OR }), hueso([7, 4, 10], [7, 4, 15], 1, 0.4, { mat: OR })], { mat: OR, suave: 0.6 }), a.caja(11, 4, 3, 2, 5, 2.4, { mat: 'negro', resta: true }));
+      return ps;
+    },
+  },
+  {
+    id: 'cel_arpa_rota', nombre: ['Arpa de oro rota', 'Broken golden harp'], tema: TEMA, variantes: ['de_pie', 'caida', 'sin_cuerdas'], huella: [2, 2], bloquea: true,
+    armar: (v, _f, a) => {
+      const loc: Pieza[] = [], cs: Comp[] = [];
+      // marco curvo de oro, columna con un ángel tallado y cuerdas de luz que quedan
+      const curva = (t: number): V3 => [0, -10 + t * 22, 8 + Math.sin(t * PI) * 10 + t * 30];
+      for (let i = 0; i < 6; i++) cs.push(hueso(curva(i / 6), curva((i + 1) / 6), 1.8, 1.6, { mat: OR }));
+      cs.push(hueso([0, -10, 6], [0, -10, 46], 2.2, 1.8, { mat: OR }), bulto([0, -10, 48], [2.6, 2.6, 3], { mat: OR }), hueso([0, -10, 6], [0, 12, 4], 2, 2, { mat: OR }));
+      loc.push(masa(cs, { mat: OR, suave: 1 }));
+      if (v !== 'sin_cuerdas') for (let i = 1; i < 9; i++) { if (a.r() < 0.35) continue; const y = -10 + i * 2.4, top = curva((y + 10) / 22); loc.push(a.palo([0, y, 5], [0, y, top[2] - 1], 0.25, { mat: 'cel_luz_oro' })); }
+      loc.push(a.cilindro(0, 0, 0, 8, 2.5, { mat: ML }));
+      const ps = v === 'caida' ? transformar(loc, rotM(a.r() * 360, 84, 0), [0, 0, 3]) : mover(loc, 45 + jit(a, 30));
+      return ps;
+    },
+  },
+  dosEjes({
+    id: 'cel_columnata', nombre: ['Columnata de mármol', 'Marble colonnade'], tema: TEMA, variantes: ['entera', 'rota', 'caida'], huella: [5, 1], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [];
+      for (let i = 0; i < 4; i++) { const x = -30 + i * 20, roto = v === 'rota' && (i === 2 || a.r() < 0.3) ? 0.3 + a.r() * 0.4 : 1; if (v === 'caida' && i > 1) { ps.push(a.cilindro(x, 8, 4, 4, 60, { mat: MA, eje: [0.15, 1, 0] })); continue; } columna(a, ps, [x, 0, 0], 72, 4, { roto }); }
+      if (v === 'entera') ps.push(a.caja(0, 0, 79.5, 76, 12, 8, { mat: ML }), a.caja(0, 6.1, 82, 70, 0.6, 3, { mat: OR }));
+      else ps.push(a.caja(-20, 0, 79.5, 36, 12, 8, { mat: ML, incl: v === 'caida' ? 0 : 3, inclEje: 'y' }));
+      for (let i = 0; i < 3; i++) ps.push(lasca(a, [jit(a, 36), 10 + jit(a, 4), 1], 3));
+      return ps;
+    },
+  }),
+  {
+    id: 'cel_piso_roto', nombre: ['Piso de mármol roto', 'Broken marble floor'], tema: TEMA, variantes: ['losas', 'hundido', 'con_mosaico', 'al_vacio'], huella: [5, 5], bloquea: false, plano: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [];
+      for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
+        if (v === 'al_vacio' && i + j > 1) continue;
+        if (a.r() < 0.18) continue;
+        const z = v === 'hundido' ? -Math.max(0, 3 - Math.hypot(i, j) * 1.2) * 1.5 : 0;
+        ps.push(a.caja(i * 16 + jit(a, 0.8), j * 16 + jit(a, 0.8), z, 15.2, 15.2, 1.6, { mat: (v === 'con_mosaico' && (i + j) % 2 === 0) ? 'marmol_negro' : MA, giro: jit(a, 3), incl: jit(a, 3), tono: jit(a, 0.04) }));
+      }
+      if (v === 'con_mosaico') { ps.push(a.cilindro(0, 0, 1.4, 12, 0.5, { mat: OR })); ps.push(a.cilindro(0, 0, 1.5, 9, 0.5, { mat: 'marmol_negro' })); }
+      if (v === 'al_vacio') ps.push(a.caja(20, 20, -0.4, 50, 50, 1, { mat: 'cel_vacio', giro: 45 }));
+      for (let i = 0; i < 3; i++) vetaOro(a, ps, [jit(a, 30), jit(a, 30), 1.7], [0, 0, 1], 14);
+      return ps;
+    },
+  },
+  {
+    id: 'cel_relicario', nombre: ['Relicario de oro', 'Golden reliquary'], tema: TEMA, variantes: ['cerrado', 'abierto', 'volcado'], cuadros: 8, t: 4, huella: [2, 1], bloquea: true,
+    armar: (v, f, a) => {
+      const loc: Pieza[] = [], k = 0.5 + 0.5 * onda(f, 8);
+      // arqueta como una iglesia chica: caja, tejado a dos aguas, pináculos y el vidrio con un hueso adentro
+      loc.push(a.caja(0, 0, 0, 22, 12, 2, { mat: ML }), a.caja(0, 0, 2, 20, 10, 11, { mat: OR }), a.caja(5.1, 0, 4, 0.6, 7, 7, { mat: 'vidrio' }));
+      if (v !== 'abierto') loc.push(a.poliedro([[-10, -5, 13], [10, -5, 13], [-10, 5, 13], [10, 5, 13], [-10, 0, 19], [10, 0, 19]], { mat: OR }));
+      else loc.push(...transformar([a.poliedro([[-10, 0, 0], [10, 0, 0], [-10, 10, 0], [10, 10, 0], [-10, 5, 6], [10, 5, 6]], { mat: OR })], rotM(0, -110, 0), [0, -5, 13]), a.esfera(0, 0, 15, 2 + k * 0.4, { mat: 'cel_luz' }));
+      for (const x of [-10, 10]) for (const y of [-5, 5]) loc.push(a.cilindro(x, y, 13, 0.9, 6, { mat: OR, r1: 0.1 }));
+      const ps = v === 'volcado' ? transformar(loc, rotM(a.r() * 360, 90, 0), [0, 0, 6]) : mover(loc, 45 + jit(a, 20));
+      return v === 'abierto' ? { piezas: ps, resplandor: { c: [0, 0, 16], r: 20 + k * 4, color: '#f4f0e0' } } : ps;
     },
   },
 );

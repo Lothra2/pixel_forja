@@ -4,7 +4,7 @@ import { masa, hueso as hM, bulto, ruido, type Comp } from '../render';
 import { armaSuelta, type Cuerpo, type Equipo } from '../cuerpo';
 import type { Dir } from '../figura';
 import {
-  PI, rad, add, mez, onda, entre, forma, suelo, mover, pena, piedras, rocaComps, roca, espeleo, prisma, viga, cuerda, cadena,
+  PI, rad, add, mez, onda, entre, forma, suelo, mover, pena, piedras, roca, espeleo, prisma, viga, cuerda,
   calavera, huesoL, llama, farol, cadaver, recorte, semisDe, contornoOrg, penasco, paredRoca, bordeVacio, BORDES, paredesHueco,
 } from './subterraneo';
 
