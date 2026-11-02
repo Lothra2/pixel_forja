@@ -6,7 +6,7 @@ import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, objetoMeta, dibujar, dibujar
 import { generarPaisaje, type MapaGotico } from '../../../src/engine/gotico/index';
 import { CLASES } from '../datos/clases';
 import { INTRO, ENTREACTO, REVELACION, OPCIONES_BRASA, TRAS_ELEGIR, EPILOGO, type FinalElegido } from '../mundo/actos';
-import type { DatosHeroe } from '../juego/heroe';
+import { siguienteCiclo, type DatosHeroe } from '../juego/heroe';
 import { R, rng } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 import { logoReq } from './logo';
@@ -300,7 +300,7 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
     ctx.fillStyle = i === sel ? 'rgba(120,80,30,0.35)' : enc ? 'rgba(80,60,30,0.25)' : 'rgba(0,0,0,0.3)'; ctx.fillRect(x + 12, yy, w - 24, 58);
     const fs = cuadrosHeroe(hr.clase, 'quieto', 'so'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], x + 44, yy + 56, 0.62);
     texto(hr.nombre, x + 80, yy + 22, { tam: 16, color: '#f0e0b0', fuente: TITULO });
-    texto(`${TT(CLASES.find((c) => c.id === hr.clase)!.nombre)} · ${T('Nivel', 'Level')} ${hr.nivel} · ${T('Acto', 'Act')} ${hr.acto}${hr.dificultad ? ' · ' + [T('Normal', 'Normal'), T('Pesadilla', 'Nightmare'), T('Infierno', 'Hell')][hr.dificultad] : ''}`, x + 80, yy + 42, { tam: 12, color: hr.dificultad ? '#ff8060' : '#a09070' });
+    texto(`${TT(CLASES.find((c) => c.id === hr.clase)!.nombre)} · ${T('Nivel', 'Level')} ${hr.nivel} · ${T('Acto', 'Act')} ${hr.acto}${hr.dificultad ? ' · ' + [T('Normal', 'Normal'), T('Pesadilla', 'Nightmare'), T('Infierno', 'Hell')][hr.dificultad] : ''}${hr.ciclo ? ' · ' + T('Ciclo', 'Cycle') + ' ' + (hr.ciclo + 1) : ''}`, x + 80, yy + 42, { tam: 12, color: hr.dificultad ? '#ff8060' : '#a09070' });
     if (enc && E.clicIzq) { sel = i; E.clicIzq = false; Sonido.efecto('click'); }
   });
   if (!heroes.length) texto(T('Todavía no hay héroes.', 'No heroes yet.'), x + w / 2, y + 90, { alin: 'center', color: '#a09070' });
@@ -311,7 +311,7 @@ export function dibujarSeleccion(t: number, heroes: DatosHeroe[], sel: number): 
     const vivo = cuadrosDeFirma((window as any).__firmaSel ?? '', 'quieto', 's');
     const fs = vivo?.length ? vivo : cuadrosHeroe(hr.clase, 'quieto', 's'); if (fs.length) dibujar(ctx, fs[Math.floor(t * 6) % fs.length], bx + 140, by + 30, 2);
     if (boton(T('Jugar', 'Play'), bx + 40, by + 80, 200, 38, { tam: 16 })) accion = 'jugar';
-    if ((hr.actosHechos ?? []).includes(7) && (hr.dificultad ?? 0) < 2 && boton(hr.dificultad ? T('Bajar al Infierno', 'Descend into Hell') : T('Empezar Pesadilla', 'Begin Nightmare'), bx + 40, by + 268, 200, 30, { tam: 13, color: '#ff8060' })) accion = 'dificultad';
+    if ((hr.actosHechos ?? []).includes(7) && boton(T('Volver a empezar: ', 'Start over: ') + TT(siguienteCiclo(hr)), bx + 40, by + 268, 260, 30, { tam: 13, color: '#ff8060' })) accion = 'dificultad';
     if (boton((window as any).__borrar === hr.id ? T('¿Seguro? Clic otra vez', 'Sure? Click again') : T('Borrar', 'Delete'), bx + 40, by + 128, 200, 30, { tam: 13, color: (window as any).__borrar === hr.id ? '#ff6060' : undefined })) accion = 'borrar';
   }
   if (boton(T('Crear héroe nuevo', 'Create new hero'), bx + 40, by + 178, 200, 34, { tam: 14 })) accion = 'crear';
@@ -448,7 +448,6 @@ export function dibujarFinal(t: number, eleccion: FinalElegido = 'destruir'): bo
     logo(W / 2, H * 0.4, k, t, Math.min(56, W / 16));
     texto(TT(ep.titulo), W / 2, H * 0.54, { alin: 'center', tam: 20, color: `rgba(220,200,160,${k})`, fuente: TITULO });
     texto(T('Fin', 'The End'), W / 2, H * 0.6, { alin: 'center', tam: 14, color: `rgba(180,160,120,${k})`, fuente: TITULO });
-    texto(T('Ahora puedes empezar la Pesadilla desde la lista de héroes.', 'You can now begin Nightmare from the hero list.'), W / 2, H * 0.66, { alin: 'center', tam: 13, color: '#8a7a60' });
     return t > ep.lineas.length * dur + 7;
   }
   const tl = t - i * dur;
@@ -461,4 +460,27 @@ export function dibujarFinal(t: number, eleccion: FinalElegido = 'destruir'): bo
   if (i === ep.lineas.length - 1) { const g = ctx.createRadialGradient(W * 0.72, H * 0.2, 0, W * 0.72, H * 0.2, 40 + Math.sin(t * 6) * 4); const k = Math.min(1, tl / 1.2); g.addColorStop(0, `rgba(255,200,120,${k})`); g.addColorStop(0.3, `rgba(255,90,20,${0.6 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
   marcoCine(TT(ep.lineas[i]), tl, dur);
   return false;
+}
+
+/**
+ * Después del epílogo: volver a empezar con todo lo tuyo (Nueva Partida+) o quedarte en este mundo.
+ * Devuelve 'empezar', 'quedarse' o null mientras decide.
+ */
+export function dibujarCiclo(t: number, d: DatosHeroe): 'empezar' | 'quedarse' | null {
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  brasas(t, 60, true);
+  const k = Math.min(1, t / 1.5);
+  texto(T('La rueda vuelve a girar', 'The wheel turns again'), W / 2, H * 0.24, { alin: 'center', tam: 30, color: `rgba(240,200,140,${k})`, fuente: TITULO });
+  const lin = [
+    ['La sed no muere. Solo duerme hasta que alguien vuelve a cantar de noche.', 'Thirst does not die. It only sleeps until someone sings at night again.'],
+    ['Puedes bajar otra vez a Velmora con todo lo que ganaste: tu nivel, tus armas, tu bolsa, tu oro, tu baúl y Thor.', 'You can descend to Velmora again with everything you earned: your level, your weapons, your pack, your gold, your chest and Thor.'],
+    ['La historia empieza de nuevo, los monstruos son más duros y el botín, mejor.', 'The story starts over, the monsters are harder and the loot is better.'],
+  ] as [string, string][];
+  lin.forEach((l, i) => texto(TT(l), W / 2, H * 0.34 + i * 26, { alin: 'center', tam: 14, color: `rgba(200,180,150,${Math.min(1, Math.max(0, t - 0.6 - i * 0.5))})` }));
+  if (t < 2) return null;
+  let r: 'empezar' | 'quedarse' | null = null;
+  if (boton(T('Volver a empezar: ', 'Start over: ') + TT(siguienteCiclo(d)), W / 2 - 160, H * 0.56, 320, 42, { tam: 16, color: '#ff8060' })) r = 'empezar';
+  if (boton(T('Quedarme en este mundo', 'Stay in this world'), W / 2 - 160, H * 0.56 + 56, 320, 34, { tam: 14 })) r = 'quedarse';
+  texto(T('Siempre puedes volver a empezar desde la lista de héroes.', 'You can always start over from the hero list.'), W / 2, H * 0.56 + 112, { alin: 'center', tam: 12, color: '#7a6a50' });
+  return r;
 }

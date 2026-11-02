@@ -39,6 +39,8 @@ export interface DatosHeroe {
   actosHechos: number[];
   vidaActual?: number; manaActual?: number;
   dificultad: number;
+  /** Veces que volvió a empezar la historia con todo lo suyo (Nueva Partida+). */
+  ciclo?: number;
   /** Aura activa (solo una a la vez). Opcional: las partidas viejas no la tienen. */
   aura?: string;
   /** Tipo de poción de cada columna del cinturón (con eso se rellena). Opcional: las partidas viejas no lo tienen. */
@@ -268,7 +270,7 @@ export function calcular(h: DatosHeroe, buffs: Record<string, number> = {}): Cal
     precision: Math.round(des * 5 - 35 + h.nivel * 6 + (st.precision ?? 0)), def, bloqueo, critico: st.critico ?? 0, esquiva: st.esquiva ?? 0,
     res, robo_vida: st.robo_vida ?? 0, robo_mana: st.robo_mana ?? 0,
     vel_ataque: (st.vel_ataque ?? 0) - (ba?.vel ?? 0), vel_lanzar: st.vel_lanzar ?? 0, vel_mover: st.vel_mover ?? 0, vel_recuperar: st.vel_recuperar ?? 0,
-    regen_vida: st.regen_vida ?? 0, regen_mana: st.regen_mana ?? 0, hallazgo: st.hallazgo ?? 0, oro_extra: st.oro_extra ?? 0, radio_luz: st.radio_luz ?? 0,
+    regen_vida: st.regen_vida ?? 0, regen_mana: st.regen_mana ?? 0, hallazgo: (st.hallazgo ?? 0) + 25 * (h.ciclo ?? 0), oro_extra: st.oro_extra ?? 0, radio_luz: st.radio_luz ?? 0,
     espinas: st.espinas ?? 0, reduc_dano: Math.min(50, st.reduc_dano ?? 0), mas_habilidades: mas,
     golpe_aplastante: st.golpe_aplastante ?? 0, herida_abierta: st.herida_abierta ?? 0, ralentizar: st.ralentizar ?? 0, aturdir: st.aturdir ?? 0, perforar: st.perforar ?? 0,
     vida_por_muerte: st.vida_por_muerte ?? 0, mana_por_muerte: st.mana_por_muerte ?? 0,
@@ -324,3 +326,23 @@ export function puedeAprender(h: DatosHeroe, hb: Habilidad): boolean {
   return (hb.req ?? []).every((r) => (h.habs[r] ?? 0) > 0);
 }
 export const habDe = (id: string) => (id === 'ataque' ? null : habilidad(id));
+
+/** Ciclos más allá del Infierno: los monstruos se endurecen un 15 % por cada uno. */
+export const cicloExtra = (d: DatosHeroe) => (d.dificultad >= 2 ? Math.max(0, (d.ciclo ?? 0) - 2) : 0);
+/** Nombre de lo que viene al volver a empezar. */
+export function siguienteCiclo(d: DatosHeroe): [string, string] {
+  const dif = d.dificultad ?? 0;
+  if (dif === 0) return ['Pesadilla', 'Nightmare'];
+  if (dif === 1) return ['Infierno', 'Hell'];
+  const n = cicloExtra(d) + 1;
+  return [`Infierno, ciclo ${n + 1}`, `Hell, cycle ${n + 1}`];
+}
+/**
+ * Nueva Partida+: la historia vuelve al acto 1 y sube un escalón (Normal, Pesadilla, Infierno y luego ciclos del Infierno).
+ * Se conserva todo lo demás: nivel, equipo, bolsa, oro, Thor, talismanes, habilidades y el baúl compartido.
+ */
+export function volverAEmpezar(d: DatosHeroe) {
+  d.ciclo = (d.ciclo ?? 0) + 1;
+  d.dificultad = Math.min(2, (d.dificultad ?? 0) + 1);
+  d.acto = 1; d.zona = 'a1_refugio'; d.misiones = {}; d.actosHechos = []; d.viajes = ['a1_refugio'];
+}

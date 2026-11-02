@@ -5,7 +5,7 @@ import * as Assets from './motor/assets';
 import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
-import { dibujarFinal, dibujarEntreacto, dibujarRevelacion } from './ui/menus';
+import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
 import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
@@ -14,7 +14,7 @@ import { abrirTienda } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, opciones as opcionesRender, type Pick } from './render/escena';
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
-import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad } from './juego/heroe';
+import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad, volverAEmpezar } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
 import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA } from './mundo/actos';
 import { POBLACION, MONSTRUOS } from './datos/monstruos';
@@ -23,7 +23,7 @@ import { CLASES } from './datos/clases';
 import { dist, R, elegir } from './nucleo/azar';
 import { pasable, type ObjZ, type Salida } from './mundo/zona';
 
-type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona' | 'final' | 'entreacto' | 'revelacion';
+type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona' | 'final' | 'entreacto' | 'revelacion' | 'ciclo';
 let finalT = 0;
 // historia: la cinemática entre actos espera a que se cierre el diálogo; la revelación lleva al final si se elige al caer Aun-Saar
 let entreActo = 0, entreActoPendiente = 0, entreT = 0;
@@ -396,6 +396,7 @@ function procesarEventos(jj: Juego) {
 let ultimo = performance.now();
 let introT = 0;
 (window as any).__introA = (s: number) => { introT = s; };
+(window as any).__aFinal = () => { estado = 'final'; finalT = 999; };
 function cuadro(ahora: number) {
   marcarCuadro(ahora);
   const dt = Math.min(0.05, (ahora - ultimo) / 1000); ultimo = ahora;
@@ -439,7 +440,15 @@ function paso(dt: number) {
     }
     case 'final': {
       finalT += dt;
-      if (dibujarFinal(finalT, (j && finalDe(j.heroe.d)) || 'destruir') || (finalT > 3 && (pulso('Escape') || E.clicIzq))) { estado = 'juego'; E.clicIzq = false; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); }
+      if (dibujarFinal(finalT, (j && finalDe(j.heroe.d)) || 'destruir') || (finalT > 3 && (pulso('Escape') || E.clicIzq))) { E.clicIzq = false; if (j && j.heroe.d.actosHechos.includes(7)) { estado = 'ciclo'; finalT = 0; } else { estado = 'juego'; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); } }
+      break;
+    }
+    case 'ciclo': {
+      finalT += dt;
+      const r = j ? dibujarCiclo(finalT, j.heroe.d) : 'quedarse';
+      if (r === 'empezar' && j) { E.clicIzq = false; const d = j.heroe.d; volverAEmpezar(d); reiniciarHistoria(d); recalc(j); olvidarZonas(); guardar(); Sonido.efecto('campana', { vol: 0.8 }); irAZona('a1_refugio', 'viaje'); }
+      else if (r === 'quedarse' || pulso('Escape')) { E.clicIzq = false; estado = 'juego'; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); }
+      else dibujarCursor('senalar');
       break;
     }
     case 'intro': {
@@ -471,7 +480,7 @@ function paso(dt: number) {
       sel = r.sel;
       dibujarCursor('senalar');
       if (r.accion === 'jugar' && heroes[sel]) { E.clicIzq = false; empezarPartida(JSON.parse(JSON.stringify(heroes[sel]))); }
-      if (r.accion === 'dificultad' && heroes[sel]) { E.clicIzq = false; const hr = heroes[sel]; hr.dificultad = (hr.dificultad ?? 0) + 1; hr.acto = 1; hr.zona = 'a1_refugio'; hr.misiones = {}; reiniciarHistoria(hr); hr.actosHechos = []; hr.viajes = ['a1_refugio']; guardarPartidas(); }
+      if (r.accion === 'dificultad' && heroes[sel]) { E.clicIzq = false; const hr = heroes[sel]; volverAEmpezar(hr); reiniciarHistoria(hr); guardarPartidas(); }
       if (r.accion === 'crear') { estado = 'crear'; selClase = null; E.clicIzq = false; }
       if (r.accion === 'volver' || pulso('Escape')) { estado = 'menu'; E.clicIzq = false; }
       if (r.accion === 'borrar' && heroes[sel]) { E.clicIzq = false; if ((window as any).__borrar === heroes[sel].id) { heroes.splice(sel, 1); sel = 0; guardarPartidas(); (window as any).__borrar = null; } else (window as any).__borrar = heroes[sel].id; }

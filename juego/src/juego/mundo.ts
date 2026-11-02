@@ -4,7 +4,7 @@ import { ZONAS, POBL_ZONA, MISIONES, FRASE_JEFE } from '../mundo/actos';
 import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '../datos/monstruos';
 import { HABILIDADES, INVOCADOS, ATAQUE, ESCALA_HECHIZOS, poderNivel, danoInvocadoNivel, type Habilidad } from '../datos/clases';
 import { GENTE } from '../datos/npcs';
-import { calcular, nivelHab, xpPara, recoger, NIVEL_MAX, nivelEnDificultad, cant, rellenarColumna, type DatosHeroe, type Calc } from './heroe';
+import { calcular, nivelHab, xpPara, recoger, NIVEL_MAX, nivelEnDificultad, cicloExtra, cant, rellenarColumna, type DatosHeroe, type Calc } from './heroe';
 import { botin, crearObjeto, crearUnicoId, legendariaJefe, valorPocion, crearObjetoThor, type Objeto, type Caida } from './objetos';
 import { TALISMAN_JEFE } from '../datos/talismanes';
 import type { Elemento } from './tipos_objetos';
@@ -145,6 +145,8 @@ export interface Juego {
 // ------------------------------------------------------------------ zonas en memoria (no se regeneran mientras juegas)
 const zonasVivas = new Map<string, { z: Zona; monstruos: Monstruo[]; suelo: Suelo[]; manchas: Mancha[] }>();
 export const olvidarZonas = () => zonasVivas.clear();
+/** Dureza de los ciclos más allá del Infierno (Nueva Partida+): +15 % de vida y daño por ciclo. */
+let durezaCiclo = 1;
 
 export function crearJuego(d: DatosHeroe, idi: 0 | 1): Juego {
   const c = calcular(d);
@@ -164,6 +166,7 @@ export function crearJuego(d: DatosHeroe, idi: 0 | 1): Juego {
 
 /** Entra a una zona por una entrada (o a la piedra de viaje). */
 export function entrarZona(j: Juego, zid: string, entrada: string) {
+  durezaCiclo = 1 + 0.15 * cicloExtra(j.heroe.d);
   // guardar la zona actual
   if (j.zona) zonasVivas.set(j.zona.id, { z: j.zona, monstruos: j.monstruos, suelo: j.suelo, manchas: j.manchas });
   const def = ZONAS[zid];
@@ -236,10 +239,10 @@ export function crearMonstruo(def: DefMonstruo, nivel: number, x: number, y: num
   const s = escalar(def, nivel + dif * 0);
   // el nivel ya trae la dificultad (Pesadilla e Infierno suben de nivel): aquí solo un empujón extra
   // los jefes de mazmorra (ia jefe sin ser de acto) salen como únicos: con 4 veces la vida duraban casi como uno de acto
-  const mv = [1, 3, 4, 1, 1][calidad] * (def.ia === 'jefe' && !def.jefe ? 0.6 : 1) * ([1, 1.35, 1.7][dif] ?? 1);
+  const mv = durezaCiclo * [1, 3, 4, 1, 1][calidad] * (def.ia === 'jefe' && !def.jefe ? 0.6 : 1) * ([1, 1.35, 1.7][dif] ?? 1);
   // acto 1 en Normal: los monstruos pegan un 25 % menos hasta el nivel 8 y vuelven a lo normal hacia el 14 (para los que empiezan)
   const suave = dif === 0 && nivel < 14 ? 0.75 + 0.25 * clamp((nivel - 8) / 6, 0, 1) : 1;
-  const md = [1, 1.5, 1.8, 0.7, 0.7][calidad] * ([1, 1.15, 1.3][dif] ?? 1) * suave;
+  const md = durezaCiclo * [1, 1.5, 1.8, 0.7, 0.7][calidad] * ([1, 1.15, 1.3][dif] ?? 1) * suave;
   const m: Monstruo = {
     ...(nueva({ tipo: 'monstruo', x, y, vel: def.vel, radio: 0.42 * (def.huella ?? 1), escala: def.escala ?? 1, tinte: def.tinte }) as Ent), tipo: 'monstruo',
     def, nivel, dano: [Math.round(s.dano[0] * md), Math.round(s.dano[1] * md)], defensa: s.defensa, res: { ...(def.res ?? {}) }, calidad, nombre: def.nombre, mods: [],
