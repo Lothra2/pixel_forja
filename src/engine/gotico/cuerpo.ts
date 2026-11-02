@@ -248,7 +248,8 @@ type IzqTipo = NonNullable<Equipo['izq']>['tipo'];
 export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   // (las astas y el gran báculo nuevos van con la pose de vara aunque sean a dos manos: la izquierda baja por el asta)
-  const tipo = arma === 'ballesta' ? 'ballesta' : asta(arma) || arma === 'gran_baculo' ? 'baculo' : dos(arma) ? 'dos' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'lanza' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
+  // (las armas de asta largas a dos manos, la lanza y el gran báculo van con la pose a dos manos: arco grande y agarre doble)
+  const tipo = arma === 'ballesta' ? 'ballesta' : dos(arma) || arma === 'lanza' ? 'dos' : asta(arma) ? 'baculo' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
   const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo));
   const th = rad(RUMBO[dir]);
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
@@ -348,6 +349,9 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
     let hW: V3, cW: V3, mW: V3, maW: V3;
     if (meta) {
       const hB = Tl(...h0), obj: V3 = [meta[0] * S, meta[1] * A, meta[2] * S];
+      // si el arma tiene que apoyar la cabeza en el piso y es corta, la mano baja lo justo para que llegue
+      const Lp = LARGO_ARMA[arma];
+      if (i === 0 && Lp && (P.pisoArma ?? 0) > 0.5 && P.armaD) { const tope = 1.2 * S + Lp * S * Math.max(0.3, -Math.cos(rad(P.armaD[0]))) * 0.97; if (obj[2] > tope) obj[2] = tope; }
       const pol: V3 = polo ? [polo[0], polo[1], polo[2]] : [-0.35, s * 0.8, -0.5];
       const [cB, maB] = ik2(hB, obj, LB1, LB2 + 1.9 * S, pol);
       const muB = add(maB, nor(sub(maB, cB)), -1.9 * S);
@@ -380,16 +384,31 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
     }
     der.eje = dirW([Math.sin(rad(pa)) * Math.cos(rad(ya)), Math.sin(rad(pa)) * Math.sin(rad(ya)), Math.cos(rad(pa))]);
   }
+  // la cabeza del arma nunca se mete en el piso: si la punta queda abajo, el arma se levanta en su plano vertical
+  const Lw = LARGO_ARMA[arma];
+  if (Lw && !P.caida && !esVara(arma)) {
+    const need = (1.2 * S - der.mano[2]) / (Lw * S);
+    if (der.mano[2] + der.eje[2] * Lw * S < 1.2 * S && need >= -1 && need <= 1) {
+      const h = Math.hypot(der.eje[0], der.eje[1]) || 1e-3, hz = Math.sqrt(1 - need * need);
+      der.eje = [(der.eje[0] / h) * hz, (der.eje[1] / h) * hz, need];
+    }
+  }
   // armas a dos manos, lanzas y ballestas: la mano izquierda se cierra sobre el mango (cinemática inversa de dos huesos);
   // la pose puede correr el agarre por el mango (agarreI) o soltarlo (pegaI)
   // el báculo: casi vertical en la mano, inclinado como diga la pose o apoyado con el pie en un punto del piso
   const varaPie = P.varaPie ? Wc(P.varaPie[0] * S, P.varaPie[1] * A, P.varaPie[2] * S) : undefined;
-  const vara = varaPie ? nor(sub(der.mano, varaPie)) : P.vara ? dirW([Math.sin(rad(P.vara[0])), Math.sin(rad(P.vara[1])), Math.cos(rad(P.vara[0])) * Math.cos(rad(P.vara[1]))]) : undefined;
+  const vara = varaPie ? nor(sub(der.mano, varaPie)) : P.vara ? dirW([Math.sin(rad(P.vara[0])), Math.sin(rad(P.vara[1])), Math.cos(rad(P.vara[0])) * Math.cos(rad(P.vara[1]))]) : P.armaD && esVara(arma) ? der.eje : undefined;
   const separa = arma === 'lanza' || arma === 'alabarda' || arma === 'guadana' || arma === 'tridente' || arma === 'lanza_dragon' ? 11 : arma === 'gran_baculo' ? 10 : dos(arma) ? 4.8 : arma === 'ballesta' ? -9 : 0;
   const agarre = P.agarreI ?? separa, pega = Math.max(0, Math.min(1, P.pegaI ?? (agarre ? 1 : 0)));
   if (agarre && pega > 0 && !P.caida && !esArco(arma) && arma !== 'nada' && arma !== 'puno') {
     const ejeMango = esVara(arma) ? vara ?? [0, 0, 1] : der.eje;
     let meta = arma === 'ballesta' ? add(add(der.mano, F, 7 * S), R, 2.5 * S) : add(der.mano, ejeMango, -agarre * S);
+    // si la izquierda no llega a ese punto del mango, se corre por el mango hasta el punto más cercano que alcanza
+    if (arma !== 'ballesta' && len(sub(meta, izq.hom)) > LB1 + L2m - 0.15) {
+      let mejor = meta, dm = len(sub(meta, izq.hom));
+      for (let g = 2; g <= agarre + 8; g += 0.5) { const q = add(der.mano, ejeMango, -g * S), dq = len(sub(q, izq.hom)); if (dq < dm) { dm = dq; mejor = q; } if (dq <= LB1 + L2m - 0.15) { mejor = q; break; } }
+      meta = mejor;
+    }
     if (pega < 1) meta = mez(izq.mano, meta, pega);
     const afuera = nor(add(R, [0, 0, 0], izq.s));
     const pol = nor(add([0, 0, -1], afuera, 0.8));
@@ -1063,9 +1082,9 @@ function efectos(cu: Cuerpo, eq: Equipo, e: Esqueleto, dir: Dir, f: number): Pie
     }
     case 'rugido': {
       // el hachazo contra el piso levanta polvo y piedritas que se abren y caen
-      if (u < 0.5 || u > 0.72 || tipo === 'nada') break;
-      const [, punta] = filoDe(e, tipo, e.brazos[0]), c: V3 = [punta[0], punta[1], 0.8];
-      const t = (u - 0.5) / 0.22;
+      if (u < 0.54 || u > 0.78 || tipo === 'nada') break;
+      const [a0, a1] = filoDe(e, tipo, e.brazos[0]), punta = mez(a0, a1, 0.5), c: V3 = [punta[0], punta[1], 0.8];
+      const t = (u - 0.54) / 0.24;
       for (let k = 0; k < 8; k++) {
         const a = (k / 8) * Math.PI * 2 + h(k), r = (2 + t * 7) * S * (0.6 + h(k + 1) * 0.6), z = (Math.sin(Math.PI * Math.min(1, t * 1.3)) * (2 + h(k + 2) * 4) + 0.6) * S;
         ps.push(esfera(c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r, z, (k % 2 ? 0.9 : 1.4) * S * (1 - t * 0.6), { mat: k % 2 ? 'roca' : 'tierra' }));
