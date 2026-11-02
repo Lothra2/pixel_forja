@@ -1,4 +1,4 @@
-import { registrar, conVarianteY, TEMAS, type Arma, type Pieza, type Tema } from '../objeto';
+import { registrar, conVarianteY, esCodo, codoArco, TEMAS, type Arma, type Pieza, type Tema } from '../objeto';
 import { MATERIALES } from '../materiales';
 import { ruido, hueso, bulto, masa, type Comp, type Escena } from '../render';
 import {
@@ -624,23 +624,49 @@ reg({
 });
 
 // ------------------------------------------------------------------ agua: arroyos, puentes y charcos
+interface OpcCauce { curva?: number; piedras?: number; juncos?: number; sinBordes?: boolean; empalme?: boolean; ciclo?: number; tramos?: number; pasoRuido?: number }
 /** Cauce a lo largo de x (de -L/2 a L/2), ancho `w`, que serpentea `curva`; espuma que corre con el cuadro. */
-function cauce(a: Arma, ps: Pieza[], L: number, w: number, f: number, nc: number, o: { curva?: number; piedras?: number; juncos?: number; sinBordes?: boolean } = {}) {
-  const n = 10, fase = a.r() * PI2, cv = o.curva ?? 6;
-  const cy = (x: number) => Math.sin((x / L) * Math.PI * 1.4 + fase) * cv;
+function cauce(a: Arma, ps: Pieza[], L: number, w: number, f: number, nc: number, o: OpcCauce = {}) {
+  const off = cauceCamino(a, ps, (s) => ({ p: [s - L / 2, 0], d: [1, 0], l: [0, 1] }), L, w, f, nc, o);
+  return (x: number) => off(x + L / 2);
+}
+/**
+ * El cauce sobre un camino de largo `Lt` (`en(s)` da el punto, la tangente río abajo y la normal izquierda). Con
+ * `empalme`, a 11 o menos de cada punta (los 2 que pasan del borde de la baldosa y el último tramo) el centro no
+ * serpentea y el ancho es justo `w`: así un tramo pega con el siguiente (recto, _y o codo) sin escalón. `ciclo` es
+ * el largo en que se repite la espuma (la misma velocidad en todos los tramos); `tramos` cuántos poliedros arman el
+ * cauce y `pasoRuido` cada cuánto largo cambia el ancho (por defecto, un tramo).
+ */
+function cauceCamino(a: Arma, ps: Pieza[], en: (s: number) => { p: [number, number]; d: [number, number]; l: [number, number] }, Lt: number, w: number, f: number, nc: number, o: OpcCauce = {}) {
+  const n = o.tramos ?? 10, fase = a.r() * PI2, cv = o.curva ?? 6, cic = o.ciclo ?? Lt, pr = o.pasoRuido ?? Lt / n;
+  const fija = (s: number) => { if (!o.empalme) return 1; const u = Math.min(1, Math.max(0, (Math.min(s, Lt - s) - 11) / 14)); return u * u * (3 - 2 * u); };
+  const off = (s: number) => Math.sin(((s - Lt / 2) / Lt) * Math.PI * 1.4 + fase) * cv * fija(s);
+  const P = (s: number, k: number, z: number): V => { const q = en(s), m = off(s) + k; return [q.p[0] + q.l[0] * m, q.p[1] + q.l[1] * m, z]; };
   for (let i = 0; i < n; i++) {
-    const x0 = -L / 2 + (i / n) * L, x1 = x0 + L / n + 0.5, w0 = w * (0.9 + 0.2 * ruido(i * 0.7, fase, 1)), w1 = w * (0.9 + 0.2 * ruido((i + 1) * 0.7, fase, 1));
-    if (!o.sinBordes) ps.push(a.poliedro([[x0, cy(x0) - w0 / 2 - 5, -0.3], [x1, cy(x1) - w1 / 2 - 5, -0.3], [x0, cy(x0) + w0 / 2 + 5, -0.3], [x1, cy(x1) + w1 / 2 + 5, -0.3], [x0, cy(x0) - w0 / 2 - 3, 0.8], [x1, cy(x1) - w1 / 2 - 3, 0.8], [x0, cy(x0) + w0 / 2 + 3, 0.8], [x1, cy(x1) + w1 / 2 + 3, 0.8]], { mat: 'ext_barro', tono: az(a, 0.05) }));
-    ps.push(a.poliedro([[x0, cy(x0) - w0 / 2, -0.2], [x1, cy(x1) - w1 / 2, -0.2], [x0, cy(x0) + w0 / 2, -0.2], [x1, cy(x1) + w1 / 2, -0.2], [x0, cy(x0) - w0 / 2, 1.1], [x1, cy(x1) - w1 / 2, 1.1], [x0, cy(x0) + w0 / 2, 1.1], [x1, cy(x1) + w1 / 2, 1.1]], { mat: 'ext_agua_lluvia', tono: -0.04 }));
+    const s0 = (i / n) * Lt, s1 = s0 + Lt / n + 0.5, w0 = w * (1 + (0.2 * ruido((s0 / pr) * 0.7, fase, 1) - 0.1) * fija(s0)), w1 = w * (1 + (0.2 * ruido(((s0 + Lt / n) / pr) * 0.7, fase, 1) - 0.1) * fija(s1));
+    if (!o.sinBordes) ps.push(a.poliedro([P(s0, -w0 / 2 - 5, -0.3), P(s1, -w1 / 2 - 5, -0.3), P(s0, w0 / 2 + 5, -0.3), P(s1, w1 / 2 + 5, -0.3), P(s0, -w0 / 2 - 3, 0.8), P(s1, -w1 / 2 - 3, 0.8), P(s0, w0 / 2 + 3, 0.8), P(s1, w1 / 2 + 3, 0.8)], { mat: 'ext_barro', tono: az(a, 0.05) }));
+    ps.push(a.poliedro([P(s0, -w0 / 2, -0.2), P(s1, -w1 / 2, -0.2), P(s0, w0 / 2, -0.2), P(s1, w1 / 2, -0.2), P(s0, -w0 / 2, 1.1), P(s1, -w1 / 2, 1.1), P(s0, w0 / 2, 1.1), P(s1, w1 / 2, 1.1)], { mat: 'ext_agua_lluvia', tono: -0.04 }));
   }
-  // espuma: rayas claras que bajan con la corriente
+  // espuma: rayas claras que bajan con la corriente (se repiten cada `cic`; las que caen fuera del camino no se ven)
   for (let k = 0; k < 7; k++) {
-    const u = ((f / nc) + k / 7 + a.r() * 0.05) % 1, x = -L / 2 + u * L, y = cy(x) + az(a, w * 0.3);
-    ps.push(a.elipsoide(x, y, 1.15, 3 + a.r() * 2.5, 0.5, 0.12, { mat: 'ext_espuma', giro: grad(Math.atan2(cy(x + 1) - cy(x), 1)), tono: -0.15 - Math.abs(u - 0.5) * 0.4 }));
+    const u = ((f / nc) + k / 7 + a.r() * 0.05) % 1, s = u * cic, lat = az(a, w * 0.3), lr = 3 + a.r() * 2.5;
+    if (s > Lt) continue;
+    const p = P(s, lat, 1.15), q = P(s + 1, lat, 1.15);
+    ps.push(a.elipsoide(p[0], p[1], 1.15, lr, 0.5, 0.12, { mat: 'ext_espuma', giro: grad(Math.atan2(q[1] - p[1], q[0] - p[0])), tono: -0.15 - Math.abs(s / Lt - 0.5) * 0.4 }));
   }
-  for (let i = 0; i < (o.piedras ?? 3); i++) { const x = az(a, L * 0.45); pena(a, ps, [x, cy(x) + az(a, w * 0.35), -0.5], [2.5 + a.r() * 3, 2 + a.r() * 2.5, 2 + a.r() * 2], { n: 3, mat: 'ext_roca_fria', musgo: 0.4 }); }
-  for (let i = 0; i < (o.juncos ?? 3); i++) { const x = az(a, L * 0.45), s = a.r() < 0.5 ? 1 : -1; juncos(a, ps, x, cy(x) + s * (w / 2 + 2), 6 + Math.floor(a.r() * 5), 14); }
-  return cy;
+  for (let i = 0; i < (o.piedras ?? 3); i++) { const s = Lt / 2 + az(a, Lt * 0.45); pena(a, ps, P(s, az(a, w * 0.35), -0.5), [2.5 + a.r() * 3, 2 + a.r() * 2.5, 2 + a.r() * 2], { n: 3, mat: 'ext_roca_fria', musgo: 0.4 }); }
+  for (let i = 0; i < (o.juncos ?? 3); i++) { const s = Lt / 2 + az(a, Lt * 0.45), sg = a.r() < 0.5 ? 1 : -1, p = P(s, sg * (w / 2 + 2), 0); juncos(a, ps, p[0], p[1], 6 + Math.floor(a.r() * 5), 14); }
+  return off;
+}
+/** Cauce del codo (`codo_n/e/s/o`, ver `codoArco`): el arco de radio 40 y 2 de recta de más en cada punta, como el recto.
+ * Va en tramos más cortos que el recto para que las cuerdas sigan el arco, con el ancho cambiando al mismo paso. */
+function cauceCodo(a: Arma, ps: Pieza[], v: string, w: number, f: number, nc: number, o: OpcCauce = {}) {
+  const C = codoArco(v), ext = 2;
+  const en = (s: number) => {
+    const t = s - ext, q = C.en(Math.min(1, Math.max(0, t / C.largo))), k = t < 0 ? t : t > C.largo ? t - C.largo : 0;
+    return { p: [q.p[0] + q.d[0] * k, q.p[1] + q.d[1] * k] as [number, number], d: q.d, l: q.l };
+  };
+  return cauceCamino(a, ps, en, C.largo + 2 * ext, w, f, nc, o);
 }
 /** Mata de juncos con espadañas. */
 function juncos(a: Arma, ps: Pieza[], x: number, y: number, n: number, alto: number) {
@@ -651,11 +677,20 @@ function juncos(a: Arma, ps: Pieza[], x: number, y: number, n: number, alto: num
   }
 }
 reg({
-  id: 'par_arroyo', nombre: ['Arroyo', 'Brook'], tema: PAR, variantes: ['recto', 'piedras', 'vado', 'juncal'], cuadros: 6, t: 3, huella: [5, 2], bloquea: true,
+  id: 'par_arroyo', nombre: ['Arroyo', 'Brook'], tema: PAR, variantes: ['recto', 'piedras', 'vado', 'juncal', 'codo_n', 'codo_e', 'codo_s', 'codo_o'], cuadros: 6, t: 3, huella: [5, 2],
+  huellaPor: { codo_n: [5, 5], codo_e: [5, 5], codo_s: [5, 5], codo_o: [5, 5] }, bloquea: true,
   armar: (v, f, a) => {
     const ps: Pieza[] = [];
+    if (esCodo(v)) {
+      // codo: la turba sigue el arco y el cauce es el del recto (mismo ancho, orilla, espuma y velocidad)
+      const m = codoArco(v).en(0.5), q: Pieza[] = [];
+      sueloP(a, q, 40, 24, { matas: 6, piedras: 0, manchas: 3, giro: grad(Math.atan2(m.d[1], m.d[0])) });
+      ps.push(...mover(q, [m.p[0], m.p[1], 0]));
+      cauceCodo(a, ps, v, 18, f, 6, { piedras: 2, juncos: 3, empalme: true, ciclo: 84, tramos: 20, pasoRuido: 8.4 });
+      return ps;
+    }
     sueloP(a, ps, 44, 22, { matas: 6, piedras: 0, manchas: 3 });
-    const cy = cauce(a, ps, 84, v === 'vado' ? 26 : 18, f, 6, { piedras: v === 'piedras' ? 8 : 2, juncos: v === 'juncal' ? 9 : 3 });
+    const cy = cauce(a, ps, 84, v === 'vado' ? 26 : 18, f, 6, { piedras: v === 'piedras' ? 8 : 2, juncos: v === 'juncal' ? 9 : 3, empalme: true });
     // vado: pasaderas planas de lado a lado
     if (v === 'vado') for (let i = 0; i < 5; i++) { const y = cy(4) - 13 + i * 6.5; sillar(a, ps, 4 + az(a, 2), y, -0.4, 6 + a.r(), 5, 3.2, a.r() * 60, 'ext_roca_fria', { jit: 0.8 }); }
     return ps;

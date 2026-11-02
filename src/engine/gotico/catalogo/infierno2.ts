@@ -1,4 +1,4 @@
-import { conVarianteY, registrar, type Arma, type Pieza, type V3 } from '../objeto';
+import { conVarianteY, registrar, esCodo, codoArco, type Arma, type Pieza, type V3 } from '../objeto';
 import { MATERIALES } from '../materiales';
 import { masa, hueso, bulto, ruido, type Comp } from '../render';
 import {
@@ -46,17 +46,22 @@ const lavaT = (f: number, fase = 0, base = -0.12) => base + onda(f, 8, fase) * 0
 /**
  * Río de lava por un camino (t de 0 a 1 → centro y ancho): franjas encendidas que laten en ola río abajo, placas de
  * costra que derivan con la corriente (cierran el ciclo en 8 cuadros), burbujas que revientan y orillas de roca.
+ * `paso` es el desfase de la ola por tramo (8/n: la ola da la vuelta justa en la baldosa y sigue en la vecina),
+ * `placas` cuántas placas caben en el camino (manda el espaciado y la velocidad) y `empalme` deja las vetas y la
+ * costra de las puntas siempre iguales, para que un tramo pegue con el siguiente (y la tangente en las puntas sale
+ * de mirar el camino un poco más allá de 0 y de 1: el camino tiene que admitir t fuera de 0..1).
  */
-function rioLava(a: Arma, ps: Pieza[], camino: (t: number) => [V3, number], f: number, n = 12, orillas = true) {
-  const pts = Array.from({ length: n + 1 }, (_, i) => { const t = i / n, [c, w] = camino(t), [c2] = camino(Math.min(1, t + 0.01)), [c1] = camino(Math.max(0, t - 0.01)); const d = nor(sub(c2, c1)), l: V3 = [-d[1], d[0], 0]; return { c, w, d, l }; });
+function rioLava(a: Arma, ps: Pieza[], camino: (t: number) => [V3, number], f: number, n = 12, orillas = true, o: { paso?: number; placas?: number; empalme?: boolean } = {}) {
+  const paso = o.paso ?? 0.6, np = o.placas ?? n * 0.6, punta = (i: number) => !!o.empalme && (i === 0 || i === n);
+  const pts = Array.from({ length: n + 1 }, (_, i) => { const t = i / n, [c, w] = camino(t), [c2] = camino(o.empalme ? t + 0.01 : Math.min(1, t + 0.01)), [c1] = camino(o.empalme ? t - 0.01 : Math.max(0, t - 0.01)); const d = nor(sub(c2, c1)), l: V3 = [-d[1], d[0], 0]; return { c, w, d, l }; });
   for (let i = 0; i < n; i++) {
     const A = pts[i], B = pts[i + 1], q: V3[] = [add(A.c, A.l, -A.w), add(A.c, A.l, A.w), add(B.c, B.l, -B.w), add(B.c, B.l, B.w)];
-    ps.push(a.poliedro(q.flatMap((p) => [add(p, [0, 0, 0]), add(p, [0, 0, 1.0])]), { mat: 'lava', tono: lavaT(f + i * 0.6, 0, -0.32) }));
-    const k0 = 0.45 + ruido(i * 1.7, 3, 1) * 0.25, k1 = 0.45 + ruido((i + 1) * 1.7, 3, 1) * 0.25, sh0 = (ruido(i * 0.9, 5, 2) - 0.5) * A.w * 0.5, sh1 = (ruido((i + 1) * 0.9, 5, 2) - 0.5) * B.w * 0.5;
+    ps.push(a.poliedro(q.flatMap((p) => [add(p, [0, 0, 0]), add(p, [0, 0, 1.0])]), { mat: 'lava', tono: lavaT(f + i * paso, 0, -0.32) }));
+    const k0 = punta(i) ? 0.575 : 0.45 + ruido(i * 1.7, 3, 1) * 0.25, k1 = punta(i + 1) ? 0.575 : 0.45 + ruido((i + 1) * 1.7, 3, 1) * 0.25, sh0 = punta(i) ? 0 : (ruido(i * 0.9, 5, 2) - 0.5) * A.w * 0.5, sh1 = punta(i + 1) ? 0 : (ruido((i + 1) * 0.9, 5, 2) - 0.5) * B.w * 0.5;
     const nq: V3[] = [add(A.c, A.l, sh0 - A.w * k0), add(A.c, A.l, sh0 + A.w * k0), add(B.c, B.l, sh1 - B.w * k1), add(B.c, B.l, sh1 + B.w * k1)];
-    ps.push(a.poliedro(nq.flatMap((p) => [add(p, [0, 0, 0.9]), add(p, [0, 0, 1.25])]), { mat: 'lava', tono: lavaT(f + i * 0.6, 1, 0.02) }));
+    ps.push(a.poliedro(nq.flatMap((p) => [add(p, [0, 0, 0.9]), add(p, [0, 0, 1.25])]), { mat: 'lava', tono: lavaT(f + i * paso, 1, 0.02) }));
     // costra que se enfría pegada a las orillas
-    for (const sg of [-1, 1]) { const w0 = A.w * (0.78 + ruido(i, sg, 4) * 0.2), w1 = B.w * (0.78 + ruido(i + 1, sg, 4) * 0.2); ps.push(a.poliedro([add(A.c, A.l, sg * w0), add(A.c, A.l, sg * (A.w + 1)), add(B.c, B.l, sg * w1), add(B.c, B.l, sg * (B.w + 1))].flatMap((p) => [add(p, [0, 0, 0.5]), add(p, [0, 0, 1.6])]), { mat: K })); }
+    for (const sg of [-1, 1]) { const w0 = A.w * (punta(i) ? 0.88 : 0.78 + ruido(i, sg, 4) * 0.2), w1 = B.w * (punta(i + 1) ? 0.88 : 0.78 + ruido(i + 1, sg, 4) * 0.2); ps.push(a.poliedro([add(A.c, A.l, sg * w0), add(A.c, A.l, sg * (A.w + 1)), add(B.c, B.l, sg * w1), add(B.c, B.l, sg * (B.w + 1))].flatMap((p) => [add(p, [0, 0, 0.5]), add(p, [0, 0, 1.6])]), { mat: K })); }
     if (orillas) for (const s of [-1, 1]) {
       const e = add(mez(A.c, B.c, 0.5), mez(A.l, B.l, 0.5), s * (mez([A.w, 0, 0], [B.w, 0, 0], 0.5)[0] + 2));
       ps.push(pena(a, e[0] + jit(a, 2), e[1] + jit(a, 2), 1, 5 + a.r() * 4, 4 + a.r() * 3, 2 + a.r() * 3, { mat: elegir(a, [R0, K, K]) }));
@@ -64,13 +69,15 @@ function rioLava(a: Arma, ps: Pieza[], camino: (t: number) => [V3, number], f: n
     }
   }
   // placas de costra que derivan río abajo
-  for (let k = 0; k < Math.round(n * 0.6); k++) {
-    const t = ((k / (n * 0.6)) + ciclo(f, 8) / (n * 0.6)) % 1, i = Math.min(n - 1, Math.floor(t * n)), u = t * n - i, P = mez(pts[i].c, pts[i + 1].c, u), l = pts[i].l, w = pts[i].w;
+  for (let k = 0; k < Math.round(np); k++) {
+    const t = ((k / np) + ciclo(f, 8) / np) % 1, i = Math.min(n - 1, Math.floor(t * n)), u = t * n - i, P = mez(pts[i].c, pts[i + 1].c, u), l = pts[i].l, w = pts[i].w;
     const off = (ruido(k * 3.1, 1, 2) - 0.5) * w * 1.2, c = add(P, l, off), s = 1.6 + ruido(k, 2, 3) * 3;
     ps.push(a.poliedro([add(c, [-s, 0, 1.2]), add(c, [0, -s * 0.8, 1.2]), add(c, [s, s * 0.2, 1.2]), add(c, [-s * 0.2, s, 1.2]), add(c, [0, 0, 2.2])], { mat: K }));
   }
   for (let k = 0; k < 3; k++) { const i = Math.floor(ruido(k, 4, 1) * n), fase = (f + k * 3) % 8, c = add(pts[i].c, pts[i].l, (ruido(k, 7, 2) - 0.5) * pts[i].w); if (fase < 5) ps.push(a.esfera(c[0], c[1], 1.2, 0.6 + fase * 0.45, { mat: 'lava', tono: 0.25 })); }
 }
+/** 0 en las puntas de un camino de largo L (sin desvío, con tangente recta) y 1 desde 18 hacia adentro. */
+const fijaLava = (t: number, L: number) => { const u = Math.min(1, Math.max(0, (Math.min(t, 1 - t) * L - 2) / 16)); return u * u * (3 - 2 * u); };
 /** Charca de lava: orilla de costra, la lava que respira, vetas claras, costras flotando y burbujas. */
 function charca(a: Arma, ps: Pieza[], R: number, ry: number, f: number, o: { x?: number; y?: number } = {}) {
   const x = o.x ?? 0, y = o.y ?? 0;
@@ -119,15 +126,29 @@ function estrella(a: Arma, ps: Pieza[], R: number, n: number, mat: string, tono:
 registrar(
   // ------------------------------------------------------------------ ríos y charcas de lava
   {
-    id: 'inf2_rio_lava', nombre: ['Río de lava', 'Lava river'], tema: 'infierno', variantes: ['recto', 'curva', 'ancho', 'meandro'], cuadros: 8, t: 3, huella: [5, 3], huellaPor: { curva: [5, 5], meandro: [5, 4] }, bloquea: true, plano: true,
+    id: 'inf2_rio_lava', nombre: ['Río de lava', 'Lava river'], tema: 'infierno', variantes: ['recto', 'curva', 'ancho', 'meandro', 'codo_n', 'codo_e', 'codo_s', 'codo_o'], cuadros: 8, t: 3, huella: [5, 3],
+    huellaPor: { curva: [5, 5], meandro: [5, 4], codo_n: [5, 5], codo_e: [5, 5], codo_s: [5, 5], codo_o: [5, 5] }, bloquea: true, plano: true,
     armar: (v, f, a) => {
       const ps: Pieza[] = [];
+      if (esCodo(v)) {
+        // codo: el arco de `codoArco` con el mismo cauce que el recto. La ola da la vuelta justa (8/n) y las placas
+        // son 7 en el arco (62.8) como 9 en el recto (80): igual espaciado y velocidad, y una placa que sale por
+        // un borde entra por el de la baldosa vecina en el mismo cuadro
+        const C = codoArco(v);
+        const camino = (t: number): [V3, number] => { const q = C.en(t), e = fijaLava(t, C.largo), m = Math.sin(t * 5 + 1) * 2 * e; return [[q.p[0] + q.l[0] * m, q.p[1] + q.l[1] * m, 0], 10 + Math.sin(t * 7) * 1.5 * e]; };
+        rioLava(a, ps, camino, f, 12, true, { paso: 8 / 12, placas: 7, empalme: true });
+        ps.push(suelo(a));
+        return { piezas: ps, resplandor: { c: [0, 0, 4], r: 48, color: LUZ } };
+      }
       const camino = (t: number): [V3, number] => {
         if (v === 'curva') { const an = PI * 0.5 * t; return [[-20 + Math.sin(an) * 40, 20 - Math.cos(an) * 40, 0], 10 + Math.sin(t * 7) * 1.2]; }
         if (v === 'meandro') return [[-40 + t * 80, Math.sin(t * TAU) * 12, 0], 9 + Math.sin(t * 7) * 1.5];
-        return [[-40 + t * 80, Math.sin(t * 5 + 1) * 2, 0], v === 'ancho' ? 18 + Math.sin(t * 9) * 2 : 10 + Math.sin(t * 7) * 1.5];
+        // recto y ancho: en las puntas el centro va al medio del borde y el ancho es el justo (pegan con el codo)
+        const e = fijaLava(t, 80);
+        return [[-40 + t * 80, Math.sin(t * 5 + 1) * 2 * e, 0], v === 'ancho' ? 18 + Math.sin(t * 9) * 2 * e : 10 + Math.sin(t * 7) * 1.5 * e];
       };
-      rioLava(a, ps, camino, f, v === 'ancho' ? 14 : 12);
+      const n = v === 'ancho' ? 14 : 12;
+      rioLava(a, ps, camino, f, n, true, v === 'recto' ? { paso: 8 / n, placas: 9, empalme: true } : v === 'ancho' ? { paso: 8 / n, empalme: true } : {});
       ps.push(suelo(a));
       return { piezas: ps, resplandor: { c: [0, 0, 4], r: v === 'ancho' ? 60 : 48, color: LUZ } };
     },
