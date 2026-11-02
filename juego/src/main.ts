@@ -1,11 +1,11 @@
 // Réquiem de Ceniza: arranque, estados (carga, intro, menú, elegir, crear, juego) y el control del héroe.
 import { ctx, W, H, E, ajustar, instalarEntrada, finCuadro, pulso, alPrimerGesto } from './nucleo/lienzo';
-import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto } from './motor/assets';
+import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto, objetoMeta } from './motor/assets';
 import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion } from './ui/menus';
-import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria } from './juego/historia';
+import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
@@ -245,7 +245,13 @@ function controlar(jj: Juego, dt: number) {
   if (h.recoger && llega(h.recoger.x, h.recoger.y, 1.3)) { recogerSuelo(jj, h.recoger); h.recoger = null; h.camino = null; pista('botin', ['Pulsa I para ver tu inventario. Clic derecho sobre un objeto para ponértelo.', 'Press I for your inventory. Right click an item to equip it.']); }
   if (h.hablar && llega(h.hablar.x, h.hablar.y, 2)) { hablarCon(jj, h.hablar.npc); h.hablar = null; h.camino = null; }
   if (h.usar && llega(h.usar.cx + 0.5, h.usar.cy + 0.5, 2.2 + Math.max(h.usar.hw, h.usar.hh) / 2)) { usarObjeto(jj, h.usar); h.usar = null; h.camino = null; }
-  if ((h as any).salida && llega((h as any).salida.cx + 0.5, (h as any).salida.cy + 0.5, 2.5)) { const s = (h as any).salida as Salida; (h as any).salida = null; zonaPendiente = { id: s.destino, entrada: s.entrada }; }
+  // puertas selladas por la historia: la variante del objeto sigue a la misión y no se puede pasar antes
+  for (const s of jj.zona.salidas) if (s.sello && s.obj) { const abierta = estadoMision(h.d, s.sello) > 0; const v = abierta ? (s.obj.v === 'sellada' ? (objetoMeta(s.obj.id, 'abierta') ? 'abierta' : s.obj.v) : s.obj.v) : (objetoMeta(s.obj.id, 'sellada') ? 'sellada' : s.obj.v); if (v !== s.obj.v) s.obj.v = v; }
+  if ((h as any).salida && llega((h as any).salida.cx + 0.5, (h as any).salida.cy + 0.5, 2.5)) {
+    const s = (h as any).salida as Salida; (h as any).salida = null;
+    if (s.sello && estadoMision(h.d, s.sello) === 0) msg(jj, ['La puerta está sellada. Alguien en el Refugio sabrá qué hacer.', 'The door is sealed. Someone at the Refuge will know what to do.']);
+    else zonaPendiente = { id: s.destino, entrada: s.entrada };
+  }
   if ((h as any).portal) {
     const pp = jj.zona.tipo === 'pueblo' ? jj.zona.entradas.portal : jj.portal ? [jj.portal.x, jj.portal.y] : null;
     if (pp && llega(pp[0], pp[1], 2)) { (h as any).portal = false; if (jj.zona.tipo === 'pueblo' && jj.portal) { zonaPendiente = { id: (jj as any).portalZona, entrada: '__portal' }; } else zonaPendiente = { id: PUEBLO_DE[jj.zona.acto], entrada: 'portal' }; }

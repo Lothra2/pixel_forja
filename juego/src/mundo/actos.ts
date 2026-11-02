@@ -19,6 +19,8 @@ export const ZONAS: Record<string, DefZona> = Object.fromEntries([
   Z({ id: 'a1_mina2', nombre: ['Mina de Velmora: el Pozo Profundo', 'Velmora Mine: the Deep Shaft'], acto: 1, nivel: 8, tipo: 'mazmorra', tema: 'mina', tam: [18, 18], jefe: 'carcelero', lateral: true, oscuridad: 0.86,
     salidas: [{ destino: 'a1_mina1', entrada: 'abajo', lado: 'arriba', nombre: ['Las Galerías', 'The Galleries'] }] }),
   Z({ id: 'a1_cementerio', nombre: ['Camposanto de Santa Oria', 'Santa Oria Churchyard'], acto: 1, nivel: 5, tipo: 'exterior', tema: 'cementerio', tam: [24, 24], piedraViaje: true, niebla: 0.45,
+    ancla: { id: 'abo_catedral', piezas: ['abo_catedral_fachada', 'abo_catedral_nave', 'abo_catedral_cabecera'], salida: 'a1_abadia1', sello: 'm1_campanas',
+      cerca: [{ t: ['cementerio'], p: ['abo_arbol_muerto', 'abo_lapidas', 'abo_niebla', 'abo_muro_camposanto', 'abo_farol_rojo'] }] },
     salidas: [{ destino: 'a1_paramo', entrada: 'e', lado: 'o', nombre: ['Páramo de Velmora', 'Velmora Moor'] }, { destino: 'a1_abadia1', entrada: 'arriba', lado: 'abajo', nombre: ['Abadía de Santa Oria', 'Abbey of Santa Oria'] }, { destino: 'a1_cripta', entrada: 'arriba', lado: 'abajo', nombre: ['Cripta de los Olvidados', 'Crypt of the Forgotten'] }] }),
   Z({ id: 'a1_cripta', nombre: ['La Cripta de los Olvidados', 'Crypt of the Forgotten'], acto: 1, nivel: 7, tipo: 'mazmorra', tema: 'cripta', tam: [18, 18], jefe: 'aparecida', lateral: true,
     salidas: [{ destino: 'a1_cementerio', entrada: 'salida_a1_cripta', lado: 'arriba', nombre: ['Camposanto', 'Churchyard'] }] }),
