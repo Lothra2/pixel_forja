@@ -560,27 +560,32 @@ function rioDeLava(k: Constructor, r: () => number, arroyo = false) {
   const z = k.z, { tw, th } = z;
   const rio = REGISTRO.find((d) => d.id === (arroyo ? 'par_arroyo' : 'inf2_rio_lava')), puente = REGISTRO.find((d) => d.id === (arroyo ? 'par_puente' : 'inf2_puente'));
   if (!rio) return;
-  let bx = Math.floor(tw * (0.35 + r() * 0.3)), antes = bx;
-  const tramo = (tx: number, ty: number) => {
+  let bx = Math.floor(tw * (0.35 + r() * 0.3));
+  const cruzaCamino = (tx: number, ty: number) => { for (let y = ty * 5; y < ty * 5 + 5; y++) for (let x = tx * 5; x < tx * 5 + 5; x++) if (k.reserva[y * z.W + x]) return true; return false; };
+  const bloquear = (tx: number, ty: number, v: number) => { for (let y = ty * 5; y < ty * 5 + 5; y++) for (let x = tx * 5; x < tx * 5 + 5; x++) if (z.bloq[y * z.W + x] !== 2) z.bloq[y * z.W + x] = v; };
+  /** Un tramo: recto de norte a sur, o un codo (`codo`) que une dos lados de la baldosa. */
+  const tramo = (tx: number, ty: number, codo?: string) => {
     if (!z.pisos[ty * tw + tx]) return;
     const x0 = tx * 5, y0 = ty * 5;
-    let cruza = false;
-    for (let y = y0; y < y0 + 5 && !cruza; y++) for (let x = x0; x < x0 + 5; x++) if (k.reserva[y * z.W + x]) { cruza = true; break; }
     if (!arroyo) k.piso('lava_grietas', tx, ty);
-    if (cruza && arroyo && r() < 0.35) { k.poner(rio, x0 + 2, y0 + 2, 'vado_y', true); return; }
-    if (cruza && puente) {
-      k.poner(puente, x0 + 2, y0 + 2, arroyo ? (r() < 0.7 ? 'x' : 'musgoso') : r() < 0.7 ? 'piedra' : 'hueso', true);
-      for (let y = y0; y < y0 + 5; y++) for (let x = x0; x < x0 + 5; x++) if (z.bloq[y * z.W + x] !== 2) z.bloq[y * z.W + x] = 0;
-      return;
+    if (!codo && cruzaCamino(tx, ty)) {
+      if (arroyo && r() < 0.35) { k.poner(rio, x0 + 2, y0 + 2, 'vado_y', true); return; }
+      if (puente) { k.poner(puente, x0 + 2, y0 + 2, arroyo ? (r() < 0.7 ? 'x' : 'musgoso') : r() < 0.7 ? 'piedra' : 'hueso', true); bloquear(tx, ty, 0); return; }
     }
-    k.poner(rio, x0 + 2, y0 + 2, arroyo ? (r() < 0.6 ? 'recto_y' : r() < 0.5 ? 'piedras_y' : 'juncal_y') : r() < 0.75 ? 'recto_y' : 'ancho_y', true);
-    for (let y = y0; y < y0 + 5; y++) for (let x = x0; x < x0 + 5; x++) if (z.bloq[y * z.W + x] !== 2) z.bloq[y * z.W + x] = 1;
+    const v = codo ?? (arroyo ? (r() < 0.6 ? 'recto_y' : r() < 0.5 ? 'piedras_y' : 'juncal_y') : r() < 0.6 ? 'recto_y' : r() < 0.5 ? 'ancho_y' : 'meandro_y');
+    k.poner(rio, x0 + 2, y0 + 2, v, true);
+    // el camino no se corta: si un codo cae sobre él, se deja pasar
+    bloquear(tx, ty, codo && cruzaCamino(tx, ty) ? 0 : 1);
   };
+  // de norte a sur; cuando el cauce se corre de columna dobla con dos codos (nunca corre en x hacia atrás más de una baldosa)
   for (let by = 0; by < th; by++) {
-    if (by > 1 && r() < 0.3) bx = clamp(bx + (r() < 0.5 ? -1 : 1), 2, tw - 3);
-    tramo(bx, by);
-    if (bx !== antes) tramo(antes, by);
-    antes = bx;
+    const lado = by > 1 && by < th - 2 && r() < 0.3 ? (r() < 0.5 ? -1 : 1) : 0;
+    const nx = bx + lado;
+    if (lado && nx >= 2 && nx <= tw - 3 && !cruzaCamino(bx, by) && !cruzaCamino(nx, by)) {
+      tramo(bx, by, lado > 0 ? 'codo_e' : 'codo_n');
+      tramo(nx, by, lado > 0 ? 'codo_o' : 'codo_s');
+      bx = nx;
+    } else tramo(bx, by);
   }
 }
 
