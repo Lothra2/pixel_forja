@@ -64,6 +64,8 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   // fuegos y objetos que alumbran
   for (const o of z.objetos) {
     const meta = objetoMeta(o.id, o.v); if (!meta || !meta.luz) continue;
+    // ríos de lava: un tramo de cada dos alumbra (la luz es grande y se solapa); igual se ve continuo
+    if (/rio_lava/.test(o.id) && (Math.floor(o.cx / 5) + Math.floor(o.cy / 5)) % 2) continue;
     const [px, py] = aPant(o.cx + 0.5, o.cy + 0.5);
     if (!dentro(px, py, 320)) continue;
     const lc: any = meta.luz[1];
@@ -154,6 +156,13 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   if (j.portal) {
     const pz = (j as any).portalZona === z.id ? aPant(j.portal.x, j.portal.y) : z.tipo === 'pueblo' && z.entradas.portal ? aPant(z.entradas.portal[0] + 0.5, z.entradas.portal[1] - 1) : null;
     if (pz) L.push({ id: 'portal', x: pz[0], y: pz[1], h: 40, r: 160, c: [70, 130, 255], k: 0.8 });
+  }
+  // con muchas luces (el acto 5 llega a ~50) el cuadro se cae: quedan las 22 que más pesan en pantalla
+  // (fuerza por radio y cercanía al centro); las del héroe y las sin id de objeto siempre entran
+  if (L.length > 18) {
+    const cxp = W / 2, cyp = H * 0.45;
+    const peso = (l: Luz) => (l.de === h || l.id === 'puerta' || l.id?.startsWith('ancla') || l.id?.startsWith('oz') || l.id?.startsWith('ca') || l.id?.startsWith('as') ? 1e9 : (l.k * l.r) / (60 + Math.hypot(l.x - cxp, l.y - cyp)));
+    L.sort((a, b) => peso(b) - peso(a)); L.length = 18;
   }
   luces = L;
   destello = Math.max(destello * 0.82, fl); destelloColor = fl > 0 ? flc : destelloColor;
