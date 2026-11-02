@@ -425,8 +425,10 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
     if (tipo === 'tienda' && ui.tiendaTipo === 'vidente') { ctx.globalAlpha = 0.85; }
     icono(b.o, ox + 1, oy + 1, b.o.w * C - 1, b.o.h * C - 1, t);
     ctx.globalAlpha = 1;
-    if (!cumpleReq(j.heroe.d, j.heroe.c, b.o) && b.o.tipo === 'equipo') { ctx.fillStyle = 'rgba(160,0,0,0.25)'; ctx.fillRect(ox + 1, oy + 1, b.o.w * C - 1, b.o.h * C - 1); }
+    if (!cumpleReq(j.heroe.d, j.heroe.c, b.o) && b.o.tipo === 'equipo') { ctx.fillStyle = 'rgba(200,20,20,0.32)'; ctx.fillRect(ox + 1, oy + 1, b.o.w * C - 1, b.o.h * C - 1); }
   }
+  // la bolsa la pinta el panel de la Forja: encima, en rojo, lo que el héroe todavía no puede llevar
+  if (tipo === 'bolsa') for (const b of lista) if (b.o.tipo === 'equipo' && !cumpleReq(j.heroe.d, j.heroe.c, b.o)) { ctx.fillStyle = 'rgba(200,20,20,0.32)'; ctx.fillRect(x + b.x * C + 1, y + b.y * C + 1, b.o.w * C - 2, b.o.h * C - 2); ctx.strokeStyle = 'rgba(255,60,60,0.7)'; ctx.strokeRect(x + b.x * C + 1.5, y + b.y * C + 1.5, b.o.w * C - 3, b.o.h * C - 3); }
   if (!dentro(x, y, cw * C, ch * C)) return;
   const cx = Math.floor((E.x - x) / C), cy = Math.floor((E.y - y) / C);
   const bajo = lista.find((b) => cx >= b.x && cx < b.x + b.o.w && cy >= b.y && cy < b.y + b.o.h);
@@ -481,7 +483,7 @@ export function lugarBolsa(lista: EnBolsa[], o: Objeto): [number, number, number
 export function dibujarTooltipObjeto(j: Juego) {
   const e = ui.encima; if (!e || ui.mano) return;
   const h = j.heroe;
-  const l = lineasObjeto(e.o, { nivel: h.d.nivel, fue: h.c.fue, des: h.c.des, clase: h.d.clase });
+  const l = lineasObjeto(e.o, { nivel: h.d.nivel, fue: h.c.fue, des: h.c.des, clase: h.d.clase, conjuntos: h.c.conjuntos });
   if (e.tienda) { const p = ui.tiendaTipo === 'vidente' ? precioApuesta(e.o) : precioCompra(e.o); l.push([`${T('Precio', 'Price')}: ${p.toLocaleString()} ${T('de oro', 'gold')}`, h.d.oro >= p ? '#e8c050' : '#ff4040']); }
   else if (ui.izq === 'tienda') l.push([`${T('Clic derecho: vender por', 'Right click: sell for')} ${precioVenta(e.o)}`, '#e8c050']);
   let extra: [string, string][] | undefined;

@@ -34,6 +34,7 @@ export type Stat =
   | 'perforar' // % de que el proyectil atraviese
   | 'durabilidad_infinita' // 1 = indestructible
   | 'reduc_req' // % menos requisitos
+  | 'invocados_pct' // % vida y daño de los invocados
   | 'valor' // % resistencia al terror (los sustos encogen menos la luz y llegan menos)
   | 'huecos'; // agujeros para gemas y runas (se aplica al crear)
 
@@ -103,9 +104,19 @@ export interface Unico {
   legendario?: boolean;
   /** Material que pisa al de la base para que se vea distinto (opcional). */
   mat?: string;
+  /** Nivel necesario fijo para llevarlo (si falta, se calcula del nivel del objeto). */
+  req?: number;
 }
 
-export interface PiezaConjunto { id: string; nombre: [string, string]; base: string; stats: RangoStat[] }
+export interface PiezaConjunto {
+  id: string; nombre: [string, string]; base: string; stats: RangoStat[];
+  /** Arma viva del conjunto (se ve encantada en la mano y en el ícono). */
+  vivo?: Elemento;
+  /** Color propio de la pieza (cara del escudo); si falta, el del conjunto. */
+  color?: string;
+}
+/** Cómo se ve el conjunto puesto: todas las piezas con la misma línea, el mismo grado y el mismo color. */
+export interface AspectoConjunto { linea: 'tunica' | 'cuero' | 'malla' | 'placas' | 'metal'; grado: 1 | 2 | 3 | 4 | 5; color: string }
 export interface Conjunto {
   id: string;
   nombre: [string, string];
@@ -114,6 +125,9 @@ export interface Conjunto {
   /** Bonos por piezas puestas (2, 3, 4...). */
   bonos: { piezas: number; stats: RangoStat[] }[];
   lore: [string, string];
+  /** Nivel necesario fijo de todas sus piezas (si falta, el nivel del conjunto). */
+  req?: number;
+  aspecto?: AspectoConjunto;
 }
 
 export interface Gema {

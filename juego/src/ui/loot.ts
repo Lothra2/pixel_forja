@@ -1,7 +1,7 @@
 // Traduce los objetos del juego al formato del motor de botín (para que el inventario de la Forja los pinte en 3D).
 import type { LootItem } from '../../../src/engine/loot/catalog';
 import { baseDe, type Objeto } from '../juego/objetos';
-import { RUNAS } from '../datos/objetos_datos';
+import { RUNAS, CONJUNTOS } from '../datos/objetos_datos';
 
 const RAREZA: Record<string, LootItem['rarity']> = { normal: 'normal', gris: 'normal', magico: 'magic', raro: 'rare', conjunto: 'set', unico: 'unique', legendario: 'legendary' };
 const ENC: Record<string, string> = { fuego: 'fuego', frio: 'hielo', rayo: 'rayo', veneno: 'veneno', sombra: 'sombra', luz: 'sagrado', sangre: 'sangre' };
@@ -43,7 +43,20 @@ export function aLoot(o: Objeto): LootItem {
       base = { cat: 'offhand', icon: b.familia === 'orbe' ? 'orb' : b.familia === 'libro' ? 'tome' : t === 'escudo_torre' ? 'shield_tower' : t === 'escudo_cometa' ? 'shield_kite' : t === 'rodela' ? 'buckler' : t === 'escudo_calavera' ? 'shrunken_head' : 'shield_round' };
     }
   }
-  const it: LootItem = { id: String(o.uid), name: { es: o.nombre[0], en: o.nombre[1] }, rarity: RAREZA[o.rareza] ?? 'normal', base, level: o.nivel, stats: { mods: [] }, ...(diseno ? { design: diseno } : {}), ...(grado ? { grade: grado } : {}) } as LootItem;
+  // conjuntos: todas las piezas con la misma línea, el mismo grado y el mismo color (en el ícono y en el cuerpo)
+  let extra: any = {};
+  const asp = o.conjunto && b ? CONJUNTOS.find((c) => c.id === o.conjunto) : undefined;
+  if (asp && b) {
+    const a = asp.aspecto, pz = asp.piezas.find((p) => p.nombre[0] === o.nombre[0]);
+    extra = { set: asp.id, flavor: { es: asp.lore[0], en: asp.lore[1] } };
+    if (a && base.cat === 'armor') {
+      // 'metal': la línea legendaria del motor teñida con el color del conjunto (pide flavor); las demás, su línea con el color
+      base = { ...base, line: a.linea === 'metal' ? 'placas' : a.linea, tier: a.grado };
+      diseno = { ...(diseno ?? {}), base: a.color };
+      if (a.linea !== 'metal') delete extra.flavor;
+    } else if (base.cat === 'offhand' && (pz?.color ?? a?.color)) { diseno = { ...(diseno ?? {}), face: pz?.color ?? a!.color }; grado = 5; }
+  }
+  const it: LootItem = { id: String(o.uid), name: { es: o.nombre[0], en: o.nombre[1] }, rarity: RAREZA[o.rareza] ?? 'normal', base, level: o.nivel, stats: { mods: [] }, ...(diseno ? { design: diseno } : {}), ...(grado ? { grade: grado } : {}), ...extra } as LootItem;
   cache.set(k, it);
   if (cache.size > 2000) cache.clear();
   return it;

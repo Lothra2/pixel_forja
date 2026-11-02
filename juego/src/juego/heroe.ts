@@ -124,7 +124,8 @@ export function calcular(h: DatosHeroe, buffs: Record<string, number> = {}): Cal
     if (o.def && c !== 'arma') defItems += o.def;
     if (o.conjunto) conjuntos[o.conjunto] = (conjuntos[o.conjunto] ?? 0) + 1;
   }
-  for (const [cid, n] of Object.entries(conjuntos)) { const cj = CONJUNTOS.find((x) => x.id === cid); for (const b of cj?.bonos ?? []) if (n >= b.piezas) for (const s of b.stats) add(s.stat, s.max); }
+  let pctSet = 0;
+  for (const [cid, n] of Object.entries(conjuntos)) { const cj = CONJUNTOS.find((x) => x.id === cid); for (const b of cj?.bonos ?? []) if (n >= b.piezas) for (const s of b.stats) { add(s.stat, s.max); if (s.stat === 'dano_pct') pctSet += s.max; } }
   for (const [k, v] of Object.entries(buffs)) add(k, v);
   const mas = (st.mas_habilidades ?? 0) + (st.mas_clase ?? 0);
   // pasivas
@@ -140,7 +141,7 @@ export function calcular(h: DatosHeroe, buffs: Record<string, number> = {}): Cal
   const base: [number, number] = arma?.dano && !(arma.durabMax > 0 && arma.durab <= 0) ? [arma.dano[0], arma.dano[1]] : [1, 3];
   // dano_pct de objetos ya está en el arma; dano_pct de otras cosas (buffs, pasivas, auras) suma aquí
   let pctExtra = 0; for (const c of Object.keys(h.equipo) as Casilla[]) if (c !== 'arma') for (const [k, v] of h.equipo[c]!.stats) if (k === 'dano_pct') pctExtra += v;
-  pctExtra += buffs.dano_pct ?? 0;
+  pctExtra += (buffs.dano_pct ?? 0) + pctSet;
   for (const hb of HABILIDADES) if (hb.clase === h.clase && hb.tipo === 'pasiva' && h.habs[hb.id]) pctExtra += v2(hb.bonos?.dano_pct, h.habs[hb.id] + mas);
   const mult = 1 + (bonoAtr + pctExtra) / 100;
   const dano: [number, number] = [Math.max(1, Math.round(base[0] * mult)), Math.max(1, Math.round(base[1] * mult))];
@@ -181,7 +182,7 @@ export function cumpleReq(h: DatosHeroe, c: Calc, o: Objeto): boolean {
   if (Math.max(b.req.nivel ?? 1, reqNivel(o)) > h.nivel) return false;
   return true;
 }
-export const reqNivel = (o: Objeto) => (o.rareza === 'normal' || o.rareza === 'gris' ? (baseDe(o)?.req.nivel ?? 1) : Math.max(baseDe(o)?.req.nivel ?? 1, Math.floor(o.nivel * (o.rareza === 'magico' ? 0.6 : o.rareza === 'raro' ? 0.75 : 0.85))));
+export const reqNivel = (o: Objeto) => (o.req ? Math.max(o.req, baseDe(o)?.req.nivel ?? 1) : o.rareza === 'normal' || o.rareza === 'gris' ? (baseDe(o)?.req.nivel ?? 1) : Math.max(baseDe(o)?.req.nivel ?? 1, Math.floor(o.nivel * (o.rareza === 'magico' ? 0.6 : o.rareza === 'raro' ? 0.75 : 0.85))));
 
 // ------------------------------------------------------------------ cómo se ve
 // La Forja traduce lo equipado en el inventario a lo que se ve en el cuerpo (mismo diseño, línea y colores que el ícono).

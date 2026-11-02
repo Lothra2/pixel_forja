@@ -1,7 +1,8 @@
 // Botín: crear objetos (normales, mágicos, raros, de conjunto, únicos, legendarios), pociones, gemas, runas y oro.
 import { BASES, PREFIJOS, SUFIJOS, UNICOS, CONJUNTOS, GEMAS, RUNAS, PALABRAS, NOMBRES_RAROS } from '../datos/objetos_datos';
 import '../datos/talismanes';
-import type { Base, Elemento, Stat, Ranura, Afijo } from './tipos_objetos';
+import { LEGENDARIA_JEFE } from '../datos/legendarias';
+import type { Base, Elemento, Stat, Ranura, Afijo, Unico } from './tipos_objetos';
 import { R, entero, elegir, clamp } from '../nucleo/azar';
 
 export type Rareza = 'normal' | 'magico' | 'raro' | 'conjunto' | 'unico' | 'legendario' | 'gris';
@@ -31,6 +32,8 @@ export interface Objeto {
   identificado?: boolean;
   /** Aspecto propio del arma (el arma inicial se ve como la del novato). */
   vis?: any;
+  /** Nivel necesario fijo (legendarias y conjuntos). Opcional: los objetos viejos no lo tienen. */
+  req?: number;
 }
 
 let uid = Date.now() % 100000;
@@ -38,9 +41,7 @@ export const nuevoUid = () => ++uid;
 export const BASE_POR_ID = new Map(BASES.map((b) => [b.id, b]));
 export function crearUnicoId(id: string, nivel: number): Objeto | null {
   const u = UNICOS.find((x) => x.id === id); const b = u && BASE_POR_ID.get(u.base); if (!u || !b) return null;
-  const o = crearBase(b, Math.max(nivel, u.nivel)); o.rareza = 'unico'; o.nombre = [...u.nombre] as [string, string]; o.lore = u.lore;
-  for (const st of u.stats) o.stats.push([st.stat, rollStat(st.min, st.max)]);
-  o.precio = b.precio * 10; return o;
+  return deUnico(u, b, nivel);
 }
 export const baseDe = (o: Objeto): Base | undefined => BASE_POR_ID.get(o.base);
 
@@ -137,27 +138,44 @@ export function crearUnico(nivel: number, legendario: boolean, filtro?: (b: Base
   const cand = UNICOS.filter((u) => u.nivel <= nivel + 3 && !!u.legendario === legendario && BASE_POR_ID.has(u.base) && (!filtro || filtro(BASE_POR_ID.get(u.base)!)));
   if (!cand.length) return null;
   const u = elegir(cand);
-  const b = BASE_POR_ID.get(u.base)!;
+  return deUnico(u, BASE_POR_ID.get(u.base)!, nivel);
+}
+/** Arma un único o legendario con sus estadísticas, su elemento vivo y su nivel necesario. */
+function deUnico(u: Unico, b: Base, nivel: number): Objeto {
   const o = crearBase(b, Math.max(nivel, u.nivel));
-  o.rareza = legendario ? 'legendario' : 'unico';
+  o.rareza = u.legendario ? 'legendario' : 'unico';
   o.nombre = [...u.nombre] as [string, string];
   for (const st of u.stats) { const v = rollStat(st.min, st.max); if (st.stat === 'huecos') o.huecos = v; else o.stats.push([st.stat, v]); }
-  o.vivo = u.vivo; o.lore = u.lore;
-  o.precio = Math.round(b.precio * 10 + nivel * 30);
+  if (u.vivo) o.vivo = u.vivo;
+  o.lore = u.lore;
+  if (u.req) o.req = u.req;
+  o.precio = Math.round(b.precio * 10 + o.nivel * 30);
   aplicarMejoras(o);
   return o;
 }
 export function crearConjunto(nivel: number): Objeto | null {
   const cand = CONJUNTOS.filter((c) => c.nivel <= nivel + 3);
   if (!cand.length) return null;
-  const c = elegir(cand), p = elegir(c.piezas);
-  const b = BASE_POR_ID.get(p.base); if (!b) return null;
+  const c = elegir(cand);
+  return crearPiezaConjunto(c.id, elegir(c.piezas).id, nivel);
+}
+/** Una pieza concreta de un conjunto (su nivel necesario es el del conjunto). */
+export function crearPiezaConjunto(conjunto: string, pieza: string, nivel: number): Objeto | null {
+  const c = CONJUNTOS.find((x) => x.id === conjunto), p = c?.piezas.find((x) => x.id === pieza);
+  const b = p && BASE_POR_ID.get(p.base); if (!c || !p || !b) return null;
   const o = crearBase(b, Math.max(nivel, c.nivel));
   o.rareza = 'conjunto'; o.conjunto = c.id; o.nombre = [...p.nombre] as [string, string]; o.lore = c.lore;
   for (const st of p.stats) o.stats.push([st.stat, rollStat(st.min, st.max)]);
-  o.precio = Math.round(b.precio * 8 + nivel * 25);
+  if (p.vivo) o.vivo = p.vivo;
+  o.req = c.req ?? c.nivel;
+  o.precio = Math.round(b.precio * 8 + o.nivel * 25);
   aplicarMejoras(o);
   return o;
+}
+/** La legendaria temática de un jefe, si la suelta (de acto siempre que toque; de mazmorra solo si es único o jefe). */
+export function legendariaJefe(id: string, nivel: number, calidad: number): Objeto | null {
+  const lj = LEGENDARIA_JEFE[id]; if (!lj || calidad < 2 || R() >= lj[1]) return null;
+  return crearUnicoId(lj[0], nivel);
 }
 
 // ------------------------------------------------------------------ consumibles
@@ -285,7 +303,7 @@ export const NOMBRE_STAT: Record<string, [string, string]> = {
   radio_luz: ['+{v} radio de luz', '+{v} to Light Radius'], precision: ['+{v} índice de ataque', '+{v} to Attack Rating'], reduc_dano: ['Daño reducido {v}%', 'Damage Reduced by {v}%'],
   espinas: ['El atacante recibe {v} de daño', 'Attacker Takes {v} Damage'], vida_por_muerte: ['+{v} vida por cada muerte', '+{v} Life after each Kill'], mana_por_muerte: ['+{v} maná por cada muerte', '+{v} Mana after each Kill'],
   golpe_aplastante: ['{v}% de golpe aplastante', '{v}% Crushing Blow'], herida_abierta: ['{v}% de herida abierta', '{v}% Open Wounds'], ralentizar: ['Ralentiza al objetivo {v}%', 'Slows Target by {v}%'], aturdir: ['{v}% de aturdir', '{v}% Chance to Stun'],
-  perforar: ['{v}% de perforar', '{v}% Piercing Attack'], valor: ['{v}% resistencia al terror', '{v}% Terror Resistance'], durabilidad_infinita: ['Indestructible', 'Indestructible'], reduc_req: ['Requisitos -{v}%', 'Requirements -{v}%'],
+  perforar: ['{v}% de perforar', '{v}% Piercing Attack'], invocados_pct: ['+{v}% de vida y daño de invocados', '+{v}% Summon Life and Damage'], valor: ['{v}% resistencia al terror', '{v}% Terror Resistance'], durabilidad_infinita: ['Indestructible', 'Indestructible'], reduc_req: ['Requisitos -{v}%', 'Requirements -{v}%'],
 };
 export function textoStat(s: string, v: number, idi: 0 | 1): string {
   const t = NOMBRE_STAT[s]; if (!t) return `${s} ${v}`;

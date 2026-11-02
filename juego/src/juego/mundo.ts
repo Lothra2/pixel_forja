@@ -5,7 +5,7 @@ import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '..
 import { HABILIDADES, INVOCADOS, ATAQUE, type Habilidad } from '../datos/clases';
 import { GENTE } from '../datos/npcs';
 import { calcular, nivelHab, xpPara, recoger, type DatosHeroe, type Calc } from './heroe';
-import { botin, crearObjeto, crearUnicoId, valorPocion, type Objeto, type Caida } from './objetos';
+import { botin, crearObjeto, crearUnicoId, legendariaJefe, valorPocion, type Objeto, type Caida } from './objetos';
 import { TALISMAN_JEFE } from '../datos/talismanes';
 import type { Elemento } from './tipos_objetos';
 import { R, entre, elegir, clamp, dist, hashTxt } from '../nucleo/azar';
@@ -444,6 +444,7 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   const caidas = botin(m.nivel, cal, h.c.hallazgo, h.c.oro_extra);
   if (m.def.jefe) caidas.push({ obj: crearObjeto(m.nivel, R() < 0.5 ? 'unico' : 'raro') }, { obj: crearObjeto(m.nivel, 'raro') });
   const tj = TALISMAN_JEFE[m.def.id]; if (tj) { const o = crearUnicoId(tj, m.nivel); if (o) caidas.push({ obj: o }); }
+  const lj = legendariaJefe(m.def.id, m.nivel, cal); if (lj) caidas.push({ obj: lj });
   if (m.calidad >= 2 && !m.def.jefe && R() < 0.25) caidas.push({ obj: crearObjeto(m.nivel, R() < 0.3 ? 'raro' : 'magico', (b) => b.ranura === 'talisman') });
   soltar(j, m.x, m.y, caidas);
   if (m.mods.includes('ardiente')) { j.areas.push({ x: m.x, y: m.y, radio: 2, dano: [m.dano[0], m.dano[1] * 1.2], elem: 'fuego', t: 0, dur: 0.4, tick: 1, prox: 0.3, deHeroe: false, efecto: 'explosion_fuego', retraso: 0.3 }); efecto(j, 'explosion_fuego', m.x, m.y); }

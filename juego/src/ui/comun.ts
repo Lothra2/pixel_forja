@@ -3,6 +3,7 @@ import { ctx, E } from '../nucleo/lienzo';
 import { objetoMeta, dibujar } from '../motor/assets';
 import { baseDe, colorObj, textoStat, type Objeto } from '../juego/objetos';
 import { reqNivel } from '../juego/heroe';
+import { CONJUNTOS } from '../datos/objetos_datos';
 import type { Raster } from '../../../src/engine/core/raster';
 import { iconoObjeto3D, iconoDeLoot, iconoDeArma } from '../../../src/engine/gotico/iconos3d';
 import { aLoot, arma3dDe } from './loot';
@@ -191,7 +192,7 @@ export function icono(o: Objeto, x: number, y: number, w: number, h: number, t =
 }
 
 // ------------------------------------------------------------------ tooltip de objeto
-export function lineasObjeto(o: Objeto, h?: { nivel: number; fue: number; des: number; clase: string }): [string, string][] {
+export function lineasObjeto(o: Objeto, h?: { nivel: number; fue: number; des: number; clase: string; conjuntos?: Record<string, number> }): [string, string][] {
   const b = baseDe(o);
   const out: [string, string][] = [];
   out.push([TT(o.nombre), colorObj(o)]);
@@ -210,12 +211,19 @@ export function lineasObjeto(o: Objeto, h?: { nivel: number; fue: number; des: n
     if (b.clase) out.push([`(${T('Solo', 'Only')} ${b.clase})`, h && h.clase !== b.clase ? '#ff4040' : '#e8e0d0']);
     if (b.req.fue) out.push([`${T('Fuerza necesaria', 'Required Strength')}: ${b.req.fue}`, h && h.fue < b.req.fue ? '#ff4040' : '#e8e0d0']);
     if (b.req.des) out.push([`${T('Destreza necesaria', 'Required Dexterity')}: ${b.req.des}`, h && h.des < b.req.des ? '#ff4040' : '#e8e0d0']);
-    if (rn > 1) out.push([`${T('Nivel necesario', 'Required Level')}: ${rn}`, h && h.nivel < rn ? '#ff4040' : '#e8e0d0']);
+    if (rn > 1) out.push([T(`Requiere nivel ${rn}`, `Requires level ${rn}`), h && h.nivel < rn ? '#ff4040' : '#e8e0d0']);
   }
   const agrup = new Map<string, number>();
   for (const [s, v] of o.stats) agrup.set(s, (agrup.get(s) ?? 0) + v);
   for (const [s, v] of agrup) if (s !== 'dano_min' && s !== 'dano_max' || true) out.push([textoStat(s, v, IDI), '#7c94ff']);
   if (o.huecos) out.push([`${T('Huecos', 'Sockets')} (${o.engarces.length}/${o.huecos})`, '#a0a0a0']);
+  // conjunto: su nombre y sus bonos (en verde los que ya da)
+  const cj = o.conjunto ? CONJUNTOS.find((c) => c.id === o.conjunto) : undefined;
+  if (cj) {
+    const n = h?.conjuntos?.[cj.id] ?? 0;
+    out.push([`${TT(cj.nombre)} (${n}/${cj.piezas.length})`, '#40d040']);
+    for (const bn of cj.bonos) out.push([`${bn.piezas} ${T('piezas', 'pieces')}: ${bn.stats.map((st) => textoStat(st.stat, st.max, IDI)).join(', ')}`, n >= bn.piezas ? '#40d040' : '#707070']);
+  }
   if (o.lore) for (const l of envolver(TT(o.lore), 260, 12)) out.push([l, '#b09060']);
   return out;
 }
