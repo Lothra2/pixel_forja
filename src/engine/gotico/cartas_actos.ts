@@ -428,6 +428,12 @@ function acto6(L: Lamina) {
   const rr = rng(67), rel = rayo(980, 0, 1010, 430, rr, 0.28, 3), m0 = M(); for (const t of rel) polilinea(m0, t.pts, 2 * t.w, 0.8 * t.w);
   brillo(L, m0, [0.8, 0.9, 1], 1); brillo(L, desenfocada(m0, 10), [0.4, 0.5, 0.7], 1.2);
   const mar = 455;
+  // la ciudad hundida asoma en el horizonte: agujas y muros rotos en la bruma
+  const lejos = M();
+  for (const [x, w2, h2] of [[70, 14, 90], [150, 10, 60], [760, 12, 84], [826, 18, 124], [1190, 12, 70], [1246, 16, 104]] as [number, number, number][]) aguja(lejos, x, mar + 2, w2, h2);
+  ruina(lejos, null, 100, mar + 2, 80, 30, 5); ruina(lejos, null, 690, mar + 2, 100, 26, 6); ruina(lejos, null, 1150, mar + 2, 90, 34, 7);
+  pintar(L, lejos, [0.075, 0.11, 0.105]);
+  contraluz(L, lejos, -2, 0, [0.2, 0.35, 0.32], 0.5);
   // la catedral ahogada saliendo del agua, inclinada, con luz verde de mar en las ventanas y campanas
   const cat = M(), ven = M(), cx = 520;
   const cuerpo: P2[] = [[cx - 170, mar + 10], [cx - 170, mar - 140], [cx - 120, mar - 190], [cx + 120, mar - 190], [cx + 170, mar - 140], [cx + 170, mar + 10]];

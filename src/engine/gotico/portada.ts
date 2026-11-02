@@ -302,7 +302,7 @@ export function hojaCeniza(): Raster {
 // ------------------------------------------------------------------ relámpago
 export const CUADROS_RELAMPAGO = 6;
 /** Intensidad de cada cuadro y el destello blanco que el juego pone sobre toda la pantalla. */
-export const RELAMPAGO_SEC = { fuerza: [0.25, 1, 0.55, 0.9, 0.35, 0.12], destello: [0.02, 0.09, 0.04, 0.07, 0.025, 0.01], fps: 15 };
+export const RELAMPAGO_SEC = { fuerza: [0.25, 1, 0.55, 0.9, 0.35, 0.12], destello: [0.015, 0.06, 0.03, 0.05, 0.02, 0.008], fps: 15 };
 /** Cuadros del relámpago (1536 x 560, se suman encima de las nubes): rayo con ramas y nubes encendidas a su alrededor. */
 export function cuadrosRelampago(): Raster[] {
   const w = CAPA.w, h = 560, r = rng(808), bx = 330;

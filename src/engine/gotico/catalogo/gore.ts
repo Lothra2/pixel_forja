@@ -80,8 +80,10 @@ M.gore_pus = { rampa: ['#2a2408', '#433a10', '#5f5219', '#7b6c24', '#968632', '#
 M.gore_tripa_bestia = { rampa: ['#13120a', '#232013', '#36301d', '#4a4228', '#5f5434', '#746740', '#887b4d'], ruido: 0.15, escala: 1, brillo: 1 };
 M.gore_cartilago = { rampa: ['#1e1c12', '#34301f', '#4d472e', '#675f3f', '#817851', '#9a9164', '#b0a878'], ruido: 0.18, escala: 0.9, brillo: 0.4 };
 // cadáveres (horror.ts)
-M.gore_piel_cadaver = { rampa: ['#151314', '#232021', '#332f30', '#463f40', '#595151', '#6c6362', '#7f7573', '#928784', '#a49895'], ruido: 0.16, escala: 1, brillo: 0.08, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.3) > 0.66 ? -0.09 : 0) + grumo(0.08, 0.9)(p) };
+M.gore_piel_cadaver = { rampa: ['#131112', '#201d1e', '#2f2a2b', '#403a3a', '#524a4a', '#645a59', '#766b69', '#887c79', '#998c88'], ruido: 0.16, escala: 1, brillo: 0.08, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.3) > 0.66 ? -0.09 : 0) + grumo(0.08, 0.9)(p) };
 M.gore_piel_quemada = { rampa: ['#040303', '#090605', '#0f0a08', '#16100c', '#1e1611', '#281d16', '#352519'], ruido: 0.35, escala: 1.1, brillo: 0.35, patron: (p) => (grietas(p[0] + p[2], p[1] - p[2], 2.6) < 0.3 ? -0.25 : 0) + (ruido(p[0] * 0.4, p[1] * 0.4, p[2] * 0.4) > 0.7 ? 0.12 : 0) };
+M.gore_moreton = { rampa: ['#0c0a10', '#16121c', '#211a28', '#2d2334', '#3a2d40', '#48384c'], ruido: 0.3, escala: 0.8 };
+M.gore_mugre = { rampa: ['#0d0b08', '#18140f', '#241e17', '#312820', '#3e3329'], ruido: 0.6, escala: 1.4 };
 M.gore_pelo = { rampa: ['#060505', '#0e0b0a', '#171210', '#211a16', '#2b221c'], ruido: 0.5, escala: 2.2 };
 /** Lo que brilla: runas de sangre, ojos en lo oscuro, sangre que hierve. */
 M.gore_runa_sangre = { rampa: ['#2a0303', '#4a0505', '#700a08', '#981410', '#bc241a', '#d84030', '#ee6a50'], ruido: 0.35, escala: 0.4, emite: true };
@@ -775,6 +777,13 @@ export function cuerpo(g: G, pose: Pose, o: OpcCuerpo = {}): Juntas {
     const cad = J.caderas[i], rod = J.rodillas[i], tob = J.tobillos[i], pie = J.pies[i], dc = nor3(sub3(tob, rod));
     cs.push(g.hu(cad, rod, 3.3 * k, 2.2 * k), g.hu(rod, tob, 2.2 * k, 1.3 * k), g.bu(add3(rod, dc, 4), [3.6, 1.9 * k, 2 * k], { eje: dc }), g.hu(tob, pie, 1.4, 1.1), g.bu(add3(tob, sub3(pie, tob), 0.5), [2.4, 1.4, 1.1], { eje: sub3(pie, tob) }));
   });
+  // moretones, mugre y sangre seca sobre la piel: esferas metidas bajo la piel de cada tramo (asoma el casquete)
+  const tramos: [V3, V3, number][] = [[J.pelvis, J.pecho, 4.6 * k], [J.caderas[0], J.rodillas[0], 2.8 * k], [J.caderas[1], J.rodillas[1], 2.8 * k], [J.rodillas[0], J.tobillos[0], 1.8 * k], [J.rodillas[1], J.tobillos[1], 1.8 * k], [J.hombros[0], J.codos[0], 1.9 * k], [J.hombros[1], J.codos[1], 1.9 * k]];
+  for (let i = 0; i < 12; i++) {
+    const [p, q, R0] = tramos[Math.floor(a.r() * tramos.length)], t = a.r(), r = 1 + a.r() * 1.4, th = a.r() * TAU, d = nor3(sub3(q, p));
+    const u = perp([Math.cos(th), Math.sin(th), r2(a, 1)], d, [0, 0, 1]);
+    cs.push(g.bu(add3(add3(p, sub3(q, p), t), u, R0 - r + 0.5), [r * 1.5, r, r], { mat: i < 5 ? 'gore_moreton' : i < 8 ? 'gore_mugre' : 'gore_sangre_oscura', eje: d, k: 0.3 }));
+  }
   // cortes que sangran: tajos de carne con un hilo de sangre hacia abajo
   const nh = o.heridas ?? 3;
   for (let i = 0; i < nh; i++) {
