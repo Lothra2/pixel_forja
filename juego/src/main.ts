@@ -6,7 +6,7 @@ import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
-import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision } from './juego/historia';
+import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
@@ -73,7 +73,7 @@ function atlasZona(zid: string): Set<string> {
   const z = j!.zona && j!.zona.id === zid ? j!.zona : null;
   const s = new Set<string>();
   const ids = new Set<string>();
-  if (z) for (const o of z.objetos) ids.add(`${o.id}|${o.v}`);
+  if (z) for (const o of z.objetos) { ids.add(`${o.id}|${o.v}`); if (o.dato?.mision) for (const k of Object.keys(m.o)) if (k.startsWith(o.id + '|')) ids.add(k); }
   // piezas que cambian de variante con la historia (la catedral): todas sus variantes
   if (z) for (const sa of z.salidas) for (const o of sa.piezas ?? []) for (const k of Object.keys(m.o)) if (k.startsWith(o.id + '|')) ids.add(k);
   // por tema si todavía no hay zona
@@ -88,7 +88,7 @@ function atlasZona(zid: string): Set<string> {
   for (const f of FANTASMAS) if (f.zona === zid) mons.add(f.sprite);
   for (const p of pool) { const inv = MONSTRUOS[p]?.invoca; if (inv) mons.add(MONSTRUOS[inv]?.sprite); }
   for (const id of mons) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
-  if (def.tipo === 'pueblo') for (const n of GENTE[def.acto] ?? []) for (const a of atlasDe('m', clavesCon('m', `${n}/`))) s.add(a);
+  if (def.tipo === 'pueblo') for (const n of GENTE[def.acto] ?? []) for (const a of atlasDe('m', clavesCon('m', `${NPCS[n]?.sprite ?? n}/`))) s.add(a);
   for (const a of atlasDe('w', Object.keys(m.w ?? {}))) s.add(a);
   // íconos del equipo de Thor
   for (const a of atlasDe('o', ['thor_icono_collar|icono', 'thor_icono_barda|icono', 'thor_icono_collar|suelo'])) s.add(a);
@@ -351,7 +351,11 @@ function usarObjeto(jj: Juego, o: ObjZ) {
       Sonido.susurro(); jj.sacudida = 0.5;
     } else if (R() < 0.25) { h.vida = h.vidaMax; h.mana = h.c.manaMax; msg(jj, ['Santuario de la Vigilia: te sientes entero.', 'Vigil Shrine: you feel whole.'], '#a0ffa0'); }
     else { const s = elegir(tipos); h.buffs['santuario'] = { t: 90, bonos: s.b as any, hab: 'santuario' }; recalc(jj); msg(jj, s.m as [string, string], '#a0c0ff'); }
+  } else if (o.tag === 'pista' || o.tag === 'reliquia' || o.tag === 'altar') {
+    const r = usarObjetoMision(jj, o);
+    if (r && typeof r === 'object') { ui.dialogoTexto = TT(r.texto); ui.izq = 'pagina' as any; Object.assign(ui as any, { paginaN: r.n, paginaTotal: r.total, paginaTitulo: TT(r.titulo), paginaPanel: T('Pista', 'Clue') }); }
   } else if (o.tag === 'libro') {
+    (ui as any).paginaPanel = undefined;
     const p = leerLibro(h.d, jj.zona.acto);
     ui.dialogoTexto = TT(p.texto); ui.izq = 'pagina' as any; Object.assign(ui as any, { paginaN: p.n, paginaTotal: p.total, paginaTitulo: TT(p.titulo) });
     Sonido.efecto('abrir'); Sonido.susurro(); o.tag = undefined;
@@ -397,6 +401,7 @@ let ultimo = performance.now();
 let introT = 0;
 (window as any).__introA = (s: number) => { introT = s; };
 (window as any).__aFinal = () => { estado = 'final'; finalT = 999; };
+(window as any).__usar = (o: ObjZ) => { if (j) usarObjeto(j, o); };
 function cuadro(ahora: number) {
   marcarCuadro(ahora);
   const dt = Math.min(0.05, (ahora - ultimo) / 1000); ultimo = ahora;
@@ -544,7 +549,7 @@ function paso(dt: number) {
 function etiquetaPick(jj: Juego, p: Pick) {
   if (p.tipo === 'npc') { const n = (p.ref as Npc); import('./datos/npcs').then(() => { }); texto(TT(npcsNombre(n.npc)), (p.x0 + p.x1) / 2, p.y0 - 6, { alin: 'center', color: '#e0e0ff' }); }
   else if (p.tipo === 'salida') tooltip([[TT((p.ref as Salida).nombre), '#ffd060']], (p.x0 + p.x1) / 2, p.y0 + 20);
-  else if (p.tipo === 'objeto') { const o = p.ref as ObjZ; const n = o.id === 'com_piedra_viaje' ? T('Piedra de viaje', 'Travel stone') : o.tag === 'baul' ? T('Baúl compartido', 'Shared chest') : o.tag === 'cofre' ? T('Cofre', 'Chest') : o.tag === 'santuario' ? T('Santuario', 'Shrine') : o.tag === 'pozo' ? T('Pozo', 'Well') : o.tag === 'romper' ? T('Urna', 'Urn') : o.tag === 'libro' ? T('Libro maldito', 'Cursed book') : ''; if (n) texto(n, (p.x0 + p.x1) / 2, p.y0 - 4, { alin: 'center', color: '#c0c0ff' }); }
+  else if (p.tipo === 'objeto') { const o = p.ref as ObjZ; const n = o.id === 'com_piedra_viaje' ? T('Piedra de viaje', 'Travel stone') : o.tag === 'baul' ? T('Baúl compartido', 'Shared chest') : o.tag === 'pista' ? T('Pista', 'Clue') : o.tag === 'reliquia' ? T('Reliquia', 'Relic') : o.tag === 'altar' ? T('Altar', 'Altar') : o.tag === 'cofre' ? T('Cofre', 'Chest') : o.tag === 'santuario' ? T('Santuario', 'Shrine') : o.tag === 'pozo' ? T('Pozo', 'Well') : o.tag === 'romper' ? T('Urna', 'Urn') : o.tag === 'libro' ? T('Libro maldito', 'Cursed book') : ''; if (n) texto(n, (p.x0 + p.x1) / 2, p.y0 - 4, { alin: 'center', color: '#c0c0ff' }); }
   else if (p.tipo === 'portal') texto(T('Portal', 'Portal'), (p.x0 + p.x1) / 2, p.y0 - 4, { alin: 'center', color: '#80b0ff' });
   void jj;
 }

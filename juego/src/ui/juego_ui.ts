@@ -8,9 +8,10 @@ import { CLASES, HABILIDADES, habilidadesDe, ATAQUE, TIERS, ESCALA_HECHIZOS, typ
 import { NPCS } from '../datos/npcs';
 import { MISIONES, ZONAS, PUEBLO_DE, daMision, type Mision, type Premio } from '../mundo/actos';
 import { MONSTRUOS } from '../datos/monstruos';
-import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist } from '../juego/historia';
-import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, type Objeto } from '../juego/objetos';
+import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist, avanceDe } from '../juego/historia';
+import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, crearUnicoId, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
+import type { DatosHeroe } from '../juego/heroe';
 import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, ropaBase, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa, nivelEnDificultad, cant, apilable, partir, alCinturon, meterEnBolsa, tiposCinturon, PILA_BOLSA, PILA_CINTURON, type TipoPocion } from '../juego/heroe';
 import { recalc, usarPocion, beberPocion, noRellenar, abrirPortal, costoMana, danoHab, habilidadDe, msg, frascosMax, ventanaCombo, cadaveresCerca, MAX_CARGAS, colorElem, thorDe, tramoThor, type Juego, type Monstruo } from '../juego/mundo';
 import { cuadrosMonstruo, dibujar as dibujarCuadro } from '../motor/assets';
@@ -328,6 +329,9 @@ export function alternar(p: PanelId, lado: 'izq' | 'der') {
 
 // ------------------------------------------------------------------ cosas de arriba: jefe, plaquita del monstruo, mensajes
 export function dibujarArriba(j: Juego, encima: Monstruo | null) {
+  // purga en curso: cuántos faltan y cuánto tiempo queda
+  const pu = (j as any).purga;
+  if (pu) { const s = Math.max(0, Math.ceil(pu.t)); const falta = Math.max(0, pu.n - (pu.hechos ?? 0)); texto(`${T('Purga', 'Purge')}: ${falta} · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`, W / 2, j.jefe && !j.jefe.muerto ? 64 : 52, { alin: 'center', tam: 16, color: s < 20 ? '#ff6040' : '#ffb060', fuente: TITULO }); }
   if (j.jefe && !j.jefe.muerto) {
     const k = Math.round((j.jefe.vida / j.jefe.vidaMax) * 100);
     const c = cacheRaster(`jefe${j.jefe.id}_${k}_${IDI}`, () => barraJefe(TT(j.jefe!.nombre), k / 100));
@@ -386,7 +390,7 @@ function dibujarPanel(j: Juego, p: PanelId, x: number, t: number) {
     case 'viaje': return panelViaje(j, x, y);
     case 'misiones': return panelMisiones(j, x, y);
     case 'menu': return panelMenu(j, x, y);
-    case 'pagina' as any: { marco(x, y, 320, 432); titulo(T('Página arrancada', 'Torn page'), x, y, 320); texto((ui as any).paginaTitulo ?? '', x + 160, y + 52, { alin: 'center', tam: 12, color: '#c0a070' }); texto(`${(ui as any).paginaN} / ${(ui as any).paginaTotal ?? 9}`, x + 160, y + 68, { alin: 'center', tam: 11, color: '#806a50' }); envolver(ui.dialogoTexto ?? '', 270, 15).forEach((l, i) => texto(l, x + 25, y + 90 + i * 22, { tam: 15, color: '#d8c49a', fuente: TITULO })); if (boton(T('Cerrar', 'Close'), x + 120, y + 380, 80, 28, { tam: 13 })) { ui.izq = null; E.clicIzq = false; } return; }
+    case 'pagina' as any: { marco(x, y, 320, 432); titulo((ui as any).paginaPanel ?? T('Página arrancada', 'Torn page'), x, y, 320); texto((ui as any).paginaTitulo ?? '', x + 160, y + 52, { alin: 'center', tam: 12, color: '#c0a070' }); texto(`${(ui as any).paginaN} / ${(ui as any).paginaTotal ?? 9}`, x + 160, y + 68, { alin: 'center', tam: 11, color: '#806a50' }); envolver(ui.dialogoTexto ?? '', 270, 15).forEach((l, i) => texto(l, x + 25, y + 90 + i * 22, { tam: 15, color: '#d8c49a', fuente: TITULO })); if (boton(T('Cerrar', 'Close'), x + 120, y + 380, 80, 28, { tam: 13 })) { ui.izq = null; E.clicIzq = false; } return; }
   }
 }
 
@@ -1001,6 +1005,7 @@ function darPremio(j: Juego, p: Premio) {
   if (p.atributos) d.puntosAtrib += p.atributos;
   if (p.oro) d.oro += p.oro;
   if (p.vida) d.vit += Math.round(p.vida / 3);
+  if (p.unico) { const o = crearUnicoId(p.unico, Math.max(d.nivel, 5)); if (o) { if (!recoger(d, o)) j.suelo.push({ o, oro: 0, x: j.heroe.x - 1, y: j.heroe.y + 1, t: 0, id: Date.now() + 2 }); msg(j, [`Recibes ${o.nombre[0]}.`, `You receive ${o.nombre[1]}.`], '#ff9a30'); } }
   if (p.objeto) { const o = crearObjeto(Math.max(d.nivel, 5), p.objeto); if (!recoger(d, o)) j.suelo.push({ o, oro: 0, x: j.heroe.x + 1, y: j.heroe.y + 1, t: 0, id: Date.now() }); }
   if (p.olvido) { const o = crearPergamino('olvido'); if (!recoger(d, o)) j.suelo.push({ o, oro: 0, x: j.heroe.x + 1, y: j.heroe.y - 1, t: 0, id: Date.now() + 1 }); msg(j, ['Te dieron una Lágrima del Olvido. Bébela para repartir de nuevo tus habilidades y atributos.', 'You received a Tear of Oblivion. Drink it to reassign your skills and attributes.'], '#c8a060'); }
 }
@@ -1067,9 +1072,15 @@ function panelViaje(j: Juego, x: number, y: number) {
     yy += 30;
   }
 }
-function objetivoTxt(m: Mision): string {
+function objetivoTxt(m: Mision, d: DatosHeroe): string {
   const o = m.objetivo, z = TT(ZONAS[o.zona]?.nombre ?? ['?', '?']);
+  const av = avanceDe(d, m);
   if (o.tipo === 'llegar') return `${T('Llega a', 'Reach')} ${z}`;
+  if (o.tipo === 'pistas') return `${T('Investiga', 'Investigate')} ${av} · ${z}`;
+  if (o.tipo === 'ritual') return `${T('Altares', 'Altars')} ${av} · ${z}`;
+  if (o.tipo === 'purgar') return `${T('Purga', 'Purge')} ${o.n} ${T('en', 'in')} ${Math.round(o.tiempo / 60 * 10) / 10} min · ${z}`;
+  if (o.tipo === 'escoltar') return `${T('Escolta a', 'Escort')} ${TT(o.nombre)} · ${z}`;
+  if (o.tipo === 'cazar') return `${T('Caza a', 'Hunt')} ${TT(o.nombre)} · ${z}`;
   const nom = o.nombreUnico ?? MONSTRUOS[o.monstruo]?.nombre ?? ['?', '?'];
   return `${T('Vence a', 'Defeat')} ${TT(nom)} · ${z}`;
 }
@@ -1091,7 +1102,7 @@ function panelMisiones(j: Juego, x: number, y: number) {
     const col = e === 3 ? '#707070' : e === 2 ? '#80ff80' : e === 1 ? '#f0d080' : '#5a5040';
     const quien = TT(NPCS[daMision(m)]?.nombre ?? ['', '']);
     texto(TT(m.nombre), x + 18, yy, { color: col, tam: 13 });
-    const est = e === 3 ? T('Terminada', 'Completed') : e === 2 ? `${T('Vuelve con', 'Return to')} ${quien}` : e === 1 ? objetivoTxt(m) : `${T('Habla con', 'Speak with')} ${quien}`;
+    const est = e === 3 ? T('Terminada', 'Completed') : e === 2 ? `${T('Vuelve con', 'Return to')} ${quien}` : e === 1 ? objetivoTxt(m, d) : `${T('Habla con', 'Speak with')} ${quien}`;
     texto(est.length > 52 ? est.slice(0, 50) + '…' : est, x + 30, yy + 14, { tam: 10, color: '#a09070' });
     const el = eleccionDe(d, m.id);
     if (e === 3 && el !== undefined && m.eleccion) texto(`· ${TT(m.eleccion.opciones[el].texto)}`.slice(0, 56), x + 30, yy + 26, { tam: 10, color: '#8a7ab0' });

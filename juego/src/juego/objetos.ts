@@ -145,7 +145,7 @@ export function aplicarMejoras(o: Objeto) {
 }
 
 export function crearUnico(nivel: number, legendario: boolean, filtro?: (b: Base) => boolean): Objeto | null {
-  const todos = UNICOS.filter((u) => u.nivel <= nivel + 3 && !!u.legendario === legendario && BASE_POR_ID.has(u.base) && (!filtro || filtro(BASE_POR_ID.get(u.base)!)));
+  const todos = UNICOS.filter((u) => !u.soloMision && u.nivel <= nivel + 3 && !!u.legendario === legendario && BASE_POR_ID.has(u.base) && (!filtro || filtro(BASE_POR_ID.get(u.base)!)));
   if (!todos.length) return null;
   // a nivel alto no caen los de los primeros actos: los de los últimos 35 niveles (o, si no hay, los más altos que haya)
   const tope = todos.reduce((m, u) => Math.max(m, u.nivel), 0);

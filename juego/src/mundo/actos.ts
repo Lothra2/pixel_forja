@@ -123,14 +123,31 @@ export const PUEBLO_DE: Record<number, string> = { 1: 'a1_refugio', 2: 'a2_oasis
 export const MUSICA_ACTO = (acto: number, tipo: string) => (tipo === 'pueblo' ? `campamento${acto}` : tipo === 'mazmorra' ? (acto === 1 ? 'mazmorra' : `mazmorra${acto}`) : `acto${acto}`);
 
 // ------------------------------------------------------------------ misiones
-export interface Premio { habilidad?: number; atributos?: number; vida?: number; oro?: number; objeto?: 'raro' | 'unico' | 'conjunto'; resistencia?: number; /** Una Lágrima del Olvido: reinicia habilidades y atributos. */ olvido?: boolean }
+/** Una pista que se encuentra en el mapa: el objeto que se ve y lo que cuenta. */
+export interface Pista { obj: string; v: string; texto: [string, string] }
+export type Objetivo =
+  | { tipo: 'matar'; zona: string; monstruo: string; nombreUnico?: [string, string] }
+  | { tipo: 'llegar'; zona: string }
+  /** Investigar: encontrar todas las pistas de la zona. */
+  | { tipo: 'pistas'; zona: string; pistas: Pista[] }
+  /** Ritual: recoger n reliquias y llevar cada una a un altar. Al encender el último despierta el guardián (opcional). */
+  | { tipo: 'ritual'; zona: string; n: number; reliquia: [string, string]; altar: [string, string, string]; guardian?: string }
+  /** Purgar: matar n monstruos en la zona antes de que se acabe el tiempo (segundos). */
+  | { tipo: 'purgar'; zona: string; n: number; tiempo: number }
+  /** Escoltar: alguien te sigue hasta el otro extremo de la zona; si cae, vuelves a empezar al entrar de nuevo. */
+  | { tipo: 'escoltar'; zona: string; sprite: string; nombre: [string, string]; inicio: [string, string]; llegada: [string, string]; muerte: [string, string] }
+  /** Cazar: un único con nombre que aparece en la zona mientras la misión está activa. */
+  | { tipo: 'cazar'; zona: string; monstruo: string; nombre: [string, string]; frase?: [string, string] };
+export interface Premio { /** Una legendaria fija con nombre (id de UNICOS). */ unico?: string; habilidad?: number; atributos?: number; vida?: number; oro?: number; objeto?: 'raro' | 'unico' | 'conjunto'; resistencia?: number; /** Una Lágrima del Olvido: reinicia habilidades y atributos. */ olvido?: boolean }
 export interface OpcionMision { texto: [string, string]; hecho: [string, string]; premio: Premio }
 export type FinalElegido = 'destruir' | 'absorber';
 export interface Mision {
   id: string; acto: number; nombre: [string, string];
   /** Lo que pide el que da la misión y lo que dice cuando vuelves. */
   pedido: [string, string]; hecho: [string, string];
-  objetivo: { tipo: 'matar'; zona: string; monstruo: string; nombreUnico?: [string, string] } | { tipo: 'llegar'; zona: string };
+  objetivo: Objetivo;
+  /** Lo que dicen otros en el pueblo cuando la terminas (solo en el acto de la misión). */
+  comentarios?: { npc: string; texto: [string, string]; eleccion?: number }[];
   premio: Premio;
   /** Al terminarla se abre el siguiente acto. */
   cierraActo?: boolean;

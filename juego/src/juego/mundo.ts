@@ -3,7 +3,7 @@ import { generarZona, pasable, buscarCamino, lineaLibre, libreCerca, type Zona, 
 import { ZONAS, POBL_ZONA, MISIONES, FRASE_JEFE } from '../mundo/actos';
 import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '../datos/monstruos';
 import { HABILIDADES, INVOCADOS, ATAQUE, ESCALA_HECHIZOS, poderNivel, danoInvocadoNivel, type Habilidad } from '../datos/clases';
-import { GENTE } from '../datos/npcs';
+import { GENTE, NPCS } from '../datos/npcs';
 import { calcular, nivelHab, xpPara, recoger, NIVEL_MAX, nivelEnDificultad, cicloExtra, cant, rellenarColumna, type DatosHeroe, type Calc } from './heroe';
 import { botin, crearObjeto, crearUnicoId, legendariaJefe, valorPocion, crearObjetoThor, type Objeto, type Caida } from './objetos';
 import { TALISMAN_JEFE } from '../datos/talismanes';
@@ -191,7 +191,7 @@ export function entrarZona(j: Juego, zid: string, entrada: string) {
   for (const m of invocados) { const q = libreCerca(j.zona, h.x + entre(-2, 2), h.y + entre(-2, 2)); m.x = q[0] + 0.5; m.y = q[1] + 0.5; m.objetivo = null; j.monstruos.push(m); }
   h.d.zona = zid; h.d.acto = def.acto;
   if (def.tipo === 'pueblo') { h.vida = h.vidaMax; h.mana = h.c.manaMax; }
-  j.npcs = def.tipo === 'pueblo' ? crearNpcs(j.zona) : [];
+  j.npcs = def.tipo === 'pueblo' ? crearNpcs(j.zona, j.heroe.d) : [];
   j.jefe = null;
   if (def.tipo === 'pueblo' && !h.d.viajes.includes(zid)) h.d.viajes.push(zid);
   // misión de llegar
@@ -199,8 +199,8 @@ export function entrarZona(j: Juego, zid: string, entrada: string) {
   j.eventos.push({ tipo: 'zona', dato: zid });
 }
 
-function crearNpcs(z: Zona): Npc[] {
-  const gente = GENTE[z.acto] ?? [];
+function crearNpcs(z: Zona, d: DatosHeroe): Npc[] {
+  const gente = (GENTE[z.acto] ?? []).filter((id) => { const dm = NPCS[id]?.desaparece; return !dm || (d.misiones[dm] ?? 0) < 2; });
   const lugares = z.marcas.filter((m) => m.tipo === 'npc');
   return gente.map((id, i) => {
     const l = lugares[i % Math.max(1, lugares.length)] ?? { cx: z.W / 2, cy: z.H / 2 };

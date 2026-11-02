@@ -9,6 +9,10 @@ export interface NPC {
   saludo: [string, string][];
   /** Lo que cuenta si le preguntas por el lugar. */
   relato: [string, string];
+  /** Dibujo de otro personaje horneado (para gente que no tiene el suyo). */
+  sprite?: string;
+  /** Deja de estar en el pueblo cuando esta misión está cumplida (el traidor que huye o muere). */
+  desaparece?: string;
 }
 
 export const NPCS: Record<string, NPC> = Object.fromEntries(([

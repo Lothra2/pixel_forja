@@ -1,6 +1,7 @@
 // Dibuja la zona: pisos, manchas, objetos y personajes por profundidad, poderes, partículas, luz, niebla y clima.
 import { nuevoCuadroSombras } from './luces';
 import { ctx, W, H } from '../nucleo/lienzo';
+import { NPCS } from '../datos/npcs';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto } from '../juego/mundo';
 import { CUADROS, DIRS, ZANCADA, ALTO_CLASE } from '../juego/mundo';
@@ -181,7 +182,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
       // fuego vivo sobre fogatas, braseros, piras y antorchas
       if (meta.luz && ES_FUEGO.test(o.id) && !/^(arma_|mis_)/.test(o.id) && !/apagad/.test(o.v)) fuegoMundo(ctx, px, py - meta.luz[2] * 1.1, Math.max(0.3, Math.min(1.3, meta.luz[0] / 160)), tiempo, cam.x, cam.y);
     } });
-    if (o.tag === 'libro' || o.tag === 'cofre' || o.tag === 'santuario' || o.tag === 'pozo' || o.tag === 'baul' || o.tag === 'romper' || o.id === 'com_piedra_viaje') picks.push({ tipo: 'objeto', ref: o, x0: px - q.ax, y0: py - q.ay, x1: px - q.ax + q.w, y1: py - q.ay + q.h, prof });
+    if (o.dato?.mision && (o.tag === 'pista' || o.tag === 'reliquia' || o.tag === 'altar' || o.tag === 'destino')) items.push({ prof: prof - 0.01, draw: () => haloMision(px, py, tiempo, o.tag === 'destino') });
+    if (o.tag === 'pista' || o.tag === 'reliquia' || o.tag === 'altar' || o.tag === 'libro' || o.tag === 'cofre' || o.tag === 'santuario' || o.tag === 'pozo' || o.tag === 'baul' || o.tag === 'romper' || o.id === 'com_piedra_viaje') picks.push({ tipo: 'objeto', ref: o, x0: px - q.ax, y0: py - q.ay, x1: px - q.ax + q.w, y1: py - q.ay + q.h, prof });
   }
   // salidas (las puertas/escaleras ya están como objetos; aquí solo la zona de clic)
   for (const s of z.salidas) { const [px, py] = aPant(s.cx + 0.5, s.cy + 0.5); picks.push({ tipo: 'salida', ref: s, x0: px - 40, y0: py - 60, x1: px + 40, y1: py + 20, prof: s.cx + s.cy - 2 }); }
@@ -324,7 +326,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   let acc = e.acc;
   const m = e as Monstruo;
   if (e.tipo === 'heroe') fs = framesHeroe(j, acc, e.dir);
-  else if (e.tipo === 'npc') fs = cuadrosMonstruo((e as any).npc, 'quieto', e.dir);
+  else if (e.tipo === 'npc') fs = cuadrosMonstruo(NPCS[(e as any).npc]?.sprite ?? (e as any).npc, 'quieto', e.dir);
   else {
     if ((m as any).surgiendo > 0) acc = 'morir';
     if (acc === 'lanzar' && m.def.sprite.startsWith('jefe_') && ((m as any).fase ?? 0) >= 1) acc = 'especial' as any;
@@ -486,5 +488,17 @@ function clima(j: Juego, dt: number, t: number) {
   ctx.save();
   if (tipo === 'lluvia') { ctx.strokeStyle = 'rgba(150,160,190,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); for (const g of gotas) { g.y += 700 * g.v * dt; g.x -= 90 * g.v * dt; if (g.y > H) { g.y = -10; g.x = R() * W * 1.2; } ctx.moveTo(g.x, g.y); ctx.lineTo(g.x - 3, g.y + 14 * g.v); } ctx.stroke(); }
   else { ctx.fillStyle = tipo === 'nieve' ? 'rgba(235,240,255,0.8)' : 'rgba(255,140,60,0.75)'; for (const g of gotas) { g.y += (tipo === 'nieve' ? 50 : -30) * g.v * dt; g.x += Math.sin(t + g.v * 10) * 20 * dt; if (g.y > H) g.y = -4; if (g.y < -5) g.y = H; ctx.fillRect(g.x, g.y, 2, 2); } }
+  ctx.restore();
+}
+
+/** Halo dorado que late bajo las cosas de misión, para que se encuentren en la oscuridad. */
+function haloMision(px: number, py: number, t: number, destino: boolean) {
+  const k = 0.55 + 0.45 * Math.sin(t * 3.2);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const r = destino ? 46 : 30;
+  const g = ctx.createRadialGradient(px, py, 2, px, py, r);
+  g.addColorStop(0, `rgba(255,200,110,${0.42 * k})`); g.addColorStop(0.6, `rgba(255,150,50,${0.16 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+  if (destino) { ctx.strokeStyle = `rgba(255,210,120,${0.5 * k})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, py, r * 0.8, r * 0.4, 0, 0, Math.PI * 2); ctx.stroke(); }
   ctx.restore();
 }

@@ -107,6 +107,8 @@ export interface Unico {
   vivo?: Elemento;
   /** Legendario: más raro y más fuerte (color naranja). */
   legendario?: boolean;
+  /** Solo se gana como premio de una misión: nunca cae al azar. */
+  soloMision?: boolean;
   /** Material que pisa al de la base para que se vea distinto (opcional). */
   mat?: string;
   /** Nivel necesario fijo para llevarlo (si falta, se calcula del nivel del objeto). */

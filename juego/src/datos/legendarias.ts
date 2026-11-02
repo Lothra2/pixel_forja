@@ -14,7 +14,7 @@ const STAT_ELEM: Record<Exclude<Elemento, 'fisico'>, Stat> = { fuego: 'dano_fueg
 const LANZADOR = new Set(['baculo', 'varita', 'cetro']);
 
 /** Una legendaria viva: el daño mejorado y el daño de su elemento salen del escalón, lo demás lo pone cada una. */
-function leg(
+export function leg(
   id: string, es: string, en: string, base: string, escalon: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8, vivo: Exclude<Elemento, 'fisico'>,
   extra: RangoStat[], loreEs: string, loreEn: string,
 ): Unico {

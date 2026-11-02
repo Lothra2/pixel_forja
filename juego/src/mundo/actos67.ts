@@ -96,3 +96,4 @@ Object.assign(ENTRADA_ZONA, {
   a7_escaleras: ['Cada escalón tiene un nombre grabado. El último está en blanco.', 'Every step bears a carved name. The last one is blank.'],
   a7_trono: ['El Trono Sediento te estaba esperando. Siempre te estuvo esperando.', 'The Thirsting Throne was waiting for you. It was always waiting.'],
 } as Record<string, [string, string]>);
+import './misiones_historia';
