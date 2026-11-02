@@ -14,3 +14,4 @@ export { figura, pose, zancada, DIRS, NOMBRE_DIR, CUADROS, type Dir, type Accion
 export { personaje, esqueleto, type Cuerpo, type Equipo, type TipoArma } from './cuerpo';
 export { HEROES, MONSTRUOS, type Heroe, type Monstruo } from './catalogo/personajes';
 export { JEFES } from './catalogo/jefes';
+export { equipoDeInventario, tinte, type Puesto } from './apariencia';
