@@ -137,8 +137,8 @@ export interface Esqueleto {
   W: Fn; T: Fn; cab: Fn; ejesT: [V3, V3, V3]; ejesCab: [V3, V3, V3];
   piernas: Pierna[]; brazos: Brazo[]; caida: number;
   Pv?: Fn; pose?: Pose;
-  /** Báculo: eje de la vara (del puño hacia el remate). */
-  vara?: V3;
+  /** Báculo: eje de la vara (del puño hacia el remate) y, si está apoyada, el punto del piso donde apoya el pie. */
+  vara?: V3; varaPie?: V3;
 }
 const ejesDe = (fn: Fn, o: [number, number, number]): [V3, V3, V3] => {
   const c = fn(...o), ex = nor(sub(fn(o[0] + 1, o[1], o[2]), c)), up = nor(sub(fn(o[0], o[1], o[2] + 1), c));
@@ -305,10 +305,14 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   }
   // armas a dos manos, lanzas y ballestas: la mano izquierda se cierra sobre el mango (cinemática inversa de dos huesos);
   // la pose puede correr el agarre por el mango (agarreI) o soltarlo (pegaI)
+  // el báculo: casi vertical en la mano, inclinado como diga la pose o apoyado con el pie en un punto del piso
+  const varaPie = P.varaPie ? Wc(P.varaPie[0] * S, P.varaPie[1] * A, P.varaPie[2] * S) : undefined;
+  const vara = varaPie ? nor(sub(der.mano, varaPie)) : P.vara ? dirW([Math.sin(rad(P.vara[0])), Math.sin(rad(P.vara[1])), Math.cos(rad(P.vara[0])) * Math.cos(rad(P.vara[1]))]) : undefined;
   const separa = arma === 'lanza' || arma === 'alabarda' || arma === 'guadana' ? 11 : dos(arma) ? 4.8 : arma === 'ballesta' ? -9 : 0;
   const agarre = P.agarreI ?? separa, pega = Math.max(0, Math.min(1, P.pegaI ?? (agarre ? 1 : 0)));
   if (agarre && pega > 0 && !P.caida && arma !== 'arco' && arma !== 'nada' && arma !== 'puno') {
-    let meta = arma === 'ballesta' ? add(add(der.mano, F, 7 * S), R, 2.5 * S) : add(der.mano, der.eje, -agarre * S);
+    const ejeMango = arma === 'baculo' || arma === 'cetro' ? vara ?? [0, 0, 1] : der.eje;
+    let meta = arma === 'ballesta' ? add(add(der.mano, F, 7 * S), R, 2.5 * S) : add(der.mano, ejeMango, -agarre * S);
     if (pega < 1) meta = mez(izq.mano, meta, pega);
     const afuera = nor(add(R, [0, 0, 0], izq.s));
     const pol = nor(add([0, 0, -1], afuera, 0.8));
@@ -317,8 +321,7 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
     Object.assign(izq, { codo, mano, mun: add(mano, d2, -1.9 * S), d1: nor(sub(codo, izq.hom)), d2, eje: der.eje });
   }
   // el báculo: casi vertical en la mano, o inclinado como diga la pose
-  const vara = P.vara ? dirW([Math.sin(rad(P.vara[0])), Math.sin(rad(P.vara[1])), Math.cos(rad(P.vara[0])) * Math.cos(rad(P.vara[1]))]) : undefined;
-  return { S, A, F, R, zc, hombroZ, cz, W: Wc, T, cab, ejesT: ejesDe(T, [0, 0, zc + 10]), ejesCab: ejesDe(cab, [0, 0, cz]), piernas, brazos, caida: P.caida, Pv, pose: P, vara };
+  return { S, A, F, R, zc, hombroZ, cz, W: Wc, T, cab, ejesT: ejesDe(T, [0, 0, zc + 10]), ejesCab: ejesDe(cab, [0, 0, cz]), piernas, brazos, caida: P.caida, Pv, pose: P, vara, varaPie };
 }
 
 const dot3 = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -639,6 +642,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   if (eq.izq) ps.push(...manoIzq(e, eq.izq, eq.arma?.tipo));
   if (e.pose?.objetoI === 'frasco') ps.push(...frasco(e, acc === 'presentar' ? f / CUADROS.presentar : 0));
   if (acc === 'presentar' && cu.presentacion) ps.push(...efectos(cu, eq, e, dir, f));
+  if (acc === 'lanzar' && cu.presentacion === 'naturaleza') ps.push(...raices(e, f));
   void R; void F;
   return ps;
 }
@@ -728,6 +732,25 @@ function efectos(cu: Cuerpo, eq: Equipo, e: Esqueleto, dir: Dir, f: number): Pie
     }
   }
   return ps;
+}
+
+/** El druida arranca raíces del piso: crecen retorcidas desde el suelo siguiendo a la mano que sube y se retraen. */
+function raices(e: Esqueleto, f: number): Pieza[] {
+  const u = f / CUADROS.lanzar, S = e.S, m = e.brazos[1].mano;
+  const crece = Math.min(1, Math.max(0, (u - 0.2) / 0.3)) * (u < 0.8 ? 1 : Math.max(0, 1 - (u - 0.8) / 0.2));
+  if (crece <= 0) return [];
+  const cs: Comp[] = [];
+  for (let k = 0; k < 3; k++) {
+    const a = k * 2.1 + 0.4, base: V3 = [m[0] + Math.cos(a) * 3.2 * S, m[1] + Math.sin(a) * 3.2 * S, 0];
+    const alto = Math.max(2, (m[2] - 3 * S) * crece * (0.75 + 0.15 * k));
+    let prev = base;
+    for (let i = 1; i <= 5; i++) {
+      const t = i / 5, q: V3 = [base[0] + (m[0] - base[0]) * t * 0.7 + Math.sin(i * 1.7 + k) * 1.2 * S, base[1] + (m[1] - base[1]) * t * 0.7 + Math.cos(i * 1.3 + k) * 1.2 * S, alto * t];
+      cs.push(hueso(prev, q, (1.9 - t * 1.2) * S, (1.6 - t * 1.2) * S, { mat: 'corteza' }));
+      prev = q;
+    }
+  }
+  return [masa(cs, { mat: 'corteza', suave: 0.8 })];
 }
 
 /** Esqueleto de huesos: cráneo con cuencas, mandíbula, columna, costillar en arcos, pelvis y huesos largos. */
@@ -977,13 +1000,26 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
       const izq = e.brazos[1];
       const c = izq.mano;
       if (tipo === 'arco') {
-        const arr: V3 = [c[0], c[1], c[2] + 15 * S], abj: V3 = [c[0], c[1], c[2] - 15 * S], comba = add(c, F, 3.4 * S);
-        const pts = [arr, add(add(comba, [0, 0, 9 * S]), F, -0.8 * S), comba, add(add(comba, [0, 0, -9 * S]), F, -0.8 * S), abj];
-        for (let i = 0; i < 4; i++) ps.push(palo(pts[i], pts[i + 1], (i === 1 || i === 2 ? 0.75 : 0.55) * S, { mat: mango, r1: (i === 1 || i === 2 ? 0.75 : 0.55) * S }));
-        const tensa = e.pose?.tensa !== false;
-        if (tensa) ps.push(palo(arr, m, 0.15 * S, { mat: 'cuerda' }), palo(m, abj, 0.15 * S, { mat: 'cuerda' }));
+        // el puño izquierdo cierra sobre la empuñadura, en el centro del arco; las palas se curvan hacia atrás (hacia la
+        // cuerda) y el arco queda en el plano vertical de la línea de tiro: de la mano que tira a la que sostiene
+        const fT = e.ejesT ? nor([e.ejesT[0][0], e.ejesT[0][1], 0]) : F, haciaArco = sub(c, m); // (un arco suelto no tiene torso)
+        const tira = e.pose?.tensa !== false && dot3(haciaArco, fT) > 6 * S;
+        const tiro = tira ? nor(haciaArco) : nor(add(fT, F, 1));
+        const arriba = nor(sub([0, 0, 1], [tiro[0] * tiro[2], tiro[1] * tiro[2], tiro[2] * tiro[2]]));
+        const en = (k: number, atras: number): V3 => add(add(c, arriba, k * S), tiro, -atras * S);
+        const arr = en(15, 3.6), abj = en(-15, 3.6);
+        const pts = [arr, en(9, 1.2), en(2.6, -0.3), en(-2.6, -0.3), en(-9, 1.2), abj];
+        for (let i = 0; i < 5; i++) ps.push(palo(pts[i], pts[i + 1], (i === 2 ? 0.95 : i === 1 || i === 3 ? 0.75 : 0.55) * S, { mat: mango, r1: (i === 2 ? 0.95 : i === 0 || i === 4 ? 0.75 : 0.55) * S }));
+        // la cuerda: una V hasta los dedos que tiran; si no tira, recta entre las puntas (del lado del cuerpo)
+        const culatin = tira ? m : en(0, 3.6);
+        if (tira) ps.push(palo(arr, m, 0.15 * S, { mat: 'cuerda' }), palo(m, abj, 0.15 * S, { mat: 'cuerda' }));
         else ps.push(palo(arr, abj, 0.15 * S, { mat: 'cuerda' }));
-        if (tensa && e.pose?.flecha !== false) ps.push(palo(m, add(comba, F, 2 * S), 0.3 * S, { mat: 'madera_lisa' }), poliedro([add(add(comba, F, 2 * S), [0, 0, 0.8]), add(add(comba, F, 2 * S), [0, 0, -0.8]), add(comba, F, 4.5 * S)], { mat }));
+        // la flecha: del culatín en la cuerda, apoyada sobre el puño izquierdo, con la punta delante del arco
+        const apoyo = add(c, arriba, 1.1 * S), punta = add(apoyo, tiro, 6 * S);
+        if (e.pose?.flecha !== false && (tira || len(sub(m, culatin)) < 6 * S)) {
+          ps.push(palo(culatin, punta, 0.3 * S, { mat: 'madera_lisa' }));
+          ps.push(poliedro([add(punta, arriba, 0.8), add(punta, arriba, -0.8), add(punta, tiro, 2.5 * S)], { mat }));
+        }
       } else {
         // la ballesta va al frente, entre las dos manos, apuntando hacia adelante
         // con las dos manos va entre ellas apuntando adelante; con la izquierda libre cuelga de la derecha en la dirección del puño
@@ -1007,6 +1043,11 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
 /** La vara del báculo o el cetro por la mano: [pie, tope, eje]; casi vertical salvo que la pose la incline. */
 function varaDe(e: Esqueleto, m: V3, lg: number): [V3, V3, V3] {
   const S = e.S;
+  if (e.varaPie && e.vara) {
+    // apoyada: el pie queda en su punto y la vara (de largo fijo) pasa por la mano
+    const L = len(sub(m, e.varaPie));
+    return [e.varaPie, add(m, e.vara, Math.max(12 * S, 64 * S * lg - L)), e.vara];
+  }
   if (!e.vara) return [add([m[0], m[1], Math.max(0.5, m[2] - 24 * S * lg)], e.F, 1.2), add([m[0], m[1], m[2] + 26 * S * lg], e.F, 2.4), [0, 0, 1]];
   const v = e.vara, pie = add(m, v, -24 * S * lg);
   if (pie[2] < 0.5) { const k = (m[2] - 0.5) / Math.max(0.01, m[2] - pie[2]); pie[0] = m[0] + (pie[0] - m[0]) * k; pie[1] = m[1] + (pie[1] - m[1]) * k; pie[2] = 0.5; }
