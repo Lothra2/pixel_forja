@@ -327,10 +327,23 @@ function portada(c: G, w: number, hr: number, n: number, sale: number, z0: numbe
   c.elip(0, fondo + 2.6, zd + (altoOjiva(w, hr, K) - hr * 0.78) * 0.45, w * 0.08, 0.6, (altoOjiva(w, hr, K) - hr * 0.78) * 0.2, { mat: 'abo_estatua', tono: -0.05 });
   c.caja(0, fondo + 2.1, z0, w - 0.4, 0.8, zd - 3 - z0, { mat: L, resta: true });
   if (modo === 'abierta') {
-    // adentro: oscuro, y el rojo que sube del piso de la nave
-    c.caja(0, fondo - 6, z0, w + 4, 1, zd, { mat: 'negro' });
-    c.caja(0, fondo - 3.5, z0, w - 2, 5, 0.6, { mat: st.lit ? 'abo_brasa' : 'negro', tono: st.lit ? -0.45 + st.p * 0.3 : 0 });
-    for (const sx of [-1, 1]) { const h = c.sub(sx * (w / 2 - 0.5), fondo + 1.4, z0, sx * -72); h.caja(-sx * w / 4, -0.8, 0, w / 2 - 0.6, 1.6, zd - 3.5 - z0, { mat: 'abo_madera', tono: -0.15 }); }
+    // adentro: la nave arde. El fondo es un muro de luz roja que late, el piso es brasa viva y una lengua de luz
+    // sale por el umbral y baja por la escalinata (el resplandor de la fachada, centrado en la puerta, tiñe la piedra)
+    if (st.lit) {
+      c.caja(0, fondo - 6, z0, w + 4, 1, zd, { mat: 'abo_vitral', tono: -0.05 + st.p * 0.35 + (st.herida ? 0.1 : 0) });
+      c.caja(0, fondo - 3.5, z0, w - 2, 5, 0.6, { mat: 'abo_brasa', tono: 0.05 + st.p * 0.35 });
+      // núcleo más claro al centro del fondo: el corazón de la luz
+      c.elip(0, fondo - 5, z0 + hr * 0.38, w * 0.36, 0.8, hr * 0.42, { mat: 'abo_chispa', tono: 0.05 + st.p * 0.35 });
+      c.elip(0, fondo - 4.6, z0 + hr * 0.3, w * 0.18, 0.6, hr * 0.26, { mat: 'abo_chispa', tono: 0.4 + st.p * 0.3 });
+      // el piso de la nave encendido, que se ve hacia adentro
+      c.caja(0, fondo - 1, z0 + 0.1, w - 1, 8, 0.4, { mat: 'abo_vitral', tono: 0.1 + st.p * 0.3 });
+      // umbral encendido y reflejo en el primer escalón
+      c.caja(0, fondo + 2.4, z0 - 0.2, w - 1, 2.2, 0.5, { mat: 'abo_brasa', tono: -0.1 + st.p * 0.3 });
+    } else {
+      c.caja(0, fondo - 6, z0, w + 4, 1, zd, { mat: 'negro' });
+      c.caja(0, fondo - 3.5, z0, w - 2, 5, 0.6, { mat: 'negro' });
+    }
+    for (const sx of [-1, 1]) { const h = c.sub(sx * (w / 2 - 0.5), fondo + 1.4, z0, sx * (st.lit ? -104 : -72)); h.caja(-sx * w / 4, -0.8, 0, w / 2 - 0.6, 1.6, zd - 3.5 - z0, { mat: 'abo_madera', tono: -0.15 }); }
   } else if (modo === 'cerrada') {
     for (const sx of [-1, 1]) { c.caja(sx * w / 4, fondo + 1.4, z0, w / 2 - 0.4, 1.6, zd - 3 - z0, { mat: 'abo_madera', tono: -0.05 + sx * 0.03 }); for (const z of [0.2, 0.5, 0.8]) c.caja(sx * w / 4, fondo + 2.4, z0 + (zd - 3 - z0) * z, w / 2 - 2, 0.6, 1.4, { mat: 'mu_hierro' }); }
     c.cil(w * 0.06, fondo + 2.6, z0 + (zd - z0) * 0.45, 1.3, 0.6, { mat: 'mu_hierro', eje: [0, 1, 0] });
@@ -474,6 +487,14 @@ function fachada(g: G, st: Estado) {
   for (const sx of [-1, 1]) torre(g, sx * XT, sx, st);
   // escalinata, base sucia, sillares caídos
   escalinata(g, YF + 10, 4, 64, 3.6, 2.2);
+  // el abanico de luz que sale por la puerta: sobre cada escalón y en el piso de afuera, más ancho y más tenue a medida que se aleja
+  if (st.lit) {
+    for (let i = 0; i < 4; i++) {
+      const y = YF + 10 + (3 - i) * 3.6 + 1.8, z = (i + 1) * 2.2 + 0.05, k = (3 - i) / 3;
+      g.caja(0, y, z, 26 + k * 12, 3.2, 0.25, { mat: 'abo_brasa', tono: -0.05 - k * 0.25 + st.p * 0.25 });
+    }
+    for (let j = 0; j < 3; j++) g.caja(0, YF + 10 + 14.4 + 3 + j * 6, 0.05, 40 + j * 14, 6, 0.2, { mat: 'abo_brasa', tono: -0.4 - j * 0.15 + st.p * 0.2 });
+  }
   base(fc, -XC, XC, 60, 1);
   base(cara(g, XT, YT1 + 9, 0), -LT / 2 - 4, LT / 2 + 4, 90, 2);
   base(cara(g, XT + LT / 2 + 9, (YT0 + YT1) / 2, -90), -LT / 2, LT / 2, 120, 2);
@@ -483,7 +504,8 @@ function fachada(g: G, st: Estado) {
   for (let i = 0; i < 4; i++) bloque(g, rr(a, -90, 96), YT1 + rr(a, 12, 22), -0.6, 9 + a.r() * 4, 6, 5 + a.r() * 2, { mat: SG, giro: a.r() * 90, incl: rr(a, -14, 14), b: 1.2, j: 1.4 });
   if (st.herida) { const p = g.sub(98, YT1 - 10, 3, 30, 84, 'x'); pinaculo(p, 0, 0, -20, 8, 44, SG); cascotes(g, 8, 10, 8, SG, 96, YT1 - 4, 2.6); }
   matas(g, 14, 96, 10, 0, YT1 + 14);
-  return { piezas: g.ps, resplandor: st.lit ? { c: [0, YF - 10, 170] as V3, r: (st.herida ? 74 : 58) + st.p * 22, color: st.p > 0.5 ? '#ff4a1c' : '#c42410' } : undefined };
+  // la luz sale por la puerta: centro justo afuera del umbral y bajo, para teñir de rojo la escalinata, las jambas y el piso
+  return { piezas: g.ps, resplandor: st.lit ? { c: [0, YF + 16, 22] as V3, r: (st.herida ? 120 : 100) + st.p * 34, color: st.p > 0.5 ? '#ff3a12' : '#d01c0a' } : undefined };
 }
 
 // ------------------------------------------------------------------ la nave: cinco tramos con arbotantes
