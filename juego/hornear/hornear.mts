@@ -44,10 +44,13 @@ if (GRUPOS.includes('n')) for (const n of Object.values(NPCS) as any[]) {
   if (SOLO && !SOLO.includes(n.id)) continue;
   for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'n', clave: `${n.id}/quieto/${dir}`, tipo: 'personaje', cuerpo: n.cuerpo, equipo: n.equipo, dir, acc: 'quieto', cuadros: CUADROS.quieto });
 }
-const { BESTIAS } = await import(join(raiz, 'catalogo/bestias.ts'));
+const { BESTIAS: BESTIAS1 } = await import(join(raiz, 'catalogo/bestias.ts'));
+// Thor (el perro de la familia): un monstruo por tramo de armadura, thor_0 a thor_5
+const { THOR_MONSTRUOS } = await import(join(raiz, 'catalogo/thor.ts'));
+const BESTIAS = [...BESTIAS1, ...THOR_MONSTRUOS];
 if (GRUPOS.includes('b')) for (const bs of BESTIAS as any[]) {
   if (SOLO && !SOLO.includes(bs.id)) continue;
-  for (const acc of ['quieto', 'caminar', 'atacar', 'morir', 'especial']) {
+  for (const acc of ['quieto', 'caminar', 'correr', 'atacar', 'herido', 'morir', 'especial']) {
     const id = `mon_${bs.id}_${acc}`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue;
     for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'b', clave: `${bs.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
   }

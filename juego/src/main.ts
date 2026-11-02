@@ -12,7 +12,7 @@ import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal,
 import { abrirTienda } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, opciones as opcionesRender, type Pick } from './render/escena';
-import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
+import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
 import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA } from './mundo/actos';
@@ -88,7 +88,7 @@ function atlasZona(zid: string): Set<string> {
   if (def.tipo === 'pueblo') for (const n of GENTE[def.acto] ?? []) for (const a of atlasDe('m', clavesCon('m', `${n}/`))) s.add(a);
   for (const a of atlasDe('w', Object.keys(m.w ?? {}))) s.add(a);
   // invocaciones del héroe
-  for (const id of ['esqueleto', 'esqueleto_arquero', 'ogro', 'necrofago', 'espectro', 'thor', 'thor_0', 'thor_1', 'thor_2', 'thor_3', 'thor_4', 'thor_5', 'lobo_sombrio']) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
+  for (const id of ['esqueleto', 'esqueleto_arquero', 'ogro', 'necrofago', 'espectro', `thor_${tramoThor(j!.heroe.d)}`, `thor_${Math.min(5, tramoThor(j!.heroe.d) + 1)}`]) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
   // armas del arsenal para íconos
   for (const k of Object.keys(m.o)) if (k.startsWith('arma_') && (k.endsWith('|flota') || k.endsWith('|suelo'))) for (const e of m.o[k].f) s.add(e[0]);
   return s;

@@ -1286,7 +1286,9 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
     if (!m.objetivo) { let bd = 8; for (const e of enem) { const d = dist(e.x, e.y, m.x, m.y); if (d < bd) { bd = d; m.objetivo = e; } } }
     if (m.objetivo) { pelear(j, m, m.objetivo, dt, lento); return; }
     const d = dist(m.x, m.y, h.x, h.y);
-    if (d > 3) { moverHacia(j, m, h.x, h.y, m.vel * 1.4, dt); m.acc = 'caminar'; } else if (m.acc === 'caminar') m.acc = 'quieto';
+    // Thor galopa si el héroe corre (o si quedó lejos)
+    const galopa = m.invocaId === 'thor' && (h.acc === 'correr' || d > 7);
+    if (d > 3) { moverHacia(j, m, h.x, h.y, m.vel * (galopa ? 1.8 : 1.4), dt); m.acc = (galopa ? 'correr' : 'caminar') as any; } else if (m.acc === 'caminar' || (m.acc as string) === 'correr') m.acc = 'quieto';
     if (d > 20) { m.x = h.x + entre(-1, 1); m.y = h.y + entre(-1, 1); }
     return;
   }
