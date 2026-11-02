@@ -311,13 +311,13 @@ function ala(a: Ala): { piezas: Pieza[]; borde: V3[]; muneca: V3 } {
     const ult2 = tips[nd - 1], mc2 = mez(ult2, cola, 0.5), g2 = len(sub(cola, ult2)), fuera = nor(sub(mc2, mez(pM, pC, 0.5)));
     festones.push([add(mc2, fuera, g2 * 0.3), nor(sub(cola, ult2)), g2 * 0.5]);
   }
-  for (const [c, e, r] of festones) { const x = nor(sub(e, esc(n2, pto(e, n2)))), y = nor(cruz(n2, x)); ps.push({ k: 'elip', c, ex: x, ey: y, ez: cruz(x, y), r: [r, r * 0.9, 6], mat: a.membrana, resta: true } as Pieza); }
+  for (const [c, e, r] of festones) { const x = nor(sub(e, esc(n2, pto(e, n2)))), y = nor(cruz(n2, x)); ps.push({ k: 'elip', c, ex: x, ey: y, ez: cruz(x, y), r: [r, r * 0.9, 1.8], mat: a.membrana, resta: true } as Pieza); }
   // agujeros que la atraviesan (cavan solo las hojas, que se armaron antes)
   const nag = rota > 0 ? 2 + Math.floor(rota * 2) : 0;
   for (let k = 0; k < nag; k++) {
     const i = Math.floor(hr(sem * 13 + k) * (nd - 1)), c = mez(pM, mez(tips[i], tips[i + 1], 0.5), 0.35 + 0.3 * hr(sem * 17 + k)), e = sub(tips[i], pM);
     const x = nor(sub(e, esc(n2, pto(e, n2)))), y = nor(cruz(n2, x));
-    ps.push({ k: 'elip', c, ex: x, ey: y, ez: cruz(x, y), r: [2.5 + 3 * hr(sem + k * 5), 1.6 + 1.5 * hr(sem + k * 7), 3], mat: a.membrana, resta: true } as Pieza);
+    ps.push({ k: 'elip', c, ex: x, ey: y, ez: cruz(x, y), r: [2.5 + 3 * hr(sem + k * 5), 1.6 + 1.5 * hr(sem + k * 7), 1.8], mat: a.membrana, resta: true } as Pieza);
   }
   // ---- huesos: husos alargados que se solapan (las juntas quedan como nudillos), los dedos curvos hacia el borde de
   // fuga, y una garra en el pulgar
@@ -348,7 +348,7 @@ type Armado = (acc: Acc, f: number) => Res;
 /** Los jefes: id, nombre, alto en unidades del mundo (sin cuernos ni efectos) y huella en celdas. */
 export const JEFES: { id: string; nombre: [string, string]; alto: number; huella: number }[] = [];
 
-/** Masas de tronco de los jefes que caen tendidos: al morir, si se meten en el piso, se alza el cuerpo entero. */
+/** Masas del cuerpo de los jefes que caen tendidos: al morir, si se meten en el piso, se alza el cuerpo entero. */
 const TRONCO = new WeakSet<Pieza>();
 const tronco = (p: Pieza) => { TRONCO.add(p); return p; };
 /** Lo más bajo de una masa (cota por componentes: cada bulto por su extensión vertical y cada hueso por sus puntas). */
@@ -386,7 +386,7 @@ function jefe(id: string, nombre: [string, string], alto: number, huella: number
           // tendido: el tronco no se mete en el piso (se alza todo el cuerpo, salvo lo que ya está pintado en el piso)
           let lo = Infinity;
           for (const p of r.piezas) if (TRONCO.has(p)) lo = Math.min(lo, fondoMasa(p));
-          if (lo < -0.2) { const dz = -lo + 0.4; r.piezas = r.piezas.map((p) => (techo(p) < 2.5 ? p : alzar(p, dz))); if (r.resplandor) r.resplandor = { ...r.resplandor, c: [r.resplandor.c[0], r.resplandor.c[1], r.resplandor.c[2] + dz] }; }
+          if (lo < -2) { const dz = -lo + 0.4; r.piezas = r.piezas.map((p) => (techo(p) < 2.5 ? p : alzar(p, dz))); if (r.resplandor) r.resplandor = { ...r.resplandor, c: [r.resplandor.c[0], r.resplandor.c[1], r.resplandor.c[2] + dz] }; }
         }
         const res = r.resplandor ? { ...r.resplandor, c: [r.resplandor.c[0] * c - r.resplandor.c[1] * s, r.resplandor.c[0] * s + r.resplandor.c[1] * c, r.resplandor.c[2]] as V3 } : undefined;
         return { piezas: girarPiezas(r.piezas, g), resplandor: res, sinSombra: r.sinSombra };
@@ -451,8 +451,8 @@ function ozmaren(acc: Acc, f: number): Res {
     ruge = K([0, 1, 1, 0.6, 0.3, 0, 0, 0], f); pecho = K([0, 0.5, 1, 0.9, 0.7, 0.5, 0.4, 0.4], f); columna = K([0, 0.5, 1, 0.55, 0.2, 0, 0, 0], f);
     frio = K([0, 0, 0, 0.2, 0.45, 0.7, 0.9, 1], f); roto = K([0, 0, 0.2, 0.5, 0.75, 1, 1, 1], f); latido = K([1, 1, 1, 0.6, 0.3, 0, 0, 0], f); humo = K([0, 0, 0, 0.2, 0.5, 0.8, 1, 1], f);
     alaAbre = K([0.55, 1, 1, 0.8, 0.6, 0.45, 0.35, 0.3], f); alaBate = K([12, 30, 26, 6, -14, -30, -40, -44], f);
-    garra[0] = [K([22, 0, -4, 24, 40, 36, 30, 28], f), K([-64, -80, -82, -70, -66, -64, -62, -62], f), K([76, 150, 156, 80, 34, 12, 5, 4], f)];
-    garra[1] = [K([18, -4, -6, 22, 38, 34, 30, 28], f), K([64, 80, 82, 70, 66, 64, 62, 62], f), K([78, 146, 152, 78, 32, 12, 5, 4], f)];
+    garra[0] = [K([22, 0, -4, 24, 40, 36, 30, 28], f), K([-64, -80, -82, -70, -66, -64, -62, -62], f), K([76, 150, 156, 80, 40, 28, 30, 32], f)];
+    garra[1] = [K([18, -4, -6, 22, 38, 34, 30, 28], f), K([64, 80, 82, 70, 66, 64, 62, 62], f), K([78, 146, 152, 78, 38, 28, 30, 32], f)];
     baja[0] = [K([36, 22, 18, 30, 36, 36, 34, 34], f), -30, K([94, 112, 112, 80, 56, 46, 42, 40], f)];
     baja[1] = [K([32, 20, 16, 28, 34, 34, 32, 32], f), 30, K([98, 114, 114, 82, 58, 48, 44, 42], f)];
     pie[0] = [K([-3, -6, -10, -20, -34, -42, -46, -46], f), -27, 0]; pie[1] = [K([5, 2, -4, -16, -30, -40, -44, -44], f), 27, 0];
@@ -460,7 +460,7 @@ function ozmaren(acc: Acc, f: number): Res {
     // el pecho se abre como dos puertas y sale una columna de fuego al cielo; las alas se despliegan enteras
     pecho = K([0, 0.15, 0.5, 1, 1, 1, 0.7, 0.25], f); columna = K([0, 0, 0.25, 0.75, 1, 1, 0.6, 0.15], f); ruge = K([0, 0.2, 0.6, 1, 1, 1, 0.6, 0.2], f);
     tp = K([12, 22, 10, -10, -14, -12, -4, 6], f); cab = K([4, 18, 8, -4, -8, -6, 0, 4], f); pz = K([0, -8, -6, 2, 4, 3, 1, 0], f); mand = K([0.3, 0.3, 0.6, 1, 1, 1, 0.6, 0.35], f);
-    alaAbre = K([0.55, 0.45, 0.75, 1, 1, 1, 0.85, 0.6], f); alaBate = K([12, 6, 10, 22, 26, 24, 18, 12], f); alaLag = K([0, 0, -12, -16, -4, 4, 6, 0], f); latido = 1;
+    alaAbre = K([0.55, 0.45, 0.72, 0.9, 0.92, 0.9, 0.8, 0.6], f); alaBate = K([12, 6, 10, 22, 26, 24, 18, 12], f); alaLag = K([0, 0, -12, -16, -4, 4, 6, 0], f); latido = 1;
     for (const [i, s] of [[0, -1], [1, 1]] as [number, number][]) {
       garra[i] = [K([22, 32, 20, 2, -4, -2, 8, 18], f), s * K([64, 48, 72, 98, 104, 102, 88, 68], f), K([76, 72, 104, 150, 160, 158, 130, 86], f)];
       baja[i] = [K([36, 38, 30, 16, 12, 14, 22, 32], f), s * K([24, 20, 38, 54, 58, 56, 44, 28], f), K([94, 90, 102, 114, 118, 116, 106, 96], f)];
@@ -489,7 +489,7 @@ function ozmaren(acc: Acc, f: number): Res {
   // ---- alas (primero: sus agujeros cavan solo la membrana)
   const bordes: V3[] = [];
   for (const s of [1, -1]) {
-    const w = ala({ raiz: ap(tor, [-22, s * 18, 60]), adel: nor(mv(tor.m, [0.6, 0, -0.8])), afuera: nor(mv(tor.m, [-0.45, s, 0])), arriba: nor(mv(tor.m, [-0.3, 0, 1])), L1: 44, L2: 50, Ld: 80, abre: alaAbre, bate: alaBate, lag: alaLag, hueso: PF, tono: enf - 0.06, membrana: ceniza ? 'jf_ceniza' : 'jf_membrana_fuego', grueso: 3, rota: 0.45 + roto * 0.4, semilla: s > 0 ? 3 : 4, dedos: 5 });
+    const w = ala({ raiz: ap(tor, [-22, s * 18, 60]), adel: nor(mv(tor.m, [0.6, 0, -0.8])), afuera: nor(mv(tor.m, [-0.45, s, 0])), arriba: nor(mv(tor.m, [-0.3, 0, 1])), L1: 42, L2: 46, Ld: 73, abre: alaAbre, bate: alaBate, lag: alaLag, hueso: PF, tono: enf - 0.06, membrana: ceniza ? 'jf_ceniza' : 'jf_membrana_fuego', grueso: 3, rota: 0.45 + roto * 0.4, semilla: s > 0 ? 3 : 4, dedos: 5 });
     ps.push(...w.piezas);
     bordes.push(...w.borde);
   }
@@ -613,7 +613,7 @@ function ozmaren(acc: Acc, f: number): Res {
     const B = manosB[1];
     tramo = [...colgar(cadA, B, 44 + Math.sin(ph * TAU) * 3, 14).slice(0, -1), ...bezier(B, add(B, [18, 14, -40]), [54 + Math.sin(ph * TAU) * 4, 46, 0.9], 8), [76, 40, 0.9], [84, 26, 0.9]];
   }
-  ps.push(...cadena(tramo, 5.4, 2.4, eslabon));
+  ps.push(...cadena(tramo, 6.2, 2.6, eslabon));
   if (latigo > 0.9 && cadB[2] < 10) {
     // donde pega la punta revienta el piso en fuego
     for (let k = 0; k < 4; k++) ps.push(llamaOrg(add(cadB, [Math.cos(k * 1.6) * 9, Math.sin(k * 1.6) * 9, 0]), [Math.cos(k * 1.6) * 0.3, Math.sin(k * 1.6) * 0.3, 1], 30 - (k % 2) * 8, 5.5, f, nC, 120 + k));
@@ -1508,8 +1508,8 @@ function reyEscarcha(acc: Acc, f: number): Res {
     for (const g of [1, -1]) c.piernas[i].push(bulto(add(add(mez(rd, tb, 0.27), fwc, -1.35 * r.A), ldc, g * 0.75 * r.A), [3 * S, 1.3 * r.A, 1.45 * r.A], { eje: ca, ...km }));
   }
   ps.push(tronco(masa(c.tronco, { mat: Z, suave: 1.8 * S })));
-  c.brazos.forEach((b) => ps.push(masa(b, { mat: Z, suave: 1.5 * S })));
-  c.piernas.forEach((b) => ps.push(masa(b, { mat: Z, suave: 1.5 * S })));
+  c.brazos.forEach((b) => ps.push(tronco(masa(b, { mat: Z, suave: 1.5 * S }))));
+  c.piernas.forEach((b) => ps.push(tronco(masa(b, { mat: Z, suave: 1.5 * S }))));
   // calzas de piel, botas envueltas, taparrabo de piel y cinturón con hebilla de hielo
   for (let i = 0; i < 2; i++) {
     ps.push(masa([hueso(mez(r.rod[i], r.tob[i], 0.25), r.tob[i], 2.9 * r.A, 2.2 * r.A, { mat: 'cu_pelaje_gris' }), hueso(r.tob[i], r.suelo[i], 2.4 * r.A, 2.2 * r.A, { mat: 'cu_pelaje_gris' })], { mat: 'cu_pelaje_gris', suave: S }));
@@ -1735,8 +1735,8 @@ function verdugo(acc: Acc, f: number): Res {
   c.tronco.push(bT(tor, [1.6 * S, 0, 9.6 * S + respira * 0.4 * S], [3.2 * r.A * (1 + respira * 0.07), 5.2 * r.A * (1 + respira * 0.04), 4.2 * S], { mat: Pl }), bT(tor, [2.6 * S, 0, 3.4 * S], [3.4 * r.A * (1 + respira * 0.08), 4.4 * r.A, 3.6 * S], { mat: Pl }));
   for (const s of [1, -1]) c.tronco.push(hueso(ap(tor, [-1 * S, s * 1.4 * r.A, (15.6 + respira * 0.5) * S]), ap(tor, [-0.6 * S, s * 5.6 * r.A, (13.6 + respira * 0.4) * S]), 2.6 * r.A, 2.2 * r.A, { mat: Pl }));
   ps.push(tronco(masa(c.tronco, { mat: Pl, suave: 1.8 * S })));
-  c.brazos.forEach((b) => ps.push(masa(b, { mat: Pl, suave: 1.5 * S })));
-  c.piernas.forEach((b) => ps.push(masa(b, { mat: Pl, suave: 1.5 * S })));
+  c.brazos.forEach((b) => ps.push(tronco(masa(b, { mat: Pl, suave: 1.5 * S }))));
+  c.piernas.forEach((b) => ps.push(tronco(masa(b, { mat: Pl, suave: 1.5 * S }))));
   const T2 = (q: V3) => ap(tor, esc(q, S));
   for (const [a, b] of [[[6.6, -5, 10], [7.6, 1, 4]], [[5.2, 6.5, 13], [6.4, 2, 9]], [[3, -7.5, 15], [4.6, -4, 12.5]]] as [V3, V3][]) {
     const pa = T2(a), pb = T2(b);
@@ -1780,13 +1780,16 @@ function verdugo(acc: Acc, f: number): Res {
     for (let k = 0; k < 3; k++) {
       // péndulo: la cadena se balancea con fase propia y el garfio sigue la cadena
       const a0 = ap(pel, [(4.6 - k * 1.2) * r.A, (k - 1) * 4.6 * r.A - 2.4 * r.A, 3 * S]), L = 9 + k * 5, an = Math.sin(ph * TAU + k * 1.9) * (acc === 'caminar' ? 0.5 : 0.3), an2 = Math.cos(ph * TAU + k * 1.3) * 0.18;
-      const dir: V3 = nor([Math.sin(an), Math.sin(an2), -Math.cos(an)]), b0 = add(a0, dir, L);
+      let dir: V3 = nor([Math.sin(an), Math.sin(an2), -Math.cos(an)]), b0 = add(a0, dir, L);
+      if (b0[2] < 2) { b0 = [b0[0], b0[1], 2]; dir = nor([dir[0] + 0.3, dir[1], -0.2]); }
       ps.push(...cadena([a0, mez(a0, b0, 0.5), b0], 2.2, 1.1, () => 'hierro_oxido'), ...garfio(b0, dir, 1.6, k * 1.7 + an * 2));
     }
     // dos cadenas más que cuelgan del cuello de cuero con garfios grandes, mecidas al revés que las del cinto
     for (const s of [1, -1]) {
       const a0 = T2([2.6, s * 6.4, 13.6]), L = 22 + (s > 0 ? 6 : 0), an = -Math.sin(ph * TAU + s) * (acc === 'caminar' ? 0.45 : 0.25);
-      const dir: V3 = nor(add(mv(tor.m, [0.25, s * 0.15, 0]), [Math.sin(an), 0, -Math.cos(an)])), b0 = add(a0, dir, L);
+      let dir: V3 = nor(add(mv(tor.m, [0.25, s * 0.15, 0]), [Math.sin(an), 0, -Math.cos(an)])), b0 = add(a0, dir, L);
+      // tendido en el piso, la cadena queda apoyada y el garfio acostado
+      if (b0[2] < 2) { b0 = [b0[0], b0[1], 2]; dir = nor([dir[0] + 0.4, dir[1], -0.2]); }
       ps.push(...cadena(colgar(a0, b0, 2, 4, -99), 2.4, 1.2, () => 'hierro_oxido'), ...garfio(b0, dir, 2.2, s + an * 2));
     }
   }
@@ -1821,7 +1824,7 @@ function verdugo(acc: Acc, f: number): Res {
         eje = nor(mv(tor.m, [-0.5, -0.55, 1])); filoD = mv(tor.m, [1, 0, 0.15]); filoD = nor(sub(filoD, esc(eje, pto(filoD, eje))));
         base = add(mu, eje, 1.2 * S);
       }
-    } else { base = [26 * S, -14 * S, 1.2]; eje = nor([0.7, -0.7, 0]); filoD = [0, 0, 1]; if (len(cruz(eje, filoD)) < 0.1) filoD = [1, 0, 0]; filoD = nor(sub(filoD, esc(eje, pto(filoD, eje)))); }
+    } else { base = [26 * S, -14 * S, 2.2]; eje = nor([0.7, -0.7, 0]); filoD = nor([0.7, 0.7, 0]); }
     const lado = nor(cruz(eje, filoD));
     const h0 = add(base, eje, -5), h1 = add(base, eje, 9);
     ps.push(palo(h0, h1, 1.5, { mat: 'madera_vieja' }), esfera(...h0, 2, { mat: 'hierro_oxido' }));
