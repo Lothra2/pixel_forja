@@ -1937,6 +1937,17 @@ function fondoRareza(l: Lienzo, it: LootItem, x: number, y: number, w: number, h
 }
 
 /** Achica un raster promediando (para que los íconos no se corten ni se salgan de su casilla). */
+/** Recorta un raster a la caja de sus píxeles con alfa mayor a `umbral`, con un margen. */
+function recortarAlfa(r: Raster, umbral = 24, margen = 2): Raster {
+  let x0 = r.w, y0 = r.h, x1 = -1, y1 = -1;
+  for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) if (r.data[(y * r.w + x) * 4 + 3] > umbral) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return r;
+  x0 = Math.max(0, x0 - margen); y0 = Math.max(0, y0 - margen); x1 = Math.min(r.w - 1, x1 + margen); y1 = Math.min(r.h - 1, y1 + margen);
+  const o = createRaster(x1 - x0 + 1, y1 - y0 + 1);
+  for (let y = 0; y < o.h; y++) o.data.set(r.data.subarray(((y + y0) * r.w + x0) * 4, ((y + y0) * r.w + x1 + 1) * 4), y * o.w * 4);
+  return o;
+}
+
 function reducir(r: Raster, w: number, h: number): Raster {
   const o = createRaster(Math.max(1, w), Math.max(1, h));
   const kx = r.w / o.w, ky = r.h / o.h;
@@ -2044,8 +2055,10 @@ export function heroeEnNicho(cuerpo: Cuerpo, equipo: Equipo, cuadro = 0): Raster
   const k = JSON.stringify([cuerpo, equipo, cuadro % 4]);
   const c = cacheHeroe.get(k);
   if (c) return c;
-  const e = personajeEscena({ ...cuerpo, alto: (cuerpo.alto ?? 1) * 1.9 }, equipo, 'so', 'quieto', cuadro % 4);
-  const r = pintarEscena({ ...e, sinSombra: true, ss: 1 }).img;
+  const z = 1.9, e = personajeEscena({ ...cuerpo, alto: (cuerpo.alto ?? 1) * z }, equipo, 'so', 'quieto', cuadro % 4);
+  // luz de antorcha cálida al frente y arriba, como la del nicho, para que el metal y la cara lean
+  const luz = { c: [22 * z, -10 * z, 30 * z] as [number, number, number], r: 80 * z, color: '#ffc080' };
+  const r = recortarAlfa(pintarEscena({ ...e, resplandor: e.resplandor ?? luz, sinSombra: true, ss: 2 }).img, 24, 2);
   cacheHeroe.set(k, r);
   return r;
 }
@@ -2069,8 +2082,7 @@ export function panelInventario(idioma: Idioma = 'es', o: OpcInventario = {}): P
   if (!o.vacio) {
     const hh = o.heroe ?? HEROE_MUESTRA;
     const fig = heroeEnNicho(hh.cuerpo, hh.equipo, cuadro);
-    const k = Math.min(1, (N.h - 10) / fig.h), f1 = k < 1 ? reducir(fig, Math.floor(fig.w * k), Math.floor(fig.h * k)) : fig;
-    const f2 = f1.w > N.w - 4 ? centrado(f1, N.w - 4, f1.h) : f1;
+    const k = Math.min(1, (N.h - 12) / fig.h, (N.w - 6) / fig.w), f2 = k < 1 ? reducir(fig, Math.floor(fig.w * k), Math.floor(fig.h * k)) : fig;
     // sombra suave en el piso del nicho
     const sx = N.x + N.w / 2, sy = N.y + N.h - 8;
     for (let j = -6; j <= 6; j++) for (let i = -34; i <= 34; i++) { const d = Math.hypot(i / 34, j / 6); if (d < 1) l.mul(sx + i, sy + j, 0.55 + 0.45 * d); }

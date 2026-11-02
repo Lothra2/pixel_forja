@@ -410,14 +410,21 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       const peto = partes(e, cu, ['abdomen', 'pecho'], 1.5, to.mat);
       ps.push(masa(peto, { mat: to.mat, suave: 2.4 }));
       for (let i = 0; i < 3; i++) ps.push(cilindro(...e.W(0, 0, e.zc - 2 * S - i * 2.6 * S), (5.6 + i * 0.35) * A, 2.4 * S, { mat: to.mat, r1: (5.3 + i * 0.35) * A, tono: -i * 0.03 }));
-      ps.push(elipsoide(...T(4.9 * A, 0, e.zc + 15.2 * S), 0.6, 4.4 * A, 0.7, { mat: to.mat2 === 'cu_oro' ? 'cu_oro' : 'cu_oro', giro: 0 }));
+      ps.push(elipsoide(...T(4.9 * A, 0, e.zc + 15.2 * S), 0.6, 4.4 * A, 0.7, { mat: 'cu_oro', giro: 0 }));
+      // brazos de placa: brazal superior, codera con aleta y remache, para que el brazo lea como armadura y no como maniquí
+      for (const b of e.brazos) {
+        const lado = nor(cruz(b.d1, [0, 0, 1]));
+        ps.push(masa([hueso(mez(b.hom, b.codo, 0.28), mez(b.hom, b.codo, 0.86), 2.15 * A, 1.9 * A, { mat: to.mat })], { mat: to.mat }));
+        ps.push(masa([bulto(b.codo, [2.2 * A, 2.2 * A, 2.0 * S], { eje: b.d1, mat: to.mat, tono: 0.06 }), bulto(add(add(b.codo, lado, b.s * 1.2 * A), b.d1, -0.4 * S), [0.8 * A, 2.0 * A, 1.7 * S], { eje: b.d1, mat: to.mat, tono: 0.1 })], { mat: to.mat, suave: 0.6 }));
+        ps.push(esfera(...add(b.codo, lado, b.s * 2.1 * A), 0.45, { mat: 'cu_oro' }));
+      }
     }
     if (to.tipo === 'cuero') ps.push(palo(T(4.2 * A, 4.5 * A, e.zc + 17 * S), T(4.4 * A, -4 * A, e.zc + 3 * S), 0.55 * S, { mat: 'cu_cuero_negro' }));
   }
   if (eq.tabardo) {
-    const tb = eq.tabardo;
-    ps.push(caja(...T(4.6 * A + 1.2, 0, e.zc - 10 * S), 0.8, 5.4 * A, 26 * S, { mat: tb.mat, giro: angulo(e.ejesT[0]), incl: -inclinacion(e.ejesT[2], e.ejesT[0]), inclEje: 'y' }));
-    if (tb.borde) ps.push(caja(...T(4.6 * A + 1.4, 0, e.zc - 10 * S), 0.5, 1.2 * A, 26 * S, { mat: tb.borde, giro: angulo(e.ejesT[0]), incl: -inclinacion(e.ejesT[2], e.ejesT[0]), inclEje: 'y' }));
+    const tb = eq.tabardo, sobre = eq.torso?.tipo === 'placas' ? 1.6 * A : 0;
+    ps.push(caja(...T(4.6 * A + 1.2 + sobre, 0, e.zc - 10 * S), 0.8, 5.4 * A, 26 * S, { mat: tb.mat, giro: angulo(e.ejesT[0]), incl: -inclinacion(e.ejesT[2], e.ejesT[0]), inclEje: 'y' }));
+    if (tb.borde) ps.push(caja(...T(4.6 * A + 1.4 + sobre, 0, e.zc - 10 * S), 0.5, 1.2 * A, 26 * S, { mat: tb.borde, giro: angulo(e.ejesT[0]), incl: -inclinacion(e.ejesT[2], e.ejesT[0]), inclEje: 'y' }));
   }
   if (eq.cinturon) {
     ps.push(cilindro(...e.W(0, 0, e.zc + 1.6 * S), (4.6 + (cu.grasa ?? 0) * 1.5) * A, 2.2 * S, { mat: eq.cinturon.mat, r1: (4.8 + (cu.grasa ?? 0) * 1.5) * A }));
@@ -427,7 +434,12 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   if (eq.manos) {
     const mn = eq.manos;
     const inf = mn.tipo === 'guanteletes' ? 0.9 : 0.45;
-    ps.push(masa(partes(e, cu, ['mano', 'antebrazo'], inf, mn.mat, { hasta: 1 }).filter((c) => c.f === 'bulto' || true), { mat: mn.mat, suave: 1.2 }));
+    ps.push(masa(partes(e, cu, ['mano', 'antebrazo'], inf, mn.mat, { hasta: 1 }), { mat: mn.mat, suave: 1.2 }));
+    // guanteletes: brazal acampanado hacia el puño y nudillos de placa
+    if (mn.tipo === 'guanteletes') for (const b of e.brazos) {
+      ps.push(masa([hueso(mez(b.codo, b.mun, 0.25), mez(b.codo, b.mun, 1.02), 1.75 * A, 2.15 * A, { mat: mn.mat, tono: 0.04 })], { mat: mn.mat }));
+      ps.push(cilindro(...add(b.mun, b.d2, -0.6 * S), 2.25 * A, 0.7 * S, { mat: mn.mat === 'cu_oro' ? 'cu_placa' : 'cu_oro', r1: 2.3 * A, eje: b.d2 }));
+    }
   }
   // ---- hombreras
   if (eq.hombros) for (const b of e.brazos) {
