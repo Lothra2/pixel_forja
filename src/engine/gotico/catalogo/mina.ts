@@ -336,8 +336,8 @@ const MINERO = (casco: string, luz: boolean, k = 0): Equipo => ({ torso: { tipo:
 
 registrar(
   {
-    id: 'min_galeria', nombre: ['Boca de galería apuntalada', 'Shored mine adit'], tema: 'mina', variantes: ['abierta', 'tapiada', 'derrumbada', 'abandonada'], cuadros: 6, t: 4, huella: [6, 3], bloquea: true,
-    armar: (v, f, a) => {
+    id: 'min_galeria', nombre: ['Boca de galería apuntalada', 'Shored mine adit'], tema: 'mina', variantes: ['abierta', 'tapiada', 'derrumbada', 'abandonada'], huella: [6, 3], bloquea: true,
+    armar: (v, _f, a) => {
       const ps: Pieza[] = [], fm = forma(a, 4);
       paredRoca(a, ps, [[-50, -8], [50, -8 + (a.r() - 0.5) * 6]], entre(a, 96, 116), 16, fm % 2 ? 'sub_roca' : 'sub_roca_humeda');
       for (const l of [-1, 1]) for (let i = 0; i < 2; i++) penasco(a, ps, [l * entre(a, 30, 36), 8, 12 + i * 22], [10, 9, 12], { mat: 'sub_roca', n: 1 });
@@ -353,7 +353,7 @@ registrar(
       if (v === 'abierta') {
         const vias: Pieza[] = []; viaX(a, vias, -8, 40); ps.push(...mover(vias, [0, 0, 0], 90));
         ps.push(a.palo([14, 12, 46], [14, 16, 46], 0.5, { mat: 'hierro' }));
-        luz = { c: farol(a, ps, [14, 16, 46], f), r: 40, color: '#ffb050' };
+        luz = { c: farol(a, ps, [14, 16, 46], 0), r: 40, color: '#ffb050' };
       } else if (v === 'tapiada') {
         for (let i = 0; i < 5; i++) ps.push(viga(a, [-17, 11.5, 6 + i * 9 + (a.r() - 0.5) * 3], [17, 11.5, 6 + i * 9 + (a.r() - 0.5) * 3], 6, 1.4, i % 2 ? 'madera_vieja' : MAD));
         ps.push(viga(a, [-17, 13, 4], [17, 13, 44], 4.5, 1.4, MAD), viga(a, [17, 13, 4], [-17, 13, 44], 4.5, 1.4, MAD));

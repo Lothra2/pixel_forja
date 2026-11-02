@@ -360,7 +360,7 @@ registrar(
     },
   },
   {
-    id: 'cue2_lago_negro', nombre: ['Lago de agua negra', 'Black water lake'], tema: 'cueva', variantes: ['orilla', 'isla', 'ojos', 'barca'], cuadros: 8, t: 4, huella: [9, 7], bloquea: true,
+    id: 'cue2_lago_negro', nombre: ['Lago de agua negra', 'Black water lake'], tema: 'cueva', variantes: ['orilla', 'isla', 'ojos', 'barca'], cuadros: 6, t: 5, huella: [9, 7], bloquea: true,
     armar: (v, f, a) => {
       const fm = forma(a, 4), ps: Pieza[] = [], mat = 'c2_agua_negra';
       const os: Ovalo[] = [[0, 0, entre(a, 48, 58), entre(a, 34, 42), entre(a, -15, 15)]];
@@ -383,14 +383,14 @@ registrar(
         ps.push(...cadaver({ piel: 'cu_hueso', oseo: true }, { torso: { tipo: 'harapos', mat: 'cu_tela_parda' } }, 'e', [4, -6, 7], a.r() * 40));
         ps.push(a.cilindro(-4, -10, 6, 1, 14, { mat: 'madera_vieja' }), a.cilindro(-4, -10, 18, 1.6, 2, { mat: 'hierro' }));
         luz = { c: [-4, -10, 22], r: 30, color: '#ffa040' };
-        llama(a, ps, -4, -10, 19.5, f, 8, 0.8);
+        llama(a, ps, -4, -10, 19.5, f, 6, 0.8);
       } else if (v === 'ojos') {
         // algo grande y quieto bajo el agua: un lomo, dos ojos que parpadean y la onda que deja
-        const x = entre(a, -10, 10), y = entre(a, -6, 6), ab = (f % 8) === 5 ? 0.15 : 1;
+        const x = entre(a, -10, 10), y = entre(a, -6, 6), ab = (f % 6) === 4 ? 0.15 : 1;
         ps.push(masa([bulto([x - 10, y - 4, -2], [16, 9, 4.5], { giro: 30 }), bulto([x + 2, y + 2, -1.5], [7, 6, 3.2])], { mat: 'cu_quitina', suave: 3 }));
         for (const l of [-1, 1]) ps.push(a.elipsoide(x + 5 + l * 2.2, y + 4 - l * 2.2, 1.4, 1.3, 1.3, 0.9 * ab, { mat: 'cu_ojo_verde' }));
-        const R = 6 + (f % 8) * 3;
-        ps.push(a.cilindro(x, y, 0.55, R, 0.15, { mat: 'c2_reflejo', tono: 0.1 - (f % 8) * 0.03 }), a.cilindro(x, y, 0.55, R - 1, 0.2, { mat }));
+        const R = 6 + (f % 6) * 4;
+        ps.push(a.cilindro(x, y, 0.55, R, 0.15, { mat: 'c2_reflejo', tono: 0.1 - (f % 6) * 0.04 }), a.cilindro(x, y, 0.55, R - 1, 0.2, { mat }));
         luz = { c: [x + 5, y + 4, 4], r: 18, color: '#60e070' };
       } else if (v === 'barca') {
         // un bote podrido medio hundido, con el remo flotando

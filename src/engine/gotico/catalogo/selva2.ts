@@ -39,7 +39,9 @@ M.sel2_paja = { rampa: ['#100c06', '#1b150b', '#282011', '#352b17', '#43361d', '
 M.sel2_bambu = { rampa: ['#121306', '#20220b', '#303210', '#414316', '#53551d', '#656625', '#78772e'], ruido: 0.18, escala: 0.3, brillo: 0.3, patron: (p) => ((((p[2] % 10) + 10) % 10) < 0.8 ? -0.35 : 0) };
 M.sel2_ocre = { rampa: ['#1d0805', '#340f08', '#4c180c', '#652311', '#7e2f17', '#96401f'], ruido: 0.3, escala: 0.4 };
 M.sel2_cal = { rampa: ['#2d2b25', '#47443b', '#625e52', '#7e796a', '#999382', '#b1ab98'], ruido: 0.3, escala: 0.4 };
-M.sel2_agua = { rampa: ['#030605', '#06100b', '#0a1811', '#102117', '#172b1d', '#1f3624', '#2c4530'], ruido: 0.2, escala: 0.12, brillo: 1, patron: (p) => (ruido(p[0] * 0.12, p[1] * 0.12, 4) - 0.5) * 0.25 };
+M.sel2_agua = { rampa: ['#020403', '#050907', '#08100b', '#0c1610', '#111d15', '#17251a', '#1f2f22'], ruido: 0.2, escala: 0.12, brillo: 0.6, patron: (p) => (ruido(p[0] * 0.12, p[1] * 0.12, 4) - 0.5) * 0.25 };
+M.sel2_chorro = { rampa: ['#16201f', '#243333', '#364a4a', '#4b6262', '#647c7b', '#829896', '#a4b6b3', '#c8d4d0'], ruido: 0.3, escala: 0.4, brillo: 0.5, patron: (p) => (ruido(p[0] * 1.4, p[1] * 1.4, p[2] * 0.08) - 0.5) * 0.5 };
+M.sel2_termita = { rampa: ['#110a06', '#1e130b', '#2d1d11', '#3d2817', '#4e331e', '#5f3f26'], ruido: 0.45, escala: 0.4, patron: (p) => (Math.sin(p[2] * 1.3 + ruido(p[0] * 0.3, p[1] * 0.3, 1) * 4) > 0.7 ? -0.12 : 0) };
 M.sel2_lenteja = { rampa: ['#0a1205', '#132109', '#1d310e', '#284214', '#34531b', '#416422'], ruido: 0.5, escala: 1.4, patron: (p) => (ruido(p[0] * 0.6, p[1] * 0.6, 3) > 0.55 ? 0.1 : -0.25) };
 M.sel2_hongo_luz = { rampa: ['#0a2a2e', '#12444a', '#1e6266', '#2e8282', '#4ca69c', '#7ccab8'], ruido: 0.3, escala: 0.6, emite: true };
 M.sel2_hongo_rojo = { rampa: ['#150405', '#29080a', '#3e0d0f', '#541315', '#6a1a1b', '#802322'], ruido: 0.3, escala: 0.4, brillo: 0.25 };
@@ -344,7 +346,7 @@ reg({
 });
 
 reg({
-  id: 'sel2_puente_colgante', nombre: ['Puente colgante', 'Rope bridge'], tema: 'selva', variantes: ['x', 'roto'], cuadros: 6, t: 4, huella: [7, 2], bloquea: true,
+  id: 'sel2_puente_colgante', nombre: ['Puente colgante', 'Rope bridge'], tema: 'selva', variantes: ['x', 'roto', 'viejo'], cuadros: 6, t: 4, huella: [7, 2], bloquea: true,
   armar: (v, f, a) => {
     const ps: Pieza[] = [];
     // barranco con agua oscura abajo (el puente cruza a lo largo de x)
@@ -357,6 +359,7 @@ reg({
     for (let i = 0; i < n; i++) {
       const x = -L / 2 + 4 + (i / (n - 1)) * (L - 8), k = 1 - (x / (L / 2)) ** 2;
       if (roto && x > -4 && x < 14) continue;
+      if (v === 'viejo' && a.r() < 0.25) continue;
       const yy = mece * k, zz = roto && x > 0 ? z(x) - (x - 14) * 0.2 : z(x);
       ps.push(a.caja(x, yy, zz + (roto ? az(a, 1) : 0), 3.4, 13, 1.1, { mat: 'madera_vieja', giro: az(a, 6), tono: az(a, 0.1) }));
     }
@@ -405,21 +408,26 @@ reg({
     const R = v === 'con_poza' ? 30 : 22;
     disco(a, ps, 10, 12, 0, R + 4, R * 0.75 + 4, 1.4, 'ext_barro', { ruido: 0.1 });
     disco(a, ps, 10, 12, 0.2, R, R * 0.75, 1.4, 'sel2_agua', { ruido: 0.1, n: 16 });
-    // el chorro: lenguas de agua que bajan con el cuadro y la espuma al pie
+    // el chorro: cintas de agua que salen del labio de la peña, se curvan hacia afuera al caer y corren con el cuadro
     const x0 = -10, y0 = -8, ancho = 14;
     for (let k = 0; k < 5; k++) {
-      const yy = y0 + (k / 4 - 0.5) * ancho, u = ((f / 6) + k * 0.37) % 1;
-      ps.push(a.caja(x0 + 4, yy, 1, 2.2, ancho / 5 + 0.4, H - 1, { mat: 'ext_agua_lluvia', tono: 0.1 + (k % 2) * 0.06 }));
-      for (let j = 0; j < 3; j++) { const z = H * (1 - ((u + j / 3) % 1)); ps.push(a.elipsoide(x0 + 5.3, yy, z, 0.7, 1.2, 3.5, { mat: 'ext_espuma', tono: -0.05 })); }
+      const yy = y0 + (k / 4 - 0.5) * ancho, n = 7;
+      let prev: V = [x0 - 5, yy, H * 0.92];
+      for (let j = 1; j <= n; j++) {
+        const t = j / n, q: V = [x0 - 5 + Math.sin(t * Math.PI * 0.5) * 9 + t * 2, yy + az(a, 0.4), H * 0.92 * (1 - t) + 1];
+        const fase = ((f / 6) * 2 + j / n + k * 0.31) % 1;
+        ps.push(a.palo(prev, q, 1.3 + t * 0.6, { mat: 'sel2_chorro', tono: fase < 0.3 ? 0.12 : -0.05 }));
+        prev = q;
+      }
     }
-    for (let i = 0; i < 7; i++) { const t = a.r() * PI2, u = ((f / 6) + i / 7) % 1; ps.push(a.elipsoide(x0 + 8 + Math.cos(t) * 5 * u, y0 + Math.sin(t) * 7, 1.8 + u * 2, 3 - u * 1.5, 2.4 - u, 1.2, { mat: 'ext_espuma', tono: 0.05 - u * 0.2 })); }
+    for (let i = 0; i < 7; i++) { const t = a.r() * PI2, u = ((f / 6) + i / 7) % 1; ps.push(a.elipsoide(x0 + 7 + Math.cos(t) * 5 * u, y0 + Math.sin(t) * 7, 1.8 + u * 2, 3 - u * 1.5, 2.4 - u, 1.2, { mat: 'ext_espuma', tono: 0.05 - u * 0.2 })); }
     for (let i = 0; i < 4; i++) helecho(a, ps, polar(a.r() * PI2 + 1, 34, 0.5), 12, 6);
     return ps;
   },
 });
 /** Peña con el borde de donde cae el agua (al fondo, hacia -x). */
 function grupoP(a: Arma, ps: Pieza[], H: number) {
-  pena(a, ps, [-28, -6, 0], [20, 26, H * 0.62], { mat: 'sel2_piedra', musgo: 1.1, n: 7, losa: 0.3, hunde: 0 });
+  pena(a, ps, [-28, -6, 0], [20, 26, H * 1.05], { mat: 'sel2_piedra', musgo: 1.1, n: 7, losa: 0.3, hunde: 0 });
   pena(a, ps, [-22, 18, 0], [14, 12, H * 0.45], { mat: 'sel2_piedra', musgo: 1, n: 5, hunde: 0 });
   pena(a, ps, [-22, -30, 0], [12, 12, H * 0.5], { mat: 'sel2_piedra', musgo: 1, n: 5, hunde: 0 });
 }
@@ -435,7 +443,8 @@ reg({
       ps.push(masa([hueso(base, top, 3.6, 2.2), bulto(base, [5, 5, 4])], { mat: 'sel2_corteza', suave: 1.6 }));
       const nr = 7 + Math.floor(a.r() * 4);
       for (let i = 0; i < nr; i++) { const t = (i / nr) * PI2 + az(a, 0.3), R = H * (0.35 + a.r() * 0.2), m: V = [c[0] + Math.cos(t) * R * 0.55, c[1] + Math.sin(t) * R * 0.55, H * 0.36 + a.r() * 4], e: V = [c[0] + Math.cos(t) * R, c[1] + Math.sin(t) * R, -0.5]; ps.push(masa([hueso(mas(base, [0, 0, az(a, 2)]), m, 1.8, 1.4), hueso(m, e, 1.4, 1)], { mat: 'sel2_corteza', suave: 1 })); }
-      for (let i = 0; i < 5; i++) { const t = a.r() * PI2; ps.push(a.palo(top, mas(top, [Math.cos(t) * 12, Math.sin(t) * 12, 4 + a.r() * 6]), 1.1, { mat: 'sel2_corteza', r1: 0.5 })); follaje(a, ps, mas(top, [Math.cos(t) * 14, Math.sin(t) * 14, 8]), 13, 'sel2_follaje', 3); }
+      for (let i = 0; i < 6; i++) { const t = (i / 6) * PI2 + az(a, 0.4); ps.push(a.palo(top, mas(top, [Math.cos(t) * 15, Math.sin(t) * 15, 4 + a.r() * 6]), 1.2, { mat: 'sel2_corteza', r1: 0.5 })); follaje(a, ps, mas(top, [Math.cos(t) * 16, Math.sin(t) * 16, 8]), 18, 'sel2_follaje', 3); }
+      follaje(a, ps, mas(top, [0, 0, 12]), 20, 'sel2_follaje', 3);
       for (let i = 0; i < 4; i++) { const t = a.r() * PI2; ps.push(a.palo(mas(top, [Math.cos(t) * 8, Math.sin(t) * 8, 2]), [top[0] + Math.cos(t) * 9, top[1] + Math.sin(t) * 9, 0.5], 0.4, { mat: 'sel2_corteza' })); }
     };
     if (v === 'chico') arbol([0, 0, 0], 46);
@@ -522,7 +531,7 @@ reg({
     // termitero: torre de barro con agujas y chimeneas
     const cs: Comp[] = [bulto([0, 0, 6], [14, 12, 9]), hueso([0, 0, 6], [2, 1, 46], 9, 3)];
     for (let i = 0; i < 4; i++) { const t = (i / 4) * PI2 + a.r(); cs.push(hueso(polar(t, 6, 8), polar(t + az(a, 0.3), 8, 22 + a.r() * 16), 4, 1.6)); }
-    ps.push(masa(cs, { mat: 'sel2_ocre', suave: 3, tono: -0.1 }));
+    ps.push(masa(cs, { mat: 'sel2_termita', suave: 3 }));
     for (let i = 0; i < 5; i++) ps.push(a.elipsoide(...(polar(a.r() * PI2, 8, 10 + a.r() * 20) as V), 1, 1, 1.6, { mat: 'negro', tono: 0.1 }));
     return ps;
   },

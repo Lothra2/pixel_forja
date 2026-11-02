@@ -527,7 +527,7 @@ registrar(
     id: 'hie2_roca', nombre: ['Roca con costra de hielo', 'Ice-crusted rock'], tema: 'hielo', variantes: ['grande', 'grupo', 'carambanos', 'partida'], huella: [2, 2], huellaPor: { grupo: [3, 3] }, bloquea: true,
     armar: (v, _f, a) => {
       const ps: Pieza[] = [helada(a, 24, 20)];
-      const M = { mat: 'hie2_roca', cubre: E, cubreAlto: 0.4 };
+      const M = { mat: 'hie2_roca', cubre: E, cubreAlto: 0.4, n: 4, facetas: 7 };
       if (v === 'grande') ps.push(...roca(a, [0, 0, 11], [18, 15, 15], { ...M, n: 9 }));
       else if (v === 'grupo') ps.push(...roca(a, [-8, -6, 10], [14, 12, 12], M), ...roca(a, [12, 4, 7], [10, 9, 8], M), ...roca(a, [-2, 16, 4], [7, 6, 5], M));
       else if (v === 'carambanos') { ps.push(...roca(a, [0, -4, 20], [20, 12, 10], { ...M, n: 8 }), ...roca(a, [-14, -6, 8], [7, 7, 10], M)); carambanos(a, ps, [-16, 7, 14], [16, 6, 14], 9, 12, 1.4); }
@@ -554,11 +554,11 @@ registrar(
   {
     id: 'hie2_pozo', nombre: ['Pozo en el hielo', 'Ice pit'], tema: 'hielo', variantes: ['abierto', 'sellado', 'luz'], cuadros: 8, t: 4, huella: [3, 3], bloquea: true,
     armar: (v, f, a) => {
-      const ps: Pieza[] = [helada(a, 30, 28)];
+      const ps: Pieza[] = [...losa(a, 30, 28, 0, 1.2, E, 12, { tono: -0.1 })];
       const R = 16;
       for (let i = 0; i < 12; i++) { const t = (i / 12) * TAU; ps.push(pena(a, Math.cos(t) * (R + 3), Math.sin(t) * (R + 3), 3, 5 + a.r() * 2, 4 + a.r() * 2, 3.6 + a.r() * 3, { mat: elegir(a, [H2, 'hie2_roca']), giro: deg(t) })); }
-      ps.push(a.cilindro(0, 0, 0.4, R, 0.6, { mat: v === 'luz' ? 'hie2_luz' : 'hie2_agua', tono: v === 'luz' ? -0.3 + onda(f, 8) * 0.15 : 0 }));
-      if (v === 'abierto') { const u = ciclo(f, 8); ps.push(a.cilindro(jit(a, 4), jit(a, 4), 0.9, 2 + u * 10, 0.15, { mat: H2, tono: 0.2 - u * 0.3 })); ps.push(a.cilindro(0, 0, 0.92, 1.5 + ((u + 0.5) % 1) * 10, 0.12, { mat: H2, tono: 0.1 - ((u + 0.5) % 1) * 0.3 })); }
+      ps.push(a.cilindro(0, 0, 0, R, 2.6, { mat: v === 'luz' ? 'hie2_luz' : 'hie2_agua', tono: v === 'luz' ? -0.3 + onda(f, 8) * 0.15 : 0 }));
+      if (v === 'abierto') { const u = ciclo(f, 8); ps.push(a.cilindro(jit(a, 4), jit(a, 4), 2.6, 2 + u * 10, 0.3, { mat: H2, tono: 0.2 - u * 0.3 })); ps.push(a.cilindro(0, 0, 2.6, 1.5 + ((u + 0.5) % 1) * 10, 0.25, { mat: H2, tono: 0.1 - ((u + 0.5) % 1) * 0.3 })); }
       if (v === 'sellado') { ps.push(a.cilindro(0, 0, 0, R + 1, 3, { mat: H2 })); for (let i = 0; i < 4; i++) { const t = (i / 4) * PI; ps.push(a.palo([Math.cos(t) * R, Math.sin(t) * R, 3.2], [-Math.cos(t) * R, -Math.sin(t) * R, 3.2], 1, { mat: 'hierro_oxido' })); } }
       if (v === 'luz') for (let i = 0; i < 5; i++) { const u = ciclo(f + i * 1.6, 8), t = i * 1.3 + u * 3; ps.push(a.elipsoide(Math.cos(t) * 6, Math.sin(t) * 6, 2 + u * 30, 1.8 * (1 - u * 0.5), 1.8 * (1 - u * 0.5), 3, { mat: 'hie2_luz', tono: 0.1 - u * 0.4 })); }
       ps.push(suelo(a));
