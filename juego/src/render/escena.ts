@@ -3,7 +3,7 @@ import { ctx, W, H } from '../nucleo/lienzo';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto } from '../juego/mundo';
 import { CUADROS, DIRS, ZANCADA, ALTO_CLASE } from '../juego/mundo';
-import { colorObj, baseDe } from '../juego/objetos';
+import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
 import { cuadrosVivos } from '../motor/pintor';
 import { R } from '../nucleo/azar';
@@ -117,7 +117,13 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   for (const o of z.objetos) {
     if (!cerca(o.cx + 0.5, o.cy + 0.5, 4)) continue;
     const meta = objetoMeta(o.id, o.v); if (!meta || !meta.f.length) continue;
-    const q = meta.f[Math.floor(f25 / meta.t) % meta.f.length];
+    let q = meta.f[Math.floor(f25 / meta.t) % meta.f.length];
+    // cofres que se abren: la animación se toca una vez y queda abierto
+    if (o.v.startsWith('abriendo') && o.dato?.abre !== undefined) {
+      const i = Math.floor(((j.t - o.dato.abre) * 25) / meta.t);
+      if (i >= meta.f.length) o.v = o.v.endsWith('_y') ? 'abierto_y' : 'abierto';
+      q = meta.f[Math.min(meta.f.length - 1, i)];
+    }
     const [px, py] = aPant(o.cx + 0.5, o.cy + 0.5);
     const prof = meta.plano ? -1e6 + o.cx + o.cy : o.cx + o.cy + (o.hw + o.hh) / 2 - 1;
     const alto = q.ay;
@@ -324,27 +330,30 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (e.tipo === 'monstruo' && m.habla) { ctx.font = 'italic 13px Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText(m.habla, px + 1, py - 95 * esc + 1); ctx.fillStyle = '#ff9060'; ctx.fillText(m.habla, px, py - 95 * esc); ctx.textAlign = 'left'; }
 }
 
+const PILAR: Record<string, string> = { magico: 'magico', raro: 'raro', conjunto: 'conjunto', unico: 'unico', legendario: 'legendario' };
+const GEMAS = ['rubi', 'zafiro', 'topacio', 'esmeralda', 'amatista', 'diamante'];
 function dibujarBotinSuelo(s: any, px: number, py: number, t: number) {
-  // un objeto en el piso: ícono chico con brillo de su color
-  const col = s.oro ? '#e8c050' : colorObj(s.o);
   const k = Math.min(1, s.t * 3);
   const salto = (1 - k) * 18 * Math.sin(k * Math.PI);
+  const anim = (id: string, v: string, una = false, t0 = 0) => { const m = objetoMeta(id, v); if (!m || !m.f.length) return false; const i = Math.floor(((una ? t0 : t) * 25) / m.t); dibujar(ctx, m.f[una ? Math.min(m.f.length - 1, i) : i % m.f.length], px, py - salto); return true; };
   ctx.save();
-  ctx.globalAlpha = 0.5; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(px, py, 8, 4, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 1;
-  if (s.oro) { for (let i = 0; i < 5; i++) { ctx.fillStyle = i % 2 ? '#c09030' : '#f0d070'; ctx.fillRect(px - 6 + i * 2.5, py - 4 - (i % 3) - salto, 4, 3); } }
-  else {
-    const b = baseDe(s.o);
-    const ENCS: Record<string, string> = { fuego: '_fuego', frio: '_hielo', rayo: '_rayo', veneno: '_veneno', sombra: '_sombra', luz: '_sagrado', sangre: '_sangre' };
-    const meta = b?.arma && b.arma !== 'puno' ? (objetoMeta(`arma_${b.arma}${s.o.vivo ? ENCS[s.o.vivo] ?? '' : ''}`, 'suelo') ?? objetoMeta(`arma_${b.arma}`, 'suelo')) : null;
-    if (meta && meta.f.length) dibujar(ctx, meta.f[Math.floor(t * 25 / meta.t) % meta.f.length], px, py - salto);
-    else { ctx.translate(0, -salto); icono(s.o, px - 11, py - 20, 22, 22, t); }
-    if (s.o.rareza === 'unico' || s.o.rareza === 'legendario' || s.o.rareza === 'conjunto' || s.o.tipo === 'runa') {
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.25 + Math.sin(t * 4) * 0.1;
-      const g = ctx.createLinearGradient(px, py - 120, px, py); g.addColorStop(0, col + '00'); g.addColorStop(1, col + 'ff');
-      ctx.fillStyle = g; ctx.fillRect(px - 5, py - 120, 10, 120);
-    }
+  // oro: cae tintineando y queda como montón con brillo
+  if (s.oro) {
+    const ok = s.t < 0.7 ? anim('oro_caida', s.oro >= 100 ? 'muchas' : 'pocas', true, s.t) : anim('oro_monton', s.oro >= 400 ? 'grande' : s.oro >= 80 ? 'mediano' : 'pequeno');
+    if (!ok) { for (let i = 0; i < 5; i++) { ctx.fillStyle = i % 2 ? '#c09030' : '#f0d070'; ctx.fillRect(px - 6 + i * 2.5, py - 4 - (i % 3) - salto, 4, 3); } }
+    ctx.restore(); return;
   }
+  const o = s.o;
+  // haz de luz debajo según la rareza (las runas y gemas también brillan)
+  const pv = PILAR[o.rareza] ?? (o.tipo === 'runa' || o.tipo === 'gema' ? 'raro' : null);
+  if (pv) { const m = objetoMeta('botin_pilar', pv); if (m && m.f.length) { ctx.globalAlpha = Math.min(1, s.t * 2) * 0.9; dibujar(ctx, m.f[Math.floor((t * 25) / m.t) % m.f.length], px, py); ctx.globalAlpha = 1; } }
+  else { ctx.globalAlpha = 0.5; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(px, py, 8, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+  if (o.tipo === 'gema') { const g = GEMAS.find((x) => o.base.startsWith(x)); if (g && anim('gema_suelo', g)) { ctx.restore(); return; } }
+  const b = baseDe(o);
+  const ENCS: Record<string, string> = { fuego: '_fuego', frio: '_hielo', rayo: '_rayo', veneno: '_veneno', sombra: '_sombra', luz: '_sagrado', sangre: '_sangre' };
+  const meta = b?.arma && b.arma !== 'puno' ? (objetoMeta(`arma_${b.arma}${o.vivo ? ENCS[o.vivo] ?? '' : ''}`, 'suelo') ?? objetoMeta(`arma_${b.arma}`, 'suelo')) : null;
+  if (meta && meta.f.length) dibujar(ctx, meta.f[Math.floor(t * 25 / meta.t) % meta.f.length], px, py - salto);
+  else { ctx.translate(0, -salto); icono(o, px - 11, py - 20, 22, 22, t); }
   ctx.restore();
 }
 

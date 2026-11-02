@@ -340,21 +340,29 @@ function exterior(def: DefZona, semilla: number): Zona {
     if (o) z.marcas.push({ tipo: 'viaje', cx: o.cx, cy: o.cy });
   }
   // cofres, santuarios y pozos
-  colocarInteractivos(k, 2 + Math.floor(area / 6000), 1 + Math.floor(area / 9000));
+  colocarInteractivos(k, 2 + Math.floor(area / 6000), 1 + Math.floor(area / 9000), def.tema);
   // dónde salen los monstruos: lejos de las entradas
   sembrar(k, Math.floor((area / 700) * dens), puntos);
   if (def.jefe) { const p = lejos(k, puntos); z.spawns.push({ cx: p[0], cy: p[1], tipo: 'jefe', fuerza: 1 }); }
   return z;
 }
 
-function colocarInteractivos(k: Constructor, cofres: number, santuarios: number) {
+/** Cofres de la Forja según el lugar: madera y hierro afuera, malditos abajo, relicarios en templos y tumbas. */
+function cofresDe(z: Zona, tema: string): string[] {
+  if (z.tipo === 'mazmorra') {
+    if (/templo|tumba|catedral|abadia/.test(tema)) return ['cofre_sarcofago_tesoro', 'cofre_maldito', 'cofre_hierro', 'cofre_noble'];
+    return ['cofre_maldito', 'cofre_maldito', 'cofre_hierro', 'cofre_noble'];
+  }
+  return ['cofre_madera', 'cofre_madera', 'cofre_hierro', 'cofre_noble'];
+}
+function colocarInteractivos(k: Constructor, cofres: number, santuarios: number, tema = '') {
   const z = k.z;
-  const pc = ['com_cofre', 'com_cofre', 'com_cofre_herrado', 'com_cofre_ornado'];
+  const pc = cofresDe(z, tema);
   const ps = ['com_santuario_obelisco', 'com_santuario_cuernos', 'com_santuario_estela', 'com_santuario_calaveras', 'com_santuario_caldero', 'com_santuario_monolito'];
   for (let i = 0, n = 0; i < cofres * 20 && n < cofres; i++) {
     const x = 3 + Math.floor(k.r() * (z.W - 6)), y = 3 + Math.floor(k.r() * (z.H - 6));
     if (z.bloq[y * z.W + x]) continue;
-    const o = k.poner(pc[Math.floor(k.r() * pc.length)], x, y, 'cerrado', false, 'cofre');
+    const o = k.poner(pc[Math.floor(k.r() * pc.length)], x, y, k.r() < 0.5 ? 'cerrado' : 'cerrado_y', false, 'cofre');
     if (o) { n++; z.marcas.push({ tipo: 'cofre', cx: x, cy: y }); }
   }
   for (let i = 0, n = 0; i < santuarios * 20 && n < santuarios; i++) {
@@ -480,13 +488,16 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   });
   if (!z.entradas.arriba) z.entradas.arriba = [p0[0], p0[1] + 2];
   if (def.piedraViaje) { const o = k.poner('com_piedra_viaje', p0[0] + 4, p0[1] + 3, 'apagada', true); if (o) z.marcas.push({ tipo: 'viaje', cx: o.cx, cy: o.cy }); }
-  colocarInteractivos(k, 2 + Math.floor(area / 3500), 1 + Math.floor(area / 7000));
+  colocarInteractivos(k, 2 + Math.floor(area / 3500), 1 + Math.floor(area / 7000), def.tema);
   sembrar(k, Math.floor(area / 260), [p0]);
   if (def.jefe) {
     z.spawns.push({ cx: pN[0], cy: pN[1] + 2, tipo: 'jefe', fuerza: 1 });
     // la sala del jefe: cosas que no deberían existir
     const mis = ['mis_trono_huesos', 'mis_manos', 'mis_ojos_oscuridad', 'mis_carne_viva', 'mis_estatua_doliente', 'mis_pozo_almas', 'mis_reliquia', 'mis_libro_maldito', 'mis_espejo'];
     for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2 + r(); k.poner(mis[i % mis.length], pN[0] + Math.cos(a) * (4 + r() * 3), pN[1] + 2 + Math.sin(a) * (4 + r() * 3)); }
+    // y el tesoro que guardaba
+    const tesoro: [string, string][] = [['tesoro_pila', 'grande'], ['tesoro_pila', 'chica'], ['saco_monedas', 'derramado'], ['caliz', 'volcado'], ['corona_suelo', 'con_calavera'], ['jarron_oro', 'de_pie'], ['oro_monton', 'mediano'], ['saco_monedas', 'cerrado']];
+    tesoro.forEach(([id, v], i) => { const a = (i / tesoro.length) * Math.PI * 2 + 0.3; k.poner(id, pN[0] + Math.cos(a) * 7.5, pN[1] + 2 + Math.sin(a) * 6, v); });
   }
   // en las mazmorras a veces asoman ojos en la oscuridad
   k.regar([{ t: ['misterio' as Tema], p: ['ojos', 'manos', 'espejo', 'libro', 'arbol_rostros'] }], 2 + Math.floor(area / 3000), 1, 1, z.W - 1, z.H - 1, enSuelo);
@@ -522,11 +533,11 @@ function pueblo(def: DefZona, semilla: number): Zona {
     const cx = o.cx + ox * 5, cy = o.cy + oy * 5;
     if (/portal_azul/.test(o.id)) continue;
     if (/piedra_viaje/.test(o.id)) { const q = k.poner(o.id, cx, cy, 'encendida', true); if (q) z.marcas.push({ tipo: 'viaje', cx, cy }); continue; }
-    if (/baul|alijo/.test(o.id)) { const q = k.poner(o.id, cx, cy, o.v, true, 'baul'); if (q) z.marcas.push({ tipo: 'baul', cx, cy }); continue; }
+    if (/baul|alijo/.test(o.id)) { const q = k.poner('cofre_gg', cx, cy, 'cerrado', true, 'baul'); if (q) z.marcas.push({ tipo: 'baul', cx, cy }); continue; }
     k.poner(o.id, cx, cy, o.v);
   }
   if (!z.marcas.some((q) => q.tipo === 'viaje')) { const q = k.poner('com_piedra_viaje', cx0 + 9, cy0 - 7, 'encendida', true); if (q) z.marcas.push({ tipo: 'viaje', cx: q.cx, cy: q.cy }); }
-  if (!z.marcas.some((q) => q.tipo === 'baul')) { const q = k.poner('camp_baul', cx0 - 9, cy0 + 8, 'cerrado', true, 'baul'); if (q) z.marcas.push({ tipo: 'baul', cx: q.cx, cy: q.cy }); }
+  if (!z.marcas.some((q) => q.tipo === 'baul')) { const q = k.poner('cofre_gg', cx0 - 9, cy0 + 8, 'cerrado', true, 'baul'); if (q) z.marcas.push({ tipo: 'baul', cx: q.cx, cy: q.cy }); }
   lugares.forEach(([x, y], i) => z.marcas.push({ tipo: 'npc', cx: x, cy: y, dato: i }));
   // alrededores
   k.regar(pu.extra, Math.floor((z.W * z.H) / 300), 3, 3, z.W - 3, z.H - 3, (x, y) => Math.hypot(x - cx0, y - cy0) > m.ancho * 2.8);

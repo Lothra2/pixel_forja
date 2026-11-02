@@ -171,6 +171,7 @@ function controlar(jj: Juego, dt: number) {
   if (h.muerto) { if (E.clicIzq && tEstado > 1) revivir(jj); return; }
   curarEnTiempo(jj, dt);
   if (ui.izq === 'cofre' && dist(h.x, h.y, (ui as any).cofreX ?? h.x, (ui as any).cofreY ?? h.y) > 4) ui.izq = null;
+  if (ui.izq !== 'cofre' && (ui as any).baul) { (ui as any).baul.v = 'cerrado'; (ui as any).baul = null; Sonido.efecto('puerta', { vol: 0.5 }); }
   pickEncima = ui.sobreUI ? null : encimaDe();
   const [mx, my] = aMundo(E.x, E.y);
   // soltar lo que tengo en la mano al piso
@@ -253,10 +254,11 @@ function revivir(jj: Juego) {
 function usarObjeto(jj: Juego, o: ObjZ) {
   const h = jj.heroe;
   if (o.tag === 'cofre') {
-    if (o.v === 'abierto') return;
-    o.v = 'abierto'; o.tag = undefined;
+    if (o.v.startsWith('abiert') || o.v.startsWith('abriendo')) return;
+    o.v = o.v.endsWith('_y') ? 'abriendo_y' : 'abriendo'; o.tag = undefined; o.dato = { abre: jj.t };
     Sonido.efecto('cofre');
-    soltar(jj, o.cx + 0.5, o.cy + 1.2, botin(jj.zona.nivel, o.id.includes('ornado') ? 2 : 1, h.c.hallazgo, h.c.oro_extra));
+    const bueno = /ornado|noble|sarcofago|gg/.test(o.id) ? 2 : 1;
+    setTimeout(() => soltar(jj, o.cx + 0.5, o.cy + 1.2, botin(jj.zona.nivel, bueno, h.c.hallazgo, h.c.oro_extra)), 450);
     if (R() < 0.12) { // terror: el cofre era una trampa
       msg(jj, ['Del cofre sale un grito.', 'A scream comes from the chest.'], '#ff6060'); Sonido.susurro(); jj.sacudida = 0.4;
     }
@@ -292,6 +294,7 @@ function usarObjeto(jj: Juego, o: ObjZ) {
     if (o.v === 'seco') return;
     o.v = 'seco'; if (o.id.includes('vida')) h.vida = h.vidaMax; else h.mana = h.c.manaMax; Sonido.efecto('pocion');
   } else if (o.tag === 'baul') {
+    if (o.id === 'cofre_gg' && !o.v.startsWith('abiert')) { o.v = 'abriendo'; o.dato = { abre: jj.t }; (ui as any).baul = o; }
     ui.izq = 'cofre'; ui.der = 'inv'; (ui as any).cofreX = o.cx; (ui as any).cofreY = o.cy; Sonido.efecto('abrir');
   } else if (o.id === 'com_piedra_viaje') {
     if (!h.d.viajes.includes(jj.zona.id)) { h.d.viajes.push(jj.zona.id); o.v = 'encendida'; Sonido.efecto('portal'); msg(jj, ['La piedra de viaje se enciende.', 'The travel stone ignites.'], '#80c0ff'); guardar(); }

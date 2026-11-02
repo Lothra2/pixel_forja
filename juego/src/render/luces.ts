@@ -29,6 +29,7 @@ export const COLOR_ELEM: Record<string, [number, number, number]> = {
 };
 const hex = (c: [number, number, number], a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
+const LUZ_RAREZA: Record<string, [number, number, number]> = { raro: [255, 230, 90], conjunto: [90, 230, 90], unico: [210, 170, 90], legendario: [255, 110, 40] };
 export let luces: Luz[] = [];
 (window as any).__luces = () => luces;
 /** Destello global de la escena (explosiones grandes), 0 a 1. */
@@ -94,6 +95,13 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const [px, py] = aPant(a.x, a.y);
     if (!dentro(px, py, 300)) continue;
     L.push({ x: px, y: py, h: 20, r: a.radio * 32 + 40, c: COLOR_ELEM[a.elem] ?? COLOR_ELEM.fuego, k: 0.6 + Math.sin(t * 11 + a.x) * 0.08 });
+  }
+  // botín en el piso: luz del color de su rareza
+  for (const sl of j.suelo) {
+    const o = sl.o; if (!o) continue;
+    const c = LUZ_RAREZA[o.rareza]; if (!c) continue;
+    const [px, py] = aPant(sl.x, sl.y); if (!dentro(px, py, 120)) continue;
+    L.push({ x: px, y: py, h: 30, r: o.rareza === 'legendario' ? 130 : o.rareza === 'unico' ? 110 : 80, c, k: 0.5 + Math.sin(t * 3 + sl.id) * 0.08 });
   }
   // portal
   if (j.portal) {
