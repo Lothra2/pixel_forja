@@ -178,6 +178,7 @@ export const INTRO: [string, string][] = [
   ['Al amanecer, los monjes ya no estaban. Y el valle empezó a arder sin fuego.', 'By dawn, the monks were gone. And the valley began to burn without fire.'],
   ['Los que sobrevivieron llevan ceniza en la piel. La llaman la Marca.', 'Those who survived carry ash on their skin. They call it the Mark.'],
   ['Tú también la tienes.', 'You bear it too.'],
+  ['Y en el fondo del pozo, algo que esperaba mil inviernos abrió los ojos.', 'And at the bottom of the well, something that had waited a thousand winters opened its eyes.'],
 ];
 
 /** Páginas arrancadas del diario del primer abad: se encuentran en libros malditos y cuentan el secreto. */

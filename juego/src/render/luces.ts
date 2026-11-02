@@ -4,6 +4,7 @@ import type { Cuadro } from '../motor/assets';
 import { manifiesto, objetoMeta } from '../motor/assets';
 import type { Juego, Ent } from '../juego/mundo';
 import { R } from '../nucleo/azar';
+import { auraEquipo } from '../juego/visual';
 
 export interface Luz {
   /** Punto del piso bajo la luz, en pantalla. */
@@ -49,6 +50,9 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const cv = COLOR_ELEM[h.c.vivo === 'luz' ? 'sagrado' : h.c.vivo] ?? COLOR_ELEM.fuego;
     L.push({ x: hx + 10, y: hy, h: 40, r: 120, c: cv, k: 0.55 + Math.sin(t * 13) * 0.08, de: h });
   }
+  // equipo legendario: el héroe mismo da una luz de su color
+  const au = auraEquipo(h.d.equipo as any);
+  if (au) L.push({ x: hx, y: hy, h: 45, r: 110 + au.k * 70, c: au.color, k: (0.35 + au.k * 0.35) * (0.85 + Math.sin(t * 3) * 0.15), de: h });
   // fuegos y objetos que alumbran
   for (const o of z.objetos) {
     const meta = objetoMeta(o.id, o.v); if (!meta || !meta.luz) continue;

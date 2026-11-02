@@ -7,6 +7,7 @@ import { colorObj, baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
 import { cuadrosVivos } from '../motor/pintor';
 import { R } from '../nucleo/azar';
+import { auraEquipo } from '../juego/visual';
 import { recolectar, sombras, reflejos, luces, destello, destelloColor } from './luces';
 
 export const cam = { x: 0, y: 0 };
@@ -303,6 +304,17 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // aura del héroe (botón derecho)
   if (e.tipo === 'heroe' && !e.muerto) {
     const au = Object.values(j.heroe.buffs).find((b) => b.t > 9000);
+    const ae = auraEquipo(j.heroe.d.equipo as any);
+    if (ae) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const c = ae.color, pul = 0.5 + Math.sin(tiempo * 2.4) * 0.5;
+      const g = ctx.createRadialGradient(px, py - 40, 6, px, py - 40, 60); g.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${0.16 * ae.k + 0.06 * pul})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(px - 60, py - 100, 120, 120);
+      ctx.globalAlpha = 0.25 + 0.2 * pul * ae.k; ctx.strokeStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(px, py, 26 + pul * 4, 13 + pul * 2, 0, 0, Math.PI * 2); ctx.stroke();
+      for (let k = 0; k < 3; k++) { const a = tiempo * 1.7 + k * 2.1; ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(px + Math.cos(a) * 24, py - 10 - ((tiempo * 30 + k * 23) % 70), 2, 2); }
+      ctx.restore();
+    }
     if (au) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.25 + Math.sin(tiempo * 3) * 0.08; ctx.strokeStyle = '#ffe0a0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, py, 34, 17, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
     if (j.heroe.escudoHueso > 0) for (let k = 0; k < 4; k++) { const a = tiempo * 3 + k * 1.57; ctx.fillStyle = '#e0d8c0'; ctx.fillRect(px + Math.cos(a) * 20, py - 30 + Math.sin(a) * 10, 3, 6); }
   }

@@ -1,4 +1,5 @@
 // El héroe que se guarda: clase, atributos, habilidades, equipo, bolsa y progreso. Y el cálculo de sus números.
+import { vestir } from './visual';
 import { HEROES } from '../../../src/engine/gotico/catalogo/personajes';
 import type { Equipo, Encanto } from '../../../src/engine/gotico/cuerpo';
 import { CLASES, HABILIDADES, habilidad, type Habilidad } from '../datos/clases';
@@ -190,7 +191,7 @@ export function equipoVisual(h: DatosHeroe): Equipo {
     if (c === 'arma') {
       eq.arma = vis.arma ? { ...vis.arma } : b.arma ? { tipo: b.arma } : undefined;
       if (eq.arma && o.vivo && ENC[o.vivo]) eq.arma.encanto = ENC[o.vivo];
-    } else Object.assign(eq, JSON.parse(JSON.stringify(vis)));
+    } else Object.assign(eq, vestir(vis, o, b, h.nivel));
   }
   if (!eq.arma) eq.arma = { tipo: 'puno' };
   return eq;

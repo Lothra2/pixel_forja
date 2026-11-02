@@ -1,7 +1,7 @@
 // Fuera del juego: intro, menú principal, elegir y crear héroe, opciones y pantalla de carga.
 import { ctx, W, H, E } from '../nucleo/lienzo';
 import { texto, T, TT, IDI, boton, marco, dentro, envolver, TITULO, fijarIdioma } from './comun';
-import { cuadrosHeroe, cuadrosPiso, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
+import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
 import { generarPaisaje, type MapaGotico } from '../../../src/engine/gotico/index';
 import { CLASES } from '../datos/clases';
 import { INTRO } from '../mundo/actos';
@@ -77,48 +77,171 @@ export function logo(x: number, y: number, k: number, t: number, tam = 54) {
 }
 
 // ------------------------------------------------------------------ intro
-const TOMAS: { dur: number; dibujar: (t: number, k: number) => void }[] = [];
+// Cinemática por tomas: cada una con su cámara (paneo, zoom lento, sacudida), luz que titila y ceniza.
+const SPRITE_OZMAREN = 'senor_demonio';
+const TOMAS: { dur: number; dibujar: (t: number, k: number) => void; lineas: number[] }[] = [];
 let tomasListas = false;
+const suave = (u: number) => u * u * (3 - 2 * u);
+const titila = (t: number, s = 0) => 0.9 + Math.sin(t * 11 + s) * 0.04 + Math.sin(t * 23 + s * 2) * 0.03 + (R() - 0.5) * 0.03;
+let sacudir = 0;
+const ceniza = Array.from({ length: 120 }, () => ({ x: R(), y: R(), v: 0.3 + R() * 0.7, s: R() }));
+function lluviaCeniza(t: number, k = 1, brasa = 0.25) {
+  for (const c of ceniza) {
+    const y = ((c.y + t * c.v * 0.06) % 1) * H, x = (((c.x + Math.sin(t * 0.7 + c.s * 9) * 0.01 - t * 0.012 * c.v) % 1) + 1) % 1 * W;
+    const viva = c.s < brasa;
+    ctx.globalAlpha = k * (viva ? 0.5 + 0.5 * Math.sin(t * 4 + c.s * 30) : 0.55);
+    ctx.fillStyle = viva ? '#ff9040' : '#8a8478';
+    ctx.fillRect(x, y, viva ? 2 : 2 + c.v, viva ? 2 : 1.5);
+  }
+  ctx.globalAlpha = 1;
+}
+function camara(f: () => void, zoom: number, cx = W / 2, cy = H / 2) {
+  ctx.save();
+  if (sacudir > 0) ctx.translate((R() - 0.5) * sacudir * 14, (R() - 0.5) * sacudir * 10);
+  ctx.translate(cx, cy); ctx.scale(zoom, zoom); ctx.translate(-cx, -cy);
+  f(); ctx.restore();
+}
+function destello(k: number, c = '255,240,210') { if (k <= 0) return; ctx.fillStyle = `rgba(${c},${Math.min(1, k)})`; ctx.fillRect(0, 0, W, H); }
+function cielo(t: number, rojo: number) {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, `rgb(${8 + rojo * 70},${6 + rojo * 12},${14})`); g.addColorStop(1, '#020203');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const r = rng(3); for (let i = 0; i < 180; i++) { ctx.fillStyle = `rgba(255,255,255,${(0.15 + r() * 0.6) * (1 - rojo * 0.6) * (0.7 + 0.3 * Math.sin(t * 2 + i))})`; ctx.fillRect(r() * W, r() * H * 0.75, 1, 1); }
+  // nubes bajas que toman el color de la brasa
+  const rn = rng(9);
+  for (let i = 0; i < 9; i++) { const x = ((rn() * W * 1.4 + t * (8 + i * 2)) % (W * 1.4)) - W * 0.2, y = H * (0.12 + rn() * 0.35), rr = 120 + rn() * 160; const g2 = ctx.createRadialGradient(x, y, 0, x, y, rr); g2.addColorStop(0, `rgba(${30 + rojo * 160},${20 + rojo * 40},${30},${0.35})`); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
+}
+function abadiaSilueta(x: number, y: number, k: number, ventanas: number, t: number) {
+  ctx.fillStyle = '#030203';
+  ctx.fillRect(x - 90 * k, y - 60 * k, 180 * k, 60 * k);
+  for (const [dx, w, h] of [[-80, 26, 120], [54, 26, 140], [-14, 30, 90]] as [number, number, number][]) {
+    ctx.fillRect(x + dx * k, y - h * k, w * k, h * k);
+    ctx.beginPath(); ctx.moveTo(x + (dx - 4) * k, y - h * k); ctx.lineTo(x + (dx + w / 2) * k, y - (h + 50) * k); ctx.lineTo(x + (dx + w + 4) * k, y - h * k); ctx.fill();
+  }
+  ctx.fillStyle = `rgba(255,170,70,${ventanas * titila(t)})`;
+  for (const [dx, dy] of [[-72, 80], [-72, 50], [62, 100], [62, 70], [-6, 60], [-40, 30], [30, 30]]) ctx.fillRect(x + dx * k, y - dy * k, 4 * k, 9 * k);
+}
+function suelo(rojo: number) {
+  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(0, H); for (let x = 0; x <= W; x += 16) ctx.lineTo(x, H * 0.8 - Math.sin(x * 0.01) * 26 - Math.sin(x * 0.031) * 10); ctx.lineTo(W, H); ctx.fill();
+  if (rojo > 0) { const g = ctx.createLinearGradient(0, H * 0.7, 0, H); g.addColorStop(0, `rgba(255,90,20,${rojo * 0.25})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, H * 0.7, W, H * 0.3); }
+}
+interface Chispa { x: number; y: number; vx: number; vy: number; t: number; d: number; c: string }
+const chispasIntro: Chispa[] = [];
+function chispasPaso(dt: number) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = chispasIntro.length - 1; i >= 0; i--) { const c = chispasIntro[i]; c.t += dt; if (c.t > c.d) { chispasIntro.splice(i, 1); continue; } c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 90 * dt; ctx.globalAlpha = 1 - c.t / c.d; ctx.fillStyle = c.c; ctx.fillRect(c.x, c.y, 2, 2); }
+  ctx.restore();
+}
+let ultT = 0;
 function armarTomas() {
   if (tomasListas) return; tomasListas = true;
-  const T0 = (dur: number, f: (t: number, k: number) => void) => TOMAS.push({ dur, dibujar: f });
-  // 1: el valle
-  T0(7, (t) => { const m = escena('bosque', 5).mapa; pintarMapa(m, 30 + t * 14, 300 + t * 4, t, undefined, 1.8); oscuridad(0.18); lluvia(t, 0.5); });
-  // 2: la abadía con monjes encapuchados
-  T0(7, (t) => { const m = escena('catedral', 2).mapa; const aP = pintarMapa(m, -40 + t * 10, 330 - t * 6, t, (aP) => [0, 1, 2].map((i) => { const [x, y] = aP(9 + i * 3, 12); return { prof: 21 + i * 3, draw: () => dibujar(ctx, cuadrosMonstruo('cultista', 'quieto', 's')[Math.floor(t * 5) % 4], x, y) }; }), 1.8); void aP; oscuridad(0.55, [[W * 0.3, H * 0.5, 160], [W * 0.7, H * 0.45, 160]]); });
-  // 3: el voto
-  T0(6, (t) => { const m = escena('catedral', 7).mapa; pintarMapa(m, 60 - t * 6, 340, t, undefined, 1.8); oscuridad(0.72, [[W / 2, H / 2, 200]]); });
-  // 4-5: el cielo se abre y la brasa cae
-  T0(10, (t) => {
-    ctx.fillStyle = '#05040a'; ctx.fillRect(0, 0, W, H);
-    const r = rng(3); for (let i = 0; i < 160; i++) { ctx.fillStyle = `rgba(255,255,255,${0.2 + r() * 0.6})`; ctx.fillRect(r() * W, r() * H * 0.8, 1, 1); }
-    if (t > 1.5) { const k = Math.min(1, (t - 1.5) / 1.5); ctx.strokeStyle = `rgba(255,120,40,${0.5 * k})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W * 0.62, 0); for (let i = 0; i < 6; i++) ctx.lineTo(W * 0.62 + Math.sin(i * 7) * 20, H * 0.05 * i * k); ctx.stroke(); }
-    if (t > 3) {
-      const u = Math.min(1, (t - 3) / 6), x = W * (0.62 - u * 0.2), y = H * (0.05 + u * 0.75);
-      for (let i = 0; i < 30; i++) { const v = i / 30; ctx.fillStyle = `rgba(255,${100 + v * 100},40,${(1 - v) * 0.6})`; ctx.beginPath(); ctx.arc(x + v * 40 * 0.3, y - v * 120 * Math.max(0.2, u), 6 * (1 - v) + 1, 0, Math.PI * 2); ctx.fill(); }
-      const g = ctx.createRadialGradient(x, y, 0, x, y, 70); g.addColorStop(0, 'rgba(255,220,140,1)'); g.addColorStop(0.2, 'rgba(255,120,30,0.8)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(x - 70, y - 70, 140, 140);
-    }
-    // silueta del valle
-    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(0, H); for (let x = 0; x <= W; x += 20) ctx.lineTo(x, H * 0.82 - Math.sin(x * 0.01) * 30 - Math.sin(x * 0.033) * 12); ctx.lineTo(W, H); ctx.fill();
-    ctx.fillRect(W * 0.38, H * 0.62, 30, H * 0.2); ctx.beginPath(); ctx.moveTo(W * 0.37, H * 0.62); ctx.lineTo(W * 0.38 + 15, H * 0.52); ctx.lineTo(W * 0.4 + 16, H * 0.62); ctx.fill();
+  const T0 = (dur: number, lineas: number[], f: (t: number, k: number) => void) => TOMAS.push({ dur, dibujar: f, lineas });
+  // 1: el valle al anochecer, la cámara baja despacio
+  T0(8, [0], (t, k) => { const m = escena('bosque', 5).mapa; camara(() => pintarMapa(m, 10 + t * 16, 290 + t * 5, t, undefined, 1.6 + suave(k) * 0.35), 1); oscuridad(0.25 + k * 0.1); lluvia(t, 0.5); });
+  // 2: la abadía y los monjes, velas que titilan
+  T0(9, [1], (t, k) => {
+    const m = escena('catedral', 2).mapa;
+    camara(() => pintarMapa(m, -60 + t * 12, 330 - t * 6, t, (aP) => [0, 1, 2].map((i) => { const [x, y] = aP(9 + i * 3, 12); return { prof: 21 + i * 3, draw: () => dibujar(ctx, cuadrosMonstruo('cultista', 'quieto', 's')[Math.floor(t * 5 + i) % 4], x, y) }; }), 1.7 + k * 0.2), 1);
+    oscuridad(0.58, [[W * 0.3, H * 0.5, 170 * titila(t)], [W * 0.7, H * 0.45, 160 * titila(t, 2)]]);
   });
-  // 6: el claustro y la brasa en el piso; campanas
-  T0(7, (t) => { const m = escena('catedral', 11).mapa; pintarMapa(m, 0, 300 + t * 3, t, undefined, 1.8); oscuridad(0.7, [[W / 2, H * 0.55, 220 + Math.sin(t * 9) * 10]]); const g = ctx.createRadialGradient(W / 2, H * 0.55, 0, W / 2, H * 0.55, 40); g.addColorStop(0, 'rgba(255,220,120,1)'); g.addColorStop(0.3, 'rgba(255,100,20,0.8)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(W / 2 - 40, H * 0.55 - 40, 80, 80); if (Math.floor(t * 0.7) !== Math.floor((t - 1 / 60) * 0.7)) Sonido.efecto('campana', { vol: 0.8 }); });
-  // 7: los muertos se levantan
-  T0(8, (t) => { const m = escena('cementerio', 4).mapa; pintarMapa(m, 20 + t * 6, 320, t, (aP) => [[8, 10], [13, 9], [16, 14], [10, 15]].map(([x, y], i) => { const [px, py] = aP(x, y); const fs = cuadrosMonstruo('zombi', t > 2 + i ? 'caminar' : 'morir', 's'); const f = t > 2 + i ? Math.floor(t * 8) % 8 : Math.max(0, 7 - Math.floor((t - i * 0.5) * 4)); return { prof: x + y, draw: () => dibujar(ctx, fs[Math.max(0, Math.min(fs.length - 1, f))], px, py) }; }), 1.8); oscuridad(0.6); lluvia(t, 0.6); });
-  // 8: los sobrevivientes
-  T0(7, (t) => { const m = escena('campamento', 6).mapa; pintarMapa(m, 60 - t * 8, 380, t, undefined, 1.8); oscuridad(0.5, [[W / 2, H / 2, 260]]); brasas(t, 25); });
-  // 9: tú
-  T0(8, (t) => {
+  // 3: el voto, empuje lento hacia la vela
+  T0(7, [2], (t, k) => { const m = escena('catedral', 7).mapa; camara(() => pintarMapa(m, 60 - t * 6, 340, t, undefined, 1.8 + suave(k) * 0.5), 1); oscuridad(0.76, [[W / 2, H / 2, 200 * titila(t)]]); });
+  // 4: el cielo se abre y la brasa cae como un meteoro sobre la abadía
+  T0(13, [3, 4], (t) => {
+    const dt = Math.max(0, t - ultT); ultT = t;
+    const rojo = Math.min(1, Math.max(0, (t - 2) / 3));
+    const impacto = 9.6, u = Math.min(1, Math.max(0, (t - 3.6) / (impacto - 3.6)));
+    const ax = W * 0.46, ay = H * 0.66;
+    const zoom = 1 + suave(Math.min(1, t / impacto)) * 0.22;
+    if (t >= impacto && t - dt < impacto) { sacudir = 1.6; Sonido.efecto('explosion', { vol: 1 }); Sonido.efecto('trueno', { vol: 1 }); for (let i = 0; i < 120; i++) { const a = -Math.PI * R(); chispasIntro.push({ x: ax, y: ay - 40, vx: Math.cos(a) * (80 + R() * 260), vy: Math.sin(a) * (120 + R() * 240), t: 0, d: 1 + R() * 2, c: R() < 0.5 ? '#ffb040' : '#ff5010' }); } }
+    sacudir = Math.max(0, sacudir - dt * 0.8);
+    camara(() => {
+      cielo(t, rojo);
+      // la grieta en el cielo
+      if (t > 2) { const kk = Math.min(1, (t - 2) / 1.5); ctx.strokeStyle = `rgba(255,140,50,${0.7 * kk})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W * 0.8, 0); for (let i = 1; i < 7; i++) ctx.lineTo(W * 0.8 + Math.sin(i * 7) * 22, H * 0.035 * i * kk); ctx.stroke(); }
+      // la brasa: cae acelerando con su estela
+      if (t > 3.6 && t < impacto) {
+        const e = u * u, x = W * 0.8 + (ax - W * 0.8) * e, y = H * 0.02 + (ay - 40 - H * 0.02) * e;
+        const dx = ax - W * 0.8, dy = ay - 40 - H * 0.02, L = Math.hypot(dx, dy);
+        for (let i = 0; i < 40; i++) { const v = i / 40, l = (40 + 260 * u) * v; ctx.fillStyle = `rgba(255,${120 + v * 100},${40 + v * 40},${(1 - v) * 0.55})`; ctx.beginPath(); ctx.arc(x - (dx / L) * l + Math.sin(t * 30 + i) * 2 * v, y - (dy / L) * l, 9 * (1 - v) + 1, 0, Math.PI * 2); ctx.fill(); }
+        const g = ctx.createRadialGradient(x, y, 0, x, y, 90 + u * 60); g.addColorStop(0, 'rgba(255,240,190,1)'); g.addColorStop(0.15, 'rgba(255,150,50,0.9)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(x - 150, y - 150, 300, 300);
+        if (R() < 0.8) chispasIntro.push({ x, y, vx: (R() - 0.5) * 60, vy: -R() * 40, t: 0, d: 0.6 + R() * 0.6, c: '#ffa040' });
+      }
+      abadiaSilueta(ax, ay, 1.1, t < impacto ? 0.7 : 0, t);
+      if (t >= impacto) {
+        const q = t - impacto;
+        // onda expansiva y la abadía ardiendo
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = `rgba(255,170,80,${Math.max(0, 0.8 - q * 0.5)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(ax, ay, 60 + q * 420, 18 + q * 120, 0, 0, Math.PI * 2); ctx.stroke();
+        const g = ctx.createRadialGradient(ax, ay - 50, 0, ax, ay - 50, 260 * titila(t)); g.addColorStop(0, 'rgba(255,170,60,0.75)'); g.addColorStop(0.4, 'rgba(255,70,20,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(ax - 300, ay - 320, 600, 500);
+        ctx.restore();
+      }
+      suelo(t >= impacto ? 1 : rojo * 0.4);
+      chispasPaso(dt);
+    }, zoom, ax, ay - 60);
+    if (t >= impacto) destello(1 - (t - impacto) / 0.7);
+  });
+  // 5: el claustro y la brasa en el piso; campanas que doblan solas
+  T0(8, [5], (t, k) => {
+    const m = escena('catedral', 11).mapa; sacudir = t < 0.8 ? 0.6 : Math.max(0, sacudir - 0.01);
+    camara(() => pintarMapa(m, 0, 300 + t * 3, t, undefined, 2.1 - suave(k) * 0.25), 1);
+    oscuridad(0.72, [[W / 2, H * 0.55, 230 * titila(t)]]);
+    const g = ctx.createRadialGradient(W / 2, H * 0.55, 0, W / 2, H * 0.55, 46 * titila(t, 3)); g.addColorStop(0, 'rgba(255,230,140,1)'); g.addColorStop(0.3, 'rgba(255,100,20,0.85)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(W / 2 - 50, H * 0.55 - 50, 100, 100);
+    if (Math.floor(t * 0.6) !== Math.floor((t - 1 / 60) * 0.6)) Sonido.efecto('campana', { vol: 0.8 });
+    lluviaCeniza(t, Math.min(1, t / 3), 0.3);
+  });
+  // 6: los muertos se levantan bajo la ceniza
+  T0(8, [6], (t, k) => {
+    const m = escena('cementerio', 4).mapa;
+    camara(() => pintarMapa(m, 20 + t * 7, 320, t, (aP) => [[8, 10], [13, 9], [16, 14], [10, 15]].map(([x, y], i) => { const [px, py] = aP(x, y); const fs = cuadrosMonstruo('zombi', t > 2 + i ? 'caminar' : 'morir', 's'); const f = t > 2 + i ? Math.floor(t * 8) % 8 : Math.max(0, 7 - Math.floor((t - i * 0.5) * 4)); return { prof: x + y, draw: () => dibujar(ctx, fs[Math.max(0, Math.min(fs.length - 1, f))], px, py) }; }), 1.8 + k * 0.15), 1);
+    oscuridad(0.62); lluviaCeniza(t, 1, 0.15);
+  });
+  // 7: los sobrevivientes alrededor del fuego
+  T0(7, [7], (t, k) => { const m = escena('campamento', 6).mapa; camara(() => pintarMapa(m, 70 - t * 9, 380, t, undefined, 1.75 + k * 0.15), 1); oscuridad(0.5, [[W / 2, H / 2, 260 * titila(t)]]); lluviaCeniza(t, 0.8, 0.4); });
+  // 8: tú. Las ocho clases en silueta, la luz del fuego las va encendiendo
+  T0(9, [8], (t, k) => {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-    CLASES.forEach((c, i) => { const fs = cuadrosHeroe(c.id, 'quieto', 's'); const q = fs[Math.floor(t * 6 + i) % Math.max(1, fs.length)]; const x = W / 2 + (i - 3.5) * 82, y = H * 0.68; const k = Math.min(1, Math.max(0, (t - i * 0.25) / 1.5)); ctx.globalAlpha = k; dibujarTenido(ctx, q, x, y, '#000', 0.55, 1.2); ctx.globalAlpha = 1; });
-    const g = ctx.createRadialGradient(W / 2, H * 0.75, 0, W / 2, H * 0.75, 260); g.addColorStop(0, 'rgba(255,100,30,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over';
-    brasas(t, 50);
+    const paso = Math.min(130, W / 9), pan = (0.5 - suave(k)) * paso * 0.8;
+    const esc = Math.min(0.9, H / 520);
+    CLASES.forEach((c, i) => {
+      const ret = cuadrosRetrato(c.id, 2); const q = ret.length ? ret[Math.floor(t * 8 + i) % ret.length] : cuadrosHeroe(c.id, 'quieto', 's')[0];
+      const x = W / 2 + (i - 3.5) * paso + pan, y = H * 0.74 + (i % 2) * 14;
+      const a = Math.min(1, Math.max(0, (t - i * 0.3) / 1.2));
+      const luz = Math.min(1, Math.max(0, (t - 3 - i * 0.25) / 2));
+      ctx.globalAlpha = a; dibujarTenido(ctx, q, x, y, '#000', 1 - luz * 0.75, ret.length ? esc : esc * 2); ctx.globalAlpha = 1;
+    });
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(W / 2, H * 0.85, 0, W / 2, H * 0.85, 360 * titila(t)); g.addColorStop(0, 'rgba(255,100,30,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    brasas(t, 50); lluviaCeniza(t, 0.6, 0.5);
+  });
+  // 9: en el fondo del pozo algo abre los ojos. Relámpagos que dejan ver la silueta de Ozmaren
+  T0(10, [9], (t) => {
+    const dt = Math.max(0, t - ultT); ultT = t;
+    const flashes = [2.2, 3.1, 6];
+    let luz = 0; for (const f of flashes) if (t > f) luz = Math.max(luz, Math.max(0, 1 - (t - f) / (f === 6 ? 1.2 : 0.25)));
+    if (flashes.some((f) => t >= f && t - dt < f)) { Sonido.efecto(t > 5 ? 'rugido_jefe' : 'trueno', { vol: 1 }); sacudir = t > 5 ? 1.4 : 0.4; }
+    sacudir = Math.max(0, sacudir - dt);
+    camara(() => {
+      ctx.fillStyle = '#030102'; ctx.fillRect(0, 0, W, H);
+      const g = ctx.createRadialGradient(W / 2, H * 0.95, 0, W / 2, H * 0.95, H * 0.8); g.addColorStop(0, `rgba(120,20,5,${0.5 + Math.sin(t * 2) * 0.1})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      const fs = cuadrosMonstruo(SPRITE_OZMAREN, 'quieto', 's'); const q = fs[Math.floor(t * 4) % Math.max(1, fs.length)];
+      const esc = Math.min(2.6, (H * 0.8) / Math.max(1, q?.h ?? 200)), x = W / 2, y = H * 0.92;
+      if (q) {
+        dibujarTenido(ctx, q, x, y, '#000', 1 - luz * 0.5, esc);
+        if (luz > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = luz * 0.5; dibujarTenido(ctx, q, x, y, '#ff5020', 1, esc); ctx.restore(); }
+        // los ojos, siempre encendidos desde que despierta
+        if (t > 4.4) { const o = Math.min(1, (t - 4.4) / 0.6), ey = y - q.ay * esc * 0.86; ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (const dx of [-11, 11]) { const gg = ctx.createRadialGradient(x + dx * esc * 0.5, ey, 0, x + dx * esc * 0.5, ey, 18); gg.addColorStop(0, `rgba(255,220,120,${o})`); gg.addColorStop(0.3, `rgba(255,90,20,${o * 0.8})`); gg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gg; ctx.fillRect(x + dx * esc * 0.5 - 18, ey - 18, 36, 36); } ctx.restore(); }
+      }
+      lluviaCeniza(t, 0.7, 0.6);
+    }, 1 + suave(Math.min(1, t / 10)) * 0.15, W / 2, H * 0.4);
+    destello(luz * 0.8, '255,200,170');
   });
   // título
-  T0(7, (t) => { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); brasas(t, 70); logo(W / 2, H / 2, Math.min(1, t / 3), t, Math.min(64, W / 14)); });
+  T0(8, [], (t) => { sacudir = 0; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); brasas(t, 70); lluviaCeniza(t, 0.6, 0.3); logo(W / 2, H / 2, Math.min(1, t / 3), t, Math.min(64, W / 14)); });
 }
 export function introDuracion() { armarTomas(); return TOMAS.reduce((s, x) => s + x.dur, 0); }
+/** Escribe la línea letra por letra. */
+function maquina(s: string, tl: number) { return s.slice(0, Math.max(0, Math.floor(tl * 30))); }
 /** Devuelve true cuando terminó. */
 export function dibujarIntro(t: number): boolean {
   armarTomas();
@@ -126,21 +249,26 @@ export function dibujarIntro(t: number): boolean {
   while (i < TOMAS.length && t > acc + TOMAS[i].dur) { acc += TOMAS[i].dur; i++; }
   if (i >= TOMAS.length) return true;
   const tl = t - acc, tm = TOMAS[i];
+  if (tl < ultT) ultT = 0;
   tm.dibujar(tl, tl / tm.dur);
   vineta();
+  // franjas de cine
+  const fr = Math.round(H * 0.07); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, fr); ctx.fillRect(0, H - fr, W, fr);
   // fundidos
   const f = Math.min(1, tl / 1.2, (tm.dur - tl) / 1.2);
   ctx.fillStyle = `rgba(0,0,0,${1 - Math.max(0, f)})`; ctx.fillRect(0, 0, W, H);
-  // la voz (texto): la toma de la brasa lleva dos líneas
-  const LINEAS: number[][] = [[0], [1], [2], [3, 4], [5], [6], [7], [8], []];
-  const ls = LINEAS[i] ?? [];
+  // la voz: a máquina, una o dos líneas por toma
+  const ls = tm.lineas;
   if (ls.length) {
     const parte = ls.length > 1 ? (tl < tm.dur / 2 ? 0 : 1) : 0;
     const d0 = ls.length > 1 ? (parte ? tm.dur / 2 : 0) : 0, d1 = ls.length > 1 ? (parte ? tm.dur : tm.dur / 2) : tm.dur;
-    const k = Math.min(1, Math.max(0, (tl - d0 - 0.6) / 1), Math.max(0, (d1 - tl - 0.3) / 0.8));
-    ctx.globalAlpha = k;
-    envolver(TT(INTRO[ls[parte]]), Math.min(720, W - 80), 20).forEach((l, n) => texto(l, W / 2, H - 90 + n * 26, { alin: 'center', tam: 20, color: '#e8dcc0', fuente: TITULO }));
-    ctx.globalAlpha = 1;
+    const k = Math.min(1, Math.max(0, (d1 - tl - 0.3) / 0.8));
+    const linea = INTRO[ls[parte]];
+    if (linea) {
+      ctx.globalAlpha = k;
+      envolver(maquina(TT(linea), tl - d0 - 0.7), Math.min(760, W - 80), 20).forEach((l, n) => texto(l, W / 2, H - fr - 52 + n * 26, { alin: 'center', tam: 20, color: '#e8dcc0', fuente: TITULO }));
+      ctx.globalAlpha = 1;
+    }
   }
   texto(T('Clic o Esc para saltar', 'Click or Esc to skip'), W - 16, H - 14, { alin: 'right', tam: 11, color: '#5a5040' });
   return false;
