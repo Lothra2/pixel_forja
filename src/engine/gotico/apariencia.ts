@@ -1,6 +1,6 @@
 import { MATERIALES } from './materiales';
 import { armaduraDeLinea, LINEAS_CUERPO, MAT_LINEA, type Equipo, type LineaCuerpo } from './cuerpo';
-import { iconoDeLoot, type Icono3D, type Linea } from './iconos3d';
+import { iconoDeLoot, arma3dDeLoot, type Icono3D, type Linea } from './iconos3d';
 import type { LootItem } from '../loot/catalog';
 
 /**
@@ -107,7 +107,9 @@ export function equipoDeInventario(puesto: Partial<Record<string, Puesto | undef
   else if (bo) { const m = matDe(bo.linea, bo); e.pies = { tipo: duro(bo.linea) ? 'sabatones' : bo.linea === 'tela' ? 'botas' : (bo.nivel ?? 2) >= 3 ? 'botas_altas' : 'botas', mat: duro(bo.linea) ? m.mat : m.mat }; }
   // ---- armas: la de la mano es la misma que pinta el ícono
   const ar = puesto.arma;
-  if (ar?.arma3d) e.arma = { ...ar.arma3d } as Equipo['arma'];
+  // (sin arma3d explícita, la base del botín dice qué arma del motor es: así toda arma nueva sale en la mano)
+  const ar3 = ar?.arma3d ?? (ar ? arma3dDeLoot(ar.it) : null);
+  if (ar3) e.arma = { ...ar3 } as Equipo['arma'];
   else if (base.arma) e.arma = base.arma;
   const izq = puesto.mano_libre && descDe(puesto.mano_libre);
   if (izq) {

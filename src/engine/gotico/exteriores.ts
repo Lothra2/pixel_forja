@@ -689,8 +689,8 @@ export function bestiaMuerta(a: Arma, ps: Pieza[], tipo: TipoBestia, p: V, giro:
   }
   if (o.carga) {
     // la carga se le cayó al costado del lomo: fardos, un tapete enrollado y la cuerda
-    for (const [x, y] of [[-6, -17], [5, -16]] as [number, number][]) { const q = W(x, y, 4.5); ps.push(a.elipsoide(q[0], q[1], q[2], 6.5 * s, 4.8 * s, 4.5 * s, { mat: elegir(a, ['ext_tela_sucia', 'tela', 'tela_roja']), giro: giro + az(a, 25), tono: az(a, 0.1) })); }
-    const q = W(1, -12, 12); ps.push(a.cilindro(q[0], q[1], q[2], 3 * s, 22 * s, { mat: elegir(a, ['tela_roja', 'tela_azul']), eje: X([1, 0.2, -0.1]) }));
+    for (const [x, y] of [[-6, -17], [5, -16]] as [number, number][]) { const q = W(x, y, 4.5); ps.push(a.elipsoide(q[0], q[1], q[2], 6.5 * s, 4.8 * s, 4.5 * s, { mat: elegir(a, ['ext_tela_sucia', 'tela', 'cu_tela_parda']), giro: giro + az(a, 25), tono: az(a, 0.1) })); }
+    const q = W(1, -12, 12); ps.push(a.cilindro(q[0], q[1], q[2], 3 * s, 22 * s, { mat: elegir(a, ['tela_roja', 'ext_tela_sucia', 'cu_tela_parda']), eje: X([1, 0.2, -0.1]) }));
     ps.push(a.palo(W(-12, -10, 9), W(10, -12, 10), 0.6 * s, { mat: 'cuerda' }));
   }
 }

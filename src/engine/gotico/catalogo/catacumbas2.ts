@@ -1,7 +1,7 @@
 import { type V3 } from '../objeto';
 import {
-  G, hacerObj, bloque, ojiva, letras, grieta, tierra, monticulo, musgo, cascotes, calavera, calaveraSimple, huesoLargo, huesos, huesito,
-  esqueleto, mirar, vela, llama, cadena, rr, elegir, onda, orient, base, GR, type P2,
+  G, hacerObj, bloque, ojiva, letras, grieta, tierra, monticulo, musgo, cascotes, calavera, calaveraSimple, huesos, huesito,
+  esqueleto, mirar, vela, llama, rr, elegir, orient, base, GR, type P2,
 } from '../kit_muerte';
 
 /**
@@ -13,7 +13,7 @@ import {
  * Las paredes corren a lo largo de x con la cara a +y; la variante que termina en `_der` corre a lo largo de y.
  */
 const obj = hacerObj('catacumbas');
-const TOBA = ['mu_bloques_toba', 'mu_toba', 'cat_toba'];
+const TOBA = ['mu_bloques_toba', 'mu_toba', 'mu_toba'];
 const conDer = (vs: string[]) => [...vs, ...vs.slice(0, 2).map((v) => v + '_der')];
 /** Pared de toba con su zócalo y una viga de remate gastada. */
 function paredToba(g: G, L: number, H: number, gro: number, m: string) {
@@ -29,19 +29,12 @@ obj('cat2_pasillo_osario', ['Pasillo de osario', 'Ossuary corridor wall'], conDe
   const g = g0.sub(0, 0, 0, orient(v)), b = base(v), m = elegir(a, TOBA), H = 84;
   bloque(g, 0, -4, 0, 80, 10, H, { mat: m, b: 1, j: 1 });
   const alto = (x: number) => (b === 'derrumbado' ? Math.max(14, 50 - Math.abs(x - 6) * 1.6 + Math.sin(x * 0.3) * 6) : 56);
-  // el muro de huesos: hileras de cabezas de fémur, con bandas de cráneos cada tanto
-  const banda = (z: number) => b !== 'femures' && (Math.abs(z - 24) < 3 || Math.abs(z - 46) < 3);
-  for (let z = 1.2; z < 58; z += 2.6) {
-    const enBanda = banda(z);
-    for (let x = -38; x <= 38; x += enBanda ? 6 : 2.5) {
-      if (z > alto(x)) continue;
-      if (b === 'cruz_calaveras' && Math.abs(x) < 9 && z > 10 && z < 40 && (Math.abs(x) < 2.6 || Math.abs(z - 30) < 2.6)) { calaveraSimple(g.sub(x, 2.2, z - 1.8, 90 + rr(a, -10, 10)), 2.1, 'mu_hueso', 0.02); continue; }
-      if (enBanda) { if (Math.abs(z - 24) < 1.4 || Math.abs(z - 46) < 1.4) calaveraSimple(g.sub(x + rr(a, -0.3, 0.3), 2.6, z - 2.4, 90 + rr(a, -15, 15)), 2.6, 'mu_hueso', -0.03); continue; }
-      const r = 1.1 + a.r() * 0.25;
-      g.palo([x, -2, z], [x + rr(a, -0.3, 0.3), 1.6, z + rr(a, -0.3, 0.3)], r * 0.7, { mat: 'mu_hueso', tono: -0.15 });
-      g.esf(x, 1.8, z, r, { mat: 'mu_hueso', tono: -0.1 + a.r() * 0.12 });
-    }
-  }
+  // el muro de huesos: cabezas de fémur apiladas (la textura) con algunas que sobresalen, y bandas de cráneos
+  const bandas = b === 'femures' ? [] : [24, 46];
+  for (let x = -38; x < 38; x += 4) { const h = Math.min(56, alto(x + 2)); if (h > 2) bloque(g, x + 2, 0.4, 0, 4.2, 3, h, { mat: 'mu_pared_huesos', b: 0.3, j: 0.5 }); }
+  for (let i = 0; i < 26; i++) { const x = rr(a, -37, 37), z = rr(a, 2, 54); if (z > alto(x) - 2 || bandas.some((zb) => Math.abs(z - zb) < 4)) continue; g.palo([x, 1, z], [x + rr(a, -0.3, 0.3), 2.8, z], 0.9, { mat: 'mu_hueso', tono: -0.12 }); g.esf(x, 3, z, 1.25, { mat: 'mu_hueso', tono: -0.04 + a.r() * 0.1 }); }
+  for (const zb of bandas) for (let x = -36; x <= 36; x += 5.6) { if (zb > alto(x) - 3) continue; calaveraSimple(g.sub(x + rr(a, -0.3, 0.3), 1.2, zb - 2.6, 90 + rr(a, -15, 15)), 2.6, 'mu_hueso', -0.03); }
+  if (b === 'cruz_calaveras') { for (const [x, z] of [[0, 12], [0, 17], [0, 22], [0, 27], [0, 32], [-5, 27], [5, 27]] as P2[]) calaveraSimple(g.sub(x, 1.6, z - 2, 90 + rr(a, -10, 10)), 2.2, 'mu_hueso', 0.04); }
   // arriba de los huesos, la toba desnuda con una cornisa de cráneos
   if (b !== 'derrumbado') { for (let x = -36; x <= 36; x += 6) calaveraSimple(g.sub(x, 1.4, 56.6, 90 + rr(a, -15, 15)), 2.4, 'mu_hueso', -0.06); bloque(g, 0, 0, 62, 80, 4, 2.4, { mat: m, tono: 0.04, b: 0.5, j: 0.8 }); }
   else { huesos(g, 18, 22, 8, 6, 12, 0.9, 3); g.elip(6, 10, 0, 22, 9, 6, { mat: 'mu_hueso', tono: -0.3 }); for (let i = 0; i < 6; i++) calavera(g.sub(rr(a, -14, 26), rr(a, 6, 16), rr(a, 0, 3), mirar(a)), 2.8); }

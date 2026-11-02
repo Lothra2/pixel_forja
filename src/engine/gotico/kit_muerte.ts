@@ -26,6 +26,7 @@ M.mu_bloques_frio = { rampa: ['#0f1012', '#1b1d20', '#292c30', '#393d42', '#4b50
 M.mu_bloques_toba = { rampa: ['#110e0b', '#1e1913', '#2c241b', '#3c3124', '#4d3f2f', '#5f4e3b', '#725e48'], ruido: 0.45, escala: 0.25, patron: sillares(11, 6) };
 M.mu_toba = { rampa: ['#110e0b', '#1e1913', '#2c241b', '#3c3124', '#4d3f2f', '#5f4e3b', '#725e48'], ruido: 0.5, escala: 0.2, patron: (p) => (ruido(p[0] * 0.05, p[1] * 0.05, p[2] * 0.4) - 0.5) * 0.3 - Math.max(0, 1 - p[2] / 12) * 0.15 };
 M.mu_ladrillo = { rampa: ['#170d0a', '#28160f', '#3a2015', '#4d2b1c', '#613725', '#76442e'], ruido: 0.3, escala: 0.35, patron: (p, n) => { const m = (v: number, s: number) => ((v % s) + s) % s; const u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0]; const f = Math.floor(p[2] / 4); if (m(p[2], 4) < 0.8) return -0.35; if (m(u + (f % 2) * 4, 8) < 0.8) return -0.3; return (ruido(Math.floor((u + (f % 2) * 4) / 8) * 2.1, f * 1.3, 2) - 0.5) * 0.3; } };
+M.mu_piedra_musgo = { rampa: ['#111410', '#1e241b', '#2d3528', '#3e4737', '#525a48', '#676e5a', '#7f8670'], ruido: 0.45, escala: 0.22, patron: mugre(0.18, 14, 0.2) };
 M.mu_musgo = { rampa: ['#0d120a', '#172012', '#22301a', '#2e3f22', '#3b4f2b', '#4a6035'], ruido: 0.7, escala: 0.6 };
 M.mu_liquen = { rampa: ['#1d1d12', '#2f2f1c', '#444328', '#5a5835', '#706d44'], ruido: 0.6, escala: 0.8 };
 M.mu_hierro = { rampa: ['#0a0a0b', '#141415', '#1f1f21', '#2c2c2f', '#3b3b3f', '#4d4c50', '#625f60'], ruido: 0.3, escala: 0.6, brillo: 0.3, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5) > 0.7 ? 0.08 : 0) };
@@ -52,6 +53,15 @@ M.mu_madera = { rampa: ['#0f0d0a', '#1b1712', '#28221b', '#372e24', '#463b2e', '
 M.mu_hoja_seca = { rampa: ['#140d07', '#22160c', '#332112', '#452d18', '#573a1f'], ruido: 0.6, escala: 0.6 };
 M.mu_flor = { rampa: ['#160c12', '#25131d', '#361c2a', '#472637', '#583143'], ruido: 0.5, escala: 0.6 };
 M.mu_hueso = { rampa: ['#1d1913', '#322b21', '#4a4131', '#655943', '#807257', '#9a8b6d', '#b2a385', '#c6b99c'], ruido: 0.22, escala: 0.7 };
+/** Pared de cabezas de fémur apiladas: cada celda es una bola de hueso con la junta negra alrededor. */
+M.mu_pared_huesos = { rampa: ['#0e0c09', '#1d1912', '#342d21', '#4d4432', '#685c45', '#82755a', '#9b8c6e', '#b2a283'], ruido: 0.18, escala: 0.6, patron: (p, n) => {
+  const c = 2.6, u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : Math.abs(n[2]) > 0.7 ? p[0] : p[0], w = Math.abs(n[2]) > 0.7 ? p[1] : p[2];
+  const fila = Math.floor(w / c), uu = u + (fila % 2) * c * 0.5, col = Math.floor(uu / c);
+  const du = uu - (col + 0.5) * c, dw = w - (fila + 0.5) * c, d = Math.hypot(du, dw) / (c * 0.5);
+  const h = ruido(col * 3.7, fila * 5.1, 9);
+  if (d > 0.92 + h * 0.08) return -0.55;
+  return 0.12 - d * d * 0.32 + (h - 0.5) * 0.3 + (du < 0 && dw > 0 ? 0.06 : -0.04);
+} };
 M.mu_osario = { rampa: ['#100e0b', '#1c1914', '#2a251d', '#393228', '#4a4133'], ruido: 0.5, escala: 0.5 };
 M.mu_agua = { rampa: ['#05070a', '#0a1016', '#111a22', '#1a2630', '#26343f', '#36454f'], ruido: 0.2, escala: 0.15, brillo: 1 };
 M.mu_carne_seca = { rampa: ['#140b08', '#24140e', '#361f15', '#492b1d', '#5c3826', '#6f4630'], ruido: 0.45, escala: 0.5 };

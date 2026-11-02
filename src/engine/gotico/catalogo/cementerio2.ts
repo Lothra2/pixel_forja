@@ -47,7 +47,7 @@ function cruzCelta(g: G, m: string, h: number) {
   void a;
 }
 obj('cem2_cruz_celta_alta', ['Cruz celta alta', 'Tall Celtic high cross'], ['intacta', 'rota', 'inclinada', 'musgo', 'liquen'], [1, 1], true, (v, _f, g, a) => {
-  const m = v === 'musgo' ? 'cem_lapida_musgo' : elegir(a, PIEDRAS), h = 50 + a.r() * 8;
+  const m = v === 'musgo' ? 'mu_piedra_musgo' : elegir(a, PIEDRAS), h = 50 + a.r() * 8;
   tierra(g, 13, 11, 4);
   const gu = g.sub(0, 0, v === 'inclinada' ? -1.5 : 0, (a.r() - 0.5) * 30, v === 'inclinada' ? (a.r() < 0.5 ? -1 : 1) * (8 + a.r() * 7) : (a.r() - 0.5) * 3, a.r() < 0.5 ? 'x' : 'y');
   cruzCelta(gu, m, h);
@@ -83,7 +83,7 @@ function lapidaHombros(g: G, m: string, w: number, h: number, d: number) {
   return h;
 }
 obj('cem2_lapida_angel', ['Lápida con ángel que llora', 'Tombstone with weeping angel'], ['intacta', 'decapitada', 'musgo', 'hiedra'], [2, 1], true, (v, _f, g, a) => {
-  const m = v === 'musgo' ? 'cem_lapida_musgo' : elegir(a, ['mu_piedra', 'mu_piedra_fria']), mf = v === 'musgo' ? 'cem_lapida_musgo' : 'mu_marmol';
+  const m = v === 'musgo' ? 'mu_piedra_musgo' : elegir(a, ['mu_piedra', 'mu_piedra_fria']), mf = v === 'musgo' ? 'mu_piedra_musgo' : 'mu_marmol';
   tierra(g, 18, 12, 4);
   const gu = g.sub(-2, -2, 0, (a.r() - 0.5) * 16);
   lapidaHombros(gu, m, 17, 27, 4.2);
@@ -148,7 +148,7 @@ obj('cem2_obelisco_velado', ['Monumento velado', 'Draped monument'], ['columna_r
 
 /** Losa sepulcral que se hundió en la tierra. */
 obj('cem2_losa_hundida', ['Losa hundida', 'Sunken grave slab'], ['hundida', 'partida', 'musgo', 'levantada', 'hiedra'], [1, 2], false, (v, _f, g, a) => {
-  const m = v === 'musgo' ? 'cem_lapida_musgo' : elegir(a, PIEDRAS);
+  const m = v === 'musgo' ? 'mu_piedra_musgo' : elegir(a, PIEDRAS);
   tierra(g, 13, 21, 3, 'mu_tierra');
   const inc = v === 'levantada' ? 0 : 4 + a.r() * 5;
   const gu = g.sub(0, 0, v === 'levantada' ? 0 : -1.4, (a.r() - 0.5) * 14, (a.r() < 0.5 ? -1 : 1) * inc, a.r() < 0.5 ? 'x' : 'y');
@@ -215,7 +215,7 @@ obj('cem2_lapida_rota', ['Lápida rota', 'Broken tombstone'], ['mitad', 'astilla
 
 /** Lápida tragada por el musgo: un manto verde que la cubre y le cae por los costados. */
 obj('cem2_lapida_musgo', ['Lápida cubierta de musgo', 'Moss-covered tombstone'], ['redonda', 'ojival', 'cruz_baja', 'hundida'], [1, 1], true, (v, _f, g, a) => {
-  const m = 'cem_lapida_musgo', w = 13 + a.r() * 3, d = 4.6;
+  const m = 'mu_piedra_musgo', w = 13 + a.r() * 3, d = 4.6;
   tierra(g, 11, 10, 3, 'mu_tierra');
   const gu = g.sub(0, 0, v === 'hundida' ? -7 : 0, (a.r() - 0.5) * 26, (a.r() - 0.5) * (v === 'hundida' ? 22 : 8), a.r() < 0.5 ? 'x' : 'y');
   let h = 22 + a.r() * 5;
@@ -467,7 +467,7 @@ obj('cem2_mausoleo_familiar', ['Mausoleo familiar', 'Family mausoleum'], ['cerra
 
 /** Mausoleo gótico grande: contrafuertes, techo empinado, rosetón, pináculos y espadaña. */
 function mausoleoGotico(g: G, est: EstadoMau) {
-  const a = g.a, m = elegir(a, ['mu_bloques', 'mon_piedra', 'mu_piedra']), mt = elegir(a, ['pizarra', 'mu_piedra_fria']), W = 52, D = 60, H = 52;
+  const a = g.a, m = elegir(a, ['mu_bloques', 'mu_piedra_fria', 'mu_piedra']), mt = elegir(a, ['pizarra', 'mu_piedra_fria']), W = 52, D = 60, H = 52;
   tierra(g, W * 0.75, D * 0.7, 7, 'tierra', 0, 4);
   bloque(g, 0, 2, 0, W + 12, D + 14, 3.6, { mat: 'mu_piedra', tono: -0.08, b: 1.2, j: 1 });
   for (let i = 0; i < 3; i++) bloque(g, 0, D / 2 + 9 - i * 2.6, 0, 28 - i * 2, 4.6, 1.4 + i * 1.4, { mat: 'mu_piedra', tono: -0.05 + i * 0.03, b: 0.6, j: 0.6 });
@@ -1039,7 +1039,7 @@ obj('cem2_trampilla_cripta', ['Trampilla de cripta', 'Crypt hatch'], ['cerrada',
   matas(g, 5, 16, 15);
 });
 obj('cem2_banco_piedra', ['Banco de piedra', 'Stone mourning bench'], ['entero', 'roto', 'musgo', 'con_ofrenda'], [2, 1], false, (v, _f, g, a) => {
-  const m = v === 'musgo' ? 'cem_lapida_musgo' : elegir(a, PIEDRAS);
+  const m = v === 'musgo' ? 'mu_piedra_musgo' : elegir(a, PIEDRAS);
   tierra(g, 18, 9, 3);
   const s = g.sub(0, 0, 0, (a.r() - 0.5) * 10);
   for (const sx of [-1, 1]) { bloque(s, sx * 10, 0, 0, 4, 9, 8, { mat: m, b: 0.6, j: 0.5 }); s.sub(sx * 10, 0, 0, 90).prisma([[-3.6, 0], [3.6, 0], [3.6, 2], [-3.6, 2]], -2, 2, { mat: m, resta: true }); }
@@ -1057,7 +1057,7 @@ function muroRoto(g: G, x0: number, x1: number, gro: number, alto: (x: number) =
   for (let x = x0; x < x1 - 0.1; x += paso) { const w = Math.min(paso, x1 - x), h = Math.max(4, alto(x + w / 2) + (a.r() - 0.5) * 6); bloque(g, x + w / 2, 0, 0, w + 0.3, gro, h, { mat: m, b: 0.5, j: 0.9 }); if (a.r() < 0.4 && h > 12) bloque(g, x + w / 2 + rr(a, -1, 1), rr(a, -1, 1), h - 0.5, w * 0.6, gro * 0.8, 2 + a.r() * 3, { mat: m, b: 0.5, j: 1, giro: rr(a, -10, 10) }); }
 }
 obj('cem2_capilla_ruinas', ['Capilla en ruinas', 'Ruined chapel'], ['fachada', 'nave', 'abside', 'campanario'], [5, 5], true, (v, _f, g, a) => {
-  const m = elegir(a, ['mu_bloques', 'mon_piedra', 'mu_piedra']), mc = 'mu_piedra';
+  const m = elegir(a, ['mu_bloques', 'mu_piedra_fria', 'mu_piedra']), mc = 'mu_piedra';
   tierra(g, 42, 40, 10);
   if (v === 'fachada') {
     const s = g.sub(0, -6, 0), H = 92;

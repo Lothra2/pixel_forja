@@ -130,7 +130,7 @@ export const ARMOR_MOD_EPICO: Record<ArmorLineEpica, { stat: 'coldRes' | 'poison
   elfica: [{ stat: 'dex', k: 0.3 }, { stat: 'moveSpeed', k: 0.12 }],
   draconica: [{ stat: 'fireRes', k: 0.45 }, { stat: 'str', k: 0.3 }],
   demoniaca: [{ stat: 'thorns', k: 1.0 }, { stat: 'lifeSteal', k: 0.05 }],
-  celestial: [{ stat: 'healPct', k: 0.2 }, { stat: 'allRes', k: 0.2 }],
+  celestial: [{ stat: 'healPct', k: 0.2 }, { stat: 'lifeRegen', k: 0.1 }],
 };
 
 /** Nombres de las piezas (para el juego). */

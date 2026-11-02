@@ -1,5 +1,7 @@
 import { createRaster, type Raster } from '../core/raster';
 import type { LootItem } from '../loot/catalog';
+import type { WeaponIcon } from '../loot/weapons';
+import type { TipoArma, Encanto } from './cuerpo';
 import { MATERIALES } from './materiales';
 import { KZ, VISTA, pintarEscena, palo, poliedro, masa, hueso, bulto, ruido, type Comp, type Pieza, type V3 } from './render';
 
@@ -2142,7 +2144,9 @@ export function iconoObjeto3D(desc: Icono3D, w: number, h: number, cuadro = 0): 
 
 /**
  * Las armas del arsenal 3D que se ven mejor con el modelo de ícono propio (hoy las hachas, que en `armaSuelta` salen
- * de canto y planas). Devuelve null para las demás, que siguen con `iconoArma3D`.
+ * de canto y planas). Devuelve null para las demás, que siguen con `iconoArma3D` (`armaSuelta` en pose 'icono'): ahí
+ * van también las del arsenal épico (katana, estoque, falcata, tridente, lucero, arcos largo y corto, jabalina, gran
+ * báculo, orbe de mano, katar, hoz y lanza del dragón), cada una de frente o de perfil según se lea mejor.
  */
 export function iconoDeArma(a: { tipo: string; mat?: string; encanto?: string; gema?: string }): Icono3D | null {
   if (a.tipo !== 'hacha' && a.tipo !== 'hacha_doble') return null;
@@ -2153,6 +2157,32 @@ export function iconoDeArma(a: { tipo: string; mat?: string; encanto?: string; g
 }
 
 // ------------------------------------------------------------------ del botín a la descripción 3D
+/** Qué arma del motor (cuerpo.ts) pinta cada base de arma del botín, en la mano y en el inventario. */
+export const ARMA_DE_ICONO: Record<WeaponIcon, TipoArma> = {
+  sword: 'espada', scimitar: 'cimitarra', katana: 'katana', rapier: 'estoque', dagger: 'daga', kris: 'daga', axe: 'hacha', hatchet: 'hacha',
+  mace: 'maza', morning_star: 'maza_estrella', flail: 'mangual', warhammer: 'martillo', scepter: 'cetro', club: 'maza', wand: 'varita', claw: 'garras',
+  javelin: 'jabalina', greatsword: 'mandoble', greataxe: 'hacha_doble', maul: 'martillo', staff: 'baculo', spear: 'lanza', halberd: 'alabarda',
+  scythe: 'guadana', bow: 'arco_corto', longbow: 'arco_largo', crossbow: 'ballesta',
+  falcata: 'falcata', katar: 'katar', sickle: 'hoz', hand_orb: 'orbe_mano', trident: 'tridente', greatstaff: 'gran_baculo', dragon_lance: 'lanza_dragon',
+};
+/**
+ * El arma 3D de una base del botín (para `iconoArma3D`, `Puesto.arma3d` y el cuerpo): el tipo según su ícono y el
+ * metal, el mango, la gema y el encanto según su diseño (oro, acero oscuro u obsidiana, hueso o acero).
+ */
+export function arma3dDeLoot(it: LootItem): { tipo: TipoArma; mat: string; mango: string; gema?: string; encanto?: Encanto } | null {
+  if (it.base.cat !== 'weapon') return null;
+  const dz = (it.design ?? {}) as { blade?: { hex: string; kind: string }; haft?: { hex: string }; grip?: { hex: string }; gem?: string | null; glow?: string | null };
+  const hojaHex = dz.blade?.hex, h = esHex(hojaHex) ? hex(hojaHex) : null;
+  const sat = h ? (Math.max(...h) - Math.min(...h)) / Math.max(1, Math.max(...h)) : 0;
+  const mat = !h ? 'cu_placa' : dz.blade?.kind === 'bone' ? 'cu_hueso' : h[0] > h[2] * 1.4 && h[1] > h[2] * 1.1 && lum(h) > 120 ? 'cu_oro' : lum(h) < 90 ? 'cu_placa_oscura' : sat > 0.35 && h[0] > h[1] * 1.6 ? 'cu_draco' : 'cu_placa';
+  const mangoHex = dz.grip?.hex ?? dz.haft?.hex, mh = esHex(mangoHex) ? hex(mangoHex) : null;
+  const mango = !mh ? 'cu_cuero' : lum(mh) < 60 ? 'cu_cuero_negro' : lum(mh) > 140 ? 'madera_lisa' : 'cu_cuero';
+  const a: { tipo: TipoArma; mat: string; mango: string; gema?: string; encanto?: Encanto } = { tipo: ARMA_DE_ICONO[it.base.icon], mat, mango };
+  if (esHex(dz.gem)) a.gema = tinte(dz.gem, 'gema');
+  const en = encantoDe(dz.glow ?? undefined);
+  if (en && it.rarity !== 'normal') a.encanto = en as Encanto;
+  return a;
+}
 const PIEZA_DE_RANURA: Record<string, Pieza3D> = { helm: 'casco', chest: 'pecho', shoulders: 'hombreras', gloves: 'guantes', belt: 'cinturon', pants: 'grebas', boots: 'botas' };
 const GEMA_KIND: Record<string, string> = { ruby: 'ruby', sapphire: 'sapphire', emerald: 'emerald', topaz: 'topaz', amethyst: 'amethyst', diamond: 'diamond', skull: 'skull' };
 const GRADO: Record<string, 1 | 2 | 3 | 4 | 5> = { chipped: 1, flawed: 2, normal: 3, flawless: 4, perfect: 5 };

@@ -1,6 +1,6 @@
 import { conVarianteY, TEMAS, type Tema, type V3 } from '../objeto';
 import {
-  G, hacerObj, bloque, ojiva, altoOjiva, letras, grieta, tierra, monticulo, musgo, hiedra, cascotes, calavera, calaveraSimple, huesoLargo, huesos, huesito,
+  G, hacerObj, bloque, ojiva, altoOjiva, letras, grieta, tierra, musgo, hiedra, cascotes, calavera, calaveraSimple, huesoLargo, huesos, huesito,
   esqueleto, costillar, mirar, vela, llama, cadena, voluta, punta, figuraVelada, rr, elegir, onda, orient, base, GR, type P2,
 } from '../kit_muerte';
 
@@ -73,6 +73,7 @@ obj('cri_osario_pared', ['Pared de cráneos', 'Ossuary skull wall'], conDer(['ca
   const g = g0.sub(0, 0, 0, orient(v)), b = base(v), m = elegir(a, PIEDRA), H = 96;
   bloque(g, 0, 0, 0, 80, 14, 5, { mat: m, tono: -0.07, b: 1, j: 0.6 });
   bloque(g, 0, -1, 5, 74, 9, H - 5, { mat: 'mu_osario', b: 0.6, j: 0.3 });
+  for (let f = 1; f < 11; f += 2) bloque(g, 0, 2.2, 5 + f * 8, 72, 3, 6.4, { mat: 'mu_pared_huesos', b: 0.3, j: 0.3 });
   for (const s of [-1, 1]) bloque(g, s * 37, 1, 0, 8, 14, H + 2, { mat: m, tono: 0.05, b: 0.9, j: 0.4 });
   bloque(g, 0, 0.6, H, 82, 15, 3, { mat: m, tono: 0.04, b: 0.8, j: 0.4 });
   const hueco = (x: number, z: number) => (b === 'roseton' && Math.hypot(x, z - 52) < 17) || (b === 'arco' && Math.abs(x) < 13 && z < 46 + Math.sqrt(Math.max(0, 169 - x * x)) * 0.4);
@@ -82,7 +83,7 @@ obj('cri_osario_pared', ['Pared de cráneos', 'Ossuary skull wall'], conDer(['ca
     for (let x = -31; x <= 31; x += craneos ? 6.2 : 3) {
       if (hueco(x, z + 2)) continue;
       if (craneos) calaveraSimple(g.sub(x + rr(a, -0.4, 0.4), 3.4, z, 90 + rr(a, -12, 12)), 2.6, 'mu_hueso', -0.05);
-      else { g.esf(x, 3.6, z + 1.6, 1.5, { mat: 'mu_hueso', tono: -0.08 + a.r() * 0.08 }); g.esf(x + 0.9, 3.4, z + 2.6, 1.2, { mat: 'mu_hueso', tono: -0.12 }); }
+      else if (a.r() < 0.25) g.esf(x, 3.6, z + 1.8, 1.4, { mat: 'mu_hueso', tono: -0.06 + a.r() * 0.08 });
     }
   }
   if (b === 'huesos_cruzados') for (const x of [-18, 0, 18]) { const c = g.sub(x, 6, 48); huesoLargo(c, [-8, 0, -8], [8, 0, 8], 1.4); huesoLargo(c, [-8, 0.6, 8], [8, 0.6, -8], 1.4); calavera(c.sub(0, -0.5, -3, 90), 3.6); }
@@ -176,7 +177,7 @@ function tapaSarc(g: G, Lx: number, Ly: number, z: number, m: string) {
 function sarcofagoTallado(tipo: 'caballero' | 'obispo' | 'nino') {
   return (v: string, _f: number, g: G, a: G['a']) => {
     const nino = tipo === 'nino', Lx = nino ? 18 : 28, Ly = nino ? 36 : 64, H = nino ? 14 : 19;
-    const m = v === 'marmol_negro' ? 'mu_marmol_negro' : v === 'dorado' ? 'mu_marmol' : v === 'musgo' ? 'cem_lapida_musgo' : elegir(a, SARC);
+    const m = v === 'marmol_negro' ? 'mu_marmol_negro' : v === 'dorado' ? 'mu_marmol' : v === 'musgo' ? 'mu_piedra_musgo' : elegir(a, SARC);
     tierra(g, Lx * 0.8, Ly * 0.6, 4, 'mu_tierra');
     const s = g.sub(0, 0, 0, (a.r() - 0.5) * 6);
     cajaSarc(s, Lx, Ly, H, m);
@@ -588,7 +589,7 @@ obj('cri_relicario', ['Relicario', 'Reliquary'], ['cerrado', 'abierto', 'dorado'
   if (v === 'dorado') { vela(g, -7, 7, 0, 7, 1.3, f, 4, 0); vela(g, 7, 7, 0, 5, 1.3, f, 4, 1); return { piezas: g.ps, resplandor: { c: [0, 6, 14] as V3, r: 22, color: '#ffc060' } }; }
 }, { cuadros: 4, t: 3 });
 obj('cri_estatua_guardian', ['Guardián de piedra', 'Stone guardian knight'], ['espada', 'escudo', 'roto', 'musgo', 'ojos'], [2, 2], true, (v, f, g, a) => {
-  const m = v === 'musgo' ? 'cem_lapida_musgo' : elegir(a, ['mu_piedra', 'mu_piedra_fria', 'mu_marmol_negro']);
+  const m = v === 'musgo' ? 'mu_piedra_musgo' : elegir(a, ['mu_piedra', 'mu_piedra_fria', 'mu_marmol_negro']);
   tierra(g, 14, 14, 4, 'mu_tierra');
   bloque(g, 0, 0, 0, 22, 22, 5, { mat: m, tono: -0.06, b: 1, j: 0.7 }); bloque(g, 0, 0, 5, 18, 18, 7, { mat: m, b: 0.9, j: 0.5 }); bloque(g, 0, 0, 12, 20, 20, 2, { mat: m, tono: 0.04, b: 0.6, j: 0.4 });
   letras(g, -5, 5, 9, 10, 2, m);
