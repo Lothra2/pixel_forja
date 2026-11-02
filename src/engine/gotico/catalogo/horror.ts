@@ -445,7 +445,7 @@ function cabezaPica(g: G, x: number, y: number, alto: number, estado: number) {
   s.masa([s.bu([-0.8, 0, 3.4], [3.2, 3, 2.6]), s.hu([-1.6, 0, 3], [-2.4 + r2(a, 1), r2(a, 1), -2.5], 1.8, 0.6)], { mat: 'gore_pelo', suave: 1 });
   for (const sg of [-1, 1]) s.elip(2.7, sg * 1.2, 2.2, 0.6, 0.8, 0.65, { mat: 'negro' });
   s.elip(3, 0, -0.6, 0.6, 1, 0.8 + a.r() * 0.6, { mat: 'negro' });
-  sangrePorPalo(g, [tip[0], tip[1], hz - 4], [x, y, 0], 0.9);
+  sangrePorPalo(g, [tip[0], tip[1], hz - 4], [x, y, hz * 0.5], 0.9);
 }
 reg({
   id: 'hor_cabezas_picas', nombre: ['Cabezas en picas', 'Heads on pikes'], variantes: ['una', 'tres', 'cerco'], huella: [2, 2], bloquea: true,
