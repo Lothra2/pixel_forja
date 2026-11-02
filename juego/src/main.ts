@@ -12,7 +12,10 @@ import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
 import { abrirTienda } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
-import { dibujarMundo, picks, aMundo, aPant, opciones as opcionesRender, type Pick } from './render/escena';
+import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
+import { vinetaSangre, dibujarPresentacion, DUR_PRESENTA } from './ui/horror';
+/** Presentación del jefe en curso (cámara lenta y nombre grande). */
+let presenta: { m: Monstruo; t: number } | null = null;
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad, volverAEmpezar } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
@@ -384,6 +387,7 @@ function procesarEventos(jj: Juego) {
     if (e.tipo === 'viajar') zonaPendiente = { id: e.dato, entrada: 'viaje' };
     else if (e.tipo === 'salir') { guardar(); Sonido.musica('menu'); estado = 'seleccion'; j = null; cargarPartidas(); return; }
     else if (e.tipo === 'opciones') { opcionesDesde = 'juego'; estado = 'opciones'; ui.izq = null; }
+    else if (e.tipo === 'presentar') { presenta = { m: e.dato, t: 0 }; Sonido.efecto('rugido_jefe' as any, { vol: 0.9 }); }
     else if (e.tipo === 'mision') { const m = MISIONES.find((q) => q.id === e.dato); if (m) { msg(jj, [`Misión cumplida: ${m.nombre[0]}. Vuelve al campamento.`, `Quest fulfilled: ${m.nombre[1]}. Return to camp.`], '#80ff80'); Sonido.efecto('mision'); } }
     else if (e.tipo === 'jefe_muerto' && e.dato === 'senor_demonio') { guardar(); if (!finalDe(jj.heroe.d)) setTimeout(() => empezarRevelacion(false), 4000); else Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); }
     else if (e.tipo === 'jefe_muerto' && e.dato === 'aun_saar') { guardar(); setTimeout(() => { if (finalDe(jj.heroe.d)) { estado = 'final'; finalT = 0; Sonido.musica('intro'); } else empezarRevelacion(true); }, 4000); }
@@ -511,9 +515,14 @@ function paso(dt: number) {
       if (zonaPendiente) { const z = zonaPendiente; zonaPendiente = null; if (z.entrada === '__portal') { const p = jj.portal!; irAZona(z.id, 'centro').then(() => { jj.heroe.x = p.x + 1; jj.heroe.y = p.y + 1; }); } else irAZona(z.id, z.entrada); break; }
       opcionesRender.idi = IDI;
       const pausa = ui.izq === 'menu' || ui.confirmar;
-      if (!pausa) { actualizar(jj, dt); historiaPaso(jj, dt); }
-      dibujarMundo(jj, dt, tiempo);
+      // presentación de un jefe: el mundo va en cámara lenta y la cámara lo mira
+      if (presenta) { presenta.t += dt; foco.x = presenta.m.x; foco.y = presenta.m.y; foco.k = Math.min(1, presenta.t / 0.6, Math.max(0, (DUR_PRESENTA - presenta.t) / 0.6)); if (presenta.t >= DUR_PRESENTA || presenta.m.muerto) { presenta = null; foco.k = 0; } }
+      const dtMundo = presenta ? dt * 0.18 : dt;
+      if (!pausa) { actualizar(jj, dtMundo); historiaPaso(jj, dtMundo); }
+      dibujarMundo(jj, dtMundo, tiempo);
       dibujarHistoria(jj, tiempo);
+      vinetaSangre(jj.heroe.muerto ? 0 : jj.heroe.vida / jj.heroe.vidaMax, tiempo);
+      if (presenta) dibujarPresentacion(presenta.m, presenta.t);
       if (entreActoPendiente && ui.izq !== 'dialogo') { empezarEntreacto(entreActoPendiente); entreActoPendiente = 0; }
       etiquetasBotin(jj);
       // brillo general

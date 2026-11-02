@@ -29,7 +29,7 @@ export const estadoMision = (d: DatosHeroe, id: string) => d.misiones[id] ?? 0;
 export const eleccionDe = (d: DatosHeroe, id: string) => hist(d).elecciones?.[id];
 export const finalDe = (d: DatosHeroe) => hist(d).finalElegido;
 /** Al empezar otra dificultad la historia vuelve a empezar. */
-export function reiniciarHistoria(d: DatosHeroe) { const h = hist(d); h.elecciones = {}; h.heraldo = []; h.heraldoMuerto = false; h.finalElegido = undefined; h.misionProg = {}; }
+export function reiniciarHistoria(d: DatosHeroe) { const h = hist(d); h.elecciones = {}; h.heraldo = []; h.heraldoMuerto = false; h.finalElegido = undefined; h.misionProg = {}; (d as any).jefesVistos = []; }
 
 // ------------------------------------------------------------------ misiones por persona
 const requisitos = (d: DatosHeroe, m: Mision) => (m.requiere ?? []).every((r) => estadoMision(d, r) === 3);

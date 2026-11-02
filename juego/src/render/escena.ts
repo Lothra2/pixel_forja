@@ -3,18 +3,20 @@ import { nuevoCuadroSombras } from './luces';
 import { ctx, W, H } from '../nucleo/lienzo';
 import { NPCS } from '../datos/npcs';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
-import type { Juego, Ent, Monstruo, Efecto } from '../juego/mundo';
+import type { Juego, Ent, Monstruo, Efecto, Mancha } from '../juego/mundo';
 import { CUADROS, DIRS, ZANCADA, ALTO_CLASE } from '../juego/mundo';
 import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
 import { cuadrosVivos, cambioVisible } from '../motor/pintor';
-import { R } from '../nucleo/azar';
+import { R, rng } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { fuegoOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
 const ES_FUEGO = /fogata|hoguera|brasero|pira|antorcha|fuego|caldero|hogar/;
 import { recolectar, sombras, reflejos, luces, destello, destelloColor } from './luces';
 
 export const cam = { x: 0, y: 0 };
+/** Hacia dónde mira la cámara además del héroe (presentación de un jefe): k de 0 a 1. */
+export const foco = { x: 0, y: 0, k: 0 };
 export const aPant = (x: number, y: number): [number, number] => [(x - y) * 16 - cam.x + W / 2, (x + y) * 8 - cam.y + (H - 96) / 2];
 export const aMundo = (sx: number, sy: number): [number, number] => {
   const X = sx - W / 2 + cam.x, Y = sy - (H - 96) / 2 + cam.y;
@@ -126,6 +128,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   }
   camAlzada += (alzar - camAlzada) * Math.min(1, dt * 2.5);
   cam.x = (h.x - h.y) * 16 + sx; cam.y = (h.x + h.y) * 8 + sy - camAlzada;
+  if (foco.k > 0) { const k = foco.k * foco.k * (3 - 2 * foco.k); cam.x += ((foco.x - foco.y) * 16 - (h.x - h.y) * 16) * k; cam.y += ((foco.x + foco.y) * 8 - 60 - (h.x + h.y) * 8 + camAlzada) * k; }
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   picks = [];
   recolectar(j, tiempo, aPant, W, H);
@@ -148,6 +151,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   // manchas
   for (const m of j.manchas) {
     const [px, py] = aPant(m.x, m.y); if (px < -60 || px > W + 60 || py < -40 || py > H + 40) continue;
+    if (m.forma) { dibujarSangre(m, px, py); continue; }
     ctx.save(); ctx.globalAlpha = m.tipo === 'quemado' ? 0.55 : 0.75; ctx.fillStyle = m.color;
     ctx.beginPath(); ctx.ellipse(px, py, m.r * 16, m.r * 8, 0, 0, Math.PI * 2); ctx.fill();
     if (m.tipo === 'sangre' && m.r > 0.5) { ctx.beginPath(); ctx.ellipse(px + m.r * 9, py + 3, m.r * 6, m.r * 3, 0, 0, Math.PI * 2); ctx.fill(); }
@@ -321,6 +325,8 @@ function pajaro(x: number, y: number, t: number) {
 }
 
 function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
+  // reventado por exceso de daño: no queda cuerpo (los gibs de la Forja irán en su lugar)
+  if (e.muerto && (e as any).reventado) return;
   const [px, py] = aPant(e.x, e.y);
   let fs: Cuadro[];
   let acc = e.acc;
@@ -500,5 +506,40 @@ function haloMision(px: number, py: number, t: number, destino: boolean) {
   g.addColorStop(0, `rgba(255,200,110,${0.42 * k})`); g.addColorStop(0.6, `rgba(255,150,50,${0.16 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
   if (destino) { ctx.strokeStyle = `rgba(255,210,120,${0.5 * k})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, py, r * 0.8, r * 0.4, 0, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.restore();
+}
+
+// ------------------------------------------------------------------ sangre en el piso
+// Sellos procedurales en caché (forma, variante y color). Cuando lleguen los de la Forja, selloSangre devuelve su sprite.
+const sellos = new Map<string, HTMLCanvasElement>();
+function selloSangre(forma: string, sem: number, color: string): HTMLCanvasElement {
+  const k = `${forma}|${sem}|${color}`; let c = sellos.get(k); if (c) return c;
+  c = document.createElement('canvas'); c.width = 128; c.height = 128;
+  const g = c.getContext('2d')!, r = rng(sem * 7919 + forma.length * 131);
+  const mancha = (x: number, y: number, rad: number, a = 1) => { const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, color); gr.addColorStop(0.7, color); gr.addColorStop(1, color + '00'); g.globalAlpha = a; g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2); g.fill(); };
+  if (forma === 'charco') {
+    for (let i = 0; i < 9; i++) mancha(64 + (r() - 0.5) * 40, 64 + (r() - 0.5) * 40, 16 + r() * 22, 0.9);
+    // centro más oscuro y espeso
+    g.globalAlpha = 0.45; g.fillStyle = '#000'; g.beginPath(); g.arc(64, 64, 18, 0, Math.PI * 2); g.fill();
+    for (let i = 0; i < 6; i++) { const a = r() * Math.PI * 2, d = 44 + r() * 14; mancha(64 + Math.cos(a) * d, 64 + Math.sin(a) * d, 3 + r() * 4, 0.9); }
+  } else if (forma === 'salpicadura') {
+    // gota grande atrás y el chorro hacia +x, con gotas que se alejan
+    mancha(34, 64, 16 + r() * 6, 0.95);
+    for (let i = 0; i < 7; i++) mancha(40 + i * 9, 64 + (r() - 0.5) * 10, 9 - i * 0.8 + r() * 3, 0.85);
+    for (let i = 0; i < 12; i++) { const x = 60 + r() * 62, y = 64 + (r() - 0.5) * (14 + (x - 60) * 0.5); mancha(x, y, 1.5 + r() * 3.5, 0.95); }
+  } else if (forma === 'rastro') {
+    for (let i = 0; i < 3; i++) mancha(44 + i * 18 + r() * 6, 64 + (r() - 0.5) * 12, 6 + r() * 5, 0.9);
+  } else {
+    mancha(64, 64, 14 + r() * 10, 0.9);
+    for (let i = 0; i < 4; i++) { const a = r() * Math.PI * 2; mancha(64 + Math.cos(a) * 22, 64 + Math.sin(a) * 22, 2 + r() * 3, 0.9); }
+  }
+  g.globalAlpha = 1; sellos.set(k, c); return c;
+}
+/** La sangre se dibuja acostada en el piso isométrico, girada hacia donde salió el golpe. */
+function dibujarSangre(m: Mancha, px: number, py: number) {
+  const st = selloSangre(m.forma!, m.sem ?? 0, m.color);
+  const tam = m.r * 36;
+  ctx.save(); ctx.globalAlpha = 0.9; ctx.translate(px, py); ctx.scale(1, 0.5); ctx.rotate((m.ang ?? 0) + Math.PI / 4);
+  ctx.drawImage(st, -tam, -tam, tam * 2, tam * 2);
   ctx.restore();
 }

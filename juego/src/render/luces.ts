@@ -157,6 +157,20 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const pz = (j as any).portalZona === z.id ? aPant(j.portal.x, j.portal.y) : z.tipo === 'pueblo' && z.entradas.portal ? aPant(z.entradas.portal[0] + 0.5, z.entradas.portal[1] - 1) : null;
     if (pz) L.push({ id: 'portal', x: pz[0], y: pz[1], h: 40, r: 160, c: [70, 130, 255], k: 0.8 });
   }
+  // cerca de un jefe despierto las luces del mapa titubean y a ratos se apagan, como si algo les chupara el aire
+  const jf = j.jefe && !j.jefe.muerto && j.jefe.estado === 'perseguir' ? j.jefe : null;
+  if (jf) {
+    const [bx, by] = aPant(jf.x, jf.y);
+    for (let i = L.length - 1; i >= 0; i--) {
+      const l = L[i]; if (!l.id || l.id[0] !== 'o') continue;
+      const d = Math.hypot(l.x - bx, l.y - by); if (d > 380) continue;
+      const cerca = 1 - d / 380, sem = (l.x * 0.37 + l.y * 0.11) % 7;
+      const parpadeo = Math.sin(t * (9 + sem * 3)) * Math.sin(t * (2.3 + sem)) ;
+      const apagada = Math.sin(t * 0.7 + sem * 2.1) > 0.92 - cerca * 0.25;
+      if (apagada) { L.splice(i, 1); continue; }
+      l.k *= Math.max(0.15, 1 - cerca * (0.45 + 0.4 * Math.abs(parpadeo)));
+    }
+  }
   // con muchas luces (el acto 5 llega a ~50) el cuadro se cae: quedan las 22 que más pesan en pantalla
   // (fuerza por radio y cercanía al centro); las del héroe y las sin id de objeto siempre entran
   if (L.length > 18) {

@@ -77,7 +77,50 @@ export interface Suelo { o: Objeto | null; oro: number; x: number; y: number; t:
 export interface Numero { x: number; y: number; z: number; txt: string; color: string; t: number; grande?: boolean }
 export interface Efecto { id: string; x: number; y: number; t: number; dir: number; escala: number; z?: number; seguir?: Ent; dur?: number }
 export interface Particula { x: number; y: number; z: number; vx: number; vy: number; vz: number; t: number; dur: number; color: string; tam: number; tipo: 'chispa' | 'humo' | 'sangre' | 'brasa' | 'nieve' | 'hoja' | 'pluma' | 'ceniza'; grav: number }
-export interface Mancha { x: number; y: number; r: number; color: string; t: number; tipo: 'sangre' | 'quemado' | 'hielo' | 'veneno' }
+export interface Mancha {
+  x: number; y: number; r: number; color: string; t: number; tipo: 'sangre' | 'quemado' | 'hielo' | 'veneno';
+  /** Forma de la sangre: charco que crece, salpicadura alargada según el golpe, gota o rastro de quien huye. */
+  forma?: 'charco' | 'salpicadura' | 'gota' | 'rastro'; ang?: number; rmax?: number; sem?: number;
+}
+/** Manchas por zona: cola circular (las más viejas se van) para que la sangre no se coma el rendimiento. */
+export const TOPE_MANCHAS = 300;
+export function ponerMancha(j: Juego, m: Mancha) { j.manchas.push(m); if (j.manchas.length > TOPE_MANCHAS) j.manchas.splice(0, j.manchas.length - TOPE_MANCHAS); }
+/** La primera vez que ves a un jefe de verdad: su presentación con el nombre grande y cámara lenta. */
+function presentarJefe(j: Juego, m: Monstruo) {
+  if (!(m.def.jefe || m.def.ia === 'jefe') || (m as any).presentado) return;
+  (m as any).presentado = true;
+  const vis: string[] = ((j.heroe.d as any).jefesVistos ??= []);
+  if (!vis.includes(m.def.id)) { vis.push(m.def.id); j.eventos.push({ tipo: 'presentar', dato: m }); }
+}
+const sangraHueso = (m: Monstruo) => m.def?.sonido === 'hueso';
+const colorSangre = (m: Monstruo) => (sangraHueso(m) ? '#4a4436' : m.def?.elem === 'veneno' ? '#2a4a10' : '#6a0a0a');
+/** Salpicadura en la dirección del golpe: sangre que vuela y una mancha alargada en el piso detrás del herido. */
+function salpicar(j: Juego, v: Monstruo, de: Ent | undefined, fuerza: number, crit: boolean) {
+  if (sangraHueso(v) || v.dueno) return;
+  const dx = de ? v.x - de.x : R() - 0.5, dy = de ? v.y - de.y : R() - 0.5, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l;
+  const n = Math.min(26, Math.round((crit ? 14 : 5) + fuerza * 30));
+  if (j.particulas.length < 900) for (let i = 0; i < n; i++) {
+    const sp = (R() - 0.5) * 0.9, c = Math.cos(sp), s = Math.sin(sp), vx = ux * c - uy * s, vy = ux * s + uy * c, vel = (1.5 + R() * 3.5) * (crit ? 1.6 : 1);
+    j.particulas.push({ x: v.x, y: v.y, z: 30 * v.escala + R() * 10, vx: vx * vel, vy: vy * vel, vz: 30 + R() * (crit ? 110 : 60), t: 0, dur: 0.5 + R() * 0.5, color: R() < 0.3 ? '#b01010' : '#7a0808', tam: 1 + R() * 2, grav: 260, tipo: 'sangre' } as any);
+  }
+  if (crit || fuerza > 0.08 || R() < 0.35) ponerMancha(j, { x: v.x + ux * (0.6 + R() * 0.5), y: v.y + uy * (0.6 + R() * 0.5), r: 0.35 + Math.min(0.9, fuerza * 2) + (crit ? 0.35 : 0), color: colorSangre(v), t: 0, tipo: 'sangre', forma: 'salpicadura', ang: Math.atan2(uy, ux), sem: Math.floor(R() * 8) });
+}
+/**
+ * Muerte por exceso de daño: el cuerpo revienta. Por ahora es sangre y pedazos con partículas; cuando lleguen los gibs
+ * de la Forja, aquí se sueltan sus sprites (GIBS: id de objeto con variantes) con la misma física.
+ */
+export const GIBS: { id: string; variantes: string[] } | null = null;
+function reventar(j: Juego, m: Monstruo) {
+  (m as any).reventado = true;
+  const col = colorSangre(m);
+  if (j.particulas.length < 1100) for (let i = 0; i < 42; i++) {
+    const a = R() * Math.PI * 2, vel = 2 + R() * 6, trozo = i < 12;
+    j.particulas.push({ x: m.x, y: m.y, z: 26 * m.escala + R() * 20, vx: Math.cos(a) * vel, vy: Math.sin(a) * vel, vz: 60 + R() * 160, t: 0, dur: trozo ? 1.4 + R() * 0.6 : 0.6 + R() * 0.6, color: trozo ? (R() < 0.5 ? '#5a0a0a' : '#8a3a2a') : R() < 0.4 ? '#c01414' : '#7a0808', tam: trozo ? 3 + R() * 3 : 1.2 + R() * 2.2, grav: 300, tipo: 'sangre' } as any);
+  }
+  for (let i = 0; i < 6; i++) { const a = R() * Math.PI * 2, d = 0.6 + R() * 1.6; ponerMancha(j, { x: m.x + Math.cos(a) * d, y: m.y + Math.sin(a) * d, r: 0.3 + R() * 0.5, color: col, t: 0, tipo: 'sangre', forma: 'salpicadura', ang: a, sem: Math.floor(R() * 8) }); }
+  j.sacudida = Math.max(j.sacudida, 0.3);
+  sonar(j, 'explosion' as any, m.x, m.y, 0.5);
+}
 /** Torretas y trampas. Las minas (mina = radio de la explosión) esperan a que algo las pise. */
 export interface Torreta { x: number; y: number; t: number; dur: number; dano: [number, number]; cd: number; hab?: string; elem?: Elemento; mina?: number; raiz?: boolean; efecto?: string }
 export interface Npc extends Ent { npc: string; hablando: boolean }
@@ -454,7 +497,8 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   if (g.lento) v.frio = Math.max(v.frio, 2);
   if (g.empuje && v.tipo !== 'heroe' && g.fuente && !(v as Monstruo).def.jefe) { const dx = v.x - g.fuente.x, dy = v.y - g.fuente.y, l = Math.hypot(dx, dy) || 1; for (let k = 0; k < 6; k++) { const nx = v.x + (dx / l) * 0.35, ny = v.y + (dy / l) * 0.35; if (pasable(j.zona, nx, ny)) { v.x = nx; v.y = ny; } } }
   // sangre y reacción
-  if (g.elem === 'fisico' || g.elem === 'sangre') particulas(j, v.x, v.y, total > v.vidaMax * 0.2 ? 10 : 5, 'sangre', (v as Monstruo).def?.sonido === 'hueso' ? '#d8d0b8' : '#8a0c0c', 1, 34 * v.escala);
+  if (v.tipo === 'monstruo' && total > 0 && (g.elem === 'fisico' || g.elem === 'sangre' || crit)) salpicar(j, v as Monstruo, g.fuente, total / Math.max(1, v.vidaMax), crit);
+  else if (g.elem === 'fisico' || g.elem === 'sangre') particulas(j, v.x, v.y, total > v.vidaMax * 0.2 ? 10 : 5, 'sangre', (v as Monstruo).def?.sonido === 'hueso' ? '#d8d0b8' : '#8a0c0c', 1, 34 * v.escala);
   if (v.tipo === 'heroe') {
     j.sacudida = Math.max(j.sacudida, total > h.vidaMax * 0.15 ? 0.35 : 0.12);
     if (total > h.vidaMax * 0.08 && h.acc !== 'atacar' && h.acc !== 'lanzar') { h.acc = 'herido'; h.t = 0; h.dur = 0.3 / (1 + h.c.vel_recuperar / 100); }
@@ -474,6 +518,8 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     if (total > m.vidaMax * 0.12 && m.acc !== 'atacar' && m.acc !== 'lanzar' && m.calidad < 3) { m.acc = 'herido'; m.t = 0; m.dur = 0.3; }
     if (crit || total > m.vidaMax * 0.3) j.sacudida = Math.max(j.sacudida, 0.1);
     if (m.vida <= 0 && (m as any).huye) m.vida = 1; // historia: el heraldo no muere antes de su acto, huye
+    // exceso de daño: si el golpe que lo mata pasa de la mitad de su vida, revienta (los jefes no)
+    if (m.vida <= 0 && !m.dueno && m.calidad < 3 && !m.def.jefe && total > m.vidaMax * 0.5 && !sangraHueso(m)) reventar(j, m);
     if (m.vida <= 0) morirMonstruo(j, m, g);
   }
   return total;
@@ -496,8 +542,9 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
     j.areas.push({ x: m.x, y: m.y, radio: 2.5, dano: [dh[0] * 0.6 + m.vidaMax * 0.15, dh[1] * 0.6 + m.vidaMax * 0.25], elem: 'fuego', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: 'estallido_cadaver', retraso: 0.05 });
   }
   sonar(j, m.def.sonido === 'hueso' ? 'muerte_esqueleto' : m.calidad >= 3 ? 'rugido_jefe' : 'muerte_monstruo', m.x, m.y);
-  j.manchas.push({ x: m.x, y: m.y, r: 0.8 + R() * 0.8 * m.escala, color: m.def.sonido === 'hueso' ? '#4a4436' : '#3a0606', t: 0, tipo: 'sangre' });
-  if (j.manchas.length > 160) j.manchas.shift();
+  // el charco crece despacio bajo el cuerpo
+  const rm = (0.8 + R() * 0.8) * m.escala * ((m as any).reventado ? 1.4 : 1);
+  ponerMancha(j, { x: m.x, y: m.y, r: rm * 0.25, rmax: rm, color: colorSangre(m), t: 0, tipo: 'sangre', forma: sangraHueso(m) ? undefined : 'charco', sem: Math.floor(R() * 8) });
   particulas(j, m.x, m.y, 14, 'sangre', m.def.sonido === 'hueso' ? '#d8d0b8' : '#7a0808', 1.4, 30);
   // experiencia (con castigo si el monstruo es muy bajo)
   const dif = h.d.nivel - m.nivel;
@@ -1194,6 +1241,13 @@ export function actualizar(j: Juego, dt: number) {
   actualizarHeroe(j, dt);
   actualizarThor(j, dt);
   for (const m of j.monstruos) actualizarMonstruo(j, m, dt);
+  // charcos que crecen bajo los muertos y rastro de sangre del que huye herido
+  for (const mc of j.manchas) if (mc.rmax && mc.r < mc.rmax) mc.r = Math.min(mc.rmax, mc.r + (mc.rmax - mc.r) * dt * 0.45 + dt * 0.02);
+  for (const m of j.monstruos) {
+    if (m.muerto || m.dueno || sangraHueso(m) || m.vida > m.vidaMax * 0.35) continue;
+    const o = m as any; if (o.rx === undefined) { o.rx = m.x; o.ry = m.y; continue; }
+    if (dist(m.x, m.y, o.rx, o.ry) > 0.8) { ponerMancha(j, { x: m.x + (R() - 0.5) * 0.3, y: m.y + (R() - 0.5) * 0.3, r: 0.12 + R() * 0.12, color: colorSangre(m), t: 0, tipo: 'sangre', forma: 'rastro', ang: Math.atan2(m.y - o.ry, m.x - o.rx), sem: Math.floor(R() * 8) }); o.rx = m.x; o.ry = m.y; }
+  }
   for (const n of j.npcs) { n.t += dt; if (dist(n.x, n.y, h.x, h.y) < 5) n.dir = dirDe(h.x - n.x, h.y - n.y); }
   actualizarProyectiles(j, dt);
   actualizarAreas(j, dt);
@@ -1228,7 +1282,7 @@ export function actualizar(j: Juego, dt: number) {
   j.efectos = j.efectos.filter((e) => e.t < (e.dur ?? 1.4));
   for (const n of j.numeros) { n.t += dt; n.z += dt * 30; }
   j.numeros = j.numeros.filter((n) => n.t < 1.1);
-  for (const p of j.particulas) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.vz -= p.grav * dt; if (p.z < 0) { p.z = 0; p.vx *= 0.5; p.vy *= 0.5; p.vz = 0; if (p.tipo === 'sangre' && R() < 0.05 && j.manchas.length < 160) j.manchas.push({ x: p.x, y: p.y, r: 0.15 + R() * 0.2, color: p.color, t: 0, tipo: 'sangre' }); } }
+  for (const p of j.particulas) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.vz -= p.grav * dt; if (p.z < 0) { p.z = 0; p.vx *= 0.5; p.vy *= 0.5; p.vz = 0; if (p.tipo === 'sangre' && R() < 0.06) ponerMancha(j, { x: p.x, y: p.y, r: 0.12 + R() * 0.18, color: p.color, t: 0, tipo: 'sangre', forma: 'gota', sem: Math.floor(R() * 8) }); } }
   j.particulas = j.particulas.filter((p) => p.t < p.dur);
   for (const s of j.suelo) s.t += dt;
   for (const m of j.mensajes) m.t += dt;
@@ -1443,7 +1497,10 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
     const esJefe = !!(m.def.jefe || m.def.ia === 'jefe');
     if (!h.muerto && ((esJefe && dh < 7 + (m.escala ?? 1) * 2) || (dh < vista && (dh < 3 || lineaLibre(j.zona, m.x, m.y, h.x, h.y))))) {
       m.estado = 'perseguir'; m.objetivo = h;
-      if (m.calidad >= 3 || m.def.jefe || m.def.ia === 'jefe') { j.jefe = m; if (!(m as any).hablo) { (m as any).hablo = true; const fr = FRASE_JEFE[m.def.id]; if (fr) { msg(j, fr, '#ff6040'); m.habla = fr[j.idi]; (m as any).hablaT = 4; } sonar(j, 'rugido_jefe'); Sonido.musica('jefe'); } }
+      if (m.calidad >= 3 || m.def.jefe || m.def.ia === 'jefe') { j.jefe = m;
+        // la primera vez que ves a un jefe de verdad: su presentación con el nombre grande y cámara lenta
+        presentarJefe(j, m);
+        if (!(m as any).hablo) { (m as any).hablo = true; const fr = FRASE_JEFE[m.def.id]; if (fr) { msg(j, fr, '#ff6040'); m.habla = fr[j.idi]; (m as any).hablaT = 4; } sonar(j, 'rugido_jefe'); Sonido.musica('jefe'); } }
       else if (R() < 0.3) sonar(j, m.def.sonido === 'hueso' ? 'golpe_hueso' : 'grunido', m.x, m.y, 0.6);
       // el grupo despierta junto
       // el grupo despierta junto, pero no entero: los más cercanos sí, los demás a veces (llegan después cuando te vean)
@@ -1496,6 +1553,8 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
       return;
     }
   }
+  // un jefe que despertó con su grupo (sin pasar por la vista) también se presenta
+  if ((m.def.jefe || m.def.ia === 'jefe') && m.estado === 'perseguir' && !m.dueno && dist(m.x, m.y, h.x, h.y) < 14) { if (!j.jefe || j.jefe.muerto) j.jefe = m; presentarJefe(j, m); }
   // fases de jefe
   if (m.def.jefe) {
     const f = m.vida < m.vidaMax * 0.33 ? 2 : m.vida < m.vidaMax * 0.66 ? 1 : 0;
@@ -1645,7 +1704,7 @@ function explotar(j: Juego, p: Proyectil) {
   if (p.hab?.id === 'gran_crisol') j.areas.push({ x: p.x, y: p.y, radio: r * 0.7, dano: [p.dano[0] * 0.08, p.dano[1] * 0.08], elem: 'fuego', t: 0, dur: 4, tick: 0.5, prox: 0.5, deHeroe: true, efecto: 'crater_ardiente', retraso: 0.05 });
   j.sacudida = Math.max(j.sacudida, 0.15);
   sonar(j, p.elem === 'frio' ? 'hielo_impacto' : 'explosion', p.x, p.y, 0.8);
-  if (p.elem === 'fuego') j.manchas.push({ x: p.x, y: p.y, r: r * 0.6, color: '#141008', t: 0, tipo: 'quemado' });
+  if (p.elem === 'fuego') ponerMancha(j, { x: p.x, y: p.y, r: r * 0.6, color: '#141008', t: 0, tipo: 'quemado' });
 }
 function actualizarAreas(j: Juego, dt: number) {
   for (const a of j.areas) {
