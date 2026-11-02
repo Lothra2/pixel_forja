@@ -1002,7 +1002,7 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
       if (tipo === 'arco') {
         // el puño izquierdo cierra sobre la empuñadura, en el centro del arco; las palas se curvan hacia atrás (hacia la
         // cuerda) y el arco queda en el plano vertical de la línea de tiro: de la mano que tira a la que sostiene
-        const fT = nor([e.ejesT[0][0], e.ejesT[0][1], 0]), haciaArco = sub(c, m);
+        const fT = e.ejesT ? nor([e.ejesT[0][0], e.ejesT[0][1], 0]) : F, haciaArco = sub(c, m); // (un arco suelto no tiene torso)
         const tira = e.pose?.tensa !== false && dot3(haciaArco, fT) > 6 * S;
         const tiro = tira ? nor(haciaArco) : nor(add(fT, F, 1));
         const arriba = nor(sub([0, 0, 1], [tiro[0] * tiro[2], tiro[1] * tiro[2], tiro[2] * tiro[2]]));

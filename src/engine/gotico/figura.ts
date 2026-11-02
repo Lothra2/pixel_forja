@@ -260,7 +260,7 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
   if (arma === 'dos') { p.hombroD = [30 + 3 * k, 8, 50 + 4 * k, 0]; p.munecaD = -2 + 3 * k2; }
   if (arma === 'ballesta') { p.hombroD = [26 + 3 * k, 10, 60 + 4 * k, 0]; }
   // el arco cuelga natural de la izquierda, la cuerda recta; la derecha descansa
-  if (arma === 'arco') { p.hombroI = [6 + 1.5 * k, 13, 14 + 2 * k, 0]; p.hombroD = [12 + 3 * k, 12, 26 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
+  if (arma === 'arco') { p.hombroI = [16 + 1.5 * k, 22, 18 + 2 * k, 0]; p.hombroD = [12 + 3 * k, 12, 26 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
   if (arma === 'baculo') { p.hombroD = [20 + 2 * k, 12, 56 + 3 * k, 0]; p.vara = [4 + 1.5 * k2, 3]; }
   if (arma === 'garras' || arma === 'nada') { p.hombroD = [16 + 3 * k, 14, 44 + 5 * k, 12]; p.hombroI = [14 + 2 * k, 14, 48 + 4 * k, 14]; }
   switch (estilo) {
