@@ -94,8 +94,12 @@ function sumarAfijo(o: Objeto, a: Afijo) {
 }
 
 export function crearObjeto(nivel: number, rareza: Rareza, filtro?: (b: Base) => boolean): Objeto {
-  const cand = BASES.filter((b) => b.nivel <= Math.max(1, nivel) && (!filtro || filtro(b)) && b.nivel >= nivel - 30);
-  const b = cand.length ? elegir(cand) : elegir(BASES.filter((x) => x.nivel <= Math.max(3, nivel)));
+  // bases de los últimos 30 niveles (las joyas y talismanes no tienen escalones: siempre entran)
+  const sinEscalon = (b: Base) => b.ranura === 'anillo' || b.ranura === 'amuleto' || b.ranura === 'talisman';
+  const cand = BASES.filter((b) => b.nivel <= Math.max(1, nivel) && (!filtro || filtro(b)) && (b.nivel >= nivel - 30 || sinEscalon(b)));
+  // si nada entra en la ventana, la base más alta que respete el filtro
+  const resto = cand.length ? cand : BASES.filter((x) => x.nivel <= Math.max(3, nivel) && (!filtro || filtro(x)));
+  const b = resto.length ? (cand.length ? elegir(cand) : resto.reduce((m, x) => (x.nivel > m.nivel ? x : m))) : elegir(BASES.filter((x) => x.nivel <= Math.max(3, nivel)));
   if (rareza === 'unico' || rareza === 'legendario') { const u = crearUnico(nivel, rareza === 'legendario', filtro); if (u) return u; rareza = 'raro'; }
   if (rareza === 'conjunto') { const s = crearConjunto(nivel); if (s) return s; rareza = 'raro'; }
   const o = crearBase(b, nivel);
@@ -135,9 +139,11 @@ export function aplicarMejoras(o: Objeto) {
 }
 
 export function crearUnico(nivel: number, legendario: boolean, filtro?: (b: Base) => boolean): Objeto | null {
-  const cand = UNICOS.filter((u) => u.nivel <= nivel + 3 && !!u.legendario === legendario && BASE_POR_ID.has(u.base) && (!filtro || filtro(BASE_POR_ID.get(u.base)!)));
-  if (!cand.length) return null;
-  const u = elegir(cand);
+  const todos = UNICOS.filter((u) => u.nivel <= nivel + 3 && !!u.legendario === legendario && BASE_POR_ID.has(u.base) && (!filtro || filtro(BASE_POR_ID.get(u.base)!)));
+  if (!todos.length) return null;
+  // a nivel alto no caen los de los primeros actos: los de los últimos 35 niveles (o, si no hay, los más altos que haya)
+  const tope = todos.reduce((m, u) => Math.max(m, u.nivel), 0);
+  const u = elegir(todos.filter((x) => x.nivel >= Math.min(nivel - 35, tope - 15)));
   return deUnico(u, BASE_POR_ID.get(u.base)!, nivel);
 }
 /** Arma un único o legendario con sus estadísticas, su elemento vivo y su nivel necesario. */
@@ -154,9 +160,10 @@ function deUnico(u: Unico, b: Base, nivel: number): Objeto {
   return o;
 }
 export function crearConjunto(nivel: number): Objeto | null {
-  const cand = CONJUNTOS.filter((c) => c.nivel <= nivel + 3);
-  if (!cand.length) return null;
-  const c = elegir(cand);
+  const todos = CONJUNTOS.filter((c) => c.nivel <= nivel + 3);
+  if (!todos.length) return null;
+  const tope = todos.reduce((m, c) => Math.max(m, c.nivel), 0);
+  const c = elegir(todos.filter((x) => x.nivel >= Math.min(nivel - 35, tope - 15)));
   return crearPiezaConjunto(c.id, elegir(c.piezas).id, nivel);
 }
 /** Una pieza concreta de un conjunto (su nivel necesario es el del conjunto). */
@@ -174,7 +181,7 @@ export function crearPiezaConjunto(conjunto: string, pieza: string, nivel: numbe
 }
 /** La legendaria temática de un jefe, si la suelta (de acto siempre que toque; de mazmorra solo si es único o jefe). */
 export function legendariaJefe(id: string, nivel: number, calidad: number): Objeto | null {
-  const lj = LEGENDARIA_JEFE[id]; if (!lj || calidad < 2 || R() >= lj[1]) return null;
+  const lj = LEGENDARIA_JEFE[id]; if (!lj || calidad < 2 || nivel < (lj[2] ?? 0) || R() >= lj[1]) return null;
   return crearUnicoId(lj[0], nivel);
 }
 

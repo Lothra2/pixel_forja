@@ -1,4 +1,4 @@
-// Armas legendarias por escalón de nivel (6, 15, 24, 33, 42), la legendaria temática de cada jefe
+// Armas legendarias por escalón de nivel (6, 15, 24, 33, 45, 60, 75, 90), la legendaria temática de cada jefe
 // y los conjuntos nuevos (con el "Legado GG" de la familia). Todo original. Se suman a UNICOS y CONJUNTOS al cargar.
 import { BASES, UNICOS, CONJUNTOS } from './objetos_datos';
 import type { Conjunto, Elemento, RangoStat, Stat, Unico } from '../juego/tipos_objetos';
@@ -6,15 +6,16 @@ import type { Conjunto, Elemento, RangoStat, Stat, Unico } from '../juego/tipos_
 const r = (stat: Stat, min: number, max: number = min): RangoStat => ({ stat, min, max });
 
 /** Nivel necesario de cada escalón (también es el nivel desde el que caen). */
-export const NIVEL_LEGENDARIA = [6, 15, 24, 33, 42] as const;
-const DANO: [number, number][] = [[60, 90], [90, 130], [125, 170], [160, 215], [200, 260]];
-const ELEM: [number, number][] = [[5, 10], [10, 18], [16, 28], [24, 40], [34, 58]];
+export const NIVEL_LEGENDARIA = [6, 15, 24, 33, 45, 60, 75, 90] as const;
+// % de daño mejorado y daño elemental plano por escalón (los escalones 6 a 8 van sobre bases míticas, que ya pegan más)
+const DANO: [number, number][] = [[60, 90], [90, 130], [125, 170], [160, 215], [200, 260], [230, 295], [260, 330], [290, 370]];
+const ELEM: [number, number][] = [[5, 10], [10, 18], [16, 28], [24, 40], [34, 58], [50, 85], [68, 112], [90, 145]];
 const STAT_ELEM: Record<Exclude<Elemento, 'fisico'>, Stat> = { fuego: 'dano_fuego', frio: 'dano_frio', rayo: 'dano_rayo', veneno: 'dano_veneno', sombra: 'dano_sombra', luz: 'dano_luz', sangre: 'dano_sangre' };
 const LANZADOR = new Set(['baculo', 'varita', 'cetro']);
 
 /** Una legendaria viva: el daño mejorado y el daño de su elemento salen del escalón, lo demás lo pone cada una. */
 function leg(
-  id: string, es: string, en: string, base: string, escalon: 1 | 2 | 3 | 4 | 5, vivo: Exclude<Elemento, 'fisico'>,
+  id: string, es: string, en: string, base: string, escalon: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8, vivo: Exclude<Elemento, 'fisico'>,
   extra: RangoStat[], loreEs: string, loreEn: string,
 ): Unico {
   const b = BASES.find((x) => x.id === base);
@@ -134,7 +135,7 @@ export const LEGENDARIAS: Unico[] = [
     [r('aturdir', 15), r('vel_ataque', 10), r('res_rayo', 25)],
     'Forjada con los eslabones que ataban a un hereje a un pararrayos.', 'Forged from the links that bound a heretic to a lightning rod.'),
 
-  // ---------------- escalón 5 (nivel 42): la Herida y el Ascua
+  // ---------------- escalón 5 (nivel 45): la Herida y el Ascua
   leg('beso_herida', 'Beso de la Herida', 'Kiss of the Wound', 'colmillo_sombra', 5, 'sombra',
     [r('critico', 10), r('vel_ataque', 30), r('robo_mana', 5)],
     'No corta. Abre. Lo que sale por ahí ya no vuelve a entrar.', 'It does not cut. It opens. What comes out never goes back in.'),
@@ -159,22 +160,127 @@ export const LEGENDARIAS: Unico[] = [
   leg('sed_ozmaren', 'Sed de Ozmaren', 'Ozmaren\'s Thirst', 'hoja_ceniza_negra', 5, 'fuego',
     [r('robo_vida', 6, 9), r('res_fuego', 35), r('vida', 50, 70), r('mas_habilidades', 1)],
     'Ozmaren bebía del Ascua con esta hoja. Ahora te pide de beber a ti.', 'Ozmaren drank from the Ember with this blade. Now it asks you for a drink.'),
+
+  // ---------------- escalón 6 (nivel 60): Ysmeral, la Ciudad Ahogada
+  leg('lamento_ysmeral', 'Lamento de Ysmeral', 'Ysmeral\'s Lament', 'hoja_marea', 6, 'luz',
+    [r('res_sombra', 35), r('vida', 70, 100), r('radio_luz', 3), r('valor', 40)],
+    'La ciudad cantaba mientras se hundía. La hoja aprendió la canción y no sabe callarla.', 'The city sang as it sank. The blade learned the song and cannot stop humming it.'),
+  leg('filo_coral_sangrante', 'Filo de Coral Sangrante', 'Bleeding Coral Edge', 'cimitarra_coral', 6, 'sangre',
+    [r('herida_abierta', 35), r('vel_ataque', 25), r('des', 15, 20), r('robo_vida', 6, 8)],
+    'El coral creció sobre los ahogados y aprendió el gusto de la sangre.', 'The coral grew over the drowned and learned the taste of blood.'),
+  leg('ancla_faro_hundido', 'Ancla del Faro Hundido', 'Sunken Lighthouse Anchor', 'hacha_ancla', 6, 'fuego',
+    [r('golpe_aplastante', 20), r('fue', 15, 20), r('res_fuego', 35), r('radio_luz', 2)],
+    'Sujetaba el faro al fondo para que la luz no se fuera con la marea. La luz se quedó en el hierro.', 'It held the lighthouse to the seabed so the light would not drift with the tide. The light stayed in the iron.'),
+  leg('perla_negra_abismo', 'Perla Negra del Abismo', 'Black Pearl of the Abyss', 'maza_perla', 6, 'sombra',
+    [r('robo_mana', 6), r('res_sombra', 35), r('golpe_aplastante', 15), r('aturdir', 15)],
+    'Ninguna ostra la hizo. Creció sola en el fondo, alrededor de un grito.', 'No oyster made it. It grew alone on the seabed, around a scream.'),
+  leg('tanido_campana', 'Tañido de la Campana que Ahoga', 'Toll of the Drowning Bell', 'martillo_campana', 6, 'frio',
+    [r('aturdir', 25), r('ralentizar', 30), r('res_frio', 40), r('vida', 80, 110), r('mas_habilidades', 1)],
+    'La sacerdotisa se abrazó a la campana para que no sonara. Ahora suenan las dos.', 'The priestess wrapped herself around the bell so it would not ring. Now both of them ring.'),
+  leg('arpon_ultima_ballena', 'Arpón de la Última Ballena', 'Last Whale\'s Harpoon', 'arpon_ballenero', 6, 'rayo',
+    [r('perforar', 40), r('des', 15, 20), r('vel_ataque', 20), r('res_rayo', 35)],
+    'Los balleneros de Ysmeral la cazaron en una tormenta. El mar no se lo perdonó a la ciudad.', 'The whalers of Ysmeral hunted her down in a storm. The sea never forgave the city.'),
+  leg('baculo_marea_viva', 'Báculo de la Marea Viva', 'Living Tide Staff', 'baculo_coral', 6, 'frio',
+    [r('mas_habilidades', 2), r('mana', 70, 100), r('vel_lanzar', 30), r('res_frio', 35)],
+    'Sube y baja con la luna aunque esté lejos del mar. A veces amanece mojado.', 'It rises and falls with the moon even far from the sea. Some mornings it wakes up wet.'),
+  leg('caracola_sumergidos', 'Caracola de los Sumergidos', 'Conch of the Submerged', 'varita_caracola', 6, 'sombra',
+    [r('mas_habilidades', 2), r('vel_lanzar', 30), r('mana', 60, 90), r('invocados_pct', 30)],
+    'Si la acercas al oído no se oye el mar. Se oye a los que viven debajo.', 'Hold it to your ear and you will not hear the sea. You will hear those who live beneath it.'),
+  leg('espina_raya_negra', 'Espina de la Raya Negra', 'Black Ray\'s Barb', 'daga_espina_raya', 6, 'veneno',
+    [r('critico', 12), r('vel_ataque', 30), r('res_veneno', 35), r('des', 15, 20)],
+    'La raya duerme en la arena de la plaza ahogada. Le falta una espina y está despierta.', 'The ray sleeps in the sand of the drowned square. It is missing a barb and it is awake.'),
+  leg('red_pescador_almas', 'Red del Pescador de Almas', 'Soulfisher\'s Net', 'mangual_ancla', 6, 'sombra',
+    [r('vida_por_muerte', 8, 12), r('mana_por_muerte', 6, 10), r('aturdir', 20), r('vit', 15, 20)],
+    'El pescador echó la red la noche del hundimiento. No sacó peces.', 'The fisherman cast his net the night the city sank. He did not haul up fish.'),
+
+  // ---------------- escalón 7 (nivel 75): el fondo de Ysmeral y la escalera rota
+  leg('siega_sal', 'Siega de Sal', 'Salt Reaping', 'guadana_sal', 7, 'fuego',
+    [r('herida_abierta', 30), r('robo_vida', 7, 10), r('res_fuego', 40), r('fue', 20, 25)],
+    'La sal arde en las heridas. Esta guadaña nunca deja de echarla.', 'Salt burns in wounds. This scythe never stops pouring it.'),
+  leg('vigia_campana_hundida', 'Vigía de la Campana Hundida', 'Sunken Bell Warden', 'alabarda_campana_hundida', 7, 'rayo',
+    [r('aturdir', 25), r('reduc_dano', 10), r('res_rayo', 40), r('vida', 90, 130)],
+    'Guardó el campanario mientras subía el agua. Todavía espera el relevo.', 'It guarded the belfry while the water rose. It is still waiting to be relieved.'),
+  leg('rompeolas', 'Rompeolas', 'Breakwater', 'hacha_rompeolas', 7, 'frio',
+    [r('golpe_aplastante', 25), r('ralentizar', 30), r('fue', 20, 25), r('res_frio', 40)],
+    'Partió olas del tamaño de catedrales. La última no la pudo partir.', 'It split waves the size of cathedrals. The last one it could not split.'),
+  leg('cetro_sacerdotisa', 'Cetro de la Sacerdotisa Fundida', 'Sceptre of the Fused Priestess', 'cetro_marea', 7, 'luz',
+    [r('mas_habilidades', 2), r('vel_lanzar', 30), r('mana', 90, 120), r('res_todo', 15)],
+    'Lo soltó cuando el bronce le subió por los brazos. Fue lo último que soltó.', 'She let it go when the bronze climbed up her arms. It was the last thing she let go.'),
+  leg('espuma_negra', 'Arco de la Espuma Negra', 'Black Foam Bow', 'arco_ballena', 7, 'sombra',
+    [r('perforar', 40), r('des', 20, 25), r('vel_ataque', 25), r('robo_mana', 6)],
+    'En Ysmeral la espuma es negra desde que la ciudad se hundió. Las flechas también.', 'In Ysmeral the foam has been black since the city sank. So are the arrows.'),
+  leg('resaca', 'Resaca', 'Undertow', 'ballesta_arponera', 7, 'veneno',
+    [r('perforar', 35), r('ralentizar', 25), r('des', 20, 25), r('res_veneno', 40)],
+    'Lo que alcanza no cae. Se lo lleva el agua, aunque no haya agua.', 'What it strikes does not fall. The water drags it away, even where there is no water.'),
+  leg('fauces_fosa', 'Fauces de la Fosa', 'Trench Maws', 'garras_fosa', 7, 'sangre',
+    [r('mas_clase', 2), r('vel_ataque', 30), r('critico', 10), r('robo_vida', 6, 8)],
+    'Algo vive en la fosa bajo la catedral. Esto es lo que se le cayó al morder.', 'Something lives in the trench beneath the cathedral. This is what it shed when it bit.'),
+  leg('ultimo_bautismo', 'Último Bautismo', 'Last Baptism', 'maza_perla', 7, 'frio',
+    [r('golpe_aplastante', 20), r('res_frio', 40), r('vida', 90, 130), r('regen_vida', 8, 12)],
+    'Las monjas de Ysmeral bautizaban hundiendo. Al final bautizaron a toda la ciudad.', 'The nuns of Ysmeral baptized by drowning. In the end they baptized the whole city.'),
+  leg('ascenso_peregrino', 'Ascenso del Peregrino', 'Pilgrim\'s Ascent', 'lanza_peregrino_aureo', 7, 'luz',
+    [r('perforar', 30), r('vel_mover', 15), r('res_sombra', 40), r('des', 20, 25)],
+    'Subió por la escalera rota hasta el cielo. La lanza bajó sola.', 'He climbed the broken stair up into the sky. The lance came back down alone.'),
+  leg('quilla_naufragio', 'Quilla del Naufragio', 'Shipwreck Keel', 'mandoble_naufragio', 7, 'rayo',
+    [r('golpe_aplastante', 25), r('fue', 20, 25), r('res_rayo', 40), r('vida', 90, 130)],
+    'La tormenta partió el barco en dos. Esta es la mitad que no se hundió.', 'The storm split the ship in two. This is the half that did not sink.'),
+
+  // ---------------- escalón 8 (nivel 90): la Corona del Dios Sediento
+  leg('primera_brasa', 'La Primera Brasa', 'The First Ember', 'mandoble_sol_roto', 8, 'fuego',
+    [r('mas_habilidades', 2), r('robo_vida', 8, 12), r('res_todo', 20), r('vida', 140, 180), r('fue', 25, 35)],
+    'Antes del Ascua hubo una sed. Aun-Saar la escupió al mundo y esta es la chispa que se guardó.', 'Before the Ember there was a thirst. Aun-Saar spat it upon the world and kept this spark for himself.'),
+  leg('cielo_quebrado', 'Cielo Quebrado', 'Shattered Sky', 'arco_cielo_roto', 8, 'rayo',
+    [r('perforar', 45), r('des', 25, 35), r('vel_ataque', 30), r('critico', 10)],
+    'Por cada grieta del cielo cae un rayo. Este arco los junta.', 'Lightning falls through every crack in the sky. This bow gathers them.'),
+  leg('jardin_piedra', 'Guadaña del Jardín de Piedra', 'Stone Garden Scythe', 'guadana_sed', 8, 'sombra',
+    [r('ralentizar', 35), r('robo_vida', 8, 10), r('res_sombra', 45), r('vida_por_muerte', 12, 18)],
+    'Los que intentaron subir antes que tú están en el jardín. Esta guadaña los poda.', 'Those who tried to climb before you stand in the garden. This scythe prunes them.'),
+  leg('veredicto_trono', 'Veredicto del Trono Vacío', 'Empty Throne\'s Verdict', 'martillo_trono', 8, 'luz',
+    [r('golpe_aplastante', 35), r('aturdir', 25), r('res_todo', 20), r('fue', 25, 35)],
+    'El trono está vacío porque el dios nunca se sienta. Juzga de pie.', 'The throne is empty because the god never sits. He judges standing.'),
+  leg('baculo_ultimo_intento', 'Báculo del Último Intento', 'Staff of the Last Attempt', 'baculo_vacio', 8, 'frio',
+    [r('mas_habilidades', 3), r('mana', 120, 160), r('vel_lanzar', 40), r('res_frio', 45)],
+    'Un mago llegó a la Corona con este báculo. Su estatua todavía lo sostiene.', 'A mage reached the Crown with this staff. His statue still holds it.'),
+  leg('gota_prometida', 'La Gota Prometida', 'The Promised Drop', 'varita_oro_sediento', 8, 'veneno',
+    [r('mas_habilidades', 3), r('vel_lanzar', 40), r('mana', 100, 140), r('robo_mana', 8)],
+    'El dios prometió una gota a quien lo saciara. Nadie lo ha saciado.', 'The god promised one drop to whoever quenched him. No one ever has.'),
+  leg('ultimo_sorbo', 'Último Sorbo', 'The Last Sip', 'daga_ultimo_rito', 8, 'sangre',
+    [r('critico', 15), r('vel_ataque', 40), r('robo_vida', 10, 14), r('herida_abierta', 40)],
+    'Los sacerdotes de la Corona daban de beber al dios con ella. El último sorbo fue de ellos.', 'The priests of the Crown gave the god drink with it. The last sip was their own.'),
+  leg('manos_escultor', 'Manos del Escultor', 'The Sculptor\'s Hands', 'garras_marmol', 8, 'rayo',
+    [r('mas_clase', 3), r('vel_ataque', 40), r('critico', 12), r('des', 25, 35)],
+    'Esculpió cada estatua del jardín. Ninguna fue tallada en piedra.', 'He sculpted every statue in the garden. None of them was carved from stone.'),
+  leg('ojo_sediento', 'Ojo del Dios Sediento', 'Eye of the Thirsting God', 'ballesta_vacio', 8, 'sombra',
+    [r('perforar', 45), r('des', 25, 35), r('critico', 10), r('res_sombra', 45)],
+    'Mira lo que tú miras. Y luego mira lo que quiere.', 'It looks where you look. Then it looks at what it wants.'),
+  leg('espejismo_aureo', 'Espejismo Áureo', 'Golden Mirage', 'cimitarra_espejismo', 8, 'fuego',
+    [r('vel_ataque', 35), r('des', 25, 35), r('res_fuego', 45), r('hallazgo', 40)],
+    'Las islas de oro brillan desde abajo como un tesoro. De cerca brillan como esta hoja.', 'From below, the golden isles gleam like treasure. Up close they gleam like this blade.'),
 ];
 
-/** La legendaria temática de cada jefe y su probabilidad (además de su botín de siempre). */
-export const LEGENDARIA_JEFE: Record<string, [string, number]> = {
+/** La legendaria temática de cada jefe, su probabilidad (además de su botín de siempre) y, si hace falta, el nivel
+ *  mínimo del monstruo (para jefes de mazmorra que también salen como monstruos únicos en actos anteriores). */
+export const LEGENDARIA_JEFE: Record<string, [string, number, number?]> = {
   // jefes de acto
   abadesa: ['azote_abadesa', 0.6],
   rey_sin_sombra: ['cetro_sin_sombra', 0.6],
   madre_cienaga: ['hoz_madre_cienaga', 0.6],
   rey_escarcha: ['mandato_hjaldur', 0.6],
   senor_demonio: ['sed_ozmaren', 0.6],
+  campana_ahoga: ['tanido_campana', 0.6],
+  aun_saar: ['primera_brasa', 0.6],
   // jefes de mazmorra (menos probable)
   arana_reina: ['aguijon_madre_pozo', 0.25],
   verdugo: ['sentencia_cadalso', 0.3],
   gusano_de_arena: ['diente_boca_arena', 0.25],
   bruja: ['dedo_bruja_manglar', 0.25],
   dragon_oseo: ['ala_varnhul', 0.3],
+  // jefes de mazmorra de Ysmeral y de la Corona (solo desde el nivel de su acto)
+  ahogado: ['ancla_faro_hundido', 0.2, 45],
+  cangrejo_cripta: ['arpon_ultima_ballena', 0.2, 45],
+  monja_hueca: ['ultimo_bautismo', 0.15, 48],
+  lich: ['baculo_ultimo_intento', 0.15, 54],
+  caballero_abismo: ['ultimo_sorbo', 0.15, 56],
 };
 
 // ------------------------------------------------------------------ conjuntos nuevos
@@ -242,6 +348,38 @@ export const CONJUNTOS_NUEVOS: Conjunto[] = [
       { piezas: 3, stats: [r('robo_vida', 5), r('vida', 60)] },
       { piezas: 4, stats: [r('reduc_dano', 10), r('dano_sombra', 20)] },
       { piezas: 5, stats: [r('mas_habilidades', 2), r('dano_pct', 60), r('res_todo', 15)] },
+    ] },
+  { id: 'coro_ysmeral', nombre: ['Coro Ahogado de Ysmeral', 'Drowned Choir of Ysmeral'], nivel: 58, req: 58,
+    aspecto: { linea: 'tunica', grado: 5, color: '#2a5c62', ribete: '#d8d0b8', gema: '#5fd0d8', brillo: '#5fd0d8' },
+    lore: ['Cantaron en el coro mientras el agua les llegaba al pecho. Nadie les dijo que podían parar.', 'They sang in the choir while the water rose to their chests. No one told them they could stop.'],
+    piezas: [
+      { id: 'coro_corona', nombre: ['Corona de la Cantora', 'Chorister\'s Crown'], base: 'corona_perlas', stats: [r('def_pct', 100, 130), r('mana', 50, 70)] },
+      { id: 'coro_tunica', nombre: ['Túnica de la Cantora', 'Chorister\'s Robe'], base: 'tunica_sumergida', stats: [r('def_pct', 120, 150), r('res_frio', 30)] },
+      { id: 'coro_guantes', nombre: ['Guantes de la Cantora', 'Chorister\'s Gloves'], base: 'guantes_escama_marina', stats: [r('def_pct', 90, 120), r('vel_lanzar', 20)] },
+      { id: 'coro_sandalias', nombre: ['Sandalias de la Cantora', 'Chorister\'s Sandals'], base: 'sandalias_sal', stats: [r('def_pct', 90, 120), r('vel_mover', 20)] },
+      { id: 'coro_faja', nombre: ['Faja de la Cantora', 'Chorister\'s Sash'], base: 'faja_red', stats: [r('def_pct', 90, 120), r('vida', 50, 70)] },
+    ],
+    bonos: [
+      { piezas: 2, stats: [r('res_frio', 30)] },
+      { piezas: 3, stats: [r('mana', 100), r('regen_mana', 50)] },
+      { piezas: 4, stats: [r('vel_lanzar', 25), r('res_todo', 15)] },
+      { piezas: 5, stats: [r('mas_habilidades', 2), r('dano_frio', 40, 60), r('vida', 120)] },
+    ] },
+  { id: 'vigilia_marmol', nombre: ['Vigilia de Mármol', 'Marble Vigil'], nivel: 80, req: 80,
+    aspecto: { linea: 'metal', grado: 5, color: '#c8a040', ribete: '#f4e0a0', gema: '#f8f4e8', brillo: '#ffd060' },
+    lore: ['Subieron hasta la Corona con armadura de oro. Se quedaron para siempre, de pie y vigilando.', 'They climbed to the Crown in golden armor. They stayed forever, standing watch.'],
+    piezas: [
+      { id: 'marmol_mascara', nombre: ['Rostro de Mármol', 'Marble Visage'], base: 'mascara_estatua', stats: [r('def_pct', 130, 170), r('res_sombra', 35)] },
+      { id: 'marmol_placas', nombre: ['Coraza de Mármol', 'Marble Breastplate'], base: 'placas_aureas', stats: [r('def_pct', 150, 190), r('vida', 100, 140)] },
+      { id: 'marmol_brazales', nombre: ['Brazales de Mármol', 'Marble Bracers'], base: 'brazales_aureos', stats: [r('def_pct', 120, 160), r('vel_ataque', 20)] },
+      { id: 'marmol_sabatones', nombre: ['Pasos de Mármol', 'Marble Steps'], base: 'sabatones_aureos', stats: [r('def_pct', 120, 160), r('vel_mover', 20)] },
+      { id: 'marmol_espada', nombre: ['Promesa de Mármol', 'Marble Promise'], base: 'espada_aurea', vivo: 'luz', stats: [r('dano_pct', 260, 320), r('dano_luz', 70, 110), r('robo_vida', 8)] },
+    ],
+    bonos: [
+      { piezas: 2, stats: [r('res_todo', 20)] },
+      { piezas: 3, stats: [r('vida', 200), r('reduc_dano', 10)] },
+      { piezas: 4, stats: [r('dano_luz', 50), r('todos_atributos', 15)] },
+      { piezas: 5, stats: [r('mas_habilidades', 2), r('dano_pct', 100), r('res_todo', 25), r('valor', 100)] },
     ] },
   // El set de la familia GG del motor, portado: un objeto por cada miembro y el collar de Thor.
   { id: 'legado_gg', nombre: ['Legado GG', 'GG Legacy'], nivel: 25, req: 25,

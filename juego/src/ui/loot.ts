@@ -43,6 +43,9 @@ export function aLoot(o: Objeto): LootItem {
       base = { cat: 'offhand', icon: b.familia === 'orbe' ? 'orb' : b.familia === 'libro' ? 'tome' : t === 'escudo_torre' ? 'shield_tower' : t === 'escudo_cometa' ? 'shield_kite' : t === 'rodela' ? 'buckler' : t === 'escudo_calavera' ? 'shrunken_head' : 'shield_round' };
     }
   }
+  // bases míticas (escalón 3): la armadura viene teñida con los colores de su tierra (Ysmeral o la Corona)
+  if (b?.tinte && base.cat === 'armor') diseno = { ...(diseno ?? {}), base: b.tinte.base, ...(b.tinte.ribete ? { trim: b.tinte.ribete } : {}), ...(b.tinte.gema ? { gem: b.tinte.gema } : {}) };
+  else if (b?.tinte && base.cat === 'offhand' && b.familia === 'escudo' && !diseno?.face) { diseno = { ...(diseno ?? {}), face: b.tinte.base }; grado = 5; }
   // conjuntos: todas las piezas con la misma línea, el mismo grado y el mismo color (en el ícono y en el cuerpo)
   let extra: any = {};
   const asp = o.conjunto && b ? CONJUNTOS.find((c) => c.id === o.conjunto) : undefined;
@@ -52,7 +55,7 @@ export function aLoot(o: Objeto): LootItem {
     if (a && base.cat === 'armor') {
       // 'metal': la línea legendaria del motor teñida con el color del conjunto (pide flavor); las demás, su línea con el color
       base = { ...base, line: a.linea === 'metal' ? 'placas' : a.linea, tier: a.grado };
-      diseno = { ...(diseno ?? {}), base: a.color };
+      diseno = { ...(diseno ?? {}), base: a.color, ...(a.ribete ? { trim: a.ribete } : {}), ...(a.gema ? { gem: a.gema } : {}), ...(a.brillo ? { glow: a.brillo } : {}) };
       if (a.linea !== 'metal') delete extra.flavor;
     } else if (base.cat === 'offhand' && (pz?.color ?? a?.color)) { diseno = { ...(diseno ?? {}), face: pz?.color ?? a!.color }; grado = 5; }
   }

@@ -46,9 +46,9 @@ export interface Base {
   ranura: Ranura;
   /** Familia para afijos y para el dibujo: 'espada', 'hacha', 'armadura', 'casco', 'escudo', 'guantes', 'botas', 'cinturon', 'anillo', 'amuleto', 'orbe', etc. */
   familia: string;
-  /** Nivel del objeto desde el que puede caer (1-90) y su escalón: 0 normal, 1 excepcional, 2 de élite. */
+  /** Nivel del objeto desde el que puede caer (1-100) y su escalón: 0 normal, 1 excepcional, 2 de élite, 3 mítico (Ysmeral y la Corona). */
   nivel: number;
-  escalon: 0 | 1 | 2;
+  escalon: 0 | 1 | 2 | 3;
   req: { fue?: number; des?: number; nivel?: number };
   /** Celdas que ocupa en el inventario (ancho, alto). */
   tam: [number, number];
@@ -71,6 +71,8 @@ export interface Base {
   visual: Partial<Equipo>;
   /** Tipo de arma del motor si es arma (para animación y para el ícono). */
   arma?: TipoArma;
+  /** Color propio del ícono (bases míticas): la armadura se tiñe con él. */
+  tinte?: { base: string; ribete?: string; gema?: string };
 }
 
 export interface Afijo {
@@ -116,7 +118,11 @@ export interface PiezaConjunto {
   color?: string;
 }
 /** Cómo se ve el conjunto puesto: todas las piezas con la misma línea, el mismo grado y el mismo color. */
-export interface AspectoConjunto { linea: 'tunica' | 'cuero' | 'malla' | 'placas' | 'metal'; grado: 1 | 2 | 3 | 4 | 5; color: string }
+export interface AspectoConjunto {
+  linea: 'tunica' | 'cuero' | 'malla' | 'placas' | 'metal'; grado: 1 | 2 | 3 | 4 | 5; color: string;
+  /** Opcionales: ribete metálico, gema del pecho y brillo (para que el conjunto se vea único en el ícono). */
+  ribete?: string; gema?: string; brillo?: string;
+}
 export interface Conjunto {
   id: string;
   nombre: [string, string];

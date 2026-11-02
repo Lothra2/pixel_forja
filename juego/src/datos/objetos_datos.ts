@@ -12,11 +12,11 @@ const r = (stat: Stat, min: number, max: number = min): RangoStat => ({ stat, mi
 
 // ------------------------------------------------------------------ bases
 const A_DOS_MANOS: TipoArma[] = ['mandoble', 'hacha_doble', 'martillo', 'lanza', 'alabarda', 'guadana', 'baculo', 'arco', 'ballesta'];
-const DURAB = [28, 44, 60];
-const PRECIO_ESC = [1, 2.5, 6];
+const DURAB = [28, 44, 60, 75];
+const PRECIO_ESC = [1, 2.5, 6, 9];
 
 function arma(
-  id: string, es: string, en: string, tipo: TipoArma, escalon: 0 | 1 | 2, nivel: number,
+  id: string, es: string, en: string, tipo: TipoArma, escalon: Base['escalon'], nivel: number,
   tam: [number, number], dano: [number, number], vel: number, req: Base['req'], huecos: number,
   mat: string, mango?: string, gema?: string, clase?: Clase,
 ): Base {
@@ -36,7 +36,7 @@ function arma(
 }
 
 function pieza(
-  id: string, es: string, en: string, ranura: Ranura, familia: string, escalon: 0 | 1 | 2, nivel: number,
+  id: string, es: string, en: string, ranura: Ranura, familia: string, escalon: Base['escalon'], nivel: number,
   tam: [number, number], def: [number, number] | undefined, req: Base['req'], huecos: number, visual: Visual,
   extra: Partial<Base> = {},
 ): Base {
@@ -229,6 +229,116 @@ export const BASES: Base[] = [
   pieza('amuleto', 'Amuleto', 'Amulet', 'amuleto', 'amuleto', 0, 1, [1, 1], undefined, {}, 0, {}),
 ];
 
+// ------------------------------------------------------------------ bases míticas (escalón 3)
+// Ysmeral, la ciudad ahogada (nivel 56-72) y la Corona del Dios Sediento (nivel 78-90).
+// Salen de una base de élite de la misma familia: su daño o defensa por un factor, sus requisitos un poco más altos.
+const AHOGADA: NonNullable<Base['tinte']> = { base: '#2a5c62', ribete: '#d8d0b8', gema: '#5fd0d8' };
+const AUREA: NonNullable<Base['tinte']> = { base: '#b8892e', ribete: '#f4e0a0', gema: '#f8f4e8' };
+const refBase = (id: string): Base => { const b = BASES.find((x) => x.id === id); if (!b) throw new Error(`base mítica: falta ${id}`); return b; };
+const subirReq = (req: Base['req'], k: number): Base['req'] => {
+  const out: Base['req'] = {}, f = 1 + (k - 1) * 0.6;
+  if (req.fue) out.fue = Math.round(req.fue * f);
+  if (req.des) out.des = Math.round(req.des * f);
+  return out;
+};
+function armaMitica(id: string, es: string, en: string, ref: string, nivel: number, k: number, mat: string, mango?: string, gema?: string): Base {
+  const b = refBase(ref);
+  const d = b.dano!;
+  return arma(id, es, en, b.familia as TipoArma, 3, nivel, b.tam, [Math.round(d[0] * k), Math.round(d[1] * k)], b.vel ?? 0, subirReq(b.req, k),
+    Math.min(6, (b.huecosMax ?? 2) + (k >= 1.9 ? 1 : 0)), mat, mango, gema, b.clase);
+}
+function piezaMitica(id: string, es: string, en: string, ref: string, nivel: number, k: number, visual: Visual, tinte: NonNullable<Base['tinte']>): Base {
+  const b = refBase(ref);
+  const extra: Partial<Base> = { tinte };
+  if (b.bloqueo) extra.bloqueo = b.bloqueo + (k >= 1.9 ? 8 : 4);
+  if (b.clase) extra.clase = b.clase;
+  const def: [number, number] | undefined = b.def ? [Math.round(b.def[0] * k), Math.round(b.def[1] * k)] : undefined;
+  return pieza(id, es, en, b.ranura, b.familia, 3, nivel, b.tam, def, subirReq(b.req, k), Math.min(6, (b.huecosMax ?? 0) + (b.huecosMax ? 1 : 0)), visual, extra);
+}
+
+export const BASES_MITICAS: Base[] = [
+  // ---------------- armas de Ysmeral
+  armaMitica('hoja_marea', 'Hoja de la marea alta', 'High Tide Blade', 'hoja_ceniza_negra', 62, 1.55, 'acero', 'cu_escama', 'cristal'),
+  armaMitica('cimitarra_coral', 'Cimitarra de coral', 'Coral Scimitar', 'hoz_rey_dormido', 64, 1.55, 'roca_roja', 'cu_tela_azul', 'cristal'),
+  armaMitica('mandoble_naufragio', 'Mandoble del naufragio', 'Shipwreck Greatsword', 'mandoble_eclipse', 68, 1.5, 'hierro_oxido', 'madera_vieja', 'cristal'),
+  armaMitica('hacha_ancla', 'Hacha de ancla', 'Anchor Axe', 'hacha_escarcha_negra', 63, 1.5, 'hierro_oxido', 'cuerda'),
+  armaMitica('hacha_rompeolas', 'Hacha rompeolas', 'Breakwater Axe', 'hacha_devorador', 69, 1.5, 'acero', 'cu_escama', 'cristal'),
+  armaMitica('maza_perla', 'Maza de perla negra', 'Black Pearl Mace', 'maza_penitencia', 61, 1.5, 'bronce', 'cu_escama', 'magia'),
+  armaMitica('martillo_campana', 'Martillo de campana', 'Bell Hammer', 'martillo_juicio', 60, 1.5, 'bronce', 'madera_vieja', 'runa'),
+  armaMitica('mangual_ancla', 'Mangual de cadena de ancla', 'Anchor Chain Flail', 'mangual_flagelante', 66, 1.5, 'hierro_oxido', 'cuerda'),
+  armaMitica('arpon_ballenero', 'Arpón ballenero', 'Whaler\'s Harpoon', 'lanza_obsidiana', 62, 1.5, 'acero', 'madera_vieja'),
+  armaMitica('alabarda_campana_hundida', 'Alabarda de la campana hundida', 'Sunken Bell Halberd', 'alabarda_ultimo_muro', 67, 1.5, 'bronce', 'madera_vieja', 'cristal'),
+  armaMitica('guadana_sal', 'Guadaña de sal', 'Salt Scythe', 'guadana_ocaso', 72, 1.5, 'marmol', 'corteza_muerta', 'cristal'),
+  armaMitica('baculo_coral', 'Báculo de coral vivo', 'Living Coral Staff', 'baculo_astro_caido', 61, 1.55, 'roca_roja', 'cu_escama', 'cristal'),
+  armaMitica('cetro_marea', 'Cetro de la marea', 'Tide Sceptre', 'cetro_llama_santa', 64, 1.55, 'bronce', 'cu_tela_azul', 'cristal'),
+  armaMitica('varita_caracola', 'Varita de caracola', 'Conch Wand', 'varita_susurro', 60, 1.55, 'marmol', 'cu_escama', 'magia'),
+  armaMitica('daga_espina_raya', 'Daga de espina de raya', 'Stingray Dagger', 'estilete_abadia', 60, 1.4, 'cu_hueso', 'cu_escama', 'fuego_verde'),
+  armaMitica('garras_fosa', 'Garras de la fosa', 'Trench Claws', 'garras_dragon_palido', 66, 1.55, 'cu_quitina', 'cu_escama', 'cristal'),
+  armaMitica('arco_ballena', 'Arco de barba de ballena', 'Whalebone Bow', 'arco_cuervo', 63, 1.5, 'cu_hueso', 'cuerda'),
+  armaMitica('ballesta_arponera', 'Ballesta arponera', 'Harpoon Arbalest', 'ballesta_centinela', 70, 1.5, 'madera_vieja', 'hierro_oxido'),
+  // ---------------- armas de la Corona
+  armaMitica('espada_aurea', 'Espada del cielo áureo', 'Golden Sky Sword', 'hoja_ceniza_negra', 78, 2.1, 'cu_oro', 'cu_tela_blanca', 'luz_vela'),
+  armaMitica('cimitarra_espejismo', 'Cimitarra del espejismo', 'Mirage Scimitar', 'hoz_rey_dormido', 84, 2.2, 'oro', 'cu_tela_blanca', 'cristal'),
+  armaMitica('mandoble_sol_roto', 'Mandoble del sol roto', 'Broken Sun Greatsword', 'mandoble_eclipse', 90, 2.2, 'cu_oro', 'cu_cuero_negro', 'fuego'),
+  armaMitica('hacha_coloso', 'Hacha del coloso', 'Colossus Axe', 'hacha_escarcha_negra', 82, 2.15, 'oro', 'marmol', 'luz_vela'),
+  armaMitica('gran_hacha_estatua', 'Gran hacha de la estatua', 'Statue Greataxe', 'hacha_devorador', 86, 2.15, 'marmol', 'cu_oro', 'runa'),
+  armaMitica('maza_relicario', 'Maza del relicario áureo', 'Golden Reliquary Mace', 'maza_penitencia', 80, 2.1, 'cu_oro', 'marmol', 'luz_vela'),
+  armaMitica('martillo_trono', 'Martillo del trono vacío', 'Empty Throne Hammer', 'martillo_juicio', 90, 2.15, 'marmol', 'cu_oro', 'luz_vela'),
+  armaMitica('mangual_islas', 'Mangual de las islas colgantes', 'Hanging Isles Flail', 'mangual_flagelante', 84, 2.15, 'oro', 'cu_oro', 'magia'),
+  armaMitica('lanza_peregrino_aureo', 'Lanza del peregrino dorado', 'Golden Pilgrim Lance', 'lanza_obsidiana', 80, 2.1, 'cu_oro', 'marmol', 'luz_vela'),
+  armaMitica('alabarda_puerta_aurea', 'Alabarda de la puerta dorada', 'Golden Gate Halberd', 'alabarda_ultimo_muro', 88, 2.15, 'cu_oro', 'marmol', 'runa'),
+  armaMitica('guadana_sed', 'Guadaña de la sed', 'Thirst Scythe', 'guadana_ocaso', 90, 2.15, 'oro', 'marmol_negro', 'fuego'),
+  armaMitica('baculo_vacio', 'Báculo del vacío', 'Void Staff', 'baculo_astro_caido', 86, 2.2, 'marmol_negro', 'cu_oro', 'magia'),
+  armaMitica('cetro_oro_hueco', 'Cetro de oro hueco', 'Hollow Gold Sceptre', 'cetro_llama_santa', 82, 2.2, 'oro', 'cu_tela_blanca', 'luz_vela'),
+  armaMitica('varita_oro_sediento', 'Varita de oro sediento', 'Thirsting Gold Wand', 'varita_susurro', 80, 2.2, 'oro', 'marmol', 'fuego'),
+  armaMitica('daga_ultimo_rito', 'Daga del último rito', 'Last Rite Dagger', 'estilete_abadia', 80, 2.0, 'cu_oro', 'marmol', 'runa'),
+  armaMitica('garras_marmol', 'Garras de mármol vivo', 'Living Marble Claws', 'garras_dragon_palido', 86, 2.2, 'marmol', 'cu_oro', 'luz_vela'),
+  armaMitica('arco_cielo_roto', 'Arco del cielo roto', 'Broken Sky Bow', 'arco_cuervo', 84, 2.15, 'cu_oro', 'cuerda'),
+  armaMitica('ballesta_vacio', 'Ballesta del vacío', 'Void Arbalest', 'ballesta_centinela', 88, 2.15, 'marmol_negro', 'cu_oro'),
+
+  // ---------------- armaduras de Ysmeral
+  piezaMitica('tunica_sumergida', 'Túnica sumergida', 'Submerged Robe', 'vestido_luto', 56, 1.45,
+    { torso: { tipo: 'tunica', mat: 'cu_tela_azul', mat2: 'cu_escama' }, piernas: { tipo: 'tunica_larga', mat: 'cu_tela_azul' } }, AHOGADA),
+  piezaMitica('coraza_coral', 'Coraza de coral', 'Coral Cuirass', 'placas_obsidiana', 64, 1.35,
+    { torso: { tipo: 'placas', mat: 'cu_escama', mat2: 'roca_roja' }, piernas: { tipo: 'grebas', mat: 'cu_escama' }, hombros: { tipo: 'puas', mat: 'roca_roja' } }, AHOGADA),
+  piezaMitica('malla_perlas', 'Malla de perlas', 'Pearl Mail', 'malla_sombra', 70, 1.6,
+    { torso: { tipo: 'malla', mat: 'cu_malla', mat2: 'marmol' }, piernas: { tipo: 'faldon', mat: 'cu_tela_azul' }, hombros: { tipo: 'placas', mat: 'cu_escama' } }, AHOGADA),
+  piezaMitica('corona_perlas', 'Corona de perlas', 'Pearl Crown', 'corona_ascua', 57, 1.3, { cabeza: { tipo: 'corona', mat: 'bronce', mat2: 'cristal' } }, AHOGADA),
+  piezaMitica('yelmo_marea', 'Yelmo de la marea', 'Tide Helm', 'gran_yelmo_herida', 66, 1.35, { cabeza: { tipo: 'gran_yelmo', mat: 'cu_escama', mat2: 'cristal' } }, AHOGADA),
+  piezaMitica('cornamenta_coral', 'Cornamenta de coral', 'Coral Antlers', 'cornamenta_bosque_viejo', 66, 1.5, { cabeza: { tipo: 'cuernos', mat: 'roca_roja', mat2: 'cu_escama' } }, AHOGADA),
+  piezaMitica('escudo_caparazon', 'Escudo de caparazón', 'Carapace Shield', 'muralla_negra', 66, 1.4, { izq: { tipo: 'escudo_torre', mat: 'cu_quitina', mat2: 'cu_escama' } }, AHOGADA),
+  piezaMitica('escudo_ahogados', 'Escudo de los ahogados', 'Shield of the Drowned', 'escudo_craneos', 64, 1.5, { izq: { tipo: 'escudo_calavera', mat: 'cu_hueso', mat2: 'cu_escama' } }, AHOGADA),
+  piezaMitica('orbe_perla', 'Perla abisal', 'Abyssal Pearl', 'orbe_ascua', 64, 1, { izq: { tipo: 'orbe', mat: 'cristal' } }, AHOGADA),
+  piezaMitica('codice_ahogado', 'Códice ahogado', 'Drowned Codex', 'codice_transmutacion', 64, 1, { izq: { tipo: 'libro', mat: 'cu_escama', mat2: 'bronce' } }, AHOGADA),
+  piezaMitica('guantes_escama_marina', 'Guantes de escama marina', 'Sea-Scale Gloves', 'brazales_hueso', 57, 1.45, { manos: { tipo: 'guantes', mat: 'cu_escama' } }, AHOGADA),
+  piezaMitica('guanteletes_marea', 'Guanteletes de la marea', 'Tide Gauntlets', 'guanteletes_verdugo', 68, 1.5, { manos: { tipo: 'guanteletes', mat: 'cu_escama' } }, AHOGADA),
+  piezaMitica('sandalias_sal', 'Sandalias de sal', 'Salt Sandals', 'botas_piel_wyrm', 56, 1.4, { pies: { tipo: 'sandalias', mat: 'cu_escama' } }, AHOGADA),
+  piezaMitica('sabatones_marea', 'Sabatones de la marea', 'Tide Sabatons', 'sabatones_obsidiana', 68, 1.5, { pies: { tipo: 'sabatones', mat: 'cu_escama' } }, AHOGADA),
+  piezaMitica('faja_red', 'Faja de red', 'Net Sash', 'cinto_verdugo', 56, 1.45, { cinturon: { mat: 'cu_tela_azul', hebilla: 'cristal' } }, AHOGADA),
+  piezaMitica('cinturon_coral', 'Cinturón de coral', 'Coral Belt', 'cenidor_placas', 66, 1.5, { cinturon: { mat: 'cu_escama', hebilla: 'roca_roja' } }, AHOGADA),
+  // ---------------- armaduras de la Corona
+  piezaMitica('placas_aureas', 'Placas del coloso dorado', 'Golden Colossus Plate', 'armadura_ultimo_rey', 80, 1.55,
+    { torso: { tipo: 'placas', mat: 'cu_oro', mat2: 'marmol' }, piernas: { tipo: 'grebas', mat: 'cu_oro' }, hombros: { tipo: 'placas', mat: 'cu_oro' }, tabardo: { mat: 'cu_tela_blanca', borde: 'cu_oro' } }, AUREA),
+  piezaMitica('loriga_peregrino_aureo', 'Loriga del peregrino dorado', 'Golden Pilgrim Hauberk', 'malla_sombra', 84, 2.0,
+    { torso: { tipo: 'malla', mat: 'cu_oro' }, piernas: { tipo: 'faldon', mat: 'cu_tela_blanca' }, hombros: { tipo: 'placas', mat: 'cu_oro' } }, AUREA),
+  piezaMitica('vestiduras_vacio', 'Vestiduras del vacío', 'Void Vestments', 'vestido_luto', 88, 2.3,
+    { torso: { tipo: 'vestido', mat: 'cu_tela_negra', mat2: 'cu_oro' }, piernas: { tipo: 'tunica_larga', mat: 'cu_tela_negra' } }, AUREA),
+  piezaMitica('mascara_estatua', 'Máscara de estatua', 'Statue Mask', 'gran_yelmo_herida', 78, 1.5, { cabeza: { tipo: 'mascara', mat: 'marmol', mat2: 'cu_oro' } }, AUREA),
+  piezaMitica('aro_cielo_roto', 'Aro del cielo roto', 'Broken Sky Circlet', 'aro_vigias', 88, 2.0, { cabeza: { tipo: 'aro', mat: 'cu_oro', mat2: 'cu_rayo' } }, AUREA),
+  piezaMitica('gran_yelmo_coloso', 'Gran yelmo del coloso', 'Colossus Greathelm', 'gran_yelmo_herida', 90, 1.75, { cabeza: { tipo: 'gran_yelmo', mat: 'cu_oro', mat2: 'luz_vela' } }, AUREA),
+  piezaMitica('cornamenta_aurea', 'Cornamenta de oro', 'Golden Antlers', 'cornamenta_bosque_viejo', 86, 2.1, { cabeza: { tipo: 'cuernos', mat: 'cu_oro', mat2: 'marmol' } }, AUREA),
+  piezaMitica('egida_aurea', 'Égida del vacío dorado', 'Golden Void Aegis', 'egida_alba', 86, 2.1, { izq: { tipo: 'escudo_cometa', mat: 'cu_oro', mat2: 'marmol' } }, AUREA),
+  piezaMitica('escudo_rostros', 'Escudo de rostros dorados', 'Shield of Golden Faces', 'escudo_craneos', 84, 2.1, { izq: { tipo: 'escudo_calavera', mat: 'cu_oro', mat2: 'cu_luz_santa' } }, AUREA),
+  piezaMitica('orbe_sed', 'Orbe de la sed', 'Orb of Thirst', 'orbe_ascua', 84, 1, { izq: { tipo: 'orbe', mat: 'fuego_azul' } }, AUREA),
+  piezaMitica('codice_estatuas', 'Códice de las estatuas', 'Codex of Statues', 'codice_transmutacion', 84, 1, { izq: { tipo: 'libro', mat: 'marmol', mat2: 'cu_oro' } }, AUREA),
+  piezaMitica('brazales_aureos', 'Brazales áureos', 'Golden Bracers', 'brazales_hueso', 79, 2.0, { manos: { tipo: 'brazales', mat: 'cu_oro' } }, AUREA),
+  piezaMitica('guanteletes_coloso', 'Guanteletes del coloso', 'Colossus Gauntlets', 'guanteletes_verdugo', 90, 2.0, { manos: { tipo: 'guanteletes', mat: 'cu_oro' } }, AUREA),
+  piezaMitica('sabatones_aureos', 'Sabatones áureos', 'Golden Sabatons', 'sabatones_obsidiana', 80, 1.8, { pies: { tipo: 'sabatones', mat: 'cu_oro' } }, AUREA),
+  piezaMitica('botas_vacio', 'Botas del vacío', 'Void Treads', 'botas_piel_wyrm', 88, 2.3, { pies: { tipo: 'botas_altas', mat: 'cu_cuero_negro' } }, AUREA),
+  piezaMitica('cenidor_aureo', 'Ceñidor áureo', 'Golden Girdle', 'cenidor_placas', 84, 2.0, { cinturon: { mat: 'cu_oro', hebilla: 'marmol' } }, AUREA),
+];
+BASES.push(...BASES_MITICAS);
+
 // ------------------------------------------------------------------ afijos
 // El juego compone en español "<Base> <prefijo> <sufijo>" (Espada larga Ardiente del Lobo)
 // y en inglés "<prefix> <Base> <suffix>" (Burning Long Sword of the Wolf).
@@ -384,6 +494,79 @@ export const SUFIJOS: Afijo[] = [
   suf('de_los_siglos', 'de los Siglos', 'of the Ages', 30, 'durabilidad', ['arma', ...ARMAD], [r('durabilidad_infinita', 1)], 12),
   suf('de_la_ligereza', 'de la Ligereza', 'of Lightness', 12, 'reduc_req', ['arma', ...ARMAD], [r('reduc_req', 10, 20)], 30),
 ];
+
+// ------------------------------------------------------------------ afijos altos (nivel 50-90)
+// Los escalones de cada grupo siguen hasta el nivel 100: Ysmeral pone los primeros, la Corona los últimos.
+PREFIJOS.push(
+  pre('inclemente', 'Inclemente', 'Merciless', 70, 'dano_pct', ['arma'], [r('dano_pct', 141, 190), r('precision', 60, 120)], 8),
+  pre('de_cataclismo', 'de Cataclismo', 'Cataclysmic', 86, 'dano_pct', ['arma'], [r('dano_pct', 191, 250), r('precision', 120, 200)], 4),
+  pre('salvaje', 'Salvaje', 'Savage', 50, 'dano_plano', ['arma', 'guantes', 'anillo', 'amuleto'], [r('dano_min', 4, 10), r('dano_max', 12, 28)], 20),
+  pre('bestial', 'Bestial', 'Bestial', 78, 'dano_plano', ['arma', 'guantes', 'anillo', 'amuleto'], [r('dano_min', 10, 20), r('dano_max', 28, 55)], 8),
+  pre('imbatible', 'Imbatible', 'Unbeatable', 66, 'def_pct', ARMAD, [r('def_pct', 91, 125)], 10),
+  pre('inexpugnable', 'Inexpugnable', 'Impregnable', 84, 'def_pct', ARMAD, [r('def_pct', 126, 165)], 5),
+  pre('monumental', 'Monumental', 'Monumental', 62, 'def_plana', ARMAD, [r('def', 81, 160)], 14),
+  pre('omnisciente', 'Omnisciente', 'Omniscient', 70, 'precision', ['arma', 'guantes', ...JOYAS], [r('precision', 201, 350), r('dano_pct', 20, 30)], 8),
+  pre('sideral', 'Sideral', 'Sidereal', 55, 'mana', ['casco', 'orbe', 'libro', 'varita', 'baculo', 'cetro', ...JOYAS], [r('mana', 46, 70)], 16),
+  pre('de_firmamento', 'de Firmamento', 'Firmament', 80, 'mana', ['casco', 'orbe', 'libro', 'varita', 'baculo', 'cetro', ...JOYAS], [r('mana', 71, 100)], 7),
+  pre('de_fenix', 'de Fénix', 'Phoenix', 60, 'res_fuego', [...ARMAD, ...JOYAS], [r('res_fuego', 31, 45)], 18),
+  pre('de_glaciar', 'de Glaciar', 'Glacierborn', 60, 'res_frio', [...ARMAD, ...JOYAS], [r('res_frio', 31, 45)], 18),
+  pre('de_basalto', 'de Basalto', 'Basalt', 60, 'res_rayo', [...ARMAD, ...JOYAS], [r('res_rayo', 31, 45)], 18),
+  pre('inmune', 'Inmune', 'Immune', 60, 'res_veneno', [...ARMAD, ...JOYAS], [r('res_veneno', 31, 45)], 18),
+  pre('de_aurora', 'de Aurora', 'Auroral', 62, 'res_sombra', [...ARMAD, ...JOYAS], [r('res_sombra', 31, 45)], 14),
+  pre('inmortal', 'Inmortal', 'Deathless', 76, 'res_todo', ['escudo', 'armadura', ...JOYAS], [r('res_todo', 26, 32)], 5),
+  pre('insaciable', 'Insaciable', 'Insatiable', 60, 'hallazgo_pre', ['casco', 'guantes', 'botas', ...JOYAS], [r('hallazgo', 46, 70)], 9),
+  pre('magistral', 'Magistral', 'Masterful', 70, 'mas_clase', ['amuleto', 'casco', 'orbe', 'libro'], [r('mas_clase', 2)], 8),
+  pre('sublime', 'Sublime', 'Sublime', 85, 'mas_habilidades', ['amuleto', 'orbe', 'baculo', 'cetro', 'varita'], [r('mas_habilidades', 2)], 4),
+  pre('inamovible', 'Inamovible', 'Immovable', 65, 'bloqueo', ['escudo'], [r('bloqueo', 31, 40), r('def_pct', 20, 35)], 12),
+  // armas vivas, escalones 4 y 5
+  pre('infernal', 'Infernal', 'Infernal', 66, 'vivo', ['arma'], [r('dano_fuego', 46, 80), r('res_fuego', 10, 15)], 7, 'fuego'),
+  pre('de_sol_negro', 'de Sol Negro', 'Black Sun', 86, 'vivo', ['arma'], [r('dano_fuego', 81, 130), r('res_fuego', 15, 20)], 3, 'fuego'),
+  pre('de_ventisca', 'de Ventisca', 'Blizzard', 66, 'vivo', ['arma'], [r('dano_frio', 41, 75), r('ralentizar', 20, 30)], 7, 'frio'),
+  pre('de_invierno_eterno', 'de Invierno Eterno', 'Everwinter', 86, 'vivo', ['arma'], [r('dano_frio', 76, 120), r('ralentizar', 30, 40)], 3, 'frio'),
+  pre('fulgurante', 'Fulgurante', 'Fulgurant', 66, 'vivo', ['arma'], [r('dano_rayo', 51, 90), r('aturdir', 10, 15)], 7, 'rayo'),
+  pre('de_cielo_roto', 'de Cielo Roto', 'Skybreaking', 86, 'vivo', ['arma'], [r('dano_rayo', 91, 150), r('aturdir', 15, 20)], 3, 'rayo'),
+  pre('letal', 'Letal', 'Lethal', 66, 'vivo', ['arma'], [r('dano_veneno', 66, 120), r('res_veneno', 10, 15)], 7, 'veneno'),
+  pre('de_pudricion', 'de Pudrición', 'Rotting', 86, 'vivo', ['arma'], [r('dano_veneno', 121, 200), r('res_veneno', 15, 20)], 3, 'veneno'),
+  pre('de_vacio', 'de Vacío', 'Voidtouched', 66, 'vivo', ['arma'], [r('dano_sombra', 46, 80), r('robo_mana', 3, 5)], 6, 'sombra'),
+  pre('de_noche_eterna', 'de Noche Eterna', 'Everdark', 86, 'vivo', ['arma'], [r('dano_sombra', 81, 130), r('robo_mana', 4, 6)], 3, 'sombra'),
+  pre('de_aureola', 'de Aureola', 'Haloed', 66, 'vivo', ['arma'], [r('dano_luz', 46, 80), r('radio_luz', 3), r('res_sombra', 10, 15)], 6, 'luz'),
+  pre('de_alba_eterna', 'de Alba Eterna', 'Everdawn', 86, 'vivo', ['arma'], [r('dano_luz', 81, 130), r('radio_luz', 4), r('res_sombra', 15, 20)], 3, 'luz'),
+  pre('de_carniceria', 'de Carnicería', 'Butchering', 66, 'vivo', ['arma'], [r('dano_sangre', 46, 80), r('herida_abierta', 30, 40), r('robo_vida', 3, 5)], 6, 'sangre'),
+  pre('de_rio_rojo', 'de Río Rojo', 'Red River', 86, 'vivo', ['arma'], [r('dano_sangre', 81, 130), r('herida_abierta', 40, 50), r('robo_vida', 4, 6)], 3, 'sangre'),
+);
+SUFIJOS.push(
+  suf('del_titan', 'del Titán', 'of the Titan', 62, 'fue', ['todas'], [r('fue', 21, 30)], 12),
+  suf('del_leviatan', 'del Leviatán', 'of the Leviathan', 86, 'fue', ['todas'], [r('fue', 31, 40)], 5),
+  suf('del_lince', 'del Lince', 'of the Lynx', 62, 'des', ['todas'], [r('des', 21, 30)], 12),
+  suf('de_la_sierpe_marina', 'de la Sierpe Marina', 'of the Sea Serpent', 86, 'des', ['todas'], [r('des', 31, 40)], 5),
+  suf('del_arrecife', 'del Arrecife', 'of the Reef', 62, 'vit', ['todas'], [r('vit', 21, 30)], 12),
+  suf('de_la_roca_madre', 'de la Roca Madre', 'of the Bedrock', 86, 'vit', ['todas'], [r('vit', 31, 40)], 5),
+  suf('del_profeta', 'del Profeta', 'of the Prophet', 62, 'ene', ['todas'], [r('ene', 21, 30)], 12),
+  suf('del_archimago', 'del Archimago', 'of the Archmage', 86, 'ene', ['todas'], [r('ene', 31, 40)], 5),
+  suf('de_la_corona_rota', 'de la Corona Rota', 'of the Broken Crown', 78, 'todos_atributos', ['casco', 'armadura', ...JOYAS], [r('todos_atributos', 9, 14)], 3),
+  suf('de_la_marea', 'de la Marea', 'of the Tide', 68, 'vida', [...ARMAD, ...JOYAS], [r('vida', 81, 120)], 9),
+  suf('de_los_inmortales', 'de los Inmortales', 'of the Undying', 88, 'vida', ['armadura', 'escudo', 'cinturon', 'amuleto'], [r('vida', 121, 170)], 4),
+  suf('de_la_lamprea', 'de la Lamprea', 'of the Lamprey', 62, 'robo_vida', ['arma', 'guantes', 'anillo'], [r('robo_vida', 9, 12)], 10),
+  suf('de_la_medusa', 'de la Medusa', 'of the Jellyfish', 62, 'robo_mana', ['arma', 'guantes', 'anillo'], [r('robo_mana', 9, 12)], 10),
+  suf('del_huracan', 'del Huracán', 'of the Hurricane', 64, 'vel_ataque', ['arma', 'guantes'], [r('vel_ataque', 30)], 9),
+  suf('del_arcano_mayor', 'del Arcano Mayor', 'of High Arcana', 64, 'vel_lanzar', ['orbe', 'libro', 'varita', 'baculo', 'cetro', 'amuleto'], [r('vel_lanzar', 30)], 9),
+  suf('de_la_estela', 'de la Estela', 'of the Wake', 70, 'vel_mover', ['botas'], [r('vel_mover', 40)], 6),
+  suf('de_la_sentencia', 'de la Sentencia', 'of the Verdict', 68, 'critico', ['arma'], [r('critico', 13, 18)], 7),
+  suf('del_terremoto', 'del Terremoto', 'of the Earthquake', 60, 'golpe_aplastante', ['maza', 'martillo', 'mangual', 'hacha', 'hacha_doble'], [r('golpe_aplastante', 16, 25)], 12),
+  suf('de_la_masacre', 'de la Masacre', 'of Massacre', 55, 'herida_abierta', ['arma'], [r('herida_abierta', 16, 30)], 14),
+  suf('de_la_helada_eterna', 'de la Helada Eterna', 'of Everfrost', 60, 'ralentizar', ['arma', 'botas'], [r('ralentizar', 16, 30)], 12),
+  suf('de_la_campana', 'de la Campana', 'of the Bell', 60, 'aturdir', ['arma', 'escudo'], [r('aturdir', 16, 25)], 12),
+  suf('del_arpon', 'del Arpón', 'of the Harpoon', 58, 'perforar', ['arco', 'ballesta', 'lanza'], [r('perforar', 26, 40)], 14),
+  suf('de_la_perla', 'de la Perla', 'of the Pearl', 66, 'regen_vida', [...ARMAD, ...JOYAS], [r('regen_vida', 9, 15)], 8),
+  suf('de_la_pleamar', 'de la Pleamar', 'of High Tide', 66, 'regen_mana', ['casco', 'orbe', 'libro', 'escudo', ...JOYAS], [r('regen_mana', 61, 90)], 8),
+  suf('del_buitre', 'del Buitre', 'of the Vulture', 50, 'vida_por_muerte', ['arma', 'guantes', 'anillo'], [r('vida_por_muerte', 6, 12)], 14),
+  suf('del_alma_hundida', 'del Alma Hundida', 'of the Sunken Soul', 50, 'mana_por_muerte', ['arma', 'casco', 'anillo'], [r('mana_por_muerte', 6, 12)], 14),
+  suf('de_la_ciudadela', 'de la Ciudadela', 'of the Citadel', 72, 'reduc_dano', ['armadura', 'escudo'], [r('reduc_dano', 13, 18)], 6),
+  suf('del_coral', 'del Coral', 'of Coral', 56, 'espinas', ['armadura', 'escudo'], [r('espinas', 21, 45)], 12),
+  suf('de_la_zarza_eterna', 'de la Zarza Eterna', 'of the Everbriar', 84, 'espinas', ['armadura', 'escudo'], [r('espinas', 46, 80)], 5),
+  suf('del_tesoro_hundido', 'del Tesoro Hundido', 'of Sunken Treasure', 64, 'hallazgo', ['casco', 'guantes', 'botas', ...JOYAS], [r('hallazgo', 31, 50)], 8),
+  suf('del_galeon', 'del Galeón', 'of the Galleon', 60, 'oro_extra', ['todas'], [r('oro_extra', 81, 130)], 9),
+);
 
 // ------------------------------------------------------------------ únicos
 export const UNICOS: Unico[] = [
