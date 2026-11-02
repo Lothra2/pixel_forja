@@ -59,7 +59,7 @@ M.m67_tejas = { rampa: ['#0a0c08', '#141810', '#1f2418', '#2b3221', '#39412b', '
 M.m67_humo = { rampa: ['#121212', '#1e1e1d', '#2c2b29', '#3b3936', '#4a4743'], ruido: 0.5, escala: 0.4 };
 // acto 7
 M.m67_marmol = { rampa: ['#151418', '#232227', '#343238', '#47454b', '#5d5a60', '#747177', '#8d8a8f', '#a6a3a7', '#bfbcbe', '#d6d3d3'], ruido: 0.1, escala: 0.15, brillo: 0.45, patron: (p) => { const v = ruido(p[0] * 0.16 + p[2] * 0.22, p[1] * 0.16, p[2] * 0.09); return (Math.abs(v - 0.5) < 0.025 ? -0.13 : 0) + (ruido(p[0] * 0.1, p[1] * 0.1, p[2] * 0.1) > 0.66 ? -0.06 : 0); } };
-M.m67_marmol_gris = { rampa: ['#121114', '#1e1d21', '#2c2a2f', '#3c3a3f', '#4e4b51', '#615e64', '#767378', '#8b888c', '#a19ea1'], ruido: 0.12, escala: 0.15, brillo: 0.35, patron: (p) => { const v = ruido(p[0] * 0.14, p[1] * 0.14 + p[2] * 0.2, p[2] * 0.08); return Math.abs(v - 0.5) < 0.025 ? -0.12 : 0; } };
+M.m67_marmol_gris = { rampa: ['#141317', '#222125', '#312f34', '#423f45', '#545157', '#68656b', '#7e7b80', '#949196', '#aaa7ab'], ruido: 0.12, escala: 0.15, brillo: 0.35, patron: (p) => { const v = ruido(p[0] * 0.14, p[1] * 0.14 + p[2] * 0.2, p[2] * 0.08); return Math.abs(v - 0.5) < 0.025 ? -0.12 : 0; } };
 M.m67_oro = { rampa: ['#1e1307', '#33220c', '#4d3512', '#6b4b19', '#8a6322', '#a97d2e', '#c69a3e', '#ddb758', '#f0d688', '#fcefc4'], ruido: 0.08, escala: 0.3, brillo: 1.1 };
 M.m67_oro_viejo = { rampa: ['#150e07', '#25190c', '#392712', '#4f3818', '#674a21', '#805d2b', '#987237'], ruido: 0.2, escala: 0.4, brillo: 0.75 };
 M.m67_vacio = { rampa: ['#000000', '#020104', '#05030a', '#0a0614', '#110a20'], ruido: 0.6, escala: 0.5, emite: true };
@@ -314,7 +314,7 @@ function campanero(c: Ctx): Res {
   let resplandor: Res['resplandor'] = c.muerte < 0.8 ? { c: e.cab(6 * H, 0, e.cz - 3 * H), r: 8 * S, color: '#58d0b8' } : undefined;
   if (acc === 'atacar' && f >= 4 && f <= 6) {
     const k = (f - 3) / 3;
-    for (let j = 0; j < 3; j++) ps.push(...aro(at(11 + j * 1.5), (6 + k * 4 + j * 3) * S, ax, 'm67_bio', -0.05 - k * 0.25 - j * 0.12, 1.1 * S, 0.3, j * 9 + f));
+    for (let j = 0; j < 2; j++) ps.push(...aro(at(11.5 + j * 2.5), (5.5 + k * 3 + j * 2.5) * S, ax, 'm67_bio', -0.05 - k * 0.25 - j * 0.12, 1 * S, 0.3, j * 9 + f));
     resplandor = { c: at(11), r: 26 * S, color: '#6ae8cc' };
   }
   return { piezas: ps, resplandor };
@@ -1054,7 +1054,7 @@ function cangrejo(d: Dir, acc: AccB, f: number): Res {
   // chorreados de cera por la vela y por el techo
   const lv = lat(arriba);
   for (let k = 0; k < 4; k++) { const a = hr(k + 9) * TAU, u = add(esc(lv, Math.cos(a)), cruz(arriba, lv), Math.sin(a)), l = 3 + hr(k) * 4; ps.push(masa([hueso(add(add(velaT, u, 2.3), arriba, -0.4), add(add(velaT, u, 2.45), arriba, -l), 0.7, 0.55, { mat: 'cera' }), bulto(add(add(velaT, u, 2.45), arriba, -l), [0.8, 0.8, 0.9], { mat: 'cera' })], { mat: 'cera', suave: 0.4 })); }
-  for (const sy of [1, -1]) { const b = add(vela0, ap(Q.m, [0, sy * 3.5, -0.6]), 1), e2 = add(b, ap(Q.m, [0, sy * 6, -4.4]), 1); ps.push(masa([hueso(b, e2, 0.9, 0.6, { mat: 'cera' }), bulto(e2, [1, 1, 0.8], { mat: 'cera' })], { mat: 'cera', suave: 0.4 })); }
+  for (const sy of [1, -1]) { const b = add(vela0, ap(Q.m, [0.5, sy * 3, -0.9]), 1), e2 = add(b, ap(Q.m, [0.6, sy * 2.6, -2.2]), 1); ps.push(masa([bulto(b, [1.6, 1.4, 0.8], { mat: 'cera' }), hueso(b, e2, 1, 0.75, { mat: 'cera' }), bulto(e2, [1.1, 1.1, 0.9], { mat: 'cera' })], { mat: 'cera', suave: 0.5 })); }
   ps.push(palo(velaT, add(velaT, arriba, 1.3), 0.25, { mat: 'cu_tela_negra' }));
   let resplandor: Res['resplandor'];
   if (llama > 0.05) {
@@ -1148,7 +1148,7 @@ function mano(d: Dir, acc: AccB, f: number): Res {
     for (let k = 0; k < 7; k++) { const a = (k / 7) * TAU + 0.3, r = 7 + golpe * 6 * hr(k), q: V3 = add(c0, [Math.cos(a) * r, Math.sin(a) * r, 1 + golpe * 7 * hr(k * 2)]); ps.push(poliedro([q, add(q, [1.6, 0.3, 0]), add(q, [0, 1.4, 0.4]), add(q, [0.3, 0, 1.6])], { mat: 'm67_marmol' })); }
   }
   ps.push(bajoPiso());
-  const luz = muerte < 0.85 ? { c: golpe > 0.2 ? apT(W, [px + 16, 0, 6]) : corte, r: 14 + brillo * 10 + golpe * 14, color: '#f4e0b0' } : undefined;
+  const luz = muerte < 0.85 ? { c: golpe > 0.2 ? apT(W, [px + 16, 0, 6]) : corte, r: 9 + brillo * 6 + golpe * 16, color: '#f0dcb0' } : undefined;
   return { piezas: ps, resplandor: luz };
 }
 bestia67('mano_dorada', ['Mano dorada', 'Golden hand'], ['Mano de oro cortada que flota, agarra y aplasta; una menor de las manos de Aun-Saar.', 'A severed golden hand that floats, grabs and crushes; a lesser one of Aun-Saar’s hands.'], [2, 2], mano);
