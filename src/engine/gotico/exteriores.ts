@@ -1,8 +1,7 @@
 import { MATERIALES } from './materiales';
 import { ruido, hueso, bulto, masa, girarPiezas, type Comp, type Pieza, type V3 } from './render';
 import type { Arma } from './objeto';
-import { personaje, type Cuerpo, type Equipo } from './cuerpo';
-import type { Dir } from './figura';
+import './cuerpo';
 
 /**
  * Herramientas compartidas por los exteriores de los actos 1 a 3 (páramo, desierto y selva): suelo orgánico con matas
@@ -14,7 +13,7 @@ import type { Dir } from './figura';
 // ------------------------------------------------------------------ materiales de los exteriores
 const M = MATERIALES;
 /** Grieta: el ruido "de cresta" (|ruido - 0.5| chico) traza líneas finas que se cortan como piedra partida. */
-const grieta = (p: V3, k: number, ancho = 0.035) => Math.abs(ruido(p[0] * k, p[1] * k, p[2] * k) - 0.5) < ancho;
+const grieta = (p: V3, k: number, ancho = 0.035) => Math.abs(ruido(p[0] * k + p[2] * k * 0.3, p[1] * k, p[2] * k * 0.35) - 0.5) < ancho && ruido(p[0] * k * 0.5 + 9, p[1] * k * 0.5, p[2] * k * 0.5) > 0.42;
 M.ext_roca = {
   rampa: ['#0f0f0e', '#1c1b19', '#2b2926', '#3c3934', '#4f4b44', '#635e55', '#787166', '#8d8576'], ruido: 0.4, escala: 0.16,
   patron: (p) => (grieta(p, 0.11) ? -0.32 : 0) + (grieta(p, 0.27, 0.03) ? -0.16 : 0) + (ruido(p[0] * 0.05, p[1] * 0.05, p[2] * 0.05) - 0.5) * 0.3 + (ruido(p[0] * 0.9, p[1] * 0.9, p[2] * 0.9) > 0.8 ? 0.1 : 0),
@@ -39,7 +38,7 @@ M.ext_musgo = {
 };
 M.ext_liquen = { rampa: ['#24251c', '#383929', '#4d4e37', '#626245', '#787654', '#8d8a65'], ruido: 0.5, escala: 0.9, patron: (p) => (ruido(p[0] * 1.6, p[1] * 1.6, p[2] * 1.6) > 0.6 ? 0.15 : -0.05) };
 M.ext_tierra = {
-  rampa: ['#0d0a07', '#18120d', '#241b13', '#30251a', '#3d3021', '#4b3b29', '#5a4732'], ruido: 0.5, escala: 0.3,
+  rampa: ['#0b0a08', '#15130f', '#201c16', '#2b261e', '#373027', '#433b30', '#50473a'], ruido: 0.5, escala: 0.3,
   patron: (p) => (ruido(p[0] * 0.12, p[1] * 0.12, 1) - 0.5) * 0.3 + (ruido(p[0] * 1.4, p[1] * 1.4, 2) > 0.78 ? 0.12 : 0),
 };
 /** Barro mojado: oscuro y con brillo de lluvia. */
@@ -179,36 +178,43 @@ export interface OpcPena { mat?: string; musgo?: number; matMusgo?: string; liqu
 export function pena(a: Arma, ps: Pieza[], c: V, r: V, o: OpcPena = {}): Comp[] {
   const g = o.giro ?? a.r() * 360, cg = Math.cos(rad(g)), sg = Math.sin(rad(g));
   const L = (x: number, y: number, z: number): V => [c[0] + x * cg - y * sg, c[1] + x * sg + y * cg, c[2] + z];
-  const hunde = o.hunde ?? 0.3;
-  const comps: Comp[] = [bulto(L(0, 0, r[2] * (0.45 - hunde * 0.5)), [r[0] * 0.82, r[1] * 0.82, r[2] * 0.62], { giro: g + az(a, 15), incl: az(a, 8) })];
-  const n = o.n ?? 5, losa = o.losa ?? 0.45;
-  const caps: { p: V; d: V; s: number }[] = [];
+  const R = (d: V): V => [d[0] * cg - d[1] * sg, d[0] * sg + d[1] * cg, d[2]];
+  const hunde = o.hunde ?? 0.25, z0 = -r[2] * hunde;
+  // núcleo chico y torcido: lo que manda en la silueta son las lajas
+  const comps: Comp[] = [bulto(L(az(a, r[0] * 0.1), az(a, r[1] * 0.1), z0 + r[2] * 0.45), [r[0] * 0.62, r[1] * 0.6, r[2] * 0.5], { giro: g + az(a, 25), incl: az(a, 10) })];
+  const n = o.n ?? 6, losa = o.losa ?? 0.38;
+  // la cara de arriba: una laja casi horizontal que deja el tope plano y algo inclinado
+  {
+    const d = nrm([az(a, 0.35), az(a, 0.35), 1]);
+    comps.push(bulto(L(az(a, r[0] * 0.15), az(a, r[1] * 0.15), z0 + r[2] * 0.82), [r[0] * 0.62, r[1] * 0.58, r[2] * losa * 0.55], { ejes: [R(nrm(cruz(d, [0, 1, 0]))), R(nrm(cruz([1, 0, 0], d))), R(d)], tono: 0.03 }));
+  }
   for (let i = 0; i < n; i++) {
-    const t = (i / n) * PI2 + az(a, 0.6), el = -0.15 + a.r() * 0.95, ce = Math.cos(el);
+    const t = (i / n) * PI2 + az(a, 0.5), el = -0.05 + a.r() * 0.7, ce = Math.cos(el);
     const d: V = [Math.cos(t) * ce, Math.sin(t) * ce, Math.sin(el)];
-    const p = L(d[0] * r[0] * 0.48, d[1] * r[1] * 0.48, r[2] * (0.42 - hunde * 0.4) + d[2] * r[2] * 0.5);
-    const s = 0.42 + a.r() * 0.22;
-    // la laja: aplastada a lo largo de su normal (cara casi plana hacia afuera)
-    const dn = nrm([d[0] * cg - d[1] * sg + az(a, 0.25), d[0] * sg + d[1] * cg + az(a, 0.25), d[2] + az(a, 0.2)]);
-    const [ex, ey, ez] = ejesDe(dn, a.r() * PI2);
-    comps.push(bulto(p, [Math.min(r[0], r[1], r[2]) * s * losa * 1.4, Math.max(r[0], r[1]) * s, r[2] * s * 0.95], { ejes: [ex, ey, ez], tono: az(a, 0.05) }));
-    caps.push({ p, d: dn, s });
+    const k = 0.5 + a.r() * 0.12;
+    const p = L(d[0] * r[0] * k, d[1] * r[1] * k, z0 + r[2] * 0.4 + d[2] * r[2] * 0.45);
+    const s = 0.5 + a.r() * 0.3;
+    // la laja: aplastada a lo largo de su normal (cara casi plana hacia afuera), alta y ancha
+    const dn = nrm(R([d[0] + az(a, 0.3), d[1] + az(a, 0.3), d[2] * 0.6 + az(a, 0.2)]));
+    const [ex, ey, ez] = ejesDe(dn, az(a, 0.5));
+    comps.push(bulto(p, [Math.min(r[0], r[1]) * losa * s, Math.max(r[0], r[1]) * s * 0.75, r[2] * s * 0.75], { ejes: [ex, ey, ez], tono: az(a, 0.06) }));
   }
   if (o.extra) comps.push(...o.extra);
+  const top = z0 + r[2] * 0.95;
   // musgo y liquen: arriba y del lado de la lluvia
   const nm = Math.round((o.musgo ?? 0) * 6);
   for (let i = 0; i < nm; i++) {
-    const t = a.r() * PI2, el = 0.45 + a.r() * 0.5, ce = Math.cos(el);
-    const p = L(Math.cos(t) * ce * r[0] * 0.62, Math.sin(t) * ce * r[1] * 0.62, r[2] * (0.42 - hunde * 0.4) + Math.sin(el) * r[2] * 0.62);
-    comps.push(bulto(p, [r[0] * (0.25 + a.r() * 0.2), r[1] * (0.22 + a.r() * 0.18), Math.max(1, r[2] * 0.12)], { mat: o.matMusgo ?? 'ext_musgo', giro: a.r() * 180, incl: grad(Math.cos(el)) * 0.5 * (a.r() < 0.5 ? 1 : -1), k: 0.9, tono: az(a, 0.06) }));
+    const t = a.r() * PI2, d = a.r() * 0.55;
+    const p = L(Math.cos(t) * d * r[0], Math.sin(t) * d * r[1], top - d * d * r[2] * 0.9);
+    comps.push(bulto(p, [r[0] * (0.22 + a.r() * 0.2), r[1] * (0.2 + a.r() * 0.18), Math.max(1, r[2] * 0.1)], { mat: o.matMusgo ?? 'ext_musgo', giro: a.r() * 180, incl: az(a, 20), k: 0.9, tono: az(a, 0.06) }));
   }
   const nl = Math.round((o.liquen ?? 0) * 7);
   for (let i = 0; i < nl; i++) {
-    const t = a.r() * PI2, el = a.r() * 1.2, ce = Math.cos(el);
-    const p = L(Math.cos(t) * ce * r[0] * 0.78, Math.sin(t) * ce * r[1] * 0.78, r[2] * (0.42 - hunde * 0.4) + Math.sin(el) * r[2] * 0.6);
-    comps.push(bulto(p, [1.4 + a.r() * 2.2, 1.4 + a.r() * 2.2, 0.8], { mat: 'ext_liquen', eje: [Math.cos(t), Math.sin(t), 0], k: 0.4 }));
+    const t = a.r() * PI2, el = a.r() * 0.9;
+    const p = L(Math.cos(t) * Math.cos(el) * r[0] * 0.7, Math.sin(t) * Math.cos(el) * r[1] * 0.7, z0 + r[2] * 0.4 + Math.sin(el) * r[2] * 0.5);
+    comps.push(bulto(p, [1.4 + a.r() * 2.2, 1.4 + a.r() * 2.2, 0.8], { mat: 'ext_liquen', eje: R([Math.cos(t), Math.sin(t), 0]), k: 0.4 }));
   }
-  ps.push(masa(comps, { mat: o.mat ?? 'ext_roca', suave: o.suave ?? 1.8, tono: o.tono }));
+  ps.push(masa(comps, { mat: o.mat ?? 'ext_roca', suave: o.suave ?? 1.4, tono: o.tono }));
   return comps;
 }
 /** Grupo de peñas con piedras chicas alrededor: la grande primero y las otras arrimadas. */
@@ -290,40 +296,139 @@ export function humo(a: Arma, ps: Pieza[], f: number, nc: number, x: number, y: 
 }
 
 // ------------------------------------------------------------------ cuerpos
-const PIEL = ['cu_piel', 'cu_piel_clara', 'cu_piel_morena', 'cu_piel_palida'];
-const PELO = ['cu_pelo_negro', 'cu_pelo_castano', 'cu_pelo_rubio', 'cu_pelo_rojo', 'cu_pelo_blanco'];
-export type TipoCadaver = 'campesino' | 'soldado' | 'mercader' | 'bandido' | 'nomada' | 'tribal' | 'explorador' | 'momificado';
-/** Quién era: cuerpo y ropa del cadáver (la piel y el pelo salen de la semilla). */
-export function vestido(a: Arma, tipo: TipoCadaver): [Cuerpo, Equipo] {
-  const piel = tipo === 'nomada' ? elegir(a, ['cu_piel_morena', 'cu_piel']) : tipo === 'tribal' ? 'cu_piel_morena' : tipo === 'momificado' ? 'cu_piel_gris' : elegir(a, PIEL);
-  const cu: Cuerpo = { piel, pelo: elegir(a, PELO), peinado: elegir(a, ['corto', 'largo', 'rapado', 'calvo', 'cola'] as const), musculo: a.r() * 0.6, grasa: a.r() * 0.4, ojos: 'cu_ojo', demacrado: tipo === 'momificado', parches: tipo === 'momificado' ? 'ext_cuero_seco' : undefined, heridas: tipo !== 'momificado' && a.r() < 0.6 };
-  if (a.r() < 0.4 && tipo !== 'tribal') cu.barba = elegir(a, ['corta', 'larga', 'bigote'] as const);
-  // cómo cayó: de espaldas, de costado o de bruces
-  cu.presentacion = elegir(a, ['conjuro', 'apunta', 'kata', 'rugido'] as const);
-  const tela = elegir(a, ['cu_tela_parda', 'cu_tela_negra', 'cu_tela_verde', 'cu_tela_roja', 'cu_tela_azul']);
-  const eq: Equipo = {};
-  if (tipo === 'campesino') { eq.torso = { tipo: elegir(a, ['camisa', 'tunica', 'harapos'] as const), mat: tela }; eq.piernas = { tipo: 'pantalon', mat: 'cu_tela_parda' }; eq.pies = { tipo: 'botas', mat: 'cu_cuero' }; if (a.r() < 0.4) eq.cabeza = { tipo: 'capucha', mat: tela }; }
-  if (tipo === 'soldado') { eq.torso = { tipo: elegir(a, ['malla', 'cuero_tachonado'] as const), mat: 'cu_malla', mat2: 'cu_cuero' }; eq.piernas = { tipo: 'pantalon', mat: 'cu_tela_parda' }; eq.pies = { tipo: 'botas_altas', mat: 'cu_cuero' }; eq.tabardo = { mat: elegir(a, ['cu_tela_roja', 'cu_tela_azul']) }; if (a.r() < 0.6) eq.cabeza = { tipo: 'casco', mat: 'hierro_oxido' }; eq.cinturon = { mat: 'cu_cuero' }; }
-  if (tipo === 'mercader') { eq.torso = { tipo: 'tunica', mat: elegir(a, ['cu_tela_morada', 'cu_tela_roja', 'cu_tela_verde']) }; eq.piernas = { tipo: 'tunica_larga', mat: 'cu_tela_parda' }; eq.pies = { tipo: 'botas', mat: 'cu_cuero' }; eq.cinturon = { mat: 'cu_cuero', hebilla: 'cu_oro' }; if (a.r() < 0.5) eq.cabeza = { tipo: 'gorro', mat: tela }; }
-  if (tipo === 'bandido') { eq.torso = { tipo: 'cuero', mat: 'cu_cuero' }; eq.piernas = { tipo: 'pantalon', mat: 'cu_tela_parda' }; eq.pies = { tipo: 'botas', mat: 'cu_cuero' }; eq.cabeza = { tipo: 'capucha', mat: 'cu_tela_negra' }; }
-  if (tipo === 'nomada') { eq.torso = { tipo: 'tunica', mat: elegir(a, ['cu_tela_blanca', 'cu_tela_parda', 'cu_tela_azul']) }; eq.piernas = { tipo: 'tunica_larga', mat: elegir(a, ['cu_tela_blanca', 'cu_tela_parda']) }; eq.pies = { tipo: 'sandalias', mat: 'cu_cuero' }; eq.cabeza = { tipo: 'turbante', mat: elegir(a, ['cu_tela_blanca', 'cu_tela_azul', 'cu_tela_roja']) }; }
-  if (tipo === 'tribal') { eq.piernas = { tipo: 'taparrabo', mat: 'cu_cuero' }; eq.hombros = a.r() < 0.5 ? { tipo: 'huesos', mat: 'cu_hueso' } : undefined; cu.peinado = elegir(a, ['trenzas', 'cresta', 'largo'] as const); }
-  if (tipo === 'explorador') { eq.torso = { tipo: 'camisa', mat: 'cu_tela_blanca' }; eq.piernas = { tipo: 'pantalon', mat: 'cu_tela_parda' }; eq.pies = { tipo: 'botas_altas', mat: 'cu_cuero' }; eq.cinturon = { mat: 'cu_cuero' }; eq.hombros = { tipo: 'cuero', mat: 'cu_cuero' }; }
-  if (tipo === 'momificado') { eq.torso = { tipo: 'harapos', mat: 'ext_tela_sucia' }; eq.piernas = { tipo: 'pantalon', mat: 'ext_tela_sucia' }; }
-  return [cu, eq];
+/** Lo que lleva puesto un cuerpo: material de la piel, la ropa de arriba, las mangas, las piernas, los pies y el pelo. */
+export interface Ropa { piel: string; torso: string; mangas: string; piernas: string; pies: string; pelo: string; capucha?: string; casco?: string; cinto?: string }
+export type TipoCadaver = 'campesino' | 'soldado' | 'mercader' | 'bandido' | 'nomada' | 'tribal' | 'explorador' | 'momia';
+const PIELES = ['cu_piel', 'cu_piel_clara', 'cu_piel_palida', 'cu_piel_morena'];
+const PELOS = ['cu_pelo_negro', 'cu_pelo_castano', 'cu_pelo_rubio', 'cu_pelo_rojo', 'cu_pelo_castano'];
+export function ropaDe(a: Arma, tipo: TipoCadaver): Ropa {
+  const piel = tipo === 'nomada' || tipo === 'tribal' ? elegir(a, ['cu_piel_morena', 'cu_piel']) : tipo === 'momia' ? 'ext_cuero_seco' : elegir(a, PIELES);
+  const pelo = tipo === 'momia' ? 'ext_tela_sucia' : elegir(a, PELOS);
+  const tela = elegir(a, ['cu_tela_parda', 'ext_tela_sucia', 'cu_tela_verde', 'cu_tela_roja', 'cu_tela_azul', 'cu_tela_negra']);
+  switch (tipo) {
+    case 'soldado': return { piel, pelo, torso: elegir(a, ['cu_malla', 'cu_tela_roja', 'cu_tela_azul']), mangas: 'cu_malla', piernas: 'cu_tela_parda', pies: 'cu_cuero', casco: a.r() < 0.6 ? 'hierro_oxido' : undefined, cinto: 'cu_cuero' };
+    case 'mercader': return { piel, pelo, torso: elegir(a, ['cu_tela_morada', 'cu_tela_roja', 'cu_tela_verde']), mangas: 'cu_tela_blanca', piernas: 'cu_tela_parda', pies: 'cu_cuero', cinto: 'cu_oro' };
+    case 'bandido': return { piel, pelo, torso: 'cu_cuero', mangas: 'cu_tela_negra', piernas: 'cu_tela_parda', pies: 'cu_cuero_negro', capucha: a.r() < 0.6 ? 'cu_tela_negra' : undefined, cinto: 'cu_cuero_negro' };
+    case 'nomada': return { piel, pelo, torso: elegir(a, ['cu_tela_blanca', 'cu_tela_parda', 'cu_tela_azul']), mangas: 'cu_tela_blanca', piernas: elegir(a, ['cu_tela_blanca', 'cu_tela_parda']), pies: 'cu_cuero', capucha: elegir(a, ['cu_tela_blanca', 'cu_tela_azul', 'cu_tela_roja']) };
+    case 'tribal': return { piel, pelo: 'cu_pelo_negro', torso: piel, mangas: piel, piernas: piel, pies: piel, cinto: 'cu_cuero' };
+    case 'explorador': return { piel, pelo, torso: 'cu_tela_blanca', mangas: 'cu_tela_blanca', piernas: 'cu_tela_parda', pies: 'cu_cuero', cinto: 'cu_cuero' };
+    case 'momia': return { piel, pelo, torso: 'ext_tela_sucia', mangas: 'ext_cuero_seco', piernas: 'ext_tela_sucia', pies: 'ext_cuero_seco' };
+    default: return { piel, pelo, torso: tela, mangas: a.r() < 0.5 ? tela : piel, piernas: elegir(a, ['cu_tela_parda', 'ext_tela_sucia']), pies: elegir(a, ['cu_cuero', 'ext_cuero_seco']), capucha: a.r() < 0.3 ? tela : undefined, cinto: a.r() < 0.5 ? 'cuerda' : undefined };
+  }
+}
+/** Pose de un cuerpo inerte: ángulos de brazos (180 pegado al cuerpo, 90 abierto, 20 sobre la cabeza), codos, piernas y rodillas. */
+export interface PoseCuerpo { brazos: [number, number]; codos: [number, number]; piernas: [number, number]; rodillas: [number, number]; cabeza: number; ladea?: number }
+export function poseAzar(a: Arma): PoseCuerpo {
+  return {
+    brazos: [a.r() < 0.6 ? entre(a, 130, 175) : entre(a, 50, 130), a.r() < 0.5 ? entre(a, 130, 175) : entre(a, 40, 120)], codos: [az(a, 60), az(a, 60)], piernas: [entre(a, 3, 24), entre(a, 3, 24)],
+    rodillas: [a.r() < 0.35 ? entre(a, 20, 70) : entre(a, 0, 12), a.r() < 0.25 ? entre(a, 20, 60) : entre(a, 0, 12)], cabeza: az(a, 60),
+  };
+}
+/** Puntos del cuerpo en el mundo (para clavarle flechas, atarle sogas o mancharlo). */
+export interface Huesos { cabeza: V; pecho: V; pelvis: V; frente: V; manos: V[]; pies: V[] }
+/**
+ * Muñeco de masa en un marco: `T` lleva del marco del cuerpo (x a lo largo hacia la cabeza, y a la izquierda, z hacia
+ * el frente; la pelvis en el origen) al mundo. Así el mismo cuerpo sirve tendido de espaldas, de bruces o colgado.
+ * `huesos` lo arma como esqueleto (cráneo, costillar y huesos largos).
+ */
+export function muneco(a: Arma, ps: Pieza[], T: (p: V) => V, ropa: Ropa, pose: PoseCuerpo, o: { s?: number; huesos?: boolean; colgado?: boolean } = {}): Huesos {
+  const s = o.s ?? 1, O = T([0, 0, 0]);
+  const A = (v: V): V => mas(T(v), O, -1);
+  const W = (x: number, y: number, z: number) => T([x * s, y * s, z * s]);
+  const ej = (x: V, y: V): [V, V, V] => { const ex = nrm(A(x)), ey0 = nrm(A(y)); const ez = nrm(cruz(ex, ey0)); return [ex, cruz(ez, ex), ez]; };
+  const EJ = ej([1, 0, 0], [0, 1, 0]);
+  const cs: Comp[] = [];
+  const B = (c: V, r: V, mat: string, ejes = EJ, tono?: number) => cs.push(bulto(c, [r[0] * s, r[1] * s, r[2] * s], { ejes, mat, tono }));
+  const H = (p: V, q: V, r0: number, r1: number, mat: string) => cs.push(hueso(p, q, r0 * s, r1 * s, { mat }));
+  // cabeza girada alrededor del eje del cuerpo
+  const cg = Math.cos(rad(pose.cabeza)), sg = Math.sin(rad(pose.cabeza));
+  const cl = Math.cos(rad(pose.ladea ?? 0)), sl = Math.sin(rad(pose.ladea ?? 0));
+  const Hd = (x: number, y: number, z: number) => { const y1 = y * cg - z * sg, z1 = y * sg + z * cg, u = x - 19.5; return W(19.5 + u * cl - y1 * sl, u * sl + y1 * cl, z1); };
+  const EJH = ej([cl, sl, 0], [-sl * cg, cl * cg, sg]);
+  // brazos y piernas
+  const manos: V[] = [], pies: V[] = [];
+  const brazo = (sd: number, th: number, codo: number) => {
+    const t = rad(th), S: V = [15.5, sd * 7, 0];
+    const d: V = [Math.cos(t), sd * Math.sin(t), o.colgado ? 0.12 : 0];
+    const E = mas(S, nrm(d), 11), t2 = t + rad(codo);
+    const d2: V = nrm([Math.cos(t2), sd * Math.sin(t2), o.colgado ? 0.25 : Math.abs(codo) > 30 ? 0.35 : 0.05]);
+    const Hn = mas(E, d2, 10), Mn = mas(Hn, d2, 1.8);
+    return { S, E, Hn, Mn, d2 };
+  };
+  const pierna = (sd: number, ph: number, rod: number) => {
+    const p = rad(ph), P: V = [-1.5, sd * 3.4, 0], d: V = [-Math.cos(p), sd * Math.sin(p), 0], k = rad(rod / 2);
+    const K = mas(mas(P, d, 15 * Math.cos(k)), [0, 0, 1], 15 * Math.sin(k)), Ak = mas(mas(K, d, 14 * Math.cos(k)), [0, 0, 1], -14 * Math.sin(k));
+    return { P, K, Ak, d };
+  };
+  const bz = [brazo(1, pose.brazos[0], pose.codos[0]), brazo(-1, pose.brazos[1], pose.codos[1])];
+  const pn = [pierna(1, pose.piernas[0], pose.rodillas[0]), pierna(-1, pose.piernas[1], pose.rodillas[1])];
+  const Wv = (v: V) => W(v[0], v[1], v[2]);
+  if (o.huesos) {
+    costillar(a, ps, W(1, 0, -1), W(17, 0, -0.5), 7, 5.2 * s, { abre: 0.1, r: 0.55 * s });
+    ps.push(masa([bulto(W(-0.5, 0, -0.5), [3 * s, 5 * s, 2.2 * s], { ejes: EJ }), bulto(W(-1, 3, -0.5), [2.4 * s, 2.6 * s, 1.4 * s], { ejes: EJ }), bulto(W(-1, -3, -0.5), [2.4 * s, 2.6 * s, 1.4 * s], { ejes: EJ })], { mat: 'ext_hueso', suave: 1 }));
+    const hc = Hd(22.5, 0, 0.5);
+    craneo(a, ps, hc[0], hc[1], hc[2], 0.95 * s, Math.atan2(A([0, 0, 1])[1], A([0, 0, 1])[0]));
+    for (const b of bz) { huesoLargo(ps, Wv(b.S), Wv(b.E), 0.7 * s); huesoLargo(ps, Wv(b.E), Wv(b.Hn), 0.55 * s); manos.push(Wv(b.Mn)); }
+    for (const l of pn) { huesoLargo(ps, Wv(l.P), Wv(l.K), 0.95 * s); huesoLargo(ps, Wv(l.K), Wv(l.Ak), 0.75 * s); pies.push(Wv(l.Ak)); }
+    return { cabeza: hc, pecho: W(12, 0, 2), pelvis: W(0, 0, 0), frente: nrm(A([0, 0, 1])), manos, pies };
+  }
+  // tronco
+  B(W(0, 0, 0), [4.4, 5.8, 3.4], ropa.piernas);
+  B(W(6, 0, 0.2), [4.6, 5.4, 3.3], ropa.torso);
+  B(W(12.5, 0, 0.4), [5.2, 7, 3.9], ropa.torso);
+  H(W(15.3, -6.6, 0), W(15.3, 6.6, 0), 2.6, 2.6, ropa.torso);
+  if (ropa.cinto) H(W(2.6, -5.6, 0.3), W(2.6, 5.6, 0.3), 1.6, 1.6, ropa.cinto);
+  H(W(17.5, 0, 0), W(20.2, 0, 0.3), 1.8, 1.7, ropa.piel);
+  // cabeza: cráneo, nariz, mandíbula y pelo o capucha atrás y arriba
+  B(Hd(23, 0, 0.3), [4.1, 3.3, 3.5], ropa.piel, EJH);
+  B(Hd(22.2, 0, 3.4), [1, 0.8, 0.9], ropa.piel, EJH, -0.05);
+  B(Hd(20.4, 0, 1.6), [1.6, 2.5, 1.6], ropa.piel, EJH, -0.03);
+  if (ropa.casco) B(Hd(24.2, 0, -0.3), [3.5, 3.9, 3.9], ropa.casco, EJH);
+  else if (ropa.capucha) { B(Hd(23.8, 0, -1), [4.6, 4.3, 3.9], ropa.capucha, EJH); B(Hd(19, 0, -1.5), [2.5, 5.5, 2.6], ropa.capucha, EJH); }
+  else B(Hd(23.8, 0, -0.9), [3.9, 3.5, 3.2], ropa.pelo, EJH);
+  for (const b of bz) {
+    H(Wv(b.S), Wv(b.E), 2.4, 2, ropa.mangas);
+    H(Wv(b.E), Wv(b.Hn), 2, 1.5, ropa.mangas === ropa.torso && ropa.mangas !== ropa.piel ? ropa.mangas : ropa.piel);
+    cs.push(bulto(Wv(b.Mn), [2 * s, 1.5 * s, 0.9 * s], { eje: A(b.d2), mat: ropa.piel }));
+    manos.push(Wv(b.Mn));
+  }
+  for (const l of pn) {
+    H(Wv(l.P), Wv(l.K), 3.2, 2.5, ropa.piernas);
+    H(Wv(l.K), Wv(mez(l.K, l.Ak, 0.5)), 2.5, 2.1, ropa.piernas);
+    H(Wv(mez(l.K, l.Ak, 0.45)), Wv(l.Ak), 2.3, 1.9, ropa.pies);
+    // el pie apunta al frente del cuerpo (arriba si está de espaldas, al piso si está de bruces, abajo si cuelga)
+    const pf = o.colgado ? mas(l.Ak, [-1.5, 0, 0.6]) : mas(l.Ak, [0, 0, 2]);
+    cs.push(bulto(Wv(mas(pf, l.d, 0.3)), [1.5 * s, 1.4 * s, 3 * s], { ejes: EJ, mat: ropa.pies }));
+    pies.push(Wv(l.Ak));
+  }
+  ps.push(masa(cs, { mat: ropa.torso, suave: 1.3 * s }));
+  return { cabeza: Hd(23, 0, 0.3), pecho: W(12.5, 0, 3.5), pelvis: W(0, 0, 0), frente: nrm(A([0, 0, 1])), manos, pies };
+}
+/** Marco de un cuerpo tendido en el piso con la pelvis en `p`, la cabeza hacia `giro` (grados): de espaldas o de bruces. */
+export function tendido(p: V, giro: number, bruces = false, alto = 3.5): (q: V) => V {
+  const c = Math.cos(rad(giro)), s = Math.sin(rad(giro));
+  return (q) => { const y = bruces ? -q[1] : q[1]; return [p[0] + q[0] * c - y * s, p[1] + q[0] * s + y * c, p[2] + alto + (bruces ? -q[2] : q[2])]; };
+}
+/** Marco de un cuerpo colgado: la nuca en `p`, mirando hacia `giro` (grados). */
+export function colgado(p: V, giro: number): (q: V) => V {
+  const c = Math.cos(rad(giro)), s = Math.sin(rad(giro));
+  return (q) => [p[0] + q[2] * c - q[1] * s, p[1] + q[2] * s + q[1] * c, p[2] + q[0] - 21];
 }
 /**
- * Cadáver tumbado: el cuerpo articulado en el último cuadro de morir, corrido para que su centro quede en `p` y
- * girado. Con charco de sangre debajo si `sangre`.
+ * Cadáver tumbado con la pelvis cerca de `p`: de espaldas o de bruces, con la pose al azar, un charco de sangre si
+ * `sangre` y flechas clavadas si `flechas`.
  */
-export function cadaver(a: Arma, ps: Pieza[], tipo: TipoCadaver, p: V, giro: number, o: { sangre?: number; arma?: Equipo['arma'] } = {}) {
-  const [cu, eq] = vestido(a, tipo);
-  if (o.arma) eq.arma = o.arma;
-  const dir = elegir(a, ['s', 'so', 'o', 'no', 'n', 'ne', 'e', 'se'] as Dir[]);
-  const cuerpo = personaje(cu, eq, dir, 'morir', 7);
-  const c = centroDe(cuerpo.filter((q) => q.k === 'masa').slice(0, 1));
-  if (o.sangre) disco(a, ps, p[0] + az(a, 3), p[1] + az(a, 3), p[2] - 0.1, 9 * o.sangre, 7 * o.sangre, 0.5, 'sangre', { giro: a.r() * 180, ruido: 0.22 });
-  ps.push(...mover(mover(cuerpo, [-c[0], -c[1], 0]), p, giro));
+export function cadaver(a: Arma, ps: Pieza[], tipo: TipoCadaver, p: V, giro: number, o: { sangre?: number; flechas?: number; bruces?: boolean; huesos?: boolean; pose?: Partial<PoseCuerpo>; s?: number } = {}): Huesos {
+  const bruces = o.bruces ?? a.r() < 0.45;
+  const ropa = ropaDe(a, tipo), pose = { ...poseAzar(a), ...o.pose };
+  if (bruces) pose.rodillas = [Math.min(8, pose.rodillas[0]), Math.min(8, pose.rodillas[1])];
+  if (o.sangre) disco(a, ps, p[0] + Math.cos(rad(giro)) * 8 + az(a, 3), p[1] + Math.sin(rad(giro)) * 8 + az(a, 3), p[2] - 0.2, 10 * o.sangre, 7 * o.sangre, 0.55, 'sangre', { giro: giro + az(a, 30), ruido: 0.25 });
+  const h = muneco(a, ps, tendido(p, giro, bruces, o.huesos ? 1.5 : 3.5), ropa, pose, { huesos: o.huesos, s: o.s });
+  for (let i = 0; i < (o.flechas ?? 0); i++) {
+    const q = mez(h.pecho, h.pelvis, a.r() * 0.6);
+    flecha(a, ps, mas(q, [az(a, 2), az(a, 2), 0]), [az(a, 0.6) + (bruces ? 0 : 0), az(a, 0.6), 1], 12);
+  }
+  return h;
 }
 /** Flecha clavada (asta, plumas) desde `p` hacia afuera `d`. */
 export function flecha(a: Arma, ps: Pieza[], p: V, d: V, L = 14) {
@@ -378,6 +483,30 @@ export function costillar(a: Arma, ps: Pieza[], p0: V, p1: V, n: number, R: numb
 }
 
 // ------------------------------------------------------------------ aves
+M.ext_plumon = { rampa: ['#2c2820', '#443e32', '#5d5645', '#776f5a', '#918870', '#a9a087'], ruido: 0.5, escala: 1.4 };
+/**
+ * Buitre encorvado de masa: lomo alto, alas plegadas que lo envuelven, collar de plumón, cuello pelado en S y pico
+ * ganchudo. `s` 1 mide unos 18 de alto; `come` baja el cuello hacia el piso (0..1).
+ */
+export function buitre(a: Arma, ps: Pieza[], p: V, g: number, s: number, come = 0) {
+  const fx = Math.cos(g), fy = Math.sin(g), lx = -fy, ly = fx;
+  const P = (fw: number, rt: number, up: number): V => [p[0] + (fx * fw + lx * rt) * s, p[1] + (fy * fw + ly * rt) * s, p[2] + up * s];
+  const D = (fw: number, rt: number, up: number): V => [fx * fw + lx * rt, fy * fw + ly * rt, up];
+  const cab = come ? P(8 + come * 2, 0, 12 - come * 10) : P(6.5, 0, 14.5);
+  const cs: Comp[] = [
+    bulto(P(0, 0, 9), [6.2 * s, 4.2 * s, 4.6 * s], { eje: D(0.8, 0, 0.55) }),
+    bulto(P(-6.5, 0, 4.5), [3.8 * s, 2.4 * s, 0.7 * s], { eje: D(-1, 0, -0.45) }),
+    bulto(P(2.6, 0, 12.6), [2.6 * s, 3.5 * s, 2.2 * s], { eje: D(1, 0, 0.3), mat: 'ext_plumon' }),
+    hueso(P(3.5, 0, 13), come ? P(6 + come, 0, 12 - come * 4) : P(4.6, 0, 16), 1.3 * s, 1 * s, { mat: 'ext_piel_buitre' }),
+    hueso(come ? P(6 + come, 0, 12 - come * 4) : P(4.6, 0, 16), cab, 1 * s, 1 * s, { mat: 'ext_piel_buitre' }),
+    bulto(cab, [1.9 * s, 1.3 * s, 1.4 * s], { eje: D(1, 0, come ? -0.8 : -0.1), mat: 'ext_piel_buitre' }),
+  ];
+  for (const sd of [-1, 1]) cs.push(bulto(P(-1.5, sd * 3.3, 8.6), [7.4 * s, 1.5 * s, 4.2 * s], { eje: D(0.85, sd * 0.1, 0.35), tono: 0.05 }));
+  ps.push(masa(cs, { mat: 'ext_pluma_parda', suave: 1.3 * s }));
+  const pd = nrm(come ? D(0.5, 0, -1) : D(1, 0, -0.2)), b0 = mas(cab, pd, 1.6 * s), b1 = mas(b0, pd, 2.2 * s);
+  ps.push(a.palo(b0, b1, 0.85 * s, { mat: 'ext_pico', r1: 0.55 * s }), a.palo(b1, mas(b1, [0, 0, -1.4 * s]), 0.55 * s, { mat: 'ext_pico', r1: 0.15 * s }));
+  for (const sd of [-1, 1]) { const c = P(0.5, sd * 1.8, 5), pie = P(1, sd * 2.2, 0); ps.push(a.palo(c, pie, 0.7 * s, { mat: 'ext_pico', r1: 0.5 * s, tono: -0.2 }), a.palo(pie, mas(pie, [fx * 2.5 * s, fy * 2.5 * s, 0]), 0.45 * s, { mat: 'negro' })); }
+}
 /** Pose de un pájaro: posado, picando (cabeza al piso) o con las alas abiertas. */
 export type PoseAve = 'posado' | 'picando' | 'alas';
 /**
@@ -453,3 +582,110 @@ export function pano(a: Arma, ps: Pieza[], p: V, q: V, caida: number, mat: strin
     ps.push(a.poliedro(pts, { mat, tono: (o.tono ?? 0) + ola * 0.05 + az(a, 0.03) }));
   }
 }
+
+// ------------------------------------------------------------------ marcos girados en 3D
+/** Marco rígido: lleva puntos y direcciones de un marco local (girado en los tres ejes) al mundo. */
+export interface Marco { T: (p: V) => V; D: (v: V) => V }
+/** Local → alabeo (alrededor de x) → cabeceo (alrededor de y) → giro (alrededor de z, grados) → corrido a `o`. */
+export function marco(o: V, giro = 0, cabeceo = 0, alabeo = 0): Marco {
+  const cz = Math.cos(rad(giro)), sz = Math.sin(rad(giro)), cy = Math.cos(rad(cabeceo)), sy = Math.sin(rad(cabeceo)), cx = Math.cos(rad(alabeo)), sx = Math.sin(rad(alabeo));
+  const D = (v: V): V => {
+    const y1 = v[1] * cx - v[2] * sx, z1 = v[1] * sx + v[2] * cx;
+    const x2 = v[0] * cy + z1 * sy, z2 = -v[0] * sy + z1 * cy;
+    return [x2 * cz - y1 * sz, x2 * sz + y1 * cz, z2];
+  };
+  return { D, T: (p) => mas(o, D(p)) };
+}
+/** Caja con la base centrada en (x,y,z) del marco: un poliedro de sus 8 esquinas (sirve girada en cualquier eje). */
+export function cajaM(a: Arma, ps: Pieza[], m: Marco, x: number, y: number, z: number, an: number, pr: number, al: number, mat: string, tono?: number, resta?: boolean) {
+  const pts: V[] = [];
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [0, 1]) pts.push(m.T([x + sx * an / 2, y + sy * pr / 2, z + sz * al]));
+  ps.push(a.poliedro(pts, { mat, tono, resta }));
+}
+export const paloM = (a: Arma, ps: Pieza[], m: Marco, p: V, q: V, r: number, mat: string, r1?: number, tono?: number) => ps.push(a.palo(m.T(p), m.T(q), r, { mat, r1, tono }));
+/** Sillar: bloque de piedra tallado a mano (esquinas corridas al azar), con la base centrada en (x,y,z). */
+export function sillar(a: Arma, ps: Pieza[], x: number, y: number, z: number, l: number, w: number, h: number, giro: number, mat = 'piedra_gris', o: { jit?: number; tono?: number; incl?: number } = {}) {
+  const j = o.jit ?? Math.min(l, w, h) * 0.12, c = Math.cos(rad(giro)), s = Math.sin(rad(giro)), ti = rad(o.incl ?? 0);
+  const pts: V[] = [];
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [0, 1]) {
+    const lx = sx * l / 2 + az(a, j), ly = sy * w / 2 + az(a, j), lz = sz * h + (sz ? az(a, j) : 0);
+    const zz = lz + lx * Math.sin(ti);
+    pts.push([x + lx * c - ly * s, y + lx * s + ly * c, z + zz]);
+  }
+  // arista gastada: un punto más adentro en el medio de la cara de arriba
+  pts.push([x + az(a, l * 0.2) * c, y + az(a, w * 0.2), z + h + j * 0.5]);
+  ps.push(a.poliedro(pts, { mat, tono: (o.tono ?? 0) + az(a, 0.07) }));
+}
+/**
+ * Losa en pie (menhir, piedra de un círculo): masa de bultos apilados que se afinan, ancha de frente y angosta de
+ * canto, mirando hacia `giro` (grados), con inclinación `incl` (grados, hacia su frente).
+ */
+export function losa(a: Arma, ps: Pieza[], p: V, H: number, w: number, d: number, giro: number, o: { incl?: number; mat?: string; musgo?: number; liquen?: number; ladeo?: number; tono?: number } = {}): Comp[] {
+  const m = marco(p, giro, o.incl ?? 0, o.ladeo ?? 0), cs: Comp[] = [];
+  const ej: [V, V, V] = [m.D([1, 0, 0]), m.D([0, 1, 0]), m.D([0, 0, 1])];
+  const k = 4;
+  for (let i = 0; i < k; i++) {
+    const t = (i + 0.5) / k, af = 1 - t * 0.38 + az(a, 0.06);
+    cs.push(bulto(m.T([az(a, d * 0.15), az(a, w * 0.08), H * (0.12 + t * 0.78)]), [d * af, w * af, H * 0.24], { ejes: ej, tono: az(a, 0.05) }));
+  }
+  cs.push(bulto(m.T([az(a, d * 0.2), az(a, w * 0.25), H * 0.92]), [d * 0.55, w * 0.5, H * 0.1], { ejes: ej }));
+  for (let i = 0; i < Math.round((o.musgo ?? 0) * 4); i++) cs.push(bulto(m.T([d * 0.6 * (a.r() < 0.5 ? 1 : -1), az(a, w * 0.6), a.r() * H * 0.35]), [d * 0.35, w * (0.3 + a.r() * 0.3), H * (0.08 + a.r() * 0.1)], { ejes: ej, mat: 'ext_musgo', k: 0.8 }));
+  for (let i = 0; i < Math.round((o.liquen ?? 0) * 6); i++) cs.push(bulto(m.T([d * 0.85 * (a.r() < 0.5 ? 1 : -1), az(a, w * 0.6), H * (0.2 + a.r() * 0.65)]), [0.8, 1.5 + a.r() * 2, 1.5 + a.r() * 2], { ejes: ej, mat: 'ext_liquen', k: 0.4 }));
+  ps.push(masa(cs, { mat: o.mat ?? 'ext_roca', suave: Math.min(w, d) * 0.5, tono: o.tono }));
+  return cs;
+}
+
+// ------------------------------------------------------------------ bestias muertas
+export type TipoBestia = 'caballo' | 'buey' | 'camello' | 'ciervo' | 'jabali';
+/**
+ * Bestia muerta tendida de costado (masa): tronco, cuello, cabeza, patas tiesas. `podrida` 0..1 le abre el costado y
+ * deja ver las costillas; con `carga` lleva fardos atados.
+ */
+export function bestiaMuerta(a: Arma, ps: Pieza[], tipo: TipoBestia, p: V, giro: number, o: { podrida?: number; carga?: boolean; s?: number } = {}) {
+  const s = (o.s ?? 1) * (tipo === 'camello' ? 1.15 : tipo === 'jabali' ? 0.6 : tipo === 'ciervo' ? 0.8 : 1);
+  const mat = tipo === 'caballo' ? elegir(a, ['ext_pelo_caballo', 'ext_pelo_negro']) : tipo === 'camello' ? 'ext_pelo_camello' : tipo === 'buey' ? elegir(a, ['ext_pelo_caballo', 'ext_pelo_negro']) : 'ext_pelo_caballo';
+  const m = marco(p, giro);
+  // tendido sobre el lado derecho: y local hacia arriba es el lomo
+  const W = (x: number, y: number, z: number) => m.T([x * s, y * s, z * s]);
+  const cs: Comp[] = [];
+  const R = 9.5;
+  cs.push(bulto(W(0, 0, R * 0.92), [20 * s, 9 * s, R * s], { eje: m.D([1, 0, 0.02]) }));
+  cs.push(bulto(W(-11, -1, R * 0.95), [10 * s, 9.5 * s, R * 1.02 * s], { eje: m.D([1, 0, 0]) }));
+  if (tipo === 'camello') cs.push(bulto(W(1, -6, R * 1.05), [8 * s, 5 * s, 6 * s], { eje: m.D([1, -0.3, 0]) }));
+  // cuello y cabeza (echados hacia atrás, como caen)
+  const cu0: V = [16, 1, R * 1.1], cu1: V = tipo === 'camello' ? [30, 8, 5] : [26, 6, 5.5], cab: V = tipo === 'camello' ? [35, 14, 4] : [31, 12, 4.5];
+  cs.push(hueso(W(...cu0), W(...cu1), 5.5 * s, (tipo === 'camello' ? 3 : 4.2) * s));
+  cs.push(hueso(W(...cu1), W(...cab), (tipo === 'camello' ? 3 : 4) * s, 2.6 * s));
+  cs.push(bulto(W(...cab), [(tipo === 'buey' ? 5 : 5.5) * s, 3 * s, 3.2 * s], { eje: m.D(nrm([cab[0] - cu1[0], cab[1] - cu1[1], 0])) }));
+  // patas: las de arriba tiesas al aire, las de abajo en el piso
+  const patas: [V, V][] = [[[11, 3, R * 0.9], [22, 20, R * 1.3]], [[11, -3, R * 0.5], [24, 14, 2.5]], [[-13, 3, R * 0.9], [-20, 24, R * 1.4]], [[-13, -3, R * 0.5], [-26, 16, 2.5]]];
+  const largo = tipo === 'camello' ? 1.25 : tipo === 'buey' ? 0.8 : 1;
+  for (const [c0, c1] of patas) {
+    const fin = mas(c0, mas(c1, c0, -1), largo), rod = mez(c0, fin, 0.5);
+    cs.push(hueso(W(...c0), W(...rod), 3.6 * s, 2.2 * s), hueso(W(...rod), W(...fin), 2.2 * s, 1.5 * s));
+  }
+  ps.push(masa(cs, { mat, suave: 2.6 * s }));
+  // pezuñas, orejas, cuernos, crin
+  for (const [c0, c1] of patas) { const fin = mas(c0, mas(c1, c0, -1), largo); const q = W(...fin); ps.push(a.esfera(q[0], q[1], q[2], 1.9 * s, { mat: 'negro', tono: 0.15 })); }
+  const qc = W(...cab);
+  if (tipo === 'buey' || tipo === 'ciervo') for (const sd of [-1, 1]) {
+    const b0 = W(cab[0] - 2, cab[1] + 1, cab[2] + sd * 2.5);
+    if (tipo === 'buey') ps.push(a.palo(b0, W(cab[0] - 3, cab[1] + 6, cab[2] + sd * 7), 1.2 * s, { mat: 'ext_hueso', r1: 0.3 * s }));
+    else { const t = W(cab[0] - 6, cab[1] + 10, cab[2] + sd * 6); ps.push(a.palo(b0, t, 0.7 * s, { mat: 'ext_hueso', r1: 0.4 * s }), a.palo(mez(b0, t, 0.5), W(cab[0] - 1, cab[1] + 9, cab[2] + sd * 8), 0.5 * s, { mat: 'ext_hueso', r1: 0.2 * s })); }
+  } else for (const sd of [-1, 1]) { const b0 = W(cab[0] - 3, cab[1] + 1.5, cab[2] + sd * 2); ps.push(a.palo(b0, W(cab[0] - 5, cab[1] + 4, cab[2] + sd * 3), 1 * s, { mat, r1: 0.3 * s })); }
+  ps.push(a.esfera(qc[0], qc[1], qc[2] + 1.2 * s, 0.7 * s, { mat: 'negro' }));
+  if (tipo === 'caballo') for (let i = 0; i < 5; i++) { const q0 = W(16 + i * 2.2, 4 + i * 1, R * 1.2 - i * 0.6); ps.push(a.palo(q0, mas(q0, m.D([az(a, 2), 3, -1]), s), 1.2 * s, { mat: 'cu_pelo_negro', r1: 0.4 * s })); }
+  if (o.podrida) {
+    // el costado abierto: hueco oscuro y las costillas a la vista
+    const c = W(-3, 7, R * 1.25), d = m.D([1, 0, 0]);
+    ps.push(a.elipsoide(c[0], c[1], c[2], 13 * s * o.podrida, 6 * s, 3.5 * s, { mat: 'ext_carne_seca', giro: giro, tono: -0.1 }));
+    for (let i = 0; i < 6; i++) { const q = mas(c, d, (i - 2.5) * 3.4 * s * o.podrida); ps.push(a.palo(mas(q, m.D([0, -3, 4]), s), mas(q, m.D([0, 3, 4.5]), s), 0.6 * s, { mat: 'ext_hueso' }), a.palo(mas(q, m.D([0, 3, 4.5]), s), mas(q, m.D([0, 6, -3]), s), 0.55 * s, { mat: 'ext_hueso' })); }
+  }
+  if (o.carga) {
+    for (const [x, z] of [[-4, R * 2], [5, R * 1.9]] as [number, number][]) { const q = W(x, 2, z); ps.push(a.elipsoide(q[0], q[1], q[2], 6 * s, 5 * s, 4.5 * s, { mat: elegir(a, ['tela', 'tela_roja', 'ext_tela_sucia']), giro: giro + az(a, 20) })); }
+    const q = W(0, 0, R * 2.2); ps.push(a.palo(mas(q, m.D([-8, 0, 0]), s), mas(q, m.D([8, 0, 0]), s), 0.6 * s, { mat: 'cuerda' }));
+  }
+}
+M.ext_pelo_caballo = { rampa: ['#0f0906', '#1c110b', '#2b1a10', '#3b2416', '#4c2f1c', '#5e3b24', '#70482d'], ruido: 0.35, escala: 0.9, brillo: 0.15, patron: (p) => (ruido(p[0] * 0.35, p[1] * 0.35, p[2] * 0.35) - 0.5) * 0.2 };
+M.ext_pelo_negro = { rampa: ['#070707', '#0f0e0d', '#191715', '#23201d', '#2e2a26', '#3a3530'], ruido: 0.35, escala: 0.9, brillo: 0.2 };
+M.ext_pelo_camello = { rampa: ['#1d140b', '#302213', '#46321c', '#5d4426', '#755731', '#8c6a3d', '#a27d4b'], ruido: 0.4, escala: 0.9, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.3) - 0.5) * 0.22 };

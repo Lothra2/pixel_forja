@@ -143,12 +143,12 @@ export function cuerpo(o: OpcCuerpo): Pieza[] {
 }
 
 // ------------------------------------------------------------------ roca orgánica
-export interface OpcRoca { mat: string; n?: number; giro?: number; tono?: number; suave?: number; cubre?: string; cubreAlto?: number; aplasta?: number }
+export interface OpcRoca { mat: string; n?: number; facetas?: number; giro?: number; tono?: number; suave?: number; cubre?: string; cubreAlto?: number; aplasta?: number }
 /**
  * Roca de masa: un bulto mayor con bultos de ruido pegados que la abollan y, si `cubre` (nieve, ceniza, escarcha), un
  * manto que se funde con ella arriba. `r` son los radios del bulto mayor.
  */
-export function roca(a: Arma, c: V3, r: V3, o: OpcRoca): Pieza {
+export function roca(a: Arma, c: V3, r: V3, o: OpcRoca): Pieza[] {
   const g = o.giro ?? a.r() * 360, cs: Comp[] = [];
   const L = (v: V3): V3 => { const cg = Math.cos(rad(g)), sg = Math.sin(rad(g)); return [c[0] + v[0] * cg - v[1] * sg, c[1] + v[0] * sg + v[1] * cg, c[2] + v[2]]; };
   cs.push(bulto(c, r, { giro: g, mat: o.mat }));
@@ -164,7 +164,17 @@ export function roca(a: Arma, c: V3, r: V3, o: OpcRoca): Pieza {
     cs.push(bulto(L([jit(a, r[0] * 0.12), jit(a, r[1] * 0.12), r[2] * 0.78]), [r[0] * 0.78, r[1] * 0.72, r[2] * h], { giro: a.r() * 180, mat: o.cubre, k: 2 }));
     for (let i = 0; i < 3; i++) { const th = a.r() * TAU; cs.push(bulto(L([Math.cos(th) * r[0] * 0.5, Math.sin(th) * r[1] * 0.5, r[2] * 0.55]), [r[0] * 0.4, r[1] * 0.35, r[2] * h * 0.6], { giro: deg(th), mat: o.cubre })); }
   }
-  return masa(cs, { mat: o.mat, tono: o.tono, suave: o.suave ?? Math.min(r[0], r[1], r[2]) * 0.45 });
+  const m = masa(cs, { mat: o.mat, tono: o.tono, suave: o.suave ?? Math.min(r[0], r[1], r[2]) * 0.45 });
+  const nf = o.facetas ?? 3;
+  if (!nf) return [m];
+  // lajas facetadas que asoman de la masa: le dan el quiebre de la piedra
+  const ps: Pieza[] = [m];
+  for (let i = 0; i < nf; i++) {
+    const th = a.r() * TAU, w = -0.1 + a.r() * 0.7, q = Math.sqrt(1 - w * w), k = 0.5 + a.r() * 0.15, s = 0.38 + a.r() * 0.22;
+    const p = L([Math.cos(th) * q * r[0] * k, Math.sin(th) * q * r[1] * k, w * r[2] * k]);
+    ps.push(pena(a, p[0], p[1], p[2], r[0] * s, r[1] * s * 0.8, r[2] * s * 0.9, { mat: o.mat, tono: (o.tono ?? 0) + jit(a, 0.05) - 0.02, n: 7 }));
+  }
+  return ps;
 }
 /** Peña facetada (cáscara convexa de puntos sobre un elipsoide): piedra quebrada, obsidiana, hielo. */
 export function pena(a: Arma, x: number, y: number, z: number, rx: number, ry: number, rz: number, o: { mat: string; giro?: number; tono?: number; n?: number }): Pieza {

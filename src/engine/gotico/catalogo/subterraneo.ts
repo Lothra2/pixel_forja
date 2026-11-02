@@ -228,3 +228,86 @@ export function farol(a: Arma, ps: Pieza[], top: V3, f: number, o: { luz?: strin
 export function cadaver(cu: Cuerpo, eq: Equipo, dir: Dir, o: V3 = [0, 0, 0], giro = 0, cuadro = 7): Pieza[] {
   return mover(personaje(cu, eq, dir, 'morir', cuadro), o, giro);
 }
+
+// ------------------------------------------------------------------ lo que se ve por un hueco en el piso
+/** Cuánto se corre en el piso, por cada unidad que baja, un rayo de la cámara (en x y en y). */
+const KV = Math.sqrt(1.5);
+/** Los vértices del poliedro {p : n·p <= d} para una lista de planos (cerrado por los que se pasen). */
+export function politopo(planos: [V3, number][]): V3[] {
+  const pts: V3[] = [];
+  const n = planos.length;
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) for (let k = j + 1; k < n; k++) {
+    const [a, da] = planos[i], [b, db] = planos[j], [c, dc] = planos[k];
+    const bc = cross(b, c), det = a[0] * bc[0] + a[1] * bc[1] + a[2] * bc[2];
+    if (Math.abs(det) < 1e-9) continue;
+    const ca = cross(c, a), ab = cross(a, b);
+    const p: V3 = [(da * bc[0] + db * ca[0] + dc * ab[0]) / det, (da * bc[1] + db * ca[1] + dc * ab[1]) / det, (da * bc[2] + db * ca[2] + dc * ab[2]) / det];
+    if (planos.every(([m, e]) => m[0] * p[0] + m[1] * p[1] + m[2] * p[2] <= e + 1e-6) && !pts.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) < 1e-4)) pts.push(p);
+  }
+  return pts;
+}
+/** Semiplano del piso: los puntos (x,y) con nx*x + ny*y <= c. */
+export type Semi = [number, number, number];
+const caja0 = (B: number, Z: number): [V3, number][] => [[[1, 0, 0], B], [[-1, 0, 0], B], [[0, 1, 0], B], [[0, -1, 0], B], [[0, 0, 1], -0.02], [[0, 0, -1], Z]];
+/**
+ * Bajo el piso solo se ve lo que asoma por el hueco (un vacío, una grieta, una sima): un punto hundido se ve si el
+ * rayo de la cámara entra por el hueco. Estas piezas cavan todo lo demás que quedó bajo el piso (van al final).
+ * `convexo`: el hueco es la intersección de los semiplanos (una sima, un vacío en un rincón). Si no, el hueco es
+ * la unión de los semiplanos (el vacío que rodea una punta de tierra).
+ */
+export function recorte(a: Arma, semis: Semi[], convexo = true, B = 600, Z = 900): Pieza[] {
+  // fuera del hueco: n·e > c con e = (x + KV*(-z), y + KV*(-z))  =>  n·(x,y) - KV*(nx+ny)*z > c
+  const fuera = ([nx, ny, c]: Semi): [V3, number] => [[-nx, -ny, KV * (nx + ny)], -c];
+  if (convexo) return semis.map((s) => a.poliedro(politopo([...caja0(B, Z), fuera(s)]), { mat: 'roca', resta: true }));
+  return [a.poliedro(politopo([...caja0(B, Z), ...semis.map(fuera)]), { mat: 'roca', resta: true })];
+}
+/** Semiplanos de un hueco convexo dado por su contorno (en cualquier sentido). */
+export function semisDe(contorno: [number, number][]): Semi[] {
+  let cx = 0, cy = 0; for (const [x, y] of contorno) { cx += x / contorno.length; cy += y / contorno.length; }
+  return contorno.map(([x0, y0], i) => {
+    const [x1, y1] = contorno[(i + 1) % contorno.length];
+    let nx = y1 - y0, ny = -(x1 - x0); const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+    if (nx * (cx - x0) + ny * (cy - y0) > 0) { nx = -nx; ny = -ny; }
+    return [nx, ny, nx * x0 + ny * y0] as Semi;
+  });
+}
+/** Contorno convexo y orgánico de un hueco: elipse de radios rx, ry con n puntos un poco movidos. */
+export function contornoOrg(a: Arma, rx: number, ry: number, n = 12, cx = 0, cy = 0, giro = 0): [number, number][] {
+  const g = rad(giro), c = Math.cos(g), s = Math.sin(g), out: [number, number][] = [];
+  for (let i = 0; i < n; i++) { const t = (i / n) * 2 * PI + (a.r() - 0.5) * 0.25, k = 0.9 + a.r() * 0.1, x = Math.cos(t) * rx * k, y = Math.sin(t) * ry * k; out.push([cx + x * c - y * s, cy + x * s + y * c]); }
+  return out;
+}
+
+// ------------------------------------------------------------------ peñascos y paredes facetadas
+/** Peñasco: una peña grande con lóbulos facetados pegados (roca dura, con caras y aristas). */
+export function penasco(a: Arma, ps: Pieza[], c: V3, r: V3, o: { mat: string; n?: number; tono?: number; giro?: number }) {
+  const g = o.giro ?? a.r() * 360;
+  ps.push(pena(a, c[0], c[1], c[2], r[0], r[1], r[2], { mat: o.mat, giro: g, tono: o.tono, n: 16 }));
+  const n = o.n ?? 3;
+  for (let i = 0; i < n; i++) {
+    const t = a.r() * 2 * PI, k = 0.45 + a.r() * 0.3;
+    ps.push(pena(a, c[0] + Math.cos(t) * r[0] * 0.6, c[1] + Math.sin(t) * r[1] * 0.6, c[2] + (a.r() - 0.4) * r[2] * 0.7, r[0] * k, r[1] * k, r[2] * k, { mat: o.mat, giro: g + (a.r() - 0.5) * 60, tono: (o.tono ?? 0) + (a.r() - 0.5) * 0.12, n: 10 }));
+  }
+}
+/** Pared de roca a lo largo de una línea quebrada: lajas facetadas apiladas, más angostas arriba, con derrubio al pie. */
+export function paredRoca(a: Arma, ps: Pieza[], pts: [number, number][], alto: number, grueso: number, mat = 'sub_roca', paso = 15) {
+  for (let s = 0; s < pts.length - 1; s++) {
+    const [x0, y0] = pts[s], [x1, y1] = pts[s + 1];
+    const L = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / L, uy = (y1 - y0) / L, nx = -uy, ny = ux;
+    const giro = (Math.atan2(uy, ux) * 180) / PI;
+    const n = Math.max(2, Math.round(L / paso));
+    for (let k = s === 0 ? 0 : 1; k <= n; k++) {
+      const t = k / n, cx = x0 + (x1 - x0) * t + ux * (a.r() - 0.5) * 5, cy = y0 + (y1 - y0) * t + uy * (a.r() - 0.5) * 5;
+      const h = alto * (0.8 + 0.28 * a.r());
+      ps.push(pena(a, cx, cy, h * 0.42, paso * 0.85, grueso * 0.7, h * 0.5, { mat, giro, tono: -0.08, n: 6 }));
+      let z = 0;
+      while (z < h - 6) {
+        const fr = z / h, rz = Math.min(h - z, 12 + a.r() * 12) * 0.6 + 4, rl = paso * 0.65 + a.r() * 6;
+        const rn = grueso * (1 - 0.45 * fr) * (0.8 + 0.3 * a.r()), off = (a.r() - 0.5) * grueso * 0.5 * (1 - fr * 0.5);
+        ps.push(pena(a, cx + nx * off, cy + ny * off, z + rz * 0.75, rl, rn, rz, { mat, giro: giro + (a.r() - 0.5) * 24, tono: (a.r() - 0.5) * 0.14 - fr * 0.05 }));
+        z += rz * (1.1 + 0.25 * a.r());
+      }
+      if (a.r() < 0.7) { const r = 3 + a.r() * 4; ps.push(pena(a, cx + nx * (grueso + r) + ux * (a.r() - 0.5) * 8, cy + ny * (grueso + r) + uy * (a.r() - 0.5) * 8, r * 0.3, r, r * 0.9, r * 0.75, { mat, tono: 0.04 })); }
+    }
+  }
+}
