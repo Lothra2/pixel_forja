@@ -3,7 +3,7 @@ import { MATERIALES } from '../materiales';
 import { masa, hueso, bulto, ruido, type Comp } from '../render';
 import {
   TAU, PI, deg, add, nor, mez, jit, elegir, onda, suelo, rotM, transformar, cuerpo, CUERPOS, EQUIPOS, envolver, rematerial,
-  roca, pena, manto, tronco, fuego, brasas, craneo, huesoLargo, cadena, catenaria, tela, jaula, colgado, losa,
+  roca, manto, tronco, fuego, brasas, craneo, cadena, catenaria, tela, jaula, colgado, losa,
 } from '../actos45';
 
 /**
@@ -264,7 +264,7 @@ registrar(
       ps.push(a.caja(6, 13.2, 14, 14, 0.6, 5, { mat: 'bronce', giro: 0 }));
       const eq = { torso: { tipo: 'placas' as const, mat: 'cu_placa', mat2: 'cu_malla' }, piernas: { tipo: 'grebas' as const, mat: 'cu_placa', mat2: 'cu_malla' }, pies: { tipo: 'sabatones' as const, mat: 'cu_placa' }, hombros: { tipo: 'placas' as const, mat: 'cu_placa' }, capa: { mat: 'cu_tela_azul', largo: 1 }, cabeza: { tipo: 'corona' as const, mat: 'cu_oro', mat2: 'cu_oro' }, arma: v === 'cetro' ? { tipo: 'cetro' as const, mat: 'cu_oro' } : { tipo: 'mandoble' as const, mat: 'cu_placa' }, izq: v === 'escudo' ? { tipo: 'escudo_torre' as const, mat: 'cu_placa', mat2: 'cu_placa' } : undefined };
       let cs = cuerpo({ cu: { ...CUERPOS.soldado, barba: 'larga', alto: 1.2 }, eq, acc: v === 'espada' ? 'presentar' : 'quieto', f: v === 'espada' ? 6 : 0, dir: 'se', t: [0, 0, 27] });
-      if (v === 'decapitada') { cs = cs.filter((p) => envolver([p])[0][2] < 27 + 62); craneo(a, ps, [16, 18, 3.5], 0.1, 0); ps.push(...rematerial([a.esfera(14, 20, 4, 4.4, { mat: ES }), a.cilindro(14, 20, 7, 4, 3, { mat: ES })], ES)); escombros(a, ps, [14, 16, 0], 8, 5, ES); }
+      if (v === 'decapitada') { cs = cs.filter((p) => envolver([p])[0][2] < 27 + 56); ps.push(...rematerial([a.esfera(14, 20, 4, 4.4, { mat: ES }), a.cilindro(14, 20, 7, 4, 3, { mat: ES })], ES)); escombros(a, ps, [14, 16, 0], 8, 5, ES); }
       ps.push(...rematerial(cs, ES));
       ps.push(suelo(a));
       return ps;
