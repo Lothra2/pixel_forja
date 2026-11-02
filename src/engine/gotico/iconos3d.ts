@@ -20,10 +20,11 @@ import { KZ, VISTA, pintarEscena, palo, poliedro, masa, hueso, bulto, ruido, typ
 export type Linea = 'tela' | 'cuero' | 'tachonado' | 'malla' | 'placas' | 'hueso' | 'sagrado' | 'oscuro' | 'legendario';
 export type Pieza3D = 'casco' | 'capucha' | 'corona' | 'pecho' | 'guantes' | 'botas' | 'cinturon' | 'hombreras' | 'grebas'
   | 'escudo_redondo' | 'escudo_cometa' | 'escudo_torre' | 'escudo_calavera'
-  | 'anillo' | 'amuleto' | 'talisman' | 'pocion' | 'gema' | 'runa' | 'pergamino' | 'llave' | 'oro' | 'libro' | 'orbe' | 'flecha_carcaj';
+  | 'anillo' | 'amuleto' | 'talisman' | 'pocion' | 'gema' | 'runa' | 'pergamino' | 'llave' | 'oro' | 'libro' | 'orbe' | 'flecha_carcaj'
+  | 'hacha' | 'hacha_doble';
 export const PIEZAS_3D: Pieza3D[] = ['casco', 'capucha', 'corona', 'pecho', 'guantes', 'botas', 'cinturon', 'hombreras', 'grebas',
   'escudo_redondo', 'escudo_cometa', 'escudo_torre', 'escudo_calavera', 'anillo', 'amuleto', 'talisman', 'pocion', 'gema', 'runa',
-  'pergamino', 'llave', 'oro', 'libro', 'orbe', 'flecha_carcaj'];
+  'pergamino', 'llave', 'oro', 'libro', 'orbe', 'flecha_carcaj', 'hacha', 'hacha_doble'];
 export const LINEAS: Linea[] = ['tela', 'cuero', 'tachonado', 'malla', 'placas', 'hueso', 'sagrado', 'oscuro', 'legendario'];
 
 /**
@@ -161,7 +162,7 @@ const cepillado = (p: V3) => (ruido(p[0] * 0.15, p[1] * 0.15, p[2] * 3) - 0.5) *
 /** Reflejo de entorno falso para lo pulido: cielo claro arriba del horizonte, suelo oscuro abajo, una línea nítida. */
 const reflejo = (n: V3, k = 1) => {
   const d = VISTA[0] * n[0] + VISTA[1] * n[1] + VISTA[2] * n[2], rz = VISTA[2] - 2 * d * n[2];
-  return (rz > 0.12 ? 0.1 + Math.min(0.12, (rz - 0.12) * 0.3) : rz > -0.05 ? -0.16 : -0.06) * k;
+  return (rz > 0.12 ? 0.06 + Math.min(0.08, (rz - 0.12) * 0.25) : rz > -0.05 ? -0.16 : -0.06) * k;
 };
 const anillas = (p: V3) => { const a = Math.sin(p[0] * 2.9 + p[1] * 2.9) * Math.sin(p[2] * 3.4 + (p[0] - p[1]) * 1.45); return a > 0.3 ? 0.13 : a < -0.5 ? -0.24 : -0.02; };
 /** Un material con rampa desde un color (se registra una vez por color y tipo). */
@@ -172,18 +173,19 @@ function tinte(base: string, tipo: 'tela' | 'cuero' | 'metal' | 'esmalte' | 'gem
     case 'tela': M[id] = { rampa: rampaDe(base, 0.35), ruido: 0.1, escala: 0.9, patron: tejido }; break;
     case 'cuero': M[id] = { rampa: rampaDe(base, 0.42), ruido: 0.14, escala: 0.7, brillo: 0.14, patron: grano }; break;
     case 'metal': M[id] = { rampa: rampaDe(base, 0.85, 0.08), ruido: 0.05, escala: 0.5, brillo: 0.75, patron: (p, n) => cepillado(p) + reflejo(n) }; break;
-    case 'esmalte': M[id] = { rampa: rampaDe(base, 0.6), ruido: 0.04, escala: 0.5, brillo: 0.5, patron: (_p, n) => reflejo(n, 0.6) }; break;
-    case 'gema': M[id] = { rampa: rampaDe(base, 0.95, 0.06), ruido: 0.04, escala: 0.6, brillo: 1.1, patron: (_p, n) => reflejo(n, 1.2) }; break;
-    case 'liquido': M[id] = { rampa: rampaDe(base, 0.8, 0.14), ruido: 0.1, escala: 0.4, brillo: 1.0 }; break;
+    case 'esmalte': M[id] = { rampa: rampaDe(base, 0.38), ruido: 0.04, escala: 0.5, brillo: 0.5, patron: (_p, n) => reflejo(n, 0.6) }; break;
+    case 'gema': M[id] = { rampa: rampaDe(base, 0.42, 0.05), ruido: 0.04, escala: 0.6, brillo: 1.1, patron: (_p, n) => reflejo(n, 0.7) - 0.06 }; break;
+    case 'liquido': M[id] = { rampa: rampaDe(base, 0.3, 0.12), ruido: 0.1, escala: 0.4, brillo: 1.0 }; break;
     case 'mate': M[id] = { rampa: rampaDe(base, 0.3), ruido: 0.25, escala: 0.6, patron: grano }; break;
     case 'luz': { const c = hex(base); M[id] = { rampa: [aHex(mul(c, 0.45) as V3), aHex(mul(c, 0.7) as V3), base, aHex(mezC(c, [255, 255, 255], 0.4)), aHex(mezC(c, [255, 255, 250], 0.8))], ruido: 0.35, escala: 0.5, emite: true }; break; }
   }
   return id;
 }
 M.ic_acero = { patron: (p, n) => cepillado(p) + reflejo(n), rampa: ['#0c0d10', '#171a1f', '#252930', '#353b44', '#48505b', '#5e6874', '#78838f', '#96a1ac', '#b9c2ca', '#e2e7eb'], ruido: 0.05, escala: 0.5, brillo: 0.85 };
+M.ic_acero_mate = { patron: (p, n) => cepillado(p) + reflejo(n, 0.7), rampa: ['#0c0d10', '#171a1f', '#252930', '#353b44', '#48505b', '#5e6874', '#78838f', '#96a1ac', '#b4bdc6'], ruido: 0.06, escala: 0.5, brillo: 0.7 };
 M.ic_hierro = { rampa: ['#0b0b0c', '#161719', '#232427', '#323438', '#43464b', '#575a60', '#6e7177', '#8a8d92'], ruido: 0.22, escala: 0.6, brillo: 0.4 };
 M.ic_hierro_negro = { patron: (p, n) => cepillado(p) + reflejo(n), rampa: ['#050506', '#0b0b0e', '#131318', '#1c1c23', '#26262f', '#33333d', '#44444f', '#5e5e6a', '#868694'], ruido: 0.1, escala: 0.6, brillo: 0.7 };
-M.ic_oro = { patron: (_p, n) => reflejo(n, 0.8), rampa: ['#1a0e03', '#331f07', '#54360d', '#785015', '#9c6c1f', '#bd8a2c', '#d8a943', '#ecc865', '#f8e39a', '#fff6d6'], ruido: 0.04, escala: 0.5, brillo: 0.95 };
+M.ic_oro = { patron: (_p, n) => reflejo(n, 0.6), rampa: ['#1a0e03', '#331f07', '#54360d', '#785015', '#9c6c1f', '#b8862a', '#d0a03c', '#e2bb55', '#efd27c', '#f8e6aa'], ruido: 0.04, escala: 0.5, brillo: 0.95 };
 M.ic_oro_viejo = { rampa: ['#140b04', '#281808', '#42290d', '#5f3d14', '#7d531c', '#9a6b27', '#b48636', '#cca24c'], ruido: 0.12, escala: 0.6, brillo: 0.6 };
 M.ic_bronce = { patron: (_p, n) => reflejo(n, 0.8), rampa: ['#150b05', '#29170a', '#412511', '#5b3519', '#764623', '#91592f', '#ab703f', '#c58c58', '#ddb084'], ruido: 0.08, escala: 0.5, brillo: 0.7 };
 M.ic_plata = { patron: (_p, n) => reflejo(n, 0.8), rampa: ['#121417', '#23272c', '#383d44', '#50565e', '#6b727b', '#8890999', '#a8afb7', '#ccd2d8', '#f0f3f6'].map((c) => c.slice(0, 7)), ruido: 0.04, escala: 0.5, brillo: 0.95 };
@@ -196,7 +198,7 @@ M.ic_pelaje_gris = { rampa: ['#0d0d0d', '#1a1a1a', '#2a2928', '#3b3a38', '#4f4d4
 M.ic_pelaje_blanco = { rampa: ['#2a2826', '#45423e', '#625e58', '#807b73', '#9d978e', '#b8b2a8', '#d0cbc2', '#e6e2da', '#f6f3ee'], ruido: 0.5, escala: 2.2, patron: (p) => (ruido(p[0] * 3.4, p[1] * 3.4, p[2] * 0.9) - 0.5) * 0.4 };
 M.ic_costura = { rampa: ['#3a3226', '#5e5240', '#867860', '#ab9d80', '#cdc0a0', '#e6dbbd'], ruido: 0.05, escala: 1 };
 M.ic_papel = { rampa: ['#2c2418', '#4a3d29', '#6b5a3e', '#8c7855', '#ab966d', '#c6b387', '#dccba2', '#ece0be', '#f7efd8'], ruido: 0.16, escala: 0.6, patron: (p) => (ruido(p[0] * 0.8, p[1] * 0.8, p[2] * 0.8) - 0.5) * 0.12 };
-M.ic_vidrio = { patron: (_p, n) => reflejo(n, 0.8), rampa: ['#0d1216', '#18222a', '#25343f', '#364955', '#4b616d', '#647b86', '#83989f', '#a9bbc0', '#d4e2e4', '#f6fbfb'], ruido: 0.04, escala: 0.4, brillo: 1.2 };
+M.ic_vidrio = { patron: (_p, n) => reflejo(n, 0.8) - 0.12, rampa: ['#0a0e12', '#121a20', '#1c2830', '#283840', '#364a54', '#465e68', '#5c757e', '#7a9298', '#a6bcc0', '#e0eeee'], ruido: 0.04, escala: 0.4, brillo: 1.2 };
 M.ic_madera = { rampa: ['#120a05', '#21140a', '#331f10', '#462b17', '#5a381f', '#6f4728', '#855833', '#9b6a40'], ruido: 0.18, escala: 0.35, patron: (p, n) => { const u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0]; return (ruido(u * 0.6, p[2] * 0.06, 1) - 0.5) * 0.3 + ((((u % 5) + 5) % 5) < 0.6 ? -0.25 : 0); } };
 M.ic_corcho = { rampa: ['#1e140b', '#352414', '#4f371f', '#6a4b2b', '#856139', '#9d784b', '#b38f60'], ruido: 0.5, escala: 1.5 };
 M.ic_cera_roja = { rampa: ['#1d0405', '#360809', '#520e0e', '#701714', '#8e221c', '#a93127', '#c14735', '#d6644d'], ruido: 0.12, escala: 0.6, brillo: 0.45 };
@@ -356,7 +358,8 @@ function bota(t: Taller, e: Estilo) {
     t.poli([[6.0, 2.85, 0.95], [6.0, -2.85, 0.95], [6.0, 2.2, 2.4], [6.0, -2.2, 2.4], [6.0, 0, 2.75], [9.6, 0, 1.15], [8.6, 0, 1.9], [8.4, 1.0, 0.95], [8.4, -1.0, 0.95]], { mat: pl, tono: 0.03 });
     if (e.ribete) for (let k = 0; k < 4; k++) t.aro([-1.2 + k * 1.75, 0, 0.95], 3.22 - k * 0.12, 0.2, { mat: e.borde, eje: 'x', desde: 0, hasta: 180, n: 6 });
     // greba
-    t.cil([cx, 0, 2.6], [cx, 0, top], 3.55, 4.05, { mat: pl });
+    t.cil([cx, 0, 2.6], [cx, 0, 9.6], 3.45, 4.25, { mat: pl });
+    t.cil([cx, 0, 9.6], [cx, 0, top], 4.25, 3.95, { mat: pl });
     t.caja([cx + 3.75, 0, (3 + top) / 2], [0.9, 1.2, top - 3.4], { mat: pl, tono: 0.1 });
     t.cil([cx, 0, top - 0.6], [cx, 0, top + 0.5], 4.25, 4.35, { mat: e.borde });
     t.elip([cx, 0, top + 0.55], [3.3, 3.3, 0.4], { mat: 'ic_hueco' });
@@ -514,22 +517,26 @@ function pecho(t: Taller, e: Estilo) {
 // ------------------------------------------------------------------ cascos, capuchas y coronas
 function capucha(t: Taller, e: Estilo) {
   const mat = e.linea === 'cuero' || e.linea === 'tachonado' || e.linea === 'hueso' ? e.base : e.linea === 'tela' ? e.base : e.linea === 'sagrado' ? tinte('#e0d8c8', 'tela') : e.linea === 'oscuro' ? tinte('#1c1620', 'tela') : e.linea === 'legendario' ? tinte('#5a1420', 'tela') : tinte('#4a4a52', 'tela');
-  t.en([0, 0, 0], [24, -4, 0], () => {
+  t.en([0, 0, 0], [12, -4, 0], () => {
     t.masa([
-      t.bul([0, 0, 2], [6.2, 6.4, 6.8], mat),
-      t.bul([0, -2.6, 6.8], [3.6, 4.2, 3.2], mat),
-      t.hue([0, -4.2, 8.6], [0, -7.0, 11.0], 1.8, 0.4, mat),
-      t.hue([0, -0.5, -4], [0, -0.6, -9.5], 7.0, 10.0, mat),
-      t.bul([0, 2.4, -5.6], [8.4, 4.8, 3.4], mat),
+      t.bul([0, -0.4, 2.4], [5.4, 5.8, 6.2], mat),
+      t.bul([0, -2.8, 6.6], [3.2, 3.8, 3.0], mat),
+      t.hue([0, -4.2, 8.2], [0, -7.4, 10.6], 1.8, 0.35, mat),
+      t.hue([0, -0.6, -2.5], [0, -0.8, -8.5], 6.2, 10.6, mat),
+      t.bul([0, 1.6, -7.2], [10.2, 5.6, 2.4], mat),
+      t.hue([-3.6, 4.6, -1.5], [-5.4, 5.6, -8.4], 1.3, 1.6, mat, 0.6, 0.05),
+      t.hue([3.6, 4.6, -1.5], [5.4, 5.6, -8.4], 1.3, 1.6, mat, 0.6, -0.04),
+      t.hue([-7.6, 2.4, -4], [-9.4, 2.6, -8.6], 1.0, 1.5, mat, 0.6, -0.05),
+      t.hue([7.6, 2.4, -4], [9.4, 2.6, -8.6], 1.0, 1.5, mat, 0.6, -0.08),
     ], mat, 1.8);
     // la cara: un hueco oscuro con el borde del paño
-    t.elip([0, 6.4, 0.6], [3.7, 3.2, 4.6], { mat: 'ic_hueco', resta: true });
-    t.elip([0, 3.4, 0.6], [3.6, 1.4, 4.4], { mat: 'ic_hueco' });
+    t.elip([0, 6.4, 0.4], [3.9, 3.4, 5.0], { mat: 'ic_hueco', resta: true });
+    t.elip([0, 3.0, 0.4], [3.8, 1.4, 4.8], { mat: 'ic_hueco' });
     if (e.ribete) for (let k = 0; k < 14; k++) { const a = rad(k * 25.7); t.esf([Math.cos(a) * 4.05, 4.9 + Math.abs(Math.cos(a)) * 0.6, 0.6 + Math.sin(a) * 4.95], 0.42, { mat: e.borde }); }
     if (e.forro) for (let k = 0; k < 9; k++) { const a = rad(-80 + k * 20); t.elip([Math.cos(a) * 4.4, 5.2 - Math.abs(Math.sin(a)) * 0.8, 0.6 + Math.sin(a) * 5.0], [1.3, 1.3, 1.3], { mat: e.forro }); }
     const ojos = e.linea === 'oscuro' || e.linea === 'hueso' || e.linea === 'legendario' || e.n >= 5 ? e.luz ?? tinte(e.luzHex, 'luz') : null;
     if (ojos) for (const sx of [-1, 1]) t.elip([sx * 1.4, 4.6, 1.2], [0.75, 0.4, 0.45], { mat: ojos, tono: tonoLuz(e) });
-    if (e.n >= 4) gemaEngastada(t, [0, 3.6, -4.8], 1.0, e, { engaste: metalJoya(e) });
+    if (e.n >= 4) gemaEngastada(t, [0, 5.4, -5.4], 1.0, e, { engaste: metalJoya(e) });
     if (e.linea === 'hueso') for (const sx of [-1, 1]) t.masa([t.hue([sx * 4.2, 0, 5.5], [sx * 7.0, 0.6, 9.5], 1.2, 0.8, 'ic_hueso'), t.hue([sx * 7.0, 0.6, 9.5], [sx * 6.6, 2.0, 12.8], 0.8, 0.12, 'ic_hueso')], 'ic_hueso', 0.6);
   });
 }
@@ -613,11 +620,10 @@ function casco(t: Taller, e: Estilo) {
 function corona(t: Taller, e: Estilo) {
   const met = e.linea === 'oscuro' ? 'ic_hierro_negro' : e.linea === 'hueso' ? 'ic_hueso' : e.n <= 1 && e.linea !== 'legendario' && e.linea !== 'sagrado' ? 'ic_bronce' : e.n === 2 && e.linea !== 'legendario' && e.linea !== 'sagrado' ? 'ic_plata' : 'ic_oro';
   t.en([0, 0, 0], [12, 34, 0], () => {
-    if (e.n >= 3 && e.linea !== 'oscuro' && e.linea !== 'hueso') t.masa([t.bul([0, 0, 2.4], [5.6, 5.6, 4.2], tinte(e.linea === 'sagrado' ? '#e8e0d0' : '#7a1020', 'tela'))], tinte(e.linea === 'sagrado' ? '#e8e0d0' : '#7a1020', 'tela'), 1);
+    if (e.n >= 3 && e.linea !== 'oscuro' && e.linea !== 'hueso') t.masa([t.bul([0, 0, 1.6], [5.6, 5.6, 3.2], tinte(e.linea === 'sagrado' ? '#e8e0d0' : '#7a1020', 'tela'))], tinte(e.linea === 'sagrado' ? '#e8e0d0' : '#7a1020', 'tela'), 1);
     else t.cil([0, 0, 0.4], [0, 0, 0.5], 5.6, 5.6, { mat: 'ic_hueco' });
     t.cil([0, 0, 0], [0, 0, 3.0], 6.4, 6.5, { mat: met });
     t.cil([0, 0, -0.5], [0, 0, 3.6], 5.7, 5.7, { mat: met, resta: true });
-    if (e.n >= 3 && e.linea !== 'oscuro' && e.linea !== 'hueso') t.masa([t.bul([0, 0, 2.4], [5.6, 5.6, 4.2], tinte(e.linea === 'sagrado' ? '#e8e0d0' : '#7a1020', 'tela'))], tinte(e.linea === 'sagrado' ? '#e8e0d0' : '#7a1020', 'tela'), 1);
     t.aro([0, 0, 0.1], 6.55, 0.4, { mat: met, n: 18 });
     t.aro([0, 0, 2.95], 6.55, 0.4, { mat: met, n: 18 });
     const n = 8;
@@ -687,22 +693,22 @@ function guante(t: Taller, e: Estilo, lado: 1 | -1) {
 }
 function guantes(t: Taller, e: Estilo) {
   t.en([0, 0, 0], [0, -14, 0], () => {
-    t.en([4.6, -3, 1.2], [-18, 0, -12], () => guante(t, e, -1));
-    t.en([-4.6, 2, 0], [16, 0, 10], () => guante(t, e, 1));
+    t.en([5.4, -3, 1.2], [-22, 0, 16], () => guante(t, e, -1));
+    t.en([-5.4, 2, 0], [20, 0, -14], () => guante(t, e, 1));
   });
 }
 
 // ------------------------------------------------------------------ cinturón
 function cinturon(t: Taller, e: Estilo) {
   const L = e.linea, banda = L === 'tela' ? e.base : L === 'malla' || L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario' ? blando(e) : e.base;
-  const rx = 10.5, ry = 6.5, alto = L === 'tela' ? 3.6 : 3.2;
+  const rx = 9.6, ry = 7.2, alto = L === 'tela' ? 4.6 : 4.2;
   t.en([0, 0, 0], [8, 48, 0], () => {
     const n = 22, gap = 0.55; // hueco al frente (la hebilla)
     for (let i = 0; i < n; i++) {
       const a0 = rad(90 + gap * 57.3 / 1.6 + (i * (360 - gap * 57.3 * 1.25)) / n), a1 = rad(90 + gap * 57.3 / 1.6 + ((i + 1.05) * (360 - gap * 57.3 * 1.25)) / n);
       const p0: V3 = [Math.cos(a0) * rx, Math.sin(a0) * ry, 0], p1: V3 = [Math.cos(a1) * rx, Math.sin(a1) * ry, 0];
       const m = mez(p0, p1, 0.5), d = add(p1, p0, -1), g = Math.atan2(d[1], d[0]) * 180 / Math.PI;
-      t.caja(m, [Math.hypot(d[0], d[1]) + 0.05, 0.75, alto], { mat: banda, rot: [g, 0, 0], tono: (i % 3) * 0.015 });
+      t.caja(m, [Math.hypot(d[0], d[1]) + 0.05, 1.1, alto], { mat: banda, rot: [g, 0, 0], tono: (i % 3) * 0.015 });
       const plancha = L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario' || (L === 'hueso' && i % 2 === 0);
       if (plancha && i % 2 === 0) {
         const out: V3 = nor([Math.cos((a0 + a1) / 2) / rx, Math.sin((a0 + a1) / 2) / ry, 0]);
@@ -816,8 +822,8 @@ function caraEscudo(e: Estilo, color?: string): string {
     case 'tela': return tinte(color ?? '#2a3a7a', 'esmalte');
     case 'cuero': case 'tachonado': return color ? tinte(color, 'cuero') : e.base;
     case 'hueso': return 'ic_madera';
-    case 'malla': return color ? tinte(color, 'esmalte') : 'ic_acero';
-    case 'placas': return color ? tinte(color, 'esmalte') : 'ic_acero';
+    case 'malla': return color ? tinte(color, 'esmalte') : 'ic_acero_mate';
+    case 'placas': return color ? tinte(color, 'esmalte') : 'ic_acero_mate';
     case 'sagrado': return 'ic_esmalte';
     case 'oscuro': return 'ic_hierro_negro';
     case 'legendario': return e.base;
@@ -853,7 +859,7 @@ function emblema(t: Taller, e: Estilo, y0: number, k = 1, z0 = 0) {
 }
 function escudoRedondo(t: Taller, e: Estilo, d: Icono3D) {
   const R = d.variante === 'rodela' ? 8 : 11, cara = caraEscudo(e, d.color);
-  t.en([0, 0, 0], [22, -16, 0], () => {
+  t.en([0, 0, 0], [22, -8, 0], () => {
     t.cil([0, -1.4, 0], [0, -0.2, 0], R - 0.4, R, { mat: e.linea === 'hueso' ? 'ic_madera' : cara, tono: -0.05 });
     t.elip([0, -0.2, 0], [R - 0.2, 1.9, R - 0.2], { mat: cara });
     const borde = e.linea === 'tela' || e.linea === 'cuero' || e.linea === 'hueso' ? (e.n >= 3 ? 'ic_bronce' : 'ic_hierro') : e.borde;
@@ -879,7 +885,7 @@ function escudoCometa(t: Taller, e: Estilo, d: Icono3D) {
   const top = heater ? 10 : 12, W = heater ? 9.5 : 9, punta = heater ? -12 : -17;
   const cont: [number, number][] = [];
   for (let i = 0; i <= 8; i++) { const u = i / 8; const z = top - (top - punta) * u, w = heater ? W * Math.cos(Math.pow(u, 1.6) * Math.PI / 2) : W * (u < 0.3 ? 1 - u * 0.15 : (1 - u) / 0.7 * 0.955); cont.push([w, z]); }
-  t.en([0, 0, 0], [22, -14, 0], () => {
+  t.en([0, 0, 0], [22, -8, 0], () => {
     const pts: V3[] = [];
     for (const [w, z] of cont) for (const sx of [-1, 1]) { pts.push([sx * w, -0.8, z], [sx * w, 0.3, z]); pts.push([sx * w * 0.5, 0.3 + 1.3 * (w / W), z]); }
     pts.push([0, 1.7, top - 1]);
@@ -895,7 +901,7 @@ function escudoCometa(t: Taller, e: Estilo, d: Icono3D) {
 }
 function escudoTorre(t: Taller, e: Estilo, d: Icono3D) {
   const cara = caraEscudo(e, d.color), W = 9, top = 15, bot = -15;
-  t.en([0, 0, 0], [24, -12, 0], () => {
+  t.en([0, 0, 0], [24, -6, 0], () => {
     const pts: V3[] = [];
     for (let i = 0; i <= 6; i++) { const a = rad(-60 + i * 20), x = Math.sin(a) * W / Math.sin(rad(60)), y = Math.cos(a) * 3.2 - 1.6; for (const z of [bot, top - Math.abs(x) * 0.25]) pts.push([x, y, z], [x, y - 1.0, z]); }
     t.poli(pts, { mat: cara });
@@ -1088,16 +1094,17 @@ function pocion(t: Taller, e: Estilo, d: Icono3D) {
     if (n <= 1) {
       // frasquito de vidrio largo
       t.cil([0, 0, 1.4], [0, 0, 10], 2.5, 2.4, { mat: 'ic_vidrio' });
-      t.caja([0, 0, 9.0], [6, 6, 3.2], { mat: 'ic_vidrio', resta: true });
-      t.esf([0, 0, 1.6], 2.45, { mat: liq });
-      t.cil([0, 0, 1.4], [0, 0, 7.6], 2.38, 2.38, { mat: liq });
+      t.esf([0, 0, 1.6], 2.5, { mat: 'ic_vidrio' });
+      t.caja([0, 0, 1.4], [6, 6, 10], { mat: 'ic_vidrio', resta: true });
+      t.esf([0, 0, 1.6], 2.4, { mat: liq });
+      t.cil([0, 0, 1.4], [0, 0, 6.4], 2.36, 2.36, { mat: liq });
       t.elip([-1.0, 1.7, 6.0], [0.35, 0.3, 2.2], { mat: 'ic_brillo' });
       cuello = 10; rc = 1.4;
     } else {
       const R = n === 2 ? 4.0 : n === 3 ? 4.8 : 5.3, cz = R;
       // el vidrio solo arriba del nivel del líquido; abajo se ve el líquido
       t.esf([0, 0, cz], R + 0.15, { mat: 'ic_vidrio' });
-      t.caja([0, 0, cz + R * 0.18 - R * 1.2], [R * 3, R * 3, R * 2.4], { mat: 'ic_vidrio', resta: true });
+      t.caja([0, 0, cz + R * 0.42 - R * 1.2], [R * 3, R * 3, R * 2.4], { mat: 'ic_vidrio', resta: true });
       t.esf([0, 0, cz], R, { mat: liq });
       t.cil([0, 0, cz + R * 0.6], [0, 0, cz + R + 2.6], 1.7, 1.5, { mat: 'ic_vidrio' });
       t.elip([-R * 0.45, R * 0.62, cz + R * 0.42], [R * 0.22, R * 0.1, R * 0.32], { mat: 'ic_brillo', rot: [0, 0, 35] });
@@ -1326,6 +1333,54 @@ function carcaj(t: Taller, e: Estilo) {
   });
 }
 
+// ------------------------------------------------------------------ hachas (el arma que en el arsenal salía plana)
+/** Material de la hoja según el material del arma del motor (`variante`: cu_placa, cu_oro, cu_placa_oscura, cu_hueso) o la línea. */
+function metalHoja(e: Estilo, d: Icono3D): string {
+  const c = d.variante;
+  if (c === 'cu_oro' || e.linea === 'legendario' || e.linea === 'sagrado') return 'ic_oro';
+  if (c === 'cu_placa_oscura' || e.linea === 'oscuro') return 'ic_hierro_negro';
+  if (c === 'cu_hueso' || e.linea === 'hueso') return 'ic_hueso';
+  return 'ic_acero_mate';
+}
+function hacha(t: Taller, e: Estilo, d: Icono3D, doble: boolean) {
+  const hoja = metalHoja(e, d), filo = hoja === 'ic_hierro_negro' ? 'ic_acero' : hoja === 'ic_oro' ? 'ic_plata' : hoja === 'ic_hueso' ? 'ic_hueso' : 'ic_plata';
+  const madera = tinte('#5a3a22', 'cuero'), venda = tinte('#3a2416', 'cuero');
+  const brillo = d.encanto ? tinte(colorDe(d.encanto, '#ff7a20', ENCANTO), 'luz') : null;
+  t.en([0, 0, 0], [-24, 4, -8], () => {
+    // mango de madera con vendas de cuero y regatón
+    t.cil([0, 0, -14], [0, 0, 15.5], 0.95, 0.85, { mat: madera });
+    for (let k = 0; k < 6; k++) t.cil([0, 0, -12.6 + k * 1.15], [0, 0, -11.8 + k * 1.15], 1.15, 1.15, { mat: venda, tono: k % 2 ? -0.05 : 0.04, rot: [0, 8, 0] });
+    t.cil([0, 0, -15.4], [0, 0, -13.6], 1.3, 1.05, { mat: hoja === 'ic_hueso' ? 'ic_hierro' : hoja });
+    t.esf([0, 0, -15.6], 0.9, { mat: hoja === 'ic_hueso' ? 'ic_hierro' : hoja });
+    // ojo del hacha: el cubo de metal que abraza el mango
+    t.cil([0, 0, 7.4], [0, 0, 13.6], 1.75, 1.6, { mat: hoja, tono: -0.04 });
+    for (const z of [7.6, 13.4]) t.aro([0, 0, z], 1.75, 0.3, { mat: e.n >= 3 || hoja === 'ic_oro' ? 'ic_oro' : hoja, n: 10 });
+    t.esf([0, 0, 15.6], 1.0, { mat: hoja });
+    // la hoja: gruesa junto al ojo, fina en el filo curvo (en el plano x-z, de frente a quien mira)
+    const lados = doble ? [1, -1] : [1];
+    for (const sx of lados) {
+      const arcoFilo: V3[] = [];
+      for (let i = 0; i <= 6; i++) { const a = rad(-62 + i * 124 / 6); arcoFilo.push([sx * (9.2 + Math.cos(a) * 1.4 - Math.abs(Math.sin(a)) * 0.6), 0, 10.5 + Math.sin(a) * 7.2]); }
+      const cuerpo: V3[] = [[sx * 1.5, 1.4, 12.8], [sx * 1.5, -1.4, 12.8], [sx * 1.5, 1.4, 8.2], [sx * 1.5, -1.4, 8.2], [sx * 4.5, 0.9, 12.4], [sx * 4.5, -0.9, 12.4], [sx * 4.5, 0.9, 8.6], [sx * 4.5, -0.9, 8.6]];
+      for (const q of arcoFilo) cuerpo.push([q[0] - sx * 1.6, 0.45, q[2] * 0.96 + 0.4], [q[0] - sx * 1.6, -0.45, q[2] * 0.96 + 0.4]);
+      t.poli(cuerpo, { mat: hoja });
+      // filo afilado y brillante
+      for (let i = 0; i < arcoFilo.length - 1; i++) {
+        const a = arcoFilo[i], b = arcoFilo[i + 1];
+        t.poli([[a[0], 0, a[2]], [b[0], 0, b[2]], [a[0] - sx * 1.7, 0.5, a[2] * 0.96 + 0.4], [a[0] - sx * 1.7, -0.5, a[2] * 0.96 + 0.4], [b[0] - sx * 1.7, 0.5, b[2] * 0.96 + 0.4], [b[0] - sx * 1.7, -0.5, b[2] * 0.96 + 0.4]], { mat: filo, tono: 0.08 });
+        if (brillo) t.cil(a, b, 0.32, 0.32, { mat: brillo, tono: tonoLuz(e, i) });
+      }
+      // canal grabado a lo largo de la hoja (marca el bisel)
+      t.poli([[sx * 4.2, 0.95, 12.2], [sx * 4.2, 0.95, 8.8], [sx * 7.4, 0.62, 14.6], [sx * 7.4, 0.62, 6.4], [sx * 4.2, 0.7, 12.2], [sx * 4.2, 0.7, 8.8], [sx * 7.4, 0.4, 14.6], [sx * 7.4, 0.4, 6.4]], { mat: hoja, tono: -0.12 });
+      // remaches y una runa en la hoja
+      filaRemaches(t, [sx * 2.6, 1.15, 12.0], [sx * 2.6, 1.15, 9.0], 2, 0.42, e.n >= 3 ? 'ic_oro' : 'ic_hierro');
+      if (e.n >= 4 || brillo) t.caja([sx * 5.4, 0.75, 10.5], [0.5, 0.3, 3.2], { mat: brillo ?? tinte(e.luzHex, 'luz') });
+    }
+    if (!doble) { t.poli([[-1.4, 1.0, 12.0], [-1.4, -1.0, 12.0], [-1.4, 1.0, 9.0], [-1.4, -1.0, 9.0], [-5.6, 0, 10.6], [-5.0, 0.3, 10.0]], { mat: hoja, tono: -0.03 }); }
+  });
+  if (brillo) t.luz([6, 0, 10], 12, colorDe(d.encanto, '#ff7a20', ENCANTO));
+}
+
 // ------------------------------------------------------------------ armar
 function armar(d: Icono3D, t: Taller) {
   const e = estilo(d);
@@ -1355,6 +1410,8 @@ function armar(d: Icono3D, t: Taller) {
     case 'libro': libro(t, e, d); break;
     case 'orbe': orbe(t, e, d); break;
     case 'flecha_carcaj': carcaj(t, e); break;
+    case 'hacha': hacha(t, e, d, false); break;
+    case 'hacha_doble': hacha(t, e, d, true); break;
   }
   return e;
 }
@@ -1536,10 +1593,106 @@ export function iconoObjeto3D(desc: Icono3D, w: number, h: number, cuadro = 0): 
   return out;
 }
 
+/**
+ * Las armas del arsenal 3D que se ven mejor con el modelo de ícono propio (hoy las hachas, que en `armaSuelta` salen
+ * de canto y planas). Devuelve null para las demás, que siguen con `iconoArma3D`.
+ */
+export function iconoDeArma(a: { tipo: string; mat?: string; encanto?: string; gema?: string }): Icono3D | null {
+  if (a.tipo !== 'hacha' && a.tipo !== 'hacha_doble') return null;
+  const d: Icono3D = { pieza: a.tipo, linea: a.mat === 'cu_oro' ? 'legendario' : a.mat === 'cu_placa_oscura' ? 'oscuro' : 'placas', nivel: a.encanto ? 4 : 2, variante: a.mat ?? 'cu_placa' };
+  if (a.encanto) d.encanto = a.encanto;
+  if (a.gema) d.gema = a.gema;
+  return d;
+}
+
 // ------------------------------------------------------------------ del botín a la descripción 3D
-/** La descripción 3D de un objeto del botín (null si no tiene ícono 3D: armas y mascotas van por su camino). */
+const PIEZA_DE_RANURA: Record<string, Pieza3D> = { helm: 'casco', chest: 'pecho', shoulders: 'hombreras', gloves: 'guantes', belt: 'cinturon', pants: 'grebas', boots: 'botas' };
+const GEMA_KIND: Record<string, string> = { ruby: 'ruby', sapphire: 'sapphire', emerald: 'emerald', topaz: 'topaz', amethyst: 'amethyst', diamond: 'diamond', skull: 'skull' };
+const GRADO: Record<string, 1 | 2 | 3 | 4 | 5> = { chipped: 1, flawed: 2, normal: 3, flawless: 4, perfect: 5 };
+const TAMANO: Record<string, 1 | 2 | 3 | 4 | 5> = { minor: 1, light: 2, normal: 3, greater: 4, super: 5 };
+const nivelDe = (n: number): 1 | 2 | 3 | 4 | 5 => Math.max(1, Math.min(5, Math.round(n))) as 1 | 2 | 3 | 4 | 5;
+const esHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
+/** El brillo del diseño del botín llevado a un encanto (para teñir el resplandor). */
+function encantoDe(glow?: string): string | undefined {
+  if (!esHex(glow)) return undefined;
+  const [r, g, b] = hex(glow);
+  if (r > 200 && g > 200 && b < 200) return 'sagrado';
+  if (r > 200 && g < 140) return r > 230 && g < 80 ? 'sangre' : 'fuego';
+  if (g > 200 && r < 160 && b < 180) return 'veneno';
+  if (b > 200 && r < 190) return g > 200 ? 'hielo' : 'rayo';
+  if (r > 150 && b > 200) return 'sombra';
+  return undefined;
+}
+/**
+ * La descripción 3D de un objeto del botín, para que el inventario lo pinte con `iconoObjeto3D`. Devuelve null para
+ * lo que va por otro camino (armas, que usan `iconoArma3D`, y armaduras de mascota).
+ */
 export function iconoDeLoot(it: LootItem): Icono3D | null {
-  const b = it.base;
-  if (b.cat === 'armor') return { pieza: 'botas', linea: 'cuero', nivel: b.tier };
+  const b = it.base, dz = (it.design ?? {}) as Record<string, unknown>;
+  const unico = !!it.flavor || it.rarity === 'unique' || it.rarity === 'set';
+  const gemaD = esHex(dz.gem) ? (dz.gem as string) : undefined;
+  const enc = encantoDe(dz.glow as string | undefined);
+  const nivelRar = it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' ? 5 : it.rarity === 'rare' ? 4 : it.rarity === 'magic' ? 3 : 2;
+  const conGema = (d: Icono3D): Icono3D => { if (gemaD) d.gema = gemaD; if (enc && unico) d.encanto = enc; return d; };
+  switch (b.cat) {
+    case 'armor': {
+      const pieza = b.slot === 'helm' && dz.helm === 'crown' ? 'corona' : b.slot === 'helm' && b.line === 'tunica' ? 'capucha' : PIEZA_DE_RANURA[b.slot];
+      let linea: Linea = b.line === 'tunica' ? 'tela' : b.line === 'cuero' ? (b.tier === 2 || b.tier === 3 ? 'tachonado' : 'cuero') : b.line;
+      if (it.flavor) linea = 'legendario';
+      const d: Icono3D = { pieza, linea, nivel: b.tier };
+      if (b.line === 'tunica' || (linea === 'cuero' && b.tier >= 4) || linea === 'legendario') d.color = esHex(dz.base) ? (dz.base as string) : b.line === 'tunica' ? ['#6a5a8a', '#3d4fa0', '#3a2a7a', '#2a1f5a', '#16112e'][b.tier - 1] : b.line === 'cuero' && b.tier === 4 ? '#3f5e3c' : undefined;
+      if (linea === 'legendario' && d.color) { const [r, g, bb] = hex(d.color); if (r + g + bb > 560) d.color = undefined; }
+      if (!d.color) delete d.color;
+      return conGema(d);
+    }
+    case 'offhand': {
+      const em = dz.emblem as string | undefined, cara = esHex(dz.face) ? (dz.face as string) : undefined;
+      const oscuro = cara ? lum(hex(cara)) < 50 : false, claro = cara ? lum(hex(cara)) > 200 : false;
+      const linea: Linea = it.flavor || it.set ? (claro || em === 'sun' ? 'sagrado' : oscuro || em === 'skull' ? 'oscuro' : 'legendario') : nivelDe(it.grade ?? 1) >= 3 ? 'placas' : (it.grade ?? 1) === 2 ? 'malla' : 'cuero';
+      const nivel = nivelDe(unico ? 5 : (it.grade ?? 1) + (it.rarity === 'rare' ? 2 : it.rarity === 'magic' ? 1 : 0));
+      const d = (pieza: Pieza3D, extra: Partial<Icono3D> = {}): Icono3D => conGema({ pieza, linea, nivel, ...(cara && !claro && !oscuro && linea !== 'cuero' ? { color: cara } : {}), ...extra });
+      switch (b.icon) {
+        case 'shield_round': return d(em === 'skull' ? 'escudo_calavera' : 'escudo_redondo');
+        case 'buckler': return d('escudo_redondo', { variante: 'rodela' });
+        case 'shield_kite': return d(em === 'skull' ? 'escudo_calavera' : 'escudo_cometa');
+        case 'shield_heater': return d(em === 'skull' ? 'escudo_calavera' : 'escudo_cometa', { variante: 'heater' });
+        case 'shield_tower': return d(em === 'skull' ? 'escudo_calavera' : 'escudo_torre');
+        case 'orb': return conGema({ pieza: 'orbe', linea: it.flavor ? 'legendario' : 'placas', nivel, ...(esHex(dz.glow) ? { gema: dz.glow as string } : {}) });
+        case 'tome': return conGema({ pieza: 'libro', linea: it.flavor ? 'legendario' : 'cuero', nivel, ...(cara ? { color: cara } : {}) });
+        case 'shrunken_head': return { pieza: 'talisman', linea: 'hueso', nivel, variante: 'cabeza' };
+        case 'quiver': return conGema({ pieza: 'flecha_carcaj', linea: it.flavor ? 'legendario' : 'cuero', nivel });
+      }
+      return null;
+    }
+    case 'jewel': {
+      const met = dz.metal as { hex?: string } | undefined, oro = !met || (met.hex ?? '').toLowerCase().startsWith('#e') || (met.hex ?? '').toLowerCase().startsWith('#f');
+      const linea: Linea = it.flavor || it.set ? 'legendario' : 'cuero';
+      const nivel = nivelDe(it.flavor || it.set ? 5 : nivelRar + (oro ? 0 : -1));
+      if (it.id.startsWith('talisman') || b.icon.startsWith('charm')) {
+        const v = b.icon === 'charm_grand' ? 'brasa' : b.icon === 'charm_large' ? 'badajo' : b.icon === 'charm_small' ? 'cera' : ['hueso', 'cera', 'ceniza', 'badajo', 'brasa'][Math.abs([...it.id].reduce((h, c) => h * 31 + c.charCodeAt(0), 7)) % 5];
+        return conGema({ pieza: 'talisman', linea: 'hueso', nivel, variante: v });
+      }
+      if (b.icon === 'jewel') return conGema({ pieza: 'gema', nivel: 4, variante: gemaD ?? 'diamond' });
+      if (b.icon === 'ring' || b.icon === 'ring_band') return conGema({ pieza: 'anillo', linea, nivel, ...(b.icon === 'ring_band' ? { variante: 'banda' } : {}) });
+      return conGema({ pieza: 'amuleto', linea, nivel, ...(b.icon === 'amulet_pendant' ? { variante: 'colgante' } : {}) });
+    }
+    case 'potion': return { pieza: 'pocion', nivel: TAMANO[b.size] ?? 3, variante: b.kind };
+    case 'gem': return { pieza: 'gema', nivel: GRADO[b.grade] ?? 3, variante: GEMA_KIND[b.kind] ?? 'ruby' };
+    case 'rune': return { pieza: 'runa', nivel: nivelDe(1 + b.index / 3), variante: String(b.index) };
+    case 'consumable':
+      switch (b.icon) {
+        case 'scroll_portal': return { pieza: 'pergamino', nivel: 2, variante: 'portal' };
+        case 'scroll_identify': return { pieza: 'pergamino', nivel: 2, variante: 'identificar' };
+        case 'map': return { pieza: 'pergamino', nivel: 1, variante: 'mapa' };
+        case 'tome_portal': return { pieza: 'libro', linea: 'cuero', nivel: 3, variante: 'portal' };
+        case 'key': return { pieza: 'llave', nivel: 2 };
+        case 'key_boss': return { pieza: 'llave', nivel: 5, variante: 'jefe' };
+        case 'gold': return { pieza: 'oro', nivel: 3 };
+        case 'ore': return { pieza: 'gema', nivel: 1, variante: 'diamond' };
+        case 'essence': return { pieza: 'pocion', nivel: 2, variante: 'esencia' };
+        case 'skull_trophy': return { pieza: 'talisman', linea: 'hueso', nivel: 3, variante: 'craneo' };
+      }
+      return null;
+  }
   return null;
 }
