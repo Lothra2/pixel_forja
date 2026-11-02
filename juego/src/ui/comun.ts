@@ -6,6 +6,7 @@ import { reqNivel } from '../juego/heroe';
 import type { Raster } from '../../../src/engine/core/raster';
 import { iconoObjeto3D, iconoDeLoot, iconoDeArma } from '../../../src/engine/gotico/iconos3d';
 import { aLoot, arma3dDe } from './loot';
+import { iconoArma3D } from '../../../src/engine/gotico/hud';
 
 export let IDI: 0 | 1 = 0;
 export const fijarIdioma = (i: 0 | 1) => { IDI = i; };
@@ -82,7 +83,7 @@ const iconos3d = new Map<string, HTMLCanvasElement>();
 let ultimoIcono = 0;
 function desc3D(o: Objeto): any {
   const b = baseDe(o);
-  if (b?.ranura === 'arma') { const a = arma3dDe(o); return a ? iconoDeArma(a) : null; }
+  if (b?.ranura === 'arma') { const a = arma3dDe(o); return a ? (iconoDeArma(a) ?? { arma: a }) : null; }
   try { return iconoDeLoot(aLoot(o)); } catch { return null; }
 }
 function icono3D(o: Objeto, x: number, y: number, w: number, h: number): boolean {
@@ -92,7 +93,7 @@ function icono3D(o: Objeto, x: number, y: number, w: number, h: number): boolean
   if (!c) {
     const ahora = performance.now();
     if (ahora - ultimoIcono < 60) return false;
-    try { c = rasterACanvas(iconoObjeto3D(d, Math.round(w), Math.round(h))); } catch { c = undefined; }
+    try { c = rasterACanvas(d.arma ? iconoArma3D(d.arma, Math.round(w), Math.round(h)) : iconoObjeto3D(d, Math.round(w), Math.round(h))); } catch { c = undefined; }
     ultimoIcono = performance.now();
     if (!c) return false;
     iconos3d.set(k, c); if (iconos3d.size > 300) iconos3d.delete(iconos3d.keys().next().value!);
