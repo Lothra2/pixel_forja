@@ -219,6 +219,8 @@ M.ic_cera = { rampa: ['#3a3226', '#5c5040', '#807058', '#a29074', '#c0b092', '#d
 M.ic_roca = { rampa: ['#0d0d0e', '#19191b', '#26262a', '#35353a', '#45454b', '#57575e', '#6b6b72', '#828289', '#9c9ca3'], ruido: 0.4, escala: 0.45, patron: (p) => (ruido(p[0] * 1.6, p[1] * 1.6, p[2] * 1.6) - 0.5) * 0.18 };
 M.ic_barro = { rampa: ['#170c07', '#2a170d', '#402315', '#57311e', '#6f4029', '#875136', '#9f6445'], ruido: 0.3, escala: 0.5 };
 M.ic_hueco = { rampa: ['#030203', '#070608', '#0c0a0d', '#120f13'], ruido: 0.05, escala: 1 };
+/** Solo para la pasada del resplandor: tapa lo que brilla detrás sin calcular luz. */
+M.ic_tapa = { rampa: ['#000000', '#000000'], ruido: 0, escala: 1, emite: true };
 M.ic_brillo = { rampa: ['#d8d0c0', '#efe8da', '#fbf8f0', '#ffffff'], ruido: 0.05, escala: 1, emite: true };
 
 const GEMAS: Record<string, string> = {
@@ -509,15 +511,19 @@ function pecho(t: Taller, e: Estilo) {
     const comps: Comp[] = [
       t.bul([0, 0.3, 11], [8.0, 4.6, 5.8], blandoMat),
       t.bul([0, 0.2, 4.6], [6.4, 4.2, 5.4], blandoMat),
-      t.hue([0, 0, -1], [0, 0, 3], 6.0, 6.3, blandoMat),
+      L === 'malla' ? t.bul([0, 0, 1.0], [6.4, 4.4, 3.2], blandoMat) : t.hue([0, 0, -1], [0, 0, 3], 6.0, 6.3, blandoMat),
     ];
     for (const sx of [-1, 1]) {
       comps.push(t.bul([sx * 3.4, 2.0, 11.6], [3.8, 2.6, 3.6], blandoMat), t.bul([sx * 8.0, 0, 14.2], [3.4, 3.8, 3.0], blandoMat));
       if (!duro) comps.push(t.hue([sx * 8.6, 0, 13.6], [sx * 11.0, 0.6, L === 'tela' ? 4 : 7.5], 3.1, L === 'tela' ? 3.6 : 2.7, blandoMat));
     }
-    if (L === 'tela' || L === 'malla') comps.push(t.hue([0, 0, 0], [0, 0, L === 'tela' ? -13 : -7], 6.3, L === 'tela' ? 8.8 : 7.6, blandoMat));
+    if (L === 'tela') comps.push(t.hue([0, 0, 0], [0, 0, -13], 6.3, 8.8, blandoMat));
+    // la cota: faldón ovalado que se abre un poco, con el ruedo casi recto
+    if (L === 'malla') comps.push(t.bul([0, 0, -2.6], [7.0, 4.8, 3.0], blandoMat), t.bul([0, 0.1, -5.6], [7.7, 5.2, 1.6], blandoMat));
     if (L === 'tela') for (let k = -2; k <= 2; k++) { const a = rad(90 + k * 32); comps.push(t.hue([Math.cos(a) * 5.8, Math.sin(a) * 5.8, -1], [Math.cos(a) * 8.6, Math.sin(a) * 8.6, -13], 1.0, 1.7, blandoMat, 0.8)); }
-    t.masa(comps, blandoMat, 2);
+    // bajo la coraza de placas casi no se ve: solo se arma la cota de las piezas blandas (y se pinta la mitad de rápido)
+    if (!duro) t.masa(comps, blandoMat, 2);
+    else t.masa([t.bul([0, 0.2, 13.4], [7.4, 4.0, 3.2], blandoMat)], blandoMat, 1);
     // cuello
     t.elip([0, 0.3, 16.7], [3.6, 2.6, 1.0], { mat: 'ic_hueco' });
     if (L === 'tela') {
@@ -535,8 +541,9 @@ function pecho(t: Taller, e: Estilo) {
     if (!duro) {
       if (L === 'malla') {
         // cota: cinturón de cuero, gorjal y faldón
-        t.cil([0, 0, 0], [0, 0, 1.8], 6.55, 6.6, { mat: e.base2 });
-        t.caja([0, 6.5, 0.9], [2.0, 0.6, 2.0], { mat: e.hebilla });
+        t.poli([...anilloPts(6.75, 4.75, 0, 16), ...anilloPts(6.8, 4.8, 1.8, 16)], { mat: e.base2 });
+        t.caja([0, 4.95, 0.9], [2.0, 0.6, 2.2], { mat: e.hebilla });
+        t.poli([...anilloPts(7.9, 5.45, -6.75, 18), ...anilloPts(7.95, 5.5, -6.05, 18)], { mat: e.ribete ? e.borde : 'ic_acero', tono: 0.04 });
         t.cil([0, 0.2, 15.6], [0, 0.2, 17.6], 4.6, 3.9, { mat: e.n >= 3 ? 'ic_acero' : e.base2 });
         if (e.ribete) t.aro([0, 0.2, 17.5], 3.95, 0.35, { mat: e.borde, n: 14 });
         if (e.n >= 3) for (const sx of [-1, 1]) { casquete(t, [sx * 8.6, 0, 13.6], 4.2, 3.2, { mat: 'ic_acero', kx: 1.1, rot: [0, 0, sx * -28] }); }
@@ -1119,9 +1126,14 @@ function escudoTorre(t: Taller, e: Estilo, d: Icono3D) {
 function escudoCalavera(t: Taller, e: Estilo, d: Icono3D) {
   const cara = d.linea === undefined || e.linea === 'cuero' || e.linea === 'tela' ? 'ic_hierro_negro' : caraEscudo(e, d.color);
   t.en([0, 0, 0], [22, -14, 0], () => {
-    t.cil([0, -1.4, 0], [0, -0.2, 0], 10.6, 11, { mat: cara, tono: -0.05 });
-    t.elip([0, -0.2, 0], [10.8, 1.6, 10.8], { mat: cara });
+    // bisel en cono, campo abombado, filete y remaches, como los escudos redondos de metal
+    const bis = cara === 'ic_hierro_negro' || e.linea === 'hueso' ? cara : biselEscudo(e);
+    t.cil([0, -1.4, 0], [0, -0.3, 0], 10.6, 11, { mat: bis, tono: -0.08 });
+    t.cil([0, -0.4, 0], [0, 1.0, 0], 10.5, 8.3, { mat: bis, tono: 0.03 });
+    t.elip([0, 0.95, 0], [8.3, 1.1, 8.3], { mat: cara });
     t.aro([0, -0.4, 0], 11, 0.9, { mat: e.linea === 'sagrado' || e.linea === 'legendario' ? 'ic_oro' : 'ic_hierro', eje: 'y', n: 22 });
+    t.aro([0, 1.0, 0], 8.3, 0.28, { mat: e.ribete ? e.borde : 'ic_hierro', eje: 'y', n: 20, tono: 0.05 });
+    for (let k = 0; k < 12; k++) { const a = rad(k * 30 + 15); t.esf([Math.cos(a) * 9.5, 0.55, Math.sin(a) * 9.5], 0.45, { mat: e.remache, tono: 0.05 }); }
     for (let k = 0; k < 8; k++) { const a = rad(k * 45 + 22.5); pua(t, [Math.cos(a) * 10.4, -0.4, Math.sin(a) * 10.4], [Math.cos(a), 0, Math.sin(a)], 3, 0.8, 'ic_hierro_negro'); }
     // la calavera grande en relieve
     const h = 'ic_hueso';
@@ -1801,30 +1813,30 @@ export function iconoObjeto3D(desc: Icono3D, w: number, h: number, cuadro = 0): 
   if (c) return c;
   CUADRO = f;
   w = Math.max(4, Math.floor(w)); h = Math.max(4, Math.floor(h));
-  // 1) medir la geometría a escala 1 y elegir la escala que llena el rectángulo; lo que brilla reserva un pixel más
-  //    por lado para el halo (que además se apaga suave antes del borde de la casilla, ver abajo)
-  const T0 = performance.now();
+  // 1) medir la geometría a escala 1 y elegir la escala que llena el rectángulo; si lo que brilla queda cerca del
+  //    borde se reserva un pixel más por lado para el halo (que además se apaga suave antes del borde de la casilla,
+  //    ver abajo); las chispitas de las gemas no cuentan, su halo es mínimo
   const e1 = escena(desc, 1).piezas;
-  const brilla = e1.some(emitePieza);
-  const margen = (w < 40 || h < 40 ? 1 : 2) + (brilla ? 2 : 0);
-  const m1 = medir(e1);
-  const k = m1 ? Math.min((w - margen) / (m1[2] - m1[0]), (h - margen) / (m1[3] - m1[1])) : 1;
+  const m1 = medir(e1), mL = medir(e1.filter((p) => emitePieza(p) && p.mat !== 'ic_brillo'));
+  const escala = (mg: number) => (m1 ? Math.min((w - mg) / (m1[2] - m1[0]), (h - mg) / (m1[3] - m1[1])) : 1);
+  const margen = w < 40 || h < 40 ? 1 : 2;
+  let k = escala(margen);
+  // el halo solo pide lugar si lo que brilla queda a menos de 3 pixeles del borde
+  if (m1 && mL && Math.min(mL[0] - m1[0], mL[1] - m1[1], m1[2] - mL[2], m1[3] - mL[3]) * k < 3) k = escala(margen + 2);
   // 2) pintar al doble y reducir
   const S = k * 2;
   const e2 = escena(desc, S);
-  const T1 = performance.now();
   const rg = pintarEscena({ piezas: e2.piezas, resplandor: e2.resplandor, sinSombra: true, ss: 1 });
-  const T2 = performance.now();
   let img = pulir(mitad(rg.img));
   // 3) resplandor de lo que brilla: una pasada rápida (a tamaño final) solo con lo que emite, desenfocada y sumada
   let pad = 0, cuerpo: Raster = img;
   if (e2.piezas.some(emitePieza)) {
-    const negro = (p: Pieza): Pieza => (p.k === 'masa' ? { ...p, mat: emite(p.mat) ? p.mat : 'ic_hueco', comps: p.comps.map((q) => (emite(q.mat) ? q : { ...q, mat: 'ic_hueco' })) } : emite(p.mat) ? p : { ...p, mat: 'ic_hueco' });
+    // lo que no brilla solo tapa: negro y sin luz propia (así esta pasada no tira rayos de sombra)
+    const negro = (p: Pieza): Pieza => (p.k === 'masa' ? { ...p, mat: emite(p.mat) ? p.mat : 'ic_tapa', comps: p.comps.map((q) => (emite(q.mat) ? q : { ...q, mat: 'ic_tapa' })) } : emite(p.mat) ? p : { ...p, mat: 'ic_tapa' });
     const rm = pintarEscena({ piezas: escena(desc, k).piezas.map(negro), sinSombra: true, ss: 0 }, {}, { w: img.w, h: img.h, ax: rg.ancla[0] / 2, ay: rg.ancla[1] / 2 }).img;
     pad = 3;
     img = resplandecer(img, rm, desc.linea === 'legendario' ? 1.15 + 0.35 * late() : 1, pad);
   }
-  if (process.env.PROF) console.log('armar', Math.round(T1 - T0), 'pintar', Math.round(T2 - T1), 'resto', Math.round(performance.now() - T2), e2.piezas.length);
   // 4) recortar a lo visible y centrar en el rectángulo pedido (sin salirse): el centro es el del objeto, no el del halo
   const b = cajaAlfa(img), bo = cajaAlfa(cuerpo);
   let out: Raster;
