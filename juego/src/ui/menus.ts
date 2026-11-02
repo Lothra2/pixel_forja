@@ -8,6 +8,7 @@ import { INTRO } from '../mundo/actos';
 import type { DatosHeroe } from '../juego/heroe';
 import { R, rng } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
+import { logoReq } from './logo';
 
 export interface Opciones { general: number; musica: number; efectos: number; idioma: 0 | 1; brillo: number }
 export const opciones: Opciones = { general: 0.8, musica: 0.6, efectos: 0.8, idioma: 0, brillo: 1 };
@@ -60,21 +61,8 @@ function brasas(t: number, n = 40, sube = true) {
   for (let i = 0; i < n; i++) { const x = r() * W, v = 20 + r() * 50, y = ((r() * H - (sube ? t * v : -t * v)) % H + H) % H; ctx.fillStyle = r() < 0.5 ? '#ff8030' : '#ffd060'; ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 3 + i)); ctx.fillRect(x + Math.sin(t + i) * 10, y, 2, 2); }
   ctx.globalAlpha = 1;
 }
-/** El título que se enciende. k de 0 a 1. */
-export function logo(x: number, y: number, k: number, t: number, tam = 54) {
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.font = `${Math.round(tam * 0.32)}px ${TITULO}`; ctx.fillStyle = `rgba(160,120,70,${k})`; ctx.fillText('LEGADO GG', x, y - tam * 0.85);
-  ctx.font = `bold ${tam}px ${TITULO}`;
-  const s = IDI ? 'THE MARK OF ASH' : 'LA MARCA DE CENIZA';
-  const g = ctx.createLinearGradient(0, y - tam, 0, y);
-  g.addColorStop(0, `rgba(255,${200 + Math.sin(t * 3) * 30},120,${k})`); g.addColorStop(0.5, `rgba(255,110,30,${k})`); g.addColorStop(1, `rgba(120,20,10,${k})`);
-  ctx.shadowColor = `rgba(255,90,20,${0.8 * k})`; ctx.shadowBlur = 18 + Math.sin(t * 5) * 6;
-  ctx.fillStyle = '#000'; ctx.fillText(s, x + 3, y + 3);
-  ctx.fillStyle = g; ctx.fillText(s, x, y);
-  ctx.shadowBlur = 0;
-  ctx.restore();
-}
+/** El título que se enciende. k de 0 a 1; `forja` 0..1 para que las brasas formen las letras (intro). */
+export function logo(x: number, y: number, k: number, t: number, tam = 54, forja?: number) { logoReq(x, y, k, t, tam * 1.15, forja); }
 
 // ------------------------------------------------------------------ intro
 // Cinemática por tomas: cada una con su cámara (paneo, zoom lento, sacudida), luz que titila y ceniza.
@@ -237,7 +225,8 @@ function armarTomas() {
     destello(luz * 0.8, '255,200,170');
   });
   // título
-  T0(8, [], (t) => { sacudir = 0; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); brasas(t, 70); lluviaCeniza(t, 0.6, 0.3); logo(W / 2, H / 2, Math.min(1, t / 3), t, Math.min(64, W / 14)); });
+  // el título se forja desde la ceniza: las brasas suben y se juntan en las letras, con un golpe cuando cierran
+  T0(9, [], (t) => { sacudir = Math.max(0, sacudir - 0.02); if (t >= 3.6 && t - 1 / 60 < 3.6) { Sonido.efecto('trueno', { vol: 0.6 }); sacudir = 0.5; } ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); camara(() => { brasas(t, 50); lluviaCeniza(t, 0.6, 0.3); logo(W / 2, H / 2, 1, t, Math.min(64, W / 14), Math.min(1, t / 4.2)); }, 1); });
 }
 export function introDuracion() { armarTomas(); return TOMAS.reduce((s, x) => s + x.dur, 0); }
 /** Escribe la línea letra por letra. */

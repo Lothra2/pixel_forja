@@ -1,6 +1,6 @@
-# La Marca de Ceniza (Legado GG)
+# Réquiem de Ceniza (Legado GG)
 
-Juego de rol de acción isométrico y oscuro, hecho en casa para Rick y la familia. Todo es original: historia, clases,
+Juego de rol de acción isométrico y oscuro (antes "La Marca de Ceniza"), hecho en casa para Rick y la familia. Todo es original: historia, clases,
 habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor gótico de `src/engine/gotico`).
 
 ## Cómo se juega

@@ -1,4 +1,4 @@
-// La Marca de Ceniza: arranque, estados (carga, intro, menú, elegir, crear, juego) y el control del héroe.
+// Réquiem de Ceniza: arranque, estados (carga, intro, menú, elegir, crear, juego) y el control del héroe.
 import { ctx, W, H, E, ajustar, instalarEntrada, finCuadro, pulso, alPrimerGesto } from './nucleo/lienzo';
 import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto } from './motor/assets';
 import { pintarHeroe, progresoPintura } from './motor/pintor';
@@ -323,6 +323,7 @@ function procesarEventos(jj: Juego) {
 // ------------------------------------------------------------------ bucle
 let ultimo = performance.now();
 let introT = 0;
+(window as any).__introA = (s: number) => { introT = s; };
 function cuadro(ahora: number) {
   const dt = Math.min(0.05, (ahora - ultimo) / 1000); ultimo = ahora;
   tiempo += dt; tEstado += dt;
