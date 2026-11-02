@@ -760,27 +760,27 @@ registrar(
     },
   },
   {
-    id: 'abi_estrellas', nombre: ['Estrellas en el fondo del vacío', 'Stars in the void below'], tema: 'abismo', variantes: ['pocas', 'nebulosa', 'cumulo'], cuadros: 8, t: 6, huella: [5, 5], bloquea: false,
+    id: 'abi_estrellas', nombre: ['Estrellas en el fondo del vacío', 'Stars in the void below'], tema: 'abismo', variantes: ['nebulosa', 'pocas', 'cumulo'], cuadros: 8, t: 6, huella: [5, 5], bloquea: false,
     armar: (v, f, a) => {
-      const ps: Pieza[] = [], n = v === 'pocas' ? 14 : 30;
+      const ps: Pieza[] = [], n = v === 'pocas' ? 18 : 30;
       // lejos, muy abajo: puntos que titilan y una nebulosa que apenas se mueve
-      for (let i = 0; i < n; i++) { const x = entre(a, -40, 40), y = entre(a, -40, 40), z = entre(a, -220, -120), tw = (i + f) % 6 === 0 ? -0.4 : 0; ps.push(a.esfera(x, y, z, v === 'cumulo' && i < 10 ? entre(a, 0.6, 1) : entre(a, 0.3, 0.6), { mat: 'abi_estrella', tono: tw + (a.r() - 0.5) * 0.3 })); }
+      for (let i = 0; i < n; i++) { const x = entre(a, -40, 40), y = entre(a, -40, 40), z = entre(a, -220, -120), tw = (i + f) % 6 === 0 ? -0.4 : 0; ps.push(a.esfera(x, y, z, v === 'cumulo' && i < 10 ? entre(a, 0.7, 1.1) : entre(a, 0.45, 0.8), { mat: 'abi_estrella', tono: tw + (a.r() - 0.5) * 0.3 })); }
       if (v !== 'pocas') for (let i = 0; i < 4; i++) jiron(a, ps, [entre(a, -24, 24), entre(a, -24, 24), entre(a, -200, -150)], 60, 14, entre(a, 0, 180) + f * 1.5, 'abi_niebla', -0.2);
       return flota(ps);
     },
   },
   {
-    id: 'abi_raices', nombre: ['Raíces que cuelgan de la nada', 'Roots hanging from nowhere'], tema: 'abismo', variantes: ['pocas', 'maraña', 'con_cuerpo'], cuadros: 8, t: 6, huella: [3, 3], bloquea: false,
+    id: 'abi_raices', nombre: ['Raíces que cuelgan de la nada', 'Roots hanging from nowhere'], tema: 'abismo', variantes: ['pocas', 'maraña', 'con_cuerpo'], cuadros: 6, t: 7, huella: [3, 3], bloquea: false,
     armar: (v, f, a) => {
       const ps: Pieza[] = [], n = v === 'maraña' ? 9 : 5;
       for (let i = 0; i < n; i++) {
         let p: V3 = [entre(a, -24, 24), entre(a, -24, 24), 160], r = entre(a, 2, 4.5);
-        const largo = entre(a, 180, 290), seg = 12, ph = a.r() * 6;
+        const largo = entre(a, 170, 250), seg = 8, ph = a.r() * 6;
         const cs: Comp[] = [];
-        for (let k = 0; k < seg; k++) { const u = (k + 1) / seg, q: V3 = [p[0] + Math.sin(u * 5 + ph) * 3 + onda(f, 8, ph) * u * 2, p[1] + Math.cos(u * 4 + ph) * 3, 160 - largo * u]; cs.push(hM(p, q, r, r * 0.88, { tono: fundido(q[2], 150) })); p = q; r *= 0.88; }
+        for (let k = 0; k < seg; k++) { const u = (k + 1) / seg, q: V3 = [p[0] + Math.sin(u * 5 + ph) * 3 + onda(f, 6, ph) * u * 2, p[1] + Math.cos(u * 4 + ph) * 3, 160 - largo * u]; cs.push(hM(p, q, r, r * 0.88, { tono: fundido(q[2], 150) })); p = q; r *= 0.88; }
         ps.push(masa(cs, { mat: 'corteza_muerta', suave: 1.5 }));
       }
-      if (v === 'con_cuerpo') { const sw = onda(f, 8) * 3; ps.push(...mover(cadaver({ piel: 'cu_hueso', oseo: true }, { torso: { tipo: 'harapos', mat: 'cu_tela_negra' } }, 's', [0, 0, 0], 0, 2), [sw, 0, 10], 30, 160)); ps.push(a.palo([sw, 0, 12], [0, 0, 60], 0.8, { mat: 'corteza_muerta' })); }
+      if (v === 'con_cuerpo') { const sw = onda(f, 6) * 3; ps.push(...mover(cadaver({ piel: 'cu_hueso', oseo: true }, { torso: { tipo: 'harapos', mat: 'cu_tela_negra' } }, 's', [0, 0, 0], 0, 2), [sw, 0, 10], 30, 160)); ps.push(a.palo([sw, 0, 12], [0, 0, 60], 0.8, { mat: 'corteza_muerta' })); }
       return flota(ps);
     },
   },

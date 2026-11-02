@@ -664,7 +664,7 @@ reg({
 conVarianteY('par_arroyo');
 
 reg({
-  id: 'par_puente', nombre: ['Puente de piedra', 'Stone bridge'], tema: PAR, variantes: ['x', 'roto'], cuadros: 6, t: 3, huella: [6, 4], bloquea: true,
+  id: 'par_puente', nombre: ['Puente de piedra', 'Stone bridge'], tema: PAR, variantes: ['x', 'roto', 'musgoso'], cuadros: 6, t: 3, huella: [6, 4], bloquea: true,
   armar: (v, f, a) => {
     const ps: Pieza[] = [];
     sueloP(a, ps, 56, 40, { matas: 8, piedras: 2 });
@@ -694,6 +694,7 @@ reg({
     // musgo bajo el arco y en el tajamar
     for (let i = 0; i < 6; i++) { const x = az(a, 40); ps.push(a.elipsoide(x, (a.r() < 0.5 ? -1 : 1) * (W / 2 + 0.3), Math.max(1, bajo(x) + 1 + a.r() * 4), 4 + a.r() * 3, 1, 2.5, { mat: 'ext_musgo' })); }
     if (roto) cascotes(a, ps, 10, 1, 0, 12, 14);
+    if (v === 'musgoso') for (let i = 0; i < 10; i++) { const x = az(a, 46); ps.push(a.elipsoide(x, az(a, W * 0.4), top(x) + 0.6, 5 + a.r() * 5, 4 + a.r() * 3, 1.4, { mat: 'ext_musgo', giro: a.r() * 180 })); if (i < 4) mata(a, ps, x, (a.r() < 0.5 ? -1 : 1) * (W / 2 - 1), 5, 8, 'ext_pasto', top(x)); }
     return ps;
   },
 });
