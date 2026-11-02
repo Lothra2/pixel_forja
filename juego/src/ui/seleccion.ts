@@ -102,7 +102,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   const cx = angosto ? W * 0.5 : W * 0.44, cy = angosto ? H * 0.5 : H * 0.7;
   // piso de piedra con la fogata detrás
   const piso = cuadrosPiso('lajas', 0)[0] ?? cuadrosPiso('tierra', 1)[0];
-  for (let i = -4; i <= 4; i++) for (let k = -4; k <= 4; k++) { const px = cx + (i - k) * 80, py = cy + (i + k) * 40; if (piso && px > -100 && px < W + 100) dibujar(ctx, piso, px, py); }
+  for (let i = -4; i <= 4; i++) for (let k = -4; k <= 4; k++) { const px = cx + (i - k) * 80, py = cy + (i + k) * 40; if (piso && px > -100 && px < W + 100) { ctx.globalAlpha = 0.6; dibujar(ctx, piso, px, py); ctx.globalAlpha = 1; } }
   const fx = cx + 150, fy = cy - 40;
   const fog = objetoMeta('camp_fogata', 'grande');
   if (fog) dibujar(ctx, fog.f[Math.floor(t * 25 / fog.t) % fog.f.length], fx, fy, 1.4);
@@ -126,7 +126,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter';
   const g2 = ctx.createRadialGradient(fx, fy - 20, 0, fx, fy - 20, 240 + Math.sin(t * 8) * 8); g2.addColorStop(0, 'rgba(255,120,40,0.3)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
-  const g3 = ctx.createRadialGradient(cx, cy - 120, 0, cx, cy - 120, 260); g3.addColorStop(0, `rgba(${lc},${0.22 * k})`); g3.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g3; ctx.fillRect(0, 0, W, H);
+  const g3 = ctx.createRadialGradient(cx, cy - 120, 0, cx, cy - 120, 260); g3.addColorStop(0, `rgba(${lc},${0.08 * k})`); g3.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g3; ctx.fillRect(0, 0, W, H);
   ctx.restore();
   particulas(f, cx, cy, dt, t);
   // nombre y frase sobre el héroe
@@ -147,7 +147,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   });
   // ficha a la derecha
   if (!angosto) {
-    const pw = Math.min(400, W * 0.36), px = W - pw - 14, py = 110, ph = 420;
+    const pw = Math.min(400, W * 0.36), px = W - pw - 14, py = 110, ph = 400;
     marco(px, py, pw, ph, 0.88);
     let y = py + 26;
     texto(f.rol.map((r) => TT(ROL[r])).join(' · ').toUpperCase(), px + 16, y, { tam: 12, color: `rgb(${lc})`, fuente: TITULO });
