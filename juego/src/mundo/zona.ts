@@ -45,8 +45,10 @@ export interface DefZona {
   oscuridad?: number;
   /** Mazmorra lateral: tiene mini jefe y cofre de tesoro. */
   lateral?: boolean;
-  /** Un río de lava cruza el mapa de norte a sur: no se pasa, salvo por los puentes donde lo corta el camino. */
-  rio?: boolean;
+  /** Un río cruza el mapa de norte a sur (de lava o un arroyo): no se pasa, salvo por los puentes (o vados) donde lo corta el camino. */
+  rio?: boolean | 'lava' | 'arroyo';
+  /** Objetos propios de esta zona, además de los de su tema (el bosque de los ahorcados, el oasis muerto...). */
+  extra?: Sel[];
   /** Pueblo amurallado: murallas de fortaleza en los bordes de atrás y portones en las salidas. */
   amurallado?: boolean;
 }
@@ -78,10 +80,11 @@ interface Tematica {
 const TEMATICAS: Record<string, Tematica> = {
   paramo: {
     piso: 'pasto_seco', parches: ['pasto', 'tierra', 'pasto_seco'], camino: 'camino', ambiente: 'atardecer', oscuridad: 0.45,
-    borde: [{ t: ['arboles'], p: ['muert', 'seco', 'torc', 'pino'] }, { t: ['campo'], p: ['roca', 'penasco'] }],
-    disperso: [{ t: ['arboles'], p: ['arbust', 'zarza', 'tocon', 'tronco', 'hongo', 'pasto'] }, { t: ['campo'], p: ['roca', 'craneo', 'esqueleto', 'mojon', 'letrero', 'cerca_rota', 'muro_ruina', 'menhir'] }],
-    grande: [{ t: ['arboles'], p: ['roble', 'muert', 'sauce', 'torc'], v: (v) => !/nevad/.test(v) }],
-    luces: [{ t: ['campo'], p: ['fogata'] }],
+    borde: [{ t: ['arboles'], p: ['muert', 'seco', 'torc', 'pino'] }, { t: ['campo'], p: ['roca', 'penasco'] }, { t: ['paramo' as Tema], p: ['par_penasco', 'par_roca', 'par_matorral', 'par_brezo'] }],
+    disperso: [{ t: ['arboles'], p: ['arbust', 'zarza', 'tocon', 'tronco', 'hongo', 'pasto'] }, { t: ['campo'], p: ['roca', 'craneo', 'esqueleto', 'mojon', 'letrero', 'cerca_rota', 'muro_ruina', 'menhir'] },
+      { t: ['paramo' as Tema], p: ['par_roca', 'par_pedregal', 'par_brezo', 'par_matorral', 'par_pasto', 'par_tronco', 'par_tocon', 'par_cadaver', 'par_restos_batalla', 'par_cuervos', 'par_esqueleto_animal', 'par_huesos', 'par_charco', 'par_estandarte', 'par_botin'] }],
+    grande: [{ t: ['arboles'], p: ['roble', 'muert', 'sauce', 'torc'], v: (v) => !/nevad/.test(v) }, { t: ['paramo' as Tema], p: ['par_menhir', 'par_dolmen', 'par_circulo', 'par_torre_vigia', 'par_carreta_rota', 'par_caravana', 'par_molino', 'par_granja', 'par_pozo', 'par_tumulo', 'par_fosa_comun'] }],
+    luces: [{ t: ['campo'], p: ['fogata'] }, { t: ['paramo' as Tema], p: ['par_fogata', 'par_farol', 'par_santuario', 'par_rescoldos'] }],
     vinetas: ['pueblo', 'cementerio', 'bosque'],
   },
   cementerio: {
@@ -115,9 +118,11 @@ const TEMATICAS: Record<string, Tematica> = {
   },
   desierto: {
     piso: 'arena', parches: ['arena', 'arenisca', 'tierra'], camino: 'arenisca', ambiente: 'desierto', oscuridad: 0.12,
-    borde: [{ t: ['desierto'], p: ['roca', 'duna', 'peña', 'pena', 'acantil', 'cactus', 'palm'] }],
-    disperso: [{ t: ['desierto'], p: ['cactus', 'arbust', 'hueso', 'craneo', 'esquel', 'roca', 'jarr', 'vasij', 'obelis', 'ruina', 'colum'] }],
-    grande: [{ t: ['desierto'], p: ['palm', 'ruina', 'colum', 'estatua'] }], luces: [{ t: ['desierto'], p: ['fuego', 'antorch', 'brasero', 'fogat'] }],
+    borde: [{ t: ['desierto'], p: ['roca', 'duna', 'peña', 'pena', 'acantil', 'cactus', 'palm'], s: ['des2_'] }, { t: ['desierto'], p: ['des2_duna', 'des2_roca_viento', 'des2_palmera', 'des2_cactus'] }],
+    disperso: [{ t: ['desierto'], p: ['cactus', 'arbust', 'hueso', 'craneo', 'esquel', 'roca', 'jarr', 'vasij', 'obelis', 'ruina', 'colum'], s: ['des2_'] },
+      { t: ['desierto'], p: ['des2_huesos', 'des2_craneo_cuernos', 'des2_camello_muerto', 'des2_buitres', 'des2_escarabajos', 'des2_restos_batalla', 'des2_arbusto', 'des2_cactus', 'des2_estela'] }],
+    grande: [{ t: ['desierto'], p: ['palm', 'ruina', 'colum', 'estatua'], s: ['des2_'] }, { t: ['desierto'], p: ['des2_duna', 'des2_roca_viento', 'des2_osamenta', 'des2_tienda', 'des2_caravana', 'des2_pozo_seco', 'des2_obelisco', 'des2_palmera'] }],
+    luces: [{ t: ['desierto'], p: ['fuego', 'antorch', 'brasero', 'fogat'], s: ['des2_'] }, { t: ['desierto'], p: ['des2_fogata'] }],
     vinetas: ['desierto', 'tumba'],
   },
   tumba: {
@@ -128,10 +133,11 @@ const TEMATICAS: Record<string, Tematica> = {
   },
   selva: {
     piso: 'selva', parches: ['selva', 'pantano', 'tierra'], camino: 'tierra', ambiente: 'selva', oscuridad: 0.5,
-    borde: [{ t: ['selva', 'arboles'], p: ['arbol', 'ceiba', 'palma', 'mangl'] }],
-    disperso: [{ t: ['selva'], p: ['helecho', 'hongo', 'enred', 'flor', 'totem', 'calav', 'capullo', 'raiz', 'tronco', 'planta'] }],
-    grande: [{ t: ['selva', 'arboles'], p: ['arbol', 'ceiba', 'palma'] }, { t: ['templo_selva'], p: ['idolo', 'estatua', 'columna', 'muro_musgo'] }],
-    luces: [{ t: ['selva'], p: ['antorcha', 'tiki', 'fuego'] }, { t: ['templo_selva'], p: ['brasero'] }],
+    borde: [{ t: ['selva', 'arboles'], p: ['arbol', 'ceiba', 'palma', 'mangl'], s: ['sel2_'] }, { t: ['selva'], p: ['sel2_arbol_gigante', 'sel2_bambu', 'sel2_helecho'] }],
+    disperso: [{ t: ['selva'], p: ['helecho', 'hongo', 'enred', 'flor', 'totem', 'calav', 'capullo', 'raiz', 'tronco', 'planta'], s: ['sel2_'] },
+      { t: ['selva'], p: ['sel2_helecho', 'sel2_planta', 'sel2_tronco_podrido', 'sel2_raices', 'sel2_hongos', 'sel2_flor_carnivora', 'sel2_ranas', 'sel2_nido', 'sel2_cadaver', 'sel2_trampa', 'sel2_calaveras_estacas', 'sel2_charca'] }],
+    grande: [{ t: ['selva', 'arboles'], p: ['arbol', 'ceiba', 'palma'], s: ['sel2_'] }, { t: ['templo_selva'], p: ['idolo', 'estatua', 'columna', 'muro_musgo'] }, { t: ['selva'], p: ['sel2_arbol_gigante', 'sel2_idolo', 'sel2_cabeza_colosal', 'sel2_ruina', 'sel2_totem', 'sel2_choza', 'sel2_jaula'] }],
+    luces: [{ t: ['selva'], p: ['antorcha', 'tiki', 'fuego'], s: ['sel2_'] }, { t: ['templo_selva'], p: ['brasero'] }, { t: ['selva'], p: ['sel2_fogata_tribal', 'sel2_altar'] }],
     vinetas: ['templo'],
   },
   templo: {
@@ -398,7 +404,7 @@ function exterior(def: DefZona, semilla: number): Zona {
     }
   };
   for (const p of puntos) camino(p, centro);
-  if (def.rio) rioDeLava(k, r);
+  if (def.rio) rioDeLava(k, r, def.rio === 'arroyo');
   // viñetas: paisajes del motor estampados donde haya lugar
   const vin = def.vinetas ?? t.vinetas ?? [];
   const usadas: [number, number, number, number][] = [];
@@ -436,6 +442,7 @@ function exterior(def: DefZona, semilla: number): Zona {
   k.regar(t.grande, Math.floor((area / 900) * dens), 3, 3, z.W - 3, z.H - 3, undefined, 26);
   k.regar(t.disperso, Math.floor((area / 260) * dens), 2, 2, z.W - 2, z.H - 2);
   k.regar(t.luces, Math.floor(area / 2600), 4, 4, z.W - 4, z.H - 4);
+  if (def.extra) k.regar(def.extra, Math.floor((area / 1100) * dens), 4, 4, z.W - 4, z.H - 4, undefined, 12);
   if (def.tipo === 'exterior') k.regar([{ t: ['misterio' as Tema], p: ['arbol_rostros', 'manos', 'ojos', 'estatua', 'pozo'] }], 2 + Math.floor(area / 5000), 4, 4, z.W - 4, z.H - 4);
   // salidas reales
   def.salidas.forEach((s, i) => {
@@ -534,9 +541,9 @@ function rieles(k: Constructor, suelo: Uint8Array, sala: Uint8Array) {
 }
 
 /** El río de lava: tramos de la Forja de norte a sur que serpentean, bloquean el paso y dejan puentes donde pasa el camino. */
-function rioDeLava(k: Constructor, r: () => number) {
+function rioDeLava(k: Constructor, r: () => number, arroyo = false) {
   const z = k.z, { tw, th } = z;
-  const rio = REGISTRO.find((d) => d.id === 'inf2_rio_lava'), puente = REGISTRO.find((d) => d.id === 'inf2_puente');
+  const rio = REGISTRO.find((d) => d.id === (arroyo ? 'par_arroyo' : 'inf2_rio_lava')), puente = REGISTRO.find((d) => d.id === (arroyo ? 'par_puente' : 'inf2_puente'));
   if (!rio) return;
   let bx = Math.floor(tw * (0.35 + r() * 0.3)), antes = bx;
   const tramo = (tx: number, ty: number) => {
@@ -544,13 +551,14 @@ function rioDeLava(k: Constructor, r: () => number) {
     const x0 = tx * 5, y0 = ty * 5;
     let cruza = false;
     for (let y = y0; y < y0 + 5 && !cruza; y++) for (let x = x0; x < x0 + 5; x++) if (k.reserva[y * z.W + x]) { cruza = true; break; }
-    k.piso('lava_grietas', tx, ty);
+    if (!arroyo) k.piso('lava_grietas', tx, ty);
+    if (cruza && arroyo && r() < 0.35) { k.poner(rio, x0 + 2, y0 + 2, 'vado_y', true); return; }
     if (cruza && puente) {
-      k.poner(puente, x0 + 2, y0 + 2, r() < 0.7 ? 'piedra' : 'hueso', true);
+      k.poner(puente, x0 + 2, y0 + 2, arroyo ? (r() < 0.7 ? 'x' : 'musgoso') : r() < 0.7 ? 'piedra' : 'hueso', true);
       for (let y = y0; y < y0 + 5; y++) for (let x = x0; x < x0 + 5; x++) if (z.bloq[y * z.W + x] !== 2) z.bloq[y * z.W + x] = 0;
       return;
     }
-    k.poner(rio, x0 + 2, y0 + 2, r() < 0.75 ? 'recto_y' : 'ancho_y', true);
+    k.poner(rio, x0 + 2, y0 + 2, arroyo ? (r() < 0.6 ? 'recto_y' : r() < 0.5 ? 'piedras_y' : 'juncal_y') : r() < 0.75 ? 'recto_y' : 'ancho_y', true);
     for (let y = y0; y < y0 + 5; y++) for (let x = x0; x < x0 + 5; x++) if (z.bloq[y * z.W + x] !== 2) z.bloq[y * z.W + x] = 1;
   };
   for (let by = 0; by < th; by++) {
@@ -749,9 +757,9 @@ function mazmorra(def: DefZona, semilla: number): Zona {
 
 // ------------------------------------------------------------------ pueblo
 const PUEBLOS: Record<string, { paisaje: string; piso: string; extra: Sel[] }> = {
-  paramo: { paisaje: 'campamento', piso: 'pasto_seco', extra: [{ t: ['arboles'], p: ['muert', 'roble', 'torc'] }, { t: ['campo'], p: ['roca'] }] },
-  desierto: { paisaje: 'desierto', piso: 'arena', extra: [{ t: ['desierto'], p: ['palm', 'cactus', 'roca'] }] },
-  selva: { paisaje: 'campamento', piso: 'selva', extra: [{ t: ['selva', 'arboles'], p: ['arbol', 'palma', 'ceiba', 'helecho'] }] },
+  paramo: { paisaje: 'campamento', piso: 'pasto_seco', extra: [{ t: ['arboles'], p: ['muert', 'roble', 'torc'] }, { t: ['campo'], p: ['roca'] }, { t: ['paramo' as Tema], p: ['par_brezo', 'par_menhir', 'par_tienda', 'par_pozo', 'par_tronco'] }] },
+  desierto: { paisaje: 'desierto', piso: 'arena', extra: [{ t: ['desierto'], p: ['palm', 'cactus', 'roca'], s: ['des2_'] }, { t: ['desierto'], p: ['des2_palmera', 'des2_tienda', 'des2_caravana', 'des2_duna'] }] },
+  selva: { paisaje: 'campamento', piso: 'selva', extra: [{ t: ['selva', 'arboles'], p: ['arbol', 'palma', 'ceiba', 'helecho'], s: ['sel2_'] }, { t: ['selva'], p: ['sel2_choza', 'sel2_barca', 'sel2_bambu', 'sel2_arbol_gigante'] }] },
   nieve: { paisaje: 'campamento', piso: 'nieve', extra: [{ t: ['nieve'], p: ['pino', 'roca'] }, { t: ['nieve'], p: ['nie2_pino', 'nie2_cabana', 'nie2_lena', 'nie2_trineo', 'nie2_secadero', 'nie2_estandarte'] }, { t: ['fortaleza'], p: ['for2_pertrechos', 'for2_barricada', 'for2_catapulta'] }] },
   infierno: { paisaje: 'fortaleza', piso: 'fortaleza', extra: [{ t: ['fortaleza'], p: ['cristal', 'pilar', 'estatua'], s: ['for2_'] }, { t: ['fortaleza'], p: ['for2_armeria', 'for2_ballesta', 'for2_pertrechos', 'for2_estatua_rey', 'for2_campana', 'for2_brasero', 'for2_antorchero', 'for2_estandarte'] }] },
 };
