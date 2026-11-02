@@ -752,7 +752,7 @@ function guardian(c: Ctx): Res {
 
 // ================================================================== 8. SEDIENTO
 function sediento(c: Ctx): Res {
-  const { e, S, A, H, acc, f, w } = c;
+  const { e, S, A, H, acc, f } = c;
   const ps: Pieza[] = [];
   // ---- el hueso bajo la piel: vértebras, omóplatos, crestas de la cadera, pómulos y rótulas
   const piel = c.cu.piel, hs: Comp[] = [];
