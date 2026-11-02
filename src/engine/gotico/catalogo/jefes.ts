@@ -20,6 +20,7 @@ const M = MATERIALES;
 M.jf_obsidiana = { rampa: ['#020202', '#060506', '#0b090b', '#110e11', '#181418', '#201b20', '#2a242a', '#383038', '#4c434c', '#665a64'], ruido: 0.18, escala: 0.45, brillo: 0.75, patron: (p) => { const v = ruido(p[0] * 0.22, p[1] * 0.22, p[2] * 0.22); return Math.abs(v - 0.5) < 0.025 ? -0.22 : ruido(p[0] * 0.9, p[1] * 0.9, p[2] * 0.9) > 0.72 ? 0.06 : 0; } };
 M.jf_cuerno = { rampa: ['#060404', '#0f0b09', '#1b1410', '#2a2018', '#3b2e22', '#4f3f2e', '#66533d', '#7e6a50'], ruido: 0.25, escala: 0.8, brillo: 0.35, patron: (p) => (Math.sin(p[2] * 1.6 + p[0] * 0.4) > 0.6 ? -0.1 : 0) };
 M.jf_garra = { rampa: ['#0b0807', '#1a1411', '#2c241d', '#41372d', '#5a4e40', '#776a58', '#978a74', '#b8ab92'], ruido: 0.15, escala: 0.8, brillo: 0.5 };
+M.jf_hueso_negro = { rampa: ['#020202', '#070606', '#0e0c0b', '#171412', '#221d1a', '#2e2823', '#3c342d', '#4e443a', '#62574a'], ruido: 0.14, escala: 0.8, brillo: 0.7, patron: (p) => (Math.sin(p[0] * 1.7 + p[1] * 1.3 + p[2] * 2.1) > 0.75 ? -0.06 : 0) };
 M.jf_costilla = { rampa: ['#0c0908', '#1a1311', '#2a201b', '#3c2f27', '#504034', '#665343', '#7d6853'], ruido: 0.25, escala: 0.7, brillo: 0.3 };
 M.jf_membrana = { rampa: ['#080303', '#120605', '#1e0a08', '#2c100b', '#3c160f', '#4e1d13', '#622618', '#78301e'], ruido: 0.55, escala: 0.6, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5) > 0.64 ? -0.15 : 0) };
 M.jf_ceniza = { rampa: ['#090807', '#121010', '#1b1817', '#25211f', '#302b28', '#3c3632', '#49423d'], ruido: 0.35, escala: 0.5, patron: (p) => (Math.abs(ruido(p[0] * 0.22, p[1] * 0.22, p[2] * 0.22) - 0.5) < 0.03 ? -0.25 : 0) };
@@ -151,6 +152,66 @@ function llama(base: V3, alto: number, ancho: number, f: number, sem: number, ma
   ps.push(elipE(p1, arriba, [h * 0.36, ancho, ancho], mat, -0.12 + tono));
   ps.push(elipE(p2, arriba, [h * 0.3, ancho * 0.55, ancho * 0.55], mat, 0.1 + tono));
   if (u < 0.5) ps.push(esfera(...add(add(base, arriba, h * (1.05 + u)), w, sway * 1.6), ancho * 0.25, { mat }));
+  return ps;
+}
+/**
+ * Lengua de fuego en punta: dos conos que se afinan a lo largo de una curva que se dobla. Cada lengua tiene su fase,
+ * su ritmo (una o dos vueltas por ciclo), su largo y su inclinación propios según `sem`, así que una hilera no sale
+ * pareja; la base arde amarilla y la punta se enfría a naranja. `n` es el largo del ciclo en cuadros.
+ */
+function lengua(base: V3, dir: V3, alto: number, ancho: number, f: number, n: number, sem: number, viento: V3 = [0, 0, 0], tono = 0): Pieza[] {
+  const fase = hr(sem) * TAU, vel = 1 + Math.floor(hr(sem + 1) * 2), u = (f / n) * TAU * vel + fase;
+  const fl = 0.68 + 0.32 * Math.sin(u) + 0.1 * Math.sin(u * 2 + sem);
+  const h = alto * fl, d = nor(dir);
+  const lat = nor(Math.abs(d[2]) > 0.9 ? cruz(d, [1, 0, 0]) : cruz(d, [0, 0, 1])), lat2 = cruz(d, lat);
+  const a1 = (hr(sem + 2) - 0.5) * 1.1 + Math.sin(u + 1.7) * 0.32, a2 = (hr(sem + 3) - 0.5) * 0.7 + Math.cos(u * 0.5 + sem) * 0.22;
+  const d1 = nor(add(add(add(d, lat, a1 * 0.45), lat2, a2 * 0.45), viento, 0.3)), d2 = nor(add(add(add(d, lat, a1 * 1.3), lat2, a2 * 1.2), viento, 0.85));
+  const w = ancho * (0.7 + 0.55 * hr(sem + 4)) * (0.8 + 0.25 * fl);
+  const p1 = add(base, d1, h * 0.42), p2 = add(p1, d2, h * 0.58);
+  const ps: Pieza[] = [
+    esfera(...base, w, { mat: 'fuego', tono: 0.06 + tono }), palo(base, p1, w, { mat: 'fuego', r1: w * 0.6, tono: -0.04 + tono }),
+    esfera(...p1, w * 0.6, { mat: 'fuego', tono: -0.14 + tono }), palo(p1, p2, w * 0.6, { mat: 'fuego', r1: 0.06, tono: -0.27 + tono }),
+  ];
+  // las lenguas grandes se abren en una segunda punta más corta, hacia el otro lado
+  if (h > 7) { const ds = nor(add(add(d, lat, -a1 - 0.5 * Math.sign(a1 || 1)), viento, 0.5)); ps.push(palo(p1, add(p1, ds, h * (0.28 + 0.15 * hr(sem + 6))), w * 0.5, { mat: 'fuego', r1: 0.05, tono: -0.24 + tono })); }
+  // de vez en cuando se suelta una chispa por encima de la punta
+  if (hr(sem * 3.1 + f * 7.3) < 0.28) ps.push(esfera(...add(p2, d2, h * (0.2 + 0.3 * hr(sem + f))), Math.max(0.5, w * 0.32), { mat: 'fuego', tono: -0.2 + tono }));
+  return ps;
+}
+/**
+ * Columna de fuego continua que se afina hacia arriba: tres lenguas anidadas que comparten la base y se tuercen con
+ * fases distintas, así las de adentro rompen la de afuera en vetas. Afuera y abajo lava, después naranja y arriba,
+ * en el alma y la punta, amarillo. `k` (0..1) la hace crecer.
+ */
+function columnaFuego(b0: V3, arriba: V3, L: number, ancho: number, f: number, n: number, k: number): Pieza[] {
+  const ps: Pieza[] = [];
+  const up = nor(arriba), lat = nor(Math.abs(up[2]) > 0.9 ? cruz(up, [1, 0, 0]) : cruz(up, [0, 0, 1])), lat2 = cruz(up, lat);
+  const w = (f / n) * TAU;
+  const capas: [string, number, number, number, number, number][] = [
+    // material, tono, largo, ancho, fase, amplitud de la torsión
+    ['lava', -0.28, 0.6, 1, 0, 0.5], ['fuego', -0.3, 0.9, 0.78, 2.1, 0.5], ['fuego', 0.14, 0.93, 0.5, 4.3, 0.8],
+  ];
+  const N = 14;
+  for (const [mat, tono, lk, ak, fase, amp] of capas) {
+    const Lc = L * lk * k * (0.94 + 0.06 * Math.sin(w * 2 + fase)), A = ancho * amp;
+    const P = (t: number): V3 => add(add(add(b0, up, Lc * t), lat, Math.sin(t * 3.4 - w + fase) * A * Math.pow(t, 0.6)), lat2, Math.cos(t * 2.6 - w + fase * 1.3) * A * 0.6 * Math.pow(t, 0.6));
+    const R = (t: number) => Math.max(0.15, ancho * ak * (0.55 + 0.45 * k) * Math.pow(1 - t, 0.8) * (1 + 0.13 * Math.sin(t * 9 - w * 2 + fase)));
+    for (let i = 0; i < N; i++) {
+      const t0 = i / N, t1 = (i + 1) / N, q0 = P(t0), q1 = P(t1);
+      ps.push(esfera(...q0, R(t0), { mat, tono: tono + (1 - t0) * 0.05 }), palo(q0, q1, R(t0), { mat, r1: R(t1), tono: tono + (1 - t0) * 0.05 }));
+    }
+  }
+  // lenguas que se desprenden de los costados y lamen hacia arriba
+  for (let j = 0; j < 7; j++) {
+    const t = 0.12 + 0.11 * j + 0.04 * Math.sin(w + j), a = hr(j * 11 + 5) * TAU + w * 0.5;
+    const r = ancho * Math.pow(1 - t, 0.8) * (0.55 + 0.45 * k) * 0.95, sd = add(esc(lat, Math.cos(a)), lat2, Math.sin(a));
+    ps.push(...lengua(add(add(b0, up, L * 0.62 * k * t), sd, r), add(up, sd, 0.45), (20 + 16 * hr(j + 9)) * k * (1 - t * 0.5), 3.4 * (1 - t * 0.4), f, n, 880 + j, [0, 0, 0], -0.12));
+  }
+  // la punta se abre en tres lenguas que se tuercen
+  for (let j = 0; j < 3; j++) {
+    const t = 0.72 + 0.06 * j, sd = add(esc(lat, Math.cos(j * 2.1 + w)), lat2, Math.sin(j * 2.1 + w));
+    ps.push(...lengua(add(add(b0, up, L * k * t), sd, ancho * 0.12), add(up, sd, 0.25), (34 + 14 * hr(j + 31)) * k, ancho * 0.16, f, n, 900 + j, [0, 0, 0], -0.1));
+  }
   return ps;
 }
 /** Eslabones de una cadena a lo largo de una polilínea (se remuestrea al paso del eslabón). */
@@ -339,7 +400,8 @@ function ozmaren(acc: Acc, f: number): Res {
   const zc = 95 + pz;
   const pel: Tr = T([px, py, zc], Rz(ty * 0.3), Ry(tp * 0.3 + flojo * 12), Rx(tr * 0.5));
   const tor = cmp(pel, T([0, 0, 8], Rz(ty * 0.7), Ry(tp * 0.7), Rx(tr)));
-  const cabT = cmp(tor, T([24, 0, 74], Ry(cab - tp * 0.6)));
+  // la cabeza va alta y un poco atrás: así no tapa la caja del pecho desde la cámara alta
+  const cabT = cmp(tor, T([18, 0, 83], Ry(cab - tp * 0.6)));
   const hs = 1.55, HP = (q: V3) => ap(cabT, esc(q, hs)), bH = (c: V3, r: V3, o: OpcComp = m) => bT(cabT, esc(c, hs), esc(r, hs), o);
   const lava = frio > 0.75 ? 'jf_lava_fria' : 'cu_lava';
   const ojo = frio > 0.6 ? 'cu_ojo' : 'cu_ojo_brasa';
@@ -349,7 +411,7 @@ function ozmaren(acc: Acc, f: number): Res {
   // ---- tronco: pelvis, cintura de avispa, costillar enorme, pectorales, trapecios altos, joroba y deltoides
   const cs: Comp[] = [
     bT(pel, [0, 0, 0], [18, 24, 14], m), bT(tor, [3, 0, 10], [16, 21, 14], m), bT(tor, [5, 0, 38], [25 * resp, 36 * resp, 25], m),
-    bT(tor, [-15, 0, 48], [18, 31, 20], m), hT(tor, [2, 0, 54], [20, 0, 70], 18, 14, m), bT(tor, [6, 0, 60], [14, 22, 10], m),
+    bT(tor, [-15, 0, 48], [18, 31, 20], m), hT(tor, [2, 0, 54], [16, 0, 76], 18, 13.5, m), bT(tor, [6, 0, 60], [14, 22, 10], m),
   ];
   for (const s of [1, -1]) {
     cs.push(bT(pel, [-3, s * 13, -2], [13, 12, 13], m), bT(tor, [19, s * 16, 45], [11, 16, 10], m), bT(tor, [-6, s * 20, 64], [15, 15, 11], m));
@@ -358,45 +420,53 @@ function ozmaren(acc: Acc, f: number): Res {
     for (let i = 0; i < 3; i++) cs.push(bT(tor, [16, s * 6, 4 + i * 7.5], [4, 5.5, 3.8], { mat: O, k: 2 }));
   }
   ps.push(masa(cs, { mat: O, suave: 2.6 }));
-  // el hueco del pecho (cava el tronco) y lo que hay adentro: brasa honda, costillas que se abren y el corazón
-  ps.push(elipsoide(...ap(tor, [31, 0, 40]), 14, 14, 16, { mat: O, resta: true }));
-  const cora = ap(tor, [22, 0, 40]);
-  ps.push(elipE(ap(tor, [15, 0, 40]), tor.m[0], [9, 12, 14], frio > 0.85 ? 'jf_lava_fria' : 'jf_brasa_honda', -0.4, tor.m[1]));
-  const lt = 1.25 + latido * 0.2;
+  // la caja del pecho: un hueco hondo en el tronco con un núcleo de lava viva adentro y costillas de hueso negro
+  // separadas por delante (entre ellas se ve el fuego); al abrir el pecho las medias costillas giran hacia afuera
+  // el hueco se inclina hacia adelante y arriba (hacia la cámara alta), así la parte de arriba del pecho no lo tapa
+  ps.push({ ...elipE(ap(tor, [31, 0, 37]), mv(tor.m, [1, 0, 0.55]), [21, 18.5, 18.5], O, 0, tor.m[1]), resta: true } as Pieza);
+  const cora = ap(tor, [23, 0, 35]);
+  const lt = 1.25 + latido * 0.2, vivo = frio < 0.5;
+  // el fondo del hueco: lava que llena la caja (se apaga en negro rojizo al morir)
+  ps.push(elipE(ap(tor, [16, 0, 24]), tor.m[0], [11, 14, 10], frio > 0.85 ? 'jf_lava_fria' : frio > 0.5 ? 'jf_brasa_honda' : 'lava', vivo ? -0.18 : 0, tor.m[1]));
+  ps.push(elipE(ap(tor, [14, 0, 35]), tor.m[0], [13, 18, 20], frio > 0.85 ? 'jf_lava_fria' : frio > 0.5 ? 'jf_brasa_honda' : 'lava', vivo ? -0.12 + latido * 0.06 : 0, tor.m[1]));
+  if (vivo) for (let k = 0; k < 7; k++) {
+    // remolinos más claros en la lava del fondo
+    const a = hr(k * 7 + 3) * TAU, q = ap(tor, [25 - Math.abs(Math.sin(a)) * 3, Math.cos(a) * (4 + hr(k) * 8), 36 + Math.sin(a) * (4 + hr(k + 2) * 9)]);
+    ps.push(elipE(q, mv(tor.m, [0, Math.cos(a + 1.3), Math.sin(a + 1.3)]), [3 + hr(k + 4) * 3, 1.2, 1.4], 'fuego', 0.05 + latido * 0.1, tor.m[0]));
+  }
   if (frio < 0.9) {
-    ps.push(elipE(cora, mv(tor.m, [0.3, 0, 1]), [6.5 * lt, 5 * lt, 5.5 * lt], frio > 0.5 ? 'jf_brasa_honda' : 'cu_lava', 0.12, tor.m[1]));
-    ps.push(esfera(...add(cora, mv(tor.m, [2.5, 0, 1])), 2.4 * lt, { mat: frio > 0.5 ? 'jf_brasa_honda' : 'luz_vela' }));
-    for (let k = 0; k < 4; k++) ps.push(palo(add(cora, mv(tor.m, [3, 0, 0])), add(cora, mv(tor.m, [4, Math.cos(k * 1.6) * 9 * lt, Math.sin(k * 1.6) * 8 * lt])), 0.9, { mat: 'jf_hierro_rojo', r1: 0.3 }));
-    for (const s of [1, -1]) ps.push(palo(add(cora, mv(tor.m, [0, s * 2, 4])), ap(tor, [12, s * 6, 56]), 2.2, { mat: 'jf_costilla', r1: 1.4 }));
-    if (frio < 0.4) for (let k = 0; k < 4; k++) ps.push(...llama(add(cora, mv(tor.m, [1, (k - 1.5) * 3, 3])), 10 + latido * 5, 2.4, f, 40 + k, 'fuego', nor(mv(tor.m, [0.2, 0, 1]))));
+    // el núcleo: un corazón de lava que late, con el centro casi blanco y venas al rojo que lo atan a las paredes
+    ps.push(elipE(cora, mv(tor.m, [0.3, 0, 1]), [6 * lt, 5 * lt, 6 * lt], vivo ? 'cu_lava' : 'jf_brasa_honda', 0.1, tor.m[1]));
+    ps.push(esfera(...add(cora, mv(tor.m, [3, 0, 0.6])), 3 * lt, { mat: vivo ? 'luz_vela' : 'jf_brasa_honda', tono: 0.1 }));
+    for (let k = 0; k < 6; k++) { const a = k * 1.05 + 0.3; ps.push(palo(cora, add(cora, mv(tor.m, [-3, Math.cos(a) * 14, Math.sin(a) * 15])), 1.3, { mat: vivo ? 'jf_hierro_rojo' : 'jf_lava_fria', r1: 0.5 })); }
+    if (frio < 0.4) for (let k = 0; k < 3; k++) ps.push(...lengua(add(cora, mv(tor.m, [1, (k - 1) * 3.5, 4])), nor(mv(tor.m, [0.35, (k - 1) * 0.3, 1])), 8 + latido * 5 + hr(k) * 4, 2.2, f, CUADROS[acc], 40 + k));
   }
-  for (let k = 0; k < 5; k++) for (const s of [1, -1]) {
-    // media costilla: del costado al esternón; al abrirse gira hacia afuera sobre el costado
-    const z = 28 + k * 5.8, w = 14.5 - Math.abs(k - 2) * 0.8;
-    const ancla: V3 = [24, s * w, z], g = rad(s * pecho * 105);
+  const hn = frio > 0.75 ? 'jf_ceniza' : 'jf_hueso_negro';
+  for (let k = 0; k < 4; k++) for (const s of [1, -1]) {
+    // media costilla: sale de la pared del costado, se arquea hacia adelante y se cierra en el esternón
+    const z = 20.5 + k * 7.6, w = 17.5 - Math.abs(k - 1.5) * 1.3;
+    const ancla: V3 = [22, s * w, z + 1.5], g = rad(s * pecho * 105);
     const rot = (q: V3): V3 => { const d = sub(q, ancla); return add(ancla, [d[0] * Math.cos(g) - d[1] * Math.sin(g), d[0] * Math.sin(g) + d[1] * Math.cos(g), d[2]]); };
-    const a = ap(tor, ancla), b = ap(tor, rot([34, s * w * 0.62, z - 0.6])), c = ap(tor, rot([37, s * 1.6, z - 1.8]));
-    ps.push(masa([hueso(a, b, 2.5, 2.1, { mat: 'jf_costilla' }), hueso(b, c, 2.1, 1.6, { mat: 'jf_costilla' })], { mat: 'jf_costilla', suave: 1 }));
-    if (pecho > 0.3) ps.push(pua(c, add(c, mv(tor.m, [s * 0.2, s * 0.6, -0.4]), 4), 1.2, 'jf_costilla'));
+    const a = ap(tor, ancla), b = ap(tor, rot([35.5, s * w * 0.68, z])), c = ap(tor, rot([40, s * 2.2, z - 2]));
+    ps.push(palo(a, b, 2.1, { mat: hn, r1: 1.75 }), palo(b, c, 1.75, { mat: hn, r1: 1.35 }), esfera(...b, 1.75, { mat: hn }), esfera(...c, 1.35, { mat: hn }));
+    // nudillo en el arranque y una espina corta que apunta afuera
+    ps.push(esfera(...a, 2.6, { mat: hn, tono: 0.04 }));
+    ps.push(pua(b, add(b, mv(tor.m, [0.9, s * 0.5, -0.5]), 4 + (k % 2) * 2), 1.1, hn, 0.05));
+    if (pecho > 0.3) ps.push(pua(c, add(c, mv(tor.m, [s * 0.2, s * 0.6, -0.4]), 5), 1.2, hn));
   }
-  if (pecho < 0.3) ps.push(masa([hT(tor, [36, 0, 29], [38, 0, 53], 2.2, 2.6, { mat: 'jf_costilla' })], { mat: 'jf_costilla' }));
+  if (pecho < 0.3) {
+    // el esternón: una hoja de hueso negro con dos púas, cerrando las costillas por delante
+    ps.push(palo(ap(tor, [39.5, 0, 17]), ap(tor, [41, 0, 47]), 2, { mat: hn, r1: 2.6 }));
+    ps.push(pua(ap(tor, [39.5, 0, 18]), ap(tor, [41, 0, 9]), 1.8, hn), pua(ap(tor, [40.5, 0, 46]), ap(tor, [45, 0, 50]), 1.5, hn));
+  }
   // el fuego del especial: del pecho abierto sale un chorro corto hacia adelante (por debajo de la cara) y detrás de
   // los cuernos sube una corona de fuego desde la espalda, que nunca tapa la cabeza
   if (columna > 0.02) {
     const o0 = ap(tor, [34, 0, 38]), adel = nor(mv(tor.m, [1, 0, -0.15]));
     for (let k = 0; k < 9; k++) { const a = (k / 9) * TAU; ps.push(...llama(add(add(o0, tor.m[1], Math.cos(a) * 8), tor.m[2], Math.sin(a) * 9), (14 + hr(k) * 10) * columna, 3.2, f, 650 + k, 'fuego', nor(add(adel, add(esc(tor.m[1], Math.cos(a)), tor.m[2], Math.sin(a)), 0.5)), -0.1)); }
     ps.push(esfera(...o0, 7 * columna, { mat: 'luz_vela' }));
-    const b0 = ap(tor, [-30, 0, 58]), arriba = nor([-0.12, 0, 1]), L = 190 * columna, n = 12;
-    const lat = nor(cruz(arriba, [0, 1, 0])), lat2 = cruz(arriba, lat);
-    for (let c = 0; c < 6; c++) for (let i = 0; i < n; i++) {
-      const t = (i + 0.5) / n, an = c * (TAU / 6) + t * 5 + f * 0.8, rr = (10 + 30 * Math.pow(t, 0.8)) * (0.6 + 0.4 * columna);
-      if (hr(c * 17 + i * 3 + f * 5) < 0.1 + t * 0.25) continue;
-      const pp = add(add(add(b0, arriba, L * t), lat, Math.cos(an) * rr), lat2, Math.sin(an) * rr * 0.6);
-      const qq = add(add(add(b0, arriba, L * (t + 1 / n)), lat, Math.cos(an + 5 / n) * rr), lat2, Math.sin(an + 5 / n) * rr * 0.6);
-      const w = (4 + 7 * t) * (1 - Math.pow(t, 3) * 0.5) * (0.85 + 0.3 * hr(c * 31 + i + f));
-      ps.push(elipE(mez(pp, qq, 0.5), sub(qq, pp), [len(sub(qq, pp)) * 0.75, w, w], 'fuego', -0.38 + (1 - t) * 0.22));
-    }
-    for (let i = 0; i < n - 2; i++) { const t = (i + 0.5) / n; ps.push(elipE(add(add(b0, arriba, L * t), lat, Math.sin(f + i) * 3), arriba, [L / n * 0.8, 5 + t * 7, 4 + t * 5], i % 2 ? 'luz_vela' : 'fuego', 0.15)); }
+    const b0 = ap(tor, [-30, 0, 58]), arriba = nor([-0.12, 0, 1]), L = 190 * columna;
+    ps.push(...columnaFuego(b0, arriba, 200, 27, f, CUADROS[acc], columna));
     ps.push(...brasas(add(b0, arriba, L * 0.6), 50, 90, 20, f, 77, 'fuego', 1.3));
   }
 
@@ -552,7 +622,7 @@ function ozmaren(acc: Acc, f: number): Res {
       const a0 = (k / nseg) * TAU, a1 = ((k + 1) / nseg) * TAU, caida = roto * 60 * hr(k * 3);
       const pt = (a: number, rr: number): V3 => { const q = add(add(hc, hy, Math.cos(a) * rr), hz, Math.sin(a) * rr); return [q[0], q[1], Math.max(1, q[2] - caida)]; };
       ps.push(palo(pt(a0, R), pt(a1, R), 1.6, { mat: frio > 0.5 ? 'jf_lava_fria' : 'jf_hierro_rojo', tono: -0.05 }));
-      if (frio < 0.5 && Math.sin(a0) > -0.5) ps.push(...llama(pt(a0 + 0.15, R), (7 + hr(k) * 8 + ruge * 10 + columna * 14) * (0.6 + 0.4 * Math.sin(a0)), 2.4 + columna, f, 200 + k, 'fuego', nor(add(sub(pt(a0, R + 1), hc), [0, 0, 40]))));
+      if (frio < 0.5 && Math.sin(a0) > -0.5) ps.push(...lengua(pt(a0 + 0.15, R), nor(add(nor(sub(pt(a0, R + 1), hc)), [0, 0, 1.2])), (6 + hr(k) * 10 + ruge * 10 + columna * 14) * (0.6 + 0.4 * Math.sin(a0)), 1.6 + columna, f, CUADROS[acc], 200 + k));
       ps.push(esquirla(pt(a0 + 0.16, R - 1), sub(pt(a0 + 0.16, R + 5), pt(a0 + 0.16, R)), 6 + (k % 3) * 4, 1.6, 400 + k, O, 0.15));
     }
   }
@@ -566,15 +636,30 @@ function ozmaren(acc: Acc, f: number): Res {
       const nd = 5, orden: V3[] = [];
       for (let k = 0; k < nd - 1; k++) orden.push(w.borde[k], w.borde[nd + k]);
       orden.push(w.borde[nd - 1], w.borde[w.borde.length - 2], w.borde[w.borde.length - 1]);
+      const viento = nor(mv(tor.m, [-1, 0, 0.3]));
       for (let k = 0; k < orden.length - 1; k++) {
         ps.push(palo(orden[k], orden[k + 1], 0.9, { mat: 'jf_hierro_rojo' }));
-        for (let j = 0; j < 3; j++) ps.push(...llama(mez(orden[k], orden[k + 1], (j + 0.5) / 3), 4 + hr(k * 3 + j) * 6 + ruge * 4, 1.4, f, 300 + k * 3 + j + (s > 0 ? 50 : 0), 'fuego', [0, 0, 1], -0.2));
+        // lenguas desparejas: largo, grosor, inclinación (hacia afuera del ala, hacia arriba y con el viento hacia
+        // atrás) y fase propios; algunas se apagan un cuadro y vuelven
+        const nl = 2 + Math.floor(hr(k * 5 + s) * 3.6);
+        for (let j = 0; j < nl; j++) {
+          const sem = 300 + k * 7 + j + (s > 0 ? 90 : 0);
+          if (hr(sem * 1.7 + f * 3.3) < 0.13) continue;
+          const q = mez(orden[k], orden[k + 1], (j + 0.15 + 0.7 * hr(sem + 0.5)) / nl), afuera = nor(sub(q, w.muneca));
+          const grande = hr(sem + 0.25);
+          ps.push(...lengua(q, add(add([0, 0, 1], afuera, 0.35 + 0.6 * hr(sem + 0.75)), viento, 0.3), (4.5 + 16 * grande * grande + ruge * 5) * (0.8 + 0.4 * hr(sem + 0.9)), 1.1 + 1.5 * grande, f, CUADROS[acc], sem, viento));
+        }
       }
     }
     ps.push(...brasas(w.muneca, 30, 50, 4, f, 700 + s, 'fuego', 0.8));
   }
   // grietas grandes del pecho, la espalda y el vientre
-  ps.push(...grietas(tor, [5, 0, 38], [25 * resp, 36 * resp, 25], 15, 11, lava, { largo: 7, grueso: 1.5 }));
+  {
+    // las del pecho, menos las que caerían dentro del hueco (quedarían flotando delante de las costillas)
+    const hc = ap(tor, [31, 0, 37]), [e1, e2, e3] = [nor(mv(tor.m, [1, 0, 0.55])), tor.m[1], nor(cruz(nor(mv(tor.m, [1, 0, 0.55])), tor.m[1]))];
+    const fuera = (q: V3) => { const d = sub(q, hc); return (pto(d, e1) / 23) ** 2 + (pto(d, e2) / 21) ** 2 + (pto(d, e3) / 21) ** 2 > 1; };
+    ps.push(...grietas(tor, [5, 0, 38], [25 * resp, 36 * resp, 25], 15, 11, lava, { largo: 7, grueso: 1.5 }).filter((q) => q.k !== 'cono' || fuera(q.o)));
+  }
   ps.push(...grietas(tor, [-15, 0, 48], [18, 31, 20], 8, 13, lava, { lado: 1, grueso: 1.4, largo: 6 }));
   ps.push(...grietas(tor, [3, 0, 10], [16, 21, 14], 5, 15, lava, { grueso: 1.2, largo: 5 }));
   ps.push(...grietas(pel, [0, 0, 0], [18, 24, 14], 4, 17, lava, { grueso: 1.2 }));
@@ -587,7 +672,8 @@ function ozmaren(acc: Acc, f: number): Res {
     for (let j = 0; j < 3; j++) { const v = u + j * 0.33, w = (1.4 + v * 2.6) * humo; ps.push(elipsoide(b[0] + Math.sin(v * 6 + k) * 4, b[1] + Math.cos(v * 5 + k) * 3, b[2] + 10 + v * 46, w, w, w * 2.2, { mat: 'jf_humo' })); }
     ps.push(esfera(b[0], b[1], b[2] + 4 + u * 20, 0.8, { mat: 'fuego', tono: -0.3 }));
   }
-  const luz = frio > 0.8 ? undefined : { c: cora, r: 36 + columna * 30 + ruge * 10, color: '#e04010' };
+  // la luz sale de adentro del tronco (si saliera del corazón teñiría de rojo las costillas negras que lo tapan)
+  const luz = frio > 0.8 ? undefined : { c: ap(tor, [2, 0, 42]), r: 44 + columna * 30 + ruge * 10, color: '#e04010' };
   return { piezas: ps, resplandor: luz };
 }
 jefe('ozmaren', ['Ozmaren, la Sed que Arde', 'Ozmaren, the Burning Thirst'], 195, 5, ['abre el pecho', 'opens the chest'], ozmaren);

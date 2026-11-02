@@ -32,9 +32,10 @@ export const LINEAS: Linea[] = ['tela', 'cuero', 'tachonado', 'malla', 'placas',
  * sapphire, emerald, amethyst, topaz, diamond, skull), de talismán (hueso, cera, ceniza, badajo, brasa, cabeza, craneo),
  * de escudo (heater, rodela), de anillo (banda), de amuleto (colgante), de pergamino (portal, identificar, mapa), de
  * llave (jefe), de libro (portal) o el número de la runa. `gema` y `color` aceptan nombre o color #rrggbb; `encanto`
- * tiñe el brillo (fuego, hielo, rayo, veneno, sombra, sagrado, sangre).
+ * tiñe el brillo (fuego, hielo, rayo, veneno, sombra, sagrado, sangre). `metal` fija el metal de joyas y coronas
+ * (oro, plata, bronce, acero, hierro, negro o un color #rrggbb) por encima del que daría la línea.
  */
-export interface Icono3D { pieza: Pieza3D; linea?: Linea; nivel?: 1 | 2 | 3 | 4 | 5; variante?: string; gema?: string; encanto?: string; color?: string }
+export interface Icono3D { pieza: Pieza3D; linea?: Linea; nivel?: 1 | 2 | 3 | 4 | 5; variante?: string; gema?: string; encanto?: string; color?: string; metal?: string }
 
 // ------------------------------------------------------------------ vectores
 const add = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
@@ -164,9 +165,19 @@ const reflejo = (n: V3, k = 1) => {
   const d = VISTA[0] * n[0] + VISTA[1] * n[1] + VISTA[2] * n[2], rz = VISTA[2] - 2 * d * n[2];
   return (rz > 0.12 ? 0.06 + Math.min(0.08, (rz - 0.12) * 0.25) : rz > -0.05 ? -0.16 : -0.06) * k;
 };
-const anillas = (p: V3) => { const a = Math.sin(p[0] * 2.9 + p[1] * 2.9) * Math.sin(p[2] * 3.4 + (p[0] - p[1]) * 1.45); return a > 0.3 ? 0.13 : a < -0.5 ? -0.24 : -0.02; };
+/**
+ * Cota de malla: hileras de anillas trabadas medidas en pixeles de pantalla (el mundo ya viene escalado al doble del
+ * ícono), así la trama tiene el mismo paso en cualquier tamaño y no se vuelve ruido: cada anilla tiene su arco de luz
+ * arriba y la sombra del hueco abajo, y las hileras se corren media anilla.
+ */
+const anillas = (p: V3) => {
+  const v = p[2] * 1.22 - (p[0] + p[1]) * 0.5, fila = Math.floor(v / 4.4), fv = v / 4.4 - fila;
+  const u = p[0] - p[1] + (fila & 1 ? 2.6 : 0), fu = u / 5.2 - Math.floor(u / 5.2), dx = Math.abs(fu - 0.5) * 2;
+  const arco = fv > 0.55 && dx < 0.85 ? 0.13 * (1 - dx * 0.6) : 0;
+  return fv < 0.27 ? -0.2 : dx > 0.88 ? -0.12 : arco - 0.02;
+};
 /** Un material con rampa desde un color (se registra una vez por color y tipo). */
-function tinte(base: string, tipo: 'tela' | 'cuero' | 'metal' | 'esmalte' | 'gema' | 'liquido' | 'luz' | 'mate'): string {
+function tinte(base: string, tipo: 'tela' | 'cuero' | 'liso' | 'metal' | 'esmalte' | 'gema' | 'liquido' | 'luz' | 'mate'): string {
   const id = `ic_${tipo}_${base.slice(1)}`;
   if (M[id]) return id;
   switch (tipo) {
@@ -177,6 +188,7 @@ function tinte(base: string, tipo: 'tela' | 'cuero' | 'metal' | 'esmalte' | 'gem
     case 'gema': M[id] = { rampa: rampaDe(base, 0.42, 0.05), ruido: 0.04, escala: 0.6, brillo: 1.1, patron: (_p, n) => reflejo(n, 0.7) - 0.06 }; break;
     case 'liquido': M[id] = { rampa: rampaDe(base, 0.3, 0.12), ruido: 0.1, escala: 0.4, brillo: 1.0 }; break;
     case 'mate': M[id] = { rampa: rampaDe(base, 0.3), ruido: 0.25, escala: 0.6, patron: grano }; break;
+    case 'liso': M[id] = { rampa: rampaDe(base, 0.45), ruido: 0.05, escala: 0.4, brillo: 0.25 }; break;
     case 'luz': { const c = hex(base); M[id] = { rampa: [aHex(mul(c, 0.45) as V3), aHex(mul(c, 0.7) as V3), base, aHex(mezC(c, [255, 255, 255], 0.4)), aHex(mezC(c, [255, 255, 250], 0.8))], ruido: 0.35, escala: 0.5, emite: true }; break; }
   }
   return id;
@@ -189,8 +201,8 @@ M.ic_oro = { patron: (_p, n) => reflejo(n, 0.6), rampa: ['#1a0e03', '#331f07', '
 M.ic_oro_viejo = { rampa: ['#140b04', '#281808', '#42290d', '#5f3d14', '#7d531c', '#9a6b27', '#b48636', '#cca24c'], ruido: 0.12, escala: 0.6, brillo: 0.6 };
 M.ic_bronce = { patron: (_p, n) => reflejo(n, 0.8), rampa: ['#150b05', '#29170a', '#412511', '#5b3519', '#764623', '#91592f', '#ab703f', '#c58c58', '#ddb084'], ruido: 0.08, escala: 0.5, brillo: 0.7 };
 M.ic_plata = { patron: (_p, n) => reflejo(n, 0.8), rampa: ['#121417', '#23272c', '#383d44', '#50565e', '#6b727b', '#8890999', '#a8afb7', '#ccd2d8', '#f0f3f6'].map((c) => c.slice(0, 7)), ruido: 0.04, escala: 0.5, brillo: 0.95 };
-M.ic_malla = { rampa: ['#0b0c0e', '#17191c', '#25282c', '#363a3f', '#4a4f55', '#61676e', '#7c838a', '#9ca3aa', '#c4cad0'], ruido: 0.06, escala: 1, brillo: 0.6, patron: anillas };
-M.ic_malla_oro = { rampa: ['#140b03', '#2b1a07', '#47300d', '#674816', '#896221', '#a97e30', '#c69c46', '#dfbd68'], ruido: 0.06, escala: 1, brillo: 0.7, patron: anillas };
+M.ic_malla = { rampa: ['#0b0c0e', '#17191c', '#25282c', '#363a3f', '#4a4f55', '#61676e', '#7c838a', '#9ca3aa', '#c4cad0'], ruido: 0.03, escala: 0.3, brillo: 0.55, patron: anillas };
+M.ic_malla_oro = { rampa: ['#140b03', '#2b1a07', '#47300d', '#674816', '#896221', '#a97e30', '#c69c46', '#dfbd68'], ruido: 0.03, escala: 0.3, brillo: 0.65, patron: anillas };
 M.ic_esmalte = { patron: (_p, n) => reflejo(n, 0.5), rampa: ['#2a2724', '#47423c', '#665f56', '#877e72', '#a89e90', '#c5bcae', '#ddd6ca', '#efeae1', '#fbf9f4'], ruido: 0.03, escala: 0.5, brillo: 0.55 };
 M.ic_hueso = { rampa: ['#17130e', '#2b241a', '#433829', '#5e5039', '#7a6a4c', '#978761', '#b2a37b', '#cbbe98', '#e1d7b8'], ruido: 0.2, escala: 0.9, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 2.2) - 0.5) * 0.16 };
 M.ic_pelaje = { rampa: ['#0f0a06', '#1c140c', '#2b1f13', '#3c2c1b', '#4f3a25', '#634a30', '#795c3d', '#90714e', '#a88a66'], ruido: 0.55, escala: 2.2, patron: (p) => (ruido(p[0] * 3.4, p[1] * 3.4, p[2] * 0.9) - 0.5) * 0.45 };
@@ -214,12 +226,26 @@ const GEMAS: Record<string, string> = {
 };
 const ENCANTO: Record<string, string> = { fuego: '#ff7a20', hielo: '#80c8ff', rayo: '#a0c0ff', veneno: '#60e040', sombra: '#a050e0', sagrado: '#ffe080', sangre: '#e82020' };
 const colorDe = (s: string | undefined, def: string, tabla: Record<string, string> = GEMAS) => (!s ? def : s.startsWith('#') && s.length === 7 ? s : tabla[s] ?? def);
+const METALES: Record<string, string> = { oro: 'ic_oro', plata: 'ic_plata', bronce: 'ic_bronce', cobre: 'ic_bronce', acero: 'ic_acero', hierro: 'ic_hierro', negro: 'ic_hierro_negro' };
+/** El material de un metal pedido por nombre o por color: los conocidos van a su material, los demás se tiñen. */
+function metalDe(m: string): string {
+  if (METALES[m]) return METALES[m];
+  if (!/^#[0-9a-fA-F]{6}$/.test(m)) return 'ic_oro';
+  const c = hex(m), mx = Math.max(...c), mn = Math.min(...c), sat = mx ? (mx - mn) / mx : 0, l = lum(c);
+  if (sat < 0.2) return l > 175 ? 'ic_plata' : l > 95 ? 'ic_acero' : 'ic_hierro_negro';
+  const tono = (() => { const [r, g, b] = c, d = mx - mn; const h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; return (h * 60 + 360) % 360; })();
+  if (tono >= 33 && tono <= 60 && l > 120) return 'ic_oro';
+  if (tono >= 12 && tono < 33 && l > 70) return 'ic_bronce';
+  return tinte(m, 'metal');
+}
 
 // ------------------------------------------------------------------ estilo por línea y nivel
 interface Estilo {
   linea: Linea; n: number;
   base: string; base2: string; borde: string; remache: string; correa: string; hebilla: string; costura: string;
   forro: string | null; gema: string; gemaHex: string; luz: string | null; luzHex: string;
+  /** metal pedido por el diseño (joyas y coronas) */
+  metalPedido: string | null;
   tachas: boolean; puas: boolean; duro: boolean; metal: boolean;
   /** ribete de metal en los bordes, remaches, filigrana */
   ribete: boolean; remaches: boolean; filigrana: boolean;
@@ -231,6 +257,7 @@ function estilo(d: Icono3D): Estilo {
   const e: Estilo = {
     linea, n, base: 'ic_acero', base2: 'ic_malla', borde: 'ic_acero', remache: 'ic_acero', correa: tinte('#3a2416', 'cuero'), hebilla: n >= 3 ? 'ic_oro' : n >= 2 ? 'ic_bronce' : 'ic_hierro',
     costura: 'ic_costura', forro: null, gema: tinte(gemaHex, 'gema'), gemaHex, luz: n >= 5 ? tinte(luzHex, 'luz') : null, luzHex,
+    metalPedido: d.metal ? metalDe(d.metal) : null,
     tachas: false, puas: false, duro: false, metal: false, ribete: n >= 3, remaches: n >= 2, filigrana: n >= 4,
   };
   switch (linea) {
@@ -264,15 +291,34 @@ function gemaEngastada(t: Taller, c: V3, r: number, e: Estilo, o: { engaste?: st
     if (o.luz || e.n >= 4) t.elip([-0.35 * r, 0.95 * r, 0.35 * r], [0.22 * r, 0.12 * r, 0.22 * r], { mat: 'ic_brillo' });
   });
 }
-/** Talla brillante: mesa, corona, filetín y pabellón (poliedro convexo). `rr` orienta la mesa (por omisión hacia arriba). */
+/** Un valor fijo por faceta (de la normal): cada cara plana de la talla devuelve la luz distinto, como un mosaico. */
+const destello = (n: V3) => { const h = Math.sin(n[0] * 91.7 + n[1] * 47.3 + n[2] * 13.1) * 43758.5453; return (h - Math.floor(h) - 0.5) * 0.62; };
+/**
+ * La versión tallada de un material de gema: rampa que llega casi al blanco, cada faceta con su propio valor
+ * (claras y oscuras alternadas), brillo especular fuerte y la mesa (lo que mira arriba) más luminosa.
+ */
+function facetada(mat: string): string {
+  const id = `${mat}_f`;
+  if (M[id]) return id;
+  const b = M[mat], m = /^ic_gema_([0-9a-f]{6})$/.exec(mat);
+  const rampa = m ? rampaDe('#' + m[1], 0.62, 0.025) : [...b.rampa, '#fffaf0'];
+  M[id] = { rampa, ruido: 0.02, escala: 0.5, brillo: 1.6, patron: (_p, n) => destello(n) - 0.14 + Math.max(0, n[2] - 0.85) * 0.5 + reflejo(n, 0.35) };
+  return id;
+}
+/**
+ * Talla brillante: mesa, estrellas de la corona, filetín de 16 y pabellón hasta la culata (poliedro convexo con
+ * material facetado). `rr` orienta la mesa (por omisión hacia arriba).
+ */
 function brillante(t: Taller, c: V3, r: number, mat: string, rr: Rot = [0, 0, 0], alto = 1) {
+  const fm = facetada(mat);
   t.en(c, rr, () => {
     const pts: V3[] = [];
-    for (let i = 0; i < 8; i++) { const a = rad(i * 45 + 22.5); pts.push([Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, r * 0.42 * alto]); }
-    for (let i = 0; i < 8; i++) { const a = rad(i * 45); pts.push([Math.cos(a) * r, Math.sin(a) * r, r * 0.08]); }
-    pts.push([0, 0, -r * 0.75 * alto]);
-    for (let i = 0; i < 8; i++) { const a = rad(i * 45 + 22.5); pts.push([Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45, -r * 0.45 * alto]); }
-    t.poli(pts, { mat });
+    for (let i = 0; i < 8; i++) { const a = rad(i * 45 + 22.5); pts.push([Math.cos(a) * r * 0.52, Math.sin(a) * r * 0.52, r * 0.44 * alto]); }
+    for (let i = 0; i < 8; i++) { const a = rad(i * 45); pts.push([Math.cos(a) * r * 0.8, Math.sin(a) * r * 0.8, r * 0.27 * alto]); }
+    for (let i = 0; i < 16; i++) { const a = rad(i * 22.5 + 11.25); pts.push([Math.cos(a) * r, Math.sin(a) * r, r * 0.05]); }
+    for (let i = 0; i < 8; i++) { const a = rad(i * 45 + 22.5); pts.push([Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, -r * 0.42 * alto]); }
+    pts.push([0, 0, -r * 0.82 * alto]);
+    t.poli(pts, { mat: fm });
   });
 }
 /** Remaches en fila de `a` a `b`. */
@@ -281,6 +327,46 @@ function filaRemaches(t: Taller, a: V3, b: V3, n: number, r: number, mat: string
 }
 /** Púa cónica de `a` hacia `dir` con largo L. */
 function pua(t: Taller, a: V3, dir: V3, L: number, r: number, mat: string) { t.cil(a, add(a, nor(dir), L), r, 0.04, { mat }); }
+
+// ------------------------------------------------------------------ piernas de placas (grebas y botas)
+/** Sección ovalada de una greba con la arista al frente (+y): para armar placas convexas por anillos. */
+const seccion = (rx: number, ry: number, z: number, quilla: number, y0 = 0): V3[] => [...anilloPts(rx, ry, z, 12, 0, 0, y0), [0, y0 + ry + quilla, z]];
+/**
+ * Pierna de placas articulada a lo largo de z (el frente mira a +y, `lado` dice dónde queda el costado de afuera):
+ * greba con arista desde `z0`, lamas que se montan bajo y sobre la rodilla, rodillera abombada con su aleta hacia
+ * afuera y, si hay `muslo`, el quijote hasta esa altura. `r` es el radio de la pantorrilla.
+ */
+function piernaPlaca(t: Taller, e: Estilo, o: { z0: number; rod: number; muslo?: number; r: number; lado: 1 | -1; arriba?: boolean }) {
+  const { z0, rod: zr, r, lado } = o, pl = e.base, br = e.ribete ? e.borde : pl;
+  const zg = zr - r * 0.95;
+  // greba: se ensancha en la pantorrilla y la arista del frente recoge la luz
+  t.poli([...seccion(r * 0.7, r * 0.66, z0, r * 0.12), ...seccion(r * 0.98, r * 0.88, z0 + (zg - z0) * 0.58, r * 0.2), ...seccion(r * 0.9, r * 0.82, zg, r * 0.16)], { mat: pl });
+  if (e.ribete) t.aro([0, 0, z0 + 0.2], r * 0.72, 0.28, { mat: br, n: 12 });
+  // lamas: conos cortos que se pisan (el canto de abajo queda afuera y hace la línea de sombra)
+  const lama = (za: number, zb: number, ra: number, rb: number, k: number) => t.cil([0, r * 0.06, za], [0, r * 0.06, zb], ra, rb, { mat: pl, tono: k & 1 ? -0.06 : 0.05 });
+  lama(zg - 0.2, zg + r * 0.3, r * 0.97, r * 0.86, 0);
+  lama(zg + r * 0.3, zg + r * 0.6, r * 0.92, r * 0.84, 1);
+  // rodillera: copa abombada, nervio al medio y la aleta en abanico hacia afuera
+  t.elip([0, r * 0.38, zr], [r * 0.9, r * 0.78, r * 0.72], { mat: pl, tono: 0.07 });
+  t.elip([0, r * 1.05, zr], [r * 0.13, r * 0.2, r * 0.6], { mat: pl, tono: 0.12 });
+  t.en([lado * r * 0.8, r * 0.3, zr - r * 0.05], [lado * -35, 0, 0], () => {
+    t.elip([0, 0, 0], [r * 0.14, r * 0.6, r * 0.66], { mat: pl, tono: 0.02 });
+    if (e.ribete) t.aro([lado * r * 0.02, 0, 0], r * 0.6, r * 0.07, { mat: br, eje: 'x', n: 12 });
+    for (const a of [-45, 0, 45]) t.elip([lado * r * 0.1, Math.sin(rad(a)) * r * 0.3, Math.cos(rad(a)) * r * 0.3], [r * 0.07, r * 0.07, r * 0.3], { mat: pl, tono: 0.12, rot: [0, 0, -a] });
+    t.esf([lado * r * 0.12, 0, 0], r * 0.13, { mat: e.remache, tono: 0.08 });
+  });
+  if (o.arriba !== false) {
+    lama(zr + r * 0.55, zr + r * 0.9, r * 0.98, r * 1.0, 1);
+    lama(zr + r * 0.9, zr + r * 1.25, r * 1.04, r * 1.05, 0);
+  } else t.cil([0, r * 0.06, zr + r * 0.1], [0, r * 0.06, zr + r * 0.55], r * 0.88, r * 0.92, { mat: br, tono: -0.04 });
+  if (e.remaches) for (const k of [0, 1]) for (const sx of [-1, 1]) t.esf([sx * r * 0.88, r * 0.35, zg + r * (0.1 + k * 0.3)], r * 0.11, { mat: e.remache });
+  // quijote del muslo
+  if (o.muslo !== undefined) {
+    const z1 = zr + r * 1.2;
+    t.poli([...seccion(r * 1.06, r * 0.98, z1, r * 0.14), ...seccion(r * 1.22, r * 1.06, (z1 + o.muslo) / 2, r * 0.2), ...seccion(r * 1.2, r * 1.0, o.muslo, r * 0.1)], { mat: pl, tono: 0.02 });
+    if (e.ribete) t.aro([0, r * 0.06, z1 + 0.15], r * 1.07, 0.26, { mat: br, n: 14 });
+  }
+}
 
 // ------------------------------------------------------------------ botas
 /** Túnel convexo con sección de arco (láminas de escarpe, guardas): de x0 a x1, ancho `w`, alto `h` sobre `zb`. */
@@ -351,23 +437,18 @@ function bota(t: Taller, e: Estilo) {
       }
     }
   } else {
-    // escarpe y greba de placas: lámina sobre lámina hacia la punta
+    // escarpe (sabatón) de lamas articuladas que bajan a la punta, y la greba con su rodillera de aleta
     const pl = e.base;
     t.elip([-2.6, 0, 3.0], [2.8, 3.15, 2.5], { mat: pl, tono: -0.02 });
-    for (let k = 0; k < 4; k++) arco(t, -1.2 + k * 1.75, 1.1 + k * 1.75, 3.25 - k * 0.12, 3.3 - k * 0.42, 0.95, { mat: pl, tono: k % 2 ? -0.05 : 0.04 }, 3.15 - k * 0.12, 3.0 - k * 0.42);
-    t.poli([[6.0, 2.85, 0.95], [6.0, -2.85, 0.95], [6.0, 2.2, 2.4], [6.0, -2.2, 2.4], [6.0, 0, 2.75], [9.6, 0, 1.15], [8.6, 0, 1.9], [8.4, 1.0, 0.95], [8.4, -1.0, 0.95]], { mat: pl, tono: 0.03 });
-    if (e.ribete) for (let k = 0; k < 4; k++) t.aro([-1.2 + k * 1.75, 0, 0.95], 3.22 - k * 0.12, 0.2, { mat: e.borde, eje: 'x', desde: 0, hasta: 180, n: 6 });
-    // greba
-    t.cil([cx, 0, 2.6], [cx, 0, 9.6], 3.45, 4.25, { mat: pl });
-    t.cil([cx, 0, 9.6], [cx, 0, top], 4.25, 3.95, { mat: pl });
-    t.caja([cx + 3.75, 0, (3 + top) / 2], [0.9, 1.2, top - 3.4], { mat: pl, tono: 0.1 });
-    t.cil([cx, 0, top - 0.6], [cx, 0, top + 0.5], 4.25, 4.35, { mat: e.borde });
-    t.elip([cx, 0, top + 0.55], [3.3, 3.3, 0.4], { mat: 'ic_hueco' });
-    if (e.ribete) t.cil([cx, 0, 9.4], [cx, 0, 10.2], 4.0, 4.0, { mat: e.borde, tono: -0.03 });
-    // tobillera con remache
-    t.esf([cx - 0.2, 3.3, 4.4], 1.65, { mat: pl, tono: 0.05 });
-    t.esf([cx - 0.2, 4.85, 4.4], 0.5, { mat: e.remache });
-    if (e.remaches) filaRemaches(t, [cx - 1.4, 3.75, 6.4], [cx - 1.4, 3.85, top - 1.6], 3, 0.42, e.remache);
+    for (let k = 0; k < 4; k++) {
+      arco(t, -1.2 + k * 1.7, 1.0 + k * 1.7, 3.25 - k * 0.14, 3.35 - k * 0.45, 0.95, { mat: pl, tono: k % 2 ? -0.07 : 0.06 }, 3.12 - k * 0.14, 3.05 - k * 0.45);
+      if (e.remaches) t.esf([-0.1 + k * 1.7, 3.15 - k * 0.14, 1.6], 0.32, { mat: e.remache });
+    }
+    // la punta del sabatón: larga, con arista, termina en pico
+    t.poli([[5.8, 2.75, 0.95], [5.8, -2.75, 0.95], [5.8, 2.1, 2.3], [5.8, -2.1, 2.3], [5.8, 0, 2.62], [11.2, 0, 1.0], [8.9, 0, 1.95], [8.9, 1.15, 0.95], [8.9, -1.15, 0.95]], { mat: pl, tono: 0.04 });
+    // tobillo: dos lamas (la de abajo con ribete)
+    for (let k = 0; k < 2; k++) t.cil([cx, 0, 2.4 + k * 1.2], [cx, 0, 3.6 + k * 1.2], 3.55 - k * 0.15, 3.3 - k * 0.15, { mat: k === 0 && e.ribete ? e.borde : pl, tono: k ? 0.05 : -0.05 });
+    t.en([cx, 0, 0], [-90, 0, 0], () => piernaPlaca(t, e, { z0: 4.6, rod: top - 0.6, r: 3.5, lado: -1, arriba: false }));
     if (L === 'sagrado') {
       // alitas en el talón y la cruz de oro al frente
       for (let k = 0; k < 3; k++) t.elip([cx - 4.4 - k * 0.8, 2.0, top - 3.2 + k * 1.4], [2.9 - k * 0.45, 0.45, 0.95], { mat: k % 2 ? 'ic_oro' : 'ic_esmalte', rot: [20, 0, 35 + k * 12] });
@@ -383,7 +464,7 @@ function bota(t: Taller, e: Estilo) {
     if (L === 'legendario') for (let k = 0; k < 3; k++) t.caja([cx + 4.25, 0, 6.4 + k * 2.4], [0.3, 0.75, 1.3], { mat: e.luz!, tono: tonoLuz(e, k) });
   }
   // gema en el costado (nivel 4 y 5) y runas (5)
-  if (e.n >= 4 || L === 'sagrado' || L === 'legendario') gemaEngastada(t, [cx - 0.3, placa ? 4.05 : 3.85, top - 3.2], 1.15, e, { engaste: L === 'oscuro' ? 'ic_hierro_negro' : 'ic_oro' });
+  if (e.n >= 4 || L === 'sagrado' || L === 'legendario') gemaEngastada(t, placa ? [cx - 0.2, 3.65, 8.4] : [cx - 0.3, 3.85, top - 3.2], 1.15, e, { engaste: L === 'oscuro' ? 'ic_hierro_negro' : 'ic_oro' });
   if (e.n >= 5 && !placa && e.luz) for (let k = 0; k < 2; k++) t.caja([cx + 1.0 + k * 0.2, 3.3, top - 6 - k * 1.6], [1.0, 0.3, 0.35], { mat: e.luz });
 }
 function botas(t: Taller, e: Estilo) {
@@ -405,6 +486,7 @@ function casquete(t: Taller, c: V3, R: number, h: number, o: OpI & { kx?: number
 }
 /** Material de metal de las joyas y adornos según línea y nivel. */
 function metalJoya(e: Estilo): string {
+  if (e.metalPedido) return e.metalPedido;
   if (e.linea === 'oscuro') return 'ic_hierro_negro';
   if (e.linea === 'hueso') return 'ic_hueso';
   if (e.linea === 'sagrado' || e.linea === 'legendario') return 'ic_oro';
@@ -515,29 +597,52 @@ function pecho(t: Taller, e: Estilo) {
 }
 
 // ------------------------------------------------------------------ cascos, capuchas y coronas
+/**
+ * Capucha de tela: el capuchón sobre la cabeza con la punta que cae hacia atrás, la abertura de la cara honda y
+ * oscura con el borde del paño enrollado (o de piel), y la esclavina sobre los hombros con sus pliegues.
+ */
 function capucha(t: Taller, e: Estilo) {
-  const mat = e.linea === 'cuero' || e.linea === 'tachonado' || e.linea === 'hueso' ? e.base : e.linea === 'tela' ? e.base : e.linea === 'sagrado' ? tinte('#e0d8c8', 'tela') : e.linea === 'oscuro' ? tinte('#1c1620', 'tela') : e.linea === 'legendario' ? tinte('#5a1420', 'tela') : tinte('#4a4a52', 'tela');
-  t.en([0, 0, 0], [12, -4, 0], () => {
-    t.masa([
-      t.bul([0, -0.4, 2.4], [5.4, 5.8, 6.2], mat),
-      t.bul([0, -2.8, 6.6], [3.2, 3.8, 3.0], mat),
-      t.hue([0, -4.2, 8.2], [0, -7.4, 10.6], 1.8, 0.35, mat),
-      t.hue([0, -0.6, -2.5], [0, -0.8, -8.5], 6.2, 10.6, mat),
-      t.bul([0, 1.6, -7.2], [10.2, 5.6, 2.4], mat),
-      t.hue([-3.6, 4.6, -1.5], [-5.4, 5.6, -8.4], 1.3, 1.6, mat, 0.6, 0.05),
-      t.hue([3.6, 4.6, -1.5], [5.4, 5.6, -8.4], 1.3, 1.6, mat, 0.6, -0.04),
-      t.hue([-7.6, 2.4, -4], [-9.4, 2.6, -8.6], 1.0, 1.5, mat, 0.6, -0.05),
-      t.hue([7.6, 2.4, -4], [9.4, 2.6, -8.6], 1.0, 1.5, mat, 0.6, -0.08),
-    ], mat, 1.8);
-    // la cara: un hueco oscuro con el borde del paño
-    t.elip([0, 6.4, 0.4], [3.9, 3.4, 5.0], { mat: 'ic_hueco', resta: true });
-    t.elip([0, 3.0, 0.4], [3.8, 1.4, 4.8], { mat: 'ic_hueco' });
-    if (e.ribete) for (let k = 0; k < 14; k++) { const a = rad(k * 25.7); t.esf([Math.cos(a) * 4.05, 4.9 + Math.abs(Math.cos(a)) * 0.6, 0.6 + Math.sin(a) * 4.95], 0.42, { mat: e.borde }); }
-    if (e.forro) for (let k = 0; k < 9; k++) { const a = rad(-80 + k * 20); t.elip([Math.cos(a) * 4.4, 5.2 - Math.abs(Math.sin(a)) * 0.8, 0.6 + Math.sin(a) * 5.0], [1.3, 1.3, 1.3], { mat: e.forro }); }
-    const ojos = e.linea === 'oscuro' || e.linea === 'hueso' || e.linea === 'legendario' || e.n >= 5 ? e.luz ?? tinte(e.luzHex, 'luz') : null;
-    if (ojos) for (const sx of [-1, 1]) t.elip([sx * 1.4, 4.6, 1.2], [0.75, 0.4, 0.45], { mat: ojos, tono: tonoLuz(e) });
-    if (e.n >= 4) gemaEngastada(t, [0, 5.4, -5.4], 1.0, e, { engaste: metalJoya(e) });
-    if (e.linea === 'hueso') for (const sx of [-1, 1]) t.masa([t.hue([sx * 4.2, 0, 5.5], [sx * 7.0, 0.6, 9.5], 1.2, 0.8, 'ic_hueso'), t.hue([sx * 7.0, 0.6, 9.5], [sx * 6.6, 2.0, 12.8], 0.8, 0.12, 'ic_hueso')], 'ic_hueso', 0.6);
+  const L = e.linea;
+  const mat = L === 'cuero' || L === 'tachonado' || L === 'hueso' || L === 'tela' ? e.base : L === 'sagrado' ? tinte('#e0d8c8', 'tela') : L === 'oscuro' ? tinte('#1c1620', 'tela') : L === 'legendario' ? tinte('#5a1420', 'tela') : tinte('#4a4a52', 'tela');
+  t.en([0, 0, 0], [28, -6, 0], () => {
+    const comps: Comp[] = [
+      // capuchón: la cabeza, la coronilla que sube atrás y la punta que se dobla y cae
+      t.bul([0, -0.4, 2.6], [5.0, 5.4, 5.6], mat),
+      t.hue([0, -1.0, 5.8], [0, -3.8, 9.9], 3.1, 1.25, mat),
+      t.hue([0, -3.8, 9.9], [0.4, -7.0, 8.4], 1.25, 0.8, mat, 0.6),
+      t.hue([0.4, -7.0, 8.4], [1.0, -8.8, 3.4], 0.8, 0.42, mat, 0.5),
+      // cuello y esclavina acampanada (el ruedo se corta recto abajo)
+      t.bul([0, -0.4, -1.6], [5.0, 4.8, 2.4], mat),
+      t.bul([0, -0.2, -4.0], [7.0, 6.0, 2.4], mat),
+      t.bul([0, 0.1, -6.2], [8.9, 7.3, 1.5], mat),
+    ];
+    // pliegues: crestas que bajan del cuello al ruedo y se abren
+    for (let k = -2; k <= 2; k++) {
+      const a = rad(90 + k * 30);
+      comps.push(t.hue([Math.cos(a) * 4.2, Math.sin(a) * 4.0 - 0.4, -1.4], [Math.cos(a) * 8.9, Math.sin(a) * 7.4, -6.9], 0.5, 1.2, mat, 0.8, (k & 1) ? -0.05 : 0.04));
+    }
+    // pliegues del capuchón que bajan de la coronilla a los costados
+    for (const sx of [-1, 1]) comps.push(t.hue([sx * 2.4, -1.6, 7.0], [sx * 4.9, 0.4, -0.4], 0.7, 0.95, mat, 0.9, sx > 0 ? -0.04 : 0.03));
+    t.masa(comps, mat, 1.5);
+    // la abertura: se cava honda y se llena de sombra
+    t.elip([0, 5.4, 1.4], [3.5, 3.4, 4.5], { mat: 'ic_hueco', resta: true });
+    t.elip([0, 2.2, 1.2], [3.5, 1.2, 4.4], { mat: 'ic_hueco' });
+    t.elip([0, 3.0, 2.6], [3.1, 1.0, 2.6], { mat: tinte('#120d0c', 'tela'), tono: -0.1 });
+    // el borde del paño enrollado alrededor de la cara, en arco que termina en punta arriba
+    const borde = e.forro ?? (e.ribete ? e.borde : L === 'tela' ? e.base2 : mat);
+    const pts: V3[] = [];
+    for (let i = 0; i <= 14; i++) {
+      const a = rad(-90 + i * 360 / 14), sa = Math.sin(a);
+      pts.push([Math.cos(a) * 3.95, 4.15 + sa * 0.7 + (1 - Math.abs(Math.cos(a))) * 0.2, 1.4 + sa * 4.7 + Math.pow(Math.max(0, sa), 6) * 0.9]);
+    }
+    if (e.forro) for (let i = 0; i < 14; i++) t.elip(pts[i], [1.25, 1.0, 1.25], { mat: e.forro, rot: [0, i * 25.7, 0], tono: (i & 1) * 0.05 });
+    else for (let i = 0; i < 14; i++) { t.cil(pts[i], pts[i + 1], 0.72, 0.72, { mat: borde }); t.esf(pts[i], 0.72, { mat: borde }); }
+    if (e.ribete && !e.forro && L !== 'tela') for (let k = 0; k < 7; k++) { const a = rad(-90 + k * 30); t.esf([Math.cos(a) * 9.1, Math.sin(a) * 7.5 + 0.3, -6.4], 0.45, { mat: e.borde }); }
+    const ojos = L === 'oscuro' || L === 'hueso' || L === 'legendario' || e.n >= 5 ? e.luz ?? tinte(e.luzHex, 'luz') : null;
+    if (ojos) for (const sx of [-1, 1]) t.elip([sx * 1.3, 3.6, 1.6], [0.7, 0.4, 0.42], { mat: ojos, tono: tonoLuz(e) });
+    // broche que cierra la esclavina
+    if (e.n >= 3) { t.cil([0, 5.2, -3.4], [0, 5.9, -3.4], 1.25, 1.1, { mat: metalJoya(e) }); if (e.n >= 4) gemaEngastada(t, [0, 5.9, -3.4], 0.8, e, { engaste: metalJoya(e) }); }
+    if (L === 'hueso') for (const sx of [-1, 1]) t.masa([t.hue([sx * 3.8, -0.6, 5.0], [sx * 6.6, 0.0, 8.8], 1.1, 0.75, 'ic_hueso'), t.hue([sx * 6.6, 0.0, 8.8], [sx * 6.2, 1.4, 12.0], 0.75, 0.12, 'ic_hueso')], 'ic_hueso', 0.6);
   });
 }
 function casco(t: Taller, e: Estilo) {
@@ -618,7 +723,7 @@ function casco(t: Taller, e: Estilo) {
   });
 }
 function corona(t: Taller, e: Estilo) {
-  const met = e.linea === 'oscuro' ? 'ic_hierro_negro' : e.linea === 'hueso' ? 'ic_hueso' : e.n <= 1 && e.linea !== 'legendario' && e.linea !== 'sagrado' ? 'ic_bronce' : e.n === 2 && e.linea !== 'legendario' && e.linea !== 'sagrado' ? 'ic_plata' : 'ic_oro';
+  const met = e.metalPedido ?? (e.linea === 'oscuro' ? 'ic_hierro_negro' : e.linea === 'hueso' ? 'ic_hueso' : e.n <= 1 && e.linea !== 'legendario' && e.linea !== 'sagrado' ? 'ic_bronce' : e.n === 2 && e.linea !== 'legendario' && e.linea !== 'sagrado' ? 'ic_plata' : 'ic_oro');
   t.en([0, 0, 0], [12, 34, 0], () => {
     if (e.n >= 3 && e.linea !== 'oscuro' && e.linea !== 'hueso') t.masa([t.bul([0, 0, 1.6], [5.6, 5.6, 3.2], tinte(e.linea === 'sagrado' ? '#e8e0d0' : '#7a1020', 'tela'))], tinte(e.linea === 'sagrado' ? '#e8e0d0' : '#7a1020', 'tela'), 1);
     else t.cil([0, 0, 0.4], [0, 0, 0.5], 5.6, 5.6, { mat: 'ic_hueco' });
@@ -699,60 +804,87 @@ function guantes(t: Taller, e: Estilo) {
 }
 
 // ------------------------------------------------------------------ cinturón
+/**
+ * Cinturón de cuero ancho visto de tres cuartos: la banda (con su canto, pespunte y remaches) da la vuelta y deja ver
+ * el cuero de adentro atrás; al frente la hebilla grande con su clavo y la punta del cinto que sale por el pasador; a
+ * los costados cuelgan las bolsitas con su tapa y botón.
+ */
 function cinturon(t: Taller, e: Estilo) {
-  const L = e.linea, banda = L === 'tela' ? e.base : L === 'malla' || L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario' ? blando(e) : e.base;
-  const rx = 9.6, ry = 7.2, alto = L === 'tela' ? 4.6 : 4.2;
-  t.en([0, 0, 0], [8, 48, 0], () => {
-    const n = 22, gap = 0.55; // hueco al frente (la hebilla)
+  const L = e.linea, banda = L === 'tela' ? e.base : L === 'hueso' ? e.base2 : blando(e);
+  const placa = L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario';
+  const rx = 10.2, ry = 6.4, alto = L === 'tela' ? 5.6 : 5.2, hueco = 9; // grados libres a cada lado de la hebilla
+  const fuera = (a: number): V3 => nor([Math.cos(a) / rx, Math.sin(a) / ry, 0]);
+  const en = (a: number, d = 0, z = 0): V3 => add([Math.cos(a) * rx, Math.sin(a) * ry, z], fuera(a), d);
+  t.en([0, 0, 0], [4, 19, 0], () => {
+    const n = 30, a0 = 90 + hueco, a1 = 90 + 360 - hueco;
     for (let i = 0; i < n; i++) {
-      const a0 = rad(90 + gap * 57.3 / 1.6 + (i * (360 - gap * 57.3 * 1.25)) / n), a1 = rad(90 + gap * 57.3 / 1.6 + ((i + 1.05) * (360 - gap * 57.3 * 1.25)) / n);
-      const p0: V3 = [Math.cos(a0) * rx, Math.sin(a0) * ry, 0], p1: V3 = [Math.cos(a1) * rx, Math.sin(a1) * ry, 0];
-      const m = mez(p0, p1, 0.5), d = add(p1, p0, -1), g = Math.atan2(d[1], d[0]) * 180 / Math.PI;
-      t.caja(m, [Math.hypot(d[0], d[1]) + 0.05, 1.1, alto], { mat: banda, rot: [g, 0, 0], tono: (i % 3) * 0.015 });
-      const plancha = L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario' || (L === 'hueso' && i % 2 === 0);
-      if (plancha && i % 2 === 0) {
-        const out: V3 = nor([Math.cos((a0 + a1) / 2) / rx, Math.sin((a0 + a1) / 2) / ry, 0]);
-        t.caja(add(m, out, 0.5), [Math.hypot(d[0], d[1]) * 1.6, 0.55, alto + 0.8], { mat: L === 'hueso' ? 'ic_hueso' : e.base, rot: [g, 0, 0] });
-        if (e.remaches) t.esf(add(m, out, 0.95), 0.4, { mat: e.remache });
-      }
-      if (e.tachas && i % 2) { const out: V3 = nor([Math.cos((a0 + a1) / 2) / rx, Math.sin((a0 + a1) / 2) / ry, 0]); t.esf(add(m, out, 0.4), 0.5, { mat: e.remache }); }
-      if ((L === 'cuero' || L === 'hueso' || L === 'tela') && e.n >= 2) { const out: V3 = nor([Math.cos((a0 + a1) / 2) / rx, Math.sin((a0 + a1) / 2) / ry, 0]); for (const z of [-1.1, 1.1]) t.caja(add(add(m, out, 0.38), [0, 0, z]), [Math.hypot(d[0], d[1]) * 0.6, 0.1, 0.18], { mat: e.costura, rot: [g, 0, 0] }); }
+      const u0 = rad(a0 + ((a1 - a0) * i) / n), u1 = rad(a0 + ((a1 - a0) * (i + 1)) / n), um = (u0 + u1) / 2;
+      const p0 = en(u0), p1 = en(u1), m = mez(p0, p1, 0.5), d = add(p1, p0, -1), g = Math.atan2(d[1], d[0]) * 180 / Math.PI, lg = Math.hypot(d[0], d[1]) + 0.06;
+      const frente = Math.sin(um) > -0.25;
+      t.caja(m, [lg, 1.2, alto], { mat: banda, rot: [g, -12, 0], tono: frente ? 0.05 : -0.06 });
+      if (!frente) continue;
+      // cantos un poco más gruesos y el pespunte
+      for (const z of [-1, 1]) t.caja(add(m, [0, 0, z * (alto / 2 - 0.3)]), [lg, 1.5, 0.6], { mat: banda, rot: [g, 0, 0], tono: 0.05 });
+      if (L !== 'tela' && !placa) for (const z of [-1, 1]) t.caja(add(add(m, fuera(um), 0.72), [0, 0, z * (alto / 2 - 1.05)]), [lg * 0.55, 0.12, 0.2], { mat: e.costura, rot: [g, 0, 0] });
+      // remaches (de a dos) o placas de metal o hueso
+      if (placa || (L === 'hueso' && i % 2 === 0)) {
+        if (i % 2 === 0) {
+          t.caja(add(m, fuera(um), 0.75), [lg * 1.55, 0.5, alto - 0.6], { mat: L === 'hueso' ? 'ic_hueso' : e.base, rot: [g, 0, 0], tono: 0.03 });
+          for (const z of [-1, 1]) t.esf(add(add(m, fuera(um), 1.05), [0, 0, z * (alto / 2 - 1.1)]), 0.42, { mat: e.remache });
+        }
+      } else if (L !== 'tela' && (i % 2 === 1 || e.tachas)) for (const z of [-1, 1]) t.esf(add(add(m, fuera(um), 0.78 - z * 0.26), [0, 0, z * (alto / 2 - 1.25)]), e.tachas ? 0.6 : 0.58, { mat: e.tachas ? e.remache : e.hebilla, tono: 0.06 });
     }
-    // hebilla al frente, con la punta del cinto que sale
+    // la hebilla al frente: marco grueso con esquinas, travesaño, clavo y el cinto que pasa por debajo
     const hb = L === 'tela' ? null : e.hebilla;
+    const fr = en(rad(90), 0.5);
     if (hb) {
-      t.en([0, ry + 0.5, 0], [0, 0, 0], () => {
-        const W = 4.6, H = alto + 1.8, g = 0.85;
-        t.caja([-W / 2 + g / 2, 0, 0], [g, 0.9, H], { mat: hb }); t.caja([W / 2 - g / 2, 0, 0], [g, 0.9, H], { mat: hb });
-        t.caja([0, 0, H / 2 - g / 2], [W, 0.9, g], { mat: hb }); t.caja([0, 0, -H / 2 + g / 2], [W, 0.9, g], { mat: hb });
-        t.caja([0.4, 0.35, 0], [W - 1.2, 0.4, alto], { mat: banda, tono: 0.05 });
-        t.caja([-0.3, 0.6, 0], [W * 0.8, 0.4, 0.5], { mat: hb, tono: 0.08 });
-        t.caja([W / 2 + 2.2, 0.2, 0], [4.4, 0.6, alto], { mat: banda, rot: [8, 0, -8] });
-        if (L === 'hueso') t.masa([t.bul([0, 1.0, 0], [2.2, 1.4, 2.4], 'ic_hueso')], 'ic_hueso', 1);
-        if (e.n >= 4 || L === 'legendario' || L === 'sagrado') gemaEngastada(t, [0, 1.0, 0], 1.05, e, { engaste: hb });
+      t.en(fr, [0, 0, 0], () => {
+        const W = 6.6, H = alto + 2.6, r = 0.72;
+        const esq: V3[] = [[-W / 2, 0, -H / 2], [W / 2, 0, -H / 2], [W / 2, 0, H / 2], [-W / 2, 0, H / 2]];
+        for (let k = 0; k < 4; k++) { t.cil(esq[k], esq[(k + 1) % 4], r, r, { mat: hb }); t.esf(esq[k], r * 1.25, { mat: hb, tono: 0.06 }); }
+        t.cil([-W / 2 + 1.7, 0, -H / 2], [-W / 2 + 1.7, 0, H / 2], 0.45, 0.45, { mat: hb, tono: -0.04 });
+        // el cinto que entra por la hebilla y el clavo que lo atraviesa
+        t.caja([0.6, -0.5, 0], [W, 1.0, alto], { mat: banda, tono: 0.04 });
+        t.cil([-W / 2 + 1.7, 0.35, 0], [W / 2 + 0.3, 0.7, 0], 0.36, 0.3, { mat: hb, tono: 0.1 });
+        if (L !== 'hueso') for (const z of [-1, 1]) t.esf([-W / 2 - 0.1, 0.55, z * H * 0.2], 0.3, { mat: hb, tono: 0.12 });
+        if (L === 'hueso') t.masa([t.bul([-1.6, 1.0, 0], [1.6, 1.0, 1.8], 'ic_hueso')], 'ic_hueso', 1);
+        if (e.n >= 4 || L === 'legendario' || L === 'sagrado') gemaEngastada(t, [-W / 2 + 1.7, 0.5, H / 2 - 0.2], 0.85, e, { engaste: hb });
       });
+      // la punta del cinto: sale de la hebilla, pasa por el pasador y termina en su herrete
+      const ap = rad(90 - hueco - 22);
+      t.caja(en(rad(90 - hueco - 9), 1.3), [6.4, 1.0, alto - 0.6], { mat: banda, rot: [-12, 0, 0], tono: 0.06 });
+      t.caja(en(ap + rad(4), 1.6), [1.1, 1.5, alto + 0.4], { mat: banda, rot: [-24, 0, 0], tono: -0.06 });
+      t.caja(en(ap - rad(6), 1.6), [1.6, 1.1, alto - 0.9], { mat: hb, rot: [-36, 0, 0] });
+      for (let k = 0; k < 2; k++) t.esf(en(rad(90 - hueco - 4 - k * 6), 1.85), 0.38, { mat: 'ic_hueco' });
     } else {
       // faja: nudo y dos colas
-      t.masa([t.bul([0, ry + 0.4, 0], [2.2, 1.2, 2.2], e.base), t.hue([0.4, ry + 0.9, -0.6], [1.6, ry + 2.6, -7], 1.3, 1.6, e.base), t.hue([-0.4, ry + 0.9, -0.6], [-1.8, ry + 2.2, -6], 1.2, 1.5, e.base)], e.base, 1.2);
-      if (e.ribete) for (const sx of [-1, 1]) t.aro([sx * 1.7, ry + 2.4, -6.6], 1.5, 0.3, { mat: e.borde, n: 8 });
+      t.masa([t.bul(add(fr, [0, 0.2, 0]), [2.4, 1.4, 2.4], e.base), t.hue(add(fr, [0.4, 0.6, -0.6]), add(fr, [1.6, 2.4, -8]), 1.4, 1.7, e.base), t.hue(add(fr, [-0.4, 0.6, -0.6]), add(fr, [-1.8, 2.0, -7]), 1.3, 1.6, e.base)], e.base, 1.2);
+      if (e.ribete) for (const sx of [-1, 1]) t.aro(add(fr, [sx * 1.7, 2.2, -7.6]), 1.5, 0.3, { mat: e.borde, n: 8 });
     }
-    // bolsa de cuero colgando a un costado
-    const ap = rad(28), pc: V3 = [Math.cos(ap) * (rx + 1.2), Math.sin(ap) * (ry + 1.2), -1.2];
-    t.en(pc, [-62, 0, 0], () => {
-      const bm = L === 'tela' ? e.base2 : tinte('#5a3a22', 'cuero');
-      t.masa([t.bul([0, 0, -1], [2.8, 1.6, 3.0], bm)], bm, 1);
-      t.poli([[-2.7, 1.5, 2.0], [2.7, 1.5, 2.0], [-2.6, 1.9, -0.6], [2.6, 1.9, -0.6], [0, 2.2, -1.6], [-2.7, 0.6, 2.2], [2.7, 0.6, 2.2]], { mat: bm, tono: 0.06 });
-      t.esf([0, 2.3, -1.0], 0.55, { mat: e.hebilla });
-    });
+    // bolsitas colgadas a los costados: cuerpo, tapa con su canto y botón, y la presilla al cinto
+    const bm = L === 'tela' ? e.base2 : L === 'oscuro' ? tinte('#3a2a26', 'liso') : tinte('#946238', 'liso');
+    for (const [ang, k] of [[40, 1.15], [142, 0.95]] as [number, number][]) {
+      const a = rad(ang), c = en(a, 1.9 * k + 0.3, -alto / 2 - 1.6 * k);
+      t.en(c, [ang - 90, 0, 0], () => {
+        const w = 2.7 * k, dd = 1.5 * k, h = 3.0 * k;
+        const caja8 = (x: number, y: number, z: number, ch: number): V3[] => [[-x + ch, -y, z], [x - ch, -y, z], [x, -y + ch, z], [x, y - ch, z], [x - ch, y, z], [-x + ch, y, z], [-x, y - ch, z], [-x, -y + ch, z]];
+        t.poli([...caja8(w, dd, h * 0.7, 0.4 * k), ...caja8(w * 0.98, dd * 1.05, -h * 0.4, 0.6 * k), ...caja8(w * 0.8, dd * 0.75, -h, 1.0 * k)], { mat: bm, tono: -0.03 });
+        // la tapa: cae sobre el frente y termina en punta redondeada con el botón
+        const tapa = L === 'tela' ? e.base : banda;
+        t.poli([[-w * 1.04, -dd * 0.6, h * 0.82], [w * 1.04, -dd * 0.6, h * 0.82], [-w * 1.04, dd * 1.12, h * 0.6], [w * 1.04, dd * 1.12, h * 0.6], [-w * 1.0, dd * 1.2, -h * 0.05], [w * 1.0, dd * 1.2, -h * 0.05], [0, dd * 1.25, -h * 0.42], [-w * 0.5, dd * 1.22, -h * 0.32], [w * 0.5, dd * 1.22, -h * 0.32], [-w * 1.04, dd * 0.9, h * 0.6], [w * 1.04, dd * 0.9, h * 0.6]], { mat: tapa, tono: 0.08 });
+        t.esf([0, dd * 1.32, -h * 0.25], 0.55 * k, { mat: e.hebilla, tono: 0.05 });
+        t.caja([0, -dd * 0.2, h * 1.05], [1.6 * k, 0.6, 1.6 * k], { mat: bm, tono: -0.08 });
+      });
+    }
     if (e.n >= 3) {
-      // un frasco en el cinto
-      const av = rad(150), vc: V3 = [Math.cos(av) * (rx + 0.9), Math.sin(av) * (ry + 0.9), 0];
-      t.esf(add(vc, [0, 0, -0.2]), 1.9, { mat: tinte('#c02030', 'liquido') });
-      t.cil(add(vc, [0, 0, 1.4]), add(vc, [0, 0, 3.2]), 0.7, 0.7, { mat: 'ic_vidrio' });
-      t.cil(add(vc, [0, 0, 3.0]), add(vc, [0, 0, 3.9]), 0.75, 0.8, { mat: 'ic_corcho' });
+      // un frasco en el cinto, del lado de atrás
+      const vc = en(rad(168), 1.0);
+      t.esf(add(vc, [0, 0, -0.4]), 1.9, { mat: tinte('#c02030', 'liquido') });
+      t.cil(add(vc, [0, 0, 1.2]), add(vc, [0, 0, 3.0]), 0.7, 0.7, { mat: 'ic_vidrio' });
+      t.cil(add(vc, [0, 0, 2.8]), add(vc, [0, 0, 3.7]), 0.75, 0.8, { mat: 'ic_corcho' });
     }
-    if (L === 'oscuro') for (let k = 0; k < 5; k++) { const a = rad(-150 + k * 30); pua(t, [Math.cos(a) * (rx + 0.6), Math.sin(a) * (ry + 0.6), 0], [Math.cos(a) / rx, Math.sin(a) / ry, 0.4], 2.4, 0.55, 'ic_hierro_negro'); }
-    if (e.luz && L !== 'tela') for (let k = 0; k < 3; k++) { const a = rad(200 + k * 40); t.caja([Math.cos(a) * (rx + 1.05), Math.sin(a) * (ry + 1.05), 0], [1.2, 0.3, 0.5], { mat: e.luz, rot: [Math.atan2(Math.cos(a) * ry, -Math.sin(a) * rx) * 180 / Math.PI, 0, 0], tono: tonoLuz(e, k) }); }
+    if (L === 'oscuro') for (let k = 0; k < 4; k++) { const a = rad(-140 + k * 30); pua(t, en(a, 0.6), add(fuera(a), [0, 0, 0.4]), 2.4, 0.55, 'ic_hierro_negro'); }
+    if (e.luz && L !== 'tela') for (let k = 0; k < 3; k++) { const a = rad(205 + k * 45); t.caja(en(a, 1.3), [1.3, 0.3, 0.5], { mat: e.luz, rot: [Math.atan2(Math.cos(a) * ry, -Math.sin(a) * rx) * 180 / Math.PI, 0, 0], tono: tonoLuz(e, k) }); }
   });
 }
 
@@ -1139,26 +1271,37 @@ function gema(t: Taller, e: Estilo, d: Icono3D) {
       // sin tallar: un canto rodado facetado al azar
       const pts: V3[] = [];
       for (let i = 0; i < (n === 1 ? 8 : 12); i++) { const a = rad(i * 137.5), z = ((i * 0.618) % 1) * 2 - 1, r = Math.sqrt(1 - z * z); pts.push([Math.cos(a) * r * R * (0.8 + 0.3 * ((i * 7) % 3) / 2), Math.sin(a) * r * R * 0.7, z * R * 0.85]); }
-      t.poli(pts, { mat });
+      t.poli(pts, { mat: facetada(mat) });
     } else if (tipo === 'emerald' || tipo === 'esmeralda') {
-      const w = R * 0.75, h = R * 1.05, pts: V3[] = [];
-      for (const [f, z] of [[0.62, R * 0.45], [1, R * 0.12], [1, -R * 0.02], [0.55, -R * 0.5]] as [number, number][]) for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) { pts.push([sx * w * f, sy * (h * f - w * f * 0.3), z], [sx * (w * f - w * f * 0.3), sy * h * f, z]); }
-      t.poli(pts, { mat });
+      // talla esmeralda: rectángulo de esquinas cortadas, escalones en la corona y en el pabellón
+      const w = R * 1.05, h = R * 0.78, pts: V3[] = [];
+      for (const [f, z] of [[0.66, R * 0.5], [0.86, R * 0.36], [1, R * 0.14], [1, R * 0.02], [0.82, -R * 0.3], [0.6, -R * 0.55], [0.36, -R * 0.72]] as [number, number][]) for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) { pts.push([sx * w * f, sy * (h * f - w * f * 0.22), z], [sx * (w * f - w * f * 0.22), sy * h * f, z]); }
+      t.en([0, 0, 0], [0, -26, 6], () => t.poli(pts, { mat: facetada(mat) }));
     } else if (tipo === 'amethyst' || tipo === 'amatista') {
       // drusa: tres prismas con punta
-      for (const [x, y, ang, L] of [[0, 0, 0, R * 1.5], [R * 0.6, -R * 0.2, 28, R * 1.05], [-R * 0.55, 0.2, -24, R * 1.1]] as number[][]) t.en([x, y, -R * 0.6], [0, 0, ang], () => { const rr = R * 0.36; t.poli([...anilloPts(rr, rr, 0, 6), ...anilloPts(rr, rr, L * 0.72, 6), [0, 0, L]], { mat }); });
+      for (const [x, y, ang, L] of [[0, 0, 0, R * 1.5], [R * 0.6, -R * 0.2, 28, R * 1.05], [-R * 0.55, 0.2, -24, R * 1.1]] as number[][]) t.en([x, y, -R * 0.6], [0, 0, ang], () => { const rr = R * 0.36; t.poli([...anilloPts(rr, rr, 0, 6), ...anilloPts(rr, rr, L * 0.72, 6), [0, 0, L]], { mat: facetada(mat) }); });
       t.masa([t.bul([0, 0, -R * 0.7], [R * 0.9, R * 0.6, R * 0.35], 'ic_roca')], 'ic_roca', 1);
     } else {
-      const kx = tipo === 'topaz' || tipo === 'topacio' ? 1.3 : 1;
-      t.en([0, 0, 0], [0, 0, 0], () => { brillante(t, [0, 0, 0], R, mat, [0, 0, 0], 1.2); });
-      if (kx !== 1) { /* óvalo: un segundo brillante corrido lo alarga */ brillante(t, [R * 0.35, 0, 0], R * 0.92, mat, [0, 0, 0], 1.2); brillante(t, [-R * 0.35, 0, 0], R * 0.92, mat, [0, 0, 0], 1.2); }
+      // brillante visto casi de perfil: mesa ancha, corona en declive y el pabellón que termina en punta
+      const oval = tipo === 'topaz' || tipo === 'topacio';
+      t.en([0, 0, 0], [0, -24, 4], () => {
+        // el óvalo es el mismo brillante estirado a lo largo
+        if (oval) t.en([0, 0, 0], [[1.4, 0, 0], [0, 1, 0], [0, 0, 1]], () => brillante(t, [0, 0, 0], R * 0.9, mat, [0, 0, 0], 1.25));
+        else brillante(t, [0, 0, 0], R, mat, [0, 0, 0], 1.25);
+        // destello: estrella de luz sobre el canto de la mesa
+        if (n >= 3) {
+          const c: V3 = [-R * 0.3, R * 0.32, R * 0.5];
+          t.elip(c, [R * 0.38, 0.1, 0.1], { mat: 'ic_brillo' });
+          t.elip(c, [0.1, 0.1, R * 0.38], { mat: 'ic_brillo', rot: [0, 24, 0] });
+          if (n >= 5) t.esf(c, 0.4, { mat: 'ic_brillo' });
+        }
+      });
+      return;
     }
     if (n >= 3) {
-      // destello: cruz de luz en una faceta
       t.elip([-R * 0.25, R * 0.15, R * 0.55], [R * 0.42, 0.12, 0.12], { mat: 'ic_brillo' });
       t.elip([-R * 0.25, R * 0.15, R * 0.55], [0.12, R * 0.42, 0.12], { mat: 'ic_brillo' });
     }
-    if (n >= 5) t.esf([-R * 0.25, R * 0.15, R * 0.55], 0.35, { mat: 'ic_brillo' });
   });
   t.luz([0, 0, 0], R * 2.4, col);
 }
@@ -1264,6 +1407,30 @@ function oro(t: Taller, e: Estilo) {
     if (e.n >= 4) brillante(t, [0.6, 1.6, 3.4], 1.4, e.gema, [0, 20, 0]);
   });
 }
+/**
+ * Emblema de metal de la tapa (plano x-z, sobresale hacia +y): cruz de brazos que se abren, con arista al medio,
+ * remaches en las puntas y una gema tallada en un engaste cuadrado de garras al centro.
+ */
+function emblemaTapa(t: Taller, e: Estilo, c: V3, met: string, portal: boolean) {
+  t.en(c, [0, 0, 0], () => {
+    for (const [ang, L] of [[90, 4.6], [270, 5.4], [0, 3.4], [180, 3.4]] as [number, number][]) {
+      const u: V3 = [Math.cos(rad(ang)), 0, Math.sin(rad(ang))], v: V3 = [-u[2], 0, u[0]];
+      const q = (a: number, b: number, y: number): V3 => [u[0] * a + v[0] * b, y, u[2] * a + v[2] * b];
+      const pts: V3[] = [];
+      for (const y of [0, 0.3]) pts.push(q(0, 0.55, y), q(0, -0.55, y), q(L - 0.9, 1.5, y), q(L - 0.9, -1.5, y), q(L, 0, y));
+      pts.push(q(0.2, 0, 0.8), q(L - 0.6, 0, 0.62));
+      t.poli(pts, { mat: met });
+      const punta = q(L, 0, 0);
+      t.esf(add(add(punta, u, -0.6), [0, 0.45, 0]), 0.42, { mat: met, tono: 0.08 });
+    }
+    // engaste cuadrado (girado 45°) con cuatro garras y la gema
+    t.caja([0, 0.5, 0], [2.6, 0.9, 2.6], { mat: met, rot: [0, 0, 45], tono: -0.04 });
+    for (let k = 0; k < 4; k++) { const a = rad(k * 90); t.esf([Math.cos(a) * 1.55, 1.05, Math.sin(a) * 1.55], 0.32, { mat: met, tono: 0.1 }); }
+    if (portal) { t.esf([0, 1.0, 0], 1.05, { mat: tinte('#5ac8f0', 'luz') }); return; }
+    brillante(t, [0, 0.95, 0], 1.25, e.gema, [0, -90, 0]);
+    if (e.luz) for (let k = 0; k < 4; k++) { const a = rad(45 + k * 90); t.esf([Math.cos(a) * 2.2, 0.5, Math.sin(a) * 2.2], 0.3, { mat: e.luz, tono: tonoLuz(e, k) }); }
+  });
+}
 function libro(t: Taller, e: Estilo, d: Icono3D) {
   const L = e.linea;
   const tapa = L === 'tela' ? e.base : L === 'oscuro' ? tinte('#1e1418', 'cuero') : L === 'sagrado' ? 'ic_esmalte' : L === 'legendario' ? e.base : L === 'hueso' ? tinte('#6e5a44', 'cuero') : tinte(d.color ?? '#5a2a1e', 'cuero');
@@ -1279,11 +1446,11 @@ function libro(t: Taller, e: Estilo, d: Icono3D) {
     if (e.n >= 2 || L !== 'tela') for (const [x, z] of [[5.3, 6.8], [5.3, -6.8]]) t.poli([[x, 2.2, z], [x - 2.6, 2.2, z], [x, 2.2, z - Math.sign(z) * 2.6], [x + 0.2, -2.2, z], [x - 2.6, -2.2, z], [x + 0.2, -2.2, z - Math.sign(z) * 2.6], [x + 0.35, 0, z]], { mat: met });
     t.caja([5.6, 0, 0], [0.6, 4.4, 2.0], { mat: tapa, tono: -0.05 });
     t.caja([4.2, 2.25, 0], [1.8, 0.4, 1.6], { mat: met });
-    t.cil([0.4, 2.0, 0.4], [0.4, 2.6, 0.4], 2.8, 2.6, { mat: met });
-    if (portal) t.cil([0.4, 2.55, 0.4], [0.4, 2.85, 0.4], 1.9, 1.9, { mat: tinte('#5ac8f0', 'luz') });
-    else if (L === 'oscuro') { t.masa([t.bul([0.4, 2.9, 0.8], [1.8, 0.8, 1.7], 'ic_hueso'), t.bul([0.4, 2.9, -0.8], [1.1, 0.7, 0.9], 'ic_hueso')], 'ic_hueso', 0.8); for (const sx of [-1, 1]) t.esf([0.4 + sx * 0.7, 3.5, 0.9], 0.45, { mat: e.luz ?? 'ic_hueco' }); }
-    else gemaEngastada(t, [0.4, 2.6, 0.4], 1.3, e, { engaste: met });
-    if (L === 'sagrado') { t.caja([0.4, 2.2, 0.4], [1.0, 0.4, 10], { mat: 'ic_oro' }); t.caja([0.4, 2.2, 2.2], [6.6, 0.4, 1.0], { mat: 'ic_oro' }); }
+    if (L === 'oscuro' && !portal) {
+      t.cil([0.4, 2.0, 0.4], [0.4, 2.5, 0.4], 2.8, 2.6, { mat: met });
+      t.masa([t.bul([0.4, 2.9, 0.8], [1.8, 0.8, 1.7], 'ic_hueso'), t.bul([0.4, 2.9, -0.8], [1.1, 0.7, 0.9], 'ic_hueso')], 'ic_hueso', 0.8);
+      for (const sx of [-1, 1]) t.esf([0.4 + sx * 0.7, 3.5, 0.9], 0.45, { mat: e.luz ?? 'ic_hueco' });
+    } else emblemaTapa(t, e, [0.4, 2.1, 0.6], met, portal);
     if (e.luz && !portal && L !== 'oscuro') for (let k = 0; k < 4; k++) t.caja([-3.2 + (k % 2) * 7.2, 2.2, -5 + Math.floor(k / 2) * 10], [0.9, 0.3, 0.9], { mat: e.luz, tono: tonoLuz(e, k) });
   });
   if (portal) t.luz([0, 4, 0], 8, '#5ac8f0');
@@ -1426,6 +1593,7 @@ function escena(d: Icono3D, s: number): { piezas: Pieza[]; resplandor?: { c: V3;
   return { piezas: t.ps, resplandor: t.resp };
 }
 const emite = (m?: string) => !!(m && MATERIALES[m]?.emite);
+const emitePieza = (p: Pieza) => emite(p.mat) || (p.k === 'masa' && p.comps.some((q) => emite(q.mat)));
 /**
  * Lo que ocupa la escena en pantalla, medido sobre la geometría (sin pintar): el contorno exacto de cada caja,
  * elipsoide, disco de cilindro y componente de masa a lo largo de los ejes de la pantalla.
@@ -1563,31 +1731,51 @@ export function iconoObjeto3D(desc: Icono3D, w: number, h: number, cuadro = 0): 
   if (c) return c;
   CUADRO = f;
   w = Math.max(4, Math.floor(w)); h = Math.max(4, Math.floor(h));
-  // 1) medir la geometría a escala 1 y elegir la escala que llena el rectángulo
-  const m1 = medir(escena(desc, 1).piezas);
-  const margen = w < 40 || h < 40 ? 1 : 2;
+  // 1) medir la geometría a escala 1 y elegir la escala que llena el rectángulo; lo que brilla reserva un pixel más
+  //    por lado para el halo (que además se apaga suave antes del borde de la casilla, ver abajo)
+  const T0 = performance.now();
+  const e1 = escena(desc, 1).piezas;
+  const brilla = e1.some(emitePieza);
+  const margen = (w < 40 || h < 40 ? 1 : 2) + (brilla ? 2 : 0);
+  const m1 = medir(e1);
   const k = m1 ? Math.min((w - margen) / (m1[2] - m1[0]), (h - margen) / (m1[3] - m1[1])) : 1;
   // 2) pintar al doble y reducir
   const S = k * 2;
   const e2 = escena(desc, S);
+  const T1 = performance.now();
   const rg = pintarEscena({ piezas: e2.piezas, resplandor: e2.resplandor, sinSombra: true, ss: 1 });
+  const T2 = performance.now();
   let img = pulir(mitad(rg.img));
   // 3) resplandor de lo que brilla: una pasada rápida (a tamaño final) solo con lo que emite, desenfocada y sumada
-  const hayLuz = e2.piezas.some((p) => emite(p.mat) || (p.k === 'masa' && p.comps.some((q) => emite(q.mat))));
-  if (hayLuz) {
+  let pad = 0, cuerpo: Raster = img;
+  if (e2.piezas.some(emitePieza)) {
     const negro = (p: Pieza): Pieza => (p.k === 'masa' ? { ...p, mat: emite(p.mat) ? p.mat : 'ic_hueco', comps: p.comps.map((q) => (emite(q.mat) ? q : { ...q, mat: 'ic_hueco' })) } : emite(p.mat) ? p : { ...p, mat: 'ic_hueco' });
     const rm = pintarEscena({ piezas: escena(desc, k).piezas.map(negro), sinSombra: true, ss: 0 }, {}, { w: img.w, h: img.h, ax: rg.ancla[0] / 2, ay: rg.ancla[1] / 2 }).img;
-    img = resplandecer(img, rm, desc.linea === 'legendario' ? 1.15 + 0.35 * late() : 1);
+    pad = 3;
+    img = resplandecer(img, rm, desc.linea === 'legendario' ? 1.15 + 0.35 * late() : 1, pad);
   }
-  // 4) recortar a lo visible y centrar en el rectángulo pedido (sin salirse)
-  const b = cajaAlfa(img);
+  if (process.env.PROF) console.log('armar', Math.round(T1 - T0), 'pintar', Math.round(T2 - T1), 'resto', Math.round(performance.now() - T2), e2.piezas.length);
+  // 4) recortar a lo visible y centrar en el rectángulo pedido (sin salirse): el centro es el del objeto, no el del halo
+  const b = cajaAlfa(img), bo = cajaAlfa(cuerpo);
   let out: Raster;
-  if (!b) out = createRaster(1, 1);
+  if (!b || !bo) out = createRaster(1, 1);
   else {
     const bw = Math.min(w, b[2] - b[0] + 1), bh = Math.min(h, b[3] - b[1] + 1);
-    const ox = b[0] + Math.floor((b[2] - b[0] + 1 - bw) / 2), oy = b[1] + Math.floor((b[3] - b[1] + 1 - bh) / 2);
+    const cx = (bo[0] + bo[2]) / 2 + pad, cy = (bo[1] + bo[3]) / 2 + pad;
+    const ox = Math.max(b[0], Math.min(b[2] + 1 - bw, Math.round(cx - bw / 2 + 0.5))), oy = Math.max(b[1], Math.min(b[3] + 1 - bh, Math.round(cy - bh / 2 + 0.5)));
     out = createRaster(bw, bh);
-    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) { const s = ((y + oy) * img.w + x + ox) * 4; out.data.set(img.data.subarray(s, s + 4), (y * bw + x) * 4); }
+    const cortaX = bw < b[2] - b[0] + 1, cortaY = bh < b[3] - b[1] + 1;
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      const s = ((y + oy) * img.w + x + ox) * 4, d = (y * bw + x) * 4;
+      out.data.set(img.data.subarray(s, s + 4), d);
+      if (!pad || (!cortaX && !cortaY)) continue;
+      // el halo que el borde cortaría se apaga en los últimos 3 pixeles (el objeto queda intacto)
+      const fx = cortaX ? Math.min(1, (Math.min(x, bw - 1 - x) + 0.5) / 3) : 1, fy = cortaY ? Math.min(1, (Math.min(y, bh - 1 - y) + 0.5) / 3) : 1, f = fx * fy;
+      if (f >= 1) continue;
+      const sx = x + ox - pad, sy = y + oy - pad;
+      const sa = sx >= 0 && sy >= 0 && sx < cuerpo.w && sy < cuerpo.h ? cuerpo.data[(sy * cuerpo.w + sx) * 4 + 3] : 0;
+      out.data[d + 3] = Math.round(sa + (out.data[d + 3] - sa) * f);
+    }
   }
   cache.set(clave, out);
   return out;
@@ -1673,8 +1861,10 @@ export function iconoDeLoot(it: LootItem): Icono3D | null {
         return conGema({ pieza: 'talisman', linea: 'hueso', nivel, variante: v });
       }
       if (b.icon === 'jewel') return conGema({ pieza: 'gema', nivel: 4, variante: gemaD ?? 'diamond' });
-      if (b.icon === 'ring' || b.icon === 'ring_band') return conGema({ pieza: 'anillo', linea, nivel, ...(b.icon === 'ring_band' ? { variante: 'banda' } : {}) });
-      return conGema({ pieza: 'amuleto', linea, nivel, ...(b.icon === 'amulet_pendant' ? { variante: 'colgante' } : {}) });
+      // el metal del diseño manda (el Sello del Liche es de plata aunque sea legendario)
+      const metal = esHex(met?.hex) ? { metal: met!.hex } : {};
+      if (b.icon === 'ring' || b.icon === 'ring_band') return conGema({ pieza: 'anillo', linea, nivel, ...metal, ...(b.icon === 'ring_band' ? { variante: 'banda' } : {}) });
+      return conGema({ pieza: 'amuleto', linea, nivel, ...metal, ...(b.icon === 'amulet_pendant' ? { variante: 'colgante' } : {}) });
     }
     case 'potion': return { pieza: 'pocion', nivel: TAMANO[b.size] ?? 3, variante: b.kind };
     case 'gem': return { pieza: 'gema', nivel: GRADO[b.grade] ?? 3, variante: GEMA_KIND[b.kind] ?? 'ruby' };
