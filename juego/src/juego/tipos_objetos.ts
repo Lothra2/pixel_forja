@@ -9,6 +9,7 @@ export type Clase = 'berserker' | 'templario' | 'arcanista' | 'cazadora' | 'nigr
 /** Todas las estadísticas que puede dar un objeto. Los porcentajes van en enteros (15 = 15%). */
 export type Stat =
   | 'dano_pct' // % daño físico mejorado
+  | 'dano_hechizos' // % daño de hechizos (todo lo que trae daño propio: proyectiles, áreas, novas, bombas...)
   | 'dano_min' | 'dano_max' // daño físico plano agregado
   | 'dano_fuego' | 'dano_frio' | 'dano_rayo' | 'dano_veneno' | 'dano_sombra' | 'dano_luz' | 'dano_sangre' // daño elemental plano (promedio por golpe)
   | 'def' | 'def_pct' // defensa plana y % defensa mejorada

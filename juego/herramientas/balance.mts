@@ -19,12 +19,18 @@ const sembrar = (...k: (string | number)[]) => { let h = 2166136261; for (const 
 // ------------------------------------------------------------------ argumentos
 const arg = (n: string, d: string) => { const i = process.argv.indexOf('--' + n); return i >= 0 ? process.argv[i + 1] : d; };
 const SEMILLAS = +arg('semillas', '6');
-const CLASES_SIM = arg('clases', 'berserker,templario,arcanista,cazadora,nigromante').split(',');
+const CLASES_SIM = arg('clases', 'berserker,templario,arcanista,cazadora,nigromante,monje,druida,alquimista').split(',');
+const DIFS = arg('difs', '0,1,2').split(',').map(Number);
+// --rapido: solo lo que hace falta para comparar clases (DPS, TTK único y jefe de acto), sin TTD, legendaria ni campaña
+const RAPIDO = process.argv.includes('--rapido');
 const NIVELES = arg('niveles', '1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100').split(',').map(Number);
 const SALIDA = arg('salida', '');
 const MD = arg('md', '');
 
 // ------------------------------------------------------------------ módulos del juego
+// algunos módulos de dibujo crean un lienzo al cargar: un document de mentira que acepta todo
+const nada: any = new Proxy(function () {}, { get: (_t, k) => (k === Symbol.toPrimitive ? () => 0 : nada), apply: () => nada, construct: () => nada });
+(globalThis as any).document ??= nada;
 const raiz = fileURLToPath(new URL('..', import.meta.url));
 const sv = await createServer({ root: raiz, configFile: false, logLevel: 'error', server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom', optimizeDeps: { noDiscovery: true, include: [] } });
 const carga = (p: string) => sv.ssrLoadModule(p) as Promise<any>;
@@ -45,6 +51,12 @@ const PLANES: Record<string, Plan> = {
   arcanista: { armas: () => ['varita'], izq: (b) => b.familia === 'orbe', atrib: { fue: 0.1, des: 0.05, vit: 0.55, ene: 0.3 }, habs: ['bola_fuego', 'saeta_ignea', 'maestria_fuego', 'ceniza_venas'], principal: (h) => (h.bola_fuego ? 'bola_fuego' : 'saeta_ignea') },
   cazadora: { armas: () => ['arco'], atrib: { fue: 0.15, des: 0.45, vit: 0.4, ene: 0 }, habs: ['flecha_certera', 'pulso_firme', 'aljaba_viva', 'ojo_halcon'], principal: () => 'flecha_certera' },
   nigromante: { armas: () => ['varita', 'daga'], izq: (b) => b.familia === 'escudo' && b.clase === 'nigromante', atrib: { fue: 0.15, des: 0.05, vit: 0.5, ene: 0.3 }, habs: ['lanza_hueso', 'espiral_huesos', 'armadura_hueso', 'medula_negra'], principal: () => 'lanza_hueso' },
+  // monje de puños: rayo y eco con remates de combo
+  monje: { armas: () => ['garras'], atrib: { fue: 0.2, des: 0.35, vit: 0.45, ene: 0 }, habs: ['puno_rayo', 'puno_eco', 'nudillos_hierro', 'arte_remate', 'tercer_ojo'], principal: (h) => (h.puno_eco ? 'puno_eco' : 'puno_rayo') },
+  // druida invocador: lobos y oso pegan, él tira ráfaga ártica con lo que sobra
+  druida: { armas: () => ['baculo'], atrib: { fue: 0.15, des: 0.1, vit: 0.5, ene: 0.25 }, habs: ['invocar_lobo', 'corazon_salvaje', 'oso_espiritu', 'rafaga_artica', 'ojo_nube'], principal: (h) => (h.rafaga_artica ? 'rafaga_artica' : 'ataque') },
+  // alquimista de bombas con ballesta
+  alquimista: { armas: () => ['ballesta'], izq: () => false, atrib: { fue: 0.2, des: 0.3, vit: 0.4, ene: 0.1 }, habs: ['bomba_ignea', 'bandolera', 'bomba_cluster', 'polvora_negra'], principal: (h) => (h.bomba_cluster ? 'bomba_cluster' : 'bomba_ignea') },
 };
 // premios de misiones de la campaña normal (unos 23 puntos de habilidad y 110 de atributos repartidos hasta el 60)
 const premioHab = (n: number) => Math.round(23 * Math.min(1, n / 60));
@@ -165,7 +177,19 @@ function pelear(d: any, zona: any, mons: any[], modo: 'matar' | 'muneco' | 'agua
   const h = j.heroe;
   MU.reiniciarMecanicas(h);
   [h.x, h.y] = claro(zona);
-  j.monstruos = mons;
+  // las invocaciones que no piden cadáver salen antes de la pelea (lobos, oso, halcón, gólem...): su daño cuenta
+  j.monstruos = [];
+  if (modo !== 'aguantar') for (const id of Object.keys(d.habs)) {
+    const hb = MU.habilidadDe(id);
+    if (hb.tipo !== 'invocar' || hb.definitiva || ['alzar_esqueleto', 'mago_hueso', 'marcha_fosa'].includes(id)) continue;
+    const n = HE.nivelHab(d, id, h.c), mx = Math.max(1, Math.floor(hb.max[0] + hb.max[1] * (n - 1)));
+    for (let k = 0; k < mx; k++) {
+      h.mana = h.c.manaMax;
+      MU.usarHabilidad(j, id, h.x + 1, h.y, null);
+      for (let t = 0; t < 1.5 && (h.acc === 'lanzar' || h.acc === 'atacar'); t += DT) MU.actualizar(j, DT);
+    }
+  }
+  j.monstruos.push(...mons);
   mons.forEach((m, i) => {
     const a = (i / mons.length) * Math.PI * 2;
     const q = ZO.libreCerca(zona, h.x + Math.cos(a) * 3, h.y + Math.sin(a) * 3);
@@ -220,7 +244,7 @@ const media = (v?: number[]) => (v && v.length ? v.reduce((a, b) => a + b, 0) / 
 
 interface Fila {
   clase: string; nivel: number; dif: number; nivelMon: number; zona: string; jefe: string;
-  vida: number; def: number; resFuego: number; dpsBasico: number; dpsHab: number;
+  vida: number; danoArma: number; golpe: number; def: number; resFuego: number; dpsBasico: number; dpsHab: number;
   ttkNormal: number; ttkCampeon: number; ttkUnico: number; ttkJefeZona: number; ttkJefe: number; jefeCapado: number;
   ttdGrupo: number; ttdJefe: number; dpsGrupo: number; dpsJefeRecibido: number; legBas: number; legHab: number; legs: string;
   xpMin: number; minNivel: number;
@@ -238,8 +262,16 @@ function simular(clase: string, nivel: number, dif: number): Fila | null {
   for (let s = 0; s < SEMILLAS; s++) {
     const d = armarHeroe(clase, nivel, dif, Math.max(1, nivelMon - 2), s);
     const c = HE.calcular(d); ej = c;
-    push('vida', c.vidaMax); push('def', c.def); push('res', c.res.fuego);
+    push('vida', c.vidaMax); push('danoArma', (c.dano[0] + c.dano[1]) / 2); push('def', c.def); push('res', c.res.fuego);
     const hab = PLANES[clase].principal(d.habs);
+    // daño de un uso de la habilidad principal sin crítico ni resistencias (arma por el multiplicador más el daño propio)
+    {
+      const jj = MU.crearJuego(d, 0), hb = MU.habilidadDe(hab), n = Math.max(1, HE.nivelHab(d, hab, c));
+      MU.reiniciarMecanicas(jj.heroe);
+      const dh = MU.danoHab(jj, hb, n), val = (b: any) => (b ? b[0] + b[1] * (n - 1) : 0);
+      const arma = hb.mult ? ((c.dano[0] + c.dano[1]) / 2) * val(hb.mult) / 100 : 0;
+      push('golpe', (arma + (dh[0] + dh[1]) / 2) * (Math.round(val(hb.n)) || 1));
+    }
     // monstruos reales de las zonas cercanas
     const pobl = zonas.map((z) => poblacion(z.id, dif, s));
     const todos = pobl.flatMap((p) => p.monstruos.map((m: any) => ({ m, zona: p.zona })));
@@ -258,7 +290,7 @@ function simular(clase: string, nivel: number, dif: number): Fila | null {
       const fams = PLANES[clase].armas(nivel);
       sembrar('legendaria', clase, nivel, s);
       const leg = OB.crearObjeto(Math.max(1, nivelMon - 2), 'legendario', (b: any) => b.ranura === 'arma' && fams.includes(b.familia));
-      if (leg.rareza === 'legendario' && HE.reqNivel(leg) <= nivel) {
+      if (!RAPIDO && leg.rareza === 'legendario' && HE.reqNivel(leg) <= nivel) {
         const dl = { ...d, equipo: { ...d.equipo, arma: leg } };
         if (OB.baseDe(leg)?.dosManos) delete dl.equipo.izq;
         push('dpsLegBas', pelear(dl, mu.zona, [clonar(mu.m)], 'muneco', 'ataque', 8).dano / 8);
@@ -267,15 +299,16 @@ function simular(clase: string, nivel: number, dif: number): Fila | null {
         legs.add(leg.base + ':' + leg.nombre[0]);
       }
     }
-    for (const x of toma(normales, 5)) push('ttkNormal', pelear(d, x.zona, [clonar(x.m)], 'matar', hab, 60).t);
-    for (const x of toma(campeones, 2)) push('ttkCampeon', pelear(d, x.zona, [clonar(x.m)], 'matar', hab, 120).t);
+    if (!RAPIDO) for (const x of toma(normales, 5)) push('ttkNormal', pelear(d, x.zona, [clonar(x.m)], 'matar', hab, 60).t);
+    if (!RAPIDO) for (const x of toma(campeones, 2)) push('ttkCampeon', pelear(d, x.zona, [clonar(x.m)], 'matar', hab, 120).t);
     for (const x of toma(unicos, 2)) push('ttkUnico', pelear(d, x.zona, [clonar(x.m)], 'matar', hab, 180).t);
-    for (const x of toma(jefesZona, 1)) push('ttkJefeZona', pelear(d, x.zona, [clonar(x.m)], 'matar', hab, 300).t);
+    if (!RAPIDO) for (const x of toma(jefesZona, 1)) push('ttkJefeZona', pelear(d, x.zona, [clonar(x.m)], 'matar', hab, 300).t);
     // el jefe del acto de esta zona, creado con crearMonstruo al nivel de la zona + 2 (como lo pone poblar)
     {
       const nuevoJefe = () => MU.crearMonstruo(MO.MONSTRUOS[zJefe.jefe], nivelMon + 2, 0, 0, 4, dif);
       const r = pelear(d, pobl[0].zona, [nuevoJefe()], 'matar', hab, 400);
       push('ttkJefe', r.t); push('jefeCapado', r.ok ? 0 : 1);
+      if (RAPIDO) continue;
       const a = pelear(d, pobl[0].zona, [nuevoJefe()], 'aguantar', hab, 120);
       push('ttdJefe', a.t); push('dpsJefeRecibido', a.recibido / Math.max(a.t, DT));
     }
@@ -296,7 +329,7 @@ function simular(clase: string, nivel: number, dif: number): Fila | null {
   const necesita = nivel >= HE.NIVEL_MAX ? 0 : HE.xpPara(nivel + 1) - HE.xpPara(nivel);
   return {
     clase, nivel, dif, nivelMon, zona: zonas[0].id, jefe: zJefe.jefe,
-    vida: media(res.vida), def: media(res.def), resFuego: media(res.res), dpsBasico: media(res.dpsBasico), dpsHab: media(res.dpsHab),
+    vida: media(res.vida), danoArma: media(res.danoArma), golpe: media(res.golpe), def: media(res.def), resFuego: media(res.res), dpsBasico: media(res.dpsBasico), dpsHab: media(res.dpsHab),
     ttkNormal: media(res.ttkNormal), ttkCampeon: media(res.ttkCampeon), ttkUnico: media(res.ttkUnico), ttkJefeZona: media(res.ttkJefeZona), ttkJefe: media(res.ttkJefe), jefeCapado: media(res.jefeCapado ?? [0]),
     ttdGrupo: media(res.ttdGrupo), ttdJefe: media(res.ttdJefe), dpsGrupo: media(res.dpsGrupo), dpsJefeRecibido: media(res.dpsJefeRecibido), legBas: media(res.dpsLegBas) / media(res.dpsRefBas), legHab: media(res.dpsLegHab) / media(res.dpsRefHab), legs: [...legs].join(', '),
     xpMin, minNivel: necesita / xpMin,
@@ -327,7 +360,7 @@ function campana(semilla: number) {
 // ------------------------------------------------------------------ correr y resumir
 const filas: Fila[] = [];
 const t0 = Date.now();
-for (const clase of CLASES_SIM) for (const nivel of NIVELES) for (const dif of [0, 1, 2]) {
+for (const clase of CLASES_SIM) for (const nivel of NIVELES) for (const dif of DIFS) {
   const f = simular(clase, nivel, dif);
   if (f) { filas.push(f); process.stderr.write(`${clase} ${nivel} d${dif} ttkN ${f.ttkNormal.toFixed(1)} jefe ${f.ttkJefe.toFixed(0)} ttdG ${f.ttdGrupo.toFixed(1)} ttdJ ${f.ttdJefe.toFixed(1)} (${((Date.now() - t0) / 1000).toFixed(0)} s)\n`); }
 }
@@ -374,7 +407,19 @@ for (const nivel of NIVELES) {
   const fs = filas.filter((f) => f.nivel === nivel && Number.isFinite(f.legBas) && ['berserker', 'templario', 'cazadora'].includes(f.clase)); if (!fs.length) continue;
   linea(`| ${nivel} | x${f1(mediana(fs.map((f) => f.legBas)))} | x${f1(mediana(fs.map((f) => f.legHab)))} |`);
 }
-{
+// comparación entre clases: TTK contra el jefe de acto y contra un único, y cuánto tarda la más lenta contra la más rápida
+for (const [k, nom] of [['ttkJefe', 'jefe de acto'], ['ttkUnico', 'único'], ['golpe', 'golpe: daño de un uso de la habilidad principal'], ['danoArma', 'arma: daño medio del arma con fuerza y pasivas']] as [keyof Fila, string][]) {
+  linea(`\n### ${k.startsWith("ttk") ? "TTK " : ""}${nom} por clase${k.startsWith("ttk") ? " (segundos; * = alguna pelea llegó al tope de tiempo)" : ""}\n`);
+  linea('| Dif | Nivel | ' + CLASES_SIM.join(' | ') + ' | lenta / rápida |');
+  linea('|---|---' + '|---'.repeat(CLASES_SIM.length) + '|---|');
+  for (const dif of DIFS) for (const nivel of NIVELES) {
+    const fs = CLASES_SIM.map((c) => filas.find((f) => f.clase === c && f.nivel === nivel && f.dif === dif));
+    if (!fs.some(Boolean)) continue;
+    const v = fs.map((f) => (f ? (f[k] as number) : NaN)).filter(Number.isFinite);
+    linea(`| ${DIF[dif]} | ${nivel} | ` + fs.map((f) => (f ? f1(f[k] as number) + (k === 'ttkJefe' && f.jefeCapado > 0 ? '*' : '') : '-')).join(' | ') + ` | x${f1(Math.max(...v) / Math.min(...v))} |`);
+  }
+}
+if (!RAPIDO) {
   const c0 = campana(0);
   linea('\n### Campaña limpiando cada zona una vez (nivel del héroe al cerrar cada acto / nivel de los monstruos del final del acto)\n');
   linea('| Dificultad | ' + [1, 2, 3, 4, 5, 6, 7].map((a) => `Acto ${a}`).join(' | ') + ' |');

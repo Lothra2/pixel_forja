@@ -89,3 +89,94 @@ Horas aproximadas de combate (modelo de un solo objetivo, sirve para la forma, n
 - **TTD contra jefe en Infierno** queda en 7.5 a 8.5 s en algunos niveles (jefes de fuego con 3 proyectiles). En juego real se esquiva parte.
 - **Únicos al entrar a una dificultad** (Pesadilla 60: 14.7 s, Infierno 80: 13.2 s): un poco arriba de 12.
 - **Legendarias:** pegan unas 3 a 4 veces el arma típica en todos los escalones, no solo el 8. La razón es que los raros casi nunca salen con % de daño (media 6 a 27%) y la legendaria trae 200 a 300% seguro. Recortar el escalón 8 casi no movía el número, así que lo dejé igual. Ojo aparte: los únicos de espada a nivel alto siempre salen como la Hoja de Vigilia de nivel 7 (no hay únicos de espada más altos en el filtro).
+
+## Hechizos por nivel del héroe, daño de hechizos y las 8 clases
+
+### Qué cambió en el simulador
+
+- Mide las 8 clases. Planes nuevos: monje de puños (puño de rayo y puño del eco), druida invocador (lobos, oso espiritual y ráfaga ártica con los puntos que sobran) y alquimista de bombas con ballesta.
+- Las invocaciones que no piden cadáver (lobos, oso, halcón, gólem...) se llaman antes de cada pelea y su daño cuenta. Thor ya contaba para todos.
+- `--rapido` (solo DPS, TTK único y TTK jefe de acto), `--difs 0,1,2` y tablas nuevas por clase: TTK jefe, TTK único, daño de un uso de la habilidad principal y daño del arma, con la columna lenta / rápida.
+- Un `document` de mentira al cargar, porque `motor/assets.ts` crea un lienzo al importarse.
+- Normal no tiene monstruos por encima del 62, así que el 70 se mide en Pesadilla y el 90 en Infierno.
+
+### Fórmula nueva (`danoHab` en `src/juego/mundo.ts`, constantes en `src/datos/clases.ts`)
+
+| Parte | Antes | Después |
+|---|---|---|
+| Nivel del héroe | no contaba | `poderNivel(nivelHéroe) / poderNivel(nivelReq)`, con `poderNivel(n) = 4 + 0.6n + 0.02n²` (la curva del arma típica). El daño de la tabla es el que hace la habilidad el nivel en que se aprende |
+| Puntos en la habilidad | `(1 + dano[2])^(n-1)` (x24 a x40 al 20) | `1 + 0.2 * dano[2] * (n-1)` (x1.6 a x1.8 al 20) |
+| Sinergias | multiplicativas, sin tope | se suman, tope +75% (`ESCALA_HECHIZOS.topeSinergia`). El tooltip muestra el total y el tope |
+| % del elemento | multiplicaba aparte | se suma con el % de daño de hechizos del equipo |
+| Invocados | daño `1 + 0.08 * nivel` | `danoInvocadoNivel(n) = 1 + 0.05n + 0.0008n²` (igual al 30, x1.5 al 90) |
+
+Las habilidades de arma (`mult`) quedan como estaban. Las híbridas (golpe sagrado, puño de rayo, flechas elementales) suman su parte de hechizo con la fórmula nueva.
+
+**Estadística nueva `dano_hechizos`** (`+X% daño de hechizos`): prefijos en varitas, báculos, cetros y orbes (Arcano 8-15 al 1, Hechicero 16-30 al 14, Taumatúrgico 31-50 al 28, Nigromántico 51-75 al 44, Profano 76-100 al 62, del Eclipse Arcano 101-130 al 80) y, más bajos, en amuletos y ropa de tela, túnicas, hábitos, vestidos y camisas (Susurrante 5-10 al 3, Ritual 11-20 al 20, Litúrgico 21-32 al 40, Apócrifo 33-45 al 62, de la Corona Sedienta 46-60 al 82). Las legendarias de lanzador traen además 35% de su escalón de daño mejorado como daño de hechizos. Los únicos de lanzador nuevos la traen también.
+
+**Datos de habilidades retocados** (para meter a cada clase en la franja):
+
+| Habilidad | Antes | Después | Por qué |
+|---|---|---|---|
+| Esfera ígnea (`bola_fuego`) daño | 9-18 | 5-10 | explota al tocar: pega dos veces al mismo objetivo |
+| Maestría del fuego (`maestria_fuego`) | fuego +30% +7/nivel | +15% +3/nivel | dos pasivas de fuego daban +228% al 20, el doble que las otras ramas |
+| Ceniza en las venas (`ceniza_venas`) | fuego +8% +3/nivel | +5% +2/nivel | ídem |
+| Golpe sagrado (`golpe_sagrado`) | arma 130% +10, luz 3-6 | arma 140% +12, luz 6-12 | templario era la clase más lenta (espada a una mano) |
+| Voto de acero (`voto_acero`) | daño +10% +3/nivel | +30% +7/nivel | ídem, a la par de la maestría de hachas |
+| Flecha certera (`flecha_certera`) | arma 130% +10 | 160% +16 | cazadora lenta en todos los niveles |
+| Pulso firme (`pulso_firme`) | daño +15% +4/nivel | +20% +6/nivel | ídem |
+| Bomba ígnea (`bomba_ignea`) | 7-13 | 14-26 | las bombas están limitadas por frascos |
+| Bomba de racimo (`bomba_cluster`) | 20-34 | 31-53 | ídem |
+| Bandolera (`bandolera`) | recarga de frascos +10% +4/nivel | +20% +5/nivel | ídem |
+| Puño de rayo / del eco | arma 120% +8 / 150% +10, eco 8-30 | 130% +10 / 160% +12, eco 10-38 | el monje se quedaba atrás en el 30 |
+| Nudillos de hierro | daño +15% +4/nivel | +20% +5/nivel | ídem |
+
+### Antes y después por clase (12 semillas, equipo típico)
+
+
+**TTK jefe de acto** (segundos, antes → después)
+
+| Clase | Normal 10 | Normal 30 | Normal 50 | Pesadilla 70 | Infierno 90 |
+|---|---|---|---|---|---|
+| berserker | 81.4 → 83.5 | 85.6 → 86.8 | 71.6 → 74.4 | 38.8 → 40.0 | 40.9 → 39.7 |
+| templario | 58.5 → 43.9 | 81.4 → 61.5 | 125 → 50.5 | 103 → 55.0 | 160* → 67.3 |
+| arcanista | 41.2 → 88.4 | 5.1 → 48.3 | 5.1 → 36.3 | 9.8 → 38.8 | 14.3 → 39.8 |
+| cazadora | 143 → 114 | 215* → 150* | 89.7 → 54.1 | 66.4 → 42.4 | 89.5 → 51.8 |
+| nigromante | 33.7 → 47.8 | 13.2 → 45.2 | 19.0 → 51.9 | 24.1 → 37.8 | 42.0 → 41.5 |
+| monje | 47.0 → 51.6 | 51.6 → 72.8 | 52.6 → 60.4 | 49.1 → 45.3 | 47.0 → 39.5 |
+| druida | 62.7 → 44.2 | 49.1 → 39.7 | 109 → 68.3 | 69.4 → 46.4 | 116 → 52.9 |
+| alquimista | 140 → 125 | 122 → 116 | 9.0 → 58.9 | 15.7 → 47.0 | 36.8 → 57.2 |
+| **lenta / rápida** | x4.3 → x2.9 | x42.5 → x3.8 | x24.7 → x2.0 | x10.5 → x1.5 | x11.2 → x1.7 |
+
+**TTK único** (segundos, antes → después)
+
+| Clase | Normal 10 | Normal 30 | Normal 50 | Pesadilla 70 | Infierno 90 |
+|---|---|---|---|---|---|
+| berserker | 15.4 → 15.2 | 9.0 → 9.6 | 9.7 → 10.5 | 5.3 → 5.0 | 6.7 → 5.6 |
+| templario | 12.6 → 9.5 | 6.6 → 5.8 | 12.7 → 5.9 | 13.0 → 7.1 | 16.5 → 8.4 |
+| arcanista | 12.0 → 26.6 | 0.7 → 4.3 | 1.0 → 4.3 | 1.6 → 6.4 | 2.0 → 5.5 |
+| cazadora | 30.7 → 23.6 | 20.6 → 14.3 | 7.1 → 4.4 | 7.5 → 4.6 | 9.8 → 6.2 |
+| nigromante | 7.1 → 10.4 | 1.0 → 3.8 | 1.6 → 4.0 | 2.8 → 4.1 | 4.1 → 3.2 |
+| monje | 9.8 → 10.7 | 6.1 → 8.4 | 5.5 → 6.6 | 6.1 → 5.8 | 6.3 → 5.3 |
+| druida | 12.4 → 9.0 | 4.6 → 4.6 | 10.9 → 8.6 | 9.0 → 6.2 | 17.8 → 8.9 |
+| alquimista | 35.7 → 31.7 | 7.5 → 7.6 | 1.7 → 4.4 | 2.8 → 5.3 | 3.3 → 4.7 |
+| **lenta / rápida** | x5.1 → x3.5 | x30.3 → x3.8 | x12.1 → x2.7 | x8.2 → x1.7 | x9.0 → x2.8 |
+
+`*` = alguna pelea llegó al tope de 400 s. Antes = el código anterior con este mismo simulador (mismas semillas y planes).
+
+Mediana de las 8 clases después contra jefe de acto: 79 s (Normal 10), 77 s (Normal 30), 57 s (Normal 50), 44 s (Pesadilla 70), 53 s (Infierno 90). Es la misma franja que la tabla de arriba, así que la curva de los monstruos no hay que tocarla.
+
+### Lo que quedó fuera de la meta de 1.5x
+
+- **Del 50 al 90 la meta casi se cumple** (x1.5 a x2.0 contra jefe). El que se sale es el templario en Infierno 90 (67 s contra 40 s del berserker): espada a una mano contra hacha a dos manos con la maestría de hachas. Subirle más el golpe sagrado lo pondría primero en el 10 y el 30, donde ya es de los rápidos.
+- **En el 10 y el 30 no se cumple (x2.9 y x3.8)**, por tres cosas que no son la fórmula de hechizos:
+  - Contra el muñeco el DPS de las 8 clases está en x2.5 (al 30, 259 a 687), pero contra el jefe la cazadora (150 s) y la alquimista (116 s) se van muy arriba. Los jefes de esos actos (la Abadesa y la Madre Ciénaga) llaman esbirros que se comen las flechas y los virotes, y las bombas caen donde estaba el jefe. Contra un único (sin esbirros) la alquimista queda en 7.6 s, en la franja. Un jugador de verdad mata a los esbirros primero.
+  - La Abadesa resiste el fuego un 60%: la arcanista de fuego y la alquimista de bombas ígneas tardan el doble en el 10 a propósito (contra el muñeco hacen 112 y 85, a la par de las demás). Con escarcha o rayo el arcanista quedaría en la franja.
+  - El berserker y la cazadora arrancan con armas flojas (hacha de una mano hasta el 11 y arco corto). Es el equipo, no la fórmula.
+- **Únicos**: a partir del 50 mueren en 3 a 10 s, que incluye acercarse, así que la relación lenta / rápida (x1.7 a x2.8) es sobre todo ruido de 2 a 5 segundos.
+- Solo se mide un plan por clase. Las otras ramas (escarcha, rayo, invocador nigromante, lanza de la cazadora...) usan la misma fórmula pero no están medidas.
+
+### Únicos y legendarias altas
+
+- 32 únicos de arma nuevos (`UNICOS` en `src/datos/objetos_datos.ts`): cada una de las 18 familias tiene uno de élite (45 a 58) y uno sobre base mítica o épica (66 a 88). Las espadas únicas altas ya no salen como la Llama de Santa Oria sobre la Hoja de Vigilia de nivel 7: al 50 a 80 sale la Vigilia sin Alba o el Estoque de la Marea Muerta y al 90 la Sed Dorada (katana).
+- 6 legendarias de espada nuevas: ahora hay 2 o 3 espadas (espada y cimitarra, con las formas épicas falcata, katana y estoque) en cada escalón desde el 45.

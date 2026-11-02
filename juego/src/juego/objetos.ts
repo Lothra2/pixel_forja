@@ -51,6 +51,8 @@ const familiaDonde = (b: Base): string[] => {
   const f = b.familia, out = ['todas', f];
   if (b.ranura === 'arma') out.push('arma');
   if (b.ranura === 'torso') out.push('armadura', 'torso');
+  // ropa de tela (túnicas, hábitos, vestidos, camisas): puede traer daño de hechizos
+  if (b.ranura === 'torso' && ['tunica', 'vestido', 'camisa'].includes((b.visual as any)?.torso?.tipo)) out.push('tela');
   if (b.ranura === 'cabeza') out.push('casco');
   if (b.ranura === 'izq') out.push(f === 'orbe' || f === 'libro' ? f : 'escudo');
   if (b.ranura === 'manos') out.push('guantes');
@@ -296,7 +298,7 @@ export const ranuraDe = (o: Objeto): Ranura | null => (o.tipo === 'equipo' ? bas
 
 /** Nombre corto de cada stat para el tooltip. */
 export const NOMBRE_STAT: Record<string, [string, string]> = {
-  dano_pct: ['+{v}% daño mejorado', '+{v}% Enhanced Damage'], dano_min: ['+{v} daño mínimo', '+{v} to Minimum Damage'], dano_max: ['+{v} daño máximo', '+{v} to Maximum Damage'],
+  dano_pct: ['+{v}% daño mejorado', '+{v}% Enhanced Damage'], dano_hechizos: ['+{v}% daño de hechizos', '+{v}% Spell Damage'], dano_min: ['+{v} daño mínimo', '+{v} to Minimum Damage'], dano_max: ['+{v} daño máximo', '+{v} to Maximum Damage'],
   dano_fuego: ['+{v} daño de fuego', '+{v} Fire Damage'], dano_frio: ['+{v} daño de frío', '+{v} Cold Damage'], dano_rayo: ['+{v} daño de rayo', '+{v} Lightning Damage'],
   dano_veneno: ['+{v} daño de veneno', '+{v} Poison Damage'], dano_sombra: ['+{v} daño de sombra', '+{v} Shadow Damage'], dano_luz: ['+{v} daño de luz', '+{v} Holy Damage'], dano_sangre: ['+{v} daño de sangrado', '+{v} Bleed Damage'],
   def: ['+{v} defensa', '+{v} Defense'], def_pct: ['+{v}% defensa mejorada', '+{v}% Enhanced Defense'],

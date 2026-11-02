@@ -24,6 +24,8 @@ function leg(
   const lanzador = LANZADOR.has(b.familia);
   const stats: RangoStat[] = [
     lanzador ? r('dano_pct', Math.round(d[0] * 0.5), Math.round(d[1] * 0.5)) : r('dano_pct', d[0], d[1]),
+    // las de lanzador también suben los hechizos
+    ...(lanzador ? [r('dano_hechizos', Math.round(d[0] * 0.35), Math.round(d[1] * 0.35))] : []),
     r(STAT_ELEM[vivo], lanzador ? Math.round(e[0] * 1.2) : e[0], lanzador ? Math.round(e[1] * 1.2) : e[1]),
     ...extra,
   ];
@@ -160,6 +162,9 @@ export const LEGENDARIAS: Unico[] = [
   leg('sed_ozmaren', 'Sed de Ozmaren', 'Ozmaren\'s Thirst', 'hoja_ceniza_negra', 5, 'fuego',
     [r('robo_vida', 6, 9), r('res_fuego', 35), r('vida', 50, 70), r('mas_habilidades', 1)],
     'Ozmaren bebía del Ascua con esta hoja. Ahora te pide de beber a ti.', 'Ozmaren drank from the Ember with this blade. Now it asks you for a drink.'),
+  leg('juramento_ceniza', 'Juramento de Ceniza', 'Oath of Ash', 'hoja_ceniza_negra', 5, 'sombra',
+    [r('critico', 10), r('vel_ataque', 20), r('res_sombra', 30), r('vida', 50, 70)],
+    'Los caballeros que bajaron a la Herida juraron no volver. Solo la espada cumplió.', 'The knights who went down into the Wound swore never to return. Only the sword kept its word.'),
 
   // ---------------- escalón 6 (nivel 60): Ysmeral, la Ciudad Ahogada
   leg('lamento_ysmeral', 'Lamento de Ysmeral', 'Ysmeral\'s Lament', 'hoja_marea', 6, 'luz',
@@ -192,6 +197,9 @@ export const LEGENDARIAS: Unico[] = [
   leg('red_pescador_almas', 'Red del Pescador de Almas', 'Soulfisher\'s Net', 'mangual_ancla', 6, 'sombra',
     [r('vida_por_muerte', 8, 12), r('mana_por_muerte', 6, 10), r('aturdir', 20), r('vit', 15, 20)],
     'El pescador echó la red la noche del hundimiento. No sacó peces.', 'The fisherman cast his net the night the city sank. He did not haul up fish.'),
+  leg('ultima_estocada', 'La Última Estocada', 'The Final Thrust', 'estoque_coral', 6, 'frio',
+    [r('critico', 12), r('vel_ataque', 25), r('des', 15, 20), r('res_frio', 35)],
+    'El maestro de esgrima de Ysmeral se batió con la marea. Ganó el primer asalto.', 'The fencing master of Ysmeral dueled the tide. He won the first bout.'),
 
   // ---------------- escalón 7 (nivel 75): el fondo de Ysmeral y la escalera rota
   leg('siega_sal', 'Siega de Sal', 'Salt Reaping', 'guadana_sal', 7, 'fuego',
@@ -224,6 +232,12 @@ export const LEGENDARIAS: Unico[] = [
   leg('quilla_naufragio', 'Quilla del Naufragio', 'Shipwreck Keel', 'mandoble_naufragio', 7, 'rayo',
     [r('golpe_aplastante', 25), r('fue', 20, 25), r('res_rayo', 40), r('vida', 90, 130)],
     'La tormenta partió el barco en dos. Esta es la mitad que no se hundió.', 'The storm split the ship in two. This is the half that did not sink.'),
+  leg('bruma_partida', 'Bruma Partida', 'Cloven Mist', 'katana_bruma', 7, 'rayo',
+    [r('critico', 12), r('vel_ataque', 30), r('des', 20, 25), r('res_rayo', 40)],
+    'Corta la niebla del puerto en dos y por la grieta se ve la ciudad como era.', 'It cuts the harbor fog in two and through the gap the city can be seen as it was.'),
+  leg('diente_arrecife', 'Diente del Arrecife', 'Reef Tooth', 'falcata_coral', 7, 'veneno',
+    [r('herida_abierta', 35), r('vel_ataque', 30), r('robo_vida', 7, 10), r('res_veneno', 40)],
+    'El arrecife que se tragó Ysmeral tiene dientes. Este se lo sacaron a mano.', 'The reef that swallowed Ysmeral has teeth. This one was pulled out by hand.'),
 
   // ---------------- escalón 8 (nivel 90): la Corona del Dios Sediento
   leg('primera_brasa', 'La Primera Brasa', 'The First Ember', 'lanza_dragon_aurea', 8, 'fuego',
@@ -256,6 +270,12 @@ export const LEGENDARIAS: Unico[] = [
   leg('espejismo_aureo', 'Espejismo Áureo', 'Golden Mirage', 'falcata_espejismo', 8, 'fuego',
     [r('vel_ataque', 35), r('des', 25, 35), r('res_fuego', 45), r('hallazgo', 40)],
     'Las islas de oro brillan desde abajo como un tesoro. De cerca brillan como esta hoja.', 'From below, the golden isles gleam like treasure. Up close they gleam like this blade.'),
+  leg('ocaso_dios', 'Ocaso del Dios', 'Dusk of the God', 'katana_ocaso', 8, 'luz',
+    [r('critico', 15), r('vel_ataque', 35), r('res_todo', 20), r('des', 25, 35)],
+    'Cuando el sol se pone sobre la Corona, el dios cierra los ojos. Esta hoja corta en ese parpadeo.', 'When the sun sets over the Crown, the god closes his eyes. This blade cuts in that blink.'),
+  leg('beso_estatua', 'Beso de la Estatua', 'The Statue\'s Kiss', 'estoque_marmol', 8, 'sombra',
+    [r('critico', 15), r('robo_vida', 8, 12), r('res_sombra', 45), r('des', 25, 35)],
+    'Las estatuas del jardín no se mueven. Salvo para esto.', 'The statues in the garden do not move. Except for this.'),
 ];
 
 /** La legendaria temática de cada jefe, su probabilidad (además de su botín de siempre) y, si hace falta, el nivel

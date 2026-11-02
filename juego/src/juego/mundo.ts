@@ -2,7 +2,7 @@
 import { generarZona, pasable, buscarCamino, lineaLibre, libreCerca, type Zona, type ObjZ } from '../mundo/zona';
 import { ZONAS, POBL_ZONA, MISIONES, FRASE_JEFE } from '../mundo/actos';
 import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '../datos/monstruos';
-import { HABILIDADES, INVOCADOS, ATAQUE, type Habilidad } from '../datos/clases';
+import { HABILIDADES, INVOCADOS, ATAQUE, ESCALA_HECHIZOS, poderNivel, danoInvocadoNivel, type Habilidad } from '../datos/clases';
 import { GENTE } from '../datos/npcs';
 import { calcular, nivelHab, xpPara, recoger, NIVEL_MAX, nivelEnDificultad, type DatosHeroe, type Calc } from './heroe';
 import { botin, crearObjeto, crearUnicoId, legendariaJefe, valorPocion, crearObjetoThor, type Objeto, type Caida } from './objetos';
@@ -565,11 +565,17 @@ export function habilidadDe(id: string): Habilidad { return id === 'ataque' ? AT
 export function costoMana(j: Juego, hb: Habilidad) { const n = Math.max(1, nivelHab(j.heroe.d, hb.id, j.heroe.c)); return Math.max(0, hb.mana[0] + hb.mana[1] * (n - 1)); }
 export function danoHab(j: Juego, hb: Habilidad, n: number): [number, number] {
   if (!hb.dano) return [0, 0];
-  let k = Math.pow(1 + hb.dano[2], n - 1);
-  for (const [sid, pct] of hb.sinergias ?? []) k *= 1 + (pct * (j.heroe.d.habs[sid] ?? 0)) / 100;
   const h = j.heroe;
-  if (hb.elem === 'fuego') k *= 1 + h.c.fuego_pct / 100;
-  else k *= 1 + bono(h, hb.elem + '_pct') / 100;
+  // nivel del héroe: el daño de la tabla es el del nivel en que se aprende y de ahí sigue la curva del arma
+  let k = poderNivel(h.d.nivel) / poderNivel(hb.nivelReq);
+  // nivel de la habilidad: lineal
+  k *= 1 + ESCALA_HECHIZOS.lineal * hb.dano[2] * (n - 1);
+  // sinergias: se suman y tienen tope
+  let sin = 0;
+  for (const [sid, pct] of hb.sinergias ?? []) sin += pct * (h.d.habs[sid] ?? 0);
+  k *= 1 + Math.min(ESCALA_HECHIZOS.topeSinergia, sin) / 100;
+  // % del elemento (pasivas, objetos) y % de daño de hechizos del equipo, sumados
+  k *= 1 + ((hb.elem === 'fuego' ? h.c.fuego_pct : bono(h, hb.elem + '_pct')) + bono(h, 'dano_hechizos')) / 100;
   // resonancia: cada carga del mismo elemento suma daño
   if (h.d.clase === 'arcanista' && !CONSUME_CARGAS.has(hb.id)) { const c = h.cargas.filter((e) => e === hb.elem).length; k *= 1 + c * (6 + bono(h, 'resonancia')) / 100; }
   // la energía da un poco de poder a los hechizos
@@ -735,7 +741,7 @@ function crearInvocado(j: Juego, invId: string, n: number, x: number, y: number,
   const def: DefMonstruo = { ...(MONSTRUOS[inv.sprite] ?? MONSTRUOS.esqueleto), id: invId, sprite: inv.sprite, vida: inv.vida, dano: inv.dano, vel: inv.vel, ia: inv.distancia ? 'distancia' : 'normal', proyectil: inv.proyectil, rango: inv.distancia ? 7 : undefined, elem: (inv.elem as Elemento) ?? 'fisico', tinte: inv.tinte, escala: inv.escala, res: {}, xp: 0, jefe: false };
   const m = crearMonstruo(def, h.d.nivel, x, y, 0, 0);
   m.tipo = 'invocado'; m.dueno = true; m.invocaId = invId; m.estado = 'deambular';
-  m.vidaMax = m.vida = Math.round(inv.vida * kk * (1 + h.d.nivel * 0.12)); m.dano = [inv.dano[0] * kk * (1 + h.d.nivel * 0.08), inv.dano[1] * kk * (1 + h.d.nivel * 0.08)];
+  m.vidaMax = m.vida = Math.round(inv.vida * kk * (1 + h.d.nivel * 0.12)); m.dano = [inv.dano[0] * kk * danoInvocadoNivel(h.d.nivel), inv.dano[1] * kk * danoInvocadoNivel(h.d.nivel)];
   m.tinte = inv.tinte; m.escala = inv.escala ?? 1; m.tVida = tVida;
   j.monstruos.push(m);
   efecto(j, 'circulo_invocacion', x, y, 0, 0.8);

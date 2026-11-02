@@ -4,7 +4,7 @@ import { ctx, W, H, E, pulso } from '../nucleo/lienzo';
 import { barraInferior, orbe, zonasBarra, ladoOrbe, barraJefe, cursores, cartelMuerte, panelInventario, EQUIPO as EQUIPO_HUD, CELDA_INV, BOLSA as BOLSA_HUD, type ObjetoInv } from '../../../src/engine/gotico/hud';
 import { aLoot, arma3dDe } from './loot';
 import { texto, T, TT, IDI, marco, titulo, boton, dentro, icono, iconoThor, lineasObjeto, tooltip, cacheRaster, rasterACanvas, envolver, ancho, TITULO } from './comun';
-import { CLASES, HABILIDADES, habilidadesDe, ATAQUE, TIERS, type Habilidad } from '../datos/clases';
+import { CLASES, HABILIDADES, habilidadesDe, ATAQUE, TIERS, ESCALA_HECHIZOS, type Habilidad } from '../datos/clases';
 import { NPCS } from '../datos/npcs';
 import { MISIONES, ZONAS, PUEBLO_DE, daMision, type Mision, type Premio } from '../mundo/actos';
 import { MONSTRUOS } from '../datos/monstruos';
@@ -733,6 +733,8 @@ function lineasHab(j: Juego, hb: Habilidad, conSiguiente: boolean): [string, str
   if (hb.sinergias?.length) {
     l.push(['', '']); l.push([T('Sinergias', 'Synergies'), '#40d040']);
     for (const [s, p] of hb.sinergias) { const o = HABILIDADES.find((q) => q.id === s); if (!o) continue; const tiene = d.habs[s] ?? 0; l.push([`${TT(o.nombre)}: +${p}% ${T('por nivel', 'per level')}${tiene ? ` (${T('ahora', 'now')} +${p * tiene}%)` : ''}`, tiene ? '#60e060' : '#409040']); }
+    // las sinergias se suman y tienen tope
+    if (hb.dano) { const tope = ESCALA_HECHIZOS.topeSinergia, tot = hb.sinergias.reduce((a, [s, p]) => a + p * (d.habs[s] ?? 0), 0); l.push([`${T('Total', 'Total')}: +${Math.min(tope, tot)}% (${T('tope', 'cap')} +${tope}%)`, tot >= tope ? '#ffd060' : '#60e060']); }
   }
   if (hb.tipo === 'aura') l.push([T('Solo un aura activa: ponla en el botón derecho', 'One active aura: set it on the right button'), '#a0a0a0']);
   if (puedeAprender(d, hb)) l.push([base === 0 ? T('Clic para aprender', 'Click to learn') : T('Clic para subir un nivel', 'Click to raise a level'), '#ffd060']);
