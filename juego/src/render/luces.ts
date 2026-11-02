@@ -5,7 +5,7 @@ import { manifiesto, objetoMeta } from '../motor/assets';
 import type { Juego, Ent } from '../juego/mundo';
 import { R } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
-import { lucesOzmaren } from './fuego';
+import { lucesOzmaren, ALTO_OZMAREN } from './fuego';
 
 export interface Luz {
   /** Punto del piso bajo la luz, en pantalla. */
@@ -108,7 +108,7 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     if (m.muerto || m.def.sprite !== 'jefe_ozmaren') continue;
     const [px, py] = aPant(m.x, m.y); if (!dentro(px, py, 400)) continue;
     const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
-    for (const [i, l] of lucesOzmaren(px, py, 195 * (m.escala ?? 1), t, furia).entries()) L.push({ id: 'oz' + i, x: l.x, y: l.y, h: l.h, r: l.r, c: [255, 95 + Math.round(l.k * 40), 25], k: l.k, de: m });
+    for (const [i, l] of lucesOzmaren(px, py, ALTO_OZMAREN * (m.escala ?? 1), t, furia).entries()) L.push({ id: 'oz' + i, x: l.x, y: l.y, h: l.h, r: l.r, c: l.nucleo ? [255, 150 + Math.round(l.k * 60), 60] : [255, 95 + Math.round(l.k * 40), 25], k: l.k, de: m });
   }
   // grietas de lava del piso: brillan y respiran
   for (const mk of z.marcas) if (mk.tipo === 'lava' && mk.cx % 2 === 0) {

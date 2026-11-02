@@ -19,27 +19,36 @@ const rPosX = [new Ruido(0.15, 0.8), new Ruido(0.13, 0.8), new Ruido(0.17, 0.8)]
 const rPosY = [new Ruido(0.12, 0.8), new Ruido(0.16, 0.8), new Ruido(0.14, 0.8)];
 
 /** Puntos de donde sale el fuego, en fracciones del cuadro (x desde el ancla, y desde los pies hacia arriba). */
+// medidos sobre el Ozmaren orgánico de la Forja (cuadro de 421 px de ancho, pies a 354 px)
 const FOCOS: [number, number, number][] = [
-  [-0.22, 0.93, 1.3], [0.22, 0.93, 1.3], // cuernos
-  [-0.3, 0.72, 1], [0.3, 0.72, 1], // hombros
-  [0, 0.8, 1.6], // espalda
-  [-0.42, 0.45, 0.8], [0.42, 0.45, 0.8], // manos
+  [-0.19, 0.79, 1.4], [0.19, 0.79, 1.4], // puntas de los cuernos
+  [-0.16, 0.47, 1], [0.16, 0.47, 1], // hombros
+  [0, 0.72, 1.4], // espalda, detrás de la cabeza
+  [0, 0.39, 0.9], // núcleo de lava del pecho
+  [-0.21, 0.16, 0.6], [0.21, 0.16, 0.6], // garras
 ];
+/** Alto del cuadro de Ozmaren desde los pies (para ubicar sus luces sin tener el cuadro a mano). */
+export const ALTO_OZMAREN = 354;
+const rNucleo = new Ruido(0.2, 0.5);
 
-export interface LuzFuego { x: number; y: number; h: number; r: number; k: number }
-/** Luces de su fuego para este cuadro: posición e intensidad con ruido, para que las sombras tiemblen. */
+export interface LuzFuego { x: number; y: number; h: number; r: number; k: number; nucleo?: boolean }
+/** Luces de su fuego para este cuadro: cuernos y espalda con ruido (las sombras tiemblan) y el núcleo del pecho que late. */
 export function lucesOzmaren(px: number, py: number, alto: number, t: number, furia: number): LuzFuego[] {
-  return [0, 1, 2].map((i) => {
-    const fx = [-0.25, 0.25, 0][i], fy = [0.75, 0.75, 0.95][i];
+  const out: LuzFuego[] = [0, 1, 2].map((i) => {
+    const fx = [-0.19, 0.19, 0][i], fy = [0.79, 0.79, 0.72][i];
     const n = rIntensidad[i].leer(t);
     return {
-      x: px + fx * alto * 0.6 + (rPosX[i].leer(t) - 0.5) * 30,
-      y: py + (rPosY[i].leer(t) - 0.5) * 16,
+      x: px + fx * alto * 1.2 + (rPosX[i].leer(t) - 0.5) * 24,
+      y: py + (rPosY[i].leer(t) - 0.5) * 12,
       h: alto * fy * (0.9 + n * 0.2),
-      r: (220 + furia * 140) * (0.8 + n * 0.45),
-      k: Math.min(1, (0.45 + furia * 0.3) * (0.6 + n * 0.8)),
+      r: (200 + furia * 140) * (0.8 + n * 0.45),
+      k: Math.min(1, (0.4 + furia * 0.3) * (0.6 + n * 0.8)),
     };
   });
+  // el corazón de lava: late como un pulso (más rápido con furia) y alumbra hacia adelante
+  const lat = Math.pow(0.5 + 0.5 * Math.sin(t * (2.2 + furia * 2.5) * Math.PI), 3);
+  out.push({ x: px, y: py + 6, h: alto * 0.39, r: 170 + lat * 90 + furia * 60, k: Math.min(1, 0.35 + lat * 0.5 + (rNucleo.leer(t) - 0.5) * 0.15 + furia * 0.2), nucleo: true });
+  return out;
 }
 
 // manchas de fuego pintadas una sola vez: 8 tonos de amarillo a rojo oscuro
@@ -68,7 +77,7 @@ export function fuegoOzmaren(ctx: CanvasRenderingContext2D, m: Monstruo, q: Cuad
   const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
   const alto = q.ay * esc, ancho = q.w * esc;
   // nacer: más en furia
-  const n = Math.round((7 + furia * 10) * (dt * 60) * calidad);
+  const n = Math.round((7 + furia * 6) * (dt * 60) * calidad);
   for (let i = 0; i < n && llamas.length < 320 * calidad; i++) {
     const [fx, fy, peso] = FOCOS[Math.floor(R() * FOCOS.length)];
     if (R() > peso * 0.7) continue;
@@ -76,7 +85,7 @@ export function fuegoOzmaren(ctx: CanvasRenderingContext2D, m: Monstruo, q: Cuad
     llamas.push({
       x: px + fx * ancho + (R() - 0.5) * 10 + camX, y: py - fy * alto + (R() - 0.5) * 8 + camY,
       vx: (R() - 0.5) * 20, vy: -(brasa ? 70 + R() * 70 : 30 + R() * 40 + furia * 30),
-      t: 0, d: brasa ? 1.2 + R() * 1.2 : 0.5 + R() * 0.5, s: brasa ? 1.6 : 5 + R() * 6 + furia * 4, brasa, f: R() * 10,
+      t: 0, d: brasa ? 1.2 + R() * 1.2 : 0.5 + R() * 0.5, s: brasa ? 1.6 : 5 + R() * 6 + furia * 1.5, brasa, f: R() * 10,
     });
   }
   ctx.save();

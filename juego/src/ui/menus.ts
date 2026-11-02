@@ -230,7 +230,7 @@ function armarTomas() {
         dibujarTenido(ctx, q, x, y, '#000', 1 - luz * 0.5, esc);
         if (luz > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = luz * 0.5; dibujarTenido(ctx, q, x, y, '#ff5020', 1, esc); ctx.restore(); }
         // los ojos, siempre encendidos desde que despierta
-        if (t > 4.4) { const o = Math.min(1, (t - 4.4) / 0.6), ey = y - q.ay * esc * 0.86; ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (const dx of [-11, 11]) { const gg = ctx.createRadialGradient(x + dx * esc * 0.5, ey, 0, x + dx * esc * 0.5, ey, 18); gg.addColorStop(0, `rgba(255,220,120,${o})`); gg.addColorStop(0.3, `rgba(255,90,20,${o * 0.8})`); gg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gg; ctx.fillRect(x + dx * esc * 0.5 - 18, ey - 18, 36, 36); } ctx.restore(); }
+        if (t > 4.4) { const o = Math.min(1, (t - 4.4) / 0.6), ey = y - q.ay * esc * 0.53; ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (const dx of [-11, 11]) { const gg = ctx.createRadialGradient(x + dx * esc, ey, 0, x + dx * esc, ey, 18); gg.addColorStop(0, `rgba(255,220,120,${o})`); gg.addColorStop(0.3, `rgba(255,90,20,${o * 0.8})`); gg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gg; ctx.fillRect(x + dx * esc - 18, ey - 18, 36, 36); } ctx.restore(); }
       }
       lluviaCeniza(t, 0.7, 0.6);
     }, 1 + suave(Math.min(1, t / 10)) * 0.15, W / 2, H * 0.4);
