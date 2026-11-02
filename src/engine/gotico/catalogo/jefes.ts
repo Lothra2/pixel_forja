@@ -348,6 +348,31 @@ type Armado = (acc: Acc, f: number) => Res;
 /** Los jefes: id, nombre, alto en unidades del mundo (sin cuernos ni efectos) y huella en celdas. */
 export const JEFES: { id: string; nombre: [string, string]; alto: number; huella: number }[] = [];
 
+/** Masas de tronco de los jefes que caen tendidos: al morir, si se meten en el piso, se alza el cuerpo entero. */
+const TRONCO = new WeakSet<Pieza>();
+const tronco = (p: Pieza) => { TRONCO.add(p); return p; };
+/** Lo más bajo de una masa (cota por componentes: cada bulto por su extensión vertical y cada hueso por sus puntas). */
+function fondoMasa(p: Pieza): number {
+  if (p.k !== 'masa') return Infinity;
+  let lo = Infinity;
+  for (const c of p.comps) {
+    if (c.f === 'hueso') lo = Math.min(lo, c.a[2] - c.r0, c.b[2] - c.r1);
+    else lo = Math.min(lo, c.c[2] - Math.hypot(c.r[0] * c.ex[2], c.r[1] * c.ey[2], c.r[2] * c.ez[2]));
+  }
+  return lo;
+}
+/** Una pieza corrida `dz` hacia arriba. */
+function alzar(p: Pieza, dz: number): Pieza {
+  const up = (v: V3): V3 => [v[0], v[1], v[2] + dz];
+  if (p.k === 'conv') return { ...p, pts: p.pts.map(up), planos: p.planos.map(([n, d]) => [n, d + n[2] * dz] as [V3, number]) };
+  if (p.k === 'cono') return { ...p, o: up(p.o) };
+  if (p.k === 'elip') return { ...p, c: up(p.c) };
+  const comps = p.comps.map((q): Comp => (q.f === 'hueso' ? hueso(up(q.a), up(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k }) : { ...q, c: up(q.c), sc: up(q.sc) }));
+  return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave });
+}
+/** Lo más alto de una pieza (para no alzar lo que está pintado en el piso: charcos, grietas, manchas). */
+const techo = (p: Pieza) => (p.k === 'masa' ? p.esf[2] + p.esf[3] : p.k === 'conv' ? Math.max(...p.pts.map((q) => q[2])) : p.k === 'elip' ? p.c[2] + Math.max(...p.r) : Math.max(p.o[2], p.o[2] + p.ez[2] * p.h) + Math.max(p.r0, p.r1));
+
 function jefe(id: string, nombre: [string, string], alto: number, huella: number, especial: [string, string], armar: Armado) {
   JEFES.push({ id, nombre, alto, huella });
   for (const acc of ACCIONES) {
@@ -357,6 +382,12 @@ function jefe(id: string, nombre: [string, string], alto: number, huella: number
       variantes: [...DIRS], cuadros: CUADROS[acc], t: acc === 'quieto' ? 6 : 3, huella: [huella, huella], bloquea: true,
       armar: (v, f) => {
         const r = armar(acc, f), g = RUMBO[v as Dir], c = Math.cos(rad(g)), s = Math.sin(rad(g));
+        if (acc === 'morir') {
+          // tendido: el tronco no se mete en el piso (se alza todo el cuerpo, salvo lo que ya está pintado en el piso)
+          let lo = Infinity;
+          for (const p of r.piezas) if (TRONCO.has(p)) lo = Math.min(lo, fondoMasa(p));
+          if (lo < -0.2) { const dz = -lo + 0.4; r.piezas = r.piezas.map((p) => (techo(p) < 2.5 ? p : alzar(p, dz))); if (r.resplandor) r.resplandor = { ...r.resplandor, c: [r.resplandor.c[0], r.resplandor.c[1], r.resplandor.c[2] + dz] }; }
+        }
         const res = r.resplandor ? { ...r.resplandor, c: [r.resplandor.c[0] * c - r.resplandor.c[1] * s, r.resplandor.c[0] * s + r.resplandor.c[1] * c, r.resplandor.c[2]] as V3 } : undefined;
         return { piezas: girarPiezas(r.piezas, g), resplandor: res, sinSombra: r.sinSombra };
       },
@@ -1462,7 +1493,21 @@ function reyEscarcha(acc: Acc, f: number): Res {
   const ps: Pieza[] = [];
   // ---- cuerpo de gigante
   const c = carneB(r, Z, 0.95, 0.15);
-  ps.push(masa(c.tronco, { mat: Z, suave: 1.8 * S }));
+  // músculo marcado (la unión más corta para que cada uno se lea): bíceps, tríceps, flexores del antebrazo,
+  // cuádriceps con la gota sobre la rodilla, isquiotibiales y gemelos de dos cabezas
+  for (const [i, s] of [[0, -1], [1, 1]] as [number, number][]) {
+    const h = r.hom[i], cd0 = r.codo[i], w = r.mun[i], ua = nor(sub(cd0, h)), fa = r.fa[i], km = { mat: Z, k: 0.8 * S };
+    const fr = nor(sub(tor.m[0], esc(ua, pto(tor.m[0], ua)))), la = nor(cruz(ua, fr)), lf = nor(sub(tor.m[1], esc(fa, pto(tor.m[1], fa))));
+    c.brazos[i].push(bulto(add(mez(h, cd0, 0.52), fr, 1.05 * r.A), [3 * S, 1.55 * r.A, 1.5 * r.A], { eje: ua, ...km }), bulto(add(mez(h, cd0, 0.42), fr, -1.05 * r.A), [3.5 * S, 1.5 * r.A, 1.6 * r.A], { eje: ua, ...km }));
+    c.brazos[i].push(bulto(add(mez(h, cd0, 0.2), la, s * -0.9 * r.A), [2.4 * S, 1.6 * r.A, 1.6 * r.A], { eje: ua, ...km }));
+    c.brazos[i].push(bulto(add(mez(cd0, w, 0.25), lf, s * 0.75 * r.A), [2.6 * S, 1.35 * r.A, 1.3 * r.A], { eje: fa, ...km }), bulto(add(mez(cd0, w, 0.3), lf, -s * 0.8 * r.A), [2.4 * S, 1.25 * r.A, 1.2 * r.A], { eje: fa, ...km }));
+    const cd = r.cad[i], rd = r.rod[i], tb = r.tob[i], mu = nor(sub(rd, cd)), ca = nor(sub(tb, rd));
+    const fw = nor(sub(pel.m[0], esc(mu, pto(pel.m[0], mu)))), ld = nor(cruz(mu, fw)), fwc = nor(sub(pel.m[0], esc(ca, pto(pel.m[0], ca)))), ldc = nor(cruz(ca, fwc));
+    c.piernas[i].push(bulto(add(mez(cd, rd, 0.45), fw, 1.5 * r.A), [4.8 * S, 1.6 * r.A, 1.6 * r.A], { eje: mu, ...km }), bulto(add(mez(cd, rd, 0.55), ld, s * 1.4 * r.A), [4.4 * S, 1.7 * r.A, 1.9 * r.A], { eje: mu, ...km }));
+    c.piernas[i].push(bulto(add(add(mez(cd, rd, 0.8), ld, -s * 1.1 * r.A), fw, 0.7 * r.A), [2.4 * S, 1.4 * r.A, 1.5 * r.A], { eje: mu, ...km }), bulto(add(mez(cd, rd, 0.5), fw, -1.5 * r.A), [4.6 * S, 1.7 * r.A, 1.8 * r.A], { eje: mu, ...km }));
+    for (const g of [1, -1]) c.piernas[i].push(bulto(add(add(mez(rd, tb, 0.27), fwc, -1.35 * r.A), ldc, g * 0.75 * r.A), [3 * S, 1.3 * r.A, 1.45 * r.A], { eje: ca, ...km }));
+  }
+  ps.push(tronco(masa(c.tronco, { mat: Z, suave: 1.8 * S })));
   c.brazos.forEach((b) => ps.push(masa(b, { mat: Z, suave: 1.5 * S })));
   c.piernas.forEach((b) => ps.push(masa(b, { mat: Z, suave: 1.5 * S })));
   // calzas de piel, botas envueltas, taparrabo de piel y cinturón con hebilla de hielo
@@ -1483,6 +1528,18 @@ function reyEscarcha(acc: Acc, f: number): Res {
     }
     ps.push(esquirla(base, dir, largo, ancho, sem, I, (hr(sem) - 0.5) * 0.2));
   };
+  /**
+   * Placa de hielo facetada pegada al miembro: un anillo de puntos apenas hundido en la piel y tres puntos alzados
+   * que forman una cresta; la cáscara convexa queda como una gema chata. `n` sale de la piel, `u` corre a lo largo
+   * del miembro y `prof` es el radio del miembro en ese punto.
+   */
+  const placa = (c0: V3, n: V3, u: V3, largo: number, ancho: number, prof: number, alto: number, sem: number) => {
+    if (rompe > 0 && hr(sem * 3.1) < rompe * 0.8) return;
+    const v = nor(cruz(n, u)), c1 = add(c0, n, prof), pts: V3[] = [];
+    for (let k = 0; k < 7; k++) { const a = (k / 7) * TAU + hr(sem + k) * 0.5, rr = 0.8 + 0.3 * hr(sem + k + 9); pts.push(add(add(add(c1, u, Math.cos(a) * largo * 0.5 * rr), v, Math.sin(a) * ancho * 0.5 * rr), n, -0.35 * alto - Math.abs(Math.sin(a)) * 0.25 * alto)); }
+    for (const t of [-0.3, 0.05, 0.35]) pts.push(add(add(add(c1, u, t * largo + (hr(sem + t * 10) - 0.5) * 0.15 * largo), v, (hr(sem + t * 7) - 0.5) * 0.3 * ancho), n, alto * (1 - Math.abs(t) * 0.9)));
+    ps.push(poliedro(pts, { mat: I, tono: (hr(sem) - 0.5) * 0.15 }));
+  };
   for (const [i, s] of [[0, -1], [1, 1]] as [number, number][]) {
     const h = r.hom[i], ua = nor(sub(r.codo[i], h));
     const out = nor(mv(tor.m, [0, s, 0]));
@@ -1491,6 +1548,15 @@ function reyEscarcha(acc: Acc, f: number): Res {
     // brazales de hielo
     ps.push(masa([hueso(mez(r.codo[i], r.mun[i], 0.35), mez(r.codo[i], r.mun[i], 0.92), 2.4 * r.A, 1.9 * r.A, { mat: 'cu_cuero_negro' })], { mat: 'cu_cuero_negro' }));
     for (let k = 0; k < 3; k++) cris(mez(r.codo[i], r.mun[i], 0.35 + k * 0.2), nor(add(esc(r.fa[i], -0.6), out, 1)), (4.2 - k * 0.6) * S, 1.1 * S, 40 + k + i * 5);
+    // placas de hielo facetadas sobre el brazal: por afuera y por arriba del antebrazo
+    const fa = r.fa[i], nOut = nor(sub(out, esc(fa, pto(out, fa)))), nArr = nor(sub([0, 0, 1], esc(fa, pto([0, 0, 1], fa))));
+    placa(mez(r.codo[i], r.mun[i], 0.55), nOut, fa, 4.6 * S, 2.6 * S, 2.3 * r.A, 1.5 * S, 80 + i * 7);
+    placa(mez(r.codo[i], r.mun[i], 0.6), nor(add(nArr, nOut, 0.4)), fa, 3.8 * S, 2.2 * S, 2.2 * r.A, 1.3 * S, 83 + i * 7);
+    // y en las espinillas, sobre las pieles de la bota y arriba de ellas
+    const ca = nor(sub(r.tob[i], r.rod[i])), fwc = nor(sub(pel.m[0], esc(ca, pto(pel.m[0], ca)))), ldc = nor(cruz(ca, fwc));
+    placa(mez(r.rod[i], r.tob[i], 0.36), fwc, ca, 4.8 * S, 2.6 * S, 2.9 * r.A, 1.5 * S, 90 + i * 7);
+    placa(mez(r.rod[i], r.tob[i], 0.66), nor(add(fwc, ldc, s * 0.7)), ca, 3.6 * S, 2.2 * S, 2.8 * r.A, 1.3 * S, 93 + i * 7);
+    placa(r.rod[i], nor(add(fwc, [0, 0, 0.4])), ca, 2.8 * S, 2.6 * S, 2.1 * r.A, 1.4 * S, 96 + i * 7);
   }
   // peto: placas de hielo sobre los pectorales y cristales que salen del esternón
   for (const s of [1, -1]) ps.push(elipE(ap(tor, [3.4 * r.A, s * 2.9 * r.A, 9.6 * S]), mv(tor.m, [1, s * 0.3, 0.1]), [1.4 * S, 3.8 * r.A, 3.2 * S], 'hielo', 0, mv(tor.m, [0, 1, 0])));
@@ -1625,9 +1691,9 @@ function verdugo(acc: Acc, f: number): Res {
   let gira = -1, tiro = 0, golpe = 0, charco = 0, respira = 0;
   if (acc === 'quieto') {
     // la respiración se ve: el pecho y la panza se inflan, los hombros suben y al soltar el aire sale vaho
-    const b = Math.sin(ph * TAU); respira = 0.5 + 0.5 * b; p.pz = 0.5 + b * 0.5; p.tp = 10 + b * 2; p.cab = 6 - b * 2; p.mano = [[9, -12.5, 39 + b * 1.2], [8, 11.8, 20 - b * 0.5]];
+    const b = Math.sin(ph * TAU); respira = 0.5 + 0.5 * b; p.pz = 0.5 + b * 0.5; p.tp = 10 + b * 2; p.cab = 6 - b * 2; p.mano = [[7, -14.5, 39 + b * 1.2], [8, 11.8, 20 - b * 0.5]];
   } else if (acc === 'caminar') {
-    marcha(p, ph, 15, 4); p.tp = 14; p.mano[0] = [9 - p.pie[0][0] * 0.15, -12.5, 39 + Math.sin(ph * TAU * 2) * 1]; p.mano[1] = [8 - p.pie[1][0] * 0.3, 11.8, 20]; respira = 0.5 + 0.5 * Math.sin(ph * TAU * 2);
+    marcha(p, ph, 15, 4); p.tp = 14; p.mano[0] = [7 - p.pie[0][0] * 0.15, -14.5, 39 + Math.sin(ph * TAU * 2) * 1]; p.mano[1] = [8 - p.pie[1][0] * 0.3, 11.8, 20]; respira = 0.5 + 0.5 * Math.sin(ph * TAU * 2);
     p.pie[0][1] = -5.6; p.pie[1][1] = 5.6;
   } else if (acc === 'atacar') {
     // la cuchilla sube por encima del hombro y baja en diagonal con todo el peso
@@ -1668,7 +1734,7 @@ function verdugo(acc: Acc, f: number): Res {
   // el aire que entra: pecho y panza que se inflan, y trapecios que suben
   c.tronco.push(bT(tor, [1.6 * S, 0, 9.6 * S + respira * 0.4 * S], [3.2 * r.A * (1 + respira * 0.07), 5.2 * r.A * (1 + respira * 0.04), 4.2 * S], { mat: Pl }), bT(tor, [2.6 * S, 0, 3.4 * S], [3.4 * r.A * (1 + respira * 0.08), 4.4 * r.A, 3.6 * S], { mat: Pl }));
   for (const s of [1, -1]) c.tronco.push(hueso(ap(tor, [-1 * S, s * 1.4 * r.A, (15.6 + respira * 0.5) * S]), ap(tor, [-0.6 * S, s * 5.6 * r.A, (13.6 + respira * 0.4) * S]), 2.6 * r.A, 2.2 * r.A, { mat: Pl }));
-  ps.push(masa(c.tronco, { mat: Pl, suave: 1.8 * S }));
+  ps.push(tronco(masa(c.tronco, { mat: Pl, suave: 1.8 * S })));
   c.brazos.forEach((b) => ps.push(masa(b, { mat: Pl, suave: 1.5 * S })));
   c.piernas.forEach((b) => ps.push(masa(b, { mat: Pl, suave: 1.5 * S })));
   const T2 = (q: V3) => ap(tor, esc(q, S));
@@ -1752,7 +1818,7 @@ function verdugo(acc: Acc, f: number): Res {
       base = add(mu, fa, 1.6 * S);
       if (acc === 'quieto' || acc === 'caminar') {
         // amartillada: la hoja sube junto a la cabeza, un poco hacia atrás y afuera, con el filo hacia adelante
-        eje = nor(mv(tor.m, [-0.32, -0.28, 1])); filoD = mv(tor.m, [1, 0, 0.15]); filoD = nor(sub(filoD, esc(eje, pto(filoD, eje))));
+        eje = nor(mv(tor.m, [-0.5, -0.55, 1])); filoD = mv(tor.m, [1, 0, 0.15]); filoD = nor(sub(filoD, esc(eje, pto(filoD, eje))));
         base = add(mu, eje, 1.2 * S);
       }
     } else { base = [26 * S, -14 * S, 1.2]; eje = nor([0.7, -0.7, 0]); filoD = [0, 0, 1]; if (len(cruz(eje, filoD)) < 0.1) filoD = [1, 0, 0]; filoD = nor(sub(filoD, esc(eje, pto(filoD, eje)))); }
