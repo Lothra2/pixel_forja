@@ -1,7 +1,7 @@
 import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, type Comp, type Pieza, type V3 } from './render';
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
-import { pose, CUADROS, type Dir, type Accion, type Pose, type AngBrazo } from './figura';
+import { pose, CUADROS, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 
 /**
  * Cuerpos orgánicos para personajes y monstruos humanoides: el mismo esqueleto con articulaciones de figura.ts,
@@ -162,19 +162,28 @@ const rotar = (v: V3, k: V3, ang: number): V3 => {
 /** Hasta dónde llega el arma desde el puño (para que la cabeza del arma toque el piso). */
 const LARGO_ARMA: Partial<Record<TipoArma, number>> = { espada: 23, cimitarra: 23, mandoble: 33, daga: 9.5, hacha: 21, hacha_doble: 29, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 30, varita: 10 };
 
-export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada'): Esqueleto {
+/** Qué lleva la mano izquierda, para la pose: un escudo o un objeto en la mano (si la derecha no la ocupa). */
+function manoDe(arma: TipoArma, izq?: IzqTipo): ManoPose | undefined {
+  if (!izq || izq === 'arma' || dos(arma) || arma === 'arco' || arma === 'ballesta') return undefined;
+  return izq.startsWith('escudo') || izq === 'rodela' ? 'escudo' : 'objeto';
+}
+type IzqTipo = NonNullable<Equipo['izq']>['tipo'];
+
+export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   const tipo = arma === 'ballesta' ? 'ballesta' : dos(arma) ? 'dos' : arma === 'arco' ? 'arco' : arma === 'baculo' || arma === 'lanza' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
-  const P = pose(acc, f, tipo, cu.presentacion);
+  const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo));
   const th = rad(RUMBO[dir]);
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
   const W: Fn = (fw, rt, up) => [F[0] * fw + R[0] * rt, F[1] * fw + R[1] * rt, up];
+  // la caída de morir: el cuerpo gira alrededor de los pies hacia caidaDir (0 adelante, 180 de espaldas, ±90 de costado)
+  const cd = rad(P.caidaDir ?? 0), D: V3 = [F[0] * Math.cos(cd) + R[0] * Math.sin(cd), F[1] * Math.cos(cd) + R[1] * Math.sin(cd), 0], Q: V3 = [-D[1], D[0], 0];
   const caer = (q: V3): V3 => {
     if (!P.caida) return q;
-    const a = rad(-82 * P.caida);
-    const fw = q[0] * F[0] + q[1] * F[1], rt = q[0] * R[0] + q[1] * R[1];
-    const nf = fw * Math.cos(a) - q[2] * Math.sin(a), nz = Math.max(0.6, fw * Math.sin(a) + q[2] * Math.cos(a));
-    return W(nf - 4 * P.caida, rt, nz);
+    const a = rad(82 * P.caida);
+    const al = q[0] * D[0] + q[1] * D[1], pe = q[0] * Q[0] + q[1] * Q[1];
+    const na = al * Math.cos(a) + q[2] * Math.sin(a) - 4 * P.caida, nz = Math.max(0.6, -al * Math.sin(a) + q[2] * Math.cos(a));
+    return [D[0] * na + Q[0] * pe, D[1] * na + Q[1] * pe, nz];
   };
   const plant = !!P.plantado && !P.caida;
   // con los pies plantados `avanza` corre la cadera (los pies quedan); si no, mueve todo el cuerpo
@@ -423,14 +432,14 @@ export function personajeEscena(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f
   const piezas = personaje(cu, eq, dir, acc, f);
   const en = eq.arma?.encanto;
   if (!en || !eq.arma) return { piezas };
-  const e = esqueleto(cu, dir, acc, f, eq.arma.tipo);
+  const e = esqueleto(cu, dir, acc, f, eq.arma.tipo, eq.izq?.tipo);
   const [a, b] = filoDe(e, eq.arma.tipo, e.brazos[0]);
   return { piezas, resplandor: { c: mez(a, b, 0.5), r: 15 * e.S, color: ENCANTOS.find((x) => x[0] === en)![3] } };
 }
 
 export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): Pieza[] {
   const tipoArma = eq.arma?.tipo ?? 'nada';
-  const e = esqueleto(cu, dir, acc, f, tipoArma);
+  const e = esqueleto(cu, dir, acc, f, tipoArma, eq.izq?.tipo);
   const { S, A, T, cab, ejesCab, F, R } = e;
   const H = (cu.cabeza ?? 1) * S, cz = e.cz;
   const ps: Pieza[] = [];
@@ -655,7 +664,7 @@ function frasco(e: Esqueleto, u: number): Pieza[] {
 function efectos(cu: Cuerpo, eq: Equipo, e: Esqueleto, dir: Dir, f: number): Pieza[] {
   const n = CUADROS.presentar, u = f / n, S = e.S, ps: Pieza[] = [];
   const tipo = eq.arma?.tipo ?? 'nada';
-  const mano = (q: number, i: number) => esqueleto(cu, dir, 'presentar', q * n, tipo).brazos[i].mano;
+  const mano = (q: number, i: number) => esqueleto(cu, dir, 'presentar', q * n, tipo, eq.izq?.tipo).brazos[i].mano;
   const h = (i: number) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
   switch (cu.presentacion) {
     case 'conjuro': {
@@ -672,7 +681,7 @@ function efectos(cu: Cuerpo, eq: Equipo, e: Esqueleto, dir: Dir, f: number): Pie
     case 'invoca': {
       // jirones de alma que suben en espiral desde el piso hacia la garra mientras la levanta
       if (u < 0.08 || u > 0.84) break;
-      const m = e.brazos[1].mano, piso: V3 = [m[0], m[1], 0.8];
+      const m = e.brazos[manoDe(tipo, eq.izq?.tipo) === 'escudo' ? 0 : 1].mano, piso: V3 = [m[0], m[1], 0.8];
       const fuerza = Math.sin(Math.PI * (u - 0.08) / 0.76);
       for (let k = 0; k < 6; k++) {
         const t = ((u * 2 + k / 6) % 1), a = k * 2.1 + u * 9, r = (3.2 - t * 2.2) * S;
@@ -971,8 +980,10 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
         const arr: V3 = [c[0], c[1], c[2] + 15 * S], abj: V3 = [c[0], c[1], c[2] - 15 * S], comba = add(c, F, 3.4 * S);
         const pts = [arr, add(add(comba, [0, 0, 9 * S]), F, -0.8 * S), comba, add(add(comba, [0, 0, -9 * S]), F, -0.8 * S), abj];
         for (let i = 0; i < 4; i++) ps.push(palo(pts[i], pts[i + 1], (i === 1 || i === 2 ? 0.75 : 0.55) * S, { mat: mango, r1: (i === 1 || i === 2 ? 0.75 : 0.55) * S }));
-        ps.push(palo(arr, m, 0.15 * S, { mat: 'cuerda' }), palo(m, abj, 0.15 * S, { mat: 'cuerda' }));
-        if (e.pose?.flecha !== false) ps.push(palo(m, add(comba, F, 2 * S), 0.3 * S, { mat: 'madera_lisa' }), poliedro([add(add(comba, F, 2 * S), [0, 0, 0.8]), add(add(comba, F, 2 * S), [0, 0, -0.8]), add(comba, F, 4.5 * S)], { mat }));
+        const tensa = e.pose?.tensa !== false;
+        if (tensa) ps.push(palo(arr, m, 0.15 * S, { mat: 'cuerda' }), palo(m, abj, 0.15 * S, { mat: 'cuerda' }));
+        else ps.push(palo(arr, abj, 0.15 * S, { mat: 'cuerda' }));
+        if (tensa && e.pose?.flecha !== false) ps.push(palo(m, add(comba, F, 2 * S), 0.3 * S, { mat: 'madera_lisa' }), poliedro([add(add(comba, F, 2 * S), [0, 0, 0.8]), add(add(comba, F, 2 * S), [0, 0, -0.8]), add(comba, F, 4.5 * S)], { mat }));
       } else {
         // la ballesta va al frente, entre las dos manos, apuntando hacia adelante
         // con las dos manos va entre ellas apuntando adelante; con la izquierda libre cuelga de la derecha en la dirección del puño
@@ -1100,10 +1111,16 @@ export function encantar(a: V3, b: V3, en: Encanto, f: number, S = 1, semilla = 
 }
 
 function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArma): Pieza[] {
-  const { S, F } = e;
+  const { S } = e;
   const b = e.brazos[1];
   const ps: Pieza[] = [];
   if (dos(derecha) || derecha === 'arco' || derecha === 'ballesta') return ps;
+  // la cara del escudo mira hacia donde mira el torso, abierta unos 30° hacia afuera (nunca de canto); en el piso, la del cuerpo
+  let F = e.F;
+  if (!e.caida) {
+    const [ex, ey] = e.ejesT, fh = nor([ex[0] * Math.cos(rad(30)) + ey[0] * Math.sin(rad(30)), ex[1] * Math.cos(rad(30)) + ey[1] * Math.sin(rad(30)), 0]);
+    if (isFinite(fh[0]) && len([fh[0], fh[1], 0]) > 0.5) F = fh;
+  }
   const c = add(add(b.mano, F, 1.2 * S), [0, 0, 2.2 * S]);
   const mat = iz.mat ?? 'madera', m2 = iz.mat2 ?? 'cu_placa';
   const ga = angulo(F);

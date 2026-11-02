@@ -70,8 +70,10 @@ export interface Pose {
   vara?: [number, number]; giroVara?: number;
   /** Tela y pelo: cuánto se arrastran [atrás, a la derecha] por la inercia del cuerpo. */
   capa?: [number, number]; pelo?: [number, number];
-  /** Arco: hay flecha en la cuerda (falta = sí). */
-  flecha?: boolean;
+  /** Arco: hay flecha en la cuerda (falta = sí) y la mano derecha tira de la cuerda (falta = sí; si no, la cuerda va recta). */
+  flecha?: boolean; tensa?: boolean;
+  /** Morir: hacia dónde cae el cuerpo (grados sobre el piso: 0 adelante, 90 a la derecha, 180 de espaldas, -90 a la izquierda). */
+  caidaDir?: number;
   /** Lo que lleva la mano izquierda en la presentación. */
   objetoI?: 'frasco';
 }
@@ -113,17 +115,41 @@ export function zancada(acc: 'caminar' | 'correr', alto = 1): number {
 /** Tipo de arma para la pose (lo que cambia cómo se agarra y cómo se mueve). */
 export type ArmaPose = 'una' | 'dos' | 'arco' | 'baculo' | 'garras' | 'nada' | 'ballesta';
 
-export function pose(acc: Accion, f: number, arma: ArmaPose = 'una', estilo?: Presentacion): Pose {
+/** Lo que lleva la mano izquierda cuando la derecha empuña sola: un escudo o un objeto (orbe, libro, antorcha). */
+export type ManoPose = 'escudo' | 'objeto';
+
+export function pose(acc: Accion, f: number, arma: ArmaPose = 'una', estilo?: Presentacion, mano?: ManoPose): Pose {
   const p: Pose = { torso: 4, giroTorso: 0, cabeza: 0, bajar: 0, avanza: 0, hombroD: [8, 10, 18], hombroI: [6, 10, 16], caderaD: [2, 4], caderaI: [-2, 4], caida: 0 };
   const u = f / CUADROS[acc];
   if (acc === 'quieto') quieto(p, u, arma, estilo);
   else if (acc === 'caminar' || acc === 'correr') marcha(p, u, acc === 'correr', arma);
-  else if (acc === 'presentar') presentar(p, u, arma, estilo ?? 'guardia');
+  else if (acc === 'presentar') presentar(p, u, arma, estilo ?? 'guardia', mano);
   else if (acc === 'atacar') atacar(p, u, arma);
   else if (acc === 'lanzar') lanzar(p, u, arma);
   else if (acc === 'herido') herido(p, f, arma);
-  else morir(p, f, arma);
+  else morir(p, f, arma, estilo);
+  if (mano) brazoEscudo(p, acc, u, mano);
   return p;
+}
+
+/**
+ * El brazo del escudo (o del orbe, el libro, la antorcha): quieto y adelante, con el codo cerca de 90° y el antebrazo
+ * cruzando un poco frente al pecho; casi no se balancea. La cara del escudo la orienta cuerpo.ts con el torso.
+ */
+function brazoEscudo(p: Pose, acc: Accion, u: number, mano: ManoPose) {
+  if (acc === 'presentar' || acc === 'morir') return;
+  if (acc === 'lanzar') {
+    // conjura empujando el escudo al frente, a la altura del pecho (nunca por encima del hombro)
+    if (p.manoI && mano === 'escudo') p.manoI = [Math.min(p.manoI[0], 15), -4.5, Math.min(p.manoI[2], 37)];
+    return;
+  }
+  delete p.manoI; delete p.codoI;
+  const gi = mano === 'escudo' ? 24 : 14, br = Math.sin(u * TAU), resp = p.respira ?? 0;
+  if (acc === 'quieto') p.hombroI = [22 + resp * 1.5, 14, 82 + resp * 2, gi];
+  else if (acc === 'caminar') p.hombroI = [22 + br * 2.5, 14, 84 - br * 2, gi];
+  else if (acc === 'correr') p.hombroI = [26 + br * 4, 16, 90 - br * 3, gi];
+  else if (acc === 'atacar') p.hombroI = [26 + p.giroTorso * 0.25, 16, 84 - p.giroTorso * 0.2, gi];
+  else if (acc === 'herido') p.hombroI = [18 - p.torso * 0.4, 18 + (p.ladeo ?? 0), 80, gi - 4];
 }
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const TAU = Math.PI * 2;
@@ -283,12 +309,13 @@ function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose) {
   p.pelo = [(correr ? 2.2 : 0.6) + rebote * 0.5, -peso(u - 0.16) * 0.8];
   const g = dif(u);
   if (arma === 'dos' || arma === 'ballesta') { p.hombroD = [30 + g * 4, 8, 50 + g * 3, 0]; p.hombroI = [36 + g * 4, 14, 58]; p.munecaD = g * 4; }
-  if (arma === 'arco') p.hombroI = [sI * 0.6 + 12, 9, 30, 8];
+  // el arco va en la izquierda, bajo y vertical al costado; la derecha se balancea libre (la cuerda queda recta)
+  if (arma === 'arco') { p.hombroI = [sI * (correr ? 0.35 : 0.3) + 2, 14, (correr ? 34 : 14) + Math.max(0, cI) * 0.3, 0]; p.tensa = false; }
   if (arma === 'baculo') { p.hombroD = [18 + sD * 0.3, 10, 55, 0]; p.vara = [5 + sD * 0.15, 2]; }
 }
 
 // ------------------------------------------------------------------ presentar: la actuación de cada clase (16 cuadros)
-function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion) {
+function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, mano?: ManoPose) {
   const dosM = arma === 'dos' || arma === 'ballesta';
   switch (estilo) {
     case 'rugido': {
@@ -385,6 +412,15 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion) {
       ], u, { lagCab: 0.04, capa: 0.8, tela: 1.2 });
       // temblor de la garra mientras sostiene lo que invocó
       if (u > 0.55 && u < 0.8 && p.manoI) { const tr = Math.sin(u * TAU * 7) * 0.5; p.manoI = [p.manoI[0] + tr * 0.4, p.manoI[1] + tr, p.manoI[2] + tr * 0.6]; }
+      if (mano === 'escudo' && p.manoI) {
+        // con escudo en la izquierda: la garra es la derecha (la daga en puño invertido) y el escudo queda abajo, al costado
+        const g = p.manoI, cd = p.codoI ?? [0.2, -1, 0.5];
+        p.manoD = [g[0], -g[1], g[2]]; p.codoD = [cd[0], -cd[1], cd[2]]; p.armaD = [172, 0];
+        const r = p.respira ?? 0;
+        p.manoI = [4 + r, -9, 30 + r]; p.codoI = [-0.4, -0.8, -0.5];
+        p.giroTorso = -p.giroTorso; p.giroCadera = -(p.giroCadera ?? 0); p.ladeo = -(p.ladeo ?? 0); p.giroCabeza = -(p.giroCabeza ?? 0); p.ladeoCabeza = -(p.ladeoCabeza ?? 0); p.lateral = -(p.lateral ?? 0); p.ladeoCadera = -(p.ladeoCadera ?? 0);
+        p.hombros = [p.hombros?.[1] ?? 0, p.hombros?.[0] ?? 0];
+      }
       break;
     }
     case 'kata': {
@@ -580,31 +616,84 @@ function herido(p: Pose, f: number, arma: ArmaPose) {
   p.capa = [tab([2.2, 3.4, 1.4, 0.9]), tab([-0.6, -1.2, -0.4, 0])]; p.pelo = [tab([1.6, 2.4, 0.6, 0.2]), tab([-0.5, -1, 0, 0])];
   if (arma === 'dos' || arma === 'ballesta') { p.hombroD = tab<AngBrazo>([[40, 14, 60, 0], [48, 18, 70, 0], [34, 10, 55, 0], [30, 8, 50, 0]]); }
   if (arma === 'baculo') p.vara = tab<[number, number]>([[-14, 8], [-20, 10], [-4, 4], [3, 3]]);
-  if (arma === 'arco') p.hombroI = tab<AngBrazo>([[40, 30, 30, 0], [48, 36, 40, 0], [36, 20, 24, 0], [34, 14, 18, 0]]);
+  if (arma === 'arco') { p.hombroI = tab<AngBrazo>([[40, 30, 30, 0], [48, 36, 40, 0], [36, 20, 24, 0], [34, 14, 18, 0]]); p.tensa = false; }
 }
 
-// ------------------------------------------------------------------ morir: las rodillas ceden, cae con peso y rebota
-function morir(p: Pose, f: number, arma: ArmaPose) {
+// ------------------------------------------------------------------ morir: con peso; cada cuerpo cae a su manera
+/**
+ * Las clases pesadas (berserker, templario) caen de rodillas y después de bruces; las ligeras caen de espaldas
+ * (arcanista, nigromante) o de costado (cazadora a la derecha, alquimista a la izquierda); las demás se desploman
+ * hacia adelante. En todas: el golpe, las rodillas que ceden, la caída que acelera, el contacto con rebote y el asiento.
+ */
+function morir(p: Pose, f: number, arma: ArmaPose, estilo?: Presentacion) {
   const i = Math.max(0, Math.min(7, Math.floor(f)));
   const tab = <T>(xs: T[]) => xs[i];
-  // la caída acelera (gravedad), el cuerpo toca el piso en el 6 y en el 7 se asienta
-  p.caida = tab([0, 0, 0.06, 0.22, 0.5, 0.86, 1, 1]);
-  p.bajar = tab([1.5, 6.5, 8, 7, 5, 3, 1.2, 0.6]);
-  p.torso = tab([-14, 18, 10, 2, -3, -5, -8, -3]);
-  p.cabeza = tab([-14, 24, 20, 8, -4, -16, 6, -8]);
-  p.giroCabeza = tab([8, 6, 2, 0, 2, 10, 26, 34]); p.ladeoCabeza = tab([6, 4, 0, -2, -2, 0, 6, 10]);
-  p.ladeo = tab([5, 3, -2, -3, -2, 0, 3, 4]); p.giroTorso = tab([12, 8, 4, 2, 0, -2, -6, -9]);
+  const T2 = (xs: [number, number][]) => tab(xs);
+  const T3 = (xs: [number, number, number][]) => tab(xs) as AngBrazo;
+  const modo = estilo === 'rugido' || estilo === 'guardia' ? 'rodillas' : estilo === 'conjuro' || estilo === 'invoca' ? 'espaldas' : estilo === 'apunta' || estilo === 'frasco' ? 'costado' : 'adelante';
   p.avanza = tab([-1.2, -0.4, 0, 0, 0, 0, 0, 0]);
-  // los brazos quedan atrás en la caída (se levantan) y golpean el piso abiertos
-  p.hombroD = tab<AngBrazo>([[35, 35, 50, 0], [6, 16, 18, 0], [14, 22, 24, 0], [45, 36, 30, 0], [80, 48, 26, 0], [70, 58, 22, 0], [18, 52, 30, 0], [12, 48, 26, 0]]);
-  p.hombroI = tab<AngBrazo>([[28, 40, 65, 0], [3, 14, 22, 0], [10, 24, 26, 0], [38, 42, 34, 0], [72, 52, 30, 0], [60, 62, 26, 0], [14, 56, 36, 0], [10, 52, 30, 0]]);
-  p.caderaD = tab<[number, number]>([[6, 10], [26, 72], [28, 84], [24, 66], [20, 46], [16, 30], [12, 20], [13, 22]]);
-  p.caderaI = tab<[number, number]>([[-6, 8], [18, 62], [22, 74], [16, 54], [8, 34], [2, 20], [0, 12], [1, 14]]);
-  p.munecaD = tab([-10, 20, 30, 10, -20, -30, 10, 0]);
   p.capa = [tab([2, 0.5, -0.5, -1.5, -2, -1, 0.6, 0]), 0]; p.pelo = [tab([1.6, -0.6, -1, -1.6, -2, -1, 0.4, 0]), 0];
+  if (modo === 'rodillas') {
+    // cae de rodillas (el golpe de las rodillas en el piso), se balancea y se va de bruces
+    p.caida = tab([0, 0, 0, 0, 0.18, 0.55, 1, 1]);
+    p.bajar = tab([1.5, 7, 14, 14.5, 11, 6, 1.2, 0.6]);
+    p.torso = tab([-14, 16, 6, 18, 24, 16, -4, -2]); p.cabeza = tab([-14, 22, 10, 26, 20, -10, 6, -8]);
+    p.giroCabeza = tab([8, 6, 2, 4, 6, 10, 26, 34]); p.ladeoCabeza = tab([6, 4, 0, 6, 4, 0, 6, 10]);
+    p.ladeo = tab([5, 3, -1, 3, 2, 0, 3, 4]); p.giroTorso = tab([12, 8, 2, 4, 2, -2, -6, -9]);
+    p.caderaD = T2([[6, 10], [26, 72], [6, 100], [4, 102], [10, 80], [12, 45], [10, 18], [12, 20]]);
+    p.caderaI = T2([[-6, 8], [18, 62], [12, 104], [10, 106], [14, 84], [10, 50], [2, 12], [2, 14]]);
+    p.hombroD = T3([[35, 35, 50], [6, 16, 18], [4, 14, 14], [2, 12, 10], [30, 22, 20], [70, 40, 24], [18, 52, 30], [12, 48, 26]]);
+    p.hombroI = T3([[28, 40, 65], [3, 14, 22], [2, 14, 16], [0, 12, 12], [25, 26, 24], [62, 44, 26], [14, 56, 36], [10, 52, 30]]);
+    p.munecaD = tab([-10, 20, 25, 30, 10, -20, 10, 0]);
+    // de rodillas el arma se le cae de punta al piso
+    if (i >= 2 && i <= 4 && arma !== 'arco' && arma !== 'garras' && arma !== 'nada' && arma !== 'baculo') { p.armaD = [150, 20]; p.pisoArma = 1; }
+  } else if (modo === 'espaldas') {
+    // el golpe la echa atrás: da un paso, la barbilla se recoge en la caída y la cabeza golpea al llegar
+    p.caidaDir = 180;
+    p.caida = tab([0, 0, 0.1, 0.32, 0.68, 1, 0.95, 1]);
+    p.bajar = tab([1.5, 3, 4, 3.5, 2.5, 1.5, 1, 0.6]);
+    p.torso = tab([-14, -10, 4, 10, 14, 6, 10, 2]); p.cabeza = tab([-16, -12, 14, 20, 18, -8, 6, -6]);
+    p.giroCabeza = tab([6, 8, 4, 2, 0, 6, 20, 30]); p.ladeoCabeza = tab([8, 6, 2, 0, 0, 4, 8, 10]);
+    p.ladeo = tab([4, 5, 2, 0, -1, 0, 2, 3]); p.giroTorso = tab([10, 14, 8, 4, 0, -4, -6, -8]);
+    p.avanza = tab([-1.2, -2, -1, 0, 0, 0, 0, 0]);
+    p.caderaD = T2([[6, 10], [-8, 20], [14, 40], [28, 60], [34, 64], [30, 56], [26, 48], [28, 52]]);
+    p.caderaI = T2([[-6, 8], [10, 30], [8, 24], [6, 16], [4, 10], [2, 6], [2, 6], [2, 8]]);
+    p.hombroD = T3([[35, 35, 50], [45, 40, 40], [70, 40, 30], [85, 45, 25], [80, 50, 25], [30, 60, 30], [14, 62, 34], [10, 60, 30]]);
+    p.hombroI = T3([[28, 40, 65], [40, 45, 50], [64, 44, 30], [80, 48, 26], [76, 52, 24], [26, 64, 34], [12, 66, 38], [8, 62, 34]]);
+    p.munecaD = tab([-10, -15, -20, -10, 10, 20, 0, 0]);
+    p.capa = [tab([2, 2.6, 3, 2, 1, 0, 0.4, 0]), 0];
+  } else if (modo === 'costado') {
+    // se dobla sobre la herida, gira y cae de costado; queda acurrucada
+    const sg = estilo === 'apunta' ? 1 : -1;
+    p.caidaDir = 95 * sg;
+    p.caida = tab([0, 0, 0.08, 0.3, 0.66, 1, 0.95, 1]);
+    p.bajar = tab([1.5, 5, 6, 5, 3.5, 2, 1, 0.6]);
+    p.torso = tab([-12, 10, 14, 10, 6, 4, 8, 6]); p.cabeza = tab([-12, 16, 14, 8, 2, -4, 4, 2]);
+    p.giroCabeza = tab([8, 4, 0, -4, -6, -2, 6, 10])* sg; p.ladeoCabeza = tab([6, 2, 0, -4, -6, -2, 4, 6]) * sg;
+    p.ladeo = tab([0, 4, 8, 6, 4, 0, -2, 0]) * sg; p.giroTorso = tab([12, 16, 20, 14, 8, 4, 0, 2]) * sg;
+    p.caderaD = T2([[6, 10], [22, 60], [26, 70], [30, 64], [34, 60], [36, 58], [34, 54], [36, 56]]);
+    p.caderaI = T2([[-6, 8], [14, 40], [16, 46], [18, 44], [16, 36], [14, 30], [12, 28], [14, 30]]);
+    p.hombroD = T3([[35, 35, 50], [20, 30, 30], [40, 40, 30], [60, 46, 30], [70, 40, 40], [50, 30, 60], [46, 26, 64], [44, 24, 66]]);
+    p.hombroI = T3([[28, 40, 65], [10, 24, 30], [30, 40, 30], [50, 46, 30], [60, 44, 40], [56, 30, 60], [52, 28, 66], [50, 26, 68]]);
+    p.munecaD = tab([-10, 10, 20, 10, 0, -10, 0, 0]);
+  } else {
+    // se desploma hacia adelante: la caída acelera (gravedad), toca el piso en el 6 y en el 7 se asienta
+    p.caida = tab([0, 0, 0.06, 0.22, 0.5, 0.86, 1, 1]);
+    p.bajar = tab([1.5, 6.5, 8, 7, 5, 3, 1.2, 0.6]);
+    p.torso = tab([-14, 18, 10, 2, -3, -5, -8, -3]); p.cabeza = tab([-14, 24, 20, 8, -4, -16, 6, -8]);
+    p.giroCabeza = tab([8, 6, 2, 0, 2, 10, 26, 34]); p.ladeoCabeza = tab([6, 4, 0, -2, -2, 0, 6, 10]);
+    p.ladeo = tab([5, 3, -2, -3, -2, 0, 3, 4]); p.giroTorso = tab([12, 8, 4, 2, 0, -2, -6, -9]);
+    // los brazos se adelantan a frenar la caída y quedan abiertos
+    p.hombroD = T3([[35, 35, 50], [6, 16, 18], [14, 22, 24], [45, 36, 30], [80, 48, 26], [70, 58, 22], [18, 52, 30], [12, 48, 26]]);
+    p.hombroI = T3([[28, 40, 65], [3, 14, 22], [10, 24, 26], [38, 42, 34], [72, 52, 30], [60, 62, 26], [14, 56, 36], [10, 52, 30]]);
+    p.caderaD = T2([[6, 10], [26, 72], [28, 84], [24, 66], [20, 46], [16, 30], [12, 20], [13, 22]]);
+    p.caderaI = T2([[-6, 8], [18, 62], [22, 74], [16, 54], [8, 34], [2, 20], [0, 12], [1, 14]]);
+    p.munecaD = tab([-10, 20, 30, 10, -20, -30, 10, 0]);
+  }
+  if (arma === 'arco') p.tensa = false;
   if (arma === 'baculo') p.vara = tab<[number, number]>([[-14, 8], [10, 14], [20, 20], [10, 30], [-10, 40], [-30, 50], [-60, 60], [-70, 62]]);
-  // al tocar el piso el arma queda tendida al costado (no se clava en el suelo)
-  else if (arma !== 'arco' && arma !== 'garras' && arma !== 'nada' && i >= 5) p.armaD = tab<[number, number]>([[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [86, 80], [90, 86], [90, 88]]);
+  // al tocar el piso el arma queda tendida sobre el suelo (no se clava): de costado va hacia adelante, si no al costado
+  else if (arma !== 'arco' && arma !== 'garras' && arma !== 'nada' && i >= 5) p.armaD = modo === 'costado' ? [90, 0] : tab<[number, number]>([[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [86, 80], [90, 86], [90, 88]]);
 }
 
 /** Cómo va vestido y armado un personaje. */
