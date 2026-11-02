@@ -1222,7 +1222,9 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
   // despertar
   if (m.estado === 'dormido' || m.estado === 'deambular') {
     const vista = m.calidad >= 3 ? 9 : 8;
-    if (!h.muerto && dh < vista && (dh < 3 || lineaLibre(j.zona, m.x, m.y, h.x, h.y))) {
+    // los jefes despiertan por cercanía a su sala, aunque un muro los tape (si no, quedan quietos hasta verte)
+    const esJefe = !!(m.def.jefe || m.def.ia === 'jefe');
+    if (!h.muerto && ((esJefe && dh < 7 + (m.escala ?? 1) * 2) || (dh < vista && (dh < 3 || lineaLibre(j.zona, m.x, m.y, h.x, h.y))))) {
       m.estado = 'perseguir'; m.objetivo = h;
       if (m.calidad >= 3 || m.def.jefe || m.def.ia === 'jefe') { j.jefe = m; if (!(m as any).hablo) { (m as any).hablo = true; const fr = FRASE_JEFE[m.def.id]; if (fr) { msg(j, fr, '#ff6040'); m.habla = fr[j.idi]; (m as any).hablaT = 4; } sonar(j, 'rugido_jefe'); Sonido.musica('jefe'); } }
       else if (R() < 0.3) sonar(j, m.def.sonido === 'hueso' ? 'golpe_hueso' : 'grunido', m.x, m.y, 0.6);

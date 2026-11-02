@@ -351,7 +351,13 @@ function cuadro(ahora: number) {
   finCuadro();
   requestAnimationFrame(cuadro);
 }
+// autoguardado: cada 30 s en partida y al ocultar o cerrar la pestaña (antes solo al cambiar de zona)
+let tAutoguardado = performance.now();
+const guardarYa = () => { if (estado === 'juego' && j) guardar(); };
+addEventListener('pagehide', guardarYa);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') guardarYa(); });
 function paso(dt: number) {
+  if (estado === 'juego' && j && performance.now() - tAutoguardado > 30000) { tAutoguardado = performance.now(); guardar(); }
   ctx.imageSmoothingEnabled = false;
   const inp = document.getElementById('nombre') as HTMLInputElement;
   if (estado !== 'crear') inp.style.display = 'none';

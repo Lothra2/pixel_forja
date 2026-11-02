@@ -780,7 +780,9 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     z.spawns.push({ cx: pN[0], cy: pN[1] + 2, tipo: 'jefe', fuerza: 1 });
     // la sala del jefe: cosas que no deberían existir
     const mis = ['mis_trono_huesos', 'mis_manos', 'mis_ojos_oscuridad', 'mis_carne_viva', 'mis_estatua_doliente', 'mis_pozo_almas', 'mis_reliquia', 'mis_libro_maldito', 'mis_espejo'];
-    for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2 + r(); k.poner(mis[i % mis.length], pN[0] + Math.cos(a) * (4 + r() * 3), pN[1] + 2 + Math.sin(a) * (4 + r() * 3)); }
+    // los jefes enormes necesitan la sala despejada: el anillo y el tesoro se abren
+    const g = def.jefe === 'aun_saar' || def.jefe === 'senor_demonio' ? 1.7 : def.jefe === 'campana_ahoga' ? 1.3 : 1;
+    for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2 + r(); k.poner(mis[i % mis.length], pN[0] + Math.cos(a) * (4 + r() * 3) * g, pN[1] + 2 + Math.sin(a) * (4 + r() * 3) * g); }
     // la sala de Ozmaren: el piso se raja y deja ver la lava
     if (def.jefe === 'senor_demonio') {
       const bx = Math.floor(pN[0] / 5), by = Math.floor((pN[1] + 2) / 5);
@@ -789,7 +791,7 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     }
     // y el tesoro que guardaba
     const tesoro: [string, string][] = [['tesoro_pila', 'grande'], ['tesoro_pila', 'chica'], ['saco_monedas', 'derramado'], ['caliz', 'volcado'], ['corona_suelo', 'con_calavera'], ['jarron_oro', 'de_pie'], ['oro_monton', 'mediano'], ['saco_monedas', 'cerrado']];
-    tesoro.forEach(([id, v], i) => { const a = (i / tesoro.length) * Math.PI * 2 + 0.3; k.poner(id, pN[0] + Math.cos(a) * 7.5, pN[1] + 2 + Math.sin(a) * 6, v); });
+    tesoro.forEach(([id, v], i) => { const a = (i / tesoro.length) * Math.PI * 2 + 0.3; k.poner(id, pN[0] + Math.cos(a) * 7.5 * g, pN[1] + 2 + Math.sin(a) * 6 * g, v); });
     // las mazmorras laterales guardan un cofre de tesoro junto a su mini jefe
     if (def.lateral) { const c = k.poner(def.tema === 'tumba' || def.tema === 'templo' ? 'cofre_sarcofago_tesoro' : 'cofre_noble', pN[0] + 4, pN[1] + 5, 'cerrado', true, 'cofre'); if (c) z.marcas.push({ tipo: 'cofre', cx: c.cx, cy: c.cy }); }
   }
