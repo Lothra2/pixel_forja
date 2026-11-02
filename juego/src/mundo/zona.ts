@@ -62,6 +62,8 @@ interface Tematica {
   piso: string; parches: string[]; camino?: string; ambiente: AmbienteId; oscuridad: number;
   borde: Sel[]; disperso: Sel[]; grande?: Sel[]; luces?: Sel[];
   muroX?: [string, string[]]; muroY?: [string, string[]];
+  /** Otros pares de muros (x, y) para que no todas las mazmorras del tema se vean iguales: se elige uno por zona. */
+  murosAlt?: [[string, string[]], [string, string[]]][];
   deco?: Sel[]; vinetas?: string[];
 }
 
@@ -77,9 +79,11 @@ const TEMATICAS: Record<string, Tematica> = {
   cementerio: {
     piso: 'pasto', parches: ['lajas_musgo', 'tierra', 'pasto_seco'], camino: 'lajas_musgo', ambiente: 'noche', oscuridad: 0.62,
     borde: [{ t: ['arboles'], p: ['muert', 'seco', 'torc'] }, { t: ['cementerio'], p: ['muro'] }],
-    disperso: [{ t: ['cementerio'], p: ['losa', 'tumba', 'cruz', 'urna', 'velas', 'flores', 'pila', 'ataud', 'fosa'] }, { t: ['arboles'], p: ['tocon', 'zarza', 'hongo'] }],
-    grande: [{ t: ['cementerio'], p: ['mausoleo', 'angel', 'sarcofago'] }, { t: ['arboles'], p: ['muert', 'torc'] }],
-    luces: [{ t: ['cementerio'], p: ['farol', 'velas'] }],
+    disperso: [{ t: ['cementerio'], p: ['losa', 'tumba', 'cruz', 'urna', 'velas', 'flores', 'pila', 'ataud', 'fosa'] }, { t: ['arboles'], p: ['tocon', 'zarza', 'hongo'] },
+      { t: ['cementerio'], p: ['cem2_cruz_celta', 'cem2_lapida', 'cem2_losa', 'cem2_cruz_', 'cem2_tumba_', 'cem2_ataud', 'cem2_corona', 'cem2_cuervo', 'cem2_doliente', 'cem2_parca', 'cem2_pala', 'cem2_velas', 'cem2_campana', 'cem2_trampilla', 'cem2_banco', 'cem2_jaula', 'cem2_tocon', 'cem2_obelisco'] }],
+    grande: [{ t: ['cementerio'], p: ['mausoleo', 'angel', 'sarcofago'] }, { t: ['arboles'], p: ['muert', 'torc'] },
+      { t: ['cementerio'], p: ['cem2_mausoleo', 'cem2_capilla', 'cem2_arbol_muerto', 'cem2_osario_aire', 'cem2_cerco', 'cem2_carreta', 'cem2_fosa_comun'], v: (v) => !/_der$/.test(v) }],
+    luces: [{ t: ['cementerio'], p: ['farol', 'velas', 'cem2_linterna', 'cem2_farol_cayado'] }],
     vinetas: ['cementerio', 'cementerio'],
   },
   abadia: {
@@ -91,9 +95,15 @@ const TEMATICAS: Record<string, Tematica> = {
   },
   catacumbas: {
     piso: 'lajas', parches: ['hueso', 'lajas', 'lajas_musgo'], ambiente: 'cripta', oscuridad: 0.82,
-    borde: [], disperso: [{ t: ['catacumbas'], p: ['osario', 'poste', 'potro', 'jaula', 'banco', 'cama', 'rejilla', 'ataudes', 'monton', 'doncella'] }, { t: ['cementerio'], p: ['pila', 'ataud', 'urna'] }],
-    grande: [{ t: ['catacumbas'], p: ['osario'] }], luces: [{ t: ['monasterio'], p: ['brasero', 'antorcha'] }],
+    borde: [], disperso: [{ t: ['catacumbas'], p: ['osario', 'poste', 'potro', 'jaula', 'banco', 'cama', 'rejilla', 'ataudes', 'monton', 'doncella'] }, { t: ['cementerio'], p: ['pila', 'ataud', 'urna'] },
+      { t: ['catacumbas'], p: ['cat2_escombro', 'cat2_gotera', 'cat2_rata', 'cat2_huesos_suelo', 'cat2_carretilla', 'cat2_pozo', 'cat2_columna_derrumbada', 'cat2_ataudes_estante'] }],
+    grande: [{ t: ['catacumbas'], p: ['osario', 'cat2_arco_derrumbado', 'cat2_ataudes_estante'] }], luces: [{ t: ['monasterio'], p: ['brasero', 'antorcha'] }],
     muroX: ['cat_nichos', ['izq', 'izq_saqueado']], muroY: ['cat_nichos', ['der', 'der_saqueado']],
+    murosAlt: [
+      [['cat2_loculos', ['sellados', 'abiertos', 'mixto', 'saqueado']], ['cat2_loculos', ['sellados_der', 'abiertos_der']]],
+      [['cat2_pasillo_osario', ['femures', 'banda_calaveras', 'cruz_calaveras']], ['cat2_pasillo_osario', ['femures_der', 'banda_calaveras_der']]],
+      [['cat2_pared_toba', ['lisa', 'humeda', 'agrietada', 'con_nicho']], ['cat2_pared_toba', ['lisa_der', 'humeda_der']]],
+    ],
   },
   desierto: {
     piso: 'arena', parches: ['arena', 'arenisca', 'tierra'], camino: 'arenisca', ambiente: 'desierto', oscuridad: 0.12,
@@ -194,10 +204,15 @@ const TEMATICAS: Record<string, Tematica> = {
   },
   cripta: {
     piso: 'lajas', parches: ['lajas', 'hueso', 'lajas_musgo'], ambiente: 'cripta', oscuridad: 0.84,
-    borde: [], disperso: [{ t: ['cripta' as Tema], p: [''] }, { t: ['catacumbas'], p: ['osario', 'ataudes', 'monton', 'rejilla'] }, { t: ['cementerio'], p: ['urna', 'ataud', 'velas'] }],
-    grande: [{ t: ['cripta' as Tema], p: ['sarcofago', 'estatua', 'pilar', 'tumba'] }, { t: ['catacumbas'], p: ['osario'] }],
-    luces: [{ t: ['cripta' as Tema], p: ['vela', 'brasero', 'antorcha'] }, { t: ['monasterio'], p: ['brasero', 'antorcha'] }],
-    muroX: ['cat_nichos', ['izq', 'izq_saqueado']], muroY: ['cat_nichos', ['der', 'der_saqueado']],
+    borde: [], disperso: [{ t: ['cripta' as Tema], p: ['cri_pila_craneos', 'cri_sangre_seca', 'cri_lapida_suelo', 'cri_vasijas', 'cri_telarana', 'cri_cofres_osarios', 'cri_cuerpo_amortajado', 'cri_mesa_embalsamar', 'cri_relicario', 'cri_atril', 'cri_estandarte', 'cri_crucifijo', 'cri_pila_agua', 'cri_tumba_abierta', 'cri_pozo_huesos', 'cri_sello_suelo', 'cri_jaula_colgante'] }, { t: ['catacumbas'], p: ['cat2_huesos_suelo', 'cat2_rata', 'cat2_gotera'] }],
+    grande: [{ t: ['cripta' as Tema], p: ['cri_sarcofago', 'cri_estatua_guardian', 'cri_pilar', 'cri_altar_huesos', 'cri_columna_calaveras'] }],
+    luces: [{ t: ['cripta' as Tema], p: ['cri_candelabro', 'cri_brasero_huesos', 'cri_lampara_aceite'], v: (v) => !/_der$/.test(v) }],
+    deco: [{ t: ['cripta' as Tema], p: ['cri_altar_huesos', 'cri_escalera_caracol'] }],
+    muroX: ['cri_muro', ['liso', 'agrietado', 'hornacina']], muroY: ['cri_muro', ['liso_der', 'agrietado_der']],
+    murosAlt: [
+      [['cri_muro_nichos', ['huesos', 'calaveras', 'mixto', 'saqueado']], ['cri_muro_nichos', ['huesos_der', 'calaveras_der']]],
+      [['cri_osario_pared', ['calaveras', 'huesos_cruzados', 'roseton', 'arco']], ['cri_osario_pared', ['calaveras_der', 'huesos_cruzados_der']]],
+    ],
   },
   abismo: {
     piso: 'tierra_infierno', parches: ['hueso', 'tierra_infierno', 'pentagrama'], ambiente: 'infierno', oscuridad: 0.9,
@@ -514,8 +529,8 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     for (let y = by * 5; y < by * 5 + 5; y++) for (let x = bx * 5; x < bx * 5 + 5; x++) z.bloq[y * z.W + x] = 0;
   }
   // muros: en los bordes de atrás (hacia -x y -y) de cada baldosa con suelo
-  const [mx, vx] = t.muroX ?? ['mon_muro', ['izq']];
-  const [my, vy] = t.muroY ?? ['mon_muro', ['der']];
+  const opcionesMuro: [[string, string[]], [string, string[]]][] = [[t.muroX ?? ['mon_muro', ['izq']], t.muroY ?? ['mon_muro', ['der']]], ...(t.murosAlt ?? [])];
+  const [[mx, vx], [my, vy]] = opcionesMuro[Math.floor(r() * opcionesMuro.length)];
   const defX = REGISTRO.find((d) => d.id === mx), defY = REGISTRO.find((d) => d.id === my);
   for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) {
     if (!suelo[by * tw + bx]) continue;
