@@ -11,6 +11,7 @@ import type { Elemento } from './tipos_objetos';
 import { R, entre, elegir, clamp, dist, hashTxt } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 import { zancada } from '../../../src/engine/gotico/figura';
+import { manifiesto } from '../motor/assets';
 
 /** Celdas que avanza un ciclo completo de caminar o correr (cuerpo de alto 1), según la pisada del motor. */
 export const ZANCADA = { caminar: zancada('caminar') / 16, correr: zancada('correr') / 16 };
@@ -385,6 +386,8 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   }
   total = Math.max(0, total);
   if (v.tipo === 'heroe' && total > 0) ganarFuria(j, 3);
+  // la armadura de Thor: cada tramo le quita daño
+  if ((v as any).invocaId === 'thor') total *= 1 - Math.min(45, ((v as any).tramoThor ?? 0) * 8) / 100;
   v.vida -= total;
   v.destello = 0.12;
   if (total > 0) {
@@ -424,6 +427,12 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
 function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; m.vida = 0;
   const h = j.heroe;
+  if (m.dueno && m.invocaId === 'thor') {
+    // Thor no muere: se echa a descansar y vuelve solo en 60 s (o al llegar al pueblo), sin castigo
+    (h.d.thor ??= {}).descanso = 60;
+    msg(j, ['Thor se echa a descansar. Vuelve en un minuto, o antes si pasas por el pueblo.', 'Thor lies down to rest. He comes back in a minute, or sooner if you visit town.'], '#c0a070');
+    return;
+  }
   if (m.dueno) { j.cadaveres++; return; }
   // condena del osario: el maldito revienta al morir
   if (m.maldicion?.condena && !(m as any).usado) {
@@ -621,6 +630,68 @@ function rematar(j: Juego, x: number, y: number, hb: Habilidad, mult: number) {
   j.numeros.push({ x: h.x, y: h.y, z: 80, txt: j.idi ? 'Finisher!' : '¡Remate!', color: '#ffd060', t: 0, grande: true });
   j.sacudida = Math.max(j.sacudida, 0.3);
 }
+// ------------------------------------------------------------------ Thor
+/** Tramo de armadura de Thor (0 solo collar, 5 la barda azul y oro de la Casa GG): por nivel o por su barda propia. */
+export const TRAMOS_THOR = [1, 6, 15, 30, 50, 75];
+export function tramoThor(d: DatosHeroe): number {
+  let t = 0; for (let i = 0; i < TRAMOS_THOR.length; i++) if (d.nivel >= TRAMOS_THOR[i]) t = i;
+  return Math.max(t, d.thor?.barda ?? 0);
+}
+/** El sprite de Thor según su tramo; mientras no llegue el de la Forja, un lobo teñido de leonado. */
+export function spriteThor(tramo: number): { sprite: string; tinte?: string; escala: number } {
+  const m: any = manifiesto()?.m ?? {};
+  for (const id of [`thor_${tramo}`, 'thor']) if (m[`${id}/quieto/s`]) return { sprite: id, escala: 1 };
+  return { sprite: 'lobo_sombrio', tinte: '#b07838', escala: 1.05 };
+}
+const conCollar = (h: Heroe) => Object.values(h.d.equipo).some((o) => o && (o as any).unico === 'collar_de_thor' || (o as any)?.nombre?.[0] === 'Collar de Thor');
+/** Stats de Thor: suben con el nivel del héroe, su tramo de armadura y el Collar de Thor del Legado GG. */
+function statsThor(j: Juego, m: Monstruo) {
+  const h = j.heroe, n = h.d.nivel, tr = tramoThor(h.d), col = conCollar(h) ? 1.3 : 1;
+  const k = (1 + tr * 0.12) * col * (1 + h.c.invocados_pct / 200);
+  const pct = m.vidaMax ? m.vida / m.vidaMax : 1;
+  m.vidaMax = Math.round((70 + n * 24) * k); m.vida = Math.max(1, Math.round(m.vidaMax * pct));
+  m.dano = [(3 + n * 1.0) * k, (5 + n * 1.7) * k];
+  m.vel = 5.2 * (col > 1 ? 1.1 : 1);
+  (m as any).nivelThor = n; (m as any).tramoThor = tr; (m as any).collarThor = col;
+  const sp = spriteThor(tr); m.def = { ...m.def, sprite: sp.sprite }; m.tinte = sp.tinte; m.escala = sp.escala;
+}
+function crearThor(j: Juego): Monstruo {
+  const h = j.heroe, sp = spriteThor(tramoThor(h.d));
+  const base = MONSTRUOS.lobo_sombrio;
+  const def: DefMonstruo = { ...base, id: 'thor', sprite: sp.sprite, nombre: ['Thor', 'Thor'], vida: 70, dano: [4, 8], vel: 5.2, ia: 'normal', xp: 0, jefe: false, res: {} };
+  const q = libreCerca(j.zona, h.x + 1, h.y + 1);
+  const m = crearMonstruo(def, h.d.nivel, q[0] + 0.5, q[1] + 0.5, 0, 0);
+  m.tipo = 'invocado'; m.dueno = true; m.invocaId = 'thor'; m.estado = 'deambular';
+  m.vidaMax = 0; statsThor(j, m); m.vida = m.vidaMax;
+  (m as any).cdLadrido = 4;
+  j.monstruos.push(m);
+  return m;
+}
+export const thorDe = (j: Juego) => j.monstruos.find((m) => m.dueno && m.invocaId === 'thor' && !m.muerto) ?? null;
+/** Cada cuadro: que Thor esté, que suba con el héroe, que vuelva tras descansar, y su ladrido protector. */
+function actualizarThor(j: Juego, dt: number) {
+  const h = j.heroe; const t = (h.d.thor ??= {});
+  if (t.descanso && t.descanso > 0) { t.descanso -= dt; if (j.zona.tipo === 'pueblo') t.descanso = 0; if (t.descanso > 0) return; }
+  let m = thorDe(j);
+  if (!m) { if (h.muerto) return; m = crearThor(j); efecto(j, 'circulo_invocacion', m.x, m.y, 0, 0.6); return; }
+  if ((m as any).nivelThor !== h.d.nivel || (m as any).tramoThor !== tramoThor(h.d) || (m as any).collarThor !== (conCollar(h) ? 1.3 : 1)) statsThor(j, m);
+  // ladrido protector: escudo para el héroe cuando está en apuros o rodeado
+  (m as any).cdLadrido -= dt;
+  if ((m as any).cdLadrido <= 0 && !h.muerto) {
+    const cerca = j.monstruos.filter((o) => !o.muerto && !o.dueno && dist(o.x, o.y, h.x, h.y) < 6).length;
+    if (h.vida < h.vidaMax * 0.5 || cerca >= 3) {
+      (m as any).cdLadrido = 14;
+      const escudo = Math.round(h.vidaMax * (0.12 + tramoThor(h.d) * 0.02) * ((m as any).collarThor ?? 1));
+      h.escudoHueso = Math.max(h.escudoHueso, escudo);
+      const conEsp = !!(manifiesto() as any)?.m?.[`${m.def.sprite}/especial/s`];
+      if (conEsp) { m.acc = 'especial' as any; m.t = 0; m.dur = 0.9; }
+      efecto(j, 'grito_guerra', m.x, m.y, 0, 1.1);
+      j.numeros.push({ x: m.x, y: m.y, z: 60, txt: j.idi ? 'Woof!' : '¡Guau!', color: '#9ec8ff', t: 0, grande: true });
+      sonar(j, 'grunido', m.x, m.y, 0.8);
+    } else (m as any).cdLadrido = 1;
+  }
+}
+
 /** Invoca un aliado. tVida: si es temporal (no cuenta para el máximo). */
 function crearInvocado(j: Juego, invId: string, n: number, x: number, y: number, tVida?: number, extra = 1): Monstruo | null {
   const h = j.heroe, inv = INVOCADOS[invId]; if (!inv) return null;
@@ -992,6 +1063,7 @@ export function actualizar(j: Juego, dt: number) {
   j.t += dt;
   const h = j.heroe;
   actualizarHeroe(j, dt);
+  actualizarThor(j, dt);
   for (const m of j.monstruos) actualizarMonstruo(j, m, dt);
   for (const n of j.npcs) { n.t += dt; if (dist(n.x, n.y, h.x, h.y) < 5) n.dir = dirDe(h.x - n.x, h.y - n.y); }
   actualizarProyectiles(j, dt);
