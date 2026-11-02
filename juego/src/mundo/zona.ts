@@ -69,6 +69,10 @@ interface Tematica {
   /** Otros pares de muros (x, y) para que no todas las mazmorras del tema se vean iguales: se elige uno por zona. */
   murosAlt?: [[string, string[]], [string, string[]]][];
   deco?: Sel[]; vinetas?: string[];
+  /** Mazmorra de islas: sin muros, los cuartos son islas con borde de precipicio y los pasillos son puentes sobre el vacío. */
+  islas?: { borde: string; puente: string; vacio?: Sel[] };
+  /** Mazmorra con vías: los pasillos llevan rieles (rectos, curvas y fin de vía) y a veces una vagoneta. */
+  rieles?: boolean;
 }
 
 const TEMATICAS: Record<string, Tematica> = {
@@ -171,8 +175,11 @@ const TEMATICAS: Record<string, Tematica> = {
   },
   cueva: {
     piso: 'cueva', parches: ['cueva', 'tierra'], ambiente: 'cripta', oscuridad: 0.8,
-    borde: [], disperso: [{ t: ['cueva'], p: ['estalag', 'roca', 'escomb', 'hueso', 'costill', 'hongo', 'telar', 'raiz', 'cristal', 'poza'] }],
-    grande: [{ t: ['cueva'], p: ['columna'] }], luces: [{ t: ['cueva'], p: ['antorcha', 'hongos'] }],
+    borde: [], disperso: [{ t: ['cueva'], p: ['estalag', 'roca', 'escomb', 'hueso', 'costill', 'hongo', 'telar', 'raiz', 'cristal', 'poza'], s: ['cue2_'] },
+      { t: ['cueva'], p: ['cue2_estalagmitas', 'cue2_estalactitas_caidas', 'cue2_cristales_suelo', 'cue2_charca', 'cue2_nido_huesos', 'cue2_capullos', 'cue2_aventurero', 'cue2_pertrechos', 'cue2_grieta_vapor', 'cue2_gours'] }],
+    grande: [{ t: ['cueva'], p: ['columna'], s: ['cue2_'] }, { t: ['cueva'], p: ['cue2_columna', 'cue2_pilar_roca', 'cue2_hongo_gigante', 'cue2_campamento', 'cue2_sima'] }],
+    luces: [{ t: ['cueva'], p: ['antorcha', 'hongos'], s: ['cue2_'] }, { t: ['cueva'], p: ['cue2_drusa', 'cue2_cristal_gigante', 'cue2_hongos_luz'] }],
+    deco: [{ t: ['cueva'], p: ['cue2_lago_negro'] }],
     muroX: ['cue_muro', ['x', 'x_alta']], muroY: ['cue_muro', ['y', 'y_alta']],
   },
   // acto 6: la ciudad ahogada (afuera) y su catedral (adentro). Mezclan lo nuevo de la Forja con lo que existe
@@ -208,10 +215,13 @@ const TEMATICAS: Record<string, Tematica> = {
   // temas nuevos de la Forja: cada lista mezcla lo nuevo (cuando llegue) con lo que ya existe, así funcionan desde hoy
   mina: {
     piso: 'cueva', parches: ['cueva', 'tierra'], ambiente: 'cripta', oscuridad: 0.84,
-    borde: [], disperso: [{ t: ['mina' as Tema], p: [''] }, { t: ['cueva'], p: ['escomb', 'roca', 'hueso', 'cristal', 'estalag'] }],
-    grande: [{ t: ['mina' as Tema], p: ['vagon', 'grua', 'puntal', 'torno', 'polea'] }, { t: ['cueva'], p: ['columna'] }],
-    luces: [{ t: ['mina' as Tema], p: ['farol', 'lampara', 'antorcha'] }, { t: ['cueva'], p: ['antorcha'] }],
+    borde: [], disperso: [{ t: ['mina' as Tema], p: [''], s: ['min_'] }, { t: ['cueva'], p: ['escomb', 'roca', 'hueso', 'cristal', 'estalag'], s: ['cue2_'] },
+      { t: ['mina' as Tema], p: ['min_vagoneta_volcada', 'min_vagoneta_rota', 'min_viga_caida', 'min_herramientas', 'min_pico_clavado', 'min_veta', 'min_derrumbe', 'min_polvora', 'min_cajones', 'min_minero_muerto', 'min_carretilla', 'min_mineral', 'min_bomba'] }],
+    grande: [{ t: ['mina' as Tema], p: ['vagon', 'grua', 'puntal', 'torno', 'polea'], s: ['min_'] }, { t: ['mina' as Tema], p: ['min_montacargas', 'min_torno', 'min_polea', 'min_tolva', 'min_pozo', 'min_mesa_capataz', 'min_andamio', 'min_escalera'] }],
+    luces: [{ t: ['mina' as Tema], p: ['farol', 'lampara', 'antorcha'], s: ['min_'] }, { t: ['mina' as Tema], p: ['min_linterna', 'min_horno'] }],
     muroX: ['cue_muro', ['x', 'x_alta']], muroY: ['cue_muro', ['y', 'y_alta']],
+    murosAlt: [[['min_pared_veta', ['oro', 'hierro', 'sangre']], ['min_pared_veta', ['oro_y', 'hierro_y', 'sangre_y']]]],
+    rieles: true,
   },
   cripta: {
     piso: 'lajas', parches: ['lajas', 'hueso', 'lajas_musgo'], ambiente: 'cripta', oscuridad: 0.84,
@@ -236,9 +246,11 @@ const TEMATICAS: Record<string, Tematica> = {
   },
   abismo: {
     piso: 'tierra_infierno', parches: ['hueso', 'tierra_infierno', 'pentagrama'], ambiente: 'infierno', oscuridad: 0.9,
-    borde: [], disperso: [{ t: ['abismo' as Tema], p: [''] }, { t: ['infierno'], p: ['huesos', 'cadenas', 'grieta', 'sello'] }],
-    grande: [{ t: ['abismo' as Tema], p: ['isla', 'roca', 'aguja', 'puente', 'monolito'] }, { t: ['infierno'], p: ['aguja', 'estatua'] }],
-    luces: [{ t: ['abismo' as Tema], p: ['brasero', 'cristal', 'luz'] }, { t: ['infierno'], p: ['brasero', 'pilar_luz'] }],
+    borde: [], disperso: [{ t: ['abismo' as Tema], p: [''], s: ['abi_'] }, { t: ['infierno'], p: ['huesos', 'cadenas', 'grieta', 'sello'], s: ['inf2_'] },
+      { t: ['abismo' as Tema], p: ['abi_runa', 'abi_circulo_runas', 'abi_grieta', 'abi_reliquia', 'abi_jaula', 'abi_farol', 'abi_cristal_vacio', 'abi_almas'] }],
+    islas: { borde: 'abi_borde', puente: 'abi_puente', vacio: [{ t: ['abismo' as Tema], p: ['abi_isla', 'abi_islote', 'abi_cadena', 'abi_pilar', 'abi_torre_invertida', 'abi_fragmentos', 'abi_ojos', 'abi_niebla', 'abi_espiral', 'abi_estrellas', 'abi_tentaculos', 'abi_raices', 'abi_estatua', 'abi_costillar', 'abi_mano', 'abi_campana', 'abi_ancla'] }] },
+    grande: [{ t: ['abismo' as Tema], p: ['isla', 'roca', 'aguja', 'puente', 'monolito'], s: ['abi_'] }, { t: ['abismo' as Tema], p: ['abi_ruina', 'abi_altar', 'abi_trono', 'abi_puerta', 'abi_obelisco', 'abi_arbol_borde', 'abi_portal', 'abi_plataforma'] }],
+    luces: [{ t: ['abismo' as Tema], p: ['brasero', 'cristal', 'luz'], s: ['abi_'] }, { t: ['abismo' as Tema], p: ['abi_runa', 'abi_farol'] }],
     muroX: ['inf_muro_carne', ['liso', 'costillas']], muroY: ['inf_muro_carne', ['liso_y', 'costillas_y']],
   },
 };
@@ -452,6 +464,75 @@ function exterior(def: DefZona, semilla: number): Zona {
   return z;
 }
 
+/** Islas sobre el vacío: cada cuarto es una isla con su borde de precipicio y cada pasillo un puente; en el vacío flota lo que vive ahí. */
+function islas(k: Constructor, o: NonNullable<Tematica['islas']>, suelo: Uint8Array, sala: Uint8Array) {
+  const z = k.z, { tw, th } = z, r = k.r;
+  const borde = REGISTRO.find((d) => d.id === o.borde), puente = REGISTRO.find((d) => d.id === o.puente);
+  const S = (x: number, y: number) => x >= 0 && y >= 0 && x < tw && y < th && !!suelo[y * tw + x];
+  for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) {
+    const i = by * tw + bx;
+    if (!suelo[i]) continue;
+    const cx = bx * 5 + 2, cy = by * 5 + 2;
+    if (!sala[i]) {
+      // pasillo: el piso se va y queda un puente; se camina por la franja del medio
+      const enX = S(bx - 1, by) || S(bx + 1, by), enY = S(bx, by - 1) || S(bx, by + 1);
+      const v = enX && !enY ? 'tramo' : !enX && enY ? 'tramo_y' : r() < 0.5 ? 'pilar' : 'pilar_y';
+      z.pisos[i] = null;
+      if (puente) k.poner(puente, cx, cy, r() < 0.12 && v.startsWith('tramo') ? v.replace('tramo', 'roto') : v, true);
+      continue;
+    }
+    if (!borde) continue;
+    // isla: un borde por cada lado que da al vacío (los puentes cuentan como tierra)
+    const px = !S(bx + 1, by), py = !S(bx, by + 1), nx = !S(bx - 1, by), ny = !S(bx, by - 1);
+    const vs: string[] = [];
+    if (px && py) vs.push('s'); else if (nx && ny) vs.push('n'); else if (px && ny) vs.push('e'); else if (py && nx) vs.push('o');
+    if (!vs.length) { if (px) vs.push('se'); if (py) vs.push('so'); if (nx) vs.push('no'); if (ny) vs.push('ne'); }
+    else {
+      // tres lados: punta más el recto que queda
+      if (px && py && nx) vs.push('no'); else if (px && py && ny) vs.push('ne'); else if (nx && ny && px) vs.push('se'); else if (nx && ny && py) vs.push('so');
+    }
+    if (!px && !py && !S(bx + 1, by + 1)) vs.push('is');
+    if (!nx && !ny && !S(bx - 1, by - 1)) vs.push('in');
+    if (!px && !ny && !S(bx + 1, by - 1)) vs.push('ie');
+    if (!nx && !py && !S(bx - 1, by + 1)) vs.push('io');
+    for (const v of vs) k.poner(borde, cx, cy, v, true);
+  }
+  // lo que flota en el vacío (islotes, cadenas, ojos, estrellas abajo...)
+  const vacios = k.sel(o.vacio);
+  if (vacios.length) for (let n = 0, i = 0; n < Math.floor((tw * th) / 6) && i < 2000; i++) {
+    const bx = Math.floor(r() * tw), by = Math.floor(r() * th);
+    if (suelo[by * tw + bx]) continue;
+    let cerca = false;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (S(bx + dx, by + dy)) cerca = true;
+    if (!cerca && r() < 0.6) continue;
+    const q = vacios[Math.floor(r() * vacios.length)], vs = q.d.variantes.filter(q.v);
+    if (k.poner(q.d, bx * 5 + 2, by * 5 + 2, vs[Math.floor(r() * vs.length)], true)) n++;
+  }
+}
+
+/** Vías de mina por los pasillos: rieles rectos, curvas donde dobla, fin de vía en los extremos y alguna vagoneta. */
+function rieles(k: Constructor, suelo: Uint8Array, sala: Uint8Array) {
+  const z = k.z, { tw, th } = z, r = k.r;
+  const P = (x: number, y: number) => x >= 0 && y >= 0 && x < tw && y < th && !!suelo[y * tw + x] && !sala[y * tw + x];
+  const S = (x: number, y: number) => x >= 0 && y >= 0 && x < tw && y < th && !!suelo[y * tw + x];
+  for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) {
+    if (!P(bx, by)) continue;
+    const cx = bx * 5 + 2, cy = by * 5 + 2;
+    const px = S(bx + 1, by), nx = S(bx - 1, by), py = S(bx, by + 1), ny = S(bx, by - 1);
+    const n = +px + +nx + +py + +ny;
+    let id = 'min_riel', v = '';
+    if (n >= 3) { id = 'min_riel_cruce'; v = (px && nx) ? 'cruce' : 'cruce_y'; }
+    else if ((px || nx) && (py || ny)) { id = 'min_riel_curva'; v = nx && ny ? 'n' : px && ny ? 'e' : px && py ? 's' : 'o'; }
+    else if (n === 1) { id = 'min_riel_fin'; v = px || nx ? 'fin' : 'fin_y'; }
+    else v = (px || nx ? 'recto' : 'recto_y').replace('recto', r() < 0.7 ? 'recto' : r() < 0.5 ? 'gastado' : 'hundido');
+    const d = REGISTRO.find((q) => q.id === id); if (!d) continue;
+    const vv = d.variantes.includes(v) ? v : d.variantes.filter((q) => q.endsWith('_y') === v.endsWith('_y'))[0] ?? d.variantes[0];
+    k.poner(d, cx, cy, vv, true);
+    if (id === 'min_riel' && r() < 0.12) k.poner('min_vagoneta', cx, cy, undefined, true);
+    else if (r() < 0.25) k.poner('min_puntal', cx + (v.endsWith('_y') ? 2 : 0), cy + (v.endsWith('_y') ? 0 : 2), v.endsWith('_y') ? 'entero_y' : 'entero');
+  }
+}
+
 /** El río de lava: tramos de la Forja de norte a sur que serpentean, bloquean el paso y dejan puentes donde pasa el camino. */
 function rioDeLava(k: Constructor, r: () => number) {
   const z = k.z, { tw, th } = z;
@@ -587,7 +668,8 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     marca();
     orden.push(c);
   }
-  for (const [x, y, w, h] of orden) for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) suelo[j * tw + i] = 1;
+  const sala = new Uint8Array(tw * th);
+  for (const [x, y, w, h] of orden) for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) { suelo[j * tw + i] = 1; sala[j * tw + i] = 1; }
   const manchas = ruido2(r, tw, th, 3);
   for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) if (suelo[by * tw + bx]) {
     const m = manchas[by * tw + bx];
@@ -597,7 +679,9 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   // muros: en los bordes de atrás (hacia -x y -y) de cada baldosa con suelo
   const opcionesMuro: [[string, string[]], [string, string[]]][] = [[t.muroX ?? ['mon_muro', ['izq']], t.muroY ?? ['mon_muro', ['der']]], ...(t.murosAlt ?? [])];
   const [[mx, vx], [my, vy]] = opcionesMuro[Math.floor(r() * opcionesMuro.length)];
-  const defX = REGISTRO.find((d) => d.id === mx), defY = REGISTRO.find((d) => d.id === my);
+  const defX = t.islas ? undefined : REGISTRO.find((d) => d.id === mx), defY = t.islas ? undefined : REGISTRO.find((d) => d.id === my);
+  if (t.islas) islas(k, t.islas, suelo, sala);
+  if (t.rieles) rieles(k, suelo, sala);
   for (let by = 0; by < th; by++) for (let bx = 0; bx < tw; bx++) {
     if (!suelo[by * tw + bx]) continue;
     if (by === 0 || !suelo[(by - 1) * tw + bx]) if (defX) {
@@ -621,7 +705,8 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     const g = gs[Math.floor(r() * gs.length)];
     for (const [fx, fy] of [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]]) k.poner(g.d, Math.floor((c[0] + c[2] * fx) * 5), Math.floor((c[1] + c[3] * fy) * 5));
   }
-  const enSuelo = (x: number, y: number) => !!suelo[Math.floor(y / 5) * tw + Math.floor(x / 5)];
+  // con islas o vías, los pasillos (puentes y rieles) quedan libres de adornos
+  const enSuelo = (x: number, y: number) => !!(t.islas || t.rieles ? sala : suelo)[Math.floor(y / 5) * tw + Math.floor(x / 5)];
   k.regar(t.disperso, Math.floor(area / 160), 1, 1, z.W - 1, z.H - 1, enSuelo);
   k.regar(t.luces, Math.floor(area / 500), 1, 1, z.W - 1, z.H - 1, enSuelo);
   k.regar(t.deco, Math.floor(area / 2500), 1, 1, z.W - 1, z.H - 1, enSuelo);
