@@ -69,6 +69,8 @@ export interface Proyectil {
   hab?: Habilidad; nivelHab?: number; mult?: number; lento?: number; t: number; rebota?: number;
   /** Abanicos: golpes de la misma salva por monstruo (la 2.ª flecha y siguientes al mismo blanco hacen 60 %). */
   salva?: Map<number, number>;
+  /** Quién lo disparó (para atribuir el golpe, la escarcha que congela al atacante, etc.). */
+  fuente?: Ent;
 }
 export interface Area { x: number; y: number; radio: number; dano: [number, number]; elem: Elemento; t: number; dur: number; tick: number; prox: number; deHeroe: boolean; efecto: string; retraso: number; caida?: boolean }
 export interface Suelo { o: Objeto | null; oro: number; x: number; y: number; t: number; id: number }
@@ -579,7 +581,7 @@ export function recalc(j: Juego) {
 // ------------------------------------------------------------------ proyectiles
 function disparar(j: Juego, de: Ent, tx: number, ty: number, g: Golpe, efectoId: string, vel: number, o: Partial<Proyectil> = {}) {
   const dx = tx - de.x, dy = ty - de.y, l = Math.hypot(dx, dy) || 1;
-  j.proyectiles.push({ x: de.x + (dx / l) * 0.5, y: de.y + (dy / l) * 0.5, z: 34, vx: (dx / l) * vel, vy: (dy / l) * vel, vida: o.vida ?? 2.2, dano: [g.min, g.max], elem: g.elem, deHeroe: g.deHeroe, perfora: false, explota: 0, efecto: efectoId, golpeados: new Set(), buscador: false, radio: 0.5, t: 0, ...o });
+  j.proyectiles.push({ x: de.x + (dx / l) * 0.5, y: de.y + (dy / l) * 0.5, z: 34, vx: (dx / l) * vel, vy: (dy / l) * vel, vida: o.vida ?? (g.deHeroe ? 2.2 : Math.min(2.2, 11 / vel)), dano: [g.min, g.max], elem: g.elem, deHeroe: g.deHeroe, perfora: false, explota: 0, efecto: efectoId, golpeados: new Set(), buscador: false, radio: 0.5, t: 0, fuente: g.fuente, ...o });
 }
 
 // ------------------------------------------------------------------ habilidades del héroe
@@ -1332,8 +1334,8 @@ function actualizarHeroe(j: Juego, dt: number) {
   // fuera de combate (5 s sin pegar ni recibir) el héroe se repone despacio: 1.5 % de su vida por segundo
   const regV = h.c.regen_vida + (j.zona.tipo === 'pueblo' ? h.vidaMax * 0.05 : j.t - h.tCombate > 5 ? h.vidaMax * 0.015 : 0);
   h.vida = Math.min(h.vidaMax, h.vida + regV * dt);
-  // en Normal el maná vuelve más rápido al principio: el doble en el nivel 1 y normal desde el 25
-  const temprano = h.d.dificultad === 0 ? 1 + Math.max(0, 25 - h.d.nivel) / 24 : 1;
+  // en Normal el maná vuelve el doble de rápido hasta el nivel 15 y baja a lo normal hacia el 25
+  const temprano = h.d.dificultad === 0 ? (h.d.nivel <= 15 ? 2 : 1 + Math.max(0, 25 - h.d.nivel) / 10) : 1;
   h.mana = Math.min(h.c.manaMax, h.mana + h.c.manaMax * 0.025 * temprano * (1 + h.c.regen_mana / 100) * dt);
   if (h.veneno > 0) { h.veneno -= dt; h.vida -= h.venenoDps * dt; if (h.vida <= 0) { h.vida = 1; } }
   if ((h as any).quema > 0) { (h as any).quema -= dt; h.vida -= (h as any).quemaDps * dt; if ((h as any).quema <= 0) (h as any).quemaDps = 0; if (h.vida <= 0) h.vida = 1; }
@@ -1474,7 +1476,7 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
     const cuantos = j.monstruos.filter((o) => !o.muerto && !o.dueno && dist(o.x, o.y, m.x, m.y) < 8).length;
     if (cuantos < (m.def.id === 'abadesa' ? 4 : m.def.jefe ? 8 : 9)) {
       m.acc = 'lanzar'; m.t = 0; m.dur = 0.7; m.golpeEn = 0.4; m.golpeo = true;
-      for (let k = 0; k < (m.def.id === 'abadesa' ? 1 : 2); k++) { const q = libreCerca(j.zona, m.x + entre(-2, 2), m.y + entre(-2, 2)); const nm = crearMonstruo(MONSTRUOS[m.def.invoca], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); nm.estado = 'perseguir'; nm.objetivo = h; nm.acc = 'morir'; nm.t = 0; (nm as any).surgiendo = 1; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', q[0] + 0.5, q[1] + 0.5, 0, 0.7); }
+      for (let k = 0; k < (m.def.id === 'abadesa' ? 1 : 2); k++) { const q = libreCerca(j.zona, m.x + entre(-2, 2), m.y + entre(-2, 2)); const nm = crearMonstruo(MONSTRUOS[m.def.invoca], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); if (m.def.jefe) nm.dano = [Math.min(nm.dano[0], Math.round(m.dano[0] * 0.5)), Math.min(nm.dano[1], Math.round(m.dano[1] * 0.5))]; nm.estado = 'perseguir'; nm.objetivo = h; nm.acc = 'morir'; nm.t = 0; (nm as any).surgiendo = 1; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', q[0] + 0.5, q[1] + 0.5, 0, 0.7); }
       sonar(j, 'invocar', m.x, m.y);
       return;
     }
@@ -1618,7 +1620,7 @@ function actualizarProyectiles(j: Juego, dt: number) {
         const fs = ks ? 0.6 : 1;
         const g: Golpe = { min: p.dano[0] * fs, max: p.dano[1] * fs, elem: p.elem, deHeroe: p.deHeroe, fuente: p.deHeroe ? j.heroe : undefined, sinFallo: p.elem !== 'fisico' || !p.deHeroe ? p.elem !== 'fisico' : false, precision: p.deHeroe ? j.heroe.c.precision : undefined, critico: p.deHeroe ? j.heroe.c.critico : 0 };
         if (p.deHeroe && (p.efecto === 'flecha' || p.efecto === 'flecha_fuego' || p.efecto === 'flecha_hielo' || p.efecto === 'virote')) { g.extra = Object.fromEntries(Object.entries(j.heroe.c.elem).map(([k, v]) => [k, (v as number) * fs])); g.robo = j.heroe.c.robo_vida; }
-        if (!p.deHeroe) { g.fuente = undefined; for (const m of j.monstruos) if (!m.muerto && dist(m.x, m.y, p.x, p.y) < 30) { g.fuente = m; break; } }
+        if (!p.deHeroe) { g.fuente = p.fuente && p.fuente.tipo === 'monstruo' ? p.fuente : undefined; if (!g.fuente) for (const m of j.monstruos) if (!m.muerto && dist(m.x, m.y, p.x, p.y) < 30) { g.fuente = m; break; } }
         if (p.deHeroe && p.hab?.bonos?.empuje) g.empuje = 1;
         if (p.deHeroe && p.hab?.bonos?.marca && e.tipo === 'monstruo') (e as Monstruo).marca = Math.max((e as Monstruo).marca ?? 0, val(p.hab.bonos.marca, p.nivelHab ?? 1));
         danar(j, e, g);
