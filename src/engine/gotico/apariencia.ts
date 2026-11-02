@@ -99,8 +99,8 @@ export function equipoDeInventario(puesto: Partial<Record<string, Puesto | undef
   const izq = puesto.mano_libre && descDe(puesto.mano_libre);
   if (izq) {
     const cara = esHex(izq.color) ? tinte(izq.color, 'tela') : undefined;
-    const dz = (puesto.mano_libre!.it.design ?? {}) as Record<string, unknown>;
-    const cara2 = esHex(dz.face) ? tinte(dz.face as string, 'tela') : cara;
+    // misma regla que el ícono (iconoDeLoot): solo se pinta la cara con su color si el ícono también lo hace; si no, el material de su línea
+    const cara2 = cara ?? (izq.linea === 'cuero' ? 'madera' : izq.linea === 'oscuro' ? 'cu_placa_oscura' : izq.linea === 'sagrado' ? 'cu_tela_blanca' : izq.linea === 'malla' ? 'cu_placa' : undefined);
     const borde = duro(izq.linea) ? 'cu_oro' : izq.linea === 'malla' ? 'cu_placa' : 'hierro';
     switch (izq.pieza) {
       case 'escudo_redondo': e.izq = { tipo: izq.variante === 'rodela' ? 'rodela' : 'escudo_redondo', mat: cara2 ?? (izq.linea === 'cuero' ? 'madera' : 'cu_placa'), mat2: borde }; break;
