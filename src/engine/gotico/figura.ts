@@ -326,24 +326,38 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
   const dosM = arma === 'dos' || arma === 'ballesta';
   switch (estilo) {
     case 'rugido': {
-      // apoyado sobre el mango con el hacha clavada adelante, jadea encorvado (dos respiraciones); se hunde, la arranca
-      // del piso y la sube con los dos brazos por encima de la cabeza, ruge al cielo con el pecho inflado, la descarga
-      // adelante y la clava en el piso (polvo) y se vuelve a apoyar en el mango. Las dos manos nunca sueltan el mango.
+      // jadea encorvado (dos respiraciones); se hunde, sube el hacha con los dos brazos por encima de la cabeza, ruge al
+      // cielo con el pecho inflado, la descarga adelante y la clava en el piso (polvo) y vuelve a descansar.
+      // La gran hacha descansa apoyada: la cabeza en el piso y las dos manos arriba del mango. El hacha de una mano es
+      // corta para apoyarse (el puño tendría que bajar a la rodilla con el brazo colgando): cuelga del puño derecho, bien
+      // cerrado arriba del mango, con la cabeza delante de la rodilla, y la izquierda en puño al costado; la toma con las
+      // dos manos para subirla.
       plantar(p, [-3, 2.6], [2.6, 2.4], [24, 12]);
-      p.agarreI = 5.5; p.pegaI = 1;
-      const apoyado: Vals = { bajar: 4, torso: 24, ladeo: -2, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: -16, giroCabeza: -4, ladeoCabeza: 0, manoD: [10, 1.5, 32], armaD: [160, -4], pisoArma: 1 };
-      actuar(p, [
+      // la izquierda siempre del lado del cabo (agarre positivo) y antes de su remate: apoyada cierra arriba de la derecha,
+      // arriba queda abajo, en el remate, como en un golpe a dos manos; las manos nunca se cruzan por el mango
+      const una = arma !== 'dos';
+      p.agarreI = una ? 2.6 : 3; p.pegaI = 1;
+      const codo: Vals = una ? { codoD: [-0.35, 0.8, -0.5], pegaI: 1 } : {};
+      // en reposo: cuánto se hunde, se encorva y levanta la cara
+      const [b0, t0, c0] = una ? [2.4, 7, -9] : [4, 24, -16];
+      const apoyado: Vals = una
+        ? { pegaI: 0, bajar: b0, torso: t0, ladeo: -1, giroTorso: -6, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [4, 10, 26], codoD: [-0.6, 0.8, -0.3], armaD: [145, 22], pisoArma: 0, manoI: [3, -12, 28], codoI: [-0.7, -0.9, -0.1] }
+        : { bajar: b0, torso: t0, ladeo: -2, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [10, 1.5, 32], armaD: [160, -4], pisoArma: 1 };
+      const cl: Clave[] = [
         K(0, { ...apoyado, respira: 0.15, hombros: [1.6, 1.4] }),
-        K(0.08, { respira: 0.95, hombros: [2.4, 2.2], torso: 22, cabeza: -18 }),
-        K(0.16, { respira: 0.05, hombros: [1.4, 1.2], bajar: 4.8, torso: 28, cabeza: -14 }, true),
-        K(0.3, { bajar: 2, torso: 6, ladeo: 1, lateral: 0.3, ladeoCadera: 1, respira: 0.6, hombros: [1.8, 1.8], cabeza: -14, manoD: [8, 3, 46], armaD: [18, -8], pisoArma: 0 }),
-        K(0.4, { bajar: 1, torso: -10, ladeo: 2, lateral: 0.6, ladeoCadera: 2, respira: 1, hombros: [2.6, 2.6], cabeza: -30, giroCabeza: 0, ladeoCabeza: 3, manoD: [6, 3, 61], armaD: [-22, 4] }),
-        K(0.48, { bajar: 0.8, torso: -13, cabeza: -34, manoD: [5.5, 3, 62], armaD: [-32, 4] }, true),
-        K(0.56, { bajar: 5.5, torso: 26, ladeo: -3, giroTorso: 6, giroCadera: 4, lateral: -0.8, ladeoCadera: -2, respira: 0.3, hombros: [1, 1], cabeza: -12, ladeoCabeza: -1, manoD: [13, 1.5, 30], armaD: [150, -4], pisoArma: 1 }),
-        K(0.64, { bajar: 5, torso: 28, cabeza: -12, manoD: [11, 1.5, 31], armaD: [158, -4], respira: 0.1 }, true),
-        K(0.8, { ...apoyado, respira: 0.7, hombros: [2, 1.8] }),
-        K(0.9, { respira: 0.1, hombros: [1.4, 1.2], torso: 25 }),
-      ], u, { lagCab: 0.035, capa: 1 });
+        K(0.08, { respira: 0.95, hombros: [2.4, 2.2], torso: t0 - 2, cabeza: c0 - 2 }),
+        K(0.16, { respira: 0.05, hombros: [1.4, 1.2], bajar: b0 + 0.8, torso: t0 + 4, cabeza: c0 + 2 }, true),
+        K(0.3, { ...codo, bajar: 2, torso: 6, ladeo: 1, lateral: 0.3, ladeoCadera: 1, respira: 0.6, hombros: [1.8, 1.8], cabeza: -14, manoD: [8, 3, 46], armaD: [18, -8], pisoArma: 0 }),
+        // arriba los puños quedan sobre la coronilla (el cuerpo se echa atrás), no delante de la cara: ruge al cielo debajo del hacha
+        K(0.4, { bajar: 1, torso: -10, ladeo: 2, lateral: 0.6, ladeoCadera: 2, respira: 1, hombros: [2.6, 2.6], cabeza: -30, giroCabeza: 0, ladeoCabeza: 3, manoD: [-6.5, 1.5, 68], armaD: [-26, 4] }),
+        K(0.48, { bajar: 0.8, torso: -13, cabeza: -34, manoD: [-7.5, 1.5, 68.5], armaD: [-36, 4] }, true),
+        K(0.56, { bajar: una ? 7 : 5.5, torso: una ? 32 : 26, ladeo: -3, giroTorso: 6, giroCadera: 4, lateral: -0.8, ladeoCadera: -2, respira: 0.3, hombros: [1, 1], cabeza: -12, ladeoCabeza: -1, manoD: [13, 1.5, 30], armaD: [150, -4], pisoArma: 1 }),
+        K(0.64, { bajar: una ? 6.5 : 5, torso: una ? 33 : 28, cabeza: -12, manoD: [11, 1.5, 31], armaD: [158, -4], respira: 0.1 }, true),
+      ];
+      // el hacha corta sale del piso y vuelve a colgar del puño, al costado
+      if (una) cl.push(K(0.72, { pegaI: 0.3, bajar: 4.5, torso: 24, giroTorso: 6, cabeza: -10, manoD: [9, 7, 28], codoD: [-0.5, 0.8, -0.4], armaD: [128, 14], pisoArma: 0 }));
+      cl.push(K(0.8, { ...apoyado, respira: 0.7, hombros: [2, 1.8] }), K(0.9, { respira: 0.1, hombros: [1.4, 1.2], torso: t0 + 1 }));
+      actuar(p, cl, u, { lagCab: 0.035, capa: 1 });
       break;
     }
     case 'guardia': {
@@ -369,8 +383,8 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       const cx = 12.5, cy = -3, cz = 42, r = 9.5;
       const sig = (th: number): [number, number, number] => [cx + Math.sin((th * Math.PI) / 180) * 1.2, cy - Math.sin((th * Math.PI) / 180) * r, cz - Math.cos((th * Math.PI) / 180) * r];
       const cl: Clave[] = [
-        K(0, { bajar: 0.8, torso: 2, ladeo: 0, lateral: 0.4, ladeoCadera: 1.5, giroTorso: 0, giroCadera: 0, respira: 0.2, puntillas: [0, 0], manoI: [6, -8, 30], manoD: [5, 8, 33], vara: [4, 4], armaD: [35, 5] }),
-        K(0.1, { bajar: 1.6, torso: 4, respira: 0, manoI: [9, -6, 30], manoD: [5, 8.5, 32], lateral: 0.6 }, true),
+        K(0, { bajar: 0.8, torso: 2, ladeo: 0, lateral: 0.4, ladeoCadera: 1.5, giroTorso: 0, giroCadera: 0, respira: 0.2, puntillas: [0, 0], manoI: [6, -8, 30], manoD: [5, 10, 33], vara: [-3, 12], armaD: [35, 5] }),
+        K(0.1, { bajar: 1.6, torso: 4, respira: 0, manoI: [9, -6, 30], manoD: [5, 10.5, 32], lateral: 0.6 }, true),
         K(0.2, { bajar: 0.7, torso: 0, ladeo: -2, lateral: 0.2, respira: 0.4, manoI: sig(60), manoD: [5, 9, 35], vara: [-2, 10], giroTorso: -4 }),
         K(0.3, { bajar: 0, torso: -6, ladeo: -5, lateral: 0.5, puntillas: [0.35, 0.35], manoI: sig(150), manoD: [4, 9, 37], vara: [-8, 16], giroTorso: -8 }),
         K(0.4, { bajar: -0.6, torso: -8, ladeo: 4, lateral: -0.4, puntillas: [0.6, 0.6], respira: 0.8, manoI: sig(240), manoD: [5, 8, 39], vara: [-4, 4], giroTorso: 6 }),
@@ -378,7 +392,7 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
         K(0.6, { bajar: -1.1, torso: -10, ladeo: -2, lateral: 0.3, puntillas: [0.9, 0.9], respira: 1, manoI: [5, -4, 49], manoD: [4, 8.5, 40], vara: [-12, 12], armaD: [5, 5], giroTorso: -12 }, true),
         K(0.68, { bajar: -1.6, torso: 9, ladeo: 0, lateral: -0.2, puntillas: [1, 1], respira: 0.4, manoI: [21, -1, 46], manoD: [10, 7, 43], vara: [28, 0], armaD: [70, 0], giroTorso: 8 }),
         K(0.78, { bajar: -1.5, torso: 10, puntillas: [1, 1], manoI: [21.5, -1, 46.5], manoD: [10.5, 7, 43.5], vara: [30, 0] }, true),
-        K(0.9, { bajar: 0.6, torso: 3, ladeo: 0, lateral: 0.3, puntillas: [0, 0], respira: 0.2, manoI: [8, -7, 32], manoD: [5, 8, 33.5], vara: [5, 4], armaD: [38, 5], giroTorso: 0 }),
+        K(0.9, { bajar: 0.6, torso: 3, ladeo: 0, lateral: 0.3, puntillas: [0, 0], respira: 0.2, manoI: [8, -7, 32], manoD: [5, 10, 33.5], vara: [-2, 12], armaD: [38, 5], giroTorso: 0 }),
       ];
       actuar(p, cl, u, { lagArma: 0.03, capa: 0.6, tela: 1.4 });
       // la cabeza sigue a la mano que dibuja (con retardo)
