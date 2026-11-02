@@ -15,6 +15,7 @@ import { arrowProjectile, arrowImpact } from '../fx/arrow';
 import { stompWave, dirtDig } from '../fx/stomp';
 import { exportLootIcons, exportLootWorld, lootCatalog } from '../loot/export';
 import { allLoot, UNIQUE_LOOT } from '../loot/catalog';
+import { allArsenalBases, allArsenalLegendarias } from '../loot/arsenal';
 import { isSpecial, handKindOf } from '../loot/render';
 import { TILE } from '../world/tiles';
 import { ESPUMA } from '../world/water';
@@ -39,6 +40,7 @@ import { PET_ARMOR } from '../render/pet3d';
 import { renderBossSheets, clipSheet, type BossSpec, type BossCache } from '../boss/sheet';
 import { MINO_SPEC } from '../boss/minotauro';
 import { GUARDIAN_SPEC } from '../boss/guardian';
+import { exportarGoreHorror, type GoreKitOpts } from './gorekit';
 
 /**
  * Kit del juego "GG Abyss": todo lo que el juego necesita, listo para Phaser, con un manifest.json que dice qué es
@@ -78,6 +80,8 @@ export interface KitOptions {
   sinMundo3?: boolean;
   /** sin el intro (paneles, fuego, humo y logo con fuego) */
   sinIntro?: boolean;
+  /** el kit de sangre, vísceras y horror (gorekit.ts): atlas de a 60, luces y el velo rojo de pantalla */
+  goreHorror?: boolean | GoreKitOpts;
 }
 
 /** Hoja de una animación en 8 direcciones: fila = dirección, columna = cuadro. */
@@ -331,12 +335,18 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const uniqueIds = new Set(UNIQUE_LOOT.map((i) => i.id));
   // tres atlas: normales (1 cuadro), únicos y set (8 cuadros) y armaduras de nivel 5 (8 cuadros).
   // Separados para que ninguno pase de 4096 px a 64.
+  // el arsenal elemental va en sus propios atlas: las bases (1 cuadro, filas de 16) de a 960 y las legendarias
+  // (8 cuadros, una fila por arma) de a 60, así ninguno pasa de 4096 px a 64
+  const arsenalIds = new Set([...allArsenalBases(), ...allArsenalLegendarias()].map((i) => i.id));
   const groups: Record<string, typeof loot> = {
-    iconos: loot.filter((i) => !isSpecial(i.rarity)),
+    iconos: loot.filter((i) => !isSpecial(i.rarity) && !arsenalIds.has(i.id)),
     especiales: loot.filter((i) => uniqueIds.has(i.id)),
   };
+  const arsB = loot.filter((i) => arsenalIds.has(i.id) && !isSpecial(i.rarity)), arsL = loot.filter((i) => arsenalIds.has(i.id) && isSpecial(i.rarity));
+  for (let k = 0; k * 960 < arsB.length; k++) groups[k ? `arsenal_${k + 1}` : 'arsenal'] = arsB.slice(k * 960, (k + 1) * 960);
+  for (let k = 0; k * 60 < arsL.length; k++) groups[k ? `arsenal_legendario_${k + 1}` : 'arsenal_legendario'] = arsL.slice(k * 60, (k + 1) * 60);
   // las armaduras de nivel 5 (con las líneas épicas son muchas) van en atlas de a 60 (una fila de 8 cuadros por objeto) para no pasar de 4096 px
-  const n5 = loot.filter((i) => isSpecial(i.rarity) && !uniqueIds.has(i.id));
+  const n5 = loot.filter((i) => isSpecial(i.rarity) && !uniqueIds.has(i.id) && !arsenalIds.has(i.id));
   for (let k = 0; k * 60 < n5.length; k++) groups[k ? `armadura_n5_${k + 1}` : 'armadura_n5'] = n5.slice(k * 60, (k + 1) * 60);
   const atlasOf = new Map<string, string>();
   const atlas: Record<string, Record<number, string>> = {};
@@ -517,6 +527,13 @@ export function buildGameKit(opts: KitOptions = {}): ExportFile[] {
   const creditTxt = ['GG Abyss: créditos del arte', '', 'Personajes, mundo, botín, interfaz y sonidos generados con PixelForja (código).', '', ...(opts.fonts ? ['Fuentes: Silkscreen, de Jason Kottke. SIL Open Font License 1.1 (https://openfontlicense.org).', ''] : []), ...credits].join('\n');
   files.push(file('CREDITOS.txt', enc.encode(creditTxt), 'text/plain'));
   manifest.creditos = 'CREDITOS.txt';
+  // ---------- sangre, vísceras y horror ----------
+  if (opts.goreHorror) {
+    const gh = exportarGoreHorror({ ...(typeof opts.goreHorror === 'object' ? opts.goreHorror : {}), progress: log });
+    files.push(...gh.files);
+    manifest.gore_horror = gh.manifest;
+    log('sangre y horror listos');
+  }
   // ninguna textura más grande que lo que soportan las tablets
   const tooBig: string[] = [];
   for (const f of files) if (f.mime === 'image/png') { const w = (f.bytes[16] << 24) | (f.bytes[17] << 16) | (f.bytes[18] << 8) | f.bytes[19], h = (f.bytes[20] << 24) | (f.bytes[21] << 16) | (f.bytes[22] << 8) | f.bytes[23]; if (w > MAX_TEX || h > MAX_TEX) tooBig.push(`${f.name} ${w}x${h}`); }

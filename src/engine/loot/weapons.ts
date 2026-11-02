@@ -1,5 +1,5 @@
 import { IconCanvas, Axis, type MatDef, type P } from './canvas';
-import { MAT, gemMat, glowMat } from './materials';
+import { MAT, gemMat, glowMat, crystalMat } from './materials';
 
 /**
  * Armas del RPG como íconos de inventario, en diagonal (el pomo abajo a la izquierda, la punta arriba a la derecha).
@@ -14,7 +14,9 @@ export type WeaponIcon =
   // dos manos
   | 'greatsword' | 'greataxe' | 'maul' | 'staff' | 'spear' | 'halberd' | 'scythe' | 'bow' | 'longbow' | 'crossbow'
   // el arsenal épico
-  | 'falcata' | 'katar' | 'sickle' | 'hand_orb' | 'trident' | 'greatstaff' | 'dragon_lance';
+  | 'falcata' | 'katar' | 'sickle' | 'hand_orb' | 'trident' | 'greatstaff' | 'dragon_lance'
+  // el arsenal elemental: el cesto de púgil (monje) y el frasco que se arroja (alquimista)
+  | 'cestus' | 'flask';
 
 export const WEAPON_ICONS: WeaponIcon[] = [
   'sword', 'scimitar', 'katana', 'rapier', 'dagger', 'kris', 'axe', 'hatchet', 'mace', 'morning_star', 'flail', 'warhammer', 'scepter', 'club', 'wand', 'claw', 'javelin',
@@ -24,6 +26,8 @@ export const WEAPON_ICONS: WeaponIcon[] = [
 /** Las armas nuevas del arsenal épico (las clásicas siguen en `WEAPON_ICONS`). */
 export const WEAPON_ICONS_EPICAS: WeaponIcon[] = ['falcata', 'katar', 'sickle', 'hand_orb', 'trident', 'greatstaff', 'dragon_lance'];
 export const ALL_WEAPON_ICONS: WeaponIcon[] = [...WEAPON_ICONS, ...WEAPON_ICONS_EPICAS];
+/** Las armas nuevas del arsenal elemental (solo salen como bases elementales y legendarias, ver arsenal.ts). */
+export const WEAPON_ICONS_ARSENAL: WeaponIcon[] = ['cestus', 'flask'];
 
 export const TWO_HANDED: WeaponIcon[] = ['greatsword', 'greataxe', 'maul', 'staff', 'spear', 'halberd', 'scythe', 'bow', 'longbow', 'crossbow', 'trident', 'greatstaff', 'dragon_lance'];
 
@@ -594,7 +598,35 @@ const DRAW: Record<WeaponIcon, (x: Ctx) => void> = {
     blade(y, 25.6, 33.6, 1.2, 2.2, { taper: 0.6 });
     if (d.accent && d.accent !== 'none') accent(x, d.accent, 26, 32, 0.6);
   },
+  cestus: (x) => dibujarCesto(x),
+  flask: (x) => dibujarFrasco(x),
 };
+
+// el arsenal elemental
+function dibujarCesto(x: Ctx) {
+  const { c, A, d } = x;
+  // la mano envuelta en correas (de la muñeca a los nudillos) y la placa de nudillos con sus púas
+  c.poly(A.pts([[4, -4.2], [17, -5.2], [20.4, -4.2], [20.4, 4.2], [17, 5.2], [4, 4.2]]), d.grip);
+  for (let u = 5.2; u < 17; u += 2.4) c.px1(A.p(u, -4.6), A.p(u + 1.2, 4.6), d.grip, { tone: 1 }, true);
+  for (const u of [5, 7]) c.poly(A.pts([[u, -4.6], [u + 1, -4.6], [u + 1, 4.6], [u, 4.6]]), d.guard);
+  const g = c.poly(A.pts([[19.4, -5.4], [23.2, -5.6], [23.6, 0], [23.2, 5.6], [19.4, 5.4]]), d.blade);
+  c.px1(A.p(23, -5), A.p(23, 5), d.edge ?? d.blade, { tone: 5, group: g }, true);
+  for (const v of [-3.9, -1.3, 1.3, 3.9]) c.poly(A.pts([[23.2, v - 0.8], [d.shape === 'wicked' || d.shape === 'serrated' ? 29.6 : 27, v], [23.2, v + 0.8]]), d.blade, { bias: 1 });
+  if (d.gem) c.circle(A.p(14, 0), 1.2, gemMat(d.gem));
+  if (d.glow) for (const v of [-3.9, -1.3, 1.3, 3.9]) c.dot(A.p(25.6, v), glowMat(d.glow), { tone: 5 }, true);
+}
+function dibujarFrasco(x: Ctx) {
+  const { c, A, d } = x;
+  // la pera de vidrio con el líquido del elemento, el cuello, el tapón y (en las buenas) la jaula de metal
+  const C = A.p(12.6, 0), liq = d.glow ?? '#7ad48a';
+  c.circle(C, 7.4, crystalMat('#9ab8c4'));
+  c.circle([C[0] + 0.6, C[1] + 0.8], 5.8, glowMat(liq));
+  c.poly(A.pts([[19, -1.9], [24.6, -1.6], [24.6, 1.6], [19, 1.9]]), crystalMat('#9ab8c4'));
+  c.poly(A.pts([[24.2, -2.2], [27.6, -2.0], [27.6, 2.0], [24.2, 2.2]]), d.guardShape === 'skull' ? MAT.bone : d.pommel);
+  c.dot([C[0] - 3, C[1] - 3], glowMat('#ffffff'), { tone: 5 }, true);
+  if (d.guardShape && d.guardShape !== 'bar') c.ring(C, 7.6, 7.6, 0.8, d.guard);
+  if (d.gem) c.circle(A.p(26, 0), 0.9, gemMat(d.gem));
+}
 
 function bowDraw(x: Ctx, R: number, t: number) {
   const { c, d } = x;

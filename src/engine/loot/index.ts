@@ -8,3 +8,4 @@ export * from './render';
 export * from './world';
 export * from './export';
 export * from './early';
+export * from './arsenal';

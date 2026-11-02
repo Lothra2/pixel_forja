@@ -2,6 +2,8 @@ import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, 
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
 import { pose, CUADROS, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
+import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
+import { formaForjada, adornosNivel, anchoVivo, marcoIcono, tramosVivos, type MarcoArma, type NivelForja, type OpcForja } from './forja_armas';
 
 /**
  * Cuerpos orgánicos para personajes y monstruos humanoides: el mismo esqueleto con articulaciones de figura.ts,
@@ -140,7 +142,7 @@ export interface Equipo {
   hombros?: { tipo: 'pieles' | 'cuero' | 'placas' | 'puas' | 'huesos'; mat: string; linea?: LineaCuerpo };
   cinturon?: { mat: string; hebilla?: string; linea?: LineaCuerpo };
   capa?: { mat: string; largo?: number; forro?: string };
-  arma?: { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto };
+  arma?: { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto; /** nivel del arsenal elemental (1 común a 5 mítica): forma forjada y adornos */ nivel?: 1 | 2 | 3 | 4 | 5 };
   izq?: { tipo: 'escudo_redondo' | 'escudo_cometa' | 'escudo_torre' | 'rodela' | 'escudo_calavera' | 'orbe' | 'libro' | 'antorcha' | 'arma'; mat?: string; mat2?: string; arma?: TipoArma };
   /** Tabardo o faldón con color de la orden. */
   tabardo?: { mat: string; borde?: string };
@@ -180,7 +182,9 @@ export const ENCANTOS: [Encanto, string, string, string][] = [
 export type TipoArma = 'espada' | 'cimitarra' | 'mandoble' | 'hacha' | 'hacha_doble' | 'maza' | 'martillo' | 'mangual' | 'lanza' | 'alabarda' | 'guadana'
   | 'baculo' | 'cetro' | 'varita' | 'daga' | 'garras' | 'arco' | 'ballesta' | 'puno' | 'nada'
   // el arsenal épico
-  | 'katana' | 'estoque' | 'falcata' | 'tridente' | 'maza_estrella' | 'arco_largo' | 'arco_corto' | 'jabalina' | 'gran_baculo' | 'orbe_mano' | 'katar' | 'hoz' | 'lanza_dragon';
+  | 'katana' | 'estoque' | 'falcata' | 'tridente' | 'maza_estrella' | 'arco_largo' | 'arco_corto' | 'jabalina' | 'gran_baculo' | 'orbe_mano' | 'katar' | 'hoz' | 'lanza_dragon'
+  // el arsenal elemental: el cesto de púgil y el frasco del alquimista (forja_armas.ts)
+  | 'cestus' | 'frasco';
 /** Las armas del arsenal épico (formas de masa: hojas, cabezas y cunas que se funden sin aristas duras). */
 export const ARMAS_EPICAS: TipoArma[] = ['katana', 'estoque', 'falcata', 'tridente', 'maza_estrella', 'arco_largo', 'arco_corto', 'jabalina', 'gran_baculo', 'orbe_mano', 'katar', 'hoz', 'lanza_dragon'];
 
@@ -249,7 +253,7 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   // (las astas y el gran báculo nuevos van con la pose de vara aunque sean a dos manos: la izquierda baja por el asta)
   // (las armas de asta largas a dos manos, la lanza y el gran báculo van con la pose a dos manos: arco grande y agarre doble)
-  const tipo = arma === 'ballesta' ? 'ballesta' : dos(arma) || arma === 'lanza' ? 'dos' : asta(arma) ? 'baculo' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
+  const tipo = arma === 'ballesta' ? 'ballesta' : dos(arma) || arma === 'lanza' ? 'dos' : asta(arma) ? 'baculo' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' || arma === 'cestus' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
   const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo));
   const th = rad(RUMBO[dir]);
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
@@ -431,7 +435,7 @@ function ejeAgarre(d2: V3, F: V3, arma: TipoArma, s: number, muneca = 0): V3 {
   let pul = sub(F, [d2[0] * dot3(F, d2), d2[1] * dot3(F, d2), d2[2] * dot3(F, d2)]);
   if (len(pul) < 0.25) pul = sub([0, 0, 1], [d2[0] * d2[2], d2[1] * d2[2], d2[2] * d2[2]]);
   pul = nor(pul);
-  const a = rad((arma === 'garras' || arma === 'puno' || arma === 'katar' ? 0 : arma === 'lanza' || arma === 'alabarda' || asta(arma) ? 82 : dos(arma) ? 58 : arma === 'daga' || arma === 'varita' || arma === 'orbe_mano' || arma === 'hoz' ? 55 : 66) + muneca);
+  const a = rad((arma === 'garras' || arma === 'puno' || arma === 'katar' || arma === 'cestus' ? 0 : arma === 'lanza' || arma === 'alabarda' || asta(arma) ? 82 : dos(arma) ? 58 : arma === 'daga' || arma === 'varita' || arma === 'orbe_mano' || arma === 'hoz' || arma === 'frasco' ? 55 : 66) + muneca);
   return nor(add([d2[0] * Math.cos(a), d2[1] * Math.cos(a), d2[2] * Math.cos(a)], pul, Math.sin(a)));
 }
 
@@ -533,6 +537,7 @@ export function personajeEscena(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f
   if (!en || !eq.arma) return { piezas };
   const e = esqueleto(cu, dir, acc, f, eq.arma.tipo, eq.izq?.tipo);
   const [a, b] = filoDe(e, eq.arma.tipo, e.brazos[0]);
+  if (eq.arma.nivel) return { piezas, resplandor: { c: mez(a, b, 0.5), r: (11 + eq.arma.nivel * 2.2) * e.S, color: LUZ_ELEMENTO_ARMA[en].color } };
   return { piezas, resplandor: { c: mez(a, b, 0.5), r: 15 * e.S, color: ENCANTOS.find((x) => x[0] === en)![3] } };
 }
 
@@ -733,7 +738,11 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   // ---- las formas de las líneas épicas sobre cada pieza (escamas, crestas, filigrana, lava, alas, percebes...)
   ps.push(...adornos(e, cu, eq, f));
   // ---- armas y mano izquierda
-  if (eq.arma && eq.arma.tipo !== 'nada' && eq.arma.tipo !== 'puno') {
+  if (eq.arma && eq.arma.tipo !== 'nada' && eq.arma.tipo !== 'puno' && nivelArma(eq.arma)) {
+    // el arsenal elemental: forma forjada del nivel y capa del elemento (el cesto va en los dos puños si la izquierda está libre)
+    ps.push(...armaForjadaEn(e, e.brazos[0], eq.arma, f, 7));
+    if (eq.arma.tipo === 'cestus' && !eq.izq) ps.push(...armaForjadaEn(e, e.brazos[1], { ...eq.arma, encanto: undefined }, f, 9));
+  } else if (eq.arma && eq.arma.tipo !== 'nada' && eq.arma.tipo !== 'puno') {
     ps.push(...arma(e, eq.arma.tipo, e.brazos[0], eq.arma.mat ?? 'cu_placa', eq.arma.mango ?? 'cu_cuero', eq.arma.gema));
     if (eq.arma.encanto) { const [a, b] = filoDe(e, eq.arma.tipo, e.brazos[0]); ps.push(...encantar(a, b, eq.arma.encanto, f, e.S, 7)); }
   }
@@ -1812,9 +1821,9 @@ function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArm
  * Un arma sola, sin quien la empuñe: 'flota' gira despacio en el aire (8 cuadros, como el botín que se muestra),
  * 'suelo' queda tirada en el piso y 'clavada' entra de punta en la tierra. Si tiene encantamiento, arde o brilla.
  */
-export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; gema?: string; encanto?: Encanto; escala?: number }, pose: 'flota' | 'suelo' | 'clavada' | 'icono', f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } {
+export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; gema?: string; encanto?: Encanto; escala?: number; nivel?: 1 | 2 | 3 | 4 | 5 }, pose: 'flota' | 'suelo' | 'clavada' | 'icono', f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } {
   const largo: Partial<Record<TipoArma, number>> = { espada: 24, cimitarra: 24, mandoble: 34, daga: 10, hacha: 23, hacha_doble: 31, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 31, garras: 9, varita: 11, baculo: 30, cetro: 16, arco: 30, ballesta: 16,
-    katana: 27, estoque: 28, falcata: 22, tridente: 38, maza_estrella: 21, arco_largo: 39, arco_corto: 26, jabalina: 29, gran_baculo: 34, orbe_mano: 11, katar: 13, hoz: 13, lanza_dragon: 42 };
+    katana: 27, estoque: 28, falcata: 22, tridente: 38, maza_estrella: 21, arco_largo: 39, arco_corto: 26, jabalina: 29, gran_baculo: 34, orbe_mano: 11, katar: 13, hoz: 13, lanza_dragon: 42, cestus: 8, frasco: 10 };
   const L = largo[tipo] ?? 20;
   let mano: V3, eje: V3, F: V3 = [1, 0, 0];
   if (pose === 'flota') {
@@ -1833,6 +1842,8 @@ export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; ge
     // (los arcos nuevos y la hoz de perfil, para que se lea la curva de las palas y la media luna)
     const deLado = ['hacha', 'hacha_doble', 'martillo', 'guadana', 'alabarda', 'mangual', 'maza', 'hoz', 'arco_largo', 'arco_corto', 'maza_estrella'].includes(tipo);
     eje = [0, 0, 1]; F = deLado ? nor([1, -1, 0]) : nor([1, 1, 0]); mano = [0, 0, 0];
+    // (las del arsenal elemental: la punta un poco atrás y la cara hacia la luz)
+    if (o.nivel) [eje, F] = marcoIcono(deLado);
   } else {
     eje = [0, 0, -1]; mano = [0, 0, L * 0.72]; F = nor([1, -1, 0]);
   }
@@ -1841,9 +1852,50 @@ export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; ge
   const SS = o.escala ?? (L < 14 ? 1.7 : 1);
   const b: Brazo = { s: 1, hom: mano, codo: mano, mun: mano, mano, d1: eje, d2: eje, eje };
   const e = { S: SS, A: SS, F, R, zc: 0, hombroZ: 0, cz: 0, brazos: [b, { ...b, mano: tipo === 'arco' || tipo === 'ballesta' ? mano : mano }] } as unknown as Esqueleto;
+  if (nivelArma({ tipo, nivel: o.nivel })) {
+    // el arsenal elemental: la forma forjada, los adornos del nivel y la capa del elemento con su luz
+    const piezas = armaForjadaEn(e, b, { ...o, tipo }, f, 3);
+    if (!o.encanto) return { piezas };
+    const [a, z] = filoDe(e, tipo, b);
+    return { piezas, resplandor: { c: mez(a, z, 0.5), r: 12 + (o.nivel ?? 1) * 2.5, color: LUZ_ELEMENTO_ARMA[o.encanto].color } };
+  }
   const piezas = arma(e, tipo, b, o.mat ?? 'cu_placa', o.mango ?? 'cu_cuero', o.gema);
   if (!o.encanto) return { piezas };
   const [a, z] = filoDe(e, tipo, b);
   piezas.push(...encantar(a, z, o.encanto, f, SS, 3));
   return { piezas, resplandor: { c: mez(a, z, 0.5), r: 18, color: ENCANTOS.find((x) => x[0] === o.encanto)![3] } };
+}
+
+// ------------------------------------------------------------------ el arsenal elemental (forja_armas.ts y elementos_arma.ts)
+/** Las formas que solo pinta la forja: sin nivel salen comunes. */
+const SOLO_FORJA: TipoArma[] = ['cestus', 'frasco'];
+/** El nivel del arsenal elemental de un arma (undefined: el arma de siempre del motor). */
+const nivelArma = (a: { tipo: TipoArma; nivel?: number }): NivelForja | undefined => (a.nivel ?? (SOLO_FORJA.includes(a.tipo) ? 1 : undefined)) as NivelForja | undefined;
+/**
+ * Un arma del arsenal elemental en la mano `b`: la forma forjada de su nivel (o la del motor con los adornos del nivel)
+ * y la capa viva de su elemento sobre el tramo vivo (hoja, cabeza o gema). Sirve igual para el cuerpo y para el ícono.
+ */
+function armaForjadaEn(e: Esqueleto, b: Brazo, a: { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto; nivel?: number }, f: number, semilla: number): Pieza[] {
+  const tipo = a.tipo, nivel = nivelArma(a) ?? 1, S = e.S;
+  const filo = filoDe(e, tipo, b);
+  const mc: MarcoArma = { m: b.mano, dd: b.eje, F: e.F, S, filo, f, giroVara: rad(e.pose?.giroVara ?? 0) };
+  if (esVara(tipo)) mc.vara = varaDe(e, b.mano, tipo === 'cetro' ? 0.45 : tipo === 'gran_baculo' ? 1.06 : 1);
+  if (esArco(tipo)) {
+    // el arco en el puño izquierdo, como lo arma `arma`: hacia dónde tira y su arriba
+    const c = e.brazos[1].mano, fT = e.ejesT ? nor([e.ejesT[0][0], e.ejesT[0][1], 0]) : e.F, hacia = sub(c, b.mano);
+    const tiro = e.pose?.tensa !== false && dot3(hacia, fT) > 6 * S ? nor(hacia) : nor(add(fT, e.F, 1));
+    mc.arco = { c, tiro, arriba: nor(sub([0, 0, 1], [tiro[0] * tiro[2], tiro[1] * tiro[2], tiro[2] * tiro[2]])) };
+  }
+  if (tipo === 'ballesta') {
+    // en la mano: entre las dos manos apuntando adelante (o colgando de la derecha); suelta (ícono): de pie
+    const icono = !e.ejesT, suelta = icono || (e.pose?.pegaI ?? 1) < 0.5, ap = icono ? b.eje : suelta ? b.eje : e.F;
+    const c = suelta ? add(b.mano, b.eje, icono ? 0 : 2 * S) : mez(e.brazos[1].mano, b.mano, 0.5);
+    let lado = cruz(ap, icono ? e.F : [0, 0, 1]); if (len(lado) < 0.2) lado = cruz(ap, e.F);
+    mc.ballesta = { c, ap, lado: nor(lado) };
+  }
+  const o: OpcForja = { tipo, nivel, encanto: a.encanto, mat: a.mat ?? 'ar_acero', mango: a.mango ?? 'cu_cuero', gema: a.gema };
+  const ps = formaForjada(mc, o) ?? [...arma(e, tipo, b, o.mat, o.mango, o.gema), ...adornosNivel(mc, o)];
+  // (los arcos llevan la capa en las dos palas, más suave: son finas)
+  if (a.encanto) for (const [p, q] of tramosVivos(mc, tipo)) ps.push(...capaElemental(p, q, a.encanto, f, S, esArco(tipo) ? Math.max(1, nivel - 1) : nivel, semilla++, esArco(tipo) ? 0.6 : anchoVivo(tipo)));
+  return ps;
 }

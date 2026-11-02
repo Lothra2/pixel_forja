@@ -2,6 +2,7 @@ import { createRaster, type Raster } from '../core/raster';
 import type { LootItem } from '../loot/catalog';
 import type { WeaponIcon } from '../loot/weapons';
 import type { TipoArma, Encanto } from './cuerpo';
+import { especArma, type FamiliaArma } from './datos/arsenal_datos';
 import { MATERIALES } from './materiales';
 import { KZ, VISTA, pintarEscena, palo, poliedro, masa, hueso, bulto, ruido, type Comp, type Pieza, type V3 } from './render';
 
@@ -2148,8 +2149,9 @@ export function iconoObjeto3D(desc: Icono3D, w: number, h: number, cuadro = 0): 
  * van también las del arsenal épico (katana, estoque, falcata, tridente, lucero, arcos largo y corto, jabalina, gran
  * báculo, orbe de mano, katar, hoz y lanza del dragón), cada una de frente o de perfil según se lea mejor.
  */
-export function iconoDeArma(a: { tipo: string; mat?: string; encanto?: string; gema?: string }): Icono3D | null {
-  if (a.tipo !== 'hacha' && a.tipo !== 'hacha_doble') return null;
+export function iconoDeArma(a: { tipo: string; mat?: string; encanto?: string; gema?: string; nivel?: number }): Icono3D | null {
+  // (las del arsenal elemental, con nivel, van por la forja: `armaSuelta` con su forma forjada)
+  if ((a.tipo !== 'hacha' && a.tipo !== 'hacha_doble') || a.nivel) return null;
   const d: Icono3D = { pieza: a.tipo, linea: a.mat === 'cu_oro' ? 'legendario' : a.mat === 'cu_placa_oscura' ? 'oscuro' : 'placas', nivel: a.encanto ? 4 : 2, variante: a.mat ?? 'cu_placa' };
   if (a.encanto) d.encanto = a.encanto;
   if (a.gema) d.gema = a.gema;
@@ -2164,13 +2166,16 @@ export const ARMA_DE_ICONO: Record<WeaponIcon, TipoArma> = {
   javelin: 'jabalina', greatsword: 'mandoble', greataxe: 'hacha_doble', maul: 'martillo', staff: 'baculo', spear: 'lanza', halberd: 'alabarda',
   scythe: 'guadana', bow: 'arco_corto', longbow: 'arco_largo', crossbow: 'ballesta',
   falcata: 'falcata', katar: 'katar', sickle: 'hoz', hand_orb: 'orbe_mano', trident: 'tridente', greatstaff: 'gran_baculo', dragon_lance: 'lanza_dragon',
+  cestus: 'cestus', flask: 'frasco',
 };
 /**
  * El arma 3D de una base del botín (para `iconoArma3D`, `Puesto.arma3d` y el cuerpo): el tipo según su ícono y el
  * metal, el mango, la gema y el encanto según su diseño (oro, acero oscuro u obsidiana, hueso o acero).
  */
-export function arma3dDeLoot(it: LootItem): { tipo: TipoArma; mat: string; mango: string; gema?: string; encanto?: Encanto } | null {
+export function arma3dDeLoot(it: LootItem): { tipo: TipoArma; mat: string; mango: string; gema?: string; encanto?: Encanto; nivel?: 1 | 2 | 3 | 4 | 5 } | null {
   if (it.base.cat !== 'weapon') return null;
+  // el arsenal elemental: la forma forjada de su familia, nivel y elemento
+  if (it.arsenal) { const ar = it.arsenal; return especArma(ar.familia as FamiliaArma, ar.nivel, ar.elemento ?? null, { ...(ar.mat ? { mat: ar.mat } : {}), ...(ar.mango ? { mango: ar.mango } : {}) }); }
   const dz = (it.design ?? {}) as { blade?: { hex: string; kind: string }; haft?: { hex: string }; grip?: { hex: string }; gem?: string | null; glow?: string | null };
   const hojaHex = dz.blade?.hex, h = esHex(hojaHex) ? hex(hojaHex) : null;
   const sat = h ? (Math.max(...h) - Math.min(...h)) / Math.max(1, Math.max(...h)) : 0;

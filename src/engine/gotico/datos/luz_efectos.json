@@ -1,0 +1,1456 @@
+{
+ "formato": "pixelforja-gotico-luz-efectos",
+ "version": 1,
+ "cuadros_por_segundo": 25,
+ "notas": "radio y altura en px de pantalla a escala 1 (multiplicar por la escala del efecto); luz del cuadro = intensidad * curva[cuadro]; enVuelo: la luz sigue al proyectil; lanzar: fogonazo en la mano; impacto: efecto a soltar al pegar; prioridad 0 = imprescindible; mezcla 'normal': dibujar con alfa (no aditivo) para que se vean la sangre, el hueso y el humo.",
+ "efectos": {
+  "abanico_flechas": {
+   "color": "#fff0d0",
+   "radio": 90,
+   "intensidad": 0.35,
+   "curva": [
+    1,
+    0.09,
+    0.01,
+    0,
+    0,
+    0
+   ],
+   "altura": 42,
+   "sombra": false,
+   "prioridad": 3,
+   "mezcla": "normal"
+  },
+  "aliento_infernal": {
+   "color": "#ff8a33",
+   "radio": 230,
+   "intensidad": 0.9,
+   "curva": [
+    0.86,
+    0.98,
+    0.86,
+    0.74,
+    0.86,
+    0.98,
+    0.86,
+    0.74
+   ],
+   "altura": 40,
+   "parpadeo": 0.2,
+   "sombra": true,
+   "prioridad": 1
+  },
+  "alma_ascendente": {
+   "color": "#8ff0d8",
+   "radio": 130,
+   "intensidad": 0.55,
+   "curva": [
+    0.46,
+    0.79,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0.95,
+    0.87,
+    0.79,
+    0.7,
+    0.59,
+    0.46,
+    0.26
+   ],
+   "altura": 90,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "arco_cadena": {
+   "color": "#a8c2ff",
+   "radio": 220,
+   "intensidad": 1,
+   "curva": [
+    0.59,
+    0.77,
+    0.52,
+    0.66,
+    0.59,
+    0.82
+   ],
+   "altura": 38,
+   "parpadeo": 0.4,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "aura_furia": {
+   "color": "#ff4a2a",
+   "radio": 150,
+   "intensidad": 0.55,
+   "curva": [
+    0.8,
+    0.96,
+    0.96,
+    0.8,
+    0.64,
+    0.64,
+    0.8,
+    0.96,
+    0.96,
+    0.8,
+    0.64,
+    0.64
+   ],
+   "altura": 24,
+   "parpadeo": 0.1,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "aura_sagrada": {
+   "color": "#ffd98a",
+   "radio": 150,
+   "intensidad": 0.5,
+   "curva": [
+    0.85,
+    0.91,
+    0.95,
+    0.97,
+    0.95,
+    0.91,
+    0.85,
+    0.79,
+    0.75,
+    0.73,
+    0.75,
+    0.79
+   ],
+   "altura": 20,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "bola_fuego": {
+   "color": "#ff8a33",
+   "radio": 230,
+   "intensidad": 1,
+   "curva": [
+    0.88,
+    0.98,
+    0.88,
+    0.78,
+    0.88,
+    0.98,
+    0.88,
+    0.78
+   ],
+   "altura": 44,
+   "parpadeo": 0.16,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 161,
+    "intensidad": 0.9,
+    "cuadros": 4
+   },
+   "impacto": "explosion_fuego",
+   "sombra": true,
+   "prioridad": 1
+  },
+  "brillo_pocion_mana": {
+   "color": "#4874ff",
+   "radio": 120,
+   "intensidad": 0.55,
+   "curva": [
+    0.46,
+    0.79,
+    1,
+    1,
+    1,
+    1,
+    0.96,
+    0.87,
+    0.76,
+    0.65,
+    0.5,
+    0.29
+   ],
+   "altura": 36,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "brillo_pocion_rejuvenecer": {
+   "color": "#c64cff",
+   "radio": 120,
+   "intensidad": 0.55,
+   "curva": [
+    0.46,
+    0.79,
+    1,
+    1,
+    1,
+    1,
+    0.96,
+    0.87,
+    0.76,
+    0.65,
+    0.5,
+    0.29
+   ],
+   "altura": 36,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "brillo_pocion_vida": {
+   "color": "#ff3a34",
+   "radio": 120,
+   "intensidad": 0.55,
+   "curva": [
+    0.46,
+    0.79,
+    1,
+    1,
+    1,
+    1,
+    0.96,
+    0.87,
+    0.76,
+    0.65,
+    0.5,
+    0.29
+   ],
+   "altura": 36,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "campo_estatico": {
+   "color": "#a8c2ff",
+   "radio": 180,
+   "intensidad": 0.6,
+   "curva": [
+    0.5,
+    0.38,
+    0.45,
+    0.59,
+    0.39,
+    0.84,
+    0.46,
+    0.52
+   ],
+   "altura": 12,
+   "parpadeo": 0.45,
+   "sombra": false,
+   "prioridad": 2
+  },
+  "castigo": {
+   "color": "#ffd98a",
+   "radio": 230,
+   "intensidad": 1,
+   "curva": [
+    1,
+    0.46,
+    0.21,
+    0.1,
+    0.04,
+    0.02,
+    0.01,
+    0
+   ],
+   "altura": 40,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "chispa_cargada": {
+   "color": "#a8c2ff",
+   "radio": 170,
+   "intensidad": 0.85,
+   "curva": [
+    0.8,
+    0.62,
+    0.89,
+    0.71,
+    0.77,
+    0.91,
+    0.74,
+    0.94
+   ],
+   "altura": 26,
+   "parpadeo": 0.3,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 119,
+    "intensidad": 0.765,
+    "cuadros": 4
+   },
+   "impacto": "impacto_rayo",
+   "sombra": true,
+   "prioridad": 1
+  },
+  "chispas_carne": {
+   "color": "#ff6040",
+   "radio": 80,
+   "intensidad": 0.35,
+   "curva": [
+    1,
+    0.14,
+    0.02,
+    0,
+    0,
+    0
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 2,
+   "mezcla": "normal"
+  },
+  "chispas_curacion": {
+   "color": "#9cff9c",
+   "radio": 130,
+   "intensidad": 0.5,
+   "curva": [
+    0.42,
+    0.73,
+    0.94,
+    1,
+    1,
+    1,
+    1,
+    0.96,
+    0.89,
+    0.8,
+    0.71,
+    0.6,
+    0.46,
+    0.27
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "chispas_metal": {
+   "color": "#ffc070",
+   "radio": 120,
+   "intensidad": 0.7,
+   "curva": [
+    1,
+    0.14,
+    0.02,
+    0,
+    0,
+    0
+   ],
+   "altura": 44,
+   "sombra": false,
+   "prioridad": 1
+  },
+  "circulo_invocacion": {
+   "color": "#7dffa0",
+   "radio": 170,
+   "intensidad": 0.6,
+   "curva": [
+    0.82,
+    0.89,
+    0.94,
+    0.96,
+    0.94,
+    0.89,
+    0.82,
+    0.75,
+    0.7,
+    0.68,
+    0.7,
+    0.75
+   ],
+   "altura": 8,
+   "sombra": false,
+   "prioridad": 2
+  },
+  "coraza_helada": {
+   "color": "#78bcff",
+   "radio": 120,
+   "intensidad": 0.45,
+   "curva": [
+    0.85,
+    0.93,
+    0.97,
+    0.93,
+    0.85,
+    0.77,
+    0.73,
+    0.77
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "crater_ardiente": {
+   "color": "#ff6a1e",
+   "radio": 160,
+   "intensidad": 0.6,
+   "curva": [
+    0.8,
+    0.89,
+    0.94,
+    0.94,
+    0.89,
+    0.8,
+    0.71,
+    0.66,
+    0.66,
+    0.71
+   ],
+   "altura": 10,
+   "parpadeo": 0.2,
+   "sombra": false,
+   "prioridad": 2
+  },
+  "destello_teleporte": {
+   "color": "#c27aff",
+   "radio": 230,
+   "intensidad": 0.9,
+   "curva": [
+    0.4,
+    0.68,
+    0.88,
+    1,
+    0.96,
+    0.87,
+    0.76,
+    0.65,
+    0.5,
+    0.29
+   ],
+   "altura": 40,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "escudo_divino": {
+   "color": "#ffd98a",
+   "radio": 140,
+   "intensidad": 0.45,
+   "curva": [
+    0.85,
+    0.92,
+    0.96,
+    0.96,
+    0.92,
+    0.85,
+    0.78,
+    0.74,
+    0.74,
+    0.78
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "estallido_cadaver": {
+   "color": "#ff5a2a",
+   "radio": 240,
+   "intensidad": 1,
+   "curva": [
+    1,
+    0.55,
+    0.3,
+    0.16,
+    0.09,
+    0.05,
+    0.03,
+    0.01,
+    0.01,
+    0,
+    0,
+    0
+   ],
+   "altura": 18,
+   "parpadeo": 0.06,
+   "sombra": true,
+   "prioridad": 0,
+   "mezcla": "normal"
+  },
+  "estallido_enredaderas": {
+   "color": "#94e06a",
+   "radio": 150,
+   "intensidad": 0.5,
+   "curva": [
+    0.53,
+    0.91,
+    1,
+    1,
+    1,
+    0.95,
+    0.87,
+    0.79,
+    0.7,
+    0.59,
+    0.46,
+    0.26
+   ],
+   "altura": 16,
+   "sombra": false,
+   "prioridad": 2,
+   "mezcla": "normal"
+  },
+  "estallido_esquirlas": {
+   "color": "#78bcff",
+   "radio": 190,
+   "intensidad": 0.85,
+   "curva": [
+    1,
+    0.51,
+    0.26,
+    0.14,
+    0.07,
+    0.04,
+    0.02,
+    0.01,
+    0,
+    0
+   ],
+   "altura": 30,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "explosion_fuego": {
+   "color": "#ff8a33",
+   "radio": 270,
+   "intensidad": 1,
+   "curva": [
+    1,
+    0.68,
+    0.46,
+    0.32,
+    0.21,
+    0.15,
+    0.1,
+    0.07,
+    0.05,
+    0.03,
+    0.02,
+    0.01,
+    0.01,
+    0.01
+   ],
+   "altura": 30,
+   "parpadeo": 0.08,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "flecha": {
+   "color": "#ffd2a0",
+   "radio": 0,
+   "intensidad": 0,
+   "curva": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "altura": 42,
+   "enVuelo": true,
+   "impacto": "chispas_carne",
+   "prioridad": 3,
+   "mezcla": "normal"
+  },
+  "flecha_fuego": {
+   "color": "#ff8a33",
+   "radio": 120,
+   "intensidad": 0.6,
+   "curva": [
+    0.88,
+    0.97,
+    0.97,
+    0.88,
+    0.79,
+    0.79
+   ],
+   "altura": 42,
+   "parpadeo": 0.15,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 84,
+    "intensidad": 0.54,
+    "cuadros": 4
+   },
+   "impacto": "explosion_fuego",
+   "sombra": true,
+   "prioridad": 1,
+   "mezcla": "normal"
+  },
+  "flecha_hielo": {
+   "color": "#78bcff",
+   "radio": 110,
+   "intensidad": 0.5,
+   "curva": [
+    0.88,
+    0.97,
+    0.97,
+    0.88,
+    0.79,
+    0.79
+   ],
+   "altura": 42,
+   "parpadeo": 0.1,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 77,
+    "intensidad": 0.45,
+    "cuadros": 4
+   },
+   "impacto": "estallido_esquirlas",
+   "sombra": true,
+   "prioridad": 1,
+   "mezcla": "normal"
+  },
+  "glifo_trampa": {
+   "color": "#ff5aa8",
+   "radio": 110,
+   "intensidad": 0.5,
+   "curva": [
+    0.78,
+    0.92,
+    0.98,
+    0.92,
+    0.78,
+    0.64,
+    0.58,
+    0.64
+   ],
+   "altura": 6,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "grito_guerra": {
+   "color": "#ff6a2a",
+   "radio": 210,
+   "intensidad": 0.7,
+   "curva": [
+    1,
+    0.62,
+    0.39,
+    0.24,
+    0.15,
+    0.09,
+    0.06,
+    0.04,
+    0.02,
+    0.01
+   ],
+   "altura": 60,
+   "sombra": false,
+   "prioridad": 1
+  },
+  "haz_botin_conjunto": {
+   "color": "#4cff52",
+   "radio": 110,
+   "intensidad": 0.55,
+   "curva": [
+    0.85,
+    0.96,
+    1,
+    0.96,
+    0.85,
+    0.74,
+    0.7,
+    0.74
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "haz_botin_magico": {
+   "color": "#5a84ff",
+   "radio": 90,
+   "intensidad": 0.45,
+   "curva": [
+    0.85,
+    0.96,
+    1,
+    0.96,
+    0.85,
+    0.74,
+    0.7,
+    0.74
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "haz_botin_normal": {
+   "color": "#eae6d6",
+   "radio": 80,
+   "intensidad": 0.35,
+   "curva": [
+    0.85,
+    0.96,
+    1,
+    0.96,
+    0.85,
+    0.74,
+    0.7,
+    0.74
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "haz_botin_raro": {
+   "color": "#ffe64c",
+   "radio": 100,
+   "intensidad": 0.5,
+   "curva": [
+    0.85,
+    0.96,
+    1,
+    0.96,
+    0.85,
+    0.74,
+    0.7,
+    0.74
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "haz_botin_unico": {
+   "color": "#dca852",
+   "radio": 110,
+   "intensidad": 0.55,
+   "curva": [
+    0.85,
+    0.96,
+    1,
+    0.96,
+    0.85,
+    0.74,
+    0.7,
+    0.74
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "impacto_hueso": {
+   "color": "#8ff0d8",
+   "radio": 130,
+   "intensidad": 0.55,
+   "curva": [
+    1,
+    0.34,
+    0.12,
+    0.04,
+    0.01,
+    0,
+    0,
+    0
+   ],
+   "altura": 34,
+   "sombra": false,
+   "prioridad": 1,
+   "mezcla": "normal"
+  },
+  "impacto_rayo": {
+   "color": "#a8c2ff",
+   "radio": 240,
+   "intensidad": 1,
+   "curva": [
+    1,
+    0.42,
+    0.18,
+    0.08,
+    0.03,
+    0.01,
+    0.01,
+    0
+   ],
+   "altura": 36,
+   "parpadeo": 0.35,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "impacto_sagrado": {
+   "color": "#ffd98a",
+   "radio": 220,
+   "intensidad": 1,
+   "curva": [
+    1,
+    0.42,
+    0.18,
+    0.08,
+    0.03,
+    0.01,
+    0.01,
+    0
+   ],
+   "altura": 36,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "impacto_veneno": {
+   "color": "#86e84a",
+   "radio": 160,
+   "intensidad": 0.65,
+   "curva": [
+    1,
+    0.49,
+    0.24,
+    0.12,
+    0.06,
+    0.03,
+    0.01,
+    0.01
+   ],
+   "altura": 26,
+   "sombra": false,
+   "prioridad": 1,
+   "mezcla": "normal"
+  },
+  "lanza_hueso": {
+   "color": "#8ff0d8",
+   "radio": 150,
+   "intensidad": 0.6,
+   "curva": [
+    0.88,
+    0.97,
+    0.97,
+    0.88,
+    0.79,
+    0.79
+   ],
+   "altura": 42,
+   "parpadeo": 0.05,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 105,
+    "intensidad": 0.54,
+    "cuadros": 4
+   },
+   "impacto": "impacto_hueso",
+   "sombra": true,
+   "prioridad": 1,
+   "mezcla": "normal"
+  },
+  "lluvia_flechas": {
+   "color": "#ffd2a0",
+   "radio": 0,
+   "intensidad": 0,
+   "curva": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "altura": 0,
+   "prioridad": 3,
+   "mezcla": "normal"
+  },
+  "maldicion_sombra": {
+   "color": "#9a4dff",
+   "radio": 160,
+   "intensidad": 0.55,
+   "curva": [
+    0.42,
+    0.73,
+    0.94,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0.99,
+    0.9,
+    0.79,
+    0.67,
+    0.52,
+    0.3
+   ],
+   "altura": 24,
+   "sombra": false,
+   "prioridad": 2,
+   "mezcla": "normal"
+  },
+  "meteoro": {
+   "color": "#ff8a33",
+   "radio": 300,
+   "intensidad": 1,
+   "curva": [
+    0.22,
+    0.26,
+    0.3,
+    0.35,
+    0.41,
+    0.48,
+    0.55,
+    0.62,
+    1,
+    0.92,
+    0.74,
+    0.56,
+    0.42,
+    0.3,
+    0.2,
+    0.12,
+    0.06,
+    0.02
+   ],
+   "altura": 34,
+   "parpadeo": 0.1,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "muro_llamas": {
+   "color": "#ff8a33",
+   "radio": 150,
+   "intensidad": 0.75,
+   "curva": [
+    0.82,
+    0.92,
+    0.88,
+    0.76,
+    0.72,
+    0.82,
+    0.92,
+    0.88,
+    0.76,
+    0.72
+   ],
+   "altura": 30,
+   "parpadeo": 0.18,
+   "sombra": true,
+   "prioridad": 2
+  },
+  "nova_escarcha": {
+   "color": "#78bcff",
+   "radio": 250,
+   "intensidad": 0.9,
+   "curva": [
+    0.58,
+    1,
+    0.72,
+    0.51,
+    0.37,
+    0.26,
+    0.19,
+    0.14,
+    0.1,
+    0.07,
+    0.05,
+    0.04,
+    0.03,
+    0.02
+   ],
+   "altura": 12,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "nova_sangre": {
+   "color": "#e0262a",
+   "radio": 240,
+   "intensidad": 0.8,
+   "curva": [
+    0.58,
+    1,
+    0.7,
+    0.49,
+    0.34,
+    0.24,
+    0.17,
+    0.12,
+    0.08,
+    0.06,
+    0.04,
+    0.03,
+    0.02,
+    0.01
+   ],
+   "altura": 20,
+   "parpadeo": 0.05,
+   "sombra": true,
+   "prioridad": 0,
+   "mezcla": "normal"
+  },
+  "nova_veneno": {
+   "color": "#86e84a",
+   "radio": 230,
+   "intensidad": 0.75,
+   "curva": [
+    0.58,
+    1,
+    0.73,
+    0.54,
+    0.39,
+    0.29,
+    0.21,
+    0.15,
+    0.11,
+    0.08,
+    0.06,
+    0.04,
+    0.03,
+    0.02
+   ],
+   "altura": 14,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "nube_veneno": {
+   "color": "#86e84a",
+   "radio": 170,
+   "intensidad": 0.4,
+   "curva": [
+    0.8,
+    0.86,
+    0.9,
+    0.92,
+    0.9,
+    0.86,
+    0.8,
+    0.74,
+    0.7,
+    0.68,
+    0.7,
+    0.74
+   ],
+   "altura": 20,
+   "parpadeo": 0.08,
+   "sombra": false,
+   "prioridad": 2,
+   "mezcla": "normal"
+  },
+  "onda_aterrizaje": {
+   "color": "#ffe6c0",
+   "radio": 170,
+   "intensidad": 0.45,
+   "curva": [
+    1,
+    0.39,
+    0.15,
+    0.06,
+    0.02,
+    0.01,
+    0,
+    0,
+    0,
+    0
+   ],
+   "altura": 6,
+   "sombra": false,
+   "prioridad": 1,
+   "mezcla": "normal"
+  },
+  "paso_sombrio": {
+   "color": "#9a4dff",
+   "radio": 180,
+   "intensidad": 0.7,
+   "curva": [
+    1,
+    0.57,
+    0.33,
+    0.19,
+    0.11,
+    0.06,
+    0.04,
+    0.02,
+    0.01,
+    0.01
+   ],
+   "altura": 36,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "pilar_luz": {
+   "color": "#ffd98a",
+   "radio": 290,
+   "intensidad": 1,
+   "curva": [
+    0.49,
+    0.85,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0.93,
+    0.85,
+    0.75,
+    0.63,
+    0.49,
+    0.28
+   ],
+   "altura": 100,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "polvo_carga": {
+   "color": "#ffd2a0",
+   "radio": 0,
+   "intensidad": 0,
+   "curva": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "altura": 0,
+   "prioridad": 3,
+   "mezcla": "normal"
+  },
+  "portal_regreso": {
+   "color": "#5a90ff",
+   "radio": 180,
+   "intensidad": 0.8,
+   "curva": [
+    0.85,
+    0.94,
+    0.94,
+    0.85,
+    0.76,
+    0.76,
+    0.85,
+    0.94,
+    0.94,
+    0.85,
+    0.76,
+    0.76
+   ],
+   "altura": 50,
+   "sombra": true,
+   "prioridad": 1
+  },
+  "prision_hueso": {
+   "color": "#8ff0d8",
+   "radio": 150,
+   "intensidad": 0.5,
+   "curva": [
+    0.41,
+    0.71,
+    0.91,
+    1,
+    1,
+    1,
+    1,
+    0.97,
+    0.85,
+    0.72,
+    0.56,
+    0.32
+   ],
+   "altura": 30,
+   "sombra": false,
+   "prioridad": 2,
+   "mezcla": "normal"
+  },
+  "relampago": {
+   "color": "#a8c2ff",
+   "radio": 240,
+   "intensidad": 1,
+   "curva": [
+    0.75,
+    0.98,
+    0.99,
+    0.62,
+    0.91,
+    0.93
+   ],
+   "altura": 42,
+   "parpadeo": 0.35,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 168,
+    "intensidad": 0.9,
+    "cuadros": 4
+   },
+   "impacto": "impacto_rayo",
+   "sombra": true,
+   "prioridad": 1
+  },
+  "saeta_fuego": {
+   "color": "#ff8a33",
+   "radio": 170,
+   "intensidad": 0.85,
+   "curva": [
+    0.88,
+    0.97,
+    0.97,
+    0.88,
+    0.79,
+    0.79
+   ],
+   "altura": 42,
+   "parpadeo": 0.14,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 119,
+    "intensidad": 0.765,
+    "cuadros": 4
+   },
+   "impacto": "explosion_fuego",
+   "sombra": true,
+   "prioridad": 1
+  },
+  "saeta_hielo": {
+   "color": "#78bcff",
+   "radio": 160,
+   "intensidad": 0.7,
+   "curva": [
+    0.88,
+    0.97,
+    0.97,
+    0.88,
+    0.79,
+    0.79
+   ],
+   "altura": 42,
+   "parpadeo": 0.05,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 112,
+    "intensidad": 0.63,
+    "cuadros": 4
+   },
+   "impacto": "estallido_esquirlas",
+   "sombra": true,
+   "prioridad": 1
+  },
+  "saeta_sagrada": {
+   "color": "#ffd98a",
+   "radio": 190,
+   "intensidad": 0.9,
+   "curva": [
+    0.88,
+    0.97,
+    0.97,
+    0.88,
+    0.79,
+    0.79
+   ],
+   "altura": 42,
+   "parpadeo": 0.06,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 133,
+    "intensidad": 0.81,
+    "cuadros": 4
+   },
+   "impacto": "impacto_sagrado",
+   "sombra": true,
+   "prioridad": 1
+  },
+  "saeta_veneno": {
+   "color": "#86e84a",
+   "radio": 140,
+   "intensidad": 0.6,
+   "curva": [
+    0.88,
+    0.97,
+    0.97,
+    0.88,
+    0.79,
+    0.79
+   ],
+   "altura": 42,
+   "parpadeo": 0.08,
+   "enVuelo": true,
+   "lanzar": {
+    "radio": 98,
+    "intensidad": 0.54,
+    "cuadros": 4
+   },
+   "impacto": "impacto_veneno",
+   "sombra": true,
+   "prioridad": 1,
+   "mezcla": "normal"
+  },
+  "salpicadura_sangre": {
+   "color": "#e0262a",
+   "radio": 100,
+   "intensidad": 0.3,
+   "curva": [
+    1,
+    0.24,
+    0.06,
+    0.01,
+    0,
+    0,
+    0,
+    0
+   ],
+   "altura": 34,
+   "sombra": false,
+   "prioridad": 2,
+   "mezcla": "normal"
+  },
+  "subida_nivel": {
+   "color": "#ffd98a",
+   "radio": 270,
+   "intensidad": 1,
+   "curva": [
+    0.56,
+    0.97,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0.98,
+    0.92,
+    0.86,
+    0.79,
+    0.72,
+    0.63,
+    0.53,
+    0.41,
+    0.24
+   ],
+   "altura": 80,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "tajo_garras": {
+   "color": "#ff5040",
+   "radio": 120,
+   "intensidad": 0.45,
+   "curva": [
+    0.58,
+    1,
+    0.29,
+    0.08,
+    0.02,
+    0.01
+   ],
+   "altura": 40,
+   "sombra": false,
+   "prioridad": 1
+  },
+  "torbellino": {
+   "color": "#dfe6ff",
+   "radio": 110,
+   "intensidad": 0.3,
+   "curva": [
+    0.8,
+    1,
+    0.8,
+    0.6,
+    0.8,
+    1,
+    0.8,
+    0.6
+   ],
+   "altura": 36,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "tornado": {
+   "color": "#c8d8c0",
+   "radio": 0,
+   "intensidad": 0,
+   "curva": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "altura": 50,
+   "prioridad": 3,
+   "mezcla": "normal"
+  },
+  "transformacion_bestia": {
+   "color": "#ffa040",
+   "radio": 210,
+   "intensidad": 0.85,
+   "curva": [
+    1,
+    0.57,
+    0.33,
+    0.19,
+    0.11,
+    0.06,
+    0.04,
+    0.02,
+    0.01,
+    0.01
+   ],
+   "altura": 40,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "trueno": {
+   "color": "#a8c2ff",
+   "radio": 320,
+   "intensidad": 1,
+   "curva": [
+    0.2,
+    1,
+    0.88,
+    0.55,
+    0.14,
+    0.86,
+    0.45,
+    0.24,
+    0.14,
+    0.08,
+    0.04,
+    0.01
+   ],
+   "altura": 120,
+   "parpadeo": 0.2,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "ventisca": {
+   "color": "#78bcff",
+   "radio": 230,
+   "intensidad": 0.45,
+   "curva": [
+    0.8,
+    0.95,
+    0.8,
+    0.65,
+    0.8,
+    0.95,
+    0.8,
+    0.65,
+    0.8,
+    0.95,
+    0.8,
+    0.65
+   ],
+   "altura": 60,
+   "parpadeo": 0.12,
+   "sombra": false,
+   "prioridad": 2
+  },
+  "virote": {
+   "color": "#ffd2a0",
+   "radio": 0,
+   "intensidad": 0,
+   "curva": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "altura": 42,
+   "enVuelo": true,
+   "impacto": "chispas_carne",
+   "prioridad": 3,
+   "mezcla": "normal"
+  }
+ }
+}
