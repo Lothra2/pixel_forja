@@ -110,6 +110,7 @@ const HAND: Record<WeaponIcon, WeaponKind> = {
   sword: 'sword', scimitar: 'sword', katana: 'sword', rapier: 'sword', dagger: 'dagger', kris: 'dagger', axe: 'axe', hatchet: 'axe', mace: 'mace',
   morning_star: 'mace', flail: 'mace', warhammer: 'hammer', scepter: 'mace', club: 'club', wand: 'wand', claw: 'claws', javelin: 'spear',
   greatsword: 'greatsword', greataxe: 'axe', maul: 'hammer', staff: 'staff', spear: 'spear', halberd: 'spear', scythe: 'scythe', bow: 'bow', longbow: 'bow', crossbow: 'bow',
+  falcata: 'sword', katar: 'claws', sickle: 'dagger', hand_orb: 'wand', trident: 'spear', greatstaff: 'staff', dragon_lance: 'spear',
 };
 const HAND_OFF: Partial<Record<OffhandIcon, OffhandKind>> = {
   shield_heater: 'shield', shield_round: 'shield_round', shield_kite: 'shield_kite', shield_tower: 'shield_tower', buckler: 'shield_round', orb: 'orb', tome: 'tome', shrunken_head: 'orb',

@@ -1188,12 +1188,11 @@ registrar(
         if (i === 0) loc.push(a.cilindro(x - 4, y + 6, r, 1.6, 16, { mat: HI }));
       });
       // el palo mayor sirve de poste del toldo; sogas con ropa y pescado secándose
-      const top = mastil(a, loc, [8, 0, hd], 92, 3, { roto: 0.8, verga: true, vela: true, f, n: 8 });
+      mastil(a, loc, [8, 0, hd], 92, 3, { roto: 0.8, verga: true, vela: true, f, n: 8 });
       for (const [p, q] of [[[-40, -12, hd + 34], [8, 0, hd + 48]], [[8, 0, hd + 40], [38, 0, hd + 18]]] as [V3, V3][]) {
         const pts = catenaria(p, q, 5, 7); for (let i = 0; i < pts.length - 1; i++) loc.push(a.palo(pts[i], pts[i + 1], 0.3, { mat: 'ahg_soga' }));
         for (let i = 1; i < pts.length - 1; i += 2) { const tmp: Pieza[] = []; pez(a, tmp, [0, 0, 0], 7, 0); loc.push(...transformar(tmp, ejeAng([0, 1, 0], -90 + onda(f, 8, i) * 8), add(pts[i], [0, 0, -4]))); }
       }
-      void top;
       // escalera de mano hasta la arena y una pasarela de tablones
       for (const s of [-1, 1]) loc.push(a.palo([-20, 22 + s * 4, 0], [-20, 15 + s * 4, hd], 0.8, { mat: WL }));
       for (let i = 1; i < 7; i++) loc.push(a.palo([-20, 22 - 4 - i * 1, (i / 7) * hd], [-20, 22 + 4 - i * 1, (i / 7) * hd], 0.6, { mat: WL }));
@@ -1202,7 +1201,7 @@ registrar(
         const kk = 0.5 + 0.4 * onda(f, 8);
         for (const [x, y] of [[-26, -12], [10, 14], [34, -8]]) { loc.push(a.palo([x, y, hd + 8], [x, y, hd + 26], 0.7, { mat: WL })); farol(a, loc, [x, y, hd + 17], 0.8, kk); }
         luz = { c: [0, 0, hd + 20], r: 70 + kk * 10, color: '#e0a040' };
-        if (v === 'mercado') for (let i = 0; i < 4; i++) { const x = -20 + i * 14; loc.push(a.cilindro(x, 26 + a.r() * 6, 0, 4.5, 10, { mat: W, r1: 5 }), a.cilindro(x, 26, 0, 4.5, 10, { mat: W }).k === 'cono' ? a.cilindro(x, 26 + a.r() * 6, 0, 4.5, 0.1, { mat: W }) : a.esfera(0, 0, 0, 0.1, { mat: W })); }
+        if (v === 'mercado') for (let i = 0; i < 4; i++) { const x = -24 + i * 15, y = 30 + jit(a, 3); loc.push(a.caja(x, y, 0, 10, 7, 8, { mat: W, giro: jit(a, 10) }), a.cilindro(x + 2, y + 1, 8, 3.4, 3, { mat: 'paja', r1: 4 })); const tmp: Pieza[] = []; pez(a, tmp, [0, 0, 0], 6, 0); loc.push(...transformar(tmp, rotM(a.r() * 180, 90, 0), [x - 2, y, 9])); }
       }
       // percebes y algas en el casco
       for (let i = 0; i < 8; i++) { const u = -0.9 + a.r() * 1.8, s = elegir(a, [1, -1]); percebes(a, loc, k.pt(u, s, 0.3 + a.r() * 0.3), [0, s, -0.3], 5, 4); }

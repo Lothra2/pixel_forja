@@ -25,11 +25,11 @@ M.ext_roca_fria = {
 /** Arenisca erosionada: estratos horizontales que ondulan, con vetas más claras y grietas. */
 M.ext_estratos = {
   rampa: ['#1d120b', '#2f1e12', '#442c1a', '#5b3c24', '#734e2f', '#8b613b', '#a37549', '#b98a5a'], ruido: 0.3, escala: 0.18,
-  patron: (p) => { const z = p[2] + (ruido(p[0] * 0.06, p[1] * 0.06, 3) - 0.5) * 8; const b = Math.sin(z * 0.9) * 0.5 + 0.5; return (b > 0.82 ? 0.13 : b < 0.12 ? -0.2 : 0) + (Math.sin(z * 0.23 + 1) * 0.08) + (grieta(p, 0.12) ? -0.25 : 0); },
+  patron: (p) => { const z = p[2] + (ruido(p[0] * 0.06, p[1] * 0.06, 3) - 0.5) * 8; const b = ruido(z * 0.4, p[1] * 0.02, 9); return (b > 0.7 ? 0.1 : b < 0.25 ? -0.12 : 0) + (grieta(p, 0.12) ? -0.22 : 0); },
 };
 M.ext_estratos_rojos = {
-  rampa: ['#170908', '#29110d', '#3d1a13', '#52241a', '#6a3122', '#813f2c', '#994f38', '#b06246'], ruido: 0.3, escala: 0.18,
-  patron: (p) => { const z = p[2] + (ruido(p[0] * 0.05, p[1] * 0.05, 7) - 0.5) * 9; const b = Math.sin(z * 0.75) * 0.5 + 0.5; return (b > 0.85 ? 0.12 : b < 0.1 ? -0.22 : 0) + (grieta(p, 0.1) ? -0.25 : 0); },
+  rampa: ['#150b08', '#24130e', '#351d15', '#47281d', '#593426', '#6b4131', '#7e4f3c', '#905e48'], ruido: 0.32, escala: 0.18,
+  patron: (p) => { const z = p[2] + (ruido(p[0] * 0.05, p[1] * 0.05, 7) - 0.5) * 9; const b = ruido(z * 0.35, p[0] * 0.02, 4); return (b > 0.7 ? 0.08 : b < 0.25 ? -0.1 : 0) + (grieta(p, 0.1) ? -0.22 : 0); },
 };
 /** Musgo húmedo en matas: manchas claras y huecos oscuros. */
 M.ext_musgo = {

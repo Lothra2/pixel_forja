@@ -253,7 +253,7 @@ registrar(
     id: 'min_vagoneta_volcada', nombre: ['Vagoneta volcada', 'Overturned mine cart'], tema: 'mina', variantes: ['carbon', 'oro', 'hierro', 'sangre'], huella: [3, 3], bloquea: true,
     armar: (v, _f, a) => {
       const fm = forma(a, 4), ps: Pieza[] = [], m = MENA[v];
-      const g = fm * 70 + entre(a, -15, 15), t = rad(g + 90);
+      const g = -90 + fm * 30 + entre(a, -10, 10), t = rad(g + 90);
       ps.push(...mover(vagoneta(a, 'vacia', fm === 3 ? 1 : 0), [-Math.cos(t) * 14, -Math.sin(t) * 14 - 2, 9.5], g, -95));
       // la carga derramada en abanico desde la boca
       for (let i = 0; i < 28; i++) { const d = 10 + Math.sqrt(a.r()) * 22, s = (a.r() - 0.5) * 1.2; const x = Math.cos(t + s) * d, y = Math.sin(t + s) * d - 2, r = entre(a, 1.8, 3.8) * (1 - d / 50); ps.push(pena(a, x, y, r * 0.3 + Math.max(0, 5 - d * 0.3), r, r * 0.85, r * 0.7, { mat: m.roca, tono: (a.r() - 0.5) * 0.12 })); }

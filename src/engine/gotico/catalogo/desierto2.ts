@@ -65,6 +65,7 @@ M.des2_alfombra = {
   patron: (p) => { const u = fr((p[0] + p[1] * 0.2) / 6), v = fr((p[1] - p[0] * 0.2) / 6); return (u < 0.1 || v < 0.1 ? 0.18 : 0) + (Math.abs(u - 0.5) + Math.abs(v - 0.5) < 0.2 ? -0.15 : 0); },
 };
 M.des2_cuerno = { rampa: ['#080605', '#120e0b', '#1e1812', '#2b221a', '#3a2e23', '#4b3c2e', '#5e4c3b'], ruido: 0.2, escala: 0.8, brillo: 0.3, patron: (p) => (Math.sin(p[2] * 1.4 + p[0] * 0.3) > 0.7 ? -0.1 : 0) };
+M.des2_nemes = { rampa: ['#1d140c', '#30221a', '#463222', '#5d432e', '#76563a', '#8d6947', '#a47d56'], ruido: 0.15, escala: 0.2, patron: (p) => (Math.sin(p[2] * 1.5) > 0.2 ? 0.12 : -0.12) + (ruido(p[0] * 0.4, p[1] * 0.4, p[2] * 0.4) > 0.78 ? -0.15 : 0) };
 M.des2_piedra_pulida = { rampa: ['#20170f', '#352719', '#4b3824', '#624a30', '#7a5d3d', '#91704b', '#a7845b', '#bb986c'], ruido: 0.12, escala: 0.1, brillo: 0.15, patron: (p) => (ruido(p[0] * 0.05, p[1] * 0.05, p[2] * 0.05) - 0.5) * 0.25 + (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5) > 0.78 ? -0.12 : 0) };
 
 const reg = (...ds: Parameters<typeof registrar>) => registrar(...ds);
@@ -77,21 +78,20 @@ reg({
   id: 'des2_duna', nombre: ['Duna con cresta', 'Crested dune'], tema: 'desierto', variantes: ['baja', 'alta', 'doble', 'con_huesos', 'ondulada'], huella: [6, 4], bloquea: true,
   armar: (v, _f, a) => {
     const ps: Pieza[] = [];
-    // barlovento suave hacia -y, la cresta corrida y la cara de sotavento empinada hacia +y
+    // cáscara de la duna: el pie ondulado, la ladera de barlovento suave hacia -y y la cresta filosa corrida hacia +y,
+    // con la cara de sotavento empinada (la arista de la cáscara es la cresta)
     const duna = (cx: number, cy: number, L: number, H: number, curva: number) => {
-      const cs: Comp[] = [];
-      const n = 6;
-      for (let i = 0; i < n; i++) {
-        const t = (i / (n - 1)) * 2 - 1, x = cx + t * L * 0.5, h = H * (1 - t * t * 0.75) * (0.9 + a.r() * 0.2), y = cy + curva * (1 - t * t) * L * 0.18;
-        cs.push(bulto([x, y - h * 0.9, 0], [L * 0.26, h * 2.4, h * 0.75], { giro: az(a, 6) }));
-        cs.push(bulto([x, y + h * 0.15, h * 0.35], [L * 0.2, h * 0.75, h * 0.62], { giro: az(a, 4) }));
-      }
-      ps.push(masa(cs, { mat: 'des2_arena', suave: H * 0.55 }));
+      const W = H * 4.2, pts: V[] = [];
+      for (let i = 0; i < 18; i++) { const t = (i / 18) * PI2, k = 1 + az(a, 0.06); pts.push([cx + Math.cos(t) * L * 0.5 * k, cy + Math.sin(t) * W * 0.5 * k + (Math.sin(t) > 0 ? -curva * W * 0.15 * Math.cos(t) ** 2 : 0), 0]); }
+      for (let i = 0; i <= 8; i++) { const t = (i / 8) * 2 - 1, h = H * (1 - t * t * 0.85); pts.push([cx + t * L * 0.4, cy + W * 0.22 - curva * W * 0.25 * t * t, h], [cx + t * L * 0.36, cy - W * 0.1, h * 0.68]); }
+      ps.push(a.poliedro(pts, { mat: 'des2_arena', tono: az(a, 0.03) }));
+      // el pie de la cara de sotavento, más oscuro (arena que se desliza)
+      ps.push(masa([bulto([cx, cy + W * 0.32, 0], [L * 0.32, W * 0.12, H * 0.25])], { mat: 'des2_arena', suave: 2, tono: -0.06 }));
     };
     if (v === 'baja') duna(0, 0, 80, 12 + a.r() * 4, 0.6);
     if (v === 'alta') duna(0, -4, 90, 24 + a.r() * 6, 0.8);
     if (v === 'doble') { duna(-14, -10, 64, 16, 0.6); duna(18, 12, 56, 12, 0.7); }
-    if (v === 'ondulada') { for (let k = 0; k < 3; k++) duna(az(a, 6), -20 + k * 18, 84, 5 + a.r() * 2, 0.3 + a.r() * 0.3); }
+    if (v === 'ondulada') { for (let k = 0; k < 4; k++) duna(az(a, 6), -27 + k * 18, 80 - k * 6, 4 + a.r() * 2, 0.4 + a.r() * 0.4); }
     if (v === 'con_huesos') {
       duna(0, 0, 80, 15, 0.6);
       craneo(a, ps, 18, 14, 3.2, 1.05, 1.6);
@@ -206,7 +206,7 @@ reg(
       const g = a.r() * 90, H = 96 + a.r() * 20;
       if (v === 'en_pie') { sillar(a, ps, 0, 0, -1, 24, 24, 7, g, 'arenisca'); obelisco(a, ps, H, 15, marco([0, 0, 5], g)); montonArena(ps, [4, 6, 2], [18, 12, 6], g + 30); }
       if (v === 'inclinado') { obelisco(a, ps, H, 15, marco([0, 0, -10], g, 16, 4)); montonArena(ps, [0, 0, 2], [20, 18, 9], g); }
-      if (v === 'enterrado') { obelisco(a, ps, H, 16, marco([0, 0, -48], g, 6, 0)); montonArena(ps, [0, 0, 3], [24, 20, 11], g); montonArena(ps, [10, -8, 2], [14, 10, 6], g + 60); }
+      if (v === 'enterrado') { obelisco(a, ps, H * 0.45, 11, marco([0, 0, -2], g, 7, 0)); montonArena(ps, [0, 0, 3], [24, 20, 11], g); montonArena(ps, [10, -8, 2], [14, 10, 6], g + 60); }
       if (v === 'roto') {
         obelisco(a, ps, H, 15, marco([-24, 0, -2], 0), 0.32);
         obelisco(a, ps, H * 0.6, 12, marco([-2, 4, 6], -5, 90, 0));
@@ -221,8 +221,8 @@ reg(
     armar: (v, _f, a) => {
       const ps: Pieza[] = [];
       sueloD(a, ps, 18, 16);
-      const g = 45 + az(a, 15), m = marco([0, 0, v === 'enterrada' ? -16 : -1], g, v === 'caida' ? 86 : az(a, 3), 0);
-      const H = v === 'rota' ? 22 : 44;
+      const g = 45 + az(a, 15), m = marco([0, 0, v === 'caida' ? 3 : -1], g, v === 'caida' ? 86 : v === 'enterrada' ? 12 : az(a, 3), 0);
+      const H = v === 'rota' ? 22 : v === 'enterrada' ? 26 : 44;
       cajaM(a, ps, m, 0, 0, 0, 6, 22, H, 'des2_glifos');
       if (v !== 'rota') { const c = m.T([0, 0, H]); ps.push(masa([bulto(c, [3, 11, 5], { ejes: [m.D([1, 0, 0]), m.D([0, 1, 0]), m.D([0, 0, 1])] })], { mat: 'des2_glifos', suave: 1 })); ps.push(a.cilindro(...m.T([3.1, 0, H - 6]), 3.4, 0.8, { mat: 'des2_quitina_oro', eje: m.D([1, 0, 0]) })); }
       else for (let i = 0; i < 4; i++) sillar(a, ps, ...(polar(a.r() * PI2, 12 + a.r() * 5).slice(0, 2) as [number, number]), -1, 5 + a.r() * 3, 4, 3, a.r() * 180, 'des2_glifos');
@@ -242,13 +242,12 @@ function cabezaColosal(a: Arma, ps: Pieza[], m: ReturnType<typeof marco>, s: num
     B(T(0, 0, 14), [10, 9, 12]), B(T(6, 0, 7), [5, 7.5, 6]), B(T(9.4, 0, 12), [2.4, 1.7, 3.4]), B(T(8.2, 0, 6), [2.6, 3.8, 1.3], { tono: -0.05 }),
     B(T(7.2, 0, 2.5), [3.6, 4.6, 2.6]), B(T(8.5, 3.5, 16.5), [1.6, 2.6, 1], { tono: 0.03 }), B(T(8.5, -3.5, 16.5), [1.6, 2.6, 1], { tono: 0.03 }),
     // tocado: la tela que cae a los costados y la cofia
-    B(T(-1, 0, 21), [11.5, 11, 6], { mat: 'des2_glifos' }), B(T(-1, 9.5, 8), [6, 3.5, 12], { mat: 'des2_glifos' }), B(T(-1, -9.5, 8), [6, 3.5, 12], { mat: 'des2_glifos' }),
+    B(T(-1, 0, 21), [11.5, 11, 6], { mat: 'des2_nemes' }), B(T(-1, 9.5, 8), [6, 3.5, 12], { mat: 'des2_nemes' }), B(T(-1, -9.5, 8), [6, 3.5, 12], { mat: 'des2_nemes' }), B(T(-6, 0, 6), [7, 9, 12], { mat: 'des2_nemes' }),
+    B(T(7.6, 3.4, 13.4), [1.2, 2.2, 1], { tono: -0.25 }), B(T(7.6, -3.4, 13.4), [1.2, 2.2, 1], { tono: -0.25 }),
     B(T(2, 10.8, 15), [2.4, 1.6, 3.4]), B(T(2, -10.8, 15), [2.4, 1.6, 3.4]),
   ];
   for (let i = 0; i < Math.round(gastada * 6); i++) cs.push(B(T(az(a, 9), az(a, 9), 6 + a.r() * 16), [2 + a.r() * 3, 2 + a.r() * 3, 2 + a.r() * 2], { tono: -0.12 }));
   ps.push(masa(cs, { mat, suave: 1.6 * s }));
-  for (const sd of [-1, 1]) { const q = T(8.8, sd * 3.5, 13.5); ps.push(a.elipsoide(q[0], q[1], q[2], 1.2 * s, 2 * s, 1 * s, { mat: 'negro', tono: 0.15 })); }
-  for (let k = 0; k < 5; k++) { const z = 17 + k * 1.6; ps.push(a.palo(T(9.2, -10, z), T(9.2, 10, z), 0.35 * s, { mat: 'negro', tono: 0.2 })); }
 }
 reg({
   id: 'des2_estatua_caida', nombre: ['Estatua colosal derribada', 'Toppled colossus'], tema: 'desierto', variantes: ['cabeza', 'torso', 'pies', 'mano'], huella: [5, 4], bloquea: true,

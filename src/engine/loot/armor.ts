@@ -7,8 +7,19 @@ import { MAT, gemMat, glowMat, metalMat, leatherMat, clothMat } from './material
  * para el personaje (se la pone) y para los íconos de cada pieza.
  */
 
-export type ArmorLine = 'cuero' | 'malla' | 'placas' | 'tunica';
-export const ARMOR_LINES: ArmorLine[] = ['cuero', 'malla', 'placas', 'tunica'];
+/** Las cuatro líneas clásicas (el avatar LPC y el estudio las conocen) y las seis épicas de los actos 3 a 7. */
+export type ArmorLineClasica = 'cuero' | 'malla' | 'placas' | 'tunica';
+export type ArmorLineEpica = 'escamas' | 'draconica' | 'elfica' | 'demoniaca' | 'celestial' | 'ahogada';
+export type ArmorLine = ArmorLineClasica | ArmorLineEpica;
+export const ARMOR_LINES: ArmorLineClasica[] = ['cuero', 'malla', 'placas', 'tunica'];
+/** Líneas épicas: cada una cubre una franja de niveles hasta el 100 (ver `ARMOR_EVOLUTION`). */
+export const ARMOR_LINES_EPICAS: ArmorLineEpica[] = ['ahogada', 'escamas', 'elfica', 'draconica', 'demoniaca', 'celestial'];
+export const ALL_ARMOR_LINES: ArmorLine[] = [...ARMOR_LINES, ...ARMOR_LINES_EPICAS];
+/** La forma clásica que usa cada línea para el dibujo 2D y el avatar LPC (las épicas son de metal: malla o placas). */
+export const ARMOR_FORMA: Record<ArmorLine, ArmorLineClasica> = {
+  cuero: 'cuero', malla: 'malla', placas: 'placas', tunica: 'tunica',
+  escamas: 'malla', draconica: 'placas', elfica: 'placas', demoniaca: 'placas', celestial: 'placas', ahogada: 'placas',
+};
 export type ArmorTier = 1 | 2 | 3 | 4 | 5;
 export const ARMOR_TIERS: ArmorTier[] = [1, 2, 3, 4, 5];
 export type ArmorSlot = 'helm' | 'chest' | 'shoulders' | 'gloves' | 'belt' | 'pants' | 'boots';
@@ -68,6 +79,58 @@ export const ARMOR_EVOLUTION: Record<ArmorLine, [TierLook, TierLook, TierLook, T
     T('Vestiduras del archimago', 'Archmage Vestments', '#2a1f5a', GOLD, '#9a3ad8', null, 'wizard', true, '#1a1236', '#1a1440', 34, 30),
     T('Manto de las Estrellas', 'Starweave Mantle', '#16112e', GOLD, '#b48cff', '#b48cff', 'celestial', true, '#100c22', '#100c26', 50, 45),
   ],
+  // ---- líneas épicas (actos 3 a 7): la defensa sube con el nivel hasta el 100
+  ahogada: [
+    T('Bronce del naufragio', 'Shipwreck Bronze', '#4b6a52', BRONZE, null, null, 'kettle', true, '#1e2a22', null, 70, 35),
+    T('Coraza de la marea', 'Tidewrack Plate', '#466a58', BRONZE, null, null, 'bascinet', true, '#1e2a22', '#1f3a2a', 86, 42),
+    T('Placas del abismo', 'Abyssal Plate', '#3f6458', BRONZE, '#3fc8c0', null, 'greathelm', true, '#162420', '#16302a', 104, 50),
+    T('Armadura del ahogado', 'Drowned Lord Armor', '#3a5e52', GOLD, '#3fc8c0', null, 'greathelm', true, '#14201c', '#122a24', 122, 58),
+    T('Égida de las Profundidades', 'Aegis of the Deep', '#2f584e', GOLD, '#7ff0e0', '#7ff0e0', 'close', true, '#101a18', '#0e2420', 142, 66),
+  ],
+  escamas: [
+    T('Cota de escamas verdes', 'Greenscale Mail', '#3e7a38', BRONZE, null, null, 'norman', true, '#2a2016', null, 82, 40),
+    T('Escamas de draco', 'Drakescale', '#3a7034', BRONZE, null, null, 'spangenhelm', true, '#2a2016', '#2a4a22', 98, 48),
+    T('Escamas de wyrm', 'Wyrmscale', '#346a30', BRONZE, '#1fb35e', null, 'armet', true, '#241a12', '#22401c', 116, 56),
+    T('Escamas del dragón anciano', 'Elder Dragonscale', '#2e642c', GOLD, '#1fb35e', null, 'greathelm', true, '#20160e', '#1e3a18', 136, 64),
+    T('Piel del Dragón Esmeralda', 'Emerald Dragonhide', '#2a5e28', GOLD, '#9affb0', '#9affb0', 'close', true, '#1a120c', '#183214', 158, 72),
+  ],
+  elfica: [
+    T('Plata de los bosques', 'Sylvan Silver', '#b4c6c0', '#d8bc68', null, null, 'armet', true, '#2f5a3e', '#2f5a3e', 84, 45),
+    T('Malla de hojas de plata', 'Silverleaf Mail', '#bccbc6', '#d8bc68', null, null, 'armet', true, '#2f5a3e', '#2f5a3e', 102, 54),
+    T('Coraza de la luna élfica', 'Elven Moon Plate', '#c4d2cc', '#d8bc68', '#7ad4a0', null, 'close', true, '#244a32', '#244a32', 122, 63),
+    T('Armadura del rey del bosque', 'Forest King Armor', '#ccd8d2', GOLD, '#7ad4a0', null, 'close', true, '#1e4028', '#1e4028', 142, 72),
+    T('Égida del Árbol Eterno', 'Aegis of the Eternal Tree', '#d6e0da', GOLD, '#c8ffd8', '#c8ffd8', 'celestial', true, '#183820', '#183820', 164, 81),
+  ],
+  draconica: [
+    T('Placas dracónicas', 'Draconic Plate', '#5c1517', '#9a6b27', null, null, 'greathelm', true, '#2a1414', '#4a0f12', 120, 55),
+    T('Coraza de cresta roja', 'Redcrest Cuirass', '#5a1416', '#9a6b27', null, null, 'greathelm', true, '#2a1414', '#4a0f12', 142, 64),
+    T('Armadura del señor dragón', 'Dragonlord Armor', '#561315', GOLD, '#ff6a2a', null, 'close', true, '#241010', '#420c10', 166, 73),
+    T('Placas del gran wyrm rojo', 'Great Red Wyrm Plate', '#521214', GOLD, '#ff6a2a', '#ff8a2a', 'close', true, '#200e0e', '#3c0a0e', 192, 82),
+    T('Corazón del Dragón Carmesí', 'Crimson Dragonheart', '#4e1012', GOLD, '#ff8a2a', '#ff8a2a', 'close', true, '#1c0c0c', '#36080c', 220, 91),
+  ],
+  demoniaca: [
+    T('Placas del infierno', 'Hellforged Plate', '#2c2020', '#4a4040', null, '#ff6a1a', 'greathelm', true, '#1a1012', '#160c0e', 130, 60),
+    T('Coraza de la grieta ardiente', 'Riftfire Cuirass', '#2a1e1e', '#4a4040', null, '#ff6a1a', 'greathelm', true, '#1a1012', '#160c0e', 155, 70),
+    T('Armadura del archidemonio', 'Archfiend Armor', '#281c1c', '#cbb488', '#ff3020', '#ff6a1a', 'close', true, '#160e10', '#120a0c', 182, 80),
+    T('Placas del trono de ceniza', 'Ashen Throne Plate', '#261a1a', '#cbb488', '#ff3020', '#ff6a1a', 'close', true, '#140c0e', '#10080a', 210, 90),
+    T('Coraza del Señor del Abismo', 'Abyss Lord Carapace', '#241818', GOLD, '#ff3020', '#ff6a1a', 'close', true, '#120a0c', '#0e0608', 240, 100),
+  ],
+  celestial: [
+    T('Oro blanco del alba', 'Dawn White-Gold', '#e2d9c4', GOLD, null, null, 'armet', true, '#d8cbb0', '#efe8da', 126, 64),
+    T('Placas del serafín', 'Seraph Plate', '#e6ddc8', GOLD, null, '#fff0b8', 'armet', true, '#d8cbb0', '#efe8da', 150, 73),
+    T('Armadura del arcángel', 'Archangel Armor', '#eae2ce', GOLD, '#ffd86a', '#fff0b8', 'celestial', true, '#d8cbb0', '#f4ecd6', 176, 82),
+    T('Égida del trono de luz', 'Throne of Light Aegis', '#eee6d4', GOLD, '#ffd86a', '#fff0b8', 'celestial', true, '#e3ae3c', '#f4ecd6', 204, 91),
+    T('Gloria del Último Cielo', 'Glory of the Final Heaven', '#f2ecdc', GOLD, '#ffd86a', '#ffe9a0', 'celestial', true, '#e3ae3c', '#f8f2e2', 234, 100),
+  ],
+};
+/** Lo propio de cada línea épica, en cada pieza: se escala con el nivel de la pieza. */
+export const ARMOR_MOD_EPICO: Record<ArmorLineEpica, { stat: 'coldRes' | 'poisonRes' | 'fireRes' | 'dex' | 'moveSpeed' | 'lifeSteal' | 'thorns' | 'healPct' | 'allRes' | 'str' | 'life' | 'lifeRegen'; k: number }[]> = {
+  ahogada: [{ stat: 'coldRes', k: 0.35 }, { stat: 'poisonRes', k: 0.3 }],
+  escamas: [{ stat: 'fireRes', k: 0.35 }, { stat: 'life', k: 1.2 }],
+  elfica: [{ stat: 'dex', k: 0.3 }, { stat: 'moveSpeed', k: 0.12 }],
+  draconica: [{ stat: 'fireRes', k: 0.45 }, { stat: 'str', k: 0.3 }],
+  demoniaca: [{ stat: 'thorns', k: 1.0 }, { stat: 'lifeSteal', k: 0.05 }],
+  celestial: [{ stat: 'healPct', k: 0.2 }, { stat: 'allRes', k: 0.2 }],
 };
 
 /** Nombres de las piezas (para el juego). */
@@ -80,6 +143,8 @@ interface Look { line: ArmorLine; tier: ArmorTier; t: TierLook; main: MatDef; tr
 
 function look(line: ArmorLine, tier: ArmorTier, over: Partial<TierLook> = {}): Look {
   const t = { ...ARMOR_EVOLUTION[line][tier - 1], ...over };
+  // las épicas se dibujan con la forma clásica de metal que les toca (colores y ribetes propios)
+  line = ARMOR_FORMA[line];
   const metal = line === 'malla' || line === 'placas';
   const main: MatDef = line === 'tunica' ? clothMat(t.base) : line === 'cuero' ? leatherMat(t.base) : metalMat(t.base);
   // lo blando (forro, correas): cuero para cuero y metal; tela clara para túnica

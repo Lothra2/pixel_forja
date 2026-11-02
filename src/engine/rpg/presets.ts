@@ -5,7 +5,7 @@ import { defaultAvatar, type Avatar } from '../head3d/avatar';
 import { withLpc } from '../head3d/thumb';
 import { DEFAULT_LPC, type LpcLook } from '../parts/lpc';
 import { bodyProportions, DEFAULT_BODY, type BodyType } from '../rig/dims';
-import { ARMOR_EVOLUTION, type ArmorLine, type ArmorTier, type TierLook } from '../loot/armor';
+import { ARMOR_EVOLUTION, ARMOR_FORMA, type ArmorLine, type ArmorTier, type TierLook } from '../loot/armor';
 import type { LootItem } from '../loot/catalog';
 import { handKindOf } from '../loot/render';
 
@@ -157,7 +157,7 @@ export function applyArmorTier(f: HumanFicha, line: ArmorLine, tier: ArmorTier, 
   const t = { ...ARMOR_EVOLUTION[line][tier - 1], ...over };
   let out: HumanFicha = {
     ...f,
-    outfit: { ...f.outfit, armor: line, armorTier: tier, armorColor: t.base, trim: t.trim, pauldrons: t.pauldrons, belt: t.belt, cape: t.cape, armorGem: t.gem, armorGlow: t.glow, shoes: f.outfit.shoes === 'descalzo' || f.outfit.shoes === 'tenis' ? 'botas' : f.outfit.shoes },
+    outfit: { ...f.outfit, armor: ARMOR_FORMA[line], armorTier: tier, armorColor: t.base, trim: t.trim, pauldrons: t.pauldrons, belt: t.belt, cape: t.cape, armorGem: t.gem, armorGlow: t.glow, shoes: f.outfit.shoes === 'descalzo' || f.outfit.shoes === 'tenis' ? 'botas' : f.outfit.shoes },
   };
   if (out.avatar?.lpc) {
     // el casco toma el color de la armadura (el celestial, el del ribete)

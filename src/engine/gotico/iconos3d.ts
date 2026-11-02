@@ -1805,7 +1805,7 @@ function adornoIcono(t: Taller, e: Estilo, pieza: 'pecho' | 'casco' | 'guante' |
         for (let i = 0; i < 3; i++) cs.push(puaIc(t, [0, -0.5 - i * 2.0, 8.0 - i * 0.5], [0, -0.3, 1], 2.4 - i * 0.4, 0.65, 'ic_hueso_demonio'));
         t.masa(cs, 'ic_hueso_demonio', 0.3);
       } else if (L === 'celestial') {
-        t.aro([0, -1.2, 11.2], 5.4, 0.42, { mat: e.luz ?? tinte('#fff0b8', 'luz'), n: 24, rot: [0, -18, 0], suave: true });
+        t.en([0, -1.6, 11.4], [0, 38, 0], () => t.aro([0, 0, 0], 5.6, 0.5, { mat: e.luz ?? tinte('#fff0b8', 'luz'), n: 24, suave: true }));
         for (const sx of [-1, 1]) alaIc(t, [sx * 5.8, -0.6, 2.4], [0, -0.7, 1], [sx, -0.3, 0], [sx, 0, 0], 4.6, 4);
       } else if (L === 'ahogada') {
         percebesIc(t, [3.4, 2.2, 5.4], [0.5, 0.4, 0.8], 0.8, 0);
@@ -1850,9 +1850,9 @@ function adornoIcono(t: Taller, e: Estilo, pieza: 'pecho' | 'casco' | 'guante' |
     case 'hombrera': {
       if (L === 'escamas') { const cs: Comp[] = []; for (let i = 0; i < 3; i++) cs.push(t.bulD([lado * (0.6 + i * 0.7), 0.4, 3.4 - i * 2.4], [lado * 0.6, 0, -1], [lado * 0.4, 0.3, 1], [2.6, 3.4 - i * 0.3, 0.6], 'ic_escama', 0.06 - i * 0.05)); t.masa(cs, 'ic_escama', 0.25); t.esf([0, 0.4, 4.9], 0.6, { mat: 'ic_bronce' }); }
       else if (L === 'draconica') { const cs: Comp[] = []; for (let i = 0; i < 3; i++) cs.push(...cuernoIc(t, [[lado * (i - 1) * 1.8, 0.3, 3.8 - Math.abs(i - 1) * 0.6], [lado * (i - 1) * 2.4, -1.6, 7.0 - Math.abs(i - 1) * 1.2], [lado * (i - 1) * 2.6, -4.2, 8.6 - Math.abs(i - 1) * 1.8]], 1.05, 'ic_cuerno')); t.masa(cs, 'ic_cuerno', 0.25); }
-      else if (L === 'elfica') t.masa([t.bulD([lado * 1.2, 1.2, 1.6], [lado * 0.6, 0.15, -1], [lado * 0.3, 0.4, 1], [4.4, 3.0, 0.5], 'ic_plata_elfica', 0.05), t.bulD([lado * 0.9, 1.6, 3.0], [lado * 0.6, 0.15, -1], [lado * 0.3, 0.4, 1], [3.0, 1.8, 0.4], 'ic_hoja_elfica'), t.hue([lado * -0.6, 1.9, 5.2], [lado * 2.8, 1.4, -2.4], 0.22, 0.14, 'ic_filigrana'), t.bulD([lado * -1.6, -1.6, 5.6], [lado * -0.2, -0.6, 1], [0, 1, 0.3], [2.6, 0.9, 0.25], 'ic_filigrana')], 'ic_plata_elfica', 0.15);
+      else if (L === 'elfica') t.masa([t.bulD([lado * 1.0, 3.9, 2.2], [lado * 0.5, 0.3, -1], [lado * 0.2, 1, 0.6], [4.2, 2.6, 0.5], 'ic_plata_elfica', 0.08), t.bulD([lado * 0.8, 4.6, 2.8], [lado * 0.5, 0.3, -1], [lado * 0.2, 1, 0.6], [2.8, 1.6, 0.4], 'ic_hoja_elfica'), t.hue([lado * -0.4, 4.4, 5.6], [lado * 2.4, 4.2, -1.2], 0.22, 0.14, 'ic_filigrana'), t.bulD([lado * -1.6, -1.6, 5.6], [lado * -0.2, -0.6, 1], [0, 1, 0.3], [2.6, 0.9, 0.25], 'ic_filigrana')], 'ic_plata_elfica', 0.15);
       else if (L === 'demoniaca') { t.masa([0, 1, 2].map((k) => puaIc(t, [lado * (k - 1) * 1.8, 0, 3.8 - Math.abs(k - 1) * 0.6], [lado * 0.35 * (k - 1), -0.1, 1], 6.4 - Math.abs(k - 1) * 1.6, 1.15, 'ic_hueso_demonio')), 'ic_hueso_demonio', 0.25); lavaIc(t, e, [[lado * -3.4, 3.6, 2.4], [lado * -1.2, 4.4, 1.4], [lado * 0.6, 4.2, 2.6], [lado * 2.8, 3.4, 1.0]], 0.28); }
-      else if (L === 'celestial') alaIc(t, [lado * -0.8, -1.4, 3.8], [0, -0.35, 1], [lado, -0.3, 0.1], [0, 1, 0], 6.0, 5);
+      else if (L === 'celestial') alaIc(t, [lado * -0.8, -1.4, 3.8], [0, -0.35, 1], [lado, -0.3, 0.1], [0, 1, 0], 7.6, 5);
       else if (L === 'ahogada') { conchaIc(t, [lado * 0.6, 2.6, 2.4], [lado * 0.2, 1, 0.6], [0, 0, 1], 1.2); percebesIc(t, [lado * -2.4, 0.4, 4.2], [0, 0.2, 1], 0.75, lado); algaIc(t, [[lado * 4.4, 1.2, -1.6], [lado * 5.6, 1.8, -4.4], [lado * 5.0, 1.4, -7.6], [lado * 5.8, 1.8, -10.4]], 0.45); }
       break;
     }
