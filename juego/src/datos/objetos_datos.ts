@@ -820,6 +820,22 @@ export const UNICOS: Unico[] = [
 // así a nivel alto no sale un único de los primeros actos (antes una espada única alta siempre era la Hoja de Vigilia).
 UNICOS.push(
   // ---------------- élite: la Herida y el Ascua
+  // hueco del nivel 45: mandoble, martillo, alabarda, guadaña y cimitarra no tenían única hasta el 50 o más
+  { id: 'voto_del_verdugo', nombre: ['Voto del Verdugo', 'Headsman\'s Vow'], base: 'hoja_cruzada_rota', nivel: 45, vivo: 'sangre',
+    stats: [r('dano_pct', 150, 195), r('dano_sangre', 25, 45), r('herida_abierta', 25), r('fue', 12, 16)],
+    lore: ['Juró no cortar una cabeza inocente. Nadie le dijo cuáles lo eran.', 'He swore never to cut an innocent head. No one told him which ones were.'] },
+  { id: 'yunque_de_hrimgard', nombre: ['Yunque de Hrimgard', 'Anvil of Hrimgard'], base: 'martillo_forja', nivel: 46, vivo: 'frio',
+    stats: [r('dano_pct', 150, 200), r('dano_frio', 25, 45), r('golpe_aplastante', 20), r('aturdir', 12)],
+    lore: ['Los gigantes forjaban sobre él. Todavía suena cuando algo se rompe cerca.', 'The giants forged upon it. It still rings when something breaks nearby.'] },
+  { id: 'ultima_guardia', nombre: ['Última Guardia', 'Last Watch'], base: 'alabarda_campanario', nivel: 45, vivo: 'rayo',
+    stats: [r('dano_pct', 150, 195), r('dano_rayo', 25, 50), r('reduc_dano', 6), r('vida', 40, 60)],
+    lore: ['La campana tocó a rebato y nadie vino. La alabarda se quedó de pie sola.', 'The bell rang the alarm and no one came. The halberd stood alone.'] },
+  { id: 'siega_de_los_nombres', nombre: ['Siega de los Nombres', 'Reaping of Names'], base: 'guadana_sepulturero', nivel: 45, vivo: 'sombra',
+    stats: [r('dano_pct', 155, 200), r('dano_sombra', 25, 45), r('robo_vida', 4, 6), r('vida_por_muerte', 6, 9)],
+    lore: ['El sepulturero de Sahrim borraba los nombres de las tumbas. Ahora los guarda la hoja.', 'The gravedigger of Sahrim erased the names from the tombs. Now the blade keeps them.'] },
+  { id: 'media_luna_roja', nombre: ['Media Luna Roja', 'Red Crescent'], base: 'cimitarra_dunas', nivel: 45, vivo: 'fuego',
+    stats: [r('dano_pct', 150, 195), r('dano_fuego', 25, 45), r('vel_ataque', 20), r('des', 12, 16)],
+    lore: ['Brilla como la luna sobre las dunas la noche que ardió el oasis.', 'It gleams like the moon over the dunes on the night the oasis burned.'] },
   { id: 'vigilia_sin_alba', nombre: ['Vigilia sin Alba', 'Dawnless Vigil'], base: 'hoja_ceniza_negra', nivel: 49, vivo: 'luz',
     stats: [r('dano_pct', 160, 210), r('dano_luz', 30, 55), r('res_sombra', 30), r('vida', 40, 60), r('radio_luz', 2)],
     lore: ['El último centinela de Velmora la empuñó toda una noche esperando un amanecer que no llegó.', 'The last sentinel of Velmora held it through a night, waiting for a dawn that never came.'] },

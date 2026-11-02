@@ -26,6 +26,9 @@ export function dirDe(dx: number, dy: number): Dir {
   const i = Math.round(((a % 360) + 360) % 360 / 45) % 8;
   return (['se', 's', 'so', 'o', 'no', 'n', 'ne', 'e'] as Dir[])[i];
 }
+/** Vector unitario de cada dirección, el inverso de dirDe (ángulo 0 = 'se'). */
+const R2 = Math.SQRT1_2;
+export const DIR_VEC: Record<string, [number, number]> = { se: [1, 0], s: [R2, R2], so: [0, 1], o: [-R2, R2], no: [-1, 0], n: [-R2, -R2], ne: [0, -1], e: [R2, -R2] };
 export const CUADROS: Record<Accion, number> = { quieto: 4, caminar: 8, correr: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8 };
 
 export interface Ent {
@@ -733,6 +736,47 @@ function actualizarThor(j: Juego, dt: number) {
   }
 }
 
+/**
+ * Thor sigue al héroe sin trabarse: arranca a más de 3.2 celdas y frena a menos de 2.2 (histéresis), con al menos 0.2 s en cada
+ * estado; la velocidad sube y baja suave (~0.25 s); va a un punto detrás y a un lado del héroe, rodeando obstáculos con el mismo
+ * camino que los monstruos; y la dirección solo cambia si el rumbo pasa el sector vecino por más de 8°.
+ */
+function seguirThor(j: Juego, m: Monstruo, dh: number, dt: number) {
+  const h = j.heroe, t = m as any;
+  t.tEst = (t.tEst ?? 0) + dt; t.vAct ??= 0; t.lado ??= m.id % 2 ? 1 : -1;
+  // a dónde ir: detrás del héroe según hacia dónde mira (o hacia dónde camina), y un poco a su lado
+  const [fx, fy] = DIR_VEC[h.dir] ?? [0, 1];
+  const tx0 = h.x - fx * 1.7 + -fy * t.lado * 1.0, ty0 = h.y - fy * 1.7 + fx * t.lado * 1.0;
+  // el punto se mueve suave (~0.4 s): si el héroe se da vuelta, Thor no lo rodea dando tumbos
+  const [px0, py0] = pasable(j.zona, tx0, ty0) ? [tx0, ty0] : [h.x, h.y];
+  t.ptx ??= px0; t.pty ??= py0; const kp = Math.min(1, dt / 0.4); t.ptx += (px0 - t.ptx) * kp; t.pty += (py0 - t.pty) * kp;
+  const [tx, ty] = pasable(j.zona, t.ptx, t.pty) ? [t.ptx, t.pty] : [px0, py0];
+  const dObj = Math.hypot(tx - m.x, ty - m.y);
+  if (!t.sigue && dh > 3.2 && t.tEst > 0.2) { t.sigue = true; t.tEst = 0; }
+  else if (t.sigue && (dh < 2.2 || dObj < 0.4) && t.tEst > 0.2) { t.sigue = false; t.tEst = 0; }
+  if (dh > 20) { const q = libreCerca(j.zona, tx, ty); m.x = q[0] + 0.5; m.y = q[1] + 0.5; t.vAct = 0; t.camino = null; return; }
+  const galopa = h.acc === 'correr' || dh > 7;
+  const vDes = t.sigue ? m.vel * (dh > 6 ? 1.75 : galopa ? 1.45 : 1.1) : 0;
+  t.vAct += (vDes - t.vAct) * Math.min(1, dt / 0.25);
+  if (t.vAct < 0.05 && !t.sigue) { t.vAct = 0; if ((m.acc === 'caminar' || (m.acc as string) === 'correr') && t.tEst > 0.2) m.acc = 'quieto'; return; }
+  // rodear: si no hay línea libre, el camino de los monstruos (se recalcula cada medio segundo)
+  let gx = tx, gy = ty;
+  if (!lineaLibre(j.zona, m.x, m.y, tx, ty)) {
+    t.tCam = (t.tCam ?? 0) - dt;
+    if (!t.camino || t.tCam <= 0) { t.camino = buscarCamino(j.zona, m.x, m.y, tx, ty, 1500); t.tCam = 0.5; }
+    while (t.camino?.length && Math.hypot(t.camino[0][0] + 0.5 - m.x, t.camino[0][1] + 0.5 - m.y) < 0.5) t.camino.shift();
+    if (t.camino?.length) { gx = t.camino[0][0] + 0.5; gy = t.camino[0][1] + 0.5; }
+  } else t.camino = null;
+  const dirAntes = m.dir;
+  moverHacia(j, m, gx, gy, t.vAct, dt);
+  // dirección con histéresis: el rumbo tiene que pasarse del sector actual en más de 8°
+  const ang = Math.atan2(gy - m.y, gx - m.x), [cx, cy] = DIR_VEC[dirAntes] ?? [0, 1];
+  let dif = Math.abs(ang - Math.atan2(cy, cx)); if (dif > Math.PI) dif = Math.PI * 2 - dif;
+  m.dir = dif > (22.5 + 8) * Math.PI / 180 ? dirDe(gx - m.x, gy - m.y) : dirAntes;
+  const acc = galopa ? 'correr' : 'caminar';
+  if (m.acc !== acc && (t.tEst > 0.2 || m.acc === 'quieto')) { m.acc = acc as any; }
+}
+
 /** Invoca un aliado. tVida: si es temporal (no cuenta para el máximo). */
 function crearInvocado(j: Juego, invId: string, n: number, x: number, y: number, tVida?: number, extra = 1): Monstruo | null {
   const h = j.heroe, inv = INVOCADOS[invId]; if (!inv) return null;
@@ -1332,6 +1376,7 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
     if (!m.objetivo) { let bd = 8; for (const e of enem) { const d = dist(e.x, e.y, m.x, m.y); if (d < bd) { bd = d; m.objetivo = e; } } }
     if (m.objetivo) { pelear(j, m, m.objetivo, dt, lento); return; }
     const d = dist(m.x, m.y, h.x, h.y);
+    if (m.invocaId === 'thor') { seguirThor(j, m, d, dt); return; }
     // Thor galopa si el héroe corre (o si quedó lejos)
     const galopa = m.invocaId === 'thor' && (h.acc === 'correr' || d > 7);
     if (d > 3) { moverHacia(j, m, h.x, h.y, m.vel * (galopa ? 1.8 : 1.4), dt); m.acc = (galopa ? 'correr' : 'caminar') as any; } else if (m.acc === 'caminar' || (m.acc as string) === 'correr') m.acc = 'quieto';

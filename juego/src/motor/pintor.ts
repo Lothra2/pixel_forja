@@ -53,7 +53,7 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
   for (const o of obreros) o.terminate();
   obreros = [];
   if (firma === 'base') { vivos = null; nuevosVivos = null; progresoPintura = 1; cambioVisible = performance.now() / 1000; return; }
-  const clave = 'v6|' + clase + '|' + firma;
+  const clave = 'v7|' + clase + '|' + firma;
   const cache = await leer(clave);
   if (yo !== trabajo) return;
   if (cache) { const m = new Map<string, Cuadro[]>(); for (const [k, fs] of Object.entries(cache as Record<string, any[]>)) m.set(k, fs.map(aCuadro)); vivos = m; firmaVivos = firma; nuevosVivos = null; progresoPintura = 1; cambioVisible = performance.now() / 1000; return; }

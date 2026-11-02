@@ -36,6 +36,8 @@ function zancadaDe(e: Ent, acc: string): number {
   const za = manifiesto().za as Record<string, number> | undefined;
   if (e.tipo === 'heroe') return base * (za?.[(e as any).d?.clase] ?? ALTO_CLASE[(e as any).d?.clase] ?? 1);
   const m = e as Monstruo;
+  // Thor trota a la cintura del héroe: su zancada es más corta que la de un humanoide de su alto
+  if (m.def?.sprite?.startsWith('thor')) return base * 0.55;
   const alto = za?.[m.def?.sprite];
   return base * (alto ?? 0.9) * (m.escala ?? 1);
 }
