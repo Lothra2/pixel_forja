@@ -125,7 +125,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   const vista = nivelVista;
   const ret = cuadrosRetrato(c.id, vista);
   const esc = Math.min(1.3, (H * 0.56) / 240);
-  let q: Cuadro | undefined = ret.length ? ret[Math.floor((t - tCambio) * 8) % ret.length] : undefined;
+  let q: Cuadro | undefined = ret.length ? ret[Math.floor((t - tCambio) * (ret.length > 8 ? 12 : 8)) % ret.length] : undefined;
   let escQ = esc;
   if (!q) { const fs = cuadrosHeroe(c.id, 'quieto', 'so'); q = fs[Math.floor(t * 6) % Math.max(1, fs.length)]; escQ = esc * 2.3; }
   // sombra larga desde la fogata y otra corta desde la luz de la clase
