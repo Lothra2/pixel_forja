@@ -21,9 +21,9 @@ M.jf_obsidiana = { rampa: ['#020202', '#060506', '#0b090b', '#110e11', '#181418'
 M.jf_cuerno = { rampa: ['#060404', '#0f0b09', '#1b1410', '#2a2018', '#3b2e22', '#4f3f2e', '#66533d', '#7e6a50'], ruido: 0.25, escala: 0.8, brillo: 0.35, patron: (p) => (Math.sin(p[2] * 1.6 + p[0] * 0.4) > 0.6 ? -0.1 : 0) };
 M.jf_garra = { rampa: ['#0b0807', '#1a1411', '#2c241d', '#41372d', '#5a4e40', '#776a58', '#978a74', '#b8ab92'], ruido: 0.15, escala: 0.8, brillo: 0.5 };
 M.jf_hueso_negro = { rampa: ['#020202', '#070606', '#0e0c0b', '#171412', '#221d1a', '#2e2823', '#3c342d', '#4e443a', '#62574a'], ruido: 0.14, escala: 0.8, brillo: 0.7, patron: (p) => (Math.sin(p[0] * 1.7 + p[1] * 1.3 + p[2] * 2.1) > 0.75 ? -0.06 : 0) };
-M.jf_piel_fuego = { rampa: ['#100302', '#1e0504', '#300806', '#440c08', '#5a120a', '#72190c', '#8c220e', '#a62f12', '#c04216', '#d85c1c', '#ec7e2a'], ruido: 0.14, escala: 0.5, brillo: 0.45, patron: (p) => (ruido(p[0] * 0.35, p[1] * 0.35, p[2] * 0.35) > 0.66 ? -0.07 : 0) + (Math.sin(p[2] * 1.3 + ruido(p[0] * 0.2, p[1] * 0.2, p[2] * 0.2) * 7) > 0.88 ? -0.05 : 0) };
-M.jf_piel_ascua = { rampa: ['#1e0503', '#360a05', '#521207', '#701c09', '#8e280c', '#aa3810', '#c44c14', '#da641a', '#ec8226', '#f8a43a'], ruido: 0.16, escala: 0.5, brillo: 0.35, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.3) > 0.62 ? 0.06 : 0) };
-M.jf_membrana_fuego = { rampa: ['#0c0302', '#1a0604', '#2a0a06', '#3e0f08', '#54160a', '#6c1e0c', '#86280f', '#a03414'], ruido: 0.4, escala: 0.5, patron: (p) => (Math.abs(ruido(p[0] * 0.16, p[1] * 0.16, p[2] * 0.16) - 0.5) < 0.035 ? 0.12 : ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5) > 0.66 ? -0.1 : 0) };
+M.jf_piel_fuego = { rampa: ['#0a0202', '#160403', '#230605', '#320806', '#430b07', '#560f08', '#6b150a', '#841d0c', '#a02a10', '#bc3e14', '#d65a1c'], ruido: 0.14, escala: 0.5, brillo: 0.45, patron: (p) => (ruido(p[0] * 0.35, p[1] * 0.35, p[2] * 0.35) > 0.66 ? -0.07 : 0) + (Math.sin(p[2] * 1.3 + ruido(p[0] * 0.2, p[1] * 0.2, p[2] * 0.2) * 7) > 0.88 ? -0.05 : 0) };
+M.jf_piel_ascua = { rampa: ['#160403', '#2a0705', '#420c06', '#5c1308', '#781c0a', '#94280d', '#b03810', '#c84c14', '#de661c', '#f08a2c'], ruido: 0.16, escala: 0.5, brillo: 0.35, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.3) > 0.62 ? 0.06 : 0) };
+M.jf_membrana_fuego = { rampa: ['#070202', '#100403', '#1a0604', '#260805', '#340b06', '#440f08', '#58150a', '#6e1c0c'], ruido: 0.4, escala: 0.5, patron: (p) => (Math.abs(ruido(p[0] * 0.16, p[1] * 0.16, p[2] * 0.16) - 0.5) < 0.035 ? 0.12 : ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5) > 0.66 ? -0.1 : 0) };
 M.jf_costilla = { rampa: ['#0c0908', '#1a1311', '#2a201b', '#3c2f27', '#504034', '#665343', '#7d6853'], ruido: 0.25, escala: 0.7, brillo: 0.3 };
 M.jf_membrana = { rampa: ['#080303', '#120605', '#1e0a08', '#2c100b', '#3c160f', '#4e1d13', '#622618', '#78301e'], ruido: 0.55, escala: 0.6, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5) > 0.64 ? -0.15 : 0) };
 M.jf_ceniza = { rampa: ['#090807', '#121010', '#1b1817', '#25211f', '#302b28', '#3c3632', '#49423d'], ruido: 0.35, escala: 0.5, patron: (p) => (Math.abs(ruido(p[0] * 0.22, p[1] * 0.22, p[2] * 0.22) - 0.5) < 0.03 ? -0.25 : 0) };
@@ -170,20 +170,27 @@ function llamaOrg(base: V3, dir: V3, alto: number, ancho: number, f: number, n: 
   const ph = (f / n) * TAU, cx = Math.cos(ph) * 1.4, cy = Math.sin(ph) * 1.4;
   const R = (i: number, c: number) => ruido(sem * 3.7 + cx + c * 5.3, sem * 1.9 + cy + i * 0.83, c * 2.9 + i * 0.31) - 0.5;
   const N = o.tramos ?? 5, tono = o.tono ?? 0, viento = o.viento ?? [0, 0, 0];
-  const h = alto * (0.7 + 0.75 * (R(0, 0) + 0.5)), d = nor(dir);
-  const lat = nor(Math.abs(d[2]) > 0.9 ? cruz(d, [1, 0, 0]) : cruz(d, [0, 0, 1])), lat2 = cruz(d, lat);
+  const d = nor(dir), lat = nor(Math.abs(d[2]) > 0.9 ? cruz(d, [1, 0, 0]) : cruz(d, [0, 0, 1])), lat2 = cruz(d, lat);
   const comps: Comp[] = [];
-  let p = base, dd = d;
-  for (let i = 0; i < N; i++) {
-    const t = i / N, r = ancho * Math.pow(1 - t, 0.9) * (0.8 + 0.5 * (R(i, 1) + 0.5));
-    // cada tramo se tuerce un poco más que el anterior (la punta es la que más baila)
-    dd = nor(add(add(add(add(dd, lat, R(i, 2) * (0.6 + t)), lat2, R(i, 3) * (0.6 + t)), viento, 0.12 + t * 0.2), d, 0.5));
-    const q = add(p, dd, h / N);
-    comps.push(hueso(p, q, r, ancho * Math.pow(1 - (i + 1) / N, 0.9) * 0.85 + 0.12, { mat: 'fuego', tono: tono + 0.14 - t * 0.5 }));
-    if (i < N - 1) comps.push(bulto(mez(p, q, 0.5), [h / N * 0.55, r * 1.12, r * 1.12], { eje: dd, mat: 'fuego', tono: tono + 0.1 - t * 0.5 }));
-    p = q;
+  /** Una lengua: tramos de hueso que se afinan hasta la punta, cada uno torcido un poco más que el anterior. */
+  const tira = (p0: V3, d0: V3, h: number, w: number, nt: number, c0: number, t0: number) => {
+    let p = p0, dd = d0;
+    for (let i = 0; i < nt; i++) {
+      const t = i / nt, r = w * Math.pow(1 - t, 0.85) * (0.85 + 0.4 * (R(i + c0, 1) + 0.5)), r1 = w * Math.pow(1 - (i + 1) / nt, 0.85) * 0.9 + 0.1;
+      dd = nor(add(add(add(add(dd, lat, R(i + c0, 2) * (0.5 + t)), lat2, R(i + c0, 3) * (0.5 + t)), viento, 0.1 + t * 0.25), d, 0.45));
+      const q = add(p, dd, h / nt);
+      comps.push(hueso(p, q, r, r1, { mat: 'fuego', tono: tono + t0 - 0.05 - t * 0.5 }));
+      p = q;
+    }
+  };
+  const h = alto * (0.75 + 0.6 * (R(0, 0) + 0.5));
+  tira(base, d, h, ancho, N, 0, 0);
+  // dos lenguas menores que se abren de la base, cada una con su propio baile
+  for (const sg of [1, -1]) {
+    const hl = h * (0.4 + 0.3 * (R(7, sg + 4) + 0.5)), dl = nor(add(add(d, lat, sg * (0.45 + 0.3 * R(8, sg + 4))), lat2, R(9, sg + 4) * 0.6));
+    tira(add(add(base, d, h * 0.12), lat, sg * ancho * 0.5), dl, hl, ancho * 0.62, Math.max(3, N - 2), 10 + sg * 5, -0.08);
   }
-  return masa(comps, { mat: 'fuego', suave: Math.max(1, ancho * 0.6) });
+  return masa(comps, { mat: 'fuego', suave: Math.max(1, ancho * 0.7) });
 }
 /**
  * Columna de fuego continua que se afina hacia arriba: tres lenguas de masa anidadas que comparten la base y se
@@ -532,7 +539,7 @@ function ozmaren(acc: Acc, f: number): Res {
     ps.push(...grietas({ o: mez(h, codo, 0.42), m: marcoEje(ua) }, [0, 0, 0], [16, 11.5, 11.5], 3, 20 + i, lava, pulso(1 + i), { grueso: 1.2, largo: 5 }));
     ps.push(...grietas({ o: mez(codo, mano, 0.25), m: marcoEje(fa) }, [0, 0, 0], [13, 11, 10], 2, 30 + i, lava, pulso(3 + i), { grueso: 1.1, largo: 5 }));
     // fuego que sale de la hombrera
-    if (arde) ps.push(llamaOrg(ap(tor, [-6, s * 50, 74]), mv(tor.m, [-0.35, s * 0.35, 1]), 22 + ruge * 12 + columna * 10, 4.2, f, nC, 60 + i, { viento }));
+    if (arde) ps.push(llamaOrg(ap(tor, [-6, s * 50, 74]), mv(tor.m, [-0.35, s * 0.35, 1]), 34 + ruge * 12 + columna * 10, 4.4, f, nC, 60 + i, { viento }));
   }
   // ---- brazos de abajo: más cortos, con la cadena
   const manosB: V3[] = [];
@@ -645,10 +652,10 @@ function ozmaren(acc: Acc, f: number): Res {
     for (let i = 0; i < 5; i++) hc.push(hueso(pts[i], pts[i + 1], rr[i], rr[i + 1]));
     for (let i = 0; i < 4; i++) for (const t of [0.3, 0.7]) { const r = lerp(rr[i], rr[i + 1], t); hc.push(bulto(mez(pts[i], pts[i + 1], t), [r * 0.32, r * 1.1, r * 1.1], { eje: sub(pts[i + 1], pts[i]), mat: CU, k: 0.9 })); }
     ps.push(masa(hc, { mat: CU, suave: 1.3 }));
-    if (arde) ps.push(llamaOrg(mez(pts[2], pts[3], 0.4), [0, 0, 1], 18 + ruge * 10 + columna * 10, 3.4, f, nC, 80 + s, { viento }));
+    if (arde) ps.push(llamaOrg(mez(pts[2], pts[3], 0.4), [0, 0, 1], 28 + ruge * 10 + columna * 10, 3.4, f, nC, 80 + s, { viento }));
   }
   // fuego grande que sale de la espalda, entre los omóplatos
-  if (arde) ps.push(llamaOrg(ap(tor, [-30, 0, 62]), mv(tor.m, [-0.45, 0, 1]), 34 + ruge * 16, 6.5, f, nC, 95, { viento, tramos: 6 }));
+  if (arde) ps.push(llamaOrg(ap(tor, [-30, 0, 62]), mv(tor.m, [-0.45, 0, 1]), 50 + ruge * 16, 6.5, f, nC, 95, { viento, tramos: 6 }));
 
   // el fuego del especial: del pecho abierto salen lenguas cortas hacia adelante y detrás de los cuernos sube una
   // columna de fuego desde la espalda, que nunca tapa la cabeza
@@ -680,7 +687,7 @@ function ozmaren(acc: Acc, f: number): Res {
     ps.push(esfera(b[0], b[1], b[2] + 4 + u * 20, 0.8, { mat: 'fuego', tono: -0.3 }));
   }
   // la luz del fuego respira con el cuadro: el centro se mece y el radio crece y se encoge
-  const luz = frio > 0.8 ? undefined : { c: add(ap(tor, [2, 0, 42]), [Math.sin(fz) * 4, Math.cos(fz * 2) * 3, Math.sin(fz * 2 + 1) * 5]), r: (44 + columna * 30 + ruge * 10) * (1 + 0.12 * Math.sin(fz * 2 + 0.7)) * (1 - frio * 0.4), color: '#e04010' };
+  const luz = frio > 0.8 ? undefined : { c: add(ap(tor, [6, 0, 28]), [Math.sin(fz) * 4, Math.cos(fz * 2) * 3, Math.sin(fz * 2 + 1) * 5]), r: (34 + columna * 34 + ruge * 10) * (1 + 0.12 * Math.sin(fz * 2 + 0.7)) * (1 - frio * 0.4), color: '#e04010' };
   return { piezas: ps, resplandor: luz };
 }
 jefe('ozmaren', ['Ozmaren, la Sed que Arde', 'Ozmaren, the Burning Thirst'], 195, 5, ['abre el pecho', 'opens the chest'], ozmaren);
