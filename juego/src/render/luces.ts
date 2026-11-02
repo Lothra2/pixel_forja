@@ -110,6 +110,24 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
     for (const [i, l] of lucesOzmaren(px, py, ALTO_OZMAREN * (m.escala ?? 1), t, furia).entries()) L.push({ id: 'oz' + i, x: l.x, y: l.y, h: l.h, r: l.r, c: l.nucleo ? [255, 150 + Math.round(l.k * 60), 60] : [255, 95 + Math.round(l.k * 40), 25], k: l.k, de: m });
   }
+  // la Campana que Ahoga: luz de mar verde que respira y crece con cada tañido; Aun-Saar: luz blanca dorada y la boca del pecho que late
+  for (const m of j.monstruos) {
+    if (m.muerto) continue;
+    const sp = m.def.sprite;
+    if (sp !== 'jefe_campana_ahoga' && sp !== 'jefe_aun_saar') continue;
+    const [px, py] = aPant(m.x, m.y); if (!dentro(px, py, 420)) continue;
+    const esp = m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 1 : 0;
+    const es = m.escala ?? 1;
+    if (sp === 'jefe_campana_ahoga') {
+      const tan = esp ? 0.5 + 0.5 * Math.abs(Math.sin(t * 6)) : 0;
+      L.push({ id: 'ca0', x: px, y: py - 60 * es, h: 70 * es, r: 190 + tan * 90 + Math.sin(t * 1.3) * 12, c: [70, 220, 190], k: 0.7 + tan * 0.3 + Math.sin(t * 1.3) * 0.06, de: m });
+      L.push({ id: 'ca1', x: px, y: py - 20 * es, h: 24, r: 120 + tan * 60, c: [120, 255, 220], k: 0.35 + tan * 0.4, de: m, sinSombra: true });
+    } else {
+      const pulso = 0.5 + 0.5 * Math.sin(t * 2.4) * Math.sin(t * 0.9 + 1);
+      L.push({ id: 'as0', x: px, y: py - 150 * es, h: 160 * es, r: 260 + Math.sin(t * 0.8) * 15, c: [255, 240, 205], k: 0.75 + (m.fase ?? 0) * 0.08, de: m });
+      L.push({ id: 'as1', x: px, y: py - 120 * es, h: 120 * es, r: 140 + pulso * 70 + esp * 90, c: [255, 205, 110], k: 0.45 + pulso * 0.35 + esp * 0.3, de: m, sinSombra: true });
+    }
+  }
   // grietas de lava del piso: brillan y respiran
   for (const mk of z.marcas) if (mk.tipo === 'lava' && mk.cx % 2 === 0) {
     const [px, py] = aPant(mk.cx + 0.5, mk.cy + 0.5); if (!dentro(px, py, 200)) continue;

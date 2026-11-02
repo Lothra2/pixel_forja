@@ -72,7 +72,7 @@ interface Tematica {
   murosAlt?: [[string, string[]], [string, string[]]][];
   deco?: Sel[]; vinetas?: string[];
   /** Mazmorra de islas: sin muros, los cuartos son islas con borde de precipicio y los pasillos son puentes sobre el vacío. */
-  islas?: { borde: string; puente: string; vacio?: Sel[] };
+  islas?: { borde: string; puente: string; vacio?: Sel[]; mapa?: Record<string, string> };
   /** Mazmorra con vías: los pasillos llevan rieles (rectos, curvas y fin de vía) y a veces una vagoneta. */
   rieles?: boolean;
 }
@@ -191,31 +191,45 @@ const TEMATICAS: Record<string, Tematica> = {
   // acto 6: la ciudad ahogada (afuera) y su catedral (adentro). Mezclan lo nuevo de la Forja con lo que existe
   ahogada: {
     piso: 'lajas_musgo', parches: ['agua', 'pantano', 'ladrillo_cloaca'], camino: 'empedrado', ambiente: 'noche', oscuridad: 0.6,
-    borde: [{ t: ['ahogada' as Tema], p: ['casco', 'ruina', 'muro'] }, { t: ['cementerio'], p: ['muro'] }, { t: ['arboles'], p: ['muert', 'seco'] }],
-    disperso: [{ t: ['ahogada' as Tema], p: [''] }, { t: ['cloaca'], p: ['charco', 'barril', 'desague'] }, { t: ['cementerio'], p: ['losa', 'cruz', 'urna', 'ataud'] }, { t: ['campo'], p: ['craneo', 'esqueleto', 'muro_ruina'] }],
-    grande: [{ t: ['ahogada' as Tema], p: ['campana', 'casco', 'torre', 'estatua', 'ancla'] }, { t: ['cementerio'], p: ['mausoleo', 'angel'] }],
-    luces: [{ t: ['ahogada' as Tema], p: ['farol', 'vela'] }, { t: ['cementerio'], p: ['farol', 'velas'] }],
+    borde: [{ t: ['ahogada' as Tema], p: ['casco', 'ruina', 'muro'], s: ['ahg_'] }, { t: ['ahogada' as Tema], p: ['ahg_roca_percebes', 'ahg_arrecife_huesos', 'ahg_mastil_caido', 'ahg_casco_costillar'] }, { t: ['arboles'], p: ['muert', 'seco'] }],
+    disperso: [{ t: ['ahogada' as Tema], p: [''], s: ['ahg_'] }, { t: ['cloaca'], p: ['charco', 'barril', 'desague'] }, { t: ['cementerio'], p: ['losa', 'cruz', 'urna', 'ataud'] }, { t: ['ahogada' as Tema], p: ['ahg_tablones', 'ahg_vela_raida', 'ahg_timon', 'ahg_barril_marino', 'ahg_nasa', 'ahg_cofre_barco', 'ahg_red_huesos', 'ahg_cadena_ancla', 'ahg_charco_marea', 'ahg_coral_hueso', 'ahg_concha_gigante', 'ahg_roca_percebes', 'ahg_peces_muertos', 'ahg_algas_colgantes', 'ahg_tentaculo', 'ahg_marino_ahogado', 'ahg_cruz_marinos', 'ahg_roseton_caido'] }],
+    grande: [{ t: ['ahogada' as Tema], p: ['campana', 'casco', 'torre', 'estatua', 'ancla'], s: ['ahg_'] }, { t: ['ahogada' as Tema], p: ['ahg_casco_proa', 'ahg_casco_popa', 'ahg_casco_costillar', 'ahg_mastil_roto', 'ahg_ancla', 'ahg_bote_roto', 'ahg_casco_bote_colgado', 'ahg_campana_caida', 'ahg_torre_campanario', 'ahg_columna_percebes', 'ahg_arco_hundido', 'ahg_estatua_santo', 'ahg_ballena_huesos', 'ahg_pescadora_estatua', 'ahg_columna_caida_algas'] }],
+    luces: [{ t: ['ahogada' as Tema], p: ['farol', 'vela'], s: ['ahg_'] }, { t: ['ahogada' as Tema], p: ['ahg_farol_pescador', 'ahg_boya_campana', 'ahg_torre_farol', 'ahg_pila_ahogada'] }],
     vinetas: ['cementerio'],
   },
   catedral_ahogada: {
     piso: 'baldosa_catedral', parches: ['agua', 'lajas_musgo'], ambiente: 'cripta', oscuridad: 0.82,
-    borde: [], disperso: [{ t: ['ahogada' as Tema], p: [''] }, { t: ['monasterio'], p: ['banco', 'estatua', 'pila', 'charco', 'campana'] }, { t: ['cloaca'], p: ['charco', 'reja'] }],
-    grande: [{ t: ['ahogada' as Tema], p: ['campana', 'pilar', 'organo'] }, { t: ['monasterio'], p: ['pilar'] }], luces: [{ t: ['monasterio'], p: ['brasero', 'antorcha'] }],
+    borde: [], disperso: [{ t: ['ahogada' as Tema], p: [''], s: ['ahg_'] }, { t: ['monasterio'], p: ['banco', 'estatua', 'pila', 'charco', 'campana'] }, { t: ['cloaca'], p: ['charco', 'reja'] },
+      { t: ['ahogada' as Tema], p: ['ahg_charco_marea', 'ahg_roseton_caido', 'ahg_algas_colgantes', 'ahg_peces_muertos', 'ahg_marino_ahogado', 'ahg_cruz_marinos', 'ahg_coral_hueso', 'ahg_tentaculo', 'ahg_red_huesos'] }],
+    grande: [{ t: ['ahogada' as Tema], p: ['campana', 'pilar', 'organo'], s: ['ahg_'] }, { t: ['monasterio'], p: ['pilar'] }, { t: ['ahogada' as Tema], p: ['ahg_columna_percebes', 'ahg_campana_caida', 'ahg_campana_colgante', 'ahg_estatua_santo', 'ahg_columna_caida_algas', 'ahg_arco_hundido'] }],
+    luces: [{ t: ['monasterio'], p: ['brasero', 'antorcha'] }, { t: ['ahogada' as Tema], p: ['ahg_pila_ahogada', 'ahg_farol_altar'] }],
     muroX: ['mon_muro_vitral', ['izq', 'izq_roto']], muroY: ['mon_muro_vitral', ['der', 'der_roto']],
     deco: [{ t: ['monasterio'], p: ['altar'] }],
   },
   // acto 7: islas de oro sobre el vacío y el interior del trono
   celestial: {
     piso: 'arenisca', parches: ['arcano', 'fortaleza', 'arenisca'], camino: 'fortaleza', ambiente: 'dia', oscuridad: 0.4,
-    borde: [{ t: ['celestial' as Tema], p: ['nube', 'roca', 'isla'] }, { t: ['arcano'], p: ['pilar_estrella'] }, { t: ['fortaleza'], p: ['pilar', 'cristales'] }],
-    disperso: [{ t: ['celestial' as Tema], p: [''] }, { t: ['arcano'], p: ['atril', 'pasarela', 'brasero'] }, { t: ['fortaleza'], p: ['cristales', 'baldosa_runa', 'estatua_angel'] }, { t: ['desierto'], p: ['colum', 'obelis', 'ruina'] }],
-    grande: [{ t: ['celestial' as Tema], p: ['estatua', 'arco', 'trono', 'columna'] }, { t: ['fortaleza'], p: ['estatua_angel', 'pilar'] }, { t: ['desierto'], p: ['estatua', 'colum'] }],
-    luces: [{ t: ['celestial' as Tema], p: ['luz', 'brasero'] }, { t: ['arcano'], p: ['brasero'] }, { t: ['fortaleza'], p: ['brasero'] }],
+    borde: [{ t: ['celestial' as Tema], p: ['nube', 'roca', 'isla'], s: ['cel_'] }, { t: ['celestial' as Tema], p: ['cel_nube_ceniza', 'cel_isla_roca', 'cel_cadena_dorada'] }, { t: ['arcano'], p: ['pilar_estrella'] }],
+    disperso: [{ t: ['celestial' as Tema], p: [''], s: ['cel_'] }, { t: ['arcano'], p: ['atril', 'pasarela', 'brasero'] }, { t: ['celestial' as Tema], p: ['cel_escombros_marmol', 'cel_piso_roto', 'cel_estatua_suplica', 'cel_corona_caida', 'cel_halo_roto', 'cel_anfora_oro', 'cel_lanza_angel', 'cel_arpa_rota', 'cel_relicario', 'cel_ala_piedra', 'cel_mano_estatua', 'cel_pedestal_vacio', 'cel_estandarte', 'cel_fragmento_flotante'] }],
+    grande: [{ t: ['celestial' as Tema], p: ['estatua', 'arco', 'trono', 'columna'], s: ['cel_'] }, { t: ['fortaleza'], p: ['estatua_angel'], s: ['for2_'] }, { t: ['celestial' as Tema], p: ['cel_columna_rota', 'cel_arco_triunfal', 'cel_templo_ruina', 'cel_torre_ruina', 'cel_obelisco_oro', 'cel_angel_caido', 'cel_estatua_angel', 'cel_cabeza_coloso', 'cel_fuente_seca', 'cel_esfera_armilar', 'cel_arbol_oro', 'cel_isla_ruinas', 'cel_isla_roca', 'cel_puerta_cielo', 'cel_jardin_estatuas'] }],
+    luces: [{ t: ['celestial' as Tema], p: ['luz', 'brasero'], s: ['cel_'] }, { t: ['celestial' as Tema], p: ['cel_brasero_blanco', 'cel_candelabro_oro', 'cel_rayo_luz'] }],
+  },
+  // las Islas de Oro: mazmorra de islas como el abismo, con bordes de oro y escaleras flotantes entre isla e isla
+  celestial_islas: {
+    piso: 'arenisca', parches: ['arcano', 'fortaleza', 'arenisca'], ambiente: 'dia', oscuridad: 0.42,
+    borde: [], disperso: [{ t: ['celestial' as Tema], p: ['cel_escombros_marmol', 'cel_piso_roto', 'cel_estatua_suplica', 'cel_corona_caida', 'cel_halo_roto', 'cel_anfora_oro', 'cel_lanza_angel', 'cel_arpa_rota', 'cel_relicario', 'cel_ala_piedra', 'cel_mano_estatua', 'cel_pedestal_vacio', 'cel_estandarte', 'cel_fragmento_flotante'] }],
+    grande: [{ t: ['celestial' as Tema], p: ['cel_columna_rota', 'cel_arco_triunfal', 'cel_templo_ruina', 'cel_obelisco_oro', 'cel_angel_caido', 'cel_estatua_angel', 'cel_fuente_seca', 'cel_esfera_armilar', 'cel_arbol_oro', 'cel_jardin_estatuas', 'cel_cabeza_coloso'] }],
+    luces: [{ t: ['celestial' as Tema], p: ['cel_brasero_blanco', 'cel_candelabro_oro', 'cel_rayo_luz'] }],
+    deco: [{ t: ['celestial' as Tema], p: ['cel_puerta_cielo', 'cel_torre_ruina', 'cel_ojo_cielo'] }],
+    islas: { borde: 'cel_isla_borde', puente: 'abi_escalones', mapa: { s: 'esquina_s', e: 'esquina_e', n: 'esquina_n', o: 'esquina_o', tramo: 'firmes', tramo_y: 'firmes_y', pilar: 'sueltos', pilar_y: 'sueltos_y', roto: 'sueltos', roto_y: 'sueltos_y' },
+      vacio: [{ t: ['celestial' as Tema], p: ['cel_isla_ruinas', 'cel_isla_roca', 'cel_fragmento_flotante', 'cel_cadena_dorada', 'cel_nube_ceniza', 'cel_ojo_cielo', 'cel_torre_ruina'] }, { t: ['abismo' as Tema], p: ['abi_estrellas', 'abi_fragmentos'] }] },
   },
   celestial_interior: {
     piso: 'fortaleza', parches: ['arcano', 'arenisca'], ambiente: 'cripta', oscuridad: 0.68,
-    borde: [], disperso: [{ t: ['celestial' as Tema], p: [''] }, { t: ['fortaleza'], p: ['cristales', 'baldosa_runa', 'estatua_angel'] }, { t: ['arcano'], p: ['atril', 'estante', 'cofre'] }],
-    grande: [{ t: ['fortaleza'], p: ['pilar', 'estatua_angel'] }], luces: [{ t: ['fortaleza'], p: ['brasero'] }, { t: ['arcano'], p: ['brasero'] }],
+    borde: [], disperso: [{ t: ['celestial' as Tema], p: [''], s: ['cel_'] }, { t: ['arcano'], p: ['atril', 'estante', 'cofre'] }, { t: ['celestial' as Tema], p: ['cel_escombros_marmol', 'cel_estatua_suplica', 'cel_corona_caida', 'cel_halo_roto', 'cel_anfora_oro', 'cel_relicario', 'cel_arpa_rota', 'cel_pedestal_vacio', 'cel_grieta_vacio'] }],
+    grande: [{ t: ['fortaleza'], p: ['pilar', 'estatua_angel'], s: ['for2_'] }, { t: ['celestial' as Tema], p: ['cel_columna_rota', 'cel_estatua_angel', 'cel_altar_sed', 'cel_fuente_seca', 'cel_esfera_armilar', 'cel_obelisco_oro'] }],
+    luces: [{ t: ['fortaleza'], p: ['brasero'], s: ['for2_'] }, { t: ['celestial' as Tema], p: ['cel_brasero_blanco', 'cel_candelabro_oro'] }],
+    deco: [{ t: ['celestial' as Tema], p: ['cel_columnata', 'cel_balaustrada', 'cel_escalera_oro'] }],
     muroX: ['for_muro_runas', ['recto', 'roto', 'torre']], muroY: ['for_muro_runas', ['recto_y', 'roto_y', 'torre_y']],
   },
   // temas nuevos de la Forja: cada lista mezcla lo nuevo (cuando llegue) con lo que ya existe, así funcionan desde hoy
@@ -485,7 +499,8 @@ function islas(k: Constructor, o: NonNullable<Tematica['islas']>, suelo: Uint8Ar
       const enX = S(bx - 1, by) || S(bx + 1, by), enY = S(bx, by - 1) || S(bx, by + 1);
       const v = enX && !enY ? 'tramo' : !enX && enY ? 'tramo_y' : r() < 0.5 ? 'pilar' : 'pilar_y';
       z.pisos[i] = null;
-      if (puente) k.poner(puente, cx, cy, r() < 0.12 && v.startsWith('tramo') ? v.replace('tramo', 'roto') : v, true);
+      const vp = r() < 0.12 && v.startsWith('tramo') ? v.replace('tramo', 'roto') : v;
+      if (puente) k.poner(puente, cx, cy, o.mapa?.[vp] ?? vp, true);
       continue;
     }
     if (!borde) continue;
@@ -502,7 +517,7 @@ function islas(k: Constructor, o: NonNullable<Tematica['islas']>, suelo: Uint8Ar
     if (!nx && !ny && !S(bx - 1, by - 1)) vs.push('in');
     if (!px && !ny && !S(bx + 1, by - 1)) vs.push('ie');
     if (!nx && !py && !S(bx - 1, by + 1)) vs.push('io');
-    for (const v of vs) k.poner(borde, cx, cy, v, true);
+    for (const v0 of vs) { const v = o.mapa?.[v0] ?? v0; if (borde.variantes.includes(v)) k.poner(borde, cx, cy, v, true); }
   }
   // lo que flota en el vacío (islotes, cadenas, ojos, estrellas abajo...)
   const vacios = k.sel(o.vacio);
@@ -760,6 +775,8 @@ const PUEBLOS: Record<string, { paisaje: string; piso: string; extra: Sel[] }> =
   paramo: { paisaje: 'campamento', piso: 'pasto_seco', extra: [{ t: ['arboles'], p: ['muert', 'roble', 'torc'] }, { t: ['campo'], p: ['roca'] }, { t: ['paramo' as Tema], p: ['par_brezo', 'par_menhir', 'par_tienda', 'par_pozo', 'par_tronco'] }] },
   desierto: { paisaje: 'desierto', piso: 'arena', extra: [{ t: ['desierto'], p: ['palm', 'cactus', 'roca'], s: ['des2_'] }, { t: ['desierto'], p: ['des2_palmera', 'des2_tienda', 'des2_caravana', 'des2_duna'] }] },
   selva: { paisaje: 'campamento', piso: 'selva', extra: [{ t: ['selva', 'arboles'], p: ['arbol', 'palma', 'ceiba', 'helecho'], s: ['sel2_'] }, { t: ['selva'], p: ['sel2_choza', 'sel2_barca', 'sel2_bambu', 'sel2_arbol_gigante'] }] },
+  ahogada: { paisaje: 'campamento', piso: 'lajas_musgo', extra: [{ t: ['ahogada' as Tema], p: ['ahg_barril_marino', 'ahg_nasa', 'ahg_red_huesos', 'ahg_bote_roto', 'ahg_ancla', 'ahg_farol_pescador', 'ahg_cruz_marinos'] }] },
+  celestial: { paisaje: 'fortaleza', piso: 'arenisca', extra: [{ t: ['celestial' as Tema], p: ['cel_estatua_suplica', 'cel_columna_rota', 'cel_brasero_blanco', 'cel_escombros_marmol', 'cel_estandarte', 'cel_anfora_oro'] }] },
   nieve: { paisaje: 'campamento', piso: 'nieve', extra: [{ t: ['nieve'], p: ['pino', 'roca'] }, { t: ['nieve'], p: ['nie2_pino', 'nie2_cabana', 'nie2_lena', 'nie2_trineo', 'nie2_secadero', 'nie2_estandarte'] }, { t: ['fortaleza'], p: ['for2_pertrechos', 'for2_barricada', 'for2_catapulta'] }] },
   infierno: { paisaje: 'fortaleza', piso: 'fortaleza', extra: [{ t: ['fortaleza'], p: ['cristal', 'pilar', 'estatua'], s: ['for2_'] }, { t: ['fortaleza'], p: ['for2_armeria', 'for2_ballesta', 'for2_pertrechos', 'for2_estatua_rey', 'for2_campana', 'for2_brasero', 'for2_antorchero', 'for2_estandarte'] }] },
 };
@@ -799,6 +816,8 @@ function pueblo(def: DefZona, semilla: number): Zona {
     z.entradas[s.lado] = [p[0] + (s.lado === 'e' ? -3 : s.lado === 'o' ? 3 : 0), p[1] + (s.lado === 's' ? -3 : s.lado === 'n' ? 3 : 0)];
     z.entradas['salida_' + s.destino] = z.entradas[s.lado];
   });
+  // el Barco Varado: el casco grande hace de pueblo, encallado detrás del campamento
+  if (def.tema === 'ahogada') for (let i = 0; i < 12; i++) { if (k.poner('ahg_casco_pueblo', cx0 + (r() - 0.5) * 8, cy0 - 16 - r() * 6, ['chozas', 'faroles', 'mercado'][i % 3])) break; }
   if (def.amurallado) amurallar(k, z.salidas.filter((s) => s.cx < 12 || s.cy < 12).map((s) => [s.cx, s.cy] as [number, number]));
   z.entradas.centro = [Math.round(cx0 + 2), Math.round(cy0 + 3)];
   z.entradas.portal = [Math.round(cx0 - 3), Math.round(cy0 + 5)];

@@ -31,9 +31,9 @@ const NUEVAS: DefZona[] = [
     salidas: [{ destino: 'a7_campamento', entrada: 'e', lado: 'o', nombre: ['El Campamento', 'The Camp'] }, { destino: 'a7_islas1', entrada: 'o', lado: 'e', nombre: ['Islas de Oro en Ruinas', 'Isles of Ruined Gold'] }, { destino: 'a7_boveda', entrada: 'arriba', lado: 'abajo', nombre: ['La Bóveda de los Astros', 'The Vault of Stars'] }] }),
   Z({ id: 'a7_boveda', nombre: ['La Bóveda de los Astros', 'The Vault of Stars'], acto: 7, nivel: 56, tipo: 'mazmorra', tema: 'celestial_interior', tam: [18, 18], jefe: 'lich', lateral: true,
     salidas: [{ destino: 'a7_cielo', entrada: 'salida_a7_boveda', lado: 'arriba', nombre: ['Cielo Roto', 'Broken Sky'] }] }),
-  Z({ id: 'a7_islas1', nombre: ['Islas de Oro en Ruinas: el Puente Quebrado', 'Isles of Ruined Gold: the Broken Bridge'], acto: 7, nivel: 57, tipo: 'exterior', tema: 'celestial', tam: [24, 24], piedraViaje: true, densidad: 1.2,
+  Z({ id: 'a7_islas1', nombre: ['Islas de Oro en Ruinas: el Puente Quebrado', 'Isles of Ruined Gold: the Broken Bridge'], acto: 7, nivel: 57, tipo: 'mazmorra', tema: 'celestial_islas', tam: [24, 24], piedraViaje: true, densidad: 1.2,
     salidas: [{ destino: 'a7_cielo', entrada: 'e', lado: 'o', nombre: ['Cielo Roto', 'Broken Sky'] }, { destino: 'a7_islas2', entrada: 'o', lado: 'e', nombre: ['Las Islas Altas', 'The High Isles'] }] }),
-  Z({ id: 'a7_islas2', nombre: ['Islas de Oro en Ruinas: las Islas Altas', 'Isles of Ruined Gold: the High Isles'], acto: 7, nivel: 58, tipo: 'exterior', tema: 'celestial', tam: [24, 24], ceniza: true,
+  Z({ id: 'a7_islas2', nombre: ['Islas de Oro en Ruinas: las Islas Altas', 'Isles of Ruined Gold: the High Isles'], acto: 7, nivel: 58, tipo: 'mazmorra', tema: 'celestial_islas', tam: [24, 24], ceniza: true,
     salidas: [{ destino: 'a7_islas1', entrada: 'e', lado: 'o', nombre: ['Puente Quebrado', 'Broken Bridge'] }, { destino: 'a7_jardin', entrada: 'o', lado: 'e', nombre: ['Jardín de los que Intentaron', 'Garden of Those Who Tried'] }, { destino: 'a7_relicario', entrada: 'arriba', lado: 'abajo', nombre: ['El Relicario del Sediento', 'Reliquary of the Thirsting'] }] }),
   Z({ id: 'a7_relicario', nombre: ['El Relicario del Sediento', 'Reliquary of the Thirsting'], acto: 7, nivel: 59, tipo: 'mazmorra', tema: 'celestial_interior', tam: [18, 18], jefe: 'caballero_abismo', lateral: true,
     salidas: [{ destino: 'a7_islas2', entrada: 'salida_a7_relicario', lado: 'arriba', nombre: ['Islas Altas', 'High Isles'] }] }),
@@ -51,8 +51,8 @@ PUEBLO_DE[7] = 'a7_campamento';
 // jefes nuevos (hasta que la Forja entregue sus modelos usan cuerpos de jefes existentes, teñidos y a otra escala)
 const M = (m: DefMonstruo) => m;
 const JEFES: DefMonstruo[] = [
-  M({ id: 'campana_ahoga', sprite: 'jefe_abadesa', nombre: ['La Campana que Ahoga', 'The Drowning Bell'], vida: 6200, dano: [34, 66], elem: 'frio', def: 120, vel: 2.2, ia: 'jefe', rango: 9, proyectil: 'hielo', xp: 42000, jefe: true, sonido: 'metal', res: { frio: 70, rayo: 30 }, invoca: 'ahogado', huella: 3, area: 3, escala: 1.35, tinte: '#3a6a7a' }),
-  M({ id: 'aun_saar', sprite: 'jefe_ozmaren', nombre: ['Aun-Saar, el Dios Sediento', 'Aun-Saar, the Thirsting God'], vida: 9800, dano: [44, 88], elem: 'luz', def: 150, vel: 2.4, ia: 'jefe', rango: 10, proyectil: 'luz', xp: 80000, jefe: true, sonido: 'carne', res: { luz: 70, fuego: 50, sombra: 50 }, invoca: 'caballero_abismo', huella: 4, area: 3.5, escala: 0.62, tinte: '#d8b048' }),
+  M({ id: 'campana_ahoga', sprite: 'jefe_campana_ahoga', nombre: ['La Campana que Ahoga', 'The Drowning Bell'], vida: 6200, dano: [34, 66], elem: 'frio', def: 120, vel: 2.2, ia: 'jefe', rango: 9, proyectil: 'hielo', xp: 42000, jefe: true, sonido: 'metal', res: { frio: 70, rayo: 30 }, invoca: 'ahogado', huella: 3.5, area: 3, escala: 1.15 }),
+  M({ id: 'aun_saar', sprite: 'jefe_aun_saar', nombre: ['Aun-Saar, el Dios Sediento', 'Aun-Saar, the Thirsting God'], vida: 9800, dano: [44, 88], elem: 'luz', def: 150, vel: 2.4, ia: 'jefe', rango: 10, proyectil: 'luz', xp: 80000, jefe: true, sonido: 'carne', res: { luz: 70, fuego: 50, sombra: 50 }, invoca: 'caballero_abismo', huella: 5, area: 3.5, escala: 0.7 }),
 ];
 for (const j of JEFES) (MONSTRUOS as Record<string, DefMonstruo>)[j.id] = j;
 

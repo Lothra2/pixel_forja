@@ -58,7 +58,9 @@ if (GRUPOS.includes('r')) for (const h of HEROES) {
   for (const nivel of [0, 2]) jobs.push({ id_job: nid++, grupo: 'r', clave: `${h.id}/${nivel}`, tipo: 'retrato', id: h.id, nivel, cuadros: CUADROS.presentar ?? 8 });
 }
 // jefes a medida de la Forja: se guardan como monstruos 'jefe_<id>'
-const { JEFES } = await import(join(raiz, 'catalogo/jefes.ts'));
+const { JEFES: JEFES1 } = await import(join(raiz, 'catalogo/jefes.ts'));
+const { JEFES2 } = await import(join(raiz, 'catalogo/jefes2.ts'));
+const JEFES = [...JEFES1, ...JEFES2];
 if (GRUPOS.includes('j')) for (const jf of JEFES as any[]) {
   if (SOLO && !SOLO.includes(jf.id)) continue;
   for (const acc of ['quieto', 'caminar', 'atacar', 'lanzar', 'herido', 'morir', 'especial']) {
