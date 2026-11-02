@@ -30,6 +30,8 @@ export interface Objeto {
   /** Pociones: 'vida' | 'mana' | 'rejuv'; tamaño 0..4. */
   pocion?: 'vida' | 'mana' | 'rejuv';
   tam?: number;
+  /** Pociones apiladas en la misma casilla. Opcional: sin ella es una sola. */
+  cantidad?: number;
   precio: number;
   identificado?: boolean;
   /** Aspecto propio del arma (el arma inicial se ve como la del novato). */

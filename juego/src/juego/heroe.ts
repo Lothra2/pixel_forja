@@ -6,7 +6,7 @@ import type { Equipo } from '../../../src/engine/gotico/cuerpo';
 import { CLASES, HABILIDADES, habilidad, type Habilidad } from '../datos/clases';
 import { BASES, CONJUNTOS } from '../datos/objetos_datos';
 import type { Clase, Elemento } from './tipos_objetos';
-import { crearBase, crearPocion, crearPergamino, baseDe, type Objeto } from './objetos';
+import { crearBase, crearPocion, crearPergamino, baseDe, nuevoUid, type Objeto } from './objetos';
 
 export type Casilla = 'cabeza' | 'torso' | 'arma' | 'izq' | 'manos' | 'cinturon' | 'pies' | 'amuleto' | 'anillo1' | 'anillo2' | 'talisman';
 export const CASILLAS: Casilla[] = ['cabeza', 'torso', 'arma', 'izq', 'manos', 'cinturon', 'pies', 'amuleto', 'anillo1', 'anillo2', 'talisman'];
@@ -41,7 +41,14 @@ export interface DatosHeroe {
   dificultad: number;
   /** Aura activa (solo una a la vez). Opcional: las partidas viejas no la tienen. */
   aura?: string;
+  /** Tipo de poción de cada columna del cinturón (con eso se rellena). Opcional: las partidas viejas no lo tienen. */
+  tiposCinturon?: TipoPocion[];
 }
+export type TipoPocion = 'vida' | 'mana' | 'rejuv';
+/** Columnas del cinturón por defecto: dos de vida, una de maná y una de rejuvenecer. */
+export const CINTURON_DEF: TipoPocion[] = ['vida', 'vida', 'mana', 'rejuv'];
+/** Cuántas pociones caben apiladas en una casilla de la bolsa y en una del cinturón. */
+export const PILA_BOLSA = 20, PILA_CINTURON = 4;
 export const BOLSA_W = 10, BOLSA_H = 5, BOLSAS = 3;
 
 export function nuevoHeroe(clase: Clase, nombre: string): DatosHeroe {
@@ -61,8 +68,9 @@ export function nuevoHeroe(clase: Clase, nombre: string): DatosHeroe {
   const primera = HABILIDADES.find((x) => x.clase === clase && x.nivelReq === 1 && x.tipo !== 'pasiva' && x.tipo !== 'aura' && x.tipo !== 'buff');
   if (primera) { h.habs[primera.id] = 1; h.der = primera.id; h.atajos[0] = primera.id; }
   // para empezar: tres de vida y una de maná en el cinturón, y otras cuatro de vida en la bolsa
-  h.cinturon = [crearPocion('vida', 0), crearPocion('vida', 0), crearPocion('vida', 0), crearPocion('mana', 0)];
-  for (let i = 0; i < 4; i++) meterEnBolsa(h, crearPocion('vida', 0));
+  h.tiposCinturon = [...CINTURON_DEF];
+  h.cinturon = [pila(crearPocion('vida', 0), 2), pila(crearPocion('vida', 0), 2), pila(crearPocion('mana', 0), 1), null];
+  meterEnBolsa(h, pila(crearPocion('vida', 0), 3));
   meterEnBolsa(h, crearPergamino('portal'));
   meterEnBolsa(h, crearPergamino('portal'));
   return h;
@@ -77,14 +85,88 @@ export function libre(bolsa: EnBolsa[], x: number, y: number, w: number, h: numb
   return !bolsa.some((b) => (b.b ?? 0) === bb && b.o !== salvo && x < b.x + b.o.w && x + w > b.x && y < b.y + b.o.h && y + h > b.y);
 }
 export function meterEnBolsa(h: DatosHeroe, o: Objeto): boolean {
+  // las pociones primero se apilan con las iguales que ya hay
+  if (apilar(h.bolsa.map((e) => e.o), o, PILA_BOLSA)) return true;
   const p = lugarLibre(h, o.w, o.h);
   if (!p) return false;
   h.bolsa.push({ o, x: p[0], y: p[1], b: p[2] });
   return true;
 }
-/** Las pociones van primero al cinturón. */
+
+// ------------------------------------------------------------------ pilas de pociones y cinturón
+/** Cuántas hay en la pila (las partidas viejas no tienen cantidad: es una). */
+export const cant = (o: Objeto) => Math.max(1, o.cantidad ?? 1);
+export function pila(o: Objeto, n: number): Objeto { o.cantidad = n; return o; }
+/** Dos pociones se apilan si son la misma (tipo y tamaño). */
+export const apilable = (a: Objeto, b: Objeto) => a.tipo === 'pocion' && b.tipo === 'pocion' && a.base === b.base;
+/** Pasa todo lo que quepa de o a las pilas iguales de la lista. Devuelve true si o quedó vacía. */
+export function apilar(lista: Objeto[], o: Objeto, max: number): boolean {
+  if (o.tipo !== 'pocion') return false;
+  for (const x of lista) {
+    if (x === o || !apilable(x, o) || cant(x) >= max) continue;
+    const n = Math.min(max - cant(x), cant(o));
+    x.cantidad = cant(x) + n; o.cantidad = cant(o) - n;
+    if (o.cantidad <= 0) return true;
+  }
+  return false;
+}
+/** Separa n de la pila: devuelve un objeto nuevo con esas n (o el mismo si se lleva todo). */
+export function partir(o: Objeto, n: number): Objeto {
+  if (n >= cant(o)) return o;
+  o.cantidad = cant(o) - n;
+  return { ...o, uid: nuevoUid(), cantidad: n, stats: [], engarces: [] };
+}
+export function tiposCinturon(h: DatosHeroe): TipoPocion[] {
+  if (!h.tiposCinturon || h.tiposCinturon.length !== h.cinturon.length) h.tiposCinturon = h.cinturon.map((_, i) => CINTURON_DEF[i] ?? 'vida');
+  return h.tiposCinturon;
+}
+/**
+ * Mete la poción en el cinturón: primero en pilas iguales, después en columnas vacías de su tipo.
+ * Devuelve true si entró entera (si entró una parte, o queda con lo que sobró).
+ */
+export function alCinturon(h: DatosHeroe, o: Objeto): boolean {
+  if (o.tipo !== 'pocion') return false;
+  if (apilar(h.cinturon.filter((x): x is Objeto => !!x), o, PILA_CINTURON)) return true;
+  const tipos = tiposCinturon(h);
+  for (let i = 0; i < h.cinturon.length; i++) if (!h.cinturon[i] && tipos[i] === o.pocion) {
+    const n = Math.min(PILA_CINTURON, cant(o));
+    if (n >= cant(o)) { h.cinturon[i] = o; return true; }
+    h.cinturon[i] = { ...o, uid: nuevoUid(), cantidad: n }; o.cantidad = cant(o) - n;
+  }
+  return false;
+}
+/**
+ * Rellena la columna i desde la bolsa con pociones de su tipo (la misma poción si ya hay una, si no la más grande).
+ * Devuelve true si movió algo.
+ */
+export function rellenarColumna(h: DatosHeroe, i: number): boolean {
+  const tipo = tiposCinturon(h)[i];
+  let actual = h.cinturon[i];
+  if (actual && (actual.pocion !== tipo || cant(actual) >= PILA_CINTURON)) return false;
+  let movio = false;
+  while (!actual || cant(actual) < PILA_CINTURON) {
+    const cands = h.bolsa.filter((e) => e.o.tipo === 'pocion' && (actual ? apilable(e.o, actual) : e.o.pocion === tipo));
+    if (!cands.length) break;
+    // si la columna está vacía, la poción más fuerte. Entre iguales, la pila más chica primero (así se liberan casillas)
+    cands.sort((a, b) => (b.o.tam ?? 0) - (a.o.tam ?? 0) || cant(a.o) - cant(b.o));
+    const e = cands[0];
+    const falta = actual ? PILA_CINTURON - cant(actual) : PILA_CINTURON;
+    const n = Math.min(falta, cant(e.o));
+    if (!actual) {
+      if (n >= cant(e.o)) { h.bolsa.splice(h.bolsa.indexOf(e), 1); actual = e.o; }
+      else { actual = { ...e.o, uid: nuevoUid(), cantidad: n }; e.o.cantidad = cant(e.o) - n; }
+      h.cinturon[i] = actual;
+    } else {
+      actual.cantidad = cant(actual) + n; e.o.cantidad = cant(e.o) - n;
+      if ((e.o.cantidad ?? 1) <= 0) h.bolsa.splice(h.bolsa.indexOf(e), 1);
+    }
+    movio = true;
+  }
+  return movio;
+}
+/** Las pociones van primero al cinturón (a su columna), y lo que sobre a la bolsa. */
 export function recoger(h: DatosHeroe, o: Objeto): boolean {
-  if (o.tipo === 'pocion') { const i = h.cinturon.findIndex((x) => !x); if (i >= 0) { h.cinturon[i] = o; return true; } }
+  if (o.tipo === 'pocion' && alCinturon(h, o)) return true;
   return meterEnBolsa(h, o);
 }
 

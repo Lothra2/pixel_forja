@@ -11,8 +11,8 @@ import { MONSTRUOS } from '../datos/monstruos';
 import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist } from '../juego/historia';
 import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
-import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, ropaBase, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa, nivelEnDificultad } from '../juego/heroe';
-import { recalc, usarPocion, abrirPortal, costoMana, danoHab, habilidadDe, msg, frascosMax, ventanaCombo, cadaveresCerca, MAX_CARGAS, colorElem, thorDe, tramoThor, type Juego, type Monstruo } from '../juego/mundo';
+import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, ropaBase, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa, nivelEnDificultad, cant, apilable, partir, alCinturon, meterEnBolsa, tiposCinturon, PILA_BOLSA, PILA_CINTURON, type TipoPocion } from '../juego/heroe';
+import { recalc, usarPocion, beberPocion, noRellenar, abrirPortal, costoMana, danoHab, habilidadDe, msg, frascosMax, ventanaCombo, cadaveresCerca, MAX_CARGAS, colorElem, thorDe, tramoThor, type Juego, type Monstruo } from '../juego/mundo';
 import { cuadrosMonstruo, dibujar as dibujarCuadro } from '../motor/assets';
 import { Sonido } from '../audio/sonido';
 import { R, entero } from '../nucleo/azar';
@@ -38,7 +38,7 @@ export function prepararHud() {
   if (!orbes) { orbes = {}; for (const t of ['vida', 'mana', 'veneno', 'helado'] as const) { orbes[t + '1'] = []; orbes[t + '0'] = []; for (let f = 0; f < 8; f++) { orbes[t + '1'].push(rasterACanvas(orbe(t, 0.985, f))); orbes[t + '0'].push(rasterACanvas(orbe(t, 0, f))); } } }
 }
 export function dibujarCursor(tipo: string) {
-  if (ui.mano) { icono(ui.mano, E.x - 14, E.y - 14, ui.mano.w * 29, ui.mano.h * 29); return; }
+  if (ui.mano) { icono(ui.mano, E.x - 14, E.y - 14, ui.mano.w * 29, ui.mano.h * 29); if (cant(ui.mano) > 1) texto(String(cant(ui.mano)), E.x - 14 + ui.mano.w * 29 - 2, E.y - 14 + ui.mano.h * 29 - 3, { tam: 11, alin: 'right', color: '#fff' }); return; }
   const c = cursoresC?.[tipo] ?? cursoresC?.senalar;
   if (c) ctx.drawImage(c.c, Math.round(E.x - c.a[0]), Math.round(E.y - c.a[1]));
 }
@@ -144,15 +144,33 @@ export function dibujarBarra(j: Juego, t: number) {
     const rc = h.recargas[hb.id] ?? 0; if (rc > 0) { ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(bx + z.x, by + z.y, z.w, z.h * Math.min(1, rc / (hb.recarga ?? 1))); }
     if (dentro(bx + z.x, by + z.y, z.w, z.h)) { if (E.clicIzq) { ui.izq = null; ui.der = 'elegirHab'; ui.elegirLado = lado; E.clicIzq = false; } }
   }
-  // cinturón
+  // cinturón: cada columna tiene su tipo de poción (clic derecho en una vacía lo cambia) y guarda una pila de hasta 4
+  const tipos = tiposCinturon(h.d);
   for (let i = 0; i < 4; i++) {
     const z = Z(`cinturon_${i + 1}`); const o = h.d.cinturon[i];
-    if (o) icono(o, bx + z.x, by + z.y, z.w, z.h);
-    texto(String(i + 1), bx + z.x + 2, by + z.y + z.h - 2, { tam: 10, color: '#a09070' });
-    if (dentro(bx + z.x, by + z.y, z.w, z.h)) {
-      if (o) tooltip(lineasObjeto(o), E.x, by + z.y);
-      if ((E.clicIzq || E.clicDer) && !ui.mano) { usarPocion(j, i); E.clicIzq = E.clicDer = false; }
-      else if (E.clicIzq && ui.mano && ui.mano.tipo === 'pocion' && !o) { h.d.cinturon[i] = ui.mano; ui.mano = null; E.clicIzq = false; }
+    const x0 = bx + z.x, y0 = by + z.y;
+    if (o) {
+      icono(o, x0, y0, z.w, z.h);
+      texto(String(cant(o)), x0 + z.w - 2, y0 + 10, { tam: 10, alin: 'right', color: '#ffffff' });
+    } else {
+      // vacía: un tinte tenue y un frasquito del tipo de la columna
+      ctx.save(); ctx.globalAlpha = 0.18; ctx.fillStyle = COLOR_POCION[tipos[i]]; ctx.fillRect(x0 + 2, y0 + 2, z.w - 4, z.h - 4);
+      ctx.globalAlpha = 0.45; ctx.beginPath(); ctx.arc(x0 + z.w / 2, y0 + z.h / 2 + 3, 6, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(x0 + z.w / 2 - 2, y0 + z.h / 2 - 8, 4, 6); ctx.restore();
+    }
+    texto(String(i + 1), x0 + 2, y0 + z.h - 2, { tam: 10, color: '#a09070' });
+    if (dentro(x0, y0, z.w, z.h)) {
+      if (o && !ui.mano) tooltip([...lineasObjeto(o), ...lineaCantidad(o), [T('Shift + clic: a la bolsa', 'Shift + click: to bag'), '#a09070']], E.x, y0);
+      else if (!o && !ui.mano) tooltip([[`${T('Columna de', 'Column for')} ${TT(NOMBRE_POCION[tipos[i]])}`, COLOR_POCION[tipos[i]]], [T('Clic derecho: cambiar el tipo', 'Right click: change the type'), '#a09070']], E.x, y0);
+      if (E.clicIzq) {
+        E.clicIzq = false;
+        if (!ui.mano) { if (o) { if (E.shift) cinturonABolsa(j, i); else { ui.mano = o; h.d.cinturon[i] = null; noRellenar(j, i); levantadoDe(null); Sonido.efecto('click'); } } }
+        else if (ui.mano.tipo !== 'pocion') Sonido.efecto('negado');
+        else soltarEnCinturon(j, i);
+      } else if (E.clicDer) {
+        E.clicDer = false;
+        if (o) usarPocion(j, i);
+        else if (!ui.mano) { tipos[i] = TIPOS_POCION[(TIPOS_POCION.indexOf(tipos[i]) + 1) % TIPOS_POCION.length]; Sonido.efecto('click'); }
+      }
     }
   }
   // experiencia
@@ -201,6 +219,33 @@ export function dibujarBarra(j: Juego, t: number) {
     if (dentro(bx2 - 130, by2 - 70, 170, 130)) ui.sobreUI = true;
   }
   ui.sobreUI = ui.sobreUI || E.y > by + 56 || dentro(bx, by, 130, BAR_H) || dentro(bx + 670, by, 130, BAR_H);
+}
+const TIPOS_POCION: TipoPocion[] = ['vida', 'mana', 'rejuv'];
+const COLOR_POCION: Record<TipoPocion, string> = { vida: '#d02828', mana: '#3050e0', rejuv: '#b040d0' };
+const NOMBRE_POCION: Record<TipoPocion, [string, string]> = { vida: ['vida', 'life'], mana: ['maná', 'mana'], rejuv: ['rejuvenecer', 'rejuvenation'] };
+const lineaCantidad = (o: Objeto): [string, string][] => (o.tipo === 'pocion' && cant(o) > 1 ? [[`${T('Cantidad', 'Quantity')}: ${cant(o)}`, '#e0d0a0']] : []);
+const cinturonLleno = (j: Juego) => { Sonido.efecto('negado'); msg(j, ['Cinturón lleno.', 'Belt is full.'], '#ff8060'); };
+/** Suelta lo que hay en la mano (una poción) en la columna i: se apila, entra en el hueco o se intercambia. */
+function soltarEnCinturon(j: Juego, i: number) {
+  const d = j.heroe.d, m = ui.mano!, o = d.cinturon[i];
+  if (!o) {
+    const n = Math.min(PILA_CINTURON, cant(m));
+    d.cinturon[i] = partir(m, n); if (d.cinturon[i] === m) ui.mano = null;
+    tiposCinturon(d)[i] = m.pocion ?? 'vida';
+  } else if (apilable(o, m)) {
+    const n = Math.min(PILA_CINTURON - cant(o), cant(m));
+    if (n <= 0) { cinturonLleno(j); return; }
+    o.cantidad = cant(o) + n; m.cantidad = cant(m) - n; if (m.cantidad <= 0) ui.mano = null;
+  } else if (cant(m) <= PILA_CINTURON) { d.cinturon[i] = m; ui.mano = o; tiposCinturon(d)[i] = m.pocion ?? 'vida'; }
+  else { cinturonLleno(j); return; }
+  Sonido.efecto('pocion', { vol: 0.35, tono: 1.6 });
+}
+/** Shift + clic en el cinturón: la pila vuelve a la bolsa. */
+function cinturonABolsa(j: Juego, i: number) {
+  const d = j.heroe.d, o = d.cinturon[i]; if (!o) return;
+  d.cinturon[i] = null; noRellenar(j, i);
+  if (!meterEnBolsa(d, o)) { d.cinturon[i] = o; Sonido.efecto('negado'); msg(j, ['No tengo lugar.', 'I have no room.'], '#ff8060'); return; }
+  Sonido.efecto('click');
 }
 /** Indicador chico de la mecánica de clase, arriba de los atajos. */
 function recursoClase(j: Juego, x: number, y: number, w: number) {
@@ -378,6 +423,9 @@ function panelInv(j: Juego, x: number, y: number, t: number) {
     const o = h.d.equipo[cas];
     const ex = x + e.x, ey = y + e.y;
     if (o && o.durabMax && o.durab <= 0) { ctx.fillStyle = 'rgba(160,0,0,0.35)'; ctx.fillRect(ex, ey, e.w, e.h); }
+    // destello corto en la casilla que se acaba de equipar
+    const fl = (ui as any).destello as { cas: Casilla; t: number } | undefined;
+    if (fl && fl.cas === cas) { const k = 1 - (performance.now() - fl.t) / 500; if (k > 0) { ctx.save(); ctx.fillStyle = `rgba(255,220,120,${0.45 * k})`; ctx.fillRect(ex, ey, e.w, e.h); ctx.strokeStyle = `rgba(255,240,180,${k})`; ctx.lineWidth = 2; ctx.strokeRect(ex + 1, ey + 1, e.w - 2, e.h - 2); ctx.restore(); } }
     if (dentro(ex, ey, e.w, e.h)) {
       if (ui.mano) { const ok = ranuraCasa(ui.mano, cas) && cumpleReq(h.d, h.c, ui.mano); ctx.strokeStyle = ok ? '#40ff40' : '#ff4040'; ctx.strokeRect(ex + 1, ey + 1, e.w - 2, e.h - 2); }
       else if (o) ui.encima = { o, x: ex + e.w / 2, y: ey, comparar: false };
@@ -447,16 +495,63 @@ function clicEquipo(j: Juego, cas: Casilla) {
     // gema en un objeto con huecos
     if ((ui.mano.tipo === 'gema' || ui.mano.tipo === 'runa') && actual && actual.huecos > actual.engarces.length) { if (engarzar(actual, ui.mano)) { ui.mano = null; Sonido.efecto('equipar'); recalc(j); } return; }
     if (!ranuraCasa(ui.mano, cas)) { Sonido.efecto('negado'); return; }
-    if (!cumpleReq(h.d, h.c, ui.mano)) { Sonido.efecto('negado'); msg(j, ['No cumplo los requisitos.', 'I do not meet the requirements.']); return; }
+    if (!cumpleReq(h.d, h.c, ui.mano)) { Sonido.efecto('negado'); msg(j, ['No cumplo los requisitos.', 'I do not meet the requirements.'], '#ff5050'); return; }
     // dos manos y escudo
     const b = baseDe(ui.mano)!;
     if (cas === 'izq' && h.d.equipo.arma && baseDe(h.d.equipo.arma)?.dosManos) { Sonido.efecto('negado'); msg(j, ['Llevo un arma a dos manos.', 'I am wielding a two-handed weapon.']); return; }
     h.d.equipo[cas] = ui.mano; ui.mano = actual;
     if (cas === 'arma' && b.dosManos && h.d.equipo.izq && !ui.mano) { ui.mano = h.d.equipo.izq; delete h.d.equipo.izq; }
-    Sonido.efecto('equipar');
+    sonidoEquipar(h.d.equipo[cas]!); (ui as any).destello = { cas, t: performance.now() };
   } else if (actual) { ui.mano = actual; delete h.d.equipo[cas]; Sonido.efecto('equipar'); }
   recalc(j);
 }
+/** El sonido de ponerse algo: metal para armas y armaduras pesadas, tela o cuero para lo liviano, tintineo para joyas. */
+function sonidoEquipar(o: Objeto) {
+  const b = baseDe(o);
+  if (b?.ranura === 'anillo' || b?.ranura === 'amuleto' || b?.ranura === 'talisman') Sonido.efecto('equipar', { tono: 1.7, vol: 0.6 });
+  else if (b?.arma || (b?.req.fue ?? 0) >= 30) Sonido.efecto('equipar', { tono: 0.85 });
+  else Sonido.efecto('equipar', { tono: 0.55, vol: 0.7 });
+}
+/** Casilla a la que va un objeto con equipar rápido: los anillos al dedo libre, o en lugar del izquierdo. */
+function casillaPara(j: Juego, o: Objeto): Casilla | null {
+  const r = baseDe(o)?.ranura; if (!r || o.tipo !== 'equipo') return null;
+  const eq = j.heroe.d.equipo;
+  if (r === 'anillo') return !eq.anillo1 ? 'anillo1' : !eq.anillo2 ? 'anillo2' : 'anillo1';
+  return r as Casilla;
+}
+/**
+ * Equipar de un clic (clic derecho o doble clic en la bolsa): se pone el objeto y lo que llevaba vuelve a la bolsa,
+ * a la misma casilla si cabe o a la primera libre. Un arma a dos manos manda el escudo a la bolsa, y un escudo con un
+ * arma a dos manos puesta manda el arma. Devuelve false (y no toca nada) si no cumple requisitos o no hay lugar.
+ */
+export function equiparRapido(j: Juego, e: EnBolsa, todos: EnBolsa[]): boolean {
+  const h = j.heroe, d = h.d, o = e.o, b = baseDe(o);
+  const cas = casillaPara(j, o); if (!cas || !b) return false;
+  if (!cumpleReq(d, h.c, o)) { Sonido.efecto('negado'); msg(j, ['No cumplo los requisitos para llevar eso.', 'I do not meet the requirements to wear that.'], '#ff5050'); return false; }
+  const sale: Objeto[] = [];
+  if (d.equipo[cas]) sale.push(d.equipo[cas]!);
+  if (cas === 'arma' && b.dosManos && d.equipo.izq) sale.push(d.equipo.izq);
+  if (cas === 'izq' && d.equipo.arma && baseDe(d.equipo.arma)?.dosManos) sale.push(d.equipo.arma);
+  const i = todos.indexOf(e); if (i >= 0) todos.splice(i, 1);
+  const puestos: EnBolsa[] = [];
+  for (const [k, s2] of sale.entries()) {
+    const bb = e.b ?? 0;
+    const p: [number, number, number] | null = k === 0 && e.x + s2.w <= BOLSA_W && e.y + s2.h <= BOLSA_H && libre(todos, e.x, e.y, s2.w, s2.h, undefined, bb) ? [e.x, e.y, bb] : lugarBolsa(todos, s2);
+    if (!p) {
+      for (const q of puestos) todos.splice(todos.indexOf(q), 1);
+      todos.push(e); Sonido.efecto('negado'); msg(j, ['No tengo lugar en la bolsa para cambiarlo.', 'I have no room in the bag to swap it.'], '#ff5050');
+      return false;
+    }
+    const nb: EnBolsa = { o: s2, x: p[0], y: p[1], b: p[2] }; todos.push(nb); puestos.push(nb);
+  }
+  for (const s2 of sale) for (const c of CASILLAS) if (d.equipo[c] === s2) delete d.equipo[c];
+  d.equipo[cas] = o;
+  sonidoEquipar(o); (ui as any).destello = { cas, t: performance.now() };
+  recalc(j);
+  return true;
+}
+/** Lo último que se levantó de la bolsa y de dónde: para reconocer el doble clic. */
+function levantadoDe(e: EnBolsa | null) { (ui as any).levantado = e ? { o: e.o, x: e.x, y: e.y, b: e.b ?? 0, t: performance.now(), mx: E.x, my: E.y } : null; }
 /** Rejilla de objetos (bolsa, cofre, tienda). */
 function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: number, ch: number, t: number, tipo: 'bolsa' | 'cofre' | 'tienda', bb?: number) {
   const C = CELDA_INV;
@@ -476,6 +571,8 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
   if (tipo === 'bolsa') for (const b of lista) if (b.o.tipo === 'thor') { const ox = x + b.x * C + 1, oy = y + b.y * C + 1, w = b.o.w * C - 2, hh = b.o.h * C - 2; ctx.fillStyle = '#0e0b09'; ctx.fillRect(ox, oy, w, hh); ctx.fillStyle = colorObj(b.o) + '30'; ctx.fillRect(ox, oy, w, hh); iconoThor(b.o, ox, oy, w, hh, t); }
   // la bolsa la pinta el panel de la Forja: encima, en rojo, lo que el héroe todavía no puede llevar
   if (tipo === 'bolsa') for (const b of lista) if (b.o.tipo === 'equipo' && !cumpleReq(j.heroe.d, j.heroe.c, b.o)) { ctx.fillStyle = 'rgba(200,20,20,0.32)'; ctx.fillRect(x + b.x * C + 1, y + b.y * C + 1, b.o.w * C - 2, b.o.h * C - 2); ctx.strokeStyle = 'rgba(255,60,60,0.7)'; ctx.strokeRect(x + b.x * C + 1.5, y + b.y * C + 1.5, b.o.w * C - 3, b.o.h * C - 3); }
+  // pilas de pociones: el número en la esquina
+  for (const b of lista) if (b.o.tipo === 'pocion' && cant(b.o) > 1) texto(String(cant(b.o)), x + (b.x + b.o.w) * C - 3, y + (b.y + b.o.h) * C - 4, { tam: 11, alin: 'right', color: '#ffffff' });
   if (!dentro(x, y, cw * C, ch * C)) return;
   const cx = Math.floor((E.x - x) / C), cy = Math.floor((E.y - y) / C);
   const bajo = lista.find((b) => cx >= b.x && cx < b.x + b.o.w && cy >= b.y && cy < b.y + b.o.h);
@@ -487,6 +584,21 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
     if (E.clicIzq) {
       E.clicIzq = false;
       if (tipo === 'tienda') { venderMano(j); return; }
+      // doble clic sobre lo que se acaba de levantar: equiparlo (vuelve a su casilla si no se puede)
+      const lev = (ui as any).levantado;
+      if (tipo === 'bolsa' && lev && lev.o === ui.mano && performance.now() - lev.t < 350 && Math.hypot(E.x - lev.mx, E.y - lev.my) < 6) {
+        levantadoDe(null);
+        const e: EnBolsa = { o: ui.mano, x: lev.x, y: lev.y, b: lev.b }; todos.push(e); ui.mano = null;
+        if (ui.izq !== 'tienda' && ui.izq !== 'cofre' && e.o.tipo === 'equipo') equiparRapido(j, e, todos);
+        return;
+      }
+      // pociones: se apilan con las iguales (hasta 20 por casilla)
+      const tope = tipo === 'bolsa' ? PILA_BOLSA : 99;
+      if (bajo && apilable(bajo.o, ui.mano) && cant(bajo.o) < tope) {
+        const n = Math.min(tope - cant(bajo.o), cant(ui.mano));
+        bajo.o.cantidad = cant(bajo.o) + n; ui.mano.cantidad = cant(ui.mano) - n; if (ui.mano.cantidad <= 0) ui.mano = null;
+        Sonido.efecto('objeto_cae', { vol: 0.4 }); return;
+      }
       // engarzar
       if ((ui.mano.tipo === 'gema' || ui.mano.tipo === 'runa') && bajo && bajo.o.huecos > bajo.o.engarces.length && bajo.o.tipo === 'equipo') { if (engarzar(bajo.o, ui.mano)) { ui.mano = null; Sonido.efecto('equipar'); } return; }
       if (choques.length === 0) { poner({ o: ui.mano, x: px, y: py }); ui.mano = null; Sonido.efecto('objeto_cae', { vol: 0.5 }); }
@@ -496,20 +608,29 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
   }
   if (!bajo) return;
   ctx.strokeStyle = '#c0a060'; ctx.strokeRect(x + bajo.x * C + 0.5, y + bajo.y * C + 0.5, bajo.o.w * C, bajo.o.h * C);
-  ui.encima = { o: bajo.o, x: x + (bajo.x + bajo.o.w / 2) * C, y: y + bajo.y * C, comparar: bajo.o.tipo === 'equipo', tienda: tipo === 'tienda' };
+  ui.encima = { o: bajo.o, x: x + (bajo.x + bajo.o.w / 2) * C, y: y + bajo.y * C, comparar: bajo.o.tipo === 'equipo', tienda: tipo === 'tienda', bolsa: tipo === 'bolsa' };
   if (E.clicIzq) {
     E.clicIzq = false;
     if (tipo === 'tienda') { comprar(j, bajo); return; }
-    if (ui.der === 'tienda' || ui.izq === 'tienda') { /* con la tienda abierta, clic levanta igual */ }
+    // Shift + clic en una poción de la bolsa: al cinturón
+    if (tipo === 'bolsa' && E.shift && bajo.o.tipo === 'pocion') {
+      const antes = cant(bajo.o);
+      if (alCinturon(j.heroe.d, bajo.o)) { quitar(bajo); Sonido.efecto('click'); }
+      else { if (cant(bajo.o) < antes) Sonido.efecto('click'); cinturonLleno(j); }
+      return;
+    }
     quitar(bajo); ui.mano = bajo.o; Sonido.efecto('click');
+    if (tipo === 'bolsa') levantadoDe(bajo);
   } else if (E.clicDer) {
     E.clicDer = false;
+    if (tipo === 'tienda') { comprar(j, bajo); return; }
     if (tipo === 'bolsa' && (ui.izq === 'tienda')) { quitar(bajo); ui.mano = bajo.o; venderMano(j); return; }
     if (tipo === 'bolsa' && ui.izq === 'cofre') { const p = lugarEn(ui.cofre, bajo.o, COFRE_W, COFRE_H); if (p) { quitar(bajo); ui.cofre.push({ o: bajo.o, x: p[0], y: p[1] }); } return; }
-    if (tipo === 'cofre') { const p = lugarBolsa(j.heroe.d.bolsa, bajo.o); if (p) { quitar(bajo); j.heroe.d.bolsa.push({ o: bajo.o, x: p[0], y: p[1], b: p[2] }); } return; }
+    if (tipo === 'cofre') { if (meterEnBolsa(j.heroe.d, bajo.o)) quitar(bajo); else { Sonido.efecto('negado'); msg(j, ['No tengo lugar.', 'I have no room.'], '#ff8060'); } return; }
     if (tipo !== 'bolsa') return;
     const o = bajo.o;
-    if (o.tipo === 'pocion') { const i = j.heroe.d.cinturon.findIndex((c) => !c); if (i >= 0) { quitar(bajo); j.heroe.d.cinturon[i] = o; } else { quitar(bajo); j.heroe.d.cinturon.push(o); usarPocion(j, j.heroe.d.cinturon.length - 1); j.heroe.d.cinturon.length = 4; } return; }
+    // clic derecho en una poción de la bolsa: tomarse una
+    if (o.tipo === 'pocion') { beberPocion(j, o); if (cant(o) > 1) o.cantidad = cant(o) - 1; else quitar(bajo); return; }
     if (o.base === 'pergamino_portal') { abrirPortal(j); return; }
     if (o.base === 'pergamino_olvido') { quitar(bajo); olvidar(j); return; }
     if (o.tipo === 'thor') { // ponérselo a Thor: lo que tenía vuelve a la bolsa
@@ -517,11 +638,7 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
       if (viejo) { const p = lugarBolsa(todos, viejo); if (p) todos.push({ o: viejo, x: p[0], y: p[1], b: p[2] }); else ui.mano = viejo; }
       return;
     }
-    if (o.tipo === 'equipo') { // equipar rápido
-      const r = baseDe(o)!.ranura; const cas: Casilla = r === 'anillo' ? (j.heroe.d.equipo.anillo1 ? 'anillo2' : 'anillo1') : (r as Casilla);
-      quitar(bajo); ui.mano = o; clicEquipo(j, cas);
-      if (ui.mano === o) { todos.push(bajo); ui.mano = null; } else if (ui.mano) { const p = lugarBolsa(todos, ui.mano); if (p) { todos.push({ o: ui.mano, x: p[0], y: p[1], b: p[2] }); ui.mano = null; } }
-    }
+    if (o.tipo === 'equipo') equiparRapido(j, bajo, todos);
   }
 }
 export function lugarEn(lista: EnBolsa[], o: Objeto, cw: number, ch: number, b = 0): [number, number] | null {
@@ -536,17 +653,28 @@ export function lugarBolsa(lista: EnBolsa[], o: Objeto): [number, number, number
 export function dibujarTooltipObjeto(j: Juego) {
   const e = ui.encima; if (!e || ui.mano) return;
   const h = j.heroe;
-  const l = lineasObjeto(e.o, { nivel: h.d.nivel, fue: h.c.fue, des: h.c.des, clase: h.d.clase, conjuntos: h.c.conjuntos });
+  const l = [...lineasObjeto(e.o, { nivel: h.d.nivel, fue: h.c.fue, des: h.c.des, clase: h.d.clase, conjuntos: h.c.conjuntos }), ...lineaCantidad(e.o)];
   if (e.tienda) { const p = ui.tiendaTipo === 'vidente' ? precioApuesta(e.o) : precioCompra(e.o); l.push([`${T('Precio', 'Price')}: ${p.toLocaleString()} ${T('de oro', 'gold')}`, h.d.oro >= p ? '#e8c050' : '#ff4040']); }
   else if (ui.izq === 'tienda') l.push([`${T('Clic derecho: vender por', 'Right click: sell for')} ${precioVenta(e.o)}`, '#e8c050']);
+  else if (e.bolsa && e.o.tipo === 'equipo' && ui.izq !== 'cofre') l.push([T('Clic derecho o doble clic: equipar', 'Right click or double click: equip'), '#a09070']);
+  else if (e.bolsa && e.o.tipo === 'pocion' && ui.izq !== 'cofre') l.push([T('Shift + clic: al cinturón', 'Shift + click: to belt'), '#a09070']);
   let extra: [string, string][] | undefined;
   if (e.comparar) {
-    const r = baseDe(e.o)?.ranura; const cas = r === 'anillo' ? 'anillo1' : r as Casilla;
+    const cas = casillaPara(j, e.o);
     const actual = cas ? h.d.equipo[cas] : undefined;
+    if (!actual && cas && !Object.values(h.d.equipo).includes(e.o)) extra = [[T('Casilla vacía', 'Empty slot'), '#808080']];
     if (actual && actual !== e.o) {
       extra = [[T('Equipado:', 'Equipped:'), '#808080'], [TT(actual.nombre), colorObj(actual)]];
       if (actual.dano && e.o.dano) { const d = (e.o.dano[0] + e.o.dano[1]) / 2 - (actual.dano[0] + actual.dano[1]) / 2; extra.push([`${T('Daño', 'Damage')} ${d >= 0 ? '+' : ''}${d.toFixed(1)}`, d >= 0 ? '#60ff60' : '#ff6060']); }
       if (actual.def !== undefined && e.o.def !== undefined) { const d = e.o.def - actual.def; extra.push([`${T('Defensa', 'Defense')} ${d >= 0 ? '+' : ''}${d}`, d >= 0 ? '#60ff60' : '#ff6060']); }
+      // las propiedades que cambian (suma de cada stat: lo nuevo menos lo puesto)
+      const suma = (o: Objeto) => { const m = new Map<string, number>(); for (const [k, v] of o.stats) m.set(String(k), (m.get(String(k)) ?? 0) + v); return m; };
+      const a = suma(e.o), b2 = suma(actual);
+      for (const k of new Set([...a.keys(), ...b2.keys()])) {
+        const dv = (a.get(k) ?? 0) - (b2.get(k) ?? 0); if (!dv) continue;
+        extra.push([textoStat(k, dv, IDI), dv > 0 ? '#60ff60' : '#ff6060']);
+        if (extra.length > 14) break;
+      }
     }
   }
   tooltip(l, e.x, e.y, extra);
@@ -788,7 +916,7 @@ export function abrirTienda(j: Juego, tipo: 'herrero' | 'curandera' | 'vidente')
   ui.izq = 'tienda'; ui.der = 'inv';
 }
 const precioCompra = (o: Objeto) => Math.round(o.precio * (o.tipo === 'equipo' ? 1.6 : 1));
-const precioVenta = (o: Objeto) => Math.max(1, Math.round(o.precio * 0.25 * (o.durabMax ? 0.3 + 0.7 * o.durab / o.durabMax : 1)));
+const precioVenta = (o: Objeto) => Math.max(1, Math.round(o.precio * 0.25 * (o.durabMax ? 0.3 + 0.7 * o.durab / o.durabMax : 1))) * cant(o);
 const precioApuesta = (o: Objeto) => Math.round(150 + o.nivel * 90 + (baseDe(o)?.escalon ?? 0) * 800);
 function comprar(j: Juego, b: EnBolsa) {
   const h = j.heroe;
@@ -826,7 +954,7 @@ function panelTienda(j: Juego, x: number, y: number, t: number) {
     if (boton(`${T('Reparar todo', 'Repair all')} (${costo})`, x + 150, y + 44 + 10 * CELDA_INV + 6, 156, 26, { tam: 12, activo: costo > 0 && h.d.oro >= costo })) { if (costo > 0 && h.d.oro >= costo) { h.d.oro -= costo; for (const o of Object.values(h.d.equipo)) if (o) o.durab = o.durabMax; Sonido.efecto('reparar'); recalc(j); } E.clicIzq = false; }
   }
   // cómo se usa la tienda, siempre a la vista
-  texto(ui.tiendaTipo === 'vidente' ? T('Clic izquierdo: apostar por un objeto', 'Left click: gamble for an item') : T('Clic izquierdo: comprar', 'Left click: buy'), x + 18, y + 44 + 10 * CELDA_INV + 44, { tam: 11, color: '#c0b090' });
+  texto(ui.tiendaTipo === 'vidente' ? T('Clic izquierdo: apostar por un objeto', 'Left click: gamble for an item') : T('Clic izquierdo o derecho: comprar', 'Left or right click: buy'), x + 18, y + 44 + 10 * CELDA_INV + 44, { tam: 11, color: '#c0b090' });
   texto(T('Clic derecho en tu bolsa: vender', 'Right click in your bag: sell'), x + 18, y + 44 + 10 * CELDA_INV + 58, { tam: 11, color: '#c0b090' });
   if (ui.mano && dentro(x, y, 320, 432)) texto(T('Clic para vender', 'Click to sell'), x + 160, y + 425, { alin: 'center', tam: 11, color: '#e8c050' });
   if (boton(T('Cerrar', 'Close'), x + 230, y + 395, 76, 26, { tam: 12 })) { ui.izq = null; ui.der = null; E.clicIzq = false; }

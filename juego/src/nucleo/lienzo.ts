@@ -42,7 +42,9 @@ function pos(cx: number, cy: number) {
   E.y = ((cy - r.top) / r.height) * H;
 }
 export function instalarEntrada() {
+  // el menú del navegador no sale nunca: el clic derecho es del juego
   lienzo.addEventListener('contextmenu', (e) => e.preventDefault());
+  window.addEventListener('contextmenu', (e) => e.preventDefault());
   window.addEventListener('mousemove', (e) => { pos(e.clientX, e.clientY); E.shift = e.shiftKey; });
   lienzo.addEventListener('mousedown', (e) => {
     gesto(); pos(e.clientX, e.clientY); E.tactil = false; E.shift = e.shiftKey; E.ctrl = e.ctrlKey;
