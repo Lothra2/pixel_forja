@@ -1,6 +1,7 @@
 // Luces del mundo: cada fuego, proyectil, hechizo y la antorcha del héroe es una luz con color.
 // Sirve para tres cosas: sombras proyectadas de los personajes, reflejo de color en sus cuerpos y destellos.
 import type { Cuadro } from '../motor/assets';
+import { LUZ_EFECTO, intensidadLuz, rgbLuz } from '../../../src/engine/gotico/luz_efectos';
 import { manifiesto, objetoMeta } from '../motor/assets';
 import type { Juego, Ent } from '../juego/mundo';
 import { R } from '../nucleo/azar';
@@ -25,6 +26,8 @@ export interface Luz {
   sinSombra?: boolean;
   /** Identidad estable entre cuadros, para suavizar las sombras. */
   id?: string;
+  /** Prioridad de los poderes (0 imprescindible a 3 adorno): pesa en el tope de luces. */
+  prio?: number;
 }
 
 export const COLOR_ELEM: Record<string, [number, number, number]> = {
@@ -83,14 +86,37 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     // lápidas y les saca sombras largas hacia afuera (con sombra, a propósito)
     if (fa.v !== 'sellada') { const [dx, dy] = aPant(fa.cx + 0.5, fa.cy + 2); const pulso = 0.5 + 0.5 * Math.sin(t * 1.4); L.push({ id: 'puerta', x: dx, y: dy, h: 22, r: 150 + pulso * 25, c: [255, 58, 18], k: 0.8 + pulso * 0.2 }); }
   }
-  // proyectiles: luces que viajan
+  // proyectiles: la luz viaja con ellos (tabla de la Forja: color, radio, curva, parpadeo); un abanico de más de 3 es una sola luz
+  const salvas = new Map<any, { x: number; y: number; n: number; p: any }>();
   for (const p of j.proyectiles) {
-    const [px, py] = aPant(p.x, p.y);
+    const LE = LUZ_EFECTO[p.efecto];
+    if (p.salva && LE?.enVuelo) { const s = salvas.get(p.salva) ?? { x: 0, y: 0, n: 0, p }; s.x += p.x; s.y += p.y; s.n++; salvas.set(p.salva, s); }
+  }
+  const unaPorSalva = new Set<any>();
+  for (const [k, s] of salvas) if (s.n > 3) unaPorSalva.add(k);
+  const hechas = new Set<any>();
+  for (const p of j.proyectiles) {
+    const LE = LUZ_EFECTO[p.efecto];
+    let x = p.x, y = p.y, rk = 1;
+    if (p.salva && unaPorSalva.has(p.salva)) { if (hechas.has(p.salva)) continue; hechas.add(p.salva); const s = salvas.get(p.salva)!; x = s.x / s.n; y = s.y / s.n; rk = 1.3; }
+    const [px, py] = aPant(x, y);
     if (!dentro(px, py, 300)) continue;
+    if (LE) {
+      if (!LE.enVuelo || LE.intensidad <= 0 || LE.radio <= 0) continue;
+      const k = intensidadLuz(p.efecto, (manifiesto().wm?.[p.efecto]?.t ?? 2) / 25, p.t, true) * (1 - (LE.parpadeo ?? 0) * R());
+      if (k <= 0.02) continue;
+      L.push({ id: idDe(p), x: px, y: py, h: Math.max(18, (p.z ?? 0) * 1.2), r: LE.radio * rk, c: rgbLuz(p.efecto), k, sinSombra: !LE.sombra, prio: LE.prioridad ?? 1 });
+      continue;
+    }
     const el = (manifiesto().wm?.[p.efecto]?.elem as string) ?? p.elem;
     const c = COLOR_ELEM[p.elem === 'rayo' || el === 'rayo' ? 'rayo' : p.elem && p.elem !== 'fisico' ? p.elem : el] ?? COLOR_ELEM.fisico;
     const fuerte = el === 'rayo' || p.elem === 'rayo' ? 1.35 : p.arco ? 0.5 : 1;
-    L.push({ id: idDe(p), x: px, y: py, h: Math.max(18, (p.z ?? 0) * 1.2 + 30), r: 200 * fuerte + Math.sin(t * 30 + p.x) * 10, c, k: Math.min(1, 0.85 * fuerte) });
+    L.push({ id: idDe(p), x: px, y: py, h: Math.max(18, (p.z ?? 0) * 1.2 + 30), r: 200 * fuerte * rk + Math.sin(t * 30 + p.x) * 10, c, k: Math.min(1, 0.85 * fuerte), prio: 1 });
+  }
+  // fogonazo en la mano del héroe al lanzar
+  for (const fg of ((j as any).fogonazos ?? []) as { t: number; dur: number; r: number; k: number; id: string }[]) {
+    const q = Math.max(0, 1 - fg.t / fg.dur); if (q <= 0) continue;
+    L.push({ x: hx + 8, y: hy, h: 46, r: fg.r, c: rgbLuz(fg.id), k: fg.k * q, de: h, sinSombra: true, prio: 1 });
   }
   // hechizos y explosiones: luz que se apaga; los impactos dan un destello
   let fl = 0; let flc: [number, number, number] = destelloColor;
@@ -98,6 +124,19 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const [px, py] = aPant(e.x, e.y);
     if (!dentro(px, py, 300)) continue;
     const meta = manifiesto().wm?.[e.id];
+    const LE = LUZ_EFECTO[e.id];
+    if (LE && meta) {
+      // curva por cuadro de la Forja; los de prioridad 0 además dan el destello de pantalla
+      const n = LE.curva.length, fi = Math.floor((e.t * 25) / (meta.t ?? 2));
+      const cv = meta.bucle ? LE.curva[fi % n] : fi < n ? LE.curva[fi] : 0;
+      const k = LE.intensidad * cv * (1 - (LE.parpadeo ?? 0) * R());
+      if (k <= 0.01 || LE.radio <= 0) continue;
+      const esc = e.escala ?? 1, c = rgbLuz(e.id);
+      L.push({ id: idDe(e), x: px, y: py, h: LE.altura * esc + (e.z ?? 0), r: LE.radio * esc, c, k: Math.min(1, k), sinSombra: !LE.sombra, prio: LE.prioridad ?? 2 });
+      if ((LE.prioridad ?? 2) === 0) { const f = k * Math.min(1, esc); if (f > fl) { fl = f; flc = c; } }
+      if (e.id === 'arco_cadena' && (e as any).x2 !== undefined) { const [bx, by] = aPant((e as any).x2, (e as any).y2); L.push({ id: idDe(e) + 'b', x: (px + bx) / 2, y: (py + by) / 2, h: 34, r: LE.radio, c, k: Math.min(1, k), prio: 0, sinSombra: !LE.sombra }); }
+      continue;
+    }
     const c = COLOR_ELEM[meta?.elem ?? (e.id === 'arco_cadena' ? 'rayo' : 'fisico')] ?? COLOR_ELEM.fisico;
     const dur = e.dur ?? 1;
     const k = Math.max(0, 1 - e.t / dur);
@@ -175,9 +214,13 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   // (fuerza por radio y cercanía al centro); las del héroe y las sin id de objeto siempre entran
   if (L.length > 18) {
     const cxp = W / 2, cyp = H * 0.45;
-    const peso = (l: Luz) => (l.de === h || l.id === 'puerta' || l.id?.startsWith('ancla') || l.id?.startsWith('oz') || l.id?.startsWith('ca') || l.id?.startsWith('as') ? 1e9 : (l.k * l.r) / (60 + Math.hypot(l.x - cxp, l.y - cyp)));
+    const PRIO = [4, 2, 1, 0.5];
+    const peso = (l: Luz) => (l.de === h || l.id === 'puerta' || l.id?.startsWith('ancla') || l.id?.startsWith('oz') || l.id?.startsWith('ca') || l.id?.startsWith('as') ? 1e9 : l.prio === 0 && l.k > 0.2 ? 1e8 + l.k : ((l.k * l.r) / (60 + Math.hypot(l.x - cxp, l.y - cyp))) * (l.prio !== undefined ? PRIO[l.prio] : 1));
     L.sort((a, b) => peso(b) - peso(a)); L.length = 18;
   }
+  // como mucho 6 luces de poderes proyectan sombra (las de prioridad 3 nunca)
+  let conSombra = 0;
+  for (const l of L) if (l.prio !== undefined && !l.sinSombra) { if (l.prio >= 3 || conSombra >= 6) l.sinSombra = true; else conSombra++; }
   luces = L;
   destello = Math.max(destello * 0.82, fl); destelloColor = fl > 0 ? flc : destelloColor;
   sol = z.tipo === 'mazmorra' ? 0 : Math.max(0, 0.6 - z.oscuridad);

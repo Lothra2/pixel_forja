@@ -2,6 +2,7 @@
 import { nuevoCuadroSombras } from './luces';
 import { ctx, W, H } from '../nucleo/lienzo';
 import { NPCS } from '../datos/npcs';
+import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto, Mancha } from '../juego/mundo';
 import { CUADROS, DIRS, ZANCADA, ALTO_CLASE } from '../juego/mundo';
@@ -220,11 +221,14 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   if (j.portal && j.portal.destino) dibujarPortal(j, tiempo);
   // poderes y efectos
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  for (const e of j.efectos) dibujarEfecto(e, tiempo);
+  // los de mucha materia (sangre, hueso, humo, flechas) van con alfa normal: sumados se pierden
+  const mezclar = (id: string) => { ctx.globalCompositeOperation = LUZ_EFECTO[id]?.mezcla === 'normal' ? 'source-over' : 'lighter'; };
+  for (const e of j.efectos) { mezclar(e.id); dibujarEfecto(e, tiempo); }
   for (const p of j.proyectiles) {
     const [px, py] = aPant(p.x, p.y);
     if (p.arco) { const [ax, ay] = [px, py - p.z * 1.2]; ctx.fillStyle = p.elem === 'frio' ? '#a0e0ff' : p.elem === 'veneno' ? '#80ff60' : '#ffa040'; ctx.beginPath(); ctx.arc(ax, ay, 4, 0, Math.PI * 2); ctx.fill(); continue; }
     const id = p.efecto;
+    mezclar(id);
     const meta = manifiesto().wm?.[id];
     const d = Math.round(((Math.atan2(p.vy, p.vx) * 180) / Math.PI / 45 + 8) % 8);
     const dname = (['se', 's', 'so', 'o', 'no', 'n', 'ne', 'e'])[d];

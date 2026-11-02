@@ -4,6 +4,7 @@ import { ZONAS, POBL_ZONA, MISIONES, FRASE_JEFE } from '../mundo/actos';
 import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '../datos/monstruos';
 import { HABILIDADES, INVOCADOS, ATAQUE, ESCALA_HECHIZOS, poderNivel, danoInvocadoNivel, type Habilidad } from '../datos/clases';
 import { GENTE, NPCS } from '../datos/npcs';
+import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
 import { calcular, nivelHab, xpPara, recoger, NIVEL_MAX, nivelEnDificultad, cicloExtra, cant, rellenarColumna, type DatosHeroe, type Calc } from './heroe';
 import { botin, crearObjeto, crearUnicoId, legendariaJefe, valorPocion, crearObjetoThor, type Objeto, type Caida } from './objetos';
 import { TALISMAN_JEFE } from '../datos/talismanes';
@@ -630,6 +631,9 @@ export function recalc(j: Juego) {
 
 // ------------------------------------------------------------------ proyectiles
 function disparar(j: Juego, de: Ent, tx: number, ty: number, g: Golpe, efectoId: string, vel: number, o: Partial<Proyectil> = {}) {
+  // fogonazo en la mano del héroe (uno por cuadro aunque sea un abanico)
+  const lz = de === j.heroe ? LUZ_EFECTO[efectoId]?.lanzar : undefined;
+  if (lz) { const fs: any[] = ((j as any).fogonazos ??= []); if (!fs.some((f) => f.t === 0)) fs.push({ t: 0, dur: lz.cuadros / 25, r: lz.radio, k: lz.intensidad, id: efectoId }); }
   const dx = tx - de.x, dy = ty - de.y, l = Math.hypot(dx, dy) || 1;
   j.proyectiles.push({ x: de.x + (dx / l) * 0.5, y: de.y + (dy / l) * 0.5, z: 34, vx: (dx / l) * vel, vy: (dy / l) * vel, vida: o.vida ?? (g.deHeroe ? 2.2 : Math.min(2.2, 11 / vel)), dano: [g.min, g.max], elem: g.elem, deHeroe: g.deHeroe, perfora: false, explota: 0, efecto: efectoId, golpeados: new Set(), buscador: false, radio: 0.5, t: 0, fuente: g.fuente, ...o });
 }
@@ -921,7 +925,7 @@ function resolverHabilidad(j: Juego) {
       }
       if (hb.bonos?.robo_golpe && total > 0) h.vida = Math.min(h.vidaMax, h.vida + total * val(hb.bonos.robo_golpe, n) / 100);
       if (hb.id === 'corte_sello' && total > 0) { h.buffs.aura_avivada = { t: val(hb.duracion, n), bonos: { potencia_aura: val(hb.bonos?.potencia_aura, n) }, hab: 'corte_sello' }; recalc(j); }
-      if (!basico && hb.efecto) efecto(j, efectoDe(hb.efecto, hb.elem), obj.x, obj.y, efectoDir);
+      if (!basico && hb.efecto) efecto(j, efectoDe(hb.efecto, hb.elem, hb), obj.x, obj.y, efectoDir);
       if (hb.explota) { j.areas.push({ x: obj.x, y: obj.y, radio: hb.explota, dano: [dh[0] * kRem, dh[1] * kRem], elem: hb.elem, t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: '', retraso: 0 }); efecto(j, hb.elem === 'luz' ? 'castigo' : hb.elem === 'rayo' ? 'trueno' : hb.elem === 'fisico' ? 'onda_aterrizaje' : 'explosion_fuego', obj.x, obj.y, 0, hb.explota / 2); }
       if (remate) rematar(j, obj.x, obj.y, hb, mult);
       break;
@@ -947,7 +951,7 @@ function resolverHabilidad(j: Juego) {
         const a = cnt === 1 ? base : circ ? base + (k / cnt) * Math.PI * 2 : base - abanico / 2 + (abanico * k) / (cnt - 1);
         const g: Golpe = hb.mult ? golpeArma(j, mult, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? dh : undefined) : { min: dh[0], max: dh[1], elem: hb.elem, deHeroe: true, fuente: h, sinFallo: true };
         if (prec && g.precision !== undefined) g.precision += prec;
-        disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, g, efectoDe(hb.efecto, hb.elem), hb.vel ?? 12, { perfora: !!hb.perfora || R() * 100 < h.c.perforar, explota: hb.explota ?? 0, buscador: !!hb.buscador, hab: hb, nivelHab: n, vida: hb.id === 'martillo_bendito' ? 2.4 : hb.id === 'orbe_glacial' ? 1.4 : 1.6, rebota: hb.id === 'chispa' ? 1 : 0, salva });
+        disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, g, efectoDe(hb.efecto, hb.elem, hb, true), hb.vel ?? 12, { perfora: !!hb.perfora || R() * 100 < h.c.perforar, explota: hb.explota ?? 0, buscador: !!hb.buscador, hab: hb, nivelHab: n, vida: hb.id === 'martillo_bendito' ? 2.4 : hb.id === 'orbe_glacial' ? 1.4 : 1.6, rebota: hb.id === 'chispa' ? 1 : 0, salva });
       }
       break;
     }
@@ -956,7 +960,7 @@ function resolverHabilidad(j: Juego) {
       let d0: [number, number] = dh, congela = 0;
       if (hb.mult) { const fu = h.furia; h.furia = 0; const g = golpeArma(j, mult * (1 + fu / 50)); d0 = [g.min, g.max]; }
       if (hb.id === 'edad_hielo') { const u = gastarCargas(h, 'frio').length; d0 = [d0[0] * (1 + 0.35 * u), d0[1] * (1 + 0.35 * u)]; congela = 2 + 0.6 * u; }
-      efecto(j, efectoDe(hb.efecto, hb.elem), h.x, h.y, 0, r / 4);
+      efecto(j, efectoDe(hb.efecto, hb.elem, hb), h.x, h.y, 0, r / 4);
       let total = 0;
       for (const e of enRadio(j, h.x, h.y, r)) {
         total += danar(j, e, { ...golpeSimple(j, d0, hb.elem), aturdir: hb.bonos?.aturdir ? 60 : 0 });
@@ -1054,11 +1058,11 @@ function resolverHabilidad(j: Juego) {
         const roca = hb.efecto === 'meteoro';
         for (let k = 0; k < cn; k++) {
           const a = R() * Math.PI * 2, rr = R() * r * 0.85;
-          golpeArea(ax + Math.cos(a) * rr, ay + Math.sin(a) * rr, roca ? 2 : 1.6, dh, roca ? 'crater_ardiente' : efectoDe(hb.efecto, hb.elem), (roca ? 0.4 : 0.05) + k * (roca ? 0.25 : 0.15), hb.elem, roca);
+          golpeArea(ax + Math.cos(a) * rr, ay + Math.sin(a) * rr, roca ? 2 : 1.6, dh, roca ? 'crater_ardiente' : efectoDe(hb.efecto, hb.elem, hb), (roca ? 0.4 : 0.05) + k * (roca ? 0.25 : 0.15), hb.elem, roca);
         }
         break;
       }
-      j.areas.push({ x: ax, y: ay, radio: r, dano: [dh[0] / Math.max(1, dur * 2), dh[1] / Math.max(1, dur * 2)], elem: hb.elem, t: 0, dur, tick: 0.5, prox: 0, deHeroe: true, efecto: efectoDe(hb.efecto, hb.elem), retraso: 0.1 });
+      j.areas.push({ x: ax, y: ay, radio: r, dano: [dh[0] / Math.max(1, dur * 2), dh[1] / Math.max(1, dur * 2)], elem: hb.elem, t: 0, dur, tick: 0.5, prox: 0, deHeroe: true, efecto: efectoDe(hb.efecto, hb.elem, hb), retraso: 0.1 });
       break;
     }
     case 'cadena': {
@@ -1132,7 +1136,7 @@ function resolverHabilidad(j: Juego) {
       }
       if (hb.id === 'caceria_salvaje') for (const e of enRadio(j, h.x, h.y, hb.radio ?? 9)) e.marca = Math.max(e.marca ?? 0, dur);
       h.buffs[hb.id] = { t: dur, bonos, hab: hb.id };
-      efecto(j, efectoDe(hb.efecto, hb.elem), h.x, h.y, 0, 1);
+      efecto(j, efectoDe(hb.efecto, hb.elem, hb), h.x, h.y, 0, 1);
       recalc(j);
       break;
     }
@@ -1190,7 +1194,7 @@ function resolverHabilidad(j: Juego) {
     }
     case 'trampa': {
       const minaR = hb.explota;
-      const nueva = (x: number, y: number, elem: Elemento = hb.elem, ef = efectoDe(hb.efecto, hb.elem)): Torreta => ({ x, y, t: 0, dur: val(hb.duracion, n), dano: dh, cd: 0.5, hab: hb.id, elem, mina: minaR, raiz: !!hb.bonos?.congelar, efecto: ef });
+      const nueva = (x: number, y: number, elem: Elemento = hb.elem, ef = efectoDe(hb.efecto, hb.elem, hb)): Torreta => ({ x, y, t: 0, dur: val(hb.duracion, n), dano: dh, cd: 0.5, hab: hb.id, elem, mina: minaR, raiz: !!hb.bonos?.congelar, efecto: ef });
       if (hb.id === 'coto_caza') {
         j.torretas = j.torretas.filter((t) => t.hab !== hb.id);
         const cn = Math.round(val(hb.n, n));
@@ -1217,13 +1221,17 @@ function resolverHabilidad(j: Juego) {
 }
 const EFECTOS: Record<string, string> = {
   fuego: 'saeta_fuego', fuego_grande: 'bola_fuego', hielo: 'saeta_hielo', orbe_hielo: 'saeta_hielo', chispa: 'chispa_cargada', rayo: 'relampago', hueso: 'lanza_hueso',
-  luz: 'castigo', columna_luz: 'pilar_luz', veneno: 'nova_veneno', nube_veneno: 'nube_veneno', flecha: 'flecha', virote: 'flecha', llamas_suelo: 'muro_llamas', ventisca: 'ventisca',
+  luz: 'castigo', columna_luz: 'pilar_luz', veneno: 'nova_veneno', nube_veneno: 'nube_veneno', flecha: 'flecha', virote: 'virote', llamas_suelo: 'muro_llamas', ventisca: 'ventisca',
   nova_hielo: 'nova_escarcha', nova_viento: 'tornado', onda: 'grito_guerra', polvo: 'onda_aterrizaje', tajo: 'chispas_carne', sangre: 'salpicadura_sangre', meteoro: 'meteoro',
   martillo: 'castigo', jabalina: 'chispa_cargada', viento: 'tornado', tornado: 'tornado', torbellino: 'torbellino', cadaver: 'estallido_cadaver', invocar: 'circulo_invocacion',
-  aura_roja: 'aura_sagrada', aura_azul: 'escudo_divino', aura_gris: 'escudo_divino', aura_verde: 'chispas_curacion', aura_fuego: 'aura_sagrada', aura_morada: 'aura_sagrada', huesos_giran: 'prision_hueso', raices: 'estallido_enredaderas',
-  maldicion: 'prision_hueso', lluvia_flechas: 'lluvia_flechas', cuervos: 'tajo_garras',
+  aura_roja: 'aura_furia', aura_azul: 'escudo_divino', aura_gris: 'escudo_divino', aura_verde: 'chispas_curacion', aura_fuego: 'aura_furia', aura_morada: 'aura_sagrada', huesos_giran: 'prision_hueso', raices: 'estallido_enredaderas',
+  maldicion: 'maldicion_sombra', lluvia_flechas: 'lluvia_flechas', cuervos: 'tajo_garras',
 };
-export function efectoDe(e: string, elem: Elemento): string {
+export function efectoDe(e: string, elem: Elemento, hb?: Habilidad, proyectil = false): string {
+  if (hb?.id === 'marea_roja' || hb?.id === 'rio_carmesi') return 'nova_sangre';
+  // proyectiles de luz o martillo y de veneno: las saetas nuevas de la Forja
+  if (proyectil && (e === 'luz' || e === 'martillo')) return 'saeta_sagrada';
+  if (proyectil && e === 'veneno') return 'saeta_veneno';
   if (e === 'flecha' && elem === 'fuego') return 'flecha_fuego';
   if (e === 'flecha' && elem === 'frio') return 'flecha_hielo';
   return EFECTOS[e] ?? e;
@@ -1236,6 +1244,7 @@ function masCercano(j: Juego, x: number, y: number, r: number, salvo: Set<number
 
 // ------------------------------------------------------------------ actualización
 export function actualizar(j: Juego, dt: number) {
+  { const fs: any[] = (j as any).fogonazos; if (fs?.length) { for (const f of fs) f.t += dt; (j as any).fogonazos = fs.filter((f) => f.t < f.dur); } }
   j.t += dt;
   const h = j.heroe;
   actualizarHeroe(j, dt);
@@ -1567,7 +1576,7 @@ function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
   if (m.objetivo) pelear(j, m, m.objetivo, dt, lento);
 }
 
-function efectoProy(p: string) { return p === 'fuego' ? 'saeta_fuego' : p === 'hielo' ? 'saeta_hielo' : p === 'veneno' ? 'nova_veneno' : p === 'sombra' ? 'lanza_hueso' : p === 'luz' ? 'castigo' : p === 'lanza' ? 'flecha' : 'flecha'; }
+function efectoProy(p: string) { return p === 'fuego' ? 'saeta_fuego' : p === 'hielo' ? 'saeta_hielo' : p === 'veneno' ? 'saeta_veneno' : p === 'sombra' ? 'lanza_hueso' : p === 'luz' ? 'saeta_sagrada' : p === 'lanza' ? 'flecha' : 'flecha'; }
 
 function pelear(j: Juego, m: Monstruo, obj: Ent, dt: number, lento: number) {
   const d = dist(m.x, m.y, obj.x, obj.y);
@@ -1687,15 +1696,21 @@ function actualizarProyectiles(j: Juego, dt: number) {
         if (p.deHeroe && p.hab?.bonos?.marca && e.tipo === 'monstruo') (e as Monstruo).marca = Math.max((e as Monstruo).marca ?? 0, val(p.hab.bonos.marca, p.nivelHab ?? 1));
         danar(j, e, g);
         if (p.explota) { explotar(j, p); p.vida = 0; break; }
-        if (!p.perfora) { p.vida = 0; efecto(j, p.elem === 'fuego' ? 'explosion_fuego' : p.elem === 'frio' ? 'estallido_esquirlas' : p.elem === 'fisico' ? 'chispas_carne' : 'chispas_metal', p.x, p.y, 0, 0.5); break; }
+        if (!p.perfora) { p.vida = 0; efecto(j, impactoDe(p), p.x, p.y, 0, 0.5); break; }
       }
     }
   }
   j.proyectiles = j.proyectiles.filter((p) => p.vida > 0);
 }
+/** Qué efecto suelta un proyectil al pegar: el que sugiere la tabla de luces de la Forja, o uno por elemento. */
+function impactoDe(p: Proyectil): string {
+  const sug = LUZ_EFECTO[p.efecto]?.impacto; if (sug) return sug;
+  const IMP: Partial<Record<Elemento, string>> = { fuego: 'explosion_fuego', frio: 'estallido_esquirlas', fisico: 'chispas_carne', rayo: 'impacto_rayo', veneno: 'impacto_veneno', luz: 'impacto_sagrado', sangre: 'salpicadura_sangre' };
+  return /hueso/.test(p.efecto) ? 'impacto_hueso' : IMP[p.elem] ?? 'chispas_metal';
+}
 function explotar(j: Juego, p: Proyectil) {
   const r = p.explota || 1.5;
-  efecto(j, p.elem === 'frio' ? 'nova_escarcha' : p.elem === 'veneno' ? 'nube_veneno' : 'explosion_fuego', p.x, p.y, 0, r / 2);
+  efecto(j, p.elem === 'frio' ? 'nova_escarcha' : p.elem === 'veneno' ? 'nube_veneno' : p.elem === 'rayo' ? 'impacto_rayo' : 'explosion_fuego', p.x, p.y, 0, r / 2);
   for (const e of enemigosDe(j, p.deHeroe)) if (dist(e.x, e.y, p.x, p.y) < r + e.radio) {
     danar(j, e, { min: p.dano[0], max: p.dano[1], elem: p.elem, deHeroe: p.deHeroe, fuente: p.deHeroe ? j.heroe : undefined, sinFallo: true });
     if (p.hab?.bonos?.miedo && !esJefe(e)) e.miedo = val(p.hab.duracion, p.nivelHab ?? 1);
