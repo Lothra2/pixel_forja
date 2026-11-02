@@ -285,31 +285,35 @@ function campanero(c: Ctx): Res {
   for (const k of [-1, 0, 1]) ps.push(palo(fin, add(add(fin, [0, 0, -2.6 * S]), lat(fw), k * 1.4 * S), 0.55 * S, { mat: 'm67_soga', r1: 0.15 * S }));
   ps.push(...alga(cabo[3], add(fw, [0, 0, -1]), 7 * S, 0.7 * S, w, 3, true));
   // ---- la campanita en la derecha: el mango en el puño y la campana más allá de los nudillos
-  const b = e.brazos[0], ax = ejeMano(c, acc === 'atacar' ? 10 : 18), so = lat(ax), so2 = cruz(ax, so);
+  const b = e.brazos[0], ax = ejeMano(c, acc === 'atacar' ? 25 : 40), so = lat(ax), so2 = cruz(ax, so);
   const at = (k: number) => add(b.mano, ax, k * S);
-  ps.push(palo(at(-2.6), at(2.4), 0.75 * S, { mat: 'madera_vieja' }), esfera(...at(-2.9), 1.1 * S, { mat: 'm67_bronce' }));
-  const bell: Comp[] = [bulto(at(3.6), [1.3 * S, 1.8 * S, 1.8 * S], { eje: ax, mat: 'm67_bronce' }), hueso(at(4), at(7.4), 2.6 * S, 3.3 * S, { mat: 'm67_bronce' }), hueso(at(7.4), at(9.4), 3.3 * S, 4.4 * S, { mat: 'm67_bronce' }), bulto(at(9.3), [0.9 * S, 4.7 * S, 4.7 * S], { eje: ax, mat: 'm67_bronce', tono: 0.06 })];
-  ps.push(masa(bell, { mat: 'm67_bronce', suave: 0.9 }));
-  ps.push(elipE(at(9.9), ax, [2.2 * S, 3.6 * S, 3.6 * S], 'm67_bronce', 0, so));
-  ps[ps.length - 1] = { ...ps[ps.length - 1], resta: true } as Pieza;
+  ps.push(palo(at(-2.4), at(3), 0.75 * S, { mat: 'madera_vieja' }), esfera(...at(-2.7), 1.1 * S, { mat: 'm67_bronce_vivo' }));
+  // la campana: cabeza chica, hombro, cuerpo que se abre y el labio grueso; la boca hueca con el badajo
+  const bell: Comp[] = [bulto(at(3.6), [1.2 * S, 2.3 * S, 2.3 * S], { eje: ax, mat: 'm67_bronce' }), hueso(at(4), at(8.2), 2.6 * S, 3.4 * S, { mat: 'm67_bronce' }), hueso(at(8.2), at(10.6), 3.4 * S, 5.4 * S, { mat: 'm67_bronce' }), bulto(at(10.6), [0.95 * S, 5.6 * S, 5.6 * S], { eje: ax, mat: 'm67_bronce_vivo', tono: -0.08 })];
+  ps.push(masa(bell, { mat: 'm67_bronce', suave: 0.7 }));
+  ps.push({ ...elipE(at(11.6), ax, [3 * S, 4.6 * S, 4.6 * S], 'm67_bronce', 0, so), resta: true } as Pieza);
+  ps.push(elipE(at(8.4), ax, [0.5 * S, 2.6 * S, 2.6 * S], 'm67_agua_negra', 0, so));
   // el badajo que golpea adentro
   const bad = (acc === 'atacar' ? K([0, 0, 0.5, 1, -1, -0.6, 0.3, 0], f) : Math.sin(w * 2)) * 1.6 * S;
-  ps.push(palo(at(5), add(at(8.6), so, bad), 0.4 * S, { mat: 'm67_hierro_mar' }), esfera(...add(at(8.8), so, bad), 1.15 * S, { mat: 'm67_bronce_vivo' }));
-  ps.push(...costra(add(at(6.6), so2, 3.1 * S), so2, 0.8 * S, 3, 41));
-  ps.push(esfera(...add(at(7.8), so, -3.6 * S), 0.8 * S, { mat: 'm67_bio' }), esfera(...add(at(6.2), so2, -3 * S), 0.65 * S, { mat: 'm67_bio' }));
+  ps.push(palo(at(8.4), add(at(10.6), so, bad), 0.45 * S, { mat: 'm67_hierro_mar' }), esfera(...add(at(10.9), so, bad), 1.3 * S, { mat: 'm67_bronce_vivo' }));
+  ps.push(...costra(add(at(7), so2, 3.2 * S), so2, 0.8 * S, 3, 41));
+  ps.push(esfera(...add(at(8.6), so, -3.8 * S), 0.8 * S, { mat: 'm67_bio' }), esfera(...add(at(6.6), so2, -3.2 * S), 0.65 * S, { mat: 'm67_bio' }));
   // ---- percebes en el hombro izquierdo y la espalda; ampollas de ahogado; agua de mar que gotea
   const hi = e.brazos[1].hom;
   ps.push(...costra(add(hi, up, 1.6 * S), nor(add(up, sub(hi, e.T(0, 0, e.hombroZ)), 0.1)), 0.95 * S, 5, 7, 2));
   const [pe, ne] = enTorso(c, 200, 12, 1.2);
   ps.push(...costra(pe, ne, 1 * S, 6, 13, 3));
   for (const [ang, z] of [[30, 6], [-40, 3], [160, 4]] as [number, number][]) { const [q, nq] = enTorso(c, ang, z, 0.8); ps.push(elipE(q, nq, [0.9 * S, 1.3 * S, 1.3 * S], 'm67_piel_ahogada', 0.12)); }
-  ps.push(...gotas(c, e.cab(3 * H, 0, e.cz - 4.4 * H), 2, 5), ...gotas(c, at(10), 2, 9));
+  ps.push(...gotas(c, e.cab(3 * H, 0, e.cz - 4.4 * H), 2, 5), ...gotas(c, at(11), 2, 9));
+  // el pelo: hebras de algas pegadas al cráneo pelado; manchas de lividez en el vientre y los costados
+  for (let k = 0; k < 7; k++) { const [q, nq] = enCabeza(c, 120 + k * 22, 1.4 + (k % 2) * 1.2, 4); ps.push(...alga(q, add(nq, [0, 0, -0.6]), (7 + hr(k) * 6) * S, 0.75 * S, w + k, k * 3, k === 2 || k === 5)); }
+  for (const [ang, z] of [[50, 3], [-70, 7], [110, 9], [-150, 4]] as [number, number][]) { const [q, nq] = enTorso(c, ang, z, 1.4); ps.push(elipE(q, [0, 0, 1], [2.6 * S, 2 * S, 0.5 * S], 'm67_lividez', 0, cruz(nq, [0, 0, 1]))); }
   // ---- el tañido: al pegar la campana suelta ondas de luz de mar
   let resplandor: Res['resplandor'] = c.muerte < 0.8 ? { c: e.cab(4 * H, 0, e.cz), r: 12 * S, color: '#58d0b8' } : undefined;
   if (acc === 'atacar' && f >= 4 && f <= 6) {
     const k = (f - 3) / 3;
-    for (let j = 0; j < 2; j++) ps.push(...aro(at(10), (4 + k * 10 + j * 5) * S, ax, 'm67_bio', -0.1 - k * 0.3 - j * 0.15, 0.7 * S, 0.25, j * 9));
-    resplandor = { c: at(10), r: 26 * S, color: '#6ae8cc' };
+    for (let j = 0; j < 3; j++) ps.push(...aro(at(11 + j * 1.5), (6 + k * 4 + j * 3) * S, ax, 'm67_bio', -0.05 - k * 0.25 - j * 0.12, 1.1 * S, 0.3, j * 9 + f));
+    resplandor = { c: at(11), r: 26 * S, color: '#6ae8cc' };
   }
   return { piezas: ps, resplandor };
 }
@@ -746,8 +750,8 @@ const guardianEq: Equipo = (() => {
 export const MONSTRUOS67: Monstruo67[] = [
   {
     id: 'ahogado_campanero', nombre: ['Ahogado campanero', 'Drowned bell-ringer'], descripcion: ['Hinchado y pálido, con la soga de la campana al cuello; pega con una campanita de mano.', 'Bloated and pale, the bell rope still round its neck; strikes with a hand bell.'],
-    cuerpo: { alto: 1.04, ancho: 1.24, musculo: 0.15, grasa: 1, piel: 'm67_piel_ahogada', parches: 'm67_lividez', ojos: 'm67_ojo_mar', boca: 'fauces', joroba: 0.45, cabeza: 1.12, pelo: 'm67_alga', peinado: 'largo' },
-    equipo: { torso: { tipo: 'sin_mangas', mat: 'm67_tela_ahogada' }, piernas: { tipo: 'faldon', mat: 'm67_tela_ahogada', mat2: 'm67_tela_ahogada' }, cinturon: { mat: 'm67_soga', hebilla: 'm67_bronce' }, arma: { tipo: 'puno' } },
+    cuerpo: { alto: 1.04, ancho: 1.26, musculo: 0.1, grasa: 1, piel: 'm67_piel_ahogada', ojos: 'm67_ojo_mar', boca: 'fauces', joroba: 0.45, cabeza: 1.12, peinado: 'calvo' },
+    equipo: { piernas: { tipo: 'faldon', mat: 'm67_tela_ahogada', mat2: 'm67_tela_ahogada' }, cinturon: { mat: 'm67_soga', hebilla: 'm67_bronce' }, arma: { tipo: 'puno' } },
     extra: campanero,
   },
   {
