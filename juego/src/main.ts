@@ -138,6 +138,20 @@ async function empezarPartida(d: DatosHeroe) {
 
 // ------------------------------------------------------------------ control del héroe
 let mantenerT = 0, derT = 0;
+/** El clic izquierdo sostenido empezó sobre un monstruo: si ese muere, sigue con el que esté bajo el cursor. */
+let mantenerMonstruo = false;
+/** Colchón de entrada: un clic de habilidad durante un golpe o un hechizo se guarda y sale apenas termina la animación. */
+let colchon: { lado: 'izq' | 'der'; x: number; y: number; obj: Monstruo | null; t: number } | null = null;
+const COLCHON_T = 0.3;
+const ocupado = (jj: Juego) => jj.heroe.acc === 'atacar' || jj.heroe.acc === 'lanzar';
+/** Golpe o habilidad en el sitio hacia el cursor (clic derecho o Shift + clic izquierdo). Si está ocupado, va al colchón. */
+function enSitio(jj: Juego, lado: 'izq' | 'der', x: number, y: number, obj: Monstruo | null, guardar: boolean) {
+  const h = jj.heroe;
+  if (usarHabilidad(jj, h.d[lado], x, y, obj, true)) { colchon = null; return; }
+  if (guardar && ocupado(jj)) colchon = { lado, x, y, obj, t: COLCHON_T };
+}
+/** Arrastrar y soltar: dónde se agarró lo que está en la mano (si el botón sigue apretado). */
+let arrastre: { x: number; y: number } | null = null;
 function encimaDe(): Pick | null {
   let best: Pick | null = null;
   // las etiquetas del botín ganan: si el nombre está a la vista, el clic es para recogerlo (antes un monstruo detrás se lo robaba)
@@ -189,14 +203,25 @@ function controlar(jj: Juego, dt: number) {
   pickEncima = ui.sobreUI ? null : encimaDe();
   const [mx, my] = aMundo(E.x, E.y);
   // soltar lo que tengo en la mano al piso
+  // soltar un arrastre fuera de los paneles no hace nada (ni camina ni tira el objeto al piso)
+  if ((ui as any).clicSoltar && E.clicIzq) E.clicIzq = false;
   if (E.clicIzq && ui.mano && !ui.sobreUI) { jj.suelo.push({ o: ui.mano, oro: 0, x: h.x + 0.6, y: h.y + 0.6, t: 0, id: Date.now() }); ui.mano = null; E.clicIzq = false; return; }
+  // el colchón: lo que se pidió durante la animación sale apenas termina (y espera un poquito más por si acaso)
+  if (colchon && !h.muerto) {
+    if (!ocupado(jj)) {
+      const c = colchon; c.t -= dt;
+      if (usarHabilidad(jj, h.d[c.lado], c.x, c.y, c.obj && !c.obj.muerto ? c.obj : null, true) || c.t <= 0) colchon = null;
+    }
+  }
   if (!ui.sobreUI) {
+    if (E.clicIzq && !E.shift) colchon = null;
     if (E.clicIzq) {
-      mantenerT = 0;
+      mantenerT = 0; mantenerMonstruo = false;
       h.objetivo = null; h.recoger = null; h.hablar = null; h.usar = null; (h as any).salida = null; (h as any).portal = false;
       const p = pickEncima;
-      if (E.shift) { usarHabilidad(jj, h.d.izq, mx, my, p?.tipo === 'monstruo' ? p.ref : null); }
-      else if (p?.tipo === 'monstruo') h.objetivo = p.ref as Monstruo;
+      // Shift + clic: atacar en el sitio hacia el cursor, sin caminar
+      if (E.shift) { h.camino = null; h.destino = null; enSitio(jj, 'izq', mx, my, p?.tipo === 'monstruo' ? p.ref as Monstruo : null, true); }
+      else if (p?.tipo === 'monstruo') { h.objetivo = p.ref as Monstruo; mantenerMonstruo = true; }
       else if (p?.tipo === 'npc') h.hablar = p.ref as Npc;
       else if (p?.tipo === 'suelo') h.recoger = p.ref as Suelo;
       else if (p?.tipo === 'objeto') h.usar = p.ref as ObjZ;
@@ -206,19 +231,22 @@ function controlar(jj: Juego, dt: number) {
       if (h.recoger || h.usar || h.hablar || (h as any).salida || (h as any).portal) { const r = h.recoger ?? h.usar ?? h.hablar ?? (h as any).salida; if ((h as any).portal) { const pp = jj.zona.tipo === 'pueblo' ? jj.zona.entradas.portal : [jj.portal!.x, jj.portal!.y]; caminarA(jj, pp[0], pp[1]); } else caminarA(jj, (r.x ?? r.cx + 0.5), (r.y ?? r.cy + 0.5)); }
     } else if (E.izq && !h.objetivo && !h.recoger && !h.usar && !h.hablar && !(h as any).salida) {
       mantenerT += dt;
-      if (E.shift) { usarHabilidad(jj, h.d.izq, mx, my, null); }
+      const bajoCursor = pickEncima?.tipo === 'monstruo' ? pickEncima.ref as Monstruo : null;
+      if (E.shift) enSitio(jj, 'izq', mx, my, bajoCursor, false);
+      // sostener sobre un monstruo encadena golpes: si el primero cae, sigue con el que esté bajo el cursor
+      else if (mantenerMonstruo && bajoCursor) h.objetivo = bajoCursor;
       else if (mantenerT > 0.12) { mantenerT = 0; caminarA(jj, mx, my); }
     }
-    // botón derecho: la habilidad derecha
-    if (E.der) {
+    // botón derecho: la habilidad derecha (o el ataque básico) en el sitio hacia el cursor, sin caminar
+    // (un clic muy rápido puede bajar y subir en el mismo cuadro: el clic cuenta igual)
+    if (E.der || E.clicDer) {
       derT -= dt;
       if (E.clicDer || derT <= 0) {
         derT = 0.05;
         const p = pickEncima;
-        const hb = habilidadDe(h.d.der);
         const obj = p?.tipo === 'monstruo' ? (p.ref as Monstruo) : null;
-        if (hb.tipo === 'golpe' && !(h.d.der === 'ataque' && h.c.distancia)) { if (obj) { h.objetivo = obj; (h as any).usarDer = true; } }
-        else usarHabilidad(jj, h.d.der, obj ? obj.x : mx, obj ? obj.y : my, obj);
+        if (E.clicDer) { h.objetivo = null; (h as any).usarDer = false; h.camino = null; h.destino = null; }
+        enSitio(jj, 'der', obj ? obj.x : mx, obj ? obj.y : my, obj, E.clicDer);
       }
     } else (h as any).usarDer = false;
   }
@@ -463,8 +491,14 @@ function paso(dt: number) {
       if (ui.mapa) dibujarMapa(jj, true); else dibujarMapa(jj, false);
       dibujarArriba(jj, pickEncima?.tipo === 'monstruo' ? pickEncima.ref : null);
       ui.sobreUI = false;
+      // arrastrar y soltar: si se agarró algo con el botón apretado y se suelta en otro lado, cuenta como clic ahí
+      (ui as any).clicSoltar = false;
+      if (E.soltoIzq && arrastre && ui.mano && Math.hypot(E.x - arrastre.x, E.y - arrastre.y) > 10) { E.clicIzq = true; (ui as any).clicSoltar = true; }
+      if (E.soltoIzq || !ui.mano) arrastre = null;
+      const clicAntes = E.clicIzq, manoAntes = ui.mano;
       dibujarPaneles(jj, tiempo);
       dibujarBarra(jj, tiempo);
+      if (clicAntes && !manoAntes && ui.mano && E.izq && !E.soltoIzq) arrastre = { x: E.x, y: E.y };
       if (!jj.heroe.muerto) controlar(jj, dt); else { dibujarMuerte(); controlar(jj, dt); }
       dibujarTooltipObjeto(jj);
       if (pickEncima && !ui.sobreUI) etiquetaPick(jj, pickEncima);

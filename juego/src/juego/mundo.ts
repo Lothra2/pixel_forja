@@ -4,7 +4,7 @@ import { ZONAS, POBL_ZONA, MISIONES, FRASE_JEFE } from '../mundo/actos';
 import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '../datos/monstruos';
 import { HABILIDADES, INVOCADOS, ATAQUE, ESCALA_HECHIZOS, poderNivel, danoInvocadoNivel, type Habilidad } from '../datos/clases';
 import { GENTE } from '../datos/npcs';
-import { calcular, nivelHab, xpPara, recoger, NIVEL_MAX, nivelEnDificultad, type DatosHeroe, type Calc } from './heroe';
+import { calcular, nivelHab, xpPara, recoger, NIVEL_MAX, nivelEnDificultad, cant, rellenarColumna, type DatosHeroe, type Calc } from './heroe';
 import { botin, crearObjeto, crearUnicoId, legendariaJefe, valorPocion, crearObjetoThor, type Objeto, type Caida } from './objetos';
 import { TALISMAN_JEFE } from '../datos/talismanes';
 import type { Elemento } from './tipos_objetos';
@@ -604,7 +604,11 @@ const rangoMelee = (h: Heroe) => (h.c.tipoArma === 'lanza' || h.c.tipoArma === '
 export const esDistancia = (j: Juego, hb: Habilidad) => hb.tipo !== 'golpe' && hb.tipo !== 'salto' && hb.tipo !== 'carga' && hb.tipo !== 'torbellino' ? true : false;
 
 /** Intenta usar una habilidad hacia (tx,ty) / objetivo. Devuelve si empezó la acción. */
-export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj: Monstruo | null): boolean {
+/**
+ * Usa una habilidad hacia (tx, ty). Con alAire (clic derecho o Shift + clic) un golpe cuerpo a cuerpo se da en el sitio:
+ * le pega a quien esté al alcance hacia el cursor, o al aire si no hay nadie, sin caminar.
+ */
+export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj: Monstruo | null, alAire = false): boolean {
   const h = j.heroe;
   if (h.muerto || h.acc === 'atacar' || h.acc === 'lanzar' || h.salto) return false;
   if (j.zona.tipo === 'pueblo') return false;
@@ -631,8 +635,22 @@ export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj:
   if (h.mana < costo) { if ((h.avisos.mana ?? -99) < j.t - 1.5) { h.avisos.mana = j.t; sonar(j, 'mana_falta'); msg(j, ['No tengo suficiente maná.', 'Not enough mana.'], '#8080ff'); } return false; }
   const melee = hb.tipo === 'golpe' && !(basico && h.c.distancia);
   if (melee) {
-    if (!obj) return false;
-    if (dist(h.x, h.y, obj.x, obj.y) > rangoMelee(h) + obj.radio) return false;
+    const alcanza = (m: Monstruo) => dist(h.x, h.y, m.x, m.y) <= rangoMelee(h) + m.radio;
+    if (alAire) {
+      if (obj && !alcanza(obj)) obj = null;
+      // sin nadie bajo el cursor: el enemigo al alcance más cercano a la dirección del cursor
+      if (!obj) {
+        const a0 = Math.atan2(ty - h.y, tx - h.x); let mejor = 1.1;
+        for (const m of j.monstruos) {
+          if (m.muerto || m.dueno || m.estado === 'surgir' || !alcanza(m)) continue;
+          let da = Math.abs(Math.atan2(m.y - h.y, m.x - h.x) - a0); if (da > Math.PI) da = Math.PI * 2 - da;
+          if (da < mejor) { mejor = da; obj = m; }
+        }
+      }
+    } else {
+      if (!obj) return false;
+      if (!alcanza(obj)) return false;
+    }
   }
   if (hb.id === 'golpe_escudo' && !h.d.equipo.izq) { aviso(j, ['Necesito un escudo.', 'I need a shield.']); return false; }
   h.mana -= costo;
@@ -1603,32 +1621,36 @@ export function caminarA(j: Juego, x: number, y: number) {
   h.camino = buscarCamino(j.zona, h.x, h.y, x, y, 2500);
   h.destino = [x, y];
 }
-export function usarPocion(j: Juego, i: number) {
+/** El efecto de tomarse una poción (del cinturón o de la bolsa). */
+export function beberPocion(j: Juego, o: Objeto) {
   const h = j.heroe; if (h.muerto) return;
-  const o = h.d.cinturon[i]; if (!o) return;
   const v = valorPocion(o);
   if (o.pocion === 'vida') { (h as any).curando = { t: 4, v: v / 4 }; }
   else if (o.pocion === 'mana') { (h as any).cargando = { t: 3, v: v / 3 }; }
   else { h.vida = Math.min(h.vidaMax, h.vida + h.vidaMax * v / 100); h.mana = Math.min(h.c.manaMax, h.mana + h.c.manaMax * v / 100); }
-  h.d.cinturon[i] = null;
-  // reacomodar: si hay otra poción del mismo tipo en la bolsa, se mueve al cinturón
-  const idx = h.d.bolsa.findIndex((b) => b.o.tipo === 'pocion' && b.o.pocion === o.pocion);
-  if (idx >= 0) { h.d.cinturon[i] = h.d.bolsa[idx].o; h.d.bolsa.splice(idx, 1); }
   sonar(j, 'pocion');
   particulas(j, h.x, h.y, 10, 'chispa', o.pocion === 'mana' ? '#6080ff' : o.pocion === 'vida' ? '#ff4040' : '#c040ff', 0.6, 40);
 }
+/** Columnas del cinturón que se rellenan solas desde la bolsa (no se guarda: al entrar todas se rellenan). */
+const pendientes = (h: any): boolean[] => (h.rellenar ??= h.d.cinturon.map(() => true));
+/** Si se saca a mano una poción del cinturón, esa columna deja de rellenarse sola hasta la próxima vez que se tome. */
+export function noRellenar(j: Juego, i: number) { pendientes(j.heroe)[i] = false; }
+export function usarPocion(j: Juego, i: number) {
+  const h = j.heroe; if (h.muerto) return;
+  const o = h.d.cinturon[i]; if (!o) return;
+  beberPocion(j, o);
+  if (cant(o) > 1) o.cantidad = cant(o) - 1; else h.d.cinturon[i] = null;
+  // la misma columna se rellena desde la bolsa con su tipo
+  pendientes(h)[i] = true;
+  rellenarColumna(h.d, i);
+}
 export function curarEnTiempo(j: Juego, dt: number) {
   const h = j.heroe as any;
-  // el cinturón se rellena solo desde la bolsa: cada hueco toma una poción (vida primero en los tres primeros)
+  // el cinturón se rellena solo desde la bolsa, cada columna con su tipo (salvo las que vaciaste a mano)
   if (!h.muerto && (h.tCinturon = (h.tCinturon ?? 0) - dt) <= 0) {
     h.tCinturon = 0.5;
-    const d = h.d;
-    for (let i = 0; i < d.cinturon.length; i++) if (!d.cinturon[i]) {
-      const pref = i < 3 ? 'vida' : 'mana';
-      let idx = d.bolsa.findIndex((b: any) => b.o.tipo === 'pocion' && b.o.pocion === pref);
-      if (idx < 0) idx = d.bolsa.findIndex((b: any) => b.o.tipo === 'pocion');
-      if (idx >= 0) { d.cinturon[i] = d.bolsa[idx].o; d.bolsa.splice(idx, 1); }
-    }
+    const d = h.d, pend = pendientes(h);
+    for (let i = 0; i < d.cinturon.length; i++) if (pend[i]) rellenarColumna(d, i);
   }
   if (h.curando) { h.vida = Math.min(h.vidaMax, h.vida + h.curando.v * dt); h.curando.t -= dt; if (h.curando.t <= 0) h.curando = null; }
   if (h.cargando) { h.mana = Math.min(h.c.manaMax, h.mana + h.cargando.v * dt); h.cargando.t -= dt; if (h.cargando.t <= 0) h.cargando = null; }
