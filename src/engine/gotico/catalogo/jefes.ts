@@ -556,10 +556,13 @@ function ozmaren(acc: Acc, f: number): Res {
     const [codo, mano] = ik(h, baja[i], 34, 32, mv(tor.m, [-1, s * 0.8, -0.2]));
     manosB.push(mano);
     const fa = nor(sub(mano, codo)), lat = nor(cruz(fa, [0, 0, 1])), aba = nor(cruz(lat, fa));
-    const c: Comp[] = [bT(tor, [10, s * 32, 32], [10, 10, 10], m), hueso(h, codo, 8.5, 6.5, m), bulto(mez(h, codo, 0.45), [12, 9, 9], { eje: sub(codo, h), ...m }), hueso(codo, mano, 7.2, 5.2, m), bulto(mez(codo, mano, 0.25), [10, 8, 7.5], { eje: fa, ...m }), bulto(mano, [6, 5.6, 5.6], { eje: fa, ...m })];
-    c.push(hueso(codo, add(codo, nor(sub(codo, mano)), 10), 2.4, 0.25, { ...mc, k: 1 }));
+    // músculo en husos que se solapan (son brazos de atrás, casi siempre tapados: no hace falta fundirlos)
+    const ua = nor(sub(codo, h)), L1 = len(sub(codo, h)), L2 = len(sub(mano, codo));
+    ps.push(elipE(ap(tor, [10, s * 32, 32]), tor.m[0], [10, 10, 10], PF, enf), elipE(mez(h, codo, 0.45), ua, [L1 * 0.55, 9.5, 9.5], PF, enf, tor.m[2]), elipE(mez(h, codo, 0.4), ua, [L1 * 0.4, 12, 9], PF, enf + 0.02, tor.m[2]));
+    ps.push(elipE(codo, ua, [7.5, 7, 7], PF, enf), elipE(mez(codo, mano, 0.45), fa, [L2 * 0.55, 7, 7], PF, enf), elipE(mez(codo, mano, 0.25), fa, [L2 * 0.32, 9.5, 8], PF, enf + 0.02), elipE(mano, fa, [6.5, 5.6, 5.6], PF, enf));
+    const c: Comp[] = [hueso(codo, add(codo, nor(sub(codo, mano)), 10), 2.4, 0.25, { ...mc, k: 1 })];
     for (const k of [-1, 0, 1]) c.push(hueso(add(add(mano, fa, 4), lat, k * 3), add(add(add(mano, fa, 12), lat, k * 4), aba, 5), 1.7, 0.15, { mat: 'jf_garra', k: 0.6 }));
-    ps.push(masa(c, { mat: PF, suave: 2 }));
+    ps.push(masa(c, { mat: CU, suave: 0.8 }));
     ps.push(...grietas({ o: mez(h, codo, 0.45), m: marcoEje(sub(codo, h)) }, [0, 0, 0], [12, 9, 9], 2, 50 + i, lava, pulso(5 + i), { grueso: 1 }));
   }
   // la cadena de eslabones al rojo: cuelga entre las dos manos bajas y la punta se arrastra; en el latigazo restalla
@@ -671,8 +674,8 @@ function ozmaren(acc: Acc, f: number): Res {
     for (let k = 0; k < 4; k++) { const a = (k / 4) * TAU + 0.4; ps.push(llamaOrg(add(add(o0, tor.m[1], Math.cos(a) * 6), tor.m[2], Math.sin(a) * 7), add(mv(tor.m, [1, 0, 0.5]), add(esc(tor.m[1], Math.cos(a)), tor.m[2], Math.sin(a)), 0.5), (18 + hr(k) * 10) * columna, 4, f, nC, 650 + k)); }
     ps.push(esfera(...o0, 6 * columna, { mat: 'luz_vela' }));
     const b0 = ap(tor, [-30, 0, 58]), arriba = nor([-0.12, 0, 1]);
-    ps.push(...columnaFuego(b0, arriba, 200, 27, f, nC, columna));
-    ps.push(...brasas(add(b0, arriba, 200 * columna * 0.45), 45, 80, 10, f, 77, 'fuego', 1.3));
+    ps.push(...columnaFuego(b0, arriba, 175, 27, f, nC, columna));
+    ps.push(...brasas(add(b0, arriba, 175 * columna * 0.45), 45, 80, 10, f, 77, 'fuego', 1.3));
   }
   // venas de lava que laten por zona: pecho, espalda, vientre, pelvis y hombros
   {
