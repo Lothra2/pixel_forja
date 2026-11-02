@@ -23,6 +23,8 @@ mkdirSync(SALIDA, { recursive: true });
 const GRUPOS = (process.env.GRUPOS ?? 'h,m,n,b,w,o,p').split(',');
 const { PODERES, DIRS_PODER } = await import(join(raiz, 'poderes.ts'));
 const SOLO = process.env.SOLO?.split(',');
+const VARIANTES = process.env.VARIANTES?.split(',');
+const CUADROS_MAX = process.env.CUADROS ? +process.env.CUADROS : 0;
 
 interface Job { id_job: number; grupo: string; clave: string; tipo: string; [k: string]: any }
 const jobs: Job[] = [];
@@ -84,10 +86,12 @@ if (GRUPOS.includes('o')) for (const d of REGISTRO) {
   if (d.tema === 'personajes' || d.tema === 'monstruos') continue;
   if (SOLO && !SOLO.includes(d.id)) continue;
   for (const v of d.variantes) {
+    // VARIANTES=suelo hornea solo esas; CUADROS=1 corta la animación (para el botín en el piso)
+    if (VARIANTES && !VARIANTES.includes(v)) continue;
     const k = `${d.id}|${v}`;
     let luz = null; try { luz = fuenteDe(d.id, v); } catch { /* sin luz */ }
     objMeta[k] = { t: d.t ?? 3, hu: huellaDe(d, v), b: d.bloquea ? 1 : 0, tema: d.tema, luz: luz ? [Math.round(luz.r), luz.color, Math.round(luz.z)] : 0, plano: d.plano ? 1 : 0 };
-    jobs.push({ id_job: nid++, grupo: 'o', clave: k, tipo: 'objeto', id: d.id, v, seed: 1, cuadros: d.cuadros ?? 1 });
+    jobs.push({ id_job: nid++, grupo: 'o', clave: k, tipo: 'objeto', id: d.id, v, seed: 1, cuadros: CUADROS_MAX ? Math.min(CUADROS_MAX, d.cuadros ?? 1) : d.cuadros ?? 1 });
   }
 }
 if (GRUPOS.includes('p')) for (const p of PISOS) for (let v = 0; v < p.variantes; v++) jobs.push({ id_job: nid++, grupo: 'p', clave: `${p.id}|${v}`, tipo: 'piso', id: p.id, v, cuadros: p.cuadros ?? 1 });

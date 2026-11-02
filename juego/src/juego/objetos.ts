@@ -40,6 +40,8 @@ export interface Objeto {
   req?: number;
   /** Efecto propio de una legendaria del arsenal (cadena, pira, tercer golpe...). */
   efecto?: string;
+  /** Id de la legendaria del arsenal (para su dibujo en el piso). */
+  leg?: string;
 }
 
 let uid = Date.now() % 100000;
@@ -168,7 +170,7 @@ function deUnico(u: Unico, b: Base, nivel: number): Objeto {
   for (const st of u.stats) { const v = rollStat(st.min, st.max); if (st.stat === 'huecos') o.huecos = v; else o.stats.push([st.stat, v]); }
   if (u.vivo) o.vivo = u.vivo;
   if ((u as any).vis) o.vis = (u as any).vis;
-  if ((u as any).efecto) o.efecto = (u as any).efecto;
+  if ((u as any).efecto) { o.efecto = (u as any).efecto; o.leg = u.id; }
   o.lore = u.lore;
   if (u.req) o.req = u.req;
   o.precio = Math.round(b.precio * 10 + o.nivel * 30);

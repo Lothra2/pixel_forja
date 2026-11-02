@@ -422,7 +422,14 @@ function dibujarBotinSuelo(s: any, px: number, py: number, t: number) {
   if (o.tipo === 'gema') { const g = GEMAS.find((x) => o.base.startsWith(x)); if (g && anim('gema_suelo', g)) { ctx.restore(); return; } }
   const b = baseDe(o);
   const ENCS: Record<string, string> = { fuego: '_fuego', frio: '_hielo', rayo: '_rayo', veneno: '_veneno', sombra: '_sombra', luz: '_sagrado', sangre: '_sangre' };
-  const meta = b?.arma && b.arma !== 'puno' ? (objetoMeta(`arma_${b.arma}${o.vivo ? ENCS[o.vivo] ?? '' : ''}`, 'suelo') ?? objetoMeta(`arma_${b.arma}`, 'suelo')) : null;
+  const meta = (o.leg ? objetoMeta(`arma_${o.leg}`, 'suelo') : null) ?? (b?.arma && b.arma !== 'puno' ? (objetoMeta(`arma_${b.arma}${o.vivo ? ENCS[o.vivo] ?? '' : ''}`, 'suelo') ?? objetoMeta(`arma_${b.arma}`, 'suelo')) : null);
+  // arma elemental sin dibujo propio de su elemento: un resplandor de su color debajo
+  if (o.vivo && meta && !objetoMeta(`arma_${b?.arma}${ENCS[o.vivo] ?? ''}`, 'suelo')) {
+    const COL: Record<string, string> = { fuego: '255,120,40', frio: '130,200,255', rayo: '210,200,255', veneno: '110,230,70', sombra: '150,80,230', luz: '255,230,150', sangre: '230,30,40' };
+    const g = ctx.createRadialGradient(px, py - 4, 1, px, py - 4, 22); const c = COL[o.vivo] ?? '255,200,120', k = 0.45 + 0.15 * Math.sin(t * 4);
+    g.addColorStop(0, `rgba(${c},${k})`); g.addColorStop(1, `rgba(${c},0)`);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(px, py - 4, 22, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
   if (meta && meta.f.length) dibujar(ctx, meta.f[Math.floor(t * 25 / meta.t) % meta.f.length], px, py - salto);
   else { ctx.translate(0, -salto); icono(o, px - 11, py - 20, 22, 22, t); }
   ctx.restore();

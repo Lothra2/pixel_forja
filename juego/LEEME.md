@@ -66,6 +66,7 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
     - Fuego: lo que matas revienta en llamas.
     - Veneno: lo que matas deja una nube que contagia.
     - Luz: cada quinto golpe baja un castigo del cielo y te cura.
+  - En el piso, las armas de forma nueva y las 60 legendarias tienen su dibujo, y las elementales brillan con su color.
   - Afinidad: cada clase pelea mejor con ciertas familias. Afín da +15 % de daño y +10 % de velocidad, torpe da −15 % de daño. Se ve en verde o en rojo en el tooltip. No hay armas prohibidas.
 - **Poderes con luz.**
   - Cada poder prende su propia luz con la tabla de la Forja: un fogonazo en la mano al lanzar, la luz que viaja con el proyectil y el destello al pegar, cada una con su curva de intensidad y sus sombras.
