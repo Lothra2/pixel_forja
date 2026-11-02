@@ -54,7 +54,7 @@ M.ahg_bronce = { rampa: ['#0a1311', '#11201c', '#192f29', '#234036', '#305345', 
 M.ahg_bronce_viejo = { rampa: ['#140e08', '#22180d', '#332413', '#46321a', '#5a4223', '#6e532d', '#83653a'], ruido: 0.3, escala: 0.3, brillo: 0.6 };
 M.ahg_madera = { rampa: ['#0a0908', '#13110e', '#1d1a15', '#28231c', '#332d24', '#3f372c', '#4c4235', '#5a4f40'], ruido: 0.22, escala: 0.3, patron: tablas(5) };
 M.ahg_madera_lisa = { rampa: ['#0a0908', '#13110e', '#1d1a15', '#28231c', '#332d24', '#3f372c', '#4c4235', '#5a4f40'], ruido: 0.25, escala: 0.25, patron: (p) => (ruido(p[0] * 0.15, p[1] * 0.15, p[2] * 0.9) - 0.5) * 0.25 };
-M.ahg_agua = { rampa: ['#02070a', '#051015', '#09191f', '#0e242b', '#153138', '#1d3f46', '#284e55', '#3a6168'], ruido: 0.22, escala: 0.07, brillo: 1.1, patron: (p) => (Math.sin(p[0] * 0.5 + p[1] * 0.3 + ruido(p[0] * 0.1, p[1] * 0.1, 3) * 6) > 0.85 ? 0.08 : 0) };
+M.ahg_agua = { rampa: ['#020506', '#040a0d', '#071014', '#0b171b', '#101f23', '#16282c', '#1f3437', '#2e4546'], ruido: 0.2, escala: 0.07, brillo: 0.8, patron: (p) => (Math.sin(p[0] * 0.5 + p[1] * 0.3 + ruido(p[0] * 0.1, p[1] * 0.1, 3) * 6) > 0.85 ? 0.08 : 0) };
 M.ahg_espuma = { rampa: ['#2e3c3e', '#465859', '#617474', '#7e9090', '#9cacaa', '#bac8c4'], ruido: 0.55, escala: 0.6 };
 M.ahg_bio = { rampa: ['#08403e', '#0e6660', '#18908a', '#38bcae', '#7ae2cc', '#c8fbec'], ruido: 0.35, escala: 0.35, emite: true };
 M.ahg_bio_azul = { rampa: ['#0a1c48', '#123276', '#1e54a6', '#3a84d4', '#86c0f4', '#d6eeff'], ruido: 0.35, escala: 0.35, emite: true };
@@ -217,11 +217,19 @@ function casco(a: Arma, ps: Pieza[], o: OpcCasco) {
   }
   return { pt, ancho, borda, quilla };
 }
+/** Punta astillada de un palo roto: lascas que salen del corte hacia `d`. */
+function astillas(a: Arma, ps: Pieza[], c: V3, d: V3, r: number) {
+  const dd = nor(d), u = lat(dd), w = cruz(dd, u);
+  for (let i = 0; i < 5; i++) {
+    const an = (i / 5) * TAU + a.r() * 0.8, e = add(esc(u, Math.cos(an)), w, Math.sin(an)), e2 = add(esc(u, Math.cos(an + 0.9)), w, Math.sin(an + 0.9));
+    ps.push(a.poliedro([add(add(c, e, r * 0.95), dd, -1.5), add(add(c, e2, r * 0.95), dd, -1.5), add(add(c, mez(e, e2, 0.5), r * 0.55), dd, -1.5), add(add(c, mez(e, e2, 0.5), r * 0.75), dd, 2 + a.r() * 8)], { mat: WL, tono: 0.08 }));
+  }
+}
 /** Mástil con verga, cofa y jarcia; `vela` le cuelga una vela raída que se mueve. */
 function mastil(a: Arma, ps: Pieza[], base: V3, alto: number, r: number, o: { roto?: number; verga?: boolean; cofa?: boolean; vela?: boolean; f?: number; n?: number } = {}) {
   const top = add(base, [0, 0, alto * (o.roto ?? 1)]);
   ps.push(a.cilindro(...base, r, alto * (o.roto ?? 1), { mat: WL, r1: r * 0.75 }));
-  if (o.roto !== undefined && o.roto < 1) { for (let i = 0; i < 4; i++) { const an = a.r() * TAU; ps.push(a.poliedro([add(top, [Math.cos(an) * r * 0.8, Math.sin(an) * r * 0.8, -1]), add(top, [Math.cos(an + 1) * r * 0.8, Math.sin(an + 1) * r * 0.8, -1]), add(top, [Math.cos(an + 0.5) * r * 0.3, Math.sin(an + 0.5) * r * 0.3, 3 + a.r() * 7])], { mat: WL, tono: 0.05 })); } }
+  if (o.roto !== undefined && o.roto < 1) astillas(a, ps, top, [0, 0, 1], r * 0.8);
   const hv = alto * 0.78;
   if (o.verga && (o.roto ?? 1) * alto > hv) {
     const c = add(base, [0, 0, hv]), g = jit(a, 14), d: V3 = [Math.sin(rad(g)), Math.cos(rad(g)), Math.sin(rad(jit(a, 10)))];
@@ -305,7 +313,7 @@ const POSES: Record<string, Pose> = {
 // ------------------------------------------------------------------ 1. barcos partidos, mástiles, anclas, cadenas y redes
 registrar(
   {
-    id: 'ahg_proa_naufragada', nombre: ['Proa naufragada', 'Wrecked bow'], tema: TEMA, variantes: ['hundida', 'alzada', 'escorada', 'con_mascaron'], huella: [5, 3], bloquea: true,
+    id: 'ahg_casco_proa', nombre: ['Casco partido: proa', 'Broken hull: bow'], tema: TEMA, variantes: ['hundida', 'alzada', 'escorada', 'con_mascaron'], huella: [5, 3], bloquea: true,
     armar: (v, _f, a) => {
       const loc: Pieza[] = [];
       const k = casco(a, loc, { L: 62, W: 15, D: 22, u0: -0.15, u1: 1, roto: 0.1 + a.r() * 0.1, rotoLado: 1, podrido: 0.3 + a.r() * 0.3, cubierta: true });
@@ -329,7 +337,7 @@ registrar(
     },
   },
   {
-    id: 'ahg_popa_naufragada', nombre: ['Popa naufragada', 'Wrecked stern'], tema: TEMA, variantes: ['recta', 'escorada', 'podrida', 'con_farol'], huella: [5, 3], bloquea: true,
+    id: 'ahg_casco_popa', nombre: ['Casco partido: popa', 'Broken hull: stern'], tema: TEMA, variantes: ['recta', 'escorada', 'podrida', 'con_farol'], huella: [5, 3], bloquea: true,
     armar: (v, _f, a) => {
       const loc: Pieza[] = [];
       const k = casco(a, loc, { L: 60, W: 17, D: 24, u0: -1, u1: 0.2, roto: 0.05 - a.r() * 0.1, rotoLado: -1, podrido: v === 'podrida' ? 0.9 : 0.25, cubierta: true });
@@ -353,7 +361,7 @@ registrar(
     },
   },
   {
-    id: 'ahg_costillar_barco', nombre: ['Costillar de barco', 'Ship skeleton'], tema: TEMA, variantes: ['corto', 'largo', 'medio_hundido', 'volcado'], huella: [6, 3], bloquea: true,
+    id: 'ahg_casco_costillar', nombre: ['Costillar de casco', 'Hull skeleton'], tema: TEMA, variantes: ['corto', 'largo', 'medio_hundido', 'volcado'], huella: [6, 3], bloquea: true,
     armar: (v, _f, a) => {
       const loc: Pieza[] = [];
       const L = v === 'corto' ? 44 : 64;
@@ -390,7 +398,7 @@ registrar(
       const L = 90 + a.r() * 20;
       loc.push(a.cilindro(-L / 2, 0, 3.2, 3.4, L, { mat: WL, r1: 2.4, eje: [1, 0, 0] }));
       // punta astillada
-      for (let i = 0; i < 4; i++) { const an = a.r() * TAU; loc.push(a.poliedro([[-L / 2, Math.cos(an) * 2.6, 3.2 + Math.sin(an) * 2.6], [-L / 2, Math.cos(an + 1.1) * 2.6, 3.2 + Math.sin(an + 1.1) * 2.6], [-L / 2 - 4 - a.r() * 6, Math.cos(an + 0.5) * 1.2, 3.2 + Math.sin(an + 0.5) * 1.2]], { mat: WL, tono: 0.06 })); }
+      astillas(a, loc, [-L / 2, 0, 3.2], [-1, 0, 0], 3.4);
       if (v !== 'x') { const x = jit(a, 10) + 10, g = 60 + jit(a, 20); loc.push(a.palo([x - Math.cos(rad(g)) * 38, -Math.sin(rad(g)) * 38, 2], [x + Math.cos(rad(g)) * 38, Math.sin(rad(g)) * 38, 4.8], 1.8, { mat: WL, r1: 1.3 })); }
       if (v === 'con_cofa') loc.push(a.cilindro(L * 0.12, 0, 0.2, 7, 4, { mat: W, eje: [0.2, 0.3, 0.9], r1: 8 }));
       const sogas: Comp[] = [];
@@ -415,10 +423,10 @@ registrar(
       const cs: Comp[] = [bulto([0, 0, 2], [5, 5, 5], { mat: HI })];
       for (const s of [1, -1]) {
         let prev: V3 = [0, 0, 2];
-        for (let i = 1; i <= 5; i++) { const an = (i / 5) * 1.15, q: V3 = [s * Math.sin(an) * 30, 0, 30 - Math.cos(an) * 28]; cs.push(hueso(prev, q, 3.6 - i * 0.25, 3.4 - i * 0.3, { mat: HI })); prev = q; }
-        // uña: pala triangular que mira afuera
-        const t = prev, d: V3 = [s * 0.45, 0, 1];
-        loc.push(a.poliedro([add(t, [s * 3, -7, -9]), add(t, [s * 3, 7, -9]), add(t, [s * 2, 0, 9]), add(t, [s * 0.5, -5, -3]), add(t, [s * 0.5, 5, -3]), add(t, esc(nor(d), 6))], { mat: HI, tono: 0.03 }));
+        for (let i = 1; i <= 6; i++) { const an = (i / 6) * 1.25, q: V3 = [s * Math.sin(an) * 36, 0, 36 - Math.cos(an) * 34]; cs.push(hueso(prev, q, 4.6 - i * 0.3, 4.4 - i * 0.35, { mat: HI })); prev = q; }
+        // uña: pala de hierro que se abre a los lados de la punta del brazo
+        const t = prev, d = nor([s * Math.sin(1.25), 0, Math.cos(1.25) * 0.4 + 0.6]);
+        cs.push(bulto(add(t, d, -3), [7, 8.5, 2.2], { mat: HI, ejes: [d, [0, 1, 0], cruz(d, [0, 1, 0])] }), hueso(add(t, d, -2), add(t, d, 9), 3, 0.4, { mat: HI }));
       }
       loc.push(masa(cs, { mat: HI, suave: 2.5 }));
       for (let i = 0; i < 5; i++) percebes(a, loc, [jit(a, 4), elegir(a, [-3.5, 3.5]), 6 + a.r() * H * 0.5], [0, 1, 0], 4, 3);
@@ -536,7 +544,7 @@ registrar(
     },
   },
   {
-    id: 'ahg_campanario_hundido', nombre: ['Campanario hundido', 'Sunken belfry'], tema: TEMA, variantes: ['aguja', 'tronera', 'derrumbado'], cuadros: 8, t: 5, huella: [5, 5], bloquea: true,
+    id: 'ahg_torre_campanario', nombre: ['Torre del campanario hundida', 'Sunken bell tower'], tema: TEMA, variantes: ['aguja', 'tronera', 'derrumbado'], cuadros: 8, t: 5, huella: [5, 5], bloquea: true,
     armar: (v, f, a) => {
       const ps: Pieza[] = [], h0 = 6, ix = jit(a, 6), iy = jit(a, 6);
       const loc: Pieza[] = [];

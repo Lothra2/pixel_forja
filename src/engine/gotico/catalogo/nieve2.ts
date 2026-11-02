@@ -3,7 +3,7 @@ import { MATERIALES } from '../materiales';
 import { masa, hueso, bulto, ruido, type Comp } from '../render';
 import {
   TAU, PI, rad, deg, add, envolver, sub, esc, nor, mez, cruz, jit, elegir, ciclo, onda, suelo, rotM, transformar, tenir, cuerpo, CUERPOS, EQUIPOS,
-  roca, pena, prisma, manto, tronco, fuego, brasas, craneo, craneoBestia, huesoLargo, costillar, catenaria, cadena, tela, pellejo, arbolMuerto,
+  roca, pena, prisma, manto, tronco, fuego, brasas, craneo, craneoBestia, huesoLargo, costillar, cadena, tela, pellejo, arbolMuerto,
 } from '../actos45';
 
 /**
@@ -753,7 +753,7 @@ registrar(
         tronco(a, ps, [8, 4, 4], [40, 16, 5], 4, { mat: 'corteza_muerta' }); ps.push(a.elipsoide(24, 10, 9, 12, 3, 1.4, { mat: N, giro: 20 }));
       } else {
         const ramas = arbolMuerto(a, ps, { H: v === 'alto' ? 120 : v === 'ahorcado' ? 112 : 84, mat: 'corteza_muerta', cubre: N, ramas: v === 'alto' ? 9 : 7, torsion: v === 'retorcido' ? 2.2 : 1 });
-        if (v === 'ahorcado') { const bien = ramas.filter((r) => r[0][2] > 72 && r[0][2] < 100); const [p, d] = (bien.length ? bien : ramas).reduce((m, r) => (Math.hypot(r[0][0], r[0][1]) > Math.hypot(m[0][0], m[0][1]) ? r : m)); const q = add(p, nor([d[0], d[1], 0]), 5); ahorcado(a, ps, q, Math.max(3, q[2] - 74)); }
+        if (v === 'ahorcado') { const bien = ramas.filter((r) => r[0][2] > 72 && r[0][2] < 100); const pun = (r: [V3, V3]) => Math.abs(r[0][0] - r[0][1]); const [p, d] = (bien.length ? bien : ramas).reduce((m, r) => (pun(r) > pun(m) ? r : m)); const q = add(p, nor([d[0], d[1], 0]), 5); ahorcado(a, ps, q, Math.max(3, q[2] - 74)); }
         if (v === 'cuervos') for (const [p, d] of ramas.slice(0, 4)) cuervo(ps, add(p, [0, 0, 1]), deg(Math.atan2(d[1], d[0])) + 90, false, 1.2);
       }
       ps.push(suelo(a));
@@ -881,10 +881,10 @@ registrar(
     armar: (v, f, a) => {
       const ps: Pieza[] = [manto(a, 13, 12, 4, 'nie2_nieve_sucia', 2, { tono: -0.15 })];
       let zf = 30;
-      if (v === 'tripode') { for (let i = 0; i < 3; i++) { const t = (i / 3) * TAU + 0.5; ps.push(a.palo([Math.cos(t) * 9, Math.sin(t) * 9, 0], [Math.cos(t) * 3, Math.sin(t) * 3, 28], 0.9, { mat: 'hierro' })); } ps.push(masa([bulto([0, 0, 29], [7, 7, 3.4]), hueso([0, 0, 29], [0, 0, 32], 7, 7.4)], { mat: 'hierro', suave: 1 })); zf = 31; }
-      else if (v === 'cuenco') { ps.push(...roca(a, [0, 0, 5], [8, 7, 6], { mat: 'nie2_roca', n: 4 }), masa([bulto([0, 0, 13], [9, 9, 3.8]), hueso([0, 0, 13], [0, 0, 16], 9, 9.6)], { mat: 'hierro_oxido', suave: 1 })); zf = 15; }
+      if (v === 'tripode') { for (let i = 0; i < 3; i++) { const t = (i / 3) * TAU + 0.5; ps.push(a.palo([Math.cos(t) * 9, Math.sin(t) * 9, 0], [Math.cos(t) * 3, Math.sin(t) * 3, 28], 0.9, { mat: 'hierro' })); } ps.push(a.cilindro(0, 0, 26, 3.5, 6, { mat: 'hierro', r1: 8 }), a.cilindro(0, 0, 31.4, 8.4, 1, { mat: 'hierro', tono: 0.08 })); zf = 31; }
+      else if (v === 'cuenco') { ps.push(...roca(a, [0, 0, 5], [8, 7, 6], { mat: 'nie2_roca', n: 4 }), a.cilindro(0, 0, 9, 5, 6.5, { mat: 'hierro_oxido', r1: 10 }), a.cilindro(0, 0, 15, 10.4, 1, { mat: 'hierro_oxido', tono: 0.08 })); zf = 15; }
       else if (v === 'jaula') { ps.push(a.cilindro(0, 0, 0, 5, 3, { mat: 'hierro', r1: 3 }), a.palo([0, 0, 3], [0, 0, 28], 1.4, { mat: 'hierro' })); for (let i = 0; i < 7; i++) { const t = (i / 7) * TAU; ps.push(a.palo([Math.cos(t) * 3, Math.sin(t) * 3, 26], [Math.cos(t) * 7, Math.sin(t) * 7, 38], 0.6, { mat: 'hierro' })); } ps.push(a.cilindro(0, 0, 26, 4, 2, { mat: 'hierro' })); zf = 28; }
-      else { tronco(a, ps, [0, 0, -2], [0, 0, 36], 2.6, { mat: 'nie2_tronco', nudos: 1 }); craneoBestia(a, ps, [0, 0, 23], 3.4, 45, { cuernos: 'carnero' }); ps.push(masa([bulto([0, 0, 37], [6, 6, 2.6]), hueso([0, 0, 37], [0, 0, 39.5], 6, 6.6)], { mat: 'hierro', suave: 1 })); zf = 39; }
+      else { tronco(a, ps, [0, 0, -2], [0, 0, 36], 2.6, { mat: 'nie2_tronco', nudos: 1 }); craneoBestia(a, ps, [0, 0, 23], 3.4, 45, { cuernos: 'carnero' }); ps.push(a.cilindro(0, 0, 35, 3, 4.5, { mat: 'hierro', r1: 7 }), a.cilindro(0, 0, 39.2, 7.4, 0.9, { mat: 'hierro', tono: 0.08 })); zf = 39; }
       brasas(a, ps, [0, 0, zf - 1], 5, f, 8);
       fuego(a, ps, [0, 0, zf], 1.5, f, 8, { lenguas: 4 });
       ps.push(suelo(a));
@@ -899,7 +899,7 @@ registrar(
       for (let i = 0; i < 5; i++) { const t = (i / 5) * TAU + a.r(); ps.push(pena(a, Math.cos(t) * 6, Math.sin(t) * 6, 2, 3 + a.r() * 2, 2.6, 3, { mat: 'nie2_roca' })); }
       const H = 86;
       tronco(a, ps, [0, 0, -2], [0, 0, H], 3, { mat: 'nie2_tronco', nudos: 2 });
-      const brazos: V3[] = v === 'doble' ? [[1, 1, 0], [-1, -1, 0]] : [[1, 1, 0]];
+      const brazos: V3[] = v === 'doble' ? [[1, -1, 0], [-1, 1, 0]] : [[elegir(a, [1, -1]), 0, 0].map((x, i) => (i === 1 ? -x : x)) as V3];
       for (const b of brazos) {
         const d = nor(b), p: V3 = add([0, 0, H - 4], d, 28);
         tronco(a, ps, add([0, 0, H - 4], d, -3), p, 2.3, { mat: 'nie2_tronco' });

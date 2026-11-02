@@ -1072,11 +1072,11 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
     case 'varita': ps.push(palo(en(-1.5 * S), en(10 * S), 0.5 * S, { mat: mango, r1: 0.3 * S })); gemaArriba(en(10.5 * S), 1 * S); break;
     case 'daga': ps.push(palo(en(-2.6 * S), en(0.3), 0.6 * S, { mat: mango }), palo(add(en(0.5), canto, 1.8 * S), add(en(0.5), canto, -1.8 * S), 0.5 * S, { mat })); ps.push(hoja(0.8, 10 * S, 0.9 * S, 0.3 * S, 0.05)); break;
     case 'garras': for (const sg of [-1, 0, 1]) ps.push(hoja(0, 9 * S, 0.45 * S, 0.2 * S, 0.02, 0), palo(add(m, canto, sg * 1.1 * S), add(add(en(9 * S), canto, sg * 1.6 * S), plano, 1.4 * S), 0.35 * S, { mat, r1: 0.08 })); break;
-    case 'arco': case 'ballesta': {
+    case 'arco': case 'arco_largo': case 'arco_corto': case 'ballesta': {
       // el arco va en la izquierda; la derecha tira de la cuerda
       const izq = e.brazos[1];
       const c = izq.mano;
-      if (tipo === 'arco') {
+      if (tipo !== 'ballesta') {
         // el puño izquierdo cierra sobre la empuñadura, en el centro del arco; las palas se curvan hacia atrás (hacia la
         // cuerda) y el arco queda en el plano vertical de la línea de tiro: de la mano que tira a la que sostiene
         const fT = e.ejesT ? nor([e.ejesT[0][0], e.ejesT[0][1], 0]) : F, haciaArco = sub(c, m); // (un arco suelto no tiene torso)
@@ -1084,11 +1084,29 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
         const tiro = tira ? nor(haciaArco) : nor(add(fT, F, 1));
         const arriba = nor(sub([0, 0, 1], [tiro[0] * tiro[2], tiro[1] * tiro[2], tiro[2] * tiro[2]]));
         const en = (k: number, atras: number): V3 => add(add(c, arriba, k * S), tiro, -atras * S);
-        const arr = en(15, 3.6), abj = en(-15, 3.6);
-        const pts = [arr, en(9, 1.2), en(2.6, -0.3), en(-2.6, -0.3), en(-9, 1.2), abj];
-        for (let i = 0; i < 5; i++) ps.push(palo(pts[i], pts[i + 1], (i === 2 ? 0.95 : i === 1 || i === 3 ? 0.75 : 0.55) * S, { mat: mango, r1: (i === 2 ? 0.95 : i === 0 || i === 4 ? 0.75 : 0.55) * S }));
+        let arr: V3, abj: V3, atrasCuerda = 3.6;
+        if (tipo === 'arco') {
+          arr = en(15, 3.6); abj = en(-15, 3.6);
+          const pts = [arr, en(9, 1.2), en(2.6, -0.3), en(-2.6, -0.3), en(-9, 1.2), abj];
+          for (let i = 0; i < 5; i++) ps.push(palo(pts[i], pts[i + 1], (i === 2 ? 0.95 : i === 1 || i === 3 ? 0.75 : 0.55) * S, { mat: mango, r1: (i === 2 ? 0.95 : i === 0 || i === 4 ? 0.75 : 0.55) * S }));
+        } else {
+          // arco largo (una D alta de madera) o corto recurvo (las palas vuelven hacia adelante en las puntas de cuerno):
+          // las palas son una masa de huesos que adelgazan hacia las puntas, con el agarre forrado y las culatas de cuerno
+          const largo = tipo === 'arco_largo';
+          const perfil: [number, number][] = largo ? [[19.5, 4.4], [15.5, 3.1], [10, 1.4], [5, 0.2], [1.8, -0.35]] : [[12.8, 2.3], [11.4, 3.2], [8.6, 2.6], [5.2, 1.1], [2.2, -0.25]];
+          const kmax = perfil[0][0];
+          const pts = [...perfil.map(([k, a]) => en(k, a)), ...[...perfil].reverse().map(([k, a]) => en(-k, a))];
+          const rad0 = (k: number) => ((largo ? 0.95 : 1.05) - (Math.abs(k) / kmax) * (largo ? 0.55 : 0.6)) * S;
+          const ks = [...perfil.map(([k]) => k), ...[...perfil].reverse().map(([k]) => -k)];
+          const palas: Comp[] = [];
+          for (let i = 0; i < pts.length - 1; i++) palas.push(hueso(pts[i], pts[i + 1], rad0(ks[i]), rad0(ks[i + 1]), { mat: mango }));
+          ps.push(masa(palas, { mat: mango, suave: 0.5 * S }));
+          ps.push(masa([hueso(en(-2.6, -0.45), en(2.6, -0.45), 1.15 * S, 1.15 * S, { mat: 'cu_cuero_negro' }), bulto(en(0, -0.5), [1.7 * S, 1.3 * S, 1.3 * S], { eje: arriba, mat: 'cu_cuero_negro', tono: 0.05 })], { mat: 'cu_cuero_negro', suave: 0.3 * S }));
+          for (const q of [pts[0], pts[pts.length - 1]]) ps.push(masa([bulto(q, [0.75 * S, 0.62 * S, 0.62 * S], { eje: arriba, mat: 'cu_hueso' })], { mat: 'cu_hueso' }));
+          arr = pts[0]; abj = pts[pts.length - 1]; atrasCuerda = perfil[0][1];
+        }
         // la cuerda: una V hasta los dedos que tiran; si no tira, recta entre las puntas (del lado del cuerpo)
-        const culatin = tira ? m : en(0, 3.6);
+        const culatin = tira ? m : en(0, atrasCuerda);
         if (tira) ps.push(palo(arr, m, 0.15 * S, { mat: 'cuerda' }), palo(m, abj, 0.15 * S, { mat: 'cuerda' }));
         else ps.push(palo(arr, abj, 0.15 * S, { mat: 'cuerda' }));
         // la flecha: del culatín en la cuerda, apoyada sobre el puño izquierdo, con la punta delante del arco
@@ -1112,7 +1130,7 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
       }
       break;
     }
-    default: break;
+    default: ps.push(...armaEpica(e, tipo, b, mat, mango, gema)); break;
   }
   return ps;
 }
@@ -1147,7 +1165,22 @@ function filoDe(e: Esqueleto, tipo: TipoArma, b: Brazo): [V3, V3] {
     case 'garras': return [en(1), en(9)];
     case 'varita': return [en(5), en(11)];
     case 'baculo': case 'cetro': { const [, t, up] = varaDe(e, b.mano, tipo === 'cetro' ? 0.45 : 1); return [t, add(t, up, 4 * S)]; }
-    case 'arco': case 'ballesta': { if (tipo === 'ballesta' && (e.pose?.pegaI ?? 1) < 0.5) return [b.mano, add(b.mano, b.eje, 11 * S)]; const c = e.brazos[1].mano; return [add(c, [0, 0, -12 * S]), add(c, [0, 0, 12 * S])]; }
+    case 'arco': case 'arco_largo': case 'arco_corto': case 'ballesta': { if (tipo === 'ballesta' && (e.pose?.pegaI ?? 1) < 0.5) return [b.mano, add(b.mano, b.eje, 11 * S)]; const c = e.brazos[1].mano, k = tipo === 'arco_largo' ? 17 : tipo === 'arco_corto' ? 10.5 : 12; return [add(c, [0, 0, -k * S]), add(c, [0, 0, k * S])]; }
+    case 'katana': return [en(2), en(25)];
+    case 'estoque': return [en(2), en(27)];
+    case 'falcata': return [en(2), en(20.5)];
+    case 'tridente': return [en(28), en(37)];
+    case 'maza_estrella': return [en(14), en(20)];
+    case 'jabalina': return [en(21), en(28)];
+    case 'orbe_mano': return [en(3.8), en(7.6)];
+    case 'katar': return [en(1.5), en(12.5)];
+    case 'lanza_dragon': return [en(31), en(41)];
+    case 'gran_baculo': { const [, t, up] = varaDe(e, b.mano, 1.06); return [add(t, up, 3 * S), add(t, up, 7.6 * S)]; }
+    case 'hoz': {
+      const [, plano] = marcoArma(b.eje, e.F), C = add(en(5.6), plano, 4.4 * S);
+      const arcoP = (g: number, R: number): V3 => add(add(C, plano, -Math.cos(rad(g)) * R * S), b.eje, Math.sin(rad(g)) * R * S);
+      return [arcoP(50, 4.25), arcoP(185, 3.85)];
+    }
     default: return [b.mano, en(4)];
   }
 }
@@ -1232,7 +1265,7 @@ function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArm
   const { S } = e;
   const b = e.brazos[1];
   const ps: Pieza[] = [];
-  if (dos(derecha) || derecha === 'arco' || derecha === 'ballesta') return ps;
+  if (dos(derecha) || esArco(derecha) || derecha === 'ballesta') return ps;
   // la cara del escudo mira hacia donde mira el torso y se abre hacia afuera entre 10° y 45°: la apertura se elige por
   // dirección (fija en todos los cuadros de esa dirección) para que la cámara vea la cara y nunca el canto
   let F = e.F;

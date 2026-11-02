@@ -191,7 +191,7 @@ function sarcofagoTallado(tipo: 'caballero' | 'obispo' | 'nino') {
     if (v === 'musgo') { musgo(s, 6, -Lx / 2, Lx / 2, Ly / 2 + 1.2, 2, H, 'mu_musgo'); for (let i = 0; i < 4; i++) s.elip(rr(a, -8, 8), rr(a, -20, 20), zt + 2, 3, 3, 1, { mat: 'mu_musgo' }); }
     if (v === 'profanado') { huesos(g, 4, 10, 12, Lx / 2 + 10, 0); calavera(g.sub(Lx / 2 + 8, Ly / 2, 0, mirar(a)), 3); }
     if (v !== 'con_velas') return;
-    return { piezas: g.ps, resplandor: { c: [Lx / 2 + 6, 0, 24], r: 36, color: '#ffb35a' } };
+    return { piezas: g.ps, resplandor: { c: [Lx / 2 + 6, 0, 24] as V3, r: 36, color: '#ffb35a' } };
   };
 }
 obj('cri_sarcofago_caballero', ['Sarcófago del caballero yacente', 'Effigy tomb of a knight'], ['intacto', 'musgo', 'profanado', 'marmol_negro', 'con_velas'], [2, 4], true, sarcofagoTallado('caballero'), { cuadros: 4, t: 3 });
