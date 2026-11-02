@@ -405,6 +405,23 @@ function mapaSombra(sol: Pieza[]): MapaSombra | null {
   }
   return { U, W, u0, w0, ts, nu, nw, prof, ...maxDilatado(prof, nu, nw, Math.ceil(4.6 / ts / 8)) };
 }
+/**
+ * Para el rayo de sombra del borrador: las piezas agrupadas por dónde caen vistas desde la luz. Un rayo hacia la luz
+ * se proyecta en un solo punto de ese plano, así que solo pueden taparlo las piezas de su casillero (el resultado es
+ * el mismo que probar todas, pero sin recorrer la escena entera en cada pixel).
+ */
+function rejillaLuz(sol: Pieza[]): (q: V3) => Pieza[] {
+  const U = norm(cross(UPZ, LUZ)), W = cross(LUZ, U);
+  let u0 = Infinity, u1 = -Infinity, w0 = Infinity, w1 = -Infinity;
+  for (const p of sol) { const e = esferaDe(p), c: V3 = [e[0], e[1], e[2]]; const cu = dot(c, U), cw = dot(c, W); u0 = Math.min(u0, cu - e[3]); u1 = Math.max(u1, cu + e[3]); w0 = Math.min(w0, cw - e[3]); w1 = Math.max(w1, cw + e[3]); }
+  if (!isFinite(u0)) return () => sol;
+  const B = 8, nu = Math.ceil((u1 - u0) / B) + 1, nw = Math.ceil((w1 - w0) / B) + 1;
+  const grilla = rejillaDe(sol, (c) => [dot(c, U), dot(c, W)], u0, w0, B, nu, nw), vacio: Pieza[] = [];
+  return (q) => {
+    const i = Math.floor((dot(q, U) - u0) / B), j = Math.floor((dot(q, W) - w0) / B);
+    return i < 0 || j < 0 || i >= nu || j >= nw ? vacio : grilla[j * nu + i];
+  };
+}
 /** Máximo por bloque de 8×8 texeles, dilatado `rad` bloques: si ni eso tapa, no hace falta mirar el detalle. */
 function maxDilatado(v: Float32Array, nu: number, nw: number, rad: number): { bloq: Float32Array; bu: number; bw: number } {
   const bu = Math.ceil(nu / 8), bw = Math.ceil(nw / 8), b = new Float32Array(bu * bw).fill(-Infinity);
@@ -525,8 +542,9 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   const borrador = (esc.ss ?? CALIDAD) === 0;
   const sombras = borrador ? null : mapaSombra(sol);
   const alturas = borrador ? null : mapaAlturas(sol);
+  const haciaLuz = borrador ? rejillaLuz(sol) : null;
   /** En borrador la luz es de un solo rayo (sombra dura) y no hay oclusión. */
-  const luzDe = (q: V3, giro: number, sesgo: number) => (borrador ? (impacto(sol, q, LUZ) ? 0 : 1) : luzEn(sombras, q, giro, sesgo));
+  const luzDe = (q: V3, giro: number, sesgo: number) => (borrador ? (impacto(haciaLuz!(q), q, LUZ) ? 0 : 1) : luzEn(sombras, q, giro, sesgo));
   const z0 = zmax + 40;
   const tin = amb.tinte ?? [1, 1, 1];
   const luzAmb = amb.luz ?? 1;
