@@ -6,13 +6,15 @@ import { aLoot, arma3dDe } from './loot';
 import { texto, T, TT, IDI, marco, titulo, boton, dentro, icono, lineasObjeto, tooltip, cacheRaster, rasterACanvas, envolver, ancho, TITULO } from './comun';
 import { CLASES, HABILIDADES, habilidadesDe, ATAQUE, TIERS, type Habilidad } from '../datos/clases';
 import { NPCS } from '../datos/npcs';
-import { MISIONES, ZONAS, PUEBLO_DE } from '../mundo/actos';
+import { MISIONES, ZONAS, PUEBLO_DE, daMision, type Mision, type Premio } from '../mundo/actos';
+import { MONSTRUOS } from '../datos/monstruos';
+import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist } from '../juego/historia';
 import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
 import { CASILLAS, BOLSA_W, BOLSA_H, equipoVisual, ropaBase, cuerpoDe, firmaVisual, libre, cumpleReq, nivelHab, puedeAprender, xpPara, recoger, type Casilla, type EnBolsa } from '../juego/heroe';
 import { recalc, usarPocion, abrirPortal, costoMana, danoHab, habilidadDe, msg, frascosMax, ventanaCombo, cadaveresCerca, MAX_CARGAS, colorElem, type Juego, type Monstruo } from '../juego/mundo';
 import { Sonido } from '../audio/sonido';
-import { R, entero, elegir } from '../nucleo/azar';
+import { R, entero } from '../nucleo/azar';
 
 export type PanelId = 'inv' | 'pers' | 'habs' | 'cofre' | 'tienda' | 'dialogo' | 'viaje' | 'misiones' | 'menu' | 'elegirHab' | null;
 export const ui = {
@@ -338,7 +340,7 @@ function dibujarPanel(j: Juego, p: PanelId, x: number, t: number) {
     case 'viaje': return panelViaje(j, x, y);
     case 'misiones': return panelMisiones(j, x, y);
     case 'menu': return panelMenu(j, x, y);
-    case 'pagina' as any: { marco(x, y, 320, 432); titulo(T('Página arrancada', 'Torn page'), x, y, 320); texto(`${(ui as any).paginaN} / 9`, x + 160, y + 58, { alin: 'center', tam: 11, color: '#806a50' }); envolver(ui.dialogoTexto ?? '', 270, 15).forEach((l, i) => texto(l, x + 25, y + 90 + i * 22, { tam: 15, color: '#d8c49a', fuente: TITULO })); if (boton(T('Cerrar', 'Close'), x + 120, y + 380, 80, 28, { tam: 13 })) { ui.izq = null; E.clicIzq = false; } return; }
+    case 'pagina' as any: { marco(x, y, 320, 432); titulo(T('Página arrancada', 'Torn page'), x, y, 320); texto((ui as any).paginaTitulo ?? '', x + 160, y + 52, { alin: 'center', tam: 12, color: '#c0a070' }); texto(`${(ui as any).paginaN} / ${(ui as any).paginaTotal ?? 9}`, x + 160, y + 68, { alin: 'center', tam: 11, color: '#806a50' }); envolver(ui.dialogoTexto ?? '', 270, 15).forEach((l, i) => texto(l, x + 25, y + 90 + i * 22, { tam: 15, color: '#d8c49a', fuente: TITULO })); if (boton(T('Cerrar', 'Close'), x + 120, y + 380, 80, 28, { tam: 13 })) { ui.izq = null; E.clicIzq = false; } return; }
   }
 }
 
@@ -776,44 +778,74 @@ function panelTienda(j: Juego, x: number, y: number, t: number) {
 
 // ---------------- diálogo con la gente del campamento
 export function hablarCon(j: Juego, id: string) {
-  ui.npc = id; ui.dialogoTexto = null; ui.izq = 'dialogo'; ui.der = null;
-  const n = NPCS[id]; ui.dialogoTexto = TT(elegir(n.saludo));
-  Sonido.efecto('click');
-  // misiones: quien da misiones entrega las pendientes
-  if (n.oficio === 'misiones') revisarMisiones(j);
-}
-function revisarMisiones(j: Juego) {
+  ui.npc = id; ui.izq = 'dialogo'; ui.der = null; (ui as any).eleccion = null; (ui as any).oferta = null;
   const d = j.heroe.d;
-  for (const m of MISIONES.filter((q) => q.acto === d.acto)) {
-    const e = d.misiones[m.id] ?? 0;
-    if (e === 2) { // terminar
-      d.misiones[m.id] = 3;
-      const p = m.premio;
-      if (p.habilidad) d.puntosHab += p.habilidad;
-      if (p.atributos) d.puntosAtrib += p.atributos;
-      if (p.oro) d.oro += p.oro;
-      if (p.vida) d.vit += Math.round(p.vida / 3);
-      if (p.resistencia) d.ene += 0;
-      if (p.objeto) { const o = crearObjeto(Math.max(d.nivel, 5), p.objeto); if (!recoger(d, o)) j.suelo.push({ o, oro: 0, x: j.heroe.x + 1, y: j.heroe.y + 1, t: 0, id: Date.now() }); }
-      ui.dialogoTexto = TT(m.hecho);
-      Sonido.efecto('mision');
-      recalc(j);
-      if (m.cierraActo && d.acto < 5) { const sig = PUEBLO_DE[d.acto + 1]; if (!d.viajes.includes(sig)) d.viajes.push(sig); }
-      j.eventos.push({ tipo: 'mision_hecha', dato: m.id });
-      return;
-    }
+  ui.dialogoTexto = TT(saludoDe(id, d));
+  Sonido.efecto('click');
+  revisarMisiones(j, id);
+}
+/** Entrega lo cumplido (o pregunta qué elegir) y ofrece lo que haya. Las principales se aceptan solas, como siempre. */
+function revisarMisiones(j: Juego, id = ui.npc ?? '') {
+  const d = j.heroe.d;
+  const e = entregaDe(id, d);
+  if (e) {
+    if (e.eleccion) { (ui as any).eleccion = e.id; ui.dialogoTexto = TT(e.eleccion.pregunta); Sonido.efecto('mision'); }
+    else entregar(j, e);
+    return;
   }
-  const sig = MISIONES.find((q) => q.acto === d.acto && (d.misiones[q.id] ?? 0) === 0);
-  if (sig && MISIONES.filter((q) => q.acto === d.acto && (d.misiones[q.id] ?? 0) === 1).length === 0) { d.misiones[sig.id] = 1; ui.dialogoTexto = TT(sig.pedido); Sonido.efecto('mision'); }
+  const o = ofertaDe(id, d);
+  if (!o) return;
+  if (o.lateral) { (ui as any).oferta = o.id; ui.dialogoTexto = TT(o.pedido); }
+  else { aceptar(d, o); ui.dialogoTexto = TT(o.pedido); Sonido.efecto('mision'); }
+}
+function darPremio(j: Juego, p: Premio) {
+  const d = j.heroe.d;
+  if (p.habilidad) d.puntosHab += p.habilidad;
+  if (p.atributos) d.puntosAtrib += p.atributos;
+  if (p.oro) d.oro += p.oro;
+  if (p.vida) d.vit += Math.round(p.vida / 3);
+  if (p.objeto) { const o = crearObjeto(Math.max(d.nivel, 5), p.objeto); if (!recoger(d, o)) j.suelo.push({ o, oro: 0, x: j.heroe.x + 1, y: j.heroe.y + 1, t: 0, id: Date.now() }); }
+}
+function entregar(j: Juego, m: Mision, opcion?: number) {
+  const d = j.heroe.d;
+  d.misiones[m.id] = 3;
+  if (opcion !== undefined && m.eleccion) { hist(d).elecciones ??= {}; hist(d).elecciones![m.id] = opcion; darPremio(j, m.eleccion.opciones[opcion].premio); }
+  darPremio(j, m.premio);
+  ui.dialogoTexto = TT(textoHecho(d, m, opcion));
+  (ui as any).eleccion = null;
+  Sonido.efecto('mision');
+  recalc(j);
+  if (m.cierraActo && m.acto < 7) { const sig = PUEBLO_DE[m.acto + 1]; if (sig && !d.viajes.includes(sig)) d.viajes.push(sig); }
+  j.eventos.push({ tipo: 'mision_hecha', dato: m.id });
 }
 function panelDialogo(j: Juego, x: number, y: number) {
   const n = NPCS[ui.npc ?? '']; if (!n) { ui.izq = null; return; }
+  const d = j.heroe.d;
   marco(x, y, 320, 432); titulo(TT(n.nombre), x, y, 320);
-  envolver(ui.dialogoTexto ?? '', 280, 14).slice(0, 12).forEach((l, i) => texto(l, x + 20, y + 62 + i * 19, { tam: 14, color: '#e0d0b0' }));
+  const eleccion = MISIONES.find((m) => m.id === (ui as any).eleccion && m.eleccion);
+  const oferta = MISIONES.find((m) => m.id === (ui as any).oferta);
+  if (eleccion || oferta) texto(TT((eleccion ?? oferta)!.nombre), x + 160, y + 52, { alin: 'center', tam: 12, color: eleccion ? '#ffd080' : '#80c0ff' });
+  envolver(ui.dialogoTexto ?? '', 280, 14).slice(0, 12).forEach((l, i) => texto(l, x + 20, y + 72 + i * 18, { tam: 14, color: '#e0d0b0' }));
   let by = y + 300;
-  const op = (s: string, f: () => void) => { if (boton(s, x + 40, by, 240, 26, { tam: 13 })) { E.clicIzq = false; f(); } by += 30; };
-  op(T('Cuéntame', 'Tell me'), () => { ui.dialogoTexto = TT(n.relato); });
-  if (n.oficio === 'misiones') op(T('Misiones', 'Quests'), () => { revisarMisiones(j); const act = MISIONES.find((q) => q.acto === j.heroe.d.acto && (j.heroe.d.misiones[q.id] ?? 0) === 1); if (act && ui.dialogoTexto === null) ui.dialogoTexto = TT(act.pedido); else if (act) ui.dialogoTexto = TT(act.pedido); });
+  const op = (s: string, f: () => void, color?: string) => { if (boton(s, x + 15, by, 290, 26, { tam: 12, color })) { E.clicIzq = false; f(); } by += 30; };
+  if (eleccion?.eleccion) {
+    eleccion.eleccion.opciones.forEach((o, i) => {
+      const ls = envolver(TT(o.texto), 270, 12), hb = 14 + ls.length * 15;
+      if (boton('', x + 15, by, 290, hb, { tam: 12 })) { E.clicIzq = false; entregar(j, eleccion, i); }
+      ls.forEach((l, k) => texto(l, x + 160, by + 17 + k * 15, { alin: 'center', tam: 12, color: '#ffd080' }));
+      by += hb + 6;
+    });
+    return;
+  }
+  if (oferta) {
+    op(T('Aceptar el encargo', 'Accept the task'), () => { aceptar(d, oferta); (ui as any).oferta = null; ui.dialogoTexto = TT(saludoDe(n.id, d)); Sonido.efecto('mision'); }, '#80c0ff');
+    op(T('Ahora no', 'Not now'), () => { (ui as any).oferta = null; ui.dialogoTexto = TT(saludoDe(n.id, d)); });
+    return;
+  }
+  op(T('Cuéntame', 'Tell me'), () => { ui.dialogoTexto = TT(relatoDe(n.id, d)); });
+  const act = activaDe(n.id, d);
+  if (act) op(`${T('Sobre', 'About')}: ${TT(act.nombre)}`, () => { ui.dialogoTexto = TT(act.pedido); });
+  else if (n.oficio === 'misiones') op(T('Misiones', 'Quests'), () => { revisarMisiones(j, n.id); });
   if (n.oficio === 'herrero') op(T('Comerciar y reparar', 'Trade and repair'), () => abrirTienda(j, 'herrero'));
   if (n.oficio === 'curandera') op(T('Curarme y comprar remedios', 'Heal me and buy remedies'), () => { j.heroe.vida = j.heroe.vidaMax; j.heroe.mana = j.heroe.c.manaMax; j.heroe.veneno = 0; Sonido.efecto('curar'); abrirTienda(j, 'curandera'); });
   if (n.oficio === 'vidente') op(T('Probar suerte', 'Try my luck'), () => abrirTienda(j, 'vidente'));
@@ -837,16 +869,35 @@ function panelViaje(j: Juego, x: number, y: number) {
     yy += 30;
   }
 }
+function objetivoTxt(m: Mision): string {
+  const o = m.objetivo, z = TT(ZONAS[o.zona]?.nombre ?? ['?', '?']);
+  if (o.tipo === 'llegar') return `${T('Llega a', 'Reach')} ${z}`;
+  const nom = o.nombreUnico ?? MONSTRUOS[o.monstruo]?.nombre ?? ['?', '?'];
+  return `${T('Vence a', 'Defeat')} ${TT(nom)} · ${z}`;
+}
 function panelMisiones(j: Juego, x: number, y: number) {
   const d = j.heroe.d;
   marco(x, y, 320, 432); titulo(T('Misiones', 'Quests'), x, y, 320);
-  let yy = y + 56;
-  for (const m of MISIONES) {
-    const e = d.misiones[m.id] ?? 0; if (e === 0 && m.acto > d.acto) continue;
+  const max = Math.max(d.acto, ...MISIONES.filter((m) => (d.misiones[m.id] ?? 0) > 0).map((m) => m.acto));
+  const actos = Array.from({ length: max }, (_, i) => i + 1);
+  let act = (ui as any).misionesActo ?? d.acto; if (!actos.includes(act)) act = d.acto;
+  const tw = Math.floor(290 / Math.max(1, actos.length));
+  actos.forEach((a, i) => { if (boton(String(a), x + 15 + i * tw, y + 44, tw - 3, 22, { tam: 12, color: a === act ? '#ffd080' : undefined })) { (ui as any).misionesActo = a; E.clicIzq = false; } });
+  let yy = y + 86;
+  const lista = MISIONES.filter((m) => m.acto === act).sort((a, b) => Number(!!a.lateral) - Number(!!b.lateral));
+  let lateral = false;
+  for (const m of lista) {
+    if (m.lateral && !lateral) { lateral = true; texto(T('Encargos', 'Side tasks'), x + 18, yy, { tam: 11, color: '#806a50' }); yy += 14; }
+    else if (yy === y + 86) { texto(T('Historia', 'Story'), x + 18, yy, { tam: 11, color: '#806a50' }); yy += 14; }
+    const e = d.misiones[m.id] ?? 0;
     const col = e === 3 ? '#707070' : e === 2 ? '#80ff80' : e === 1 ? '#f0d080' : '#5a5040';
-    texto(`${T('Acto', 'Act')} ${m.acto} · ${TT(m.nombre)}`, x + 18, yy, { color: col, tam: 13 });
-    texto(e === 3 ? T('Terminada', 'Completed') : e === 2 ? T('Vuelve a contarlo', 'Return to report') : e === 1 ? T('En curso', 'In progress') : T('Sin empezar', 'Not started'), x + 34, yy + 15, { tam: 11, color: '#a09070' });
-    yy += 34;
+    const quien = TT(NPCS[daMision(m)]?.nombre ?? ['', '']);
+    texto(TT(m.nombre), x + 18, yy, { color: col, tam: 13 });
+    const est = e === 3 ? T('Terminada', 'Completed') : e === 2 ? `${T('Vuelve con', 'Return to')} ${quien}` : e === 1 ? objetivoTxt(m) : `${T('Habla con', 'Speak with')} ${quien}`;
+    texto(est.length > 52 ? est.slice(0, 50) + '…' : est, x + 30, yy + 14, { tam: 10, color: '#a09070' });
+    const el = eleccionDe(d, m.id);
+    if (e === 3 && el !== undefined && m.eleccion) texto(`· ${TT(m.eleccion.opciones[el].texto)}`.slice(0, 56), x + 30, yy + 26, { tam: 10, color: '#8a7ab0' });
+    yy += e === 3 && el !== undefined ? 40 : 32;
   }
 }
 function panelMenu(j: Juego, x: number, y: number) {

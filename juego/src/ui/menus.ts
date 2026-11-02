@@ -4,7 +4,7 @@ import { texto, T, TT, IDI, boton, marco, dentro, envolver, TITULO, fijarIdioma 
 import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
 import { generarPaisaje, type MapaGotico } from '../../../src/engine/gotico/index';
 import { CLASES } from '../datos/clases';
-import { INTRO } from '../mundo/actos';
+import { INTRO, ENTREACTO, REVELACION, OPCIONES_BRASA, TRAS_ELEGIR, EPILOGO, type FinalElegido } from '../mundo/actos';
 import type { DatosHeroe } from '../juego/heroe';
 import { R, rng } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
@@ -352,30 +352,110 @@ export function pantallaCarga(k: number, msg: string, t: number) {
   texto(msg, W / 2, y + 34, { alin: 'center', tam: 13, color: '#a09070' });
 }
 
-// ------------------------------------------------------------------ el final
-const FINAL: [string, string][] = [
-  ['Ozmaren cae. La sed se apaga como una vela bajo el agua.', 'Ozmaren falls. The thirst goes out like a candle under water.'],
-  ['La Marca en tu piel se pone gris y fría.', 'The Mark on your skin turns grey and cold.'],
-  ['En Velmora, por primera vez en mil inviernos, las campanas callan.', 'In Velmora, for the first time in a thousand winters, the bells fall silent.'],
-  ['Pero esa noche Tomás despierta gritando. Dibuja una sola cosa, una y otra vez.', 'But that night Tomas wakes up screaming. He draws one thing, over and over.'],
-  ['Una segunda brasa. Todavía en el cielo. Esperando.', 'A second ember. Still in the sky. Waiting.'],
-];
-/** Devuelve true cuando terminó. */
-export function dibujarFinal(t: number): boolean {
+// ------------------------------------------------------------------ entre actos, la revelación y los finales
+// Usan la misma máquina que la intro: escenas pintadas con los assets, cámara lenta, franjas de cine y la voz a máquina.
+const DUR_TOMA = 7;
+/** Cámara al centro de la escena (cada bloque son 5 baldosas de 8 px de alto). */
+const centroY = (m: MapaGotico) => ((m.ancho + m.alto) / 2) * 5 * 8;
+/** Una figura en la toma: el heraldo pálido, la silueta de Ozmaren o el dios dorado. */
+function figura(id: string, t: number, x: number, y: number, k: number) {
+  const sprite = id === 'heraldo' ? 'sacerdote_caido' : SPRITE_OZMAREN;
+  const fs = cuadrosMonstruo(sprite, id === 'heraldo' ? 'caminar' : 'quieto', id === 'heraldo' ? 'o' : 's'); const q = fs[Math.floor(t * (id === 'heraldo' ? 8 : 4)) % Math.max(1, fs.length)];
+  if (!q) return;
+  if (id === 'heraldo') { ctx.globalAlpha = 0.65 * k; dibujarTenido(ctx, q, x - t * 14, y, '#e8e0ff', 0.75, 1.6); ctx.globalAlpha = 1; return; }
+  const esc = Math.min(2.2, (H * 0.6) / Math.max(1, q.h));
+  dibujarTenido(ctx, q, x, y + H * 0.25, '#000', 0.85, esc);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.25 * k * (0.7 + 0.3 * Math.sin(t * 3));
+  dibujarTenido(ctx, q, x, y + H * 0.25, id === 'aun_saar' ? '#ffd060' : '#ff5020', 1, esc); ctx.restore();
+}
+function lluviaDe(escenaId: string, t: number) {
+  if (escenaId === 'nieve') lluviaCeniza(t, 1, 0); else if (escenaId === 'infierno' || escenaId === 'fortaleza') lluviaCeniza(t, 1, 0.45);
+  else if (escenaId === 'cementerio' || escenaId === 'catedral' || escenaId === 'campamento') lluvia(t, 0.5); else lluviaCeniza(t, 0.5, 0.15);
+}
+/** Franjas, viñeta, fundidos y la línea escrita a máquina. */
+function marcoCine(linea: string | null, tl: number, dur: number) {
+  vineta();
+  const fr = Math.round(H * 0.07); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, fr); ctx.fillRect(0, H - fr, W, fr);
+  const f = Math.min(1, tl / 1.2, (dur - tl) / 1.2);
+  ctx.fillStyle = `rgba(0,0,0,${1 - Math.max(0, f)})`; ctx.fillRect(0, 0, W, H);
+  if (linea) envolver(maquina(linea, tl - 0.7), Math.min(760, W - 80), 20).forEach((l, n) => texto(l, W / 2, H - fr - 52 + n * 26, { alin: 'center', tam: 20, color: '#e8dcc0', fuente: TITULO }));
+  texto(T('Clic o Esc para saltar', 'Click or Esc to skip'), W - 16, H - 14, { alin: 'right', tam: 11, color: '#5a5040' });
+}
+/** Cinemática al cerrar un acto. Devuelve true cuando terminó. */
+export function dibujarEntreacto(acto: number, t: number, eleccion?: FinalElegido): boolean {
+  const tomas = ENTREACTO[acto] ?? [];
+  const i = Math.floor(t / DUR_TOMA);
+  if (i >= tomas.length) return true;
+  const tm = tomas[i], tl = t - i * DUR_TOMA, k = tl / DUR_TOMA;
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-  const dur = 6, i = Math.floor(t / dur);
-  brasas(t, 40, i < 3);
-  if (i >= FINAL.length) {
-    const k = Math.min(1, (t - FINAL.length * dur) / 2);
-    logo(W / 2, H * 0.42, k, t, Math.min(56, W / 16));
-    texto(T('Fin del primer legado', 'End of the first legacy'), W / 2, H * 0.55, { alin: 'center', tam: 18, color: `rgba(220,200,160,${k})`, fuente: TITULO });
-    texto(T('Ahora puedes empezar la Pesadilla desde la lista de héroes.', 'You can now begin Nightmare from the hero list.'), W / 2, H * 0.62, { alin: 'center', tam: 13, color: '#8a7a60' });
-    return t > FINAL.length * dur + 7;
+  const m = escena(tm.escena, tm.seed).mapa;
+  camara(() => pintarMapa(m, (i % 2 ? -1 : 1) * (tl * 6 - 20), centroY(m) - 20 + tl * 4, t, undefined, 1.6 + suave(k) * 0.3), 1);
+  oscuridad(tm.escena === 'infierno' ? 0.45 : 0.6, [[W / 2, H * 0.55, 220 * titila(t)]]);
+  if (tm.figura) figura(tm.figura, tl, W * 0.62, H * 0.62, Math.min(1, tl / 2));
+  lluviaDe(tm.escena, t);
+  if (tm.escena === 'infierno' || tm.escena === 'arcano') brasas(t, 30);
+  const linea = (eleccion && tm.textoSegun?.[eleccion]) || tm.texto;
+  marcoCine(TT(linea), tl, DUR_TOMA);
+  texto(`${T('Acto', 'Act')} ${acto + 1}`, W / 2, Math.round(H * 0.07) + 30, { alin: 'center', tam: 13, color: `rgba(200,170,120,${Math.min(1, tl / 2) * 0.8})`, fuente: TITULO });
+  return false;
+}
+/** Una brasa que late en el centro (la Brasa de Ozmaren). */
+function brasaViva(t: number, x: number, y: number, k: number, gris = 0) {
+  const r = (38 + Math.sin(t * 5) * 6) * (1 - gris * 0.6);
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.2);
+  if (gris > 0) { g.addColorStop(0, `rgba(180,180,180,${k})`); g.addColorStop(0.3, `rgba(90,90,90,${0.6 * k})`); }
+  else { g.addColorStop(0, `rgba(255,230,160,${k})`); g.addColorStop(0.25, `rgba(255,110,30,${0.8 * k})`); }
+  g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(x - r * 2.2, y - r * 2.2, r * 4.4, r * 4.4);
+}
+const DUR_REV = 7;
+/** Al caer Ozmaren: la revelación y la elección. Devuelve la elección (una vez) o 'fin' cuando termina el desenlace. */
+export function dibujarRevelacion(t: number, eleccion: FinalElegido | null): FinalElegido | 'fin' | null {
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  const m = escena('infierno', 5).mapa;
+  camara(() => pintarMapa(m, -10 + Math.min(t, 30) * 1.5, centroY(m), t, undefined, 1.8), 1);
+  oscuridad(0.8);
+  if (eleccion) {
+    brasaViva(t, W / 2, H * 0.45, 1, eleccion === 'destruir' ? Math.min(1, t / 3) : 0);
+    if (eleccion === 'absorber') { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(W / 2, H * 0.45, 0, W / 2, H * 0.45, Math.min(W, 200 + t * 120)); g.addColorStop(0, `rgba(255,90,20,${Math.max(0, 0.4 - t * 0.04)})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+    brasas(t, 40, eleccion === 'absorber');
+    marcoCine(TT(TRAS_ELEGIR[eleccion]), t, 9);
+    return t > 9 ? 'fin' : null;
   }
-  const tl = t - i * dur, k = Math.min(1, tl / 1.2, (dur - tl) / 1.2);
-  if (i === 4) { const g = ctx.createRadialGradient(W * 0.7, H * 0.2, 0, W * 0.7, H * 0.2, 40 + Math.sin(t * 6) * 4); g.addColorStop(0, `rgba(255,200,120,${k})`); g.addColorStop(0.3, `rgba(255,90,20,${0.6 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
-  ctx.globalAlpha = Math.max(0, k);
-  envolver(TT(FINAL[i]), Math.min(720, W - 80), 22).forEach((l, n) => texto(l, W / 2, H / 2 + n * 30, { alin: 'center', tam: 22, color: '#e8dcc0', fuente: TITULO }));
-  ctx.globalAlpha = 1;
+  brasaViva(t, W / 2, H * 0.45, Math.min(1, t / 2));
+  brasas(t, 30);
+  const n = REVELACION.length, i = Math.min(n - 1, Math.floor(t / DUR_REV));
+  if (t < n * DUR_REV) { marcoCine(TT(REVELACION[i]), t - i * DUR_REV, DUR_REV); return null; }
+  // la elección
+  vineta();
+  texto(TT(REVELACION[n - 1]).split('. ')[0] + '.', W / 2, H * 0.68, { alin: 'center', tam: 16, color: '#c8b890', fuente: TITULO });
+  let r: FinalElegido | null = null;
+  const bw = 230, by = H * 0.74;
+  if (boton(TT(OPCIONES_BRASA.destruir), W / 2 - bw - 20, by, bw, 40, { tam: 16, color: '#c0d0e0' })) r = 'destruir';
+  if (boton(TT(OPCIONES_BRASA.absorber), W / 2 + 20, by, bw, 40, { tam: 16, color: '#ffa060' })) r = 'absorber';
+  return r;
+}
+/** Al caer Aun-Saar: el epílogo según lo que hiciste con la Brasa. Devuelve true cuando terminó. */
+export function dibujarFinal(t: number, eleccion: FinalElegido = 'destruir'): boolean {
+  const ep = EPILOGO[eleccion];
+  const dur = 7, i = Math.floor(t / dur);
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  if (i >= ep.lineas.length) {
+    const k = Math.min(1, (t - ep.lineas.length * dur) / 2);
+    brasas(t, 40, eleccion === 'absorber');
+    logo(W / 2, H * 0.4, k, t, Math.min(56, W / 16));
+    texto(TT(ep.titulo), W / 2, H * 0.54, { alin: 'center', tam: 20, color: `rgba(220,200,160,${k})`, fuente: TITULO });
+    texto(T('Fin', 'The End'), W / 2, H * 0.6, { alin: 'center', tam: 14, color: `rgba(180,160,120,${k})`, fuente: TITULO });
+    texto(T('Ahora puedes empezar la Pesadilla desde la lista de héroes.', 'You can now begin Nightmare from the hero list.'), W / 2, H * 0.66, { alin: 'center', tam: 13, color: '#8a7a60' });
+    return t > ep.lineas.length * dur + 7;
+  }
+  const tl = t - i * dur;
+  // destruir: el valle al alba, gris y en calma. Absorber: el trono sobre el cielo roto, dorado y rojo.
+  const m = eleccion === 'destruir' ? escena(i < 2 ? 'arcano' : i < 4 ? 'campamento' : 'cementerio', 3 + i).mapa : escena(i < 2 ? 'fortaleza' : i < 4 ? 'catedral' : 'infierno', 4 + i).mapa;
+  camara(() => pintarMapa(m, (i % 2 ? -1 : 1) * (tl * 5 - 15), centroY(m) + 10 - tl * 3, t, undefined, 1.7 + suave(tl / dur) * 0.2), 1);
+  oscuridad(eleccion === 'destruir' ? 0.5 : 0.62, [[W / 2, H * 0.5, 240 * titila(t)]]);
+  if (eleccion === 'destruir') { lluvia(t, 0.3); ctx.fillStyle = 'rgba(120,130,150,0.12)'; ctx.fillRect(0, 0, W, H); }
+  else { brasas(t, 40); if (i < 2) figura('aun_saar', tl, W / 2, H * 0.5, 1); }
+  if (i === ep.lineas.length - 1) { const g = ctx.createRadialGradient(W * 0.72, H * 0.2, 0, W * 0.72, H * 0.2, 40 + Math.sin(t * 6) * 4); const k = Math.min(1, tl / 1.2); g.addColorStop(0, `rgba(255,200,120,${k})`); g.addColorStop(0.3, `rgba(255,90,20,${0.6 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+  marcoCine(TT(ep.lineas[i]), tl, dur);
   return false;
 }

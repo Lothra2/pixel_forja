@@ -121,16 +121,34 @@ export const PUEBLO_DE: Record<number, string> = { 1: 'a1_refugio', 2: 'a2_oasis
 export const MUSICA_ACTO = (acto: number, tipo: string) => (tipo === 'pueblo' ? `campamento${acto}` : tipo === 'mazmorra' ? (acto === 1 ? 'mazmorra' : `acto${acto}`) : `acto${acto}`);
 
 // ------------------------------------------------------------------ misiones
+export interface Premio { habilidad?: number; atributos?: number; vida?: number; oro?: number; objeto?: 'raro' | 'unico' | 'conjunto'; resistencia?: number }
+export interface OpcionMision { texto: [string, string]; hecho: [string, string]; premio: Premio }
+export type FinalElegido = 'destruir' | 'absorber';
 export interface Mision {
   id: string; acto: number; nombre: [string, string];
   /** Lo que pide el que da la misión y lo que dice cuando vuelves. */
   pedido: [string, string]; hecho: [string, string];
   objetivo: { tipo: 'matar'; zona: string; monstruo: string; nombreUnico?: [string, string] } | { tipo: 'llegar'; zona: string };
-  premio: { habilidad?: number; atributos?: number; vida?: number; oro?: number; objeto?: 'raro' | 'unico' | 'conjunto'; resistencia?: number };
+  premio: Premio;
   /** Al terminarla se abre el siguiente acto. */
   cierraActo?: boolean;
+  /** Encargo lateral (las principales son la cadena del acto). */
+  lateral?: boolean;
+  /** Quién la da y la recibe (por defecto quien da misiones en el pueblo del acto). */
+  da?: string;
+  /** Misiones que tienen que estar terminadas antes de que te la ofrezcan. */
+  requiere?: string[];
+  /** Al volver, eliges qué hacer: cada opción tiene su desenlace y su premio. */
+  eleccion?: { pregunta: [string, string]; opciones: [OpcionMision, OpcionMision] };
+  /** Otro desenlace según lo que hiciste con la Brasa. */
+  hechoSegun?: Partial<Record<FinalElegido, [string, string]>>;
 }
+/** Quién da las misiones principales en cada acto. */
+export const DA_MISIONES: Record<number, string> = { 1: 'odran', 2: 'qadir', 3: 'oya', 4: 'sigrun', 5: 'auren', 6: 'oya', 7: 'auren' };
+export const daMision = (m: Mision) => m.da ?? DA_MISIONES[m.acto];
+
 export const MISIONES: Mision[] = [
+  // ============================================================== ACTO 1
   { id: 'm1_hambre', acto: 1, nombre: ['El hambre bajo el páramo', 'The Hunger Beneath the Moor'],
     pedido: ['Hay una cueva en el páramo. De ahí salen arañas del tamaño de un perro y los que comen a los muertos. Algo grande teje allá abajo. Los pastores la llaman la Madre del Pozo. Mátala y el páramo respirará un poco.', 'There is a cave on the moor. Spiders the size of dogs crawl out of it, and the corpse-eaters with them. Something big weaves down below. The shepherds call it the Well Mother. Kill it and the moor will breathe a little.'],
     hecho: ['Siento el aire más liviano. Toma, esto es lo único que sé enseñar: cómo aprender más rápido.', 'The air feels lighter. Here, this is the only thing I know how to teach: how to learn faster.'],
@@ -139,42 +157,267 @@ export const MISIONES: Mision[] = [
     pedido: ['La abadía está más allá del camposanto. Alguien tiene que entrar y ver qué quedó. Si encuentras la piedra de viaje de la Nave, enciéndela. Así podremos seguirte.', 'The abbey lies beyond the churchyard. Someone must go in and see what remains. If you find the travel stone in the Nave, light it. Then we can follow you.'],
     hecho: ['Encendiste la piedra. Escuché las campanas desde aquí, una sola vez. Tomás lloró toda la noche. Ten, te lo ganaste.', 'You lit the stone. I heard the bells from here, just once. Tomas cried all night. Here, you earned it.'],
     objetivo: { tipo: 'llegar', zona: 'a1_abadia1' }, premio: { atributos: 5 } },
-  { id: 'm1_verdugo', acto: 1, nombre: ['El Verdugo de Velmora', 'The Velmora Headsman'],
-    pedido: ['Antes de la brasa, la abadía tenía un verdugo para los herejes. Lo enterraron con su hacha en los osarios. Lys dice que lo oye afilar por las noches. Que deje de afilar.', 'Before the ember, the abbey kept a headsman for heretics. They buried him with his axe in the ossuaries. Lys says she hears him sharpening at night. Make the sharpening stop.'],
-    hecho: ['Tenía mi nombre escrito en su hacha. No te asustes, tenía el de todos. Toma esto, era de él.', 'He had my name written on his axe. Do not worry, he had everyone\'s. Take this, it was his.'],
-    objetivo: { tipo: 'matar', zona: 'a1_cata1', monstruo: 'verdugo' }, premio: { objeto: 'raro', oro: 500 } },
   { id: 'm1_abadesa', acto: 1, nombre: ['La Brasa en el Pozo', 'The Ember in the Well'], cierraActo: true,
-    pedido: ['Bajo los osarios está el pozo. Ilvara está allí abajo con la brasa. Ya no es la Abadesa. Si la dejas, la brasa abre el primer sello y todo el valle se enciende. Ve.', 'Beneath the ossuaries lies the well. Ilvara is down there with the ember. She is no longer the Abbess. If you let her be, the ember opens the first seal and the whole valley ignites. Go.'],
+    pedido: ['Bajo los osarios está el pozo. Ilvara está allí abajo con la brasa. Ya no es la Abadesa. Si la dejas, la brasa abre el primer sello y todo el valle se enciende. Ve. Y si ves a un hombre pálido que canta, no le contestes.', 'Beneath the ossuaries lies the well. Ilvara is down there with the ember. She is no longer the Abbess. If you let her be, the ember opens the first seal and the whole valley ignites. Go. And if you see a pale man singing, do not answer him.'],
     hecho: ['La brasa se fue antes de que cayera Ilvara. Voló al sur, al desierto de Sahrim. Ysolde la vio en sus cartas. La seguiremos. La piedra de viaje ya conoce el camino.', 'The ember fled before Ilvara fell. It flew south, to the Sahrim desert. Ysolde saw it in her cards. We will follow. The travel stone already knows the way.'],
     objetivo: { tipo: 'matar', zona: 'a1_pozo', monstruo: 'abadesa' }, premio: { habilidad: 1, atributos: 5 } },
+  { id: 'm1_verdugo', acto: 1, lateral: true, da: 'lys', requiere: ['m1_campanas'], nombre: ['El Verdugo de Velmora', 'The Velmora Headsman'],
+    pedido: ['Antes de la brasa, la abadía tenía un verdugo para los herejes. Lo enterraron con su hacha en los osarios, bajo el claustro. Yo lo oigo afilar por las noches, aunque estoy lejos. Que deje de afilar. Por favor.', 'Before the ember, the abbey kept a headsman for heretics. They buried him with his axe in the ossuaries, beneath the cloister. I hear him sharpening at night, even from this far. Make the sharpening stop. Please.'],
+    hecho: ['Tenía mi nombre escrito en su hacha, ¿verdad? No pongas esa cara. Tenía el de todos. Toma esto, era de él. Y mi bendición, que es lo único mío que vale algo. Esta noche voy a dormir.', 'He had my name written on his axe, did he not? Do not make that face. He had everyone\'s. Take this, it was his. And my blessing, the only thing of mine worth anything. Tonight I will sleep.'],
+    objetivo: { tipo: 'matar', zona: 'a1_cata1', monstruo: 'verdugo' }, premio: { objeto: 'raro', oro: 500, vida: 10 } },
+  { id: 'm1_pastor', acto: 1, lateral: true, da: 'brannoc', nombre: ['El pastor que no volvió', 'The Shepherd Who Never Returned'],
+    pedido: ['Mi hermano Edrin cuidaba ovejas en el páramo. La noche de la brasa se metió con el rebaño en la Cueva del Pastor, para protegerlo de la lluvia tibia. Las ovejas salieron. Él no. Ahora algo grande vive ahí y las ovejas ya no salen. Entra. Dime qué encontraste.', 'My brother Edrin herded sheep on the moor. The night of the ember he took the flock into the Shepherd\'s Cave, to shelter it from the warm rain. The sheep came out. He did not. Now something big lives there and the sheep no longer come out. Go in. Tell me what you found.'],
+    hecho: ['Gracias por entrar. Ya sé lo que hay que saber.', 'Thank you for going in. I know what there is to know.'],
+    objetivo: { tipo: 'matar', zona: 'a1_pastor', monstruo: 'ogro', nombreUnico: ['Edrin, el que Comió', 'Edrin, Who Ate'] }, premio: {},
+    eleccion: { pregunta: ['Lo que encontraste llevaba el cayado de Edrin clavado en la carne, como un hueso más. Brannoc espera. ¿Qué le dices?', 'What you found carried Edrin\'s crook sunk into its flesh, like another bone. Brannoc waits. What do you tell him?'], opciones: [
+      { texto: ['La verdad: la brasa lo convirtió en eso.', 'The truth: the ember made him into that.'],
+        hecho: ['Brannoc no dice nada durante mucho rato. Después mete el cayado en la fragua fría. Lo que sale es una hoja. «Ten. Que mi hermano siga peleando, aunque sea en tu mano.»', 'Brannoc says nothing for a long while. Then he puts the crook into the cold forge. What comes out is a blade. "Here. Let my brother keep fighting, even if it is in your hand."'],
+        premio: { objeto: 'raro', oro: 200 } },
+      { texto: ['Una mentira piadosa: murió defendiendo el rebaño.', 'A merciful lie: he died defending the flock.'],
+        hecho: ['Brannoc sonríe por primera vez desde que lo conoces. «Así era él.» Te paga más de lo que vale tu trabajo. Tú sabes lo que vale de verdad.', 'Brannoc smiles for the first time since you met him. "That was him." He pays you more than your work is worth. You know what it is truly worth.'],
+        premio: { oro: 900, atributos: 2 } }] } },
+  { id: 'm1_reliquia', acto: 1, lateral: true, da: 'tomas', requiere: ['m1_hambre'], nombre: ['El dedo de Santa Oria', 'The Finger of Santa Oria'],
+    pedido: ['Tomás te toma de la manga y te enseña un dibujo: una cripta, una monja sin cara y, en sus manos, una cajita con un hueso adentro. Señala el camposanto. Después se toca la garganta y niega con la cabeza, despacio.', 'Tomas tugs at your sleeve and shows you a drawing: a crypt, a faceless nun, and in her hands a small box with a bone inside. He points toward the churchyard. Then he touches his throat and shakes his head, slowly.'],
+    hecho: ['Tomás asiente.', 'Tomas nods.'],
+    objetivo: { tipo: 'matar', zona: 'a1_cripta', monstruo: 'aparecida', nombreUnico: ['Hermana Ívola, la que Recuerda', 'Sister Ivola, She Who Remembers'] }, premio: {},
+    eleccion: { pregunta: ['Traes el relicario de Santa Oria. Adentro hay un dedo de la santa, todavía tibio. Tomás estira las manos. Odrán, desde el fuego, te mira y no dice nada.', 'You bring the reliquary of Santa Oria. Inside lies a finger of the saint, still warm. Tomas reaches out his hands. Odran, by the fire, watches you and says nothing.'], opciones: [
+      { texto: ['Dárselo a Tomás.', 'Give it to Tomas.'],
+        hecho: ['Tomás aprieta el relicario contra el pecho. Abre la boca. Sale una sola palabra, ronca, la primera en años: «Gracias». Odrán llora sin esconderse.', 'Tomas presses the reliquary to his chest. He opens his mouth. A single word comes out, hoarse, the first in years: "Thank you." Odran weeps without hiding it.'],
+        premio: { habilidad: 1 } },
+      { texto: ['Quedártelo. La santa todavía tiene poder.', 'Keep it. The saint still holds power.'],
+        hecho: ['Guardas el relicario. Pesa más de lo que debería. Tomás baja las manos y vuelve a su dibujo. Esta vez dibuja a alguien con tu cara.', 'You keep the reliquary. It weighs more than it should. Tomas lowers his hands and returns to his drawing. This time he draws someone with your face.'],
+        premio: { objeto: 'unico' } }] } },
+  // ============================================================== ACTO 2
   { id: 'm2_saqueador', acto: 2, nombre: ['El agua negra', 'The Black Water'],
     pedido: ['Bajo el Oasis Muerto vive algo que se bebe el agua desde abajo. Los saqueadores la llaman la Boca de Arena. La tierra tiembla antes de que salga. Mientras respire, el agua no vuelve.', 'Beneath the Dead Oasis lives something that drinks the water from below. The raiders call it the Sand Maw. The ground trembles before it rises. While it breathes, the water will not return.'],
     hecho: ['El agua corre clara otra vez, aunque sabe a hierro. Toma, para tu sed y tus heridas.', 'The water runs clear again, though it tastes of iron. Here, for your thirst and your wounds.'],
     objetivo: { tipo: 'matar', zona: 'a2_oasis_muerto', monstruo: 'gusano_de_arena' }, premio: { vida: 20, oro: 1000 } },
+  { id: 'm2_dormidos', acto: 2, nombre: ['La Galería de los Dormidos', 'The Gallery of the Sleepers'],
+    pedido: ['Más allá de las Ruinas del Sol están las tumbas de los reyes. Los saqueadores dicen que la puerta se abrió sola hace tres noches, y que de adentro sale un viento tibio que huele a canela. Llega a la Galería de los Dormidos y enciende la piedra. Sin ella no podremos sacarte de ahí.', 'Beyond the Ruins of the Sun lie the tombs of the kings. The raiders say the door opened by itself three nights ago, and that a warm wind blows out of it smelling of cinnamon. Reach the Gallery of the Sleepers and light the stone. Without it we cannot bring you back.'],
+    hecho: ['Encendiste la piedra. Desde aquí se vio una luz azul en el horizonte, y por un momento el agua del oasis estuvo limpia. Toma, para lo que viene.', 'You lit the stone. From here we saw a blue light on the horizon, and for a moment the oasis water ran clean. Here, for what comes next.'],
+    objetivo: { tipo: 'llegar', zona: 'a2_tumbas1' }, premio: { atributos: 5 } },
   { id: 'm2_rey', acto: 2, nombre: ['El Rey sin Sombra', 'The Shadowless King'], cierraActo: true,
     pedido: ['Khamer-Ul despertó. Su sombra se fue con la brasa hace mil años y ahora volvió a buscarla. Baja a las tumbas y quítale lo que le queda.', 'Khamer-Ul has woken. His shadow left with the ember a thousand years ago and now it has come back for it. Go down to the tombs and take what remains.'],
     hecho: ['Segundo sello roto, pero la brasa escapó otra vez. Ahora va hacia el río, hacia Yhuantl. La capitana Oyá tiene barco. Te espera en Kesh.', 'Second seal broken, but the ember escaped again. Now it heads for the river, to Yhuantl. Captain Oya has a ship. She waits for you at Kesh.'],
     objetivo: { tipo: 'matar', zona: 'a2_tumbas2', monstruo: 'rey_sin_sombra' }, premio: { habilidad: 1, objeto: 'unico' } },
+  { id: 'm2_nombres', acto: 2, lateral: true, da: 'nahla', nombre: ['El nombre de Samira', 'Samira\'s Name'],
+    pedido: ['Mi hija Samira murió de fiebre antes de la brasa. Grabamos su nombre en el Pozo de los Nombres, como manda la costumbre, para que los reyes de abajo la recuerden. Ayer fui a rezarle y su piedra estaba lisa. Algo allá abajo está borrando a nuestros muertos. Encuéntralo.', 'My daughter Samira died of fever before the ember. We carved her name into the Well of Names, as custom demands, so the kings below would remember her. Yesterday I went to pray and her stone was smooth. Something down there is erasing our dead. Find it.'],
+    hecho: ['Gracias.', 'Thank you.'],
+    objetivo: { tipo: 'matar', zona: 'a2_nombres2', monstruo: 'momia', nombreUnico: ['La Borradora', 'The Eraser'] }, premio: {},
+    eleccion: { pregunta: ['La Borradora cayó, pero la piedra de Samira sigue lisa. Nahla te da un cincel. Solo queda espacio para un nombre. El pozo, dicen, protege a quien lleva el nombre grabado.', 'The Eraser has fallen, but Samira\'s stone is still smooth. Nahla hands you a chisel. There is room for only one name. The well, they say, protects whoever has their name carved there.'], opciones: [
+      { texto: ['Grabar el nombre de Samira.', 'Carve Samira\'s name.'],
+        hecho: ['Nahla pasa los dedos por las letras recién cortadas. «Ahora la recuerdan otra vez.» Te regala lo que guardaba para la dote de su hija.', 'Nahla runs her fingers over the freshly cut letters. "Now they remember her again." She gives you what she had saved for her daughter\'s dowry.'],
+        premio: { atributos: 5, oro: 600 } },
+      { texto: ['Grabar tu propio nombre.', 'Carve your own name.'],
+        hecho: ['Nahla te mira grabar tu nombre sobre la piedra de su hija. No te detiene. Esa noche sientes que algo, muy abajo, te sostiene. Ella ya no te sirve el té.', 'Nahla watches you carve your name over her daughter\'s stone. She does not stop you. That night you feel something, far below, holding you up. She no longer pours you tea.'],
+        premio: { vida: 30 } }] } },
+  { id: 'm2_escarabajos', acto: 2, lateral: true, da: 'barzin', nombre: ['El caparazón de la reina', 'The Queen\'s Shell'],
+    pedido: ['En la Cueva de los Escarabajos vive un escorpión tan viejo que su caparazón ya parece bronce. Ninguna hoja lo atraviesa. Tráeme ese caparazón y te hago algo que ningún rey de Sahrim tuvo nunca.', 'In the Scarab Cave lives a scorpion so old its shell looks like bronze. No blade gets through it. Bring me that shell and I will make you something no king of Sahrim ever had.'],
+    hecho: ['Tres días de martillo. El caparazón cantaba cada vez que lo golpeaba. Toma. No le preguntes a la pieza de dónde viene, que te lo va a contar.', 'Three days of hammering. The shell sang every time I struck it. Take it. Do not ask the piece where it comes from, it will tell you.'],
+    objetivo: { tipo: 'matar', zona: 'a2_escarabajos', monstruo: 'escorpion_gigante', nombreUnico: ['Caparazón de Reina', 'Queenshell'] }, premio: { objeto: 'conjunto', oro: 400 } },
+  { id: 'm2_sol', acto: 2, lateral: true, da: 'cartografo', requiere: ['m2_saqueador'], nombre: ['El mapa que mira abajo', 'The Map That Looks Down'],
+    pedido: ['En el Templo del Sol Caído hay un sacerdote que todavía reza. Pero reza hacia abajo, hacia la brasa. Tiene un mapa que yo dibujé de joven, cuando aún veía: el mapa de los cinco sellos. Si lo sigue usando, sabrá dónde cavar. Quítaselo.', 'In the Temple of the Fallen Sun there is a priest who still prays. But he prays downward, toward the ember. He has a map I drew when I was young and could still see: the map of the five seals. If he keeps using it, he will know where to dig. Take it from him.'],
+    hecho: ['Lo tienes.', 'You have it.'],
+    objetivo: { tipo: 'matar', zona: 'a2_sol', monstruo: 'sacerdote_caido', nombreUnico: ['Hamun, el que Reza hacia Abajo', 'Hamun, Who Prays Downward'] }, premio: {},
+    eleccion: { pregunta: ['Traes el mapa de los cinco sellos. Las líneas se mueven si no las miras. En una esquina hay un sexto sello que nadie dibujó, una escalera hacia arriba. El cartógrafo extiende la mano hacia tu voz.', 'You bring the map of the five seals. The lines move when you are not looking. In one corner there is a sixth seal no one drew, a stair leading up. The cartographer reaches his hand toward your voice.'], opciones: [
+      { texto: ['Devolvérselo al cartógrafo.', 'Return it to the cartographer.'],
+        hecho: ['El viejo pasa los dedos sobre el pergamino y se ríe como un niño. «Todavía lo veo. Aquí, aquí y aquí.» Te enseña a leer los caminos que no existen todavía.', 'The old man runs his fingers over the parchment and laughs like a child. "I can still see it. Here, here and here." He teaches you to read paths that do not exist yet.'],
+        premio: { habilidad: 1 } },
+      { texto: ['Quemarlo. Nadie más debe seguirlo.', 'Burn it. No one else must follow it.'],
+        hecho: ['El mapa arde con una llama verde y grita. El cartógrafo no dice nada. Después te da todo lo que tiene, como si ya no le sirviera de nada.', 'The map burns with a green flame and screams. The cartographer says nothing. Then he gives you everything he owns, as if it no longer served him.'],
+        premio: { atributos: 4, oro: 1200 } }] } },
+  // ============================================================== ACTO 3
   { id: 'm3_bruja', acto: 3, nombre: ['La voz del manglar', 'The Voice of the Mangrove'],
     pedido: ['En el manglar hay una bruja que llama a los marineros por su nombre. Ya me robó tres. Tráeme su lengua o lo que sea que use para hablar.', 'In the mangrove there is a witch who calls sailors by name. She has taken three of mine. Bring me her tongue, or whatever she speaks with.'],
     hecho: ['Silencio por fin. Toma, Tlalli dice que esto te hará más fuerte.', 'Silence at last. Here, Tlalli says this will make you stronger.'],
     objetivo: { tipo: 'matar', zona: 'a3_pantano', monstruo: 'bruja', nombreUnico: ['La que Llama', 'She Who Calls'] }, premio: { atributos: 5, resistencia: 10 } },
+  { id: 'm3_escalones', acto: 3, nombre: ['Los escalones bajo las raíces', 'The Steps Beneath the Roots'],
+    pedido: ['La bruja hablaba de unos escalones bajo el manglar. Mis hombres los encontraron: bajan más de lo que la tierra permite. Ahí empieza el templo. Baja y enciende la piedra de los Escalones Hundidos. Yo no mando a nadie más.', 'The witch spoke of steps beneath the mangrove. My men found them: they go deeper than the earth allows. That is where the temple begins. Go down and light the stone of the Sunken Steps. I am not sending anyone else.'],
+    hecho: ['Ya tenemos camino. Tlalli dice que los escalones tienen tu número exacto, ni uno más ni uno menos. No sé qué quiere decir. Toma.', 'Now we have a way. Tlalli says the steps match your number exactly, not one more, not one less. I do not know what she means. Take this.'],
+    objetivo: { tipo: 'llegar', zona: 'a3_templo1' }, premio: { atributos: 5 } },
   { id: 'm3_madre', acto: 3, nombre: ['La Madre Ciénaga', 'Mother Mire'], cierraActo: true,
     pedido: ['Bajo el templo vive la Madre. Pare monstruos con el barro de la brasa. Si la matas, el río se limpia y mi barco puede llevarte al norte, a Hrimgard.', 'Beneath the temple lives the Mother. She births monsters from the ember\'s mud. Kill her and the river is cleansed, and my ship can take you north, to Hrimgard.'],
     hecho: ['El río ya no sangra. Sube a bordo. Dicen que en el norte el frío conserva todo, hasta las promesas rotas.', 'The river no longer bleeds. Come aboard. They say in the north the cold preserves everything, even broken promises.'],
     objetivo: { tipo: 'matar', zona: 'a3_templo2', monstruo: 'madre_cienaga' }, premio: { habilidad: 1, objeto: 'conjunto' } },
+  { id: 'm3_tunde', acto: 3, lateral: true, da: 'tlalli', nombre: ['Lo que tejió la araña', 'What the Spider Wove'],
+    pedido: ['Tunde, el primer oficial de Oyá, entró al Nido de la Araña buscando a los marineros que perdimos. Eso fue hace nueve días. Anoche lo oí cantar en sueños, una canción de cuna con la voz de otro. Tráelo. Esté como esté.', 'Tunde, Oya\'s first mate, went into the Spider\'s Nest looking for the sailors we lost. That was nine days ago. Last night I heard him singing in my dreams, a lullaby in someone else\'s voice. Bring him back. However he is.'],
+    hecho: ['Lo trajiste.', 'You brought him.'],
+    objetivo: { tipo: 'matar', zona: 'a3_nido', monstruo: 'arana_reina', nombreUnico: ['La Tejedora de Gente', 'The People-Weaver'] }, premio: {},
+    eleccion: { pregunta: ['Tunde está vivo, envuelto en hilo, con la piel tibia y algo que se mueve debajo de las costillas. Tlalli dice que lo que lleva adentro va a nacer. Tunde te pide que lo dejes ver el río una vez más.', 'Tunde is alive, wrapped in thread, his skin warm and something moving beneath his ribs. Tlalli says what he carries inside will be born. Tunde asks you to let him see the river one more time.'], opciones: [
+      { texto: ['Perdonarlo. Que Tlalli intente curarlo.', 'Spare him. Let Tlalli try to heal him.'],
+        hecho: ['Tlalli cose, quema y reza tres noches seguidas. Tunde sobrevive. No vuelve a hablar de la cueva, pero de noche mira la selva como si alguien lo llamara. Oyá te paga en oro y en silencio.', 'Tlalli stitches, burns and prays for three nights straight. Tunde survives. He never speaks of the cave again, but at night he watches the jungle as if someone were calling him. Oya pays you in gold and in silence.'],
+        premio: { oro: 1500, objeto: 'raro' } },
+      { texto: ['Darle una muerte limpia, junto al río.', 'Give him a clean death, by the river.'],
+        hecho: ['Lo llevas a la orilla. Mira el agua un rato largo. Después asiente. Lo que salió de su pecho no alcanzó a abrir los ojos. Oyá no te habla en días. Tlalli te marca la frente con barro y te dice que ahora eres más fuerte que tu pena.', 'You carry him to the bank. He watches the water for a long time. Then he nods. What came out of his chest never opened its eyes. Oya does not speak to you for days. Tlalli marks your forehead with mud and tells you that now you are stronger than your grief.'],
+        premio: { atributos: 6 } }] } },
+  { id: 'm3_idolo', acto: 3, lateral: true, da: 'jorun', requiere: ['m3_bruja'], nombre: ['El ídolo que mira', 'The Watching Idol'],
+    pedido: ['¿Te acuerdas del ídolo que te conté? Ya sé de dónde vino. Del Palacio Ahogado, en la Ciudad Hundida. Allá vive la novia del último rey, y ella me lo mandó. Me lo dijo anoche, al oído, con la boca llena de agua. Haz que deje de mirarme.', 'Remember the idol I told you about? I know where it came from now. The Drowned Palace, in the Sunken City. The last king\'s bride lives there, and she sent it to me. She told me last night, in my ear, with her mouth full of water. Make her stop watching me.'],
+    hecho: ['Esta mañana el ídolo tenía los ojos cerrados. Lo vendí a un comerciante que pasaba río abajo. No me mires así, alguien tenía que comprarlo. Toma tu parte, y algo que arreglé con mis propias manos.', 'This morning the idol had its eyes closed. I sold it to a trader passing downriver. Do not look at me like that, someone had to buy it. Take your share, and something I mended with my own hands.'],
+    objetivo: { tipo: 'matar', zona: 'a3_hundida2', monstruo: 'hechicera_sangre', nombreUnico: ['Nahue, la Novia Ahogada', 'Nahue, the Drowned Bride'] }, premio: { oro: 2000, objeto: 'raro' } },
+  { id: 'm3_ixel', acto: 3, lateral: true, da: 'ixel', nombre: ['La campana de vísperas', 'The Vespers Bell'],
+    pedido: ['Cuando hui de Santa Oria me llevé la campana pequeña, la de vísperas. Era lo único que podía cargar. Me la quitó un trol en las Cavernas Inundadas, y ahora la lleva colgada del cuello. La oigo sonar cuando camina. Cada vez que suena, algo en el agua se despierta.', 'When I fled Santa Oria I took the small bell, the vespers bell. It was all I could carry. A troll took it from me in the Flooded Caverns, and now wears it around its neck. I hear it ring when it walks. Every time it rings, something in the water wakes.'],
+    hecho: ['La campana.', 'The bell.'],
+    objetivo: { tipo: 'matar', zona: 'a3_inundadas', monstruo: 'trol_pantano', nombreUnico: ['Bocaferro, el de la Campana', 'Ironmaw, Bell-Bearer'] }, premio: {},
+    eleccion: { pregunta: ['Recuperaste la campana de vísperas. Ixel la mira sin tocarla. «Si la toco de noche, los que quedan del coro sabrán dónde estamos. Ellos y lo que los persigue.»', 'You recovered the vespers bell. Ixel looks at it without touching it. "If I ring it at night, what remains of the choir will know where we are. They, and whatever hunts them."'], opciones: [
+      { texto: ['Que la toque esta noche.', 'Let him ring it tonight.'],
+        hecho: ['La campana suena una sola vez. Muy lejos, en el norte, otra campana contesta. Ixel sonríe y te enseña la última oración del coro.', 'The bell rings just once. Far away, in the north, another bell answers. Ixel smiles and teaches you the last prayer of the choir.'],
+        premio: { habilidad: 1 } },
+      { texto: ['Que la hunda en el río, callada para siempre.', 'Let him sink it in the river, silent forever.'],
+        hecho: ['Ixel la suelta en la corriente. No hace ruido al hundirse. Esa noche nadie en el muelle sueña. Te da sus ahorros de monje, que no eran pocos.', 'Ixel lets it go in the current. It makes no sound as it sinks. That night no one at the landing dreams. He gives you his monk\'s savings, which were not few.'],
+        premio: { atributos: 4, oro: 1000 } }] } },
+  // ============================================================== ACTO 4
+  { id: 'm4_paso', acto: 4, nombre: ['El viento que canta', 'The Singing Wind'],
+    pedido: ['Hjaldur bajó del trono y la montaña se puso a cantar. Antes de ir por él necesito saber si el Paso del Glaciar sigue abierto. Mis exploradores no volvieron. Llega al glaciar y enciende la piedra.', 'Hjaldur came down from the throne and the mountain began to sing. Before we go after him I need to know if the Glacier Pass is still open. My scouts did not return. Reach the glacier and light the stone.'],
+    hecho: ['Abierto, entonces. ¿Y mis exploradores? No, no me digas. Lo veo en tu cara. Toma esto. Era para ellos.', 'Open, then. And my scouts? No, do not tell me. I see it on your face. Take this. It was meant for them.'],
+    objetivo: { tipo: 'llegar', zona: 'a4_glaciar' }, premio: { atributos: 5 } },
+  { id: 'm4_aliento', acto: 4, nombre: ['El Aliento Helado', 'The Frozen Breath'],
+    pedido: ['Las cuevas bajo el glaciar llevan al trono. Los viejos las llaman el Aliento, porque de ahí sale el frío del mundo. Entra y enciende la piedra de las cuevas. Si hay caras en el hielo, no las mires mucho.', 'The caves beneath the glacier lead to the throne. The old ones call them the Breath, because the cold of the world comes out of there. Go in and light the stone of the caves. If there are faces in the ice, do not look at them for long.'],
+    hecho: ['Encendida. La montaña dejó de cantar por un momento, como si escuchara. Ya falta poco. Toma.', 'Lit. The mountain stopped singing for a moment, as if it were listening. Not long now. Take this.'],
+    objetivo: { tipo: 'llegar', zona: 'a4_hielo1' }, premio: { habilidad: 1 } },
   { id: 'm4_rey', acto: 4, nombre: ['El trono vacío', 'The Empty Throne'], cierraActo: true,
     pedido: ['Hjaldur dejó el trono de hielo. Los muertos de la montaña lo siguen. Si no vuelve a sentarse, que no se levante nunca más. Tú eliges cómo.', 'Hjaldur left the ice throne. The mountain dead follow him. If he will not sit again, make sure he never stands again. You choose how.'],
-    hecho: ['Cuatro sellos. Queda uno: la Herida, donde cayó el dios que tiene sed. Auren te espera en el Bastión. Que la nieve te guarde.', 'Four seals. One remains: the Wound, where the thirsting god fell. Auren awaits you at the Bastion. May the snow keep you.'],
+    hecho: ['Cuatro sellos. Queda uno: la Herida, donde cayó la sed del dios que tiene hambre. Auren te espera en el Bastión. Que la nieve te guarde.', 'Four seals. One remains: the Wound, where the thirst of the starving god fell. Auren awaits you at the Bastion. May the snow keep you.'],
     objetivo: { tipo: 'matar', zona: 'a4_hielo2', monstruo: 'rey_escarcha' }, premio: { habilidad: 1, atributos: 5, objeto: 'unico' } },
+  { id: 'm4_nino', acto: 4, lateral: true, da: 'nino_nieve', nombre: ['El corazón del niño', 'The Child\'s Heart'],
+    pedido: ['El niño de la nieve te toma la mano. Su piel no está fría, está vacía. «Los gigantes cavaron en la Veta Madre buscando mi corazón. Es rojo y está tibio. Uno grande se lo quedó. Tráemelo, por favor. Quiero saber cómo se siente tener frío.»', 'The snow child takes your hand. His skin is not cold, it is empty. "The giants dug in the Mother Lode looking for my heart. It is red and warm. A big one kept it. Bring it to me, please. I want to know how it feels to be cold."'],
+    hecho: ['El niño espera.', 'The child waits.'],
+    objetivo: { tipo: 'matar', zona: 'a4_minas2', monstruo: 'gigante_helado', nombreUnico: ['Ymrak, el que Cava', 'Ymrak the Digger'] }, premio: {},
+    eleccion: { pregunta: ['Traes una piedra roja que late. No es un corazón. Es un pedazo de brasa. Tu Marca arde al tenerla cerca, y por un instante sientes que la piedra te reconoce. El niño la mira con hambre de niño.', 'You bring a red stone that beats. It is not a heart. It is a shard of ember. Your Mark burns with it near, and for a moment you feel the stone recognize you. The child looks at it with a child\'s hunger.'], opciones: [
+      { texto: ['Dársela al niño.', 'Give it to the child.'],
+        hecho: ['El niño aprieta la piedra contra el pecho y se estremece. «Frío. Así se siente.» Sonríe, y por la mañana junto a la puerta solo queda nieve con forma de niño. En la nieve hay algo para ti.', 'The child presses the stone to his chest and shivers. "Cold. So that is how it feels." He smiles, and by morning there is only snow in the shape of a child by the gate. In the snow there is something for you.'],
+        premio: { habilidad: 1, objeto: 'raro' } },
+      { texto: ['Dejar que tu Marca la beba.', 'Let your Mark drink it.'],
+        hecho: ['Cierras la mano. La piedra se apaga y tu Marca se enciende. Te sientes más fuerte, más entero, como si recuperaras algo que te habían quitado. El niño te mira y no llora. Dice: «Ya eligió.»', 'You close your hand. The stone goes dark and your Mark lights up. You feel stronger, more whole, as if you had recovered something taken from you. The child looks at you and does not cry. He says: "It has chosen."'],
+        premio: { atributos: 6, vida: 25 } }] } },
+  { id: 'm4_grieta', acto: 4, lateral: true, da: 'vigdis', nombre: ['El que buscaba a sus hijos', 'He Who Sought His Children'],
+    pedido: ['Mi marido Eirik bajó a la Grieta Glaciar hace veinte inviernos, buscando a nuestros hijos perdidos en la ventisca. El hielo es tan claro que lo veo desde el borde: sigue caminando allá abajo, con la armadura puesta. Ya no sabe por qué camina. Ayúdalo a detenerse.', 'My husband Eirik went down into the Glacial Rift twenty winters ago, searching for our children lost in the blizzard. The ice is so clear I can see him from the edge: he is still walking down there, armor on. He no longer knows why he walks. Help him stop.'],
+    hecho: ['Lo sentí. Anoche dejé de oír sus pasos bajo el fortín. Toma su anillo, y lo que sé de curar: no lo aprendí para nadie más que para él.', 'I felt it. Last night I stopped hearing his footsteps beneath the fort. Take his ring, and what I know of healing: I learned it for no one but him.'],
+    objetivo: { tipo: 'matar', zona: 'a4_grieta', monstruo: 'caballero_espectral', nombreUnico: ['Eirik el Fiel', 'Eirik the Faithful'] }, premio: { vida: 30, objeto: 'raro' } },
+  { id: 'm4_barbaro', acto: 4, lateral: true, da: 'hakon', requiere: ['m4_paso'], nombre: ['El martillo de Hrodulf', 'Hrodulf\'s Hammer'],
+    pedido: ['En la Cripta del Rey Bárbaro está enterrado Hrodulf con su ejército, de pie, mirando a la puerta. Mi abuelo le forjó el martillo. Dicen que ahora se mueven, que el rey se cansó de esperar. Tráeme el martillo antes de que lo use contra nosotros.', 'In the Crypt of the Barbarian King lies Hrodulf with his army, standing, facing the door. My grandfather forged his hammer. They say they move now, that the king grew tired of waiting. Bring me the hammer before he uses it against us.'],
+    hecho: ['El martillo de mi abuelo. Todavía tiene su marca en el mango. Lo voy a fundir y con lo que salga te haré algo digno. Él lo habría querido así, aunque nunca lo dijo.', 'My grandfather\'s hammer. His mark is still on the handle. I will melt it down and with what comes out I will make you something worthy. He would have wanted it, though he never said so.'],
+    objetivo: { tipo: 'matar', zona: 'a4_barbaro', monstruo: 'caballero_muerto', nombreUnico: ['Hrodulf, el Rey de Pie', 'Hrodulf, the Standing King'] }, premio: { objeto: 'unico' } },
+  // ============================================================== ACTO 5
+  { id: 'm5_heraldo', acto: 5, nombre: ['El último canto de Vesperio', 'Vesperio\'s Last Song'],
+    pedido: ['Lo has visto en cada sello, ¿verdad? El que se escapa riendo. Se llama Vesperio. Fue novicio en Santa Oria, el único que rompió el voto y cantó de noche. Su canto llamó a la brasa. Ahora espera en la Fragua de Ozmaren, junto al yunque donde se forjaron las cadenas. Esta vez no tendrá adónde huir.', 'You have seen him at every seal, have you not? The one who escapes laughing. His name is Vesperio. He was a novice at Santa Oria, the only one who broke the vow and sang at night. His song called the ember. Now he waits in Ozmaren\'s Forge, beside the anvil where the chains were forged. This time he will have nowhere to run.'],
+    hecho: ['Vesperio calló. Antes de morir te dijo algo, ¿verdad? Lo veo en tus ojos. No me lo cuentes todavía. Primero el dragón. Después el Corazón. Después, si quedamos, hablamos.', 'Vesperio is silent. Before he died he told you something, did he not? I see it in your eyes. Do not tell me yet. First the dragon. Then the Heart. Afterwards, if we remain, we will talk.'],
+    objetivo: { tipo: 'matar', zona: 'a5_fragua', monstruo: 'heraldo' }, premio: { habilidad: 1, atributos: 5 } },
   { id: 'm5_dragon', acto: 5, nombre: ['Los huesos que vuelan', 'The Bones That Fly'],
     pedido: ['En la Garganta de la Herida duerme Varnhul, un dragón que murió antes de que existieran los hombres. Ozmaren le prestó aliento. Si llegas al Corazón con él vivo a tus espaldas, no saldrás.', 'In the Throat of the Wound sleeps Varnhul, a dragon that died before men existed. Ozmaren lent it breath. If you reach the Heart with it alive behind you, you will not come out.'],
     hecho: ['El aliento de Varnhul se apagó. Ahora solo queda la sed.', 'Varnhul\'s breath has gone out. Now only the thirst remains.'],
     objetivo: { tipo: 'matar', zona: 'a5_santuario1', monstruo: 'dragon_oseo' }, premio: { atributos: 5, objeto: 'unico' } },
   { id: 'm5_ozmaren', acto: 5, nombre: ['La Sed que Arde', 'The Burning Thirst'], cierraActo: true,
     pedido: ['Ozmaren está entero otra vez, en el Corazón de la Brasa. Tu Marca es la llave que le falta. Si entras, puede que no salgas siendo tú. Pero si no entras, no queda nadie para salir.', 'Ozmaren is whole again, in the Ember Heart. Your Mark is the key it lacks. If you go in, you may not come out as yourself. But if you do not, there will be no one left to come out.'],
-    hecho: ['Lo lograste. La Marca en tu piel se puso gris y fría. Escucha: en el valle las campanas sonaron de noche, todas a la vez. Odrán dice que es una despedida. Yo no estoy tan seguro.', 'You did it. The Mark on your skin turned grey and cold. Listen: in the valley the bells rang at night, all at once. Odran says it is a farewell. I am not so sure.'],
+    hecho: ['Lo lograste. Pero anoche el mar del norte se partió en dos y algo subió del fondo. Una ciudad entera, con sus campanas. Oyá dice que su barco quedó varado en la costa. Te espera allá.', 'You did it. But last night the northern sea split in two and something rose from the bottom. A whole city, with its bells. Oya says her ship ran aground on the coast. She waits for you there.'],
+    hechoSegun: {
+      destruir: ['Apagaste la Brasa. Tu Marca está gris y fría, la vi. Pero anoche el mar del norte se partió en dos, como si algo allá arriba hubiera sentido que le faltaba un pedazo. Subió una ciudad entera, con sus campanas. Oyá quedó varada en esa costa. Te espera.', 'You put out the Ember. Your Mark is grey and cold, I saw it. But last night the northern sea split in two, as if something far above had felt a piece of itself go missing. A whole city rose, with its bells. Oya ran aground on that coast. She waits for you.'],
+      absorber: ['No te acerques mucho al fuego. No por ti. Por el fuego. Anoche el mar del norte se partió en dos cuando la Brasa entró en ti, y subió una ciudad entera, con sus campanas. Oyá quedó varada en esa costa. Dice que las campanas tocan tu nombre.', 'Do not stand too close to the fire. Not for your sake. For the fire\'s. Last night the northern sea split in two when the Ember entered you, and a whole city rose, with its bells. Oya ran aground on that coast. She says the bells are ringing your name.'],
+    },
     objetivo: { tipo: 'matar', zona: 'a5_santuario2', monstruo: 'senor_demonio' }, premio: { habilidad: 2, atributos: 10, objeto: 'unico' } },
+  { id: 'm5_coro', acto: 5, lateral: true, da: 'odran', nombre: ['Las seis voces', 'The Six Voices'],
+    pedido: ['Auren dice que fueron siete voces y queda él. Las otras seis bajaron al Abismo de los Susurros a cantarle a la nada, para que no subiera. Un caballero del abismo guarda ahora sus huesos en las Islas sobre la Nada. Fui su archivero. Tráelos, o al menos tráeme sus nombres.', 'Auren says there were seven voices and he remains. The other six went down into the Abyss of Whispers to sing to the nothing, so it would not rise. An abyss knight now guards their bones on the Isles over Nothing. I was their archivist. Bring them back, or at least bring me their names.'],
+    hecho: ['Gracias.', 'Thank you.'],
+    objetivo: { tipo: 'matar', zona: 'a5_abismo2', monstruo: 'caballero_abismo', nombreUnico: ['Orvan el Juramentado', 'Orvan the Oathbound'] }, premio: {},
+    eleccion: { pregunta: ['Traes seis cráneos envueltos en un manto. Todavía murmuran, muy bajo, el mismo canto. Si los traes al Bastión, Auren podrá cantar con ellos. Si los devuelves al Abismo, seguirán cantándole a la nada para que no suba.', 'You bring six skulls wrapped in a cloak. They still murmur, very low, the same song. If you bring them to the Bastion, Auren can sing with them. If you return them to the Abyss, they will keep singing to the nothing so it does not rise.'], opciones: [
+      { texto: ['Traerlos al Bastión, con Auren.', 'Bring them to the Bastion, with Auren.'],
+        hecho: ['Esa noche el Bastión canta con siete voces. Auren llora sin dejar de cantar. Odrán escribe cada nombre en su libro y después te enseña algo que solo saben los archiveros.', 'That night the Bastion sings with seven voices. Auren weeps without stopping his song. Odran writes each name in his book and then teaches you something only archivists know.'],
+        premio: { habilidad: 1 } },
+      { texto: ['Devolverlos al Abismo, a su guardia.', 'Return them to the Abyss, to their watch.'],
+        hecho: ['Los dejas al borde de las islas. El murmullo sigue, más firme. Los susurros que te seguían desde el Abismo se callan. Odrán asiente: «Así lo habrían querido.» Te da la armadura de su hermano mayor.', 'You leave them at the edge of the isles. The murmur continues, steadier. The whispers that followed you from the Abyss fall silent. Odran nods: "That is what they would have wanted." He gives you his elder brother\'s armor.'],
+        premio: { objeto: 'unico', vida: 20 } }] } },
+  { id: 'm5_fuelle', acto: 5, lateral: true, da: 'brannoc', nombre: ['El fuego que no calienta', 'The Fire That Gives No Heat'],
+    pedido: ['Mi fragua no prende desde la noche de la brasa, ¿te acuerdas? Ya sé por qué. Ozmaren se llevó el calor de todas las fraguas del valle a la suya. Allá abajo hay un segador que hace de fuelle. Mátalo y el fuego volverá a casa.', 'My forge has not lit since the night of the ember, remember? Now I know why. Ozmaren took the heat of every forge in the valley into his own. Down there a reaper works the bellows. Kill it and the fire will come home.'],
+    hecho: ['¿Lo sientes? Calor. Calor de verdad, por primera vez en un año. Mira lo que hice con él mientras volvías. Lo templé en agua bendita y en mis lágrimas, y no sé cuál de las dos sirvió más.', 'Do you feel it? Heat. Real heat, for the first time in a year. Look what I made with it while you were coming back. I tempered it in holy water and in my tears, and I do not know which helped more.'],
+    objetivo: { tipo: 'matar', zona: 'a5_fragua', monstruo: 'segador', nombreUnico: ['El Fuelle', 'The Bellows'] }, premio: { objeto: 'conjunto', oro: 2000 } },
+  { id: 'm5_cartas', acto: 5, lateral: true, da: 'ysolde', nombre: ['La última carta', 'The Last Card'],
+    pedido: ['Saqué la última carta del mazo y está en blanco. Dice que el futuro todavía no decide. Llega al Río de Lava, mira el fuego un rato y vuelve. Entonces le daremos la vuelta.', 'I drew the last card from the deck and it is blank. It says the future has not decided yet. Reach the Lava River, watch the fire a while, and come back. Then we will turn it over.'],
+    hecho: ['Ya miraste el fuego.', 'You have watched the fire.'],
+    objetivo: { tipo: 'llegar', zona: 'a5_rio' }, premio: {},
+    eleccion: { pregunta: ['Ysolde pone dos cartas boca abajo. «Una es la Hoguera, que todo lo apaga. La otra es la Corona, que todo lo guarda. Elige una. No cambia nada. O lo cambia todo.»', 'Ysolde lays two cards face down. "One is the Pyre, which puts everything out. The other is the Crown, which keeps everything. Choose one. It changes nothing. Or it changes everything."'], opciones: [
+      { texto: ['La Hoguera.', 'The Pyre.'],
+        hecho: ['Ysolde voltea la carta. Un fuego que se apaga solo. «Valiente. O cansado. Las dos cosas se parecen.» Te regala la carta. Pesa como una moneda de plomo.', 'Ysolde turns the card. A fire putting itself out. "Brave. Or tired. The two look alike." She gives you the card. It weighs like a lead coin.'],
+        premio: { atributos: 5 } },
+      { texto: ['La Corona.', 'The Crown.'],
+        hecho: ['Ysolde voltea la carta. Una corona de brasas sobre una cabeza sin cara. Se queda callada mucho rato. «Ten cuidado con lo que guardas. A veces lo que guardas te guarda a ti.»', 'Ysolde turns the card. A crown of embers on a faceless head. She is silent for a long while. "Be careful what you keep. Sometimes what you keep, keeps you."'],
+        premio: { habilidad: 1 } }] } },
+  // ============================================================== ACTO 6
+  { id: 'm6_costa', acto: 6, nombre: ['La ciudad que subió', 'The City That Rose'],
+    pedido: ['Mi barco no se va a mover de aquí hasta que la marea vuelva, y la marea no vuelve. Esa ciudad la sostiene del otro lado. Cruza la Costa de los Naufragios y llega al Barrio Sumergido. Enciende la piedra. Quiero saber qué clase de gente vivía ahí.', 'My ship will not move from here until the tide returns, and the tide does not return. That city holds it on the other side. Cross the Shipwreck Coast and reach the Sunken Quarter. Light the stone. I want to know what kind of people lived there.'],
+    hecho: ['¿Mesas puestas? ¿Platos servidos? Se hundieron cenando. Nadie corre cuando no sabe que se está hundiendo. Toma, y descansa un poco.', 'Tables set? Plates served? They sank at supper. No one runs when they do not know they are sinking. Here, and rest a little.'],
+    objetivo: { tipo: 'llegar', zona: 'a6_barrio1' }, premio: { atributos: 5 } },
+  { id: 'm6_plaza', acto: 6, nombre: ['La puerta de las campanas', 'The Door of Bells'],
+    pedido: ['La campana que oímos de noche viene de la catedral, al otro lado de la Plaza de las Ánimas. Sor Salitre dice que la catedral se llamaba Ysmeral, igual que la ciudad, y que la ciudad entera era una sola iglesia. Llega a la Nave y enciende la piedra.', 'The bell we hear at night comes from the cathedral, across the Square of Souls. Sister Brine says the cathedral was called Ysmeral, like the city, and that the whole city was a single church. Reach the Nave and light the stone.'],
+    hecho: ['Los bancos llenos y nadie levanta la cabeza. Sí, lo vi en tu cara antes de que lo dijeras. Toma. Lo que hay arriba del campanario no es una persona. Ya no.', 'Pews full and no one raising their head. Yes, I saw it on your face before you said it. Take this. What is up in the belfry is not a person. Not anymore.'],
+    objetivo: { tipo: 'llegar', zona: 'a6_catedral1' }, premio: { habilidad: 1 } },
+  { id: 'm6_campana', acto: 6, nombre: ['La Campana que Ahoga', 'The Drowning Bell'], cierraActo: true,
+    pedido: ['La última sacerdotisa de Ysmeral se ató a la campana mayor para que la ciudad no se hundiera. Se hundió igual. Ahora son una sola cosa, y cada vez que toca, el mar se acerca un palmo. Haz que deje de tocar.', 'The last priestess of Ysmeral bound herself to the great bell so the city would not sink. It sank anyway. Now they are one thing, and every time it tolls, the sea draws a span closer. Make it stop tolling.'],
+    hecho: ['La campana calló y la marea volvió de golpe. Mi barco flota. Pero mira el cielo, al norte. Se está rompiendo como un vidrio, y detrás hay escalones de oro. Auren dice que conoce esa escalera. Dice que lleva a un trono.', 'The bell went silent and the tide came back all at once. My ship floats. But look at the sky, to the north. It is breaking like glass, and behind it are steps of gold. Auren says he knows that stair. He says it leads to a throne.'],
+    objetivo: { tipo: 'matar', zona: 'a6_catedral2', monstruo: 'campana_ahoga' }, premio: { habilidad: 1, atributos: 5, objeto: 'unico' } },
+  { id: 'm6_faro', acto: 6, lateral: true, da: 'tarn', nombre: ['La luz de los dientes', 'The Light of Teeth'],
+    pedido: ['En la costa hay un faro apagado. Su lámpara está hecha de dientes, y alguien la sigue limpiando cada noche. Es el farero, ahogado hace siglos. Mientras él cuide esa lámpara, ningún barco va a encontrar esta costa. Ni los nuestros.', 'On the coast there is a dark lighthouse. Its lamp is made of teeth, and someone still cleans it every night. It is the keeper, drowned centuries ago. As long as he tends that lamp, no ship will find this coast. Not even ours.'],
+    hecho: ['Volviste del faro.', 'You came back from the lighthouse.'],
+    objetivo: { tipo: 'matar', zona: 'a6_faro', monstruo: 'ahogado', nombreUnico: ['El Farero de Ysmeral', 'The Keeper of Ysmeral'] }, premio: {},
+    eleccion: { pregunta: ['El farero cayó, pero la lámpara de dientes sigue ahí. Tarn dice que si la enciendes, la luz llegará hasta los barcos perdidos de mil años. Algunos traerán vivos. Otros no.', 'The keeper has fallen, but the lamp of teeth remains. Tarn says that if you light it, its glow will reach the ships lost for a thousand years. Some will carry the living. Others will not.'], opciones: [
+      { texto: ['Encender la lámpara.', 'Light the lamp.'],
+        hecho: ['La luz sale verde y fría. Esa noche llegan tres barcos a la costa. Uno trae pescadores asustados. Los otros dos no traen a nadie, pero alguien amarra los cabos. Tarn te enseña a leer las estrellas que no se mueven.', 'The light comes out green and cold. That night three ships reach the coast. One carries frightened fishermen. The other two carry no one, yet someone ties the ropes. Tarn teaches you to read the stars that do not move.'],
+        premio: { habilidad: 1 } },
+      { texto: ['Romper la lámpara.', 'Break the lamp.'],
+        hecho: ['Los dientes caen como granizo sobre la roca. El faro queda a oscuras para siempre. Tarn suspira y te da el oro que iba a cobrar por guiar barcos. «Nadie más va a venir. Puede que sea mejor.»', 'The teeth fall like hail on the rock. The lighthouse stays dark forever. Tarn sighs and gives you the gold he would have charged to guide ships. "No one else will come. Perhaps that is better."'],
+        premio: { oro: 4000, objeto: 'raro' } }] } },
+  { id: 'm6_arrecife', acto: 6, lateral: true, da: 'nerea', nombre: ['Los huesos de mi madre', 'My Mother\'s Bones'],
+    pedido: ['Me llamo Nerea. Salí del agua con la ciudad, pero mi madre no. Está en el Arrecife de Huesos, lo sé porque la oigo cantar mi nombre entre las costillas. Algo grande camina por el arrecife y no la deja dormir.', 'My name is Nerea. I came out of the water with the city, but my mother did not. She is on the Bone Reef, I know because I hear her singing my name among the ribs. Something big walks the reef and will not let her sleep.'],
+    hecho: ['Ya no canta. Está dormida. Mi madre tenía esto guardado para el día en que yo me casara. Yo ya no me voy a casar. Es tuyo.', 'She is not singing anymore. She is asleep. My mother kept this for the day I would marry. I will not marry now. It is yours.'],
+    objetivo: { tipo: 'matar', zona: 'a6_arrecife', monstruo: 'cangrejo_cripta', nombreUnico: ['Coraza de Costillas', 'Ribshell'] }, premio: { objeto: 'unico', vida: 20 } },
+  { id: 'm6_criptas', acto: 6, lateral: true, da: 'sor_salitre', requiere: ['m6_costa'], nombre: ['Las hermanas de la sal', 'The Sisters of Salt'],
+    pedido: ['Yo era una de las doce hermanas de Ysmeral. Subí viva. Las otras once siguen abajo, en el Osario Ahogado, rezando con agua en la boca. Las guía nuestra abadesa, que nunca aceptó que nos hundiéramos. Baja. Haz que la abadesa me escuche, o que no escuche nada más.', 'I was one of the twelve sisters of Ysmeral. I came up alive. The other eleven are still below, in the Drowned Ossuary, praying with water in their mouths. Our abbess leads them, she who never accepted that we sank. Go down. Make the abbess listen to me, or listen to nothing ever again.'],
+    hecho: ['La abadesa calló.', 'The abbess is silent.'],
+    objetivo: { tipo: 'matar', zona: 'a6_criptas2', monstruo: 'monja_hueca', nombreUnico: ['La Abadesa de la Sal', 'The Salt Abbess'] }, premio: {},
+    eleccion: { pregunta: ['Sin su abadesa, las once hermanas flotan quietas en el osario. Sor Salitre te pide que decidas por ella. Puede rezar para que suban como subió ella, con la sal en la sangre. O dejar que el agua se las lleve por fin.', 'Without their abbess, the eleven sisters float still in the ossuary. Sister Brine asks you to decide for her. She can pray for them to rise as she did, with salt in their blood. Or let the water take them at last.'], opciones: [
+      { texto: ['Que suban, como ella.', 'Let them rise, as she did.'],
+        hecho: ['A la mañana once mujeres pálidas esperan junto al barco, chorreando agua. No hablan. Cantan bajito cuando pasas. Sor Salitre llora de alegría y te cose una oración en el forro de la armadura.', 'In the morning eleven pale women wait beside the ship, dripping water. They do not speak. They sing softly when you pass. Sister Brine weeps for joy and stitches a prayer into the lining of your armor.'],
+        premio: { vida: 30, atributos: 3 } },
+      { texto: ['Que el agua se las lleve.', 'Let the water take them.'],
+        hecho: ['Sor Salitre reza toda la noche en la proa. Al alba el osario está vacío y el mar, por un momento, huele a lirios. Te entrega el rosario de la abadesa. Las cuentas son perlas negras.', 'Sister Brine prays all night at the prow. At dawn the ossuary is empty and the sea, for a moment, smells of lilies. She gives you the abbess\'s rosary. The beads are black pearls.'],
+        premio: { habilidad: 1, oro: 1500 } }] } },
+  // ============================================================== ACTO 7
+  { id: 'm7_puente', acto: 7, nombre: ['El puente quebrado', 'The Broken Bridge'],
+    pedido: ['Esta escalera la vi en sueños cuando era novicio. Lleva a Aun-Saar, el dios que tiene sed. Ozmaren era su sed. Las brasas eran su sed. Todo este tiempo peleamos contra su sed y nunca contra él. Cruza el Cielo Roto y llega a las Islas de Oro. Enciende la piedra del Puente Quebrado.', 'I saw this stair in dreams when I was a novice. It leads to Aun-Saar, the god who thirsts. Ozmaren was his thirst. The embers were his thirst. All this time we fought his thirst and never him. Cross the Broken Sky and reach the Isles of Gold. Light the stone of the Broken Bridge.'],
+    hecho: ['El oro está tibio, ¿verdad? Como una piel. Es la piel de su casa. Toma, y no mires abajo, que abajo no hay nada.', 'The gold is warm, is it not? Like skin. It is the skin of his house. Here, and do not look down, for there is nothing below.'],
+    objetivo: { tipo: 'llegar', zona: 'a7_islas1' }, premio: { atributos: 5 } },
+  { id: 'm7_escaleras', acto: 7, nombre: ['Los escalones con nombre', 'The Named Steps'],
+    pedido: ['Pasando el Jardín de los que Intentaron están las Escaleras al Trono. Cada escalón tiene grabado el nombre de alguien que subió antes que tú. Llega a las escaleras y enciende la piedra. Si encuentras tu nombre, no lo leas en voz alta.', 'Past the Garden of Those Who Tried are the Stairs to the Throne. Each step bears the name of someone who climbed before you. Reach the stairs and light the stone. If you find your name, do not read it aloud.'],
+    hecho: ['El último escalón está en blanco. Ya sé. Lo dejaron así para ti. Toma esto, y lo que queda de mi voz.', 'The last step is blank. I know. They left it that way for you. Take this, and what remains of my voice.'],
+    objetivo: { tipo: 'llegar', zona: 'a7_escaleras' }, premio: { habilidad: 1, vida: 20 } },
+  { id: 'm7_aunsaar', acto: 7, nombre: ['El Dios Sediento', 'The Thirsting God'], cierraActo: true,
+    pedido: ['Aun-Saar espera en el Trono Sediento. No odia. No ama. Solo tiene sed, y la sed no se acaba con una muerte, se acaba con un final. Ve, y elige bien qué final le das.', 'Aun-Saar waits on the Thirsting Throne. He does not hate. He does not love. He only thirsts, and thirst does not end with a death, it ends with an ending. Go, and choose well what ending you give him.'],
+    hecho: ['Se terminó. Escucha: el cielo está callado. Por primera vez desde que nací, nadie canta para sostener nada.', 'It is over. Listen: the sky is silent. For the first time since I was born, no one is singing to hold anything up.'],
+    objetivo: { tipo: 'matar', zona: 'a7_trono', monstruo: 'aun_saar' }, premio: { habilidad: 2, atributos: 10, objeto: 'unico' } },
+  { id: 'm7_boveda', acto: 7, lateral: true, da: 'mira', nombre: ['Las estrellas enjauladas', 'The Caged Stars'],
+    pedido: ['Soy Mira. Contaba estrellas en Velmora. Una noche faltaron tres, y las seguí hasta aquí. Están en la Bóveda de los Astros, en jaulas de oro, y un astrónomo hueco las cuida para que el dios tenga luz que beber. Mátalo. Las estrellas no son de nadie.', 'I am Mira. I counted stars in Velmora. One night three were missing, and I followed them here. They are in the Vault of Stars, in golden cages, and a hollow astronomer keeps them so the god has light to drink. Kill him. The stars belong to no one.'],
+    hecho: ['Está muerto el astrónomo.', 'The astronomer is dead.'],
+    objetivo: { tipo: 'matar', zona: 'a7_boveda', monstruo: 'lich', nombreUnico: ['El Astrónomo Hueco', 'The Hollow Astronomer'] }, premio: {},
+    eleccion: { pregunta: ['Las jaulas siguen cerradas. Mira tiene las llaves en la mano y te mira a ti. «Si las suelto, vuelven al cielo de Velmora. Si te quedas con una, tendrás una luz que nunca se apaga. Tú la ganaste.»', 'The cages are still shut. Mira holds the keys and looks at you. "If I free them, they go back to Velmora\'s sky. If you keep one, you will have a light that never goes out. You earned it."'], opciones: [
+      { texto: ['Soltarlas todas.', 'Free them all.'],
+        hecho: ['Tres luces suben despacio y se pierden más allá del vidrio roto. Mira cuenta en voz baja: «Una, dos, tres». Esa noche, desde muy lejos, Velmora tiene otra vez su cielo completo. Mira te enseña a encontrar el norte en cualquier oscuridad.', 'Three lights rise slowly and vanish beyond the broken glass. Mira counts softly: "One, two, three." That night, far away, Velmora has its full sky again. Mira teaches you to find north in any darkness.'],
+        premio: { habilidad: 1, atributos: 3 } },
+      { texto: ['Quedarte con una estrella.', 'Keep one star.'],
+        hecho: ['La estrella cabe en tu mano y no quema. Mira suelta las otras dos sin decir nada. Cuando cuenta, dice: «Una, dos». Y se calla.', 'The star fits in your hand and does not burn. Mira frees the other two without a word. When she counts, she says: "One, two." And falls silent.'],
+        premio: { objeto: 'unico', oro: 3000 } }] } },
+  { id: 'm7_relicario', acto: 7, lateral: true, da: 'eskel', requiere: ['m7_puente'], nombre: ['El copero del dios', 'The God\'s Cupbearer'],
+    pedido: ['Subí esta escalera hace cuarenta años, con seis compañeros. Llegué hasta el Relicario del Sediento y no pasé de ahí. Un caballero sirve copas vacías al dios, una tras otra, y mis compañeros están entre las copas. Yo me escondí. Desde entonces sigo escondido. Termina lo que no me atreví a terminar.', 'I climbed this stair forty years ago, with six companions. I reached the Reliquary of the Thirsting and got no farther. A knight serves empty cups to the god, one after another, and my companions are among the cups. I hid. I have been hiding ever since. Finish what I did not dare to finish.'],
+    hecho: ['Cuarenta años. Y bastaste tú solo. No, no lo digo con rencor. Lo digo con alivio. Toma la espada que no usé.', 'Forty years. And you alone were enough. No, I do not say it bitterly. I say it with relief. Take the sword I never used.'],
+    objetivo: { tipo: 'matar', zona: 'a7_relicario', monstruo: 'caballero_abismo', nombreUnico: ['El Copero del Dios', 'The God\'s Cupbearer'] }, premio: { objeto: 'conjunto', atributos: 3 } },
+  { id: 'm7_jardin', acto: 7, lateral: true, da: 'hollin', nombre: ['La estatua con tu cara', 'The Statue With Your Face'],
+    pedido: ['En el Jardín de los que Intentaron hay una estatua nueva. Llegó anoche. Tiene tu cara y tu Marca, y está mirando hacia el trono. Ve a verla. Lo que hagas con ella decide algo. No sé qué.', 'In the Garden of Those Who Tried there is a new statue. It arrived last night. It has your face and your Mark, and it is looking toward the throne. Go and see it. What you do with it decides something. I do not know what.'],
+    hecho: ['La viste.', 'You saw it.'],
+    objetivo: { tipo: 'llegar', zona: 'a7_jardin' }, premio: {},
+    eleccion: { pregunta: ['La estatua tiene tu cara, pero más vieja, cansada, con la boca abierta como si tuviera sed. Hollin te alcanza un martillo de piedra.', 'The statue has your face, but older, tired, its mouth open as if it were thirsty. Hollin hands you a stone hammer.'], opciones: [
+      { texto: ['Romperla.', 'Break it.'],
+        hecho: ['La estatua se parte en dos de un solo golpe. Adentro no hay piedra, hay ceniza tibia. Hollin sonríe con los dientes que le quedan: «Entonces todavía no te toca.»', 'The statue splits in two with a single blow. Inside there is no stone, only warm ash. Hollin smiles with the teeth he has left: "Then it is not your turn yet."'],
+        premio: { atributos: 6 } },
+      { texto: ['Dejarla de pie, mirando el trono.', 'Leave it standing, facing the throne.'],
+        hecho: ['Dejas la estatua donde está. Al irte, sientes que te mira la espalda y te cuida. Hollin asiente: «Hay quien necesita un testigo. Ahora tú tienes uno.»', 'You leave the statue where it stands. As you go, you feel it watching your back, keeping you. Hollin nods: "Some need a witness. Now you have one."'],
+        premio: { vida: 40 } }] } },
 ];
 
 /** Lo que se ve al entrar a una zona por primera vez (una línea de ambiente). */
@@ -235,6 +478,9 @@ export const FRASE_JEFE: Record<string, [string, string]> = {
   arana_reina: ['Tantos hijos con hambre... y llegas tú, tan lleno.', 'So many hungry children... and here you come, so full.'],
   gusano_de_arena: ['(La arena tiembla. Algo enorme respira debajo de ti.)', '(The sand trembles. Something enormous breathes beneath you.)'],
   dragon_oseo: ['Morí antes de que tu raza aprendiera el fuego. Él me devolvió el aliento.', 'I died before your kind learned fire. He gave me back my breath.'],
+  heraldo: ['Yo canté de noche. Yo la llamé.', 'I sang at night. I called her.'],
+  campana_ahoga: ['Toca conmigo. El mar escucha cuando tocamos juntas.', 'Ring with me. The sea listens when we ring together.'],
+  aun_saar: ['Tengo sed desde antes de que existiera el agua. Ven. Tú eres lo que me falta.', 'I have thirsted since before water existed. Come. You are what I lack.'],
   senor_demonio: ['Llevas mi ceniza en la piel. Ven, vuelve a mí.', 'You wear my ash on your skin. Come, return to me.'],
 };
 
@@ -263,3 +509,153 @@ export const PAGINAS: [string, string][] = [
   ['«Si lees esto, la abadía cayó. Busca al niño que no habla. Él lo vio todo, y por eso le quitamos la voz.»', '"If you read this, the abbey has fallen. Seek the child who does not speak. He saw everything, and that is why we took his voice."'],
   ['«Cayó una segunda brasa. No cayó aquí. Sigue cayendo. Tarda mil años en llegar.»', '"A second ember fell. It did not fall here. It is still falling. It takes a thousand years to arrive."'],
 ];
+
+// ------------------------------------------------------------------ diarios de los sellos
+/** Un diario por acto: se lee en los libros malditos de las zonas de ese acto, antes que las páginas del abad. */
+export const DIARIOS: Record<number, { titulo: [string, string]; paginas: [string, string][] }> = {
+  1: { titulo: ['Cuaderno de la hermana Ívola, campanera', 'Notebook of Sister Ivola, Bell-Ringer'], paginas: [
+    ['«Soy la que toca las campanas al alba. Nunca de noche. Ese es el voto. Esta noche alguien tocó la campana pequeña, la de vísperas. Cuando subí al campanario no había nadie.»', '"I am the one who rings the bells at dawn. Never at night. That is the vow. Tonight someone rang the small bell, the vespers bell. When I climbed the tower there was no one."'],
+    ['«Es el novicio Vesperio. Lo oí cantar en el claustro, bajito, con la cara pegada a la piedra del pozo. Le pregunté a quién le cantaba. Me dijo: "A la que escucha".»', '"It is the novice Vesperio. I heard him singing in the cloister, softly, his face pressed to the stone of the well. I asked him who he sang to. He said: \'To the one who listens.\'"'],
+    ['«La Abadesa sostuvo la brasa y no se quemó. Dijo que el primer sello no era el pozo, era nuestro silencio. Y el silencio ya estaba roto. Raspo mi nombre de la lápida antes de que ella lo aprenda.»', '"The Abbess held the ember and did not burn. She said the first seal was not the well, it was our silence. And the silence was already broken. I am scraping my name from my tombstone before she learns it."'],
+  ] },
+  2: { titulo: ['Tablillas de Tahem, escriba del Rey', 'Tablets of Tahem, Scribe of the King'], paginas: [
+    ['«Año treinta del reinado. Los monjes del norte trajeron una piedra que ardía en una caja de plomo. El Rey pagó con oro y con la promesa de guardarla bajo su sueño.»', '"Year thirty of the reign. The monks from the north brought a stone that burned in a lead box. The King paid in gold and with the promise to keep it beneath his sleep."'],
+    ['«El Rey ya no proyecta sombra. Dice que la vendió para dormir más hondo. Yo vi a la sombra irse. Caminaba hacia la caja de plomo.»', '"The King no longer casts a shadow. He says he sold it to sleep deeper. I saw the shadow leave. It walked toward the lead box."'],
+    ['«Hoy vino un hombre pálido que cantaba en una lengua del norte. Las momias le abrieron la puerta. El segundo sello no se rompió. Lo invitaron a romperse.»', '"Today a pale man came singing in a northern tongue. The mummies opened the door for him. The second seal did not break. It was invited to break."'],
+  ] },
+  3: { titulo: ['Bitácora de la capitana Ama Oyá', 'Log of Captain Ama Oya'], paginas: [
+    ['«Llevamos una caja de plomo río arriba, por encargo de unos monjes. Nadie de la tripulación quiere dormir cerca de ella. Dicen que la caja respira.»', '"We carry a lead box upriver, commissioned by some monks. No one in the crew wants to sleep near it. They say the box breathes."'],
+    ['«La sacerdotisa del templo la recibió llorando. Dijo que su diosa era madre de todo lo que nace del barro, y que ahora tendría un hijo de fuego.»', '"The temple priestess received it weeping. She said her goddess was mother to all things born of mud, and that now she would bear a child of fire."'],
+    ['«La ciudad se hundió en una noche. Desde el barco vimos las torres entrar al agua, despacio, con las campanas sonando. Si mi hija lee esto: no vuelvas al templo. Nunca.»', '"The city sank in a single night. From the ship we watched the towers go into the water, slowly, with the bells ringing. If my daughter reads this: never go back to the temple. Never."'],
+  ] },
+  4: { titulo: ['Runas de la guardia de Hjaldur', 'Runes of Hjaldur\'s Guard'], paginas: [
+    ['«Hjaldur se sentó sobre el sello y juró no levantarse. Nosotros juramos quedarnos de pie a su lado. Eso fue hace trescientos inviernos.»', '"Hjaldur sat upon the seal and swore never to rise. We swore to stand beside him. That was three hundred winters ago."'],
+    ['«El rey ya no tiene frío. Eso es lo que nos asusta. Dice que la brasa bajo el trono le habla de un dios allá arriba, sentado en un trono de oro, que se muere de sed desde antes del mundo.»', '"The king no longer feels cold. That is what frightens us. He says the ember beneath the throne speaks to him of a god far above, seated on a throne of gold, dying of thirst since before the world."'],
+    ['«Un hombre pálido subió la montaña descalzo. Le cantó al rey una canción de cuna. El rey se levantó. Nosotros seguimos de pie. No sabemos hacer otra cosa.»', '"A pale man climbed the mountain barefoot. He sang the king a lullaby. The king rose. We are still standing. We do not know how to do anything else."'],
+    ['«Las brasas no son el dios. Son su sed, que se le cayó del pecho como una lágrima de fuego. Si alguna vez se juntan todas, él va a sentir que vuelve a tener boca.»', '"The embers are not the god. They are his thirst, which fell from his chest like a tear of fire. If they ever come together, he will feel that he has a mouth again."'],
+  ] },
+  5: { titulo: ['Libro de horas del Último Coro', 'Book of Hours of the Last Choir'], paginas: [
+    ['«Ozmaren no es un demonio. Es la sed de Aun-Saar, el dios hambriento, hecha carne para bajar a beber. La partimos en brasas para que ninguna recordara a las otras.»', '"Ozmaren is not a demon. It is the thirst of Aun-Saar, the starving god, made flesh to come down and drink. We split it into embers so that none would remember the others."'],
+    ['«Eran cinco brasas en cinco sellos. Pero hubo una sexta, la más pequeña, que no pudimos encerrar. Se metió en la piel de una criatura dormida, en el valle. Esa criatura no lo sabe.»', '"There were five embers in five seals. But there was a sixth, the smallest, which we could not imprison. It slipped into the skin of a sleeping child, in the valley. The child does not know."'],
+    ['«La ceniza de los sobrevivientes es solo ceniza. Pero en uno de ellos la Marca no se apaga. Esa es la sexta brasa. Quien la lleve podrá apagar la sed para siempre, o terminar de encenderla. Que el portador elija. Nosotros ya no podemos.»', '"The ash on the survivors is only ash. But on one of them the Mark does not fade. That is the sixth ember. Whoever bears it can put out the thirst forever, or finish lighting it. Let the bearer choose. We no longer can."'],
+  ] },
+  6: { titulo: ['Registro de la campanera de Ysmeral', 'Register of the Bell-Keeper of Ysmeral'], paginas: [
+    ['«Ysmeral no tiene muralla. Tiene campanas. Mientras suenen, el mar respeta la orilla. Así lo pactó la primera sacerdotisa con lo que vive en el fondo.»', '"Ysmeral has no wall. It has bells. As long as they ring, the sea respects the shore. So the first priestess agreed with what lives at the bottom."'],
+    ['«Cayó una luz del cielo sobre el mar y el mar tuvo sed. La sacerdotisa mayor se ató a la campana grande con cadenas de plata y tocó tres días sin parar. Al tercer día las manos ya eran bronce.»', '"A light fell from the sky upon the sea and the sea grew thirsty. The high priestess chained herself to the great bell with silver chains and rang for three days without rest. By the third day her hands were bronze."'],
+    ['«Nos hundimos cenando. Nadie corrió. Debajo del agua la campana sigue sonando, y cada vez que suena, el agua sube un palmo hacia el cielo. Creo que no quiere ahogarnos. Creo que quiere llevarnos arriba, a quien tiene sed.»', '"We sank at supper. No one ran. Beneath the water the bell keeps ringing, and every time it rings, the water rises a span toward the sky. I do not think it wants to drown us. I think it wants to carry us up, to the one who thirsts."'],
+  ] },
+  7: { titulo: ['Tablillas de los que subieron', 'Tablets of Those Who Climbed'], paginas: [
+    ['«Somos siete y subimos con la Marca. Dicen que el dios nos espera porque somos pedazos suyos. Eskel tiene miedo. Yo también, pero canto.»', '"We are seven and we climb with the Mark. They say the god awaits us because we are pieces of him. Eskel is afraid. So am I, but I sing."'],
+    ['«Aun-Saar no tiene ojos. Tiene una boca en el lugar del corazón. Habla con la voz de todos los que alguna vez tuvieron sed: el náufrago, el enfermo, el niño que llora de noche.»', '"Aun-Saar has no eyes. He has a mouth where his heart should be. He speaks with the voice of everyone who has ever been thirsty: the castaway, the sick, the child crying at night."'],
+    ['«Llegué al último escalón. Está en blanco. Entendí que no es para mí. Bajo la vista y veo mi propia estatua formándose en el jardín. No es una tumba. Es un aviso para el que venga después.»', '"I reached the last step. It is blank. I understood it is not for me. I look down and see my own statue forming in the garden. It is not a grave. It is a warning for whoever comes after."'],
+  ] },
+};
+
+// ------------------------------------------------------------------ fantasmas que repiten su última escena
+/** Al acercarte, la figura pálida dice sus últimas palabras, repite su muerte y se desvanece. */
+export const FANTASMAS: { id: string; zona: string; sprite: string; texto: [string, string] }[] = [
+  { id: 'f_cementerio', zona: 'a1_cementerio', sprite: 'cultista', texto: ['Cierren las puertas. Algo sube por el pozo y sabe nuestros nombres.', 'Shut the doors. Something is climbing the well and it knows our names.'] },
+  { id: 'f_bosque', zona: 'a1_bosque', sprite: 'penitente', texto: ['No fui yo. Fue la campana. Ella me pidió la soga.', 'It was not me. It was the bell. She asked me for the rope.'] },
+  { id: 'f_abadia', zona: 'a1_abadia2', sprite: 'monja_hueca', texto: ['Hermano Vesperio, no cantes. Es de noche. Por favor, no cantes.', 'Brother Vesperio, do not sing. It is night. Please, do not sing.'] },
+  { id: 'f_oasis', zona: 'a2_oasis_muerto', sprite: 'saqueador', texto: ['El agua estaba negra. Bebí igual. Tenía tanta sed.', 'The water was black. I drank anyway. I was so thirsty.'] },
+  { id: 'f_hundida', zona: 'a3_hundida1', sprite: 'ahogado', texto: ['Las campanas sonaban bajo el agua. Bajé a ver quién las tocaba.', 'The bells were ringing beneath the water. I went down to see who rang them.'] },
+  { id: 'f_glaciar', zona: 'a4_glaciar', sprite: 'escarchado', texto: ['¿Hijo? ¿Eres tú? Te busqué toda la noche. Ya no siento las manos.', 'Son? Is that you? I searched for you all night. I can no longer feel my hands.'] },
+  { id: 'f_llanuras', zona: 'a5_llanuras', sprite: 'caballero_abismo', texto: ['Juramos que no lo despertaríamos. Lo juramos cantando.', 'We swore we would not wake it. We swore it singing.'] },
+  { id: 'f_barrio', zona: 'a6_barrio1', sprite: 'ahogado', texto: ['Siéntate, la sopa se enfría. ¿Por qué hay agua en el pan?', 'Sit down, the soup is getting cold. Why is there water in the bread?'] },
+  { id: 'f_jardin', zona: 'a7_jardin', sprite: 'sacerdote_caido', texto: ['Yo también subí, ¿sabes? Antes de cantar de noche. Él me dijo que tenía sed, y yo le creí.', 'I climbed too, you know. Before I sang at night. He told me he was thirsty, and I believed him.'] },
+];
+
+// ------------------------------------------------------------------ el heraldo de Ozmaren
+/** Vesperio, el novicio que cantó de noche. Aparece antes del jefe de cada acto y huye, hasta la Fragua. */
+export const HERALDO = {
+  id: 'heraldo',
+  zonas: { 1: 'a1_cata1', 2: 'a2_tumbas1', 3: 'a3_templo1', 4: 'a4_hielo1', 5: 'a5_fragua' } as Record<number, string>,
+  /** Acto en el que pelea hasta morir. */
+  final: 5,
+  encuentro: {
+    1: ['Yo canté de noche. Yo la llamé. ¿Vienes a darme las gracias?', 'I sang at night. I called her. Have you come to thank me?'],
+    2: ['El rey vendió su sombra por dormir. ¿Qué venderás tú, cuando tengas sed?', 'The king sold his shadow to sleep. What will you sell, when you are thirsty?'],
+    3: ['La Madre me cantaba cuando yo era niño. Ahora le canto yo a ella.', 'The Mother sang to me when I was a child. Now I sing to her.'],
+    4: ['Hjaldur juró no levantarse. Yo le enseñé que los juramentos se derriten.', 'Hjaldur swore never to rise. I taught him that oaths melt.'],
+    5: ['Aquí forjó las cadenas. Aquí se rompe la última. ¿Todavía no lo sabes? La llave eres tú.', 'Here he forged the chains. Here the last one breaks. Do you still not know? The key is you.'],
+  } as Record<number, [string, string]>,
+  huida: {
+    1: ['Todavía no. Él quiere verte entero cuando llegues.', 'Not yet. He wants you whole when you arrive.'],
+    2: ['La arena me guarda un sitio. Nos vemos más abajo.', 'The sand keeps a place for me. We will meet further down.'],
+    3: ['El agua me lleva. Siempre me lleva adonde tú vas.', 'The water carries me. It always carries me where you are going.'],
+    4: ['Corre al trono. Yo te espero donde todo arde.', 'Run to the throne. I will wait for you where everything burns.'],
+  } as Record<number, [string, string]>,
+  muerte: ['Canté... para que alguien me escuchara... Tu Marca... no es ceniza... nunca lo fue...', 'I sang... so that someone would listen... Your Mark... is not ash... it never was...'] as [string, string],
+};
+
+// ------------------------------------------------------------------ cinemáticas entre actos
+/** Tomas que se ven al cerrar un acto (clave: el acto que se cierra). Escena del motor, semilla y la voz. */
+export interface TomaEntreacto { escena: string; seed: number; texto: [string, string]; textoSegun?: Partial<Record<FinalElegido, [string, string]>>; figura?: string }
+export const ENTREACTO: Record<number, TomaEntreacto[]> = {
+  1: [
+    { escena: 'catacumbas', seed: 3, texto: ['La Abadesa cayó. La brasa no.', 'The Abbess fell. The ember did not.'] },
+    { escena: 'catedral', seed: 5, texto: ['Subió por el pozo como una chispa que se niega a morir, y en el claustro las campanas doblaron una última vez.', 'It rose up the well like a spark that refuses to die, and in the cloister the bells tolled one last time.'] },
+    { escena: 'desierto', seed: 4, texto: ['Tomó el camino del sur, hacia Sahrim, donde los reyes no mueren. Solo duermen.', 'It took the southern road, toward Sahrim, where kings do not die. They only sleep.'] },
+    { escena: 'tumba', seed: 2, figura: 'heraldo', texto: ['Y en tu brazo, la Marca se calentó un poco más.', 'And on your arm, the Mark grew a little warmer.'] },
+  ],
+  2: [
+    { escena: 'tumba', seed: 6, texto: ['Khamer-Ul volvió al polvo, sin sombra que lo acompañara.', 'Khamer-Ul returned to dust, with no shadow to keep him company.'] },
+    { escena: 'desierto', seed: 9, texto: ['La brasa siguió el río hacia el este, donde la selva respira y el agua sangra.', 'The ember followed the river east, where the jungle breathes and the water bleeds.'] },
+    { escena: 'templo', seed: 3, texto: ['Oyá desató las amarras. Nadie habló durante el viaje.', 'Oya cast off the moorings. No one spoke during the voyage.'] },
+    { escena: 'templo', seed: 7, figura: 'heraldo', texto: ['Detrás del barco, algo pálido caminaba sobre el agua, cantando.', 'Behind the ship, something pale walked upon the water, singing.'] },
+  ],
+  3: [
+    { escena: 'templo', seed: 5, texto: ['La Madre calló. El río se aclaró, aunque todavía sabe a hierro.', 'The Mother fell silent. The river cleared, though it still tastes of iron.'] },
+    { escena: 'nieve', seed: 2, texto: ['Al norte, en Hrimgard, un rey que juró no levantarse ya caminaba sobre la nieve.', 'In the north, in Hrimgard, a king who swore never to rise was already walking on the snow.'] },
+    { escena: 'nieve', seed: 8, texto: ['Dicen que el frío conserva todo. Hasta las promesas rotas.', 'They say the cold preserves everything. Even broken promises.'] },
+  ],
+  4: [
+    { escena: 'nieve', seed: 4, texto: ['Cuatro sellos rotos. Cuatro brasas sueltas que buscan volver a juntarse.', 'Four seals broken. Four loose embers seeking to come together again.'] },
+    { escena: 'infierno', seed: 3, texto: ['Sobre la Herida, el cielo se abrió como una boca que no termina de gritar.', 'Above the Wound, the sky opened like a mouth that never finishes screaming.'] },
+    { escena: 'fortaleza', seed: 2, texto: ['En el Bastión del Último Coro, una sola voz sigue cantando.', 'In the Bastion of the Last Choir, a single voice keeps singing.'] },
+    { escena: 'infierno', seed: 6, figura: 'ozmaren', texto: ['Tu Marca ya no duele. Late. Y algo, del otro lado, te llama hijo.', 'Your Mark no longer hurts. It beats. And something, on the other side, calls you child.'] },
+  ],
+  5: [
+    { escena: 'infierno', seed: 8, texto: ['Ozmaren cayó. La sed que bajó a beber se quedó sin boca.', 'Ozmaren fell. The thirst that came down to drink was left without a mouth.'],
+      textoSegun: { destruir: ['Ozmaren cayó, y la Brasa se apagó en tu puño. Tu Marca quedó gris, como un nombre olvidado.', 'Ozmaren fell, and the Ember went out in your fist. Your Mark turned grey, like a forgotten name.'], absorber: ['Ozmaren cayó, y la Brasa entró en ti. Desde entonces tu sombra es tibia.', 'Ozmaren fell, and the Ember entered you. Since then your shadow has been warm.'] } },
+    { escena: 'cementerio', seed: 7, texto: ['Esa noche, muy al norte, el mar se partió en dos.', 'That night, far to the north, the sea split in two.'] },
+    { escena: 'catedral', seed: 9, texto: ['Del fondo subió Ysmeral, la Ciudad Ahogada, con sus campanas todavía sonando.', 'From the depths rose Ysmeral, the Drowned City, its bells still ringing.'] },
+    { escena: 'campamento', seed: 4, texto: ['El barco de Oyá quedó varado en su costa. Desde la proa, las campanas parecían llamar a alguien.', 'Oya\'s ship ran aground on its coast. From the prow, the bells seemed to be calling someone.'] },
+  ],
+  6: [
+    { escena: 'catedral', seed: 4, texto: ['La Campana calló. El mar volvió a su lugar, como un perro que reconoce a su amo.', 'The Bell fell silent. The sea returned to its place, like a dog that knows its master.'] },
+    { escena: 'arcano', seed: 3, texto: ['Entonces el cielo se rompió como un vidrio, y detrás del vidrio había escalones de oro.', 'Then the sky broke like glass, and behind the glass there were steps of gold.'] },
+    { escena: 'fortaleza', seed: 6, texto: ['Arriba, en un trono que tiene sed desde antes del mundo, Aun-Saar abrió la boca que tiene en el pecho.', 'Above, on a throne that has thirsted since before the world, Aun-Saar opened the mouth in his chest.'] },
+    { escena: 'arcano', seed: 8, figura: 'aun_saar', texto: ['Y por primera vez en mil inviernos, dijo una palabra. Era tu nombre.', 'And for the first time in a thousand winters, he spoke a word. It was your name.'],
+      textoSegun: { destruir: ['Y por primera vez en mil inviernos, preguntó por el pedazo que le faltaba. Preguntó por ti.', 'And for the first time in a thousand winters, he asked for the piece he was missing. He asked for you.'], absorber: ['Y por primera vez en mil inviernos, sonrió. Ya sabía que su sed venía en camino.', 'And for the first time in a thousand winters, he smiled. He knew his thirst was on its way.'] } },
+  ],
+};
+
+// ------------------------------------------------------------------ la revelación (al caer Ozmaren) y los finales (al caer Aun-Saar)
+export const REVELACION: [string, string][] = [
+  ['Ozmaren cae. Su cuerpo se deshace en ceniza, y de la ceniza rueda una brasa hasta tus pies.', 'Ozmaren falls. Its body crumbles into ash, and from the ash an ember rolls to your feet.'],
+  ['Tu Marca responde. Late al mismo ritmo. Entonces entiendes lo que Vesperio quiso decirte antes de morir.', 'Your Mark answers. It beats in the same rhythm. Then you understand what Vesperio tried to tell you before he died.'],
+  ['La Marca nunca fue ceniza. Es un pedazo de la Brasa. El más pequeño. El que los monjes no pudieron encerrar.', 'The Mark was never ash. It is a piece of the Ember. The smallest. The one the monks could not imprison.'],
+  ['La Brasa te habla con tu propia voz. Puedes apagarla para siempre, y apagar con ella lo que llevas adentro. O puedes tomarla, y que la sed sea tuya.', 'The Ember speaks to you in your own voice. You can put it out forever, and put out with it what you carry inside. Or you can take it, and let the thirst be yours.'],
+];
+export const OPCIONES_BRASA: Record<FinalElegido, [string, string]> = { destruir: ['Destruir la Brasa', 'Destroy the Ember'], absorber: ['Absorber la Brasa', 'Absorb the Ember'] };
+export const TRAS_ELEGIR: Record<FinalElegido, [string, string]> = {
+  destruir: ['Cierras la mano y aprietas hasta que la Brasa deja de latir. Tu Marca se pone gris y fría. Muy arriba, algo siente que le falta un pedazo.', 'You close your hand and squeeze until the Ember stops beating. Your Mark turns grey and cold. Far above, something feels a piece of itself go missing.'],
+  absorber: ['Llevas la Brasa a tu pecho y la Marca la bebe como agua en el desierto. La sed entra en ti. Es tuya. Muy arriba, algo sonríe.', 'You bring the Ember to your chest and the Mark drinks it like water in the desert. The thirst enters you. It is yours. Far above, something smiles.'],
+};
+export const EPILOGO: Record<FinalElegido, { titulo: [string, string]; lineas: [string, string][] }> = {
+  destruir: { titulo: ['La Hoguera', 'The Pyre'], lineas: [
+    ['Aun-Saar cae de su trono. Busca en ti el pedazo que le faltaba, y no lo encuentra. Tu Marca está apagada.', 'Aun-Saar falls from his throne. He searches you for the piece he was missing, and does not find it. Your Mark is dark.'],
+    ['Sin nada que beber, la sed se apaga como una vela bajo el agua. Las islas de oro se enfrían y el cielo se cierra despacio, como una herida.', 'With nothing to drink, the thirst goes out like a candle under water. The isles of gold grow cold and the sky closes slowly, like a wound.'],
+    ['En Velmora las campanas callan para siempre. Tomás habla en voz alta, y la primera palabra que dice es tu nombre.', 'In Velmora the bells fall silent forever. Tomas speaks aloud, and the first word he says is your name.'],
+    ['Nadie vuelve a pronunciar el nombre del dios. Así se apaga la sed: olvidándola.', 'No one speaks the god\'s name again. That is how the thirst goes out: by being forgotten.'],
+    ['Pero muy arriba, en otro cielo, una segunda brasa sigue cayendo. Tardará mil años en llegar.', 'But far above, in another sky, a second ember is still falling. It will take a thousand years to arrive.'],
+  ] },
+  absorber: { titulo: ['La Corona de Ceniza', 'The Crown of Ash'], lineas: [
+    ['Aun-Saar cae de su trono, y su sed busca un cuerpo nuevo. Ya lo tiene. Es el tuyo.', 'Aun-Saar falls from his throne, and his thirst seeks a new body. It already has one. It is yours.'],
+    ['Te sientas en el Trono Sediento. La sed ya no tiene otro nombre que el tuyo, y por eso no puede volver a bajar.', 'You sit upon the Thirsting Throne. The thirst has no name but yours now, and so it can never come down again.'],
+    ['Velmora no vuelve a arder. Pero de noche nadie se acerca al fuego, y cuando el viento sopla desde el norte, las campanas contestan solas.', 'Velmora never burns again. But at night no one goes near the fire, and when the wind blows from the north, the bells answer on their own.'],
+    ['Ysolde guarda sus cartas para siempre. Dice que ya no ve la cura ni la herida. Solo te ve a ti, arriba, esperando.', 'Ysolde puts away her cards forever. She says she no longer sees the cure or the wound. She sees only you, above, waiting.'],
+    ['Muy lejos, en otro cielo, una segunda brasa cambia de rumbo. Ahora sabe adónde ir.', 'Far away, in another sky, a second ember changes course. Now it knows where to go.'],
+  ] },
+};

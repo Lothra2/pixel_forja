@@ -414,6 +414,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     if (m.estado === 'dormido' || m.estado === 'deambular') { m.estado = 'perseguir'; m.objetivo = g.fuente ?? j.heroe; }
     if (total > m.vidaMax * 0.12 && m.acc !== 'atacar' && m.acc !== 'lanzar' && m.calidad < 3) { m.acc = 'herido'; m.t = 0; m.dur = 0.3; }
     if (crit || total > m.vidaMax * 0.3) j.sacudida = Math.max(j.sacudida, 0.1);
+    if (m.vida <= 0 && (m as any).huye) m.vida = 1; // historia: el heraldo no muere antes de su acto, huye
     if (m.vida <= 0) morirMonstruo(j, m, g);
   }
   return total;

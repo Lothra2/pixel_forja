@@ -4,7 +4,10 @@ import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto } from './mo
 import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
-import { dibujarFinal } from './ui/menus';
+import { dibujarFinal, dibujarEntreacto, dibujarRevelacion } from './ui/menus';
+import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria } from './juego/historia';
+import { dibujarHistoria } from './ui/historia_ui';
+import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
 import { abrirTienda } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
@@ -12,15 +15,18 @@ import { dibujarMundo, picks, aMundo, aPant, opciones as opcionesRender, type Pi
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
-import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA, PAGINAS } from './mundo/actos';
+import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA } from './mundo/actos';
 import { POBLACION, MONSTRUOS } from './datos/monstruos';
 import { GENTE } from './datos/npcs';
 import { CLASES } from './datos/clases';
 import { dist, R, elegir } from './nucleo/azar';
 import { pasable, type ObjZ, type Salida } from './mundo/zona';
 
-type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona' | 'final';
+type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona' | 'final' | 'entreacto' | 'revelacion';
 let finalT = 0;
+// historia: la cinemática entre actos espera a que se cierre el diálogo; la revelación lleva al final si se elige al caer Aun-Saar
+let entreActo = 0, entreActoPendiente = 0, entreT = 0;
+let revT = 0, revEleccion: FinalElegido | null = null, revLuegoFinal = false;
 let estado: Estado = 'carga';
 let tEstado = 0, tiempo = 0;
 let cargaK = 0, cargaMsg = '';
@@ -75,6 +81,8 @@ function atlasZona(zid: string): Set<string> {
   const def = ZONAS[zid];
   const mons = new Set(pool.map((p) => MONSTRUOS[p]?.sprite).filter(Boolean));
   if (def.jefe) mons.add(MONSTRUOS[def.jefe]?.sprite);
+  if (Object.values(HERALDO.zonas).includes(zid)) mons.add(MONSTRUOS[HERALDO.id]?.sprite);
+  for (const f of FANTASMAS) if (f.zona === zid) mons.add(f.sprite);
   for (const p of pool) { const inv = MONSTRUOS[p]?.invoca; if (inv) mons.add(MONSTRUOS[inv]?.sprite); }
   for (const id of mons) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
   if (def.tipo === 'pueblo') for (const n of GENTE[def.acto] ?? []) for (const a of atlasDe('m', clavesCon('m', `${n}/`))) s.add(a);
@@ -91,6 +99,7 @@ async function irAZona(id: string, entrada: string) {
   ui.izq = ui.der = null; ui.mano = null;
   await new Promise((r) => setTimeout(r, 30));
   entrarZona(j, id, entrada);
+  historiaEntrar(j);
   await asegurar(atlasZona(id), (h, t) => { cargaK = t ? h / t : 1; });
   const z = ZONAS[id];
   Sonido.musica(MUSICA_ACTO(z.acto, z.tipo) as any);
@@ -285,10 +294,8 @@ function usarObjeto(jj: Juego, o: ObjZ) {
     } else if (R() < 0.25) { h.vida = h.vidaMax; h.mana = h.c.manaMax; msg(jj, ['Santuario de la Vigilia: te sientes entero.', 'Vigil Shrine: you feel whole.'], '#a0ffa0'); }
     else { const s = elegir(tipos); h.buffs['santuario'] = { t: 90, bonos: s.b as any, hab: 'santuario' }; recalc(jj); msg(jj, s.m as [string, string], '#a0c0ff'); }
   } else if (o.tag === 'libro') {
-    const d = h.d as any; d.paginas ??= 0;
-    const i = Math.min(PAGINAS.length - 1, d.paginas);
-    if (d.paginas < PAGINAS.length) d.paginas++;
-    ui.dialogoTexto = TT(PAGINAS[i]); ui.izq = 'pagina' as any; (ui as any).paginaN = i + 1;
+    const p = leerLibro(h.d, jj.zona.acto);
+    ui.dialogoTexto = TT(p.texto); ui.izq = 'pagina' as any; Object.assign(ui as any, { paginaN: p.n, paginaTotal: p.total, paginaTitulo: TT(p.titulo) });
     Sonido.efecto('abrir'); Sonido.susurro(); o.tag = undefined;
   } else if (o.tag === 'pozo') {
     if (o.v === 'seco') return;
@@ -303,6 +310,11 @@ function usarObjeto(jj: Juego, o: ObjZ) {
   }
 }
 
+// ------------------------------------------------------------------ cinemáticas de la historia
+const REV_LARGO = 28;
+function empezarEntreacto(acto: number) { guardar(); estado = 'entreacto'; entreActo = acto; entreT = 0; ui.izq = ui.der = null; E.clicIzq = false; Sonido.musica('intro'); }
+function empezarRevelacion(luegoFinal: boolean) { estado = 'revelacion'; revT = 0; revEleccion = null; revLuegoFinal = luegoFinal; ui.izq = ui.der = null; E.clicIzq = false; Sonido.musica('intro'); }
+
 // ------------------------------------------------------------------ eventos del mundo
 function procesarEventos(jj: Juego) {
   const ev = jj.eventos.splice(0);
@@ -311,12 +323,14 @@ function procesarEventos(jj: Juego) {
     else if (e.tipo === 'salir') { guardar(); Sonido.musica('menu'); estado = 'seleccion'; j = null; cargarPartidas(); return; }
     else if (e.tipo === 'opciones') { opcionesDesde = 'juego'; estado = 'opciones'; ui.izq = null; }
     else if (e.tipo === 'mision') { const m = MISIONES.find((q) => q.id === e.dato); if (m) { msg(jj, [`Misión cumplida: ${m.nombre[0]}. Vuelve al campamento.`, `Quest fulfilled: ${m.nombre[1]}. Return to camp.`], '#80ff80'); Sonido.efecto('mision'); } }
-    else if (e.tipo === 'jefe_muerto' && e.dato === 'senor_demonio') { guardar(); setTimeout(() => { estado = 'final'; finalT = 0; Sonido.musica('intro'); }, 4000); }
+    else if (e.tipo === 'jefe_muerto' && e.dato === 'senor_demonio') { guardar(); if (!finalDe(jj.heroe.d)) setTimeout(() => empezarRevelacion(false), 4000); else Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); }
+    else if (e.tipo === 'jefe_muerto' && e.dato === 'aun_saar') { guardar(); setTimeout(() => { if (finalDe(jj.heroe.d)) { estado = 'final'; finalT = 0; Sonido.musica('intro'); } else empezarRevelacion(true); }, 4000); }
     else if (e.tipo === 'jefe_muerto') { Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); msg(jj, ['El sello se rompe. Algo escapa hacia lo alto.', 'The seal breaks. Something escapes upward.'], '#ffb060'); guardar(); }
     else if (e.tipo === 'muerte') { Sonido.musica(null as any); tEstado = 0; }
     else if (e.tipo === 'spawn') { import('./juego/mundo').then((mm) => { const m = mm.crearMonstruo(MONSTRUOS[e.dato.id], jj.zona.nivel + 1, e.dato.x, e.dato.y, 1, jj.heroe.d.dificultad); m.estado = 'perseguir'; m.objetivo = jj.heroe; m.acc = 'morir'; (m as any).surgiendo = 1.2; jj.monstruos.push(m); }); }
     else if (e.tipo === 'nivel') { guardar(); pista('nivel', ['Subiste de nivel: pulsa C para tus atributos y T para tus habilidades.', 'Level up: press C for attributes and T for skills.']); }
-    else if (e.tipo === 'mision_hecha') guardar();
+    else if (e.tipo === 'mision_hecha') { guardar(); const m = MISIONES.find((q) => q.id === e.dato); if (m?.cierraActo && m.acto < 7) entreActoPendiente = m.acto; }
+    else if (e.tipo === 'heraldo_huye') guardar();
   }
 }
 
@@ -338,9 +352,29 @@ function paso(dt: number) {
   switch (estado) {
     case 'carga': pantallaCarga(cargaK, cargaMsg, tiempo); break;
     case 'zona': pantallaCarga(cargaK, cargaMsg, tiempo); break;
+    case 'entreacto': {
+      entreT += dt;
+      if (dibujarEntreacto(entreActo, entreT, j ? finalDe(j.heroe.d) : undefined) || (entreT > 0.5 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) {
+        E.clicIzq = false; estado = 'juego'; tEstado = 0;
+        const sig = PUEBLO_DE[entreActo + 1]; if (sig && ZONAS[sig]) zonaPendiente = { id: sig, entrada: 'centro' };
+      }
+      break;
+    }
+    case 'revelacion': {
+      revT += dt;
+      const r = dibujarRevelacion(revT, revEleccion);
+      if (!revEleccion && r !== 'fin' && r) { revEleccion = r; revT = 0; E.clicIzq = false; if (j) { hist(j.heroe.d).finalElegido = r; guardar(); } Sonido.efecto(r === 'absorber' ? 'rugido_jefe' : 'campana', { vol: 0.8 }); }
+      else if (!revEleccion && revT > 0.5 && revT < REV_LARGO && (E.clicIzq || pulso('Escape'))) { revT = REV_LARGO; E.clicIzq = false; }
+      else if (revEleccion && (r === 'fin' || (revT > 1 && (E.clicIzq || pulso('Escape'))))) {
+        E.clicIzq = false;
+        if (revLuegoFinal) { estado = 'final'; finalT = 0; } else { estado = 'juego'; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); }
+      }
+      if (estado === 'revelacion') dibujarCursor('senalar');
+      break;
+    }
     case 'final': {
       finalT += dt;
-      if (dibujarFinal(finalT) || (finalT > 3 && (pulso('Escape') || E.clicIzq))) { estado = 'juego'; E.clicIzq = false; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); }
+      if (dibujarFinal(finalT, (j && finalDe(j.heroe.d)) || 'destruir') || (finalT > 3 && (pulso('Escape') || E.clicIzq))) { estado = 'juego'; E.clicIzq = false; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); }
       break;
     }
     case 'intro': {
@@ -370,7 +404,7 @@ function paso(dt: number) {
       sel = r.sel;
       dibujarCursor('senalar');
       if (r.accion === 'jugar' && heroes[sel]) { E.clicIzq = false; empezarPartida(JSON.parse(JSON.stringify(heroes[sel]))); }
-      if (r.accion === 'dificultad' && heroes[sel]) { E.clicIzq = false; const hr = heroes[sel]; hr.dificultad = (hr.dificultad ?? 0) + 1; hr.acto = 1; hr.zona = 'a1_refugio'; hr.misiones = {}; hr.actosHechos = []; hr.viajes = ['a1_refugio']; guardarPartidas(); }
+      if (r.accion === 'dificultad' && heroes[sel]) { E.clicIzq = false; const hr = heroes[sel]; hr.dificultad = (hr.dificultad ?? 0) + 1; hr.acto = 1; hr.zona = 'a1_refugio'; hr.misiones = {}; reiniciarHistoria(hr); hr.actosHechos = []; hr.viajes = ['a1_refugio']; guardarPartidas(); }
       if (r.accion === 'crear') { estado = 'crear'; selClase = null; E.clicIzq = false; }
       if (r.accion === 'volver' || pulso('Escape')) { estado = 'menu'; E.clicIzq = false; }
       if (r.accion === 'borrar' && heroes[sel]) { E.clicIzq = false; if ((window as any).__borrar === heroes[sel].id) { heroes.splice(sel, 1); sel = 0; guardarPartidas(); (window as any).__borrar = null; } else (window as any).__borrar = heroes[sel].id; }
@@ -396,8 +430,10 @@ function paso(dt: number) {
       if (zonaPendiente) { const z = zonaPendiente; zonaPendiente = null; if (z.entrada === '__portal') { const p = jj.portal!; irAZona(z.id, 'centro').then(() => { jj.heroe.x = p.x + 1; jj.heroe.y = p.y + 1; }); } else irAZona(z.id, z.entrada); break; }
       opcionesRender.idi = IDI;
       const pausa = ui.izq === 'menu' || ui.confirmar;
-      if (!pausa) actualizar(jj, dt);
+      if (!pausa) { actualizar(jj, dt); historiaPaso(jj, dt); }
       dibujarMundo(jj, dt, tiempo);
+      dibujarHistoria(jj, tiempo);
+      if (entreActoPendiente && ui.izq !== 'dialogo') { empezarEntreacto(entreActoPendiente); entreActoPendiente = 0; }
       etiquetasBotin(jj);
       // brillo general
       if (opciones.brillo < 0.95 || opciones.brillo > 1.05) { ctx.save(); ctx.globalCompositeOperation = opciones.brillo > 1 ? 'lighter' : 'source-over'; ctx.fillStyle = opciones.brillo > 1 ? `rgba(40,36,30,${(opciones.brillo - 1) * 0.6})` : `rgba(0,0,0,${(1 - opciones.brillo) * 0.5})`; ctx.fillRect(0, 0, W, H); ctx.restore(); }
@@ -453,6 +489,7 @@ async function arrancar() {
   // ganchos para las pruebas del build de producción
   Promise.all([import('./juego/heroe'), import('./juego/objetos'), import('./datos/objetos_datos'), import('./motor/pintor')]).then(([H, O, D, P]) => { (window as any).__T = { H, O, D, P }; });
   (window as any).__ir = (id: string, e: string) => irAZona(id, e);
+  (window as any).__historia = { entreacto: (n: number) => empezarEntreacto(n), revelacion: (luegoFinal = false) => empezarRevelacion(luegoFinal), final: () => { estado = 'final'; finalT = 0; }, t: (s: number) => { entreT = s; revT = s; finalT = s; } };
   (window as any).__aPant = (x: number, y: number) => { const [a, b] = aPant(x, y); const r = (document.getElementById('juego') as HTMLCanvasElement).getBoundingClientRect(); return [r.left + a * r.width / W, r.top + b * r.height / H]; };
 }
 function aplicarMusicaEstado() { Sonido.musica(estado === 'intro' ? 'intro' : estado === 'juego' && j ? (MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any) : 'menu'); }
