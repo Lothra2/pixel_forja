@@ -1,6 +1,6 @@
 import { registrar, conVarianteY, type Pieza, type V3 } from '../objeto';
 import {
-  G, raiz, bloque, ojiva, altoOjiva, letras, grieta, tierra, monticulo, matas, musgo, hiedra, cascotes, calavera, huesos, huesito,
+  G, raiz, bajoTierra, bloque, ojiva, altoOjiva, letras, grieta, tierra, monticulo, matas, musgo, hiedra, cascotes, calavera, huesos, huesito,
   esqueleto, mirar, vela, llama, cadena, voluta, punta, cuervo, arbolMuerto, figuraVelada, rr, elegir, onda, GR, type P2,
 } from '../kit_muerte';
 
@@ -19,7 +19,7 @@ type Arm = (v: string, f: number, g: G, a: G['a']) => Pieza[] | { piezas: Pieza[
 function obj(id: string, nombre: [string, string], variantes: string[], huella: [number, number], bloquea: boolean, armar: Arm, extra: { cuadros?: number; t?: number; huellaPor?: Record<string, [number, number]>; plano?: boolean } = {}) {
   registrar({
     id, nombre, tema: T, variantes, huella, bloquea, ...extra,
-    armar: (v, f, a) => { const { ps, g } = raiz(a); const r = armar(v, f, g, a); return r ? r : ps; },
+    armar: (v, f, a) => { const { ps, g } = raiz(a); const r = armar(v, f, g, a); bajoTierra(ps); return r ? r : ps; },
   });
 }
 const PIEDRAS = ['mu_piedra', 'mu_piedra_fria', 'mu_piedra_clara', 'mu_granito'];

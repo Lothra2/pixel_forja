@@ -821,7 +821,7 @@ reg({
     for (let i = 0; i < 9; i++) { const p = polar(a.r() * PI2, a.r() * 12), k = Math.sin((f / 6) * PI2 + i * 1.9); ps.push(a.esfera(p[0], p[1], 1 + a.r(), 1 + a.r() * 0.8, { mat: 'ext_brasa', tono: -0.25 + k * 0.2 })); }
     if (v !== 'brasas') { humo(a, ps, f, 6, 2, -2, 4, 40, 5, 4); humo(a, ps, f + 3, 6, -6, 5, 3, 28, 4, 3); }
     else chispas(a, ps, f, 6, 0, 0, 3, 16, 4);
-    return { piezas: ps, resplandor: { c: [0, 0, 2], r: 22 + Math.sin((f / 6) * PI2) * 3, color: '#c04414' } };
+    return { piezas: ps, resplandor: { c: [0, 0, 3], r: 15 + Math.sin((f / 6) * PI2) * 2, color: '#8a3010' } };
   },
 });
 
@@ -1121,6 +1121,307 @@ reg({
       vela(a, ps, 0, 0, H + 7, 3, f, 6, 0.9);
       ps.push(a.elipsoide(0, 0, 0.3, 9, 9, 0.5, { mat: 'ext_sangre' }));
       return { piezas: ps, resplandor: { c: [0, 0, 8], r: 26, color: '#ffa040' } };
+    }
+    return ps;
+  },
+});
+
+// ------------------------------------------------------------------ troncos, tocones y hongos
+/** Hongo de sombrero (tallo y sombrero con laminillas oscuras debajo). */
+function hongo(a: Arma, ps: Pieza[], x: number, y: number, z: number, h: number, R: number, mat: string) {
+  const t: V = [x + az(a, h * 0.25), y + az(a, h * 0.25), z + h];
+  ps.push(a.palo([x, y, z], t, R * 0.28, { mat: 'par_flor_blanca', r1: R * 0.22, tono: -0.1 }));
+  ps.push(a.elipsoide(t[0], t[1], t[2] - R * 0.05, R * 0.9, R * 0.9, R * 0.2, { mat: 'negro', tono: 0.1 }), a.elipsoide(t[0], t[1], t[2] + R * 0.08, R, R, R * 0.5, { mat, tono: az(a, 0.08) }));
+}
+/** Hongos de repisa pegados a la madera. */
+const repisa = (a: Arma, ps: Pieza[], p: V, g: number, R: number, mat = 'hongo') => ps.push(a.elipsoide(p[0] + Math.cos(g) * R * 0.4, p[1] + Math.sin(g) * R * 0.4, p[2], R, R * 0.75, R * 0.26, { mat, giro: grad(g), tono: az(a, 0.06) }));
+reg({
+  id: 'par_tronco', nombre: ['Tronco caído', 'Fallen log'], tema: PAR, variantes: ['musgo', 'hueco', 'hongos', 'partido'], huella: [4, 2], bloquea: true,
+  armar: (v, _f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 40, 18, { matas: 5, piedras: 1, hojas: 'hojas_otono' });
+    const g = az(a, 20), d: V = [Math.cos(rad(g)), Math.sin(rad(g)), 0], lado: V = [-d[1], d[0], 0];
+    const L = 64, r0 = 7 + a.r() * 2, partes = v === 'partido' ? [[-L / 2, -4], [6, L / 2]] : [[-L / 2, L / 2]];
+    for (const [u0, u1] of partes) {
+      const cs: Comp[] = [];
+      const n = 5;
+      for (let i = 0; i < n; i++) { const t0 = u0 + (i / n) * (u1 - u0), t1 = u0 + ((i + 1) / n) * (u1 - u0), r = (u: number) => r0 * (1 - (u + L / 2) / L * 0.35); cs.push(hueso(mas(mas([0, 0, 0], d, t0), [az(a, 0.6), az(a, 0.6), r(t0) * 0.85]), mas(mas([0, 0, 0], d, t1), [0, 0, r(t1) * 0.85]), r(t0), r(t1))); }
+      // nudos y muñones de ramas
+      for (let i = 0; i < 3; i++) { const u = entre(a, u0 + 4, u1 - 4), s = a.r() < 0.5 ? 1 : -1, b = mas(mas(mas([0, 0, 0], d, u), lado, s * r0 * 0.6), [0, 0, r0]); cs.push(hueso(b, mas(mas(b, lado, s * 5), [az(a, 2), az(a, 2), 5]), 1.8, 1.1)); }
+      if (v === 'musgo') for (let i = 0; i < 6; i++) { const u = entre(a, u0, u1); cs.push(bulto(mas(mas([0, 0, 0], d, u), [az(a, 1.5), az(a, 1.5), r0 * 1.55]), [6 + a.r() * 5, r0 * 0.75, 1.8], { eje: d, mat: 'ext_musgo', k: 1.1 })); }
+      ps.push(masa(cs, { mat: 'corteza', suave: 1.8 }));
+      // la punta cortada: anillos claros o el hueco
+      for (const u of [u0, u1]) {
+        const c = mas(mas([0, 0, 0], d, u), [0, 0, r0 * (1 - (u + L / 2) / L * 0.35) * 0.85]), rr = r0 * (1 - (u + L / 2) / L * 0.35);
+        if (v === 'hueco' && u === u1) { ps.push(a.cilindro(c[0] - d[0] * 6, c[1] - d[1] * 6, c[2], rr * 0.7, 7, { mat: 'negro', eje: d, resta: true }), a.cilindro(c[0] - d[0] * 6, c[1] - d[1] * 6, c[2], rr * 0.7, 0.5, { mat: 'negro', eje: d })); }
+        else ps.push(a.cilindro(c[0] - d[0] * (u === u0 ? 0.3 : -0.3) * 0, c[1], c[2], rr * 0.97, 0.5, { mat: 'ext_madera_gris', eje: u === u0 ? [-d[0], -d[1], 0] : d, tono: -0.05 }));
+      }
+    }
+    if (v === 'hongos' || v === 'musgo') for (let i = 0; i < 6; i++) { const u = az(a, L * 0.4); repisa(a, ps, mas(mas([0, 0, 0], d, u), [lado[0] * r0 * 0.9, lado[1] * r0 * 0.9, r0 * (0.5 + a.r() * 0.8)]), Math.atan2(lado[1], lado[0]), 2.5 + a.r() * 2); }
+    if (v === 'hongos') for (let i = 0; i < 6; i++) { const u = az(a, L * 0.45), s = a.r() < 0.5 ? 1 : -1; const p = mas(mas([0, 0, 0], d, u), lado, s * (r0 + 3)); hongo(a, ps, p[0], p[1], 0, 3 + a.r() * 4, 2 + a.r() * 2.5, elegir(a, ['hongo', 'cuero', 'par_flor_blanca'])); }
+    return ps;
+  },
+});
+
+reg({
+  id: 'par_tocon', nombre: ['Tocón con hongos', 'Mushroom stump'], tema: PAR, variantes: ['hongos', 'luminoso', 'repisas', 'raices'], huella: [1, 1], huellaPor: { raices: [2, 2] }, bloquea: true,
+  armar: (v, _f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 18, 16, { matas: 4, piedras: 1, hojas: 'hojas_otono' });
+    const r = 7 + a.r() * 2, H = 12 + a.r() * 10;
+    const cs: Comp[] = [hueso([0, 0, 0], [az(a, 1), az(a, 1), H], r, r * 0.9), bulto([0, 0, 2], [r * 1.3, r * 1.25, 3])];
+    const nr = v === 'raices' ? 6 : 4;
+    for (let i = 0; i < nr; i++) { const t = (i / nr) * PI2 + az(a, 0.4), L = (v === 'raices' ? 22 : 12) + a.r() * 6; cs.push(hueso(polar(t, r * 0.4, H * 0.3), polar(t + az(a, 0.2), L * 0.55, 1.5), r * 0.45, r * 0.3), hueso(polar(t + az(a, 0.2), L * 0.55, 1.5), polar(t + az(a, 0.4), L, -0.5), r * 0.3, r * 0.12)); }
+    ps.push(masa(cs, { mat: 'corteza', suave: 2 }));
+    // el corte de arriba con los anillos y la madera podrida del centro
+    ps.push(a.cilindro(0, 0, H - 0.6, r * 0.88, 1, { mat: 'ext_madera_gris', tono: 0.04 }), a.cilindro(0, 0, H - 0.2, r * 0.45, 0.8, { mat: 'ext_madera_podrida', tono: -0.08 }));
+    if (v === 'raices') ps.push(a.cilindro(0, 0, H - 4, r * 0.55, 5, { mat: 'negro', resta: true }));
+    const luz = v === 'luminoso';
+    const nh = v === 'repisas' ? 2 : 6;
+    for (let i = 0; i < nh; i++) { const p = polar(a.r() * PI2, r + 2 + a.r() * 6); hongo(a, ps, p[0], p[1], 0, 2.5 + a.r() * 5, 1.5 + a.r() * 2.2, luz ? 'par_hongo_luz' : elegir(a, ['hongo', 'cuero', 'arenisca_lisa'])); }
+    if (v === 'repisas' || v === 'hongos') for (let i = 0; i < 5; i++) { const t = a.r() * PI2; repisa(a, ps, polar(t, r * 0.95, 3 + a.r() * (H - 5)), t, 2.4 + a.r() * 2.4, v === 'repisas' ? elegir(a, ['hongo', 'par_flor_amarilla']) : 'hongo'); }
+    if (luz) { for (let i = 0; i < 3; i++) hongo(a, ps, az(a, r * 0.4), az(a, r * 0.4), H, 1.5 + a.r() * 2, 1 + a.r() * 1.5, 'par_hongo_luz'); return { piezas: ps, resplandor: { c: [0, 0, 6], r: 24, color: '#3aa078' } }; }
+    return ps;
+  },
+});
+
+// ------------------------------------------------------------------ esqueletos y huesos
+/** Cráneo de animal: hocico largo de masa, cuencas y cuernos o astas. */
+function craneoBestia(a: Arma, ps: Pieza[], p: V, g: number, tipo: 'vaca' | 'caballo' | 'ciervo', s = 1) {
+  const d: V = [Math.cos(g), Math.sin(g), 0], l: V = [-d[1], d[0], 0];
+  const L = tipo === 'caballo' ? 16 : tipo === 'vaca' ? 13 : 11;
+  ps.push(masa([bulto(mas(p, [0, 0, 3.5 * s]), [5 * s, 4.4 * s, 4 * s], { eje: d }), hueso(mas(p, [0, 0, 3.4 * s]), mas(mas(p, d, L * s), [0, 0, 2 * s]), 3.6 * s, 2 * s), bulto(mas(mas(p, d, L * 0.3 * s), [0, 0, 1.2 * s]), [L * 0.55 * s, 3 * s, 1.4 * s], { eje: d, tono: -0.05 })], { mat: 'ext_hueso', suave: 1.4 * s }));
+  for (const sd of [-1, 1]) { const e = mas(mas(mas(p, d, 3 * s), l, sd * 3.2 * s), [0, 0, 4.4 * s]); ps.push(a.esfera(e[0], e[1], e[2], 1.4 * s, { mat: 'negro' })); }
+  if (tipo === 'vaca') for (const sd of [-1, 1]) { const b = mas(mas(p, l, sd * 4 * s), [0, 0, 6 * s]), m = mas(mas(b, l, sd * 7 * s), [0, 0, 1 * s]); ps.push(a.palo(b, m, 1.4 * s, { mat: 'ext_hueso', r1: 1 * s }), a.palo(m, mas(mas(m, d, 3 * s), [0, 0, 5 * s]), 1 * s, { mat: 'ext_hueso', r1: 0.2 * s })); }
+  if (tipo === 'ciervo') for (const sd of [-1, 1]) { const b = mas(mas(p, l, sd * 2.5 * s), [0, 0, 6.5 * s]), t = mas(mas(mas(b, l, sd * 9 * s), d, -6 * s), [0, 0, 14 * s]); ps.push(a.palo(b, t, 0.9 * s, { mat: 'ext_hueso', r1: 0.4 * s })); for (let k = 0; k < 3; k++) { const q = mez(b, t, 0.3 + k * 0.25); ps.push(a.palo(q, mas(mas(q, d, 3 * s), [0, 0, 4 * s]), 0.5 * s, { mat: 'ext_hueso', r1: 0.15 * s })); } }
+}
+reg({
+  id: 'par_esqueleto_animal', nombre: ['Esqueleto de animal', 'Animal skeleton'], tema: PAR, variantes: ['vaca', 'caballo', 'ciervo', 'disperso'], huella: [3, 2], bloquea: false,
+  armar: (v, _f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 36, 24, { matas: 6, piedras: 1 });
+    const g = rad(az(a, 25)), d: V = [Math.cos(g), Math.sin(g), 0], l: V = [-d[1], d[0], 0];
+    const tipo = v === 'disperso' ? elegir(a, ['vaca', 'caballo'] as const) : v;
+    if (v !== 'disperso') costillar(a, ps, mas(d, [0, 0, 0], -18), mas(mas([0, 0, 0], d, 12), [0, 0, 1.5]), 10, 9 + a.r() * 2, { abre: 0.5 + a.r() * 0.4, rotas: 0.15 });
+    else for (let i = 0; i < 9; i++) { const p: V = [az(a, 22), az(a, 14), 0.6]; ps.push(a.palo(p, mas(p, [az(a, 6), az(a, 6), 3 + a.r() * 4]), 0.6, { mat: 'ext_hueso', r1: 0.4 })); }
+    craneoBestia(a, ps, mas(mas([0, 0, 0], d, 22), l, az(a, 6)), g + az(a, 0.8), tipo as 'vaca' | 'caballo' | 'ciervo');
+    // patas sueltas y la pelvis
+    for (let i = 0; i < 4; i++) { const p = mas(mas([0, 0, 0], d, entre(a, -22, 14)), l, (i % 2 ? 1 : -1) * entre(a, 10, 18)); huesoLargo(ps, [p[0], p[1], 0.9], [p[0] + az(a, 10), p[1] + az(a, 10), 0.9], 0.9); }
+    ps.push(masa([bulto(mas(mas([0, 0, 0], d, -22), [0, 0, 3]), [3, 6, 2.6], { eje: d }), bulto(mas(mas(mas([0, 0, 0], d, -23), l, 4), [0, 0, 3.5]), [2.4, 2.4, 3]), bulto(mas(mas(mas([0, 0, 0], d, -23), l, -4), [0, 0, 3.5]), [2.4, 2.4, 3])], { mat: 'ext_hueso', suave: 1.2 }));
+    if (v === 'disperso') for (let i = 0; i < 2; i++) ave(a, ps, [az(a, 24), az(a, 16), 0], a.r() * PI2, 1, 'picando');
+    return ps;
+  },
+});
+
+reg({
+  id: 'par_huesos', nombre: ['Huesos en el pasto', 'Bones in the grass'], tema: PAR, variantes: ['dispersos', 'craneos', 'fosa'], huella: [2, 2], bloquea: false,
+  armar: (v, _f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 24, 20, { matas: 5, piedras: 1 });
+    if (v === 'fosa') { ps.push(a.elipsoide(0, 0, 0, 16, 11, 2.5, { mat: 'ext_tierra', tono: 0.05 })); disco(a, ps, 0, 0, 0.9, 12, 8, 0.3, 'negro', { ruido: 0.12 }); for (let i = 0; i < 8; i++) { const p: V = [az(a, 9), az(a, 6), 1.6]; huesoLargo(ps, p, [p[0] + az(a, 7), p[1] + az(a, 7), 1.6], 0.7); } craneo(a, ps, 3, -2, 3.6, 1, 1); craneo(a, ps, -5, 3, 3.4, 0.95, 2.5); return ps; }
+    const nc = v === 'craneos' ? 5 : 1;
+    for (let i = 0; i < nc; i++) { const p = i ? polar(a.r() * PI2, 6 + a.r() * 10) : [az(a, 4), az(a, 4), 0]; craneo(a, ps, p[0], p[1], 2.8, 0.95 + a.r() * 0.15, a.r() * PI2); }
+    for (let i = 0; i < (v === 'craneos' ? 4 : 9); i++) { const p: V = [az(a, 18), az(a, 15), 0.8]; huesoLargo(ps, p, [p[0] + az(a, 8), p[1] + az(a, 8), 0.8], 0.6 + a.r() * 0.3); }
+    if (v === 'dispersos') costillar(a, ps, [-10, -8, 3], [0, -6, 3.5], 5, 4, { abre: 1, r: 0.5, rotas: 0.3 });
+    return ps;
+  },
+});
+
+// ------------------------------------------------------------------ hoguera de la bruja
+reg({
+  id: 'par_hoguera', nombre: ['Hoguera de la bruja', 'Witch pyre'], tema: PAR, variantes: ['ardiendo', 'consumida', 'preparada'], cuadros: 6, t: 3, huella: [3, 3], bloquea: true,
+  armar: (v, f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 32, 30, { matas: 5, piedras: 2, mat: v === 'preparada' ? 'par_turba' : 'ext_ceniza' });
+    const quema = v !== 'preparada', mad = v === 'consumida' ? 'ext_carbon' : 'corteza';
+    // haces de leña en rueda contra el palo
+    const n = v === 'consumida' ? 8 : 14;
+    for (let i = 0; i < n; i++) { const t = (i / n) * PI2 + az(a, 0.15); ps.push(a.palo(polar(t, 18 + a.r() * 4, 0.5), polar(t + az(a, 0.2), 3, v === 'consumida' ? 3 : 12 + a.r() * 6), 1.8 + a.r() * 0.6, { mat: mad, r1: 1.2 })); }
+    for (let i = 0; i < 6; i++) { const t = a.r() * PI2; ps.push(a.palo(polar(t, 14, 1.5), polar(t + 1.2, 14, 2 + a.r() * 3), 1.4, { mat: mad })); }
+    ps.push(a.cilindro(0, 0, -1, 2.4, 70, { mat: quema ? 'ext_carbon' : 'par_madera_negra', r1: 2 }));
+    if (v === 'consumida') {
+      // huesos ennegrecidos al pie del palo y la cadena caída
+      craneo(a, ps, 4, 3, 4, 0.95, 0.8, 'ext_carbon');
+      costillar(a, ps, [-1, 6, 3], [-1, -6, 4], 5, 4.4, { abre: 0.8, mat: 'ext_carbon', r: 0.5 });
+      for (let i = 0; i < 6; i++) ps.push(a.esfera(az(a, 10), az(a, 10), 1.5, 1 + a.r() * 0.6, { mat: 'ext_brasa', tono: -0.3 + Math.sin((f / 6) * PI2 + i) * 0.15 }));
+      humo(a, ps, f, 6, 0, 0, 10, 40, 5, 4);
+      return { piezas: ps, resplandor: { c: [0, 0, 3], r: 22, color: '#a03a12' } };
+    }
+    // la condenada atada al palo, de pie sobre la leña
+    muneco(a, ps, colgado([1.5, 0, 58], 45), { ...ropaDe(a, 'campesino'), torso: 'cu_tela_blanca', mangas: 'cu_tela_blanca', piernas: 'cu_tela_blanca' }, { brazos: [176, 176], codos: [6, -6], piernas: [4, 4], rodillas: [4, 6], cabeza: az(a, 20), ladea: 20 }, { colgado: true, s: 0.95 });
+    for (const z of [30, 44]) ps.push(a.cilindro(0, 0, z, 6.5, 1.4, { mat: 'cuerda' }));
+    if (v === 'ardiendo') {
+      for (let i = 0; i < 3; i++) { const t = (i / 3) * PI2 + f * 0.3; llamas(a, ps, f + i * 2, 6, Math.cos(t) * 8, Math.sin(t) * 8, 6, 3, 20, 3.4, 'fuego', 4); }
+      llamas(a, ps, f, 6, 0, 0, 12, 4, 26, 4, 'fuego', 5);
+      chispas(a, ps, f, 6, 0, 0, 30, 40, 5);
+      return { piezas: ps, resplandor: { c: [0, 0, 20], r: 60 + Math.sin((f / 6) * PI2) * 4, color: '#ff8a28' } };
+    }
+    // preparada: una antorcha clavada a un lado
+    ps.push(a.palo([22, 6, -1], [21, 7, 24], 1, { mat: 'madera' }), a.cilindro(21, 7, 22, 2, 4, { mat: 'cuerda', r1: 2.2 }));
+    llamas(a, ps, f, 6, 21, 7, 26, 1.2, 8, 1.4, 'fuego', 3);
+    return { piezas: ps, resplandor: { c: [21, 7, 28], r: 28, color: '#ffa040' } };
+  },
+});
+
+// ------------------------------------------------------------------ túmulo
+reg({
+  id: 'par_tumulo', nombre: ['Túmulo', 'Barrow mound'], tema: PAR, variantes: ['entrada', 'sellado', 'saqueado'], huella: [6, 6], bloquea: true,
+  armar: (v, _f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 60, 56, { matas: 6, piedras: 3 });
+    // el montículo de tierra y pasto (una masa de lomos)
+    const cs: Comp[] = [bulto([0, 0, 0], [44, 40, 24], { giro: a.r() * 180 })];
+    for (let i = 0; i < 7; i++) { const t = a.r() * PI2; cs.push(bulto(polar(t, 18 + a.r() * 10, 4), [14 + a.r() * 8, 12 + a.r() * 6, 12 + a.r() * 6], { giro: grad(t), mat: elegir(a, ['ext_musgo', 'par_turba', 'ext_pasto_seco']), tono: -0.05 })); }
+    ps.push(masa(cs, { mat: 'par_turba', suave: 6 }));
+    for (let i = 0; i < 10; i++) { const t = a.r() * PI2, d = 10 + a.r() * 28, z = 26 * Math.sqrt(Math.max(0, 1 - (d / 44) ** 2)); mata(a, ps, Math.cos(t) * d, Math.sin(t) * d, 5, 8, a.r() < 0.4 ? 'ext_pasto_seco' : 'ext_pasto', z - 1); }
+    // la boca de piedra mirando al frente (+x +y)
+    const m = marco([30, 30, 0], 45);
+    for (const s of [-1, 1]) losa(a, ps, m.T([0, s * 10, -2]), 26, 5, 4, 45, { liquen: 0.6, musgo: 0.3 });
+    const dintel = m.T([0, 0, 23]);
+    ps.push(masa([bulto(dintel, [4, 16, 3.6], { giro: 45 }), bulto(mas(dintel, [1, -1, 3]), [3, 8, 1.2], { giro: 45, mat: 'ext_musgo', k: 0.6 })], { mat: 'ext_roca_fria', suave: 2 }));
+    if (v === 'sellado') { const q = m.T([3, 0, 0]); pena(a, ps, q, [5, 10, 11], { giro: 45 + 90, n: 5, mat: 'ext_roca_fria', liquen: 0.5, hunde: 0 }); }
+    else { const q = m.T([-6, 0, -1]); ps.push(a.caja(q[0], q[1], q[2], 26, 15, 22, { mat: 'negro', giro: 45, resta: true })); const q2 = m.T([-3, 0, 0]); ps.push(a.caja(q2[0], q2[1], -1, 1, 15, 21, { mat: 'negro', giro: 45 })); }
+    for (let i = 0; i < 3; i++) { const q = m.T([6 + i * 5, 0, -2 + 0]); sillar(a, ps, q[0], q[1], -1.5 - i * 0.3, 5, 18, 2.2, 45, 'par_sillar', { jit: 0.6 }); }
+    if (v === 'saqueado') {
+      cascotes(a, ps, 6, 44, 40, 10, 10);
+      const q = m.T([18, -14, 0]); ps.push(a.elipsoide(q[0], q[1], 2, 9, 7, 4, { mat: 'ext_tierra', tono: 0.06 }), a.palo([q[0], q[1], 4], [q[0] + 3, q[1] - 2, 22], 0.7, { mat: 'madera' }), a.caja(q[0], q[1], -1, 5, 1, 7, { mat: 'ext_hierro', giro: 30 }));
+      craneo(a, ps, 46, 30, 2.8, 1, 0.2); huesoLargo(ps, [40, 46, 0.9], [50, 40, 0.9], 0.8);
+    }
+    return ps;
+  },
+});
+
+// ------------------------------------------------------------------ restos de batalla
+reg({
+  id: 'par_restos_batalla', nombre: ['Restos de batalla', 'Battlefield debris'], tema: PAR, variantes: ['escudos', 'flechas', 'espada', 'yelmo'], huella: [2, 2], bloquea: false,
+  armar: (v, _f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 26, 22, { matas: 4, piedras: 1, mat: a.r() < 0.5 ? 'par_turba' : 'ext_barro' });
+    const escudo = (x: number, y: number, z: number, e: V, roto: boolean) => {
+      ps.push(a.cilindro(x - e[0] * 0.3, y - e[1] * 0.3, z - e[2] * 0.3, 8.2, 0.9, { mat: 'ext_hierro', eje: e }), a.cilindro(x, y, z, 7.5, 1.4, { mat: elegir(a, ['tela_roja', 'tela_azul', 'madera_vieja']), eje: e, tono: 0.05 }));
+      ps.push(a.cilindro(x + e[0] * 1.2, y + e[1] * 1.2, z + e[2] * 1.2, 2.4, 1, { mat: 'ext_hierro', eje: e, r1: 1.4 }));
+      if (roto) ps.push(a.caja(x + 5, y + 3, z - 5, 4, 10, 10, { mat: 'negro', giro: 40, resta: true }));
+    };
+    if (v === 'escudos') { escudo(-6, 4, 1.2, nrm([0.1, 0.2, 1]), true); escudo(9, -4, 7, nrm([0.7, 0.5, 0.5]), false); cadaver(a, ps, 'soldado', [-4, 18, 0], 200, { huesos: a.r() < 0.5, sangre: 0.6 }); }
+    if (v === 'flechas' || v === 'escudos') for (let i = 0; i < (v === 'flechas' ? 12 : 4); i++) flecha(a, ps, [az(a, 18), az(a, 14), 0], [az(a, 0.6), az(a, 0.6), 1], 11);
+    if (v === 'espada') {
+      // espada clavada con un jirón de tela atado, y el escudo apoyado
+      const p: V = [0, 0, 0], tip = az(a, 0.15);
+      ps.push(a.poliedro([[-1.6, 0, 0], [1.6, 0, 0], [-1.3, -0.4, 30], [1.3, 0.4, 30], [0, 0, -3]].map(([x, y, z]) => [x + tip * z, y, z] as V), { mat: 'hierro_oxido' }));
+      ps.push(a.caja(tip * 30, 0, 30, 12, 2, 2, { mat: 'ext_hierro' }), a.palo([tip * 30, 0, 32], [tip * 40, 0, 40], 1, { mat: 'cuero' }), a.esfera(tip * 40, 0, 41, 1.6, { mat: 'ext_hierro' }));
+      ps.push(a.caja(tip * 30 + 1, 1, 18, 1, 2, 12, { mat: 'tela_roja', incl: 10 }));
+      escudo(6, 8, 6, nrm([0.6, 0.6, 0.5]), false); void p;
+    }
+    if (v === 'yelmo') {
+      // yelmo volcado con el cráneo adentro y la lanza partida
+      ps.push(a.elipsoide(0, 0, 4, 5.5, 5.5, 5, { mat: 'hierro_oxido', incl: 70 }), a.elipsoide(1.5, 1.5, 4, 4.8, 4.8, 4.4, { mat: 'negro', incl: 70, resta: true }));
+      craneo(a, ps, 1.5, 3, 3.5, 0.85, 1.6);
+      ps.push(a.palo([-16, -8, 1.2], [6, -14, 1.2], 1, { mat: 'madera_vieja' }), a.palo([8, -14, 1.2], [18, -9, 3], 1, { mat: 'madera_vieja' }), a.poliedro([[18, -9, 3], [24, -6, 4], [19, -8, 5], [19, -10, 2]], { mat: 'hierro_oxido' }));
+      cadaver(a, ps, 'soldado', [10, 14, 0], 120, { huesos: true });
+    }
+    return ps;
+  },
+});
+
+// ------------------------------------------------------------------ farol de camino
+reg({
+  id: 'par_farol', nombre: ['Farol de camino', 'Road lantern'], tema: PAR, variantes: ['encendido', 'apagado', 'roto'], cuadros: 6, t: 3, huella: [1, 1], bloquea: true,
+  armar: (v, f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 14, 12, { matas: 3, piedras: 3 });
+    const mad = 'par_madera_negra', H = 62;
+    ps.push(a.cilindro(0, 0, -1, 2, H, { mat: mad, r1: 1.7, incl: v === 'roto' ? 9 : az(a, 2) }));
+    if (v === 'roto') { ps.push(a.palo([3, 6, 1], [20, 14, 2], 0.9, { mat: mad })); ps.push(a.cilindro(16, 10, 0, 3, 7, { mat: 'ext_hierro', r1: 2.5, eje: [0.9, 0.3, 0.3] })); return ps; }
+    ps.push(a.palo([0, 0, H - 4], [12, -2, H - 1], 1, { mat: mad }), a.palo([0, 0, H - 14], [9, -1.5, H - 2], 0.7, { mat: mad }));
+    const sw = Math.sin((f / 6) * PI2) * 0.8, c: V = [12 + sw, -2, H - 14];
+    ps.push(a.palo([12, -2, H - 1], [c[0], c[1], c[2] + 9], 0.35, { mat: 'ext_hierro' }));
+    // la linterna: armazón de hierro, vidrios y la llama
+    ps.push(a.poliedro([[c[0] - 3.4, c[1] - 3.4, c[2] + 8], [c[0] + 3.4, c[1] - 3.4, c[2] + 8], [c[0] - 3.4, c[1] + 3.4, c[2] + 8], [c[0] + 3.4, c[1] + 3.4, c[2] + 8], [c[0], c[1], c[2] + 11.5]], { mat: 'ext_hierro' }));
+    ps.push(a.caja(c[0], c[1], c[2] - 1, 6, 6, 1.2, { mat: 'ext_hierro' }));
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) ps.push(a.caja(c[0] + sx * 2.7, c[1] + sy * 2.7, c[2], 0.9, 0.9, 8, { mat: 'ext_hierro' }));
+    const viva = v === 'encendido', k = Math.sin((f / 6) * PI2 * 2) * 0.08;
+    ps.push(a.caja(c[0], c[1], c[2] + 0.2, 4.8, 4.8, 7.6, { mat: viva ? 'luz_vela' : 'vidrio', tono: viva ? -0.25 + k : -0.3 }));
+    if (viva) { ps.push(a.elipsoide(c[0], c[1], c[2] + 3.6, 1.1, 1.1, 2.4, { mat: 'fuego', tono: 0.2 + k })); return { piezas: ps, resplandor: { c: [c[0], c[1], c[2] + 3], r: 34 + k * 20, color: '#ffb050' } }; }
+    return ps;
+  },
+});
+
+// ------------------------------------------------------------------ cabezas en picas, árbol de los ahorcados, fosa común
+/** Cabeza cortada (masa): cráneo con piel seca, pelo, cuello desgarrado. */
+function cabeza(a: Arma, ps: Pieza[], p: V, g: number, s = 1) {
+  const d: V = [Math.cos(g), Math.sin(g), 0];
+  const piel = elegir(a, ['cu_piel_palida', 'cu_piel_gris', 'ext_cuero_seco']);
+  ps.push(masa([bulto(p, [3.8 * s, 3.4 * s, 4 * s]), bulto(mas(p, d, 2.4 * s), [1.6 * s, 2.6 * s, 2.6 * s], { tono: -0.05 }), bulto(mas(mas(p, d, 3.6 * s), [0, 0, -0.2 * s]), [0.9 * s, 0.7 * s, 1 * s]), bulto(mas(p, [0, 0, -4 * s]), [2.4 * s, 2.4 * s, 1.6 * s], { mat: 'ext_carne_seca' }), bulto(mas(mas(p, d, -1 * s), [0, 0, 1.2 * s]), [3.8 * s, 3.6 * s, 3.2 * s], { mat: elegir(a, ['cu_pelo_negro', 'cu_pelo_castano', 'cu_pelo_rojo']) })], { mat: piel, suave: 1 * s }));
+  for (const sd of [-1, 1]) { const e = mas(mas(p, d, 3.1 * s), [-d[1] * sd * 1.3 * s, d[0] * sd * 1.3 * s, 0.6 * s]); ps.push(a.esfera(e[0], e[1], e[2], 0.7 * s, { mat: 'negro' })); }
+}
+reg({
+  id: 'par_cabezas_picas', nombre: ['Cabezas en picas', 'Heads on pikes'], tema: PAR, variantes: ['cabezas', 'calaveras', 'mezcla'], huella: [3, 1], bloquea: true,
+  armar: (v, _f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 34, 14, { matas: 5, piedras: 2 });
+    for (let i = 0; i < 4; i++) {
+      const x = -24 + i * 16 + az(a, 2), inc: V = [az(a, 0.05), az(a, 0.05), 1], H = 46 + a.r() * 12, top = mas([x, 0, -1], nrm(inc), H);
+      ps.push(a.palo([x, 0, -1], top, 1, { mat: 'par_madera_negra', r1: 0.7 }));
+      for (let k = 0; k < 3; k++) guijarro(a, ps, x + az(a, 3), az(a, 3), 1.8 + a.r());
+      const cab = v === 'cabezas' || (v === 'mezcla' && i % 2 === 0);
+      if (cab) { cabeza(a, ps, mas(top, [0, 0, 3]), 0.8 + az(a, 0.7)); ps.push(a.palo(mas(top, [0, 0, -2]), mas(top, [az(a, 0.5), az(a, 0.5), -12]), 0.4, { mat: 'ext_sangre' })); }
+      else craneo(a, ps, top[0], top[1], top[2] + 2.6, 1.05, 0.8 + az(a, 0.6));
+      if (a.r() < 0.35) ave(a, ps, mas(top, [0, 0, cab ? 7 : 5.6]), a.r() * PI2, 0.9, 'posado');
+    }
+    return ps;
+  },
+});
+conVarianteY('par_cabezas_picas');
+
+reg({
+  id: 'par_arbol_ahorcados', nombre: ['Árbol de los ahorcados', 'Hanging tree'], tema: PAR, variantes: ['uno', 'dos', 'cuervos'], cuadros: 8, t: 4, huella: [3, 3], bloquea: true,
+  armar: (v, f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 40, 36, { matas: 6, piedras: 2, hojas: 'hojas_otono' });
+    // árbol muerto de masa: tronco torcido, raíces y la rama larga de la que cuelgan
+    const cs: Comp[] = [];
+    const t1: V = [az(a, 4), az(a, 4), 46], t2: V = [t1[0] + az(a, 6), t1[1] + az(a, 6), 92];
+    cs.push(hueso([0, 0, -1], t1, 8.5, 6), hueso(t1, t2, 6, 3), bulto([0, 0, 3], [11, 10, 5]));
+    for (let i = 0; i < 5; i++) { const t = (i / 5) * PI2 + az(a, 0.4); cs.push(hueso(polar(t, 3, 6), polar(t, 14 + a.r() * 6, 1), 4, 2), hueso(polar(t, 14, 1), polar(t + az(a, 0.4), 24 + a.r() * 6, -1), 2, 0.8)); }
+    const g = rad((a.r() < 0.5 ? -45 : 135) + az(a, 20)), rama0: V = mez(t1, t2, 0.25), rama1: V = [Math.cos(g) * 38, Math.sin(g) * 38, 74], rama2: V = [Math.cos(g) * 50, Math.sin(g) * 50, 78];
+    cs.push(hueso(rama0, rama1, 4.2, 2.2), hueso(rama1, rama2, 2.2, 1));
+    for (let i = 0; i < 4; i++) { const b = mez(t1, t2, 0.4 + i * 0.18), t = a.r() * PI2; cs.push(hueso(b, mas(b, [Math.cos(t) * 18, Math.sin(t) * 18, 12 + a.r() * 10]), 2.6, 0.9)); }
+    ps.push(masa(cs, { mat: 'corteza_muerta', suave: 2.4 }));
+    for (let i = 0; i < 8; i++) { const b = mez(rama0, rama2, a.r()), t = a.r() * PI2; ps.push(a.palo(b, mas(b, [Math.cos(t) * 9, Math.sin(t) * 9, 5 + a.r() * 9]), 0.7, { mat: 'corteza_muerta', r1: 0.2 })); }
+    // los ahorcados, meciéndose en la rama
+    const n = v === 'dos' ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const u = n === 1 ? 0.7 : 0.45 + i * 0.4, top = mez(rama0, rama2, u), sw = Math.sin((f / 8) * PI2 + i * 2.1) * 1.8;
+      const cuello: V = [top[0] + sw, top[1], top[2] - 11];
+      ps.push(a.palo(top, cuello, 0.5, { mat: 'cuerda' }));
+      muneco(a, ps, colgado([cuello[0], cuello[1], cuello[2] + 1], 20 + i * 100 + sw * 4), ropaDe(a, elegir(a, ['campesino', 'bandido', 'soldado'] as const)), { brazos: [176, 174], codos: [5, -5], piernas: [3, 5], rodillas: [5, 9], cabeza: az(a, 20), ladea: 30 + a.r() * 15 }, { colgado: true });
+    }
+    if (v === 'cuervos') { ave(a, ps, mas(rama2, [0, 0, 2]), 2.4, 1, 'posado'); ave(a, ps, mas(mez(rama0, rama1, 0.4), [0, 0, 4]), 0.6, 1, 'posado'); ave(a, ps, [Math.cos(g) * 30 + 8, Math.sin(g) * 30, 0], a.r() * PI2, 1, 'picando', { f, nc: 8 }); }
+    return ps;
+  },
+});
+
+reg({
+  id: 'par_fosa_comun', nombre: ['Fosa común', 'Mass grave'], tema: PAR, variantes: ['abierta', 'con_cuerpos', 'cubierta'], huella: [5, 4], bloquea: true,
+  armar: (v, _f, a) => {
+    const ps: Pieza[] = [];
+    sueloP(a, ps, 48, 40, { matas: 5, piedras: 1 });
+    const rx = 30, ry = 20;
+    if (v === 'cubierta') {
+      // tierra removida en lomo, palas y una cruz de palos torcida
+      ps.push(masa([bulto([0, 0, 0], [rx, ry, 7], { giro: 10 }), bulto([8, -4, 2], [16, 12, 7]), bulto([-12, 6, 1], [14, 10, 6])], { mat: 'ext_tierra', suave: 4 }));
+      for (let i = 0; i < 6; i++) guijarro(a, ps, az(a, rx), az(a, ry), 2 + a.r() * 2, 'ext_roca');
+      ps.push(a.palo([rx + 4, 0, -1], [rx + 4, 0, 26], 1.1, { mat: 'par_madera_negra' }), a.palo([rx + 4, -7, 19], [rx + 4, 7, 20], 0.9, { mat: 'par_madera_negra' }));
+    } else {
+      // el pozo: piso hundido, bordes de tierra amontonada, los muertos adentro con cal
+      disco(a, ps, 0, 0, -6, rx, ry, 0.6, 'ext_barro', { ruido: 0.1 });
+      for (let i = 0; i < 14; i++) { const t = (i / 14) * PI2; ps.push(a.elipsoide(Math.cos(t) * (rx + 3), Math.sin(t) * (ry + 3), -2, 9 + a.r() * 3, 7, 6 + a.r() * 2, { mat: 'ext_tierra', giro: grad(t) + 90, tono: az(a, 0.05) })); }
+      ps.push(a.elipsoide(-rx - 8, -6, 3, 12, 10, 6, { mat: 'ext_tierra', tono: 0.05 }));
+      const nc = v === 'con_cuerpos' ? 5 : 2;
+      for (let i = 0; i < nc; i++) cadaver(a, ps, elegir(a, ['campesino', 'campesino', 'soldado'] as const), [entre(a, -16, 16), entre(a, -9, 9), -5.5], a.r() * 360, { s: 0.92, huesos: v === 'abierta' && i === 0 });
+      for (let i = 0; i < 5; i++) ps.push(a.elipsoide(az(a, rx * 0.7), az(a, ry * 0.7), -5, 5 + a.r() * 4, 3 + a.r() * 3, 0.8, { mat: 'par_flor_blanca', giro: a.r() * 180, tono: 0.05 }));
+      ps.push(a.palo([-rx - 8, -6, 6], [-rx - 4, -2, 30], 0.8, { mat: 'madera' }), a.caja(-rx - 8, -6, 2, 6, 1.2, 8, { mat: 'ext_hierro', giro: 40, incl: -15 }));
+      if (v === 'con_cuerpos') for (let i = 0; i < 2; i++) ave(a, ps, [entre(a, -10, 10), entre(a, -6, 6), 0], a.r() * PI2, 1, 'posado');
     }
     return ps;
   },

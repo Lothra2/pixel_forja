@@ -13,11 +13,14 @@ import { KZ, VISTA, pintarEscena, palo, poliedro, masa, hueso, bulto, ruido, typ
  * pinta al doble de tamaño y se reduce (bordes suaves de verdad), se le suma el resplandor de lo que brilla y se
  * recorta al rectángulo de su casilla.
  *
- * Nueve líneas de estilo (tela, cuero, tachonado, malla, placas, hueso, sagrado, oscuro, legendario) y cinco niveles:
+ * Nueve líneas de estilo (tela, cuero, tachonado, malla, placas, hueso, sagrado, oscuro, legendario), seis épicas
+ * (escamas de dragón, dracónica, élfica, demoníaca, celestial y ahogada, con sus formas propias) y cinco niveles:
  * a más nivel, más remaches, ribetes de oro, filigrana, gemas engastadas y runas que brillan (4 y 5).
  */
 
-export type Linea = 'tela' | 'cuero' | 'tachonado' | 'malla' | 'placas' | 'hueso' | 'sagrado' | 'oscuro' | 'legendario';
+export type Linea = 'tela' | 'cuero' | 'tachonado' | 'malla' | 'placas' | 'hueso' | 'sagrado' | 'oscuro' | 'legendario'
+  // las líneas épicas (actos 3 a 7): las mismas que viste el cuerpo (cuerpo.ts, `LineaCuerpo`)
+  | 'escamas' | 'draconica' | 'elfica' | 'demoniaca' | 'celestial' | 'ahogada';
 export type Pieza3D = 'casco' | 'capucha' | 'corona' | 'pecho' | 'guantes' | 'botas' | 'cinturon' | 'hombreras' | 'grebas'
   | 'escudo_redondo' | 'escudo_cometa' | 'escudo_torre' | 'escudo_calavera'
   | 'anillo' | 'amuleto' | 'talisman' | 'pocion' | 'gema' | 'runa' | 'pergamino' | 'llave' | 'oro' | 'libro' | 'orbe' | 'flecha_carcaj'
@@ -25,7 +28,11 @@ export type Pieza3D = 'casco' | 'capucha' | 'corona' | 'pecho' | 'guantes' | 'bo
 export const PIEZAS_3D: Pieza3D[] = ['casco', 'capucha', 'corona', 'pecho', 'guantes', 'botas', 'cinturon', 'hombreras', 'grebas',
   'escudo_redondo', 'escudo_cometa', 'escudo_torre', 'escudo_calavera', 'anillo', 'amuleto', 'talisman', 'pocion', 'gema', 'runa',
   'pergamino', 'llave', 'oro', 'libro', 'orbe', 'flecha_carcaj', 'hacha', 'hacha_doble'];
-export const LINEAS: Linea[] = ['tela', 'cuero', 'tachonado', 'malla', 'placas', 'hueso', 'sagrado', 'oscuro', 'legendario'];
+export const LINEAS_EPICAS: Linea[] = ['escamas', 'draconica', 'elfica', 'demoniaca', 'celestial', 'ahogada'];
+export const LINEAS: Linea[] = ['tela', 'cuero', 'tachonado', 'malla', 'placas', 'hueso', 'sagrado', 'oscuro', 'legendario', ...LINEAS_EPICAS];
+const esEpica = (l: Linea) => LINEAS_EPICAS.includes(l);
+/** Las líneas de metal duro: coraza, sabatones, guanteletes de láminas y yelmo cerrado (las épicas también). */
+const esDura = (l: Linea) => l === 'placas' || l === 'sagrado' || l === 'oscuro' || l === 'legendario' || esEpica(l);
 
 /**
  * Qué objeto pintar. `variante`: tipo de poción (health, mana, rejuv, antidote, stamina, thawing), de gema (ruby,
@@ -113,6 +120,13 @@ class Taller {
   /** Componentes de masa en el marco del objeto. */
   hue(a: V3, b: V3, r0: number, r1: number, mat?: string, k?: number, tono?: number): Comp { return hueso(this.P(a), this.P(b), r0 * this.s, r1 * this.s, { mat, k: k === undefined ? undefined : k * this.s, tono }); }
   bul(c: V3, r: V3, mat?: string, rr?: Rot, k?: number, tono?: number): Comp { return bulto(this.P(c), [r[0] * this.s, r[1] * this.s, r[2] * this.s], { ejes: this.ejes(rr), mat, k: k === undefined ? undefined : k * this.s, tono }); }
+  /** Bulto chato orientado: largo hacia `d`, la cara hacia `n` (direcciones del objeto). */
+  bulD(c: V3, d: V3, n: V3, r: V3, mat?: string, tono?: number): Comp {
+    const ex = nor(d);
+    let ey = cruz(n, ex); if (Math.hypot(...ey) < 1e-3) ey = cruz([0, 0, 1], ex); if (Math.hypot(...ey) < 1e-3) ey = [0, 1, 0];
+    ey = nor(ey);
+    return bulto(this.P(c), [r[0] * this.s, r[1] * this.s, r[2] * this.s], { ejes: [this.D(ex), this.D(ey), this.D(cruz(ex, ey))], mat, tono });
+  }
   masa(comps: Comp[], mat: string, suave = 1.5, tono?: number) { this.ps.push(masa(comps, { mat, suave: suave * this.s, tono })); }
   /** Aro (toro) de radio R y grosor r en el plano perpendicular a `eje` (eje del objeto), con n tramos. */
   aro(c: V3, R: number, r: number, o: OpI & { eje?: 'x' | 'y' | 'z'; n?: number; desde?: number; hasta?: number; suave?: boolean }) {
@@ -223,6 +237,31 @@ M.ic_hueco = { rampa: ['#030203', '#070608', '#0c0a0d', '#120f13'], ruido: 0.05,
 M.ic_tapa = { rampa: ['#000000', '#000000'], ruido: 0, escala: 1, emite: true };
 M.ic_brillo = { rampa: ['#d8d0c0', '#efe8da', '#fbf8f0', '#ffffff'], ruido: 0.05, escala: 1, emite: true };
 
+// materiales de las líneas épicas
+/** Escamas superpuestas medidas en pixeles de pantalla (como las anillas): canto de abajo claro, arriba en sombra. */
+const escamasIc = (p: V3) => {
+  const v = (p[2] * 1.22 - (p[0] + p[1]) * 0.5) / 5.2, fila = Math.floor(v);
+  const local = (fv: number, u: number) => { const fu = u - Math.floor(u) - 0.5; return fv - 0.55 * (2 * fu) * (2 * fu); };
+  const u0 = (p[0] - p[1]) / 6.4 + (fila & 1 ? 0.5 : 0);
+  let d = local(v - fila, u0);
+  if (d < 0) d = local(v - fila + 1, u0 + 0.5);
+  return d < 0.16 ? 0.12 : d > 0.88 ? -0.22 : (0.45 - d) * 0.12;
+};
+M.ic_escama = { rampa: rampaDe('#3e7a38', 0.62, 0.08), ruido: 0.03, escala: 0.5, brillo: 0.65, patron: (p, n) => escamasIc(p) + reflejo(n, 0.4) };
+M.ic_draco = { rampa: rampaDe('#5c1517', 0.7, 0.08), ruido: 0.04, escala: 0.5, brillo: 0.75, patron: (p, n) => cepillado(p) + reflejo(n, 0.8) };
+M.ic_cuerno = { rampa: ['#0a0806', '#16110c', '#241c14', '#33281d', '#453728', '#5b4934', '#755f44', '#927a5a', '#b19a78', '#d0bf9e'], ruido: 0.1, escala: 0.6, brillo: 0.35, patron: (p) => (Math.sin(p[2] * 1.4 + p[0] * 0.5) > 0.55 ? -0.07 : 0.02) };
+M.ic_plata_elfica = { rampa: rampaDe('#b4c6c0', 0.9, 0.1), ruido: 0.03, escala: 0.5, brillo: 0.9, patron: (p, n) => cepillado(p) * 0.5 + reflejo(n) };
+M.ic_filigrana = { rampa: rampaDe('#d8bc68', 0.9, 0.1), ruido: 0.03, escala: 0.5, brillo: 0.95, patron: (_p, n) => reflejo(n, 0.6) };
+M.ic_hoja_elfica = { rampa: rampaDe('#4d7c58', 0.5, 0.1), ruido: 0.06, escala: 0.5, brillo: 0.45 };
+M.ic_demonio = { rampa: rampaDe('#2c2020', 0.55, 0.12), ruido: 0.05, escala: 0.5, brillo: 0.75, patron: (p, n) => (Math.abs(ruido(p[0] * 0.18, p[1] * 0.18, p[2] * 0.18) - 0.5) < 0.02 ? -0.25 : cepillado(p)) + reflejo(n, 0.7) };
+M.ic_hueso_demonio = { rampa: ['#110c07', '#21180e', '#352717', '#4b3921', '#634c2d', '#7d623c', '#977a50', '#b09466', '#cbb488'], ruido: 0.18, escala: 0.8, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 2.2) - 0.5) * 0.16 };
+M.ic_oro_blanco = { rampa: rampaDe('#e2d9c4', 0.9, 0.14), ruido: 0.03, escala: 0.5, brillo: 0.9, patron: (_p, n) => reflejo(n, 0.55) };
+M.ic_pluma = { rampa: ['#3a3836', '#5a5752', '#7a766f', '#9a958d', '#b8b3ab', '#d2cdc5', '#e6e2db', '#f5f2ec', '#fdfcf8'], ruido: 0.08, escala: 0.6, patron: (p) => (Math.sin((p[0] + p[1]) * 1.6 + p[2] * 0.6) > 0.75 ? -0.06 : 0) };
+M.ic_bronce_ahogado = { rampa: ['#061010', '#0c1b19', '#152824', '#1f382f', '#2b493a', '#3b5a43', '#536a49', '#6f7a51', '#8c8a5c', '#aca070'], ruido: 0.08, escala: 0.5, brillo: 0.45, patron: (p, n) => (ruido(p[0] * 0.2, p[1] * 0.2, p[2] * 0.2) - 0.5) * 0.4 + reflejo(n, 0.4) };
+M.ic_percebe = { rampa: ['#171513', '#2b2824', '#433f38', '#5e5850', '#7a736a', '#968f84', '#b1aa9e', '#cdc7bc'], ruido: 0.3, escala: 1.2 };
+M.ic_alga = { rampa: ['#040905', '#09130a', '#0f1f10', '#172c16', '#1f3a1d', '#294924', '#33582c', '#43693a', '#557c4a'], ruido: 0.25, escala: 0.9, brillo: 0.3 };
+M.ic_concha = { rampa: ['#28181a', '#45292a', '#663e3c', '#875650', '#a66f66', '#c08a7e', '#d6a796', '#e8c6b6', '#f8e6da'], ruido: 0.04, escala: 0.5, brillo: 0.4 };
+
 const GEMAS: Record<string, string> = {
   ruby: '#d8243e', rubi: '#d8243e', sapphire: '#2f62e6', zafiro: '#2f62e6', emerald: '#1fb35e', esmeralda: '#1fb35e', amethyst: '#9a3ad8', amatista: '#9a3ad8',
   topaz: '#f2b21e', topacio: '#f2b21e', diamond: '#dfe8f0', diamante: '#dfe8f0', skull: '#cfc6b0', calavera: '#cfc6b0',
@@ -255,8 +294,10 @@ interface Estilo {
 }
 function estilo(d: Icono3D): Estilo {
   const linea = d.linea ?? 'cuero', n = d.nivel ?? 2;
-  const gemaHex = colorDe(d.gema, linea === 'oscuro' ? '#d8243e' : linea === 'sagrado' ? '#ffd86a' : linea === 'hueso' ? '#1fb35e' : linea === 'legendario' ? '#ff8a1e' : '#2f62e6');
-  const luzHex = colorDe(d.encanto, linea === 'oscuro' ? '#ff3020' : linea === 'sagrado' ? '#ffe9a0' : linea === 'hueso' ? '#7aff9a' : linea === 'legendario' ? '#ffb040' : gemaHex, ENCANTO);
+  const GEMA_EPICA: Partial<Record<Linea, [string, string]>> = { escamas: ['#1fb35e', '#9affb0'], draconica: ['#ff6a2a', '#ff8a2a'], elfica: ['#7ad4a0', '#c8ffd8'], demoniaca: ['#ff3020', '#ff6a1a'], celestial: ['#ffd86a', '#fff0b8'], ahogada: ['#3fc8c0', '#7ff0e0'] };
+  const ge = GEMA_EPICA[linea];
+  const gemaHex = colorDe(d.gema, ge ? ge[0] : linea === 'oscuro' ? '#d8243e' : linea === 'sagrado' ? '#ffd86a' : linea === 'hueso' ? '#1fb35e' : linea === 'legendario' ? '#ff8a1e' : '#2f62e6');
+  const luzHex = colorDe(d.encanto, ge ? ge[1] : linea === 'oscuro' ? '#ff3020' : linea === 'sagrado' ? '#ffe9a0' : linea === 'hueso' ? '#7aff9a' : linea === 'legendario' ? '#ffb040' : gemaHex, ENCANTO);
   const e: Estilo = {
     linea, n, base: 'ic_acero', base2: 'ic_malla', borde: 'ic_acero', remache: 'ic_acero', correa: tinte('#3a2416', 'cuero'), hebilla: n >= 3 ? 'ic_oro' : n >= 2 ? 'ic_bronce' : 'ic_hierro',
     costura: 'ic_costura', forro: null, gema: tinte(gemaHex, 'gema'), gemaHex, luz: n >= 5 ? tinte(luzHex, 'luz') : null, luzHex,
@@ -272,12 +313,21 @@ function estilo(d: Icono3D): Estilo {
     case 'hueso': e.base = 'ic_hueso'; e.base2 = tinte('#3a2a1e', 'cuero'); e.borde = 'ic_hierro'; e.remache = 'ic_hierro'; e.forro = 'ic_pelaje_gris'; e.puas = true; e.correa = tinte('#2e1e14', 'cuero'); break;
     case 'sagrado': e.base = 'ic_esmalte'; e.base2 = tinte('#d8d0c0', 'tela'); e.borde = 'ic_oro'; e.remache = 'ic_oro'; e.hebilla = 'ic_oro'; e.duro = true; e.metal = true; e.ribete = true; e.forro = 'ic_pelaje_blanco'; e.luz = n >= 3 ? tinte(luzHex, 'luz') : null; break;
     case 'oscuro': e.base = 'ic_hierro_negro'; e.base2 = tinte('#1e1418', 'cuero'); e.borde = n >= 4 ? 'ic_oro_viejo' : 'ic_hierro_negro'; e.remache = 'ic_hierro'; e.hebilla = 'ic_hierro_negro'; e.correa = tinte('#1a1214', 'cuero'); e.puas = true; e.duro = true; e.metal = true; e.luz = n >= 2 ? tinte(luzHex, 'luz') : null; break;
+    case 'escamas': e.base = 'ic_escama'; e.base2 = tinte('#2a2016', 'cuero'); e.borde = 'ic_bronce'; e.remache = 'ic_bronce'; e.hebilla = 'ic_bronce'; e.correa = tinte('#2a2016', 'cuero'); e.duro = true; e.metal = true; e.ribete = true; break;
+    case 'draconica': e.base = 'ic_draco'; e.base2 = 'ic_malla'; e.borde = 'ic_oro_viejo'; e.remache = 'ic_hierro_negro'; e.hebilla = 'ic_oro_viejo'; e.correa = tinte('#2a1414', 'cuero'); e.duro = true; e.metal = true; e.ribete = true; e.luz = n >= 4 ? tinte(luzHex, 'luz') : null; break;
+    case 'elfica': e.base = 'ic_plata_elfica'; e.base2 = tinte('#2f5a3e', 'tela'); e.borde = 'ic_filigrana'; e.remache = 'ic_filigrana'; e.hebilla = 'ic_filigrana'; e.correa = tinte('#2f5a3e', 'tela'); e.duro = true; e.metal = true; e.ribete = true; e.filigrana = true; e.luz = n >= 4 ? tinte(luzHex, 'luz') : null; break;
+    case 'demoniaca': e.base = 'ic_demonio'; e.base2 = tinte('#1a1012', 'cuero'); e.borde = 'ic_hierro_negro'; e.remache = 'ic_hueso_demonio'; e.hebilla = 'ic_hierro_negro'; e.correa = tinte('#1a1012', 'cuero'); e.duro = true; e.metal = true; e.ribete = false; e.luz = tinte(luzHex, 'luz'); break;
+    case 'celestial': e.base = 'ic_oro_blanco'; e.base2 = tinte('#efe8da', 'tela'); e.borde = 'ic_oro'; e.remache = 'ic_oro'; e.hebilla = 'ic_oro'; e.correa = tinte('#d8cbb0', 'cuero'); e.duro = true; e.metal = true; e.ribete = true; e.forro = 'ic_pelaje_blanco'; e.luz = tinte(luzHex, 'luz'); break;
+    case 'ahogada': e.base = 'ic_bronce_ahogado'; e.base2 = tinte('#1e2a22', 'cuero'); e.borde = 'ic_bronce'; e.remache = 'ic_percebe'; e.hebilla = 'ic_bronce'; e.correa = tinte('#1a2a1e', 'cuero'); e.duro = true; e.metal = true; e.ribete = true; break;
     case 'legendario': e.base = tinte(d.color ?? '#7a1f2b', 'esmalte'); e.base2 = 'ic_malla_oro'; e.borde = 'ic_oro'; e.remache = 'ic_oro'; e.hebilla = 'ic_oro'; e.duro = true; e.metal = true; e.ribete = true; e.remaches = true; e.filigrana = true; e.luz = tinte(luzHex, 'luz'); e.forro = 'ic_pelaje'; break;
   }
   return e;
 }
 /** El material del cuerpo de una pieza blanda (botas, guantes, cinturón): cuero salvo en las líneas de tela. */
-const blando = (e: Estilo) => (e.linea === 'tela' ? e.base : e.linea === 'malla' || e.linea === 'placas' || e.linea === 'sagrado' || e.linea === 'oscuro' || e.linea === 'legendario' ? (e.linea === 'sagrado' ? tinte('#d8cbb0', 'cuero') : e.linea === 'oscuro' ? tinte('#24181a', 'cuero') : e.linea === 'legendario' ? tinte('#4a1a1e', 'cuero') : tinte('#4a2c18', 'cuero')) : e.base);
+/** Lo blando de cada línea épica (cuero, tela o la cota de debajo). */
+const BLANDO_EPICO: Partial<Record<Linea, [string, 'cuero' | 'tela']>> = { escamas: ['#2a2016', 'cuero'], draconica: ['#2a1414', 'cuero'], elfica: ['#2f5a3e', 'tela'], demoniaca: ['#1a1012', 'cuero'], celestial: ['#d8cbb0', 'cuero'], ahogada: ['#1e2a22', 'cuero'] };
+const blandoEpico = (l: Linea) => { const b = BLANDO_EPICO[l]!; return tinte(b[0], b[1]); };
+const blando = (e: Estilo) => (esEpica(e.linea) ? blandoEpico(e.linea) : e.linea === 'tela' ? e.base : e.linea === 'malla' || e.linea === 'placas' || e.linea === 'sagrado' || e.linea === 'oscuro' || e.linea === 'legendario' ? (e.linea === 'sagrado' ? tinte('#d8cbb0', 'cuero') : e.linea === 'oscuro' ? tinte('#24181a', 'cuero') : e.linea === 'legendario' ? tinte('#4a1a1e', 'cuero') : tinte('#4a2c18', 'cuero')) : e.base);
 
 // ------------------------------------------------------------------ el estado de la animación (para lo legendario)
 let CUADRO = 0;
@@ -381,7 +431,7 @@ function arco(t: Taller, x0: number, x1: number, w: number, h: number, zb: numbe
 /** Una bota con la punta hacia +x, el talón en -x, la caña hacia arriba; el costado +y es el que se ve. */
 function bota(t: Taller, e: Estilo) {
   const L = e.linea, cuero = blando(e), suela = tinte('#1c130d', 'cuero');
-  const placa = L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario';
+  const placa = esDura(L);
   const top = L === 'tela' ? 12.5 : placa ? 16 : 15.5;
   const cx = -1.5; // eje de la caña
   // suela y tacón (aparte, para que se lea el canto oscuro)
@@ -465,6 +515,7 @@ function bota(t: Taller, e: Estilo) {
       if (e.luz) for (let k = 0; k < 3; k++) t.caja([cx + 4.25, 0.1, 6.3 + k * 2.5], [0.3, 0.8, 1.1], { mat: e.luz, tono: 0.1 });
     }
     if (L === 'legendario') for (let k = 0; k < 3; k++) t.caja([cx + 4.25, 0, 6.4 + k * 2.4], [0.3, 0.75, 1.3], { mat: e.luz!, tono: tonoLuz(e, k) });
+    if (esEpica(L)) adornoIcono(t, e, 'bota');
   }
   // gema en el costado (nivel 4 y 5) y runas (5)
   if (e.n >= 4 || L === 'sagrado' || L === 'legendario') gemaEngastada(t, placa ? [cx - 0.2, 3.65, 8.4] : [cx - 0.3, 3.85, top - 3.2], 1.15, e, { engaste: L === 'oscuro' ? 'ic_hierro_negro' : 'ic_oro' });
@@ -492,21 +543,23 @@ function metalJoya(e: Estilo): string {
   if (e.metalPedido) return e.metalPedido;
   if (e.linea === 'oscuro') return 'ic_hierro_negro';
   if (e.linea === 'hueso') return 'ic_hueso';
-  if (e.linea === 'sagrado' || e.linea === 'legendario') return 'ic_oro';
+  if (e.linea === 'sagrado' || e.linea === 'legendario' || e.linea === 'celestial') return 'ic_oro';
+  if (esEpica(e.linea)) return e.borde;
   return e.n >= 3 ? 'ic_oro' : e.n === 2 ? 'ic_plata' : 'ic_bronce';
 }
 /** Material de metal duro (llaves, jaulas, soportes). */
 function metalDuro(e: Estilo): string {
-  if (e.linea === 'oscuro') return 'ic_hierro_negro';
-  if (e.linea === 'sagrado' || e.linea === 'legendario') return 'ic_oro';
+  if (e.linea === 'oscuro' || e.linea === 'demoniaca') return 'ic_hierro_negro';
+  if (e.linea === 'sagrado' || e.linea === 'legendario' || e.linea === 'celestial') return 'ic_oro';
+  if (esEpica(e.linea)) return e.borde;
   return e.n >= 4 ? 'ic_oro' : e.n === 3 ? 'ic_acero' : e.n === 2 ? 'ic_bronce' : 'ic_hierro';
 }
 
 // ------------------------------------------------------------------ pecho
 function pecho(t: Taller, e: Estilo) {
   const L = e.linea;
-  const duro = L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario';
-  const blandoMat = L === 'malla' ? 'ic_malla' : duro ? (L === 'sagrado' ? tinte('#d8d0c0', 'tela') : L === 'oscuro' ? 'ic_malla' : L === 'legendario' ? 'ic_malla_oro' : 'ic_malla') : e.base;
+  const duro = esDura(L);
+  const blandoMat = L === 'malla' ? 'ic_malla' : esEpica(L) ? (L === 'elfica' || L === 'celestial' ? e.base2 : 'ic_malla') : duro ? (L === 'sagrado' ? tinte('#d8d0c0', 'tela') : L === 'oscuro' ? 'ic_malla' : L === 'legendario' ? 'ic_malla_oro' : 'ic_malla') : e.base;
   t.en([0, 0, 0], [16, -6, 0], () => {
     const comps: Comp[] = [
       t.bul([0, 0.3, 11], [8.0, 4.6, 5.8], blandoMat),
@@ -601,6 +654,7 @@ function pecho(t: Taller, e: Estilo) {
     if (L === 'legendario') { for (let k = 0; k < 3; k++) t.caja([-3.6 + k * 3.6, 5.05, 3.6], [1.6, 0.35, 0.45], { mat: e.luz!, tono: tonoLuz(e, k) }); t.aro([0, 5.0, 11.2], 2.2, 0.3, { mat: 'ic_oro', eje: 'y', n: 12 }); }
     if (e.n >= 4 || L === 'legendario' || L === 'sagrado') gemaEngastada(t, [0, 5.6, 11.4], 1.3, e, { engaste: L === 'oscuro' ? 'ic_hierro_negro' : 'ic_oro' });
     if (e.n >= 5 && e.luz && L === 'placas') for (let k = 0; k < 3; k++) t.caja([-3.6 + k * 3.6, 5.05, 3.6], [1.6, 0.35, 0.45], { mat: e.luz });
+    if (esEpica(L)) adornoIcono(t, e, 'pecho');
   });
 }
 
@@ -611,7 +665,7 @@ function pecho(t: Taller, e: Estilo) {
  */
 function capucha(t: Taller, e: Estilo) {
   const L = e.linea;
-  const mat = L === 'cuero' || L === 'tachonado' || L === 'hueso' || L === 'tela' ? e.base : L === 'sagrado' ? tinte('#e0d8c8', 'tela') : L === 'oscuro' ? tinte('#1c1620', 'tela') : L === 'legendario' ? tinte('#5a1420', 'tela') : tinte('#4a4a52', 'tela');
+  const mat = L === 'cuero' || L === 'tachonado' || L === 'hueso' || L === 'tela' ? e.base : esEpica(L) ? blandoEpico(L) : L === 'sagrado' ? tinte('#e0d8c8', 'tela') : L === 'oscuro' ? tinte('#1c1620', 'tela') : L === 'legendario' ? tinte('#5a1420', 'tela') : tinte('#4a4a52', 'tela');
   t.en([0, 0, 0], [28, -6, 0], () => {
     const comps: Comp[] = [
       // capuchón: la cabeza, la coronilla que sube atrás y la punta que se dobla y cae
@@ -746,7 +800,8 @@ function casco(t: Taller, e: Estilo) {
     }
     if (L === 'legendario') for (let k = 0; k < 7; k++) { const a = rad(30 + k * 20); t.cil([Math.cos(a) * 5.8, Math.sin(a) * 6.0, 4.4], [Math.cos(a) * 5.0, Math.sin(a) * 5.2, 7.6 + (k % 2) * 1.4], 0.65, 0.15, { mat: 'ic_oro' }); }
     if (e.filigrana && L === 'placas') t.masa([t.hue([0, 0.5, 8.0], [0, -4.5, 9.5], 1.2, 1.6, tinte('#a01e24', 'tela')), t.hue([0, -4.5, 9.5], [0, -8.5, 5.5], 1.6, 0.6, tinte('#a01e24', 'tela'))], tinte('#a01e24', 'tela'), 1);
-    if (e.n >= 4 || L === 'sagrado' || L === 'legendario') gemaEngastada(t, [0, 6.6, 3.6], 0.9, e, { engaste: L === 'oscuro' ? 'ic_hierro_negro' : 'ic_oro', normal: [0, 0, 0] });
+    if (esEpica(L)) adornoIcono(t, e, 'casco');
+    if (e.n >= 4 || L === 'sagrado' || L === 'legendario') gemaEngastada(t, [0, 6.6, 3.6], 0.9, e, { engaste: L === 'oscuro' ? 'ic_hierro_negro' : esEpica(L) ? e.borde : 'ic_oro', normal: [0, 0, 0] });
   });
 }
 function corona(t: Taller, e: Estilo) {
@@ -782,8 +837,8 @@ function corona(t: Taller, e: Estilo) {
 
 // ------------------------------------------------------------------ guantes
 function guante(t: Taller, e: Estilo, lado: 1 | -1) {
-  const L = e.linea, duro = L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario';
-  const mano = L === 'malla' ? tinte('#4a2c18', 'cuero') : duro ? (L === 'sagrado' ? tinte('#d8cbb0', 'cuero') : L === 'legendario' ? tinte('#4a1a1e', 'cuero') : tinte('#2a2020', 'cuero')) : e.base;
+  const L = e.linea, duro = esDura(L);
+  const mano = L === 'malla' ? tinte('#4a2c18', 'cuero') : esEpica(L) ? blandoEpico(L) : duro ? (L === 'sagrado' ? tinte('#d8cbb0', 'cuero') : L === 'legendario' ? tinte('#4a1a1e', 'cuero') : tinte('#2a2020', 'cuero')) : e.base;
   const dorso = L === 'malla' ? 'ic_malla' : duro ? e.base : e.base;
   const comps: Comp[] = [t.bul([0, 0, 9.6], [3.5, 1.7, 3.6], mano), t.bul([0, 0.6, 10.2], [3.4, 1.4, 3.2], dorso)];
   for (let i = 0; i < 4; i++) {
@@ -809,7 +864,8 @@ function guante(t: Taller, e: Estilo, lado: 1 | -1) {
     if (L === 'oscuro') for (let i = 0; i < 4; i++) { const x = -2.4 + i * 1.6, largo = 5.6 - Math.abs(i - 1.3) * 0.8; t.cil([x * 1.08, 1.0, 12.2 + largo], [x * 1.1, 2.2, 13.4 + largo], 0.6, 0.05, { mat: 'ic_hierro_negro' }); }
     if (L === 'oscuro' && e.luz) t.caja([0, 2.1, 9.6], [0.4, 0.4, 3], { mat: e.luz });
     if (L === 'legendario') for (let k = 0; k < 2; k++) t.caja([-1.2 + k * 2.4, 2.25, 9.4], [0.4, 0.3, 2.4], { mat: e.luz!, tono: tonoLuz(e, k) });
-    if (e.n >= 4 || L === 'sagrado' || L === 'legendario') gemaEngastada(t, [0, 3.0, 4.6], 0.95, e, { engaste: L === 'oscuro' ? 'ic_hierro_negro' : 'ic_oro' });
+    if (esEpica(L)) adornoIcono(t, e, 'guante', lado);
+    if (e.n >= 4 || L === 'sagrado' || L === 'legendario') gemaEngastada(t, [0, 3.0, 4.6], 0.95, e, { engaste: L === 'oscuro' ? 'ic_hierro_negro' : esEpica(L) ? e.borde : 'ic_oro' });
   } else {
     // costuras del dorso, correa en la muñeca, piel o tachas
     for (let i = 0; i < 3; i++) t.cil([-1.6 + i * 1.6, 1.85, 7.8], [-1.8 + i * 1.8, 1.75, 12.2], 0.2, 0.2, { mat: e.costura });
@@ -838,7 +894,7 @@ function guantes(t: Taller, e: Estilo) {
  */
 function cinturon(t: Taller, e: Estilo) {
   const L = e.linea, banda = L === 'tela' ? e.base : L === 'hueso' ? e.base2 : blando(e);
-  const placa = L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario';
+  const placa = esDura(L);
   const rx = 10.2, ry = 6.4, alto = L === 'tela' ? 5.6 : 5.2, hueco = 9; // grados libres a cada lado de la hebilla
   const fuera = (a: number): V3 => nor([Math.cos(a) / rx, Math.sin(a) / ry, 0]);
   const en = (a: number, d = 0, z = 0): V3 => add([Math.cos(a) * rx, Math.sin(a) * ry, z], fuera(a), d);
@@ -911,6 +967,7 @@ function cinturon(t: Taller, e: Estilo) {
       t.cil(add(vc, [0, 0, 2.8]), add(vc, [0, 0, 3.7]), 0.75, 0.8, { mat: 'ic_corcho' });
     }
     if (L === 'oscuro') for (let k = 0; k < 4; k++) { const a = rad(-140 + k * 30); pua(t, en(a, 0.6), add(fuera(a), [0, 0, 0.4]), 2.4, 0.55, 'ic_hierro_negro'); }
+    if (esEpica(L)) adornoIcono(t, e, 'cinturon');
     if (e.luz && L !== 'tela') for (let k = 0; k < 3; k++) { const a = rad(205 + k * 45); t.caja(en(a, 1.3), [1.3, 0.3, 0.5], { mat: e.luz, rot: [Math.atan2(Math.cos(a) * ry, -Math.sin(a) * rx) * 180 / Math.PI, 0, 0], tono: tonoLuz(e, k) }); }
   });
 }
@@ -932,6 +989,7 @@ function hombrera(t: Taller, e: Estilo, lado: 1 | -1) {
   if (L === 'oscuro' && e.luz) t.caja([0, 4.2, 1.6], [3, 0.4, 0.4], { mat: e.luz });
   if (L === 'sagrado') { for (let k = 0; k < 3; k++) t.elip([lado * -1.2, -1.2 - k * 1.0, 3.6 + k * 1.6], [0.5, 3.0 - k * 0.5, 1.0], { mat: k % 2 ? 'ic_oro' : 'ic_esmalte', rot: [0, 35 + k * 10, lado * 8] }); }
   if (L === 'legendario') { t.aro([0, 0, 2.0], 3.6, 0.3, { mat: e.luz!, n: 12, tono: tonoLuz(e) }); }
+  if (esEpica(L)) adornoIcono(t, e, 'hombrera', lado);
   if (e.n >= 4 || L === 'sagrado' || L === 'legendario') gemaEngastada(t, [0, 3.6, 2.8], 1.0, e, { engaste: L === 'oscuro' ? 'ic_hierro_negro' : 'ic_oro', normal: [0, 30, 0] });
 }
 function hombreras(t: Taller, e: Estilo) {
@@ -947,8 +1005,8 @@ function hombreras(t: Taller, e: Estilo) {
  * las de placas, quijote, lamas, rodillera con aleta y greba con arista (ver `piernaPlaca`).
  */
 function grebas(t: Taller, e: Estilo) {
-  const L = e.linea, duro = L === 'placas' || L === 'sagrado' || L === 'oscuro' || L === 'legendario';
-  const tela = L === 'malla' ? 'ic_malla' : duro ? (L === 'sagrado' ? tinte('#d8d0c0', 'tela') : 'ic_malla') : e.base;
+  const L = e.linea, duro = esDura(L);
+  const tela = L === 'malla' ? 'ic_malla' : esEpica(L) ? (L === 'elfica' || L === 'celestial' ? e.base2 : 'ic_malla') : duro ? (L === 'sagrado' ? tinte('#d8d0c0', 'tela') : 'ic_malla') : e.base;
   t.en([0, 0, 0], [18, -6, 0], () => {
     const comps: Comp[] = [t.bul([0, 0, 20.4], [6.6, 4.6, 3.0], tela)];
     for (const sx of [-1, 1]) {
@@ -965,6 +1023,7 @@ function grebas(t: Taller, e: Estilo) {
         piernaPlaca(t, e, { z0: 1.0, rod: 10.6, muslo: 19.4, r: 2.9, lado: sx as 1 | -1 });
         if (L === 'oscuro') pua(t, [0, 3.2, 10.8], [0, 1, 0.3], 3, 0.8, 'ic_hierro_negro');
         if (L === 'legendario' || (L === 'oscuro' && e.luz)) t.caja([0, 3.25, 5.4], [0.3, 0.3, 4.0], { mat: e.luz!, tono: tonoLuz(e) });
+        if (esEpica(L)) adornoIcono(t, e, 'pierna', sx as 1 | -1);
       });
     } else {
       for (const sx of [-1, 1]) {
@@ -998,15 +1057,17 @@ function caraEscudo(e: Estilo, color?: string): string {
     case 'sagrado': return 'ic_esmalte';
     case 'oscuro': return 'ic_hierro_negro';
     case 'legendario': return e.base;
+    default: return color && e.linea !== 'escamas' && e.linea !== 'ahogada' ? tinte(color, 'esmalte') : e.base;
   }
 }
 /** Los escudos de metal (malla, placas, sagrado, oscuro, legendario) llevan bisel, campo, filete y remaches. */
-const escudoMetal = (e: Estilo) => e.linea === 'malla' || e.linea === 'placas' || e.linea === 'sagrado' || e.linea === 'oscuro' || e.linea === 'legendario';
+const escudoMetal = (e: Estilo) => e.linea === 'malla' || e.linea === 'placas' || e.linea === 'sagrado' || e.linea === 'oscuro' || e.linea === 'legendario' || esEpica(e.linea);
 /** El bisel de un escudo de metal: acero pulido que contrasta con el campo (pintado o de acero oscuro). */
-const biselEscudo = (e: Estilo) => (e.linea === 'oscuro' ? 'ic_hierro_negro' : e.linea === 'sagrado' ? 'ic_esmalte' : 'ic_acero');
+const biselEscudo = (e: Estilo) => (e.linea === 'oscuro' || e.linea === 'demoniaca' ? 'ic_hierro_negro' : e.linea === 'sagrado' ? 'ic_esmalte' : e.linea === 'celestial' ? 'ic_oro' : e.linea === 'escamas' || e.linea === 'ahogada' ? 'ic_bronce' : e.linea === 'elfica' ? 'ic_filigrana' : e.linea === 'draconica' ? 'ic_oro_viejo' : 'ic_acero');
 /** Emblema al frente (en el plano x-z, sobresale hacia +y desde `y0`). */
 function emblema(t: Taller, e: Estilo, y0: number, k = 1, z0 = 0) {
   const L = e.linea;
+  if (esEpica(L)) return emblemaEpico(t, e, y0, k, z0);
   const oro = L === 'oscuro' ? 'ic_hierro_negro' : e.n >= 3 || L === 'sagrado' || L === 'legendario' ? 'ic_oro' : e.n === 2 ? 'ic_plata' : 'ic_bronce';
   if (L === 'sagrado') {
     // sol de rayos con la gema al centro
@@ -1045,7 +1106,7 @@ function escudoRedondo(t: Taller, e: Estilo, d: Icono3D) {
       t.aro([0, -0.4, 0], R, 0.9, { mat: borde, eje: 'y', n: 24 });
       t.aro([0, 1.3, 0], rc, 0.3, { mat: e.ribete ? e.borde : bis, eje: 'y', n: 22, tono: 0.06 });
       for (let i = 0; i < 12; i++) { const a = rad(i * 30 + 15), r = R - 1.6; t.esf([Math.cos(a) * r, 0.75, Math.sin(a) * r], 0.5 * k, { mat: e.remache, tono: 0.05 }); }
-      if (e.linea === 'sagrado' || e.linea === 'legendario' || e.linea === 'oscuro') emblema(t, e, 2.2, d.variante === 'rodela' ? 0.62 : 0.85);
+      if (e.linea === 'sagrado' || e.linea === 'legendario' || e.linea === 'oscuro' || esEpica(e.linea)) emblema(t, e, 2.2, d.variante === 'rodela' ? 0.62 : 0.85);
       else {
         const um = e.borde;
         t.cil([0, 1.6, 0], [0, 2.4, 0], 4.2 * k, 4.0 * k, { mat: um, tono: -0.04 });
@@ -1628,6 +1689,222 @@ function hacha(t: Taller, e: Estilo, d: Icono3D, doble: boolean) {
     if (!doble) { t.poli([[-1.4, 1.0, 12.0], [-1.4, -1.0, 12.0], [-1.4, 1.0, 9.0], [-1.4, -1.0, 9.0], [-5.6, 0, 10.6], [-5.0, 0.3, 10.0]], { mat: hoja, tono: -0.03 }); }
   });
   if (brillo) t.luz([6, 0, 10], 12, colorDe(d.encanto, '#ff7a20', ENCANTO));
+}
+
+// ------------------------------------------------------------------ las formas de las líneas épicas
+/** Racimo de percebes: conos con la boca oscura sobre la normal `n`. */
+function percebesIc(t: Taller, c: V3, n: V3, k = 1, sem = 0) {
+  const nn = nor(n), t1 = nor(cruz(nn, Math.abs(nn[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1])), t2 = cruz(nn, t1), cs: Comp[] = [];
+  for (let i = 0; i < 5; i++) {
+    const a = i * 1.9 + sem, r = (i ? 1.0 : 0) * k, b = add(add(c, t1, Math.cos(a) * r), t2, Math.sin(a) * r), al = (1.1 - i * 0.12) * k;
+    cs.push(t.hue(add(b, nn, -0.3 * k), add(b, nn, al), (0.62 - i * 0.05) * k, 0.36 * k, 'ic_percebe', undefined, i * 0.03));
+    t.esf(add(b, nn, al + 0.04), 0.22 * k, { mat: 'ic_hueco' });
+  }
+  t.masa(cs, 'ic_percebe', 0.25 * k);
+}
+/** Tira de alga blanda por una polilínea. */
+function algaIc(t: Taller, pts: V3[], r = 0.5) { t.masa(pts.slice(1).map((q, i) => t.hue(pts[i], q, r * (1 - i * 0.06), r * (1 - (i + 1) * 0.06), 'ic_alga')), 'ic_alga', r * 0.5); }
+/** Concha de vieira: costillas en abanico desde la charnela, la cara hacia `n`, abierta hacia `arriba`. */
+function conchaIc(t: Taller, c: V3, n: V3, arriba: V3, k = 1) {
+  const nn = nor(n), up = nor(add(arriba, nn, -(arriba[0] * nn[0] + arriba[1] * nn[1] + arriba[2] * nn[2]))), lado = nor(cruz(up, nn));
+  const cs: Comp[] = [t.bulD(c, lado, nn, [0.7 * k, 0.55 * k, 0.35 * k], 'ic_concha')];
+  for (let i = 0; i < 7; i++) { const a = rad(-63 + i * 21), d = nor(add(mul(up, Math.cos(a)), lado, Math.sin(a))); cs.push(t.bulD(add(c, d, 1.3 * k), d, nn, [1.45 * k, 0.46 * k, 0.4 * k], 'ic_concha', i % 2 ? -0.07 : 0.05)); }
+  t.masa(cs, 'ic_concha', 0.25 * k);
+}
+/** Grieta de lava: una cadena fina que brilla. */
+function lavaIc(t: Taller, e: Estilo, pts: V3[], r = 0.32) { t.masa(pts.slice(1).map((q, i) => t.hue(pts[i], q, r, r * 0.8, e.luz ?? tinte('#ff6a1a', 'luz'))), e.luz ?? tinte('#ff6a1a', 'luz'), 0.1); }
+/** Púa o cuerno de masa: cono redondeado que se afina. */
+const puaIc = (t: Taller, a: V3, dir: V3, L: number, r: number, mat: string) => t.hue(a, add(a, nor(dir), L), r, 0.06, mat);
+/** Cuerno curvo por una polilínea que adelgaza. */
+const cuernoIc = (t: Taller, pts: V3[], r0: number, mat: string): Comp[] => pts.slice(1).map((q, i) => t.hue(pts[i], q, r0 * (1 - i / (pts.length - 1)) + 0.08, r0 * (1 - (i + 1) / (pts.length - 1)) + 0.06, mat));
+/** Ala chica de plumas en abanico desde `raiz`, hacia `arriba` y `afuera`, con la cara hacia `n`. */
+function alaIc(t: Taller, raiz: V3, arriba: V3, afuera: V3, n: V3, L: number, k = 5) {
+  const cs: Comp[] = [];
+  for (let i = 0; i < k; i++) { const g = rad(8 + i * (75 / k)), d = nor(add(mul(nor(arriba), Math.cos(g)), nor(afuera), Math.sin(g))), l = L * (1 - i * 0.11); cs.push(t.bulD(add(raiz, d, l * 0.55), d, n, [l * 0.55, 0.32 * L / 2.2, 0.12 * L / 2.2], 'ic_pluma', i * 0.03)); }
+  cs.push(t.hue(raiz, add(raiz, nor(add(arriba, afuera, 0.2)), L * 0.75), 0.16 * L / 2.2, 0.06, 'ic_oro'));
+  t.masa(cs, 'ic_pluma', 0.12 * L / 2.2);
+}
+
+/**
+ * Lo que distingue a cada línea épica sobre la pieza ya armada (en su propio marco): escamas superpuestas y bronce,
+ * crestas y cuernos dracónicos, hojas y filigrana élficas, grietas de lava y púas de hueso demoníacas, alitas y halo
+ * celestiales, y percebes, algas y conchas de la armadura ahogada.
+ */
+function adornoIcono(t: Taller, e: Estilo, pieza: 'pecho' | 'casco' | 'guante' | 'bota' | 'cinturon' | 'hombrera' | 'pierna', lado: 1 | -1 = 1) {
+  const L = e.linea;
+  switch (pieza) {
+    case 'pecho': {
+      if (L === 'escamas') {
+        const cs: Comp[] = [];
+        for (let i = -3; i <= 3; i++) { const a = rad(90 + i * 17); cs.push(t.bulD([Math.cos(a) * 6.9, Math.sin(a) * 5.0, -6.6], [0, 0, -1], [Math.cos(a), Math.sin(a), 0], [1.6, 1.25, 0.45], 'ic_escama', 0.06)); }
+        t.masa(cs, 'ic_escama', 0.3);
+        for (let r = 0; r < 3; r++) { const cr: Comp[] = []; for (let i = -2; i <= 2; i++) cr.push(t.bulD([i * 1.9 + (r % 2) * 0.95, 5.2 - Math.abs(i) * 0.25, 9.6 - r * 2.2], [0, 0.25, -1], [0, 1, 0.2], [1.2, 0.95, 0.3], 'ic_escama', 0.05 - r * 0.03)); t.masa(cr, 'ic_escama', 0.2); }
+        t.masa([t.bulD([0, 5.75, 11.6], [1, 0, 0], [0, 1, 0], [1.5, 1.5, 0.45], 'ic_bronce')], 'ic_bronce', 0.2);
+        gemaEngastada(t, [0, 6.1, 11.6], 0.8, e, { engaste: 'ic_bronce' });
+      } else if (L === 'draconica') {
+        const cs: Comp[] = [];
+        for (let i = 0; i < 3; i++) cs.push(puaIc(t, [0, 5.6, 13 - i * 3.2], [0, 0.7, 1], 2.4 - i * 0.3, 0.75, 'ic_cuerno'));
+        for (const sx of [-1, 1]) cs.push(...cuernoIc(t, [[sx * 3.4, 2.4, 16.4], [sx * 4.6, 2.0, 19.0], [sx * 4.4, 0.6, 21.0]], 0.8, 'ic_cuerno'));
+        t.masa(cs, 'ic_cuerno', 0.25);
+        for (let k = 0; k < 3; k++) t.masa([t.hue([-3.4, 4.4, 2.6 + k * 2.2], [0, 5.3, 2.9 + k * 2.2], 0.5, 0.5, 'ic_draco', undefined, -0.1), t.hue([0, 5.3, 2.9 + k * 2.2], [3.4, 4.4, 2.6 + k * 2.2], 0.5, 0.5, 'ic_draco', undefined, -0.1)], 'ic_draco', 0.3);
+        if (e.luz) t.esf([0, 5.7, 11.4], 0.9, { mat: e.luz });
+      } else if (L === 'elfica') {
+        const cs: Comp[] = [];
+        for (const sx of [-1, 1]) { const pts: V3[] = []; for (let i = 0; i <= 16; i++) { const g = i * 0.42, r = 2.3 - i * 0.12, x = sx * (2.9 + Math.cos(g) * r); pts.push([x, 5.5 - x * x * 0.03, 10.8 + Math.sin(g) * r]); } cs.push(...pts.slice(1).map((q, i) => t.hue(pts[i], q, 0.26, 0.2, 'ic_filigrana'))); }
+        t.masa(cs, 'ic_filigrana', 0.1);
+        const hs: Comp[] = [];
+        for (let i = 0; i < 7; i++) { const a = rad(20 + i * 23.3), c: V3 = [Math.cos(a) * 4.6, Math.sin(a) * 3.6 + 0.6, 16.6], d = nor([Math.cos(a), Math.sin(a), -0.7]); hs.push(t.bulD(add(c, d, 1.2), d, [0, 0.4, 1], [1.8, 0.8, 0.22], i % 2 ? 'ic_filigrana' : 'ic_hoja_elfica')); }
+        hs.push(t.bulD([0, 5.9, 5.4], [0, 0, 1], [0, 1, 0], [2.4, 1.1, 0.28], 'ic_hoja_elfica'));
+        t.masa(hs, 'ic_hoja_elfica', 0.15);
+        gemaEngastada(t, [0, 6.1, 13.4], 0.75, e, { engaste: 'ic_filigrana' });
+      } else if (L === 'demoniaca') {
+        lavaIc(t, e, [[-0.4, 5.75, 14.6], [0.9, 5.8, 12.8], [-0.3, 5.85, 11.0], [1.6, 5.75, 9.2], [0.6, 5.5, 7.0], [1.9, 5.3, 4.6]], 0.36);
+        lavaIc(t, e, [[-1.4, 5.7, 13.6], [-2.8, 5.4, 11.6], [-2.0, 5.5, 9.6], [-3.6, 5.0, 7.6]], 0.3);
+        lavaIc(t, e, [[0.9, 5.8, 12.8], [2.8, 5.5, 13.6], [4.2, 4.9, 12.2]], 0.26);
+        const cs: Comp[] = [];
+        for (const sx of [-1, 1]) cs.push(puaIc(t, [sx * 4.2, 1.0, 15.6], [sx * 0.55, -0.2, 1], 5.2, 1.0, 'ic_hueso_demonio'), puaIc(t, [sx * 2.4, -1.0, 15.8], [sx * 0.3, -0.5, 1], 3.6, 0.75, 'ic_hueso_demonio'));
+        for (let i = 0; i < 6; i++) { const a = rad(i * 60); cs.push(t.bul([Math.cos(a) * 1.6, 5.7, 12.0 + Math.sin(a) * 1.6], [0.55, 0.55, 0.55], 'ic_hueso_demonio')); }
+        t.masa(cs, 'ic_hueso_demonio', 0.3);
+        t.esf([0, 5.9, 12.0], 1.0, { mat: e.luz! });
+      } else if (L === 'celestial') {
+        const cs: Comp[] = [t.bulD([0, 5.75, 11.2], [1, 0, 0], [0, 1, 0], [1.7, 1.7, 0.45], 'ic_oro')];
+        for (let i = 0; i < 12; i++) { const a = rad(i * 30 + 15), r0 = 1.7, r1 = i % 2 ? 3.0 : 4.0; cs.push(t.hue([Math.cos(a) * r0, 5.75, 11.2 + Math.sin(a) * r0], [Math.cos(a) * r1, 5.6 - Math.abs(Math.cos(a)) * 0.6, 11.2 + Math.sin(a) * r1], 0.36, 0.06, 'ic_oro')); }
+        t.masa(cs, 'ic_oro', 0.15);
+        gemaEngastada(t, [0, 6.1, 11.2], 0.95, e, { engaste: 'ic_oro', luz: true });
+        for (const sx of [-1, 1]) alaIc(t, [sx * 8.4, -1.6, 15.6], [0, -0.3, 1], [sx, -0.2, 0.2], [0, -1, 0], 4.2, 4);
+      } else if (L === 'ahogada') {
+        percebesIc(t, [-2.6, 5.2, 13.0], [0, 1, 0.2], 0.85, 0);
+        percebesIc(t, [3.0, 4.8, 5.6], [0.3, 1, 0], 0.7, 1);
+        percebesIc(t, [6.4, 1.6, 14.6], [0.6, 0.3, 1], 0.7, 2);
+        algaIc(t, [[-6.4, 2.4, 16.0], [-4.2, 5.0, 13.4], [-1.4, 5.7, 10.6], [1.4, 5.6, 8.0], [3.4, 5.2, 5.2], [4.6, 4.8, 1.6], [5.0, 4.6, -2.4], [4.6, 4.8, -6.0]], 0.5);
+        algaIc(t, [[5.6, 3.6, 12.0], [6.6, 3.0, 7.0], [6.4, 3.4, 2.4], [6.9, 3.2, -2.0]], 0.42);
+        conchaIc(t, [0.4, 6.0, 9.8], [0, 1, 0.1], [0, 0, 1], 1.1);
+      }
+      break;
+    }
+    case 'casco': {
+      if (L === 'escamas') {
+        const cs: Comp[] = [];
+        for (let i = 0; i < 5; i++) cs.push(t.bulD([0, 3.4 - i * 2.0, 7.8 - Math.abs(i - 1.5) * 0.6], [0, -1, 0.3], [1, 0, 0], [1.8, 1.7 - i * 0.12, 0.4], 'ic_escama', 0.08 - i * 0.03));
+        t.masa(cs, 'ic_escama', 0.25);
+        t.aro([0, 0, -0.6], 6.25, 0.55, { mat: 'ic_bronce', n: 18, suave: true });
+      } else if (L === 'draconica') {
+        const cs: Comp[] = [];
+        for (const sx of [-1, 1]) { cs.push(...cuernoIc(t, [[sx * 4.8, -0.6, 4.4], [sx * 6.6, -2.8, 6.8], [sx * 6.9, -5.8, 8.0], [sx * 6.0, -8.6, 6.8]], 1.45, 'ic_cuerno')); cs.push(puaIc(t, [sx * 5.6, 2.0, -2.0], [sx * 0.8, -1, 0.4], 3.2, 0.6, 'ic_cuerno')); }
+        for (let i = 0; i < 5; i++) cs.push(puaIc(t, [0, 3.0 - i * 2.0, 8.0 - i * i * 0.2], [0, -0.6, 1], 2.0 - i * 0.15, 0.6, 'ic_cuerno'));
+        t.masa(cs, 'ic_cuerno', 0.3);
+      } else if (L === 'elfica') {
+        const cs: Comp[] = [];
+        for (let i = 0; i < 7; i++) { const k = i - 3, d = nor([k * 0.32, -0.6, 1]); cs.push(t.bulD(add([k * 1.0, -1.4 + Math.abs(k) * 0.3, 7.0 - Math.abs(k) * 0.4], d, 1.8), d, [0, 1, 0.2], [2.2 - Math.abs(k) * 0.15, 0.85, 0.24], i % 2 ? 'ic_filigrana' : 'ic_hoja_elfica')); }
+        for (const sx of [-1, 1]) cs.push(t.bulD([sx * 6.4, -1.2, 2.6], [sx * 0.25, -1, 0.85], [sx, 0, 0], [3.4, 1.1, 0.28], 'ic_plata_elfica', 0.05));
+        t.masa(cs, 'ic_hoja_elfica', 0.15);
+        t.aro([0, 0, 3.6], 6.0, 0.28, { mat: 'ic_filigrana', n: 18, desde: -10, hasta: 190 });
+      } else if (L === 'demoniaca') {
+        const cs: Comp[] = [];
+        for (const sx of [-1, 1]) cs.push(...cuernoIc(t, [[sx * 5.2, 0.4, 3.2], [sx * 8.4, 0.2, 5.2], [sx * 9.8, 1.6, 9.2], [sx * 9.0, 3.6, 12.2]], 1.8, 'ic_hueso_demonio'));
+        for (let i = 0; i < 3; i++) cs.push(puaIc(t, [0, -0.5 - i * 2.0, 8.0 - i * 0.5], [0, -0.3, 1], 2.4 - i * 0.4, 0.65, 'ic_hueso_demonio'));
+        t.masa(cs, 'ic_hueso_demonio', 0.3);
+      } else if (L === 'celestial') {
+        t.aro([0, -1.2, 11.2], 5.4, 0.42, { mat: e.luz ?? tinte('#fff0b8', 'luz'), n: 24, rot: [0, -18, 0], suave: true });
+        for (const sx of [-1, 1]) alaIc(t, [sx * 5.8, -0.6, 2.4], [0, -0.7, 1], [sx, -0.3, 0], [sx, 0, 0], 4.6, 4);
+      } else if (L === 'ahogada') {
+        percebesIc(t, [3.4, 2.2, 5.4], [0.5, 0.4, 0.8], 0.8, 0);
+        percebesIc(t, [-5.2, -1.4, 1.6], [-0.9, -0.2, 0.2], 0.7, 2);
+        conchaIc(t, [0, 6.3, 4.2], [0, 1, 0.3], [0, 0, 1], 0.75);
+        for (const sx of [-1, 1]) algaIc(t, [[sx * 3.6, -3.4, 6.0], [sx * 5.4, -4.4, 1.6], [sx * 6.2, -4.0, -3.4], [sx * 6.0, -4.6, -7.6]], 0.45);
+      }
+      break;
+    }
+    case 'guante': {
+      if (L === 'escamas') t.masa([0, 1].map((i) => t.bulD([0, 2.2, 5.0 + i * 2.6], [0, 0.2, -1], [0, 1, 0], [1.8, 2.6, 0.45], 'ic_escama', 0.06 - i * 0.05)), 'ic_escama', 0.2);
+      else if (L === 'draconica') { const cs: Comp[] = []; for (let i = 0; i < 4; i++) { const x = -2.4 + i * 1.6, largo = 5.6 - Math.abs(i - 1.3) * 0.8; cs.push(t.hue([x * 1.08, 1.1, 12.0 + largo], [x * 1.1, 2.6, 14.0 + largo], 0.6, 0.05, 'ic_cuerno')); } for (let i = 0; i < 2; i++) cs.push(puaIc(t, [lado * 3.2, 1.2, 2.4 + i * 2.6], [lado, 0.3, -0.6], 2.6, 0.6, 'ic_cuerno')); t.masa(cs, 'ic_cuerno', 0.2); }
+      else if (L === 'elfica') t.masa([t.bulD([0, 3.0, 4.2], [0, 0, 1], [0, 1, 0], [3.4, 1.7, 0.3], 'ic_hoja_elfica'), t.hue([0, 3.25, 1.2], [0, 3.25, 7.4], 0.18, 0.12, 'ic_filigrana')], 'ic_hoja_elfica', 0.12);
+      else if (L === 'demoniaca') { t.masa([0, 1].map((i) => puaIc(t, [lado * 3.0, 0.8, 2.0 + i * 2.6], [lado, 0.4, -0.7], 3.2 - i * 0.5, 0.75, 'ic_hueso_demonio')), 'ic_hueso_demonio', 0.2); lavaIc(t, e, [[-1.4, 3.15, 1.0], [0.6, 3.2, 2.6], [-0.4, 3.2, 4.4], [1.0, 3.0, 6.4]], 0.26); }
+      else if (L === 'celestial') alaIc(t, [lado * 3.6, 0.6, 4.0], [0, 0, -1], [lado, 0.2, 0.2], [0, 1, 0], 3.2, 3);
+      else if (L === 'ahogada') { percebesIc(t, [lado * 2.2, 2.6, 3.6], [lado * 0.5, 1, 0], 0.65, 1); algaIc(t, [[-3.4, 2.0, 6.6], [0, 3.4, 5.0], [3.4, 2.0, 3.4], [3.0, 1.4, -1.0]], 0.36); }
+      break;
+    }
+    case 'bota': {
+      const cx = -1.5;
+      if (L === 'escamas') t.masa([t.bulD([7.2, 0, 2.2], [1, 0, -0.2], [0, 0, 1], [2.4, 2.2, 0.9], 'ic_bronce'), ...[0, 1].map((i) => t.bulD([cx + 3.2, 0.6, 9.6 + i * 2.6], [0.2, 0, -1], [1, 0.2, 0], [1.6, 2.4, 0.45], 'ic_escama', 0.05 - i * 0.04))], 'ic_escama', 0.2);
+      else if (L === 'draconica' || L === 'demoniaca') {
+        const mt = L === 'draconica' ? 'ic_cuerno' : 'ic_hueso_demonio', cs: Comp[] = [];
+        for (const y of [-1.5, 0, 1.5]) cs.push(t.hue([9.6, y, 1.6], [12.0, y * 1.25, 0.6], 0.62, 0.06, mt));
+        cs.push(puaIc(t, [cx - 2.4, 0, 4.2], [-1, 0, 0.5], 2.8, 0.75, mt), puaIc(t, [cx + 3.4, 0, 10.6], [1, 0, 0.6], 2.6, 0.7, mt));
+        t.masa(cs, mt, 0.2);
+        if (L === 'demoniaca') lavaIc(t, e, [[cx + 3.5, 0.6, 6.0], [cx + 3.7, -0.4, 8.0], [cx + 3.6, 0.5, 10.0]], 0.24);
+      } else if (L === 'elfica') t.masa([t.hue([10.6, 0, 1.3], [12.6, 0, 2.6], 0.75, 0.4, 'ic_plata_elfica'), t.hue([12.6, 0, 2.6], [12.2, 0, 4.2], 0.4, 0.1, 'ic_plata_elfica'), t.bulD([cx + 3.6, 0.4, 9.4], [0, 0, 1], [1, 0, 0], [2.6, 1.2, 0.3], 'ic_hoja_elfica')], 'ic_plata_elfica', 0.15);
+      else if (L === 'celestial') alaIc(t, [cx - 2.6, 2.6, 12.0], [-0.3, 0, 1], [-1, 0.2, 0.3], [0, 1, 0], 3.8, 4);
+      else if (L === 'ahogada') { percebesIc(t, [3.6, 2.6, 2.6], [0, 1, 0.4], 0.7, 0); percebesIc(t, [cx + 1.0, 3.4, 10.6], [0.2, 1, 0], 0.6, 1); algaIc(t, [[cx - 3.4, 2.0, 15.4], [cx - 3.8, 2.8, 10.8], [cx - 3.0, 3.2, 6.6], [cx - 3.8, 2.8, 2.6]], 0.4); }
+      break;
+    }
+    case 'cinturon': {
+      if (L === 'ahogada') { conchaIc(t, [0, 7.8, 0.4], [0, 1, 0.2], [0, 0, 1], 0.9); percebesIc(t, [7.2, 4.6, 1.6], [0.7, 0.7, 0.2], 0.6, 0); for (const sx of [-1, 1]) algaIc(t, [[sx * 4.4, 6.2, -2.0], [sx * 4.8, 6.6, -5.6], [sx * 4.2, 6.4, -9.0]], 0.42); }
+      else if (L === 'elfica') t.masa([t.bulD([0, 7.9, -2.6], [0, 0.2, -1], [0, 1, 0], [2.2, 1.0, 0.25], 'ic_hoja_elfica'), t.bulD([1.6, 7.8, -2.0], [0.6, 0.2, -1], [0, 1, 0], [1.6, 0.7, 0.22], 'ic_filigrana')], 'ic_hoja_elfica', 0.12);
+      else if (L === 'draconica') t.masa([-1, 1].map((sx) => t.hue([sx * 1.4, 7.4, -2.6], [sx * 1.6, 7.7, -6.0], 0.55, 0.05, 'ic_cuerno')), 'ic_cuerno', 0.15);
+      else if (L === 'demoniaca') t.masa([-1, 1].map((sx) => puaIc(t, [sx * 9.8, 0.6, 0.6], [sx, -0.2, 0.7], 3.2, 0.8, 'ic_hueso_demonio')), 'ic_hueso_demonio', 0.15);
+      else if (L === 'celestial') { const cs: Comp[] = []; for (let i = 0; i < 8; i++) { const a = rad(i * 45 + 22.5); cs.push(t.hue([Math.cos(a) * 1.6, 7.8, Math.sin(a) * 1.6 + 5.2], [Math.cos(a) * 3.0, 7.6, Math.sin(a) * 3.0 + 5.2], 0.32, 0.06, 'ic_oro')); } t.masa(cs, 'ic_oro', 0.12); }
+      else if (L === 'escamas') t.masa([-2, -1, 0, 1, 2].map((i) => t.bulD([i * 2.2, 6.9 - Math.abs(i) * 0.35, -3.6], [0, 0.2, -1], [0, 1, 0], [1.5, 1.2, 0.4], 'ic_escama', 0.05)), 'ic_escama', 0.2);
+      break;
+    }
+    case 'hombrera': {
+      if (L === 'escamas') { const cs: Comp[] = []; for (let i = 0; i < 3; i++) cs.push(t.bulD([lado * (0.6 + i * 0.7), 0.4, 3.4 - i * 2.4], [lado * 0.6, 0, -1], [lado * 0.4, 0.3, 1], [2.6, 3.4 - i * 0.3, 0.6], 'ic_escama', 0.06 - i * 0.05)); t.masa(cs, 'ic_escama', 0.25); t.esf([0, 0.4, 4.9], 0.6, { mat: 'ic_bronce' }); }
+      else if (L === 'draconica') { const cs: Comp[] = []; for (let i = 0; i < 3; i++) cs.push(...cuernoIc(t, [[lado * (i - 1) * 1.8, 0.3, 3.8 - Math.abs(i - 1) * 0.6], [lado * (i - 1) * 2.4, -1.6, 7.0 - Math.abs(i - 1) * 1.2], [lado * (i - 1) * 2.6, -4.2, 8.6 - Math.abs(i - 1) * 1.8]], 1.05, 'ic_cuerno')); t.masa(cs, 'ic_cuerno', 0.25); }
+      else if (L === 'elfica') t.masa([t.bulD([lado * 1.2, 1.2, 1.6], [lado * 0.6, 0.15, -1], [lado * 0.3, 0.4, 1], [4.4, 3.0, 0.5], 'ic_plata_elfica', 0.05), t.bulD([lado * 0.9, 1.6, 3.0], [lado * 0.6, 0.15, -1], [lado * 0.3, 0.4, 1], [3.0, 1.8, 0.4], 'ic_hoja_elfica'), t.hue([lado * -0.6, 1.9, 5.2], [lado * 2.8, 1.4, -2.4], 0.22, 0.14, 'ic_filigrana'), t.bulD([lado * -1.6, -1.6, 5.6], [lado * -0.2, -0.6, 1], [0, 1, 0.3], [2.6, 0.9, 0.25], 'ic_filigrana')], 'ic_plata_elfica', 0.15);
+      else if (L === 'demoniaca') { t.masa([0, 1, 2].map((k) => puaIc(t, [lado * (k - 1) * 1.8, 0, 3.8 - Math.abs(k - 1) * 0.6], [lado * 0.35 * (k - 1), -0.1, 1], 6.4 - Math.abs(k - 1) * 1.6, 1.15, 'ic_hueso_demonio')), 'ic_hueso_demonio', 0.25); lavaIc(t, e, [[lado * -3.4, 3.6, 2.4], [lado * -1.2, 4.4, 1.4], [lado * 0.6, 4.2, 2.6], [lado * 2.8, 3.4, 1.0]], 0.28); }
+      else if (L === 'celestial') alaIc(t, [lado * -0.8, -1.4, 3.8], [0, -0.35, 1], [lado, -0.3, 0.1], [0, 1, 0], 6.0, 5);
+      else if (L === 'ahogada') { conchaIc(t, [lado * 0.6, 2.6, 2.4], [lado * 0.2, 1, 0.6], [0, 0, 1], 1.2); percebesIc(t, [lado * -2.4, 0.4, 4.2], [0, 0.2, 1], 0.75, lado); algaIc(t, [[lado * 4.4, 1.2, -1.6], [lado * 5.6, 1.8, -4.4], [lado * 5.0, 1.4, -7.6], [lado * 5.8, 1.8, -10.4]], 0.45); }
+      break;
+    }
+    case 'pierna': {
+      // cada pierna de las grebas (rodilla en z 10.6, frente hacia +y, radio de la canilla ~2.9)
+      if (L === 'escamas') { t.masa([0, 1, 2].map((i) => t.bulD([0, 3.0, 8.2 - i * 2.2], [0, 0.2, -1], [0, 1, 0], [1.4, 1.9, 0.4], 'ic_escama', 0.05 - i * 0.03)), 'ic_escama', 0.2); t.esf([0, 3.6, 11.0], 0.5, { mat: 'ic_bronce' }); }
+      else if (L === 'draconica') t.masa([puaIc(t, [0, 3.2, 11.0], [0, 1, 0.7], 3.4, 0.85, 'ic_cuerno'), puaIc(t, [0, 3.0, 7.0], [0, 1, -0.6], 1.8, 0.5, 'ic_cuerno'), puaIc(t, [0, 3.0, 4.6], [0, 1, -0.6], 1.5, 0.45, 'ic_cuerno')], 'ic_cuerno', 0.2);
+      else if (L === 'elfica') t.masa([t.bulD([0, 3.4, 11.4], [0, 0, 1], [0, 1, 0], [2.6, 1.6, 0.35], 'ic_plata_elfica', 0.06), t.bulD([0, 3.7, 11.6], [0, 0, 1], [0, 1, 0], [1.6, 0.8, 0.25], 'ic_hoja_elfica'), ...[0, 1, 2, 3].map((i) => t.hue([Math.sin(i * 1.6) * 0.5, 3.15, 8.6 - i * 1.7], [Math.sin((i + 1) * 1.6) * 0.5, 3.1, 8.6 - (i + 1) * 1.7], 0.2, 0.16, 'ic_filigrana'))], 'ic_plata_elfica', 0.12);
+      else if (L === 'demoniaca') { t.masa([puaIc(t, [0, 3.0, 11.0], [0, 1, 0.9], 4.4, 1.0, 'ic_hueso_demonio')], 'ic_hueso_demonio', 0.2); lavaIc(t, e, [[-0.5, 3.2, 8.4], [0.6, 3.25, 6.8], [-0.4, 3.1, 5.0], [0.5, 2.9, 3.0]], 0.26); }
+      else if (L === 'celestial') { t.masa([t.bulD([0, 3.6, 10.8], [1, 0, 0], [0, 1, 0], [1.4, 1.4, 0.35], 'ic_oro')], 'ic_oro', 0.1); t.esf([0, 3.95, 10.8], 0.55, { mat: e.luz! }); }
+      else if (L === 'ahogada') { percebesIc(t, [0.4, 2.9, 6.0], [0.2, 1, 0], 0.65, lado); algaIc(t, [[-3.2, 0.6, 18.4], [0, 3.4, 16.2], [3.2, 0.8, 14.0], [2.8, 2.4, 10.6], [3.4, 2.0, 7.4]], 0.4); }
+      break;
+    }
+  }
+}
+/** El emblema de un escudo de línea épica (en el plano x-z, sobresale hacia +y desde `y0`). */
+function emblemaEpico(t: Taller, e: Estilo, y0: number, k: number, z0: number) {
+  const L = e.linea, P = (x: number, y: number, z: number): V3 => [x * k, y0 + y, z0 + z * k];
+  if (L === 'escamas') {
+    const cs: Comp[] = [];
+    for (let r = 0; r < 3; r++) for (let i = -1; i <= 1; i++) { if (r === 2 && i) continue; cs.push(t.bulD(P(i * 2.4 + (r % 2) * 1.2 - (r === 2 ? 1.2 : 0), 0.4, 3 - r * 2.6), [0, 0.2, -1], [0, 1, 0], [1.9 * k, 1.5 * k, 0.5], 'ic_escama', 0.06 - r * 0.03)); }
+    t.masa(cs, 'ic_escama', 0.2);
+    t.aro([0, y0 + 0.2, z0 + 0.4 * k], 5.0 * k, 0.4, { mat: 'ic_bronce', eje: 'y', n: 20, suave: true });
+  } else if (L === 'draconica') {
+    const cs: Comp[] = [t.bulD(P(0, 0.8, 1.0), [0, 0, 1], [0, 1, 0], [2.6 * k, 2.2 * k, 1.2], 'ic_draco'), t.hue(P(0, 1.0, -0.6), P(0, 1.6, -3.8), 1.6 * k, 1.0 * k, 'ic_draco')];
+    for (const sx of [-1, 1]) cs.push(...cuernoIc(t, [P(sx * 1.6, 0.8, 2.4), P(sx * 3.4, 0.9, 4.4), P(sx * 3.6, 1.0, 6.8)], 0.85 * k, 'ic_cuerno'), t.bulD(P(sx * 4.2, 0.2, 0.2), [sx * 1, 0, 0.4], [0, 1, 0], [3.0 * k, 1.6 * k, 0.3], 'ic_draco', -0.05));
+    t.masa(cs, 'ic_draco', 0.3);
+    for (const sx of [-1, 1]) t.esf(P(sx * 1.0, 2.0, 0.8), 0.45 * k, { mat: e.luz ?? tinte('#ff8a2a', 'luz') });
+  } else if (L === 'elfica') {
+    const cs: Comp[] = [t.hue(P(0, 0.4, -4.6), P(0, 0.4, 3.0), 0.5 * k, 0.3 * k, 'ic_filigrana')];
+    for (let i = 0; i < 5; i++) { const a = rad(90 + (i - 2) * 34), d: V3 = [Math.cos(a), 0.15, Math.sin(a)]; cs.push(t.bulD(add(P(0, 0.4, 1.6), d, 2.4 * k), d, [0, 1, 0], [2.6 * k, 1.0 * k, 0.3], i % 2 ? 'ic_filigrana' : 'ic_hoja_elfica')); }
+    t.masa(cs, 'ic_hoja_elfica', 0.15);
+    t.aro([0, y0 + 0.2, z0], 5.2 * k, 0.3, { mat: 'ic_filigrana', eje: 'y', n: 22, suave: true });
+    gemaEngastada(t, P(0, 0.6, -1.4), 0.9 * k, e, { engaste: 'ic_filigrana' });
+  } else if (L === 'demoniaca') {
+    const cs: Comp[] = [t.bulD(P(0, 0.4, 0.6), [0, 0, 1], [0, 1, 0], [2.8 * k, 2.6 * k, 1.5], 'ic_hueso_demonio'), t.bulD(P(0, 0.5, -2.0), [1, 0, 0], [0, 1, 0], [1.7 * k, 1.3 * k, 1.2], 'ic_hueso_demonio')];
+    for (const sx of [-1, 1]) cs.push(...cuernoIc(t, [P(sx * 2.2, 0.4, 2.0), P(sx * 4.4, 0.6, 3.0), P(sx * 5.2, 0.8, 5.6), P(sx * 4.2, 1.0, 7.4)], 1.0 * k, 'ic_hueso_demonio'));
+    t.masa(cs, 'ic_hueso_demonio', 0.3);
+    for (const sx of [-1, 1]) t.elip(P(sx * 1.1, 1.6, 0.6), [0.7 * k, 0.4, 0.75 * k], { mat: e.luz! });
+    lavaIc(t, e, [P(0, 0.2, -3.6), P(1.0, 0.1, -5.4), P(-0.4, 0, -7.0)], 0.3);
+  } else if (L === 'celestial') {
+    const cs: Comp[] = [t.bulD(P(0, 0.4, 0), [1, 0, 0], [0, 1, 0], [2.2 * k, 2.2 * k, 0.5], 'ic_oro')];
+    for (let i = 0; i < 12; i++) { const a = rad(i * 30 + 15), r1 = i % 2 ? 3.4 : 4.4; cs.push(t.hue(P(Math.cos(a) * 2.0, 0.4, Math.sin(a) * 2.0), P(Math.cos(a) * r1, 0.3, Math.sin(a) * r1), 0.38 * k, 0.06, 'ic_oro')); }
+    t.masa(cs, 'ic_oro', 0.12);
+    for (const sx of [-1, 1]) alaIc(t, P(sx * 2.4, 0.6, 0.4), [0, 0, 1], [sx, 0, -0.2], [0, 1, 0], 5.2 * k, 5);
+    gemaEngastada(t, P(0, 0.7, 0), 1.2 * k, e, { engaste: 'ic_oro', luz: true });
+  } else if (L === 'ahogada') {
+    conchaIc(t, P(0, 0.6, -2.4), [0, 1, 0], [0, 0, 1], 2.0 * k);
+    percebesIc(t, P(-3.6, 0.2, 3.6), [0, 1, 0.2], 0.8 * k, 0);
+    percebesIc(t, P(3.8, 0.2, -4.0), [0, 1, -0.2], 0.7 * k, 2);
+    algaIc(t, [P(4.4, 0.4, 4.6), P(2.6, 0.8, 3.0), P(4.0, 0.6, 1.0), P(3.0, 0.8, -1.2)], 0.45 * k);
+  }
 }
 
 // ------------------------------------------------------------------ armar

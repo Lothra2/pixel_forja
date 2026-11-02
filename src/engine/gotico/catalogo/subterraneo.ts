@@ -34,6 +34,7 @@ M.sub_madera_mina = { rampa: ['#110c08', '#1e150e', '#2d2015', '#3d2c1d', '#4f3a
 } };
 M.sub_cuerda = { rampa: ['#1c160d', '#2f2515', '#45371f', '#5c4a2b', '#745e38', '#8c7247'], ruido: 0.45, escala: 1.1, patron: (p) => (Math.sin((p[0] + p[1] + p[2]) * 2.2) > 0.3 ? 0.06 : -0.06) };
 M.sub_telarana = { rampa: ['#3a3935', '#53514c', '#6d6a63', '#88847b', '#a39e94', '#bdb8ad'], ruido: 0.25, escala: 0.8 };
+M.sub_fondo = { rampa: ['#000000', '#030304', '#060609'], ruido: 0.2, escala: 0.2 };
 M.sub_vapor = { rampa: ['#2c2c30', '#3c3c42', '#505058', '#68686e', '#828288', '#a0a0a4'], ruido: 0.55, escala: 0.22, emite: true };
 
 // ------------------------------------------------------------------ vectores
@@ -369,3 +370,26 @@ export function bordeVacio(a: Arma, ps: Pieza[], v: string, o: { mat: string; ma
   if (o.fondo) ps.push(a.caja(0, 0, -D - 60, 600, 600, 4, { mat: o.fondo }));
   ps.push(...recorte(a, semis, convexo));
 }
+
+/** Paredes de un hueco (sima, grieta ancha): lajas que bajan por los lados que la cámara ve, y el fondo negro. */
+export function paredesHueco(a: Arma, ps: Pieza[], cont: [number, number][], D: number, mat = 'sub_roca', fondo = 'sub_fondo') {
+  const n = cont.length;
+  let cx = 0, cy = 0; for (const [x, y] of cont) { cx += x / n; cy += y / n; }
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = cont[i], [x1, y1] = cont[(i + 1) % n], mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+    // el labio de la boca
+    ps.push(pena(a, mx + (mx - cx) * 0.08, my + (my - cy) * 0.08, -1.6, entre(a, 5, 8), entre(a, 4, 6), 2.8, { mat, giro: (Math.atan2(y1 - y0, x1 - x0) * 180) / PI, tono: 0.05, n: 8 }));
+    if ((cx - mx) + (cy - my) <= 0) continue; // esta pared mira para atrás: no se ve
+    const L = Math.hypot(x1 - x0, y1 - y0), st = Math.max(1, Math.round(L / 10));
+    for (let k = 0; k <= st; k++) {
+      const u = k / st, x = x0 + (x1 - x0) * u, y = y0 + (y1 - y0) * u, dx = cx - x, dy = cy - y, dl = Math.hypot(dx, dy) || 1;
+      let z = -4, off = entre(a, 0, 3);
+      while (z > -D) { const fr = -z / D, rz = entre(a, 5, 8); off += (a.r() - 0.4) * 2.5; ps.push(pena(a, x + (dx / dl) * off, y + (dy / dl) * off, z - rz * 0.4, entre(a, 6, 9), entre(a, 4, 6), rz, { mat, tono: -fr * 0.6 + (a.r() - 0.5) * 0.1, n: 7 })); z -= rz * entre(a, 1.1, 1.4); }
+    }
+  }
+  // el fondo: solo la parte que se ve por la boca (la boca corrida por el rayo de la cámara hasta esa hondura)
+  const k = Math.sqrt(1.5) * (D + 2), fp: V3[] = [];
+  for (const [x, y] of cont) for (const z of [-D - 4, -D]) fp.push([cx + (x - cx) * 1.25 - k, cy + (y - cy) * 1.25 - k, z]);
+  ps.push(a.poliedro(fp, { mat: fondo }));
+}
+

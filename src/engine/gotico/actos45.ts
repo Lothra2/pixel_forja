@@ -445,3 +445,35 @@ export function arbolMuerto(a: Arma, ps: Pieza[], o: OpcArbol): [V3, V3][] {
   ps.push(masa(cs, { mat: o.mat, suave: Math.max(1.2, r0 * 0.35) }));
   return ramas;
 }
+
+/** Las mismas piezas todas de un solo material (estatuas de hielo, de piedra, de obsidiana), con su tono de cada parte. */
+export function rematerial(ps: Pieza[], mat: string, k = 0.5): Pieza[] {
+  return ps.map((p): Pieza => (p.k === 'masa' ? masa(p.comps.map((q) => ({ ...q, mat, tono: (q.tono ?? 0) * k })), { mat, tono: p.tono, suave: p.suave }) : { ...p, mat, tono: (p.tono ?? 0) * k }));
+}
+
+/** Jaula de hierro (barrotes, aros, fondo y gancho), con alguien adentro o vacía; `c` es el centro del fondo. */
+export function jaula(a: Arma, ps: Pieza[], c: V3, r: number, h: number, o: { preso?: 'esqueleto' | 'muerto' | 'vivo'; mat?: string; abierta?: boolean } = {}) {
+  const mat = o.mat ?? 'hierro_oxido', n = 9;
+  ps.push(a.cilindro(c[0], c[1], c[2], r + 0.6, 1.4, { mat }), a.cilindro(c[0], c[1], c[2] + h, r + 0.4, 1.2, { mat }), a.cilindro(c[0], c[1], c[2] + h * 0.5, r + 0.5, 0.9, { mat }));
+  for (let i = 0; i < n; i++) { if (o.abierta && (i === 1 || i === 2)) continue; const t = (i / n) * TAU; ps.push(a.palo([c[0] + Math.cos(t) * r, c[1] + Math.sin(t) * r, c[2]], [c[0] + Math.cos(t) * r * 0.9, c[1] + Math.sin(t) * r * 0.9, c[2] + h], 0.5, { mat })); }
+  for (let i = 0; i < 4; i++) { const t = (i / 4) * TAU + 0.4; ps.push(a.palo([c[0] + Math.cos(t) * r * 0.9, c[1] + Math.sin(t) * r * 0.9, c[2] + h], [c[0], c[1], c[2] + h + r * 0.7], 0.45, { mat })); }
+  if (o.abierta) ps.push(...transformar([a.caja(0, 0, 0, 0.6, r * 0.9, h * 0.9, { mat })], rotM(60), [c[0] + r * 0.6, c[1] + r * 1.2, c[2] + 1]));
+  const s = h / 62;
+  if (o.preso === 'esqueleto') ps.push(...cuerpo({ cu: CUERPOS.esqueleto, eq: EQUIPOS.nada, acc: 'morir', f: 3, s: s * 0.95, t: [c[0], c[1], c[2] + 1.2] }));
+  else if (o.preso) ps.push(...cuerpo({ cu: o.preso === 'vivo' ? CUERPOS.palido : CUERPOS.muerto, eq: EQUIPOS.preso, acc: o.preso === 'vivo' ? 'herido' : 'morir', f: o.preso === 'vivo' ? 2 : 3, dir: 'se', s: s * (o.preso === 'vivo' ? 0.85 : 0.95), t: [c[0], c[1], c[2] + 1.2] }));
+}
+/** Cuerpo colgado de una soga (o cadena) desde `p`, los brazos caídos. */
+export function colgado(a: Arma, ps: Pieza[], p: V3, largo: number, cu: Cuerpo = CUERPOS.muerto, eq: Equipo = EQUIPOS.preso, s = 0.95, mat = 'cuerda') {
+  if (mat === 'cuerda') ps.push(a.palo(p, add(p, [0, 0, -largo]), 0.35, { mat })); else cadena(a, ps, [p, add(p, [0, 0, -largo])], 2.2, 0.45, mat);
+  ps.push(...cuerpo({ cu, eq, acc: 'herido', f: 2, dir: elegir(a, ['s', 'so', 'se']), m: rotM(0, jit(a, 6), jit(a, 6)), t: [p[0], p[1], p[2] - largo - 62 * s], s }));
+}
+/** Losa irregular plana (lagos, charcos, pozos): cuñas convexas desde el centro hasta un contorno con ruido. */
+export function losa(a: Arma, R: number, ry: number, z0: number, z1: number, mat: string, n = 12, o: { x?: number; y?: number; tono?: number } = {}): Pieza[] {
+  const rr = Array.from({ length: n }, () => 0.78 + a.r() * 0.3), ps: Pieza[] = [], x = o.x ?? 0, y = o.y ?? 0;
+  for (let i = 0; i < n; i++) {
+    const t0 = (i / n) * TAU, t1 = ((i + 1) / n) * TAU, k0 = rr[i], k1 = rr[(i + 1) % n];
+    const q = [[x, y], [x + Math.cos(t0) * R * k0, y + Math.sin(t0) * ry * k0], [x + Math.cos(t1) * R * k1, y + Math.sin(t1) * ry * k1]];
+    ps.push(a.poliedro(q.flatMap(([u, w]) => [[u, w, z0], [u, w, z1]] as V3[]), { mat, tono: o.tono }));
+  }
+  return ps;
+}

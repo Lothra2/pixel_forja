@@ -1,6 +1,6 @@
 import { registrar, type Arma, type Tema } from './objeto';
 import { MATERIALES } from './materiales';
-import { masa, hueso, bulto, ruido, type Comp, type Pieza, type V3 } from './render';
+import { masa, hueso, bulto, ruido, caja, type Comp, type Pieza, type V3 } from './render';
 
 /**
  * Kit de la muerte: lo que comparten el cementerio nuevo (`cementerio2`), la cripta (`cripta`) y las catacumbas
@@ -120,6 +120,8 @@ export class G {
 const norm3 = (v: V3): V3 => { const l = Math.hypot(...v) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
 const cruz = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 
+/** Corta todo lo que quedó debajo del piso (z < 0): la cámara lo vería asomar por delante del suelo. Va última. */
+export const bajoTierra = (ps: Pieza[]) => { ps.push(caja(0, 0, -80, 600, 600, 80, { mat: 'negro', resta: true })); };
 /** Grupo raíz de un armado y su lista de piezas. */
 export const raiz = (a: Arma, giro = 0) => { const ps: Pieza[] = []; const g0 = new G(a, ps); return { ps, g: giro ? g0.sub(0, 0, 0, giro) : g0 }; };
 /** Variantes de pared: la que termina en `_der` corre a lo largo de y con la cara hacia +x. */
@@ -421,7 +423,7 @@ type Resultado = Pieza[] | { piezas: Pieza[]; resplandor?: { c: V3; r: number; c
  */
 export function hacerObj(tema: Tema) {
   return (id: string, nombre: [string, string], variantes: string[], huella: [number, number], bloquea: boolean, armar: (v: string, f: number, g: G, a: Arma) => Resultado, extra: { cuadros?: number; t?: number; huellaPor?: Record<string, [number, number]>; plano?: boolean } = {}) =>
-    registrar({ id, nombre, tema, variantes, huella, bloquea, ...extra, armar: (v, f, a) => { const { ps, g } = raiz(a); const r = armar(v, f, g, a); return r ? r : ps; } });
+    registrar({ id, nombre, tema, variantes, huella, bloquea, ...extra, armar: (v, f, a) => { const { ps, g } = raiz(a); const r = armar(v, f, g, a); bajoTierra(ps); return r ? r : ps; } });
 }
 /** Calavera barata (sin masa) para paredes enteras de cráneos, mirando +x. */
 export function calaveraSimple(g: G, r = 3, mat = 'mu_hueso', tono = 0) {

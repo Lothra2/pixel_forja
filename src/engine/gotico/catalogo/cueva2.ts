@@ -5,7 +5,7 @@ import { armaSuelta, type Cuerpo, type Equipo } from '../cuerpo';
 import type { Dir } from '../figura';
 import {
   PI, rad, add, mez, onda, entre, forma, suelo, mover, pena, piedras, rocaComps, roca, espeleo, prisma, viga, cuerda, cadena,
-  calavera, huesoL, llama, farol, cadaver, recorte, semisDe, contornoOrg, penasco, paredRoca, bordeVacio, BORDES,
+  calavera, huesoL, llama, farol, cadaver, recorte, semisDe, contornoOrg, penasco, paredRoca, bordeVacio, BORDES, paredesHueco,
 } from './subterraneo';
 
 /**
@@ -689,28 +689,6 @@ registrar(
   },
 );
 
-/** Paredes de un hueco (sima, grieta ancha): lajas que bajan por los lados que la cámara ve, y el fondo negro. */
-function paredesHueco(a: Arma, ps: Pieza[], cont: [number, number][], D: number, mat = 'sub_roca', fondo = 'c2_fondo') {
-  const n = cont.length;
-  let cx = 0, cy = 0; for (const [x, y] of cont) { cx += x / n; cy += y / n; }
-  for (let i = 0; i < n; i++) {
-    const [x0, y0] = cont[i], [x1, y1] = cont[(i + 1) % n], mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
-    // el labio de la boca
-    ps.push(pena(a, mx + (mx - cx) * 0.08, my + (my - cy) * 0.08, -1.6, entre(a, 5, 8), entre(a, 4, 6), 2.8, { mat, giro: (Math.atan2(y1 - y0, x1 - x0) * 180) / PI, tono: 0.05, n: 8 }));
-    if ((cx - mx) + (cy - my) <= 0) continue; // esta pared mira para atrás: no se ve
-    const L = Math.hypot(x1 - x0, y1 - y0), st = Math.max(1, Math.round(L / 10));
-    for (let k = 0; k <= st; k++) {
-      const u = k / st, x = x0 + (x1 - x0) * u, y = y0 + (y1 - y0) * u, dx = cx - x, dy = cy - y, dl = Math.hypot(dx, dy) || 1;
-      let z = -4, off = entre(a, 0, 3);
-      while (z > -D) { const fr = -z / D, rz = entre(a, 5, 8); off += (a.r() - 0.4) * 2.5; ps.push(pena(a, x + (dx / dl) * off, y + (dy / dl) * off, z - rz * 0.4, entre(a, 6, 9), entre(a, 4, 6), rz, { mat, tono: -fr * 0.6 + (a.r() - 0.5) * 0.1, n: 7 })); z -= rz * entre(a, 1.1, 1.4); }
-    }
-  }
-  // el fondo: solo la parte que se ve por la boca (la boca corrida por el rayo de la cámara hasta esa hondura)
-  const k = Math.sqrt(1.5) * (D + 2), fp: V3[] = [];
-  for (const [x, y] of cont) for (const z of [-D - 4, -D]) fp.push([cx + (x - cx) * 1.25 - k, cy + (y - cy) * 1.25 - k, z]);
-  ps.push(a.poliedro(fp, { mat: fondo }));
-}
-
 registrar(
   {
     id: 'cue2_campamento', nombre: ['Campamento de expedición', 'Expedition camp'], tema: 'cueva', variantes: ['tienda', 'farol', 'destrozado'], cuadros: 6, t: 4, huella: [4, 4], bloquea: true,
@@ -841,7 +819,7 @@ registrar(
     armar: (v, _f, a) => {
       const fm = forma(a, 5), ps: Pieza[] = [];
       const cont = contornoOrg(a, entre(a, 18, 26), entre(a, 16, 22), 12, 0, 0, a.r() * 180);
-      paredesHueco(a, ps, cont, 80 + fm * 8, fm % 2 ? 'sub_roca' : 'sub_roca_humeda', v === 'luz' ? 'sub_luz_verde' : 'c2_fondo');
+      paredesHueco(a, ps, cont, 80 + fm * 8, fm % 2 ? 'sub_roca' : 'sub_roca_humeda', v === 'luz' ? 'sub_luz_verde' : 'sub_fondo');
       for (let i = 0; i < 6; i++) { const [x, y] = cont[Math.floor(a.r() * cont.length)]; penasco(a, ps, [x * 1.25, y * 1.25, 2], [entre(a, 4, 8), entre(a, 3, 6), entre(a, 2, 5)], { mat: 'sub_roca', n: 1 }); }
       let luz: { c: V3; r: number; color: string } | undefined;
       if (v === 'cuerda') {
