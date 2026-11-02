@@ -823,14 +823,16 @@ function panelViaje(j: Juego, x: number, y: number) {
   const d = j.heroe.d;
   marco(x, y, 320, 432); titulo(T('Piedras de viaje', 'Travel stones'), x, y, 320);
   const actos = [1, 2, 3, 4, 5].filter((a) => d.viajes.some((v) => ZONAS[v]?.acto === a));
-  let yy = y + 50;
-  for (const a of actos) {
-    texto(`${T('Acto', 'Act')} ${a}`, x + 20, yy + 12, { color: '#c0a060', fuente: TITULO }); yy += 20;
-    for (const z of Object.values(ZONAS).filter((q) => q.acto === a && q.piedraViaje)) {
-      const tiene = d.viajes.includes(z.id);
-      if (boton(TT(z.nombre), x + 30, yy, 260, 22, { tam: 12, activo: tiene && z.id !== j.zona.id })) { E.clicIzq = false; if (tiene) j.eventos.push({ tipo: 'viajar', dato: z.id }); ui.izq = null; }
-      yy += 24;
-    }
+  // una pestaña por acto: con tantas piedras no caben todas juntas
+  let act = (ui as any).viajeActo ?? ZONAS[j.zona.id]?.acto ?? 1;
+  if (!actos.includes(act)) act = actos[actos.length - 1] ?? 1;
+  const tw = Math.floor(280 / Math.max(1, actos.length));
+  actos.forEach((a, i) => { if (boton(`${T('Acto', 'Act')} ${a}`, x + 20 + i * tw, y + 44, tw - 4, 24, { tam: 12, color: a === act ? '#ffd080' : undefined })) { (ui as any).viajeActo = a; E.clicIzq = false; } });
+  let yy = y + 80;
+  for (const z of Object.values(ZONAS).filter((q) => q.acto === act && q.piedraViaje)) {
+    const tiene = d.viajes.includes(z.id);
+    if (boton(tiene ? TT(z.nombre) : '? ? ?', x + 30, yy, 260, 26, { tam: 12, activo: tiene && z.id !== j.zona.id })) { E.clicIzq = false; if (tiene) j.eventos.push({ tipo: 'viajar', dato: z.id }); ui.izq = null; }
+    yy += 30;
   }
 }
 function panelMisiones(j: Juego, x: number, y: number) {

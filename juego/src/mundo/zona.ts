@@ -42,6 +42,8 @@ export interface DefZona {
   /** Paisajes del motor que se estampan como viñetas. */
   vinetas?: string[];
   oscuridad?: number;
+  /** Mazmorra lateral: tiene mini jefe y cofre de tesoro. */
+  lateral?: boolean;
 }
 
 // ------------------------------------------------------------------ búsqueda en el catálogo
@@ -151,6 +153,28 @@ const TEMATICAS: Record<string, Tematica> = {
     grande: [{ t: ['cueva'], p: ['columna'] }], luces: [{ t: ['cueva'], p: ['antorcha', 'hongos'] }],
     muroX: ['cue_muro', ['x', 'x_alta']], muroY: ['cue_muro', ['y', 'y_alta']],
   },
+  // temas nuevos de la Forja: cada lista mezcla lo nuevo (cuando llegue) con lo que ya existe, así funcionan desde hoy
+  mina: {
+    piso: 'cueva', parches: ['cueva', 'tierra'], ambiente: 'cripta', oscuridad: 0.84,
+    borde: [], disperso: [{ t: ['mina' as Tema], p: [''] }, { t: ['cueva'], p: ['escomb', 'roca', 'hueso', 'cristal', 'estalag'] }],
+    grande: [{ t: ['mina' as Tema], p: ['vagon', 'grua', 'puntal', 'torno', 'polea'] }, { t: ['cueva'], p: ['columna'] }],
+    luces: [{ t: ['mina' as Tema], p: ['farol', 'lampara', 'antorcha'] }, { t: ['cueva'], p: ['antorcha'] }],
+    muroX: ['cue_muro', ['x', 'x_alta']], muroY: ['cue_muro', ['y', 'y_alta']],
+  },
+  cripta: {
+    piso: 'lajas', parches: ['lajas', 'hueso', 'lajas_musgo'], ambiente: 'cripta', oscuridad: 0.84,
+    borde: [], disperso: [{ t: ['cripta' as Tema], p: [''] }, { t: ['catacumbas'], p: ['osario', 'ataudes', 'monton', 'rejilla'] }, { t: ['cementerio'], p: ['urna', 'ataud', 'velas'] }],
+    grande: [{ t: ['cripta' as Tema], p: ['sarcofago', 'estatua', 'pilar', 'tumba'] }, { t: ['catacumbas'], p: ['osario'] }],
+    luces: [{ t: ['cripta' as Tema], p: ['vela', 'brasero', 'antorcha'] }, { t: ['monasterio'], p: ['brasero', 'antorcha'] }],
+    muroX: ['cat_nichos', ['izq', 'izq_saqueado']], muroY: ['cat_nichos', ['der', 'der_saqueado']],
+  },
+  abismo: {
+    piso: 'tierra_infierno', parches: ['hueso', 'tierra_infierno', 'pentagrama'], ambiente: 'infierno', oscuridad: 0.9,
+    borde: [], disperso: [{ t: ['abismo' as Tema], p: [''] }, { t: ['infierno'], p: ['huesos', 'cadenas', 'grieta', 'sello'] }],
+    grande: [{ t: ['abismo' as Tema], p: ['isla', 'roca', 'aguja', 'puente', 'monolito'] }, { t: ['infierno'], p: ['aguja', 'estatua'] }],
+    luces: [{ t: ['abismo' as Tema], p: ['brasero', 'cristal', 'luz'] }, { t: ['infierno'], p: ['brasero', 'pilar_luz'] }],
+    muroX: ['inf_muro_carne', ['liso', 'costillas']], muroY: ['inf_muro_carne', ['liso_y', 'costillas_y']],
+  },
 };
 export const tematica = (t: string) => TEMATICAS[t] ?? TEMATICAS.paramo;
 
@@ -188,7 +212,8 @@ class Constructor {
     for (const s of ss ?? []) for (const d of buscar(s.t, s.p, s.s)) out.push({ d, v: s.v ?? (() => true) });
     return out;
   }
-  regar(ss: Sel[] | undefined, n: number, x0: number, y0: number, x1: number, y1: number, cerca?: (x: number, y: number) => boolean) {
+  /** Riega objetos al azar. `separar` > 0: no repite el mismo objeto a menos de esa distancia (nada grande repetido en pantalla). */
+  regar(ss: Sel[] | undefined, n: number, x0: number, y0: number, x1: number, y1: number, cerca?: (x: number, y: number) => boolean, separar = 0) {
     const op = this.sel(ss); if (!op.length) return;
     for (let i = 0, k = 0; i < n && k < n * 10; k++) {
       const o = op[Math.floor(this.r() * op.length)];
@@ -196,6 +221,7 @@ class Constructor {
       const x = x0 + Math.floor(this.r() * (x1 - x0)), y = y0 + Math.floor(this.r() * (y1 - y0));
       if (cerca && !cerca(x, y)) continue;
       if (this.z.bloq[clamp(y, 0, this.z.H - 1) * this.z.W + clamp(x, 0, this.z.W - 1)]) continue;
+      if (separar && this.z.objetos.some((q) => q.id === o.d.id && Math.abs(q.cx - x) + Math.abs(q.cy - y) < separar)) continue;
       if (this.poner(o.d, x, y, vs[Math.floor(this.r() * vs.length)])) i++;
     }
   }
@@ -266,8 +292,20 @@ function exterior(def: DefZona, semilla: number): Zona {
     }
     return [Math.floor(z.W / 2), Math.floor(z.H / 2)];
   };
+  // las bocas de mazmorra van adentro del mapa, separadas entre sí y de los bordes
+  const enInterior = (): [number, number] => {
+    for (let i = 0; i < 300; i++) {
+      const bx = Math.floor((0.18 + r() * 0.64) * tw), by = Math.floor((0.18 + r() * 0.64) * th);
+      if (!z.pisos[by * tw + bx]) continue;
+      const p: [number, number] = [bx * 5 + 2, by * 5 + 2];
+      if (puntos.some(([x, y]) => Math.hypot(x - p[0], y - p[1]) < 28)) continue;
+      return p;
+    }
+    return [Math.floor(z.W / 2) + Math.floor((r() - 0.5) * 20), Math.floor(z.H / 2) + Math.floor((r() - 0.5) * 20)];
+  };
   // entrada principal (de dónde se llega primero): la primera salida
-  for (const s of def.salidas) { const p = enLado(s.lado); puntos.push(p); }
+  for (const s of def.salidas) if (s.lado !== 'abajo') puntos.push(enLado(s.lado)); else puntos.push([-999, -999]);
+  def.salidas.forEach((s, i) => { if (s.lado === 'abajo') puntos[i] = enInterior(); });
   const centro: [number, number] = [Math.floor(z.W / 2), Math.floor(z.H / 2)];
   const camino = (a: [number, number], b: [number, number]) => {
     let x = a[0], y = a[1];
@@ -316,7 +354,7 @@ function exterior(def: DefZona, semilla: number): Zona {
   }
   // grandes y dispersos
   const area = z.W * z.H, dens = def.densidad ?? 1;
-  k.regar(t.grande, Math.floor((area / 900) * dens), 3, 3, z.W - 3, z.H - 3);
+  k.regar(t.grande, Math.floor((area / 900) * dens), 3, 3, z.W - 3, z.H - 3, undefined, 26);
   k.regar(t.disperso, Math.floor((area / 260) * dens), 2, 2, z.W - 2, z.H - 2);
   k.regar(t.luces, Math.floor(area / 2600), 4, 4, z.W - 4, z.H - 4);
   if (def.tipo === 'exterior') k.regar([{ t: ['misterio' as Tema], p: ['arbol_rostros', 'manos', 'ojos', 'estatua', 'pozo'] }], 2 + Math.floor(area / 5000), 4, 4, z.W - 4, z.H - 4);
@@ -477,7 +515,7 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   k.regar(t.deco, Math.floor(area / 2500), 1, 1, z.W - 1, z.H - 1, enSuelo);
   // salidas: la primera en la entrada, las demás al fondo
   def.salidas.forEach((s, i) => {
-    const p = i === 0 ? p0 : pN;
+    const p = i === 0 ? p0 : i === 1 ? pN : centroDe(orden[Math.max(1, Math.floor((orden.length * i) / (def.salidas.length + 1)))]);
     const arriba = s.lado === 'arriba';
     const id = arriba ? (def.tema === 'tumba' ? 'tum_escalera' : 'com_escalera_subida') : def.tema === 'tumba' ? 'tum_escalera' : 'com_escalera';
     const v = arriba ? (def.tema === 'tumba' ? 'subida' : 'piedra') : def.tema === 'tumba' ? 'bajada' : 'bajada';
@@ -504,6 +542,8 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     // y el tesoro que guardaba
     const tesoro: [string, string][] = [['tesoro_pila', 'grande'], ['tesoro_pila', 'chica'], ['saco_monedas', 'derramado'], ['caliz', 'volcado'], ['corona_suelo', 'con_calavera'], ['jarron_oro', 'de_pie'], ['oro_monton', 'mediano'], ['saco_monedas', 'cerrado']];
     tesoro.forEach(([id, v], i) => { const a = (i / tesoro.length) * Math.PI * 2 + 0.3; k.poner(id, pN[0] + Math.cos(a) * 7.5, pN[1] + 2 + Math.sin(a) * 6, v); });
+    // las mazmorras laterales guardan un cofre de tesoro junto a su mini jefe
+    if (def.lateral) { const c = k.poner(def.tema === 'tumba' || def.tema === 'templo' ? 'cofre_sarcofago_tesoro' : 'cofre_noble', pN[0] + 4, pN[1] + 5, 'cerrado', true, 'cofre'); if (c) z.marcas.push({ tipo: 'cofre', cx: c.cx, cy: c.cy }); }
   }
   // en las mazmorras a veces asoman ojos en la oscuridad
   k.regar([{ t: ['misterio' as Tema], p: ['ojos', 'manos', 'espejo', 'libro', 'arbol_rostros'] }], 2 + Math.floor(area / 3000), 1, 1, z.W - 1, z.H - 1, enSuelo);
