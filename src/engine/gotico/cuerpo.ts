@@ -61,6 +61,36 @@ M.cu_sangre_viva = { rampa: ['#3a0204', '#6a0408', '#a00c10', '#d02820', '#ff604
 M.cu_luz_santa = { rampa: ['#806020', '#c09838', '#f0d060', '#fff4c0', '#ffffff'], ruido: 0.15, escala: 0.6, emite: true };
 M.cu_ectoplasma = { rampa: ['#204a60', '#3a7a90', '#68b0c0', '#a8e0e8', '#e8ffff'], ruido: 0.3, escala: 0.4, emite: true };
 
+// ------------------------------------------------------------------ materiales de las líneas épicas de armadura
+/**
+ * Escamas superpuestas como tejas medidas en el mundo: cada escama tiene el canto de abajo redondo y claro (la luz
+ * le pega) y la parte de arriba en sombra, tapada por la fila de encima; las filas se corren media escama.
+ */
+const escamas = (alto: number, ancho: number) => (p: V3) => {
+  const v = p[2] / alto, fila = Math.floor(v);
+  const local = (fv: number, u: number) => { const fu = u - Math.floor(u) - 0.5; return fv - 0.55 * (2 * fu) * (2 * fu); };
+  const u0 = (p[0] - p[1]) * 0.7 / ancho + (fila & 1 ? 0.5 : 0);
+  let d = local(v - fila, u0);
+  if (d < 0) d = local(v - fila + 1, u0 + 0.5);
+  return d < 0.14 ? 0.13 : d > 0.92 ? -0.26 : (0.45 - d) * 0.16;
+};
+M.cu_escama_dragon = { rampa: ['#050905', '#0b150b', '#132213', '#1b311a', '#244222', '#2e542b', '#3a6735', '#4b7c43', '#64955a', '#86b07a'], ruido: 0.06, escala: 0.6, brillo: 0.45, patron: escamas(1.5, 1.9) };
+M.cu_bronce = { rampa: ['#120a04', '#231407', '#38200d', '#502f14', '#6a401c', '#845326', '#9f6a33', '#b98442', '#d2a25c', '#e8c588'], ruido: 0.05, escala: 0.6, brillo: 0.65 };
+M.cu_draco = { rampa: ['#0b0304', '#180607', '#260a0c', '#370f11', '#4a1517', '#5e1c1d', '#742525', '#8c3230', '#a6473f', '#c46a5a'], ruido: 0.06, escala: 0.6, brillo: 0.6, patron: (p) => (ruido(p[0] * 0.35, p[1] * 0.35, p[2] * 0.35) - 0.5) * 0.1 };
+M.cu_cuerno = { rampa: ['#0a0806', '#16110c', '#241c14', '#33281d', '#453728', '#5b4934', '#755f44', '#927a5a', '#b19a78', '#cdbb98'], ruido: 0.12, escala: 0.8, brillo: 0.3, patron: (p) => (Math.sin(p[0] * 2.3 + p[1] * 1.7 + p[2] * 3.1) > 0.6 ? -0.08 : 0.02) };
+M.cu_plata_elfica = { rampa: ['#161a1c', '#262c2f', '#394144', '#4f585b', '#677174', '#818b8d', '#9ca6a7', '#b8c1c1', '#d4dbda', '#eef3f1'], ruido: 0.03, escala: 0.5, brillo: 0.8 };
+M.cu_filigrana = { rampa: ['#261c0b', '#463514', '#6a521f', '#8f7230', '#b29346', '#cfb264', '#e6cf90', '#f6e8c0'], ruido: 0.03, escala: 0.6, brillo: 0.85 };
+M.cu_hoja_elfica = { rampa: ['#0a120c', '#142017', '#1f3124', '#2b4332', '#3a5842', '#4c6f55', '#62886b', '#7ea386', '#a2c0a7'], ruido: 0.08, escala: 0.6, brillo: 0.4, patron: (p) => (Math.abs(Math.sin(p[0] * 1.9 - p[1] * 1.9 + p[2] * 2.6)) < 0.12 ? 0.1 : 0) };
+M.cu_placa_demonio = { rampa: ['#040203', '#0a0607', '#110a0b', '#19100f', '#221514', '#2c1b19', '#39231f', '#4b2f28', '#663f34'], ruido: 0.05, escala: 0.6, brillo: 0.65, patron: (p) => (Math.abs(ruido(p[0] * 0.55, p[1] * 0.55, p[2] * 0.55) - 0.5) < 0.025 ? -0.22 : 0) };
+M.cu_hueso_demonio = { rampa: ['#110c07', '#21180e', '#352717', '#4b3921', '#634c2d', '#7d623c', '#977a50', '#b09466', '#c8b082'], ruido: 0.2, escala: 0.9, patron: (p) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 2.2) - 0.5) * 0.16 };
+M.cu_oro_blanco = { rampa: ['#28241e', '#433e36', '#605950', '#80786c', '#a0978a', '#beb5a6', '#d8d0c0', '#ebe5d6', '#f7f3e8', '#fffdf6'], ruido: 0.03, escala: 0.6, brillo: 0.8 };
+M.cu_pluma = { rampa: ['#363432', '#55524e', '#76726c', '#96918a', '#b4afa7', '#cec9c1', '#e3dfd8', '#f3f0ea'], ruido: 0.1, escala: 0.8, patron: (p) => (Math.sin((p[0] + p[1]) * 3.4 + p[2] * 1.2) > 0.7 ? -0.06 : 0) };
+M.cu_halo = { rampa: ['#6a5530', '#94784a', '#bca064', '#dcc48a', '#f2e2b8'], ruido: 0.15, escala: 0.6, emite: true };
+M.cu_bronce_ahogado = { rampa: ['#061010', '#0c1b19', '#152824', '#1f382f', '#2b493a', '#3b5a43', '#536a49', '#6f7a51', '#8c8a5c', '#a89c6c'], ruido: 0.1, escala: 0.5, brillo: 0.35, patron: (p) => (ruido(p[0] * 0.45, p[1] * 0.45, p[2] * 0.45) - 0.5) * 0.4 };
+M.cu_percebe = { rampa: ['#171513', '#2b2824', '#433f38', '#5e5850', '#7a736a', '#968f84', '#b1aa9e', '#c9c3b8'], ruido: 0.35, escala: 1.4 };
+M.cu_alga = { rampa: ['#040905', '#09130a', '#0f1f10', '#172c16', '#1f3a1d', '#294924', '#33582c', '#40683a'], ruido: 0.3, escala: 1.2, brillo: 0.25 };
+M.cu_concha = { rampa: ['#28181a', '#45292a', '#663e3c', '#875650', '#a66f66', '#c08a7e', '#d6a796', '#e8c6b6', '#f6e2d6'], ruido: 0.05, escala: 0.6, brillo: 0.35, patron: (p) => (Math.sin((p[0] - p[1]) * 3.2) > 0.55 ? -0.08 : 0.02) };
+
 // ------------------------------------------------------------------ tipos
 export interface Cuerpo {
   genero?: 'h' | 'm';
@@ -93,19 +123,53 @@ export interface Cuerpo {
   flota?: boolean;
 }
 export type Pieza_ = Pieza;
+/**
+ * Líneas épicas de armadura (actos 3 a 7): cada pieza puede llevar `linea` y, sobre su forma de siempre (placas,
+ * grebas, sabatones, guanteletes, yelmo, hombreras), se le suman las formas de la línea: escamas de dragón con ribetes
+ * de bronce, crestas y cuernos dracónicos, filigrana y hojas élficas, grietas de lava y púas de hueso demoníacas,
+ * alitas y halo celestiales, o percebes, algas y conchas de la armadura ahogada.
+ */
+export type LineaCuerpo = 'escamas' | 'draconica' | 'elfica' | 'demoniaca' | 'celestial' | 'ahogada';
+export const LINEAS_CUERPO: LineaCuerpo[] = ['escamas', 'draconica', 'elfica', 'demoniaca', 'celestial', 'ahogada'];
 export interface Equipo {
-  torso?: { tipo: 'camisa' | 'sin_mangas' | 'tunica' | 'cuero' | 'cuero_tachonado' | 'malla' | 'placas' | 'harapos' | 'vestido'; mat: string; mat2?: string };
-  piernas?: { tipo: 'pantalon' | 'calzas' | 'faldon' | 'tunica_larga' | 'grebas' | 'taparrabo'; mat: string; mat2?: string };
-  pies?: { tipo: 'botas' | 'botas_altas' | 'sandalias' | 'sabatones' | 'vendas'; mat: string };
-  manos?: { tipo: 'guantes' | 'guanteletes' | 'vendas' | 'brazales'; mat: string };
-  cabeza?: { tipo: 'capucha' | 'gorro' | 'casco' | 'yelmo' | 'gran_yelmo' | 'cuernos' | 'corona' | 'diadema' | 'mascara' | 'calavera' | 'turbante' | 'aro'; mat: string; mat2?: string };
-  hombros?: { tipo: 'pieles' | 'cuero' | 'placas' | 'puas' | 'huesos'; mat: string };
-  cinturon?: { mat: string; hebilla?: string };
+  torso?: { tipo: 'camisa' | 'sin_mangas' | 'tunica' | 'cuero' | 'cuero_tachonado' | 'malla' | 'placas' | 'harapos' | 'vestido'; mat: string; mat2?: string; linea?: LineaCuerpo };
+  piernas?: { tipo: 'pantalon' | 'calzas' | 'faldon' | 'tunica_larga' | 'grebas' | 'taparrabo'; mat: string; mat2?: string; linea?: LineaCuerpo };
+  pies?: { tipo: 'botas' | 'botas_altas' | 'sandalias' | 'sabatones' | 'vendas'; mat: string; linea?: LineaCuerpo };
+  manos?: { tipo: 'guantes' | 'guanteletes' | 'vendas' | 'brazales'; mat: string; linea?: LineaCuerpo };
+  cabeza?: { tipo: 'capucha' | 'gorro' | 'casco' | 'yelmo' | 'gran_yelmo' | 'cuernos' | 'corona' | 'diadema' | 'mascara' | 'calavera' | 'turbante' | 'aro'; mat: string; mat2?: string; linea?: LineaCuerpo };
+  hombros?: { tipo: 'pieles' | 'cuero' | 'placas' | 'puas' | 'huesos'; mat: string; linea?: LineaCuerpo };
+  cinturon?: { mat: string; hebilla?: string; linea?: LineaCuerpo };
   capa?: { mat: string; largo?: number; forro?: string };
   arma?: { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto };
   izq?: { tipo: 'escudo_redondo' | 'escudo_cometa' | 'escudo_torre' | 'rodela' | 'escudo_calavera' | 'orbe' | 'libro' | 'antorcha' | 'arma'; mat?: string; mat2?: string; arma?: TipoArma };
   /** Tabardo o faldón con color de la orden. */
   tabardo?: { mat: string; borde?: string };
+}
+/** Materiales de cada línea épica: la placa, lo de abajo (cota, cuero o tela), el acento (ribetes y remaches) y lo que la distingue. */
+export const MAT_LINEA: Record<LineaCuerpo, { placa: string; base: string; acento: string; extra: string }> = {
+  escamas: { placa: 'cu_escama_dragon', base: 'cu_cuero_negro', acento: 'cu_bronce', extra: 'cu_bronce' },
+  draconica: { placa: 'cu_draco', base: 'cu_malla', acento: 'cu_cuerno', extra: 'cu_cuerno' },
+  elfica: { placa: 'cu_plata_elfica', base: 'cu_tela_verde', acento: 'cu_filigrana', extra: 'cu_hoja_elfica' },
+  demoniaca: { placa: 'cu_placa_demonio', base: 'cu_cuero_negro', acento: 'cu_hueso_demonio', extra: 'cu_lava' },
+  celestial: { placa: 'cu_oro_blanco', base: 'cu_malla', acento: 'cu_oro', extra: 'cu_pluma' },
+  ahogada: { placa: 'cu_bronce_ahogado', base: 'cu_malla', acento: 'cu_percebe', extra: 'cu_alga' },
+};
+/** La armadura completa de una línea épica (casco, pecho, hombreras, guanteletes, cinto, grebas y sabatones; capa desde el nivel 4). */
+export function armaduraDeLinea(linea: LineaCuerpo, nivel = 3): Equipo {
+  const m = MAT_LINEA[linea];
+  const casco: NonNullable<Equipo['cabeza']>['tipo'] = linea === 'ahogada' ? 'gran_yelmo' : 'yelmo';
+  const eq: Equipo = {
+    torso: { tipo: 'placas', mat: m.placa, mat2: m.base, linea },
+    piernas: { tipo: 'grebas', mat: m.placa, mat2: m.base, linea },
+    pies: { tipo: 'sabatones', mat: m.placa, linea },
+    manos: { tipo: 'guanteletes', mat: m.placa, linea },
+    hombros: { tipo: 'placas', mat: m.placa, linea },
+    cabeza: { tipo: casco, mat: m.placa, mat2: m.acento === 'cu_percebe' ? 'cu_bronce' : m.acento, linea },
+    cinturon: { mat: linea === 'elfica' ? 'cu_tela_verde' : linea === 'celestial' ? 'cu_tela_blanca' : 'cu_cuero_negro', hebilla: m.acento === 'cu_percebe' ? 'cu_bronce' : m.acento, linea },
+  };
+  if (linea === 'celestial') eq.tabardo = { mat: 'cu_tela_blanca', borde: 'cu_oro' };
+  if (nivel >= 4) eq.capa = { mat: { escamas: 'cu_tela_verde', draconica: 'cu_tela_roja', elfica: 'cu_tela_verde', demoniaca: 'cu_tela_negra', celestial: 'cu_tela_blanca', ahogada: 'cu_alga' }[linea], largo: 0.95 };
+  return eq;
 }
 /** Armas vivas: el encantamiento arde, escarcha, chispea, gotea o humea sobre la hoja en cada cuadro. */
 export type Encanto = 'fuego' | 'hielo' | 'rayo' | 'veneno' | 'sombra' | 'sagrado' | 'sangre';
@@ -114,9 +178,20 @@ export const ENCANTOS: [Encanto, string, string, string][] = [
   ['veneno', 'de ponzoña', 'of venom', '#60e040'], ['sombra', 'de las sombras', 'of shadows', '#9040d0'], ['sagrado', 'de la luz', 'of light', '#ffe080'], ['sangre', 'sangrienta', 'of blood', '#e02020'],
 ];
 export type TipoArma = 'espada' | 'cimitarra' | 'mandoble' | 'hacha' | 'hacha_doble' | 'maza' | 'martillo' | 'mangual' | 'lanza' | 'alabarda' | 'guadana'
-  | 'baculo' | 'cetro' | 'varita' | 'daga' | 'garras' | 'arco' | 'ballesta' | 'puno' | 'nada';
+  | 'baculo' | 'cetro' | 'varita' | 'daga' | 'garras' | 'arco' | 'ballesta' | 'puno' | 'nada'
+  // el arsenal épico
+  | 'katana' | 'estoque' | 'falcata' | 'tridente' | 'maza_estrella' | 'arco_largo' | 'arco_corto' | 'jabalina' | 'gran_baculo' | 'orbe_mano' | 'katar' | 'hoz' | 'lanza_dragon';
+/** Las armas del arsenal épico (formas de masa: hojas, cabezas y cunas que se funden sin aristas duras). */
+export const ARMAS_EPICAS: TipoArma[] = ['katana', 'estoque', 'falcata', 'tridente', 'maza_estrella', 'arco_largo', 'arco_corto', 'jabalina', 'gran_baculo', 'orbe_mano', 'katar', 'hoz', 'lanza_dragon'];
 
-const dos = (t?: TipoArma) => t === 'mandoble' || t === 'hacha_doble' || t === 'martillo' || t === 'alabarda' || t === 'guadana';
+/** A dos manos: la izquierda se cierra sobre el mango (cinemática inversa) y no lleva escudo ni objeto. */
+const dos = (t?: TipoArma) => t === 'mandoble' || t === 'hacha_doble' || t === 'martillo' || t === 'alabarda' || t === 'guadana' || t === 'tridente' || t === 'gran_baculo' || t === 'lanza_dragon';
+/** Arcos: la izquierda sostiene el arco y la derecha tira de la cuerda. */
+const esArco = (t?: TipoArma) => t === 'arco' || t === 'arco_largo' || t === 'arco_corto';
+/** Astas que se empuñan como la lanza (pose de vara, casi horizontales en el puño). */
+const asta = (t?: TipoArma) => t === 'tridente' || t === 'lanza_dragon' || t === 'jabalina';
+/** Varas que se apoyan en el piso (báculo, cetro, gran báculo). */
+const esVara = (t?: TipoArma) => t === 'baculo' || t === 'cetro' || t === 'gran_baculo';
 
 // ------------------------------------------------------------------ esqueleto en el mundo
 const RUMBO: Record<Dir, number> = { se: 0, s: 45, so: 90, o: 135, no: 180, n: 225, ne: 270, e: 315 };
@@ -160,18 +235,20 @@ const rotar = (v: V3, k: V3, ang: number): V3 => {
   return [v[0] * c + kv[0] * s + k[0] * d * (1 - c), v[1] * c + kv[1] * s + k[1] * d * (1 - c), v[2] * c + kv[2] * s + k[2] * d * (1 - c)];
 };
 /** Hasta dónde llega el arma desde el puño (para que la cabeza del arma toque el piso). */
-const LARGO_ARMA: Partial<Record<TipoArma, number>> = { espada: 23, cimitarra: 23, mandoble: 33, daga: 9.5, hacha: 21, hacha_doble: 29, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 30, varita: 10 };
+const LARGO_ARMA: Partial<Record<TipoArma, number>> = { espada: 23, cimitarra: 23, mandoble: 33, daga: 9.5, hacha: 21, hacha_doble: 29, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 30, varita: 10,
+  katana: 26, estoque: 27, falcata: 21, tridente: 37, maza_estrella: 19, jabalina: 28, orbe_mano: 8, katar: 13, hoz: 10, lanza_dragon: 41 };
 
 /** Qué lleva la mano izquierda, para la pose: un escudo o un objeto en la mano (si la derecha no la ocupa). */
 function manoDe(arma: TipoArma, izq?: IzqTipo): ManoPose | undefined {
-  if (!izq || izq === 'arma' || dos(arma) || arma === 'arco' || arma === 'ballesta') return undefined;
+  if (!izq || izq === 'arma' || dos(arma) || esArco(arma) || arma === 'ballesta') return undefined;
   return izq.startsWith('escudo') || izq === 'rodela' ? 'escudo' : 'objeto';
 }
 type IzqTipo = NonNullable<Equipo['izq']>['tipo'];
 
 export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
-  const tipo = arma === 'ballesta' ? 'ballesta' : dos(arma) ? 'dos' : arma === 'arco' ? 'arco' : arma === 'baculo' || arma === 'lanza' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
+  // (las astas y el gran báculo nuevos van con la pose de vara aunque sean a dos manos: la izquierda baja por el asta)
+  const tipo = arma === 'ballesta' ? 'ballesta' : asta(arma) || arma === 'gran_baculo' ? 'baculo' : dos(arma) ? 'dos' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'lanza' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
   const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo));
   const th = rad(RUMBO[dir]);
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
@@ -308,10 +385,10 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   // el báculo: casi vertical en la mano, inclinado como diga la pose o apoyado con el pie en un punto del piso
   const varaPie = P.varaPie ? Wc(P.varaPie[0] * S, P.varaPie[1] * A, P.varaPie[2] * S) : undefined;
   const vara = varaPie ? nor(sub(der.mano, varaPie)) : P.vara ? dirW([Math.sin(rad(P.vara[0])), Math.sin(rad(P.vara[1])), Math.cos(rad(P.vara[0])) * Math.cos(rad(P.vara[1]))]) : undefined;
-  const separa = arma === 'lanza' || arma === 'alabarda' || arma === 'guadana' ? 11 : dos(arma) ? 4.8 : arma === 'ballesta' ? -9 : 0;
+  const separa = arma === 'lanza' || arma === 'alabarda' || arma === 'guadana' || arma === 'tridente' || arma === 'lanza_dragon' ? 11 : arma === 'gran_baculo' ? 10 : dos(arma) ? 4.8 : arma === 'ballesta' ? -9 : 0;
   const agarre = P.agarreI ?? separa, pega = Math.max(0, Math.min(1, P.pegaI ?? (agarre ? 1 : 0)));
-  if (agarre && pega > 0 && !P.caida && arma !== 'arco' && arma !== 'nada' && arma !== 'puno') {
-    const ejeMango = arma === 'baculo' || arma === 'cetro' ? vara ?? [0, 0, 1] : der.eje;
+  if (agarre && pega > 0 && !P.caida && !esArco(arma) && arma !== 'nada' && arma !== 'puno') {
+    const ejeMango = esVara(arma) ? vara ?? [0, 0, 1] : der.eje;
     let meta = arma === 'ballesta' ? add(add(der.mano, F, 7 * S), R, 2.5 * S) : add(der.mano, ejeMango, -agarre * S);
     if (pega < 1) meta = mez(izq.mano, meta, pega);
     const afuera = nor(add(R, [0, 0, 0], izq.s));
@@ -335,7 +412,7 @@ function ejeAgarre(d2: V3, F: V3, arma: TipoArma, s: number, muneca = 0): V3 {
   let pul = sub(F, [d2[0] * dot3(F, d2), d2[1] * dot3(F, d2), d2[2] * dot3(F, d2)]);
   if (len(pul) < 0.25) pul = sub([0, 0, 1], [d2[0] * d2[2], d2[1] * d2[2], d2[2] * d2[2]]);
   pul = nor(pul);
-  const a = rad((arma === 'garras' || arma === 'puno' ? 0 : arma === 'lanza' || arma === 'alabarda' ? 82 : dos(arma) ? 58 : arma === 'daga' || arma === 'varita' ? 55 : 66) + muneca);
+  const a = rad((arma === 'garras' || arma === 'puno' || arma === 'katar' ? 0 : arma === 'lanza' || arma === 'alabarda' || asta(arma) ? 82 : dos(arma) ? 58 : arma === 'daga' || arma === 'varita' || arma === 'orbe_mano' || arma === 'hoz' ? 55 : 66) + muneca);
   return nor(add([d2[0] * Math.cos(a), d2[1] * Math.cos(a), d2[2] * Math.cos(a)], pul, Math.sin(a)));
 }
 

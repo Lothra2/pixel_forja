@@ -43,8 +43,9 @@ M.ext_tierra = {
 };
 /** Barro mojado: oscuro y con brillo de lluvia. */
 M.ext_barro = { rampa: ['#0a0806', '#14100c', '#1f1812', '#2a2118', '#362b1f', '#433527'], ruido: 0.35, escala: 0.25, brillo: 0.55, patron: (p) => (ruido(p[0] * 0.2, p[1] * 0.2, 4) - 0.5) * 0.3 };
-M.ext_agua_lluvia = { rampa: ['#05080b', '#0a1117', '#111b24', '#192632', '#223240', '#2d4050', '#3c5162'], ruido: 0.18, escala: 0.12, brillo: 1.1, patron: (p) => (ruido(p[0] * 0.15, p[1] * 0.15, 9) - 0.5) * 0.25 };
-M.ext_espuma = { rampa: ['#2c3438', '#435054', '#5d6b70', '#7a888c', '#98a4a6', '#b8c2c3'], ruido: 0.4, escala: 0.6, brillo: 0.4 };
+M.ext_agua_lluvia = { rampa: ['#050607', '#0a0d10', '#101519', '#171e23', '#1f272d', '#283138', '#343d44', '#48525a'], ruido: 0.18, escala: 0.12, brillo: 0.9, patron: (p) => (ruido(p[0] * 0.15, p[1] * 0.15, 9) - 0.5) * 0.25 };
+M.ext_espuma = { rampa: ['#262b2e', '#394044', '#4e575b', '#657074', '#7e898c', '#99a2a4'], ruido: 0.4, escala: 0.6, brillo: 0.4 };
+M.ext_sangre = { rampa: ['#0b0202', '#160404', '#230706', '#310b09', '#3f100c', '#4e1610'], ruido: 0.3, escala: 0.4, brillo: 0.45 };
 M.ext_pasto = {
   rampa: ['#0c1009', '#151c0f', '#1f2915', '#2a361b', '#364322', '#43512a', '#516033'], ruido: 0.45, escala: 0.8,
   patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.6) - 0.5) * 0.3,
@@ -422,7 +423,7 @@ export function cadaver(a: Arma, ps: Pieza[], tipo: TipoCadaver, p: V, giro: num
   const bruces = o.bruces ?? a.r() < 0.45;
   const ropa = ropaDe(a, tipo), pose = { ...poseAzar(a), ...o.pose };
   if (bruces) pose.rodillas = [Math.min(8, pose.rodillas[0]), Math.min(8, pose.rodillas[1])];
-  if (o.sangre) disco(a, ps, p[0] + Math.cos(rad(giro)) * 8 + az(a, 3), p[1] + Math.sin(rad(giro)) * 8 + az(a, 3), p[2] - 0.2, 10 * o.sangre, 7 * o.sangre, 0.55, 'sangre', { giro: giro + az(a, 30), ruido: 0.25 });
+  if (o.sangre) disco(a, ps, p[0] + Math.cos(rad(giro)) * 8 + az(a, 3), p[1] + Math.sin(rad(giro)) * 8 + az(a, 3), p[2] - 0.2, 10 * o.sangre, 7 * o.sangre, 0.55, 'ext_sangre', { giro: giro + az(a, 30), ruido: 0.25 });
   const h = muneco(a, ps, tendido(p, giro, bruces, o.huesos ? 1.5 : 3.5), ropa, pose, { huesos: o.huesos, s: o.s });
   for (let i = 0; i < (o.flechas ?? 0); i++) {
     const q = mez(h.pecho, h.pelvis, a.r() * 0.6);

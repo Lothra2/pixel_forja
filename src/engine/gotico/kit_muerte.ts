@@ -1,4 +1,4 @@
-import type { Arma } from './objeto';
+import { registrar, type Arma, type Tema } from './objeto';
 import { MATERIALES } from './materiales';
 import { masa, hueso, bulto, ruido, type Comp, type Pieza, type V3 } from './render';
 
@@ -407,4 +407,24 @@ export function figuraVelada(g: G, h: number, o: { mat: string; pose?: 'pie' | '
   // la cara en sombra dentro de la capucha
   if (pose !== 'cubre_cara') s.elip(2.6, 0, zh - 0.4, 1.2, 1.8, 2.3, { mat: 'negro', tono: 0.1 });
   return zh * k;
+}
+
+// ------------------------------------------------------------------ registro
+type Resultado = Pieza[] | { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } | void;
+/**
+ * Registrador para un tema: el armado recibe la variante, el cuadro, el grupo raíz y las herramientas; si no
+ * devuelve nada se toman las piezas del grupo.
+ */
+export function hacerObj(tema: Tema) {
+  return (id: string, nombre: [string, string], variantes: string[], huella: [number, number], bloquea: boolean, armar: (v: string, f: number, g: G, a: Arma) => Resultado, extra: { cuadros?: number; t?: number; huellaPor?: Record<string, [number, number]>; plano?: boolean } = {}) =>
+    registrar({ id, nombre, tema, variantes, huella, bloquea, ...extra, armar: (v, f, a) => { const { ps, g } = raiz(a); const r = armar(v, f, g, a); return r ? r : ps; } });
+}
+/** Calavera barata (sin masa) para paredes enteras de cráneos, mirando +x. */
+export function calaveraSimple(g: G, r = 3, mat = 'mu_hueso', tono = 0) {
+  const a = g.a, t = tono + (a.r() - 0.5) * 0.12;
+  g.elip(0, 0, r, r * 1.05, r * 0.9, r * 0.92, { mat, tono: t });
+  g.elip(r * 0.55, 0, r * 0.5, r * 0.55, r * 0.68, r * 0.5, { mat, tono: t - 0.03 });
+  for (const s of [-1, 1]) g.esf(r * 0.88, s * r * 0.38, r * 0.78, r * 0.3, { mat: 'negro' });
+  g.elip(r * 1.02, 0, r * 0.48, r * 0.12, r * 0.14, r * 0.18, { mat: 'negro' });
+  g.caja(r * 0.98, 0, r * 0.12, r * 0.2, r * 0.66, r * 0.14, { mat: 'negro' });
 }

@@ -2,8 +2,8 @@ import { conVarianteY, registrar, type Arma, type Pieza, type V3 } from '../obje
 import { MATERIALES } from '../materiales';
 import { masa, hueso, bulto, ruido, type Comp } from '../render';
 import {
-  TAU, PI, rad, deg, add, sub, esc, nor, mez, cruz, jit, elegir, ciclo, onda, suelo, rotM, transformar, tenir, cuerpo, CUERPOS, EQUIPOS,
-  roca, pena, prisma, manto, tronco, fuego, brasas, craneo, craneoBestia, huesoLargo, costillar, catenaria, cadena, tela, pellejo,
+  TAU, PI, rad, deg, add, envolver, sub, esc, nor, mez, cruz, jit, elegir, ciclo, onda, suelo, rotM, transformar, tenir, cuerpo, CUERPOS, EQUIPOS,
+  roca, pena, prisma, manto, tronco, fuego, brasas, craneo, craneoBestia, huesoLargo, costillar, catenaria, cadena, tela, pellejo, arbolMuerto,
 } from '../actos45';
 
 /**
@@ -23,7 +23,7 @@ MATERIALES.nie2_lana = { rampa: ['#0d0907', '#1a120d', '#281c14', '#36261b', '#4
 MATERIALES.nie2_marfil = { rampa: ['#2b2519', '#463d2a', '#655940', '#857758', '#a39572', '#bdb08e', '#d3c8a9'], ruido: 0.15, escala: 0.5, brillo: 0.3, patron: (p) => (Math.sin((p[0] + p[1]) * 0.9 + p[2] * 0.4) > 0.75 ? -0.06 : 0) };
 MATERIALES.nie2_piedra_runa = { rampa: ['#121316', '#1f2126', '#2e3138', '#3e424a', '#50555d', '#646971', '#797e86'], ruido: 0.4, escala: 0.2, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.3) > 0.72 ? 0.12 : 0) };
 MATERIALES.nie2_humo = { rampa: ['#1a1a1e', '#2a2a30', '#3c3c43', '#505058', '#66666e', '#7c7c84'], ruido: 0.5, escala: 0.3 };
-MATERIALES.nie2_cuervo = { rampa: ['#050506', '#0b0b0e', '#131318', '#1c1c23', '#26262f', '#31313c'], ruido: 0.2, escala: 1.2, brillo: 0.4 };
+MATERIALES.nie2_cuervo = { rampa: ['#07070a', '#101016', '#191a22', '#24262f', '#30333e', '#3e4250', '#4e5466'], ruido: 0.25, escala: 1.4, brillo: 0.6 };
 MATERIALES.nie2_sangre_helada = { rampa: ['#140405', '#24080a', '#350c0f', '#481216', '#5a1a1e'], ruido: 0.3, escala: 0.3, brillo: 0.4 };
 
 const N = 'nie2_nieve';
@@ -158,10 +158,10 @@ registrar(
     armar: (v, _f, a) => {
       const ps: Pieza[] = [], cs: Comp[] = [];
       const L = v === 'duna' ? 40 : 26;
-      for (let i = 0; i < 7; i++) { const t = i / 6 - 0.5, h = (1 - Math.abs(t) * 1.5) * (v === 'ola' ? 11 : 8) + a.r() * 2; cs.push(bulto([t * L * 2, jit(a, 3) - t * 5, 0], [12 + a.r() * 4, 9 + a.r() * 3, Math.max(2, h)], { giro: -15 + jit(a, 10) })); }
+      for (let i = 0; i < 7; i++) { const t = i / 6 - 0.5, h = (1 - Math.abs(t) * 1.5) * (v === 'ola' ? 11 : 8) + a.r() * 2; const bx = 12 + a.r() * 4, by = 9 + a.r() * 3, hz = Math.max(2, h), cz = Math.max(hz, by * 0.6); cs.push(bulto([t * L * 2, jit(a, 3) - t * 5, hz - cz], [bx, by, cz], { giro: -15 + jit(a, 10) })); }
       if (v === 'ola') for (let i = 0; i < 4; i++) cs.push(bulto([-12 + i * 8, -6, 10 + Math.sin(i) * 1.5], [6, 4, 2.2], { giro: -15 }));
       // crestas que talla el viento y piedras que asoman
-      for (let i = 0; i < 5; i++) { const t = jit(a, 0.45), x = t * L * 2, h = (1 - Math.abs(t) * 1.5) * (v === 'ola' ? 11 : 8); cs.push(bulto([x + jit(a, 4), jit(a, 5), Math.max(1, h * 0.85)], [9 + a.r() * 5, 1.4, 1.6], { giro: -15 + jit(a, 8), tono: 0.08 })); }
+      for (let i = 0; i < 5; i++) { const t = jit(a, 0.45), x = t * L * 2, h = (1 - Math.abs(t) * 1.5) * (v === 'ola' ? 11 : 8); cs.push(bulto([x + jit(a, 4), jit(a, 5), Math.max(1, h * 0.85)], [8 + a.r() * 4, 2.6, 2.4], { giro: -15 + jit(a, 8), tono: 0.08 })); }
       ps.push(masa(cs, { mat: N, suave: 5, tono: -0.04 }));
       for (let i = 0; i < 3; i++) ps.push(pena(a, jit(a, L * 1.4), 6 + a.r() * 6, 0.5, 2.5 + a.r() * 2.5, 2 + a.r() * 2, 2 + a.r() * 1.5, { mat: 'nie2_roca' }));
       if (v === 'lanza') {
@@ -214,8 +214,8 @@ registrar(
           // el manto de nieve: bultos chatos siguiendo la pendiente y una cornisa colgando del alero
           const cs: Comp[] = [];
           const sl = Math.atan2(cum - zt + 3, D / 2 + 8);
-          for (let i = 0; i < 5; i++) for (let k = 0; k < 3; k++) { const t = 0.12 + k * 0.36, x = -W / 2 - 2 + (i / 4) * (W + 4), z = zt - 3 + (cum - zt + 3) * t + 1.6 - (hund && (s > 0 || i < 2) ? 12 * t : 0); cs.push(bulto([x + jit(a, 2), s * (D / 2 + 8) * (1 - t), z], [13, 12, 1.8 + a.r() * 1.1], { ejes: [[1, 0, 0], [0, Math.cos(sl), -s * Math.sin(sl)], [0, s * Math.sin(sl), Math.cos(sl)]] })); }
-          for (let i = 0; i < 6; i++) cs.push(bulto([-W / 2 - 5 + (i / 5) * (W + 10), s * (D / 2 + 8.5), zt - 3.2], [9, 2.6, 2.6 + a.r() * 1.2]));
+          for (let i = 0; i < 5; i++) for (let k = 0; k < 3; k++) { const t = 0.12 + k * 0.36, x = -W / 2 - 2 + (i / 4) * (W + 4), z = zt - 3 + (cum - zt + 3) * t + 1.6 - (hund && (s > 0 || i < 2) ? 12 * t : 0); cs.push(bulto([x + jit(a, 2), s * (D / 2 + 8) * (1 - t), z], [12, 10, 3.4 + a.r() * 1.2], { ejes: [[1, 0, 0], [0, Math.cos(sl), -s * Math.sin(sl)], [0, s * Math.sin(sl), Math.cos(sl)]] })); }
+          for (let i = 0; i < 6; i++) cs.push(bulto([-W / 2 - 5 + (i / 5) * (W + 10), s * (D / 2 + 8), zt - 2.6], [8, 3.4, 3.2 + a.r() * 1.2]));
           ps.push(masa(cs, { mat: N, suave: 4 }));
           for (let i = 0; i < 6; i++) if (a.r() < 0.7) ps.push(a.cilindro(-W / 2 + (i / 5) * W + jit(a, 3), s * (D / 2 + 8.5), zt - 6 - 3 - a.r() * 6, 0.15, 3 + a.r() * 6, { mat: 'hielo', r1: 0.9 }));
         }
@@ -531,13 +531,13 @@ registrar(
     armar: (v, f, a) => {
       const ps: Pieza[] = [];
       // la nieve derretida alrededor: barro oscuro y un anillo de nieve sucia
-      ps.push(manto(a, 26, 24, 6, 'nie2_nieve_sucia', 2.5), manto(a, 16, 15, 4, 'tierra', 1.2, { tono: -0.12 }));
+      ps.push(manto(a, 22, 20, 6, 'nie2_nieve_sucia', 2, { tono: -0.25 }), manto(a, 14, 13, 4, 'a45_carbon', 1.2, { tono: 0.05 }));
       let zf = 2, s = 2.2, al = 1;
       if (v !== 'pira') for (let i = 0; i < 9; i++) { const t = (i / 9) * TAU + jit(a, 0.15); ps.push(...roca(a, [Math.cos(t) * 11, Math.sin(t) * 11, 2], [3.4 + a.r(), 2.8, 2.6 + a.r()], { mat: 'nie2_roca', n: 3, facetas: 1 })); }
       if (v === 'pira') {
         for (let i = 0; i < 9; i++) { const t = (i / 9) * TAU + jit(a, 0.2); tronco(a, ps, [Math.cos(t) * 13, Math.sin(t) * 13, 1], [Math.cos(t) * 2, Math.sin(t) * 2, 26 + a.r() * 4], 2.3, { mat: i % 3 ? 'nie2_tronco' : 'a45_carbon', nudos: 0 }); }
         zf = 4; s = 3.2; al = 1.25;
-      } else if (v === 'brasas') { s = 1; al = 0.8; }
+      } else if (v === 'brasas') { s = 1.4; al = 0.7; }
       else for (let i = 0; i < 4; i++) { const t = (i / 4) * TAU + a.r(); tronco(a, ps, [Math.cos(t) * 9, Math.sin(t) * 9, 1.5], [Math.cos(t + PI) * 3, Math.sin(t + PI) * 3, 4], 1.8, { mat: 'a45_carbon', nudos: 0 }); }
       brasas(a, ps, [0, 0, 0.5], v === 'brasas' ? 10 : 8, f, 8);
       fuego(a, ps, [0, 0, zf], s, f, 8, { alto: al, lenguas: v === 'brasas' ? 3 : 5 });
@@ -551,8 +551,9 @@ registrar(
       } else if (v === 'caldero') {
         for (let i = 0; i < 3; i++) { const t = (i / 3) * TAU + 0.3; ps.push(a.palo([Math.cos(t) * 17, Math.sin(t) * 17, 0], [0, 0, 40], 1, { mat: 'madera' })); }
         cadena(a, ps, [[0, 0, 40], [0, 0, 27]], 2.2, 0.45);
-        ps.push(masa([bulto([0, 0, 20], [8, 8, 7]), hueso([0, 0, 24], [0, 0, 27], 7.4, 7)], { mat: 'hierro', suave: 2 }), a.cilindro(0, 0, 26.4, 6.6, 0.8, { mat: 'agua_sucia' }));
-        for (let i = 0; i < 3; i++) { const u = ciclo(f + i * 2.7, 8); ps.push(a.elipsoide(jit(a, 3), jit(a, 3), 29 + u * 16, 2 + u * 4, 2 + u * 4, 1.6 + u * 2, { mat: 'nie2_humo', tono: 0.25 - u * 0.4 })); }
+        ps.push(masa([bulto([0, 0, 20.5], [8.5, 8.5, 6.5]), hueso([0, 0, 22], [0, 0, 27], 8.2, 7.6)], { mat: 'hierro', suave: 1.5 }), a.cilindro(0, 0, 26.6, 8.4, 1, { mat: 'hierro', r1: 8.6, tono: 0.1 }), a.cilindro(0, 0, 26.8, 7.2, 1, { mat: 'agua_sucia', tono: 0.1 }));
+        for (const sg of [-1, 1]) ps.push(a.palo([sg * 7.4, -sg * 7.4, 27], [0, 0, 33], 0.3, { mat: 'hierro' }));
+        for (let i = 0; i < 2; i++) { const u = ciclo(f + i * 4, 8); ps.push(a.elipsoide(jit(a, 2), jit(a, 2), 30 + u * 12, 1.5 + u * 3, 1.5 + u * 3, 1.4 + u * 2, { mat: 'nie2_nieve', tono: -0.1 - u * 0.4 })); }
         cz = 12;
       }
       ps.push(suelo(a));
@@ -635,3 +636,285 @@ registrar(
     },
   },
 );
+
+/** Ahorcado colgando de una soga desde `p` (el nudo queda unos 6 sobre la cabeza). */
+function ahorcado(a: Arma, ps: Pieza[], p: V3, largo: number, cu = CUERPOS.muerto, eq = EQUIPOS.preso, s = 0.95) {
+  const pie = p[2] - largo - 62 * s;
+  ps.push(a.palo(p, add(p, [0, 0, -largo]), 0.35, { mat: 'cuerda' }));
+  ps.push(...cuerpo({ cu, eq, acc: 'herido', f: 1, dir: elegir(a, ['s', 'so', 'se']), m: rotM(0, jit(a, 6), jit(a, 6)), t: [p[0], p[1], pie], s }));
+}
+/** Jaula de hierro colgante (barrotes, aros, fondo), opcionalmente con un esqueleto acurrucado adentro. */
+function jaula(a: Arma, ps: Pieza[], c: V3, r: number, h: number, o: { preso?: 'esqueleto' | 'muerto' | 'vivo'; mat?: string; abierta?: boolean } = {}) {
+  const mat = o.mat ?? 'hierro_oxido', n = 9;
+  ps.push(a.cilindro(c[0], c[1], c[2], r + 0.6, 1.4, { mat }), a.cilindro(c[0], c[1], c[2] + h, r + 0.4, 1.2, { mat }), a.cilindro(c[0], c[1], c[2] + h * 0.5, r + 0.5, 0.9, { mat }));
+  for (let i = 0; i < n; i++) { if (o.abierta && (i === 2 || i === 3)) continue; const t = (i / n) * TAU; ps.push(a.palo([c[0] + Math.cos(t) * r, c[1] + Math.sin(t) * r, c[2]], [c[0] + Math.cos(t) * r * 0.9, c[1] + Math.sin(t) * r * 0.9, c[2] + h], 0.5, { mat })); }
+  for (let i = 0; i < 4; i++) { const t = (i / 4) * TAU + 0.4; ps.push(a.palo([c[0] + Math.cos(t) * r * 0.9, c[1] + Math.sin(t) * r * 0.9, c[2] + h], [c[0], c[1], c[2] + h + r * 0.7], 0.45, { mat })); }
+  if (o.abierta) ps.push(...transformar([a.caja(0, 0, 0, 0.6, r * 0.9, h * 0.9, { mat })], rotM(60), [c[0] + r * 0.5, c[1] + r * 1.2, c[2] + 1]));
+  if (o.preso === 'esqueleto') ps.push(...cuerpo({ cu: CUERPOS.esqueleto, eq: EQUIPOS.nada, acc: 'morir', f: 3, s: (h / 62) * 0.95, t: [c[0], c[1], c[2] + 1.2] }));
+  else if (o.preso) ps.push(...cuerpo({ cu: o.preso === 'vivo' ? CUERPOS.palido : CUERPOS.muerto, eq: EQUIPOS.preso, acc: o.preso === 'vivo' ? 'herido' : 'morir', f: o.preso === 'vivo' ? 2 : 3, s: (h / 62) * (o.preso === 'vivo' ? 0.85 : 0.95), t: [c[0], c[1], c[2] + 1.2] }));
+}
+
+registrar(
+  // ------------------------------------------------------------------ cadáveres en la nieve
+  {
+    id: 'nie2_cadaver', nombre: ['Caído en la nieve', 'Fallen in the snow'], tema: 'nieve', variantes: ['barbaro', 'soldado', 'enterrado', 'cuervos', 'esqueleto', 'congelado'], huella: [2, 2], bloquea: false,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [manto(a, 24, 20, 5, N, 2)];
+      const g = a.r() * 360, dir = elegir(a, ['s', 'so', 'se', 'e'] as const);
+      const [cu, eq] = v === 'soldado' ? [CUERPOS.soldado, EQUIPOS.soldado] : v === 'esqueleto' ? [CUERPOS.esqueleto, EQUIPOS.oxidado] : v === 'congelado' ? [CUERPOS.soldado_moreno, EQUIPOS.soldado_lanza] : [elegir(a, [CUERPOS.barbaro, CUERPOS.barbaro_rubio]), EQUIPOS.barbaro];
+      let cs = cuerpo({ cu, eq: { ...eq, arma: undefined, izq: undefined }, acc: 'morir', f: 7, dir, m: rotM(g) });
+      if (v === 'congelado') cs = hielo(cs);
+      ps.push(...cs);
+      if (v !== 'esqueleto' && v !== 'congelado') ps.push(sangre(a, 10 + jit(a, 4), 12 + jit(a, 4), 9 + a.r() * 4));
+      if (v === 'barbaro') hacha(a, ps, [14, -10, 0.8], [26, -2, 1.2], 1, a.r() < 0.5);
+      if (v === 'soldado') { escudo(a, ps, [-14, 12, 1.4], 7, [0.1, 0.1, 1], ['madera_vieja', 'tela_azul']); ps.push(a.palo([10, -16, 0.8], [22, 4, 1], 0.8, { mat: 'madera' }), a.palo([-20, -4, 0.6], [-8, -10, 0.8], 0.8, { mat: 'madera' })); }
+      if (v === 'esqueleto') { espada(a, ps, [12, 4, 1], [1, 0.4, 0.04], 24, 'hierro_oxido'); }
+      if (v === 'cuervos') { const [lo, hi] = envolver(cs); cuervo(ps, [(lo[0] + hi[0]) / 2 + 2, (lo[1] + hi[1]) / 2 + 2, hi[2] - 2], 200, true, 1.6); cuervo(ps, [hi[0] + 4, (lo[1] + hi[1]) / 2 + 6, 0.5], 200, true, 1.6); cuervo(ps, [lo[0] + 2, hi[1] + 4, 0.5], 330, false, 1.5); }
+      if (v === 'congelado') for (let i = 0; i < 6; i++) ps.push(prisma(a, [jit(a, 14), jit(a, 14), -1], [jit(a, 0.5), jit(a, 0.5), 1], 5 + a.r() * 8, 1.6 + a.r(), 'hielo', 0.1));
+      // la nieve que lo va tapando
+      const n = v === 'enterrado' ? 9 : 3, ns: Comp[] = [], [lo, hi] = envolver(cs);
+      for (let i = 0; i < n; i++) { const x = lo[0] + a.r() * (hi[0] - lo[0]), y = lo[1] + a.r() * (hi[1] - lo[1]); ns.push(bulto([x, y, v === 'enterrado' ? 2 : 1], [9 + a.r() * 5, 8 + a.r() * 4, v === 'enterrado' ? 10 + a.r() * 3 : 3.5], { giro: a.r() * 180 })); }
+      ps.push(masa(ns, { mat: N, suave: 4 }));
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+  // ------------------------------------------------------------------ tienda de pieles
+  {
+    id: 'nie2_tienda', nombre: ['Tienda de pieles', 'Hide tent'], tema: 'nieve', variantes: ['cerrada', 'abierta', 'derrumbada', 'grande'], huella: [4, 4], huellaPor: { grande: [5, 5] }, bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [];
+      const R = v === 'grande' ? 34 : 26, H = v === 'grande' ? 66 : 52;
+      ps.push(manto(a, R + 10, R + 8, 7, N, 3));
+      if (v === 'derrumbada') {
+        for (let i = 0; i < 7; i++) { const t = (i / 7) * TAU + jit(a, 0.3); ps.push(a.palo([Math.cos(t) * 6, Math.sin(t) * 6, 2], [Math.cos(t + 0.3) * (R + 12), Math.sin(t + 0.3) * (R + 12), 1 + a.r() * 3], 1.1, { mat: 'madera' })); }
+        const cs: Comp[] = [];
+        for (let i = 0; i < 8; i++) { const t = a.r() * TAU, d = a.r() * R * 0.8; cs.push(bulto([Math.cos(t) * d, Math.sin(t) * d, 2], [10 + a.r() * 6, 9 + a.r() * 5, 4 + a.r() * 3], { giro: a.r() * 180, mat: elegir(a, ['a45_piel', 'cu_pelaje', 'cu_cuero']) })); }
+        cs.push(bulto([0, 0, 6], [10, 9, 8], { mat: 'a45_piel' }));
+        ps.push(masa(cs, { mat: 'a45_piel', suave: 4 }));
+        for (let i = 0; i < 4; i++) ps.push(a.elipsoide(jit(a, R * 0.6), jit(a, R * 0.6), 6, 7, 6, 2, { mat: N, giro: a.r() * 180 }));
+        ps.push(suelo(a));
+        return ps;
+      }
+      // el cono de cueros cosidos: los parches (otra piel en cada bulto) se funden en la masa
+      const cs: Comp[] = [hueso([0, 0, -2], [0, 0, H], R, 2.5, { mat: 'a45_piel' })];
+      for (let i = 0; i < 14; i++) { const t = a.r() * TAU, z = 4 + a.r() * H * 0.7, rr = R * (1 - z / H) + 1.8 * (1 - z / H) + 0.5; cs.push(bulto([Math.cos(t) * rr * 0.98, Math.sin(t) * rr * 0.98, z], [6 + a.r() * 5, 1.6, 6 + a.r() * 4], { eje: [-Math.sin(t), Math.cos(t), 0], mat: elegir(a, ['cu_pelaje', 'cu_cuero', 'a45_piel', 'cu_pelaje_gris']), k: 0.8 })); }
+      ps.push(masa(cs, { mat: 'a45_piel', suave: 2 }));
+      // costuras de cuerda y los palos que asoman por arriba
+      for (let i = 0; i < 4; i++) { const z = 10 + i * (H * 0.18), rr = R * (1 - z / H) + 2.6 * (1 - z / H) + 0.5; for (let k = 0; k < 10; k++) { const t0 = (k / 10) * TAU, t1 = ((k + 1) / 10) * TAU; ps.push(a.palo([Math.cos(t0) * rr, Math.sin(t0) * rr, z], [Math.cos(t1) * rr, Math.sin(t1) * rr, z], 0.35, { mat: 'cuerda' })); } }
+      for (let i = 0; i < 7; i++) { const t = (i / 7) * TAU + 0.2; ps.push(a.palo([Math.cos(t) * R * 0.95, Math.sin(t) * R * 0.95, 0], [-Math.cos(t) * 5, -Math.sin(t) * 5, H + 12 + a.r() * 6], 1, { mat: 'madera' })); }
+      // la puerta mirando al frente
+      const fd = nor([1, 1, 0]), puerta = (z: number) => R * (1 - z / H);
+      if (v === 'abierta' || v === 'grande') {
+        ps.push(a.poliedro([add(esc(fd, puerta(0) + 0.6), [-6, 6, 0]), add(esc(fd, puerta(0) + 0.6), [6, -6, 0]), add(esc(fd, puerta(26) + 0.8), [0, 0, 26]), add(esc(fd, puerta(0) - 3), [-5, 5, 0]), add(esc(fd, puerta(0) - 3), [5, -5, 0])], { mat: 'negro' }));
+        ps.push(...transformar([pellejo(a, [0, 0, 0], 14, 24, [1, 0, 0], 'cu_pelaje')], rotM(-20), add(esc(fd, puerta(10) + 3), [7, -9, 12])));
+        ps.push(a.elipsoide(...add(esc(fd, puerta(0) - 2), [0, 0, 2]), 3, 3, 2.5, { mat: 'fuego', tono: -0.15 }));
+      } else ps.push(a.poliedro([add(esc(fd, puerta(0) + 1), [-5, 5, 0]), add(esc(fd, puerta(0) + 1), [5, -5, 0]), add(esc(fd, puerta(22) + 1.4), [0, 0, 22]), add(esc(fd, puerta(0) + 2.2), [0, 0, 0])], { mat: 'cu_pelaje_gris' }));
+      // nieve de un lado y en las costuras de arriba
+      const nv: Comp[] = [];
+      for (let i = 0; i < 6; i++) { const t = PI * 0.9 + jit(a, 0.9), z = 3 + a.r() * 14; nv.push(bulto([Math.cos(t) * (R * (1 - z / H) + 2), Math.sin(t) * (R * (1 - z / H) + 2), z], [9, 6, 6], { giro: deg(t) })); }
+      ps.push(masa(nv, { mat: N, suave: 4 }));
+      craneoBestia(a, ps, [0, 0, H + 4], 4, 45, { cuernos: 'carnero' });
+      ps.push(suelo(a));
+      return v === 'abierta' || v === 'grande' ? { piezas: ps, resplandor: { c: add(esc(fd, R - 2), [0, 0, 6]), r: 22, color: '#ff9a40' } } : ps;
+    },
+  },
+  // ------------------------------------------------------------------ leña
+  {
+    id: 'nie2_lena', nombre: ['Leña', 'Firewood'], tema: 'nieve', variantes: ['apilada', 'cubierta', 'tajo', 'troncos'], huella: [2, 1], huellaPor: { tajo: [1, 1], troncos: [3, 2] }, bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [manto(a, 20, 12, 4, N, 2)];
+      if (v === 'apilada' || v === 'cubierta') {
+        for (let k = 0; k < 4; k++) for (let i = 0; i < 5 - k; i++) { const y = -8 + i * 3.8 + k * 1.9, z = 2 + k * 3.3; tronco(a, ps, [-12 + jit(a, 1.5), y, z], [12 + jit(a, 1.5), y, z], 1.9, { mat: 'nie2_tronco', nudos: 0 }); }
+        for (const x of [-14, 14]) for (const y of [-11, 11]) ps.push(a.palo([x, y, 0], [x, y, 16], 1, { mat: 'madera' }));
+        if (v === 'cubierta') { const cs: Comp[] = []; for (let i = 0; i < 5; i++) cs.push(bulto([-10 + i * 5, jit(a, 2), 15 - Math.abs(i - 2) * 0.5], [6, 11, 2.6], { giro: jit(a, 10) })); cs.push(bulto([0, 11, 10], [14, 2, 5]), bulto([0, -11, 10], [14, 2, 5])); ps.push(masa(cs, { mat: 'cu_pelaje', suave: 2 })); ps.push(a.palo([-6, -12, 6], [-6, 12, 6], 0.35, { mat: 'cuerda' })); }
+        ps.push(a.elipsoide(0, 0, v === 'cubierta' ? 17.5 : 15.5, 10, 7, 1.6, { mat: N }));
+      } else if (v === 'tajo') {
+        ps.push(a.cilindro(0, 0, 0, 7, 12, { mat: 'nie2_tronco', r1: 6.4 }), a.cilindro(0, 0, 12, 6.4, 0.5, { mat: 'madera_lisa', tono: 0.1 }));
+        hacha(a, ps, [8, 6, 22], [1, 0, 13], 1.1);
+        for (let i = 0; i < 7; i++) { const t = a.r() * TAU, d = 10 + a.r() * 8; ps.push(a.poliedro([[Math.cos(t) * d, Math.sin(t) * d, 0], [Math.cos(t) * d + 2.4, Math.sin(t) * d + 1, 0], [Math.cos(t) * d + 1, Math.sin(t) * d - 2.4, 0], [Math.cos(t) * d + 0.8, Math.sin(t) * d, 2.4], [Math.cos(t) * d + 1.4, Math.sin(t) * d - 0.4, 2.4]].map((p) => [p[0] + Math.cos(t + 1) * 8, p[1], p[2]] as V3), { mat: 'madera_lisa', tono: 0.06 })); }
+      } else {
+        for (let i = 0; i < 3; i++) tronco(a, ps, [-26 + jit(a, 3), -10 + i * 9, 4.2], [24 + jit(a, 3), -8 + i * 9 + jit(a, 2), 4.2], 4.2 + a.r(), { mat: 'nie2_tronco' });
+        tronco(a, ps, [-18, -6, 12], [16, -2, 12], 3.8, { mat: 'nie2_tronco' });
+        for (let i = 0; i < 3; i++) ps.push(a.elipsoide(-14 + i * 14, -4 + jit(a, 3), 16, 9, 6, 1.6, { mat: N }));
+      }
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+  // ------------------------------------------------------------------ árbol muerto
+  {
+    id: 'nie2_arbol_muerto', nombre: ['Árbol muerto nevado', 'Snowy dead tree'], tema: 'nieve', variantes: ['retorcido', 'alto', 'ahorcado', 'cuervos', 'tocon'], huella: [2, 2], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [manto(a, 24, 20, 5, N, 3)];
+      if (v === 'tocon') {
+        arbolMuerto(a, ps, { H: 18, mat: 'corteza_muerta', cubre: N, ramas: 0, grueso: 2.6 });
+        ps.push(a.cilindro(0, 0, 14, 7, 1, { mat: 'madera_lisa', tono: 0.05 }), a.elipsoide(1, 0, 15.5, 5, 4.5, 1.5, { mat: N }));
+        tronco(a, ps, [8, 4, 4], [40, 16, 5], 4, { mat: 'corteza_muerta' }); ps.push(a.elipsoide(24, 10, 9, 12, 3, 1.4, { mat: N, giro: 20 }));
+      } else {
+        const ramas = arbolMuerto(a, ps, { H: v === 'alto' ? 120 : v === 'ahorcado' ? 112 : 84, mat: 'corteza_muerta', cubre: N, ramas: v === 'alto' ? 9 : 7, torsion: v === 'retorcido' ? 2.2 : 1 });
+        if (v === 'ahorcado') { const bien = ramas.filter((r) => r[0][2] > 72 && r[0][2] < 100); const [p, d] = (bien.length ? bien : ramas).reduce((m, r) => (Math.hypot(r[0][0], r[0][1]) > Math.hypot(m[0][0], m[0][1]) ? r : m)); const q = add(p, nor([d[0], d[1], 0]), 5); ahorcado(a, ps, q, Math.max(3, q[2] - 74)); }
+        if (v === 'cuervos') for (const [p, d] of ramas.slice(0, 4)) cuervo(ps, add(p, [0, 0, 1]), deg(Math.atan2(d[1], d[0])) + 90, false, 1.2);
+      }
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+  // ------------------------------------------------------------------ escudos, lanzas y armas clavadas
+  {
+    id: 'nie2_escudos', nombre: ['Armas en la nieve', 'Weapons in the snow'], tema: 'nieve', variantes: ['muro', 'lanzas', 'campo', 'trofeo'], huella: [4, 2], huellaPor: { trofeo: [1, 1] }, bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [manto(a, v === 'trofeo' ? 14 : 34, v === 'trofeo' ? 12 : 16, 5, N, 2.5)];
+      const pint: [string, string][] = [['madera_vieja', 'tela_roja'], ['madera_vieja', 'tela_azul'], ['madera', 'cu_tela_negra'], ['madera_vieja', 'cu_tela_blanca']];
+      if (v === 'muro') for (let i = 0; i < 5; i++) { const x = -26 + i * 13; ps.push(a.palo([x, -3, 0], [x + jit(a, 1), -3, 26], 1, { mat: 'madera' })); escudo(a, ps, [x, 0, 13 + jit(a, 1.5)], 7.5, [0.25 + jit(a, 0.1), 1, 0.15], elegir(a, pint)); }
+      else if (v === 'lanzas') for (let i = 0; i < 7; i++) { const b: V3 = [-28 + i * 9 + jit(a, 2), jit(a, 8), -2], d = nor([jit(a, 0.35), jit(a, 0.35), 1]), q = add(b, d, 52 + a.r() * 12); ps.push(a.palo(b, q, 0.8, { mat: 'madera' }), a.poliedro([add(q, [-0.9, 0, 0]), add(q, [0.9, 0, 0]), add(q, [0, -0.9, 0]), add(q, [0, 0.9, 0]), add(q, d, 7)], { mat: 'hierro' })); if (a.r() < 0.4) ps.push(a.caja(...add(q, [0, 3, -6]), 0.4, 6, 9, { mat: 'tela_roja', tono: -0.1 })); }
+      else if (v === 'campo') {
+        for (let i = 0; i < 4; i++) espada(a, ps, [-24 + i * 15 + jit(a, 3), jit(a, 8), -3], [jit(a, 0.4), jit(a, 0.4), 1], 24 + a.r() * 6, elegir(a, ['acero', 'hierro_oxido']));
+        hacha(a, ps, [6, 10, -2], [9, 8, 18], 1, true);
+        escudo(a, ps, [-12, 10, 1.4], 7, [0.2, 0.1, 1], elegir(a, pint)); casco(a, ps, [16, -8, 0], a.r() < 0.5);
+        craneo(a, ps, [22, 6, 3], 2.8, 30, { incl: 20 });
+      } else {
+        ps.push(a.palo([0, 0, -2], [0, 0, 62], 1.6, { mat: 'madera' }), a.palo([-1, 1, 44], [1, -1, 44], 1, { mat: 'madera' }));
+        escudo(a, ps, [1.5, 1.5, 36], 9, [1, 1, 0.1], elegir(a, pint));
+        hacha(a, ps, [-6, -6, 26], [7, 7, 54], 1.1); hacha(a, ps, [7, -7, 26], [-6, 6, 54], 1.1);
+        casco(a, ps, [0, 0, 60], true, 'hierro');
+        ps.push(pellejo(a, [-2, -2, 40], 26, 22, [1, 1, 0], 'cu_pelaje'));
+      }
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+);
+
+registrar(
+  // ------------------------------------------------------------------ hitos de piedra
+  {
+    id: 'nie2_hito', nombre: ['Hito de piedras', 'Stone cairn'], tema: 'nieve', variantes: ['pila', 'craneo', 'caido', 'cuernos', 'senal'], huella: [1, 1], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [manto(a, 14, 12, 4, N, 2.5)];
+      if (v === 'caido') { for (let i = 0; i < 8; i++) { const t = a.r() * TAU, d = a.r() * 12; ps.push(pena(a, Math.cos(t) * d, Math.sin(t) * d, 2, 3.5 + a.r() * 2.5, 3 + a.r() * 2, 2.6 + a.r() * 1.5, { mat: 'nie2_roca' })); } ps.push(pena(a, -2, -2, 4, 7, 6, 4, { mat: 'nie2_roca' })); }
+      else {
+        let z = 3, r = 8;
+        const n = v === 'senal' ? 4 : 5 + Math.floor(a.r() * 2);
+        for (let i = 0; i < n; i++) { ps.push(pena(a, jit(a, 1), jit(a, 1), z, r, r * 0.85, 3.4 + a.r(), { mat: 'nie2_roca', tono: jit(a, 0.06), n: 9 })); if (a.r() < 0.5) ps.push(a.elipsoide(jit(a, 2), jit(a, 2), z + 3, r * 0.5, r * 0.45, 1.2, { mat: N })); z += 5.6; r *= 0.84; }
+        if (v === 'craneo') craneo(a, ps, [0, 0, z - 1], 3.4, 45, { incl: -5 });
+        if (v === 'cuernos') craneoBestia(a, ps, [0, 0, z + 1], 4, 45, { cuernos: elegir(a, ['carnero', 'ciervo', 'toro'] as const) });
+        if (v === 'senal') { ps.push(a.palo([0, 0, z - 6], [0, 0, z + 34], 1, { mat: 'madera' })); ps.push(a.caja(0, 2, z + 22, 0.5, 6, 12, { mat: 'tela_roja', giro: jit(a, 10), tono: -0.15 }), a.caja(0, 4.6, z + 18, 0.5, 2, 9, { mat: 'tela_roja', giro: 20, tono: -0.2 })); for (const k of [-1, 1]) { ps.push(a.palo([0, 0, z + 31], [k * 2, -k * 2, z + 27], 0.25, { mat: 'cuerda' })); craneo(a, ps, [k * 2, -k * 2, z + 23], 1.6, 45 + k * 40); } }
+        if (v === 'pila') ps.push(a.elipsoide(0, 0, z - 1.5, 3, 3, 1.4, { mat: N }));
+      }
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+  // ------------------------------------------------------------------ osamentas de bestias grandes
+  {
+    id: 'nie2_osamenta', nombre: ['Osamenta de bestia', 'Great beast bones'], tema: 'nieve', variantes: ['costillar', 'craneo', 'columna', 'completa'], huella: [4, 3], huellaPor: { completa: [6, 4] }, bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [manto(a, v === 'completa' ? 54 : 34, 26, 7, N, 4)];
+      const g = jit(a, 25);
+      if (v === 'costillar' || v === 'completa') costillar(a, ps, [v === 'completa' ? -8 : 0, 0, 22], v === 'completa' ? 54 : 40, 20, g, { alto: 22, n: v === 'completa' ? 9 : 7, grueso: 1.6, rotas: 0.25 });
+      if (v === 'craneo' || v === 'completa') craneoBestia(a, ps, v === 'completa' ? [34, 2, 8] : [0, 0, 9], v === 'completa' ? 9 : 11, g + 10, { cuernos: elegir(a, ['toro', 'demonio', 'carnero'] as const), colmillos: true, incl: 20 });
+      if (v === 'columna') {
+        let p: V3 = [-30, -8, 3];
+        for (let i = 0; i < 12; i++) { const q: V3 = add(p, [5.4, 1.4 + Math.sin(i * 0.6) * 1.2, Math.sin(i * 0.5) * 0.8]); ps.push(masa([bulto(p, [2.6, 3, 3]), hueso(p, add(p, [0, 0, 5]), 1.1, 0.6), hueso(p, add(p, [0, 4, 1]), 0.9, 0.4), hueso(p, add(p, [0, -4, 1]), 0.9, 0.4)], { mat: 'hueso', suave: 1 })); p = q; }
+        craneoBestia(a, ps, add(p, [6, 2, 4]), 6, 20, { cuernos: 'demonio' });
+      }
+      for (let i = 0; i < 4; i++) { const p: V3 = [jit(a, 30), 16 + jit(a, 10), 1.5], q = add(p, [jit(a, 14), jit(a, 8), 0.5]); huesoLargo(ps, p, q, 1.8); }
+      // la nieve que entra entre las costillas
+      for (let i = 0; i < 4; i++) ps.push(a.elipsoide(jit(a, 24), jit(a, 10), 4, 10, 7, 4, { mat: N, giro: a.r() * 180, tono: -0.05 }));
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+  // ------------------------------------------------------------------ secadero
+  {
+    id: 'nie2_secadero', nombre: ['Secadero', 'Drying rack'], tema: 'nieve', variantes: ['pieles', 'pescado', 'carne', 'vacio'], huella: [3, 1], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [manto(a, 28, 12, 5, N, 2.5)];
+      for (const x of [-22, 22]) { ps.push(a.palo([x, -6, 0], [x, 0, 40], 1.2, { mat: 'madera' }), a.palo([x, 6, 0], [x, 0, 40], 1.2, { mat: 'madera' })); }
+      ps.push(a.palo([-26, 0, 39], [26, 0, 39 + jit(a, 1)], 1.1, { mat: 'madera' }), a.palo([-23, 0, 20], [23, 0, 20], 0.8, { mat: 'madera' }));
+      ps.push(a.elipsoide(0, 0, 40.6, 22, 1.6, 1.1, { mat: N }));
+      if (v === 'pieles') for (let i = 0; i < 3; i++) ps.push(pellejo(a, [-14 + i * 14, 1.4, 27], 12 + a.r() * 3, 20, [jit(a, 0.2), 1, 0], elegir(a, ['a45_piel', 'cu_pelaje', 'cu_pelaje_gris'])));
+      else if (v === 'pescado') for (let i = 0; i < 9; i++) { const x = -19 + i * 4.6, z = 39 - 6 - a.r() * 3; ps.push(a.palo([x, 0, 38.5], [x, 0, z + 1], 0.2, { mat: 'cuerda' }), masa([bulto([x, 0, z - 4], [1.6, 0.9, 5]), hueso([x, 0, z - 8.5], [x + 1.2, 0, z - 11], 0.6, 0.2)], { mat: 'acero', suave: 0.8, tono: -0.1 })); }
+      else if (v === 'carne') for (let i = 0; i < 5; i++) { const x = -16 + i * 8, z = 39 - 4; ps.push(a.palo([x, 0, 38.5], [x, 0, z], 0.3, { mat: 'hierro' }), masa([bulto([x, 0, z - 6], [3.4, 2.6, 6]), bulto([x + 1, 0.5, z - 11], [2.4, 2, 3])], { mat: elegir(a, ['carne', 'cu_cuero']), suave: 1.5 })); if (a.r() < 0.5) ps.push(sangre(a, x, 2, 3)); }
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+  // ------------------------------------------------------------------ el gran cuerno de guerra
+  {
+    id: 'nie2_cuerno', nombre: ['Cuerno de guerra', 'Great war horn'], tema: 'nieve', variantes: ['soporte', 'colgado', 'caido'], huella: [4, 2], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [manto(a, 32, 16, 5, N, 3)];
+      const cuerno = (b: V3, fw: V3, up: V3, L: number) => {
+        const cs: Comp[] = [], pts: V3[] = [];
+        for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push(add(add(b, fw, L * t), up, Math.sin(t * PI * 0.9) * L * 0.22 + t * t * L * 0.15)); }
+        for (let i = 0; i < 8; i++) { const t0 = i / 8, t1 = (i + 1) / 8; cs.push(hueso(pts[i], pts[i + 1], 1.3 + t0 * t0 * 6.5, 1.3 + t1 * t1 * 6.5)); }
+        ps.push(masa(cs, { mat: 'nie2_marfil', suave: 1 }));
+        for (const t of [0.3, 0.6, 0.85]) { const i = Math.round(t * 8), r = 1.3 + t * t * 6.5 + 0.5; ps.push(a.cilindro(...pts[i], r, 1.6, { mat: 'bronce', eje: sub(pts[Math.min(8, i + 1)], pts[i]) })); }
+        ps.push(a.cilindro(...pts[8], 8.3, 0.8, { mat: 'negro', eje: sub(pts[8], pts[7]) }), a.palo(add(pts[0], fw, -3), pts[0], 0.8, { mat: 'bronce' }));
+        return pts;
+      };
+      if (v === 'soporte') {
+        for (const x of [-12, 14]) { ps.push(a.palo([x, -8, 0], [x, 0, 26], 1.2, { mat: 'madera' }), a.palo([x, 8, 0], [x, 0, 26], 1.2, { mat: 'madera' })); }
+        const pts = cuerno([-28, 0, 24], [1, 0, 0], [0, 0, 1], 56);
+        ps.push(a.palo([-12, 0, 26], [-12, 0, pts[2][2] - 2], 0.5, { mat: 'cuerda' }), a.palo([14, 0, 26], [14, 0, pts[5][2] - 6], 0.5, { mat: 'cuerda' }));
+        ps.push(a.elipsoide(0, 0, pts[4][2] + 6, 10, 4, 1.6, { mat: N }));
+      } else if (v === 'colgado') {
+        for (const x of [-22, 22]) tronco(a, ps, [x, 0, -2], [x, 0, 52], 2.4, { mat: 'nie2_tronco', nudos: 1 });
+        tronco(a, ps, [-26, 0, 50], [26, 0, 50], 2.2, { mat: 'nie2_tronco' });
+        const pts = cuerno([-24, 0, 28], [1, 0, 0], [0, 0, 1], 50);
+        for (const i of [1, 6]) ps.push(a.palo([pts[i][0], 0, 49], pts[i], 0.4, { mat: 'cuerda' }));
+        ps.push(a.elipsoide(0, 0, 52.4, 22, 2, 1.2, { mat: N }));
+      } else {
+        const pts = cuerno([-28, -2, 2], [1, 0.1, 0], [0, 0.2, 0.6], 56);
+        ps.push(manto(a, 14, 10, 4, N, 6, { x: 4, y: -6 }), a.elipsoide(pts[6][0], pts[6][1], pts[6][2] + 5, 6, 4, 2, { mat: N }));
+        void pts;
+      }
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+  // ------------------------------------------------------------------ braseros de hierro
+  {
+    id: 'nie2_brasero', nombre: ['Brasero bárbaro', 'Barbarian brazier'], tema: 'nieve', variantes: ['tripode', 'cuenco', 'jaula', 'poste'], cuadros: 8, t: 3, huella: [1, 1], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [manto(a, 13, 12, 4, 'nie2_nieve_sucia', 2, { tono: -0.15 })];
+      let zf = 30;
+      if (v === 'tripode') { for (let i = 0; i < 3; i++) { const t = (i / 3) * TAU + 0.5; ps.push(a.palo([Math.cos(t) * 9, Math.sin(t) * 9, 0], [Math.cos(t) * 3, Math.sin(t) * 3, 28], 0.9, { mat: 'hierro' })); } ps.push(masa([bulto([0, 0, 29], [7, 7, 3.4]), hueso([0, 0, 29], [0, 0, 32], 7, 7.4)], { mat: 'hierro', suave: 1 })); zf = 31; }
+      else if (v === 'cuenco') { ps.push(...roca(a, [0, 0, 5], [8, 7, 6], { mat: 'nie2_roca', n: 4 }), masa([bulto([0, 0, 13], [9, 9, 3.8]), hueso([0, 0, 13], [0, 0, 16], 9, 9.6)], { mat: 'hierro_oxido', suave: 1 })); zf = 15; }
+      else if (v === 'jaula') { ps.push(a.cilindro(0, 0, 0, 5, 3, { mat: 'hierro', r1: 3 }), a.palo([0, 0, 3], [0, 0, 28], 1.4, { mat: 'hierro' })); for (let i = 0; i < 7; i++) { const t = (i / 7) * TAU; ps.push(a.palo([Math.cos(t) * 3, Math.sin(t) * 3, 26], [Math.cos(t) * 7, Math.sin(t) * 7, 38], 0.6, { mat: 'hierro' })); } ps.push(a.cilindro(0, 0, 26, 4, 2, { mat: 'hierro' })); zf = 28; }
+      else { tronco(a, ps, [0, 0, -2], [0, 0, 36], 2.6, { mat: 'nie2_tronco', nudos: 1 }); craneoBestia(a, ps, [0, 0, 23], 3.4, 45, { cuernos: 'carnero' }); ps.push(masa([bulto([0, 0, 37], [6, 6, 2.6]), hueso([0, 0, 37], [0, 0, 39.5], 6, 6.6)], { mat: 'hierro', suave: 1 })); zf = 39; }
+      brasas(a, ps, [0, 0, zf - 1], 5, f, 8);
+      fuego(a, ps, [0, 0, zf], 1.5, f, 8, { lenguas: 4 });
+      ps.push(suelo(a));
+      return { piezas: ps, resplandor: { c: [0, 0, zf + 4], r: 46, color: '#ff8a30' } };
+    },
+  },
+  // ------------------------------------------------------------------ horca
+  {
+    id: 'nie2_horca', nombre: ['Horca', 'Gibbet'], tema: 'nieve', variantes: ['vacia', 'ahorcado', 'jaula', 'doble'], huella: [2, 2], bloquea: true,
+    armar: (v, _f, a) => {
+      const ps: Pieza[] = [manto(a, 18, 16, 5, N, 3)];
+      for (let i = 0; i < 5; i++) { const t = (i / 5) * TAU + a.r(); ps.push(pena(a, Math.cos(t) * 6, Math.sin(t) * 6, 2, 3 + a.r() * 2, 2.6, 3, { mat: 'nie2_roca' })); }
+      const H = 86;
+      tronco(a, ps, [0, 0, -2], [0, 0, H], 3, { mat: 'nie2_tronco', nudos: 2 });
+      const brazos: V3[] = v === 'doble' ? [[1, 1, 0], [-1, -1, 0]] : [[1, 1, 0]];
+      for (const b of brazos) {
+        const d = nor(b), p: V3 = add([0, 0, H - 4], d, 28);
+        tronco(a, ps, add([0, 0, H - 4], d, -3), p, 2.3, { mat: 'nie2_tronco' });
+        ps.push(a.palo(add([0, 0, H - 24], d, 1.5), add([0, 0, H - 4], d, 16), 1.4, { mat: 'nie2_tronco' }));
+        ps.push(a.elipsoide(...add([0, 0, H - 1], d, 14), 14, 2, 1.2, { mat: N, giro: deg(Math.atan2(d[1], d[0])) }));
+        const q = add(p, d, -3);
+        if (v === 'vacia') { ps.push(a.palo(q, add(q, [0, 0, -14]), 0.35, { mat: 'cuerda' })); ps.push(...transformar([a.cilindro(0, 0, 0, 2.6, 0.7, { mat: 'cuerda', eje: [1, -1, 0] })], rotM(0), add(q, [0, 0, -16.5]))); }
+        else if (v === 'jaula') { cadena(a, ps, [q, add(q, [0, 0, -12])], 2.4, 0.5); jaula(a, ps, add(q, [0, 0, -52]), 9, 38, { preso: 'esqueleto' }); }
+        else ahorcado(a, ps, q, 8, elegir(a, [CUERPOS.muerto, CUERPOS.palido]), EQUIPOS.preso, 0.92);
+      }
+      craneo(a, ps, [0, 0, H + 3.6], 3, 45);
+      ps.push(suelo(a));
+      return ps;
+    },
+  },
+);
+
+conVarianteY('nie2_empalizada');

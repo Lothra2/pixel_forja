@@ -205,8 +205,9 @@ export function manto(a: Arma, rx: number, ry: number, n: number, mat: string, a
   const cs: Comp[] = [];
   for (let i = 0; i < n; i++) {
     const t = a.r() * TAU, q = Math.sqrt(a.r()) * 0.6;
-    const m = Math.min(rx, ry);
-    cs.push(bulto([(o.x ?? 0) + Math.cos(t) * rx * q, (o.y ?? 0) + Math.sin(t) * ry * q, 0], [m * 0.4 + rx * (0.25 + a.r() * 0.2), m * 0.4 + ry * (0.25 + a.r() * 0.2), alto * (0.5 + a.r() * 0.6)], { giro: jit(a, 12) }));
+    // el bulto se hunde bajo el piso: solo asoma su casquete (un elipsoide muy chato se pinta mal en la masa)
+    const m = Math.min(rx, ry), bx = m * 0.4 + rx * (0.25 + a.r() * 0.2), by = m * 0.4 + ry * (0.25 + a.r() * 0.2), h = alto * (0.5 + a.r() * 0.6), cz = Math.max(h, 0.55 * Math.min(bx, by));
+    cs.push(bulto([(o.x ?? 0) + Math.cos(t) * rx * q, (o.y ?? 0) + Math.sin(t) * ry * q, h - cz], [bx * (cz > h ? 1.08 : 1), by * (cz > h ? 1.08 : 1), cz], { giro: jit(a, 12) }));
   }
   return masa(cs, { mat, tono: o.tono ?? -0.06, suave: Math.min(rx, ry) * 0.3 });
 }
@@ -413,4 +414,34 @@ export function pellejo(a: Arma, c: V3, ancho: number, alto: number, normal: V3,
   for (const s of [-1, 1]) for (const t of [-1, 1]) cs.push(hueso(P(s * ancho * 0.25, t * alto * 0.28), P(s * ancho * 0.5, t * alto * 0.5 + jit(a, 2)), 1.6, 0.8));
   cs.push(hueso(P(0, alto * 0.38), P(jit(a, 2), alto * 0.55), 2.2, 1.6), hueso(P(0, -alto * 0.38), P(jit(a, 2), -alto * 0.6), 1.4, 0.4));
   return masa(cs, { mat, suave: 2 });
+}
+
+// ------------------------------------------------------------------ árbol muerto
+export interface OpcArbol { H: number; mat: string; cubre?: string; brasa?: string; ramas?: number; x?: number; y?: number; torsion?: number; grueso?: number }
+/**
+ * Árbol muerto de masa: tronco que se tuerce, raíces que agarran el piso, ramas en dos tramos con ramitas, nieve (o
+ * ceniza) fundida encima de cada rama y vetas encendidas si `brasa`. Devuelve los puntos de las ramas (para colgar
+ * cosas o posar cuervos) como [punto, dirección].
+ */
+export function arbolMuerto(a: Arma, ps: Pieza[], o: OpcArbol): [V3, V3][] {
+  const x0 = o.x ?? 0, y0 = o.y ?? 0, H = o.H, tor = o.torsion ?? 1, r0 = (o.grueso ?? 1) * (H * 0.045 + 2), cs: Comp[] = [], ramas: [V3, V3][] = [];
+  const fx = a.r() * TAU, fy = a.r() * TAU;
+  const eje = (t: number): V3 => [x0 + Math.sin(t * 2.6 * tor + fx) * H * 0.07 * t, y0 + Math.sin(t * 2.1 * tor + fy) * H * 0.07 * t, H * t];
+  for (let i = 0; i < 5; i++) cs.push(hueso(eje((i / 5) * 0.8), eje(((i + 1) / 5) * 0.8), r0 * (1 - (i / 5) * 0.65), r0 * (1 - ((i + 1) / 5) * 0.65)));
+  for (let k = 0; k < 6; k++) { const an = (k / 6) * TAU + a.r() * 0.6, L = r0 * (2.4 + a.r() * 1.6); cs.push(hueso([x0 + Math.cos(an) * r0 * 0.4, y0 + Math.sin(an) * r0 * 0.4, r0 * 0.9], [x0 + Math.cos(an) * L, y0 + Math.sin(an) * L, -1], r0 * 0.5, r0 * 0.14)); }
+  const n = o.ramas ?? 7;
+  for (let i = 0; i < n; i++) {
+    const t = 0.42 + (i / n) * 0.42 + jit(a, 0.03), b = eje(t), an = (i * 2.4 + a.r() * 0.8) % TAU, L = H * (0.3 + a.r() * 0.18) * (1.1 - t * 0.4);
+    const d1: V3 = nor([Math.cos(an), Math.sin(an), 0.55 + a.r() * 0.5]), m = add(b, d1, L * 0.55);
+    const d2: V3 = nor(add(d1, [jit(a, 0.5), jit(a, 0.5), 0.3])), q = add(m, d2, L * 0.45);
+    const rb = r0 * (0.5 - t * 0.25);
+    cs.push(hueso(b, m, rb, rb * 0.55), hueso(m, q, rb * 0.55, 0.4));
+    for (let k = 0; k < 2; k++) { const w = mez(b, q, 0.55 + k * 0.25), dd = nor(add(d2, [jit(a, 0.9), jit(a, 0.9), 0.5])); cs.push(hueso(w, add(w, dd, L * 0.22), rb * 0.3, 0.3)); }
+    if (o.cubre) { const sl = Math.max(0.6, rb * 0.55); cs.push(bulto(add(mez(b, m, 0.55), [0, 0, rb * 0.75]), [L * 0.2, sl * 1.4, sl], { eje: [d1[0], d1[1], d1[2] * 0.4], mat: o.cubre, k: 0.6 })); }
+    ramas.push([mez(b, m, 0.7), d1]);
+  }
+  if (o.cubre) for (let i = 0; i < 3; i++) { const t = 0.5 + i * 0.15, c = eje(t); cs.push(bulto(add(c, [jit(a, r0 * 0.3), jit(a, r0 * 0.3), r0 * 0.3]), [r0 * 0.5, r0 * 0.45, r0 * 0.35], { mat: o.cubre })); }
+  if (o.brasa) for (let i = 0; i < 9; i++) { const t = 0.05 + a.r() * 0.6, c = eje(t), an = a.r() * TAU, rr = r0 * (1 - t * 0.65); cs.push(bulto(add(c, [Math.cos(an) * rr * 0.92, Math.sin(an) * rr * 0.92, 0]), [rr * 0.22, rr * 0.22, rr * 0.6 + 1], { mat: o.brasa, k: 0.3 })); }
+  ps.push(masa(cs, { mat: o.mat, suave: Math.max(1.2, r0 * 0.35) }));
+  return ramas;
 }

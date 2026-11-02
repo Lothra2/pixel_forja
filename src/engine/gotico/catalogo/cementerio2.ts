@@ -1,7 +1,7 @@
 import { registrar, conVarianteY, type Pieza, type V3 } from '../objeto';
 import {
-  G, raiz, bloque, ojiva, altoOjiva, letras, grieta, tierra, monticulo, matas, musgo, hiedra, cascotes, calavera, huesoLargo, huesos, huesito,
-  esqueleto, costillar, mirar, vela, llama, cadena, voluta, punta, cuervo, arbolMuerto, figuraVelada, rr, elegir, onda, GR, type P2,
+  G, raiz, bloque, ojiva, altoOjiva, letras, grieta, tierra, monticulo, matas, musgo, hiedra, cascotes, calavera, huesos, huesito,
+  esqueleto, mirar, vela, llama, cadena, voluta, punta, cuervo, arbolMuerto, figuraVelada, rr, elegir, onda, GR, type P2,
 } from '../kit_muerte';
 
 /**
@@ -683,7 +683,7 @@ obj('cem2_cerco_parcela', ['Parcela cercada', 'Fenced family plot'], ['con_lapid
   else matas(g, 5, X + 2, Y + 2);
 });
 /** Jaula de hierro sobre la tumba (para que no se roben el muerto... o para que no salga). */
-obj('cem2_jaula_tumba', ['Jaula de tumba', 'Mortsafe grave cage'], ['cerrada', 'forzada', 'oxidada', 'con_cadenas'], [2, 3], true, (v, _f, g, a) => {
+obj('cem2_jaula_tumba', ['Jaula de tumba', 'Mortsafe grave cage'], ['cerrada', 'forzada', 'oxidada', 'con_cadenas'], [2, 3], true, (v, _f, g) => {
   const mh = v === 'oxidada' ? 'mu_oxido' : 'mu_hierro', X = 10, Y = 19, H = 16;
   monticulo(g, X + 2, Y + 2, 3.6, 'mu_tierra', 4, 0, 0, 6);
   bloque(g, 0, -Y - 3, 0, 2 * X + 6, 5, 4, { mat: 'mu_piedra', b: 0.8, j: 0.6 });
@@ -777,15 +777,16 @@ obj('cem2_tocon_raices', ['Tocón que abraza la tumba', 'Stump strangling a tomb
     else { bloque(s, 0, 0, 0, 3.6, 3.6, 24, { mat: m, b: 0.5, j: 0.4 }); bloque(s, 0, 0, 15, 13, 3.6, 3.6, { mat: m, b: 0.5, j: 0.4 }); }
   }
   const cs = [], gr = 9 + a.r() * 2, h = 18 + a.r() * 10;
-  cs.push(g.hu([-6, -6, -2], [-6, -6, h], gr, gr * 0.8));
-  for (let i = 0; i < 6; i++) cs.push(g.hu([-6, -6, h], [-6 + rr(a, -3, 3), -6 + rr(a, -3, 3), h + 3 + a.r() * 6], gr * 0.3, 0.6));
+  g.cil(-6, -6, 0, gr * 1.05, h, { mat: 'mu_corteza', r1: gr * 0.85 });
+  for (let i = 0; i < 6; i++) { const an = a.r() * 6.28; cs.push(g.hu([-6 + Math.cos(an) * gr * 0.6, -6 + Math.sin(an) * gr * 0.6, h - 2], [-6 + Math.cos(an) * gr * 0.7, -6 + Math.sin(an) * gr * 0.7, h + 2 + a.r() * 6], gr * 0.18, 0.4)); }
+  for (let i = 0; i < 5; i++) { const an = (i / 5) * 6.28 + a.r(); cs.push(g.hu([-6 + Math.cos(an) * gr, -6 + Math.sin(an) * gr, 1], [-6 + Math.cos(an) * gr * 0.9, -6 + Math.sin(an) * gr * 0.9, h * (0.4 + a.r() * 0.4)], gr * 0.3, gr * 0.15)); }
   for (let i = 0; i < 7; i++) {
     const an = (i / 7) * 6.28 + a.r() * 0.5, L = 14 + a.r() * 10;
     const m1: V3 = [-6 + Math.cos(an) * gr * 1.1, -6 + Math.sin(an) * gr * 1.1, 4], m2: V3 = [-6 + Math.cos(an + 0.4) * L, -6 + Math.sin(an + 0.4) * L, 2.4 + a.r() * 3];
     cs.push(g.hu([-6, -6, 9], m1, gr * 0.45, gr * 0.3), g.hu(m1, m2, gr * 0.3, 1), g.hu(m2, [m2[0] + Math.cos(an + 1) * 7, m2[1] + Math.sin(an + 1) * 7, -0.5], 1, 0.4));
   }
   g.masa(cs, { mat: 'mu_corteza', suave: 2.4 });
-  g.elip(-6, -6, h + 0.6, gr * 0.7, gr * 0.7, 1, { mat: 'madera_vieja', tono: 0.1 });
+  g.cil(-6, -6, h - 0.2, gr * 0.75, 0.6, { mat: 'madera_vieja', tono: 0.1 }); for (let i = 1; i < 4; i++) g.cil(-6, -6, h + 0.1, gr * 0.75 * (i / 4), 0.6, { mat: 'madera_vieja', tono: -0.1 + (i % 2) * 0.15 });
   if (v === 'con_hongos') for (let i = 0; i < 9; i++) { const an = a.r() * 6.28, z = rr(a, 2, h - 2); const r = gr * 0.85; g.elip(-6 + Math.cos(an) * r, -6 + Math.sin(an) * r, z, 2.4, 2.4, 0.9, { mat: 'hongo', tono: (a.r() - 0.5) * 0.2, incl: 10 }); }
   else musgo(g, 4, -12, 0, 2, 2, h, 'mu_musgo');
   matas(g, 6, 15, 13);
@@ -812,7 +813,7 @@ function corona(g: G, R: number) {
 obj('cem2_corona_marchita', ['Corona de flores marchitas', 'Withered funeral wreath'], ['en_atril', 'en_piso', 'apoyada', 'podrida'], [1, 1], false, (v, _f, g, a) => {
   tierra(g, 9, 9, 2);
   if (v === 'en_atril') {
-    const s = g.sub(0, 0, 0, 30 + a.r() * 30);
+    const s = g.sub(0, 0, 0, -45 + (a.r() - 0.5) * 30);
     for (const [x, y] of [[-5, -2], [5, -2], [0, 4]] as P2[]) s.palo([x, y, 0], [0, -0.4, 26], 0.6, { mat: elegir(a, ['mu_madera', 'mu_hierro']) });
     corona(s.sub(0, 1.4, 19), 7.5);
   } else if (v === 'apoyada') {
@@ -855,7 +856,7 @@ obj('cem2_parca', ['Estatua de la muerte', 'Grim reaper statue'], ['guadana', 'r
     const gu = f.sub(3, 5.5, 0);
     gu.palo([0, 0, 0], [0.5, 0, zh + 14], 0.8, { mat: 'mu_madera', tono: -0.05 });
     const hoja: V3[] = []; for (let i = 0; i <= 6; i++) { const t = i / 6; hoja.push([0.5 - Math.sin(t * 1.8) * 12, Math.cos(t * 1.2) * 2 - 2, zh + 14 - t * 5 + Math.sin(t * 3) * 1.5]); }
-    for (let i = 0; i < 6; i++) gu.poli([[hoja[i][0], hoja[i][1] - 0.3, hoja[i][2]], [hoja[i + 1][0], hoja[i + 1][1] - 0.3, hoja[i + 1][2]], [hoja[i][0], hoja[i][1] + 0.3, hoja[i][2]], [hoja[i + 1][0], hoja[i + 1][1] + 0.3, hoja[i + 1][2]], [hoja[i][0] * 0.96, hoja[i][1], hoja[i][2] - 3 * (1 - i / 6)], [hoja[i + 1][0] * 0.96, hoja[i + 1][1], hoja[i + 1][2] - 3 * (1 - (i + 1) / 6)]], { mat: 'mu_hierro', tono: 0.1 });
+    for (let i = 0; i < 6; i++) gu.poli([[hoja[i][0], hoja[i][1] - 0.5, hoja[i][2]], [hoja[i + 1][0], hoja[i + 1][1] - 0.5, hoja[i + 1][2]], [hoja[i][0], hoja[i][1] + 0.5, hoja[i][2]], [hoja[i + 1][0], hoja[i + 1][1] + 0.5, hoja[i + 1][2]], [hoja[i][0] * 0.96, hoja[i][1], hoja[i][2] - 5 * (1 - i / 6)], [hoja[i + 1][0] * 0.96, hoja[i + 1][1], hoja[i + 1][2] - 5 * (1 - (i + 1) / 6)]], { mat: 'acero', tono: -0.1 });
   } else { f.palo([3, 5.5, 0], [3.2, 5.5, zh - 10], 0.8, { mat: m }); const p = g.sub(13, 8, 1, 30, 88, 'x'); p.palo([0, 0, 0], [0, 0, 20], 0.8, { mat: m }); cascotes(g, 5, 9, 7, m, 10, 6, 2); }
   if (v === 'reloj') { const r = f.sub(5.5, -2.4, zh - 13); r.cil(0, 0, 0, 1.8, 0.6, { mat: 'mu_bronce' }); r.cil(0, 0, 0.6, 1.5, 2.2, { mat: 'vidrio', r1: 0.3 }); r.cil(0, 0, 2.8, 0.3, 2.2, { mat: 'vidrio', r1: 1.5 }); r.cil(0, 0, 5, 1.8, 0.6, { mat: 'mu_bronce' }); r.cil(0, 0, 0.6, 1.2, 1, { mat: 'arena', r1: 0.5 }); }
   if (v === 'alas') for (const sg of [-1, 1]) ala(f, sg, zh + 2, m, 1.3);
@@ -871,7 +872,7 @@ obj('cem2_osario_aire', ['Osario al aire libre', 'Open-air ossuary'], ['techado'
     for (let i = -3; i <= 3; i++) s.caja(i * 6, -6, 0, 6, 2, 40, { mat: 'mu_madera', tono: (a.r() - 0.5) * 0.12 });
     for (const x of [-21, 21]) for (const y of [-6, 10]) s.caja(x, y, 0, 3, 3, y > 0 ? 34 : 42, { mat: 'mu_madera', tono: -0.05 });
     for (const z of [3, 15, 27]) { s.caja(0, 2, z, 42, 13, 1.6, { mat: 'mu_madera', tono: 0.05 }); for (let i = 0; i < 9; i++) calavera(s.sub(-18 + i * 4.5 + rr(a, -0.5, 0.5), 2 + rr(a, -2, 3), z + 1.6, 70 + rr(a, -25, 25)), 2.2); }
-    s.poli([[-24, -9, 42], [24, -9, 42], [-24, 14, 33], [24, 14, 33], [-24, -9, 44], [24, -9, 44], [-24, 14, 35], [24, 14, 35]], { mat: elegir(a, ['teja', 'mu_madera', 'paja']) });
+    s.poli([[-24, -9, 42], [24, -9, 42], [-24, 14, 33], [24, 14, 33], [-24, -9, 44], [24, -9, 44], [-24, 14, 35], [24, 14, 35]], { mat: elegir(a, ['pizarra', 'mu_madera', 'paja']), tono: -0.05 });
     huesos(g, 6, 18, 4, 0, 14);
   } else if (v === 'fosa_reja') {
     const m = elegir(a, PIEDRAS);
@@ -924,8 +925,8 @@ obj('cem2_fosa_comun', ['Fosa común', 'Mass grave'], ['llena', 'a_medio', 'cal'
   return { piezas: g.ps };
 }, { cuadros: 8, t: 3 });
 obj('cem2_pala_clavada', ['Pala clavada', 'Shovel in the dirt'], ['pala', 'pico', 'pala_farol', 'rota', 'horca'], [1, 1], false, (v, f, g, a) => {
-  monticulo(g, 10, 8, 3.4 + a.r() * 2, 'mu_tierra', 4, 0, 0, 7);
-  const s = g.sub(rr(a, -1, 1), rr(a, -1, 1), 3, a.r() * 360, rr(a, 8, 22), a.r() < 0.5 ? 'x' : 'y');
+  monticulo(g, 12, 10, 2.4 + a.r() * 1.4, 'mu_tierra', 4, 0, 0, 9);
+  const s = g.sub(rr(a, -1, 1), rr(a, -1, 1), 13, a.r() * 360, rr(a, 8, 22), a.r() < 0.5 ? 'x' : 'y');
   const L = v === 'rota' ? 14 : 30;
   s.palo([0, 0, -6], [0, 0, L], 0.9, { mat: elegir(a, ['mu_madera', 'madera']) });
   if (v !== 'rota') { s.caja(0, 0, L, 5.4, 1.4, 1.4, { mat: 'mu_madera' }); s.palo([0, 0, L - 2], [-2.4, 0, L], 0.5, { mat: 'mu_madera' }); s.palo([0, 0, L - 2], [2.4, 0, L], 0.5, { mat: 'mu_madera' }); }
@@ -1016,7 +1017,7 @@ obj('cem2_campana_tumba', ['Campana del enterrado vivo', 'Safety coffin bell'], 
   s.palo([0, 0, 0], [0, 0, 30], 1, { mat: m }); s.palo([0, 0, 29], [7, 0, 29], 0.8, { mat: m }); s.palo([0, 0, 22], [5, 0, 29], 0.6, { mat: m });
   const ang = v === 'sonando' ? onda(f, 6) * 28 : 0;
   const b = s.sub(6, 0, 28.4, 0, ang, 'y');
-  b.cil(0, 0, -6, 3.2, 5.4, { mat: v === 'oxidada' ? 'mu_oxido' : 'mu_bronce', r1: 1.6 }); b.cil(0, 0, -6.4, 3.4, 0.6, { mat: v === 'oxidada' ? 'mu_oxido' : 'mu_bronce' }); b.cil(0, 0, -6.6, 2.8, 4.5, { mat: 'negro', r1: 1.2 }); b.esf(0, 0, -6.8, 0.9, { mat: 'mu_hierro' });
+  b.cil(0, 0, -6, 3.2, 5.4, { mat: v === 'oxidada' ? 'mu_oxido' : 'bronce', r1: 1.6, tono: -0.1 }); b.cil(0, 0, -6.4, 3.4, 0.6, { mat: v === 'oxidada' ? 'mu_oxido' : 'bronce', tono: -0.1 }); b.cil(0, 0, -6.6, 2.8, 4.5, { mat: 'negro', r1: 1.2 }); b.esf(0, 0, -6.8, 0.9, { mat: 'mu_hierro' });
   if (v !== 'cuerda_rota') { const fin: V3 = [7 + Math.sin(ang * GR) * 7, 0, 21]; b.palo([0, 0, -6.4], [Math.sin(-ang * GR) * 0.5, 0, -8], 0.3, { mat: 'cuerda' }); s.palo(fin, [2, 8, 3], 0.35, { mat: 'cuerda' }); s.palo([2, 8, 3], [1, 10, 0], 0.35, { mat: 'cuerda' }); }
   else s.palo([6, 0, 21], [7, 1, 14], 0.35, { mat: 'cuerda' });
   s.cil(1, 10, 0, 1.4, 1.4, { mat: 'mu_hierro' });
@@ -1047,4 +1048,80 @@ obj('cem2_banco_piedra', ['Banco de piedra', 'Stone mourning bench'], ['entero',
   if (v === 'musgo') { for (let i = 0; i < 6; i++) s.elip(rr(a, -12, 12), rr(a, -4, 4), 10.8, 2.5, 2, 0.8, { mat: 'mu_musgo' }); hiedra(s, [[-13, 5, 0], [-12, 5.2, 6], [-8, 5, 10.5], [-2, 4, 11]], 4); }
   if (v === 'con_ofrenda') { vela(s, 8, 0, 10.8, 4, 1.1, 0, 4, 0, false); s.sub(-6, 0, 10.8, 30).palo([0, 0, 0.6], [6, 1, 0.6], 0.4, { mat: 'mu_hoja_seca' }); s.esf(0.4, 1, 11.6, 1.4, { mat: 'mu_flor' }); calavera(s.sub(-1, 0, 10.8, 60), 2.4); }
   matas(g, 4, 16, 7);
+});
+
+// ================================================================== capilla en ruinas
+/** Muro roto a lo largo de x (cara +y): rebanadas de alto desparejo, así el borde de arriba queda mellado. */
+function muroRoto(g: G, x0: number, x1: number, gro: number, alto: (x: number) => number, m: string) {
+  const a = g.a, paso = 6;
+  for (let x = x0; x < x1 - 0.1; x += paso) { const w = Math.min(paso, x1 - x), h = Math.max(4, alto(x + w / 2) + (a.r() - 0.5) * 6); bloque(g, x + w / 2, 0, 0, w + 0.3, gro, h, { mat: m, b: 0.5, j: 0.9 }); if (a.r() < 0.4 && h > 12) bloque(g, x + w / 2 + rr(a, -1, 1), rr(a, -1, 1), h - 0.5, w * 0.6, gro * 0.8, 2 + a.r() * 3, { mat: m, b: 0.5, j: 1, giro: rr(a, -10, 10) }); }
+}
+obj('cem2_capilla_ruinas', ['Capilla en ruinas', 'Ruined chapel'], ['fachada', 'nave', 'abside', 'campanario'], [5, 5], true, (v, _f, g, a) => {
+  const m = elegir(a, ['mu_bloques', 'mon_piedra', 'mu_piedra']), mc = 'mu_piedra';
+  tierra(g, 42, 40, 10);
+  if (v === 'fachada') {
+    const s = g.sub(0, -6, 0), H = 92;
+    bloque(s, 0, 0, 0, 76, 16, 4, { mat: mc, tono: -0.06, b: 1, j: 1 });
+    muroRoto(s.sub(0, 0, 4), -34, 34, 10, (x) => Math.max(10, H - Math.abs(x) * 1.3 - (x > 8 ? (x - 8) * 1.6 : 0)), m);
+    for (const sx of [-1, 1]) { bloque(s, sx * 34, 3, 4, 9, 16, sx > 0 ? 40 : 60, { mat: m, b: 0.8, j: 0.6, tono: 0.03 }); bloque(s, sx * 34, 5, sx > 0 ? 44 : 64, 7, 12, 8, { mat: m, b: 0.8, j: 0.8, arriba: 0.7 }); }
+    for (let i = 3; i >= 0; i--) s.sub(0, 5 + i * 1.2, 4).prisma(ojiva(22 + i * 4, 26, 0.85, 5, 0), -1.2, 1.2, { mat: m, tono: 0.04 * (4 - i) });
+    s.sub(0, 0, 4).prisma(ojiva(20, 25, 0.85, 5, 0), -8, 10, { mat: m, resta: true });
+    s.cil(0, -6, 60, 10, 14, { mat: m, resta: true, eje: [0, 1, 0] });
+    for (let i = 0; i < 4; i++) { const t = (i / 8) * Math.PI * 2 + 0.3; s.palo([0, 0, 60], [Math.cos(t) * 9.6, 0, 60 + Math.sin(t) * 9.6], 0.8, { mat: m, tono: 0.08 }); }
+    s.cil(0, -0.5, 60, 2.2, 1, { mat: m, eje: [0, 1, 0], tono: 0.08 });
+    for (let i = 0; i < 6; i++) { const t = (i / 12) * Math.PI * 2; s.palo([Math.cos(t) * 9.8, -1, 60 + Math.sin(t) * 9.8], [Math.cos(t + 0.52) * 9.8, -1, 60 + Math.sin(t + 0.52) * 9.8], 0.9, { mat: m, tono: 0.06 }); }
+    hiedra(s, [[-28, 6, 0], [-26, 6, 18], [-20, 6.5, 34], [-12, 6, 52], [-6, 6.5, 70]], 7);
+    cascotes(g, 16, 30, 12, m, 0, 22, 3.4);
+    s.palo([16, 18, 1], [-2, 30, 6], 2, { mat: 'mu_madera' });
+  } else if (v === 'nave') {
+    for (const sx of [-1, 1]) {
+      const s = g.sub(sx * 30, 0, 0, 90);
+      bloque(s, 0, 0, 0, 74, 12, 3, { mat: mc, tono: -0.06, b: 1, j: 1 });
+      muroRoto(s.sub(0, 0, 3), -35, 35, 8, (y) => (sx > 0 ? 30 : 64) - Math.abs(y + (sx > 0 ? 10 : -6)) * 0.7 + Math.sin(y * 0.2) * 6, m);
+      for (const y of [-18, 6]) s.sub(y, 0, 3).prisma(ojiva(9, 24, 0.85, 4, 12), -6, 6, { mat: m, resta: true });
+      for (const y of [-30, -6, 18]) bloque(s, y, -6 * sx * -1, 3, 6, 6, sx > 0 ? 26 : 50, { mat: m, b: 0.6, j: 0.6, tono: 0.04 });
+    }
+    // un arco que queda en pie y vigas del techo caídas
+    const ar = g.sub(0, -24, 0);
+    for (const sx of [-1, 1]) bloque(ar, sx * 22, 0, 0, 7, 7, 46, { mat: m, b: 0.7, j: 0.5 });
+    ar.prisma(ojiva(52, 46, 0.7, 6, 0), -3, 3, { mat: m });
+    ar.prisma(ojiva(38, 46, 0.7, 6, 0), -4, 4, { mat: m, resta: true });
+    ar.caja(0, 0, 0, 38, 10, 46, { mat: m, resta: true });
+    for (let i = 0; i < 3; i++) g.palo([rr(a, -26, -10), rr(a, -20, 20), rr(a, 0, 30)], [rr(a, 10, 26), rr(a, -20, 20), 1], 1.8, { mat: 'mu_madera', tono: (a.r() - 0.5) * 0.1 });
+    for (let i = 0; i < 3; i++) { const b = g.sub(rr(a, -10, 10), 4 + i * 10, 0, rr(a, -15, 15)); b.caja(0, 0, 0, 18, 3, 6, { mat: 'mu_madera', tono: -0.08 }); b.caja(0, -2, 6, 18, 1.4, 4, { mat: 'mu_madera', tono: -0.04 }); }
+    cascotes(g, 18, 22, 28, m, 0, 0, 3);
+  } else if (v === 'abside') {
+    const R = 32;
+    for (let i = 0; i <= 8; i++) {
+      const t = Math.PI + (i / 8) * Math.PI, x = Math.cos(t) * R, y = Math.sin(t) * R * 0.95 + 10;
+      const s = g.sub(x, y, 0, t / GR + 90);
+      const h = 40 + Math.sin(i * 1.7) * 18 + a.r() * 10;
+      bloque(s, 0, 0, 0, 13.4, 8, h, { mat: m, b: 0.6, j: 0.9 });
+      if (i % 2 === 1 && h > 34) s.prisma(ojiva(5, 18, 0.85, 4, 10), -6, 6, { mat: m, resta: true });
+      if (i % 2 === 0) bloque(s, 0, 4, 0, 5, 6, h * 0.8, { mat: m, b: 0.6, j: 0.5, tono: 0.04 });
+    }
+    bloque(g, 0, 0, 0, 30, 18, 4, { mat: mc, tono: -0.05, b: 0.8, j: 0.8 });
+    bloque(g, 0, -2, 4, 22, 10, 12, { mat: elegir(a, ['mu_marmol', m]), b: 0.8, j: 0.6 });
+    bloque(g, 0, -2, 16, 26, 12, 2.4, { mat: elegir(a, ['mu_marmol', m]), tono: 0.05, b: 0.5, j: 0.4 });
+    for (let i = 0; i < 3; i++) vela(g, -8 + i * 8, -2, 18.4, 2 + a.r() * 5, 1.1, 0, 4, i, false);
+    const c = g.sub(0, -8, 18.4, 0, -60 + a.r() * 20, 'x'); c.caja(0, 0, 0, 2.4, 2.4, 22, { mat: 'mu_madera' }); c.caja(0, 0, 14, 12, 2.4, 2.4, { mat: 'mu_madera' });
+    g.elip(0, 10, 0.2, 10, 6, 0.4, { mat: 'tela_roja', tono: -0.3 });
+    cascotes(g, 14, 30, 16, m, 0, 6, 3);
+  } else {
+    const s = g.sub(0, -4, 0), W = 30;
+    bloque(s, 0, 0, 0, W + 8, W + 8, 4, { mat: mc, tono: -0.06, b: 1, j: 1 });
+    for (const [x, y, gi, alto] of [[0, W / 2 - 4, 0, 96], [W / 2 - 4, 0, 90, 70], [0, -W / 2 + 4, 0, 110], [-W / 2 + 4, 0, 90, 104]] as [number, number, number, number][]) {
+      const w = s.sub(x, y, 4, gi);
+      muroRoto(w, -W / 2, W / 2, 8, (u) => alto - Math.abs(u - (gi ? 6 : -4)) * 1.4, m);
+      if (alto > 80) { w.prisma(ojiva(8, 12, 0.85, 4, 56), -6, 6, { mat: m, resta: true }); w.prisma(ojiva(6, 10, 0.85, 4, 20), -6, 6, { mat: m, resta: true }); }
+    }
+    s.sub(0, W / 2 - 4, 4).prisma(ojiva(12, 16, 0.85, 4, 0), -6, 6, { mat: m, resta: true });
+    s.caja(0, W / 2 - 8, 4, 12, 0.6, 22, { mat: 'negro' });
+    // la campana caída, rajada, con su yugo
+    const c = g.sub(W / 2 + 10, W / 2 + 6, 6, a.r() * 180, 70, 'x');
+    c.cil(0, 0, -7, 7, 13, { mat: 'bronce', r1: 3.6, tono: -0.12 }); c.cil(0, 0, -7.6, 7.6, 1.2, { mat: 'bronce', tono: -0.1 }); c.cil(0, 0, -7.4, 5.8, 11, { mat: 'negro', r1: 2.4 });
+    c.palo([0, -9, 7], [0, 9, 7], 1.6, { mat: 'mu_madera' });
+    cascotes(g, 16, 24, 20, m, 6, 10, 3.4);
+  }
+  matas(g, 10, 38, 36);
 });
