@@ -5,7 +5,7 @@ import { DIALOGOS, NPCS, type Linea } from '../datos/npcs';
 import { MONSTRUOS } from '../datos/monstruos';
 import { pasable, libreCerca } from '../mundo/zona';
 import { crearMonstruo, msg, efecto, particulas, soltar, dirDe, type Juego, type Monstruo, type Dir } from './mundo';
-import type { DatosHeroe } from './heroe';
+import { nivelEnDificultad, type DatosHeroe } from './heroe';
 import { Sonido } from '../audio/sonido';
 import { R, dist } from '../nucleo/azar';
 
@@ -125,7 +125,7 @@ export function historiaEntrar(j: Juego) {
   const cand = z.spawns.filter((s) => s.tipo !== 'jefe').sort((a, b) => dist(a.cx, a.cy, h.x, h.y) - dist(b.cx, b.cy, h.x, h.y));
   const s = cand[Math.floor(cand.length * 0.6)] ?? cand[cand.length - 1];
   const p = s ? libreCerca(z, s.cx + 2, s.cy) : libreCerca(z, h.x + 8, h.y + 8);
-  const m = crearMonstruo(def, z.nivel + 1 + d.dificultad * 25, p[0] + 0.5, p[1] + 0.5, 3, d.dificultad);
+  const m = crearMonstruo(def, nivelEnDificultad(z.nivel, d.dificultad) + 1, p[0] + 0.5, p[1] + 0.5, 3, d.dificultad);
   if (acto === HERALDO.final) { m.vidaMax = m.vida = Math.round(m.vidaMax * 1.8); m.misionUnico = 'm5_heraldo'; }
   m.nombre = [def.nombre[0], def.nombre[1]];
   m.estado = 'dormido';

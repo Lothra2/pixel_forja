@@ -122,8 +122,11 @@ export const xpPara = (n: number) => {
   const largo = n > 70 ? 1 + Math.pow((n - 70) / 30, 2) * 1.4 : 1;
   return Math.round(base * medio * largo);
 };
-/** Nivel de los monstruos de una zona según la dificultad: Normal como está, Pesadilla hasta ~80 e Infierno hasta 100. */
-export const nivelEnDificultad = (nivel: number, dif: number) => (dif >= 2 ? Math.min(100, Math.round(60 + nivel * 0.65)) : dif === 1 ? Math.round(30 + nivel * 0.8) : nivel);
+/**
+ * Nivel de los monstruos de una zona según la dificultad: Normal como está (2 a 62), Pesadilla arranca donde termina Normal
+ * (59 a 86) e Infierno donde termina Pesadilla (81 a 100). Así el que viene de cerrar Normal no cae en zonas 30 niveles más bajas.
+ */
+export const nivelEnDificultad = (nivel: number, dif: number) => (dif >= 2 ? Math.min(100, Math.round(80 + nivel * 0.33)) : dif === 1 ? Math.round(58 + nivel * 0.45) : nivel);
 export const nivelHab = (h: DatosHeroe, id: string, c?: Calc) => (h.habs[id] ? h.habs[id] + (c?.mas_habilidades ?? 0) : 0);
 const v2 = (b: [number, number] | undefined, n: number) => (b ? b[0] + b[1] * (n - 1) : 0);
 
@@ -166,7 +169,7 @@ export function calcular(h: DatosHeroe, buffs: Record<string, number> = {}): Cal
   const elem: Partial<Record<Elemento, number>> = {};
   for (const [k, e] of [['dano_fuego', 'fuego'], ['dano_frio', 'frio'], ['dano_rayo', 'rayo'], ['dano_veneno', 'veneno'], ['dano_sombra', 'sombra'], ['dano_luz', 'luz'], ['dano_sangre', 'sangre']] as [string, Elemento][]) if (st[k]) elem[e] = st[k];
   const resTodo = st.res_todo ?? 0;
-  const pen = [0, -40, -100][h.dificultad] ?? 0;
+  const pen = [0, -30, -60][h.dificultad] ?? 0;
   const res = {
     fisico: 0, fuego: Math.min(75, (st.res_fuego ?? 0) + resTodo + pen), frio: Math.min(75, (st.res_frio ?? 0) + resTodo + pen), rayo: Math.min(75, (st.res_rayo ?? 0) + resTodo + pen),
     veneno: Math.min(75, (st.res_veneno ?? 0) + resTodo + pen), sombra: Math.min(75, (st.res_sombra ?? 0) + resTodo + pen), luz: Math.min(75, resTodo + pen), sangre: 0,

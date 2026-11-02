@@ -52,13 +52,13 @@ PUEBLO_DE[7] = 'a7_campamento';
 const M = (m: DefMonstruo) => m;
 const JEFES: DefMonstruo[] = [
   M({ id: 'campana_ahoga', sprite: 'jefe_campana_ahoga', nombre: ['La Campana que Ahoga', 'The Drowning Bell'], vida: 6200, dano: [34, 66], elem: 'frio', def: 120, vel: 2.2, ia: 'jefe', rango: 9, proyectil: 'hielo', xp: 42000, jefe: true, sonido: 'metal', res: { frio: 70, rayo: 30 }, invoca: 'ahogado', huella: 3.5, area: 3, escala: 1.15 }),
-  M({ id: 'aun_saar', sprite: 'jefe_aun_saar', nombre: ['Aun-Saar, el Dios Sediento', 'Aun-Saar, the Thirsting God'], vida: 9800, dano: [44, 88], elem: 'luz', def: 150, vel: 2.4, ia: 'jefe', rango: 10, proyectil: 'luz', xp: 80000, jefe: true, sonido: 'carne', res: { luz: 70, fuego: 50, sombra: 50 }, invoca: 'caballero_abismo', huella: 5, area: 3.5, escala: 0.7 }),
+  M({ id: 'aun_saar', sprite: 'jefe_aun_saar', nombre: ['Aun-Saar, el Dios Sediento', 'Aun-Saar, the Thirsting God'], vida: 7800, dano: [44, 88], elem: 'luz', def: 150, vel: 2.4, ia: 'jefe', rango: 10, proyectil: 'luz', xp: 80000, jefe: true, sonido: 'carne', res: { luz: 70, fuego: 50, sombra: 50 }, invoca: 'caballero_abismo', huella: 5, area: 3.5, escala: 0.7 }),
 ];
 for (const j of JEFES) (MONSTRUOS as Record<string, DefMonstruo>)[j.id] = j;
 
 POBLACION.costa = ['ahogado', 'cangrejo_cripta', 'hombre_cienaga', 'esqueleto', 'murcielago_gigante'];
 POBLACION.barrio = ['ahogado', 'monja_hueca', 'aparecida', 'sin_rostro', 'cangrejo_cripta', 'espectro'];
-POBLACION.catedral_ahogada = ['monja_hueca', 'ahogado', 'sacerdote_caido', 'caballero_espectral', 'sin_rostro', 'aparecida'];
+POBLACION.catedral_ahogada = ['ahogado', 'monja_hueca', 'sacerdote_caido', 'caballero_espectral', 'sin_rostro', 'aparecida'];
 POBLACION.cielo = ['demonio_alado', 'gargola', 'segador', 'caballero_abismo', 'golem_de_piedra'];
 POBLACION.islas = ['gargola', 'golem_de_piedra', 'demonio_alado', 'espectro', 'lich'];
 POBLACION.trono = ['caballero_abismo', 'lich', 'segador', 'demonio_alado', 'hechicera_sangre'];
