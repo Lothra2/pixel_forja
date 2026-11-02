@@ -545,11 +545,11 @@ reg({
     const ps: Pieza[] = [];
     // las huellas en la arena y los bichos que la cruzan en círculo
     disco(a, ps, 0, 0, -0.3, v === 'gigante' ? 22 : 14, v === 'gigante' ? 18 : 11, 1.2, 'des2_arena', { ruido: 0.15 });
-    if (v === 'gigante') { escarabajo(a, ps, [Math.cos((f / 6) * 0.6) * 3, Math.sin((f / 6) * 0.6) * 3, 0], 0.9 + (f / 6) * 0.6, 3.4, f, 6, 'des2_quitina'); return ps; }
+    if (v === 'gigante') { escarabajo(a, ps, [Math.cos((f / 6) * 0.6) * 3, Math.sin((f / 6) * 0.6) * 3, 0], 0.9 + (f / 6) * 0.6, 4.2, f, 6, 'des2_quitina'); return ps; }
     const n = v === 'grupo' ? 5 : 1;
     for (let i = 0; i < n; i++) {
       const R = n === 1 ? 4 : 5 + a.r() * 7, fase = a.r() * PI2, sentido = a.r() < 0.5 ? 1 : -1, t = fase + sentido * (f / 6) * 0.9;
-      escarabajo(a, ps, [Math.cos(t) * R, Math.sin(t) * R, 0], t + sentido * Math.PI / 2, v === 'dorado' ? 1.4 : 0.9 + a.r() * 0.3, f + i, 6, v === 'dorado' ? 'des2_quitina_oro' : 'des2_quitina');
+      escarabajo(a, ps, [Math.cos(t) * R, Math.sin(t) * R, 0], t + sentido * Math.PI / 2, v === 'dorado' ? 1.9 : 1.3 + a.r() * 0.3, f + i, 6, v === 'dorado' ? 'des2_quitina_oro' : 'des2_quitina');
     }
     if (v === 'grupo') { craneo(a, ps, 2, -3, 2.6, 0.8, 1); }
     return ps;

@@ -1495,9 +1495,9 @@ registrar(
       if (v === 'con_red') for (let i = 0; i < 4; i++) loc.push(a.palo([12, 6, z0 + 58], [14 + i * 2, 2 + i * 3, z0 + 30 - i * 3], 0.3, { mat: 'ahg_soga' }));
       for (let i = 0; i < 3; i++) costra(a, loc, [5.5, jit(a, 5), z0 + 10 + a.r() * 20], [1, 0, 0], 4, a.r() < 0.5 ? 'ahg_alga' : 'ahg_sal');
       percebes(a, loc, [10, 0, 4], [1, 0, 0.3], 8, 6);
-      const ps = mover(loc, 45 + jit(a, 30));
+      const g = 45 + jit(a, 30), ps = mover(loc, g), lc: V3 = [12 * Math.cos(rad(g)) - 6 * Math.sin(rad(g)), 12 * Math.sin(rad(g)) + 6 * Math.cos(rad(g)), z0 + 49];
       ps.push(charco(a, 24, 20), suelo(a));
-      return v === 'con_farol' ? { piezas: ps, resplandor: { c: [0, 12, z0 + 49], r: 34 + k * 6, color: '#e0a040' } } : ps;
+      return v === 'con_farol' ? { piezas: ps, resplandor: { c: lc, r: 34 + k * 6, color: '#e0a040' } } : ps;
     },
   },
 );
