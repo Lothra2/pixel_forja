@@ -45,6 +45,10 @@ export interface DefZona {
   oscuridad?: number;
   /** Mazmorra lateral: tiene mini jefe y cofre de tesoro. */
   lateral?: boolean;
+  /** Un río de lava cruza el mapa de norte a sur: no se pasa, salvo por los puentes donde lo corta el camino. */
+  rio?: boolean;
+  /** Pueblo amurallado: murallas de fortaleza en los bordes de atrás y portones en las salidas. */
+  amurallado?: boolean;
 }
 
 // ------------------------------------------------------------------ búsqueda en el catálogo
@@ -134,28 +138,35 @@ const TEMATICAS: Record<string, Tematica> = {
   },
   nieve: {
     piso: 'nieve', parches: ['nieve', 'hielo', 'nieve'], camino: 'nieve', ambiente: 'nieve', oscuridad: 0.25,
-    borde: [{ t: ['nieve'], p: ['pino', 'arbol', 'roca'] }, { t: ['arboles'], p: ['pino'], v: (v) => /nevad/.test(v) }],
-    disperso: [{ t: ['nieve'], p: ['roca', 'ventis', 'tronco', 'poste', 'totem', 'barric', 'estand', 'jaula', 'trineo'] }],
-    grande: [{ t: ['nieve'], p: ['pino', 'torre', 'catapul', 'altar'] }], luces: [{ t: ['nieve'], p: ['fuego', 'fogat', 'antorch', 'brasero'] }],
+    borde: [{ t: ['nieve'], p: ['pino', 'arbol', 'roca'] }, { t: ['arboles'], p: ['pino'], v: (v) => /nevad/.test(v) }, { t: ['nieve'], p: ['nie2_pino', 'nie2_bosquecillo', 'nie2_arbol_muerto'] }],
+    disperso: [{ t: ['nieve'], p: ['roca', 'ventis', 'tronco', 'poste', 'totem', 'barric', 'estand', 'jaula', 'trineo'] },
+      { t: ['nieve'], p: ['nie2_roca', 'nie2_ventisquero', 'nie2_tronco_caido', 'nie2_cadaver', 'nie2_lena', 'nie2_escudos', 'nie2_hito', 'nie2_osamenta', 'nie2_cuerno', 'nie2_piedra_runica', 'nie2_estandarte', 'nie2_trineo', 'nie2_tumulo', 'nie2_soldado_hielo'] }],
+    grande: [{ t: ['nieve'], p: ['pino', 'torre', 'catapul', 'altar'] }, { t: ['nieve'], p: ['nie2_pino', 'nie2_mamut', 'nie2_cabana', 'nie2_tienda', 'nie2_totem', 'nie2_secadero', 'nie2_horca'] }],
+    luces: [{ t: ['nieve'], p: ['fuego', 'fogat', 'antorch', 'brasero', 'nie2_hoguera', 'nie2_brasero', 'nie2_runa_viva'] }],
     vinetas: ['nieve'],
   },
   hielo: {
     piso: 'hielo', parches: ['hielo', 'nieve', 'cueva'], ambiente: 'cripta', oscuridad: 0.66,
-    borde: [], disperso: [{ t: ['hielo'], p: ['puas', 'cristales', 'cuerpo', 'roca', 'estanque'] }],
-    grande: [{ t: ['hielo'], p: ['pilar'] }], luces: [{ t: ['hielo'], p: ['antorcha'] }],
+    borde: [], disperso: [{ t: ['hielo'], p: ['puas', 'cristales', 'cuerpo', 'roca', 'estanque'] },
+      { t: ['hielo'], p: ['hie2_estalactita', 'hie2_cadaver', 'hie2_escarcha', 'hie2_osamenta', 'hie2_roca', 'hie2_charco', 'hie2_cofre', 'hie2_lago', 'hie2_erupcion'] }],
+    grande: [{ t: ['hielo'], p: ['pilar', 'hie2_columna', 'hie2_serac', 'hie2_estatua', 'hie2_pilar_runa', 'hie2_arbol', 'hie2_sarcofago', 'hie2_espejo', 'hie2_pozo'] }],
+    luces: [{ t: ['hielo'], p: ['antorcha', 'hie2_cristal', 'hie2_brasero', 'hie2_altar'] }],
+    deco: [{ t: ['hielo'], p: ['hie2_trono', 'hie2_barco', 'hie2_cascada', 'hie2_portal'] }],
     muroX: ['hie_muro', ['x', 'x_alta']], muroY: ['hie_muro', ['y', 'y_alta']],
   },
   infierno: {
     piso: 'tierra_infierno', parches: ['tierra_infierno', 'lava_grietas', 'hueso'], camino: 'tierra_infierno', ambiente: 'infierno', oscuridad: 0.55,
-    borde: [{ t: ['infierno'], p: ['aguja', 'roca', 'espin', 'obsid'] }],
-    disperso: [{ t: ['infierno'], p: ['huesos', 'empalados', 'cadenas', 'jaula', 'estatua', 'pentagrama', 'grieta'] }],
-    grande: [{ t: ['infierno'], p: ['aguja', 'estatua', 'lago'] }], luces: [{ t: ['infierno'], p: ['brasero', 'pilar_luz', 'forja'] }],
+    borde: [{ t: ['infierno'], p: ['aguja', 'roca', 'espin', 'obsid'], s: ['inf2_'] }, { t: ['infierno'], p: ['inf2_roca', 'inf2_obsidiana', 'inf2_espina', 'inf2_arbol'] }],
+    disperso: [{ t: ['infierno'], p: ['huesos', 'empalados', 'cadenas', 'jaula', 'estatua', 'pentagrama', 'grieta'], s: ['inf2_'] }, { t: ['infierno'], p: ['inf2_roca', 'inf2_obsidiana', 'inf2_grieta', 'inf2_charca_lava', 'inf2_fumarola', 'inf2_empalado', 'inf2_cadenas', 'inf2_ganchos', 'inf2_pinchos', 'inf2_cuerpos', 'inf2_sangre', 'inf2_espina', 'inf2_caldero', 'inf2_huevo', 'inf2_carne', 'inf2_estandarte'] }],
+    grande: [{ t: ['infierno'], p: ['aguja', 'estatua', 'lago'], s: ['inf2_'] }, { t: ['infierno'], p: ['inf2_coloso', 'inf2_craneo', 'inf2_estatua', 'inf2_ruina', 'inf2_jaula', 'inf2_osario', 'inf2_geiser', 'inf2_obelisco', 'inf2_arbol'] }],
+    luces: [{ t: ['infierno'], p: ['brasero', 'pilar_luz', 'forja'], s: ['inf2_'] }, { t: ['infierno'], p: ['inf2_brasero', 'inf2_pira', 'inf2_columna_fuego'] }],
     vinetas: ['infierno'],
   },
   santuario: {
     piso: 'tierra_infierno', parches: ['hueso', 'tierra_infierno', 'pentagrama'], ambiente: 'infierno', oscuridad: 0.7,
-    borde: [], disperso: [{ t: ['infierno'], p: ['huesos', 'empalados', 'cadenas', 'jaula', 'sello', 'pentagrama'] }],
-    grande: [{ t: ['infierno'], p: ['estatua', 'aguja'] }], luces: [{ t: ['infierno'], p: ['brasero', 'pilar_luz'] }],
+    borde: [], disperso: [{ t: ['infierno'], p: ['huesos', 'empalados', 'cadenas', 'jaula', 'sello', 'pentagrama'], s: ['inf2_'] }, { t: ['infierno'], p: ['inf2_empalado', 'inf2_cadenas', 'inf2_ganchos', 'inf2_pinchos', 'inf2_cuerpos', 'inf2_sangre', 'inf2_carne', 'inf2_huevo', 'inf2_caldero'] }],
+    grande: [{ t: ['infierno'], p: ['estatua', 'aguja'], s: ['inf2_'] }, { t: ['infierno'], p: ['inf2_jaula', 'inf2_altar', 'inf2_craneo', 'inf2_trono', 'inf2_osario', 'inf2_obelisco'] }],
+    luces: [{ t: ['infierno'], p: ['brasero', 'pilar_luz'], s: ['inf2_'] }, { t: ['infierno'], p: ['inf2_brasero', 'inf2_pira', 'inf2_pentaculo'] }],
     muroX: ['inf_muro_carne', ['liso', 'costillas']], muroY: ['inf_muro_carne', ['liso_y', 'costillas_y']],
   },
   cueva: {
@@ -213,6 +224,15 @@ const TEMATICAS: Record<string, Tematica> = {
       [['cri_muro_nichos', ['huesos', 'calaveras', 'mixto', 'saqueado']], ['cri_muro_nichos', ['huesos_der', 'calaveras_der']]],
       [['cri_osario_pared', ['calaveras', 'huesos_cruzados', 'roseton', 'arco']], ['cri_osario_pared', ['calaveras_der', 'huesos_cruzados_der']]],
     ],
+  },
+  fortaleza: {
+    piso: 'lajas', parches: ['lajas', 'fortaleza', 'lajas_musgo'], ambiente: 'cripta', oscuridad: 0.7,
+    borde: [], disperso: [{ t: ['fortaleza'], p: ['for2_escombros', 'for2_pertrechos', 'for2_barricada', 'for2_cadaver', 'for2_estandarte', 'for2_caldero_aceite', 'for2_tumba'] }],
+    grande: [{ t: ['fortaleza'], p: ['for2_columna', 'for2_armeria', 'for2_catapulta', 'for2_ballesta', 'for2_estatua_rey', 'for2_celda', 'for2_potro', 'for2_horca', 'for2_aljibe', 'for2_campana'] }],
+    luces: [{ t: ['fortaleza'], p: ['for2_brasero', 'for2_antorchero'] }],
+    deco: [{ t: ['fortaleza'], p: ['for2_trono', 'for2_mesa_guerra', 'for2_torre'] }],
+    muroX: ['for2_muralla', ['recta', 'saeteras', 'contrafuerte', 'rota']], muroY: ['for2_muralla', ['recta_y', 'saeteras_y', 'contrafuerte_y']],
+    murosAlt: [[['for2_almena', ['recta', 'matacan', 'estandarte', 'rota']], ['for2_almena', ['recta_y', 'matacan_y', 'estandarte_y']]]],
   },
   abismo: {
     piso: 'tierra_infierno', parches: ['hueso', 'tierra_infierno', 'pentagrama'], ambiente: 'infierno', oscuridad: 0.9,
@@ -366,6 +386,7 @@ function exterior(def: DefZona, semilla: number): Zona {
     }
   };
   for (const p of puntos) camino(p, centro);
+  if (def.rio) rioDeLava(k, r);
   // viñetas: paisajes del motor estampados donde haya lugar
   const vin = def.vinetas ?? t.vinetas ?? [];
   const usadas: [number, number, number, number][] = [];
@@ -429,6 +450,51 @@ function exterior(def: DefZona, semilla: number): Zona {
   sembrar(k, Math.floor((area / 700) * dens), puntos);
   if (def.jefe) { const p = lejos(k, puntos); z.spawns.push({ cx: p[0], cy: p[1], tipo: 'jefe', fuerza: 1 }); }
   return z;
+}
+
+/** El río de lava: tramos de la Forja de norte a sur que serpentean, bloquean el paso y dejan puentes donde pasa el camino. */
+function rioDeLava(k: Constructor, r: () => number) {
+  const z = k.z, { tw, th } = z;
+  const rio = REGISTRO.find((d) => d.id === 'inf2_rio_lava'), puente = REGISTRO.find((d) => d.id === 'inf2_puente');
+  if (!rio) return;
+  let bx = Math.floor(tw * (0.35 + r() * 0.3)), antes = bx;
+  const tramo = (tx: number, ty: number) => {
+    if (!z.pisos[ty * tw + tx]) return;
+    const x0 = tx * 5, y0 = ty * 5;
+    let cruza = false;
+    for (let y = y0; y < y0 + 5 && !cruza; y++) for (let x = x0; x < x0 + 5; x++) if (k.reserva[y * z.W + x]) { cruza = true; break; }
+    k.piso('lava_grietas', tx, ty);
+    if (cruza && puente) {
+      k.poner(puente, x0 + 2, y0 + 2, r() < 0.7 ? 'piedra' : 'hueso', true);
+      for (let y = y0; y < y0 + 5; y++) for (let x = x0; x < x0 + 5; x++) if (z.bloq[y * z.W + x] !== 2) z.bloq[y * z.W + x] = 0;
+      return;
+    }
+    k.poner(rio, x0 + 2, y0 + 2, r() < 0.75 ? 'recto_y' : 'ancho_y', true);
+    for (let y = y0; y < y0 + 5; y++) for (let x = x0; x < x0 + 5; x++) if (z.bloq[y * z.W + x] !== 2) z.bloq[y * z.W + x] = 1;
+  };
+  for (let by = 0; by < th; by++) {
+    if (by > 1 && r() < 0.3) bx = clamp(bx + (r() < 0.5 ? -1 : 1), 2, tw - 3);
+    tramo(bx, by);
+    if (bx !== antes) tramo(antes, by);
+    antes = bx;
+  }
+}
+
+/** Murallas de fortaleza en los bordes de atrás de un pueblo, con portón abierto donde salen los caminos. */
+function amurallar(k: Constructor, huecos: [number, number][]) {
+  const z = k.z, { tw, th } = z, r = k.r;
+  const mur = REGISTRO.find((d) => d.id === 'for2_muralla'), alm = REGISTRO.find((d) => d.id === 'for2_almena'), por = REGISTRO.find((d) => d.id === 'for2_porton');
+  if (!mur) return;
+  const hueco = (bx: number, by: number) => huecos.some(([x, y]) => Math.abs(Math.floor(x / 5) - bx) <= 1 && Math.abs(Math.floor(y / 5) - by) <= 1);
+  const poner = (d: ObjetoDef | undefined, v: string, bx: number, by: number) => { if (!d) return; const [hw, hh] = huellaDe(d, v); k.poner(d, bx * 5 + (hw - 1) / 2, by * 5 + (hh - 1) / 2, v, true); };
+  for (let bx = 1; bx < tw - 1; bx++) {
+    if (hueco(bx, 1)) { if (Math.abs(Math.floor(huecos.find(([x]) => Math.abs(Math.floor(x / 5) - bx) <= 1)![0] / 5) - bx) === 0) poner(por, 'abierto', bx, 1); continue; }
+    poner(bx % 4 === 2 && alm ? alm : mur, bx % 4 === 2 ? 'estandarte' : r() < 0.2 ? 'saeteras' : r() < 0.15 ? 'contrafuerte' : 'almenada', bx, 1);
+  }
+  for (let by = 1; by < th - 1; by++) {
+    if (hueco(1, by)) { if (Math.abs(Math.floor(huecos.find(([, y]) => Math.abs(Math.floor(y / 5) - by) <= 1)![1] / 5) - by) === 0) poner(por, 'abierto_y', 1, by); continue; }
+    poner(by % 4 === 2 && alm ? alm : mur, by % 4 === 2 ? 'estandarte_y' : r() < 0.2 ? 'saeteras_y' : r() < 0.15 ? 'contrafuerte_y' : 'almenada_y', 1, by);
+  }
 }
 
 /** Cofres de la Forja según el lugar: madera y hierro afuera, malditos abajo, relicarios en templos y tumbas. */
@@ -601,8 +667,8 @@ const PUEBLOS: Record<string, { paisaje: string; piso: string; extra: Sel[] }> =
   paramo: { paisaje: 'campamento', piso: 'pasto_seco', extra: [{ t: ['arboles'], p: ['muert', 'roble', 'torc'] }, { t: ['campo'], p: ['roca'] }] },
   desierto: { paisaje: 'desierto', piso: 'arena', extra: [{ t: ['desierto'], p: ['palm', 'cactus', 'roca'] }] },
   selva: { paisaje: 'campamento', piso: 'selva', extra: [{ t: ['selva', 'arboles'], p: ['arbol', 'palma', 'ceiba', 'helecho'] }] },
-  nieve: { paisaje: 'campamento', piso: 'nieve', extra: [{ t: ['nieve'], p: ['pino', 'roca'] }] },
-  infierno: { paisaje: 'fortaleza', piso: 'fortaleza', extra: [{ t: ['fortaleza'], p: ['cristal', 'pilar', 'estatua'] }] },
+  nieve: { paisaje: 'campamento', piso: 'nieve', extra: [{ t: ['nieve'], p: ['pino', 'roca'] }, { t: ['nieve'], p: ['nie2_pino', 'nie2_cabana', 'nie2_lena', 'nie2_trineo', 'nie2_secadero', 'nie2_estandarte'] }, { t: ['fortaleza'], p: ['for2_pertrechos', 'for2_barricada', 'for2_catapulta'] }] },
+  infierno: { paisaje: 'fortaleza', piso: 'fortaleza', extra: [{ t: ['fortaleza'], p: ['cristal', 'pilar', 'estatua'], s: ['for2_'] }, { t: ['fortaleza'], p: ['for2_armeria', 'for2_ballesta', 'for2_pertrechos', 'for2_estatua_rey', 'for2_campana', 'for2_brasero', 'for2_antorchero', 'for2_estandarte'] }] },
 };
 function pueblo(def: DefZona, semilla: number): Zona {
   const z = nuevaZona(def, semilla), k = new Constructor(z), r = k.r;
@@ -640,6 +706,7 @@ function pueblo(def: DefZona, semilla: number): Zona {
     z.entradas[s.lado] = [p[0] + (s.lado === 'e' ? -3 : s.lado === 'o' ? 3 : 0), p[1] + (s.lado === 's' ? -3 : s.lado === 'n' ? 3 : 0)];
     z.entradas['salida_' + s.destino] = z.entradas[s.lado];
   });
+  if (def.amurallado) amurallar(k, z.salidas.filter((s) => s.cx < 12 || s.cy < 12).map((s) => [s.cx, s.cy] as [number, number]));
   z.entradas.centro = [Math.round(cx0 + 2), Math.round(cy0 + 3)];
   z.entradas.portal = [Math.round(cx0 - 3), Math.round(cy0 + 5)];
   void r;

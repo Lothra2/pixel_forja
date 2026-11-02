@@ -71,7 +71,7 @@ export const ZONAS: Record<string, DefZona> = Object.fromEntries([
   Z({ id: 'a3_templo2', nombre: ['Templo: el Vientre de la Madre', 'Temple: the Mother\'s Womb'], acto: 3, nivel: 29, tipo: 'mazmorra', tema: 'templo', tam: [18, 18], jefe: 'madre_cienaga',
     salidas: [{ destino: 'a3_templo1', entrada: 'abajo', lado: 'arriba', nombre: ['Escalones', 'Steps'] }] }),
   // ============================================================== ACTO 4
-  Z({ id: 'a4_fortin', nombre: ['El Fortín de Vel', 'Vel Fort'], acto: 4, nivel: 30, tipo: 'pueblo', tema: 'nieve', tam: [14, 14], piedraViaje: true, nieve: true,
+  Z({ id: 'a4_fortin', nombre: ['El Fortín de Vel', 'Vel Fort'], acto: 4, nivel: 30, tipo: 'pueblo', tema: 'nieve', tam: [14, 14], piedraViaje: true, nieve: true, amurallado: true,
     salidas: [{ destino: 'a4_picos', entrada: 's', lado: 'n', nombre: ['Picos de Hrimgard', 'Hrimgard Peaks'] }] }),
   Z({ id: 'a4_picos', nombre: ['Los Picos de Hrimgard', 'The Hrimgard Peaks'], acto: 4, nivel: 31, tipo: 'exterior', tema: 'nieve', tam: [26, 26], piedraViaje: true, nieve: true, niebla: 0.35,
     salidas: [{ destino: 'a4_fortin', entrada: 'n', lado: 's', nombre: ['El Fortín', 'The Fort'] }, { destino: 'a4_glaciar', entrada: 'o', lado: 'e', nombre: ['El Paso del Glaciar', 'The Glacier Pass'] }, { destino: 'a4_minas1', entrada: 'arriba', lado: 'abajo', nombre: ['Minas de los Gigantes', 'Giants\' Mines'] }] }),
@@ -90,7 +90,7 @@ export const ZONAS: Record<string, DefZona> = Object.fromEntries([
   Z({ id: 'a4_hielo2', nombre: ['El Trono de Hjaldur', 'Hjaldur\'s Throne'], acto: 4, nivel: 35, tipo: 'mazmorra', tema: 'hielo', tam: [18, 18], jefe: 'rey_escarcha',
     salidas: [{ destino: 'a4_hielo1', entrada: 'abajo', lado: 'arriba', nombre: ['Cuevas', 'Caves'] }] }),
   // ============================================================== ACTO 5
-  Z({ id: 'a5_bastion', nombre: ['El Bastión del Último Coro', 'Bastion of the Last Choir'], acto: 5, nivel: 36, tipo: 'pueblo', tema: 'infierno', tam: [14, 14], piedraViaje: true, ceniza: true,
+  Z({ id: 'a5_bastion', nombre: ['El Bastión del Último Coro', 'Bastion of the Last Choir'], acto: 5, nivel: 36, tipo: 'pueblo', tema: 'infierno', tam: [14, 14], piedraViaje: true, ceniza: true, amurallado: true,
     salidas: [{ destino: 'a5_llanuras', entrada: 'o', lado: 'e', nombre: ['Llanuras de Ceniza', 'Ash Plains'] }] }),
   Z({ id: 'a5_llanuras', nombre: ['Las Llanuras de Ceniza', 'The Ash Plains'], acto: 5, nivel: 38, tipo: 'exterior', tema: 'infierno', tam: [26, 26], piedraViaje: true, ceniza: true,
     salidas: [{ destino: 'a5_bastion', entrada: 'e', lado: 'o', nombre: ['El Bastión', 'The Bastion'] }, { destino: 'a5_rio', entrada: 'o', lado: 'e', nombre: ['El Río de Lava', 'The Lava River'] }, { destino: 'a5_abismo1', entrada: 'arriba', lado: 'abajo', nombre: ['El Abismo de los Susurros', 'The Abyss of Whispers'] }] }),
@@ -98,7 +98,7 @@ export const ZONAS: Record<string, DefZona> = Object.fromEntries([
     salidas: [{ destino: 'a5_llanuras', entrada: 'salida_a5_abismo1', lado: 'arriba', nombre: ['Llanuras', 'Plains'] }, { destino: 'a5_abismo2', entrada: 'arriba', lado: 'abajo', nombre: ['Las Islas sobre la Nada', 'The Isles over Nothing'] }] }),
   Z({ id: 'a5_abismo2', nombre: ['El Abismo: las Islas sobre la Nada', 'The Abyss: Isles over Nothing'], acto: 5, nivel: 40, tipo: 'mazmorra', tema: 'abismo', tam: [18, 18], jefe: 'caballero_abismo', lateral: true, oscuridad: 0.92,
     salidas: [{ destino: 'a5_abismo1', entrada: 'abajo', lado: 'arriba', nombre: ['Los Susurros', 'The Whispers'] }] }),
-  Z({ id: 'a5_rio', nombre: ['El Río de Lava', 'The Lava River'], acto: 5, nivel: 40, tipo: 'exterior', tema: 'infierno', tam: [24, 24], piedraViaje: true, ceniza: true, densidad: 1.2,
+  Z({ id: 'a5_rio', nombre: ['El Río de Lava', 'The Lava River'], acto: 5, nivel: 40, tipo: 'exterior', tema: 'infierno', tam: [24, 24], piedraViaje: true, ceniza: true, densidad: 1.2, rio: true,
     salidas: [{ destino: 'a5_llanuras', entrada: 'e', lado: 'o', nombre: ['Llanuras', 'Plains'] }, { destino: 'a5_santuario1', entrada: 'arriba', lado: 'abajo', nombre: ['La Herida', 'The Wound'] }, { destino: 'a5_fragua', entrada: 'arriba', lado: 'abajo', nombre: ['La Fragua de Ozmaren', 'Ozmaren\'s Forge'] }] }),
   Z({ id: 'a5_fragua', nombre: ['La Fragua de Ozmaren', 'Ozmaren\'s Forge'], acto: 5, nivel: 42, tipo: 'mazmorra', tema: 'santuario', tam: [18, 18], jefe: 'segador', lateral: true, ceniza: true,
     salidas: [{ destino: 'a5_rio', entrada: 'salida_a5_fragua', lado: 'arriba', nombre: ['Río de Lava', 'Lava River'] }] }),
