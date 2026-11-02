@@ -261,25 +261,25 @@ const HL = 92;     // alto de las naves laterales
 const HC = 210;    // alto de la nave central
 const ZR = 286;    // cumbrera
 const ZL = 128;    // donde el tejado de la nave lateral toca el muro alto
-const YF = 132;    // frente del cuerpo central de la fachada
-const YT0 = 94, YT1 = 136; // las torres (fondo y frente)
+const YF = 118;    // frente del cuerpo central de la fachada
+const YT0 = 80, YT1 = 122; // las torres (fondo y frente)
 const XT = 53;     // centro de cada torre
 const LT = 42;     // lado de la torre
-const YX0 = -22, YX1 = -70; // crucero (entre y0 e y1)
+const YX0 = -72, YX1 = -120; // crucero (entre y0 e y1)
 const XB = 82;     // hastial del transepto
-const YAB = -92;   // centro de la cabecera
-const PILAS = [72, 44, 16];
-const BAHIAS = [58, 30, -3];
-const PIEZAS = { fachada: 112, nave: 0, cabecera: -112 } as const;
+const YAB = -136;  // centro del ábside
+const PILAS = [64, 36, 8, -20, -48];
+const BAHIAS = [50, 22, -6, -34, -61];
+const PIEZAS = { fachada: 112, nave: 0, cabecera: -144 } as const;
 /** Cómo se colocan las tres piezas: corrimiento en celdas desde la pieza de la nave. */
 export const CATEDRAL = {
   piezas: [
-    { id: 'abo_catedral_cabecera', dx: 0, dy: -7, huella: [13, 5] },
+    { id: 'abo_catedral_cabecera', dx: 0, dy: -9, huella: [13, 8] },
     { id: 'abo_catedral_nave', dx: 0, dy: 0, huella: [13, 9] },
     { id: 'abo_catedral_fachada', dx: 0, dy: 7, huella: [13, 5] },
   ],
   /** Celda de la puerta central y del pie de la escalinata, desde la celda de la nave. */
-  puerta: [0, 9], escalinata: [0, 10],
+  puerta: [0, 8], escalinata: [0, 9],
 } as const;
 
 interface Estado { v: string; f: number; luz: Luz; lit: boolean; herida: boolean; p: number }
@@ -365,31 +365,45 @@ function escalinata(g: G, y0: number, n: number, ancho: number, prof: number, su
 }
 
 // ------------------------------------------------------------------ la fachada oeste con las dos torres
-/** Aguja calada de piedra: pirámide ochavada hueca con huecos de tracería, frondas en las aristas y la cruz. */
+/**
+ * Aguja calada de piedra: el esqueleto de una pirámide ochavada (ocho nervios con frondas que suben a la punta, anillos
+ * de tracería a distintas alturas y parteluces en los paños), así se ve el cielo a través. `rota` le arranca la punta.
+ */
 function agujaCalada(g: G, x: number, y: number, z0: number, R: number, H: number, m: string, rota = 0) {
-  const oct = (r: number, z: number): V3[] => Array.from({ length: 8 }, (_, i) => { const t = (i / 8) * TAU + TAU / 16; return [x + Math.cos(t) * r, y + Math.sin(t) * r, z]; });
-  const zA = z0 + H;
-  g.poli([...oct(R, z0), ...oct(1.2, zA - 1), [x, y, zA]], { mat: m, tono: 0.02 });
-  g.poli([...oct(R - 3, z0 - 1), ...oct(0.4, zA - 14)], { mat: m, resta: true });
-  // tracería calada: hileras de óculos y lancetas en las caras que se ven
+  const a = g.a, zA = z0 + H, ztop = rota ? zA - rota : zA;
+  const p = (i: number, f: number): V3 => { const t = (i / 8) * TAU + TAU / 16, r = R * (1 - f); return [x + Math.cos(t) * r, y + Math.sin(t) * r, z0 + H * f]; };
+  const fmax = (ztop - z0) / H;
+  // base maciza y el anillo de arranque
+  g.poli([...Array.from({ length: 8 }, (_, i) => p(i, 0)), ...Array.from({ length: 8 }, (_, i) => p(i, 0.06))], { mat: m });
   for (let i = 0; i < 8; i++) {
-    const t = (i / 8) * TAU, nx = Math.cos(t), ny = Math.sin(t);
-    if (nx + ny < -0.75) continue;
-    for (let fila = 0; fila < 6; fila++) {
-      const f = 0.05 + fila * 0.135, rr0 = R * (1 - f) * Math.cos(TAU / 16) - 1, zz = z0 + H * f;
-      const tam = (1 - f) * R * 0.42;
-      if (fila % 2 === 1) g.cil(x + nx * (rr0 + 4), y + ny * (rr0 + 4), zz + tam * 1.1, tam, 9, { mat: m, resta: true, eje: [-nx, -ny, 0] });
-      else g.sub(x + nx * rr0, y + ny * rr0, zz, t / GR - 90).prisma(ojiva(tam * 1.25, tam * 2.2, K, 3, 0), -6, 6, { mat: m, resta: true });
+    const ft = rota && i % 3 === 1 ? fmax - 0.05 - a.r() * 0.08 : fmax;
+    g.palo(p(i, 0.05), p(i, ft), 1.9, { mat: m, r1: 0.8 });
+    for (let k = 1; k < 9; k++) { const f = 0.06 + k * 0.105; if (f > ft) break; const q = p(i, f), d = Math.hypot(q[0] - x, q[1] - y) + 1.4; g.elip(x + ((q[0] - x) / (d - 1.4)) * d, y + ((q[1] - y) / (d - 1.4)) * d, q[2], 1.3, 1.3, 1.7, { mat: m, tono: 0.1 }); }
+  }
+  // anillos de tracería: cada paño con un arquito apuntado y, en los de abajo, un óculo y su parteluz
+  const anillos = [0.06, 0.24, 0.42, 0.6, 0.76, 0.88];
+  anillos.forEach((f, k) => {
+    if (f > fmax - 0.02) return;
+    for (let i = 0; i < 8; i++) {
+      const A = p(i, f), B = p((i + 1) % 8, f);
+      g.palo(A, B, k === 0 ? 1.6 : 1.1, { mat: m, tono: 0.05 });
+      const f2 = anillos[k + 1] ?? f + 0.1;
+      if (f2 > fmax - 0.02) continue;
+      const C = p(i, f2), D = p((i + 1) % 8, f2), mA = mix(A, B, 0.5), mC = mix(C, D, 0.5);
+      // arquito apuntado colgado del anillo de arriba
+      const pico = mix(mA, mC, 0.72), arr = mix(mA, mC, 0.45);
+      g.palo(mix(mix(A, C, 0.45), arr, 0), pico, 0.6, { mat: m, tono: 0.06 }); g.palo(pico, mix(B, D, 0.45), 0.6, { mat: m, tono: 0.06 });
+      if (k < 3) {
+        g.palo(mA, mix(mA, mC, 0.45), 0.7, { mat: m, tono: 0.04 });
+        const c = mix(mA, mC, 0.62), rr0 = Math.hypot(A[0] - B[0], A[1] - B[1]) * 0.16, u = nrm(sub3(B, A));
+        for (let j = 0; j < 6; j++) { const t0 = (j / 6) * TAU, t1 = ((j + 1) / 6) * TAU; g.palo([c[0] + u[0] * Math.cos(t0) * rr0, c[1] + u[1] * Math.cos(t0) * rr0, c[2] + Math.sin(t0) * rr0], [c[0] + u[0] * Math.cos(t1) * rr0, c[1] + u[1] * Math.cos(t1) * rr0, c[2] + Math.sin(t1) * rr0], 0.5, { mat: m, tono: 0.06 }); }
+      }
     }
-  }
-  // frondas en las ocho aristas
-  for (let i = 0; i < 8; i++) {
-    const t = (i / 8) * TAU + TAU / 16;
-    for (let k = 1; k < 7; k++) { const f = k / 7.3, r = R * (1 - f) + 0.6; if (rota && f > 0.7 && i % 3 === 0) continue; g.elip(x + Math.cos(t) * r, y + Math.sin(t) * r, z0 + H * f, 1.3, 1.3, 1.8, { mat: m, tono: 0.1 }); }
-  }
-  if (rota) { g.poli([[x - 9, y - 9, zA - rota], [x + 9, y - 9, zA - rota + 6], [x - 9, y + 9, zA - rota + 3], [x + 9, y + 9, zA - rota + 8], [x - 9, y - 9, zA + 30], [x + 9, y - 9, zA + 30], [x - 9, y + 9, zA + 30], [x + 9, y + 9, zA + 30]], { mat: m, resta: true }); return; }
-  g.esf(x, y, zA + 1.5, 2.6, { mat: m, tono: 0.1 });
-  g.caja(x, y, zA + 3.6, 1.6, 1.6, 15, { mat: 'mu_hierro' }); g.caja(x, y, zA + 13, 8, 1.6, 1.6, { mat: 'mu_hierro' });
+  });
+  if (rota) { for (let i = 0; i < 5; i++) g.caja(x + rr(a, -R * 0.4, R * 0.4), y + rr(a, -R * 0.4, R * 0.4), ztop - 4, 2 + a.r() * 2, 2 + a.r() * 2, 3, { mat: m, giro: a.r() * 90, incl: rr(a, -30, 30) }); return; }
+  g.esf(x, y, zA - 2, 2.6, { mat: m, tono: 0.1 });
+  for (let i = 0; i < 4; i++) { const t = (i / 4) * TAU; g.elip(x + Math.cos(t) * 2.4, y + Math.sin(t) * 2.4, zA - 6, 1.6, 1.6, 2.6, { mat: m, tono: 0.12 }); }
+  g.caja(x, y, zA, 1.6, 1.6, 15, { mat: 'mu_hierro' }); g.caja(x, y, zA + 9.5, 8, 1.6, 1.6, { mat: 'mu_hierro' });
 }
 /** Una torre de la fachada (centro x, y), cuatro cuerpos, campanario, balaustrada, pináculos y la aguja calada. */
 function torre(g: G, x: number, sx: number, st: Estado) {
@@ -471,175 +485,170 @@ function fachada(g: G, st: Estado) {
   return { piezas: g.ps, resplandor: st.lit ? { c: [0, YF - 10, 170] as V3, r: (st.herida ? 74 : 58) + st.p * 22, color: st.p > 0.5 ? '#ff4a1c' : '#c42410' } : undefined };
 }
 
-// ------------------------------------------------------------------ la nave, el crucero y el transepto
+// ------------------------------------------------------------------ la nave: cinco tramos con arbotantes
+/** Superficie de arriba del faldón +x del tejado de la nave: punto a la fracción `s` de alero a cumbrera, corrido `o` hacia afuera. */
+const zEal = HC + 2 + 2.6, zCum = ZR + 1.4;
+const nTecho = nrm([zCum - zEal, 0, XC + 3.5]);
+const enTecho = (s: number, y: number, o: number): V3 => { const p = mix([XC + 3.5, y, zEal], [0, y, zCum], s); return [p[0] + nTecho[0] * o, p[1], p[2] + nTecho[2] * o]; };
+const sobreTecho = (x: number) => zCum - (zCum - zEal) * (x / (XC + 3.5));
 function nave(g: G, st: Estado) {
-  const a = g.a, y0 = 90, y1 = YX0;
-  suelo(g, XE - 4, XE + 16, -60, 80, 10);
-  suelo(g, XB - 8, XB + 14, YX1 - 6, YX0 + 6, 4);
-  g.caja(0, (y0 + YX1) / 2, 0, 2 * XL + 4, y0 - YX1, 9, { mat: SG, tono: -0.08 });
-  // muros: altos de la nave central, de las laterales y del transepto
+  const a = g.a, y0 = 84, y1 = YX0;
+  suelo(g, XE - 4, XE + 16, y1, 76, 10);
+  g.caja(0, (y0 + y1) / 2, 0, 2 * XL + 4, y0 - y1, 9, { mat: SG, tono: -0.08 });
   for (const s of [-1, 1]) {
-    g.caja(s * (XC - TM / 2), (y0 + YX1) / 2, 0, TM, y0 - YX1, HC, { mat: S });
+    g.caja(s * (XC - TM / 2), (y0 + y1) / 2, 0, TM, y0 - y1, HC, { mat: S });
     g.caja(s * (XL - TM / 2), (y0 + y1) / 2, 0, TM, y0 - y1, HL, { mat: S });
   }
-  for (const s of [-1, 1]) for (const y of [YX0 + TM / 2, YX1 - TM / 2]) g.caja(s * (XC + XB) / 2, y, 0, XB - XC, TM, HC, { mat: S });
-  for (const s of [-1, 1]) g.caja(s * (XB - TM / 2), (YX0 + YX1) / 2, 0, TM, YX0 - YX1, HC, { mat: S });
   g.caja(0, (y0 + y1) / 2, 0, 2 * XC - 2 * TM, y0 - y1, 10, { mat: 'mu_bloques_frio', tono: -0.2 });
-  // vitrales: altos y bajos en el costado que se ve, y los del transepto
+  // daño y vitrales: altos (tres luces) y bajos en el costado que se ve
   const alto = (y: number) => cara(g, XC, y, -90), bajo = (y: number) => cara(g, XL, y, -90);
-  const tr = cara(g, XB, (YX0 + YX1) / 2, -90), trN = (x: number) => cara(g, x, YX0, 0);
-  desgaste(tr, -20, 20, 10, 200, S, 4);
-  desgaste(trN(71), -9, 9, 10, 190, S, 2);
   for (const y of BAHIAS) desgaste(bajo(y), -9, 9, 6, 80, S, 1);
-  desgaste(alto(26), -40, 40, 100, 200, S, 3);
-  for (const y of BAHIAS) { ventanal(alto(y), 0, 17, 136, 42, TM, st.luz, S, 3); ventanal(bajo(y), 0, 12, 24, 32, TM, st.luz, S, 2, st.v === 'sellada' && y < 20); }
-  roseton(tr, 0, 168, 21, TM, st.luz, S, 10);
-  for (const x of [-11, 11]) ventanal(tr, x, 11, 30, 64, TM, st.luz, S, 2);
-  ventanal(trN(71.5), 0, 10, 40, 98, TM, st.luz, S, 2);
-  // estribos y arbotantes
+  desgaste(alto(10), -60, 60, 100, 200, S, 4);
+  for (const y of BAHIAS) { ventanal(alto(y), 0, 17, 136, 42, TM, st.luz, S, 3); ventanal(bajo(y), 0, 12, 24, 32, TM, st.luz, S, 2, st.v === 'sellada' && (y === 22 || y === -34)); }
+  // estribos y arbotantes a los dos lados
   for (const y of PILAS) {
-    const c = cara(g, XL, y, -90);
-    estribo(c, 0, 7, XE - XL - 2, 184, SG, { pin: 40, garg: true });
+    estribo(cara(g, XL, y, -90), 0, 7, XE - XL - 2, 184, SG, { pin: 40, garg: true });
     arbotante(g, XL + 1, XC, y, 166, 192, SG);
-    const o = cara(g, -XL, y, 90);
-    estribo(o, 0, 7, XE - XL - 2, 184, SG, { pin: 40 });
+    estribo(cara(g, -XL, y, 90), 0, 7, XE - XL - 2, 184, SG, { pin: 40 });
     arbotante(g, -XL - 1, -XC, y, 166, 192, SG);
   }
-  for (const yy of [YX0, YX1]) { const c = cara(g, XB, yy, -90); estribo(c, 0, 10, 12, 220, SG, { pin: 44, garg: yy === YX0 }); }
-  estribo(cara(g, 61, YX0, 0), 0, 6, 10, 205, SG, { pin: 40, garg: true });
-  // aleros con ménsulas
-  mensulas(cara(g, XC, 30, -90), -60, 52, HC - 3, L);
-  mensulas(cara(g, XL, 30, -90), -60, 52, HL - 3, L, 6);
-  mensulas(cara(g, 72, YX0, 0), -10, 10, HC - 3, L);
-  // tejados: nave central de la fachada al coro, las laterales en pendiente y el transepto
-  tejado(g, true, 0, XC, HC + 2, ZR, YX1 - 4, y0);
+  mensulas(cara(g, XC, (y0 + y1) / 2, -90), -(y0 - y1) / 2, (y0 - y1) / 2, HC - 3, L);
+  mensulas(cara(g, XL, (y0 + y1) / 2, -90), -(y0 - y1) / 2, (y0 - y1) / 2, HL - 3, L, 6);
+  // tejados: el alto (hasta el crucero) y las naves laterales en pendiente
+  tejado(g, true, 0, XC, HC + 2, ZR, y1 - 4, y0);
   for (const s of [-1, 1]) g.poli([[s * (XL + 3.5), y0, HL], [s * (XL + 3.5), y1, HL], [s * (XL + 3.5), y0, HL + 3], [s * (XL + 3.5), y1, HL + 3], [s * XC, y0, ZL], [s * XC, y1, ZL], [s * XC, y0, ZL + 3], [s * XC, y1, ZL + 3]], { mat: 'abo_pizarra', tono: s > 0 ? 0.04 : 0 });
-  tejado(g, false, (YX0 + YX1) / 2, (YX0 - YX1) / 2, HC + 2, ZR, -XB + 2, XB - 2);
-  for (const s of [-1, 1]) hastial(cara(g, s * XB, (YX0 + YX1) / 2, s > 0 ? -90 : 90), (YX0 - YX1) / 2 + 4, HC, ZR + 12, TM + 2, S);
-  // el tramo hundido: el agujero, las vigas al aire, la ruina que cayó adentro y las brasas
-  const zE = HC + 2 + 2.6, zR = ZR + 1.4, E = (y: number): V3 => [XC + 3.5, y, zE], R = (y: number): V3 => [0, y, zR];
-  const nr = nrm([zR - zE, 0, XC + 3.5]);
-  const enTecho = (s: number, y: number, o: number): V3 => { const p = mix(E(y), R(y), s); return [p[0] + nr[0] * o, p[1], p[2] + nr[2] * o]; };
+  // el tramo hundido: el agujero, las vigas al aire, lo que cayó adentro y las brasas
+  const H0 = -12, H1 = 30;
   if (st.herida) {
     const hueco = (q: [number, number][]) => g.poli(q.flatMap(([s, y]) => [enTecho(s, y, -5), enTecho(s, y, 4)]), { mat: 'abo_pizarra', resta: true });
-    hueco([[0.12, 16], [0.45, 9], [0.86, 18], [0.8, 34], [0.25, 36]]);
-    hueco([[0.2, 30], [0.62, 28], [0.7, 46], [0.35, 48]]);
-    // cabios: unos enteros, otros partidos con la punta en brasa, y la hilera y la correa
-    for (let y = 8; y <= 48; y += 4.4) {
+    hueco([[0.12, H0 + 6], [0.45, H0], [0.86, H0 + 9], [0.8, H0 + 26], [0.25, H0 + 28]]);
+    hueco([[0.2, H0 + 22], [0.62, H0 + 20], [0.7, H1], [0.35, H1 + 2]]);
+    for (let y = H0 - 2; y <= H1 + 3; y += 4.4) {
       const sb = a.r() < 0.4 ? 1 : 0.35 + a.r() * 0.45, p0 = enTecho(-0.02, y, -3.4), p1 = enTecho(sb, y, -3.4);
       viga(g, p0, p1, 2, 2.6, { mat: 'abo_madera_quemada', tono: (a.r() - 0.5) * 0.1 });
       if (sb < 1) g.esf(p1[0], p1[1], p1[2], 1.4, { mat: 'abo_brasa', tono: -0.2 + st.p * 0.25 });
     }
-    viga(g, enTecho(0.5, 4, -6.5), enTecho(0.5, 52, -6.5), 2.6, 3.2, { mat: 'abo_madera_quemada' });
-    viga(g, [0, 4, zR - 4], [0, 52, zR - 4], 3, 3.4, { mat: 'abo_madera_quemada', tono: 0.04 });
-    viga(g, [-XC + TM, 20, HC - 6], [XC - TM, 22, HC - 6], 3.4, 3.4, { mat: 'abo_madera_quemada' });
-    viga(g, [-XC + TM, 40, HC - 6], [6, 36, 120], 3.4, 3.4, { mat: 'abo_madera_quemada' });
-    for (let i = 0; i < 4; i++) viga(g, [rr(a, -20, 10), rr(a, 10, 44), 10.5], [rr(a, -20, 20), rr(a, 10, 44), 10 + rr(a, 2, 30)], 3, 3, { mat: 'abo_madera_quemada' });
-    for (let i = 0; i < 9; i++) g.elip(rr(a, -22, 18), rr(a, 8, 46), 10.3, 3 + a.r() * 4, 2 + a.r() * 3, 0.9, { mat: 'abo_brasa', tono: -0.35 + st.p * 0.3 + a.r() * 0.1, giro: a.r() * 90 });
-    cascotes(g, 12, 18, 18, 'abo_pizarra', -4, 28, 2.4);
-    // pizarras que cuelgan del borde y las que se deslizaron al alero
-    for (let i = 0; i < 8; i++) { const p = enTecho(rr(a, 0.05, 0.3), rr(a, 10, 46), 1.4); g.caja(p[0], p[1], p[2], 4.4, 3.4, 0.8, { mat: 'abo_pizarra', giro: a.r() * 60, incl: rr(a, 20, 60), tono: 0.05 }); }
-    cascotes(g, 10, 8, 20, 'abo_pizarra', XE + 10, 26, 2.2);
-    viga(g, [XL + 6, 18, 1], [XE + 18, 40, 4], 2.6, 2.6, { mat: 'abo_madera_quemada' });
+    viga(g, enTecho(0.5, H0 - 6, -6.5), enTecho(0.5, H1 + 6, -6.5), 2.6, 3.2, { mat: 'abo_madera_quemada' });
+    viga(g, [0, H0 - 6, zCum - 5.4], [0, H1 + 6, zCum - 5.4], 3, 3.4, { mat: 'abo_madera_quemada', tono: 0.04 });
+    viga(g, [-XC + TM, H0 + 4, HC - 6], [XC - TM, H0 + 6, HC - 6], 3.4, 3.4, { mat: 'abo_madera_quemada' });
+    viga(g, [-XC + TM, H0 + 24, HC - 6], [6, H0 + 20, 120], 3.4, 3.4, { mat: 'abo_madera_quemada' });
+    for (let i = 0; i < 4; i++) viga(g, [rr(a, -20, 10), rr(a, H0, H1), 10.5], [rr(a, -20, 20), rr(a, H0, H1), 10 + rr(a, 2, 30)], 3, 3, { mat: 'abo_madera_quemada' });
+    for (let i = 0; i < 9; i++) g.elip(rr(a, -22, 18), rr(a, H0, H1), 10.3, 3 + a.r() * 4, 2 + a.r() * 3, 0.9, { mat: 'abo_brasa', tono: -0.35 + st.p * 0.3 + a.r() * 0.1, giro: a.r() * 90 });
+    cascotes(g, 12, 18, 18, 'abo_pizarra', -4, (H0 + H1) / 2, 2.4);
+    for (let i = 0; i < 8; i++) { const p = enTecho(rr(a, 0.05, 0.3), rr(a, H0 + 2, H1), 1.4); g.caja(p[0], p[1], p[2], 4.4, 3.4, 0.8, { mat: 'abo_pizarra', giro: a.r() * 60, incl: rr(a, 20, 60), tono: 0.05 }); }
+    cascotes(g, 10, 8, 20, 'abo_pizarra', XE + 10, (H0 + H1) / 2, 2.2);
+    viga(g, [XL + 6, H0 + 4, 1], [XE + 18, H1, 4], 2.6, 2.6, { mat: 'abo_madera_quemada' });
   }
-  // la aguja del crucero: tambor con lancetas, la aguja partida y la punta caída sobre el tejado
-  const ya = (YX0 + YX1) / 2;
-  g.cil(0, ya, ZR - 22, 16, 22 + 34, { mat: 'abo_plomo' });
-  for (let i = 0; i < 8; i++) { const t = (i / 8) * TAU; if (Math.cos(t) + Math.sin(t) < -0.6) continue; g.sub(Math.cos(t) * 15.5, ya + Math.sin(t) * 15.5, 0, t / GR - 90).prisma(ojiva(4.4, 14, K, 3, ZR + 6), -4, 2, { mat: 'abo_plomo', resta: true }); }
-  for (let i = 0; i < 4; i++) { const t = (i / 4) * TAU + TAU / 8; const s = g.sub(Math.cos(t) * 16, ya + Math.sin(t) * 16, ZR + 34, t / GR - 90); s.prisma([[-6, 0], [6, 0], [0, 10]], -1.5, 1.5, { mat: 'abo_plomo', tono: 0.05 }); }
-  g.cil(0, ya, ZR + 34, 18, 2.4, { mat: 'abo_plomo', tono: 0.06 });
-  const zb = ZR + 36, Hb = 62, rb = 12.5, rk = rb * (1 - Hb / 168);
-  g.cil(0, ya, zb, rb, Hb, { mat: 'abo_plomo', r1: rk });
-  g.poli([[-14, ya - 14, zb + Hb - 9], [14, ya - 14, zb + Hb + 2], [-14, ya + 14, zb + Hb - 2], [14, ya + 14, zb + Hb + 6], [-14, ya - 14, zb + 120], [14, ya - 14, zb + 120], [-14, ya + 14, zb + 120], [14, ya + 14, zb + 120]], { mat: 'abo_plomo', resta: true });
-  for (let i = 0; i < 5; i++) { const t = a.r() * TAU, r = rk * 0.6; g.palo([Math.cos(t) * r, ya + Math.sin(t) * r, zb + Hb - 12], [Math.cos(t) * r * 1.3, ya + Math.sin(t) * r * 1.3, zb + Hb + 3 + a.r() * 9], 0.9, { mat: 'abo_madera_quemada' }); }
-  const sup = (x: number) => zR - (zR - zE) * (x / (XC + 3.5));
-  const B: V3 = st.herida ? [4, -10, sup(4) + 6] : [5, -14, sup(5) + rk];
-  const Ep: V3 = st.herida ? [18, 30, 214] : [27, 64, sup(27) + 1];
+  // la punta de la aguja del crucero, caída sobre el tejado (en la herida se metió por el hueco)
+  const rk = 7.9;
+  const B: V3 = st.herida ? [4, -66, sobreTecho(4) + rk] : [5, -70, sobreTecho(5) + rk];
+  const Ep: V3 = st.herida ? [16, 6, 206] : [27, 10, sobreTecho(27) + 1];
   const ej = sub3(Ep, B), Lp = Math.hypot(...ej);
   g.cil(B[0], B[1], B[2], rk, Lp, { mat: 'abo_plomo', r1: 0.6, eje: ej, tono: 0.03 });
-  const cz = g.sub(Ep[0], Ep[1], Ep[2], 0, 0); cz.palo([0, 0, 0], [ej[0] / Lp * 10, ej[1] / Lp * 10 + 2, ej[2] / Lp * 10 + 3], 0.8, { mat: 'mu_hierro' });
-  if (!st.herida) cascotes(g, 7, 6, 10, 'abo_pizarra', 14, 22, 2);
-  // base sucia, hiedra, sillares caídos y pasto
-  for (const y of [58, -3]) base(cara(g, XL, y, -90), -10, 10, 70, 1);
-  base(cara(g, XB + 13, (YX0 + YX1) / 2, -90), -22, 22, 140, 2);
-  base(trN(71), -9, 9, 110, 2);
-  cascotes(g, 16, 10, 50, SG, XE + 12, 20, 3.4);
-  cascotes(g, 8, 14, 10, SG, XB + 18, (YX0 + YX1) / 2, 3);
-  for (let i = 0; i < 5; i++) bloque(g, rr(a, XE + 4, XE + 26), rr(a, -60, 70), -0.6, 9 + a.r() * 5, 6, 5 + a.r() * 2, { mat: SG, giro: a.r() * 90, incl: rr(a, -16, 16), b: 1.2, j: 1.4 });
-  matas(g, 16, 18, 66, XE + 10, 10);
-  // dos cuervos en la cumbrera
-  for (const y of [60, -60]) cuervo(g.sub(XC * 0.05, y, ZR + 2, 30 + a.r() * 40), 'posado', 0, 8, 1);
-  if (st.herida) {
-    for (let i = 0; i < 18; i++) {
-      const u = (i / 18 + st.f / 8) % 1, f0 = i * 2.39;
-      const x = 10 + Math.sin(f0) * 10 + u * 22, y = 24 + Math.cos(f0 * 1.3) * 12 + Math.sin(u * 7 + f0) * 5, z = 236 + u * 120;
-      g.elip(x, y, z, 1.1 * (1 - u * 0.5), 1.1 * (1 - u * 0.5), 1.8 * (1 - u * 0.4), { mat: 'abo_chispa', tono: -0.1 - u * 0.35 });
-    }
+  for (let i = 1; i < 4; i++) { const p = mix(B, Ep, i * 0.22); g.cil(p[0], p[1], p[2], rk * (1 - i * 0.22) + 0.5, 1.4, { mat: 'abo_plomo', eje: ej, tono: 0.08 }); }
+  g.palo(Ep, [Ep[0] + ej[0] / Lp * 9, Ep[1] + ej[1] / Lp * 9 + 2, Ep[2] + 5], 0.8, { mat: 'mu_hierro' });
+  if (!st.herida) cascotes(g, 7, 6, 12, 'abo_pizarra', 14, -40, 2);
+  // base sucia, hiedra, sillares caídos, pasto y dos cuervos en la cumbrera
+  for (const y of [50, -6]) base(cara(g, XL, y, -90), -10, 10, 70, 1);
+  base(cara(g, XE, PILAS[2], -90), -4, 4, 120, 1);
+  cascotes(g, 16, 10, 60, SG, XE + 12, 6, 3.4);
+  for (let i = 0; i < 5; i++) bloque(g, rr(a, XE + 4, XE + 26), rr(a, -66, 66), -0.6, 9 + a.r() * 5, 6, 5 + a.r() * 2, { mat: SG, giro: a.r() * 90, incl: rr(a, -16, 16), b: 1.2, j: 1.4 });
+  matas(g, 16, 18, 66, XE + 10, 4);
+  for (const y of [60, -24]) cuervo(g.sub(1.6, y, ZR + 2, 30 + a.r() * 40), 'posado', 0, 8, 1);
+  if (st.herida) for (let i = 0; i < 18; i++) {
+    const u = (i / 18 + st.f / 8) % 1, f0 = i * 2.39;
+    const x = 10 + Math.sin(f0) * 10 + u * 22, y = (H0 + H1) / 2 + Math.cos(f0 * 1.3) * 12 + Math.sin(u * 7 + f0) * 5, z = 236 + u * 120;
+    g.elip(x, y, z, 1.1 * (1 - u * 0.5), 1.1 * (1 - u * 0.5), 1.8 * (1 - u * 0.4), { mat: 'abo_chispa', tono: -0.1 - u * 0.35 });
   }
-  const c: V3 = st.herida ? [14, 28, 214] : [XC + 4, 20, 150];
+  const c: V3 = st.herida ? [14, (H0 + H1) / 2, 214] : [XC + 4, 8, 150];
   return { piezas: g.ps, resplandor: st.lit ? { c, r: (st.herida ? 86 : 62) + st.p * 24, color: st.p > 0.5 ? '#ff4a1c' : '#c42410' } : undefined };
 }
 
-// ------------------------------------------------------------------ la cabecera: coro, girola y capillas radiales
+// ------------------------------------------------------------------ la cabecera: crucero, transepto, aguja, girola y capillas
 function cabecera(g: G, st: Estado) {
-  const a = g.a, y0 = YX1 + 6, R1 = XC, R2 = XL - 4, RC = 64;
+  const a = g.a, R1 = XC, R2 = XL - 4, RC = 60, ya = (YX0 + YX1) / 2;
+  suelo(g, XB + 2, XB + 18, YX1 - 4, YX0 + 4, 4);
   suelo(g, XE - 6, XE + 14, YAB - 50, YX1, 5);
+  g.caja(0, (YX0 + YAB) / 2, 0, 2 * XL + 4, YX0 - YAB, 9, { mat: SG, tono: -0.08 });
+  g.caja(0, ya, 0, 2 * XB + 4, YX0 - YX1 + 4, 9, { mat: SG, tono: -0.08 });
   g.cil(0, YAB, 0, R2 + 6, 9, { mat: SG, tono: -0.08 });
-  g.caja(0, (y0 + YAB) / 2, 0, 2 * XL + 4, y0 - YAB, 9, { mat: SG, tono: -0.08 });
+  // crucero y transepto: muros, el hastial +x con su rosetón, estribos de esquina
+  for (const s of [-1, 1]) for (const y of [YX0 - TM / 2, YX1 + TM / 2]) g.caja(s * (XC + XB) / 2, y, 0, XB - XC, TM, HC, { mat: S });
+  for (const s of [-1, 1]) g.caja(s * (XB - TM / 2), ya, 0, TM, YX0 - YX1, HC, { mat: S });
+  const tr = cara(g, XB, ya, -90), trN = (x: number) => cara(g, x, YX0, 0);
+  desgaste(tr, -20, 20, 10, 200, S, 4);
+  desgaste(trN(71), -9, 9, 10, 190, S, 2);
+  roseton(tr, 0, 168, 21, TM, st.luz, S, 10);
+  for (const x of [-11, 11]) ventanal(tr, x, 11, 30, 64, TM, st.luz, S, 2);
+  ventanal(trN(71.5), 0, 10, 40, 98, TM, st.luz, S, 2);
+  for (const yy of [YX0, YX1]) estribo(cara(g, XB, yy, -90), 0, 10, 12, 220, SG, { pin: 44, garg: yy === YX0 });
+  estribo(cara(g, 61, YX0, 0), 0, 6, 10, 205, SG, { pin: 40, garg: true });
+  mensulas(cara(g, 72, YX0, 0), -10, 10, HC - 3, L);
+  tejado(g, false, ya, (YX0 - YX1) / 2, HC + 2, ZR, -XB + 2, XB - 2);
+  tejado(g, true, 0, XC, HC + 2, ZR, YAB, YX0 + 2);
+  for (const s of [-1, 1]) hastial(cara(g, s * XB, ya, s > 0 ? -90 : 90), (YX0 - YX1) / 2 + 4, HC, ZR + 12, TM + 2, S);
   // coro: tramo recto, ábside alto y la girola baja alrededor
-  for (const s of [-1, 1]) { g.caja(s * (XC - TM / 2), (y0 + YAB) / 2, 0, TM, y0 - YAB, HC, { mat: S }); g.caja(s * (XL - TM / 2), (y0 + YAB) / 2, 0, TM, y0 - YAB, HL, { mat: S }); }
+  for (const s of [-1, 1]) { g.caja(s * (XC - TM / 2), (YX1 + YAB) / 2, 0, TM, YX1 - YAB + 2, HC, { mat: S }); g.caja(s * (XL - TM / 2), (YX1 + YAB) / 2, 0, TM, YX1 - YAB + 2, HL, { mat: S }); }
   g.cil(0, YAB, 0, R1, HC, { mat: S });
   g.cil(0, YAB, 0, R2, HL, { mat: S });
   const radial = (r: number, t: number) => cara(g, Math.cos(t * GR) * r, YAB + Math.sin(t * GR) * r, t - 90);
-  for (const t of [-14, -52, -90, -128, -166]) ventanal(radial(R1, t), 0, 13, 130, 44, 8, st.luz, S, 2);
-  for (const t of [-33, -147]) ventanal(radial(R2, t), 0, 9, 22, 30, 8, st.luz, S, 1);
-  ventanal(cara(g, XC, YAB + 13, -90), 0, 14, 130, 44, TM, st.luz, S, 2);
-  ventanal(cara(g, XL, YAB + 12, -90), 0, 11, 24, 32, TM, st.luz, S, 2);
+  desgaste(radial(R1, -30), -10, 10, 100, 200, S, 2);
+  desgaste(radial(R2, -20), -10, 10, 8, 80, S, 2);
+  for (const t of [-14, -52, -90, -128, -166]) ventanal(radial(R1, t), 0, 13, 136, 42, 8, st.luz, S, 2);
+  for (const t of [-36, -144]) ventanal(radial(R2, t), 0, 9, 22, 30, 8, st.luz, S, 1);
+  ventanal(cara(g, XL, YAB + 8, -90), 0, 10, 24, 32, TM, st.luz, S, 1);
   // capillas radiales: cilindro con su ventanal, contrafuertes, techo cónico y remate
   for (const t of [-18, -54, -90, -126, -162]) {
     const cx = Math.cos(t * GR) * RC, cy = YAB + Math.sin(t * GR) * RC;
-    g.cil(cx, cy, 0, 13, 76, { mat: S });
-    g.cil(cx, cy, 74, 14.5, 3, { mat: L, tono: 0.05 });
-    g.cil(cx, cy, 77, 15, 34, { mat: 'abo_pizarra', r1: 0.8 });
+    g.cil(cx, cy, 0, 12, 76, { mat: S });
+    g.cil(cx, cy, 74, 13.5, 3, { mat: L, tono: 0.05 });
+    g.cil(cx, cy, 77, 14, 34, { mat: 'abo_pizarra', r1: 0.8 });
     g.esf(cx, cy, 112, 1.8, { mat: L, tono: 0.08 });
-    const vis = Math.cos(t * GR) + Math.sin(t * GR) > -0.9;
-    if (vis) {
-      ventanal(cara(g, cx + Math.cos(t * GR) * 13, cy + Math.sin(t * GR) * 13, t - 90), 0, 9, 18, 34, 8, st.luz, S, 1);
-      for (const d of [-38, 38]) { const tt = t + d; estribo(cara(g, cx + Math.cos(tt * GR) * 12, cy + Math.sin(tt * GR) * 12, tt - 90), 0, 5, 5, 70, SG, { pin: 18 }); }
+    if (Math.cos(t * GR) + Math.sin(t * GR) > -0.9) {
+      ventanal(cara(g, cx + Math.cos(t * GR) * 12, cy + Math.sin(t * GR) * 12, t - 90), 0, 9, 18, 34, 8, st.luz, S, 1);
+      for (const d of [-40, 40]) { const tt = t + d; estribo(cara(g, cx + Math.cos(tt * GR) * 11, cy + Math.sin(tt * GR) * 11, tt - 90), 0, 5, 5, 70, SG, { pin: 18 }); }
     }
   }
   // arbotantes en corona alrededor del ábside
   for (const t of [0, -36, -72, -108, -144, -180]) {
-    const ct = Math.cos(t * GR), sn = Math.sin(t * GR), c = cara(g, ct * (R2 + 1), YAB + sn * (R2 + 1), t - 90);
-    estribo(c, 0, 10, 18, 180, SG, { pin: 40, garg: ct + sn > -0.3 });
-    const r0 = R2 + 3, rs = g.sub(0, YAB, 0, t);
-    arbotante(rs, r0, R1, 0, 162, 192, SG);
+    const ct = Math.cos(t * GR), sn = Math.sin(t * GR);
+    estribo(cara(g, ct * (R2 + 1), YAB + sn * (R2 + 1), t - 90), 0, 9, 18, 180, SG, { pin: 40, garg: ct + sn > -0.3 });
+    arbotante(g.sub(0, YAB, 0, t), R2 + 3, R1, 0, 162, 192, SG);
   }
-  estribo(cara(g, XL, y0 - 4, -90), 0, 10, 16, 190, SG, { pin: 40 });
-  // tejados: la nave central sigue hasta el ábside (medio cono), la girola en anillo y el coro bajo
-  tejado(g, true, 0, XC, HC + 2, ZR, YAB, y0);
+  // tejados del coro: medio cono del ábside, la girola en anillo y las laterales
   g.cil(0, YAB, HC + 2, XC + 4, ZR - HC - 2, { mat: 'abo_pizarra', r1: 0.6 });
   g.palo([0, YAB, ZR + 1], [0, YAB, ZR + 14], 1.2, { mat: 'mu_hierro' }); g.palo([-4, YAB, ZR + 10], [4, YAB, ZR + 10], 0.9, { mat: 'mu_hierro' });
   g.cil(0, YAB, HL, R2 + 3.5, ZL - HL, { mat: 'abo_pizarra', r1: R1 });
-  for (const s of [-1, 1]) g.poli([[s * (XL + 3.5), y0, HL], [s * (XL + 3.5), YAB, HL], [s * (XL + 3.5), y0, HL + 3], [s * (XL + 3.5), YAB, HL + 3], [s * XC, y0, ZL], [s * XC, YAB, ZL], [s * XC, y0, ZL + 3], [s * XC, YAB, ZL + 3]], { mat: 'abo_pizarra', tono: 0.04 });
+  for (const s of [-1, 1]) g.poli([[s * (XL + 3.5), YX1, HL], [s * (XL + 3.5), YAB, HL], [s * (XL + 3.5), YX1, HL + 3], [s * (XL + 3.5), YAB, HL + 3], [s * XC, YX1, ZL], [s * XC, YAB, ZL], [s * XC, YX1, ZL + 3], [s * XC, YAB, ZL + 3]], { mat: 'abo_pizarra', tono: 0.04 });
   for (let i = 0; i < 18; i++) { const t = -i * 10, ct = Math.cos(t * GR), sn = Math.sin(t * GR); if (ct + sn < -0.5) continue; g.caja(ct * (R1 + 1), YAB + sn * (R1 + 1), HC - 3, 3, 3, 3, { mat: L, tono: 0.05, giro: t }); }
-  desgaste(radial(R1, -30), -10, 10, 100, 200, S, 2);
-  desgaste(radial(R2, -20), -10, 10, 8, 80, S, 2);
+  // la aguja del crucero: tambor de plomo con lancetas y gabletes, la aguja partida con el maderamen a la vista
+  g.cil(0, ya, ZR - 22, 16, 56, { mat: 'abo_plomo' });
+  for (let i = 0; i < 8; i++) { const t = (i / 8) * TAU; if (Math.cos(t) + Math.sin(t) < -0.6) continue; g.sub(Math.cos(t) * 15.5, ya + Math.sin(t) * 15.5, 0, t / GR - 90).prisma(ojiva(4.4, 14, K, 3, ZR + 6), -4, 2, { mat: 'abo_plomo', resta: true }); }
+  for (let i = 0; i < 4; i++) { const t = (i / 4) * TAU + TAU / 8; g.sub(Math.cos(t) * 16, ya + Math.sin(t) * 16, ZR + 34, t / GR - 90).prisma([[-6, 0], [6, 0], [0, 10]], -1.5, 1.5, { mat: 'abo_plomo', tono: 0.05 }); }
+  for (let i = 0; i < 4; i++) { const t = (i / 4) * TAU; pinaculo(g, Math.cos(t) * 15, ya + Math.sin(t) * 15, ZR + 34, 4, 22, 'abo_plomo'); }
+  g.cil(0, ya, ZR + 34, 18, 2.4, { mat: 'abo_plomo', tono: 0.06 });
+  const zb = ZR + 36, Hb = 62, rb = 12.5, rk = rb * (1 - Hb / 168);
+  g.cil(0, ya, zb, rb, Hb, { mat: 'abo_plomo', r1: rk });
+  for (let i = 1; i < 4; i++) g.cil(0, ya, zb + i * 15, rb * (1 - (i * 15) / 168) + 0.5, 1.4, { mat: 'abo_plomo', tono: 0.08 });
+  g.poli([[-14, ya - 14, zb + Hb - 9], [14, ya - 14, zb + Hb + 2], [-14, ya + 14, zb + Hb - 2], [14, ya + 14, zb + Hb + 6], [-14, ya - 14, zb + 120], [14, ya - 14, zb + 120], [-14, ya + 14, zb + 120], [14, ya + 14, zb + 120]], { mat: 'abo_plomo', resta: true });
+  for (let i = 0; i < 5; i++) { const t = a.r() * TAU, r = rk * 0.6; g.palo([Math.cos(t) * r, ya + Math.sin(t) * r, zb + Hb - 12], [Math.cos(t) * r * 1.3, ya + Math.sin(t) * r * 1.3, zb + Hb + 3 + a.r() * 9], 0.9, { mat: 'abo_madera_quemada' }); }
   // base sucia, hiedra, sillares caídos y pasto
-  base(radial(RC + 13, -18), -8, 8, 60, 2);
-  base(radial(RC + 13, -54), -8, 8, 60, 1);
-  base(cara(g, XL, YAB + 12, -90), -10, 10, 80, 2);
+  base(tr, -22, 22, 140, 2);
+  base(trN(71), -9, 9, 110, 1);
+  base(radial(RC + 12, -18), -7, 7, 60, 2);
+  base(radial(RC + 12, -54), -7, 7, 60, 1);
+  cascotes(g, 8, 14, 10, SG, XB + 18, ya, 3);
   cascotes(g, 14, 22, 14, SG, XE + 6, YAB + 2, 3.2);
-  for (let i = 0; i < 3; i++) bloque(g, rr(a, XE, XE + 20), rr(a, -150, -76), -0.6, 9 + a.r() * 5, 6, 5, { mat: SG, giro: a.r() * 90, incl: rr(a, -16, 16), b: 1.2, j: 1.4 });
+  for (let i = 0; i < 3; i++) bloque(g, rr(a, XE, XE + 20), rr(a, YAB - 50, YX1), -0.6, 9 + a.r() * 5, 6, 5, { mat: SG, giro: a.r() * 90, incl: rr(a, -16, 16), b: 1.2, j: 1.4 });
   matas(g, 12, 30, 20, XE + 4, YAB);
-  return { piezas: g.ps, resplandor: st.lit ? { c: [R1 - 4, YAB - 10, 140] as V3, r: (st.herida ? 76 : 60) + st.p * 22, color: st.p > 0.5 ? '#ff4a1c' : '#c42410' } : undefined };
+  return { piezas: g.ps, resplandor: st.lit ? { c: [XC + 4, YAB + 4, 140] as V3, r: (st.herida ? 80 : 64) + st.p * 22, color: st.p > 0.5 ? '#ff4a1c' : '#c42410' } : undefined };
 }
 
 const VARIANTES = ['entera', 'herida', 'sellada'];
 for (const [id, nombre, huella, armar] of [
   ['abo_catedral_fachada', ['Catedral de Santa Oria: fachada y torres', 'Saint Oria cathedral: west front and towers'], [13, 5], fachada],
-  ['abo_catedral_nave', ['Catedral de Santa Oria: nave y crucero', 'Saint Oria cathedral: nave and crossing'], [13, 9], nave],
-  ['abo_catedral_cabecera', ['Catedral de Santa Oria: cabecera', 'Saint Oria cathedral: chevet'], [13, 5], cabecera],
+  ['abo_catedral_nave', ['Catedral de Santa Oria: nave', 'Saint Oria cathedral: nave'], [13, 9], nave],
+  ['abo_catedral_cabecera', ['Catedral de Santa Oria: crucero y cabecera', 'Saint Oria cathedral: crossing and chevet'], [13, 8], cabecera],
 ] as [string, [string, string], [number, number], (g: G, st: Estado) => { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } }][]) {
   const yc = PIEZAS[id.replace('abo_catedral_', '') as keyof typeof PIEZAS];
   registrar({
