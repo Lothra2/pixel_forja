@@ -199,15 +199,37 @@ function crearNpcs(z: Zona): Npc[] {
 }
 
 // ------------------------------------------------------------------ monstruos
+/**
+ * Los datos de cada monstruo ya traen la dureza de su acto (un caballero del abismo nace más duro que un zombi). Cuando sale
+ * por encima de su acto (zombis del acto 1 en Pesadilla, esqueletos en el acto 6) se le sube a la dureza del nivel donde está,
+ * así la curva sigue al nivel y no a qué acto reusa a quién. Pasado el 62 (el final de Normal) ya no hay actos nuevos.
+ */
+const durezaNivel = (n: number) => Math.pow(1 + Math.min(n, 62) / 12, 1.1);
+let nativos: Map<string, number> | null = null;
+function nivelNativo(id: string): number | undefined {
+  if (!nativos) {
+    nativos = new Map();
+    for (const z of Object.values(ZONAS)) {
+      if (z.tipo === 'pueblo') continue;
+      for (const m of [...(POBLACION[POBL_ZONA[z.id] ?? ''] ?? []), ...(z.jefe ? [z.jefe] : [])]) nativos.set(m, Math.min(nativos.get(m) ?? 999, z.nivel));
+    }
+  }
+  return nativos.get(id);
+}
 function escalar(def: DefMonstruo, nivel: number) {
   const k = nivel - 1;
-  return { vida: Math.max(4, Math.round(def.vida * 0.6 * (1 + k * 0.32) * (1 + k * 0.012))), dano: [Math.max(1, Math.round(def.dano[0] * (k < 6 ? 0.6 : 0.75) * (1 + k * 0.17))), Math.max(1, Math.round(def.dano[1] * (k < 6 ? 0.6 : 0.75) * (1 + k * 0.17)))] as [number, number], defensa: Math.round(def.def + nivel * 7), xp: Math.round(def.xp * Math.pow(nivel, 1.18)) };
+  const nat = nivelNativo(def.id);
+  const f = nat ? Math.max(1, durezaNivel(nivel) / durezaNivel(nat)) : 1;
+  // el daño sube despacio con el nivel: la dureza del acto ya lo sube, y la vida del héroe crece casi lineal
+  const kd = 0.6 * Math.pow(nivel, 0.3);
+  return { vida: Math.max(4, Math.round(def.vida * f * 0.6 * (1 + k * 0.32) * (1 + k * 0.012))), dano: [Math.max(1, Math.round(def.dano[0] * f * kd)), Math.max(1, Math.round(def.dano[1] * f * kd))] as [number, number], defensa: Math.round(def.def + nivel * 7), xp: Math.round(def.xp * f * Math.pow(nivel, 0.9)) };
 }
 export function crearMonstruo(def: DefMonstruo, nivel: number, x: number, y: number, calidad = 0, dif = 0): Monstruo {
   const s = escalar(def, nivel + dif * 0);
   // el nivel ya trae la dificultad (Pesadilla e Infierno suben de nivel): aquí solo un empujón extra
-  const mv = [1, 3, 4, 1, 1][calidad] * (def.jefe ? 1 : 1) * ([1, 1.35, 1.7][dif] ?? 1);
-  const md = [1, 1.5, 1.8, 1, 1][calidad] * ([1, 1.15, 1.3][dif] ?? 1);
+  // los jefes de mazmorra (ia jefe sin ser de acto) salen como únicos: con 4 veces la vida duraban casi como uno de acto
+  const mv = [1, 3, 4, 1, 1][calidad] * (def.ia === 'jefe' && !def.jefe ? 0.6 : 1) * ([1, 1.35, 1.7][dif] ?? 1);
+  const md = [1, 1.5, 1.8, 0.7, 0.7][calidad] * ([1, 1.15, 1.3][dif] ?? 1);
   const m: Monstruo = {
     ...(nueva({ tipo: 'monstruo', x, y, vel: def.vel, radio: 0.42 * (def.huella ?? 1), escala: def.escala ?? 1, tinte: def.tinte }) as Ent), tipo: 'monstruo',
     def, nivel, dano: [Math.round(s.dano[0] * md), Math.round(s.dano[1] * md)], defensa: s.defensa, res: { ...(def.res ?? {}) }, calidad, nombre: def.nombre, mods: [],
