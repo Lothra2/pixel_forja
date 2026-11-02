@@ -490,6 +490,8 @@ function aunSaar(acc: Acc, f: number): Res {
       for (let i = 0; i < 4; i++) cs.push(hueso(pts[i], pts[i + 1], 5.5 - i, 4.8 - i, { mat: k % 3 === 0 ? OR : MB }));
     }
     ps.push(masa(cs, { mat: MB, suave: 6.5 }));
+    // al partirse, la cara del corte muestra el vacío
+    if (frag > 0) ps.push(elipE(ap(cuerpoT, [0, 0, 100]), cuerpoT.m[0], [30, 32, 5], 'j2_vacio', 0, cuerpoT.m[1]), elipE(ap(cuerpoT, [0, 0, 99]), cuerpoT.m[0], [33, 35, 4], 'j2_borde_vacio', brillo * 0.2 - 0.2, cuerpoT.m[1]));
     ps.push(...grietasVacio(cuerpoT, [cola * 0.3, 0, 60], [26, 29, 30], 4, 3, brillo, { frente: 0.6, grueso: 1.9 }));
     // esquirlas que flotan bajo la punta, girando
     for (let k = 0; k < 5; k++) { const a = hr(k) * TAU + w * 0.5, z = 10 + hr(k * 3) * 14 + Math.sin(w + k) * 3; const c = ap(cuerpoT, [cola + Math.cos(a) * 10, Math.sin(a) * 10, z - 30]); ps.push(poliedro([add(c, [3, 0, 0]), add(c, [-2, 2.5, 0.5]), add(c, [-1, -2.5, -0.5]), add(c, [0, 0, 4.5]), add(c, [0.5, 0, -3.5])], { mat: k % 2 ? OR : MB })); }

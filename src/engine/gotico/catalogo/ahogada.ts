@@ -1405,3 +1405,99 @@ registrar(
     },
   },
 );
+
+// ------------------------------------------------------------------ 9. más del puerto hundido
+registrar(
+  {
+    id: 'ahg_casco_bote_colgado', nombre: ['Bote colgado de un pescante', 'Boat hanging from a davit'], tema: TEMA, variantes: ['entero', 'roto', 'de_punta'], cuadros: 8, t: 5, huella: [3, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], sw = onda(f, 8) * 3;
+      // dos pescantes de madera curvos y el bote que se mece colgado de las sogas
+      for (const y of [-12, 12]) { const cs: Comp[] = [hueso([-8, y, 0], [-8, y, 44], 2, 1.7, { mat: WL }), hueso([-8, y, 44], [4, y, 52], 1.7, 1.4, { mat: WL })]; ps.push(masa(cs, { mat: WL, suave: 0.8 })); percebes(a, ps, [-6, y, 4], [1, 0, 0], 4, 3); }
+      const bl: Pieza[] = [];
+      casco(a, bl, { L: 15, W: 6, D: 6, u0: -1, u1: 1, secciones: 6, tracas: 3, costillas: false, roto: v === 'roto' ? 0.3 : undefined, rotoLado: 1 });
+      const g = v === 'de_punta' ? 60 : 0;
+      ps.push(...transformar(bl, rotM(90, sw, g), [6 + sw * 0.3, 0, v === 'de_punta' ? 22 : 30]));
+      for (const y of [-11, 11]) { const tope: V3 = [4, y, 52], bajo: V3 = [6 + sw * 0.3, y * (v === 'de_punta' ? 0.2 : 0.9), v === 'de_punta' ? 40 - (y > 0 ? 14 : 0) : 37]; ps.push(a.palo(tope, bajo, 0.4, { mat: 'ahg_soga' })); }
+      const ag = algas([[6, 0, 30], [6, 6, 30]], 10, 0.5, f, 8, a.seed);
+      if (ag) ps.push(ag);
+      ps.push(charco(a, 22, 18), suelo(a));
+      return ps;
+    },
+  },
+  {
+    id: 'ahg_columna_caida_algas', nombre: ['Columna caída cubierta de algas', 'Fallen kelp-covered column'], tema: TEMA, variantes: ['x', 'partida', 'sobre_roca'], huella: [6, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const loc: Pieza[] = [], L = 90, r = 5.5;
+      // el fuste acostado con su capitel, partido o apoyado en una roca, y un manto de algas encima
+      if (v === 'partida') { loc.push(a.cilindro(-L / 2, 0, r, r, L * 0.45, { mat: PL, eje: [1, 0, 0] }), a.cilindro(L * 0.05, 3, r, r, L * 0.45, { mat: PL, eje: [1, 0.12, 0.02] })); }
+      else loc.push(a.cilindro(-L / 2, 0, r + (v === 'sobre_roca' ? 6 : 0), r, L, { mat: PL, eje: v === 'sobre_roca' ? nor([1, 0, -0.14]) : [1, 0, 0] }));
+      loc.push(a.cilindro(L / 2, 0, r, r * 1.5, 6, { mat: PL, eje: [1, 0, 0] }), a.caja(L / 2 + 8, 0, 0, 4, r * 3.4, r * 3.4, { mat: P }));
+      if (v === 'sobre_roca') loc.push(...roca(a, [-L * 0.3, 0, 0], [12, 10, 9], { mat: 'ahg_roca' }));
+      for (let i = 0; i < 6; i++) costra(a, loc, [-L / 2 + 8 + i * 14, 0, r * 2 + 0.5], [0, 0, 1], 7, i % 2 ? 'ahg_alga' : 'ahg_alga_parda');
+      for (let i = 0; i < 5; i++) percebes(a, loc, [-L / 2 + 10 + a.r() * (L - 20), r, r], [0, 1, 0.2], 5, 4);
+      const ag = algas(Array.from({ length: 6 }, (_, i) => [-L / 2 + 10 + i * 14, jit(a, 2), r * 2 + 1] as V3), 14, 0.8, f, 1, a.seed, { arriba: true });
+      if (ag) loc.push(ag);
+      const ps = mover(loc, jit(a, 10), [0, 0, -1.5]);
+      ps.push(charco(a, L * 0.45, 16), suelo(a));
+      return ps;
+    },
+  },
+  {
+    id: 'ahg_farol_altar', nombre: ['Altar de faroles para los ahogados', 'Lantern altar for the drowned'], tema: TEMA, variantes: ['velas', 'faroles', 'apagado'], cuadros: 8, t: 3, huella: [3, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const ps: Pieza[] = [], k = 0.5 + 0.4 * onda(f, 8);
+      // mesa de piedra mojada con conchas, cráneos de marinos y la luz que les dejan los vivos
+      ps.push(a.caja(0, 0, 0, 34, 20, 4, { mat: P }), a.caja(0, 0, 4, 28, 14, 16, { mat: PL }), a.caja(0, 0, 20, 36, 22, 3, { mat: P, tono: 0.04 }));
+      for (let i = 0; i < 3; i++) craneo(a, ps, [-10 + i * 10, 5, 25.4], 2.6, 30 + jit(a, 30), { mat: 'ahg_coral', mandibula: false });
+      for (let i = 0; i < 4; i++) ps.push(a.elipsoide(jit(a, 14), -6 + jit(a, 2), 23.6, 2.2, 1.7, 0.8, { mat: 'ahg_concha', giro: a.r() * 180 }));
+      if (v === 'velas') for (let i = 0; i < 6; i++) { const x = -14 + i * 5.6, y = -7 + jit(a, 1.5), h = 2 + a.r() * 5; ps.push(a.cilindro(x, y, 23, 0.9, h, { mat: 'cera' }), a.elipsoide(x, y, 23 + h + 1, 0.6, 0.6, 1.3 + k * 0.5, { mat: 'luz_vela' })); }
+      if (v === 'faroles') for (const x of [-13, 13]) farol(a, ps, [x, -6, 23], 0.9, k);
+      percebes(a, ps, [14, 0, 6], [1, 0, 0], 6, 5);
+      const ag = algas([[-16, 10, 23], [16, 10, 23]], 12, 0.5, f, 8, a.seed);
+      if (ag) ps.push(ag);
+      ps.push(charco(a, 26, 20), suelo(a));
+      return v === 'apagado' ? ps : { piezas: ps, resplandor: { c: [0, -6, 30], r: 32 + k * 6, color: '#e0a040' } };
+    },
+  },
+  {
+    id: 'ahg_cruz_marinos', nombre: ['Cruz de los marinos perdidos', 'Cross of the lost sailors'], tema: TEMA, variantes: ['de_madera', 'de_piedra', 'con_redes', 'caida'], cuadros: 8, t: 5, huella: [2, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const loc: Pieza[] = [], piedra = v === 'de_piedra';
+      // cruz hecha con remos y mástiles atados, o de piedra con percebes; de los brazos cuelgan redes, sogas y campanillas
+      if (piedra) loc.push(a.caja(0, 0, 0, 7, 7, 64, { mat: PL }), a.caja(0, 0, 44, 6, 32, 6, { mat: PL }), a.caja(0, 0, 0, 16, 16, 5, { mat: P }));
+      else loc.push(a.cilindro(0, 0, -3, 2.4, 68, { mat: WL, r1: 2 }), a.palo([0, -18, 48], [0, 18, 49], 1.8, { mat: WL }), a.caja(0, -19, 46.6, 1, 5, 2.8, { mat: WL }), a.palo([-1.5, -2, 47], [1.5, 2, 50], 0.5, { mat: 'ahg_soga' }));
+      for (const y of [-14, 14]) {
+        const sw = onda(f, 8, y) * 1.4;
+        loc.push(a.palo([0, y, 48], [sw, y, 40], 0.3, { mat: 'ahg_soga' }));
+        const cl: Pieza[] = []; campana(a, cl, [0, 0, -5], [0, 0, 1], 3.6, {}); loc.push(...transformar(cl, ID3, [sw, y, 36]));
+      }
+      if (v === 'con_redes') for (let i = 0; i < 5; i++) for (let j = 0; j < 4; j++) { const y0 = -16 + i * 6, z0 = 46 - j * 6, cs = onda(f, 8, i) * 0.8; if (i < 4) loc.push(a.palo([1.5 + cs, y0, z0], [1.5 + cs, y0 + 6, z0 - 1], 0.3, { mat: 'ahg_soga' })); if (j < 3) loc.push(a.palo([1.5 + cs, y0, z0], [1.5 + cs, y0 + 0.5, z0 - 6], 0.3, { mat: 'ahg_soga' })); }
+      percebes(a, loc, [3, 0, 6], [1, 0, 0], 6, 4);
+      const ag = algas([[2, -16, 47], [2, 16, 47], [2, 0, 60]], 12, 0.6, f, 8, a.seed);
+      if (ag) loc.push(ag);
+      const ps = v === 'caida' ? transformar(loc, rotM(a.r() * 360, 0, 70), [0, 0, 6]) : mover(loc, 45 + jit(a, 30), [0, 0, 0], jit(a, 5), jit(a, 5));
+      ps.push(charco(a, 18, 16), suelo(a));
+      return ps;
+    },
+  },
+  {
+    id: 'ahg_pescadora_estatua', nombre: ['Estatua de la virgen de los pescadores', 'Statue of the fishers virgin'], tema: TEMA, variantes: ['con_farol', 'con_red', 'rota'], cuadros: 8, t: 3, huella: [2, 2], bloquea: true,
+    armar: (v, f, a) => {
+      const loc: Pieza[] = [], z0 = 16, k = 0.5 + 0.4 * onda(f, 8);
+      // sobre una roca, una virgen con manto que sostiene un farol (o una red) hacia el mar; la sal le comió la cara
+      loc.push(...roca(a, [0, 0, 0], [14, 12, 10], { mat: 'ahg_roca', facetas: 2 }), a.caja(0, 0, 9, 14, 14, 7, { mat: PL }));
+      const pose: Pose = { ...POSES.bendice, mano: [[6, -6, 32], [12, 6, 58]], codo: [[3, -10, 38], [7, 10, 48]] };
+      loc.push(...transformar(figura(pose, 'ahg_piedra_lisa', 1, { capucha: true, sinCabeza: v === 'rota' }), ID3, [0, 0, z0]));
+      const cab: V3 = [POSES.bendice.cab[0] + 3.8, 0, POSES.bendice.cab[2] + z0];
+      if (v !== 'rota') { costra(a, loc, add(cab, [0.3, 0, -0.5]), [1, 0, 0.2], 4); loc.push(a.elipsoide(cab[0] + 0.2, 0, cab[2] - 2.2, 1.3, 1.8, 1.3, { mat: 'negro', resta: true })); }
+      if (v === 'con_farol') { loc.push(a.palo([12, 6, z0 + 58], [12, 6, z0 + 54], 0.4, { mat: HI })); farol(a, loc, [12, 6, z0 + 46], 0.9, k); }
+      if (v === 'con_red') for (let i = 0; i < 4; i++) loc.push(a.palo([12, 6, z0 + 58], [14 + i * 2, 2 + i * 3, z0 + 30 - i * 3], 0.3, { mat: 'ahg_soga' }));
+      for (let i = 0; i < 3; i++) costra(a, loc, [5.5, jit(a, 5), z0 + 10 + a.r() * 20], [1, 0, 0], 4, a.r() < 0.5 ? 'ahg_alga' : 'ahg_sal');
+      percebes(a, loc, [10, 0, 4], [1, 0, 0.3], 8, 6);
+      const ps = mover(loc, 45 + jit(a, 30));
+      ps.push(charco(a, 24, 20), suelo(a));
+      return v === 'con_farol' ? { piezas: ps, resplandor: { c: [0, 12, z0 + 49], r: 34 + k * 6, color: '#e0a040' } } : ps;
+    },
+  },
+);
