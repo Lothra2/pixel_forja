@@ -68,6 +68,8 @@ export interface Pose {
   agarreI?: number; pegaI?: number;
   /** Báculo: inclinación [adelante, a la derecha] en grados y giro del remate sobre su eje. */
   vara?: [number, number]; giroVara?: number;
+  /** Báculo apoyado: el pie de la vara queda en ese punto (marco del cuerpo) y la vara pasa por la mano derecha. */
+  varaPie?: [number, number, number];
   /** Tela y pelo: cuánto se arrastran [atrás, a la derecha] por la inercia del cuerpo. */
   capa?: [number, number]; pelo?: [number, number];
   /** Arco: hay flecha en la cuerda (falta = sí) y la mano derecha tira de la cuerda (falta = sí; si no, la cuerda va recta). */
@@ -121,7 +123,9 @@ export type ManoPose = 'escudo' | 'objeto';
 export function pose(acc: Accion, f: number, arma: ArmaPose = 'una', estilo?: Presentacion, mano?: ManoPose): Pose {
   const p: Pose = { torso: 4, giroTorso: 0, cabeza: 0, bajar: 0, avanza: 0, hombroD: [8, 10, 18], hombroI: [6, 10, 16], caderaD: [2, 4], caderaI: [-2, 4], caida: 0 };
   const u = f / CUADROS[acc];
-  if (acc === 'quieto') quieto(p, u, arma, estilo);
+  if (estilo === 'kata' && acc !== 'presentar' && acc !== 'lanzar') monje(p, acc, u, f, arma);
+  else if (estilo === 'naturaleza' && acc !== 'presentar') druida(p, acc, u, f, arma);
+  else if (acc === 'quieto') quieto(p, u, arma, estilo);
   else if (acc === 'caminar' || acc === 'correr') marcha(p, u, acc === 'correr', arma);
   else if (acc === 'presentar') presentar(p, u, arma, estilo ?? 'guardia', mano);
   else if (acc === 'atacar') atacar(p, u, arma);
@@ -255,7 +259,8 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
   p.capa = [0.7 + 0.2 * k, 0.3 * k2]; p.pelo = [0.2 * k, 0.2 * k2];
   if (arma === 'dos') { p.hombroD = [30 + 3 * k, 8, 50 + 4 * k, 0]; p.munecaD = -2 + 3 * k2; }
   if (arma === 'ballesta') { p.hombroD = [26 + 3 * k, 10, 60 + 4 * k, 0]; }
-  if (arma === 'arco') { p.hombroI = [36 + 3 * k, 12, 16 + 2 * k, 0]; p.hombroD = [32 + 2 * k, 16, 58 + 4 * k, 6]; p.giroTorso = 16 + k; p.giroCadera = 6; p.giroCabeza = -14 + 3 * k2; }
+  // el arco cuelga natural de la izquierda, la cuerda recta; la derecha descansa
+  if (arma === 'arco') { p.hombroI = [6 + 1.5 * k, 13, 14 + 2 * k, 0]; p.hombroD = [12 + 3 * k, 12, 26 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
   if (arma === 'baculo') { p.hombroD = [20 + 2 * k, 12, 56 + 3 * k, 0]; p.vara = [4 + 1.5 * k2, 3]; }
   if (arma === 'garras' || arma === 'nada') { p.hombroD = [16 + 3 * k, 14, 44 + 5 * k, 12]; p.hombroI = [14 + 2 * k, 14, 48 + 4 * k, 14]; }
   switch (estilo) {
@@ -382,14 +387,14 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       // busca otra flecha atrás del hombro y la monta
       plantar(p, [-3.2, 3.6], [2.2, 1.6], [55, 12]);
       actuar(p, [
-        K(0, { bajar: 1.2, torso: 3, ladeo: 0, giroTorso: 16, giroCadera: 8, lateral: 0.2, ladeoCadera: 0, manoI: [11, -7, 31], manoD: [9, -4, 32], cabeza: 6, giroCabeza: -12, ladeoCabeza: 0, respira: 0.2, hombros: [0, 0] }),
+        K(0, { bajar: 1.2, torso: 3, ladeo: 0, giroTorso: 16, giroCadera: 8, lateral: 0.2, ladeoCadera: 0, manoI: [11, -7, 31], manoD: [8, -4.5, 32], codoD: [-0.35, 0.8, -0.5], cabeza: 6, giroCabeza: -12, ladeoCabeza: 0, respira: 0.2, hombros: [0, 0] }),
         K(0.14, { bajar: 2, torso: 5, giroTorso: 24, giroCadera: 12, manoI: [15, -5, 38], manoD: [12, -3, 39], cabeza: 1, giroCabeza: -20, respira: 0.7 }, true),
-        K(0.34, { bajar: 2.5, torso: -1, ladeo: -2.5, giroTorso: 54, giroCadera: 26, lateral: 0.9, ladeoCadera: 2, manoI: [26, -3, 46], manoD: [1.5, 2, 50.5], cabeza: 0, giroCabeza: -50, ladeoCabeza: -4, respira: 1, hombros: [0.4, 0.8] }),
-        K(0.48, { manoD: [1, 2.2, 50.3], respira: 0.85 }, true),
-        K(0.56, { torso: -2.5, manoD: [-4, 6, 51.5], manoI: [27.5, -3.2, 46.6], cabeza: -1, respira: 0.2 }),
-        K(0.66, { manoD: [-5, 7, 50], manoI: [27, -3, 46], respira: 0.1 }, true),
-        K(0.8, { bajar: 1.6, torso: 2, ladeo: -1, giroTorso: 32, giroCadera: 16, lateral: 0.4, ladeoCadera: 1, manoI: [16, -5, 38], manoD: [-3, 6, 56], cabeza: 2, giroCabeza: -26, ladeoCabeza: 0, hombros: [0.6, 0.3] }),
-        K(0.9, { bajar: 1.4, torso: 3, ladeo: 0, giroTorso: 20, giroCadera: 10, lateral: 0.2, ladeoCadera: 0, manoI: [12, -6, 33], manoD: [10, -3.5, 34], cabeza: 5, giroCabeza: -14, hombros: [0, 0] }),
+        K(0.34, { bajar: 2.5, torso: -1, ladeo: -2.5, giroTorso: 54, giroCadera: 26, lateral: 0.9, ladeoCadera: 2, manoI: [24.5, 0.5, 48.5], manoD: [1.5, 2.2, 50], codoD: [-1, 0.45, 0.5], cabeza: 0, giroCabeza: -50, ladeoCabeza: -4, respira: 1, hombros: [0.4, 0.8] }),
+        K(0.48, { manoD: [1, 2.3, 50], respira: 0.85 }, true),
+        K(0.56, { torso: -2.5, manoD: [-4.5, 3.6, 50.6], manoI: [26, 0.3, 49], cabeza: -1, respira: 0.2 }),
+        K(0.66, { manoD: [-5.5, 4.4, 50], manoI: [25.5, 0.2, 48.6], respira: 0.1 }, true),
+        K(0.8, { bajar: 1.6, torso: 2, ladeo: -1, giroTorso: 32, giroCadera: 16, lateral: 0.4, ladeoCadera: 1, manoI: [16, -5, 38], manoD: [-3, 6, 56], codoD: [-0.2, 0.6, 0.8], cabeza: 2, giroCabeza: -26, ladeoCabeza: 0, hombros: [0.6, 0.3] }),
+        K(0.9, { bajar: 1.4, torso: 3, ladeo: 0, giroTorso: 20, giroCadera: 10, lateral: 0.2, ladeoCadera: 0, manoI: [12, -6, 33], manoD: [9, -3.8, 34], codoD: [-0.35, 0.8, -0.5], cabeza: 5, giroCabeza: -14, hombros: [0, 0] }),
       ], u, { lagCab: 0.03, capa: 0.8 });
       p.flecha = !(u > 0.53 && u < 0.86);
       break;
@@ -429,33 +434,36 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       plantar(p, [-0.3, 0.6], [5, 5], [24, 24]);
       const atras = (s: number): [number, number, number] => [-1, s, -0.2];
       actuar(p, [
-        K(0, { bajar: 7, torso: 6, ladeo: 0, giroTorso: 0, giroCadera: 0, lateral: 0, ladeoCadera: 0, respira: 0.3, manoD: [3, 7, 29], manoI: [3, -7, 29], codoD: atras(0.4), codoI: atras(-0.4), cabeza: 0, giroCabeza: 0 }),
-        K(0.14, { bajar: 7.6, lateral: 1.4, ladeoCadera: 2, giroCadera: 12, giroTorso: 24, ladeo: 1.5, manoI: [9, -2, 51], codoI: [0, -1, 0.2], cabeza: -2, giroCabeza: -22 }),
-        K(0.26, { bajar: 6.4, lateral: -1, ladeoCadera: -2, giroCadera: -14, giroTorso: -30, ladeo: -2, manoD: [23, -1, 45], codoD: [0, 1, -0.3], manoI: [2, -7, 31], codoI: atras(-0.4), cabeza: 2, giroCabeza: 26, respira: 0 }, true),
+        K(0, { bajar: 7, torso: 6, ladeo: 0, giroTorso: 0, giroCadera: 0, lateral: 0, ladeoCadera: 0, respira: 0.3, manoD: [2, 7.4, 29.5], manoI: [2, -7.4, 29.5], codoD: atras(0.4), codoI: atras(-0.4), cabeza: 0, giroCabeza: 0 }),
+        K(0.14, { bajar: 7.6, lateral: 1.4, ladeoCadera: 2, giroCadera: 12, giroTorso: 24, ladeo: 1.5, manoI: [9, 0.5, 54], codoI: [0.1, -1, 0.35], cabeza: -2, giroCabeza: -22 }),
+        K(0.26, { bajar: 6.4, lateral: -1, ladeoCadera: -2, giroCadera: -14, giroTorso: -30, ladeo: -2, manoD: [23, -1, 45], codoD: [0, 1, -0.3], manoI: [2, -7.4, 30.5], codoI: atras(-0.4), cabeza: 2, giroCabeza: 26, respira: 0 }, true),
         K(0.42, { bajar: 7.8, lateral: 0, ladeoCadera: 0, giroCadera: 0, giroTorso: 0, ladeo: 0, torso: 4, manoD: [12, 9, 37], manoI: [12, -9, 37], codoD: [-0.2, 1, -0.5], codoI: [-0.2, -1, -0.5], cabeza: 2, giroCabeza: 0, respira: 0.8 }),
-        K(0.55, { bajar: 6.4, lateral: 1, ladeoCadera: 2, giroCadera: 14, giroTorso: 30, ladeo: 2, manoI: [22, 1, 44], codoI: [0, -1, -0.3], manoD: [2, 7, 30], codoD: atras(0.4), cabeza: 1, giroCabeza: -26, respira: 0 }, true),
+        K(0.55, { bajar: 6.4, lateral: 1, ladeoCadera: 2, giroCadera: 14, giroTorso: 30, ladeo: 2, manoI: [22, 1, 44], codoI: [0, -1, -0.3], manoD: [2, 7.4, 30.5], codoD: atras(0.4), cabeza: 1, giroCabeza: -26, respira: 0 }, true),
         K(0.72, { bajar: 5, torso: 0, lateral: 0, ladeoCadera: 0, giroCadera: 0, giroTorso: 0, ladeo: 0, manoD: [10, 1.2, 44], manoI: [10, -1.2, 44], codoD: [0, 1, -0.6], codoI: [0, -1, -0.6], cabeza: 6, giroCabeza: 0, respira: 1 }),
         K(0.86, { bajar: 6.6, torso: 5, manoD: [10, 4, 34], manoI: [10, -4, 34], codoD: [-0.3, 1, -0.6], codoI: [-0.3, -1, -0.6], cabeza: 1, respira: 0.1 }),
       ], u, { lagCab: 0.03, capa: 0.6 });
       break;
     }
     case 'naturaleza': {
-      // inspira y abre los brazos de a poco, mira al cielo y el viento lo mece de un lado al otro (la cabeza, los brazos,
-      // la barba y la capa llegan tarde); después baja los brazos y la mirada
+      // encorvado y terrenal, la vara plantada al costado: el brazo libre sube suave como una rama (el codo blando
+      // adelante de la mano), la mano de la vara sube por ella, mira al cielo y el viento lo mece; la mano llega tarde
       plantar(p, [-0.6, 2], [1.5, 1.2], [14, 10]);
+      const pie: [number, number, number] = [12, 20, 0.5], cima: [number, number, number] = [9, 17.5, 62];
+      const enVara = (z: number): [number, number, number] => { const t = (z - pie[2]) / (cima[2] - pie[2]); return [lerp(pie[0], cima[0], t), lerp(pie[1], cima[1], t), z]; };
+      p.varaPie = pie;
       const cl: Clave[] = [
-        K(0, { bajar: 1, torso: 3, ladeo: 0, lateral: 0.3, ladeoCadera: 1, giroTorso: 0, respira: 0.1, hombros: [0, 0], manoD: [6, 8, 34], vara: [4, 4], manoI: [3, -9, 27], cabeza: 8, giroCabeza: -4, ladeoCabeza: 0 }),
-        K(0.18, { bajar: 0.6, torso: 0, respira: 0.6, manoI: [7, -16, 37], manoD: [7, 12, 38], vara: [0, 14], cabeza: -8, hombros: [0.4, 0.4] }),
-        K(0.32, { bajar: 0.2, torso: -8, respira: 1, manoI: [5, -19, 56], manoD: [5, 16, 50], vara: [-5, 22], cabeza: -26, giroCabeza: 0, hombros: [0.8, 0.8] }),
-        K(0.46, { torso: -7, ladeo: -5, lateral: -0.8, ladeoCadera: -1.5, giroTorso: -6, manoI: [4, -20, 53], manoD: [6, 15, 52], vara: [-4, 26], cabeza: -24, ladeoCabeza: -5, giroCabeza: -6 }),
-        K(0.6, { torso: -8, ladeo: 5, lateral: 0.8, ladeoCadera: 1.5, giroTorso: 6, manoI: [6, -18, 57], manoD: [4, 17, 49], vara: [-6, 18], cabeza: -27, ladeoCabeza: 5, giroCabeza: 6 }),
-        K(0.72, { torso: -6, ladeo: -2, lateral: -0.2, ladeoCadera: 0, giroTorso: -2, manoI: [5, -19, 53], manoD: [5, 16, 50], cabeza: -20, ladeoCabeza: -2, giroCabeza: -2, respira: 0.7 }),
-        K(0.86, { bajar: 0.8, torso: 2, ladeo: 0, lateral: 0.2, ladeoCadera: 0.8, giroTorso: 0, respira: 0.2, manoI: [4, -12, 31], manoD: [6, 10, 36], vara: [3, 8], cabeza: 4, ladeoCabeza: 0, giroCabeza: -3, hombros: [0.1, 0.1] }),
+        K(0, { bajar: 1.6, torso: 9, ladeo: 0, lateral: 0.4, ladeoCadera: 1, giroTorso: 0, respira: 0.1, hombros: [0.3, 0.3], manoD: enVara(38), manoI: [5, -7.5, 29], codoI: [-0.3, -1, -0.6], cabeza: 2, giroCabeza: -4, ladeoCabeza: 0 }),
+        K(0.2, { bajar: 1.2, torso: 6, respira: 0.5, manoI: [8, -14, 33], codoI: [0, -1, -0.8], manoD: enVara(41), cabeza: -6 }),
+        K(0.34, { bajar: 0.6, torso: 2, respira: 1, hombros: [0.6, 0.8], manoI: [7, -15, 48], codoI: [0.2, -1, -0.9], manoD: enVara(46), cabeza: -18 }),
+        K(0.46, { torso: 1, ladeo: -4, lateral: -0.5, ladeoCadera: -1.2, giroTorso: -5, manoI: [6, -14, 55], cabeza: -24, ladeoCabeza: -5, giroCabeza: -6 }),
+        K(0.6, { torso: 0, ladeo: 4, lateral: 0.6, ladeoCadera: 1.2, giroTorso: 5, manoI: [8, -12, 53], manoD: enVara(47), cabeza: -22, ladeoCabeza: 5, giroCabeza: 4 }),
+        K(0.72, { torso: 2, ladeo: -2, lateral: -0.1, ladeoCadera: 0, giroTorso: -2, manoI: [7, -14, 52], cabeza: -18, ladeoCabeza: -2, giroCabeza: -2, respira: 0.7 }),
+        K(0.86, { bajar: 1.4, torso: 7, ladeo: 0, lateral: 0.3, ladeoCadera: 0.8, giroTorso: 0, respira: 0.2, manoI: [6, -11, 36], codoI: [-0.2, -1, -0.7], manoD: enVara(40), cabeza: 0, ladeoCabeza: 0, giroCabeza: -3, hombros: [0.3, 0.3] }),
       ];
       actuar(p, cl, u, { lagCab: 0.05, capa: 1.2, pelo: 0.6, tela: 1.6 });
-      // los brazos y la vara siguen al torso con retardo (el viento los empuja después)
-      const b = animar(cl, u - 0.05);
-      p.manoI = b.manoI as [number, number, number]; p.manoD = b.manoD as [number, number, number]; p.vara = b.vara as [number, number];
+      // la mano libre llega más tarde que el hombro, como la punta de una rama
+      const b = animar(cl, u - 0.06);
+      p.manoI = b.manoI as [number, number, number];
       break;
     }
     case 'frasco': {
@@ -480,20 +488,175 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
   }
 }
 
+// ------------------------------------------------------------------ monje: cadera baja y centrada, puños guardados
+/**
+ * El monje se mueve desde el centro: la cadera baja y quieta, los puños cerrados en la cintura o en guardia, los golpes
+ * salen de la cadera con giro y el brazo vuelve a la guardia; los codos apuntan abajo y atrás (nunca se cruzan).
+ */
+function monje(p: Pose, acc: Accion, u: number, f: number, arma: ArmaPose) {
+  void arma;
+  const cint = (s: number): [number, number, number] => [-1, s * 0.35, -0.2]; // codo atrás: puño en la cintura
+  const abajo = (s: number): [number, number, number] => [-0.3, s * 0.7, -1]; // codo abajo: guardia
+  if (acc === 'quieto') {
+    // de pie en postura baja, los puños en la cintura; respira hondo desde el vientre
+    const k = 0.5 - 0.5 * Math.cos(u * TAU), k2 = Math.sin(u * TAU);
+    plantar(p, [-1.2, 1.6], [2.4, 2.4], [22, 22]);
+    p.bajar = 3.2 - 0.45 * k; p.torso = 3 - k; p.respira = 0.2 + k; p.hombros = [0.45 * k, 0.45 * k];
+    p.lateral = 0.1; p.giroTorso = 4; p.giroCadera = 2; p.cabeza = -0.5 * k; p.giroCabeza = -3 + 2.5 * k2;
+    p.manoD = [2, 7.4, 30.6 + 0.6 * k]; p.manoI = [2, -7.4, 30.6 + 0.6 * k]; p.codoD = cint(1); p.codoI = cint(-1);
+    p.capa = [0.6, 0.2 * k2]; p.pelo = [0, 0];
+  } else if (acc === 'caminar' || acc === 'correr') {
+    const correr = acc === 'correr';
+    marcha(p, u, correr, 'nada');
+    if (!correr) {
+      // erguido y sereno: las manos juntas delante del vientre, el torso apenas gira
+      p.torso = 2; p.giroTorso *= 0.5; p.giroCabeza = -p.giroTorso * 0.9; p.respira = 0.4;
+      const b = Math.sin((u - 0.1) * 2 * TAU) * 0.3;
+      p.manoD = [8, 1.3, 32.5 + b]; p.manoI = [8, -1.3, 32.5 + b]; p.codoD = [-0.3, 1, -0.6]; p.codoI = [-0.3, -1, -0.6];
+    } else {
+      // guardia suelta: puños compactos que bombean cerca del cuerpo, los codos atrás
+      p.torso = 11;
+      const [d, i] = [p.hombroD, p.hombroI];
+      p.hombroD = [d[0] * 0.8 + 2, 12, d[2] + 14, 22]; p.hombroI = [i[0] * 0.8 + 2, 12, i[2] + 14, 22];
+    }
+  } else if (acc === 'atacar') {
+    // combo: directo de izquierda, cruzado de derecha y patada frontal con la pierna de atrás; cada puño vuelve a la guardia
+    plantar(p, [-2.5, 3], [2.2, 1.8], [30, 10]);
+    const GD: [number, number, number] = [8, 4.5, 42], GI: [number, number, number] = [12, -3, 43];
+    actuar(p, [
+      K(0, { bajar: 4, torso: 6, ladeo: 0, giroTorso: 12, giroCadera: 6, lateral: 0.2, manoD: GD, manoI: GI, codoD: abajo(1), codoI: abajo(-1), cabeza: 0, giroCabeza: -10, pasos: [-2.5, 3], alza: [0, 0], respira: 0.4 }),
+      K(1 / 8, { torso: 8, giroTorso: 24, giroCadera: 9, lateral: -0.3, manoI: [24, -1.5, 45], giroCabeza: -22, respira: 0 }, true),
+      K(2 / 8, { torso: 7, giroTorso: 10, giroCadera: -6, lateral: -0.4, manoI: GI, manoD: [6, 5.5, 41] }),
+      K(3 / 8, { torso: 12, giroTorso: -26, giroCadera: -16, lateral: -0.9, ladeo: -2, manoD: [25, 0.5, 45], manoI: [10, -4, 43], giroCabeza: 22 }, true),
+      K(4 / 8, { bajar: 3, torso: 2, giroTorso: 4, giroCadera: 0, lateral: -1.4, ladeo: 0, manoD: GD, manoI: [11, -3.5, 43], giroCabeza: -2, pasos: [4, 3], alza: [11, 0], respira: 0.6 }),
+      K(5 / 8, { bajar: 3, torso: -10, giroTorso: 4, giroCadera: -8, lateral: -1.6, manoD: [6, 6, 41], manoI: [9, -5, 42], cabeza: 4, giroCabeza: 6, pasos: [21, 3], alza: [14, 0], respira: 0 }, true),
+      K(6 / 8, { bajar: 3.4, torso: 2, giroTorso: 6, giroCadera: 0, lateral: -1, manoD: GD, manoI: GI, cabeza: 0, giroCabeza: -6, pasos: [6, 3], alza: [7, 0] }),
+      K(7 / 8, { bajar: 3.8, torso: 5, giroTorso: 10, giroCadera: 5, lateral: -0.2, pasos: [-2, 3], alza: [0.6, 0], respira: 0.3 }),
+    ], u, { lagCab: 0.03, capa: 0.8 });
+    p.alza = [Math.max(0, p.alza?.[0] ?? 0), 0];
+  } else if (acc === 'herido') {
+    // encaja el golpe cubriéndose: los puños suben a la cara y la cadera se hunde
+    const i = ((f % 4) + 4) % 4, tab = <T>(xs: T[]) => xs[i];
+    plantar(p, [-2, 2.2], [2.2, 2], [24, 14]);
+    p.torso = tab([-10, -14, -3, 4]); p.avanza = tab([-1.4, -2, -1, -0.3]); p.giroTorso = tab([10, 14, 8, 6]); p.giroCadera = tab([4, 7, 4, 3]);
+    p.ladeo = tab([3, 5, 2, 0]); p.lateral = tab([0.5, 0.8, 0.3, 0]); p.bajar = tab([4, 5, 4.4, 3.8]);
+    p.cabeza = tab([-6, -12, -2, 2]); p.giroCabeza = tab([8, 10, 3, -2]); p.ladeoCabeza = tab([5, 8, 2, 0]);
+    p.manoD = tab<[number, number, number]>([[5, 4, 47], [3, 4.5, 48], [6, 4.5, 44], [8, 4.5, 42]]);
+    p.manoI = tab<[number, number, number]>([[7, -3.5, 48], [5, -4, 49], [9, -3.5, 45], [12, -3, 43]]);
+    p.codoD = abajo(1); p.codoI = abajo(-1); p.respira = tab([0.9, 0.5, 0.2, 0.3]);
+    p.capa = [tab([2, 3, 1.2, 0.8]), tab([-0.5, -1, -0.3, 0])];
+  } else {
+    // morir con calma: se arrodilla, apoya las manos en los muslos, exhala y se recuesta de costado
+    const i = Math.max(0, Math.min(7, Math.floor(f))), tab = <T>(xs: T[]) => xs[i];
+    p.caidaDir = 90;
+    p.caida = tab([0, 0, 0, 0, 0.12, 0.42, 0.8, 1]);
+    p.bajar = tab([2, 6, 13, 14.5, 14.5, 14, 14, 14]);
+    p.caderaD = tab<[number, number]>([[8, 14], [20, 60], [8, 98], [4, 104], [4, 104], [6, 106], [8, 108], [8, 108]]);
+    p.caderaI = tab<[number, number]>([[-6, 10], [14, 56], [12, 100], [8, 104], [8, 104], [10, 106], [12, 108], [12, 108]]);
+    p.torso = tab([-10, 10, 14, 20, 18, 14, 10, 8]); p.cabeza = tab([-8, 14, 18, 24, 22, 16, 10, 8]);
+    p.giroCabeza = tab([6, 4, 2, 0, 0, 0, 4, 6]); p.ladeoCabeza = tab([4, 2, 0, 0, 2, 6, 10, 12]);
+    p.ladeo = tab([3, 2, 0, 0, 2, 4, 6, 6]); p.giroTorso = tab([8, 4, 0, 0, 0, 2, 4, 4]);
+    p.avanza = tab([-0.8, 0, 0, 0, 0, 0, 0, 0]); p.respira = tab([1, 0.6, 0.3, 0.6, 0.2, 0.1, 0, 0]);
+    p.manoD = tab<[number, number, number]>([[6, 5, 44], [9, 6, 30], [7, 5, 18], [6, 5, 17], [6, 5, 17], [7, 6, 16], [8, 6, 15], [8, 6, 15]]);
+    p.manoI = tab<[number, number, number]>([[9, -4, 44], [10, -6, 30], [7, -5, 18], [6, -5, 17], [6, -5, 17], [7, -6, 16], [8, -6, 15], [8, -6, 15]]);
+    p.capa = [tab([1.6, 0.4, -0.4, -0.8, -0.8, -0.4, 0, 0]), 0];
+  }
+}
+
+// ------------------------------------------------------------------ druida: encorvado y terrenal, el bastón como apoyo
+/**
+ * El druida carga el peso hacia adelante, con la vara apoyada en el piso: al caminar la vara avanza y se planta con el
+ * talón izquierdo y queda quieta en el suelo mientras el cuerpo pasa sobre ella. Golpea con la vara a dos manos en arco,
+ * conjura sacando raíces del piso y muere arrodillado, cayendo de costado sobre la vara.
+ */
+function druida(p: Pose, acc: Accion, u: number, f: number, arma: ArmaPose) {
+  void arma;
+  if (acc === 'quieto') {
+    const k = 0.5 - 0.5 * Math.cos(u * TAU), k2 = Math.sin(u * TAU);
+    plantar(p, [-1.5, 2], [1.6, 1.4], [16, 12]);
+    p.bajar = 1.6 - 0.4 * k; p.torso = 9 - 1.2 * k; p.respira = k; p.hombros = [0.4 + 0.5 * k, 0.4 + 0.5 * k];
+    p.lateral = 0.5 + 0.1 * k; p.ladeoCadera = 1.8; p.ladeo = 1 - 0.3 * k; p.giroTorso = 3; p.giroCadera = 0;
+    p.cabeza = -7 - 1.5 * k; p.giroCabeza = -4 + 4 * k2; p.ladeoCabeza = 1.5 * k2;
+    p.varaPie = [13, 12.5, 0.5]; p.manoD = [8, 10, 41 - 0.4 * k]; p.manoI = [4, -9, 29 + 0.6 * k];
+    p.capa = [0.8 + 0.2 * k, 0.2 * k2]; p.pelo = [0.2 * k, 0.2 * k2];
+  } else if (acc === 'caminar' || acc === 'correr') {
+    const correr = acc === 'correr';
+    marcha(p, u, correr, 'baculo');
+    p.torso = correr ? 18 : 10; p.cabeza = correr ? -12 : -7;
+    if (correr) { p.manoD = [10, 9, 35]; p.vara = [42, 3]; return; }
+    // la vara se planta con el talón izquierdo (u = 0.5) y queda quieta en el piso mientras el cuerpo pasa sobre ella
+    // (en el marco del cuerpo retrocede a la misma velocidad con que avanza el personaje); después vuela adelante
+    const zan = zancada('caminar', 1), q = mod1(u - 0.5), delante = 12.5, recorre = zan * 0.5;
+    if (q < 0.5) p.varaPie = [delante - recorre * (q / 0.5), 11.5, 0.5];
+    else { const s2 = (q - 0.5) / 0.5, e = 0.5 - 0.5 * Math.cos(Math.PI * s2); p.varaPie = [lerp(delante - recorre, delante, e), 11.5, 0.5 + 3.2 * Math.sin(Math.PI * s2)]; }
+    p.manoD = [6 + 3 * Math.cos(TAU * q), 9.5, 37 + 0.8 * Math.sin(TAU * q)];
+    delete p.vara;
+  } else if (acc === 'atacar') {
+    // golpe de vara a dos manos: la carga atrás y arriba, el arco por encima y el golpe adelante con paso
+    plantar(p, [-2.8, 3.6], [1.8, 1.4], [26, 10]);
+    p.agarreI = 12; p.pegaI = 1;
+    actuar(p, [
+      K(0, { bajar: 2.5, torso: 10, giroTorso: 8, giroCadera: 4, lateral: 0, ladeo: 0, avanza: 0, manoD: [11, 4, 38], vara: [35, -35], cabeza: -6, giroCabeza: -8, respira: 0.3 }),
+      K(1 / 8, { bajar: 3, torso: 2, giroTorso: 26, giroCadera: 10, lateral: 0.7, ladeo: 3, manoD: [3, 9, 50], vara: [-25, 25], cabeza: -8, giroCabeza: -20, respira: 0.8 }),
+      K(2 / 8, { bajar: 3.2, torso: -6, giroTorso: 32, giroCadera: 12, lateral: 0.9, ladeo: 4, manoD: [0, 9, 54], vara: [-50, 30], cabeza: -10, giroCabeza: -26, respira: 1 }, true),
+      K(3 / 8, { bajar: 3.6, torso: 6, giroTorso: 6, giroCadera: -10, lateral: 0, ladeo: 0, manoD: [12, 5, 48], vara: [45, 0], cabeza: -6, giroCabeza: -6 }),
+      K(4 / 8, { bajar: 5, torso: 22, giroTorso: -18, giroCadera: -12, lateral: -1, ladeo: -3, manoD: [17, 1, 36], vara: [100, -10], avanza: 2, cabeza: 4, giroCabeza: 14, respira: 0.2 }, true),
+      K(5 / 8, { bajar: 5.3, torso: 25, giroTorso: -24, manoD: [16, -1, 32], vara: [118, -18], avanza: 2.3, cabeza: 6, giroCabeza: 18 }),
+      K(6 / 8, { bajar: 4, torso: 16, giroTorso: -6, giroCadera: -3, lateral: -0.4, ladeo: -1, manoD: [13, 3, 37], vara: [70, -25], avanza: 1.2, cabeza: 0, giroCabeza: 2 }),
+      K(7 / 8, { bajar: 2.8, torso: 11, giroTorso: 5, giroCadera: 2, lateral: 0, ladeo: 0, manoD: [11, 4, 38], vara: [40, -33], avanza: 0.3, cabeza: -5, giroCabeza: -8 }),
+    ], u, { lagCab: 0.03, lagArma: 0.02, capa: 1 });
+  } else if (acc === 'lanzar') {
+    // apoyado en la vara, se agacha, la mano libre agarra la tierra y sube despacio arrancando raíces
+    plantar(p, [-1.8, 2.6], [1.8, 1.6], [18, 12]);
+    p.varaPie = [14, 12.5, 0.5];
+    actuar(p, [
+      K(0, { bajar: 1.6, torso: 9, ladeo: 0, lateral: 0.3, manoI: [6, -7, 30], manoD: [8, 9.5, 40], cabeza: -5, giroCabeza: -4, respira: 0.2 }),
+      K(1 / 8, { bajar: 5, torso: 32, ladeo: -2, lateral: -0.3, manoI: [14, -5, 6], codoI: [0, -1, 0.4], manoD: [9, 9.5, 34], cabeza: 14, giroCabeza: -6, respira: 0 }),
+      K(2 / 8, { bajar: 5.5, torso: 34, manoI: [15, -5, 3], cabeza: 16 }, true),
+      K(3 / 8, { bajar: 3.5, torso: 18, ladeo: 0, manoI: [13, -7, 24], manoD: [8.5, 9.5, 38], cabeza: -4, respira: 0.6 }),
+      K(4 / 8, { bajar: 1, torso: 0, ladeo: 1, lateral: 0.4, manoI: [9, -9, 50], codoI: [0, -1, -0.7], manoD: [7, 9.5, 42], cabeza: -18, giroCabeza: -8, respira: 1 }, true),
+      K(5 / 8, { bajar: 1, torso: -2, manoI: [9.5, -9, 52], cabeza: -20 }),
+      K(6 / 8, { bajar: 2, torso: 8, ladeo: 0, lateral: 0.3, manoI: [8, -8, 34], manoD: [7.5, 9.5, 40], cabeza: -4, giroCabeza: -4, respira: 0.3 }),
+      K(7 / 8, { bajar: 1.6, torso: 9, manoI: [6, -7, 30], cabeza: -5 }),
+    ], u, { lagCab: 0.035, capa: 1 });
+  } else if (acc === 'herido') {
+    herido(p, f, 'baculo');
+    p.torso += 6; p.cabeza -= 3; delete p.vara;
+    // se sostiene de la vara plantada
+    p.varaPie = [13, 12.5, 0.5]; p.manoD = [8 + (p.avanza ?? 0) * 0.5, 10, 40];
+  } else {
+    // se arrodilla apoyado en la vara, la mano baja por ella y cae de costado sobre la vara
+    const i = Math.max(0, Math.min(7, Math.floor(f))), tab = <T>(xs: T[]) => xs[i];
+    p.caidaDir = 90;
+    p.caida = tab([0, 0, 0, 0, 0.18, 0.55, 1, 1]);
+    p.bajar = tab([1.5, 6, 13, 14.5, 14, 13, 12, 12]);
+    p.caderaD = tab<[number, number]>([[6, 10], [22, 64], [8, 98], [4, 104], [6, 100], [10, 90], [14, 80], [14, 80]]);
+    p.caderaI = tab<[number, number]>([[-6, 8], [16, 58], [12, 102], [8, 106], [10, 100], [12, 90], [16, 80], [16, 80]]);
+    p.torso = tab([-12, 14, 16, 24, 22, 14, 8, 6]); p.cabeza = tab([-12, 18, 16, 24, 20, 10, 6, 4]);
+    p.giroCabeza = tab([8, 4, 2, 0, 0, 4, 10, 14]); p.ladeoCabeza = tab([6, 2, 0, 0, 4, 8, 12, 12]);
+    p.ladeo = tab([4, 2, 0, 0, 4, 8, 6, 6]); p.giroTorso = tab([10, 6, 2, 0, 0, 2, 4, 4]);
+    p.avanza = tab([-1, -0.3, 0, 0, 0, 0, 0, 0]); p.respira = tab([0.9, 0.5, 0.2, 0.5, 0.2, 0, 0, 0]);
+    p.varaPie = [10, 9, 0.5];
+    p.manoD = tab<[number, number, number]>([[7, 8.5, 40], [8, 8.5, 32], [8, 8, 26], [7, 8, 22], [7, 8, 22], [7, 8, 22], [7, 8, 22], [7, 8, 22]]);
+    p.manoI = tab<[number, number, number]>([[6, -7, 32], [8, -6, 24], [7, -6, 18], [6, -5, 16], [6, -5, 16], [6, -6, 14], [6, -7, 12], [6, -7, 12]]);
+    p.capa = [tab([2, 0.5, -0.5, -1, -1, -0.5, 0, 0]), 0]; p.pelo = [tab([1.4, -0.4, -0.8, -1.2, -1, -0.5, 0, 0]), 0];
+  }
+}
+
 // ------------------------------------------------------------------ atacar: anticipación, contacto y recuperación (8 cuadros)
 function atacar(p: Pose, u: number, arma: ArmaPose) {
   let cl: Clave[];
   if (arma === 'arco') {
     plantar(p, [-3.2, 3.6], [2.2, 1.6], [55, 12]);
     cl = [
-      K(0, { bajar: 2, torso: 0, ladeo: 0, giroTorso: 46, giroCadera: 22, lateral: 0.6, manoI: [24, -3, 45], manoD: [13, -3, 45], cabeza: 0, giroCabeza: -44, respira: 0.6 }),
-      K(1 / 8, { manoD: [7, -0.5, 47.5], giroTorso: 50, giroCadera: 24, lateral: 0.8, respira: 0.9 }),
-      K(2 / 8, { manoD: [2, 1.8, 50], giroTorso: 54, giroCadera: 26, lateral: 0.9, ladeo: -2, respira: 1, manoI: [26, -3, 46], giroCabeza: -50 }),
-      K(3 / 8, { manoD: [1.6, 2.1, 50.2] }, true),
-      K(4 / 8, { manoD: [-3.5, 6, 51], manoI: [27.5, -3.2, 46.6], torso: -2, respira: 0.2, cabeza: -1 }),
-      K(5 / 8, { manoD: [-4.5, 6.5, 50], manoI: [27, -3, 46] }, true),
-      K(6 / 8, { manoD: [-2, 6, 56], giroTorso: 48, ladeo: -1, cabeza: 1, manoI: [25, -3, 45.5] }),
-      K(7 / 8, { manoD: [12, -2.5, 45.5], giroTorso: 46, ladeo: 0, manoI: [24.5, -3, 45.2], respira: 0.5, cabeza: 0 }),
+      K(0, { bajar: 2, torso: 0, ladeo: 0, giroTorso: 46, giroCadera: 22, lateral: 0.6, manoI: [23.5, 0.3, 47.5], manoD: [17, 0.6, 48.4], codoD: [-0.6, 0.6, 0.3], cabeza: 0, giroCabeza: -44, respira: 0.6 }),
+      K(1 / 8, { manoD: [8, 1.6, 49.4], codoD: [-1, 0.5, 0.45], giroTorso: 50, giroCadera: 24, lateral: 0.8, respira: 0.9 }),
+      K(2 / 8, { manoD: [1.6, 2.2, 50], giroTorso: 54, giroCadera: 26, lateral: 0.9, ladeo: -2, respira: 1, manoI: [24.5, 0.5, 48.5], giroCabeza: -50 }),
+      K(3 / 8, { manoD: [1.2, 2.3, 50] }, true),
+      K(4 / 8, { manoD: [-4.5, 3.6, 50.6], manoI: [26, 0.3, 49], torso: -2, respira: 0.2, cabeza: -1 }),
+      K(5 / 8, { manoD: [-5.5, 4.4, 50], manoI: [25.5, 0.2, 48.6] }, true),
+      K(6 / 8, { manoD: [-2, 6, 56], codoD: [-0.2, 0.6, 0.8], giroTorso: 48, ladeo: -1, cabeza: 1, manoI: [24.5, 0.3, 48] }),
+      K(7 / 8, { manoD: [16, 0.6, 48.4], codoD: [-0.6, 0.6, 0.3], giroTorso: 46, ladeo: 0, manoI: [23.5, 0.3, 47.5], respira: 0.5, cabeza: 0 }),
     ];
     actuar(p, cl, u, { lagCab: 0.03, capa: 0.9 });
     p.flecha = !(u > 0.45 && u < 0.83);

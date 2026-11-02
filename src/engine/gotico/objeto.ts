@@ -9,7 +9,7 @@ import { pintarEscena, medirEscena, calidad, girarPiezas, type Escena, type Piez
 export type Tema =
   | 'campamento' | 'campo' | 'cementerio' | 'cueva' | 'monasterio' | 'catacumbas' | 'pueblo' | 'desierto' | 'tumba' | 'cloaca'
   | 'selva' | 'templo_selva' | 'infierno' | 'nieve' | 'hielo' | 'fortaleza' | 'arcano' | 'comun' | 'armas' | 'muebles' | 'arboles' | 'casas'
-  | 'personajes' | 'monstruos' | 'misterio';
+  | 'personajes' | 'monstruos' | 'misterio' | 'mina' | 'abismo';
 
 export const TEMAS: [Tema, string, string][] = [
   ['personajes', 'Personajes (8 direcciones)', 'Characters (8 directions)'], ['monstruos', 'Monstruos (8 direcciones)', 'Monsters (8 directions)'],
@@ -22,6 +22,7 @@ export const TEMAS: [Tema, string, string][] = [
   ['desierto', 'Desierto', 'Desert'], ['tumba', 'Tumbas del desierto', 'Desert tombs'], ['cloaca', 'Cloacas', 'Sewers'], ['arcano', 'Santuario arcano', 'Arcane sanctuary'],
   ['selva', 'Selva y pantano', 'Jungle & marsh'], ['templo_selva', 'Templos de la selva', 'Jungle temples'],
   ['infierno', 'Infierno', 'Hell'], ['fortaleza', 'Fortaleza del cielo', 'Heavenly fortress'], ['nieve', 'Montaña nevada', 'Snowy mountain'], ['hielo', 'Cuevas de hielo', 'Ice caves'],
+  ['mina', 'Minas', 'Mines'], ['abismo', 'El abismo', 'The abyss'],
 ];
 
 export interface ObjetoDef {
