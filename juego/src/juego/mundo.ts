@@ -82,10 +82,14 @@ export interface Mancha {
   x: number; y: number; r: number; color: string; t: number; tipo: 'sangre' | 'quemado' | 'hielo' | 'veneno';
   /** Forma de la sangre: charco que crece, salpicadura alargada según el golpe, gota o rastro de quien huye. */
   forma?: 'charco' | 'salpicadura' | 'gota' | 'rastro'; ang?: number; rmax?: number; sem?: number;
+  /** Paleta del kit de gore: sangre roja, icor negro (no-muertos) o verde (bestias e insectos); y la superficie donde cae. */
+  pal?: 'rojo' | 'negro' | 'verde'; sup?: 'piedra' | 'tierra' | 'nieve' | 'madera';
 }
+/** Pedazo de cuerpo que vuela al reventar: gira, cae con gravedad, salpica al tocar el piso y se desvanece. */
+export interface Gib { id: string; pal: string; x: number; y: number; z: number; vx: number; vy: number; vz: number; ang: number; va: number; t: number; vida: number; quieto?: boolean }
 /** Manchas por zona: cola circular (las más viejas se van) para que la sangre no se coma el rendimiento. */
 export const TOPE_MANCHAS = 300;
-export function ponerMancha(j: Juego, m: Mancha) { j.manchas.push(m); if (j.manchas.length > TOPE_MANCHAS) j.manchas.splice(0, j.manchas.length - TOPE_MANCHAS); }
+export function ponerMancha(j: Juego, m: Mancha) { if (m.forma && !m.sup) m.sup = superficieDe(j); j.manchas.push(m); if (j.manchas.length > TOPE_MANCHAS) j.manchas.splice(0, j.manchas.length - TOPE_MANCHAS); }
 // ------------------------------------------------------------------ efectos de las legendarias del arsenal
 const efectoArma = (j: Juego) => j.heroe.d.equipo.arma?.efecto;
 let enCadena = false;
@@ -135,6 +139,17 @@ function presentarJefe(j: Juego, m: Monstruo) {
   const vis: string[] = ((j.heroe.d as any).jefesVistos ??= []);
   if (!vis.includes(m.def.id)) { vis.push(m.def.id); j.eventos.push({ tipo: 'presentar', dato: m }); }
 }
+const NO_MUERTO = /zombi|momia|necrof|espectr|lich|aparecid|ahogad|muert|hueca|sin_rostro|suplicante|desollad|penitente|segador|caballero_espectral/;
+const BESTIA = /lobo|jabali|arana|escorp|gusano|murcielago|cangrejo|perro|escarabajo|gargola|chacal|trol|madre/;
+const paletaDe = (m: Monstruo): 'rojo' | 'negro' | 'verde' => (NO_MUERTO.test(m.def?.sprite ?? '') ? 'negro' : BESTIA.test(m.def?.sprite ?? '') ? 'verde' : 'rojo');
+/** Superficie del piso de la zona, para el sello de sangre que corresponde. */
+export function superficieDe(j: Juego): 'piedra' | 'tierra' | 'nieve' | 'madera' {
+  const d = ZONAS[j.zona?.id ?? '']; const t = d?.tema ?? '';
+  if (/nieve|hielo/.test(t)) return 'nieve';
+  if (d?.tipo === 'pueblo' && /ahogada|campamento|barco/.test(t)) return 'madera';
+  if (d?.tipo === 'mazmorra' || /catedral|celestial|cripta|catacumbas|fortaleza/.test(t)) return 'piedra';
+  return 'tierra';
+}
 const sangraHueso = (m: Monstruo) => m.def?.sonido === 'hueso';
 const colorSangre = (m: Monstruo) => (sangraHueso(m) ? '#4a4436' : m.def?.elem === 'veneno' ? '#2a4a10' : '#6a0a0a');
 /** Salpicadura en la dirección del golpe: sangre que vuela y una mancha alargada en el piso detrás del herido. */
@@ -146,16 +161,27 @@ function salpicar(j: Juego, v: Monstruo, de: Ent | undefined, fuerza: number, cr
     const sp = (R() - 0.5) * 0.9, c = Math.cos(sp), s = Math.sin(sp), vx = ux * c - uy * s, vy = ux * s + uy * c, vel = (1.5 + R() * 3.5) * (crit ? 1.6 : 1);
     j.particulas.push({ x: v.x, y: v.y, z: 30 * v.escala + R() * 10, vx: vx * vel, vy: vy * vel, vz: 30 + R() * (crit ? 110 : 60), t: 0, dur: 0.5 + R() * 0.5, color: R() < 0.3 ? '#b01010' : '#7a0808', tam: 1 + R() * 2, grav: 260, tipo: 'sangre' } as any);
   }
-  if (crit || fuerza > 0.08 || R() < 0.35) ponerMancha(j, { x: v.x + ux * (0.6 + R() * 0.5), y: v.y + uy * (0.6 + R() * 0.5), r: 0.35 + Math.min(0.9, fuerza * 2) + (crit ? 0.35 : 0), color: colorSangre(v), t: 0, tipo: 'sangre', forma: 'salpicadura', ang: Math.atan2(uy, ux), sem: Math.floor(R() * 8) });
+  if (crit || fuerza > 0.08 || R() < 0.35) ponerMancha(j, { x: v.x + ux * (0.6 + R() * 0.5), y: v.y + uy * (0.6 + R() * 0.5), r: 0.35 + Math.min(0.9, fuerza * 2) + (crit ? 0.35 : 0), color: colorSangre(v), t: 0, tipo: 'sangre', forma: 'salpicadura', ang: Math.atan2(uy, ux), sem: Math.floor(R() * 8), pal: paletaDe(v) });
 }
 /**
  * Muerte por exceso de daño: el cuerpo revienta. Por ahora es sangre y pedazos con partículas; cuando lleguen los gibs
  * de la Forja, aquí se sueltan sus sprites (GIBS: id de objeto con variantes) con la misma física.
  */
 export const GIBS: { id: string; variantes: string[] } | null = null;
+const PIEZAS_GIB = ['torso', 'brazo', 'pierna', 'costillas', 'craneo', 'tripas', 'astillas', 'trozo'];
+const PAL_GIB: Record<string, string> = { rojo: 'rojo', negro: 'no_muerto', verde: 'bestia' };
 function reventar(j: Juego, m: Monstruo) {
   (m as any).reventado = true;
-  const col = colorSangre(m);
+  const col = colorSangre(m), pal = paletaDe(m);
+  // el reventón de la Forja y 5 a 9 pedazos que vuelan, giran y caen
+  (((j as any).reventones ??= []) as any[]).push({ x: m.x, y: m.y, pal: PAL_GIB[pal], t: 0, esc: m.escala });
+  const gibs: Gib[] = ((j as any).gibs ??= []);
+  const n = 5 + Math.floor(R() * 5);
+  for (let i = 0; i < n; i++) {
+    const a = R() * Math.PI * 2, v = 1.5 + R() * 3.5;
+    gibs.push({ id: 'gore_gib_' + (i === 0 ? 'torso' : PIEZAS_GIB[1 + Math.floor(R() * (PIEZAS_GIB.length - 1))]), pal: PAL_GIB[pal], x: m.x, y: m.y, z: 24 * m.escala, vx: Math.cos(a) * v, vy: Math.sin(a) * v, vz: 80 + R() * 140, ang: R() * 8, va: (R() - 0.5) * 30, t: 0, vida: 20 + R() * 20 });
+  }
+  if (gibs.length > 80) gibs.splice(0, gibs.length - 80);
   if (j.particulas.length < 1100) for (let i = 0; i < 42; i++) {
     const a = R() * Math.PI * 2, vel = 2 + R() * 6, trozo = i < 12;
     j.particulas.push({ x: m.x, y: m.y, z: 26 * m.escala + R() * 20, vx: Math.cos(a) * vel, vy: Math.sin(a) * vel, vz: 60 + R() * 160, t: 0, dur: trozo ? 1.4 + R() * 0.6 : 0.6 + R() * 0.6, color: trozo ? (R() < 0.5 ? '#5a0a0a' : '#8a3a2a') : R() < 0.4 ? '#c01414' : '#7a0808', tam: trozo ? 3 + R() * 3 : 1.2 + R() * 2.2, grav: 300, tipo: 'sangre' } as any);
@@ -253,6 +279,7 @@ export function crearJuego(d: DatosHeroe, idi: 0 | 1): Juego {
 /** Entra a una zona por una entrada (o a la piedra de viaje). */
 export function entrarZona(j: Juego, zid: string, entrada: string) {
   durezaCiclo = 1 + 0.15 * cicloExtra(j.heroe.d);
+  (j as any).gibs = []; (j as any).reventones = [];
   // guardar la zona actual
   if (j.zona) zonasVivas.set(j.zona.id, { z: j.zona, monstruos: j.monstruos, suelo: j.suelo, manchas: j.manchas });
   const def = ZONAS[zid];
@@ -589,7 +616,7 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   sonar(j, m.def.sonido === 'hueso' ? 'muerte_esqueleto' : m.calidad >= 3 ? 'rugido_jefe' : 'muerte_monstruo', m.x, m.y);
   // el charco crece despacio bajo el cuerpo
   const rm = (0.8 + R() * 0.8) * m.escala * ((m as any).reventado ? 1.4 : 1);
-  ponerMancha(j, { x: m.x, y: m.y, r: rm * 0.25, rmax: rm, color: colorSangre(m), t: 0, tipo: 'sangre', forma: sangraHueso(m) ? undefined : 'charco', sem: Math.floor(R() * 8) });
+  ponerMancha(j, { x: m.x, y: m.y, r: rm * 0.25, rmax: rm, color: colorSangre(m), t: 0, tipo: 'sangre', forma: sangraHueso(m) ? undefined : 'charco', sem: Math.floor(R() * 8), pal: paletaDe(m) });
   particulas(j, m.x, m.y, 14, 'sangre', m.def.sonido === 'hueso' ? '#d8d0b8' : '#7a0808', 1.4, 30);
   // experiencia (con castigo si el monstruo es muy bajo)
   const dif = h.d.nivel - m.nivel;
@@ -1295,11 +1322,28 @@ export function actualizar(j: Juego, dt: number) {
   actualizarThor(j, dt);
   for (const m of j.monstruos) actualizarMonstruo(j, m, dt);
   // charcos que crecen bajo los muertos y rastro de sangre del que huye herido
-  for (const mc of j.manchas) if (mc.rmax && mc.r < mc.rmax) mc.r = Math.min(mc.rmax, mc.r + (mc.rmax - mc.r) * dt * 0.45 + dt * 0.02);
+  for (const mc of j.manchas) { if (mc.forma === 'charco' && mc.t < 10) mc.t += dt; if (mc.rmax && mc.r < mc.rmax) mc.r = Math.min(mc.rmax, mc.r + (mc.rmax - mc.r) * dt * 0.45 + dt * 0.02); }
+  // pedazos que vuelan: gravedad, giro (8 cuadros por vuelta) y salpicadura donde caen; se van a los 20-40 s
+  const gibs: Gib[] | undefined = (j as any).gibs;
+  if (gibs?.length) {
+    for (const g of gibs) {
+      g.t += dt;
+      if (g.quieto) continue;
+      g.x += g.vx * dt; g.y += g.vy * dt; g.z += g.vz * dt; g.vz -= 420 * dt; g.ang += g.va * dt;
+      if (!pasable(j.zona, g.x, g.y)) { g.vx *= -0.3; g.vy *= -0.3; g.x += g.vx * dt * 2; g.y += g.vy * dt * 2; }
+      if (g.z <= 0) {
+        g.z = 0;
+        if (Math.abs(g.vz) > 60) { ponerMancha(j, { x: g.x, y: g.y, r: 0.35 + R() * 0.3, color: g.pal === 'no_muerto' ? '#2a2a20' : g.pal === 'bestia' ? '#2a4a10' : '#6a0a0a', t: 0, tipo: 'sangre', forma: 'salpicadura', ang: Math.atan2(g.vy, g.vx), sem: Math.floor(R() * 8), pal: g.pal === 'no_muerto' ? 'negro' : g.pal === 'bestia' ? 'verde' : 'rojo' }); g.vz = -g.vz * 0.3; g.vx *= 0.5; g.vy *= 0.5; g.va *= 0.5; }
+        else { g.quieto = true; g.ang = Math.round(g.ang); }
+      }
+    }
+    (j as any).gibs = gibs.filter((g) => g.t < g.vida);
+  }
+  const rv: any[] | undefined = (j as any).reventones; if (rv?.length) { for (const r of rv) r.t += dt; (j as any).reventones = rv.filter((r) => r.t < 1.2); }
   for (const m of j.monstruos) {
     if (m.muerto || m.dueno || sangraHueso(m) || m.vida > m.vidaMax * 0.35) continue;
     const o = m as any; if (o.rx === undefined) { o.rx = m.x; o.ry = m.y; continue; }
-    if (dist(m.x, m.y, o.rx, o.ry) > 0.8) { ponerMancha(j, { x: m.x + (R() - 0.5) * 0.3, y: m.y + (R() - 0.5) * 0.3, r: 0.12 + R() * 0.12, color: colorSangre(m), t: 0, tipo: 'sangre', forma: 'rastro', ang: Math.atan2(m.y - o.ry, m.x - o.rx), sem: Math.floor(R() * 8) }); o.rx = m.x; o.ry = m.y; }
+    if (dist(m.x, m.y, o.rx, o.ry) > 0.8) { ponerMancha(j, { x: m.x + (R() - 0.5) * 0.3, y: m.y + (R() - 0.5) * 0.3, r: 0.12 + R() * 0.12, color: colorSangre(m), t: 0, tipo: 'sangre', forma: 'rastro', ang: Math.atan2(m.y - o.ry, m.x - o.rx), sem: Math.floor(R() * 8), pal: paletaDe(m) }); o.rx = m.x; o.ry = m.y; }
   }
   for (const n of j.npcs) { n.t += dt; if (dist(n.x, n.y, h.x, h.y) < 5) n.dir = dirDe(h.x - n.x, h.y - n.y); }
   actualizarProyectiles(j, dt);

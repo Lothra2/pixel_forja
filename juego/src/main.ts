@@ -14,6 +14,8 @@ import { abrirTienda } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
 import { vinetaSangre, dibujarPresentacion, DUR_PRESENTA } from './ui/horror';
+import { miedoPaso } from './juego/miedo';
+import { dibujarMiedo } from './render/miedo';
 /** Presentación del jefe en curso (cámara lenta y nombre grande). */
 let presenta: { m: Monstruo; t: number } | null = null;
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
@@ -93,6 +95,8 @@ function atlasZona(zid: string): Set<string> {
   for (const id of mons) for (const a of atlasDe('m', clavesCon('m', `${id}/`))) s.add(a);
   if (def.tipo === 'pueblo') for (const n of GENTE[def.acto] ?? []) for (const a of atlasDe('m', clavesCon('m', `${NPCS[n]?.sprite ?? n}/`))) s.add(a);
   for (const a of atlasDe('w', Object.keys(m.w ?? {}))) s.add(a);
+  // kit de gore (sangre, pedazos, reventón) y los sustos: siempre, son livianos
+  for (const k of Object.keys(m.o)) if (k.startsWith('gore_') && !k.startsWith('gore_pared') && !k.startsWith('gore_huellas') || /^hor_(ojos|sombra|manos|susurro)\|/.test(k)) for (const e of m.o[k].f) s.add(e[0]);
   // íconos del equipo de Thor
   for (const a of atlasDe('o', ['thor_icono_collar|icono', 'thor_icono_barda|icono', 'thor_icono_collar|suelo'])) s.add(a);
   // invocaciones del héroe
@@ -520,8 +524,9 @@ function paso(dt: number) {
       // presentación de un jefe: el mundo va en cámara lenta y la cámara lo mira
       if (presenta) { presenta.t += dt; foco.x = presenta.m.x; foco.y = presenta.m.y; foco.k = Math.min(1, presenta.t / 0.6, Math.max(0, (DUR_PRESENTA - presenta.t) / 0.6)); if (presenta.t >= DUR_PRESENTA || presenta.m.muerto) { presenta = null; foco.k = 0; } }
       const dtMundo = presenta ? dt * 0.18 : dt;
-      if (!pausa) { actualizar(jj, dtMundo); historiaPaso(jj, dtMundo); }
+      if (!pausa) { actualizar(jj, dtMundo); historiaPaso(jj, dtMundo); miedoPaso(jj, dtMundo); }
       dibujarMundo(jj, dtMundo, tiempo);
+      dibujarMiedo(jj, tiempo);
       dibujarHistoria(jj, tiempo);
       vinetaSangre(jj.heroe.muerto ? 0 : jj.heroe.vida / jj.heroe.vidaMax, tiempo);
       if (presenta) dibujarPresentacion(presenta.m, presenta.t);

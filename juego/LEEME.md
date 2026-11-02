@@ -55,6 +55,22 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 - **Controles y pociones.** Clic derecho ataca o lanza la habilidad derecha hacia el cursor sin moverte. Mayúscula y clic izquierdo atacan en el sitio. El navegador ya no abre su menú. Las pociones se apilan hasta 20 por casilla. Pasan entre el cinturón y la bolsa arrastrando o con Mayúscula y clic, y con clic derecho en la bolsa te las bebes. Cada columna del cinturón tiene su tipo, y se cambia con clic derecho en una casilla vacía. Clic derecho o doble clic en la bolsa equipa al instante: intercambia, las armas a dos manos guardan el escudo y los anillos buscan la casilla libre. El clic que das durante un ataque se guarda y se ejecuta al terminar. Thor sigue sin trabarse. Los héroes tienen los ataques a dos manos nuevos y el berserker su presentación nueva. Ysmeral y la Corona tienen diez monstruos propios.
 - **Ozmaren, el inicio y la arcanista.** Ozmaren tiene un 29 % menos de vida y cada 16 segundos (13 cuando está desesperado) abre el pecho: suelta una ola de fuego que avisa, se queda quieto 4 segundos y medio con el núcleo a la vista, y recibe el doble de daño, con los números en dorado. Es el momento de meterse cuerpo a cuerpo. Con el simulador su pelea bajó de 84 a 55 segundos de mediana. Al empezar, en Normal, los monstruos pegan un 25 % menos hasta el nivel 8 y vuelven a lo normal hacia el 14, el primer grupo cerca de la entrada es un solo monstruo y hasta el nivel 5 las pociones curan en 2 segundos en vez de 4. La arcanista gana más vida por nivel y paga con maná un cuarto del daño que recibe.
 - **Clic derecho cuerpo a cuerpo.** Con un golpe cuerpo a cuerpo en la derecha, el clic derecho sobre un monstruo camina hasta él y pega, y sostenerlo encadena golpes igual que el izquierdo. Sobre el suelo, o con hechizos y habilidades de área, se lanza en el sitio hacia el cursor. Con Mayúscula siempre se queda en el sitio. Al cambiar de equipo el héroe sigue con su último aspecto completo hasta que cada animación nueva está pintada en las 8 direcciones, y al abrir la partida usa el último héroe pintado en vez del muñeco base.
+- **Kit de gore y horror de la Forja.**
+  - La sangre del piso usa sus dibujos: salpicaduras orientadas en 8 direcciones, charcos que crecen, gotas y rastros sobre piedra, tierra, nieve o madera según la zona. Los no-muertos sueltan icor negro y las bestias, verde.
+  - Al reventar sale el reventón y de 5 a 9 pedazos (torso, brazos, costillas, cráneo, tripas) que vuelan girando, salpican al caer y se van a los 20 a 40 segundos.
+  - Con poca vida, la pantalla se cubre con un velo de sangre que chorrea: más denso bajo el 40, el 25 y el 12 % de vida, y en el último late.
+  - Las salas de jefe tienen su ambientación por acto:
+    - Acto 1: cabezas en picas, cuervos, colgados y empalados.
+    - Acto 2: jaulas, mesa de tortura, nidos de huesos y pilas de cadáveres.
+    - Acto 3: altares, crucificados y escritura de sangre.
+    - Actos 4 y 5: paredes de carne, fosos de sangre que hierven y piras.
+    - Actos 6 y 7: un poco de todo.
+  - El bosque de los que cuelgan y la guarida de Ciro en la Cripta tienen su escena propia.
+  - Sustos raros y espaciados:
+    - ojos en la oscuridad que se apagan si te acercas
+    - una sombra que cruza el borde de la pantalla
+    - manos que salen del piso una vez en criptas y catacumbas
+    - un susurro como niebla cerca de los jefes
 - **Arsenal elemental y afinidad.**
   - 30 familias de armas en 5 niveles (tosca, templada, de élite, legendaria y mítica) y 7 elementos: fuego, hielo, veneno, rayo, sombra, luz y sangre. Son 360 armas nuevas en el botín, con el cesto del monje y el frasco de la alquimista.
   - Cada arma juega como su familia del juego y su daño sigue la misma curva, así no rompe lo que había. El elemento suma daño propio que sube con el nivel, brilla vivo en la mano y en el ícono, y alumbra con su color.

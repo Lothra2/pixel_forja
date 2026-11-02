@@ -198,6 +198,20 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     const [px, py] = aPant(s.x, s.y);
     items.push({ prof: s.x + s.y - 0.5, draw: () => dibujarBotinSuelo(s, px, py, tiempo) });
   }
+  // pedazos de cuerpo y reventones del kit de gore
+  for (const gb of ((j as any).gibs ?? []) as any[]) {
+    if (!cerca(gb.x, gb.y)) continue;
+    const meta = objetoMeta(gb.id, gb.pal); if (!meta || !meta.f.length) continue;
+    const [px, py] = aPant(gb.x, gb.y), q = meta.f[((Math.floor(gb.ang) % meta.f.length) + meta.f.length) % meta.f.length];
+    const alfa = Math.min(1, (gb.vida - gb.t) / 3);
+    items.push({ prof: gb.x + gb.y - (gb.z > 0 ? -0.5 : 0.55), draw: () => { ctx.save(); ctx.globalAlpha = alfa; dibujar(ctx, q, px, py - gb.z * 0.6); ctx.restore(); } });
+  }
+  for (const rv of ((j as any).reventones ?? []) as any[]) {
+    const meta = objetoMeta('gore_reventon', rv.pal); if (!meta || !meta.f.length) continue;
+    const i = Math.floor((rv.t * 25) / (meta.t || 2)); if (i >= meta.f.length) continue;
+    const [px, py] = aPant(rv.x, rv.y);
+    items.push({ prof: rv.x + rv.y + 0.3, draw: () => dibujar(ctx, meta.f[i], px, py, rv.esc ?? 1) });
+  }
   // personajes
   const ents: Ent[] = [...j.monstruos, ...j.npcs, h];
   for (const e of ents) {
@@ -547,7 +561,26 @@ function selloSangre(forma: string, sem: number, color: string): HTMLCanvasEleme
   g.globalAlpha = 1; sellos.set(k, c); return c;
 }
 /** La sangre se dibuja acostada en el piso isométrico, girada hacia donde salió el golpe. */
+/** Rumbo de pantalla (8 sectores) de un ángulo del mundo, como los nombres del kit de gore. */
+function rumbo(ang: number): string { const dx = Math.cos(ang), dy = Math.sin(ang); const sx = dx - dy, sy = (dx + dy) * 0.5; const a = Math.atan2(sy, sx); const i = Math.round(a / (Math.PI / 4)); return (['e', 'se', 's', 'so', 'o', 'no', 'n', 'ne'] as const)[((i % 8) + 8) % 8]; }
+/** El sello del kit de gore de la Forja para esta mancha (o null si su atlas no está). */
+function selloGore(m: Mancha): { q: Cuadro; esc: number } | null {
+  const sup = m.sup ?? 'piedra', pal = m.pal ?? 'rojo';
+  let id = '', v = '', fi = 0;
+  if (m.forma === 'salpicadura') { id = 'gore_salpicadura'; v = pal === 'rojo' ? `${sup}_${rumbo(m.ang ?? 0)}` : `${pal}_${rumbo(m.ang ?? 0)}`; }
+  else if (m.forma === 'charco') { id = 'gore_charco'; v = pal === 'rojo' ? sup : pal; }
+  else if (m.forma === 'rastro') { id = 'gore_rastro'; v = `${sup}_${rumbo(m.ang ?? 0)}`; }
+  else { id = 'gore_gotas'; v = `${sup}_${(['dispersas', 'hilera_x', 'hilera_y'])[(m.sem ?? 0) % 3]}`; }
+  const meta = objetoMeta(id, v); if (!meta || !meta.f.length) return null;
+  // el charco crece en sus 8 cuadros una sola vez y se queda en el último
+  if (m.forma === 'charco') fi = Math.min(meta.f.length - 1, Math.floor((m.t * 25) / (meta.t || 4)));
+  else fi = (m.sem ?? 0) % meta.f.length;
+  const nominal = m.forma === 'charco' ? 1.1 : m.forma === 'salpicadura' ? 0.7 : 0.35;
+  return { q: meta.f[fi], esc: Math.max(0.45, Math.min(1.5, (m.rmax ?? m.r) / nominal)) };
+}
 function dibujarSangre(m: Mancha, px: number, py: number) {
+  const g = m.tipo === 'sangre' ? selloGore(m) : null;
+  if (g) { ctx.save(); ctx.globalAlpha = 0.95; const ok = dibujar(ctx, g.q, px, py, g.esc); ctx.restore(); if (ok) return; }
   const st = selloSangre(m.forma!, m.sem ?? 0, m.color);
   const tam = m.r * 36;
   ctx.save(); ctx.globalAlpha = 0.9; ctx.translate(px, py); ctx.scale(1, 0.5); ctx.rotate((m.ang ?? 0) + Math.PI / 4);

@@ -63,7 +63,7 @@ const cacheBusca = new Map<string, ObjetoDef[]>();
 export function buscar(temas: string[], palabras?: string[], sin?: string[]): ObjetoDef[] {
   const k = temas.join() + '|' + (palabras ?? []).join() + '|' + (sin ?? []).join();
   let r = cacheBusca.get(k);
-  if (!r) { r = REGISTRO.filter((d) => temas.includes(d.tema) && (!palabras || palabras.some((p) => d.id.includes(p))) && !(sin ?? []).some((p) => d.id.includes(p))); cacheBusca.set(k, r); }
+  if (!r) { r = REGISTRO.filter((d) => temas.includes(d.tema) && !/^(gore|hor)_/.test(d.id) && (!palabras || palabras.some((p) => d.id.includes(p))) && !(sin ?? []).some((p) => d.id.includes(p))); cacheBusca.set(k, r); }
   return r;
 }
 
@@ -948,6 +948,7 @@ export function generarZona(def: DefZona, semilla: number): Zona {
   for (const k of Object.keys(z.entradas)) z.entradas[k] = libreCerca(z, z.entradas[k][0], z.entradas[k][1]);
   // los pisos 'fortaleza' y 'arcano' parecen de prueba (círculos tachados): se cambian por baldosa de catedral y arenisca
   for (const t of z.pisos) if (t && (t.id === 'fortaleza' || t.id === 'arcano')) t.id = t.id === 'fortaleza' ? 'baldosa_catedral' : 'arenisca';
+  if (def.tipo !== 'pueblo') ambientarHorror(z, def);
   conectar(z);
   return z;
 }
@@ -1015,4 +1016,41 @@ function lineaPasable(z: Zona, ax: number, ay: number, bx: number, by: number) {
   const d = Math.hypot(bx - ax, by - ay), n = Math.ceil(d * 3);
   for (let i = 1; i <= n; i++) { const t = i / n; const x = ax + (bx - ax) * t, y = ay + (by - ay) * t; for (const [ox, oy] of [[0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3]]) if (!pasable(z, x + ox, y + oy)) return false; }
   return true;
+}
+
+// ------------------------------------------------------------------ horror: lo que rodea a los jefes y a los lugares de misión
+/** Qué pone cada acto (kit de gore y horror de la Forja): [id, variantes]. */
+const HORROR_ACTO: Record<number, [string, string[]][]> = {
+  1: [['hor_cabezas_picas', ['una', 'tres', 'cerco']], ['hor_cuervos_cadaver', ['suelo', 'horca']], ['hor_colgados', ['munecas', 'pies', 'ganchos']], ['hor_empalado', ['viejo']]],
+  2: [['hor_jaula', ['cadaver', 'momia', 'antorcha']], ['hor_mesa_tortura', ['vacia', 'con_cuerpo', 'brasero']], ['hor_nido_huesos', ['chico', 'grande']], ['hor_pila_cadaveres', ['chica', 'grande']]],
+  3: [['hor_altar', ['x', 'y']], ['hor_crucificado', ['madera', 'hierro']], ['hor_escritura_sangre', ['circulo', 'palabras', 'sello']]],
+  4: [['hor_pared_carne', ['x', 'der']], ['hor_foso_sangre', ['piedra', 'carne']], ['hor_pila_cadaveres', ['quemada']], ['hor_empalado', ['tres']]],
+  5: [['hor_pared_carne', ['x', 'der']], ['hor_foso_sangre', ['piedra', 'carne']], ['hor_pila_cadaveres', ['quemada']], ['hor_empalado', ['tres', 'uno']]],
+};
+HORROR_ACTO[6] = HORROR_ACTO[7] = [...HORROR_ACTO[1], ...HORROR_ACTO[2], ...HORROR_ACTO[3], ...HORROR_ACTO[4], ['hor_escritura_sangre', ['circulo', 'palabras', 'sello']]];
+/** Lugares de misión con su escena propia: los que cuelgan del bosque y la guarida de Ciro en la cripta. */
+const HORROR_MISION: Record<string, [string, string][]> = {
+  a1_bosque: [['hor_colgados', 'pies'], ['hor_cuervos_cadaver', 'horca'], ['hor_colgados', 'munecas'], ['hor_cuervos_cadaver', 'suelo']],
+  a1_cripta: [['hor_mesa_tortura', 'con_cuerpo'], ['hor_escritura_sangre', 'palabras'], ['hor_colgados', 'ganchos'], ['hor_cabezas_picas', 'tres'], ['hor_pila_cadaveres', 'chica']],
+};
+function ambientarHorror(z: Zona, def: DefZona) {
+  const k = new Constructor(z), r = rng(z.semilla * 7717 + 31);
+  // nada cerca de entradas ni salidas (conectar() igual despeja lo que estorbe después)
+  k.reserva = new Uint8Array(z.W * z.H);
+  const res = (x: number, y: number, rr: number) => { for (let dy = -rr; dy <= rr; dy++) for (let dx = -rr; dx <= rr; dx++) { const X = Math.round(x) + dx, Y = Math.round(y) + dy; if (X >= 0 && Y >= 0 && X < z.W && Y < z.H) k.reserva[Y * z.W + X] = 1; } };
+  for (const e of Object.values(z.entradas)) res(e[0], e[1], 4);
+  for (const s of z.salidas) res(s.cx, s.cy, 4);
+  const poner = (id: string, v: string, cx: number, cy: number) => {
+    for (let i = 0; i < 14; i++) { const a = r() * Math.PI * 2, d = 4 + r() * 5; const o = k.poner(id, Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d), v); if (o) return o; }
+    return null;
+  };
+  const lista = HORROR_ACTO[def.acto] ?? HORROR_ACTO[1];
+  // sala del jefe: 3 a 5 piezas alrededor, nunca encima de él (radio 4 a 9)
+  const jf = z.spawns.find((s) => s.tipo === 'jefe');
+  if (jf) { const n = 3 + Math.floor(r() * 3); for (let i = 0; i < n; i++) { const [id, vs] = lista[Math.floor(r() * lista.length)]; poner(id, vs[Math.floor(r() * vs.length)], jf.cx, jf.cy); } }
+  // la escena de la misión: cerca del centro de la zona, lejos de la entrada
+  const esc = HORROR_MISION[def.id];
+  if (esc) { const s = z.spawns.filter((q) => q.tipo !== 'jefe'); const c = s[Math.floor(s.length / 2)] ?? { cx: z.W / 2, cy: z.H / 2 }; for (const [id, v] of esc) poner(id, v, c.cx, c.cy); }
+  // y alguna pieza suelta en las zonas de combate (rara: no tiene que estar en todas partes)
+  if (r() < 0.45) { const s = z.spawns[Math.floor(r() * z.spawns.length)]; if (s && s.tipo !== 'jefe') { const [id, vs] = lista[Math.floor(r() * lista.length)]; poner(id, vs[Math.floor(r() * vs.length)], s.cx, s.cy); } }
 }
