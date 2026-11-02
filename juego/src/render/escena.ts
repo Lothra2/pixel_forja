@@ -1,4 +1,5 @@
 // Dibuja la zona: pisos, manchas, objetos y personajes por profundidad, poderes, partículas, luz, niebla y clima.
+import { nuevoCuadroSombras } from './luces';
 import { ctx, W, H } from '../nucleo/lienzo';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto } from '../juego/mundo';
@@ -112,6 +113,7 @@ function puertaCatedral(j: Juego, dt: number, t: number) {
 }
 export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   const z = j.zona, h = j.heroe;
+  nuevoCuadroSombras();
   const sx = j.sacudida > 0 ? (R() - 0.5) * j.sacudida * 12 : 0, sy = j.sacudida > 0 ? (R() - 0.5) * j.sacudida * 8 : 0;
   // frente a la pieza ancla (la catedral), la cámara sube suave para que se vean las torres
   let alzar = 0;

@@ -193,6 +193,9 @@ function influencias(e: Ent, px: number, py: number, paraSombra = false): Influe
 const estadoSombras = new Map<number, { t: number; s: Map<string, { gx: number; gy: number; len: number; a: number }> }>();
 export const olvidarSombras = () => estadoSombras.clear();
 /** Sombras del personaje: una por cada luz fija cercana, estiradas lejos de ella y más suaves con la distancia. */
+// presupuesto de sombras por cuadro: con decenas de monstruos y muchas luces (acto 5) las sombras completas se comían el cuadro
+let gastoSombras = 0;
+export const nuevoCuadroSombras = () => { gastoSombras = 0; };
 export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: number, py: number, esc: number) {
   // Khamer-Ul no tiene sombra: es su maldición
   if ((e as any).def?.sprite === 'jefe_rey_sin_sombra') return;
@@ -231,7 +234,12 @@ export function sombras(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: nu
   const norm = n > 2 ? Math.sqrt(2 / n) : 1;
   // los sprites gigantes (jefes) se dibujan con menos sombras y una sola copia: son caros
   const grande = q.w * q.h * esc * esc > 50000;
-  for (const s of grande ? lista.slice(0, 2) : lista) dibujarSombra(ctx, q, px, py, esc, s.gx, s.gy, s.len, Math.min(0.72, s.a * norm), grande ? 1 : 3);
+  // lejos del centro de la pantalla, o pasado el presupuesto, basta la sombra de la luz más fuerte en una sola copia
+  const lejos = Math.hypot(px - ctx.canvas.width / 2, py - ctx.canvas.height * 0.45) > 320;
+  if ((lejos || gastoSombras > 150) && !grande && e.tipo !== 'heroe') { const s0 = lista[0]; dibujarSombra(ctx, q, px, py, esc, s0.gx, s0.gy, s0.len, Math.min(0.72, s0.a), 1); gastoSombras += 1; return; }
+  const usar = grande ? lista.slice(0, 2) : lista;
+  for (const s of usar) dibujarSombra(ctx, q, px, py, esc, s.gx, s.gy, s.len, Math.min(0.72, s.a * norm), grande ? 1 : 3);
+  gastoSombras += usar.length * (grande ? 1 : 3);
 }
 
 /** Sombra de una silueta ya preparada en el lienzo de trabajo: (gx, gy) es la dirección lejos de la luz en el piso. */
