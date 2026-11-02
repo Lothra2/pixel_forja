@@ -55,6 +55,18 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 - **Controles y pociones.** Clic derecho ataca o lanza la habilidad derecha hacia el cursor sin moverte. Mayúscula y clic izquierdo atacan en el sitio. El navegador ya no abre su menú. Las pociones se apilan hasta 20 por casilla. Pasan entre el cinturón y la bolsa arrastrando o con Mayúscula y clic, y con clic derecho en la bolsa te las bebes. Cada columna del cinturón tiene su tipo, y se cambia con clic derecho en una casilla vacía. Clic derecho o doble clic en la bolsa equipa al instante: intercambia, las armas a dos manos guardan el escudo y los anillos buscan la casilla libre. El clic que das durante un ataque se guarda y se ejecuta al terminar. Thor sigue sin trabarse. Los héroes tienen los ataques a dos manos nuevos y el berserker su presentación nueva. Ysmeral y la Corona tienen diez monstruos propios.
 - **Ozmaren, el inicio y la arcanista.** Ozmaren tiene un 29 % menos de vida y cada 16 segundos (13 cuando está desesperado) abre el pecho: suelta una ola de fuego que avisa, se queda quieto 4 segundos y medio con el núcleo a la vista, y recibe el doble de daño, con los números en dorado. Es el momento de meterse cuerpo a cuerpo. Con el simulador su pelea bajó de 84 a 55 segundos de mediana. Al empezar, en Normal, los monstruos pegan un 25 % menos hasta el nivel 8 y vuelven a lo normal hacia el 14, el primer grupo cerca de la entrada es un solo monstruo y hasta el nivel 5 las pociones curan en 2 segundos en vez de 4. La arcanista gana más vida por nivel y paga con maná un cuarto del daño que recibe.
 - **Clic derecho cuerpo a cuerpo.** Con un golpe cuerpo a cuerpo en la derecha, el clic derecho sobre un monstruo camina hasta él y pega, y sostenerlo encadena golpes igual que el izquierdo. Sobre el suelo, o con hechizos y habilidades de área, se lanza en el sitio hacia el cursor. Con Mayúscula siempre se queda en el sitio. Al cambiar de equipo el héroe sigue con su último aspecto completo hasta que cada animación nueva está pintada en las 8 direcciones, y al abrir la partida usa el último héroe pintado en vez del muñeco base.
+- **Arsenal elemental y afinidad.**
+  - 30 familias de armas en 5 niveles (tosca, templada, de élite, legendaria y mítica) y 7 elementos: fuego, hielo, veneno, rayo, sombra, luz y sangre. Son 360 armas nuevas en el botín, con el cesto del monje y el frasco de la alquimista.
+  - Cada arma juega como su familia del juego y su daño sigue la misma curva, así no rompe lo que había. El elemento suma daño propio que sube con el nivel, brilla vivo en la mano y en el ícono, y alumbra con su color.
+  - 60 legendarias con nombre e historia, cada una con un efecto que cambia cómo juegas según su elemento:
+    - Sangre: los críticos te curan y hacen sangrar.
+    - Rayo: cada golpe salta a dos enemigos.
+    - Sombra: al matar se levanta una sombra que pelea por ti.
+    - Hielo: cada tercer golpe congela alrededor.
+    - Fuego: lo que matas revienta en llamas.
+    - Veneno: lo que matas deja una nube que contagia.
+    - Luz: cada quinto golpe baja un castigo del cielo y te cura.
+  - Afinidad: cada clase pelea mejor con ciertas familias. Afín da +15 % de daño y +10 % de velocidad, torpe da −15 % de daño. Se ve en verde o en rojo en el tooltip. No hay armas prohibidas.
 - **Poderes con luz.**
   - Cada poder prende su propia luz con la tabla de la Forja: un fogonazo en la mano al lanzar, la luz que viaja con el proyectil y el destello al pegar, cada una con su curva de intensidad y sus sombras.
   - Hay efectos nuevos: virote (antes era un cuadrado blanco), saetas sagradas y de veneno, impactos de rayo, veneno, luz y hueso, nova de sangre, maldición de sombra y aura de furia.

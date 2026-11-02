@@ -2,6 +2,9 @@
 // Sirve para tres cosas: sombras proyectadas de los personajes, reflejo de color en sus cuerpos y destellos.
 import type { Cuadro } from '../motor/assets';
 import { LUZ_EFECTO, intensidadLuz, rgbLuz } from '../../../src/engine/gotico/luz_efectos';
+import { luzDeArma } from '../../../src/engine/gotico/elementos_arma';
+import { baseDe as baseDeObj } from '../juego/objetos';
+const hexRgb = (c: string): [number, number, number] => { const n = parseInt(c.replace('#', '').slice(0, 6), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 import { manifiesto, objetoMeta } from '../motor/assets';
 import type { Juego, Ent } from '../juego/mundo';
 import { R } from '../nucleo/azar';
@@ -58,8 +61,17 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   const rLuz = ((z.tipo === 'pueblo' ? 420 : 210) + h.c.radio_luz * 18 + Math.sin(t * 7) * 3) * (osc > 0 ? 0.55 + 0.45 * Math.max(0, 1 - Math.sin((osc / 3.5) * Math.PI)) : 1);
   L.push({ x: hx, y: hy, h: 55, r: rLuz, c: [255, 210, 150], k: 1, de: h, blanca: true, sinSombra: true });
   if (h.c.vivo) {
-    const cv = COLOR_ELEM[h.c.vivo === 'luz' ? 'sagrado' : h.c.vivo] ?? COLOR_ELEM.fuego;
-    L.push({ x: hx + 10, y: hy, h: 40, r: 120, c: cv, k: 0.55 + Math.sin(t * 13) * 0.08, de: h, sinSombra: true });
+    // arma elemental: la luz de su elemento en la mano (más grande cuanto mejor el arma), con sombra si alcanza
+    const ENC: Record<string, string> = { fuego: 'fuego', frio: 'hielo', rayo: 'rayo', veneno: 'veneno', sombra: 'sombra', luz: 'sagrado', sangre: 'sangre' };
+    const nv = (h.d.equipo.arma?.vis?.nivel ?? (h.d.equipo.arma ? (baseDeObj(h.d.equipo.arma) as any)?.arsenal?.nivel : undefined) ?? 3) as number;
+    const la = ENC[h.c.vivo] ? luzDeArma(ENC[h.c.vivo] as any, nv) : null;
+    if (la) {
+      const c = hexRgb(la.color);
+      L.push({ id: 'mano', x: hx + 10, y: hy, h: 42, r: la.radio, c, k: Math.min(1, la.intensidad * (1 - (la.parpadeo ?? 0) * 0.5 * R())), de: h, prio: 1 });
+    } else {
+      const cv = COLOR_ELEM[h.c.vivo === 'luz' ? 'sagrado' : h.c.vivo] ?? COLOR_ELEM.fuego;
+      L.push({ x: hx + 10, y: hy, h: 40, r: 120, c: cv, k: 0.55 + Math.sin(t * 13) * 0.08, de: h, sinSombra: true });
+    }
   }
   // equipo legendario: el héroe mismo da una luz de su color
   const au = auraEquipo(h.d.equipo as any);

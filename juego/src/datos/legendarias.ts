@@ -1,6 +1,8 @@
 // Armas legendarias por escalón de nivel (6, 15, 24, 33, 45, 60, 75, 90), la legendaria temática de cada jefe
 // y los conjuntos nuevos (con el "Legado GG" de la familia). Todo original. Se suman a UNICOS y CONJUNTOS al cargar.
 import { BASES, UNICOS, CONJUNTOS } from './objetos_datos';
+// el arsenal de la Forja (360 bases y 60 legendarias) se suma a las tablas antes de que objetos.ts las indexe
+import './arsenal';
 import type { Conjunto, Elemento, RangoStat, Stat, Unico } from '../juego/tipos_objetos';
 
 const r = (stat: Stat, min: number, max: number = min): RangoStat => ({ stat, min, max });

@@ -4,6 +4,8 @@ import { objetoMeta, dibujar } from '../motor/assets';
 import { baseDe, colorObj, textoStat, type Objeto } from '../juego/objetos';
 import { reqNivel } from '../juego/heroe';
 import { CONJUNTOS } from '../datos/objetos_datos';
+import { afinidadDe, EFECTO_LEGENDARIO } from '../datos/arsenal';
+import { CLASES } from '../datos/clases';
 import type { Raster } from '../../../src/engine/core/raster';
 import { iconoObjeto3D, iconoDeLoot, iconoDeArma } from '../../../src/engine/gotico/iconos3d';
 import { aLoot, arma3dDe } from './loot';
@@ -226,6 +228,13 @@ export function lineasObjeto(o: Objeto, h?: { nivel: number; fue: number; des: n
     return out;
   }
   if (o.dano) out.push([`${b?.dosManos ? T('Daño a dos manos', 'Two-hand damage') : T('Daño', 'Damage')}: ${o.dano[0]} ${T('a', 'to')} ${o.dano[1]}`, '#e8e0d0']);
+  // afinidad con la clase del que mira
+  if (h && b?.ranura === 'arma') {
+    const af = afinidadDe(b, h.clase), cn = TT(CLASES.find((c) => c.id === h.clase)?.nombre ?? ['', '']);
+    if (af === 'afin') out.push([T(`Afinidad: ${cn} (+15 % daño, +10 % velocidad)`, `Affinity: ${cn} (+15% damage, +10% speed)`), '#60e060']);
+    else if (af === 'torpe') out.push([T(`Torpe en manos de ${cn} (−15 % daño)`, `Clumsy for a ${cn} (−15% damage)`), '#ff6050']);
+  }
+  if (o.efecto) { const ef = Object.values(EFECTO_LEGENDARIO).find((e) => e.id === o.efecto); if (ef) out.push([TT(ef.texto), '#ffb050']); }
   if (o.def) out.push([`${T('Defensa', 'Defense')}: ${o.def}`, '#e8e0d0']);
   if (b?.bloqueo) out.push([`${T('Bloqueo', 'Block')}: ${b.bloqueo}%`, '#e8e0d0']);
   if (o.durabMax > 0 && !o.stats.some((s) => s[0] === 'durabilidad_infinita')) out.push([`${T('Durabilidad', 'Durability')}: ${Math.ceil(o.durab)} ${T('de', 'of')} ${o.durabMax}`, o.durab <= 0 ? '#ff4040' : '#e8e0d0']);

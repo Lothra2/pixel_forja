@@ -74,5 +74,5 @@ export function arma3dDe(o: Objeto): any {
   const b = baseDe(o);
   if (!b?.arma || b.arma === 'puno' || b.arma === 'nada') return undefined;
   const v: any = (o.vis ?? (b.visual as any).arma ?? { tipo: b.arma });
-  return { tipo: v.tipo ?? b.arma, mat: v.mat, mango: v.mango, gema: v.gema, encanto: o.vivo ? ENC[o.vivo] : undefined };
+  return { tipo: v.tipo ?? b.arma, mat: v.mat, mango: v.mango, gema: v.gema, encanto: o.vivo ? ENC[o.vivo] : v.encanto, ...(v.nivel ? { nivel: v.nivel } : {}) };
 }

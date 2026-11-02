@@ -38,6 +38,8 @@ export interface Objeto {
   vis?: any;
   /** Nivel necesario fijo (legendarias y conjuntos). Opcional: los objetos viejos no lo tienen. */
   req?: number;
+  /** Efecto propio de una legendaria del arsenal (cadena, pira, tercer golpe...). */
+  efecto?: string;
 }
 
 let uid = Date.now() % 100000;
@@ -69,6 +71,10 @@ const rollStat = (min: number, max: number) => Math.round(min + (max - min) * R(
 
 function aplicarBase(o: Objeto, b: Base) {
   if (b.dano) o.dano = [b.dano[0], b.dano[1]];
+  // armas del arsenal: el elemento vivo y su daño elemental propio
+  const x = b as any;
+  if (x.vivo) o.vivo = x.vivo;
+  if (x.implicito) for (const st of x.implicito) o.stats.push([st.stat, rollStat(st.min, st.max)]);
   if (b.def) o.def = rollStat(b.def[0], b.def[1]);
 }
 
@@ -102,7 +108,9 @@ function sumarAfijo(o: Objeto, a: Afijo) {
 export function crearObjeto(nivel: number, rareza: Rareza, filtro?: (b: Base) => boolean): Objeto {
   // bases de los últimos 30 niveles (las joyas y talismanes no tienen escalones: siempre entran)
   const sinEscalon = (b: Base) => b.ranura === 'anillo' || b.ranura === 'amuleto' || b.ranura === 'talisman';
-  const cand = BASES.filter((b) => b.nivel <= Math.max(1, nivel) && (!filtro || filtro(b)) && (b.nivel >= nivel - 30 || sinEscalon(b)));
+  let cand = BASES.filter((b) => !(b as any).soloUnico && b.nivel <= Math.max(1, nivel) && (!filtro || filtro(b)) && (b.nivel >= nivel - 30 || sinEscalon(b)));
+  // el arsenal son 360 armas: sin esto taparían todo lo demás. Sale un 35 % de las veces que podría
+  { const ars = cand.filter((b) => (b as any).arsenal), resto = cand.filter((b) => !(b as any).arsenal); if (ars.length && resto.length) cand = R() < 0.35 ? ars : resto; }
   // si nada entra en la ventana, la base más alta que respete el filtro
   const resto = cand.length ? cand : BASES.filter((x) => x.nivel <= Math.max(3, nivel) && (!filtro || filtro(x)));
   const b = resto.length ? (cand.length ? elegir(cand) : resto.reduce((m, x) => (x.nivel > m.nivel ? x : m))) : elegir(BASES.filter((x) => x.nivel <= Math.max(3, nivel)));
@@ -159,6 +167,8 @@ function deUnico(u: Unico, b: Base, nivel: number): Objeto {
   o.nombre = [...u.nombre] as [string, string];
   for (const st of u.stats) { const v = rollStat(st.min, st.max); if (st.stat === 'huecos') o.huecos = v; else o.stats.push([st.stat, v]); }
   if (u.vivo) o.vivo = u.vivo;
+  if ((u as any).vis) o.vis = (u as any).vis;
+  if ((u as any).efecto) o.efecto = (u as any).efecto;
   o.lore = u.lore;
   if (u.req) o.req = u.req;
   o.precio = Math.round(b.precio * 10 + o.nivel * 30);

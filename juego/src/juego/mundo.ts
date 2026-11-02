@@ -86,6 +86,48 @@ export interface Mancha {
 /** Manchas por zona: cola circular (las más viejas se van) para que la sangre no se coma el rendimiento. */
 export const TOPE_MANCHAS = 300;
 export function ponerMancha(j: Juego, m: Mancha) { j.manchas.push(m); if (j.manchas.length > TOPE_MANCHAS) j.manchas.splice(0, j.manchas.length - TOPE_MANCHAS); }
+// ------------------------------------------------------------------ efectos de las legendarias del arsenal
+const efectoArma = (j: Juego) => j.heroe.d.equipo.arma?.efecto;
+let enCadena = false;
+/** Al pegar con el arma: sed crítica, cadena de rayo, tercer golpe de escarcha y juicio del quinto golpe. */
+function efectoLegGolpe(j: Juego, m: Monstruo, total: number, crit: boolean) {
+  const ef = efectoArma(j); if (!ef) return;
+  const h = j.heroe, o = h as any;
+  if (ef === 'sed_critica' && crit) { h.vida = Math.min(h.vidaMax, h.vida + total * 0.25); m.sangrado = Math.max(m.sangrado, 4); particulas(j, h.x, h.y, 6, 'chispa', '#ff3030', 0.8, 40); }
+  if (ef === 'cadena' && !enCadena) {
+    enCadena = true;
+    let desde: Ent = m; const ya = new Set<number>([m.id]);
+    for (let k = 0; k < 2; k++) {
+      const b = masCercano(j, desde.x, desde.y, 4, ya) as Monstruo | null; if (!b) break;
+      const ef2 = { id: 'arco_cadena', x: desde.x, y: desde.y, t: 0, dir: 0, escala: 1, z: 0, dur: 0.25 } as any; ef2.x2 = b.x; ef2.y2 = b.y; j.efectos.push(ef2);
+      danar(j, b, { min: total * 0.45, max: total * 0.45, elem: 'rayo', deHeroe: true, fuente: h, sinFallo: true });
+      efecto(j, 'impacto_rayo', b.x, b.y, 0, 0.5); ya.add(b.id); desde = b;
+    }
+    enCadena = false;
+  }
+  if (ef === 'tercer_golpe') {
+    o.golpesLeg = (o.golpesLeg ?? 0) + 1;
+    if (o.golpesLeg % 3 === 0) {
+      efecto(j, 'nova_escarcha', m.x, m.y, 0, 0.9); sonar(j, 'hielo_lanzar', m.x, m.y, 0.7);
+      for (const e of enemigosDe(j, true)) if (dist(e.x, e.y, m.x, m.y) < 2.5 + e.radio) { const q = e as Monstruo; q.frio = Math.max(q.frio, 3); if (!q.def?.jefe) q.congelado = Math.max(q.congelado ?? 0, 1.2); if (q !== m) danar(j, q, { min: total * 0.6, max: total * 0.6, elem: 'frio', deHeroe: true, fuente: h, sinFallo: true }); }
+    }
+  }
+  if (ef === 'juicio') {
+    o.golpesLeg = (o.golpesLeg ?? 0) + 1;
+    if (o.golpesLeg % 5 === 0) { efecto(j, 'castigo', m.x, m.y, 0, 1); danar(j, m, { min: total * 1.5, max: total * 1.5, elem: 'luz', deHeroe: true, fuente: h, sinFallo: true }); h.vida = Math.min(h.vidaMax, h.vida + h.vidaMax * 0.04); }
+  }
+}
+/** Al matar con el arma: pira, contagio y la sombra que se levanta. */
+function efectoLegMuerte(j: Juego, m: Monstruo) {
+  const ef = efectoArma(j); if (!ef) return;
+  const h = j.heroe;
+  if (ef === 'pira') { efecto(j, 'explosion_fuego', m.x, m.y, 0, 1); j.areas.push({ x: m.x, y: m.y, radio: 2, dano: [m.vidaMax * 0.25, m.vidaMax * 0.35], elem: 'fuego', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: '', retraso: 0 }); }
+  if (ef === 'contagio') j.areas.push({ x: m.x, y: m.y, radio: 2.2, dano: [m.vidaMax * 0.05, m.vidaMax * 0.08], elem: 'veneno', t: 0, dur: 3, tick: 0.5, prox: 0, deHeroe: true, efecto: 'nube_veneno', retraso: 0 });
+  if (ef === 'sombra_hambrienta' && R() < 0.3 && mios(j).filter((q) => q.invocaId === 'espiritu' && q.tVida).length < 3) {
+    const s = crearInvocado(j, 'espiritu', Math.max(1, Math.floor(h.d.nivel / 6)), m.x, m.y, 12);
+    if (s) { s.tinte = '#5020a0'; s.nombre = ['Sombra hambrienta', 'Hungry shadow']; efecto(j, 'maldicion_sombra', m.x, m.y, 0, 0.8); }
+  }
+}
 /** La primera vez que ves a un jefe de verdad: su presentación con el nombre grande y cámara lenta. */
 function presentarJefe(j: Juego, m: Monstruo) {
   if (!(m.def.jefe || m.def.ia === 'jefe') || (m as any).presentado) return;
@@ -425,7 +467,7 @@ function sonar(j: Juego, id: string, x?: number, y?: number, vol = 1) {
 }
 
 // ------------------------------------------------------------------ daño
-export interface Golpe { min: number; max: number; elem: Elemento; precision?: number; critico?: number; robo?: number; aturdir?: number; empuje?: number; lento?: number; aplastar?: number; herida?: number; deHeroe: boolean; fuente?: Ent; extra?: Partial<Record<Elemento, number>>; sinFallo?: boolean }
+export interface Golpe { /** Golpe del arma del héroe (dispara los efectos de las legendarias del arsenal). */ arma?: boolean; min: number; max: number; elem: Elemento; precision?: number; critico?: number; robo?: number; aturdir?: number; empuje?: number; lento?: number; aplastar?: number; herida?: number; deHeroe: boolean; fuente?: Ent; extra?: Partial<Record<Elemento, number>>; sinFallo?: boolean }
 export function danar(j: Juego, v: Ent, g: Golpe): number {
   if (v.muerto) return 0;
   const h = j.heroe;
@@ -518,6 +560,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     if (m.estado === 'dormido' || m.estado === 'deambular') { m.estado = 'perseguir'; m.objetivo = g.fuente ?? j.heroe; }
     if (total > m.vidaMax * 0.12 && m.acc !== 'atacar' && m.acc !== 'lanzar' && m.calidad < 3) { m.acc = 'herido'; m.t = 0; m.dur = 0.3; }
     if (crit || total > m.vidaMax * 0.3) j.sacudida = Math.max(j.sacudida, 0.1);
+    if (g.arma && total > 0) efectoLegGolpe(j, m, total, crit);
     if (m.vida <= 0 && (m as any).huye) m.vida = 1; // historia: el heraldo no muere antes de su acto, huye
     // exceso de daño: si el golpe que lo mata pasa de la mitad de su vida, revienta (los jefes no)
     if (m.vida <= 0 && !m.dueno && m.calidad < 3 && !m.def.jefe && total > m.vidaMax * 0.5 && !sangraHueso(m)) reventar(j, m);
@@ -527,6 +570,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
 }
 
 function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
+  if (g?.arma && !m.dueno) efectoLegMuerte(j, m);
   m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; m.vida = 0;
   const h = j.heroe;
   if (m.dueno && m.invocaId === 'thor') {
@@ -667,7 +711,7 @@ function golpeArma(j: Juego, mult: number, elemHab?: Elemento, extraHab?: [numbe
   if (h.buffs.aura_llama) extra.fuego = (extra.fuego ?? 0) + (h.buffs.aura_llama.bonos.dano_fuego ?? 0);
   if (extraHab && elemHab) extra[elemHab] = (extra[elemHab] ?? 0) + entre(extraHab[0], extraHab[1]);
   const fk = h.d.clase === 'berserker' ? 1 + (h.furia / 100) * (15 + bono(h, 'furia_dano')) / 100 : 1;
-  return { min: c.dano[0] * mult * fk, max: c.dano[1] * mult * fk, elem: 'fisico', precision: c.precision, critico: c.critico, robo: c.robo_vida, aturdir: c.aturdir, aplastar: c.golpe_aplastante, herida: c.herida_abierta, lento: c.ralentizar, deHeroe: true, fuente: h, extra };
+  return { min: c.dano[0] * mult * fk, max: c.dano[1] * mult * fk, elem: 'fisico', precision: c.precision, critico: c.critico, robo: c.robo_vida, aturdir: c.aturdir, aplastar: c.golpe_aplastante, herida: c.herida_abierta, lento: c.ralentizar, deHeroe: true, fuente: h, extra, arma: true };
 }
 /** Velocidad de ataque/lanzamiento: duración de la animación. */
 export const durAtaque = (h: Heroe) => clamp(0.62 / (1 + h.c.vel_ataque / 100), 0.25, 1);
