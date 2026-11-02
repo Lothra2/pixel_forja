@@ -7,6 +7,7 @@ import type { Rarity } from '../loot/materials';
 import { pintarEscena } from './render';
 import { personajeEscena, armaSuelta, type Cuerpo, type Equipo, type TipoArma, type Encanto } from './cuerpo';
 import { HEROES } from './catalogo/personajes';
+import { equipoDeInventario } from './apariencia';
 import { iconoObjeto3D, iconoDeLoot, iconoDeArma, type Icono3D } from './iconos3d';
 
 /**
@@ -1858,7 +1859,7 @@ function siluetaObjeto(l: Lienzo, it: LootItem, x: number, y: number, w: number,
 // ------------------------------------------------------------------------------------------------ objetos de ejemplo
 
 const L = (id: string): LootItem => findLoot(id) ?? baseWeapon('sword', 1);
-const HEROE_MUESTRA = { cuerpo: HEROES[1].cuerpo, equipo: HEROES[1].niveles[2] };
+const HEROE_MUESTRA: { cuerpo: Cuerpo; equipo: Equipo; ropaBase?: Equipo } = { cuerpo: HEROES[1].cuerpo, equipo: HEROES[1].niveles[2], ropaBase: HEROES[1].niveles[0] };
 
 /** Casilleros del equipo en coordenadas del panel (con el héroe de verdad en el nicho del medio). */
 export const EQUIPO: { id: string; x: number; y: number; w: number; h: number; es: string; en: string }[] = [
@@ -2038,7 +2039,9 @@ export function objetosDeMuestra() {
 export interface OpcInventario {
   vacio?: boolean; oro?: number;
   /** el héroe que se ve en el nicho (por omisión un templario leyenda) */
-  heroe?: { cuerpo: Cuerpo; equipo: Equipo };
+  /** el héroe del nicho: su cuerpo y, si no hay casillas, su equipo; `ropaBase` es lo que lleva debajo cuando una casilla está vacía */
+  heroe?: { cuerpo: Cuerpo; equipo: Equipo; ropaBase?: Equipo };
+  ropaBase?: Equipo;
   /** lo que lleva puesto por casillero y lo que hay en la bolsa activa */
   equipo?: Record<string, { it: LootItem; arma3d?: Arma3D }>;
   bolsa?: ObjetoInv[];
@@ -2080,8 +2083,10 @@ export function panelInventario(idioma: Idioma = 'es', o: OpcInventario = {}): P
   sombraInterna(l, N.x, N.y, N.w, N.h, 6, 0.6);
   bisel(l, N.x - 2, N.y - 2, N.w + 4, N.h + 4, P.hierro, 2, { hundido: true });
   if (!o.vacio) {
+    // el héroe lleva exactamente lo que está en sus casillas: lo equipado manda, lo vacío cae a su ropa base
     const hh = o.heroe ?? HEROE_MUESTRA;
-    const fig = heroeEnNicho(hh.cuerpo, hh.equipo, cuadro);
+    const puesto = o.equipo ?? (o.heroe ? undefined : muestra.equipo);
+    const fig = heroeEnNicho(hh.cuerpo, puesto ? equipoDeInventario(puesto, o.ropaBase ?? hh.ropaBase ?? hh.equipo) : hh.equipo, cuadro);
     const k = Math.min(1, (N.h - 12) / fig.h, (N.w - 6) / fig.w), f2 = k < 1 ? reducir(fig, Math.floor(fig.w * k), Math.floor(fig.h * k)) : fig;
     // sombra suave en el piso del nicho
     const sx = N.x + N.w / 2, sy = N.y + N.h - 8;
