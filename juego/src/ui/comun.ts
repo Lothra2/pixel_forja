@@ -4,6 +4,8 @@ import { objetoMeta, dibujar } from '../motor/assets';
 import { baseDe, colorObj, textoStat, type Objeto } from '../juego/objetos';
 import { reqNivel } from '../juego/heroe';
 import type { Raster } from '../../../src/engine/core/raster';
+import { iconoObjeto3D, iconoDeLoot, iconoDeArma } from '../../../src/engine/gotico/iconos3d';
+import { aLoot, arma3dDe } from './loot';
 
 export let IDI: 0 | 1 = 0;
 export const fijarIdioma = (i: 0 | 1) => { IDI = i; };
@@ -75,7 +77,31 @@ export function cacheRaster(k: string, f: () => Raster): HTMLCanvasElement {
 const ENC: Record<string, string> = { fuego: '_fuego', frio: '_hielo', rayo: '_rayo', veneno: '_veneno', sombra: '_sombra', luz: '_sagrado', sangre: '_sangre' };
 const GEMA_COLOR: Record<string, string> = { rubi: '#d02030', zafiro: '#2050d0', topacio: '#e0b020', esmeralda: '#20b040', amatista: '#9030c0', diamante: '#e8f0ff', calavera: '#d8d0c0' };
 /** Dibuja el ícono de un objeto dentro de la caja (x, y, w, h). */
+// íconos 3D de la Forja: tardan unos 200 ms cada uno, así que se pinta uno por vez y se guardan
+const iconos3d = new Map<string, HTMLCanvasElement>();
+let ultimoIcono = 0;
+function desc3D(o: Objeto): any {
+  const b = baseDe(o);
+  if (b?.ranura === 'arma') { const a = arma3dDe(o); return a ? iconoDeArma(a) : null; }
+  try { return iconoDeLoot(aLoot(o)); } catch { return null; }
+}
+function icono3D(o: Objeto, x: number, y: number, w: number, h: number): boolean {
+  const d = desc3D(o); if (!d) return false;
+  const k = JSON.stringify(d) + '|' + Math.round(w) + '|' + Math.round(h);
+  let c = iconos3d.get(k);
+  if (!c) {
+    const ahora = performance.now();
+    if (ahora - ultimoIcono < 60) return false;
+    try { c = rasterACanvas(iconoObjeto3D(d, Math.round(w), Math.round(h))); } catch { c = undefined; }
+    ultimoIcono = performance.now();
+    if (!c) return false;
+    iconos3d.set(k, c); if (iconos3d.size > 300) iconos3d.delete(iconos3d.keys().next().value!);
+  }
+  ctx.drawImage(c, Math.round(x + (w - c.width) / 2), Math.round(y + (h - c.height) / 2));
+  return true;
+}
 export function icono(o: Objeto, x: number, y: number, w: number, h: number, t = 0) {
+  if (icono3D(o, x, y, w, h)) return;
   const b = baseDe(o);
   const cx = x + w / 2, cy = y + h / 2;
   ctx.save();
