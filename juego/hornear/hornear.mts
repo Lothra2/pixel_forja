@@ -57,6 +57,15 @@ if (GRUPOS.includes('r')) for (const h of HEROES) {
   if (SOLO && !SOLO.includes(h.id)) continue;
   for (const nivel of [0, 2]) jobs.push({ id_job: nid++, grupo: 'r', clave: `${h.id}/${nivel}`, tipo: 'retrato', id: h.id, nivel, cuadros: CUADROS.presentar ?? 8 });
 }
+// jefes a medida de la Forja: se guardan como monstruos 'jefe_<id>'
+const { JEFES } = await import(join(raiz, 'catalogo/jefes.ts'));
+if (GRUPOS.includes('j')) for (const jf of JEFES as any[]) {
+  if (SOLO && !SOLO.includes(jf.id)) continue;
+  for (const acc of ['quieto', 'caminar', 'atacar', 'lanzar', 'herido', 'morir', 'especial']) {
+    const id = `jefe_${jf.id}_${acc}`; const d = REGISTRO.find((x: any) => x.id === id); if (!d) continue;
+    for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'j', clave: `jefe_${jf.id}/${acc}/${dir}`, tipo: 'bestia', id, v: dir, seed: 1, cuadros: d.cuadros ?? 1 });
+  }
+}
 const objMeta: Record<string, any> = {};
 const poderMeta: Record<string, any> = {};
 if (GRUPOS.includes('w')) for (const p of PODERES as any[]) {
@@ -141,12 +150,12 @@ for (const g of GRUPOS) {
   // borrar lo viejo del grupo si se hornea completo
   if (!SOLO) {
     if (g === 'm') { const ids = new Set(js.map((j) => j.clave.split('/')[0])); for (const k of Object.keys(man.m ?? {})) if (ids.has(k.split('/')[0])) delete man.m[k]; }
-    else if (g !== 'n' && g !== 'b') man[g] = {};
+    else if (g !== 'n' && g !== 'b' && g !== 'j') man[g] = {};
     for (const k of Object.keys(man.atlas)) if (k.startsWith(g + '_')) delete man.atlas[k]; }
   const items: { j: Job; f: number; c: any }[] = [];
   for (const j of js) (resultados.get(j.id_job) ?? []).forEach((c, f) => items.push({ j, f, c }));
   // un juego de atlas por entidad (clase, monstruo, tema) para bajar solo lo que hace falta
-  const sub = (j: Job) => g === 'w' ? 'w' : g === 'b' ? j.clave.split('/')[0] : g === 'o' ? (objMeta[j.clave]?.tema ?? 'x') : g === 'p' ? 'p' : j.clave.split('/')[0];
+  const sub = (j: Job) => g === 'w' ? 'w' : g === 'b' || g === 'j' ? j.clave.split('/')[0] : g === 'o' ? (objMeta[j.clave]?.tema ?? 'x') : g === 'p' ? 'p' : j.clave.split('/')[0];
   const porSub = new Map<string, typeof items>();
   for (const it of items) { const k = sub(it.j); if (!porSub.has(k)) porSub.set(k, []); porSub.get(k)!.push(it); }
   const listas: Record<string, any[]> = {};
@@ -183,13 +192,14 @@ for (const g of GRUPOS) {
   }
   for (const [k, fs] of Object.entries(listas)) {
     if (g === 'o') man.o[k] = { f: fs, ...objMeta[k] };
-    else (man[g === 'n' || g === 'b' ? 'm' : g] ??= {})[k] = fs;
+    else (man[g === 'n' || g === 'b' || g === 'j' ? 'm' : g] ??= {})[k] = fs;
   }
 }
 // alto de cada cuerpo: el juego lo usa con la zancada del motor para que los pies no patinen
 man.za = { ...(man.za ?? {}) };
 for (const h of HEROES) man.za[h.id] = h.cuerpo.alto ?? 1;
 for (const m of [...MONSTRUOS, ...extras.MONSTRUOS_EXTRA]) man.za[m.id] = m.cuerpo?.alto ?? 1;
+for (const jf of JEFES as any[]) man.za['jefe_' + jf.id] = jf.alto / 75;
 if (GRUPOS.includes('w')) man.wm = { ...(man.wm ?? {}), ...poderMeta };
 writeFileSync(manPath, JSON.stringify(man));
 console.log('listo en', ((Date.now() - t0) / 1000).toFixed(0), 's');
