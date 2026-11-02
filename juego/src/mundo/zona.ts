@@ -500,7 +500,7 @@ function exterior(def: DefZona, semilla: number): Zona {
   });
   if (def.piedraViaje) {
     const [cx, cy] = puntos[0];
-    const o = k.poner('com_piedra_viaje', cx + 6, cy + 6, 'apagada') ?? k.poner('com_piedra_viaje', cx - 6, cy + 6, 'apagada', true);
+    const o = ponerPiedra(k, cx, cy);
     if (o) z.marcas.push({ tipo: 'viaje', cx: o.cx, cy: o.cy });
   }
   // cofres, santuarios y pozos
@@ -579,6 +579,89 @@ function rieles(k: Constructor, suelo: Uint8Array, sala: Uint8Array) {
     if (id === 'min_riel' && r() < 0.12) k.poner('min_vagoneta', cx, cy, undefined, true);
     else if (r() < 0.25) k.poner('min_puntal', cx + (v.endsWith('_y') ? 2 : 0), cy + (v.endsWith('_y') ? 0 : 2), v.endsWith('_y') ? 'entero_y' : 'entero');
   }
+}
+
+/** La piedra de viaje: en piso firme y libre cerca de (x, y), buscando en espiral; nunca en el vacío ni en un muro. */
+function ponerPiedra(k: Constructor, x: number, y: number): ObjZ | null {
+  const z = k.z;
+  for (let r = 4; r <= 16; r++) for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2 + r, px = Math.round(x + Math.cos(a) * r), py = Math.round(y + Math.sin(a) * r);
+    if (px < 3 || py < 3 || px >= z.W - 3 || py >= z.H - 3) continue;
+    if (!z.pisos[Math.floor(py / 5) * z.tw + Math.floor(px / 5)]) continue;
+    let firme = true;
+    for (let dy = -2; dy <= 2 && firme; dy++) for (let dx = -2; dx <= 2; dx++) if (z.bloq[(py + dy) * z.W + px + dx] !== 0) { firme = false; break; }
+    if (!firme) continue;
+    const o = k.poner('com_piedra_viaje', px, py, 'apagada');
+    if (o) return o;
+  }
+  const [lx, ly] = libreCerca(z, x, y);
+  return k.poner('com_piedra_viaje', lx, ly, 'apagada', true);
+}
+
+/**
+ * Que todo se pueda alcanzar: desde la primera entrada, inunda lo caminable; si una salida, el jefe, la piedra de viaje o un
+ * cofre quedan aislados, busca el camino más barato (el piso libre cuesta 1, un objeto que estorba 25, el vacío no se cruza)
+ * y despeja solo lo que estorba en ese camino. Los ríos se vuelven vado o puente donde hace falta.
+ */
+export function conectar(z: Zona) {
+  const { W, H } = z, N = W * H;
+  const ent = Object.values(z.entradas)[0]; if (!ent) return 0;
+  const alcanza = new Uint8Array(N);
+  const inundar = (x0: number, y0: number) => {
+    const pila = [y0 * W + x0]; alcanza[y0 * W + x0] = 1;
+    while (pila.length) { const i = pila.pop()!, x = i % W, y = (i / W) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= W || Y >= H) continue; const j = Y * W + X; if (alcanza[j]) continue; const b = z.bloq[j]; if (b === 0 || b === 3) { alcanza[j] = 1; pila.push(j); } }
+    }
+  };
+  inundar(ent[0], ent[1]);
+  const metas: [number, number][] = [...Object.values(z.entradas), ...z.salidas.map((s) => [s.cx, s.cy] as [number, number]), ...z.spawns.filter((s) => s.tipo === 'jefe').map((s) => [s.cx, s.cy] as [number, number]), ...z.marcas.filter((m) => m.tipo === 'viaje' || m.tipo === 'cofre').map((m) => [m.cx, m.cy] as [number, number])];
+  let abiertos = 0;
+  const cerca = (x: number, y: number) => { for (let r = 0; r <= 3; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const X = Math.round(x) + dx, Y = Math.round(y) + dy; if (X >= 0 && Y >= 0 && X < W && Y < H && alcanza[Y * W + X]) return true; } return false; };
+  for (const [mx, my] of metas) {
+    if (cerca(mx, my)) continue;
+    // Dijkstra desde la meta hasta cualquier celda ya alcanzable
+    const dist = new Float32Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
+    let s0 = -1;
+    for (let r = 0; r <= 3 && s0 < 0; r++) for (let dy = -r; dy <= r && s0 < 0; dy++) for (let dx = -r; dx <= r; dx++) { const X = Math.round(mx) + dx, Y = Math.round(my) + dy; if (X >= 0 && Y >= 0 && X < W && Y < H && z.bloq[Y * W + X] !== 2) { s0 = Y * W + X; break; } }
+    if (s0 < 0) continue;
+    const cola: [number, number][] = [[0, s0]]; dist[s0] = 0; let fin = -1;
+    while (cola.length) {
+      let bi = 0; for (let i = 1; i < cola.length; i++) if (cola[i][0] < cola[bi][0]) bi = i;
+      const [d, i] = cola[bi]; cola[bi] = cola[cola.length - 1]; cola.pop();
+      if (d > dist[i]) continue;
+      if (alcanza[i]) { fin = i; break; }
+      const x = i % W, y = (i / W) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= W || Y >= H) continue; const j = Y * W + X; const b = z.bloq[j]; const nd = d + (b === 2 ? 400 : b === 1 ? 25 : 1); if (nd < dist[j]) { dist[j] = nd; prev[j] = i; cola.push([nd, j]); } }
+    }
+    if (fin < 0) continue;
+    // despejar el camino: quitar lo que estorba (salvo salidas y piezas ancla) y abrir ríos
+    const fijos = new Set<ObjZ>(); for (const s of z.salidas) { if (s.obj) fijos.add(s.obj); for (const o of s.piezas ?? []) fijos.add(o); }
+    for (let i = fin; i >= 0; i = prev[i]) {
+      // último recurso: si el camino cruza el vacío (una isla suelta), esa baldosa se vuelve piso como la de al lado
+      if (z.bloq[i] === 2) {
+        const tx = Math.floor((i % W) / 5), ty = Math.floor(((i / W) | 0) / 5), tw = z.tw;
+        const vecino = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => z.pisos[(ty + b) * tw + tx + a]).find((q) => q) ?? Object.values(z.pisos).find((q) => q);
+        if (vecino) z.pisos[ty * tw + tx] = { ...vecino };
+        for (let yy = ty * 5; yy < ty * 5 + 5; yy++) for (let xx = tx * 5; xx < tx * 5 + 5; xx++) if (z.bloq[yy * W + xx] === 2) z.bloq[yy * W + xx] = 0;
+        abiertos++;
+        continue;
+      }
+      if (z.bloq[i] !== 1) continue;
+      const x = i % W, y = (i / W) | 0;
+      for (let oi = z.objetos.length - 1; oi >= 0; oi--) {
+        const o = z.objetos[oi]; if (fijos.has(o)) continue;
+        const x0 = Math.round(o.cx - (o.hw - 1) / 2), y0 = Math.round(o.cy - (o.hh - 1) / 2);
+        if (x < x0 || x >= x0 + o.hw || y < y0 || y >= y0 + o.hh) continue;
+        if (/rio_lava|arroyo/.test(o.id)) { if (/arroyo/.test(o.id)) o.v = 'vado_y'; else { o.id = 'inf2_puente'; o.v = 'piedra'; } }
+        else if (o.bloquea) z.objetos.splice(oi, 1);
+        for (let yy = Math.max(0, y0); yy < Math.min(H, y0 + o.hh); yy++) for (let xx = Math.max(0, x0); xx < Math.min(W, x0 + o.hw); xx++) if (z.bloq[yy * W + xx] === 1) z.bloq[yy * W + xx] = 0;
+      }
+      if (z.bloq[i] === 1) z.bloq[i] = 0;
+      abiertos++;
+    }
+    alcanza.fill(0); inundar(ent[0], ent[1]);
+  }
+  return abiertos;
 }
 
 /** El río de lava: tramos de la Forja de norte a sur que serpentean, bloquean el paso y dejan puentes donde pasa el camino. */
@@ -776,7 +859,7 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     z.entradas['salida_' + s.destino] = [p[0], p[1] + 2];
   });
   if (!z.entradas.arriba) z.entradas.arriba = [p0[0], p0[1] + 2];
-  if (def.piedraViaje) { const o = k.poner('com_piedra_viaje', p0[0] + 4, p0[1] + 3, 'apagada', true); if (o) z.marcas.push({ tipo: 'viaje', cx: o.cx, cy: o.cy }); }
+  if (def.piedraViaje) { const o = ponerPiedra(k, p0[0], p0[1]); if (o) z.marcas.push({ tipo: 'viaje', cx: o.cx, cy: o.cy }); }
   colocarInteractivos(k, 2 + Math.floor(area / 3500), 1 + Math.floor(area / 7000), def.tema);
   sembrar(k, Math.floor(area / 260), [p0]);
   if (def.jefe) {
@@ -863,6 +946,7 @@ export function generarZona(def: DefZona, semilla: number): Zona {
   for (const o of z.objetos) if (o.id === 'mis_libro_maldito') o.tag = 'libro';
   // asegurar que toda entrada caiga en celda libre
   for (const k of Object.keys(z.entradas)) z.entradas[k] = libreCerca(z, z.entradas[k][0], z.entradas[k][1]);
+  conectar(z);
   return z;
 }
 
