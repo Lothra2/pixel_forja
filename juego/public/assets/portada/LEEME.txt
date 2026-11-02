@@ -1,0 +1,8 @@
+Portada de Réquiem de Ceniza (PixelForja, taller gótico). Todo pintado por el motor: letras propias, nada importado.
+
+portada.json dice qué es cada archivo, el orden de las capas, su paralaje, sus animaciones y la secuencia de entrada.
+titulo/   el título en español (es) e inglés (en): fijo a 1600, 800 y 400 (transparente) y sobre fondo oscuro;
+          bucle de 48 cuadros a 12 fps (4 s) en grillas; revelado de 20 cuadros.
+fondo/    capas de 1536x800 (la pantalla base de 1280x720 va en 128, 40), viñeta fija, relámpago (6 cuadros que se
+          suman) y la hoja de ceniza (8 x 4 celdas de 32 px).
+cartas/   las siete cartas de los actos, 1280x720, con lugar para el título arriba y la narración abajo.

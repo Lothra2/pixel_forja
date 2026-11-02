@@ -1,0 +1,563 @@
+{
+ "formato": "pixelforja-gotico-portada",
+ "version": 1,
+ "leeme": "Coordenadas en pixeles de la pantalla base de 1280x720 salvo que se diga otra cosa. Los cuadros de una hoja van en grilla: cuadro i en la columna i % columnas, fila floor(i / columnas). Las capas que dicen mezcla \"sumar\" se dibujan con globalCompositeOperation = \"lighter\".",
+ "base": {
+  "w": 1280,
+  "h": 720
+ },
+ "titulo": {
+  "es": {
+   "fijo": {
+    "400": "titulo/titulo_es_400.png",
+    "800": "titulo/titulo_es_800.png",
+    "1600": "titulo/titulo_es_1600.webp",
+    "fondo_oscuro": "titulo/titulo_es_800_fondo.png"
+   },
+   "anim": {
+    "400": {
+     "hojas": [
+      "titulo/titulo_es_anim_400.webp"
+     ],
+     "w": 400,
+     "h": 240,
+     "cuadros": 48,
+     "por_hoja": 48,
+     "columnas": 8,
+     "fps": 12,
+     "loop": true
+    },
+    "800": {
+     "hojas": [
+      "titulo/titulo_es_anim_800_a.webp",
+      "titulo/titulo_es_anim_800_b.webp"
+     ],
+     "w": 800,
+     "h": 480,
+     "cuadros": 48,
+     "por_hoja": 25,
+     "columnas": 5,
+     "fps": 12,
+     "loop": true
+    }
+   },
+   "revelar": {
+    "400": {
+     "hojas": [
+      "titulo/titulo_es_revelar_400.webp"
+     ],
+     "w": 400,
+     "h": 240,
+     "cuadros": 20,
+     "por_hoja": 20,
+     "columnas": 8,
+     "fps": 12,
+     "loop": false
+    },
+    "800": {
+     "hojas": [
+      "titulo/titulo_es_revelar_800.webp"
+     ],
+     "w": 800,
+     "h": 480,
+     "cuadros": 20,
+     "por_hoja": 20,
+     "columnas": 5,
+     "fps": 12,
+     "loop": false
+    }
+   },
+   "letras": {
+    "400": {
+     "x": 30,
+     "y": 39,
+     "w": 339,
+     "h": 178
+    },
+    "800": {
+     "x": 60,
+     "y": 78,
+     "w": 678,
+     "h": 356
+    }
+   }
+  },
+  "en": {
+   "fijo": {
+    "400": "titulo/titulo_en_400.png",
+    "800": "titulo/titulo_en_800.png",
+    "1600": "titulo/titulo_en_1600.webp",
+    "fondo_oscuro": "titulo/titulo_en_800_fondo.png"
+   },
+   "anim": {
+    "400": {
+     "hojas": [
+      "titulo/titulo_en_anim_400.webp"
+     ],
+     "w": 400,
+     "h": 240,
+     "cuadros": 48,
+     "por_hoja": 48,
+     "columnas": 8,
+     "fps": 12,
+     "loop": true
+    },
+    "800": {
+     "hojas": [
+      "titulo/titulo_en_anim_800_a.webp",
+      "titulo/titulo_en_anim_800_b.webp"
+     ],
+     "w": 800,
+     "h": 480,
+     "cuadros": 48,
+     "por_hoja": 25,
+     "columnas": 5,
+     "fps": 12,
+     "loop": true
+    }
+   },
+   "revelar": {
+    "400": {
+     "hojas": [
+      "titulo/titulo_en_revelar_400.webp"
+     ],
+     "w": 400,
+     "h": 240,
+     "cuadros": 20,
+     "por_hoja": 20,
+     "columnas": 8,
+     "fps": 12,
+     "loop": false
+    },
+    "800": {
+     "hojas": [
+      "titulo/titulo_en_revelar_800.webp"
+     ],
+     "w": 800,
+     "h": 480,
+     "cuadros": 20,
+     "por_hoja": 20,
+     "columnas": 5,
+     "fps": 12,
+     "loop": false
+    }
+   },
+   "letras": {
+    "400": {
+     "x": 30,
+     "y": 55,
+     "w": 339,
+     "h": 162
+    },
+    "800": {
+     "x": 60,
+     "y": 109,
+     "w": 678,
+     "h": 325
+    }
+   }
+  },
+  "colocacion": {
+   "escritorio": {
+    "ancho_rel": 0.54,
+    "centro_y_rel": 0.235,
+    "usar": "800",
+    "notas": "el cuadro de 800x480 escalado a 0.54 del ancho de pantalla, centrado en x: las agujas de la catedral asoman detrás de CENIZA"
+   },
+   "movil_vertical": {
+    "ancho_rel": 0.96,
+    "centro_y_rel": 0.2,
+    "usar": "400",
+    "notas": "el cuadro de 400x240 escalado a 0.96 del ancho"
+   }
+  },
+  "notas": "Los cuadros son transparentes y ya traen el halo de ascua, el contorno negro y la sombra: dibujarlos con mezcla normal. El revelado se toca una vez y empalma con el cuadro 0 del bucle."
+ },
+ "fondo": {
+  "capa": {
+   "w": 1536,
+   "h": 800,
+   "margen_x": 128,
+   "margen_y": 40,
+   "notas": "La pantalla base va en (margen_x, margen_y) de cada capa. Con la cámara corrida (cx, cy) la capa se dibuja en (-margen_x - cx * paralaje, -margen_y - cy * paralaje), todo por la escala de pantalla."
+  },
+  "capas": [
+   {
+    "id": "cielo",
+    "z": 0,
+    "archivo": "fondo/cielo.webp",
+    "w": 1536,
+    "h": 800,
+    "paralaje": 0.05,
+    "mezcla": "normal"
+   },
+   {
+    "id": "nubes",
+    "z": 1,
+    "archivo": "fondo/nubes.png",
+    "w": 1536,
+    "h": 800,
+    "paralaje": 0.12,
+    "mezcla": "normal",
+    "anim": {
+     "tipo": "deriva",
+     "px_por_segundo": -6,
+     "enrollar": true
+    },
+    "notas": "Se repite cada 1536 px en x: dibujarla dos veces para enrollarla."
+   },
+   {
+    "id": "relampago",
+    "z": 2,
+    "archivo": "fondo/relampago.png",
+    "paralaje": 0.12,
+    "mezcla": "sumar",
+    "anim": {
+     "tipo": "cuadros",
+     "ver": "relampago"
+    }
+   },
+   {
+    "id": "ruinas",
+    "z": 3,
+    "archivo": "fondo/ruinas.png",
+    "w": 1536,
+    "h": 800,
+    "paralaje": 0.2,
+    "mezcla": "normal"
+   },
+   {
+    "id": "ruinas_fuego",
+    "z": 4,
+    "archivo": "fondo/ruinas_fuego.png",
+    "w": 1536,
+    "h": 800,
+    "paralaje": 0.2,
+    "mezcla": "sumar",
+    "anim": {
+     "tipo": "titilar",
+     "alfa": [
+      0.7,
+      1
+     ],
+     "hz": 7,
+     "notas": "alfa con ruido suave (no un seno): suma de dos senos de 5.3 y 8.9 Hz"
+    }
+   },
+   {
+    "id": "catedral",
+    "z": 5,
+    "archivo": "fondo/catedral.png",
+    "w": 1536,
+    "h": 800,
+    "paralaje": 0.45,
+    "mezcla": "normal"
+   },
+   {
+    "id": "catedral_luz",
+    "z": 6,
+    "archivo": "fondo/catedral_luz.png",
+    "w": 1536,
+    "h": 800,
+    "paralaje": 0.45,
+    "mezcla": "sumar",
+    "anim": {
+     "tipo": "latir",
+     "alfa": [
+      0.7,
+      1
+     ],
+     "periodo_s": 2.4,
+     "notas": "late con los vitrales; durante un relámpago bajarla a 0.5"
+    }
+   },
+   {
+    "id": "niebla",
+    "z": 7,
+    "archivo": "fondo/niebla.png",
+    "w": 1536,
+    "h": 800,
+    "paralaje": 0.6,
+    "mezcla": "normal",
+    "anim": {
+     "tipo": "deriva",
+     "px_por_segundo": 9,
+     "enrollar": true
+    }
+   },
+   {
+    "id": "cementerio",
+    "z": 9,
+    "archivo": "fondo/cementerio.webp",
+    "w": 1536,
+    "h": 800,
+    "paralaje": 1,
+    "mezcla": "normal"
+   },
+   {
+    "id": "vineta",
+    "z": 20,
+    "archivo": "fondo/vineta.png",
+    "w": 1280,
+    "h": 720,
+    "paralaje": 0,
+    "mezcla": "normal",
+    "notas": "Fija, estirada a toda la pantalla, encima de todo menos del título y los botones."
+   }
+  ],
+  "camara": {
+   "deriva_x": 40,
+   "periodo_x_s": 46,
+   "deriva_y": 8,
+   "periodo_y_s": 31,
+   "raton": 24,
+   "notas": "cx = sin(2πt/periodo_x) * deriva_x + (raton_x - 0.5) * 2 * raton; cy igual con y. Nunca más de 100 px en x ni 30 en y (el margen de la capa de paralaje 1 es 128 x 40)."
+  },
+  "foco": {
+   "x": 772,
+   "puerta": [
+    719,
+    536
+   ],
+   "notas": "En pantallas angostas (teléfono vertical) centrar la vista en foco.x para que se vea la catedral y su puerta."
+  },
+  "relampago": {
+   "archivo": "fondo/relampago.png",
+   "w": 1536,
+   "h": 560,
+   "cuadros": 6,
+   "columnas": 2,
+   "fps": 15,
+   "destello": [
+    0.015,
+    0.06,
+    0.03,
+    0.05,
+    0.02,
+    0.008
+   ],
+   "cada_s": [
+    7,
+    16
+   ],
+   "espejar": "al azar",
+   "y_capa": 0,
+   "notas": "Se dibuja sobre la capa nubes con su paralaje (sumar), arriba de la capa (y 0). En cada cuadro, además, un rectángulo blanco azulado a toda la pantalla con alfa = destello[i] (sumar). Mientras dura, catedral_luz baja a 0.5 y el trueno suena 0.4 a 1.2 s después."
+  },
+  "ceniza": {
+   "archivo": "fondo/ceniza.png",
+   "celda": 32,
+   "columnas": 8,
+   "fps": 10,
+   "filas": {
+    "copo": 0,
+    "copo2": 1,
+    "brasa": 2,
+    "chispa": 3
+   },
+   "particulas": [
+    {
+     "fila": "copo",
+     "cantidad": 60,
+     "despues_de": "niebla",
+     "paralaje": 0.6,
+     "escala": [
+      0.35,
+      0.7
+     ],
+     "vel_x": [
+      -16,
+      -4
+     ],
+     "vel_y": [
+      10,
+      24
+     ],
+     "vaiven": 10,
+     "alfa": [
+      0.3,
+      0.6
+     ],
+     "mezcla": "normal"
+    },
+    {
+     "fila": "brasa",
+     "cantidad": 16,
+     "despues_de": "catedral_luz",
+     "paralaje": 0.45,
+     "escala": [
+      0.4,
+      0.8
+     ],
+     "vel_x": [
+      -8,
+      8
+     ],
+     "vel_y": [
+      -28,
+      -10
+     ],
+     "vaiven": 14,
+     "alfa": [
+      0.6,
+      1
+     ],
+     "mezcla": "sumar",
+     "nacen_en": [
+      719,
+      536
+     ],
+     "notas": "suben desde la puerta de la catedral y se apagan a los 2 a 4 s"
+    },
+    {
+     "fila": "copo2",
+     "cantidad": 22,
+     "despues_de": "cementerio",
+     "paralaje": 1.25,
+     "escala": [
+      0.9,
+      1.6
+     ],
+     "vel_x": [
+      -40,
+      -14
+     ],
+     "vel_y": [
+      28,
+      60
+     ],
+     "vaiven": 18,
+     "alfa": [
+      0.45,
+      0.85
+     ],
+     "mezcla": "normal"
+    },
+    {
+     "fila": "chispa",
+     "cantidad": 24,
+     "despues_de": "cementerio",
+     "paralaje": 1.1,
+     "escala": [
+      0.6,
+      1.1
+     ],
+     "vel_x": [
+      -20,
+      10
+     ],
+     "vel_y": [
+      -45,
+      -15
+     ],
+     "vaiven": 12,
+     "alfa": [
+      0.5,
+      1
+     ],
+     "mezcla": "sumar"
+    }
+   ],
+   "notas": "Cada partícula toma un cuadro de su fila que avanza a fps (con desfase al azar) y se mueve con su velocidad en px/s más un vaivén senoidal en x. Al salir por un borde vuelve a entrar por el opuesto."
+  }
+ },
+ "cartas": {
+  "w": 1280,
+  "h": 720,
+  "zonas": {
+   "titulo": {
+    "x": 240,
+    "y": 52,
+    "w": 800,
+    "h": 132
+   },
+   "narracion": {
+    "x": 160,
+    "y": 548,
+    "w": 960,
+    "h": 144
+   }
+  },
+  "actos": [
+   {
+    "n": 1,
+    "id": "velmora",
+    "es": "El Valle de Velmora",
+    "en": "The Vale of Velmora",
+    "archivo": "cartas/acto_1.webp",
+    "color_titulo": "#d8c7a8"
+   },
+   {
+    "n": 2,
+    "id": "sahrim",
+    "es": "Las Arenas de Sahrim",
+    "en": "The Sands of Sahrim",
+    "archivo": "cartas/acto_2.webp",
+    "color_titulo": "#f0c27a"
+   },
+   {
+    "n": 3,
+    "id": "yhuantl",
+    "es": "La Selva de Yhuantl",
+    "en": "The Jungle of Yhuantl",
+    "archivo": "cartas/acto_3.webp",
+    "color_titulo": "#b8e0c8"
+   },
+   {
+    "n": 4,
+    "id": "hrimgard",
+    "es": "Los Picos de Hrimgard",
+    "en": "The Peaks of Hrimgard",
+    "archivo": "cartas/acto_4.webp",
+    "color_titulo": "#cfe6ff"
+   },
+   {
+    "n": 5,
+    "id": "herida",
+    "es": "La Herida",
+    "en": "The Wound",
+    "archivo": "cartas/acto_5.webp",
+    "color_titulo": "#ffb070"
+   },
+   {
+    "n": 6,
+    "id": "ysmeral",
+    "es": "Ysmeral, la Ciudad Ahogada",
+    "en": "Ysmeral, the Drowned City",
+    "archivo": "cartas/acto_6.webp",
+    "color_titulo": "#b0e8d8"
+   },
+   {
+    "n": 7,
+    "id": "corona",
+    "es": "La Corona del Dios Sediento",
+    "en": "The Crown of the Thirsting God",
+    "archivo": "cartas/acto_7.webp",
+    "color_titulo": "#ffe2a0"
+   }
+  ],
+  "notas": "Opacas. El título del acto va centrado en zonas.titulo (color_titulo con contorno negro) y la narración en zonas.narracion, en hueso claro. Entrar con fundido de 0.8 s y un acercamiento lento (escala 1.0 a 1.04 en 8 s)."
+ },
+ "secuencia": [
+  {
+   "t": 0,
+   "que": "negro; empieza la música"
+  },
+  {
+   "t": 0.2,
+   "que": "fundido del fondo (cielo y ruinas primero) en 1.6 s; la cámara ya deriva"
+  },
+  {
+   "t": 1.4,
+   "que": "un relámpago (forzado) que deja ver la catedral; catedral_luz sube de 0 a 1 en 1 s"
+  },
+  {
+   "t": 2.2,
+   "que": "revelar del título (20 cuadros a 12 fps, 1.7 s) y al terminar el bucle anim desde el cuadro 0"
+  },
+  {
+   "t": 4,
+   "que": "aparecen los botones del menú (fundido 0.5 s), en la franja oscura de abajo"
+  }
+ ]
+}

@@ -10,6 +10,7 @@ import { siguienteCiclo, type DatosHeroe } from '../juego/heroe';
 import { R, rng } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 import { logoReq } from './logo';
+import { dibujarPortada, tituloFijo, dibujarCarta, prepararCarta } from './portada';
 
 export interface Opciones { general: number; musica: number; efectos: number; idioma: 0 | 1; brillo: number }
 export const opciones: Opciones = { general: 0.8, musica: 0.6, efectos: 0.8, idioma: 0, brillo: 1 };
@@ -63,7 +64,8 @@ function brasas(t: number, n = 40, sube = true) {
   ctx.globalAlpha = 1;
 }
 /** El título que se enciende. k de 0 a 1; `forja` 0..1 para que las brasas formen las letras (intro). */
-export function logo(x: number, y: number, k: number, t: number, tam = 54, forja?: number) { logoReq(x, y, k, t, tam * 1.15, forja); }
+/** El título: el de letras forjadas de la Forja si ya llegó (salvo la intro, donde las brasas forman las letras viejas). */
+export function logo(x: number, y: number, k: number, t: number, tam = 54, forja?: number) { if (forja === undefined && tituloFijo(x, y, Math.min(W * 0.62, tam * 10.5), k)) return; logoReq(x, y, k, t, tam * 1.15, forja); }
 
 // ------------------------------------------------------------------ intro
 // Cinemática por tomas: cada una con su cámara (paneo, zoom lento, sacudida), luz que titila y ceniza.
@@ -274,10 +276,16 @@ export function dibujarFondoMenu(t: number) {
   vineta();
 }
 export function menuPrincipal(t: number, hayPartidas: boolean): string | null {
-  dibujarFondoMenu(t);
-  logo(W / 2, H * 0.3, 1, t, Math.min(64, W / 14));
-  let y = H * 0.44; let r: string | null = null;
-  const b = (s: string, id: string, activo = true) => { if (boton(s, W / 2 - 130, y, 260, 38, { activo, tam: 16 })) r = id; y += 50; };
+  // la portada de la Forja; mientras baja, el fondo de siempre
+  const pt = dibujarPortada(performance.now() / 1000);
+  if (!pt) { dibujarFondoMenu(t); logo(W / 2, H * 0.3, 1, t, Math.min(64, W / 14)); }
+  let y = pt ? pt.yBotones : H * 0.44; let r: string | null = null;
+  const alfa = pt ? pt.botones : 1;
+  if (alfa <= 0) return null;
+  // con la portada, los botones van en fila en la franja oscura de abajo, sobre el cementerio, sin tapar la catedral
+  const fila = !!pt && W >= 900; const bw = fila ? Math.min(210, (W - 120) / 4 - 12) : 260; let bx = W / 2 - (fila ? (bw * 4 + 36) / 2 : 130);
+  if (fila) y = H - 92;
+  const b = (s: string, id: string, activo = true) => { ctx.save(); ctx.globalAlpha = alfa; const ok = boton(s, bx, y, bw, 38, { activo, tam: 16 }); ctx.restore(); if (ok && alfa > 0.6) r = id; if (fila) bx += bw + 12; else y += 50; };
   b(T('Jugar', 'Play'), 'jugar');
   b(T('Ver la intro', 'Watch intro'), 'intro');
   b(T('Opciones', 'Options'), 'opciones');
@@ -385,8 +393,19 @@ function marcoCine(linea: string | null, tl: number, dur: number) {
   texto(T('Clic o Esc para saltar', 'Click or Esc to skip'), W - 16, H - 14, { alin: 'right', tam: 11, color: '#5a5040' });
 }
 /** Cinemática al cerrar un acto. Devuelve true cuando terminó. */
+const DUR_CARTA = 7.5;
+const NARRA_ACTO1: [string, string] = ['La brasa cayó sobre Santa Oria. Desde entonces el valle no duerme, y los muertos tampoco.', 'The ember fell on Santa Oria. Since then the valley does not sleep, and neither do the dead.'];
 export function dibujarEntreacto(acto: number, t: number, eleccion?: FinalElegido): boolean {
-  const tomas = ENTREACTO[acto] ?? [];
+  const todas = ENTREACTO[acto] ?? [];
+  // primero la carta ilustrada del acto que empieza, con su nombre y la primera línea de la narración
+  prepararCarta(acto + 1);
+  if (t < DUR_CARTA) {
+    const t0 = todas[0]; const linea = t0 ? (eleccion && t0.textoSegun?.[eleccion]) || t0.texto : acto === 0 ? NARRA_ACTO1 : null;
+    if (dibujarCarta(acto + 1, t, linea ? TT(linea) : '', DUR_CARTA)) return false;
+  }
+  // después de la carta siguen las tomas (sin la primera, que ya se leyó en la carta); si la carta no llegó, todas
+  let tomas = todas;
+  if (t >= DUR_CARTA) { tomas = todas.slice(1); t -= DUR_CARTA; }
   const i = Math.floor(t / DUR_TOMA);
   if (i >= tomas.length) return true;
   const tm = tomas[i], tl = t - i * DUR_TOMA, k = tl / DUR_TOMA;

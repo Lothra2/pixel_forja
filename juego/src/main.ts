@@ -145,6 +145,8 @@ async function empezarPartida(d: DatosHeroe) {
   await irAZona(zid, 'centro');
   pintarHeroe(d.clase, cuerpoDe(d.clase), equipoVisual(d), firmaVisual(d));
   if (!d.misiones.m1_hambre && d.nivel === 1) msg(j, ['Habla con el Maestre Odrán junto al fuego.', 'Speak with Master Odran by the fire.'], '#ffd080');
+  // héroe nuevo: la carta del acto 1 antes de empezar
+  if (d.acto === 1 && !Object.keys(d.misiones).length && !(d as any).vioCarta1) { (d as any).vioCarta1 = true; empezarEntreacto(0); }
 }
 
 // ------------------------------------------------------------------ control del héroe
@@ -431,7 +433,7 @@ function paso(dt: number) {
       entreT += dt;
       if (dibujarEntreacto(entreActo, entreT, j ? finalDe(j.heroe.d) : undefined) || (entreT > 0.5 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) {
         E.clicIzq = false; estado = 'juego'; tEstado = 0;
-        const sig = PUEBLO_DE[entreActo + 1]; if (sig && ZONAS[sig]) zonaPendiente = { id: sig, entrada: 'centro' };
+        const sig = PUEBLO_DE[entreActo + 1]; if (entreActo > 0 && sig && ZONAS[sig]) zonaPendiente = { id: sig, entrada: 'centro' };
       }
       break;
     }
