@@ -193,6 +193,8 @@ function poseCuad(q: Cuad, acc: Acc, f: number) {
   return p;
 }
 
+/** Trote al caminar: cada pata retrocede PASO_CUAD × S × pata apoyada durante APOYO_CUAD del ciclo (pares en diagonal). */
+const PASO_CUAD = 14, APOYO_CUAD = 0.56;
 function cuadrupedo(q: Cuad, d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const S = q.S, g = q.gordo, pt = q.pata;
   const W = mundo(d);
@@ -237,12 +239,12 @@ function cuadrupedo(q: Cuad, d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const mand = cmp(cab, T(H(1, 0, jab ? -3.5 : -2.6), Ry(P.mand)));
   // ---- patas: dos huesos con IK al tobillo y la mano o pezuña en el piso (o colgando al morir)
   const piezas: Pieza[] = [];
-  const pasoL = 14 * S * pt, alzaL = 6 * S;
+  const pasoL = PASO_CUAD * S * pt, alzaL = 6 * S;
   for (const del of [true, false]) for (const s of [1, -1]) {
     const raiz = ap(cuerpo, del ? B(12.5, s * 5.6 * g, -3) : B(-13.6, s * 5 * g, -1.5));
     const l1 = (del ? 10 : 10.8) * S * pt, l2 = (del ? 10.5 : 11.6) * S * pt, l3 = (del ? 3.6 : 7) * S * pt;
     const fase = acc === 'caminar' ? f / 8 + (del ? 0 : 0.5) + (s > 0 ? 0.5 : 0) : 0;
-    const st = acc === 'caminar' ? paso(fase, pasoL, alzaL, 0.56) : { x: 0, z: 0, vuelo: 0 };
+    const st = acc === 'caminar' ? paso(fase, pasoL, alzaL, APOYO_CUAD) : { x: 0, z: 0, vuelo: 0 };
     let pie: V3 = [(del ? 14.5 : -14.5) * S * (0.6 + 0.4 * pt) + st.x + (del ? P.adel[0] : P.atrasX), s * 5.8 * g * S, st.z + (del ? P.alza[0] : 0)];
     let vuelo = st.vuelo + (del && P.alza[0] > 0 ? 0.8 : 0);
     if (P.flojo > 0) {
@@ -388,11 +390,13 @@ interface Pata { cadera: V3; reposo: V3; l1: number; l2: number; fase: number; r
  * grupos de cuatro que alternan), la rodilla sube por encima del cuerpo y el último tramo baja curvado a la punta.
  * `rizo` (0..1) las encoge hacia el vientre como una araña muerta.
  */
+/** Marcha de los arácnidos: cada grupo de patas apoya la mitad del ciclo; el paso de la araña es PASO_ARANA × S. */
+const APOYO_ARAC = 0.5, PASO_ARANA = 15, PASO_CANGREJO = 10;
 function patasArac(W: Tr, cuerpo: Tr, patas: Pata[], o: { paso: number; alza: number; mat: string; junta: string; caminar: boolean; ph: number; rizo: number; espinas?: boolean; deLado?: boolean }): Pieza[] {
   const ps: Pieza[] = [];
   for (const pa of patas) {
     const cad = ap(cuerpo, pa.cadera);
-    const st = o.caminar ? paso(o.ph + pa.fase, o.paso, o.alza, 0.5) : { x: 0, z: 0, vuelo: 0 };
+    const st = o.caminar ? paso(o.ph + pa.fase, o.paso, o.alza, APOYO_ARAC) : { x: 0, z: 0, vuelo: 0 };
     let tip = ap(W, o.deLado ? [pa.reposo[0], pa.reposo[1] + st.x, pa.reposo[2] + st.z] : [pa.reposo[0] + st.x, pa.reposo[1], pa.reposo[2] + st.z]);
     if (pa.alzaExtra) tip = add(tip, mv(W.m, pa.alzaExtra));
     const afuera = nor([tip[0] - cad[0], tip[1] - cad[1], 0]);
@@ -424,7 +428,9 @@ function arana(q: Arana, d: Dir, acc: Acc, f: number, crias = true): Pieza[] | E
   const S = q.S, W = mundo(d), n = CUADROS[acc], ph = f / n;
   let av = 0, z = 0, pitch = 0, roll = 0, quel = 0, abd = 0, rizo = 0, alzaDel = 0, adelDel = 0, muerte = 0;
   if (acc === 'quieto') { const b = Math.sin(ph * TAU); z = b * 0.5; abd = b * 3; quel = 4 + b * 4; }
-  else if (acc === 'caminar') { z = -Math.abs(Math.cos(ph * TAU * 2)) * 0.8 + 0.4; roll = Math.sin(ph * TAU * 2) * 1.5; pitch = Math.sin(ph * TAU * 2) * 1.2; abd = Math.sin(ph * TAU * 2) * 3; quel = 6; }
+  else if (acc === 'caminar') {
+    // el cuerpo baja una vez por cada grupo de patas que apoya (dos por ciclo), no en cuadros alternos
+    z = -Math.abs(Math.cos(ph * TAU)) * 0.8 + 0.4; roll = Math.sin(ph * TAU * 2) * 1.5; pitch = Math.sin(ph * TAU * 2) * 1.2; abd = Math.sin(ph * TAU * 2) * 3; quel = 6; }
   else if (acc === 'atacar') {
     // se alza con las patas delanteras arriba, cae hacia adelante y clava los quelíceros
     av = K([0, -2, -4, -4, 7, 9, 4, 1], f); z = K([0, 2, 5, 6, 0, -2, -1, 0], f); pitch = K([0, -10, -22, -26, 10, 15, 6, 1], f);
@@ -493,7 +499,7 @@ function arana(q: Arana, d: Dir, acc: Acc, f: number, crias = true): Pieza[] | E
       alzaExtra: del ? [adelDel * S, 0, alzaDel * S] : i === 1 ? [adelDel * 0.4 * S, 0, alzaDel * 0.3 * S] : undefined,
     });
   }
-  ps.push(...patasArac(W, cuerpo, patas, { paso: 15 * S, alza: 9 * S, mat: q.quitina, junta: q.junta, caminar: acc === 'caminar', ph, rizo, espinas: S > 0.6 }));
+  ps.push(...patasArac(W, cuerpo, patas, { paso: PASO_ARANA * S, alza: 9 * S, mat: q.quitina, junta: q.junta, caminar: acc === 'caminar', ph, rizo, espinas: S > 0.6 }));
   // ---- especial: chorro de veneno en arco y crías que salen del saco
   let resplandor: Escena['resplandor'];
   if (acc === 'especial') {
@@ -1294,7 +1300,7 @@ function cangrejo(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const W = mundo(d), ph = f / CUADROS[acc], C = 'be_caparazon', Q = { mat: C };
   let z = 0, roll = 0, pitch = 0, lado = 0, pinza = 0.3, brazo = 0, rizo = 0, muerte = 0;
   if (acc === 'quieto') { const b = Math.sin(ph * TAU); z = b * 0.4; pinza = 0.3 + b * 0.25; brazo = b * 4; }
-  else if (acc === 'caminar') { z = -Math.abs(Math.cos(ph * TAU * 2)) * 0.6; roll = Math.sin(ph * TAU * 2) * 3; lado = Math.sin(ph * TAU) * 1.2; }
+  else if (acc === 'caminar') { z = -Math.abs(Math.cos(ph * TAU)) * 0.6; roll = Math.sin(ph * TAU * 2) * 3; lado = Math.sin(ph * TAU) * 1.2; }
   else if (acc === 'atacar') { pinza = K([0.3, 0.9, 1, 1, 0, 0, 0.2, 0.3], f); brazo = K([0, 18, 30, 34, -6, -10, -2, 0], f); pitch = K([0, -4, -8, -8, 6, 8, 3, 0], f); }
   else if (acc === 'morir') { z = K([0, 2, 0, -2, -4, -5, -5.5, -5.5], f); roll = K([0, 10, 40, 90, 140, 170, 180, 180], f); rizo = K([0, 0.2, 0.4, 0.6, 0.8, 1, 1, 1], f); pinza = 0.6; brazo = K([0, 20, 10, 0, -10, -20, -20, -20], f); muerte = K([0, 0, 0.2, 0.5, 0.8, 1, 1, 1], f); }
   const zb = 13 + (acc === 'morir' ? K([0, 3, 4, 3, 1, 0, 0, 0], f) : 0);
@@ -1327,7 +1333,22 @@ function cangrejo(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     const a = rad(60 + i * 25), R = 32;
     patas.push({ cadera: [(7 - i * 4.5), s * 15, -1], reposo: [Math.cos(a) * R * 0.7, s * Math.sin(a) * R, 0], l1: 14, l2: 18, fase: (i % 2 === 0) === (s < 0) ? 0 : 0.5, r: 1.6 });
   }
-  ps.push(...patasArac(W, cuerpo, patas, { paso: 10, alza: 5, mat: C, junta: 'be_quitina_parda', caminar: acc === 'caminar', ph, rizo, deLado: true }));
+  // las patas dan el paso en el sentido de la marcha (el juego lo mueve hacia donde mira): de costado patinaban de lado
+  ps.push(...patasArac(W, cuerpo, patas, { paso: PASO_CANGREJO, alza: 5, mat: C, junta: 'be_quitina_parda', caminar: acc === 'caminar', ph, rizo }));
   return ps;
 }
 bestia('cangrejo_cripta', ['Cangrejo de cripta', 'Crypt crab'], [3, 3], cangrejo);
+
+/**
+ * Zancada de caminar de las bestias que pisan: unidades del mundo que avanza el cuerpo en un ciclo de 8 cuadros (lo que
+ * retrocede el pie apoyado dividido por la parte del ciclo que apoya), a escala 1. Así el juego mueve la animación a
+ * velocidad / zancada y las patas no patinan (como `zancada()` de figura.ts para los humanoides).
+ */
+export const ZANCADA_BESTIA: Record<string, number> = {
+  lobo_sombrio: (PASO_CUAD * LOBO.S * LOBO.pata) / APOYO_CUAD,
+  jabali_demonio: (PASO_CUAD * JABALI.S * JABALI.pata) / APOYO_CUAD,
+  perro_infernal: (PASO_CUAD * PERRO.S * PERRO.pata) / APOYO_CUAD,
+  arana_reina: (PASO_ARANA * REINA.S) / APOYO_ARAC,
+  arana_cueva: (PASO_ARANA * CUEVA.S) / APOYO_ARAC,
+  cangrejo_cripta: PASO_CANGREJO / APOYO_ARAC,
+};

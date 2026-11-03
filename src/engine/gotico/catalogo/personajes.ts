@@ -85,7 +85,7 @@ export const HEROES: Heroe[] = [
     niveles: [
       { torso: { tipo: 'camisa', mat: 'cu_tela_blanca' }, piernas: { tipo: 'pantalon', mat: 'cu_tela_parda' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, manos: { tipo: 'guantes', mat: 'cu_cuero' }, cinturon: { mat: 'cu_cuero' }, arma: { tipo: 'ballesta', mat: 'hierro', mango: madera } },
       { torso: { tipo: 'cuero', mat: 'cu_cuero' }, piernas: { tipo: 'calzas', mat: 'cu_tela_negra' }, pies: { tipo: 'botas_altas', mat: 'cu_cuero' }, manos: { tipo: 'guantes', mat: 'cu_cuero_negro' }, cinturon: { mat: 'cu_cuero_negro', hebilla: 'cu_oro' }, cabeza: { tipo: 'gorro', mat: 'cu_cuero', mat2: 'cu_cuero_negro' }, capa: { mat: 'cu_tela_parda', largo: 0.9 }, arma: { tipo: 'ballesta', mat: 'cu_placa', mango: lisa } },
-      { torso: { tipo: 'cuero_tachonado', mat: 'cu_tela_morada' }, piernas: { tipo: 'calzas', mat: 'cu_cuero_negro' }, pies: { tipo: 'botas_altas', mat: 'cu_cuero_negro' }, manos: { tipo: 'guanteletes', mat: 'cu_oro' }, hombros: { tipo: 'placas', mat: 'cu_oro' }, cinturon: { mat: 'cu_cuero_negro', hebilla: 'fuego_verde' }, cabeza: { tipo: 'mascara', mat: 'cu_oro' }, capa: { mat: 'cu_tela_morada' }, arma: { tipo: 'ballesta', mat: 'cu_oro', mango: 'cu_placa_oscura', encanto: 'fuego' } },
+      { torso: { tipo: 'cuero_tachonado', mat: 'cu_tela_morada' }, piernas: { tipo: 'calzas', mat: 'cu_cuero_negro' }, pies: { tipo: 'botas_altas', mat: 'cu_cuero_negro' }, manos: { tipo: 'guanteletes', mat: 'cu_oro' }, hombros: { tipo: 'placas', mat: 'cu_oro' }, cinturon: { mat: 'cu_cuero_negro', hebilla: 'fuego_verde' }, cabeza: { tipo: 'mascara', mat: 'cu_placa_oscura' }, capa: { mat: 'cu_tela_morada' }, arma: { tipo: 'ballesta', mat: 'cu_oro', mango: 'cu_placa_oscura', encanto: 'fuego' } },
     ],
   },
 ];

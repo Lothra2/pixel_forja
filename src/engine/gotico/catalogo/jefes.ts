@@ -1019,13 +1019,16 @@ function lamina(g: V3[][], mat: string, e = 0.5, tono = 0): Pieza[] {
   return ps;
 }
 /** Caminar genérico de bípedo pesado (en unidades de persona). */
+const APOYO_B = 0.58;
 function marcha(p: PoseB, ph: number, largo = 18, alto = 5) {
   for (const [i, s] of [[0, -1], [1, 1]] as [number, number][]) {
-    const st = paso(ph + (i ? 0.5 : 0), largo, alto, 0.58);
+    const st = paso(ph + (i ? 0.5 : 0), largo, alto, APOYO_B);
     p.pie[i] = [st.x, s * 4.4, st.z];
     p.mano[i] = [3 - st.x * 0.45, s * 9, 24 + st.vuelo * 1.5];
   }
-  p.py = Math.sin(ph * TAU) * 1.2; p.tr = Math.sin(ph * TAU) * 3; p.ty = Math.sin(ph * TAU) * 6; p.pz = 0.4 + Math.abs(Math.cos(ph * TAU * 2)) * 0.9; p.tp = 9;
+  // la cadera baja una vez por paso (dos por ciclo): abajo al pisar, arriba a mitad del apoyo (con |cos(2·TAU·ph)| bajaba y
+  // subía en cuadros alternos: el cuerpo temblaba)
+  p.py = Math.sin(ph * TAU) * 1.2; p.tr = Math.sin(ph * TAU) * 3; p.ty = Math.sin(ph * TAU) * 6; p.pz = 0.4 + Math.abs(Math.cos(ph * TAU)) * 0.9; p.tp = 9;
 }
 
 // ================================================================== 3. KHAMER-UL, EL REY SIN SOMBRA
@@ -1682,8 +1685,9 @@ function garfio(a: V3, abajo: V3, t: number, giro: number, mat = 'hierro_oxido')
  * garfios de carnicero colgando del cinto y una cuchilla enorme que gotea sangre. El especial hace girar la cadena
  * con el garfio alrededor, a ras del piso.
  */
+const S_VERDUGO = 1.85, PASO_VERDUGO = 15;
 function verdugo(acc: Acc, f: number): Res {
-  const ph = f / CUADROS[acc], S = 1.85, Pl = 'jf_piel_verdugo', Cn = 'cu_cuero_negro';
+  const ph = f / CUADROS[acc], S = S_VERDUGO, Pl = 'jf_piel_verdugo', Cn = 'cu_cuero_negro';
   const p = poseB();
   // en guardia: piernas abiertas con la izquierda adelante, la cuchilla amartillada a la altura del pecho y la otra
   // mano baja y adelante con la cadena
@@ -1693,7 +1697,7 @@ function verdugo(acc: Acc, f: number): Res {
     // la respiración se ve: el pecho y la panza se inflan, los hombros suben y al soltar el aire sale vaho
     const b = Math.sin(ph * TAU); respira = 0.5 + 0.5 * b; p.pz = 0.5 + b * 0.5; p.tp = 10 + b * 2; p.cab = 6 - b * 2; p.mano = [[7, -14.5, 39 + b * 1.2], [8, 11.8, 20 - b * 0.5]];
   } else if (acc === 'caminar') {
-    marcha(p, ph, 15, 4); p.tp = 14; p.mano[0] = [7 - p.pie[0][0] * 0.15, -14.5, 39 + Math.sin(ph * TAU * 2) * 1]; p.mano[1] = [8 - p.pie[1][0] * 0.3, 11.8, 20]; respira = 0.5 + 0.5 * Math.sin(ph * TAU * 2);
+    marcha(p, ph, PASO_VERDUGO, 4); p.tp = 14; p.mano[0] = [7 - p.pie[0][0] * 0.15, -14.5, 39 + Math.sin(ph * TAU * 2) * 1]; p.mano[1] = [8 - p.pie[1][0] * 0.3, 11.8, 20]; respira = 0.5 + 0.5 * Math.sin(ph * TAU * 2);
     p.pie[0][1] = -5.6; p.pie[1][1] = 5.6;
   } else if (acc === 'atacar') {
     // la cuchilla sube por encima del hombro y baja en diagonal con todo el peso
@@ -1881,3 +1885,6 @@ function verdugo(acc: Acc, f: number): Res {
   return { piezas: ps };
 }
 jefe('verdugo', ['El Verdugo de Velmora', 'The Headsman of Velmora'], 110, 3, ['remolino de cadena', 'chain whirl'], verdugo);
+
+/** Zancada de caminar de los jefes que pisan (unidades del mundo por ciclo de 8 cuadros: paso × escala / parte que apoya). */
+export const ZANCADA_JEFE: Record<string, number> = { jefe_verdugo: (PASO_VERDUGO * S_VERDUGO) / APOYO_B };
