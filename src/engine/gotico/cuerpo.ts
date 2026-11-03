@@ -253,6 +253,9 @@ function manoDe(arma: TipoArma, izq?: IzqTipo): ManoPose | undefined {
 }
 type IzqTipo = NonNullable<Equipo['izq']>['tipo'];
 
+/** Radios del hueso del pie (talón y punta) en unidades de A: el pie se apoya con la planta a ras del piso. */
+const PIE_TALON = 1.6, PIE_PUNTA = 1.25;
+
 export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   // (las astas y el gran báculo nuevos van con la pose de vara aunque sean a dos manos: la izquierda baja por el asta)
@@ -343,10 +346,12 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
     }
     // el pie: punta hacia adelante (abierta con pieGiro); en puntillas el talón sube y la punta queda en el piso, a la
     // misma altura que la de un pie plantado (no se hunde: el pie gira sobre la punta)
+    // (el talón y la punta no bajan de su propio radio, el del hueso del pie en partes(): la planta queda a ras del piso;
+    // la suela de la bota la suma personaje() hacia arriba, nunca hacia abajo)
     const pg = rad(s * (P.pieGiro?.[i] ?? 0)), fd: V3 = [Math.cos(pg), Math.sin(pg), 0];
-    const pz = Math.max(1.1 * S, tob[2] - 1.6 * S), tip = plant ? P.puntillas?.[i] ?? 0 : 0;
-    const talon: V3 = [tob[0] - fd[0] * 1.2 * S, tob[1] - fd[1] * 1.2 * S, Math.max(1.1 * S, tob[2] - 2.2 * S)];
-    const punta: V3 = [tob[0] + fd[0] * 4.6 * S * (1 - tip * 0.25), tob[1] * 1.04 + fd[1] * 4.6 * S, tip > 0 ? Math.max(0.9 * S, pz - 0.2 * S - tip * 2.2 * S) : pz - 0.2 * S];
+    const pz = Math.max(PIE_TALON * A, tob[2] - 1.6 * S), tip = plant ? P.puntillas?.[i] ?? 0 : 0;
+    const talon: V3 = [tob[0] - fd[0] * 1.2 * S, tob[1] - fd[1] * 1.2 * S, Math.max(PIE_TALON * A, tob[2] - 2.2 * S)];
+    const punta: V3 = [tob[0] + fd[0] * 4.6 * S * (1 - tip * 0.25), tob[1] * 1.04 + fd[1] * 4.6 * S, Math.max(PIE_PUNTA * A, tip > 0 ? pz - 0.2 * S - tip * 2.2 * S : pz - 0.2 * S)];
     piernas.push({ s, cad: Wc(...cad), rod: Wc(...rodl), tob: Wc(...tob), talon: Wc(...talon), punta: Wc(...punta) });
   });
   // ---- brazos: por ángulos (con giro del brazo) o con la mano a un punto (cinemática inversa)
@@ -526,15 +531,19 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: st
       cs.push(bulto(p.rod, [1.8 * A + inf, 2.0 * A + inf, 2.0 * A + inf], { mat }));
     }
     if (tiene('pantorrilla')) {
-      const fin = extra.hasta !== undefined ? mez(p.rod, p.tob, extra.hasta) : p.tob;
+      // (en el tobillo la prenda sube medio grosor, como la bota: no asoma bajo la planta)
+      const fin = add(extra.hasta !== undefined ? mez(p.rod, p.tob, extra.hasta) : p.tob, [0, 0, inf * 0.5]);
       cs.push(hueso(p.rod, fin, 2.2 * A + inf, 1.3 * A + inf, o));
       // gemelo atrás de la pierna
       const pa = nor(sub(p.tob, p.rod)), atras = nor(add(cruz(cruz(pa, e.F), pa), [0, 0, 0]));
       cs.push(bulto(add(mez(p.rod, p.tob, 0.3), atras, -0.6 * A), [4.4 * S + inf * 0.5, (2.0 + mu * 0.4) * A + inf, (2.1 + mu * 0.4) * A + inf], { eje: pa, mat }));
     }
     if (tiene('pie')) {
-      cs.push(hueso(p.talon, p.punta, 1.6 * A + inf, 1.25 * A + inf, o));
-      cs.push(bulto(p.tob, [1.5 * A + inf, 1.5 * A + inf, 1.7 * S + inf], { mat }));
+      // la bota envuelve el pie por arriba y a los costados, pero la suela queda a ras de la planta: el hueso se sube
+      // medio grosor y engorda medio grosor (si engordara entero hacia abajo, la bota se hundiría en el piso)
+      const sube: V3 = [0, 0, inf * 0.5];
+      cs.push(hueso(add(p.talon, sube), add(p.punta, sube), PIE_TALON * A + inf * 0.5, PIE_PUNTA * A + inf * 0.5, o));
+      cs.push(bulto(add(p.tob, sube), [1.5 * A + inf, 1.5 * A + inf, 1.7 * S + inf * 0.5], { mat }));
     }
   }
   if (tiene('cabeza') || tiene('craneo')) {
@@ -633,7 +642,14 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     } else if (pz.tipo === 'tunica_larga') ps.push(faldon(e, pz.mat, 30, 1.5, acc, f));
   }
   if (pi) {
-    if (pi.tipo === 'sandalias') for (const p of e.piernas) ps.push(masa([hueso(add(p.talon, [0, 0, -0.9]), add(p.punta, [0, 0, -0.7]), 1.7 * A, 1.4 * A, { mat: pi.mat })], { mat: pi.mat }));
+    if (pi.tipo === 'sandalias') for (const p of e.piernas) {
+      // la suela: una lámina chata bajo la planta, apoyada en el piso, un poco más ancha que el pie
+      const ex = nor(sub(p.punta, p.talon)), ey = nor(cruz([0, 0, 1], ex)), ez = cruz(ex, ey), L = len(sub(p.punta, p.talon));
+      const planta = add(mez(p.talon, p.punta, 0.5), ez, -((PIE_TALON + PIE_PUNTA) / 2) * A + 0.45);
+      ps.push(masa([bulto(planta, [L / 2 + 1.7 * A, 1.75 * A, 0.5], { ejes: [ex, ey, ez], mat: pi.mat })], { mat: pi.mat }));
+      // y las tiras que cruzan el empeine
+      for (const t of [0.35, 0.75]) ps.push(masa([hueso(add(add(mez(p.talon, p.punta, t), ey, 1.5 * A), ez, -0.4), add(add(mez(p.talon, p.punta, t), ey, -1.5 * A), ez, -0.4), 0.42, 0.42, { mat: pi.mat }), bulto(add(mez(p.talon, p.punta, t), ez, 0.85 * A), [0.5, 1.45 * A, 0.42], { ejes: [ex, ey, ez], mat: pi.mat })], { mat: pi.mat, suave: 0.6 }));
+    }
     else {
       const alto = pi.tipo === 'botas_altas' || pi.tipo === 'sabatones' ? 0.3 : pi.tipo === 'vendas' ? 0.55 : 0.55;
       ps.push(masa(partes(e, cu, ['pantorrilla', 'pie'], pi.tipo === 'sabatones' ? 1.2 : 0.8, pi.mat, { hasta: 1 }).filter((c) => c.f === 'hueso' ? true : true).map((c) => c), { mat: pi.mat, suave: 1.2 }));
@@ -747,7 +763,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     else ps.push(masa([bulto(add(c, fuera, 0.5), [4.4 * A, 4.2 * A, 2.8 * S], { mat: h.mat }), bulto(add(c, fuera, -0.5), [3.6 * A, 3.6 * A, 3.2 * S], { mat: h.mat })], { mat: h.mat, suave: 2.6 }));
   }
   // ---- capa: lámina de bultos planos que cuelga de los hombros y se mece al caminar
-  if (eq.capa) ps.push(capa(e, eq.capa.mat, eq.capa.largo ?? 1, acc, f));
+  if (eq.capa) ps.push(capa(e, eq.capa.mat, eq.capa.largo ?? 1, acc, f, pi ? (pi.tipo === 'sabatones' ? 1.2 : pi.tipo === 'sandalias' ? 0 : 0.8) : 0));
   // ---- pelo y barba
   const casco = eq.cabeza?.tipo;
   const tapaPelo = casco === 'capucha' || casco === 'yelmo' || casco === 'gran_yelmo' || casco === 'casco' || casco === 'turbante';
@@ -1295,11 +1311,37 @@ function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Ac
  * Capa con pliegues: franjas de tela (poliedros finos) que bajan de los hombros, se abren en el ruedo y alternan
  * hacia adentro y hacia afuera para que la luz marque los pliegues. Arriba sigue el torso, abajo cuelga y se mece.
  */
-function capa(e: Esqueleto, mat: string, largo: number, acc: Accion, f: number): Pieza {
-  const { S, A, T } = e;
+function capa(e: Esqueleto, mat: string, largo: number, acc: Accion, f: number, bota = 0): Pieza {
+  const { A } = e;
   // la capa se arrastra atrás y al costado con la inercia del cuerpo (la pose la calcula); en el ruedo pesa más
   const tela = e.pose?.capa;
-  const ondea = tela ? tela[0] : acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.6 + 2.6 : acc === 'atacar' ? 2.2 : acc === 'morir' ? 0 : 0.7;
+  const ondea0 = tela ? tela[0] : acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.6 + 2.6 : acc === 'atacar' ? 2.2 : acc === 'morir' ? 0 : 0.7;
+  // la tela no se deja atravesar por las piernas: si el talón que patea atrás al correr (o la pantorrilla) llega a la
+  // capa, el vuelo crece hasta que la capa se aparta y el ruedo sube por encima del pie (la tela se abre con el golpe);
+  // al correr el talón sube hasta el ruedo, así que ahí la capa se aparta con más holgura (que no lo roce)
+  const piernaPts: [V3, number][] = [];
+  for (const p of e.piernas) {
+    for (let t = 0.3; t <= 1.001; t += 0.1) piernaPts.push([mez(p.rod, p.tob, t), (2.2 - 0.9 * t) * A + bota]);
+    for (let t = 0; t <= 1.001; t += 0.25) piernaPts.push([mez(p.talon, p.punta, t), (PIE_TALON - (PIE_TALON - PIE_PUNTA) * t) * A + bota]);
+  }
+  const holgura = (cs: Comp[]) => {
+    let m = Infinity;
+    for (const [q, r] of piernaPts) for (const c of cs) if (c.f === 'bulto') m = Math.min(m, dElip(c, q) - r);
+    return m;
+  };
+  let ondea = ondea0, cs = capaCon(e, largo, mat, ondea, tela);
+  if (acc !== 'morir' && !e.caida) for (let i = 0; i < 14 && holgura(cs) < (acc === 'correr' ? 1.5 * A : 0.4); i++) cs = capaCon(e, largo, mat, (ondea += 0.6), tela);
+  return masa(cs, { mat, suave: 1.1 });
+}
+/** Distancia aproximada de q a la superficie de un bulto (la de la masa, sin la unión suave). */
+function dElip(c: Extract<Comp, { f: 'bulto' }>, q: V3): number {
+  const d = sub(q, c.c), lx = dot3(d, c.ex) / c.r[0], ly = dot3(d, c.ey) / c.r[1], lz = dot3(d, c.ez) / c.r[2];
+  const k0 = Math.hypot(lx, ly, lz), k1 = Math.hypot(lx / c.r[0], ly / c.r[1], lz / c.r[2]);
+  return k1 < 1e-9 ? -Math.min(c.r[0], c.r[1], c.r[2]) : (k0 * (k0 - 1)) / k1;
+}
+/** Las franjas de la capa con un vuelo `ondea` (cuánto se aparta atrás; desde 2.5 el ruedo además sube). */
+function capaCon(e: Esqueleto, largo: number, mat: string, ondea: number, tela?: [number, number]): Comp[] {
+  const { S, A, T } = e;
   const ladea = tela ? tela[1] : 0;
   const zTop = e.hombroZ + 1.2 * S, zBot = Math.max(2.2 * S, e.zc - 26 * S * largo + 12 * S);
   const N = 7, cs: Comp[] = [];
@@ -1321,7 +1363,7 @@ function capa(e: Esqueleto, mat: string, largo: number, acc: Accion, f: number):
       cs.push(bulto(mez(pts[i], pts[i + 1], 0.5), [L * 0.6, 1.25 * A, 0.6], { ejes: [ex, ey, ez], mat }));
     }
   }
-  return masa(cs, { mat, suave: 1.1 });
+  return cs;
 }
 
 function alas(e: Esqueleto, mat: string, acc: Accion, f: number): Pieza[] {
@@ -1484,10 +1526,7 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
       if (tipo !== 'ballesta') {
         // el puño izquierdo cierra sobre la empuñadura, en el centro del arco; las palas se curvan hacia atrás (hacia la
         // cuerda) y el arco queda en el plano vertical de la línea de tiro: de la mano que tira a la que sostiene
-        const fT = e.ejesT ? nor([e.ejesT[0][0], e.ejesT[0][1], 0]) : F, haciaArco = sub(c, m); // (un arco suelto no tiene torso)
-        const tira = e.pose?.tensa !== false && dot3(haciaArco, fT) > 6 * S;
-        const tiro = tira ? nor(haciaArco) : nor(add(fT, F, 1));
-        const arriba = nor(sub([0, 0, 1], [tiro[0] * tiro[2], tiro[1] * tiro[2], tiro[2] * tiro[2]]));
+        const { tira, tiro, arriba } = marcoArco(e, c, m);
         const en = (k: number, atras: number): V3 => add(add(c, arriba, k * S), tiro, -atras * S);
         let arr: V3, abj: V3, atrasCuerda = 3.6;
         if (tipo === 'arco') {
@@ -1542,6 +1581,29 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
     default: ps.push(...armaEpica(e, tipo, b, mat, mango, gema)); break;
   }
   return ps;
+}
+
+/**
+ * El marco del arco en el puño izquierdo `c` (la derecha `m` tira de la cuerda): hacia dónde tira y su arriba. De pie
+ * el arco queda en el plano vertical de la línea de tiro; al caer muerto se acuesta en el piso junto al cuerpo (arriba
+ * y tiro horizontales), así no queda parado en el aire ni medio hundido en el suelo.
+ */
+function marcoArco(e: Esqueleto, c: V3, m: V3): { tira: boolean; tiro: V3; arriba: V3 } {
+  const F = e.F, fT = e.ejesT ? nor([e.ejesT[0][0], e.ejesT[0][1], 0]) : F, haciaArco = sub(c, m); // (un arco suelto no tiene torso)
+  const tira = e.pose?.tensa !== false && dot3(haciaArco, fT) > 6 * e.S;
+  let tiro = tira ? nor(haciaArco) : nor(add(fT, F, 1));
+  let arriba = nor(sub([0, 0, 1], [tiro[0] * tiro[2], tiro[1] * tiro[2], tiro[2] * tiro[2]]));
+  const yace = Math.max(0, Math.min(1, ((e.caida ?? 0) - 0.55) / 0.4));
+  if (yace > 0 && e.ejesT) {
+    // tumbado: el arco a lo largo del cuerpo (su eje de los pies a la cabeza ya está casi horizontal)
+    let ax: V3 = [e.ejesT[2][0], e.ejesT[2][1], 0]; if (len(ax) < 0.2) ax = [F[1], -F[0], 0];
+    ax = nor(ax);
+    let tY = nor(cruz([0, 0, 1], ax)); if (dot3(tY, tiro) < 0) tY = mulv(tY, -1);
+    arriba = nor(mez(arriba, ax, yace));
+    tiro = nor(mez(tiro, tY, yace));
+    tiro = nor(sub(tiro, mulv(arriba, dot3(tiro, arriba))));
+  }
+  return { tira, tiro, arriba };
 }
 
 /** El marco de una hoja en el puño: el canto (ancho de la hoja) y el plano (hacia donde mira su cara). */
@@ -1770,7 +1832,7 @@ function filoDe(e: Esqueleto, tipo: TipoArma, b: Brazo): [V3, V3] {
     case 'garras': return [en(1), en(9)];
     case 'varita': return [en(5), en(11)];
     case 'baculo': case 'cetro': { const [, t, up] = varaDe(e, b.mano, tipo === 'cetro' ? 0.45 : 1); return [t, add(t, up, 4 * S)]; }
-    case 'arco': case 'arco_largo': case 'arco_corto': case 'ballesta': { if (tipo === 'ballesta' && (e.pose?.pegaI ?? 1) < 0.5) return [b.mano, add(b.mano, b.eje, 11 * S)]; const c = e.brazos[1].mano, k = tipo === 'arco_largo' ? 17 : tipo === 'arco_corto' ? 10.5 : 12; return [add(c, [0, 0, -k * S]), add(c, [0, 0, k * S])]; }
+    case 'arco': case 'arco_largo': case 'arco_corto': case 'ballesta': { if (tipo === 'ballesta' && (e.pose?.pegaI ?? 1) < 0.5) return [b.mano, add(b.mano, b.eje, 11 * S)]; const c = e.brazos[1].mano, k = tipo === 'arco_largo' ? 17 : tipo === 'arco_corto' ? 10.5 : 12; const up: V3 = tipo === 'ballesta' || !e.caida ? [0, 0, 1] : marcoArco(e, c, b.mano).arriba; return [add(c, up, -k * S), add(c, up, k * S)]; }
     case 'katana': return [en(2), en(25)];
     case 'estoque': return [en(2), en(27)];
     case 'falcata': return [en(2), en(20.5)];
@@ -1920,7 +1982,7 @@ function manoIzq(e: Esqueleto, iz: NonNullable<Equipo['izq']>, derecha?: TipoArm
  * Un arma sola, sin quien la empuñe: 'flota' gira despacio en el aire (8 cuadros, como el botín que se muestra),
  * 'suelo' queda tirada en el piso y 'clavada' entra de punta en la tierra. Si tiene encantamiento, arde o brilla.
  */
-export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; gema?: string; encanto?: Encanto; escala?: number; nivel?: 1 | 2 | 3 | 4 | 5 }, pose: 'flota' | 'suelo' | 'clavada' | 'icono', f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } {
+export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; gema?: string; encanto?: Encanto; escala?: number; nivel?: 1 | 2 | 3 | 4 | 5; apoyado?: boolean; alzar?: number }, pose: 'flota' | 'suelo' | 'clavada' | 'icono', f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } {
   const largo: Partial<Record<TipoArma, number>> = { espada: 24, cimitarra: 24, mandoble: 34, daga: 10, hacha: 23, hacha_doble: 31, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 31, garras: 9, varita: 11, baculo: 30, cetro: 16, arco: 30, ballesta: 16,
     katana: 27, estoque: 28, falcata: 22, tridente: 38, maza_estrella: 21, arco_largo: 39, arco_corto: 26, jabalina: 29, gran_baculo: 34, orbe_mano: 11, katar: 13, hoz: 13, lanza_dragon: 42, cestus: 8, frasco: 10 };
   const L = largo[tipo] ?? 20;
@@ -1936,6 +1998,15 @@ export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; ge
     eje = nor([1, -0.35, 0]); F = nor([0.35, 1, 0]);
     mano = [-L * 0.45, L * 0.16, 1.4];
     if (esVara(tipo)) { mano = [0, 0, 30]; }
+    // el cesto y el frasco (solo de la forja) quedan tendidos y apoyados: el cesto boca abajo con el dorso arriba, el
+    // frasco acostado; se arman una vez a ras del piso y se suben lo que asome por debajo
+    if (SOLO_FORJA.includes(tipo) && !o.apoyado) {
+      const r = armaSuelta(tipo, { ...o, apoyado: true }, pose, f);
+      const z = 0.05 - bajoDe(r.piezas);
+      return armaSuelta(tipo, { ...o, apoyado: true, alzar: z }, pose, f);
+    }
+    if (tipo === 'cestus') F = [0, 0, 1];
+    mano = [mano[0], mano[1], o.alzar !== undefined ? o.alzar : mano[2]];
   } else if (pose === 'icono') {
     // para el inventario: de pie; las hojas de frente a la cámara, las cabezas de hacha, martillo o guadaña de perfil
     // (los arcos nuevos y la hoz de perfil, para que se lea la curva de las palas y la media luna)
@@ -1954,6 +2025,8 @@ export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; ge
   if (nivelArma({ tipo, nivel: o.nivel })) {
     // el arsenal elemental: la forma forjada, los adornos del nivel y la capa del elemento con su luz
     const piezas = armaForjadaEn(e, b, { ...o, tipo }, f, 3);
+    // el frasco tirado alumbra con su poción (el juego lo toma como fuente de luz)
+    if (!o.encanto && tipo === 'frasco' && pose === 'suelo') return { piezas, resplandor: { c: add(mano, eje, 4 * SS), r: 9, color: '#b46ae8' } };
     if (!o.encanto) return { piezas };
     const [a, z] = filoDe(e, tipo, b);
     return { piezas, resplandor: { c: mez(a, z, 0.5), r: 12 + (o.nivel ?? 1) * 2.5, color: LUZ_ELEMENTO_ARMA[o.encanto].color } };
@@ -1963,6 +2036,20 @@ export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; ge
   const [a, z] = filoDe(e, tipo, b);
   piezas.push(...encantar(a, z, o.encanto, f, SS, 3));
   return { piezas, resplandor: { c: mez(a, z, 0.5), r: 18, color: ENCANTOS.find((x) => x[0] === o.encanto)![3] } };
+}
+
+/** El punto más bajo de unas piezas (para apoyar en el piso lo que queda tendido). */
+function bajoDe(ps: Pieza[]): number {
+  let z = Infinity;
+  const elip = (c: V3, ex: V3, ey: V3, ez: V3, r: V3) => c[2] - Math.hypot(ex[2] * r[0], ey[2] * r[1], ez[2] * r[2]);
+  for (const p of ps) {
+    if (p.resta) continue;
+    if (p.k === 'masa') for (const c of p.comps) z = Math.min(z, c.f === 'hueso' ? Math.min(c.a[2] - c.r0, c.b[2] - c.r1) : elip(c.c, c.ex, c.ey, c.ez, c.r));
+    else if (p.k === 'conv') for (const q of p.pts) z = Math.min(z, q[2]);
+    else if (p.k === 'elip') z = Math.min(z, elip(p.c, p.ex, p.ey, p.ez, p.r));
+    else z = Math.min(z, p.o[2] - Math.max(p.r0, p.r1), p.o[2] + p.ez[2] * p.h - Math.max(p.r0, p.r1));
+  }
+  return isFinite(z) ? z : 0;
 }
 
 // ------------------------------------------------------------------ el arsenal elemental (forja_armas.ts y elementos_arma.ts)
@@ -1981,9 +2068,8 @@ function armaForjadaEn(e: Esqueleto, b: Brazo, a: { tipo: TipoArma; mat?: string
   if (esVara(tipo)) mc.vara = varaDe(e, b.mano, tipo === 'cetro' ? 0.45 : tipo === 'gran_baculo' ? 1.06 : 1);
   if (esArco(tipo)) {
     // el arco en el puño izquierdo, como lo arma `arma`: hacia dónde tira y su arriba
-    const c = e.brazos[1].mano, fT = e.ejesT ? nor([e.ejesT[0][0], e.ejesT[0][1], 0]) : e.F, hacia = sub(c, b.mano);
-    const tiro = e.pose?.tensa !== false && dot3(hacia, fT) > 6 * S ? nor(hacia) : nor(add(fT, e.F, 1));
-    mc.arco = { c, tiro, arriba: nor(sub([0, 0, 1], [tiro[0] * tiro[2], tiro[1] * tiro[2], tiro[2] * tiro[2]])) };
+    const c = e.brazos[1].mano, { tiro, arriba } = marcoArco(e, c, b.mano);
+    mc.arco = { c, tiro, arriba };
   }
   if (tipo === 'ballesta') {
     // en la mano: entre las dos manos apuntando adelante (o colgando de la derecha); suelta (ícono): de pie

@@ -923,9 +923,15 @@ function morir(p: Pose, f: number, arma: ArmaPose, estilo?: Presentacion) {
     p.ladeo = tab([0, 4, 8, 6, 4, 0, -2, 0]) * sg; p.giroTorso = tab([12, 16, 20, 14, 8, 4, 0, 2]) * sg;
     p.caderaD = T2([[6, 10], [22, 60], [26, 70], [30, 64], [34, 60], [36, 58], [34, 54], [36, 56]]);
     p.caderaI = T2([[-6, 8], [14, 40], [16, 46], [18, 44], [16, 36], [14, 30], [12, 28], [14, 30]]);
-    p.hombroD = T3([[35, 35, 50], [20, 30, 30], [40, 40, 30], [60, 46, 30], [70, 40, 40], [50, 30, 60], [46, 26, 64], [44, 24, 66]]);
-    p.hombroI = T3([[28, 40, 65], [10, 24, 30], [30, 40, 30], [50, 46, 30], [60, 44, 40], [56, 30, 60], [52, 28, 66], [50, 26, 68]]);
+    // el brazo de abajo queda tendido en el piso; el de arriba (el del lado contrario a la caída) no puede quedar en el
+    // aire a la altura del hombro con el arma colgando: al tocar el piso se le cae por delante del pecho hasta el suelo
+    // (`afuera` negativo lo cruza hacia el lado de la caída, que tumbado es hacia abajo)
+    const abajo = T3([[35, 35, 50], [20, 30, 30], [40, 40, 30], [60, 46, 30], [70, 40, 40], [50, 30, 60], [46, 26, 64], [44, 24, 66]]);
+    const arriba = T3([[28, 40, 65], [10, 24, 30], [30, 40, 30], [50, 46, 30], [66, 12, 40], [70, -38, 40], [66, -50, 34], [64, -54, 32]]);
+    if (sg > 0) { p.hombroD = abajo; p.hombroI = arriba; } else { p.hombroD = arriba; p.hombroI = abajo; }
     p.munecaD = tab([-10, 10, 20, 10, 0, -10, 0, 0]);
+    // la ballesta se suelta de la izquierda y cae con la mano que la tenía
+    if (arma === 'ballesta' && i >= 4) p.pegaI = 0;
   } else {
     // se desploma hacia adelante: la caída acelera (gravedad), toca el piso en el 6 y en el 7 se asienta
     p.caida = tab([0, 0, 0.06, 0.22, 0.5, 0.86, 1, 1]);

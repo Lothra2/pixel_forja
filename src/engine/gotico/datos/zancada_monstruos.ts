@@ -4,7 +4,7 @@ import { ZANCADA_BESTIA } from '../catalogo/bestias';
 import { ZANCADA_JEFE } from '../catalogo/jefes';
 
 /**
- * Zancada de caminar de los monstruos del acto 1, en casillas del piso por ciclo completo de caminar (8 cuadros) y a
+ * Zancada de caminar de los monstruos del acto 1 (y del escorpión de las dunas del acto 2), en casillas del piso por ciclo completo de caminar (8 cuadros) y a
  * escala 1: la misma convención que `ZANCADA.caminar` del juego para los héroes (`zancada('caminar') / 16`, una casilla
  * mide 16 unidades del mundo). El juego pone la animación de caminar a `velocidad / (ZANCADA_MONSTRUO[sprite] × escala)`
  * ciclos por segundo y los pies quedan plantados.
@@ -26,6 +26,8 @@ const HUMANOS_ACTO1 = ['zombi', 'necrofago', 'bandido', 'penitente', 'esqueleto'
 /** Humanoides propios del juego (hornear_extra.ts) armados con cuerpos del motor de alto 1. */
 const HUMANOS_JUEGO: Record<string, number> = { monja_hueca: 1, ahogado: 1 };
 const BESTIAS_ACTO1 = ['lobo_sombrio', 'arana_cueva', 'arana_reina', 'cangrejo_cripta'];
+/** Bestias de otros actos que el juego también hace caminar con su zancada (el escorpión de las dunas, acto 2). */
+const BESTIAS_OTRAS = ['escorpion_gigante'];
 /** Los que no pisan: ritmo de aleteo (la gárgola bate una vez por ciclo, el murciélago dos) y vaivén de la abadesa. */
 const SIN_PISADA: Record<string, number> = { gargola: 1.7, murcielago_gigante: 2.4, jefe_abadesa: 3.8 };
 
@@ -37,11 +39,11 @@ function tabla(): Record<string, number> {
     t[id] = redondo(zancada('caminar', m.cuerpo.alto ?? 1) / CASILLA);
   }
   for (const [id, alto] of Object.entries(HUMANOS_JUEGO)) t[id] = redondo(zancada('caminar', alto) / CASILLA);
-  for (const id of BESTIAS_ACTO1) t[id] = redondo(ZANCADA_BESTIA[id] / CASILLA);
+  for (const id of [...BESTIAS_ACTO1, ...BESTIAS_OTRAS]) t[id] = redondo(ZANCADA_BESTIA[id] / CASILLA);
   t.jefe_verdugo = redondo(ZANCADA_JEFE.jefe_verdugo / CASILLA);
   Object.assign(t, SIN_PISADA);
   return t;
 }
 
-/** Casillas por ciclo de caminar (8 cuadros) de cada monstruo del acto 1, a escala 1. */
+/** Casillas por ciclo de caminar (8 cuadros) de cada monstruo del acto 1 (y del escorpión del acto 2), a escala 1. */
 export const ZANCADA_MONSTRUO: Record<string, number> = tabla();

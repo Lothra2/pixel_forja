@@ -50,6 +50,15 @@ for (const [tipo, es, en, o] of ARMAS) for (const [enc, ees, een] of ENC) {
   });
 }
 
+// el cesto del monje y el frasco del alquimista (formas que solo pinta la forja): el juego hornea `arma_<forma>|suelo`
+// para el botín tirado en el piso, así que llevan su objeto con esa sola variante y un cuadro, tendidos en el piso
+for (const [tipo, es, en] of [['cestus', 'Cesto', 'Cestus'], ['frasco', 'Frasco', 'Flask']] as [TipoArma, string, string][]) {
+  registrar({
+    id: `arma_${tipo}`, nombre: [es, en], tema: 'armas', variantes: ['suelo'], cuadros: 1, t: 3, huella: [1, 1], bloquea: false,
+    armar: (v, f) => armaSuelta(tipo, {}, v as 'suelo', f),
+  });
+}
+
 // maniquíes: un muñeco de madera con el equipo completo de cada héroe en cada nivel
 const NIV = [['novato', 'novato', 'novice'], ['veterano', 'veterano', 'veteran'], ['leyenda', 'leyenda', 'legend']] as const;
 for (const h of HEROES) h.niveles.forEach((eq, i) => {

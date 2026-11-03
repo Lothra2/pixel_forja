@@ -392,6 +392,8 @@ interface Pata { cadera: V3; reposo: V3; l1: number; l2: number; fase: number; r
  */
 /** Marcha de los arácnidos: cada grupo de patas apoya la mitad del ciclo; el paso de la araña es PASO_ARANA × S. */
 const APOYO_ARAC = 0.5, PASO_ARANA = 15, PASO_CANGREJO = 10;
+/** El escorpión: su escala y el paso de cada pata (a escala 1). */
+const S_ESCORPION = 1.15, PASO_ESCORPION = 9;
 function patasArac(W: Tr, cuerpo: Tr, patas: Pata[], o: { paso: number; alza: number; mat: string; junta: string; caminar: boolean; ph: number; rizo: number; espinas?: boolean; deLado?: boolean }): Pieza[] {
   const ps: Pieza[] = [];
   for (const pa of patas) {
@@ -538,11 +540,12 @@ bestia('arana_cueva', ['Araña de cueva', 'Cave spider'], [2, 2], (d, acc, f) =>
 
 /** Escorpión gigante: pinzas que se abren, ocho patas en tetrápodo y la cola de seis anillos que se arquea y pica. */
 function escorpion(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
-  const S = 1.15, W = mundo(d), ph = f / CUADROS[acc];
+  const S = S_ESCORPION, W = mundo(d), ph = f / CUADROS[acc];
   let av = 0, z = 0, pitch = 0, roll = 0, rizo = 0, muerte = 0;
   let pinza = 0.3, brazo = 0, cola = 0, colaAlza = 0;
   if (acc === 'quieto') { const b = Math.sin(ph * TAU); z = b * 0.4; pinza = 0.3 + b * 0.25; cola = b * 4; brazo = b * 3; }
-  else if (acc === 'caminar') { z = -Math.abs(Math.cos(ph * TAU * 2)) * 0.5; roll = Math.sin(ph * TAU * 2) * 1.2; pinza = 0.25; cola = Math.sin(ph * TAU) * 6; brazo = Math.sin(ph * TAU) * 6; }
+  else if (acc === 'caminar') { z = -Math.abs(Math.cos(ph * TAU)) * 0.5; // (dos rebotes por ciclo, uno por cada cambio de grupo de patas)
+    roll = Math.sin(ph * TAU * 2) * 1.2; pinza = 0.25; cola = Math.sin(ph * TAU) * 6; brazo = Math.sin(ph * TAU) * 6; }
   else if (acc === 'atacar') {
     // las pinzas atrapan (0-3) y la cola descarga el aguijón por encima del cuerpo (3-5)
     av = K([0, 1, 2, 2, 4, 5, 2, 0], f); pitch = K([0, 2, 4, 2, 6, 8, 3, 0], f); pinza = K([0.3, 0.9, 1, 0.05, 0, 0.1, 0.3, 0.3], f);
@@ -616,7 +619,7 @@ function escorpion(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     const a = rad(pAng[i]), R = 25 * S;
     patas.push({ cadera: [(9 - i * 4.6) * S, s * 7 * S, -1.5 * S], reposo: [(4 - i * 2) * S + Math.cos(a) * R + av * S * 0.3, s * Math.sin(a) * R, 0], l1: 11 * S, l2: 15 * S, fase: ((i % 2 === 0) === (s < 0) ? 0 : 0.5) + i * 0.04, r: 1.6 * S });
   }
-  ps.push(...patasArac(W, cuerpo, patas, { paso: 9 * S, alza: 5 * S, mat: 'be_ambar', junta: 'be_quitina_parda', caminar: acc === 'caminar', ph, rizo }));
+  ps.push(...patasArac(W, cuerpo, patas, { paso: PASO_ESCORPION * S, alza: 5 * S, mat: 'be_ambar', junta: 'be_quitina_parda', caminar: acc === 'caminar', ph, rizo }));
   return acc === 'atacar' && f >= 3 && f <= 5 ? { piezas: ps, resplandor: { c: punta, r: 10 * S, color: '#90ff50' } } : ps;
 }
 bestia('escorpion_gigante', ['Escorpión gigante', 'Giant scorpion'], [4, 3], escorpion);
@@ -756,7 +759,7 @@ function golem(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
       pie[i] = [2 + st.x, s * 13, st.z];
       mano[i] = [6 - st.x * 0.6, s * 31, 30 + st.vuelo * 3];
     }
-    py = Math.sin(ph * TAU) * 4.5; tr = -Math.sin(ph * TAU) * 4; ty = Math.sin(ph * TAU) * 7; pz = -Math.abs(Math.sin(ph * TAU * 2 + 0.6)) * 3; tp = 4;
+    py = Math.sin(ph * TAU) * 4.5; tr = -Math.sin(ph * TAU) * 4; ty = Math.sin(ph * TAU) * 7; pz = -Math.abs(Math.sin(ph * TAU + 1.09)) * 3; tp = 4; // (bípedo: dos rebotes por ciclo, al pisar cada pie)
   } else if (acc === 'atacar') {
     // sube los dos puños sobre la cabeza y los descarga contra el suelo
     const mx = [6, 8, -2, -6, 36, 40, 24, 8], mz = [30, 72, 122, 128, 14, 9, 20, 28], my = [31, 26, 18, 16, 13, 14, 24, 30];
@@ -1055,7 +1058,7 @@ function demonio(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     mano = [[18, 34, 62 + b], [16, -34, 60 + b]];
   } else if (acc === 'caminar') {
     for (const [i, s] of [[0, 1], [1, -1]] as [number, number][]) { const st = paso(ph + (i ? 0.5 : 0), 44, 16, 0.58); pie[i] = [st.x, s * 15, st.z]; mano[i] = [16 - st.x * 0.55, s * 34, 60 + st.vuelo * 4]; }
-    py = Math.sin(ph * TAU) * 3; tr = -Math.sin(ph * TAU) * 3; ty = Math.sin(ph * TAU) * 8; pz = -Math.abs(Math.sin(ph * TAU * 2 + 0.5)) * 3.5; tp = 12; bate = 16 + Math.sin(ph * TAU * 2) * 8; abre = 0.4;
+    py = Math.sin(ph * TAU) * 3; tr = -Math.sin(ph * TAU) * 3; ty = Math.sin(ph * TAU) * 8; pz = -Math.abs(Math.sin(ph * TAU + 1.04)) * 3.5; tp = 12; // (bípedo: dos rebotes por ciclo) bate = 16 + Math.sin(ph * TAU * 2) * 8; abre = 0.4;
   } else if (acc === 'atacar') {
     // zarpazo: el brazo derecho se carga atrás y arriba, barre en diagonal y sigue de largo
     ty = K([0, 14, 26, 30, -20, -34, -18, 0], f); tp = K([8, 4, 0, 0, 20, 26, 16, 8], f); pz = K([0, 0, -2, -3, -7, -8, -4, 0], f); px = K([0, -2, -4, -4, 6, 9, 4, 0], f);
@@ -1183,7 +1186,8 @@ function dragon(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const H = 'be_hueso_viejo';
   let av = 0, z = 0, pitch = -3, roll = 0, cuello = 0, cabP = 0, mand = 8, abre = 0.55, bate = 22, lag = 0, flojo = 0, muerte = 0, aliento = 0, onda = 1, colaAlza = 0;
   if (acc === 'quieto') { const b = Math.sin(ph * TAU); z = b * 0.8; cuello = b * 3; mand = 8 + b * 4; bate = 22 + b * 5; }
-  else if (acc === 'caminar') { z = -Math.abs(Math.sin(ph * TAU * 2)) * 2.5; roll = Math.sin(ph * TAU) * 3; pitch = -3 + Math.sin(ph * TAU * 2) * 1.5; onda = 1.8; bate = 18 + Math.sin(ph * TAU * 2) * 6; abre = 0.45; }
+  else if (acc === 'caminar') { z = -Math.abs(Math.cos(ph * TAU)) * 2.5; // (patas en dos grupos: baja al cambiar de grupo, dos veces por ciclo)
+    roll = Math.sin(ph * TAU) * 3; pitch = -3 + Math.sin(ph * TAU * 2) * 1.5; onda = 1.8; bate = 18 + Math.sin(ph * TAU * 2) * 6; abre = 0.45; }
   else if (acc === 'atacar') {
     cuello = K([0, -14, -22, 18, 30, 24, 8, 0], f); cabP = K([0, -10, -16, 20, 30, 18, 6, 0], f); mand = K([8, 14, 26, 50, 52, 4, 6, 8], f); av = K([0, -4, -8, 6, 14, 12, 5, 0], f); pitch = K([-3, -8, -12, 4, 8, 6, 0, -3], f);
     abre = K([0.55, 0.7, 0.9, 0.8, 0.6, 0.5, 0.5, 0.55], f); bate = K([22, 40, 55, 0, -10, 5, 18, 22], f);
@@ -1351,4 +1355,5 @@ export const ZANCADA_BESTIA: Record<string, number> = {
   arana_reina: (PASO_ARANA * REINA.S) / APOYO_ARAC,
   arana_cueva: (PASO_ARANA * CUEVA.S) / APOYO_ARAC,
   cangrejo_cripta: PASO_CANGREJO / APOYO_ARAC,
+  escorpion_gigante: (PASO_ESCORPION * S_ESCORPION) / APOYO_ARAC,
 };

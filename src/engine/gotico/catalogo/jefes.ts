@@ -423,7 +423,7 @@ function ozmaren(acc: Acc, f: number): Res {
       garra[i] = [20 - st.x * 0.5, s * 64, 76 + st.vuelo * 6];
       baja[i] = [34 - st.x * 0.25, s * 24, 96];
     }
-    py = Math.sin(ph * TAU) * 4; tr = Math.sin(ph * TAU) * 3; ty = Math.sin(ph * TAU) * 7; pz = -Math.abs(Math.sin(ph * TAU * 2 + 0.4)) * 5;
+    py = Math.sin(ph * TAU) * 4; tr = Math.sin(ph * TAU) * 3; ty = Math.sin(ph * TAU) * 7; pz = -Math.abs(Math.sin(ph * TAU + 0.99)) * 5; // (bípedo: dos rebotes por ciclo, al pisar cada pie)
     tp = 16; alaBate = 14 + Math.sin(ph * TAU * 2) * 5; alaAbre = 0.75; latido = 0.5 + 0.5 * Math.cos(ph * TAU * 2);
   } else if (acc === 'atacar') {
     // zarpazo: carga atrás y arriba, barre en diagonal con la garra derecha y remata con la izquierda

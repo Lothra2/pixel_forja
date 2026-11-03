@@ -1007,7 +1007,8 @@ function cangrejo(d: Dir, acc: AccB, f: number): Res {
   let av = 0, z = 0, pitch = 0, roll = 0, yaw = 0, rizo = 0, muerte = 0, vuelca = 0, llama = 1;
   let alzaD = 0, abreD = 0.3, alzaI = 0, abreI = 0.3;
   if (acc === 'quieto') { const b = Math.sin(w); z = b * 0.5; alzaD = b * 4; abreD = 0.25 + 0.2 * Math.sin(w + 1); alzaI = -b * 3; abreI = 0.3 + 0.2 * Math.sin(w * 2); }
-  else if (acc === 'caminar') { z = -Math.abs(Math.cos(w * 2)) * 0.9; roll = Math.sin(w * 2) * 2.6; yaw = Math.sin(w) * 3; alzaD = Math.sin(w) * 5; alzaI = -Math.sin(w) * 5; }
+  else if (acc === 'caminar') { z = -Math.abs(Math.cos(w)) * 0.9; // (dos rebotes por ciclo: uno por cada cambio de grupo de patas)
+    roll = Math.sin(w * 2) * 2.6; yaw = Math.sin(w) * 3; alzaD = Math.sin(w) * 5; alzaI = -Math.sin(w) * 5; }
   else if (acc === 'atacar') {
     // levanta la pinza grande, abierta, y la descarga adelante cerrándola de golpe
     av = K([0, -2, -4, -4, 7, 9, 4, 1], f); pitch = K([0, -5, -10, -12, 8, 11, 4, 0], f); z = K([0, 1, 3, 3, -1, -2, -1, 0], f);

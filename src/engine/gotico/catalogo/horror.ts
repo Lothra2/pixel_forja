@@ -2,7 +2,7 @@ import { MATERIALES } from '../materiales';
 import { aPantalla, type Comp, type V3 } from '../render';
 import { createRaster, type Raster } from '../../core/raster';
 import { G, bloque, vela, llama, cadena, cuervo, calavera, huesoLargo, costillar, cascotes, rr, onda, type Op } from '../kit_muerte';
-import { reg, cuerpo, juntas, POSES, Mancha, ManchaPared, SUP, PALETAS, type Pose } from './gore';
+import { reg, cuerpo, juntas, POSES, Mancha, ManchaPared, SUP, PALETAS, GIBS, type Pose } from './gore';
 
 /**
  * Horror para ambientar (para un jugador adulto): lo que deja el enemigo a su paso y lo que se mueve en lo oscuro.
@@ -127,7 +127,7 @@ function empalado(g: G, x: number, y: number, viejo: boolean) {
   const a = g.a, s = g.sub(x, y, 0, rr(a, -50, 50));
   estaca(s, [0, 0, -2], [-2.5 + r2(a, 1), r2(a, 1.5), 70 + a.r() * 6]);
   const pose: Pose = { ...POSES.colgando, columna: -10 + r2(a, 6), cabeza: [-35 + r2(a, 15), r2(a, 30)], brazos: [[10 + a.r() * 20, 15, 20], [5, 10 + a.r() * 20, 30]] };
-  cuerpo(s.sub(1.2, 0, 8, 0, -6), pose, { piel: viejo ? 'mu_carne_seca' : undefined, flaco: viejo ? 0.72 : 1, heridas: viejo ? 0 : 4, trapo: viejo ? null : 'mu_mortaja' });
+  cuerpo(s.sub(1.2, 0, 8, 0, -6), pose, { piel: viejo ? 'gore_piel_momia' : undefined, flaco: viejo ? 0.72 : 0.9, heridas: viejo ? 0 : 4, trapo: viejo ? null : 'gore_trapo' });
   if (!viejo) { sangrePorPalo(s, [0.4, 0, 38], [0, 0, 0], 1.7); charco(s, 3, 3, 7 + a.r() * 3); }
   else charco(s, 2, 2, 5, 'piedra');
   if (viejo) cuervo(s.sub(-1, 0, 62, 20), 'posado', 0, 8, 0.9);
@@ -170,7 +170,7 @@ function jaula(g: G, f: number, v: string) {
   j.cil(0, 0, z0 - 0.8, R + 0.3, 1, { mat: 'mu_hierro' });
   // el que quedó adentro, sentado con un brazo afuera de los barrotes
   const momia = v === 'momia';
-  cuerpo(j.sub(0, 0, z0 - 26.5 * 0.85).esc(0.85), ACURRUCADO, { piel: momia ? 'mu_carne_seca' : undefined, flaco: momia ? 0.7 : 1, heridas: momia ? 0 : 3, trapo: momia ? 'mu_venda' : 'mu_mortaja' });
+  cuerpo(j.sub(0, 0, z0 - 26.5 * 0.85).esc(0.85), ACURRUCADO, { piel: momia ? 'gore_piel_momia' : undefined, flaco: momia ? 0.7 : 0.85, heridas: momia ? 0 : 3, trapo: momia ? 'mu_venda' : 'gore_trapo' });
   // goteo y el charco del piso
   if (!momia) { for (let i = 0; i < 3; i++) { const x = r2(a, 4), y = r2(a, 4); j.palo([x, y, z0 - 1], [x, y, z0 - 3 - a.r() * 4], 0.35, { mat: 'gore_sangre', r1: 0.2 }); } charco(g, P[0] + 1, 2, 8); }
   else charco(g, P[0], 1, 4, 'tierra');
@@ -227,9 +227,11 @@ reg({
     const n = v === 'chica' ? 3 : 6, quemada = v === 'quemada';
     for (let i = 0; i < n; i++) {
       const capa = Math.floor(i / 3), x = r2(a, 10 - capa * 3), y = r2(a, 10 - capa * 3), giro = a.r() * 360, boca = a.r() < 0.35;
-      const p: Pose = { brazos: [[a.r() * 160, a.r() * 80, a.r() * 70], [a.r() * 160, a.r() * 80, a.r() * 70]], piernas: [[a.r() * 50, a.r() * 25, a.r() * 70], [a.r() * 50, a.r() * 25, a.r() * 70]], columna: r2(a, 15), cabeza: [r2(a, 40), r2(a, 40)] };
+      // brazos tirados a lo largo del cuerpo o por encima de la cabeza, abiertos sobre la pila (no apuntando al cielo)
+      const brazo = (): [number, number, number] => [a.r() < 0.6 ? a.r() * 35 : 140 + a.r() * 40, 15 + a.r() * 65, a.r() * 60];
+      const p: Pose = { brazos: [brazo(), brazo()], piernas: [[a.r() * 30, a.r() * 25, a.r() * 60], [a.r() * 30, a.r() * 25, a.r() * 60]], columna: r2(a, 15), cabeza: [r2(a, 40), r2(a, 40)] };
       const s = boca ? g.sub(x, y, capa * 6.5 + 4, giro, -90, 'y') : acostado(g, x, y, capa * 6.5, giro);
-      cuerpo(s, p, { piel: quemada ? 'gore_piel_quemada' : a.r() < 0.4 ? 'gore_piel_muerta' : undefined, abajo: boca ? [1, 0, 0] : ABAJO_ACOSTADO, heridas: quemada ? 0 : 3, trapo: quemada ? null : a.r() < 0.5 ? 'mu_mortaja' : 'mu_venda', abierto: !quemada && a.r() < 0.3, flaco: 0.85 + a.r() * 0.2 });
+      cuerpo(s, p, { piel: quemada ? 'gore_piel_quemada' : a.r() < 0.4 ? 'gore_piel_muerta' : undefined, abajo: boca ? [1, 0, 0] : ABAJO_ACOSTADO, heridas: quemada ? 0 : 3, trapo: quemada ? null : a.r() < 0.5 ? 'gore_trapo' : 'mu_venda', abierto: !quemada && a.r() < 0.3, flaco: 0.85 + a.r() * 0.2 });
     }
     if (quemada) {
       for (let i = 0; i < 14; i++) g.elip(r2(a, 22), r2(a, 20), 0.5, 1.4 + a.r() * 1.6, 1.2 + a.r() * 1.2, 0.9, { mat: a.r() < 0.6 ? 'mu_brasa' : 'mu_madera_quemada', tono: 0.12 * onda(f, 4, i), giro: a.r() * 180 });
@@ -240,7 +242,9 @@ reg({
     charco(g, 4, 6, n * 2.6 + 6);
     // los miembros sueltos que quedaron alrededor
     const pz = PALETAS.rojo;
-    for (let i = 0; i < 3; i++) { const t = a.r() * TAU, d = 20 + a.r() * 6; g.masa([g.bu([Math.cos(t) * d, Math.sin(t) * d, 1.4], [3 + a.r() * 2, 1.8, 1.4], { mat: pz.carne, giro: a.r() * 180 }), g.bu([Math.cos(t) * d + 1, Math.sin(t) * d, 1.6], [2, 1.4, 1.2], { mat: pz.sangre })], { mat: pz.carne, suave: 1 }); }
+    // miembros arrancados de verdad (los pedazos del kit, tirados en el piso) y un trozo de carne
+    const sueltos = [GIBS.brazo[0], GIBS.pierna[0], GIBS.trozo[0]];
+    for (let i = 0; i < 3; i++) { const t = a.r() * TAU, d = 20 + a.r() * 6, k = i === 2 ? 0.8 : 0.62; sueltos[i](g.sub(Math.cos(t) * d, Math.sin(t) * d, 1.8 * k + 0.6, a.r() * 360).esc(k), pz, a); }
   },
 });
 
@@ -298,7 +302,7 @@ reg({
     const zt = H + 2.6;
     if (v === 'con_cuerpo') {
       const p: Pose = { brazos: [[175, 12, 0], [175, 14, 0]], piernas: [[2, 7, 0], [2, 7, 0]], columna: 0, cabeza: [-10, 25] };
-      cuerpo(acostado(g, 25, 0, zt, 0, 0.78), p, { abajo: ABAJO_ACOSTADO, abierto: true, heridas: 6, trapo: 'mu_mortaja' });
+      cuerpo(acostado(g, 25, 0, zt, 0, 0.78), p, { abajo: ABAJO_ACOSTADO, abierto: true, heridas: 6, trapo: 'gore_trapo', flaco: 0.85 });
     } else {
       // herramientas sobre la mesa: serrucho, tenazas, ganchos, un cuchillo
       const s = g.sub(6, -3, zt, 20);
@@ -408,7 +412,7 @@ reg({
     // el cuerpo, de frente, con los pies arriba y los brazos abiertos sobre el travesaño
     const p: Pose = { brazos: [[90, 86, 3], [90, 86, 3]], piernas: [[0, 1, 2], [0, 1, 2]], columna: 0, cabeza: [-25 + r2(a, 10), r2(a, 20)] };
     const zt = 94, gc = g.sub(2.6, 0, zt, 0, 180);
-    const J = cuerpo(gc, p, { abajo: [0, 0, 1], heridas: 5, trapo: 'mu_mortaja' });
+    const J = cuerpo(gc, p, { abajo: [0, 0, 1], heridas: 5, trapo: 'gore_trapo', flaco: 0.88 });
     // clavos o grilletes en las manos y los pies, con su sangre
     const aMundo = (q: V3): V3 => [2.6 + q[0], -q[1], zt - q[2]];
     for (const q of [J.manos[0], J.manos[1], mid(J.tobillos[0], J.tobillos[1])].map(aMundo)) {
@@ -462,7 +466,7 @@ reg({
   armar: (v, f, g) => {
     if (v === 'suelo') {
       const p: Pose = { brazos: [[150, 30, 40], [40, 70, 60]], piernas: [[15, 15, 30], [5, 8, 10]], columna: 0, cabeza: [-30, 40] };
-      cuerpo(acostado(g, 28, 0, 0, 10), p, { abajo: ABAJO_ACOSTADO, abierto: true, heridas: 4, trapo: 'mu_mortaja', flaco: 0.9 });
+      cuerpo(acostado(g, 28, 0, 0, 10), p, { abajo: ABAJO_ACOSTADO, abierto: true, heridas: 4, trapo: 'gore_trapo', flaco: 0.85 });
       charco(g, 0, 6, 12, 'tierra');
       cuervo(g.sub(4, 9, 0, -100), 'picotea', f, 8);
       cuervo(g.sub(-24, -6, 0, 30), 'picotea', (f + 3) % 8, 8, 0.9);
