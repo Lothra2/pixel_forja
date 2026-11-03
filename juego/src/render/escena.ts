@@ -7,6 +7,7 @@ import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto, Mancha } from '../juego/mundo';
 import { CUADROS, DIRS, ZANCADA, ALTO_CLASE } from '../juego/mundo';
+import ZANCADA_MONSTRUO from '../../../src/engine/gotico/datos/zancada_monstruos.json';
 import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
 import { cuadrosVivos, cambioVisible } from '../motor/pintor';
@@ -43,6 +44,9 @@ function zancadaDe(e: Ent, acc: string): number {
   const m = e as Monstruo;
   // Thor trota a la cintura del héroe: su zancada es más corta que la de un humanoide de su alto
   if (m.def?.sprite?.startsWith('thor')) return base * 0.55;
+  // tabla de la Forja: casillas por ciclo de caminar a escala 1, medidas en el sprite (sin pies: el ritmo de aleteo)
+  const zm = (ZANCADA_MONSTRUO as Record<string, number>)[m.def?.sprite];
+  if (zm) return zm * (base / ZANCADA.caminar) * (m.escala ?? 1);
   const alto = za?.[m.def?.sprite];
   return base * (alto ?? 0.9) * (m.escala ?? 1);
 }
