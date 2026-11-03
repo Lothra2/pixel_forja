@@ -62,6 +62,8 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - En pantallas bajas, como el iPhone apaisado, la barra de abajo y los botones táctiles se esconden mientras hay un panel, y los paneles se achican si no caben.
   - La pantalla de carga pone el título arriba y la barra abajo, sin encimarse.
   - Nunca se ve el título viejo: la portada y los títulos se precargan antes de empezar.
+  - Los nombres de las salidas siempre se leen enteros y en táctil nunca caen sobre los botones Golpe y Poder.
+  - En el teléfono vertical el juego ahora llena la pantalla de arriba abajo, y sale un aviso para girarlo porque se juega mejor en horizontal. Tocando el aviso se sigue en vertical.
   - Antes de publicar se corre una prueba que abre y cierra cada panel de las cuatro maneras en 844x390, 390x844, 1180x820 y 1280x720.
 - **Agresivo o pasivo (Z o el botón sobre la barra).** En agresivo, quieto y sin órdenes, el héroe le pega solo al enemigo más cercano dentro de su alcance, sin perseguirlo ni cortar tus movimientos. En pasivo no ataca nada sin tu orden. Se recuerda por héroe.
 - **Monstruos que caminan mejor.** No cambian de dirección por cada zigzag del camino y no alternan entre quieto y caminar de un cuadro a otro.
