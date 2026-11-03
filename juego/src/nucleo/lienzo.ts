@@ -11,6 +11,8 @@ export function ajustar() {
   const w = ww / k;
   W = Math.round(Math.min(Math.max(w, 640), 1600));
   H = Math.round(h);
+  // en vertical el ancho mínimo de 640 dejaba un cuadrado chiquito en el medio: se estira el alto para llenar la pantalla
+  if (ww < wh && w < 640) H = Math.round(Math.min(1400, (640 * wh) / ww));
   ESCALA = Math.min(ww / W, wh / H);
   lienzo.width = W; lienzo.height = H;
   lienzo.style.width = `${Math.floor(W * ESCALA)}px`;

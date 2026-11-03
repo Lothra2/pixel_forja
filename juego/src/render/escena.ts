@@ -1,6 +1,6 @@
 // Dibuja la zona: pisos, manchas, objetos y personajes por profundidad, poderes, partículas, luz, niebla y clima.
 import { nuevoCuadroSombras } from './luces';
-import { ctx, W, H } from '../nucleo/lienzo';
+import { ctx, W, H, E } from '../nucleo/lienzo';
 import { NPCS } from '../datos/npcs';
 import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
@@ -302,7 +302,12 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     const g = ctx.createRadialGradient(px, py, 4, px, py, 48); g.addColorStop(0, `rgba(255,190,90,${k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(px, py, 48, 24, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    ctx.font = '12px Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText('» ' + sa.nombre[opciones.idi] + ' «', px + 1, py - 29); ctx.fillStyle = '#e8c070'; ctx.fillText('» ' + sa.nombre[opciones.idi] + ' «', px, py - 30); ctx.textAlign = 'left';
+    // el nombre siempre entero en pantalla, y en táctil fuera de la zona de los botones Golpe y Poder (abajo a la derecha)
+    ctx.font = '12px Georgia, serif'; ctx.textAlign = 'center';
+    const txt = '» ' + sa.nombre[opciones.idi] + ' «', tw2 = ctx.measureText(txt).width;
+    let lx = Math.max(tw2 / 2 + 6, Math.min(W - tw2 / 2 - 6, px)), ly = Math.max(16, Math.min(H - 130, py - 29));
+    if (E.tactil && lx + tw2 / 2 > W - 210 && ly > H - 260) ly = H - 262;
+    ctx.fillStyle = '#000'; ctx.fillText(txt, lx + 1, ly + 1); ctx.fillStyle = '#e8c070'; ctx.fillText(txt, lx, ly);
   }
   // clima
   clima(j, dt, tiempo);
