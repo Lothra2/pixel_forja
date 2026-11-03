@@ -4,11 +4,12 @@ import { lamina, degradado, encima, escalar, aRaster, grilla, hex, recortar, typ
 import { capasTitulo, reducirCapas, cuadroTitulo, CUADROS_TITULO, FPS_TITULO, type CapasTitulo, type IdiomaTitulo } from './titulo';
 import { pintarPortada, componerPortada, capaVineta, BASE, CAPA, FOCO_X, RELAMPAGO_SEC, CUADROS_RELAMPAGO, type Portada } from './portada';
 import { cartaActo, ACTOS_CARTA, ZONAS_CARTA, W_CARTA, H_CARTA } from './cartas_actos';
+import { exportarCinematicas, LEEME_CINE, type Plano } from './cinematicas';
 
 /**
  * Kit de la portada de Réquiem de Ceniza: el título (fijo, animado y su revelado, en español e inglés), el fondo en
- * capas de paralaje con su ceniza y sus relámpagos, y las siete cartas de los actos, con `portada.json` que dice qué
- * es cada archivo y cómo se dibuja. Mismo camino que la interfaz (`paqueteHud`): PNG + JSON + LEEME, en carpeta o en
+ * capas de paralaje con su ceniza y sus relámpagos, las siete cartas de los actos y las cinemáticas de cierre de cada
+ * acto (sección `cinematicas`), con `portada.json` que dice qué es cada archivo y cómo se dibuja. Mismo camino que la interfaz (`paqueteHud`): PNG + JSON + LEEME, en carpeta o en
  * un .zip. Ninguna textura pasa de 4096 px.
  */
 
@@ -81,6 +82,13 @@ export interface OpcKit {
   /** sin el modelo de la catedral (pruebas) y menos cuadros */
   rapido?: boolean;
   sinCartas?: boolean;
+  /** sin las cinemáticas de cierre (son lo más lento del kit) */
+  sinCinematicas?: boolean;
+  /** solo estas cinemáticas (claves acto_1 ... acto_7_corona_fria) */
+  cinematicas?: string[];
+  /** recibe cada carta y cada plano compuestos (vistas de control) */
+  vistaCarta?: (n: number, r: Raster) => void;
+  vistaCine?: (clave: string, n: number, p: Plano, valor: string | undefined, L: Lamina) => void;
   aviso?: (s: string) => void;
   /** recibe cada archivo apenas está listo (así no se juntan todos en memoria) */
   guardar?: (a: Archivo) => void;
@@ -152,9 +160,13 @@ export function kitPortada(o: OpcKit = {}): ResultadoKit {
   const cartas = [];
   if (!o.sinCartas) for (const a of ACTOS_CARTA) {
     av(`carta ${a.n}`);
-    poner(`cartas/acto_${a.n}.png`, cartaActo(a.n));
+    const rc = cartaActo(a.n);
+    poner(`cartas/acto_${a.n}.png`, rc);
+    o.vistaCarta?.(a.n, rc);
     cartas.push({ n: a.n, id: a.id, es: a.es, en: a.en, archivo: `cartas/acto_${a.n}.png`, color_titulo: a.luz });
   }
+  // ---------------- las cinemáticas de cierre
+  const cinematicas = o.sinCinematicas ? undefined : exportarCinematicas({ poner, aviso: av, claves: o.cinematicas, vista: o.vistaCine });
   const puerta = [Math.round(p.puerta[0] - CAPA.mx), Math.round(p.puerta[1] - CAPA.my)];
   const manifiesto = {
     formato: 'pixelforja-gotico-portada', version: 1,
@@ -187,6 +199,7 @@ export function kitPortada(o: OpcKit = {}): ResultadoKit {
       },
     },
     cartas: { w: W_CARTA, h: H_CARTA, zonas: ZONAS_CARTA, actos: cartas, notas: 'Opacas. El título del acto va centrado en zonas.titulo (color_titulo con contorno negro) y la narración en zonas.narracion, en hueso claro. Entrar con fundido de 0.8 s y un acercamiento lento (escala 1.0 a 1.04 en 8 s).' },
+    ...(cinematicas ? { cinematicas } : {}),
     secuencia: [
       { t: 0, que: 'negro; empieza la música' },
       { t: 0.2, que: 'fundido del fondo (cielo y ruinas primero) en 1.6 s; la cámara ya deriva' },
@@ -210,7 +223,7 @@ titulo/   el título en español (es) e inglés (en): fijo a 1600, 800 y 400 (tr
 fondo/    capas de 1536x800 (la pantalla base de 1280x720 va en 128, 40), viñeta fija, relámpago (6 cuadros que se
           suman) y la hoja de ceniza (8 x 4 celdas de 32 px).
 cartas/   las siete cartas de los actos, 1280x720, con lugar para el título arriba y la narración abajo.
-`;
+` + LEEME_CINE;
 
 /** Todo el kit en un .zip. */
 export function paquetePortada(o: OpcKit = {}): Uint8Array {

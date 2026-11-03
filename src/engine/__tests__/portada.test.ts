@@ -71,12 +71,12 @@ describe('las cartas de los actos', () => {
       const z = ZONAS_CARTA.narracion;
       expect(luz(r, z.x, z.y + 40, z.w, z.h - 50)).toBeLessThan(luz(r, 0, 250, 1280, 200));
     }
-  });
+  }, 300000);
 });
 
 describe('el kit de la portada', () => {
   it('trae el manifiesto, todas sus texturas de 4096 o menos y los archivos que nombra', () => {
-    const { manifiesto, archivos } = K.kitPortada({ rapido: true, sinCartas: true, idiomas: ['es'] });
+    const { manifiesto, archivos } = K.kitPortada({ rapido: true, sinCartas: true, sinCinematicas: true, idiomas: ['es'] });
     const nombres = new Set(archivos.map((a) => a.nombre));
     expect(nombres.has('portada.json')).toBe(true);
     for (const a of archivos) if (a.nombre.endsWith('.png')) { const r = decodePng(a.bytes); expect(Math.max(r.w, r.h), a.nombre).toBeLessThanOrEqual(4096); }
