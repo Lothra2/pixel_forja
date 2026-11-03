@@ -233,3 +233,4 @@ for (const m of NUEVAS) { const dl = (DIALOGOS[m.da!] ??= {}); (dl.lineas ??= []
 (DIALOGOS.ciro ??= {}).lineas = [
   { acto: 1, hecha: ['m1s_ahorcados'], texto: ['Ciro te mira las manos. «Encontraste mis notas. Qué lástima. Eran para Dios, no para ti.»', 'Ciro looks at your hands. "You found my notes. What a pity. They were for God, not for you."'] },
 ];
+import './historia_final';

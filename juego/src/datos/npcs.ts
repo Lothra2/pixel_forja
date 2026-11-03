@@ -13,6 +13,10 @@ export interface NPC {
   sprite?: string;
   /** Deja de estar en el pueblo cuando esta misión está cumplida (el traidor que huye o muere). */
   desaparece?: string;
+  /** Muere si tomaste esta decisión: no aparece más y en su lugar queda su tumba. */
+  muereSi?: [string, string];
+  /** Solo aparece si tomaste esta decisión. */
+  soloSi?: [string, string];
 }
 
 export const NPCS: Record<string, NPC> = Object.fromEntries(([
@@ -172,6 +176,8 @@ export interface Linea {
   heraldo?: number;
   /** Lo que hiciste con la Brasa al caer Ozmaren. */
   final?: FinalElegido;
+  /** Una decisión de la cadena principal (clave y valor, ver mundo/decisiones). */
+  decision?: [string, string];
 }
 export const DIALOGOS: Record<string, { lineas?: Linea[]; relatos?: Linea[] }> = {
   odran: { lineas: [

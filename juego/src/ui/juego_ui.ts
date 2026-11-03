@@ -8,7 +8,8 @@ import { CLASES, HABILIDADES, habilidadesDe, ATAQUE, TIERS, ESCALA_HECHIZOS, typ
 import { NPCS } from '../datos/npcs';
 import { MISIONES, ZONAS, PUEBLO_DE, daMision, type Mision, type Premio } from '../mundo/actos';
 import { MONSTRUOS } from '../datos/monstruos';
-import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist, avanceDe } from '../juego/historia';
+import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist, avanceDe, decidir, finalCompleto } from '../juego/historia';
+import { EPILOGOS } from '../mundo/decisiones';
 import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, crearUnicoId, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
 import type { DatosHeroe } from '../juego/heroe';
@@ -1077,8 +1078,15 @@ function darPremio(j: Juego, p: Premio) {
 function entregar(j: Juego, m: Mision, opcion?: number) {
   const d = j.heroe.d;
   d.misiones[m.id] = 3;
-  if (opcion !== undefined && m.eleccion) { hist(d).elecciones ??= {}; hist(d).elecciones![m.id] = opcion; darPremio(j, m.eleccion.opciones[opcion].premio); }
+  if (opcion !== undefined && m.eleccion) {
+    hist(d).elecciones ??= {}; hist(d).elecciones![m.id] = opcion;
+    const op = m.eleccion.opciones[opcion];
+    if (op.decision) decidir(d, op.decision[0], op.decision[1]);
+    darPremio(j, op.premio);
+  }
   darPremio(j, m.premio);
+  // la misión que cierra la historia deja la legendaria del final que te tocó
+  if (m.final) darPremio(j, { unico: EPILOGOS[finalCompleto(d)].unico });
   ui.dialogoTexto = TT(textoHecho(d, m, opcion));
   (ui as any).eleccion = null;
   Sonido.efecto('mision');

@@ -1,6 +1,7 @@
 // La historia en juego: estado de las misiones, lo que dice cada uno según lo que pasó, los diarios de los sellos,
 // los fantasmas que repiten su última escena y Vesperio, el heraldo que huye en cada acto hasta la Fragua.
-import { MISIONES, DIARIOS, PAGINAS, FANTASMAS, HERALDO, ZONAS, MUSICA_ACTO, POBL_ZONA, daMision, type Mision, type FinalElegido } from '../mundo/actos';
+import { MISIONES, DIARIOS, PAGINAS, FANTASMAS, HERALDO, ZONAS, MUSICA_ACTO, POBL_ZONA, DA_MISIONES, daMision, type Mision, type FinalElegido } from '../mundo/actos';
+import { finalPor, type Decisiones, type Final } from '../mundo/decisiones';
 import { DIALOGOS, NPCS, type Linea } from '../datos/npcs';
 import { MONSTRUOS, POBLACION } from '../datos/monstruos';
 import { pasable, libreCerca, type ObjZ } from '../mundo/zona';
@@ -23,13 +24,30 @@ export interface Historia {
   paginas?: number;
   /** Avance de las misiones con varios pasos (pistas halladas, reliquias en la mano, altares encendidos). */
   misionProg?: Record<string, number>;
+  /** Decisiones de la cadena principal (Vigdis, Corona); la Brasa sigue en finalElegido. */
+  decisiones?: Record<string, string>;
 }
 export const hist = (d: DatosHeroe) => d as DatosHeroe & Historia;
 export const estadoMision = (d: DatosHeroe, id: string) => d.misiones[id] ?? 0;
 export const eleccionDe = (d: DatosHeroe, id: string) => hist(d).elecciones?.[id];
 export const finalDe = (d: DatosHeroe) => hist(d).finalElegido;
+/** Todas las decisiones de la cadena principal, con la Brasa incluida. */
+export const decisionesDe = (d: DatosHeroe): Decisiones => ({ ...(hist(d).decisiones ?? {}), ...(finalDe(d) ? { brasa: finalDe(d) } : {}) } as Decisiones);
+export const decisionDe = (d: DatosHeroe, clave: string): string | undefined => (decisionesDe(d) as any)[clave];
+export function decidir(d: DatosHeroe, clave: string, valor: string) { if (clave === 'brasa') hist(d).finalElegido = valor as FinalElegido; else (hist(d).decisiones ??= {})[clave] = valor; }
+/** El final que te toca según lo decidido. */
+export const finalCompleto = (d: DatosHeroe): Final => finalPor(decisionesDe(d));
+/** Si esta persona sigue en el mundo (alguien que se entregó al trono, por ejemplo, ya no está). */
+export function npcVivo(id: string, d: DatosHeroe): boolean {
+  const n = NPCS[id]; if (!n) return false;
+  if (n.muereSi && decisionDe(d, n.muereSi[0]) === n.muereSi[1]) return false;
+  if (n.soloSi && decisionDe(d, n.soloSi[0]) !== n.soloSi[1]) return false;
+  return true;
+}
+/** Quién da y recibe esta misión ahora: si quien la daba ya no está, la recibe quien da las principales del acto. */
+export const quienDa = (m: Mision, d: DatosHeroe) => { const q = daMision(m); return npcVivo(q, d) ? q : DA_MISIONES[m.acto]; };
 /** Al empezar otra dificultad la historia vuelve a empezar. */
-export function reiniciarHistoria(d: DatosHeroe) { const h = hist(d); h.elecciones = {}; h.heraldo = []; h.heraldoMuerto = false; h.finalElegido = undefined; h.misionProg = {}; (d as any).jefesVistos = []; }
+export function reiniciarHistoria(d: DatosHeroe) { const h = hist(d); h.elecciones = {}; h.decisiones = {}; h.heraldo = []; h.heraldoMuerto = false; h.finalElegido = undefined; h.misionProg = {}; (d as any).jefesVistos = []; }
 
 // ------------------------------------------------------------------ misiones por persona
 const requisitos = (d: DatosHeroe, m: Mision) => (m.requiere ?? []).every((r) => estadoMision(d, r) === 3);
@@ -39,16 +57,16 @@ export function ofertaDe(npc: string, d: DatosHeroe): Mision | null {
   const principales = delActo.filter((m) => !m.lateral);
   const hayPrincipal = principales.some((m) => estadoMision(d, m.id) === 1);
   for (const m of delActo) {
-    if (daMision(m) !== npc || estadoMision(d, m.id) !== 0 || !requisitos(d, m)) continue;
+    if (daMision(m) !== npc || !npcVivo(npc, d) || estadoMision(d, m.id) !== 0 || !requisitos(d, m)) continue;
     if (!m.lateral) { if (hayPrincipal || principales.find((q) => estadoMision(d, q.id) === 0) !== m) continue; }
     return m;
   }
   return null;
 }
 /** Misión cumplida que esta persona tiene que recibir (de cualquier acto). */
-export const entregaDe = (npc: string, d: DatosHeroe) => MISIONES.find((m) => daMision(m) === npc && estadoMision(d, m.id) === 2) ?? null;
+export const entregaDe = (npc: string, d: DatosHeroe) => MISIONES.find((m) => quienDa(m, d) === npc && estadoMision(d, m.id) === 2) ?? null;
 /** Misión en curso que dio esta persona. */
-export const activaDe = (npc: string, d: DatosHeroe) => MISIONES.find((m) => daMision(m) === npc && estadoMision(d, m.id) === 1) ?? null;
+export const activaDe = (npc: string, d: DatosHeroe) => MISIONES.find((m) => quienDa(m, d) === npc && estadoMision(d, m.id) === 1) ?? null;
 /** Marca sobre la cabeza: '?' si hay algo que entregar, '!' si hay algo que ofrecer. */
 export function marcaNpc(npc: string, d: DatosHeroe): '!' | '?' | null { return entregaDe(npc, d) ? '?' : ofertaDe(npc, d) ? '!' : null; }
 /** Al aceptar una misión de llegar a un lugar ya visitado (con piedra encendida) se da por cumplida. */
@@ -70,6 +88,7 @@ function cumple(l: Linea, d: DatosHeroe): boolean {
   if (l.eleccion && (estadoMision(d, l.eleccion[0]) !== 3 || eleccionDe(d, l.eleccion[0]) !== l.eleccion[1])) return false;
   if (l.heraldo !== undefined && !(hist(d).heraldo ?? []).includes(l.heraldo)) return false;
   if (l.final && finalDe(d) !== l.final) return false;
+  if (l.decision && decisionDe(d, l.decision[0]) !== l.decision[1]) return false;
   return true;
 }
 /** La línea que corresponde ahora (la última de la lista que se cumpla), o null para usar las de siempre. */
@@ -118,6 +137,8 @@ export function historiaEntrar(j: Juego) {
       return { id: f.id, sprite: f.sprite, texto: f.texto, x, y, dir: dirDe(h.x - x, h.y - y), estado: 'espera', t: 0 } as Fantasma;
     });
   }
+  // Hjaldur sin el calor que le robó Vigdis: llega con un cuarto menos de vida
+  if (decisionDe(d, 'vigdis') === 'sacrificar') for (const m of j.monstruos) if (m.def.id === 'rey_escarcha' && !(m as any).sinCalor) { (m as any).sinCalor = true; m.vidaMax = Math.round(m.vidaMax * 0.75); m.vida = Math.min(m.vida, m.vidaMax); }
   // el heraldo
   const acto = ZONAS[z.id]?.acto ?? 0;
   if (HERALDO.zonas[acto] !== z.id) return;
@@ -247,7 +268,7 @@ function misionesEntrar(j: Juego) {
       msg(j, [`${m.nombre[0]}: mata ${o.n} antes de que pasen ${Math.round(o.tiempo / 60 * 10) / 10} minutos.`, `${m.nombre[1]}: kill ${o.n} before ${Math.round(o.tiempo / 60 * 10) / 10} minutes pass.`], '#ff8060');
       Sonido.efecto('campana', { vol: 0.6 });
     }
-    if (o.tipo === 'escoltar' && !j.monstruos.some((q) => (q as any).escolta === m.id && !q.muerto)) {
+    if (o.tipo === 'escoltar' && !j.monstruos.some((q) => ((q as any).escolta === m.id || q.misionUnico === m.id) && !q.muerto)) {
       const def = MONSTRUOS[o.sprite] ?? MONSTRUOS.penitente;
       const q = libreCerca(z, h.x + 1.5, h.y + 1);
       const e = crearMonstruo({ ...def, id: 'escolta_' + m.id, ia: 'normal', proyectil: undefined, invoca: undefined, jefe: false } as any, d.nivel, q[0] + 0.5, q[1] + 0.5, 0, 0);
@@ -256,7 +277,7 @@ function misionesEntrar(j: Juego) {
       (e as any).escolta = m.id;
       j.monstruos.push(e);
       const dest = lugaresLejos(j, 1, 18)[0];
-      (j as any).destinoEscolta = { id: m.id, x: dest[0] + 0.5, y: dest[1] + 0.5 };
+      (j as any).destinoEscolta = { id: m.id, x: dest[0] + 0.5, y: dest[1] + 0.5, d0: Math.max(1, dist(e.x, e.y, dest[0] + 0.5, dest[1] + 0.5)) };
       ponerObjeto(j, 'campo_altar', 'velas', dest[0], dest[1], 'destino', { mision: m.id });
       eco(j, e.x, e.y, o.inicio, 6, '#e0d0a0'); msg(j, o.inicio, '#e0d0a0');
     }
@@ -316,6 +337,21 @@ function misionesPaso(j: Juego, dt: number) {
         if (e) { eco(j, e.x, e.y, o.muerte, 6, '#ff8080'); j.monstruos = j.monstruos.filter((q) => q !== e); }
         msg(j, o.muerte, '#ff6060'); msg(j, ['Sal de la zona y vuelve a entrar para intentarlo otra vez.', 'Leave the zone and enter again to try once more.'], '#c08060');
         const pz = (j.zona as any).misionPuesta; if (pz) pz[de.id] = false;
+      } else if (o.traicion && dist(e.x, e.y, de.x, de.y) < (de as any).d0 * (1 - (o.traicion.en ?? 0.55))) {
+        // la traición: a mitad de camino el escoltado deja de fingir
+        (j as any).destinoEscolta = undefined;
+        j.zona.objetos = j.zona.objetos.filter((x) => !(x.tag === 'destino' && x.dato?.mision === m.id));
+        j.monstruos = j.monstruos.filter((q) => q !== e);
+        const def = MONSTRUOS[o.traicion.monstruo];
+        if (def) {
+          const u = crearMonstruo(def, nivelEnDificultad(j.zona.nivel, d.dificultad) + 2, e.x, e.y, 2, d.dificultad);
+          u.nombre = o.traicion.nombre; u.misionUnico = m.id; u.mods = ['fuerte']; u.escala *= 1.15; u.estado = 'perseguir'; u.objetivo = h; (u as any).surgiendo = 1; u.acc = 'morir'; u.t = 0;
+          j.monstruos.push(u); j.jefe = u;
+        }
+        eco(j, e.x, e.y, o.traicion.frase, 6, '#ff7060'); msg(j, o.traicion.frase, '#ff7060');
+        efecto(j, 'circulo_invocacion', e.x, e.y, 0, 1.2); particulas(j, e.x, e.y, 40, 'sangre', '#a01010', 1.6, 60);
+        j.sacudida = Math.max(j.sacudida, 0.6); Sonido.efecto('rugido_jefe' as any, { vol: 0.8 }); Sonido.susurro();
+        const pz = (j.zona as any).misionPuesta; if (pz) pz[de.id] = true;
       } else if (dist(e.x, e.y, de.x, de.y) < 3.5) {
         (j as any).destinoEscolta = undefined;
         eco(j, e.x, e.y, o.llegada, 7, '#e0d0a0'); msg(j, o.llegada, '#e0d0a0');

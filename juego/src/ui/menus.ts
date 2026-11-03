@@ -5,7 +5,8 @@ import { texto, T, TT, IDI, boton, marco, dentro, envolver, TITULO, fijarIdioma 
 import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, cuadrosMonstruo } from '../motor/assets';
 import { generarPaisaje, type MapaGotico } from '../../../src/engine/gotico/index';
 import { CLASES } from '../datos/clases';
-import { INTRO, ENTREACTO, REVELACION, OPCIONES_BRASA, TRAS_ELEGIR, EPILOGO, type FinalElegido } from '../mundo/actos';
+import { INTRO, ENTREACTO, REVELACION, OPCIONES_BRASA, TRAS_ELEGIR, type FinalElegido } from '../mundo/actos';
+import { EPILOGOS, type Final } from '../mundo/decisiones';
 import { siguienteCiclo, type DatosHeroe } from '../juego/heroe';
 import { R, rng } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
@@ -459,28 +460,30 @@ export function dibujarRevelacion(t: number, eleccion: FinalElegido | null): Fin
   if (boton(TT(OPCIONES_BRASA.absorber), W / 2 + 20, by, bw, 40, { tam: 16, color: '#ffa060' })) r = 'absorber';
   return r;
 }
-/** Al caer Aun-Saar: el epílogo según lo que hiciste con la Brasa. Devuelve true cuando terminó. */
-export function dibujarFinal(t: number, eleccion: FinalElegido = 'destruir'): boolean {
-  const ep = EPILOGO[eleccion];
-  const dur = 7, i = Math.floor(t / dur);
+/** Al entregar la Corona: el epílogo del final que te tocó, con el párrafo de Vigdis antes de la última línea. Devuelve true cuando terminó. */
+export function dibujarFinal(t: number, final: Final = 'vigilia', vigdis?: string): boolean {
+  const ep = EPILOGOS[final];
+  const lineas = [...ep.lineas]; if (vigdis === 'salvar' || vigdis === 'sacrificar') lineas.splice(lineas.length - 1, 0, ep.vigdis[vigdis]);
+  const dur = 7.5, i = Math.floor(t / dur);
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-  if (i >= ep.lineas.length) {
-    const k = Math.min(1, (t - ep.lineas.length * dur) / 2);
-    brasas(t, 40, eleccion === 'absorber');
+  if (i >= lineas.length) {
+    const k = Math.min(1, (t - lineas.length * dur) / 2);
+    brasas(t, 40, ep.arde);
     logo(W / 2, H * 0.4, k, t, Math.min(56, W / 16));
     texto(TT(ep.titulo), W / 2, H * 0.54, { alin: 'center', tam: 20, color: `rgba(220,200,160,${k})`, fuente: TITULO });
     texto(T('Fin', 'The End'), W / 2, H * 0.6, { alin: 'center', tam: 14, color: `rgba(180,160,120,${k})`, fuente: TITULO });
-    return t > ep.lineas.length * dur + 7;
+    return t > lineas.length * dur + 7;
   }
   const tl = t - i * dur;
-  // destruir: el valle al alba, gris y en calma. Absorber: el trono sobre el cielo roto, dorado y rojo.
-  const m = eleccion === 'destruir' ? escena(i < 2 ? 'arcano' : i < 4 ? 'campamento' : 'cementerio', 3 + i).mapa : escena(i < 2 ? 'fortaleza' : i < 4 ? 'catedral' : 'infierno', 4 + i).mapa;
+  const esc = ep.escenas[Math.min(2, Math.floor(i * 3 / lineas.length))];
+  const m = escena(esc, 3 + i).mapa;
   camara(() => pintarMapa(m, (i % 2 ? -1 : 1) * (tl * 5 - 15), centroY(m) + 10 - tl * 3, t, undefined, 1.7 + suave(tl / dur) * 0.2), 1);
-  oscuridad(eleccion === 'destruir' ? 0.5 : 0.62, [[W / 2, H * 0.5, 240 * titila(t)]]);
-  if (eleccion === 'destruir') { lluvia(t, 0.3); ctx.fillStyle = 'rgba(120,130,150,0.12)'; ctx.fillRect(0, 0, W, H); }
-  else { brasas(t, 40); if (i < 2) figura('aun_saar', tl, W / 2, H * 0.5, 1); }
-  if (i === ep.lineas.length - 1) { const g = ctx.createRadialGradient(W * 0.72, H * 0.2, 0, W * 0.72, H * 0.2, 40 + Math.sin(t * 6) * 4); const k = Math.min(1, tl / 1.2); g.addColorStop(0, `rgba(255,200,120,${k})`); g.addColorStop(0.3, `rgba(255,90,20,${0.6 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
-  marcoCine(TT(ep.lineas[i]), tl, dur);
+  oscuridad(ep.arde ? 0.62 : 0.5, [[W / 2, H * 0.5, 240 * titila(t)]]);
+  if (final === 'vigilia' || final === 'corona_fria') { lluvia(t, final === 'corona_fria' ? 0.5 : 0.25); ctx.fillStyle = final === 'corona_fria' ? 'rgba(150,170,200,0.16)' : 'rgba(120,130,150,0.1)'; ctx.fillRect(0, 0, W, H); }
+  if (final === 'cielo') { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (let k = 0; k < 60; k++) { const sx = ((k * 137.5) % 1) * W, sy = ((t * (30 + (k % 7) * 8) + k * 41) % (H + 40)) - 20; ctx.fillStyle = `rgba(255,${200 + (k % 3) * 20},120,${0.25 + (k % 5) * 0.08})`; ctx.fillRect(((sx + k * 53) % W), sy, 2, 4); } ctx.restore(); }
+  if (ep.arde) { brasas(t, 40); if (i < 2) figura('aun_saar', tl, W / 2, H * 0.5, 1); }
+  if (i === lineas.length - 1) { const g = ctx.createRadialGradient(W * 0.72, H * 0.2, 0, W * 0.72, H * 0.2, 40 + Math.sin(t * 6) * 4); const k = Math.min(1, tl / 1.2); const c = ep.arde ? '255,90,20' : final === 'cielo' ? '255,220,140' : '160,190,230'; g.addColorStop(0, `rgba(255,230,190,${k})`); g.addColorStop(0.3, `rgba(${c},${0.6 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+  marcoCine(TT(lineas[i]), tl, dur);
   return false;
 }
 

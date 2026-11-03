@@ -6,7 +6,7 @@ import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
-import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision } from './juego/historia';
+import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision, finalCompleto, decisionDe } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
@@ -348,6 +348,11 @@ function revivir(jj: Juego) {
 function usarObjeto(jj: Juego, o: ObjZ) {
   (ui as any).origen = [o.cx + 0.5, o.cy + 0.5];
   const h = jj.heroe;
+  if (o.tag === 'tumba') {
+    const n = NPCS[o.dato?.npc]; if (!n) return;
+    msg(jj, [`Aquí descansa ${n.nombre[0]}. La piedra está tibia y la nieve no se le queda encima.`, `Here lies ${n.nombre[1]}. The stone is warm and the snow will not settle on it.`], '#c8b8a0'); Sonido.susurro();
+    return;
+  }
   if (o.tag === 'cofre') {
     if (o.v.startsWith('abiert') || o.v.startsWith('abriendo')) return;
     o.v = o.v.endsWith('_y') ? 'abriendo_y' : 'abriendo'; o.tag = undefined; o.dato = { abre: jj.t };
@@ -415,12 +420,20 @@ function procesarEventos(jj: Juego) {
     else if (e.tipo === 'presentar') { presenta = { m: e.dato, t: 0 }; Sonido.efecto('rugido_jefe' as any, { vol: 0.9 }); }
     else if (e.tipo === 'mision') { const m = MISIONES.find((q) => q.id === e.dato); if (m) { msg(jj, [`Misión cumplida: ${m.nombre[0]}. Vuelve al campamento.`, `Quest fulfilled: ${m.nombre[1]}. Return to camp.`], '#80ff80'); Sonido.efecto('mision'); } }
     else if (e.tipo === 'jefe_muerto' && e.dato === 'senor_demonio') { guardar(); if (!finalDe(jj.heroe.d)) setTimeout(() => empezarRevelacion(false), 4000); else Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); }
-    else if (e.tipo === 'jefe_muerto' && e.dato === 'aun_saar') { guardar(); setTimeout(() => { if (finalDe(jj.heroe.d)) { estado = 'final'; finalT = 0; Sonido.musica('intro'); } else empezarRevelacion(true); }, 4000); }
+    else if (e.tipo === 'jefe_muerto' && e.dato === 'aun_saar') {
+      // el dios cae y deja su Corona: el final se elige al entregarla en el campamento
+      guardar(); msg(jj, ['La Corona de Aun-Saar rueda hasta tus pies. Todavía está tibia. Llévala al campamento: alguien tendrá que decidir qué hacer con ella.', 'Aun-Saar\'s Crown rolls to your feet. It is still warm. Take it to the camp: someone will have to decide what to do with it.'], '#ffd080');
+      if (!finalDe(jj.heroe.d)) setTimeout(() => empezarRevelacion(false), 4000); else Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any);
+    }
     else if (e.tipo === 'jefe_muerto') { Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); msg(jj, ['El sello se rompe. Algo escapa hacia lo alto.', 'The seal breaks. Something escapes upward.'], '#ffb060'); guardar(); }
     else if (e.tipo === 'muerte') { Sonido.musica(null as any); tEstado = 0; }
     else if (e.tipo === 'spawn') { import('./juego/mundo').then((mm) => { const m = mm.crearMonstruo(MONSTRUOS[e.dato.id], nivelEnDificultad(jj.zona.nivel, jj.heroe.d.dificultad) + 1, e.dato.x, e.dato.y, 1, jj.heroe.d.dificultad); m.estado = 'perseguir'; m.objetivo = jj.heroe; m.acc = 'morir'; (m as any).surgiendo = 1.2; jj.monstruos.push(m); }); }
     else if (e.tipo === 'nivel') { guardar(); pista('nivel', ['Subiste de nivel: pulsa C para tus atributos y T para tus habilidades.', 'Level up: press C for attributes and T for skills.']); }
-    else if (e.tipo === 'mision_hecha') { guardar(); const m = MISIONES.find((q) => q.id === e.dato); if (m?.cierraActo && m.acto < 7) entreActoPendiente = m.acto; }
+    else if (e.tipo === 'mision_hecha') {
+      guardar(); const m = MISIONES.find((q) => q.id === e.dato);
+      if (m?.cierraActo && m.acto < 7) entreActoPendiente = m.acto;
+      if (m?.final) setTimeout(() => { if (estado === 'juego') { ui.izq = ui.der = null; estado = 'final'; finalT = 0; Sonido.musica('intro'); } }, 4500);
+    }
     else if (e.tipo === 'heraldo_huye') guardar();
   }
 }
@@ -475,7 +488,7 @@ function paso(dt: number) {
     }
     case 'final': {
       finalT += dt;
-      if (dibujarFinal(finalT, (j && finalDe(j.heroe.d)) || 'destruir') || (finalT > 3 && (pulso('Escape') || E.clicIzq))) { E.clicIzq = false; if (j && j.heroe.d.actosHechos.includes(7)) { estado = 'ciclo'; finalT = 0; } else { estado = 'juego'; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); } }
+      if (dibujarFinal(finalT, j ? finalCompleto(j.heroe.d) : 'vigilia', j ? decisionDe(j.heroe.d, 'vigdis') : undefined) || (finalT > 3 && (pulso('Escape') || E.clicIzq))) { E.clicIzq = false; if (j && j.heroe.d.actosHechos.includes(7)) { estado = 'ciclo'; finalT = 0; } else { estado = 'juego'; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); } }
       break;
     }
     case 'ciclo': {

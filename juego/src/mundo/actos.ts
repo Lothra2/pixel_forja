@@ -135,11 +135,15 @@ export type Objetivo =
   /** Purgar: matar n monstruos en la zona antes de que se acabe el tiempo (segundos). */
   | { tipo: 'purgar'; zona: string; n: number; tiempo: number }
   /** Escoltar: alguien te sigue hasta el otro extremo de la zona; si cae, vuelves a empezar al entrar de nuevo. */
-  | { tipo: 'escoltar'; zona: string; sprite: string; nombre: [string, string]; inicio: [string, string]; llegada: [string, string]; muerte: [string, string] }
+  | { tipo: 'escoltar'; zona: string; sprite: string; nombre: [string, string]; inicio: [string, string]; llegada: [string, string]; muerte: [string, string] ;
+      /** Traición: a esta fracción del camino (0.55 por defecto) el escoltado se convierte en este monstruo único y hay que matarlo. */
+      traicion?: { monstruo: string; nombre: [string, string]; frase: [string, string]; en?: number } }
   /** Cazar: un único con nombre que aparece en la zona mientras la misión está activa. */
   | { tipo: 'cazar'; zona: string; monstruo: string; nombre: [string, string]; frase?: [string, string] };
 export interface Premio { /** Una legendaria fija con nombre (id de UNICOS). */ unico?: string; habilidad?: number; atributos?: number; vida?: number; oro?: number; objeto?: 'raro' | 'unico' | 'conjunto'; resistencia?: number; /** Una Lágrima del Olvido: reinicia habilidades y atributos. */ olvido?: boolean }
-export interface OpcionMision { texto: [string, string]; hecho: [string, string]; premio: Premio }
+export interface OpcionMision { texto: [string, string]; hecho: [string, string]; premio: Premio;
+  /** Decisión de la cadena principal que se guarda en el héroe (clave y valor), y que cambia gente, jefes y final. */
+  decision?: [string, string] }
 export type FinalElegido = 'destruir' | 'absorber';
 export interface Mision {
   id: string; acto: number; nombre: [string, string];
@@ -158,7 +162,9 @@ export interface Mision {
   /** Misiones que tienen que estar terminadas antes de que te la ofrezcan. */
   requiere?: string[];
   /** Al volver, eliges qué hacer: cada opción tiene su desenlace y su premio. */
-  eleccion?: { pregunta: [string, string]; opciones: [OpcionMision, OpcionMision] };
+  eleccion?: { pregunta: [string, string]; opciones: OpcionMision[] };
+  /** Al entregarla empieza el epílogo (la misión que cierra la historia). */
+  final?: boolean;
   /** Otro desenlace según lo que hiciste con la Brasa. */
   hechoSegun?: Partial<Record<FinalElegido, [string, string]>>;
 }

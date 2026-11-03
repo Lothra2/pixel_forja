@@ -1,4 +1,5 @@
 // La simulación: héroe, monstruos, invocados, proyectiles, áreas, botín y efectos de una zona.
+import { npcVivo } from './historia';
 import { generarZona, pasable, buscarCamino, lineaLibre, libreCerca, type Zona, type ObjZ } from '../mundo/zona';
 import { ZONAS, POBL_ZONA, MISIONES, FRASE_JEFE } from '../mundo/actos';
 import { MONSTRUOS, POBLACION, MODS, NOMBRES_UNICOS, type DefMonstruo } from '../datos/monstruos';
@@ -313,10 +314,18 @@ export function entrarZona(j: Juego, zid: string, entrada: string) {
 }
 
 function crearNpcs(z: Zona, d: DatosHeroe): Npc[] {
-  const gente = (GENTE[z.acto] ?? []).filter((id) => { const dm = NPCS[id]?.desaparece; return !dm || (d.misiones[dm] ?? 0) < 2; });
+  const todos = GENTE[z.acto] ?? [];
+  const gente = todos.filter((id) => { const dm = NPCS[id]?.desaparece; return (!dm || (d.misiones[dm] ?? 0) < 2) && npcVivo(id, d); });
   const lugares = z.marcas.filter((m) => m.tipo === 'npc');
-  return gente.map((id, i) => {
+  // quien murió por una decisión deja su tumba donde solía estar
+  todos.forEach((id, i) => {
+    const n = NPCS[id]; if (!n?.muereSi || npcVivo(id, d) || z.objetos.some((o) => o.tag === 'tumba' && o.dato?.npc === id)) return;
     const l = lugares[i % Math.max(1, lugares.length)] ?? { cx: z.W / 2, cy: z.H / 2 };
+    const q = libreCerca(z, l.cx, l.cy);
+    z.objetos.push({ id: 'cem_lapida_celta', v: 'con_musgo', cx: q[0], cy: q[1], hw: 1, hh: 1, bloquea: false, tag: 'tumba', dato: { npc: id } } as any);
+  });
+  return gente.map((id, i) => {
+    const l = lugares[todos.indexOf(id) % Math.max(1, lugares.length)] ?? lugares[i % Math.max(1, lugares.length)] ?? { cx: z.W / 2, cy: z.H / 2 };
     const q = libreCerca(z, l.cx, l.cy);
     return { ...(nueva({ tipo: 'npc', x: q[0] + 0.5, y: q[1] + 0.5, vida: 1, vidaMax: 1, dir: elegir(['s', 'so', 'se'] as Dir[]) }) as Ent), tipo: 'npc', npc: id, hablando: false } as Npc;
   });
