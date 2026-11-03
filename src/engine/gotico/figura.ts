@@ -282,8 +282,9 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
   if (arma === 'ballesta') { p.hombroD = [26 + 3 * k, 10, 60 + 4 * k, 0]; }
   // el arco cuelga natural de la izquierda, la cuerda recta; la derecha descansa
   if (arma === 'arco') { p.hombroI = [16 + 1.5 * k, 22, 18 + 2 * k, 0]; p.hombroD = [12 + 3 * k, 12, 26 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
-  // la vara al costado, con el remate afuera de la silueta de la cabeza (de frente y en diagonal tapaba la cara)
-  if (arma === 'baculo') { p.hombroD = [16 + 2 * k, 19, 56 + 3 * k, 0]; p.vara = [2 + 1.5 * k2, 8]; }
+  // la vara al costado y apenas atrás, con el remate afuera de la silueta de la cabeza (en diagonal, so y o, la vara
+  // adelantada quedaba alineada con la cara y el remate la tapaba)
+  if (arma === 'baculo') { p.hombroD = [6 + 2 * k, 24, 56 + 3 * k, 0]; p.vara = [-4 + 1.5 * k2, 10]; }
   if (arma === 'garras' || arma === 'nada') { p.hombroD = [16 + 3 * k, 14, 44 + 5 * k, 12]; p.hombroI = [14 + 2 * k, 14, 48 + 4 * k, 14]; }
   switch (estilo) {
     case 'rugido': // jadea encorvado, hombros arriba
@@ -342,7 +343,8 @@ function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose) {
   if (arma === 'ballesta') { p.hombroD = [30 + g * 4, 8, 50 + g * 3, 0]; p.hombroI = [36 + g * 4, 14, 58]; p.munecaD = g * 4; }
   // el arco va en la izquierda, bajo y vertical al costado; la derecha se balancea libre (la cuerda queda recta)
   if (arma === 'arco') { p.hombroI = [sI * (correr ? 0.35 : 0.3) + 2, 14, (correr ? 34 : 14) + Math.max(0, cI) * 0.3, 0]; p.tensa = false; }
-  if (arma === 'baculo') { p.hombroD = [16 + sD * 0.3, 17, 55, 0]; p.vara = [4 + sD * 0.15, 7]; }
+  // la vara al costado y apenas atrás: el remate queda afuera de la silueta de la cabeza en todas las direcciones
+  if (arma === 'baculo') { p.hombroD = [6 + sD * 0.3, 22, 55, 0]; p.vara = [-3 + sD * 0.15, 9]; }
 }
 
 // ------------------------------------------------------------------ presentar: la actuación de cada clase (16 cuadros)
