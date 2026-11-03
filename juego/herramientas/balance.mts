@@ -171,7 +171,9 @@ function claro(zona: any): [number, number] {
   claros.set(zona, mejor);
   return mejor;
 }
-function pelear(d: any, zona: any, mons: any[], modo: 'matar' | 'muneco' | 'aguantar', hab: string, tMax: number): Pelea {
+/** modo 'duelo': como 'matar', pero el héroe puede morir y toma pociones como un jugador (bajo el 40 %, una cada 2.5 s, hasta `pociones`). */
+let POCIONES = 0;
+function pelear(d: any, zona: any, mons: any[], modo: 'matar' | 'muneco' | 'aguantar' | 'duelo', hab: string, tMax: number): Pelea {
   const j = MU.crearJuego(d, 0);
   j.zona = zona;
   const h = j.heroe;
@@ -201,11 +203,15 @@ function pelear(d: any, zona: any, mons: any[], modo: 'matar' | 'muneco' | 'agua
   const objetivos = modo === 'aguantar' ? [] : mons.slice();
   // el muñeco tiene una vida enorme pero la vida máxima de siempre (el sangrado y el aturdir miran la máxima)
   if (modo === 'muneco') for (const m of mons) m.vida = 1e12;
-  let dano = 0, recibido = 0, tCamino = -9;
+  let dano = 0, recibido = 0, tCamino = -9, quedan = POCIONES, tPocion = -9;
   const vidaPrev = new Map(mons.map((m) => [m, m.vida]));
   for (let t = 0; t < tMax; t += DT) {
+    if (modo === 'duelo') {
+      if (h.muerto) return { t, ok: false, dano, recibido };
+      if (h.vida < h.vidaMax * 0.4 && quedan > 0 && t - tPocion > 2.5) { quedan--; tPocion = t; h.vida = Math.min(h.vidaMax, h.vida + h.vidaMax * 0.45); }
+    }
     if (modo !== 'aguantar') {
-      h.vida = h.vidaMax; h.muerto = false;
+      if (modo !== 'duelo') { h.vida = h.vidaMax; h.muerto = false; }
       // pociones de maná: si no alcanza para la habilidad, se llena
       if (hab !== 'ataque' && h.mana < MU.costoMana(j, MU.habilidadDe(hab))) h.mana = h.c.manaMax;
       if (modo === 'muneco') h.c.golpe_aplastante = 0;
@@ -231,10 +237,32 @@ function pelear(d: any, zona: any, mons: any[], modo: 'matar' | 'muneco' | 'agua
       if (m.vida < pv) dano += pv - m.vida;
       vidaPrev.set(m, m.vida);
     }
-    if (modo === 'matar' && objetivos.every((m) => m.muerto)) return { t, ok: true, dano, recibido };
+    if ((modo === 'matar' || modo === 'duelo') && objetivos.every((m) => m.muerto)) return { t, ok: true, dano, recibido };
     if (modo === 'aguantar' && h.muerto) return { t, ok: true, dano, recibido };
   }
   return { t: tMax, ok: modo === 'muneco', dano, recibido };
+}
+
+// ------------------------------------------------------------------ duelo contra un jefe (--duelo id --pociones n)
+const DUELO = arg('duelo', '');
+if (DUELO) {
+  POCIONES = +arg('pociones', '8');
+  const zj = JEFES_ACTO.find((z: any) => z.jefe === DUELO) ?? JEFES_ACTO[JEFES_ACTO.length - 1];
+  for (const dif of DIFS) for (const nivel of NIVELES) for (const clase of CLASES_SIM) {
+    const nivelMon = nivelZona(zj, dif);
+    let gana = 0; const restos: number[] = [], tiempos: number[] = [];
+    for (let s = 0; s < SEMILLAS; s++) {
+      const d = armarHeroe(clase, nivel, dif, Math.max(1, nivelMon - 2), s);
+      const pobl = poblacion(zj.id, dif, s);
+      sembrar('duelo', clase, nivel, dif, s);
+      const jefe = MU.crearMonstruo(MO.MONSTRUOS[DUELO], nivelMon + 2, 0, 0, 4, dif);
+      const r = pelear(d, pobl.zona, [jefe], 'duelo', PLANES[clase].principal(d.habs), 400);
+      if (r.ok) gana++; restos.push(jefe.muerto ? 0 : jefe.vida / jefe.vidaMax); tiempos.push(r.t);
+    }
+    const med = (v: number[]) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
+    console.log(`${clase.padEnd(11)} nivel ${nivel} dif ${dif} jefe ${DUELO} (nivel ${nivelMon + 2}): gana ${gana}/${SEMILLAS}, vida del jefe al terminar ${restos.map((x) => Math.round(x * 100) + '%').join(' ')} (mediana ${Math.round(med(restos) * 100)}%), ${Math.round(med(tiempos))} s`);
+  }
+  await sv.close(); process.exit(0);
 }
 
 // ------------------------------------------------------------------ una configuración: clase, nivel, dificultad

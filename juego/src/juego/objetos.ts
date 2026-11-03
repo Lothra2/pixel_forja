@@ -16,6 +16,8 @@ export interface Objeto {
   nivel: number;
   stats: [Stat | string, number][];
   dano?: [number, number];
+  /** Piso de daño: multiplica el daño de la base cuando el arma es mucho más floja que las de su familia a su nivel. */
+  kDano?: number;
   def?: number;
   durab: number; durabMax: number;
   huecos: number;
@@ -107,6 +109,16 @@ function sumarAfijo(o: Objeto, a: Afijo) {
   if (a.vivo) o.vivo = a.vivo;
 }
 
+/** Mediana del daño medio de las armas de una familia que pueden salir a este nivel (la misma ventana de 30 niveles). */
+const medianas = new Map<string, number>();
+function medianaFamilia(fam: string, nivel: number): number {
+  const k = fam + '|' + nivel; let m = medianas.get(k);
+  if (m === undefined) {
+    const v = BASES.filter((b) => b.ranura === 'arma' && b.familia === fam && b.dano && !(b as any).soloUnico && b.nivel <= Math.max(1, nivel) && b.nivel >= nivel - 30).map((b) => (b.dano![0] + b.dano![1]) / 2).sort((a, b) => a - b);
+    m = v.length ? v[Math.floor(v.length / 2)] : 0; medianas.set(k, m);
+  }
+  return m;
+}
 export function crearObjeto(nivel: number, rareza: Rareza, filtro?: (b: Base) => boolean): Objeto {
   // bases de los últimos 30 niveles (las joyas y talismanes no tienen escalones: siempre entran)
   const sinEscalon = (b: Base) => b.ranura === 'anillo' || b.ranura === 'amuleto' || b.ranura === 'talisman';
@@ -120,6 +132,11 @@ export function crearObjeto(nivel: number, rareza: Rareza, filtro?: (b: Base) =>
   if (rareza === 'conjunto') { const s = crearConjunto(nivel); if (s) return s; rareza = 'raro'; }
   const o = crearBase(b, nivel);
   o.rareza = rareza;
+  // piso de daño: un arma vieja de la ventana nunca pega menos del 70 % de la mediana de su familia a este nivel
+  if (b.ranura === 'arma' && b.dano) {
+    const med = medianaFamilia(b.familia, nivel), media = (b.dano[0] + b.dano[1]) / 2;
+    if (med > 0 && media < med * 0.7) { o.kDano = Math.round((med * 0.7 / media) * 100) / 100; o.dano = [Math.round(b.dano[0] * o.kDano), Math.round(b.dano[1] * o.kDano)]; }
+  }
   if (rareza === 'normal' && b.huecosMax && R() < 0.25) o.huecos = entero(1, b.huecosMax);
   if (rareza === 'normal' && R() < 0.06) { o.rareza = 'gris'; o.durab = o.durabMax = Math.ceil(b.durab * 0.5); if (o.dano) o.dano = [Math.max(1, Math.floor(o.dano[0] * 0.7)), Math.max(1, Math.floor(o.dano[1] * 0.7))]; if (o.def) o.def = Math.floor(o.def * 0.7); o.nombre = [`${b.nombre[0]} gastado`, `Worn ${b.nombre[1]}`]; }
   if (rareza === 'magico' || rareza === 'raro') {
@@ -149,7 +166,8 @@ export function aplicarMejoras(o: Objeto) {
   const b = baseDe(o); if (!b) return;
   let dp = 0, ap = 0, dmin = 0, dmax = 0, d = 0;
   for (const [s, v] of o.stats) { if (s === 'dano_pct') dp += v; if (s === 'def_pct') ap += v; if (s === 'dano_min') dmin += v; if (s === 'dano_max') dmax += v; if (s === 'def') d += v; }
-  if (b.dano) o.dano = [Math.round(b.dano[0] * (1 + dp / 100)) + dmin, Math.round(b.dano[1] * (1 + dp / 100)) + dmax];
+  const k = o.kDano ?? 1;
+  if (b.dano) o.dano = [Math.round(b.dano[0] * k * (1 + dp / 100)) + dmin, Math.round(b.dano[1] * k * (1 + dp / 100)) + dmax];
   if (b.def) o.def = Math.round(((o.def ?? b.def[0]) * (1 + ap / 100))) + d;
   if (o.dano && o.dano[1] < o.dano[0]) o.dano[1] = o.dano[0];
 }

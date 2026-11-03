@@ -52,7 +52,7 @@ PUEBLO_DE[7] = 'a7_campamento';
 const M = (m: DefMonstruo) => m;
 const JEFES: DefMonstruo[] = [
   M({ id: 'campana_ahoga', sprite: 'jefe_campana_ahoga', nombre: ['La Campana que Ahoga', 'The Drowning Bell'], vida: 6200, dano: [34, 66], elem: 'frio', def: 120, vel: 2.2, ia: 'jefe', rango: 9, proyectil: 'hielo', xp: 42000, jefe: true, sonido: 'metal', res: { frio: 70, rayo: 30 }, invoca: 'ahogado', huella: 3.5, area: 3, escala: 1.15 }),
-  M({ id: 'aun_saar', sprite: 'jefe_aun_saar', nombre: ['Aun-Saar, el Dios Sediento', 'Aun-Saar, the Thirsting God'], vida: 7800, dano: [44, 88], elem: 'luz', def: 150, vel: 2.4, ia: 'jefe', rango: 10, proyectil: 'luz', xp: 80000, jefe: true, sonido: 'carne', res: { luz: 70, fuego: 50, sombra: 50 }, invoca: 'mano_dorada', huella: 5, area: 3.5, escala: 0.7 }),
+  M({ id: 'aun_saar', sprite: 'jefe_aun_saar', nombre: ['Aun-Saar, el Dios Sediento', 'Aun-Saar, the Thirsting God'], vida: 7800, dano: [40, 80], elem: 'luz', def: 150, vel: 2.4, ia: 'jefe', rango: 10, proyectil: 'luz', xp: 80000, jefe: true, sonido: 'carne', res: { luz: 35, fuego: 30, sombra: 30 }, invoca: 'mano_dorada', huella: 5, area: 3.5, escala: 0.7 }),
 ];
 for (const j of JEFES) (MONSTRUOS as Record<string, DefMonstruo>)[j.id] = j;
 

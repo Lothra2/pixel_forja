@@ -180,3 +180,43 @@ Mediana de las 8 clases después contra jefe de acto: 79 s (Normal 10), 77 s (No
 
 - 32 únicos de arma nuevos (`UNICOS` en `src/datos/objetos_datos.ts`): cada una de las 18 familias tiene uno de élite (45 a 58) y uno sobre base mítica o épica (66 a 88). Las espadas únicas altas ya no salen como la Llama de Santa Oria sobre la Hoja de Vigilia de nivel 7: al 50 a 80 sale la Vigilia sin Alba o el Estoque de la Marea Muerta y al 90 la Sed Dorada (katana).
 - 6 legendarias de espada nuevas: ahora hay 2 o 3 espadas (espada y cimitarra, con las formas épicas falcata, katana y estoque) en cada escalón desde el 45.
+
+## Ronda de noviembre: arcanista, Aun-Saar y el piso de daño
+
+Medido con `balance.mts` (3 semillas, Normal) y con el modo nuevo de duelo (`--duelo aun_saar --pociones 8`): el héroe pelea hasta morir y toma una poción del 45 % cada 2.5 s si baja del 40 %.
+
+**Arcanista.** Vida por vitalidad de 2 a 2.5, y el escudo de maná absorbe el 40 % del daño (antes 30 %) pagado del maná por encima del 15 % (antes 25 %).
+
+| Nivel | Vida | TTD grupo de 4 | TTD jefe de acto |
+|---|---|---|---|
+| 10 | 169 → 188 | 90.8 → 120 | 65.7 → 79.0 |
+| 30 | 364 → 424 | 16.9 → 28.3 | 23.5 → 27.3 |
+| 50 | 562 → 659 | 13.3 → 17.8 | 13.5 → 15.4 |
+
+Al 50 queda por encima de la nigromante (9.7), la alquimista (11.2) y la cazadora (17.1 contra el jefe), y por debajo de los de cuerpo a cuerpo (26 a 40 s), que es donde tiene que estar.
+
+**Aun-Saar.** Los que perdían contra él eran los que pegan con el elemento que más resistía: templario (luz al 70 %), nigromante (sombra al 50 %), arcanista y alquimista (fuego al 50 %). Ahora resiste luz 35 %, fuego 30 % y sombra 30 %, y pega 40 a 80 (antes 44 a 88).
+
+| Nivel 62, 8 pociones | Antes (gana / vida del jefe al perder) | Después |
+|---|---|---|
+| berserker | 4/4 | 4/4 |
+| templario | 2/4 (13 %, 50 %) | 3/4 (23 %) |
+| arcanista | 4/4 | 4/4 |
+| cazadora | 3/4 (15 %) | 2/4 (4 %, 12 %) |
+| nigromante | 0/4 (31 a 63 %) | 1/4 (7 a 15 %) |
+| monje | 3/4 | 4/4 |
+| druida | 4/4 | 4/4 |
+| alquimista | 2/4 (34 %, 34 %) | 4/4 |
+
+El berserker que vio la Forja (muerto con el jefe al 13 %) aparece en el simulador al 58 con solo 4 pociones (3/4, una derrota al 14 %): llegar 6 niveles abajo y con pocas pociones tiene que costar. Las derrotas que quedan son por poco. La nigromante en el duelo pelea sin esqueletos (no hay cadáveres al empezar), así que en el juego le va mejor.
+
+**Piso de daño de las armas.** Un arma que sale al azar nunca pega menos del 70 % de la mediana de su familia a ese nivel (la misma ventana de 30 niveles de la que salen las bases). Si la base es más floja, el arma guarda un multiplicador (`kDano`) que también usan los afijos de daño.
+
+| Cazadora, nivel 30 | Antes | Después |
+|---|---|---|
+| DPS de la habilidad | 208 | 282 |
+| TTK campeón | 28.5 s | 9.6 s |
+| TTK único | 16.2 s | 11.2 s |
+| TTK jefe de acto | 181 s | 162 s |
+
+Al 50 el jefe de acto pasa de 52 a 45 s. El jefe del acto 2 (la Madre con esbirros) sigue lento para la cazadora por lo mismo de siempre: los esbirros se comen las flechas.

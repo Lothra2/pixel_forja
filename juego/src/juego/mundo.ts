@@ -549,7 +549,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   if (nucleo) total *= 2;
   // la arcanista desvía a su maná un cuarto del daño que recibe ("una mente que no se quiebra")
   // paga con maná el 30 % del daño, pero solo con el maná por encima del 25 %: así nunca la deja sin hechizos
-  if (v.tipo === 'heroe' && h.d.clase === 'arcanista' && total > 0) { const libre = h.mana - h.c.manaMax * 0.25; if (libre > 0) { const a = Math.min(libre, total * 0.3); h.mana -= a; total -= a; } }
+  if (v.tipo === 'heroe' && h.d.clase === 'arcanista' && total > 0) { const libre = h.mana - h.c.manaMax * 0.15; if (libre > 0) { const a = Math.min(libre, total * 0.4); h.mana -= a; total -= a; } }
   // escudo de hueso
   if (v.tipo === 'heroe' && h.escudoHueso > 0) { const a = Math.min(h.escudoHueso, total); h.escudoHueso -= a; total -= a; if (a > 0) particulas(j, v.x, v.y, 3, 'chispa', '#e0d8c0'); }
   if (g.aplastar && v.tipo !== 'heroe' && R() * 100 < g.aplastar) total += v.vida * ((v as Monstruo).calidad >= 3 ? 0.05 : 0.25);
