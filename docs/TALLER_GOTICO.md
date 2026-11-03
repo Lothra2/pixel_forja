@@ -53,7 +53,7 @@ abierto trae el arte original, todos piden los archivos del juego. Por eso todo 
 - Armas vivas: `equipo.arma.encanto` en fuego, hielo, rayo, veneno, sombra, luz o sangre. Se anima cuadro a cuadro.
 - Héroes originales con 3 niveles de equipo (`HEROES`): berserker, templario, arcanista, cazadora, nigromante, monje,
   druida y alquimista. Monstruos humanoides (`MONSTRUOS`) con jefes; bestias en `catalogo/bestias.ts`.
-- Arsenal: `arma_<tipo>[_<encanto>]` (flota, suelo, clavada) y `maniqui_<clase>_<nivel>`.
+- Arsenal: `arma_<tipo>[_<encanto>]` (flota, suelo, clavada), `arma_cestus` y `arma_frasco` (solo suelo, un cuadro: el botín tirado) y `maniqui_<clase>_<nivel>`.
 - Tema `misterio`: espejos, árbol de rostros, manos de la tierra, pozo de almas, trono de huesos, carne viva, ojos en la
   oscuridad, círculos de invocación, puerta sellada, reliquia, libro maldito, estatua doliente.
 - `poderes.ts`: 58 efectos con alfa (`pintarPoder(id, dir, cuadro)`, `paquetePoderes()`).
