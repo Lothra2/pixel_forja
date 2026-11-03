@@ -6,8 +6,8 @@ import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
-import { dibujarCine, precargarCine, claveCine } from './ui/cine';
-import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision, finalCompleto, decisionDe } from './juego/historia';
+import { dibujarCine, precargarCine, claveCine, claveFinal, marcasCine } from './ui/cine';
+import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision, finalCompleto, decisionDe, decisionesDe } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
@@ -28,8 +28,9 @@ const DUR_CAIDA = 2.8;
 /** Qué jefe cierra cada acto (el de la misión que cierra el acto). */
 const JEFE_CIERRA: Record<string, number> = {};
 for (const m of MISIONES) if (m.cierraActo && m.objetivo.tipo === 'matar') JEFE_CIERRA[m.objetivo.monstruo] = m.acto;
-function empezarCine(acto: number, despues: () => void, final?: string) {
-  const clave = claveCine(acto, final); precargarCine(clave, acto);
+function empezarCine(acto: number, despues: () => void, clave = claveCine(acto)) {
+  precargarCine(clave, acto);
+  if (j) { const dec = decisionesDe(j.heroe.d) as Record<string, string>; marcasCine(Object.entries(dec).map(([k, v]) => k === 'vigdis' ? (v === 'salvar' ? 'vigdis_viva' : 'vigdis_muerta') : `${k}_${v}`)); }
   cine = { clave, acto, t: 0, despues }; estado = 'cine'; ui.izq = ui.der = null; E.clicIzq = false;
   Sonido.musica('intro');
 }
@@ -458,10 +459,16 @@ function procesarEventos(jj: Juego) {
     else if (e.tipo === 'mision_hecha') {
       guardar(); const m = MISIONES.find((q) => q.id === e.dato);
       if (m?.cierraActo && m.acto < 7) entreActoPendiente = m.acto;
-      if (m?.final) setTimeout(() => { if (estado === 'juego') { ui.izq = ui.der = null; estado = 'final'; finalT = 0; Sonido.musica('intro'); } }, 4500);
+      // al entregar la Corona: la cinemática del final (si la Forja ya la entregó) y después el epílogo
+      if (m?.final) setTimeout(() => {
+        if (estado !== 'juego') return;
+        const alFinal = () => { ui.izq = ui.der = null; estado = 'final'; finalT = 0; Sonido.musica('intro'); };
+        const cf = claveFinal(finalCompleto(jj.heroe.d));
+        if (cf) empezarCine(7, alFinal, cf); else alFinal();
+      }, 4500);
     }
     else if (e.tipo === 'heraldo_huye') guardar();
-    else if (e.tipo === 'cinematica') { const d = jj.heroe.d; empezarCine(e.dato, () => { if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); }, e.dato === 7 && hist(d).decisiones?.corona ? finalCompleto(d) : undefined); }
+    else if (e.tipo === 'cinematica') empezarCine(e.dato, () => { if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); });
     else if (e.tipo === 'epilogo') { repeticion = true; ui.izq = ui.der = null; estado = 'final'; finalT = 0; Sonido.musica('intro'); }
   }
 }

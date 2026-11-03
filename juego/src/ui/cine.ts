@@ -7,7 +7,8 @@
 //   cinematicas.capa = { w, h, margen_x, margen_y }           geometría por defecto de las capas, como el fondo de la portada
 //   cinematicas[clave] = { musica?, planos: Plano[] }          clave: acto_1 … acto_6, acto_7 y acto_7_<final>
 //   Plano = { dur, capas: Capa[], camara?, narracion?: {es, en}, fundido?: {entra, sale}, particulas?: 'ceniza'|'brasas'|'nieve'|'lluvia' }
-//   Capa  = { archivo, paralaje, mezcla?: 'normal'|'sumar', w?, h?, x?, y?, alfa?, anim? }
+//   Capa  = { archivo, paralaje, mezcla?: 'normal'|'sumar', w?, h?, x?, y?, alfa?, anim?, si?, no? }
+//           si / no: marcas del héroe (vigdis_viva, vigdis_muerta, brasa_destruir, brasa_absorber, corona_auren…)
 //   anim  = { tipo: 'deriva', px_por_segundo, enrollar? } | { tipo: 'titilar' } | { tipo: 'latir', periodo_s }
 //         | { tipo: 'flotar', amplitud_px, periodo_s } | { tipo: 'cuadros', columnas, cuadros, fps, w, h }
 //         | { tipo: 'aparecer', desde_s, dur_s }
@@ -43,11 +44,13 @@ export function prepararCine() {
   fetch(RAIZ + 'portada.json').then((r) => r.json()).then((m) => { man = m; }).catch(() => { pidio = false; });
 }
 const datos = (clave: string) => man?.cinematicas?.[clave] ?? demo[clave];
-/** La clave que corresponde: el acto 7 busca primero la variante del final. */
-export function claveCine(acto: number, final?: string): string {
-  if (acto === 7 && final && datos(`acto_7_${final}`)) return `acto_7_${final}`;
-  return `acto_${acto}`;
-}
+/** La clave del cierre de un acto (el acto 7 tiene además una por final, ver claveFinal). */
+export const claveCine = (acto: number) => `acto_${acto}`;
+/** La cinemática del final que te tocó, si la Forja ya la entregó (se ve al entregar la Corona, antes del epílogo). */
+export const claveFinal = (final: string): string | null => (datos(`acto_7_${final}`) ? `acto_7_${final}` : null);
+/** Marcas que eligen capas: una capa con `si` solo se ve si la marca está, y con `no` solo si no está (p. ej. vigdis_viva o vigdis_muerta). */
+let marcas = new Set<string>();
+export function marcasCine(m: string[]) { marcas = new Set(m); }
 /** Empieza a bajar las imágenes de una cinemática (o la carta de respaldo). */
 export function precargarCine(clave: string, acto: number) {
   prepararCine();
@@ -127,6 +130,7 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   const alfaPlano = Math.min(1, fe > 0 ? tl / fe : 1, fs > 0 ? Math.max(0, (p.dur - tl) / fs) : 1);
   ctx.save();
   for (const capa of p.capas) {
+    if ((capa.si && !marcas.has(capa.si)) || (capa.no && marcas.has(capa.no))) continue;
     const im = lista(capa.archivo); if (!im) continue;
     const cw = capa.w ?? geo.w, ch = capa.h ?? geo.h, an = capa.anim ?? {};
     let alfa = capa.alfa ?? 1, dx = 0, dy = 0;
