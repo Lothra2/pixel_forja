@@ -242,6 +242,10 @@ const rotar = (v: V3, k: V3, ang: number): V3 => {
 const LARGO_ARMA: Partial<Record<TipoArma, number>> = { espada: 23, cimitarra: 23, mandoble: 33, daga: 9.5, hacha: 21, hacha_doble: 29, maza: 18, martillo: 27, mangual: 12, lanza: 36, alabarda: 36, guadana: 30, varita: 10,
   katana: 26, estoque: 27, falcata: 21, tridente: 37, maza_estrella: 19, jabalina: 28, orbe_mano: 8, katar: 13, hoz: 10, lanza_dragon: 41 };
 
+/** Largo del mango detrás del puño (lo que dibuja arma() y armaEpica() hacia atrás desde la mano), por tipo. */
+const CABO_MANGO: Partial<Record<TipoArma, number>> = { hacha: 4, hacha_doble: 4, martillo: 5, mandoble: 7, maza: 3, mangual: 3, espada: 3.5, cimitarra: 3.5,
+  lanza: 18, alabarda: 18, guadana: 14, tridente: 18, lanza_dragon: 18, jabalina: 15 };
+
 /** Qué lleva la mano izquierda, para la pose: un escudo o un objeto en la mano (si la derecha no la ocupa). */
 function manoDe(arma: TipoArma, izq?: IzqTipo): ManoPose | undefined {
   if (!izq || izq === 'arma' || dos(arma) || esArco(arma) || arma === 'ballesta') return undefined;
@@ -403,7 +407,12 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   const varaPie = P.varaPie ? Wc(P.varaPie[0] * S, P.varaPie[1] * A, P.varaPie[2] * S) : undefined;
   const vara = varaPie ? nor(sub(der.mano, varaPie)) : P.vara ? dirW([Math.sin(rad(P.vara[0])), Math.sin(rad(P.vara[1])), Math.cos(rad(P.vara[0])) * Math.cos(rad(P.vara[1]))]) : P.armaD && esVara(arma) ? der.eje : undefined;
   const separa = arma === 'lanza' || arma === 'alabarda' || arma === 'guadana' || arma === 'tridente' || arma === 'lanza_dragon' ? 11 : arma === 'gran_baculo' ? 10 : dos(arma) ? 4.8 : arma === 'ballesta' ? -9 : 0;
-  const agarre = P.agarreI ?? separa, pega = Math.max(0, Math.min(1, P.pegaI ?? (agarre ? 1 : 0)));
+  // el agarre de la izquierda nunca pasa del regatón: se recorta al largo real del mango detrás del puño (el que dibuja
+  // arma()) menos medio puño, así el puño cierra siempre sobre madera
+  const cabo = esVara(arma) ? undefined : CABO_MANGO[arma];
+  let agarre = P.agarreI ?? separa;
+  if (cabo !== undefined && agarre > cabo - 0.6) agarre = cabo - 0.6;
+  const pega = Math.max(0, Math.min(1, P.pegaI ?? (agarre ? 1 : 0)));
   if (agarre && pega > 0 && !P.caida && !esArco(arma) && arma !== 'nada' && arma !== 'puno') {
     const ejeMango = esVara(arma) ? vara ?? [0, 0, 1] : der.eje;
     let meta = arma === 'ballesta' ? add(add(der.mano, F, 7 * S), R, 2.5 * S) : add(der.mano, ejeMango, -agarre * S);
@@ -411,7 +420,7 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
     // (agarre negativo: la izquierda va del lado de la cabeza del arma, por delante del puño derecho)
     if (arma !== 'ballesta' && len(sub(meta, izq.hom)) > LB1 + L2m - 0.15) {
       let mejor = meta, dm = len(sub(meta, izq.hom));
-      if (agarre > 0) for (let g = 2; g <= agarre + 8; g += 0.5) { const q = add(der.mano, ejeMango, -g * S), dq = len(sub(q, izq.hom)); if (dq < dm) { dm = dq; mejor = q; } if (dq <= LB1 + L2m - 0.15) { mejor = q; break; } }
+      if (agarre > 0) for (let g = 2; g <= (cabo !== undefined ? cabo - 0.6 : agarre + 8); g += 0.5) { const q = add(der.mano, ejeMango, -g * S), dq = len(sub(q, izq.hom)); if (dq < dm) { dm = dq; mejor = q; } if (dq <= LB1 + L2m - 0.15) { mejor = q; break; } }
       // del lado de la cabeza: se queda lo más lejos del puño derecho que alcance (no se apila sobre él)
       else for (let g = -agarre; g >= 2; g -= 0.25) { const q = add(der.mano, ejeMango, g * S), dq = len(sub(q, izq.hom)); if (dq < dm) { dm = dq; mejor = q; } if (dq <= LB1 + L2m - 0.15) { mejor = q; break; } }
       meta = mejor;

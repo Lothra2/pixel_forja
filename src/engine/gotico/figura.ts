@@ -719,8 +719,8 @@ function atacar(p: Pose, u: number, arma: ArmaPose) {
     cl = [
       K(0, { bajar: 2, torso: 0, ladeo: 0, giroTorso: 46, giroCadera: 22, lateral: 0.6, manoI: [23.5, 0.3, 47.5], manoD: [17, 0.6, 48.4], codoD: [-0.6, 0.6, 0.3], cabeza: 0, giroCabeza: -44, respira: 0.6 }),
       K(1 / 8, { manoD: [8, 1.6, 49.4], codoD: [-1, 0.5, 0.45], giroTorso: 50, giroCadera: 24, lateral: 0.8, respira: 0.9 }),
-      K(2 / 8, { manoD: [1.6, 2.2, 50], giroTorso: 54, giroCadera: 26, lateral: 0.9, ladeo: -2, respira: 1, manoI: [24.5, 0.5, 48.5], giroCabeza: -50 }),
-      K(3 / 8, { manoD: [1.2, 2.3, 50] }, true),
+      K(2 / 8, { manoD: [1.6, 3.9, 49], giroTorso: 54, giroCadera: 26, lateral: 0.9, ladeo: -2, respira: 1, manoI: [24.5, 0.5, 48.5], giroCabeza: -50 }),
+      K(3 / 8, { manoD: [1.2, 4, 49] }, true), // el anclaje: los dedos junto a la mandíbula, sin meterse en la cara
       K(4 / 8, { manoD: [-4.5, 3.6, 50.6], manoI: [26, 0.3, 49], torso: -2, respira: 0.2, cabeza: -1 }),
       K(5 / 8, { manoD: [-5.5, 4.4, 50], manoI: [25.5, 0.2, 48.6] }, true),
       K(6 / 8, { manoD: [-2, 6, 56], codoD: [-0.2, 0.6, 0.8], giroTorso: 48, ladeo: -1, cabeza: 1, manoI: [24.5, 0.3, 48] }),
