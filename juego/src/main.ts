@@ -6,6 +6,7 @@ import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
+import { dibujarCine, precargarCine, claveCine } from './ui/cine';
 import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision, finalCompleto, decisionDe } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
@@ -14,12 +15,24 @@ import { hud, etiquetasMundo } from './ui/hud_rects';
 import { abrirTienda, cerrarPaneles, cambiarAgresivo, rectPanel, compacto } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
-import { vinetaSangre, dibujarPresentacion, DUR_PRESENTA } from './ui/horror';
+import { vinetaSangre, dibujarPresentacion, dibujarCaida, DUR_PRESENTA } from './ui/horror';
 import { prepararPortada, esperarPortada } from './ui/portada';
 import { miedoPaso } from './juego/miedo';
 import { dibujarMiedo } from './render/miedo';
 /** Presentación del jefe en curso (cámara lenta y nombre grande). */
 let presenta: { m: Monstruo; t: number } | null = null;
+/** La muerte del jefe que cierra el acto: cámara lenta sobre el cuerpo y después la cinemática. */
+let caida: { m: Monstruo | null; t: number; acto: number; despues: () => void } | null = null;
+let cine: { clave: string; acto: number; t: number; despues: () => void } | null = null;
+const DUR_CAIDA = 2.8;
+/** Qué jefe cierra cada acto (el de la misión que cierra el acto). */
+const JEFE_CIERRA: Record<string, number> = {};
+for (const m of MISIONES) if (m.cierraActo && m.objetivo.tipo === 'matar') JEFE_CIERRA[m.objetivo.monstruo] = m.acto;
+function empezarCine(acto: number, despues: () => void, final?: string) {
+  const clave = claveCine(acto, final); precargarCine(clave, acto);
+  cine = { clave, acto, t: 0, despues }; estado = 'cine'; ui.izq = ui.der = null; E.clicIzq = false;
+  Sonido.musica('intro');
+}
 import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
 import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad, volverAEmpezar } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
@@ -30,7 +43,7 @@ import { CLASES } from './datos/clases';
 import { dist, R, elegir } from './nucleo/azar';
 import { pasable, lineaLibre, type ObjZ, type Salida } from './mundo/zona';
 
-type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona' | 'final' | 'entreacto' | 'revelacion' | 'ciclo';
+type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona' | 'final' | 'entreacto' | 'revelacion' | 'ciclo' | 'cine';
 let finalT = 0;
 // historia: la cinemática entre actos espera a que se cierre el diálogo; la revelación lleva al final si se elige al caer Aun-Saar
 let entreActo = 0, entreActoPendiente = 0, entreT = 0;
@@ -422,11 +435,21 @@ function procesarEventos(jj: Juego) {
     else if (e.tipo === 'opciones') { opcionesDesde = 'juego'; estado = 'opciones'; ui.izq = null; }
     else if (e.tipo === 'presentar') { presenta = { m: e.dato, t: 0 }; Sonido.efecto('rugido_jefe' as any, { vol: 0.9 }); }
     else if (e.tipo === 'mision') { const m = MISIONES.find((q) => q.id === e.dato); if (m) { msg(jj, [`Misión cumplida: ${m.nombre[0]}. Vuelve al campamento.`, `Quest fulfilled: ${m.nombre[1]}. Return to camp.`], '#80ff80'); Sonido.efecto('mision'); } }
-    else if (e.tipo === 'jefe_muerto' && e.dato === 'senor_demonio') { guardar(); if (!finalDe(jj.heroe.d)) setTimeout(() => empezarRevelacion(false), 4000); else Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); }
-    else if (e.tipo === 'jefe_muerto' && e.dato === 'aun_saar') {
-      // el dios cae y deja su Corona: el final se elige al entregarla en el campamento
-      guardar(); msg(jj, ['La Corona de Aun-Saar rueda hasta tus pies. Todavía está tibia. Llévala al campamento: alguien tendrá que decidir qué hacer con ella.', 'Aun-Saar\'s Crown rolls to your feet. It is still warm. Take it to the camp: someone will have to decide what to do with it.'], '#ffd080');
-      if (!finalDe(jj.heroe.d)) setTimeout(() => empezarRevelacion(false), 4000); else Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any);
+    else if (e.tipo === 'jefe_muerto' && JEFE_CIERRA[e.dato]) {
+      // el jefe que cierra el acto: cámara lenta sobre su caída, la cinemática y después lo de siempre
+      guardar();
+      const acto = JEFE_CIERRA[e.dato], d = jj.heroe.d;
+      const despues = () => {
+        if (e.dato === 'senor_demonio') { if (!finalDe(d)) empezarRevelacion(false); else Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); return; }
+        if (e.dato === 'aun_saar') {
+          msg(jj, ['La Corona de Aun-Saar rueda hasta tus pies. Todavía está tibia. Llévala al campamento: alguien tendrá que decidir qué hacer con ella.', 'Aun-Saar\'s Crown rolls to your feet. It is still warm. Take it to the camp: someone will have to decide what to do with it.'], '#ffd080');
+          if (!finalDe(d)) empezarRevelacion(false); else Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); return;
+        }
+        Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); msg(jj, ['El sello se rompe. Algo escapa hacia lo alto.', 'The seal breaks. Something escapes upward.'], '#ffb060');
+      };
+      precargarCine(claveCine(acto), acto);
+      caida = { m: jj.monstruos.find((q) => q.def.id === e.dato) ?? null, t: 0, acto, despues };
+      presenta = null; Sonido.musica(null as any);
     }
     else if (e.tipo === 'jefe_muerto') { Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); msg(jj, ['El sello se rompe. Algo escapa hacia lo alto.', 'The seal breaks. Something escapes upward.'], '#ffb060'); guardar(); }
     else if (e.tipo === 'muerte') { Sonido.musica(null as any); tEstado = 0; }
@@ -438,7 +461,7 @@ function procesarEventos(jj: Juego) {
       if (m?.final) setTimeout(() => { if (estado === 'juego') { ui.izq = ui.der = null; estado = 'final'; finalT = 0; Sonido.musica('intro'); } }, 4500);
     }
     else if (e.tipo === 'heraldo_huye') guardar();
-    else if (e.tipo === 'cinematica') { repeticion = true; empezarEntreacto(e.dato); }
+    else if (e.tipo === 'cinematica') { const d = jj.heroe.d; empezarCine(e.dato, () => { if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); }, e.dato === 7 && hist(d).decisiones?.corona ? finalCompleto(d) : undefined); }
     else if (e.tipo === 'epilogo') { repeticion = true; ui.izq = ui.der = null; estado = 'final'; finalT = 0; Sonido.musica('intro'); }
   }
 }
@@ -448,6 +471,8 @@ let ultimo = performance.now();
 let introT = 0;
 (window as any).__introA = (s: number) => { introT = s; };
 (window as any).__aFinal = () => { estado = 'final'; finalT = 999; };
+(window as any).__cine = (clave: string, acto = 1) => { cine = { clave, acto, t: 0, despues: () => {} }; precargarCine(clave, acto); estado = 'cine'; };
+(window as any).__cineT = (s: number) => { if (cine) cine.t = s; };
 (window as any).__carga = (k: number, m: string) => { estado = 'carga'; cargaK = k; cargaMsg = m; };
 (window as any).__usar = (o: ObjZ) => { if (j) usarObjeto(j, o); };
 function cuadro(ahora: number) {
@@ -491,6 +516,14 @@ function paso(dt: number) {
         if (revLuegoFinal) { estado = 'final'; finalT = 0; } else { estado = 'juego'; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); }
       }
       if (estado === 'revelacion') dibujarCursor('senalar');
+      break;
+    }
+    case 'cine': {
+      if (!cine) { estado = 'juego'; break; }
+      cine.t += dt;
+      if (dibujarCine(cine.clave, cine.acto, cine.t) || (cine.t > 0.6 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) {
+        E.clicIzq = false; const c = cine; cine = null; estado = 'juego'; tEstado = 0; c.despues();
+      }
       break;
     }
     case 'final': {
@@ -563,13 +596,15 @@ function paso(dt: number) {
       const pausa = ui.izq === 'menu' || ui.confirmar;
       // presentación de un jefe: el mundo va en cámara lenta y la cámara lo mira
       if (presenta) { presenta.t += dt; foco.x = presenta.m.x; foco.y = presenta.m.y; foco.k = Math.min(1, presenta.t / 0.6, Math.max(0, (DUR_PRESENTA - presenta.t) / 0.6)); if (presenta.t >= DUR_PRESENTA || presenta.m.muerto) { presenta = null; foco.k = 0; } }
-      const dtMundo = presenta ? dt * 0.18 : dt;
+      if (caida) { caida.t += dt; if (caida.m) { foco.x = caida.m.x; foco.y = caida.m.y; } foco.k = Math.min(1, caida.t / 0.4); if (caida.t >= DUR_CAIDA) { const c = caida; caida = null; foco.k = 0; empezarCine(c.acto, c.despues); } }
+      const dtMundo = presenta ? dt * 0.18 : caida ? dt * 0.22 : dt;
       if (!pausa) { actualizar(jj, dtMundo); historiaPaso(jj, dtMundo); miedoPaso(jj, dtMundo); }
       dibujarMundo(jj, dtMundo, tiempo);
       dibujarMiedo(jj, tiempo);
       dibujarHistoria(jj, tiempo);
       vinetaSangre(jj.heroe.muerto ? 0 : jj.heroe.vida / jj.heroe.vidaMax, tiempo);
       if (presenta) dibujarPresentacion(presenta.m, presenta.t);
+      if (caida) dibujarCaida(caida.m, caida.t, DUR_CAIDA);
       if (entreActoPendiente && ui.izq !== 'dialogo') { empezarEntreacto(entreActoPendiente); entreActoPendiente = 0; }
       etiquetasBotin(jj);
       // brillo general

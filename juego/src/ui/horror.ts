@@ -1,6 +1,6 @@
 // Miedo y sangre en pantalla: la viñeta roja cuando te queda poca vida y la presentación de cada jefe la primera vez.
 import { ctx, W, H } from '../nucleo/lienzo';
-import { texto, TT, TITULO, rasterACanvas } from './comun';
+import { texto, T, TT, TITULO, rasterACanvas } from './comun';
 import { veloSangre } from '../../../src/engine/gotico/catalogo/horror';
 import type { Monstruo } from '../juego/mundo';
 
@@ -61,6 +61,27 @@ export function dibujarPresentacion(m: Monstruo, t: number) {
     const s = (i * 97.13) % 1, x = W / 2 + (((i * 53.7) % 1) - 0.5) * W * 0.5, y = H * 0.72 - ((t * (40 + s * 60) + i * 13) % (H * 0.3));
     ctx.globalAlpha = 0.6 * k * (0.4 + s * 0.6); ctx.fillStyle = s < 0.5 ? '#ff7020' : '#ffc060';
     ctx.fillRect(x, y, 2, 2);
+  }
+  ctx.restore();
+}
+
+/** La caída del jefe que cierra el acto: franjas de cine, el mundo en cámara lenta y su nombre que se apaga. */
+export function dibujarCaida(m: Monstruo | null, t: number, dur: number) {
+  const k = Math.min(1, t / 0.4, Math.max(0, (dur - t) / 0.3));
+  const banda = H * 0.12 * k;
+  ctx.save();
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, banda); ctx.fillRect(0, H - banda, W, banda);
+  const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.25, W / 2, H / 2, Math.max(W, H) * 0.7);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(40,0,0,${0.75 * k})`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  if (m) {
+    const [nom] = TT(m.nombre).split(/,\s*/);
+    const tam = Math.min(46, W / 18), a = Math.min(1, Math.max(0, (t - 0.5) / 0.6)) * k;
+    ctx.globalAlpha = a;
+    texto(nom, W / 2 + 2, H * 0.72 + 2, { alin: 'center', tam, color: '#000', fuente: TITULO });
+    texto(nom, W / 2, H * 0.72, { alin: 'center', tam, color: '#c8b090', fuente: TITULO });
+    ctx.globalAlpha = Math.min(1, Math.max(0, (t - 1.1) / 0.6)) * k;
+    texto(T('ha caído', 'has fallen'), W / 2, H * 0.72 + tam * 0.75, { alin: 'center', tam: Math.round(tam * 0.42), color: '#a04030', fuente: TITULO });
   }
   ctx.restore();
 }
