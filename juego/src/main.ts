@@ -10,10 +10,11 @@ import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistor
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
-import { abrirTienda } from './ui/juego_ui';
+import { abrirTienda, cerrarPaneles, cambiarAgresivo, rectPanel, compacto } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
 import { vinetaSangre, dibujarPresentacion, DUR_PRESENTA } from './ui/horror';
+import { prepararPortada, esperarPortada } from './ui/portada';
 import { miedoPaso } from './juego/miedo';
 import { dibujarMiedo } from './render/miedo';
 /** Presentación del jefe en curso (cámara lenta y nombre grande). */
@@ -26,7 +27,7 @@ import { POBLACION, MONSTRUOS } from './datos/monstruos';
 import { GENTE } from './datos/npcs';
 import { CLASES } from './datos/clases';
 import { dist, R, elegir } from './nucleo/azar';
-import { pasable, type ObjZ, type Salida } from './mundo/zona';
+import { pasable, lineaLibre, type ObjZ, type Salida } from './mundo/zona';
 
 type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona' | 'final' | 'entreacto' | 'revelacion' | 'ciclo';
 let finalT = 0;
@@ -66,6 +67,7 @@ function guardar() {
 // ------------------------------------------------------------------ carga de atlas
 async function cargarBase() {
   cargaMsg = T('Despertando el valle...', 'Waking the valley...');
+  prepararPortada();
   await cargarManifiesto();
   const m = manifiesto();
   const temas = ['campamento', 'monasterio', 'cementerio', 'arboles', 'campo', 'comun', 'armas'];
@@ -108,7 +110,7 @@ function atlasZona(zid: string): Set<string> {
 async function irAZona(id: string, entrada: string) {
   if (!j) return;
   estado = 'zona'; tEstado = 0; cargaK = 0; cargaMsg = TT(ZONAS[id].nombre);
-  ui.izq = ui.der = null; ui.mano = null;
+  cerrarPaneles(); ui.mano = null;
   await new Promise((r) => setTimeout(r, 30));
   entrarZona(j, id, entrada);
   historiaEntrar(j);
@@ -205,16 +207,19 @@ function controlar(jj: Juego, dt: number) {
   if (pulso('q')) alternar('misiones', 'izq');
   if (pulso('Tab') || pulso('m')) ui.mapa = !ui.mapa;
   if (pulso('r')) h.correr = !h.correr;
+  if (pulso('z')) cambiarAgresivo(jj);
   if (pulso('b')) abrirPortal(jj);
   for (let i = 1; i <= 4; i++) if (pulso(String(i))) usarPocion(jj, i - 1);
   for (let k = 1; k <= 10; k++) if (pulso('F' + k) && ui.der !== 'elegirHab') { const id = h.d.atajos[k - 1]; if (id) { h.d.der = id; recalc(jj); } }
   for (const [tecla, k] of [['5', 0], ['6', 1], ['7', 2], ['8', 3], ['9', 4], ['0', 5]] as [string, number][]) if (pulso(tecla)) { const id = h.d.atajos[k]; if (id) { h.d.der = id; recalc(jj); Sonido.efecto('click'); } }
   if (pulso('Escape')) {
     if (h.muerto) { revivir(jj); return; }
-    if (ui.izq || ui.der || ui.mapa) { ui.izq = ui.der = null; ui.mapa = false; } else ui.izq = 'menu';
+    if (ui.izq || ui.der || ui.mapa || ui.confirmar) { cerrarPaneles(); ui.confirmar = null; } else ui.izq = 'menu';
   }
   if (h.muerto) { if (E.clicIzq && tEstado > 1) revivir(jj); return; }
   curarEnTiempo(jj, dt);
+  // lo que abrió un NPC o un objeto se cierra solo si te alejas más de 4 casillas
+  { const o = (ui as any).origen as [number, number] | null; if (o && (ui.izq || ui.der) && dist(h.x, h.y, o[0], o[1]) > 4.5) cerrarPaneles(); else if (o && !ui.izq && !ui.der) (ui as any).origen = null; }
   if (ui.izq === 'cofre' && dist(h.x, h.y, (ui as any).cofreX ?? h.x, (ui as any).cofreY ?? h.y) > 4) ui.izq = null;
   if (ui.izq !== 'cofre' && (ui as any).baul) { (ui as any).baul.v = 'cerrado'; (ui as any).baul = null; Sonido.efecto('puerta', { vol: 0.5 }); }
   pickEncima = ui.sobreUI ? null : encimaDe();
@@ -274,6 +279,18 @@ function controlar(jj: Juego, dt: number) {
       }
     } else if (!h.objetivo) (h as any).usarDer = false;
   }
+  // agresivo: si está quieto, sin orden ni camino, le pega solo al enemigo más cercano dentro de su alcance (sin perseguir)
+  if ((h.d as any).agresivo && !h.objetivo && !h.camino && !h.destino && !h.recoger && !h.usar && !h.hablar && !(h as any).salida && h.acc !== 'atacar' && h.acc !== 'lanzar' && jj.zona.tipo !== 'pueblo' && !E.izq && !E.der) {
+    const lejos = !!h.c.distancia, alc = lejos ? 9 : h.c.tipoArma === 'lanza' || h.c.tipoArma === 'alabarda' || h.c.tipoArma === 'guadana' ? 2.0 : 1.4;
+    let best: Monstruo | null = null, bd = 1e9;
+    for (const m of jj.monstruos) {
+      if (m.muerto || m.dueno || m.estado === 'surgir' || (m as any).surgiendo > 0) continue;
+      const d = dist(m.x, m.y, h.x, h.y); if (d > alc + m.radio || d >= bd) continue;
+      if (lejos && !lineaLibre(jj.zona, h.x, h.y, m.x, m.y)) continue;
+      bd = d; best = m;
+    }
+    if (best && !usarHabilidad(jj, h.d.izq, best.x, best.y, best)) usarHabilidad(jj, 'ataque', best.x, best.y, best);
+  }
   // táctil: el botón usa la habilidad sobre el enemigo más cercano
   if ((ui as any).tactilHab) {
     const lado = (ui as any).tactilHab as 'izq' | 'der'; (ui as any).tactilHab = null;
@@ -328,6 +345,7 @@ function revivir(jj: Juego) {
   msg(jj, [`Despiertas junto al fuego. Perdiste ${perdido} de oro.`, `You wake by the fire. You lost ${perdido} gold.`], '#c08080');
 }
 function usarObjeto(jj: Juego, o: ObjZ) {
+  (ui as any).origen = [o.cx + 0.5, o.cy + 0.5];
   const h = jj.heroe;
   if (o.tag === 'cofre') {
     if (o.v.startsWith('abiert') || o.v.startsWith('abriendo')) return;
@@ -411,6 +429,7 @@ let ultimo = performance.now();
 let introT = 0;
 (window as any).__introA = (s: number) => { introT = s; };
 (window as any).__aFinal = () => { estado = 'final'; finalT = 999; };
+(window as any).__carga = (k: number, m: string) => { estado = 'carga'; cargaK = k; cargaMsg = m; };
 (window as any).__usar = (o: ObjZ) => { if (j) usarObjeto(j, o); };
 function cuadro(ahora: number) {
   marcarCuadro(ahora);
@@ -580,6 +599,7 @@ async function arrancar() {
   requestAnimationFrame(cuadro);
   try {
     await cargarBase();
+    await esperarPortada();
   } catch (e) { console.error(e); cargaMsg = 'Error: ' + e; return; }
   prepararHud();
   let vista = false; try { vista = localStorage.getItem('marca.intro') === '1'; } catch { /* */ }
@@ -588,7 +608,7 @@ async function arrancar() {
   (window as any).__juego = () => j;
   (window as any).__estado = () => estado;
   import('./juego/mundo').then((m) => { (window as any).__mundo = m; });
-  (window as any).__U = { hablarCon, abrirTienda, ui };
+  (window as any).__U = { hablarCon, abrirTienda, ui, rectPanel, compacto, cerrarPaneles };
   (window as any).__A = Assets;
   // ganchos para las pruebas del build de producción
   Promise.all([import('./juego/heroe'), import('./juego/objetos'), import('./datos/objetos_datos'), import('./motor/pintor')]).then(([H, O, D, P]) => { (window as any).__T = { H, O, D, P }; });

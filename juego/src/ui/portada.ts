@@ -180,3 +180,14 @@ export function dibujarCarta(acto: number, t: number, narracion: string, dur: nu
   ctx.restore();
   return true;
 }
+
+/** Espera a que estén la portada y los títulos fijos (con tope), para que la secuencia arranque con todo y sin el título viejo. */
+export async function esperarPortada(tope = 8000) {
+  prepararPortada();
+  const t0 = performance.now();
+  while (performance.now() - t0 < tope) {
+    if (portadaLista() && man && ['es', 'en'].every((i) => lista(man.titulo[i].fijo['800']))) return true;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return false;
+}

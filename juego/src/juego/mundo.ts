@@ -1443,7 +1443,9 @@ function moverHacia(j: Juego, e: Ent, tx: number, ty: number, vel: number, dt: n
   if (l < 0.05) return true;
   const paso = Math.min(l, vel * dt);
   const nx = e.x + (dx / l) * paso, ny = e.y + (dy / l) * paso;
-  e.dir = dirDe(dx, dy);
+  // los monstruos no cambian de dirección por cada zigzag del camino: solo si el rumbo pasa el sector vecino por más de 10°
+  if (e.tipo === 'heroe') e.dir = dirDe(dx, dy);
+  else { const [cx, cy] = DIR_VEC[e.dir] ?? [0, 1]; const dif = Math.abs(Math.atan2(cx * dy - cy * dx, cx * dx + cy * dy)); if (dif > (Math.PI / 8) + 0.18) e.dir = dirDe(dx, dy); }
   const x0 = e.x, y0 = e.y;
   if (pasable(j.zona, nx, ny)) { e.x = nx; e.y = ny; }
   else if (pasable(j.zona, nx, e.y)) e.x = nx;
@@ -1545,6 +1547,13 @@ function actualizarHeroe(j: Juego, dt: number) {
 function actualizarMonstruo(j: Juego, m: Monstruo, dt: number) {
   m.t += dt; m.destello = Math.max(0, m.destello - dt);
   if (m.muerto) { m.tMuerto += dt; return; }
+  actualizarMonstruo2(j, m, dt);
+  // lo que se ve: entre quieto y caminar hace falta un mínimo de 0.2 s en cada estado (sin vaivén de un cuadro a otro)
+  const o = m as any; o.tVis = (o.tVis ?? 0) + dt;
+  const suave = (a: string) => a === 'quieto' || a === 'caminar' || a === 'correr';
+  if (o.accVis !== m.acc) { if (!(suave(m.acc) && suave(o.accVis ?? '') && o.tVis < 0.2)) { o.accVis = m.acc; o.tVis = 0; } }
+}
+function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
   const h = j.heroe;
   if (m.veneno > 0) { m.veneno -= dt; m.vida -= m.venenoDps * dt; if (Math.floor(m.veneno * 2) !== Math.floor((m.veneno + dt) * 2)) particulas(j, m.x, m.y, 2, 'humo', '#60a040', 0.5, 30); if (m.vida <= 0) { morirMonstruo(j, m); return; } }
   if (m.sangrado > 0) { m.sangrado -= dt; m.vida -= m.vidaMax * 0.02 * dt; if (m.vida <= 0) { morirMonstruo(j, m); return; } }

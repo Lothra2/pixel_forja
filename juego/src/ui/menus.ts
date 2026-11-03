@@ -9,7 +9,6 @@ import { INTRO, ENTREACTO, REVELACION, OPCIONES_BRASA, TRAS_ELEGIR, EPILOGO, typ
 import { siguienteCiclo, type DatosHeroe } from '../juego/heroe';
 import { R, rng } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
-import { logoReq } from './logo';
 import { dibujarPortada, tituloFijo, dibujarCarta, prepararCarta } from './portada';
 
 export interface Opciones { general: number; musica: number; efectos: number; idioma: 0 | 1; brillo: number }
@@ -65,7 +64,7 @@ function brasas(t: number, n = 40, sube = true) {
 }
 /** El título que se enciende. k de 0 a 1; `forja` 0..1 para que las brasas formen las letras (intro). */
 /** El título: el de letras forjadas de la Forja si ya llegó (salvo la intro, donde las brasas forman las letras viejas). */
-export function logo(x: number, y: number, k: number, t: number, tam = 54, forja?: number) { if (forja === undefined && tituloFijo(x, y, Math.min(W * 0.62, tam * 10.5), k)) return; logoReq(x, y, k, t, tam * 1.15, forja); }
+export function logo(x: number, y: number, k: number, _t: number, tam = 54, _forja?: number) { tituloFijo(x, y, Math.min(W * 0.62, tam * 10.5, (H * 0.42) / 0.6), k); }
 
 // ------------------------------------------------------------------ intro
 // Cinemática por tomas: cada una con su cámara (paneo, zoom lento, sacudida), luz que titila y ceniza.
@@ -229,7 +228,7 @@ function armarTomas() {
   });
   // título
   // el título se forja desde la ceniza: las brasas suben y se juntan en las letras, con un golpe cuando cierran
-  T0(9, [], (t) => { sacudir = Math.max(0, sacudir - 0.02); if (t >= 3.6 && t - 1 / 60 < 3.6) { Sonido.efecto('trueno', { vol: 0.6 }); sacudir = 0.5; } ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); camara(() => { brasas(t, 50); lluviaCeniza(t, 0.6, 0.3); logo(W / 2, H / 2, 1, t, Math.min(64, W / 14), Math.min(1, t / 4.2)); }, 1); });
+  T0(9, [], (t) => { sacudir = Math.max(0, sacudir - 0.02); if (t >= 3.6 && t - 1 / 60 < 3.6) { Sonido.efecto('trueno', { vol: 0.6 }); sacudir = 0.5; } ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); camara(() => { brasas(t, 50); lluviaCeniza(t, 0.6, 0.3); tituloFijo(W / 2, H / 2, Math.min(W * 0.62, (H * 0.55) / 0.6), Math.min(1, t / 4.2)); }, 1); });
 }
 export function introDuracion() { armarTomas(); return TOMAS.reduce((s, x) => s + x.dur, 0); }
 /** Escribe la línea letra por letra. */
@@ -278,7 +277,8 @@ export function dibujarFondoMenu(t: number) {
 export function menuPrincipal(t: number, hayPartidas: boolean): string | null {
   // la portada de la Forja; mientras baja, el fondo de siempre
   const pt = dibujarPortada(performance.now() / 1000);
-  if (!pt) { dibujarFondoMenu(t); logo(W / 2, H * 0.3, 1, t, Math.min(64, W / 14)); }
+  // mientras la portada no llega: negro con brasas (nunca el título viejo)
+  if (!pt) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); brasas(t, 30); return null; }
   let y = pt ? pt.yBotones : H * 0.44; let r: string | null = null;
   const alfa = pt ? pt.botones : 1;
   if (alfa <= 0) return null;
@@ -356,8 +356,11 @@ export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
 export function pantallaCarga(k: number, msg: string, t: number) {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   brasas(t, 20);
-  logo(W / 2, H * 0.42, 0.85, t, Math.min(50, W / 18));
-  const w = Math.min(420, W - 80), x = W / 2 - w / 2, y = H * 0.6;
+  // pensado para pantallas bajas (teléfono apaisado): título arriba con su alto acotado y la barra abajo con margen
+  const th = Math.min(H * 0.5, 300), tw = Math.min(W * 0.62, th / 0.6);
+  const ty = Math.max(8, H * 0.06) + (tw * 0.6) / 2;
+  tituloFijo(W / 2, ty, tw, 0.9);
+  const w = Math.min(420, W - 80), x = W / 2 - w / 2, y = Math.max(ty + (tw * 0.6) / 2 + 16, H - 78);
   ctx.fillStyle = '#140f0b'; ctx.fillRect(x, y, w, 12); ctx.fillStyle = '#a0401a'; ctx.fillRect(x, y, w * k, 12);
   ctx.strokeStyle = '#5a4a30'; ctx.strokeRect(x + 0.5, y + 0.5, w, 12);
   texto(msg, W / 2, y + 34, { alin: 'center', tam: 13, color: '#a09070' });

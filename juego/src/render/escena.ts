@@ -352,6 +352,8 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (e.tipo === 'heroe') fs = framesHeroe(j, acc, e.dir);
   else if (e.tipo === 'npc') fs = cuadrosMonstruo(NPCS[(e as any).npc]?.sprite ?? (e as any).npc, 'quieto', e.dir);
   else {
+    // el monstruo se dibuja con su estado visible (con tiempo mínimo entre quieto y caminar)
+    const av = (m as any).accVis; if (av && (av === 'quieto' || av === 'caminar' || av === 'correr') && (acc === 'quieto' || acc === 'caminar' || acc === 'correr')) acc = av;
     if ((m as any).surgiendo > 0) acc = 'morir';
     if (acc === 'lanzar' && m.def.sprite.startsWith('jefe_') && ((m as any).fase ?? 0) >= 1) acc = 'especial' as any;
     fs = framesMonstruo(m.def.sprite, acc, e.dir);

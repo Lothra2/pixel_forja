@@ -30,7 +30,7 @@ const BAR_H = 120;
 const barraY = () => H - BAR_H;
 const barraX = () => Math.round((W - 800) / 2);
 const panelY = () => Math.max(0, Math.round((H - BAR_H - 432) / 2));
-const panelDer = () => W - 320;
+
 
 let cursoresC: Record<string, { c: HTMLCanvasElement; a: [number, number] }> | null = null;
 let orbes: Record<string, HTMLCanvasElement[]> | null = null;
@@ -121,6 +121,8 @@ export function iconoHab(hb: Habilidad, x: number, y: number, s: number, apagado
 
 // ------------------------------------------------------------------ barra de abajo
 export function dibujarBarra(j: Juego, t: number) {
+  // pantalla baja con un panel abierto: la barra no se dibuja (taparía el panel)
+  if (compacto() && (ui.izq || ui.der)) return;
   prepararHud();
   const h = j.heroe, bx = barraX(), by = barraY();
   ctx.fillStyle = '#080605'; ctx.fillRect(0, by + 56, W, BAR_H - 56);
@@ -182,6 +184,19 @@ export function dibujarBarra(j: Juego, t: number) {
   const za = Z('barra_aguante'); ctx.fillStyle = h.correr ? '#b0a040' : '#606060'; ctx.fillRect(bx + za.x + 1, by + za.y + 2, za.w - 2, za.h - 4);
   texto(h.correr ? T('Corriendo (R)', 'Running (R)') : T('Caminando (R)', 'Walking (R)'), bx + za.x + za.w / 2, by + za.y + 10, { alin: 'center', tam: 10, color: '#000', sombra: false });
   const zc = Z('caminar_correr'); if (dentro(bx + zc.x, by + zc.y, zc.w + za.w, zc.h) && E.clicIzq) { h.correr = !h.correr; E.clicIzq = false; }
+  // agresivo o pasivo (Z): espada roja que ataca sola lo que entra en su alcance, o escudo gris que espera órdenes
+  {
+    const ag = !!(h.d as any).agresivo, s = E.tactil ? 46 : 38, ax = Math.max(8, bx + 6), ay = by - s - 8;
+    const enc = dentro(ax, ay, s, s);
+    ctx.save(); ctx.globalAlpha = 0.9; ctx.fillStyle = ag ? '#3a0c08' : '#1a1a1e'; ctx.fillRect(ax, ay, s, s);
+    ctx.strokeStyle = enc ? '#ffe0a0' : ag ? '#c04020' : '#707078'; ctx.lineWidth = 2; ctx.strokeRect(ax + 1, ay + 1, s - 2, s - 2);
+    const cx = ax + s / 2, cy = ay + s / 2;
+    if (ag) { ctx.strokeStyle = '#ff4030'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx - s * 0.28, cy + s * 0.28); ctx.lineTo(cx + s * 0.26, cy - s * 0.26); ctx.stroke(); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - s * 0.3, cy + s * 0.08); ctx.lineTo(cx - s * 0.08, cy + s * 0.3); ctx.stroke(); }
+    else { ctx.fillStyle = '#9a9aa4'; ctx.beginPath(); ctx.moveTo(cx - s * 0.26, cy - s * 0.28); ctx.lineTo(cx + s * 0.26, cy - s * 0.28); ctx.lineTo(cx + s * 0.22, cy + s * 0.06); ctx.lineTo(cx, cy + s * 0.32); ctx.lineTo(cx - s * 0.22, cy + s * 0.06); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+    if (enc) { texto(ag ? T('Agresivo (Z): ataca solo lo que entra en su alcance', 'Aggressive (Z): attacks whatever comes in reach') : T('Pasivo (Z): no ataca sin tu orden', 'Passive (Z): does not attack without your order'), ax, ay - 8, { tam: 11, color: '#fff' }); ui.sobreUI = true; }
+    if (enc && E.clicIzq) { E.clicIzq = false; cambiarAgresivo(j); }
+  }
   // diez atajos de habilidades: clic o tecla (F1-F10, y también 5-9 y 0)
   while (h.d.atajos.length < 10) h.d.atajos.push(null);
   for (let i = 0; i < 10; i++) {
@@ -208,7 +223,8 @@ export function dibujarBarra(j: Juego, t: number) {
   if (h.d.puntosAtrib > 0) { const z = Z('boton_personaje'); ctx.fillStyle = Math.floor(t * 2) % 2 ? '#ffd060' : '#a07020'; ctx.fillRect(bx + z.x + z.w - 6, by + z.y, 6, 6); }
   if (h.d.puntosHab > 0) { const z = Z('boton_habilidades'); ctx.fillStyle = Math.floor(t * 2) % 2 ? '#ffd060' : '#a07020'; ctx.fillRect(bx + z.x + z.w - 6, by + z.y, 6, 6); }
   // táctil: botones grandes para la tablet
-  if (E.tactil) {
+  // los botones táctiles nunca encima de un panel abierto
+  if (E.tactil && !ui.izq && !ui.der) {
     const r = 34, bx2 = W - 70, by2 = by - 50;
     for (const [i, lado, txt] of [[0, 'der', T('Poder', 'Skill')], [1, 'izq', T('Golpe', 'Hit')]] as [number, 'izq' | 'der', string][]) {
       const cx = bx2 - i * 84, cy = by2 - i * 30;
@@ -360,14 +376,48 @@ export function dibujarMuerte() {
 }
 
 // ------------------------------------------------------------------ paneles
+/** Paneles en pantallas bajas (teléfono apaisado): sin la barra de abajo mientras hay un panel, y achicados si no caben. */
+export const compacto = () => H < PANEL_ALTO + BAR_H + 8;
+const PANEL_ALTO = 440;
+const escPanel = () => Math.min(1, (H - (compacto() ? 0 : BAR_H)) / PANEL_ALTO);
+/** Dónde queda cada panel en pantalla real (para clics fuera y para la barra). */
+export function rectPanel(lado: 'izq' | 'der'): [number, number, number, number] {
+  const k = escPanel(), w = 320 * k, h = 432 * k;
+  const y = compacto() ? Math.max(0, (H - h) / 2) : Math.max(0, (H - BAR_H - h) / 2);
+  return [lado === 'izq' ? 0 : W - w, y, w, h];
+}
+/** Cierre común de todo lo que abre un NPC o un objeto: tienda, diálogo, baúl, piedra de viaje, página, misiones, menú. */
+export function cerrarPaneles() {
+  ui.izq = ui.der = null; ui.mapa = false; ui.npc = null; ui.dialogoTexto = null;
+  const u = ui as any; u.oferta = null; u.eleccion = null; u.origen = null; u.paginaPanel = undefined;
+}
 export function dibujarPaneles(j: Juego, t: number) {
   ui.encima = null;
-  if (ui.izq) dibujarPanel(j, ui.izq, 0, t);
-  if (ui.der) dibujarPanel(j, ui.der, panelDer(), t);
+  const ex = E.x, ey = E.y, clic = E.clicIzq;
+  for (const lado of ['izq', 'der'] as const) {
+    const p = ui[lado]; if (!p) continue;
+    const [x0, y0, , ] = rectPanel(lado), k = escPanel();
+    // el panel se dibuja en su tamaño de siempre y se escala; la entrada se pasa al mismo espacio
+    ctx.save(); ctx.translate(x0, y0); ctx.scale(k, k);
+    E.x = (ex - x0) / k; E.y = (ey - y0) / k;
+    dibujarPanel(j, p, 0, t, 0);
+    // la X para cerrar, grande en táctil
+    const tx = E.tactil ? 46 : 30;
+    if (ui[lado] === p && p !== 'elegirHab') {
+      const bx = 320 - tx - 4, by = 4, enc = dentro(bx, by, tx, tx);
+      ctx.fillStyle = enc ? 'rgba(120,40,20,0.9)' : 'rgba(20,14,10,0.85)'; ctx.fillRect(bx, by, tx, tx);
+      ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.strokeRect(bx + 1, by + 1, tx - 2, tx - 2);
+      ctx.strokeStyle = '#e8d0a0'; ctx.lineWidth = 3; const m = tx * 0.3; ctx.beginPath(); ctx.moveTo(bx + m, by + m); ctx.lineTo(bx + tx - m, by + tx - m); ctx.moveTo(bx + tx - m, by + m); ctx.lineTo(bx + m, by + tx - m); ctx.stroke();
+      if (E.clicIzq && enc) { E.clicIzq = false; if (lado === 'izq' && (p === 'dialogo' || p === 'tienda' || p === 'cofre' || p === 'viaje')) cerrarPaneles(); else ui[lado] = null; if (!ui.izq && !ui.der) (ui as any).origen = null; Sonido.efecto('click'); }
+    }
+    ctx.restore();
+    E.x = ex; E.y = ey;
+  }
   if (ui.izq || ui.der) {
-    const px = ui.izq ? 320 : 0, px2 = ui.der ? W - 320 : W;
-    if ((ui.izq && E.x < 320) || (ui.der && E.x >= W - 320)) if (E.y < H - BAR_H) ui.sobreUI = true;
-    void px; void px2;
+    const dentroDe = (lado: 'izq' | 'der') => { if (!ui[lado]) return false; const [x, y, w, h] = rectPanel(lado); return ex >= x && ex < x + w && ey >= y && ey < y + h; };
+    if (dentroDe('izq') || dentroDe('der')) ui.sobreUI = true;
+    // en táctil, tocar fuera de los paneles los cierra (y ese toque no camina)
+    else if (E.tactil && clic && E.clicIzq && !ui.mano) { E.clicIzq = false; ui.sobreUI = true; cerrarPaneles(); }
   }
   if (ui.confirmar) {
     const w = 360, h = 110, x = W / 2 - w / 2, y = H / 2 - h / 2 - 40;
@@ -377,8 +427,7 @@ export function dibujarPaneles(j: Juego, t: number) {
     ui.sobreUI = true;
   }
 }
-function dibujarPanel(j: Juego, p: PanelId, x: number, t: number) {
-  const y = panelY();
+function dibujarPanel(j: Juego, p: PanelId, x: number, t: number, y = panelY()) {
   switch (p) {
     case 'inv': return panelInv(j, x, y, t);
     case 'pers': return panelPers(j, x, y);
@@ -966,6 +1015,7 @@ function panelTienda(j: Juego, x: number, y: number, t: number) {
 
 // ---------------- diálogo con la gente del campamento
 export function hablarCon(j: Juego, id: string) {
+  { const n = j.npcs.find((q) => q.npc === id); (ui as any).origen = n ? [n.x, n.y] : [j.heroe.x, j.heroe.y]; }
   ui.npc = id; ui.izq = 'dialogo'; ui.der = null; (ui as any).eleccion = null; (ui as any).oferta = null;
   const d = j.heroe.d;
   ui.dialogoTexto = TT(saludoDe(id, d));
@@ -1166,3 +1216,10 @@ export function dibujarMapa(j: Juego, grande: boolean) {
 }
 const dist2 = (a: number, b: number, c: number, d: number) => (a - c) ** 2 + (b - d) ** 2;
 void entero; void BASES; void CASILLAS;
+
+/** Cambia entre agresivo y pasivo (se guarda en el héroe) y avisa. */
+export function cambiarAgresivo(j: Juego) {
+  const d = j.heroe.d as any; d.agresivo = !d.agresivo;
+  msg(j, d.agresivo ? ['Agresivo: atacas solo a lo que entra en tu alcance.', 'Aggressive: you attack whatever comes in reach.'] : ['Pasivo: no atacas sin una orden.', 'Passive: you do not attack without an order.'], d.agresivo ? '#ff8060' : '#a0a0b0');
+  Sonido.efecto('click');
+}
