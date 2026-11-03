@@ -64,7 +64,9 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - Nunca se ve el título viejo: la portada y los títulos se precargan antes de empezar.
   - Los nombres de las salidas siempre se leen enteros y en táctil nunca caen sobre los botones Golpe y Poder.
   - En el teléfono vertical el juego ahora llena la pantalla de arriba abajo, y sale un aviso para girarlo porque se juega mejor en horizontal. Tocando el aviso se sigue en vertical.
-  - Antes de publicar se corre una prueba que abre y cierra cada panel de las cuatro maneras en 844x390, 390x844, 1180x820 y 1280x720.
+  - Los mensajes de abajo a la izquierda van encima del botón agresivo, y ese botón se esconde mientras hay un panel a la izquierda.
+  - En táctil la tienda explica cómo se usa con el dedo: tocar para comprar, y tocar algo de la bolsa y luego la tienda para vender.
+  - Antes de publicar se corre una prueba que abre y cierra cada panel de las cuatro maneras en 844x390, 390x844, 1180x820 y 1280x720, y además revisa que Golpe, Poder, la barra, el botón agresivo, los mensajes y los nombres de las salidas no se crucen entre sí ni con un panel (juego/herramientas/auditoria_paneles.cjs).
 - **Agresivo o pasivo (Z o el botón sobre la barra).** En agresivo, quieto y sin órdenes, el héroe le pega solo al enemigo más cercano dentro de su alcance, sin perseguirlo ni cortar tus movimientos. En pasivo no ataca nada sin tu orden. Se recuerda por héroe.
 - **Monstruos que caminan mejor.** No cambian de dirección por cada zigzag del camino y no alternan entre quieto y caminar de un cuadro a otro.
 - **Kit de gore y horror de la Forja.**
