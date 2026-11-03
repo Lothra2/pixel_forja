@@ -367,15 +367,18 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       const una = arma !== 'dos';
       const ag = una ? -5.5 : -7, agArriba = una ? -6 : -11;
       p.agarreI = ag; p.pegaI = 1; p.poloI = [-0.3, -1, -0.35];
-      // en reposo: cuánto se hunde, se encorva y levanta la cara
-      const [b0, t0, c0] = una ? [2.6, 8, -10] : [4, 24, -16];
+      // en reposo: cuánto se hunde, se encorva y levanta la cara. El puño derecho va bien adelante y al costado derecho
+      // (apoyado, en guardia y al clavar el hacha): el cabo del mango, detrás del puño, nunca queda delante de la
+      // entrepierna, ni en el cuerpo ni en la pantalla ('so' y 's'); el cuerpo se encorva lo justo para que la izquierda
+      // llegue a su lugar en el mango
+      const [b0, t0, c0] = una ? [2.6, 8, -10] : [7, 34, -20];
       const apoyado: Vals = una
-        ? { agarreI: ag, bajar: b0, torso: t0, ladeo: -1, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [9, 5.5, 34], armaD: [58, -72], pisoArma: 0 }
-        : { agarreI: ag, bajar: b0, torso: t0, ladeo: -2, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [12, 0, 32], armaD: [160, -4], pisoArma: 1 };
+        ? { agarreI: ag, bajar: b0, torso: t0, ladeo: -1, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [16, 3, 36], armaD: [70, -80], pisoArma: 0 }
+        : { agarreI: ag, bajar: b0, torso: t0, ladeo: -2, giroTorso: 4, giroCadera: 2, lateral: -0.3, ladeoCadera: -1, cabeza: c0, giroCabeza: -4, ladeoCabeza: 0, manoD: [17, 4, 32], armaD: [160, -4], pisoArma: 1 };
       // el hacha sube cruzada delante del pecho (la cabeza arriba a la izquierda, la derecha en la cadera) y de ahí se alza
       // atravesada sobre la cabeza, los brazos en V y los puños abiertos en el mango (la cabeza del hacha a la izquierda,
       // un poco más alta): los puños quedan por encima de la coronilla, nunca delante de la cara
-      const sube: Vals = { agarreI: ag, manoD: [8, una ? 7 : 6.5, una ? 36 : 38], armaD: [una ? 62 : 50, -72] };
+      const sube: Vals = { agarreI: ag, manoD: [una ? 16 : 20, una ? 3 : 6.5, una ? 36 : 38], armaD: [una ? 62 : 50, -72] };
       const arriba: Vals = { agarreI: agArriba, manoD: [-4.5, 6.5, 66], armaD: [76, -90] };
       const cumbre: Vals = { agarreI: agArriba, manoD: [-5, 6.5, 66.5], armaD: [72, -90] };
       const cl: Clave[] = [
@@ -386,11 +389,11 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
         // arriba ruge al cielo debajo del hacha, el cuerpo echado atrás y el pecho inflado
         K(0.37, { bajar: 1, torso: -10, ladeo: 2, giroTorso: 0, lateral: 0.6, ladeoCadera: 2, respira: 1, hombros: [2.6, 2.6], cabeza: -30, giroCabeza: 0, ladeoCabeza: 3, ...arriba }),
         K(0.5, { bajar: 0.8, torso: -13, cabeza: -34, ...cumbre }, true),
-        K(0.56, { agarreI: ag, bajar: una ? 7 : 5.5, torso: una ? 32 : 26, ladeo: -3, giroTorso: 6, giroCadera: 4, lateral: -0.8, ladeoCadera: -2, respira: 0.3, hombros: [1, 1], cabeza: -12, ladeoCabeza: -1, manoD: [13, 1.5, 30], armaD: [150, -4], pisoArma: 1 }),
-        K(0.64, { bajar: una ? 6.5 : 5, torso: una ? 33 : 28, cabeza: -12, manoD: [11, 1.5, 31], armaD: [158, -4], respira: 0.1 }, true),
+        K(0.56, { agarreI: ag, bajar: una ? 10 : 9, torso: una ? 40 : 36, ladeo: -3, giroTorso: 6, giroCadera: 4, lateral: -0.8, ladeoCadera: -2, respira: 0.3, hombros: [1, 1], cabeza: -12, ladeoCabeza: -1, manoD: [una ? 16 : 19, una ? 3 : 6, 30], armaD: [150, -4], pisoArma: 1 }),
+        K(0.64, { bajar: una ? 9.5 : 8.5, torso: una ? 41.5 : 37.5, cabeza: -12, manoD: [una ? 14 : 17, una ? 3 : 6, 31], armaD: [158, -4], respira: 0.1 }, true),
       ];
       // el hacha corta sale del piso y vuelve a la guardia, cruzada delante del cuerpo
-      if (una) cl.push(K(0.72, { bajar: 4.5, torso: 20, giroTorso: 5, cabeza: -10, manoD: [11, 4, 30], armaD: [100, -45], pisoArma: 0 }));
+      if (una) cl.push(K(0.72, { bajar: 4.5, torso: 20, giroTorso: 5, cabeza: -10, manoD: [16, 5, 31], armaD: [100, -45], pisoArma: 0 }));
       cl.push(K(0.8, { ...apoyado, respira: 0.7, hombros: [2, 1.8] }), K(0.9, { respira: 0.1, hombros: [1.4, 1.2], torso: t0 + 1 }));
       actuar(p, cl, u, { lagCab: 0.035, capa: 1 });
       break;
@@ -450,8 +453,9 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       actuar(p, [
         K(0, { bajar: 1.2, torso: 3, ladeo: 0, giroTorso: 16, giroCadera: 8, lateral: 0.2, ladeoCadera: 0, manoI: [11, -7, 31], manoD: [8, -4.5, 32], codoD: [-0.35, 0.8, -0.5], cabeza: 6, giroCabeza: -12, ladeoCabeza: 0, respira: 0.2, hombros: [0, 0] }),
         K(0.14, { bajar: 2, torso: 5, giroTorso: 24, giroCadera: 12, manoI: [15, -5, 38], manoD: [12, -3, 39], cabeza: 1, giroCabeza: -20, respira: 0.7 }, true),
-        K(0.34, { bajar: 2.5, torso: -1, ladeo: -2.5, giroTorso: 54, giroCadera: 26, lateral: 0.9, ladeoCadera: 2, manoI: [24.5, 0.5, 48.5], manoD: [1.5, 2.2, 50], codoD: [-1, 0.45, 0.5], cabeza: 0, giroCabeza: -50, ladeoCabeza: -4, respira: 1, hombros: [0.4, 0.8] }),
-        K(0.48, { manoD: [1, 2.3, 50], respira: 0.85 }, true),
+        K(0.34, { bajar: 2.5, torso: -1, ladeo: -2.5, giroTorso: 54, giroCadera: 26, lateral: 0.9, ladeoCadera: 2, manoI: [24.5, 0.5, 48.5], manoD: [1, 5.5, 49], codoD: [-1, 0.45, 0.5], cabeza: 0, giroCabeza: -50, ladeoCabeza: -4, respira: 1, hombros: [0.4, 0.8] }),
+        // la cuerda se tensa hasta la quijada, por fuera de la cara (la mano no se mete en la cabeza)
+        K(0.48, { manoD: [0.5, 5.6, 49], respira: 0.85 }, true),
         K(0.56, { torso: -2.5, manoD: [-4.5, 3.6, 50.6], manoI: [26, 0.3, 49], cabeza: -1, respira: 0.2 }),
         K(0.66, { manoD: [-5.5, 4.4, 50], manoI: [25.5, 0.2, 48.6], respira: 0.1 }, true),
         K(0.8, { bajar: 1.6, torso: 2, ladeo: -1, giroTorso: 32, giroCadera: 16, lateral: 0.4, ladeoCadera: 1, manoI: [16, -5, 38], manoD: [-3, 6, 56], codoD: [-0.2, 0.6, 0.8], cabeza: 2, giroCabeza: -26, ladeoCabeza: 0, hombros: [0.6, 0.3] }),
@@ -480,9 +484,13 @@ function presentar(p: Pose, u: number, arma: ArmaPose, estilo: Presentacion, man
       if (u > 0.55 && u < 0.8 && p.manoI) { const tr = Math.sin(u * TAU * 7) * 0.5; p.manoI = [p.manoI[0] + tr * 0.4, p.manoI[1] + tr, p.manoI[2] + tr * 0.6]; }
       if (dosM && p.manoI) {
         // con la guadaña (a dos manos) la invocación la hace el arma: sube con las dos manos en el asta, la hoja arriba
-        const g = p.manoI;
-        p.manoD = [g[0] - 1, 2, Math.max(26, g[2] - 3)]; p.armaD = [lerp(70, 12, clamp((g[2] - 5) / 55, 0, 1)), 10];
-        delete p.manoI; delete p.codoI; delete p.codoD; p.agarreI = 7; p.pegaI = 1;
+        // la derecha cierra en el cabo, al costado derecho de la cadera, y el asta sube cruzada hacia la izquierda con la
+        // izquierda más arriba, del lado de la hoja: el cabo (largo) baja por fuera del muslo derecho, nunca entre las
+        // piernas. Al invocar alza la guadaña cruzada delante del pecho, la hoja bien alta a la izquierda: las manos no
+        // pasan de los hombros (ninguna cruza la cara)
+        const g = p.manoI, k = clamp((g[2] - 8) / 50, 0, 1), ks = k * k * (3 - 2 * k);
+        p.manoD = [lerp(g[0] - 2, 10, ks), 8, lerp(Math.max(30, g[2] - 2), 40, ks)]; p.armaD = [lerp(48, 44, ks), lerp(-40, -62, ks)];
+        delete p.manoI; delete p.codoI; delete p.codoD; p.agarreI = lerp(-8, -9, ks); p.pegaI = 1; p.poloI = [-0.3, -1, -0.35];
       } else if (mano === 'escudo' && p.manoI) {
         // con escudo en la izquierda: la garra es la derecha (la daga en puño invertido) y el escudo queda abajo, al costado
         const g = p.manoI, cd = p.codoI ?? [0.2, -1, 0.5];

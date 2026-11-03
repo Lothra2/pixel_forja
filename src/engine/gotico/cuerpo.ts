@@ -341,11 +341,12 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
       rodl = [Math.sin(a1) * L1, cad[1], zc - Math.cos(a1) * L1];
       tob = [rodl[0] + Math.sin(a2) * L2, rodl[1], rodl[2] - Math.cos(a2) * L2];
     }
-    // el pie: punta hacia adelante (abierta con pieGiro); en puntillas el talón sube y la punta queda en el piso
+    // el pie: punta hacia adelante (abierta con pieGiro); en puntillas el talón sube y la punta queda en el piso, a la
+    // misma altura que la de un pie plantado (no se hunde: el pie gira sobre la punta)
     const pg = rad(s * (P.pieGiro?.[i] ?? 0)), fd: V3 = [Math.cos(pg), Math.sin(pg), 0];
     const pz = Math.max(1.1 * S, tob[2] - 1.6 * S), tip = plant ? P.puntillas?.[i] ?? 0 : 0;
     const talon: V3 = [tob[0] - fd[0] * 1.2 * S, tob[1] - fd[1] * 1.2 * S, Math.max(1.1 * S, tob[2] - 2.2 * S)];
-    const punta: V3 = [tob[0] + fd[0] * 4.6 * S * (1 - tip * 0.25), tob[1] * 1.04 + fd[1] * 4.6 * S, tip > 0 ? Math.max(0.6 * S, pz - 0.2 * S - tip * 2.2 * S) : pz - 0.2 * S];
+    const punta: V3 = [tob[0] + fd[0] * 4.6 * S * (1 - tip * 0.25), tob[1] * 1.04 + fd[1] * 4.6 * S, tip > 0 ? Math.max(0.9 * S, pz - 0.2 * S - tip * 2.2 * S) : pz - 0.2 * S];
     piernas.push({ s, cad: Wc(...cad), rod: Wc(...rodl), tob: Wc(...tob), talon: Wc(...talon), punta: Wc(...punta) });
   });
   // ---- brazos: por ángulos (con giro del brazo) o con la mano a un punto (cinemática inversa)
