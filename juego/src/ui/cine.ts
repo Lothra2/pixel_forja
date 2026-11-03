@@ -127,7 +127,10 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   const ox = W / 2 - (base.w * esc) / 2 + sx, oy = H / 2 - (base.h * esc) / 2 + sy;
   // fundidos
   const fe = p.fundido?.entra ?? 0.8, fs = p.fundido?.sale ?? 0.8;
-  const alfaPlano = Math.min(1, fe > 0 ? tl / fe : 1, fs > 0 ? Math.max(0, (p.dur - tl) / fs) : 1);
+  const kEntra = fe > 0 ? Math.min(1, tl / fe) : 1, kSale = fs > 0 ? Math.min(1, Math.max(0, (p.dur - tl) / fs)) : 1;
+  // un fundido de color (blanco o rojo) no oscurece las capas: las tapa con su color
+  const colorEn = p.fundido?.color_entra, colorSa = p.fundido?.color_sale;
+  const alfaPlano = Math.min(colorEn ? 1 : kEntra, colorSa ? 1 : kSale);
   ctx.save();
   for (const capa of p.capas) {
     if ((capa.si && !marcas.has(capa.si)) || (capa.no && marcas.has(capa.no))) continue;
@@ -135,28 +138,35 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
     const cw = capa.w ?? geo.w, ch = capa.h ?? geo.h, an = capa.anim ?? {};
     let alfa = capa.alfa ?? 1, dx = 0, dy = 0;
     if (an.tipo === 'deriva') dx = (((tl * an.px_por_segundo) % cw) + cw) % cw;
-    if (an.tipo === 'titilar') alfa *= 0.7 + 0.3 * (0.5 + 0.25 * Math.sin(tl * 5.3 * 6.28) + 0.25 * Math.sin(tl * 8.9 * 6.28 + 1));
-    if (an.tipo === 'latir') alfa *= 0.7 + 0.3 * (0.5 + 0.5 * Math.sin((tl / (an.periodo_s ?? 2)) * 6.28));
+    const [a0, a1] = an.alfa ?? [0.7, 1];
+    if (an.tipo === 'titilar') { const hz = (an.hz ?? 7) / 7; alfa *= a0 + (a1 - a0) * (0.5 + 0.25 * Math.sin(tl * 5.3 * hz * 6.28) + 0.25 * Math.sin(tl * 8.9 * hz * 6.28 + 1)); }
+    if (an.tipo === 'latir') alfa *= a0 + (a1 - a0) * (0.5 + 0.5 * Math.sin((tl / (an.periodo_s ?? 2)) * 6.28));
     if (an.tipo === 'flotar') dy = Math.sin((tl / (an.periodo_s ?? 4)) * 6.28) * (an.amplitud_px ?? 6);
     if (an.tipo === 'aparecer') alfa *= Math.min(1, Math.max(0, (tl - (an.desde_s ?? 0)) / (an.dur_s ?? 1)));
     const x = ox + ((capa.x ?? 0) - geo.margen_x - cx * capa.paralaje + dx) * esc, y = oy + ((capa.y ?? 0) - geo.margen_y - cy * capa.paralaje + dy) * esc;
     ctx.globalAlpha = alfa * alfaPlano; ctx.globalCompositeOperation = capa.mezcla === 'sumar' ? 'lighter' : 'source-over';
     if (an.tipo === 'cuadros') {
-      const n = Math.floor(tl * (an.fps ?? 12)) % an.cuadros, col = n % an.columnas, fila = Math.floor(n / an.columnas);
-      ctx.drawImage(im, col * an.w, fila * an.h, an.w, an.h, x, y, an.w * esc, an.h * esc);
+      // la celda de la hoja mide an.w x an.h; en pantalla se dibuja del tamaño de la capa
+      const n = (Math.floor(tl * (an.fps ?? 12)) + (an.desfase ?? 0)) % an.cuadros, col = n % an.columnas, fila = Math.floor(n / an.columnas);
+      ctx.drawImage(im, col * an.w, fila * an.h, an.w, an.h, x, y, (capa.w ?? an.w) * esc, (capa.h ?? an.h) * esc);
     } else {
       ctx.drawImage(im, x, y, cw * esc, ch * esc);
       if (an.enrollar || an.tipo === 'deriva') ctx.drawImage(im, x - cw * esc, y, cw * esc, ch * esc);
     }
   }
   ctx.restore();
+  const tapa = (c: string, k: number) => { if (k >= 1) return; ctx.save(); ctx.globalAlpha = 1 - k; ctx.fillStyle = c === 'rojo' ? '#8a0606' : c === 'blanco' ? '#fff6e8' : '#000'; ctx.fillRect(0, 0, W, H); ctx.restore(); };
+  if (colorEn) tapa(colorEn, kEntra);
+  if (colorSa) tapa(colorSa, kSale);
   if (p.particulas) particulas(p.particulas, dt, alfaPlano);
   // franjas de cine y narración en la zona de abajo
   ctx.save(); ctx.fillStyle = '#000'; const banda = H * 0.08; ctx.fillRect(0, 0, W, banda); ctx.fillRect(0, H - banda, W, banda); ctx.restore();
   if (p.narracion) {
-    const s = IDI ? p.narracion.en : p.narracion.es, tn = Math.max(15, Math.round(H / 30));
+    let nar = p.narracion;
+    for (const [bandera, alt] of Object.entries(p.narracion_si ?? {})) if (marcas.has(bandera)) nar = alt;
+    const s = IDI ? nar.en : nar.es, tn = Math.max(15, Math.round(H / 30));
     const ln = envolver(s, W * 0.7, tn).slice(0, 3);
-    const kt = Math.min(1, Math.max(0, (tl - 0.6) / 0.9), Math.max(0, (p.dur - tl) / 0.7));
+    const kt = Math.min(1, Math.max(0, (tl - 0.6) / 0.9), Math.max(0, (p.dur - tl) / 0.7)) * Math.min(kEntra, kSale) ** 0.5;
     ctx.save(); ctx.globalAlpha = kt;
     const y0 = H - banda - 18 - (ln.length - 1) * tn * 1.35;
     const g = ctx.createLinearGradient(0, y0 - tn * 2, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.75)');
