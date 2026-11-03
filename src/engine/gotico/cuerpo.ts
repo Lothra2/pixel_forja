@@ -1245,11 +1245,13 @@ function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Ac
   const cs: Comp[] = [];
   const z0 = e.zc + 2.5 * S, z1 = Math.max(1.2 * S, e.zc + 2.5 * S - largo * S), Pv = e.Pv ?? e.W;
   cs.push(hueso(Pv(0, 0, z0), Pv(0.2 * S, 0, (z0 + z1) / 2), 4.6 * A, 4.4 * A * vuelo, { mat }));
+  // las túnicas largas y los vestidos (sin calzas debajo) cierran la tela; los faldones cortos van sobre calzas
+  const larga = largo >= 20;
   // un tubo de tela por la pierna: si el ruedo baja de la rodilla pasa por ella (con la rodilla doblada adelante, el
   // tubo recto de la cadera al ruedo la dejaba asomar por delante de la tela)
   const tubo = (cad: V3, rod: V3, ruedo: V3): Comp[] => {
     const r0 = 4.0 * A, r1 = 3.6 * A * vuelo;
-    if (ruedo[2] >= rod[2] + 1.5 * S) return [hueso(cad, ruedo, r0, r1, { mat })];
+    if (!larga || ruedo[2] >= rod[2] + 1.5 * S) return [hueso(cad, ruedo, r0, r1, { mat })];
     const l1 = len(sub(rod, cad)), l2 = len(sub(ruedo, rod)), rk = r0 + (r1 - r0) * (l1 / Math.max(0.01, l1 + l2));
     return [hueso(cad, rod, r0, rk, { mat }), hueso(rod, ruedo, rk, r1, { mat })];
   };
@@ -1262,11 +1264,15 @@ function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Ac
     ruedos.push(ruedo);
     cs.push(...tubo(p.cad, p.rod, ruedo));
   }
-  // la tela entre las piernas: paños del cinto al ruedo que cierran el hueco entre los dos tubos (si no, al dar el paso
-  // o al abrir las piernas asomaban los muslos desnudos por la abertura de la túnica o del vestido)
-  if (ruedos.length === 2) for (const k of [0.25, 0.5, 0.75]) {
+  // la tela entre las piernas: travesaños de un tubo al otro, más finos que los tubos, que cierran el hueco sin inflar
+  // el ruedo (si no, al dar el paso o al abrir las piernas asomaban los muslos desnudos por la abertura de la túnica)
+  if (larga && ruedos.length === 2) {
     const [p0, p1] = e.piernas;
-    cs.push(...tubo(mez(p0.cad, p1.cad, k), mez(p0.rod, p1.rod, k), mez(ruedos[0], ruedos[1], k)));
+    const sobre = (p: Pierna, ruedo: V3, t: number): V3 => (ruedo[2] >= p.rod[2] + 1.5 * S ? mez(p.cad, ruedo, t) : t < 0.5 ? mez(p.cad, p.rod, t * 2) : mez(p.rod, ruedo, t * 2 - 1));
+    for (const t of [0.3, 0.55, 0.78, 1]) {
+      const r = (2.0 + 1.4 * t) * A * Math.sqrt(vuelo);
+      cs.push(hueso(sobre(p0, ruedos[0], t), sobre(p1, ruedos[1], t), r, r, { mat }));
+    }
   }
   // la tela de atrás se arrastra con la inercia del cuerpo (capa de la pose) o se mece al caminar
   const tela = e.pose?.capa, vaiven = tela ? (tela[0] - 0.8) * 0.6 : acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.5 : 0, lado = tela ? tela[1] * 0.6 : 0;
