@@ -59,6 +59,7 @@ const RES = [[844, 390, true, 'iphone_apaisado'], [390, 844, true, 'iphone_verti
       pers: () => p.evaluate(() => { window.__U.ui.izq = 'pers'; }),
       habs: () => p.evaluate(() => { window.__U.ui.izq = 'habs'; }),
       misiones: () => p.evaluate(() => { window.__U.ui.izq = 'misiones'; }),
+      codice: () => p.evaluate(() => { window.__U.ui.izq = 'codice'; }),
       dialogo: () => p.evaluate(() => { const j = window.__juego(); const n = j.npcs[0]; j.heroe.x = n.x + 1; j.heroe.y = n.y + 1; window.__U.hablarCon(j, n.npc); }),
       tienda: () => p.evaluate(() => { const j = window.__juego(); const n = j.npcs.find((q) => q.npc === 'brannoc') ?? j.npcs[0]; j.heroe.x = n.x + 1; j.heroe.y = n.y + 1; window.__U.hablarCon(j, n.npc); window.__U.abrirTienda(j, 'herrero'); }),
       baul: () => p.evaluate(() => { const j = window.__juego(); const o = j.zona.objetos.find((o) => o.tag === 'baul'); j.heroe.x = o.cx + 1.5; j.heroe.y = o.cy + 1.5; window.__usar(o); }),

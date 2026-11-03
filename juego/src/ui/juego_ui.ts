@@ -6,9 +6,10 @@ import { aLoot, arma3dDe } from './loot';
 import { texto, T, TT, IDI, marco, titulo, boton, dentro, icono, iconoThor, lineasObjeto, tooltip, cacheRaster, rasterACanvas, envolver, ancho, TITULO } from './comun';
 import { CLASES, HABILIDADES, habilidadesDe, ATAQUE, TIERS, ESCALA_HECHIZOS, type Habilidad } from '../datos/clases';
 import { NPCS } from '../datos/npcs';
-import { MISIONES, ZONAS, PUEBLO_DE, daMision, type Mision, type Premio } from '../mundo/actos';
+import { MISIONES, ZONAS, PUEBLO_DE, type Mision, type Premio } from '../mundo/actos';
 import { MONSTRUOS } from '../datos/monstruos';
-import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist, avanceDe, decidir, finalCompleto } from '../juego/historia';
+import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist, avanceDe, decidir, finalCompleto, quienDa } from '../juego/historia';
+import { panelCodice } from './codice';
 import { EPILOGOS } from '../mundo/decisiones';
 import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, crearUnicoId, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
@@ -19,7 +20,7 @@ import { cuadrosMonstruo, dibujar as dibujarCuadro } from '../motor/assets';
 import { Sonido } from '../audio/sonido';
 import { R, entero } from '../nucleo/azar';
 
-export type PanelId = 'inv' | 'pers' | 'habs' | 'cofre' | 'tienda' | 'dialogo' | 'viaje' | 'misiones' | 'menu' | 'elegirHab' | null;
+export type PanelId = 'inv' | 'pers' | 'habs' | 'cofre' | 'tienda' | 'dialogo' | 'viaje' | 'misiones' | 'codice' | 'menu' | 'elegirHab' | null;
 export const ui = {
   izq: null as PanelId, der: null as PanelId, mapa: false, mano: null as Objeto | null,
   npc: null as string | null, dialogoTexto: null as string | null, tienda: [] as EnBolsa[], tiendaTipo: 'herrero' as 'herrero' | 'curandera' | 'vidente', pestana: 0,
@@ -452,6 +453,7 @@ function dibujarPanel(j: Juego, p: PanelId, x: number, t: number, y = panelY()) 
     case 'dialogo': return panelDialogo(j, x, y);
     case 'viaje': return panelViaje(j, x, y);
     case 'misiones': return panelMisiones(j, x, y);
+    case 'codice': return panelCodice(j, x, y);
     case 'menu': return panelMenu(j, x, y);
     case 'pagina' as any: { marco(x, y, 320, 432); titulo((ui as any).paginaPanel ?? T('Página arrancada', 'Torn page'), x, y, 320); texto((ui as any).paginaTitulo ?? '', x + 160, y + 52, { alin: 'center', tam: 12, color: '#c0a070' }); texto(`${(ui as any).paginaN} / ${(ui as any).paginaTotal ?? 9}`, x + 160, y + 68, { alin: 'center', tam: 11, color: '#806a50' }); envolver(ui.dialogoTexto ?? '', 270, 15).forEach((l, i) => texto(l, x + 25, y + 90 + i * 22, { tam: 15, color: '#d8c49a', fuente: TITULO })); if (boton(T('Cerrar', 'Close'), x + 120, y + 380, 80, 28, { tam: 13 })) { ui.izq = null; E.clicIzq = false; } return; }
   }
@@ -1173,7 +1175,7 @@ function panelMisiones(j: Juego, x: number, y: number) {
     else if (yy === y + 86) { texto(T('Historia', 'Story'), x + 18, yy, { tam: 11, color: '#806a50' }); yy += 14; }
     const e = d.misiones[m.id] ?? 0;
     const col = e === 3 ? '#707070' : e === 2 ? '#80ff80' : e === 1 ? '#f0d080' : '#5a5040';
-    const quien = TT(NPCS[daMision(m)]?.nombre ?? ['', '']);
+    const quien = TT(NPCS[quienDa(m, d)]?.nombre ?? ['', '']);
     texto(TT(m.nombre), x + 18, yy, { color: col, tam: 13 });
     const est = e === 3 ? T('Terminada', 'Completed') : e === 2 ? `${T('Vuelve con', 'Return to')} ${quien}` : e === 1 ? objetivoTxt(m, d) : `${T('Habla con', 'Speak with')} ${quien}`;
     texto(est.length > 52 ? est.slice(0, 50) + '…' : est, x + 30, yy + 14, { tam: 10, color: '#a09070' });
@@ -1185,13 +1187,14 @@ function panelMisiones(j: Juego, x: number, y: number) {
 function panelMenu(j: Juego, x: number, y: number) {
   marco(x, y, 320, 432); titulo(T('Menú', 'Menu'), x, y, 320);
   let yy = y + 80;
-  const op = (s: string, f: () => void) => { if (boton(s, x + 40, yy, 240, 34)) { E.clicIzq = false; f(); } yy += 46; };
+  const op = (s: string, f: () => void) => { if (boton(s, x + 40, yy, 240, 32)) { E.clicIzq = false; f(); } yy += 39; };
   op(T('Volver al juego', 'Return to game'), () => { ui.izq = null; });
   op(T('Opciones', 'Options'), () => j.eventos.push({ tipo: 'opciones' }));
   op(T('Misiones (Q)', 'Quests (Q)'), () => { ui.izq = 'misiones'; });
+  op(T('Códice (J)', 'Codex (J)'), () => { ui.izq = 'codice'; });
   op(T('Guardar y salir', 'Save and quit'), () => j.eventos.push({ tipo: 'salir' }));
   texto(T('Teclas: clic izq. caminar/atacar · clic der. habilidad · 1-4 pociones · 5-0 atajos · I inventario · C personaje · T habilidades · Q misiones · Tab mapa · Alt botín · R correr · Shift atacar sin moverse · B portal', 'Keys: left click walk/attack · right click skill · 1-4 potions · I inventory · C character · T skills · Q quests · Tab map · Alt loot · R run · Shift attack in place · B portal'), x + 18, y + 330, { tam: 1 });
-  envolver(T('Clic izquierdo camina y ataca · clic derecho usa la habilidad · 1-4 pociones · I inventario · C personaje · T habilidades · Q misiones · Tab mapa · Alt muestra el botín · R correr o caminar · Shift ataca sin moverte · B portal al campamento', 'Left click walks and attacks · right click uses the skill · 1-4 potions · I inventory · C character · T skills · Q quests · Tab map · Alt shows loot · R run or walk · Shift attacks in place · B portal to camp'), 280, 11).forEach((l, i) => texto(l, x + 20, y + 290 + i * 14, { tam: 11, color: '#a09070' }));
+  envolver(T('Clic izquierdo camina y ataca · clic derecho usa la habilidad · 1-4 pociones · I inventario · C personaje · T habilidades · Q misiones · J códice · Tab mapa · Alt muestra el botín · R correr o caminar · Shift ataca sin moverte · B portal al campamento', 'Left click walks and attacks · right click uses the skill · 1-4 potions · I inventory · C character · T skills · Q quests · J codex · Tab map · Alt shows loot · R run or walk · Shift attacks in place · B portal to camp'), 280, 11).forEach((l, i) => texto(l, x + 20, y + 290 + i * 14, { tam: 11, color: '#a09070' }));
 }
 
 // ------------------------------------------------------------------ mapa (Tab) y minimapa

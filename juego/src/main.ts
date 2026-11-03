@@ -206,6 +206,7 @@ function controlar(jj: Juego, dt: number) {
   if (pulso('c')) alternar('pers', 'izq');
   if (pulso('t') || pulso('s') && false) alternar('habs', 'der');
   if (pulso('q')) alternar('misiones', 'izq');
+  if (pulso('j')) alternar('codice', 'izq');
   if (pulso('Tab') || pulso('m')) ui.mapa = !ui.mapa;
   if (pulso('r')) h.correr = !h.correr;
   if (pulso('z')) cambiarAgresivo(jj);
@@ -407,6 +408,8 @@ function usarObjeto(jj: Juego, o: ObjZ) {
 
 // ------------------------------------------------------------------ cinemáticas de la historia
 const REV_LARGO = 28;
+/** Se está volviendo a ver una cinemática desde el Códice: al terminar se vuelve al juego, sin viajar ni pasar a la rueda. */
+let repeticion = false;
 function empezarEntreacto(acto: number) { guardar(); estado = 'entreacto'; entreActo = acto; entreT = 0; ui.izq = ui.der = null; E.clicIzq = false; Sonido.musica('intro'); }
 function empezarRevelacion(luegoFinal: boolean) { estado = 'revelacion'; revT = 0; revEleccion = null; revLuegoFinal = luegoFinal; ui.izq = ui.der = null; E.clicIzq = false; Sonido.musica('intro'); }
 
@@ -435,6 +438,8 @@ function procesarEventos(jj: Juego) {
       if (m?.final) setTimeout(() => { if (estado === 'juego') { ui.izq = ui.der = null; estado = 'final'; finalT = 0; Sonido.musica('intro'); } }, 4500);
     }
     else if (e.tipo === 'heraldo_huye') guardar();
+    else if (e.tipo === 'cinematica') { repeticion = true; empezarEntreacto(e.dato); }
+    else if (e.tipo === 'epilogo') { repeticion = true; ui.izq = ui.der = null; estado = 'final'; finalT = 0; Sonido.musica('intro'); }
   }
 }
 
@@ -470,7 +475,9 @@ function paso(dt: number) {
       entreT += dt;
       if (dibujarEntreacto(entreActo, entreT, j ? finalDe(j.heroe.d) : undefined) || (entreT > 0.5 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) {
         E.clicIzq = false; estado = 'juego'; tEstado = 0;
-        const sig = PUEBLO_DE[entreActo + 1]; if (entreActo > 0 && sig && ZONAS[sig]) zonaPendiente = { id: sig, entrada: 'centro' };
+        const sig = PUEBLO_DE[entreActo + 1]; if (!repeticion && entreActo > 0 && sig && ZONAS[sig]) zonaPendiente = { id: sig, entrada: 'centro' };
+        if (repeticion && j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any);
+        repeticion = false;
       }
       break;
     }
@@ -488,7 +495,7 @@ function paso(dt: number) {
     }
     case 'final': {
       finalT += dt;
-      if (dibujarFinal(finalT, j ? finalCompleto(j.heroe.d) : 'vigilia', j ? decisionDe(j.heroe.d, 'vigdis') : undefined) || (finalT > 3 && (pulso('Escape') || E.clicIzq))) { E.clicIzq = false; if (j && j.heroe.d.actosHechos.includes(7)) { estado = 'ciclo'; finalT = 0; } else { estado = 'juego'; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); } }
+      if (dibujarFinal(finalT, j ? finalCompleto(j.heroe.d) : 'vigilia', j ? decisionDe(j.heroe.d, 'vigdis') : undefined) || (finalT > 3 && (pulso('Escape') || E.clicIzq))) { E.clicIzq = false; if (j && j.heroe.d.actosHechos.includes(7) && !repeticion) { estado = 'ciclo'; finalT = 0; } else { estado = 'juego'; if (j) Sonido.musica(MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any); } repeticion = false; }
       break;
     }
     case 'ciclo': {
