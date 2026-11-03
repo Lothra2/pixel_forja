@@ -1,5 +1,7 @@
 // Auditoría de paneles: abre y cierra cada panel con la X, con Escape, tocando fuera y alejándose, en 4 resoluciones.
 // Falla (código 1) si queda algún panel o ui.* abierto, o si la barra o los botones táctiles quedan encima de un panel.
+// Además revisa encimados: Golpe, Poder, barra, botón agresivo, mensajes y nombres de salidas no se cruzan entre sí ni con un panel abierto.
+// Uso: node auditoria_paneles.cjs (dev en 5190) o URL=http://127.0.0.1:5191/publicar.html node auditoria_paneles.cjs
 const { chromium, devices } = require('playwright');
 const RES = [[844, 390, true, 'iphone_apaisado'], [390, 844, true, 'iphone_vertical'], [1180, 820, true, 'ipad'], [1280, 720, false, 'escritorio']];
 (async () => {
@@ -9,8 +11,8 @@ const RES = [[844, 390, true, 'iphone_apaisado'], [390, 844, true, 'iphone_verti
     const ctx = await b.newContext({ viewport: { width: w, height: h }, hasTouch: tactil, isMobile: tactil, deviceScaleFactor: 1 });
     const p = await ctx.newPage();
     const errs = []; p.on('pageerror', (e) => errs.push(e.message));
-    await p.addInitScript(() => { localStorage.setItem('marca.intro', '1'); });
-    await p.goto('http://127.0.0.1:5190/', { waitUntil: 'load' });
+    await p.addInitScript(() => { localStorage.setItem('marca.intro', '1'); sessionStorage.setItem('vertical-ok', '1'); });
+    await p.goto('' + (process.env.URL || 'http://127.0.0.1:5190/') + '', { waitUntil: 'load' });
     // pantalla de carga: foto apenas aparece
     await p.waitForTimeout(700); await p.screenshot({ path: `aud_${nombre}_carga.png` });
     for (let i = 0; i < 60; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => window.__estado && window.__estado()) === 'menu') break; }
@@ -32,6 +34,25 @@ const RES = [[844, 390, true, 'iphone_apaisado'], [390, 844, true, 'iphone_verti
     await p.evaluate(() => window.__ir('a1_refugio'));
     for (let i = 0; i < 60; i++) { await p.waitForTimeout(300); if (await p.evaluate(() => window.__estado()) === 'juego') break; }
     await p.waitForTimeout(800);
+    // encimados: botones táctiles, barra, agresivo, mensajes y nombres de salidas no se pueden cruzar
+    {
+      const cruzan = (a, b) => a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
+      await p.evaluate(() => { const j = window.__juego(); for (const t of ['Habla con el Maestro Odrán junto al fuego', 'El Refugio de los Cenicientos', 'Una tercera línea de prueba bastante larga']) j.mensajes.push({ txt: [t, t], color: '#fff', t: 0 }); });
+      const sa = await p.evaluate(() => { const z = window.__juego().zona; return z.salidas.filter((s) => !s.obj).map((s) => { const a = z.entradas['salida_' + s.destino] ?? [s.cx, s.cy]; return [(s.cx + a[0]) / 2 + 0.5, (s.cy + a[1]) / 2 + 0.5]; }); });
+      const vistos = new Set();
+      for (const [sx, sy] of sa) for (const [dx, dy] of [[-4, 0], [-6, 0], [-3, -3], [0, -5], [-2, 2], [2, -2], [0, 0]]) {
+        await p.evaluate(([x, y]) => { const h = window.__juego().heroe; h.x = x; h.y = y; window.__juego().mensajes.forEach((m) => (m.t = 0)); }, [sx + dx, sy + dy]);
+        await p.waitForTimeout(700);
+        const { hud, etiquetas } = await p.evaluate(() => window.__hud());
+        const ks = Object.keys(hud);
+        for (let a = 0; a < ks.length; a++) for (let b = a + 1; b < ks.length; b++) if (cruzan(hud[ks[a]], hud[ks[b]])) vistos.add(`${ks[a]} cruza ${ks[b]}`);
+        for (const e of etiquetas) for (const k of ks) if (cruzan(e.r, hud[k])) vistos.add(`salida "${e.txt}" cruza ${k}`);
+      }
+      if (tactil) { const h = await p.evaluate(() => window.__hud().hud); if (!h.golpe || !h.poder) vistos.add('no se registraron Golpe y Poder'); }
+      for (const v of vistos) fallas.push(`${nombre} encimado: ${v}`);
+      await p.screenshot({ path: `aud_${nombre}_hud.png` });
+      await p.evaluate(() => { window.__juego().mensajes.length = 0; });
+    }
     // si el primer clic ya marcó táctil
     const abrir = {
       inv: () => p.evaluate(() => { window.__U.ui.der = 'inv'; }),
@@ -54,6 +75,12 @@ const RES = [[844, 390, true, 'iphone_apaisado'], [390, 844, true, 'iphone_verti
       if (modo === 'x' || modo === 'fuera') await p.screenshot({ path: `aud_${nombre}_${pid}.png` });
       // nada encima: con pantalla baja la barra no se dibuja; los botones táctiles nunca con panel
       const lado = s.der ? 'der' : 'izq';
+      {
+        const cruzan = (a, b) => a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
+        await p.waitForTimeout(150);
+        const { hud } = await p.evaluate(() => window.__hud());
+        for (const l of ['izq', 'der']) if (s[l]) { const rp = await p.evaluate((l) => window.__U.rectPanel(l), l); for (const [k, r] of Object.entries(hud)) if (k !== 'barra' && k !== 'mensajes' && cruzan(r, rp)) fallas.push(`${nombre} ${pid}: ${k} encima del panel ${l}`); }
+      }
       if (modo === 'x') {
         const r = await p.evaluate((lado) => { const [x, y, w] = window.__U.rectPanel(lado); return [x, y, w]; }, lado);
         const k = r[2] / 320, tx = tactil ? 46 : 30;

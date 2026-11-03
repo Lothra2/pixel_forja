@@ -26,6 +26,7 @@ export const ui = {
   confirmar: null as null | { txt: string; si: () => void },
 };
 export const COFRE_W = 10, COFRE_H = 8;
+import { hud } from './hud_rects';
 const BAR_H = 120;
 const barraY = () => H - BAR_H;
 const barraX = () => Math.round((W - 800) / 2);
@@ -122,9 +123,11 @@ export function iconoHab(hb: Habilidad, x: number, y: number, s: number, apagado
 // ------------------------------------------------------------------ barra de abajo
 export function dibujarBarra(j: Juego, t: number) {
   // pantalla baja con un panel abierto: la barra no se dibuja (taparía el panel)
+  for (const k of ['agresivo', 'golpe', 'poder', 'barra']) delete hud[k];
   if (compacto() && (ui.izq || ui.der)) return;
   prepararHud();
   const h = j.heroe, bx = barraX(), by = barraY();
+  hud.barra = [Math.max(0, bx), by, Math.min(W, 800), BAR_H];
   ctx.fillStyle = '#080605'; ctx.fillRect(0, by + 56, W, BAR_H - 56);
   ctx.drawImage(cacheRaster('barra' + IDI, () => barraInferior({ vacia: true, idioma: IDI ? 'en' : 'es' })), bx, by);
   const zs = zonasBarra();
@@ -185,9 +188,11 @@ export function dibujarBarra(j: Juego, t: number) {
   texto(h.correr ? T('Corriendo (R)', 'Running (R)') : T('Caminando (R)', 'Walking (R)'), bx + za.x + za.w / 2, by + za.y + 10, { alin: 'center', tam: 10, color: '#000', sombra: false });
   const zc = Z('caminar_correr'); if (dentro(bx + zc.x, by + zc.y, zc.w + za.w, zc.h) && E.clicIzq) { h.correr = !h.correr; E.clicIzq = false; }
   // agresivo o pasivo (Z): espada roja que ataca sola lo que entra en su alcance, o escudo gris que espera órdenes
-  {
+  // con un panel a la izquierda se esconde, porque queda pegado al borde de abajo del panel
+  if (!ui.izq) {
     const ag = !!(h.d as any).agresivo, s = E.tactil ? 46 : 38, ax = Math.max(8, bx + 6), ay = by - s - 8;
     const enc = dentro(ax, ay, s, s);
+    hud.agresivo = [ax, ay, s, s];
     ctx.save(); ctx.globalAlpha = 0.9; ctx.fillStyle = ag ? '#3a0c08' : '#1a1a1e'; ctx.fillRect(ax, ay, s, s);
     ctx.strokeStyle = enc ? '#ffe0a0' : ag ? '#c04020' : '#707078'; ctx.lineWidth = 2; ctx.strokeRect(ax + 1, ay + 1, s - 2, s - 2);
     const cx = ax + s / 2, cy = ay + s / 2;
@@ -224,10 +229,12 @@ export function dibujarBarra(j: Juego, t: number) {
   if (h.d.puntosHab > 0) { const z = Z('boton_habilidades'); ctx.fillStyle = Math.floor(t * 2) % 2 ? '#ffd060' : '#a07020'; ctx.fillRect(bx + z.x + z.w - 6, by + z.y, 6, 6); }
   // táctil: botones grandes para la tablet
   // los botones táctiles nunca encima de un panel abierto
+  delete hud.golpe; delete hud.poder;
   if (E.tactil && !ui.izq && !ui.der) {
-    const r = 34, bx2 = W - 70, by2 = by - 50;
+    const r = 34, bx2 = W - 70, by2 = by - 54;
     for (const [i, lado, txt] of [[0, 'der', T('Poder', 'Skill')], [1, 'izq', T('Golpe', 'Hit')]] as [number, 'izq' | 'der', string][]) {
       const cx = bx2 - i * 84, cy = by2 - i * 30;
+      hud[i ? 'golpe' : 'poder'] = [cx - r, cy - r, r * 2, r * 2 + 18];
       ctx.save(); ctx.globalAlpha = 0.75; ctx.fillStyle = '#1a1410'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
       iconoHab(habilidadDe(h.d[lado]), cx - 18, cy - 18, 36);
       texto(txt, cx, cy + r + 12, { alin: 'center', tam: 11 });
@@ -362,13 +369,19 @@ export function dibujarArriba(j: Juego, encima: Monstruo | null) {
     if (m.mods.length && m.calidad >= 1) texto(m.mods.map((id) => ({ rapido: T('Veloz', 'Swift'), piel_piedra: T('Piel de piedra', 'Stoneskin'), ardiente: T('Ardiente', 'Fire Enchanted'), helado: T('Helado', 'Cold Enchanted'), electrico: T('Eléctrico', 'Lightning'), vampiro: T('Sediento', 'Thirsting'), maldito: T('Maldito', 'Cursed'), fuerte: T('Bruto', 'Brute'), espectral: T('Espectral', 'Spectral') } as any)[id]).join(', '), W / 2, y + 44, { alin: 'center', color: '#c8a050', tam: 11 });
   }
   // mensajes
-  let y = H - BAR_H - 30;
+  // encima del botón agresivo, que vive justo sobre la barra a la izquierda
+  const ag = hud.agresivo, mx = ui.izq ? 334 : 14;
+  let y = ag && !ui.izq ? ag[1] - 12 : H - BAR_H - 30;
+  const y0 = y;
+  ctx.font = '14px Georgia, serif'; let anchoM = 0;
   for (let i = j.mensajes.length - 1; i >= 0; i--) {
     const m = j.mensajes[i];
     ctx.globalAlpha = Math.min(1, 7 - m.t);
-    texto(TT(m.txt), ui.izq ? 334 : 14, y, { color: m.color, tam: 14 });
+    texto(TT(m.txt), mx, y, { color: m.color, tam: 14 });
+    ctx.font = '14px Georgia, serif'; anchoM = Math.max(anchoM, ctx.measureText(TT(m.txt)).width);
     ctx.globalAlpha = 1; y -= 18;
   }
+  if (j.mensajes.length) hud.mensajes = [mx, y + 4, anchoM, y0 - y + 2]; else delete hud.mensajes;
 }
 export function dibujarMuerte() {
   const c = cacheRaster('muerte' + IDI, () => cartelMuerte(IDI ? 'en' : 'es'));
@@ -954,6 +967,8 @@ function panelCofre(j: Juego, x: number, y: number, t: number) {
 export function abrirTienda(j: Juego, tipo: 'herrero' | 'curandera' | 'vidente') {
   const h = j.heroe, nivel = Math.max(1, Math.min(100, Math.max(h.d.nivel, nivelEnDificultad(ZONAS[j.zona.id].nivel, h.d.dificultad)) + 2));
   ui.tiendaTipo = tipo; ui.tienda = [];
+  // si se abre sin pasar por el NPC, el origen es donde está el héroe: igual se cierra al alejarse
+  if (!(ui as any).origen) (ui as any).origen = [h.x, h.y];
   const meter = (o: Objeto) => { const p = lugarEn(ui.tienda, o, 10, 10); if (p) ui.tienda.push({ o, x: p[0], y: p[1] }); };
   if (tipo === 'curandera') {
     const tam = nivel < 8 ? 0 : nivel < 18 ? 1 : nivel < 30 ? 2 : 3;
@@ -1007,9 +1022,9 @@ function panelTienda(j: Juego, x: number, y: number, t: number) {
     if (boton(`${T('Reparar todo', 'Repair all')} (${costo})`, x + 150, y + 44 + 10 * CELDA_INV + 6, 156, 26, { tam: 12, activo: costo > 0 && h.d.oro >= costo })) { if (costo > 0 && h.d.oro >= costo) { h.d.oro -= costo; for (const o of Object.values(h.d.equipo)) if (o) o.durab = o.durabMax; Sonido.efecto('reparar'); recalc(j); } E.clicIzq = false; }
   }
   // cómo se usa la tienda, siempre a la vista
-  texto(ui.tiendaTipo === 'vidente' ? T('Clic izquierdo: apostar por un objeto', 'Left click: gamble for an item') : T('Clic izquierdo o derecho: comprar', 'Left or right click: buy'), x + 18, y + 44 + 10 * CELDA_INV + 44, { tam: 11, color: '#c0b090' });
-  texto(T('Clic derecho en tu bolsa: vender', 'Right click in your bag: sell'), x + 18, y + 44 + 10 * CELDA_INV + 58, { tam: 11, color: '#c0b090' });
-  if (ui.mano && dentro(x, y, 320, 432)) texto(T('Clic para vender', 'Click to sell'), x + 160, y + 425, { alin: 'center', tam: 11, color: '#e8c050' });
+  texto(ui.tiendaTipo === 'vidente' ? (E.tactil ? T('Toca un objeto: apostar por él', 'Tap an item: gamble for it') : T('Clic izquierdo: apostar por un objeto', 'Left click: gamble for an item')) : (E.tactil ? T('Toca un objeto: comprar', 'Tap an item: buy') : T('Clic izquierdo o derecho: comprar', 'Left or right click: buy')), x + 18, y + 44 + 10 * CELDA_INV + 44, { tam: 11, color: '#c0b090' });
+  texto(E.tactil ? T('Toca algo de tu bolsa y luego la tienda: vender', 'Tap something in your bag, then the shop: sell') : T('Clic derecho en tu bolsa: vender', 'Right click in your bag: sell'), x + 18, y + 44 + 10 * CELDA_INV + 58, { tam: 11, color: '#c0b090' });
+  if (ui.mano && dentro(x, y, 320, 432)) texto(E.tactil ? T('Toca para vender', 'Tap to sell') : T('Clic para vender', 'Click to sell'), x + 160, y + 425, { alin: 'center', tam: 11, color: '#e8c050' });
   if (boton(T('Cerrar', 'Close'), x + 230, y + 395, 76, 26, { tam: 12 })) { ui.izq = null; ui.der = null; E.clicIzq = false; }
 }
 

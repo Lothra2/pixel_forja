@@ -1,6 +1,7 @@
 // Dibuja la zona: pisos, manchas, objetos y personajes por profundidad, poderes, partículas, luz, niebla y clima.
 import { nuevoCuadroSombras } from './luces';
-import { ctx, W, H, E } from '../nucleo/lienzo';
+import { ctx, W, H } from '../nucleo/lienzo';
+import { esquivarHud, etiquetasMundo } from '../ui/hud_rects';
 import { NPCS } from '../datos/npcs';
 import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
@@ -291,6 +292,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   }
   ctx.globalAlpha = 1; ctx.textAlign = 'left';
   // salidas sin puerta: un rastro de luz en el piso con el nombre del lugar
+  etiquetasMundo.length = 0;
   for (const sa of z.salidas) {
     if (sa.obj) continue;
     // la etiqueta va sobre piso firme: un poco hacia adentro de la salida, no flotando en el vacío del borde
@@ -306,7 +308,9 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     ctx.font = '12px Georgia, serif'; ctx.textAlign = 'center';
     const txt = '» ' + sa.nombre[opciones.idi] + ' «', tw2 = ctx.measureText(txt).width;
     let lx = Math.max(tw2 / 2 + 6, Math.min(W - tw2 / 2 - 6, px)), ly = Math.max(16, Math.min(H - 130, py - 29));
-    if (E.tactil && lx + tw2 / 2 > W - 210 && ly > H - 260) ly = H - 262;
+    // nunca encima de los botones del HUD (Golpe, Poder, agresivo, mensajes): sube hasta quedar libre
+    ly = esquivarHud([lx - tw2 / 2, ly - 12, tw2, 16]) + 12;
+    etiquetasMundo.push({ txt, r: [lx - tw2 / 2, ly - 12, tw2, 16] });
     ctx.fillStyle = '#000'; ctx.fillText(txt, lx + 1, ly + 1); ctx.fillStyle = '#e8c070'; ctx.fillText(txt, lx, ly);
   }
   // clima

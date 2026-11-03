@@ -10,6 +10,7 @@ import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistor
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
+import { hud, etiquetasMundo } from './ui/hud_rects';
 import { abrirTienda, cerrarPaneles, cambiarAgresivo, rectPanel, compacto } from './ui/juego_ui';
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
@@ -609,6 +610,7 @@ async function arrancar() {
   (window as any).__estado = () => estado;
   import('./juego/mundo').then((m) => { (window as any).__mundo = m; });
   (window as any).__U = { hablarCon, abrirTienda, ui, rectPanel, compacto, cerrarPaneles };
+  (window as any).__hud = () => ({ hud: { ...hud }, etiquetas: etiquetasMundo.map((e) => ({ ...e })) });
   (window as any).__A = Assets;
   // ganchos para las pruebas del build de producción
   Promise.all([import('./juego/heroe'), import('./juego/objetos'), import('./datos/objetos_datos'), import('./motor/pintor')]).then(([H, O, D, P]) => { (window as any).__T = { H, O, D, P }; });
