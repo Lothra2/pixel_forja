@@ -105,8 +105,8 @@ export const GUION: Record<string, Plano[]> = {
       cam: acercar([640, 380], 1.09), entrada: T('rojo', 0.8), salida: T('fundido', 1.2),
       texto: ['De la ceniza rodó una brasa hasta tus pies, y tu Marca respondió.', 'From the ash an ember rolled to your feet, and your Mark answered.'],
       textoSegun: {
-        destruir: ['Cerraste la mano hasta que la Brasa dejó de latir. Tu Marca quedó gris, como un nombre olvidado.', 'You closed your hand until the Ember stopped beating. Your Mark turned grey, like a forgotten name.'],
-        absorber: ['La Marca bebió la Brasa como agua en el desierto. Desde entonces tu sombra es tibia.', 'The Mark drank the Ember like water in the desert. Since then your shadow has been warm.'],
+        brasa_destruir: ['Cerraste la mano hasta que la Brasa dejó de latir. Tu Marca quedó gris, como un nombre olvidado.', 'You closed your hand until the Ember stopped beating. Your Mark turned grey, like a forgotten name.'],
+        brasa_absorber: ['La Marca bebió la Brasa como agua en el desierto. Desde entonces tu sombra es tibia.', 'The Mark drank the Ember like water in the desert. Since then your shadow has been warm.'],
       } },
     { id: 'p3_mar', que: 'Muy al norte, de noche, el mar se parte en dos bajo un rayo; las agujas de una ciudad empiezan a salir del agua.', dur: 7,
       cam: temblar(acercar([640, 380], 1.08, [0, 6], [0, -8]), 5, 7, 0, 6), entrada: T('fundido', 1.2), salida: T('fundido', 1),
@@ -129,8 +129,8 @@ export const GUION: Record<string, Plano[]> = {
       cam: acercar([640, 330], 1.12), entrada: T('fundido', 1), salida: T('negro', 1.8),
       texto: ['Arriba, en un trono que tiene sed desde antes del mundo, Aun-Saar abrió la boca que tiene en el pecho y dijo tu nombre.', 'Above, on a throne that has thirsted since before the world, Aun-Saar opened the mouth in his chest and spoke your name.'],
       textoSegun: {
-        destruir: ['Arriba, Aun-Saar abrió la boca que tiene en el pecho y preguntó por el pedazo que le faltaba. Preguntó por ti.', 'Above, Aun-Saar opened the mouth in his chest and asked for the piece he was missing. He asked for you.'],
-        absorber: ['Arriba, Aun-Saar abrió la boca que tiene en el pecho y sonrió. Ya sabía que su sed venía en camino.', 'Above, Aun-Saar opened the mouth in his chest and smiled. He knew his thirst was on its way.'],
+        brasa_destruir: ['Arriba, Aun-Saar abrió la boca que tiene en el pecho y preguntó por el pedazo que le faltaba. Preguntó por ti.', 'Above, Aun-Saar opened the mouth in his chest and asked for the piece he was missing. He asked for you.'],
+        brasa_absorber: ['Arriba, Aun-Saar abrió la boca que tiene en el pecho y sonrió. Ya sabía que su sed venía en camino.', 'Above, Aun-Saar opened the mouth in his chest and smiled. He knew his thirst was on its way.'],
       }, eleccion: 'brasa' },
   ],
   acto_7: [
@@ -181,7 +181,8 @@ export const GUION: Record<string, Plano[]> = {
   ],
 };
 /** Valores de cada elección (las capas con `solo_si` se dibujan solo con ese valor). */
-export const ELECCIONES: Record<string, string[]> = { vigdis: ['vigdis_viva', 'vigdis_muerta'], brasa: ['destruir', 'absorber'] };
+/** Banderas del juego para cada elección: una capa con `si` se dibuja solo con esa bandera encendida. */
+export const ELECCIONES: Record<string, string[]> = { vigdis: ['vigdis_viva', 'vigdis_muerta'], brasa: ['brasa_destruir', 'brasa_absorber'] };
 export const CLAVES_CINE = Object.keys(GUION);
 const PINTORES: Record<string, (t: Toma) => void> = { ...PINTORES_A, ...PINTORES_B, ...PINTORES_C };
 
@@ -392,23 +393,18 @@ export function exportarCinematicas(o: OpcExportar): Record<string, unknown> {
       const archivoDe = (c: CapaFinal) => (c.hoja ? `cinematicas/fx/${c.hoja}.png` : `cinematicas/${clave}/${p.id}_${c.id}.png`);
       for (const c of capas) if (c.img) o.poner(archivoDe(c), aRaster(c.img, !!c.opaca));
       const json = (lista: CapaFinal[]) => [
-        ...lista.map((c) => ({ id: c.id, archivo: archivoDe(c), x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.alfa !== undefined ? { alfa: c.alfa } : {}), ...(c.anim ? { anim: c.anim } : {}) })),
+        ...lista.map((c) => ({ id: c.id, archivo: archivoDe(c), x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.alfa !== undefined ? { alfa: c.alfa } : {}), ...(c.anim ? { anim: c.anim } : {}), ...(c.soloSi ? { si: c.soloSi } : {}) })),
         { id: 'vineta', archivo: 'cinematicas/vineta.png', x: MX, y: MY, w: 1280, h: 720, paralaje: 0, mezcla: 'normal' },
       ];
-      const valores = p.eleccion ? ELECCIONES[p.eleccion] : [undefined];
-      const de = (v: string | undefined) => capas.filter((c) => !c.soloSi || c.soloSi === v);
-      const narr = (v: string | undefined) => { const tx = (v && p.textoSegun?.[v]) || p.texto; return { es: tx[0], en: tx[1] }; };
       const plano: Record<string, unknown> = {
-        id: p.id, que: p.que, dur: p.dur, capas: json(de(valores[0])),
+        id: p.id, que: p.que, dur: p.dur, capas: json(capas),
         camara: { desde: p.cam.desde, hasta: p.cam.hasta, curva: p.cam.curva, ...(p.cam.sacudida ? { sacudida: p.cam.sacudida } : {}) },
-        narracion: narr(valores[0]),
+        narracion: { es: p.texto[0], en: p.texto[1] },
+        ...(p.textoSegun ? { narracion_si: Object.fromEntries(Object.entries(p.textoSegun).map(([k, v]) => [k, { es: v[0], en: v[1] }])) } : {}),
         fundido: { entra: p.entrada.s, sale: p.salida.s, ...(p.entrada.tipo !== 'negro' && p.entrada.tipo !== 'fundido' ? { color_entra: p.entrada.tipo } : {}), ...(p.salida.tipo !== 'negro' && p.salida.tipo !== 'fundido' ? { color_sale: p.salida.tipo } : {}) },
         ...(t.particulas ? { particulas: t.particulas } : {}),
       };
-      if (p.eleccion) {
-        plano.eleccion = p.eleccion; plano.valor = valores[0];
-        plano.alternativas = Object.fromEntries(valores.slice(1).map((v) => [v, { capas: json(de(v)), narracion: narr(v) }]));
-      }
+      const valores = p.eleccion ? ELECCIONES[p.eleccion] : [undefined];
       planos.push(plano);
       if (o.vista) for (const v of valores) o.vista(clave, n, p, v, componerPlano(capas, p, { valor: v, vineta }));
     });

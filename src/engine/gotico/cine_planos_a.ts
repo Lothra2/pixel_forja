@@ -176,7 +176,7 @@ function a1p2(t: Toma) {
   pasto(suelo, 0, CW, sueloEn, 700, 22, 39);
   pintar(Fr, suelo, [0.02, 0.014, 0.016]);
   contraluz(Fr, suelo, -2, -2, [0.7, 0.22, 0.08], 0.7);
-  const luzH: Luz = { amb: [0.17, 0.14, 0.16], desat: 0.5, clave: { dir: [-1, -0.4], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [1, 0.35, 0.1], k: 1, ancho: 1 }, { dx: 1, dy: 0, c: FRIO, k: 0.25 }] };
+  const luzH: Luz = { amb: [0.17, 0.14, 0.16], desat: 0.5, clave: { dir: [-1, -0.4], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [1, 0.35, 0.1], k: 0.7, ancho: 1 }, { dx: 1, dy: 0, c: FRIO, k: 0.2 }], niebla: { c: [0.08, 0.03, 0.03], k: 0.3 } };
   const ho = figura(Fr, undefined, modelo('hor_cuervos_cadaver', 'horca', 0, 3), 1150, sueloEn(1150) + 30, 470, luzH);
   const hc = cajaPose(ho, 1150, sueloEn(1150) + 30), sh = M(), mh = mascaraPose(CW, CH, ho, 1150, sueloEn(1150) + 30);
   for (let k = 0; k < 5; k++) chorreado(sh, hc.x0 + (hc.x1 - hc.x0) * (0.45 + k * 0.05), hc.y0 + (hc.y1 - hc.y0) * (0.3 + k * 0.06), 10, 70, 170 + k);
@@ -259,7 +259,8 @@ function a2p1(t: Toma) {
   for (const x of [170, 470, 938, 1238]) {
     const c = M(); rellenar(c, [[x - 46, 660], [x - 40, 140], [x - 70, 100], [x - 60, 70], [x + 60, 70], [x + 70, 100], [x + 40, 140], [x + 46, 660]]);
     pintarConRuido(F, c, [0.2, 0.12, 0.07], 0.3, 18, x); const b = M(); for (let y = 160; y < 650; y += 40) trazo(b, x - 44, y, x + 44, y, 2, 2, 1, 'max', false); for (let i = 0; i < CW * CH; i++) b.d[i] *= c.d[i]; pintar(F, b, [0.03, 0.015, 0.01], 0.7);
-    contraluz(F, c, x < CX ? 3 : -3, 0, [1, 0.7, 0.35], 0.6);
+    contraluz(F, c, x < CX ? 3 : -3, 0, [1, 0.7, 0.35], 0.25);
+    const sombraC = M(); rellenar(sombraC, x < CX ? [[x + 10, 660], [x + 16, 140], [x + 46, 140], [x + 46, 660]] : [[x - 46, 660], [x - 46, 140], [x - 16, 140], [x - 10, 660]]); desenfocar(sombraC.d, CW, CH, 10); pintar(F, sombraC, [0, 0, 0], 0.55);
   }
   losas(F, 640, CH, [0.12, 0.075, 0.045], 204, [CX, 640], 7);
   sombraVertical(F, 0, 700, 0.5, false);
@@ -277,7 +278,7 @@ function a2p1(t: Toma) {
   brillo(Hz, desenfocada(cae, 2), [0.9, 0.62, 0.3], 0.6);
   // Khamer-Ul se deshace
   const R = t.capa('rey', 3, 0.6), RL = t.capa('rey_luz', 4, 0.6, 'sumar', { anim: { tipo: 'titilar', alfa: [0.7, 1], hz: 5 } });
-  const luzR: Luz = { amb: [0.62, 0.5, 0.36], desat: 0.2, clave: { dir: [0.2, -1], k: 0.8, c: [1.25, 1, 0.75] }, bordes: [{ dx: 0, dy: -1, c: [1.3, 0.9, 0.45], k: 1.3, ancho: 1.5 }, { dx: -1, dy: 0, c: [0.5, 0.25, 0.12], k: 0.5 }], emite: (c) => Math.max(emiteOro(c), c[1] > 0.5 && c[1] > c[0] * 1.3 ? sat((c[1] - 0.45) * 2) : 0), cEmite: [0.5, 1, 0.5] };
+  const luzR: Luz = { amb: [0.4, 0.31, 0.22], desat: 0.3, clave: { dir: [0.2, -1], k: 0.8, c: [1.25, 1, 0.75] }, bordes: [{ dx: 0, dy: -1, c: [1.3, 0.9, 0.45], k: 1.3, ancho: 1.5 }, { dx: -1, dy: 0, c: [0.5, 0.25, 0.12], k: 0.5 }], emite: (c) => Math.max(emiteOro(c), c[1] > 0.5 && c[1] > c[0] * 1.3 ? sat((c[1] - 0.45) * 2) : 0), cEmite: [0.5, 1, 0.5] };
   const rey = figura(R, RL, modelo('jefe_rey_sin_sombra_morir', 's', 4, 3.4), 740, 712, 470, luzR);
   const rb = cajaPose(rey, 740, 712), rw = rb.x1 - rb.x0, rh = rb.y1 - rb.y0;
   // la arena que se le escurre del cuerpo y el montón a sus pies
@@ -417,21 +418,30 @@ const VERDE: C3 = [0.35, 1, 0.55];
 function a3p1(t: Toma) {
   const F = t.capa('fondo', 0, 0.25, 'normal', { opaca: true });
   cielo(F, [[0, '#030604'], [0.5, '#0c140c'], [1, '#040503']]);
-  // la bóveda: piedra tallada comida por raíces y carne
-  const muro = M(), raices = M(), carne = M();
-  rellenar(muro, [[-10, -10], [CW + 10, -10], [CW + 10, 640], [-10, 640]]);
-  const r = rng(301);
-  for (let k = 0; k < 34; k++) { const x = r() * CW, pts: P2[] = []; let xx = x; for (let y = -10; y < 660; y += 30) { xx += (r() - 0.5) * 30; pts.push([xx, y]); } polilinea(raices, pts, 10 + r() * 16, 4); }
-  for (let k = 0; k < 9; k++) { const x = r() * CW, y = r() * 520, rr = 40 + r() * 80; rellenar(carne, Array.from({ length: 20 }, (_, j) => { const a = (j / 20) * Math.PI * 2, q = 0.7 + 0.5 * fbm(Math.cos(a) + k, Math.sin(a), 2, 302); return [x + Math.cos(a) * rr * q, y + Math.sin(a) * rr * 0.7 * q] as P2; })); }
-  const glif = M(); sillares(glif, -10, -10, CW + 10, 640, 70, 90, 303);
-  pintarConRuido(F, muro, [0.08, 0.1, 0.075], 0.4, 24, 304); pintar(F, glif, [0.015, 0.02, 0.012], 0.7);
-  pintarConRuido(F, carne, [0.22, 0.06, 0.06], 0.45, 14, 305); contraluz(F, carne, 0, 3, [0.8, 0.25, 0.2], 0.6);
-  pintarConRuido(F, raices, [0.05, 0.05, 0.03], 0.4, 10, 306); contraluz(F, raices, 2, 0, VERDE, 0.4);
-  losas(F, 640, CH, [0.06, 0.05, 0.03], 307, [CX, 640], 6);
-  sombraVertical(F, 0, 640, 0.5, false);
-  alumbrar(F, CX, 620, 700, [0.6, 1.6, 0.8], 1.1, 0.7);
-  alumbrar(F, CX, 680, 360, [1.6, 0.4, 0.2], 0.8, 0.5);
-  granoOpaco(F, 0.02, 308);
+  // el vientre: costillas de carne que se cierran en arco, venas, ampollas que brillan y piedra del templo abajo
+  const r = rng(301), piedra = M(), juntas = M();
+  rellenar(piedra, [[-10, 420], [CW + 10, 420], [CW + 10, 660], [-10, 660]]); sillares(juntas, -10, 420, CW + 10, 660, 48, 96, 303);
+  pintarConRuido(F, piedra, [0.08, 0.09, 0.065], 0.4, 20, 304); pintar(F, juntas, [0.01, 0.012, 0.008], 0.8);
+  const carne = M(), costillas = M(), venas = M(), ampollas = M();
+  for (let y = -10; y < 470; y++) for (let x = 0; x < CW; x++) carne.d[y * CW + x] = sat((470 - y) / 40) * (0.75 + 0.25 * fbm(x / 60, y / 60, 4, 305));
+  for (let k = 0; k < 11; k++) {
+    const x0 = (k / 10) * (CW + 300) - 150, pts: P2[] = [];
+    for (let j = 0; j <= 14; j++) { const u = j / 14; pts.push([x0 + (CX - x0) * u * 0.9 + Math.sin(u * 3 + k) * 10, 480 - u * 520]); }
+    polilinea(costillas, pts, 40 - Math.abs(k - 5) * 2, 10);
+  }
+  for (let k = 0; k < 18; k++) grietas(venas, r() * CW, r() * 440, 90, 3, 306 + k, 2.4);
+  for (let k = 0; k < 40; k++) disco(ampollas, r() * CW, 40 + r() * 420, 3 + r() * 7);
+  pintarConRuido(F, carne, [0.17, 0.045, 0.04], 0.5, 18, 307);
+  pintarConRuido(F, costillas, [0.3, 0.1, 0.08], 0.4, 10, 308); contraluz(F, costillas, 0, 3, [0.9, 0.35, 0.25], 0.8); contraluz(F, costillas, -3, 0, [0.4, 1, 0.55], 0.4);
+  pintar(F, venas, [0.07, 0.005, 0.01], 0.8);
+  pintar(F, ampollas, [0.2, 0.5, 0.25], 0.9);
+  losas(F, 640, CH, [0.06, 0.05, 0.03], 309, [CX, 640], 6);
+  sombraVertical(F, 0, 640, 0.45, false);
+  alumbrar(F, CX, 620, 720, [0.6, 1.5, 0.8], 1, 0.7);
+  alumbrar(F, CX, 680, 420, [1.6, 0.4, 0.2], 0.9, 0.5);
+  granoOpaco(F, 0.02, 310);
+  const Am = t.capa('ampollas_luz', 0.5, 0.25, 'sumar', { anim: { tipo: 'latir', alfa: [0.4, 1], periodo_s: 2.2 } });
+  brillo(Am, desenfocada(ampollas, 6), VERDE, 0.9); brillo(Am, ampollas, [0.7, 1, 0.7], 0.6);
   // el barro: charca de sangre y lodo con huevos
   const B = t.capa('barro', 1, 0.4);
   const lodo = M(); charco(lodo, CX, 700, 520, 80, 309, 30);
@@ -444,7 +454,7 @@ function a3p1(t: Toma) {
   // la Madre se derrumba
   const Ma = t.capa('madre', 2, 0.55), MaL = t.capa('madre_luz', 3, 0.55, 'sumar', { anim: { tipo: 'latir', alfa: [0.6, 1], periodo_s: 1.4 } });
   const luzM: Luz = { amb: [0.5, 0.58, 0.45], desat: 0.2, clave: { dir: [0, 1], k: 0.6, c: [0.9, 1.2, 0.8] }, bordes: [{ dx: 0, dy: -1, c: [0.5, 1, 0.6], k: 1, ancho: 1.5 }, { dx: 1, dy: 1, c: [1, 0.3, 0.15], k: 0.7 }], abajo: { c: [0.8, 0.2, 0.1], k: 0.5 }, emite: (c) => (c[1] > 0.45 && c[1] > c[0] * 1.4 && c[1] > c[2] * 1.3 ? sat((c[1] - 0.4) * 2.5) : 0), cEmite: VERDE };
-  const ma = figura(Ma, MaL, modelo('jefe_madre_cienaga_morir', 's', 5, 2.6), CX, 712, 400, luzM);
+  const ma = figura(Ma, MaL, modelo('jefe_madre_cienaga_morir', 's', 4, 3.2), CX, 730, 470, luzM);
   const mb = cajaPose(ma, CX, 712), mw = mb.x1 - mb.x0;
   const tajo = M(); polilinea(tajo, [[CX - mw * 0.12, mb.y0 + 90], [CX, mb.y0 + 150], [CX + mw * 0.1, mb.y0 + 230]], 14, 6);
   pintar(Ma, tajo, [0.15, 0.01, 0.01]); brillo(MaL, desenfocada(tajo, 8), [1, 0.25, 0.08], 0.7);

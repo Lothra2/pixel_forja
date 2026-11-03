@@ -21,6 +21,8 @@ import './catalogo/desierto2';
 import './catalogo/nieve2';
 import './catalogo/hielo2';
 import './catalogo/selva2';
+import './catalogo/botin';
+import './catalogo/hielo';
 
 /**
  * La toma de una cinemática: las capas de paralaje que se pintan para un plano y los elementos animados que el juego
@@ -166,26 +168,35 @@ export function figura(capa: Lamina, capaLuz: Lamina | undefined, m: Modelo, x: 
   return p;
 }
 export { modelo };
+/** Como `figura` pero a una escala fija (px por px del render): dos modelos del mismo k quedan del mismo tamaño y alineados. */
+export function figuraEsc(capa: Lamina, capaLuz: Lamina | undefined, m: Modelo, x: number, y: number, escala: number, luz: Luz, o: { espejo?: boolean } = {}): Pose {
+  return figura(capa, capaLuz, m, x, y, m.img.h * escala, luz, o);
+}
 /** Atajo: una lámina de luz suelta con un brillo en una máscara desenfocada. */
 export function resplandor(L: Lamina, m: Mascara, c: C3, k: number, r: number) { brillo(L, desenfocada(m, r), c, k); }
-/** Silueta de un barco de vela (casco, mástiles, velas rotas): en una máscara. */
+/** Silueta de un barco de vela: casco curvo con castillo de popa, tres mástiles, velas hinchadas y jironeadas, jarcias. */
 export function barco(m: Mascara, x: number, y: number, largo: number, s: number, rotas = true) {
-  const r = rng(s), h = largo * 0.16;
-  rellenar(m, [[x - largo / 2, y - h], [x - largo * 0.42, y], [x + largo * 0.38, y], [x + largo / 2 + largo * 0.08, y - h * 1.3], [x + largo * 0.3, y - h * 0.9], [x - largo * 0.3, y - h * 0.95]]);
-  rellenar(m, [[x - largo / 2, y - h], [x - largo / 2 - largo * 0.02, y - h * 1.9], [x - largo * 0.34, y - h * 1.6], [x - largo * 0.3, y - h * 0.95]]);
-  for (const [dx, alto] of [[-0.18, 1], [0.12, 1.15], [0.36, 0.7]] as [number, number][]) {
-    const mx = x + dx * largo, top = y - h - largo * 0.55 * alto;
-    trazo(m, mx, y - h, mx + largo * 0.01, top, largo * 0.012, largo * 0.008, 1, 'max', false);
-    for (const t of [0.25, 0.55]) {
-      const vy = y - h - largo * 0.55 * alto * (1 - t), vw = largo * 0.16 * alto * (1 - t * 0.4);
-      trazo(m, mx - vw, vy, mx + vw, vy, 2, 2, 1, 'max', false);
-      const pts: P2[] = [[mx - vw, vy], [mx + vw, vy]];
-      for (let k = 0; k <= 6; k++) { const u = 1 - k / 6; pts.push([mx - vw + u * vw * 2 + Math.sin(k * 1.7 + s) * 4, vy + largo * 0.13 * alto * (0.7 + (rotas ? r() * 0.5 : 0.3))]); }
+  const r = rng(s), h = largo * 0.13, L = largo / 2;
+  const casco: P2[] = [];
+  for (let k = 0; k <= 20; k++) { const u = k / 20, xx = x - L + u * largo; casco.push([xx, y - h - h * 0.5 * (Math.abs(u - 0.45) * 2) ** 2.2 - (u < 0.18 ? h * 0.9 * (1 - u / 0.18) : 0)]); }
+  for (let k = 20; k >= 0; k--) { const u = k / 20, xx = x - L * 0.88 + u * largo * 0.92; casco.push([xx, y - h * 0.15 * (Math.abs(u - 0.5) * 2) ** 2]); }
+  rellenar(m, casco);
+  trazo(m, x + L * 0.95, y - h * 1.3, x + L * 1.35, y - h * 2.1, largo * 0.012, largo * 0.006, 1, 'max', false);
+  for (const [dx, alto] of [[-0.42, 0.62], [-0.02, 0.92], [0.42, 0.74]] as [number, number][]) {
+    const mx = x + dx * L, top = y - h - largo * 0.62 * alto;
+    trazo(m, mx, y - h, mx, top, largo * 0.012, largo * 0.007, 1, 'max', false);
+    for (const [t0, t1, an] of [[0.1, 0.42, 0.24], [0.48, 0.8, 0.2]] as [number, number, number][]) {
+      const ya = top + (y - h - top) * t0, yb = top + (y - h - top) * t1, w0 = largo * an * alto * 0.55, w1 = w0 * 1.15;
+      trazo(m, mx - w0, ya, mx + w0, ya, 2, 2, 1, 'max', false);
+      const pts: P2[] = [[mx - w0, ya]];
+      for (let k = 0; k <= 8; k++) { const u = k / 8; pts.push([mx + w0 + (w1 - w0) * u + Math.sin(u * Math.PI) * w0 * 0.12, ya + (yb - ya) * u]); }
+      for (let k = 0; k <= 10; k++) { const u = 1 - k / 10, jir = rotas && r() < 0.5 ? (r() * 0.35) * (yb - ya) : 0; pts.push([mx - w1 + 2 * w1 * u, yb - jir + Math.sin(u * Math.PI) * (yb - ya) * 0.08]); }
+      for (let k = 0; k <= 8; k++) { const u = 1 - k / 8; pts.push([mx - w0 - (w1 - w0) * u - Math.sin(u * Math.PI) * w0 * 0.12, ya + (yb - ya) * u]); }
       rellenar(m, pts);
-      if (rotas) for (let k = 0; k < 2; k++) disco(m, mx + (r() - 0.5) * vw, vy + largo * 0.06 * alto, largo * 0.015 * (1 + r()), 1, 'restar');
+      if (rotas && r() < 0.6) disco(m, mx + (r() - 0.5) * w0, (ya + yb) / 2, largo * 0.012 * (1 + r()), 1, 'restar');
     }
   }
-  for (let k = 0; k < 6; k++) trazo(m, x - largo * 0.18 + (k - 2) * largo * 0.1, y - h - largo * 0.5, x + (k - 2.5) * largo * 0.16, y - h, 1, 1, 0.8, 'max', false);
+  for (let k = 0; k < 7; k++) { const a = x + (k - 3) * L * 0.28, b = y - h * 1.1; trazo(m, a, b, x - L * 0.02 + (k - 3) * 4, y - h - largo * 0.55, 1, 1, 0.7, 'max', false); }
 }
 /** Ondas y brillos del agua en una lámina que suma (para que titilen). */
 export function brillosAgua(L: Lamina, y0: number, y1: number, cx: number, ancho: number, c: C3, k: number, s: number) {
