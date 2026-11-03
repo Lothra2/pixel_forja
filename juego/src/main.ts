@@ -493,6 +493,7 @@ function paso(dt: number) {
   ctx.imageSmoothingEnabled = false;
   const inp = document.getElementById('nombre') as HTMLInputElement;
   if (estado !== 'crear') inp.style.display = 'none';
+  if (estado !== 'juego') { Sonido.dronJefe(0); Sonido.latido(false); }
   switch (estado) {
     case 'carga': pantallaCarga(cargaK, cargaMsg, tiempo); break;
     case 'zona': pantallaCarga(cargaK, cargaMsg, tiempo); break;
@@ -602,7 +603,16 @@ function paso(dt: number) {
       dibujarMundo(jj, dtMundo, tiempo);
       dibujarMiedo(jj, tiempo);
       dibujarHistoria(jj, tiempo);
-      vinetaSangre(jj.heroe.muerto ? 0 : jj.heroe.vida / jj.heroe.vidaMax, tiempo);
+      {
+        // el latido bajo el 30 % de vida, más rápido cuanto menos queda, y la pantalla late con él
+        const frac = jj.heroe.muerto ? 0 : jj.heroe.vida / jj.heroe.vidaMax;
+        const enPeligro = frac > 0 && frac < 0.3 && jj.zona.tipo !== 'pueblo';
+        Sonido.latido(enPeligro); if (enPeligro) Sonido.latidoRitmo(0.95 - (1 - frac / 0.3) * 0.45);
+        vinetaSangre(frac, tiempo, Sonido.latidoFase());
+        // el dron grave que sube cerca de un jefe despierto
+        const jf = jj.jefe && !jj.jefe.muerto && jj.jefe.estado === 'perseguir' ? jj.jefe : null;
+        Sonido.dronJefe(jf ? Math.max(0.3, 1 - dist(jf.x, jf.y, jj.heroe.x, jj.heroe.y) / 20) : 0);
+      }
       if (presenta) dibujarPresentacion(presenta.m, presenta.t);
       if (caida) dibujarCaida(caida.m, caida.t, DUR_CAIDA);
       if (entreActoPendiente && ui.izq !== 'dialogo') { empezarEntreacto(entreActoPendiente); entreActoPendiente = 0; }

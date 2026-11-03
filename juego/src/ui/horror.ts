@@ -13,19 +13,20 @@ let ultimoT = 0;
  * Con poca vida la pantalla se tiñe: velo 1 bajo el 40 %, 2 bajo el 25 % y 3 bajo el 12 %, con fundido de 0.4 s entre
  * niveles; en el 3 el velo late. Encima, el latido rojo de siempre debajo del 30 %.
  */
-export function vinetaSangre(frac: number, t: number) {
+export function vinetaSangre(frac: number, t: number, fase = -1) {
   const dt = Math.min(0.1, Math.max(0, t - ultimoT)); ultimoT = t;
   const nivel = frac <= 0 ? 0 : frac < 0.12 ? 3 : frac < 0.25 ? 2 : frac < 0.4 ? 1 : 0;
   for (let n = 1; n <= 3; n++) alfaVelo[n] += ((n === nivel ? 1 : 0) - alfaVelo[n]) * Math.min(1, dt / 0.4);
   for (let n = 1 as 1 | 2 | 3; n <= 3; n = (n + 1) as 1 | 2 | 3) {
     const a = alfaVelo[n]; if (a < 0.01) continue;
-    const late = n === 3 ? 0.8 + 0.2 * Math.pow(Math.max(0, Math.sin(t * Math.PI * 2.6)), 4) : 1;
+    const late = n === 3 ? 0.8 + 0.2 * (fase >= 0 ? Math.exp(-fase * 6) : Math.pow(Math.max(0, Math.sin(t * Math.PI * 2.6)), 4)) : 1;
     ctx.save(); ctx.globalAlpha = a * late; ctx.drawImage(velo(n), 0, 0, W, H); ctx.restore();
   }
   if (frac >= 0.3 || frac <= 0) return;
   const peligro = 1 - frac / 0.3;
   const ritmo = 1.2 + peligro * 1.6;
-  const lat = Math.pow(Math.max(0, Math.sin(t * Math.PI * ritmo)), 6);
+  // con sonido, la pantalla late justo con cada golpe del corazón; sin sonido, con su propio ritmo
+  const lat = fase >= 0 ? Math.exp(-fase * 7) + 0.6 * Math.exp(-Math.max(0, fase - 0.27) * 9) * (fase > 0.27 ? 1 : 0) : Math.pow(Math.max(0, Math.sin(t * Math.PI * ritmo)), 6);
   const k = (0.2 + peligro * 0.3 + lat * 0.35 * (0.5 + peligro)) * 0.6;
   const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * (0.42 - peligro * 0.12), W / 2, H / 2, Math.max(W, H) * 0.72);
   g.addColorStop(0, 'rgba(120,0,0,0)');

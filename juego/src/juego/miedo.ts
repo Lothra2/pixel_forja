@@ -6,6 +6,8 @@ import { ZONAS } from '../mundo/actos';
 import { pasable } from '../mundo/zona';
 import { Sonido } from '../audio/sonido';
 import { R, dist } from '../nucleo/azar';
+/** Paneo y distancia de algo respecto al héroe, como los demás sonidos del mundo. */
+const panDe = (j: Juego, x: number, y: number): [number, number] => { const h = j.heroe; return [Math.max(-1, Math.min(1, ((x - y) - (h.x - h.y)) / 14)), Math.max(0, Math.min(1, dist(x, y, h.x, h.y) / 22))]; };
 
 export interface Ojos { x: number; y: number; v: string; t: number; vida: number; apaga: number }
 export interface Manos { x: number; y: number; v: string; t: number }
@@ -37,30 +39,31 @@ export function miedoPaso(j: Juego, dt: number) {
       for (let i = 0; i < 12; i++) {
         const a = R() * Math.PI * 2, r = 8 + R() * 5, x = h.x + Math.cos(a) * r, y = h.y + Math.sin(a) * r;
         if (!pasable(z, x, y)) continue;
+        Sonido.susurro(...panDe(j, x, y));
         m.ojos.push({ x, y, v: (['rojo', 'ambar', 'muchos', 'enorme'])[Math.floor(R() * (R() < 0.15 ? 4 : 2))], t: 0, vida: 25 + R() * 15, apaga: 0 });
         break;
       }
     }
   }
-  for (const o of m.ojos) { o.t += dt; if (!o.apaga && dist(o.x, o.y, h.x, h.y) < 4) { o.apaga = 0.01; Sonido.susurro(); } if (o.apaga) o.apaga += dt; }
+  for (const o of m.ojos) { o.t += dt; if (!o.apaga && dist(o.x, o.y, h.x, h.y) < 4) { o.apaga = 0.01; Sonido.susurro(...panDe(j, o.x, o.y)); } if (o.apaga) o.apaga += dt; }
   m.ojos = m.ojos.filter((o) => o.t < o.vida && o.apaga < 0.6);
   // la sombra que cruza el borde: una vez cada mucho
   m.proxSombra -= dt;
-  if (!m.sombra && m.proxSombra <= 0 && oscuro) { m.proxSombra = 150 + R() * 150; m.sombra = { t: 0, lado: R() < 0.5 ? -1 : 1, y: 0.3 + R() * 0.4, v: R() < 0.7 ? 'cruza' : 'asoma' }; Sonido.susurro(); }
+  if (!m.sombra && m.proxSombra <= 0 && oscuro) { m.proxSombra = 150 + R() * 150; m.sombra = { t: 0, lado: R() < 0.5 ? -1 : 1, y: 0.3 + R() * 0.4, v: R() < 0.7 ? 'cruza' : 'asoma' }; Sonido.susurro(-m.sombra.lado * 0.9, 0.1); Sonido.efecto('golpe_susto', { pan: -m.sombra.lado * 0.6, vol: 0.8 }); }
   if (m.sombra) { m.sombra.t += dt; if (m.sombra.t > 2.6) m.sombra = null; }
   // manos: una vez por visita en criptas y catacumbas, cerca de ti
   if (!m.manosHechas && /cripta|catacumbas|abadia|osario|criptas/.test(def.tema + z.id)) {
     m.proxManos -= dt;
     if (m.proxManos <= 0 && !h.muerto) {
       const a = R() * Math.PI * 2, x = h.x + Math.cos(a) * 1.8, y = h.y + Math.sin(a) * 1.8;
-      if (pasable(z, x, y)) { m.manos = { x, y, v: (['una', 'muchas', 'esqueleto'])[Math.floor(R() * 3)], t: 0 }; m.manosHechas = true; Sonido.susurro(); j.sacudida = Math.max(j.sacudida, 0.2); }
+      if (pasable(z, x, y)) { m.manos = { x, y, v: (['una', 'muchas', 'esqueleto'])[Math.floor(R() * 3)], t: 0 }; m.manosHechas = true; Sonido.efecto('golpe_susto', { pan: panDe(j, x, y)[0], vol: 0.9 }); Sonido.efecto('hueso_cruje', { pan: panDe(j, x, y)[0], vol: 0.6 }); j.sacudida = Math.max(j.sacudida, 0.2); }
       else m.proxManos = 2;
     }
   }
   if (m.manos) { m.manos.t += dt; if (m.manos.t > 1.6) m.manos = null; }
   // susurro: niebla con rostros que deriva cerca de un jefe despierto
   const jf = j.jefe && !j.jefe.muerto && j.jefe.estado === 'perseguir' ? j.jefe : null;
-  if (jf && m.susurros.length < 3 && R() < dt * 0.4) { const a = R() * Math.PI * 2, r = 2 + R() * 4; m.susurros.push({ x: jf.x + Math.cos(a) * r, y: jf.y + Math.sin(a) * r, v: R() < 0.6 ? 'humo' : 'rostros', t: 0, vx: (R() - 0.5) * 0.6, vy: (R() - 0.5) * 0.6 }); }
+  if (jf && m.susurros.length < 3 && R() < dt * 0.4) { const a = R() * Math.PI * 2, r = 2 + R() * 4; { const sx = jf.x + Math.cos(a) * r, sy = jf.y + Math.sin(a) * r; Sonido.susurro(...panDe(j, sx, sy)); } m.susurros.push({ x: jf.x + Math.cos(a) * r, y: jf.y + Math.sin(a) * r, v: R() < 0.6 ? 'humo' : 'rostros', t: 0, vx: (R() - 0.5) * 0.6, vy: (R() - 0.5) * 0.6 }); }
   for (const s of m.susurros) { s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; }
   m.susurros = m.susurros.filter((s) => s.t < 6);
 }

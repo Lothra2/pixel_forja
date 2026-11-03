@@ -173,6 +173,7 @@ const PIEZAS_GIB = ['torso', 'brazo', 'pierna', 'costillas', 'craneo', 'tripas',
 const PAL_GIB: Record<string, string> = { rojo: 'rojo', negro: 'no_muerto', verde: 'bestia' };
 function reventar(j: Juego, m: Monstruo) {
   (m as any).reventado = true;
+  sonar(j, 'reventon', m.x, m.y, 0.9);
   const col = colorSangre(m), pal = paletaDe(m);
   // el reventón de la Forja y 5 a 9 pedazos que vuelan, giran y caen
   (((j as any).reventones ??= []) as any[]).push({ x: m.x, y: m.y, pal: PAL_GIB[pal], t: 0, esc: m.escala });
@@ -593,6 +594,11 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   } else {
     const m = v as Monstruo;
     sonar(j, g.elem !== 'fisico' ? SONIDO_ELEM[g.elem] : m.def.sonido === 'hueso' ? 'golpe_hueso' : m.def.sonido === 'metal' ? 'golpe_metal' : 'golpe_carne', v.x, v.y, 0.8);
+    // gore: la carne chapotea, y un crítico desgarra
+    if (total > 0 && (g.elem === 'fisico' || g.elem === 'sangre') && !sangraHueso(m) && m.def.sonido !== 'metal') {
+      if (crit) sonar(j, 'desgarro', v.x, v.y, 0.75);
+      else if (R() < 0.45) sonar(j, 'chapoteo', v.x, v.y, 0.4 + Math.min(0.4, total / m.vidaMax));
+    }
     if (m.estado === 'dormido' || m.estado === 'deambular') { m.estado = 'perseguir'; m.objetivo = g.fuente ?? j.heroe; }
     if (total > m.vidaMax * 0.12 && m.acc !== 'atacar' && m.acc !== 'lanzar' && m.calidad < 3) { m.acc = 'herido'; m.t = 0; m.dur = 0.3; }
     if (crit || total > m.vidaMax * 0.3) j.sacudida = Math.max(j.sacudida, 0.1);
@@ -606,6 +612,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
 }
 
 function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
+  if (sangraHueso(m) && !m.dueno) sonar(j, 'hueso_cruje', m.x, m.y, 0.8);
   if (g?.arma && !m.dueno) efectoLegMuerte(j, m);
   m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; m.vida = 0;
   const h = j.heroe;

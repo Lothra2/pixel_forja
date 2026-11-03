@@ -12,11 +12,11 @@ import { R, rng } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 import { dibujarPortada, tituloFijo, dibujarCarta, prepararCarta } from './portada';
 
-export interface Opciones { general: number; musica: number; efectos: number; idioma: 0 | 1; brillo: number }
-export const opciones: Opciones = { general: 0.8, musica: 0.6, efectos: 0.8, idioma: 0, brillo: 1 };
+export interface Opciones { general: number; musica: number; efectos: number; horror: number; idioma: 0 | 1; brillo: number }
+export const opciones: Opciones = { general: 0.8, musica: 0.6, efectos: 0.8, horror: 0.8, idioma: 0, brillo: 1 };
 export function cargarOpciones() { try { Object.assign(opciones, JSON.parse(localStorage.getItem('marca.opciones') ?? '{}')); } catch { /* nada */ } fijarIdioma(opciones.idioma); aplicarVolumen(); }
 export function guardarOpciones() { try { localStorage.setItem('marca.opciones', JSON.stringify(opciones)); } catch { /* nada */ } }
-export const aplicarVolumen = () => Sonido.volumen(opciones.general, opciones.musica, opciones.efectos);
+export const aplicarVolumen = () => Sonido.volumen(opciones.general, opciones.musica, opciones.efectos, opciones.horror ?? 0.8);
 
 // ------------------------------------------------------------------ escenas pintadas con los assets (para intro y menú)
 interface Escena { mapa: MapaGotico; seed: number }
@@ -334,7 +334,7 @@ export { dibujarCrear } from './seleccion';
 // ------------------------------------------------------------------ opciones
 export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
   if (fondo) dibujarFondoMenu(t); else { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, W, H); }
-  const w = 420, h = 340, x = W / 2 - w / 2, y = H / 2 - h / 2;
+  const w = 420, h = 372, x = W / 2 - w / 2, y = H / 2 - h / 2;
   marco(x, y, w, h);
   texto(T('Opciones', 'Options'), W / 2, y + 34, { alin: 'center', tam: 20, color: '#e0c890', fuente: TITULO });
   const barra = (n: string, k: keyof Opciones, yy: number) => {
@@ -347,9 +347,10 @@ export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
   barra(T('Volumen general', 'Master volume'), 'general', y + 60);
   barra(T('Música', 'Music'), 'musica', y + 92);
   barra(T('Efectos', 'Effects'), 'efectos', y + 124);
-  barra(T('Brillo', 'Brightness'), 'brillo', y + 156);
-  if (boton(`${T('Idioma', 'Language')}: ${IDI ? 'English' : 'Español'}`, x + 30, y + 196, w - 60, 30, { tam: 13 })) { opciones.idioma = IDI ? 0 : 1; fijarIdioma(opciones.idioma); guardarOpciones(); E.clicIzq = false; }
-  if (boton(T('Pantalla completa', 'Fullscreen'), x + 30, y + 236, w - 60, 30, { tam: 13 })) { E.clicIzq = false; try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch { /* nada */ } }
+  barra(T('Efectos de horror', 'Horror effects'), 'horror', y + 156);
+  barra(T('Brillo', 'Brightness'), 'brillo', y + 188);
+  if (boton(`${T('Idioma', 'Language')}: ${IDI ? 'English' : 'Español'}`, x + 30, y + 228, w - 60, 30, { tam: 13 })) { opciones.idioma = IDI ? 0 : 1; fijarIdioma(opciones.idioma); guardarOpciones(); E.clicIzq = false; }
+  if (boton(T('Pantalla completa', 'Fullscreen'), x + 30, y + 268, w - 60, 30, { tam: 13 })) { E.clicIzq = false; try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch { /* nada */ } }
   if (boton(T('Volver', 'Back'), x + w / 2 - 80, y + h - 48, 160, 32)) { E.clicIzq = false; return 'volver'; }
   return null;
 }

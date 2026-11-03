@@ -29,12 +29,14 @@ let fallido = false;
 let maestro!: GainNode;
 let busMusica!: GainNode;
 let busEfectos!: GainNode;
+/** Efectos de horror (gore, sustos, susurros, latido y dron): con volumen propio en Opciones. */
+let busHorror!: GainNode;
 let busAmbiente!: GainNode;
 let revEntrada!: GainNode;
 let ruidos: AudioBuffer[] = [];
 let reloj: ReturnType<typeof setInterval> | null = null;
 
-const vols = { general: 0.8, musica: 0.6, efectos: 0.8 };
+const vols = { general: 0.8, musica: 0.6, efectos: 0.8, horror: 0.8 };
 
 const BLANCO = 0;
 const ROSA = 1;
@@ -304,7 +306,9 @@ function construirGrafo(): void {
   busMusica = gan(0, maestro);
   busEfectos = gan(0, maestro);
   busAmbiente = gan(0, maestro);
+  busHorror = gan(0, maestro);
   aplicarVolumen();
+  crearDronJefe();
 
   crearCombate();
   crearLatido();
@@ -317,6 +321,7 @@ function aplicarVolumen(): void {
   busMusica.gain.setTargetAtTime(vols.musica * 0.75, t, 0.05);
   busEfectos.gain.setTargetAtTime(vols.efectos, t, 0.05);
   busAmbiente.gain.setTargetAtTime(vols.efectos * 0.65, t, 0.05);
+  busHorror.gain.setTargetAtTime(vols.horror, t, 0.05);
 }
 
 // ============================================================================
@@ -1790,11 +1795,13 @@ function tickCombate(desde: number, hasta: number): void {
 // Latido (vida baja)
 // ============================================================================
 
-const latido = { salida: null as GainNode | null, on: false, proximo: 0, hasta: 0 };
+const latido = { salida: null as GainNode | null, on: false, proximo: 0, hasta: 0, periodo: 0.86, golpes: [] as number[] };
 
 function crearLatido(): void {
-  latido.salida = gan(0, busEfectos);
+  latido.salida = gan(0, busHorror);
 }
+/** Diferencia entre el reloj de audio y el de la página, para que la pantalla lata justo con el sonido. */
+const relojPagina = (tAudio: number) => performance.now() / 1000 + (tAudio - ac.currentTime);
 
 function tickLatido(desde: number, hasta: number): void {
   const o = latido.salida;
@@ -1804,8 +1811,9 @@ function tickLatido(desde: number, hasta: number): void {
   while (latido.proximo < hasta) {
     const t = latido.proximo;
     latidoGolpe(o, t, 0.8);
-    latidoGolpe(o, t + 0.27, 0.5);
-    latido.proximo += al(0.82, 0.9);
+    latidoGolpe(o, t + latido.periodo * 0.31, 0.5);
+    latido.golpes.push(relojPagina(t)); if (latido.golpes.length > 4) latido.golpes.shift();
+    latido.proximo += latido.periodo * al(0.97, 1.03);
   }
 }
 
@@ -1893,9 +1901,9 @@ function cambiarMusica(m: Musica): void {
 // Susurro
 // ============================================================================
 
-function susurrar(): void {
+function susurrar(pan?: number, d = 0.15): void {
   const t0 = ac.currentTime + 0.05;
-  const o = crearVoz(0.55, al(-0.9, 0.9), 0.15, REVERB_EXTRA.susurro ?? 0.5, busEfectos);
+  const o = crearVoz(0.55, pan ?? al(-0.9, 0.9), d, REVERB_EXTRA.susurro ?? 0.5, busHorror);
   const n = 5 + Math.floor(Math.random() * 6);
   let t = t0;
   const vocales = Object.keys(VOCALES);
@@ -1923,6 +1931,67 @@ function susurrar(): void {
   vocesFin.push(t + 0.5);
   liberar(o, t - ac.currentTime + 1.5);
 }
+
+// ============================================================================
+// Horror: dron de jefe y efectos de gore y sustos
+// ============================================================================
+
+const dron = { salida: null as GainNode | null, filtro: null as BiquadFilterNode | null, nivel: 0 };
+/** Un dron grave y sucio que sube cuando hay un jefe despierto cerca: dos sierras desafinadas, un subgrave y ruido marrón. */
+function crearDronJefe(): void {
+  const t = ac.currentTime;
+  dron.salida = gan(0, busHorror);
+  dron.filtro = filt('lowpass', 180, 2, dron.salida);
+  for (const [f, det] of [[41.2, 0], [41.2, 9], [61.7, -6]] as [number, number][]) { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det; o.connect(gan(0.22, dron.filtro)); o.start(t); }
+  const sub = ac.createOscillator(); sub.type = 'sine'; sub.frequency.value = 30.9; sub.connect(gan(0.5, dron.salida)); sub.start(t);
+  const rb = ac.createBufferSource(); rb.buffer = ruidos[MARRON] as AudioBuffer; rb.loop = true; rb.connect(filt('lowpass', 260, 0.8, gan(0.35, dron.filtro))); rb.start(t);
+  const l = ac.createOscillator(); l.frequency.value = 0.13; const lg = gan(70, dron.filtro.frequency as any); l.connect(lg); l.start(t);
+}
+
+/** Chapoteo de sangre: un golpe húmedo grave, ruido que se cierra rápido y unas gotas que caen después. */
+function chapoteo(o: AudioNode, t: number, p: number, grande: boolean): number {
+  const v = grande ? 0.7 : 0.7;
+  golpeSordo(o, t, 140 * p, 55, v * 0.7, grande ? 0.16 : 0.09);
+  const g = gan(0, o); env(g.gain, t, 0.003, v * 0.8, grande ? 0.22 : 0.12);
+  const lp = filt('lowpass', 1400 * p, 1.2, g); lp.frequency.exponentialRampToValueAtTime(260, t + (grande ? 0.25 : 0.14));
+  ruido(t, t + 0.3, lp, ROSA);
+  const n = grande ? 7 : 3;
+  for (let i = 0; i < n; i++) golpeHumedo(o, t + 0.05 + al(0, grande ? 0.5 : 0.25), al(500, 1100) * p, al(0.1, 0.25) * v);
+  return grande ? 0.7 : 0.35;
+}
+const EFECTOS_HORROR: Record<string, Fx> = {
+  chapoteo(o, t, p) { return chapoteo(o, t, p, false); },
+  reventon(o, t, p) { golpeSordo(o, t, 90 * p, 38, 0.5, 0.3); return chapoteo(o, t + 0.01, p * 0.8, true); },
+  /** Huesos que crujen: una ráfaga de chasquidos secos que se astillan, y el golpe sordo del montón al caer. */
+  hueso_cruje(o, t, p) {
+    const n = 7 + Math.floor(Math.random() * 6);
+    let tt = t;
+    for (let i = 0; i < n; i++) { chasquido(o, tt, al(1800, 4200) * p, al(3, 9), al(0.25, 0.6), al(0.01, 0.03)); tt += al(0.012, 0.06); }
+    golpeSordo(o, tt, 220 * p, 90, 0.5, 0.08);
+    crujido(o, t, 0.18, 900 * p, 0.25);
+    return tt - t + 0.2;
+  },
+  /** Carne que se desgarra: ruido áspero que barre hacia arriba con un temblor, sobre un tirón grave. */
+  desgarro(o, t, p) {
+    const g = gan(0, o); envSost(g.gain, t, 0.01, 0.7, 0.22, 0.08);
+    const b = filt('bandpass', 500 * p, 2.5, g); b.frequency.exponentialRampToValueAtTime(2600 * p, t + 0.28);
+    const am = gan(0.5, b); lfo(38, 0.5, am.gain, t, t + 0.35, 'square');
+    ruido(t, t + 0.36, am, BLANCO);
+    golpeSordo(o, t, 110 * p, 50, 0.6, 0.12);
+    chapoteo(o, t + 0.06, p, false);
+    return 0.45;
+  },
+  /** El golpe del susto: un cluster grave de órgano y cuerdas que entra de golpe y un platillo raspado. */
+  golpe_susto(o, t, p) {
+    const g = gan(0, o); env(g.gain, t, 0.004, 0.2, 1.6);
+    const lp = filt('lowpass', 1800, 0.9, g); lp.frequency.exponentialRampToValueAtTime(240, t + 1.4);
+    for (const [f, det] of [[55, 0], [58.3, 4], [82.4, -3], [110, 6], [116.5, -5]] as [number, number][]) osc('sawtooth', f * p, t, t + 1.8, lp, det);
+    golpeSordo(o, t, 70, 32, 0.55, 0.5);
+    const gm = gan(0, o); env(gm.gain, t, 0.002, 0.35, 0.9); ruido(t, t + 1, filt('bandpass', 5200, 1.5, gm));
+    return 1.9;
+  },
+};
+const HORROR = new Set([...Object.keys(EFECTOS_HORROR), 'susurro']);
 
 // ============================================================================
 // API publica
@@ -1959,8 +2028,9 @@ function iniciar(): void {
 export const Sonido = {
   iniciar,
 
-  volumen(general: number, musica: number, efectos: number): void {
+  volumen(general: number, musica: number, efectos: number, horror = vols.horror): void {
     try {
+      vols.horror = lim(Number(horror) || 0, 0, 1);
       vols.general = lim(Number(general) || 0, 0, 1);
       vols.musica = lim(Number(musica) || 0, 0, 1);
       vols.efectos = lim(Number(efectos) || 0, 0, 1);
@@ -2003,8 +2073,8 @@ export const Sonido = {
       if (vol <= 0.001) return;
       const tono = (op.tono && op.tono > 0 ? op.tono : 1) * (1 + (Math.random() - 0.5) * 0.08);
       const t = ac.currentTime + 0.005;
-      const voz = crearVoz(vol, op.pan ?? 0, d, REVERB_EXTRA[id] ?? 0, busEfectos);
-      const fx = EFECTOS[id] ?? efectoGenerico;
+      const voz = crearVoz(vol, op.pan ?? 0, d, REVERB_EXTRA[id] ?? (id === 'golpe_susto' ? 0.6 : 0), HORROR.has(id) ? busHorror : busEfectos);
+      const fx = EFECTOS_HORROR[id] ?? EFECTOS[id] ?? efectoGenerico;
       const dur = fx(voz, t, tono);
       vocesFin.push(t + dur);
       liberar(voz, dur + 0.3);
@@ -2020,7 +2090,7 @@ export const Sonido = {
     } catch { /* nada */ }
   },
 
-  susurro(): void {
+  susurro(pan?: number, dist?: number): void {
     try {
       if (!listo || ac.state !== 'running') return;
       const ms = ahoraMs();
@@ -2028,10 +2098,25 @@ export const Sonido = {
       if (ult !== undefined && ms - ult < 400) return;
       if (!hayHueco()) return;
       ultimoEfecto.set('__susurro', ms);
-      susurrar();
+      susurrar(pan === undefined ? undefined : lim(pan, -1, 1), dist === undefined ? 0.15 : lim(dist, 0, 1));
     } catch { /* nada */ }
   },
 
+  /** Ritmo del latido (segundos entre latidos): más rápido cuanto menos vida queda. */
+  latidoRitmo(periodo: number): void { latido.periodo = lim(Number(periodo) || 0.86, 0.35, 1.4); },
+  /** Segundos desde el último latido que sonó (para que la pantalla lata con él), o -1 si no hay latido. */
+  latidoFase(): number { if (!latido.on) return -1; const ahora = performance.now() / 1000; const g = latido.golpes.filter((x) => x <= ahora); return g.length ? ahora - g[g.length - 1] : -1; },
+  /** El dron grave cerca de un jefe despierto: 0 apagado, 1 encima. */
+  dronJefe(nivel: number): void {
+    try {
+      if (!listo || !dron.salida || !dron.filtro) return;
+      const v = lim(Number(nivel) || 0, 0, 1);
+      if (Math.abs(v - dron.nivel) < 0.02) return;
+      dron.nivel = v; const t = ac.currentTime;
+      dron.salida.gain.setTargetAtTime(v * 0.55, t, v > 0 ? 1.2 : 0.8);
+      dron.filtro.frequency.setTargetAtTime(140 + v * 380, t, 1.5);
+    } catch { /* nada */ }
+  },
   latido(on: boolean): void {
     try {
       const v = !!on;
@@ -2051,4 +2136,23 @@ export function _detenerSonido(): void {
     if (reloj) clearInterval(reloj);
     reloj = null;
   } catch { /* nada */ }
+}
+
+/** Solo para pruebas: renderiza un efecto fuera de línea y devuelve su pico, su RMS y la duración con sonido. */
+export async function _renderEfecto(id: string, seg = 2.5): Promise<{ pico: number; rms: number; activo: number }> {
+  const viejoAc = ac, viejos = ruidos;
+  const off = new OfflineAudioContext(1, Math.floor(44100 * seg), 44100);
+  ac = off as unknown as AudioContext;
+  try {
+    crearRuidos();
+    const salida = off.createGain(); salida.connect(off.destination);
+    const fx = EFECTOS_HORROR[id] ?? EFECTOS[id];
+    if (!fx) throw new Error('no existe ' + id);
+    fx(salida, 0.01, 1);
+  } finally { ac = viejoAc; }
+  const buf = await off.startRendering();
+  ruidos = viejos;
+  const d = buf.getChannelData(0); let pico = 0, s = 0, act = 0;
+  for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); pico = Math.max(pico, a); s += d[i] * d[i]; if (a > 0.01) act = i; }
+  return { pico, rms: Math.sqrt(s / d.length), activo: act / 44100 };
 }
