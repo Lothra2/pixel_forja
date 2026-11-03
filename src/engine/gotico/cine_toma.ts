@@ -37,15 +37,14 @@ export const NARR_Y = 548 + MY;
 
 export type Mezcla = 'normal' | 'sumar';
 export interface CapaToma { id: string; z: number; L: Lamina; paralaje: number; mezcla: Mezcla; anim?: Record<string, unknown>; soloSi?: string; opaca?: boolean; notas?: string }
-/** Un efecto animado: partículas que nacen en una zona o sprites fijos en posiciones (coordenadas de capa). */
-export type FxToma =
-  | { tipo: 'particulas'; fila: FilaParticula; cantidad: number; zona: [number, number, number, number]; vel_x: [number, number]; vel_y: [number, number]; vaiven?: number; escala: [number, number]; alfa: [number, number]; mezcla: Mezcla; despues_de: string; paralaje: number; vida_s?: [number, number]; fps?: number }
-  | { tipo: 'sprite'; hoja: 'fuego' | 'goteo' | 'humo' | 'cuervo'; fila?: string; en: [number, number, number][]; fps: number; mezcla: Mezcla; despues_de: string; paralaje: number; pausa_s?: [number, number]; sube_px_s?: number; vuela_px_s?: [number, number]; alfa?: number; soloSi?: string };
-export type FilaParticula = 'copo' | 'copo2' | 'brasa' | 'chispa' | 'nieve' | 'oro' | 'lluvia' | 'polvo';
+/** Sprites animados de las hojas compartidas (fuego, goteo, humo, cuervos) puestos en posiciones de la capa: [x, y, escala] del pivote. */
+export interface FxToma { tipo: 'sprite'; hoja: 'fuego' | 'goteo_sangre' | 'goteo_agua' | 'humo' | 'cuervo'; en: [number, number, number][]; mezcla: Mezcla; despues_de: string; paralaje: number; fps?: number; alfa?: number; soloSi?: string }
 
 export class Toma {
   capas: CapaToma[] = [];
   fx: FxToma[] = [];
+  /** Partículas del juego para este plano (una de las que ya trae). */
+  particulas?: 'ceniza' | 'brasas' | 'nieve' | 'lluvia';
   constructor(readonly semilla: number) {}
   /** Una capa nueva (transparente, salvo que se pinte entera). */
   capa(id: string, z: number, paralaje: number, mezcla: Mezcla = 'normal', o: { anim?: Record<string, unknown>; soloSi?: string; opaca?: boolean; notas?: string } = {}): Lamina {

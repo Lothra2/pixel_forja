@@ -37,6 +37,21 @@ const M = MATERIALES;
 M.ar_hueco = { rampa: ['#020102', '#060406', '#0b080a', '#120d0f'], ruido: 0.05, escala: 1 };
 M.ar_cera = { rampa: ['#1d0405', '#360809', '#520e0e', '#701714', '#8e221c', '#a93127', '#c14735'], ruido: 0.12, escala: 0.6, brillo: 0.45 };
 M.ar_cordon = { rampa: ['#140c06', '#24160b', '#382311', '#4e3219', '#664223', '#80552f'], ruido: 0.25, escala: 1.4 };
+// los arcos y la ballesta: las palas de madera, ébano o cuerno se veían negras a la escala del juego (palas finas de
+// madera oscura); van en tejo claro, ébano pulido o cuerno claro, con un filo más claro en el lomo, la cuerda de lino
+// claro que se ve y el agarre forrado con vueltas de cordel
+M.ar_tejo = { rampa: ['#24150a', '#3a2412', '#56361b', '#734a25', '#8f6031', '#a8773f', '#bf8f52', '#d4a96c', '#e6c48e'], ruido: 0.12, escala: 0.25, brillo: 0.3, patron: (p) => Math.sin(p[2] * 1.7 + p[0] * 0.4) * 0.04 };
+M.ar_ebano_arco = { rampa: ['#120a08', '#1f120d', '#2e1b13', '#40261a', '#553323', '#6b432e', '#84573b', '#a0704d', '#bf9270'], ruido: 0.1, escala: 0.4, brillo: 0.5 };
+M.ar_cuerno_claro = { rampa: ['#2a2018', '#43352a', '#5e4c3c', '#7a6650', '#968166', '#b09c80', '#c9b79a', '#ded0b4', '#efe5cf'], ruido: 0.12, escala: 0.8, brillo: 0.35, patron: (p) => (Math.sin(p[0] * 2.3 + p[1] * 1.7 + p[2] * 3.1) > 0.6 ? -0.07 : 0.02) };
+M.ar_filo_arco = { rampa: ['#4a3c28', '#6e5a3c', '#947c58', '#b89e78', '#d6c09c', '#efe0c0'], ruido: 0.08, escala: 0.6, brillo: 0.4 };
+M.ar_cuerda_clara = { rampa: ['#4a4234', '#6e6450', '#948a72', '#b8ae94', '#d8d0b8'], ruido: 0.3, escala: 1 };
+/** La madera (o el cuerno) de las palas de un arco y del tablero de la ballesta, en su versión clara que se lee. */
+export function palaClara(m: string): string {
+  if (m === 'madera' || m === 'madera_lisa' || m === 'madera_vieja') return 'ar_tejo';
+  if (m === 'ar_ebano') return 'ar_ebano_arco';
+  if (m === 'cu_cuerno') return 'ar_cuerno_claro';
+  return m;
+}
 
 // ------------------------------------------------------------------ el marco y los materiales
 export interface MarcoArma {
@@ -56,6 +71,11 @@ export interface MarcoArma {
   arco?: { c: V3; tiro: V3; arriba: V3 };
   /** el cuadro (los fragmentos míticos orbitan) */
   f: number;
+  /**
+   * Radio (en unidades de S) de los filos y las runas encendidas de lo legendario y lo mítico: en la mano es grueso para
+   * que se lea a la escala del juego, en el ícono fino (sin valor: 0.2).
+   */
+  vivo?: number;
 }
 export type NivelForja = 1 | 2 | 3 | 4 | 5;
 export interface OpcForja { tipo: TipoArma; nivel: NivelForja; encanto?: Encanto; mat: string; mango: string; gema?: string }
@@ -78,6 +98,8 @@ const luzDe = (o: OpcForja) => o.gema ?? (o.encanto ? BRILLO_ELEMENTO[o.encanto]
 interface Cx {
   S: number; n: NivelForja; m: V3; dd: V3; canto: V3; plano: V3; F: V3; f: number;
   mat: string; mango: string; guarn: string; acento: string; luz: string; el?: Encanto;
+  /** filos y runas encendidos (legendaria y mítica): su radio en unidades de S (0 = sin) y lo que brilla */
+  vivo: number; brasa: string;
   ps: Pieza[];
   /** punto en unidades de S: k a lo largo del arma, c hacia el canto (ancho de la hoja), p hacia la cara */
   P: (k: number, c?: number, p?: number) => V3;
@@ -89,6 +111,7 @@ function contexto(mc: MarcoArma, o: OpcForja): Cx {
   const plano = nor(cruz(canto, dd));
   return {
     S, n: o.nivel, m, dd, canto, plano, F, f: mc.f, mat: o.mat, mango: o.mango, guarn: guarnicionDe(o.nivel, o.encanto), acento: acentoDe(o.nivel, o.encanto), luz: luzDe(o), el: o.encanto, ps: [],
+    vivo: o.nivel >= 4 ? mc.vivo ?? 0.2 : 0, brasa: o.encanto ? BRILLO_ELEMENTO[o.encanto] : 'ar_runa_oro',
     P: (k, c = 0, p = 0) => add(add(add(m, dd, k * S), canto, c * S), plano, p * S),
   };
 }
@@ -147,6 +170,19 @@ function fragmentos(cx: Cx, a: V3, b: V3, R: number, n = 4) {
     cx.ps.push(poliedro([add(c, d, l), add(c, d, -l * 0.7), add(c, o1, w), add(c, o1, -w), add(c, o2, w * 0.6), add(c, o2, -w * 0.6)], { mat: cx.luz }));
   }
 }
+/**
+ * Una línea encendida por los puntos: los filos y las runas de lo legendario y lo mítico, del brillo del elemento (o
+ * runas de oro sin elemento). Brilla sola, así que aun de un pixel de ancho se lee a la escala del juego.
+ */
+function encendida(cx: Cx, pts: V3[], k = 1) {
+  const r = cx.vivo * k * cx.S;
+  if (r > 0 && pts.length > 1) cx.ps.push(masa(cadena(pts, r, r * 0.8), { mat: cx.brasa, suave: 0.2 * cx.S }));
+}
+/** Un aro encendido de radio R (en unidades de S) alrededor de c, en el plano de u y v. */
+function aroEncendido(cx: Cx, c: V3, u: V3, v: V3, R: number, k = 1) {
+  encendida(cx, Array.from({ length: 17 }, (_, i) => { const a = (i / 16) * Math.PI * 2; return add(add(c, u, Math.cos(a) * R * cx.S), v, Math.sin(a) * R * cx.S); }), k);
+}
+
 /** Aros de metal alrededor del eje en las posiciones k. */
 function aros(cx: Cx, ks: number[], r: number, mat = cx.guarn) {
   for (const k of ks) un(cx, [bulto(cx.P(k), [0.32 * cx.S, r * cx.S, r * cx.S], { eje: cx.dd, mat })], mat, 0.1);
@@ -237,6 +273,8 @@ function hojaForjada(cx: Cx, k0: number, k1: number, ancho: number, grueso: numb
   }
   if (n === 5) for (const s of o.unFilo ? [-1] : [1, -1]) { const t = 0.72, k = k0 + L * t; cs.push(...cuerno(P(k, s * ancho * 0.75 + offs(t)), nor(add(mul(cx.canto, s), cx.dd, 0.3)), mul(cx.dd, -1), 1.9 * S, 0.42 * S)); }
   un(cx, cs, cx.mat, 0.22);
+  // filos encendidos (legendaria y mítica): los dos filos brillan del elemento de la base a la punta
+  if (cx.vivo) for (const s of [1, -1]) encendida(cx, ctrl.slice(1, -1).map((q) => add(q.p, cx.canto, s * q.an * 0.86)));
   // canal (desde excepcional): un surco oscuro en las dos caras; en élite con un hilo de oro
   if (n >= 2 && L > 6) for (const s of [1, -1]) {
     const a = P(k0 + 0.6, offs(0.03), s * grueso * 0.82), b = P(k0 + L * 0.68, offs(0.68), s * grueso * 0.55);
@@ -326,6 +364,8 @@ function cabezaHacha(cx: Cx, k: number, lado: 1 | -1, tam: number) {
   const filo: V3[] = [];
   for (let i = 0; i <= 6; i++) { const t = i / 6; filo.push(P(k - barba * 0.55 + (t - 0.5) * ancho * 0.95, 0, lado * (sale + 0.15 - Math.abs(t - 0.5) * 0.9))); }
   un(cx, cadena(filo, 0.16 * S, 0.16 * S, cx.mat, 0.12), cx.mat, 0.08);
+  // (legendaria y mítica: el corte entero encendido)
+  encendida(cx, filo, 1.1);
   // remaches (excepcional) y la gema o la runa en la mejilla (élite)
   if (n >= 2) for (const s of [1, -1]) for (const dz of [-0.9, 0.9]) cx.ps.push(esfera(...P(k + dz, s * 0.6, lado * 2.0), 0.24 * S, { mat: cx.guarn }));
   if (n >= 3) for (const s of [1, -1]) cx.ps.push(esfera(...P(k - barba * 0.2, s * 0.45, lado * (sale * 0.55)), 0.42 * S, { mat: cx.luz }));
@@ -360,6 +400,7 @@ function mazaForjada(cx: Cx) {
   if (n >= 3) cs.push(hueso(add(C, cx.dd, R * 0.9 * S), add(C, cx.dd, (R + (n >= 4 ? 3.6 : 2.0)) * S), 0.6 * S, 0.05 * S));
   un(cx, cs, cx.mat, 0.35);
   if (n >= 3) aros(cx, [13.6], 1.35);
+  aroEncendido(cx, C, cx.canto, cx.plano, R * 1.02);
   if (n === 5) craneo(cx, add(C, cx.plano, 0.9 * R * S), cx.plano, cx.dd, 1.3 * S, true);
   else if (n >= 3) for (const s of [1, -1]) cx.ps.push(esfera(...add(C, cx.plano, s * R * 0.95 * S), 0.5 * S, { mat: cx.luz }));
   if (n === 5) fragmentos(cx, P(12), P(20), 7);
@@ -382,6 +423,9 @@ function martilloForjado(cx: Cx) {
   un(cx, cs, cx.mat, 0.4);
   // lengüetas que bajan por el asta
   if (n >= 2) for (const s of [1, -1]) un(cx, [hueso(P(k - 1.8 * tam, s * 0.8), P(k - 6, s * 0.75), 0.3 * S, 0.22 * S)], cx.guarn, 0.1);
+  // (legendaria y mítica: el borde de la cara de golpe y la cintura del mazo encendidos)
+  aroEncendido(cx, P(k, 0, 3.1 * tam), cx.dd, cx.canto, 2.05 * tam);
+  aroEncendido(cx, P(k), cx.canto, cx.plano, 2.0 * tam, 0.8);
   if (n >= 3) { aros(cx, [k - 2.2 * tam], 1.25); for (const s of [1, -1]) cx.ps.push(esfera(...P(k, s * 1.85 * tam, 0), 0.5 * S, { mat: cx.luz })); }
   if (n === 5) { craneo(cx, P(k, 1.9 * tam, 0.4), cx.canto, cx.dd, 1.2 * S, true); fragmentos(cx, P(k - 5), P(k + 4), 8); }
 }
@@ -414,6 +458,7 @@ function mangualForjado(cx: Cx) {
   }
   un(cx, cs, cx.mat, 0.4);
   if (n >= 3) un(cx, [bulto(add(C, [0, 0, R * 0.9 * S]), [1.2 * S, 1.2 * S, 0.45 * S], {})], cx.guarn, 0.2);
+  aroEncendido(cx, C, [1, 0, 0], [0, 1, 0], R * 1.02);
   if (n === 5) craneo(cx, add(C, cx.F, R * 0.95 * S), cx.F, [0, 0, 1], 1.0 * S, true);
   else if (n >= 4) cx.ps.push(esfera(...add(C, cx.F, R * 0.95 * S), 0.55 * S, { mat: cx.luz }));
 }
@@ -455,6 +500,8 @@ function guadanaForjada(cx: Cx) {
   if (n >= 4) for (let i = 2; i < 9; i += 2) { const p = pts[i], d = nor(sub(pts[i + 1], pts[i - 1])); cs.push(hueso(add(p, cx.dd, -1.1 * S), add(add(p, cx.dd, -2.1 * S), d, -0.7 * S), 0.3 * S, 0.04 * S)); }
   if (n === 5) cs.push(...cuerno(add(pts[4], cx.dd, 1.0 * S), cx.dd, mul(cx.plano, -1), 2.4 * S, 0.45 * S));
   un(cx, cs, cx.mat, 0.25);
+  // (legendaria y mítica: el filo de adentro encendido)
+  encendida(cx, ctrl.slice(0, -1).map((q) => add(q.p, q.w, -q.an * 0.86)));
   if (n >= 3) cx.ps.push(esfera(...add(t0, cx.canto, 1.0 * S), 0.55 * S, { mat: cx.luz }), esfera(...add(t0, cx.canto, -1.0 * S), 0.55 * S, { mat: cx.luz }));
   if (n === 5) { craneo(cx, P(29.4, 0, -1.2), mul(cx.plano, -1), cx.dd, 1.1 * S, true); fragmentos(cx, pts[1], pts[8], 4); }
 }
@@ -503,7 +550,10 @@ function varaForjada(cx: Cx, mc: MarcoArma, tipo: TipoArma) {
     if (n >= 3) un(cx, [bulto(Q(0.2 * g), [0.55 * S, (r + 0.6) * S, (r + 0.6) * S], { eje: up })], cx.guarn, 0.15);
   }
   if (n === 5) craneo(cx, Q(-1.6 * g, 0, 0), nor(add(cx.F, ey, 0.3)), up, 1.15 * S * g, true);
-  cx.ps.push(esfera(...gemaC, gr * S, { mat: cx.luz }));
+  // (legendaria y mítica: la gema más grande, con un anillo encendido que la ciñe)
+  const grV = cx.vivo > 0.3 ? gr * 1.3 : gr;
+  cx.ps.push(esfera(...gemaC, grV * S, { mat: cx.luz }));
+  aroEncendido(cx, gemaC, ex, ey, grV * 1.45, 0.8);
   if (n >= 4) fragmentos(cx, Q(0), Q(7 * g), 4.2 * g, n === 5 ? 5 : 3);
 }
 
@@ -519,6 +569,7 @@ function garrasForjadas(cx: Cx) {
     const cs = lamina(ctrl, cx.mat, 0.7 * S);
     if (n >= 4) cs.push(hueso(P(1.4 + lg * 0.42, c + abre * 0.4, 0.4), P(1.4 + lg * 0.3, c + abre * 0.3 - 1.3, 0.4), 0.26 * S, 0.04 * S));
     un(cx, cs, cx.mat, 0.18);
+    encendida(cx, ctrl.slice(0, -1).map((q) => add(q.p, cx.canto, q.an * 0.8)), 0.8);
   }
   if (n >= 3) cx.ps.push(esfera(...P(-0.6, 0, 1.55), 0.55 * S, { mat: cx.luz }));
   if (n === 5) { craneo(cx, P(-1.8, 0, 1.6), cx.plano, cx.dd, 0.8 * S, true); fragmentos(cx, P(2), P(lg), 4, 3); }
@@ -577,6 +628,8 @@ function cestusForjado(cx: Cx) {
     else un(cx, cuerno(P(1.7, c, 0.6), cx.dd, mul(cx.plano, n === 5 ? 0.9 : 0.4), (n === 5 ? 3.6 : 2.6) * S, 0.42 * S), cx.acento, 0.12);
   }
   if (n >= 3) cx.ps.push(esfera(...P(-0.4, 0, 1.4), 0.5 * S, { mat: cx.luz }));
+  // (legendaria y mítica: la placa de los nudillos encendida)
+  encendida(cx, [P(1.9, -1.6, 0.6), P(1.95, 0, 0.75), P(1.9, 1.6, 0.6)]);
   if (n === 5) { craneo(cx, P(-2.2, 0, 1.4), cx.plano, cx.dd, 0.75 * S, true); fragmentos(cx, P(0), P(4), 3.6, 3); }
 }
 
@@ -608,6 +661,8 @@ function frascoForjado(cx: Cx) {
     un(cx, jaula, cx.guarn, 0.12);
   }
   if (n >= 3) un(cx, [bulto(add(C, cx.dd, -R * 1.1 * S), [0.5 * S, 1.1 * S, 1.1 * S], { eje: cx.dd })], cx.guarn, 0.15);
+  // (legendaria y mítica: un cinto encendido alrededor del vidrio)
+  aroEncendido(cx, C, cx.canto, cx.plano, R * 1.1);
   if (n === 5) fragmentos(cx, add(C, cx.dd, -R * S), add(C, cx.dd, R * 2 * S), R + 2.4, 3);
 }
 
@@ -620,15 +675,19 @@ function ballestaForjada(cx: Cx, mc: MarcoArma) {
   const B = (a: number, l = 0, z = 0): V3 => add(add(add(c, ap, a * S), lado, l * S), arriba, z * S);
   // el tablero: de la culata al frente, con la culata que baja
   const caja: Comp[] = [hueso(B(-6), B(9.5), 0.85 * S, 0.75 * S), bulto(B(-6.2, 0, -1.6), [1.6 * S, 0.8 * S, 2.0 * S], { ejes: [ap, lado, arriba] }), hueso(B(-1.5, 0, -0.6), B(-1.2, 0, -2.6), 0.42 * S, 0.3 * S)];
-  un(cx, caja, cx.mango, 0.4);
+  un(cx, caja, palaClara(cx.mango), 0.4);
+  // el puño de la culata forrado con vueltas de cordel claro
+  un(cx, [-4.6, -4.0, -3.4, -2.8].map((a, i) => bulto(B(a), [0.3 * S, 1.0 * S, 1.0 * S], { eje: ap, tono: i % 2 ? 0.08 : -0.02 })), 'ar_cuerda_clara', 0.1);
   // el arco: dos palas en media luna hacia adelante, de acero (o de hueso y cuerno en lo mítico)
   const ab = [7, 7.5, 8, 8.6, 9.4][n - 1];
   const palas: Comp[] = [];
   for (const s of [1, -1]) palas.push(...cadena([B(8.6), B(8.4, s * ab * 0.4, 0), B(7.6, s * ab * 0.75, 0), B(6.2, s * ab, 0)], 0.75 * S, 0.32 * S));
   un(cx, palas, n === 5 ? 'cu_hueso_demonio' : cx.mat, 0.3);
   if (n >= 4) for (const s of [1, -1]) un(cx, cuerno(B(6.2, s * ab, 0), nor(add(mul(lado, s), ap, 0.6)), mul(ap, 0.8), (n === 5 ? 2.6 : 1.6) * S, 0.36 * S), cx.acento, 0.1);
+  // (legendaria y mítica: el frente de las palas encendido)
+  for (const s of [1, -1]) encendida(cx, [B(9.2, s * ab * 0.1, 0), B(9.0, s * ab * 0.42, 0), B(8.2, s * ab * 0.77, 0), B(6.8, s * ab * 0.98, 0)], 0.9);
   // la cuerda tensa hasta la nuez y el virote
-  for (const s of [1, -1]) cx.ps.push(palo(B(6.2, s * ab, 0), B(-0.8, 0, 0.6), 0.14 * S, { mat: 'cuerda' }));
+  for (const s of [1, -1]) cx.ps.push(palo(B(6.2, s * ab, 0), B(-0.8, 0, 0.6), 0.24 * S, { mat: 'ar_cuerda_clara' }));
   cx.ps.push(palo(B(-0.6, 0, 0.9), B(10.6, 0, 0.9), 0.24 * S, { mat: 'madera_lisa' }));
   un(cx, [hueso(B(10.4, 0, 0.9), B(12.0, 0, 0.9), 0.4 * S, 0.04 * S)], cx.mat, 0.1);
   if (n >= 2) for (const a of [-3.5, 3.5]) un(cx, [bulto(B(a), [0.32 * S, 1.0 * S, 1.0 * S], { eje: ap })], cx.guarn, 0.1);
@@ -704,6 +763,19 @@ export function adornosNivel(mc: MarcoArma, o: OpcForja): Pieza[] {
       cx.ps.push(esfera(...P(0.3, 0, 0.75), 0.5 * S, { mat: cx.luz }));
     }
     if (n === 5) { if (mango) craneo(cx, P(-mango - 1.2), cx.plano, mul(cx.dd, -1), 1.1 * S, true); fragmentos(cx, a, b, 3.6, t === 'katar' || t === 'hoz' ? 3 : 4); }
+    // (legendaria y mítica: los filos encendidos, por el mismo perfil de la hoja que arma cuerpo.ts: [k, corrimiento, ancho])
+    if (n >= 4) {
+      if (t === 'hoz') {
+        const C = add(P(5.6), cx.plano, 4.4 * S);
+        encendida(cx, Array.from({ length: 9 }, (_, i) => { const g = rad(50 + (135 * i) / 8); return add(add(C, cx.plano, -Math.cos(g) * 4.6 * S), cx.dd, Math.sin(g) * 4.6 * S); }));
+      } else {
+        const perfil: [number, number, number][] = t === 'katana' ? [3, 8, 13, 18, 22, 24.4].map((k) => [k, 2.0 * (k / 26.2) ** 2, 0.95 - (k / 26.2) * 0.12])
+          : t === 'estoque' ? [[2, 0, 0.58], [6, 0, 0.5], [14, 0, 0.42], [22, 0, 0.32], [26, 0, 0.18]]
+            : t === 'falcata' ? [[1.5, 0.8], [3, 0.8], [6, 1.05], [9, 1.5], [12, 1.85], [14.5, 1.95], [17, 1.7], [19, 1.1]].map(([k, w]) => [k, -0.5 * Math.sin((Math.PI * k) / 21.4) + 1.7 * (k / 21.4) ** 3, w])
+              : [];
+        for (const sg of [1, -1]) encendida(cx, perfil.map(([k, o, w]) => P(k, o + sg * w * 0.86)));
+      }
+    }
     return cx.ps;
   }
   if (t === 'tridente' || t === 'jabalina' || t === 'lanza_dragon') {
@@ -713,12 +785,15 @@ export function adornosNivel(mc: MarcoArma, o: OpcForja): Pieza[] {
     if (n >= 4) for (const s of [1, -1]) un(cx, cuerno(P(kb - 1.4, s * 0.6), nor(add(mul(cx.canto, s), cx.dd, -0.7)), mul(cx.dd, -0.6), (n === 5 ? 2.8 : 1.8) * S, 0.38 * S), cx.acento, 0.1);
     if (n >= 4) cx.ps.push(esfera(...P(kb - 2.2, 0, 1.0), 0.48 * S, { mat: cx.luz }));
     if (n === 5) { craneo(cx, P(kb - 3.6, 0, 0.9), cx.plano, cx.dd, 0.95 * S, true); fragmentos(cx, a, b, 4, 4); }
+    // (legendaria y mítica: una vena encendida por las dos caras de la moharra)
+    if (n >= 4) for (const sg of [1, -1]) encendida(cx, [add(mez(a, b, 0.05), cx.plano, sg * 0.5 * S), add(mez(a, b, 0.75), cx.plano, sg * 0.4 * S)]);
     return cx.ps;
   }
   if (t === 'maza_estrella') {
     aros(cx, [13.2, -2.6], 1.1);
     if (n >= 4) for (let i = 0; i < 4; i++) { const ang = rad(i * 90 + 45), d = nor(add(mul(cx.canto, Math.cos(ang)), cx.plano, Math.sin(ang))); un(cx, cuerno(add(P(13.6), d, 1.0 * S), nor(add(d, cx.dd, -0.3)), mul(cx.dd, -1.0), (n === 5 ? 4.6 : 3.6) * S, 0.55 * S), cx.acento, 0.12); }
     if (n === 5) { craneo(cx, P(-4.2), cx.plano, mul(cx.dd, -1), 1.0 * S, true); fragmentos(cx, a, b, 6, 4); }
+    if (n >= 4) aroEncendido(cx, mez(a, b, 0.5), cx.canto, cx.plano, 2.7);
     return cx.ps;
   }
   if (t === 'gran_baculo' || t === 'orbe_mano') {
@@ -729,6 +804,8 @@ export function adornosNivel(mc: MarcoArma, o: OpcForja): Pieza[] {
     const ey = cruz(eje, ex), R = t === 'orbe_mano' ? 2.4 : 2.6;
     if (n >= 4) for (let i = 0; i < 3; i++) { const ang = (i / 3) * Math.PI * 2 + 0.5, d = nor(add(mul(ex, Math.cos(ang)), ey, Math.sin(ang))); un(cx, cuerno(add(add(cen, eje, -R * 0.9 * S), d, R * 0.8 * S), nor(add(mul(eje, 0.35), d, 1)), mul(eje, 1.1), (n === 5 ? 4.4 : 3.4) * S, 0.42 * S), cx.acento, 0.12); }
     if (n === 5) { craneo(cx, add(cen, eje, -R * 2.0 * S), nor(add(cx.F, ey, 0.3)), eje, 0.95 * S, true); fragmentos(cx, add(cen, eje, -3 * S), add(cen, eje, 4 * S), t === 'orbe_mano' ? 3.4 : 4.2, 5); }
+    // (legendaria y mítica: un anillo encendido que ciñe la gema)
+    if (n >= 4) aroEncendido(cx, cen, ex, ey, R * 1.25);
     return cx.ps;
   }
   if (t === 'arco' || t === 'arco_corto' || t === 'arco_largo') {
@@ -746,6 +823,8 @@ export function adornosNivel(mc: MarcoArma, o: OpcForja): Pieza[] {
     }
     if (n >= 3) cx.ps.push(esfera(...B(0.16, 0.9), 0.5 * S, { mat: cx.luz }), esfera(...B(-0.16, 0.9), 0.5 * S, { mat: cx.luz }));
     if (n === 5) { craneo(cx, B(0, 1.6), ar.tiro, ar.arriba, 0.85 * S, false); fragmentos(cx, B(-0.6), B(0.6), 3.4, 3); }
+    // (legendaria y mítica: el lomo de las dos palas encendido, de la empuñadura a las puntas)
+    if (n >= 4) for (const s of [1, -1]) encendida(cx, [0.2, 0.36, 0.52, 0.68, 0.82, 0.93].map((u) => B(s * u, 0.55)), 0.85);
     return cx.ps;
   }
   return cx.ps;

@@ -3,7 +3,7 @@ import { MATERIALES } from './materiales';
 import { ruido } from './render';
 import { pose, CUADROS, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
-import { formaForjada, adornosNivel, anchoVivo, marcoIcono, tramosVivos, type MarcoArma, type NivelForja, type OpcForja } from './forja_armas';
+import { formaForjada, adornosNivel, anchoVivo, marcoIcono, tramosVivos, palaClara, type MarcoArma, type NivelForja, type OpcForja } from './forja_armas';
 
 /**
  * Cuerpos orgánicos para personajes y monstruos humanoides: el mismo esqueleto con articulaciones de figura.ts,
@@ -1529,10 +1529,18 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
         const { tira, tiro, arriba } = marcoArco(e, c, m);
         const en = (k: number, atras: number): V3 => add(add(c, arriba, k * S), tiro, -atras * S);
         let arr: V3, abj: V3, atrasCuerda = 3.6;
+        // (las palas en madera clara, con el filo claro en el lomo y el agarre forrado: así el arco se lee en la mano)
+        const pala = palaClara(mango), lomo = (q: V3, r: number): V3 => add(q, tiro, r * 0.62);
+        const agarre = (k0: number, k1: number, r: number, atras: number) => {
+          ps.push(masa([hueso(en(k0, atras), en(k1, atras), r * S, r * S, { mat: 'cu_cuero' }), ...[0, 1, 2, 3, 4].map((i) => bulto(en(k0 + ((i + 0.5) / 5) * (k1 - k0), atras), [0.32 * S, (r + 0.14) * S, (r + 0.14) * S], { eje: arriba, mat: 'ar_cuerda_clara', tono: i % 2 ? 0.06 : -0.04 }))], { mat: 'cu_cuero', suave: 0.15 * S }));
+        };
         if (tipo === 'arco') {
           arr = en(15, 3.6); abj = en(-15, 3.6);
-          const pts = [arr, en(9, 1.2), en(2.6, -0.3), en(-2.6, -0.3), en(-9, 1.2), abj];
-          for (let i = 0; i < 5; i++) ps.push(palo(pts[i], pts[i + 1], (i === 2 ? 0.95 : i === 1 || i === 3 ? 0.75 : 0.55) * S, { mat: mango, r1: (i === 2 ? 0.95 : i === 0 || i === 4 ? 0.75 : 0.55) * S }));
+          const pts = [arr, en(9, 1.2), en(2.6, -0.3), en(-2.6, -0.3), en(-9, 1.2), abj], rs = [0.6, 0.8, 1.0, 0.8, 0.6, 0.6];
+          const palas: Comp[] = [];
+          for (let i = 0; i < 5; i++) palas.push(hueso(pts[i], pts[i + 1], rs[i] * S, rs[i + 1] * S, { mat: pala }), hueso(lomo(pts[i], rs[i] * S), lomo(pts[i + 1], rs[i + 1] * S), rs[i] * 0.42 * S, rs[i + 1] * 0.42 * S, { mat: 'ar_filo_arco' }));
+          ps.push(masa(palas, { mat: pala, suave: 0.4 * S }));
+          agarre(-2.4, 2.4, 1.05, -0.3);
         } else {
           // arco largo (una D alta de madera) o corto recurvo (las palas vuelven hacia adelante en las puntas de cuerno):
           // las palas son una masa de huesos que adelgazan hacia las puntas, con el agarre forrado y las culatas de cuerno
@@ -1543,20 +1551,21 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
           const rad0 = (k: number) => ((largo ? 0.95 : 1.05) - (Math.abs(k) / kmax) * (largo ? 0.55 : 0.6)) * S;
           const ks = [...perfil.map(([k]) => k), ...[...perfil].reverse().map(([k]) => -k)];
           const palas: Comp[] = [];
-          for (let i = 0; i < pts.length - 1; i++) palas.push(hueso(pts[i], pts[i + 1], rad0(ks[i]), rad0(ks[i + 1]), { mat: mango }));
-          ps.push(masa(palas, { mat: mango, suave: 0.5 * S }));
-          ps.push(masa([hueso(en(-2.6, -0.45), en(2.6, -0.45), 1.15 * S, 1.15 * S, { mat: 'cu_cuero_negro' }), bulto(en(0, -0.5), [1.7 * S, 1.3 * S, 1.3 * S], { eje: arriba, mat: 'cu_cuero_negro', tono: 0.05 })], { mat: 'cu_cuero_negro', suave: 0.3 * S }));
+          for (let i = 0; i < pts.length - 1; i++) palas.push(hueso(pts[i], pts[i + 1], rad0(ks[i]), rad0(ks[i + 1]), { mat: pala }), hueso(lomo(pts[i], rad0(ks[i])), lomo(pts[i + 1], rad0(ks[i + 1])), rad0(ks[i]) * 0.42, rad0(ks[i + 1]) * 0.42, { mat: 'ar_filo_arco' }));
+          ps.push(masa(palas, { mat: pala, suave: 0.5 * S }));
+          agarre(-2.6, 2.6, 1.15, -0.45);
           for (const q of [pts[0], pts[pts.length - 1]]) ps.push(masa([bulto(q, [0.75 * S, 0.62 * S, 0.62 * S], { eje: arriba, mat: 'cu_hueso' })], { mat: 'cu_hueso' }));
           arr = pts[0]; abj = pts[pts.length - 1]; atrasCuerda = perfil[0][1];
         }
         // la cuerda: una V hasta los dedos que tiran; si no tira, recta entre las puntas (del lado del cuerpo)
         const culatin = tira ? m : en(0, atrasCuerda);
-        if (tira) ps.push(palo(arr, m, 0.15 * S, { mat: 'cuerda' }), palo(m, abj, 0.15 * S, { mat: 'cuerda' }));
-        else ps.push(palo(arr, abj, 0.15 * S, { mat: 'cuerda' }));
+        // (de lino claro y con cuerpo: tiene que verse contra la ropa)
+        if (tira) ps.push(palo(arr, m, 0.26 * S, { mat: 'ar_cuerda_clara' }), palo(m, abj, 0.26 * S, { mat: 'ar_cuerda_clara' }));
+        else ps.push(palo(arr, abj, 0.26 * S, { mat: 'ar_cuerda_clara' }));
         // la flecha: del culatín en la cuerda, apoyada sobre el puño izquierdo, con la punta delante del arco
         const apoyo = add(c, arriba, 1.1 * S), punta = add(apoyo, tiro, 6 * S);
-        // (los arcos nuevos sueltos, sin quien los tense, no llevan la flecha que flotaría delante)
-        if (e.pose?.flecha !== false && (tira || len(sub(m, culatin)) < 6 * S) && (tipo === 'arco' || e.ejesT)) {
+        // (los arcos sueltos, sin quien los tense, no llevan la flecha que flotaría delante: el ícono va de perfil)
+        if (e.pose?.flecha !== false && (tira || len(sub(m, culatin)) < 6 * S) && e.ejesT) {
           ps.push(palo(culatin, punta, 0.3 * S, { mat: 'madera_lisa' }));
           // la punta: una pirámide chata de acero (con tres puntos el poliedro es un solo plano sin cerrar y se pintaba
           // como una bola clara flotando delante del arco)
@@ -1566,14 +1575,18 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
       } else {
         // la ballesta va al frente, entre las dos manos, apuntando hacia adelante
         // con las dos manos va entre ellas apuntando adelante; con la izquierda libre cuelga de la derecha en la dirección del puño
-        const suelta = (e.pose?.pegaI ?? 1) < 0.5, ap = suelta ? dd : F;
+        // (suelta en el ícono, sin torso: de pie, con las palas de frente)
+        const suelta = !e.ejesT || (e.pose?.pegaI ?? 1) < 0.5, ap = suelta ? dd : F;
         const d = e.brazos[0].mano, cc = suelta ? add(d, dd, 2 * S) : mez(c, d, 0.5);
         let lado = nor(cruz(ap, [0, 0, 1])); if (len(cruz(ap, [0, 0, 1])) < 0.2) lado = nor(cruz(ap, F));
         const atras = add(cc, ap, -5 * S), frente = add(cc, ap, 9 * S);
-        ps.push(palo(atras, frente, 1.0 * S, { mat: mango }), caja(...add(atras, [0, 0, -2.4 * S]), 1.6 * S, 1.4 * S, 3 * S, { mat: mango, giro: angulo(F) }));
+        const tablero = palaClara(mango);
+        ps.push(palo(atras, frente, 1.0 * S, { mat: tablero }), caja(...add(atras, [0, 0, -2.4 * S]), 1.6 * S, 1.4 * S, 3 * S, { mat: tablero, giro: angulo(F) }));
+        // el puño forrado con vueltas de cordel claro
+        for (let i = 0; i < 4; i++) ps.push(cilindro(...add(atras, ap, (1.2 + i * 0.75) * S), 1.12 * S, 0.5 * S, { mat: 'ar_cuerda_clara', eje: ap, tono: i % 2 ? 0.06 : -0.03 }));
         const pal = add(frente, ap, -1.5 * S);
         ps.push(palo(add(add(pal, lado, 7.5 * S), ap, -2 * S), pal, 0.7 * S, { mat, r1: 0.9 * S }), palo(pal, add(add(pal, lado, -7.5 * S), ap, -2 * S), 0.9 * S, { mat, r1: 0.7 * S }));
-        ps.push(palo(add(add(pal, lado, 7.5 * S), ap, -2 * S), add(cc, ap, -1 * S), 0.15 * S, { mat: 'cuerda' }), palo(add(cc, ap, -1 * S), add(add(pal, lado, -7.5 * S), ap, -2 * S), 0.15 * S, { mat: 'cuerda' }));
+        ps.push(palo(add(add(pal, lado, 7.5 * S), ap, -2 * S), add(cc, ap, -1 * S), 0.24 * S, { mat: 'ar_cuerda_clara' }), palo(add(cc, ap, -1 * S), add(add(pal, lado, -7.5 * S), ap, -2 * S), 0.24 * S, { mat: 'ar_cuerda_clara' }));
         ps.push(palo(add(cc, [0, 0, 1 * S]), add(add(frente, ap, 1.5 * S), [0, 0, 1 * S]), 0.35 * S, { mat: 'madera_lisa' }));
       }
       break;
@@ -2010,7 +2023,8 @@ export function armaSuelta(tipo: TipoArma, o: { mat?: string; mango?: string; ge
   } else if (pose === 'icono') {
     // para el inventario: de pie; las hojas de frente a la cámara, las cabezas de hacha, martillo o guadaña de perfil
     // (los arcos nuevos y la hoz de perfil, para que se lea la curva de las palas y la media luna)
-    const deLado = ['hacha', 'hacha_doble', 'martillo', 'guadana', 'alabarda', 'mangual', 'maza', 'hoz', 'arco_largo', 'arco_corto', 'maza_estrella'].includes(tipo);
+    // (el arco simple también de perfil: de frente se veía de canto, como un palo)
+    const deLado = ['hacha', 'hacha_doble', 'martillo', 'guadana', 'alabarda', 'mangual', 'maza', 'hoz', 'arco', 'arco_largo', 'arco_corto', 'maza_estrella'].includes(tipo);
     eje = [0, 0, 1]; F = deLado ? nor([1, -1, 0]) : nor([1, 1, 0]); mano = [0, 0, 0];
     // (las del arsenal elemental: la punta un poco atrás y la cara hacia la luz)
     if (o.nivel) [eje, F] = marcoIcono(deLado);
@@ -2061,26 +2075,53 @@ const nivelArma = (a: { tipo: TipoArma; nivel?: number }): NivelForja | undefine
  * Un arma del arsenal elemental en la mano `b`: la forma forjada de su nivel (o la del motor con los adornos del nivel)
  * y la capa viva de su elemento sobre el tramo vivo (hoja, cabeza o gema). Sirve igual para el cuerpo y para el ícono.
  */
-function armaForjadaEn(e: Esqueleto, b: Brazo, a: { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto; nivel?: number }, f: number, semilla: number): Pieza[] {
-  const tipo = a.tipo, nivel = nivelArma(a) ?? 1, S = e.S;
-  const filo = filoDe(e, tipo, b);
-  const mc: MarcoArma = { m: b.mano, dd: b.eje, F: e.F, S, filo, f, giroVara: rad(e.pose?.giroVara ?? 0) };
-  if (esVara(tipo)) mc.vara = varaDe(e, b.mano, tipo === 'cetro' ? 0.45 : tipo === 'gran_baculo' ? 1.06 : 1);
-  if (esArco(tipo)) {
-    // el arco en el puño izquierdo, como lo arma `arma`: hacia dónde tira y su arriba
-    const c = e.brazos[1].mano, { tiro, arriba } = marcoArco(e, c, b.mano);
-    mc.arco = { c, tiro, arriba };
-  }
-  if (tipo === 'ballesta') {
-    // en la mano: entre las dos manos apuntando adelante (o colgando de la derecha); suelta (ícono): de pie
-    const icono = !e.ejesT, suelta = icono || (e.pose?.pegaI ?? 1) < 0.5, ap = icono ? b.eje : suelta ? b.eje : e.F;
-    const c = suelta ? add(b.mano, b.eje, icono ? 0 : 2 * S) : mez(e.brazos[1].mano, b.mano, 0.5);
-    let lado = cruz(ap, icono ? e.F : [0, 0, 1]); if (len(lado) < 0.2) lado = cruz(ap, e.F);
-    mc.ballesta = { c, ap, lado: nor(lado) };
-  }
+function armaForjadaEn(e0: Esqueleto, b: Brazo, a: { tipo: TipoArma; mat?: string; mango?: string; gema?: string; encanto?: Encanto; nivel?: number }, f: number, semilla: number): Pieza[] {
+  const tipo = a.tipo, nivel = nivelArma(a) ?? 1;
   const o: OpcForja = { tipo, nivel, encanto: a.encanto, mat: a.mat ?? 'ar_acero', mango: a.mango ?? 'cu_cuero', gema: a.gema };
-  const ps = formaForjada(mc, o) ?? [...arma(e, tipo, b, o.mat, o.mango, o.gema), ...adornosNivel(mc, o)];
+  // en la mano (el ícono y el arma suelta no tienen torso), lo legendario y lo mítico tienen que leerse a la escala del
+  // juego: el arma crece (1.12 legendaria, 1.2 mítica), aclara, lleva los filos y las runas encendidos y gruesos y su
+  // capa del elemento es un poco más fuerte
+  const enMano = !!e0.ejesT, leyenda = enMano && nivel >= 4;
+  const forjar = (g: number) => {
+    const e: Esqueleto = g !== 1 ? { ...e0, S: e0.S * g } : e0, S = e.S;
+    const mc: MarcoArma = { m: b.mano, dd: b.eje, F: e.F, S, filo: filoDe(esVara(tipo) ? e0 : e, tipo, b), f, giroVara: rad(e.pose?.giroVara ?? 0), vivo: leyenda ? 0.4 : 0.2 };
+    // (la vara conserva su largo: crece el remate)
+    if (esVara(tipo)) mc.vara = varaDe(e0, b.mano, tipo === 'cetro' ? 0.45 : tipo === 'gran_baculo' ? 1.06 : 1);
+    if (esArco(tipo)) {
+      // el arco en el puño izquierdo, como lo arma `arma`: hacia dónde tira y su arriba
+      const c = e.brazos[1].mano, { tiro, arriba } = marcoArco(e, c, b.mano);
+      mc.arco = { c, tiro, arriba };
+    }
+    if (tipo === 'ballesta') {
+      // en la mano: entre las dos manos apuntando adelante (o colgando de la derecha); suelta (ícono): de pie
+      const icono = !e.ejesT, suelta = icono || (e.pose?.pegaI ?? 1) < 0.5, ap = icono ? b.eje : suelta ? b.eje : e.F;
+      const c = suelta ? add(b.mano, b.eje, icono ? 0 : 2 * S) : mez(e.brazos[1].mano, b.mano, 0.5);
+      let lado = cruz(ap, icono ? e.F : [0, 0, 1]); if (len(lado) < 0.2) lado = cruz(ap, e.F);
+      mc.ballesta = { c, ap, lado: nor(lado) };
+    }
+    return { e, mc, ps: formaForjada(mc, o) ?? [...arma(e, tipo, b, o.mat, o.mango, o.gema), ...adornosNivel(mc, o)] };
+  };
+  let r = forjar(1);
+  if (leyenda) {
+    // crece alrededor del puño, pero nunca se mete en el piso más de lo que ya llegaba a su tamaño (la cabeza que
+    // apoya, la hoja que barre bajo): si con el tamaño nuevo bajaría más, crece solo lo que deja; al morir, tendida en
+    // el suelo, vuelve de a poco a su tamaño
+    const gT = 1 + ((nivel === 5 ? 1.2 : 1.12) - 1) * (1 - Math.min(1, e0.caida ?? 0));
+    const z1 = bajoDe(r.ps), lim = Math.min(z1, 0);
+    let rg = forjar(gT);
+    const zg = bajoDe(rg.ps);
+    if (zg < lim - 0.05) { const g = 1 + ((gT - 1) * (lim - z1)) / (zg - z1); rg = g > 1.01 ? forjar(g) : r; }
+    r = rg;
+    const realce = nivel === 5 ? 0.14 : 0.1;
+    for (const p of r.ps) if (!MATERIALES[p.mat]?.emite) p.tono = (p.tono ?? 0) + realce;
+  }
+  const { e, mc, ps } = r;
   // (los arcos llevan la capa en las dos palas, más suave: son finas)
-  if (a.encanto) for (const [p, q] of tramosVivos(mc, tipo)) ps.push(...capaElemental(p, q, a.encanto, f, S, esArco(tipo) ? Math.max(1, nivel - 1) : nivel, semilla++, esArco(tipo) ? 0.6 : anchoVivo(tipo)));
+  if (a.encanto) for (const [p, q] of tramosVivos(mc, tipo)) {
+    let capa = capaElemental(p, q, a.encanto, f, mc.S, esArco(tipo) ? Math.max(1, nivel - 1) : nivel, semilla++, esArco(tipo) ? 0.6 : anchoVivo(tipo), leyenda ? (nivel === 5 ? 1.25 : 1.15) : 1);
+    // tumbado en el piso, lo que colgaría bajo el arma (carámbanos, gotas) queda dentro de la tierra
+    if ((e.caida ?? 0) > 0.5) capa = capa.filter((pz) => bajoDe([pz]) > -0.8);
+    ps.push(...capa);
+  }
   return ps;
 }

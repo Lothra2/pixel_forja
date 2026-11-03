@@ -43,6 +43,7 @@ const mul3 = (a: V3, k: number): V3 => [a[0] * k, a[1] * k, a[2] * k];
 const dot3 = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cruz3 = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const nor3 = (a: V3): V3 => { const l = Math.hypot(...a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+const mid3 = (a: V3, b: V3, t = 0.5): V3 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 /** La parte de `v` perpendicular a `d` (unitario), normalizada; si casi no queda nada, `otro`. */
 const perp = (v: V3, d: V3, otro: V3): V3 => { const p = sub3(v, mul3(d, dot3(v, d))); return Math.hypot(...p) < 0.15 ? nor3(sub3(otro, mul3(d, dot3(otro, d)))) : nor3(p); };
 
@@ -262,15 +263,48 @@ function charcoQueCrece(m: Mancha, a: Arma, f: number, n: number, Rmax: number) 
   for (let i = 0; i < 5; i++) { const th = a.r() * TAU, d = Rmax * (0.9 + a.r() * 0.5), r = 0.5 + a.r() * 0.9; m.gota(Math.cos(th) * d, Math.sin(th) * d, r, r * 0.9, th, 0.5); }
 }
 
-/** Huella de bota: suela con la punta redonda, el arco vacío y el taco, con la marca de los tacos de la suela. */
+/**
+ * Media suela de bota en coordenadas de la suela: `u` hacia la punta, `v` hacia el lado de afuera del pie. Devuelve
+ * dónde cae (0 afuera; 1 la puntera y la planta; 2 el taco), con el hueco del arco entre las dos.
+ */
+function suela(u: number, v: number): number {
+  if (u >= -0.6 && u <= 5.8) {
+    // la planta: angosta en la cintura, ancha en el metatarso, la puntera redonda y corrida hacia el dedo gordo
+    const c = -0.3 * Math.min(1, (u + 0.6) / 5), an = u < 2.8 ? 1.12 + 0.63 * Math.sin(((u + 0.6) / 3.4) * Math.PI / 2) : 1.75 * Math.sqrt(Math.max(0, 1 - ((u - 2.8) / 3.05) ** 2.4));
+    return Math.abs(v - c) <= an ? 1 : 0;
+  }
+  if (u >= -5.3 && u <= -2.6) {
+    // el taco: el frente recto y la parte de atrás redonda
+    const an = u > -4.3 ? 1.45 : 1.45 * Math.sqrt(Math.max(0, 1 - ((u + 4.3) / 1.0) ** 2));
+    return Math.abs(v + 0.05) <= an ? 2 : 0;
+  }
+  return 0;
+}
+/** Las ranuras de la suela (tacos de goma de la planta y del taco): bandas transversales más hundidas. */
+const ranura = (u: number) => [0.9, 2.1, 3.3, 4.5, -3.4, -4.5].some((r) => Math.abs(u - r) < 0.22);
+/**
+ * Huella de bota con sangre: la planta y el taco separados por el arco, con las ranuras de la suela. `gasto` (0 a 1)
+ * es cuánta sangre le queda a la suela: se pierde primero el medio de la planta y la cintura y quedan el borde de la
+ * puntera y el talón, que pisan más fuerte; se gasta a manchones (ruido), no a granos.
+ */
 function huellaBota(m: Mancha, x: number, y: number, ang: number, lado: number, gasto: number, a: Arma) {
-  const c = Math.cos(ang), s = Math.sin(ang), P = (u: number, w: number): [number, number] => [x + c * u - s * w * lado, y + s * u + c * w * lado];
-  const parte = (u: number, w: number, rl: number, rt: number, h = 0.45, siempre = false) => { if (!siempre && a.r() < gasto) return; const [px, py] = P(u, w); m.gota(px, py, rl, rt, ang, h, r2(a, 0.04), false); };
-  // la silueta de la suela: puntera, planta, la cintura angosta del lado de afuera y el taco aparte
-  parte(4.1, 0.25, 1.9, 1.55, 0.45, true); parte(2.2, 0.35, 2.1, 1.95, 0.45, gasto < 0.5); parte(0.2, 0.9, 1.6, 0.9);
-  parte(-3.5, 0.1, 1.45, 1.6, 0.45, gasto < 0.7);
-  // lo que deja el barro de sangre al levantar el pie: grumos de los tacos
-  for (let i = 0; i < 4; i++) parte(-1 + a.r() * 6, r2(a, 1.3), 0.6, 0.5, 0.5);
+  // la suela va un poco más grande que la de verdad: a la escala del juego tiene que leerse planta, arco y taco
+  const c = Math.cos(ang), s = Math.sin(ang), sem = a.r() * 50, K = 1.6;
+  const P = (u: number, v: number): [number, number] => [x + (c * u - s * v * lado) * K, y + (s * u + c * v * lado) * K];
+  const paso = 0.5;
+  for (let u = -5.3; u <= 5.8; u += paso) for (let v = -2; v <= 2; v += paso) {
+    const q = suela(u, v);
+    if (!q) continue;
+    // cuánto pisa este punto: la puntera, el borde de la planta y el fondo del taco más; el medio menos
+    const borde = Math.max(Math.abs(v) / 1.7, q === 1 ? Math.max(0, (u - 3.8) / 2) : Math.max(0, (-u - 4) / 1.3));
+    const pisa = 0.55 + 0.45 * borde + (q === 2 ? 0.15 : 0);
+    const n = ruido(u * 0.55 + sem, v * 0.55, sem);
+    if (n * 0.9 + (1 - pisa) * 0.45 < gasto * 1.05 - 0.05) continue;
+    const [px, py] = P(u + r2(a, 0.06), v + r2(a, 0.06));
+    m.gota(px, py, 0.42 * K, 0.42 * K, ang, 0.36 - gasto * 0.12, (ranura(u) ? -0.28 : 0) + gasto * 0.05 + r2(a, 0.02), false);
+  }
+  // la sangre espesa que se corre al despegar el pie: una lengua corta desde la punta (solo las primeras)
+  if (gasto < 0.35) { const [px, py] = P(6.2 + a.r() * 0.8, -0.2); m.gota(px, py, 0.9 * K, 0.45 * K, ang, 0.3, 0.04, false); }
 }
 
 // ------------------------------------------------------------------ manchas de pared
@@ -373,13 +407,18 @@ reg(
     id: 'gore_huellas', ss: 2, nombre: ['Huellas ensangrentadas', 'Bloody footprints'], variantes: SUPERFICIES.flatMap((s) => DIR8.map((d) => `${s}_${d}`)), huella: [5, 5], plano: true,
     armar: (v, _f, g, a) => {
       const m = new Mancha(g, SUP[supDe(v)]), ang = rumboDe(v), c = Math.cos(ang), s = Math.sin(ang);
-      // pisó el charco: una manchita al principio, y cada paso deja menos
-      m.charco(c * -34, s * -34, 5, a, 0.7, 6, 3);
-      for (let i = 0; i < 6; i++) {
-        const lado = i % 2 ? 1 : -1, u = -26 + i * 12, w = lado * 3.4;
-        huellaBota(m, c * u - s * w, s * u + c * w, ang + r2(a, 0.08), lado, Math.min(0.8, i * 0.15), a);
+      const P = (u: number, w: number): [number, number] => [c * u - s * w, s * u + c * w];
+      // pisó el charco: la mancha de donde salió, corrida hacia adelante, con el resbalón del primer pie
+      const [x0, y0] = P(-62, 0.5); m.charco(x0, y0, 7, a, 0.7, 7, 4);
+      // paso tras paso, izquierdo y derecho alternados a lo ancho de la marcha, la punta un poco abierta hacia afuera,
+      // y cada vez con menos sangre en la suela
+      const n = 6, largo = 21;
+      for (let i = 0; i < n; i++) {
+        const lado = i % 2 ? 1 : -1, u = -46 + i * largo + r2(a, 0.8), w = lado * (3.6 + r2(a, 0.3));
+        const [x, y] = P(u, w);
+        huellaBota(m, x, y, ang + lado * (0.12 + r2(a, 0.04)), lado, 0.02 + i * 0.14, a);
       }
-      m.cerrar(0.9);
+      m.cerrar(0.45);
     },
   },
   {
@@ -589,35 +628,62 @@ const gibCostillas: Gib = (g, p, a) => {
   hebras(cs, g, [0, 0, -1], 3, 3, p, a);
   g.masa(cs, { mat: p.hueso, suave: 0.7 });
 };
-/** Cráneo: hueso con la carne arrancada a medias (la bestia, cabeza de bicho con mandíbulas y ojos compuestos). */
-const gibCraneo: Gib = (g, p, a) => {
+/**
+ * Cráneo (más grande que el resto de los pedazos en proporción: tiene que leerse a la escala del juego): la bóveda,
+ * la frente con el arco de las cejas, pómulos, cuencas hondas, el agujero de la nariz, la fila de dientes y a veces la
+ * mandíbula todavía colgada; de un lado le queda carne y cuero cabelludo arrancado a medias (en el no muerto, jirones
+ * secos y moho). La bestia: cabeza de bicho con mandíbulas y ojos compuestos.
+ */
+const gibCraneo: Gib = (g0, p, a) => {
   const cs: Comp[] = [];
   if (p.nombre === 'bestia') {
+    const g = g0.esc(1.3);
     cs.push(g.bu([0, 0, 0], [4.6, 3.8, 3.4], { mat: p.piel }), g.bu([2.8, 0, -0.6], [2.6, 2.6, 2.2], { mat: p.piel, tono: 0.05 }));
     for (const s of [-1, 1]) {
       cs.push(g.bu([2.6, s * 2.8, 1], [1.6, 1.3, 1.6], { mat: p.piel, tono: -0.12 }));
-      const b: V3 = [4.6, s * 1.6, -1.6], m1: V3 = [7, s * 2.4, -1.4], m2: V3 = [8.4, s * 0.6, -1.2];
-      cs.push(g.hu(b, m1, 0.9, 0.6, { mat: p.hueso, k: 0.3 }), g.hu(m1, m2, 0.6, 0.15, { mat: p.hueso, k: 0.2 }));
-      cs.push(g.hu([-1, s * 2, 3], [-4 - a.r() * 2, s * 4.5, 6 + a.r() * 2], 0.4, 0.15, { mat: p.piel, k: 0.2 }));
+      const b: V3 = [4.6, s * 1.6, -1.6], m1: V3 = [7.2, s * 2.6, -1.4], m2: V3 = [8.8, s * 0.5, -1.2];
+      cs.push(g.hu(b, m1, 1, 0.65, { mat: p.hueso, k: 0.3 }), g.hu(m1, m2, 0.65, 0.15, { mat: p.hueso, k: 0.2 }));
+      cs.push(g.hu([-1, s * 2, 3], [-4.5 - a.r() * 2, s * 5, 6.5 + a.r() * 2], 0.45, 0.15, { mat: p.piel, k: 0.2 }));
     }
     desgarro(g, cs, [-4.2, 0, -0.5], [-1, 0, -0.2], 3, p, a, false);
     g.masa(cs, { mat: p.piel, suave: 0.9 });
     for (const s of [-1, 1]) g.elip(2.9, s * 2.9, 1.2, 1.1, 0.8, 1.2, { mat: 'gore_quitina', tono: 0.2 });
     return;
   }
-  cs.push(g.bu([0, 0, 1], [4.2, 3.4, 3.6], { mat: p.hueso }), g.bu([2.4, 0, -1], [2.2, 2.5, 2.2], { mat: p.hueso }));
-  for (const s of [-1, 1]) cs.push(g.bu([2.4, s * 2.3, -0.8], [1.3, 0.9, 1.1], { mat: p.hueso }));
-  // carne y piel que quedan pegadas de un lado (en el no muerto, jirones)
-  const lado = a.r() < 0.5 ? -1 : 1, piel = p.nombre === 'no_muerto' ? 0.5 : 1;
-  for (let i = 0; i < 5 * piel; i++) cs.push(g.bu([r2(a, 2.5), lado * (2.2 + a.r()), r2(a, 2) + 0.8], [2.2, 1.2, 2], { mat: i % 2 ? p.piel : p.carne, eje: [a.r() - 0.5, 0, 1] }));
-  if (p.nombre === 'rojo') cs.push(g.bu([-0.8, 0, 3.2], [3.4, 3.4, 1.4], { mat: 'gore_pelo' }));
-  desgarro(g, cs, [-1.5, 0, -2.4], [-0.5, 0, -1], 2.4, p, a);
-  hebras(cs, g, [0, 0, -3], 2, 3, p, a);
-  ensangrentar(cs, g, [-1.5, 0, -1.5], [1, 0, 2], 5, 3.4, p, a);
-  g.masa(cs, { mat: p.hueso, suave: 0.9 });
-  for (const s of [-1, 1]) g.elip(3.4, s * 1.35, 0.5, 0.9, 1, 1, { mat: 'negro' });
-  g.elip(4.3, 0, -0.9, 0.5, 0.45, 0.65, { mat: 'negro' });
-  for (let i = 0; i < 5; i++) g.esf(4.1, -1.2 + i * 0.6, -2.4, 0.38, { mat: p.hueso, tono: 0.1 });
+  // la cara mira casi a lo largo del eje de vuelta (y): al girar sigue de frente y la calavera se lee en casi todos los cuadros
+  const g = g0.sub(0, 0, 0, 70).esc(1.45), H = p.hueso, mand = a.r() < 0.6;
+  // la bóveda, la nuca y el arco de las cejas
+  cs.push(g.bu([-0.3, 0, 1.4], [4.5, 3.4, 3.5], { mat: H }), g.bu([-2.4, 0, 0.2], [2.4, 3, 3], { mat: H }), g.bu([3, 0, 0.85], [1, 3, 0.85], { mat: H, tono: 0.08, k: 0.5 }));
+  // los pómulos y el maxilar, con la fila de dientes
+  for (const s of [-1, 1]) cs.push(g.bu([2.8, s * 2.35, -0.9], [1.3, 0.9, 0.9], { mat: H, tono: 0.05, k: 0.5 }), g.hu([0.6, s * 3, -0.6], [2.4, s * 2.5, -0.9], 0.6, 0.55, { mat: H, k: 0.4 }));
+  cs.push(g.bu([2.9, 0, -1.9], [1.4, 1.9, 1.1], { mat: H }));
+  for (let i = 0; i < 6; i++) { const t = (i / 5 - 0.5) * 2.2; cs.push(g.bu([3.85 - t * t * 0.25, t * 1.25, -2.9], [0.42, 0.34, 0.6], { mat: H, tono: 0.1, k: 0.1 })); }
+  // cuencas, la nariz y la boca: huecos negros
+  for (const s of [-1, 1]) cs.push(g.bu([3.3, s * 1.4, -0.2], [0.95, 1.15, 1.1], { mat: 'negro', k: 0.15 }));
+  cs.push(g.bu([3.95, 0, -1.2], [0.65, 0.55, 0.85], { mat: 'negro', k: 0.15 }));
+  if (mand) {
+    // la mandíbula floja, caída de un lado
+    const cae = 0.6 + a.r() * 0.5, ch: V3 = [3.4 - cae, 0.3, -4.2 - cae];
+    for (const s of [-1, 1]) cs.push(g.hu([0.3, s * 2.6, -1.4], [ch[0] - 0.6, s * 1.4 + 0.3, ch[2] + 0.4], 0.65, 0.55, { mat: H, k: 0.3 }));
+    cs.push(g.bu(ch, [0.9, 1.5, 0.75], { mat: H, k: 0.3 }), g.bu([ch[0] + 0.1, 0.3, ch[2] + 1.2], [0.6, 1.3, 0.9], { mat: 'negro', k: 0.15 }));
+    for (let i = 0; i < 5; i++) { const t = (i / 4 - 0.5) * 2; cs.push(g.bu([ch[0] + 0.4 - t * t * 0.2, t * 1.1 + 0.3, ch[2] + 0.8], [0.36, 0.3, 0.5], { mat: H, tono: 0.08, k: 0.1 })); }
+  } else cs.push(g.bu([3.3, 0, -3.1], [0.7, 1.5, 0.4], { mat: p.sangre, k: 0.2 }));
+  // lo que le queda: carne y cuero cabelludo de un lado, jirones colgando
+  const lado = a.r() < 0.5 ? -1 : 1, vivo = p.nombre === 'rojo';
+  const n = vivo ? 7 : 4;
+  for (let i = 0; i < n; i++) cs.push(g.bu([r2(a, 2.6) - 0.8, lado * (2.5 + a.r() * 0.9), r2(a, 1.8) + 0.4], [1.8, 0.9, 1.6], { mat: i % 3 === 2 ? p.sangre : vivo ? (i % 2 ? p.piel : p.carne) : p.piel, eje: [a.r() - 0.5, 0, 1], k: 0.4 }));
+  for (let i = 0; i < 3; i++) { const q: V3 = [r2(a, 2) - 0.5, lado * 3.1, -0.5 - a.r()]; cs.push(g.hu(q, [q[0] + r2(a, 0.6), lado * 3.4, q[2] - 2 - a.r() * 2], 0.5, 0.2, { mat: vivo ? p.carne : p.piel, k: 0.3 })); }
+  if (!vivo) for (let i = 0; i < 4; i++) cs.push(g.bu([r2(a, 3), r2(a, 2.5), 3.2 + a.r() * 1.2], [1, 0.9, 0.5], { mat: p.grasa, k: 0.3 }));
+  // la base del cráneo arrancada: carne, la vértebra y hebras de sangre
+  desgarro(g, cs, [-1, 0, -2.8], [-0.4, 0, -1], 2.4, p, a);
+  hebras(cs, g, [-0.5, 0, -3.4], 2, 3, p, a);
+  // una raja en la bóveda
+  for (let i = 0; i < 4; i++) cs.push(g.bu([-1.2 + i * 0.9, -lado * (0.4 + i * 0.35), 4.85 - i * 0.12], [0.55, 0.22, 0.25], { mat: 'negro', k: 0.05, eje: [1, -lado * 0.4, -0.1] }));
+  g.masa(cs, { mat: H, suave: 0.75 });
+  // pelo pegado al cuero cabelludo que queda (el no muerto, unas hebras sucias)
+  const pc: Comp[] = [g.bu([-1.8, lado * 2.2, 2.4], [2.6, 1.4, 1.9], { k: 0.4 })];
+  for (let i = 0; i < (vivo ? 5 : 3); i++) { const r0: V3 = [-2.5 + a.r() * 2, lado * (2.3 + a.r() * 1.2), 1.5 + a.r() * 2]; pc.push(g.hu(r0, [r0[0] - 1.5 - a.r() * 2, r0[1] + lado * a.r() * 1.5, r0[2] - 2 - a.r() * 3], 0.55, 0.15, { k: 0.3 })); }
+  g.masa(pc, { mat: 'gore_pelo', suave: 0.6 });
 };
 /** Tripas: un lazo de intestino que se enrosca y una víscera oscura. */
 const gibTripas: Gib = (g, p, a) => {
@@ -638,15 +704,28 @@ const gibTripas: Gib = (g, p, a) => {
   hebras(cs, g, [0, 0, -2], 3, 3.5, p, a);
   g.masa(cs, { mat: p.tripa, suave: 0.7 });
 };
-/** Astillas de hueso: tres puntas partidas, con el tuétano a la vista. */
-const gibAstillas: Gib = (g, p, a) => {
-  const cs: Comp[] = [];
-  for (let i = 0; i < 3; i++) {
-    const c: V3 = [r2(a, 2.5), r2(a, 2.5), r2(a, 1.5)], d = nor3([r2(a, 1), r2(a, 1), r2(a, 0.6)]), L = 3 + a.r() * 3;
-    const q0 = add3(c, d, -L / 2), q1 = add3(add3(c, d, L / 2), [r2(a, 0.4), r2(a, 0.4), r2(a, 0.4)]);
-    cs.push(g.hu(q0, add3(c, d, 0.5), 0.75, 0.6, { mat: p.hueso, k: 0.2 }), g.hu(add3(c, d, 0.5), q1, 0.6, 0.1, { mat: p.hueso, k: 0.2 }));
-    cs.push(g.bu(q0, [0.55, 0.55, 0.55], { mat: p.carne, k: 0.2 }));
+/**
+ * Astillas de hueso: cuatro lanzas largas y quebradas que se cruzan (la silueta en estrella se lee de lejos), con
+ * los cortes en bisel, el tuétano oscuro en la boca partida, la cabeza articular de una y sangre.
+ */
+const gibAstillas: Gib = (g0, p, a) => {
+  const g = g0.esc(1.25), cs: Comp[] = [], th0 = a.r() * TAU;
+  for (let i = 0; i < 4; i++) {
+    const th = th0 + (i / 4) * Math.PI + r2(a, 0.25), d = nor3([Math.cos(th), Math.sin(th), r2(a, 0.45)]), L = 7 + a.r() * 4.5, w = 0.85 + a.r() * 0.35;
+    const lat2 = perp([0, 0, 1], d, [1, 0, 0]), o: V3 = add3([r2(a, 1), r2(a, 1), r2(a, 0.6)], d, -L * 0.45);
+    // la caña: tres tramos con quiebres, cada vez más finos, que terminan en punta
+    let q = o;
+    const pts: V3[] = [o];
+    for (let j = 1; j <= 3; j++) { q = add3(add3(q, d, L / 3), lat2, r2(a, 0.45)); pts.push(q); }
+    for (let j = 0; j < 3; j++) cs.push(g.hu(pts[j], pts[j + 1], w * (1 - j * 0.28), j === 2 ? 0.08 : w * (1 - (j + 1) * 0.28), { mat: p.hueso, k: 0.12, tono: j === 0 ? -0.02 : 0.03 }));
+    // una esquirla que se abre de la caña
+    if (a.r() < 0.6) { const b = mid3(pts[1], pts[2]); cs.push(g.hu(b, add3(add3(b, d, 2.2), lat2, 1.3 * (a.r() < 0.5 ? -1 : 1)), 0.4, 0.06, { mat: p.hueso, k: 0.1 })); }
+    // la boca partida: el tuétano oscuro y la sangre; la primera conserva la cabeza de la articulación
+    if (i === 0) cs.push(g.bu(add3(o, d, -0.6), [1.5, 1.35, 1.25], { mat: p.hueso, eje: d, k: 0.3, tono: 0.04 }));
+    else { cs.push(g.bu(add3(o, d, -0.15), [0.3, w * 0.65, w * 0.65], { mat: p.organo, eje: d, k: 0.1, tono: -0.1 })); if (a.r() < 0.6) cs.push(g.bu(add3(o, d, 0.6), [0.9, w * 0.8, w * 0.75], { mat: p.sangre, eje: d, k: 0.2 })); }
   }
+  // un grumo de carne con sangre donde se juntan
+  cs.push(g.bu([r2(a, 0.5), r2(a, 0.5), 0], [1.2, 1, 0.8], { mat: p.carne, k: 0.3 }), g.bu([0.4, 0.2, 0.3], [0.8, 0.7, 0.6], { mat: p.sangre, k: 0.3 }));
   g.masa(cs, { mat: p.hueso, suave: 0.3 });
 };
 /** Trozo de carne suelto: músculo, una tira de piel, grasa y una esquirla. */
@@ -778,7 +857,6 @@ export interface OpcCuerpo {
   /** la cabeza: con mechones de pelo o pelada con el cráneo a la vista (por omisión, al azar) */
   cabeza?: 'pelo' | 'craneo';
 }
-const mid3 = (a: V3, b: V3, t = 0.5): V3 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 /** Bulto con sus ejes dados en las coordenadas del grupo: `ex` (radio x) y `ey` (se endereza contra `ex`). */
 function bx(g: G, c: V3, r: V3, ex: V3, ey: V3, o: { mat?: string; tono?: number; k?: number } = {}): Comp {
   const s = Math.hypot(...g.D([1, 0, 0])), X = nor3(ex), Y = perp(ey, X, Math.abs(X[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]), Z = cruz3(X, Y);

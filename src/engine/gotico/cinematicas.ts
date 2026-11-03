@@ -1,12 +1,10 @@
 import { createRaster, type Raster } from '../core/raster';
-import { rng } from '../core/rng';
 import {
   lamina, mascara, rellenar, trazo, disco, desenfocada, desenfocar, pintar, brillo, halo, aRaster, grilla, desdeRaster, escalar, sat, suave, fbm, mezcla,
   type Lamina, type C3, type P2,
 } from './cine';
 import { llamas } from './siluetas';
-import { hojaCeniza } from './portada';
-import { CW, CH, MX, MY, Toma, type FxToma, type FilaParticula } from './cine_toma';
+import { CW, CH, MX, MY, Toma } from './cine_toma';
 import { PINTORES_A } from './cine_planos_a';
 import { PINTORES_B } from './cine_planos_b';
 import { PINTORES_C } from './cine_planos_c';
@@ -24,16 +22,28 @@ import { PINTORES_C } from './cine_planos_c';
  */
 
 export type Texto = [string, string];
-export type Curva = 'lineal' | 'suave' | 'entrada' | 'salida';
-/** Cámara: (cx, cy) en px de la capa de paralaje 1 y zoom; se acerca hacia `foco` (pantalla base). */
-export interface Camara { tipo: 'acercar' | 'alejar' | 'paneo' | 'quieta' | 'temblor' | 'subir' | 'bajar'; desde: [number, number, number]; hasta: [number, number, number]; foco: [number, number]; curva: Curva; temblor?: { amp: number; hz: number; desde_s: number; hasta_s: number; decae: boolean }[] }
+export type Curva = 'lineal' | 'suave';
+/** Cámara del reproductor del juego: (x, y) en px de la capa de paralaje 1, zoom alrededor del centro de la pantalla. */
+export interface Camara { desde: { x: number; y: number; zoom: number }; hasta: { x: number; y: number; zoom: number }; curva: Curva; sacudida?: { t: number; dur: number; fuerza: number } }
 export interface Transicion { tipo: 'corte' | 'negro' | 'fundido' | 'blanco' | 'rojo'; s: number }
+export type Particulas = 'ceniza' | 'brasas' | 'nieve' | 'lluvia';
 export interface Plano { id: string; que: string; dur: number; cam: Camara; texto: Texto; textoSegun?: Record<string, Texto>; eleccion?: 'vigdis' | 'brasa'; entrada: Transicion; salida: Transicion }
 
 // ------------------------------------------------------------------ cámaras
-const acercar = (foco: [number, number], z1 = 1.08, desde: [number, number] = [0, 0], hasta: [number, number] = [0, 0], z0 = 1): Camara => ({ tipo: 'acercar', desde: [desde[0], desde[1], z0], hasta: [hasta[0], hasta[1], z1], foco, curva: 'suave' });
-const paneo = (dx0: number, dx1: number, dy0 = 0, dy1 = 0, z = 1.02): Camara => ({ tipo: 'paneo', desde: [dx0, dy0, z], hasta: [dx1, dy1, z], foco: [640, 360], curva: 'suave' });
-const temblar = (c: Camara, amp: number, hasta_s: number, desde_s = 0, hz = 11): Camara => ({ ...c, temblor: [...(c.temblor ?? []), { amp, hz, desde_s, hasta_s, decae: true }] });
+/** Margen que puede usar la cámara (el de la capa menos lo que se lleva la sacudida). */
+const LIM_X = 56, LIM_Y = 30;
+const lim = (v: number, m: number) => Math.round(Math.max(-m, Math.min(m, v)));
+/**
+ * Acercarse a `foco` (pantalla base): el zoom es alrededor del centro, así que la cámara se corre para que el foco
+ * no se escape: x = (foco - centro) * (1 - 1 / zoom).
+ */
+const acercar = (foco: [number, number], z1 = 1.08, desde: [number, number] = [0, 0], hasta: [number, number] = [0, 0], z0 = 1): Camara => ({
+  desde: { x: lim(desde[0] + (foco[0] - 640) * (1 - 1 / z0), LIM_X), y: lim(desde[1] + (foco[1] - 360) * (1 - 1 / z0), LIM_Y), zoom: z0 },
+  hasta: { x: lim(hasta[0] + (foco[0] - 640) * (1 - 1 / z1), LIM_X), y: lim(hasta[1] + (foco[1] - 360) * (1 - 1 / z1), LIM_Y), zoom: z1 }, curva: 'suave',
+});
+const paneo = (dx0: number, dx1: number, dy0 = 0, dy1 = 0, z = 1.02): Camara => ({ desde: { x: lim(dx0, LIM_X), y: lim(dy0, LIM_Y), zoom: z }, hasta: { x: lim(dx1, LIM_X), y: lim(dy1, LIM_Y), zoom: z }, curva: 'suave' });
+/** Sacudida (el juego toca un trueno): fuerza en px, desde el segundo t durante dur. */
+const temblar = (c: Camara, fuerza: number, hasta_s: number, desde_s = 0, _hz = 11): Camara => ({ ...c, sacudida: { t: desde_s, dur: +(hasta_s - desde_s).toFixed(2), fuerza } });
 const T = (tipo: Transicion['tipo'], s: number): Transicion => ({ tipo, s });
 
 // ------------------------------------------------------------------ el guion
@@ -186,23 +196,7 @@ export function pintarPlano(clave: string, id: string): Toma {
 }
 
 // ------------------------------------------------------------------ hojas de efectos
-export const FILAS_PARTICULAS: FilaParticula[] = ['copo', 'copo2', 'brasa', 'chispa', 'nieve', 'oro', 'lluvia', 'polvo'];
-export interface HojaFx { img: Raster; w: number; h: number; columnas: number; cuadros: number; filas: string[]; notas: string }
-/** Hoja de partículas: 8 x 8 celdas de 32 (ceniza, ceniza grande, brasa, chispa, nieve, polvo de oro, lluvia, polvo). */
-function hojaParticulas(): Raster {
-  const base = hojaCeniza(), C = 32, extra: Raster[] = [];
-  for (let fila = 4; fila < 8; fila++) for (let f = 0; f < 8; f++) {
-    const L = lamina(C, C), m = mascara(C, C), a = (f / 8) * Math.PI * 2;
-    if (fila === 4) { disco(m, 16, 16, 3.2 + Math.sin(a) * 0.4); const g = desenfocada(m, 1.2); pintar(L, g, [0.86, 0.9, 1], 0.95); }
-    else if (fila === 5) { const p = 0.5 + 0.5 * Math.sin(a); halo(L, 16, 16, 9, [1, 0.78, 0.35], 0.6 * p + 0.2, 1, true); trazo(m, 16, 16 - 7 * p, 16, 16 + 7 * p, 1, 1); trazo(m, 16 - 7 * p, 16, 16 + 7 * p, 16, 1, 1); disco(m, 16, 16, 1.6); brillo(L, m, [1, 0.9, 0.6], 1.1); }
-    else if (fila === 6) { trazo(m, 18, 2, 14, 30, 1.1, 1.1, 0.9, 'max', false); pintar(L, m, [0.7, 0.75, 0.82], 0.55); }
-    else { disco(m, 16, 16, 2.5); pintar(L, desenfocada(m, 2), [0.55, 0.5, 0.45], 0.6 + 0.2 * Math.sin(a)); }
-    extra.push(aRaster(L));
-  }
-  const ex = grilla(extra, 8), o = createRaster(256, 256);
-  o.data.set(base.data, 0); o.data.set(ex.data, 256 * 128 * 4);
-  return o;
-}
+export interface HojaFx { img: Raster; w: number; h: number; columnas: number; cuadros: number; fps: number; pivote: P2; notas: string }
 /** Fuego: 8 cuadros de 64 x 128 que se repiten (se suma). El pie de la llama está en (32, 120). */
 function hojaFuego(): Raster {
   const cuadros: Raster[] = [];
@@ -215,12 +209,11 @@ function hojaFuego(): Raster {
   }
   return grilla(cuadros, 8);
 }
-/** Goteo: 12 cuadros de 32 x 128 por fila (sangre, agua de mar). La gota se forma arriba (16, 6), se estira, cae y sale por abajo. */
-function hojaGoteo(): Raster {
+/** Goteo: 12 cuadros de 32 x 128. La gota se forma arriba (16, 0), se estira, cae y sale por abajo. */
+function hojaGoteo(base: C3, filo: C3): Raster {
   const cuadros: Raster[] = [];
-  for (const [base, filo] of [[[0.24, 0.01, 0.012], [0.9, 0.35, 0.3]], [[0.08, 0.2, 0.18], [0.6, 0.95, 0.85]]] as [C3, C3][]) for (let f = 0; f < 12; f++) {
-    const L = lamina(32, 128), m = mascara(32, 128);
-    const t = f / 11;
+  for (let f = 0; f < 12; f++) {
+    const L = lamina(32, 128), m = mascara(32, 128), t = f / 11;
     if (t < 0.5) { const r = 2 + t * 5, l = 6 + t * 18; trazo(m, 16, 0, 16, l, 3, r * 1.4); disco(m, 16, l, r); }
     else { const q = (t - 0.5) / 0.5, y = 24 + q * q * 110, r = 3.2; trazo(m, 16, 0, 16, 6 + (1 - q) * 8, 3, 2); disco(m, 16, y, r); trazo(m, 16, y - r * 3 * q, 16, y, r * 0.6, r * 1.5); }
     pintar(L, m, base, 1);
@@ -230,7 +223,7 @@ function hojaGoteo(): Raster {
   }
   return grilla(cuadros, 12);
 }
-/** Humo: 8 cuadros de 128 x 128 de una bocanada que crece y se deshace (normal; el juego la hace subir). */
+/** Humo: 8 cuadros de 128 x 128 de una bocanada que crece y se deshace (normal). */
 function hojaHumo(): Raster {
   const cuadros: Raster[] = [];
   for (let f = 0; f < 8; f++) {
@@ -244,157 +237,189 @@ function hojaHumo(): Raster {
   }
   return grilla(cuadros, 8);
 }
-/** Cuervo: 8 cuadros de 64 x 48 batiendo las alas (silueta negra; el juego lo mueve). */
+/** Cuervo: 8 cuadros de 64 x 48 batiendo las alas (silueta negra). */
 function hojaCuervo(): Raster {
   const cuadros: Raster[] = [];
   for (let f = 0; f < 8; f++) {
-    const L = lamina(64, 48), m = mascara(64, 48), a = Math.sin((f / 8) * Math.PI * 2), cx = 32, cy = 24;
+    const L = lamina(64, 48), m = mascara(64, 48), a = Math.sin((f / 8) * Math.PI * 2), cx = 32, cy = 26;
     rellenar(m, [[cx - 14, cy + 1], [cx - 4, cy - 3], [cx + 10, cy - 2], [cx + 16, cy], [cx + 10, cy + 3], [cx - 6, cy + 4]]);
     disco(m, cx + 13, cy - 1.5, 3.2); rellenar(m, [[cx + 15, cy - 2.5], [cx + 21, cy - 0.5], [cx + 15, cy + 0.5]]);
     rellenar(m, [[cx - 13, cy + 1], [cx - 22, cy - 2], [cx - 21, cy + 5], [cx - 12, cy + 4]]);
-    for (const lado of [-1, 1]) { const tip: P2 = [cx - 6 + lado * 2, cy - 20 * a * lado * lado]; rellenar(m, [[cx - 4, cy - 1], [cx + 6, cy - 1], [cx + 2 + 8, tip[1] * 0.5 + cy * 0.5], tip, [cx - 16, tip[1] * 0.7 + cy * 0.3]]); }
+    const tip: P2 = [cx - 8, cy - 20 * a];
+    rellenar(m, [[cx - 6, cy - 1], [cx + 6, cy - 1], [cx + 4, cy - 10 * a], tip, [cx - 18, cy - 12 * a]]);
     pintar(L, m, [0.015, 0.012, 0.015], 1);
     cuadros.push(aRaster(L));
   }
   return grilla(cuadros, 8);
 }
-let hojasCache: Record<string, HojaFx> | null = null;
-export function hojasFx(): Record<string, HojaFx> {
+export type NombreHoja = 'fuego' | 'goteo_sangre' | 'goteo_agua' | 'humo' | 'cuervo';
+let hojasCache: Record<NombreHoja, HojaFx> | null = null;
+export function hojasFx(): Record<NombreHoja, HojaFx> {
   if (hojasCache) return hojasCache;
   hojasCache = {
-    particulas: { img: hojaParticulas(), w: 32, h: 32, columnas: 8, cuadros: 8, filas: FILAS_PARTICULAS, notas: 'Una fila por tipo; cada partícula avanza por los 8 cuadros de su fila.' },
-    fuego: { img: hojaFuego(), w: 64, h: 128, columnas: 8, cuadros: 8, filas: ['fuego'], notas: 'Se suma. El pie de la llama va en (32, 120) de la celda.' },
-    goteo: { img: hojaGoteo(), w: 32, h: 128, columnas: 12, cuadros: 12, filas: ['sangre', 'agua'], notas: 'Normal. La gota nace en (16, 0) de la celda; poner ese punto en la posición del efecto.' },
-    humo: { img: hojaHumo(), w: 128, h: 128, columnas: 8, cuadros: 8, filas: ['humo'], notas: 'Normal. Centro de la bocanada en (64, 70) de la celda.' },
-    cuervo: { img: hojaCuervo(), w: 64, h: 48, columnas: 8, cuadros: 8, filas: ['cuervo'], notas: 'Normal. Mira a la derecha: espejar para volar a la izquierda.' },
+    fuego: { img: hojaFuego(), w: 64, h: 128, columnas: 8, cuadros: 8, fps: 12, pivote: [32, 120], notas: 'llama que se suma' },
+    goteo_sangre: { img: hojaGoteo([0.24, 0.01, 0.012], [0.9, 0.35, 0.3]), w: 32, h: 128, columnas: 12, cuadros: 12, fps: 10, pivote: [16, 0], notas: 'gota de sangre que se forma y cae' },
+    goteo_agua: { img: hojaGoteo([0.08, 0.2, 0.18], [0.6, 0.95, 0.85]), w: 32, h: 128, columnas: 12, cuadros: 12, fps: 10, pivote: [16, 0], notas: 'gota de agua de mar' },
+    humo: { img: hojaHumo(), w: 128, h: 128, columnas: 8, cuadros: 8, fps: 8, pivote: [64, 70], notas: 'bocanada de humo' },
+    cuervo: { img: hojaCuervo(), w: 64, h: 48, columnas: 8, cuadros: 8, fps: 10, pivote: [32, 26], notas: 'cuervo que bate las alas' },
   };
   return hojasCache;
 }
 
 // ------------------------------------------------------------------ viñeta y cámara
-/** Viñeta fija de 1280 x 720 de las cinemáticas (negro con alfa): bordes y la franja de la narración más oscura. */
+/** Viñeta fija de 1280 x 720 (negro con alfa en los bordes); la franja de la narración la pone el juego. */
 export function vinetaCine(): Lamina {
   const w = 1280, h = 720, L = lamina(w, h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const q = Math.hypot((x - w / 2) / (w / 2), (y - h / 2) / (h / 2));
-    L.d[(y * w + x) * 4 + 3] = sat(0.7 * suave(0.62, 1.45, q) + 0.55 * suave(500, 640, y) + 0.2 * (1 - suave(0, 70, y)));
+    L.d[(y * w + x) * 4 + 3] = sat(0.72 * suave(0.6, 1.42, q) + 0.18 * (1 - suave(0, 80, y)));
   }
   return L;
 }
-const curva = (c: Curva, t: number) => (c === 'lineal' ? t : c === 'entrada' ? t * t : c === 'salida' ? 1 - (1 - t) * (1 - t) : t * t * (3 - 2 * t));
-/** Dónde está la cámara en el segundo t del plano: (cx, cy, zoom), con el temblor. */
+const curva = (c: Curva, t: number) => (c === 'lineal' ? t : t * t * (3 - 2 * t));
+/** Dónde está la cámara en el segundo t del plano: (x, y, zoom), con la sacudida. */
 export function camaraEn(cam: Camara, dur: number, t: number): [number, number, number] {
   const u = curva(cam.curva, sat(t / dur));
-  let cx = cam.desde[0] + (cam.hasta[0] - cam.desde[0]) * u, cy = cam.desde[1] + (cam.hasta[1] - cam.desde[1]) * u;
-  const z = cam.desde[2] + (cam.hasta[2] - cam.desde[2]) * u;
-  for (const tb of cam.temblor ?? []) {
-    if (t < tb.desde_s || t > tb.hasta_s) continue;
-    const k = tb.decae ? 1 - (t - tb.desde_s) / (tb.hasta_s - tb.desde_s) : 1, w = t * tb.hz * Math.PI * 2;
-    cx += tb.amp * k * (Math.sin(w) * 0.6 + Math.sin(w * 2.3 + 1) * 0.4); cy += tb.amp * k * (Math.sin(w * 1.3 + 2) * 0.6 + Math.sin(w * 2.9) * 0.4);
+  let x = cam.desde.x + (cam.hasta.x - cam.desde.x) * u, y = cam.desde.y + (cam.hasta.y - cam.desde.y) * u;
+  const z = cam.desde.zoom + (cam.hasta.zoom - cam.desde.zoom) * u, sc = cam.sacudida;
+  if (sc && t >= sc.t && t <= sc.t + sc.dur) { const k = 1 - (t - sc.t) / sc.dur, w = t * 11 * Math.PI * 2; x += sc.fuerza * k * Math.sin(w); y += sc.fuerza * k * Math.sin(w * 1.3 + 2); }
+  return [x, y, z];
+}
+
+// ------------------------------------------------------------------ las capas que salen de una toma
+/** Una capa lista para el manifiesto: imagen (o una hoja de efectos), su lugar en la capa de 1408 x 792 y cómo se dibuja. */
+export interface CapaFinal { id: string; img: Lamina | null; hoja?: NombreHoja; x: number; y: number; w: number; h: number; paralaje: number; mezcla: 'normal' | 'sumar'; alfa?: number; anim?: Record<string, unknown>; soloSi?: string; opaca?: boolean }
+/** Recorta una capa transparente a lo que tiene (con 2 px de aire). */
+function recorte(L: Lamina): { img: Lamina; x: number; y: number } | null {
+  let x0 = L.w, y0 = L.h, x1 = -1, y1 = -1;
+  for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) { const j = (y * L.w + x) * 4; if (L.d[j + 3] > 0.004 || L.d[j] > 0.004 || L.d[j + 1] > 0.004 || L.d[j + 2] > 0.004) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+  if (x1 < 0) return null;
+  x0 = Math.max(0, x0 - 2); y0 = Math.max(0, y0 - 2); x1 = Math.min(L.w - 1, x1 + 2); y1 = Math.min(L.h - 1, y1 + 2);
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, R = lamina(w, h);
+  for (let y = 0; y < h; y++) R.d.set(L.d.subarray(((y + y0) * L.w + x0) * 4, ((y + y0) * L.w + x1 + 1) * 4), y * w * 4);
+  return { img: R, x: x0, y: y0 };
+}
+/** Las capas de la toma en orden de dibujo (recortadas) con los sprites de efectos metidos detrás de su capa. */
+export function capasFinales(t: Toma): CapaFinal[] {
+  const H = hojasFx(), out: CapaFinal[] = [];
+  for (const c of [...t.capas].sort((a, b) => a.z - b.z)) {
+    const r = c.opaca ? { img: c.L, x: 0, y: 0 } : recorte(c.L);
+    if (r) out.push({ id: c.id, img: r.img, x: r.x, y: r.y, w: r.img.w, h: r.img.h, paralaje: c.paralaje, mezcla: c.mezcla, anim: c.anim, soloSi: c.soloSi, opaca: c.opaca });
+    t.fx.filter((f) => f.despues_de === c.id).forEach((f, i) => {
+      const h = H[f.hoja];
+      f.en.forEach(([x, y, e], k) => out.push({
+        id: `${f.hoja}_${c.id}_${i}_${k}`, img: null, hoja: f.hoja, x: Math.round(x - h.pivote[0] * e), y: Math.round(y - h.pivote[1] * e), w: Math.round(h.w * e), h: Math.round(h.h * e),
+        paralaje: f.paralaje, mezcla: f.mezcla, alfa: f.alfa, soloSi: f.soloSi,
+        anim: { tipo: 'cuadros', columnas: h.columnas, cuadros: h.cuadros, fps: f.fps ?? h.fps, w: h.w, h: h.h, desfase: +((k * 0.37) % 1).toFixed(2) },
+      }));
+    });
   }
-  return [cx, cy, z];
+  return out;
 }
 
 // ------------------------------------------------------------------ componer (vistas de control)
-/** Dibuja una capa (de 1408 x 792 o recortada en ox, oy) en la pantalla base con la cámara, como lo haría el juego. */
-function dibujarCapa(out: Lamina, L: Lamina, ox: number, oy: number, p: number, cam: [number, number, number], foco: [number, number], sumar: boolean, k = 1) {
-  const s = 1 + (cam[2] - 1) * p;
+/** Dibuja una imagen puesta en (ox, oy) de la capa en la pantalla base, con la cámara como el reproductor del juego. */
+function dibujar(out: Lamina, L: Lamina, ox: number, oy: number, w: number, h: number, p: number, cam: [number, number, number], sumar: boolean, k = 1) {
+  const z = cam[2], sx = L.w / w, sy = L.h / h;
   for (let y = 0; y < out.h; y++) for (let x = 0; x < out.w; x++) {
-    // pantalla = foco + (capa - margen - cam * p - foco) * s  =>  capa = (pantalla - foco) / s + foco + margen + cam * p
-    const lx = (x + 0.5 - foco[0]) / s + foco[0] + MX + cam[0] * p - ox - 0.5, ly = (y + 0.5 - foco[1]) / s + foco[1] + MY + cam[1] * p - oy - 0.5;
+    // pantalla = centro + (capa - margen - cam * paralaje - centro) * zoom
+    const lx = ((x + 0.5 - 640) / z + 640 + MX + cam[0] * p - ox) * sx - 0.5, ly = ((y + 0.5 - 360) / z + 360 + MY + cam[1] * p - oy) * sy - 0.5;
     if (lx < 0 || ly < 0 || lx >= L.w - 1 || ly >= L.h - 1) continue;
     const xi = Math.floor(lx), yi = Math.floor(ly), u = lx - xi, v = ly - yi, j = (y * out.w + x) * 4;
     const q = (yy: number, xx: number, c: number) => L.d[(yy * L.w + xx) * 4 + c];
     const smp = (c: number) => (q(yi, xi, c) * (1 - u) + q(yi, xi + 1, c) * u) * (1 - v) + (q(yi + 1, xi, c) * (1 - u) + q(yi + 1, xi + 1, c) * u) * v;
-    const a = smp(3) * k;
     if (sumar) { out.d[j] += smp(0) * k; out.d[j + 1] += smp(1) * k; out.d[j + 2] += smp(2) * k; continue; }
-    if (a <= 0) continue;
+    const a = smp(3) * k; if (a <= 0) continue;
     out.d[j] = out.d[j] * (1 - a) + smp(0) * k; out.d[j + 1] = out.d[j + 1] * (1 - a) + smp(1) * k; out.d[j + 2] = out.d[j + 2] * (1 - a) + smp(2) * k; out.d[j + 3] = 1;
   }
 }
-/** Los efectos de un plano pintados quietos (posiciones sembradas) en una lámina de capa: para las vistas de control. */
-function sembrarFx(L: Lamina, fx: FxToma, s: number) {
-  const H = hojasFx(), r = rng(s);
-  const sello = (h: HojaFx, fila: number, cuadro: number, x: number, y: number, esc: number, alfa: number, sumar: boolean, px: number, py: number) => {
-    const cel = recorteCelda(h, fila, cuadro), w = Math.max(1, Math.round(h.w * esc)), hh = Math.max(1, Math.round(h.h * esc));
-    const e = escalar(cel, w, hh);
-    for (let yy = 0; yy < hh; yy++) for (let xx = 0; xx < w; xx++) {
-      const tx = Math.round(x - px * esc + xx), ty = Math.round(y - py * esc + yy); if (tx < 0 || ty < 0 || tx >= L.w || ty >= L.h) continue;
-      const sj = (yy * w + xx) * 4, tj = (ty * L.w + tx) * 4, a = e.d[sj + 3] * alfa;
-      if (sumar) { L.d[tj] += e.d[sj] * alfa; L.d[tj + 1] += e.d[sj + 1] * alfa; L.d[tj + 2] += e.d[sj + 2] * alfa; continue; }
-      L.d[tj] = L.d[tj] * (1 - a) + e.d[sj] * alfa; L.d[tj + 1] = L.d[tj + 1] * (1 - a) + e.d[sj + 1] * alfa; L.d[tj + 2] = L.d[tj + 2] * (1 - a) + e.d[sj + 2] * alfa;
-    }
-  };
-  if (fx.tipo === 'particulas') {
-    const fila = FILAS_PARTICULAS.indexOf(fx.fila);
-    for (let i = 0; i < fx.cantidad; i++) sello(H.particulas, fila, Math.floor(r() * 8), fx.zona[0] + r() * fx.zona[2], fx.zona[1] + r() * fx.zona[3], fx.escala[0] + r() * (fx.escala[1] - fx.escala[0]), fx.alfa[0] + r() * (fx.alfa[1] - fx.alfa[0]), fx.mezcla === 'sumar', 16, 16);
-  } else {
-    const h = H[fx.hoja], fila = fx.fila ? Math.max(0, h.filas.indexOf(fx.fila)) : 0, piv: P2 = fx.hoja === 'fuego' ? [32, 120] : fx.hoja === 'goteo' ? [16, 0] : fx.hoja === 'humo' ? [64, 70] : [32, 24];
-    for (const [x, y, e] of fx.en) sello(h, fila, Math.floor(r() * h.cuadros), x, y, e, fx.alfa ?? 1, fx.mezcla === 'sumar', piv[0], piv[1]);
-  }
-}
 const celdas = new Map<string, Lamina>();
-function recorteCelda(h: HojaFx, fila: number, cuadro: number): Lamina {
-  const k = `${h.w}x${h.h}|${h.columnas}|${fila}|${cuadro}|${h.img.w}`;
+function celda(n: NombreHoja, cuadro: number): Lamina {
+  const k = `${n}|${cuadro}`;
   let c = celdas.get(k);
   if (!c) {
-    const i = fila * h.cuadros + cuadro, cx = (i % h.columnas) * h.w, cy = Math.floor(i / h.columnas) * h.h, r = createRaster(h.w, h.h);
+    const h = hojasFx()[n], cx = (cuadro % h.columnas) * h.w, cy = Math.floor(cuadro / h.columnas) * h.h, r = createRaster(h.w, h.h);
     for (let y = 0; y < h.h; y++) r.data.set(h.img.data.subarray(((cy + y) * h.img.w + cx) * 4, ((cy + y) * h.img.w + cx + h.w) * 4), y * h.w * 4);
     c = desdeRaster(r); celdas.set(k, c);
   }
   return c;
 }
-/** Una toma compuesta en la pantalla base (1280 x 720) en el segundo t, con una elección y sus efectos sembrados. */
-export function componerPlano(t: Toma, p: Plano, o: { t?: number; valor?: string; fx?: boolean; vineta?: Lamina } = {}): Lamina {
-  const out = lamina(1280, 720), cam = camaraEn(p.cam, p.dur, o.t ?? p.dur * 0.5);
+/**
+ * Un plano compuesto en la pantalla base (1280 x 720) en el segundo t, como lo dibuja el juego, con la viñeta y la
+ * franja oscura de la narración (para juzgarlo). Con `valor` se elige la variante de una elección.
+ */
+export function componerPlano(capas: CapaFinal[], p: Plano, o: { t?: number; valor?: string; vineta?: Lamina; franja?: boolean } = {}): Lamina {
+  const out = lamina(1280, 720), tt = o.t ?? p.dur * 0.5, cam = camaraEn(p.cam, p.dur, tt);
   const valor = o.valor ?? (p.eleccion ? ELECCIONES[p.eleccion][0] : undefined);
-  const capas = [...t.capas].filter((c) => !c.soloSi || c.soloSi === valor).sort((a, b) => a.z - b.z);
-  for (const c of capas) {
-    dibujarCapa(out, c.L, 0, 0, c.paralaje, cam, p.cam.foco, c.mezcla === 'sumar');
-    if (o.fx !== false) for (const [i, f] of t.fx.entries()) {
-      if (f.despues_de !== c.id || (f.tipo === 'sprite' && f.soloSi && f.soloSi !== valor)) continue;
-      const L = lamina(CW, CH); sembrarFx(L, f, t.semilla + i * 7);
-      dibujarCapa(out, L, 0, 0, f.paralaje, cam, p.cam.foco, f.mezcla === 'sumar');
-    }
+  for (const [i, c] of capas.entries()) {
+    if (c.soloSi && c.soloSi !== valor) continue;
+    const img = c.img ?? celda(c.hoja!, Math.floor(tt * Number(c.anim?.fps ?? 10) + i * 3) % hojasFx()[c.hoja!].cuadros);
+    dibujar(out, img, c.x, c.y, c.w, c.h, c.paralaje, cam, c.mezcla === 'sumar', c.alfa ?? 1);
   }
   const v = o.vineta ?? vinetaCine();
-  for (let i = 0; i < out.w * out.h; i++) { const a = v.d[i * 4 + 3], j = i * 4; out.d[j] *= 1 - a; out.d[j + 1] *= 1 - a; out.d[j + 2] *= 1 - a; out.d[j + 3] = 1; }
+  for (let i = 0; i < out.w * out.h; i++) {
+    const y = Math.floor(i / out.w), barra = o.franja === false ? 0 : sat((y - 560) / 120) * 0.8;
+    const a = 1 - (1 - v.d[i * 4 + 3]) * (1 - barra), j = i * 4; out.d[j] *= 1 - a; out.d[j + 1] *= 1 - a; out.d[j + 2] *= 1 - a; out.d[j + 3] = 1;
+  }
   return out;
 }
 
-// ------------------------------------------------------------------ manifiesto
-/** Recorta una capa transparente a lo que tiene (con 2 px de aire): devuelve el pedazo y dónde va en la capa. */
-export function recorteCapa(L: Lamina, opaca: boolean): { img: Raster; x: number; y: number } {
-  if (opaca) return { img: aRaster(L, true), x: 0, y: 0 };
-  let x0 = L.w, y0 = L.h, x1 = -1, y1 = -1;
-  for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) { const j = (y * L.w + x) * 4; if (L.d[j + 3] > 0.004 || L.d[j] > 0.004 || L.d[j + 1] > 0.004 || L.d[j + 2] > 0.004) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
-  if (x1 < 0) return { img: createRaster(1, 1), x: 0, y: 0 };
-  x0 = Math.max(0, x0 - 2); y0 = Math.max(0, y0 - 2); x1 = Math.min(L.w - 1, x1 + 2); y1 = Math.min(L.h - 1, y1 + 2);
-  const w = x1 - x0 + 1, h = y1 - y0 + 1, R = lamina(w, h);
-  for (let y = 0; y < h; y++) R.d.set(L.d.subarray(((y + y0) * L.w + x0) * 4, ((y + y0) * L.w + x1 + 1) * 4), y * w * 4);
-  // lo que suma no tiene alfa propio: se guarda con alfa = su luz para que el PNG lo conserve (el juego lo dibuja con 'lighter')
-  return { img: aRaster(R), x: x0, y: y0 };
-}
-const aBase = ([x, y]: [number, number]): [number, number] => [Math.round(x - MX), Math.round(y - MY)];
-/** El pedazo del manifiesto de un plano (los archivos los pone quien llama). */
-export function manifiestoPlano(clave: string, n: number, p: Plano, capas: { id: string; z: number; archivo: string; x: number; y: number; w: number; h: number; paralaje: number; mezcla: string; anim?: Record<string, unknown>; soloSi?: string; notas?: string }[], fx: FxToma[]) {
-  const narr = (tx: Texto) => ({ es: tx[0], en: tx[1] });
-  return {
-    id: p.id, n, que: p.que, dur_s: p.dur,
-    camara: { ...p.cam, notas: undefined },
-    narracion: { ...narr(p.texto), aparece_s: Math.min(1.2, p.entrada.s + 0.3), hasta_s: +(p.dur - p.salida.s * 0.6).toFixed(2), ...(p.textoSegun ? { segun: Object.fromEntries(Object.entries(p.textoSegun).map(([k, v]) => [k, narr(v)])) } : {}) },
-    ...(p.eleccion ? { eleccion: p.eleccion, valores: ELECCIONES[p.eleccion] } : {}),
-    transicion: { entrada: p.entrada, salida: p.salida },
-    capas: capas.map((c) => ({ id: c.id, z: c.z, archivo: c.archivo, x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.anim ? { anim: c.anim } : {}), ...(c.soloSi ? { solo_si: { eleccion: p.eleccion, valor: c.soloSi } } : {}), ...(c.notas ? { notas: c.notas } : {}) })),
-    efectos: fx.map((f) => (f.tipo === 'particulas'
-      ? { ...f, hoja: 'particulas', zona: [Math.round(f.zona[0] - MX), Math.round(f.zona[1] - MY), Math.round(f.zona[2]), Math.round(f.zona[3])], fps: f.fps ?? 10, loop: true }
-      : { ...f, en: f.en.map(([x, y, e]) => [...aBase([x, y]), e]), loop: true, ...(f.soloSi ? { solo_si: { eleccion: p.eleccion, valor: f.soloSi }, soloSi: undefined } : {}) })),
-  };
-}
+// ------------------------------------------------------------------ exportar con el manifiesto
 export const CAPA_CINE = { w: CW, h: CH, margen_x: MX, margen_y: MY };
-export { CW, CH, MX, MY };
-export type { Toma };
-export const LEEME_CINE = `cinematicas/  las cinemáticas de cierre de cada acto. portada.json > cinematicas dice, por clave (acto_1 ... acto_6, acto_7 y
-              acto_7_<final>), sus planos: capas recortadas con su lugar en la capa de 1408x792, paralaje, mezcla y
-              animación; efectos (partículas y sprites de cinematicas/fx/); duración, cámara, transiciones y narración.
+export interface OpcExportar {
+  /** guarda un PNG (nombre relativo a la carpeta del kit) */
+  poner: (nombre: string, r: Raster) => void;
+  aviso?: (s: string) => void;
+  /** solo estas claves (por defecto todas) */
+  claves?: string[];
+  /** recibe cada plano compuesto (vistas de control): clave, índice, variante */
+  vista?: (clave: string, n: number, p: Plano, valor: string | undefined, L: Lamina) => void;
+}
+/**
+ * Pinta todas las cinemáticas, guarda sus PNG (capas recortadas, viñeta y hojas de efectos compartidas) y devuelve la
+ * sección `cinematicas` del manifiesto, con el esquema del reproductor del juego.
+ */
+export function exportarCinematicas(o: OpcExportar): Record<string, unknown> {
+  const av = o.aviso ?? (() => {}), H = hojasFx(), out: Record<string, unknown> = { capa: CAPA_CINE };
+  for (const [n, h] of Object.entries(H)) o.poner(`cinematicas/fx/${n}.png`, h.img);
+  o.poner('cinematicas/vineta.png', aRaster(vinetaCine()));
+  const vineta = vinetaCine();
+  for (const clave of o.claves ?? CLAVES_CINE) {
+    const planos: unknown[] = [];
+    GUION[clave].forEach((p, n) => {
+      av(`cinemática ${clave} ${p.id}`);
+      const t = pintarPlano(clave, p.id), capas = capasFinales(t);
+      const archivoDe = (c: CapaFinal) => (c.hoja ? `cinematicas/fx/${c.hoja}.png` : `cinematicas/${clave}/${p.id}_${c.id}.png`);
+      for (const c of capas) if (c.img) o.poner(archivoDe(c), aRaster(c.img, !!c.opaca));
+      const json = (lista: CapaFinal[]) => [
+        ...lista.map((c) => ({ id: c.id, archivo: archivoDe(c), x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.alfa !== undefined ? { alfa: c.alfa } : {}), ...(c.anim ? { anim: c.anim } : {}) })),
+        { id: 'vineta', archivo: 'cinematicas/vineta.png', x: MX, y: MY, w: 1280, h: 720, paralaje: 0, mezcla: 'normal' },
+      ];
+      const valores = p.eleccion ? ELECCIONES[p.eleccion] : [undefined];
+      const de = (v: string | undefined) => capas.filter((c) => !c.soloSi || c.soloSi === v);
+      const narr = (v: string | undefined) => { const tx = (v && p.textoSegun?.[v]) || p.texto; return { es: tx[0], en: tx[1] }; };
+      const plano: Record<string, unknown> = {
+        id: p.id, que: p.que, dur: p.dur, capas: json(de(valores[0])),
+        camara: { desde: p.cam.desde, hasta: p.cam.hasta, curva: p.cam.curva, ...(p.cam.sacudida ? { sacudida: p.cam.sacudida } : {}) },
+        narracion: narr(valores[0]),
+        fundido: { entra: p.entrada.s, sale: p.salida.s, ...(p.entrada.tipo !== 'negro' && p.entrada.tipo !== 'fundido' ? { color_entra: p.entrada.tipo } : {}), ...(p.salida.tipo !== 'negro' && p.salida.tipo !== 'fundido' ? { color_sale: p.salida.tipo } : {}) },
+        ...(t.particulas ? { particulas: t.particulas } : {}),
+      };
+      if (p.eleccion) {
+        plano.eleccion = p.eleccion; plano.valor = valores[0];
+        plano.alternativas = Object.fromEntries(valores.slice(1).map((v) => [v, { capas: json(de(v)), narracion: narr(v) }]));
+      }
+      planos.push(plano);
+      if (o.vista) for (const v of valores) o.vista(clave, n, p, v, componerPlano(capas, p, { valor: v, vineta }));
+    });
+    out[clave] = { planos };
+  }
+  return out;
+}
+
+export const LEEME_CINE = `cinematicas/  las cinemáticas de cierre de cada acto: portada.json > cinematicas > <clave> > planos. Cada plano trae sus
+              capas (recortadas: x, y, w, h en la capa de 1408x792 cuya pantalla base va en 64, 36), paralaje, mezcla y
+              animación; cámara, fundidos, narración (es, en) y partículas del juego. cinematicas/fx/ son hojas de
+              sprites compartidas (fuego, goteo de sangre y de agua, humo, cuervos) que las capas usan con anim
+              "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0.
 `;

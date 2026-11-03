@@ -94,7 +94,7 @@ function a1p1(t: Toma) {
   rellenar(herida, Array.from({ length: 18 }, (_, k) => { const a = (k / 18) * Math.PI * 2, q = 0.7 + 0.5 * fbm(Math.cos(a) * 2 + 3, Math.sin(a) * 2, 2, 23); return [pecho[0] + Math.cos(a) * 22 * q, pecho[1] + Math.sin(a) * 30 * q] as P2; }));
   chorreado(sangre, pecho[0], pecho[1] + 16, 46, bh * 0.45, 24);
   chorreado(sangre, pecho[0] - bw * 0.06, b.y0 + bh * 0.2, 12, 60, 25);
-  for (let i = 0; i < CW * CH; i++) sangre.d[i] *= mascaraPose(CW, CH, ab, cx, cy - 10).d[i] > 0.3 ? 1 : 0.25;
+  const mab = mascaraPose(CW, CH, ab, cx, cy - 10); for (let i = 0; i < CW * CH; i++) sangre.d[i] *= mab.d[i] > 0.3 ? 1 : 0.25;
   pintarSangre(A, sangre, [1, 0.3, 0.12], 0.95, 0.6);
   pintar(A, herida, [0.25, 0.02, 0.01], 1);
   brillo(AL, herida, [1, 0.5, 0.15], 1.6); halo(AL, pecho[0], pecho[1], 90, [1, 0.35, 0.08], 1, 1, true);
@@ -104,6 +104,7 @@ function a1p1(t: Toma) {
   t.rayos('rayos', 4.5, 0.45, 4, pecho[0], pecho[1], 0.5, 0.45, { tipo: 'latir', alfa: [0.6, 1], periodo_s: 1.8 });
 
   // primer plano: los colgados de los ganchos a la izquierda, huesos y velas a la derecha
+  t.particulas = 'brasas';
   const Fr = t.capa('frente', 5, 1);
   const luzFr: Luz = { amb: [0.34, 0.27, 0.27], desat: 0.3, clave: { dir: [1, 0.3], k: 0.7 }, bordes: [{ dx: 1, dy: 0, c: [1.1, 0.3, 0.08], k: 1.4, ancho: 2 }], abajo: { c: [0.6, 0.12, 0.03], k: 0.5 } };
   const col = figura(Fr, undefined, modelo('hor_colgados', 'ganchos', 0, 3), 170, 860, 760, luzFr);
@@ -121,9 +122,7 @@ function a1p1(t: Toma) {
   t.efecto({ tipo: 'sprite', hoja: 'fuego', en: velas, fps: 12, mezcla: 'sumar', despues_de: 'frente', paralaje: 1 });
   const vl = t.capa('velas_luz', 6, 1, 'sumar', { anim: { tipo: 'titilar', alfa: [0.75, 1], hz: 8 } });
   for (const [x, y] of velas) halo(vl, x, y - 10, 70, [1, 0.5, 0.15], 0.6, 1, true);
-  t.efecto({ tipo: 'sprite', hoja: 'goteo', fila: 'sangre', en: [[cc.x0 + (cc.x1 - cc.x0) * 0.35, cc.y0 + (cc.y1 - cc.y0) * 0.78, 1], [cc.x0 + (cc.x1 - cc.x0) * 0.62, cc.y0 + (cc.y1 - cc.y0) * 0.72, 0.9], [pecho[0] - 8, pecho[1] + bh * 0.42, 1]], fps: 12, pausa_s: [0.3, 1.6], mezcla: 'normal', despues_de: 'frente', paralaje: 1 });
-  t.efecto({ tipo: 'particulas', fila: 'brasa', cantidad: 46, zona: [cx - 280, 260, 560, 420], vel_x: [-14, 14], vel_y: [-70, -25], vaiven: 16, escala: [0.4, 1], alfa: [0.6, 1], mezcla: 'sumar', despues_de: 'abadesa_luz', paralaje: 0.5, vida_s: [1.5, 3.5] });
-  t.efecto({ tipo: 'particulas', fila: 'copo', cantidad: 40, zona: [0, 0, CW, CH], vel_x: [-10, 6], vel_y: [12, 30], vaiven: 10, escala: [0.4, 0.9], alfa: [0.3, 0.6], mezcla: 'normal', despues_de: 'frente', paralaje: 0.9 });
+  t.efecto({ tipo: 'sprite', hoja: 'goteo_sangre', en: [[cc.x0 + (cc.x1 - cc.x0) * 0.35, cc.y0 + (cc.y1 - cc.y0) * 0.78, 1], [cc.x0 + (cc.x1 - cc.x0) * 0.62, cc.y0 + (cc.y1 - cc.y0) * 0.72, 0.9], [pecho[0] - 8, pecho[1] + bh * 0.42, 1]], fps: 12, mezcla: 'normal', despues_de: 'frente', paralaje: 1 });
 }
 /** Hacia dónde mira el filo del muro (hacia el centro): se usa el lado izquierdo; el derecho lo alumbra el pozo. */
 const x0dir = () => 2;
@@ -161,6 +160,7 @@ function a1p2(t: Toma) {
   const N = t.capa('niebla', 4, 0.5, 'normal', { anim: { tipo: 'deriva', px_por_segundo: 8, enrollar: true } });
   niebla(N, 560, 720, [0.13, 0.09, 0.1], 0.6, 35, 220, CW);
 
+  t.particulas = 'lluvia';
   // primer plano: el camposanto con la horca de los cuervos y un árbol muerto
   const Fr = t.capa('frente', 5, 1);
   const suelo = M(), sueloEn = (x: number) => 690 - 70 * Math.abs((x - CX) / CX) ** 2.5;
@@ -174,10 +174,8 @@ function a1p2(t: Toma) {
   const luzH: Luz = { amb: [0.32, 0.27, 0.3], desat: 0.35, clave: { dir: [-1, -0.4], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [1, 0.35, 0.1], k: 1.2, ancho: 2 }, { dx: 1, dy: 0, c: FRIO, k: 0.35 }] };
   const ho = figura(Fr, undefined, modelo('hor_cuervos_cadaver', 'horca', 0, 3), 1180, sueloEn(1180) + 30, 520, luzH);
   const hc = cajaPose(ho, 1180, sueloEn(1180) + 30);
-  t.efecto({ tipo: 'sprite', hoja: 'goteo', fila: 'sangre', en: [[hc.x0 + (hc.x1 - hc.x0) * 0.5, hc.y0 + (hc.y1 - hc.y0) * 0.6, 0.8]], fps: 12, pausa_s: [0.6, 2], mezcla: 'normal', despues_de: 'frente', paralaje: 1 });
-  t.efecto({ tipo: 'sprite', hoja: 'cuervo', en: [[700, 300, 0.7], [770, 260, 0.55], [640, 250, 0.5], [820, 330, 0.6], [560, 320, 0.45]], fps: 10, vuela_px_s: [-90, -20], mezcla: 'normal', despues_de: 'abadia_luz', paralaje: 0.4 });
-  t.efecto({ tipo: 'particulas', fila: 'chispa', cantidad: 30, zona: [240, 120, 640, 260], vel_x: [-30, -6], vel_y: [-10, 20], vaiven: 8, escala: [0.4, 0.9], alfa: [0.5, 1], mezcla: 'sumar', despues_de: 'estela', paralaje: 0.1, vida_s: [1, 2.5] });
-  t.efecto({ tipo: 'particulas', fila: 'lluvia', cantidad: 120, zona: [0, 0, CW, CH], vel_x: [-80, -60], vel_y: [700, 820], escala: [0.8, 1.3], alfa: [0.25, 0.5], mezcla: 'normal', despues_de: 'frente', paralaje: 1 });
+  t.efecto({ tipo: 'sprite', hoja: 'goteo_sangre', en: [[hc.x0 + (hc.x1 - hc.x0) * 0.5, hc.y0 + (hc.y1 - hc.y0) * 0.6, 0.8]], fps: 12, mezcla: 'normal', despues_de: 'frente', paralaje: 1 });
+  t.efecto({ tipo: 'sprite', hoja: 'cuervo', en: [[700, 300, 0.7], [770, 260, 0.55], [640, 250, 0.5], [820, 330, 0.6], [560, 320, 0.45]], fps: 10, mezcla: 'normal', despues_de: 'abadia_luz', paralaje: 0.4 });
 }
 
 /** El cruce del páramo: la horca, el camino al sur y la estrella roja que cae; el héroe de espaldas con la Marca. */
@@ -220,15 +218,14 @@ function a1p3(t: Toma) {
   const hb = cajaPose(he, 960, 818);
   const mano: P2 = [hb.x0 + (hb.x1 - hb.x0) * 0.2, hb.y0 + (hb.y1 - hb.y0) * 0.52];
   halo(HL, mano[0], mano[1], 46, [1, 0.3, 0.08], 1.1, 1, true); halo(HL, mano[0], mano[1], 10, [1, 0.7, 0.4], 1.2, 1, true);
+  t.particulas = 'ceniza';
   const Fr = t.capa('frente', 6, 1);
   const fr = M(); rellenar(fr, [[-10, CH + 5], [-10, 700], [120, 690], [260, 720], [380, 760], [460, CH + 5]]); rellenar(fr, [[1240, CH + 5], [1300, 740], [1408, 700], [1420, CH + 5]]);
   pasto(fr, -10, 460, (x) => 700 + x * 0.12, 220, 40, 51); pasto(fr, 1240, 1420, () => 720, 90, 40, 52);
   const cruz = M(); trazo(cruz, 120, 700, 128, 420, 9, 7, 1, 'max', false); trazo(cruz, 80, 480, 176, 470, 7, 7, 1, 'max', false); rellenar(cruz, [[60, 470], [124, 440], [200, 456], [130, 490]]);
   pintar(Fr, fr, [0.012, 0.01, 0.012]); pintar(Fr, cruz, [0.02, 0.015, 0.016]);
   contraluz(Fr, cruz, -2, 0, [1, 0.45, 0.15], 0.9); contraluz(Fr, fr, -2, -2, [0.8, 0.35, 0.12], 0.6);
-  t.efecto({ tipo: 'sprite', hoja: 'cuervo', en: [[420, 360, 0.4], [470, 330, 0.35], [380, 340, 0.3]], fps: 9, vuela_px_s: [-40, -15], mezcla: 'normal', despues_de: 'lejos', paralaje: 0.2 });
-  t.efecto({ tipo: 'particulas', fila: 'copo', cantidad: 50, zona: [0, 0, CW, CH], vel_x: [-20, -6], vel_y: [10, 26], vaiven: 12, escala: [0.4, 0.9], alfa: [0.3, 0.6], mezcla: 'normal', despues_de: 'heroe', paralaje: 0.9 });
-  t.efecto({ tipo: 'particulas', fila: 'brasa', cantidad: 8, zona: [mano[0] - 30, mano[1] - 60, 60, 60], vel_x: [-6, 6], vel_y: [-30, -12], vaiven: 6, escala: [0.3, 0.6], alfa: [0.5, 1], mezcla: 'sumar', despues_de: 'marca', paralaje: 0.8, vida_s: [0.8, 1.6] });
+  t.efecto({ tipo: 'sprite', hoja: 'cuervo', en: [[420, 360, 0.4], [470, 330, 0.35], [380, 340, 0.3]], fps: 9, mezcla: 'normal', despues_de: 'lejos', paralaje: 0.2 });
 }
 
 export const PINTORES_A: Record<string, (t: Toma) => void> = {

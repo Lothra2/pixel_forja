@@ -136,11 +136,13 @@ const ARRIBA: V3 = [0, 0, 1];
  * La capa viva de un elemento sobre el tramo a→b (la hoja, la cabeza o la gema del arma), en el cuadro f (de 8).
  * `S` es la escala del arma y `nivel` (1..5) cuánto se nota: brasas y lenguas más altas, más cristales, más arcos.
  * `ancho` es el medio ancho de lo que envuelve (la hoja o la cabeza), para que la capa nazca del borde y no del eje.
+ * `fuerza` multiplica cuánto se nota (lo legendario y lo mítico en la mano van un poco más fuertes, para leerse a la
+ * escala del juego).
  */
-export function capaElemental(a: V3, b: V3, el: Encanto, f: number, S = 1, nivel = 3, semilla = 1, ancho = 1.2): Pieza[] {
+export function capaElemental(a: V3, b: V3, el: Encanto, f: number, S = 1, nivel = 3, semilla = 1, ancho = 1.2, fuerza = 1): Pieza[] {
   const ps: Pieza[] = [];
   const h = (i: number) => { const x = Math.sin(i * 127.1 + semilla * 311.7) * 43758.5453; return x - Math.floor(x); };
-  const k = [0.5, 0.65, 0.82, 1.0, 1.25][Math.max(1, Math.min(5, nivel)) - 1];
+  const k = [0.5, 0.65, 0.82, 1.0, 1.25][Math.max(1, Math.min(5, nivel)) - 1] * fuerza;
   const L = len(sub(b, a)), eje = nor(sub(b, a));
   // un lado perpendicular al eje (para abrir la capa a los costados de la hoja)
   let lado = cruz(eje, ARRIBA); if (len(lado) < 0.2) lado = cruz(eje, [1, 0, 0]);

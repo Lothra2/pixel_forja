@@ -670,6 +670,141 @@ function astillas(L: Lienzo, R: () => number, n: number, C0: V3, T: number, vel:
   }
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// hueso que se astilla y rayos que se ramifican
+
+const MARFIL: C = [0.86, 0.81, 0.68];
+const TUETANO: C = [0.24, 0.09, 0.07];
+const TIERRA: C = [0.17, 0.13, 0.1];
+
+/**
+ * Esquirla de hueso de verdad: larga, angosta y quebrada (no un grano), con los bordes mellados, la boca partida en
+ * dientes con el tuétano oscuro adentro y la punta en aguja. (x, y) es el medio; `ang` el rumbo en pantalla; `l` el
+ * largo y `w` el medio ancho de la boca.
+ */
+function esquirla(L: Lienzo, R: () => number, x: number, y: number, ang: number, l: number, w: number, al = 1, plana = false): void {
+  const ca = Math.cos(ang), sa = Math.sin(ang) * (plana ? 0.5 : 1), nx = -Math.sin(ang), ny = Math.cos(ang) * (plana ? 0.5 : 1);
+  const P = (u: number, v: number): Pt => [x + ca * u * l + nx * v * w, y + sa * u * l + ny * v * w];
+  // el ancho se mantiene en la mitad de atrás y se afila hasta la aguja; los bordes, mellados
+  const an = (u: number) => (u < -0.05 ? 1 : Math.max(0, 1 - (u + 0.05) / 0.55));
+  const us = [-0.5, -0.32, -0.14, 0.04, 0.2, 0.34];
+  const arriba: Pt[] = us.map((u) => P(u, an(u) * (0.75 + R() * 0.45)));
+  const abajo: Pt[] = us.map((u) => P(u, -an(u) * (0.75 + R() * 0.45))).reverse();
+  // la boca partida: tres dientes desparejos
+  const boca: Pt[] = [P(-0.5 - R() * 0.08, -0.45), P(-0.45, -0.05), P(-0.5 - R() * 0.1, 0.35)];
+  const pts: Pt[] = [...arriba, P(0.5, (R() - 0.5) * 0.3), ...abajo, ...boca];
+  // la sombra propia (un poco corrida abajo a la derecha), el cuerpo de marfil y el filo que mira a la luz
+  L.poli(pts.map(([px, py]) => [px + 0.55, py + 0.65] as Pt), [0.16, 0.13, 0.1], al * 0.9);
+  L.poli(pts, MARFIL, al);
+  const luz = ny < 0 ? 1 : -1, [ax, ay] = P(-0.42, 0.55 * luz), [bx, by] = P(0.28, 0.25 * luz);
+  L.capsula(ax, ay, bx, by, Math.max(0.45, w * 0.32), 0.3, [1, 0.97, 0.88], al * 0.8);
+  // la veta a lo largo y el tuétano en la boca
+  const [vx, vy] = P(-0.3, -0.25 * luz), [wx, wy] = P(0.15, -0.1 * luz);
+  L.capsula(vx, vy, wx, wy, 0.35, 0.25, [0.6, 0.53, 0.42], al * 0.6);
+  const [tx, ty] = P(-0.48, 0), [ux, uy] = P(-0.3, 0);
+  L.capsula(tx, ty, ux, uy, Math.max(0.5, w * 0.42), 0.35, TUETANO, al);
+}
+
+/** lluvia de esquirlas: salen de C0 con velocidad `vel` (px por unidad de tiempo), giran, caen y quedan en el piso */
+function esquirlas(L: Lienzo, R: () => number, n: number, C0: V3, T: number, vel: [number, number], g = 110, largo: [number, number] = [6, 11], al = 1): void {
+  const ps: { p: V3; ang: number; l: number; w: number; quieto: boolean }[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = R() * TAU, sp = lerp(vel[0], vel[1], R()), up = 0.25 + R() * 1.1, spin = (R() - 0.5) * 14, l = lerp(largo[0], largo[1], R()), w = Math.max(0.9, l * (0.09 + R() * 0.04));
+    const b = up * sp, tl = (b + Math.sqrt(b * b + 4 * g * Math.max(0.1, C0[2]))) / (2 * g), t = Math.min(T, tl);
+    ps.push({ p: [C0[0] + Math.cos(a) * sp * t, C0[1] + Math.sin(a) * sp * t, Math.max(0, C0[2] + b * t - g * t * t)], ang: R() * TAU + spin * t, l: l * (1 - 0.15 * Math.min(1, t * 2)), w, quieto: T >= tl });
+  }
+  ps.sort((a, b) => a.p[0] + a.p[1] - b.p[0] - b.p[1]);
+  for (const s of ps) { const [x, y] = L.P(s.p); esquirla(L, R, x, y, s.ang, s.l, s.w, al, s.quieto); }
+}
+
+/** terrón o piedra suelta: polígono irregular de tierra con la cara de arriba más clara */
+function terron(L: Lienzo, R: () => number, x: number, y: number, r: number, c: C = TIERRA, al = 1): void {
+  const n = 5 + Math.floor(R() * 3), f = R() * TAU, pts: Pt[] = [];
+  for (let i = 0; i < n; i++) { const t = f + (i / n) * TAU, rr = r * (0.65 + R() * 0.45); pts.push([x + Math.cos(t) * rr, y + Math.sin(t) * rr * 0.85]); }
+  L.poli(pts, [c[0] * 0.55, c[1] * 0.5, c[2] * 0.48], al);
+  L.poli(pts.map(([px, py]) => [x + (px - x) * 0.75 - r * 0.15, y + (py - y) * 0.6 - r * 0.25] as Pt), [c[0] * 1.5, c[1] * 1.45, c[2] * 1.4], al * 0.9);
+}
+
+/** grieta en el piso: un camino quebrado que se abre desde (x, y), oscuro, con un hilo de luz `brillo` en el fondo */
+function grietaPiso(L: Lienzo, R: () => number, p: V3, ang: number, largo: number, ancho: number, crece: number, brillo?: C, kb = 0): void {
+  if (crece <= 0.02) return;
+  let q = p, a = ang;
+  const n = 5;
+  for (let i = 0; i < n; i++) {
+    const t0 = i / n, t1 = (i + 1) / n;
+    if (t0 > crece) break;
+    a += (R() - 0.5) * 0.9;
+    const seg = (largo / n) * Math.min(1, (crece - t0) * n), nq: V3 = [q[0] + Math.cos(a) * seg, q[1] + Math.sin(a) * seg, 0];
+    const [xa, ya] = L.P(q), [xb, yb] = L.P(nq);
+    L.capsula(xa, ya, xb, yb, ancho * (1 - t0 * 0.7), ancho * (1 - t1 * 0.7), [0.03, 0.025, 0.02], 0.9);
+    if (brillo && kb > 0) L.trazo(xa, ya, xb, yb, 1.2, 0.8, brillo, kb * (1 - t0), kb * (1 - t1));
+    // una rama corta a mitad de camino
+    if (i === 2 && R() < 0.7) grietaPiso(L, R, nq, a + (R() < 0.5 ? -1 : 1) * (0.6 + R() * 0.5), largo * 0.35, ancho * 0.6, c01((crece - 0.5) * 2), brillo, kb * 0.6);
+    q = nq;
+  }
+}
+
+/**
+ * Costilla o púa de hueso que sale del piso: quebrada y nudosa (no un colmillo liso), con el borde oscuro, la cara a la
+ * luz, muescas y rajaduras de través, la base sucia de tierra y la punta astillada en dos.
+ */
+function costillaHueso(L: Lienzo, R: () => number, pts: Pt[], anchos: number[], a = 1, punta = 1): void {
+  const n = pts.length, sucio = (i: number) => c01(1 - i / (n * 0.3));
+  const col = (i: number, k: number): C => { const s = sucio(i); return [lerp(MARFIL[0], TIERRA[0] * 2.1, s) * k, lerp(MARFIL[1], TIERRA[1] * 2.1, s) * k, lerp(MARFIL[2], TIERRA[2] * 2.1, s) * k]; };
+  const nudo = pts.map(() => 0.85 + R() * 0.3);
+  for (let i = 0; i < n - 1; i++) L.capsula(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], anchos[i] * nudo[i] + 0.8, anchos[i + 1] * nudo[i + 1] + 0.8, [0.12, 0.1, 0.08], a);
+  for (let i = 0; i < n - 1; i++) L.capsula(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], anchos[i] * nudo[i], anchos[i + 1] * nudo[i + 1], col(i, 0.82), a);
+  for (let i = 0; i < n - 1; i++) {
+    const o0 = anchos[i] * 0.42, o1 = anchos[i + 1] * 0.42;
+    L.capsula(pts[i][0] - o0, pts[i][1] - o0 * 0.5, pts[i + 1][0] - o1, pts[i + 1][1] - o1 * 0.5, anchos[i] * 0.42, anchos[i + 1] * 0.42, col(i, 1.12), a * 0.9);
+  }
+  // muescas y rajaduras de través (en los nudos)
+  for (let i = 2; i < n - 2; i++) {
+    if (R() < 0.45) continue;
+    const dx = pts[i + 1][0] - pts[i][0], dy = pts[i + 1][1] - pts[i][1], l = Math.hypot(dx, dy) || 1, w = anchos[i] * 0.9;
+    L.capsula(pts[i][0] - (dy / l) * w, pts[i][1] + (dx / l) * w, pts[i][0] + (dy / l) * w * 0.3, pts[i][1] - (dx / l) * w * 0.3, 0.45, 0.3, [0.22, 0.18, 0.13], a * 0.85);
+  }
+  // la punta astillada: dos agujas desparejas
+  const [px, py] = pts[n - 1], [qx, qy] = pts[n - 2], dx = px - qx, dy = py - qy, l = Math.hypot(dx, dy) || 1;
+  for (const s of [-1, 1]) {
+    const e = (2 + R() * 3.5) * punta, ox = (-dy / l) * s * 0.6, oy = (dx / l) * s * 0.6;
+    L.capsula(qx + ox, qy + oy, px + (dx / l) * e * (s > 0 ? 1 : 0.55) + ox * 1.6, py + (dy / l) * e * (s > 0 ? 1 : 0.55) + oy * 1.6, anchos[n - 2] * 0.45, 0.25, MARFIL, a);
+  }
+}
+
+/** rayo con cuatro capas: aura ancha de color, halo, cuerpo y el alma blanca que quema */
+function rayoHalo(L: Lienzo, pts: V3[], pal: C[], k: number, g = 1, k1 = k): void {
+  const n = pts.length - 1;
+  for (let i = 0; i < n; i++) {
+    const [xa, ya] = L.P(pts[i]), [xb, yb] = L.P(pts[i + 1]);
+    const ka = lerp(k, k1, i / n), kb = lerp(k, k1, (i + 1) / n);
+    L.trazo(xa, ya, xb, yb, 13 * g, 13 * g, pal[3], ka * 0.07, kb * 0.07);
+    L.trazo(xa, ya, xb, yb, 4.6 * g, 4.6 * g, pal[2], ka * 0.26, kb * 0.26);
+    L.trazo(xa, ya, xb, yb, 1.7 * g, 1.7 * g, pal[1], ka * 0.8, kb * 0.8);
+    L.trazo(xa, ya, xb, yb, 0.7 * g, 0.7 * g, BLANCO, ka * 1.6, kb * 1.6);
+  }
+}
+
+/**
+ * Rayo que se ramifica: el tronco quebrado y, desde puntos al azar del tronco, horquillas que salen en ángulo hacia
+ * adelante y a su vez se parten (más finas y más tenues cada vez), como un relámpago de verdad.
+ */
+function rayoRamas(L: Lienzo, a: V3, b: V3, R: () => number, pal: C[], k: number, g: number, niv: number, rug: number, prof: number, fin = 0): void {
+  const pts = zigzag(a, b, R, rug, niv);
+  rayoHalo(L, pts, pal, k, g, k * fin);
+  if (prof <= 0) return;
+  const u = unit(sub(b, a)), len = largo(sub(b, a));
+  const n1 = Math.abs(u[2]) > 0.9 ? [1, 0, 0] as V3 : unit(cruz(u, [0, 0, 1]));
+  const nr = 1 + Math.floor(R() * (prof + 1.6));
+  for (let i = 0; i < nr; i++) {
+    const j = Math.floor(lerp(0.12, 0.75, R()) * (pts.length - 1)), o = pts[j], s = R() < 0.5 ? -1 : 1, an = 0.35 + R() * 0.65;
+    const d = unit(add(add(mul(u, Math.cos(an)), mul(n1, Math.sin(an) * s)), [0, 0, (R() - 0.5) * 0.7]));
+    const kk = k * lerp(1, k1Fin(fin), j / (pts.length - 1)) * (0.7 + R() * 0.2);
+    rayoRamas(L, o, add(o, mul(d, len * (0.2 + R() * 0.3))), R, pal, kk, g * 0.62, Math.max(2, niv - 2), rug * 1.4, prof - 1, 0);
+  }
+}
+const k1Fin = (fin: number) => 0.4 + fin * 0.6;
+
 /** rayos de luz desparejos (god rays) desde un punto de pantalla: largos y anchos distintos, nunca una estrella perfecta */
 function rayosLuz(L: Lienzo, R: () => number, x: number, y: number, n: number, largo: number, pal: C[], k: number, giro = 0): void {
   if (k <= 0.01) return;
@@ -1147,16 +1282,25 @@ const DEFS: Def[] = [
     id: 'relampago', nombre: ['Relámpago', 'Lightning bolt'], elemento: 'rayo', tipo: 'proyectil', cuadros: 6, t: 1, dir: true, bucle: true,
     pinta: (c) => {
       const { L } = c, z = ALTO_VUELO, R = rng(c.sem + c.f * 104729);
-      const H = c.fw(22, 0, z), T = c.fw(-30, 0, z);
-      L.piso(c.fw(0, 0, 0), 26, RAYO[2], 0.35);
-      L.rayo3(H, T, 8, 3, RAYO[3], 0.45, 0);
-      for (let s = 0; s < 3; s++) dibujaRayo(L, zigzag(T, H, R, 0.09, 5), RAYO, 0.15, s === 0 ? 1 : 0.7, 1.2);
+      const H = c.fw(22, 0, z), T = c.fw(-34, 0, z);
+      L.piso(c.fw(-2, 0, 0), 30, RAYO[2], 0.35);
+      // la estela de aire ionizado detrás de la cabeza
+      L.rayo3(H, T, 11, 3, RAYO[3], 0.38, 0);
+      // el tronco, más vivo hacia la cabeza, con horquillas que se vuelven a partir
+      rayoRamas(L, T, H, R, RAYO, 0.55, 1, 5, 0.1, 2, 1.9);
+      // un segundo filamento más tenue que se le cruza
+      rayoHalo(L, zigzag(T, H, R, 0.15, 5), RAYO, 0.12, 0.55, 0.55);
+      // ramitas que saltan de la cabeza hacia adelante y a los costados
       for (let i = 0; i < 4; i++) {
-        const o = c.fw(-20 + R() * 40, 0, z), d: V3 = [(R() - 0.5) * 18, (R() - 0.5) * 18, (R() - 0.5) * 16];
-        dibujaRayo(L, zigzag(o, add(o, d), R, 0.3, 3), RAYO, 0.6, 0.55, 0);
+        const o = c.fw(8 + R() * 12, 0, z), d: V3 = [(R() - 0.5) * 22, (R() - 0.5) * 22, (R() - 0.5) * 18];
+        rayoRamas(L, o, add(o, d), R, RAYO, 0.6, 0.5, 3, 0.3, 1, 0);
       }
-      L.bola(H, 12, RAYO[2], 0.8);
-      L.bola(H, 4, RAYO[0], 2.4);
+      // la cabeza: el alma blanca con la corona azul y el halo violeta
+      L.bola(H, 17, RAYO[3], 0.5);
+      L.bola(H, 8, RAYO[2], 0.85);
+      L.bola(H, 3.6, RAYO[1], 1.5);
+      L.bola(H, 1.7, BLANCO, 2.6);
+      for (let i = 0; i < 5; i++) L.bola(add(H, [(R() - 0.5) * 16, (R() - 0.5) * 16, (R() - 0.5) * 12]), 0.9, RAYO[0], 1.1);
     },
   },
   {
@@ -1187,20 +1331,28 @@ const DEFS: Def[] = [
     pinta: (c) => {
       const { L } = c, R = rng(c.sem + c.f * 7121), ph = c.u * TAU;
       const C0: V3 = [Math.sin(ph) * 2, Math.cos(ph * 2) * 2, 20 + Math.sin(ph * 2) * 3];
-      L.piso(C0, 14, RAYO[2], 0.5);
-      L.bola(C0, 16, RAYO[3], 0.4);
-      for (let i = 0; i < 6; i++) {
+      L.piso(C0, 16, RAYO[2], 0.5);
+      // el halo de color: aura violeta y la esfera azul
+      L.bola(C0, 22, RAYO[3], 0.42);
+      L.bola(C0, 10, RAYO[2], 0.42);
+      // zarcillos que salen de la esfera y se ramifican
+      for (let i = 0; i < 7; i++) {
         const d = unit([R() - 0.5, R() - 0.5, R() - 0.5]);
-        dibujaRayo(L, zigzag(C0, add(C0, mul(d, 8 + R() * 8)), R, 0.3, 3), RAYO, 0.9, 0.55, 0);
+        rayoRamas(L, add(C0, mul(d, 3.5)), add(C0, mul(d, 10 + R() * 10)), R, RAYO, 0.75, 0.5, 3, 0.32, 1, 0.1);
       }
+      // un arco que sale y vuelve a entrar
+      const d1 = unit([R() - 0.5, R() - 0.5, R() - 0.2]), d2 = unit(add(d1, [R() - 0.5, R() - 0.5, R() - 0.5]));
+      rayoHalo(L, zigzag(add(C0, mul(d1, 5)), add(C0, mul(d2, 5)), R, 0.45, 3), RAYO, 0.6, 0.5);
+      // chispas que orbitan
       for (let k = 0; k < 3; k++) {
         const a = ph * (k + 1) * (k % 2 ? -1 : 1) + k * 2.1;
-        const s = add(C0, [Math.cos(a) * 9, Math.sin(a) * 9, Math.sin(a * 2 + k) * 6]);
-        L.bola(s, 4, RAYO[1], 0.7); L.bola(s, 1.3, RAYO[0], 1.8);
-        if (R() < 0.5) dibujaRayo(L, zigzag(C0, s, R, 0.2, 3), RAYO, 0.5, 0.5);
+        const s = add(C0, [Math.cos(a) * 10, Math.sin(a) * 10, Math.sin(a * 2 + k) * 6]);
+        L.bola(s, 4, RAYO[1], 0.6); L.bola(s, 1.2, BLANCO, 1.8);
+        if (R() < 0.5) rayoHalo(L, zigzag(C0, s, R, 0.22, 3), RAYO, 0.45, 0.45);
       }
-      L.bola(C0, 7, RAYO[1], 1.1);
-      L.bola(C0, 3, RAYO[0], 2.6);
+      // el núcleo: blanco que quema dentro de un azul vivo
+      L.bola(C0, 5, RAYO[1], 0.85);
+      L.bola(C0, 2.2, BLANCO, 2.3);
     },
   },
   {
@@ -1293,29 +1445,59 @@ const DEFS: Def[] = [
   {
     id: 'prision_hueso', nombre: ['Prisión de hueso', 'Bone prison'], elemento: 'hueso', tipo: 'muro', cuadros: 12, t: 2,
     pinta: (c) => {
-      const { L, v } = c, R = c.R();
+      const { L, v } = c, R = c.R(), Rb = 26;
       const [cx, cy] = L.P([0, 0, 0]);
-      L.piso([0, 0, 0], 32, ALMA[2], 0.6 * (1 - v * 0.7));
-      L.mancha(cx, cy, 44, 22, [0.1, 0.09, 0.08], 0.45 * suave(0, 0.3, v), 2, 5, 0.6);
-      const sp: { a: number; h: number; d: number; w: number; cu: number }[] = [];
-      for (let i = 0; i < 12; i++) sp.push({ a: (i / 12) * TAU + (R() - 0.5) * 0.25, h: 36 + R() * 18, d: R() * 0.35, w: 2.8 + R() * 1.4, cu: 0.5 + R() * 0.5 });
+      L.piso([0, 0, 0], 32, ALMA[2], 0.55 * (1 - v * 0.6));
+      // el suelo removido donde se cierra la jaula
+      L.mancha(cx, cy, 46, 23, [0.07, 0.06, 0.05], 0.5 * suave(0, 0.3, v), 2, 5, 0.7);
+      const sp: { a: number; h: number; d: number; w: number; cu: number; i: number }[] = [];
+      // doce costillas en anillo (algunas quebradas a media altura: la silueta no queda pareja como un peine)
+      for (let i = 0; i < 12; i++) { const rota = R() < 0.25; sp.push({ a: (i / 12) * TAU + (R() - 0.5) * 0.25, h: rota ? 17 + R() * 9 : 36 + R() * 20, d: R() * 0.35, w: 2.6 + R() * 1.5, cu: 0.55 + R() * 0.55, i }); }
       sp.sort((p, q) => Math.cos(p.a) + Math.sin(p.a) - Math.cos(q.a) - Math.sin(q.a));
+      // el piso primero: grietas que se abren desde la base de cada púa (con el alma brillando en el fondo), el labio
+      // de tierra levantada y los terrones que ya cayeron
       for (const s of sp) {
-        const g = sale(c01((v - s.d) / 0.35), 2.5);
-        const ca = Math.cos(s.a), sa = Math.sin(s.a), Rb = 26;
-        if (g > 0) {
-          const pts: Pt[] = [], an: number[] = [];
+        const e = c01((v - s.d) / 0.2), Rg = rng(c.sem + s.i * 977), ca = Math.cos(s.a), sa = Math.sin(s.a), base: V3 = [ca * Rb, sa * Rb, 0];
+        for (let k = 0; k < 3; k++) grietaPiso(L, Rg, base, s.a + (k - 1) * 1.1 + (Rg() - 0.5) * 0.5, 8 + Rg() * 8, 1.1, e, ALMA[1], 0.55 * (1 - v * 0.5));
+        if (e > 0) {
+          const [bx, by] = L.P(base);
+          L.mancha(bx, by + 0.5, 6 * sale(e), 3 * sale(e), [0.05, 0.04, 0.035], 0.85, s.a * 3, 1, 0.6);
+          for (let k = 0; k < 5; k++) { const t = s.a + (Rg() - 0.5) * 2.4, d = 3.5 + Rg() * 3; const [x, y] = L.P([base[0] + Math.cos(t) * d * sale(e), base[1] + Math.sin(t) * d * sale(e), 0]); terron(L, Rg, x, y - 0.6, 1 + Rg() * 1.3); }
+        }
+      }
+      // las púas: costillas quebradas que revientan el piso, cada una con su erupción de tierra, esquirlas y polvo
+      for (const s of sp) {
+        const g = sale(c01((v - s.d) / 0.3), 2.5), te = v - s.d, ca = Math.cos(s.a), sa = Math.sin(s.a), Rg = rng(c.sem + s.i * 977 + 5);
+        const base: V3 = [ca * Rb, sa * Rb, 0];
+        const qu = Array.from({ length: 11 }, () => (Rg() - 0.5) * 1.6);
+        if (g > 0.06) {
+          const pts: Pt[] = [], an: number[] = [], ab = Math.min(1, g * 2.5);
           for (let i = 0; i <= 10; i++) {
             const q = i / 10, h = q * s.h * g;
-            const rr = Rb * (1 - 0.42 * q * q * s.cu) + 2 * Math.sin(q * Math.PI) * s.cu;
-            pts.push(L.P([ca * rr, sa * rr, h]));
-            an.push(s.w * Math.pow(1 - q, 0.7) + 0.35);
+            const rr = Rb * (1 - 0.5 * (q * g) ** 2 * s.cu) + 2 * Math.sin(q * Math.PI) * s.cu * g;
+            const tg = qu[i] * Math.sin(q * Math.PI) * g;
+            pts.push(L.P([ca * rr - sa * tg, sa * rr + ca * tg, h]));
+            an.push((s.w * Math.pow(1 - q, 0.7) + 0.4) * ab);
           }
-          colmillo(L, pts, an, 1);
+          costillaHueso(L, Rg, pts, an, 1, ab);
         }
-        const dust = campana(v, s.d, s.d + 0.15, s.d + 0.55);
-        if (dust > 0.02) { const [x, y] = L.P([ca * Rb, sa * Rb, 2]); L.humo(x, y - 3, 7 + 6 * dust, POLVO, 0.5 * dust, s.a * 5, v * 2); }
+        if (te > 0 && te < 0.45) {
+          // la erupción: terrones y piedras que saltan, esquirlas del hueso que rompió el piso y el polvo
+          const Rt = rng(c.sem + s.i * 131), T = te * 1.6;
+          for (let k = 0; k < 9; k++) {
+            const t = s.a + (Rt() - 0.5) * 2.4, vel = 20 + Rt() * 34, vz = 40 + Rt() * 45, z = vz * T - 80 * T * T, r = 1.2 + Rt() * 1.7, piedra = Rt() < 0.3;
+            if (z <= 0) continue;
+            const [x, y] = L.P([base[0] + Math.cos(t) * vel * T, base[1] + Math.sin(t) * vel * T, z]);
+            terron(L, Rt, x, y, r, piedra ? [0.22, 0.2, 0.18] : TIERRA);
+          }
+          esquirlas(L, rng(c.sem + s.i * 53), 3, [base[0], base[1], 3], te * 0.9, [18, 40], 110, [3.5, 6.5]);
+          const dust = campana(te, 0, 0.08, 0.45);
+          const [x, y] = L.P(base);
+          L.humo(x, y - 4 - te * 14, 8 + 16 * te, POLVO, 0.75 * dust, s.a * 5, te * 4);
+          L.humo(x + ca * 5, y - 1, 6 + 10 * te, [0.3, 0.25, 0.2], 0.65 * dust, s.a * 7 + 3, te * 3);
+        }
       }
+      // motas del alma que suben
       for (let i = 0; i < 8; i++) {
         const t = frac(v * 1.5 + R()), a = R() * TAU, rr = R() * 24;
         const [x, y] = L.P([Math.cos(a) * rr, Math.sin(a) * rr, t * 50]);
@@ -2384,25 +2566,36 @@ const DEFS: Def[] = [
       const { L, v } = c, R = c.R(), C0: V3 = [0, 0, 32];
       const fin = Math.pow(1 - v, 1.3);
       const [x, y] = L.P(C0);
-      L.piso([0, 0, 0], 20, ALMA[2], 0.5 * fin);
-      if (v < 0.3) { const k = 1 - v / 0.3; L.luz(x, y, 16, ALMA[2], 0.9 * k); L.luz(x, y, 5, ALMA[0], 1.8 * k); ondaAire(L, x, y, 6 + 26 * sale(v, 2), 1.6, ALMA[1], 0.7 * k, 2.2); }
-      // polvo de hueso
-      for (let i = 0; i < 6; i++) {
-        const a = R() * TAU, d = 6 + R() * 16 * sale(v);
-        L.humo3([Math.cos(a) * d, Math.sin(a) * d, 26 + R() * 10 + v * 8], 4 + 8 * sale(v), [0.62, 0.58, 0.5], 0.4 * campana(v, 0, 0.2, 1), i * 2.7, v);
+      L.piso([0, 0, 0], 20, ALMA[2], 0.45 * fin);
+      // el chasquido: un destello blanco y la onda de aire
+      if (v < 0.3) { const k = 1 - v / 0.3; L.luz(x, y, 15, ALMA[2], 0.8 * k); L.luz(x, y, 4.5, [1, 0.98, 0.9], 1.8 * k); ondaAire(L, x, y, 6 + 26 * sale(v, 2), 1.6, ALMA[1], 0.6 * k, 2.2); }
+      // la nube de polvo de hueso: se abre, se aplasta y se asienta
+      for (let i = 0; i < 9; i++) {
+        const a = R() * TAU, d = 4 + R() * 18 * sale(v), z = 26 + R() * 12 - sale(v) * 10 * R();
+        L.humo3([Math.cos(a) * d, Math.sin(a) * d, z], 4 + 9 * sale(v), [0.6, 0.56, 0.48], 0.42 * campana(v, 0, 0.18, 1), i * 2.7, v);
       }
       // espíritus que se deshacen
-      for (let w = 0; w < 4; w++) {
+      for (let w = 0; w < 3; w++) {
         const a0 = R() * TAU;
         let prev: V3 | null = null;
         for (let i = 0; i <= 8; i++) {
           const s = i / 8, a = a0 + s * 2, rr = (4 + s * 22) * sale(v);
           const p: V3 = [Math.cos(a) * rr, Math.sin(a) * rr, 32 + s * 12 * sale(v)];
-          if (prev) L.rayo3(prev, p, 0.9, 0.9, ALMA[1], 0.6 * fin * (1 - s), 0.6 * fin * (1 - s - 0.12));
+          if (prev) L.rayo3(prev, p, 0.9, 0.9, ALMA[1], 0.55 * fin * (1 - s), 0.55 * fin * (1 - s - 0.12));
           prev = p;
         }
       }
-      astillas(L, c.R(4), 16, C0, v * 0.7, [30, 75]);
+      // las esquirlas: largas y quebradas, con el tuétano en la boca; las chicas vuelan más lejos
+      esquirlas(L, c.R(4), 9, C0, v * 0.75, [26, 60], 110, [11, 17]);
+      esquirlas(L, c.R(5), 11, C0, v * 0.75, [38, 85], 110, [5, 9]);
+      // motas de polvo fino que caen
+      const Rm = c.R(7);
+      for (let i = 0; i < 24; i++) {
+        const a = Rm() * TAU, sp = 14 + Rm() * 46, up = Rm() * 40, t = v * 0.75, z = 32 + up * t - 70 * t * t;
+        if (z <= 0) continue;
+        const [px, py] = L.P([Math.cos(a) * sp * t, Math.sin(a) * sp * t, z]);
+        L.capsula(px, py, px + 0.4, py, 0.55, 0.55, [0.8, 0.76, 0.66], 0.85 * (1 - v * 0.7));
+      }
     },
   },
   {
