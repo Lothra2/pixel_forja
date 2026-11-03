@@ -31,8 +31,8 @@ function a1p1(t: Toma) {
   cielo(F, [[0, '#050304'], [0.55, '#100605'], [1, '#040202']]);
   // el muro del fondo es un osario: filas de cráneos con las cuencas negras
   const cr = M(), hu = M();
-  osario(cr, hu, -20, 20, CW + 20, 640, 19, 11);
-  pintarConRuido(F, cr, [0.2, 0.15, 0.115], 0.3, 14, 12);
+  osario(cr, hu, -20, 20, CW + 20, 640, 15, 11);
+  pintarConRuido(F, cr, [0.15, 0.11, 0.085], 0.45, 9, 12);
   pintar(F, hu, [0.012, 0.004, 0.004], 0.95);
   // muros laterales y el arco apuntado que abre al osario
   const muro = M(), juntas = M();
@@ -50,8 +50,9 @@ function a1p1(t: Toma) {
   contraluz(F, muro, x0dir(), 0, [0.5, 0.14, 0.05], 0.8);
   losas(F, 640, CH, [0.06, 0.035, 0.03], 15, [CX, 640], 7);
   // todo lo alumbra el pozo, de abajo hacia arriba
-  sombraVertical(F, 0, 600, 0.55, false);
-  alumbrar(F, CX, 660, 760, [2.2, 0.7, 0.25], 1.4, 0.8);
+  sombraVertical(F, 0, 620, 0.7, false);
+  const hollin = M(); for (let i = 0; i < CW * CH; i++) hollin.d[i] = suave(0.45, 0.75, fbm((i % CW) / 140, Math.floor(i / CW) / 90, 4, 161)) * 0.7; pintar(F, hollin, [0.01, 0.005, 0.005], 0.8);
+  alumbrar(F, CX, 660, 640, [2.2, 0.7, 0.25], 1.25, 0.85);
   alumbrar(F, CX, 660, 300, [2, 0.9, 0.4], 1, 0.5);
   granoOpaco(F, 0.02, 16);
 
@@ -87,17 +88,17 @@ function a1p1(t: Toma) {
   // la Abadesa: cae hacia atrás con los brazos abiertos, el pecho abierto por la brasa que se escapa
   const A = t.capa('abadesa', 3, 0.55), AL = t.capa('abadesa_luz', 4, 0.55, 'sumar', { anim: { tipo: 'titilar', alfa: [0.7, 1], hz: 6 } });
   const luzAb: Luz = { amb: [0.66, 0.56, 0.58], desat: 0.2, clave: { dir: [0, 1], k: 0.55, c: [1.25, 0.85, 0.75] }, bordes: [{ dx: 0, dy: 1, c: [1.2, 0.35, 0.1], k: 1.5, ancho: 2 }, { dx: -1, dy: -1, c: FRIO, k: 0.35 }], abajo: { c: [1, 0.3, 0.08], k: 0.9 }, emite: emiteFuego };
-  const ab = figura(A, AL, modelo('jefe_abadesa_morir', 's', 2, 3), cx, cy - 10, 600, luzAb);
+  const ab = figura(A, AL, modelo('jefe_abadesa_morir', 's', 2, 3), cx, cy - 10, 520, luzAb);
   const b = cajaPose(ab, cx, cy - 10), bw = b.x1 - b.x0, bh = b.y1 - b.y0;
   const pecho: P2 = [(b.x0 + b.x1) / 2, b.y0 + bh * 0.4];
   const sangre = M(), herida = M();
-  rellenar(herida, Array.from({ length: 18 }, (_, k) => { const a = (k / 18) * Math.PI * 2, q = 0.7 + 0.5 * fbm(Math.cos(a) * 2 + 3, Math.sin(a) * 2, 2, 23); return [pecho[0] + Math.cos(a) * 22 * q, pecho[1] + Math.sin(a) * 30 * q] as P2; }));
+  rellenar(herida, Array.from({ length: 18 }, (_, k) => { const a = (k / 18) * Math.PI * 2, q = 0.7 + 0.5 * fbm(Math.cos(a) * 2 + 3, Math.sin(a) * 2, 2, 23); return [pecho[0] + Math.cos(a) * 13 * q, pecho[1] + Math.sin(a) * 19 * q] as P2; }));
   chorreado(sangre, pecho[0], pecho[1] + 16, 46, bh * 0.45, 24);
   chorreado(sangre, pecho[0] - bw * 0.06, b.y0 + bh * 0.2, 12, 60, 25);
   const mab = mascaraPose(CW, CH, ab, cx, cy - 10); for (let i = 0; i < CW * CH; i++) sangre.d[i] *= mab.d[i] > 0.3 ? 1 : 0.25;
   pintarSangre(A, sangre, [1, 0.3, 0.12], 0.95, 0.6);
-  pintar(A, herida, [0.25, 0.02, 0.01], 1);
-  brillo(AL, herida, [1, 0.5, 0.15], 1.6); halo(AL, pecho[0], pecho[1], 90, [1, 0.35, 0.08], 1, 1, true);
+  pintar(A, herida, [0.12, 0.01, 0.005], 1);
+  const nucleo = M(); disco(nucleo, pecho[0], pecho[1] - 2, 6); brillo(AL, desenfocada(herida, 4), [1, 0.3, 0.06], 0.9); brillo(AL, nucleo, [1, 0.8, 0.5], 1.4); halo(AL, pecho[0], pecho[1], 70, [1, 0.35, 0.08], 0.8, 1, true);
   // la brasa que se escapa hacia arriba, con su estela
   const pts: P2[] = []; for (let k = 0; k <= 30; k++) { const u = k / 30; pts.push([pecho[0] + Math.sin(u * 3) * 30 * u, pecho[1] - u * (pecho[1] - 70)]); }
   estela(AL, pts, 7, BRASA, 1.1);
@@ -107,7 +108,7 @@ function a1p1(t: Toma) {
   t.particulas = 'brasas';
   const Fr = t.capa('frente', 5, 1);
   const luzFr: Luz = { amb: [0.34, 0.27, 0.27], desat: 0.3, clave: { dir: [1, 0.3], k: 0.7 }, bordes: [{ dx: 1, dy: 0, c: [1.1, 0.3, 0.08], k: 1.4, ancho: 2 }], abajo: { c: [0.6, 0.12, 0.03], k: 0.5 } };
-  const col = figura(Fr, undefined, modelo('hor_colgados', 'ganchos', 0, 3), 170, 860, 760, luzFr);
+  const col = figura(Fr, undefined, modelo('hor_colgados', 'ganchos', 0, 3), 170, 860, 660, luzFr);
   const cc = cajaPose(col, 170, 860);
   const go = M(); charco(go, 200, 778, 110, 18, 26); pintarSangre(Fr, go, [1, 0.3, 0.1], 0.95, 0.5);
   const hue = M(); montonCuerpos(hue, 1080, 1420, 812, 150, 27);
@@ -148,13 +149,17 @@ function a1p2(t: Toma) {
 
   // la abadía: el modelo de Santa Oria, oscuro y frío, con su luz roja aparte (late con las campanas)
   const A = t.capa('abadia', 2, 0.3), AL = t.capa('abadia_luz', 3, 0.3, 'sumar', { anim: { tipo: 'latir', alfa: [0.55, 1], periodo_s: 2.2, notas: 'cada pico es un golpe de campana' } });
-  const loma = lomas(A, 610, 26, 33, [0.03, 0.025, 0.03], { escala: 420, filo: [0.4, 0.14, 0.06], kFilo: 0.6, deform: (x) => -60 * Math.exp(-(((x - 900) / 330) ** 2)) });
+  lomas(A, 640, 26, 33, [0.03, 0.025, 0.03], { escala: 420, filo: [0.4, 0.14, 0.06], kFilo: 0.6 });
   const cat = catedralOria();
   const pc = iluminar({ img: cat.img, ancla: cat.puerta }, 470, { amb: [0.34, 0.33, 0.42], desat: 0.55, clave: { dir: [-1, -0.3], k: 0.5 }, bordes: [{ dx: -1, dy: -1, c: [0.9, 0.35, 0.12], k: 0.9 }, { dx: 1, dy: 0, c: FRIO, k: 0.3 }], emite: emiteFuego, cEmite: [1, 0.22, 0.06], kEmite: 1.8 });
   poner(A, pc, 900, 560, AL);
+  const cb = cajaPose(pc, 900, 560), monte = M();
+  rellenar(monte, [[-10, CH + 4], ...Array.from({ length: 90 }, (_, k) => { const x = -10 + (k / 89) * (CW + 20), u = (x - (cb.x0 + cb.x1) / 2) / ((cb.x1 - cb.x0) * 1.1); return [x, Math.min(650, cb.y1 - 30 + Math.max(0, Math.abs(u) - 0.35) ** 1.5 * 160) + (fbm(x / 30, 2, 3, 171) - 0.5) * 14] as P2; }), [CW + 10, CH + 4]]);
+  pintar(A, monte, [0.025, 0.02, 0.025]); contraluz(A, monte, 0, 3, [0.6, 0.2, 0.08], 0.7);
+  const puertaL = M(); rellenar(puertaL, [[900 - 14, 560], [900 + 14, 560], [900 + 80, 660], [900 - 160, 680]]); desenfocar(puertaL.d, CW, CH, 18); for (let i = 0; i < CW * CH; i++) puertaL.d[i] *= monte.d[i];
+  brillo(AL, puertaL, [0.9, 0.15, 0.04], 0.25);
   // el campanario que despide la brasa
   halo(AL, sx, sy + 120, 120, [1, 0.45, 0.12], 1.1, 1, true);
-  for (let i = 0; i < CW * CH; i++) loma.d[i] = Math.max(loma.d[i], 0);
   niebla(A, 520, 640, [0.12, 0.07, 0.08], 0.55, 34, 200);
 
   const N = t.capa('niebla', 4, 0.5, 'normal', { anim: { tipo: 'deriva', px_por_segundo: 8, enrollar: true } });
@@ -171,9 +176,12 @@ function a1p2(t: Toma) {
   pasto(suelo, 0, CW, sueloEn, 700, 22, 39);
   pintar(Fr, suelo, [0.02, 0.014, 0.016]);
   contraluz(Fr, suelo, -2, -2, [0.7, 0.22, 0.08], 0.7);
-  const luzH: Luz = { amb: [0.32, 0.27, 0.3], desat: 0.35, clave: { dir: [-1, -0.4], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [1, 0.35, 0.1], k: 1.2, ancho: 2 }, { dx: 1, dy: 0, c: FRIO, k: 0.35 }] };
-  const ho = figura(Fr, undefined, modelo('hor_cuervos_cadaver', 'horca', 0, 3), 1180, sueloEn(1180) + 30, 520, luzH);
-  const hc = cajaPose(ho, 1180, sueloEn(1180) + 30);
+  const luzH: Luz = { amb: [0.17, 0.14, 0.16], desat: 0.5, clave: { dir: [-1, -0.4], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [1, 0.35, 0.1], k: 1, ancho: 1 }, { dx: 1, dy: 0, c: FRIO, k: 0.25 }] };
+  const ho = figura(Fr, undefined, modelo('hor_cuervos_cadaver', 'horca', 0, 3), 1150, sueloEn(1150) + 30, 470, luzH);
+  const hc = cajaPose(ho, 1150, sueloEn(1150) + 30), sh = M(), mh = mascaraPose(CW, CH, ho, 1150, sueloEn(1150) + 30);
+  for (let k = 0; k < 5; k++) chorreado(sh, hc.x0 + (hc.x1 - hc.x0) * (0.45 + k * 0.05), hc.y0 + (hc.y1 - hc.y0) * (0.3 + k * 0.06), 10, 70, 170 + k);
+  for (let i = 0; i < CW * CH; i++) sh.d[i] *= mh.d[i];
+  pintarSangre(Fr, sh, [0.9, 0.3, 0.12], 0.9, 0.5);
   t.efecto({ tipo: 'sprite', hoja: 'goteo_sangre', en: [[hc.x0 + (hc.x1 - hc.x0) * 0.5, hc.y0 + (hc.y1 - hc.y0) * 0.6, 0.8]], fps: 12, mezcla: 'normal', despues_de: 'frente', paralaje: 1 });
   t.efecto({ tipo: 'sprite', hoja: 'cuervo', en: [[700, 300, 0.7], [770, 260, 0.55], [640, 250, 0.5], [820, 330, 0.6], [560, 320, 0.45]], fps: 10, mezcla: 'normal', despues_de: 'abadia_luz', paralaje: 0.4 });
 }
@@ -203,18 +211,17 @@ function a1p3(t: Toma) {
   const cam = M(), ci: P2[] = [], cd: P2[] = [];
   for (let k = 0; k <= 30; k++) { const u = k / 30, y = 556 + u * 240, x = hx + 60 + Math.sin(u * 3.4) * 120 * u + u * 240, w = 4 + u * u * 160; ci.push([x - w, y]); cd.push([x + w, y]); }
   rellenar(cam, [...ci, ...cd.reverse()]); for (let i = 0; i < CW * CH; i++) cam.d[i] *= tierra.d[i];
-  pintarConRuido(Md, cam, [0.09, 0.065, 0.06], 0.4, 18, 47);
   const charcos = M(); for (let i = 0; i < CW * CH; i++) charcos.d[i] = cam.d[i] * suave(0.6, 0.66, fbm((i % CW) / 40, Math.floor(i / CW) / 9, 3, 48));
-  pintar(Md, charcos, [0.75, 0.38, 0.18], 0.5, 'normal');
-  const luzM: Luz = { amb: [0.3, 0.26, 0.3], desat: 0.4, clave: { dir: [-1, -0.2], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [1, 0.45, 0.15], k: 1.1, ancho: 1.5 }], niebla: { c: [0.18, 0.1, 0.1], k: 0.18 } };
-  const hp = figura(Md, undefined, modelo('par_horca', 'ahorcado', 0, 2.4), 300, 640, 330, luzM);
+  pintar(Md, charcos, [0.95, 0.45, 0.2], 0.75, 'normal');
+  const luzM: Luz = { amb: [0.17, 0.14, 0.16], desat: 0.5, clave: { dir: [-1, -0.2], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [1, 0.45, 0.15], k: 1.1, ancho: 1.5 }], niebla: { c: [0.16, 0.09, 0.09], k: 0.22 } };
+  const hp = figura(Md, undefined, modelo('hor_jaula', 'cadaver', 0, 2.6), 300, 640, 380, luzM);
   figura(Md, undefined, modelo('hor_cabezas_picas', 'tres', 0, 2.4), 860, 650, 230, luzM);
   const sp = M(); const hpc = cajaPose(hp, 300, 640); charco(sp, (hpc.x0 + hpc.x1) / 2 + 20, 642, 40, 7, 49, 6); pintarSangre(Md, sp, [1, 0.4, 0.15], 0.9, 0.5);
   niebla(Md, 600, 720, [0.12, 0.08, 0.09], 0.45, 50, 200);
   // el héroe, de espaldas, mirando al sur; la Marca le late en el brazo
   const Hh = t.capa('heroe', 4, 0.8), HL = t.capa('marca', 5, 0.8, 'sumar', { anim: { tipo: 'latir', alfa: [0.4, 1], periodo_s: 1.6, notas: 'la Marca: late como un corazón' } });
-  const luzHe: Luz = { amb: [0.42, 0.38, 0.42], desat: 0.3, clave: { dir: [-1, -0.3], k: 0.75 }, bordes: [{ dx: -1, dy: 0, c: [1.1, 0.5, 0.18], k: 1.5, ancho: 2.2 }, { dx: 1, dy: -1, c: FRIO, k: 0.35 }] };
-  const he = figura(Hh, undefined, heroe('no', 'quieto', 0, 6), 960, 818, 560, luzHe);
+  const luzHe: Luz = { amb: [0.42, 0.37, 0.4], desat: 0.3, clave: { dir: [-1, -0.3], k: 0.85, c: [1.2, 0.9, 0.75] }, bordes: [{ dx: -1, dy: 0, c: [1.1, 0.5, 0.18], k: 1.5, ancho: 2.2 }, { dx: 1, dy: -1, c: FRIO, k: 0.35 }] };
+  const he = figura(Hh, undefined, heroe('o', 'quieto', 0, 6), 980, 836, 500, luzHe);
   const hb = cajaPose(he, 960, 818);
   const mano: P2 = [hb.x0 + (hb.x1 - hb.x0) * 0.2, hb.y0 + (hb.y1 - hb.y0) * 0.52];
   halo(HL, mano[0], mano[1], 46, [1, 0.3, 0.08], 1.1, 1, true); halo(HL, mano[0], mano[1], 10, [1, 0.7, 0.4], 1.2, 1, true);
@@ -222,7 +229,7 @@ function a1p3(t: Toma) {
   const Fr = t.capa('frente', 6, 1);
   const fr = M(); rellenar(fr, [[-10, CH + 5], [-10, 700], [120, 690], [260, 720], [380, 760], [460, CH + 5]]); rellenar(fr, [[1240, CH + 5], [1300, 740], [1408, 700], [1420, CH + 5]]);
   pasto(fr, -10, 460, (x) => 700 + x * 0.12, 220, 40, 51); pasto(fr, 1240, 1420, () => 720, 90, 40, 52);
-  const cruz = M(); trazo(cruz, 120, 700, 128, 420, 9, 7, 1, 'max', false); trazo(cruz, 80, 480, 176, 470, 7, 7, 1, 'max', false); rellenar(cruz, [[60, 470], [124, 440], [200, 456], [130, 490]]);
+  const cruz = M(); trazo(cruz, 120, 700, 128, 420, 9, 7, 1, 'max', false); trazo(cruz, 80, 480, 176, 470, 7, 7, 1, 'max', false); 
   pintar(Fr, fr, [0.012, 0.01, 0.012]); pintar(Fr, cruz, [0.02, 0.015, 0.016]);
   contraluz(Fr, cruz, -2, 0, [1, 0.45, 0.15], 0.9); contraluz(Fr, fr, -2, -2, [0.8, 0.35, 0.12], 0.6);
   t.efecto({ tipo: 'sprite', hoja: 'cuervo', en: [[420, 360, 0.4], [470, 330, 0.35], [380, 340, 0.3]], fps: 9, mezcla: 'normal', despues_de: 'lejos', paralaje: 0.2 });

@@ -50,6 +50,14 @@ function pintarModelo(clave: string, esc: Escena, k: number): Modelo {
   let img = desdeRaster(r.img), ancla: P2 = [r.ancla[0], r.ancla[1]];
   // en rápido se agranda al tamaño que tendría (así las tomas componen igual, solo que borrosas)
   if (RAPIDO) { img = escalar(img, r.img.w * 3, r.img.h * 3); ancla = [ancla[0] * 3, ancla[1] * 3]; }
+  // recortado a lo que se ve: así el alto que pide una toma es el de la figura
+  let x0 = img.w, y0 = img.h, x1 = -1, y1 = -1;
+  for (let y = 0; y < img.h; y++) for (let x = 0; x < img.w; x++) if (img.d[(y * img.w + x) * 4 + 3] > 0.02) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 >= 0 && (x0 > 0 || y0 > 0 || x1 < img.w - 1 || y1 < img.h - 1)) {
+    const w = x1 - x0 + 1, h = y1 - y0 + 1, c = lamina(w, h);
+    for (let y = 0; y < h; y++) c.d.set(img.d.subarray(((y + y0) * img.w + x0) * 4, ((y + y0) * img.w + x1 + 1) * 4), y * w * 4);
+    img = c; ancla = [ancla[0] - x0, ancla[1] - y0];
+  }
   const m = { img, ancla };
   cacheModelos.set(ck, m);
   return m;
@@ -125,7 +133,7 @@ export function iluminar(m: Modelo, alto: number, luz: Luz, o: { espejo?: boolea
     cuerpo.d[j] = o2[0] * a; cuerpo.d[j + 1] = o2[1] * a; cuerpo.d[j + 2] = o2[2] * a; cuerpo.d[j + 3] = a;
   }
   // contraluces: lo que queda de la silueta corrida hacia la luz, ancho y fino
-  for (const b of luz.bordes ?? []) for (const [mul, kk, bl] of [[1, 1, 0.8], [2.6, 0.45, 2.2]] as [number, number, number][]) {
+  for (const b of luz.bordes ?? []) for (const [mul, kk, bl] of [[1, 1, 0.8], [1.8, 0.3, 1.6]] as [number, number, number][]) {
     const an = (b.ancho ?? 1) * mul, dx = Math.round(b.dx * an), dy = Math.round(b.dy * an), r = mascara(w, h);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const i = y * w + x, a = A.d[i]; if (a <= 0) continue;

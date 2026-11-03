@@ -92,7 +92,7 @@ M.gore_cartilago = { rampa: ['#1e1c12', '#34301f', '#4d472e', '#675f3f', '#81785
 // cadáveres (horror.ts)
 /** Hacia la cámara (la vista del taller al revés) y de dónde viene el relleno: la cara +x que la luz deja a oscuras. */
 const HACIA_CAMARA = nor3([1, 1, 1 / Math.sqrt(1.5)]);
-const DIR_RELLENO = nor3([0.75, 0.35, 0.45]);
+const DIR_RELLENO = nor3([0.7, 0.55, 0.45]);
 /**
  * Luz propia de la carne muerta: un relleno suave desde la cara +x (la que la luz del taller deja negra y hace que
  * el cuerpo se lea como un maniquí plano) y un borde que recorta la silueta contra el fondo oscuro. Solo levanta las
