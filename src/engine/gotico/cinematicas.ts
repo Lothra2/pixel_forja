@@ -1,6 +1,6 @@
 import { createRaster, type Raster } from '../core/raster';
 import {
-  lamina, mascara, rellenar, trazo, disco, desenfocada, desenfocar, pintar, brillo, halo, aRaster, grilla, desdeRaster, escalar, sat, suave, fbm, mezcla,
+  lamina, mascara, rellenar, trazo, disco, desenfocada, pintar, brillo, halo, aRaster, grilla, desdeRaster, sat, suave, fbm,
   type Lamina, type C3, type P2,
 } from './cine';
 import { llamas } from './siluetas';
@@ -32,7 +32,7 @@ export interface Plano { id: string; que: string; dur: number; cam: Camara; text
 // ------------------------------------------------------------------ cámaras
 /** Margen que puede usar la cámara (el de la capa menos lo que se lleva la sacudida). */
 const LIM_X = 56, LIM_Y = 30;
-const lim = (v: number, m: number) => Math.round(Math.max(-m, Math.min(m, v)));
+const lim = (v: number, m: number) => Math.round(Math.max(-m, Math.min(m, v))) || 0;
 /**
  * Acercarse a `foco` (pantalla base): el zoom es alrededor del centro, así que la cámara se corre para que el foco
  * no se escape: x = (foco - centro) * (1 - 1 / zoom).
@@ -184,7 +184,7 @@ export const GUION: Record<string, Plano[]> = {
 /** Banderas del juego para cada elección: una capa con `si` se dibuja solo con esa bandera encendida. */
 export const ELECCIONES: Record<string, string[]> = { vigdis: ['vigdis_viva', 'vigdis_muerta'], brasa: ['brasa_destruir', 'brasa_absorber'] };
 export const CLAVES_CINE = Object.keys(GUION);
-const PINTORES: Record<string, (t: Toma) => void> = { ...PINTORES_A, ...PINTORES_B, ...PINTORES_C };
+export const PINTORES: Record<string, (t: Toma) => void> = { ...PINTORES_A, ...PINTORES_B, ...PINTORES_C };
 
 /** Pinta un plano: sus capas y sus efectos. */
 export function pintarPlano(clave: string, id: string): Toma {

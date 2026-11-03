@@ -6,7 +6,7 @@ import {
   type Luz,
 } from './estudio';
 import {
-  CW, CH, CX, Toma, alumbrar, sombraVertical, granoOpaco, cielo, lomas, pintarConRuido, pasto, fogata, figura, figuraEsc, modelo, heroe, npc, barco, brillosAgua,
+  CW, CH, CX, Toma, alumbrar, sombraVertical, granoOpaco, cielo, lomas, pintarConRuido, figura, figuraEsc, modelo, heroe, npc, barco, brillosAgua,
 } from './cine_toma';
 
 /**
@@ -97,7 +97,7 @@ function a4p2(t: Toma) {
     for (let k = 0; k < 2; k++) rellenar(ven, [[x - 6, 560 - h * (0.45 + k * 0.28)], [x + 6, 560 - h * (0.45 + k * 0.28)], [x + 6, 560 - h * (0.35 + k * 0.28)], [x - 6, 560 - h * (0.35 + k * 0.28)]]);
   }
   rellenar(ven, [[690, 560], [690, 520], [700, 510], [710, 520], [710, 560]]);
-  pintarConRuido(Fo, fo, [0.06, 0.06, 0.08], 0.3, 20, 427); pintar(Fo, techo, [0.55, 0.55, 0.65]); contraluz(Fo, fo, 2, 0, [1, 0.7, 0.5], 0.6);
+  pintarConRuido(Fo, fo, [0.06, 0.06, 0.08], 0.3, 20, 427); pintarConRuido(Fo, techo, [0.3, 0.3, 0.38], 0.25, 8, 4271); contraluz(Fo, techo, 2, -1, [1, 0.75, 0.6], 0.5); contraluz(Fo, fo, 2, 0, [1, 0.7, 0.5], 0.6);
   pintar(Fo, ven, [0.9, 0.55, 0.25]); brillo(FoL, ven, [1, 0.6, 0.25], 1); brillo(FoL, desenfocada(ven, 8), [1, 0.5, 0.2], 1.2);
   niebla(Fo, 520, 610, [0.5, 0.45, 0.52], 0.4, 428, 200);
   t.efecto({ tipo: 'sprite', hoja: 'humo', en: [[700, 330, 1.2], [340, 400, 0.9], [1080, 390, 0.9]], mezcla: 'normal', despues_de: 'fortin_luz', paralaje: 0.35, alfa: 0.55 });
@@ -122,8 +122,8 @@ function a4p2(t: Toma) {
   const T = t.capa('tumba', 4, 0.7, 'normal', { soloSi: 'vigdis_muerta' }), TL = t.capa('tumba_farol', 5, 0.7, 'sumar', { soloSi: 'vigdis_muerta', anim: { tipo: 'titilar', alfa: [0.75, 1], hz: 5 } });
   const tm = M(), chal = M(), r = rng(432);
   for (let k = 0; k < 22; k++) { const a = Math.PI + (k / 21) * Math.PI, x = 600 + Math.cos(a) * 110 * (0.5 + r() * 0.5), y = 728 + Math.sin(a) * 50 * (0.4 + r() * 0.6); rellenar(tm, Array.from({ length: 10 }, (_, j) => { const b = (j / 10) * Math.PI * 2, rr = 12 + r() * 10; return [x + Math.cos(b) * rr, y + Math.sin(b) * rr * 0.7] as P2; })); }
-  trazo(tm, 600, 700, 600, 470, 12, 9, 1, 'max', false); trazo(tm, 548, 540, 652, 534, 10, 10, 1, 'max', false);
-  rellenar(chal, [[556, 538], [646, 532], [660, 620], [630, 600], [610, 640], [584, 596], [552, 616]]);
+  trazo(tm, 600, 720, 600, 440, 16, 12, 1, 'max', false); trazo(tm, 540, 534, 660, 528, 13, 13, 1, 'max', false);
+  rellenar(chal, [[566, 536], [636, 532], [628, 566], [616, 592], [604, 604], [590, 590], [576, 566]]);
   pintarConRuido(T, tm, [0.14, 0.14, 0.17], 0.4, 10, 433); pintar(T, chal, [0.08, 0.14, 0.3]); contraluz(T, tm, 1, -1, [1, 0.75, 0.55], 0.7); contraluz(T, chal, 1, 0, [0.7, 0.75, 1], 0.6);
   const ns = M(); for (let i = 0; i < CW * CH; i++) ns.d[i] = tm.d[i] * suave(0.55, 0.62, fbm((i % CW) / 9, Math.floor(i / CW) / 6, 3, 434)); pintar(T, ns, [0.7, 0.72, 0.82], 0.8);
   halo(TL, 600, 456, 150, [1, 0.55, 0.2], 0.7, 1, true); halo(TL, 600, 456, 20, [1, 0.85, 0.5], 1.2, 1, true);
@@ -187,20 +187,24 @@ function a4p3(t: Toma) {
 // ================================================================== ACTO 5: LA HERIDA
 /** Caverna de fragua: obsidiana con grietas de lava, cascadas de lava y cadenas. */
 function fragua(F: Lamina, s: number, k = 1) {
-  cielo(F, [[0, '#040101'], [0.5, '#160403'], [1, '#050101']]);
-  const muro = M(); rellenar(muro, [[-10, -10], [CW + 10, -10], [CW + 10, 660], [-10, 660]]);
-  pintarConRuido(F, muro, [0.06, 0.035, 0.035], 0.5, 40, s);
-  const gr = M(); for (let j = 0; j < 14; j++) grietas(gr, (j / 13) * CW, 60 + (j % 4) * 140, 160, 4, s + j, 2.6);
-  for (let i = 0; i < CW * CH; i++) gr.d[i] *= muro.d[i];
-  pintar(F, gr, [1.2 * k, 0.4 * k, 0.08 * k], 1);
-  const la = M(); for (const x of [180, 1230]) polilinea(la, Array.from({ length: 16 }, (_, j) => [x + Math.sin(j * 0.7) * 10, -10 + j * 44] as P2), 22, 46);
-  for (let i = 0; i < CW * CH; i++) la.d[i] *= 0.7 + 0.5 * fbm((i % CW) / 12, Math.floor(i / CW) / 40, 3, s + 50);
-  pintar(F, la, [1.4 * k, 0.55 * k, 0.12 * k], 1);
-  const cad = M(); for (const [x0, x1] of [[300, 620], [800, 1120]]) polilinea(cad, Array.from({ length: 20 }, (_, j) => { const u = j / 19; return [x0 + (x1 - x0) * u, -10 + Math.sin(u * Math.PI) * 220] as P2; }), 7, 7);
-  pintar(F, cad, [0.03, 0.015, 0.015]);
+  cielo(F, [[0, '#040101'], [0.4, '#120302'], [0.75, '#3a0a04'], [1, '#0a0201']], { fuente: [CX, 640, 900, [1, 0.3, 0.05], 0.6 * k] });
+  // humo encendido desde abajo
+  const hu = M(); for (let y = 0; y < 640; y++) for (let x = 0; x < CW; x++) hu.d[y * CW + x] = suave(0.45, 0.8, fbm(x / 200, y / 90, 5, s)) * (0.4 + 0.6 * y / 640);
+  pintar(F, hu, [0.4 * k, 0.1 * k, 0.04 * k], 0.8);
+  // tres planos de columnas de roca (estalagmitas) cada vez más cerca y más oscuras
+  for (const [n, alto, c, sem] of [[9, 0.55, 0.11, 1], [7, 0.75, 0.06, 2], [5, 0.95, 0.025, 3]] as [number, number, number, number][]) {
+    const m = M(), r = rng(s + sem);
+    for (let j = 0; j < n; j++) { const x = (j + 0.5 + (r() - 0.5) * 0.6) * (CW / n), w = 40 + r() * 70, top = 660 - 640 * alto * (0.6 + r() * 0.4); rellenar(m, [[x - w, 670], [x - w * 0.5, top + 80], [x - w * 0.15, top], [x + w * 0.2, top + 40], [x + w * 0.55, top + 120], [x + w, 670]]); }
+    rellenar(m, [[-10, -10], [CW + 10, -10], ...Array.from({ length: 40 }, (_, q) => [CW + 10 - (q / 39) * (CW + 20), 40 + 80 * sem * 0.4 + (fbm(q / 4, sem, 3, s) - 0.5) * 120] as P2)]);
+    pintarConRuido(F, m, [c * 1.6, c * 0.7, c * 0.6], 0.4, 30, s + sem); contraluz(F, m, 0, 3, [1 * k, 0.32 * k, 0.07 * k], 0.9 - sem * 0.15); contraluz(F, m, 2, 0, [0.8 * k, 0.2 * k, 0.04 * k], 0.4);
+    if (sem < 3) niebla(F, 380, 680, [0.3 * k, 0.08 * k, 0.03 * k], 0.35, s + sem * 9, 200);
+  }
+  // dos cascadas de lava, con su resplandor
+  const la = M(); for (const x of [210, 1200]) polilinea(la, Array.from({ length: 18 }, (_, j) => [x + Math.sin(j * 0.5) * 14, 40 + j * 36] as P2), 16, 40);
+  for (let i = 0; i < CW * CH; i++) la.d[i] *= 0.6 + 0.6 * fbm((i % CW) / 10, Math.floor(i / CW) / 60, 3, s + 50);
+  pintar(F, desenfocada(la, 22), [0.9 * k, 0.25 * k, 0.05 * k], 0.5, 'luz'); pintar(F, desenfocada(la, 3), [1.1 * k, 0.42 * k, 0.1 * k], 0.75);
   losas(F, 660, CH, [0.08, 0.03, 0.025], s + 3, [CX, 660], 6);
-  sombraVertical(F, 0, 660, 0.4, false);
-  alumbrar(F, CX, 700, 760, [1.8, 0.6, 0.2], 1.1, 0.7);
+  alumbrar(F, CX, 720, 760, [1.6, 0.5, 0.15], 1 * k, 0.6);
 }
 function a5p1(t: Toma) {
   const F = t.capa('fondo', 0, 0.25, 'normal', { opaca: true });
@@ -232,7 +236,7 @@ function a5p2(t: Toma) {
   const F = t.capa('fondo', 0, 0.25, 'normal', { opaca: true });
   fragua(F, 511, 0.55); granoOpaco(F, 0.02, 512);
   const O = t.capa('ceniza_ozmaren', 1, 0.4);
-  figura(O, undefined, modelo('jefe_ozmaren_morir', 's', 7, 2.2), CX, 620, 380, { amb: [0.22, 0.2, 0.2], desat: 0.85, bordes: [{ dx: 0, dy: -1, c: [0.9, 0.35, 0.12], k: 0.7 }], niebla: { c: [0.08, 0.04, 0.04], k: 0.35 } });
+  figura(O, undefined, modelo('jefe_ozmaren_morir', 's', 7, 2.2), CX - 220, 660, 430, { amb: [0.22, 0.2, 0.2], desat: 0.85, bordes: [{ dx: 0, dy: -1, c: [0.9, 0.35, 0.12], k: 0.7 }], niebla: { c: [0.08, 0.04, 0.04], k: 0.35 } });
   niebla(O, 520, 700, [0.12, 0.06, 0.05], 0.5, 513, 200);
   // el héroe de frente, con la mano cerrada
   const luzBase = (fuego: boolean): Luz => fuego
@@ -241,12 +245,12 @@ function a5p2(t: Toma) {
   for (const [flag, fuego] of [['brasa_destruir', false], ['brasa_absorber', true]] as [string, boolean][]) {
     const H = t.capa(fuego ? 'heroe_fuego' : 'heroe_gris', 2, 0.7, 'normal', { soloSi: flag });
     const HL = t.capa(fuego ? 'brasa_viva' : 'brasa_apagada', 3, 0.7, 'sumar', { soloSi: flag, anim: fuego ? { tipo: 'latir', alfa: [0.6, 1], periodo_s: 0.8 } : { tipo: 'latir', alfa: [0.3, 0.6], periodo_s: 3 } });
-    const he = figura(H, undefined, heroe('s', 'quieto', 0, 6), CX + 40, 800, 560, luzBase(fuego));
-    const hb = cajaPose(he, CX + 40, 800), mano: P2 = [hb.x0 + (hb.x1 - hb.x0) * 0.18, hb.y0 + (hb.y1 - hb.y0) * 0.5];
+    const he = figura(H, undefined, heroe('s', 'quieto', 0, 6), CX + 220, 790, 440, luzBase(fuego));
+    const hb = cajaPose(he, CX + 220, 790), mano: P2 = [hb.x0 + (hb.x1 - hb.x0) * 0.18, hb.y0 + (hb.y1 - hb.y0) * 0.5];
     if (fuego) {
       // venas de fuego por todo el cuerpo y los ojos encendidos
-      const ve = M(), mh = mascaraPose(CW, CH, he, CX + 40, 800);
-      grietas(ve, mano[0], mano[1], 260, 6, 514, 2.2, 1.2); grietas(ve, (hb.x0 + hb.x1) / 2, hb.y0 + (hb.y1 - hb.y0) * 0.35, 180, 6, 515, 1.8);
+      const ve = M(), mh = mascaraPose(CW, CH, he, CX + 220, 790);
+      grietas(ve, mano[0], mano[1], 150, 3, 514, 1.6, 1.2); grietas(ve, (hb.x0 + hb.x1) / 2, hb.y0 + (hb.y1 - hb.y0) * 0.35, 110, 4, 515, 1.3);
       for (let i = 0; i < CW * CH; i++) ve.d[i] *= mh.d[i];
       pintar(H, ve, [1, 0.5, 0.15], 1); brillo(HL, desenfocada(ve, 5), [1, 0.35, 0.08], 1.1); brillo(HL, ve, [1, 0.7, 0.3], 0.8);
       halo(HL, mano[0], mano[1], 120, [1, 0.4, 0.08], 1.1, 1, true); halo(HL, mano[0], mano[1], 18, [1, 0.9, 0.6], 1.6, 1, true);
@@ -275,19 +279,30 @@ function a5p3(t: Toma) {
   const rm = M(); for (const tr of rayo(gx + 60, 0, gx + 10, mar - 40, rng(534), 0.3, 4)) polilinea(rm, tr.pts, 2.4 * tr.w, 1 * tr.w);
   brillo(R, rm, [0.85, 0.95, 1], 1.2); brillo(R, desenfocada(rm, 10), [0.4, 0.6, 0.8], 1.2); halo(R, gx, 200, 500, [0.3, 0.45, 0.5], 0.4, 0.8, true);
   const G = t.capa('grieta', 2, 0.3), GL = t.capa('grieta_luz', 3, 0.3, 'sumar', { anim: { tipo: 'latir', alfa: [0.6, 1], periodo_s: 2.2 } });
-  const hueco = M(); rellenar(hueco, [[gx - 40, mar + 2], [gx + 40, mar + 2], [gx + 200, CH + 5], [gx - 200, CH + 5]]);
-  pintar(G, hueco, [0.01, 0.03, 0.03]);
+  // el fondo del mar entre las dos paredes: negro, con la luz verde muy abajo
+  const hueco = M(); rellenar(hueco, [[gx - 60, mar - 4], [gx + 60, mar - 4], [gx + 260, CH + 5], [gx - 260, CH + 5]]);
+  pintar(G, desenfocada(hueco, 6), [0.005, 0.015, 0.015], 1);
   for (const lado of [-1, 1]) {
-    const pared = M(); rellenar(pared, [[gx + lado * 40, mar - 6], [gx + lado * 70, mar - 60], [gx + lado * 130, mar - 50], [gx + lado * 240, mar + 10], [gx + lado * 360, CH + 5], [gx + lado * 200, CH + 5]]);
-    for (let y = mar - 70; y < CH; y++) for (let x = 0; x < CW; x++) { const i = y * CW + x; if (pared.d[i] <= 0) continue; pared.d[i] *= 0.75 + 0.25 * fbm(x / 8, y / 40, 4, 535 + lado); }
-    pintarConRuido(G, pared, [0.03, 0.08, 0.08], 0.4, 16, 536 + lado); contraluz(G, pared, -lado * 3, 0, MAR, 0.9); contraluz(G, pared, 0, -3, [0.75, 0.9, 0.9], 0.8);
+    // la pared: borde interior ondulado que sube y se curva, con vetas verticales de agua que cae
+    const pared = M(), pts: P2[] = [];
+    for (let k = 0; k <= 30; k++) { const u = k / 30, y = CH + 5 - u * (CH + 5 - (mar - 190)), x = gx + lado * (250 - u * 190 + (fbm(u * 4, lado, 3, 539) - 0.5) * 60); pts.push([x, y]); }
+    for (let k = 0; k <= 12; k++) { const u = k / 12; pts.push([gx + lado * (60 + u * 380), mar - 190 + u * u * 200 + Math.sin(u * 7) * 8]); }
+    pts.push([gx + lado * 900, mar + 10], [gx + lado * 900, CH + 5]);
+    rellenar(pared, pts);
+    for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
+      const i = y * CW + x, a = pared.d[i]; if (a <= 0) continue;
+      const v = fbm(x / 7, y / 90, 4, 535 + lado), c = 0.025 + v * 0.07, j = i * 4;
+      G.d[j] = G.d[j] * (1 - a) + c * 0.55 * a; G.d[j + 1] = G.d[j + 1] * (1 - a) + c * 1.2 * a; G.d[j + 2] = G.d[j + 2] * (1 - a) + c * 1.15 * a; G.d[j + 3] = Math.max(G.d[j + 3], a);
+    }
+    contraluz(G, pared, -lado * 4, 0, MAR, 0.7); contraluz(G, pared, 0, -4, [0.7, 0.85, 0.85], 0.9);
+    const esp = M(); for (let k = 0; k < 60; k++) { const u = k / 59, x = gx + lado * (60 + u * 380), y = mar - 190 + u * u * 200; disco(esp, x + (fbm(k, lado, 2, 9) - 0.5) * 30, y - 6, 5 + 10 * fbm(k * 0.3, lado + 3, 2, 8)); }
+    pintar(G, desenfocada(esp, 4), [0.55, 0.66, 0.66], 0.75);
   }
   // las agujas que suben
   const ag = M(); for (const [x, w, h] of [[gx - 60, 18, 170], [gx + 10, 26, 240], [gx + 80, 16, 140], [gx - 120, 12, 90]] as [number, number, number][]) aguja(ag, x, mar + 60, w, h);
-  for (let y = mar + 30; y < CH; y++) for (let x = 0; x < CW; x++) ag.d[y * CW + x] *= hueco.d[y * CW + x];
   pintar(G, ag, [0.03, 0.06, 0.06]); contraluz(G, ag, 0, 2, MAR, 1);
   const vg = M(); for (const [x, y] of [[gx + 10, mar - 90], [gx - 60, mar - 30], [gx + 80, mar - 10], [gx + 10, mar - 20]] as P2[]) rellenar(vg, [[x - 3, y + 12], [x - 3, y], [x, y - 5], [x + 3, y], [x + 3, y + 12]]);
-  brillo(GL, vg, MAR, 1.3); brillo(GL, desenfocada(hueco, 30), [0.1, 0.5, 0.4], 0.5); brillo(GL, desenfocada(vg, 8), MAR, 1.2);
+  brillo(GL, vg, MAR, 1.3); brillo(GL, desenfocada(vg, 8), MAR, 1.2); halo(GL, gx, mar + 120, 220, [0.1, 0.5, 0.4], 0.5, 0.6, true);
   // adelante: la costa de piedra con un ahogado
   const Fr = t.capa('frente', 5, 1);
   const co = M(); rellenar(co, [[-10, CH + 5], [-10, 660], [160, 640], [320, 690], [430, 760], [470, CH + 5]]); rellenar(co, [[1000, CH + 5], [1100, 720], [1260, 650], [1420, 630], [1420, CH + 5]]);
@@ -328,7 +343,7 @@ function a5p4(t: Toma) {
   const Ca = t.capa('catedral', 1, 0.25), CaL = t.capa('catedral_luz', 2, 0.25, 'sumar', { anim: { tipo: 'latir', alfa: [0.55, 1], periodo_s: 2.6, notas: 'cada pico, un golpe de campana' } });
   const ca = catedralAhogada(Ca, 560, mar, 1.15, -0.06);
   for (let i = 0; i < CW * CH; i++) ca.ven.d[i] *= 0.55 + 0.45 * fbm((i % CW) / 5, Math.floor(i / CW) / 5, 2, 543);
-  brillo(CaL, ca.ven, [0.2, 0.75, 0.55], 0.9); brillo(CaL, desenfocada(ca.ven, 14), [0.12, 0.6, 0.45], 1.2);
+  pintar(Ca, ca.ven, [0.03, 0.09, 0.07], 1); brillo(CaL, ca.ven, [0.1, 0.36, 0.28], 0.45); brillo(CaL, desenfocada(ca.ven, 14), [0.1, 0.5, 0.38], 1);
   // el agua que todavía le chorrea por los muros
   const ch = M(); for (let k = 0; k < 30; k++) chorreado(ch, 400 + k * 11, mar - 180 - (k % 5) * 30, 6, 160, 544 + k); for (let i = 0; i < CW * CH; i++) ch.d[i] *= ca.cuerpo.d[i]; pintar(Ca, ch, [0.15, 0.25, 0.24], 0.5);
   const ag = M(); for (let y = mar; y < CH; y++) for (let x = 0; x < CW; x++) ag.d[y * CW + x] = 1;
@@ -364,11 +379,11 @@ function a6p1(t: Toma) {
   const ag = M(); for (let y = 600; y < CH; y++) for (let x = 0; x < CW; x++) ag.d[y * CW + x] = 1;
   pintar(F, ag, [0.02, 0.05, 0.05]);
   sombraVertical(F, 0, 600, 0.4, false);
-  alumbrar(F, CX, 520, 720, [0.4, 1.4, 1.1], 1.1, 0.8);
+  alumbrar(F, CX, 520, 820, [0.6, 1.8, 1.4], 1.4, 0.8);
   granoOpaco(F, 0.02, 604);
   // la Campana que Ahoga se raja
   const Cm = t.capa('campana', 2, 0.55), CmL = t.capa('campana_luz', 3, 0.55, 'sumar', { anim: { tipo: 'latir', alfa: [0.6, 1], periodo_s: 1.2 } });
-  const luzC: Luz = { amb: [0.5, 0.6, 0.56], desat: 0.2, clave: { dir: [-0.5, -1], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [0.5, 1, 0.85], k: 1.1, ancho: 1.5 }, { dx: 1, dy: 1, c: [0.2, 0.6, 0.5], k: 0.5 }], emite: emiteMar, cEmite: MAR, kEmite: 1.5 };
+  const luzC: Luz = { amb: [0.5, 0.6, 0.56], desat: 0.2, clave: { dir: [-0.5, -1], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [0.5, 1, 0.85], k: 1.1, ancho: 1.5 }, { dx: 1, dy: 1, c: [0.2, 0.6, 0.5], k: 0.5 }], emite: emiteMar, cEmite: MAR, kEmite: 0.6 };
   const cm = figura(Cm, CmL, modelo('jefe_campana_ahoga_morir', 's', 3, 3), CX, 650, 560, luzC);
   const cb = cajaPose(cm, CX, 650), chh = cb.y1 - cb.y0;
   const raja = M(); polilinea(raja, [[CX + 6, cb.y0 + chh * 0.45], [CX - 6, cb.y0 + chh * 0.6], [CX + 10, cb.y0 + chh * 0.75], [CX - 2, cb.y1 - 10]], 6, 2); grietas(raja, CX, cb.y0 + chh * 0.7, 60, 4, 605, 1.6);
@@ -377,7 +392,7 @@ function a6p1(t: Toma) {
   // el agua que estalla en anillos
   const sp = M(); for (let k = 0; k < 3; k++) { const rr = 200 + k * 140, pts: P2[] = []; for (let j = 0; j <= 40; j++) { const a = (j / 40) * Math.PI * 2; pts.push([CX + Math.cos(a) * rr, 660 + Math.sin(a) * rr * 0.16]); } polilinea(sp, pts, 3 - k * 0.6, 3 - k * 0.6); }
   for (let k = 0; k < 40; k++) { const a = Math.PI + (k / 39) * Math.PI, l = 60 + (k * 13) % 80; trazo(sp, CX + Math.cos(a) * 160, 650 + Math.sin(a) * 30, CX + Math.cos(a) * (160 + l * 0.6), 650 + Math.sin(a) * 30 - l, 3, 1); }
-  brillo(CmL, sp, [0.6, 0.95, 0.85], 0.8);
+  pintar(Cm, desenfocada(sp, 2), [0.4, 0.6, 0.58], 0.45);
   const Fr = t.capa('frente', 5, 1);
   const luzF: Luz = { amb: [0.24, 0.3, 0.3], desat: 0.5, clave: { dir: [1, -0.5], k: 0.6 }, bordes: [{ dx: 1, dy: -1, c: [0.45, 0.95, 0.8], k: 1 }] };
   figura(Fr, undefined, modelo('mon_ahogado_campanero_morir', 's', 5, 3), 200, 800, 300, luzF);
@@ -398,17 +413,23 @@ function a6p2(t: Toma) {
   // la ciudad: tejados y torres
   const Ci = t.capa('ciudad', 1, 0.3);
   const ci = M(); rellenar(ci, perfil(CW, CH, 560, 10, 625, { escala: 200 }));
-  const r = rng(626); for (let x = 200; x < CW; x += 40 + r() * 50) { const h = 40 + r() * 90; rellenar(ci, [[x, 562], [x, 560 - h], [x + 20, 560 - h - 30], [x + 40, 560 - h], [x + 40, 562]]); }
+  for (const [x, w, h] of [[300, 90, 60], [420, 70, 90], [540, 110, 70], [700, 90, 120], [860, 80, 80], [1000, 120, 100], [1180, 90, 70], [1300, 100, 90]] as [number, number, number][]) ruina(ci, null, x, 562, w, h, x, { techo: true, ventanas: 2 });
   aguja(ci, 640, 520, 26, 200); aguja(ci, 980, 520, 18, 150);
   pintar(Ci, ci, [0.03, 0.045, 0.045]); contraluz(Ci, ci, 2, -1, [0.5, 0.65, 0.6], 0.6);
-  // la ola: una pared de agua que se curva sobre la ciudad, con espuma
+  niebla(Ci, 480, 600, [0.2, 0.26, 0.26], 0.4, 627, 200);
+  // la ola: una pared de agua que se viene encima de la ciudad; vetas que siguen el agua y espuma solo en la cresta
   const O = t.capa('ola', 2, 0.4);
-  const ola = M(), esp = M();
-  const cr: P2[] = []; for (let k = 0; k <= 40; k++) { const u = k / 40; cr.push([-20 + u * 760, 140 + Math.sin(u * Math.PI * 0.9) * -40 + u * u * 380]); }
-  rellenar(ola, [[-20, CH + 5], ...cr, [760, CH + 5]]);
-  for (let k = 0; k < 14; k++) { const u = k / 14, [x, y] = cr[Math.floor(u * 40)]; rellenar(ola, [[x - 20, y], [x + 30, y - 30 - (k % 3) * 12], [x + 50, y + 10]]); }
-  for (let i = 0; i < CW * CH; i++) { const x = i % CW, y = Math.floor(i / CW); if (ola.d[i] <= 0) continue; esp.d[i] = suave(0.62, 0.72, fbm(x / 18, y / 30, 4, 627)) * ola.d[i]; }
-  pintarConRuido(O, ola, [0.04, 0.1, 0.1], 0.5, 20, 628); contraluz(O, ola, 3, 3, [0.7, 0.9, 0.85], 1); pintar(O, esp, [0.5, 0.6, 0.58], 0.7);
+  const ola = M(), cr: P2[] = [];
+  for (let k = 0; k <= 40; k++) { const u = k / 40; cr.push([-20 + u * 980, 110 + u ** 1.8 * 560 + (fbm(u * 6, 2, 3, 627) - 0.5) * 30]); }
+  rellenar(ola, [[-20, CH + 5], ...cr, [960, CH + 5]]);
+  desenfocar(ola.d, CW, CH, 2);
+  const lab = M(); for (let k = 0; k < 160; k++) { const u = k / 159, i = Math.min(39, Math.floor(u * 40)), f = u * 40 - i, x = cr[i][0] + (cr[i + 1][0] - cr[i][0]) * f, y = cr[i][1] + (cr[i + 1][1] - cr[i][1]) * f; disco(lab, x + (fbm(k * 0.4, 1, 2, 629) - 0.5) * 30, y - 4 + (fbm(k * 0.4, 5, 2, 630) - 0.5) * 20, 6 + 12 * fbm(k * 0.2, 3, 2, 631)); }
+  for (let i = 0; i < CW * CH; i++) { const a = ola.d[i]; if (a <= 0) continue; const x = i % CW, y = Math.floor(i / CW), v = fbm(x / 140 + y / 70, y / 16 - x / 110, 4, 628), c = 0.03 + v * 0.09, j = i * 4; O.d[j] = c * 0.7 * a; O.d[j + 1] = c * 1.5 * a; O.d[j + 2] = c * 1.45 * a; O.d[j + 3] = a; }
+  const vet = M(); for (let i = 0; i < CW * CH; i++) if (ola.d[i] > 0) { const x = i % CW, y = Math.floor(i / CW); vet.d[i] = ola.d[i] * suave(0.66, 0.74, fbm(x / 140 + y / 70, y / 16 - x / 110, 4, 632)); }
+  pintar(O, vet, [0.4, 0.5, 0.5], 0.45);
+  contraluz(O, ola, 4, -4, [0.6, 0.8, 0.78], 0.8);
+  pintar(O, desenfocada(lab, 5), [0.7, 0.78, 0.76], 0.9); pintar(O, lab, [0.85, 0.9, 0.88], 0.5);
+  t.efecto({ tipo: 'sprite', hoja: 'humo', en: [[480, 360, 2], [760, 520, 1.8]], mezcla: 'normal', despues_de: 'ola', paralaje: 0.4, alfa: 0.35 });
   // adelante: la playa con los que dejó el mar
   const Fr = t.capa('frente', 5, 1);
   const pl = M(); rellenar(pl, suelo(720, 30, 629)); pintarConRuido(Fr, pl, [0.07, 0.065, 0.055], 0.3, 40, 630); contraluz(Fr, pl, 0, -2, [0.55, 0.65, 0.6], 0.5);
@@ -422,10 +443,10 @@ function a6p2(t: Toma) {
 }
 
 /** El cielo se rompe como un vidrio: grietas de luz, pedazos caídos y la escalera de oro que sube. */
-export function cieloRoto(C: Lamina, CL: Lamina, cx: number, ty: number, s: number, hasta = 480) {
+export function cieloRoto(C: Lamina, CL: Lamina, cx: number, ty: number, s: number, hasta = 480, n = 18) {
   const r = rng(s), gr = mascara(C.w, C.h), hu = mascara(C.w, C.h), radiales: P2[][] = [];
-  for (let k = 0; k < 18; k++) {
-    const ang = (k / 18) * Math.PI * 2 + r() * 0.25, pts: P2[] = [[cx + Math.cos(ang) * 50, ty + Math.sin(ang) * 50]];
+  for (let k = 0; k < n; k++) {
+    const ang = (k / n) * Math.PI * 2 + r() * 0.25, pts: P2[] = [[cx + Math.cos(ang) * 50, ty + Math.sin(ang) * 50]];
     let x = pts[0][0], y = pts[0][1], a = ang;
     for (let j = 0; j < 16; j++) { a += (r() - 0.5) * 0.3; const l = 30 + r() * 45; x += Math.cos(a) * l; y += Math.sin(a) * l * 0.85; pts.push([x, y]); if (y > hasta || x < -50 || x > C.w + 50) break; }
     radiales.push(pts); polilinea(gr, pts, 2.6, 0.6);
@@ -438,7 +459,7 @@ export function cieloRoto(C: Lamina, CL: Lamina, cx: number, ty: number, s: numb
   }
   desenfocar(hu.d, C.w, C.h, 1.5);
   for (let i = 0; i < C.w * C.h; i++) if (Math.floor(i / C.w) > hasta) { gr.d[i] = 0; hu.d[i] = 0; }
-  pintar(C, hu, [0.9, 0.82, 0.62], 0.8);
+  pintar(C, hu, [0.5, 0.42, 0.3], 0.35);
   brillo(CL, gr, [1, 0.85, 0.5], 1.2); brillo(CL, desenfocada(gr, 6), [1, 0.6, 0.2], 1); brillo(CL, hu, [1, 0.9, 0.7], 0.3);
 }
 /** La escalera de oro: escalones que se angostan hacia arriba (máscaras pintadas en la lámina). */
@@ -460,7 +481,8 @@ function a6p3(t: Toma) {
   const cx = CX, ty = 230;
   cielo(C, [[0, '#030306'], [0.4, '#110e18'], [0.6, '#2a2018'], [0.66, '#18201e'], [1, '#050707']], { fuente: [cx, ty, 620, [1, 0.75, 0.35], 0.6] });
   const CL = t.capa('grietas', 1, 0.05, 'sumar', { anim: { tipo: 'latir', alfa: [0.7, 1], periodo_s: 3 } });
-  cieloRoto(C, CL, cx, ty, 631, 520);
+  cieloRoto(C, CL, cx, ty, 631, 520, 12);
+  for (let i = 0; i < CL.d.length; i++) CL.d[i] *= 0.6;
   const E = t.capa('escalera', 2, 0.15), EL = t.capa('escalera_luz', 3, 0.15, 'sumar', { anim: { tipo: 'titilar', alfa: [0.8, 1], hz: 2 } });
   const e = escaleraOro(E, cx, 520, ty + 30, 120, 10, 632);
   for (let i = 0; i < CW * CH; i++) e.esc.d[i] *= 1 - suave(ty, 520, Math.floor(i / CW)) * 0.6;
@@ -484,6 +506,7 @@ function a6p4(t: Toma) {
   cielo(C, [[0, '#030204'], [0.5, '#120c10'], [1, '#040304']], { fuente: [CX, 300, 700, [1, 0.7, 0.3], 0.55], estrellas: 200, s: 641 });
   const CL = t.capa('grietas', 1, 0.05, 'sumar', { anim: { tipo: 'latir', alfa: [0.6, 1], periodo_s: 3.3 } });
   cieloRoto(C, CL, CX, 260, 642, 560);
+  for (let i = 0; i < CL.d.length; i++) CL.d[i] *= 0.5;
   granoOpaco(C, 0.015, 643);
   const Tr = t.capa('trono', 2, 0.35);
   const luzT: Luz = { amb: [0.42, 0.34, 0.26], desat: 0.3, clave: { dir: [0, -1], k: 0.6 }, bordes: [{ dx: 0, dy: -1, c: [1, 0.8, 0.4], k: 1 }], niebla: { c: [0.12, 0.08, 0.06], k: 0.2 }, emite: emiteOro, cEmite: [1, 0.8, 0.4] };
@@ -491,9 +514,9 @@ function a6p4(t: Toma) {
   figuraEsc(Tr, undefined, mR, CX, 700, esc, luzT); figuraEsc(Tr, undefined, mE, CX, 700, esc, luzT);
   const A = t.capa('aunsaar', 3, 0.5), AL = t.capa('aunsaar_luz', 4, 0.5, 'sumar', { anim: { tipo: 'latir', alfa: [0.5, 1], periodo_s: 1.8, notas: 'la boca del pecho respira' } });
   const luzA: Luz = { amb: [0.5, 0.45, 0.42], desat: 0.25, clave: { dir: [0, -1], k: 0.7, c: [1.2, 1, 0.8] }, bordes: [{ dx: 0, dy: -1, c: [1.2, 0.9, 0.5], k: 1.2, ancho: 1.5 }, { dx: 1, dy: 0, c: [0.6, 0.3, 0.8], k: 0.5 }], emite: emiteOro, cEmite: [1, 0.8, 0.45], kEmite: 1 };
-  const au = figura(A, AL, modelo('jefe_aun_saar_quieto', 's', 0, 1.8), CX, 640, 560, luzA);
+  const au = figura(A, AL, modelo('jefe_aun_saar_quieto', 's', 0, 1.8), CX, 690, 660, luzA);
   const ab = cajaPose(au, CX, 640), bocaY = ab.y0 + (ab.y1 - ab.y0) * 0.52;
-  halo(AL, CX, bocaY, 120, [0.7, 0.35, 1], 0.9, 1.4, true); halo(AL, CX, bocaY, 30, [1, 0.8, 1], 1, 1.6, true);
+  halo(AL, CX, bocaY, 120, [0.55, 0.3, 0.8], 0.6, 1.4, true); halo(AL, CX, bocaY, 26, [1, 0.85, 0.9], 0.8, 1.6, true);
   // brasa_absorber: la boca brilla más roja (ya sabe que su sed viene en camino)
   const Ab = t.capa('boca_roja', 5, 0.5, 'sumar', { soloSi: 'brasa_absorber', anim: { tipo: 'latir', alfa: [0.5, 1], periodo_s: 1 } });
   halo(Ab, CX, bocaY, 160, [1, 0.25, 0.08], 0.8, 1.4, true);

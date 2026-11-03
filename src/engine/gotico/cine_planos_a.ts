@@ -1,16 +1,16 @@
 import { rng } from '../core/rng';
 import {
-  mascara, rellenar, trazo, disco, polilinea, desenfocar, desenfocada, pintar, brillo, halo, mezcla, sat, suave, fbm, hex,
+  mascara, rellenar, trazo, disco, polilinea, desenfocar, desenfocada, pintar, brillo, halo, mezcla, sat, suave, fbm,
   type Lamina, type Mascara, type C3, type P2,
 } from './cine';
 import { arbolMuerto, lapida, aguja, ruina, perfil, type TipoLapida } from './siluetas';
 import { renderCatedral } from './portada';
 import {
-  iluminar, poner, contraluz, niebla, lluvia, motas, reflejo, chorreado, charco, salpicar, pintarSangre, haces, estela, osario, sillares, sombraPie,
-  cajaPose, mascaraPose, emiteFuego, emiteOro, losas, montonCuerpos, grietas, modeloPersonaje as modeloPersonajeX, type Luz, type Pose, type Modelo,
+  iluminar, poner, contraluz, niebla, reflejo, chorreado, charco, salpicar, pintarSangre, haces, estela, osario, sillares,
+  cajaPose, mascaraPose, emiteFuego, emiteOro, losas, montonCuerpos, grietas, modeloPersonaje as modeloPersonajeX, type Luz, type Modelo,
 } from './estudio';
 import {
-  CW, CH, CX, Toma, alumbrar, sombraVertical, granoOpaco, cielo, lomas, pintarConRuido, pasto, fogata, figura, modelo, heroe, npc, barco, brillosAgua,
+  CW, CH, CX, Toma, alumbrar, sombraVertical, granoOpaco, cielo, lomas, pintarConRuido, pasto, figura, modelo, heroe, barco, brillosAgua,
 } from './cine_toma';
 
 /**
@@ -141,11 +141,13 @@ function a1p2(t: Toma) {
   });
   granoOpaco(C, 0.015, 32);
   // la estela de la brasa: sube del campanario, se curva y se va hacia el sur (izquierda)
-  const E = t.capa('estela', 1, 0.1, 'sumar', { anim: { tipo: 'latir', alfa: [0.8, 1], periodo_s: 1.2 } });
-  const pts: P2[] = []; for (let k = 0; k <= 40; k++) { const u = k / 40; pts.push([sx - u * 600 - Math.sin(u * 2) * 40, sy + 120 - Math.sin(u * Math.PI * 0.9) * 230 + u * 40]); }
-  estela(E, pts, 6, BRASA, 1.2);
-  // la luz que deja en las nubes de abajo
-  for (const [x, y] of pts.filter((_, k) => k % 6 === 0)) halo(E, x, y + 30, 150, [0.6, 0.18, 0.05], 0.18, 0.6, true);
+  if (!t.carta) {
+    const E = t.capa('estela', 1, 0.1, 'sumar', { anim: { tipo: 'latir', alfa: [0.8, 1], periodo_s: 1.2 } });
+    const pts: P2[] = []; for (let k = 0; k <= 40; k++) { const u = k / 40; pts.push([sx - u * 600 - Math.sin(u * 2) * 40, sy + 120 - Math.sin(u * Math.PI * 0.9) * 230 + u * 40]); }
+    estela(E, pts, 6, BRASA, 1.2);
+    // la luz que deja en las nubes de abajo
+    for (const [x, y] of pts.filter((_, k) => k % 6 === 0)) halo(E, x, y + 30, 150, [0.6, 0.18, 0.05], 0.18, 0.6, true);
+  }
 
   // la abadía: el modelo de Santa Oria, oscuro y frío, con su luz roja aparte (late con las campanas)
   const A = t.capa('abadia', 2, 0.3), AL = t.capa('abadia_luz', 3, 0.3, 'sumar', { anim: { tipo: 'latir', alfa: [0.55, 1], periodo_s: 2.2, notas: 'cada pico es un golpe de campana' } });
@@ -236,7 +238,7 @@ function a1p3(t: Toma) {
 }
 
 // ================================================================== ACTO 2: SAHRIM
-const ORO: C3 = [1, 0.72, 0.32], ARENA: C3 = [0.42, 0.24, 0.12];
+const ORO: C3 = [1, 0.72, 0.32];
 /** El pálido que canta (Vesperio, el heraldo): flaco, de túnica blanca, sin pelo. */
 const CANTOR: [import('./cuerpo').Cuerpo, import('./cuerpo').Equipo] = [{ genero: 'h', alto: 1.08, ancho: 0.82, musculo: 0, piel: 'cu_piel_palida', peinado: 'calvo' }, { torso: { tipo: 'tunica', mat: 'cu_tela_blanca' }, piernas: { tipo: 'tunica_larga', mat: 'cu_tela_blanca' } }];
 
@@ -328,8 +330,8 @@ function a2p2(t: Toma) {
   pintar(C, sol, [1, 0.62, 0.3]); halo(C, sx, sy, 230, [1, 0.5, 0.15], 0.8);
   lomas(C, 494, 12, 222, [0.4, 0.12, 0.07], { escala: 320 });
   granoOpaco(C, 0.015, 223);
-  const E = t.capa('estela', 1, 0.1, 'sumar', { anim: { tipo: 'latir', alfa: [0.8, 1], periodo_s: 1.1 } });
-  estela(E, Array.from({ length: 36 }, (_, k) => { const u = k / 35; return [880 + u * 440, 250 - Math.sin(u * 2.4) * 150] as P2; }), 6, BRASA, 1.2);
+  const E = t.carta ? null : t.capa('estela', 1, 0.1, 'sumar', { anim: { tipo: 'latir', alfa: [0.8, 1], periodo_s: 1.1 } });
+  if (E) estela(E, Array.from({ length: 36 }, (_, k) => { const u = k / 35; return [880 + u * 440, 250 - Math.sin(u * 2.4) * 150] as P2; }), 6, BRASA, 1.2);
   const Co = t.capa('coloso', 2, 0.3), CoL = t.capa('coloso_luz', 3, 0.3, 'sumar', { anim: { tipo: 'titilar', alfa: [0.7, 1], hz: 4 } });
   const cx = 880, base = 590, s = 1.05;
   coloso(Co, cx, base, s, 1);
@@ -424,13 +426,14 @@ function a3p1(t: Toma) {
   pintarConRuido(F, piedra, [0.08, 0.09, 0.065], 0.4, 20, 304); pintar(F, juntas, [0.01, 0.012, 0.008], 0.8);
   const carne = M(), costillas = M(), venas = M(), ampollas = M();
   for (let y = -10; y < 470; y++) for (let x = 0; x < CW; x++) carne.d[y * CW + x] = sat((470 - y) / 40) * (0.75 + 0.25 * fbm(x / 60, y / 60, 4, 305));
-  for (let k = 0; k < 11; k++) {
-    const x0 = (k / 10) * (CW + 300) - 150, pts: P2[] = [];
-    for (let j = 0; j <= 14; j++) { const u = j / 14; pts.push([x0 + (CX - x0) * u * 0.9 + Math.sin(u * 3 + k) * 10, 480 - u * 520]); }
-    polilinea(costillas, pts, 40 - Math.abs(k - 5) * 2, 10);
+  // costillas: arcos que cruzan la bóveda, cada vez más chicos hacia el fondo (un túnel de carne)
+  for (let k = 0; k < 7; k++) {
+    const u = k / 6, rx = 780 - u * 520, ry = 460 - u * 300, cy = 480, pts: P2[] = [];
+    for (let j = 0; j <= 30; j++) { const a = Math.PI + (j / 30) * Math.PI; pts.push([CX + Math.cos(a) * rx + Math.sin(j + k) * 6, cy + Math.sin(a) * ry]); }
+    polilinea(costillas, pts, 46 - u * 30, 46 - u * 30);
   }
   for (let k = 0; k < 18; k++) grietas(venas, r() * CW, r() * 440, 90, 3, 306 + k, 2.4);
-  for (let k = 0; k < 40; k++) disco(ampollas, r() * CW, 40 + r() * 420, 3 + r() * 7);
+  for (let k = 0; k < 16; k++) { const x = r() * CW, y = 60 + r() * 380, q = 4 + r() * 12; disco(ampollas, x, y, q); for (let j = 0; j < 3; j++) disco(ampollas, x + (r() - 0.5) * q * 4, y + (r() - 0.5) * q * 3, q * 0.4 * r()); }
   pintarConRuido(F, carne, [0.17, 0.045, 0.04], 0.5, 18, 307);
   pintarConRuido(F, costillas, [0.3, 0.1, 0.08], 0.4, 10, 308); contraluz(F, costillas, 0, 3, [0.9, 0.35, 0.25], 0.8); contraluz(F, costillas, -3, 0, [0.4, 1, 0.55], 0.4);
   pintar(F, venas, [0.07, 0.005, 0.01], 0.8);
@@ -454,7 +457,7 @@ function a3p1(t: Toma) {
   // la Madre se derrumba
   const Ma = t.capa('madre', 2, 0.55), MaL = t.capa('madre_luz', 3, 0.55, 'sumar', { anim: { tipo: 'latir', alfa: [0.6, 1], periodo_s: 1.4 } });
   const luzM: Luz = { amb: [0.5, 0.58, 0.45], desat: 0.2, clave: { dir: [0, 1], k: 0.6, c: [0.9, 1.2, 0.8] }, bordes: [{ dx: 0, dy: -1, c: [0.5, 1, 0.6], k: 1, ancho: 1.5 }, { dx: 1, dy: 1, c: [1, 0.3, 0.15], k: 0.7 }], abajo: { c: [0.8, 0.2, 0.1], k: 0.5 }, emite: (c) => (c[1] > 0.45 && c[1] > c[0] * 1.4 && c[1] > c[2] * 1.3 ? sat((c[1] - 0.4) * 2.5) : 0), cEmite: VERDE };
-  const ma = figura(Ma, MaL, modelo('jefe_madre_cienaga_morir', 's', 4, 3.2), CX, 730, 470, luzM);
+  const ma = figura(Ma, MaL, modelo('jefe_madre_cienaga_morir', 's', 4, 3.2), CX, 700, 540, luzM);
   const mb = cajaPose(ma, CX, 712), mw = mb.x1 - mb.x0;
   const tajo = M(); polilinea(tajo, [[CX - mw * 0.12, mb.y0 + 90], [CX, mb.y0 + 150], [CX + mw * 0.1, mb.y0 + 230]], 14, 6);
   pintar(Ma, tajo, [0.15, 0.01, 0.01]); brillo(MaL, desenfocada(tajo, 8), [1, 0.25, 0.08], 0.7);
@@ -504,9 +507,9 @@ function a3p2(t: Toma) {
     figura(R, undefined, modelo('ahg_marino_ahogado', v, 0, 2.6), x, y, al, luzC, { espejo: x > 700 });
     const sg = M(); charco(sg, x, y + 4, al * 0.7, al * 0.08, x, 0); for (let i = 0; i < CW * CH; i++) sg.d[i] *= 0.5; pintar(R, sg, [0.22, 0.03, 0.02], 0.6);
   }
-  // el barco de Oyá con las velas al alba
-  const Bc = t.capa('barco', 3, 0.5);
-  const bm = M(); barco(bm, 1100, 586, 380, 331, false); pintar(Bc, bm, [0.03, 0.035, 0.03]); contraluz(Bc, bm, -2, -1, [1, 0.9, 0.6], 0.8);
+  // el barco de Oyá con las velas al alba (en la carta el río todavía sangra y no hay barco)
+  if (t.carta) for (let i = 0; i < CW * CH; i++) { if (R.d[i * 4 + 3] <= 0) continue; R.d[i * 4] = R.d[i * 4] * 1.5 + 0.06; R.d[i * 4 + 1] *= 0.45; R.d[i * 4 + 2] *= 0.4; }
+  else { const Bc = t.capa('barco', 3, 0.5); const bm = M(); barco(bm, 1100, 586, 380, 331, false); pintar(Bc, bm, [0.03, 0.035, 0.03]); contraluz(Bc, bm, -2, -1, [1, 0.9, 0.6], 0.8); }
   const Fr = t.capa('frente', 5, 1);
   const hj = M();
   const hoja = (x: number, y: number, l: number, a: number) => { const pts: P2[] = []; for (let k = 0; k <= 12; k++) { const u = k / 12; pts.push([u * l, -Math.sin(u * Math.PI) * l * 0.22]); } for (let k = 12; k >= 0; k--) { const u = k / 12; pts.push([u * l, Math.sin(u * Math.PI) * l * 0.22]); } const c = Math.cos(a), s2 = Math.sin(a); rellenar(hj, pts.map(([u, v]) => [x + u * c - v * s2, y + u * s2 + v * c] as P2)); };

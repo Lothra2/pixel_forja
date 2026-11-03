@@ -1,6 +1,6 @@
 import { rng } from '../core/rng';
 import {
-  lamina, mascara, rellenar, trazo, disco, desenfocar, desenfocada, pintar, brillo, degradado, halo, rayosDeLuz, mezcla, sat, suave, fbm, hex,
+  lamina, mascara, rellenar, trazo, disco, desenfocar, desenfocada, brillo, degradado, halo, rayosDeLuz, mezcla, sat, suave, fbm, hex,
   type Lamina, type Mascara, type C3, type P2,
 } from './cine';
 import { nubes, perfil, type OpcNubes } from './siluetas';
@@ -47,6 +47,8 @@ export class Toma {
   fx: FxToma[] = [];
   /** Partículas del juego para este plano (una de las que ya trae). */
   particulas?: 'ceniza' | 'brasas' | 'nieve' | 'lluvia';
+  /** Pintada para la carta de presentación del acto (sin lo que cuenta el final: estelas, barcos que zarpan). */
+  carta = false;
   constructor(readonly semilla: number) {}
   /** Una capa nueva (transparente, salvo que se pinte entera). */
   capa(id: string, z: number, paralaje: number, mezcla: Mezcla = 'normal', o: { anim?: Record<string, unknown>; soloSi?: string; opaca?: boolean; notas?: string } = {}): Lamina {
@@ -185,7 +187,7 @@ export function barco(m: Mascara, x: number, y: number, largo: number, s: number
   for (const [dx, alto] of [[-0.42, 0.62], [-0.02, 0.92], [0.42, 0.74]] as [number, number][]) {
     const mx = x + dx * L, top = y - h - largo * 0.62 * alto;
     trazo(m, mx, y - h, mx, top, largo * 0.012, largo * 0.007, 1, 'max', false);
-    for (const [t0, t1, an] of [[0.1, 0.42, 0.24], [0.48, 0.8, 0.2]] as [number, number, number][]) {
+    for (const [t0, t1, an] of [[0.08, 0.4, 0.15], [0.46, 0.82, 0.13]] as [number, number, number][]) {
       const ya = top + (y - h - top) * t0, yb = top + (y - h - top) * t1, w0 = largo * an * alto * 0.55, w1 = w0 * 1.15;
       trazo(m, mx - w0, ya, mx + w0, ya, 2, 2, 1, 'max', false);
       const pts: P2[] = [[mx - w0, ya]];
