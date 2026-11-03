@@ -277,8 +277,10 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
   p.hombroD = [12 + 3 * k, 12, 24 + 5 * k, 8]; p.hombroI = [9 - 2 * k, 11, 18 + 4 * k, 12];
   p.munecaD = 3 * k2;
   p.capa = [0.7 + 0.2 * k, 0.3 * k2]; p.pelo = [0.2 * k, 0.2 * k2];
-  // a dos manos: el mango cruzado delante del cuerpo, la cabeza del arma arriba a la izquierda; las dos manos en el mango
-  if (arma === 'dos') { p.manoD = [9, 4.5, 33 + 0.6 * k]; p.armaD = [40 + 2 * k2, -28]; }
+  // a dos manos: el arma descansa al hombro; el puño derecho delante del pecho, cerca del regatón, el mango apoya
+  // sobre el borde de afuera del hombro derecho y la cabeza queda atrás, lejos de la cara; la izquierda suelta. (Con el
+  // mango cruzado bajo, delante de la ingle, el regatón asomaba entre las piernas.)
+  if (arma === 'dos') { p.manoD = [5, 8.5, 40 + 0.6 * k]; p.armaD = [50 + 1.5 * k2, 172]; p.pegaI = 0; }
   if (arma === 'ballesta') { p.hombroD = [26 + 3 * k, 10, 60 + 4 * k, 0]; }
   // el arco cuelga natural de la izquierda, la cuerda recta; la derecha descansa
   if (arma === 'arco') { p.hombroI = [16 + 1.5 * k, 22, 18 + 2 * k, 0]; p.hombroD = [12 + 3 * k, 12, 26 + 5 * k, 8]; p.giroTorso = 5 + k; p.giroCadera = -2; p.tensa = false; }
@@ -339,7 +341,8 @@ function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose) {
   // el arma de una mano cuelga adelante y abajo del puño: la muñeca compensa el vaivén del brazo (sin esto la hoja se
   // ponía horizontal al frente cuando el brazo iba adelante y caía de golpe en el cuadro siguiente)
   if (arma === 'una' && !correr) p.munecaD = -sD * 0.8 - 14;
-  if (arma === 'dos') { p.manoD = correr ? [11, 3.5, 38 + Math.abs(rebote) * 0.6] : [10, 3.5, 33 + rebote * 0.4]; p.armaD = correr ? [30 + g * 5, -30] : [40 + g * 4, -28]; }
+  // a dos manos: al hombro, como en quieto (el puño delante del pecho, la cabeza del arma atrás); la izquierda bracea
+  if (arma === 'dos') { p.manoD = correr ? [8, 9.5, 40 + Math.abs(rebote) * 0.6] : [5, 8.5, 40 + rebote * 0.4]; p.armaD = [(correr ? 52 : 50) + g * 3, 172]; p.pegaI = 0; }
   if (arma === 'ballesta') { p.hombroD = [30 + g * 4, 8, 50 + g * 3, 0]; p.hombroI = [36 + g * 4, 14, 58]; p.munecaD = g * 4; }
   // el arco va en la izquierda, bajo y vertical al costado; la derecha se balancea libre (la cuerda queda recta)
   if (arma === 'arco') { p.hombroI = [sI * (correr ? 0.35 : 0.3) + 2, 14, (correr ? 34 : 14) + Math.max(0, cI) * 0.3, 0]; p.tensa = false; }
@@ -831,7 +834,7 @@ function lanzar(p: Pose, u: number, arma: ArmaPose) {
         : [{ manoD: [8, 7, 32] }, { manoD: [7, 1, 40] }, { manoD: [5, 2, 44] }, { manoD: [21, 1, 45] }, { manoD: [22, 1, 45.5] }, {}, { manoD: [13, 5, 37] }, { manoD: [9, 7, 33] }];
   cl.forEach((c, i) => Object.assign(c.v, der[i]));
   actuar(p, cl, u, { lagCab: 0.035, lagArma: 0.03, capa: 1 });
-  if (arma === 'dos' || arma === 'ballesta') { if ((p.pegaI ?? 1) > 0.95) { if (arma === 'dos') { p.manoD = [9, 4.5, 33]; p.armaD = [40, -28]; } else { delete p.manoD; delete p.armaD; p.hombroD = [30, 8, 50, 0]; } } p.pegaI = clamp(p.pegaI ?? 1, 0, 1); }
+  if (arma === 'dos' || arma === 'ballesta') { if ((p.pegaI ?? 1) > 0.95) { if (arma === 'dos') { p.manoD = [5, 8.5, 40]; p.armaD = [50, 172]; p.pegaI = 0; } else { delete p.manoD; delete p.armaD; p.hombroD = [30, 8, 50, 0]; } } p.pegaI = clamp(p.pegaI ?? 1, 0, 1); }
 }
 
 // ------------------------------------------------------------------ herido: el golpe lo echa atrás, la cabeza latiguea
@@ -846,7 +849,9 @@ function herido(p: Pose, f: number, arma: ArmaPose) {
   p.hombroI = tab<AngBrazo>([[25, 36, 60, 0], [35, 45, 75, 0], [18, 25, 50, 8], [12, 14, 30, 10]]);
   p.munecaD = tab([-10, -18, 8, 2]); p.respira = tab([0.8, 0.4, 0.1, 0.2]);
   p.capa = [tab([2.2, 3.4, 1.4, 0.9]), tab([-0.6, -1.2, -0.4, 0])]; p.pelo = [tab([1.6, 2.4, 0.6, 0.2]), tab([-0.5, -1, 0, 0])];
-  if (arma === 'dos') { p.manoD = tab<[number, number, number]>([[6, 5, 35], [4, 6, 37], [7.5, 5, 34], [9, 4.5, 33]]); p.armaD = tab<[number, number]>([[25, -20], [15, -15], [32, -25], [40, -28]]); }
+  // a dos manos: el arma sigue al hombro como en quieto y el golpe la sacude atrás (cruzada abajo, el regatón y el puño
+  // izquierdo quedaban en la ingle)
+  if (arma === 'dos') { p.manoD = tab<[number, number, number]>([[3, 9, 42], [1, 9.5, 43.5], [4, 9, 41], [5, 8.5, 40]]); p.armaD = tab<[number, number]>([[58, 166], [64, 162], [54, 170], [50, 172]]); p.pegaI = 0; }
   if (arma === 'ballesta') { p.hombroD = tab<AngBrazo>([[40, 14, 60, 0], [48, 18, 70, 0], [34, 10, 55, 0], [30, 8, 50, 0]]); }
   if (arma === 'baculo') p.vara = tab<[number, number]>([[-14, 8], [-20, 10], [-4, 4], [3, 3]]);
   if (arma === 'arco') { p.hombroI = tab<AngBrazo>([[40, 30, 30, 0], [48, 36, 40, 0], [36, 20, 24, 0], [34, 14, 18, 0]]); p.tensa = false; }

@@ -609,10 +609,11 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   if (pz) {
     if (pz.tipo === 'pantalon' || pz.tipo === 'calzas') ps.push(masa(partes(e, cu, ['pelvis', 'muslo', 'pantorrilla'], pz.tipo === 'calzas' ? 0.35 : 0.65, pz.mat), { mat: pz.mat, suave: 1.6 }));
     else if (pz.tipo === 'grebas') {
-      ps.push(masa(partes(e, cu, ['pelvis', 'muslo'], 0.7, pz.mat2 ?? 'cu_malla'), { mat: pz.mat2 ?? 'cu_malla', suave: 1.6 }));
+      ps.push(masa(partes(e, cu, ['pelvis', 'muslo'], 0.45, pz.mat2 ?? 'cu_malla'), { mat: pz.mat2 ?? 'cu_malla', suave: 1.6 }));
       ps.push(masa(partes(e, cu, ['pantorrilla'], 1.1, pz.mat), { mat: pz.mat, suave: 0.8 }));
-      // quijote: tubo de placa que encierra el muslo de cuero con su cuádriceps (si no, el cuero asoma en manchas)
-      for (const p of e.piernas) ps.push(masa([bulto(p.rod, [2.6 * A, 2.6 * A, 2.4 * S], { eje: sub(p.rod, p.cad), mat: pz.mat })], { mat: pz.mat }), masa([hueso(mez(p.cad, p.rod, 0.15), mez(p.cad, p.rod, 0.85), 3.45 * A + 1.0 * S, 2.75 * A + 1.0 * S, { mat: pz.mat })], { mat: pz.mat }));
+      // quijote: tubo de placa que encierra el muslo de cuero con su cuádriceps, y rodillera que tapa la rodilla de
+      // cuero también a la escala del juego (si no, el cuero asoma en manchas)
+      for (const p of e.piernas) ps.push(masa([bulto(p.rod, [2.6 * A + 0.4, 2.6 * A + 0.4, 2.0 * A + 1.2], { eje: sub(p.rod, p.cad), mat: pz.mat })], { mat: pz.mat }), masa([hueso(mez(p.cad, p.rod, 0.15), mez(p.cad, p.rod, 0.85), 3.7 * A + 1.0 * S, 2.9 * A + 1.0 * S, { mat: pz.mat })], { mat: pz.mat }));
     } else if (pz.tipo === 'taparrabo') {
       ps.push(masa(partes(e, cu, ['pelvis'], 0.5, pz.mat), { mat: pz.mat }));
       ps.push(faldon(e, pz.mat, 9, 1.05, acc, f));
