@@ -478,7 +478,7 @@ let ultimo = performance.now();
 let introT = 0;
 (window as any).__introA = (s: number) => { introT = s; };
 (window as any).__aFinal = () => { estado = 'final'; finalT = 999; };
-(window as any).__cine = (clave: string, acto = 1) => { cine = { clave, acto, t: 0, despues: () => {} }; precargarCine(clave, acto); estado = 'cine'; };
+(window as any).__cine = (clave: string, acto = 1, marcas: string[] = []) => { marcasCine(marcas); cine = { clave, acto, t: 0, despues: () => { estado = 'juego'; } }; precargarCine(clave, acto); estado = 'cine'; };
 (window as any).__cineT = (s: number) => { if (cine) cine.t = s; };
 (window as any).__carga = (k: number, m: string) => { estado = 'carga'; cargaK = k; cargaMsg = m; };
 (window as any).__usar = (o: ObjZ) => { if (j) usarObjeto(j, o); };
