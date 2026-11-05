@@ -1,5 +1,5 @@
 import { rng } from '../core/rng';
-import { mascara, rellenar, trazo, disco, polilinea, desenfocar, desenfocada, pintar, brillo, halo, mezcla, sat, suave, fbm, rayo, type Lamina, type Mascara, type C3, type P2 } from './cine';
+import { lamina, mascara, rellenar, trazo, disco, polilinea, desenfocar, desenfocada, pintar, brillo, halo, mezcla, sat, suave, fbm, rayo, type Lamina, type Mascara, type C3, type P2 } from './cine';
 import { perfil, aguja, ruina, pino, encapuchado } from './siluetas';
 import {
   contraluz, niebla, reflejo, chorreado, charco, salpicar, pintarSangre, haces, estela, sillares, cajaPose, mascaraPose, emiteFuego, emiteMar, emiteOro, losas, grietas,
@@ -191,13 +191,28 @@ function fragua(F: Lamina, s: number, k = 1) {
   // humo encendido desde abajo
   const hu = M(); for (let y = 0; y < 640; y++) for (let x = 0; x < CW; x++) hu.d[y * CW + x] = suave(0.45, 0.8, fbm(x / 200, y / 90, 5, s)) * (0.4 + 0.6 * y / 640);
   pintar(F, hu, [0.4 * k, 0.1 * k, 0.04 * k], 0.8);
-  // tres planos de columnas de roca (estalagmitas) cada vez más cerca y más oscuras
-  for (const [n, alto, c, sem] of [[9, 0.55, 0.11, 1], [7, 0.75, 0.06, 2], [5, 0.95, 0.025, 3]] as [number, number, number, number][]) {
+  // tres planos de agujas de roca volcánica (y estalactitas arriba): bordes quebrados, vetas, grietas con lava y
+  // el filo encendido desde abajo; cada plano más cerca, más oscuro y más nítido
+  const aguja2 = (m: Mascara, x: number, base: number, w: number, alto: number, inc: number, sem: number, colgada: boolean) => {
+    const izq: P2[] = [], der: P2[] = [], N = 18;
+    for (let k = 0; k <= N; k++) {
+      const u = k / N, an = w * (1 - u) ** 0.85 * (0.85 + 0.3 * fbm(u * 5, sem, 3, s)), cxx = x + inc * u * alto + Math.sin(u * 3 + sem) * w * 0.15;
+      const yy = colgada ? base + u * alto : base - u * alto, j1 = (fbm(u * 9, sem + 1, 3, s) - 0.5) * w * 0.5, j2 = (fbm(u * 9, sem + 7, 3, s) - 0.5) * w * 0.5;
+      izq.push([cxx - an + j1 - (k % 4 === 2 ? w * 0.12 : 0), yy]); der.push([cxx + an + j2 + (k % 5 === 3 ? w * 0.1 : 0), yy]);
+    }
+    rellenar(m, [...izq, ...der.reverse()]);
+  };
+  for (const [n, alto, c, sem] of [[9, 0.55, 0.1, 1], [7, 0.75, 0.055, 2], [5, 0.95, 0.025, 3]] as [number, number, number, number][]) {
     const m = M(), r = rng(s + sem);
-    for (let j = 0; j < n; j++) { const x = (j + 0.5 + (r() - 0.5) * 0.6) * (CW / n), w = 40 + r() * 70, top = 660 - 640 * alto * (0.6 + r() * 0.4); rellenar(m, [[x - w, 670], [x - w * 0.5, top + 80], [x - w * 0.15, top], [x + w * 0.2, top + 40], [x + w * 0.55, top + 120], [x + w, 670]]); }
-    rellenar(m, [[-10, -10], [CW + 10, -10], ...Array.from({ length: 40 }, (_, q) => [CW + 10 - (q / 39) * (CW + 20), 40 + 80 * sem * 0.4 + (fbm(q / 4, sem, 3, s) - 0.5) * 120] as P2)]);
-    pintarConRuido(F, m, [c * 1.6, c * 0.7, c * 0.6], 0.4, 30, s + sem); contraluz(F, m, 0, 3, [1 * k, 0.32 * k, 0.07 * k], 0.9 - sem * 0.15); contraluz(F, m, 2, 0, [0.8 * k, 0.2 * k, 0.04 * k], 0.4);
-    if (sem < 3) niebla(F, 380, 680, [0.3 * k, 0.08 * k, 0.03 * k], 0.35, s + sem * 9, 200);
+    for (let j = 0; j < n; j++) { const x = (j + 0.5 + (r() - 0.5) * 0.6) * (CW / n), w = 36 + r() * 60; aguja2(m, x, 680, w, 640 * alto * (0.6 + r() * 0.4), (r() - 0.5) * 0.25, j * 13 + sem, false); }
+    for (let j = 0; j < n + 2; j++) { const x = (j + (r() - 0.5) * 0.6) * (CW / (n + 1)), w = 30 + r() * 50; aguja2(m, x, -10, w, 60 + r() * 140 * sem * 0.5, (r() - 0.5) * 0.2, j * 7 + sem + 50, true); }
+    const vet = M(), vl = M();
+    for (let i = 0; i < CW * CH; i++) { if (m.d[i] <= 0) continue; const x = i % CW, y = Math.floor(i / CW), v = Math.sin(y / 7 + x / 40 + fbm(x / 60, y / 60, 3, s + sem) * 7); vet.d[i] = m.d[i] * suave(0.7, 0.95, v) * 0.6; vl.d[i] = m.d[i] * suave(0.985, 1, Math.sin(y / 23 + fbm(x / 30, y / 90, 3, s + sem + 3) * 9)) * (y / CH); }
+    pintarConRuido(F, m, [c * 1.6, c * 0.75, c * 0.65], 0.55, 14, s + sem);
+    pintar(F, vet, [0, 0, 0], 0.5);
+    contraluz(F, m, 0, 3, [1.1 * k, 0.36 * k, 0.08 * k], 1 - sem * 0.15); contraluz(F, m, 2, 1, [0.9 * k, 0.25 * k, 0.05 * k], 0.5); contraluz(F, m, -2, 0, [0.6 * k, 0.15 * k, 0.04 * k], 0.3);
+    pintar(F, vl, [1.4 * k, 0.5 * k, 0.1 * k], 0.9);
+    if (sem < 3) niebla(F, 380, 690, [0.3 * k, 0.08 * k, 0.03 * k], 0.35, s + sem * 9, 200);
   }
   // dos cascadas de lava, con su resplandor
   const la = M(); for (const x of [210, 1200]) polilinea(la, Array.from({ length: 18 }, (_, j) => [x + Math.sin(j * 0.5) * 14, 40 + j * 36] as P2), 16, 40);
@@ -265,6 +280,42 @@ function a5p2(t: Toma) {
 }
 
 /** El mar del norte se parte en dos bajo un rayo; agujas de una ciudad salen del fondo con luz verde. */
+// ------------------------------------------------------------------ agua en masa (paredes del mar, la ola)
+/**
+ * Una masa de agua: más clara y translúcida donde es fina (cerca de la cresta, `fino` = 1), honda y oscura adentro;
+ * vetas que siguen el agua (`flujo` da las coordenadas del ruido) y venas de espuma. Pinta en L con el alfa de m.
+ */
+function aguaMasa(L: Lamina, m: Mascara, fino: (x: number, y: number) => number, flujo: (x: number, y: number) => P2, s: number, claro: C3, hondo: C3) {
+  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
+    const i = y * CW + x, a = m.d[i]; if (a <= 0) continue;
+    const [u, v] = flujo(x, y), n = fbm(u, v, 5, s), f = sat(fino(x, y)), veta = suave(0.6, 0.78, n), vena = suave(0.7, 0.74, fbm(u * 0.6 + 3, v * 0.6, 4, s + 5)) * (0.3 + 0.7 * f);
+    const c = mezcla(hondo, claro, f ** 1.6);
+    const k = 0.8 + 0.4 * n, j = i * 4;
+    const o: C3 = [c[0] * k + veta * 0.05 * f + vena * 0.35, c[1] * k + veta * 0.1 * f + vena * 0.42, c[2] * k + veta * 0.1 * f + vena * 0.4];
+    L.d[j] = L.d[j] * (1 - a) + o[0] * a; L.d[j + 1] = L.d[j + 1] * (1 - a) + o[1] * a; L.d[j + 2] = L.d[j + 2] * (1 - a) + o[2] * a; L.d[j + 3] = Math.max(L.d[j + 3], a);
+  }
+}
+/** Espuma a lo largo de una cresta (puntos) y rocío que salta hacia `arriba` (vector), con gotas sueltas. */
+function espumaCresta(L: Lamina, cresta: P2[], grosor: number, arriba: P2, s: number, k = 1) {
+  const m = M(), go = M(), r = rng(s);
+  for (let i = 0; i + 1 < cresta.length; i++) for (let j = 0; j < 4; j++) {
+    const u = j / 4, x = cresta[i][0] + (cresta[i + 1][0] - cresta[i][0]) * u, y = cresta[i][1] + (cresta[i + 1][1] - cresta[i][1]) * u, q = grosor * (0.4 + fbm(i * 0.3 + u, 1, 3, s) * 1.1);
+    disco(m, x + (r() - 0.5) * q, y + (r() - 0.3) * q, q);
+    if (r() < 0.6) { const d = r() * grosor * 5, sx = x + arriba[0] * d + (r() - 0.5) * grosor * 2, sy = y + arriba[1] * d; disco(go, sx, sy, 0.8 + r() * 2.2 * (1 - d / (grosor * 5))); }
+    if (r() < 0.15) { const d = grosor * (2 + r() * 4); trazo(go, x, y, x + arriba[0] * d + (r() - 0.5) * d * 0.4, y + arriba[1] * d, grosor * 0.3, 0.6, 0.6); }
+  }
+  for (let i = 0; i < CW * CH; i++) m.d[i] *= 0.55 + 0.45 * fbm((i % CW) / 9, Math.floor(i / CW) / 9, 3, s + 2);
+  pintar(L, desenfocada(m, grosor * 0.6), [0.55, 0.64, 0.63], 0.85 * k); pintar(L, m, [0.82, 0.88, 0.87], 0.6 * k);
+  pintar(L, desenfocada(go, 1.2), [0.75, 0.82, 0.82], 0.8 * k); pintar(L, desenfocada(go, 5), [0.5, 0.58, 0.58], 0.35 * k);
+}
+/** Cosas atrapadas adentro del agua: se ven turbias, del color del agua, con alfa bajo. */
+function adentroDelAgua(L: Lamina, m: Mascara, cosas: [string, string, number, number, number, boolean][], tinte: C3, k = 0.45) {
+  const T = lamina(CW, CH);
+  for (const [id, v, x, y, al, esp] of cosas) figura(T, undefined, modelo(id, v, 0, 2.4), x, y, al, { amb: [0.25, 0.3, 0.3], desat: 0.7, bordes: [{ dx: 0, dy: -1, c: tinte, k: 0.6 }] }, { espejo: esp });
+  desenfocar(T.d, CW, CH, 1.6, 4);
+  for (let i = 0; i < CW * CH; i++) { const a = T.d[i * 4 + 3] * m.d[i] * k; if (a <= 0) continue; const j = i * 4; for (let c = 0; c < 3; c++) L.d[j + c] = L.d[j + c] * (1 - a) + (T.d[j + c] / Math.max(0.01, T.d[j + 3])) * tinte[c] * a; }
+}
+
 function a5p3(t: Toma) {
   const C = t.capa('cielo', 0, 0.05, 'normal', { opaca: true });
   cielo(C, [[0, '#020406'], [0.4, '#0a1418'], [0.55, '#16262a'], [1, '#030607']], {
@@ -279,27 +330,35 @@ function a5p3(t: Toma) {
   const rm = M(); for (const tr of rayo(gx + 60, 0, gx + 10, mar - 40, rng(534), 0.3, 4)) polilinea(rm, tr.pts, 2.4 * tr.w, 1 * tr.w);
   brillo(R, rm, [0.85, 0.95, 1], 1.2); brillo(R, desenfocada(rm, 10), [0.4, 0.6, 0.8], 1.2); halo(R, gx, 200, 500, [0.3, 0.45, 0.5], 0.4, 0.8, true);
   const G = t.capa('grieta', 2, 0.3), GL = t.capa('grieta_luz', 3, 0.3, 'sumar', { anim: { tipo: 'latir', alfa: [0.6, 1], periodo_s: 2.2 } });
-  // el fondo del mar entre las dos paredes: negro, con la luz verde muy abajo
-  const hueco = M(); rellenar(hueco, [[gx - 60, mar - 4], [gx + 60, mar - 4], [gx + 260, CH + 5], [gx - 260, CH + 5]]);
-  pintar(G, desenfocada(hueco, 6), [0.005, 0.015, 0.015], 1);
+  // el lecho del mar entre las paredes: barro negro, cascos podridos y la luz verde que sube del fondo
+  const vp: P2 = [gx, mar + 6], lecho = M(); rellenar(lecho, [[gx - 50, mar], [gx + 50, mar], [gx + 300, CH + 5], [gx - 300, CH + 5]]);
+  pintarConRuido(G, lecho, [0.015, 0.025, 0.022], 0.6, 10, 540);
+  const charcos = M(); for (let i = 0; i < CW * CH; i++) charcos.d[i] = lecho.d[i] * suave(0.62, 0.7, fbm((i % CW) / 30, Math.floor(i / CW) / 8, 4, 546)); pintar(G, charcos, [0.04, 0.12, 0.1], 0.7);
+  const luzL: Luz = { amb: [0.16, 0.22, 0.22], desat: 0.6, clave: { dir: [0, -1], k: 0.6 }, bordes: [{ dx: 0, dy: -1, c: [0.3, 0.8, 0.65], k: 0.8 }] };
+  figura(G, undefined, modelo('ahg_ballena_huesos', 'costillar', 0, 2.4), gx - 90, 640, 130, luzL);
+  figura(G, undefined, modelo('ahg_bote_roto', 'partido', 0, 2.4), gx + 110, 700, 120, luzL, { espejo: true });
+  figura(G, undefined, modelo('ahg_ancla', 'tumbada', 0, 2.4), gx - 20, 560, 60, luzL);
+  figura(G, undefined, modelo('ahg_marino_ahogado', 'tendido', 0, 2.4), gx + 30, 760, 110, luzL);
   for (const lado of [-1, 1]) {
-    // la pared: borde interior ondulado que sube y se curva, con vetas verticales de agua que cae
-    const pared = M(), pts: P2[] = [];
-    for (let k = 0; k <= 30; k++) { const u = k / 30, y = CH + 5 - u * (CH + 5 - (mar - 190)), x = gx + lado * (250 - u * 190 + (fbm(u * 4, lado, 3, 539) - 0.5) * 60); pts.push([x, y]); }
-    for (let k = 0; k <= 12; k++) { const u = k / 12; pts.push([gx + lado * (60 + u * 380), mar - 190 + u * u * 200 + Math.sin(u * 7) * 8]); }
-    pts.push([gx + lado * 900, mar + 10], [gx + lado * 900, CH + 5]);
+    // la pared: un frente en perspectiva que se va hacia el punto de fuga, con la cresta que se curva y se rompe
+    const pared = M(), crY = (x: number) => { const u = sat((Math.abs(x - gx) - 34) / (CX + 20)); return mar - 36 - u ** 0.9 * (mar - 70) + (fbm(x / 70, lado, 3, 541) - 0.5) * 34 + Math.sin(x / 23) * 4; };
+    const cresta: P2[] = [], pts: P2[] = [];
+    for (let k = 0; k <= 60; k++) { const x = gx + lado * (34 + (k / 60) * (CX + 30)); cresta.push([x, crY(x)]); }
+    const borde: P2[] = []; for (let k = 0; k <= 20; k++) { const u = k / 20; borde.push([vp[0] + lado * (40 + u * 270) + (fbm(u * 5, lado + 4, 3, 542) - 0.5) * 30 * u, vp[1] + u * (CH + 5 - vp[1])]); }
+    pts.push(...cresta, [gx + lado * (CX + 80), CH + 5], ...borde.reverse());
     rellenar(pared, pts);
-    for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
-      const i = y * CW + x, a = pared.d[i]; if (a <= 0) continue;
-      const v = fbm(x / 7, y / 90, 4, 535 + lado), c = 0.025 + v * 0.07, j = i * 4;
-      G.d[j] = G.d[j] * (1 - a) + c * 0.55 * a; G.d[j + 1] = G.d[j + 1] * (1 - a) + c * 1.2 * a; G.d[j + 2] = G.d[j + 2] * (1 - a) + c * 1.15 * a; G.d[j + 3] = Math.max(G.d[j + 3], a);
-    }
-    contraluz(G, pared, -lado * 4, 0, MAR, 0.7); contraluz(G, pared, 0, -4, [0.7, 0.85, 0.85], 0.9);
-    const esp = M(); for (let k = 0; k < 60; k++) { const u = k / 59, x = gx + lado * (60 + u * 380), y = mar - 190 + u * u * 200; disco(esp, x + (fbm(k, lado, 2, 9) - 0.5) * 30, y - 6, 5 + 10 * fbm(k * 0.3, lado + 3, 2, 8)); }
-    pintar(G, desenfocada(esp, 4), [0.55, 0.66, 0.66], 0.75);
+    const fino = (x: number, y: number) => Math.max(1 - (y - crY(x)) / 70, 1 - Math.abs(x - (vp[0] + lado * (40 + ((y - vp[1]) / (CH - vp[1])) * 270))) / 60) * 0.9;
+    aguaMasa(G, pared, fino, (x, y) => [x / 10 + fbm(x / 80, y / 80, 3, 545) * 6, y / 55], 543 + lado, [0.16, 0.42, 0.38], [0.012, 0.035, 0.035]);
+    adentroDelAgua(G, pared, lado < 0
+      ? [['ahg_marino_ahogado', 'enredado', gx - 240, 560, 120, false], ['ahg_mastil_caido', 'con_verga', gx - 470, 470, 160, false], ['ahg_marino_ahogado', 'boca_abajo', gx - 120, 640, 90, true]]
+      : [['ahg_marino_ahogado', 'tendido', gx + 260, 540, 130, true], ['ahg_bote_roto', 'partido', gx + 480, 620, 150, true], ['ahg_red_huesos', 'llena', gx + 150, 420, 100, false]], [0.35, 0.65, 0.6]);
+    contraluz(G, pared, -lado * 2, 0, [0.1, 0.3, 0.26], 0.3);
+    espumaCresta(G, cresta, 7, [0.25 * lado, -1], 544 + lado);
   }
+  // el fondo brilla verde, más arriba de la grieta: la luz pasa a través de las paredes (translúcidas)
+  halo(GL, gx, mar - 40, 90, [0.08, 0.45, 0.35], 0.35, 1.4, true);
   // las agujas que suben
-  const ag = M(); for (const [x, w, h] of [[gx - 60, 18, 170], [gx + 10, 26, 240], [gx + 80, 16, 140], [gx - 120, 12, 90]] as [number, number, number][]) aguja(ag, x, mar + 60, w, h);
+  const ag = M(); for (const [x, w, h] of [[gx - 40, 12, 120], [gx + 6, 18, 180], [gx + 52, 10, 100], [gx - 80, 8, 60]] as [number, number, number][]) aguja(ag, x, mar + 40, w, h);
   pintar(G, ag, [0.03, 0.06, 0.06]); contraluz(G, ag, 0, 2, MAR, 1);
   const vg = M(); for (const [x, y] of [[gx + 10, mar - 90], [gx - 60, mar - 30], [gx + 80, mar - 10], [gx + 10, mar - 20]] as P2[]) rellenar(vg, [[x - 3, y + 12], [x - 3, y], [x, y - 5], [x + 3, y], [x + 3, y + 12]]);
   brillo(GL, vg, MAR, 1.3); brillo(GL, desenfocada(vg, 8), MAR, 1.2); halo(GL, gx, mar + 120, 220, [0.1, 0.5, 0.4], 0.5, 0.6, true);
@@ -417,19 +476,21 @@ function a6p2(t: Toma) {
   aguja(ci, 640, 520, 26, 200); aguja(ci, 980, 520, 18, 150);
   pintar(Ci, ci, [0.03, 0.045, 0.045]); contraluz(Ci, ci, 2, -1, [0.5, 0.65, 0.6], 0.6);
   niebla(Ci, 480, 600, [0.2, 0.26, 0.26], 0.4, 627, 200);
-  // la ola: una pared de agua que se viene encima de la ciudad; vetas que siguen el agua y espuma solo en la cresta
+  // la ola: una pared de agua que se viene encima de la ciudad. Fina y verde clara en el labio (se ve a través), honda
+  // abajo, con vetas que siguen la curva, espuma y rocío en la cresta y lo que se tragó adentro
   const O = t.capa('ola', 2, 0.4);
   const ola = M(), cr: P2[] = [];
-  for (let k = 0; k <= 40; k++) { const u = k / 40; cr.push([-20 + u * 980, 110 + u ** 1.8 * 560 + (fbm(u * 6, 2, 3, 627) - 0.5) * 30]); }
-  rellenar(ola, [[-20, CH + 5], ...cr, [960, CH + 5]]);
-  desenfocar(ola.d, CW, CH, 2);
-  const lab = M(); for (let k = 0; k < 160; k++) { const u = k / 159, i = Math.min(39, Math.floor(u * 40)), f = u * 40 - i, x = cr[i][0] + (cr[i + 1][0] - cr[i][0]) * f, y = cr[i][1] + (cr[i + 1][1] - cr[i][1]) * f; disco(lab, x + (fbm(k * 0.4, 1, 2, 629) - 0.5) * 30, y - 4 + (fbm(k * 0.4, 5, 2, 630) - 0.5) * 20, 6 + 12 * fbm(k * 0.2, 3, 2, 631)); }
-  for (let i = 0; i < CW * CH; i++) { const a = ola.d[i]; if (a <= 0) continue; const x = i % CW, y = Math.floor(i / CW), v = fbm(x / 140 + y / 70, y / 16 - x / 110, 4, 628), c = 0.03 + v * 0.09, j = i * 4; O.d[j] = c * 0.7 * a; O.d[j + 1] = c * 1.5 * a; O.d[j + 2] = c * 1.45 * a; O.d[j + 3] = a; }
-  const vet = M(); for (let i = 0; i < CW * CH; i++) if (ola.d[i] > 0) { const x = i % CW, y = Math.floor(i / CW); vet.d[i] = ola.d[i] * suave(0.66, 0.74, fbm(x / 140 + y / 70, y / 16 - x / 110, 4, 632)); }
-  pintar(O, vet, [0.4, 0.5, 0.5], 0.45);
-  contraluz(O, ola, 4, -4, [0.6, 0.8, 0.78], 0.8);
-  pintar(O, desenfocada(lab, 5), [0.7, 0.78, 0.76], 0.9); pintar(O, lab, [0.85, 0.9, 0.88], 0.5);
-  t.efecto({ tipo: 'sprite', hoja: 'humo', en: [[480, 360, 2], [760, 520, 1.8]], mezcla: 'normal', despues_de: 'ola', paralaje: 0.4, alfa: 0.35 });
+  for (let k = 0; k <= 60; k++) { const u = k / 60; cr.push([-20 + u * 1000, 100 + u ** 1.7 * 580 + (fbm(u * 7, 2, 3, 627) - 0.5) * 40 + Math.sin(u * 30) * 5]); }
+  const crY = (x: number) => { const u = sat((x + 20) / 1000); const i = Math.min(59, Math.floor(u * 60)), f = u * 60 - i; return cr[i][1] + (cr[i + 1][1] - cr[i][1]) * f; };
+  rellenar(ola, [[-20, CH + 5], ...cr, [980, CH + 5]]);
+  // el labio que se curva hacia adelante, arriba de la cresta
+  const labio = M(); for (let k = 0; k < 40; k++) { const [x, y] = cr[k], [x2, y2] = cr[k + 1], l = 30 + 20 * fbm(k * 0.3, 4, 2, 628); rellenar(labio, [[x, y + 2], [x2, y2 + 2], [x2 + l * 0.9, y2 - l * 0.35], [x + l * 0.8, y - l * 0.4]]); }
+  for (let i = 0; i < CW * CH; i++) ola.d[i] = Math.max(ola.d[i], labio.d[i]);
+  aguaMasa(O, ola, (x, y) => 1 - (y - crY(x) + 30) / 160, (x, y) => [(x * 0.6 + y * 0.8) / 50, (y - crY(x)) / 9], 629, [0.2, 0.5, 0.45], [0.015, 0.04, 0.04]);
+  adentroDelAgua(O, ola, [['ahg_bote_roto', 'volcado', 380, 330, 150, false], ['ahg_marino_ahogado', 'enredado', 200, 260, 110, true], ['ahg_marino_ahogado', 'tendido', 620, 520, 120, false], ['ahg_mastil_caido', 'x', 120, 520, 180, false]], [0.35, 0.65, 0.6], 0.5);
+  contraluz(O, ola, 4, -4, [0.6, 0.8, 0.78], 0.6);
+  espumaCresta(O, cr.slice(0, 50).map(([x, y]) => [x + 22, y - 12] as P2), 9, [-0.5, -1], 630, 1);
+  t.efecto({ tipo: 'sprite', hoja: 'humo', en: [[300, 160, 2], [560, 330, 1.8], [800, 520, 1.6]], mezcla: 'normal', despues_de: 'ola', paralaje: 0.4, alfa: 0.3 });
   // adelante: la playa con los que dejó el mar
   const Fr = t.capa('frente', 5, 1);
   const pl = M(); rellenar(pl, suelo(720, 30, 629)); pintarConRuido(Fr, pl, [0.07, 0.065, 0.055], 0.3, 40, 630); contraluz(Fr, pl, 0, -2, [0.55, 0.65, 0.6], 0.5);
@@ -442,25 +503,62 @@ function a6p2(t: Toma) {
   t.particulas = 'lluvia';
 }
 
-/** El cielo se rompe como un vidrio: grietas de luz, pedazos caídos y la escalera de oro que sube. */
-export function cieloRoto(C: Lamina, CL: Lamina, cx: number, ty: number, s: number, hasta = 480, n = 18) {
-  const r = rng(s), gr = mascara(C.w, C.h), hu = mascara(C.w, C.h), radiales: P2[][] = [];
-  for (let k = 0; k < n; k++) {
-    const ang = (k / n) * Math.PI * 2 + r() * 0.25, pts: P2[] = [[cx + Math.cos(ang) * 50, ty + Math.sin(ang) * 50]];
-    let x = pts[0][0], y = pts[0][1], a = ang;
-    for (let j = 0; j < 16; j++) { a += (r() - 0.5) * 0.3; const l = 30 + r() * 45; x += Math.cos(a) * l; y += Math.sin(a) * l * 0.85; pts.push([x, y]); if (y > hasta || x < -50 || x > C.w + 50) break; }
-    radiales.push(pts); polilinea(gr, pts, 2.6, 0.6);
+/**
+ * El cielo roto como un vidrio, alrededor de un solo punto de impacto (cx, ty): grietas quebradas que se abren en
+ * ramas y se afinan, anillos cortados entre ellas, los pedazos un poco corridos y con otro brillo (refracción), y la
+ * luz de detrás que se cuela solo por algunas grietas y un par de huecos chicos. El resto del cielo queda entero.
+ */
+export function cieloRoto(C: Lamina, CL: Lamina, cx: number, ty: number, s: number, hasta = 480, n = 9, luzC: C3 = [1, 0.82, 0.5]) {
+  const r = rng(s), w = C.w, h = C.h, R = Math.max(220, Math.min(440, hasta - ty + 140));
+  const angs = Array.from({ length: n }, (_, k) => (k / n) * Math.PI * 2 + (r() - 0.5) * (Math.PI / n)).sort((p, q) => p - q);
+  const largo = angs.map(() => R * (0.5 + r() * 0.5));
+  // refracción: cada pedazo (sector, partido en dos anillos) corrido y con su brillo
+  const off = Array.from({ length: n * 2 }, () => [(r() - 0.5) * 10, (r() - 0.5) * 8, 0.82 + r() * 0.36, r() * Math.PI * 2]);
+  const anillo = R * (0.3 + r() * 0.1), src = new Float32Array(C.d);
+  const sector = (a: number) => { let k = n - 1; for (let i = 0; i < n; i++) if (a >= angs[i]) k = i; return a < angs[0] ? n - 1 : k; };
+  for (let y = Math.max(0, Math.floor(ty - R)); y < Math.min(h, Math.min(hasta, ty + R)); y++) for (let x = Math.max(0, Math.floor(cx - R)); x < Math.min(w, cx + R); x++) {
+    const d = Math.hypot(x - cx, y - ty), k = sector(Math.atan2(y - ty, x - cx));
+    const f = 1 - suave(largo[k] * 0.55, largo[k] * 1.02, d); if (f <= 0) continue;
+    const [ox, oy, br, an] = off[k * 2 + (d < anillo ? 0 : 1)];
+    const sx = Math.min(w - 1, Math.max(0, Math.round(x + ox * f))), sy = Math.min(h - 1, Math.max(0, Math.round(y + oy * f))), j = (y * w + x) * 4, q = (sy * w + sx) * 4;
+    // cada pedazo es un vidrio con su propio reflejo: un brillo que corre en diagonal por la cara
+    const brillo2 = 0.5 + 0.5 * Math.sin(((x - cx) * Math.cos(an) + (y - ty) * Math.sin(an)) / (R * 0.22)), b = 1 + (br - 1) * f, sh = 0.05 * f * brillo2;
+    C.d[j] = src[q] * b + sh * luzC[0]; C.d[j + 1] = src[q + 1] * b + sh * luzC[1]; C.d[j + 2] = src[q + 2] * (b + 0.04 * f) + sh * luzC[2];
   }
-  for (let k = 0; k < radiales.length; k++) for (let j = 2; j < 9; j += 2 + Math.floor(r() * 2)) {
-    const a = radiales[k][j], b = radiales[(k + 1) % radiales.length][j + (r() < 0.5 ? 0 : 1)]; if (!a || !b) continue;
-    const m: P2 = [(a[0] + b[0]) / 2 + (r() - 0.5) * 20, (a[1] + b[1]) / 2 + (r() - 0.5) * 20];
-    polilinea(gr, [a, m, b], 1.4, 1);
-    if (r() < 0.22) { const c = radiales[k][j + 1], d = radiales[(k + 1) % radiales.length][j + 1]; if (c && d) rellenar(hu, [a, m, b, d, c]); }
+  const gr = mascara(w, h), fuga = mascara(w, h);
+  const grieta = (px: number, py: number, a: number, l: number, g: number, prof: number, luz: boolean) => {
+    const pts: P2[] = [[px, py]]; let x = px, y = py, aa = a, hecho = 0;
+    while (hecho < l) {
+      const paso = 5 + r() * 11; aa += (r() - 0.5) * 0.7; x += Math.cos(aa) * paso; y += Math.sin(aa) * paso; hecho += paso; pts.push([x, y]);
+      if (prof < 2 && r() < 0.1) grieta(x, y, aa + (r() < 0.5 ? -1 : 1) * (0.4 + r() * 0.6), (l - hecho) * (0.35 + r() * 0.3), g * (1 - hecho / l) * 0.7, prof + 1, luz && r() < 0.5);
+      if (y > hasta) break;
+    }
+    polilinea(gr, pts, Math.max(0.6, g), 0.25);
+    if (luz) polilinea(fuga, pts, Math.max(0.5, g * 0.7), 0.2);
+  };
+  const conLuz = new Set([Math.floor(r() * n), Math.floor(r() * n), Math.floor(r() * n)]);
+  angs.forEach((a, k) => grieta(cx + Math.cos(a) * 6, ty + Math.sin(a) * 6, a, largo[k], 3 + r() * 1.8, 0, conLuz.has(k)));
+  // anillos cortados: arcos quebrados entre grietas vecinas, solo algunos
+  for (const rr of [anillo, R * (0.12 + r() * 0.05)]) for (let k = 0; k < n; k++) {
+    if (r() < 0.4) continue;
+    const a0 = angs[k], a1 = k + 1 < n ? angs[k + 1] : angs[0] + Math.PI * 2, pts: P2[] = [];
+    for (let j = 0; j <= 8; j++) { const a = a0 + ((a1 - a0) * j) / 8, q = rr * (0.92 + r() * 0.16); pts.push([cx + Math.cos(a) * q, ty + Math.sin(a) * q]); }
+    polilinea(gr, pts, 1.8, 0.9);
   }
-  desenfocar(hu.d, C.w, C.h, 1.5);
-  for (let i = 0; i < C.w * C.h; i++) if (Math.floor(i / C.w) > hasta) { gr.d[i] = 0; hu.d[i] = 0; }
-  pintar(C, hu, [0.5, 0.42, 0.3], 0.35);
-  brillo(CL, gr, [1, 0.85, 0.5], 1.2); brillo(CL, desenfocada(gr, 6), [1, 0.6, 0.2], 1); brillo(CL, hu, [1, 0.9, 0.7], 0.3);
+  // un par de huecos chicos cerca del impacto por donde se ve la luz de atrás
+  const hueco = mascara(w, h);
+  for (let k = 0; k < 3; k++) { const a = angs[Math.floor(r() * n)] + 0.15, d = 14 + r() * 40, x = cx + Math.cos(a) * d, y = ty + Math.sin(a) * d, q = 5 + r() * 9; rellenar(hueco, [[x, y - q], [x + q * 0.8, y + q * 0.2], [x + q * 0.1, y + q * 0.9], [x - q * 0.7, y + q * 0.3]]); }
+  for (let i = 0; i < w * h; i++) if (Math.floor(i / w) > hasta) { gr.d[i] = 0; fuga.d[i] = 0; }
+  // en el vidrio: la grieta es oscura, con un filo claro del lado de la luz
+  pintar(C, gr, [0.02, 0.02, 0.03], 0.7);
+  contraluz(C, gr, -1, -1, [0.8, 0.76, 0.68], 0.7);
+  contraluz(C, gr, 1, 1, [0.25, 0.24, 0.3], 0.4);
+  pintar(C, hueco, [luzC[0] * 1.2, luzC[1] * 1.2, luzC[2] * 1.2], 1);
+  // la luz que se cuela (capa que suma)
+  const cerca = mascara(w, h); for (let i = 0; i < w * h; i++) { const d = Math.hypot((i % w) - cx, Math.floor(i / w) - ty); cerca.d[i] = gr.d[i] * Math.exp(-d / (R * 0.35)); }
+  for (let i = 0; i < w * h; i++) { const d = Math.hypot((i % w) - cx, Math.floor(i / w) - ty); fuga.d[i] *= Math.exp(-d / (R * 0.5)); }
+  brillo(CL, fuga, luzC, 0.7); brillo(CL, desenfocada(fuga, 3), luzC, 0.45); brillo(CL, cerca, luzC, 0.2);
+  brillo(CL, desenfocada(hueco, 8), luzC, 1.4); halo(CL, cx, ty, 70, luzC, 0.8, 1, true); halo(CL, cx, ty, R * 0.6, [luzC[0] * 0.6, luzC[1] * 0.5, luzC[2] * 0.4], 0.25, 1, true);
 }
 /** La escalera de oro: escalones que se angostan hacia arriba (máscaras pintadas en la lámina). */
 export function escaleraOro(L: Lamina, cx: number, y0: number, y1: number, w0: number, w1: number, s: number, k = 1) {
@@ -481,8 +579,7 @@ function a6p3(t: Toma) {
   const cx = CX, ty = 230;
   cielo(C, [[0, '#030306'], [0.4, '#110e18'], [0.6, '#2a2018'], [0.66, '#18201e'], [1, '#050707']], { fuente: [cx, ty, 620, [1, 0.75, 0.35], 0.6] });
   const CL = t.capa('grietas', 1, 0.05, 'sumar', { anim: { tipo: 'latir', alfa: [0.7, 1], periodo_s: 3 } });
-  cieloRoto(C, CL, cx, ty, 631, 520, 12);
-  for (let i = 0; i < CL.d.length; i++) CL.d[i] *= 0.6;
+  cieloRoto(C, CL, cx, ty, 631, 520);
   const E = t.capa('escalera', 2, 0.15), EL = t.capa('escalera_luz', 3, 0.15, 'sumar', { anim: { tipo: 'titilar', alfa: [0.8, 1], hz: 2 } });
   const e = escaleraOro(E, cx, 520, ty + 30, 120, 10, 632);
   for (let i = 0; i < CW * CH; i++) e.esc.d[i] *= 1 - suave(ty, 520, Math.floor(i / CW)) * 0.6;
@@ -505,8 +602,7 @@ function a6p4(t: Toma) {
   const C = t.capa('cielo', 0, 0.05, 'normal', { opaca: true });
   cielo(C, [[0, '#030204'], [0.5, '#120c10'], [1, '#040304']], { fuente: [CX, 300, 700, [1, 0.7, 0.3], 0.55], estrellas: 200, s: 641 });
   const CL = t.capa('grietas', 1, 0.05, 'sumar', { anim: { tipo: 'latir', alfa: [0.6, 1], periodo_s: 3.3 } });
-  cieloRoto(C, CL, CX, 260, 642, 560);
-  for (let i = 0; i < CL.d.length; i++) CL.d[i] *= 0.5;
+  cieloRoto(C, CL, CX, 200, 642, 520);
   granoOpaco(C, 0.015, 643);
   const Tr = t.capa('trono', 2, 0.35);
   const luzT: Luz = { amb: [0.42, 0.34, 0.26], desat: 0.3, clave: { dir: [0, -1], k: 0.6 }, bordes: [{ dx: 0, dy: -1, c: [1, 0.8, 0.4], k: 1 }], niebla: { c: [0.12, 0.08, 0.06], k: 0.2 }, emite: emiteOro, cEmite: [1, 0.8, 0.4] };
