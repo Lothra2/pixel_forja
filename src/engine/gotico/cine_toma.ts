@@ -1,6 +1,6 @@
 import { rng } from '../core/rng';
 import {
-  lamina, mascara, rellenar, trazo, disco, desenfocar, desenfocada, brillo, degradado, halo, rayosDeLuz, mezcla, sat, suave, fbm, hex,
+  lamina, mascara, rellenar, trazo, disco, polilinea, desenfocar, desenfocada, brillo, degradado, halo, rayosDeLuz, mezcla, sat, suave, fbm, hex,
   type Lamina, type Mascara, type C3, type P2,
 } from './cine';
 import { nubes, perfil, type OpcNubes } from './siluetas';
@@ -151,8 +151,12 @@ export const HEROE_EQ: Equipo = {
   manos: { tipo: 'guantes', mat: 'cu_cuero_negro' }, hombros: { tipo: 'cuero', mat: 'cu_cuero_negro' }, cabeza: { tipo: 'capucha', mat: 'cu_tela_negra' },
   cinturon: { mat: 'cu_cuero', hebilla: 'cu_placa' }, capa: { mat: 'cu_tela_negra', largo: 1 }, arma: { tipo: 'espada', mat: 'cu_placa' },
 };
-/** Con la Corona puesta (los finales en que el héroe se la queda). */
-export const HEROE_CORONA: Equipo = { ...HEROE_EQ, cabeza: { tipo: 'corona', mat: 'cu_oro' } };
+/** Con la Corona puesta (los finales en que el héroe se la queda): la armadura de placas del final, capa roja y corona. */
+export const HEROE_CORONA: Equipo = {
+  torso: { tipo: 'placas', mat: 'cu_placa_oscura', mat2: 'cu_malla' }, piernas: { tipo: 'grebas', mat: 'cu_placa_oscura', mat2: 'cu_cuero_negro' }, pies: { tipo: 'sabatones', mat: 'cu_placa_oscura' },
+  manos: { tipo: 'guanteletes', mat: 'cu_placa_oscura' }, hombros: { tipo: 'placas', mat: 'cu_placa_oscura' }, cabeza: { tipo: 'corona', mat: 'cu_oro' },
+  cinturon: { mat: 'cu_cuero_negro', hebilla: 'cu_oro' }, capa: { mat: 'cu_tela_roja', largo: 1 }, arma: { tipo: 'espada', mat: 'cu_placa' },
+};
 export const VIGDIS: [Cuerpo, Equipo] = [{ genero: 'm', piel: 'cu_piel_clara', pelo: 'cu_pelo_blanco', peinado: 'largo', musculo: 0.2 }, { torso: { tipo: 'vestido', mat: 'cu_tela_azul' }, hombros: { tipo: 'pieles', mat: 'cu_pelaje' }, cinturon: { mat: 'cu_cuero' }, izq: { tipo: 'antorcha' } }];
 export const AUREN: [Cuerpo, Equipo] = [{ genero: 'h', alto: 1.1, piel: 'cu_piel_clara', pelo: 'cu_pelo_blanco', peinado: 'largo', ojos: 'cu_ojo_hielo', musculo: 0.3, alas: 'cu_tela_blanca' }, { torso: { tipo: 'placas', mat: 'cu_oro', mat2: 'cu_tela_blanca' }, piernas: { tipo: 'tunica_larga', mat: 'cu_tela_blanca' }, hombros: { tipo: 'placas', mat: 'cu_oro' }, capa: { mat: 'cu_tela_blanca' } }];
 export const MIRA: [Cuerpo, Equipo] = [{ genero: 'm', piel: 'cu_piel_morena', pelo: 'cu_pelo_castano', peinado: 'cola', musculo: 0.1 }, { torso: { tipo: 'vestido', mat: 'cu_tela_morada' }, cabeza: { tipo: 'aro', mat: 'cu_oro' }, cinturon: { mat: 'cu_cuero', hebilla: 'cu_oro' } }];
@@ -176,29 +180,46 @@ export function figuraEsc(capa: Lamina, capaLuz: Lamina | undefined, m: Modelo, 
 }
 /** Atajo: una lámina de luz suelta con un brillo en una máscara desenfocada. */
 export function resplandor(L: Lamina, m: Mascara, c: C3, k: number, r: number) { brillo(L, desenfocada(m, r), c, k); }
-/** Silueta de un barco de vela: casco curvo con castillo de popa, tres mástiles, velas hinchadas y jironeadas, jarcias. */
+/**
+ * Silueta de un barco de vela: casco con arrufo (más alto a popa, con castillo y bauprés), tres palos con vergas,
+ * velas hinchadas por el viento con el borde de abajo combado y desgarrado (jirones y agujeros), y jarcias finas
+ * del tope de cada palo a la borda. Las velas van con un poco menos de valor (se ven más delgadas que el casco).
+ */
 export function barco(m: Mascara, x: number, y: number, largo: number, s: number, rotas = true) {
-  const r = rng(s), h = largo * 0.13, L = largo / 2;
+  const r = rng(s), L = largo / 2, h = largo * 0.11;
+  const borda = (u: number) => y - h - h * 0.55 * Math.max(0, 0.25 - u) * 4 - h * 0.3 * Math.max(0, u - 0.75) * 4;
   const casco: P2[] = [];
-  for (let k = 0; k <= 20; k++) { const u = k / 20, xx = x - L + u * largo; casco.push([xx, y - h - h * 0.5 * (Math.abs(u - 0.45) * 2) ** 2.2 - (u < 0.18 ? h * 0.9 * (1 - u / 0.18) : 0)]); }
-  for (let k = 20; k >= 0; k--) { const u = k / 20, xx = x - L * 0.88 + u * largo * 0.92; casco.push([xx, y - h * 0.15 * (Math.abs(u - 0.5) * 2) ** 2]); }
+  for (let k = 0; k <= 24; k++) { const u = k / 24; casco.push([x - L + u * largo, borda(u)]); }
+  casco.push([x + L + largo * 0.02, y - h * 0.9]);
+  for (let k = 24; k >= 0; k--) { const u = k / 24; casco.push([x - L * 0.92 + u * largo * 0.9, y - h * 0.08 * Math.sin(u * Math.PI) + (u < 0.1 ? -h * (0.1 - u) * 4 : 0)]); }
   rellenar(m, casco);
-  trazo(m, x + L * 0.95, y - h * 1.3, x + L * 1.35, y - h * 2.1, largo * 0.012, largo * 0.006, 1, 'max', false);
-  for (const [dx, alto] of [[-0.42, 0.62], [-0.02, 0.92], [0.42, 0.74]] as [number, number][]) {
-    const mx = x + dx * L, top = y - h - largo * 0.62 * alto;
-    trazo(m, mx, y - h, mx, top, largo * 0.012, largo * 0.007, 1, 'max', false);
-    for (const [t0, t1, an] of [[0.08, 0.4, 0.15], [0.46, 0.82, 0.13]] as [number, number, number][]) {
-      const ya = top + (y - h - top) * t0, yb = top + (y - h - top) * t1, w0 = largo * an * alto * 0.55, w1 = w0 * 1.15;
-      trazo(m, mx - w0, ya, mx + w0, ya, 2, 2, 1, 'max', false);
-      const pts: P2[] = [[mx - w0, ya]];
-      for (let k = 0; k <= 8; k++) { const u = k / 8; pts.push([mx + w0 + (w1 - w0) * u + Math.sin(u * Math.PI) * w0 * 0.12, ya + (yb - ya) * u]); }
-      for (let k = 0; k <= 10; k++) { const u = 1 - k / 10, jir = rotas && r() < 0.5 ? (r() * 0.35) * (yb - ya) : 0; pts.push([mx - w1 + 2 * w1 * u, yb - jir + Math.sin(u * Math.PI) * (yb - ya) * 0.08]); }
-      for (let k = 0; k <= 8; k++) { const u = 1 - k / 8; pts.push([mx - w0 - (w1 - w0) * u - Math.sin(u * Math.PI) * w0 * 0.12, ya + (yb - ya) * u]); }
-      rellenar(m, pts);
-      if (rotas && r() < 0.6) disco(m, mx + (r() - 0.5) * w0, (ya + yb) / 2, largo * 0.012 * (1 + r()), 1, 'restar');
+  rellenar(m, [[x - L, borda(0)], [x - L - largo * 0.015, borda(0) - h * 0.9], [x - L * 0.72, borda(0) - h * 0.75], [x - L * 0.7, borda(0.15)]]);
+  trazo(m, x + L * 0.98, y - h * 1.05, x + L * 1.38, y - h * 2.2, largo * 0.011, largo * 0.005, 1, 'max', false);
+  for (let k = 0; k < 9; k++) disco(m, x - L * 0.7 + k * L * 0.17, y - h * 0.55, largo * 0.006, 1, 'restar');
+  const palos: [number, number][] = [[-0.45, 0.62], [-0.02, 0.9], [0.42, 0.72]];
+  for (const [dx, alto] of palos) {
+    const mx = x + dx * L, base = borda(0.5 + dx / 2), top = base - largo * 0.66 * alto;
+    trazo(m, mx, base, mx + largo * 0.008, top, largo * 0.011, largo * 0.005, 1, 'max', false);
+    // jarcias: del tope a la borda, a los dos lados
+    for (const lado of [-1, 1]) for (let j = 0; j < 3; j++) trazo(m, mx, top + j * largo * 0.04, mx + lado * largo * (0.06 + j * 0.03), base, 0.8, 0.8, 0.7, 'max', false);
+    for (const [t0, t1] of [[0.06, 0.38], [0.44, 0.8]] as [number, number][]) {
+      const ya = top + (base - top) * t0, yb = top + (base - top) * t1, an = largo * 0.085 * alto * (1.15 - t0 * 0.5), comba = an * 0.3;
+      trazo(m, mx - an * 1.08, ya, mx + an * 1.08, ya, largo * 0.006, largo * 0.006, 1, 'max', false);
+      const pts: P2[] = [];
+      for (let k = 0; k <= 10; k++) { const u = k / 10; pts.push([mx - an * 0.8 + u * an * 1.6, ya + Math.sin(u * Math.PI) * comba * 0.15]); }
+      for (let k = 0; k <= 8; k++) { const u = k / 8; pts.push([mx + an * (0.8 + 0.3 * u) + Math.sin(u * Math.PI) * comba * 0.6, ya + (yb - ya) * u]); }
+      for (let k = 0; k <= 16; k++) {
+        const u = 1 - k / 16, jir = rotas && r() < 0.45 ? (0.15 + r() * 0.5) * (yb - ya) : 0;
+        pts.push([mx - an * 1.1 + u * an * 2.2 + (r() - 0.5) * 3, yb + Math.sin(u * Math.PI) * comba - jir]);
+      }
+      for (let k = 0; k <= 8; k++) { const u = 1 - k / 8; pts.push([mx - an * (0.8 + 0.3 * u) - Math.sin(u * Math.PI) * comba * 0.6, ya + (yb - ya) * u]); }
+      rellenar(m, pts, 0.88);
+      if (rotas) for (let k = 0; k < 2 + Math.floor(r() * 2); k++) { const hx = mx + (r() - 0.5) * an * 1.4, hy = ya + (yb - ya) * (0.25 + r() * 0.5), q = largo * (0.008 + r() * 0.014); rellenar(m, [[hx - q, hy - q * 0.4], [hx + q * 0.3, hy - q * 1.2], [hx + q, hy + q * 0.2], [hx - q * 0.2, hy + q * 1.1]], 1, 'restar'); }
     }
   }
-  for (let k = 0; k < 7; k++) { const a = x + (k - 3) * L * 0.28, b = y - h * 1.1; trazo(m, a, b, x - L * 0.02 + (k - 3) * 4, y - h - largo * 0.55, 1, 1, 0.7, 'max', false); }
+  // estay de proa a popa por los topes
+  const topes = palos.map(([dx, alto]) => [x + dx * L, borda(0.5 + dx / 2) - largo * 0.66 * alto] as P2);
+  polilinea(m, [[x + L * 1.36, y - h * 2.15], topes[2], topes[1], topes[0], [x - L * 0.95, borda(0) - h * 0.8]], 0.9, 0.9);
 }
 /** Ondas y brillos del agua en una lámina que suma (para que titilen). */
 export function brillosAgua(L: Lamina, y0: number, y1: number, cx: number, ancho: number, c: C3, k: number, s: number) {

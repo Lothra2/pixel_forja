@@ -1,5 +1,5 @@
 import { rng } from '../core/rng';
-import { mascara, rellenar, trazo, disco, polilinea, desenfocada, pintar, brillo, halo, sat, suave, fbm, type Lamina, type C3, type P2 } from './cine';
+import { mascara, rellenar, trazo, disco, polilinea, desenfocar, desenfocada, pintar, brillo, halo, sat, fbm, type Lamina, type C3, type P2 } from './cine';
 import { perfil, aguja, ruina, arbolMuerto } from './siluetas';
 import { contraluz, niebla, chorreado, charco, salpicar, pintarSangre, haces, estela, sillares, cajaPose, mascaraPose, emiteOro, losas, grietas, type Luz } from './estudio';
 import { CW, CH, CX, Toma, alumbrar, sombraVertical, granoOpaco, cielo, lomas, pintarConRuido, pasto, figura, figuraEsc, modelo, heroe, npc } from './cine_toma';
@@ -25,9 +25,7 @@ function salaTrono(t: Toma, p: Paleta, s: number, trono = true): { pie: P2; esc:
   const C = t.capa('cielo', 0, 0.05, 'normal', { opaca: true });
   cielo(C, p.cielo, { fuente: [CX, 300, 700, p.luz, p.luzK], estrellas: p.frio ? 260 : 140, s });
   const CL = t.capa('grietas', 1, 0.05, 'sumar', { anim: { tipo: 'latir', alfa: [0.6, 1], periodo_s: 3.2 } });
-  cieloRoto(C, CL, CX, 250, s + 1, 560, 11);
-  for (let i = 0; i < CL.d.length; i++) CL.d[i] *= 0.55;
-  if (p.frio) { for (let i = 0; i < CL.d.length; i += 4) { const g = (CL.d[i] + CL.d[i + 1] + CL.d[i + 2]) / 3; CL.d[i] = g * 0.6; CL.d[i + 1] = g * 0.7; CL.d[i + 2] = g * 0.9; } }
+  cieloRoto(C, CL, CX, 190, s + 1, 520, 8 + (s % 3), p.frio ? [0.7, 0.8, 1] : p.luz[1] < 0.5 ? [1, 0.45, 0.15] : [1, 0.82, 0.5]);
   granoOpaco(C, 0.015, s + 2);
   const pie: P2 = [CX, 700];
   let esc = 1;
@@ -39,7 +37,7 @@ function salaTrono(t: Toma, p: Paleta, s: number, trono = true): { pie: P2; esc:
     const mR = modelo('cel_trono_respaldo', 'con_alas', 0, 3), mE = modelo('cel_trono_escalones', 'con_craneos', 0, 3);
     esc = (600 / mR.img.h) * 0.9;
     figuraEsc(Tr, undefined, mR, pie[0], pie[1], esc, luzT); figuraEsc(Tr, undefined, mE, pie[0], pie[1], esc, luzT);
-    if (p.frio) { const es = M(); for (let i = 0; i < CW * CH; i++) es.d[i] = Tr.d[i * 4 + 3] * suave(0.5, 0.8, fbm((i % CW) / 30, Math.floor(i / CW) / 30, 4, s + 3)); pintar(Tr, es, [0.7, 0.78, 0.9], 0.35); }
+    if (p.frio) { const aT = M(); for (let i = 0; i < CW * CH; i++) aT.d[i] = Tr.d[i * 4 + 3]; contraluz(Tr, aT, 0, -2, [0.75, 0.82, 0.95], 0.8, undefined, 0.6); }
   }
   return { pie, esc };
 }
@@ -101,11 +99,20 @@ function v1(t: Toma) {
   const luzA: Luz = { amb: [0.62, 0.6, 0.58], desat: 0.25, clave: { dir: [-0.6, -1], k: 0.7, c: [1.2, 1.05, 0.85] }, bordes: [{ dx: -1, dy: -1, c: [1.2, 1, 0.7], k: 1.1, ancho: 1.5 }, { dx: 1, dy: 0, c: [0.4, 0.4, 0.55], k: 0.4 }] };
   const au = figura(A, undefined, npc('auren', 'so', 'quieto', 0, 6), CX - 40, 770, 560, luzA);
   const b = cajaPose(au, CX - 40, 770);
-  // la Corona contra el pecho, medio tapada por el manto
-  const mx = (b.x0 + b.x1) / 2 + 20, my = b.y0 + (b.y1 - b.y0) * 0.5;
-  corona(A, AL, mx, my + 30, 80, false, 0.6);
-  const manto = M(); rellenar(manto, [[mx - 60, my + 10], [mx + 50, my], [mx + 70, my + 60], [mx + 10, my + 90], [mx - 50, my + 70]]);
-  pintarConRuido(A, manto, [0.5, 0.48, 0.45], 0.25, 10, 724); contraluz(A, manto, -2, -2, [1, 0.9, 0.7], 0.7);
+  // la Corona contra el pecho, envuelta en el manto: tela con pliegues y sombras, y un pedazo de oro que asoma
+  const mx = (b.x0 + b.x1) / 2 + 24, my = b.y0 + (b.y1 - b.y0) * 0.5;
+  corona(A, AL, mx + 6, my + 6, 70, false, 0.5);
+  const manto = M(), pl = M(), luzPl = M();
+  rellenar(manto, Array.from({ length: 26 }, (_, k) => { const a = (k / 26) * Math.PI * 2, q = 1 + 0.18 * Math.sin(a * 5 + 1) + 0.1 * fbm(Math.cos(a) * 2, Math.sin(a) * 2, 2, 723); return [mx + Math.cos(a) * 62 * q, my + 26 + Math.sin(a) * 44 * q - (Math.sin(a) < -0.5 ? 18 : 0)] as P2; }));
+  rellenar(manto, [[mx - 30, my + 50], [mx - 70, my + 140], [mx - 40, my + 150], [mx - 10, my + 70]]);
+  for (let k = 0; k < 7; k++) { const x0 = mx - 50 + k * 16, pts: P2[] = []; for (let j = 0; j <= 8; j++) { const u = j / 8; pts.push([x0 + Math.sin(u * 3 + k) * 8 + u * (k - 3) * 6, my - 4 + u * 80]); } polilinea(pl, pts, 3.2, 1); polilinea(luzPl, pts.map(([x, y]) => [x - 3, y] as P2), 1.4, 0.5); }
+  for (let i = 0; i < CW * CH; i++) { pl.d[i] *= manto.d[i]; luzPl.d[i] *= manto.d[i]; }
+  pintarConRuido(A, manto, [0.4, 0.37, 0.33], 0.15, 12, 724);
+  const somb = M(); for (let i = 0; i < CW * CH; i++) somb.d[i] = manto.d[i] * sat(((Math.floor(i / CW) - my) / 120) + ((i % CW) - mx) / 160); pintar(A, somb, [0.18, 0.16, 0.16], 0.6);
+  pintar(A, desenfocada(pl, 1.5), [0.2, 0.18, 0.18], 0.7); pintar(A, luzPl, [1, 0.92, 0.75], 0.5, 'luz');
+  contraluz(A, manto, -2, -2, [1, 0.9, 0.7], 0.8);
+  const glint = M(); trazo(glint, mx - 12, my - 4, mx + 12, my - 4, 1.4, 1.4); trazo(glint, mx, my - 16, mx, my + 8, 1.4, 1.4); disco(glint, mx, my - 4, 2.6);
+  brillo(AL, glint, [1, 0.9, 0.6], 1.6); halo(AL, mx, my - 4, 40, [1, 0.7, 0.3], 0.8, 1, true);
   t.particulas = 'ceniza';
 }
 /** La cripta: el relicario de hierro con siete sellos, cadenas y los monjes que cantan con velas. */
@@ -120,9 +127,9 @@ function cripta(t: Toma, s: number, cerca: boolean) {
   alumbrar(F, CX, 560, 720, [1.6, 1, 0.55], 1, 0.7);
   granoOpaco(F, 0.02, s + 3);
   const R = t.capa('relicario', 2, cerca ? 0.7 : 0.5), RL = t.capa('relicario_luz', 3, cerca ? 0.7 : 0.5, 'sumar', { anim: { tipo: 'latir', alfa: [0.3, 1], periodo_s: 4, notas: 'algo tibio late adentro, muy despacio' } });
-  const alto = cerca ? 560 : 300, py = cerca ? 770 : 700;
-  const luzR: Luz = { amb: [0.3, 0.3, 0.32], desat: 0.92, clave: { dir: [0, -1], k: 0.7, c: [1.1, 0.95, 0.8] }, bordes: [{ dx: 0, dy: -1, c: [1, 0.75, 0.45], k: 1 }, { dx: -1, dy: 0, c: [0.8, 0.5, 0.3], k: 0.4 }] };
-  const re = figura(R, undefined, modelo('cel_relicario', 'cerrado', 0, 4), CX, py, alto, luzR);
+  const alto = cerca ? 640 : 380, py = cerca ? 760 : 700;
+  const luzR: Luz = { amb: [0.62, 0.5, 0.4], desat: 0.25, clave: { dir: [0.6, -0.6], k: 0.8, c: [1.3, 0.95, 0.65] }, bordes: [{ dx: 1, dy: -1, c: [1.2, 0.75, 0.4], k: 1.1 }, { dx: -1, dy: -1, c: [1, 0.6, 0.3], k: 0.6 }], abajo: { c: [0.6, 0.3, 0.1], k: 0.3 }, };
+  const re = figura(R, RL, modelo('tum_cofre', 'piedra', 0, 4), CX, py, alto * 0.75, luzR);
   const b = cajaPose(re, CX, py), w = b.x1 - b.x0, h = b.y1 - b.y0;
   // cadenas cruzadas y siete sellos de cera roja
   const ca = M(); for (const [a0, a1] of [[[b.x0 - 40, b.y0 + h * 0.2], [b.x1 + 40, b.y1 - h * 0.2]], [[b.x1 + 40, b.y0 + h * 0.2], [b.x0 - 40, b.y1 - h * 0.2]], [[b.x0 - 50, b.y0 + h * 0.55], [b.x1 + 50, b.y0 + h * 0.55]]] as [P2, P2][]) for (let k = 0; k <= 24; k++) { const u = k / 24, x = a0[0] + (a1[0] - a0[0]) * u, y = a0[1] + (a1[1] - a0[1]) * u; disco(ca, x, y, w * 0.012 + 2); disco(ca, x, y, w * 0.006 + 1, 1, 'restar'); }
@@ -253,10 +260,10 @@ function c3(t: Toma) {
 function r1(t: Toma) {
   const { pie } = salaTrono(t, ROJA, 781);
   const H = t.capa('heroe', 3, 0.55), HL = t.capa('heroe_luz', 4, 0.55, 'sumar', { anim: { tipo: 'latir', alfa: [0.6, 1], periodo_s: 1, notas: 'la Brasa le late en el pecho' } });
-  const luzH: Luz = { amb: [0.5, 0.3, 0.26], desat: 0.2, clave: { dir: [0, 1], k: 0.8, c: [1.5, 0.8, 0.6] }, bordes: [{ dx: 0, dy: 1, c: [1.3, 0.4, 0.1], k: 1.3, ancho: 1.5 }, { dx: -1, dy: -1, c: [1, 0.3, 0.08], k: 0.8 }, { dx: 1, dy: -1, c: [1, 0.75, 0.35], k: 0.6 }], abajo: { c: [1, 0.3, 0.06], k: 0.9 }, emite: emiteOro, cEmite: [1, 0.6, 0.2] };
-  const he = figura(H, HL, heroe('s', 'quieto', 0, 6, true), pie[0], pie[1] - 60, 430, luzH);
+  const luzH: Luz = { amb: [1.05, 0.78, 0.68], desat: 0.1, clave: { dir: [0.3, 1], k: 0.75, c: [1.4, 0.95, 0.75] }, bordes: [{ dx: 0, dy: 1, c: [1.3, 0.4, 0.1], k: 1.2, ancho: 1.5 }, { dx: -1, dy: -1, c: [1.2, 0.45, 0.12], k: 1.1, ancho: 1.5 }, { dx: 1, dy: -1, c: [1, 0.8, 0.45], k: 0.9, ancho: 1.5 }], abajo: { c: [1, 0.3, 0.06], k: 0.7 }, emite: emiteOro, cEmite: [1, 0.65, 0.25], kEmite: 1 };
+  const he = figura(H, HL, heroe('s', 'quieto', 0, 7, true), pie[0], pie[1] - 60, 470, luzH);
   const b = cajaPose(he, pie[0], pie[1] - 60), mh = mascaraPose(CW, CH, he, pie[0], pie[1] - 60);
-  const ve = M(); grietas(ve, (b.x0 + b.x1) / 2, b.y0 + (b.y1 - b.y0) * 0.38, 200, 8, 782, 2); for (let i = 0; i < CW * CH; i++) ve.d[i] *= mh.d[i];
+  const ve = M(); grietas(ve, (b.x0 + b.x1) / 2, b.y0 + (b.y1 - b.y0) * 0.38, 110, 5, 782, 1.4); for (let i = 0; i < CW * CH; i++) ve.d[i] *= mh.d[i];
   pintar(H, ve, [1, 0.45, 0.12]); brillo(HL, desenfocada(ve, 5), [1, 0.35, 0.08], 1.1);
   halo(HL, (b.x0 + b.x1) / 2, b.y0 + (b.y1 - b.y0) * 0.38, 90, [1, 0.4, 0.08], 1.1, 1, true);
   for (const d of [-1, 1]) halo(HL, (b.x0 + b.x1) / 2 + d * 7, b.y0 + (b.y1 - b.y0) * 0.1, 12, [1, 0.5, 0.15], 1.4, 1, true);
@@ -309,14 +316,21 @@ function r2(t: Toma) {
 function f1(t: Toma) {
   const { pie } = salaTrono(t, FRIA, 801);
   const H = t.capa('heroe', 3, 0.55);
-  const luzH: Luz = { amb: [0.42, 0.45, 0.52], desat: 0.75, clave: { dir: [-0.5, -1], k: 0.7, c: [0.9, 1, 1.15] }, bordes: [{ dx: -1, dy: -1, c: [0.7, 0.8, 1], k: 1.1, ancho: 1.5 }, { dx: 1, dy: 0, c: [0.4, 0.45, 0.55], k: 0.4 }] };
-  const he = figura(H, undefined, heroe('s', 'quieto', 0, 6, true), pie[0], pie[1] - 60, 430, luzH);
-  const mh = mascaraPose(CW, CH, he, pie[0], pie[1] - 60), es = M();
-  for (let i = 0; i < CW * CH; i++) es.d[i] = mh.d[i] * suave(0.5, 0.8, fbm((i % CW) / 24, Math.floor(i / CW) / 24, 4, 802)); pintar(H, es, [0.75, 0.82, 0.95], 0.3);
+  const luzH: Luz = { amb: [0.78, 0.84, 0.98], desat: 0.55, clave: { dir: [-0.6, -1], k: 0.8, c: [0.9, 1, 1.25] }, bordes: [{ dx: -1, dy: -1, c: [0.85, 0.95, 1.2], k: 1.3, ancho: 1.5 }, { dx: 1, dy: -1, c: [0.55, 0.65, 0.85], k: 0.7, ancho: 1.5 }, { dx: 0, dy: -1, c: [0.9, 0.95, 1.1], k: 0.6 }] };
+  const he = figura(H, undefined, heroe('s', 'quieto', 0, 7, true), pie[0], pie[1] - 60, 470, luzH);
+  const hb = cajaPose(he, pie[0], pie[1] - 60), mh = mascaraPose(CW, CH, he, pie[0], pie[1] - 60);
+  // escarcha: un filo blanco y fino solo en lo que mira arriba
+  contraluz(H, mh, 0, -2, [0.75, 0.82, 0.95], 0.8, undefined, 0.6);
+  // el vaho de la boca, que sube y se deshace
+  const HV = t.capa('vaho', 4, 0.55, 'normal', { anim: { tipo: 'latir', alfa: [0.2, 0.7], periodo_s: 3.2, notas: 'respira despacio' } });
+  const bx = (hb.x0 + hb.x1) / 2 + 6, by = hb.y0 + (hb.y1 - hb.y0) * 0.14, va = M();
+  for (let k = 0; k < 7; k++) disco(va, bx + k * 6 + Math.sin(k) * 4, by - k * 9, 8 + k * 4);
+  for (let i = 0; i < CW * CH; i++) va.d[i] *= 0.4 + 0.6 * fbm((i % CW) / 10, Math.floor(i / CW) / 10, 3, 805);
+  pintar(HV, desenfocada(va, 7), [0.72, 0.78, 0.88], 0.45);
   const F = t.capa('frente', 5, 1);
   const e = escaleraOro(F, CX, CH + 40, 640, 700, 260, 803, 0.5);
-  const nv = M(); for (let i = 0; i < CW * CH; i++) nv.d[i] = e.esc.d[i] * suave(0.5, 0.6, fbm((i % CW) / 20, Math.floor(i / CW) / 6, 4, 804)); pintar(F, nv, [0.7, 0.75, 0.85], 0.85);
   for (let i = 0; i < CW * CH; i++) { const j = i * 4, g = (F.d[j] + F.d[j + 1] + F.d[j + 2]) / 3; F.d[j] = F.d[j] * 0.4 + g * 0.6 * 0.9; F.d[j + 1] = F.d[j + 1] * 0.4 + g * 0.6; F.d[j + 2] = F.d[j + 2] * 0.4 + g * 0.6 * 1.2; }
+  contraluz(F, e.esc, 0, -2, [0.75, 0.82, 0.95], 0.7, undefined, 0.6);
   const luzS: Luz = { amb: [0.34, 0.36, 0.42], desat: 0.8, bordes: [{ dx: 0, dy: -1, c: [0.7, 0.8, 1], k: 1 }] };
   figura(F, undefined, modelo('cel_estatua_suplica', 'encogido', 0, 3), 230, 820, 320, luzS);
   figura(F, undefined, modelo('cel_estatua_suplica', 'rodillas', 0, 3), 1180, 820, 320, luzS, { espejo: true });
@@ -332,13 +346,13 @@ function f2(t: Toma) {
   const I = t.capa('islas', 1, 0.25);
   const luzI: Luz = { amb: [0.34, 0.36, 0.42], desat: 0.8, clave: { dir: [-1, -1], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [0.7, 0.8, 1], k: 1 }], niebla: { c: [0.25, 0.28, 0.34], k: 0.4 } };
   for (const [x, y, al, v] of [[260, 380, 200, 'con_estatua'], [620, 300, 140, 'chica'], [1150, 420, 240, 'con_columnas']] as [number, number, number, string][]) figura(I, undefined, modelo('cel_isla_ruinas', v, 0, 2), x, y, al, luzI);
-  const nI = M(); for (let i = 1; i < CW * CH; i++) nI.d[i] = I.d[i * 4 + 3] * sat((I.d[i * 4 + 3] - (i >= CW ? I.d[(i - CW) * 4 + 3] : 0)) * 3 + 0.25) * suave(0.45, 0.75, fbm((i % CW) / 26, Math.floor(i / CW) / 26, 4, 814)); pintar(I, nI, [0.75, 0.8, 0.9], 0.45);
+  const aI = M(); for (let i = 0; i < CW * CH; i++) aI.d[i] = I.d[i * 4 + 3]; contraluz(I, aI, 0, -3, [0.8, 0.86, 1], 0.9, undefined, 0.8);
   const B = t.capa('borde', 2, 0.7);
   const bo = M(); rellenar(bo, [[560, CH + 5], [600, 700], [760, 660], [1000, 650], [1250, 670], [1420, 660], [1420, CH + 5]]);
   pintarConRuido(B, bo, [0.32, 0.26, 0.16], 0.3, 20, 815);
-  const nb = M(); for (let i = 0; i < CW * CH; i++) nb.d[i] = bo.d[i] * suave(0.45, 0.55, fbm((i % CW) / 16, Math.floor(i / CW) / 5, 4, 816)); pintar(B, nb, [0.72, 0.76, 0.86], 0.9);
+  const nb = M(); rellenar(nb, [[600, 702], [760, 662], [1000, 652], [1250, 672], [1420, 662], [1420, 690], [1250, 694], [1000, 676], [760, 688], [610, 724]]); desenfocar(nb.d, CW, CH, 3); pintarConRuido(B, nb, [0.62, 0.66, 0.76], 0.08, 30, 816);
   contraluz(B, bo, -2, -2, [0.7, 0.8, 1], 0.7);
-  figura(B, undefined, heroe('no', 'quieto', 0, 5, true), 820, 670, 250, { amb: [0.3, 0.32, 0.38], desat: 0.7, clave: { dir: [-1, -0.5], k: 0.6 }, bordes: [{ dx: -1, dy: -1, c: [0.75, 0.85, 1], k: 1.1 }] });
+  figura(B, undefined, heroe('no', 'quieto', 0, 5, true), 820, 670, 260, { amb: [0.6, 0.65, 0.78], desat: 0.5, clave: { dir: [-1, -0.5], k: 0.7, c: [0.9, 1, 1.2] }, bordes: [{ dx: -1, dy: -1, c: [0.8, 0.9, 1.15], k: 1.3 }, { dx: 0, dy: -1, c: [0.8, 0.88, 1], k: 0.6 }] });
   t.particulas = 'nieve';
 }
 
