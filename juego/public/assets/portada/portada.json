@@ -538,6 +538,5170 @@
   ],
   "notas": "Opacas. El título del acto va centrado en zonas.titulo (color_titulo con contorno negro) y la narración en zonas.narracion, en hueso claro. Entrar con fundido de 0.8 s y un acercamiento lento (escala 1.0 a 1.04 en 8 s)."
  },
+ "cinematicas": {
+  "capa": {
+   "w": 1408,
+   "h": 792,
+   "margen_x": 64,
+   "margen_y": 36
+  },
+  "acto_1": {
+   "planos": [
+    {
+     "id": "p1_abadesa",
+     "que": "En el Pozo de la Brasa, la Abadesa Ilvara cae sobre la boca del pozo; la brasa le revienta el pecho.",
+     "dur": 6.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/acto_1/p1_abadesa_fondo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "pozo",
+       "archivo": "cinematicas/acto_1/p1_abadesa_pozo.webp",
+       "x": 212,
+       "y": 598,
+       "w": 946,
+       "h": 192,
+       "paralaje": 0.4,
+       "mezcla": "normal"
+      },
+      {
+       "id": "pozo_luz",
+       "archivo": "cinematicas/acto_1/p1_abadesa_pozo_luz.webp",
+       "x": 394,
+       "y": 0,
+       "w": 621,
+       "h": 792,
+       "paralaje": 0.4,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.75,
+         1
+        ],
+        "periodo_s": 1.8
+       }
+      },
+      {
+       "id": "abadesa",
+       "archivo": "cinematicas/acto_1/p1_abadesa_abadesa.webp",
+       "x": 493,
+       "y": 124,
+       "w": 422,
+       "h": 524,
+       "paralaje": 0.55,
+       "mezcla": "normal"
+      },
+      {
+       "id": "abadesa_luz",
+       "archivo": "cinematicas/acto_1/p1_abadesa_abadesa_luz.webp",
+       "x": 637,
+       "y": 10,
+       "w": 256,
+       "h": 576,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "hz": 6
+       }
+      },
+      {
+       "id": "rayos",
+       "archivo": "cinematicas/acto_1/p1_abadesa_rayos.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.45,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 1.8
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_1/p1_abadesa_frente.webp",
+       "x": 13,
+       "y": 267,
+       "w": 1395,
+       "h": 525,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fuego_frente_0_0",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1110,
+       "y": 430,
+       "w": 20,
+       "h": 41,
+       "paralaje": 1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "fuego_frente_0_1",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1140,
+       "y": 430,
+       "w": 20,
+       "h": 41,
+       "paralaje": 1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "fuego_frente_0_2",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1170,
+       "y": 430,
+       "w": 20,
+       "h": 41,
+       "paralaje": 1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "fuego_frente_0_3",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1200,
+       "y": 430,
+       "w": 20,
+       "h": 41,
+       "paralaje": 1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.11
+       }
+      },
+      {
+       "id": "fuego_frente_0_4",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1230,
+       "y": 430,
+       "w": 20,
+       "h": 41,
+       "paralaje": 1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.48
+       }
+      },
+      {
+       "id": "goteo_sangre_frente_1_0",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 116,
+       "y": 783,
+       "w": 32,
+       "h": 128,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 12,
+        "w": 32,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "goteo_sangre_frente_1_1",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 193,
+       "y": 743,
+       "w": 29,
+       "h": 115,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 12,
+        "w": 32,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "goteo_sangre_frente_1_2",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 680,
+       "y": 552,
+       "w": 32,
+       "h": 128,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 12,
+        "w": 32,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "velas_luz",
+       "archivo": "cinematicas/acto_1/p1_abadesa_velas_luz.webp",
+       "x": 1054,
+       "y": 392,
+       "w": 253,
+       "h": 133,
+       "paralaje": 1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.75,
+         1
+        ],
+        "hz": 8
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 8,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -11,
+       "zoom": 1.1
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 1.4,
+       "fuerza": 8
+      }
+     },
+     "narracion": {
+      "es": "La Abadesa cayó con el pecho abierto, cantando todavía. La brasa no cayó con ella.",
+      "en": "The Abbess fell with her chest torn open, still singing. The ember did not fall with her."
+     },
+     "fundido": {
+      "entra": 0.25,
+      "sale": 1,
+      "color_entra": "blanco"
+     },
+     "particulas": "brasas"
+    },
+    {
+     "id": "p2_campanas",
+     "que": "Afuera, la brasa sube por el pozo y sale por el campanario de Santa Oria rumbo al sur; las campanas doblan.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_1/p2_campanas_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "estela",
+       "archivo": "cinematicas/acto_1/p2_campanas_estela.webp",
+       "x": 158,
+       "y": 82,
+       "w": 826,
+       "h": 353,
+       "paralaje": 0.1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.8,
+         1
+        ],
+        "periodo_s": 1.2
+       }
+      },
+      {
+       "id": "abadia",
+       "archivo": "cinematicas/acto_1/p2_campanas_abadia.webp",
+       "x": 0,
+       "y": 132,
+       "w": 1408,
+       "h": 660,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "abadia_luz",
+       "archivo": "cinematicas/acto_1/p2_campanas_abadia_luz.webp",
+       "x": 725,
+       "y": 216,
+       "w": 398,
+       "h": 487,
+       "paralaje": 0.3,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.55,
+         1
+        ],
+        "periodo_s": 2.2,
+        "notas": "cada pico es un golpe de campana"
+       }
+      },
+      {
+       "id": "cuervo_abadia_luz_0_0",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 678,
+       "y": 282,
+       "w": 45,
+       "h": 34,
+       "paralaje": 0.4,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "cuervo_abadia_luz_0_1",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 752,
+       "y": 246,
+       "w": 35,
+       "h": 26,
+       "paralaje": 0.4,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "cuervo_abadia_luz_0_2",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 624,
+       "y": 237,
+       "w": 32,
+       "h": 24,
+       "paralaje": 0.4,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "cuervo_abadia_luz_0_3",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 801,
+       "y": 314,
+       "w": 38,
+       "h": 29,
+       "paralaje": 0.4,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.11
+       }
+      },
+      {
+       "id": "cuervo_abadia_luz_0_4",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 546,
+       "y": 308,
+       "w": 29,
+       "h": 22,
+       "paralaje": 0.4,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.48
+       }
+      },
+      {
+       "id": "niebla",
+       "archivo": "cinematicas/acto_1/p2_campanas_niebla.webp",
+       "x": 0,
+       "y": 562,
+       "w": 1408,
+       "h": 157,
+       "paralaje": 0.5,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "deriva",
+        "px_por_segundo": 8,
+        "enrollar": true
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_1/p2_campanas_frente.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "goteo_sangre_frente_0_0",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 1166,
+       "y": 550,
+       "w": 26,
+       "h": 102,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 12,
+        "w": 32,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 40,
+       "y": 10,
+       "zoom": 1.03
+      },
+      "hasta": {
+       "x": -40,
+       "y": -12,
+       "zoom": 1.03
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Subió por el pozo como una chispa que se niega a morir, y en Santa Oria las campanas doblaron una última vez.",
+      "en": "It rose up the well like a spark that refuses to die, and in Santa Oria the bells tolled one last time."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1
+     },
+     "particulas": "lluvia"
+    },
+    {
+     "id": "p3_camino",
+     "que": "El héroe en el cruce del páramo, junto a la horca; al sur cae una estrella roja. La Marca le late en el brazo.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_1/p3_camino_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "brasa",
+       "archivo": "cinematicas/acto_1/p3_camino_brasa.webp",
+       "x": 460,
+       "y": 274,
+       "w": 138,
+       "h": 219,
+       "paralaje": 0.08,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "periodo_s": 1.4
+       }
+      },
+      {
+       "id": "lejos",
+       "archivo": "cinematicas/acto_1/p3_camino_lejos.webp",
+       "x": 0,
+       "y": 400,
+       "w": 1408,
+       "h": 392,
+       "paralaje": 0.2,
+       "mezcla": "normal"
+      },
+      {
+       "id": "cuervo_lejos_0_0",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 407,
+       "y": 350,
+       "w": 26,
+       "h": 19,
+       "paralaje": 0.2,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 9,
+        "w": 64,
+        "h": 48,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "cuervo_lejos_0_1",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 459,
+       "y": 321,
+       "w": 22,
+       "h": 17,
+       "paralaje": 0.2,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 9,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "cuervo_lejos_0_2",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 370,
+       "y": 332,
+       "w": 19,
+       "h": 14,
+       "paralaje": 0.2,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 9,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "medio",
+       "archivo": "cinematicas/acto_1/p3_camino_medio.webp",
+       "x": 0,
+       "y": 292,
+       "w": 1408,
+       "h": 500,
+       "paralaje": 0.5,
+       "mezcla": "normal"
+      },
+      {
+       "id": "heroe",
+       "archivo": "cinematicas/acto_1/p3_camino_heroe.webp",
+       "x": 690,
+       "y": 360,
+       "w": 367,
+       "h": 432,
+       "paralaje": 0.8,
+       "mezcla": "normal"
+      },
+      {
+       "id": "marca",
+       "archivo": "cinematicas/acto_1/p3_camino_marca.webp",
+       "x": 700,
+       "y": 559,
+       "w": 90,
+       "h": 90,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.4,
+         1
+        ],
+        "periodo_s": 1.6,
+        "notas": "la Marca: late como un corazón"
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_1/p3_camino_frente.webp",
+       "x": 0,
+       "y": 415,
+       "w": 1408,
+       "h": 377,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": -20,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 14,
+       "y": -4,
+       "zoom": 1.07
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Tomó el camino del sur, hacia Sahrim, donde los reyes no mueren: solo duermen. En tu brazo, la Marca se calentó un poco más.",
+      "en": "It took the southern road, toward Sahrim, where kings do not die: they only sleep. On your arm, the Mark grew a little warmer."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1.6
+     },
+     "particulas": "ceniza"
+    }
+   ]
+  },
+  "acto_2": {
+   "planos": [
+    {
+     "id": "p1_rey",
+     "que": "En la Cámara del Rey, Khamer-Ul se deshace en arena bajo el haz de luz; la máscara de oro cae.",
+     "dur": 6.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/acto_2/p1_rey_fondo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "sarcofagos",
+       "archivo": "cinematicas/acto_2/p1_rey_sarcofagos.webp",
+       "x": 42,
+       "y": 518,
+       "w": 1346,
+       "h": 264,
+       "paralaje": 0.4,
+       "mezcla": "normal"
+      },
+      {
+       "id": "haz",
+       "archivo": "cinematicas/acto_2/p1_rey_haz.webp",
+       "x": 474,
+       "y": 0,
+       "w": 325,
+       "h": 792,
+       "paralaje": 0.35,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.8,
+         1
+        ],
+        "periodo_s": 3.5
+       }
+      },
+      {
+       "id": "rey",
+       "archivo": "cinematicas/acto_2/p1_rey_rey.webp",
+       "x": 506,
+       "y": 307,
+       "w": 468,
+       "h": 481,
+       "paralaje": 0.6,
+       "mezcla": "normal"
+      },
+      {
+       "id": "rey_luz",
+       "archivo": "cinematicas/acto_2/p1_rey_rey_luz.webp",
+       "x": 614,
+       "y": 309,
+       "w": 264,
+       "h": 468,
+       "paralaje": 0.6,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "hz": 5
+       }
+      },
+      {
+       "id": "humo_rey_luz_0_0",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 598,
+       "y": 588,
+       "w": 205,
+       "h": 205,
+       "paralaje": 0.6,
+       "mezcla": "normal",
+       "alfa": 0.55,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "humo_rey_luz_0_1",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 707,
+       "y": 599,
+       "w": 166,
+       "h": 166,
+       "paralaje": 0.6,
+       "mezcla": "normal",
+       "alfa": 0.55,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_2/p1_rey_frente.webp",
+       "x": 0,
+       "y": 671,
+       "w": 1311,
+       "h": 121,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -2,
+       "zoom": 1.09
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 1.2,
+       "fuerza": 6
+      }
+     },
+     "narracion": {
+      "es": "Khamer-Ul volvió al polvo de donde lo habían sacado. Ni siquiera su sombra vino a despedirlo.",
+      "en": "Khamer-Ul returned to the dust he was raised from. Not even his shadow came to say farewell."
+     },
+     "fundido": {
+      "entra": 0.25,
+      "sale": 1,
+      "color_entra": "blanco"
+     },
+     "particulas": "ceniza"
+    },
+    {
+     "id": "p2_coloso",
+     "que": "En el desierto rojo, el coloso enterrado se raja; la brasa huye hacia el este sobre el camino de los empalados.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_2/p2_coloso_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "estela",
+       "archivo": "cinematicas/acto_2/p2_coloso_estela.webp",
+       "x": 924,
+       "y": 84,
+       "w": 449,
+       "h": 131,
+       "paralaje": 0.1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.8,
+         1
+        ],
+        "periodo_s": 1.1
+       }
+      },
+      {
+       "id": "cuervo_estela_0_0",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 541,
+       "y": 284,
+       "w": 38,
+       "h": 29,
+       "paralaje": 0.15,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "cuervo_estela_0_1",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 624,
+       "y": 247,
+       "w": 32,
+       "h": 24,
+       "paralaje": 0.15,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "cuervo_estela_0_2",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 682,
+       "y": 306,
+       "w": 35,
+       "h": 26,
+       "paralaje": 0.15,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "cuervo_estela_0_3",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 1006,
+       "y": 268,
+       "w": 29,
+       "h": 22,
+       "paralaje": 0.15,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.11
+       }
+      },
+      {
+       "id": "coloso",
+       "archivo": "cinematicas/acto_2/p2_coloso_coloso.webp",
+       "x": 665,
+       "y": 164,
+       "w": 427,
+       "h": 431,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "coloso_luz",
+       "archivo": "cinematicas/acto_2/p2_coloso_coloso_luz.webp",
+       "x": 816,
+       "y": 150,
+       "w": 166,
+       "h": 457,
+       "paralaje": 0.3,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "hz": 4
+       }
+      },
+      {
+       "id": "dunas",
+       "archivo": "cinematicas/acto_2/p2_coloso_dunas.webp",
+       "x": 0,
+       "y": 326,
+       "w": 1408,
+       "h": 466,
+       "paralaje": 0.6,
+       "mezcla": "normal"
+      },
+      {
+       "id": "goteo_sangre_dunas_0_0",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 329,
+       "y": 508,
+       "w": 31,
+       "h": 124,
+       "paralaje": 0.6,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "goteo_sangre_dunas_1_0",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 553,
+       "y": 524,
+       "w": 23,
+       "h": 90,
+       "paralaje": 0.6,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "goteo_sangre_dunas_2_0",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 1114,
+       "y": 520,
+       "w": 28,
+       "h": 113,
+       "paralaje": 0.6,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "goteo_sangre_dunas_3_0",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 1260,
+       "y": 518,
+       "w": 36,
+       "h": 143,
+       "paralaje": 0.6,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_2/p2_coloso_frente.webp",
+       "x": 0,
+       "y": 668,
+       "w": 1408,
+       "h": 124,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": -40,
+       "y": 0,
+       "zoom": 1.03
+      },
+      "hasta": {
+       "x": 40,
+       "y": -8,
+       "zoom": 1.03
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "El segundo sello se quebró como un hueso seco. La brasa siguió el río hacia el este, donde la selva respira y el agua sangra.",
+      "en": "The second seal cracked like a dry bone. The ember followed the river east, where the jungle breathes and the water bleeds."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1
+     },
+     "particulas": "ceniza"
+    },
+    {
+     "id": "p3_rio",
+     "que": "De noche, el barco de Oyá baja el río; detrás, una figura pálida camina sobre el agua, cantando.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_2/p3_rio_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "brillos",
+       "archivo": "cinematicas/acto_2/p3_rio_brillos.webp",
+       "x": 47,
+       "y": 472,
+       "w": 559,
+       "h": 320,
+       "paralaje": 0.2,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.5,
+         1
+        ],
+        "hz": 3
+       }
+      },
+      {
+       "id": "cantor",
+       "archivo": "cinematicas/acto_2/p3_rio_cantor.webp",
+       "x": 300,
+       "y": 378,
+       "w": 64,
+       "h": 154,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "cantor_luz",
+       "archivo": "cinematicas/acto_2/p3_rio_cantor_luz.webp",
+       "x": 222,
+       "y": 325,
+       "w": 217,
+       "h": 309,
+       "paralaje": 0.3,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.5,
+         1
+        ],
+        "periodo_s": 2.6,
+        "notas": "respira con el canto"
+       }
+      },
+      {
+       "id": "barco",
+       "archivo": "cinematicas/acto_2/p3_rio_barco.webp",
+       "x": 718,
+       "y": 231,
+       "w": 564,
+       "h": 470,
+       "paralaje": 0.55,
+       "mezcla": "normal"
+      },
+      {
+       "id": "barco_luz",
+       "archivo": "cinematicas/acto_2/p3_rio_barco_luz.webp",
+       "x": 703,
+       "y": 363,
+       "w": 505,
+       "h": 249,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "hz": 6
+       }
+      },
+      {
+       "id": "fuego_barco_luz_0_0",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 755,
+       "y": 493,
+       "w": 10,
+       "h": 20,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "fuego_barco_luz_0_1",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1145,
+       "y": 487,
+       "w": 10,
+       "h": 20,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "fuego_barco_luz_0_2",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 956,
+       "y": 409,
+       "w": 9,
+       "h": 18,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_2/p3_rio_frente.webp",
+       "x": 0,
+       "y": 580,
+       "w": 1408,
+       "h": 212,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": -30,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 45,
+       "y": 1,
+       "zoom": 1.08
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Nadie habló durante el viaje. Detrás del barco, algo pálido caminaba sobre el agua, cantando.",
+      "en": "No one spoke during the voyage. Behind the ship, something pale walked upon the water, singing."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1.6
+     }
+    }
+   ]
+  },
+  "acto_3": {
+   "planos": [
+    {
+     "id": "p1_madre",
+     "que": "En el Vientre del templo, la Madre Ciénaga se abre y se hunde en su barro; los huevos revientan.",
+     "dur": 6.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/acto_3/p1_madre_fondo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "ampollas_luz",
+       "archivo": "cinematicas/acto_3/p1_madre_ampollas_luz.webp",
+       "x": 61,
+       "y": 62,
+       "w": 1221,
+       "h": 389,
+       "paralaje": 0.25,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.4,
+         1
+        ],
+        "periodo_s": 2.2
+       }
+      },
+      {
+       "id": "barro",
+       "archivo": "cinematicas/acto_3/p1_madre_barro.webp",
+       "x": 27,
+       "y": 544,
+       "w": 1379,
+       "h": 248,
+       "paralaje": 0.4,
+       "mezcla": "normal"
+      },
+      {
+       "id": "madre",
+       "archivo": "cinematicas/acto_3/p1_madre_madre.webp",
+       "x": 363,
+       "y": 344,
+       "w": 683,
+       "h": 448,
+       "paralaje": 0.55,
+       "mezcla": "normal"
+      },
+      {
+       "id": "madre_luz",
+       "archivo": "cinematicas/acto_3/p1_madre_madre_luz.webp",
+       "x": 602,
+       "y": 427,
+       "w": 212,
+       "h": 186,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 1.4
+       }
+      },
+      {
+       "id": "humo_madre_luz_0_0",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 389,
+       "y": 564,
+       "w": 230,
+       "h": 230,
+       "paralaje": 0.55,
+       "mezcla": "normal",
+       "alfa": 0.5,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "humo_madre_luz_0_1",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 828,
+       "y": 595,
+       "w": 192,
+       "h": 192,
+       "paralaje": 0.55,
+       "mezcla": "normal",
+       "alfa": 0.5,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_3/p1_madre_frente.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "goteo_sangre_frente_0_0",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 110,
+       "y": 505,
+       "w": 35,
+       "h": 141,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "goteo_sangre_frente_0_1",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 715,
+       "y": 568,
+       "w": 38,
+       "h": 154,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "goteo_sangre_frente_0_2",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 1284,
+       "y": 420,
+       "w": 32,
+       "h": 128,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": -6,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": 6,
+       "zoom": 1.08
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 1.6,
+       "fuerza": 7
+      }
+     },
+     "narracion": {
+      "es": "La Madre se abrió como un fruto podrido. De su vientre ya no salió nada vivo.",
+      "en": "The Mother split open like rotten fruit. Nothing living came out of her womb again."
+     },
+     "fundido": {
+      "entra": 0.25,
+      "sale": 1,
+      "color_entra": "blanco"
+     }
+    },
+    {
+     "id": "p2_rio",
+     "que": "Al alba, la pirámide en la niebla; el río ya no es rojo pero arrastra a los muertos. El barco espera.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_3/p2_rio_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "piramide",
+       "archivo": "cinematicas/acto_3/p2_rio_piramide.webp",
+       "x": 0,
+       "y": 152,
+       "w": 1408,
+       "h": 640,
+       "paralaje": 0.2,
+       "mezcla": "normal"
+      },
+      {
+       "id": "cuervo_piramide_0_0",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 684,
+       "y": 237,
+       "w": 32,
+       "h": 24,
+       "paralaje": 0.2,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "cuervo_piramide_0_1",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 747,
+       "y": 210,
+       "w": 26,
+       "h": 19,
+       "paralaje": 0.2,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "cuervo_piramide_0_2",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 806,
+       "y": 258,
+       "w": 29,
+       "h": 22,
+       "paralaje": 0.2,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "rio",
+       "archivo": "cinematicas/acto_3/p2_rio_rio.webp",
+       "x": 0,
+       "y": 518,
+       "w": 1408,
+       "h": 274,
+       "paralaje": 0.4,
+       "mezcla": "normal"
+      },
+      {
+       "id": "barco",
+       "archivo": "cinematicas/acto_3/p2_rio_barco.webp",
+       "x": 899,
+       "y": 313,
+       "w": 468,
+       "h": 275,
+       "paralaje": 0.5,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_3/p2_rio_frente.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 30,
+       "y": 6,
+       "zoom": 1.03
+      },
+      "hasta": {
+       "x": -30,
+       "y": -6,
+       "zoom": 1.03
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "El río dejó de sangrar, aunque todavía sabe a hierro. Oyá desató las amarras sin mirar atrás.",
+      "en": "The river stopped bleeding, though it still tastes of iron. Oya cast off without looking back."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1
+     }
+    },
+    {
+     "id": "p3_norte",
+     "que": "Al norte, en la ventisca, el rey de escarcha camina y los muertos de la montaña lo siguen.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_3/p3_norte_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "muertos",
+       "archivo": "cinematicas/acto_3/p3_norte_muertos.webp",
+       "x": 0,
+       "y": 424,
+       "w": 1408,
+       "h": 213,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "rey",
+       "archivo": "cinematicas/acto_3/p3_norte_rey.webp",
+       "x": 346,
+       "y": 226,
+       "w": 420,
+       "h": 564,
+       "paralaje": 0.6,
+       "mezcla": "normal"
+      },
+      {
+       "id": "rey_luz",
+       "archivo": "cinematicas/acto_3/p3_norte_rey_luz.webp",
+       "x": 346,
+       "y": 299,
+       "w": 382,
+       "h": 307,
+       "paralaje": 0.6,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 2
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_3/p3_norte_frente.webp",
+       "x": 0,
+       "y": 666,
+       "w": 1408,
+       "h": 126,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 5,
+       "y": -2,
+       "zoom": 1.1
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "En Hrimgard, un rey que juró no levantarse caminaba otra vez sobre la nieve. Detrás de él, en fila, sus muertos.",
+      "en": "In Hrimgard, a king who swore never to rise was walking on the snow again. Behind him, in a long line, came his dead."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 1.6
+     },
+     "particulas": "nieve"
+    }
+   ]
+  },
+  "acto_4": {
+   "planos": [
+    {
+     "id": "p1_hjaldur",
+     "que": "En el Trono de Hjaldur, el rey cae de rodillas y su hacha se parte; detrás, muertos atrapados en columnas de hielo.",
+     "dur": 6.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/acto_4/p1_hjaldur_fondo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "luz_alta",
+       "archivo": "cinematicas/acto_4/p1_hjaldur_luz_alta.webp",
+       "x": 456,
+       "y": 0,
+       "w": 492,
+       "h": 792,
+       "paralaje": 0.3,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "periodo_s": 4
+       }
+      },
+      {
+       "id": "rey",
+       "archivo": "cinematicas/acto_4/p1_hjaldur_rey.webp",
+       "x": 408,
+       "y": 390,
+       "w": 650,
+       "h": 402,
+       "paralaje": 0.6,
+       "mezcla": "normal"
+      },
+      {
+       "id": "rey_luz",
+       "archivo": "cinematicas/acto_4/p1_hjaldur_rey_luz.webp",
+       "x": 468,
+       "y": 405,
+       "w": 594,
+       "h": 387,
+       "paralaje": 0.6,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "hz": 5
+       }
+      },
+      {
+       "id": "goteo_sangre_rey_luz_0_0",
+       "archivo": "cinematicas/fx/goteo_sangre.webp",
+       "x": 689,
+       "y": 650,
+       "w": 38,
+       "h": 154,
+       "paralaje": 0.6,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_4/p1_hjaldur_frente.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1402,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -2,
+       "zoom": 1.09
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 1.5,
+       "fuerza": 8
+      }
+     },
+     "narracion": {
+      "es": "Hjaldur cayó sin un grito. El hielo se quedó con su último aliento, como se queda con todo.",
+      "en": "Hjaldur fell without a cry. The ice kept his last breath, as it keeps everything."
+     },
+     "fundido": {
+      "entra": 0.25,
+      "sale": 1,
+      "color_entra": "blanco"
+     },
+     "particulas": "nieve"
+    },
+    {
+     "id": "p2_fortin",
+     "que": "El Fortín de Vel al amanecer. Según la elección: Vigdis con su farol en la puerta, o su tumba en la nieve.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_4/p2_fortin_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fortin",
+       "archivo": "cinematicas/acto_4/p2_fortin_fortin.webp",
+       "x": 0,
+       "y": 269,
+       "w": 1408,
+       "h": 523,
+       "paralaje": 0.35,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fortin_luz",
+       "archivo": "cinematicas/acto_4/p2_fortin_fortin_luz.webp",
+       "x": 319,
+       "y": 392,
+       "w": 782,
+       "h": 183,
+       "paralaje": 0.35,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.75,
+         1
+        ],
+        "hz": 4
+       }
+      },
+      {
+       "id": "humo_fortin_luz_0_0",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 623,
+       "y": 246,
+       "w": 154,
+       "h": 154,
+       "paralaje": 0.35,
+       "mezcla": "normal",
+       "alfa": 0.55,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "humo_fortin_luz_0_1",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 282,
+       "y": 337,
+       "w": 115,
+       "h": 115,
+       "paralaje": 0.35,
+       "mezcla": "normal",
+       "alfa": 0.55,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "humo_fortin_luz_0_2",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 1022,
+       "y": 327,
+       "w": 115,
+       "h": 115,
+       "paralaje": 0.35,
+       "mezcla": "normal",
+       "alfa": 0.55,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "nieve",
+       "archivo": "cinematicas/acto_4/p2_fortin_nieve.webp",
+       "x": 0,
+       "y": 318,
+       "w": 1408,
+       "h": 474,
+       "paralaje": 0.7,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vigdis",
+       "archivo": "cinematicas/acto_4/p2_fortin_vigdis.webp",
+       "x": 532,
+       "y": 414,
+       "w": 142,
+       "h": 334,
+       "paralaje": 0.7,
+       "mezcla": "normal",
+       "si": "vigdis_viva"
+      },
+      {
+       "id": "tumba",
+       "archivo": "cinematicas/acto_4/p2_fortin_tumba.webp",
+       "x": 476,
+       "y": 435,
+       "w": 240,
+       "h": 310,
+       "paralaje": 0.7,
+       "mezcla": "normal",
+       "si": "vigdis_muerta"
+      },
+      {
+       "id": "vigdis_farol",
+       "archivo": "cinematicas/acto_4/p2_fortin_vigdis_farol.webp",
+       "x": 402,
+       "y": 440,
+       "w": 281,
+       "h": 282,
+       "paralaje": 0.7,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.75,
+         1
+        ],
+        "hz": 5
+       },
+       "si": "vigdis_viva"
+      },
+      {
+       "id": "fuego_vigdis_farol_0_0",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 536,
+       "y": 567,
+       "w": 12,
+       "h": 23,
+       "paralaje": 0.7,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0
+       },
+       "si": "vigdis_viva"
+      },
+      {
+       "id": "tumba_farol",
+       "archivo": "cinematicas/acto_4/p2_fortin_tumba_farol.webp",
+       "x": 460,
+       "y": 316,
+       "w": 281,
+       "h": 281,
+       "paralaje": 0.7,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.75,
+         1
+        ],
+        "hz": 5
+       },
+       "si": "vigdis_muerta"
+      },
+      {
+       "id": "fuego_tumba_farol_0_0",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 594,
+       "y": 444,
+       "w": 12,
+       "h": 23,
+       "paralaje": 0.7,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0
+       },
+       "si": "vigdis_muerta"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 20,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": -15,
+       "y": 0,
+       "zoom": 1.07
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Cuatro sellos rotos. En el fortín, alguien dejó una luz encendida.",
+      "en": "Four seals broken. In the fort, someone left a light burning."
+     },
+     "narracion_si": {
+      "vigdis_viva": {
+       "es": "Vigdis te esperó en la puerta con el farol encendido. «El frío conserva», dijo. «A mí también.»",
+       "en": "Vigdis waited at the gate with her lantern lit. \"Cold preserves,\" she said. \"Me as well.\""
+      },
+      "vigdis_muerta": {
+       "es": "A Vigdis la enterraron junto a la muralla, con su farol encima. Nadie lo apaga. Nadie se atreve.",
+       "en": "They buried Vigdis beside the wall, with her lantern on the grave. No one puts it out. No one dares."
+      }
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1
+     },
+     "particulas": "nieve"
+    },
+    {
+     "id": "p3_herida",
+     "que": "Al sur, más allá de los picos, el cielo se abre como una boca de fuego; cuatro brasas vuelan hacia ella.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_4/p3_herida_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "brasas",
+       "archivo": "cinematicas/acto_4/p3_herida_brasas.webp",
+       "x": 157,
+       "y": 97,
+       "w": 1154,
+       "h": 384,
+       "paralaje": 0.1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.8,
+         1
+        ],
+        "hz": 3
+       }
+      },
+      {
+       "id": "herida_luz",
+       "archivo": "cinematicas/acto_4/p3_herida_herida_luz.webp",
+       "x": 387,
+       "y": 0,
+       "w": 747,
+       "h": 627,
+       "paralaje": 0.08,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "periodo_s": 2.4,
+        "notas": "la boca respira"
+       }
+      },
+      {
+       "id": "picos",
+       "archivo": "cinematicas/acto_4/p3_herida_picos.webp",
+       "x": 0,
+       "y": 522,
+       "w": 1408,
+       "h": 270,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "heroe",
+       "archivo": "cinematicas/acto_4/p3_herida_heroe.webp",
+       "x": 0,
+       "y": 289,
+       "w": 1271,
+       "h": 503,
+       "paralaje": 0.75,
+       "mezcla": "normal"
+      },
+      {
+       "id": "marca",
+       "archivo": "cinematicas/acto_4/p3_herida_marca.webp",
+       "x": 414,
+       "y": 417,
+       "w": 79,
+       "h": 78,
+       "paralaje": 0.75,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.4,
+         1
+        ],
+        "periodo_s": 0.9,
+        "notas": "la Marca late más rápido"
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 10,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 5,
+       "y": -15,
+       "zoom": 1.1
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Cuatro brasas sueltas buscaban volver a juntarse. Sobre la Herida, el cielo se abrió como una boca que no termina de gritar.",
+      "en": "Four loose embers sought to come together again. Above the Wound, the sky opened like a mouth that never finishes screaming."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1.6
+     },
+     "particulas": "ceniza"
+    }
+   ]
+  },
+  "acto_5": {
+   "planos": [
+    {
+     "id": "p1_ozmaren",
+     "que": "En el Corazón de la Brasa, Ozmaren revienta en fuego: el pecho se abre y las alas arden.",
+     "dur": 6.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/acto_5/p1_ozmaren_fondo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "lava_luz",
+       "archivo": "cinematicas/acto_5/p1_ozmaren_lava_luz.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 681,
+       "paralaje": 0.25,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.75,
+         1
+        ],
+        "hz": 3
+       }
+      },
+      {
+       "id": "ozmaren",
+       "archivo": "cinematicas/acto_5/p1_ozmaren_ozmaren.webp",
+       "x": 428,
+       "y": 195,
+       "w": 553,
+       "h": 597,
+       "paralaje": 0.55,
+       "mezcla": "normal"
+      },
+      {
+       "id": "ozmaren_luz",
+       "archivo": "cinematicas/acto_5/p1_ozmaren_ozmaren_luz.webp",
+       "x": 91,
+       "y": 0,
+       "w": 1232,
+       "h": 792,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "hz": 7
+       }
+      },
+      {
+       "id": "fuego_ozmaren_luz_0_0",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 466,
+       "y": 586,
+       "w": 77,
+       "h": 154,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "fuego_ozmaren_luz_0_1",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 889,
+       "y": 572,
+       "w": 90,
+       "h": 179,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "fuego_ozmaren_luz_0_2",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 632,
+       "y": 640,
+       "w": 64,
+       "h": 128,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "fuego_ozmaren_luz_0_3",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 151,
+       "y": 582,
+       "w": 58,
+       "h": 115,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.11
+       }
+      },
+      {
+       "id": "fuego_ozmaren_luz_0_4",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1211,
+       "y": 592,
+       "w": 58,
+       "h": 115,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.48
+       }
+      },
+      {
+       "id": "rayos",
+       "archivo": "cinematicas/acto_5/p1_ozmaren_rayos.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.5,
+       "mezcla": "sumar"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_5/p1_ozmaren_frente.webp",
+       "x": 0,
+       "y": 419,
+       "w": 1408,
+       "h": 373,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente_luz",
+       "archivo": "cinematicas/acto_5/p1_ozmaren_frente_luz.webp",
+       "x": 174,
+       "y": 732,
+       "w": 1069,
+       "h": 60,
+       "paralaje": 1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "periodo_s": 1.6
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -4,
+       "zoom": 1.1
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 2.2,
+       "fuerza": 12
+      }
+     },
+     "narracion": {
+      "es": "Ozmaren cayó. La sed que bajó a beber se quedó sin boca.",
+      "en": "Ozmaren fell. The thirst that came down to drink was left without a mouth."
+     },
+     "fundido": {
+      "entra": 0.3,
+      "sale": 0.8,
+      "color_entra": "blanco",
+      "color_sale": "rojo"
+     },
+     "particulas": "brasas"
+    },
+    {
+     "id": "p2_eleccion",
+     "que": "Sobre la ceniza de Ozmaren, el héroe con la Brasa en el puño. Según la elección: se apaga y la Marca queda gris, o entra en él y lo enciende.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/acto_5/p2_eleccion_fondo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "ceniza_ozmaren",
+       "archivo": "cinematicas/acto_5/p2_eleccion_ceniza_ozmaren.webp",
+       "x": 0,
+       "y": 305,
+       "w": 1408,
+       "h": 434,
+       "paralaje": 0.4,
+       "mezcla": "normal"
+      },
+      {
+       "id": "heroe_gris",
+       "archivo": "cinematicas/acto_5/p2_eleccion_heroe_gris.webp",
+       "x": 832,
+       "y": 375,
+       "w": 207,
+       "h": 417,
+       "paralaje": 0.7,
+       "mezcla": "normal",
+       "si": "brasa_destruir"
+      },
+      {
+       "id": "heroe_fuego",
+       "archivo": "cinematicas/acto_5/p2_eleccion_heroe_fuego.webp",
+       "x": 832,
+       "y": 375,
+       "w": 207,
+       "h": 417,
+       "paralaje": 0.7,
+       "mezcla": "normal",
+       "si": "brasa_absorber"
+      },
+      {
+       "id": "brasa_apagada",
+       "archivo": "cinematicas/acto_5/p2_eleccion_brasa_apagada.webp",
+       "x": 815,
+       "y": 541,
+       "w": 111,
+       "h": 112,
+       "paralaje": 0.7,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.3,
+         0.6
+        ],
+        "periodo_s": 3
+       },
+       "si": "brasa_destruir"
+      },
+      {
+       "id": "humo_brasa_apagada_0_0",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 819,
+       "y": 501,
+       "w": 102,
+       "h": 102,
+       "paralaje": 0.7,
+       "mezcla": "normal",
+       "alfa": 0.6,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0
+       },
+       "si": "brasa_destruir"
+      },
+      {
+       "id": "humo_brasa_apagada_0_1",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 810,
+       "y": 420,
+       "w": 141,
+       "h": 141,
+       "paralaje": 0.7,
+       "mezcla": "normal",
+       "alfa": 0.6,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0.37
+       },
+       "si": "brasa_destruir"
+      },
+      {
+       "id": "brasa_viva",
+       "archivo": "cinematicas/acto_5/p2_eleccion_brasa_viva.webp",
+       "x": 713,
+       "y": 400,
+       "w": 445,
+       "h": 392,
+       "paralaje": 0.7,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 0.8
+       },
+       "si": "brasa_absorber"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": 2,
+       "zoom": 1.09
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "De la ceniza rodó una brasa hasta tus pies, y tu Marca respondió.",
+      "en": "From the ash an ember rolled to your feet, and your Mark answered."
+     },
+     "narracion_si": {
+      "brasa_destruir": {
+       "es": "Cerraste la mano hasta que la Brasa dejó de latir. Tu Marca quedó gris, como un nombre olvidado.",
+       "en": "You closed your hand until the Ember stopped beating. Your Mark turned grey, like a forgotten name."
+      },
+      "brasa_absorber": {
+       "es": "La Marca bebió la Brasa como agua en el desierto. Desde entonces tu sombra es tibia.",
+       "en": "The Mark drank the Ember like water in the desert. Since then your shadow has been warm."
+      }
+     },
+     "fundido": {
+      "entra": 0.8,
+      "sale": 1.2,
+      "color_entra": "rojo"
+     },
+     "particulas": "ceniza"
+    },
+    {
+     "id": "p3_mar",
+     "que": "Muy al norte, de noche, el mar se parte en dos bajo un rayo; las agujas de una ciudad empiezan a salir del agua.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_5/p3_mar_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "relampago",
+       "archivo": "cinematicas/acto_5/p3_mar_relampago.webp",
+       "x": 273,
+       "y": 0,
+       "w": 863,
+       "h": 546,
+       "paralaje": 0.06,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0,
+         1
+        ],
+        "periodo_s": 3.1,
+        "notas": "un fogonazo por ciclo; acompaña la sacudida"
+       }
+      },
+      {
+       "id": "grieta",
+       "archivo": "cinematicas/acto_5/p3_mar_grieta.webp",
+       "x": 0,
+       "y": 17,
+       "w": 1408,
+       "h": 775,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "grieta_luz",
+       "archivo": "cinematicas/acto_5/p3_mar_grieta_luz.webp",
+       "x": 510,
+       "y": 323,
+       "w": 389,
+       "h": 385,
+       "paralaje": 0.3,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 2.2
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_5/p3_mar_frente.webp",
+       "x": 0,
+       "y": 514,
+       "w": 1408,
+       "h": 278,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 6,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -7,
+       "zoom": 1.08
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 7,
+       "fuerza": 5
+      }
+     },
+     "narracion": {
+      "es": "Esa noche, muy al norte, el mar se partió en dos.",
+      "en": "That night, far to the north, the sea split in two."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 1
+     },
+     "particulas": "lluvia"
+    },
+    {
+     "id": "p4_ysmeral",
+     "que": "Ysmeral, la Ciudad Ahogada, ya afuera del agua con sus campanas; el barco de Oyá varado en la costa.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_5/p4_ysmeral_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "catedral",
+       "archivo": "cinematicas/acto_5/p4_ysmeral_catedral.webp",
+       "x": 0,
+       "y": 35,
+       "w": 1408,
+       "h": 757,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "catedral_luz",
+       "archivo": "cinematicas/acto_5/p4_ysmeral_catedral_luz.webp",
+       "x": 365,
+       "y": 154,
+       "w": 346,
+       "h": 304,
+       "paralaje": 0.25,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.55,
+         1
+        ],
+        "periodo_s": 2.6,
+        "notas": "cada pico, un golpe de campana"
+       }
+      },
+      {
+       "id": "brillos",
+       "archivo": "cinematicas/acto_5/p4_ysmeral_brillos.webp",
+       "x": 339,
+       "y": 502,
+       "w": 455,
+       "h": 290,
+       "paralaje": 0.25,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.5,
+         1
+        ],
+        "hz": 2
+       }
+      },
+      {
+       "id": "barco",
+       "archivo": "cinematicas/acto_5/p4_ysmeral_barco.webp",
+       "x": 813,
+       "y": 341,
+       "w": 595,
+       "h": 451,
+       "paralaje": 0.55,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_5/p4_ysmeral_frente.webp",
+       "x": 0,
+       "y": 596,
+       "w": 1408,
+       "h": 196,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": -40,
+       "y": 0,
+       "zoom": 1.04
+      },
+      "hasta": {
+       "x": 30,
+       "y": -6,
+       "zoom": 1.04
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Del fondo subió Ysmeral con sus campanas todavía sonando. Desde la proa varada, parecían llamar a alguien.",
+      "en": "From the depths rose Ysmeral, its bells still ringing. From the stranded prow, they seemed to be calling someone."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1.6
+     },
+     "particulas": "lluvia"
+    }
+   ]
+  },
+  "acto_6": {
+   "planos": [
+    {
+     "id": "p1_campana",
+     "que": "En el Campanario Hundido, la Campana que Ahoga se raja; el agua estalla y la sacerdotisa se suelta de las cadenas.",
+     "dur": 6.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/acto_6/p1_campana_fondo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "campana",
+       "archivo": "cinematicas/acto_6/p1_campana_campana.webp",
+       "x": 201,
+       "y": 336,
+       "w": 1005,
+       "h": 456,
+       "paralaje": 0.55,
+       "mezcla": "normal"
+      },
+      {
+       "id": "campana_luz",
+       "archivo": "cinematicas/acto_6/p1_campana_campana_luz.webp",
+       "x": 201,
+       "y": 336,
+       "w": 1005,
+       "h": 456,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 1.2
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_6/p1_campana_frente.webp",
+       "x": 134,
+       "y": 233,
+       "w": 1227,
+       "h": 559,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "goteo_agua_frente_0_0",
+       "archivo": "cinematicas/fx/goteo_agua.webp",
+       "x": 284,
+       "y": 36,
+       "w": 32,
+       "h": 128,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "goteo_agua_frente_0_1",
+       "archivo": "cinematicas/fx/goteo_agua.webp",
+       "x": 507,
+       "y": 40,
+       "w": 26,
+       "h": 102,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "goteo_agua_frente_0_2",
+       "archivo": "cinematicas/fx/goteo_agua.webp",
+       "x": 884,
+       "y": 36,
+       "w": 32,
+       "h": 128,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "goteo_agua_frente_0_3",
+       "archivo": "cinematicas/fx/goteo_agua.webp",
+       "x": 1086,
+       "y": 40,
+       "w": 29,
+       "h": 115,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0.11
+       }
+      },
+      {
+       "id": "goteo_agua_frente_0_4",
+       "archivo": "cinematicas/fx/goteo_agua.webp",
+       "x": 658,
+       "y": 378,
+       "w": 32,
+       "h": 128,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 10,
+        "w": 32,
+        "h": 128,
+        "desfase": 0.48
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -2,
+       "zoom": 1.09
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 1.8,
+       "fuerza": 9
+      }
+     },
+     "narracion": {
+      "es": "La Campana se rajó de arriba abajo, y la sacerdotisa que vivía adentro pudo, por fin, callar.",
+      "en": "The Bell cracked from crown to lip, and the priestess who lived inside could, at last, fall silent."
+     },
+     "fundido": {
+      "entra": 0.25,
+      "sale": 1,
+      "color_entra": "blanco"
+     }
+    },
+    {
+     "id": "p2_marea",
+     "que": "La marea vuelve de golpe sobre las calles de Ysmeral; los ahogados quedan en la playa. El barco flota.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_6/p2_marea_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "ciudad",
+       "archivo": "cinematicas/acto_6/p2_marea_ciudad.webp",
+       "x": 0,
+       "y": 316,
+       "w": 1408,
+       "h": 476,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "ola",
+       "archivo": "cinematicas/acto_6/p2_marea_ola.webp",
+       "x": 0,
+       "y": 36,
+       "w": 985,
+       "h": 756,
+       "paralaje": 0.4,
+       "mezcla": "normal"
+      },
+      {
+       "id": "humo_ola_0_0",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 172,
+       "y": 20,
+       "w": 256,
+       "h": 256,
+       "paralaje": 0.4,
+       "mezcla": "normal",
+       "alfa": 0.3,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "humo_ola_0_1",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 445,
+       "y": 204,
+       "w": 230,
+       "h": 230,
+       "paralaje": 0.4,
+       "mezcla": "normal",
+       "alfa": 0.3,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "humo_ola_0_2",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 698,
+       "y": 408,
+       "w": 205,
+       "h": 205,
+       "paralaje": 0.4,
+       "mezcla": "normal",
+       "alfa": 0.3,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_6/p2_marea_frente.webp",
+       "x": 0,
+       "y": 644,
+       "w": 1408,
+       "h": 148,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 40,
+       "y": -6,
+       "zoom": 1.03
+      },
+      "hasta": {
+       "x": -30,
+       "y": 6,
+       "zoom": 1.03
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "El mar volvió a su lugar como un perro que reconoce a su amo. Dejó en la arena todo lo que no quiso.",
+      "en": "The sea returned to its place like a dog that knows its master. It left on the sand everything it did not want."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1
+     },
+     "particulas": "lluvia"
+    },
+    {
+     "id": "p3_vidrio",
+     "que": "Al norte, el cielo se rompe como un vidrio; detrás, una escalera de oro sube hacia la nada.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_6/p3_vidrio_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "grietas",
+       "archivo": "cinematicas/acto_6/p3_vidrio_grietas.webp",
+       "x": 395,
+       "y": 0,
+       "w": 605,
+       "h": 523,
+       "paralaje": 0.05,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "periodo_s": 3
+       }
+      },
+      {
+       "id": "escalera",
+       "archivo": "cinematicas/acto_6/p3_vidrio_escalera.webp",
+       "x": 582,
+       "y": 258,
+       "w": 244,
+       "h": 264,
+       "paralaje": 0.15,
+       "mezcla": "normal"
+      },
+      {
+       "id": "escalera_luz",
+       "archivo": "cinematicas/acto_6/p3_vidrio_escalera_luz.webp",
+       "x": 576,
+       "y": 174,
+       "w": 256,
+       "h": 357,
+       "paralaje": 0.15,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.8,
+         1
+        ],
+        "hz": 2
+       }
+      },
+      {
+       "id": "mar",
+       "archivo": "cinematicas/acto_6/p3_vidrio_mar.webp",
+       "x": 0,
+       "y": 383,
+       "w": 1408,
+       "h": 409,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_6/p3_vidrio_frente.webp",
+       "x": 0,
+       "y": 467,
+       "w": 1408,
+       "h": 325,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 12,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -19,
+       "zoom": 1.1
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Entonces el cielo se rompió como un vidrio, y detrás del vidrio había escalones de oro.",
+      "en": "Then the sky broke like glass, and behind the glass there were steps of gold."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1
+     },
+     "particulas": "ceniza"
+    },
+    {
+     "id": "p4_aunsaar",
+     "que": "Arriba, en el Trono Sediento, Aun-Saar abre la boca que tiene en el pecho.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_6/p4_aunsaar_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "grietas",
+       "archivo": "cinematicas/acto_6/p4_aunsaar_grietas.webp",
+       "x": 376,
+       "y": 0,
+       "w": 575,
+       "h": 523,
+       "paralaje": 0.05,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 3.3
+       }
+      },
+      {
+       "id": "trono",
+       "archivo": "cinematicas/acto_6/p4_aunsaar_trono.webp",
+       "x": 435,
+       "y": 176,
+       "w": 471,
+       "h": 616,
+       "paralaje": 0.35,
+       "mezcla": "normal"
+      },
+      {
+       "id": "aunsaar",
+       "archivo": "cinematicas/acto_6/p4_aunsaar_aunsaar.webp",
+       "x": 456,
+       "y": 17,
+       "w": 501,
+       "h": 664,
+       "paralaje": 0.5,
+       "mezcla": "normal"
+      },
+      {
+       "id": "aunsaar_luz",
+       "archivo": "cinematicas/acto_6/p4_aunsaar_aunsaar_luz.webp",
+       "x": 456,
+       "y": 17,
+       "w": 501,
+       "h": 570,
+       "paralaje": 0.5,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.5,
+         1
+        ],
+        "periodo_s": 1.8,
+        "notas": "la boca del pecho respira"
+       }
+      },
+      {
+       "id": "boca_roja",
+       "archivo": "cinematicas/acto_6/p4_aunsaar_boca_roja.webp",
+       "x": 554,
+       "y": 102,
+       "w": 301,
+       "h": 420,
+       "paralaje": 0.5,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.5,
+         1
+        ],
+        "periodo_s": 1
+       },
+       "si": "brasa_absorber"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -3,
+       "zoom": 1.12
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Arriba, en un trono que tiene sed desde antes del mundo, Aun-Saar abrió la boca que tiene en el pecho y dijo tu nombre.",
+      "en": "Above, on a throne that has thirsted since before the world, Aun-Saar opened the mouth in his chest and spoke your name."
+     },
+     "narracion_si": {
+      "brasa_destruir": {
+       "es": "Arriba, Aun-Saar abrió la boca que tiene en el pecho y preguntó por el pedazo que le faltaba. Preguntó por ti.",
+       "en": "Above, Aun-Saar opened the mouth in his chest and asked for the piece he was missing. He asked for you."
+      },
+      "brasa_absorber": {
+       "es": "Arriba, Aun-Saar abrió la boca que tiene en el pecho y sonrió. Ya sabía que su sed venía en camino.",
+       "en": "Above, Aun-Saar opened the mouth in his chest and smiled. He knew his thirst was on its way."
+      }
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1.8
+     },
+     "particulas": "ceniza"
+    }
+   ]
+  },
+  "acto_7": {
+   "planos": [
+    {
+     "id": "p1_cae",
+     "que": "Aun-Saar se parte sobre la escalera de oro: la boca del pecho se apaga, las manos doradas caen.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7/p1_cae_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "grietas",
+       "archivo": "cinematicas/acto_7/p1_cae_grietas.webp",
+       "x": 417,
+       "y": 0,
+       "w": 578,
+       "h": 523,
+       "paralaje": 0.05,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 3.2
+       }
+      },
+      {
+       "id": "trono",
+       "archivo": "cinematicas/acto_7/p1_cae_trono.webp",
+       "x": 452,
+       "y": 209,
+       "w": 442,
+       "h": 583,
+       "paralaje": 0.35,
+       "mezcla": "normal"
+      },
+      {
+       "id": "aunsaar",
+       "archivo": "cinematicas/acto_7/p1_cae_aunsaar.webp",
+       "x": 446,
+       "y": 85,
+       "w": 503,
+       "h": 604,
+       "paralaje": 0.5,
+       "mezcla": "normal"
+      },
+      {
+       "id": "aunsaar_luz",
+       "archivo": "cinematicas/acto_7/p1_cae_aunsaar_luz.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 706,
+       "paralaje": 0.5,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "hz": 6
+       }
+      },
+      {
+       "id": "rayos",
+       "archivo": "cinematicas/acto_7/p1_cae_rayos.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.45,
+       "mezcla": "sumar"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_7/p1_cae_frente.webp",
+       "x": 99,
+       "y": 478,
+       "w": 1214,
+       "h": 314,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente_luz",
+       "archivo": "cinematicas/acto_7/p1_cae_frente_luz.webp",
+       "x": 93,
+       "y": 625,
+       "w": 1222,
+       "h": 167,
+       "paralaje": 1,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 2
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": -10,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": 3,
+       "zoom": 1.1
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 2.4,
+       "fuerza": 12
+      }
+     },
+     "narracion": {
+      "es": "Aun-Saar cayó del Trono Sediento, y por un instante todo el cielo contuvo la respiración.",
+      "en": "Aun-Saar fell from the Thirsting Throne, and for an instant the whole sky held its breath."
+     },
+     "fundido": {
+      "entra": 0.35,
+      "sale": 0.6,
+      "color_entra": "blanco",
+      "color_sale": "blanco"
+     },
+     "particulas": "brasas"
+    },
+    {
+     "id": "p2_corona",
+     "que": "El trono vacío; en los escalones, entre la sangre dorada, la Corona sigue ardiendo bajito.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7/p2_corona_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "grietas",
+       "archivo": "cinematicas/acto_7/p2_corona_grietas.webp",
+       "x": 384,
+       "y": 0,
+       "w": 665,
+       "h": 513,
+       "paralaje": 0.05,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 3.2
+       }
+      },
+      {
+       "id": "trono",
+       "archivo": "cinematicas/acto_7/p2_corona_trono.webp",
+       "x": 452,
+       "y": 209,
+       "w": 442,
+       "h": 583,
+       "paralaje": 0.35,
+       "mezcla": "normal"
+      },
+      {
+       "id": "escalones",
+       "archivo": "cinematicas/acto_7/p2_corona_escalones.webp",
+       "x": 53,
+       "y": 554,
+       "w": 1302,
+       "h": 238,
+       "paralaje": 0.7,
+       "mezcla": "normal"
+      },
+      {
+       "id": "corona_luz",
+       "archivo": "cinematicas/acto_7/p2_corona_corona_luz.webp",
+       "x": 284,
+       "y": 185,
+       "w": 841,
+       "h": 607,
+       "paralaje": 0.7,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 2.4,
+        "notas": "la Corona late tibia"
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": 8,
+       "zoom": 1.12
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Del dios no quedó más que la Corona, tibia todavía, esperando una cabeza.",
+      "en": "Nothing remained of the god but the Crown, still warm, waiting for a head."
+     },
+     "fundido": {
+      "entra": 0.6,
+      "sale": 1.2,
+      "color_entra": "blanco"
+     },
+     "particulas": "ceniza"
+    }
+   ]
+  },
+  "acto_7_vigilia": {
+   "planos": [
+    {
+     "id": "v1_auren",
+     "que": "Auren, de rodillas en la escalera, recibe la Corona y la envuelve en su manto sin mirarla.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7_vigilia/v1_auren_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "grietas",
+       "archivo": "cinematicas/acto_7_vigilia/v1_auren_grietas.webp",
+       "x": 338,
+       "y": 0,
+       "w": 760,
+       "h": 523,
+       "paralaje": 0.05,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 3.2
+       }
+      },
+      {
+       "id": "escalera",
+       "archivo": "cinematicas/acto_7_vigilia/v1_auren_escalera.webp",
+       "x": 128,
+       "y": 358,
+       "w": 1152,
+       "h": 434,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "auren",
+       "archivo": "cinematicas/acto_7_vigilia/v1_auren_auren.webp",
+       "x": 532,
+       "y": 244,
+       "w": 333,
+       "h": 548,
+       "paralaje": 0.65,
+       "mezcla": "normal"
+      },
+      {
+       "id": "corona_luz",
+       "archivo": "cinematicas/acto_7_vigilia/v1_auren_corona_luz.webp",
+       "x": 578,
+       "y": 346,
+       "w": 301,
+       "h": 302,
+       "paralaje": 0.65,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.5,
+         0.9
+        ],
+        "periodo_s": 2.6
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1.08
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Le diste la Corona a Auren. El último cantor la envolvió en su manto sin mirarla, como se tapa a un muerto.",
+      "en": "You gave the Crown to Auren. The last singer wrapped it in his cloak without looking at it, the way one covers the dead."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 1
+     },
+     "particulas": "ceniza"
+    },
+    {
+     "id": "v2_boveda",
+     "que": "Bajo una catedral, la Iglesia encierra la Corona en un relicario de hierro con siete sellos y monjes que cantan.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_fondo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "relicario",
+       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_relicario.webp",
+       "x": 497,
+       "y": 486,
+       "w": 412,
+       "h": 289,
+       "paralaje": 0.5,
+       "mezcla": "normal"
+      },
+      {
+       "id": "relicario_luz",
+       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_relicario_luz.webp",
+       "x": 545,
+       "y": 535,
+       "w": 319,
+       "h": 162,
+       "paralaje": 0.5,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.3,
+         1
+        ],
+        "periodo_s": 4,
+        "notas": "algo tibio late adentro, muy despacio"
+       }
+      },
+      {
+       "id": "monjes",
+       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_monjes.webp",
+       "x": 162,
+       "y": 449,
+       "w": 1089,
+       "h": 343,
+       "paralaje": 0.8,
+       "mezcla": "normal"
+      },
+      {
+       "id": "velas_luz",
+       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_velas_luz.webp",
+       "x": 179,
+       "y": 477,
+       "w": 963,
+       "h": 294,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "hz": 7
+       }
+      },
+      {
+       "id": "fuego_velas_luz_0_0",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 283,
+       "y": 569,
+       "w": 14,
+       "h": 28,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "fuego_velas_luz_0_1",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 473,
+       "y": 576,
+       "w": 14,
+       "h": 28,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "fuego_velas_luz_0_2",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 846,
+       "y": 581,
+       "w": 14,
+       "h": 28,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "fuego_velas_luz_0_3",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1023,
+       "y": 576,
+       "w": 14,
+       "h": 28,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.11
+       }
+      },
+      {
+       "id": "fuego_velas_luz_0_4",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 610,
+       "y": 631,
+       "w": 14,
+       "h": 28,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.48
+       }
+      },
+      {
+       "id": "fuego_velas_luz_0_5",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 830,
+       "y": 641,
+       "w": 14,
+       "h": 28,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.85
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": -6,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": 6,
+       "zoom": 1.1
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "La Iglesia la bajó a una cripta sin nombre, bajo siete sellos y siete voces que no dejan de cantar.",
+      "en": "The Church carried it down to a nameless crypt, beneath seven seals and seven voices that never stop singing."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1.2
+     },
+     "particulas": "ceniza"
+    },
+    {
+     "id": "v3_vela",
+     "que": "La última vela del relicario; detrás del hierro, algo tibio late despacio.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_vigilia/v3_vela_fondo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "relicario",
+       "archivo": "cinematicas/acto_7_vigilia/v3_vela_relicario.webp",
+       "x": 394,
+       "y": 402,
+       "w": 619,
+       "h": 390,
+       "paralaje": 0.7,
+       "mezcla": "normal"
+      },
+      {
+       "id": "relicario_luz",
+       "archivo": "cinematicas/acto_7_vigilia/v3_vela_relicario_luz.webp",
+       "x": 436,
+       "y": 485,
+       "w": 537,
+       "h": 270,
+       "paralaje": 0.7,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.3,
+         1
+        ],
+        "periodo_s": 4,
+        "notas": "algo tibio late adentro, muy despacio"
+       }
+      },
+      {
+       "id": "vela",
+       "archivo": "cinematicas/acto_7_vigilia/v3_vela_vela.webp",
+       "x": 1023,
+       "y": 635,
+       "w": 31,
+       "h": 157,
+       "paralaje": 0.9,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vela_luz",
+       "archivo": "cinematicas/acto_7_vigilia/v3_vela_vela_luz.webp",
+       "x": 800,
+       "y": 380,
+       "w": 481,
+       "h": 412,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "hz": 6
+       }
+      },
+      {
+       "id": "fuego_vela_luz_0_0",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1027,
+       "y": 592,
+       "w": 26,
+       "h": 51,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "humo_vela_luz_1_0",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 1002,
+       "y": 518,
+       "w": 77,
+       "h": 77,
+       "paralaje": 0.9,
+       "mezcla": "normal",
+       "alfa": 0.4,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": 2,
+       "zoom": 1.14
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "La sed duerme. No está muerta. Algún día alguien dejará de cantar.",
+      "en": "The thirst sleeps. It is not dead. Someday, someone will stop singing."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 2.4
+     }
+    }
+   ]
+  },
+  "acto_7_cielo": {
+   "planos": [
+    {
+     "id": "c1_mira",
+     "que": "Mira alza la Corona contra las estrellas enjauladas y la parte con las dos manos; sale luz blanca.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7_cielo/c1_mira_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "grietas",
+       "archivo": "cinematicas/acto_7_cielo/c1_mira_grietas.webp",
+       "x": 290,
+       "y": 0,
+       "w": 674,
+       "h": 435,
+       "paralaje": 0.05,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 3.2
+       }
+      },
+      {
+       "id": "jaulas",
+       "archivo": "cinematicas/acto_7_cielo/c1_mira_jaulas.webp",
+       "x": 307,
+       "y": 5,
+       "w": 1004,
+       "h": 501,
+       "paralaje": 0.2,
+       "mezcla": "normal"
+      },
+      {
+       "id": "estrellas",
+       "archivo": "cinematicas/acto_7_cielo/c1_mira_estrellas.webp",
+       "x": 330,
+       "y": 93,
+       "w": 955,
+       "h": 391,
+       "paralaje": 0.2,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "hz": 2
+       }
+      },
+      {
+       "id": "mira",
+       "archivo": "cinematicas/acto_7_cielo/c1_mira_mira.webp",
+       "x": 0,
+       "y": 210,
+       "w": 1408,
+       "h": 582,
+       "paralaje": 0.65,
+       "mezcla": "normal"
+      },
+      {
+       "id": "corona_luz",
+       "archivo": "cinematicas/acto_7_cielo/c1_mira_corona_luz.webp",
+       "x": 102,
+       "y": 0,
+       "w": 1205,
+       "h": 668,
+       "paralaje": 0.65,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 0.7,
+        "notas": "la Corona se raja"
+       }
+      },
+      {
+       "id": "rayos",
+       "archivo": "cinematicas/acto_7_cielo/c1_mira_rayos.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.6,
+       "mezcla": "sumar"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -5,
+       "zoom": 1.1
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Le diste la Corona a Mira. La sostuvo contra las estrellas y la partió como se parte el pan.",
+      "en": "You gave the Crown to Mira. She held it up against the stars and broke it the way one breaks bread."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 0.8,
+      "color_sale": "blanco"
+     },
+     "particulas": "brasas"
+    },
+    {
+     "id": "c2_dioses",
+     "que": "El cielo se abre de par en par; caen las islas de oro y los dioses de piedra, ardiendo.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7_cielo/c2_dioses_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "luz_blanca",
+       "archivo": "cinematicas/acto_7_cielo/c2_dioses_luz_blanca.webp",
+       "x": 69,
+       "y": 0,
+       "w": 1277,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "periodo_s": 2
+       }
+      },
+      {
+       "id": "islas",
+       "archivo": "cinematicas/acto_7_cielo/c2_dioses_islas.webp",
+       "x": 173,
+       "y": 197,
+       "w": 1029,
+       "h": 500,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "dios",
+       "archivo": "cinematicas/acto_7_cielo/c2_dioses_dios.webp",
+       "x": 458,
+       "y": 419,
+       "w": 666,
+       "h": 373,
+       "paralaje": 0.5,
+       "mezcla": "normal"
+      },
+      {
+       "id": "dios_luz",
+       "archivo": "cinematicas/acto_7_cielo/c2_dioses_dios_luz.webp",
+       "x": 233,
+       "y": 88,
+       "w": 699,
+       "h": 675,
+       "paralaje": 0.5,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "hz": 5
+       }
+      },
+      {
+       "id": "fuego_dios_luz_0_0",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 502,
+       "y": 676,
+       "w": 77,
+       "h": 154,
+       "paralaje": 0.5,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "fuego_dios_luz_0_1",
+       "archivo": "cinematicas/fx/fuego.webp",
+       "x": 1029,
+       "y": 361,
+       "w": 64,
+       "h": 128,
+       "paralaje": 0.5,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 12,
+        "w": 64,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": -12,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": 7,
+       "zoom": 1.1
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 4,
+       "fuerza": 10
+      }
+     },
+     "narracion": {
+      "es": "El cielo se abrió de par en par. Detrás no había nadie, y los dioses murieron sin hacer ruido.",
+      "en": "The sky opened wide. There was no one behind it, and the gods died without a sound."
+     },
+     "fundido": {
+      "entra": 0.8,
+      "sale": 1.4,
+      "color_entra": "blanco"
+     },
+     "particulas": "brasas"
+    },
+    {
+     "id": "c3_alba",
+     "que": "Amanece sobre Velmora: la horca vacía, la abadía en silencio y un sol pálido.",
+     "dur": 8,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7_cielo/c3_alba_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "abadia",
+       "archivo": "cinematicas/acto_7_cielo/c3_alba_abadia.webp",
+       "x": 0,
+       "y": 282,
+       "w": 1408,
+       "h": 510,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "cuervo_abadia_0_0",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 606,
+       "y": 308,
+       "w": 29,
+       "h": 22,
+       "paralaje": 0.25,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "cuervo_abadia_0_1",
+       "archivo": "cinematicas/fx/cuervo.webp",
+       "x": 667,
+       "y": 290,
+       "w": 26,
+       "h": 19,
+       "paralaje": 0.25,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 10,
+        "w": 64,
+        "h": 48,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "paramo",
+       "archivo": "cinematicas/acto_7_cielo/c3_alba_paramo.webp",
+       "x": 0,
+       "y": 383,
+       "w": 1408,
+       "h": 409,
+       "paralaje": 0.55,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_7_cielo/c3_alba_frente.webp",
+       "x": 862,
+       "y": 150,
+       "w": 546,
+       "h": 642,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": -30,
+       "y": 4,
+       "zoom": 1.03
+      },
+      "hasta": {
+       "x": 30,
+       "y": -6,
+       "zoom": 1.03
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Esa mañana salió sobre Velmora un sol que no le debía nada a nadie.",
+      "en": "That morning a sun rose over Velmora that owed nothing to anyone."
+     },
+     "fundido": {
+      "entra": 1.4,
+      "sale": 3
+     }
+    }
+   ]
+  },
+  "acto_7_rey_ceniza": {
+   "planos": [
+    {
+     "id": "r1_trono",
+     "que": "El héroe se sienta en el Trono Sediento con la Corona puesta; la Brasa le arde en el pecho y la sangre baja por la escalera.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "grietas",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_grietas.webp",
+       "x": 406,
+       "y": 0,
+       "w": 596,
+       "h": 488,
+       "paralaje": 0.05,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 3.2
+       }
+      },
+      {
+       "id": "trono",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_trono.webp",
+       "x": 452,
+       "y": 209,
+       "w": 442,
+       "h": 583,
+       "paralaje": 0.35,
+       "mezcla": "normal"
+      },
+      {
+       "id": "heroe",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_heroe.webp",
+       "x": 606,
+       "y": 196,
+       "w": 217,
+       "h": 474,
+       "paralaje": 0.55,
+       "mezcla": "normal"
+      },
+      {
+       "id": "heroe_luz",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_heroe_luz.webp",
+       "x": 607,
+       "y": 122,
+       "w": 202,
+       "h": 341,
+       "paralaje": 0.55,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 1,
+        "notas": "la Brasa le late en el pecho"
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_frente.webp",
+       "x": 99,
+       "y": 509,
+       "w": 1210,
+       "h": 283,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 10,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -12,
+       "zoom": 1.12
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Te pusiste la Corona. La sed reconoció tu cuerpo como una casa vieja y entró sin llamar.",
+      "en": "You put on the Crown. The thirst knew your body like an old house and came in without knocking."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 1,
+      "color_sale": "rojo"
+     },
+     "particulas": "brasas"
+    },
+    {
+     "id": "r2_mundo",
+     "que": "Abajo, en Velmora, todos los fuegos se inclinan hacia el norte; la gente se arrodilla en el barro.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "pueblo",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_pueblo.webp",
+       "x": 0,
+       "y": 283,
+       "w": 1408,
+       "h": 509,
+       "paralaje": 0.3,
+       "mezcla": "normal"
+      },
+      {
+       "id": "hogueras",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_hogueras.webp",
+       "x": 9,
+       "y": 351,
+       "w": 1399,
+       "h": 423,
+       "paralaje": 0.3,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "titilar",
+        "alfa": [
+         0.7,
+         1
+        ],
+        "hz": 6
+       }
+      },
+      {
+       "id": "humo_hogueras_0_0",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 183,
+       "y": 396,
+       "w": 154,
+       "h": 154,
+       "paralaje": 0.3,
+       "mezcla": "normal",
+       "alfa": 0.5,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0
+       }
+      },
+      {
+       "id": "humo_hogueras_0_1",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 850,
+       "y": 413,
+       "w": 141,
+       "h": 141,
+       "paralaje": 0.3,
+       "mezcla": "normal",
+       "alfa": 0.5,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0.37
+       }
+      },
+      {
+       "id": "humo_hogueras_0_2",
+       "archivo": "cinematicas/fx/humo.webp",
+       "x": 1217,
+       "y": 379,
+       "w": 166,
+       "h": 166,
+       "paralaje": 0.3,
+       "mezcla": "normal",
+       "alfa": 0.5,
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 8,
+        "fps": 8,
+        "w": 128,
+        "h": 128,
+        "desfase": 0.74
+       }
+      },
+      {
+       "id": "gente",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_gente.webp",
+       "x": 0,
+       "y": 556,
+       "w": 1408,
+       "h": 236,
+       "paralaje": 0.7,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_frente.webp",
+       "x": 0,
+       "y": 46,
+       "w": 497,
+       "h": 746,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 30,
+       "y": 0,
+       "zoom": 1.04
+      },
+      "hasta": {
+       "x": -30,
+       "y": 6,
+       "zoom": 1.04
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "En cada hoguera del mundo, el fuego se inclinó hacia el norte. Hacia ti. Ahora la sed tiene tu nombre.",
+      "en": "In every fire in the world, the flame leaned north. Toward you. Now the thirst bears your name."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 3,
+      "color_entra": "rojo"
+     },
+     "particulas": "brasas"
+    }
+   ]
+  },
+  "acto_7_corona_fria": {
+   "planos": [
+    {
+     "id": "f1_trono",
+     "que": "El héroe en el trono con la Corona, pero en luz gris y azul: la Marca apagada, escarcha en el oro.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "grietas",
+       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_grietas.webp",
+       "x": 337,
+       "y": 0,
+       "w": 708,
+       "h": 429,
+       "paralaje": 0.05,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.6,
+         1
+        ],
+        "periodo_s": 3.2
+       }
+      },
+      {
+       "id": "trono",
+       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_trono.webp",
+       "x": 449,
+       "y": 206,
+       "w": 448,
+       "h": 586,
+       "paralaje": 0.35,
+       "mezcla": "normal"
+      },
+      {
+       "id": "heroe",
+       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_heroe.webp",
+       "x": 603,
+       "y": 193,
+       "w": 223,
+       "h": 477,
+       "paralaje": 0.55,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vaho",
+       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_vaho.webp",
+       "x": 701,
+       "y": 167,
+       "w": 97,
+       "h": 116,
+       "paralaje": 0.55,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "latir",
+        "alfa": [
+         0.2,
+         0.7
+        ],
+        "periodo_s": 3.2,
+        "notas": "respira despacio"
+       }
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_frente.webp",
+       "x": 99,
+       "y": 556,
+       "w": 1210,
+       "h": 236,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -5,
+       "zoom": 1.1
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Te sentaste en el Trono con la Marca gris. La Corona pesaba como una lápida y no daba calor.",
+      "en": "You sat upon the Throne with your Mark grey. The Crown weighed like a gravestone and gave no warmth."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 1.2
+     },
+     "particulas": "nieve"
+    },
+    {
+     "id": "f2_invierno",
+     "que": "Las islas de oro, frías y nevadas; el héroe solo en el borde, mirando un cielo que ya no arde.",
+     "dur": 8,
+     "capas": [
+      {
+       "id": "cielo",
+       "archivo": "cinematicas/acto_7_corona_fria/f2_invierno_cielo.webp",
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.05,
+       "mezcla": "normal"
+      },
+      {
+       "id": "islas",
+       "archivo": "cinematicas/acto_7_corona_fria/f2_invierno_islas.webp",
+       "x": 191,
+       "y": 215,
+       "w": 1037,
+       "h": 324,
+       "paralaje": 0.25,
+       "mezcla": "normal"
+      },
+      {
+       "id": "borde",
+       "archivo": "cinematicas/acto_7_corona_fria/f2_invierno_borde.webp",
+       "x": 557,
+       "y": 420,
+       "w": 851,
+       "h": 372,
+       "paralaje": 0.7,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": -20,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 19,
+       "y": -3,
+       "zoom": 1.08
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Reinas sobre un cielo frío. Nada te calienta ya: ni el oro, ni el recuerdo del fuego.",
+      "en": "You reign over a cold sky. Nothing warms you now: not the gold, not the memory of fire."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 3
+     },
+     "particulas": "nieve"
+    }
+   ]
+  }
+ },
  "secuencia": [
   {
    "t": 0,

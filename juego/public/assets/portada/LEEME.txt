@@ -6,3 +6,8 @@ titulo/   el título en español (es) e inglés (en): fijo a 1600, 800 y 400 (tr
 fondo/    capas de 1536x800 (la pantalla base de 1280x720 va en 128, 40), viñeta fija, relámpago (6 cuadros que se
           suman) y la hoja de ceniza (8 x 4 celdas de 32 px).
 cartas/   las siete cartas de los actos, 1280x720, con lugar para el título arriba y la narración abajo.
+cinematicas/  las cinemáticas de cierre de cada acto: portada.json > cinematicas > <clave> > planos. Cada plano trae sus
+              capas (recortadas: x, y, w, h en la capa de 1408x792 cuya pantalla base va en 64, 36), paralaje, mezcla y
+              animación; cámara, fundidos, narración (es, en) y partículas del juego. cinematicas/fx/ son hojas de
+              sprites compartidas (fuego, goteo de sangre y de agua, humo, cuervos) que las capas usan con anim
+              "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0.
