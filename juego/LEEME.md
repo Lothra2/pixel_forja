@@ -64,6 +64,13 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - Los consejos de la primera vez salen en un cartel abajo al centro, encima de las pociones, sin tapar la misión, el minimapa ni el arco. Se cierra al tocarlo o solo a los 6 segundos.
   - Todos los botones miden 44 puntos o más, nada queda a menos de 50 puntos de los bordes (el notch y la isla) y no hay pistas de teclado ni cursor. El portal al campamento está en el menú.
   - La prueba juego/herramientas/hud_tactil.cjs revisa en cuatro tamaños de iPhone que nada se cruce, que los toques reales funcionen y que Poder y los tres atajos se vean del mismo tamaño en pantalla.
+- **Fuego vivo.** Las antorchas, braseros, piras, fogatas, velas, faroles y los vitrales de la catedral arden con un fuego que se simula en vivo, al estilo del Doom de PlayStation, en lugar de la llama pintada.
+  - La luz de cada fuego late con su llama, así que las sombras tiemblan con ella. Las chispas salen de las puntas.
+  - En los lugares fríos y en los actos 4 y 7 el fuego es de ánimas, verde azulado. Si elegiste la Corona Fría, el acto 7 arde con su llama helada. Los campamentos siempre tienen fuego cálido.
+  - Arden también los monstruos y el héroe quemados, los cadáveres de los que mueren por fuego, el piso después de los poderes de fuego, el cuerpo de Ozmaren y las armas encantadas, cada una con el color de su elemento.
+  - Poderes nuevos: el Cerco de llamas es un anillo de fuego y con 10 puntos se vuelve muro del infierno. El Sol negro suelta una lluvia de brasas, el Lamento del osario un llanto de ánimas y la Bomba ígnea deja el piso ardiendo. Ozmaren levanta un pilar de fuego al abrir el pecho y el Cetro de la Corona Fría envuelve al héroe en su llama.
+  - Como mucho arden 12 fuegos a la vez en el teléfono y 24 en la computadora, los más cercanos. Los demás muestran su llama pintada.
+  - La portada tiene fuego vivo en las ruinas y detrás de los vitrales de la catedral.
 - **La historia decide (actos 4 a 7).** La cadena principal tiene tres decisiones con consecuencias reales.
   - Acto 4, "La sangre tibia": Vigdis se ofrece para abrir el trono. Si la dejas ir, Hjaldur llega con un cuarto menos de vida, el fortín se queda sin curandera y en su lugar queda su tumba. Si la detienes, el rey llega entero y ella te sigue en los campamentos de los actos 5 a 7.
   - Acto 5: la Brasa, destruirla o absorberla.

@@ -10,4 +10,6 @@ cinematicas/  las cinemáticas de cierre de cada acto: portada.json > cinematica
               capas (recortadas: x, y, w, h en la capa de 1408x792 cuya pantalla base va en 64, 36), paralaje, mezcla y
               animación; cámara, fundidos, narración (es, en) y partículas del juego. cinematicas/fx/ son hojas de
               sprites compartidas (fuego, goteo de sangre y de agua, humo, cuervos) que las capas usan con anim
-              "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0.
+              "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0. El fuego (la hoja fx/fuego.png y
+              las tiras de fuego detrás de vitrales, como catedral_fuego en acto_5/p4_ysmeral) es fuego de Doom
+              horneado: anim "cuadros" con su hoja en grilla (columnas, cuadros, fps, w, h), se suma y empalma.

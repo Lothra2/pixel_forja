@@ -245,6 +245,26 @@
     }
    },
    {
+    "id": "ruinas_llamas",
+    "z": 4.5,
+    "archivo": "fondo/ruinas_llamas.webp",
+    "x": 190,
+    "y": 410,
+    "w": 1287,
+    "h": 95,
+    "paralaje": 0.2,
+    "mezcla": "sumar",
+    "anim": {
+     "tipo": "cuadros",
+     "columnas": 3,
+     "cuadros": 12,
+     "fps": 12,
+     "w": 1287,
+     "h": 95
+    },
+    "notas": "Fuego de Doom horneado en los incendios del horizonte: tira en grilla, cuadro = floor(t * fps) % cuadros, en (x, y) de la capa, se suma, empalma. Su luz es ruinas_fuego (que titila)."
+   },
+   {
     "id": "catedral",
     "z": 5,
     "archivo": "fondo/catedral.png",
@@ -270,6 +290,26 @@
      "periodo_s": 2.4,
      "notas": "late con los vitrales; durante un relámpago bajarla a 0.5"
     }
+   },
+   {
+    "id": "catedral_fuego",
+    "z": 6.5,
+    "archivo": "fondo/catedral_fuego.webp",
+    "x": 824,
+    "y": 374,
+    "w": 176,
+    "h": 217,
+    "paralaje": 0.45,
+    "mezcla": "sumar",
+    "anim": {
+     "tipo": "cuadros",
+     "columnas": 12,
+     "cuadros": 12,
+     "fps": 12,
+     "w": 176,
+     "h": 217
+    },
+    "notas": "Fuego de Doom horneado detrás de los vitrales y en la puerta: tira en grilla, cuadro = floor(t * fps) % cuadros, en (x, y) de la capa, se suma, empalma. Durante un relámpago bajarla a 0.6 como catedral_luz."
    },
    {
     "id": "niebla",
@@ -1011,6 +1051,24 @@
         "w": 64,
         "h": 48,
         "desfase": 0.48
+       }
+      },
+      {
+       "id": "abadia_fuego",
+       "archivo": "cinematicas/acto_1/p2_campanas_abadia_fuego.webp",
+       "x": 864,
+       "y": 269,
+       "w": 251,
+       "h": 309,
+       "paralaje": 0.3,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 12,
+        "w": 251,
+        "h": 309
        }
       },
       {
@@ -3426,9 +3484,9 @@
        "id": "catedral_luz",
        "archivo": "cinematicas/acto_5/p4_ysmeral_catedral_luz.webp",
        "x": 365,
-       "y": 154,
-       "w": 346,
-       "h": 304,
+       "y": 155,
+       "w": 345,
+       "h": 303,
        "paralaje": 0.25,
        "mezcla": "sumar",
        "anim": {
@@ -3439,6 +3497,24 @@
         ],
         "periodo_s": 2.6,
         "notas": "cada pico, un golpe de campana"
+       }
+      },
+      {
+       "id": "catedral_fuego",
+       "archivo": "cinematicas/acto_5/p4_ysmeral_catedral_fuego.webp",
+       "x": 382,
+       "y": 169,
+       "w": 311,
+       "h": 272,
+       "paralaje": 0.25,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 12,
+        "cuadros": 12,
+        "fps": 12,
+        "w": 311,
+        "h": 272
        }
       },
       {

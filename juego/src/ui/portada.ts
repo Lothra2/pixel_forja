@@ -67,8 +67,14 @@ export function dibujarPortada(tReal: number): { botones: number; yBotones: numb
   const luzCat = Math.min(1, Math.max(0, (t - 1.4) / 1)) * (enRayo ? 0.5 : 1);
   const capa = (c: any, alfa = 1, dx = 0) => {
     const im = lista(c.archivo); if (!im) return;
+    ctx.globalAlpha = alfa * fondoK; ctx.globalCompositeOperation = c.mezcla === 'sumar' || c.mezcla === 'lighter' ? 'lighter' : 'source-over';
+    // capas animadas por cuadros (el fuego de Doom de la ciudad y de la catedral): una tira de cuadros puesta en (x, y)
+    if (c.anim?.tipo === 'cuadros') {
+      const a = c.anim, w = a.w ?? c.w, h = a.h ?? c.h, cols = a.columnas ?? Math.max(1, Math.floor((im as any).width / w)), n = Math.floor(t * a.fps) % a.cuadros;
+      ctx.drawImage(im, (n % cols) * w, Math.floor(n / cols) * h, w, h, ox + ((c.x ?? 0) - mx - cx * c.paralaje) * esc, oy + ((c.y ?? 0) - my - cy * c.paralaje) * esc, w * esc, h * esc);
+      return;
+    }
     const x = ox + (-mx - cx * c.paralaje + dx) * esc, y = oy + (-my - cy * c.paralaje) * esc;
-    ctx.globalAlpha = alfa * fondoK; ctx.globalCompositeOperation = c.mezcla === 'sumar' ? 'lighter' : 'source-over';
     ctx.drawImage(im, x, y, c.w * esc, c.h * esc);
     if (c.anim?.enrollar) { const w = c.w * esc; ctx.drawImage(im, x + (dx > 0 ? -w : w), y, w, c.h * esc); }
   };
@@ -107,6 +113,8 @@ export function dibujarPortada(tReal: number): { botones: number; yBotones: numb
     let alfa = 1, dx = 0;
     if (c.anim?.tipo === 'deriva') dx = ((t * c.anim.px_por_segundo) % c.w + c.w) % c.w * Math.sign(c.anim.px_por_segundo || 1);
     if (c.anim?.tipo === 'titilar') alfa = 0.7 + 0.3 * (0.5 + 0.25 * Math.sin(t * 5.3 * 6.28) + 0.25 * Math.sin(t * 8.9 * 6.28 + 1));
+    // en los relámpagos el fuego de la catedral baja (el de las ruinas no)
+    if (c.id === 'catedral_fuego' && enRayo) alfa = 0.6;
     if (c.anim?.tipo === 'latir') alfa = (0.7 + 0.3 * (0.5 + 0.5 * Math.sin((t / c.anim.periodo_s) * 6.28))) * luzCat;
     capa(c, alfa, c.anim?.tipo === 'deriva' ? (c.anim.px_por_segundo < 0 ? -dx : dx) : 0);
     ceniza(c.id);

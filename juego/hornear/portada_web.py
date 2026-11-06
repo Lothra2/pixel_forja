@@ -9,7 +9,7 @@ from PIL import Image
 RAIZ = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'portada')
 
 def pesado(rel):
-    return rel.startswith('cartas/') or (rel.startswith('cinematicas/') and rel != 'cinematicas/vineta.png') or '_anim_' in rel or '_revelar_' in rel or rel.endswith('_1600.png') or rel in ('fondo/cielo.png', 'fondo/cementerio.png')
+    return rel.startswith('cartas/') or (rel.startswith('cinematicas/') and rel != 'cinematicas/vineta.png') or '_anim_' in rel or '_revelar_' in rel or rel.endswith('_1600.png') or rel in ('fondo/cielo.png', 'fondo/cementerio.png', 'fondo/ruinas_llamas.png', 'fondo/catedral_fuego.png')
 
 def pasar(rel):
     f = os.path.join(RAIZ, rel); out = f[:-4] + '.webp'
