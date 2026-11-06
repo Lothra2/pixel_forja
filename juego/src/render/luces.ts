@@ -11,6 +11,9 @@ import { R } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { lucesOzmaren, ALTO_OZMAREN } from './fuego';
 import { vivosDe } from './fuego_vivo';
+import { efectoPfx } from './pfx';
+/** La luz de un poder: la tabla de la Forja o, si es de pixelfx, la que trae el efecto. */
+const luzDe = (id: string): any => (id.startsWith('pfx:') ? efectoPfx(id.slice(4))?.luz : LUZ_EFECTO[id]);
 import { pulsosOzmaren, pulsoArma, lucesSuelo } from './fuego_especial';
 import { pulsoLuz } from '../../../src/engine/gotico/fuego_doom';
 
@@ -114,14 +117,14 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   // proyectiles: la luz viaja con ellos (tabla de la Forja: color, radio, curva, parpadeo); un abanico de más de 3 es una sola luz
   const salvas = new Map<any, { x: number; y: number; n: number; p: any }>();
   for (const p of j.proyectiles) {
-    const LE = LUZ_EFECTO[p.efecto];
+    const LE = luzDe(p.efecto);
     if (p.salva && LE?.enVuelo) { const s = salvas.get(p.salva) ?? { x: 0, y: 0, n: 0, p }; s.x += p.x; s.y += p.y; s.n++; salvas.set(p.salva, s); }
   }
   const unaPorSalva = new Set<any>();
   for (const [k, s] of salvas) if (s.n > 3) unaPorSalva.add(k);
   const hechas = new Set<any>();
   for (const p of j.proyectiles) {
-    const LE = LUZ_EFECTO[p.efecto];
+    const LE = luzDe(p.efecto);
     let x = p.x, y = p.y, rk = 1;
     if (p.salva && unaPorSalva.has(p.salva)) { if (hechas.has(p.salva)) continue; hechas.add(p.salva); const s = salvas.get(p.salva)!; x = s.x / s.n; y = s.y / s.n; rk = 1.3; }
     const [px, py] = aPant(x, y);
@@ -149,7 +152,7 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const [px, py] = aPant(e.x, e.y);
     if (!dentro(px, py, 300)) continue;
     const meta = manifiesto().wm?.[e.id];
-    const LE = LUZ_EFECTO[e.id];
+    const LE = luzDe(e.id);
     if (LE && meta) {
       // curva por cuadro de la Forja; los de prioridad 0 además dan el destello de pantalla
       const n = LE.curva.length, fi = Math.floor((e.t * 25) / (meta.t ?? 2));

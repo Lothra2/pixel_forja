@@ -14,7 +14,7 @@ import { R, entre, elegir, clamp, dist, hashTxt } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 import { zancada } from '../../../src/engine/gotico/figura';
 import { manifiesto } from '../motor/assets';
-import { muertePfx } from './pfx_usos';
+import { muertePfx, usosPfx } from './pfx_usos';
 
 /** Celdas que avanza un ciclo completo de caminar o correr (cuerpo de alto 1), según la pisada del motor. */
 export const ZANCADA = { caminar: zancada('caminar') / 16, correr: zancada('correr') / 16 };
@@ -1322,6 +1322,9 @@ const EFECTOS: Record<string, string> = {
   maldicion: 'maldicion_sombra', lluvia_flechas: 'lluvia_flechas', cuervos: 'tajo_garras',
 };
 export function efectoDe(e: string, elem: Elemento, hb?: Habilidad, proyectil = false): string {
+  // pixelfx: el efecto que la Forja asignó a esta habilidad (las flechas, virotes y el tornado siguen con los suyos)
+  const up = hb && usosPfx.hab.get(hb.id);
+  if (up && !/flecha|virote|tornado/.test(EFECTOS[e] ?? e)) { const id = proyectil ? up.proy : up.area ?? up.proy; if (id) return 'pfx:' + id; }
   if (hb?.id === 'marea_roja' || hb?.id === 'rio_carmesi') return 'nova_sangre';
   // proyectiles de luz o martillo y de veneno: las saetas nuevas de la Forja
   if (proyectil && (e === 'luz' || e === 'martillo')) return 'saeta_sagrada';
@@ -1761,7 +1764,7 @@ function golpeMonstruo(j: Juego, m: Monstruo) {
     const pg: Golpe = { ...g, elem: m.def.proyectil === 'flecha' || m.def.proyectil === 'lanza' ? 'fisico' : e, extra: {} };
     if (pg.elem !== 'fisico') { pg.min *= 1.1; pg.max *= 1.1; }
     const cnt = m.def.jefe ? 3 : 1;
-    for (let k = 0; k < cnt; k++) { const a = Math.atan2(obj.y - m.y, obj.x - m.x) + (k - (cnt - 1) / 2) * 0.25; disparar(j, m, m.x + Math.cos(a) * 5, m.y + Math.sin(a) * 5, pg, efectoProy(m.def.proyectil), m.def.proyectil === 'flecha' ? 12 : m.def.id === 'monja_hueca' && m.nivel < 25 ? 5.5 : 8); }
+    for (let k = 0; k < cnt; k++) { const a = Math.atan2(obj.y - m.y, obj.x - m.x) + (k - (cnt - 1) / 2) * 0.25; disparar(j, m, m.x + Math.cos(a) * 5, m.y + Math.sin(a) * 5, pg, usosPfx.mon.has(m.def.id) && m.def.proyectil !== 'flecha' ? 'pfx:' + usosPfx.mon.get(m.def.id) : efectoProy(m.def.proyectil), m.def.proyectil === 'flecha' ? 12 : m.def.id === 'monja_hueca' && m.nivel < 25 ? 5.5 : 8); }
     sonar(j, m.def.proyectil === 'flecha' ? 'flecha' : m.def.proyectil === 'hielo' ? 'hielo_lanzar' : m.def.proyectil === 'fuego' ? 'fuego_lanzar' : 'sombra', m.x, m.y, 0.7);
     return;
   }
@@ -1824,6 +1827,7 @@ function actualizarProyectiles(j: Juego, dt: number) {
 }
 /** Qué efecto suelta un proyectil al pegar: el que sugiere la tabla de luces de la Forja, o uno por elemento. */
 function impactoDe(p: Proyectil): string {
+  if (p.efecto.startsWith('pfx:')) { const im = usosPfx.impacto.get(p.efecto.slice(4)); if (im) return 'pfx:' + im; }
   const sug = LUZ_EFECTO[p.efecto]?.impacto; if (sug) return sug;
   const IMP: Partial<Record<Elemento, string>> = { fuego: 'explosion_fuego', frio: 'estallido_esquirlas', fisico: 'chispas_carne', rayo: 'impacto_rayo', veneno: 'impacto_veneno', luz: 'impacto_sagrado', sangre: 'salpicadura_sangre' };
   return /hueso/.test(p.efecto) ? 'impacto_hueso' : IMP[p.elem] ?? 'chispas_metal';

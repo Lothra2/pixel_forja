@@ -31,3 +31,23 @@ export function estadosPfx(e: { congelado: number; frio: number; veneno: number;
   if (e.miedo > 0) out.push('fx_confundido');
   return out;
 }
+
+/** Poderes de pixelfx por habilidad y por monstruo: los llena render/pfx.ts al bajar el índice (mientras tanto, los de siempre). */
+export const usosPfx = {
+  hab: new Map<string, { proy?: string; area?: string }>(),
+  mon: new Map<string, string>(),
+  impacto: new Map<string, string>(),
+};
+/** Reparte los efectos de cada habilidad en proyectil (el que vuela) y área (lo que pasa donde cae o donde pega). */
+export function armarUsosPfx(efectos: { id: string; uso?: any[]; luz?: { enVuelo?: boolean }; direccional: boolean }[]) {
+  const porHab = new Map<string, typeof efectos>();
+  for (const e of efectos) for (const u of e.uso ?? []) {
+    if (u.tipo === 'poder') for (const h of u.habilidades ?? []) { if (!porHab.has(h)) porHab.set(h, []); porHab.get(h)!.push(e); }
+    if (u.tipo === 'monstruo' && e.luz?.enVuelo) for (const m of u.monstruos ?? []) if (!usosPfx.mon.has(m)) usosPfx.mon.set(m, e.id);
+  }
+  for (const [h, es] of porHab) {
+    const proy = es.find((e) => e.luz?.enVuelo), area = es.find((e) => !e.luz?.enVuelo);
+    usosPfx.hab.set(h, { proy: proy?.id, area: area?.id });
+    if (proy && area && !usosPfx.impacto.has(proy.id)) usosPfx.impacto.set(proy.id, area.id);
+  }
+}

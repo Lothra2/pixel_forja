@@ -15,7 +15,7 @@ import { R, rng } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { calorOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
 import { prepararFuegos, vivosDe, tieneFuegoDoom, dibujarVivos } from './fuego_vivo';
-import { dibujarPfx, alfaCuerpo, efectoPfx } from './pfx';
+import { dibujarPfx, alfaCuerpo, efectoPfx, dirPfx } from './pfx';
 import { estadosPfx } from '../juego/pfx_usos';
 import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde } from './fuego_especial';
 let dtCuadro = 1 / 60;
@@ -260,6 +260,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     const [px, py] = aPant(p.x, p.y);
     if (p.arco) { const [ax, ay] = [px, py - p.z * 1.2]; ctx.fillStyle = p.elem === 'frio' ? '#a0e0ff' : p.elem === 'veneno' ? '#80ff60' : '#ffa040'; ctx.beginPath(); ctx.arc(ax, ay, 4, 0, Math.PI * 2); ctx.fill(); continue; }
     const id = p.efecto;
+    if (id.startsWith('pfx:')) { if (dibujarPfx(ctx, id.slice(4), p.t, px, py, { dir: dirPfx(p.vx, p.vy) })) continue; }
     mezclar(id);
     const meta = manifiesto().wm?.[id];
     const d = Math.round(((Math.atan2(p.vy, p.vx) * 180) / Math.PI / 45 + 8) % 8);

@@ -3,6 +3,7 @@
 // suelta cuando nadie la usa, con un tope de memoria (60 Mpx en táctil). Ver hornear/empacar_pfx.py.
 import { BASE } from '../motor/assets';
 import { E } from '../nucleo/lienzo';
+import { armarUsosPfx } from '../juego/pfx_usos';
 
 export interface CuadroPfx { 0: number; 1: number; 2: number; 3: number; 4: number; 5: number; 6: number }
 interface Pagina { archivo: string; w: number; h: number; bytes: number; ubic: [string, number, number] }
@@ -19,7 +20,7 @@ let datos: Record<string, EfectoPfx> | null = null, pidiendoDatos = false;
 function cargarDatos() {
   if (datos || pidiendoDatos) return;
   pidiendoDatos = true;
-  fetch(BASE + 'fx/efectos_pfx.json').then((r) => r.json()).then((j) => { datos = Object.fromEntries(j.efectos.map((e: EfectoPfx) => [e.id, e])); }).catch(() => { pidiendoDatos = false; });
+  fetch(BASE + 'fx/efectos_pfx.json').then((r) => r.json()).then((j) => { datos = Object.fromEntries(j.efectos.map((e: EfectoPfx) => [e.id, e])); armarUsosPfx(j.efectos); }).catch(() => { pidiendoDatos = false; });
 }
 cargarDatos();
 export const efectoPfx = (id: string) => (cargarDatos(), datos?.[id]);
