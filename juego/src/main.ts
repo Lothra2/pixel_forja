@@ -6,7 +6,7 @@ import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
-import { dibujarCine, precargarCine, claveCine, claveFinal, marcasCine } from './ui/cine';
+import { dibujarCine, precargarCine, claveCine, claveFinal, marcasCine, hayCine } from './ui/cine';
 import { dibujarHudTactil, consejoTactil } from './ui/hud_tactil';
 import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision, finalCompleto, decisionDe, decisionesDe } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
@@ -17,7 +17,7 @@ import { abrirTienda, cerrarPaneles, cambiarAgresivo, rectPanel, compacto } from
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
 import { vinetaSangre, dibujarPresentacion, dibujarCaida, DUR_PRESENTA } from './ui/horror';
-import { prepararPortada, esperarPortada } from './ui/portada';
+import { prepararPortada, esperarPortada, reiniciarPortada } from './ui/portada';
 import { miedoPaso } from './juego/miedo';
 import { dibujarMiedo } from './render/miedo';
 /** Presentación del jefe en curso (cámara lenta y nombre grande). */
@@ -559,14 +559,16 @@ function paso(dt: number) {
     }
     case 'intro': {
       introT += dt;
-      if (dibujarIntro(introT) || (tEstado > 0.5 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) { estado = 'menu'; tEstado = 0; Sonido.musica('menu'); try { localStorage.setItem('marca.intro', '1'); } catch { /* */ } }
+      // la intro de la Forja (planos de cine.ts, clave 'intro') si llegó; si no, la de siempre. Al terminar o saltarla, el título forjado
+      const fin = hayCine('intro') ? dibujarCine('intro', 0, introT) : dibujarIntro(introT);
+      if (fin || (tEstado > 0.5 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) { E.clicIzq = false; estado = 'menu'; tEstado = 0; reiniciarPortada(); Sonido.musica('menu'); try { localStorage.setItem('marca.intro', '1'); } catch { /* */ } }
       break;
     }
     case 'menu': {
       const r = menuPrincipal(tiempo, heroes.length > 0);
       dibujarCursor('senalar');
       if (r === 'jugar') { estado = heroes.length ? 'seleccion' : 'crear'; selClase = null; tEstado = 0; }
-      if (r === 'intro') { estado = 'intro'; introT = 0; tEstado = 0; Sonido.musica('intro'); }
+      if (r === 'intro') { estado = 'intro'; introT = 0; tEstado = 0; precargarCine('intro', 0); Sonido.musica('intro'); }
       if (r === 'opciones') { opcionesDesde = 'menu'; estado = 'opciones'; }
       if (r === 'idioma') { opciones.idioma = IDI ? 0 : 1; fijarIdioma(opciones.idioma); guardarOpciones(); }
       if (r) E.clicIzq = false;
@@ -687,7 +689,7 @@ async function arrancar() {
   } catch (e) { console.error(e); cargaMsg = 'Error: ' + e; return; }
   prepararHud();
   let vista = false; try { vista = localStorage.getItem('marca.intro') === '1'; } catch { /* */ }
-  estado = vista ? 'menu' : 'intro'; tEstado = 0; introT = 0;
+  estado = vista ? 'menu' : 'intro'; tEstado = 0; introT = 0; if (!vista) precargarCine('intro', 0);
   aplicarMusicaEstado();
   (window as any).__juego = () => j;
   (window as any).__estado = () => estado;

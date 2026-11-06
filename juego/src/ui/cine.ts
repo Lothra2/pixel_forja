@@ -14,12 +14,13 @@
 //         | { tipo: 'aparecer', desde_s, dur_s }
 //   camara = { desde: {x, y, zoom}, hasta: {x, y, zoom}, curva?: 'suave'|'lineal', sacudida?: {t, dur, fuerza} }
 //           x e y en píxeles de capa (con paralaje 1 se mueven 1 a 1), zoom 1 es la pantalla base.
-import { ctx, W, H } from '../nucleo/lienzo';
+import { ctx, W, H, E } from '../nucleo/lienzo';
 import { IDI, TITULO, texto, envolver, T } from './comun';
 import { BASE } from '../motor/assets';
 import { Sonido } from '../audio/sonido';
 import { prepararPortada, dibujarCarta, prepararCarta } from './portada';
 
+import { dibujarPfx, efectoPfx, duracionPfx, precargarPfx } from '../render/pfx';
 const RAIZ = BASE + 'portada/';
 let man: any = null, pidio = false;
 const imgs = new Map<string, HTMLImageElement>();
@@ -46,6 +47,8 @@ export function prepararCine() {
 const datos = (clave: string) => man?.cinematicas?.[clave] ?? demo[clave];
 /** La clave del cierre de un acto (el acto 7 tiene además una por final, ver claveFinal). */
 export const claveCine = (acto: number) => `acto_${acto}`;
+/** Hay planos para esa clave (la intro de la Forja, por ejemplo); si no, el juego usa su respaldo. */
+export const hayCine = (clave: string) => (prepararCine(), !!man?.cinematicas?.[clave]);
 /** La cinemática del final que te tocó, si la Forja ya la entregó (se ve al entregar la Corona, antes del epílogo). */
 export const claveFinal = (final: string): string | null => (datos(`acto_7_${final}`) ? `acto_7_${final}` : null);
 /** Marcas que eligen capas: una capa con `si` solo se ve si la marca está, y con `no` solo si no está (p. ej. vigdis_viva o vigdis_muerta). */
@@ -55,9 +58,10 @@ const NARRACION_ARRIBA = new Set(['p2_fortin']);
 export function marcasCine(m: string[]) { marcas = new Set(m); }
 /** Empieza a bajar las imágenes de una cinemática (o la carta de respaldo). */
 export function precargarCine(clave: string, acto: number) {
+  precargarPfx(['fx_trans_ceniza', 'fx_trans_iris']);
   prepararCine();
   const c = datos(clave);
-  if (c) { for (const p of c.planos) for (const k of p.capas) pedir(k.archivo); } else prepararCarta(acto);
+  if (c) { for (const p of c.planos) for (const k of p.capas) pedir(k.archivo); } else if (acto > 0) prepararCarta(acto);
 }
 /** Duración total (o la de la carta de respaldo). */
 export function durCine(clave: string): number { const c = datos(clave); return c ? c.planos.reduce((a: number, p: any) => a + p.dur, 0) : DUR_CARTA_CIERRE; }
@@ -100,6 +104,8 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   const dt = Math.max(0, Math.min(0.1, t - tAnt)); tAnt = t;
   const c = datos(clave);
   ctx.save(); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  // una clave sin planos que no es de acto (la intro antes de que la Forja la mande): nada que mostrar
+  if (!c && !/^acto_\d/.test(clave)) return true;
   if (!c) {
     // respaldo: la carta del acto que se cierra, con una sacudida al principio
     const sac = t < 0.6 ? (1 - t / 0.6) * 6 : 0;
@@ -161,6 +167,14 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   if (colorEn) tapa(colorEn, kEntra);
   if (colorSa) tapa(colorSa, kSale);
   if (p.particulas) particulas(p.particulas, dt, alfaPlano);
+  // transiciones de pixelfx. Ceniza: tapa y destapa, centrada en el corte entre dos planos. Iris: solo la mitad que
+  // cierra, al final del último plano de un acto. Un plano puede pedir otra con `transicion` ('ceniza', 'iris' o 'ninguna').
+  const transDe = (q: any, k: number) => q.transicion ?? (k < c.planos.length - 1 ? 'ceniza' : /^acto_\d/.test(clave) ? 'iris' : 'ninguna');
+  const dTrans = (id: string) => { const ef = efectoPfx(id); return ef ? duracionPfx(ef) : 0; };
+  const tr = transDe(p, i);
+  if (tr === 'ceniza' && i < c.planos.length - 1) { const d = dTrans('fx_trans_ceniza'); if (d && tl > p.dur - d / 2) dibujarPfx(ctx, 'fx_trans_ceniza', tl - (p.dur - d / 2), 0, 0, { W, H }); }
+  if (tr === 'iris' && i === c.planos.length - 1) { const d = dTrans('fx_trans_iris') / 2; if (d && tl > p.dur - d) dibujarPfx(ctx, 'fx_trans_iris', Math.min(d - 0.01, tl - (p.dur - d)), 0, 0, { W, H }); }
+  if (i > 0 && transDe(c.planos[i - 1], i - 1) === 'ceniza') { const d = dTrans('fx_trans_ceniza'); if (d && tl < d / 2) dibujarPfx(ctx, 'fx_trans_ceniza', d / 2 + tl, 0, 0, { W, H }); }
   // franjas de cine y narración en la zona de abajo
   ctx.save(); ctx.fillStyle = '#000'; const banda = H * 0.08; ctx.fillRect(0, 0, W, banda); ctx.fillRect(0, H - banda, W, banda); ctx.restore();
   if (p.narracion) {
@@ -182,7 +196,7 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   pista(t);
   return false;
 }
-function pista(t: number) { if (t > 1) texto(T('Clic o Esc para saltar', 'Click or Esc to skip'), W - 12, H - 10, { alin: 'right', tam: 11, color: 'rgba(160,140,110,0.6)' }); }
+function pista(t: number) { if (t > 1) texto(E.tactil ? T('Toca para saltar', 'Tap to skip') : T('Clic o Esc para saltar', 'Click or Esc to skip'), W - 12, H - 10, { alin: 'right', tam: 11, color: 'rgba(160,140,110,0.6)' }); }
 
 // ------------------------------------------------------------------ una cinemática de prueba con las capas del fondo de la portada
 // (para probar el reproductor mientras no llegan las de la Forja: window.__cine('demo'))
@@ -198,3 +212,4 @@ const demo: Record<string, any> = {
       narracion: { es: 'Push-in hacia la catedral, sacudida a los 2.5 segundos y la luz que se enciende.', en: 'Push-in toward the cathedral, a shake at 2.5 seconds and the light coming on.' } },
   ] },
 };
+(window as any).__cineDatos = () => man;
