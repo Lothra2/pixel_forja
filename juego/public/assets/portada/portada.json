@@ -296,9 +296,9 @@
     "z": 6.5,
     "archivo": "fondo/catedral_fuego.webp",
     "x": 824,
-    "y": 374,
-    "w": 176,
-    "h": 217,
+    "y": 359,
+    "w": 191,
+    "h": 224,
     "paralaje": 0.45,
     "mezcla": "sumar",
     "anim": {
@@ -306,8 +306,8 @@
      "columnas": 12,
      "cuadros": 12,
      "fps": 12,
-     "w": 176,
-     "h": 217
+     "w": 191,
+     "h": 224
     },
     "notas": "Fuego de Doom horneado detrás de los vitrales y en la puerta: tira en grilla, cuadro = floor(t * fps) % cuadros, en (x, y) de la capa, se suma, empalma. Durante un relámpago bajarla a 0.6 como catedral_luz."
    },
@@ -356,8 +356,8 @@
   "foco": {
    "x": 772,
    "puerta": [
-    719,
-    536
+    721,
+    530
    ],
    "notas": "En pantallas angostas (teléfono vertical) centrar la vista en foco.x para que se vea la catedral y su puerta."
   },
@@ -444,8 +444,8 @@
      ],
      "mezcla": "sumar",
      "nacen_en": [
-      719,
-      536
+      721,
+      530
      ],
      "notas": "suben desde la puerta de la catedral y se apagan a los 2 a 4 s"
     },
@@ -643,9 +643,9 @@
       {
        "id": "abadesa_luz",
        "archivo": "cinematicas/acto_1/p1_abadesa_abadesa_luz.webp",
-       "x": 637,
+       "x": 564,
        "y": 10,
-       "w": 256,
+       "w": 338,
        "h": 576,
        "paralaje": 0.55,
        "mezcla": "sumar",
@@ -933,9 +933,9 @@
        "id": "abadia",
        "archivo": "cinematicas/acto_1/p2_campanas_abadia.webp",
        "x": 0,
-       "y": 132,
+       "y": 140,
        "w": 1408,
-       "h": 660,
+       "h": 652,
        "paralaje": 0.3,
        "mezcla": "normal"
       },
@@ -944,7 +944,7 @@
        "archivo": "cinematicas/acto_1/p2_campanas_abadia_luz.webp",
        "x": 725,
        "y": 216,
-       "w": 398,
+       "w": 418,
        "h": 487,
        "paralaje": 0.3,
        "mezcla": "sumar",
@@ -1056,10 +1056,10 @@
       {
        "id": "abadia_fuego",
        "archivo": "cinematicas/acto_1/p2_campanas_abadia_fuego.webp",
-       "x": 864,
-       "y": 269,
-       "w": 251,
-       "h": 309,
+       "x": 862,
+       "y": 248,
+       "w": 272,
+       "h": 329,
        "paralaje": 0.3,
        "mezcla": "sumar",
        "anim": {
@@ -1067,8 +1067,8 @@
         "columnas": 12,
         "cuadros": 12,
         "fps": 12,
-        "w": 251,
-        "h": 309
+        "w": 272,
+        "h": 329
        }
       },
       {
@@ -1392,10 +1392,10 @@
       {
        "id": "rey_luz",
        "archivo": "cinematicas/acto_2/p1_rey_rey_luz.webp",
-       "x": 614,
+       "x": 617,
        "y": 309,
-       "w": 264,
-       "h": 468,
+       "w": 261,
+       "h": 465,
        "paralaje": 0.6,
        "mezcla": "sumar",
        "anim": {
@@ -2360,8 +2360,8 @@
        "archivo": "cinematicas/acto_3/p3_norte_rey_luz.webp",
        "x": 346,
        "y": 299,
-       "w": 382,
-       "h": 307,
+       "w": 387,
+       "h": 280,
        "paralaje": 0.6,
        "mezcla": "sumar",
        "anim": {
@@ -2468,9 +2468,9 @@
        "id": "rey_luz",
        "archivo": "cinematicas/acto_4/p1_hjaldur_rey_luz.webp",
        "x": 468,
-       "y": 405,
+       "y": 390,
        "w": 594,
-       "h": 387,
+       "h": 402,
        "paralaje": 0.6,
        "mezcla": "sumar",
        "anim": {
@@ -4093,7 +4093,7 @@
        "x": 456,
        "y": 17,
        "w": 501,
-       "h": 570,
+       "h": 569,
        "paralaje": 0.5,
        "mezcla": "sumar",
        "anim": {
@@ -5210,9 +5210,9 @@
        "id": "abadia",
        "archivo": "cinematicas/acto_7_cielo/c3_alba_abadia.webp",
        "x": 0,
-       "y": 282,
+       "y": 286,
        "w": 1408,
-       "h": 510,
+       "h": 506,
        "paralaje": 0.25,
        "mezcla": "normal"
       },
@@ -5774,6 +5774,1413 @@
       "sale": 3
      },
      "particulas": "nieve"
+    }
+   ]
+  },
+  "intro": {
+   "musica": "intro",
+   "planos": [
+    {
+     "id": "i01_valle",
+     "que": "Velmora antes: el valle en invierno al alba, la abadía de Santa Oria a contraluz sobre su colina nevada, el pueblo abajo con humo y faroles.",
+     "dur": 8,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_1.webp",
+       "recorte": [
+        0,
+        2706,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.85,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/intro/pagina_1.webp",
+       "recorte": [
+        1410,
+        2706,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": -24,
+       "y": 8,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 18,
+       "y": -11,
+       "zoom": 1.07
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Hubo un tiempo en que el valle de Velmora solo le temía al invierno.",
+      "en": "There was a time when the valley of Velmora feared only winter."
+     },
+     "fundido": {
+      "entra": 2,
+      "sale": 1
+     },
+     "particulas": "nieve"
+    },
+    {
+     "id": "i02_campanas",
+     "que": "Al alba, en el campanario: monjes de hábito y capucha tiran de las sogas a contraluz y la campana se mece.",
+     "dur": 8.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.9,
+       "mezcla": "normal"
+      },
+      {
+       "id": "movil_1",
+       "archivo": "cinematicas/intro/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        3825,
+        1400
+       ],
+       "x": 300,
+       "y": 0,
+       "w": 850,
+       "h": 400,
+       "paralaje": 0.9,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 9,
+        "cuadros": 55,
+        "fps": 12,
+        "w": 425,
+        "h": 200
+       }
+      },
+      {
+       "id": "movil_2",
+       "archivo": "cinematicas/intro/pagina_1.webp",
+       "recorte": [
+        0,
+        1402,
+        3825,
+        1302
+       ],
+       "x": 250,
+       "y": 420,
+       "w": 850,
+       "h": 372,
+       "paralaje": 0.9,
+       "mezcla": "normal",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 9,
+        "cuadros": 55,
+        "fps": 12,
+        "w": 425,
+        "h": 186
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 18,
+       "y": 10,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": -11,
+       "y": -8,
+       "zoom": 1.06
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Los monjes de Santa Oria tocaban las campanas al alba, y nadie preguntaba por qué la abadía se alzó sobre un pozo sellado.",
+      "en": "The monks of Santa Oria rang the bells at dawn, and no one asked why the abbey was raised over a sealed well."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1
+     },
+     "particulas": "polvo",
+     "sonidos": [
+      {
+       "t": 1.71,
+       "efecto": "campana",
+       "vol": 0.7
+      },
+      {
+       "t": 4,
+       "efecto": "campana",
+       "vol": 0.75
+      },
+      {
+       "t": 6.29,
+       "efecto": "campana",
+       "vol": 0.8
+      }
+     ]
+    },
+    {
+     "id": "i03_pozo",
+     "que": "Bajo la abadía, la cripta del pozo sellado: losa de hierro con cadenas y el sello de cera.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.9,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        3308,
+        3399,
+        608,
+        39
+       ],
+       "x": 1167,
+       "y": 116,
+       "w": 38,
+       "h": 39,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 38,
+        "h": 39
+       }
+      },
+      {
+       "id": "fuego_2",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        514,
+        3399,
+        784,
+        47
+       ],
+       "x": 578,
+       "y": 107,
+       "w": 49,
+       "h": 47,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 49,
+        "h": 47
+       }
+      },
+      {
+       "id": "fuego_3",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        2232,
+        3399,
+        608,
+        44
+       ],
+       "x": 232,
+       "y": 121,
+       "w": 38,
+       "h": 44,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 38,
+        "h": 44
+       }
+      },
+      {
+       "id": "fuego_4",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        0,
+        3399,
+        512,
+        50
+       ],
+       "x": 535,
+       "y": 465,
+       "w": 32,
+       "h": 50,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 32,
+        "h": 50
+       }
+      },
+      {
+       "id": "fuego_5",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        3190,
+        3289,
+        576,
+        50
+       ],
+       "x": 826,
+       "y": 470,
+       "w": 36,
+       "h": 50,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 36,
+        "h": 50
+       }
+      },
+      {
+       "id": "fuego_6",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        2372,
+        3289,
+        816,
+        71
+       ],
+       "x": 628,
+       "y": 308,
+       "w": 51,
+       "h": 71,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 51,
+        "h": 71
+       }
+      },
+      {
+       "id": "fuego_7",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        2842,
+        3399,
+        464,
+        42
+       ],
+       "x": 721,
+       "y": 287,
+       "w": 29,
+       "h": 42,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 29,
+        "h": 42
+       }
+      },
+      {
+       "id": "fuego_8",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        1300,
+        3399,
+        448,
+        47
+       ],
+       "x": 271,
+       "y": 356,
+       "w": 28,
+       "h": 47,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 28,
+        "h": 47
+       }
+      },
+      {
+       "id": "fuego_9",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        1762,
+        3289,
+        608,
+        94
+       ],
+       "x": 1370,
+       "y": 569,
+       "w": 38,
+       "h": 94,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 38,
+        "h": 94
+       }
+      },
+      {
+       "id": "fuego_10",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        1750,
+        3399,
+        480,
+        46
+       ],
+       "x": 750,
+       "y": 243,
+       "w": 30,
+       "h": 46,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 30,
+        "h": 46
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": -10,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": 2,
+       "zoom": 1.1
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Nadie recordaba el voto de los primeros hermanos: no cantar nunca de noche.",
+      "en": "No one remembered the vow of the first brothers: never sing at night."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1.2
+     },
+     "particulas": "polvo"
+    },
+    {
+     "id": "i04_cielo",
+     "que": "La noche de la última cosecha: la carreta en el campo, la abadía lejos, y el cielo que se desgarra con luz roja.",
+     "dur": 6.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.85,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        1410,
+        794,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 14,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -17,
+       "zoom": 1.05
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 1.9,
+       "dur": 1.5,
+       "fuerza": 5
+      }
+     },
+     "narracion": {
+      "es": "La noche de la última cosecha, el cielo se abrió.",
+      "en": "On the night of the last harvest, the sky opened."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 0.6
+     },
+     "particulas": "nieve",
+     "sonidos": [
+      {
+       "t": 1.9,
+       "efecto": "trueno",
+       "vol": 0.9
+      }
+     ]
+    },
+    {
+     "id": "i05_brasa",
+     "que": "La brasa cae despacio desde la herida del cielo, con estela de fuego de Doom, hacia la abadía.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        0,
+        1588,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.85,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        1410,
+        1588,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        2146,
+        2939,
+        1504,
+        176
+       ],
+       "x": 737,
+       "y": 0,
+       "w": 188,
+       "h": 352,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 94,
+        "h": 176
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 12,
+       "y": -6,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": -3,
+       "y": 4,
+       "zoom": 1.06
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Una brasa cayó, lenta, como si buscara algo.",
+      "en": "An ember fell, slowly, as if it were searching for something."
+     },
+     "fundido": {
+      "entra": 0.6,
+      "sale": 0.35,
+      "color_sale": "blanco"
+     },
+     "particulas": "brasas"
+    },
+    {
+     "id": "i06_impacto",
+     "que": "El impacto: la abadía arde desde adentro, fuego de Doom en el tejado, los vitrales y la puerta; los sobrevivientes miran de espaldas.",
+     "dur": 5.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        0,
+        2382,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.85,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        1410,
+        2382,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        0,
+        2686,
+        3408,
+        251
+       ],
+       "x": 610,
+       "y": 0,
+       "w": 426,
+       "h": 502,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 213,
+        "h": 251
+       }
+      },
+      {
+       "id": "fuego_2",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        1762,
+        3126,
+        1488,
+        156
+       ],
+       "x": 357,
+       "y": 147,
+       "w": 186,
+       "h": 312,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 93,
+        "h": 156
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": -14,
+       "y": -8,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 20,
+       "y": 0,
+       "zoom": 1.08
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 2.4,
+       "fuerza": 14
+      }
+     },
+     "narracion": {
+      "es": "Cayó en el claustro.",
+      "en": "It fell into the cloister."
+     },
+     "fundido": {
+      "entra": 0.6,
+      "sale": 0.8,
+      "color_entra": "blanco"
+     },
+     "particulas": "ceniza",
+     "sonidos": [
+      {
+       "t": 0,
+       "efecto": "explosion",
+       "vol": 1
+      },
+      {
+       "t": 0.15,
+       "efecto": "trueno",
+       "vol": 1
+      }
+     ]
+    },
+    {
+     "id": "i07_claustro",
+     "que": "En el claustro nevado, la brasa caída humea entre las losas del jardín con su luz roja; detrás, en la torre, las campanas se mecen solas.",
+     "dur": 7,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        0,
+        3176,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.9,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        0,
+        3289,
+        1760,
+        108
+       ],
+       "x": 479,
+       "y": 445,
+       "w": 220,
+       "h": 216,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 110,
+        "h": 108
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 6,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": -6,
+       "y": 3,
+       "zoom": 1.08
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 0,
+       "dur": 0.9,
+       "fuerza": 5
+      }
+     },
+     "narracion": {
+      "es": "Y las campanas doblaron solas.",
+      "en": "And the bells tolled on their own."
+     },
+     "fundido": {
+      "entra": 0.8,
+      "sale": 1
+     },
+     "particulas": "ceniza",
+     "sonidos": [
+      {
+       "t": 0.67,
+       "efecto": "campana",
+       "vol": 0.85
+      },
+      {
+       "t": 3.33,
+       "efecto": "campana",
+       "vol": 0.8
+      },
+      {
+       "t": 6,
+       "efecto": "campana",
+       "vol": 0.7
+      }
+     ]
+    },
+    {
+     "id": "i08_camposanto",
+     "que": "Al amanecer gris, en el camposanto bajo la ceniza, los muertos se levantan secos y retorcidos.",
+     "dur": 8,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_2.webp",
+       "recorte": [
+        1410,
+        3176,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.85,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        0,
+        2939,
+        2144,
+        185
+       ],
+       "x": 640,
+       "y": 0,
+       "w": 268,
+       "h": 370,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 134,
+        "h": 185
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 30,
+       "y": 6,
+       "zoom": 1.04
+      },
+      "hasta": {
+       "x": -26,
+       "y": -4,
+       "zoom": 1.04
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Al amanecer, los monjes ya no estaban. Y el valle empezó a arder sin fuego.",
+      "en": "By dawn, the monks were gone. And the valley began to burn without fire."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 1
+     },
+     "particulas": "ceniza"
+    },
+    {
+     "id": "i09_fuego",
+     "que": "Los sobrevivientes en silueta alrededor de una hoguera de fuego de Doom entre las ruinas del pueblo.",
+     "dur": 7.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.85,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        0,
+        2382,
+        3392,
+        302
+       ],
+       "x": 479,
+       "y": 96,
+       "w": 424,
+       "h": 604,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 212,
+        "h": 302
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": -10,
+       "y": 6,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 6,
+       "y": -1,
+       "zoom": 1.07
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Los que sobrevivieron llevan ceniza en la piel. La llaman la Marca.",
+      "en": "Those who survived carry ash on their skin. They call it the Mark."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1
+     },
+     "particulas": "ceniza"
+    },
+    {
+     "id": "i10_tu",
+     "que": "Las ocho clases en la cresta, a contraluz de la catedral que arde: tú también.",
+     "dur": 8,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        1410,
+        794,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.85,
+       "mezcla": "normal"
+      },
+      {
+       "id": "frente",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        0,
+        1588,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        0,
+        3126,
+        1760,
+        161
+       ],
+       "x": 670,
+       "y": 149,
+       "w": 220,
+       "h": 322,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 110,
+        "h": 161
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 10,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -6,
+       "zoom": 1.08
+      },
+      "curva": "suave"
+     },
+     "narracion": {
+      "es": "Tú también la tienes.",
+      "en": "You bear it too."
+     },
+     "fundido": {
+      "entra": 1,
+      "sale": 1
+     },
+     "particulas": "brasas"
+    },
+    {
+     "id": "i11_ojos",
+     "que": "En el fondo del pozo, entre relámpagos, Ozmaren abre los ojos.",
+     "dur": 9.5,
+     "capas": [
+      {
+       "id": "fondo",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        1410,
+        1588,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.92,
+       "mezcla": "normal"
+      },
+      {
+       "id": "luz_1",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        2820,
+        1588,
+        704,
+        396
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.92,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "tiempo",
+        "claves": [
+         [
+          0,
+          0
+         ],
+         [
+          2.14,
+          0
+         ],
+         [
+          2.2,
+          1
+         ],
+         [
+          2.27,
+          0.25
+         ],
+         [
+          2.33,
+          0.85
+         ],
+         [
+          2.62,
+          0
+         ],
+         [
+          3.04,
+          0
+         ],
+         [
+          3.1,
+          0.75
+         ],
+         [
+          3.18,
+          0.15
+         ],
+         [
+          3.24,
+          0.5
+         ],
+         [
+          3.5,
+          0
+         ],
+         [
+          5.94,
+          0
+         ],
+         [
+          6,
+          1
+         ],
+         [
+          6.07,
+          0.35
+         ],
+         [
+          6.13,
+          1
+         ],
+         [
+          6.22,
+          0.5
+         ],
+         [
+          6.75,
+          0
+         ]
+        ]
+       }
+      },
+      {
+       "id": "luz_2",
+       "archivo": "cinematicas/intro/pagina_3.webp",
+       "recorte": [
+        3526,
+        1588,
+        262,
+        307
+       ],
+       "x": 565,
+       "y": 33,
+       "w": 262,
+       "h": 307,
+       "paralaje": 0.92,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "tiempo",
+        "claves": [
+         [
+          0,
+          0
+         ],
+         [
+          4.35,
+          0
+         ],
+         [
+          4.45,
+          0.55
+         ],
+         [
+          4.52,
+          0.15
+         ],
+         [
+          4.62,
+          0.8
+         ],
+         [
+          4.7,
+          0.5
+         ],
+         [
+          4.85,
+          1
+         ]
+        ]
+       }
+      },
+      {
+       "id": "vineta",
+       "archivo": "cinematicas/vineta.png",
+       "x": 64,
+       "y": 36,
+       "w": 1280,
+       "h": 720,
+       "paralaje": 0,
+       "mezcla": "normal"
+      }
+     ],
+     "camara": {
+      "desde": {
+       "x": 0,
+       "y": 0,
+       "zoom": 1
+      },
+      "hasta": {
+       "x": 0,
+       "y": -4,
+       "zoom": 1.14
+      },
+      "curva": "suave",
+      "sacudida": {
+       "t": 6,
+       "dur": 1.4,
+       "fuerza": 10
+      }
+     },
+     "narracion": {
+      "es": "Y en el fondo del pozo, algo que esperaba mil inviernos abrió los ojos.",
+      "en": "And at the bottom of the well, something that had waited a thousand winters opened its eyes."
+     },
+     "fundido": {
+      "entra": 1.2,
+      "sale": 1.5
+     },
+     "sonidos": [
+      {
+       "t": 2.2,
+       "efecto": "trueno",
+       "vol": 0.8
+      },
+      {
+       "t": 3.1,
+       "efecto": "trueno",
+       "vol": 0.6
+      },
+      {
+       "t": 6,
+       "efecto": "rugido_jefe",
+       "vol": 1
+      }
+     ]
     }
    ]
   }

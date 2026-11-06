@@ -13,3 +13,9 @@ cinematicas/  las cinemáticas de cierre de cada acto: portada.json > cinematica
               "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0. El fuego (la hoja fx/fuego.png y
               las tiras de fuego detrás de vitrales, como catedral_fuego en acto_5/p4_ysmeral) es fuego de Doom
               horneado: anim "cuadros" con su hoja en grilla (columnas, cuadros, fps, w, h), se suma y empalma.
+              La intro (clave intro) sale de escenas 3D horneadas y empaquetadas en cinematicas/intro/pagina_N.png:
+              cada capa trae recorte [sx, sy, sw, sh] (de dónde sale en su página; con anim "cuadros" la celda k
+              está en sx + (k % columnas) * w, sy + floor(k / columnas) * h) y se dibuja en x, y, w, h de la capa
+              (las tiras van a media resolución: se agrandan). movil_N: normal con alfa (campanas, monjes), en
+              bucle. fuego_N: suma, en bucle. luz_N: suma con anim "tiempo" = { tipo: 'tiempo', claves: [[s, alfa],
+              ...] }: el alfa sigue las claves en el segundo del plano, lineal entre claves (relámpagos, ojos).
