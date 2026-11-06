@@ -153,10 +153,13 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   let alzar = 0;
   for (const sa of z.salidas) if (sa.piezas?.length) {
     const fa = sa.piezas[sa.piezas.length - 1], dy = h.y - fa.cy, dx = Math.abs(h.x - fa.cx);
-    if (dy > -2 && dy < 26 && dx < 16) alzar = Math.max(alzar, 190 * Math.min(1, (26 - dy) / 12) * Math.min(1, (16 - dx) / 6));
+    if (dy > -2 && dy < 26 && dx < 16) alzar = Math.max(alzar, 240 * Math.min(1, (26 - dy) / 14) * Math.min(1, (16 - dx) / 6));
   }
   camAlzada += (alzar - camAlzada) * Math.min(1, dt * 2.5);
   cam.x = (h.x - h.y) * 16 + sx; cam.y = (h.x + h.y) * 8 + sy - camAlzada;
+  // plano de llegada a la catedral: la primera vez que el héroe entra al camposanto o se acerca a la puerta, 3.5 s con la
+  // fachada entera (el foco de siempre, sin zoom); se suelta antes si el héroe camina más de 2 casillas
+  planoLlegada(j, dt);
   // cámara de jefe: entre el héroe y el jefe, con el jefe entero debajo de su barra y el héroe arriba del HUD
   const jf = j.jefe, enPelea = !!jf && !jf.muerto && Math.hypot(jf.x - h.x, jf.y - h.y) < 16 && foco.k <= 0;
   camJefe += ((enPelea ? 1 : 0) - camJefe) * Math.min(1, dt * 1.8);
@@ -336,7 +339,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   ctx.restore();
   // lo que vive en la zona (pixelfx): antes de la luz, así la noche también lo oscurece
   dibujarAmbiente(ctx, j, aPant, W, H, tiempo);
-  // luz y oscuridad
+  // bruma baja al pie de la catedral, y después la luz
+  brumaAncla(j);
   dibujarLuz(j, tiempo);
   puertaCatedral(j, dt, tiempo);
   // números de daño (encima de la oscuridad para que se lean)
@@ -592,6 +596,46 @@ function dibujarLuz(j: Juego, t: number) {
     nc.globalCompositeOperation = 'source-over';
     ctx.drawImage(nieblaCv, 0, 0);
   }
+}
+
+// ---------------------------------------------------------------- la catedral: plano de llegada y bruma baja
+let llegada: { t: number; x: number; y: number; hx: number; hy: number; zona: string } | null = null;
+const llegadasVistas = new Set<string>();
+function planoLlegada(j: Juego, dt: number) {
+  const z = j.zona, h = j.heroe;
+  if (!llegada) {
+    for (const sa of z.salidas) if (sa.piezas?.length) {
+      const fa = sa.piezas[sa.piezas.length - 1], clave = z.id + ':' + z.semilla;
+      if (llegadasVistas.has(clave)) continue;
+      const puerta = Math.hypot(h.x - (fa.cx + 0.5), h.y - (fa.cy + 1));
+      if (z.id === 'a1_cementerio' || puerta < 20) { llegadasVistas.add(clave); llegada = { t: 0, x: fa.cx + 0.5 - 15, y: fa.cy + 1 - 15, hx: h.x, hy: h.y, zona: clave }; }
+    }
+  }
+  if (!llegada) return;
+  if (llegada.zona !== z.id + ':' + z.semilla) { llegada = null; foco.k = 0; return; }
+  llegada.t += dt;
+  // la posición de partida se toma al asentarse la zona (al entrar, el héroe se ubica en el primer cuadro)
+  if (llegada.t < 0.3) { llegada.hx = h.x; llegada.hy = h.y; }
+  const movio = Math.hypot(h.x - llegada.hx, h.y - llegada.hy) > 2;
+  if (llegada.t < 3.5 && !movio) { foco.x = llegada.x; foco.y = llegada.y; foco.k = Math.min(1, foco.k + dt / 0.8); }
+  else { foco.k = Math.max(0, foco.k - dt / 1); if (foco.k <= 0) llegada = null; }
+}
+/** Bruma baja que se arrastra al pie de la fachada y del costado de la nave y la cabecera (solo con niebla). */
+function brumaAncla(j: Juego) {
+  const z = j.zona; if (!z.niebla) return;
+  ctx.save();
+  const mancha = (x: number, y: number) => {
+    const [px, py] = aPant(x, y); if (px < -150 || px > W + 150 || py < -100 || py > H + 100) return;
+    ctx.save(); ctx.translate(px, py); ctx.scale(1, 0.45);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 120); g.addColorStop(0, `rgba(112,116,122,${z.niebla! * 0.22})`); g.addColorStop(1, 'rgba(112,116,122,0)');
+    ctx.fillStyle = g; ctx.fillRect(-120, -120, 240, 240); ctx.restore();
+  };
+  for (const sa of z.salidas) if (sa.piezas?.length) {
+    const fa = sa.piezas[sa.piezas.length - 1];
+    for (let i = -6; i <= 6; i += 2) mancha(fa.cx + 0.5 + i, fa.cy + 3.3);
+    for (const p of sa.piezas.slice(0, -1)) for (let i = -4; i <= 4; i += 2) mancha(p.cx + 7.7, p.cy + 0.5 + i);
+  }
+  ctx.restore();
 }
 
 // clima: lluvia, nieve, ceniza y niebla
