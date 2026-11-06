@@ -29,3 +29,12 @@ npx tsx scripts/nekketsu.ts docs/ejemplos/nekketsu_nes/familia_gg.json salida/ne
 ```
 Sale `<id>.png` + `<id>.json` por personaje (los de `porteros` con las animaciones de portero, los de `perros` como perro) y el tablero de muestra.
 Pruebas: `src/engine/__tests__/nekketsu.test.ts` (filas completas, pies en el piso, altura de 24 a 30 px, contorno, como mucho 16 colores, determinista).
+
+## Versión chibi (la que se usa)
+
+`src/engine/nes/chibi.ts` dibuja como Kunio-kun pixel por pixel, sin líneas ni elipses: la cabeza (cráneo de 14 x 13,
+gorra de pelo por corte, extras por peinado, marcas y cara por expresión) y el cuerpo (torso, brazos y piernas como
+plantillas, puestas en las articulaciones de cada pose; las de atrás un tono más oscuras y las de adelante con su línea
+de tinta contra el cuerpo). `chibiSheet(look, { keeper })` arma la misma hoja que `nesSheet` (mismas animaciones y filas),
+y `scripts/nekketsu.ts` la usa por defecto (`--trazos` vuelve a la primera versión). Muestra rápida:
+`npx tsx scripts/chibi_tablero.ts <elenco.json> <salida.png> [ids...]`.

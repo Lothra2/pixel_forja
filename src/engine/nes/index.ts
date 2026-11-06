@@ -3,3 +3,4 @@ export * from './look';
 export * from './draw';
 export * from './poses';
 export * from './sheet';
+export * from './chibi';

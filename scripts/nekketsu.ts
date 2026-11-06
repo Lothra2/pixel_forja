@@ -6,7 +6,7 @@
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { encodePng, createRaster, migrateFicha, nesSheet, nesDogSheet, nesLookFromFicha, nesFrame, nesDogFrame, NES_ANIMS, type NesLook, type NesDogLook, type Raster, type Ficha } from '../src/engine/index.ts';
+import { encodePng, createRaster, migrateFicha, chibiSheet, chibiFrame, CHIBI_ANIMS, nesSheet, nesDogSheet, nesLookFromFicha, nesFrame, nesDogFrame, NES_ANIMS, type NesLook, type NesDogLook, type Raster, type Ficha } from '../src/engine/index.ts';
 
 const [, , cast, out] = process.argv;
 const ti = process.argv.indexOf('--tablero'), board = ti > 0 ? process.argv[ti + 1] : null;
@@ -18,7 +18,9 @@ for (const [id, v] of Object.entries(spec.personas)) {
   else looks[id] = v as NesLook;
 }
 const write = (id: string, s: { png: Raster; meta: unknown }): void => { writeFileSync(join(out, `${id}.png`), encodePng(s.png)); writeFileSync(join(out, `${id}.json`), JSON.stringify(s.meta)); };
-for (const [id, L] of Object.entries(looks)) write(id, nesSheet(L, { keeper: spec.porteros?.includes(id) }));
+// the chibi style (pixel templates, src/engine/nes/chibi.ts) is the default; --trazos keeps the first one drawn with lines
+const trazos = process.argv.includes('--trazos');
+for (const [id, L] of Object.entries(looks)) write(id, trazos ? nesSheet(L, { keeper: spec.porteros?.includes(id) }) : chibiSheet(L, { keeper: spec.porteros?.includes(id) }));
 for (const [id, D] of Object.entries(spec.perros ?? {})) write(id, nesDogSheet(D));
 console.log(`${Object.keys(looks).length + Object.keys(spec.perros ?? {}).length} hojas Nekketsu en ${out}`);
 
@@ -30,7 +32,8 @@ if (board) {
   for (let i = 0; i < R.w * R.h; i++) R.data.set(((Math.floor(i / R.w / (12 * S))) % 2) ? [82, 196, 48, 255] : [94, 214, 58, 255], i * 4);
   ids.forEach((id, row) => poses.forEach(([a, v, k], col) => {
     let f: Raster;
-    if (looks[id]) { const an = NES_ANIMS[a]; const list = (v === 'front' ? an.front : v === 'back' ? an.back : an.side) ?? an.side; f = nesFrame(looks[id], (v === 'front' && an.front) || (v === 'back' && an.back) ? v : 'side', list[Math.min(k, list.length - 1)]); }
+    if (looks[id] && !trazos) { const an = CHIBI_ANIMS[a]; const list = (v === 'front' ? an.front : v === 'back' ? an.back : an.side) ?? an.side; f = chibiFrame(looks[id], ['sad', 'dizzy'].includes(a) ? 'front' : (v === 'front' && an.front) || (v === 'back' && an.back) ? v : 'side', list[Math.min(k, list.length - 1)]); }
+    else if (looks[id]) { const an = NES_ANIMS[a]; const list = (v === 'front' ? an.front : v === 'back' ? an.back : an.side) ?? an.side; f = nesFrame(looks[id], (v === 'front' && an.front) || (v === 'back' && an.back) ? v : 'side', list[Math.min(k, list.length - 1)]); }
     else f = nesDogFrame(spec.perros![id], col % 3 === 0 ? {} : { legs: [[5, 1], [3, 2], [-6, 2], [-8, 1]], bob: 1, tail: -4 });
     for (let y = 0; y < 32 * S; y++) for (let x = 0; x < 32 * S; x++) {
       const si = (Math.floor(y / S) * 32 + Math.floor(x / S)) * 4;

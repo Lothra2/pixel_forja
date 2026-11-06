@@ -32,3 +32,27 @@ describe('estilo Nekketsu', () => {
     expect(Buffer.from(a).equals(Buffer.from(b))).toBe(true);
   });
 });
+
+describe('estilo chibi Nekketsu (plantillas de pixeles)', () => {
+  it('cada animación sale en las cinco filas, con las de portero solo si es portero', async () => {
+    const { chibiSheet, CHIBI_ANIMS } = await import('../index');
+    const { meta } = chibiSheet(L, { keeper: true });
+    for (const a of Object.keys(CHIBI_ANIMS)) for (const d of Object.keys(NES_DIRS)) expect(meta.anims[`${a}_${d}`], `${a}_${d}`).toBeDefined();
+    expect(chibiSheet(L).meta.anims.keeper_dive_right).toBeUndefined();
+  });
+  it('de pie: los pies en el piso, cabezón (la cabeza es casi la mitad) y con contorno', async () => {
+    const { chibiFrame } = await import('../index');
+    const f = chibiFrame(L, 'side', {}), ys = opaque(f);
+    expect(Math.max(...ys)).toBeGreaterThanOrEqual(NES_FOOT); expect(Math.max(...ys)).toBeLessThanOrEqual(NES_FOOT + 1);
+    const h = Math.max(...ys) - Math.min(...ys) + 1; expect(h).toBeGreaterThanOrEqual(25); expect(h).toBeLessThanOrEqual(31);
+    let ink = 0; for (let i = 0; i < f.data.length; i += 4) if (f.data[i] === NES_INK[0] && f.data[i + 1] === NES_INK[1] && f.data[i + 2] === NES_INK[2] && f.data[i + 3]) ink++;
+    expect(ink).toBeGreaterThan(50);
+  });
+  it('todas las poses caben en su cuadro (las caídas y la palomita no se salen por abajo)', async () => {
+    const { chibiFrame, CHIBI_ANIMS } = await import('../index');
+    for (const [n, a] of Object.entries(CHIBI_ANIMS)) for (const p of [...a.side, ...(a.front ?? [])]) {
+      const ys = opaque(chibiFrame(L, 'side', p));
+      expect(ys.length, n).toBeGreaterThan(80); expect(Math.max(...ys), n).toBeLessThanOrEqual(31);
+    }
+  });
+});
