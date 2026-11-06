@@ -104,7 +104,8 @@ export const LUZ_EFECTO: Record<string, LuzEfecto> = {
     curva: [0.22, 0.26, 0.3, 0.35, 0.41, 0.48, 0.55, 0.62, 1, 0.92, 0.74, 0.56, 0.42, 0.3, 0.2, 0.12, 0.06, 0.02],
   },
   crater_ardiente: { color: COL.brasa, radio: 160, intensidad: 0.6, curva: curvaDoom('crater_ardiente'), altura: 10, parpadeo: 0.14, sombra: false, prioridad: 2 },
-  aliento_infernal: { color: COL.fuego, radio: 230, intensidad: 0.9, curva: pulso(8, 0.86, 0.12, 2), altura: 40, parpadeo: 0.2, sombra: true, prioridad: 1 },
+  // aliento_infernal sopla fuego de Doom a lo largo del chorro: la curva es el calor medio de la llama en cada cuadro
+  aliento_infernal: { color: COL.fuego, radio: 230, intensidad: 0.9, curva: curvaDoom('aliento_infernal'), altura: 40, parpadeo: 0.12, sombra: true, prioridad: 1 },
   // ---- hielo
   saeta_hielo: proyectil(COL.hielo, 160, 0.7, 6, 'estallido_esquirlas', { parpadeo: 0.05 }),
   estallido_esquirlas: golpe({ color: COL.hielo, radio: 190, intensidad: 0.85, altura: 30 }, 10, 0, 0.5),
