@@ -16,6 +16,7 @@ const ALFA: Record<string, number> = { fx_lluvia: 0.45, fx_nieve: 0.5, fx_ventis
 const ORDEN_CLIMA = ['fx_tormenta', 'fx_ventisca', 'fx_lluvia', 'fx_nieve', 'fx_niebla', 'fx_hojas_caen', 'fx_luciernagas', 'fx_rayos_luz', 'fx_nubes'];
 const EXCLUYE: Record<string, string> = { fx_lluvia: 'fx_tormenta', fx_nieve: 'fx_ventisca' };
 
+const CHICOS = new Set(['fx_sapo', 'fx_serpiente', 'fx_murcielago', 'fx_cuervo']);
 interface Planta { id: string; x: number; y: number; fase: number }
 let zonaId = '', clima: string[] = [], plantas: Planta[] = [], pantallaTodo: string[] = [];
 export const climaPfx = { activo: [] as string[] };
@@ -54,7 +55,8 @@ export function dibujarAmbiente(ctx: CanvasRenderingContext2D, j: Juego, aPant: 
     const [px, py] = aPant(p.x, p.y);
     if (px < -80 || px > W + 80 || py < -60 || py > H + 160) continue;
     if (++n > tope) break;
-    dibujarPfx(ctx, p.id, t + p.fase, px, py);
+    // los bichos chicos a escala 1 (del tamaño de un animal real junto al héroe)
+    dibujarPfx(ctx, p.id, t + p.fase, px, py, { escala: CHICOS.has(p.id) ? 0.5 : 1 });
   }
 }
 
