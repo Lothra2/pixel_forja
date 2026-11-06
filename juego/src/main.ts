@@ -478,7 +478,7 @@ let ultimo = performance.now();
 let introT = 0;
 (window as any).__introA = (s: number) => { introT = s; };
 (window as any).__aFinal = () => { estado = 'final'; finalT = 999; };
-(window as any).__cine = (clave: string, acto = 1, marcas: string[] = []) => { marcasCine(marcas); cine = { clave, acto, t: 0, despues: () => { estado = 'juego'; } }; precargarCine(clave, acto); estado = 'cine'; };
+(window as any).__cine = (clave: string, acto = 1, marcas: string[] = []) => { marcasCine(marcas); const antes = estado; cine = { clave, acto, t: 0, despues: () => { estado = antes; } }; precargarCine(clave, acto); estado = 'cine'; };
 (window as any).__cineT = (s: number) => { if (cine) cine.t = s; };
 (window as any).__carga = (k: number, m: string) => { estado = 'carga'; cargaK = k; cargaMsg = m; };
 (window as any).__usar = (o: ObjZ) => { if (j) usarObjeto(j, o); };
@@ -530,7 +530,7 @@ function paso(dt: number) {
       if (!cine) { estado = 'juego'; break; }
       cine.t += dt;
       if (dibujarCine(cine.clave, cine.acto, cine.t) || (cine.t > 0.6 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) {
-        E.clicIzq = false; const c = cine; cine = null; estado = 'juego'; tEstado = 0; c.despues();
+        E.clicIzq = false; const c = cine; cine = null; estado = j ? 'juego' : 'menu'; tEstado = 0; c.despues();
       }
       break;
     }
@@ -598,6 +598,7 @@ function paso(dt: number) {
       break;
     }
     case 'juego': {
+      if (!j) { estado = 'menu'; break; }
       const jj = j!;
       if (zonaPendiente) { const z = zonaPendiente; zonaPendiente = null; if (z.entrada === '__portal') { const p = jj.portal!; irAZona(z.id, 'centro').then(() => { jj.heroe.x = p.x + 1; jj.heroe.y = p.y + 1; }); } else irAZona(z.id, z.entrada); break; }
       opcionesRender.idi = IDI;

@@ -50,6 +50,8 @@ export const claveCine = (acto: number) => `acto_${acto}`;
 export const claveFinal = (final: string): string | null => (datos(`acto_7_${final}`) ? `acto_7_${final}` : null);
 /** Marcas que eligen capas: una capa con `si` solo se ve si la marca está, y con `no` solo si no está (p. ej. vigdis_viva o vigdis_muerta). */
 let marcas = new Set<string>();
+/** Planos cuyo sujeto está abajo (la tumba y Vigdis con su farol): la narración va arriba, sobre el cielo. */
+const NARRACION_ARRIBA = new Set(['p2_fortin']);
 export function marcasCine(m: string[]) { marcas = new Set(m); }
 /** Empieza a bajar las imágenes de una cinemática (o la carta de respaldo). */
 export function precargarCine(clave: string, acto: number) {
@@ -168,9 +170,12 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
     const ln = envolver(s, W * 0.7, tn).slice(0, 3);
     const kt = Math.min(1, Math.max(0, (tl - 0.6) / 0.9), Math.max(0, (p.dur - tl) / 0.7)) * Math.min(kEntra, kSale) ** 0.5;
     ctx.save(); ctx.globalAlpha = kt;
-    const y0 = H - banda - 18 - (ln.length - 1) * tn * 1.35;
-    const g = ctx.createLinearGradient(0, y0 - tn * 2, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.75)');
-    ctx.fillStyle = g; ctx.fillRect(0, y0 - tn * 2, W, H - y0 + tn * 2);
+    // arriba cuando el sujeto del plano está abajo (lo pide el plano con narracion_pos, o la tabla de abajo)
+    const arriba = p.narracion_pos === 'arriba' || NARRACION_ARRIBA.has(p.id);
+    const y0 = arriba ? banda + tn * 1.6 : H - banda - 18 - (ln.length - 1) * tn * 1.35;
+    const g = arriba ? ctx.createLinearGradient(0, 0, 0, y0 + ln.length * tn * 1.35 + tn) : ctx.createLinearGradient(0, y0 - tn * 2, 0, H);
+    if (arriba) { g.addColorStop(0, 'rgba(0,0,0,0.6)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, y0 + ln.length * tn * 1.35 + tn); }
+    else { g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.75)'); ctx.fillStyle = g; ctx.fillRect(0, y0 - tn * 2, W, H - y0 + tn * 2); }
     ln.forEach((l, j) => { texto(l, W / 2 + 2, y0 + j * tn * 1.35 + 2, { alin: 'center', tam: tn, color: '#000', fuente: TITULO }); texto(l, W / 2, y0 + j * tn * 1.35, { alin: 'center', tam: tn, color: '#e8dcc0', fuente: TITULO }); });
     ctx.restore();
   }
