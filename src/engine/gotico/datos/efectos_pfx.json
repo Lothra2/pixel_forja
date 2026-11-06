@@ -1,0 +1,857 @@
+{
+ "formato": "pixelforja-gotico-efectos-pfx",
+ "version": 1,
+ "cuadros_por_segundo": 25,
+ "persona_px": 75,
+ "direcciones": [
+  "s",
+  "so",
+  "o",
+  "no",
+  "n",
+  "ne",
+  "e",
+  "se"
+ ],
+ "notas": "Hojas PNG RGBA con alfa directa. Cuadro i de la dirección d: columna i % columnas, fila d * filasPorDir + floor(i / columnas). Animación: cuadro = floor(segundos * 25 / t) (bucle: % cuadros; si no, el último y se termina). Ancla: el pixel que va sobre el punto del piso (los proyectiles: el piso bajo la bola; el juego los mueve). Direcciones en el orden de DIRS_PODER (s, so, o, no, n, ne, e, se), como poderes.json. capa 'pantalla': el cuadro cubre la pantalla, escalarlo entero (x3 a 960x540) con vecino más cercano. mezcla 'aditiva': color * alfa sumado; 'normal': alfa común. cuerpo.tinte: teñir el sprite del afectado con ese color y fuerza; cuerpo.alfa: visibilidad del sprite por cuadro. detrasEn: direcciones en las que el efecto va detrás del que lo lanza.",
+ "creditos": "Efectos adaptados de pixelfx (https://github.com/patch-gg/pixelfx), MIT, Copyright (c) 2026 Patch y Copyright (c) 2026 Hugo Duprez (Sprite Fusion, https://www.spritefusion.com/pixel-art-vfx); partes de Hollow Crown (rehan-remade), MIT. Ver LICENSE-pixelfx.txt y NOTICE-pixelfx.md.",
+ "efectos": [
+  {
+   "id": "fx_bola_fuego",
+   "origen": "fire/fireball",
+   "nombre": [
+    "Bola de fuego",
+    "Fireball"
+   ],
+   "categoria": "fuego",
+   "capa": "mundo",
+   "archivo": "fx_bola_fuego.png",
+   "cuadros": 15,
+   "t": 2,
+   "bucle": true,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "columnas": 10,
+   "filasPorDir": 2,
+   "celda": [
+    378,
+    266
+   ],
+   "ancla": [
+    189,
+    175
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f29867",
+    "radio": 182,
+    "intensidad": 0.7,
+    "curva": [
+     0.8,
+     0.94,
+     0.98,
+     0.99,
+     0.87,
+     0.87,
+     0.89,
+     0.88,
+     0.8,
+     0.76,
+     0.84,
+     1,
+     0.87,
+     0.84,
+     0.81
+    ],
+    "altura": 42,
+    "parpadeo": 0.22,
+    "enVuelo": true,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "bola_fuego",
+      "saeta_ignea"
+     ],
+     "nota": "el proyectil en vuelo; al pegar, fx_explosion_chica"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "virote_dragon"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "brujo_diablillo",
+      "cultista"
+     ],
+     "nota": "bola de fuego de los lanzadores"
+    }
+   ]
+  },
+  {
+   "id": "fx_nova_escarcha",
+   "origen": "ice/frost-nova",
+   "nombre": [
+    "Nova de escarcha",
+    "Frost nova"
+   ],
+   "categoria": "hielo",
+   "capa": "piso",
+   "archivo": "fx_nova_escarcha.png",
+   "cuadros": 79,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "columnas": 6,
+   "filasPorDir": 14,
+   "celda": [
+    604,
+    346
+   ],
+   "ancla": [
+    305,
+    219
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "enLanzador": true,
+   "luz": {
+    "color": "#a9def9",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0.01,
+     0.02,
+     0.02,
+     0.03,
+     0.04,
+     0.05,
+     0.07,
+     0.08,
+     0.1,
+     0.14,
+     0.14,
+     1,
+     0.76,
+     0.59,
+     0.47,
+     0.37,
+     0.27,
+     0.23,
+     0.2,
+     0.18,
+     0.16,
+     0.15,
+     0.14,
+     0.13,
+     0.13,
+     0.12,
+     0.11,
+     0.1,
+     0.09,
+     0.09,
+     0.08,
+     0.08,
+     0.08,
+     0.07,
+     0.08,
+     0.08,
+     0.08,
+     0.08,
+     0.08,
+     0.08,
+     0.07,
+     0.06,
+     0.06,
+     0.06,
+     0.05,
+     0.06,
+     0.06,
+     0.05,
+     0.06,
+     0.06,
+     0.07,
+     0.06,
+     0.05,
+     0.06,
+     0.05,
+     0.04,
+     0.04,
+     0.04,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 28,
+    "parpadeo": 0.08,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "nova_escarcha",
+      "edad_hielo"
+     ],
+     "nota": "centrada en la arcanista; el anillo de cristales llega a ~2 personas de radio"
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "canto_invierno"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "gigante_helado",
+      "espectro"
+     ],
+     "nota": "pisotón o grito helado del acto 4"
+    }
+   ]
+  },
+  {
+   "id": "fx_tajo_espada",
+   "origen": "melee/sword-slash",
+   "nombre": [
+    "Tajo de espada",
+    "Sword slash"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_tajo_espada.png",
+   "cuadros": 14,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "columnas": 12,
+   "filasPorDir": 2,
+   "celda": [
+    322,
+    258
+   ],
+   "ancla": [
+    161,
+    187
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#e6effd",
+    "radio": 168,
+    "intensidad": 0.65,
+    "curva": [
+     0.51,
+     0.84,
+     1,
+     0.8,
+     0.56,
+     0.33,
+     0.18,
+     0.05,
+     0.03,
+     0.02,
+     0.01,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 52,
+    "parpadeo": 0.21,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "celo",
+      "corte_sello"
+     ],
+     "nota": "el arco del tajo delante del templario, en la dirección del golpe"
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "tajo_salvaje",
+      "doble_golpe"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "esqueleto",
+      "caballero_muerto",
+      "bandido"
+     ],
+     "nota": "tajo de los espadachines"
+    }
+   ]
+  },
+  {
+   "id": "fx_envenenado",
+   "origen": "status/poisoned",
+   "nombre": [
+    "Envenenado",
+    "Poisoned"
+   ],
+   "categoria": "estado",
+   "capa": "mundo",
+   "archivo": "fx_envenenado.png",
+   "cuadros": 40,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "columnas": 39,
+   "filasPorDir": 2,
+   "celda": [
+    104,
+    110
+   ],
+   "ancla": [
+    53,
+    83
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "cuerpo": {
+    "tinte": {
+     "color": "#5c7c1e",
+     "fuerza": 0.35,
+     "nota": "teñir el sprite del envenenado con pulso lento"
+    }
+   },
+   "luz": {
+    "color": "#bef251",
+    "radio": 108,
+    "intensidad": 0.44,
+    "curva": [
+     1,
+     0.95,
+     0.86,
+     0.8,
+     0.76,
+     0.7,
+     0.71,
+     0.66,
+     0.61,
+     0.59,
+     0.78,
+     0.69,
+     0.59,
+     0.55,
+     0.46,
+     0.45,
+     0.44,
+     0.48,
+     0.47,
+     0.44,
+     1,
+     0.95,
+     0.86,
+     0.8,
+     0.76,
+     0.7,
+     0.71,
+     0.66,
+     0.61,
+     0.59,
+     0.78,
+     0.69,
+     0.59,
+     0.55,
+     0.46,
+     0.45,
+     0.44,
+     0.48,
+     0.47,
+     0.44
+    ],
+    "altura": 37,
+    "parpadeo": 0.14,
+    "sombra": false,
+    "prioridad": 3,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "estado",
+     "estado": "veneno",
+     "nota": "en bucle sobre el afectado mientras dure el veneno"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "virote_veneno",
+      "frasco_peste",
+      "miasma"
+     ],
+     "nota": "sobre los que alcanza"
+    },
+    {
+     "tipo": "poder",
+     "clase": "nigromante",
+     "habilidades": [
+      "toque_putrido"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_lluvia",
+   "origen": "weather/rain",
+   "nombre": [
+    "Lluvia",
+    "Rain"
+   ],
+   "categoria": "clima",
+   "capa": "pantalla",
+   "archivo": "fx_lluvia.png",
+   "cuadros": 200,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "columnas": 12,
+   "filasPorDir": 17,
+   "celda": [
+    320,
+    180
+   ],
+   "ancla": [
+    0,
+    0
+   ],
+   "escala": 1,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#56849c",
+    "radio": 0,
+    "intensidad": 0,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 95,
+    "parpadeo": 0,
+    "sombra": false,
+    "prioridad": 3,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "clima",
+     "actos": [
+      1
+     ],
+     "zonas": [
+      "a1_refugio",
+      "a1_paramo",
+      "a1_bosque"
+     ],
+     "nota": "las zonas con lluvia del acto 1"
+    },
+    {
+     "tipo": "clima",
+     "actos": [
+      3
+     ],
+     "zonas": [
+      "a3_muelle",
+      "a3_selva",
+      "a3_pantano"
+     ]
+    },
+    {
+     "tipo": "clima",
+     "actos": [
+      6
+     ],
+     "zonas": [
+      "a6_costa",
+      "a6_barrio1",
+      "a6_barrio2"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_murcielago",
+   "origen": "critters/bat",
+   "nombre": [
+    "Murciélago",
+    "Bat"
+   ],
+   "categoria": "criaturas",
+   "capa": "mundo",
+   "archivo": "fx_murcielago.png",
+   "cuadros": 60,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "columnas": 20,
+   "filasPorDir": 3,
+   "celda": [
+    198,
+    122
+   ],
+   "ancla": [
+    107,
+    115
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#e9342b",
+    "radio": 88,
+    "intensidad": 0.41,
+    "curva": [
+     0.5,
+     0.5,
+     0.51,
+     0.51,
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0.57,
+     0.86,
+     1,
+     0.99,
+     0.85,
+     0.56,
+     0.48,
+     0.48,
+     0.48,
+     0.48,
+     0.48,
+     0.48,
+     0.47,
+     0.48,
+     0.48,
+     0.48,
+     0.49,
+     0.49,
+     0.49,
+     0.5,
+     0.51,
+     0.51,
+     0.52,
+     0.52,
+     0.52,
+     0.52,
+     0.51,
+     0.51,
+     0.52,
+     0.51,
+     0.57,
+     0.86,
+     1,
+     1,
+     0.86,
+     0.57,
+     0.49,
+     0.49,
+     0.5,
+     0.5,
+     0.49,
+     0.49,
+     0.49,
+     0.49,
+     0.49,
+     0.49,
+     0.49,
+     0.49,
+     0.49,
+     0.49,
+     0.49,
+     0.5
+    ],
+    "altura": 62,
+    "parpadeo": 0.09,
+    "sombra": false,
+    "prioridad": 3,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a1_cripta",
+      "a1_cata1",
+      "a1_guarida",
+      "a2_escarabajos",
+      "a3_nido"
+     ],
+     "nota": "bandadas que cruzan el techo de las mazmorras"
+    },
+    {
+     "tipo": "cinematica",
+     "nota": "murciélagos que salen de la cripta en las tomas de entrada"
+    }
+   ]
+  }
+ ]
+}
