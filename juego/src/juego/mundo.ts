@@ -617,6 +617,31 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   return total;
 }
 
+/** El aliento de fuego de un monstruo: cono de `alcance` casillas y 90°, aviso de 0.6 s y chorro de 1.5 s. */
+interface ConfAliento { alcance: number; escala: number; cd: number; dano: number }
+export interface Aliento { fase: 'aviso' | 'sopla'; t: number; ang: number; tick: number; conf: ConfAliento }
+const ALIENTO: Record<string, ConfAliento> = { senor_demonio: { alcance: 6, escala: 1, cd: 9, dano: 0.3 }, demonio_alado: { alcance: 3, escala: 0.6, cd: 7, dano: 0.12 } };
+/** Índice de dirección (s, so, o, no, n, ne, e, se) para un ángulo en el mundo. */
+function dirDeAngulo(a: number) { const vx = Math.cos(a), vy = Math.sin(a), sx = vx - vy, sy = (vx + vy) / 2; return Math.round((Math.atan2(sy, sx) - Math.PI / 2) / (Math.PI / 4) + 8) % 8; }
+export function enCono(m: Ent, al: Aliento, x: number, y: number) {
+  const d = dist(x, y, m.x, m.y); if (d > al.conf.alcance + 0.4 || d < 0.2) return d < 0.2;
+  let da = Math.atan2(y - m.y, x - m.x) - al.ang; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
+  return Math.abs(da) <= Math.PI / 4;
+}
+function avanzarAliento(j: Juego, m: Monstruo, al: Aliento, dt: number) {
+  al.t += dt;
+  m.acc = (m.def.id === 'senor_demonio' ? 'especial' : 'lanzar') as any; if (m.t >= m.dur) m.t = 0;
+  if (al.fase === 'aviso') {
+    if (al.t >= 0.6) { al.fase = 'sopla'; al.t = 0; efecto(j, 'aliento_infernal', m.x, m.y, dirDeAngulo(al.ang), al.conf.escala, 0, 1.5); sonar(j, 'fuego_lanzar', m.x, m.y); }
+    return;
+  }
+  al.tick -= dt;
+  if (al.tick <= 0) {
+    al.tick = 0.3;
+    for (const e of enemigosDe(j, false)) if (enCono(m, al, e.x, e.y)) danar(j, e, { min: m.dano[0] * al.conf.dano, max: m.dano[1] * al.conf.dano, elem: 'fuego', deHeroe: false, fuente: m, sinFallo: true });
+  }
+  if (al.t >= 1.5) { (m as any).aliento = undefined; m.acc = 'quieto'; m.t = 0; m.cd = 0.4; }
+}
 /** Acompañantes vivos alrededor de un jefe (sin contarlo a él). */
 function acompanantes(j: Juego, m: Monstruo) { return j.monstruos.filter((o) => o !== m && !o.muerto && !o.dueno && dist(o.x, o.y, m.x, m.y) < 10).length; }
 /** Un lugar libre a 3.5 a 6 casillas del jefe: los que llegan no se le montan encima. */
@@ -1638,6 +1663,9 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
     if (o.nucleoT <= 0) { m.acc = 'quieto'; m.t = 0; m.cd = 0.3; msg(j, ['Ozmaren cierra el pecho.', 'Ozmaren closes its chest.'], '#c08060'); }
     return;
   }
+  // aliento de fuego (Ozmaren y el demonio alado): aviso con el cono en el piso y después el chorro, que se esquiva saliendo
+  const al = (m as any).aliento as Aliento | undefined;
+  if (al) { avanzarAliento(j, m, al, dt); return; }
   if (m.acc === 'herido') { if (m.t >= m.dur) { m.acc = 'quieto'; m.t = 0; } return; }
   if (m.acc === 'atacar' || m.acc === 'lanzar') {
     if (!m.golpeo && m.t >= m.golpeEn) { m.golpeo = true; golpeMonstruo(j, m); }
@@ -1697,6 +1725,18 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
     const a = Math.atan2(m.y - h.y, m.x - h.x);
     moverHacia(j, m, m.x + Math.cos(a) * 2, m.y + Math.sin(a) * 2, m.vel * lento, dt); m.acc = 'caminar';
     return;
+  }
+  // el aliento: Ozmaren lo alterna con las saetas del pecho (más seguido con furia); el demonio alado, chico y flojo
+  const ALC = ALIENTO[m.def.id];
+  if (ALC && !m.dueno && !(m as any).nucleoT && dh < ALC.alcance + 1.5) {
+    const o = m as any; o.alientoCd = (o.alientoCd ?? ALC.cd * 0.6) - dt;
+    if (o.alientoCd <= 0 && ((o.nucleoCd ?? 99) > 2.5)) {
+      o.alientoCd = ALC.cd * (m.fase >= 2 ? 0.65 : 1);
+      o.aliento = { fase: 'aviso', t: 0, ang: Math.atan2(h.y - m.y, h.x - m.x), tick: 0, conf: ALC } as Aliento;
+      m.acc = (m.def.id === 'senor_demonio' ? 'especial' : 'lanzar') as any; m.t = 0; m.dur = 0.9;
+      sonar(j, m.def.jefe ? 'rugido_jefe' : 'fuego_lanzar', m.x, m.y);
+      return;
+    }
   }
   // la escolta del jefe llega por oleadas, con 4 acompañantes vivos como mucho y lejos de él (3 casillas libres)
   const ol = (m as any).oleada as { ids: string[]; cd: number } | undefined;

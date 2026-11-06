@@ -208,6 +208,17 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   }
   // el piso que sigue ardiendo después de los poderes de fuego
   dibujarSuelo(ctx, aPant, dt);
+  // aviso del aliento: el cono se enciende en el piso antes de soplar (para poder salir de él)
+  for (const m of j.monstruos) {
+    const al = (m as any).aliento; if (!al || al.fase !== 'aviso' || m.muerto) continue;
+    const k = Math.min(1, al.t / 0.6), R0 = al.conf.alcance;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.beginPath();
+    const [x0, y0] = aPant(m.x, m.y); ctx.moveTo(x0, y0);
+    for (let i = 0; i <= 12; i++) { const a = al.ang - Math.PI / 4 + (i / 12) * (Math.PI / 2); const [x, y] = aPant(m.x + Math.cos(a) * R0, m.y + Math.sin(a) * R0); ctx.lineTo(x, y); }
+    // amarillo claro y borde marcado: sobre la lava de Ozmaren un naranja no se distingue
+    ctx.closePath(); ctx.fillStyle = `rgba(255,210,110,${0.14 + 0.3 * k})`; ctx.fill();
+    ctx.strokeStyle = `rgba(255,240,180,${0.5 + 0.5 * k})`; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
+  }
   // lista de cosas a ordenar
   type Item = { prof: number; draw: () => void };
   const items: Item[] = [];
