@@ -44,3 +44,38 @@ describe('cámara libre: árbol de cajas', () => {
     }
   });
 });
+
+describe('escena de cine: terreno, luz y aire', () => {
+  it('traza una escena chica con terreno, una casa puesta y su luz, y el aire se come lo lejano', async () => {
+    const { EscenaCine, Terreno, capasVacias, renderFilas, transmision } = await import('../gotico/cine3d');
+    const esc = new EscenaCine();
+    esc.terreno = new Terreno({ alto: (x, y) => Math.sin(x / 300) * 20 + y * 0.02, superficie: () => ({ albedo: [0.7, 0.7, 0.75] }), grillas: [[-2000, -500, 2000, 6000, 10]], techo: 400 });
+    esc.poner([caja(0, 0, 0, 60, 60, 80, { mat: 'piedra' })], { x: 0, y: 600, z: esc.terreno.h(0, 600), giro: 30 });
+    esc.luces.push({ p: [0, 540, esc.terreno.h(0, 540) + 30], c: [1, 0.6, 0.3], k: 2, r: 40 });
+    const atm = {
+      sol: { dir: [0.3, 0.8, 0.5] as V3, c: [1, 0.9, 0.8] as [number, number, number], k: 2 }, cielo: () => [0.2, 0.25, 0.4] as [number, number, number], aire: () => [0.2, 0.25, 0.4] as [number, number, number],
+      ambCielo: [0.1, 0.12, 0.2] as [number, number, number], ambSuelo: [0.05, 0.05, 0.05] as [number, number, number], niebla: { densidad: 1 / 3000, baja: 0, z0: 0, H: 50 }, borde: { c: [1, 0.8, 0.6] as [number, number, number], k: 1 },
+    };
+    const c0 = cam([0, 0, 60], [0, 600, 60], 50, 48, 27), c = capasVacias(48, 27, []);
+    renderFilas(esc, atm, c0, c, 0, 27, { ss: 1, ao: 1 });
+    const I = 13 * 48 + 24;
+    expect(c.dist[I]).toBeGreaterThan(500); expect(c.dist[I]).toBeLessThan(620);
+    expect(c.base[I * 3] + c.base[I * 3 + 1] + c.base[I * 3 + 2]).toBeGreaterThan(0);
+    expect(c.cielo[0]).toBe(1);
+    expect(isFinite(c.dist[26 * 48 + 24])).toBe(true);
+    expect(transmision(atm, c0.pos, [0, 1, 0], 4000)).toBeLessThan(transmision(atm, c0.pos, [0, 1, 0], 500));
+    // el pase del primer plano: sin piezas al frente queda vacío (todo transparente)
+    const f = capasVacias(48, 27, []);
+    renderFilas(esc, atm, c0, f, 0, 27, { ss: 1, ao: 0, pase: 'frente' });
+    expect(f.cielo.every((v) => v === 1)).toBe(true);
+  });
+  it('colocar piezas: mover, girar y escalar conservan la forma', async () => {
+    const { colocarPiezas } = await import('../gotico/cine3d');
+    const [p] = colocarPiezas([caja(0, 0, 0, 10, 20, 30, { mat: 'piedra' })], { x: 100, y: -50, z: 7, giro: 90, k: 2 });
+    if (p.k !== 'conv') throw new Error('se esperaba un poliedro');
+    for (const q of p.pts) for (const [n, d] of p.planos) expect(n[0] * q[0] + n[1] * q[1] + n[2] * q[2]).toBeLessThanOrEqual(d + 1e-6);
+    const xs = p.pts.map((q) => q[0]), zs = p.pts.map((q) => q[2]);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(40, 6);
+    expect(Math.min(...zs)).toBeCloseTo(7, 6); expect(Math.max(...zs)).toBeCloseTo(67, 6);
+  });
+});
