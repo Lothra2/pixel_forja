@@ -11,6 +11,7 @@ import { R } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { lucesOzmaren, ALTO_OZMAREN } from './fuego';
 import { vivosDe } from './fuego_vivo';
+import { pulsosOzmaren, pulsoArma, lucesSuelo } from './fuego_especial';
 import { pulsoLuz } from '../../../src/engine/gotico/fuego_doom';
 
 export interface Luz {
@@ -69,7 +70,7 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const la = ENC[h.c.vivo] ? luzDeArma(ENC[h.c.vivo] as any, nv) : null;
     if (la) {
       const c = hexRgb(la.color);
-      L.push({ id: 'mano', x: hx + 10, y: hy, h: 42, r: la.radio, c, k: Math.min(1, la.intensidad * (1 - (la.parpadeo ?? 0) * 0.5 * R())), de: h, prio: 1 });
+      L.push({ id: 'mano', x: hx + 10, y: hy, h: 42, r: la.radio, c, k: Math.min(1, la.intensidad * pulsoArma), de: h, prio: 1 });
     } else {
       const cv = COLOR_ELEM[h.c.vivo === 'luz' ? 'sagrado' : h.c.vivo] ?? COLOR_ELEM.fuego;
       L.push({ x: hx + 10, y: hy, h: 40, r: 120, c: cv, k: 0.55 + Math.sin(t * 13) * 0.08, de: h, sinSombra: true });
@@ -96,6 +97,8 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const r = Math.min(260, meta.luz[0] * 1.3) * (0.93 + Math.sin(t * 9 + o.cx) * 0.04 + R() * 0.03);
     L.push({ x: px, y: py, h: Math.max(20, meta.luz[2] * 1.2), r, c, k: 0.9, id: `o${o.cx},${o.cy}` });
   }
+  // el piso que sigue ardiendo
+  for (const l of lucesSuelo(aPant)) if (dentro(l.x, l.y, 200)) L.push(l);
   // la pieza ancla del mapa (la catedral): luna fría encima para que se lea de lejos, y el latido rojo de sus vitrales
   for (const sa of z.salidas) if (sa.piezas?.length) {
     const fa = sa.piezas[sa.piezas.length - 1], [px, py] = aPant(fa.cx + 0.5, fa.cy - 4);
@@ -179,7 +182,7 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     if (m.muerto || m.def.sprite !== 'jefe_ozmaren') continue;
     const [px, py] = aPant(m.x, m.y); if (!dentro(px, py, 400)) continue;
     const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
-    for (const [i, l] of lucesOzmaren(px, py, ALTO_OZMAREN * (m.escala ?? 1), t, furia).entries()) L.push({ id: 'oz' + i, x: l.x, y: l.y, h: l.h, r: l.r, c: l.nucleo ? [255, 150 + Math.round(l.k * 60), 60] : [255, 95 + Math.round(l.k * 40), 25], k: l.k, de: m });
+    for (const [i, l] of lucesOzmaren(px, py, ALTO_OZMAREN * (m.escala ?? 1), t, furia, pulsosOzmaren).entries()) L.push({ id: 'oz' + i, x: l.x, y: l.y, h: l.h, r: l.r, c: l.nucleo ? [255, 150 + Math.round(l.k * 60), 60] : [255, 95 + Math.round(l.k * 40), 25], k: l.k, de: m });
   }
   // la Campana que Ahoga: luz de mar verde que respira y crece con cada tañido; Aun-Saar: luz blanca dorada y la boca del pecho que late
   for (const m of j.monstruos) {

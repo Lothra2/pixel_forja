@@ -33,10 +33,11 @@ const rNucleo = new Ruido(0.2, 0.5);
 
 export interface LuzFuego { x: number; y: number; h: number; r: number; k: number; nucleo?: boolean }
 /** Luces de su fuego para este cuadro: cuernos y espalda con ruido (las sombras tiemblan) y el núcleo del pecho que late. */
-export function lucesOzmaren(px: number, py: number, alto: number, t: number, furia: number): LuzFuego[] {
+export function lucesOzmaren(px: number, py: number, alto: number, t: number, furia: number, pulsos?: number[] | null): LuzFuego[] {
   const out: LuzFuego[] = [0, 1, 2].map((i) => {
     const fx = [-0.19, 0.19, 0][i], fy = [0.79, 0.79, 0.72][i];
-    const n = rIntensidad[i].leer(t);
+    // con el fuego de Doom, el pulso de la grilla de cada cuerno y de la espalda (si no, ruido)
+    const n = pulsos ? Math.max(0, Math.min(1, (pulsos[i] - 0.4) / 0.9)) : rIntensidad[i].leer(t);
     return {
       x: px + fx * alto * 1.2 + (rPosX[i].leer(t) - 0.5) * 24,
       y: py + (rPosY[i].leer(t) - 0.5) * 12,
@@ -116,6 +117,11 @@ export function fuegoOzmaren(ctx: CanvasRenderingContext2D, m: Monstruo, q: Cuad
   if (calidad > 0.7 && !(window as any).__sinCalor) calor(ctx, px, py - alto * 1.05, ancho * 0.9, alto * 0.6 + furia * 30, t, 1.2 + furia * 1.5);
 }
 
+/** Solo el ondulado de calor encima de Ozmaren (el fuego del cuerpo ahora es de Doom, en fuego_especial.ts). */
+export function calorOzmaren(ctx: CanvasRenderingContext2D, q: Cuadro, px: number, py: number, esc: number, t: number, furia: number) {
+  const alto = q.ay * esc, ancho = q.w * esc;
+  if (!(window as any).__sinCalor) calor(ctx, px, py - alto * 1.05, ancho * 0.9, alto * 0.6 + furia * 30, t, 1.2 + furia * 1.5);
+}
 function calor(ctx: CanvasRenderingContext2D, cx: number, top: number, w: number, h: number, t: number, amp: number) {
   const tr = ctx.getTransform(), k = tr.a || 1, cv = ctx.canvas;
   const x0 = Math.max(0, Math.round((cx - w / 2) * k + tr.e)), y0 = Math.max(0, Math.round(top * k + tr.f));

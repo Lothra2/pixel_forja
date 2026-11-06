@@ -1089,6 +1089,7 @@ function resolverHabilidad(j: Juego) {
         cadaveresCerca(j, h.x, h.y, r).forEach((cad, i) => { usarCadaver(cad); golpeArea(cad.x, cad.y, 2.5, dh, 'prision_hueso', 0.01 + i * 0.08); });
         const cn = Math.round(val(hb.n, n));
         for (let k = 0; k < cn; k++) { const a = (k / cn) * Math.PI * 2; disparar(j, h, h.x + Math.cos(a) * 5, h.y + Math.sin(a) * 5, golpeSimple(j, [dh[0] * 0.5, dh[1] * 0.5], 'sombra'), 'lanza_hueso', 13, { perfora: true, vida: 1.2 }); }
+        efecto(j, 'llanto_animas', h.x, h.y, 0, 1.3);
         j.sacudida = 0.5;
         break;
       }
@@ -1124,6 +1125,7 @@ function resolverHabilidad(j: Juego) {
         j.areas.push({ x: ax, y: ay, radio: r, dano: d, elem: 'fuego', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: 'meteoro', retraso: 0.9, caida: true });
         j.areas.push({ x: ax, y: ay, radio: r * 0.8, dano: [d[0] * 0.15, d[1] * 0.15], elem: 'fuego', t: 0, dur, tick: 0.5, prox: 0, deHeroe: true, efecto: 'crater_ardiente', retraso: 1.0 });
         efecto(j, 'meteoro', ax, ay, 0, hb.id === 'sol_negro' ? 1.8 : 1.3, 0, 1.2);
+        if (hb.id === 'sol_negro') efecto(j, 'lluvia_brasas', ax, ay, 0, 1.4, 0, 1.8);
         break;
       }
       if (hb.id === 'furia_firmamento') {
@@ -1149,7 +1151,9 @@ function resolverHabilidad(j: Juego) {
         }
         break;
       }
-      j.areas.push({ x: ax, y: ay, radio: r, dano: [dh[0] / Math.max(1, dur * 2), dh[1] / Math.max(1, dur * 2)], elem: hb.elem, t: 0, dur, tick: 0.5, prox: 0, deHeroe: true, efecto: efectoDe(hb.efecto, hb.elem, hb), retraso: 0.1 });
+      // el cerco de llamas del arcanista: anillo de fuego de Doom, y con 10 puntos o más el muro del infierno
+      const efA = hb.id === 'muro_fuego' ? (n >= 10 ? 'muro_infierno' : 'cerco_llamas') : efectoDe(hb.efecto, hb.elem, hb);
+      j.areas.push({ x: ax, y: ay, radio: r, dano: [dh[0] / Math.max(1, dur * 2), dh[1] / Math.max(1, dur * 2)], elem: hb.elem, t: 0, dur, tick: 0.5, prox: 0, deHeroe: true, efecto: efA, retraso: 0.1 });
       break;
     }
     case 'cadena': {
@@ -1670,7 +1674,7 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
       o.nucleoCd = m.fase >= 2 ? 13 : 16; o.nucleoT = 4.5;
       m.acc = 'especial' as any; m.t = 0; m.dur = 0.9;
       for (let a = 0; a < 10; a++) disparar(j, m, m.x + Math.cos(a * 0.628), m.y + Math.sin(a * 0.628), { min: m.dano[0] * 0.3, max: m.dano[1] * 0.3, elem: 'fuego', deHeroe: false, fuente: m }, 'saeta_fuego', 6);
-      efecto(j, 'grito_guerra', m.x, m.y, 0, 1.6); j.sacudida = 0.4; sonar(j, 'rugido_jefe', m.x, m.y);
+      efecto(j, 'grito_guerra', m.x, m.y, 0, 1.6); efecto(j, 'pilar_infernal', m.x, m.y, 0, 1.5); j.sacudida = 0.4; sonar(j, 'rugido_jefe', m.x, m.y);
       msg(j, ['¡Ozmaren abre el pecho! Su núcleo queda expuesto: pégale ahora.', 'Ozmaren opens its chest! Its core is exposed: strike now.'], '#ffc060');
       return;
     }
@@ -1829,6 +1833,8 @@ function explotar(j: Juego, p: Proyectil) {
     if (p.hab?.bonos?.miedo && !esJefe(e)) e.miedo = val(p.hab.duracion, p.nivelHab ?? 1);
   }
   if (p.hab?.id === 'frasco_peste' || p.hab?.id === 'bomba_humo') { const d = val(p.hab.duracion, p.nivelHab ?? 1); j.areas.push({ x: p.x, y: p.y, radio: r * 0.9, dano: [p.dano[0] * 0.25, p.dano[1] * 0.25], elem: 'veneno', t: 0, dur: d, tick: 0.5, prox: 0.5, deHeroe: true, efecto: 'nube_veneno', retraso: 0.05 }); }
+  // el frasco incendiario deja el piso ardiendo
+  if (p.hab?.id === 'bomba_ignea') efecto(j, 'suelo_ardiente', p.x, p.y, 0, Math.max(0.8, r / 2.2), 0, 3);
   if (p.hab?.id === 'gran_crisol') j.areas.push({ x: p.x, y: p.y, radio: r * 0.7, dano: [p.dano[0] * 0.08, p.dano[1] * 0.08], elem: 'fuego', t: 0, dur: 4, tick: 0.5, prox: 0.5, deHeroe: true, efecto: 'crater_ardiente', retraso: 0.05 });
   j.sacudida = Math.max(j.sacudida, 0.15);
   sonar(j, p.elem === 'frio' ? 'hielo_impacto' : 'explosion', p.x, p.y, 0.8);

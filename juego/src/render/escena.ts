@@ -13,8 +13,10 @@ import { icono } from '../ui/comun';
 import { cuadrosVivos, cambioVisible } from '../motor/pintor';
 import { R, rng } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
-import { fuegoOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
+import { calorOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
 import { prepararFuegos, vivosDe, tieneFuegoDoom, dibujarVivos } from './fuego_vivo';
+import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde } from './fuego_especial';
+let dtCuadro = 1 / 60;
 const ES_FUEGO = /fogata|hoguera|brasero|pira|antorcha|fuego|caldero|hogar/;
 import { recolectar, sombras, reflejos, luces, destello, destelloColor } from './luces';
 
@@ -138,7 +140,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   if (foco.k > 0) { const k = foco.k * foco.k * (3 - 2 * foco.k); cam.x += ((foco.x - foco.y) * 16 - (h.x - h.y) * 16) * k; cam.y += ((foco.x + foco.y) * 8 - 60 - (h.x + h.y) * 8 + camAlzada) * k; }
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   picks = [];
-  prepararFuegos(j, dt, aPant, W, H);
+  prepararFuegos(j, dt, aPant, W, H); seguirSuelo(j, dt); dtCuadro = dt;
   recolectar(j, tiempo, aPant, W, H);
   // explorar
   const btx = Math.floor(h.x / 5), bty = Math.floor(h.y / 5);
@@ -165,6 +167,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     if (m.tipo === 'sangre' && m.r > 0.5) { ctx.beginPath(); ctx.ellipse(px + m.r * 9, py + 3, m.r * 6, m.r * 3, 0, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore();
   }
+  // el piso que sigue ardiendo después de los poderes de fuego
+  dibujarSuelo(ctx, aPant, dt);
   // lista de cosas a ordenar
   type Item = { prof: number; draw: () => void };
   const items: Item[] = [];
@@ -400,7 +404,10 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   else if (e.muerto && e.tMuerto > 60) { ctx.globalAlpha = Math.max(0.25, 1 - (e.tMuerto - 60) / 400); ok = dibujar(ctx, q, px, py, esc); ctx.globalAlpha = 1; }
   else ok = dibujar(ctx, q, px, py, esc);
   if (ok && !e.muerto) reflejos(ctx, e, q, px, py, esc);
-  if (ok && !e.muerto && !(window as any).__sinFuego && e.tipo === 'monstruo' && m.def.sprite === 'jefe_ozmaren') fuegoOzmaren(ctx, m, q, px, py, esc, tiempo, cam.x, cam.y);
+  if (ok && !e.muerto && !(window as any).__sinFuego && e.tipo === 'monstruo' && m.def.sprite === 'jefe_ozmaren') {
+    const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
+    ozmarenArde(ctx, m, q, px, py, esc, dtCuadro, furia); calorOzmaren(ctx, q, px, py, esc, tiempo, furia);
+  } else if (ok && !(window as any).__sinFuego && (e.tipo === 'monstruo' || e.tipo === 'heroe')) cuerpoArde(ctx, j, e, q, px, py, esc, dtCuadro);
   // únicos y jefes: aura
   if (!e.muerto && e.tipo === 'monstruo' && m.calidad >= 2) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.18 + Math.sin(tiempo * 4) * 0.06;
@@ -408,7 +415,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
     ctx.fillStyle = g; ctx.fillRect(px - 50 * esc, py - 80 * esc, 100 * esc, 100 * esc); ctx.restore();
   }
   // arma viva del héroe
-  if (ok && e.tipo === 'heroe' && j.heroe.c.vivo && !e.muerto) armaViva(q, px, py, j.heroe.c.vivo, tiempo);
+  if (ok && e.tipo === 'heroe' && j.heroe.c.vivo && !e.muerto && !armaArde(ctx, q, px, py, j.heroe.c.vivo, dtCuadro)) armaViva(q, px, py, j.heroe.c.vivo, tiempo);
   // aura del héroe: la mitad de adelante, encima del cuerpo
   if (e.tipo === 'heroe' && !e.muerto) auraHeroe(j, px, py, tiempo, false);
   // zona de clic
@@ -421,6 +428,8 @@ const PILAR: Record<string, string> = { magico: 'magico', raro: 'raro', conjunto
 const GEMAS = ['rubi', 'zafiro', 'topacio', 'esmeralda', 'amatista', 'diamante'];
 /** Aura del héroe partida por profundidad: los anillos del piso en dos mitades y lo que orbita según su lado. */
 function auraHeroe(j: Juego, px: number, py: number, tiempo: number, atras: boolean) {
+  // el cetro del final de la Corona Fría: el héroe arde con su llama fría (detrás del cuerpo)
+  if (atras && Object.values(j.heroe.d.equipo).some((o: any) => o?.rareza === 'legendario' && o.nombre?.[0] === 'Cetro de la Corona Fría')) dibujarEfecto({ id: 'llama_corona_fria', x: j.heroe.x, y: j.heroe.y, t: tiempo, dir: 0, escala: 0.9, z: 0 } as Efecto, tiempo);
   const au = Object.values(j.heroe.buffs).find((b) => b.t > 9000);
   const ae = auraEquipo(j.heroe.d.equipo as any);
   // mitad trasera del anillo: de PI a 2PI (arriba en pantalla); delantera: de 0 a PI
