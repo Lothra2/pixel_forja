@@ -43,7 +43,8 @@ function kit(m: MapaGotico, seed: number): Kit {
   };
   const k: Kit = {
     m, r, W, H,
-    buscar: (temas, palabras, sin) => REGISTRO.filter((d) => temas.includes(d.tema) && (!palabras || palabras.some((p) => d.id.includes(p))) && !(sin ?? []).some((p) => d.id.includes(p))),
+    // los gemelos `_sin_llama` son para el fuego vivo del juego, nunca decoración suelta
+    buscar: (temas, palabras, sin) => REGISTRO.filter((d) => !d.id.endsWith('_sin_llama') && temas.includes(d.tema) && (!palabras || palabras.some((p) => d.id.includes(p))) && !(sin ?? []).some((p) => d.id.includes(p))),
     poner: (d, cx, cy, v) => {
       if (!d) return false;
       const vs = d.variantes;

@@ -105,6 +105,7 @@ describe('taller gótico: pisos y mapas', () => {
     for (const p of PAISAJES) {
       const m = generarPaisaje(p.id, 3);
       expect(m.objetos.length, p.id).toBeGreaterThan(3);
+      expect(m.objetos.filter((o) => o.id.endsWith('_sin_llama')).map((o) => o.id), `${p.id}: gemelos sin llama como decoración`).toEqual([]);
       const { w, h } = medidas(m);
       const img = pintarMapa(m, { cuadro: 0 });
       expect([img.w, img.h]).toEqual([w, h]);
