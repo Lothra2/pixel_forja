@@ -102,6 +102,8 @@ const alfaTiempo = (c: [number, number][] | undefined, t: number) => {
   return c[c.length - 1][1];
 };
 let sonPlano = -1, sonT = -1, sonClave = '';
+/** Los últimos sonidos que pidió la cinemática (para las pruebas: window.__cineSon). */
+const sonados: { clave: string; plano: string | number; t: number; efecto: string }[] = [];
 /**
  * Memoria en iPhone: la intro va en páginas grandes (hasta 16 Mpx cada una). Una página que ya no usa ningún plano de
  * aquí en adelante se suelta (se vuelve a pedir si se mira la intro otra vez).
@@ -145,7 +147,7 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   if (tl >= p.dur && i === c.planos.length - 1) return true;
   // los sonidos del plano a su tiempo (al volver atrás o cambiar de plano se rearman)
   if (clave !== sonClave || i !== sonPlano || tl < sonT) { sonClave = clave; sonPlano = i; sonT = -1e-3; }
-  for (const s of p.sonidos ?? []) if (s.t > sonT && s.t <= tl) Sonido.efecto(s.efecto, { vol: s.vol ?? 1 });
+  for (const s of p.sonidos ?? []) if (s.t > sonT && s.t <= tl) { Sonido.efecto(s.efecto, { vol: s.vol ?? 1 }); sonados.push({ clave, plano: p.id ?? i, t: +tl.toFixed(3), efecto: s.efecto }); if (sonados.length > 60) sonados.shift(); }
   sonT = tl;
   liberarPaginas(c, i);
   const geo = { w: 1536, h: 800, margen_x: 128, margen_y: 40, ...(man?.cinematicas?.capa ?? {}) };
@@ -244,3 +246,5 @@ const demo: Record<string, any> = {
   ] },
 };
 (window as any).__cineDatos = () => man;
+(window as any).__cineSon = () => sonados;
+(window as any).__cineImgs = () => [...imgs.entries()].map(([k, im]) => [k, im.complete && im.naturalWidth > 0]);
