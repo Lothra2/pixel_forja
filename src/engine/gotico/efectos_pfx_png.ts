@@ -9,7 +9,7 @@ import type { Raster } from '../core/raster';
 interface Caja { idx: number[]; }
 
 /** Cuantiza a lo sumo `n` colores (más el transparente). Devuelve índices y paleta RGBA. */
-export function cuantizar(img: Raster, n = 255): { idx: Uint8Array; paleta: number[][] } {
+export function cuantizar(img: Raster, n = 255, corteViejo = false): { idx: Uint8Array; paleta: number[][] } {
   const d = img.data, total = img.w * img.h;
   // colores únicos con su cuenta
   const mapa = new Map<number, number>();
@@ -54,7 +54,10 @@ export function cuantizar(img: Raster, n = 255): { idx: Uint8Array; paleta: numb
       // mediana por cuenta
       let tot = 0;
       for (const j of c.idx) tot += cuentas[j];
-      let acc = 0, corte = 1;
+      // si el último color solo pesa más de la mitad, el corte va justo antes de él. El corte viejo quedaba en 1 y la
+      // caja perdía un color por vuelta: un velo de un color muy repetido se comía la paleta (se sigue usando donde
+      // el error queda bajo, porque comprime mejor: ver pngLiviano)
+      let acc = 0, corte = corteViejo ? 1 : c.idx.length - 1;
       for (let i = 0; i < c.idx.length - 1; i++) { acc += cuentas[c.idx[i]]; if (acc >= tot / 2) { corte = i + 1; break; } }
       cajas.splice(mejor, 1, { idx: c.idx.slice(0, corte) }, { idx: c.idx.slice(corte) });
     }
@@ -108,9 +111,44 @@ function idat(w: number, h: number, idx: Uint8Array): Uint8Array {
   return mejor!;
 }
 
-/** PNG con paleta de hasta `colores` colores con alfa (cuantizado si hace falta). Determinista. */
-export function pngLiviano(img: Raster, colores = 255): Uint8Array {
-  const { idx, paleta } = cuantizar(img, colores);
+/** Error medio de color de una cuantización (0..255 por canal), pesado por el alfa: lo casi transparente casi no se ve. */
+export function errorPaleta(img: Raster, q: { idx: Uint8Array; paleta: number[][] }): number {
+  const d = img.data;
+  let e = 0, n = 0;
+  for (let i = 0; i < q.idx.length; i++) {
+    const a = d[i * 4 + 3] / 255;
+    if (!a) continue;
+    const p = q.paleta[q.idx[i]];
+    e += a * (Math.abs(p[0] - d[i * 4]) + Math.abs(p[1] - d[i * 4 + 1]) + Math.abs(p[2] - d[i * 4 + 2]));
+    n += 3 * a;
+  }
+  return n ? e / n : 0;
+}
+
+/** Tamaños de paleta que se prueban, de menos a más colores. */
+const PASOS_PALETA = [48, 64, 96, 128, 160, 192, 224, 255];
+
+/**
+ * PNG con paleta de hasta `colores` colores con alfa (cuantizado si hace falta). Determinista.
+ * Con `errorMax`, la paleta se elige por el error medio de color (errorPaleta):
+ * - primero el corte de siempre con todos los colores; si su error pasa de `errorMax` (un velo translúcido grande se
+ *   comió la paleta y lo opaco cambió de color), el corte corregido con la paleta más chica de PASOS_PALETA que queda
+ *   por debajo de `errorFino` (o la entera);
+ * - si no, la paleta más chica con el corte de siempre que no empeora el error en más de `holgura`: las hojas fáciles
+ *   pesan menos.
+ */
+export function pngLiviano(img: Raster, colores = 255, errorMax?: number, errorFino = 4, holgura = 1): Uint8Array {
+  let q = cuantizar(img, colores, errorMax !== undefined);
+  if (errorMax !== undefined) {
+    const e0 = errorPaleta(img, q), corregido = e0 > errorMax;
+    if (corregido) q = cuantizar(img, colores);
+    for (const n of PASOS_PALETA) {
+      if (n >= colores) break;
+      const c = cuantizar(img, n, !corregido), e = errorPaleta(img, c);
+      if (corregido ? e <= errorFino : e <= e0 + holgura && e <= errorMax) { q = c; break; }
+    }
+  }
+  const { idx, paleta } = q;
   const ihdr = new Uint8Array(13), v = new DataView(ihdr.buffer);
   v.setUint32(0, img.w); v.setUint32(4, img.h); ihdr[8] = 8; ihdr[9] = 3; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
   const plte = new Uint8Array(paleta.length * 3), trns = new Uint8Array(paleta.length);
