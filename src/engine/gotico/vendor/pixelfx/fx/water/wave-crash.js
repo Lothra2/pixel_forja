@@ -19,6 +19,23 @@ export const meta = {
 };
 
 const SY = ISO, G = 820, CRASH = 1.2, LIP0 = 0.62, EDGE = 110;
+// Forja: la ola rompe sobre el piso isométrico. El perfil de pixelfx (la marcha va a la derecha: la dirección e del
+// juego) se pinta en tajadas a lo largo de la cresta, que en 2:1 va hacia la cámara (en pantalla, vertical): de atrás
+// hacia adelante, cada tajada PASO px más abajo y LAG s más atrasada que la de atrás, así la ola rompe en diagonal
+// sobre una lámina de agua. Las gotas, la espuma y la bruma se reparten en esa profundidad.
+const TAJADAS = 15, PASO = 2, LAG = 0.04, MEDIA = (TAJADAS - 1) / 2, HONDO = (MEDIA * PASO) / SY;
+/** el pintor corrido dy px hacia abajo (las coordenadas y de cada método) */
+function corrido(p, dy) {
+  return new Proxy(p, {
+    get(o, k) {
+      const f = o[k];
+      if (typeof f !== "function") return f;
+      if (k === "glowLine") return (x0, y0, x1, y1, ...r) => f.call(o, x0, y0 + dy, x1, y1 + dy, ...r);
+      if (["dot", "px", "blend", "glow", "circle", "ellipse", "light"].includes(k)) return (x, y, ...r) => f.call(o, x, y + dy, ...r);
+      return f.bind(o);
+    },
+  });
+}
 
 // the swell: where its crest is, how tall, how steep its face, as it rolls in, crashes and runs on as whitewater
 const crestX = (t) => (t < CRASH ? -80 + 72 * ease.inOutSine(t / CRASH) : -8 + 30 * ease.outCubic(clamp((t - CRASH) / 1.4)));
@@ -105,12 +122,19 @@ export function create(o) {
   }
 
   // the sea it rolls on: a lit line along the surface, dark water under it, glints sliding along
-  function sea(p, fade) {
-    for (let X = -EDGE; X < EDGE; X++) {
-      const x = X + 0.5, edge = 1 - smooth(EDGE - 30, EDGE, Math.abs(x)), a = fade * edge;
+  // Forja: en tajadas, solo la de adelante y la de atrás llevan la línea encendida; las del medio son el agua honda con
+  // brillos sueltos (si no, la lámina sale a rayas). `borde` acorta la tajada: la lámina es un óvalo, no una franja
+  function sea(p, fade, cual = 0, borde = EDGE, k = 0) {
+    for (let X = -Math.ceil(borde); X < borde; X++) {
+      const x = X + 0.5, edge = 1 - smooth(borde - 30, borde, Math.abs(x)), a = fade * edge;
       if (a <= 0.02) continue;
-      const g = noise(x * 0.3 - t * 3, S + 4);
-      p.dot(X, 0, g > 0.55 ? C[6] : C[4], a * 1.2);
+      const g = noise(x * 0.3 - t * 3 + k * 1.7, S + 4);
+      if (cual === 0) {
+        p.blend(x, 0.5, g > 0.62 ? C[5] : C[2], (g > 0.62 ? 0.8 : 0.62) * a);
+        p.blend(x, 1.5, C[1], 0.5 * a);
+        continue;
+      }
+      p.dot(X, 0, g > 0.55 ? C[6] : C[4], a * (cual > 0 ? 1.2 : 0.7));
       p.blend(x, 1.5, C[2], 0.6 * a);
       p.blend(x, 2.5, C[1], 0.45 * a);
     }
@@ -127,7 +151,7 @@ export function create(o) {
       }
       if (k > 0.3 && t < CRASH && R.chance(0.35)) {
         const [x, y] = lip(1, t);
-        drops.add({ x, z: R.range(-3, 3), h: -y, vx: R.range(30, 90), vz: R.range(-10, 10), vh: R.range(-20, 40), s: R.chance(0.3) ? 2 : 1 });
+        drops.add({ x, z: R.range(-HONDO, HONDO), h: -y, vx: R.range(30, 90), vz: R.range(-10, 10), vh: R.range(-20, 40), s: R.chance(0.3) ? 2 : 1 });
       }
       if (!crashed && t >= CRASH) {
         crashed = true;
@@ -136,11 +160,11 @@ export function create(o) {
         lights.add(X0, -4, 22, WHITE, 0.6, 0.1);
         for (let i = 0; i < 46; i++) {
           const a = R.range(-0.9, 0.6) * Math.PI, v = R.range(30, 120);
-          drops.add({ x: X0 + R.range(-6, 6), z: R.range(-4, 4), h: R.range(2, 8), vx: Math.cos(a) * v * 0.85 + 18, vz: Math.sin(a) * v * 0.5, vh: R.range(120, 320), s: R.chance(0.15) ? 3 : R.chance(0.35) ? 2 : 1, delay: R.range(0, 0.1) });
+          drops.add({ x: X0 + R.range(-6, 6), z: R.range(-HONDO - 2, HONDO + 2), h: R.range(2, 8), vx: Math.cos(a) * v * 0.85 + 18, vz: Math.sin(a) * v * 0.5, vh: R.range(120, 320), s: R.chance(0.15) ? 3 : R.chance(0.35) ? 2 : 1, delay: R.range(0, 0.1) });
         }
         // the spit: a plume shot straight up where the lip lands
-        for (let i = 0; i < 14; i++) drops.add({ x: X0 + R.range(-3, 3), z: R.range(-2, 2), h: R.range(2, 6), vx: R.range(-15, 25), vz: R.range(-8, 8), vh: R.range(220, 300), s: R.chance(0.3) ? 2 : 1, delay: R.range(0.04, 0.16) });
-        for (let i = 0; i < 34; i++) puff(X0 + R.range(-12, 10), -R.range(2, 12), R.range(-40, 130), -R.range(30, 150), R.range(1, 2), R.range(1.8, 4.2), R.range(0.4, 0.95), R.range(0, 0.14));
+        for (let i = 0; i < 14; i++) drops.add({ x: X0 + R.range(-3, 3), z: R.range(-HONDO * 0.7, HONDO * 0.7), h: R.range(2, 6), vx: R.range(-15, 25), vz: R.range(-8, 8), vh: R.range(220, 300), s: R.chance(0.3) ? 2 : 1, delay: R.range(0.04, 0.16) });
+        for (let i = 0; i < 34; i++) puff(X0 + R.range(-12, 10), -R.range(2, 12) + R.range(-MEDIA, MEDIA) * PASO, R.range(-40, 130), -R.range(30, 150), R.range(1, 2), R.range(1.8, 4.2), R.range(0.4, 0.95), R.range(0, 0.14));
         // fine spray hangs in the air over the burst
         for (let i = 0; i < 34; i++) {
           const a = R.range(-Math.PI * 0.95, -Math.PI * 0.05), v = R.range(40, 160);
@@ -179,25 +203,39 @@ export function create(o) {
       lights.update(dt);
     },
     drawBack(p) {
-      const fade = smooth(0, 0.25, t) * (1 - smooth(meta.duration - 0.7, meta.duration - 0.1, t));
-      sea(p, fade);
+      // la lámina de agua: el mar de cada tajada, de atrás hacia adelante
+      const t0 = t;
+      for (let k = 0; k < TAJADAS; k++) {
+        t = Math.max(0, Math.min(meta.duration, t0 + (MEDIA - k) * LAG));
+        const fade = smooth(0, 0.25, t) * (1 - smooth(meta.duration - 0.7, meta.duration - 0.1, t)) * (k === 0 ? 0.6 : 1);
+        const borde = EDGE * Math.sqrt(1 - ((k - MEDIA) / (MEDIA + 1.5)) ** 2) * (0.9 + 0.1 * Math.sin(k * 2.3));
+        sea(corrido(p, (k - MEDIA) * PASO), fade, k === TAJADAS - 1 ? 1 : k === 0 ? -1 : 0, borde, k);
+      }
+      t = t0;
       rings.draw(p, C, -1);
       drops.draw(p, C, "back");
     },
     draw(p) {
-      const fade = smooth(0, 0.25, t) * (1 - smooth(meta.duration - 0.7, meta.duration - 0.1, t));
-      body(p, fade);
-      curl(p);
-      rings.draw(p, C, 1);
-      // lace left on the water behind the surge, thinning out
-      if (crashed) {
-        const k = 1 - smooth(CRASH + 0.4, meta.duration - 0.15, t), x0 = -20, x1 = crestX(t) + 10;
-        for (let X = Math.floor(x0); X < x1; X++) {
-          const x = X + 0.5, n = 1 - Math.abs(noise2(x * 0.35, t * 0.8, S + 7)) * 4;
-          if (n > 1.15 - k * 1.1) p.px(X, 0, n > 1.4 - k ? WHITE : C[6]);
-          if (n > 1.4 - k * 0.9) p.px(X, 1, C[5]);
+      // el cuerpo, el labio y el encaje de cada tajada, de atrás hacia adelante (la de adelante tapa a la de atrás)
+      const t0 = t;
+      for (let k = 0; k < TAJADAS; k++) {
+        t = Math.max(0, Math.min(meta.duration, t0 + (MEDIA - k) * LAG));
+        const q = corrido(p, (k - MEDIA) * PASO), punta = k === 0 || k === TAJADAS - 1 ? 0.6 : 1;
+        const fade = smooth(0, 0.25, t) * (1 - smooth(meta.duration - 0.7, meta.duration - 0.1, t)) * punta;
+        body(q, fade);
+        curl(q);
+        // lace left on the water behind the surge, thinning out
+        if (t >= CRASH) {
+          const kk = 1 - smooth(CRASH + 0.4, meta.duration - 0.15, t), x0 = -20, x1 = crestX(t) + 10;
+          for (let X = Math.floor(x0); X < x1; X++) {
+            const x = X + 0.5, n = 1 - Math.abs(noise2(x * 0.35, t * 0.8 + k * 0.37, S + 7)) * 4;
+            if (n > 1.15 - kk * 1.1) q.px(X, 0, n > 1.4 - kk ? WHITE : C[6]);
+            if (n > 1.4 - kk * 0.9) q.px(X, 1, C[5]);
+          }
         }
       }
+      t = t0;
+      rings.draw(p, C, 1);
       for (const f of puffs) {
         if (f.delay > 0) continue;
         const g = 1 - f.life / f.max, r = (f.r0 + (f.r1 - f.r0) * ease.outCubic(g)) * (1 - smooth(0.7, 1, g));
@@ -213,7 +251,7 @@ export function create(o) {
       if (f >= 0 && f < 1) {
         const [X0] = lip(1, CRASH - 1e-3);
         p.circle(X0, -3, 8 * (1 - f * 0.4), WHITE);
-        p.ellipse(X0, 0, 14, 2.6, (d) => (d < 0.6 ? WHITE : C[6]));
+        p.ellipse(X0, 0, 14, 2.6 + MEDIA * PASO * 0.7, (d) => (d < 0.6 ? WHITE : C[6]));
       }
       ps.draw(p);
       mist.draw(p, C[5]);

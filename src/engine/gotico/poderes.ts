@@ -2718,7 +2718,7 @@ const DEFS: Def[] = [
   // fuego de Doom (poderes_doom.ts): ids nuevos
   ...DEFS_DOOM,
 ];
-// fuego de Doom en dos de siempre: mismo id, cuadros, celda y ancla (la caja fija es la que medían antes)
+// fuego de Doom en poderes de siempre (crater_ardiente, aliento_infernal): mismo id, cuadros, celda y ancla (la caja fija es la que medían antes)
 for (const d of DEFS) { const m = MEJORAS_DOOM[d.id]; if (m) { d.pinta = m.pinta; d.caja = m.caja; } }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -2861,6 +2861,9 @@ impacto_veneno, impacto_sagrado, impacto_hueso, nova_sangre, maldicion_sombra, a
 
 Fuego de Doom (el autómata de fuego_doom.ts horneado en los cuadros): ${EFECTOS_DOOM.join(', ')}.
 crater_ardiente ahora arde con fuego de Doom, con los mismos cuadros, celda y ancla de antes.
+aliento_infernal sopla fuego de Doom a lo largo del chorro (8 direcciones), con los mismos cuadros, celda y ancla.
+llanto_animas es una nova de fuego frío en capas (lenguas por el piso, jirones, caras en el humo, núcleo oscuro y
+borde cian hueso), con los mismos cuadros, celda y ancla.
 `;
 
 /** Zip con una tira PNG por poder más poderes.json y LEEME.txt. */
