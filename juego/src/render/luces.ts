@@ -10,6 +10,8 @@ import type { Juego, Ent } from '../juego/mundo';
 import { R } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { lucesOzmaren, ALTO_OZMAREN } from './fuego';
+import { vivosDe } from './fuego_vivo';
+import { pulsoLuz } from '../../../src/engine/gotico/fuego_doom';
 
 export interface Luz {
   /** Punto del piso bajo la luz, en pantalla. */
@@ -83,6 +85,12 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     if (/rio_lava/.test(o.id) && (Math.floor(o.cx / 5) + Math.floor(o.cy / 5)) % 2) continue;
     const [px, py] = aPant(o.cx + 0.5, o.cy + 0.5);
     if (!dentro(px, py, 320)) continue;
+    // fuego de Doom vivo: la luz late con la llama de verdad (y sus sombras tiemblan con ella)
+    const vs = vivosDe(o);
+    if (vs) {
+      vs.forEach((v, i) => { const lz = v.s.luz; L.push({ x: px + lz.dx, y: py, h: lz.altura, r: lz.radio, c: v.luz, k: lz.intensidad * pulsoLuz(v.f, lz.mueve).k, id: `o${o.cx},${o.cy}${i ? ',' + i : ''}`, sinSombra: !lz.sombra }); });
+      continue;
+    }
     const lc: any = meta.luz[1];
     const c: [number, number, number] = Array.isArray(lc) ? [lc[0], lc[1], lc[2]] : String(lc).includes(',') ? (String(lc).split(',').map(Number) as any) : [255, 150, 60];
     const r = Math.min(260, meta.luz[0] * 1.3) * (0.93 + Math.sin(t * 9 + o.cx) * 0.04 + R() * 0.03);

@@ -14,6 +14,7 @@ import { cuadrosVivos, cambioVisible } from '../motor/pintor';
 import { R, rng } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { fuegoOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
+import { prepararFuegos, vivosDe, tieneFuegoDoom, dibujarVivos } from './fuego_vivo';
 const ES_FUEGO = /fogata|hoguera|brasero|pira|antorcha|fuego|caldero|hogar/;
 import { recolectar, sombras, reflejos, luces, destello, destelloColor } from './luces';
 
@@ -137,6 +138,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   if (foco.k > 0) { const k = foco.k * foco.k * (3 - 2 * foco.k); cam.x += ((foco.x - foco.y) * 16 - (h.x - h.y) * 16) * k; cam.y += ((foco.x + foco.y) * 8 - 60 - (h.x + h.y) * 8 + camAlzada) * k; }
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   picks = [];
+  prepararFuegos(j, dt, aPant, W, H);
   recolectar(j, tiempo, aPant, W, H);
   // explorar
   const btx = Math.floor(h.x / 5), bty = Math.floor(h.y / 5);
@@ -179,6 +181,9 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
       q = meta.f[Math.min(meta.f.length - 1, i)];
     }
     const [px, py] = aPant(o.cx + 0.5, o.cy + 0.5);
+    // fuego de Doom vivo: el gemelo sin llama y el fuego encima
+    const vivos = vivosDe(o), gem = vivos?.[0].s.sprite ? objetoMeta(vivos[0].s.sprite, o.v) : null;
+    if (vivos && gem?.f.length) q = gem.f[0];
     const prof = meta.plano ? -1e6 + o.cx + o.cy : o.cx + o.cy + (o.hw + o.hh) / 2 - 1;
     const alto = q.ay;
     items.push({ prof, draw: () => {
@@ -190,7 +195,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
       }
       if (alfa < 1) { ctx.globalAlpha = alfa; dibujar(ctx, q, px, py); ctx.globalAlpha = 1; } else dibujar(ctx, q, px, py);
       // fuego vivo sobre fogatas, braseros, piras y antorchas
-      if (meta.luz && ES_FUEGO.test(o.id) && !/^(arma_|mis_)/.test(o.id) && !/apagad/.test(o.v)) fuegoMundo(ctx, px, py - meta.luz[2] * 1.1, Math.max(0.3, Math.min(1.3, meta.luz[0] / 160)), tiempo, cam.x, cam.y);
+      if (vivos && (gem?.f.length || !vivos[0].s.sprite)) dibujarVivos(ctx, vivos, px, py, alfa);
+      else if (meta.luz && !tieneFuegoDoom(o) && ES_FUEGO.test(o.id) && !/^(arma_|mis_)/.test(o.id) && !/apagad/.test(o.v)) fuegoMundo(ctx, px, py - meta.luz[2] * 1.1, Math.max(0.3, Math.min(1.3, meta.luz[0] / 160)), tiempo, cam.x, cam.y);
     } });
     if (o.dato?.mision && (o.tag === 'pista' || o.tag === 'reliquia' || o.tag === 'altar' || o.tag === 'destino')) items.push({ prof: prof - 0.01, draw: () => haloMision(px, py, tiempo, o.tag === 'destino') });
     if (o.tag === 'pista' || o.tag === 'reliquia' || o.tag === 'altar' || o.tag === 'libro' || o.tag === 'cofre' || o.tag === 'santuario' || o.tag === 'pozo' || o.tag === 'baul' || o.tag === 'romper' || o.id === 'com_piedra_viaje') picks.push({ tipo: 'objeto', ref: o, x0: px - q.ax, y0: py - q.ay, x1: px - q.ax + q.w, y1: py - q.ay + q.h, prof });

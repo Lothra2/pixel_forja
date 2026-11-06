@@ -63,7 +63,7 @@ const cacheBusca = new Map<string, ObjetoDef[]>();
 export function buscar(temas: string[], palabras?: string[], sin?: string[]): ObjetoDef[] {
   const k = temas.join() + '|' + (palabras ?? []).join() + '|' + (sin ?? []).join();
   let r = cacheBusca.get(k);
-  if (!r) { r = REGISTRO.filter((d) => temas.includes(d.tema) && !/^(gore|hor)_/.test(d.id) && (!palabras || palabras.some((p) => d.id.includes(p))) && !(sin ?? []).some((p) => d.id.includes(p))); cacheBusca.set(k, r); }
+  if (!r) { r = REGISTRO.filter((d) => temas.includes(d.tema) && !/^(gore|hor)_/.test(d.id) && !d.id.endsWith('_sin_llama') && (!palabras || palabras.some((p) => d.id.includes(p))) && !(sin ?? []).some((p) => d.id.includes(p))); cacheBusca.set(k, r); }
   return r;
 }
 
@@ -944,6 +944,8 @@ function pueblo(def: DefZona, semilla: number): Zona {
 export function generarZona(def: DefZona, semilla: number): Zona {
   const z = def.tipo === 'pueblo' ? pueblo(def, semilla) : def.tipo === 'mazmorra' ? mazmorra(def, semilla) : exterior(def, semilla);
   for (const o of z.objetos) if (o.id === 'mis_libro_maldito') o.tag = 'libro';
+  // los gemelos sin llama del fuego de Doom son solo para dibujar: si el paisaje del motor eligió uno, va el original con su fuego
+  for (const o of z.objetos) if (o.id.endsWith('_sin_llama')) o.id = o.id.slice(0, -10);
   // asegurar que toda entrada caiga en celda libre
   for (const k of Object.keys(z.entradas)) z.entradas[k] = libreCerca(z, z.entradas[k][0], z.entradas[k][1]);
   // los pisos 'fortaleza' y 'arcano' parecen de prueba (círculos tachados): se cambian por baldosa de catedral y arenisca
