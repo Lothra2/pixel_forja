@@ -101,7 +101,8 @@ export function draw(p, t, o) {
   const C = fit(o.palette, 8), T = meta.duration, ph = t / T;
   // a soft shadow where it lies, dark in the middle of the lit floor
   blobShadow(p, OX - 0.5, 12.5, 0.95);
-  sword(p, C, ph);
+  // Forja: sin la espada (el juego dibuja el objeto caído, el que sea)
+  void sword;
   for (let k = 0; k < RINGS.length; k++) ring(p, C, since(ph, k) * T, false);
   motes(p, C, t, T, o.seed);
 }

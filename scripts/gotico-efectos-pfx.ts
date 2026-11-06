@@ -1,5 +1,5 @@
-// Exporta los efectos mudados de pixelfx (efectos_pfx.ts): una hoja PNG liviana por efecto (paleta de 256 colores
-// con alfa), efectos_pfx.json (el manifiesto), luz_efectos_pfx.json (la luz dinámica), LEEME.txt y los avisos de
+// Exporta los efectos mudados de pixelfx (efectos_pfx.ts): el atlas de cada efecto en una o más páginas PNG livianas
+// (a 1x, paleta de 256 colores con alfa, 4096 px y 4 Mpx como mucho por página), efectos_pfx.json (el manifiesto), luz_efectos_pfx.json (la luz dinámica), LEEME.txt y los avisos de
 // licencia de pixelfx.
 // Uso: npx tsx scripts/gotico-efectos-pfx.ts <directorio>
 // Variables: IDS (filtrar ids, separados por coma), CAT (categoría), SINCRONIZAR=1 (también reescribe
@@ -8,7 +8,7 @@ import { writeFileSync, mkdirSync, readFileSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const { EFECTOS_PFX, efectoPfx, pngEfectoPfx, olvidarEfectosPfx, manifiestoDe, luzEfectosPfxJson, LEEME_PFX } = await import('../src/engine/gotico/efectos_pfx.ts');
+const { EFECTOS_PFX, efectoPfx, pngsEfectoPfx, olvidarEfectosPfx, manifiestoDe, luzEfectosPfxJson, LEEME_PFX } = await import('../src/engine/gotico/efectos_pfx.ts');
 
 const dir = process.argv[2];
 if (!dir) {
@@ -21,16 +21,17 @@ const lista = EFECTOS_PFX.filter((c) => (!filtro || filtro.includes(c.id)) && (!
 mkdirSync(dir, { recursive: true });
 
 const t0 = Date.now();
-let bytes = 0;
+let bytes = 0, mpx = 0;
 const efectos = [];
 for (const c of lista) {
   const t1 = Date.now();
   const e = efectoPfx(c.id);
-  const png = pngEfectoPfx(c.id);
-  writeFileSync(join(dir, e.archivo), png);
-  bytes += png.length;
+  const pngs = pngsEfectoPfx(c.id);
+  pngs.forEach((png, i) => { writeFileSync(join(dir, e.paginas[i].archivo), png); bytes += png.length; });
+  mpx += e.peso;
   efectos.push(e);
-  console.log(`${c.id.padEnd(28)} ${String(e.cuadros).padStart(3)}f t${e.t} ${e.direccional ? '8dir' : '    '} ${e.celda.join('x').padStart(8)} ${(png.length / 1024).toFixed(0).padStart(5)} KB  ${Date.now() - t1} ms`);
+  const kb = pngs.reduce((s, p) => s + p.length, 0) / 1024;
+  console.log(`${c.id.padEnd(28)} ${String(e.cuadros).padStart(3)}f t${e.t} ${e.direccional ? '8dir' : '    '} ${String(e.paginas.length).padStart(2)} pág ${e.peso.toFixed(2).padStart(6)} Mpx ${kb.toFixed(0).padStart(5)} KB  ${Date.now() - t1} ms`);
   // libera la memoria: los cuadros ya están en el png
   olvidarEfectosPfx(c.id);
 }
@@ -42,7 +43,7 @@ writeFileSync(join(dir, 'LEEME.txt'), LEEME_PFX);
 const vendor = fileURLToPath(new URL('../src/engine/gotico/vendor/pixelfx/', import.meta.url));
 copyFileSync(join(vendor, 'LICENSE'), join(dir, 'LICENSE-pixelfx.txt'));
 copyFileSync(join(vendor, 'NOTICE.md'), join(dir, 'NOTICE-pixelfx.md'));
-console.log(`${efectos.length} efectos, ${(bytes / 1024 / 1024).toFixed(1)} MB de hojas, en ${((Date.now() - t0) / 1000).toFixed(0)} s -> ${dir}`);
+console.log(`${efectos.length} efectos, ${mpx.toFixed(1)} Mpx decodificados, ${(bytes / 1024 / 1024).toFixed(1)} MB de PNG, en ${((Date.now() - t0) / 1000).toFixed(0)} s -> ${dir}`);
 
 if (process.env.SINCRONIZAR === '1') {
   if (filtro || cat) throw new Error('SINCRONIZAR pide todos los efectos (sin IDS ni CAT)');

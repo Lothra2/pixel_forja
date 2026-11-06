@@ -3,7 +3,7 @@
  * espacio premultiplicado, sin trama: es pixel art). Una hoja de luz suave tiene miles de colores; con 255 bien
  * elegidos no se nota el escalón y pesa un tercio.
  */
-import { encode } from 'fast-png';
+import { zlibSync } from 'fflate';
 import type { Raster } from '../core/raster';
 
 interface Caja { idx: number[]; }
@@ -74,8 +74,50 @@ export function cuantizar(img: Raster, n = 255): { idx: Uint8Array; paleta: numb
   return { idx, paleta };
 }
 
-/** PNG con paleta (cuantizado si hace falta). */
-export function pngLiviano(img: Raster): Uint8Array {
-  const { idx, paleta } = cuantizar(img);
-  return encode({ width: img.w, height: img.h, data: idx, channels: 1, depth: 8, palette: paleta });
+const CRC = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function trozo(tipo: string, datos: Uint8Array): Uint8Array {
+  const o = new Uint8Array(12 + datos.length), v = new DataView(o.buffer);
+  v.setUint32(0, datos.length);
+  for (let i = 0; i < 4; i++) o[4 + i] = tipo.charCodeAt(i);
+  o.set(datos, 8);
+  let c = 0xffffffff;
+  for (let i = 4; i < 8 + datos.length; i++) c = CRC[(c ^ o[i]) & 255] ^ (c >>> 8);
+  v.setUint32(8 + datos.length, (c ^ 0xffffffff) >>> 0);
+  return o;
+}
+
+/** Filas con filtro: 0 (ninguno) o 2 (arriba) en todas; se queda con el que comprime mejor. */
+function idat(w: number, h: number, idx: Uint8Array): Uint8Array {
+  let mejor: Uint8Array | null = null;
+  for (const f of [0, 2]) {
+    const raw = new Uint8Array((w + 1) * h);
+    for (let y = 0; y < h; y++) {
+      raw[y * (w + 1)] = f;
+      for (let x = 0; x < w; x++) {
+        const v = idx[y * w + x];
+        raw[y * (w + 1) + 1 + x] = f === 2 && y ? (v - idx[(y - 1) * w + x]) & 255 : v;
+      }
+    }
+    const z = zlibSync(raw, { level: 9, mem: 12 });
+    if (!mejor || z.length < mejor.length) mejor = z;
+  }
+  return mejor!;
+}
+
+/** PNG con paleta de hasta `colores` colores con alfa (cuantizado si hace falta). Determinista. */
+export function pngLiviano(img: Raster, colores = 255): Uint8Array {
+  const { idx, paleta } = cuantizar(img, colores);
+  const ihdr = new Uint8Array(13), v = new DataView(ihdr.buffer);
+  v.setUint32(0, img.w); v.setUint32(4, img.h); ihdr[8] = 8; ihdr[9] = 3; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
+  const plte = new Uint8Array(paleta.length * 3), trns = new Uint8Array(paleta.length);
+  paleta.forEach((c, i) => { plte[i * 3] = c[0]; plte[i * 3 + 1] = c[1]; plte[i * 3 + 2] = c[2]; trns[i] = c[3]; });
+  const partes = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), trozo('IHDR', ihdr), trozo('PLTE', plte), trozo('tRNS', trns), trozo('IDAT', idat(img.w, img.h, idx)), trozo('IEND', new Uint8Array(0))];
+  const out = new Uint8Array(partes.reduce((s, p) => s + p.length, 0));
+  let o = 0;
+  for (const p of partes) { out.set(p, o); o += p.length; }
+  return out;
 }

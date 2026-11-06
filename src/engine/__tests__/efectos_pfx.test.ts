@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import { EFECTOS_PFX, efectoPfx, hojaEfectoPfx, pngEfectoPfx, pintarEfectoPfx, olvidarEfectosPfx, luzEfectosPfxJson, CREDITOS_PFX, LEEME_PFX, type ManifiestoPfx } from '../gotico/efectos_pfx';
+import { EFECTOS_PFX, efectoPfx, pngsEfectoPfx, paginasEfectoPfx, pintarEfectoPfx, armarCuadroPfx, olvidarEfectosPfx, luzEfectosPfxJson, CREDITOS_PFX, LEEME_PFX, LADO_MAX, PX_MAX, type ManifiestoPfx } from '../gotico/efectos_pfx';
+import { decodePng } from '../export/png';
 import { EFECTOS } from '../gotico/vendor/pixelfx/fx/indice.js';
 import { DIRS_PODER } from '../gotico/poderes';
 
@@ -25,6 +26,9 @@ const EXCLUIDOS = [
   'pickups/heart-pickup', 'pickups/power-star', 'status/charmed', 'spawn/egg-hatch', 'impacts/bullet-impact', 'impacts/impact-frame', 'fire/torch',
   'fire/brazier', 'fire/campfire', 'fire/candle', 'status/burning', 'fire/flamethrower', /^projectiles\/(bullet|cannon|energy|flare|homing|laser|muzzle|plasma|rocket)/,
 ];
+
+/** Bucles cuyo salto al empezar es el efecto mismo (el arco que se vuelve a encender). */
+const COSTURA_A_PROPOSITO = ['fx_arco_chispas'];
 
 /** Tiempo por prueba: la corrida completa pinta todos los efectos y tarda. */
 const TIEMPO = process.env.PFX_COMPLETO === '1' ? 3_600_000 : 180_000;
@@ -88,9 +92,38 @@ describe('efectos de pixelfx: manifiesto sincronizado', () => {
       expect(e.uso).toEqual(JSON.parse(JSON.stringify(c.uso)));
       expect(e.bucle).toBe(!!EFECTOS[c.origen].meta.loop);
       expect(e.direccional).toBe(!!c.dir);
-      expect(e.filas).toEqual(c.dir ? [...DIRS_PODER] : null);
-      expect(e.archivo).toBe(`${c.id}.png`);
+      expect(e.direcciones.map((d) => d.dir)).toEqual(c.dir ? [...DIRS_PODER] : [null]);
+      expect(e.paginas[0].archivo).toBe(`${c.id}.png`);
     }
+  });
+
+  it('límites del atlas en la exportación real: páginas de 4096 px y 4 Mpx como mucho, 150 Mpx y 15 MB en total', () => {
+    let mpx = 0, bytes = 0;
+    for (const e of MANIFIESTO.efectos) {
+      expect(e.paginas.length, e.id).toBeGreaterThan(0);
+      for (const p of e.paginas) {
+        expect(p.w <= LADO_MAX && p.h <= LADO_MAX, `${e.id} ${p.archivo} ${p.w}x${p.h}`).toBe(true);
+        expect(p.w * p.h, `${e.id} ${p.archivo}`).toBeLessThanOrEqual(PX_MAX);
+        bytes += p.bytes;
+      }
+      const peso = e.paginas.reduce((s, p) => s + p.w * p.h, 0) / 1e6;
+      expect(Math.abs(e.peso - peso), e.id).toBeLessThan(0.006);
+      mpx += peso;
+      // cada cuadro apunta a una página que existe y cae adentro; los espejos apuntan a una dirección guardada
+      for (const d of e.direcciones) {
+        if (d.espejo) { expect(e.direcciones.find((x) => x.dir === d.de && !x.espejo), `${e.id} ${d.dir}`).toBeDefined(); continue; }
+        expect(d.cuadros!.length, e.id).toBe(e.cuadros);
+        for (const [p, x, y, w, h] of d.cuadros!) {
+          if (!w) continue;
+          const pg = e.paginas[p];
+          expect(pg && x >= 0 && y >= 0 && x + w <= pg.w && y + h <= pg.h, `${e.id} cuadro fuera de la página`).toBe(true);
+        }
+      }
+      // golpes e impactos nunca por debajo de 12.5 cuadros por segundo
+      if (['impactos', 'cuerpo_a_cuerpo'].includes(e.categoria)) expect(e.t, e.id).toBeLessThanOrEqual(2);
+    }
+    expect(mpx, `total ${mpx.toFixed(1)} Mpx`).toBeLessThanOrEqual(150);
+    expect(bytes / 1024 / 1024, 'MB de PNG').toBeLessThanOrEqual(15);
   });
 
   it('la luz del json es la del manifiesto, con una curva por cuadro', () => {
@@ -121,36 +154,17 @@ describe('efectos de pixelfx: manifiesto sincronizado', () => {
 describe('efectos de pixelfx: hojas', () => {
   const alfa = (d: Uint8ClampedArray, w: number, x: number, y: number) => d[(y * w + x) * 4 + 3];
 
-  it('celda, ancla y cuadros coherentes con la hoja; nada cortado en el borde; sin fondo opaco', () => {
+  it('nada cortado en el borde, sin fondo opaco y los que pasan una vez terminan vacíos', () => {
     for (const id of MUESTRA) {
-      const { img, efecto: e } = hojaEfectoPfx(id);
-      const dirs = e.direccional ? 8 : 1;
-      expect(e.bloques.length, id).toBe(dirs);
-      // los bloques se apilan sin pisarse y caben en la hoja
-      let y = 0;
-      e.bloques.forEach((b, d) => {
-        expect(b.dir, id).toBe(e.direccional ? DIRS_PODER[d] : null);
-        expect(b.y, id).toBe(y);
-        expect(b.columnas * b.filas, id).toBeGreaterThanOrEqual(e.cuadros);
-        expect(b.columnas * (b.filas - 1), id).toBeLessThan(e.cuadros);
-        expect(b.x + b.columnas * b.celda[0], id).toBeLessThanOrEqual(img.w);
-        if (e.capa !== 'pantalla') expect(b.ancla[0] >= 0 && b.ancla[0] <= b.celda[0] && b.ancla[1] >= 0 && b.ancla[1] <= b.celda[1], `${id} ancla fuera (${b.dir})`).toBe(true);
-        // el cuadro pintado sale con la celda y el ancla del bloque
-        const q = pintarEfectoPfx(id, d, 0);
-        expect([q.img.w, q.img.h], id).toEqual(b.celda);
-        expect(q.ancla, id).toEqual(b.ancla);
-        y += b.filas * b.celda[1];
-      });
-      expect(img.h, id).toBe(y);
-      expect(e.celda, id).toEqual(e.bloques[e.direccional ? 6 : 0].celda);
-      expect(e.ancla, id).toEqual(e.bloques[e.direccional ? 6 : 0].ancla);
+      const e = efectoPfx(id), dirs = e.direccional ? 8 : 1;
       expect(e.cuadros, id).toBeGreaterThan(1);
-      expect([1, 2]).toContain(e.t);
-      if (e.capa !== 'pantalla') expect(e.escala).toBe(2);
+      expect([1, 2, 3, 4]).toContain(e.t);
+      expect(e.escala).toBe(e.capa === 'pantalla' ? 1 : 2);
       for (let d = 0; d < dirs; d++)
         for (let f = 0; f < e.cuadros; f++) {
-          const { img: q } = pintarEfectoPfx(id, d, f);
+          const { img: q, ancla } = pintarEfectoPfx(id, d, f);
           const { w, h } = q;
+          if (f === 0 && e.capa !== 'pantalla') expect(ancla[0] >= 0 && ancla[0] <= w && ancla[1] >= 0 && ancla[1] <= h, `${id} ancla fuera`).toBe(true);
           let opaco = 0, borde = 0;
           for (let i = 3; i < q.data.length; i += 4) if (q.data[i] === 255) opaco++;
           if (e.capa !== 'pantalla') {
@@ -160,13 +174,42 @@ describe('efectos de pixelfx: hojas', () => {
           }
           if (e.categoria !== 'transiciones') expect(opaco / (w * h), `${id} fondo opaco (cuadro ${f})`).toBeLessThan(0.5);
         }
-      // un efecto que pasa una vez termina casi vacío
       if (!e.bucle && e.capa !== 'pantalla') {
         const { img: q } = pintarEfectoPfx(id, 0, e.cuadros - 1);
         let s = 0;
         for (let i = 3; i < q.data.length; i += 4) s += q.data[i];
-        expect(s / 255 / (e.celda[0] * e.celda[1]), `${id} no termina vacío`).toBeLessThan(0.02);
+        expect(s / 255 / (q.w * q.h), `${id} no termina vacío`).toBeLessThan(0.02);
       }
+      olvidarEfectosPfx(id);
+    }
+  }, TIEMPO);
+
+  it('el atlas (recorte, desplazamiento, espejo y escala) arma cada cuadro idéntico al render sin optimizar', () => {
+    // uno direccional, uno de piso y uno de pantalla
+    for (const id of ['fx_bola_fuego', 'fx_nova_escarcha', 'fx_lluvia']) {
+      const e = efectoPfx(id), dirs = e.direccional ? 8 : 1;
+      const decod = pngsEfectoPfx(id).map((b) => decodePng(b)), crudas = paginasEfectoPfx(id);
+      if (id === 'fx_bola_fuego') expect(e.direcciones.filter((d) => d.espejo).map((d) => d.dir)).toEqual(['ne', 'e', 'se']);
+      let err = 0, n = 0;
+      for (let d = 0; d < dirs; d++)
+        for (let f = 0; f < e.cuadros; f++) {
+          const ref = pintarEfectoPfx(id, d, f), arm = armarCuadroPfx(id, d, f, crudas);
+          expect(arm.ancla, id).toEqual(ref.ancla);
+          expect([arm.img.w, arm.img.h], id).toEqual([ref.img.w, ref.img.h]);
+          // idéntico pixel a pixel
+          let distintos = 0;
+          for (let i = 0; i < ref.img.data.length; i++) if (ref.img.data[i] !== arm.img.data[i]) distintos++;
+          expect(distintos, `${id} dir ${d} cuadro ${f}`).toBe(0);
+          // desde el PNG exportado: la forma (alfa > 0) es la misma y el color solo cambia lo que cuantiza la paleta
+          const png = armarCuadroPfx(id, d, f, decod);
+          for (let i = 0; i < ref.img.data.length; i += 4) {
+            expect(ref.img.data[i + 3] > 0, `${id} forma`).toBe(png.img.data[i + 3] > 0);
+            // error de color pesado por el alfa (lo casi transparente casi no se ve)
+            const al = ref.img.data[i + 3] / 255;
+            if (al) { err += al * (Math.abs(ref.img.data[i] - png.img.data[i]) + Math.abs(ref.img.data[i + 1] - png.img.data[i + 1]) + Math.abs(ref.img.data[i + 2] - png.img.data[i + 2])); n += al * 3; }
+          }
+        }
+      expect(err / n, `${id} error medio de paleta`).toBeLessThan(8);
       olvidarEfectosPfx(id);
     }
   }, TIEMPO);
@@ -175,7 +218,8 @@ describe('efectos de pixelfx: hojas', () => {
     const dif = (a: Uint8ClampedArray, b: Uint8ClampedArray) => { let s = 0; for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]); return s; };
     for (const id of MUESTRA) {
       const e = efectoPfx(id);
-      if (!e.bucle) continue;
+      // la escalera de Jacob vuelve a encender el arco al pie (destello blanco) justo al empezar cada vuelta: es su ciclo
+      if (!e.bucle || COSTURA_A_PROPOSITO.includes(id)) continue;
       const di = e.direccional ? 6 : 0, n = e.cuadros;
       // la costura (último -> primero) no salta más que el paso más grande entre cuadros seguidos
       let paso = 0;
@@ -188,9 +232,9 @@ describe('efectos de pixelfx: hojas', () => {
 
   it('es determinista: dos pintadas dan el mismo png', () => {
     for (const id of MUESTRA.slice(0, 6)) {
-      const a = createHash('sha1').update(pngEfectoPfx(id)).digest('hex');
+      const a = createHash('sha1').update(Buffer.concat(pngsEfectoPfx(id))).digest('hex');
       olvidarEfectosPfx(id);
-      const b = createHash('sha1').update(pngEfectoPfx(id)).digest('hex');
+      const b = createHash('sha1').update(Buffer.concat(pngsEfectoPfx(id))).digest('hex');
       olvidarEfectosPfx(id);
       expect(a, id).toBe(b);
     }

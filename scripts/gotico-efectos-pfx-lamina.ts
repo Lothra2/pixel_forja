@@ -1,5 +1,6 @@
 // Lámina de control de los efectos mudados de pixelfx (efectos_pfx.ts): cada efecto en su bloque, a escala de juego,
 // sobre piso gótico oscuro y con nuestro héroe al lado (o debajo, en los estados) para comparar el tamaño.
+// Los cuadros salen armados desde el atlas exportado (PNG decodificado, recorte, desplazamiento y espejo) como en el juego.
 // Muestra cuadros repartidos en el tiempo, la costura del bucle (último | primero) y, en los direccionales, un cuadro
 // en las 8 direcciones. Marca en rojo la celda si algo toca el borde.
 // Uso: npx tsx scripts/gotico-efectos-pfx-lamina.ts salida.png
@@ -7,7 +8,8 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-const { EFECTOS_PFX, efectoPfx, pintarEfectoPfx, olvidarEfectosPfx } = await import('../src/engine/gotico/efectos_pfx.ts');
+const { EFECTOS_PFX, efectoPfx, armarCuadroPfx, pngsEfectoPfx, olvidarEfectosPfx } = await import('../src/engine/gotico/efectos_pfx.ts');
+const { decodePng } = await import('../src/engine/export/png.ts');
 const { heroeReferencia } = await import('../src/engine/gotico/efectos_pfx_silueta.ts');
 const { pintarPiso } = await import('../src/engine/gotico/pisos.ts');
 const { encodePng } = await import('../src/engine/export/png.ts');
@@ -94,6 +96,8 @@ const bloques: Bloque[] = [];
 const t0 = Date.now();
 for (const c of lista) {
   const e = efectoPfx(c.id);
+  const pags = pngsEfectoPfx(c.id).map((b) => decodePng(b));
+  const pintarEfectoPfx = (id: string, d: number, f: number) => armarCuadroPfx(id, d, f, pags);
   const n = e.cuadros, filas: Bloque['filas'] = [];
   const pick = Array.from({ length: Math.min(NF, n) }, (_, k) => Math.round((k * (n - 1)) / Math.max(1, Math.min(NF, n) - 1)));
   const di = e.direccional ? 6 : 0;
@@ -114,7 +118,7 @@ for (const c of lista) {
   }
   if (e.capa === 'pantalla') borde = false;
   bloques.push({
-    etiqueta: `${c.id} ${c.origen} ${e.celda[0]}x${e.celda[1]} ${n}f t${e.t} ${e.bucle ? 'bucle' : 'una vez'} ${e.mezcla}${e.direccional ? ' 8dir' : ''}${borde ? ' borde' : ''}`,
+    etiqueta: `${c.id} ${c.origen} ${e.peso.toFixed(2)}mpx ${e.paginas.length}pag ${n}f t${e.t} ${e.bucle ? 'bucle' : 'una vez'} ${e.mezcla}${e.direccional ? ' 8dir' : ''}${borde ? ' borde' : ''}`,
     piso: e.capa === 'piso', filas, aditiva: e.mezcla === 'aditiva', estado: c.categoria === 'estado' || c.categoria === 'cuerpo_a_cuerpo' || !!c.cuerpo || !!c.detrasEn || !!c.enLanzador, borde, pantalla: e.capa === 'pantalla',
   });
   olvidarEfectosPfx(c.id);

@@ -1,9 +1,9 @@
 import { cycle, fit, clamp, ease, TAU } from "../../core/index.js";
-import { shape } from "./_lib.js";
+
 
 export const meta = {
   name: "Slowed",
-  desc: "Dragged through time: a glassy clock dial behind the head ticks round in heavy steps, flashing with each, while drops sink in slow motion and spread slow rings.",
+  desc: "Dragged through time: a small gothic hourglass over the head runs out and turns over, while grains of sand sink in slow motion and spread slow rings.",
   tags: ["status", "slow", "time", "clock", "debuff", "loop"],
   size: [64, 76],
   origin: [32, 68],
@@ -75,18 +75,49 @@ function dial(p, C, cx, cy, t) {
   }
 }
 
-export function drawBack(p, t, o) {
-  const C = fit(o.palette, 8), a = o.actor;
-  dial(p, C, 0, a.y + 3, t);
-  // the body lags behind itself: an after-image of its outline, dragged a step back after every tick
-  const lag = afterglow(t);
-  if (lag > 0.05) p.outline(a.mask, a.x - 1 - Math.round(2 * lag), a.y, C[5], 0.55 * lag);
+// Forja: en vez de la esfera de reloj (parecía interfaz), un reloj de arena gótico chico sobre la cabeza: armazón de
+// hierro negro con remates, ampollas de vidrio, la arena que baja durante el bucle y un giro al final para volver a
+// empezar; alrededor caen granos de arena en cámara lenta.
+const IRON = ["#0e0c0b", "#26211d", "#4a4038", "#6e6152"];
+function hourglass(p, C, cx, cy, t) {
+  const RUN = 0.82, u = (t % D) / D, run = Math.min(1, u / RUN), flip = u < RUN ? 0 : ease.inOutCubic((u - RUN) / (1 - RUN));
+  const th = flip * Math.PI, ca = Math.cos(th), sa = Math.sin(th);
+  // punto local (x, y) del reloj, girado alrededor del centro
+  const P = (x, y) => [cx + x * ca - y * sa, cy + x * sa + y * ca];
+  const dot = (x, y, c, a = 1) => { const [X, Y] = P(x, y); p.dot(X, Y, c, a); };
+  const H = 7, W = 4;
+  // el ancho del vidrio a la altura y (0 en el cuello)
+  const half = (y) => Math.max(0.6, W * Math.min(1, Math.abs(y) / (H - 1.5)) ** 0.8);
+  // arena: arriba baja, abajo sube (durante el giro queda quieta)
+  const top = (1 - run) * (H - 1.5), bot = run * (H - 1.5);
+  for (let y = -H + 1; y <= H - 1; y++) {
+    const w = half(y + 0.5);
+    for (let x = -Math.ceil(w); x <= Math.ceil(w); x++) {
+      if (Math.abs(x + 0.5) > w) continue;
+      const enArriba = y < 0 && -y <= top + 0.5, enAbajo = y >= 0 && H - 1 - y < bot;
+      if (enArriba || enAbajo) dot(x, y, C[5]);
+      else dot(x, y, C[1], 0.35);
+    }
+    // el borde del vidrio, apenas brillante a la izquierda
+    dot(-Math.ceil(w) - 1, y, C[3], 0.8);
+    dot(Math.ceil(w) + 1, y, C[3], 0.8);
+  }
+  // el hilo de arena que cae por el cuello
+  if (run < 1 && flip === 0) for (let y = 0; y < H - 1 - bot; y++) if ((y + Math.floor(t * 12)) % 2 === 0) dot(0, y, C[7]);
+  // armazón: tapas y dos columnas de hierro con remates
+  // (simétrico al girar media vuelta: el bucle empalma)
+  for (let x = -W - 2; x <= W + 2; x++) for (const sg of [-1, 1]) { dot(x, sg * H, IRON[2]); dot(x, sg * (H + 1), IRON[1]); }
+  for (let y = -H + 1; y <= H - 1; y++) for (const sg of [-1, 1]) dot(sg * (W + 2), y, IRON[3]);
+  for (const sg of [-1, 1]) { dot(0, sg * (H + 2), IRON[3]); dot(-1, sg * (H + 2), IRON[1]); dot(1, sg * (H + 2), IRON[1]); }
+  const [gx, gy] = P(0, H - 1 - bot);
+  p.glow(gx, gy, 6, C[5], 0.18);
 }
 
+export function drawBack() {}
+
 export function draw(p, t, o) {
-  const C = fit(o.palette, 8), a = o.actor, S = shape(a), fl = Math.max(hand(t).flash, afterglow(t));
-  // a cold film of time over the body, thickening with each tick
-  for (const [mx, my] of S.body) p.blend(a.x + mx, a.y + my, C[5], 0.08 + 0.12 * fl);
+  const C = fit(o.palette, 8), a = o.actor;
+  hourglass(p, C, 0, a.y - 11, t);
   // drops sinking in slow motion, ghosts trailing them, slow rings where they reach the floor
   cycle(t, D, 6, o.seed + 3, (r) => r.range(1.6, 2.2), (age, life, r) => {
     const side = r.next() < 0.5 ? -1 : 1, x = side * r.range(10, 17), y0 = a.y + r.range(6, 22), v0 = r.range(18, 30), k = 1.1;

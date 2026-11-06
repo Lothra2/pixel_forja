@@ -1,4 +1,4 @@
-import { fit, clamp, wrap, lerp, rng, cycle, TAU } from "../../core/index.js";
+import { fit, clamp, wrap, lerp, rng, cycle, rand, TAU } from "../../core/index.js";
 import { Grid, shift, shadow } from "./_lib.js";
 
 export const meta = {
@@ -14,7 +14,7 @@ export const meta = {
   options: { palette: ["#10142a", "#232c52", "#3e4f86", "#6b84bb", "#a3b8e2", "#d8e4ff", "#ffffff"], hover: 14, seed: 1 },
 };
 
-const D = meta.duration, GRID = new Grid(-20, -40, 40, 46), R = 10.5;
+const D = meta.duration, GRID = new Grid(-24, -48, 48, 60), R = 10.5;
 
 // where the ghost is: a lazy drift side to side and a bob, both looping
 function at(t, hover) {
@@ -22,63 +22,61 @@ function at(t, hover) {
   return { x: 4 * Math.sin(a), y: -hover - 3 * Math.sin(2 * a + 0.8) };
 }
 
-// the sheet's half-width v px above the hem (0 hem .. 1 crown): a dome over a body that flares toward the hem
+// Forja: un espectro con capucha en punta y jirones abajo, en vez del fantasma de sábana redondo. La capucha sube a
+// una punta, los hombros caen en una túnica que se abre, el ruedo se rompe en tiras de largo distinto que ondulan, y
+// las mangas cuelgan en punta. La cara es un hueco negro con dos brasas frías.
+const TOP = 2 * R + 14, HOOD = 12;
 function halfW(h) {
-  const top = 2 * R + 9;
-  if (h > top || h < -1) return -1;
-  if (h > top - R) return Math.sqrt(Math.max(0, R * R - (h - (top - R)) ** 2));
-  return lerp(R + 2.2, R, (h / (top - R)) ** 0.7);
+  if (h > TOP || h < -1) return -1;
+  if (h > TOP - HOOD) return Math.min(R * 0.82, (TOP - h) * 0.78 + 0.4);
+  return lerp(R + 3, R * 0.82, (h / (TOP - HOOD)) ** 0.8);
 }
 
 function sheet(g, C, t, o, lagX) {
   g.clear();
-  const top = 2 * R + 9, ph = (t / D) * TAU * 2, NL = 4, HW = R + 2.2, LW = (2 * HW) / NL;
-  // the lower sheet trails behind the head as it drifts
+  const top = TOP, ph = (t / D) * TAU * 2, HW = R + 3;
+  // el cuerpo de abajo se queda atrás cuando el espectro se mueve
   const off = (h) => lagX * (1 - clamp(h / top)) ** 1.4;
-  // four rounded lobes along the hem, lifting one after another in a ripple
-  const lobe = (X) => {
-    const j = clamp(Math.floor((X + HW) / LW), 0, NL - 1), c = -HW + (j + 0.5) * LW, u = (X - c) / (LW / 2);
-    return { j, u, d: (2.2 + 1.1 * Math.sin(ph - j * 1.5)) * Math.sqrt(Math.max(0, 1 - u * u)) };
+  // jirones: tiras de 3 px con punta, de largo distinto, que ondulan una después de otra
+  const NT = Math.ceil((2 * HW) / 3);
+  const rag = (X) => {
+    const j = clamp(Math.floor((X + HW) / 3), 0, NT - 1), u = (X + HW - j * 3 - 1.5) / 1.5;
+    const L = 2 + 7 * rand(j, 41) + 1.6 * Math.sin(ph - j * 0.9);
+    return { j, u, d: L * (1 - Math.abs(u)) };
   };
   const inside = (x, y) => {
     const h = -y, X = x - off(h);
-    if (h < 0 && -h > lobe(X).d) return false;
-    const hw = halfW(Math.max(0, h));
+    if (h < 0) {
+      const hw0 = halfW(0);
+      return Math.abs(X) <= hw0 && -h <= rag(X).d;
+    }
+    const hw = halfW(h);
     return hw >= 0 && Math.abs(X) <= hw;
   };
-  // little arms: rounded nubs that flutter
+  // mangas que cuelgan en punta desde los hombros
   const arm = (x, y) => {
     for (const s of [-1, 1]) {
-      const ax = s * (R + 1.2) + off(13), ay = -13 + 1.6 * Math.sin(ph + s * 1.3);
-      if (((x - ax) / 3) ** 2 + ((y - ay) / 2.2) ** 2 <= 1) return true;
+      const ax = s * (R * 0.8) + off(top - HOOD - 2), ay = -(top - HOOD - 2), bx = s * (R + 6) + off(8) + 1.2 * Math.sin(ph + s), by = -9 + 1.4 * Math.sin(ph + s * 1.3);
+      const vx = bx - ax, vy = by - ay, l2 = vx * vx + vy * vy, k = clamp(((x - ax) * vx + (y - ay) * vy) / l2);
+      const dx = x - (ax + vx * k), dy = y - (ay + vy * k);
+      if (dx * dx + dy * dy <= (2.6 * (1 - k) + 0.3) ** 2) return true;
     }
     return false;
   };
   const any = (x, y) => inside(x, y) || arm(x, y);
   const lx = -9, ly = -top - 1;
   const lit = (x, y, k) => any(lx + (x - lx) / k, ly + (y - ly) / k);
-  g.shade(-19, -top - 2, 19, 5, (x, y, o2) => {
+  g.shade(-22, -top - 2, 22, 12, (x, y, o2) => {
     if (!any(x, y)) return 0;
     const h = -y, X = x - off(h);
-    let i = lit(x, y, 0.62) ? 5 : 4;
-    if (!any(x + 2.4, y + 1.8)) i = 3;
-    if (!any(x + 1.2, y + 1) && X > 2) i = 2;
-    // the gloss: a thin bright arc just inside the top-left of the dome
-    if (h > top - R - 2 && X < 1 && !any(x - 1.5, y - 1.5) && any(x - 0.6, y - 0.6)) i = 6;
-    // the hem: each lobe darker underneath and to its right, a crease where two lobes meet
-    if (h < 1) {
-      const L = lobe(X);
-      if (L.u > 0.1 || -h > L.d - 1.2) i = Math.min(i, 3);
-    }
-    // folds: short creases running down into the notches between the lobes, lit on their left
-    if (h < 7 && h >= -0.5) {
-      for (let j = 1; j < NL; j++) {
-        const cx = -HW + j * LW + 0.6 * Math.sin(ph - j), w = (7 - h) * 0.09;
-        if (Math.abs(X - cx) <= w + 0.3) i = Math.min(i, 3);
-        else if (cx - X > w + 0.3 && cx - X < w + 1.3 && i === 4) i = 5;
-      }
-    }
-    o2.a = h < 2 ? 0.86 : 0.95;
+    let i = lit(x, y, 0.62) ? 4 : 3;
+    if (!any(x + 2.4, y + 1.8)) i = 2;
+    if (!any(x + 1.2, y + 1) && X > 2) i = 1;
+    // pliegues largos que bajan por la túnica
+    if (h < top - HOOD && h > 0) for (const cx of [-5.5, -1.5, 3]) if (Math.abs(X - cx - 0.8 * Math.sin(ph + cx)) < 0.6) i = Math.min(i, 2);
+    // los jirones, más oscuros y transparentes hacia la punta
+    if (h < 1) { const r = rag(X); i = Math.min(i, r.u > 0 ? 2 : 3); o2.a = clamp(0.85 - (-h / Math.max(1, r.d + 1)) * 0.6); return C[i]; }
+    o2.a = 0.92;
     return C[i];
   });
   return { inside, off, top };
@@ -88,17 +86,12 @@ export function draw(p, time, o) {
   const t = shift(time, D, o.seed), C = fit(o.palette, 7), S = at(t, o.hover), lagX = at(t - 0.3, o.hover).x - S.x;
   const g = GRID;
   const sh = sheet(g, C, t, o, lagX), top = sh.top;
-  // the face: two eyes that glance about and blink, a little mouth that oohs
-  const look = wrap(t, D) < 0.7 ? 0 : wrap(t, D) < 1.3 ? 1 : wrap(t, D) < 1.9 ? -1 : 0, blink = wrap(t, D) > 1.95 && wrap(t, D) < 2.03;
-  const ey = -top + R - 1, mo = 0.5 + 0.5 * Math.sin((t / D) * TAU * 2);
-  // Forja: cuencas vacías y una boca abierta que se estira, sin parpadeos ni miradas de historieta
-  void look; void blink;
-  for (const s of [-1, 1]) {
-    const ex = s * 4 - (s > 0 ? 1 : 0);
-    for (let k = 0; k < 5; k++) g.set(ex, ey + k, C[0]), g.set(ex + 1, ey + k, C[0]);
-  }
-  const my = ey + 7;
-  for (let k = 0; k < 2 + Math.round(mo * 3); k++) g.set(-1, my + k, C[0]), g.set(0, my + k, C[0]);
+  // el hueco de la capucha: negro, con dos brasas frías adentro
+  const fy = -top + HOOD * 0.62;
+  for (let y = -4; y <= 4; y++) for (let x = -3; x <= 3; x++) if ((x / 3.2) ** 2 + (y / 4.2) ** 2 <= 1) g.set(x, Math.round(fy + y), C[0]);
+  const parpadeo = 0.75 + 0.25 * Math.sin((t / D) * TAU * 3);
+  g.set(-2, Math.round(fy - 0.5), C[parpadeo > 0.85 ? 6 : 5]);
+  g.set(1, Math.round(fy - 0.5), C[parpadeo > 0.85 ? 6 : 5]);
   g.outline((x, y, nx, ny) => (ny > 0 ? C[2] : C[1]), 0.95);
   g.draw(p, 1, S.x, S.y);
   // motes trickle off the hem and fade as they sink and drift

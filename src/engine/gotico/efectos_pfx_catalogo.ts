@@ -585,7 +585,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
   },
   // ============================================================ clima
   {
-    id: 'fx_lluvia', origen: 'weather/rain', nombre: ['Lluvia', 'Rain'], categoria: 'clima', elemento: 'agua', capa: 'pantalla',
+    id: 'fx_lluvia', origen: 'weather/rain', nombre: ['Lluvia', 'Rain'], categoria: 'clima', elemento: 'agua', capa: 'pantalla', t: 2,
     opciones: { palette: rampa('agua', 8) }, gradacion: { tope: 0.3 },
     uso: [
       { tipo: 'clima', actos: [1], zonas: ['a1_refugio', 'a1_paramo', 'a1_bosque'], nota: 'las zonas con lluvia del acto 1' },
@@ -1045,7 +1045,8 @@ export const CATALOGO_PFX: CfgPfx[] = [
   },
   {
     id: 'fx_ralentizado', origen: 'status/slowed', nombre: ['Ralentizado', 'Slowed'], categoria: 'estado', elemento: 'alma',
-    opciones: { palette: rampa('alma', 8) }, cuerpo: { quitar: 'silueta' },
+    opciones: { palette: tramo('hueso', 8, 0, 1) },
+    notas: 'Un reloj de arena gótico chico sobre la cabeza que se vacía y se da vuelta, y granos de arena que caen lentos alrededor (en vez de la esfera de reloj del original).', cuerpo: { quitar: 'silueta' },
     uso: [
       { tipo: 'estado', estado: 'lento', nota: 'un reloj que pesa sobre la cabeza del ralentizado' },
       { tipo: 'poder', clase: 'nigromante', habilidades: ['decrepitud'] },
@@ -1175,7 +1176,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
   },
   // ============================================================ clima (más)
   {
-    id: 'fx_aurora', origen: 'weather/aurora', nombre: ['Aurora', 'Aurora'], categoria: 'clima', elemento: 'fatuo', capa: 'pantalla', t: 2,
+    id: 'fx_aurora', origen: 'weather/aurora', nombre: ['Aurora', 'Aurora'], categoria: 'clima', elemento: 'fatuo', capa: 'pantalla', t: 4,
     opciones: { palette: rampa('fatuo', 7), upper: tramo('sombra', 7, 0, 0.85) },
     notas: 'Es cielo: para cinemáticas, cartas de acto y la portada, no para el piso del juego.',
     uso: [
@@ -1184,12 +1185,12 @@ export const CATALOGO_PFX: CfgPfx[] = [
     ],
   },
   {
-    id: 'fx_ventisca', origen: 'weather/blizzard', nombre: ['Ventisca', 'Blizzard'], categoria: 'clima', elemento: 'hielo', capa: 'pantalla',
+    id: 'fx_ventisca', origen: 'weather/blizzard', nombre: ['Ventisca', 'Blizzard'], categoria: 'clima', elemento: 'hielo', capa: 'pantalla', t: 2,
     opciones: { palette: rampa('hielo', 8) }, gradacion: { tope: 0.3 },
     uso: [{ tipo: 'clima', actos: [4], zonas: ['a4_picos', 'a4_glaciar', 'a4_fortin'], nota: 'nieve horizontal con viento' }],
   },
   {
-    id: 'fx_nubes', origen: 'weather/clouds', nombre: ['Nubes y luna', 'Clouds and moon'], categoria: 'clima', elemento: 'noche', capa: 'pantalla', t: 2,
+    id: 'fx_nubes', origen: 'weather/clouds', nombre: ['Nubes y luna', 'Clouds and moon'], categoria: 'clima', elemento: 'noche', capa: 'pantalla', t: 4,
     opciones: { palette: rampa('noche', 8) },
     notas: 'Es cielo nocturno: para cinemáticas y cartas de acto.',
     uso: [
@@ -1198,12 +1199,12 @@ export const CATALOGO_PFX: CfgPfx[] = [
     ],
   },
   {
-    id: 'fx_hojas_caen', origen: 'weather/falling-leaves', nombre: ['Hojas que caen', 'Falling leaves'], categoria: 'clima', elemento: 'tierra', capa: 'pantalla', t: 2,
+    id: 'fx_hojas_caen', origen: 'weather/falling-leaves', nombre: ['Hojas que caen', 'Falling leaves'], categoria: 'clima', elemento: 'tierra', capa: 'pantalla',
     opciones: { palette: tramo('brasa', 6, 0.1, 0.85), reds: tramo('sangre', 6, 0.1, 0.9), golds: tramo('oro', 6, 0.05, 0.75) },
     uso: [{ tipo: 'clima', actos: [1], zonas: ['a1_bosque', 'a1_cementerio', 'a1_paramo'], nota: 'hojas muertas en el Bosque de los Ahorcados' }],
   },
   {
-    id: 'fx_luciernagas', origen: 'weather/fireflies', nombre: ['Luciérnagas', 'Fireflies'], categoria: 'clima', elemento: 'fatuo', capa: 'pantalla', t: 2,
+    id: 'fx_luciernagas', origen: 'weather/fireflies', nombre: ['Luciérnagas', 'Fireflies'], categoria: 'clima', elemento: 'fatuo', capa: 'pantalla',
     opciones: { palette: tramo('fatuo', 6, 0.2, 1), grass: tramo('naturaleza', 6, 0, 0.5) },
     uso: [
       { tipo: 'clima', actos: [3], zonas: ['a3_selva', 'a3_pantano'], nota: 'luces de la ciénaga de noche' },
@@ -1211,7 +1212,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
     ],
   },
   {
-    id: 'fx_niebla', origen: 'weather/fog', nombre: ['Niebla', 'Fog'], categoria: 'clima', elemento: 'humo', capa: 'pantalla', t: 2,
+    id: 'fx_niebla', origen: 'weather/fog', nombre: ['Niebla', 'Fog'], categoria: 'clima', elemento: 'humo', capa: 'pantalla', t: 4,
     opciones: { palette: tramo('humo', 8, 0, 1) }, gradacion: { tope: 0 }, relleno: [[-40, -150], [30, -100], [-20, -50], [0, 0]],
     notas: 'La niebla de pixelfx son bancos en una franja baja (de perfil); acá se repite en cuatro alturas desfasadas para cubrir la pantalla isométrica.',
     uso: [
@@ -1220,7 +1221,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
     ],
   },
   {
-    id: 'fx_rayos_luz', origen: 'weather/god-rays', nombre: ['Rayos de luz', 'God rays'], categoria: 'clima', elemento: 'sagrado', capa: 'pantalla', t: 2,
+    id: 'fx_rayos_luz', origen: 'weather/god-rays', nombre: ['Rayos de luz', 'God rays'], categoria: 'clima', elemento: 'sagrado', capa: 'pantalla',
     opciones: { palette: rampa('sagrado', 7) },
     uso: [
       { tipo: 'clima', actos: [1], zonas: ['a1_abadia1', 'a1_abadia2'], nota: 'luz que entra por los vitrales de la abadía' },
@@ -1229,12 +1230,12 @@ export const CATALOGO_PFX: CfgPfx[] = [
     ],
   },
   {
-    id: 'fx_nieve', origen: 'weather/snow', nombre: ['Nieve', 'Snow'], categoria: 'clima', elemento: 'hielo', capa: 'pantalla', t: 2,
+    id: 'fx_nieve', origen: 'weather/snow', nombre: ['Nieve', 'Snow'], categoria: 'clima', elemento: 'hielo', capa: 'pantalla',
     opciones: { palette: rampa('hielo', 8) }, gradacion: { tope: 0.3 },
     uso: [{ tipo: 'clima', actos: [4], zonas: ['a4_fortin', 'a4_picos', 'a4_glaciar'], nota: 'las zonas con nieve (actos.ts: nieve)' }],
   },
   {
-    id: 'fx_tormenta', origen: 'weather/storm', nombre: ['Tormenta', 'Storm'], categoria: 'clima', elemento: 'rayo', capa: 'pantalla',
+    id: 'fx_tormenta', origen: 'weather/storm', nombre: ['Tormenta', 'Storm'], categoria: 'clima', elemento: 'rayo', capa: 'pantalla', t: 2,
     opciones: { palette: rampa('noche', 8), bolt: tramo('rayo', 6, 0.2, 1) }, luz: { intensidad: 0.7, radio: 360, altura: 200, prioridad: 2, sombra: true },
     uso: [
       { tipo: 'clima', actos: [1], zonas: ['a1_paramo', 'a1_refugio'], nota: 'lluvia con relámpagos; la luz es el destello del rayo' },
@@ -1279,7 +1280,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
   {
     id: 'fx_columna_botin', origen: 'pickups/loot-beam', nombre: ['Columna de botín', 'Loot beam'], categoria: 'botin', elemento: 'oro',
     opciones: { palette: rampa('oro', 8) },
-    notas: 'La espada del original es parte de la columna; para otras rarezas, repintar con otra rampa (sangre: único, alma: de conjunto).',
+    notas: 'Sin la espada del original: el juego dibuja el objeto caído. Para otras rarezas, repintar con otra rampa (sangre: único, alma: de conjunto).',
     uso: [{ tipo: 'botin', nota: 'columna de luz sobre un objeto raro o único caído' }],
   },
   {
@@ -1332,7 +1333,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
   {
     id: 'fx_espectro', origen: 'critters/ghost', nombre: ['Espectro', 'Wraith'], categoria: 'criaturas', elemento: 'alma',
     opciones: { palette: tramo('alma', 7, 0, 0.8) }, gradacion: { brillo: 0.8, sat: 0.6 }, opacidad: 0.6,
-    notas: 'Translúcido (60 %), con cuencas vacías y la boca abierta: sin la cara de historieta del original.',
+    notas: 'Reescrito: espectro con capucha en punta, hueco negro con dos brasas por cara, mangas que cuelgan y el ruedo en jirones; translúcido (60 %).',
     uso: [
       { tipo: 'ambiente', zonas: ['a1_cripta', 'a6_barrio2', 'a6_catedral1'], nota: 'ánimas que vagan' },
       { tipo: 'monstruo', monstruos: ['espectral'], nota: 'el modificador de élite espectral' },

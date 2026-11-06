@@ -89,8 +89,8 @@ export interface CfgPfx {
   dir?: DirPfx;
   /** opciones que se pasan al efecto (paletas góticas, tamaños, semillas) */
   opciones?: Record<string, unknown>;
-  /** ticks por cuadro a 25 por segundo (1 = 25 cps, 2 = 12.5 cps) */
-  t?: 1 | 2;
+  /** ticks por cuadro a 25 por segundo (1 = 25 cps, 2 = 12.5 cps, 3 = 8.3 cps, 4 = 6.25 cps) */
+  t?: 1 | 2 | 3 | 4;
   /** escala entera de salida (2 en el mundo; 1 en los de pantalla, que el juego estira para cubrirla) */
   escala?: number;
   /** punto local (1x) que va sobre el piso: el ancla. Proyectiles: el piso debajo de la bola */
@@ -136,15 +136,27 @@ export interface CfgPfx {
   notas?: string;
 }
 
-/** Una dirección en la hoja: cuadros de `celda` en `columnas` columnas y `filas` filas, desde (x, y). */
-export interface BloquePfx {
+/**
+ * Un cuadro en el atlas: [página, x, y, ancho, alto, dx, dy]. (x, y, ancho, alto) es el rectángulo en la página, a 1x;
+ * (dx, dy) es dónde va su esquina de arriba a la izquierda respecto del ancla, a 1x (multiplicar por `escala` al dibujar).
+ * Un cuadro vacío tiene ancho y alto 0.
+ */
+export type CuadroAtlas = [number, number, number, number, number, number, number];
+
+/** Una dirección: sus cuadros, o el espejo horizontal de otra (`de`), reflejado alrededor del ancla. */
+export interface DireccionPfx {
   dir: string | null;
-  x: number;
-  y: number;
-  celda: [number, number];
-  ancla: [number, number];
-  columnas: number;
-  filas: number;
+  espejo: boolean;
+  de?: string;
+  cuadros?: CuadroAtlas[];
+}
+
+/** Una página del atlas. */
+export interface PaginaPfx {
+  archivo: string;
+  w: number;
+  h: number;
+  bytes: number;
 }
 
 /** Lo que va al manifiesto por efecto. */
@@ -154,18 +166,20 @@ export interface EfectoPfx {
   nombre: [string, string];
   categoria: CategoriaPfx;
   capa: CapaPfx;
-  archivo: string;
   cuadros: number;
   t: number;
   bucle: boolean;
   direccional: boolean;
-  filas: string[] | null;
-  /** celda y ancla de la dirección de referencia (e) o la única; cada dirección trae las suyas en `bloques` */
-  celda: [number, number];
-  ancla: [number, number];
-  /** dónde está cada dirección en la hoja (una sola si no es direccional) */
-  bloques: BloquePfx[];
+  /** escala de dibujo: el atlas está a 1x y se dibuja así, con vecino más cercano */
   escala: number;
+  /** caja de todo el efecto respecto del ancla, a 1x: [x0, y0, x1, y1] (para recortar y ordenar) */
+  caja: [number, number, number, number];
+  /** páginas del atlas */
+  paginas: PaginaPfx[];
+  /** Mpx decodificados de todas las páginas (para cargar bajo demanda y descargar) */
+  peso: number;
+  /** en el orden de DIRS_PODER (s, so, o, no, n, ne, e, se), o una sola con dir null */
+  direcciones: DireccionPfx[];
   mezcla: 'normal' | 'aditiva';
   detrasEn?: string[];
   enLanzador?: boolean;
@@ -182,8 +196,11 @@ export const CPS = 25;
 const ESCALA = 2;
 /** alfa mínima (0..255) que cuenta como contenido al medir la celda */
 const ALFA_MIN = 3;
-/** ancho máximo de una hoja en px (se parte en filas) */
-const ANCHO_HOJA = 4096;
+/** alfa (0..255) bajo la que un pixel se borra antes de armar el atlas */
+const ALFA_PISO = 10;
+/** límites de cada página del atlas: lado y Mpx (iOS Safari no sube a textura imágenes más grandes) */
+export const LADO_MAX = 4096;
+export const PX_MAX = 4_000_000;
 
 /** Ángulo en pantalla (grados, y hacia abajo) y escorzo de cada dirección a la derecha; las de la izquierda espejan. */
 const DIR_PANTALLA: Record<(typeof DIRS_PODER)[number], { ang: number; largo: number; espejo?: (typeof DIRS_PODER)[number] }> = {
@@ -250,11 +267,25 @@ function actorDe(cfg: CfgPfx, variante: 0 | 1 | 2): ActorPfx {
   return { mask: { w: s.w, h: s.h, data: s.mask }, pixels, x, y, w: s.w, h: s.h, k: 2, head: [0, y], chest: [0, Math.round(y * 0.68)], eyes: [[Math.floor(s.w / 2) - 2, 4], [Math.floor(s.w / 2) + 1, 4]] };
 }
 
+/**
+ * Ticks por cuadro según el presupuesto de memoria: 25 cps donde se nota (golpes e impactos cortos, efectos rápidos);
+ * 12.5 cps en los direccionales en bucle o largos (como los poderes), los que pasan una vez y duran más de 1.6 s, los
+ * bucles de más de 2 s, los golpes largos (polvo que queda) y las transiciones; 8.3 cps en el clima lento y 6.25 en el
+ * cielo de cinemática (aurora, nubes) y la niebla. Nunca menos de 12.5 cps en golpes e impactos.
+ */
+function tPorOmision(cfg: CfgPfx, meta: ModuloPfx['meta']): 1 | 2 | 3 | 4 {
+  if (cfg.categoria === 'clima') return 3;
+  if (cfg.categoria === 'transiciones') return 2;
+  const dur = Math.min(meta.duration, cfg.maxSeg ?? Infinity);
+  if (cfg.categoria === 'impactos' || cfg.categoria === 'cuerpo_a_cuerpo') return dur > 1.2 ? 2 : 1;
+  if (cfg.dir && (meta.loop || dur > 1.5)) return 2;
+  if (dur > (meta.loop ? 2 : 1.6)) return 2;
+  return 1;
+}
+
 /** Tiempos de los cuadros: los bucles reparten su período en cuadros enteros (empalma), los otros a 25/t por segundo. */
 function tiempos(cfg: CfgPfx, meta: ModuloPfx['meta']): { ts: number[]; t: number; bucle: boolean } {
-  // los direccionales en bucle (proyectiles) van a 12.5 cps como los poderes: 8 direcciones pesan
-  // y también los direccionales largos (más de 1.5 s)
-  const t = cfg.t ?? (cfg.dir && (meta.loop || meta.duration > 1.5) ? 2 : 1), dt = t / CPS, D = meta.duration, bucle = !!meta.loop;
+  const t = cfg.t ?? tPorOmision(cfg, meta), dt = t / CPS, D = meta.duration, bucle = !!meta.loop;
   if (bucle) {
     const n = Math.max(2, Math.round(D / dt));
     return { ts: Array.from({ length: n }, (_, i) => (i * D) / n), t, bucle };
@@ -563,14 +594,16 @@ interface Bloque {
 
 interface Hecho {
   cfg: CfgPfx;
-  /** un bloque por dirección (1 o 8): cada dirección tiene su propia celda ajustada (y su ancla) */
+  /** un bloque por dirección (1 o 8), a 1x: cada dirección tiene su propia celda ajustada (y su ancla) */
   dirs: Bloque[];
+  atlas?: Atlas;
   escala: number;
   t: number;
   bucle: boolean;
   luz: LuzEfecto;
   mezcla: 'normal' | 'aditiva';
   alfaCuerpo?: number[];
+  pngs?: Uint8Array[];
 }
 
 const HECHOS = new Map<string, Hecho>();
@@ -623,18 +656,17 @@ function hacer(id: string): Hecho {
     lams = DIRS_PODER.map((nom) => { const e = DIR_PANTALLA[nom].espejo; return e ? espejar(por[e]!) : por[nom]!; });
     lams = alinear(lams);
   } else lams = [base];
-  // escala final y recorte común
+  // lo casi invisible (alfa < ALFA_PISO, menos del 4 %) se borra: agranda las cajas y pesa en el PNG sin verse
+  for (const l of lams) for (const q of l.cuadros) for (let i = 3; i < q.length; i += 4) if (q[i] < ALFA_PISO) q[i - 3] = q[i - 2] = q[i - 1] = q[i] = 0;
+  // a 1x: el juego dibuja con `escala` (vecino más cercano); cada dirección recortada por su cuenta
   const k = cfg.escala ?? (pantalla ? 1 : ESCALA);
-  const grandes: Lamina[] = lams.map((l) => ({ w: l.w * k, h: l.h * k, ax: l.ax * k, ay: l.ay * k, ox: l.ox * k, oy: l.oy * k, cuadros: l.cuadros.map((q) => agrandar(q, l.w, l.h, k)) }));
-  let dirs: Bloque[];
-  if (pantalla) dirs = grandes.map((l) => ({ celda: [l.w, l.h], ancla: [0, 0], cuadros: l.cuadros }));
-  else
-    // cada dirección se recorta por su cuenta: una celda común para las 8 multiplicaba la memoria
-    dirs = grandes.map((l) => {
-      const [a0, b0, a1, b1] = caja([l], ALFA_MIN);
-      const r = recortar(l, a0 - 1, b0 - 1, a1 - a0 + 3, b1 - b0 + 3);
-      return { celda: [r.w, r.h], ancla: [Math.round(r.ax), Math.round(r.ay)], cuadros: r.cuadros };
-    });
+  const dirs: Bloque[] = pantalla
+    ? lams.map((l) => ({ celda: [l.w, l.h], ancla: [0, 0], cuadros: l.cuadros }))
+    : lams.map((l) => {
+        const [a0, b0, a1, b1] = caja([l], ALFA_MIN);
+        const r = recortar(l, a0 - 1, b0 - 1, a1 - a0 + 3, b1 - b0 + 3);
+        return { celda: [r.w, r.h], ancla: [Math.round(r.ax), Math.round(r.ay)], cuadros: r.cuadros };
+      });
   const luz = luzDe(cfg, crudo, k);
   const mezcla = cfg.luz?.mezcla ?? luz.mezcla ?? 'aditiva';
   const hecho: Hecho = {
@@ -700,65 +732,148 @@ export const EFECTOS_PFX: readonly CfgPfx[] = CATALOGO_PFX;
 /** Ids del manifiesto. */
 export const IDS_PFX: readonly string[] = CATALOGO_PFX.map((c) => c.id);
 
-/** Un cuadro de un efecto: `dir` índice en DIRS_PODER o su nombre (los no direccionales lo ignoran). */
+/**
+ * Un cuadro de un efecto tal como sale del render, sin optimizar, a la escala de dibujo: `dir` índice en DIRS_PODER o
+ * su nombre (los no direccionales lo ignoran). Es la referencia contra la que se prueba el atlas.
+ */
 export function pintarEfectoPfx(id: string, dir: number | string, f: number): { img: Raster; ancla: [number, number] } {
   const h = hacer(id);
   const di = h.dirs.length === 1 ? 0 : typeof dir === 'string' ? Math.max(0, (DIRS_PODER as readonly string[]).indexOf(dir)) : ((dir % 8) + 8) % 8;
-  const b = h.dirs[di];
+  const b = h.dirs[di], k = h.escala;
   const n = b.cuadros.length, ff = h.bucle ? ((f % n) + n) % n : Math.max(0, Math.min(n - 1, f));
-  return { img: { w: b.celda[0], h: b.celda[1], data: b.cuadros[ff] }, ancla: b.ancla };
+  return { img: { w: b.celda[0] * k, h: b.celda[1] * k, data: agrandar(b.cuadros[ff], b.celda[0], b.celda[1], k) }, ancla: [b.ancla[0] * k, b.ancla[1] * k] };
 }
 
-/** Dónde está cada dirección en la hoja: bloques apilados de arriba abajo. */
-function bloquesDe(h: Hecho): BloquePfx[] {
-  let y = 0;
-  return h.dirs.map((b, d) => {
-    const n = b.cuadros.length, columnas = Math.max(1, Math.min(n, Math.floor(ANCHO_HOJA / b.celda[0]))), filas = Math.ceil(n / columnas);
-    const r: BloquePfx = { dir: h.dirs.length > 1 ? DIRS_PODER[d] : null, x: 0, y, celda: b.celda, ancla: b.ancla, columnas, filas };
-    y += filas * b.celda[1];
-    return r;
+// ---------------------------------------------------------------------------------------------------------------
+// atlas: cada cuadro recortado a su caja, repetidos una sola vez, espejos sin guardar, empaquetado en estantes
+
+interface Atlas {
+  paginas: Raster[];
+  direcciones: { dir: string | null; espejo: boolean; de?: string; cuadros?: CuadroAtlas[] }[];
+  caja: [number, number, number, number];
+}
+
+/** Direcciones que se guardan y las que se dibujan espejadas (se de so, e de o, ne de no). */
+const ESPEJOS: Record<string, string> = { se: 'so', e: 'o', ne: 'no' };
+
+function hash32(q: Uint8ClampedArray, w: number, h: number): number {
+  let x = (Math.imul(w, 73856093) ^ Math.imul(h, 19349663)) >>> 0;
+  for (let i = 0; i < q.length; i += 4) x = Math.imul(x ^ (q[i] | (q[i + 1] << 8) | (q[i + 2] << 16) | (q[i + 3] << 24)), 16777619) >>> 0;
+  return x;
+}
+
+function armarAtlas(h: Hecho): Atlas {
+  if (h.atlas) return h.atlas;
+  const ocho = h.dirs.length > 1;
+  // los recortes únicos
+  const unicos: { w: number; h: number; data: Uint8ClampedArray; key: number }[] = [];
+  const porClave = new Map<number, number[]>();
+  const refs: { dir: string | null; espejo: boolean; de?: string; cuadros?: { u: number; dx: number; dy: number }[] }[] = [];
+  let X0 = Infinity, Y0 = Infinity, X1 = -Infinity, Y1 = -Infinity;
+  h.dirs.forEach((b, d) => {
+    const nom = ocho ? DIRS_PODER[d] : null;
+    if (nom && ESPEJOS[nom]) { refs.push({ dir: nom, espejo: true, de: ESPEJOS[nom] }); return; }
+    const [W] = b.celda, cuadros: { u: number; dx: number; dy: number }[] = [];
+    for (const q of b.cuadros) {
+      const H = b.celda[1];
+      let x0 = W, y0 = H, x1 = -1, y1 = -1;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (q[(y * W + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      if (x1 < 0) { cuadros.push({ u: -1, dx: 0, dy: 0 }); continue; }
+      const w = x1 - x0 + 1, hh = y1 - y0 + 1, data = new Uint8ClampedArray(w * hh * 4);
+      for (let y = 0; y < hh; y++) data.set(q.subarray(((y0 + y) * W + x0) * 4, ((y0 + y) * W + x1 + 1) * 4), y * w * 4);
+      const key = hash32(data, w, hh);
+      let u = (porClave.get(key) ?? []).find((i) => unicos[i].w === w && unicos[i].h === hh && unicos[i].data.every((v, j) => v === data[j]));
+      if (u === undefined) { u = unicos.length; unicos.push({ w, h: hh, data, key }); porClave.set(key, [...(porClave.get(key) ?? []), u]); }
+      const dx = x0 - b.ancla[0], dy = y0 - b.ancla[1];
+      cuadros.push({ u, dx, dy });
+      X0 = Math.min(X0, dx); Y0 = Math.min(Y0, dy); X1 = Math.max(X1, dx + w); Y1 = Math.max(Y1, dy + hh);
+      // la caja también cubre el espejo
+      if (ocho && Object.values(ESPEJOS).includes(nom!)) { X0 = Math.min(X0, -dx - w); X1 = Math.max(X1, -dx); }
+    }
+    refs.push({ dir: nom, espejo: false, cuadros });
   });
+  if (X0 > X1) { X0 = Y0 = X1 = Y1 = 0; }
+  // estantes: de más alto a más bajo, con 1 px de aire entre recortes
+  const G = 1, area = unicos.reduce((s, r) => s + (r.w + G) * (r.h + G), 0), anchoMax = Math.max(1, ...unicos.map((r) => r.w + G));
+  const PW = Math.min(LADO_MAX, Math.max(anchoMax, Math.ceil(Math.sqrt(area * 1.08))));
+  const PH = Math.min(LADO_MAX, Math.floor(PX_MAX / PW));
+  const orden = unicos.map((_, i) => i).sort((a, b) => unicos[b].h - unicos[a].h || unicos[b].w - unicos[a].w || a - b);
+  const lugar: [number, number, number][] = [];
+  let pag = 0, x = 0, y = 0, alto = 0;
+  const usado: number[] = [0];
+  for (const i of orden) {
+    const r = unicos[i];
+    if (x + r.w > PW) { y += alto + G; x = 0; alto = 0; }
+    if (y + r.h > PH) { pag++; usado.push(0); x = 0; y = 0; alto = 0; }
+    lugar[i] = [pag, x, y];
+    x += r.w + G; alto = Math.max(alto, r.h);
+    usado[pag] = Math.max(usado[pag], y + r.h);
+  }
+  const anchos = usado.map(() => 0);
+  unicos.forEach((r, i) => { anchos[lugar[i][0]] = Math.max(anchos[lugar[i][0]], lugar[i][1] + r.w); });
+  const paginas = usado.map((hh, p) => createRaster(Math.max(1, anchos[p]), Math.max(1, hh)));
+  unicos.forEach((r, i) => {
+    const [p, px, py] = lugar[i], pg = paginas[p];
+    for (let yy = 0; yy < r.h; yy++) pg.data.set(r.data.subarray(yy * r.w * 4, (yy + 1) * r.w * 4), ((py + yy) * pg.w + px) * 4);
+  });
+  const direcciones = refs.map((r) => r.espejo ? { dir: r.dir, espejo: true, de: r.de } : {
+    dir: r.dir, espejo: false,
+    cuadros: r.cuadros!.map((c): CuadroAtlas => c.u < 0 ? [0, 0, 0, 0, 0, 0, 0] : [lugar[c.u][0], lugar[c.u][1], lugar[c.u][2], unicos[c.u].w, unicos[c.u].h, c.dx, c.dy]),
+  });
+  h.atlas = { paginas, direcciones, caja: [X0, Y0, X1, Y1] };
+  return h.atlas;
+}
+
+/** Las páginas del atlas (RGBA a 1x, antes de pasar a PNG). */
+export function paginasEfectoPfx(id: string): Raster[] {
+  return armarAtlas(hacer(id)).paginas;
+}
+
+/** Los PNG de las páginas (paleta de hasta 256 colores con alfa; 161 en los de pantalla). */
+export function pngsEfectoPfx(id: string): Uint8Array[] {
+  const h = hacer(id);
+  // la pantalla (clima, transiciones) con 160 colores: son velos grandes y el resto con 255
+  h.pngs ??= armarAtlas(h).paginas.map((p) => pngLiviano(p, h.cfg.capa === 'pantalla' ? 160 : 255));
+  return h.pngs;
+}
+
+/**
+ * Arma un cuadro desde el atlas como lo haría el juego (recorte, desplazamiento, espejo y escala) sobre el lienzo de
+ * la referencia sin optimizar, para comprobar que son idénticos. `paginas` permite pasar las páginas decodificadas del PNG.
+ */
+export function armarCuadroPfx(id: string, dir: number, f: number, paginas: Raster[] = paginasEfectoPfx(id)): { img: Raster; ancla: [number, number] } {
+  const h = hacer(id), e = efectoPfx(id), k = h.escala;
+  const di = h.dirs.length === 1 ? 0 : ((dir % 8) + 8) % 8, b = h.dirs[di];
+  const W = b.celda[0] * k, H = b.celda[1] * k, AX = b.ancla[0] * k, AY = b.ancla[1] * k, img = createRaster(W, H);
+  let d = e.direcciones[di], espejo = false;
+  if (d.espejo) { espejo = true; d = e.direcciones.find((x) => x.dir === d.de)!; }
+  const n = d.cuadros!.length, ff = h.bucle ? ((f % n) + n) % n : Math.max(0, Math.min(n - 1, f));
+  const [p, x, y, w, hh, dx, dy] = d.cuadros![ff];
+  if (!w) return { img, ancla: [AX, AY] };
+  const pg = paginas[p];
+  for (let yy = 0; yy < hh * k; yy++)
+    for (let xx = 0; xx < w * k; xx++) {
+      const sx = x + Math.floor(xx / k), sy = y + Math.floor(yy / k);
+      const X = espejo ? AX - dx * k - w * k + (w * k - 1 - xx) : AX + dx * k + xx, Y = AY + dy * k + yy;
+      if (X < 0 || Y < 0 || X >= W || Y >= H) continue;
+      img.data.set(pg.data.subarray((sy * pg.w + sx) * 4, (sy * pg.w + sx) * 4 + 4), (Y * W + X) * 4);
+    }
+  return { img, ancla: [AX, AY] };
 }
 
 /** Datos del manifiesto de un efecto (pinta el efecto si hace falta). */
 export function efectoPfx(id: string): EfectoPfx {
-  const h = hacer(id), c = h.cfg;
-  const n = h.dirs[0].cuadros.length, bloques = bloquesDe(h);
-  // la celda y el ancla de arriba son las de la dirección de referencia (e, la que mira a la derecha) o la única
-  const ref = bloques[h.dirs.length > 1 ? 6 : 0];
+  const h = hacer(id), c = h.cfg, at = armarAtlas(h), pngs = pngsEfectoPfx(id);
+  const paginas = at.paginas.map((p, i): PaginaPfx => ({ archivo: i ? `${c.id}_${i + 1}.png` : `${c.id}.png`, w: p.w, h: p.h, bytes: pngs[i].length }));
   return {
-    id: c.id, origen: c.origen, nombre: c.nombre, categoria: c.categoria, capa: c.capa ?? 'mundo', archivo: `${c.id}.png`,
-    cuadros: n, t: h.t, bucle: h.bucle, direccional: h.dirs.length > 1, filas: h.dirs.length > 1 ? [...DIRS_PODER] : null,
-    celda: ref.celda, ancla: ref.ancla, bloques, escala: h.escala, mezcla: h.mezcla,
+    id: c.id, origen: c.origen, nombre: c.nombre, categoria: c.categoria, capa: c.capa ?? 'mundo',
+    cuadros: h.dirs[0].cuadros.length, t: h.t, bucle: h.bucle, direccional: h.dirs.length > 1, escala: h.escala, caja: at.caja,
+    paginas, peso: Math.round(paginas.reduce((s, p) => s + p.w * p.h, 0) / 1e4) / 100, direcciones: at.direcciones, mezcla: h.mezcla,
     ...(c.detrasEn ? { detrasEn: c.detrasEn } : {}),
     ...(c.enLanzador ? { enLanzador: true } : {}),
     ...(h.alfaCuerpo || c.cuerpo?.tinte ? { cuerpo: { ...(h.alfaCuerpo ? { alfa: h.alfaCuerpo } : {}), ...(c.cuerpo?.tinte ? { tinte: c.cuerpo.tinte } : {}) } } : {}),
     luz: h.luz, uso: c.uso, ...(c.notas ? { notas: c.notas } : {}),
   };
-}
-
-/**
- * Hoja de un efecto: un bloque por dirección, apilados. En el bloque b, el cuadro i está en
- * (b.x + (i % b.columnas) · b.celda[0], b.y + floor(i / b.columnas) · b.celda[1]).
- */
-export function hojaEfectoPfx(id: string): { img: Raster; efecto: EfectoPfx } {
-  const h = hacer(id), e = efectoPfx(id);
-  const W = Math.max(...e.bloques.map((b) => b.columnas * b.celda[0])), H = e.bloques.reduce((s, b) => s + b.filas * b.celda[1], 0);
-  const img = createRaster(W, H);
-  h.dirs.forEach((dir, d) => {
-    const b = e.bloques[d], [cw, ch] = b.celda;
-    dir.cuadros.forEach((q, i) => {
-      const X = b.x + (i % b.columnas) * cw, Y = b.y + Math.floor(i / b.columnas) * ch;
-      for (let y = 0; y < ch; y++) img.data.set(q.subarray(y * cw * 4, (y + 1) * cw * 4), ((Y + y) * img.w + X) * 4);
-    });
-  });
-  return { img, efecto: e };
-}
-
-/** PNG de la hoja con paleta de hasta 256 colores con alfa (liviano). */
-export function pngEfectoPfx(id: string): Uint8Array {
-  const { img } = hojaEfectoPfx(id);
-  return pngLiviano(img);
 }
 
 /** Olvida lo pintado (para medir de nuevo o liberar memoria). */
@@ -803,13 +918,14 @@ export function luzEfectosPfxJson(manifiesto: { efectos: EfectoPfx[] } = manifie
 }
 
 export const NOTAS_MANIFIESTO =
-  'Hojas PNG con paleta y alfa directa. Cada dirección es un bloque de la hoja (bloques[d], en el orden de filas): el cuadro i está en ' +
-  '(x + (i % columnas) * celda[0], y + floor(i / columnas) * celda[1]) y su ancla es la del bloque. ' +
-  'Animación: cuadro = floor(segundos * 25 / t) (bucle: % cuadros; si no, el último y se termina). Ancla: el pixel que va sobre el punto del piso ' +
-  '(los proyectiles: el piso bajo la bola; el juego los mueve). Direcciones en el orden de DIRS_PODER (s, so, o, no, n, ne, e, se), como poderes.json. ' +
-  "capa 'pantalla': el cuadro cubre la pantalla, escalarlo entero (x3 a 960x540) con vecino más cercano. mezcla 'aditiva': color * alfa sumado; " +
-  "'normal': alfa común. cuerpo.tinte: teñir el sprite del afectado con ese color y fuerza; cuerpo.alfa: visibilidad del sprite por cuadro. " +
-  'detrasEn: direcciones en las que el efecto va detrás del que lo lanza.';
+  'Atlas PNG con paleta y alfa directa, a 1x: dibujar con escala (2 en el mundo) y vecino más cercano. Cada cuadro es ' +
+  '[página, x, y, ancho, alto, dx, dy]: el rectángulo en paginas[página] y su esquina respecto del ancla (en px a 1x; multiplicar por escala). ' +
+  'Ancho 0 = cuadro vacío. Direcciones en el orden de DIRS_PODER (s, so, o, no, n, ne, e, se); las que tienen espejo: true se dibujan con los ' +
+  'cuadros de `de` volteados en horizontal alrededor del ancla (esquina x = -(dx + ancho)). Animación: cuadro = floor(segundos * 25 / t) ' +
+  '(bucle: % cuadros; si no, el último y se termina). Ancla: el punto del piso (los proyectiles: el piso bajo la bola; el juego los mueve). ' +
+  "peso: Mpx decodificados de las páginas: cargar al usarse y descargar lo que no se use. capa 'pantalla': ancla = esquina de la pantalla " +
+  "de 320x180, estirar entero (x3 a 960x540). mezcla 'aditiva': color * alfa sumado; 'normal': alfa común. cuerpo.tinte: teñir el sprite " +
+  'del afectado; cuerpo.alfa: visibilidad del sprite por cuadro. detrasEn: direcciones en que va detrás del lanzador.';
 
 export const CREDITOS_PFX =
   'Efectos adaptados de pixelfx (https://github.com/patch-gg/pixelfx), MIT, Copyright (c) 2026 Patch y Copyright (c) 2026 Hugo Duprez ' +
@@ -818,14 +934,15 @@ export const CREDITOS_PFX =
 export const LEEME_PFX = `Efectos de pixelfx mudados al taller gótico de Réquiem de Ceniza.
 
 Créditos: ${CREDITOS_PFX}
-Las hojas son derivados de esos efectos (repintados con las paletas góticas, escalados x2, con piso isométrico 2:1,
+Las hojas son derivados de esos efectos (repintados con las paletas góticas, para dibujar x2, con piso isométrico 2:1,
 sin muñeco y en 8 direcciones); siguen bajo la licencia MIT, que va en LICENSE-pixelfx.txt.
 
-Cada efecto es una hoja PNG con paleta (hasta 256 colores con alfa). efectos_pfx.json trae por efecto: id (fx_...),
-nombre [es, en], categoria, capa (mundo, piso: debajo de los personajes, pantalla: cubre la pantalla), archivo,
-cuadros, t (ticks por cuadro a 25 por segundo), bucle, direccional, filas (orden de las direcciones), bloques (dónde está
-cada dirección en la hoja, con su celda y su ancla), celda [ancho, alto] y ancla [x, y] de la dirección de referencia, escala, mezcla, enLanzador, detrasEn, cuerpo
-(tinte y visibilidad del sprite afectado), luz (como luz_efectos.json) y uso (para qué sirve en el juego).
+Cada efecto es un atlas de una o más páginas PNG con paleta (hasta 256 colores con alfa, a 1x, cada página de
+4096 px de lado y 4 Mpx como mucho). efectos_pfx.json trae por efecto: id (fx_...), nombre [es, en], categoria, capa
+(mundo, piso: debajo de los personajes, pantalla: cubre la pantalla), cuadros, t (ticks por cuadro a 25 por segundo),
+bucle, direccional, escala (de dibujo), caja, paginas (archivo, w, h, bytes), peso (Mpx decodificados), direcciones
+(cuadros [página, x, y, ancho, alto, dx, dy] o espejo de otra), mezcla, enLanzador, detrasEn, cuerpo (tinte y
+visibilidad del sprite afectado), luz (como luz_efectos.json) y uso (para qué sirve en el juego).
 
 ${NOTAS_MANIFIESTO}
 `;
