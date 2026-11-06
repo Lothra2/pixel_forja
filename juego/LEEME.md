@@ -61,7 +61,9 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - Abajo a la derecha: Golpe grande en la esquina, un arco con tu Poder y tres atajos (con la recarga y el maná que falta) y el interruptor Agresivo / Calmo con su nombre.
   - Abajo al centro: las cuatro pociones, tocar para beber, y la experiencia en una línea fina.
   - Abajo a la izquierda: un joystick que aparece donde apoyas el pulgar. Tocar el suelo o un monstruo sigue funcionando.
+  - Los consejos de la primera vez salen en un cartel abajo al centro, encima de las pociones, sin tapar la misión, el minimapa ni el arco. Se cierra al tocarlo o solo a los 6 segundos.
   - Todos los botones miden 44 puntos o más, nada queda a menos de 50 puntos de los bordes (el notch y la isla) y no hay pistas de teclado ni cursor. El portal al campamento está en el menú.
+  - La prueba juego/herramientas/hud_tactil.cjs revisa en cuatro tamaños de iPhone que nada se cruce, que los toques reales funcionen y que Poder y los tres atajos se vean del mismo tamaño en pantalla.
 - **La historia decide (actos 4 a 7).** La cadena principal tiene tres decisiones con consecuencias reales.
   - Acto 4, "La sangre tibia": Vigdis se ofrece para abrir el trono. Si la dejas ir, Hjaldur llega con un cuarto menos de vida, el fortín se queda sin curandera y en su lugar queda su tumba. Si la detienes, el rey llega entero y ella te sigue en los campamentos de los actos 5 a 7.
   - Acto 5: la Brasa, destruirla o absorberla.
