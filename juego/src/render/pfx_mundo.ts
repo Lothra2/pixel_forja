@@ -24,13 +24,13 @@ export const climaPfx = { activo: [] as string[] };
 function armar(j: Juego) {
   const z = j.zona; zonaId = z.id + ':' + z.semilla;
   const es = todosPfx();
-  const cl = es.filter((e) => e.capa === 'pantalla' && !SIN_PANTALLA.has(e.id) && e.uso?.some((u) => u.tipo === 'clima' && (u.zonas ? u.zonas.includes(z.id) : u.actos?.includes(z.acto) && z.tipo === 'exterior'))).map((e) => e.id);
+  const cl = es.filter((e) => !(e as any).soloCinematica && e.capa === 'pantalla' && !SIN_PANTALLA.has(e.id) && e.uso?.some((u) => u.tipo === 'clima' && (u.zonas ? u.zonas.includes(z.id) : u.actos?.includes(z.acto) && z.tipo === 'exterior'))).map((e) => e.id);
   const orden = cl.sort((a, b) => ORDEN_CLIMA.indexOf(a) - ORDEN_CLIMA.indexOf(b)).filter((id) => !(EXCLUYE[id] && cl.includes(EXCLUYE[id])));
   clima = orden.slice(0, E.tactil ? 1 : 2);
   pantallaTodo = cl;
   climaPfx.activo = clima;
   // lo que vive en la zona: lugares fijos (semilla de la zona) en celdas libres
-  const amb = es.filter((e) => e.capa !== 'pantalla' && e.bucle && !QUITAR_AMBIENTE.has(e.id) && e.uso?.some((u) => u.tipo === 'ambiente' && u.zonas?.includes(z.id))).map((e) => e.id);
+  const amb = es.filter((e) => !(e as any).soloCinematica && e.capa !== 'pantalla' && e.bucle && !QUITAR_AMBIENTE.has(e.id) && e.uso?.some((u) => u.tipo === 'ambiente' && u.zonas?.includes(z.id))).map((e) => e.id);
   plantas = [];
   // en las mazmorras no hay criaturas de ambiente (son de pelea); y nada de ambiente en la sala del jefe
   const jefe = z.spawns.find((q) => q.tipo === 'jefe');
@@ -59,7 +59,7 @@ export function dibujarAmbiente(ctx: CanvasRenderingContext2D, j: Juego, aPant: 
     if (px < -80 || px > W + 80 || py < -60 || py > H + 160) continue;
     if (++n > tope) break;
     // todo el ambiente a escala 1: el pixel no pasa del del mundo. El espectro, además, translúcido
-    dibujarPfx(ctx, p.id, t + p.fase, px, py, { escala: 0.5, alfa: p.id === 'fx_espectro' ? 0.6 : 1 });
+    dibujarPfx(ctx, p.id, t + p.fase, px, py, { escala: 0.5, alfa: p.id === 'fx_espectro' ? 0.6 : 1, dir: p.id === 'fx_ola' ? 6 : 0 });
   }
 }
 

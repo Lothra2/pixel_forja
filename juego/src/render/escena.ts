@@ -317,6 +317,15 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   // arcos de rayo
   for (const e of j.efectos) if (e.id === 'arco_cadena' && (e as any).x2 !== undefined) {
     const [ax, ay] = aPant(e.x, e.y), [bx, by] = aPant((e as any).x2, (e as any).y2);
+    // el arco de la Forja (fila e, la horizontal) rotado y estirado entre los dos; si no cargó, el rayo de siempre
+    const fs = manifiesto().w?.['arco_cadena/e'], meta = manifiesto().wm?.arco_cadena;
+    if (fs?.length && meta) {
+      const raw = fs[Math.floor((e.t * 25) / (meta.t || 1)) % fs.length], q: Cuadro = { img: null, atlas: raw[0], x: raw[1], y: raw[2], w: raw[3], h: raw[4], ax: raw[5], ay: raw[6] };
+      const by2 = by - 39, ay2 = ay - 39;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(ax, ay2); ctx.rotate(Math.atan2(by2 - ay2, bx - ax)); ctx.scale(Math.hypot(bx - ax, by2 - ay2) / 155.6, 1);
+      const ok = dibujar(ctx, q, 0, 39); ctx.restore();
+      if (ok) continue;
+    }
     rayo(ax, ay - 34, bx, by - 34, 1 - e.t / (e.dur ?? 0.3));
   }
   // cuervos

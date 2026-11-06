@@ -140,9 +140,11 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     if (!dentro(px, py, 300)) continue;
     if (LE) {
       if (!LE.enVuelo || LE.intensidad <= 0 || LE.radio <= 0) continue;
-      const k = intensidadLuz(p.efecto, (manifiesto().wm?.[p.efecto]?.t ?? 2) / 25, p.t, true) * (1 - (LE.parpadeo ?? 0) * R());
+      // pixelfx: la curva por cuadro del propio efecto (intensidadLuz solo conoce la tabla de la Forja y daba 0)
+      const ep = p.efecto.startsWith('pfx:') ? efectoPfx(p.efecto.slice(4)) : null;
+      const k = (ep ? LE.intensidad * (LE.curva?.length ? LE.curva[Math.floor((p.t * 25) / ep.t) % LE.curva.length] : 1) : intensidadLuz(p.efecto, (manifiesto().wm?.[p.efecto]?.t ?? 2) / 25, p.t, true)) * (1 - (LE.parpadeo ?? 0) * R());
       if (k <= 0.02) continue;
-      L.push({ id: idDe(p), x: px, y: py, h: Math.max(18, (p.z ?? 0) * 1.2), r: LE.radio * rk, c: rgbLuz(p.efecto), k, sinSombra: !LE.sombra, prio: LE.prioridad ?? 1 });
+      L.push({ id: idDe(p), x: px, y: py, h: Math.max(18, (p.z ?? 0) * 1.2), r: LE.radio * rk, c: ep ? hexRgb(LE.color) : rgbLuz(p.efecto), k, sinSombra: !LE.sombra, prio: LE.prioridad ?? 1 });
       continue;
     }
     const el = (manifiesto().wm?.[p.efecto]?.elem as string) ?? p.elem;
@@ -160,7 +162,9 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   for (const e of j.efectos) {
     const [px, py] = aPant(e.x, e.y);
     if (!dentro(px, py, 300)) continue;
-    const meta = manifiesto().wm?.[e.id];
+    // pixelfx: el cuadro sale del efecto (en el manifiesto de poderes no está y caía en la luz genérica)
+    const ep = e.id.startsWith('pfx:') ? efectoPfx(e.id.slice(4)) : null;
+    const meta = ep ? { t: ep.t, bucle: ep.bucle } : manifiesto().wm?.[e.id];
     const LE = luzDe(e.id);
     if (LE && meta) {
       // curva por cuadro de la Forja; los de prioridad 0 además dan el destello de pantalla
@@ -168,7 +172,7 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
       const cv = meta.bucle ? LE.curva[fi % n] : fi < n ? LE.curva[fi] : 0;
       const k = LE.intensidad * cv * (1 - (LE.parpadeo ?? 0) * R());
       if (k <= 0.01 || LE.radio <= 0) continue;
-      const esc = e.escala ?? 1, c = rgbLuz(e.id);
+      const esc = e.escala ?? 1, c = ep ? hexRgb(LE.color) : rgbLuz(e.id);
       L.push({ id: idDe(e), x: px, y: py, h: LE.altura * esc + (e.z ?? 0), r: LE.radio * esc, c, k: Math.min(1, k), sinSombra: !LE.sombra, prio: LE.prioridad ?? 2 });
       if ((LE.prioridad ?? 2) === 0) { const f = k * Math.min(1, esc); if (f > fl) { fl = f; flc = c; } }
       if (e.id === 'arco_cadena' && (e as any).x2 !== undefined) { const [bx, by] = aPant((e as any).x2, (e as any).y2); L.push({ id: idDe(e) + 'b', x: (px + bx) / 2, y: (py + by) / 2, h: 34, r: LE.radio, c, k: Math.min(1, k), prio: 0, sinSombra: !LE.sombra }); }

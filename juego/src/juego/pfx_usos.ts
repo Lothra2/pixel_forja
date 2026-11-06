@@ -45,7 +45,7 @@ export const transicionPfx = (id: string) => { usosPfx.pantalla.push({ id, t0: p
 /** Reparte los efectos de cada habilidad en proyectil (el que vuela) y área (lo que pasa donde cae o donde pega). */
 export function armarUsosPfx(efectos: { id: string; uso?: any[]; luz?: { enVuelo?: boolean }; direccional: boolean }[]) {
   const porHab = new Map<string, typeof efectos>();
-  for (const e of efectos) for (const u of e.uso ?? []) {
+  for (const e of efectos) if (!(e as any).soloCinematica) for (const u of e.uso ?? []) {
     if (u.tipo === 'poder') for (const h of u.habilidades ?? []) { if (!porHab.has(h)) porHab.set(h, []); porHab.get(h)!.push(e); }
     if (u.tipo === 'monstruo' && e.luz?.enVuelo) for (const m of u.monstruos ?? []) if (!usosPfx.mon.has(m)) usosPfx.mon.set(m, e.id);
   }

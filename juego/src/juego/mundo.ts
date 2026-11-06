@@ -75,7 +75,7 @@ export interface Proyectil {
   /** Quién lo disparó (para atribuir el golpe, la escarcha que congela al atacante, etc.). */
   fuente?: Ent;
 }
-export interface Area { x: number; y: number; radio: number; dano: [number, number]; elem: Elemento; t: number; dur: number; tick: number; prox: number; deHeroe: boolean; efecto: string; retraso: number; caida?: boolean }
+export interface Area { /** Lo que se dibuja al caer (por omisión explosion_fuego; '' nada, el efecto ya trae su impacto). */ fxCaida?: string; escCaida?: number; x: number; y: number; radio: number; dano: [number, number]; elem: Elemento; t: number; dur: number; tick: number; prox: number; deHeroe: boolean; efecto: string; retraso: number; caida?: boolean }
 export interface Suelo { o: Objeto | null; oro: number; x: number; y: number; t: number; id: number }
 export interface Numero { x: number; y: number; z: number; txt: string; color: string; t: number; grande?: boolean }
 export interface Efecto { id: string; x: number; y: number; t: number; dir: number; escala: number; z?: number; seguir?: Ent; dur?: number }
@@ -107,7 +107,9 @@ function efectoLegGolpe(j: Juego, m: Monstruo, total: number, crit: boolean) {
       const b = masCercano(j, desde.x, desde.y, 4, ya) as Monstruo | null; if (!b) break;
       const ef2 = { id: 'arco_cadena', x: desde.x, y: desde.y, t: 0, dir: 0, escala: 1, z: 0, dur: 0.25 } as any; ef2.x2 = b.x; ef2.y2 = b.y; j.efectos.push(ef2);
       danar(j, b, { min: total * 0.45, max: total * 0.45, elem: 'rayo', deHeroe: true, fuente: h, sinFallo: true });
-      efecto(j, 'impacto_rayo', b.x, b.y, 0, 0.5); ya.add(b.id); desde = b;
+      // el destello de impacto_rayo solo en el primero (su luz inunda la pantalla); en cada uno, electrocutado
+      if (k === 0) efecto(j, 'impacto_rayo', b.x, b.y, 0, 0.5);
+      efecto(j, 'pfx:fx_electrocutado', b.x, b.y, 0, 1, 0, 0.5); ya.add(b.id); desde = b;
     }
     enCadena = false;
   }
@@ -633,7 +635,7 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
     msg(j, ['Thor se echa a descansar. Vuelve en un minuto, o antes si pasas por el pueblo.', 'Thor lies down to rest. He comes back in a minute, or sooner if you visit town.'], '#c0a070');
     return;
   }
-  if (m.dueno) { j.cadaveres++; return; }
+  if (m.dueno) { despedidaInvocado(j, m); j.cadaveres++; return; }
   // la muerte de pixelfx (el ánima que sube, el hielo que revienta, la explosión del jefe...)
   const mp = muertePfx(m as any, g?.elem, R()); if (mp) { (m as any).pfxMuerte = { id: mp, t0: j.t }; efecto(j, 'pfx:' + mp, m.x, m.y, 0, m.escala ?? 1, 0, 4.5); }
   // condena del osario: el maldito revienta al morir
@@ -781,6 +783,7 @@ export const esDistancia = (j: Juego, hb: Habilidad) => hb.tipo !== 'golpe' && h
  * le pega a quien esté al alcance hacia el cursor, o al aire si no hay nadie, sin caminar.
  */
 export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj: Monstruo | null, alAire = false): boolean {
+  fxInvocar = null;
   const h = j.heroe;
   if (h.muerto || h.acc === 'atacar' || h.acc === 'lanzar' || h.salto) return false;
   if (j.zona.tipo === 'pueblo') return false;
@@ -971,6 +974,20 @@ function seguirThor(j: Juego, m: Monstruo, dh: number, dt: number) {
 }
 
 /** Invoca un aliado. tVida: si es temporal (no cuenta para el máximo). */
+/** Cómo aparece cada invocación (pixelfx): [efecto, escala, duración, demora]. */
+const FX_INVOCAR: Record<string, [string, number, number?, number?]> = {
+  alzar_esqueleto: ['pfx:fx_grieta_invocacion', 0.8], mago_hueso: ['pfx:fx_grieta_invocacion', 0.8], sabueso_osario: ['pfx:fx_grieta_invocacion', 0.8], marcha_fosa: ['pfx:fx_grieta_invocacion', 0.8],
+  golem_sangre: ['pfx:fx_surge_del_piso', 1], legion_ceniza: ['pfx:fx_grieta_invocacion', 0.6],
+  invocar_lobo: ['pfx:fx_torbellino_hojas', 1, 1.2], oso_espiritu: ['pfx:fx_torbellino_hojas', 1.4, 1.2], espiritu_guardian: ['pfx:fx_torbellino_hojas', 1, 1.2], despertar_bosque: ['pfx:fx_torbellino_hojas', 1, 1.2],
+  llamar_halcon: ['pfx:fx_plumas', 1],
+};
+let fxInvocar: [string, number, number?, number?] | null = null, fxPaso = 0;
+/** Cuando un invocado se va o muere: el ánima de los no muertos y el humo de los de la naturaleza. */
+function despedidaInvocado(j: Juego, m: Monstruo) {
+  if (m.invocaId === 'thor') return;
+  const natural = /lobo|oso|halcon|arbol|espiritu/.test(m.invocaId ?? '');
+  efecto(j, natural ? 'pfx:fx_humareda' : 'pfx:fx_alma_sube', m.x, m.y, 0, natural ? 1 : 0.8, 0, 3);
+}
 function crearInvocado(j: Juego, invId: string, n: number, x: number, y: number, tVida?: number, extra = 1): Monstruo | null {
   const h = j.heroe, inv = INVOCADOS[invId]; if (!inv) return null;
   if (!pasable(j.zona, x, y)) { const q = libreCerca(j.zona, x, y); x = q[0] + 0.5; y = q[1] + 0.5; }
@@ -981,7 +998,9 @@ function crearInvocado(j: Juego, invId: string, n: number, x: number, y: number,
   m.vidaMax = m.vida = Math.round(inv.vida * kk * (1 + h.d.nivel * 0.12)); m.dano = [inv.dano[0] * kk * danoInvocadoNivel(h.d.nivel), inv.dano[1] * kk * danoInvocadoNivel(h.d.nivel)];
   m.tinte = inv.tinte; m.escala = inv.escala ?? 1; m.tVida = tVida;
   j.monstruos.push(m);
-  efecto(j, 'circulo_invocacion', x, y, 0, 0.8);
+  // cómo aparece: lo que pide la habilidad que lo llama (pixelfx), o el círculo de siempre
+  if (fxInvocar) { const [id, esc, dur, t0] = fxInvocar; j.efectos.push({ id, x, y, t: -(t0 ?? 0) - fxPaso * 0.1, dir: 0, escala: esc, z: 0, dur: (dur ?? 2.5) + (t0 ?? 0) + fxPaso * 0.1 }); fxPaso++; }
+  else efecto(j, 'circulo_invocacion', x, y, 0, 0.8);
   return m;
 }
 const golpeSimple = (j: Juego, d: [number, number], elem: Elemento): Golpe => ({ min: d[0], max: d[1], elem, deHeroe: true, fuente: j.heroe, sinFallo: true });
@@ -1134,11 +1153,14 @@ function resolverHabilidad(j: Juego) {
       // ---- cargas del arcanista
       if (hb.id === 'meteoro' || hb.id === 'sol_negro') {
         let d = dh;
-        if (hb.id === 'sol_negro') { const u = gastarCargas(h, 'fuego').length; d = [dh[0] * (1 + 0.35 * u), dh[1] * (1 + 0.35 * u)]; }
-        j.areas.push({ x: ax, y: ay, radio: r, dano: d, elem: 'fuego', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: 'meteoro', retraso: 0.9, caida: true });
-        j.areas.push({ x: ax, y: ay, radio: r * 0.8, dano: [d[0] * 0.15, d[1] * 0.15], elem: 'fuego', t: 0, dur, tick: 0.5, prox: 0, deHeroe: true, efecto: 'crater_ardiente', retraso: 1.0 });
-        efecto(j, 'meteoro', ax, ay, 0, hb.id === 'sol_negro' ? 1.8 : 1.3, 0, 1.2);
-        if (hb.id === 'sol_negro') efecto(j, 'lluvia_brasas', ax, ay, 0, 1.4, 0, 1.8);
+        const sol = hb.id === 'sol_negro';
+        if (sol) { const u = gastarCargas(h, 'fuego').length; d = [dh[0] * (1 + 0.35 * u), dh[1] * (1 + 0.35 * u)]; }
+        // pixelfx: el meteoro trae su roca y su impacto (pega a los 0.64 s); el sol negro es un agujero negro y una explosión
+        // oscura a los 0.34 s (sin brasas naranjas). Después, en los dos, el cráter que sigue ardiendo
+        const pega = sol ? 0.34 : 0.64;
+        j.areas.push({ x: ax, y: ay, radio: r, dano: d, elem: 'fuego', t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: 'meteoro', retraso: pega, caida: true, fxCaida: sol ? 'pfx:fx_explosion_oscura' : '', escCaida: 1.4 });
+        j.areas.push({ x: ax, y: ay, radio: r * 0.8, dano: [d[0] * 0.15, d[1] * 0.15], elem: 'fuego', t: 0, dur, tick: 0.5, prox: 0, deHeroe: true, efecto: 'crater_ardiente', retraso: pega + 0.1 });
+        if (sol) efecto(j, 'pfx:fx_agujero_negro', ax, ay, 0, 1.2, 0, 0.9); else efecto(j, 'pfx:fx_meteoro', ax, ay, 0, 1, 0, 3.8);
         break;
       }
       if (hb.id === 'furia_firmamento') {
@@ -1176,6 +1198,8 @@ function resolverHabilidad(j: Juego) {
         j.efectos.push({ id: 'arco_cadena', x: desde.x, y: desde.y, t: 0, dir: 0, escala: 1, z: 0, dur: 0.3, seguir: blanco } as Efecto);
         (j.efectos[j.efectos.length - 1] as any).x2 = blanco.x; (j.efectos[j.efectos.length - 1] as any).y2 = blanco.y;
         danar(j, blanco, { min: dh[0], max: dh[1], elem: 'rayo', deHeroe: true, fuente: h, sinFallo: true });
+        if (!golpeados.size) efecto(j, 'impacto_rayo', blanco.x, blanco.y, 0, 0.6);
+        efecto(j, 'pfx:fx_electrocutado', blanco.x, blanco.y, 0, 1, 0, 0.5);
         golpeados.add(blanco.id);
         desde = blanco;
         blanco = masCercano(j, desde.x, desde.y, 6, golpeados);
@@ -1184,6 +1208,10 @@ function resolverHabilidad(j: Juego) {
     }
     case 'invocar': {
       const invId = hb.invoca!; if (!INVOCADOS[invId]) break;
+      // pixelfx de la aparición, por habilidad (escalonados de a 0.1 s si salen varios)
+      fxPaso = 0;
+      fxInvocar = FX_INVOCAR[hb.id] ?? null;
+      if (hb.id === 'legion_ceniza') efecto(j, 'pfx:fx_circulo_conjuro', h.x, h.y, 0, 1.2, 0, 2.5);
       // temporales: marcha de la fosa, legión de la ceniza, despertar del bosque
       if (hb.id === 'marcha_fosa') {
         const cads = cadaveresCerca(j, tx, ty, hb.radio ?? 6).slice(0, Math.floor(val(hb.max, n)));
@@ -1596,7 +1624,7 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
   if ((m as any).quema > 0) { (m as any).quema -= dt; m.vida -= (m as any).quemaDps * dt; if (R() < dt * 6) particulas(j, m.x, m.y, 1, 'brasa', '#ff7020', 0.4, 40 * m.escala); if ((m as any).quema <= 0) (m as any).quemaDps = 0; if (m.vida <= 0) { morirMonstruo(j, m); return; } }
   if (m.maldicion) { m.maldicion.t -= dt; if (m.maldicion.t <= 0) m.maldicion = undefined; }
   if (m.marca && m.marca > 0) { m.marca -= dt; if (Math.floor(m.marca * 2) !== Math.floor((m.marca + dt) * 2)) particulas(j, m.x, m.y, 1, 'pluma', '#ffc860', 0.3, 70 * m.escala); }
-  if (m.dueno && m.tVida !== undefined) { m.tVida -= dt; if (m.tVida <= 0) { m.vida = 0; m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; efecto(j, 'circulo_invocacion', m.x, m.y, 0, 0.5); return; } }
+  if (m.dueno && m.tVida !== undefined) { m.tVida -= dt; if (m.tVida <= 0) { m.vida = 0; m.muerto = true; m.acc = 'morir'; m.t = 0; m.tMuerto = 0; despedidaInvocado(j, m); return; } }
   if (m.congelado > 0) { m.congelado -= dt; return; }
   if (m.aturdido > 0) { m.aturdido -= dt; m.acc = 'herido'; return; }
   if (m.frio > 0) m.frio -= dt;
@@ -1869,7 +1897,7 @@ function explotar(j: Juego, p: Proyectil) {
 }
 function actualizarAreas(j: Juego, dt: number) {
   for (const a of j.areas) {
-    if (a.retraso > 0) { a.retraso -= dt; if (a.retraso <= 0 && a.caida) { j.sacudida = 0.5; sonar(j, 'explosion', a.x, a.y); efecto(j, 'explosion_fuego', a.x, a.y, 0, 1.6); } if (a.retraso > 0) continue; if (a.efecto && !a.caida) efecto(j, a.efecto, a.x, a.y, 0, a.radio / 2.5, 0, Math.max(0.8, a.dur)); }
+    if (a.retraso > 0) { a.retraso -= dt; if (a.retraso <= 0 && a.caida) { j.sacudida = 0.5; sonar(j, 'explosion', a.x, a.y); const fc = a.fxCaida ?? 'explosion_fuego'; if (fc) efecto(j, fc, a.x, a.y, 0, a.escCaida ?? 1.6, 0, fc.startsWith('pfx:') ? 3.5 : undefined); } if (a.retraso > 0) continue; if (a.efecto && !a.caida) efecto(j, a.efecto, a.x, a.y, 0, a.radio / 2.5, 0, Math.max(0.8, a.dur)); }
     a.t += dt; a.prox -= dt;
     if (a.prox <= 0) {
       a.prox = a.tick;
