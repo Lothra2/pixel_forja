@@ -257,6 +257,29 @@
    "sombra": true,
    "prioridad": 0
   },
+  "cerco_llamas": {
+   "color": "#ff6a1e",
+   "radio": 230,
+   "intensidad": 0.8,
+   "curva": [
+    0.94,
+    0.96,
+    0.97,
+    0.98,
+    0.99,
+    0.96,
+    0.95,
+    0.93,
+    0.99,
+    1,
+    1,
+    0.97
+   ],
+   "altura": 24,
+   "parpadeo": 0.1,
+   "sombra": true,
+   "prioridad": 2
+  },
   "chispa_cargada": {
    "color": "#a8c2ff",
    "radio": 170,
@@ -385,19 +408,19 @@
    "radio": 160,
    "intensidad": 0.6,
    "curva": [
+    0.52,
+    0.64,
+    0.68,
     0.8,
-    0.89,
-    0.94,
-    0.94,
-    0.89,
-    0.8,
+    0.73,
+    0.84,
+    1,
+    0.97,
     0.71,
-    0.66,
-    0.66,
-    0.71
+    0.6
    ],
    "altura": 10,
-   "parpadeo": 0.2,
+   "parpadeo": 0.14,
    "sombra": false,
    "prioridad": 2
   },
@@ -827,6 +850,83 @@
    "prioridad": 1,
    "mezcla": "normal"
   },
+  "llama_corona_fria": {
+   "color": "#cddcff",
+   "radio": 140,
+   "intensidad": 0.55,
+   "curva": [
+    0.91,
+    1,
+    0.93,
+    0.92,
+    0.89,
+    0.89,
+    0.95,
+    0.93,
+    0.9,
+    0.93,
+    0.98,
+    0.93
+   ],
+   "altura": 50,
+   "parpadeo": 0.05,
+   "sombra": false,
+   "prioridad": 3
+  },
+  "llanto_animas": {
+   "color": "#4fd2cc",
+   "radio": 250,
+   "intensidad": 0.85,
+   "curva": [
+    0.04,
+    0.12,
+    0.25,
+    0.4,
+    0.55,
+    0.67,
+    0.79,
+    0.89,
+    1,
+    0.87,
+    0.58,
+    0.34,
+    0.16,
+    0.06
+   ],
+   "altura": 16,
+   "parpadeo": 0.08,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "lluvia_brasas": {
+   "color": "#ff6a1e",
+   "radio": 240,
+   "intensidad": 0.85,
+   "curva": [
+    0,
+    0.04,
+    0.11,
+    0.18,
+    0.27,
+    0.37,
+    0.5,
+    0.64,
+    0.77,
+    0.89,
+    1,
+    0.78,
+    0.54,
+    0.2,
+    0.07,
+    0.02,
+    0,
+    0
+   ],
+   "altura": 20,
+   "parpadeo": 0.1,
+   "sombra": true,
+   "prioridad": 1
+  },
   "lluvia_flechas": {
    "color": "#ffd2a0",
    "radio": 0,
@@ -903,24 +1003,47 @@
    "sombra": true,
    "prioridad": 0
   },
+  "muro_infierno": {
+   "color": "#ff6a1e",
+   "radio": 190,
+   "intensidad": 0.85,
+   "curva": [
+    0.86,
+    0.8,
+    0.83,
+    0.89,
+    0.9,
+    0.97,
+    1,
+    0.95,
+    0.98,
+    0.92,
+    0.91,
+    0.84
+   ],
+   "altura": 40,
+   "parpadeo": 0.1,
+   "sombra": true,
+   "prioridad": 2
+  },
   "muro_llamas": {
    "color": "#ff8a33",
    "radio": 150,
    "intensidad": 0.75,
    "curva": [
-    0.82,
+    1,
+    0.97,
+    0.98,
+    0.96,
+    0.95,
+    0.96,
+    0.86,
+    0.9,
     0.92,
-    0.88,
-    0.76,
-    0.72,
-    0.82,
-    0.92,
-    0.88,
-    0.76,
-    0.72
+    1
    ],
    "altura": 30,
-   "parpadeo": 0.18,
+   "parpadeo": 0.12,
    "sombra": true,
    "prioridad": 2
   },
@@ -1060,6 +1183,33 @@
     0.01
    ],
    "altura": 36,
+   "sombra": true,
+   "prioridad": 0
+  },
+  "pilar_infernal": {
+   "color": "#ff8a33",
+   "radio": 300,
+   "intensidad": 1,
+   "curva": [
+    0,
+    0,
+    0.23,
+    0.43,
+    0.6,
+    0.74,
+    0.86,
+    0.93,
+    1,
+    0.8,
+    0.7,
+    0.46,
+    0.31,
+    0.19,
+    0.1,
+    0.05
+   ],
+   "altura": 110,
+   "parpadeo": 0.06,
    "sombra": true,
    "prioridad": 0
   },
@@ -1315,6 +1465,27 @@
    "altura": 80,
    "sombra": true,
    "prioridad": 0
+  },
+  "suelo_ardiente": {
+   "color": "#ff6a1e",
+   "radio": 170,
+   "intensidad": 0.6,
+   "curva": [
+    0.87,
+    0.95,
+    0.98,
+    1,
+    0.96,
+    0.97,
+    0.96,
+    0.85,
+    0.87,
+    0.81
+   ],
+   "altura": 10,
+   "parpadeo": 0.12,
+   "sombra": false,
+   "prioridad": 2
   },
   "tajo_garras": {
    "color": "#ff5040",
