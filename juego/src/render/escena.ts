@@ -20,6 +20,22 @@ import { estadosPfx } from '../juego/pfx_usos';
 import { dibujarAmbiente, dibujarClimaPfx } from './pfx_mundo';
 import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde } from './fuego_especial';
 let dtCuadro = 1 / 60;
+// bruma de altura: cada cuadro alto se pinta una vez con el degradado del color de la niebla de la zona
+let colorBruma = '78,82,96', anclasCuadro: { q: Cuadro; br: HTMLCanvasElement | null; px: number; py: number }[] = [], esAncla = new Set<object>();
+const brumas = new WeakMap<Cuadro, { c: string; cv: HTMLCanvasElement }>();
+function conBruma(q: Cuadro, c: string): HTMLCanvasElement | null {
+  const g0 = brumas.get(q); if (g0 && g0.c === c) return g0.cv;
+  const cv = document.createElement('canvas'); cv.width = q.w; cv.height = q.h;
+  const g = cv.getContext('2d')!;
+  if (!dibujar(g, q, q.ax, q.ay)) return null;
+  // de 0 a 120 px sobre el ancla no hay bruma; de ahí a la punta sube hasta 0.35 (y baja el contraste de lo alto)
+  const y120 = Math.max(1, q.ay - 120), gr = g.createLinearGradient(0, y120, 0, 0);
+  gr.addColorStop(0, `rgba(${c},0)`); gr.addColorStop(1, `rgba(${c},0.35)`);
+  g.globalCompositeOperation = 'source-atop'; g.fillStyle = gr; g.fillRect(0, 0, q.w, y120);
+  brumas.set(q, { c, cv });
+  return cv;
+}
+const nieblaCv = document.createElement('canvas');
 const congelados = new WeakSet<object>();
 const ES_FUEGO = /fogata|hoguera|brasero|pira|antorcha|fuego|caldero|hogar/;
 import { recolectar, sombras, reflejos, luces, destello, destelloColor } from './luces';
@@ -145,6 +161,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   picks = [];
   prepararFuegos(j, dt, aPant, W, H); seguirSuelo(j, dt); dtCuadro = dt;
+  colorBruma = z.niebla ? '150,150,160' : '78,82,96'; anclasCuadro = []; esAncla = new Set(z.salidas.flatMap((sa) => sa.piezas ?? []));
   recolectar(j, tiempo, aPant, W, H);
   // explorar
   const btx = Math.floor(h.x / 5), bty = Math.floor(h.y / 5);
@@ -203,7 +220,12 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
         const [hx, hy] = aPant(h.x, h.y);
         if (prof > h.x + h.y && hx > px - q.ax && hx < px - q.ax + q.w && hy - 30 > py - q.ay && hy - 30 < py - q.ay + q.h * 0.85) alfa = 0.45;
       }
-      if (alfa < 1) { ctx.globalAlpha = alfa; dibujar(ctx, q, px, py); ctx.globalAlpha = 1; } else dibujar(ctx, q, px, py);
+      // lo alto (más de 120 px sobre el ancla) lleva bruma de altura: perspectiva atmosférica
+      const br = q.ay > 120 ? conBruma(q, colorBruma) : null;
+      if (alfa < 1) ctx.globalAlpha = alfa;
+      if (br) ctx.drawImage(br, Math.round(px - q.ax), Math.round(py - q.ay)); else dibujar(ctx, q, px, py);
+      if (alfa < 1) ctx.globalAlpha = 1;
+      if (esAncla.has(o)) anclasCuadro.push({ q, br, px, py });
       // fuego vivo sobre fogatas, braseros, piras y antorchas
       if (vivos && (gem?.f.length || !vivos[0].s.sprite)) dibujarVivos(ctx, vivos, px, py, alfa);
       else if (meta.luz && !tieneFuegoDoom(o) && ES_FUEGO.test(o.id) && !/^(arma_|mis_)/.test(o.id) && !/apagad/.test(o.v)) fuegoMundo(ctx, px, py - meta.luz[2] * 1.1, Math.max(0.3, Math.min(1.3, meta.luz[0] / 160)), tiempo, cam.x, cam.y);
@@ -537,13 +559,22 @@ function dibujarLuz(j: Juego, t: number) {
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(brillo, 0, 0);
   if (destello > 0.02) { ctx.globalAlpha = destello * 0.16; ctx.fillStyle = `rgb(${destelloColor[0]},${destelloColor[1]},${destelloColor[2]})`; ctx.fillRect(0, 0, W, H); }
   ctx.restore();
-  // niebla de guerra: lo no explorado se ve negro del todo
-  ctx.fillStyle = '#000';
+  // niebla de guerra: lo no explorado se ve negro del todo (salvo las piezas ancla: la catedral no se recorta)
+  const conAncla = anclasCuadro.length > 0;
+  let nc: CanvasRenderingContext2D = ctx;
+  if (conAncla) { if (nieblaCv.width !== W || nieblaCv.height !== H) { nieblaCv.width = W; nieblaCv.height = H; } nc = nieblaCv.getContext('2d')!; nc.clearRect(0, 0, W, H); }
+  nc.fillStyle = '#000';
   for (let by = 0; by < z.th; by++) for (let bx = 0; bx < z.tw; bx++) {
     if (z.explorado[by * z.tw + bx] || !z.pisos[by * z.tw + bx]) continue;
     const [px, py] = aPant(bx * 5 + 2.5, by * 5 + 2.5);
     if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
-    ctx.beginPath(); ctx.moveTo(px, py - 41); ctx.lineTo(px + 81, py); ctx.lineTo(px, py + 41); ctx.lineTo(px - 81, py); ctx.closePath(); ctx.fill();
+    nc.beginPath(); nc.moveTo(px, py - 41); nc.lineTo(px + 81, py); nc.lineTo(px, py + 41); nc.lineTo(px - 81, py); nc.closePath(); nc.fill();
+  }
+  if (conAncla) {
+    nc.globalCompositeOperation = 'destination-out';
+    for (const a of anclasCuadro) { if (a.br) nc.drawImage(a.br, Math.round(a.px - a.q.ax), Math.round(a.py - a.q.ay)); else dibujar(nc, a.q, a.px, a.py); }
+    nc.globalCompositeOperation = 'source-over';
+    ctx.drawImage(nieblaCv, 0, 0);
   }
 }
 
