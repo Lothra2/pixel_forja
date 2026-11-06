@@ -409,7 +409,8 @@ function mensajesTactil(j: Juego) {
   const ultimos = j.mensajes.slice(-3);
   for (const m of ultimos) {
     ctx.globalAlpha = Math.max(0, Math.min(1, 6 - m.t));
-    for (const l of envolver(TT(m.txt), anchoMax, tam).slice(0, 3)) { texto(l, mx, y, { color: m.color, tam }); anchoM = Math.max(anchoM, ancho(l, tam)); y += lh; }
+    // no bajan hasta el cartel de consejos, si está
+    for (const l of envolver(TT(m.txt), anchoMax, tam).slice(0, 3)) { if (hud.cartel && y + 4 > hud.cartel[1]) break; texto(l, mx, y, { color: m.color, tam }); anchoM = Math.max(anchoM, ancho(l, tam)); y += lh; }
     ctx.globalAlpha = 1;
   }
   if (ultimos.length) hud.mensajes = [mx, y0, Math.min(anchoMax, anchoM), y - y0 - lh + tam + 4]; else delete hud.mensajes;

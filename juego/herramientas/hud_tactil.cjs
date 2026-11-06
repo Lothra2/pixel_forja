@@ -1,4 +1,5 @@
 // Uso: node hud_tactil.cjs (dev en 5190). Lee los módulos con import(), así que necesita el servidor de desarrollo.
+// Mide además el radio DIBUJADO de cada botón del arco escaneando el anillo en el lienzo.
 // HUD táctil: rects sin cruces, toques de 44 pt o más, 50 pt libres a los lados y toques reales.
 const { chromium } = require('playwright');
 const RES = [[844, 390], [932, 430], [667, 375], [844, 340]];
@@ -26,6 +27,24 @@ const RES = [[844, 390], [932, 430], [667, 375], [844, 340]];
     const m50 = 50 / info.esc - 0.5;
     for (const k of ks) { const r = info.hud[k]; if (k === 'mensajes') continue; if (r[0] < m50 || r[0] + r[2] > info.W - m50) fallas.push(`${w}x${h}: ${k} dentro de 50 pt del borde (${r[0].toFixed(0)}..${(r[0] + r[2]).toFixed(0)} de ${info.W})`); }
     { const a = info.hud.agresivo, bt = info.hud.botones; if (a && bt) { const aire = (a[1] - (bt[1] + bt[3])) * info.esc; if (aire < 8) fallas.push(`${w}x${h}: Calmo a ${aire.toFixed(1)} pt de los botones`); } }
+    // tamaño DIBUJADO de los botones del arco: se busca el anillo dorado desde afuera hacia el centro en los píxeles del lienzo
+    const radios = await p.evaluate((hudR) => {
+      const c = document.getElementById('juego'), g = c.getContext('2d'), out = {};
+      for (const id of ['poder', 'hab1', 'hab2', 'hab3', 'golpe']) {
+        const r = hudR[id]; if (!r) continue;
+        const cx = Math.round(r[0] + r[2] / 2), cy = Math.round(r[1] + r[3] / 2), lado = r[2] / 0.7071;
+        // cuatro direcciones y nos quedamos con la segunda más chica: un brillo del escenario detrás no infla la medida
+        const img = g.getImageData(0, 0, c.width, c.height).data, dorado = (x, y) => { const i = (y * c.width + x) * 4, R = img[i], G = img[i + 1], B = img[i + 2]; return R > 130 && R < 200 && G > 100 && G < 150 && B > 50 && B < 110 && R - B > 50; };
+        const hits = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => { for (let k = Math.round(lado * 0.6); k > 0; k--) { const x = cx + dx * k, y = cy + dy * k; if (x < 0 || y < 0 || x >= c.width || y >= c.height) continue; if (dorado(x, y)) return k; } return 0; }).sort((a, b) => a - b);
+        const rad = hits[1];
+        out[id] = rad;
+      }
+      return out;
+    }, info.hud);
+    const dPt = Object.fromEntries(Object.entries(radios).map(([k, v]) => [k, +(v * 2 * info.esc).toFixed(0)]));
+    for (const id of ['poder', 'hab1', 'hab2', 'hab3']) if (!(dPt[id] >= 50)) fallas.push(`${w}x${h}: ${id} se dibuja de ${dPt[id]} pt (los del arco deben verse de 52)`);
+    if (Math.max(dPt.poder, dPt.hab1, dPt.hab2, dPt.hab3) - Math.min(dPt.poder, dPt.hab1, dPt.hab2, dPt.hab3) > 3) fallas.push(`${w}x${h}: el arco no se dibuja parejo ${JSON.stringify(dPt)}`);
+    console.log(`${w}x${h} dibujado (pt)`, JSON.stringify(dPt));
     await p.screenshot({ path: `hudt_${w}x${h}.png` });
     // toques reales: poción, Golpe junto a un monstruo, Poder, y el joystick
     const centro = (r) => [r[0] + r[2] / 2, r[1] + r[3] / 2];

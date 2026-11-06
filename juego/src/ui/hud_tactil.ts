@@ -17,7 +17,7 @@ import { Sonido } from '../audio/sonido';
 
 /** Puntos de pantalla a píxeles del lienzo. */
 const L = (pt: number) => pt / Math.max(0.1, ESCALA);
-const CLAVES = ['orbes', 'rastreo', 'botones', 'mini', 'golpe', 'poder', 'hab1', 'hab2', 'hab3', 'agresivo', 'cinturon', 'xp', 'jefe'];
+const CLAVES = ['cartel', 'orbes', 'rastreo', 'botones', 'mini', 'golpe', 'poder', 'hab1', 'hab2', 'hab3', 'agresivo', 'cinturon', 'xp', 'jefe'];
 /** Los objetivos de toque de este cuadro, para la auditoría (cada uno debe medir 44 pt o más). */
 export const toques: { id: string; r: Rect }[] = [];
 let joy: { x0: number; y0: number; activo: boolean; repath: number } | null = null;
@@ -142,11 +142,13 @@ export function dibujarHudTactil(j: Juego, t: number) {
       if (!id) { boton(clave, r, () => texto('+', cx, cy + L(7), { alin: 'center', tam: Math.round(L(22)), color: '#806a50' }), () => alternar('habs', 'der'), true); return; }
       const hb = habilidadDe(id), n = hb.id === 'ataque' ? 1 : nivelHab(d, hb.id, h.c), costo = hb.id === 'ataque' ? 0 : costoMana(j, hb);
       boton(clave, r, () => {
-        iconoHab(hb, cx - P.S * 0.28, cy - P.S * 0.36, P.S * 0.56, n <= 0);
+        // el ícono llena el círculo (recortado a él) para que el botón se vea del mismo tamaño que los demás
+        ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, P.S / 2 - 2, 0, Math.PI * 2); ctx.clip(); iconoHab(hb, cx - P.S * 0.42, cy - P.S * 0.46, P.S * 0.84, n <= 0); ctx.restore();
+        ctx.save(); ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, P.S / 2, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
         const rc = h.recargas[hb.id] ?? 0;
         if (rc > 0) { ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, P.S / 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, rc / (hb.recarga ?? 1))); ctx.closePath(); ctx.fill(); ctx.restore(); }
         if (h.mana < costo) { ctx.save(); ctx.fillStyle = 'rgba(0,10,90,0.5)'; ctx.beginPath(); ctx.arc(cx, cy, P.S / 2, 0, Math.PI * 2); ctx.fill(); ctx.restore(); texto(String(Math.ceil(costo)), cx, cy + L(5), { alin: 'center', tam: Math.round(L(13)), color: '#a0b8ff' }); }
-        if (i === 0) texto(T('Poder', 'Skill'), cx, cy + P.S * 0.36, { alin: 'center', tam: Math.round(L(8)), color: '#e8d8b0', max: P.S * 0.7 });
+        if (i === 0) texto(T('Poder', 'Skill'), cx, cy + P.S * 0.38, { alin: 'center', tam: Math.round(L(8)), color: '#fff2d0', max: P.S * 0.7 });
       }, () => { if (i === 0) (ui as any).tactilHab = 'der'; else (ui as any).tactilHabId = id; }, true);
     });
     // agresivo o calmo, con su nombre
@@ -182,15 +184,18 @@ export function dibujarHudTactil(j: Juego, t: number) {
   // ---------------- el consejo de la primera vez: un cartel centrado que se cierra al tocarlo o a los 6 s
   if (cartel) {
     const ts = (performance.now() - cartel.t0) / 1000;
-    if (ts > 6) cartel = null;
+    if (ts > 6) { cartel = null; delete hud.cartel; }
     else {
-      const tam = Math.round(L(13)), w = Math.min(L(360), W - P.m.l - P.m.r), ls = TT(cartel.txt), lin = envolverT(ls, w - L(28), tam);
-      const hgt = Math.max(L(44), lin.length * tam * 1.35 + L(22)), x = W / 2 - w / 2, y = H * 0.3 - hgt / 2;
+      // abajo al centro, encima del cinturón y entre la zona del pulgar y el arco: no tapa al héroe ni la misión
+      const izq = P.m.l, der = Math.min(...P.habs.map(([hx]) => hx)) - P.S / 2 - L(10);
+      const tam = Math.round(L(13)), w = Math.min(L(360), der - izq), ls = TT(cartel.txt), lin = envolverT(ls, w - L(28), tam);
+      const hgt = Math.max(L(44), lin.length * tam * 1.35 + L(22)), x = Math.max(izq, Math.min(W / 2 - w / 2, der - w)), y = P.cinturon[1] - L(12) - hgt;
+      hud.cartel = [x, y, w, hgt];
       const a = Math.min(1, ts / 0.25, (6 - ts) / 0.5);
       ctx.save(); ctx.globalAlpha = 0.88 * a; ctx.fillStyle = '#100c08'; ctx.fillRect(x, y, w, hgt); ctx.globalAlpha = a; ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, hgt);
-      lin.forEach((l, i) => texto(l, W / 2, y + L(14) + tam + i * tam * 1.35 - tam * 0.2, { alin: 'center', tam, color: '#e8dcc0' }));
+      lin.forEach((l, i) => texto(l, x + w / 2, y + L(14) + tam + i * tam * 1.35 - tam * 0.2, { alin: 'center', tam, color: '#e8dcc0' }));
       ctx.restore();
-      if (dentro(x, y, w, hgt)) { ui.sobreUI = true; if (E.clicIzq) { E.clicIzq = false; cartel = null; } }
+      if (dentro(x, y, w, hgt)) { ui.sobreUI = true; if (E.clicIzq) { E.clicIzq = false; cartel = null; delete hud.cartel; } }
     }
   }
 
