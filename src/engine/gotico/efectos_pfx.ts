@@ -31,7 +31,7 @@ import { createFrame, clearFrame, createFx, composite, type ActorPfx, type Cuadr
 import { EFECTOS, type ModuloPfx } from './vendor/pixelfx/fx/indice.js';
 import { DIRS_PODER } from './poderes';
 import type { LuzEfecto } from './luz_efectos';
-import { GRADACION_BASE, RAMPAS, VIOLETAS, gradar, nucleo, rampa, rgbHex, type Gradacion, type NombreRampa } from './efectos_pfx_paletas';
+import { GRADACION_BASE, GRADACION_ELEMENTO, RAMPAS, VIOLETAS, gradar, nucleo, rampa, rgbHex, type Gradacion, type NombreRampa } from './efectos_pfx_paletas';
 import { CATALOGO_PFX } from './efectos_pfx_catalogo';
 import { siluetaHeroe } from './efectos_pfx_silueta';
 
@@ -47,10 +47,10 @@ export type ClaseHeroe = 'berserker' | 'templario' | 'arcanista' | 'cazadora' | 
 /** Para qué sirve cada efecto en el juego (sugerencias concretas para cablearlo). */
 export type UsoPfx =
   | { tipo: 'poder'; clase: ClaseHeroe; habilidades: string[]; nota?: string }
-  | { tipo: 'monstruo'; monstruos: string[]; nota: string }
+  | { tipo: 'monstruo'; monstruos: string[]; nota?: string }
   | { tipo: 'estado'; estado: string; nota?: string }
   | { tipo: 'clima'; actos: number[]; zonas?: string[]; nota?: string }
-  | { tipo: 'ambiente'; zonas: string[]; nota: string }
+  | { tipo: 'ambiente'; zonas: string[]; nota?: string }
   | { tipo: 'botin'; nota: string }
   | { tipo: 'muerte'; nota: string }
   | { tipo: 'cinematica'; nota: string }
@@ -61,8 +61,13 @@ export type CapaPfx = 'mundo' | 'piso' | 'pantalla';
 
 /** Cómo se sacan las 8 direcciones de un efecto que mira a la derecha. */
 export interface DirPfx {
-  /** vuelo: rotar el sprite; suelo: repartirlo en tajadas sobre la línea del piso */
-  modo: 'vuelo' | 'suelo';
+  /**
+   * vuelo: rotar el sprite; suelo: repartirlo en tajadas sobre la línea del piso; punto: el efecto pega en un punto
+   * delante del que lo lanza (martillazo, hachazo) y solo se corre ese punto por la línea 2:1, sin girar nada
+   */
+  modo: 'vuelo' | 'suelo' | 'punto';
+  /** distancia (local, 1x) del punto de impacto en el modo punto; por omisión, el centro de la luz */
+  distancia?: number;
   /** punto (local, 1x) alrededor del que se rota; por omisión el origen */
   pivote?: [number, number];
   /** exponente del escorzo a lo largo de la marcha (0 sin escorzo, 1 escorzo completo); por omisión 0.5 */
@@ -94,8 +99,11 @@ export interface CfgPfx {
   margen?: number;
   /** cuerpo: qué hacer con lo que el efecto pinta sobre el muñeco */
   cuerpo?: {
-    /** borrar lo que depende del color del muñeco: 'silueta' solo adentro de la silueta, 'todo' también afuera */
-    quitar?: 'silueta' | 'todo';
+    /**
+     * borrar lo que depende del color del muñeco: 'silueta' solo adentro de la silueta, 'todo' también afuera;
+     * 'mascara' borra todo lo que cae sobre la silueta engordada 2 px (efectos que son el cuerpo mismo encendido)
+     */
+    quitar?: 'silueta' | 'todo' | 'mascara';
     /** rampa para los colores del muñeco (lo que sale del cuerpo y queda: astillas, ceniza) */
     rampa?: NombreRampa;
     /** exportar la curva de visibilidad del sprite (el efecto lo hace desaparecer o aparecer) */
@@ -119,6 +127,17 @@ export interface CfgPfx {
   notas?: string;
 }
 
+/** Una dirección en la hoja: cuadros de `celda` en `columnas` columnas y `filas` filas, desde (x, y). */
+export interface BloquePfx {
+  dir: string | null;
+  x: number;
+  y: number;
+  celda: [number, number];
+  ancla: [number, number];
+  columnas: number;
+  filas: number;
+}
+
 /** Lo que va al manifiesto por efecto. */
 export interface EfectoPfx {
   id: string;
@@ -132,12 +151,11 @@ export interface EfectoPfx {
   bucle: boolean;
   direccional: boolean;
   filas: string[] | null;
-  /** celdas por fila de la hoja (un efecto largo se parte en varias filas por dirección) */
-  columnas: number;
-  /** filas de la hoja que ocupa cada dirección */
-  filasPorDir: number;
+  /** celda y ancla de la dirección de referencia (e) o la única; cada dirección trae las suyas en `bloques` */
   celda: [number, number];
   ancla: [number, number];
+  /** dónde está cada dirección en la hoja (una sola si no es direccional) */
+  bloques: BloquePfx[];
   escala: number;
   mezcla: 'normal' | 'aditiva';
   detrasEn?: string[];
@@ -224,7 +242,8 @@ function actorDe(cfg: CfgPfx, variante: 0 | 1): ActorPfx {
 /** Tiempos de los cuadros: los bucles reparten su período en cuadros enteros (empalma), los otros a 25/t por segundo. */
 function tiempos(cfg: CfgPfx, meta: ModuloPfx['meta']): { ts: number[]; t: number; bucle: boolean } {
   // los direccionales en bucle (proyectiles) van a 12.5 cps como los poderes: 8 direcciones pesan
-  const t = cfg.t ?? (cfg.dir && meta.loop ? 2 : 1), dt = t / CPS, D = meta.duration, bucle = !!meta.loop;
+  // y también los direccionales largos (más de 1.5 s)
+  const t = cfg.t ?? (cfg.dir && (meta.loop || meta.duration > 1.5) ? 2 : 1), dt = t / CPS, D = meta.duration, bucle = !!meta.loop;
   if (bucle) {
     const n = Math.max(2, Math.round(D / dt));
     return { ts: Array.from({ length: n }, (_, i) => (i * D) / n), t, bucle };
@@ -293,16 +312,18 @@ function pintarCrudo(cfg: CfgPfx, variante: 0 | 1 = 0): Crudo {
 
 /** Borra la capa que teñía al muñeco: lo que cambia cuando cambian los colores del muñeco. */
 function quitarCuerpo(cfg: CfgPfx, a: Crudo): void {
-  const b = pintarCrudo(cfg, 1);
+  const mascara = cfg.cuerpo?.quitar === 'mascara';
+  const b = mascara ? a : pintarCrudo(cfg, 1);
   const { w, h } = a.lam, s = siluetaHeroe();
   const dentro = new Uint8Array(w * h);
   const x0 = a.lam.ox - Math.floor(s.w / 2), y0 = a.lam.oy - s.h;
-  // la silueta engordada 1 px (el borde del tinte)
+  // la silueta engordada 1 px (el borde del tinte; 2 px en el modo máscara)
+  const G = mascara ? 2 : 1;
   for (let y = 0; y < s.h; y++)
     for (let x = 0; x < s.w; x++) {
       if (!s.mask[y * s.w + x]) continue;
-      for (let dy = -1; dy <= 1; dy++)
-        for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -G; dy <= G; dy++)
+        for (let dx = -G; dx <= G; dx++) {
           const X = x0 + x + dx, Y = y0 + y + dy;
           if (X >= 0 && Y >= 0 && X < w && Y < h) dentro[Y * w + X] = 1;
         }
@@ -314,7 +335,7 @@ function quitarCuerpo(cfg: CfgPfx, a: Crudo): void {
       const j = i * 4;
       if (!A[j + 3] && !B[j + 3]) continue;
       const dif = Math.abs(A[j] - B[j]) + Math.abs(A[j + 1] - B[j + 1]) + Math.abs(A[j + 2] - B[j + 2]) + Math.abs(A[j + 3] - B[j + 3]);
-      if (dif > 6 && (todo || dentro[i])) { A[j] = A[j + 1] = A[j + 2] = A[j + 3] = 0; }
+      if (mascara ? dentro[i] && A[j + 3] > 0 : dif > 6 && (todo || dentro[i])) { A[j] = A[j + 1] = A[j + 2] = A[j + 3] = 0; }
     }
   }
 }
@@ -436,13 +457,13 @@ function tajadasSuelo(L: Lamina, dx: number, dy: number): Lamina {
   // masa por columna sumando todos los cuadros
   const masa = new Float64Array(w);
   for (const q of L.cuadros) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) masa[x] += q[(y * w + x) * 4 + 3];
-  // cortes cada ~7 px en el mínimo local
+  // cortes cada ~10 px en el mínimo local (una púa o una mata entera por tajada)
   const cortes = [0];
-  for (let x = 4; x < w - 3;) {
+  for (let x = 6; x < w - 4;) {
     let mejor = x;
-    for (let k = x; k < Math.min(w - 1, x + 6); k++) if (masa[k] < masa[mejor]) mejor = k;
-    if (mejor - cortes[cortes.length - 1] >= 3) cortes.push(mejor);
-    x = mejor + 4;
+    for (let k = x; k < Math.min(w - 1, x + 8); k++) if (masa[k] < masa[mejor]) mejor = k;
+    if (mejor - cortes[cortes.length - 1] >= 4) cortes.push(mejor);
+    x = mejor + 6;
   }
   cortes.push(w);
   const tajadas = cortes.slice(0, -1).map((a, i) => ({ a, b: cortes[i + 1], u: (a + cortes[i + 1]) / 2 - ox }));
@@ -460,11 +481,9 @@ function tajadasSuelo(L: Lamina, dx: number, dy: number): Lamina {
         for (let x = s.a; x < s.b; x++) {
           const j = (y * w + x) * 4;
           if (!q[j + 3]) continue;
-          const X = x + ox2 - mx, Y = y + oy2 - my, k = (Y * W + X) * 4, al = q[j + 3] / 255;
-          // compone sobre lo de atrás
-          const ab = o[k + 3] / 255, oa = al + ab * (1 - al);
-          for (let c = 0; c < 3; c++) o[k + c] = (q[j + c] * al + o[k + c] * ab * (1 - al)) / Math.max(oa, 1e-6);
-          o[k + 3] = oa * 255;
+          const X = x + ox2 - mx, Y = y + oy2 - my, k = (Y * W + X) * 4;
+          // lo sólido de adelante tapa lo de atrás; lo translúcido (brillos, vapor) no se apila: queda el más fuerte
+          if (q[j + 3] >= 217 || q[j + 3] > o[k + 3]) o.set(q.subarray(j, j + 4), k);
         }
     }
     return o;
@@ -497,12 +516,17 @@ function agrandar(q: Uint8ClampedArray, w: number, h: number, k: number): Uint8C
 // ---------------------------------------------------------------------------------------------------------------
 // el efecto terminado
 
-interface Hecho {
-  cfg: CfgPfx;
-  /** cuadros por dirección (1 o 8), cada uno RGBA de celda[0] × celda[1] a la escala final */
-  dirs: Uint8ClampedArray[][];
+/** Los cuadros de una dirección, todos de la misma celda y con la misma ancla. */
+interface Bloque {
   celda: [number, number];
   ancla: [number, number];
+  cuadros: Uint8ClampedArray[];
+}
+
+interface Hecho {
+  cfg: CfgPfx;
+  /** un bloque por dirección (1 o 8): cada dirección tiene su propia celda ajustada (y su ancla) */
+  dirs: Bloque[];
   escala: number;
   t: number;
   bucle: boolean;
@@ -526,7 +550,7 @@ function hacer(id: string): Hecho {
   const cfg = cfgDe(id);
   const crudo = pintarCrudo(cfg, 0);
   if (cfg.cuerpo?.quitar) quitarCuerpo(cfg, crudo);
-  const g: Gradacion = { ...GRADACION_BASE, blanco: nucleo(cfg.elemento), ...(VIOLETAS.includes(cfg.elemento) ? { violeta: 0 } : {}), ...(cfg.gradacion ?? {}) };
+  const g: Gradacion = { ...GRADACION_BASE, blanco: nucleo(cfg.elemento), ...(VIOLETAS.includes(cfg.elemento) ? { violeta: 0 } : {}), ...(GRADACION_ELEMENTO[cfg.elemento] ?? {}), ...(cfg.gradacion ?? {}) };
   for (const q of crudo.lam.cuadros) gradar(q, g);
   cortarCola(cfg, crudo);
   // recorte a 1x (la pantalla va entera: es el cuadro de 320 × 180)
@@ -543,9 +567,15 @@ function hacer(id: string): Hecho {
         const piv: [number, number] = [base.ox + (d.pivote?.[0] ?? 0), base.oy + (d.pivote?.[1] ?? 0)];
         const f = Math.pow(dp.largo, d.escorzo ?? 0.5);
         por[nom] = nom === 'e' ? base : rotarLamina(base, piv, dp.ang * (d.giro ?? 1), f);
+      } else if (d.modo === 'punto') {
+        const a = (dp.ang * Math.PI) / 180, L = dp.largo, D = d.distancia ?? crudo.centro[0] - crudo.lam.ox;
+        // correr el contenido es correr el ancla al revés
+        por[nom] = nom === 'e' ? base : { ...base, ax: base.ax - Math.round(D * Math.cos(a) * L - D), ay: base.ay - Math.round(D * Math.sin(a) * L) };
       } else {
-        const a = (dp.ang * Math.PI) / 180, L = dp.largo;
-        por[nom] = nom === 'e' ? base : tajadasSuelo(base, Math.cos(a) * L, Math.sin(a) * L);
+        // al norte y al sur la línea se inclina un poco (0.24 de avance de costado): si no, todas las tajadas caen en
+        // la misma columna y lo que corre por el piso se vuelve una barra
+        const a = (dp.ang * Math.PI) / 180, L = dp.largo, dx = Math.abs(Math.cos(a)) < 0.01 ? 0.24 : Math.cos(a) * L;
+        por[nom] = nom === 'e' ? base : tajadasSuelo(base, dx, Math.sin(a) * L);
       }
     }
     lams = DIRS_PODER.map((nom) => { const e = DIR_PANTALLA[nom].espejo; return e ? espejar(por[e]!) : por[nom]!; });
@@ -554,22 +584,19 @@ function hacer(id: string): Hecho {
   // escala final y recorte común
   const k = cfg.escala ?? (pantalla ? 1 : ESCALA);
   const grandes: Lamina[] = lams.map((l) => ({ w: l.w * k, h: l.h * k, ax: l.ax * k, ay: l.ay * k, ox: l.ox * k, oy: l.oy * k, cuadros: l.cuadros.map((q) => agrandar(q, l.w, l.h, k)) }));
-  let celda: [number, number], ancla: [number, number], dirs: Uint8ClampedArray[][];
-  if (pantalla) {
-    celda = [grandes[0].w, grandes[0].h];
-    ancla = [0, 0];
-    dirs = grandes.map((l) => l.cuadros);
-  } else {
-    const [a0, b0, a1, b1] = caja(grandes, ALFA_MIN);
-    const r = grandes.map((l) => recortar(l, a0 - 1, b0 - 1, a1 - a0 + 3, b1 - b0 + 3));
-    celda = [r[0].w, r[0].h];
-    ancla = [Math.round(r[0].ax), Math.round(r[0].ay)];
-    dirs = r.map((l) => l.cuadros);
-  }
+  let dirs: Bloque[];
+  if (pantalla) dirs = grandes.map((l) => ({ celda: [l.w, l.h], ancla: [0, 0], cuadros: l.cuadros }));
+  else
+    // cada dirección se recorta por su cuenta: una celda común para las 8 multiplicaba la memoria
+    dirs = grandes.map((l) => {
+      const [a0, b0, a1, b1] = caja([l], ALFA_MIN);
+      const r = recortar(l, a0 - 1, b0 - 1, a1 - a0 + 3, b1 - b0 + 3);
+      return { celda: [r.w, r.h], ancla: [Math.round(r.ax), Math.round(r.ay)], cuadros: r.cuadros };
+    });
   const luz = luzDe(cfg, crudo, k);
   const mezcla = cfg.luz?.mezcla ?? luz.mezcla ?? 'aditiva';
   const hecho: Hecho = {
-    cfg, dirs, celda, ancla, escala: k, t: crudo.t, bucle: crudo.bucle, luz, mezcla,
+    cfg, dirs, escala: k, t: crudo.t, bucle: crudo.bucle, luz, mezcla,
     ...(cfg.cuerpo?.alfa ? { alfaCuerpo: crudo.alfaCuerpo.map((a) => Math.round(a * 100) / 100) } : {}),
   };
   HECHOS.set(id, hecho);
@@ -635,20 +662,32 @@ export const IDS_PFX: readonly string[] = CATALOGO_PFX.map((c) => c.id);
 export function pintarEfectoPfx(id: string, dir: number | string, f: number): { img: Raster; ancla: [number, number] } {
   const h = hacer(id);
   const di = h.dirs.length === 1 ? 0 : typeof dir === 'string' ? Math.max(0, (DIRS_PODER as readonly string[]).indexOf(dir)) : ((dir % 8) + 8) % 8;
-  const q = h.dirs[di];
-  const n = q.length, ff = h.bucle ? ((f % n) + n) % n : Math.max(0, Math.min(n - 1, f));
-  return { img: { w: h.celda[0], h: h.celda[1], data: q[ff] }, ancla: h.ancla };
+  const b = h.dirs[di];
+  const n = b.cuadros.length, ff = h.bucle ? ((f % n) + n) % n : Math.max(0, Math.min(n - 1, f));
+  return { img: { w: b.celda[0], h: b.celda[1], data: b.cuadros[ff] }, ancla: b.ancla };
+}
+
+/** Dónde está cada dirección en la hoja: bloques apilados de arriba abajo. */
+function bloquesDe(h: Hecho): BloquePfx[] {
+  let y = 0;
+  return h.dirs.map((b, d) => {
+    const n = b.cuadros.length, columnas = Math.max(1, Math.min(n, Math.floor(ANCHO_HOJA / b.celda[0]))), filas = Math.ceil(n / columnas);
+    const r: BloquePfx = { dir: h.dirs.length > 1 ? DIRS_PODER[d] : null, x: 0, y, celda: b.celda, ancla: b.ancla, columnas, filas };
+    y += filas * b.celda[1];
+    return r;
+  });
 }
 
 /** Datos del manifiesto de un efecto (pinta el efecto si hace falta). */
 export function efectoPfx(id: string): EfectoPfx {
   const h = hacer(id), c = h.cfg;
-  const n = h.dirs[0].length;
-  const columnas = Math.max(1, Math.min(n, Math.floor(ANCHO_HOJA / h.celda[0])));
+  const n = h.dirs[0].cuadros.length, bloques = bloquesDe(h);
+  // la celda y el ancla de arriba son las de la dirección de referencia (e, la que mira a la derecha) o la única
+  const ref = bloques[h.dirs.length > 1 ? 6 : 0];
   return {
     id: c.id, origen: c.origen, nombre: c.nombre, categoria: c.categoria, capa: c.capa ?? 'mundo', archivo: `${c.id}.png`,
     cuadros: n, t: h.t, bucle: h.bucle, direccional: h.dirs.length > 1, filas: h.dirs.length > 1 ? [...DIRS_PODER] : null,
-    columnas, filasPorDir: Math.ceil(n / columnas), celda: h.celda, ancla: h.ancla, escala: h.escala, mezcla: h.mezcla,
+    celda: ref.celda, ancla: ref.ancla, bloques, escala: h.escala, mezcla: h.mezcla,
     ...(c.detrasEn ? { detrasEn: c.detrasEn } : {}),
     ...(c.enLanzador ? { enLanzador: true } : {}),
     ...(h.alfaCuerpo || c.cuerpo?.tinte ? { cuerpo: { ...(h.alfaCuerpo ? { alfa: h.alfaCuerpo } : {}), ...(c.cuerpo?.tinte ? { tinte: c.cuerpo.tinte } : {}) } } : {}),
@@ -657,17 +696,20 @@ export function efectoPfx(id: string): EfectoPfx {
 }
 
 /**
- * Hoja de un efecto: cada dirección ocupa `filasPorDir` filas de `columnas` celdas (el cuadro i de la dirección d está
- * en la columna i % columnas, fila d · filasPorDir + floor(i / columnas)).
+ * Hoja de un efecto: un bloque por dirección, apilados. En el bloque b, el cuadro i está en
+ * (b.x + (i % b.columnas) · b.celda[0], b.y + floor(i / b.columnas) · b.celda[1]).
  */
 export function hojaEfectoPfx(id: string): { img: Raster; efecto: EfectoPfx } {
   const h = hacer(id), e = efectoPfx(id);
-  const [cw, ch] = e.celda, filas = h.dirs.length * e.filasPorDir;
-  const img = createRaster(cw * e.columnas, ch * filas);
-  h.dirs.forEach((cuadros, d) => cuadros.forEach((q, i) => {
-    const X = (i % e.columnas) * cw, Y = (d * e.filasPorDir + Math.floor(i / e.columnas)) * ch;
-    for (let y = 0; y < ch; y++) img.data.set(q.subarray(y * cw * 4, (y + 1) * cw * 4), ((Y + y) * img.w + X) * 4);
-  }));
+  const W = Math.max(...e.bloques.map((b) => b.columnas * b.celda[0])), H = e.bloques.reduce((s, b) => s + b.filas * b.celda[1], 0);
+  const img = createRaster(W, H);
+  h.dirs.forEach((dir, d) => {
+    const b = e.bloques[d], [cw, ch] = b.celda;
+    dir.cuadros.forEach((q, i) => {
+      const X = b.x + (i % b.columnas) * cw, Y = b.y + Math.floor(i / b.columnas) * ch;
+      for (let y = 0; y < ch; y++) img.data.set(q.subarray(y * cw * 4, (y + 1) * cw * 4), ((Y + y) * img.w + X) * 4);
+    });
+  });
   return { img, efecto: e };
 }
 
@@ -719,7 +761,8 @@ export function luzEfectosPfxJson(manifiesto: { efectos: EfectoPfx[] } = manifie
 }
 
 export const NOTAS_MANIFIESTO =
-  'Hojas PNG RGBA con alfa directa. Cuadro i de la dirección d: columna i % columnas, fila d * filasPorDir + floor(i / columnas). ' +
+  'Hojas PNG con paleta y alfa directa. Cada dirección es un bloque de la hoja (bloques[d], en el orden de filas): el cuadro i está en ' +
+  '(x + (i % columnas) * celda[0], y + floor(i / columnas) * celda[1]) y su ancla es la del bloque. ' +
   'Animación: cuadro = floor(segundos * 25 / t) (bucle: % cuadros; si no, el último y se termina). Ancla: el pixel que va sobre el punto del piso ' +
   '(los proyectiles: el piso bajo la bola; el juego los mueve). Direcciones en el orden de DIRS_PODER (s, so, o, no, n, ne, e, se), como poderes.json. ' +
   "capa 'pantalla': el cuadro cubre la pantalla, escalarlo entero (x3 a 960x540) con vecino más cercano. mezcla 'aditiva': color * alfa sumado; " +
@@ -738,8 +781,8 @@ sin muñeco y en 8 direcciones); siguen bajo la licencia MIT, que va en LICENSE-
 
 Cada efecto es una hoja PNG con paleta (hasta 256 colores con alfa). efectos_pfx.json trae por efecto: id (fx_...),
 nombre [es, en], categoria, capa (mundo, piso: debajo de los personajes, pantalla: cubre la pantalla), archivo,
-cuadros, t (ticks por cuadro a 25 por segundo), bucle, direccional, filas (orden de las direcciones), columnas y
-filasPorDir (cómo se parte la hoja), celda [ancho, alto], ancla [x, y], escala, mezcla, enLanzador, detrasEn, cuerpo
+cuadros, t (ticks por cuadro a 25 por segundo), bucle, direccional, filas (orden de las direcciones), bloques (dónde está
+cada dirección en la hoja, con su celda y su ancla), celda [ancho, alto] y ancla [x, y] de la dirección de referencia, escala, mezcla, enLanzador, detrasEn, cuerpo
 (tinte y visibilidad del sprite afectado), luz (como luz_efectos.json) y uso (para qué sirve en el juego).
 
 ${NOTAS_MANIFIESTO}

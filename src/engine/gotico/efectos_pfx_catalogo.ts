@@ -11,7 +11,9 @@ import { rampa, tramo } from './efectos_pfx_paletas';
 /** Chispas de forja: brasa clara que se apaga en rojo (para golpes de acero). */
 const CHISPAS = () => tramo('fuego', 4, 1, 0.45);
 /** Piedra del piso y de los escombros (pixelfx la tenía violeta). */
-export const PIEDRA = '#3a3431';
+const PIEDRA = '#3a3431';
+/** Chispas de rayo: blanco violáceo que se apaga en azul. */
+const CHISPAS_RAYO = () => tramo('rayo', 4, 1, 0.5);
 
 export const CATALOGO_PFX: CfgPfx[] = [
   // ============================================================ fuego
@@ -24,6 +26,199 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'monstruo', monstruos: ['brujo_diablillo', 'cultista'], nota: 'bola de fuego de los lanzadores' },
     ],
   },
+  {
+    id: 'fx_aliento_fuego', origen: 'fire/fire-breath', nombre: ['Aliento de fuego', 'Fire breath'], categoria: 'fuego', elemento: 'fuego',
+    dir: { modo: 'vuelo' }, ancla: [-6, 30], detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('fuego', 9) },
+    uso: [
+      { tipo: 'monstruo', monstruos: ['diablillo', 'satiro'], nota: 'chorro de fuego de las bestias y demonios del acto 5 (de la boca hacia adelante)' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['palma_dragon'], nota: 'la llamarada que sale de la palma' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['destilar'], nota: 'soplete del alambique' },
+    ],
+  },
+  {
+    id: 'fx_anillo_fuego', origen: 'fire/fire-ring', nombre: ['Anillo de fuego', 'Ring of fire'], categoria: 'fuego', elemento: 'fuego', capa: 'piso', enLanzador: true,
+    opciones: { palette: rampa('fuego', 9) },
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['combustion'], nota: 'el fuego corre por el piso en un anillo alrededor de la arcanista' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['rodilla_volcan'] },
+      { tipo: 'monstruo', monstruos: ['abadesa'], nota: 'el pisotón de fuego de la Abadesa en El Pozo de la Brasa' },
+    ],
+  },
+  {
+    id: 'fx_tornado_fuego', origen: 'fire/fire-tornado', nombre: ['Tornado de fuego', 'Fire tornado'], categoria: 'fuego', elemento: 'fuego',
+    opciones: { palette: rampa('fuego', 9) },
+    uso: [
+      { tipo: 'poder', clase: 'druida', habilidades: ['ira_estacion'], nota: 'remolinos de fuego que avanzan por el área' },
+      { tipo: 'monstruo', monstruos: ['senor_demonio'], nota: 'columnas de fuego que vagan por La Fragua de Ozmaren (acto 5)' },
+      { tipo: 'ambiente', zonas: ['a5_llanuras', 'a5_rio'], nota: 'remolino de brasas suelto en las Llanuras de Ceniza' },
+    ],
+  },
+  {
+    id: 'fx_pilar_llamas', origen: 'fire/flame-pillar', nombre: ['Pilar de llamas', 'Flame pillar'], categoria: 'fuego', elemento: 'fuego',
+    opciones: { palette: rampa('fuego', 9), stone: PIEDRA }, maxSeg: 3.6,
+    uso: [
+      { tipo: 'poder', clase: 'druida', habilidades: ['fisura'], nota: 'erupción de fuego donde se abre la tierra' },
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['muro_fuego'], nota: 'varios en fila hacen el muro' },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['mina_brasa'], nota: 'al pisar la mina' },
+    ],
+  },
+  {
+    id: 'fx_meteoro', origen: 'fire/meteor', nombre: ['Meteoro', 'Meteor'], categoria: 'fuego', elemento: 'fuego',
+    opciones: { palette: rampa('fuego', 9), rock: tramo('piedra', 4, 0.05, 0.7), stone: PIEDRA }, maxSeg: 3.8,
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['meteoro'], nota: 'cae en diagonal y se clava en el ancla' },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['flecha_cometa'] },
+      { tipo: 'cinematica', nota: 'lluvia de fuego del cielo roto (acto 7)' },
+    ],
+  },
+  {
+    id: 'fx_llama_fatua', origen: 'fire/spirit-flame', nombre: ['Llama fatua', 'Will-o-flame'], categoria: 'fuego', elemento: 'fatuo',
+    opciones: { palette: rampa('fatuo', 9) },
+    uso: [
+      { tipo: 'ambiente', zonas: ['a1_cementerio', 'a1_cripta', 'a1_cata1', 'a6_criptas'], nota: 'fuego de ánima sobre las tumbas y los osarios' },
+      { tipo: 'poder', clase: 'nigromante', habilidades: ['legion_ceniza'], nota: 'la llama en las cuencas de los invocados' },
+      { tipo: 'monstruo', monstruos: ['aparecida'], nota: 'fuego frío que deja la Aparecida' },
+    ],
+  },
+  // ============================================================ explosiones
+  {
+    id: 'fx_explosion_barril', origen: 'explosions/barrel-explosion', nombre: ['Barril que estalla', 'Exploding barrel'], categoria: 'explosiones', elemento: 'fuego',
+    opciones: { palette: rampa('fuego', 8), barrel: tramo('madera', 6, 0.05, 1) }, maxSeg: 3.6, cola: 0.02,
+    uso: [
+      { tipo: 'ambiente', zonas: ['a1_mina1', 'a1_mina2', 'a4_minas1', 'a6_barco'], nota: 'barriles de pólvora que estallan al romperlos' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['gran_crisol'], nota: 'el crisol que revienta' },
+    ],
+  },
+  {
+    id: 'fx_gran_explosion', origen: 'explosions/big-explosion', nombre: ['Gran explosión', 'Great explosion'], categoria: 'explosiones', elemento: 'fuego',
+    opciones: { palette: rampa('fuego', 8), stone: PIEDRA }, maxSeg: 4, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['sol_negro'], nota: 'el estallido final' },
+      { tipo: 'muerte', nota: 'muerte de un jefe de fuego (la Abadesa, Ozmaren)' },
+      { tipo: 'cinematica', nota: 'la fragua que revienta en el cierre del acto 5' },
+    ],
+  },
+  {
+    id: 'fx_explosion_tierra', origen: 'explosions/dirt-explosion', nombre: ['Reventón de tierra', 'Dirt blast'], categoria: 'explosiones', elemento: 'tierra',
+    opciones: { palette: rampa('tierra', 7), fire: rampa('fuego', 8) }, maxSeg: 3, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['cepo_dientes'], nota: 'la trampa que salta' },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['salto_lobo'], nota: 'la caída' },
+      { tipo: 'monstruo', monstruos: ['gusano_de_arena', 'ogro'], nota: 'algo que sale de la tierra o un golpe de garrote al piso' },
+    ],
+  },
+  {
+    id: 'fx_implosion', origen: 'explosions/implosion', nombre: ['Implosión', 'Implosion'], categoria: 'explosiones', elemento: 'sombra',
+    opciones: { palette: rampa('sombra', 7) },
+    uso: [
+      { tipo: 'poder', clase: 'nigromante', habilidades: ['explosion_cadaver'], nota: 'el cadáver que se hunde en sí mismo antes de reventar' },
+      { tipo: 'muerte', nota: 'muerte de un espectro o de un ser del abismo (acto 5)' },
+    ],
+  },
+  {
+    id: 'fx_explosion_chica', origen: 'explosions/small-explosion', nombre: ['Explosión', 'Explosion'], categoria: 'explosiones', elemento: 'fuego',
+    opciones: { palette: rampa('fuego', 8), stone: PIEDRA }, maxSeg: 3.2, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['bola_fuego'], nota: 'al pegar la bola de fuego' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['bomba_ignea', 'virote_explosivo', 'bomba_cluster'] },
+      { tipo: 'poder', clase: 'nigromante', habilidades: ['explosion_cadaver'] },
+    ],
+  },
+  {
+    id: 'fx_bomba_humo', origen: 'explosions/smoke-bomb', nombre: ['Bomba de humo', 'Smoke bomb'], categoria: 'explosiones', elemento: 'humo',
+    opciones: { palette: tramo('ceniza', 7, 0.05, 1), canister: tramo('piedra', 5, 0.1, 0.9), sparks: CHISPAS() }, maxSeg: 4.2, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['bomba_humo'], nota: 'la nube que ciega' },
+      { tipo: 'monstruo', monstruos: ['bandido'], nota: 'el bandido que huye' },
+    ],
+  },
+  // ============================================================ agua
+  {
+    id: 'fx_burbujas', origen: 'water/bubbles', nombre: ['Burbujeo', 'Bubbling'], categoria: 'agua', elemento: 'agua', capa: 'piso',
+    opciones: { palette: rampa('agua', 8) },
+    notas: 'Reescrito: el original era una columna de burbujas vista bajo el agua; acá son burbujas que asoman y revientan en la superficie, vistas desde arriba.',
+    uso: [
+      { tipo: 'ambiente', zonas: ['a3_pantano', 'a3_inundadas', 'a6_criptas', 'a6_criptas2'], nota: 'algo respira bajo el agua estancada' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['elixir', 'panacea_negra'], nota: 'el caldero o el frasco que hierve' },
+      { tipo: 'monstruo', monstruos: ['ahogado', 'madre_cienaga'], nota: 'marca dónde va a salir el que está sumergido' },
+    ],
+  },
+  {
+    id: 'fx_gotera', origen: 'water/drip', nombre: ['Gotera', 'Drip'], categoria: 'agua', elemento: 'agua',
+    opciones: { palette: rampa('agua', 8), source: false },
+    uso: [{ tipo: 'ambiente', zonas: ['a1_cata1', 'a1_cripta', 'a3_inundadas', 'a6_faro', 'a6_criptas'], nota: 'gota que cae del techo en un charco (el ancla es el charco)' }],
+  },
+  {
+    id: 'fx_fuente', origen: 'water/fountain', nombre: ['Fuente', 'Fountain'], categoria: 'agua', elemento: 'agua',
+    opciones: { palette: rampa('agua', 8) },
+    uso: [
+      { tipo: 'ambiente', zonas: ['a2_oasis', 'a6_barrio2', 'a7_jardin'], nota: 'el chorro de agua sobre una pila del catálogo (fuente del pueblo, la plaza de las ánimas)' },
+    ],
+  },
+  {
+    id: 'fx_geiser', origen: 'water/geyser', nombre: ['Géiser', 'Geyser'], categoria: 'agua', elemento: 'agua',
+    opciones: { palette: rampa('agua', 8) }, maxSeg: 4, cola: 0.02,
+    uso: [
+      { tipo: 'ambiente', zonas: ['a4_grieta', 'a3_pantano'], nota: 'surtidor que estalla cada tanto (trampa de vapor)' },
+      { tipo: 'monstruo', monstruos: ['madre_cienaga'], nota: 'columna de agua al emerger' },
+    ],
+  },
+  {
+    id: 'fx_salpicon_lluvia', origen: 'water/rain-splash', nombre: ['Charco bajo la lluvia', 'Rain puddle'], categoria: 'agua', elemento: 'agua', capa: 'piso',
+    opciones: { palette: rampa('agua', 8) },
+    uso: [{ tipo: 'clima', actos: [1, 3, 6], zonas: ['a1_refugio', 'a3_muelle', 'a6_barco'], nota: 'charcos con gotas: sembrarlos en el piso mientras llueve' }],
+  },
+  {
+    id: 'fx_ondas', origen: 'water/ripples', nombre: ['Ondas', 'Ripples'], categoria: 'agua', elemento: 'agua', capa: 'piso',
+    opciones: { palette: rampa('agua', 8) },
+    uso: [
+      { tipo: 'ambiente', zonas: ['a1_paramo', 'a3_pantano', 'a6_costa'], nota: 'agua quieta que tiembla (arroyos, ciénaga, pozas)' },
+      { tipo: 'golpe', nota: 'pasos del héroe sobre agua baja' },
+    ],
+  },
+  {
+    id: 'fx_salpicadura', origen: 'water/splash', nombre: ['Salpicadura', 'Splash'], categoria: 'agua', elemento: 'agua',
+    opciones: { palette: rampa('agua', 8) },
+    uso: [
+      { tipo: 'golpe', nota: 'algo cae al agua: un cuerpo, una roca, el héroe que salta' },
+      { tipo: 'muerte', nota: 'muerte de un ahogado que se deshace en agua' },
+    ],
+  },
+  {
+    id: 'fx_chorro_agua', origen: 'water/water-jet', nombre: ['Chorro de agua', 'Water jet'], categoria: 'agua', elemento: 'agua',
+    dir: { modo: 'vuelo' }, ancla: [-6, 24], detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('agua', 8) }, gradacion: { brillo: 0.8, tope: 0.8 },
+    uso: [
+      { tipo: 'monstruo', monstruos: ['ahogado', 'campana_ahoga'], nota: 'vómito de agua negra de los ahogados (acto 6)' },
+      { tipo: 'ambiente', zonas: ['a6_faro', 'a6_criptas'], nota: 'caño roto que escupe agua' },
+    ],
+  },
+  {
+    id: 'fx_orbe_agua', origen: 'water/water-orb', nombre: ['Orbe de agua', 'Water orb'], categoria: 'agua', elemento: 'agua',
+    opciones: { palette: rampa('agua', 8) },
+    uso: [
+      { tipo: 'monstruo', monstruos: ['madre_cienaga', 'hechicera_sangre'], nota: 'esfera de agua que flota antes del ataque' },
+      { tipo: 'botin', nota: 'reliquia del agua (aura del objeto en el piso)' },
+    ],
+  },
+  {
+    id: 'fx_cascada', origen: 'water/waterfall', nombre: ['Cascada', 'Waterfall'], categoria: 'agua', elemento: 'agua',
+    opciones: { palette: rampa('agua', 8), ledge: false },
+    uso: [{ tipo: 'ambiente', zonas: ['a3_selva', 'a3_inundadas', 'a4_glaciar', 'a6_criptas'], nota: 'agua que cae de una cornisa o de un caño de piedra' }],
+  },
+  {
+    id: 'fx_ola', origen: 'water/wave-crash', nombre: ['Ola que rompe', 'Crashing wave'], categoria: 'agua', elemento: 'agua',
+    opciones: { palette: rampa('agua', 8) }, cola: 0.02,
+    notas: 'Vista de perfil: la ola corre sobre una línea de agua horizontal. Sirve para tomas laterales de cinemática, no para el piso isométrico.',
+    uso: [{ tipo: 'cinematica', nota: 'el mar que golpea el barco varado o la costa de los naufragios (acto 6), en una toma de costado' }],
+  },
+  {
+    id: 'fx_remolino', origen: 'water/whirlpool', nombre: ['Remolino', 'Whirlpool'], categoria: 'agua', elemento: 'agua', capa: 'piso',
+    opciones: { palette: rampa('agua', 8) },
+    uso: [
+      { tipo: 'ambiente', zonas: ['a6_arrecife', 'a6_criptas2'], nota: 'el agua que se traga todo' },
+      { tipo: 'monstruo', monstruos: ['campana_ahoga'], nota: 'remolino bajo la Campana Ahogada' },
+    ],
+  },
   // ============================================================ hielo
   {
     id: 'fx_nova_escarcha', origen: 'ice/frost-nova', nombre: ['Nova de escarcha', 'Frost nova'], categoria: 'hielo', elemento: 'hielo', capa: 'piso', enLanzador: true,
@@ -33,7 +228,162 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'berserker', habilidades: ['canto_invierno'] },
       { tipo: 'monstruo', monstruos: ['gigante_helado', 'espectro'], nota: 'pisotón o grito helado del acto 4' },
     ],
+  },  {
+    id: 'fx_vortice_ventisca', origen: 'ice/blizzard-vortex', nombre: ['Vórtice de ventisca', 'Blizzard vortex'], categoria: 'hielo', elemento: 'hielo',
+    opciones: { palette: rampa('hielo', 8) },
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['ventisca'], nota: 'varios remolinos repartidos por el área' },
+      { tipo: 'poder', clase: 'druida', habilidades: ['huracan'] },
+      { tipo: 'poder', clase: 'monje', habilidades: ['ciclon', 'ojo_tifon'] },
+    ],
   },
+  {
+    id: 'fx_congelar', origen: 'ice/freeze', nombre: ['Congelar', 'Freeze'], categoria: 'hielo', elemento: 'hielo',
+    opciones: { palette: rampa('hielo', 8) }, cuerpo: { quitar: 'silueta', rampa: 'hielo', tinte: { color: '#86b8dc', fuerza: 0.55, nota: 'el sprite queda azul hielo y quieto mientras dura' } },
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['sepulcro_hielo'], nota: 'sobre el que queda encerrado en hielo' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['frasco_helado'] },
+      { tipo: 'estado', estado: 'congelado', nota: 'el momento en que se congela (después, fx_congelado en bucle)' },
+    ],
+  },
+  {
+    id: 'fx_aliento_escarcha', origen: 'ice/frost-breath', nombre: ['Aliento de escarcha', 'Frost breath'], categoria: 'hielo', elemento: 'hielo',
+    dir: { modo: 'vuelo' }, ancla: [-6, 30], detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('hielo', 8) },
+    uso: [
+      { tipo: 'poder', clase: 'druida', habilidades: ['rafaga_artica'] },
+      { tipo: 'poder', clase: 'monje', habilidades: ['puno_vendaval'] },
+      { tipo: 'monstruo', monstruos: ['gigante_helado', 'rey_escarcha', 'dragon_oseo'], nota: 'aliento helado del acto 4' },
+    ],
+  },
+  {
+    id: 'fx_cristal_hielo', origen: 'ice/ice-crystal', nombre: ['Cristal de hielo', 'Ice crystal'], categoria: 'hielo', elemento: 'hielo',
+    ancla: [0, 0], opciones: { palette: rampa('hielo', 8) },
+    uso: [
+      { tipo: 'botin', nota: 'gema de escarcha o fragmento de reliquia flotando en el piso' },
+      { tipo: 'ambiente', zonas: ['a4_hielo1', 'a4_hielo2', 'a4_grieta'], nota: 'cristal que flota en las cuevas del aliento helado' },
+    ],
+  },
+  {
+    id: 'fx_lanza_hielo', origen: 'ice/ice-lance', nombre: ['Lanza de hielo', 'Ice lance'], categoria: 'hielo', elemento: 'hielo',
+    dir: { modo: 'vuelo' }, ancla: [0, 21], opciones: { palette: rampa('hielo', 8) },
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['carambano', 'esquirla'], nota: 'en vuelo; al pegar, fx_estallido_hielo' },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['flecha_helada'] },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['virote_escarcha'] },
+    ],
+  },
+  {
+    id: 'fx_estallido_hielo', origen: 'ice/ice-shatter', nombre: ['Hielo que estalla', 'Ice shatter'], categoria: 'hielo', elemento: 'hielo',
+    opciones: { palette: rampa('hielo', 8) }, cola: 0.02,
+    notas: 'Un bloque de hielo que revienta y tira sus astillas hacia la derecha; espejarlo para la izquierda.',
+    uso: [
+      { tipo: 'golpe', nota: 'impacto de los proyectiles de hielo (fx_lanza_hielo, carámbano, virote de escarcha)' },
+      { tipo: 'muerte', nota: 'un enemigo congelado que se rompe' },
+    ],
+  },
+  {
+    id: 'fx_puas_hielo', origen: 'ice/ice-spikes', nombre: ['Púas de hielo', 'Ice spikes'], categoria: 'hielo', elemento: 'hielo',
+    dir: { modo: 'suelo' }, opciones: { palette: rampa('hielo', 8) }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'monje', habilidades: ['ola_escarcha'], nota: 'la línea de púas avanza por el piso desde los pies' },
+      { tipo: 'poder', clase: 'druida', habilidades: ['granizada'] },
+      { tipo: 'monstruo', monstruos: ['rey_escarcha', 'escarchado'] },
+    ],
+  },
+  {
+    id: 'fx_caida_carambano', origen: 'ice/icicle-fall', nombre: ['Carámbano que cae', 'Falling icicle'], categoria: 'hielo', elemento: 'hielo',
+    opciones: { palette: rampa('hielo', 8) }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'druida', habilidades: ['granizada'], nota: 'varios a la vez en el área' },
+      { tipo: 'ambiente', zonas: ['a4_hielo1', 'a4_grieta', 'a4_glaciar'], nota: 'trampa del techo de hielo' },
+    ],
+  },
+  {
+    id: 'fx_estallido_copos', origen: 'ice/snowflake-burst', nombre: ['Estallido de escarcha', 'Snowflake burst'], categoria: 'hielo', elemento: 'hielo',
+    opciones: { palette: rampa('hielo', 8) }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['orbe_glacial', 'armadura_escarcha'], nota: 'el orbe que revienta; el brillo al ponerse la armadura' },
+      { tipo: 'golpe', nota: 'golpe con arma de hielo (encanto hielo)' },
+    ],
+  },
+  // ============================================================ rayo
+  {
+    id: 'fx_bola_rayo', origen: 'lightning/ball-lightning', nombre: ['Rayo globular', 'Ball lightning'], categoria: 'rayo', elemento: 'rayo',
+    opciones: { palette: rampa('rayo', 8), sparks: CHISPAS_RAYO() },
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['chispa', 'descarga_prismatica'], nota: 'la esfera que avanza chisporroteando' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['frasco_rayo'] },
+      { tipo: 'ambiente', zonas: ['a7_cielo', 'a7_boveda'], nota: 'fuego de San Telmo suelto en el Cielo Roto' },
+    ],
+  },
+  {
+    id: 'fx_rayo_cadena', origen: 'lightning/chain-lightning', nombre: ['Rayo en cadena', 'Chain lightning'], categoria: 'rayo', elemento: 'rayo', enLanzador: true,
+    dir: { modo: 'vuelo', pivote: [0, -24] }, opciones: { palette: rampa('rayo', 8), sparks: CHISPAS_RAYO() }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['rayo_cadena', 'arco_voltaico'], nota: 'salta de la mano a los blancos que tiene delante' },
+      { tipo: 'poder', clase: 'druida', habilidades: ['relampago_canada'] },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['furia_tormenta'] },
+    ],
+  },
+  {
+    id: 'fx_carga_rayo', origen: 'lightning/charge-up', nombre: ['Carga de rayo', 'Lightning charge'], categoria: 'rayo', elemento: 'rayo', enLanzador: true,
+    opciones: { palette: rampa('rayo', 8), sparks: CHISPAS_RAYO() }, cuerpo: { quitar: 'silueta' }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['tempestad', 'paso_tormenta'], nota: 'la carga sobre la arcanista antes de soltar' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['puno_dios'], nota: 'la carga antes del golpe' },
+    ],
+  },
+  {
+    id: 'fx_electrocutado', origen: 'lightning/electrified', nombre: ['Electrocutado', 'Electrified'], categoria: 'rayo', elemento: 'rayo',
+    opciones: { palette: rampa('rayo', 8), sparks: CHISPAS_RAYO() }, cuerpo: { quitar: 'silueta', tinte: { color: '#a8b2f0', fuerza: 0.4, nota: 'parpadeo blanco azulado del sprite' } },
+    uso: [
+      { tipo: 'estado', estado: 'electrocutado', nota: 'en bucle sobre el afectado (aturdido por rayo)' },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['trampa_chispas', 'jabalina_rayo'], nota: 'sobre los que alcanza' },
+    ],
+  },
+  {
+    id: 'fx_relampago', origen: 'lightning/lightning-strike', nombre: ['Relámpago', 'Lightning strike'], categoria: 'rayo', elemento: 'rayo',
+    opciones: { palette: rampa('rayo', 8), sparks: CHISPAS_RAYO() }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'druida', habilidades: ['trueno_valle'], nota: 'cae del cielo sobre el ancla' },
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['furia_firmamento'] },
+      { tipo: 'cinematica', nota: 'el rayo que ilumina la abadía en la entrada del acto 1' },
+    ],
+  },
+  {
+    id: 'fx_arco_chispas', origen: 'lightning/spark-arc', nombre: ['Arco de chispas', 'Spark arc'], categoria: 'rayo', elemento: 'rayo',
+    opciones: { palette: rampa('rayo', 8), sparks: CHISPAS_RAYO() },
+    uso: [
+      { tipo: 'ambiente', zonas: ['a5_fragua', 'a7_boveda'], nota: 'arco entre dos electrodos de una máquina o dos pararrayos (va entre dos postes del catálogo)' },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['trampa_chispas'], nota: 'la trampa armada' },
+    ],
+  },
+  {
+    id: 'fx_nube_tormenta', origen: 'lightning/storm-cloud', nombre: ['Nube de tormenta', 'Storm cloud'], categoria: 'rayo', elemento: 'rayo',
+    opciones: { palette: rampa('rayo', 8), sparks: CHISPAS_RAYO(), cloud: rampa('noche', 7), rain: tramo('agua', 4, 0.3, 0.9) },
+    uso: [
+      { tipo: 'poder', clase: 'druida', habilidades: ['huracan', 'trueno_valle'], nota: 'la nube que sigue al druida y descarga' },
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['tempestad'] },
+    ],
+  },
+  {
+    id: 'fx_trueno', origen: 'lightning/thunderclap', nombre: ['Trueno', 'Thunderclap'], categoria: 'rayo', elemento: 'rayo', capa: 'piso', enLanzador: true,
+    opciones: { palette: rampa('rayo', 8), sparks: CHISPAS_RAYO() }, cuerpo: { quitar: 'silueta' }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'arcanista', habilidades: ['latido_galvanico'], nota: 'nova de rayo alrededor de la arcanista' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['puno_eco'] },
+    ],
+  },
+  {
+    id: 'fx_descarga', origen: 'lightning/zap-hit', nombre: ['Descarga', 'Zap'], categoria: 'rayo', elemento: 'rayo',
+    dir: { modo: 'vuelo' }, opciones: { palette: rampa('rayo', 8) }, cola: 0.02,
+    uso: [
+      { tipo: 'golpe', nota: 'impacto de rayo sobre un enemigo (al pegar fx_rayo_cadena, chispa, virote de tormenta)' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['puno_rayo'] },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['virote_tormenta'] },
+    ],
+  },
+
   // ============================================================ cuerpo a cuerpo
   {
     id: 'fx_tajo_espada', origen: 'melee/sword-slash', nombre: ['Tajo de espada', 'Sword slash'], categoria: 'cuerpo_a_cuerpo', elemento: 'acero',
@@ -44,7 +394,184 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'poder', clase: 'berserker', habilidades: ['tajo_salvaje', 'doble_golpe'] },
       { tipo: 'monstruo', monstruos: ['esqueleto', 'caballero_muerto', 'bandido'], nota: 'tajo de los espadachines' },
     ],
+  },  {
+    id: 'fx_zarpazo', origen: 'melee/claw-swipe', nombre: ['Zarpazo', 'Claw swipe'], categoria: 'cuerpo_a_cuerpo', elemento: 'sangre',
+    dir: { modo: 'vuelo', pivote: [0, -22] }, detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('sangre', 8), sparks: tramo('sangre', 4, 1, 0.4) },
+    uso: [
+      { tipo: 'poder', clase: 'druida', habilidades: ['zarpazo_oso', 'mordida_rabiosa', 'frenesi_luna'] },
+      { tipo: 'monstruo', monstruos: ['necrofago', 'lobo_sombrio', 'desollado', 'demonio_alado'], nota: 'garras de bestias y necrófagos' },
+    ],
   },
+  {
+    id: 'fx_rafaga_dagas', origen: 'melee/dagger-flurry', nombre: ['Ráfaga de dagas', 'Dagger flurry'], categoria: 'cuerpo_a_cuerpo', elemento: 'acero',
+    dir: { modo: 'vuelo', pivote: [0, -22] }, detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('acero', 7), sparks: CHISPAS() },
+    uso: [
+      { tipo: 'poder', clase: 'monje', habilidades: ['rafaga_golpes', 'mil_palmas'], nota: 'los golpes seguidos' },
+      { tipo: 'monstruo', monstruos: ['cultista', 'saqueador', 'cazacabezas'], nota: 'puñaladas rápidas' },
+    ],
+  },
+  {
+    id: 'fx_tajo_doble', origen: 'melee/double-slash', nombre: ['Tajo doble', 'Double slash'], categoria: 'cuerpo_a_cuerpo', elemento: 'sangre',
+    dir: { modo: 'vuelo', pivote: [0, -22] }, detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('sangre', 7), sparks: CHISPAS() },
+    uso: [
+      { tipo: 'poder', clase: 'berserker', habilidades: ['doble_golpe', 'desgarro'] },
+      { tipo: 'monstruo', monstruos: ['verdugo', 'caballero_espectral'] },
+    ],
+  },
+  {
+    id: 'fx_martillazo', origen: 'melee/hammer-smash', nombre: ['Martillazo', 'Hammer smash'], categoria: 'cuerpo_a_cuerpo', elemento: 'piedra',
+    dir: { modo: 'punto' }, detrasEn: ['no', 'n', 'ne'], opciones: { palette: tramo('sagrado', 8, 0.1, 0.9), stone: PIEDRA }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'templario', habilidades: ['juicio', 'martillo_bendito'], nota: 'el golpe al piso delante del templario' },
+      { tipo: 'monstruo', monstruos: ['ogro', 'gigante_helado', 'golem_de_piedra', 'trol_pantano'], nota: 'mazazo al piso' },
+    ],
+  },
+  {
+    id: 'fx_hachazo', origen: 'melee/heavy-cleave', nombre: ['Hachazo', 'Heavy cleave'], categoria: 'cuerpo_a_cuerpo', elemento: 'brasa',
+    dir: { modo: 'punto' }, detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('brasa', 8), stone: PIEDRA }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'berserker', habilidades: ['hachazo_ancho', 'ejecucion', 'tajo_salvaje'], nota: 'hachazo que muerde el piso' },
+      { tipo: 'monstruo', monstruos: ['verdugo', 'caballero_abismo'] },
+    ],
+  },
+  {
+    id: 'fx_siega', origen: 'melee/scythe-reap', nombre: ['Siega', 'Scythe reap'], categoria: 'cuerpo_a_cuerpo', elemento: 'alma',
+    dir: { modo: 'vuelo', pivote: [0, -22] }, detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('alma', 8) }, cola: 0.02,
+    uso: [
+      { tipo: 'monstruo', monstruos: ['segador'], nota: 'la guadaña del Segador' },
+      { tipo: 'poder', clase: 'nigromante', habilidades: ['festin_tumba', 'cosecha_osario'], nota: 'la cosecha de almas' },
+    ],
+  },
+  {
+    id: 'fx_barrido_lanza', origen: 'melee/spear-sweep', nombre: ['Barrido de lanza', 'Spear sweep'], categoria: 'cuerpo_a_cuerpo', elemento: 'acero', enLanzador: true,
+    opciones: { palette: rampa('acero', 7), sparks: CHISPAS(), stone: PIEDRA }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['furia_lanza'], nota: 'barrido bajo alrededor de la cazadora' },
+      { tipo: 'monstruo', monstruos: ['satiro', 'guardia_corrupto'], nota: 'barrido de alabarda' },
+    ],
+  },
+  {
+    id: 'fx_tajo_giratorio', origen: 'melee/spin-slash', nombre: ['Tajo giratorio', 'Spin slash'], categoria: 'cuerpo_a_cuerpo', elemento: 'acero', enLanzador: true,
+    opciones: { palette: rampa('acero', 7), sparks: CHISPAS() },
+    uso: [
+      { tipo: 'poder', clase: 'berserker', habilidades: ['torbellino'], nota: 'en bucle mientras gira (repetir la tira)' },
+      { tipo: 'poder', clase: 'templario', habilidades: ['carga'] },
+    ],
+  },
+  {
+    id: 'fx_estocada', origen: 'melee/thrust', nombre: ['Estocada', 'Thrust'], categoria: 'cuerpo_a_cuerpo', elemento: 'acero',
+    dir: { modo: 'vuelo', pivote: [0, -22] }, detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('acero', 7), sparks: CHISPAS() },
+    uso: [
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['estocada'] },
+      { tipo: 'poder', clase: 'templario', habilidades: ['carga', 'sentencia_final'] },
+      { tipo: 'monstruo', monstruos: ['diablillo', 'caballero_muerto'], nota: 'lanzazo' },
+    ],
+  },
+  {
+    id: 'fx_gancho', origen: 'melee/uppercut', nombre: ['Gancho ascendente', 'Rising strike'], categoria: 'cuerpo_a_cuerpo', elemento: 'brasa',
+    dir: { modo: 'vuelo', pivote: [0, -22] }, detrasEn: ['no', 'n', 'ne'], opciones: { palette: rampa('brasa', 7), sparks: CHISPAS(), outline: '#120403' },
+    uso: [
+      { tipo: 'poder', clase: 'monje', habilidades: ['codo_piedra', 'rodilla_volcan'], nota: 'el golpe que levanta' },
+      { tipo: 'monstruo', monstruos: ['ogro', 'jabali_demonio'], nota: 'embestida hacia arriba' },
+    ],
+  },
+  {
+    id: 'fx_latigazo', origen: 'melee/whip-crack', nombre: ['Latigazo', 'Whip crack'], categoria: 'cuerpo_a_cuerpo', elemento: 'sangre',
+    dir: { modo: 'vuelo', pivote: [0, -22] }, detrasEn: ['no', 'n', 'ne'], opciones: { palette: tramo('carne', 7, 0.05, 0.95), sparks: tramo('sangre', 4, 1, 0.4) },
+    uso: [
+      { tipo: 'monstruo', monstruos: ['penitente', 'monja_hueca', 'senor_demonio'], nota: 'flagelo y látigo' },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['sangria'] },
+    ],
+  },
+  // ============================================================ impactos
+  {
+    id: 'fx_golpe_seco', origen: 'impacts/blunt-hit', nombre: ['Golpe seco', 'Blunt hit'], categoria: 'impactos', elemento: 'piedra',
+    opciones: { palette: tramo('hueso', 7, 0.05, 0.95), warm: '#d8a870', dust: '#5c524a', clod: '#2e2620' }, cola: 0.02,
+    uso: [
+      { tipo: 'golpe', nota: 'impacto de maza, puño o garrote sobre un enemigo' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['codo_piedra'] },
+      { tipo: 'poder', clase: 'templario', habilidades: ['golpe_escudo'] },
+    ],
+  },
+  {
+    id: 'fx_critico', origen: 'impacts/crit-hit', nombre: ['Golpe crítico', 'Critical hit'], categoria: 'impactos', elemento: 'sangre',
+    dir: { modo: 'vuelo', pivote: [0, -13] }, opciones: { palette: rampa('sangre', 8) }, cola: 0.02,
+    uso: [
+      { tipo: 'golpe', nota: 'golpe crítico de cualquier arma (en el punto de impacto, mirando hacia donde va el golpe)' },
+      { tipo: 'poder', clase: 'berserker', habilidades: ['ejecucion'] },
+    ],
+  },
+  {
+    id: 'fx_golpe_piso', origen: 'impacts/ground-slam', nombre: ['Golpe al piso', 'Ground slam'], categoria: 'impactos', elemento: 'tierra', capa: 'piso', enLanzador: true,
+    opciones: { palette: rampa('tierra', 7), stone: PIEDRA }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'berserker', habilidades: ['ira_jarl', 'desatar'], nota: 'el pisotón que sacude la tierra' },
+      { tipo: 'poder', clase: 'druida', habilidades: ['rugido_primigenio'] },
+      { tipo: 'monstruo', monstruos: ['ogro', 'golem_de_piedra', 'gigante_helado'], nota: 'pisotón de los grandes' },
+    ],
+  },
+  {
+    id: 'fx_aterrizaje', origen: 'impacts/heavy-landing', nombre: ['Aterrizaje pesado', 'Heavy landing'], categoria: 'impactos', elemento: 'tierra', capa: 'piso', enLanzador: true,
+    opciones: { palette: tramo('tierra', 7, 0.05, 1), stone: PIEDRA }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'berserker', habilidades: ['salto_lobo'], nota: 'la caída del salto' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['patada_voladora'] },
+      { tipo: 'monstruo', monstruos: ['demonio_alado', 'gargola'], nota: 'el que baja volando' },
+    ],
+  },
+  {
+    id: 'fx_destello_herida', origen: 'impacts/hit-flash', nombre: ['Destello de herida', 'Hurt flash'], categoria: 'impactos', elemento: 'sangre',
+    opciones: { palette: rampa('sangre', 7), lines: 0 }, cuerpo: { quitar: 'mascara', tinte: { color: '#c84a36', fuerza: 0.6, nota: 'el sprite se enciende rojo un instante (curva de la luz)' } },
+    uso: [{ tipo: 'golpe', nota: 'cuando el héroe o un enemigo recibe daño: teñir el sprite con cuerpo.tinte siguiendo luz.curva' }],
+  },
+  {
+    id: 'fx_chispa_golpe', origen: 'impacts/hit-spark', nombre: ['Chispa de golpe', 'Hit spark'], categoria: 'impactos', elemento: 'fuego',
+    dir: { modo: 'vuelo', pivote: [0, -10] }, opciones: { palette: tramo('fuego', 7, 0.1, 1) }, cola: 0.02,
+    uso: [{ tipo: 'golpe', nota: 'acero contra armadura o hueso: chispas en el punto de impacto (orientar con el golpe)' }],
+  },
+  {
+    id: 'fx_parada', origen: 'impacts/parry', nombre: ['Parada', 'Parry'], categoria: 'impactos', elemento: 'oro',
+    opciones: { palette: rampa('oro', 7) }, cola: 0.02,
+    uso: [
+      { tipo: 'golpe', nota: 'bloqueo con el arma: choque de acero' },
+      { tipo: 'poder', clase: 'templario', habilidades: ['aura_firmeza'], nota: 'al desviar un golpe' },
+    ],
+  },
+  {
+    id: 'fx_rebote', origen: 'impacts/ricochet', nombre: ['Rebote', 'Ricochet'], categoria: 'impactos', elemento: 'fuego',
+    dir: { modo: 'vuelo', pivote: [0, -4] }, opciones: { palette: tramo('fuego', 7, 0.1, 1), stone: PIEDRA }, cola: 0.02,
+    uso: [
+      { tipo: 'golpe', nota: 'una flecha o un virote que rebota en la piedra' },
+      { tipo: 'poder', clase: 'alquimista', habilidades: ['virote_lastre'] },
+    ],
+  },
+  {
+    id: 'fx_bloqueo_escudo', origen: 'impacts/shield-block', nombre: ['Bloqueo con escudo', 'Shield block'], categoria: 'impactos', elemento: 'sagrado',
+    dir: { modo: 'vuelo', pivote: [0, -22] }, opciones: { palette: rampa('sagrado', 8), sparks: CHISPAS() }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'templario', habilidades: ['egida_alba', 'golpe_escudo'], nota: 'el escudo que para el golpe, del lado del golpe' },
+      { tipo: 'golpe', nota: 'bloqueo con escudo de cualquiera' },
+    ],
+  },
+  // ============================================================ proyectiles
+  {
+    id: 'fx_flecha', origen: 'projectiles/arrow', nombre: ['Flecha', 'Arrow'], categoria: 'proyectiles', elemento: 'madera',
+    dir: { modo: 'vuelo' }, ancla: [0, 21], opciones: { palette: ['#3a0c0c', '#6a1814', '#b8ae98', '#d8d0bc'], wood: tramo('madera', 4, 0.2, 1), steel: tramo('acero', 4, 0.2, 0.95), wind: '#7c8890' },
+    uso: [
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['flecha_certera', 'flecha_rastro', 'andanada', 'lluvia_flechas'] },
+      { tipo: 'monstruo', monstruos: ['esqueleto_arquero', 'ballestero_oscuro'] },
+    ],
+  },
+  {
+    id: 'fx_proyectil_magico', origen: 'projectiles/magic-missile', nombre: ['Proyectil arcano', 'Arcane missile'], categoria: 'proyectiles', elemento: 'arcano',
+    dir: { modo: 'vuelo', pivote: [0, -13] }, opciones: { palette: rampa('arcano', 8) }, cola: 0.02,
+    uso: [
+      { tipo: 'poder', clase: 'nigromante', habilidades: ['dientes_tumba'], nota: 'sale de la mano y pega ~4 cuerpos adelante' },
+      { tipo: 'poder', clase: 'monje', habilidades: ['lanza_espiritu'] },
+      { tipo: 'monstruo', monstruos: ['brujo_diablillo', 'lich', 'sacerdote_caido'], nota: 'saeta de los hechiceros' },
+    ],
+  },
+
   // ============================================================ estados
   {
     id: 'fx_envenenado', origen: 'status/poisoned', nombre: ['Envenenado', 'Poisoned'], categoria: 'estado', elemento: 'veneno',

@@ -14,7 +14,9 @@ const MONSTRUOS = ('zombi necrofago penitente esqueleto esqueleto_arquero ahogad
   'rey_sin_sombra cazacabezas hombre_cienaga bruja diablillo brujo_diablillo madre_cienaga escarchado espectro ogro rey_escarcha carcelero caballero_abismo lich ' +
   'senor_demonio heraldo lobo_sombrio jabali_demonio perro_infernal arana_cueva arana_reina escorpion_gigante gusano_de_arena golem_de_piedra gargola murcielago_gigante ' +
   'demonio_alado dragon_oseo cangrejo_cripta desollado sin_rostro aparecida bandido ballestero_oscuro gigante_helado guardia_corrupto sacerdote_caido segador ' +
-  'trol_pantano hechicera_sangre caballero_espectral aun_saar campana_ahoga').split(' ');
+  'trol_pantano hechicera_sangre caballero_espectral aun_saar campana_ahoga ' +
+  // modificadores de élite
+  'rapido piel_piedra ardiente helado electrico vampiro maldito fuerte espectral').split(' ');
 const CLASES = ['berserker', 'templario', 'arcanista', 'cazadora', 'nigromante', 'monje', 'druida', 'alquimista'];
 /** lo que Rick pidió dejar afuera: no puede colarse */
 const EXCLUIDOS = [
@@ -23,6 +25,9 @@ const EXCLUIDOS = [
   'pickups/heart-pickup', 'pickups/power-star', 'status/charmed', 'spawn/egg-hatch', 'impacts/bullet-impact', 'impacts/impact-frame', 'fire/torch',
   'fire/brazier', 'fire/campfire', 'fire/candle', 'status/burning', 'fire/flamethrower', /^projectiles\/(bullet|cannon|energy|flare|homing|laser|muzzle|plasma|rocket)/,
 ];
+
+/** Tiempo por prueba: la corrida completa pinta todos los efectos y tarda. */
+const TIEMPO = process.env.PFX_COMPLETO === '1' ? 3_600_000 : 180_000;
 
 /** Los que se pintan en cada corrida: las seis muestras y uno por categoría. Con PFX_COMPLETO=1, todos. */
 const MUESTRA = (() => {
@@ -110,7 +115,7 @@ describe('efectos de pixelfx: manifiesto sincronizado', () => {
       expect(JSON.parse(JSON.stringify(e)), id).toEqual(j);
       olvidarEfectosPfx(id);
     }
-  });
+  }, TIEMPO);
 });
 
 describe('efectos de pixelfx: hojas', () => {
@@ -120,20 +125,32 @@ describe('efectos de pixelfx: hojas', () => {
     for (const id of MUESTRA) {
       const { img, efecto: e } = hojaEfectoPfx(id);
       const dirs = e.direccional ? 8 : 1;
-      expect(img.w, id).toBe(e.celda[0] * e.columnas);
-      expect(img.h, id).toBe(e.celda[1] * e.filasPorDir * dirs);
-      expect(e.columnas * e.filasPorDir, id).toBeGreaterThanOrEqual(e.cuadros);
-      expect(e.columnas * (e.filasPorDir - 1), id).toBeLessThan(e.cuadros);
+      expect(e.bloques.length, id).toBe(dirs);
+      // los bloques se apilan sin pisarse y caben en la hoja
+      let y = 0;
+      e.bloques.forEach((b, d) => {
+        expect(b.dir, id).toBe(e.direccional ? DIRS_PODER[d] : null);
+        expect(b.y, id).toBe(y);
+        expect(b.columnas * b.filas, id).toBeGreaterThanOrEqual(e.cuadros);
+        expect(b.columnas * (b.filas - 1), id).toBeLessThan(e.cuadros);
+        expect(b.x + b.columnas * b.celda[0], id).toBeLessThanOrEqual(img.w);
+        if (e.capa !== 'pantalla') expect(b.ancla[0] >= 0 && b.ancla[0] <= b.celda[0] && b.ancla[1] >= 0 && b.ancla[1] <= b.celda[1], `${id} ancla fuera (${b.dir})`).toBe(true);
+        // el cuadro pintado sale con la celda y el ancla del bloque
+        const q = pintarEfectoPfx(id, d, 0);
+        expect([q.img.w, q.img.h], id).toEqual(b.celda);
+        expect(q.ancla, id).toEqual(b.ancla);
+        y += b.filas * b.celda[1];
+      });
+      expect(img.h, id).toBe(y);
+      expect(e.celda, id).toEqual(e.bloques[e.direccional ? 6 : 0].celda);
+      expect(e.ancla, id).toEqual(e.bloques[e.direccional ? 6 : 0].ancla);
       expect(e.cuadros, id).toBeGreaterThan(1);
       expect([1, 2]).toContain(e.t);
-      if (e.capa !== 'pantalla') {
-        expect(e.ancla[0] >= 0 && e.ancla[0] <= e.celda[0] && e.ancla[1] >= 0 && e.ancla[1] <= e.celda[1], `${id} ancla fuera`).toBe(true);
-        expect(e.escala).toBe(2);
-      }
+      if (e.capa !== 'pantalla') expect(e.escala).toBe(2);
       for (let d = 0; d < dirs; d++)
         for (let f = 0; f < e.cuadros; f++) {
           const { img: q } = pintarEfectoPfx(id, d, f);
-          const [w, h] = e.celda;
+          const { w, h } = q;
           let opaco = 0, borde = 0;
           for (let i = 3; i < q.data.length; i += 4) if (q.data[i] === 255) opaco++;
           if (e.capa !== 'pantalla') {
@@ -152,7 +169,7 @@ describe('efectos de pixelfx: hojas', () => {
       }
       olvidarEfectosPfx(id);
     }
-  });
+  }, TIEMPO);
 
   it('los bucles empalman sin salto', () => {
     const dif = (a: Uint8ClampedArray, b: Uint8ClampedArray) => { let s = 0; for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]); return s; };
@@ -167,7 +184,7 @@ describe('efectos de pixelfx: hojas', () => {
       expect(costura, `${id}: costura ${costura} vs paso ${paso}`).toBeLessThanOrEqual(paso * 1.15 + 1);
       olvidarEfectosPfx(id);
     }
-  });
+  }, TIEMPO);
 
   it('es determinista: dos pintadas dan el mismo png', () => {
     for (const id of MUESTRA.slice(0, 6)) {
@@ -177,6 +194,6 @@ describe('efectos de pixelfx: hojas', () => {
       olvidarEfectosPfx(id);
       expect(a, id).toBe(b);
     }
-  });
+  }, TIEMPO);
 });
 

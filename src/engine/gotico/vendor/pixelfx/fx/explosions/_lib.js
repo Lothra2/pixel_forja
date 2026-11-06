@@ -222,25 +222,25 @@ export function drawDirt(p, ps, layer) {
  */
 export function crater(p, E, x, r, k, a = 1) {
   if (k <= 0 || a <= 0) return;
-  const n = E.length, rx = r * k, ry = Math.max(1.5, r * 0.17 * k);
-  for (let py = -1; py <= Math.ceil(ry) + 1; py++)
+  // Forja: el cráter es una elipse 2:1 en el piso, con el labio alrededor y tierra suelta repartida en profundidad
+  const n = E.length, rx = r * k, ry = Math.max(1.5, r * ISO * 0.8 * k);
+  for (let py = Math.floor(-ry - 1); py <= Math.ceil(ry) + 1; py++)
     for (let px = Math.floor(-rx - 1); px <= Math.ceil(rx + 1); px++) {
-      const dx = (px + 0.5) / rx, dy = (py + 0.5 - ry * 0.35) / ry, d = Math.sqrt(dx * dx + dy * dy);
+      const dx = (px + 0.5) / rx, dy = (py + 0.5) / ry, d = Math.sqrt(dx * dx + dy * dy);
       if (d > 1.08) continue;
       // the pit: darkest at its far side under the lit rim, the near wall a step lighter
       const c = d > 0.92 ? (dy < 0 ? E[n - 2] : E[2]) : dy < -0.2 ? E[0] : dy < 0.35 ? E[1] : E[2];
       p.dot(x + px, py, c, a);
     }
-  // the lip: dirt heaped up either side, lit on top, and a scatter of loose earth
-  for (const s of [-1, 1])
-    for (let i = 0; i < 9; i++) {
-      const u = i / 8, h = Math.round(Math.sin(Math.PI * u) * 2.2 * k + (rand(i, s > 0 ? 3 : 4) < 0.4 ? 1 : 0) * k);
-      const hx = x + s * (rx * 0.82 + u * r * 0.55);
-      for (let j = 0; j <= h; j++) p.dot(hx, -j, j === h ? E[n - 2] : j === h - 1 ? E[3] : E[2], a);
-    }
+  // the lip: dirt heaped up round the rim, lit on top
+  for (let i = 0; i < 28; i++) {
+    const g = (i / 28) * Math.PI * 2, h = Math.round((1.2 + rand(i, 3) * 1.4) * k);
+    const hx = x + Math.cos(g) * rx * 1.02, hy = Math.sin(g) * ry * 1.02;
+    for (let j = 0; j <= h; j++) p.dot(hx, hy - j, j === h ? E[n - 2] : j === h - 1 ? E[3] : E[2], a);
+  }
   for (let i = 0; i < 26; i++) {
-    const s = rand(i, 7) < 0.5 ? -1 : 1, d = rx * (1.05 + rand(i, 8) * 1.4), y = Math.round(rand(i, 9) * 3) - 1;
-    if (rand(i, 10) < k) p.dot(x + s * d, y, rand(i, 11) < 0.5 ? E[3] : E[2], a);
+    const g = rand(i, 7) * Math.PI * 2, d = 1.05 + rand(i, 8) * 1.4;
+    if (rand(i, 10) < k) p.dot(x + Math.cos(g) * rx * d, Math.sin(g) * ry * d, rand(i, 11) < 0.5 ? E[3] : E[2], a);
   }
 }
 

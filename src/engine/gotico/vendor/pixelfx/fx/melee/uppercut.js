@@ -92,10 +92,9 @@ export function create(o) {
       if (q >= 0 && q < 0.36) {
         const pop = ease.outBack(clamp(q / 0.05), 2.6), out = 1 - smooth(0.16, 0.36, q), sc = pop * (0.35 + 0.65 * out), turn = q * 1.2;
         const sp = spikes.map((s) => ({ ...s, a: s.a + turn }));
-        if (sc > 0.08) {
-          star(p, SX, SY, sp, sc * 1.12, 1, INK, INK, INK, INK);
-          star(p, SX, SY, sp, sc, 1, q < 0.05 ? WHITE : C[6], C[4], C[3], C[2]);
-        }
+        // Forja: sin la estrella de historieta con contorno negro; queda un destello chico sin tinta
+        if (sc > 0.08 && q < 0.12) star(p, SX, SY, sp, sc * 0.45, 1, q < 0.05 ? WHITE : C[6], C[4], C[3], C[2]);
+        void INK;
         p.glow(SX, SY, 30, C[4], 0.45 * out);
       }
       if (q >= 0.02 && q < 0.24) {
@@ -103,7 +102,8 @@ export function create(o) {
         const k = (q - 0.02) / 0.22, r = 7 + 17 * ease.outCubic(k), th = Math.max(1, 2.2 * (1 - k)), col = k < 0.25 ? WHITE : k < 0.5 ? C[5] : k < 0.75 ? C[4] : C[3];
         for (let a = 0; a < TAU; a += 0.6 / r) for (let o = 0; o < th; o += 0.5) p.dot(SX + Math.cos(a) * (r - o), SY + Math.sin(a) * (r - o), col, 1.15 - k);
       }
-      if (q >= 0.02 && q < 0.2) {
+      if (false && q >= 0.02 && q < 0.2) {
+        // Forja: sin las líneas de historieta alrededor
         const k = (q - 0.02) / 0.18;
         for (const b of bursts) {
           const r0 = b.r0 + 10 * ease.outCubic(k), ca = Math.cos(b.a), sa = Math.sin(b.a);

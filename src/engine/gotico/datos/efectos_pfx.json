@@ -13,7 +13,7 @@
   "e",
   "se"
  ],
- "notas": "Hojas PNG RGBA con alfa directa. Cuadro i de la dirección d: columna i % columnas, fila d * filasPorDir + floor(i / columnas). Animación: cuadro = floor(segundos * 25 / t) (bucle: % cuadros; si no, el último y se termina). Ancla: el pixel que va sobre el punto del piso (los proyectiles: el piso bajo la bola; el juego los mueve). Direcciones en el orden de DIRS_PODER (s, so, o, no, n, ne, e, se), como poderes.json. capa 'pantalla': el cuadro cubre la pantalla, escalarlo entero (x3 a 960x540) con vecino más cercano. mezcla 'aditiva': color * alfa sumado; 'normal': alfa común. cuerpo.tinte: teñir el sprite del afectado con ese color y fuerza; cuerpo.alfa: visibilidad del sprite por cuadro. detrasEn: direcciones en las que el efecto va detrás del que lo lanza.",
+ "notas": "Hojas PNG con paleta y alfa directa. Cada dirección es un bloque de la hoja (bloques[d], en el orden de filas): el cuadro i está en (x + (i % columnas) * celda[0], y + floor(i / columnas) * celda[1]) y su ancla es la del bloque. Animación: cuadro = floor(segundos * 25 / t) (bucle: % cuadros; si no, el último y se termina). Ancla: el pixel que va sobre el punto del piso (los proyectiles: el piso bajo la bola; el juego los mueve). Direcciones en el orden de DIRS_PODER (s, so, o, no, n, ne, e, se), como poderes.json. capa 'pantalla': el cuadro cubre la pantalla, escalarlo entero (x3 a 960x540) con vecino más cercano. mezcla 'aditiva': color * alfa sumado; 'normal': alfa común. cuerpo.tinte: teñir el sprite del afectado con ese color y fuerza; cuerpo.alfa: visibilidad del sprite por cuadro. detrasEn: direcciones en las que el efecto va detrás del que lo lanza.",
  "creditos": "Efectos adaptados de pixelfx (https://github.com/patch-gg/pixelfx), MIT, Copyright (c) 2026 Patch y Copyright (c) 2026 Hugo Duprez (Sprite Fusion, https://www.spritefusion.com/pixel-art-vfx); partes de Hollow Crown (rehan-remade), MIT. Ver LICENSE-pixelfx.txt y NOTICE-pixelfx.md.",
  "efectos": [
   {
@@ -40,15 +40,135 @@
     "e",
     "se"
    ],
-   "columnas": 10,
-   "filasPorDir": 2,
    "celda": [
-    378,
-    266
+    256,
+    140
    ],
    "ancla": [
     189,
-    175
+    111
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      140,
+      180
+     ],
+     "ancla": [
+      71,
+      175
+     ],
+     "columnas": 15,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 180,
+     "celda": [
+      206,
+      172
+     ],
+     "ancla": [
+      61,
+      145
+     ],
+     "columnas": 15,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 352,
+     "celda": [
+      256,
+      140
+     ],
+     "ancla": [
+      67,
+      111
+     ],
+     "columnas": 15,
+     "filas": 1
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 492,
+     "celda": [
+      224,
+      138
+     ],
+     "ancla": [
+      61,
+      109
+     ],
+     "columnas": 15,
+     "filas": 1
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 630,
+     "celda": [
+      140,
+      180
+     ],
+     "ancla": [
+      69,
+      89
+     ],
+     "columnas": 15,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 810,
+     "celda": [
+      224,
+      138
+     ],
+     "ancla": [
+      163,
+      109
+     ],
+     "columnas": 15,
+     "filas": 1
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 948,
+     "celda": [
+      256,
+      140
+     ],
+     "ancla": [
+      189,
+      111
+     ],
+     "columnas": 15,
+     "filas": 1
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1088,
+     "celda": [
+      206,
+      172
+     ],
+     "ancla": [
+      145,
+      145
+     ],
+     "columnas": 15,
+     "filas": 1
+    }
    ],
    "escala": 2,
    "mezcla": "normal",
@@ -108,6 +228,3672 @@
    ]
   },
   {
+   "id": "fx_aliento_fuego",
+   "origen": "fire/fire-breath",
+   "nombre": [
+    "Aliento de fuego",
+    "Fire breath"
+   ],
+   "categoria": "fuego",
+   "capa": "mundo",
+   "archivo": "fx_aliento_fuego.png",
+   "cuadros": 19,
+   "t": 2,
+   "bucle": true,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    332,
+    270
+   ],
+   "ancla": [
+    35,
+    219
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      270,
+      234
+     ],
+     "ancla": [
+      99,
+      93
+     ],
+     "columnas": 15,
+     "filas": 2
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 468,
+     "celda": [
+      298,
+      264
+     ],
+     "ancla": [
+      265,
+      163
+     ],
+     "columnas": 13,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 996,
+     "celda": [
+      332,
+      270
+     ],
+     "ancla": [
+      297,
+      219
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 1536,
+     "celda": [
+      266,
+      267
+     ],
+     "ancla": [
+      233,
+      265
+     ],
+     "columnas": 15,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 2070,
+     "celda": [
+      270,
+      263
+     ],
+     "ancla": [
+      147,
+      261
+     ],
+     "columnas": 15,
+     "filas": 2
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 2596,
+     "celda": [
+      266,
+      267
+     ],
+     "ancla": [
+      33,
+      265
+     ],
+     "columnas": 15,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 3130,
+     "celda": [
+      332,
+      270
+     ],
+     "ancla": [
+      35,
+      219
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 3670,
+     "celda": [
+      298,
+      264
+     ],
+     "ancla": [
+      33,
+      163
+     ],
+     "columnas": 13,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#f19160",
+    "radio": 302,
+    "intensidad": 1,
+    "curva": [
+     0.77,
+     0.81,
+     0.88,
+     0.97,
+     1,
+     0.99,
+     0.97,
+     0.96,
+     0.95,
+     0.94,
+     0.91,
+     0.9,
+     0.88,
+     0.86,
+     0.85,
+     0.84,
+     0.81,
+     0.79,
+     0.76
+    ],
+    "altura": 75,
+    "parpadeo": 0.16,
+    "enVuelo": true,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "diablillo",
+      "satiro"
+     ],
+     "nota": "chorro de fuego de las bestias y demonios del acto 5 (de la boca hacia adelante)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "palma_dragon"
+     ],
+     "nota": "la llamarada que sale de la palma"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "destilar"
+     ],
+     "nota": "soplete del alambique"
+    }
+   ]
+  },
+  {
+   "id": "fx_anillo_fuego",
+   "origen": "fire/fire-ring",
+   "nombre": [
+    "Anillo de fuego",
+    "Ring of fire"
+   ],
+   "categoria": "fuego",
+   "capa": "piso",
+   "archivo": "fx_anillo_fuego.png",
+   "cuadros": 92,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    418,
+    306
+   ],
+   "ancla": [
+    209,
+    171
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      418,
+      306
+     ],
+     "ancla": [
+      209,
+      171
+     ],
+     "columnas": 9,
+     "filas": 11
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "enLanzador": true,
+   "luz": {
+    "color": "#f29d6a",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0.01,
+     0.01,
+     0.02,
+     0.02,
+     0.03,
+     0.05,
+     0.08,
+     1,
+     0.86,
+     0.77,
+     0.68,
+     0.62,
+     0.57,
+     0.53,
+     0.5,
+     0.48,
+     0.47,
+     0.46,
+     0.46,
+     0.46,
+     0.45,
+     0.44,
+     0.44,
+     0.43,
+     0.42,
+     0.41,
+     0.4,
+     0.38,
+     0.37,
+     0.36,
+     0.34,
+     0.33,
+     0.31,
+     0.29,
+     0.28,
+     0.26,
+     0.24,
+     0.22,
+     0.2,
+     0.18,
+     0.17,
+     0.15,
+     0.13,
+     0.12,
+     0.1,
+     0.09,
+     0.07,
+     0.06,
+     0.05,
+     0.04,
+     0.03,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 14,
+    "parpadeo": 0.15,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "combustion"
+     ],
+     "nota": "el fuego corre por el piso en un anillo alrededor de la arcanista"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "rodilla_volcan"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "abadesa"
+     ],
+     "nota": "el pisotón de fuego de la Abadesa en El Pozo de la Brasa"
+    }
+   ]
+  },
+  {
+   "id": "fx_tornado_fuego",
+   "origen": "fire/fire-tornado",
+   "nombre": [
+    "Tornado de fuego",
+    "Fire tornado"
+   ],
+   "categoria": "fuego",
+   "capa": "mundo",
+   "archivo": "fx_tornado_fuego.png",
+   "cuadros": 50,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    250,
+    308
+   ],
+   "ancla": [
+    125,
+    263
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      250,
+      308
+     ],
+     "ancla": [
+      125,
+      263
+     ],
+     "columnas": 16,
+     "filas": 4
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f18f61",
+    "radio": 292,
+    "intensidad": 1,
+    "curva": [
+     0.79,
+     0.82,
+     0.89,
+     0.95,
+     0.97,
+     0.94,
+     0.9,
+     0.88,
+     0.87,
+     0.86,
+     0.85,
+     0.85,
+     0.88,
+     0.92,
+     0.96,
+     0.95,
+     0.95,
+     0.94,
+     0.94,
+     0.92,
+     0.89,
+     0.87,
+     0.87,
+     0.92,
+     0.98,
+     1,
+     0.99,
+     0.96,
+     0.94,
+     0.92,
+     0.86,
+     0.78,
+     0.73,
+     0.73,
+     0.73,
+     0.74,
+     0.74,
+     0.74,
+     0.75,
+     0.76,
+     0.77,
+     0.82,
+     0.87,
+     0.89,
+     0.87,
+     0.84,
+     0.82,
+     0.81,
+     0.81,
+     0.8
+    ],
+    "altura": 91,
+    "parpadeo": 0.16,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "ira_estacion"
+     ],
+     "nota": "remolinos de fuego que avanzan por el área"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "senor_demonio"
+     ],
+     "nota": "columnas de fuego que vagan por La Fragua de Ozmaren (acto 5)"
+    },
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a5_llanuras",
+      "a5_rio"
+     ],
+     "nota": "remolino de brasas suelto en las Llanuras de Ceniza"
+    }
+   ]
+  },
+  {
+   "id": "fx_pilar_llamas",
+   "origen": "fire/flame-pillar",
+   "nombre": [
+    "Pilar de llamas",
+    "Flame pillar"
+   ],
+   "categoria": "fuego",
+   "capa": "mundo",
+   "archivo": "fx_pilar_llamas.png",
+   "cuadros": 90,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    348,
+    632
+   ],
+   "ancla": [
+    169,
+    429
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      348,
+      632
+     ],
+     "ancla": [
+      169,
+      429
+     ],
+     "columnas": 11,
+     "filas": 9
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f3a977",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.01,
+     0.01,
+     0.02,
+     0.03,
+     0.04,
+     0.05,
+     0.06,
+     0.07,
+     0.08,
+     0.89,
+     1,
+     0.96,
+     0.9,
+     0.83,
+     0.76,
+     0.68,
+     0.66,
+     0.64,
+     0.62,
+     0.62,
+     0.62,
+     0.59,
+     0.55,
+     0.54,
+     0.55,
+     0.55,
+     0.55,
+     0.54,
+     0.54,
+     0.54,
+     0.56,
+     0.57,
+     0.57,
+     0.55,
+     0.55,
+     0.55,
+     0.55,
+     0.55,
+     0.55,
+     0.55,
+     0.55,
+     0.55,
+     0.55,
+     0.55,
+     0.69,
+     0.68,
+     0.66,
+     0.57,
+     0.49,
+     0.41,
+     0.33,
+     0.28,
+     0.24,
+     0.21,
+     0.19,
+     0.16,
+     0.14,
+     0.13,
+     0.12,
+     0.12,
+     0.11,
+     0.11,
+     0.1,
+     0.1,
+     0.09,
+     0.09,
+     0.08,
+     0.08,
+     0.07,
+     0.07,
+     0.07,
+     0.06,
+     0.06,
+     0.05,
+     0.05,
+     0.04,
+     0.04,
+     0.03,
+     0.03,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 94,
+    "parpadeo": 0.16,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "fisura"
+     ],
+     "nota": "erupción de fuego donde se abre la tierra"
+    },
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "muro_fuego"
+     ],
+     "nota": "varios en fila hacen el muro"
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "mina_brasa"
+     ],
+     "nota": "al pisar la mina"
+    }
+   ]
+  },
+  {
+   "id": "fx_meteoro",
+   "origen": "fire/meteor",
+   "nombre": [
+    "Meteoro",
+    "Meteor"
+   ],
+   "categoria": "fuego",
+   "capa": "mundo",
+   "archivo": "fx_meteoro.png",
+   "cuadros": 95,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    524,
+    602
+   ],
+   "ancla": [
+    303,
+    393
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      524,
+      602
+     ],
+     "ancla": [
+      303,
+      393
+     ],
+     "columnas": 7,
+     "filas": 14
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f3a96a",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0.09,
+     0.1,
+     0.1,
+     0.1,
+     0.11,
+     0.12,
+     0.13,
+     0.13,
+     0.14,
+     0.14,
+     0.13,
+     0.14,
+     0.13,
+     0.14,
+     0.14,
+     0.14,
+     1,
+     0.87,
+     0.81,
+     0.74,
+     0.66,
+     0.58,
+     0.51,
+     0.43,
+     0.37,
+     0.31,
+     0.26,
+     0.22,
+     0.18,
+     0.15,
+     0.13,
+     0.11,
+     0.09,
+     0.08,
+     0.06,
+     0.06,
+     0.05,
+     0.05,
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 78,
+    "parpadeo": 0.15,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "meteoro"
+     ],
+     "nota": "cae en diagonal y se clava en el ancla"
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "flecha_cometa"
+     ]
+    },
+    {
+     "tipo": "cinematica",
+     "nota": "lluvia de fuego del cielo roto (acto 7)"
+    }
+   ]
+  },
+  {
+   "id": "fx_llama_fatua",
+   "origen": "fire/spirit-flame",
+   "nombre": [
+    "Llama fatua",
+    "Will-o-flame"
+   ],
+   "categoria": "fuego",
+   "capa": "mundo",
+   "archivo": "fx_llama_fatua.png",
+   "cuadros": 75,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    178,
+    202
+   ],
+   "ancla": [
+    89,
+    141
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      178,
+      202
+     ],
+     "ancla": [
+      89,
+      141
+     ],
+     "columnas": 23,
+     "filas": 4
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#83f5ba",
+    "radio": 190,
+    "intensidad": 0.69,
+    "curva": [
+     0.97,
+     0.97,
+     0.97,
+     0.96,
+     0.95,
+     0.95,
+     0.94,
+     0.93,
+     0.93,
+     0.92,
+     0.91,
+     0.91,
+     0.91,
+     0.91,
+     0.92,
+     0.92,
+     0.93,
+     0.94,
+     0.95,
+     0.95,
+     0.96,
+     0.98,
+     0.99,
+     0.99,
+     1,
+     1,
+     1,
+     1,
+     1,
+     0.99,
+     0.99,
+     0.98,
+     0.98,
+     0.98,
+     0.97,
+     0.97,
+     0.97,
+     0.97,
+     0.97,
+     0.97,
+     0.96,
+     0.95,
+     0.94,
+     0.92,
+     0.91,
+     0.9,
+     0.88,
+     0.88,
+     0.87,
+     0.87,
+     0.86,
+     0.86,
+     0.87,
+     0.87,
+     0.88,
+     0.89,
+     0.9,
+     0.91,
+     0.92,
+     0.92,
+     0.93,
+     0.93,
+     0.93,
+     0.94,
+     0.94,
+     0.95,
+     0.95,
+     0.95,
+     0.96,
+     0.96,
+     0.97,
+     0.97,
+     0.97,
+     0.97,
+     0.97
+    ],
+    "altura": 34,
+    "parpadeo": 0.05,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a1_cementerio",
+      "a1_cripta",
+      "a1_cata1",
+      "a6_criptas"
+     ],
+     "nota": "fuego de ánima sobre las tumbas y los osarios"
+    },
+    {
+     "tipo": "poder",
+     "clase": "nigromante",
+     "habilidades": [
+      "legion_ceniza"
+     ],
+     "nota": "la llama en las cuencas de los invocados"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "aparecida"
+     ],
+     "nota": "fuego frío que deja la Aparecida"
+    }
+   ]
+  },
+  {
+   "id": "fx_explosion_barril",
+   "origen": "explosions/barrel-explosion",
+   "nombre": [
+    "Barril que estalla",
+    "Exploding barrel"
+   ],
+   "categoria": "explosiones",
+   "capa": "mundo",
+   "archivo": "fx_explosion_barril.png",
+   "cuadros": 90,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    566,
+    448
+   ],
+   "ancla": [
+    281,
+    345
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      566,
+      448
+     ],
+     "ancla": [
+      281,
+      345
+     ],
+     "columnas": 7,
+     "filas": 13
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f19556",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     1,
+     0.88,
+     0.87,
+     0.83,
+     0.76,
+     0.67,
+     0.59,
+     0.51,
+     0.43,
+     0.38,
+     0.33,
+     0.28,
+     0.25,
+     0.22,
+     0.2,
+     0.18,
+     0.16,
+     0.14,
+     0.13,
+     0.13,
+     0.12,
+     0.12,
+     0.11,
+     0.11,
+     0.1,
+     0.1,
+     0.1,
+     0.1,
+     0.09,
+     0.09,
+     0.08,
+     0.08,
+     0.08,
+     0.07,
+     0.07,
+     0.07,
+     0.07,
+     0.07,
+     0.06,
+     0.06,
+     0.06,
+     0.05,
+     0.05,
+     0.05,
+     0.05,
+     0.05,
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0
+    ],
+    "altura": 38,
+    "parpadeo": 0.15,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a1_mina1",
+      "a1_mina2",
+      "a4_minas1",
+      "a6_barco"
+     ],
+     "nota": "barriles de pólvora que estallan al romperlos"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "gran_crisol"
+     ],
+     "nota": "el crisol que revienta"
+    }
+   ]
+  },
+  {
+   "id": "fx_gran_explosion",
+   "origen": "explosions/big-explosion",
+   "nombre": [
+    "Gran explosión",
+    "Great explosion"
+   ],
+   "categoria": "explosiones",
+   "capa": "mundo",
+   "archivo": "fx_gran_explosion.png",
+   "cuadros": 100,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    614,
+    614
+   ],
+   "ancla": [
+    315,
+    479
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      614,
+      614
+     ],
+     "ancla": [
+      315,
+      479
+     ],
+     "columnas": 6,
+     "filas": 17
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f08d4d",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0.67,
+     0.83,
+     0.89,
+     0.87,
+     1,
+     0.93,
+     0.84,
+     0.92,
+     0.83,
+     0.74,
+     0.67,
+     0.6,
+     0.54,
+     0.49,
+     0.45,
+     0.41,
+     0.39,
+     0.37,
+     0.36,
+     0.35,
+     0.35,
+     0.34,
+     0.34,
+     0.34,
+     0.34,
+     0.34,
+     0.33,
+     0.33,
+     0.32,
+     0.33,
+     0.32,
+     0.33,
+     0.32,
+     0.32,
+     0.31,
+     0.3,
+     0.29,
+     0.29,
+     0.28,
+     0.27,
+     0.27,
+     0.26,
+     0.25,
+     0.25,
+     0.24,
+     0.24,
+     0.23,
+     0.22,
+     0.22,
+     0.21,
+     0.2,
+     0.2,
+     0.19,
+     0.19,
+     0.18,
+     0.17,
+     0.17,
+     0.16,
+     0.16,
+     0.15,
+     0.15,
+     0.14,
+     0.13,
+     0.13,
+     0.12,
+     0.12,
+     0.11,
+     0.11,
+     0.1,
+     0.1,
+     0.09,
+     0.09,
+     0.08,
+     0.08,
+     0.07,
+     0.07,
+     0.06,
+     0.06,
+     0.06,
+     0.05,
+     0.05,
+     0.04,
+     0.04,
+     0.04,
+     0.03,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 100,
+    "parpadeo": 0.14,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "sol_negro"
+     ],
+     "nota": "el estallido final"
+    },
+    {
+     "tipo": "muerte",
+     "nota": "muerte de un jefe de fuego (la Abadesa, Ozmaren)"
+    },
+    {
+     "tipo": "cinematica",
+     "nota": "la fragua que revienta en el cierre del acto 5"
+    }
+   ]
+  },
+  {
+   "id": "fx_explosion_tierra",
+   "origen": "explosions/dirt-explosion",
+   "nombre": [
+    "Reventón de tierra",
+    "Dirt blast"
+   ],
+   "categoria": "explosiones",
+   "capa": "mundo",
+   "archivo": "fx_explosion_tierra.png",
+   "cuadros": 75,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    506,
+    490
+   ],
+   "ancla": [
+    255,
+    397
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      506,
+      490
+     ],
+     "ancla": [
+      255,
+      397
+     ],
+     "columnas": 8,
+     "filas": 10
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f08b5d",
+    "radio": 238,
+    "intensidad": 0.93,
+    "curva": [
+     1,
+     0.45,
+     0.24,
+     0.11,
+     0.05,
+     0.02,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 17,
+    "parpadeo": 0.06,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "cepo_dientes"
+     ],
+     "nota": "la trampa que salta"
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "salto_lobo"
+     ],
+     "nota": "la caída"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "gusano_de_arena",
+      "ogro"
+     ],
+     "nota": "algo que sale de la tierra o un golpe de garrote al piso"
+    }
+   ]
+  },
+  {
+   "id": "fx_implosion",
+   "origen": "explosions/implosion",
+   "nombre": [
+    "Implosión",
+    "Implosion"
+   ],
+   "categoria": "explosiones",
+   "capa": "mundo",
+   "archivo": "fx_implosion.png",
+   "cuadros": 38,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    340,
+    348
+   ],
+   "ancla": [
+    173,
+    173
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      340,
+      348
+     ],
+     "ancla": [
+      173,
+      173
+     ],
+     "columnas": 12,
+     "filas": 4
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#c389f6",
+    "radio": 332,
+    "intensidad": 1,
+    "curva": [
+     0.06,
+     0.07,
+     0.08,
+     0.09,
+     0.1,
+     0.11,
+     0.12,
+     0.14,
+     0.15,
+     0.16,
+     0.17,
+     0.19,
+     0.19,
+     0.2,
+     0.2,
+     0.19,
+     0.18,
+     0.17,
+     0.15,
+     0.14,
+     0.13,
+     0.14,
+     0.14,
+     0.13,
+     0.14,
+     0.13,
+     1,
+     0.67,
+     0.47,
+     0.32,
+     0.18,
+     0.09,
+     0.04,
+     0.01,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 4,
+    "parpadeo": 0.13,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "nigromante",
+     "habilidades": [
+      "explosion_cadaver"
+     ],
+     "nota": "el cadáver que se hunde en sí mismo antes de reventar"
+    },
+    {
+     "tipo": "muerte",
+     "nota": "muerte de un espectro o de un ser del abismo (acto 5)"
+    }
+   ]
+  },
+  {
+   "id": "fx_explosion_chica",
+   "origen": "explosions/small-explosion",
+   "nombre": [
+    "Explosión",
+    "Explosion"
+   ],
+   "categoria": "explosiones",
+   "capa": "mundo",
+   "archivo": "fx_explosion_chica.png",
+   "cuadros": 80,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    432,
+    586
+   ],
+   "ancla": [
+    209,
+    361
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      432,
+      586
+     ],
+     "ancla": [
+      209,
+      361
+     ],
+     "columnas": 9,
+     "filas": 9
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f4b67a",
+    "radio": 274,
+    "intensidad": 1,
+    "curva": [
+     1,
+     0.93,
+     0.89,
+     0.82,
+     0.7,
+     0.57,
+     0.48,
+     0.39,
+     0.32,
+     0.26,
+     0.21,
+     0.17,
+     0.14,
+     0.12,
+     0.1,
+     0.08,
+     0.07,
+     0.07,
+     0.06,
+     0.06,
+     0.06,
+     0.06,
+     0.05,
+     0.05,
+     0.05,
+     0.05,
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     0.03,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 27,
+    "parpadeo": 0.14,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "bola_fuego"
+     ],
+     "nota": "al pegar la bola de fuego"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "bomba_ignea",
+      "virote_explosivo",
+      "bomba_cluster"
+     ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "nigromante",
+     "habilidades": [
+      "explosion_cadaver"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_bomba_humo",
+   "origen": "explosions/smoke-bomb",
+   "nombre": [
+    "Bomba de humo",
+    "Smoke bomb"
+   ],
+   "categoria": "explosiones",
+   "capa": "mundo",
+   "archivo": "fx_bomba_humo.png",
+   "cuadros": 105,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    382,
+    294
+   ],
+   "ancla": [
+    243,
+    211
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      382,
+      294
+     ],
+     "ancla": [
+      243,
+      211
+     ],
+     "columnas": 10,
+     "filas": 11
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f9d1bb",
+    "radio": 248,
+    "intensidad": 0.94,
+    "curva": [
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.02,
+     0.01,
+     1,
+     0.51,
+     0.26,
+     0.12,
+     0.05,
+     0.03,
+     0.02,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 21,
+    "parpadeo": 0.07,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "bomba_humo"
+     ],
+     "nota": "la nube que ciega"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "bandido"
+     ],
+     "nota": "el bandido que huye"
+    }
+   ]
+  },
+  {
+   "id": "fx_burbujas",
+   "origen": "water/bubbles",
+   "nombre": [
+    "Burbujeo",
+    "Bubbling"
+   ],
+   "categoria": "agua",
+   "capa": "piso",
+   "archivo": "fx_burbujas.png",
+   "cuadros": 100,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    124,
+    64
+   ],
+   "ancla": [
+    65,
+    33
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      124,
+      64
+     ],
+     "ancla": [
+      65,
+      33
+     ],
+     "columnas": 33,
+     "filas": 4
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#8cd0f6",
+    "radio": 86,
+    "intensidad": 0.37,
+    "curva": [
+     0.22,
+     0.22,
+     0.22,
+     0,
+     0,
+     0.15,
+     0.15,
+     0,
+     0,
+     0,
+     0.19,
+     0.19,
+     0.38,
+     0.59,
+     0.41,
+     0.41,
+     0,
+     0,
+     0,
+     0.21,
+     0.21,
+     0.42,
+     0.21,
+     0.21,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.19,
+     0.39,
+     0.2,
+     0,
+     0,
+     0.16,
+     0.16,
+     0.16,
+     0,
+     0,
+     0,
+     0.2,
+     0.34,
+     0.77,
+     1,
+     0.43,
+     0.23,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.16,
+     0.16,
+     0.24,
+     0.42,
+     0.42,
+     0.44,
+     0.25,
+     0.43,
+     0.18,
+     0.42,
+     0.24,
+     0.24,
+     0,
+     0,
+     0,
+     0,
+     0.16,
+     0.16,
+     0.16,
+     0.16,
+     0.41,
+     0.41,
+     0.66,
+     0.25,
+     0.25,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.18,
+     0.37,
+     0.19,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.2,
+     0.41,
+     0.58,
+     0.59,
+     0.21,
+     0.21
+    ],
+    "altura": 4,
+    "parpadeo": 0.2,
+    "sombra": false,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a3_pantano",
+      "a3_inundadas",
+      "a6_criptas",
+      "a6_criptas2"
+     ],
+     "nota": "algo respira bajo el agua estancada"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "elixir",
+      "panacea_negra"
+     ],
+     "nota": "el caldero o el frasco que hierve"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "ahogado",
+      "madre_cienaga"
+     ],
+     "nota": "marca dónde va a salir el que está sumergido"
+    }
+   ],
+   "notas": "Reescrito: el original era una columna de burbujas vista bajo el agua; acá son burbujas que asoman y revientan en la superficie, vistas desde arriba."
+  },
+  {
+   "id": "fx_gotera",
+   "origen": "water/drip",
+   "nombre": [
+    "Gotera",
+    "Drip"
+   ],
+   "categoria": "agua",
+   "capa": "mundo",
+   "archivo": "fx_gotera.png",
+   "cuadros": 40,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    82,
+    162
+   ],
+   "ancla": [
+    41,
+    133
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      82,
+      162
+     ],
+     "ancla": [
+      41,
+      133
+     ],
+     "columnas": 40,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#73c3f4",
+    "radio": 114,
+    "intensidad": 0.43,
+    "curva": [
+     0.34,
+     0.34,
+     0.35,
+     0.35,
+     0.35,
+     0.35,
+     0.36,
+     0.36,
+     0.37,
+     0.37,
+     0.38,
+     0.38,
+     0.39,
+     0.4,
+     0.41,
+     0.43,
+     0.44,
+     0.46,
+     0.47,
+     0.49,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     1,
+     0.77,
+     0.75,
+     0.75,
+     0.73,
+     0.71,
+     0.68,
+     0.7,
+     0.67,
+     0.63
+    ],
+    "altura": 29,
+    "parpadeo": 0.09,
+    "sombra": false,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a1_cata1",
+      "a1_cripta",
+      "a3_inundadas",
+      "a6_faro",
+      "a6_criptas"
+     ],
+     "nota": "gota que cae del techo en un charco (el ancla es el charco)"
+    }
+   ]
+  },
+  {
+   "id": "fx_fuente",
+   "origen": "water/fountain",
+   "nombre": [
+    "Fuente",
+    "Fountain"
+   ],
+   "categoria": "agua",
+   "capa": "mundo",
+   "archivo": "fx_fuente.png",
+   "cuadros": 50,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    146,
+    188
+   ],
+   "ancla": [
+    73,
+    181
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      146,
+      188
+     ],
+     "ancla": [
+      73,
+      181
+     ],
+     "columnas": 28,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#91d1f7",
+    "radio": 182,
+    "intensidad": 0.65,
+    "curva": [
+     0.92,
+     0.96,
+     0.98,
+     0.97,
+     0.97,
+     0.97,
+     0.96,
+     0.94,
+     0.91,
+     0.92,
+     0.91,
+     0.91,
+     0.92,
+     0.93,
+     0.94,
+     0.94,
+     0.93,
+     0.92,
+     0.91,
+     0.9,
+     0.88,
+     0.88,
+     0.87,
+     0.88,
+     0.89,
+     0.91,
+     0.94,
+     0.96,
+     0.97,
+     0.99,
+     1,
+     1,
+     0.97,
+     0.94,
+     0.94,
+     0.92,
+     0.91,
+     0.91,
+     0.92,
+     0.93,
+     0.91,
+     0.9,
+     0.88,
+     0.87,
+     0.85,
+     0.83,
+     0.84,
+     0.84,
+     0.87,
+     0.89
+    ],
+    "altura": 93,
+    "parpadeo": 0.06,
+    "sombra": true,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a2_oasis",
+      "a6_barrio2",
+      "a7_jardin"
+     ],
+     "nota": "el chorro de agua sobre una pila del catálogo (fuente del pueblo, la plaza de las ánimas)"
+    }
+   ]
+  },
+  {
+   "id": "fx_geiser",
+   "origen": "water/geyser",
+   "nombre": [
+    "Géiser",
+    "Geyser"
+   ],
+   "categoria": "agua",
+   "capa": "mundo",
+   "archivo": "fx_geiser.png",
+   "cuadros": 100,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    344,
+    344
+   ],
+   "ancla": [
+    165,
+    257
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      344,
+      344
+     ],
+     "ancla": [
+      165,
+      257
+     ],
+     "columnas": 11,
+     "filas": 10
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#80caf6",
+    "radio": 276,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0,
+     0.01,
+     0.03,
+     0.05,
+     0.06,
+     0.06,
+     0.05,
+     0.05,
+     0.05,
+     0.05,
+     0.05,
+     0.06,
+     0.06,
+     0.07,
+     0.11,
+     0.08,
+     0.06,
+     0.06,
+     0.08,
+     0.1,
+     0.11,
+     0.09,
+     0.08,
+     0.11,
+     0.1,
+     0.1,
+     0.12,
+     0.12,
+     1,
+     0.73,
+     0.68,
+     0.65,
+     0.63,
+     0.64,
+     0.64,
+     0.62,
+     0.58,
+     0.57,
+     0.54,
+     0.53,
+     0.52,
+     0.53,
+     0.52,
+     0.53,
+     0.53,
+     0.52,
+     0.52,
+     0.51,
+     0.51,
+     0.5,
+     0.5,
+     0.51,
+     0.51,
+     0.5,
+     0.5,
+     0.49,
+     0.49,
+     0.48,
+     0.47,
+     0.47,
+     0.47,
+     0.47,
+     0.46,
+     0.46,
+     0.46,
+     0.45,
+     0.45,
+     0.44,
+     0.42,
+     0.39,
+     0.35,
+     0.32,
+     0.28,
+     0.24,
+     0.21,
+     0.19,
+     0.17,
+     0.16,
+     0.15,
+     0.14,
+     0.13,
+     0.12,
+     0.1,
+     0.1,
+     0.1,
+     0.09,
+     0.1,
+     0.1,
+     0.09,
+     0.08,
+     0.07,
+     0.05,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01
+    ],
+    "altura": 69,
+    "parpadeo": 0.07,
+    "sombra": true,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a4_grieta",
+      "a3_pantano"
+     ],
+     "nota": "surtidor que estalla cada tanto (trampa de vapor)"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "madre_cienaga"
+     ],
+     "nota": "columna de agua al emerger"
+    }
+   ]
+  },
+  {
+   "id": "fx_salpicon_lluvia",
+   "origen": "water/rain-splash",
+   "nombre": [
+    "Charco bajo la lluvia",
+    "Rain puddle"
+   ],
+   "categoria": "agua",
+   "capa": "piso",
+   "archivo": "fx_salpicon_lluvia.png",
+   "cuadros": 60,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    332,
+    162
+   ],
+   "ancla": [
+    157,
+    97
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      332,
+      162
+     ],
+     "ancla": [
+      157,
+      97
+     ],
+     "columnas": 12,
+     "filas": 5
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#79c7f5",
+    "radio": 158,
+    "intensidad": 0.42,
+    "curva": [
+     0.56,
+     0.46,
+     0.67,
+     0.64,
+     0.77,
+     0.88,
+     0.84,
+     0.7,
+     0.55,
+     0.78,
+     0.78,
+     0.92,
+     0.97,
+     0.97,
+     0.8,
+     0.62,
+     0.53,
+     0.88,
+     0.73,
+     0.89,
+     1,
+     0.98,
+     0.72,
+     0.52,
+     0.91,
+     0.65,
+     0.77,
+     0.87,
+     0.92,
+     0.8,
+     0.64,
+     0.78,
+     0.8,
+     0.9,
+     0.93,
+     0.9,
+     0.78,
+     0.72,
+     0.57,
+     0.86,
+     0.75,
+     0.87,
+     1,
+     0.94,
+     0.69,
+     0.59,
+     0.79,
+     0.7,
+     0.81,
+     0.88,
+     0.83,
+     0.73,
+     0.66,
+     0.49,
+     0.44,
+     0.69,
+     0.67,
+     0.82,
+     0.88,
+     0.81
+    ],
+    "altura": 4,
+    "parpadeo": 0.23,
+    "sombra": false,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "clima",
+     "actos": [
+      1,
+      3,
+      6
+     ],
+     "zonas": [
+      "a1_refugio",
+      "a3_muelle",
+      "a6_barco"
+     ],
+     "nota": "charcos con gotas: sembrarlos en el piso mientras llueve"
+    }
+   ]
+  },
+  {
+   "id": "fx_ondas",
+   "origen": "water/ripples",
+   "nombre": [
+    "Ondas",
+    "Ripples"
+   ],
+   "categoria": "agua",
+   "capa": "piso",
+   "archivo": "fx_ondas.png",
+   "cuadros": 50,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    250,
+    126
+   ],
+   "ancla": [
+    125,
+    63
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      250,
+      126
+     ],
+     "ancla": [
+      125,
+      63
+     ],
+     "columnas": 16,
+     "filas": 4
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#73c4f5",
+    "radio": 132,
+    "intensidad": 0.48,
+    "curva": [
+     1,
+     0.92,
+     0.9,
+     0.94,
+     0.97,
+     0.97,
+     0.97,
+     0.96,
+     0.94,
+     0.91,
+     0.88,
+     0.86,
+     0.84,
+     0.92,
+     0.88,
+     0.9,
+     0.9,
+     0.91,
+     0.9,
+     0.9,
+     0.9,
+     0.89,
+     0.88,
+     0.87,
+     0.86,
+     0.98,
+     0.92,
+     0.9,
+     0.95,
+     0.96,
+     0.96,
+     0.96,
+     0.94,
+     0.91,
+     0.89,
+     0.88,
+     0.86,
+     0.84,
+     0.93,
+     0.89,
+     0.92,
+     0.92,
+     0.92,
+     0.93,
+     0.93,
+     0.93,
+     0.93,
+     0.93,
+     0.91,
+     0.89
+    ],
+    "altura": 4,
+    "parpadeo": 0.07,
+    "sombra": false,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a1_paramo",
+      "a3_pantano",
+      "a6_costa"
+     ],
+     "nota": "agua quieta que tiembla (arroyos, ciénaga, pozas)"
+    },
+    {
+     "tipo": "golpe",
+     "nota": "pasos del héroe sobre agua baja"
+    }
+   ]
+  },
+  {
+   "id": "fx_salpicadura",
+   "origen": "water/splash",
+   "nombre": [
+    "Salpicadura",
+    "Splash"
+   ],
+   "categoria": "agua",
+   "capa": "mundo",
+   "archivo": "fx_salpicadura.png",
+   "cuadros": 58,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    256,
+    234
+   ],
+   "ancla": [
+    135,
+    157
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      256,
+      234
+     ],
+     "ancla": [
+      135,
+      157
+     ],
+     "columnas": 16,
+     "filas": 4
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#82caf6",
+    "radio": 204,
+    "intensidad": 0.79,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0.91,
+     0.74,
+     0.65,
+     0.58,
+     0.5,
+     0.44,
+     0.41,
+     0.41,
+     0.41,
+     0.4,
+     0.4,
+     0.4,
+     0.41,
+     0.4,
+     0.39,
+     0.37,
+     0.36,
+     0.34,
+     0.31,
+     0.28,
+     0.27,
+     0.23,
+     0.2,
+     0.17,
+     0.15,
+     0.13,
+     0.1,
+     0.09,
+     0.08,
+     0.07,
+     0.06,
+     0.05,
+     0.04,
+     0.04,
+     0.04,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 8,
+    "parpadeo": 0.09,
+    "sombra": true,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "algo cae al agua: un cuerpo, una roca, el héroe que salta"
+    },
+    {
+     "tipo": "muerte",
+     "nota": "muerte de un ahogado que se deshace en agua"
+    }
+   ]
+  },
+  {
+   "id": "fx_chorro_agua",
+   "origen": "water/water-jet",
+   "nombre": [
+    "Chorro de agua",
+    "Water jet"
+   ],
+   "categoria": "agua",
+   "capa": "mundo",
+   "archivo": "fx_chorro_agua.png",
+   "cuadros": 13,
+   "t": 2,
+   "bucle": true,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    378,
+    122
+   ],
+   "ancla": [
+    29,
+    89
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      120,
+      268
+     ],
+     "ancla": [
+      67,
+      77
+     ],
+     "columnas": 13,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 268,
+     "celda": [
+      290,
+      232
+     ],
+     "ancla": [
+      265,
+      87
+     ],
+     "columnas": 13,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 500,
+     "celda": [
+      378,
+      122
+     ],
+     "ancla": [
+      349,
+      89
+     ],
+     "columnas": 10,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 744,
+     "celda": [
+      322,
+      165
+     ],
+     "ancla": [
+      297,
+      163
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1074,
+     "celda": [
+      120,
+      289
+     ],
+     "ancla": [
+      29,
+      287
+     ],
+     "columnas": 13,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1363,
+     "celda": [
+      322,
+      165
+     ],
+     "ancla": [
+      25,
+      163
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 1693,
+     "celda": [
+      378,
+      122
+     ],
+     "ancla": [
+      29,
+      89
+     ],
+     "columnas": 10,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1937,
+     "celda": [
+      290,
+      232
+     ],
+     "ancla": [
+      25,
+      87
+     ],
+     "columnas": 13,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#8ccff6",
+    "radio": 236,
+    "intensidad": 0.68,
+    "curva": [
+     0.93,
+     0.95,
+     0.93,
+     0.99,
+     0.89,
+     1,
+     0.89,
+     1,
+     0.89,
+     1,
+     0.91,
+     0.96,
+     0.93
+    ],
+    "altura": 44,
+    "parpadeo": 0.15,
+    "enVuelo": true,
+    "sombra": true,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "ahogado",
+      "campana_ahoga"
+     ],
+     "nota": "vómito de agua negra de los ahogados (acto 6)"
+    },
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a6_faro",
+      "a6_criptas"
+     ],
+     "nota": "caño roto que escupe agua"
+    }
+   ]
+  },
+  {
+   "id": "fx_orbe_agua",
+   "origen": "water/water-orb",
+   "nombre": [
+    "Orbe de agua",
+    "Water orb"
+   ],
+   "categoria": "agua",
+   "capa": "mundo",
+   "archivo": "fx_orbe_agua.png",
+   "cuadros": 75,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    178,
+    230
+   ],
+   "ancla": [
+    89,
+    197
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      178,
+      230
+     ],
+     "ancla": [
+      89,
+      197
+     ],
+     "columnas": 23,
+     "filas": 4
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#80caf6",
+    "radio": 202,
+    "intensidad": 0.69,
+    "curva": [
+     0.89,
+     0.91,
+     0.93,
+     0.94,
+     0.96,
+     0.97,
+     0.98,
+     0.99,
+     0.99,
+     1,
+     0.99,
+     0.99,
+     0.98,
+     0.97,
+     0.96,
+     0.94,
+     0.93,
+     0.91,
+     0.9,
+     0.88,
+     0.87,
+     0.85,
+     0.83,
+     0.82,
+     0.81,
+     0.8,
+     0.79,
+     0.78,
+     0.78,
+     0.78,
+     0.78,
+     0.79,
+     0.79,
+     0.81,
+     0.82,
+     0.84,
+     0.86,
+     0.88,
+     0.9,
+     0.92,
+     0.94,
+     0.96,
+     0.97,
+     0.98,
+     0.99,
+     1,
+     1,
+     1,
+     1,
+     0.99,
+     0.98,
+     0.97,
+     0.96,
+     0.94,
+     0.93,
+     0.91,
+     0.89,
+     0.88,
+     0.86,
+     0.85,
+     0.83,
+     0.82,
+     0.81,
+     0.8,
+     0.79,
+     0.79,
+     0.78,
+     0.78,
+     0.79,
+     0.8,
+     0.8,
+     0.82,
+     0.83,
+     0.85,
+     0.87
+    ],
+    "altura": 91,
+    "parpadeo": 0.06,
+    "sombra": true,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "madre_cienaga",
+      "hechicera_sangre"
+     ],
+     "nota": "esfera de agua que flota antes del ataque"
+    },
+    {
+     "tipo": "botin",
+     "nota": "reliquia del agua (aura del objeto en el piso)"
+    }
+   ]
+  },
+  {
+   "id": "fx_cascada",
+   "origen": "water/waterfall",
+   "nombre": [
+    "Cascada",
+    "Waterfall"
+   ],
+   "categoria": "agua",
+   "capa": "mundo",
+   "archivo": "fx_cascada.png",
+   "cuadros": 50,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    238,
+    292
+   ],
+   "ancla": [
+    125,
+    231
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      238,
+      292
+     ],
+     "ancla": [
+      125,
+      231
+     ],
+     "columnas": 17,
+     "filas": 3
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#81cbf6",
+    "radio": 236,
+    "intensidad": 0.72,
+    "curva": [
+     0.91,
+     0.93,
+     0.95,
+     0.97,
+     0.98,
+     1,
+     1,
+     0.98,
+     0.97,
+     0.94,
+     0.93,
+     0.92,
+     0.91,
+     0.89,
+     0.88,
+     0.86,
+     0.84,
+     0.86,
+     0.86,
+     0.85,
+     0.86,
+     0.86,
+     0.87,
+     0.88,
+     0.91,
+     0.93,
+     0.94,
+     0.94,
+     0.95,
+     0.94,
+     0.94,
+     0.93,
+     0.93,
+     0.93,
+     0.96,
+     0.95,
+     0.94,
+     0.92,
+     0.9,
+     0.89,
+     0.88,
+     0.88,
+     0.87,
+     0.86,
+     0.87,
+     0.85,
+     0.84,
+     0.85,
+     0.85,
+     0.86
+    ],
+    "altura": 63,
+    "parpadeo": 0.06,
+    "sombra": true,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a3_selva",
+      "a3_inundadas",
+      "a4_glaciar",
+      "a6_criptas"
+     ],
+     "nota": "agua que cae de una cornisa o de un caño de piedra"
+    }
+   ]
+  },
+  {
+   "id": "fx_ola",
+   "origen": "water/wave-crash",
+   "nombre": [
+    "Ola que rompe",
+    "Crashing wave"
+   ],
+   "categoria": "agua",
+   "capa": "mundo",
+   "archivo": "fx_ola.png",
+   "cuadros": 75,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    432,
+    194
+   ],
+   "ancla": [
+    217,
+    139
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      432,
+      194
+     ],
+     "ancla": [
+      217,
+      139
+     ],
+     "columnas": 9,
+     "filas": 9
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#8dd0f7",
+    "radio": 244,
+    "intensidad": 0.93,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.02,
+     0.02,
+     0.03,
+     0.04,
+     0.05,
+     0.06,
+     0.07,
+     0.09,
+     0.1,
+     0.13,
+     0.18,
+     0.19,
+     0.19,
+     0.18,
+     1,
+     0.75,
+     0.62,
+     0.52,
+     0.43,
+     0.37,
+     0.32,
+     0.27,
+     0.25,
+     0.22,
+     0.2,
+     0.19,
+     0.18,
+     0.17,
+     0.16,
+     0.15,
+     0.14,
+     0.13,
+     0.12,
+     0.12,
+     0.11,
+     0.1,
+     0.09,
+     0.07,
+     0.06,
+     0.04,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 39,
+    "parpadeo": 0.08,
+    "sombra": true,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "cinematica",
+     "nota": "el mar que golpea el barco varado o la costa de los naufragios (acto 6), en una toma de costado"
+    }
+   ],
+   "notas": "Vista de perfil: la ola corre sobre una línea de agua horizontal. Sirve para tomas laterales de cinemática, no para el piso isométrico."
+  },
+  {
+   "id": "fx_remolino",
+   "origen": "water/whirlpool",
+   "nombre": [
+    "Remolino",
+    "Whirlpool"
+   ],
+   "categoria": "agua",
+   "capa": "piso",
+   "archivo": "fx_remolino.png",
+   "cuadros": 75,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    238,
+    138
+   ],
+   "ancla": [
+    119,
+    69
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      238,
+      138
+     ],
+     "ancla": [
+      119,
+      69
+     ],
+     "columnas": 17,
+     "filas": 5
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#81cbf6",
+    "radio": 160,
+    "intensidad": 0.59,
+    "curva": [
+     0.98,
+     0.97,
+     0.98,
+     0.98,
+     0.98,
+     0.97,
+     0.99,
+     0.98,
+     0.98,
+     0.97,
+     0.97,
+     0.97,
+     0.98,
+     0.98,
+     0.97,
+     0.98,
+     0.98,
+     0.98,
+     0.98,
+     0.97,
+     0.98,
+     0.98,
+     0.98,
+     0.98,
+     0.99,
+     0.99,
+     1,
+     0.98,
+     0.99,
+     0.98,
+     0.98,
+     0.97,
+     0.98,
+     0.99,
+     0.97,
+     0.98,
+     0.97,
+     0.98,
+     0.98,
+     0.97,
+     0.98,
+     0.97,
+     0.97,
+     0.97,
+     0.98,
+     0.97,
+     0.98,
+     0.97,
+     0.98,
+     0.98,
+     0.98,
+     0.98,
+     0.99,
+     0.98,
+     0.97,
+     0.98,
+     0.97,
+     0.98,
+     0.97,
+     0.97,
+     0.98,
+     0.97,
+     0.98,
+     0.98,
+     0.98,
+     0.97,
+     0.98,
+     0.98,
+     0.97,
+     0.99,
+     0.97,
+     0.98,
+     0.98,
+     0.98,
+     0.98
+    ],
+    "altura": 4,
+    "parpadeo": 0.05,
+    "sombra": false,
+    "prioridad": 2,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a6_arrecife",
+      "a6_criptas2"
+     ],
+     "nota": "el agua que se traga todo"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "campana_ahoga"
+     ],
+     "nota": "remolino bajo la Campana Ahogada"
+    }
+   ]
+  },
+  {
    "id": "fx_nova_escarcha",
    "origen": "ice/frost-nova",
    "nombre": [
@@ -122,8 +3908,6 @@
    "bucle": false,
    "direccional": false,
    "filas": null,
-   "columnas": 6,
-   "filasPorDir": 14,
    "celda": [
     604,
     346
@@ -131,6 +3915,23 @@
    "ancla": [
     305,
     219
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      604,
+      346
+     ],
+     "ancla": [
+      305,
+      219
+     ],
+     "columnas": 6,
+     "filas": 14
+    }
    ],
    "escala": 2,
    "mezcla": "normal",
@@ -254,6 +4055,2893 @@
    ]
   },
   {
+   "id": "fx_vortice_ventisca",
+   "origen": "ice/blizzard-vortex",
+   "nombre": [
+    "Vórtice de ventisca",
+    "Blizzard vortex"
+   ],
+   "categoria": "hielo",
+   "capa": "mundo",
+   "archivo": "fx_vortice_ventisca.png",
+   "cuadros": 50,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    190,
+    252
+   ],
+   "ancla": [
+    101,
+    199
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      190,
+      252
+     ],
+     "ancla": [
+      101,
+      199
+     ],
+     "columnas": 21,
+     "filas": 3
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#87cff6",
+    "radio": 194,
+    "intensidad": 0.7,
+    "curva": [
+     0.94,
+     0.96,
+     0.96,
+     0.98,
+     0.98,
+     0.98,
+     0.97,
+     0.96,
+     0.97,
+     0.97,
+     0.97,
+     0.98,
+     0.99,
+     1,
+     1,
+     1,
+     0.99,
+     0.97,
+     0.94,
+     0.92,
+     0.91,
+     0.9,
+     0.9,
+     0.91,
+     0.93,
+     0.95,
+     0.97,
+     0.98,
+     0.98,
+     0.98,
+     0.97,
+     0.96,
+     0.94,
+     0.92,
+     0.91,
+     0.91,
+     0.91,
+     0.92,
+     0.94,
+     0.97,
+     0.98,
+     0.99,
+     0.98,
+     0.98,
+     0.96,
+     0.96,
+     0.95,
+     0.92,
+     0.91,
+     0.93
+    ],
+    "altura": 48,
+    "parpadeo": 0.06,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "ventisca"
+     ],
+     "nota": "varios remolinos repartidos por el área"
+    },
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "huracan"
+     ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "ciclon",
+      "ojo_tifon"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_congelar",
+   "origen": "ice/freeze",
+   "nombre": [
+    "Congelar",
+    "Freeze"
+   ],
+   "categoria": "hielo",
+   "capa": "mundo",
+   "archivo": "fx_congelar.png",
+   "cuadros": 95,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    320,
+    238
+   ],
+   "ancla": [
+    165,
+    167
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      320,
+      238
+     ],
+     "ancla": [
+      165,
+      167
+     ],
+     "columnas": 12,
+     "filas": 8
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "cuerpo": {
+    "tinte": {
+     "color": "#86b8dc",
+     "fuerza": 0.55,
+     "nota": "el sprite queda azul hielo y quieto mientras dura"
+    }
+   },
+   "luz": {
+    "color": "#a7dcf9",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0,
+     0.01,
+     0.01,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.04,
+     0.04,
+     0.05,
+     0.05,
+     0.05,
+     0.06,
+     0.07,
+     0.09,
+     0.09,
+     0.1,
+     0.09,
+     0.09,
+     0.1,
+     0.1,
+     0.1,
+     0.42,
+     0.33,
+     0.25,
+     0.19,
+     0.13,
+     0.1,
+     0.08,
+     0.07,
+     0.07,
+     0.08,
+     0.08,
+     0.09,
+     0.08,
+     0.06,
+     0.06,
+     0.05,
+     0.05,
+     0.05,
+     0.05,
+     0.05,
+     0.05,
+     0.04,
+     0.04,
+     0.04,
+     0.05,
+     0.06,
+     0.08,
+     0.08,
+     0.08,
+     0.08,
+     0.07,
+     0.06,
+     0.1,
+     0.07,
+     0.07,
+     0.07,
+     0.14,
+     0.13,
+     0.16,
+     0.37,
+     1,
+     0.54,
+     0.32,
+     0.23,
+     0.19,
+     0.17,
+     0.15,
+     0.12,
+     0.1,
+     0.08,
+     0.07,
+     0.06,
+     0.06,
+     0.06,
+     0.05,
+     0.04,
+     0.04,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 44,
+    "parpadeo": 0.09,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "sepulcro_hielo"
+     ],
+     "nota": "sobre el que queda encerrado en hielo"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "frasco_helado"
+     ]
+    },
+    {
+     "tipo": "estado",
+     "estado": "congelado",
+     "nota": "el momento en que se congela (después, fx_congelado en bucle)"
+    }
+   ]
+  },
+  {
+   "id": "fx_aliento_escarcha",
+   "origen": "ice/frost-breath",
+   "nombre": [
+    "Aliento de escarcha",
+    "Frost breath"
+   ],
+   "categoria": "hielo",
+   "capa": "mundo",
+   "archivo": "fx_aliento_escarcha.png",
+   "cuadros": 15,
+   "t": 2,
+   "bucle": true,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    356,
+    140
+   ],
+   "ancla": [
+    25,
+    125
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      140,
+      252
+     ],
+     "ancla": [
+      63,
+      87
+     ],
+     "columnas": 15,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 252,
+     "celda": [
+      294,
+      210
+     ],
+     "ancla": [
+      271,
+      99
+     ],
+     "columnas": 13,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 672,
+     "celda": [
+      356,
+      140
+     ],
+     "ancla": [
+      331,
+      125
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 952,
+     "celda": [
+      304,
+      217
+     ],
+     "ancla": [
+      281,
+      215
+     ],
+     "columnas": 13,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1386,
+     "celda": [
+      140,
+      287
+     ],
+     "ancla": [
+      53,
+      285
+     ],
+     "columnas": 15,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1673,
+     "celda": [
+      304,
+      217
+     ],
+     "ancla": [
+      23,
+      215
+     ],
+     "columnas": 13,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 2107,
+     "celda": [
+      356,
+      140
+     ],
+     "ancla": [
+      25,
+      125
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 2387,
+     "celda": [
+      294,
+      210
+     ],
+     "ancla": [
+      23,
+      99
+     ],
+     "columnas": 13,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#94d5f7",
+    "radio": 266,
+    "intensidad": 0.87,
+    "curva": [
+     0.95,
+     0.96,
+     0.93,
+     0.88,
+     0.88,
+     0.91,
+     0.98,
+     0.97,
+     0.96,
+     0.93,
+     0.97,
+     1,
+     0.98,
+     0.95,
+     0.95
+    ],
+    "altura": 58,
+    "parpadeo": 0.08,
+    "enVuelo": true,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "rafaga_artica"
+     ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "puno_vendaval"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "gigante_helado",
+      "rey_escarcha",
+      "dragon_oseo"
+     ],
+     "nota": "aliento helado del acto 4"
+    }
+   ]
+  },
+  {
+   "id": "fx_cristal_hielo",
+   "origen": "ice/ice-crystal",
+   "nombre": [
+    "Cristal de hielo",
+    "Ice crystal"
+   ],
+   "categoria": "hielo",
+   "capa": "mundo",
+   "archivo": "fx_cristal_hielo.png",
+   "cuadros": 75,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    102,
+    160
+   ],
+   "ancla": [
+    51,
+    127
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      102,
+      160
+     ],
+     "ancla": [
+      51,
+      127
+     ],
+     "columnas": 40,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#80caf6",
+    "radio": 158,
+    "intensidad": 0.59,
+    "curva": [
+     0.59,
+     0.76,
+     0.92,
+     0.84,
+     0.73,
+     0.64,
+     0.64,
+     0.64,
+     0.64,
+     0.64,
+     0.63,
+     0.63,
+     0.62,
+     0.6,
+     0.58,
+     0.56,
+     0.55,
+     0.54,
+     0.53,
+     0.52,
+     0.51,
+     0.5,
+     0.51,
+     0.51,
+     0.52,
+     0.53,
+     0.53,
+     0.54,
+     0.54,
+     0.54,
+     0.54,
+     0.55,
+     0.63,
+     0.64,
+     0.64,
+     0.69,
+     0.7,
+     0.7,
+     0.8,
+     0.93,
+     1,
+     0.85,
+     0.75,
+     0.75,
+     0.76,
+     0.76,
+     0.77,
+     0.78,
+     0.73,
+     0.73,
+     0.73,
+     0.73,
+     0.73,
+     0.75,
+     0.75,
+     0.74,
+     0.69,
+     0.68,
+     0.59,
+     0.58,
+     0.57,
+     0.56,
+     0.55,
+     0.54,
+     0.53,
+     0.53,
+     0.53,
+     0.53,
+     0.53,
+     0.53,
+     0.54,
+     0.55,
+     0.55,
+     0.56,
+     0.58
+    ],
+    "altura": 55,
+    "parpadeo": 0.08,
+    "sombra": false,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "botin",
+     "nota": "gema de escarcha o fragmento de reliquia flotando en el piso"
+    },
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a4_hielo1",
+      "a4_hielo2",
+      "a4_grieta"
+     ],
+     "nota": "cristal que flota en las cuevas del aliento helado"
+    }
+   ]
+  },
+  {
+   "id": "fx_lanza_hielo",
+   "origen": "ice/ice-lance",
+   "nombre": [
+    "Lanza de hielo",
+    "Ice lance"
+   ],
+   "categoria": "hielo",
+   "capa": "mundo",
+   "archivo": "fx_lanza_hielo.png",
+   "cuadros": 10,
+   "t": 2,
+   "bucle": true,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    280,
+    81
+   ],
+   "ancla": [
+    259,
+    79
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      74,
+      227
+     ],
+     "ancla": [
+      37,
+      225
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 227,
+     "celda": [
+      226,
+      149
+     ],
+     "ancla": [
+      19,
+      147
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 376,
+     "celda": [
+      280,
+      81
+     ],
+     "ancla": [
+      21,
+      79
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 457,
+     "celda": [
+      226,
+      136
+     ],
+     "ancla": [
+      19,
+      67
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 593,
+     "celda": [
+      74,
+      198
+     ],
+     "ancla": [
+      37,
+      57
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 791,
+     "celda": [
+      226,
+      136
+     ],
+     "ancla": [
+      207,
+      67
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 927,
+     "celda": [
+      280,
+      81
+     ],
+     "ancla": [
+      259,
+      79
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1008,
+     "celda": [
+      226,
+      149
+     ],
+     "ancla": [
+      207,
+      147
+     ],
+     "columnas": 10,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#86ccf6",
+    "radio": 194,
+    "intensidad": 0.61,
+    "curva": [
+     0.95,
+     0.93,
+     0.96,
+     0.98,
+     0.96,
+     0.96,
+     0.96,
+     0.94,
+     1,
+     1
+    ],
+    "altura": 43,
+    "parpadeo": 0.07,
+    "enVuelo": true,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "carambano",
+      "esquirla"
+     ],
+     "nota": "en vuelo; al pegar, fx_estallido_hielo"
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "flecha_helada"
+     ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "virote_escarcha"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_estallido_hielo",
+   "origen": "ice/ice-shatter",
+   "nombre": [
+    "Hielo que estalla",
+    "Ice shatter"
+   ],
+   "categoria": "hielo",
+   "capa": "mundo",
+   "archivo": "fx_estallido_hielo.png",
+   "cuadros": 60,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    398,
+    274
+   ],
+   "ancla": [
+    113,
+    173
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      398,
+      274
+     ],
+     "ancla": [
+      113,
+      173
+     ],
+     "columnas": 10,
+     "filas": 6
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#acdff9",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.17,
+     0.12,
+     0.1,
+     0.14,
+     0.1,
+     0.1,
+     0.12,
+     0.09,
+     0.08,
+     0.15,
+     1,
+     0.55,
+     0.32,
+     0.22,
+     0.17,
+     0.13,
+     0.1,
+     0.07,
+     0.06,
+     0.05,
+     0.04,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 32,
+    "parpadeo": 0.1,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "impacto de los proyectiles de hielo (fx_lanza_hielo, carámbano, virote de escarcha)"
+    },
+    {
+     "tipo": "muerte",
+     "nota": "un enemigo congelado que se rompe"
+    }
+   ],
+   "notas": "Un bloque de hielo que revienta y tira sus astillas hacia la derecha; espejarlo para la izquierda."
+  },
+  {
+   "id": "fx_puas_hielo",
+   "origen": "ice/ice-spikes",
+   "nombre": [
+    "Púas de hielo",
+    "Ice spikes"
+   ],
+   "categoria": "hielo",
+   "capa": "mundo",
+   "archivo": "fx_puas_hielo.png",
+   "cuadros": 32,
+   "t": 2,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    514,
+    238
+   ],
+   "ancla": [
+    47,
+    175
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      134,
+      366
+     ],
+     "ancla": [
+      15,
+      93
+     ],
+     "columnas": 30,
+     "filas": 2
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 732,
+     "celda": [
+      368,
+      318
+     ],
+     "ancla": [
+      333,
+      113
+     ],
+     "columnas": 11,
+     "filas": 3
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 1686,
+     "celda": [
+      514,
+      238
+     ],
+     "ancla": [
+      467,
+      175
+     ],
+     "columnas": 7,
+     "filas": 5
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 2876,
+     "celda": [
+      368,
+      304
+     ],
+     "ancla": [
+      333,
+      265
+     ],
+     "columnas": 11,
+     "filas": 3
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 3788,
+     "celda": [
+      134,
+      346
+     ],
+     "ancla": [
+      15,
+      305
+     ],
+     "columnas": 30,
+     "filas": 2
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 4480,
+     "celda": [
+      368,
+      304
+     ],
+     "ancla": [
+      35,
+      265
+     ],
+     "columnas": 11,
+     "filas": 3
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 5392,
+     "celda": [
+      514,
+      238
+     ],
+     "ancla": [
+      47,
+      175
+     ],
+     "columnas": 7,
+     "filas": 5
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 6582,
+     "celda": [
+      368,
+      318
+     ],
+     "ancla": [
+      35,
+      113
+     ],
+     "columnas": 11,
+     "filas": 3
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#a7dcf9",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0.08,
+     0.17,
+     0.52,
+     0.33,
+     0.25,
+     0.15,
+     0.13,
+     0.13,
+     0.13,
+     0.13,
+     0.12,
+     0.12,
+     0.12,
+     0.12,
+     0.12,
+     0.12,
+     0.45,
+     1,
+     0.15,
+     0.1,
+     0.07,
+     0.05,
+     0.04,
+     0.04,
+     0.03,
+     0.02,
+     0.01,
+     0.01,
+     0,
+     0,
+     0
+    ],
+    "altura": 35,
+    "parpadeo": 0.18,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "ola_escarcha"
+     ],
+     "nota": "la línea de púas avanza por el piso desde los pies"
+    },
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "granizada"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "rey_escarcha",
+      "escarchado"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_caida_carambano",
+   "origen": "ice/icicle-fall",
+   "nombre": [
+    "Carámbano que cae",
+    "Falling icicle"
+   ],
+   "categoria": "hielo",
+   "capa": "mundo",
+   "archivo": "fx_caida_carambano.png",
+   "cuadros": 58,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    352,
+    272
+   ],
+   "ancla": [
+    181,
+    203
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      352,
+      272
+     ],
+     "ancla": [
+      181,
+      203
+     ],
+     "columnas": 11,
+     "filas": 6
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#b7e3fa",
+    "radio": 272,
+    "intensidad": 1,
+    "curva": [
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.24,
+     0.11,
+     0.06,
+     0.04,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     0.03,
+     1,
+     0.5,
+     0.29,
+     0.21,
+     0.15,
+     0.09,
+     0.07,
+     0.05,
+     0.03,
+     0.02,
+     0.02,
+     0.03,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 56,
+    "parpadeo": 0.1,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "granizada"
+     ],
+     "nota": "varios a la vez en el área"
+    },
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a4_hielo1",
+      "a4_grieta",
+      "a4_glaciar"
+     ],
+     "nota": "trampa del techo de hielo"
+    }
+   ]
+  },
+  {
+   "id": "fx_estallido_copos",
+   "origen": "ice/snowflake-burst",
+   "nombre": [
+    "Estallido de escarcha",
+    "Snowflake burst"
+   ],
+   "categoria": "hielo",
+   "capa": "mundo",
+   "archivo": "fx_estallido_copos.png",
+   "cuadros": 73,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    230,
+    230
+   ],
+   "ancla": [
+    115,
+    211
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      230,
+      230
+     ],
+     "ancla": [
+      115,
+      211
+     ],
+     "columnas": 17,
+     "filas": 5
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#91d3f7",
+    "radio": 296,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0.02,
+     0.04,
+     0.07,
+     1,
+     0.65,
+     0.5,
+     0.41,
+     0.35,
+     0.3,
+     0.25,
+     0.22,
+     0.21,
+     0.19,
+     0.18,
+     0.18,
+     0.17,
+     0.16,
+     0.15,
+     0.15,
+     0.15,
+     0.13,
+     0.11,
+     0.11,
+     0.12,
+     0.13,
+     0.13,
+     0.11,
+     0.11,
+     0.11,
+     0.1,
+     0.08,
+     0.08,
+     0.08,
+     0.09,
+     0.11,
+     0.11,
+     0.09,
+     0.08,
+     0.09,
+     0.08,
+     0.06,
+     0.06,
+     0.07,
+     0.07,
+     0.06,
+     0.06,
+     0.06,
+     0.06,
+     0.06,
+     0.06,
+     0.08,
+     0.12,
+     0.1,
+     0.07,
+     0.06,
+     0.06,
+     0.06,
+     0.07,
+     0.07,
+     0.06,
+     0.05,
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     0.03,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 96,
+    "parpadeo": 0.09,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "orbe_glacial",
+      "armadura_escarcha"
+     ],
+     "nota": "el orbe que revienta; el brillo al ponerse la armadura"
+    },
+    {
+     "tipo": "golpe",
+     "nota": "golpe con arma de hielo (encanto hielo)"
+    }
+   ]
+  },
+  {
+   "id": "fx_bola_rayo",
+   "origen": "lightning/ball-lightning",
+   "nombre": [
+    "Rayo globular",
+    "Ball lightning"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "archivo": "fx_bola_rayo.png",
+   "cuadros": 100,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    256,
+    218
+   ],
+   "ancla": [
+    141,
+    167
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      256,
+      218
+     ],
+     "ancla": [
+      141,
+      167
+     ],
+     "columnas": 16,
+     "filas": 7
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#848bf2",
+    "radio": 206,
+    "intensidad": 0.8,
+    "curva": [
+     0.37,
+     0.37,
+     0.38,
+     0.38,
+     0.39,
+     0.38,
+     0.4,
+     0.38,
+     0.4,
+     0.39,
+     0.38,
+     0.39,
+     0.38,
+     0.39,
+     0.37,
+     0.36,
+     0.36,
+     0.36,
+     0.34,
+     0.34,
+     0.34,
+     0.32,
+     0.31,
+     0.31,
+     0.33,
+     0.3,
+     0.3,
+     0.3,
+     0.3,
+     0.3,
+     0.3,
+     0.3,
+     0.31,
+     0.31,
+     0.32,
+     0.3,
+     0.31,
+     0.33,
+     0.32,
+     0.34,
+     0.34,
+     0.32,
+     0.33,
+     0.33,
+     0.34,
+     0.34,
+     0.35,
+     0.34,
+     0.35,
+     0.34,
+     0.35,
+     0.35,
+     1,
+     0.72,
+     0.91,
+     0.37,
+     0.38,
+     0.38,
+     0.37,
+     0.36,
+     0.37,
+     0.36,
+     0.36,
+     0.38,
+     0.36,
+     0.37,
+     0.36,
+     0.38,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     0.36,
+     0.34,
+     0.33,
+     0.35,
+     0.33,
+     0.32,
+     0.31,
+     0.32,
+     0.3,
+     0.31,
+     0.29,
+     0.29,
+     0.31,
+     0.28,
+     0.28,
+     0.29,
+     0.28,
+     0.28,
+     0.29,
+     0.3,
+     0.3,
+     0.31,
+     0.32,
+     0.33,
+     0.34,
+     0.34,
+     0.34
+    ],
+    "altura": 61,
+    "parpadeo": 0.34,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "chispa",
+      "descarga_prismatica"
+     ],
+     "nota": "la esfera que avanza chisporroteando"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "frasco_rayo"
+     ]
+    },
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a7_cielo",
+      "a7_boveda"
+     ],
+     "nota": "fuego de San Telmo suelto en el Cielo Roto"
+    }
+   ]
+  },
+  {
+   "id": "fx_rayo_cadena",
+   "origen": "lightning/chain-lightning",
+   "nombre": [
+    "Rayo en cadena",
+    "Chain lightning"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "archivo": "fx_rayo_cadena.png",
+   "cuadros": 19,
+   "t": 2,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    422,
+    194
+   ],
+   "ancla": [
+    25,
+    135
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      194,
+      298
+     ],
+     "ancla": [
+      107,
+      65
+     ],
+     "columnas": 19,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 298,
+     "celda": [
+      356,
+      250
+     ],
+     "ancla": [
+      323,
+      75
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 798,
+     "celda": [
+      422,
+      194
+     ],
+     "ancla": [
+      397,
+      135
+     ],
+     "columnas": 9,
+     "filas": 3
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 1380,
+     "celda": [
+      350,
+      256
+     ],
+     "ancla": [
+      331,
+      253
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1892,
+     "celda": [
+      194,
+      331
+     ],
+     "ancla": [
+      87,
+      329
+     ],
+     "columnas": 19,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 2223,
+     "celda": [
+      350,
+      256
+     ],
+     "ancla": [
+      19,
+      253
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 2735,
+     "celda": [
+      422,
+      194
+     ],
+     "ancla": [
+      25,
+      135
+     ],
+     "columnas": 9,
+     "filas": 3
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 3317,
+     "celda": [
+      356,
+      250
+     ],
+     "ancla": [
+      33,
+      75
+     ],
+     "columnas": 11,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "aditiva",
+   "enLanzador": true,
+   "luz": {
+    "color": "#99a0f5",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0.03,
+     0.12,
+     0.44,
+     1,
+     0.52,
+     0.42,
+     0.45,
+     0.43,
+     0.41,
+     0.28,
+     0.29,
+     0.06,
+     0.07,
+     0.01,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 46,
+    "parpadeo": 0.48,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "aditiva"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "rayo_cadena",
+      "arco_voltaico"
+     ],
+     "nota": "salta de la mano a los blancos que tiene delante"
+    },
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "relampago_canada"
+     ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "furia_tormenta"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_carga_rayo",
+   "origen": "lightning/charge-up",
+   "nombre": [
+    "Carga de rayo",
+    "Lightning charge"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "archivo": "fx_carga_rayo.png",
+   "cuadros": 56,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    460,
+    378
+   ],
+   "ancla": [
+    233,
+    231
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      460,
+      378
+     ],
+     "ancla": [
+      233,
+      231
+     ],
+     "columnas": 8,
+     "filas": 7
+    }
+   ],
+   "escala": 2,
+   "mezcla": "aditiva",
+   "enLanzador": true,
+   "luz": {
+    "color": "#9ba3f5",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.03,
+     0.03,
+     0.03,
+     0.05,
+     0.05,
+     0.04,
+     0.05,
+     0.05,
+     0.05,
+     0.07,
+     0.07,
+     0.07,
+     0.07,
+     0.08,
+     0.08,
+     0.09,
+     0.1,
+     0.11,
+     0.13,
+     0.15,
+     0.13,
+     0.14,
+     0.13,
+     0.13,
+     0.14,
+     0.15,
+     0.73,
+     1,
+     0.76,
+     0.68,
+     0.53,
+     0.35,
+     0.14,
+     0.08,
+     0.04,
+     0.02,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 45,
+    "parpadeo": 0.36,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "aditiva"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "tempestad",
+      "paso_tormenta"
+     ],
+     "nota": "la carga sobre la arcanista antes de soltar"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "puno_dios"
+     ],
+     "nota": "la carga antes del golpe"
+    }
+   ]
+  },
+  {
+   "id": "fx_electrocutado",
+   "origen": "lightning/electrified",
+   "nombre": [
+    "Electrocutado",
+    "Electrified"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "archivo": "fx_electrocutado.png",
+   "cuadros": 50,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    112,
+    138
+   ],
+   "ancla": [
+    53,
+    109
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      112,
+      138
+     ],
+     "ancla": [
+      53,
+      109
+     ],
+     "columnas": 36,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "cuerpo": {
+    "tinte": {
+     "color": "#a8b2f0",
+     "fuerza": 0.4,
+     "nota": "parpadeo blanco azulado del sprite"
+    }
+   },
+   "luz": {
+    "color": "#848bf2",
+    "radio": 170,
+    "intensidad": 0.7,
+    "curva": [
+     0.3,
+     0.25,
+     0.37,
+     0.95,
+     1,
+     0.33,
+     0.32,
+     0.45,
+     0.37,
+     0.34,
+     0.4,
+     0.36,
+     0.39,
+     0.35,
+     0.43,
+     0.3,
+     0.24,
+     0.39,
+     0.38,
+     0.91,
+     0.74,
+     0.34,
+     0.32,
+     0.28,
+     0.38,
+     0.33,
+     0.29,
+     0.24,
+     0.26,
+     0.34,
+     0.29,
+     0.28,
+     0.29,
+     0.24,
+     0.29,
+     0.82,
+     0.63,
+     0.41,
+     0.38,
+     0.34,
+     0.33,
+     0.31,
+     0.37,
+     0.34,
+     0.31,
+     0.32,
+     0.28,
+     0.25,
+     0.26,
+     0.3
+    ],
+    "altura": 28,
+    "parpadeo": 0.46,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "estado",
+     "estado": "electrocutado",
+     "nota": "en bucle sobre el afectado (aturdido por rayo)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "trampa_chispas",
+      "jabalina_rayo"
+     ],
+     "nota": "sobre los que alcanza"
+    }
+   ]
+  },
+  {
+   "id": "fx_relampago",
+   "origen": "lightning/lightning-strike",
+   "nombre": [
+    "Relámpago",
+    "Lightning strike"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "archivo": "fx_relampago.png",
+   "cuadros": 64,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    516,
+    686
+   ],
+   "ancla": [
+    273,
+    477
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      516,
+      686
+     ],
+     "ancla": [
+      273,
+      477
+     ],
+     "columnas": 7,
+     "filas": 10
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#a0a2f5",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.02,
+     0.02,
+     0.02,
+     0.02,
+     0.03,
+     0.03,
+     0.03,
+     0.05,
+     0.05,
+     0.06,
+     1,
+     0.59,
+     0.33,
+     0.6,
+     0.33,
+     0.15,
+     0.05,
+     0.56,
+     0.42,
+     0.26,
+     0.34,
+     0.07,
+     0.05,
+     0.39,
+     0.29,
+     0.25,
+     0.14,
+     0.17,
+     0.06,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 122,
+    "parpadeo": 0.41,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "trueno_valle"
+     ],
+     "nota": "cae del cielo sobre el ancla"
+    },
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "furia_firmamento"
+     ]
+    },
+    {
+     "tipo": "cinematica",
+     "nota": "el rayo que ilumina la abadía en la entrada del acto 1"
+    }
+   ]
+  },
+  {
+   "id": "fx_arco_chispas",
+   "origen": "lightning/spark-arc",
+   "nombre": [
+    "Arco de chispas",
+    "Spark arc"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "archivo": "fx_arco_chispas.png",
+   "cuadros": 50,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    186,
+    254
+   ],
+   "ancla": [
+    79,
+    203
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      186,
+      254
+     ],
+     "ancla": [
+      79,
+      203
+     ],
+     "columnas": 22,
+     "filas": 3
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#9b9ff5",
+    "radio": 196,
+    "intensidad": 0.81,
+    "curva": [
+     1,
+     0.88,
+     0.78,
+     0.71,
+     0.71,
+     0.71,
+     0.7,
+     0.71,
+     0.71,
+     0.71,
+     0.73,
+     0.69,
+     0.77,
+     0.81,
+     0.79,
+     0.76,
+     0.75,
+     0.76,
+     0.74,
+     0.82,
+     0.8,
+     0.74,
+     0.8,
+     0.77,
+     0.76,
+     0.78,
+     0.72,
+     0.85,
+     0.79,
+     0.85,
+     0.89,
+     0.89,
+     0.53,
+     0.89,
+     0.56,
+     0.92,
+     0.54,
+     0.5,
+     0.17,
+     0.13,
+     0.11,
+     0.08,
+     0.06,
+     0.06,
+     0.05,
+     0.05,
+     0.05,
+     0.06,
+     0.06,
+     0.04
+    ],
+    "altura": 65,
+    "parpadeo": 0.41,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "ambiente",
+     "zonas": [
+      "a5_fragua",
+      "a7_boveda"
+     ],
+     "nota": "arco entre dos electrodos de una máquina o dos pararrayos (va entre dos postes del catálogo)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "trampa_chispas"
+     ],
+     "nota": "la trampa armada"
+    }
+   ]
+  },
+  {
+   "id": "fx_nube_tormenta",
+   "origen": "lightning/storm-cloud",
+   "nombre": [
+    "Nube de tormenta",
+    "Storm cloud"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "archivo": "fx_nube_tormenta.png",
+   "cuadros": 75,
+   "t": 1,
+   "bucle": true,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    312,
+    438
+   ],
+   "ancla": [
+    165,
+    355
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      312,
+      438
+     ],
+     "ancla": [
+      165,
+      355
+     ],
+     "columnas": 13,
+     "filas": 6
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#8188f2",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.1,
+     0.07,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.11,
+     0.01,
+     0.06,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     1,
+     0.26,
+     0.87,
+     0.45,
+     0.68,
+     0.16,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.12,
+     0.05,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0.01
+    ],
+    "altura": 154,
+    "parpadeo": 0.39,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "huracan",
+      "trueno_valle"
+     ],
+     "nota": "la nube que sigue al druida y descarga"
+    },
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "tempestad"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_trueno",
+   "origen": "lightning/thunderclap",
+   "nombre": [
+    "Trueno",
+    "Thunderclap"
+   ],
+   "categoria": "rayo",
+   "capa": "piso",
+   "archivo": "fx_trueno.png",
+   "cuadros": 38,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    506,
+    332
+   ],
+   "ancla": [
+    259,
+    225
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      506,
+      332
+     ],
+     "ancla": [
+      259,
+      225
+     ],
+     "columnas": 8,
+     "filas": 5
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "enLanzador": true,
+   "luz": {
+    "color": "#a3aaf6",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0.73,
+     0.52,
+     0.43,
+     0.23,
+     0.09,
+     0.05,
+     0.04,
+     0.02,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 43,
+    "parpadeo": 0.38,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "arcanista",
+     "habilidades": [
+      "latido_galvanico"
+     ],
+     "nota": "nova de rayo alrededor de la arcanista"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "puno_eco"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_descarga",
+   "origen": "lightning/zap-hit",
+   "nombre": [
+    "Descarga",
+    "Zap"
+   ],
+   "categoria": "rayo",
+   "capa": "mundo",
+   "archivo": "fx_descarga.png",
+   "cuadros": 22,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    254,
+    194
+   ],
+   "ancla": [
+    157,
+    97
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      194,
+      180
+     ],
+     "ancla": [
+      97,
+      111
+     ],
+     "columnas": 21,
+     "filas": 2
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 360,
+     "celda": [
+      206,
+      194
+     ],
+     "ancla": [
+      89,
+      99
+     ],
+     "columnas": 19,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 748,
+     "celda": [
+      254,
+      194
+     ],
+     "ancla": [
+      97,
+      97
+     ],
+     "columnas": 16,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 1136,
+     "celda": [
+      228,
+      190
+     ],
+     "ancla": [
+      89,
+      95
+     ],
+     "columnas": 17,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1516,
+     "celda": [
+      194,
+      180
+     ],
+     "ancla": [
+      97,
+      69
+     ],
+     "columnas": 21,
+     "filas": 2
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1876,
+     "celda": [
+      228,
+      190
+     ],
+     "ancla": [
+      139,
+      95
+     ],
+     "columnas": 17,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 2256,
+     "celda": [
+      254,
+      194
+     ],
+     "ancla": [
+      157,
+      97
+     ],
+     "columnas": 16,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 2644,
+     "celda": [
+      206,
+      194
+     ],
+     "ancla": [
+      117,
+      99
+     ],
+     "columnas": 19,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#9ea5f5",
+    "radio": 278,
+    "intensidad": 1,
+    "curva": [
+     0.07,
+     0.26,
+     1,
+     0.67,
+     0.57,
+     0.37,
+     0.23,
+     0.15,
+     0.08,
+     0.06,
+     0.04,
+     0.03,
+     0.02,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 7,
+    "parpadeo": 0.44,
+    "sombra": true,
+    "prioridad": 0,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "impacto de rayo sobre un enemigo (al pegar fx_rayo_cadena, chispa, virote de tormenta)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "puno_rayo"
+     ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "virote_tormenta"
+     ]
+    }
+   ]
+  },
+  {
    "id": "fx_tajo_espada",
    "origen": "melee/sword-slash",
    "nombre": [
@@ -277,15 +6965,135 @@
     "e",
     "se"
    ],
-   "columnas": 12,
-   "filasPorDir": 2,
    "celda": [
-    322,
-    258
+    276,
+    210
    ],
    "ancla": [
-    161,
-    187
+    115,
+    181
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      210,
+      196
+     ],
+     "ancla": [
+      73,
+      125
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 196,
+     "celda": [
+      236,
+      208
+     ],
+     "ancla": [
+      141,
+      161
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 404,
+     "celda": [
+      276,
+      210
+     ],
+     "ancla": [
+      161,
+      181
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 614,
+     "celda": [
+      218,
+      220
+     ],
+     "ancla": [
+      115,
+      187
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 834,
+     "celda": [
+      210,
+      196
+     ],
+     "ancla": [
+      137,
+      159
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1030,
+     "celda": [
+      218,
+      220
+     ],
+     "ancla": [
+      103,
+      187
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 1250,
+     "celda": [
+      276,
+      210
+     ],
+     "ancla": [
+      115,
+      181
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1460,
+     "celda": [
+      236,
+      208
+     ],
+     "ancla": [
+      95,
+      161
+     ],
+     "columnas": 14,
+     "filas": 1
+    }
    ],
    "escala": 2,
    "mezcla": "normal",
@@ -350,6 +7158,3855 @@
    ]
   },
   {
+   "id": "fx_zarpazo",
+   "origen": "melee/claw-swipe",
+   "nombre": [
+    "Zarpazo",
+    "Claw swipe"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_zarpazo.png",
+   "cuadros": 19,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    144,
+    146
+   ],
+   "ancla": [
+    11,
+    95
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      146,
+      104
+     ],
+     "ancla": [
+      95,
+      53
+     ],
+     "columnas": 19,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 104,
+     "celda": [
+      132,
+      126
+     ],
+     "ancla": [
+      103,
+      69
+     ],
+     "columnas": 19,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 230,
+     "celda": [
+      144,
+      146
+     ],
+     "ancla": [
+      133,
+      95
+     ],
+     "columnas": 19,
+     "filas": 1
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 376,
+     "celda": [
+      126,
+      148
+     ],
+     "ancla": [
+      121,
+      119
+     ],
+     "columnas": 19,
+     "filas": 1
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 524,
+     "celda": [
+      146,
+      141
+     ],
+     "ancla": [
+      51,
+      139
+     ],
+     "columnas": 19,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 665,
+     "celda": [
+      126,
+      148
+     ],
+     "ancla": [
+      5,
+      119
+     ],
+     "columnas": 19,
+     "filas": 1
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 813,
+     "celda": [
+      144,
+      146
+     ],
+     "ancla": [
+      11,
+      95
+     ],
+     "columnas": 19,
+     "filas": 1
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 959,
+     "celda": [
+      132,
+      126
+     ],
+     "ancla": [
+      29,
+      69
+     ],
+     "columnas": 19,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#e9332e",
+    "radio": 150,
+    "intensidad": 0.61,
+    "curva": [
+     0,
+     0.5,
+     0.8,
+     1,
+     0.64,
+     0.38,
+     0.2,
+     0.09,
+     0.04,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 31,
+    "parpadeo": 0.21,
+    "sombra": false,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "zarpazo_oso",
+      "mordida_rabiosa",
+      "frenesi_luna"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "necrofago",
+      "lobo_sombrio",
+      "desollado",
+      "demonio_alado"
+     ],
+     "nota": "garras de bestias y necrófagos"
+    }
+   ]
+  },
+  {
+   "id": "fx_rafaga_dagas",
+   "origen": "melee/dagger-flurry",
+   "nombre": [
+    "Ráfaga de dagas",
+    "Dagger flurry"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_rafaga_dagas.png",
+   "cuadros": 24,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    210,
+    178
+   ],
+   "ancla": [
+    15,
+    137
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      178,
+      150
+     ],
+     "ancla": [
+      85,
+      55
+     ],
+     "columnas": 23,
+     "filas": 2
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 300,
+     "celda": [
+      200,
+      164
+     ],
+     "ancla": [
+      179,
+      85
+     ],
+     "columnas": 20,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 628,
+     "celda": [
+      210,
+      178
+     ],
+     "ancla": [
+      195,
+      137
+     ],
+     "columnas": 19,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 984,
+     "celda": [
+      172,
+      173
+     ],
+     "ancla": [
+      155,
+      171
+     ],
+     "columnas": 23,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1330,
+     "celda": [
+      178,
+      185
+     ],
+     "ancla": [
+      93,
+      183
+     ],
+     "columnas": 23,
+     "filas": 2
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1700,
+     "celda": [
+      172,
+      173
+     ],
+     "ancla": [
+      17,
+      171
+     ],
+     "columnas": 23,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 2046,
+     "celda": [
+      210,
+      178
+     ],
+     "ancla": [
+      15,
+      137
+     ],
+     "columnas": 19,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 2402,
+     "celda": [
+      200,
+      164
+     ],
+     "ancla": [
+      21,
+      85
+     ],
+     "columnas": 20,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#e6f0fd",
+    "radio": 210,
+    "intensidad": 0.82,
+    "curva": [
+     0,
+     0.17,
+     0.17,
+     0.22,
+     0.19,
+     0.25,
+     0.18,
+     0.23,
+     0.21,
+     0.09,
+     0.31,
+     1,
+     0.66,
+     0.41,
+     0.26,
+     0.18,
+     0.09,
+     0.06,
+     0.04,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0
+    ],
+    "altura": 46,
+    "parpadeo": 0.2,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "rafaga_golpes",
+      "mil_palmas"
+     ],
+     "nota": "los golpes seguidos"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "cultista",
+      "saqueador",
+      "cazacabezas"
+     ],
+     "nota": "puñaladas rápidas"
+    }
+   ]
+  },
+  {
+   "id": "fx_tajo_doble",
+   "origen": "melee/double-slash",
+   "nombre": [
+    "Tajo doble",
+    "Double slash"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_tajo_doble.png",
+   "cuadros": 17,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    238,
+    220
+   ],
+   "ancla": [
+    15,
+    167
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      220,
+      168
+     ],
+     "ancla": [
+      97,
+      55
+     ],
+     "columnas": 17,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 168,
+     "celda": [
+      190,
+      228
+     ],
+     "ancla": [
+      169,
+      139
+     ],
+     "columnas": 17,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 396,
+     "celda": [
+      238,
+      220
+     ],
+     "ancla": [
+      223,
+      167
+     ],
+     "columnas": 17,
+     "filas": 1
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 616,
+     "celda": [
+      212,
+      188
+     ],
+     "ancla": [
+      187,
+      175
+     ],
+     "columnas": 17,
+     "filas": 1
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 804,
+     "celda": [
+      220,
+      203
+     ],
+     "ancla": [
+      123,
+      201
+     ],
+     "columnas": 17,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1007,
+     "celda": [
+      212,
+      188
+     ],
+     "ancla": [
+      25,
+      175
+     ],
+     "columnas": 17,
+     "filas": 1
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 1195,
+     "celda": [
+      238,
+      220
+     ],
+     "ancla": [
+      15,
+      167
+     ],
+     "columnas": 17,
+     "filas": 1
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1415,
+     "celda": [
+      190,
+      228
+     ],
+     "ancla": [
+      21,
+      139
+     ],
+     "columnas": 17,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#ec4c44",
+    "radio": 192,
+    "intensidad": 0.74,
+    "curva": [
+     0,
+     0.19,
+     0.22,
+     0.16,
+     1,
+     0.73,
+     0.46,
+     0.32,
+     0.24,
+     0.14,
+     0.06,
+     0.03,
+     0.01,
+     0.01,
+     0,
+     0,
+     0
+    ],
+    "altura": 48,
+    "parpadeo": 0.24,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "doble_golpe",
+      "desgarro"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "verdugo",
+      "caballero_espectral"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_martillazo",
+   "origen": "melee/hammer-smash",
+   "nombre": [
+    "Martillazo",
+    "Hammer smash"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_martillazo.png",
+   "cuadros": 22,
+   "t": 2,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    332,
+    350
+   ],
+   "ancla": [
+    127,
+    153
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      332,
+      350
+     ],
+     "ancla": [
+      165,
+      135
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 700,
+     "celda": [
+      332,
+      350
+     ],
+     "ancla": [
+      195,
+      139
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 1400,
+     "celda": [
+      332,
+      350
+     ],
+     "ancla": [
+      205,
+      153
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 2100,
+     "celda": [
+      332,
+      350
+     ],
+     "ancla": [
+      195,
+      167
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 2800,
+     "celda": [
+      332,
+      350
+     ],
+     "ancla": [
+      165,
+      171
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 3500,
+     "celda": [
+      332,
+      350
+     ],
+     "ancla": [
+      137,
+      167
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 4200,
+     "celda": [
+      332,
+      350
+     ],
+     "ancla": [
+      127,
+      153
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 4900,
+     "celda": [
+      332,
+      350
+     ],
+     "ancla": [
+      137,
+      139
+     ],
+     "columnas": 12,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#f4c86a",
+    "radio": 224,
+    "intensidad": 0.83,
+    "curva": [
+     0.28,
+     0.28,
+     1,
+     0.93,
+     0.57,
+     0.35,
+     0.18,
+     0.07,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.03,
+     0.03,
+     0.02,
+     0.03,
+     0.02,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 32,
+    "parpadeo": 0.17,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "juicio",
+      "martillo_bendito"
+     ],
+     "nota": "el golpe al piso delante del templario"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "ogro",
+      "gigante_helado",
+      "golem_de_piedra",
+      "trol_pantano"
+     ],
+     "nota": "mazazo al piso"
+    }
+   ]
+  },
+  {
+   "id": "fx_hachazo",
+   "origen": "melee/heavy-cleave",
+   "nombre": [
+    "Hachazo",
+    "Heavy cleave"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_hachazo.png",
+   "cuadros": 23,
+   "t": 2,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    326,
+    312
+   ],
+   "ancla": [
+    91,
+    165
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      326,
+      312
+     ],
+     "ancla": [
+      139,
+      141
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 624,
+     "celda": [
+      326,
+      312
+     ],
+     "ancla": [
+      221,
+      147
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 1248,
+     "celda": [
+      326,
+      312
+     ],
+     "ancla": [
+      235,
+      165
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 1872,
+     "celda": [
+      326,
+      312
+     ],
+     "ancla": [
+      221,
+      183
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 2496,
+     "celda": [
+      326,
+      312
+     ],
+     "ancla": [
+      139,
+      189
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 3120,
+     "celda": [
+      326,
+      312
+     ],
+     "ancla": [
+      105,
+      183
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 3744,
+     "celda": [
+      326,
+      312
+     ],
+     "ancla": [
+      91,
+      165
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 4368,
+     "celda": [
+      326,
+      312
+     ],
+     "ancla": [
+      105,
+      147
+     ],
+     "columnas": 12,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#ed7237",
+    "radio": 214,
+    "intensidad": 0.8,
+    "curva": [
+     0.01,
+     0.16,
+     0.2,
+     0.3,
+     0.37,
+     1,
+     0.68,
+     0.49,
+     0.36,
+     0.26,
+     0.2,
+     0.15,
+     0.11,
+     0.08,
+     0.06,
+     0.04,
+     0.02,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 38,
+    "parpadeo": 0.26,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "hachazo_ancho",
+      "ejecucion",
+      "tajo_salvaje"
+     ],
+     "nota": "hachazo que muerde el piso"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "verdugo",
+      "caballero_abismo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_siega",
+   "origen": "melee/scythe-reap",
+   "nombre": [
+    "Siega",
+    "Scythe reap"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_siega.png",
+   "cuadros": 21,
+   "t": 2,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    250,
+    128
+   ],
+   "ancla": [
+    115,
+    113
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      128,
+      176
+     ],
+     "ancla": [
+      59,
+      125
+     ],
+     "columnas": 21,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 176,
+     "celda": [
+      216,
+      164
+     ],
+     "ancla": [
+      129,
+      131
+     ],
+     "columnas": 18,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 504,
+     "celda": [
+      250,
+      128
+     ],
+     "ancla": [
+      135,
+      113
+     ],
+     "columnas": 16,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 760,
+     "celda": [
+      214,
+      168
+     ],
+     "ancla": [
+      107,
+      153
+     ],
+     "columnas": 19,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1096,
+     "celda": [
+      128,
+      176
+     ],
+     "ancla": [
+      69,
+      139
+     ],
+     "columnas": 21,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1272,
+     "celda": [
+      214,
+      168
+     ],
+     "ancla": [
+      107,
+      153
+     ],
+     "columnas": 19,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 1608,
+     "celda": [
+      250,
+      128
+     ],
+     "ancla": [
+      115,
+      113
+     ],
+     "columnas": 16,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1864,
+     "celda": [
+      216,
+      164
+     ],
+     "ancla": [
+      87,
+      131
+     ],
+     "columnas": 18,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#8af8eb",
+    "radio": 192,
+    "intensidad": 0.6,
+    "curva": [
+     0,
+     0.18,
+     0.06,
+     0.29,
+     0.49,
+     1,
+     0.85,
+     0.75,
+     0.78,
+     0.74,
+     0.97,
+     0.94,
+     0.8,
+     0.64,
+     0.58,
+     0.39,
+     0.21,
+     0.1,
+     0.04,
+     0.02,
+     0
+    ],
+    "altura": 42,
+    "parpadeo": 0.25,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "segador"
+     ],
+     "nota": "la guadaña del Segador"
+    },
+    {
+     "tipo": "poder",
+     "clase": "nigromante",
+     "habilidades": [
+      "festin_tumba",
+      "cosecha_osario"
+     ],
+     "nota": "la cosecha de almas"
+    }
+   ]
+  },
+  {
+   "id": "fx_barrido_lanza",
+   "origen": "melee/spear-sweep",
+   "nombre": [
+    "Barrido de lanza",
+    "Spear sweep"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_barrido_lanza.png",
+   "cuadros": 34,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    344,
+    288
+   ],
+   "ancla": [
+    159,
+    109
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      344,
+      288
+     ],
+     "ancla": [
+      159,
+      109
+     ],
+     "columnas": 11,
+     "filas": 4
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "enLanzador": true,
+   "luz": {
+    "color": "#dfedfc",
+    "radio": 198,
+    "intensidad": 0.7,
+    "curva": [
+     0.28,
+     0.64,
+     0.62,
+     0.71,
+     1,
+     0.69,
+     0.43,
+     0.23,
+     0.1,
+     0.04,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 24,
+    "parpadeo": 0.12,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "furia_lanza"
+     ],
+     "nota": "barrido bajo alrededor de la cazadora"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "satiro",
+      "guardia_corrupto"
+     ],
+     "nota": "barrido de alabarda"
+    }
+   ]
+  },
+  {
+   "id": "fx_tajo_giratorio",
+   "origen": "melee/spin-slash",
+   "nombre": [
+    "Tajo giratorio",
+    "Spin slash"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_tajo_giratorio.png",
+   "cuadros": 17,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    364,
+    238
+   ],
+   "ancla": [
+    159,
+    145
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      364,
+      238
+     ],
+     "ancla": [
+      159,
+      145
+     ],
+     "columnas": 11,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "enLanzador": true,
+   "luz": {
+    "color": "#e3eefd",
+    "radio": 266,
+    "intensidad": 0.91,
+    "curva": [
+     0.24,
+     0.11,
+     0.23,
+     0.25,
+     0.33,
+     1,
+     0.68,
+     0.46,
+     0.31,
+     0.17,
+     0.09,
+     0.05,
+     0.03,
+     0.01,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 31,
+    "parpadeo": 0.23,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "torbellino"
+     ],
+     "nota": "en bucle mientras gira (repetir la tira)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "carga"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_estocada",
+   "origen": "melee/thrust",
+   "nombre": [
+    "Estocada",
+    "Thrust"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_estocada.png",
+   "cuadros": 16,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    320,
+    130
+   ],
+   "ancla": [
+    33,
+    105
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      130,
+      218
+     ],
+     "ancla": [
+      69,
+      59
+     ],
+     "columnas": 16,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 218,
+     "celda": [
+      276,
+      166
+     ],
+     "ancla": [
+      233,
+      69
+     ],
+     "columnas": 14,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 550,
+     "celda": [
+      320,
+      130
+     ],
+     "ancla": [
+      287,
+      105
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 810,
+     "celda": [
+      250,
+      171
+     ],
+     "ancla": [
+      227,
+      169
+     ],
+     "columnas": 16,
+     "filas": 1
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 981,
+     "celda": [
+      130,
+      249
+     ],
+     "ancla": [
+      61,
+      247
+     ],
+     "columnas": 16,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1230,
+     "celda": [
+      250,
+      171
+     ],
+     "ancla": [
+      23,
+      169
+     ],
+     "columnas": 16,
+     "filas": 1
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 1401,
+     "celda": [
+      320,
+      130
+     ],
+     "ancla": [
+      33,
+      105
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1661,
+     "celda": [
+      276,
+      166
+     ],
+     "ancla": [
+      43,
+      69
+     ],
+     "columnas": 14,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#f1f7fe",
+    "radio": 186,
+    "intensidad": 0.73,
+    "curva": [
+     0.1,
+     0.1,
+     1,
+     0.71,
+     0.56,
+     0.4,
+     0.28,
+     0.2,
+     0.1,
+     0.05,
+     0.02,
+     0.01,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 41,
+    "parpadeo": 0.23,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "estocada"
+     ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "carga",
+      "sentencia_final"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "diablillo",
+      "caballero_muerto"
+     ],
+     "nota": "lanzazo"
+    }
+   ]
+  },
+  {
+   "id": "fx_gancho",
+   "origen": "melee/uppercut",
+   "nombre": [
+    "Gancho ascendente",
+    "Rising strike"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_gancho.png",
+   "cuadros": 14,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    216,
+    207
+   ],
+   "ancla": [
+    85,
+    205
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      206,
+      154
+     ],
+     "ancla": [
+      45,
+      105
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 154,
+     "celda": [
+      180,
+      226
+     ],
+     "ancla": [
+      137,
+      201
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 380,
+     "celda": [
+      216,
+      207
+     ],
+     "ancla": [
+      131,
+      205
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 587,
+     "celda": [
+      196,
+      205
+     ],
+     "ancla": [
+      99,
+      203
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 792,
+     "celda": [
+      206,
+      154
+     ],
+     "ancla": [
+      161,
+      137
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 946,
+     "celda": [
+      196,
+      205
+     ],
+     "ancla": [
+      97,
+      203
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 1151,
+     "celda": [
+      216,
+      207
+     ],
+     "ancla": [
+      85,
+      205
+     ],
+     "columnas": 14,
+     "filas": 1
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1358,
+     "celda": [
+      180,
+      226
+     ],
+     "ancla": [
+      43,
+      201
+     ],
+     "columnas": 14,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#ee7a40",
+    "radio": 222,
+    "intensidad": 0.87,
+    "curva": [
+     0,
+     0.17,
+     1,
+     0.69,
+     0.52,
+     0.38,
+     0.32,
+     0.25,
+     0.17,
+     0.09,
+     0.04,
+     0.01,
+     0.01,
+     0
+    ],
+    "altura": 104,
+    "parpadeo": 0.35,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "codo_piedra",
+      "rodilla_volcan"
+     ],
+     "nota": "el golpe que levanta"
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "ogro",
+      "jabali_demonio"
+     ],
+     "nota": "embestida hacia arriba"
+    }
+   ]
+  },
+  {
+   "id": "fx_latigazo",
+   "origen": "melee/whip-crack",
+   "nombre": [
+    "Latigazo",
+    "Whip crack"
+   ],
+   "categoria": "cuerpo_a_cuerpo",
+   "capa": "mundo",
+   "archivo": "fx_latigazo.png",
+   "cuadros": 20,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    309,
+    144
+   ],
+   "ancla": [
+    2,
+    119
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      144,
+      214
+     ],
+     "ancla": [
+      69,
+      41
+     ],
+     "columnas": 20,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 214,
+     "celda": [
+      252,
+      168
+     ],
+     "ancla": [
+      245,
+      45
+     ],
+     "columnas": 16,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 550,
+     "celda": [
+      309,
+      144
+     ],
+     "ancla": [
+      307,
+      119
+     ],
+     "columnas": 13,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 838,
+     "celda": [
+      255,
+      199
+     ],
+     "ancla": [
+      253,
+      197
+     ],
+     "columnas": 16,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1236,
+     "celda": [
+      144,
+      263
+     ],
+     "ancla": [
+      75,
+      261
+     ],
+     "columnas": 20,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1499,
+     "celda": [
+      255,
+      199
+     ],
+     "ancla": [
+      2,
+      197
+     ],
+     "columnas": 16,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 1897,
+     "celda": [
+      309,
+      144
+     ],
+     "ancla": [
+      2,
+      119
+     ],
+     "columnas": 13,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 2185,
+     "celda": [
+      252,
+      168
+     ],
+     "ancla": [
+      7,
+      45
+     ],
+     "columnas": 16,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "detrasEn": [
+    "no",
+    "n",
+    "ne"
+   ],
+   "luz": {
+    "color": "#ef7164",
+    "radio": 160,
+    "intensidad": 0.63,
+    "curva": [
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     0.04,
+     1,
+     0.56,
+     0.35,
+     0.19,
+     0.08,
+     0.04,
+     0.02,
+     0.01,
+     0,
+     0.01,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 44,
+    "parpadeo": 0.2,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "penitente",
+      "monja_hueca",
+      "senor_demonio"
+     ],
+     "nota": "flagelo y látigo"
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "sangria"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_golpe_seco",
+   "origen": "impacts/blunt-hit",
+   "nombre": [
+    "Golpe seco",
+    "Blunt hit"
+   ],
+   "categoria": "impactos",
+   "capa": "mundo",
+   "archivo": "fx_golpe_seco.png",
+   "cuadros": 20,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    168,
+    180
+   ],
+   "ancla": [
+    83,
+    127
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      168,
+      180
+     ],
+     "ancla": [
+      83,
+      127
+     ],
+     "columnas": 20,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f7ce9b",
+    "radio": 236,
+    "intensidad": 0.94,
+    "curva": [
+     1,
+     0.63,
+     0.42,
+     0.28,
+     0.18,
+     0.1,
+     0.05,
+     0.02,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 39,
+    "parpadeo": 0.12,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "impacto de maza, puño o garrote sobre un enemigo"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "codo_piedra"
+     ]
+    },
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "golpe_escudo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_critico",
+   "origen": "impacts/crit-hit",
+   "nombre": [
+    "Golpe crítico",
+    "Critical hit"
+   ],
+   "categoria": "impactos",
+   "capa": "mundo",
+   "archivo": "fx_critico.png",
+   "cuadros": 13,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    350,
+    278
+   ],
+   "ancla": [
+    139,
+    191
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      278,
+      248
+     ],
+     "ancla": [
+      113,
+      125
+     ],
+     "columnas": 13,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 248,
+     "celda": [
+      306,
+      314
+     ],
+     "ancla": [
+      191,
+      185
+     ],
+     "columnas": 13,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 562,
+     "celda": [
+      350,
+      278
+     ],
+     "ancla": [
+      211,
+      191
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 1118,
+     "celda": [
+      342,
+      272
+     ],
+     "ancla": [
+      203,
+      185
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1662,
+     "celda": [
+      278,
+      248
+     ],
+     "ancla": [
+      165,
+      175
+     ],
+     "columnas": 13,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1910,
+     "celda": [
+      342,
+      272
+     ],
+     "ancla": [
+      139,
+      185
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 2454,
+     "celda": [
+      350,
+      278
+     ],
+     "ancla": [
+      139,
+      191
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 3010,
+     "celda": [
+      306,
+      314
+     ],
+     "ancla": [
+      115,
+      185
+     ],
+     "columnas": 13,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#ef6a61",
+    "radio": 288,
+    "intensidad": 1,
+    "curva": [
+     1,
+     0.64,
+     0.64,
+     0.47,
+     0.34,
+     0.23,
+     0.16,
+     0.11,
+     0.07,
+     0.04,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 51,
+    "parpadeo": 0.17,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "golpe crítico de cualquier arma (en el punto de impacto, mirando hacia donde va el golpe)"
+    },
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "ejecucion"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_golpe_piso",
+   "origen": "impacts/ground-slam",
+   "nombre": [
+    "Golpe al piso",
+    "Ground slam"
+   ],
+   "categoria": "impactos",
+   "capa": "piso",
+   "archivo": "fx_golpe_piso.png",
+   "cuadros": 71,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    494,
+    506
+   ],
+   "ancla": [
+    239,
+    259
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      494,
+      506
+     ],
+     "ancla": [
+      239,
+      259
+     ],
+     "columnas": 8,
+     "filas": 9
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "enLanzador": true,
+   "luz": {
+    "color": "#fadfbc",
+    "radio": 360,
+    "intensidad": 1,
+    "curva": [
+     1,
+     0.72,
+     0.49,
+     0.35,
+     0.28,
+     0.22,
+     0.18,
+     0.14,
+     0.11,
+     0.08,
+     0.06,
+     0.04,
+     0.03,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 14,
+    "parpadeo": 0.06,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "ira_jarl",
+      "desatar"
+     ],
+     "nota": "el pisotón que sacude la tierra"
+    },
+    {
+     "tipo": "poder",
+     "clase": "druida",
+     "habilidades": [
+      "rugido_primigenio"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "ogro",
+      "golem_de_piedra",
+      "gigante_helado"
+     ],
+     "nota": "pisotón de los grandes"
+    }
+   ]
+  },
+  {
+   "id": "fx_aterrizaje",
+   "origen": "impacts/heavy-landing",
+   "nombre": [
+    "Aterrizaje pesado",
+    "Heavy landing"
+   ],
+   "categoria": "impactos",
+   "capa": "piso",
+   "archivo": "fx_aterrizaje.png",
+   "cuadros": 35,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    320,
+    252
+   ],
+   "ancla": [
+    179,
+    65
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      320,
+      252
+     ],
+     "ancla": [
+      179,
+      65
+     ],
+     "columnas": 12,
+     "filas": 3
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "enLanzador": true,
+   "luz": {
+    "color": "#f9dcb4",
+    "radio": 120,
+    "intensidad": 0.48,
+    "curva": [
+     1,
+     0.66,
+     0.32,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 4,
+    "parpadeo": 0.08,
+    "sombra": false,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "berserker",
+     "habilidades": [
+      "salto_lobo"
+     ],
+     "nota": "la caída del salto"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "patada_voladora"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "demonio_alado",
+      "gargola"
+     ],
+     "nota": "el que baja volando"
+    }
+   ]
+  },
+  {
+   "id": "fx_destello_herida",
+   "origen": "impacts/hit-flash",
+   "nombre": [
+    "Destello de herida",
+    "Hurt flash"
+   ],
+   "categoria": "impactos",
+   "capa": "mundo",
+   "archivo": "fx_destello_herida.png",
+   "cuadros": 5,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    132,
+    125
+   ],
+   "ancla": [
+    49,
+    123
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      132,
+      125
+     ],
+     "ancla": [
+      49,
+      123
+     ],
+     "columnas": 5,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "cuerpo": {
+    "tinte": {
+     "color": "#c84a36",
+     "fuerza": 0.6,
+     "nota": "el sprite se enciende rojo un instante (curva de la luz)"
+    }
+   },
+   "luz": {
+    "color": "#f9c6c2",
+    "radio": 206,
+    "intensidad": 0.85,
+    "curva": [
+     1,
+     0.37,
+     0.08,
+     0.03,
+     0.01
+    ],
+    "altura": 61,
+    "parpadeo": 0.41,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "cuando el héroe o un enemigo recibe daño: teñir el sprite con cuerpo.tinte siguiendo luz.curva"
+    }
+   ]
+  },
+  {
+   "id": "fx_chispa_golpe",
+   "origen": "impacts/hit-spark",
+   "nombre": [
+    "Chispa de golpe",
+    "Hit spark"
+   ],
+   "categoria": "impactos",
+   "capa": "mundo",
+   "archivo": "fx_chispa_golpe.png",
+   "cuadros": 10,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    226,
+    146
+   ],
+   "ancla": [
+    63,
+    111
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      146,
+      160
+     ],
+     "ancla": [
+      55,
+      65
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 160,
+     "celda": [
+      210,
+      164
+     ],
+     "ancla": [
+      161,
+      99
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 324,
+     "celda": [
+      226,
+      146
+     ],
+     "ancla": [
+      163,
+      111
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 470,
+     "celda": [
+      206,
+      194
+     ],
+     "ancla": [
+      139,
+      161
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 664,
+     "celda": [
+      146,
+      160
+     ],
+     "ancla": [
+      91,
+      135
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 824,
+     "celda": [
+      206,
+      194
+     ],
+     "ancla": [
+      67,
+      161
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 1018,
+     "celda": [
+      226,
+      146
+     ],
+     "ancla": [
+      63,
+      111
+     ],
+     "columnas": 10,
+     "filas": 1
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1164,
+     "celda": [
+      210,
+      164
+     ],
+     "ancla": [
+      49,
+      99
+     ],
+     "columnas": 10,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "aditiva",
+   "luz": {
+    "color": "#f3a869",
+    "radio": 174,
+    "intensidad": 0.71,
+    "curva": [
+     1,
+     0.44,
+     0.17,
+     0.07,
+     0.03,
+     0.02,
+     0.01,
+     0.01,
+     0,
+     0
+    ],
+    "altura": 37,
+    "parpadeo": 0.29,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "aditiva"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "acero contra armadura o hueso: chispas en el punto de impacto (orientar con el golpe)"
+    }
+   ]
+  },
+  {
+   "id": "fx_parada",
+   "origen": "impacts/parry",
+   "nombre": [
+    "Parada",
+    "Parry"
+   ],
+   "categoria": "impactos",
+   "capa": "mundo",
+   "archivo": "fx_parada.png",
+   "cuadros": 18,
+   "t": 1,
+   "bucle": false,
+   "direccional": false,
+   "filas": null,
+   "celda": [
+    334,
+    206
+   ],
+   "ancla": [
+    167,
+    163
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      334,
+      206
+     ],
+     "ancla": [
+      167,
+      163
+     ],
+     "columnas": 12,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "aditiva",
+   "luz": {
+    "color": "#f6d47d",
+    "radio": 266,
+    "intensidad": 1,
+    "curva": [
+     1,
+     0.66,
+     0.43,
+     0.3,
+     0.2,
+     0.12,
+     0.07,
+     0.05,
+     0.05,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 63,
+    "parpadeo": 0.13,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "aditiva"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "bloqueo con el arma: choque de acero"
+    },
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "aura_firmeza"
+     ],
+     "nota": "al desviar un golpe"
+    }
+   ]
+  },
+  {
+   "id": "fx_rebote",
+   "origen": "impacts/ricochet",
+   "nombre": [
+    "Rebote",
+    "Ricochet"
+   ],
+   "categoria": "impactos",
+   "capa": "mundo",
+   "archivo": "fx_rebote.png",
+   "cuadros": 21,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    408,
+    142
+   ],
+   "ancla": [
+    111,
+    75
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      142,
+      290
+     ],
+     "ancla": [
+      75,
+      87
+     ],
+     "columnas": 21,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 290,
+     "celda": [
+      338,
+      194
+     ],
+     "ancla": [
+      263,
+      79
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 678,
+     "celda": [
+      408,
+      142
+     ],
+     "ancla": [
+      297,
+      75
+     ],
+     "columnas": 10,
+     "filas": 3
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 1104,
+     "celda": [
+      324,
+      246
+     ],
+     "ancla": [
+      223,
+      181
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1596,
+     "celda": [
+      142,
+      290
+     ],
+     "ancla": [
+      67,
+      219
+     ],
+     "columnas": 21,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1886,
+     "celda": [
+      324,
+      246
+     ],
+     "ancla": [
+      101,
+      181
+     ],
+     "columnas": 12,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 2378,
+     "celda": [
+      408,
+      142
+     ],
+     "ancla": [
+      111,
+      75
+     ],
+     "columnas": 10,
+     "filas": 3
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 2804,
+     "celda": [
+      338,
+      194
+     ],
+     "ancla": [
+      75,
+      79
+     ],
+     "columnas": 12,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f1995b",
+    "radio": 180,
+    "intensidad": 0.72,
+    "curva": [
+     0.04,
+     0.04,
+     1,
+     0.6,
+     0.33,
+     0.17,
+     0.08,
+     0.05,
+     0.04,
+     0.03,
+     0.03,
+     0.02,
+     0.02,
+     0.01,
+     0.01,
+     0.01,
+     0.01,
+     0,
+     0,
+     0,
+     0
+    ],
+    "altura": 7,
+    "parpadeo": 0.27,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "golpe",
+     "nota": "una flecha o un virote que rebota en la piedra"
+    },
+    {
+     "tipo": "poder",
+     "clase": "alquimista",
+     "habilidades": [
+      "virote_lastre"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_bloqueo_escudo",
+   "origen": "impacts/shield-block",
+   "nombre": [
+    "Bloqueo con escudo",
+    "Shield block"
+   ],
+   "categoria": "impactos",
+   "capa": "mundo",
+   "archivo": "fx_bloqueo_escudo.png",
+   "cuadros": 25,
+   "t": 1,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    216,
+    158
+   ],
+   "ancla": [
+    33,
+    129
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      158,
+      152
+     ],
+     "ancla": [
+      73,
+      67
+     ],
+     "columnas": 25,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 152,
+     "celda": [
+      194,
+      150
+     ],
+     "ancla": [
+      157,
+      95
+     ],
+     "columnas": 21,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 452,
+     "celda": [
+      216,
+      158
+     ],
+     "ancla": [
+      183,
+      129
+     ],
+     "columnas": 18,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 768,
+     "celda": [
+      170,
+      160
+     ],
+     "ancla": [
+      137,
+      147
+     ],
+     "columnas": 24,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1088,
+     "celda": [
+      158,
+      175
+     ],
+     "ancla": [
+      85,
+      173
+     ],
+     "columnas": 25,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1263,
+     "celda": [
+      170,
+      160
+     ],
+     "ancla": [
+      33,
+      147
+     ],
+     "columnas": 24,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 1583,
+     "celda": [
+      216,
+      158
+     ],
+     "ancla": [
+      33,
+      129
+     ],
+     "columnas": 18,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 1899,
+     "celda": [
+      194,
+      150
+     ],
+     "ancla": [
+      37,
+      95
+     ],
+     "columnas": 21,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#f1a951",
+    "radio": 210,
+    "intensidad": 0.85,
+    "curva": [
+     1,
+     0.59,
+     0.38,
+     0.26,
+     0.21,
+     0.19,
+     0.18,
+     0.17,
+     0.16,
+     0.16,
+     0.15,
+     0.15,
+     0.15,
+     0.16,
+     0.16,
+     0.15,
+     0.13,
+     0.11,
+     0.1,
+     0.07,
+     0.05,
+     0.03,
+     0.02,
+     0.01,
+     0
+    ],
+    "altura": 42,
+    "parpadeo": 0.1,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "templario",
+     "habilidades": [
+      "egida_alba",
+      "golpe_escudo"
+     ],
+     "nota": "el escudo que para el golpe, del lado del golpe"
+    },
+    {
+     "tipo": "golpe",
+     "nota": "bloqueo con escudo de cualquiera"
+    }
+   ]
+  },
+  {
+   "id": "fx_flecha",
+   "origen": "projectiles/arrow",
+   "nombre": [
+    "Flecha",
+    "Arrow"
+   ],
+   "categoria": "proyectiles",
+   "capa": "mundo",
+   "archivo": "fx_flecha.png",
+   "cuadros": 8,
+   "t": 2,
+   "bucle": true,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    160,
+    57
+   ],
+   "ancla": [
+    157,
+    55
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      28,
+      155
+     ],
+     "ancla": [
+      15,
+      153
+     ],
+     "columnas": 8,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 155,
+     "celda": [
+      134,
+      109
+     ],
+     "ancla": [
+      3,
+      107
+     ],
+     "columnas": 8,
+     "filas": 1
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 264,
+     "celda": [
+      160,
+      57
+     ],
+     "ancla": [
+      3,
+      55
+     ],
+     "columnas": 8,
+     "filas": 1
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 321,
+     "celda": [
+      122,
+      82
+     ],
+     "ancla": [
+      3,
+      49
+     ],
+     "columnas": 8,
+     "filas": 1
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 403,
+     "celda": [
+      28,
+      114
+     ],
+     "ancla": [
+      13,
+      45
+     ],
+     "columnas": 8,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 517,
+     "celda": [
+      122,
+      82
+     ],
+     "ancla": [
+      119,
+      49
+     ],
+     "columnas": 8,
+     "filas": 1
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 599,
+     "celda": [
+      160,
+      57
+     ],
+     "ancla": [
+      157,
+      55
+     ],
+     "columnas": 8,
+     "filas": 1
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 656,
+     "celda": [
+      134,
+      109
+     ],
+     "ancla": [
+      131,
+      107
+     ],
+     "columnas": 8,
+     "filas": 1
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#ffffff",
+    "radio": 64,
+    "intensidad": 0.35,
+    "curva": [
+     1,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0
+    ],
+    "altura": 45,
+    "parpadeo": 0.6,
+    "enVuelo": true,
+    "sombra": false,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "cazadora",
+     "habilidades": [
+      "flecha_certera",
+      "flecha_rastro",
+      "andanada",
+      "lluvia_flechas"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "esqueleto_arquero",
+      "ballestero_oscuro"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fx_proyectil_magico",
+   "origen": "projectiles/magic-missile",
+   "nombre": [
+    "Proyectil arcano",
+    "Arcane missile"
+   ],
+   "categoria": "proyectiles",
+   "capa": "mundo",
+   "archivo": "fx_proyectil_magico.png",
+   "cuadros": 22,
+   "t": 2,
+   "bucle": false,
+   "direccional": true,
+   "filas": [
+    "s",
+    "so",
+    "o",
+    "no",
+    "n",
+    "ne",
+    "e",
+    "se"
+   ],
+   "celda": [
+    342,
+    170
+   ],
+   "ancla": [
+    33,
+    137
+   ],
+   "bloques": [
+    {
+     "dir": "s",
+     "x": 0,
+     "y": 0,
+     "celda": [
+      170,
+      242
+     ],
+     "ancla": [
+      59,
+      49
+     ],
+     "columnas": 22,
+     "filas": 1
+    },
+    {
+     "dir": "so",
+     "x": 0,
+     "y": 242,
+     "celda": [
+      286,
+      210
+     ],
+     "ancla": [
+      267,
+      87
+     ],
+     "columnas": 14,
+     "filas": 2
+    },
+    {
+     "dir": "o",
+     "x": 0,
+     "y": 662,
+     "celda": [
+      342,
+      170
+     ],
+     "ancla": [
+      309,
+      137
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "no",
+     "x": 0,
+     "y": 1002,
+     "celda": [
+      286,
+      223
+     ],
+     "ancla": [
+      243,
+      221
+     ],
+     "columnas": 14,
+     "filas": 2
+    },
+    {
+     "dir": "n",
+     "x": 0,
+     "y": 1448,
+     "celda": [
+      170,
+      247
+     ],
+     "ancla": [
+      111,
+      245
+     ],
+     "columnas": 22,
+     "filas": 1
+    },
+    {
+     "dir": "ne",
+     "x": 0,
+     "y": 1695,
+     "celda": [
+      286,
+      223
+     ],
+     "ancla": [
+      43,
+      221
+     ],
+     "columnas": 14,
+     "filas": 2
+    },
+    {
+     "dir": "e",
+     "x": 0,
+     "y": 2141,
+     "celda": [
+      342,
+      170
+     ],
+     "ancla": [
+      33,
+      137
+     ],
+     "columnas": 11,
+     "filas": 2
+    },
+    {
+     "dir": "se",
+     "x": 0,
+     "y": 2481,
+     "celda": [
+      286,
+      210
+     ],
+     "ancla": [
+      19,
+      87
+     ],
+     "columnas": 14,
+     "filas": 2
+    }
+   ],
+   "escala": 2,
+   "mezcla": "normal",
+   "luz": {
+    "color": "#a79ff5",
+    "radio": 208,
+    "intensidad": 0.83,
+    "curva": [
+     0,
+     0.06,
+     0.11,
+     0.14,
+     0.16,
+     0.17,
+     0.2,
+     0.19,
+     0.19,
+     0.2,
+     0.2,
+     1,
+     0.62,
+     0.36,
+     0.19,
+     0.12,
+     0.07,
+     0.04,
+     0.03,
+     0.02,
+     0.01,
+     0
+    ],
+    "altura": 54,
+    "parpadeo": 0.18,
+    "sombra": true,
+    "prioridad": 1,
+    "mezcla": "normal"
+   },
+   "uso": [
+    {
+     "tipo": "poder",
+     "clase": "nigromante",
+     "habilidades": [
+      "dientes_tumba"
+     ],
+     "nota": "sale de la mano y pega ~4 cuerpos adelante"
+    },
+    {
+     "tipo": "poder",
+     "clase": "monje",
+     "habilidades": [
+      "lanza_espiritu"
+     ]
+    },
+    {
+     "tipo": "monstruo",
+     "monstruos": [
+      "brujo_diablillo",
+      "lich",
+      "sacerdote_caido"
+     ],
+     "nota": "saeta de los hechiceros"
+    }
+   ]
+  },
+  {
    "id": "fx_envenenado",
    "origen": "status/poisoned",
    "nombre": [
@@ -364,8 +11021,6 @@
    "bucle": true,
    "direccional": false,
    "filas": null,
-   "columnas": 39,
-   "filasPorDir": 2,
    "celda": [
     104,
     110
@@ -373,6 +11028,23 @@
    "ancla": [
     53,
     83
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      104,
+      110
+     ],
+     "ancla": [
+      53,
+      83
+     ],
+     "columnas": 39,
+     "filas": 2
+    }
    ],
    "escala": 2,
    "mezcla": "normal",
@@ -475,8 +11147,6 @@
    "bucle": true,
    "direccional": false,
    "filas": null,
-   "columnas": 12,
-   "filasPorDir": 17,
    "celda": [
     320,
     180
@@ -484,6 +11154,23 @@
    "ancla": [
     0,
     0
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      320,
+      180
+     ],
+     "ancla": [
+      0,
+      0
+     ],
+     "columnas": 12,
+     "filas": 17
+    }
    ],
    "escala": 1,
    "mezcla": "normal",
@@ -751,8 +11438,6 @@
    "bucle": true,
    "direccional": false,
    "filas": null,
-   "columnas": 20,
-   "filasPorDir": 3,
    "celda": [
     198,
     122
@@ -760,6 +11445,23 @@
    "ancla": [
     107,
     115
+   ],
+   "bloques": [
+    {
+     "dir": null,
+     "x": 0,
+     "y": 0,
+     "celda": [
+      198,
+      122
+     ],
+     "ancla": [
+      107,
+      115
+     ],
+     "columnas": 20,
+     "filas": 3
+    }
    ],
    "escala": 2,
    "mezcla": "normal",

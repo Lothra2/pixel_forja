@@ -17,7 +17,8 @@ export const meta = {
   options: { palette: WATER, seed: 9 },
 };
 
-const D = meta.duration, SY = ISO, RX = 92, G = 640, N = 8, LAMP = 34;
+// Forja: charco más chico (cabe en una baldosa) y sin el reflejo del farol, que en la vista isométrica no se sostiene
+const D = meta.duration, SY = ISO, RX = 64, G = 640, N = 8, LAMP = 9999;
 
 // the big drops: where each lands on the puddle (x across, z into it), when, how tall its crown stands
 function drops(S) {
@@ -79,7 +80,7 @@ export function drawBack(p, t, o) {
     }
   }
   // the far rim of the puddle catches the light
-  for (let X = -82; X < 82; X++) {
+  for (let X = -RX + 6; X < RX - 6; X++) {
     const x = X + 0.5, y = -Math.sqrt(Math.max(0, 1 - (x / RX) ** 2)) * ry;
     p.px(X, y + 0.5, Math.abs(x - LAMP) < 10 ? C[6] : C[3]);
   }
@@ -165,5 +166,4 @@ export function draw(p, t, o) {
     }
   });
   // the lamp's glow on the water
-  p.glow(LAMP, -6, 30, C[4], 0.16);
 }

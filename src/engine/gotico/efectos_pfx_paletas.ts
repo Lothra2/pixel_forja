@@ -90,6 +90,13 @@ export interface Gradacion {
 
 export const GRADACION_BASE: Gradacion = { sat: 0.84, violeta: 0.8, sombra: 1.12, blanco: '#f4ead8', tope: 0.55, brillo: 1 };
 
+/** Ajustes de la gradación por elemento: la sangre y la carne pixelfx las pinta en rojo neón. */
+export const GRADACION_ELEMENTO: Partial<Record<NombreRampa, Partial<Gradacion>>> = {
+  sangre: { sat: 0.68, brillo: 0.9 },
+  carne: { sat: 0.7, brillo: 0.92 },
+  veneno: { sat: 0.78 },
+};
+
 /** Elementos violetas o azules por naturaleza: su violeta no se apaga. */
 export const VIOLETAS: readonly NombreRampa[] = ['sombra', 'arcano', 'infierno', 'rayo'];
 

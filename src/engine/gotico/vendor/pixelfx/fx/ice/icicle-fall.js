@@ -161,7 +161,8 @@ export function create(o) {
     },
     draw(p) {
       // the rime it hangs from, fading at the end
-      const ra = 1 - smooth(meta.duration - 0.7, meta.duration - 0.2, t);
+      // Forja: en la vista isométrica el techo no se ve: sin costra ni muñón colgando en el aire (ra = 0)
+      const ra = 0 * (1 - smooth(meta.duration - 0.7, meta.duration - 0.2, t));
       for (const r of rime) {
         // a lumpy crust: white on top, pale below, a deep underside; little icicles hang off it
         for (let j = 0; j < r.h + 1; j++) p.dot(r.x, ROOT - 1 - j, j === r.h ? WHITE : j === r.h - 1 ? C[6] : j === 0 ? C[3] : C[5], ra);
@@ -169,12 +170,12 @@ export function create(o) {
         if (r.stub > 4) p.dot(r.x + 1, ROOT, C[3], ra);
       }
       // the snapped root: a jagged stub left behind
-      if (snapped)
+      if (snapped && ra > 0)
         for (let x = -W / 2 + 1; x <= W / 2 - 1; x++) {
           const L = 1 + Math.round(rand(x, 77) * 2.5);
           for (let j = 0; j < L; j++) p.dot(x, ROOT + j, j === L - 1 ? (t < SNAP + 0.15 ? WHITE : C[6]) : x < 0 ? C[5] : C[3], ra);
         }
-      p.glow(0, ROOT, 18, C[4], 0.3 * ra);
+      if (ra > 0) p.glow(0, ROOT, 18, C[4], 0.3 * ra);
       if (t >= IMPACT) {
         const k = seg(t, IMPACT, IMPACT + 0.35);
         if (k < 1) band(p, 0, 0.5, 6 + 34 * ease.outCubic(k), ISO, Math.max(1, 4 * (1 - k)), 1.1 - k, [C[3], C[4], C[5], C[6]], (a) => Math.sin(a) >= 0, k < 0.15);
