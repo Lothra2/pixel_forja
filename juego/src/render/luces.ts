@@ -82,13 +82,21 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   // equipo legendario: el héroe mismo da una luz de su color
   const au = auraEquipo(h.d.equipo as any);
   if (au) L.push({ x: hx, y: hy, h: 45, r: 110 + au.k * 70, c: au.color, k: (0.35 + au.k * 0.35) * (0.85 + Math.sin(t * 3) * 0.15), de: h, sinSombra: true });
+  // las piezas ancla (la catedral) tapan las luces que quedan detrás: sin esto un farol del otro lado pinta la torre
+  const tapan: { x0: number; y0: number; x1: number; y1: number; prof: number }[] = [];
+  for (const sa of z.salidas) for (const p of sa.piezas ?? []) {
+    const q = objetoMeta(p.id, p.v)?.f[0]; if (!q) continue;
+    const [px, py] = aPant(p.cx + 0.5, p.cy + 0.5);
+    tapan.push({ x0: px - q.ax + q.w * 0.1, y0: py - q.ay, x1: px - q.ax + q.w * 0.9, y1: py - q.ay + q.h * 0.85, prof: p.cx + p.cy });
+  }
+  const tapada = (o: { cx: number; cy: number }, x: number, y: number) => tapan.some((t) => o.cx + o.cy < t.prof - 2 && x > t.x0 && x < t.x1 && y > t.y0 && y < t.y1);
   // fuegos y objetos que alumbran
   for (const o of z.objetos) {
     const meta = objetoMeta(o.id, o.v); if (!meta || !meta.luz) continue;
     // ríos de lava: un tramo de cada dos alumbra (la luz es grande y se solapa); igual se ve continuo
     if (/rio_lava/.test(o.id) && (Math.floor(o.cx / 5) + Math.floor(o.cy / 5)) % 2) continue;
     const [px, py] = aPant(o.cx + 0.5, o.cy + 0.5);
-    if (!dentro(px, py, 320)) continue;
+    if (!dentro(px, py, 320) || tapada(o, px, py)) continue;
     // fuego de Doom vivo: la luz late con la llama de verdad (y sus sombras tiemblan con ella)
     const vs = vivosDe(o);
     if (vs) {

@@ -28,9 +28,10 @@ function conBruma(q: Cuadro, c: string): HTMLCanvasElement | null {
   const cv = document.createElement('canvas'); cv.width = q.w; cv.height = q.h;
   const g = cv.getContext('2d')!;
   if (!dibujar(g, q, q.ax, q.ay)) return null;
-  // de 0 a 120 px sobre el ancla no hay bruma; de ahí a la punta sube hasta 0.35 (y baja el contraste de lo alto)
-  const y120 = Math.max(1, q.ay - 120), gr = g.createLinearGradient(0, y120, 0, 0);
-  gr.addColorStop(0, `rgba(${c},0)`); gr.addColorStop(1, `rgba(${c},0.35)`);
+  // de 0 a 200 px sobre el ancla no hay bruma; de ahí a la punta sube hasta 0.2 de un gris azulado neutro, mezclado
+  // (source-atop, no suma luz): baja el contraste de lo alto sin aclararlo
+  const y120 = Math.max(1, q.ay - 200), gr = g.createLinearGradient(0, y120, 0, 0);
+  gr.addColorStop(0, `rgba(${c},0)`); gr.addColorStop(1, `rgba(${c},0.2)`);
   g.globalCompositeOperation = 'source-atop'; g.fillStyle = gr; g.fillRect(0, 0, q.w, y120);
   brumas.set(q, { c, cv });
   return cv;
@@ -178,7 +179,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   picks = [];
   prepararFuegos(j, dt, aPant, W, H); seguirSuelo(j, dt); dtCuadro = dt;
-  colorBruma = z.niebla ? '150,150,160' : '78,82,96'; anclasCuadro = []; esAncla = new Set(z.salidas.flatMap((sa) => sa.piezas ?? []));
+  colorBruma = '96,100,108'; anclasCuadro = []; esAncla = new Set(z.salidas.flatMap((sa) => sa.piezas ?? []));
   recolectar(j, tiempo, aPant, W, H);
   // explorar
   const btx = Math.floor(h.x / 5), bty = Math.floor(h.y / 5);
@@ -237,8 +238,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
         const [hx, hy] = aPant(h.x, h.y);
         if (prof > h.x + h.y && hx > px - q.ax && hx < px - q.ax + q.w && hy - 30 > py - q.ay && hy - 30 < py - q.ay + q.h * 0.85) alfa = 0.45;
       }
-      // lo alto (más de 120 px sobre el ancla) lleva bruma de altura: perspectiva atmosférica
-      const br = q.ay > 120 ? conBruma(q, colorBruma) : null;
+      // lo alto (más de 200 px sobre el ancla) lleva bruma de altura: perspectiva atmosférica
+      const br = q.ay > 200 ? conBruma(q, colorBruma) : null;
       if (alfa < 1) ctx.globalAlpha = alfa;
       if (br) ctx.drawImage(br, Math.round(px - q.ax), Math.round(py - q.ay)); else dibujar(ctx, q, px, py);
       if (alfa < 1) ctx.globalAlpha = 1;
