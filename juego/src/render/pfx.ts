@@ -32,7 +32,8 @@ const paquetes = new Map<string, ArrayBuffer | null>();
 function paquete(g: string): ArrayBuffer | null {
   if (paquetes.has(g)) return paquetes.get(g)!;
   paquetes.set(g, null);
-  fetch(BASE + `fx/pfx_${g}.bin`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer(); }).then((b) => paquetes.set(g, b)).catch(() => setTimeout(() => paquetes.delete(g), 3000));
+  // el paquete viene en base64 (el artifact no sirve binarios): se decodifica una vez con fetch de un data: URL
+  fetch(BASE + `fx/pfx_${g}.txt`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.text(); }).then((t) => fetch('data:application/octet-stream;base64,' + t.trim())).then((r) => r.arrayBuffer()).then((b) => paquetes.set(g, b)).catch(() => setTimeout(() => paquetes.delete(g), 3000));
   return null;
 }
 interface Viva { bmp: ImageBitmap | HTMLImageElement | null; mpx: number; uso: number; pidiendo: boolean }
