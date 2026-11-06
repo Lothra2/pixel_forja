@@ -5787,10 +5787,10 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/intro/pagina_1.webp",
+       "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         0,
-        2706,
+        0,
         1408,
         792
        ],
@@ -5803,10 +5803,10 @@
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/intro/pagina_1.webp",
+       "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         1410,
-        2706,
+        0,
         1408,
         792
        ],
@@ -5861,7 +5861,7 @@
        "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         0,
-        0,
+        794,
         1408,
         792
        ],
@@ -5878,22 +5878,22 @@
        "recorte": [
         0,
         0,
-        3825,
-        1400
+        3770,
+        2192
        ],
-       "x": 300,
-       "y": 0,
-       "w": 850,
-       "h": 400,
+       "x": 200,
+       "y": 39,
+       "w": 1131,
+       "h": 411,
        "paralaje": 0.9,
        "mezcla": "normal",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 9,
-        "cuadros": 55,
-        "fps": 12,
-        "w": 425,
-        "h": 200
+        "columnas": 5,
+        "cuadros": 37,
+        "fps": 8,
+        "w": 754,
+        "h": 274
        }
       },
       {
@@ -5901,23 +5901,23 @@
        "archivo": "cinematicas/intro/pagina_1.webp",
        "recorte": [
         0,
-        1402,
-        3825,
-        1302
+        2194,
+        3675,
+        1386
        ],
-       "x": 250,
-       "y": 420,
-       "w": 850,
-       "h": 372,
+       "x": 180,
+       "y": 330,
+       "w": 1050,
+       "h": 462,
        "paralaje": 0.9,
        "mezcla": "normal",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 9,
-        "cuadros": 55,
-        "fps": 12,
-        "w": 425,
-        "h": 186
+        "columnas": 7,
+        "cuadros": 37,
+        "fps": 8,
+        "w": 525,
+        "h": 231
        }
       },
       {
@@ -5981,7 +5981,7 @@
        "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         1410,
-        0,
+        794,
         1408,
         792
        ],
@@ -5996,8 +5996,8 @@
        "id": "fuego_1",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        3308,
-        3399,
+        0,
+        3895,
         608,
         39
        ],
@@ -6020,8 +6020,8 @@
        "id": "fuego_2",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        514,
-        3399,
+        1092,
+        3843,
         784,
         47
        ],
@@ -6044,8 +6044,8 @@
        "id": "fuego_3",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        2232,
-        3399,
+        2810,
+        3843,
         608,
         44
        ],
@@ -6068,8 +6068,8 @@
        "id": "fuego_4",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        0,
-        3399,
+        578,
+        3843,
         512,
         50
        ],
@@ -6092,8 +6092,8 @@
        "id": "fuego_5",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        3190,
-        3289,
+        0,
+        3843,
         576,
         50
        ],
@@ -6116,8 +6116,8 @@
        "id": "fuego_6",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        2372,
-        3289,
+        3158,
+        3737,
         816,
         71
        ],
@@ -6140,8 +6140,8 @@
        "id": "fuego_7",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        2842,
-        3399,
+        3420,
+        3843,
         464,
         42
        ],
@@ -6164,8 +6164,8 @@
        "id": "fuego_8",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        1300,
-        3399,
+        1878,
+        3843,
         448,
         47
        ],
@@ -6188,8 +6188,8 @@
        "id": "fuego_9",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        1762,
-        3289,
+        2548,
+        3737,
         608,
         94
        ],
@@ -6212,8 +6212,8 @@
        "id": "fuego_10",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        1750,
-        3399,
+        2328,
+        3843,
         480,
         46
        ],
@@ -6276,7 +6276,7 @@
        "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         0,
-        794,
+        1588,
         1408,
         792
        ],
@@ -6292,7 +6292,7 @@
        "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         1410,
-        794,
+        1588,
         1408,
         792
        ],
@@ -6359,7 +6359,7 @@
        "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         0,
-        1588,
+        2382,
         1408,
         792
        ],
@@ -6375,7 +6375,7 @@
        "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         1410,
-        1588,
+        2382,
         1408,
         792
        ],
@@ -6391,7 +6391,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         2146,
-        2939,
+        3380,
         1504,
         176
        ],
@@ -6455,7 +6455,7 @@
        "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         0,
-        2382,
+        3176,
         1408,
         792
        ],
@@ -6471,7 +6471,7 @@
        "archivo": "cinematicas/intro/pagina_2.webp",
        "recorte": [
         1410,
-        2382,
+        3176,
         1408,
         792
        ],
@@ -6487,14 +6487,14 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         0,
-        2686,
-        3408,
-        251
+        3567,
+        2272,
+        168
        ],
        "x": 610,
        "y": 0,
        "w": 426,
-       "h": 502,
+       "h": 504,
        "paralaje": 0.85,
        "mezcla": "sumar",
        "anim": {
@@ -6502,18 +6502,18 @@
         "columnas": 16,
         "cuadros": 16,
         "fps": 12,
-        "w": 213,
-        "h": 251
+        "w": 142,
+        "h": 168
        }
       },
       {
        "id": "fuego_2",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        1762,
-        3126,
-        1488,
-        156
+        0,
+        3737,
+        992,
+        104
        ],
        "x": 357,
        "y": 147,
@@ -6526,8 +6526,8 @@
         "columnas": 16,
         "cuadros": 16,
         "fps": 12,
-        "w": 93,
-        "h": 156
+        "w": 62,
+        "h": 104
        }
       },
       {
@@ -6584,15 +6584,15 @@
     },
     {
      "id": "i07_claustro",
-     "que": "En el claustro nevado, la brasa caída humea entre las losas del jardín con su luz roja; detrás, en la torre, las campanas se mecen solas.",
+     "que": "Desde la galería del claustro, a través de un arco ojival: la brasa caída humea en el jardín nevado con su luz roja; las campanas doblan solas, lejos.",
      "dur": 7,
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/intro/pagina_2.webp",
+       "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         0,
-        3176,
+        0,
         1408,
         792
        ],
@@ -6607,15 +6607,15 @@
        "id": "fuego_1",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        0,
-        3289,
-        1760,
-        108
+        994,
+        3737,
+        1552,
+        97
        ],
-       "x": 479,
-       "y": 445,
-       "w": 220,
-       "h": 216,
+       "x": 630,
+       "y": 470,
+       "w": 194,
+       "h": 194,
        "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
@@ -6623,8 +6623,8 @@
         "columnas": 16,
         "cuadros": 16,
         "fps": 12,
-        "w": 110,
-        "h": 108
+        "w": 97,
+        "h": 97
        }
       },
       {
@@ -6645,8 +6645,8 @@
        "zoom": 1
       },
       "hasta": {
-       "x": -6,
-       "y": 3,
+       "x": 1,
+       "y": 4,
        "zoom": 1.08
       },
       "curva": "suave",
@@ -6690,10 +6690,10 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/intro/pagina_2.webp",
+       "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         1410,
-        3176,
+        0,
         1408,
         792
        ],
@@ -6709,7 +6709,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         0,
-        0,
+        794,
         1408,
         792
        ],
@@ -6725,7 +6725,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         0,
-        2939,
+        3380,
         2144,
         185
        ],
@@ -6788,7 +6788,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         1410,
-        0,
+        794,
         1408,
         792
        ],
@@ -6804,7 +6804,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         0,
-        794,
+        1588,
         1408,
         792
        ],
@@ -6820,14 +6820,14 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         0,
-        2382,
-        3392,
-        302
+        3176,
+        2272,
+        202
        ],
        "x": 479,
        "y": 96,
-       "w": 424,
-       "h": 604,
+       "w": 426,
+       "h": 606,
        "paralaje": 0.85,
        "mezcla": "sumar",
        "anim": {
@@ -6835,8 +6835,8 @@
         "columnas": 16,
         "cuadros": 16,
         "fps": 12,
-        "w": 212,
-        "h": 302
+        "w": 142,
+        "h": 202
        }
       },
       {
@@ -6883,7 +6883,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         1410,
-        794,
+        1588,
         1408,
         792
        ],
@@ -6899,7 +6899,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         0,
-        1588,
+        2382,
         1408,
         792
        ],
@@ -6914,8 +6914,8 @@
        "id": "fuego_1",
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
-        0,
-        3126,
+        2274,
+        3567,
         1760,
         161
        ],
@@ -6978,7 +6978,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         1410,
-        1588,
+        2382,
         1408,
         792
        ],
@@ -6994,7 +6994,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         2820,
-        1588,
+        2382,
         704,
         396
        ],
@@ -7083,7 +7083,7 @@
        "archivo": "cinematicas/intro/pagina_3.webp",
        "recorte": [
         3526,
-        1588,
+        2382,
         262,
         307
        ],
