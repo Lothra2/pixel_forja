@@ -401,15 +401,22 @@ function armarForma(w: number, h: number, f: Forma, margen: number, s: number): 
 
 /**
  * Forma a medida desde una máscara de px (alfa 0..1 o 0..255, `mw` x `mh`) para una grilla con celdas de `celda` px:
- * vitrales, una puerta, la silueta de un cuerpo. La forma es la máscara (lo que cubre cada celda) y la fuente nace en
+ * vitrales, una puerta (modo 'ventanas', por omisión) o la silueta de un cuerpo que arde (modo 'salpicado': manchas de
+ * fuente sueltas adentro de la silueta, `relleno` ~0.07, y la llama sube libre). La forma es la máscara (lo que cubre cada celda) y la fuente nace en
  * el borde de abajo de cada región (la celda cubierta cuya celda de abajo no lo está) y, salteada, en el tercio de
  * abajo de cada región (`relleno`), así una ventana alta arde entera y no solo en el alféizar.
  * Devuelve la forma y el tamaño de la grilla (ancho, alto) en celdas.
  */
-export function formaDesdeMascara(mascara: ArrayLike<number>, mw: number, mh: number, celda: number, o: { relleno?: number; semilla?: number; escala255?: boolean } = {}): { forma: Forma; ancho: number; alto: number } {
+export function formaDesdeMascara(mascara: ArrayLike<number>, mw: number, mh: number, celda: number, o: { relleno?: number; semilla?: number; escala255?: boolean; modo?: 'ventanas' | 'salpicado' } = {}): { forma: Forma; ancho: number; alto: number } {
   const w = Math.ceil(mw / celda), h = Math.ceil(mh / celda), k = o.escala255 ? 1 / 255 : 1, cub = new Float32Array(w * h);
   for (let y = 0; y < mh; y++) for (let x = 0; x < mw; x++) { const v = Number(mascara[y * mw + x]) * k; if (v > 0) cub[Math.floor(y / celda) * w + Math.floor(x / celda)] += v / (celda * celda); }
   const fuente = new Float32Array(w * h), rel = o.relleno ?? 0.2, s = o.semilla ?? 1;
+  if (o.modo === 'salpicado') {
+    // un cuerpo que arde: manchas de fuente sueltas dentro de la silueta (no una pared desde los pies) y la llama libre
+    // hacia arriba (sin forma: la silueta no la corta)
+    for (let i = 0; i < w * h; i++) if (cub[i] >= 0.5 && ruido2((i % w) * 0.7, Math.floor(i / w) * 0.7, s) < rel * 1.6 && hashEnt(i, s) < 0.75) fuente[i] = 0.8 + 0.2 * hashEnt(i, s + 1);
+    return { forma: { tipo: 'mapa', fuente }, ancho: w, alto: h };
+  }
   // alto de la región en cada columna, para saber qué es "el tercio de abajo"
   for (let x = 0; x < w; x++) {
     let y = h - 1;

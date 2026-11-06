@@ -226,15 +226,15 @@ export interface FuegoEspecial {
 export const ESPECIALES: Record<string, FuegoEspecial> = {
   quemado: {
     que: 'estado "quemado" sobre monstruos y el héroe: la grilla pegada al cuerpo', celda: 3, paleta: 'infierno', forma: 'silueta',
-    altura: 0.42, humo: 0.5, turbulencia: 0.5, ruido: 0.5, relleno: 0.12, alfa: 0.9, cada_cuadros: 4, margen_px: [10, 26],
+    altura: 0.3, humo: 0.5, turbulencia: 0.5, ruido: 0.55, relleno: 0.07, alfa: 0.85, cada_cuadros: 4, margen_px: [10, 26],
     luz: { radio: 120, altura: 40, intensidad: 0.7, mueve: 0.5, sombra: false }, brasas: 3,
-    notas: 'Grilla = caja del cuadro del sprite + margen_px (x a cada lado, y arriba) en celdas de 3. Forma: formaDesdeMascara(alfa del cuadro, celda 3, relleno 0.12) rehecha cada 4 cuadros de animación (no cada cuadro de pantalla). Al terminar el estado: apagar(f) y dejar de dibujarla cuando calorMedio(f).k llegue a 0. Con paleta sombra o veneno sirve para esos estados.',
+    notas: 'Grilla = caja del cuadro del sprite + margen_px (x a cada lado, y arriba) en celdas de 3; la máscara es el alfa del cuadro puesto en esa caja, con umbral (alfa >= 200 cuenta como 255, lo demás 0: la sombra en el piso no arde). Forma: formaDesdeMascara(alfa, ancho, alto, 3, { modo: "salpicado", relleno: 0.07, escala255: true }) (manchas sueltas sobre el cuerpo, la llama sube libre), rehecha cada 4 cuadros de animación (no cada cuadro de pantalla); decay = decayPara(altura, alto de la grilla). Dibujar con alfa 0.85 encima del sprite. Al terminar el estado: apagar(f) y dejar de dibujarla cuando calorMedio(f).k llegue a 0. Con paleta sombra, veneno o animas (hueco 0.5) sirve para esos estados.',
   },
   cadaver: {
     que: 'cadáveres que arden (muertos por fuego)', celda: 3, paleta: 'infierno', forma: 'silueta',
-    altura: 0.5, humo: 0.8, turbulencia: 0.45, ruido: 0.55, relleno: 0.18, alfa: 0.95, dura_s: 5, apaga_s: 3.5, margen_px: [8, 30],
+    altura: 0.36, humo: 0.8, turbulencia: 0.45, ruido: 0.55, relleno: 0.1, alfa: 0.9, dura_s: 5, apaga_s: 3.5, margen_px: [8, 30],
     luz: { radio: 150, altura: 16, intensidad: 0.75, mueve: 0.5, sombra: true }, brasas: 2.5,
-    notas: 'Igual que quemado, con la silueta del cadáver en el piso (una sola vez). A los apaga_s se llama apagar(f); el humo sigue hasta dura_s.',
+    notas: 'Igual que quemado (modo "salpicado"), con la silueta del cadáver en el piso armada una sola vez. A los apaga_s se llama apagar(f); el humo sigue hasta dura_s.',
   },
   suelo_ardiente: {
     que: 'charcos y suelo que arden (lo que dejan los poderes de fuego: cráter, meteoro, muro, suelo ardiente)', celda: 3, paleta: 'infierno', forma: 'circulo',
