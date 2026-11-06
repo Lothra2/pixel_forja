@@ -6,9 +6,10 @@ import './catalogo/abadia_oria';
 import {
   lamina, mascara, rellenar, trazo, disco, polilinea, desenfocar, desenfocada, pintar, brillo, degradado, halo, encima, escalar, desdeRaster,
   aRaster, recortar, grano, rayo, hex, mezcla, sat, suave, fbm, grilla,
-  type Lamina, type C3, type P2,
+  type Lamina, type Mascara, type C3, type P2,
 } from './cine';
 import { perfil, arbolMuerto, lapida, verja, cuervo, ruina, aguja, llamas, humo, nubes, campoNubes, type TipoLapida } from './siluetas';
+import { fuegoTrasVidrios } from './cine_fuego';
 
 /**
  * La portada de Réquiem de Ceniza en capas de paralaje: cielo de tormenta con las nubes encendidas desde abajo,
@@ -43,6 +44,9 @@ export interface CapaPortada {
   /** animación que hace el juego sobre la capa */
   anim?: Record<string, unknown>;
   notas?: string;
+  /** esquina de la capa en la capa de 1536 x 800 si no la cubre entera (las tiras de cuadros) */
+  x?: number;
+  y?: number;
 }
 
 const luzIncendios = (x: number) => {
@@ -152,12 +156,12 @@ const esLuz = (c: C3) => c[0] > 0.42 && c[0] > c[1] * 1.7 && c[0] > c[2] * 2.2;
  * La catedral en la colina: modelo oscurecido y enfriado (noche de tormenta), la luz roja de vitrales y puerta en
  * una capa aparte que late, el cono de luz que sale por la puerta y baja por la escalinata hacia el que mira.
  */
-export function capaCatedral(cat: { img: Lamina; puerta: P2 }): { capa: Lamina; luz: Lamina; puerta: P2 } {
+export function capaCatedral(cat: { img: Lamina; puerta: P2 }): { capa: Lamina; luz: Lamina; puerta: P2; vitrales: Mascara } {
   const { w, h } = CAPA, k = ALTO_CATEDRAL / cat.img.h;
   const im = escalar(cat.img, Math.round(cat.img.w * k), Math.round(cat.img.h * k));
   const px = Math.round(CATEDRAL_X - im.w * 0.45), py = Math.round(SUELO_CATEDRAL - im.h + 6);
   const puerta: P2 = [px + cat.puerta[0] * k, py + cat.puerta[1] * k];
-  const capa = lamina(w, h), luz = lamina(w, h);
+  const capa = lamina(w, h), luz = lamina(w, h), vitrales = mascara(w, h);
   // la colina y el atrio
   const colina = mascara(w, h);
   rellenar(colina, perfil(w, h, SUELO_CATEDRAL + 30, 16, 5, { escala: 420 }).map(([x, y]) => [x, y + 40 * ((x - CATEDRAL_X) / 600) ** 2 - 10] as P2));
@@ -174,8 +178,12 @@ export function capaCatedral(cat: { img: Lamina; puerta: P2 }): { capa: Lamina; 
     o = [o[0] + (0.12 * alto ** 3 + 0.5 * cerca) * lum * 1.3, o[1] + 0.02 * alto, o[2]];
     const j = (ty * w + tx) * 4;
     capa.d[j] = capa.d[j] * (1 - a) + o[0] * a; capa.d[j + 1] = capa.d[j + 1] * (1 - a) + o[1] * a; capa.d[j + 2] = capa.d[j + 2] * (1 - a) + o[2] * a; capa.d[j + 3] = capa.d[j + 3] * (1 - a) + a;
-    if (esLuz(c)) { const e = sat((c[0] - 0.35) * 1.6) * a; luz.d[j] += 1.0 * e; luz.d[j + 1] += 0.22 * e; luz.d[j + 2] += 0.06 * e; luz.d[j + 3] = Math.min(1, luz.d[j + 3] + e); }
+    // el vidrio queda más tenue: detrás arde el fuego de Doom (capa catedral_fuego) y el resplandor lo pone el halo
+    if (esLuz(c)) { const e = sat((c[0] - 0.35) * 1.6) * a; luz.d[j] += 0.55 * e; luz.d[j + 1] += 0.12 * e; luz.d[j + 2] += 0.035 * e; luz.d[j + 3] = Math.min(1, luz.d[j + 3] + e * 0.55); vitrales.d[ty * w + tx] = Math.max(vitrales.d[ty * w + tx], e); }
   }
+  // el hueco de la puerta abierta (22 x 64 px en el sprite de la fachada, a la escala de la catedral): ahí también arde
+  { const pw = 22 * k, ph = 64 * k, [dx, dy] = puerta;
+    rellenar(vitrales, [[dx - pw / 2, dy - 2], [dx - pw / 2, dy - ph * 0.7], [dx, dy - ph], [dx + pw / 2, dy - ph * 0.7], [dx + pw / 2, dy - 2]], 0.9); }
   // tierra y escombros delante del pie del modelo (la planta isométrica no queda flotando); se abre en la puerta
   const frente = mascara(w, h), pie = new Float32Array(im.w).fill(-1);
   for (let x = 0; x < im.w; x++) for (let y = im.h - 1; y >= 0; y--) if (im.d[(y * im.w + x) * 4 + 3] > 0.5) { pie[x] = y + py; break; }
@@ -193,7 +201,7 @@ export function capaCatedral(cat: { img: Lamina; puerta: P2 }): { capa: Lamina; 
   pintar(capa, frente, [0.035, 0.025, 0.03]);
   // resplandor de los vitrales
   const v = lamina(w, h); v.d.set(luz.d); desenfocar(v.d, w, h, 9, 4);
-  for (let i = 0; i < v.d.length; i++) luz.d[i] += v.d[i] * 1.4;
+  for (let i = 0; i < v.d.length; i++) luz.d[i] += v.d[i] * 2.4;
   // la puerta: luz que se derrama por la escalinata hacia abajo a la izquierda (hacia el que mira) y un charco en el suelo
   const cono = mascara(w, h), [dx, dy] = puerta;
   rellenar(cono, [[dx - 9, dy - 30], [dx + 8, dy - 28], [dx + 60, dy + 150], [dx - 250, dy + 210]], 1);
@@ -202,7 +210,7 @@ export function capaCatedral(cat: { img: Lamina; puerta: P2 }): { capa: Lamina; 
   brillo(luz, cono, ROJO_PUERTA, 0.8);
   halo(luz, dx, dy - 10, 70, [1, 0.35, 0.12], 1.2, 1, true);
   halo(luz, dx - 40, dy + 50, 230, [0.8, 0.1, 0.03], 0.55, 0.35, true);
-  return { capa, luz, puerta };
+  return { capa, luz, puerta, vitrales };
 }
 
 // ------------------------------------------------------------------ niebla
@@ -353,6 +361,7 @@ export function pintarPortada(o: { rapida?: boolean; aviso?: (s: string) => void
   av('nubes'); const nub = capaNubes();
   av('ruinas'); const ru = capaRuinas();
   av('catedral'); const cat = capaCatedral(o.rapida ? catedralRapida() : renderCatedral('herida'));
+  av('fuego de los vitrales'); const fuego = capaFuegoCatedral(cat.vitrales);
   av('niebla'); const nie = capaNiebla(cat.puerta);
   av('camposanto'); const cem = capaCementerio(cat.puerta);
   grano(cem, 0.02, 3);
@@ -365,6 +374,7 @@ export function pintarPortada(o: { rapida?: boolean; aviso?: (s: string) => void
     { id: 'ruinas_fuego', z: 4, img: aRaster(ru.fuego), paralaje: 0.2, mezcla: 'sumar', anim: { tipo: 'titilar', alfa: [0.7, 1], hz: 7, notas: 'alfa con ruido suave (no un seno): suma de dos senos de 5.3 y 8.9 Hz' } },
     { id: 'catedral', z: 5, img: aRaster(cat.capa), paralaje: 0.45, mezcla: 'normal' },
     { id: 'catedral_luz', z: 6, img: aRaster(cat.luz), paralaje: 0.45, mezcla: 'sumar', anim: { tipo: 'latir', alfa: [0.7, 1], periodo_s: 2.4, notas: 'late con los vitrales; durante un relámpago bajarla a 0.5' } },
+    ...(fuego ? [fuego] : []),
     { id: 'niebla', z: 7, img: aRaster(nie), paralaje: 0.6, mezcla: 'normal', anim: { tipo: 'deriva', px_por_segundo: 9, enrollar: true } },
     { id: 'cementerio', z: 9, img: aRaster(cem), paralaje: 1, mezcla: 'normal' },
   ];
@@ -372,11 +382,39 @@ export function pintarPortada(o: { rapida?: boolean; aviso?: (s: string) => void
   return { capas, ceniza: hojaCeniza(), relampago: cuadrosRelampago(), puerta: cat.puerta };
 }
 
+/**
+ * Fuego de Doom detrás de los vitrales y de la puerta de la catedral: una tira de 12 cuadros a 12 por segundo que
+ * empalma (anim 'cuadros', se suma), recortada a la caja de los vitrales (x, y en la capa). Va encima de catedral_luz.
+ */
+export function capaFuegoCatedral(vit: Mascara, cuadros = 12): CapaPortada | null {
+  const { w, h } = vit;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (vit.d[y * w + x] > 0.05) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  if (x1 < 0) return null;
+  x0 = Math.max(0, x0 - 2); y0 = Math.max(0, y0 - 2); x1 = Math.min(w - 1, x1 + 2); y1 = Math.min(h - 1, y1 + 2);
+  const cw = x1 - x0 + 1, ch = y1 - y0 + 1, m = new Float32Array(cw * ch);
+  for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) m[y * cw + x] = Math.min(1, vit.d[(y + y0) * w + x + x0] * 1.4);
+  const cs = fuegoTrasVidrios(m, cw, ch, { cuadros, celda: 1, paleta: 'infierno', semilla: 6301, alto_px: 26, fondo: { c: [0.55, 0.1, 0.03], k: 0.35 }, k: 1.1, pasos: 2 });
+  const cols = Math.min(cuadros, Math.max(1, Math.floor(4096 / cw)));
+  return {
+    id: 'catedral_fuego', z: 6.5, img: grilla(cs.map((L) => aRaster(L)), cols), paralaje: 0.45, mezcla: 'sumar', x: x0, y: y0,
+    anim: { tipo: 'cuadros', columnas: cols, cuadros, fps: 12, w: cw, h: ch },
+    notas: 'Fuego de Doom horneado detrás de los vitrales y en la puerta: tira en grilla, cuadro = floor(t * fps) % cuadros, en (x, y) de la capa, se suma, empalma. Durante un relámpago bajarla a 0.6 como catedral_luz.',
+  };
+}
+
 /** Compone las capas en la pantalla base (cámara en el centro, corrida `cam` px) para vistas previas. */
 export function componerPortada(p: Portada, o: { cam?: [number, number]; relampago?: number } = {}): Lamina {
   const [cx, cy] = o.cam ?? [0, 0], out = lamina(CAPA.w, CAPA.h);
   for (const c of [...p.capas].sort((a, b) => a.z - b.z)) {
     if (c.img.w < 2) { if (o.relampago !== undefined) encima(out, desdeRaster(p.relampago[o.relampago]), Math.round(-cx * c.paralaje), Math.round(-cy * c.paralaje), 1, true); continue; }
+    if (c.anim?.tipo === 'cuadros' && c.x !== undefined) {
+      // tira: el cuadro 0 en su lugar
+      const a = c.anim as { w: number; h: number }, r = createRaster(a.w, a.h);
+      for (let y = 0; y < a.h; y++) r.data.set(c.img.data.subarray(y * c.img.w * 4, (y * c.img.w + a.w) * 4), y * a.w * 4);
+      encima(out, desdeRaster(r), Math.round((c.x ?? 0) - cx * c.paralaje), Math.round((c.y ?? 0) - cy * c.paralaje), 1, c.mezcla === 'sumar');
+      continue;
+    }
     encima(out, desdeRaster(c.img), Math.round(-cx * c.paralaje), Math.round(-cy * c.paralaje), 1, c.mezcla === 'sumar');
   }
   const base = recortar(out, CAPA.mx, CAPA.my, BASE.w, BASE.h);

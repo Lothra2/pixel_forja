@@ -38,7 +38,11 @@ export const CX = CW / 2, CY = CH / 2;
 export const NARR_Y = 548 + MY;
 
 export type Mezcla = 'normal' | 'sumar';
-export interface CapaToma { id: string; z: number; L: Lamina; paralaje: number; mezcla: Mezcla; anim?: Record<string, unknown>; soloSi?: string; opaca?: boolean; notas?: string }
+export interface CapaToma {
+  id: string; z: number; L: Lamina; paralaje: number; mezcla: Mezcla; anim?: Record<string, unknown>; soloSi?: string; opaca?: boolean; notas?: string;
+  /** capa animada (tira): sus cuadros, todos del mismo tamaño, con la esquina en (x, y) de la capa, a `fps` */
+  cuadros?: Lamina[]; x?: number; y?: number; fps?: number;
+}
 /** Sprites animados de las hojas compartidas (fuego, goteo, humo, cuervos) puestos en posiciones de la capa: [x, y, escala] del pivote. */
 export interface FxToma { tipo: 'sprite'; hoja: 'fuego' | 'goteo_sangre' | 'goteo_agua' | 'humo' | 'cuervo'; en: [number, number, number][]; mezcla: Mezcla; despues_de: string; paralaje: number; fps?: number; alfa?: number; soloSi?: string }
 
@@ -57,11 +61,15 @@ export class Toma {
     return L;
   }
   efecto(f: FxToma) { this.fx.push(f); }
+  /** Capa animada: una tira de cuadros del mismo tamaño (fuego detrás de unos vitrales) con su esquina en (x, y). */
+  tira(id: string, z: number, paralaje: number, mezcla: Mezcla, cuadros: Lamina[], x: number, y: number, fps = 12, o: { soloSi?: string; notas?: string } = {}) {
+    this.capas.push({ id, z, L: cuadros[0], paralaje, mezcla, cuadros, x: Math.round(x), y: Math.round(y), fps, ...o });
+  }
   /** Lo que se ve de las capas normales hasta z (sin las que suman), para calcular rayos de luz o reflejos. */
   plano(hastaZ: number): Lamina {
     const out = lamina(CW, CH);
     for (const c of [...this.capas].sort((a, b) => a.z - b.z)) {
-      if (c.z > hastaZ || c.soloSi) continue;
+      if (c.z > hastaZ || c.soloSi || c.cuadros) continue;
       const s = c.L.d, d = out.d;
       for (let i = 0; i < d.length; i += 4) {
         if (c.mezcla === 'sumar') { d[i] += s[i]; d[i + 1] += s[i + 1]; d[i + 2] += s[i + 2]; continue; }
