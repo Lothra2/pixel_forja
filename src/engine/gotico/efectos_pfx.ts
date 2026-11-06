@@ -91,6 +91,13 @@ export interface CfgPfx {
   opciones?: Record<string, unknown>;
   /** ticks por cuadro a 25 por segundo (1 = 25 cps, 2 = 12.5 cps, 3 = 8.3 cps, 4 = 6.25 cps) */
   t?: 1 | 2 | 3 | 4;
+  /**
+   * ventana [desde, hasta] (segundos del original) a 25 cps en un efecto que pasa una vez: el impacto de una
+   * explosión, que a 12.5 cps salta. El efecto sale con t 1; antes y después de la ventana sigue a 12.5 cps con cada
+   * cuadro repetido dos veces. El atlas guarda una sola vez los repetidos (no pesan) y el juego no cambia nada: es un
+   * t 1 común
+   */
+  rapido25?: [number, number];
   /** escala entera de salida (2 en el mundo; 1 en los de pantalla, que el juego estira para cubrirla) */
   escala?: number;
   /** punto local (1x) que va sobre el piso: el ancla. Proyectiles: el piso debajo de la bola */
@@ -132,6 +139,8 @@ export interface CfgPfx {
   relleno?: [number, number][];
   /** en qué direcciones va detrás del que lo lanza (tajos y alientos pegados al cuerpo) */
   detrasEn?: (typeof DIRS_PODER)[number][];
+  /** solo para cinemáticas (un astro del cielo, una toma de costado): no va en el mundo y no prende luz dinámica */
+  soloCinematica?: boolean;
   uso: UsoPfx[];
   notas?: string;
 }
@@ -183,6 +192,8 @@ export interface EfectoPfx {
   mezcla: 'normal' | 'aditiva';
   detrasEn?: string[];
   enLanzador?: boolean;
+  /** solo para cinemáticas: el juego no lo pone en el mundo */
+  soloCinematica?: true;
   cuerpo?: { alfa?: number[]; tinte?: { color: string; fuerza: number; nota?: string } };
   luz: LuzEfecto;
   uso: UsoPfx[];
@@ -238,6 +249,8 @@ interface Crudo {
   centro: [number, number];
   dispersion: number;
   alfaCuerpo: number[];
+  /** el cuadro repite al anterior (la cola a 12.5 cps de un arranque a 25) */
+  repetido: boolean[];
   n: number;
   t: number;
   bucle: boolean;
@@ -292,6 +305,16 @@ function tiempos(cfg: CfgPfx, meta: ModuloPfx['meta']): { ts: number[]; t: numbe
   }
   const [a, b] = cfg.ventana ?? [0, D];
   const fin = Math.min(b, cfg.maxSeg !== undefined ? a + cfg.maxSeg : b);
+  if (cfg.rapido25 && !bucle) {
+    // la ventana del impacto cuadro a cuadro a 25 por segundo; lo de antes y lo de después a 12.5, cada tiempo dos
+    // veces (dos ticks)
+    const [w0, w1] = cfg.rapido25, ts: number[] = [];
+    let x = a;
+    for (; x < Math.min(fin, w0) - 1e-9; x += 2 / CPS) ts.push(x, x);
+    for (; x < Math.min(fin, w1) - 1e-9; x += 1 / CPS) ts.push(x);
+    for (; x < fin - 1e-9; x += 2 / CPS) ts.push(x, x);
+    return { ts, t: 1, bucle };
+  }
   const n = Math.max(1, Math.ceil((fin - a) / dt - 1e-9));
   return { ts: Array.from({ length: n }, (_, i) => a + i * dt), t, bucle };
 }
@@ -309,12 +332,19 @@ function pintarCrudo(cfg: CfgPfx, variante: 0 | 1 | 2 = 0): Crudo {
   if (usaCuerpo) opc.actor = actorDe(cfg, variante);
   const inst = createFx(mod, opc);
   const { ts, t, bucle } = tiempos(cfg, meta);
-  const cuadros: Uint8ClampedArray[] = [], energia: number[] = [], materia: number[] = [], alfaCuerpo: number[] = [];
+  const cuadros: Uint8ClampedArray[] = [], energia: number[] = [], materia: number[] = [], alfaCuerpo: number[] = [], repetido: boolean[] = [];
   let lr = 0, lg = 0, lb = 0, cx = 0, cy = 0, sw = 0;
   // centro y dispersión de la luz del cuadro con más energía
   let pico = { e: -1, x: 0, y: 0, d: 0 };
   let ahora = 0;
-  for (const tt of ts) {
+  for (let it = 0; it < ts.length; it++) {
+    const tt = ts[it];
+    // el mismo tiempo que el anterior (la cola a 12.5 cps de un arranque a 25): el mismo cuadro
+    if (it > 0 && tt === ts[it - 1]) {
+      cuadros.push(cuadros[it - 1].slice()); energia.push(energia[it - 1]); materia.push(materia[it - 1]); alfaCuerpo.push(alfaCuerpo[it - 1]); repetido.push(true);
+      continue;
+    }
+    repetido.push(false);
     // pura: se puede pedir cualquier tiempo; simulada: se avanza (a 120 Hz o más fino por dentro)
     if (tt > ahora + 1e-9) { inst.update(tt - ahora); ahora = tt; }
     clearFrame(fr);
@@ -348,7 +378,7 @@ function pintarCrudo(cfg: CfgPfx, variante: 0 | 1 | 2 = 0): Crudo {
   const ax = OX + m + (cfg.ancla?.[0] ?? 0), ay = OY + m + (cfg.ancla?.[1] ?? 0);
   return {
     lam: { w, h, ax, ay, ox: OX + m, oy: OY + m, cuadros },
-    energia, materia, luzRgb: sw > 0 ? [lr / sw, lg / sw, lb / sw] : [0, 0, 0], centro: [cx, cy], dispersion: pico.d, alfaCuerpo, n, t, bucle,
+    energia, materia, luzRgb: sw > 0 ? [lr / sw, lg / sw, lb / sw] : [0, 0, 0], centro: [cx, cy], dispersion: pico.d, alfaCuerpo, repetido, n, t, bucle,
   };
 }
 
@@ -419,7 +449,7 @@ function cortarCola(cfg: CfgPfx, c: Crudo): void {
   while (fin > 1 && masa[fin - 1] < pico * frac) fin--;
   // desvanecido de los últimos cuadros si se cortó o si se cortó por tiempo
   const cortado = fin < masa.length || (cfg.maxSeg !== undefined && cfg.maxSeg < modulo(cfg).meta.duration);
-  c.lam.cuadros.length = fin; c.energia.length = fin; c.materia.length = fin; c.alfaCuerpo.length = fin; c.n = fin;
+  c.lam.cuadros.length = fin; c.energia.length = fin; c.materia.length = fin; c.alfaCuerpo.length = fin; c.repetido.length = fin; c.n = fin;
   if (cortado) {
     const K = Math.min(8, Math.max(2, Math.floor(fin / 4)));
     for (let k = 0; k < K; k++) {
@@ -628,6 +658,9 @@ function hacer(id: string): Hecho {
   }
   cortarCola(cfg, crudo);
   if (cfg.relleno) rellenar(cfg.relleno, crudo);
+  // los repetidos vuelven a ser idénticos al anterior (el desvanecido de la cola los separaba): el atlas los guarda una
+  // vez. El último no: termina apagado como pide el contrato de un efecto que pasa una vez
+  for (let f = 1; f < crudo.n - 1; f++) if (crudo.repetido[f]) { crudo.lam.cuadros[f] = crudo.lam.cuadros[f - 1].slice(); crudo.energia[f] = crudo.energia[f - 1]; }
   // recorte a 1x (la pantalla va entera: es el cuadro de 320 × 180)
   const pantalla = cfg.capa === 'pantalla';
   const [x0, y0, x1, y1] = caja([crudo.lam], 1);
@@ -690,7 +723,7 @@ function luzDe(cfg: CfgPfx, c: Crudo, k: number): LuzEfecto {
   const pico = Math.max(...c.energia, 0);
   const n = c.n;
   // los de pantalla (clima, transiciones) no prenden luz salvo que el catálogo la pida (tormenta)
-  const sinLuz = pico < 4 || (cfg.capa === 'pantalla' && !cfg.luz?.intensidad);
+  const sinLuz = pico < 4 || cfg.soloCinematica || (cfg.capa === 'pantalla' && !cfg.luz?.intensidad);
   const curva = sinLuz ? Array.from({ length: n }, () => 0) : c.energia.map((e) => r2(e / pico));
   // color: el promedio de la luz con el máximo en 255, apenas desaturado
   const [lr, lg, lb] = c.luzRgb, mx = Math.max(lr, lg, lb, 1);
@@ -871,6 +904,7 @@ export function efectoPfx(id: string): EfectoPfx {
     paginas, peso: Math.round(paginas.reduce((s, p) => s + p.w * p.h, 0) / 1e4) / 100, direcciones: at.direcciones, mezcla: h.mezcla,
     ...(c.detrasEn ? { detrasEn: c.detrasEn } : {}),
     ...(c.enLanzador ? { enLanzador: true } : {}),
+    ...(c.soloCinematica ? { soloCinematica: true } : {}),
     ...(h.alfaCuerpo || c.cuerpo?.tinte ? { cuerpo: { ...(h.alfaCuerpo ? { alfa: h.alfaCuerpo } : {}), ...(c.cuerpo?.tinte ? { tinte: c.cuerpo.tinte } : {}) } } : {}),
     luz: h.luz, uso: c.uso, ...(c.notas ? { notas: c.notas } : {}),
   };
@@ -925,7 +959,8 @@ export const NOTAS_MANIFIESTO =
   '(bucle: % cuadros; si no, el último y se termina). Ancla: el punto del piso (los proyectiles: el piso bajo la bola; el juego los mueve). ' +
   "peso: Mpx decodificados de las páginas: cargar al usarse y descargar lo que no se use. capa 'pantalla': ancla = esquina de la pantalla " +
   "de 320x180, estirar entero (x3 a 960x540). mezcla 'aditiva': color * alfa sumado; 'normal': alfa común. cuerpo.tinte: teñir el sprite " +
-  'del afectado; cuerpo.alfa: visibilidad del sprite por cuadro. detrasEn: direcciones en que va detrás del lanzador.';
+  'del afectado; cuerpo.alfa: visibilidad del sprite por cuadro. detrasEn: direcciones en que va detrás del lanzador. ' +
+  'soloCinematica: capa de cinemática (no va en el mundo ni prende luz dinámica).';
 
 export const CREDITOS_PFX =
   'Efectos adaptados de pixelfx (https://github.com/patch-gg/pixelfx), MIT, Copyright (c) 2026 Patch y Copyright (c) 2026 Hugo Duprez ' +
@@ -941,7 +976,7 @@ Cada efecto es un atlas de una o más páginas PNG con paleta (hasta 256 colores
 4096 px de lado y 4 Mpx como mucho). efectos_pfx.json trae por efecto: id (fx_...), nombre [es, en], categoria, capa
 (mundo, piso: debajo de los personajes, pantalla: cubre la pantalla), cuadros, t (ticks por cuadro a 25 por segundo),
 bucle, direccional, escala (de dibujo), caja, paginas (archivo, w, h, bytes), peso (Mpx decodificados), direcciones
-(cuadros [página, x, y, ancho, alto, dx, dy] o espejo de otra), mezcla, enLanzador, detrasEn, cuerpo (tinte y
+(cuadros [página, x, y, ancho, alto, dx, dy] o espejo de otra), mezcla, enLanzador, detrasEn, soloCinematica, cuerpo (tinte y
 visibilidad del sprite afectado), luz (como luz_efectos.json) y uso (para qué sirve en el juego).
 
 ${NOTAS_MANIFIESTO}

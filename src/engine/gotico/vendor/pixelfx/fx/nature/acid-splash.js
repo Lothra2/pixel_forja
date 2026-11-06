@@ -1,6 +1,7 @@
 // The drops that splat where they land are adapted from Sprite Fusion's open-source blood
 // (https://www.spritefusion.com/pixel-art-vfx/blood), MIT License, Copyright (c) 2026 Hugo Duprez.
-import { Particles, Lights, P, Rng, fit, sparkle, clamp, smooth, ease, noise, rand, TAU, WHITE, mix, hex } from "../../core/index.js";
+import { Particles, Lights, P, Rng, fit, sparkle, clamp, smooth, ease, noise, rand, TAU, WHITE, mix, hex, ISO } from "../../core/index.js";
+// Forja: el hoyo, la corona y las manchas se aplastan 2:1 como en la cámara isométrica del juego (ISO).
 import { Drops } from "./_lib.js";
 
 export const meta = {
@@ -59,14 +60,14 @@ export function create(o) {
   };
   const tipOf = (s) => {
     const r = crownR() * s.r, h = crownH(), sn = Math.sin(s.a), sh = s.h * spikeK();
-    const bx = Math.cos(s.a) * r, by = sn * r * 0.3 - h * (0.75 + 0.25 * Math.abs(sn));
+    const bx = Math.cos(s.a) * r, by = sn * r * ISO - h * (0.75 + 0.25 * Math.abs(sn));
     return [bx, by, bx + Math.cos(s.a) * sh * 0.55, by - sh];
   };
   const steam = (x, y, big) => wisps.push({ x, y, t0: t, life: Math.min(R.range(0.5, 0.9) * (big ? 1.3 : 1), meta.duration - 0.05 - t), rise: R.range(22, 32), len: R.range(5, 10) * (big ? 1.4 : 1), amp: R.range(1, 2.5), k: R.range(0.35, 0.6), ph: R.range(0, TAU), drift: R.range(-4, 4) });
   // the crown: a thin cup wall rising round the impact, a bright rim, spikes off the rim with beads on their tips
   const crown = (p, back) => {
     if (t < HIT || t > HIT + 0.27) return;
-    const r = crownR(), h = crownH(), ry = r * 0.3;
+    const r = crownR(), h = crownH(), ry = r * ISO;
     for (let x = Math.floor(-r); x <= Math.ceil(r); x++) {
       const c = (x + 0.5) / r;
       if (Math.abs(c) > 1) continue;
@@ -114,14 +115,14 @@ export function create(o) {
           }
       drops.update(dt, (d) => {
         // a drop that lands eats a little spot into the floor and hisses
-        if (Math.abs(d.x) > pw()) stains.push({ x: d.x, t0: t, w: d.s * 0.8 + R.range(0.3, 1.2) });
+        if (Math.abs(d.x) > pw()) stains.push({ x: d.x, y: R.range(-0.5, 0.5) * Math.min(12, Math.abs(d.x) * 0.6), t0: t, w: d.s * 0.8 + R.range(0.3, 1.2) });
         if (t < GONE) steam(d.x, -1, false);
       });
       // the acid sizzles: tiny bright beads spit off it, pops flash on its surface, steam curls off it and the pit
       const lv = level(), w2 = width();
       if (t > HIT + 0.15 && t < GONE && w2 > 2) {
         if (R.chance(0.3 * f)) {
-          const x = R.range(-0.85, 0.85) * w2, y = Math.min(lv, depth(x)) - 1;
+          const x = R.range(-0.85, 0.85) * w2, y = Math.round(clamp(lv / PIT) * pitD() + R.range(-0.6, 0.6) * w2 * ISO * Math.sqrt(1 - (x / w2) ** 2)) - 1;
           pops.push({ x, y, t0: t });
           for (let j = 0; j < R.int(1, 3); j++) drops.add(x, Math.min(y - 1, -1), R.range(-40, 40), -R.range(50, 110), 1);
         }
@@ -139,31 +140,50 @@ export function create(o) {
       // spatter spots etched round it
       for (const s of stains) {
         const age = t - s.t0, k = 1 - smooth(1, 1.8, age), c = age < 0.15 ? C[7] : age < 0.5 ? C[6] : age < 0.9 ? C[4] : BURNT;
-        for (let x = Math.floor(s.x - s.w); x <= Math.ceil(s.x + s.w); x++) p.dot(x, 0, Math.abs(x - s.x) < s.w * 0.5 ? SCORCH : c, k * fade);
-        if (age < 0.5) p.glow(s.x, -1, 5, C[5], 0.3 * (1 - age / 0.5));
+        for (let x = Math.floor(s.x - s.w); x <= Math.ceil(s.x + s.w); x++) p.dot(x, Math.round(s.y), Math.abs(x - s.x) < s.w * 0.5 ? SCORCH : c, k * fade);
+        if (age < 0.5) p.glow(s.x, s.y - 1, 5, C[5], 0.3 * (1 - age / 0.5));
       }
       crown(p, true);
       if (t > HIT && w > 1) {
-        // the pit: an etched bowl in the floor, its edge glowing where the acid is still eating, cooling to a burnt lip
-        for (let x = Math.floor(-w) - 1; x <= Math.ceil(w) + 1; x++) {
-          const dp = depth(x + 0.5);
-          if (dp < 0) continue;
-          const bottom = Math.max(0, Math.round(dp)), edge = Math.abs(x + 0.5) / w > 0.88;
-          for (let y = 0; y <= bottom; y++) p.dot(x, y, y === bottom ? (hk > 0.5 ? C[6] : hk > 0.15 ? C[4] : BURNT) : SCORCH, fade);
-          p.dot(x, bottom + 1, hk > 0.5 ? C[5] : hk > 0.15 ? C[3] : SCORCH, fade * 0.8);
-          if (edge) p.dot(x, -1, hk > 0.4 ? C[7] : hk > 0.1 ? C[5] : BURNT, fade);
-        }
-        for (const sd of [-1, 1]) p.glow(sd * w, -1, 8, C[6], 0.45 * hk);
-        // the acid in it: a bright skin shimmering on top, darker as it deepens, sinking as it boils off
-        if (t < GONE)
-          for (let x = Math.floor(-w); x <= Math.ceil(w); x++) {
-            const dp = depth(x + 0.5);
-            if (dp < 0) continue;
-            const d = Math.abs(x + 0.5) / w, dome = lv < 0 ? Math.round(lv * Math.sqrt(Math.max(0, 1 - d * d))) : Math.round(lv), bottom = Math.round(dp);
-            if (dome > bottom) continue;
-            const n = noise(x * 0.25 - t * 2.4, 3) + noise(x * 0.1 + t * 1.4, 5) * 0.6;
-            for (let y = dome; y <= bottom; y++) p.px(x, y, y === dome ? (n > 0.7 ? C[7] : C[6]) : y === dome + 1 ? (n > 0.2 ? C[5] : C[4]) : y >= bottom ? C[3] : C[4]);
+        // Forja: el hoyo visto desde arriba en 2:1 (no de perfil): una elipse comida en el piso, con la pared de atrás
+        // a la vista (encendida donde el ácido todavía come, quemada después), el fondo hundido `pitD` px más abajo y el
+        // labio de adelante que tapa la pared de adelante; el ácido es un espejo elíptico que se hunde mientras hierve
+        const rx = w, ry = w * ISO, D = pitD(), rb = 0.62, lv2 = width();
+        for (let y = Math.floor(-ry) - 1; y <= Math.ceil(ry + D) + 1; y++)
+          for (let x = Math.floor(-rx) - 1; x <= Math.ceil(rx) + 1; x++) {
+            const X = x + 0.5, Y = y + 0.5, ag = Math.atan2(Y / ISO, X), rag2 = rag[(Math.round(ag * 12.7) + 200) % 80] * 0.06;
+            const q = Math.hypot(X / rx, Y / ry) - rag2;
+            if (q > 1.12) continue;
+            if (q > 1) {
+              // el borde comido: un labio fino, encendido mientras come y quemado al final
+              p.dot(x, y, hk > 0.4 ? C[7] : hk > 0.1 ? C[5] : BURNT, fade * (1 - (q - 1) / 0.12));
+              continue;
+            }
+            // ¿fondo o pared? el fondo es la elipse de radio rb bajada D px
+            const qb = Math.hypot(X / (rx * rb), (Y - D) / (ry * rb));
+            let c;
+            if (qb <= 1) c = hk > 0.5 ? C[3] : hk > 0.15 ? C[2] : SCORCH;
+            else if (Y < D * (1 - qb) + ry * 0.15) {
+              // la pared de atrás: de la luz del borde (arriba) a la sombra (abajo, contra el fondo)
+              const u = clamp((q - rb) / (1 - rb));
+              c = u > 0.82 ? (hk > 0.5 ? C[6] : hk > 0.15 ? C[4] : BURNT) : u > 0.5 ? (hk > 0.3 ? C[3] : BURNT) : SCORCH;
+            } else c = SCORCH;
+            p.dot(x, y, c, fade);
+            // el labio de adelante: una línea más clara (el filo que mira a la cámara)
+            if (Y > 0 && q > 0.9) p.dot(x, y, hk > 0.4 ? C[6] : hk > 0.1 ? C[4] : BURNT, fade * 0.85);
           }
+        for (const sd of [-1, 1]) p.glow(sd * w * 0.9, -1, 8, C[6], 0.4 * hk);
+        // el ácido: un espejo brillante que tiembla, más chico y más hondo mientras se va
+        if (t < GONE && lv2 > 0.5) {
+          const sink = clamp(lv / Math.max(0.1, PIT)) * D, ar = lv2, br = lv2 * ISO;
+          for (let y = Math.floor(sink - br - 1); y <= Math.ceil(sink + br); y++)
+            for (let x = Math.floor(-ar); x <= Math.ceil(ar); x++) {
+              const X = x + 0.5, Y = y + 0.5 - sink, d = Math.hypot(X / ar, Y / br);
+              if (d > 1) continue;
+              const n = noise(x * 0.25 - t * 2.4 + y * 0.4, 3) + noise(x * 0.1 + t * 1.4 - y * 0.3, 5) * 0.6;
+              p.px(x, y, d > 0.86 ? C[4] : n > 0.7 ? C[7] : n > 0.15 ? C[6] : C[5]);
+            }
+        }
         p.glow(0, -6, w * 1.4 + 10, C[4], 0.3 * hk * (0.85 + 0.15 * Math.sin(t * 9)));
         p.glow(0, 1, w * 0.9, C[6], 0.2 * hk);
       }
