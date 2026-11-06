@@ -18,7 +18,7 @@ describe('intro 3D: empaquetado para el juego', () => {
   it('lo horneado de la intro: 10 archivos como mucho, 12 MB o menos, y cada capa con su recorte dentro de su página', () => {
     const { paginas, planos } = paqueteIntro3d(PLANOS_INTRO.map((p) => p.id), decodePng);
     if (!paginas.length) return; // sin horneado (el horneado se hace con scripts/gotico-cine3d.ts)
-    expect(paginas.length).toBeLessThanOrEqual(10);
+    expect(paginas.length).toBeLessThanOrEqual(3);
     expect(paginas.reduce((a, p) => a + encodePng(p).length, 0) / 1e6).toBeLessThanOrEqual(12);
     for (const [id, p] of Object.entries(planos)) for (const c of p.capas) {
       const pg = paginas[c.pagina], [sx, sy, sw, sh] = c.recorte;

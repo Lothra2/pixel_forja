@@ -1,6 +1,7 @@
 // Vista previa rápida de un plano 3D de la intro (para iterar la escena): traza la escena entera (con lo que se mueve en
 // la pose de su armado) en hilos y la revela con el revelado del plano, sin hornear nada.
-// Uso: npx tsx scripts/gotico-cine3d-previa.ts <plano> <salida.png>   Variables: ESCALA (0.5), SS (1), AO (1), HILOS (4).
+// Uso: npx tsx scripts/gotico-cine3d-previa.ts <plano> <salida.png>   Variables: ESCALA (0.5), SS (1), AO (1), HILOS (4),
+// VARIANTE=n (la escena de la variante n), MOVIL=n CUADRO=k (la escena del cuadro k de lo que se mueve n), SIN_HUMO=1, FLICK.
 import { isMainThread, parentPort, workerData, Worker } from 'node:worker_threads';
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -9,7 +10,7 @@ const ESC = +(process.env.ESCALA ?? 0.5), W = Math.round(1408 * ESC), H = Math.r
 const P3 = await import('../src/engine/gotico/cine3d_cuadros');
 const C3D = await import('../src/engine/gotico/cine3d');
 const plano0 = (id: string) => P3.PLANOS_INTRO.find((q) => q.id === id)!, VAR = process.env.VARIANTE;
-const plano = (id: string) => { const p = plano0(id); return VAR !== undefined ? { ...p, armar: p.variantes![+VAR].armar! } : p; };
+const plano = (id: string) => { const p = plano0(id); if (process.env.MOVIL !== undefined) { const m = p.moviles![+process.env.MOVIL], k = +(process.env.CUADRO ?? 0); return { ...p, armar: (w: number, h: number) => m.armar(w, h, k) }; } return VAR !== undefined ? { ...p, armar: p.variantes![+VAR].armar! } : p; };
 if (!isMainThread) {
   const { id, hilo, hilos } = workerData as { id: string; hilo: number; hilos: number }, a = plano(id).armar(W, H), c = C3D.capasVacias(W, H, Object.keys(a.esc.marcas));
   for (let y = hilo * 4; y < H; y += hilos * 4) C3D.renderFilas(a.esc, a.atm, a.cam, c, y, Math.min(H, y + 4), { ss: SS, ao: AO, pase: 'todo' });

@@ -38,12 +38,12 @@ describe('la intro: guion', () => {
 });
 
 describe('la intro: exportar empaquetada', () => {
-  it('páginas: 10 archivos como mucho, 12 MB o menos, ninguna de más de 4096 px ni 16 Mpx; cada capa con su recorte, la música y los sonidos', () => {
+  it('páginas: 3 archivos como mucho (el artifact del juego está al borde de su límite de archivos), 12 MB o menos, ninguna de más de 4096 px ni 16 Mpx; cada capa con su recorte, la música y los sonidos', () => {
     const pags = new Map<string, Raster>();
     const sec = exportarCinematicas({ poner: (n, r) => { if (n.startsWith('cinematicas/intro/')) pags.set(n, r); }, claves: ['intro'] }) as Record<string, any>;
     expect(sec.intro.musica).toBe('intro');
     expect(sec.intro.planos).toHaveLength(11);
-    expect(pags.size).toBeLessThanOrEqual(10);
+    expect(pags.size).toBeLessThanOrEqual(3);
     let bytes = 0;
     for (const [n, r] of pags) { expect(Math.max(r.w, r.h), n).toBeLessThanOrEqual(PAGINA_MAX); expect(r.w * r.h, n).toBeLessThanOrEqual(PAGINA_MPX); bytes += encodePng(r).length; }
     expect(bytes / 1e6).toBeLessThanOrEqual(12);
