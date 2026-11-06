@@ -212,6 +212,14 @@ const ALFA_PISO = 10;
 /** límites de cada página del atlas: lado y Mpx (iOS Safari no sube a textura imágenes más grandes) */
 export const LADO_MAX = 4096;
 export const PX_MAX = 4_000_000;
+/**
+ * Error medio de color tolerado al pasar una página a paleta (0..255 por canal, pesado por el alfa). Las páginas que
+ * lo pasan con el corte de siempre (velos translúcidos grandes que se comían la paleta: lo opaco cambiaba de color) se
+ * cuantizan con el corte corregido. Ver pngLiviano.
+ */
+export const ERROR_PALETA = Number(process.env.ERROR_PALETA ?? 8);
+/** Error al que apunta el corte corregido, con la paleta más chica que lo cumple. */
+export const ERROR_FINO = Number(process.env.ERROR_FINO ?? 6);
 
 /** Ángulo en pantalla (grados, y hacia abajo) y escorzo de cada dirección a la derecha; las de la izquierda espejan. */
 const DIR_PANTALLA: Record<(typeof DIRS_PODER)[number], { ang: number; largo: number; espejo?: (typeof DIRS_PODER)[number] }> = {
@@ -866,7 +874,7 @@ export function paginasEfectoPfx(id: string): Raster[] {
 export function pngsEfectoPfx(id: string): Uint8Array[] {
   const h = hacer(id);
   // la pantalla (clima, transiciones) con 160 colores: son velos grandes y el resto con 255
-  h.pngs ??= armarAtlas(h).paginas.map((p) => pngLiviano(p, h.cfg.capa === 'pantalla' ? 160 : 255));
+  h.pngs ??= armarAtlas(h).paginas.map((p) => pngLiviano(p, h.cfg.capa === 'pantalla' ? 160 : 255, h.cfg.capa === 'pantalla' ? Infinity : ERROR_PALETA, ERROR_FINO));
   return h.pngs;
 }
 

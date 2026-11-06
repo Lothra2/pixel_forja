@@ -64,7 +64,8 @@ export const CATALOGO_PFX: CfgPfx[] = [
   },
   {
     id: 'fx_meteoro', origen: 'fire/meteor', nombre: ['Meteoro', 'Meteor'], categoria: 'fuego', elemento: 'fuego',
-    opciones: { palette: rampa('fuego', 9), rock: tramo('piedra', 4, 0.05, 0.7), stone: PIEDRA }, maxSeg: 3.8,
+    // cae 0.64 s y pega: la ventana rápida es el golpe
+    opciones: { palette: rampa('fuego', 9), rock: tramo('piedra', 4, 0.05, 0.7), stone: PIEDRA }, maxSeg: 3.8, rapido25: [0.56, 1.08],
     uso: [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['meteoro'], nota: 'cae en diagonal y se clava en el ancla' },
       { tipo: 'poder', clase: 'cazadora', habilidades: ['flecha_cometa'] },
@@ -83,7 +84,8 @@ export const CATALOGO_PFX: CfgPfx[] = [
   // ============================================================ explosiones
   {
     id: 'fx_explosion_barril', origen: 'explosions/barrel-explosion', nombre: ['Barril que estalla', 'Exploding barrel'], categoria: 'explosiones', elemento: 'fuego',
-    opciones: { palette: rampa('fuego', 8), barrel: tramo('madera', 6, 0.05, 1) }, maxSeg: 3.6, cola: 0.02,
+    // el barril tiembla 0.8 s antes de reventar: la ventana rápida es el reventón
+    opciones: { palette: rampa('fuego', 8), barrel: tramo('madera', 6, 0.05, 1) }, maxSeg: 3.6, cola: 0.02, rapido25: [0.72, 1.24],
     uso: [
       { tipo: 'ambiente', zonas: ['a1_mina1', 'a1_mina2', 'a4_minas1', 'a6_barco'], nota: 'barriles de pólvora que estallan al romperlos' },
       { tipo: 'poder', clase: 'alquimista', habilidades: ['gran_crisol'], nota: 'el crisol que revienta' },
@@ -91,7 +93,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
   },
   {
     id: 'fx_gran_explosion', origen: 'explosions/big-explosion', nombre: ['Gran explosión', 'Great explosion'], categoria: 'explosiones', elemento: 'fuego',
-    opciones: { palette: rampa('fuego', 8), stone: PIEDRA }, maxSeg: 4, cola: 0.02,
+    opciones: { palette: rampa('fuego', 8), stone: PIEDRA }, maxSeg: 4, cola: 0.02, rapido25: [0, 0.5],
     uso: [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['sol_negro'], nota: 'el estallido final' },
       { tipo: 'muerte', nota: 'muerte de un jefe de fuego (la Abadesa, Ozmaren)' },
@@ -100,7 +102,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
   },
   {
     id: 'fx_explosion_tierra', origen: 'explosions/dirt-explosion', nombre: ['Reventón de tierra', 'Dirt blast'], categoria: 'explosiones', elemento: 'tierra',
-    opciones: { palette: rampa('tierra', 7), fire: rampa('fuego', 8) }, maxSeg: 3, cola: 0.02,
+    opciones: { palette: rampa('tierra', 7), fire: rampa('fuego', 8) }, maxSeg: 3, cola: 0.02, rapido25: [0, 0.5],
     uso: [
       { tipo: 'poder', clase: 'cazadora', habilidades: ['cepo_dientes'], nota: 'la trampa que salta' },
       { tipo: 'poder', clase: 'berserker', habilidades: ['salto_lobo'], nota: 'la caída' },
@@ -117,7 +119,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
   },
   {
     id: 'fx_explosion_chica', origen: 'explosions/small-explosion', nombre: ['Explosión', 'Explosion'], categoria: 'explosiones', elemento: 'fuego',
-    opciones: { palette: rampa('fuego', 8), stone: PIEDRA }, maxSeg: 3.2, cola: 0.02,
+    opciones: { palette: rampa('fuego', 8), stone: PIEDRA }, maxSeg: 3.2, cola: 0.02, rapido25: [0, 0.5],
     uso: [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['bola_fuego'], nota: 'al pegar la bola de fuego' },
       { tipo: 'poder', clase: 'alquimista', habilidades: ['bomba_ignea', 'virote_explosivo', 'bomba_cluster'] },
@@ -225,7 +227,8 @@ export const CATALOGO_PFX: CfgPfx[] = [
   // ============================================================ hielo
   {
     id: 'fx_nova_escarcha', origen: 'ice/frost-nova', nombre: ['Nova de escarcha', 'Frost nova'], categoria: 'hielo', elemento: 'hielo', capa: 'piso', enLanzador: true,
-    opciones: { palette: rampa('hielo', 8) },
+    // se carga 0.48 s y estalla: la ventana rápida es el estallido
+    opciones: { palette: rampa('hielo', 8) }, rapido25: [0.4, 0.92],
     uso: [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['nova_escarcha', 'edad_hielo'], nota: 'centrada en la arcanista; el anillo de cristales llega a ~2 personas de radio' },
       { tipo: 'poder', clase: 'berserker', habilidades: ['canto_invierno'] },
@@ -506,7 +509,7 @@ export const CATALOGO_PFX: CfgPfx[] = [
   },
   {
     id: 'fx_golpe_piso', origen: 'impacts/ground-slam', nombre: ['Golpe al piso', 'Ground slam'], categoria: 'impactos', elemento: 'tierra', capa: 'piso', enLanzador: true,
-    opciones: { palette: rampa('tierra', 7), stone: PIEDRA }, cola: 0.02,
+    opciones: { palette: rampa('tierra', 7), stone: PIEDRA }, cola: 0.02, rapido25: [0, 0.5],
     uso: [
       { tipo: 'poder', clase: 'berserker', habilidades: ['ira_jarl', 'desatar'], nota: 'el pisotón que sacude la tierra' },
       { tipo: 'poder', clase: 'druida', habilidades: ['rugido_primigenio'] },
@@ -891,7 +894,8 @@ export const CATALOGO_PFX: CfgPfx[] = [
   },
   {
     id: 'fx_explosion_oscura', origen: 'shadow/dark-explosion', nombre: ['Explosión oscura', 'Dark explosion'], categoria: 'sombra', elemento: 'sombra',
-    opciones: { palette: rampa('sombra', 8) }, cola: 0.02, maxSeg: 3.2,
+    // se junta 0.56 s y revienta: la ventana rápida es el reventón
+    opciones: { palette: rampa('sombra', 8) }, cola: 0.02, maxSeg: 3.2, rapido25: [0.48, 1],
     uso: [
       { tipo: 'poder', clase: 'arcanista', habilidades: ['sol_negro'], nota: 'el estallido' },
       { tipo: 'muerte', nota: 'muerte del Caballero del Abismo o del Señor Demonio' },

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { EFECTOS_PFX, pintarEfectoPfx, olvidarEfectosPfx, type ManifiestoPfx } from '../gotico/efectos_pfx';
+import { cuantizar, errorPaleta } from '../gotico/efectos_pfx_png';
 
 const MANIFIESTO = JSON.parse(readFileSync(fileURLToPath(new URL('../gotico/datos/efectos_pfx.json', import.meta.url)), 'utf8')) as ManifiestoPfx;
 const efecto = (id: string) => MANIFIESTO.efectos.find((e) => e.id === id)!;
@@ -43,3 +44,46 @@ describe('efectos de pixelfx que estaban de perfil', () => {
     expect(efecto('fx_ola').uso.some((u) => u.tipo === 'ambiente')).toBe(true);
   }, 120_000);
 });
+
+describe('explosiones con el impacto a 25 cps', () => {
+  const IDS = ['fx_gran_explosion', 'fx_explosion_chica', 'fx_explosion_barril', 'fx_meteoro', 'fx_nova_escarcha', 'fx_explosion_oscura', 'fx_golpe_piso', 'fx_explosion_tierra'];
+
+  it('van con t 1: la ventana del impacto cuadro a cuadro y el resto repetido (el atlas no lo guarda dos veces)', () => {
+    for (const id of IDS) {
+      const e = efecto(id), cfg = EFECTOS_PFX.find((c) => c.id === id)!;
+      expect(e.t, id).toBe(1);
+      const [w0, w1] = cfg.rapido25!;
+      expect(w1 - w0, id).toBeGreaterThanOrEqual(0.5);
+      const cs = e.direcciones[0].cuadros!, igual = (a: number[], b: number[]) => a.every((v, i) => v === b[i]);
+      // en la ventana cada cuadro es distinto del anterior; fuera de ella van de a pares (salvo el último, que se apaga)
+      const i0 = Math.ceil(w0 * 12.5 - 1e-6) * 2, i1 = i0 + Math.round((w1 - w0) * 25);
+      for (let f = i0 + 1; f < Math.min(i1, cs.length); f++) expect(igual(cs[f], cs[f - 1]), `${id} ${f} en la ventana`).toBe(false);
+      for (let f = i1 + 1; f < cs.length - 2; f += 2) expect(igual(cs[f], cs[f - 1]) || !cs[f][3], `${id} ${f} en la cola`).toBe(true);
+      // dura lo mismo que a 12.5 cps (±1 cuadro de 12.5)
+      expect(Math.abs(e.cuadros / 25 - Math.ceil(e.cuadros / 2) / 12.5), id).toBeLessThanOrEqual(0.08);
+    }
+  });
+});
+
+describe('paleta de las hojas', () => {
+  it('un velo translúcido de un color muy repetido no se come la paleta (lo opaco conserva su color)', () => {
+    // 3 de cada 4 pixeles son el mismo color (el último en el canal que más varía: el corte viejo pelaba de a un color
+    // la caja que lo tenía); el resto, un degradé de oscuro a claro, de translúcido a casi opaco, con ruido
+    const w = 400, h = 300, data = new Uint8ClampedArray(w * h * 4);
+    let s = 7;
+    const az = () => ((s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 4294967296);
+    for (let i = 0; i < w * h; i++) {
+      if (i % 4) data.set([200, 225, 240, 255], i * 4);
+      else { const t = (i % w) / w; data.set([20 + 200 * t + az() * 12, 40 + 180 * t + az() * 12, 60 + 170 * t + az() * 12, 60 + 180 * t], i * 4); }
+    }
+    const img = { w, h, data }, viejo = errorPaleta(img, cuantizar(img, 255, true)), nuevo = errorPaleta(img, cuantizar(img, 255));
+    expect(nuevo).toBeLessThan(3);
+    expect(viejo, 'el corte viejo perdía el color de lo opaco').toBeGreaterThan(nuevo * 2);
+  });
+
+  it('el atlas exportado entra en los 15 MB', () => {
+    const mb = MANIFIESTO.efectos.reduce((s, e) => s + e.paginas.reduce((t, p) => t + p.bytes, 0), 0) / 1024 / 1024;
+    expect(mb).toBeLessThanOrEqual(15);
+  });
+});
+
