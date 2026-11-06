@@ -592,9 +592,12 @@ function dibujarLuz(j: Juego, t: number) {
   // degradados pintados una vez y escalados: mucho más baratos que crear uno por luz y por cuadro
   const hueco = (x: number, y: number, r: number, k = 1) => { lctx.globalAlpha = Math.min(1, k); lctx.drawImage(SPR_HUECO, x - r, y - r, r * 2, r * 2); lctx.globalAlpha = 1; };
   const tinte = (x: number, y: number, r: number, c: string, a: number) => { bctx.globalAlpha = a; bctx.drawImage(sprTinte(c), x - r, y - r, r * 2, r * 2); bctx.globalAlpha = 1; };
+  // clave baja: la antorcha del héroe ya no abre la oscuridad del todo (el misterio vuelve); en el pueblo casi no hay
+  // oscuridad y en las mazmorras más negras se deja un poco más para que el héroe no se pierda. Su radio no cambia
+  const kHeroe = z.tipo === 'pueblo' ? 0.8 : z.oscuridad >= 0.9 ? 0.68 : 0.62;
   for (const l of luces) {
     const cy = l.y - Math.min(40, l.h * 0.45);
-    hueco(l.x, cy, l.r, l.blanca ? 1 : Math.min(1, 0.55 + l.k * 0.45));
+    hueco(l.x, cy, l.r, l.blanca ? kHeroe : Math.min(0.85, 0.5 + l.k * 0.4));
     if (!l.blanca) tinte(l.x, l.y - Math.min(30, l.h * 0.3), l.r * 0.85, `rgb(${l.c[0]},${l.c[1]},${l.c[2]})`, Math.min(0.5, 0.18 + l.k * 0.28));
   }
   ctx.drawImage(luz, 0, 0);
