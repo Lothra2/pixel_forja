@@ -397,7 +397,9 @@ export function renderFilas(esc: EscenaCine, atm: Atmosfera, cam: Camara, c: Cap
           const w = l.envuelve ?? 0.15, nl = ((n[0] * lx + n[1] * ly + n[2] * lz) / dd + w) / (1 + w);
           if (nl <= 0) continue;
           let k = (l.k / (1 + (dd / l.r) ** 2)) * (1 - (dd / lim) ** 2) ** 2 * nl;
-          if (l.sombra && k > 0.002) { const dl: V3 = [lx / dd, ly / dd, lz / dd]; if (bvh.golpe(pe, dl, 0.05, dd - 3) || (ter && ter.trazar(pe, dl, 0.5, dd - 3) >= 0)) k *= 0.08; }
+          // con la luz por detrás de la cara (lo que deja pasar `envuelve`) el rayo de sombra roza la propia pieza y
+          // sale granulado: ahí cuenta como sombra sin trazar
+          if (l.sombra && k > 0.002) { const dl: V3 = [lx / dd, ly / dd, lz / dd]; if (dot(n, dl) < 0.02 || bvh.golpe(pe, dl, 0.05, dd - 3) || (ter && ter.trazar(pe, dl, 0.5, dd - 3) >= 0)) k *= 0.08; }
           const e = brillo > 0 ? brillo * Math.pow(Math.max(0, dot(n, norm([lx / dd - d[0], ly / dd - d[1], lz / dd - d[2]]))), 24) * k * 0.5 : 0;
           if (l.canal) { qR += (albedo[0] * k + e) * l.c[0]; qG += (albedo[1] * k + e) * l.c[1]; qB += (albedo[2] * k + e) * l.c[2]; }
           else { pR += (albedo[0] * k + e) * l.c[0]; pG += (albedo[1] * k + e) * l.c[1]; pB += (albedo[2] * k + e) * l.c[2]; }
@@ -425,7 +427,7 @@ export function renderFilas(esc: EscenaCine, atm: Atmosfera, cam: Camara, c: Cap
 /** Llama de Doom (u otra lámina que SUMA, premultiplicada) parada en el mundo: pie en `p`, ancho y alto en unidades. */
 export interface Cartel { p: V3; ancho: number; alto: number; lam: Lamina; k?: number; fondo?: number }
 /** Columna de humo (volumen): nace en `base`, sube `alto`, se abre de r0 a r1 y se tuerce con el viento. */
-export interface Pluma { base: V3; alto: number; r0: number; r1: number; viento: V3; dens: number; humo: C3; abajo?: C3; kAbajo?: number; semilla: number; sube: number; escala?: number; /** cuánto le da la luz principal */ sol?: number }
+export interface Pluma { base: V3; alto: number; r0: number; r1: number; viento: V3; dens: number; humo: C3; abajo?: C3; kAbajo?: number; semilla: number; sube: number; escala?: number; /** cuánto le da la luz principal */ sol?: number; /** qué tan rápido se apaga hacia arriba la luz de abajo (6) */ decaeAbajo?: number }
 /** Partícula (copo, ceniza, chispa): posición, radio en unidades, color lineal, opacidad; `suma` para las que brillan. */
 export interface Particula { p: V3; r: number; c: C3; a: number; suma?: boolean; /** velocidad (unidades/s) para la estela */ v?: V3 }
 export interface OpcCuadro {
@@ -576,7 +578,7 @@ function humo(hdr: Float32Array, c: Capas, atm: Atmosfera, cam: Camara, b: BaseC
         const den = forma * Math.max(0, ru * 1.9 - 0.62 + forma * 0.25) * pl.dens;
         if (den <= 0) continue;
         const a = 1 - Math.exp(-den * paso);
-        const abajo = pl.abajo ? (pl.kAbajo ?? 1) * Math.exp(-u * 6) * fl * (0.5 + 0.5 * ru) * (1 - dn * 0.5) : 0;
+        const abajo = pl.abajo ? (pl.kAbajo ?? 1) * Math.exp(-u * (pl.decaeAbajo ?? 6)) * fl * (0.5 + 0.5 * ru) * (1 - dn * 0.5) : 0;
         const luzSol = atm.sol.k * 0.22 * (pl.sol ?? 1) * (0.5 + 0.5 * dot(d, L)) * (1 - dn * 0.4);
         const l: C3 = [0, 1, 2].map((e) => pl.humo[e] * (ai[e] * 0.35 + atm.ambCielo[e] * 1.1 + atm.sol.c[e] * luzSol) + (pl.abajo ? pl.abajo[e] * abajo : 0)) as C3;
         cr += Ts * a * l[0]; cg += Ts * a * l[1]; cb += Ts * a * l[2]; tmed += Ts * a * tt; peso += Ts * a;

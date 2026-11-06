@@ -77,6 +77,7 @@ M.ci_lava = { rampa: ['#140301', '#2c0602', '#4a0c04', '#6e1606', '#952208'], ru
 M.ci_ojo = { rampa: ['#ff5a10', '#ff8a28', '#ffb050', '#ffd890'], ruido: 0.1, escala: 0.5, emite: true };
 M.ci_roca = { rampa: ['#030303', '#070606', '#0c0b0a', '#13110f', '#1b1815', '#24201c', '#2e2924'], ruido: 0.4, escala: 0.08, brillo: 0.2, patron: (p) => (Math.abs(Math.sin(p[2] * 0.12 + Math.sin(p[0] * 0.05) * 2)) < 0.08 ? -0.15 : 0) };
 M.va_brasa = { rampa: ['#3a0602', '#6a0e04', '#9a1c06', '#c8320a', '#e84c10'], ruido: 0.4, escala: 0.3, emite: true };
+M.ci_labra_lisa = { rampa: ['#0f100f', '#1f221d', '#2e322c', '#3e423b', '#4e524a', '#5f635a', '#70746a', '#82857a'], ruido: 0.18, escala: 0.04, brillo: 0.1, patron: (p) => { const j = Math.abs((((p[0] + p[1]) % 38) + 38) % 38 - 19) > 18.4; return j ? -0.3 : 0; } };
 M.ci_relampago = { rampa: ['#9ab8ff', '#c6d8ff', '#eaf2ff', '#ffffff'], ruido: 0.1, escala: 0.5, emite: true };
 
 // ================================================================== piezas comunes
@@ -166,39 +167,46 @@ export function monje(alto: number, manos: [V3, V3], atras = 0, s = 0): Pieza[] 
  * es el eje x a la altura z = 0 (los muñones), la boca hacia abajo. `R` es el radio de la boca.
  */
 export function campana(R: number, s: number): Pieza[] {
-  const ps: Pieza[] = [], H = R * 2.05, z0 = -R * 0.35 - H;
-  // el perfil: hombro, cintura y la boca que se abre (conos apilados) con el labio grueso
-  const perfil: [number, number][] = [[0, 1], [0.08, 0.98], [0.2, 0.86], [0.5, 0.66], [0.78, 0.6], [0.92, 0.62], [1, 0.56]];
-  for (let i = 0; i < perfil.length - 1; i++) {
-    const [h0, r0] = perfil[i], [h1, r1] = perfil[i + 1];
-    ps.push(cilindro(0, 0, z0 + h0 * H, r0 * R, (h1 - h0) * H + 0.3, { mat: 'ci_bronce', r1: r1 * R, tono: (i === 1 ? 0.06 : 0) }));
-  }
-  ps.push(elipsoide(0, 0, z0 + H, R * 0.56, R * 0.56, R * 0.22, { mat: 'ci_bronce' }));
+  const ps: Pieza[] = [], H = R * 1.8, z0 = -R * 0.5 - H;
+  // el perfil clásico (h de la boca a la corona, r en radios de la boca): el labio grueso, la boca que se abre en
+  // trompeta, la cintura recta y apenas cóncava, el hombro redondo y la corona chata
+  const r = (h: number) => (h < 0.05 ? 1 + 0.025 * Math.sin((h / 0.05) * Math.PI) : 0.6 + 0.4 * Math.pow(Math.max(0, 1 - (h - 0.05) / 0.55), 2.2) - 0.025 * Math.sin(Math.min(1, h / 0.86) * Math.PI));
+  const N = 22, hs = Array.from({ length: N + 1 }, (_, i) => (i / N) * 0.86);
+  for (let i = 0; i < N; i++) ps.push(cilindro(0, 0, z0 + hs[i] * H, r(hs[i]) * R, (hs[i + 1] - hs[i]) * H + 0.25, { mat: 'ci_bronce', r1: r(hs[i + 1]) * R, tono: i < 2 ? 0.05 : 0 }));
+  // el hombro: un casquete que redondea de la cintura a la corona
+  ps.push(elipsoide(0, 0, z0 + 0.86 * H, r(0.86) * R, r(0.86) * R, 0.17 * H, { mat: 'ci_bronce' }));
   // la boca hueca: se ve oscura cuando la campana se levanta hacia el ojo
-  ps.push(cilindro(0, 0, z0 - 1, R * 0.86, H * 0.55, { mat: 'ci_bronce', r1: R * 0.6, resta: true }));
-  ps.push(cilindro(0, 0, z0 + H * 0.5, R * 0.6, H * 0.36, { mat: 'ci_bronce', r1: R * 0.36, resta: true }));
-  // anillos en relieve y el badajo
-  for (const h of [0.1, 0.16, 0.74]) { const r = perfil.reduce((m, [hh, rr], i) => (i && h <= hh && m < 0 ? perfil[i - 1][1] + ((rr - perfil[i - 1][1]) * (h - perfil[i - 1][0])) / (hh - perfil[i - 1][0]) : m), -1); ps.push(cilindro(0, 0, z0 + h * H, r * R + 0.6, 1.2, { mat: 'ci_bronce', tono: 0.08 })); }
-  ps.push(palo([0, 0, z0 + H * 0.8], [0, 0, z0 + H * 0.12], R * 0.05, { mat: 'ci_hierro' }), esfera(0, 0, z0 + H * 0.12, R * 0.11, { mat: 'ci_hierro' }));
-  // asas (coronas) y el yugo de madera con sus herrajes
-  for (const sx of [-1, 1]) ps.push(palo([sx * R * 0.18, 0, z0 + H], [sx * R * 0.14, 0, z0 + H + R * 0.2], R * 0.06, { mat: 'ci_bronce' }));
-  ps.push(caja(0, 0, z0 + H + R * 0.12, R * 2.2, R * 0.55, R * 0.55, { mat: 'ci_viga' }));
-  for (const sx of [-0.6, 0.6]) ps.push(caja(sx * R, 0, z0 + H - R * 0.05, R * 0.12, R * 0.62, R * 0.8, { mat: 'ci_hierro' }));
-  // la rueda de la soga, al costado (radio R * 1.15), con rayos
-  const xr = R * 1.25, rr = R * 1.15, nr = 16;
-  for (let i = 0; i < nr; i++) {
-    const a0 = (i / nr) * TAU, a1 = ((i + 1) / nr) * TAU, p0: V3 = [xr, Math.cos(a0) * rr, Math.sin(a0) * rr - R * 0.05], p1: V3 = [xr, Math.cos(a1) * rr, Math.sin(a1) * rr - R * 0.05];
-    ps.push(palo(p0, p1, R * 0.045, { mat: 'ci_viga' }));
+  ps.push(cilindro(0, 0, z0 - 1, R * 0.9, H * 0.5, { mat: 'ci_bronce', r1: R * 0.5, resta: true }), cilindro(0, 0, z0 + H * 0.49, R * 0.5, H * 0.32, { mat: 'ci_bronce', r1: R * 0.38, resta: true }));
+  // los cordones en relieve (en la boca, la cintura y bajo el hombro) y el badajo
+  for (const h of [0.035, 0.11, 0.62, 0.8]) ps.push(cilindro(0, 0, z0 + h * H, r(h) * R + 0.55, 1.1, { mat: 'ci_bronce', tono: 0.1 }));
+  ps.push(palo([0, 0, z0 + H * 0.78], [0, 0, z0 + H * 0.1], R * 0.045, { mat: 'ci_hierro' }), esfera(0, 0, z0 + H * 0.1, R * 0.1, { mat: 'ci_hierro' }));
+  // las asas de la corona: tres arcos de bronce
+  const zc = z0 + 1.03 * H;
+  for (const y of [-R * 0.12, 0, R * 0.12]) for (let k = 0; k < 6; k++) { const a0 = (k / 6) * Math.PI, a1 = ((k + 1) / 6) * Math.PI, q = R * 0.17; ps.push(palo([Math.cos(a0) * q, y, zc + Math.sin(a0) * q * 1.2], [Math.cos(a1) * q, y, zc + Math.sin(a1) * q * 1.2], R * 0.045, { mat: 'ci_bronce' })); }
+  // el yugo: un madero en cuña a lo largo del eje (de frente se lee como un trapecio sobre la corona), con sus flejes
+  // de hierro que abrazan las asas y los muñones que salen a las chumaceras
+  const zy = zc + R * 0.02, L = R * 0.62;
+  ps.push(poliedro([[-L, -R * 0.46, zy], [L, -R * 0.46, zy], [-L, R * 0.46, zy], [L, R * 0.46, zy], [-L * 0.95, -R * 0.3, zy + R * 0.36], [L * 0.95, -R * 0.3, zy + R * 0.36], [-L * 0.95, R * 0.3, zy + R * 0.36], [L * 0.95, R * 0.3, zy + R * 0.36]], { mat: 'ci_viga' }));
+  for (const x of [-R * 0.42, R * 0.42]) for (const sy of [-1, 1]) ps.push(palo([x, sy * R * 0.3, zy - R * 0.22], [x, sy * R * 0.4, zy + R * 0.34], R * 0.035, { mat: 'ci_hierro' }));
+  ps.push(palo([-L - R * 0.5, 0, 0], [L + R * 0.3, 0, 0], R * 0.06, { mat: 'ci_hierro' }), caja(0, 0, zy + R * 0.3, L * 1.9, R * 0.5, -zy - R * 0.3 + R * 0.06, { mat: 'ci_viga', tono: -0.04 }));
+  // la rueda de la soga, en un extremo del eje: dos llantas, ocho rayos y el cubo
+  const xr = L + R * 0.12, rr = R * 1.15, nr = 24;
+  for (const dx of [-R * 0.07, R * 0.07]) for (let i = 0; i < nr; i++) {
+    const a0 = (i / nr) * TAU, a1 = ((i + 1) / nr) * TAU;
+    ps.push(palo([xr + dx, Math.cos(a0) * rr, Math.sin(a0) * rr], [xr + dx, Math.cos(a1) * rr, Math.sin(a1) * rr], R * 0.038, { mat: 'ci_viga' }));
   }
-  for (let i = 0; i < 4; i++) { const a = (i / 4) * TAU + 0.4; ps.push(palo([xr, 0, -R * 0.05], [xr, Math.cos(a) * rr, Math.sin(a) * rr - R * 0.05], R * 0.035, { mat: 'ci_viga' })); }
-  ps.push(palo([-R * 1.45, 0, 0], [R * 1.4, 0, 0], R * 0.07, { mat: 'ci_hierro' }));
+  for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU + 0.2; ps.push(palo([xr, 0, 0], [xr, Math.cos(a) * rr, Math.sin(a) * rr], R * 0.03, { mat: 'ci_viga' })); }
+  ps.push(cilindro(xr - R * 0.1, 0, 0, R * 0.12, R * 0.2, { mat: 'ci_viga', eje: [1, 0, 0] }));
   void s;
   return ps;
 }
 
 // ================================================================== i02: el campanario al alba
-/** La campana mayor da en 1.71, 4.0 y 6.29 s: un vaivén de período 55 / 12 s con el extremo en 1.71 (suena en los dos extremos). */
-export const CAMPANAS_I02 = { cuadros: 55, fps: 12, golpe: 1.71, amp: 0.62 };
+/**
+ * La campana mayor da en 1.71, 4.0 y 6.29 s: un vaivén de período 37 / 8 s (4,625 s) con el extremo en 1.71 (suena en los
+ * dos extremos: 1,71 / 4,02 / 6,34, a dos centésimas de los golpes, donde la campana está casi quieta).
+ */
+export const CAMPANAS_I02 = { cuadros: 37, fps: 8, golpe: 1.71, amp: 0.62 };
 /** Ángulo de la campana (radianes) en el segundo t: coseno con los extremos donde suena. */
 export function anguloCampana(t: number, c: { cuadros: number; fps: number; golpe: number; amp: number }, fase = 0): number {
   const T = c.cuadros / c.fps;
@@ -206,14 +214,16 @@ export function anguloCampana(t: number, c: { cuadros: number; fps: number; golp
 }
 /** El sol del alba en el campanario: bajo, entrando por el arco de la derecha. */
 const SOL_I02 = dirAz(67, 5.5);
-const CAMP_I02: { pos: V3; obj: V3; fov: number } = { pos: [-6, -196, 20], obj: [0, 190, 178], fov: 56 };
+// la cámara baja: el antepecho alto llena el tercio de abajo (ahí cae la narración, sobre piedra oscura) y los monjes
+// asoman la cabeza, los brazos y las sogas contra el ventanal
+const CAMP_I02: { pos: V3; obj: V3; fov: number } = { pos: [-6, -200, 10], obj: [0, 190, 153], fov: 46 };
 /**
  * Las campanas: centro de los muñones (el eje va a lo largo de y: se mecen de lado en el cuadro), radio de la boca y
  * fase del vaivén (la chica va a contratiempo). La rueda queda detrás de cada campana, del lado del muro.
  */
-const CAMPS_I02: { c: V3; R: number; fase: number; lado: number }[] = [{ c: [0, 70, 222], R: 40, fase: 0, lado: -1 }, { c: [162, 86, 222], R: 27, fase: Math.PI, lado: -1 }, { c: [-162, 86, 222], R: 22, fase: 1.9, lado: 1 }];
+const CAMPS_I02: { c: V3; R: number; fase: number; lado: number }[] = [{ c: [0, 44, 192], R: 40, fase: 0, lado: -1 }, { c: [150, 66, 196], R: 27, fase: Math.PI, lado: -1 }, { c: [-150, 66, 198], R: 22, fase: 1.9, lado: 1 }];
 /** Los monjes: lugar, alto y a qué campana tiran (se paran junto a su soga, entre la campana y el arco). */
-const MONJES_I02: { x: number; y: number; alto: number; c: number }[] = [{ x: -22, y: 112, alto: 64, c: 0 }, { x: 150, y: 116, alto: 61, c: 1 }, { x: -164, y: 118, alto: 62, c: 2 }];
+const MONJES_I02: { x: number; y: number; alto: number; c: number }[] = [{ x: -16, y: 58, alto: 64, c: 0 }, { x: 140, y: 70, alto: 61, c: 1 }, { x: -150, y: 70, alto: 62, c: 2 }];
 
 function atmCampanario(): Atmosfera {
   const L = SOL_I02, solC = hexLin('#ffd2a0');
@@ -258,13 +268,13 @@ function terrenoLejano(base: number): Terreno {
 function salaCampanas(esc: EscenaCine) {
   // muro del fondo (y = 170) con tres vanos apuntados; muros laterales, techo y piso
   const muro: Pieza[] = [caja(0, 0, -40, 540, 46, 600, { mat: 'abo_sillar' })];
-  for (const x of [-162, 0, 162]) muro.push(...huecoApuntado(132, 316, 40, 20).map((p) => moverPiezas([p], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0, 0, 0], [x, 0, 0])[0]));
+  for (const x of [-162, 0, 162]) muro.push(...huecoApuntado(132, 316, 40, 62).map((p) => moverPiezas([p], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0, 0, 0], [x, 0, 0])[0]));
   esc.poner(muro, { x: 0, y: 190, z: 0 });
   for (const x of [-162, 0, 162]) {
     const { ps } = arcoApuntado(132, 13, 50, 'abo_labra', 8);
     esc.poner(ps, { x, y: 190, z: 316 });
     // antepecho con su remate y las jambas molduradas
-    esc.poner([caja(0, 0, 0, 134, 52, 18, { mat: 'abo_sillar' }), caja(0, 0, 18, 140, 58, 4, { mat: 'abo_labra' }), caja(-68, 0, 22, 8, 52, 294, { mat: 'abo_labra' }), caja(68, 0, 22, 8, 52, 294, { mat: 'abo_labra' })], { x, y: 190, z: 0 });
+    esc.poner([caja(0, 0, 0, 134, 52, 60, { mat: 'abo_sillar' }), caja(0, 0, 60, 140, 58, 4, { mat: 'abo_labra' }), caja(-68, 0, 64, 8, 52, 252, { mat: 'abo_labra' }), caja(68, 0, 64, 8, 52, 252, { mat: 'abo_labra' })], { x, y: 190, z: 0 });
   }
   esc.poner([caja(-290, 0, -40, 50, 520, 640, { mat: 'abo_sillar' }), caja(290, 0, -40, 50, 520, 640, { mat: 'abo_sillar' }), caja(0, -300, -40, 620, 40, 640, { mat: 'abo_sillar' })], { x: 0, y: 0, z: 0 });
   esc.poner([caja(0, 0, 540, 640, 560, 40, { mat: 'abo_sillar' })], { x: 0, y: 0, z: 0 });
@@ -275,9 +285,10 @@ function salaCampanas(esc: EscenaCine) {
   // el marco de las campanas: pies derechos, soleras y tornapuntas, y las vigas del techo que cruzan la luz
   const marco: Pieza[] = [];
   // el marco: dos soleras de muro a muro a la altura de los muñones (adelante y atrás de las campanas) y los pies derechos contra los muros
-  for (const y of [14, 146]) marco.push(caja(0, y, 208, 560, 14, 22, { mat: 'ci_viga', tono: (az(y, 4) - 0.5) * 0.2 }));
+  // solo la solera de atrás (la de adelante cruzaría las campanas): los muñones descansan en sus chumaceras
+  for (const y of [130]) marco.push(caja(0, y, 176, 560, 12, 14, { mat: 'ci_viga', tono: (az(y, 4) - 0.5) * 0.2 }));
   
-  for (const x of [-252, 252]) for (const y of [14, 146]) { marco.push(caja(x, y, 0, 15, 15, 232, { mat: 'ci_viga' })); marco.push(palo([x, y, 140], [x + (x < 0 ? 48 : -48), y, 208], 3.8, { mat: 'ci_viga' })); }
+  for (const x of [-252, 252]) for (const y of [130]) { marco.push(caja(x, y, 0, 15, 15, 190, { mat: 'ci_viga' })); marco.push(palo([x, y, 110], [x + (x < 0 ? 48 : -48), y, 176], 3.8, { mat: 'ci_viga' })); }
   for (const y of [-200, -110, 260]) marco.push(caja(0, y, 500, 580, 16, 18, { mat: 'ci_viga', tono: -0.05 }));
   esc.ponerMundo(marco, { nieve: 0 });
 }
@@ -285,7 +296,7 @@ function salaCampanas(esc: EscenaCine) {
 /** Dónde baja la soga de cada campana (de la rueda, tangente al costado) y cuánto bajó en el instante t. */
 function sogaCampana(c: { c: V3; R: number; fase: number; lado: number }, t: number) {
   const ang = anguloCampana(t, CAMPANAS_I02, c.fase), rr = c.R * 1.15;
-  return { ang, x: c.c[0] + c.lado * rr, y: c.c[1] + c.R * 1.25, zTope: c.c[2] - c.R * 0.05, baja: -c.lado * ang * rr };
+  return { ang, x: c.c[0] + c.lado * rr, y: c.c[1] + c.R * 0.74, zTope: c.c[2] - c.R * 0.05, baja: -c.lado * ang * rr };
 }
 /** Lo que se mueve en i02 en el instante t: las dos campanas en su vaivén o los monjes que tiran de sus sogas. */
 function movilesCampanario(esc: EscenaCine, t: number, que: 'campanas' | 'monjes') {
@@ -332,7 +343,7 @@ export function armarCampanario(w = 1408, h = 792, o: { t?: number; mover?: 'cam
   return { esc, atm, cam: camaraBase(C.pos, C.obj, C.fov, w, h), polvo };
 }
 /** Los recortes de lo que se mueve en i02 (px de la capa de 1408 x 792): las campanas arriba, los monjes abajo. */
-export const CAJAS_I02 = { campanas: [300, 0, 1150, 400] as [number, number, number, number], monjes: [250, 420, 1100, 792] as [number, number, number, number] };
+export const CAJAS_I02 = { campanas: [200, 40, 1330, 450] as [number, number, number, number], monjes: [180, 330, 1230, 792] as [number, number, number, number] };
 
 // ================================================================== los muertos que se levantan (i08)
 export type PoseMuerto = 'brazo' | 'medio' | 'arrastra' | 'parado' | 'encorvado';
@@ -506,12 +517,30 @@ export function armarCripta(w = 1408, h = 792): ArmadoFuego {
 export const CAMPANAS_I07 = { cuadros: 64, fps: 12, golpe: 0.67, amp: 0.5 };
 const CLA = { g: 190, ancho: 124, alto: 214, bahia: 63.3 };
 /** La brasa caída en el jardín, hundida en la nieve junto a la arcada. */
-const BRASA_I07: V3 = [-50, -10, 8];
+const BRASA_I07: V3 = [50, -14, 8];
 /** La torre de las campanas (detrás de la galería del norte) y sus dos campanas. */
 const TORRE_I07 = { x: 70, y: 330, ancho: 96, alto: 430, vano: 300 };
 const CAMPS_I07: { c: V3; R: number; fase: number }[] = [{ c: [52, 330, 358], R: 17, fase: 0 }, { c: [94, 330, 358], R: 13, fase: 2.4 }];
-const CAM_I07: { pos: V3; obj: V3; fov: number } = { pos: [-120, -304, 70], obj: [70, 170, 92], fov: 50 };
+const CAM_I07: { pos: V3; obj: V3; fov: number } = { pos: [30, -302, 70], obj: [44, 200, 150], fov: 70 };
 
+/**
+ * El par de columnillas de una arcada del claustro, con volumen: plinto, basa con su toro, fustes, capitel de hojas
+ * que se enroscan (crochets) y un ábaco común a las dos.
+ */
+function columnillas(x: number, z: number, alto: number, r: number, s: number): Pieza[] {
+  const ps: Pieza[] = [caja(x, 0, z, r * 7.4, r * 3.4, r * 0.9, { mat: 'abo_labra', tono: -0.04 })];
+  for (const dx of [-r * 1.3, r * 1.3]) {
+    const cx = x + dx, t = (az(s + Math.round(dx * 10), 9) - 0.5) * 0.08;
+    ps.push(cilindro(cx, 0, z + r * 0.9, r * 1.45, r * 0.45, { mat: 'abo_labra', r1: r * 1.35, tono: t }), elipsoide(cx, 0, z + r * 1.55, r * 1.38, r * 1.38, r * 0.42, { mat: 'abo_labra', tono: t }));
+    ps.push(cilindro(cx, 0, z + r * 1.8, r * 1.02, alto - r * 5.4, { mat: 'abo_labra', r1: r * 0.94, tono: t + 0.03 }));
+    ps.push(cilindro(cx, 0, z + alto - r * 3.6, r * 1.12, r * 0.35, { mat: 'abo_labra', tono: t }));
+    ps.push(cilindro(cx, 0, z + alto - r * 3.25, r * 0.95, r * 2.4, { mat: 'abo_labra', r1: r * 1.65, tono: t }));
+    // las hojas del capitel, que se enroscan hacia afuera bajo el ábaco
+    for (let k = 0; k < 6; k++) { const a = (k / 6) * TAU + az(s, k) * 0.3, rr = r * 1.45; ps.push(elipsoide(cx + Math.cos(a) * rr, Math.sin(a) * rr, z + alto - r * 1.25, r * 0.55, r * 0.55, r * 0.75, { mat: 'abo_labra', tono: t + 0.05 })); }
+  }
+  ps.push(poliedro([-1, 1].flatMap((sx) => [-1, 1].flatMap((sy) => [[x + sx * r * 4.4, sy * r * 2.1, z + alto - r * 0.85], [x + sx * r * 4.0, sy * r * 1.8, z + alto]] as V3[])), { mat: 'abo_labra' }));
+  return ps;
+}
 /** Una panda del claustro (en coordenadas propias: la arcada corre a lo largo de x en y = 0, la galería hacia -y). */
 function panda(largo: number, s: number): Pieza[] {
   const { ancho, alto, bahia } = CLA, n = Math.round(largo / bahia), ps: Pieza[] = [];
@@ -521,10 +550,11 @@ function panda(largo: number, s: number): Pieza[] {
   ps.push(...muro);
   for (let i = 0; i <= n; i++) {
     const x = -largo / 2 + i * bahia;
-    for (const dx of [-3.4, 3.4]) ps.push(...columna(x + dx, 0, 34, 88, 2.5, 'abo_labra', (az(i + s, 9) - 0.5) * 0.1));
+    ps.push(...columnillas(x, 34, 88, 3, s * 7 + i));
   }
   for (let i = 0; i < n; i++) { const x = -largo / 2 + (i + 0.5) * bahia, { ps: a } = arcoApuntado(bahia - 3, 4, 18, 'abo_labra', 6); ps.push(...moverPiezas(a, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0, 0, 0], [x, 0, 122])); }
-  ps.push(caja(0, 0, 32, largo + 16, 22, 4, { mat: 'abo_labra' }));
+  // la albardilla del antepecho: piedra lisa (los lunares de liquen de la labra, vistos al ras, se vuelven grano)
+  ps.push(caja(0, 0, 32, largo + 16, 22, 4, { mat: 'ci_labra_lisa' }));
   // el piso de la galería, el muro de afuera, el techo de vigas y el tejado a un agua
   ps.push(caja(0, -ancho / 2, -6, largo + ancho * 2, ancho + 20, 6, { mat: 'ci_losa' }));
   ps.push(caja(0, -ancho - 14, 0, largo + ancho * 2 + 30, 28, alto + 90, { mat: 'abo_sillar' }));
@@ -539,7 +569,7 @@ function atmClaustro(): Atmosfera {
   const rojo = hexLin('#ff5020'), F = norm([0.25, 1, 0.35]);
   const pars: [number, C3][] = [[0, hexLin('#1e2030')], [0.08, hexLin('#161a28')], [0.3, hexLin('#0c0f1a')], [0.9, hexLin('#05060a')]];
   const resplandor = (d: V3) => { const g = Math.max(0, dot3(d, F)); return 0.025 * Math.pow(g, 8) + 0.08 * Math.pow(g, 40); };
-  const aire = (d: V3): C3 => { const e = Math.min(0.03, Math.max(0, d[2])), b = gradiente(pars, e), k = resplandor(norm([d[0], d[1], e])) * 0.4; return [b[0] + rojo[0] * k, b[1] + rojo[1] * k, b[2] + rojo[2] * k]; };
+  const aire = (d: V3): C3 => gradiente(pars, Math.min(0.03, Math.max(0, d[2])));
   const cielo = (d: V3): C3 => {
     const e = Math.asin(Math.max(-1, Math.min(1, d[2]))), b = gradiente(pars, Math.max(0, e)), rf = resplandor(d);
     let c: C3 = [b[0] + rojo[0] * rf, b[1] + rojo[1] * rf, b[2] + rojo[2] * rf];
@@ -547,10 +577,10 @@ function atmClaustro(): Atmosfera {
     return c;
   };
   return {
-    sol: { dir: norm([0.3, 1, 0.55]), c: hexLin('#8a9cc8'), k: 0.05, ancho: 0.08 }, cielo, aire,
+    sol: { dir: norm([0.3, 1, 0.55]), c: hexLin('#8a9cc8'), k: 0.05, ancho: 0.025 }, cielo, aire,
     ambCielo: escalar(hexLin('#4a5a88'), 0.2), ambSuelo: escalar(hexLin('#1c1c24'), 0.05),
     niebla: { densidad: 1 / 4000, baja: 1 / 1600, z0: 0, H: 40, ruido: 0.6, escalaRuido: 0.006 },
-    borde: { c: hexLin('#ff6a30'), k: 1.6 }, nieve: { albedo: [0.62, 0.66, 0.74], desde: 0.55 }, oclusion: 0.92, oclusionLargo: 160,
+    borde: { c: hexLin('#8a9cc8'), k: 0.35 }, nieve: { albedo: [0.62, 0.66, 0.74], desde: 0.55 }, oclusion: 0.92, oclusionLargo: 160,
   };
 }
 
@@ -571,7 +601,7 @@ export function armarClaustro(w = 1408, h = 792, o: { t?: number; mover?: boolea
     superficie: () => ({ albedo: [0.55, 0.58, 0.66], brillo: 0.1 }),
   });
   // las cuatro pandas
-  for (const [x, y, giro] of [[0, -g, 0], [0, g, 180], [g, 0, 90], [-g, 0, 270]] as [number, number, number][]) esc.poner(panda(g * 2, x + y), { x, y, z: 0, giro });
+  for (const [x, y, giro] of [[0, -g, 0], [0, g, 180], [g, 0, 90], [-g, 0, 270]] as [number, number, number][]) esc.poner(panda(g * 2, x + y), { x, y, z: 0, giro }, { nieve: y === -g ? 0 : 0.25 });
   // la iglesia detrás de la panda norte: un muro alto con contrafuertes y la torre con su campanario abierto
   const T = TORRE_I07;
   esc.ponerMundo([caja(-200, g + 190, 0, 520, 60, 380, { mat: 'abo_sillar' }), ...[-380, -260, -140].map((x) => caja(x, g + 150, 0, 26, 40, 280, { mat: 'abo_sillar_grueso' }))], { nieve: 0.6 });
@@ -597,9 +627,13 @@ export function armarClaustro(w = 1408, h = 792, o: { t?: number; mover?: boolea
   roca.push(cilindro(B[0], B[1], B[2] - 0.5, 30, 0.8, { mat: 'jf_lava_fria' }));
   esc.ponerMundo(roca, { nieve: 0 });
   esc.emision.va_brasa = { k: 3.4, canal: 1 };
-  esc.luces.push({ p: [B[0], B[1], B[2] + 22], c: hexLin('#ff4a18'), k: 5, r: 26, canal: 1, sombra: true, envuelve: 0.25, halo: 0.0002 });
+  esc.luces.push({ p: [B[0], B[1], B[2] + 20], c: hexLin('#ff4a18'), k: 9, r: 34, canal: 1, sombra: true, envuelve: 0.3, halo: 0.00006 });
+  // el resplandor que sube: alcanza los capiteles y la cara de adentro de los arcos
+  esc.luces.push({ p: [B[0], B[1], B[2] + 60], c: hexLin('#ff4a18'), k: 2.2, r: 70, canal: 1, sombra: true, envuelve: 0.1 });
   for (const [dx, dy, an, al, s] of [[0, 0, 12, 22, 401], [-6, 4, 8, 15, 402], [7, -4, 7, 13, 403]] as [number, number, number, number, number][]) fuegos.push({ p: [B[0] + dx, B[1] + dy, B[2] + 4], ancho: an, alto: al, semilla: s, tipo: 'brasa' });
-  plumas.push({ base: [B[0], B[1], B[2] + 10], alto: 420, r0: 9, r1: 90, viento: [0.7, 0.9, 0], dens: 0.06, humo: [0.05, 0.05, 0.06], abajo: hexLin('#ff4a18'), kAbajo: 1.1, semilla: 404, sube: 22, escala: 1 / 26, sol: 0.1 });
+  plumas.push({ base: [B[0], B[1], B[2] + 6], alto: 640, r0: 7, r1: 260, viento: [0.9, 0.5, 0], dens: 0.1, humo: [0.26, 0.26, 0.29], abajo: hexLin('#ff3a10'), kAbajo: 0.6, decaeAbajo: 16, semilla: 404, sube: 18, escala: 1 / 20, sol: 0.05 });
+  // una vela en su repisa del muro de la galería, detrás del ojo: apenas despega del negro el lado de adentro de las columnas
+  { const v = vela(-40, -309, 62, 9, 2, 410); esc.ponerMundo([...v.ps, caja(-40, -311, 58, 14, 8, 4, { mat: 'abo_labra' })], { nieve: 0 }); esc.luces.push({ p: [v.llama[0], v.llama[1] + 4, v.llama[2] + 2], c: hexLin('#ffa458'), k: 0.5, r: 60, sombra: true, envuelve: 0.3 }); }
   const atm = atmClaustro(), C = CAM_I07;
   return { esc, atm, cam: camaraBase(C.pos, C.obj, C.fov, w, h), plumas, fuegos };
 }

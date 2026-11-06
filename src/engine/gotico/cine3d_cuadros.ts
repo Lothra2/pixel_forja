@@ -130,10 +130,10 @@ const I02: Plano3D = {
   id: 'i02_campanas', paralaje: 0.9, particulas: 'polvo', armar: (w, h) => armarCampanario(w, h),
   revelado: { t: 0, exposicion: 1.05, rayos: { k: 0.5, c: [1, 0.9, 0.78], umbral: 0.25, decae: 0.975 }, derrame: { k: 0.6, r: 5 }, bloom: { k: 0.3, umbral: 0.85 }, grado: gradoFrio },
   moviles: [
-    { id: 'campanas', cuadros: CAMPANAS_I02.cuadros, fps: CAMPANAS_I02.fps, escala: 2, armar: (w, h, k) => armarCampanario(w, h, { t: k / CAMPANAS_I02.fps, mover: 'campanas' }), caja: (a) => escalaCaja(CAJAS_I02.campanas, a.cam.w) },
+    { id: 'campanas', cuadros: CAMPANAS_I02.cuadros, fps: CAMPANAS_I02.fps, escala: 1.5, armar: (w, h, k) => armarCampanario(w, h, { t: k / CAMPANAS_I02.fps, mover: 'campanas' }), caja: (a) => escalaCaja(CAJAS_I02.campanas, a.cam.w) },
     { id: 'monjes', cuadros: CAMPANAS_I02.cuadros, fps: CAMPANAS_I02.fps, escala: 2, armar: (w, h, k) => armarCampanario(w, h, { t: k / CAMPANAS_I02.fps, mover: 'monjes' }), caja: (a) => escalaCaja(CAJAS_I02.monjes, a.cam.w) },
   ],
-  qa: [1.71, 2.85, 4.0, 5.15],
+  qa: [1.71, 2.87, 4.02, 5.18],
 };
 /** Los fuegos de una escena de adentro: los carteles de Doom de este cuadro (sin latido de la luz: las velas son canal 0). */
 function fuegoAdentro(a: ArmadoFuego, t: number): Extras {
@@ -164,7 +164,7 @@ const claustros = new Map<string, ArmadoFuego>();
 /** La brasa del claustro late (canal 1): fuego de Doom en el cráter, su luz roja y el humo que sube. */
 function fuegoClaustro(a: ArmadoFuego, t: number): Extras { return { ...fuegoAdentro(a, t), flick: latido(t) }; }
 const I07: Plano3D = {
-  id: 'i07_claustro', paralaje: 0.9, particulas: 'ceniza',
+  id: 'i07_claustro', paralaje: 0.9, particulas: 'ceniza', ss: 5, ao: 4,
   armar: (w, h) => { const k = `${w}|${h}`; let a = claustros.get(k); if (!a) { a = armarClaustro(w, h); claustros.set(k, a); } return a; },
   revelado: { t: 0, exposicion: 1.85, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.4, umbral: 0.8 }, grado: gradoNoche },
   flickBase: 0.84, cuadros: NF, fps: FPS, extras: (a, _c, t) => fuegoClaustro(a as ArmadoFuego, t),

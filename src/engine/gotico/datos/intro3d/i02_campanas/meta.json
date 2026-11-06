@@ -4,24 +4,24 @@
  "fuegos": [],
  "moviles": [
   {
-   "x": 300,
-   "y": 0,
-   "w": 425,
-   "h": 200,
-   "escala": 2,
-   "cuadros": 55,
-   "columnas": 9,
-   "fps": 12
+   "x": 200,
+   "y": 39,
+   "w": 754,
+   "h": 274,
+   "escala": 1.5,
+   "cuadros": 37,
+   "columnas": 5,
+   "fps": 8
   },
   {
-   "x": 250,
-   "y": 420,
-   "w": 425,
-   "h": 186,
+   "x": 180,
+   "y": 330,
+   "w": 525,
+   "h": 231,
    "escala": 2,
-   "cuadros": 55,
-   "columnas": 9,
-   "fps": 12
+   "cuadros": 37,
+   "columnas": 7,
+   "fps": 8
   }
  ],
  "particulas": "polvo",

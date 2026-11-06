@@ -23,7 +23,7 @@ if (!isMainThread) {
   const cajas = (c: InstanceType<typeof Object> & ReturnType<typeof C3D.capasVacias>) => ({ ...Object.fromEntries([...CANALES3, ...CANALES1].map((k) => [k, c[k]])), ...Object.fromEntries(Object.entries(c.marcas).map(([k, m]) => ['marca_' + k, m])) }) as Record<string, Float32Array>;
   if (job.tipo === 'pase') {
     const a = job.variante !== undefined ? pl.variantes![job.variante].armar!(W, H) : pl.armar(W, H), c = C3D.capasVacias(W, H, Object.keys(a.esc.marcas));
-    for (let y = job.hilo * 8; y < H; y += job.hilos * 8) C3D.renderFilas(a.esc, a.atm, a.cam, c, y, Math.min(H, y + 8), { ss: SS, ao: AO, pase: job.pase });
+    for (let y = job.hilo * 8; y < H; y += job.hilos * 8) C3D.renderFilas(a.esc, a.atm, a.cam, c, y, Math.min(H, y + 8), { ss: process.env.SS ? SS : pl.ss ?? SS, ao: process.env.AO ? AO : pl.ao ?? AO, pase: job.pase });
     const bufs = cajas(c);
     parentPort!.postMessage({ bufs }, Object.values(bufs).map((b) => b.buffer as ArrayBuffer));
   } else {

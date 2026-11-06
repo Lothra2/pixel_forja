@@ -40,6 +40,10 @@ export interface Plano3D {
   variantes?: Variante[];
   /** los instantes (s) de las cuatro vistas de la hoja de control */
   qa?: number[];
+  /** muestras por lado de este plano (si no se dice SS al hornear): más en los planos oscuros, donde se ve el grano */
+  ss?: number;
+  /** rayos de oclusión de este plano (si no se dice AO al hornear) */
+  ao?: number;
 }
 /** Envolvente de alfa en el tiempo del plano: claves [segundo, alfa], lineal entre claves, la primera y la última se sostienen. */
 export interface AnimTiempo { tipo: 'tiempo'; claves: [number, number][] }
@@ -89,7 +93,7 @@ export function hornear(pl: Plano3D, a: Armado, fondo: Capas, frente?: Capas, ma
   // lo que se mueve: cada cuadro revelado como el frente (su luz sin el aire de atrás, con su cobertura como alfa)
   (mas.moviles ?? []).forEach((m, j) => {
     const mv = pl.moviles![j], [x0, y0, x1, y1] = m.caja, tw = x1 - x0, th = y1 - y0;
-    out.moviles.push({ x: x0 * mv.escala, y: y0 * mv.escala, escala: mv.escala, fps: mv.fps, cuadros: m.cuadros.map((c) => {
+    out.moviles.push({ x: Math.round(x0 * mv.escala), y: Math.round(y0 * mv.escala), escala: mv.escala, fps: mv.fps, cuadros: m.cuadros.map((c) => {
       const L = luzCuadro(c, m.arm.atm, m.arm.cam, { t: 0, flick: fb }), r = createRaster(tw, th);
       for (let i = 0; i < c.w * c.h; i++) { const cob = 1 - c.cielo[i]; if (cob > 0) for (let k = 0; k < 3; k++) L[i * 3 + k] /= cob; }
       const col = revelarLuz(L, c.w, c.h, rev);
@@ -229,7 +233,8 @@ export function tomaDeHorneado(t: Toma, h: LeidoHorneado) {
  */
 export function componerHorneado(h: LeidoHorneado, t: number): Lamina {
   const esc = h.meta.escala ?? 1, W = Math.round(1408 * esc), H = Math.round(792 * esc), L = lamina(W, H);
-  const sobre = (r: Raster, ox: number, oy: number, sumar: boolean, ka = 1) => {
+  const sobre = (r: Raster, ox0: number, oy0: number, sumar: boolean, ka = 1) => {
+    const ox = Math.round(ox0), oy = Math.round(oy0);
     if (ka <= 0) return;
     for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) {
       const X = x + ox, Y = y + oy; if (X < 0 || Y < 0 || X >= W || Y >= H) continue;
