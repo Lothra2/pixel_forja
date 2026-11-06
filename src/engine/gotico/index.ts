@@ -22,3 +22,5 @@ export { PALETAS as PALETAS_GORE, SUPERFICIES as SUPERFICIES_GORE, GIBS as PEDAZ
 export { LUCES_HORROR, veloSangre, VELO_NIVELES, type LuzHorror } from './catalogo/horror';
 // fuego de Doom (módulo sin imports que el juego copia y corre en vivo)
 export * as fuegoDoom from './fuego_doom';
+// efectos de pixelfx mudados al taller (hojas, manifiesto y luz; ver efectos_pfx.ts y AVISOS_TERCEROS.md)
+export { EFECTOS_PFX, IDS_PFX, efectoPfx, pintarEfectoPfx, paginasEfectoPfx, pngsEfectoPfx, armarCuadroPfx, manifiestoEfectosPfx, luzEfectosPfxJson, type EfectoPfx, type CfgPfx, type UsoPfx } from './efectos_pfx';
