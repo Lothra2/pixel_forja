@@ -66,6 +66,8 @@ de la sombra a la luz).
 - Siluetas legibles a 1x: piezas de 2 unidades o más (menos se pierde), detalles con `tono` o con otro material.
 - Varía con la semilla: piedras sueltas, giros chicos, inclinaciones de 2–8°, que dos lápidas no salgan iguales.
 - Ensucia: tierra en la base, musgo, grietas (cajas finas `resta`), tablas sueltas.
+- Personajes y monstruos (temas `personajes` y `monstruos`, y todo lo que sale de `personajeEscena`) se pintan en
+  clave baja (`clave_baja.ts`): salen de la oscuridad con una luz de borde fina. Los objetos y los pisos no.
 - Animación solo donde aporta (fuego, agua, portales, banderas, magia): 4–8 cuadros, `t` 2–4.
 - Costo: hasta ~250 piezas por asset; un asset grande (casa, templo) tarda menos de 2 s en pintar.
 

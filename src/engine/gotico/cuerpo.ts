@@ -1,4 +1,5 @@
-import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, type Comp, type Pieza, type V3 } from './render';
+import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, type Comp, type Pieza, type V3, type Iluminacion } from './render';
+import { claveBaja } from './clave_baja';
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
 import { pose, CUADROS, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
@@ -567,14 +568,16 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: st
 
 // ------------------------------------------------------------------ el personaje completo
 /** El personaje como escena: si su arma está encantada, la luz del encantamiento tiñe lo que tiene cerca. */
-export function personajeEscena(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string } } {
+export function personajeEscena(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string }; luz: Iluminacion } {
   const piezas = personaje(cu, eq, dir, acc, f);
+  // clave baja (clave_baja.ts): viaja con la escena, así el horneado del juego la recibe sin cambiar su llamada
+  const luz = claveBaja(piezas);
   const en = eq.arma?.encanto;
-  if (!en || !eq.arma) return { piezas };
+  if (!en || !eq.arma) return { piezas, luz };
   const e = esqueleto(cu, dir, acc, f, eq.arma.tipo, eq.izq?.tipo);
   const [a, b] = filoDe(e, eq.arma.tipo, e.brazos[0]);
-  if (eq.arma.nivel) return { piezas, resplandor: { c: mez(a, b, 0.5), r: (11 + eq.arma.nivel * 2.2) * e.S, color: LUZ_ELEMENTO_ARMA[en].color } };
-  return { piezas, resplandor: { c: mez(a, b, 0.5), r: 15 * e.S, color: ENCANTOS.find((x) => x[0] === en)![3] } };
+  if (eq.arma.nivel) return { piezas, luz, resplandor: { c: mez(a, b, 0.5), r: (11 + eq.arma.nivel * 2.2) * e.S, color: LUZ_ELEMENTO_ARMA[en].color } };
+  return { piezas, luz, resplandor: { c: mez(a, b, 0.5), r: 15 * e.S, color: ENCANTOS.find((x) => x[0] === en)![3] } };
 }
 
 export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): Pieza[] {
