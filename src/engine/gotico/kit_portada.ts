@@ -150,7 +150,9 @@ export function kitPortada(o: OpcKit = {}): ResultadoKit {
   for (const c of p.capas) {
     if (c.id === 'relampago') { capas.push({ id: c.id, z: c.z, archivo: 'fondo/relampago.png', paralaje: c.paralaje, mezcla: c.mezcla, anim: { tipo: 'cuadros', ver: 'relampago' } }); continue; }
     poner(`fondo/${c.id}.png`, c.img);
-    capas.push({ id: c.id, z: c.z, archivo: `fondo/${c.id}.png`, w: c.img.w, h: c.img.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.anim ? { anim: c.anim } : {}), ...(c.notas ? { notas: c.notas } : {}) });
+    // una tira (anim 'cuadros' con x, y) mide lo de un cuadro; las demás cubren la capa entera
+    const tira = c.anim?.tipo === 'cuadros' && c.x !== undefined, a = c.anim as { w: number; h: number } | undefined;
+    capas.push({ id: c.id, z: c.z, archivo: `fondo/${c.id}.png`, ...(tira ? { x: c.x, y: c.y } : {}), w: tira ? a!.w : c.img.w, h: tira ? a!.h : c.img.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.anim ? { anim: c.anim } : {}), ...(c.notas ? { notas: c.notas } : {}) });
   }
   poner('fondo/vineta.png', aRaster(capaVineta()));
   capas.push({ id: 'vineta', z: 20, archivo: 'fondo/vineta.png', w: BASE.w, h: BASE.h, paralaje: 0, mezcla: 'normal', notas: 'Fija, estirada a toda la pantalla, encima de todo menos del título y los botones.' });

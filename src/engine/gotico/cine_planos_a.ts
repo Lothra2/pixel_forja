@@ -12,6 +12,7 @@ import {
 import {
   CW, CH, CX, Toma, alumbrar, sombraVertical, granoOpaco, cielo, lomas, pintarConRuido, pasto, figura, modelo, heroe, barco, brillosAgua,
 } from './cine_toma';
+import { fuegoEnVentanas, mascaraLuzPose } from './cine_ventanas';
 
 /**
  * Pintores de los planos de los actos 1 a 3 (Velmora, Sahrim, Yhuantl). Coordenadas de la capa de 1408 x 792; la
@@ -155,6 +156,8 @@ function a1p2(t: Toma) {
   const cat = catedralOria();
   const pc = iluminar({ img: cat.img, ancla: cat.puerta }, 470, { amb: [0.34, 0.33, 0.42], desat: 0.55, clave: { dir: [-1, -0.3], k: 0.5 }, bordes: [{ dx: -1, dy: -1, c: [0.9, 0.35, 0.12], k: 0.9 }, { dx: 1, dy: 0, c: FRIO, k: 0.3 }], emite: emiteFuego, cEmite: [1, 0.22, 0.06], kEmite: 1.8 });
   poner(A, pc, 900, 560, AL);
+  // detrás de los vitrales de la abadía arde fuego de Doom (tira que empalma, se suma encima de su luz)
+  fuegoEnVentanas(t, 'abadia_fuego', 3.5, 0.3, mascaraLuzPose(pc, 900, 560), { paleta: 'infierno', semilla: 1201, alto_px: 18, celda: 1, fondo: { c: [0.5, 0.1, 0.03], k: 0.2 }, k: 0.8 });
   const cb = cajaPose(pc, 900, 560), monte = M();
   rellenar(monte, [[-10, CH + 4], ...Array.from({ length: 90 }, (_, k) => { const x = -10 + (k / 89) * (CW + 20), u = (x - (cb.x0 + cb.x1) / 2) / ((cb.x1 - cb.x0) * 1.1); return [x, Math.min(650, cb.y1 - 30 + Math.max(0, Math.abs(u) - 0.35) ** 1.5 * 160) + (fbm(x / 30, 2, 3, 171) - 0.5) * 14] as P2; }), [CW + 10, CH + 4]]);
   pintar(A, monte, [0.025, 0.02, 0.025]); contraluz(A, monte, 0, 3, [0.6, 0.2, 0.08], 0.7);
