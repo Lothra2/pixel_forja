@@ -217,9 +217,9 @@ export const PX_MAX = 4_000_000;
  * lo pasan con el corte de siempre (velos translúcidos grandes que se comían la paleta: lo opaco cambiaba de color) se
  * cuantizan con el corte corregido. Ver pngLiviano.
  */
-export const ERROR_PALETA = Number(process.env.ERROR_PALETA ?? 8);
+export const ERROR_PALETA = 8;
 /** Error al que apunta el corte corregido, con la paleta más chica que lo cumple. */
-export const ERROR_FINO = Number(process.env.ERROR_FINO ?? 6);
+export const ERROR_FINO = 6;
 
 /** Ángulo en pantalla (grados, y hacia abajo) y escorzo de cada dirección a la derecha; las de la izquierda espejan. */
 const DIR_PANTALLA: Record<(typeof DIRS_PODER)[number], { ang: number; largo: number; espejo?: (typeof DIRS_PODER)[number] }> = {
@@ -727,11 +727,71 @@ const PRIORIDAD: Record<CategoriaPfx, 0 | 1 | 2 | 3> = {
   sagrado: 1, sombra: 1, estado: 3, naturaleza: 2, clima: 3, botin: 2, criaturas: 3, transiciones: 3,
 };
 
+/**
+ * Escala de la luz. La primera versión sacaba el radio y la intensidad de la energía de luz de pixelfx, y casi todo
+ * terminaba en el tope (360, 1): un golpe al piso de polvo o una parada alumbraban como una fogata. Calibrado en una
+ * escena con la cuenta del juego (scripts/efx-luz.ts: oscuridad de mazmorra, hueco de radio r y tinte; antorcha del
+ * héroe de 246) contra los fuegos de Doom del mundo (vela 121, antorcha 146 a 177, fogata y brasero 117 a 250, todos
+ * con k 0.7 a 0.9) y los poderes de siempre (chispas_metal 120, impacto_hueso 130, saetas 160 a 230,
+ * explosion_fuego 270, meteoro 300): cada efecto cae en una clase con su rango de radio e intensidad y, adentro, se
+ * ubica con la medida de siempre (más luz en pixelfx, más arriba en el rango). En el juego el hueco que abre una luz
+ * casi no depende de k (alfa 0.55 a 1): lo que manda es el radio.
+ */
+export const CLASES_LUZ = {
+  /** destellos chicos: una herida, un rebote */
+  chispa: { r: [70, 110], k: [0.3, 0.5] },
+  /** golpes cuerpo a cuerpo e impactos: menos que una antorcha */
+  golpe: { r: [100, 150], k: [0.4, 0.65] },
+  /** estados sobre el cuerpo */
+  estado: { r: [60, 100], k: [0.2, 0.4] },
+  /** botín y bichos que brillan */
+  objeto: { r: [70, 130], k: [0.3, 0.5] },
+  /** lo oscuro (sombra, manos, tentáculos): apenas tiñe */
+  oscuro: { r: [90, 150], k: [0.3, 0.5] },
+  /** materia que refleja y no emite (agua, polvo, humo, piedra, plantas) */
+  materia: { r: [60, 110], k: [0.15, 0.35] },
+  /** proyectiles, orbes y hechizos chicos: entre una antorcha y una fogata */
+  hechizo: { r: [140, 200], k: [0.55, 0.8] },
+  /** novas, círculos, pilares, alientos: como una fogata grande */
+  area: { r: [170, 240], k: [0.6, 0.9] },
+  /** explosiones: más que cualquier fuego del mundo, por un instante */
+  explosion: { r: [220, 290], k: [0.85, 1] },
+  /** lo más grande: gran explosión, meteoro, relámpagos */
+  cataclismo: { r: [280, 320], k: [1, 1] },
+} as const;
+export type ClaseLuz = keyof typeof CLASES_LUZ;
+const CLASE_CATEGORIA: Record<CategoriaPfx, ClaseLuz | null> = {
+  fuego: 'hechizo', explosiones: 'explosion', agua: 'materia', hielo: 'hechizo', rayo: 'area', cuerpo_a_cuerpo: 'golpe', impactos: 'golpe',
+  proyectiles: 'hechizo', aparicion: 'hechizo', arcano: 'hechizo', sagrado: 'hechizo', sombra: 'oscuro', estado: 'estado', naturaleza: 'materia',
+  clima: null, botin: 'objeto', criaturas: 'objeto', transiciones: null,
+};
+/** Los que no van con la clase de su categoría. */
+const CLASE_EFECTO: Record<string, ClaseLuz | null> = {
+  fx_gran_explosion: 'cataclismo', fx_meteoro: 'cataclismo', fx_relampago: 'cataclismo', fx_trueno: 'cataclismo', fx_nube_tormenta: 'cataclismo', fx_pilar_llamas: 'cataclismo',
+  fx_explosion_oscura: 'explosion', fx_implosion: 'area', fx_explosion_tierra: 'golpe', fx_bomba_humo: 'materia',
+  fx_anillo_fuego: 'area', fx_tornado_fuego: 'area', fx_aliento_fuego: 'area', fx_llama_fatua: 'objeto',
+  fx_nova_escarcha: 'area', fx_puas_hielo: 'area', fx_estallido_hielo: 'area', fx_aliento_escarcha: 'area', fx_congelar: 'golpe', fx_cristal_hielo: 'objeto',
+  fx_electrocutado: 'golpe', fx_arco_chispas: 'hechizo', fx_bola_rayo: 'hechizo', fx_descarga: 'golpe',
+  fx_destello_herida: 'chispa', fx_rebote: 'chispa', fx_chispa_golpe: 'chispa', fx_golpe_piso: 'materia', fx_aterrizaje: 'materia',
+  // una flecha no alumbra (como la de siempre)
+  fx_flecha: null,
+  fx_monedas_caen: 'objeto', fx_humareda: 'materia', fx_desintegrar: 'golpe', fx_arder_hasta_ceniza: 'golpe', fx_alma_sube: 'objeto', fx_muerte_helada: 'golpe',
+  fx_columna_regreso: 'area', fx_grieta_invocacion: 'area', fx_surge_del_piso: 'area',
+  fx_rayo_arcano: 'area', fx_circulo_conjuro: 'area', fx_lluvia_astros: 'area', fx_reloj_detenido: 'area', fx_portal: 'area', fx_estallido_mana: 'area',
+  fx_aparecer: 'golpe', fx_desaparecer: 'golpe', fx_circulo_runas: 'objeto',
+  fx_pilar_sagrado: 'area', fx_castigo_divino: 'area', fx_curacion_area: 'area', fx_resurreccion: 'area', fx_plumas: 'materia', fx_aureola: 'estado', fx_curacion: 'objeto', fx_bendicion: 'objeto', fx_escudo_divino: 'objeto',
+  fx_agujero_negro: 'area', fx_drenar_almas: 'area', fx_sello_maleficio: 'area', fx_orbe_vacio: 'hechizo', fx_calaveras_orbitan: 'objeto', fx_robo_vida: 'hechizo',
+  fx_salpicadura_acido: 'golpe', fx_nube_veneno: 'objeto', fx_charco_toxico: 'objeto', fx_esporas: 'objeto', fx_flor_curativa: 'objeto',
+  fx_orbe_agua: 'hechizo', fx_columna_botin: 'objeto', fx_calavera_voladora: 'hechizo', fx_fuego_fatuo: 'objeto', fx_ojo_flotante: 'objeto',
+};
+/** La clase de luz de un efecto (null: sin luz propia, salvo que el catálogo la pida). */
+export const claseLuz = (cfg: Pick<CfgPfx, 'id' | 'categoria'>): ClaseLuz | null => (cfg.id in CLASE_EFECTO ? CLASE_EFECTO[cfg.id] : CLASE_CATEGORIA[cfg.categoria]);
+
 function luzDe(cfg: CfgPfx, c: Crudo, k: number): LuzEfecto {
   const pico = Math.max(...c.energia, 0);
   const n = c.n;
   // los de pantalla (clima, transiciones) no prenden luz salvo que el catálogo la pida (tormenta)
-  const sinLuz = pico < 4 || cfg.soloCinematica || (cfg.capa === 'pantalla' && !cfg.luz?.intensidad);
+  const sinLuz = pico < 4 || cfg.soloCinematica || (cfg.capa === 'pantalla' && !cfg.luz?.intensidad) || (claseLuz(cfg) === null && cfg.capa !== 'pantalla');
   const curva = sinLuz ? Array.from({ length: n }, () => 0) : c.energia.map((e) => r2(e / pico));
   // color: el promedio de la luz con el máximo en 255, apenas desaturado
   const [lr, lg, lb] = c.luzRgb, mx = Math.max(lr, lg, lb, 1);
@@ -739,8 +799,12 @@ function luzDe(cfg: CfgPfx, c: Crudo, k: number): LuzEfecto {
   const col = [lr, lg, lb].map((v) => (l + (v - l) * 0.85) * (255 / mx)).map((v) => Math.max(0, Math.min(255, Math.round(v))));
   const color = sinLuz ? hexDe(rgbHex(RAMPAS[cfg.elemento][6]).map((v) => v)) : hexDe(col);
   // radio e intensidad: crecen con la luz total del cuadro pico y con lo que se abre
-  const radio = sinLuz ? 0 : Math.round(Math.max(60, Math.min(360, 46 + 5.2 * Math.sqrt(pico) + 1.2 * c.dispersion * k)) / 2) * 2;
-  const intensidad = sinLuz ? 0 : r2(0.3 + 0.7 * Math.min(1, Math.sqrt(pico / 900)));
+  // la medida de siempre (energía y apertura de la luz en pixelfx, sin tope) ubica al efecto dentro del rango de su
+  // clase, en escala logarítmica: 100 abajo del todo, 500 arriba del todo
+  const medida = 46 + 5.2 * Math.sqrt(pico) + 1.2 * c.dispersion * k, medidaK = 0.3 + 0.7 * Math.min(1, Math.sqrt(pico / 900));
+  const clase = claseLuz(cfg), rango = clase ? CLASES_LUZ[clase] : null, sm = Math.max(0, Math.min(1, Math.log(Math.max(1, medida) / 100) / Math.log(5)));
+  const radio = sinLuz ? 0 : rango ? Math.round((rango.r[0] + (rango.r[1] - rango.r[0]) * sm) / 2) * 2 : Math.round(Math.max(60, Math.min(360, medida)) / 2) * 2;
+  const intensidad = sinLuz ? 0 : rango ? r2(rango.k[0] + (rango.k[1] - rango.k[0]) * sm) : r2(medidaK);
   const altura = Math.max(4, Math.round((c.lam.ay - c.centro[1]) * k));
   // parpadeo: cuánto salta la curva de un cuadro al siguiente, más lo que pide el elemento
   let salto = 0;

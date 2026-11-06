@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { EFECTOS_PFX, pintarEfectoPfx, olvidarEfectosPfx, type ManifiestoPfx } from '../gotico/efectos_pfx';
+import { EFECTOS_PFX, pintarEfectoPfx, olvidarEfectosPfx, claseLuz, CLASES_LUZ, type ManifiestoPfx } from '../gotico/efectos_pfx';
 import { cuantizar, errorPaleta } from '../gotico/efectos_pfx_png';
 
 const MANIFIESTO = JSON.parse(readFileSync(fileURLToPath(new URL('../gotico/datos/efectos_pfx.json', import.meta.url)), 'utf8')) as ManifiestoPfx;
@@ -84,6 +84,29 @@ describe('paleta de las hojas', () => {
   it('el atlas exportado entra en los 15 MB', () => {
     const mb = MANIFIESTO.efectos.reduce((s, e) => s + e.paginas.reduce((t, p) => t + p.bytes, 0), 0) / 1024 / 1024;
     expect(mb).toBeLessThanOrEqual(15);
+  });
+});
+
+describe('luz de los efectos de pixelfx en la escala de los fuegos del mundo', () => {
+  it('cada efecto cae en el rango de su clase', () => {
+    for (const c of EFECTOS_PFX) {
+      const l = efecto(c.id).luz, cl = claseLuz(c);
+      if (!cl || l.intensidad === 0 || c.capa === 'pantalla') continue;
+      const { r, k } = CLASES_LUZ[cl];
+      expect(l.radio >= r[0] && l.radio <= r[1], `${c.id} (${cl}) radio ${l.radio}`).toBe(true);
+      expect(l.intensidad >= k[0] - 1e-9 && l.intensidad <= k[1] + 1e-9, `${c.id} (${cl}) intensidad ${l.intensidad}`).toBe(true);
+    }
+  });
+
+  it('un golpe chico no alumbra como una fogata y solo lo enorme pasa a la explosión de siempre', () => {
+    // antorcha de Doom: 146 a 177; fogata: hasta 250; explosion_fuego de siempre: 270
+    const de = (cat: string) => MANIFIESTO.efectos.filter((e) => e.categoria === cat && e.luz.intensidad > 0);
+    for (const e of [...de('impactos'), ...de('cuerpo_a_cuerpo'), ...de('estado'), ...de('botin'), ...de('criaturas'), ...de('agua')]) expect(e.luz.radio, e.id).toBeLessThanOrEqual(177);
+    for (const id of ['fx_golpe_piso', 'fx_aterrizaje', 'fx_destello_herida', 'fx_plumas', 'fx_roca', 'fx_bomba_humo']) expect(efecto(id).luz.radio, id).toBeLessThanOrEqual(130);
+    for (const e of MANIFIESTO.efectos) if (e.luz.radio > 290 && e.capa !== 'pantalla') expect(claseLuz(EFECTOS_PFX.find((c) => c.id === e.id)!), e.id).toBe('cataclismo');
+    for (const id of ['fx_gran_explosion', 'fx_meteoro', 'fx_explosion_barril', 'fx_explosion_chica']) expect(efecto(id).luz.radio, id).toBeGreaterThanOrEqual(220);
+    // una flecha no alumbra
+    expect(efecto('fx_flecha').luz.intensidad).toBe(0);
   });
 });
 

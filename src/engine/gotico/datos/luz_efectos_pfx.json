@@ -6,8 +6,8 @@
  "efectos": {
   "fx_agujero_negro": {
    "color": "#c794f6",
-   "radio": 248,
-   "intensidad": 0.86,
+   "radio": 210,
+   "intensidad": 0.77,
    "curva": [
     1,
     0.98,
@@ -68,8 +68,8 @@
   },
   "fx_aliento_escarcha": {
    "color": "#94d5f7",
-   "radio": 266,
-   "intensidad": 0.87,
+   "radio": 212,
+   "intensidad": 0.78,
    "curva": [
     0.95,
     0.96,
@@ -96,8 +96,8 @@
   },
   "fx_aliento_fuego": {
    "color": "#f19160",
-   "radio": 302,
-   "intensidad": 1,
+   "radio": 218,
+   "intensidad": 0.81,
    "curva": [
     0.77,
     0.81,
@@ -128,8 +128,8 @@
   },
   "fx_alma_sube": {
    "color": "#98f9ee",
-   "radio": 210,
-   "intensidad": 0.84,
+   "radio": 98,
+   "intensidad": 0.39,
    "curva": [
     0,
     0.03,
@@ -173,14 +173,14 @@
    ],
    "altura": 87,
    "parpadeo": 0.12,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_anillo_fuego": {
    "color": "#f3a16f",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 226,
+   "intensidad": 0.84,
    "curva": [
     0,
     0.01,
@@ -237,8 +237,8 @@
   },
   "fx_aparecer": {
    "color": "#bbb4f8",
-   "radio": 282,
-   "intensidad": 1,
+   "radio": 132,
+   "intensidad": 0.56,
    "curva": [
     0,
     0.01,
@@ -269,14 +269,14 @@
    ],
    "altura": 38,
    "parpadeo": 0.16,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "aditiva"
   },
   "fx_arco_chispas": {
    "color": "#9b9ff5",
-   "radio": 196,
-   "intensidad": 0.81,
+   "radio": 166,
+   "intensidad": 0.65,
    "curva": [
     1,
     0.88,
@@ -337,8 +337,8 @@
   },
   "fx_arder_hasta_ceniza": {
    "color": "#ef8e47",
-   "radio": 206,
-   "intensidad": 0.78,
+   "radio": 122,
+   "intensidad": 0.51,
    "curva": [
     0,
     0.01,
@@ -386,14 +386,14 @@
    ],
    "altura": 42,
    "parpadeo": 0.22,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_aterrizaje": {
    "color": "#f9dcb4",
-   "radio": 120,
-   "intensidad": 0.48,
+   "radio": 66,
+   "intensidad": 0.17,
    "curva": [
     1,
     0.32,
@@ -422,8 +422,8 @@
   },
   "fx_aturdido": {
    "color": "#e1f0fd",
-   "radio": 116,
-   "intensidad": 0.5,
+   "radio": 64,
+   "intensidad": 0.22,
    "curva": [
     0.81,
     0.8,
@@ -484,8 +484,8 @@
   },
   "fx_aureola": {
    "color": "#f7d793",
-   "radio": 130,
-   "intensidad": 0.57,
+   "radio": 66,
+   "intensidad": 0.23,
    "curva": [
     0.71,
     0.72,
@@ -633,8 +633,8 @@
   },
   "fx_baba": {
    "color": "#5def79",
-   "radio": 168,
-   "intensidad": 0.64,
+   "radio": 90,
+   "intensidad": 0.36,
    "curva": [
     0.59,
     0.6,
@@ -690,8 +690,8 @@
   },
   "fx_barrido_lanza": {
    "color": "#e2edfd",
-   "radio": 198,
-   "intensidad": 0.7,
+   "radio": 122,
+   "intensidad": 0.51,
    "curva": [
     0.28,
     0.62,
@@ -713,14 +713,14 @@
    ],
    "altura": 26,
    "parpadeo": 0.2,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_bendicion": {
    "color": "#f6d284",
-   "radio": 208,
-   "intensidad": 0.7,
+   "radio": 98,
+   "intensidad": 0.39,
    "curva": [
     0.91,
     0.84,
@@ -763,14 +763,14 @@
    ],
    "altura": 75,
    "parpadeo": 0.11,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "aditiva"
   },
   "fx_bloqueo_escudo": {
    "color": "#f1a951",
-   "radio": 210,
-   "intensidad": 0.85,
+   "radio": 122,
+   "intensidad": 0.51,
    "curva": [
     1,
     0.59,
@@ -800,14 +800,14 @@
    ],
    "altura": 42,
    "parpadeo": 0.1,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_bola_fuego": {
    "color": "#f29867",
-   "radio": 182,
-   "intensidad": 0.7,
+   "radio": 162,
+   "intensidad": 0.64,
    "curva": [
     0.8,
     0.94,
@@ -834,8 +834,8 @@
   },
   "fx_bola_rayo": {
    "color": "#848cf2",
-   "radio": 206,
-   "intensidad": 0.8,
+   "radio": 168,
+   "intensidad": 0.66,
    "curva": [
     0.37,
     0.38,
@@ -896,8 +896,8 @@
   },
   "fx_bomba_humo": {
    "color": "#fad7c3",
-   "radio": 248,
-   "intensidad": 0.94,
+   "radio": 88,
+   "intensidad": 0.26,
    "curva": [
     0.01,
     0.01,
@@ -955,14 +955,14 @@
    ],
    "altura": 20,
    "parpadeo": 0.1,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 0,
    "mezcla": "normal"
   },
   "fx_burbujas": {
    "color": "#8cd0f6",
-   "radio": 86,
-   "intensidad": 0.37,
+   "radio": 60,
+   "intensidad": 0.15,
    "curva": [
     0.22,
     0.22,
@@ -1023,8 +1023,8 @@
   },
   "fx_caida_carambano": {
    "color": "#bce6fa",
-   "radio": 272,
-   "intensidad": 1,
+   "radio": 178,
+   "intensidad": 0.71,
    "curva": [
     0.02,
     0.02,
@@ -1064,8 +1064,8 @@
   },
   "fx_calavera_voladora": {
    "color": "#6af3ae",
-   "radio": 212,
-   "intensidad": 0.71,
+   "radio": 168,
+   "intensidad": 0.67,
    "curva": [
     0.75,
     0.96,
@@ -1106,8 +1106,8 @@
   },
   "fx_calaveras_orbitan": {
    "color": "#8bf396",
-   "radio": 184,
-   "intensidad": 0.66,
+   "radio": 92,
+   "intensidad": 0.38,
    "curva": [
     1,
     1,
@@ -1150,14 +1150,14 @@
    ],
    "altura": 79,
    "parpadeo": 0.04,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_cardumen": {
    "color": "#66b6f3",
-   "radio": 144,
-   "intensidad": 0.52,
+   "radio": 84,
+   "intensidad": 0.35,
    "curva": [
     0.64,
     0.63,
@@ -1228,8 +1228,8 @@
   },
   "fx_carga_conjuro": {
    "color": "#988ff4",
-   "radio": 196,
-   "intensidad": 0.77,
+   "radio": 164,
+   "intensidad": 0.65,
    "curva": [
     0.52,
     0.53,
@@ -1280,8 +1280,8 @@
   },
   "fx_carga_rayo": {
    "color": "#99a1f5",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 234,
+   "intensidad": 0.87,
    "curva": [
     0.01,
     0.01,
@@ -1321,8 +1321,8 @@
   },
   "fx_cascada": {
    "color": "#81cbf6",
-   "radio": 236,
-   "intensidad": 0.72,
+   "radio": 86,
+   "intensidad": 0.26,
    "curva": [
     0.91,
     0.93,
@@ -1377,14 +1377,14 @@
    ],
    "altura": 63,
    "parpadeo": 0.06,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_castigo_divino": {
    "color": "#f8e094",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 234,
+   "intensidad": 0.88,
    "curva": [
     0,
     0.02,
@@ -1423,8 +1423,8 @@
   },
   "fx_charco_toxico": {
    "color": "#d9f67e",
-   "radio": 174,
-   "intensidad": 0.7,
+   "radio": 90,
+   "intensidad": 0.37,
    "curva": [
     0.39,
     0.42,
@@ -1479,14 +1479,14 @@
    ],
    "altura": 12,
    "parpadeo": 0.11,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_chispa_golpe": {
    "color": "#f3a869",
-   "radio": 174,
-   "intensidad": 0.71,
+   "radio": 84,
+   "intensidad": 0.37,
    "curva": [
     1,
     0.44,
@@ -1501,14 +1501,14 @@
    ],
    "altura": 37,
    "parpadeo": 0.29,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "aditiva"
   },
   "fx_chorro_agua": {
    "color": "#8ccff6",
-   "radio": 236,
-   "intensidad": 0.68,
+   "radio": 86,
+   "intensidad": 0.26,
    "curva": [
     0.93,
     0.95,
@@ -1527,14 +1527,14 @@
    "altura": 44,
    "parpadeo": 0.15,
    "enVuelo": true,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_circulo_conjuro": {
    "color": "#a79ff5",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 240,
+   "intensidad": 0.9,
    "curva": [
     0,
     0.01,
@@ -1587,8 +1587,8 @@
   },
   "fx_circulo_runas": {
    "color": "#968df3",
-   "radio": 238,
-   "intensidad": 0.83,
+   "radio": 102,
+   "intensidad": 0.41,
    "curva": [
     0.84,
     0.93,
@@ -1643,14 +1643,14 @@
    ],
    "altura": 12,
    "parpadeo": 0.11,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_cofre_abre": {
    "color": "#f7d787",
-   "radio": 242,
-   "intensidad": 0.91,
+   "radio": 104,
+   "intensidad": 0.41,
    "curva": [
     0,
     0,
@@ -1713,8 +1713,8 @@
   },
   "fx_columna_botin": {
    "color": "#f3c755",
-   "radio": 312,
-   "intensidad": 1,
+   "radio": 112,
+   "intensidad": 0.44,
    "curva": [
     0.69,
     0.7,
@@ -1755,8 +1755,8 @@
   },
   "fx_columna_regreso": {
    "color": "#f9e6ae",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 240,
+   "intensidad": 0.9,
    "curva": [
     0,
     0,
@@ -1789,8 +1789,8 @@
   },
   "fx_confundido": {
    "color": "#e4b0f9",
-   "radio": 120,
-   "intensidad": 0.51,
+   "radio": 64,
+   "intensidad": 0.22,
    "curva": [
     0.57,
     1,
@@ -1831,8 +1831,8 @@
   },
   "fx_congelado": {
    "color": "#7ac9f5",
-   "radio": 130,
-   "intensidad": 0.52,
+   "radio": 66,
+   "intensidad": 0.23,
    "curva": [
     1,
     0.95,
@@ -1893,8 +1893,8 @@
   },
   "fx_congelar": {
    "color": "#a0d8f8",
-   "radio": 298,
-   "intensidad": 1,
+   "radio": 134,
+   "intensidad": 0.57,
    "curva": [
     0,
     0.01,
@@ -1947,14 +1947,14 @@
    ],
    "altura": 44,
    "parpadeo": 0.14,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_cristal_hielo": {
    "color": "#80caf6",
-   "radio": 158,
-   "intensidad": 0.59,
+   "radio": 86,
+   "intensidad": 0.36,
    "curva": [
     0.58,
     0.91,
@@ -2003,8 +2003,8 @@
   },
   "fx_critico": {
    "color": "#ef6a61",
-   "radio": 288,
-   "intensidad": 1,
+   "radio": 132,
+   "intensidad": 0.56,
    "curva": [
     1,
     0.64,
@@ -2022,7 +2022,7 @@
    ],
    "altura": 51,
    "parpadeo": 0.17,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
@@ -2070,8 +2070,8 @@
   },
   "fx_curacion": {
    "color": "#f8dc9e",
-   "radio": 192,
-   "intensidad": 0.7,
+   "radio": 94,
+   "intensidad": 0.38,
    "curva": [
     0,
     0.08,
@@ -2098,14 +2098,14 @@
    ],
    "altura": 43,
    "parpadeo": 0.25,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_curacion_area": {
    "color": "#f6d485",
-   "radio": 342,
-   "intensidad": 1,
+   "radio": 224,
+   "intensidad": 0.83,
    "curva": [
     0.01,
     0.02,
@@ -2142,8 +2142,8 @@
   },
   "fx_desaparecer": {
    "color": "#c8c2f9",
-   "radio": 284,
-   "intensidad": 1,
+   "radio": 132,
+   "intensidad": 0.56,
    "curva": [
     0,
     0.02,
@@ -2180,14 +2180,14 @@
    ],
    "altura": 44,
    "parpadeo": 0.2,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "aditiva"
   },
   "fx_descarga": {
    "color": "#9ea5f5",
-   "radio": 278,
-   "intensidad": 1,
+   "radio": 132,
+   "intensidad": 0.56,
    "curva": [
     0.07,
     0.26,
@@ -2214,14 +2214,14 @@
    ],
    "altura": 7,
    "parpadeo": 0.44,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 0,
    "mezcla": "normal"
   },
   "fx_desintegrar": {
    "color": "#9df9f3",
-   "radio": 244,
-   "intensidad": 0.96,
+   "radio": 128,
+   "intensidad": 0.54,
    "curva": [
     0,
     0.02,
@@ -2259,14 +2259,14 @@
    ],
    "altura": 39,
    "parpadeo": 0.14,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_destello_herida": {
    "color": "#f9c6c2",
-   "radio": 206,
-   "intensidad": 0.85,
+   "radio": 88,
+   "intensidad": 0.39,
    "curva": [
     1,
     0.37,
@@ -2276,14 +2276,14 @@
    ],
    "altura": 61,
    "parpadeo": 0.41,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_dormido": {
    "color": "#66f6ed",
-   "radio": 120,
-   "intensidad": 0.45,
+   "radio": 64,
+   "intensidad": 0.22,
    "curva": [
     0.68,
     0.85,
@@ -2324,8 +2324,8 @@
   },
   "fx_drenar_almas": {
    "color": "#be8af5",
-   "radio": 246,
-   "intensidad": 0.83,
+   "radio": 210,
+   "intensidad": 0.77,
    "curva": [
     0.33,
     0.34,
@@ -2439,8 +2439,8 @@
   },
   "fx_electrocutado": {
    "color": "#848bf2",
-   "radio": 170,
-   "intensidad": 0.7,
+   "radio": 116,
+   "intensidad": 0.48,
    "curva": [
     0.3,
     0.25,
@@ -2495,14 +2495,14 @@
    ],
    "altura": 28,
    "parpadeo": 0.46,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 0,
    "mezcla": "normal"
   },
   "fx_envenenado": {
    "color": "#bef251",
-   "radio": 108,
-   "intensidad": 0.44,
+   "radio": 62,
+   "intensidad": 0.21,
    "curva": [
     1,
     0.95,
@@ -2553,8 +2553,8 @@
   },
   "fx_escudo_divino": {
    "color": "#f7d38a",
-   "radio": 202,
-   "intensidad": 0.72,
+   "radio": 96,
+   "intensidad": 0.39,
    "curva": [
     0.87,
     0.85,
@@ -2589,14 +2589,14 @@
    ],
    "altura": 47,
    "parpadeo": 0.09,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_espectro": {
    "color": "#55f5f4",
-   "radio": 158,
-   "intensidad": 0.55,
+   "radio": 86,
+   "intensidad": 0.36,
    "curva": [
     0.94,
     0.93,
@@ -2637,8 +2637,8 @@
   },
   "fx_espinas": {
    "color": "#c9f690",
-   "radio": 228,
-   "intensidad": 0.8,
+   "radio": 86,
+   "intensidad": 0.25,
    "curva": [
     0,
     0.01,
@@ -2671,14 +2671,14 @@
    ],
    "altura": 25,
    "parpadeo": 0.16,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_esporas": {
    "color": "#8ff6bc",
-   "radio": 264,
-   "intensidad": 1,
+   "radio": 106,
+   "intensidad": 0.42,
    "curva": [
     0,
     0,
@@ -2720,14 +2720,14 @@
    ],
    "altura": 68,
    "parpadeo": 0.12,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_estallido_copos": {
    "color": "#97d5f7",
-   "radio": 296,
-   "intensidad": 1,
+   "radio": 180,
+   "intensidad": 0.72,
    "curva": [
     0,
     0.04,
@@ -2775,8 +2775,8 @@
   },
   "fx_estallido_hielo": {
    "color": "#9fdaf8",
-   "radio": 310,
-   "intensidad": 1,
+   "radio": 220,
+   "intensidad": 0.81,
    "curva": [
     0.04,
     0.04,
@@ -2818,8 +2818,8 @@
   },
   "fx_estallido_mana": {
    "color": "#afa7f6",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 232,
+   "intensidad": 0.87,
    "curva": [
     0,
     0.03,
@@ -2849,8 +2849,8 @@
   },
   "fx_estocada": {
    "color": "#f1f7fe",
-   "radio": 186,
-   "intensidad": 0.73,
+   "radio": 120,
+   "intensidad": 0.5,
    "curva": [
     0.1,
     0.1,
@@ -2871,14 +2871,14 @@
    ],
    "altura": 41,
    "parpadeo": 0.23,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_explosion_barril": {
    "color": "#f1995a",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 280,
+   "intensidad": 0.98,
    "curva": [
     0,
     0,
@@ -2980,8 +2980,8 @@
   },
   "fx_explosion_chica": {
    "color": "#f4b77b",
-   "radio": 274,
-   "intensidad": 1,
+   "radio": 264,
+   "intensidad": 0.94,
    "curva": [
     1,
     0.93,
@@ -3073,7 +3073,7 @@
   },
   "fx_explosion_oscura": {
    "color": "#c997f7",
-   "radio": 360,
+   "radio": 290,
    "intensidad": 1,
    "curva": [
     0.02,
@@ -3166,8 +3166,8 @@
   },
   "fx_explosion_tierra": {
    "color": "#f08b5d",
-   "radio": 238,
-   "intensidad": 0.93,
+   "radio": 126,
+   "intensidad": 0.53,
    "curva": [
     1,
     0.45,
@@ -3247,26 +3247,26 @@
    ],
    "altura": 17,
    "parpadeo": 0.06,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 0,
    "mezcla": "normal"
   },
   "fx_flecha": {
-   "color": "#ffffff",
-   "radio": 64,
-   "intensidad": 0.35,
+   "color": "#724c2a",
+   "radio": 0,
+   "intensidad": 0,
    "curva": [
-    1,
     0,
     0,
     0,
-    1,
+    0,
+    0,
     0,
     0,
     0
    ],
    "altura": 45,
-   "parpadeo": 0.6,
+   "parpadeo": 0,
    "enVuelo": true,
    "sombra": false,
    "prioridad": 1,
@@ -3274,8 +3274,8 @@
   },
   "fx_flor_curativa": {
    "color": "#b9f8c3",
-   "radio": 262,
-   "intensidad": 0.98,
+   "radio": 106,
+   "intensidad": 0.42,
    "curva": [
     0,
     0,
@@ -3320,14 +3320,14 @@
    ],
    "altura": 63,
    "parpadeo": 0.12,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_fragmento_reliquia": {
    "color": "#ee7944",
-   "radio": 126,
-   "intensidad": 0.54,
+   "radio": 78,
+   "intensidad": 0.33,
    "curva": [
     0.52,
     0.52,
@@ -3378,8 +3378,8 @@
   },
   "fx_fuego_fatuo": {
    "color": "#7af4b0",
-   "radio": 160,
-   "intensidad": 0.59,
+   "radio": 88,
+   "intensidad": 0.36,
    "curva": [
     0.82,
     0.81,
@@ -3430,8 +3430,8 @@
   },
   "fx_fuente": {
    "color": "#91d1f7",
-   "radio": 182,
-   "intensidad": 0.65,
+   "radio": 78,
+   "intensidad": 0.22,
    "curva": [
     0.92,
     0.96,
@@ -3486,14 +3486,14 @@
    ],
    "altura": 93,
    "parpadeo": 0.06,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_furia": {
    "color": "#ea4531",
-   "radio": 134,
-   "intensidad": 0.51,
+   "radio": 68,
+   "intensidad": 0.24,
    "curva": [
     0.56,
     0.9,
@@ -3534,8 +3534,8 @@
   },
   "fx_gancho": {
    "color": "#ee7a40",
-   "radio": 222,
-   "intensidad": 0.87,
+   "radio": 124,
+   "intensidad": 0.52,
    "curva": [
     0,
     0.17,
@@ -3554,14 +3554,14 @@
    ],
    "altura": 104,
    "parpadeo": 0.35,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_geiser": {
    "color": "#7ec9f5",
-   "radio": 252,
-   "intensidad": 0.94,
+   "radio": 88,
+   "intensidad": 0.26,
    "curva": [
     0,
     0.02,
@@ -3616,14 +3616,14 @@
    ],
    "altura": 70,
    "parpadeo": 0.11,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_gema_gira": {
    "color": "#eb413f",
-   "radio": 104,
-   "intensidad": 0.45,
+   "radio": 72,
+   "intensidad": 0.31,
    "curva": [
     0.8,
     0.71,
@@ -3664,8 +3664,8 @@
   },
   "fx_golpe_piso": {
    "color": "#fadfbc",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 102,
+   "intensidad": 0.31,
    "curva": [
     1,
     0.72,
@@ -3741,14 +3741,14 @@
    ],
    "altura": 14,
    "parpadeo": 0.06,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_golpe_seco": {
    "color": "#f7ce9b",
-   "radio": 236,
-   "intensidad": 0.94,
+   "radio": 126,
+   "intensidad": 0.53,
    "curva": [
     1,
     0.63,
@@ -3773,14 +3773,14 @@
    ],
    "altura": 39,
    "parpadeo": 0.12,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_gotera": {
    "color": "#73c3f4",
-   "radio": 114,
-   "intensidad": 0.43,
+   "radio": 64,
+   "intensidad": 0.17,
    "curva": [
     0.34,
     0.34,
@@ -3831,7 +3831,7 @@
   },
   "fx_gran_explosion": {
    "color": "#f09353",
-   "radio": 360,
+   "radio": 316,
    "intensidad": 1,
    "curva": [
     0.67,
@@ -3944,8 +3944,8 @@
   },
   "fx_grieta_invocacion": {
    "color": "#e88df8",
-   "radio": 288,
-   "intensidad": 1,
+   "radio": 216,
+   "intensidad": 0.8,
    "curva": [
     0,
     0.12,
@@ -3999,8 +3999,8 @@
   },
   "fx_hachazo": {
    "color": "#ed7237",
-   "radio": 214,
-   "intensidad": 0.8,
+   "radio": 124,
+   "intensidad": 0.52,
    "curva": [
     0.01,
     0.16,
@@ -4028,7 +4028,7 @@
    ],
    "altura": 38,
    "parpadeo": 0.26,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
@@ -4129,8 +4129,8 @@
   },
   "fx_humareda": {
    "color": "#fef2f1",
-   "radio": 206,
-   "intensidad": 0.84,
+   "radio": 82,
+   "intensidad": 0.24,
    "curva": [
     1,
     0.58,
@@ -4165,14 +4165,14 @@
    ],
    "altura": 31,
    "parpadeo": 0.09,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_implosion": {
    "color": "#c791f6",
-   "radio": 332,
-   "intensidad": 1,
+   "radio": 222,
+   "intensidad": 0.82,
    "curva": [
     0.06,
     0.08,
@@ -4202,8 +4202,8 @@
   },
   "fx_lanza_hielo": {
    "color": "#86ccf6",
-   "radio": 194,
-   "intensidad": 0.61,
+   "radio": 164,
+   "intensidad": 0.65,
    "curva": [
     0.95,
     0.93,
@@ -4225,8 +4225,8 @@
   },
   "fx_latigazo": {
    "color": "#ef7164",
-   "radio": 160,
-   "intensidad": 0.63,
+   "radio": 114,
+   "intensidad": 0.47,
    "curva": [
     0.04,
     0.04,
@@ -4251,14 +4251,14 @@
    ],
    "altura": 44,
    "parpadeo": 0.2,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_latigo_enredadera": {
    "color": "#d5f8ac",
-   "radio": 182,
-   "intensidad": 0.73,
+   "radio": 78,
+   "intensidad": 0.23,
    "curva": [
     0,
     0,
@@ -4296,14 +4296,14 @@
    ],
    "altura": 46,
    "parpadeo": 0.13,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_llama_fatua": {
    "color": "#83f5ba",
-   "radio": 190,
-   "intensidad": 0.69,
+   "radio": 94,
+   "intensidad": 0.38,
    "curva": [
     0.97,
     0.97,
@@ -4346,14 +4346,14 @@
    ],
    "altura": 34,
    "parpadeo": 0.06,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_llamas_sombra": {
    "color": "#df64f5",
-   "radio": 166,
-   "intensidad": 0.62,
+   "radio": 110,
+   "intensidad": 0.36,
    "curva": [
     0.99,
     0.88,
@@ -4388,14 +4388,14 @@
    ],
    "altura": 25,
    "parpadeo": 0.11,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_llave": {
    "color": "#deeefc",
-   "radio": 116,
-   "intensidad": 0.51,
+   "radio": 76,
+   "intensidad": 0.32,
    "curva": [
     0.56,
     0.55,
@@ -4568,8 +4568,8 @@
   },
   "fx_lluvia_astros": {
    "color": "#f8dc98",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 228,
+   "intensidad": 0.85,
    "curva": [
     0,
     0.07,
@@ -4720,8 +4720,8 @@
   },
   "fx_maldicion": {
    "color": "#d7b0f9",
-   "radio": 298,
-   "intensidad": 1,
+   "radio": 130,
+   "intensidad": 0.44,
    "curva": [
     0.01,
     0.01,
@@ -4767,14 +4767,14 @@
    ],
    "altura": 104,
    "parpadeo": 0.12,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_maldito": {
    "color": "#b064f3",
-   "radio": 130,
-   "intensidad": 0.47,
+   "radio": 66,
+   "intensidad": 0.23,
    "curva": [
     0.57,
     0.59,
@@ -4815,8 +4815,8 @@
   },
   "fx_manos_que_agarran": {
    "color": "#ad62f2",
-   "radio": 248,
-   "intensidad": 0.87,
+   "radio": 124,
+   "intensidad": 0.41,
    "curva": [
     0,
     0.25,
@@ -4856,14 +4856,14 @@
    ],
    "altura": 22,
    "parpadeo": 0.15,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_martillazo": {
    "color": "#f4c86a",
-   "radio": 224,
-   "intensidad": 0.83,
+   "radio": 124,
+   "intensidad": 0.52,
    "curva": [
     0.28,
     0.28,
@@ -4890,14 +4890,14 @@
    ],
    "altura": 32,
    "parpadeo": 0.17,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_medusa": {
    "color": "#82e6f7",
-   "radio": 158,
-   "intensidad": 0.59,
+   "radio": 86,
+   "intensidad": 0.36,
    "curva": [
     0.71,
     0.92,
@@ -4948,7 +4948,7 @@
   },
   "fx_meteoro": {
    "color": "#f3ad6d",
-   "radio": 360,
+   "radio": 318,
    "intensidad": 1,
    "curva": [
     0.09,
@@ -5055,8 +5055,8 @@
   },
   "fx_moneda_gira": {
    "color": "#f4ca6b",
-   "radio": 116,
-   "intensidad": 0.53,
+   "radio": 76,
+   "intensidad": 0.32,
    "curva": [
     0.87,
     0.42,
@@ -5107,8 +5107,8 @@
   },
   "fx_monedas_caen": {
    "color": "#f8dc9c",
-   "radio": 200,
-   "intensidad": 0.81,
+   "radio": 96,
+   "intensidad": 0.39,
    "curva": [
     1,
     0.41,
@@ -5149,14 +5149,14 @@
    ],
    "altura": 19,
    "parpadeo": 0.14,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_muerte_helada": {
    "color": "#a2daf8",
-   "radio": 260,
-   "intensidad": 1,
+   "radio": 130,
+   "intensidad": 0.55,
    "curva": [
     0,
     0.04,
@@ -5200,14 +5200,14 @@
    ],
    "altura": 34,
    "parpadeo": 0.15,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_murcielago": {
    "color": "#e9342b",
-   "radio": 88,
-   "intensidad": 0.41,
+   "radio": 70,
+   "intensidad": 0.3,
    "curva": [
     0.5,
     0.51,
@@ -5447,8 +5447,8 @@
   },
   "fx_nova_escarcha": {
    "color": "#a9def9",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 226,
+   "intensidad": 0.84,
    "curva": [
     0.01,
     0.01,
@@ -5538,7 +5538,7 @@
   },
   "fx_nube_tormenta": {
    "color": "#838af2",
-   "radio": 360,
+   "radio": 316,
    "intensidad": 1,
    "curva": [
     0.01,
@@ -5588,8 +5588,8 @@
   },
   "fx_nube_veneno": {
    "color": "#d0f568",
-   "radio": 206,
-   "intensidad": 0.65,
+   "radio": 98,
+   "intensidad": 0.39,
    "curva": [
     0.93,
     0.94,
@@ -5644,7 +5644,7 @@
    ],
    "altura": 12,
    "parpadeo": 0.06,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
@@ -5737,8 +5737,8 @@
   },
   "fx_ojo_flotante": {
    "color": "#eb443a",
-   "radio": 160,
-   "intensidad": 0.55,
+   "radio": 88,
+   "intensidad": 0.36,
    "curva": [
     1,
     0.94,
@@ -5789,8 +5789,8 @@
   },
   "fx_ola": {
    "color": "#90d4f7",
-   "radio": 282,
-   "intensidad": 1,
+   "radio": 92,
+   "intensidad": 0.28,
    "curva": [
     0,
     0,
@@ -5835,14 +5835,14 @@
    ],
    "altura": 50,
    "parpadeo": 0.12,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_ondas": {
    "color": "#73c4f5",
-   "radio": 132,
-   "intensidad": 0.48,
+   "radio": 68,
+   "intensidad": 0.18,
    "curva": [
     1,
     0.92,
@@ -5903,8 +5903,8 @@
   },
   "fx_orbe_agua": {
    "color": "#80caf6",
-   "radio": 200,
-   "intensidad": 0.69,
+   "radio": 166,
+   "intensidad": 0.66,
    "curva": [
     0.89,
     0.93,
@@ -5953,8 +5953,8 @@
   },
   "fx_orbe_alma": {
    "color": "#86f8ea",
-   "radio": 108,
-   "intensidad": 0.48,
+   "radio": 72,
+   "intensidad": 0.31,
    "curva": [
     0.75,
     1,
@@ -6010,8 +6010,8 @@
   },
   "fx_orbe_arcano": {
    "color": "#948af3",
-   "radio": 230,
-   "intensidad": 0.81,
+   "radio": 172,
+   "intensidad": 0.68,
    "curva": [
     0.95,
     0.97,
@@ -6052,8 +6052,8 @@
   },
   "fx_orbe_vacio": {
    "color": "#c189f6",
-   "radio": 258,
-   "intensidad": 0.89,
+   "radio": 176,
+   "intensidad": 0.7,
    "curva": [
     0.72,
     0.72,
@@ -6104,8 +6104,8 @@
   },
   "fx_parada": {
    "color": "#f6d47d",
-   "radio": 266,
-   "intensidad": 1,
+   "radio": 130,
+   "intensidad": 0.55,
    "curva": [
     1,
     0.66,
@@ -6128,14 +6128,14 @@
    ],
    "altura": 63,
    "parpadeo": 0.13,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "aditiva"
   },
   "fx_petrificado": {
    "color": "#fef5f1",
-   "radio": 182,
-   "intensidad": 0.72,
+   "radio": 74,
+   "intensidad": 0.27,
    "curva": [
     0,
     0.01,
@@ -6192,7 +6192,7 @@
   },
   "fx_pilar_llamas": {
    "color": "#f3a978",
-   "radio": 360,
+   "radio": 318,
    "intensidad": 1,
    "curva": [
     0,
@@ -6249,8 +6249,8 @@
   },
   "fx_pilar_sagrado": {
    "color": "#f5cd76",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 238,
+   "intensidad": 0.89,
    "curva": [
     0,
     0.05,
@@ -6302,8 +6302,8 @@
   },
   "fx_plumas": {
    "color": "#fcf2d7",
-   "radio": 280,
-   "intensidad": 1,
+   "radio": 92,
+   "intensidad": 0.28,
    "curva": [
     1,
     0.71,
@@ -6340,14 +6340,14 @@
    ],
    "altura": 4,
    "parpadeo": 0.09,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_pocion": {
    "color": "#ec4e4c",
-   "radio": 102,
-   "intensidad": 0.45,
+   "radio": 70,
+   "intensidad": 0.3,
    "curva": [
     0.47,
     0.48,
@@ -6388,8 +6388,8 @@
   },
   "fx_portal": {
    "color": "#a39bf5",
-   "radio": 336,
-   "intensidad": 1,
+   "radio": 222,
+   "intensidad": 0.83,
    "curva": [
     0.85,
     0.91,
@@ -6430,8 +6430,8 @@
   },
   "fx_presteza": {
    "color": "#d2e7fb",
-   "radio": 112,
-   "intensidad": 0.45,
+   "radio": 62,
+   "intensidad": 0.21,
    "curva": [
     0.95,
     0.99,
@@ -6458,8 +6458,8 @@
   },
   "fx_proyectil_magico": {
    "color": "#a79ff5",
-   "radio": 208,
-   "intensidad": 0.83,
+   "radio": 168,
+   "intensidad": 0.66,
    "curva": [
     0,
     0.06,
@@ -6492,8 +6492,8 @@
   },
   "fx_proyectiles_arcanos": {
    "color": "#ada6f6",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 188,
+   "intensidad": 0.75,
    "curva": [
     0.01,
     0.1,
@@ -6524,8 +6524,8 @@
   },
   "fx_pua_tierra": {
    "color": "#ee7a49",
-   "radio": 244,
-   "intensidad": 0.88,
+   "radio": 88,
+   "intensidad": 0.26,
    "curva": [
     0,
     0.01,
@@ -6570,14 +6570,14 @@
    ],
    "altura": 30,
    "parpadeo": 0.14,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_puas_hielo": {
    "color": "#a7dcf9",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 240,
+   "intensidad": 0.9,
    "curva": [
     0,
     0.08,
@@ -6620,8 +6620,8 @@
   },
   "fx_rafaga_dagas": {
    "color": "#e6f0fd",
-   "radio": 210,
-   "intensidad": 0.82,
+   "radio": 122,
+   "intensidad": 0.51,
    "curva": [
     0,
     0.17,
@@ -6650,14 +6650,14 @@
    ],
    "altura": 46,
    "parpadeo": 0.2,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_raices_atrapan": {
    "color": "#d9f8a2",
-   "radio": 182,
-   "intensidad": 0.74,
+   "radio": 78,
+   "intensidad": 0.22,
    "curva": [
     0,
     0,
@@ -6695,14 +6695,14 @@
    ],
    "altura": 18,
    "parpadeo": 0.17,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_ralentizado": {
    "color": "#fbebc2",
-   "radio": 110,
-   "intensidad": 0.36,
+   "radio": 62,
+   "intensidad": 0.21,
    "curva": [
     0.51,
     0.47,
@@ -6743,8 +6743,8 @@
   },
   "fx_rayo_arcano": {
    "color": "#a8a0f5",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 232,
+   "intensidad": 0.86,
    "curva": [
     0.98,
     0.99,
@@ -6771,8 +6771,8 @@
   },
   "fx_rayo_cadena": {
    "color": "#99a0f5",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 230,
+   "intensidad": 0.85,
    "curva": [
     0,
     0.03,
@@ -6897,8 +6897,8 @@
   },
   "fx_rebote": {
    "color": "#f1995b",
-   "radio": 180,
-   "intensidad": 0.72,
+   "radio": 84,
+   "intensidad": 0.37,
    "curva": [
     0.04,
     0.04,
@@ -6924,14 +6924,14 @@
    ],
    "altura": 7,
    "parpadeo": 0.27,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_recoger": {
    "color": "#f7dd8d",
-   "radio": 196,
-   "intensidad": 0.83,
+   "radio": 96,
+   "intensidad": 0.38,
    "curva": [
     1,
     0.84,
@@ -6965,7 +6965,7 @@
   },
   "fx_relampago": {
    "color": "#9fa2f5",
-   "radio": 360,
+   "radio": 320,
    "intensidad": 1,
    "curva": [
     0,
@@ -7009,8 +7009,8 @@
   },
   "fx_reloj_detenido": {
    "color": "#fef8eb",
-   "radio": 360,
-   "intensidad": 1,
+   "radio": 226,
+   "intensidad": 0.84,
    "curva": [
     0.01,
     0.14,
@@ -7064,8 +7064,8 @@
   },
   "fx_remolino": {
    "color": "#81cbf6",
-   "radio": 160,
-   "intensidad": 0.59,
+   "radio": 74,
+   "intensidad": 0.21,
    "curva": [
     0.97,
     0.98,
@@ -7114,8 +7114,8 @@
   },
   "fx_resurreccion": {
    "color": "#f5cb70",
-   "radio": 342,
-   "intensidad": 1,
+   "radio": 224,
+   "intensidad": 0.83,
    "curva": [
     0,
     0,
@@ -7179,8 +7179,8 @@
   },
   "fx_robo_vida": {
    "color": "#ed594f",
-   "radio": 180,
-   "intensidad": 0.71,
+   "radio": 162,
+   "intensidad": 0.64,
    "curva": [
     0.53,
     1,
@@ -7214,8 +7214,8 @@
   },
   "fx_roca": {
    "color": "#fae1c5",
-   "radio": 272,
-   "intensidad": 1,
+   "radio": 92,
+   "intensidad": 0.27,
    "curva": [
     0.01,
     0.01,
@@ -7248,14 +7248,14 @@
    ],
    "altura": 16,
    "parpadeo": 0.15,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_salpicadura": {
    "color": "#87ccf6",
-   "radio": 216,
-   "intensidad": 0.84,
+   "radio": 84,
+   "intensidad": 0.25,
    "curva": [
     0,
     0,
@@ -7289,14 +7289,14 @@
    ],
    "altura": 8,
    "parpadeo": 0.15,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_salpicadura_acido": {
    "color": "#d6f67f",
-   "radio": 206,
-   "intensidad": 0.81,
+   "radio": 122,
+   "intensidad": 0.51,
    "curva": [
     0.02,
     0.02,
@@ -7335,14 +7335,14 @@
    ],
    "altura": 11,
    "parpadeo": 0.14,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_salpicon_lluvia": {
    "color": "#79c7f5",
-   "radio": 158,
-   "intensidad": 0.42,
+   "radio": 74,
+   "intensidad": 0.21,
    "curva": [
     0.56,
     0.67,
@@ -7470,8 +7470,8 @@
   },
   "fx_sello_maleficio": {
    "color": "#ea8df8",
-   "radio": 344,
-   "intensidad": 1,
+   "radio": 224,
+   "intensidad": 0.83,
    "curva": [
     0,
     0,
@@ -7572,8 +7572,8 @@
   },
   "fx_siega": {
    "color": "#8af8eb",
-   "radio": 192,
-   "intensidad": 0.6,
+   "radio": 120,
+   "intensidad": 0.5,
    "curva": [
     0,
     0.18,
@@ -7599,14 +7599,14 @@
    ],
    "altura": 42,
    "parpadeo": 0.25,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_sol_radiante": {
    "color": "#f6cf7d",
-   "radio": 234,
-   "intensidad": 0.86,
+   "radio": 172,
+   "intensidad": 0.68,
    "curva": [
     0.87,
     0.93,
@@ -7667,8 +7667,8 @@
   },
   "fx_surge_del_piso": {
    "color": "#eb6227",
-   "radio": 260,
-   "intensidad": 0.98,
+   "radio": 212,
+   "intensidad": 0.78,
    "curva": [
     0,
     0.01,
@@ -7731,8 +7731,8 @@
   },
   "fx_tajo_doble": {
    "color": "#ec4c44",
-   "radio": 192,
-   "intensidad": 0.74,
+   "radio": 120,
+   "intensidad": 0.5,
    "curva": [
     0,
     0.19,
@@ -7754,14 +7754,14 @@
    ],
    "altura": 48,
    "parpadeo": 0.24,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_tajo_espada": {
    "color": "#e6effd",
-   "radio": 168,
-   "intensidad": 0.65,
+   "radio": 116,
+   "intensidad": 0.48,
    "curva": [
     0.51,
     0.84,
@@ -7780,14 +7780,14 @@
    ],
    "altura": 52,
    "parpadeo": 0.21,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_tajo_giratorio": {
    "color": "#e3eefd",
-   "radio": 266,
-   "intensidad": 0.91,
+   "radio": 130,
+   "intensidad": 0.55,
    "curva": [
     0.24,
     0.11,
@@ -7809,14 +7809,14 @@
    ],
    "altura": 31,
    "parpadeo": 0.23,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_temblor": {
    "color": "#ed723d",
-   "radio": 194,
-   "intensidad": 0.71,
+   "radio": 80,
+   "intensidad": 0.23,
    "curva": [
     0,
     1,
@@ -7856,14 +7856,14 @@
    ],
    "altura": 4,
    "parpadeo": 0.21,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_tentaculos_sombra": {
    "color": "#ae64f3",
-   "radio": 266,
-   "intensidad": 0.96,
+   "radio": 126,
+   "intensidad": 0.42,
    "curva": [
     0,
     0.2,
@@ -7905,14 +7905,14 @@
    ],
    "altura": 24,
    "parpadeo": 0.13,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 1,
    "mezcla": "normal"
   },
   "fx_torbellino_hojas": {
    "color": "#cff688",
-   "radio": 144,
-   "intensidad": 0.51,
+   "radio": 72,
+   "intensidad": 0.2,
    "curva": [
     0.97,
     0.94,
@@ -8090,8 +8090,8 @@
   },
   "fx_tornado": {
    "color": "#fce0ea",
-   "radio": 254,
-   "intensidad": 0.82,
+   "radio": 88,
+   "intensidad": 0.27,
    "curva": [
     0.11,
     0.11,
@@ -8146,14 +8146,14 @@
    ],
    "altura": 114,
    "parpadeo": 0.11,
-   "sombra": true,
+   "sombra": false,
    "prioridad": 2,
    "mezcla": "normal"
   },
   "fx_tornado_fuego": {
    "color": "#f18f61",
-   "radio": 292,
-   "intensidad": 1,
+   "radio": 216,
+   "intensidad": 0.8,
    "curva": [
     0.79,
     0.82,
@@ -8406,7 +8406,7 @@
   },
   "fx_trueno": {
    "color": "#a7aef6",
-   "radio": 360,
+   "radio": 320,
    "intensidad": 1,
    "curva": [
     0,
@@ -8549,8 +8549,8 @@
   },
   "fx_vortice_ventisca": {
    "color": "#87cff6",
-   "radio": 194,
-   "intensidad": 0.7,
+   "radio": 164,
+   "intensidad": 0.65,
    "curva": [
     0.94,
     0.96,
@@ -8611,8 +8611,8 @@
   },
   "fx_zarpazo": {
    "color": "#e9332e",
-   "radio": 150,
-   "intensidad": 0.61,
+   "radio": 112,
+   "intensidad": 0.46,
    "curva": [
     0,
     0.5,
