@@ -4,6 +4,7 @@ import type { Lamina } from './cine';
 import { baseCamara, proyectar, type V3 } from './render';
 import { hexLin, escalar, type Capas, type Cartel, type Particula, type C3 } from './cine3d';
 import { armarValle, deCat, type Plano, type TipoFuego } from './cine3d_valle';
+import { armarCampanario, armarCripta, armarClaustro, armarPozo, TIEMPOS_I11, cajaCampanasI07, CAMPANAS_I02, CAMPANAS_I07, CAJAS_I02, type ArmadoFuego } from './cine3d_interior';
 import type { Plano3D, Armado, Extras } from './cine3d_toma';
 
 /**
@@ -23,6 +24,8 @@ export function tiraDoom(tipo: TipoFuego, semilla: number, nf = NF): Lamina[] {
     : tipo === 'puerta' ? [30, 54, { tipo: 'puerta', ojiva: true }, 0.92, 0.04]
       : tipo === 'ventana' ? [16, 36, { tipo: 'llama', ancho: 0.6, afinar: 0.4 }, 0.7, 0.1]
         : tipo === 'hoguera' ? [30, 100, { tipo: 'pira', ancho: 24, alto: 7 }, 0.7, 0.12]
+          : tipo === 'vela' ? [10, 24, { tipo: 'llama', ancho: 0.5, afinar: 0.6 }, 0.8, 0.03]
+            : tipo === 'brasa' ? [26, 48, { tipo: 'pira', ancho: 18, alto: 5 }, 0.55, 0.08]
         : [12, 28, { tipo: 'llama', ancho: 0.55, afinar: 0.5 }, 0.75, 0.1]) as [number, number, D.Forma, number, number];
   const f = D.crearFuego({ ancho: an, alto: al, forma, paleta: 'infierno', semilla, decay: D.decayPara(altura, al), viento, rafagas: 0.25, turbulencia: 0.5, ruido: 0.45, humo: 0, margen: 2, brillo: 1.25, pegada: 0.6 });
   D.pasos(f, 80);
@@ -111,6 +114,78 @@ export const PLANOS_VALLE: Plano3D[] = [
   planoValle('i04_cielo', 'i04', { t: 0, exposicion: 1.7, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.45, umbral: 0.8 }, grado: gradoNoche }, 'nieve', false),
   planoValle('i05_brasa', 'i05', { t: 0, exposicion: 1.3, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.5, umbral: 0.75 }, grado: gradoNoche }, 'brasas', true),
   planoValle('i06_impacto', 'i06', REV_NOCHE, 'ceniza', true),
+  planoValle('i08_camposanto', 'i08', { ...REV_NOCHE, exposicion: 1.2, derrame: { k: 0.5, r: 5 }, bloom: { k: 0.35, umbral: 0.8 } }, 'ceniza', true),
   planoValle('i09_fuego', 'i09', { ...REV_NOCHE, exposicion: 1.15, bloom: { k: 0.3, umbral: 0.85 } }, 'ceniza', true),
   planoValle('i10_tu', 'i10', { ...REV_NOCHE, exposicion: 1.25, derrame: { k: 0.6, r: 5 } }, 'brasas', true),
 ];
+
+// ================================================================== los planos de adentro (cine3d_interior.ts)
+const escalaCaja = (c: [number, number, number, number], w: number): [number, number, number, number] => { const k = w / 1408; return [c[0] * k, c[1] * k, c[2] * k, c[3] * k]; };
+/** Alba fría: sombras al azul pizarra, luces apenas tibias; los negros quedan negros. */
+function gradoFrio(c: C3): C3 {
+  const l = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], sombra = (1 - Math.min(1, l * 4)) ** 2;
+  return [Math.max(0, l + (c[0] - l) * 1.05 - 0.004 * sombra), Math.max(0, l + (c[1] - l) * 1.05 + 0.002 * sombra), Math.max(0, l + (c[2] - l) * 1.05 + 0.01 * sombra)];
+}
+const I02: Plano3D = {
+  id: 'i02_campanas', paralaje: 0.9, particulas: 'polvo', armar: (w, h) => armarCampanario(w, h),
+  revelado: { t: 0, exposicion: 1.05, rayos: { k: 0.5, c: [1, 0.9, 0.78], umbral: 0.25, decae: 0.975 }, derrame: { k: 0.6, r: 5 }, bloom: { k: 0.3, umbral: 0.85 }, grado: gradoFrio },
+  moviles: [
+    { id: 'campanas', cuadros: CAMPANAS_I02.cuadros, fps: CAMPANAS_I02.fps, escala: 2, armar: (w, h, k) => armarCampanario(w, h, { t: k / CAMPANAS_I02.fps, mover: 'campanas' }), caja: (a) => escalaCaja(CAJAS_I02.campanas, a.cam.w) },
+    { id: 'monjes', cuadros: CAMPANAS_I02.cuadros, fps: CAMPANAS_I02.fps, escala: 2, armar: (w, h, k) => armarCampanario(w, h, { t: k / CAMPANAS_I02.fps, mover: 'monjes' }), caja: (a) => escalaCaja(CAJAS_I02.monjes, a.cam.w) },
+  ],
+  qa: [1.71, 2.85, 4.0, 5.15],
+};
+/** Los fuegos de una escena de adentro: los carteles de Doom de este cuadro (sin latido de la luz: las velas son canal 0). */
+function fuegoAdentro(a: ArmadoFuego, t: number): Extras {
+  const fi = Math.round(t * FPS) % NF;
+  return { flick: 1, carteles: a.fuegos.map((f) => ({ p: f.p, ancho: f.ancho, alto: f.alto, lam: tiraDoom(f.tipo, f.semilla)[(fi + f.semilla * 5) % NF], k: f.tipo === 'vela' ? 2.2 : 2.4, fondo: f.ancho * 2 })) };
+}
+/** Una tira por fuego (a escala 1: las llamitas de vela son chicas); las que se pisan se juntan. */
+function zonasFuegos(a: Armado, margen = 6, escala = 1) {
+  const b = baseCamara(a.cam), out: { caja: [number, number, number, number]; escala: number }[] = [];
+  for (const f of (a as ArmadoFuego).fuegos) {
+    const q = [[f.p[0] - f.ancho, f.p[1], f.p[2] - 2], [f.p[0] + f.ancho, f.p[1], f.p[2] + f.alto * 1.1], [f.p[0], f.p[1] - f.ancho, f.p[2] + f.alto * 0.5], [f.p[0], f.p[1] + f.ancho, f.p[2] + f.alto * 0.5]].map((p) => proyectar(b, p as V3)).filter((p): p is [number, number, number] => !!p);
+    if (q.length) out.push({ caja: [Math.min(...q.map((p) => p[0])) - margen, Math.min(...q.map((p) => p[1])) - margen, Math.max(...q.map((p) => p[0])) + margen, Math.max(...q.map((p) => p[1])) + margen], escala });
+  }
+  for (let i = 0; i < out.length; i++) for (let j = i + 1; j < out.length; j++) {
+    const A = out[i].caja, B = out[j].caja;
+    if (A[0] < B[2] + 4 && B[0] < A[2] + 4 && A[1] < B[3] + 4 && B[1] < A[3] + 4) { out[i].caja = [Math.min(A[0], B[0]), Math.min(A[1], B[1]), Math.max(A[2], B[2]), Math.max(A[3], B[3])]; out.splice(j, 1); j = i; }
+  }
+  return out.filter((z) => z.caja[2] > 0 && z.caja[3] > 0 && z.caja[0] < a.cam.w && z.caja[1] < a.cam.h);
+}
+const cripta = new Map<string, ArmadoFuego>();
+const I03: Plano3D = {
+  id: 'i03_pozo', paralaje: 0.9, particulas: 'polvo',
+  armar: (w, h) => { const k = `${w}|${h}`; let a = cripta.get(k); if (!a) { a = armarCripta(w, h); cripta.set(k, a); } return a; },
+  revelado: { t: 0, exposicion: 1.6, derrame: { k: 0.3, r: 3 }, bloom: { k: 0.45, umbral: 0.7 }, grado: gradoNoche },
+  flickBase: 1, cuadros: NF, fps: FPS, zonas: (a) => zonasFuegos(a), extras: (a, _c, t) => fuegoAdentro(a as ArmadoFuego, t),
+};
+const claustros = new Map<string, ArmadoFuego>();
+/** La brasa del claustro late (canal 1): fuego de Doom en el cráter, su luz roja y el humo que sube. */
+function fuegoClaustro(a: ArmadoFuego, t: number): Extras { return { ...fuegoAdentro(a, t), flick: latido(t) }; }
+const I07: Plano3D = {
+  id: 'i07_claustro', paralaje: 0.9, particulas: 'ceniza',
+  armar: (w, h) => { const k = `${w}|${h}`; let a = claustros.get(k); if (!a) { a = armarClaustro(w, h); claustros.set(k, a); } return a; },
+  revelado: { t: 0, exposicion: 1.5, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.45, umbral: 0.75 }, grado: gradoNoche },
+  flickBase: 0.84, cuadros: NF, fps: FPS, extras: (a, _c, t) => fuegoClaustro(a as ArmadoFuego, t),
+  // la brasa entera (fuego, humo y su luz alrededor) en una tira a media resolución
+  zonas: (a) => zonasFuegos(a, 70, 2),
+  moviles: [{ id: 'campanas', cuadros: CAMPANAS_I07.cuadros, fps: CAMPANAS_I07.fps, escala: 2, armar: (w, h, k) => armarClaustro(w, h, { t: k / CAMPANAS_I07.fps }), caja: (a) => cajaCampanasI07(a.cam) }],
+  qa: [0.67, 2.0, 3.33, 4.67],
+};
+const pozos = new Map<string, Armado>();
+const I11: Plano3D = {
+  id: 'i11_ojos', paralaje: 0.92,
+  armar: (w, h) => { const k = `${w}|${h}`; let a = pozos.get(k); if (!a) { a = armarPozo(w, h); pozos.set(k, a); } return a; },
+  revelado: { t: 0, exposicion: 1.4, derrame: { k: 0.5, r: 4 }, bloom: { k: 0.5, umbral: 0.7 }, grado: gradoNoche },
+  // los ojos (canal 1) apagados en el fondo: llegan con su capa de tiempo
+  flickBase: 0,
+  variantes: [
+    { id: 'relampago', armar: (w, h) => armarPozo(w, h, { relampago: true }), anim: { tipo: 'tiempo', claves: TIEMPOS_I11.relampago }, escala: 2 },
+    { id: 'ojos', flick: 1, anim: { tipo: 'tiempo', claves: TIEMPOS_I11.ojos }, escala: 1 },
+  ],
+  qa: [1.0, 2.2, 4.9, 6.0],
+};
+export const PLANOS_INTERIOR: Plano3D[] = [I02, I03, I07, I11];
+/** Todos los planos 3D de la intro, en el orden del guion. */
+export const PLANOS_INTRO: Plano3D[] = [...PLANOS_VALLE, ...PLANOS_INTERIOR].sort((a, b) => a.id.localeCompare(b.id));

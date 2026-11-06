@@ -1,5 +1,5 @@
 import { createRaster, type Raster } from '../core/raster';
-import { leerHorneado, tomaDeHorneado, type MetaHorneado } from './cine3d_toma';
+import { leerHorneado, tomaDeHorneado, type MetaHorneado, type MetaTira } from './cine3d_toma';
 import type { Toma } from './cine_toma';
 import { decodePng } from '../export/png';
 
@@ -41,9 +41,14 @@ export function paqueteIntro3d(ids: string[], decodificar: (b: Uint8Array) => Ra
     const h = leerHorneado(id, decodificar); if (!h) continue;
     const e = h.meta.escala ?? 1, pon = (r: Raster, c: Omit<CapaPaquete, 'pagina' | 'recorte'>) => { capas.push({ plano: id, c, i: imgs.length }); imgs.push(r); };
     planos[id] = { capas: [], particulas: h.meta.particulas };
+    const geo = (f: MetaTira) => ({ x: Math.round(f.x / e), y: Math.round(f.y / e), w: Math.round((f.w * f.escala) / e), h: Math.round((f.h * f.escala) / e) });
+    const cuadros = (f: MetaTira) => ({ tipo: 'cuadros', columnas: f.columnas, cuadros: f.cuadros, fps: f.fps, w: f.w, h: f.h });
+    // en orden de dibujo: el fondo, lo que se mueve (normal), el frente, las tiras de fuego (suman) y las luces a su tiempo (suman)
     if (h.fondo) pon(h.fondo, { id: 'fondo', x: 0, y: 0, w: 1408, h: 792, paralaje: h.meta.paralaje, mezcla: 'normal' });
+    (h.meta.moviles ?? []).forEach((f, n) => pon(h.moviles[n], { id: `movil_${n + 1}`, ...geo(f), paralaje: h.meta.paralaje, mezcla: 'normal', anim: cuadros(f) }));
     if (h.frente) pon(h.frente, { id: 'frente', x: 0, y: 0, w: 1408, h: 792, paralaje: 1, mezcla: 'normal' });
-    h.meta.fuegos.forEach((f, n) => pon(h.fuegos[n], { id: `fuego_${n + 1}`, x: Math.round(f.x / e), y: Math.round(f.y / e), w: Math.round((f.w * f.escala) / e), h: Math.round((f.h * f.escala) / e), paralaje: h.meta.paralaje, mezcla: 'sumar', anim: { tipo: 'cuadros', columnas: f.columnas, cuadros: f.cuadros, fps: f.fps, w: f.w, h: f.h } }));
+    h.meta.fuegos.forEach((f, n) => pon(h.fuegos[n], { id: `fuego_${n + 1}`, ...geo(f), paralaje: h.meta.paralaje, mezcla: 'sumar', anim: cuadros(f) }));
+    (h.meta.luces ?? []).forEach((f, n) => pon(h.luces[n], { id: `luz_${n + 1}`, ...geo(f), paralaje: h.meta.paralaje, mezcla: 'sumar', ...(f.anim ? { anim: f.anim as unknown as Record<string, unknown> } : {}) }));
   }
   const { paginas, donde } = empaquetar(imgs);
   for (const { plano, c, i } of capas) { const [pg, x, y] = donde[i]; planos[plano].capas.push({ ...c, pagina: pg, recorte: [x, y, imgs[i].w, imgs[i].h] }); }

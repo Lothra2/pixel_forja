@@ -38,6 +38,30 @@ export const escalar = (a: C3, k: number): C3 => [a[0] * k, a[1] * k, a[2] * k];
 const h01 = (a: number, b: number, c: number) => hash3(a, b, c);
 
 // ================================================================== colocar assets
+/**
+ * Piezas movidas con una rotación cualquiera alrededor de un pivote (filas de la matriz R) y corridas `t`: la campana
+ * que se mece en su eje, el muerto que se tuerce al salir de la tierra, el monje que se echa atrás al tirar.
+ */
+export function moverPiezas(ps: Pieza[], R: [V3, V3, V3], piv: V3 = [0, 0, 0], t: V3 = [0, 0, 0]): Pieza[] {
+  const Rv = (v: V3): V3 => [dot(R[0], v), dot(R[1], v), dot(R[2], v)];
+  const P = (v: V3): V3 => { const r = Rv([v[0] - piv[0], v[1] - piv[1], v[2] - piv[2]]); return [r[0] + piv[0] + t[0], r[1] + piv[1] + t[1], r[2] + piv[2] + t[2]]; };
+  const T0 = P([0, 0, 0]);
+  return ps.map((p): Pieza => {
+    if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => { const m = Rv(n); return [m, d + dot(m, T0)] as [V3, number]; }), pts: p.pts.map(P) };
+    if (p.k === 'cono') return { ...p, o: P(p.o), ex: Rv(p.ex), ey: Rv(p.ey), ez: Rv(p.ez) };
+    if (p.k === 'elip') return { ...p, c: P(p.c), ex: Rv(p.ex), ey: Rv(p.ey), ez: Rv(p.ez) };
+    const comps = p.comps.map((q): Comp => (q.f === 'hueso'
+      ? hueso(P(q.a), P(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k })
+      : bulto(P(q.c), q.r, { ejes: [Rv(q.ex), Rv(q.ey), Rv(q.ez)], mat: q.mat, tono: q.tono, k: q.k })));
+    return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave });
+  });
+}
+/** Matriz de giro de `ang` radianes alrededor del eje `e` (Rodrigues), en filas. */
+export function giroEje(e: V3, ang: number): [V3, V3, V3] {
+  const [x, y, z] = norm(e), c = Math.cos(ang), s = Math.sin(ang), k = 1 - c;
+  return [[c + x * x * k, x * y * k - z * s, x * z * k + y * s], [y * x * k + z * s, c + y * y * k, y * z * k - x * s], [z * x * k - y * s, z * y * k + x * s, c + z * z * k]];
+}
+
 /** Dónde va un asset: su origen (el centro de la huella en el piso) en el mundo, el giro en grados y la escala. */
 export interface Colocar { x: number; y: number; z: number; giro?: number; k?: number }
 /** Las piezas de un asset movidas, giradas alrededor del eje vertical y escaladas. */
@@ -143,6 +167,8 @@ export interface Atmosfera {
   nieve?: { albedo: C3; desde: number };
   /** cuánto se oscurece lo que tapa el cielo (oclusión), 0..1 */
   oclusion?: number;
+  /** largo de los rayos de oclusión (34 al aire libre; adentro, lo que mide el cuarto: el cielo entra solo por los vanos) */
+  oclusionLargo?: number;
 }
 
 /** Cuánto deja pasar el aire entre el ojo `o` y la distancia t por el rayo d (niebla pareja más bruma baja). */
@@ -172,6 +198,11 @@ export class EscenaCine {
   marcas: Record<string, string[]> = {};
   /** grupos del primer plano: van en su propia capa (con alfa) para que el reproductor les dé paralaje */
   frente = new Set<number>();
+  /**
+   * grupos que se mueven (la campana, su soga, el monje que tira): no van ni en el fondo ni en el frente; se trazan
+   * solos (pase 'movil', con alfa) cuadro por cuadro en su recorte, y el fondo tampoco recibe su sombra quieta
+   */
+  moviles = new Set<number>();
   private arbol?: ArbolCajas;
   private arboles = new Map<string, ArbolCajas>();
   /** Pone un asset (sus piezas en coordenadas propias) en el mundo. Devuelve el número de grupo. */
@@ -192,10 +223,11 @@ export class EscenaCine {
   }
   get bvh(): ArbolCajas { return (this.arbol ??= new ArbolCajas(this.piezas, this.grupoDe)); }
   /** Árbol solo con lo que se ve en un pase: el fondo (todo menos el primer plano) o el primer plano. */
-  bvhPase(pase: 'fondo' | 'frente'): ArbolCajas {
+  bvhPase(pase: 'fondo' | 'frente' | 'movil' | 'quietas'): ArbolCajas {
     let a = this.arboles.get(pase);
     if (!a) {
-      const idx = this.piezas.map((_, i) => i).filter((i) => this.frente.has(this.grupoDe[i]) === (pase === 'frente'));
+      const g = (i: number) => this.grupoDe[i], mv = (i: number) => this.moviles.has(g(i));
+      const idx = this.piezas.map((_, i) => i).filter((i) => (pase === 'movil' ? mv(i) : pase === 'quietas' ? !mv(i) : !mv(i) && this.frente.has(g(i)) === (pase === 'frente')));
       const ps = idx.map((i) => this.piezas[i]), arbol = new ArbolCajas(ps, idx.map((i) => this.grupoDe[i])), golpe = arbol.golpe.bind(arbol);
       // el índice que devuelve tiene que ser el de la escena (para su grupo y su orden)
       arbol.golpe = (o, d, tmin, tmax) => { const g = golpe(o, d, tmin, tmax); if (g) g.i = idx[g.i]; return g; };
@@ -257,7 +289,7 @@ function haloLuz(L: LuzPuntual, o: V3, d: V3, t: number): number {
 
 /** `pase`: 'todo' (por omisión), 'fondo' (sin el primer plano) o 'frente' (solo el primer plano: lo que no toca queda
  * transparente y `cielo` guarda cuánto del pixel quedó vacío). */
-export interface OpcRender { ss?: number; ao?: number; semilla?: number; pase?: 'todo' | 'fondo' | 'frente' }
+export interface OpcRender { ss?: number; ao?: number; semilla?: number; pase?: 'todo' | 'fondo' | 'frente' | 'movil'; /** solo las columnas x0..x1 (el recorte de lo que se mueve) */ x0?: number; x1?: number }
 
 /**
  * Traza las filas y0..y1 (en las capas `c`, del tamaño de la cámara). Cada pixel tira ss x ss rayos con desplazamiento
@@ -265,11 +297,14 @@ export interface OpcRender { ss?: number; ao?: number; semilla?: number; pase?: 
  * cielo (con oclusión), las luces puntuales, el filo de contraluz y el brillo húmedo, y se mete en el aire.
  */
 export function renderFilas(esc: EscenaCine, atm: Atmosfera, cam: Camara, c: Capas, y0: number, y1: number, o: OpcRender = {}) {
-  const b = baseCamara(cam), bvh = esc.bvh, ter = esc.terreno, ss = Math.max(1, o.ss ?? 2), nao = o.ao ?? 2, sem = o.semilla ?? 1, pase = o.pase ?? 'todo';
-  const prim = pase === 'todo' ? bvh : esc.bvhPase(pase);
-  const L = norm(atm.sol.dir), ancho = atm.sol.ancho ?? 0.01, marcas = Object.entries(esc.marcas), ocl = atm.oclusion ?? 0.85;
+  const b = baseCamara(cam), ter = esc.terreno, ss = Math.max(1, o.ss ?? 2), nao = o.ao ?? 2, sem = o.semilla ?? 1, pase0 = o.pase ?? 'todo';
+  // lo que se mueve no tapa el sol del fondo ni del frente (su sombra quieta mentiría); en su propio pase, todo cuenta
+  const bvh = esc.moviles.size && (pase0 === 'fondo' || pase0 === 'frente') ? esc.bvhPase('quietas') : esc.bvh;
+  const prim = pase0 === 'todo' ? esc.bvh : esc.bvhPase(pase0), pase = pase0 === 'movil' ? 'frente' : pase0;
+  const cx0 = Math.max(0, o.x0 ?? 0), cx1 = Math.min(cam.w, o.x1 ?? cam.w);
+  const L = norm(atm.sol.dir), ancho = atm.sol.ancho ?? 0.01, marcas = Object.entries(esc.marcas), ocl = atm.oclusion ?? 0.85, aoL = atm.oclusionLargo ?? 34;
   const lucesHalo = esc.luces.filter((l) => l.halo);
-  for (let py = y0; py < y1; py++) for (let px = 0; px < cam.w; px++) {
+  for (let py = y0; py < y1; py++) for (let px = cx0; px < cx1; px++) {
     const I = py * cam.w + px;
     let bR = 0, bG = 0, bB = 0, fR = 0, fG = 0, fB = 0, T = 0, aR = 0, aG = 0, aB = 0, hR = 0, hG = 0, hB = 0, cie = 0, dmin = Infinity;
     const mk = marcas.map(() => 0);
@@ -281,6 +316,18 @@ export function renderFilas(esc: EscenaCine, atm: Atmosfera, cam: Camara, c: Cap
       let t = Infinity, golpe: GolpeEscena | null = null;
       if (g) { t = g.t; golpe = g; }
       if (tt >= 0 && tt < t) { t = tt; golpe = null; }
+      if (pase0 === 'movil') {
+        // lo que se mueve, tapado por algo quieto que está delante: ese pixel queda vacío (se ve el fondo, que ya lo
+        // tiene); y lo quieto que recibe la sombra de lo que se mueve va en la tira con esa sombra (la del sol)
+        const q = esc.bvhPase('quietas').golpe(oo, d, 0.5, g ? g.t - 0.5 : 1e6), tq = ter ? ter.trazar(oo, d, 0.5, q ? q.t : g ? g.t - 0.5 : 9e4) : -1;
+        const ts = tq >= 0 && (!q || tq < q.t) ? tq : q ? q.t : Infinity;
+        if (isFinite(ts)) {
+          const ps: V3 = [oo[0] + d[0] * ts, oo[1] + d[1] * ts, oo[2] + d[2] * ts], nq = q && ts === q.t ? q.n : ter!.normal(ps[0], ps[1], ts), sg = dot(nq, d) > 0 ? -1 : 1;
+          const pe: V3 = [ps[0] + nq[0] * sg * 0.6, ps[1] + nq[1] * sg * 0.6, ps[2] + nq[2] * sg * 0.6];
+          if (!prim.golpe(pe, L, 0.05, 6000)) { cie++; continue; }
+          t = ts; golpe = q && ts === q.t ? q : null;
+        } else if (!g) { cie++; continue; }
+      }
       if (pase !== 'frente') for (const l of lucesHalo) { const k = haloLuz(l, oo, d, t) * l.halo! * l.k; hR += l.c[0] * k; hG += l.c[1] * k; hB += l.c[2] * k; }
       if (!isFinite(t)) {
         if (pase !== 'frente') { const col = atm.cielo(d); aR += col[0]; aG += col[1]; aB += col[2]; }
@@ -330,7 +377,7 @@ export function renderFilas(esc: EscenaCine, atm: Atmosfera, cam: Camara, c: Cap
         let vis = 1;
         if (nao > 0) {
           let tapados = 0;
-          for (let k = 0; k < nao; k++) { const r = hemisferio(n, h01(px * 13 + k, py * 17, s * 3 + sem + 7), h01(px * 19, py * 23 + k, s * 5 + sem + 11)); if (bvh.golpe(pe, r, 0.05, 34) || (ter && ter.trazar(pe, r, 0.5, 34) >= 0)) tapados++; }
+          for (let k = 0; k < nao; k++) { const r = hemisferio(n, h01(px * 13 + k, py * 17, s * 3 + sem + 7), h01(px * 19, py * 23 + k, s * 5 + sem + 11)); if (bvh.golpe(pe, r, 0.05, aoL) || (ter && ter.trazar(pe, r, 0.5, aoL) >= 0)) tapados++; }
           vis = 1 - (tapados / nao) * ocl;
         }
         if (ter) {

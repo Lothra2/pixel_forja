@@ -1,6 +1,8 @@
 import { objeto, herramientas } from './objeto';
-import { hash3, caja, palo, poliedro, type Pieza, type V3, type Camara } from './render';
+import { hash3, caja, palo, poliedro, elipsoide, esfera, masa, bulto, type Pieza, type V3, type Camara } from './render';
 import { personaje, type Cuerpo, type Equipo } from './cuerpo';
+import { MATERIALES } from './materiales';
+import { muertoSeco, lapida, cruz, type PoseMuerto } from './cine3d_interior';
 import { EscenaCine, Terreno, hexLin, mezclar, escalar, type Atmosfera, type C3, type LuzPuntual, type Pluma, type Particula } from './cine3d';
 import './catalogo/abadia_oria';
 import './catalogo/casas';
@@ -10,6 +12,8 @@ import './catalogo/pueblo';
 import './catalogo/campamento';
 import './catalogo/campo';
 import './catalogo/paramo';
+import './catalogo/jefes';
+import './catalogo/cementerio';
 import { HEROES } from './catalogo/personajes';
 
 /**
@@ -25,7 +29,9 @@ import { HEROES } from './catalogo/personajes';
  * Medidas del taller (una persona mide 61): la catedral mide ~210 x 350 y sus agujas pasan las 400; la colina sube 850.
  */
 
-export type Plano = 'i01' | 'i04' | 'i05' | 'i06' | 'i09' | 'i10';
+export type Plano = 'i01' | 'i04' | 'i05' | 'i06' | 'i08' | 'i09' | 'i10';
+/** El corazón de la brasa que cae: rojo hondo que se ve por las rajaduras de la roca (no un sol). */
+MATERIALES.va_brasa = { rampa: ['#3a0602', '#6a0e04', '#9a1c06', '#c8320a', '#e84c10'], ruido: 0.4, escala: 0.3, emite: true };
 const TAU = Math.PI * 2;
 const sat = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const suave = (a: number, b: number, v: number) => { const t = sat((v - a) / (b - a)); return t * t * (3 - 2 * t); };
@@ -58,6 +64,8 @@ export const deCat = (x: number, y: number, z = 0): V3 => [CAT.x + x * CO - y * 
 const aCat = (x: number, y: number): [number, number] => { const dx = x - CAT.x, dy = y - CAT.y; return [dx * CO + dy * SI, -dx * SI + dy * CO]; };
 /** El sol del alba: bajo, escondido detrás de la catedral. */
 const SOL_ALBA = dirAz(86.1, 9.2);
+/** Dónde está la brasa que cae en i05 (sobre la abadía, debajo de la herida). */
+const BRASA_I05: V3 = [330, 900, 820];
 /**
  * Las cámaras: `fov` y `encuadre` (dónde cae la catedral, o `mira`) se dicen para la pantalla base de 1280 x 720; la
  * capa sale más grande (1408 x 792) para que el reproductor pueda moverse y acercarse sin ver el borde. El sujeto queda
@@ -70,6 +78,7 @@ export const OJOS: Record<Plano, { x: number; y: number; alto: number; fov: numb
   i06: { x: -110, y: 0, alto: 22, fov: 16.7, encuadre: [0.6, 0.4] },
   i09: { x: -1250, y: 820, alto: 170, fov: 26, encuadre: [0.5, 0.6], mira: [-860, 1330, 30] },
   i10: { x: -40, y: -760, alto: 14, fov: 28, encuadre: [0.5, 0.56], mira: [-20, -330, 34] },
+  i08: { x: -330, y: 560, alto: 15, fov: 31, encuadre: [0.56, 0.3] },
 };
 
 /** El camino que sube del pueblo a la puerta de la cerca (zigzag por la ladera). */
@@ -140,7 +149,15 @@ function altoBase(x: number, y: number) {
 const altoDetalle = (x: number, y: number) => altoBase(x, y) + (fbm2(x / 22, y / 30, 3, 31) - 0.5) * 3.4 + (r2(x / 5, y / 7, 32) - 0.5) * 0.8;
 
 const NIEVE: C3 = [0.72, 0.75, 0.82], ROCA: C3 = [0.032, 0.031, 0.031], BARRO: C3 = [0.07, 0.058, 0.05];
+/** En el amanecer del camposanto (i08) la nieve está cubierta de ceniza: gris sucio, con manchas. */
+let cenizaEnNieve = 0;
 function superficie(p: V3, n: V3): { albedo: C3; brillo?: number } {
+  const r = superficieNieve(p, n);
+  if (!cenizaEnNieve) return r;
+  const m = 0.55 + 0.35 * fbm2(p[0] / 40, p[1] / 40, 3, 48);
+  return { albedo: mezclar(r.albedo, escalar(r.albedo, 0.32), m * cenizaEnNieve), brillo: (r.brillo ?? 0) * 0.5 };
+}
+function superficieNieve(p: V3, n: V3): { albedo: C3; brillo?: number } {
   const x = p[0], y = p[1], pend = 1 - n[2], rv = fbm2(x / 60, y / 60, 3, 41), rf = r2(x / 9, y / 9, 42);
   // roca donde la ladera se para, con nieve en lo que mira arriba; en los montes, vetas de roca por las crestas
   let roca = suave(0.42, 0.6, pend + (rv - 0.5) * 0.4 + (rf - 0.5) * 0.14);
@@ -222,7 +239,7 @@ const ALDEANO = (genero: 'h' | 'm', alto: number, ancho: number): Cuerpo => ({ g
 const ROPA = (capa: string, tela: string, capucha = true): Equipo => ({ torso: { tipo: 'tunica', mat: tela }, piernas: { tipo: 'pantalon', mat: 'cu_tela_parda' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, capa: { mat: capa, largo: 0.95 }, cinturon: { mat: 'cu_cuero' }, ...(capucha ? { cabeza: { tipo: 'capucha' as const, mat: capa } } : {}) });
 
 // ================================================================== armar
-export type TipoFuego = 'techo' | 'puerta' | 'antorcha' | 'ventana' | 'hoguera';
+export type TipoFuego = 'techo' | 'puerta' | 'antorcha' | 'ventana' | 'hoguera' | 'vela' | 'brasa';
 export interface Valle { esc: EscenaCine; atm: Atmosfera; cam: Camara; plumas: Pluma[]; fuegos: { p: V3; ancho: number; alto: number; semilla: number; tipo: TipoFuego }[]; sol: V3 }
 
 export function camaraValle(plano: Plano, w = 1408, h = 792): Camara {
@@ -238,7 +255,8 @@ export function camaraValle(plano: Plano, w = 1408, h = 792): Camara {
 
 export function armarValle(plano: Plano, o: { w?: number; h?: number; sinBosque?: boolean } = {}): Valle {
   // noche: la catedral arde (i06, i09, i10); vida: el valle antes, con ventanas y faroles encendidos (i01, i04, i05)
-  const noche = plano === 'i06' || plano === 'i09' || plano === 'i10', vida = !noche;
+  const noche = plano === 'i06' || plano === 'i08' || plano === 'i09' || plano === 'i10', vida = !noche;
+  cenizaEnNieve = plano === 'i08' ? 1 : 0;
   const frente: number[] = [], esc = new EscenaCine();
   esc.terreno = new Terreno({ alto: altoDetalle, superficie, grillas: [[-2600, -3000, 3600, 6200, 5], [-14000, -3500, 16000, 17000, 25], [-90000, -6000, 90000, 80000, 220]], techo: 9000 });
   const ter = esc.terreno, cam = camaraValle(plano, o.w, o.h), fuegos: Valle['fuegos'] = [], plumas: Pluma[] = [];
@@ -316,11 +334,12 @@ export function armarValle(plano: Plano, o: { w?: number; h?: number; sinBosque?
   esc.emision.abo_llama = { k: 5, canal: 1 };
   esc.emision.abo_chispa = { k: 6, canal: 1 };
   esc.emision.luz_vela = { k: 4 };
+  esc.emision.va_brasa = { k: 3.2, canal: 1 };
   esc.marcas = { vitral: ['abo_vitral'] };
 
   // ---------------------------------------------------------------- bosque
   const pinos = ['mediano', 'alto', 'gigante', 'ralo', 'doblado'];
-  const libre = (x: number, y: number) => Math.hypot(x - OJOS.i01.x, y - OJOS.i01.y) > 500 && Math.hypot(x - OJOS.i06.x, y - OJOS.i06.y) > 520 && Math.hypot(x - OJOS.i10.x, y - OJOS.i10.y) > 500 && Math.hypot(x + 20, y + 340) > 420 && Math.hypot(x - OJOS.i09.x, y - OJOS.i09.y) > 420
+  const libre = (x: number, y: number) => Math.hypot(x - OJOS.i01.x, y - OJOS.i01.y) > 500 && (plano !== 'i08' || Math.hypot(x - OJOS.i08.x - 60, y - OJOS.i08.y - 380) > 560) && Math.hypot(x - OJOS.i06.x, y - OJOS.i06.y) > 520 && Math.hypot(x - OJOS.i10.x, y - OJOS.i10.y) > 500 && Math.hypot(x + 20, y + 340) > 420 && Math.hypot(x - OJOS.i09.x, y - OJOS.i09.y) > 420
     && distCamino(x, y) > 45 && meseta(x, y) < 0.05 && !casas.some(([, , cx, cy]) => Math.hypot(cx - x, cy - y) < 150) && Math.hypot(x - CAT.x, y - CAT.y) > 420;
   const plantar = (id: string, v: string, x: number, y: number, s: number, k = 1, nieve = 1) => esc.poner(piezasDe(id, v, s), { x, y, z: pieEn(ter, x, y, 14 * k) - 3 * k, giro: az(s, 3) * 360, k }, { nieve });
   // primer plano del alba: un árbol muerto grande a la izquierda y pinos oscuros a la derecha (capa de frente)
@@ -384,7 +403,7 @@ export function armarValle(plano: Plano, o: { w?: number; h?: number; sinBosque?
   }
   extrasPlano(plano, esc, ter, fuegos, plumas, frente);
 
-  const atm = plano === 'i01' ? atmAlba() : plano === 'i04' || plano === 'i05' ? atmCosecha(plano) : atmNoche(plano);
+  const atm = plano === 'i01' ? atmAlba() : plano === 'i04' || plano === 'i05' ? atmCosecha(plano) : plano === 'i08' ? atmCeniza() : atmNoche(plano);
   for (const g of frente) esc.frente.add(g);
   return { esc, atm, cam, plumas, fuegos, sol: atm.sol.dir };
 }
@@ -406,12 +425,22 @@ function extrasPlano(plano: Plano, esc: EscenaCine, ter: Terreno, fuegos: Valle[
     [x, y] = en(320, 640); poner('campo_espantapajaros', objetoVar('campo_espantapajaros'), x, y, 408, hacia + 180, 1.2, true, 0.5);
   }
   if (plano === 'i05') {
-    // la brasa: un núcleo que arde, su luz roja que se come el valle y una estela de fuego de Doom que sube detrás
-    const b = deCat(-300, 40, 620);
-    esc.ponerMundo([caja(b[0], b[1], b[2] - 11, 22, 22, 22, { mat: 'abo_chispa' })], { nieve: 0 });
-    esc.luces.push({ p: b, c: hexLin('#ff4a1a'), k: 70, r: 260, canal: 1, sombra: true, envuelve: 0.2, halo: 0.0004 });
-    fuegos.push({ p: [b[0], b[1], b[2] - 14], ancho: 60, alto: 420, semilla: 61, tipo: 'techo' });
-    plumas.push({ base: [b[0], b[1], b[2] + 260], alto: 900, r0: 40, r1: 160, viento: [0.15, 0.05, 0], dens: 0.012, humo: [0.03, 0.025, 0.025], abajo: hexLin('#ff5a1a'), kAbajo: 2, semilla: 62, sube: 10, escala: 1 / 40 });
+    // la brasa: un trozo de roca negra con grietas al rojo (el núcleo), la estela de fuego de Doom que sube detrás y su
+    // humo; su luz roja baja sobre el valle pero el aire no se vuelve un sol: un halo corto alrededor del núcleo
+    const b = BRASA_I05, roca: Pieza[] = [];
+    for (let k = 0; k < 3; k++) {
+      const pts: V3[] = [], rr = 30 * (k ? 0.6 : 1);
+      for (let i = 0; i < 12; i++) { const a = az(i + k * 20, 61) * TAU, z = (az(i + k * 20, 62) * 2 - 1) * rr, r = Math.sqrt(Math.max(0, rr * rr - z * z)) * (0.75 + az(i + k * 20, 63) * 0.4); pts.push([b[0] + Math.cos(a) * r + (k ? (az(k, 64) - 0.5) * 30 : 0), b[1] + Math.sin(a) * r, b[2] + z + (k ? 14 : 0)]); }
+      roca.push(poliedro(pts, { mat: 'jf_obsidiana', tono: -0.05 }));
+    }
+    // las grietas encendidas: lajas finas que asoman por la piedra, y el centro que se ve por las rajaduras
+    for (let i = 0; i < 11; i++) { const a = az(i, 65) * TAU, e = (az(i, 66) - 0.5) * 2.4; roca.push(elipsoide(b[0] + Math.cos(a) * Math.cos(e) * 25, b[1] + Math.sin(a) * Math.cos(e) * 25, b[2] + Math.sin(e) * 25, 1.8, 1.8, 8 + az(i, 67) * 9, { mat: 'va_brasa', giro: az(i, 68) * 180, incl: 40 + az(i, 69) * 80 })); }
+    roca.push(esfera(b[0], b[1], b[2] - 4, 22, { mat: 'va_brasa' }));
+    esc.ponerMundo(roca, { nieve: 0 });
+    esc.luces.push({ p: [b[0], b[1], b[2] - 40], c: hexLin('#ff4a1a'), k: 30, r: 240, canal: 1, sombra: true, envuelve: 0.2 });
+    fuegos.push({ p: [b[0], b[1], b[2] - 24], ancho: 92, alto: 640, semilla: 61, tipo: 'techo' });
+    fuegos.push({ p: [b[0] + 8, b[1], b[2] - 30], ancho: 60, alto: 300, semilla: 66, tipo: 'techo' });
+    plumas.push({ base: [b[0], b[1], b[2] + 330], alto: 1500, r0: 40, r1: 200, viento: [0.12, 0.04, 0], dens: 0.03, humo: [0.02, 0.017, 0.016], abajo: hexLin('#ff5a1a'), kAbajo: 1.2, semilla: 62, sube: 10, escala: 1 / 46, sol: 0.2 });
   }
   if (plano === 'i09') {
     // la hoguera entre las ruinas del pueblo: fuego de Doom en una pira, los que quedaron alrededor
@@ -426,17 +455,49 @@ function extrasPlano(plano: Plano, esc: EscenaCine, ter: Terreno, fuegos: Valle[
       frente.push(esc.poner(personaje(ALDEANO(gen, k, gen === 'm' ? 0.92 : 1.02), ROPA(k < 0.7 ? 'cu_tela_parda' : 'cu_pelaje', tela, gen === 'm'), 'n', 'quieto', 1), { x, y, z: ter.h(x, y) - 1, giro }, { nieve: 0 }));
     }
   }
+  if (plano === 'i08') {
+    // el camposanto al pie de la colina: lápidas, cruces y dos ángeles hundidos en la nieve con ceniza; los muertos salen
+    // de sus tumbas entre la niebla, secos y retorcidos, y se recortan contra el resplandor rojo de la abadía que arde
+    const pon = (ps: Pieza[], l: number, a: number, giro: number, alFrente: boolean) => { const [x, y] = en(l, a), g = esc.poner(ps, { x, y, z: pieEn(ter, x, y, 6) - 1, giro }, { nieve: 0.5 }); if (alFrente) frente.push(g); };
+    let s = 800;
+    for (let fila = 0; fila < 9; fila++) {
+      const a = 175 + fila * 66 + fila * fila * 6;
+      for (let c = -5; c <= 5; c++) {
+        if (az(s, 1) < 0.25 + fila * 0.03) { s++; continue; }
+        const l = c * (40 + fila * 7) + (az(s, 2) - 0.5) * 30, cerca = a < 330, tipo = az(s, 3);
+        if (Math.abs(l) > 120 + a * 0.45) { s++; continue; }
+        // un pasillo libre hacia la abadía (los muertos van ahí y la mirada sube a la colina)
+        if (Math.abs(l + 10) < 26 + fila * 3) { s++; continue; }
+        const giro = hacia + 90 + (az(s, 4) - 0.5) * 24;
+        if (tipo < 0.5 || (tipo >= 0.85 && cerca)) pon(lapida(s, (cerca ? 16 : 22) + az(s, 5) * 16, (cerca ? 11 : 14) + az(s, 6) * 7, az(s, 7) < 0.3), l, a, giro, cerca);
+        else if (tipo < 0.85) pon(cruz(s, 30 + az(s, 5) * 26, az(s, 8) < 0.35), l, a, giro, cerca);
+        else pon(piezasDe('cem_angel', az(s, 9) < 0.5 ? 'rota' : 'con_musgo', s), l, a, hacia + 180 + (az(s, 4) - 0.5) * 50, cerca);
+        s++;
+      }
+    }
+    // árboles muertos que enmarcan, y los muertos: uno que asoma un brazo, otros a medio salir, uno que se arrastra y
+    // dos ya de pie, encorvados, que caminan hacia la abadía
+    for (const [l, a, k, sd] of [[-250, 230, 1.7, 811], [300, 300, 1.4, 812], [-430, 520, 1.3, 813]] as [number, number, number, number][]) { const [x, y] = en(l, a); poner('nie2_arbol_muerto', 'retorcido', x, y, sd, az(sd, 3) * 360, k, true, 0.3); }
+    const muertos: [PoseMuerto, number, number, number][] = [['brazo', -120, 210, 1], ['medio', 80, 250, 2], ['arrastra', -40, 300, 3], ['encorvado', 24, 370, 4], ['parado', -86, 420, 5], ['medio', 150, 440, 6], ['brazo', 190, 330, 8], ['medio', -190, 380, 9], ['encorvado', -150, 520, 7], ['parado', 96, 560, 10], ['brazo', -10, 470, 11]];
+    for (const [pose, l, a, sd] of muertos) {
+      const [x, y] = en(l, a), z = ter.h(x, y), giro = hacia + (az(sd, 9) - 0.5) * 50;
+      // la tierra removida de la tumba (montículo oscuro) y el muerto que sale
+      if (pose !== 'parado' && pose !== 'encorvado') frente.push(esc.ponerMundo([masa([bulto([x, y, z - 4], [26, 18, 8], { mat: 'abo_barro', giro: hacia }), bulto([x + 10, y - 8, z - 2], [10, 8, 5], { mat: 'abo_barro' })], { mat: 'abo_barro', suave: 3 })], { nieve: 0.2 }));
+      frente.push(esc.poner(muertoSeco(pose, sd, 60 + az(sd, 3) * 8), { x, y, z: z - 1, giro }, { nieve: 0 }));
+    }
+  }
   if (plano === 'i10') {
     // las ocho clases en la cresta, escalonadas en profundidad, de frente al ojo y a contraluz del incendio: siluetas con
     // filo cálido del fuego y filo frío de la luna del otro lado; brillan solo los ojos, las runas y las armas encantadas
     const m = O.mira!, a = Math.atan2(O.y - m[1], O.x - m[0]), gx = Math.cos(a), gy = Math.sin(a);
-    const lugares: [number, number][] = [[0, -40], [-74, -86], [80, -68], [-156, -48], [154, -126], [-238, -140], [236, -58], [34, -180]];
+    // formación compacta y escalonada (una cuña que se abre hacia atrás sobre la cresta): nadie suelto a los costados
+    const lugares: [number, number][] = [[-34, 34], [-74, 8], [52, 10], [-116, -12], [94, -16], [-50, -34], [36, -44], [-156, -34]];
     HEROES.slice(0, 8).forEach((h, i) => {
       const [l, d] = lugares[i], x = m[0] + gx * d + gy * l, y = m[1] + gy * d - gx * l;
-      frente.push(esc.poner(personaje(h.cuerpo, h.niveles[2], 's', 'quieto', 0), { x, y, z: ter.h(x, y) - 1, giro: (Math.atan2(O.y - y, O.x - x) * 180) / Math.PI - 45 + l * 0.08 }, { nieve: 0 }));
+      frente.push(esc.poner(personaje(h.cuerpo, h.niveles[2], 's', 'quieto', 0), { x, y, z: pieEn(ter, x, y, 9) - 0.5, giro: (Math.atan2(O.y - y, O.x - x) * 180) / Math.PI - 45 + l * 0.12 }, { nieve: 0 }));
     });
-    // la luna: luz fría, lejana y de costado (solo filo en el lado izquierdo de las figuras)
-    esc.luces.push({ p: [m[0] - 900, m[1] + 300, ter.h(m[0], m[1]) + 150], c: hexLin('#8aa8ff'), k: 1.6, r: 700, envuelve: 0 });
+    // la luna: detrás de ellos y a la izquierda, baja; no los alumbra de frente, solo les deja un filo frío del otro lado del fuego
+    esc.luces.push({ p: [m[0] - gx * 700 - gy * 520, m[1] - gy * 700 + gx * 520, ter.h(m[0], m[1]) + 220], c: hexLin('#7f9cf0'), k: 0.55, r: 650, envuelve: 0 });
   }
 }
 
@@ -493,29 +554,48 @@ function atmAlba(): Atmosfera {
 
 /** El cielo que se rompe (i04) y la brasa que cae (i05): noche de invierno honda, estrellas y la herida roja arriba de la abadía. */
 function atmCosecha(plano: 'i04' | 'i05'): Atmosfera {
-  const O = OJOS[plano], ab = deCat(0, 0, 0), az0 = Math.atan2(ab[1] - O.y, ab[0] - O.x) + (plano === 'i04' ? 0.06 : 0.1), el0 = plano === 'i04' ? 0.27 : 0.3;
-  const R = norm([Math.cos(az0) * Math.cos(el0), Math.sin(az0) * Math.cos(el0), Math.sin(el0)]), herida = hexLin('#ff3a14'), alma = hexLin('#ffe6b0'), kH = plano === 'i05' ? 1.15 : 1;
+  const O = OJOS[plano], ab = deCat(0, 0, 0), az0 = Math.atan2(ab[1] - O.y, ab[0] - O.x) + (plano === 'i04' ? 0.06 : 0.1), el0 = plano === 'i04' ? 0.29 : 0.34;
+  const R = norm([Math.cos(az0) * Math.cos(el0), Math.sin(az0) * Math.cos(el0), Math.sin(el0)]), herida = hexLin('#ff3a14'), kH = plano === 'i05' ? 0.8 : 1;
   const pars: [number, C3][] = [[0, hexLin('#20222e')], [0.06, hexLin('#181d2c')], [0.18, hexLin('#10162a')], [0.45, hexLin('#090c1a')], [0.9, hexLin('#04050c')]];
+  // las capas de adentro de la herida, de afuera hacia adentro: el labio roto casi negro, las paredes de carne roja con
+  // estrías que bajan, y al fondo el magma rojo anaranjado con sus celdas (nunca blanco)
+  const labio = hexLin('#140201'), pared = hexLin('#6a0c04'), magma = hexLin('#e8380c'), veta = hexLin('#ff6a1c');
   /**
-   * La grieta: un desgarro orgánico (no una línea): ancho que cambia a tirones, labios rotos por ruido, dos ramas que se
-   * abren, un fondo que se ve hondo (el alma, con vetas) y el resplandor que cae; las nubes pasan por delante.
+   * La grieta: una fractura ancha y quebrada (no una línea): el eje zigzaguea, el ancho cambia a tirones, cada labio
+   * tiene su propio borde roto (con trozos sueltos), salen ramas que se afinan, y adentro se ve hondo: el borde oscuro,
+   * las paredes y el fondo encendido. Devuelve cuánto se ve de cada capa y el resplandor que cae alrededor.
    */
   const grieta = (d: V3) => {
-    const a = Math.atan2(d[1], d[0]) - az0, e = Math.asin(Math.max(-1, Math.min(1, d[2]))), u = Math.atan2(Math.sin(a), Math.cos(a)), largo = 1 - suave(0.18, 0.4, Math.abs(u));
-    const halo = Math.exp(-Math.hypot(u * 1.6, e - el0) / 0.2) * 0.22;
-    if (largo <= 0) return { alma: 0, borde: 0, brillo: halo, veta: 0 };
-    const ec = el0 + 0.03 * Math.sin(u * 7 + 0.6) + 0.03 * (fbm2(u * 10, 2, 3, 81) - 0.5), ancho = (0.006 + 0.03 * Math.pow(fbm2(u * 6, 5, 3, 82), 2.2)) * largo;
-    // labios rotos: el borde se come y se abre con ruido fino a lo largo del corte
-    const dv = Math.abs(e - ec) + (fbm2(u * 60, (e - ec) * 90, 3, 83) - 0.5) * ancho * 0.9;
-    let alma = (1 - suave(ancho * 0.25, ancho * 0.9, dv)) * largo, borde = (1 - suave(ancho * 0.8, ancho * 2.6, dv)) * largo;
-    // dos ramas finas que salen hacia abajo y hacia arriba
-    for (const [u0, dir, sd] of [[-0.08, -1, 84], [0.11, 1, 85]] as [number, number, number][]) {
-      const du = u - u0, enR = du * dir > 0 && Math.abs(du) < 0.12 ? 1 - Math.abs(du) / 0.12 : 0;
-      if (enR <= 0) continue;
-      const eb = ec - dir * Math.abs(du) * 0.9 + 0.01 * (fbm2(u * 30, 1, 2, sd) - 0.5), ab = 0.004 * enR, db = Math.abs(e - eb);
-      alma = Math.max(alma, (1 - suave(ab * 0.3, ab, db)) * enR); borde = Math.max(borde, (1 - suave(ab, ab * 3, db)) * enR);
+    const a = Math.atan2(d[1], d[0]) - az0, e = Math.asin(Math.max(-1, Math.min(1, d[2]))), u = Math.atan2(Math.sin(a), Math.cos(a));
+    const halo = Math.exp(-Math.hypot(u * 1.3, (e - el0) * 1.6) / 0.16) * 0.3, L = 0.34, largo = Math.pow(Math.max(0, 1 - (u / L) ** 2), 0.7);
+    const out = { labio: 0, pared: 0, magma: 0, veta: 0, prof: 0, brillo: halo };
+    if (Math.abs(u) > L + 0.2) { out.brillo += Math.exp(-Math.abs(e - el0 + u * 0.1) / 0.06) * Math.exp(-((u / (L * 0.75)) ** 2)) * 0.5 * 0.6; return out; }
+    // el eje: un zigzag de tramos rectos (quebrado, no ondulado) más un temblor fino
+    const zz = (x: number) => { const k = Math.floor(x), f = x - k, y0 = h2(k, 3, 87) - 0.5, y1 = h2(k + 1, 3, 87) - 0.5; return y0 + (y1 - y0) * f; };
+    const ec = el0 - u * 0.1 + zz(u * 11 + 4) * 0.035 + (fbm2(u * 40, 1, 2, 81) - 0.5) * 0.01;
+    const W = (0.014 + 0.09 * Math.pow(fbm2(u * 3.4 + 2, 5, 3, 82), 1.2)) * largo;
+    const sobre = W * (0.55 + 0.9 * (fbm2(u * 48, 2, 3, 83) - 0.5) + 0.4 * (fbm2(u * 170, 1, 2, 84) - 0.5));
+    const bajo = W * (0.55 + 0.9 * (fbm2(u * 48, 9, 3, 85) - 0.5) + 0.4 * (fbm2(u * 170, 2, 2, 86) - 0.5));
+    const v = e - ec, dentro = v > -bajo && v < sobre && W > 0.0005;
+    // cuánto adentro (0 en el labio, 1 en el medio)
+    let s = dentro ? Math.min(v + bajo, sobre - v) / Math.max(1e-5, (sobre + bajo) / 2) : 0;
+    // ramas finas que se abren hacia arriba y hacia abajo y se afinan hasta nada
+    for (const [u0, dir, sd, lr] of [[-0.24, 1, 91, 0.14], [-0.1, -1, 92, 0.16], [0.08, 1, 93, 0.18], [0.22, -1, 94, 0.12]] as [number, number, number, number][]) {
+      const du = (u - u0) * dir; if (du < 0 || du > lr) continue;
+      const q = du / lr, eb = ec + dir * du * (0.55 + 0.4 * (h2(sd, 1, 95) - 0.5)) + (fbm2(u * 30, sd, 2, sd) - 0.5) * 0.02 * q, wb = 0.006 * (1 - q) * (0.6 + 0.8 * fbm2(u * 50, sd, 2, sd + 1));
+      const db = Math.abs(e - eb); if (db < wb) s = Math.max(s, (1 - db / wb) * 0.55 * (1 - q * 0.5));
     }
-    return { alma, borde, brillo: Math.exp(-dv / 0.06) * largo * 0.5 + halo, veta: fbm2(u * 40, e * 40, 3, 86) };
+    if (s > 0) {
+      // trozos sueltos del labio que quedan colgando sobre el hueco
+      const suelto = s < 0.35 && fbm2(u * 160, e * 160, 2, 96) > 0.66 ? 1 : 0;
+      out.labio = 1; out.pared = suave(0.06, 0.22, s) * (1 - suelto); out.magma = suave(0.34, 0.8, s) * (1 - suelto);
+      // estrías de las paredes (cortan a lo ancho) y celdas del fondo
+      out.prof = 0.55 + 0.45 * Math.abs(Math.sin(u * 260 + fbm2(u * 30, e * 30, 2, 97) * 6));
+      out.veta = suave(0.6, 0.9, 1 - Math.abs(2 * fbm2(u * 60, e * 60, 3, 98) - 1)) * out.magma;
+    }
+    // el resplandor que cae alrededor (sobre todo en las nubes): se apaga suave más allá de las puntas, sin corte
+    out.brillo += Math.exp(-Math.abs(e - ec) / 0.06) * Math.exp(-((u / (L * 0.75)) ** 2)) * 0.5 * (0.6 + 0.8 * W / 0.05);
+    return out;
   };
   const aire = (d: V3): C3 => { const e = Math.min(0.03, Math.max(0, d[2])), b = gradiente(pars, e), g = Math.max(0, d[0] * R[0] + d[1] * R[1]) ** 12 * 0.06 * kH; return [b[0] + herida[0] * g, b[1] + herida[1] * g, b[2] + herida[2] * g]; };
   const cielo = (d: V3): C3 => {
@@ -525,14 +605,19 @@ function atmCosecha(plano: 'i04' | 'i05'): Atmosfera {
     const hs = h2(Math.floor(Math.atan2(d[1], d[0]) * 900), Math.floor(e * 900), 91);
     if (hs > 0.9975) c = [c[0] + (hs - 0.9975) * 24, c[1] + (hs - 0.9975) * 24, c[2] + (hs - 0.9975) * 32];
     const g = grieta(d);
-    c = [c[0] + herida[0] * g.brillo * kH * 0.5, c[1] + herida[1] * g.brillo * kH * 0.5, c[2] + herida[2] * g.brillo * kH * 0.5];
-    // el desgarro va detrás de las nubes: primero su borde de carne roja y su fondo hondo con vetas, después las nubes
-    const fondo = mezclar(escalar(herida, 1.6 * kH), escalar(alma, 2.2 * kH), 0.35 + 0.65 * g.veta);
-    c = mezclar(mezclar(c, escalar(herida, 1.3 * kH), g.borde * 0.85), fondo, g.alma);
+    c = [c[0] + herida[0] * g.brillo * kH * 0.45, c[1] + herida[1] * g.brillo * kH * 0.45, c[2] + herida[2] * g.brillo * kH * 0.45];
+    if (g.labio > 0) {
+      // de afuera hacia adentro: labio oscuro, paredes rojas estriadas, magma con vetas
+      let h: C3 = escalar(labio, 0.6);
+      h = mezclar(h, escalar(pared, (0.5 + 0.9 * g.pared) * g.prof * kH), g.pared);
+      h = mezclar(h, escalar(mezclar(magma, veta, g.veta), (0.45 + 0.55 * g.magma + 0.35 * g.veta) * kH), g.magma);
+      c = h;
+    }
+    // las nubes pasan por delante y se encienden de abajo con la luz de la herida
     for (const [sd, esc, cu, al] of [[23.1, 2400, 0.46, 3600], [29.3, 1500, 0.52, 2200]] as [number, number, number, number][]) {
       const nb = nubes(d, sd, esc, cu, al, [-R[0], -R[1], 0]); if (nb.a <= 0) continue;
-      const k = g.brillo * kH * (0.4 + nb.luz) * 1.6, frio = escalar(hexLin('#141a2a'), 1 - nb.espesor * 0.5);
-      c = mezclar(c, [frio[0] + herida[0] * k, frio[1] + herida[1] * k, frio[2] + herida[2] * k], nb.a * 0.9);
+      const k = g.brillo * kH * (0.4 + nb.luz) * 2.2, frio = escalar(hexLin('#141a2a'), 1 - nb.espesor * 0.5), tibio = hexLin('#ff5a1e');
+      c = mezclar(c, [frio[0] + tibio[0] * k, frio[1] + tibio[1] * k, frio[2] + tibio[2] * k], nb.a * (g.labio > 0 ? 0.75 : 0.9));
     }
     return c;
   };
@@ -568,6 +653,35 @@ function atmNoche(plano: Plano): Atmosfera {
     ambCielo: escalar(hexLin('#2c3c5e'), 0.32), ambSuelo: escalar(hexLin('#141820'), 0.22),
     niebla: { densidad: 1 / 16000, baja: 1 / 6500, z0: 0, H: 110, ruido: 0.7, escalaRuido: 0.0012 },
     borde: { c: hexLin('#ff7a40'), k: 2.2 }, nieve: { albedo: NIEVE, desde: 0.6 }, oclusion: 0.85,
+  };
+}
+
+/**
+ * El amanecer gris del camposanto (i08): cielo de ceniza claro y parejo, niebla espesa a ras del piso, y el resplandor
+ * rojo de la abadía que todavía arde como única luz cálida (los muertos se recortan contra él y contra la niebla).
+ */
+function atmCeniza(): Atmosfera {
+  const rojo = hexLin('#ff4a1a'), fc = deCat(0, 0, 420), O = OJOS.i08, F = norm([fc[0] - O.x, fc[1] - O.y, fc[2] - 60]);
+  const pars: [number, C3][] = [[0, hexLin('#5a5250')], [0.04, hexLin('#4e4a4c')], [0.12, hexLin('#3c3a40')], [0.35, hexLin('#24242c')], [0.9, hexLin('#0e0f14')]];
+  const resplandor = (d: V3) => { const g = Math.max(0, dot3(d, F)); return 0.9 * Math.pow(g, 400) + 0.2 * Math.pow(g, 50) + 0.05 * Math.pow(g, 6); };
+  const aire = (d: V3): C3 => { const e = Math.min(0.03, Math.max(0, d[2])), b = gradiente(pars, e), k = resplandor(norm([d[0], d[1], e])) * 0.6; return [b[0] + rojo[0] * k, b[1] + rojo[1] * k, b[2] + rojo[2] * k]; };
+  const cielo = (d: V3): C3 => {
+    const e = Math.asin(Math.max(-1, Math.min(1, d[2])));
+    if (e < 0.03) return aire(d);
+    const b = gradiente(pars, e), rf = resplandor(d), ka = 0.5 + 0.5 * suave(0, 0.12, e);
+    let c: C3 = [b[0] + rojo[0] * rf * ka, b[1] + rojo[1] * rf * ka, b[2] + rojo[2] * rf * ka];
+    for (const [sd, esc, cu, al] of [[41.3, 2600, 0.4, 3200], [47.9, 1400, 0.5, 1900]] as [number, number, number, number][]) {
+      const nb = nubes(d, sd, esc, cu, al, [-F[0], -F[1], 0]); if (nb.a <= 0) continue;
+      const k = rf * 2.2 * (0.3 + nb.luz * 0.7), gris = escalar(hexLin('#3a3638'), 0.9 * (1 - nb.espesor * 0.45));
+      c = mezclar(c, [gris[0] + rojo[0] * k, gris[1] + rojo[1] * k, gris[2] + rojo[2] * k], nb.a * 0.85);
+    }
+    return c;
+  };
+  return {
+    sol: { dir: norm([F[0], F[1], 0.18]), c: hexLin('#ff6020'), k: 0.35, ancho: 0.05 }, cielo, aire,
+    ambCielo: escalar(hexLin('#59606e'), 0.28), ambSuelo: escalar(hexLin('#1c1c22'), 0.2),
+    niebla: { densidad: 1 / 9000, baja: 1 / 1300, z0: 0, H: 70, ruido: 0.6, escalaRuido: 0.0025 },
+    borde: { c: hexLin('#ff6a30'), k: 2.6 }, nieve: { albedo: [0.3, 0.3, 0.32], desde: 0.6 }, oclusion: 0.85,
   };
 }
 

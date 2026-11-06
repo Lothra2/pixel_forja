@@ -29,7 +29,7 @@ export type Curva = 'lineal' | 'suave';
 /** Cámara del reproductor del juego: (x, y) en px de la capa de paralaje 1, zoom alrededor del centro de la pantalla. */
 export interface Camara { desde: { x: number; y: number; zoom: number }; hasta: { x: number; y: number; zoom: number }; curva: Curva; sacudida?: { t: number; dur: number; fuerza: number } }
 export interface Transicion { tipo: 'corte' | 'negro' | 'fundido' | 'blanco' | 'rojo'; s: number }
-export type Particulas = 'ceniza' | 'brasas' | 'nieve' | 'lluvia';
+export type Particulas = 'ceniza' | 'brasas' | 'nieve' | 'lluvia' | 'polvo';
 /** Un sonido del juego que se toca en el segundo t del plano (campana, trueno, explosion, rugido_jefe). */
 export interface Sonido { t: number; efecto: string; vol?: number }
 export interface Plano { id: string; que: string; dur: number; cam: Camara; texto: Texto; textoSegun?: Record<string, Texto>; eleccion?: 'vigdis' | 'brasa'; entrada: Transicion; salida: Transicion; /** sonidos a tiempo (el reproductor los toca al pasar por t) */ sonidos?: Sonido[] }

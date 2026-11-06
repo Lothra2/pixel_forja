@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createRaster } from '../core/raster';
 import { encodePng, decodePng } from '../export/png';
 import { empaquetar, paqueteIntro3d, PAGINA_MAX, PAGINA_MPX } from '../gotico/cine3d_paquete';
-import { PLANOS_VALLE } from '../gotico/cine3d_cuadros';
+import { PLANOS_INTRO } from '../gotico/cine3d_cuadros';
 
 describe('intro 3D: empaquetado para el juego', () => {
   it('el empaquetador no pisa capas ni se pasa de 4096 px ni de 16 Mpx', () => {
@@ -16,7 +16,7 @@ describe('intro 3D: empaquetado para el juego', () => {
     }
   });
   it('lo horneado de la intro: 10 archivos como mucho, 12 MB o menos, y cada capa con su recorte dentro de su página', () => {
-    const { paginas, planos } = paqueteIntro3d(PLANOS_VALLE.map((p) => p.id), decodePng);
+    const { paginas, planos } = paqueteIntro3d(PLANOS_INTRO.map((p) => p.id), decodePng);
     if (!paginas.length) return; // sin horneado (el horneado se hace con scripts/gotico-cine3d.ts)
     expect(paginas.length).toBeLessThanOrEqual(10);
     expect(paginas.reduce((a, p) => a + encodePng(p).length, 0) / 1e6).toBeLessThanOrEqual(12);

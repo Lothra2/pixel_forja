@@ -50,7 +50,7 @@ export class Toma {
   capas: CapaToma[] = [];
   fx: FxToma[] = [];
   /** Partículas del juego para este plano (una de las que ya trae). */
-  particulas?: 'ceniza' | 'brasas' | 'nieve' | 'lluvia';
+  particulas?: 'ceniza' | 'brasas' | 'nieve' | 'lluvia' | 'polvo';
   /** Pintada para la carta de presentación del acto (sin lo que cuenta el final: estelas, barcos que zarpan). */
   carta = false;
   constructor(readonly semilla: number) {}
