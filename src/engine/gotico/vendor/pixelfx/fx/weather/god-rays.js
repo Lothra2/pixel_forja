@@ -56,7 +56,8 @@ export function drawBack(p, t, o) {
   const n = sh.length, SC = new Float32Array(n), SI = new Float32Array(n), SK = new Float32Array(n);
   sh.forEach((s, j) => ((SC[j] = s.c), (SI[j] = 1 / s.h), (SK[j] = s.k)));
   rows(p, meta, -170, 9, (y, R) => {
-    const floor = y > 0, dy = y - SY, air = floor ? 0.8 : 0.66, boost = floor ? 1.6 : 1;
+    // Forja: sin aire oscuro ni franja de piso de perfil: solo los haces sobre el mapa isométrico
+    const floor = false, dy = y - SY, air = 0, boost = 1;
     let r = (-160 + 0.5 - SX) * AX + dy * AY, nn = (-160 + 0.5 - SX) * NX + dy * NY;
     R.a.fill(air);
     R.b.fill(1);

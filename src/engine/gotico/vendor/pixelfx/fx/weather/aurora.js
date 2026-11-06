@@ -116,7 +116,8 @@ function curtain(q, c, n, t, F, breath, rays, G) {
     const hem = c.y + c.slope * s + c.amp * Math.sin((TAU * s) / c.lam + cyc(t, c.c[1], n * 1.7)) + c.rip * Math.sin((TAU * s) / 23 - cyc(t, 7, n));
     const env = smooth(c.s0, c.s0 + 60, s) * (1 - smooth(c.s1 - 70, c.s1, s));
     // rays: fine strands drifting along the curtain, each with its own height; bright patches running along it
-    const r1 = clamp((sample(F, s * 5 - fast + n * 40, 10 + n * 30) - 0.38) * 3.2), r2 = clamp((sample(F, s * 4.3 + fast * 0.7 + n * 90, 50 + n * 13) - 0.35) * 3);
+    // Forja: el segundo campo corría 0.7 de vuelta por bucle (358 de 256 celdas) y el bucle saltaba; ahora da una vuelta entera
+    const r1 = clamp((sample(F, s * 5 - fast + n * 40, 10 + n * 30) - 0.38) * 3.2), r2 = clamp((sample(F, s * 4.3 + slow + n * 90, 50 + n * 13) - 0.35) * 3);
     const patch = sample(F, s * 0.7 + slow + n * 17, 80 + n * 9);
     const k = c.k * env * breath * (0.2 + 0.8 * r1) * (0.3 + 1.4 * Math.max(0, patch - 0.3));
     if (k < 0.01) continue;

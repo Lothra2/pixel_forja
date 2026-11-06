@@ -91,17 +91,14 @@ export function draw(p, time, o) {
   // the face: two eyes that glance about and blink, a little mouth that oohs
   const look = wrap(t, D) < 0.7 ? 0 : wrap(t, D) < 1.3 ? 1 : wrap(t, D) < 1.9 ? -1 : 0, blink = wrap(t, D) > 1.95 && wrap(t, D) < 2.03;
   const ey = -top + R - 1, mo = 0.5 + 0.5 * Math.sin((t / D) * TAU * 2);
+  // Forja: cuencas vacías y una boca abierta que se estira, sin parpadeos ni miradas de historieta
+  void look; void blink;
   for (const s of [-1, 1]) {
-    const ex = s * 4 - (s > 0 ? 1 : 0) + look;
-    if (blink) g.set(ex, ey + 2, C[1]), g.set(ex + 1, ey + 2, C[1]);
-    else {
-      for (let k = 0; k < 4; k++) g.set(ex, ey + k, C[0]), g.set(ex + 1, ey + k, C[0]);
-      g.set(ex + (look < 0 ? 0 : 1), ey, C[2]);
-    }
+    const ex = s * 4 - (s > 0 ? 1 : 0);
+    for (let k = 0; k < 5; k++) g.set(ex, ey + k, C[0]), g.set(ex + 1, ey + k, C[0]);
   }
-  const my = ey + 6;
-  g.set(look - 1, my, C[1]); g.set(look, my, C[1]);
-  if (mo > 0.4) g.set(look - 1, my + 1, C[0]), g.set(look, my + 1, C[0]);
+  const my = ey + 7;
+  for (let k = 0; k < 2 + Math.round(mo * 3); k++) g.set(-1, my + k, C[0]), g.set(0, my + k, C[0]);
   g.outline((x, y, nx, ny) => (ny > 0 ? C[2] : C[1]), 0.95);
   g.draw(p, 1, S.x, S.y);
   // motes trickle off the hem and fade as they sink and drift

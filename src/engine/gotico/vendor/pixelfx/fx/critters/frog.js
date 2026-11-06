@@ -20,7 +20,8 @@ export const meta = {
 
 const D = meta.duration, GRID = new Grid(-22, -40, 44, 44), SWARM = new Swarm();
 const T_CROUCH = 0.95, T_UP = 1.2, T_LAND = 1.62, T_SNAP = 1.4, T_BACK = 1.95, G = 1000, HOP = (G * (T_LAND - T_UP) ** 2) / 8;
-const EYE = ["#3a2a08", "#c89420", "#ffd860"].map(hex), TONGUE = hex("#e8607a"), FLY = hex("#141018"), WINGS = hex("#c8d0e0"), DUST = hex("#8a7f92");
+// Forja: ojo de sapo ocre apagado, lengua de carne oscura y polvo pardo (antes amarillo y rosa)
+const EYE = ["#1e1606", "#6a5414", "#9a7a2a"].map(hex), TONGUE = hex("#8a3a3a"), FLY = hex("#141018"), WINGS = hex("#6a6a70"), DUST = hex("#4a423c");
 
 // the pose at loop time t: lift off the floor, nose tilt, squash, hind legs out, throat puffed, eye shut
 function pose(t) {

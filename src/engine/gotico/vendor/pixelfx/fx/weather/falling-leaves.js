@@ -51,7 +51,8 @@ export function drawBack(p, t, o) {
     R.a.fill(0.32 + 0.1 * k);
     R.b.fill(1);
   });
-  litter(q, S, R3);
+  // Forja: sin la franja de hojarasca de perfil
+  void litter;
   leaves(q, t, S, R3, false);
 }
 
@@ -68,13 +69,15 @@ function leaves(q, t, S, R3, front) {
     const dur = D / m, air = 0.72, tf = dur * air, a = Math.min(u * dur, tf), rest = u * dur - tf;
     const w = 1.7 + R(2) * 1.2, ph0 = R(3) * TAU, amp = (near ? 14 : 8) + R(4) * 10, x0 = -180 + R(5) * 340, y0 = -186;
     // the drop speed that lands it on the floor just as its time in the air runs out
-    const path = (aa) => 0.45 * aa + (0.9 * (Hc(w * aa + ph0) - Hc(ph0))) / w, vy = (FLOOR - y0) / path(tf);
+    // Forja: en la vista isométrica cada hoja se posa a su propia altura de pantalla (el piso está en todos lados)
+    const piso = -150 + R(12) * (FLOOR + 150);
+    const path = (aa) => 0.45 * aa + (0.9 * (Hc(w * aa + ph0) - Hc(ph0))) / w, vy = (piso - y0) / path(tf);
     const born = t - u * dur, xAt = (aa) => x0 + 7 * aa + Math.sin(w * aa + ph0) * amp + (gust(born + aa) - gust(born)) * (near ? 1 : 0.7);
     const size = (near ? 5.8 : 4.2) + R(6) * 1.6, shape = Math.floor(R(7) * 3), col = R3[Math.floor(R(8) * 3)];
     if (rest > 0) {
       // lying flat in the litter, fading
       const fade = 1 - rest / (dur - tf);
-      leaf(q, xAt(tf), FLOOR - 1, size, (R(9) - 0.5) * 0.5, 0.42, shape, col, fade);
+      leaf(q, xAt(tf), piso - 1, size, (R(9) - 0.5) * 0.5, 0.42, shape, col, fade);
       return;
     }
     const x = xAt(a), y = y0 + vy * path(a), tilt = Math.cos(w * a + ph0) * 0.75 + (near ? 0 : 0.3);

@@ -18,7 +18,7 @@ export const meta = {
   },
 };
 
-const D = meta.duration, GRID = new Grid(-26, -26, 52, 46), BEAK = hex("#f0b030"), BEAKD = hex("#a86a18");
+const D = meta.duration, GRID = new Grid(-26, -26, 52, 46), BEAK = hex("#3a3631"), BEAKD = hex("#1c1a18"); // Forja: pico de cuervo, gris negro (antes amarillo)
 // the near wing's key poses, points from the shoulder: leading edge to the tip, then the trailing feathers back
 const POSE = {
   up: [[0, 0], [-1, -8], [-5, -15], [-8, -13.5], [-10.5, -10.5], [-11, -7], [-9, -3], [-6, 1]],

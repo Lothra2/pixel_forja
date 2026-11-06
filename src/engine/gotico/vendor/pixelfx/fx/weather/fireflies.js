@@ -46,18 +46,20 @@ export function drawBack(p, t, o) {
   rows(p, meta, -170, 9, (y, R) => {
     const k = (y + 170) / 180;
     R.c.fill(mix(G[0], G[1], k));
-    R.a.fill(0.48 + 0.14 * k);
+    // Forja: sin velo nocturno (el juego ya es oscuro)
+    R.a.fill(0 * k);
     R.b.fill(1);
   });
   const flies = Array.from({ length: 32 }, (_, i) => fly(S, i, t));
-  grass(q, t, S, G, C, flies, false);
+  // Forja: sin la franja de pasto de perfil
+  void grass;
   for (const f of flies) if (f.depth < 2) firefly(q, t, f, C);
 }
 
 export function draw(p, t, o) {
   const q = clip(p, meta), S = o.seed, C = fit(o.palette, 6), G = fit(o.grass, 6);
   const flies = Array.from({ length: 32 }, (_, i) => fly(S, i, t));
-  grass(q, t, S, G, C, flies, true);
+
   for (const f of flies) if (f.depth === 2) firefly(q, t, f, C);
 }
 

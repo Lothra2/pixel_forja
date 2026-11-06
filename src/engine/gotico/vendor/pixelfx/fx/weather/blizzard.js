@@ -35,7 +35,8 @@ export function drawBack(p, t, o) {
   sheets(p, t, S, C, 0);
   streaks(q, t, S, C, 0);
   streaks(q, t, S, C, 1);
-  ground(p, q, t, S, C);
+  // Forja: sin el banco de nieve de perfil (en el juego el piso es el mapa)
+  void ground;
 }
 
 export function draw(p, t, o) {

@@ -75,7 +75,8 @@ export function drawBack(p, t, o) {
   if (t > T_LEAD && t < T2 + 0.7) bolt(q, t, S, V);
   deck(q, B, t, S, C, V, litAt, srcs.length > 0);
   crawler(q, t, S, V);
-  floor(q, B, t, S, C, V, f);
+  // Forja: sin la franja de piso mojado de perfil
+  void floor;
   strike(q, t, S, C, V);
 }
 

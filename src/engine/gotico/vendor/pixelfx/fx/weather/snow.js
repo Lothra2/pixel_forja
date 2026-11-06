@@ -34,14 +34,10 @@ const LAYERS = [
 export function drawBack(p, t, o) {
   const q = clip(p, meta), S = o.seed, C = fit(o.palette, 8);
   // a cold haze, thicker low down, so the sky's stars don't read as snow
-  const haze = mix(C[1], C[2], 0.4);
-  pass(p, meta, -170, 9, (x, y, out) => {
-    out.c = haze;
-    out.a = 0.26 + 0.22 * smooth(-170, 0, y);
-    out.b = 1;
-  });
+  // Forja: sobre la vista isométrica no va el velo de cielo ni el banco de nieve de perfil: solo los copos
+  void mix; void smooth; void pass;
   layer(q, t, S, C, 0);
-  drift(q, t, S, C);
+  void drift;
   layer(q, t, S, C, 1);
 }
 

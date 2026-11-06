@@ -1173,4 +1173,231 @@ export const CATALOGO_PFX: CfgPfx[] = [
       { tipo: 'monstruo', monstruos: ['madre_cienaga', 'hombre_cienaga'], nota: 'la ciénaga que azota' },
     ],
   },
+  // ============================================================ clima (más)
+  {
+    id: 'fx_aurora', origen: 'weather/aurora', nombre: ['Aurora', 'Aurora'], categoria: 'clima', elemento: 'fatuo', capa: 'pantalla', t: 2,
+    opciones: { palette: rampa('fatuo', 7), upper: tramo('sombra', 7, 0, 0.85) },
+    notas: 'Es cielo: para cinemáticas, cartas de acto y la portada, no para el piso del juego.',
+    uso: [
+      { tipo: 'cinematica', nota: 'el cielo del Paso del Glaciar y de los Picos de Hrimgard (acto 4)' },
+      { tipo: 'clima', actos: [4], zonas: ['a4_picos', 'a4_glaciar'], nota: 'solo si el juego muestra cielo (carta de acto)' },
+    ],
+  },
+  {
+    id: 'fx_ventisca', origen: 'weather/blizzard', nombre: ['Ventisca', 'Blizzard'], categoria: 'clima', elemento: 'hielo', capa: 'pantalla',
+    opciones: { palette: rampa('hielo', 8) }, gradacion: { tope: 0.3 },
+    uso: [{ tipo: 'clima', actos: [4], zonas: ['a4_picos', 'a4_glaciar', 'a4_fortin'], nota: 'nieve horizontal con viento' }],
+  },
+  {
+    id: 'fx_nubes', origen: 'weather/clouds', nombre: ['Nubes y luna', 'Clouds and moon'], categoria: 'clima', elemento: 'noche', capa: 'pantalla', t: 2,
+    opciones: { palette: rampa('noche', 8) },
+    notas: 'Es cielo nocturno: para cinemáticas y cartas de acto.',
+    uso: [
+      { tipo: 'cinematica', nota: 'cielo nocturno detrás de la abadía (acto 1) o del barco varado (acto 6)' },
+      { tipo: 'clima', actos: [1, 6], nota: 'sombras de nubes sobre el mapa: dibujar solo el alfa muy bajo' },
+    ],
+  },
+  {
+    id: 'fx_hojas_caen', origen: 'weather/falling-leaves', nombre: ['Hojas que caen', 'Falling leaves'], categoria: 'clima', elemento: 'tierra', capa: 'pantalla', t: 2,
+    opciones: { palette: tramo('brasa', 6, 0.1, 0.85), reds: tramo('sangre', 6, 0.1, 0.9), golds: tramo('oro', 6, 0.05, 0.75) },
+    uso: [{ tipo: 'clima', actos: [1], zonas: ['a1_bosque', 'a1_cementerio', 'a1_paramo'], nota: 'hojas muertas en el Bosque de los Ahorcados' }],
+  },
+  {
+    id: 'fx_luciernagas', origen: 'weather/fireflies', nombre: ['Luciérnagas', 'Fireflies'], categoria: 'clima', elemento: 'fatuo', capa: 'pantalla', t: 2,
+    opciones: { palette: tramo('fatuo', 6, 0.2, 1), grass: tramo('naturaleza', 6, 0, 0.5) },
+    uso: [
+      { tipo: 'clima', actos: [3], zonas: ['a3_selva', 'a3_pantano'], nota: 'luces de la ciénaga de noche' },
+      { tipo: 'clima', actos: [1], zonas: ['a1_cementerio'], nota: 'fuegos fatuos sobre las tumbas' },
+    ],
+  },
+  {
+    id: 'fx_niebla', origen: 'weather/fog', nombre: ['Niebla', 'Fog'], categoria: 'clima', elemento: 'humo', capa: 'pantalla', t: 2,
+    opciones: { palette: tramo('humo', 8, 0, 1) }, gradacion: { tope: 0 }, relleno: [[-40, -150], [30, -100], [-20, -50], [0, 0]],
+    notas: 'La niebla de pixelfx son bancos en una franja baja (de perfil); acá se repite en cuatro alturas desfasadas para cubrir la pantalla isométrica.',
+    uso: [
+      { tipo: 'clima', actos: [1], zonas: ['a1_cementerio'], nota: 'las zonas con niebla (actos.ts: niebla)' },
+      { tipo: 'clima', actos: [3, 6], zonas: ['a3_pantano', 'a6_costa', 'a6_barrio1', 'a6_barrio2'] },
+    ],
+  },
+  {
+    id: 'fx_rayos_luz', origen: 'weather/god-rays', nombre: ['Rayos de luz', 'God rays'], categoria: 'clima', elemento: 'sagrado', capa: 'pantalla', t: 2,
+    opciones: { palette: rampa('sagrado', 7) },
+    uso: [
+      { tipo: 'clima', actos: [1], zonas: ['a1_abadia1', 'a1_abadia2'], nota: 'luz que entra por los vitrales de la abadía' },
+      { tipo: 'clima', actos: [7], zonas: ['a7_campamento', 'a7_jardin'] },
+      { tipo: 'cinematica', nota: 'la luz en la nave de la catedral' },
+    ],
+  },
+  {
+    id: 'fx_nieve', origen: 'weather/snow', nombre: ['Nieve', 'Snow'], categoria: 'clima', elemento: 'hielo', capa: 'pantalla', t: 2,
+    opciones: { palette: rampa('hielo', 8) }, gradacion: { tope: 0.3 },
+    uso: [{ tipo: 'clima', actos: [4], zonas: ['a4_fortin', 'a4_picos', 'a4_glaciar'], nota: 'las zonas con nieve (actos.ts: nieve)' }],
+  },
+  {
+    id: 'fx_tormenta', origen: 'weather/storm', nombre: ['Tormenta', 'Storm'], categoria: 'clima', elemento: 'rayo', capa: 'pantalla',
+    opciones: { palette: rampa('noche', 8), bolt: tramo('rayo', 6, 0.2, 1) }, luz: { intensidad: 0.7, radio: 360, altura: 200, prioridad: 2, sombra: true },
+    uso: [
+      { tipo: 'clima', actos: [1], zonas: ['a1_paramo', 'a1_refugio'], nota: 'lluvia con relámpagos; la luz es el destello del rayo' },
+      { tipo: 'clima', actos: [6], zonas: ['a6_costa', 'a6_arrecife'] },
+      { tipo: 'cinematica', nota: 'la tormenta sobre el barco varado' },
+    ],
+  },
+  // ============================================================ botín
+  {
+    id: 'fx_cofre_abre', origen: 'pickups/chest-open', nombre: ['Cofre que se abre', 'Chest opening'], categoria: 'botin', elemento: 'oro',
+    opciones: { palette: rampa('oro', 8), wood: tramo('madera', 7, 0, 1) }, cola: 0.02,
+    uso: [{ tipo: 'botin', nota: 'cofre de tesoro que se abre y escupe oro (el cofre del catálogo se oculta mientras dura)' }],
+  },
+  {
+    id: 'fx_moneda_gira', origen: 'pickups/coin-spin', nombre: ['Moneda que gira', 'Spinning coin'], categoria: 'botin', elemento: 'oro',
+    opciones: { palette: rampa('oro', 8) },
+    uso: [{ tipo: 'botin', nota: 'moneda de oro en el piso' }],
+  },
+  {
+    id: 'fx_recoger', origen: 'pickups/collect-burst', nombre: ['Recoger', 'Pickup burst'], categoria: 'botin', elemento: 'oro',
+    opciones: { palette: rampa('oro', 8) }, cola: 0.02,
+    uso: [{ tipo: 'botin', nota: 'destello al levantar un objeto o una gema' }],
+  },
+  {
+    id: 'fx_fragmento_reliquia', origen: 'pickups/crystal-shard', nombre: ['Fragmento de reliquia', 'Relic shard'], categoria: 'botin', elemento: 'brasa',
+    opciones: { palette: rampa('brasa', 8) },
+    uso: [
+      { tipo: 'botin', nota: 'fragmento de la Brasa (objeto de misión) flotando en el piso' },
+      { tipo: 'ambiente', zonas: ['a5_santuario2'], nota: 'el Corazón de la Brasa' },
+    ],
+  },
+  {
+    id: 'fx_gema_gira', origen: 'pickups/gem-spin', nombre: ['Gema que gira', 'Spinning gem'], categoria: 'botin', elemento: 'sangre',
+    opciones: { palette: rampa('sangre', 8) },
+    uso: [{ tipo: 'botin', nota: 'gema en el piso (rubí; otras gemas con la rampa de su color)' }],
+  },
+  {
+    id: 'fx_llave', origen: 'pickups/key-glint', nombre: ['Llave', 'Key'], categoria: 'botin', elemento: 'acero',
+    opciones: { palette: rampa('acero', 8) },
+    uso: [{ tipo: 'botin', nota: 'llave de mazmorra o de cripta en el piso' }],
+  },
+  {
+    id: 'fx_columna_botin', origen: 'pickups/loot-beam', nombre: ['Columna de botín', 'Loot beam'], categoria: 'botin', elemento: 'oro',
+    opciones: { palette: rampa('oro', 8) },
+    notas: 'La espada del original es parte de la columna; para otras rarezas, repintar con otra rampa (sangre: único, alma: de conjunto).',
+    uso: [{ tipo: 'botin', nota: 'columna de luz sobre un objeto raro o único caído' }],
+  },
+  {
+    id: 'fx_pocion', origen: 'pickups/potion', nombre: ['Poción', 'Potion'], categoria: 'botin', elemento: 'sangre',
+    opciones: { palette: tramo('sangre', 8, 0, 0.9) }, gradacion: { brillo: 0.85 },
+    notas: 'Brebaje rojo oscuro y espeso (vida); para maná usar la rampa arcano.',
+    uso: [{ tipo: 'botin', nota: 'poción de vida en el piso' }],
+  },
+  {
+    id: 'fx_orbe_alma', origen: 'pickups/xp-orb', nombre: ['Orbe de alma', 'Soul orb'], categoria: 'botin', elemento: 'alma',
+    opciones: { palette: rampa('alma', 8) },
+    uso: [
+      { tipo: 'botin', nota: 'el alma que suelta un enemigo y vuela al héroe (experiencia)' },
+      { tipo: 'poder', clase: 'nigromante', habilidades: ['ofrenda'] },
+    ],
+  },
+  // ============================================================ criaturas (más)
+  {
+    id: 'fx_cuervo', origen: 'critters/bird', nombre: ['Cuervo', 'Crow'], categoria: 'criaturas', elemento: 'noche',
+    ancla: [0, 30], opciones: { palette: ['#030305', '#08080c', '#101016', '#1a1a22', '#262630', '#363644', '#4a4a5c'], breast: ['#050507', '#0c0c10', '#16161c', '#24242c'] },
+    notas: 'Es el pájaro de pixelfx repintado de negro azulado: un cuervo.',
+    uso: [
+      { tipo: 'ambiente', zonas: ['a1_paramo', 'a1_bosque', 'a1_cementerio'], nota: 'cuervos sobre el Bosque de los Ahorcados' },
+      { tipo: 'poder', clase: 'druida', habilidades: ['cuervos'], nota: 'la bandada del druida' },
+      { tipo: 'cinematica', nota: 'cuervos que levantan vuelo' },
+    ],
+  },
+  {
+    id: 'fx_ojo_flotante', origen: 'critters/eyeball', nombre: ['Ojo flotante', 'Floating eye'], categoria: 'criaturas', elemento: 'carne',
+    opciones: { palette: tramo('hueso', 6, 0.05, 0.85), flesh: tramo('carne', 5, 0, 0.75), iris: tramo('sangre', 5, 0.2, 1) }, gradacion: { brillo: 0.85 },
+    uso: [
+      { tipo: 'monstruo', monstruos: ['sin_rostro'], nota: 'los ojos que acompañan al Sin Rostro' },
+      { tipo: 'ambiente', zonas: ['a5_abismo1', 'a5_abismo2'], nota: 'ojos que miran desde el Abismo de los Susurros' },
+    ],
+  },
+  {
+    id: 'fx_cardumen', origen: 'critters/fish-school', nombre: ['Cardumen', 'Fish school'], categoria: 'criaturas', elemento: 'agua',
+    opciones: { palette: tramo('agua', 7, 0, 0.9), stripe: tramo('ceniza', 3, 0.2, 0.7) },
+    notas: 'Vista de costado bajo el agua: para cinemáticas.',
+    uso: [{ tipo: 'cinematica', nota: 'peces en la ciudad hundida y en la catedral ahogada (actos 3 y 6)' }],
+  },
+  {
+    id: 'fx_calavera_voladora', origen: 'critters/flying-skull', nombre: ['Calavera en llamas', 'Flaming skull'], categoria: 'criaturas', elemento: 'fatuo',
+    opciones: { palette: rampa('fatuo', 9), bone: tramo('hueso', 7, 0, 1) },
+    uso: [
+      { tipo: 'monstruo', monstruos: ['lich', 'dragon_oseo'], nota: 'calaveras que escupen los nigromantes enemigos' },
+      { tipo: 'ambiente', zonas: ['a1_cata1', 'a1_cripta'], nota: 'calavera que ronda los osarios' },
+    ],
+  },
+  {
+    id: 'fx_espectro', origen: 'critters/ghost', nombre: ['Espectro', 'Wraith'], categoria: 'criaturas', elemento: 'alma',
+    opciones: { palette: tramo('alma', 7, 0, 0.8) }, gradacion: { brillo: 0.8, sat: 0.6 }, opacidad: 0.6,
+    notas: 'Translúcido (60 %), con cuencas vacías y la boca abierta: sin la cara de historieta del original.',
+    uso: [
+      { tipo: 'ambiente', zonas: ['a1_cripta', 'a6_barrio2', 'a6_catedral1'], nota: 'ánimas que vagan' },
+      { tipo: 'monstruo', monstruos: ['espectral'], nota: 'el modificador de élite espectral' },
+    ],
+  },
+  {
+    id: 'fx_serpiente', origen: 'critters/snake', nombre: ['Serpiente', 'Snake'], categoria: 'criaturas', elemento: 'naturaleza',
+    opciones: { palette: tramo('naturaleza', 7, 0, 0.85), belly: tramo('hueso', 3, 0.2, 0.8) },
+    uso: [{ tipo: 'ambiente', zonas: ['a2_dunas', 'a2_tumbas1', 'a3_selva', 'a3_templo1'], nota: 'serpientes en el desierto y en los templos' }],
+  },
+  {
+    id: 'fx_baba', origen: 'critters/slime', nombre: ['Baba', 'Ooze'], categoria: 'criaturas', elemento: 'necro',
+    opciones: { palette: tramo('necro', 7, 0, 0.75) }, gradacion: { brillo: 0.8, sat: 0.7 }, opacidad: 0.85,
+    notas: 'Sin la cara del original: una baba que salta.',
+    uso: [
+      { tipo: 'ambiente', zonas: ['a1_cata1', 'a3_inundadas', 'a6_criptas'], nota: 'babas de cloaca y de cripta' },
+      { tipo: 'muerte', nota: 'lo que queda de un hombre ciénaga' },
+    ],
+  },
+  {
+    id: 'fx_fuego_fatuo', origen: 'critters/wisp', nombre: ['Fuego fatuo', 'Will-o-wisp'], categoria: 'criaturas', elemento: 'fatuo',
+    opciones: { palette: rampa('fatuo', 7) },
+    notas: 'Sin la carita del original.',
+    uso: [
+      { tipo: 'ambiente', zonas: ['a3_pantano', 'a1_cementerio', 'a6_criptas'], nota: 'luces que llevan al pantano' },
+      { tipo: 'poder', clase: 'cazadora', habilidades: ['espiritu_guardian'] },
+    ],
+  },
+  {
+    id: 'fx_sapo', origen: 'critters/frog', nombre: ['Sapo', 'Toad'], categoria: 'criaturas', elemento: 'naturaleza',
+    opciones: { palette: tramo('naturaleza', 7, 0, 0.75), belly: tramo('hueso', 3, 0.2, 0.7) },
+    uso: [{ tipo: 'ambiente', zonas: ['a3_pantano', 'a3_selva', 'a1_paramo'], nota: 'sapos de la ciénaga' }],
+  },
+  {
+    id: 'fx_medusa', origen: 'critters/jellyfish', nombre: ['Medusa de las criptas', 'Crypt jelly'], categoria: 'criaturas', elemento: 'alma',
+    ancla: [0, 40], opciones: { palette: rampa('alma', 8), glow: tramo('sombra', 4, 0.3, 1) },
+    uso: [
+      { tipo: 'ambiente', zonas: ['a6_criptas', 'a6_criptas2', 'a6_catedral1', 'a3_hundida2'], nota: 'medusas que flotan en el aire de las criptas inundadas' },
+      { tipo: 'cinematica', nota: 'bajo el agua en la catedral ahogada' },
+    ],
+  },
+  // ============================================================ transiciones
+  {
+    id: 'fx_trans_quemar', origen: 'transitions/burn-away', nombre: ['Quemar la pantalla', 'Burn away'], categoria: 'transiciones', elemento: 'fuego', capa: 'pantalla',
+    opciones: { palette: rampa('fuego', 9), color: '#050405' },
+    uso: [{ tipo: 'cinematica', nota: 'paso a negro quemándose: entrada al infierno (acto 5), muerte del héroe' }],
+  },
+  {
+    id: 'fx_trans_vidrio', origen: 'transitions/shatter-wipe', nombre: ['Vidrio que estalla', 'Shatter wipe'], categoria: 'transiciones', elemento: 'acero', capa: 'pantalla',
+    opciones: { palette: rampa('acero', 8), color: '#050405' },
+    uso: [{ tipo: 'cinematica', nota: 'el vitral que estalla: entrada a la catedral ahogada o al cielo de vidrio (acto 7)' }],
+  },
+  {
+    id: 'fx_trans_tajo', origen: 'transitions/slash-wipe', nombre: ['Tajo que corta', 'Slash wipe'], categoria: 'transiciones', elemento: 'acero', capa: 'pantalla',
+    opciones: { palette: rampa('acero', 8), sparks: CHISPAS(), color: '#050405' },
+    uso: [{ tipo: 'cinematica', nota: 'corte a la pelea de jefe' }],
+  },
+  {
+    id: 'fx_trans_ceniza', origen: 'transitions/pixel-dissolve', nombre: ['Disolver en ceniza', 'Ash dissolve'], categoria: 'transiciones', elemento: 'ceniza', capa: 'pantalla',
+    opciones: { palette: rampa('brasa', 8), color: '#050405' },
+    uso: [{ tipo: 'cinematica', nota: 'paso entre planos de cinemática: la imagen se deshace en bloques de ceniza' }],
+  },
+  {
+    id: 'fx_trans_iris', origen: 'transitions/iris', nombre: ['Iris', 'Iris'], categoria: 'transiciones', elemento: 'sagrado', capa: 'pantalla',
+    opciones: { palette: rampa('sagrado', 8), color: '#050405' },
+    uso: [{ tipo: 'cinematica', nota: 'cierre en círculo sobre el héroe al terminar un acto' }],
+  },
 ];

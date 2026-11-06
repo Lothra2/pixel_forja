@@ -149,7 +149,8 @@ export function draw(p, time, o) {
   const t = shift(time, D, o.seed), C = fit(o.palette, 7), P = pose(t, o.hop), yb = P.by - 1, age = P.age;
   const g = GRID;
   body(g, C, P);
-  face(g, C, P, t);
+  // Forja: una baba sin cara
+  void face;
   bubbleIn(g, C, P, t);
   g.outline((x, y, nx, ny) => (ny < 0 && nx <= 0 && y < yb - P.H * 0.5 ? C[1] : C[0]));
   g.draw(p);

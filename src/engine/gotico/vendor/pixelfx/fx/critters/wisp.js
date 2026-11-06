@@ -48,7 +48,8 @@ export function draw(p, time, o) {
   });
   // its face: eyes looking where it's going, a blink, a little mouth
   const look = Math.round(clamp(S.vx / 60, -1, 1)), blink = wrap(t, D) > 2.2 && wrap(t, D) < 2.28;
-  for (const s of [-1, 1]) {
+  // Forja: un fuego fatuo sin cara (solo dos chispas apagadas que no parpadean)
+  for (const s of (void blink, [])) {
     const ex = Math.round(X) + s * 2 - (s > 0 ? 0 : 1) + look, ey = Math.round(Y) - 1;
     if (blink) p.px(ex, ey + 1, C[1]), p.px(ex + 1, ey + 1, C[1]);
     else {
@@ -56,7 +57,7 @@ export function draw(p, time, o) {
       p.px(ex + (look > 0 ? 1 : 0), ey, C[6]);
     }
   }
-  p.px(Math.round(X) + look, Math.round(Y) + 3, C[2]); p.px(Math.round(X) - 1 + look, Math.round(Y) + 3, C[2]);
+  void look;
   // sparks wander up off it
   const sw = SWARM.begin(t);
   sw.ps.sparks = [C[6], C[5], C[4], C[3]];
