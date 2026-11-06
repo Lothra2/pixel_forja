@@ -14,6 +14,7 @@ import { R, entre, elegir, clamp, dist, hashTxt } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 import { zancada } from '../../../src/engine/gotico/figura';
 import { manifiesto } from '../motor/assets';
+import { muertePfx } from './pfx_usos';
 
 /** Celdas que avanza un ciclo completo de caminar o correr (cuerpo de alto 1), según la pisada del motor. */
 export const ZANCADA = { caminar: zancada('caminar') / 16, correr: zancada('correr') / 16 };
@@ -623,6 +624,8 @@ function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
     return;
   }
   if (m.dueno) { j.cadaveres++; return; }
+  // la muerte de pixelfx (el ánima que sube, el hielo que revienta, la explosión del jefe...)
+  const mp = muertePfx(m as any, g?.elem, R()); if (mp) { (m as any).pfxMuerte = { id: mp, t0: j.t }; efecto(j, 'pfx:' + mp, m.x, m.y, 0, m.escala ?? 1, 0, 4.5); }
   // condena del osario: el maldito revienta al morir
   if (m.maldicion?.condena && !(m as any).usado) {
     usarCadaver(m);

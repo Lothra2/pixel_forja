@@ -15,8 +15,11 @@ import { R, rng } from '../nucleo/azar';
 import { auraEquipo } from '../juego/visual';
 import { calorOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
 import { prepararFuegos, vivosDe, tieneFuegoDoom, dibujarVivos } from './fuego_vivo';
+import { dibujarPfx, alfaCuerpo, efectoPfx } from './pfx';
+import { estadosPfx } from '../juego/pfx_usos';
 import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde } from './fuego_especial';
 let dtCuadro = 1 / 60;
+const congelados = new WeakSet<object>();
 const ES_FUEGO = /fogata|hoguera|brasero|pira|antorcha|fuego|caldero|hogar/;
 import { recolectar, sombras, reflejos, luces, destello, destelloColor } from './luces';
 
@@ -337,6 +340,7 @@ function dibujarRaw(raw: any[], x: number, y: number) {
 }
 function dibujarEfecto(e: Efecto, _t: number) {
   if (e.id === 'arco_cadena') return;
+  if (e.id.startsWith('pfx:')) { const [px, py] = aPant(e.x, e.y); dibujarPfx(ctx, e.id.slice(4), e.t, px, py - (e.z ?? 0), { dir: e.dir, escala: e.escala }); return; }
   const meta = manifiesto().wm?.[e.id];
   const [px, py] = aPant(e.x, e.y);
   if (!meta) return;
@@ -394,16 +398,24 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // la mitad de atrás del aura va antes del cuerpo
   if (e.tipo === 'heroe' && !e.muerto) auraHeroe(j, px, py, tiempo, true);
   let ok: boolean;
+  // estados de pixelfx: el primero tiñe el cuerpo, todos van en bucle encima
+  const ests = e.muerto ? [] : estadosPfx(e as any);
+  const tinteEst = ests.map((id) => efectoPfx(id)?.cuerpo?.tinte).find(Boolean);
+  const pm = (e as any).pfxMuerte as { id: string; t0: number } | undefined;
+  const alfaM = e.muerto && pm ? alfaCuerpo(pm.id, j.t - pm.t0) : 1;
+  if (alfaM <= 0.01) return;
+  if (alfaM < 1) ctx.globalAlpha = alfaM;
+  if (!e.muerto) { const cg = (e as any).congelado > 0; if (cg && !congelados.has(e)) j.efectos.push({ id: 'pfx:fx_congelar', x: e.x, y: e.y, t: 0, dir: 0, escala: Math.max(0.6, Math.min(3, (q.ay * esc) / 75)), z: 0, dur: 3.8 } as Efecto); if (cg) congelados.add(e); else congelados.delete(e); }
   const cambio = e.tipo === 'heroe' ? performance.now() / 1000 - cambioVisible : 9;
   if (cambio < 0.45) ok = dibujarTenido(ctx, q, px, py, '#fff2d0', 0.7 * (1 - cambio / 0.45), esc);
   else if (e.destello > 0) ok = dibujarTenido(ctx, q, px, py, '#ffffff', 0.55, esc);
-  else if (e.congelado > 0) ok = dibujarTenido(ctx, q, px, py, '#70b8ff', 0.55, esc);
-  else if (e.frio > 0) ok = dibujarTenido(ctx, q, px, py, '#5090e0', 0.3, esc);
-  else if (e.veneno > 0) ok = dibujarTenido(ctx, q, px, py, '#40c030', 0.3, esc);
+  else if (tinteEst) ok = dibujarTenido(ctx, q, px, py, tinteEst.color, tinteEst.fuerza * (e.frio > 0 && !(e.congelado > 0) ? 0.6 : 1), esc);
   else if (e.tinte) ok = dibujarTenido(ctx, q, px, py, e.tinte, e.tipo === 'invocado' ? 0.35 : e.tipo === 'heroe' ? 0.22 : 0.3, esc);
   else if (e.muerto && e.tMuerto > 60) { ctx.globalAlpha = Math.max(0.25, 1 - (e.tMuerto - 60) / 400); ok = dibujar(ctx, q, px, py, esc); ctx.globalAlpha = 1; }
   else ok = dibujar(ctx, q, px, py, esc);
+  if (alfaM < 1) ctx.globalAlpha = 1;
   if (ok && !e.muerto) reflejos(ctx, e, q, px, py, esc);
+  if (ok && ests.length) { const k = Math.max(0.6, Math.min(3, (q.ay * esc) / 75)); for (const id of ests) dibujarPfx(ctx, id, tiempo + (e.id % 7) * 0.31, px, py, { escala: k }); }
   if (ok && !e.muerto && !(window as any).__sinFuego && e.tipo === 'monstruo' && m.def.sprite === 'jefe_ozmaren') {
     const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
     ozmarenArde(ctx, m, q, px, py, esc, dtCuadro, furia); calorOzmaren(ctx, q, px, py, esc, tiempo, furia);
