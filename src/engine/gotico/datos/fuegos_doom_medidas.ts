@@ -18,12 +18,12 @@ export interface MedidaFuego {
 
 export const MEDIDAS_FUEGO: Record<string, MedidaFuego> = {
   'abi_farol|verde': { boca: [12, -37], ancho: 7, alto: 6, focos: [[12, -37]], mat: 'fuego_verde', tema: 'abismo', luz: [160, '#60d060', 38] },
-  'abo_catedral_cabecera|entera': { boca: [0, 0], ancho: 97, alto: 204, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [256, '#c42410', 140], vitrales: { caja: [-12, -185, 97, 204] } },
-  'abo_catedral_cabecera|herida': { boca: [0, 0], ancho: 97, alto: 204, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [320, '#c42410', 140], vitrales: { caja: [-12, -185, 97, 204] } },
+  'abo_catedral_cabecera|entera': { boca: [0, 0], ancho: 97, alto: 203, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [256, '#c42410', 140], vitrales: { caja: [-12, -185, 97, 203] } },
+  'abo_catedral_cabecera|herida': { boca: [0, 0], ancho: 97, alto: 203, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [320, '#c42410', 140], vitrales: { caja: [-12, -185, 97, 203] } },
   'abo_catedral_fachada|entera': { boca: [0, 0], ancho: 164, alto: 371, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [400, '#d01c0a', 22], vitrales: { caja: [-71, -377, 164, 371] }, puerta: [-15, -12, 22, 64] },
   'abo_catedral_fachada|herida': { boca: [0, 0], ancho: 164, alto: 371, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [480, '#d01c0a', 22], vitrales: { caja: [-71, -377, 164, 371] }, puerta: [-15, -12, 22, 64] },
-  'abo_catedral_nave|entera': { boca: [0, 0], ancho: 158, alto: 280, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [248, '#c42410', 150], vitrales: { caja: [-32, -260, 158, 280] } },
-  'abo_catedral_nave|herida': { boca: [0, 0], ancho: 158, alto: 281, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [384, '#c42410', 190], vitrales: { caja: [-32, -260, 158, 281] } },
+  'abo_catedral_nave|entera': { boca: [0, 0], ancho: 158, alto: 281, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [248, '#c42410', 150], vitrales: { caja: [-32, -260, 158, 281] } },
+  'abo_catedral_nave|herida': { boca: [0, 0], ancho: 158, alto: 280, focos: [], mat: 'abo_vitral', tema: 'cementerio', luz: [384, '#c42410', 190], vitrales: { caja: [-32, -260, 158, 280] } },
   'ahg_farol_altar|velas': { boca: [14, -37], ancho: 18, alto: 8, focos: [[-1, -42], [11, -38], [16, -37]], mat: 'luz_vela', tema: 'ahogada', luz: [140, '#e0a040', 30] },
   'arc_brasero|cuenco': { boca: [-1, -11], ancho: 16, alto: 23, focos: [[-1, -11]], mat: 'fuego_azul', tema: 'arcano', luz: [128, '#3a86f0', 17] },
   'arc_brasero|pie': { boca: [-1, -41], ancho: 12, alto: 22, focos: [[-1, -41]], mat: 'fuego_azul', tema: 'arcano', luz: [128, '#3a86f0', 41] },

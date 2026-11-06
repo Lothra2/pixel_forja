@@ -99,7 +99,7 @@
     "sprite": "abo_catedral_cabecera_sin_llama",
     "boca": [
      37,
-     19
+     18
     ],
     "grilla": [
      49,
@@ -114,7 +114,7 @@
       -12,
       -185,
       97,
-      204
+      203
      ],
      "relleno": 0.22
     },
@@ -129,9 +129,9 @@
     "pegada": 0,
     "luz": {
      "color": "#ff6a24",
-     "radio": 260,
+     "radio": 150,
      "altura": 168,
-     "intensidad": 0.8,
+     "intensidad": 0.45,
      "mueve": 0.35,
      "dx": 0,
      "sombra": false
@@ -147,7 +147,7 @@
     "sprite": "abo_catedral_cabecera_sin_llama",
     "boca": [
      37,
-     19
+     18
     ],
     "grilla": [
      49,
@@ -162,7 +162,7 @@
       -12,
       -185,
       97,
-      204
+      203
      ],
      "relleno": 0.22
     },
@@ -177,9 +177,9 @@
     "pegada": 0,
     "luz": {
      "color": "#ff6a24",
-     "radio": 260,
+     "radio": 150,
      "altura": 168,
-     "intensidad": 0.8,
+     "intensidad": 0.45,
      "mueve": 0.35,
      "dx": 0,
      "sombra": false
@@ -225,9 +225,9 @@
     "pegada": 0,
     "luz": {
      "color": "#ff6a24",
-     "radio": 260,
+     "radio": 150,
      "altura": 26,
-     "intensidad": 0.8,
+     "intensidad": 0.45,
      "mueve": 0.35,
      "dx": 0,
      "sombra": false
@@ -312,9 +312,9 @@
     "pegada": 0,
     "luz": {
      "color": "#ff6a24",
-     "radio": 260,
+     "radio": 150,
      "altura": 26,
-     "intensidad": 0.8,
+     "intensidad": 0.45,
      "mueve": 0.35,
      "dx": 0,
      "sombra": false
@@ -369,54 +369,6 @@
     "sprite": "abo_catedral_nave_sin_llama",
     "boca": [
      47,
-     20
-    ],
-    "grilla": [
-     79,
-     140
-    ],
-    "celda": 2,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "mascara",
-     "archivo": "fuegos_doom/abo_catedral_nave_entera.png",
-     "caja": [
-      -32,
-      -260,
-      158,
-      280
-     ],
-     "relleno": 0.22
-    },
-    "decay": 2.63,
-    "viento": 0,
-    "rafagas": 0.1,
-    "turbulencia": 0.5,
-    "ruido": 0.5,
-    "humo": 0,
-    "hueco": 0,
-    "brillo": 1,
-    "pegada": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 260,
-     "altura": 180,
-     "intensidad": 0.8,
-     "mueve": 0.35,
-     "dx": 0,
-     "sombra": false
-    },
-    "brasas": 0,
-    "mezcla": "sumar",
-    "semilla": 82674
-   }
-  ],
-  "abo_catedral_nave|herida": [
-   {
-    "clase": "vitral",
-    "sprite": "abo_catedral_nave_sin_llama",
-    "boca": [
-     47,
      21
     ],
     "grilla": [
@@ -427,7 +379,7 @@
     "paleta": "infierno",
     "forma": {
      "tipo": "mascara",
-     "archivo": "fuegos_doom/abo_catedral_nave_herida.png",
+     "archivo": "fuegos_doom/abo_catedral_nave_entera.png",
      "caja": [
       -32,
       -260,
@@ -447,9 +399,57 @@
     "pegada": 0,
     "luz": {
      "color": "#ff6a24",
-     "radio": 260,
+     "radio": 150,
+     "altura": 180,
+     "intensidad": 0.45,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 82674
+   }
+  ],
+  "abo_catedral_nave|herida": [
+   {
+    "clase": "vitral",
+    "sprite": "abo_catedral_nave_sin_llama",
+    "boca": [
+     47,
+     20
+    ],
+    "grilla": [
+     79,
+     140
+    ],
+    "celda": 2,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "mascara",
+     "archivo": "fuegos_doom/abo_catedral_nave_herida.png",
+     "caja": [
+      -32,
+      -260,
+      158,
+      280
+     ],
+     "relleno": 0.22
+    },
+    "decay": 2.63,
+    "viento": 0,
+    "rafagas": 0.1,
+    "turbulencia": 0.5,
+    "ruido": 0.5,
+    "humo": 0,
+    "hueco": 0,
+    "brillo": 1,
+    "pegada": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 150,
      "altura": 228,
-     "intensidad": 0.8,
+     "intensidad": 0.45,
      "mueve": 0.35,
      "dx": 0,
      "sombra": false
