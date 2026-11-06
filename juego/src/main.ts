@@ -348,7 +348,7 @@ function controlar(jj: Juego, dt: number) {
   // puertas selladas por la historia: la variante del objeto sigue a la misión y no se puede pasar antes
   for (const s of jj.zona.salidas) if (s.sello && s.obj) {
     // sellada hasta aceptar la misión, entera después y herida cuando se cumple la otra (la catedral tras la Abadesa)
-    const quiere = estadoMision(h.d, s.sello) === 0 ? 'sellada' : s.herida && estadoMision(h.d, s.herida) === 3 ? 'herida' : 'entera';
+    const quiere = catedralForzada ?? (estadoMision(h.d, s.sello) === 0 ? 'sellada' : s.herida && estadoMision(h.d, s.herida) === 3 ? 'herida' : 'entera');
     for (const o of s.piezas ?? [s.obj]) { const v = objetoMeta(o.id, quiere) ? quiere : quiere === 'entera' && objetoMeta(o.id, 'abierta') ? 'abierta' : o.v; if (v !== o.v) o.v = v; }
   }
   if ((h as any).salida && llega((h as any).salida.cx + 0.5, (h as any).salida.cy + 0.5, 2.5)) {
@@ -705,3 +705,7 @@ async function arrancar() {
 function aplicarMusicaEstado() { Sonido.musica(estado === 'intro' ? 'intro' : estado === 'juego' && j ? (MUSICA_ACTO(j.zona.acto, j.zona.tipo) as any) : 'menu'); }
 void lugarEn; void COFRE_W; void COFRE_H; void crearObjeto; void dibujarPaneles;
 arrancar();
+
+/** Prueba: fija la variante de la catedral (sellada, entera o herida) por encima de la historia; sin argumento vuelve a la historia. */
+let catedralForzada: string | null = null;
+(window as any).__catedral = (v?: string) => { catedralForzada = v || null; return catedralForzada; };

@@ -117,7 +117,7 @@ export function prepararFuegos(j: Juego, dt: number, aPant: (x: number, y: numbe
     if (!c.vitral && n >= tope) continue;
     const lista: Vivo[] = [];
     c.ss.forEach((s, i) => {
-      const k = `${c.o.cx},${c.o.cy},${i}`;
+      const k = `${c.o.cx},${c.o.cy},${c.o.v},${i}`;
       let v = vivos.get(k);
       if (!v) { const nv = crear(s, frio); if (!nv) return; v = nv; vivos.set(k, v); }
       // lo que estuvo fuera de pantalla se quedó congelado: al volver se pone al día

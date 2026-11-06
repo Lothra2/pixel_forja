@@ -44,7 +44,7 @@ export interface Entrada {
   tactil: boolean;
   texto: string;
 }
-export const E: Entrada = { x: 0, y: 0, izq: false, der: false, clicIzq: false, clicDer: false, soltoIzq: false, soltoDer: false, teclas: new Set(), pulsadas: new Set(), rueda: 0, shift: false, ctrl: false, alt: false, tactil: false, texto: '' };
+export const E: Entrada = { x: 0, y: 0, izq: false, der: false, clicIzq: false, clicDer: false, soltoIzq: false, soltoDer: false, teclas: new Set(), pulsadas: new Set(), rueda: 0, shift: false, ctrl: false, alt: false, tactil: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, texto: '' };
 let alGesto: (() => void) | null = null;
 export const alPrimerGesto = (f: () => void) => { alGesto = f; };
 const gesto = () => { if (alGesto) { try { alGesto(); } catch { /* sin audio */ } } };

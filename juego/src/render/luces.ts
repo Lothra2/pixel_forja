@@ -104,7 +104,9 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const fa = sa.piezas[sa.piezas.length - 1], [px, py] = aPant(fa.cx + 0.5, fa.cy - 4);
     if (!dentro(px, py, 700)) continue;
     L.push({ id: 'ancla0', x: px, y: py - 120, h: 260, r: 520, c: [150, 165, 210], k: 0.55, sinSombra: true });
-    L.push({ id: 'ancla1', x: px, y: py - 60, h: 90, r: 260, c: [255, 50, 40], k: 0.25 + 0.15 * (0.5 + 0.5 * Math.sin(t * 1.4)), sinSombra: true });
+    // el latido rojo de los vitrales solo si arden (sellada están apagados): con fuego de Doom late con su pulso
+    const vit = z.objetos.find((o) => o.id === fa.id) ? vivosDe(fa) : undefined;
+    if (fa.v !== 'sellada') L.push({ id: 'ancla1', x: px, y: py - 60, h: 90, r: 260, c: [255, 50, 40], k: vit ? 0.32 * pulsoLuz(vit[0].f, 0.5).k : 0.25 + 0.15 * (0.5 + 0.5 * Math.sin(t * 1.4)), sinSombra: true });
     // la puerta abierta: luz roja fuerte justo afuera del umbral, con el pulso de los vitrales; tiñe el piso, al héroe, a Thor y a las
     // lápidas y les saca sombras largas hacia afuera (con sombra, a propósito)
     if (fa.v !== 'sellada') { const [dx, dy] = aPant(fa.cx + 0.5, fa.cy + 2); const pulso = 0.5 + 0.5 * Math.sin(t * 1.4); L.push({ id: 'puerta', x: dx, y: dy, h: 22, r: 150 + pulso * 25, c: [255, 58, 18], k: 0.8 + pulso * 0.2 }); }
