@@ -13,7 +13,8 @@ import * as D from './fuego_doom';
  * La luz de cada uno (luz_efectos.ts) sale de `curvaDoom`: el calor medio de la llama en cada cuadro.
  *
  * Este archivo no importa poderes.ts (solo sus tipos por estructura): poderes.ts lo importa y suma estos efectos a su
- * lista, y reemplaza el cuerpo de muro_llamas y crater_ardiente manteniendo sus ids, cuadros, celda y ancla.
+ * lista, y reemplaza el cuerpo de crater_ardiente manteniendo su id, cuadros, celda y ancla (muro_llamas se probó y
+ * quedó como estaba: sus lenguas nítidas se veían mejor).
  */
 
 type V3 = [number, number, number];
@@ -28,6 +29,7 @@ export interface LienzoDoom {
   mancha(x: number, y: number, rx: number, ry: number, c: C, a: number, nx?: number, ny?: number, borde?: number): void;
   rayo3(a: V3, b: V3, ra: number, rb: number, c: C, ka: number, kb?: number): void;
   humo(x: number, y: number, r: number, c: C, a: number, nx?: number, ny?: number, ey?: number): void;
+  bola(p: V3, r: number, c: C, k: number, ex?: number, ey?: number): void;
 }
 export interface CxDoom { L: LienzoDoom; f: number; n: number; u: number; v: number; sem: number; R(k?: number): () => number }
 export interface DefDoom {
@@ -205,15 +207,19 @@ const GUIONES: Record<string, Guion> = {
   // brasas que caen y prenden fuegos chicos donde pegan (la fuente se arma cuadro a cuadro); después se templa
   lluvia_brasas: {
     celda: CP, t: 2, n: 18, bucle: false,
-    crear: () => D.crearFuego({ ancho: anchoAnillo(56), alto: 64, forma: { tipo: 'mapa', fuente: [] }, paleta: 'infierno', semilla: 4104, decay: dec(40, 128), humo: 0.5, ruido: 0.3, turbulencia: 0.45 }),
-    pasosEn: (i) => (i < 11 ? 3 : 4),
+    crear: () => D.crearFuego({ ancho: anchoAnillo(56), alto: 64, forma: { tipo: 'mapa', fuente: [] }, paleta: 'infierno', semilla: 4104, decay: dec(44, 128), humo: 0.25, ruido: 0.25, turbulencia: 0.4, brillo: 1.7, pegada: 0.7 }),
+    pasosEn: (i) => (i < 13 ? 3 : 4),
     antes: (f, i) => {
-      for (const g of GOLPES_LLUVIA) if (g.cuadro === i) for (let dx = -2; dx <= 2; dx++) {
-        const x = Math.round(f.w / 2 + g.cx * 1.5 + dx), y = Math.round(f.h - 18 + g.cy * 1.5);
-        if (x > 1 && y > 1 && x < f.w - 2 && y < f.h) f.fuente[y * f.w + x] = Math.max(f.fuente[y * f.w + x], 1 - Math.abs(dx) * 0.15);
+      // donde pega cada brasa nace un fuego chico: una mancha de fuente de 7 x 2 celdas, al rojo, y se aviva
+      for (const g of GOLPES_LLUVIA) if (g.cuadro === i) {
+        for (let dy = -1; dy <= 0; dy++) for (let dx = -3; dx <= 3; dx++) {
+          const x = Math.round(f.w / 2 + g.cx * 1.5 + dx), y = Math.round(f.h - 18 + g.cy * 1.5 + dy);
+          if (x > 1 && y > 1 && x < f.w - 2 && y < f.h) f.fuente[y * f.w + x] = Math.max(f.fuente[y * f.w + x], 1 - Math.abs(dx) * 0.08);
+        }
+        D.avivar(f, 1.3, 0.25);
       }
-      if (i === 11) { D.apagar(f); f.nivel = 0.3; }
-      if (i === 13) f.decay *= 1.8;
+      if (i === 13) { D.apagar(f); f.nivel = 0.3; }
+      if (i === 15) f.decay *= 1.8;
     },
   },
   // pilar: el sello brilla, revienta una columna de fuego alta y rápida (más pasos por cuadro) y se apaga templándose
@@ -248,24 +254,20 @@ const GUIONES: Record<string, Guion> = {
     celda: CP, t: 2, n: 12, bucle: true,
     crear: () => D.crearFuego({ ancho: 38, alto: 60, forma: { tipo: 'anillo', radio: rx(17, CP), grosor: 1, relleno: 0.6 }, paleta: 'corona_fria', semilla: 4107, decay: dec(84, 120), humo: 0.25, hueco: 0.25, turbulencia: 0.35, ruido: 0.4, rafagas: 0.1 }),
   },
-  // mejoras de los de siempre (misma caja): lenguas sueltas como las de antes, ahora con fuego de Doom
-  muro_llamas: {
-    celda: CP, t: 2, n: 10, bucle: true,
-    crear: () => D.crearFuego({ ancho: 38, alto: 48, forma: { tipo: 'puntos', en: lenguas(7, 14, CP, 38, 48, 43, 0.5), ancho: 2.4 }, paleta: 'infierno', semilla: 4111, decay: dec(66, 96), humo: 0.5, ruido: 0.3, turbulencia: 0.35 }),
-  },
+  // mejora de uno de siempre (misma caja), con fuego de Doom
   crater_ardiente: {
     celda: CP, t: 2, n: 10, bucle: true,
-    crear: () => D.crearFuego({ ancho: 42, alto: 34, forma: { tipo: 'puntos', en: lenguas(6, 15, CP, 42, 34, 44, 0.15), ancho: 2 }, paleta: 'infierno', semilla: 4112, decay: dec(36, 68), humo: 0.5, ruido: 0.45, tramo: 2.2, turbulencia: 0.45 }),
+    crear: () => D.crearFuego({ ancho: 42, alto: 34, forma: { tipo: 'puntos', en: lenguas(6, 15, CP, 42, 34, 44, 0.15), ancho: 2 }, paleta: 'infierno', semilla: 4112, decay: dec(36, 68), brillo: 1.5, pegada: 0.6, humo: 0.35, ruido: 0.45, tramo: 2.2, turbulencia: 0.45 }),
   },
 };
 
 /** Dónde pegan las brasas de la lluvia: cuadro y celda (desde el centro de abajo de la grilla). */
 const GOLPES_LLUVIA: { cuadro: number; cx: number; cy: number; wx: number; wy: number }[] = (() => {
   const r = D.azar(4199), out: { cuadro: number; cx: number; cy: number; wx: number; wy: number }[] = [];
-  for (let k = 0; k < 16; k++) {
-    const a = r() * TAU, d = Math.sqrt(r()) * 50, wx = Math.cos(a) * d, wy = Math.sin(a) * d;
+  for (let k = 0; k < 14; k++) {
+    const a = (k / 14) * TAU * 2.3 + r() * 1.2, d = Math.sqrt(0.08 + 0.92 * r()) * 50, wx = Math.cos(a) * d, wy = Math.sin(a) * d;
     // del mundo a celdas: x de pantalla = (wx - wy), y de pantalla = (wx + wy) / 2 (el centro queda en la fila alto - 12)
-    out.push({ cuadro: 1 + Math.floor((k / 16) * 10), cx: (wx - wy) / 3, cy: (wx + wy) / 2 / 3, wx, wy });
+    out.push({ cuadro: 3 + Math.floor((k / 14) * 9), cx: (wx - wy) / 3, cy: (wx + wy) / 2 / 3, wx, wy });
   }
   return out;
 })();
@@ -311,18 +313,38 @@ export const DEFS_DOOM: DefDoom[] = [
     id: 'lluvia_brasas', nombre: ['Lluvia de Brasas', 'Rain of Cinders'], elemento: 'fuego', tipo: 'lluvia', cuadros: 18, t: 2,
     pinta: (c) => {
       const { L } = c, s = seq('lluvia_brasas'), [x, y] = L.P([0, 0, 0]);
-      // brasas que caen en diagonal desde el cielo y pegan en su cuadro
-      for (const g of GOLPES_LLUVIA) {
-        const T = (c.f + 1 - g.cuadro) / 1;
-        if (T <= -1.2 || T > 0.15) continue;
-        const z = Math.max(0, -T) * 150, a: V3 = [g.wx - z * 0.25, g.wy - z * 0.12, z], b: V3 = [a[0] - 6, a[1] - 3, z + 26];
-        L.rayo3(a, b, 1.1, 0.5, BRASA[1], 1.3, 0);
-        L.rayo3(a, b, 3.5, 1.5, BRASA[2], 0.25, 0);
-        if (T > -0.2) L.piso([g.wx, g.wy, 0], 10, BRASA[1], 0.8);
-      }
       const k = s.cuadros[c.f].k;
-      L.piso([0, 0, 0], 60, PAL('infierno'), 0.35 * k * 2);
+      L.mancha(x, y, 72, 36, [0.045, 0.03, 0.025], 0.5 * Math.min(1, c.f / 6), 2.7, 1.9, 0.5);
+      L.piso([0, 0, 0], 64, PAL('infierno'), 0.3 + 0.5 * k);
+      // primero las llamitas del piso (detrás de las brasas que siguen cayendo)
       pintarCuadro(L, s, c.f, x, y + bajoFila(17, CP), 1);
+      for (const g of GOLPES_LLUVIA) {
+        const T = c.f + 0.5 - g.cuadro;
+        // cae: brasa grande con estela, en diagonal desde arriba (3.5 cuadros en el aire)
+        if (T > -3.5 && T <= 0) {
+          const z = -T * 58, a: V3 = [g.wx - z * 0.32, g.wy - z * 0.16, z + 3], b: V3 = [a[0] - 11, a[1] - 5.5, a[2] + 34];
+          // humo de la estela (materia, detrás), estela de fuego gruesa y la brasa: un carbón que arde
+          const [hx, hy] = L.P([a[0] - 14, a[1] - 7, a[2] + 44]);
+          L.humo(hx, hy, 7, [0.16, 0.12, 0.1], 0.35, g.wx * 0.1, T);
+          L.rayo3(a, b, 8, 3, BRASA[2], 0.32, 0);
+          L.rayo3(a, b, 3.4, 1, BRASA[1], 1.15, 0);
+          L.rayo3(a, b, 1.4, 0.5, BRASA[0], 1.4, 0);
+          L.bola(a, 14, BRASA[2], 0.42);
+          L.bola(a, 6, BRASA[1], 1.4);
+          L.bola(a, 2.8, BRASA[0], 2.2);
+        }
+        // revienta al tocar el piso: fogonazo, chispas que saltan y se apagan
+        if (T > 0 && T < 2) {
+          const q = T / 2, R = D.azar(g.cuadro * 977 + Math.round(g.wx * 13));
+          L.piso([g.wx, g.wy, 0], 16 + 10 * q, BRASA[1], 1.1 * (1 - q));
+          L.bola([g.wx, g.wy, 5], 9 * (1 - q * 0.5), BRASA[0], 0.9 * (1 - q) ** 2);
+          for (let i = 0; i < 7; i++) {
+            const an = R() * TAU, v = 14 + R() * 18, up = 18 + R() * 22, t1 = q * 0.9, t0 = Math.max(0, t1 - 0.12);
+            const at = (t: number): V3 => [g.wx + Math.cos(an) * v * t, g.wy + Math.sin(an) * v * t, Math.max(0, up * t - 40 * t * t)];
+            L.rayo3(at(t1), at(t0), 0.9, 0.5, BRASA[1], 1.4 * (1 - q), 0);
+          }
+        }
+      }
     },
   },
   {
@@ -361,16 +383,6 @@ export const DEFS_DOOM: DefDoom[] = [
 
 /** El nuevo cuerpo de dos poderes de siempre (mismo id, cuadros, celda y ancla: la caja es la que medían antes). */
 export const MEJORAS_DOOM: Record<string, Pick<DefDoom, 'pinta' | 'caja'>> = {
-  muro_llamas: {
-    caja: { x0: AX - 42, y0: AY - 100, w: 84, h: 126 },
-    pinta: (c) => {
-      const { L } = c, s = seq('muro_llamas'), [x, y] = L.P([0, 0, 0]), caja = MEJORAS_DOOM.muro_llamas.caja;
-      L.piso([0, 0, 0], 26, PAL('infierno'), 0.75);
-      L.piso([0, 0, 0], 12, BRASA[1], 0.6);
-      pintarCuadro(L, s, c.f, x, y + bajoCentro(rx(14, CP), CP), 1, { caja });
-      chispas(L, c.R(7), 10, 12, 10, 60, c.u, BRASA, 1);
-    },
-  },
   crater_ardiente: {
     caja: { x0: AX - 45, y0: AY - 78, w: 93, h: 105 },
     pinta: (c) => {

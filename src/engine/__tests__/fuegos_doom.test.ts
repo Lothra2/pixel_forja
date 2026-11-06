@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { decodePng } from '../export/png';
 import { fileURLToPath } from 'node:url';
 import { REGISTRO } from '../gotico';
 import * as D from '../gotico/fuego_doom';
@@ -19,7 +20,8 @@ describe('fuegos de Doom del mundo', () => {
     const clases = new Set(Object.values(FUEGOS_DOOM).flat().map((f) => f.clase));
     for (const c of ['antorcha', 'brasero', 'pira', 'hoguera', 'fogata', 'vela', 'candelabro', 'farol', 'caldero', 'hogar', 'vitral', 'puerta'] as const) expect(clases.has(c), c).toBe(true);
     expect(IDS_FUEGO_DOOM.length).toBeGreaterThan(40);
-    for (const id of ['cue_antorcha', 'mon_antorcha', 'inf_brasero', 'mon_brasero', 'inf2_pira', 'par_hoguera', 'camp_fogata', 'cri_candelabro', 'cem_farol', 'inf2_caldero', 'abo_catedral_fachada']) expect(IDS_FUEGO_DOOM, id).toContain(id);
+    for (const id of ['cue_antorcha', 'mon_antorcha', 'inf_brasero', 'mon_brasero', 'inf2_pira', 'par_hoguera', 'camp_fogata', 'cri_candelabro', 'cem_farol', 'mue_caldero', 'abo_catedral_fachada']) expect(IDS_FUEGO_DOOM, id).toContain(id);
+    for (const id of ['camp_fragua', 'inf2_caldero', 'inf2_columna_fuego']) expect(IDS_FUEGO_DOOM, id).not.toContain(id);
   });
 
   it('cada objeto tiene su gemelo sin llama (mismas variantes, un cuadro, sin piezas de llama ni vitral encendido)', () => {
@@ -63,6 +65,19 @@ describe('fuegos de Doom del mundo', () => {
       expect(Math.abs(m.alto - t.alto), k).toBeLessThanOrEqual(2);
     }
   }, 60_000);
+
+  it('las máscaras de los vitrales están en el repo, del tamaño de su caja', () => {
+    let n = 0;
+    for (const lista of Object.values(FUEGOS_DOOM)) for (const f of lista) {
+      if (f.forma.tipo !== 'mascara') continue;
+      const r = decodePng(readFileSync(fileURLToPath(new URL(`../gotico/datos/${f.forma.archivo}`, import.meta.url))));
+      expect([r.w, r.h], f.forma.archivo).toEqual([f.forma.caja[2], f.forma.caja[3]]);
+      let a = 0; for (let i = 3; i < r.data.length; i += 4) a += r.data[i];
+      expect(a, f.forma.archivo).toBeGreaterThan(1000);
+      n++;
+    }
+    expect(n).toBe(6);
+  });
 
   it('trae los fuegos que no son objetos', () => {
     for (const k of ['quemado', 'cadaver', 'suelo_ardiente', 'ozmaren', 'fuego_frio', 'arma_encantada']) {

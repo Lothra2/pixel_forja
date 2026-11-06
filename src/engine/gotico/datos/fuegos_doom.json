@@ -2,7 +2,7 @@
  "formato": "pixelforja-gotico-fuegos-doom",
  "version": 1,
  "pasos_por_segundo": 25,
- "notas": "Ver datos/fuegos_doom.ts y fuego_doom.ts. boca: px desde el ancla del sprite donde va el pie de la grilla (centro de su fila de abajo); grilla en celdas de celda px; dibujar el gemelo sprite (sin llama) en lugar del original y el fuego encima; luz k = intensidad * pulsoLuz(f, mueve).k; mezcla 'sumar' = globalCompositeOperation 'lighter' para la llama (el humo con alfa normal).",
+ "notas": "Ver datos/fuegos_doom.ts y fuego_doom.ts. boca: px desde el ancla del sprite donde va el pie de la grilla (centro de su fila de abajo); grilla en celdas de celda px; dibujar el gemelo sprite (sin llama) en lugar del original y el fuego encima; luz k = intensidad * pulsoLuz(f, mueve).k; forma mascara: el archivo es relativo a esta carpeta (datos/fuegos_doom/*.png, alfa = vitral); mezcla 'sumar' = globalCompositeOperation 'lighter' para la llama (el humo con alfa normal).",
  "paletas": {
   "infierno": {
    "luz": "#ff6a24",
@@ -17,7 +17,7 @@
    "mezcla": "sumar"
   },
   "corona_fria": {
-   "luz": "#cddcff",
+   "luz": "#a8c4ff",
    "mezcla": "sumar"
   },
   "veneno": {
@@ -72,11 +72,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#86d83e",
      "radio": 208,
@@ -123,6 +125,8 @@
     "ruido": 0.5,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1,
+    "pegada": 0,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -169,6 +173,8 @@
     "ruido": 0.5,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1,
+    "pegada": 0,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -215,6 +221,8 @@
     "ruido": 0.5,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1,
+    "pegada": 0,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -247,11 +255,13 @@
     },
     "decay": 3.61,
     "viento": 0,
-    "rafagas": 0.15,
+    "rafagas": 0.08,
     "turbulencia": 0.45,
     "ruido": 0.35,
-    "humo": 0.5,
+    "humo": 0.3,
     "hueco": 0,
+    "brillo": 1.3,
+    "pegada": 0.5,
     "luz": {
      "color": "#ff6a24",
      "radio": 170,
@@ -298,6 +308,8 @@
     "ruido": 0.5,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1,
+    "pegada": 0,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -330,11 +342,13 @@
     },
     "decay": 3.61,
     "viento": 0,
-    "rafagas": 0.15,
+    "rafagas": 0.08,
     "turbulencia": 0.45,
     "ruido": 0.35,
-    "humo": 0.5,
+    "humo": 0.3,
     "hueco": 0,
+    "brillo": 1.3,
+    "pegada": 0.5,
     "luz": {
      "color": "#ff6a24",
      "radio": 170,
@@ -381,6 +395,8 @@
     "ruido": 0.5,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1,
+    "pegada": 0,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -427,6 +443,8 @@
     "ruido": 0.5,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1,
+    "pegada": 0,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -471,11 +489,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 182,
@@ -500,21 +520,23 @@
     ],
     "grilla": [
      15,
-     18
+     17
     ],
     "celda": 3,
     "paleta": "gas",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.73
+     "ancho": 4
     },
-    "decay": 4.96,
+    "decay": 5.32,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#5a8cff",
      "radio": 166,
@@ -539,21 +561,23 @@
     ],
     "grilla": [
      13,
-     17
+     16
     ],
     "celda": 3,
     "paleta": "gas",
     "forma": {
      "tipo": "boca",
-     "ancho": 2.8
+     "ancho": 3
     },
-    "decay": 5.14,
+    "decay": 5.51,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#5a8cff",
      "radio": 166,
@@ -589,11 +613,13 @@
     },
     "decay": 7.03,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 156,
@@ -629,11 +655,13 @@
     },
     "decay": 10.04,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 156,
@@ -669,11 +697,13 @@
     },
     "decay": 5.17,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 142,
@@ -709,11 +739,13 @@
     },
     "decay": 4.01,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 218,
@@ -726,201 +758,6 @@
     "brasas": 2.5,
     "mezcla": "sumar",
     "semilla": 50970
-   }
-  ],
-  "camp_fragua|encendida": [
-   {
-    "clase": "hogar",
-    "sprite": "camp_fragua_sin_llama",
-    "boca": [
-     6,
-     -23
-    ],
-    "grilla": [
-     16,
-     49
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "boca",
-     "ancho": 4.5
-    },
-    "decay": 2.28,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 187,
-     "altura": 22,
-     "intensidad": 0.9,
-     "mueve": 0.35,
-     "dx": 6,
-     "sombra": true
-    },
-    "brasas": 1.5,
-    "mezcla": "sumar",
-    "semilla": 79696
-   }
-  ],
-  "cat2_antorcha_pared|doble": [
-   {
-    "clase": "antorcha",
-    "sprite": "cat2_antorcha_pared_sin_llama",
-    "boca": [
-     -1,
-     -49
-    ],
-    "grilla": [
-     23,
-     19
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.25
-    },
-    "decay": 4.22,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 156,
-     "altura": 65,
-     "intensidad": 0.9,
-     "mueve": 0.35,
-     "dx": -1,
-     "sombra": true
-    },
-    "brasas": 1.2,
-    "mezcla": "sumar",
-    "semilla": 18273
-   }
-  ],
-  "cat2_antorcha_pared|encendida": [
-   {
-    "clase": "antorcha",
-    "sprite": "cat2_antorcha_pared_sin_llama",
-    "boca": [
-     -13,
-     -54
-    ],
-    "grilla": [
-     10,
-     10
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.13
-    },
-    "decay": 8.03,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 125,
-     "altura": 65,
-     "intensidad": 0.9,
-     "mueve": 0.35,
-     "dx": -13,
-     "sombra": true
-    },
-    "brasas": 1.2,
-    "mezcla": "sumar",
-    "semilla": 20176
-   }
-  ],
-  "cat2_antorcha_pared|encendida_der": [
-   {
-    "clase": "antorcha",
-    "sprite": "cat2_antorcha_pared_sin_llama",
-    "boca": [
-     12,
-     -54
-    ],
-    "grilla": [
-     10,
-     11
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.13
-    },
-    "decay": 7.45,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 125,
-     "altura": 65,
-     "intensidad": 0.9,
-     "mueve": 0.35,
-     "dx": 12,
-     "sombra": true
-    },
-    "brasas": 1.2,
-    "mezcla": "sumar",
-    "semilla": 31192
-   }
-  ],
-  "cat2_antorcha_pared|humeante": [
-   {
-    "clase": "antorcha",
-    "sprite": "cat2_antorcha_pared_sin_llama",
-    "boca": [
-     -13,
-     -54
-    ],
-    "grilla": [
-     10,
-     10
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.13
-    },
-    "decay": 8.74,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 125,
-     "altura": 65,
-     "intensidad": 0.9,
-     "mueve": 0.35,
-     "dx": -13,
-     "sombra": true
-    },
-    "brasas": 1.2,
-    "mezcla": "sumar",
-    "semilla": 90596
    }
   ],
   "cat2_hornacina_velas|con_calavera": [
@@ -953,11 +790,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -998,11 +837,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -1047,11 +888,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -1092,11 +935,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -1141,11 +986,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -1186,11 +1033,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -1235,11 +1084,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 177,
@@ -1280,11 +1131,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 177,
@@ -1325,11 +1178,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 146,
@@ -1370,11 +1225,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#86d83e",
      "radio": 146,
@@ -1423,11 +1280,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -1468,11 +1327,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -1521,11 +1382,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -1574,11 +1437,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -1623,11 +1488,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 177,
@@ -1668,11 +1535,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 177,
@@ -1721,11 +1590,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -1770,11 +1641,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -1823,11 +1696,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -1862,11 +1737,13 @@
     },
     "decay": 5.23,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#86d83e",
      "radio": 156,
@@ -1891,21 +1768,23 @@
     ],
     "grilla": [
      14,
-     17
+     21
     ],
     "celda": 3,
     "paleta": "animas",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.27
+     "ancho": 4.02
     },
-    "decay": 5.33,
+    "decay": 4.26,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
-    "hueco": 0.45,
+    "rafagas": 0.08,
+    "turbulencia": 0.35,
+    "ruido": 0.3,
+    "humo": 0.15,
+    "hueco": 0.22,
+    "brillo": 2.28,
+    "pegada": 0.8,
     "luz": {
      "color": "#4fd2cc",
      "radio": 146,
@@ -1930,21 +1809,23 @@
     ],
     "grilla": [
      14,
-     17
+     15
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.27
+     "ancho": 3.5
     },
-    "decay": 5.33,
+    "decay": 5.73,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 146,
@@ -1969,21 +1850,23 @@
     ],
     "grilla": [
      14,
-     17
+     15
     ],
     "celda": 3,
     "paleta": "veneno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.27
+     "ancho": 3.5
     },
-    "decay": 5.33,
+    "decay": 5.73,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#86d83e",
      "radio": 146,
@@ -2028,11 +1911,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -2077,11 +1962,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -2126,11 +2013,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -2179,11 +2068,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -2232,11 +2123,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -2289,11 +2182,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -2346,11 +2241,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -2403,11 +2300,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -2456,11 +2355,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -2475,190 +2376,6 @@
     "semilla": 74851
    }
   ],
-  "cri_lampara_aceite|corona": [
-   {
-    "clase": "vela",
-    "sprite": "cri_lampara_aceite_sin_llama",
-    "boca": [
-     0,
-     -61
-    ],
-    "grilla": [
-     6,
-     9
-    ],
-    "celda": 2,
-    "paleta": "vela",
-    "forma": {
-     "tipo": "puntos",
-     "en": [
-      [
-       3,
-       8
-      ]
-     ],
-     "ancho": 1
-    },
-    "decay": 11.4,
-    "viento": 0,
-    "rafagas": 0.08,
-    "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
-    "hueco": 0,
-    "luz": {
-     "color": "#ffb25a",
-     "radio": 156,
-     "altura": 73,
-     "intensidad": 0.7,
-     "mueve": 0.15,
-     "dx": 0,
-     "sombra": false
-    },
-    "brasas": 0,
-    "mezcla": "sumar",
-    "semilla": 5616
-   }
-  ],
-  "cri_lampara_aceite|de_craneo": [
-   {
-    "clase": "vela",
-    "sprite": "cri_lampara_aceite_sin_llama",
-    "boca": [
-     1,
-     -62
-    ],
-    "grilla": [
-     6,
-     9
-    ],
-    "celda": 2,
-    "paleta": "vela",
-    "forma": {
-     "tipo": "puntos",
-     "en": [
-      [
-       3,
-       8
-      ]
-     ],
-     "ancho": 1
-    },
-    "decay": 11.4,
-    "viento": 0,
-    "rafagas": 0.08,
-    "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
-    "hueco": 0,
-    "luz": {
-     "color": "#ffb25a",
-     "radio": 156,
-     "altura": 73,
-     "intensidad": 0.7,
-     "mueve": 0.15,
-     "dx": 1,
-     "sombra": false
-    },
-    "brasas": 0,
-    "mezcla": "sumar",
-    "semilla": 44834
-   }
-  ],
-  "cri_lampara_aceite|simple": [
-   {
-    "clase": "vela",
-    "sprite": "cri_lampara_aceite_sin_llama",
-    "boca": [
-     0,
-     -61
-    ],
-    "grilla": [
-     10,
-     13
-    ],
-    "celda": 2,
-    "paleta": "vela",
-    "forma": {
-     "tipo": "puntos",
-     "en": [
-      [
-       3,
-       8
-      ],
-      [
-       7,
-       12
-      ]
-     ],
-     "ancho": 1
-    },
-    "decay": 11.4,
-    "viento": 0,
-    "rafagas": 0.08,
-    "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
-    "hueco": 0,
-    "luz": {
-     "color": "#ffb25a",
-     "radio": 156,
-     "altura": 73,
-     "intensidad": 0.7,
-     "mueve": 0.15,
-     "dx": 0,
-     "sombra": false
-    },
-    "brasas": 0,
-    "mezcla": "sumar",
-    "semilla": 82290
-   }
-  ],
-  "cri_lampara_aceite|triple": [
-   {
-    "clase": "vela",
-    "sprite": "cri_lampara_aceite_sin_llama",
-    "boca": [
-     -1,
-     -64
-    ],
-    "grilla": [
-     6,
-     9
-    ],
-    "celda": 2,
-    "paleta": "vela",
-    "forma": {
-     "tipo": "puntos",
-     "en": [
-      [
-       3,
-       8
-      ]
-     ],
-     "ancho": 1
-    },
-    "decay": 11.4,
-    "viento": 0,
-    "rafagas": 0.08,
-    "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
-    "hueco": 0,
-    "luz": {
-     "color": "#ffb25a",
-     "radio": 156,
-     "altura": 73,
-     "intensidad": 0.7,
-     "mueve": 0.15,
-     "dx": -1,
-     "sombra": false
-    },
-    "brasas": 0,
-    "mezcla": "sumar",
-    "semilla": 96344
-   }
-  ],
   "cue_antorcha|hueso": [
    {
     "clase": "antorcha",
@@ -2668,22 +2385,25 @@
      -46
     ],
     "grilla": [
-     13,
-     18
+     16,
+     21
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "infierno",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.17
+     "ancho": 0.38,
+     "afinar": 0.95
     },
-    "decay": 4.52,
+    "decay": 4.58,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
+    "rafagas": 0.03,
+    "turbulencia": 0.25,
+    "ruido": 0.12,
+    "humo": 0.08,
     "hueco": 0,
+    "brillo": 3,
+    "pegada": 0.95,
     "luz": {
      "color": "#ff6a24",
      "radio": 177,
@@ -2707,22 +2427,25 @@
      -46
     ],
     "grilla": [
-     13,
-     18
+     16,
+     21
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "infierno",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.17
+     "ancho": 0.38,
+     "afinar": 0.95
     },
-    "decay": 4.52,
+    "decay": 4.58,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
+    "rafagas": 0.03,
+    "turbulencia": 0.25,
+    "ruido": 0.12,
+    "humo": 0.08,
     "hueco": 0,
+    "brillo": 3,
+    "pegada": 0.95,
     "luz": {
      "color": "#ff6a24",
      "radio": 177,
@@ -2746,22 +2469,25 @@
      -46
     ],
     "grilla": [
-     13,
-     18
+     16,
+     21
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "infierno",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.17
+     "ancho": 0.38,
+     "afinar": 0.95
     },
-    "decay": 4.52,
+    "decay": 4.58,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
+    "rafagas": 0.03,
+    "turbulencia": 0.25,
+    "ruido": 0.12,
+    "humo": 0.08,
     "hueco": 0,
+    "brillo": 3,
+    "pegada": 0.95,
     "luz": {
      "color": "#ff6a24",
      "radio": 177,
@@ -2797,11 +2523,13 @@
     },
     "decay": 5.34,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 187,
@@ -2837,11 +2565,13 @@
     },
     "decay": 5.34,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 187,
@@ -2856,123 +2586,6 @@
     "semilla": 93617
    }
   ],
-  "for2_antorchero|doble": [
-   {
-    "clase": "antorcha",
-    "sprite": "for2_antorchero_sin_llama",
-    "boca": [
-     0,
-     -59
-    ],
-    "grilla": [
-     29,
-     9
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.27
-    },
-    "decay": 10.98,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 198,
-     "altura": 61,
-     "intensidad": 0.9,
-     "mueve": 0.35,
-     "dx": 0,
-     "sombra": true
-    },
-    "brasas": 1.2,
-    "mezcla": "sumar",
-    "semilla": 25704
-   }
-  ],
-  "for2_antorchero|pilar": [
-   {
-    "clase": "antorcha",
-    "sprite": "for2_antorchero_sin_llama",
-    "boca": [
-     -1,
-     -40
-    ],
-    "grilla": [
-     10,
-     8
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.11
-    },
-    "decay": 10.67,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 198,
-     "altura": 55,
-     "intensidad": 0.9,
-     "mueve": 0.35,
-     "dx": -1,
-     "sombra": true
-    },
-    "brasas": 1.2,
-    "mezcla": "sumar",
-    "semilla": 8936
-   }
-  ],
-  "for2_antorchero|poste": [
-   {
-    "clase": "antorcha",
-    "sprite": "for2_antorchero_sin_llama",
-    "boca": [
-     -1,
-     -65
-    ],
-    "grilla": [
-     10,
-     8
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.11
-    },
-    "decay": 10.67,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 198,
-     "altura": 67,
-     "intensidad": 0.9,
-     "mueve": 0.35,
-     "dx": -1,
-     "sombra": true
-    },
-    "brasas": 1.2,
-    "mezcla": "sumar",
-    "semilla": 20239
-   }
-  ],
   "for2_brasero|alto": [
    {
     "clase": "brasero",
@@ -2983,21 +2596,23 @@
     ],
     "grilla": [
      14,
-     15
+     14
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.27
+     "ancho": 3.5
     },
-    "decay": 6.06,
+    "decay": 6.52,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 250,
@@ -3028,15 +2643,17 @@
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 2.1
+     "ancho": 2.25
     },
-    "decay": 16.17,
+    "decay": 17.55,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 250,
@@ -3061,21 +2678,23 @@
     ],
     "grilla": [
      17,
-     17
+     16
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 4.43
+     "ancho": 4.75
     },
-    "decay": 5.14,
+    "decay": 5.51,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 250,
@@ -3110,11 +2729,13 @@
     },
     "decay": 15,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#ff6a24",
      "radio": 208,
@@ -3139,21 +2760,23 @@
     ],
     "grilla": [
      12,
-     13
+     16
     ],
     "celda": 3,
     "paleta": "animas",
     "forma": {
      "tipo": "boca",
-     "ancho": 2.57
+     "ancho": 3.16
     },
-    "decay": 7.07,
+    "decay": 5.56,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
-    "hueco": 0.45,
+    "rafagas": 0.08,
+    "turbulencia": 0.35,
+    "ruido": 0.3,
+    "humo": 0.15,
+    "hueco": 0.22,
+    "brillo": 2.28,
+    "pegada": 0.8,
     "luz": {
      "color": "#4fd2cc",
      "radio": 229,
@@ -3178,21 +2801,23 @@
     ],
     "grilla": [
      14,
-     16
+     20
     ],
     "celda": 3,
     "paleta": "animas",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.5
+     "ancho": 4.31
     },
-    "decay": 5.55,
+    "decay": 4.42,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
-    "hueco": 0.45,
+    "rafagas": 0.08,
+    "turbulencia": 0.35,
+    "ruido": 0.3,
+    "humo": 0.15,
+    "hueco": 0.22,
+    "brillo": 2.28,
+    "pegada": 0.8,
     "luz": {
      "color": "#4fd2cc",
      "radio": 229,
@@ -3217,21 +2842,23 @@
     ],
     "grilla": [
      13,
-     12
+     15
     ],
     "celda": 3,
     "paleta": "animas",
     "forma": {
      "tipo": "boca",
-     "ancho": 2.8
+     "ancho": 3.45
     },
-    "decay": 7.5,
+    "decay": 5.89,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
-    "hueco": 0.45,
+    "rafagas": 0.08,
+    "turbulencia": 0.35,
+    "ruido": 0.3,
+    "humo": 0.15,
+    "hueco": 0.22,
+    "brillo": 2.28,
+    "pegada": 0.8,
     "luz": {
      "color": "#4fd2cc",
      "radio": 229,
@@ -3255,22 +2882,25 @@
      -15
     ],
     "grilla": [
-     15,
-     24
+     19,
+     40
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "animas",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.2
+     "ancho": 0.42,
+     "afinar": 0.95
     },
-    "decay": 3.42,
+    "decay": 2.7,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0.45,
+    "rafagas": 0.03,
+    "turbulencia": 0.35,
+    "ruido": 0.12,
+    "humo": 0.08,
+    "hueco": 0.22,
+    "brillo": 3.6,
+    "pegada": 0.95,
     "luz": {
      "color": "#4fd2cc",
      "radio": 177,
@@ -3294,22 +2924,25 @@
      -53
     ],
     "grilla": [
-     15,
-     22
+     19,
+     35
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "animas",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.2
+     "ancho": 0.42,
+     "afinar": 0.95
     },
-    "decay": 3.76,
+    "decay": 2.94,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0.45,
+    "rafagas": 0.03,
+    "turbulencia": 0.35,
+    "ruido": 0.12,
+    "humo": 0.08,
+    "hueco": 0.22,
+    "brillo": 3.6,
+    "pegada": 0.95,
     "luz": {
      "color": "#4fd2cc",
      "radio": 177,
@@ -3333,22 +2966,25 @@
      -53
     ],
     "grilla": [
-     15,
-     22
+     19,
+     35
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "animas",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.2
+     "ancho": 0.42,
+     "afinar": 0.95
     },
-    "decay": 3.76,
+    "decay": 2.94,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
-    "hueco": 0.45,
+    "rafagas": 0.03,
+    "turbulencia": 0.35,
+    "ruido": 0.12,
+    "humo": 0.08,
+    "hueco": 0.22,
+    "brillo": 3.6,
+    "pegada": 0.95,
     "luz": {
      "color": "#4fd2cc",
      "radio": 177,
@@ -3373,21 +3009,23 @@
     ],
     "grilla": [
      15,
-     16
+     15
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.73
+     "ancho": 4
     },
-    "decay": 5.55,
+    "decay": 5.96,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 250,
@@ -3412,21 +3050,23 @@
     ],
     "grilla": [
      14,
-     15
+     14
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.5
+     "ancho": 3.75
     },
-    "decay": 5.79,
+    "decay": 6.22,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 250,
@@ -3451,21 +3091,23 @@
     ],
     "grilla": [
      14,
-     15
+     14
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.27
+     "ancho": 3.5
     },
-    "decay": 5.79,
+    "decay": 6.22,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 250,
@@ -3490,21 +3132,23 @@
     ],
     "grilla": [
      18,
-     21
+     20
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 5.13
+     "ancho": 5.5
     },
-    "decay": 4.25,
+    "decay": 4.55,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -3529,21 +3173,23 @@
     ],
     "grilla": [
      14,
-     15
+     14
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.5
+     "ancho": 3.75
     },
-    "decay": 6.06,
+    "decay": 6.52,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 250,
@@ -3558,240 +3204,6 @@
     "semilla": 74130
    }
   ],
-  "inf2_caldero|lava": [
-   {
-    "clase": "caldero",
-    "sprite": "inf2_caldero_sin_llama",
-    "boca": [
-     -2,
-     -2
-    ],
-    "grilla": [
-     17,
-     16
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "boca",
-     "ancho": 4.75
-    },
-    "decay": 5.67,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 239,
-     "altura": 20,
-     "intensidad": 0.9,
-     "mueve": 0.3,
-     "dx": -2,
-     "sombra": true
-    },
-    "brasas": 1,
-    "mezcla": "sumar",
-    "semilla": 80301
-   }
-  ],
-  "inf2_caldero|restos": [
-   {
-    "clase": "caldero",
-    "sprite": "inf2_caldero_sin_llama",
-    "boca": [
-     -2,
-     -2
-    ],
-    "grilla": [
-     14,
-     16
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "boca",
-     "ancho": 3.5
-    },
-    "decay": 5.67,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 239,
-     "altura": 20,
-     "intensidad": 0.9,
-     "mueve": 0.3,
-     "dx": -2,
-     "sombra": true
-    },
-    "brasas": 1,
-    "mezcla": "sumar",
-    "semilla": 79967
-   }
-  ],
-  "inf2_caldero|sangre": [
-   {
-    "clase": "caldero",
-    "sprite": "inf2_caldero_sin_llama",
-    "boca": [
-     -2,
-     -2
-    ],
-    "grilla": [
-     17,
-     16
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "boca",
-     "ancho": 4.75
-    },
-    "decay": 5.67,
-    "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 239,
-     "altura": 20,
-     "intensidad": 0.9,
-     "mueve": 0.3,
-     "dx": -2,
-     "sombra": true
-    },
-    "brasas": 1,
-    "mezcla": "sumar",
-    "semilla": 73665
-   }
-  ],
-  "inf2_columna_fuego|alta": [
-   {
-    "clase": "columna",
-    "sprite": "inf2_columna_fuego_sin_llama",
-    "boca": [
-     -1,
-     -9
-    ],
-    "grilla": [
-     33,
-     61
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.3
-    },
-    "decay": 2.04,
-    "viento": 0,
-    "rafagas": 0.25,
-    "turbulencia": 0.5,
-    "ruido": 0.4,
-    "humo": 0.5,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 260,
-     "altura": 36,
-     "intensidad": 0.9,
-     "mueve": 0.5,
-     "dx": -1,
-     "sombra": true
-    },
-    "brasas": 5,
-    "mezcla": "sumar",
-    "semilla": 81097
-   }
-  ],
-  "inf2_columna_fuego|doble": [
-   {
-    "clase": "columna",
-    "sprite": "inf2_columna_fuego_sin_llama",
-    "boca": [
-     0,
-     -5
-    ],
-    "grilla": [
-     29,
-     68
-    ],
-    "celda": 3,
-    "paleta": "infierno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.3
-    },
-    "decay": 1.93,
-    "viento": 0,
-    "rafagas": 0.25,
-    "turbulencia": 0.5,
-    "ruido": 0.4,
-    "humo": 0.5,
-    "hueco": 0,
-    "luz": {
-     "color": "#ff6a24",
-     "radio": 260,
-     "altura": 36,
-     "intensidad": 0.9,
-     "mueve": 0.5,
-     "dx": 0,
-     "sombra": true
-    },
-    "brasas": 5,
-    "mezcla": "sumar",
-    "semilla": 63371
-   }
-  ],
-  "inf2_columna_fuego|verde": [
-   {
-    "clase": "columna",
-    "sprite": "inf2_columna_fuego_sin_llama",
-    "boca": [
-     -1,
-     -8
-    ],
-    "grilla": [
-     33,
-     61
-    ],
-    "celda": 3,
-    "paleta": "veneno",
-    "forma": {
-     "tipo": "llama",
-     "ancho": 0.3
-    },
-    "decay": 2.04,
-    "viento": 0,
-    "rafagas": 0.25,
-    "turbulencia": 0.5,
-    "ruido": 0.4,
-    "humo": 0.5,
-    "hueco": 0,
-    "luz": {
-     "color": "#86d83e",
-     "radio": 260,
-     "altura": 36,
-     "intensidad": 0.9,
-     "mueve": 0.5,
-     "dx": -1,
-     "sombra": true
-    },
-    "brasas": 5,
-    "mezcla": "sumar",
-    "semilla": 36067
-   }
-  ],
   "inf2_pira|hoguera": [
    {
     "clase": "pira",
@@ -3802,7 +3214,7 @@
     ],
     "grilla": [
      24,
-     24
+     25
     ],
     "celda": 3,
     "paleta": "infierno",
@@ -3811,13 +3223,15 @@
      "ancho": 9.35,
      "alto": 1.56
     },
-    "decay": 4.2,
+    "decay": 4.05,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -3842,7 +3256,7 @@
     ],
     "grilla": [
      22,
-     24
+     26
     ],
     "celda": 3,
     "paleta": "infierno",
@@ -3851,13 +3265,15 @@
      "ancho": 8.5,
      "alto": 1.6
     },
-    "decay": 4.12,
+    "decay": 3.97,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -3882,7 +3298,7 @@
     ],
     "grilla": [
      27,
-     19
+     20
     ],
     "celda": 3,
     "paleta": "infierno",
@@ -3891,13 +3307,15 @@
      "ancho": 11.05,
      "alto": 1.2
     },
-    "decay": 5.16,
+    "decay": 4.96,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -3922,21 +3340,23 @@
     ],
     "grilla": [
      20,
-     27
+     25
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 5.83
+     "ancho": 6.25
     },
-    "decay": 3.39,
+    "decay": 3.61,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 239,
@@ -3961,21 +3381,23 @@
     ],
     "grilla": [
      15,
-     23
+     21
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.73
+     "ancho": 4
     },
-    "decay": 3.94,
+    "decay": 4.2,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 239,
@@ -4010,11 +3432,13 @@
     },
     "decay": 10.75,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#ff6a24",
      "radio": 229,
@@ -4059,11 +3483,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 239,
@@ -4108,11 +3534,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 239,
@@ -4161,11 +3589,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 239,
@@ -4214,11 +3644,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 239,
@@ -4263,11 +3695,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 208,
@@ -4308,11 +3742,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 208,
@@ -4353,11 +3789,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 208,
@@ -4381,22 +3819,25 @@
      -54
     ],
     "grilla": [
-     12,
-     18
+     14,
+     22
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "infierno",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.15
+     "ancho": 0.36,
+     "afinar": 0.95
     },
-    "decay": 4.36,
+    "decay": 3.95,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
+    "rafagas": 0.03,
+    "turbulencia": 0.25,
+    "ruido": 0.12,
+    "humo": 0.08,
     "hueco": 0,
+    "brillo": 3,
+    "pegada": 0.95,
     "luz": {
      "color": "#ff6a24",
      "radio": 156,
@@ -4420,22 +3861,25 @@
      -53
     ],
     "grilla": [
-     12,
-     16
+     14,
+     20
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "infierno",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.15
+     "ancho": 0.36,
+     "afinar": 0.95
     },
-    "decay": 4.87,
+    "decay": 4.39,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
+    "rafagas": 0.03,
+    "turbulencia": 0.25,
+    "ruido": 0.12,
+    "humo": 0.08,
     "hueco": 0,
+    "brillo": 3,
+    "pegada": 0.95,
     "luz": {
      "color": "#ff6a24",
      "radio": 156,
@@ -4460,21 +3904,23 @@
     ],
     "grilla": [
      26,
-     27
+     25
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 8.4
+     "ancho": 9
     },
-    "decay": 3.46,
+    "decay": 3.68,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -4499,21 +3945,23 @@
     ],
     "grilla": [
      16,
-     17
+     16
     ],
     "celda": 3,
     "paleta": "gas",
     "forma": {
      "tipo": "boca",
-     "ancho": 4.2
+     "ancho": 4.5
     },
-    "decay": 5.14,
+    "decay": 5.51,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#5a8cff",
      "radio": 217,
@@ -4538,21 +3986,23 @@
     ],
     "grilla": [
      13,
-     17
+     16
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.03
+     "ancho": 3.25
     },
-    "decay": 5.14,
+    "decay": 5.51,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 209,
@@ -4577,21 +4027,23 @@
     ],
     "grilla": [
      18,
-     19
+     17
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 4.9
+     "ancho": 5.25
     },
-    "decay": 4.79,
+    "decay": 5.14,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 225,
@@ -4616,21 +4068,23 @@
     ],
     "grilla": [
      16,
-     17
+     16
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 4.2
+     "ancho": 4.5
     },
-    "decay": 5.14,
+    "decay": 5.51,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 217,
@@ -4665,11 +4119,13 @@
     },
     "decay": 23.75,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#ff6a24",
      "radio": 117,
@@ -4704,11 +4160,13 @@
     },
     "decay": 7.28,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#ff6a24",
      "radio": 117,
@@ -4743,11 +4201,13 @@
     },
     "decay": 23.75,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#ff6a24",
      "radio": 117,
@@ -4796,11 +4256,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -4849,11 +4311,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 125,
@@ -4888,11 +4352,13 @@
     },
     "decay": 14,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#ff6a24",
      "radio": 156,
@@ -4927,11 +4393,13 @@
     },
     "decay": 9.21,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#ff6a24",
      "radio": 156,
@@ -4966,11 +4434,13 @@
     },
     "decay": 14,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#ff6a24",
      "radio": 156,
@@ -5005,11 +4475,13 @@
     },
     "decay": 9.21,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.22,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.75,
     "luz": {
      "color": "#ff6a24",
      "radio": 156,
@@ -5050,11 +4522,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -5095,11 +4569,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -5140,11 +4616,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -5185,11 +4663,13 @@
     },
     "decay": 11.4,
     "viento": 0,
-    "rafagas": 0.08,
+    "rafagas": 0.04,
     "turbulencia": 0.3,
-    "ruido": 0.15,
-    "humo": 0.12,
+    "ruido": 0.12,
+    "humo": 0.06,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 117,
@@ -5214,21 +4694,23 @@
     ],
     "grilla": [
      14,
-     13
+     12
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.27
+     "ancho": 3.5
     },
-    "decay": 7.07,
+    "decay": 7.62,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 239,
@@ -5253,21 +4735,23 @@
     ],
     "grilla": [
      14,
-     14
+     13
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.27
+     "ancho": 3.5
     },
-    "decay": 6.35,
+    "decay": 6.84,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 239,
@@ -5292,21 +4776,23 @@
     ],
     "grilla": [
      13,
-     15
+     14
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 2.8
+     "ancho": 3
     },
-    "decay": 5.79,
+    "decay": 6.22,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 239,
@@ -5337,15 +4823,17 @@
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.03
+     "ancho": 3.25
     },
-    "decay": 6.69,
+    "decay": 7.2,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 239,
@@ -5381,11 +4869,13 @@
     },
     "decay": 6.71,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -5421,11 +4911,13 @@
     },
     "decay": 11.95,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 177,
@@ -5461,11 +4953,13 @@
     },
     "decay": 3.53,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -5501,11 +4995,13 @@
     },
     "decay": 6.47,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -5541,11 +5037,13 @@
     },
     "decay": 4.98,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -5581,11 +5079,13 @@
     },
     "decay": 2.99,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -5621,11 +5121,13 @@
     },
     "decay": 5.11,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -5666,11 +5168,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 177,
@@ -5706,11 +5210,13 @@
     },
     "decay": 5.72,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 239,
@@ -5746,11 +5252,13 @@
     },
     "decay": 6.71,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 239,
@@ -5786,11 +5294,13 @@
     },
     "decay": 4.37,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -5826,11 +5336,13 @@
     },
     "decay": 11.11,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.4,
-    "humo": 0.6,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.28,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.65,
     "luz": {
      "color": "#ff6a24",
      "radio": 146,
@@ -5866,11 +5378,13 @@
     },
     "decay": 8.75,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 117,
@@ -5915,11 +5429,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 208,
@@ -5960,11 +5476,13 @@
     },
     "decay": 12.56,
     "viento": 0,
-    "rafagas": 0.05,
+    "rafagas": 0.03,
     "turbulencia": 0.3,
     "ruido": 0.1,
     "humo": 0,
     "hueco": 0,
+    "brillo": 1.5,
+    "pegada": 0.95,
     "luz": {
      "color": "#ffb25a",
      "radio": 208,
@@ -6000,11 +5518,13 @@
     },
     "decay": 9.35,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 117,
@@ -6040,11 +5560,13 @@
     },
     "decay": 6.17,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 131,
@@ -6080,11 +5602,13 @@
     },
     "decay": 2.51,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 260,
@@ -6120,11 +5644,13 @@
     },
     "decay": 5.52,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 187,
@@ -6160,11 +5686,13 @@
     },
     "decay": 4.29,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 250,
@@ -6200,11 +5728,13 @@
     },
     "decay": 4.29,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.5,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.25,
     "hueco": 0,
+    "brillo": 1.75,
+    "pegada": 0.7,
     "luz": {
      "color": "#ff6a24",
      "radio": 250,
@@ -6228,22 +5758,25 @@
      -60
     ],
     "grilla": [
-     13,
-     16
+     17,
+     19
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "infierno",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.18
+     "ancho": 0.38,
+     "afinar": 0.95
     },
-    "decay": 5.07,
+    "decay": 5.15,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
+    "rafagas": 0.03,
+    "turbulencia": 0.25,
+    "ruido": 0.12,
+    "humo": 0.08,
     "hueco": 0,
+    "brillo": 3,
+    "pegada": 0.95,
     "luz": {
      "color": "#ff6a24",
      "radio": 177,
@@ -6267,22 +5800,25 @@
      -61
     ],
     "grilla": [
-     13,
-     15
+     17,
+     18
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "infierno",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.18
+     "ancho": 0.38,
+     "afinar": 0.95
     },
-    "decay": 5.3,
+    "decay": 5.38,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
+    "rafagas": 0.03,
+    "turbulencia": 0.25,
+    "ruido": 0.12,
+    "humo": 0.08,
     "hueco": 0,
+    "brillo": 3,
+    "pegada": 0.95,
     "luz": {
      "color": "#ff6a24",
      "radio": 177,
@@ -6307,21 +5843,23 @@
     ],
     "grilla": [
      16,
-     19
+     18
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.97
+     "ancho": 4.25
     },
-    "decay": 4.64,
+    "decay": 4.97,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 187,
@@ -6346,21 +5884,23 @@
     ],
     "grilla": [
      16,
-     19
+     18
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.97
+     "ancho": 4.25
     },
-    "decay": 4.64,
+    "decay": 4.97,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 187,
@@ -6384,22 +5924,25 @@
      -57
     ],
     "grilla": [
-     11,
-     11
+     13,
+     14
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "infierno",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.13
+     "ancho": 0.31,
+     "afinar": 0.95
     },
-    "decay": 7.45,
+    "decay": 6.66,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
+    "rafagas": 0.03,
+    "turbulencia": 0.25,
+    "ruido": 0.12,
+    "humo": 0.08,
     "hueco": 0,
+    "brillo": 3,
+    "pegada": 0.95,
     "luz": {
      "color": "#ff6a24",
      "radio": 146,
@@ -6423,22 +5966,25 @@
      -60
     ],
     "grilla": [
-     11,
-     10
+     13,
+     13
     ],
-    "celda": 3,
+    "celda": 2,
     "paleta": "infierno",
     "forma": {
      "tipo": "llama",
-     "ancho": 0.13
+     "ancho": 0.31,
+     "afinar": 0.95
     },
-    "decay": 8.03,
+    "decay": 7.17,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.4,
-    "ruido": 0.35,
-    "humo": 0.35,
+    "rafagas": 0.03,
+    "turbulencia": 0.25,
+    "ruido": 0.12,
+    "humo": 0.08,
     "hueco": 0,
+    "brillo": 3,
+    "pegada": 0.95,
     "luz": {
      "color": "#ff6a24",
      "radio": 146,
@@ -6463,21 +6009,23 @@
     ],
     "grilla": [
      13,
-     15
+     14
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 2.8
+     "ancho": 3
     },
-    "decay": 6.06,
+    "decay": 6.52,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 177,
@@ -6502,21 +6050,23 @@
     ],
     "grilla": [
      12,
-     13
+     12
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 2.33
+     "ancho": 2.5
     },
-    "decay": 7.07,
+    "decay": 7.62,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 177,
@@ -6541,21 +6091,23 @@
     ],
     "grilla": [
      14,
-     16
+     15
     ],
     "celda": 3,
     "paleta": "infierno",
     "forma": {
      "tipo": "boca",
-     "ancho": 3.27
+     "ancho": 3.5
     },
-    "decay": 5.55,
+    "decay": 5.96,
     "viento": 0,
-    "rafagas": 0.15,
-    "turbulencia": 0.45,
-    "ruido": 0.35,
-    "humo": 0.4,
+    "rafagas": 0.08,
+    "turbulencia": 0.4,
+    "ruido": 0.3,
+    "humo": 0.15,
     "hueco": 0,
+    "brillo": 1.9,
+    "pegada": 0.8,
     "luz": {
      "color": "#ff6a24",
      "radio": 177,
@@ -6583,6 +6135,8 @@
    "ruido": 0.55,
    "relleno": 0.07,
    "alfa": 0.85,
+   "brillo": 1.5,
+   "pegada": 0.5,
    "cada_cuadros": 4,
    "margen_px": [
     10,
@@ -6609,6 +6163,8 @@
    "ruido": 0.55,
    "relleno": 0.1,
    "alfa": 0.9,
+   "brillo": 1.5,
+   "pegada": 0.5,
    "dura_s": 5,
    "apaga_s": 3.5,
    "margen_px": [
@@ -6631,10 +6187,12 @@
    "paleta": "infierno",
    "forma": "circulo",
    "altura": 0.38,
-   "humo": 0.3,
+   "humo": 0.2,
    "turbulencia": 0.45,
    "ruido": 0.6,
    "relleno": 0.7,
+   "brillo": 1.5,
+   "pegada": 0.6,
    "radio_px_por_casilla": 16,
    "dura_s": 4,
    "luz": {
@@ -6653,9 +6211,11 @@
    "paleta": "infierno",
    "forma": "focos",
    "altura": 0.75,
-   "humo": 0.55,
+   "humo": 0.3,
    "turbulencia": 0.5,
    "ruido": 0.45,
+   "brillo": 1.6,
+   "pegada": 0.6,
    "focos": [
     [
      -0.19,
@@ -6776,9 +6336,11 @@
    },
    "forma": "tira",
    "altura": 0.32,
-   "humo": 0.1,
+   "humo": 0.06,
    "turbulencia": 0.55,
    "ruido": 0.5,
+   "brillo": 1.7,
+   "pegada": 0.7,
    "margen_celdas": 3,
    "hueco_frio": 0.4,
    "luz": {

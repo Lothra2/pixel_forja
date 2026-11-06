@@ -123,9 +123,10 @@ export const PALETAS: Record<NombrePaleta, PaletaFuego> = {
   },
   // la llama de la corona fría: blanco azulado casi sin color
   corona_fria: {
-    id: 'corona_fria', nombre: ['Corona fría', 'Cold crown'], luz: '#cddcff', humo: [36, 40, 48, 0.4], mezcla: 'sumar',
-    colores: armarPaleta([[0, '#000000', 0], [0.08, '#10151c', 0.4], [0.24, '#46505e', 0.78], [0.42, '#8794a4', 0.94], [0.62, '#bcc8d6', 1],
-      [0.8, '#e0e7f0', 1], [1, '#f7f9ff', 1]]),
+    id: 'corona_fria', nombre: ['Corona fría', 'Cold crown'], luz: '#a8c4ff', humo: [30, 36, 50, 0.25], mezcla: 'sumar',
+    // borde azul hondo (se distingue del vapor), cuerpo azul pálido y alma casi blanca
+    colores: armarPaleta([[0, '#000000', 0], [0.07, '#081232', 0.55], [0.2, '#1a3478', 0.9], [0.36, '#3c66b8', 1], [0.54, '#7ea4e2', 1],
+      [0.72, '#b8d0f6', 1], [0.88, '#e0ecfe', 1], [1, '#f6faff', 1]]),
   },
   veneno: {
     id: 'veneno', nombre: ['Veneno', 'Poison'], luz: '#86d83e', humo: [26, 34, 20, 0.45], mezcla: 'sumar',
@@ -168,8 +169,11 @@ export const NOMBRES_PALETA = Object.keys(PALETAS) as NombrePaleta[];
  * `fuente`: dónde nace el calor. La forma también dice hasta dónde puede vivir la llama (enfría de más cerca del borde).
  */
 export type Forma =
-  /** lengua de llama: fuente en la fila de abajo, `ancho` fracción del ancho de la grilla (0.5 por omisión) */
-  | { tipo: 'llama'; ancho?: number }
+  /**
+   * lengua de llama: fuente en la fila de abajo, `ancho` fracción del ancho de la grilla (0.5 por omisión). `afinar`
+   * 0..1 la angosta hacia arriba (gota de antorcha: el autómata solo la abriría)
+   */
+  | { tipo: 'llama'; ancho?: number; afinar?: number }
   /** boca de brasero o farol: la boca es una elipse 2:1 de `ancho` celdas pegada abajo */
   | { tipo: 'boca'; ancho: number }
   /** pira u hoguera: un montón (media elipse de `ancho` x `alto` celdas) que arde entero, más alto en el medio */
@@ -226,6 +230,13 @@ export interface OpcFuego {
   pps?: number;
   /** 0..1 cómo arranca (1 = encendido). Por omisión 1. */
   encendido?: number;
+  /**
+   * curva del calor al pintar: 1 = lineal; más de 1 sube el calor medio (base amarillo-naranja, cuerpo naranja y solo
+   * las puntas rojas). 1.35 es un brasero que arde con ganas.
+   */
+  brillo?: number;
+  /** 0..1: cuánto se apagan al pintar los pedazos de llama despegados de su fuente (las chispitas rojas sueltas) */
+  pegada?: number;
 }
 
 /** Un fuego vivo: datos planos (se pueden copiar o guardar). */
@@ -267,6 +278,8 @@ export interface Fuego {
   medio: number;
   /** celdas que cuentan para calorMedio */
   area: number;
+  brillo: number;
+  pegada: number;
 }
 
 /**
@@ -292,6 +305,12 @@ function armarForma(w: number, h: number, f: Forma, margen: number, s: number): 
     case 'llama': {
       const bw = Math.max(1, (f.ancho ?? 0.5) * w);
       for (let x = 0; x < w; x++) { const d = Math.abs(x - cx) / (bw / 2); if (d <= 1) set(x, abajo, 0.6 + 0.4 * (1 - d * d)); }
+      const af = f.afinar ?? 0;
+      if (af > 0) for (let y = 0; y < h; y++) {
+        // media anchura permitida: la de la fuente abajo (un poco más) y se cierra hacia arriba
+        const u = (abajo - y) / Math.max(1, abajo), mitad = (bw / 2 + 1) * (1 + 0.25 * Math.sin(Math.min(1, u * 2.2) * Math.PI)) * (1 - af * u ** 0.9) + 0.6;
+        for (let x = 0; x < w; x++) forma[y * w + x] = suave(-0.6, 1.4, mitad - Math.abs(x + 0.5 - (cx + 0.5)));
+      }
       break;
     }
     case 'boca': {
@@ -452,6 +471,7 @@ export function crearFuego(o: OpcFuego): Fuego {
     ruido: o.ruido ?? 0.35, tramo: o.tramo ?? 3.5, velocidadTramo: o.velocidadTramo ?? 1.6, cantHumo: o.humo ?? 0.4, hueco: o.hueco ?? 0,
     pps: o.pps ?? PASOS_POR_SEGUNDO, semilla: sem, s: semillaDe(sem), sb: semillaDe(sem ^ 0x5bd1e995), t: 0, pasos: 0, acum: 0,
     nivel: o.encendido ?? 1, meta: o.encendido ?? 1, aviva: 1, avivaHasta: 0, medio: 0, area: Math.max(1, area),
+    brillo: o.brillo ?? 1, pegada: o.pegada ?? 0,
   };
   // precalentar: que el primer cuadro ya tenga la llama entera
   if (f.nivel > 0) { const n = Math.ceil(h * 1.5) + 8; for (let i = 0; i < n; i++) tic(f); f.medio = calorMedio(f).k; }
@@ -638,10 +658,32 @@ export interface OpcPintar {
   /** celdas de fundido en la fila de abajo (la base de la llama no termina en una línea recta). 0.8 por omisión. */
   pie?: number;
 }
-let tmpCal = new Float32Array(0), tmpHum = new Float32Array(0);
+let tmpCal = new Float32Array(0), tmpHum = new Float32Array(0), tmpPeg = new Uint8Array(0), tmpCola = new Int32Array(0);
+/**
+ * Calor sin los pedazos despegados: se recorre desde las celdas que son fuente (o la fila de abajo) por las vecinas con
+ * calor (8 vecinas); lo que no se alcanza es una chispa suelta y se apaga `pegada` veces.
+ */
+function pegar(f: Fuego): Uint8Array {
+  const { w, h, calor, fuente } = f, n = w * h;
+  if (tmpPeg.length < n * 2) { tmpPeg = new Uint8Array(n * 2); tmpCola = new Int32Array(n); }
+  const vis = tmpPeg.subarray(0, n), out = tmpPeg.subarray(n, n * 2);
+  vis.fill(0);
+  let a = 0, b = 0;
+  for (let i = 0; i < n; i++) if (calor[i] > 1 && (fuente[i] > 0 || i >= n - w)) { vis[i] = 1; tmpCola[b++] = i; }
+  while (a < b) {
+    const i = tmpCola[a++], x = i % w, y = (i - x) / w;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue;
+      const j = Y * w + X; if (!vis[j] && calor[j] > 1) { vis[j] = 1; tmpCola[b++] = j; }
+    }
+  }
+  const k = 1 - f.pegada;
+  for (let i = 0; i < n; i++) out[i] = vis[i] ? calor[i] : (calor[i] * k) | 0;
+  return out;
+}
 /** Calor y humo filtrados (1-2-1 en x e y), mezclados con el crudo según `k`. */
 function filtrar(f: Fuego, k: number): [Float32Array, Float32Array] {
-  const { w, h, calor, humo } = f, n = w * h;
+  const { w, h, humo } = f, n = w * h, calor = f.pegada > 0 ? pegar(f) : f.calor;
   if (tmpCal.length < n * 2) { tmpCal = new Float32Array(n * 2); tmpHum = new Float32Array(n * 2); }
   const c = tmpCal, m = tmpHum, o = n;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -691,6 +733,8 @@ export function pintar(f: Fuego, rgba: Uint8ClampedArray | Uint8Array, ancho: nu
       let c = capa === 'humo' ? 0 : calor[i00] * id + calor[i01] * ic + calor[i10] * ib + calor[i11] * ia;
       let sm = capa === 'llama' ? 0 : humo[i00] * id + humo[i01] * ic + humo[i10] * ib + humo[i11] * ia;
       if (c <= 0.02 && sm <= 0.5) { if (!sobre) { const d = (py * ancho + px) * 4; rgba[d] = rgba[d + 1] = rgba[d + 2] = rgba[d + 3] = 0; } continue; }
+      // curva de brillo: más calor medio a la vista (la base amarillo-naranja, el cuerpo naranja, las puntas rojas)
+      if (f.brillo !== 1 && c > 0) c = CALOR_MAX * Math.pow(c / CALOR_MAX, 1 / f.brillo);
       // corazón hueco: lo más caliente vuelve a oscuro y la llama queda como contorno
       if (hueco > 0) { const t = c / CALOR_MAX; if (t > piv) c = Math.max(0, piv - (t - piv) * 1.7) * CALOR_MAX; }
       if (trama) c += BAYER[(py & 3) * 4 + (px & 3)] * 1.6;

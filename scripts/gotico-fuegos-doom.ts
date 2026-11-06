@@ -4,7 +4,10 @@
 //                  Doom con celdas de 2, 3 y 4 px, sobre piso oscuro y con un héroe al lado; fuego frío y la fachada.
 //   medir [carpeta] mide la boca de cada objeto con fuego (contra su gemelo sin llama) y reescribe
 //                  src/engine/gotico/datos/fuegos_doom_medidas.ts; deja las máscaras de los vitrales en
-//                  <carpeta>/fuegos_doom/<id>_<variante>.png (por omisión out/). Tarda unos minutos (la catedral).
+//                  <carpeta>/fuegos_doom/<id>_<variante>.png (por omisión src/engine/gotico/datos, donde viven en el
+//                  repo: el juego no necesita medir). Tarda unos minutos (la catedral).
+//   todos <png>    hoja con todos los objetos de la tabla, el de hoy arriba y el gemelo con fuego vivo abajo.
+//   catedral <png> las tres piezas de la catedral, hoy y con fuego de Doom detrás de los vitrales.
 //   json           reescribe src/engine/gotico/datos/fuegos_doom.json desde fuegos_doom.ts.
 //   costo          mide en node cuánto cuesta un paso y un pintado por fuego (para el tope de fuegos vivos).
 import { writeFileSync, readdirSync } from 'node:fs';
@@ -100,17 +103,11 @@ function manchaJuego(R: Raster, x: number, y: number, tam: number, seg: number, 
   }
 }
 
-// ------------------------------------------------------------------ un fuego de Doom para la llama medida de un objeto
 type Clase = 'antorcha' | 'brasero' | 'pira' | 'farol';
-function fuegoPara(m: { ancho: number; alto: number }, clase: Clase, celda: number, paleta: D.NombrePaleta, sem: number, extra: Partial<D.OpcFuego> = {}) {
-  const w = Math.round((m.ancho * 1.7 + 10) / celda), h = Math.round((m.alto * 1.9 + 8) / celda);
-  const forma: D.Forma = clase === 'antorcha' || clase === 'farol' ? { tipo: 'llama', ancho: Math.min(0.7, (m.ancho * 0.55) / celda / w) }
-    : clase === 'brasero' ? { tipo: 'boca', ancho: Math.max(2, (m.ancho * 0.7) / celda) }
-    : { tipo: 'pira', ancho: Math.max(3, (m.ancho * 0.85) / celda), alto: Math.max(1, (m.alto * 0.12) / celda) };
-  return D.crearFuego({ ancho: w, alto: h, forma, paleta, semilla: sem, altura: Math.min(1, (m.alto * 1.2) / (h * celda) / D.alturaVisible(forma, w)), humo: clase === 'pira' ? 0.6 : clase === 'farol' ? 0.1 : 0.4, ...extra });
-}
 
 if (modo === 'hoja') {
+  const { specFuego, opcionesDeSpec } = await import('../src/engine/gotico/datos/fuegos_doom');
+  const { MEDIDAS_FUEGO } = await import('../src/engine/gotico/datos/fuegos_doom_medidas');
   const filas: { id: string; v: string; clase: Clase; paleta: D.NombrePaleta; rotulo: string }[] = [
     { id: 'cue_antorcha', v: 'palo', clase: 'antorcha', paleta: 'infierno', rotulo: 'antorcha' },
     { id: 'inf_brasero', v: 'cuernos', clase: 'brasero', paleta: 'infierno', rotulo: 'brasero' },
@@ -125,7 +122,6 @@ if (modo === 'hoja') {
   filas.forEach((fi, k) => {
     const y0 = 30 + k * CH, base = y0 + CH - 22;
     texto(R, 4, y0 + 6, fi.rotulo);
-    const med = M.medirLlama(fi.id, fi.v)!;
     const sin = pintarEscena(M.quitarLlama(M.escenaDe(objeto(fi.id), fi.v, 0)));
     const orig = pintarObjeto(fi.id, fi.v, 0);
     const fu = fuenteDe(fi.id, fi.v);
@@ -139,12 +135,15 @@ if (modo === 'hoja') {
         if (c === 1 && fu) manchaJuego(R, cx, base - fu.z * 1.1, Math.max(0.3, Math.min(1.3, fu.r / 160)), 1.4, 7 + k);
         return;
       }
-      const celda = c, f = fuegoPara(med, fi.clase, celda, fi.paleta, 11 + k);
+      // la spec de la tabla con la celda de la columna (la paleta de la fila si es otra: corona fría)
+      const clave = `${fi.id}|${fi.v}`, sp0 = specFuego(clave, MEDIDAS_FUEGO[clave], c)[0];
+      const sp = fi.paleta === sp0.paleta ? sp0 : { ...sp0, paleta: fi.paleta, hueco: fi.paleta === 'animas' ? 0.22 : 0, humo: 0.08 };
+      const f = D.crearFuego(opcionesDeSpec(sp));
       D.pasos(f, 14);
-      const p = D.pulsoLuz(f, 0.45);
-      M.alumbrar(R, cx + med.boca[0], base, (fu?.r ?? 150) * 0.9, colLuz, 0.5 * p.k);
+      const p = D.pulsoLuz(f, sp.luz.mueve);
+      M.alumbrar(R, cx + sp.luz.dx, base, (fu?.r ?? 150) * 0.9, colLuz, 0.5 * p.k);
       M.pegar(R, sin, cx, base);
-      M.dibujarFuego(R, f, cx + med.boca[0], base + med.boca[1] + 1, celda, { filtro: 0.5 });
+      M.dibujarFuego(R, f, cx + sp.boca[0], base + sp.boca[1], sp.celda, { filtro: 0.5 });
     });
   });
   writeFileSync(salida, encodePng(R));
@@ -178,7 +177,7 @@ function recortarAlto(R: Raster, _y0: number, _h: number): Raster { return R; }
 if (modo === 'medir') {
   const { REGISTRO } = await import('../src/engine/gotico/objeto');
   const { claseDe } = await import('../src/engine/gotico/datos/fuegos_doom');
-  const carpeta = process.argv[3] ?? 'out';
+  const carpeta = process.argv[3] ?? join(raiz, 'datos');
   mkdirSync(join(carpeta, 'fuegos_doom'), { recursive: true });
   const filas: string[] = [];
   const t0 = Date.now();
@@ -269,11 +268,11 @@ if (modo === 'mundo') {
   // hoja de control desde la tabla: por categoría, una fila con el sprite de hoy y otra con el gemelo y su fuego vivo
   const { FUEGOS_DOOM, opcionesDeSpec } = await import('../src/engine/gotico/datos/fuegos_doom');
   const grupos: [string, string[]][] = [
-    ['antorchas', ['cue_antorcha|palo', 'mon_antorcha|izq', 'hie_antorcha|pie', 'sel_antorcha|tribal', 'tum_antorcha|pared', 'cat2_antorcha_pared|hierro']],
+    ['antorchas', ['cue_antorcha|palo', 'mon_antorcha|izq', 'hie_antorcha|pie', 'sel_antorcha|tribal', 'tum_antorcha|pared', 'hie2_brasero|pie']],
     ['braseros', ['inf_brasero|cuernos', 'mon_brasero|tripode', 'for2_brasero|alto', 'cri_brasero_huesos|craneos', 'arc_brasero|pie', 'hie2_brasero|cuenco']],
     ['fogatas y hogueras', ['camp_fogata|grande', 'pue_fogata|piedras', 'nie_hoguera|pira', 'par_hoguera|ardiendo', 'inf2_pira|pira', 'des2_fogata|campamento']],
     ['velas y faroles', ['cri_candelabro|siete', 'mue_velas|grupo', 'cem_farol|encendido', 'cem2_linterna_muertos|fuego_fatuo', 'min_linterna|colgada', 'pue_farol|poste']],
-    ['calderos y hogares', ['inf2_caldero|sangre', 'mue_caldero|verde', 'camp_fragua|encendida', 'min_horno|encendido', 'mue_fogon|encendido', 'inf2_columna_fuego|alta']],
+    ['calderos y hogares', ['for2_caldero_aceite|colgado', 'mue_caldero|verde', 'com_santuario_caldero|activo', 'min_horno|encendido', 'mue_fogon|encendido', 'camp_asador|con_carne']],
   ];
   const CW = 140, CH = 150, W = 80 + CW * 6, H = grupos.length * CH * 2 + 10;
   const R = M.fondoPiso(W, H, piso, 0.3);
@@ -302,6 +301,51 @@ if (modo === 'mundo') {
   console.log('hoja', salida);
 }
 
+if (modo === 'todos') {
+  // todos los objetos de la tabla (una variante de cada uno): arriba el de hoy, abajo el gemelo con su fuego vivo
+  const { FUEGOS_DOOM, opcionesDeSpec, IDS_FUEGO_DOOM } = await import('../src/engine/gotico/datos/fuegos_doom');
+  const claves = IDS_FUEGO_DOOM.filter((id) => !id.startsWith('abo_catedral')).map((id) => Object.keys(FUEGOS_DOOM).find((k) => k.startsWith(id + '|'))!);
+  const COLS = 8, CW = 120, CH = 170, filas = Math.ceil(claves.length / COLS), W = COLS * CW, H = filas * CH * 2;
+  const R = M.fondoPiso(W, H, piso, 0.3);
+  claves.forEach((k, i) => {
+    const [id, v] = k.split('|'), sp = FUEGOS_DOOM[k][0], cx = (i % COLS) * CW + CW / 2, y0 = Math.floor(i / COLS) * CH * 2;
+    texto(R, cx - CW / 2 + 3, y0 + 4, `${i + 1} ${id}`.slice(0, 28));
+    const b1 = y0 + CH - 14, b2 = y0 + CH * 2 - 14;
+    M.alumbrar(R, cx, b1, sp.luz.radio * 0.6, sp.luz.color, 0.4); M.pegar(R, pintarObjeto(id, v, 0), cx, b1);
+    const f = D.crearFuego(opcionesDeSpec(sp)); D.pasos(f, 9);
+    M.alumbrar(R, cx + sp.luz.dx, b2, sp.luz.radio * 0.6, sp.luz.color, 0.4 * D.pulsoLuz(f, sp.luz.mueve).k);
+    M.pegar(R, pintarObjeto(sp.sprite!, v, 0), cx, b2);
+    M.dibujarFuego(R, f, cx + sp.boca[0], b2 + sp.boca[1], sp.celda, { filtro: 0.5 });
+  });
+  writeFileSync(salida, encodePng(R));
+  console.log('hoja', salida, claves.length, 'objetos');
+}
+
+if (modo === 'catedral') {
+  // las tres piezas de la catedral (herida): hoy (vitrales planos) y con fuego de Doom detrás de los vitrales
+  const piezas = ['abo_catedral_fachada', 'abo_catedral_nave', 'abo_catedral_cabecera'];
+  const FILA = 760, W = 820 * 2, H = 3 * FILA, R = M.fondoPiso(W, H, piso, 0.3);
+  piezas.forEach((id, k) => {
+    const orig = cacheado(`${id}_herida_0`, () => pintarObjeto(id, 'herida', 0));
+    const sin = cacheado(`${id}_herida_sin`, () => pintarEscena(M.sinFuegoHorneado(M.escenaDe(objeto(id), 'herida', 0))));
+    const suelo = k * FILA + FILA - 20;
+    for (let c = 0; c < 2; c++) {
+      const cx = c * 820 + 300;
+      texto(R, c * 820 + 10, k * FILA + 6, `${id} ${c ? 'doom celda 2' : 'hoy'}`);
+      if (!c) { M.alumbrar(R, cx, suelo, 300, '#ff3a12', 0.4); M.pegar(R, orig, cx, suelo); }
+      else {
+        const f = fuegoCatedral(sin, orig, 2, 31 + k, id, 'herida');
+        D.pasos(f.vit, 12); D.pasos(f.puerta, 12);
+        M.alumbrar(R, cx, suelo, 300, D.PALETAS.infierno.luz, 0.4 * D.pulsoLuz(f.vit, 0.4).k);
+        M.pegar(R, sin, cx, suelo); f.dibujar(R, cx, suelo);
+      }
+      M.pegar(R, heroe, cx + 200, suelo);
+    }
+  });
+  writeFileSync(salida, encodePng(R));
+  console.log('hoja', salida);
+}
+
 if (modo === 'json') {
   const { fuegosDoomJson } = await import('../src/engine/gotico/datos/fuegos_doom');
   writeFileSync(join(raiz, 'datos', 'fuegos_doom.json'), JSON.stringify(fuegosDoomJson(), null, 1) + '\n');
@@ -312,8 +356,8 @@ if (modo === 'json') {
  * Fuego de la catedral para una pieza: uno en los vitrales (forma desde la máscara de lo que cambia entre el sprite de
  * hoy y el gemelo, recortada a su caja) y uno en el hueco de la puerta. `dibujar` los pone sobre el gemelo.
  */
-function fuegoCatedral(sin: Render, orig: Render, celda: number, sem: number) {
-  const mk = M.mascaraFuego('abo_catedral_fachada', 'herida', orig, sin);
+function fuegoCatedral(sin: Render, orig: Render, celda: number, sem: number, id = 'abo_catedral_fachada', v = 'herida') {
+  const mk = M.mascaraFuego(id, v, orig, sin);
   // caja de la máscara
   let x0 = mk.w, y0 = mk.h, x1 = 0, y1 = 0;
   for (let y = 0; y < mk.h; y++) for (let x = 0; x < mk.w; x++) if (mk.mascara[y * mk.w + x] > 40) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
@@ -323,7 +367,7 @@ function fuegoCatedral(sin: Render, orig: Render, celda: number, sem: number) {
   const fm = D.formaDesdeMascara(sub, cw, ch, celda, { escala255: true, relleno: 0.22, semilla: sem });
   const vit = D.crearFuego({ ancho: fm.ancho, alto: fm.alto, forma: fm.forma, paleta: 'infierno', semilla: sem, decay: 1 + 52 / (64 / celda), margen: 0, humo: 0, ruido: 0.5, turbulencia: 0.5 });
   // la puerta: el hueco entre las hojas abiertas (medido en el sprite de la fachada herida)
-  const PUERTA = { x: -15, y: -12, ancho: 22, alto: 64 };
+  const PUERTA = { x: -15, y: -12, ancho: 22, alto: 64 }, conPuerta = id === 'abo_catedral_fachada';
   const pw = Math.round(PUERTA.ancho / celda) + 2, ph = Math.round(PUERTA.alto / celda);
   const puerta = D.crearFuego({ ancho: pw, alto: ph, forma: { tipo: 'puerta', arranque: 0.7 }, paleta: 'infierno', semilla: sem + 1, altura: 0.95, humo: 0.5, margen: 1 });
   return {
@@ -340,7 +384,7 @@ function fuegoCatedral(sin: Render, orig: Render, celda: number, sem: number) {
         const s = (y * pw2 + x) * 4, a = x < pw2 && y < ph2 ? buf[s + 3] / 255 : 0, d = (Y * R.w + X) * 4;
         R.data[d] += (buf[s] * a * 1.1 + 70 * k) * m; R.data[d + 1] += (buf[s + 1] * a * 1.1 + 12 * k) * m; R.data[d + 2] += (buf[s + 2] * a + 4 * k) * m;
       }
-      M.dibujarFuego(R, puerta, ax + PUERTA.x, ay + PUERTA.y, celda, { filtro: 0.5 });
+      if (conPuerta) M.dibujarFuego(R, puerta, ax + PUERTA.x, ay + PUERTA.y, celda, { filtro: 0.5 });
     },
   };
 }

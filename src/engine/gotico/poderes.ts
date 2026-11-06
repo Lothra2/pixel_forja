@@ -2860,7 +2860,7 @@ Ids nuevos (al lado de los de siempre, no reemplazan a nadie): virote, saeta_sag
 impacto_veneno, impacto_sagrado, impacto_hueso, nova_sangre, maldicion_sombra, aura_furia.
 
 Fuego de Doom (el autómata de fuego_doom.ts horneado en los cuadros): ${EFECTOS_DOOM.join(', ')}.
-muro_llamas y crater_ardiente ahora arden con fuego de Doom, con los mismos cuadros, celda y ancla de antes.
+crater_ardiente ahora arde con fuego de Doom, con los mismos cuadros, celda y ancla de antes.
 `;
 
 /** Zip con una tira PNG por poder más poderes.json y LEEME.txt. */

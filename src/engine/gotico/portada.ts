@@ -9,7 +9,8 @@ import {
   type Lamina, type Mascara, type C3, type P2,
 } from './cine';
 import { perfil, arbolMuerto, lapida, verja, cuervo, ruina, aguja, llamas, humo, nubes, campoNubes, type TipoLapida } from './siluetas';
-import { fuegoTrasVidrios } from './cine_fuego';
+import { fuegoTrasVidrios, cuadrosDoom } from './cine_fuego';
+import * as D from './fuego_doom';
 
 /**
  * La portada de Réquiem de Ceniza en capas de paralaje: cielo de tormenta con las nubes encendidas desde abajo,
@@ -116,9 +117,9 @@ export function capaRuinas(): { capa: Lamina; fuego: Lamina } {
   // luz del fuego: ventanas, llamas y su resplandor (capa que se suma y titila)
   const fuego = lamina(w, h);
   brillo(fuego, luzV, [1.0, 0.55, 0.15], 0.9);
-  brillo(fuego, llama, [1.0, 0.48, 0.13], 1.15);
+  // las llamas ya no son manchas planas: arden con fuego de Doom en su capa (ruinas_llamas); acá queda su resplandor
   const fl = desenfocada(llama, 12);
-  brillo(fuego, fl, [1.0, 0.3, 0.06], 1.6);
+  brillo(fuego, fl, [1.0, 0.3, 0.06], 1.35);
   for (const [fx, fy, k] of FUEGOS) halo(fuego, fx, fy, 110 * (0.6 + k * 0.5), [0.8, 0.25, 0.05], 0.5 * k, 0.5, true);
   return { capa, fuego };
 }
@@ -372,6 +373,7 @@ export function pintarPortada(o: { rapida?: boolean; aviso?: (s: string) => void
     { id: 'relampago', z: 2, img: createRaster(1, 1), paralaje: 0.12, mezcla: 'sumar', anim: { tipo: 'cuadros', archivo: 'relampago.png' } },
     { id: 'ruinas', z: 3, img: aRaster(ru.capa), paralaje: 0.2, mezcla: 'normal' },
     { id: 'ruinas_fuego', z: 4, img: aRaster(ru.fuego), paralaje: 0.2, mezcla: 'sumar', anim: { tipo: 'titilar', alfa: [0.7, 1], hz: 7, notas: 'alfa con ruido suave (no un seno): suma de dos senos de 5.3 y 8.9 Hz' } },
+    capaFuegoRuinas(o.rapida ? 4 : 12),
     { id: 'catedral', z: 5, img: aRaster(cat.capa), paralaje: 0.45, mezcla: 'normal' },
     { id: 'catedral_luz', z: 6, img: aRaster(cat.luz), paralaje: 0.45, mezcla: 'sumar', anim: { tipo: 'latir', alfa: [0.7, 1], periodo_s: 2.4, notas: 'late con los vitrales; durante un relámpago bajarla a 0.5' } },
     ...(fuego ? [fuego] : []),
@@ -380,6 +382,33 @@ export function pintarPortada(o: { rapida?: boolean; aviso?: (s: string) => void
   ];
   av('ceniza y relámpagos');
   return { capas, ceniza: hojaCeniza(), relampago: cuadrosRelampago(), puerta: cat.puerta };
+}
+
+/**
+ * Los incendios de la ciudad en el horizonte con fuego de Doom: una tira de 12 cuadros a 12 por segundo que empalma
+ * (anim 'cuadros', se suma) con las cinco piras del tamaño de las de antes (22 a 46 px de ancho, 12 a 28 de alto), en
+ * (x, y) de la capa. Va encima de ruinas_fuego (que queda con el resplandor y las ventanas).
+ */
+export function capaFuegoRuinas(cuadros = 12): CapaPortada {
+  const x0 = Math.floor(Math.min(...FUEGOS.map(([fx, , k]) => fx - (22 + k * 24))) - 14), x1 = Math.ceil(Math.max(...FUEGOS.map(([fx, , k]) => fx + 22 + k * 24)) + 14);
+  const y1 = Math.ceil(Math.max(...FUEGOS.map(([, fy]) => fy)) + 12), y0 = Math.floor(Math.min(...FUEGOS.map(([, fy, k]) => fy + 8 - (12 + k * 16) * 2.2)) - 6);
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, fu = new Float32Array(w * h);
+  // la base de cada pira: un montón (media elipse) del ancho de las llamas de antes, más caliente en el medio
+  for (const [fx, fy, k] of FUEGOS) {
+    const rx = (22 + k * 24) / 2, ry = 4 + k * 5, cx = fx - x0, cy = fy + 10 - y0;
+    for (let y = Math.floor(cy - ry); y <= cy; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+      const q = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2; if (q > 1 || x < 2 || x >= w - 2 || y < 0 || y >= h) continue;
+      fu[y * w + x] = Math.max(fu[y * w + x], (0.45 + 0.55 * (1 - q)) * (0.75 + 0.25 * k));
+    }
+  }
+  const f = D.crearFuego({ ancho: w, alto: h, forma: { tipo: 'mapa', fuente: fu }, paleta: 'infierno', semilla: 6311, decay: D.decayPara(30 / h, h), humo: 0, turbulencia: 0.45, ruido: 0.45, tramo: 6, brillo: 1.5, pegada: 0.7, margen: 3 });
+  const cs = cuadrosDoom(f, { cuadros, celda: 1, pasos: 2, filtro: 0.5, k: 1.05, pie: 1.5 });
+  const cols = Math.max(1, Math.min(cuadros, Math.floor(4096 / w)));
+  return {
+    id: 'ruinas_llamas', z: 4.5, img: grilla(cs.map((L) => aRaster(L)), cols), paralaje: 0.2, mezcla: 'sumar', x: x0, y: y0,
+    anim: { tipo: 'cuadros', columnas: cols, cuadros, fps: 12, w, h },
+    notas: 'Fuego de Doom horneado en los incendios del horizonte: tira en grilla, cuadro = floor(t * fps) % cuadros, en (x, y) de la capa, se suma, empalma. Su luz es ruinas_fuego (que titila).',
+  };
 }
 
 /**

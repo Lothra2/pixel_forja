@@ -17,7 +17,7 @@ describe('poderes con fuego de Doom', () => {
     }
   });
 
-  it('muro_llamas y crater_ardiente conservan id, cuadros, celda y ancla', () => {
+  it('muro_llamas (sin cambios) y crater_ardiente (con Doom) conservan id, cuadros, celda y ancla', () => {
     const m = PODERES.find((x) => x.id === 'muro_llamas')!, c = PODERES.find((x) => x.id === 'crater_ardiente')!;
     expect([m.cuadros, m.t, m.bucle, m.celda, m.ancla]).toEqual([10, 2, true, [84, 126], [42, 100]]);
     expect([c.cuadros, c.t, c.bucle, c.celda, c.ancla]).toEqual([10, 2, true, [93, 105], [45, 78]]);

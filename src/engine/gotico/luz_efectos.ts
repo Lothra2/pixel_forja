@@ -96,8 +96,8 @@ export const LUZ_EFECTO: Record<string, LuzEfecto> = {
   saeta_fuego: proyectil(COL.fuego, 170, 0.85, 6, 'explosion_fuego', { parpadeo: 0.14 }),
   bola_fuego: proyectil(COL.fuego, 230, 1, 8, 'explosion_fuego', { parpadeo: 0.16, altura: 44 }),
   explosion_fuego: golpe({ color: COL.fuego, radio: 270, intensidad: 1, altura: 30, parpadeo: 0.08 }, 14, 0, 0.6),
-  // muro_llamas y crater_ardiente arden con fuego de Doom: su curva es el calor medio de la llama en cada cuadro
-  muro_llamas: { color: COL.fuego, radio: 150, intensidad: 0.75, curva: curvaDoom('muro_llamas'), altura: 30, parpadeo: 0.12, sombra: true, prioridad: 2 },
+  muro_llamas: { color: COL.fuego, radio: 150, intensidad: 0.75, curva: pulso(10, 0.82, 0.1, 2), altura: 30, parpadeo: 0.18, sombra: true, prioridad: 2 },
+  // crater_ardiente arde con fuego de Doom: su curva es el calor medio de la llama en cada cuadro
   meteoro: {
     color: COL.fuego, radio: 300, intensidad: 1, altura: 34, parpadeo: 0.1, sombra: true, prioridad: 0,
     // cae (la luz baja con la roca: 0.25 a 0.6), pega en el cuadro 8 y se apaga
