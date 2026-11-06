@@ -27,8 +27,8 @@ const BASE: Iluminacion = {
   sombra: { color: '#05070d', fuerza: 0.45, hasta: 0.3 },
   techo: { desde: 80, k: 0.36, color: '#8c8170', mezcla: 0.45 },
 };
-export const CLAVE_BAJA_FRIA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.45, color: BORDE_FRIO, ancho: 2.2, mezcla: 0.7, contorno: 0.45 } };
-export const CLAVE_BAJA_CALIDA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.45, color: BORDE_CALIDO, ancho: 2.2, mezcla: 0.7, contorno: 0.45 } };
+export const CLAVE_BAJA_FRIA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.45, color: BORDE_FRIO, ancho: 2.2, mezcla: 0.7, contorno: 0.2 } };
+export const CLAVE_BAJA_CALIDA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.45, color: BORDE_CALIDO, ancho: 2.2, mezcla: 0.7, contorno: 0.2 } };
 
 const esCalido = (mat: string | undefined) => {
   const m = mat ? MATERIALES[mat] : undefined;
