@@ -1,0 +1,29 @@
+{
+ "fondo": true,
+ "frente": false,
+ "fuegos": [],
+ "moviles": [
+  {
+   "x": 300,
+   "y": 0,
+   "w": 425,
+   "h": 200,
+   "escala": 2,
+   "cuadros": 55,
+   "columnas": 9,
+   "fps": 12
+  },
+  {
+   "x": 250,
+   "y": 420,
+   "w": 425,
+   "h": 186,
+   "escala": 2,
+   "cuadros": 55,
+   "columnas": 9,
+   "fps": 12
+  }
+ ],
+ "particulas": "polvo",
+ "paralaje": 0.9
+}

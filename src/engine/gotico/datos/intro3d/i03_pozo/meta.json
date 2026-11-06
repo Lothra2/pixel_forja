@@ -1,0 +1,108 @@
+{
+ "fondo": true,
+ "frente": false,
+ "fuegos": [
+  {
+   "x": 1167,
+   "y": 116,
+   "w": 38,
+   "h": 39,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 578,
+   "y": 107,
+   "w": 49,
+   "h": 47,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 232,
+   "y": 121,
+   "w": 38,
+   "h": 44,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 535,
+   "y": 465,
+   "w": 32,
+   "h": 50,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 826,
+   "y": 470,
+   "w": 36,
+   "h": 50,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 628,
+   "y": 308,
+   "w": 51,
+   "h": 71,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 721,
+   "y": 287,
+   "w": 29,
+   "h": 42,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 271,
+   "y": 356,
+   "w": 28,
+   "h": 47,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 1370,
+   "y": 569,
+   "w": 38,
+   "h": 94,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 750,
+   "y": 243,
+   "w": 30,
+   "h": 46,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  }
+ ],
+ "particulas": "polvo",
+ "paralaje": 0.9
+}

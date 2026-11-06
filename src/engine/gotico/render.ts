@@ -176,11 +176,11 @@ function normalMasa(m: Masa, p: V3, sub?: Int16Array, ns = 0): V3 {
 }
 
 // ------------------------------------------------------------------ intersección (cada pieza es convexa: entrada y salida)
-interface Tramo { t0: number; t1: number; n0: V3; n1: V3; p: Pieza; i: number; mat?: string; tono?: number }
+export interface Tramo { t0: number; t1: number; n0: V3; n1: V3; p: Pieza; i: number; mat?: string; tono?: number }
 const toLocal = (v: V3, ex: V3, ey: V3, ez: V3): V3 => [dot(v, ex), dot(v, ey), dot(v, ez)];
 const toWorld = (v: V3, ex: V3, ey: V3, ez: V3): V3 => [ex[0] * v[0] + ey[0] * v[1] + ez[0] * v[2], ex[1] * v[0] + ey[1] * v[1] + ez[1] * v[2], ex[2] * v[0] + ey[2] * v[1] + ez[2] * v[2]];
 
-function tramo(p: Pieza, o: V3, d: V3, tdesde = -Infinity, thasta = Infinity): Tramo | null {
+export function tramo(p: Pieza, o: V3, d: V3, tdesde = -Infinity, thasta = Infinity): Tramo | null {
   if (p.k === 'masa') {
     // solo los componentes cuya esfera (más la unión suave) cruza el rayo, y la marcha entre su primera entrada y su última salida
     let ns = 0, ta = Infinity, tb = -Infinity;
@@ -250,7 +250,7 @@ function tramo(p: Pieza, o: V3, d: V3, tdesde = -Infinity, thasta = Infinity): T
  */
 const orden = new WeakMap<Pieza, number>();
 const envolvente = new WeakMap<Pieza, [number, number, number, number]>();
-function esferaDe(p: Pieza): [number, number, number, number] {
+export function esferaDe(p: Pieza): [number, number, number, number] {
   let e = envolvente.get(p);
   if (e) return e;
   let pts: V3[];
@@ -690,4 +690,158 @@ export function girarPiezas(ps: Pieza[], grados: number): Pieza[] {
     const comps = p.comps.map((q): Comp => (q.f === 'hueso' ? hueso(R(q.a), R(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k }) : { ...q, c: R(q.c), sc: R(q.sc), ex: R(q.ex), ey: R(q.ey), ez: R(q.ez) }));
     return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave });
   });
+}
+
+// ================================================================== cámara libre (perspectiva)
+/*
+ * Todo lo de arriba mira la escena con la cámara isométrica fija (rayos paralelos a VISTA) y no se toca. Desde acá, una
+ * cámara aparte para las cinemáticas: un ojo en el mundo, un objetivo, un campo visual y un tamaño de salida; cada pixel
+ * tira su propio rayo desde el ojo (perspectiva real). Las mismas piezas y la misma intersección (`tramo`) sirven para
+ * las dos; cambia de dónde sale cada rayo y cómo se busca qué piezas puede tocar: una escena de cine junta miles de
+ * piezas, así que la búsqueda va por un árbol de cajas (BVH) en lugar de la rejilla de pantalla del isométrico.
+ */
+
+/** Cámara de cine: ojo, objetivo, campo visual vertical en grados, tamaño de salida y giro sobre el eje de la vista. */
+export interface Camara { pos: V3; obj: V3; fov: number; w: number; h: number; giro?: number }
+/** La base de la cámara ya calculada: adelante, derecha y arriba (en el mundo), y la tangente del medio campo. */
+export interface BaseCamara { cam: Camara; f: V3; r: V3; u: V3; th: number; asp: number }
+const UPZ_C: V3 = [0, 0, 1];
+export function baseCamara(cam: Camara): BaseCamara {
+  const f = norm(add(cam.obj, cam.pos, -1));
+  let r = norm(cross(f, UPZ_C)), u = cross(r, f);
+  if (cam.giro) { const a = (cam.giro * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a); const r2 = add(r.map((v) => v * c) as V3, u, s); u = add(u.map((v) => v * c) as V3, r, -s); r = r2; }
+  return { cam, f, r, u, th: Math.tan((cam.fov * Math.PI) / 360), asp: cam.w / cam.h };
+}
+/** Dirección (unitaria) del rayo que pasa por el punto (px, py) de la imagen (el centro de un pixel es +0.5). */
+export function rayoCamara(b: BaseCamara, px: number, py: number): V3 {
+  const sx = ((2 * px) / b.cam.w - 1) * b.th * b.asp, sy = (1 - (2 * py) / b.cam.h) * b.th;
+  return norm([b.f[0] + b.r[0] * sx + b.u[0] * sy, b.f[1] + b.r[1] * sx + b.u[1] * sy, b.f[2] + b.r[2] * sx + b.u[2] * sy]);
+}
+/** Dónde cae un punto del mundo en la imagen: [px, py, distancia al ojo], o null si queda detrás de la cámara. */
+export function proyectar(b: BaseCamara, p: V3): [number, number, number] | null {
+  const q = add(p, b.cam.pos, -1), z = dot(q, b.f);
+  if (z <= 1e-6) return null;
+  const x = dot(q, b.r) / z, y = dot(q, b.u) / z;
+  return [((x / (b.th * b.asp) + 1) * b.cam.w) / 2, ((1 - y / b.th) * b.cam.h) / 2, Math.hypot(q[0], q[1], q[2])];
+}
+/** Caja alineada (x0, y0, z0, x1, y1, z1) que envuelve una pieza. */
+export function cajaPieza(p: Pieza): [number, number, number, number, number, number] {
+  const b: [number, number, number, number, number, number] = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+  const mete = (c: V3, r: number) => { for (let k = 0; k < 3; k++) { b[k] = Math.min(b[k], c[k] - r); b[k + 3] = Math.max(b[k + 3], c[k] + r); } };
+  if (p.k === 'conv') for (const q of p.pts) mete(q, 0);
+  else if (p.k === 'cono') { const R = Math.max(p.r0, p.r1); mete(p.o, R); mete(add(p.o, p.ez, p.h), R); }
+  else if (p.k === 'elip') mete(p.c, Math.max(...p.r));
+  else for (const c of p.comps) mete(c.sc, c.sr + Math.max(0, c.k ?? p.suave) * 0.5 + 0.05);
+  return b;
+}
+/** Lo que toca un rayo de la escena de cine: distancia, normal, pieza (índice) y su material. */
+export interface GolpeEscena { t: number; n: V3; i: number; mat: string; tono: number }
+/**
+ * Árbol de cajas sobre las piezas de una escena entera. Cada pieza lleva su grupo (el asset del que salió): una pieza
+ * `resta` cava solo las piezas de su mismo grupo armadas antes que ella, igual que en el isométrico (el hueco de la
+ * puerta de una casa no muerde el árbol de al lado). Las piezas de un grupo van seguidas en la lista.
+ */
+export class ArbolCajas {
+  readonly ps: Pieza[]; readonly grupo: Int32Array;
+  private bmin: Float64Array; private bmax: Float64Array; private izq: Int32Array; private der: Int32Array; private ini: Int32Array; private cnt: Int32Array;
+  private idx: Int32Array; private n = 0; private pila = new Int32Array(256); private cand: number[] = [];
+  constructor(ps: Pieza[], grupo: ArrayLike<number>) {
+    this.ps = ps; this.grupo = Int32Array.from(grupo);
+    const N = ps.length, cajas = ps.map(cajaPieza), cen = cajas.map((b) => [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]), M = Math.max(1, 2 * N);
+    this.bmin = new Float64Array(M * 3); this.bmax = new Float64Array(M * 3); this.izq = new Int32Array(M).fill(-1); this.der = new Int32Array(M).fill(-1); this.ini = new Int32Array(M); this.cnt = new Int32Array(M);
+    this.idx = Int32Array.from({ length: N }, (_, i) => i);
+    const armar = (a: number, b: number): number => {
+      const nodo = this.n++, lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity], clo = [Infinity, Infinity, Infinity], chi = [-Infinity, -Infinity, -Infinity];
+      for (let k = a; k < b; k++) { const c = cajas[this.idx[k]], m = cen[this.idx[k]]; for (let e = 0; e < 3; e++) { lo[e] = Math.min(lo[e], c[e]); hi[e] = Math.max(hi[e], c[e + 3]); clo[e] = Math.min(clo[e], m[e]); chi[e] = Math.max(chi[e], m[e]); } }
+      this.bmin.set(lo, nodo * 3); this.bmax.set(hi, nodo * 3);
+      if (b - a <= 4) { this.ini[nodo] = a; this.cnt[nodo] = b - a; return nodo; }
+      const ext = [chi[0] - clo[0], chi[1] - clo[1], chi[2] - clo[2]], eje = ext[0] >= ext[1] && ext[0] >= ext[2] ? 0 : ext[1] >= ext[2] ? 1 : 2;
+      this.idx.set(Array.from(this.idx.subarray(a, b)).sort((p, q) => cen[p][eje] - cen[q][eje]), a);
+      const m = (a + b) >> 1;
+      this.izq[nodo] = armar(a, m); this.der[nodo] = armar(m, b);
+      return nodo;
+    };
+    if (N) armar(0, N);
+  }
+  /** Índices de las piezas cuya caja cruza el rayo entre tmin y tmax (d unitario). */
+  candidatos(o: V3, d: V3, tmin: number, tmax: number): number[] {
+    const out = this.cand; out.length = 0;
+    if (!this.n) return out;
+    const inv = [1 / d[0], 1 / d[1], 1 / d[2]];
+    let P = this.pila, sp = 0; P[sp++] = 0;
+    while (sp) {
+      const nd = P[--sp], j = nd * 3;
+      let t0 = -Infinity, t1 = Infinity;
+      for (let e = 0; e < 3; e++) { const ta = (this.bmin[j + e] - o[e]) * inv[e], tb = (this.bmax[j + e] - o[e]) * inv[e]; t0 = Math.max(t0, Math.min(ta, tb)); t1 = Math.min(t1, Math.max(ta, tb)); }
+      if (!(t1 >= t0) || t1 < tmin || t0 > tmax) continue;
+      if (this.izq[nd] < 0) { for (let k = this.ini[nd]; k < this.ini[nd] + this.cnt[nd]; k++) out.push(this.idx[k]); continue; }
+      if (sp + 2 > P.length) { const Q = new Int32Array(P.length * 2); Q.set(P); this.pila = P = Q; }
+      P[sp++] = this.izq[nd]; P[sp++] = this.der[nd];
+    }
+    return out;
+  }
+  /** El primer punto sólido en el rayo entre tmin y tmax (con los huecos de `resta` por grupo). */
+  golpe(o: V3, d: V3, tmin = 0, tmax = Infinity): GolpeEscena | null {
+    const cs = this.candidatos(o, d, tmin, tmax);
+    if (!cs.length) return null;
+    const ps = this.ps, G = this.grupo, pos: Tramo[] = [], neg: Tramo[] = [];
+    let masas: [number, number][] | null = null;
+    for (const i of cs) {
+      const p = ps[i];
+      if (p.k === 'masa') {
+        const e = p.esf, wx = e[0] - o[0], wy = e[1] - o[1], wz = e[2] - o[2], tc = wx * d[0] + wy * d[1] + wz * d[2], q = wx * wx + wy * wy + wz * wz - tc * tc;
+        if (q > e[3] * e[3] || tc + e[3] < tmin) continue;
+        (masas ??= []).push([tc - Math.sqrt(e[3] * e[3] - q), i]); continue;
+      }
+      const r = tramo(p, o, d);
+      if (!r || r.t1 < tmin) continue;
+      r.i = i; (p.resta ? neg : pos).push(r);
+    }
+    const dentroNeg = (t: number, i: number) => { for (const r of neg) if (r.i > i && G[r.i] === G[i] && t > r.t0 + 1e-6 && t < r.t1 - 1e-6) return true; return false; };
+    let mejor: GolpeEscena | null = null;
+    for (const r of pos) {
+      const t = Math.max(r.t0, tmin);
+      if (t > tmax || (mejor && t >= mejor.t)) continue;
+      if (!dentroNeg(t, r.i)) { mejor = { t, n: r.n0, i: r.i, mat: r.p.mat, tono: r.p.tono ?? 0 }; continue; }
+      for (const q of neg) if (q.i > r.i && G[q.i] === G[r.i] && q.t1 > t && q.t1 < r.t1 && q.t1 <= tmax && (!mejor || q.t1 < mejor.t) && !dentroNeg(q.t1 + 1e-5, r.i)) mejor = { t: q.t1, n: [-q.n1[0], -q.n1[1], -q.n1[2]], i: r.i, mat: r.p.mat, tono: r.p.tono ?? 0 };
+    }
+    if (masas) {
+      if (masas.length > 1) masas.sort((a, b) => a[0] - b[0]);
+      for (const [entra, i] of masas) {
+        if ((mejor && entra >= mejor.t) || entra > tmax) break;
+        const m = ps[i], r = tramo(m, o, d, Math.max(tmin, entra), Math.min(tmax, mejor ? mejor.t : Infinity));
+        if (!r || r.t0 < tmin) continue;
+        if ((!mejor || r.t0 < mejor.t) && !dentroNeg(r.t0, i)) mejor = { t: r.t0, n: r.n0, i, mat: r.mat ?? m.mat, tono: (r.tono ?? 0) + (m.tono ?? 0) };
+      }
+    }
+    return mejor;
+  }
+}
+/**
+ * Vista de prueba de la cámara libre con el sombreado del taller (luz LUZ, rampa del material, sombra dura de un rayo,
+ * sin trama): sirve para mirar cualquier escena en perspectiva. Las cinemáticas usan su propio sombreado (cine3d.ts).
+ */
+export function pintarCamara(esc: Escena, cam: Camara, o: { ss?: number } = {}): Raster {
+  const ps = esc.piezas, b = baseCamara(cam), arbol = new ArbolCajas(ps, ps.map(() => 0)), img = createRaster(cam.w, cam.h), ss = Math.max(1, Math.round(o.ss ?? 1));
+  for (let py = 0; py < cam.h; py++) for (let px = 0; px < cam.w; px++) {
+    let r = 0, g = 0, bl = 0, n = 0;
+    for (let k = 0; k < ss * ss; k++) {
+      const d = rayoCamara(b, px + ((k % ss) + 0.5) / ss, py + (Math.floor(k / ss) + 0.5) / ss), h = arbol.golpe(cam.pos, d);
+      if (!h) continue;
+      const m = MATERIALES[h.mat] ?? MATERIALES.piedra, p = add(cam.pos, d, h.t);
+      let nn = h.n; if (dot(nn, d) > 0) nn = [-nn[0], -nn[1], -nn[2]];
+      let s: number;
+      if (m.emite) s = 0.8 + h.tono;
+      else {
+        const dif = Math.max(0, dot(nn, LUZ)), lz = dif > 0 && !arbol.golpe(add(p, nn, 0.5), LUZ, 0.01) ? 1 : 0;
+        s = 0.17 + 0.64 * dif * (0.22 + 0.78 * lz) + 0.12 * Math.max(0, nn[2]) + (fbm(p[0] * m.escala, p[1] * m.escala, p[2] * m.escala) - 0.5) * m.ruido + (m.patron ? m.patron(p, nn) : 0) + h.tono;
+      }
+      const R = rampa(m, h.mat), pos = Math.max(0, Math.min(0.999, s)) * (R.length - 1), k0 = Math.floor(pos), fr = pos - k0, ca = R[k0], cb = R[Math.min(R.length - 1, k0 + 1)];
+      r += ca[0] + (cb[0] - ca[0]) * fr; g += ca[1] + (cb[1] - ca[1]) * fr; bl += ca[2] + (cb[2] - ca[2]) * fr; n++;
+    }
+    if (!n) continue;
+    const i = (py * cam.w + px) * 4;
+    img.data[i] = r / n; img.data[i + 1] = g / n; img.data[i + 2] = bl / n; img.data[i + 3] = Math.round((n / (ss * ss)) * 255);
+  }
+  return img;
 }

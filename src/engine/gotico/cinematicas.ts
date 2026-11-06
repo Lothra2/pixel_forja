@@ -9,6 +9,9 @@ import { cuadrosHojaFuego } from './cine_fuego';
 import { PINTORES_A } from './cine_planos_a';
 import { PINTORES_B } from './cine_planos_b';
 import { PINTORES_C } from './cine_planos_c';
+import { pintoresIntro3d, paqueteIntro3d } from './cine3d_paquete';
+import { alfaTiempo, type AnimTiempo } from './cine3d_toma';
+import { decodePng } from '../export/png';
 
 /**
  * Las cinemáticas de cierre de cada acto de Réquiem de Ceniza: tres o cuatro planos por acto (la muerte del jefe,
@@ -27,8 +30,10 @@ export type Curva = 'lineal' | 'suave';
 /** Cámara del reproductor del juego: (x, y) en px de la capa de paralaje 1, zoom alrededor del centro de la pantalla. */
 export interface Camara { desde: { x: number; y: number; zoom: number }; hasta: { x: number; y: number; zoom: number }; curva: Curva; sacudida?: { t: number; dur: number; fuerza: number } }
 export interface Transicion { tipo: 'corte' | 'negro' | 'fundido' | 'blanco' | 'rojo'; s: number }
-export type Particulas = 'ceniza' | 'brasas' | 'nieve' | 'lluvia';
-export interface Plano { id: string; que: string; dur: number; cam: Camara; texto: Texto; textoSegun?: Record<string, Texto>; eleccion?: 'vigdis' | 'brasa'; entrada: Transicion; salida: Transicion }
+export type Particulas = 'ceniza' | 'brasas' | 'nieve' | 'lluvia' | 'polvo';
+/** Un sonido del juego que se toca en el segundo t del plano (campana, trueno, explosion, rugido_jefe). */
+export interface Sonido { t: number; efecto: string; vol?: number }
+export interface Plano { id: string; que: string; dur: number; cam: Camara; texto: Texto; textoSegun?: Record<string, Texto>; eleccion?: 'vigdis' | 'brasa'; entrada: Transicion; salida: Transicion; /** sonidos a tiempo (el reproductor los toca al pasar por t) */ sonidos?: Sonido[] }
 
 // ------------------------------------------------------------------ cámaras
 /** Margen que puede usar la cámara (el de la capa menos lo que se lleva la sacudida). */
@@ -180,12 +185,57 @@ export const GUION: Record<string, Plano[]> = {
       cam: acercar([760, 380], 1.08, [-20, 0], [10, -4]), entrada: T('fundido', 1.2), salida: T('negro', 3),
       texto: ['Reinas sobre un cielo frío. Nada te calienta ya: ni el oro, ni el recuerdo del fuego.', 'You reign over a cold sky. Nothing warms you now: not the gold, not the memory of fire.'] },
   ],
+  // la intro del juego (11 planos, 83 s, música "intro"), hasta antes del título forjado: escenas 3D horneadas (cine3d_*.ts)
+  intro: [
+    { id: 'i01_valle', que: 'Velmora antes: el valle en invierno al alba, la abadía de Santa Oria a contraluz sobre su colina nevada, el pueblo abajo con humo y faroles.', dur: 8,
+      cam: acercar([820, 250], 1.07, [-24, 8], [6, -4]), entrada: T('negro', 2), salida: T('fundido', 1),
+      texto: ['Hubo un tiempo en que el valle de Velmora solo le temía al invierno.', 'There was a time when the valley of Velmora feared only winter.'] },
+    { id: 'i02_campanas', que: 'Al alba, en el campanario: monjes de hábito y capucha tiran de las sogas a contraluz y la campana se mece.', dur: 8.5,
+      cam: acercar([700, 330], 1.06, [18, 10], [-14, -6]), entrada: T('fundido', 1), salida: T('fundido', 1),
+      sonidos: [{ t: 1.71, efecto: 'campana', vol: 0.7 }, { t: 4.0, efecto: 'campana', vol: 0.75 }, { t: 6.29, efecto: 'campana', vol: 0.8 }],
+      texto: ['Los monjes de Santa Oria tocaban las campanas al alba, y nadie preguntaba por qué la abadía se alzó sobre un pozo sellado.', 'The monks of Santa Oria rang the bells at dawn, and no one asked why the abbey was raised over a sealed well.'] },
+    { id: 'i03_pozo', que: 'Bajo la abadía, la cripta del pozo sellado: losa de hierro con cadenas y el sello de cera.', dur: 7.5,
+      cam: acercar([636, 318], 1.1, [0, -10], [0, 6]), entrada: T('fundido', 1), salida: T('negro', 1.2),
+      texto: ['Nadie recordaba el voto de los primeros hermanos: no cantar nunca de noche.', 'No one remembered the vow of the first brothers: never sing at night.'] },
+    { id: 'i04_cielo', que: 'La noche de la última cosecha: la carreta en el campo, la abadía lejos, y el cielo que se desgarra con luz roja.', dur: 6.5,
+      cam: temblar(acercar([640, 250], 1.05, [0, 14], [0, -12]), 5, 3.4, 1.9), entrada: T('negro', 1.2), salida: T('fundido', 0.6),
+      sonidos: [{ t: 1.9, efecto: 'trueno', vol: 0.9 }],
+      texto: ['La noche de la última cosecha, el cielo se abrió.', 'On the night of the last harvest, the sky opened.'] },
+    { id: 'i05_brasa', que: 'La brasa cae despacio desde la herida del cielo, con estela de fuego de Doom, hacia la abadía.', dur: 7,
+      cam: acercar([700, 330], 1.06, [12, -6], [-6, 6]), entrada: T('fundido', 0.6), salida: T('blanco', 0.35),
+      texto: ['Una brasa cayó, lenta, como si buscara algo.', 'An ember fell, slowly, as if it were searching for something.'] },
+    { id: 'i06_impacto', que: 'El impacto: la abadía arde desde adentro, fuego de Doom en el tejado, los vitrales y la puerta; los sobrevivientes miran de espaldas.', dur: 5.5,
+      cam: temblar(acercar([770, 300], 1.08, [-14, -8], [10, 4]), 14, 2.4, 0), entrada: T('blanco', 0.6), salida: T('fundido', 0.8),
+      sonidos: [{ t: 0, efecto: 'explosion', vol: 1 }, { t: 0.15, efecto: 'trueno', vol: 1 }],
+      texto: ['Cayó en el claustro.', 'It fell into the cloister.'] },
+    { id: 'i07_claustro', que: 'En el claustro nevado, la brasa caída humea entre las losas del jardín con su luz roja; detrás, en la torre, las campanas se mecen solas.', dur: 7,
+      cam: temblar(acercar([560, 480], 1.08, [0, 6], [0, -6]), 5, 0.9, 0), entrada: T('fundido', 0.8), salida: T('fundido', 1),
+      sonidos: [{ t: 0.67, efecto: 'campana', vol: 0.85 }, { t: 3.33, efecto: 'campana', vol: 0.8 }, { t: 6.0, efecto: 'campana', vol: 0.7 }],
+      texto: ['Y las campanas doblaron solas.', 'And the bells tolled on their own.'] },
+    { id: 'i08_camposanto', que: 'Al amanecer gris, en el camposanto bajo la ceniza, los muertos se levantan secos y retorcidos.', dur: 8,
+      cam: paneo(30, -26, 6, -4, 1.04), entrada: T('fundido', 1.2), salida: T('fundido', 1),
+      texto: ['Al amanecer, los monjes ya no estaban. Y el valle empezó a arder sin fuego.', 'By dawn, the monks were gone. And the valley began to burn without fire.'] },
+    { id: 'i09_fuego', que: 'Los sobrevivientes en silueta alrededor de una hoguera de fuego de Doom entre las ruinas del pueblo.', dur: 7.5,
+      cam: acercar([640, 400], 1.07, [-10, 6], [6, -4]), entrada: T('fundido', 1), salida: T('fundido', 1),
+      texto: ['Los que sobrevivieron llevan ceniza en la piel. La llaman la Marca.', 'Those who survived carry ash on their skin. They call it the Mark.'] },
+    { id: 'i10_tu', que: 'Las ocho clases en la cresta, a contraluz de la catedral que arde: tú también.', dur: 8,
+      cam: acercar([640, 360], 1.08, [0, 10], [0, -6]), entrada: T('fundido', 1), salida: T('negro', 1),
+      texto: ['Tú también la tienes.', 'You bear it too.'] },
+    { id: 'i11_ojos', que: 'En el fondo del pozo, entre relámpagos, Ozmaren abre los ojos.', dur: 9.5,
+      cam: temblar(acercar([640, 330], 1.14), 10, 7.4, 6), entrada: T('negro', 1.2), salida: T('negro', 1.5),
+      sonidos: [{ t: 2.2, efecto: 'trueno', vol: 0.8 }, { t: 3.1, efecto: 'trueno', vol: 0.6 }, { t: 6, efecto: 'rugido_jefe', vol: 1 }],
+      texto: ['Y en el fondo del pozo, algo que esperaba mil inviernos abrió los ojos.', 'And at the bottom of the well, something that had waited a thousand winters opened its eyes.'] },
+  ],
 };
 /** Valores de cada elección (las capas con `solo_si` se dibujan solo con ese valor). */
 /** Banderas del juego para cada elección: una capa con `si` se dibuja solo con esa bandera encendida. */
 export const ELECCIONES: Record<string, string[]> = { vigdis: ['vigdis_viva', 'vigdis_muerta'], brasa: ['brasa_destruir', 'brasa_absorber'] };
 export const CLAVES_CINE = Object.keys(GUION);
-export const PINTORES: Record<string, (t: Toma) => void> = { ...PINTORES_A, ...PINTORES_B, ...PINTORES_C };
+export const PINTORES: Record<string, (t: Toma) => void> = { ...PINTORES_A, ...PINTORES_B, ...PINTORES_C, ...pintoresIntro3d(GUION.intro.map((p) => p.id)) };
+/** Música que pide cada cinemática (la intro arranca con la pista 'intro' en el segundo 0 y sigue en el título). */
+export const MUSICA_CINE: Record<string, string> = { intro: 'intro' };
+/** Sonidos del juego que pueden pedir los planos (`sonidos`). */
+export const SONIDOS_CINE = ['campana', 'trueno', 'explosion', 'rugido_jefe'];
 
 /** Pinta un plano: sus capas y sus efectos. */
 export function pintarPlano(clave: string, id: string): Toma {
@@ -378,7 +428,10 @@ export function componerPlano(capas: CapaFinal[], p: Plano, o: { t?: number; val
   for (const [i, c] of capas.entries()) {
     if (c.soloSi && c.soloSi !== valor) continue;
     const img = c.img && c.anim?.tipo === 'cuadros' ? celdaTira(c, Math.floor(tt * Number(c.anim.fps ?? 12)) % Number(c.anim.cuadros)) : c.img ?? celda(c.hoja!, Math.floor(tt * Number(c.anim?.fps ?? 10) + i * 3) % hojasFx()[c.hoja!].cuadros);
-    dibujar(out, img, c.x, c.y, c.w, c.h, c.paralaje, cam, c.mezcla === 'sumar', c.alfa ?? 1);
+    // anim 'tiempo': el alfa sigue sus claves en el segundo del plano (relámpagos, ojos que se encienden)
+    const kt = c.anim?.tipo === 'tiempo' ? alfaTiempo(c.anim as unknown as AnimTiempo, tt) : 1;
+    if (kt <= 0) continue;
+    dibujar(out, img, c.x, c.y, c.w, c.h, c.paralaje, cam, c.mezcla === 'sumar', (c.alfa ?? 1) * kt);
   }
   const v = o.vineta ?? vinetaCine();
   for (let i = 0; i < out.w * out.h; i++) {
@@ -410,13 +463,18 @@ export function exportarCinematicas(o: OpcExportar): Record<string, unknown> {
   const vineta = vinetaCine();
   for (const clave of o.claves ?? CLAVES_CINE) {
     const planos: unknown[] = [];
+    // la intro: lo horneado en 3D, empaquetado en pocas páginas; cada capa con su recorte
+    const paquete = clave === 'intro' ? paqueteIntro3d(GUION.intro.map((p) => p.id), decodePng) : null;
+    paquete?.paginas.forEach((pg, i) => o.poner(`cinematicas/intro/pagina_${i + 1}.png`, pg));
     GUION[clave].forEach((p, n) => {
       av(`cinemática ${clave} ${p.id}`);
-      const t = pintarPlano(clave, p.id), capas = capasFinales(t);
+      const t = pintarPlano(clave, p.id), capas = capasFinales(t), pq = paquete?.planos[p.id];
       const archivoDe = (c: CapaFinal) => (c.hoja ? `cinematicas/fx/${c.hoja}.png` : `cinematicas/${clave}/${p.id}_${c.id}.png`);
-      for (const c of capas) if (c.img) o.poner(archivoDe(c), aRaster(c.img, !!c.opaca));
+      if (!paquete) for (const c of capas) if (c.img) o.poner(archivoDe(c), aRaster(c.img, !!c.opaca));
       const json = (lista: CapaFinal[]) => [
-        ...lista.map((c) => ({ id: c.id, archivo: archivoDe(c), x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.alfa !== undefined ? { alfa: c.alfa } : {}), ...(c.anim ? { anim: c.anim } : {}), ...(c.soloSi ? { si: c.soloSi } : {}) })),
+        ...(paquete
+          ? (pq?.capas ?? []).map((c) => ({ id: c.id, archivo: `cinematicas/intro/pagina_${c.pagina + 1}.png`, recorte: c.recorte, x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.anim ? { anim: c.anim } : {}) }))
+          : lista.map((c) => ({ id: c.id, archivo: archivoDe(c), x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.alfa !== undefined ? { alfa: c.alfa } : {}), ...(c.anim ? { anim: c.anim } : {}), ...(c.soloSi ? { si: c.soloSi } : {}) }))),
         { id: 'vineta', archivo: 'cinematicas/vineta.png', x: MX, y: MY, w: 1280, h: 720, paralaje: 0, mezcla: 'normal' },
       ];
       const plano: Record<string, unknown> = {
@@ -426,12 +484,13 @@ export function exportarCinematicas(o: OpcExportar): Record<string, unknown> {
         ...(p.textoSegun ? { narracion_si: Object.fromEntries(Object.entries(p.textoSegun).map(([k, v]) => [k, { es: v[0], en: v[1] }])) } : {}),
         fundido: { entra: p.entrada.s, sale: p.salida.s, ...(p.entrada.tipo !== 'negro' && p.entrada.tipo !== 'fundido' ? { color_entra: p.entrada.tipo } : {}), ...(p.salida.tipo !== 'negro' && p.salida.tipo !== 'fundido' ? { color_sale: p.salida.tipo } : {}) },
         ...(t.particulas ? { particulas: t.particulas } : {}),
+        ...(p.sonidos ? { sonidos: p.sonidos } : {}),
       };
       const valores = p.eleccion ? ELECCIONES[p.eleccion] : [undefined];
       planos.push(plano);
       if (o.vista) for (const v of valores) o.vista(clave, n, p, v, componerPlano(capas, p, { valor: v, vineta }));
     });
-    out[clave] = { planos };
+    out[clave] = { ...(MUSICA_CINE[clave] ? { musica: MUSICA_CINE[clave] } : {}), planos };
   }
   return out;
 }
@@ -443,4 +502,10 @@ export const LEEME_CINE = `cinematicas/  las cinemáticas de cierre de cada acto
               "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0. El fuego (la hoja fx/fuego.png y
               las tiras de fuego detrás de vitrales, como catedral_fuego en acto_5/p4_ysmeral) es fuego de Doom
               horneado: anim "cuadros" con su hoja en grilla (columnas, cuadros, fps, w, h), se suma y empalma.
+              La intro (clave intro) sale de escenas 3D horneadas y empaquetadas en cinematicas/intro/pagina_N.png:
+              cada capa trae recorte [sx, sy, sw, sh] (de dónde sale en su página; con anim "cuadros" la celda k
+              está en sx + (k % columnas) * w, sy + floor(k / columnas) * h) y se dibuja en x, y, w, h de la capa
+              (las tiras van a media resolución: se agrandan). movil_N: normal con alfa (campanas, monjes), en
+              bucle. fuego_N: suma, en bucle. luz_N: suma con anim "tiempo" = { tipo: 'tiempo', claves: [[s, alfa],
+              ...] }: el alfa sigue las claves en el segundo del plano, lineal entre claves (relámpagos, ojos).
 `;
