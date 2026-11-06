@@ -1,21 +1,23 @@
-// Hornea los planos 3D de la intro (cine3d_cuadros.ts): traza cada escena en hilos a 1408x792 (la capa de paralaje),
-// en dos pases (fondo opaco y primer plano con alfa), arma las tiras de fuego, traza lo que se mueve cuadro por cuadro
-// en su recorte (campanas, sogas, monjes) y las variantes de luz (relámpago, ojos), y deja todo en
-// src/engine/gotico/datos/intro3d/<plano>/ (fondo.png, frente.png, fuego_N.png y movil_N.png en grilla, luz_N.png y
-// meta.json). Con QA=<carpeta> escribe además una hoja por plano (4 instantes de la pantalla base 1280x720 y un recorte
-// de iPhone acostado 844x390).
-// Uso: npx tsx scripts/gotico-cine3d.ts [i01_valle,i06_impacto...]
+// Hornea los planos 3D de una cinemática (la intro o un cierre de acto; las escenas, por clave, en cine3d_registro.ts):
+// traza cada escena en hilos a 1408x792 (la capa de paralaje), en dos pases (fondo opaco y primer plano con alfa), arma
+// las tiras de fuego, traza lo que se mueve cuadro por cuadro en su recorte (campanas, sogas, monjes) y las variantes de
+// luz (relámpago, ojos), y deja todo en src/engine/gotico/datos/cine3d/<clave>/<plano>/ (fondo.png, frente.png, fuego_N.png
+// y movil_N.png en grilla, luz_N.png y meta.json). Con QA=<carpeta> escribe además una hoja por plano (4 instantes de la
+// pantalla base 1280x720 y un recorte de iPhone acostado 844x390).
+// Uso: npx tsx scripts/gotico-cine3d.ts <clave> [p1_abadesa,p2_campanas...]   (sin planos: todos los de la clave)
 // Variables: SS (muestras por lado, 3), SSM (muestras por lado de lo que se mueve, 2), AO (rayos de oclusión, 2),
-// HILOS (4), ESCALA (1; 0.5 para probar), SOLO_QA=1, DATOS=<carpeta> (hornea ahí en vez de datos/intro3d/, para pruebas).
+// HILOS (4), ESCALA (1; 0.5 para probar), SOLO_QA=1, DATOS=<carpeta> (hornea ahí en vez de datos/cine3d/<clave>/, para pruebas).
 import { isMainThread, parentPort, workerData, Worker } from 'node:worker_threads';
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const ESC = +(process.env.ESCALA ?? 1), W = Math.round(1408 * ESC), H = Math.round(792 * ESC), SS = +(process.env.SS ?? 3), SSM = +(process.env.SSM ?? 2), AO = +(process.env.AO ?? 2);
-const P3 = await import('../src/engine/gotico/cine3d_cuadros');
+const R3 = await import('../src/engine/gotico/cine3d_registro');
 const C3D = await import('../src/engine/gotico/cine3d');
-const plano = (id: string) => { const p = P3.PLANOS_INTRO.find((q) => q.id === id); if (!p) throw new Error(`no hay plano 3D ${id}`); return p; };
-type Trabajo = { id: string; hilo: number; hilos: number } & ({ tipo: 'pase'; pase: 'fondo' | 'frente' | 'todo'; variante?: number } | { tipo: 'movil'; movil: number; caja: [number, number, number, number] });
+const CLAVE = isMainThread ? process.argv[2] : (workerData as { clave: string }).clave;
+if (!CLAVE || !R3.PLANOS_CINE3D[CLAVE]) throw new Error(`uso: npx tsx scripts/gotico-cine3d.ts <clave> [planos]; claves: ${Object.keys(R3.PLANOS_CINE3D).join(', ')}`);
+const plano = (id: string) => R3.plano3d(CLAVE, id);
+type Trabajo = { clave: string; id: string; hilo: number; hilos: number } & ({ tipo: 'pase'; pase: 'fondo' | 'frente' | 'todo'; variante?: number } | { tipo: 'movil'; movil: number; caja: [number, number, number, number] });
 const CANALES3 = ['base', 'fuego', 'aire', 'aireFuego'] as const, CANALES1 = ['trans', 'dist', 'cielo'] as const;
 
 if (!isMainThread) {
@@ -43,7 +45,7 @@ if (!isMainThread) {
     parentPort!.postMessage({ fin: true });
   }
 } else {
-  const ids = process.argv[2]?.split(',') ?? P3.PLANOS_INTRO.map((p) => p.id), HILOS = +(process.env.HILOS ?? 4), QA = process.env.QA;
+  const ids = process.argv[3]?.split(',') ?? R3.PLANOS_CINE3D[CLAVE].map((p) => p.id), HILOS = +(process.env.HILOS ?? 4), QA = process.env.QA;
   const { encodePng, decodePng } = await import('../src/engine/export/png');
   const { aRaster } = await import('../src/engine/gotico/cine');
   const T = await import('../src/engine/gotico/cine3d_toma');
@@ -60,7 +62,7 @@ if (!isMainThread) {
   };
   const trazar = async (id: string, pase: 'fondo' | 'frente' | 'todo', marcas: string[], variante?: number) => {
     const partes: Record<string, Float32Array>[] = [];
-    await Promise.all(Array.from({ length: HILOS }, (_, h) => hilo({ id, tipo: 'pase', pase, variante, hilo: h, hilos: HILOS }, (m) => { partes[h] = m.bufs!; return true; })));
+    await Promise.all(Array.from({ length: HILOS }, (_, h) => hilo({ clave: CLAVE, id, tipo: 'pase', pase, variante, hilo: h, hilos: HILOS }, (m) => { partes[h] = m.bufs!; return true; })));
     const c = C3D.capasVacias(W, H, marcas);
     partes.forEach((p, h) => {
       for (let y = h * 8; y < H; y += HILOS * 8) for (let yy = y; yy < Math.min(H, y + 8); yy++) {
@@ -76,14 +78,14 @@ if (!isMainThread) {
     const mv = plano(id).moviles![j], e = mv.escala, w = Math.round(W / e), h = Math.round(H / e), arm = mv.armar(w, h, 0), [cx0, cy0, cx1, cy1] = mv.caja(mv.armar(W, H, 0));
     const caja: [number, number, number, number] = [Math.max(0, Math.floor(cx0 / e)), Math.max(0, Math.floor(cy0 / e)), Math.min(w, Math.ceil(cx1 / e)), Math.min(h, Math.ceil(cy1 / e))];
     const marcas = Object.keys(arm.esc.marcas), cuadros: ReturnType<typeof C3D.capasVacias>[] = [];
-    await Promise.all(Array.from({ length: HILOS }, (_, hh) => hilo({ id, tipo: 'movil', movil: j, caja, hilo: hh, hilos: HILOS }, (m) => {
+    await Promise.all(Array.from({ length: HILOS }, (_, hh) => hilo({ clave: CLAVE, id, tipo: 'movil', movil: j, caja, hilo: hh, hilos: HILOS }, (m) => {
       if (m.fin) return true;
       cuadros[m.k!] = desdeBufs(caja[2] - caja[0], caja[3] - caja[1], marcas, m.bufs!); return false;
     })));
     return { caja, cuadros, arm };
   };
   for (const id of ids) {
-    const base = process.env.DATOS ? new URL(`file://${process.env.DATOS.replace(/\/?$/, '/')}`) : T.CARPETA_HORNEADO, dir = new URL(`${id}/`, base).pathname, pl = plano(id);
+    const base = process.env.DATOS ? new URL(`file://${process.env.DATOS.replace(/\/?$/, '/')}`) : T.carpetaCine3d(CLAVE), dir = new URL(`${id}/`, base).pathname, pl = plano(id);
     if (process.env.SOLO_QA !== '1') {
       const t0 = Date.now(), a = pl.armar(W, H), marcas = Object.keys(a.esc.marcas);
       const fondo = await trazar(id, 'fondo', marcas), t1 = Date.now();

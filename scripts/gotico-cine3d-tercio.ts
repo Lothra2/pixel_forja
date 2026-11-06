@@ -1,13 +1,13 @@
 // Pasa tiras de fuego ya horneadas (fuego_N.png en grilla, a escala 2) a otra escala (3 = un tercio de resolución) sin
 // volver a trazar: cada celda se promedia (color por alfa, como se suma) y se rearma la grilla y el meta.json.
-// Uso: npx tsx scripts/gotico-cine3d-tercio.ts i06_impacto,i09_fuego [escala=3]
+// Uso: npx tsx scripts/gotico-cine3d-tercio.ts <clave> i06_impacto,i09_fuego [escala=3]
 import { readFileSync, writeFileSync } from 'node:fs';
 const { decodePng, encodePng } = await import('../src/engine/export/png');
 const T = await import('../src/engine/gotico/cine3d_toma');
 const { createRaster } = await import('../src/engine/core/raster');
-const ids = process.argv[2].split(','), nueva = +(process.argv[3] ?? 3);
+const clave = process.argv[2], ids = process.argv[3].split(','), nueva = +(process.argv[4] ?? 3);
 for (const id of ids) {
-  const dir = new URL(`${id}/`, T.CARPETA_HORNEADO).pathname, meta = JSON.parse(readFileSync(dir + 'meta.json', 'utf8')) as import('../src/engine/gotico/cine3d_toma').MetaHorneado;
+  const dir = new URL(`${id}/`, T.carpetaCine3d(clave)).pathname, meta = JSON.parse(readFileSync(dir + 'meta.json', 'utf8')) as import('../src/engine/gotico/cine3d_toma').MetaHorneado;
   meta.fuegos = meta.fuegos.map((f, n) => {
     if (f.escala >= nueva) return f;
     const img = decodePng(readFileSync(dir + `fuego_${n + 1}.png`)), k = nueva / f.escala, W = Math.ceil(f.w / k), H = Math.ceil(f.h / k);

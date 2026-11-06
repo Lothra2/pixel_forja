@@ -9,7 +9,7 @@ import { cuadrosHojaFuego } from './cine_fuego';
 import { PINTORES_A } from './cine_planos_a';
 import { PINTORES_B } from './cine_planos_b';
 import { PINTORES_C } from './cine_planos_c';
-import { pintoresIntro3d, paqueteIntro3d } from './cine3d_paquete';
+import { pintoresCine3d, paqueteCine3d } from './cine3d_paquete';
 import { alfaTiempo, type AnimTiempo } from './cine3d_toma';
 import { decodePng } from '../export/png';
 
@@ -231,7 +231,17 @@ export const GUION: Record<string, Plano[]> = {
 /** Banderas del juego para cada elección: una capa con `si` se dibuja solo con esa bandera encendida. */
 export const ELECCIONES: Record<string, string[]> = { vigdis: ['vigdis_viva', 'vigdis_muerta'], brasa: ['brasa_destruir', 'brasa_absorber'] };
 export const CLAVES_CINE = Object.keys(GUION);
-export const PINTORES: Record<string, (t: Toma) => void> = { ...PINTORES_A, ...PINTORES_B, ...PINTORES_C, ...pintoresIntro3d(GUION.intro.map((p) => p.id)) };
+/**
+ * Los pintores de cada plano: los 2D de siempre (cine_planos_a/b/c.ts) y, encima, los de lo horneado en 3D
+ * (datos/cine3d/<clave>/<plano>/): la intro siempre (negra si falta hornear) y en las demás claves cada plano que ya
+ * tenga horneado reemplaza a su pintor 2D.
+ */
+/** Los pintores 2D de siempre (las cartas de los actos salen de estos, en modo carta). */
+export const PINTORES_2D: Record<string, (t: Toma) => void> = { ...PINTORES_A, ...PINTORES_B, ...PINTORES_C };
+export const PINTORES: Record<string, (t: Toma) => void> = {
+  ...PINTORES_2D,
+  ...Object.assign({}, ...Object.entries(GUION).map(([clave, ps]) => pintoresCine3d(clave, ps.map((p) => p.id), { soloHorneados: clave !== 'intro' }))),
+};
 /** Música que pide cada cinemática (la intro arranca con la pista 'intro' en el segundo 0 y sigue en el título). */
 export const MUSICA_CINE: Record<string, string> = { intro: 'intro' };
 /** Sonidos del juego que pueden pedir los planos (`sonidos`). */
@@ -463,17 +473,19 @@ export function exportarCinematicas(o: OpcExportar): Record<string, unknown> {
   const vineta = vinetaCine();
   for (const clave of o.claves ?? CLAVES_CINE) {
     const planos: unknown[] = [];
-    // la intro: lo horneado en 3D, empaquetado en pocas páginas; cada capa con su recorte
-    const paquete = clave === 'intro' ? paqueteIntro3d(GUION.intro.map((p) => p.id), decodePng) : null;
-    paquete?.paginas.forEach((pg, i) => o.poner(`cinematicas/intro/pagina_${i + 1}.png`, pg));
+    // lo horneado en 3D (la intro y cada cierre ya rehecho), empaquetado en pocas páginas; cada capa con su recorte. Los
+    // planos con horneado NO exportan sus capas 2D viejas (las páginas las reemplazan); los que no, siguen en 2D.
+    const pq3 = paqueteCine3d(clave, GUION[clave].map((p) => p.id), decodePng), paquete = pq3.paginas.length || clave === 'intro' ? pq3 : null;
+    paquete?.paginas.forEach((pg, i) => o.poner(`cinematicas/${clave}/pagina_${i + 1}.png`, pg));
     GUION[clave].forEach((p, n) => {
       av(`cinemática ${clave} ${p.id}`);
-      const t = pintarPlano(clave, p.id), capas = capasFinales(t), pq = paquete?.planos[p.id];
+      const t = pintarPlano(clave, p.id), capas = capasFinales(t), pq = paquete?.planos[p.id], en3d = !!pq || clave === 'intro';
+      if (paquete && !en3d) av(`cinemática ${clave} ${p.id}: sin horneado 3D, va con sus capas 2D`);
       const archivoDe = (c: CapaFinal) => (c.hoja ? `cinematicas/fx/${c.hoja}.png` : `cinematicas/${clave}/${p.id}_${c.id}.png`);
-      if (!paquete) for (const c of capas) if (c.img) o.poner(archivoDe(c), aRaster(c.img, !!c.opaca));
+      if (!en3d) for (const c of capas) if (c.img) o.poner(archivoDe(c), aRaster(c.img, !!c.opaca));
       const json = (lista: CapaFinal[]) => [
-        ...(paquete
-          ? (pq?.capas ?? []).map((c) => ({ id: c.id, archivo: `cinematicas/intro/pagina_${c.pagina + 1}.png`, recorte: c.recorte, x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.anim ? { anim: c.anim } : {}) }))
+        ...(en3d
+          ? (pq?.capas ?? []).map((c) => ({ id: c.id, archivo: `cinematicas/${clave}/pagina_${c.pagina + 1}.png`, recorte: c.recorte, x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.anim ? { anim: c.anim } : {}), ...(c.si ? { si: c.si } : {}) }))
           : lista.map((c) => ({ id: c.id, archivo: archivoDe(c), x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.alfa !== undefined ? { alfa: c.alfa } : {}), ...(c.anim ? { anim: c.anim } : {}), ...(c.soloSi ? { si: c.soloSi } : {}) }))),
         { id: 'vineta', archivo: 'cinematicas/vineta.png', x: MX, y: MY, w: 1280, h: 720, paralaje: 0, mezcla: 'normal' },
       ];
@@ -502,10 +514,12 @@ export const LEEME_CINE = `cinematicas/  las cinemáticas de cierre de cada acto
               "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0. El fuego (la hoja fx/fuego.png y
               las tiras de fuego detrás de vitrales, como catedral_fuego en acto_5/p4_ysmeral) es fuego de Doom
               horneado: anim "cuadros" con su hoja en grilla (columnas, cuadros, fps, w, h), se suma y empalma.
-              La intro (clave intro) sale de escenas 3D horneadas y empaquetadas en cinematicas/intro/pagina_N.png:
+              La intro y los cierres ya rehechos en 3D salen de escenas horneadas y empaquetadas en
+              cinematicas/<clave>/pagina_N.png (2 páginas por clave como mucho; la intro, 3):
               cada capa trae recorte [sx, sy, sw, sh] (de dónde sale en su página; con anim "cuadros" la celda k
               está en sx + (k % columnas) * w, sy + floor(k / columnas) * h) y se dibuja en x, y, w, h de la capa
               (las tiras van a media resolución: se agrandan). movil_N: normal con alfa (campanas, monjes), en
               bucle. fuego_N: suma, en bucle. luz_N: suma con anim "tiempo" = { tipo: 'tiempo', claves: [[s, alfa],
               ...] }: el alfa sigue las claves en el segundo del plano, lineal entre claves (relámpagos, ojos).
+              Una capa con "si" (vigdis_viva, brasa_absorber...) se dibuja solo con esa bandera encendida.
 `;
