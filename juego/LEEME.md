@@ -177,4 +177,5 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 
 - `npm run juego` levanta el juego en http://localhost:5190.
 - `npm run juego:hornear` vuelve a pintar todos los atlas (unos 12 minutos con 4 núcleos) en `juego/public/assets`.
+- Después de cada horneado hay que correr `python3 juego/hornear/atlas_webp.py`. Pasa los atlas a WebP, actualiza `manifiesto.json` y borra los PNG. Los personajes en clave baja van con pérdida a calidad 92 y el resto va sin pérdida. Sin este paso el juego pasa los 256 MB que aguanta el artifact.
 - `npm run juego:build` y después `python3 juego/hornear/publicar.py` arman la página para publicar.
