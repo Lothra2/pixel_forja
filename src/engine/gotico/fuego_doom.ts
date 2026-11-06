@@ -61,7 +61,7 @@ const suave = (a: number, b: number, x: number) => { const t = c01((x - a) / (b 
 // ---------------------------------------------------------------------------------------------------------------
 // paletas
 
-export type NombrePaleta = 'infierno' | 'vela' | 'animas' | 'corona_fria' | 'veneno' | 'sombra' | 'sagrado' | 'gas' | 'clasica';
+export type NombrePaleta = 'infierno' | 'vela' | 'animas' | 'corona_fria' | 'veneno' | 'sombra' | 'sagrado' | 'gas' | 'sangre' | 'clasica';
 export interface PaletaFuego {
   id: string;
   nombre: [string, string];
@@ -106,8 +106,8 @@ export const PALETAS: Record<NombrePaleta, PaletaFuego> = {
   // rojo profundo a amarillo viejo, casi sin blanco: el fuego del infierno y de la catedral
   infierno: {
     id: 'infierno', nombre: ['Infierno', 'Inferno'], luz: '#ff6a24', humo: [34, 27, 24, 0.5], mezcla: 'sumar',
-    colores: armarPaleta([[0, '#080303', 0], [0.07, '#2a0705', 0.4], [0.18, '#560d07', 0.78], [0.32, '#861707', 0.94], [0.47, '#ad2c09', 1],
-      [0.62, '#cc4c0e', 1], [0.76, '#e0731a', 1], [0.88, '#eb9a34', 1], [1, '#f2bf62', 1]]),
+    colores: armarPaleta([[0, '#080303', 0], [0.06, '#2a0705', 0.42], [0.15, '#5a0f07', 0.8], [0.27, '#8e1c08', 0.95], [0.4, '#b9360b', 1],
+      [0.54, '#d6581a', 1], [0.68, '#e67e22', 1], [0.83, '#eea23c', 1], [1, '#f4c46a', 1]]),
   },
   // llama corta de vela o farol: naranja y un alma amarilla clara
   vela: {
@@ -118,14 +118,14 @@ export const PALETAS: Record<NombrePaleta, PaletaFuego> = {
   // fuego frío de las ánimas: negro, azul petróleo, cian y un blanco hueso en el alma
   animas: {
     id: 'animas', nombre: ['Ánimas (fuego frío)', 'Souls (cold fire)'], luz: '#4fd2cc', humo: [22, 34, 38, 0.45], mezcla: 'sumar',
-    colores: armarPaleta([[0, '#000000', 0], [0.1, '#02121a', 0.42], [0.27, '#053039', 0.8], [0.44, '#0a5560', 0.95], [0.6, '#188a92', 1],
-      [0.76, '#46bfbe', 1], [0.89, '#a2e2d6', 1], [1, '#e6e1cc', 1]]),
+    colores: armarPaleta([[0, '#000000', 0], [0.08, '#03161e', 0.45], [0.22, '#073c48', 0.82], [0.38, '#0e6a74', 0.96], [0.54, '#22a0a4', 1],
+      [0.7, '#5accc6', 1], [0.85, '#a8e6da', 1], [1, '#ece6d0', 1]]),
   },
   // la llama de la corona fría: blanco azulado casi sin color
   corona_fria: {
     id: 'corona_fria', nombre: ['Corona fría', 'Cold crown'], luz: '#cddcff', humo: [36, 40, 48, 0.4], mezcla: 'sumar',
-    colores: armarPaleta([[0, '#000000', 0], [0.12, '#0c1016', 0.35], [0.3, '#363f4a', 0.72], [0.5, '#717e8c', 0.92], [0.7, '#aebac7', 1],
-      [0.86, '#dbe2ea', 1], [1, '#f5f7ff', 1]]),
+    colores: armarPaleta([[0, '#000000', 0], [0.08, '#10151c', 0.4], [0.24, '#46505e', 0.78], [0.42, '#8794a4', 0.94], [0.62, '#bcc8d6', 1],
+      [0.8, '#e0e7f0', 1], [1, '#f7f9ff', 1]]),
   },
   veneno: {
     id: 'veneno', nombre: ['Veneno', 'Poison'], luz: '#86d83e', humo: [26, 34, 20, 0.45], mezcla: 'sumar',
@@ -150,6 +150,12 @@ export const PALETAS: Record<NombrePaleta, PaletaFuego> = {
     colores: armarPaleta([[0, '#000000', 0], [0.1, '#02061a', 0.4], [0.3, '#061664', 0.82], [0.5, '#1838c4', 1], [0.7, '#3874ea', 1],
       [0.86, '#88b4ff', 1], [1, '#dcecff', 1]]),
   },
+  // sangre que arde (armas de sangre, rituales): carmesí oscuro con un alma rosada apagada
+  sangre: {
+    id: 'sangre', nombre: ['Sangre', 'Blood'], luz: '#d8262a', humo: [30, 12, 12, 0.45], mezcla: 'sumar',
+    colores: armarPaleta([[0, '#000000', 0], [0.1, '#1a0204', 0.5], [0.3, '#4a060a', 0.88], [0.5, '#7e0c12', 1], [0.7, '#b0161c', 1],
+      [0.86, '#d84a40', 1], [1, '#f0a090', 1]]),
+  },
   clasica: { id: 'clasica', nombre: ['Doom PSX (original)', 'Doom PSX (original)'], luz: '#ff8a33', humo: [30, 28, 26, 0], mezcla: 'sumar', colores: paletaClasica() },
 };
 export const NOMBRES_PALETA = Object.keys(PALETAS) as NombrePaleta[];
@@ -172,14 +178,19 @@ export type Forma =
   | { tipo: 'arco'; arranque?: number; relleno?: number }
   /** puerta: rectángulo con arco de medio punto u ojiva; arde desde el umbral */
   | { tipo: 'puerta'; arranque?: number; ojiva?: boolean }
-  /** anillo en el piso (elipse 2:1 de radio `radio` celdas en x), centrado abajo */
-  | { tipo: 'anillo'; radio: number; grosor?: number }
+  /** anillo en el piso (elipse 2:1 de radio `radio` celdas en x), centrado abajo; `relleno` 0..1 cuánto del aro arde */
+  | { tipo: 'anillo'; radio: number; grosor?: number; relleno?: number }
   /** tira entre dos puntos (la hoja de un arma, un muro en diagonal), en celdas */
   | { tipo: 'tira'; desde: [number, number]; hasta: [number, number]; grosor?: number }
-  /** círculo o charco en el piso: elipse 2:1 llena de `radio` celdas; `relleno` 0..1 cuánto de ella arde */
+  /**
+   * círculo o charco en el piso: elipse 2:1 de `radio` celdas; `relleno` 0..1 cuánto de ella arde (a manchas). La
+   * llama se deja subir más en el medio que en el borde (un domo, no una caja).
+   */
   | { tipo: 'circulo'; radio: number; relleno?: number }
   /** muro: toda la fila de abajo menos `margen` celdas a cada lado, con las puntas más bajas */
   | { tipo: 'muro'; margen?: number }
+  /** varias llamitas (las velas de un candelabro): fuentes de `ancho` celdas en cada punto [x, y] (celdas) */
+  | { tipo: 'puntos'; en: [number, number][]; ancho?: number }
   /** a medida: fuente (0..1 por celda, w*h) y forma opcional (0..1, w*h) */
   | { tipo: 'mapa'; fuente: ArrayLike<number>; forma?: ArrayLike<number> };
 
@@ -258,8 +269,20 @@ export interface Fuego {
   area: number;
 }
 
-/** Decay que hace subir la llama `altura` (fracción) de una grilla de `alto` celdas. */
-export const decayPara = (altura: number, alto: number) => 1 + (2 * CALOR_MAX) / Math.max(2, altura * alto);
+/**
+ * Decay que hace que la llama se VEA subir `altura` (fracción) de una grilla de `alto` celdas: la punta de poco calor
+ * (por debajo de ~10 de 36) es casi transparente, así que la cuenta apunta a que el calor 10 llegue a esa altura.
+ */
+export const decayPara = (altura: number, alto: number) => 1 + (2 * (CALOR_MAX - 10)) / Math.max(1.5, altura * alto);
+/**
+ * Cuánto de `altura` se ve de verdad según la forma (medido): una lengua angosta pierde la punta antes que un muro.
+ * Para que la llama se vea de `px` en una grilla de `gridPx`, pasar `altura = px / gridPx / alturaVisible(forma)`.
+ */
+export function alturaVisible(f: Forma, ancho = 20): number {
+  if (f.tipo === 'llama') return (f.ancho ?? 0.5) * ancho < 6 ? 0.62 : 0.72;
+  if (f.tipo === 'boca' || f.tipo === 'tira' || f.tipo === 'anillo' || f.tipo === 'circulo') return 0.7;
+  return 0.8;
+}
 
 function armarForma(w: number, h: number, f: Forma, margen: number, s: number): { fuente: Float32Array; forma: Float32Array } {
   const fuente = new Float32Array(w * h), forma = new Float32Array(w * h).fill(1);
@@ -276,7 +299,8 @@ function armarForma(w: number, h: number, f: Forma, margen: number, s: number): 
       const rx = f.ancho / 2, ry = Math.max(0.6, rx / 2), cy = abajo - ry;
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const q = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
-        if (q <= 1) set(x, y, 0.55 + 0.45 * (1 - q));
+        // el frente de la boca (abajo) arde menos: ahí está el borde del cuenco, no el alma de la llama
+        if (q <= 1) set(x, y, (0.55 + 0.45 * (1 - q)) * (0.5 + 0.5 * suave(cy + ry, cy - ry * 0.3, y)));
       }
       break;
     }
@@ -314,10 +338,13 @@ function armarForma(w: number, h: number, f: Forma, margen: number, s: number): 
       break;
     }
     case 'anillo': {
-      const rx = f.radio, ry = rx / 2, g = f.grosor ?? 1.1, cy = abajo - ry - 0.5;
+      const rx = f.radio, ry = rx / 2, g = f.grosor ?? 1.1, cy = abajo - ry - 0.5, rel = f.relleno ?? 1;
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const d = Math.hypot((x - cx) / rx, (y - cy) / ry), ds = Math.abs(d - 1) * rx;
-        if (ds <= g) set(x, y, 0.8 + 0.2 * (1 - ds / g));
+        if (ds > g) continue;
+        // a tramos: el aro arde en lenguas, no como una pared pareja
+        if (rel < 1 && ruido2(Math.atan2((y - cy) / ry, (x - cx) / rx) * rx * 0.35, 0.5, s) > rel) continue;
+        set(x, y, 0.8 + 0.2 * (1 - ds / g));
       }
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) forma[y * w + x] = suave(-1, 2.5, rx + 2 - Math.abs(x - cx));
       break;
@@ -331,17 +358,29 @@ function armarForma(w: number, h: number, f: Forma, margen: number, s: number): 
       break;
     }
     case 'circulo': {
-      const rx = f.radio, ry = rx / 2, cy = abajo - ry - 0.5, rel = f.relleno ?? 0.8;
+      const rx = f.radio, ry = rx / 2, cy = abajo - ry - 0.5, rel = f.relleno ?? 0.5;
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const q = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
-        if (q <= 1 && ruido2(x * 0.45, y * 0.9, s) < rel + 0.12 * (1 - q)) set(x, y, 0.75 + 0.25 * (1 - q));
+        if (q <= 1 && ruido2(x * 0.62, y * 1.1, s) < rel + 0.1 * (1 - q)) set(x, y, 0.62 + 0.38 * (1 - q));
       }
-      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) forma[y * w + x] = suave(-1, 2.5, rx + 2 - Math.abs(x - cx));
+      // domo: lo que puede subir la llama baja hacia el borde del charco
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const dx = Math.min(1, Math.abs(x - cx) / (rx + 1.5)), techo = cy * (0.3 + 0.7 * Math.sqrt(1 - dx * dx));
+        forma[y * w + x] = suave(-1, 2.5, rx + 2 - Math.abs(x - cx)) * suave(-2, 3, techo - (cy - y));
+      }
       break;
     }
     case 'muro': {
       const m = f.margen ?? 2;
       for (let x = 0; x < w; x++) { const d = Math.min(x - m, w - 1 - m - x); if (d >= 0) set(x, abajo, 0.72 + 0.28 * suave(0, 4, d)); }
+      break;
+    }
+    case 'puntos': {
+      const a = Math.max(0.6, f.ancho ?? 1.5);
+      for (const [px, py] of f.en) for (let x = Math.floor(px - a / 2); x <= Math.ceil(px + a / 2); x++) {
+        const d = Math.abs(x + 0.5 - px) / (a / 2 + 0.5);
+        if (d <= 1) set(x, Math.min(abajo, Math.round(py)), 0.7 + 0.3 * (1 - d));
+      }
       break;
     }
     case 'mapa': {
@@ -358,6 +397,34 @@ function armarForma(w: number, h: number, f: Forma, margen: number, s: number): 
   // no nace fuego donde la forma no lo deja vivir
   for (let i = 0; i < w * h; i++) fuente[i] *= suave(0.12, 0.55, forma[i]);
   return { fuente, forma };
+}
+
+/**
+ * Forma a medida desde una máscara de px (alfa 0..1 o 0..255, `mw` x `mh`) para una grilla con celdas de `celda` px:
+ * vitrales, una puerta, la silueta de un cuerpo. La forma es la máscara (lo que cubre cada celda) y la fuente nace en
+ * el borde de abajo de cada región (la celda cubierta cuya celda de abajo no lo está) y, salteada, en el tercio de
+ * abajo de cada región (`relleno`), así una ventana alta arde entera y no solo en el alféizar.
+ * Devuelve la forma y el tamaño de la grilla (ancho, alto) en celdas.
+ */
+export function formaDesdeMascara(mascara: ArrayLike<number>, mw: number, mh: number, celda: number, o: { relleno?: number; semilla?: number; escala255?: boolean } = {}): { forma: Forma; ancho: number; alto: number } {
+  const w = Math.ceil(mw / celda), h = Math.ceil(mh / celda), k = o.escala255 ? 1 / 255 : 1, cub = new Float32Array(w * h);
+  for (let y = 0; y < mh; y++) for (let x = 0; x < mw; x++) { const v = Number(mascara[y * mw + x]) * k; if (v > 0) cub[Math.floor(y / celda) * w + Math.floor(x / celda)] += v / (celda * celda); }
+  const fuente = new Float32Array(w * h), rel = o.relleno ?? 0.2, s = o.semilla ?? 1;
+  // alto de la región en cada columna, para saber qué es "el tercio de abajo"
+  for (let x = 0; x < w; x++) {
+    let y = h - 1;
+    while (y >= 0) {
+      while (y >= 0 && cub[y * w + x] < 0.35) y--;
+      if (y < 0) break;
+      const fondo = y; while (y >= 0 && cub[y * w + x] >= 0.35) y--;
+      const alto = fondo - y;
+      fuente[fondo * w + x] = 1;
+      for (let yy = fondo - 1; yy > fondo - alto * 0.35; yy--) if (hashEnt(x * 131 + yy * 977, s) < rel) fuente[yy * w + x] = 0.85;
+    }
+  }
+  const forma = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) forma[i] = suave(0.05, 0.6, cub[i]);
+  return { forma: { tipo: 'mapa', fuente, forma }, ancho: w, alto: h };
 }
 
 // ---------------------------------------------------------------------------------------------------------------

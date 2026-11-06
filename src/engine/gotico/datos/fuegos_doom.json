@@ -1,0 +1,6795 @@
+{
+ "formato": "pixelforja-gotico-fuegos-doom",
+ "version": 1,
+ "pasos_por_segundo": 25,
+ "notas": "Ver datos/fuegos_doom.ts y fuego_doom.ts. boca: px desde el ancla del sprite donde va el pie de la grilla (centro de su fila de abajo); grilla en celdas de celda px; dibujar el gemelo sprite (sin llama) en lugar del original y el fuego encima; luz k = intensidad * pulsoLuz(f, mueve).k; mezcla 'sumar' = globalCompositeOperation 'lighter' para la llama (el humo con alfa normal).",
+ "paletas": {
+  "infierno": {
+   "luz": "#ff6a24",
+   "mezcla": "sumar"
+  },
+  "vela": {
+   "luz": "#ffb25a",
+   "mezcla": "sumar"
+  },
+  "animas": {
+   "luz": "#4fd2cc",
+   "mezcla": "sumar"
+  },
+  "corona_fria": {
+   "luz": "#cddcff",
+   "mezcla": "sumar"
+  },
+  "veneno": {
+   "luz": "#86d83e",
+   "mezcla": "sumar"
+  },
+  "sombra": {
+   "luz": "#7a40d6",
+   "mezcla": "normal"
+  },
+  "sagrado": {
+   "luz": "#ffd98a",
+   "mezcla": "sumar"
+  },
+  "gas": {
+   "luz": "#5a8cff",
+   "mezcla": "sumar"
+  },
+  "sangre": {
+   "luz": "#d8262a",
+   "mezcla": "sumar"
+  },
+  "clasica": {
+   "luz": "#ff8a33",
+   "mezcla": "sumar"
+  }
+ },
+ "fuegos": {
+  "abi_farol|verde": [
+   {
+    "clase": "farol",
+    "sprite": "abi_farol_sin_llama",
+    "boca": [
+     12,
+     -37
+    ],
+    "grilla": [
+     6,
+     8
+    ],
+    "celda": 2,
+    "paleta": "veneno",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#86d83e",
+     "radio": 208,
+     "altura": 46,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 12,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 51818
+   }
+  ],
+  "abo_catedral_cabecera|entera": [
+   {
+    "clase": "vitral",
+    "sprite": "abo_catedral_cabecera_sin_llama",
+    "boca": [
+     37,
+     19
+    ],
+    "grilla": [
+     49,
+     102
+    ],
+    "celda": 2,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "mascara",
+     "archivo": "fuegos_doom/abo_catedral_cabecera_entera.png",
+     "caja": [
+      -12,
+      -185,
+      97,
+      204
+     ],
+     "relleno": 0.22
+    },
+    "decay": 2.63,
+    "viento": 0,
+    "rafagas": 0.1,
+    "turbulencia": 0.5,
+    "ruido": 0.5,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 168,
+     "intensidad": 0.8,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 74858
+   }
+  ],
+  "abo_catedral_cabecera|herida": [
+   {
+    "clase": "vitral",
+    "sprite": "abo_catedral_cabecera_sin_llama",
+    "boca": [
+     37,
+     19
+    ],
+    "grilla": [
+     49,
+     102
+    ],
+    "celda": 2,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "mascara",
+     "archivo": "fuegos_doom/abo_catedral_cabecera_herida.png",
+     "caja": [
+      -12,
+      -185,
+      97,
+      204
+     ],
+     "relleno": 0.22
+    },
+    "decay": 2.63,
+    "viento": 0,
+    "rafagas": 0.1,
+    "turbulencia": 0.5,
+    "ruido": 0.5,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 168,
+     "intensidad": 0.8,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 51018
+   }
+  ],
+  "abo_catedral_fachada|entera": [
+   {
+    "clase": "vitral",
+    "sprite": "abo_catedral_fachada_sin_llama",
+    "boca": [
+     11,
+     -6
+    ],
+    "grilla": [
+     82,
+     186
+    ],
+    "celda": 2,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "mascara",
+     "archivo": "fuegos_doom/abo_catedral_fachada_entera.png",
+     "caja": [
+      -71,
+      -377,
+      164,
+      371
+     ],
+     "relleno": 0.22
+    },
+    "decay": 2.63,
+    "viento": 0,
+    "rafagas": 0.1,
+    "turbulencia": 0.5,
+    "ruido": 0.5,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 26,
+     "intensidad": 0.8,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 78986
+   },
+   {
+    "clase": "puerta",
+    "sprite": null,
+    "boca": [
+     -15,
+     -12
+    ],
+    "grilla": [
+     9,
+     21
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "puerta",
+     "arranque": 0.7
+    },
+    "decay": 3.61,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 170,
+     "altura": 22,
+     "intensidad": 1,
+     "mueve": 0.4,
+     "dx": -15,
+     "sombra": true
+    },
+    "brasas": 3,
+    "mezcla": "sumar",
+    "semilla": 35918
+   }
+  ],
+  "abo_catedral_fachada|herida": [
+   {
+    "clase": "vitral",
+    "sprite": "abo_catedral_fachada_sin_llama",
+    "boca": [
+     11,
+     -6
+    ],
+    "grilla": [
+     82,
+     186
+    ],
+    "celda": 2,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "mascara",
+     "archivo": "fuegos_doom/abo_catedral_fachada_herida.png",
+     "caja": [
+      -71,
+      -377,
+      164,
+      371
+     ],
+     "relleno": 0.22
+    },
+    "decay": 2.63,
+    "viento": 0,
+    "rafagas": 0.1,
+    "turbulencia": 0.5,
+    "ruido": 0.5,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 26,
+     "intensidad": 0.8,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 55146
+   },
+   {
+    "clase": "puerta",
+    "sprite": null,
+    "boca": [
+     -15,
+     -12
+    ],
+    "grilla": [
+     9,
+     21
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "puerta",
+     "arranque": 0.7
+    },
+    "decay": 3.61,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 170,
+     "altura": 22,
+     "intensidad": 1,
+     "mueve": 0.4,
+     "dx": -15,
+     "sombra": true
+    },
+    "brasas": 3,
+    "mezcla": "sumar",
+    "semilla": 56014
+   }
+  ],
+  "abo_catedral_nave|entera": [
+   {
+    "clase": "vitral",
+    "sprite": "abo_catedral_nave_sin_llama",
+    "boca": [
+     47,
+     20
+    ],
+    "grilla": [
+     79,
+     140
+    ],
+    "celda": 2,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "mascara",
+     "archivo": "fuegos_doom/abo_catedral_nave_entera.png",
+     "caja": [
+      -32,
+      -260,
+      158,
+      280
+     ],
+     "relleno": 0.22
+    },
+    "decay": 2.63,
+    "viento": 0,
+    "rafagas": 0.1,
+    "turbulencia": 0.5,
+    "ruido": 0.5,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 180,
+     "intensidad": 0.8,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 82674
+   }
+  ],
+  "abo_catedral_nave|herida": [
+   {
+    "clase": "vitral",
+    "sprite": "abo_catedral_nave_sin_llama",
+    "boca": [
+     47,
+     21
+    ],
+    "grilla": [
+     79,
+     141
+    ],
+    "celda": 2,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "mascara",
+     "archivo": "fuegos_doom/abo_catedral_nave_herida.png",
+     "caja": [
+      -32,
+      -260,
+      158,
+      281
+     ],
+     "relleno": 0.22
+    },
+    "decay": 2.63,
+    "viento": 0,
+    "rafagas": 0.1,
+    "turbulencia": 0.5,
+    "ruido": 0.5,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 228,
+     "intensidad": 0.8,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 6306
+   }
+  ],
+  "ahg_farol_altar|velas": [
+   {
+    "clase": "farol",
+    "sprite": "ahg_farol_altar_sin_llama",
+    "boca": [
+     7,
+     -37
+    ],
+    "grilla": [
+     14,
+     11
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       10.5,
+       10
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 182,
+     "altura": 36,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 7,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 3912
+   }
+  ],
+  "arc_brasero|cuenco": [
+   {
+    "clase": "brasero",
+    "sprite": "arc_brasero_sin_llama",
+    "boca": [
+     -1,
+     -11
+    ],
+    "grilla": [
+     15,
+     18
+    ],
+    "celda": 3,
+    "paleta": "gas",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.73
+    },
+    "decay": 4.96,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#5a8cff",
+     "radio": 166,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 12781
+   }
+  ],
+  "arc_brasero|pie": [
+   {
+    "clase": "brasero",
+    "sprite": "arc_brasero_sin_llama",
+    "boca": [
+     -1,
+     -41
+    ],
+    "grilla": [
+     13,
+     17
+    ],
+    "celda": 3,
+    "paleta": "gas",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 2.8
+    },
+    "decay": 5.14,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#5a8cff",
+     "radio": 166,
+     "altura": 49,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 33982
+   }
+  ],
+  "camp_asador|con_carne": [
+   {
+    "clase": "fogata",
+    "sprite": "camp_asador_sin_llama",
+    "boca": [
+     -1,
+     0
+    ],
+    "grilla": [
+     15,
+     14
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 4.27,
+     "alto": 1
+    },
+    "decay": 7.03,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 156,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 48421
+   }
+  ],
+  "camp_asador|con_olla": [
+   {
+    "clase": "fogata",
+    "sprite": "camp_asador_sin_llama",
+    "boca": [
+     -1,
+     0
+    ],
+    "grilla": [
+     15,
+     11
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 4.27,
+     "alto": 1
+    },
+    "decay": 10.04,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 156,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 16926
+   }
+  ],
+  "camp_fogata|chica": [
+   {
+    "clase": "fogata",
+    "sprite": "camp_fogata_sin_llama",
+    "boca": [
+     -1,
+     -1
+    ],
+    "grilla": [
+     13,
+     19
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 3.2,
+     "alto": 1.04
+    },
+    "decay": 5.17,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 142,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 45907
+   }
+  ],
+  "camp_fogata|grande": [
+   {
+    "clase": "fogata",
+    "sprite": "camp_fogata_sin_llama",
+    "boca": [
+     -1,
+     0
+    ],
+    "grilla": [
+     16,
+     25
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 4.53,
+     "alto": 1.44
+    },
+    "decay": 4.01,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 218,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 50970
+   }
+  ],
+  "camp_fragua|encendida": [
+   {
+    "clase": "hogar",
+    "sprite": "camp_fragua_sin_llama",
+    "boca": [
+     6,
+     -23
+    ],
+    "grilla": [
+     16,
+     49
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.5
+    },
+    "decay": 2.28,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 187,
+     "altura": 22,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": 6,
+     "sombra": true
+    },
+    "brasas": 1.5,
+    "mezcla": "sumar",
+    "semilla": 79696
+   }
+  ],
+  "cat2_antorcha_pared|doble": [
+   {
+    "clase": "antorcha",
+    "sprite": "cat2_antorcha_pared_sin_llama",
+    "boca": [
+     -1,
+     -49
+    ],
+    "grilla": [
+     23,
+     19
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.25
+    },
+    "decay": 4.22,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 156,
+     "altura": 65,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 18273
+   }
+  ],
+  "cat2_antorcha_pared|encendida": [
+   {
+    "clase": "antorcha",
+    "sprite": "cat2_antorcha_pared_sin_llama",
+    "boca": [
+     -13,
+     -54
+    ],
+    "grilla": [
+     10,
+     10
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.13
+    },
+    "decay": 8.03,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 125,
+     "altura": 65,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -13,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 20176
+   }
+  ],
+  "cat2_antorcha_pared|encendida_der": [
+   {
+    "clase": "antorcha",
+    "sprite": "cat2_antorcha_pared_sin_llama",
+    "boca": [
+     12,
+     -54
+    ],
+    "grilla": [
+     10,
+     11
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.13
+    },
+    "decay": 7.45,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 125,
+     "altura": 65,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": 12,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 31192
+   }
+  ],
+  "cat2_antorcha_pared|humeante": [
+   {
+    "clase": "antorcha",
+    "sprite": "cat2_antorcha_pared_sin_llama",
+    "boca": [
+     -13,
+     -54
+    ],
+    "grilla": [
+     10,
+     10
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.13
+    },
+    "decay": 8.74,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 125,
+     "altura": 65,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -13,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 90596
+   }
+  ],
+  "cat2_hornacina_velas|con_calavera": [
+   {
+    "clase": "vela",
+    "sprite": "cat2_hornacina_velas_sin_llama",
+    "boca": [
+     -4,
+     -38
+    ],
+    "grilla": [
+     10,
+     11
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       10
+      ],
+      [
+       7,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 35,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -4,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 32473
+   }
+  ],
+  "cat2_hornacina_velas|con_virgen": [
+   {
+    "clase": "vela",
+    "sprite": "cat2_hornacina_velas_sin_llama",
+    "boca": [
+     -8,
+     -39
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 35,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -8,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 1275
+   }
+  ],
+  "cat2_hornacina_velas|muchas": [
+   {
+    "clase": "vela",
+    "sprite": "cat2_hornacina_velas_sin_llama",
+    "boca": [
+     -4,
+     -29
+    ],
+    "grilla": [
+     11,
+     12
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       8,
+       11
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 35,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -4,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 62474
+   }
+  ],
+  "cat2_hornacina_velas|muchas_der": [
+   {
+    "clase": "vela",
+    "sprite": "cat2_hornacina_velas_sin_llama",
+    "boca": [
+     -1,
+     -31
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 35,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -1,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 97098
+   }
+  ],
+  "cat2_hornacina_velas|tres": [
+   {
+    "clase": "vela",
+    "sprite": "cat2_hornacina_velas_sin_llama",
+    "boca": [
+     -4,
+     -35
+    ],
+    "grilla": [
+     11,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       7.5,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 35,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -4,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 81297
+   }
+  ],
+  "cat2_hornacina_velas|tres_der": [
+   {
+    "clase": "vela",
+    "sprite": "cat2_hornacina_velas_sin_llama",
+    "boca": [
+     -2,
+     -34
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 35,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -2,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 93373
+   }
+  ],
+  "cem2_farol_cayado|doble": [
+   {
+    "clase": "farol",
+    "sprite": "cem2_farol_cayado_sin_llama",
+    "boca": [
+     -1,
+     -50
+    ],
+    "grilla": [
+     20,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ],
+      [
+       16.5,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 177,
+     "altura": 53,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": -1,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 98641
+   }
+  ],
+  "cem2_farol_cayado|encendido": [
+   {
+    "clase": "farol",
+    "sprite": "cem2_farol_cayado_sin_llama",
+    "boca": [
+     12,
+     -50
+    ],
+    "grilla": [
+     6,
+     8
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 177,
+     "altura": 53,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 12,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 50186
+   }
+  ],
+  "cem2_linterna_muertos|encendida": [
+   {
+    "clase": "farol",
+    "sprite": "cem2_linterna_muertos_sin_llama",
+    "boca": [
+     -1,
+     -70
+    ],
+    "grilla": [
+     6,
+     8
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 146,
+     "altura": 73,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": -1,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 10057
+   }
+  ],
+  "cem2_linterna_muertos|fuego_fatuo": [
+   {
+    "clase": "farol",
+    "sprite": "cem2_linterna_muertos_sin_llama",
+    "boca": [
+     -1,
+     -70
+    ],
+    "grilla": [
+     6,
+     8
+    ],
+    "celda": 2,
+    "paleta": "veneno",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#86d83e",
+     "radio": 146,
+     "altura": 73,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": -1,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 93792
+   }
+  ],
+  "cem2_velas_tumba|altarcito": [
+   {
+    "clase": "vela",
+    "sprite": "cem2_velas_tumba_sin_llama",
+    "boca": [
+     -2,
+     -5
+    ],
+    "grilla": [
+     11,
+     18
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       5.5,
+       17
+      ],
+      [
+       7.5,
+       12
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -2,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 52467
+   }
+  ],
+  "cem2_velas_tumba|derretidas": [
+   {
+    "clase": "vela",
+    "sprite": "cem2_velas_tumba_sin_llama",
+    "boca": [
+     1,
+     -4
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": 1,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 98469
+   }
+  ],
+  "cem2_velas_tumba|en_calavera": [
+   {
+    "clase": "vela",
+    "sprite": "cem2_velas_tumba_sin_llama",
+    "boca": [
+     3,
+     -7
+    ],
+    "grilla": [
+     14,
+     12
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       6.5,
+       11
+      ],
+      [
+       10.5,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": 3,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 83813
+   }
+  ],
+  "cem2_velas_tumba|sobre_losa": [
+   {
+    "clase": "vela",
+    "sprite": "cem2_velas_tumba_sin_llama",
+    "boca": [
+     -4,
+     -6
+    ],
+    "grilla": [
+     12,
+     14
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       5.5,
+       13
+      ],
+      [
+       8.5,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -4,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 67825
+   }
+  ],
+  "cem_farol|doble": [
+   {
+    "clase": "farol",
+    "sprite": "cem_farol_sin_llama",
+    "boca": [
+     0,
+     -42
+    ],
+    "grilla": [
+     16,
+     13
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ],
+      [
+       12.5,
+       12
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 177,
+     "altura": 50,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 13511
+   }
+  ],
+  "cem_farol|encendido": [
+   {
+    "clase": "farol",
+    "sprite": "cem_farol_sin_llama",
+    "boca": [
+     9,
+     -42
+    ],
+    "grilla": [
+     6,
+     8
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 177,
+     "altura": 50,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 9,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 84120
+   }
+  ],
+  "cem_velas|con_calavera": [
+   {
+    "clase": "vela",
+    "sprite": "cem_velas_sin_llama",
+    "boca": [
+     -3,
+     -3
+    ],
+    "grilla": [
+     14,
+     15
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       11
+      ],
+      [
+       8,
+       8
+      ],
+      [
+       10.5,
+       14
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -3,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 86934
+   }
+  ],
+  "cem_velas|muchas": [
+   {
+    "clase": "vela",
+    "sprite": "cem_velas_sin_llama",
+    "boca": [
+     -1,
+     -6
+    ],
+    "grilla": [
+     8,
+     13
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       4.5,
+       12
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -1,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 73097
+   }
+  ],
+  "cem_velas|tres": [
+   {
+    "clase": "vela",
+    "sprite": "cem_velas_sin_llama",
+    "boca": [
+     -2,
+     -3
+    ],
+    "grilla": [
+     10,
+     14
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       13
+      ],
+      [
+       5.5,
+       8
+      ],
+      [
+       7,
+       12
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -2,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 76182
+   }
+  ],
+  "com_santuario_caldero|activo": [
+   {
+    "clase": "caldero",
+    "sprite": "com_santuario_caldero_sin_llama",
+    "boca": [
+     -4,
+     -2
+    ],
+    "grilla": [
+     21,
+     17
+    ],
+    "celda": 3,
+    "paleta": "veneno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 7
+    },
+    "decay": 5.23,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#86d83e",
+     "radio": 156,
+     "altura": 24,
+     "intensidad": 0.9,
+     "mueve": 0.3,
+     "dx": -4,
+     "sombra": true
+    },
+    "brasas": 1,
+    "mezcla": "sumar",
+    "semilla": 3240
+   }
+  ],
+  "cri_brasero_huesos|azul": [
+   {
+    "clase": "brasero",
+    "sprite": "cri_brasero_huesos_sin_llama",
+    "boca": [
+     0,
+     -30
+    ],
+    "grilla": [
+     14,
+     17
+    ],
+    "celda": 3,
+    "paleta": "animas",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.27
+    },
+    "decay": 5.33,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0.45,
+    "luz": {
+     "color": "#4fd2cc",
+     "radio": 146,
+     "altura": 38,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 11518
+   }
+  ],
+  "cri_brasero_huesos|rojo": [
+   {
+    "clase": "brasero",
+    "sprite": "cri_brasero_huesos_sin_llama",
+    "boca": [
+     0,
+     -30
+    ],
+    "grilla": [
+     14,
+     17
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.27
+    },
+    "decay": 5.33,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 146,
+     "altura": 38,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 26096
+   }
+  ],
+  "cri_brasero_huesos|verde": [
+   {
+    "clase": "brasero",
+    "sprite": "cri_brasero_huesos_sin_llama",
+    "boca": [
+     0,
+     -30
+    ],
+    "grilla": [
+     14,
+     17
+    ],
+    "celda": 3,
+    "paleta": "veneno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.27
+    },
+    "decay": 5.33,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#86d83e",
+     "radio": 146,
+     "altura": 38,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 88198
+   }
+  ],
+  "cri_candelabro_pared|con_calavera": [
+   {
+    "clase": "candelabro",
+    "sprite": "cri_candelabro_pared_sin_llama",
+    "boca": [
+     -12,
+     -54
+    ],
+    "grilla": [
+     13,
+     13
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       10,
+       12
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 65,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": -12,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 8604
+   }
+  ],
+  "cri_candelabro_pared|dos": [
+   {
+    "clase": "candelabro",
+    "sprite": "cri_candelabro_pared_sin_llama",
+    "boca": [
+     -12,
+     -58
+    ],
+    "grilla": [
+     13,
+     11
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       10,
+       10
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 65,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": -12,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 44672
+   }
+  ],
+  "cri_candelabro_pared|dos_der": [
+   {
+    "clase": "candelabro",
+    "sprite": "cri_candelabro_pared_sin_llama",
+    "boca": [
+     12,
+     -54
+    ],
+    "grilla": [
+     13,
+     14
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       13
+      ],
+      [
+       10,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 65,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": 12,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 43336
+   }
+  ],
+  "cri_candelabro_pared|tres": [
+   {
+    "clase": "candelabro",
+    "sprite": "cri_candelabro_pared_sin_llama",
+    "boca": [
+     -12,
+     -59
+    ],
+    "grilla": [
+     14,
+     10
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       7,
+       8
+      ],
+      [
+       11,
+       9
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 65,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": -12,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 67136
+   }
+  ],
+  "cri_candelabro_pared|tres_der": [
+   {
+    "clase": "candelabro",
+    "sprite": "cri_candelabro_pared_sin_llama",
+    "boca": [
+     12,
+     -53
+    ],
+    "grilla": [
+     14,
+     16
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       15
+      ],
+      [
+       7,
+       11
+      ],
+      [
+       11,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 65,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": 12,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 10632
+   }
+  ],
+  "cri_candelabro|corona": [
+   {
+    "clase": "candelabro",
+    "sprite": "cri_candelabro_sin_llama",
+    "boca": [
+     0,
+     -53
+    ],
+    "grilla": [
+     18,
+     16
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       13
+      ],
+      [
+       7,
+       15
+      ],
+      [
+       9.5,
+       8
+      ],
+      [
+       15,
+       13
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 55,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 16897
+   }
+  ],
+  "cri_candelabro|goteado": [
+   {
+    "clase": "candelabro",
+    "sprite": "cri_candelabro_sin_llama",
+    "boca": [
+     2,
+     -53
+    ],
+    "grilla": [
+     16,
+     14
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       5,
+       13
+      ],
+      [
+       8.5,
+       8
+      ],
+      [
+       13,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 55,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": 2,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 30006
+   }
+  ],
+  "cri_candelabro|siete": [
+   {
+    "clase": "candelabro",
+    "sprite": "cri_candelabro_sin_llama",
+    "boca": [
+     2,
+     -53
+    ],
+    "grilla": [
+     16,
+     14
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       5,
+       13
+      ],
+      [
+       8.5,
+       8
+      ],
+      [
+       13,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 55,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": 2,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 69623
+   }
+  ],
+  "cri_candelabro|tres": [
+   {
+    "clase": "candelabro",
+    "sprite": "cri_candelabro_sin_llama",
+    "boca": [
+     0,
+     -54
+    ],
+    "grilla": [
+     15,
+     16
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       10
+      ],
+      [
+       7.5,
+       8
+      ],
+      [
+       12,
+       15
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 55,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 74851
+   }
+  ],
+  "cri_lampara_aceite|corona": [
+   {
+    "clase": "vela",
+    "sprite": "cri_lampara_aceite_sin_llama",
+    "boca": [
+     0,
+     -61
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 156,
+     "altura": 73,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 5616
+   }
+  ],
+  "cri_lampara_aceite|de_craneo": [
+   {
+    "clase": "vela",
+    "sprite": "cri_lampara_aceite_sin_llama",
+    "boca": [
+     1,
+     -62
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 156,
+     "altura": 73,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": 1,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 44834
+   }
+  ],
+  "cri_lampara_aceite|simple": [
+   {
+    "clase": "vela",
+    "sprite": "cri_lampara_aceite_sin_llama",
+    "boca": [
+     0,
+     -61
+    ],
+    "grilla": [
+     10,
+     13
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       7,
+       12
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 156,
+     "altura": 73,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 82290
+   }
+  ],
+  "cri_lampara_aceite|triple": [
+   {
+    "clase": "vela",
+    "sprite": "cri_lampara_aceite_sin_llama",
+    "boca": [
+     -1,
+     -64
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 156,
+     "altura": 73,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -1,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 96344
+   }
+  ],
+  "cue_antorcha|hueso": [
+   {
+    "clase": "antorcha",
+    "sprite": "cue_antorcha_sin_llama",
+    "boca": [
+     -1,
+     -46
+    ],
+    "grilla": [
+     13,
+     18
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.17
+    },
+    "decay": 4.52,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 177,
+     "altura": 53,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 16515
+   }
+  ],
+  "cue_antorcha|palo": [
+   {
+    "clase": "antorcha",
+    "sprite": "cue_antorcha_sin_llama",
+    "boca": [
+     -1,
+     -46
+    ],
+    "grilla": [
+     13,
+     18
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.17
+    },
+    "decay": 4.52,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 177,
+     "altura": 53,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 54471
+   }
+  ],
+  "cue_antorcha|piedras": [
+   {
+    "clase": "antorcha",
+    "sprite": "cue_antorcha_sin_llama",
+    "boca": [
+     -1,
+     -46
+    ],
+    "grilla": [
+     13,
+     18
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.17
+    },
+    "decay": 4.52,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 177,
+     "altura": 53,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 97135
+   }
+  ],
+  "des2_fogata|encendida": [
+   {
+    "clase": "fogata",
+    "sprite": "des2_fogata_sin_llama",
+    "boca": [
+     -2,
+     0
+    ],
+    "grilla": [
+     14,
+     18
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 3.73,
+     "alto": 1
+    },
+    "decay": 5.34,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 187,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 20927
+   }
+  ],
+  "des2_fogata|tetera": [
+   {
+    "clase": "fogata",
+    "sprite": "des2_fogata_sin_llama",
+    "boca": [
+     -2,
+     1
+    ],
+    "grilla": [
+     13,
+     18
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 3.2,
+     "alto": 1
+    },
+    "decay": 5.34,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 187,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 93617
+   }
+  ],
+  "for2_antorchero|doble": [
+   {
+    "clase": "antorcha",
+    "sprite": "for2_antorchero_sin_llama",
+    "boca": [
+     0,
+     -59
+    ],
+    "grilla": [
+     29,
+     9
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.27
+    },
+    "decay": 10.98,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 198,
+     "altura": 61,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 25704
+   }
+  ],
+  "for2_antorchero|pilar": [
+   {
+    "clase": "antorcha",
+    "sprite": "for2_antorchero_sin_llama",
+    "boca": [
+     -1,
+     -40
+    ],
+    "grilla": [
+     10,
+     8
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.11
+    },
+    "decay": 10.67,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 198,
+     "altura": 55,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 8936
+   }
+  ],
+  "for2_antorchero|poste": [
+   {
+    "clase": "antorcha",
+    "sprite": "for2_antorchero_sin_llama",
+    "boca": [
+     -1,
+     -65
+    ],
+    "grilla": [
+     10,
+     8
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.11
+    },
+    "decay": 10.67,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 198,
+     "altura": 67,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 20239
+   }
+  ],
+  "for2_brasero|alto": [
+   {
+    "clase": "brasero",
+    "sprite": "for2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -43
+    ],
+    "grilla": [
+     14,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.27
+    },
+    "decay": 6.06,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 250,
+     "altura": 49,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 99735
+   }
+  ],
+  "for2_brasero|colgante": [
+   {
+    "clase": "brasero",
+    "sprite": "for2_brasero_sin_llama",
+    "boca": [
+     12,
+     -47
+    ],
+    "grilla": [
+     11,
+     7
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 2.1
+    },
+    "decay": 16.17,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 250,
+     "altura": 52,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 12,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 1556
+   }
+  ],
+  "for2_brasero|cuenco": [
+   {
+    "clase": "brasero",
+    "sprite": "for2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -16
+    ],
+    "grilla": [
+     17,
+     17
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.43
+    },
+    "decay": 5.14,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 250,
+     "altura": 22,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 41630
+   }
+  ],
+  "for2_caldero_aceite|hirviendo": [
+   {
+    "clase": "caldero",
+    "sprite": "for2_caldero_aceite_sin_llama",
+    "boca": [
+     -1,
+     -1
+    ],
+    "grilla": [
+     13,
+     7
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.25
+    },
+    "decay": 15,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 208,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.3,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1,
+    "mezcla": "sumar",
+    "semilla": 46999
+   }
+  ],
+  "hie2_brasero|craneo": [
+   {
+    "clase": "brasero",
+    "sprite": "hie2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -41
+    ],
+    "grilla": [
+     12,
+     13
+    ],
+    "celda": 3,
+    "paleta": "animas",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 2.57
+    },
+    "decay": 7.07,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0.45,
+    "luz": {
+     "color": "#4fd2cc",
+     "radio": 229,
+     "altura": 47,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 86456
+   }
+  ],
+  "hie2_brasero|cuenco": [
+   {
+    "clase": "brasero",
+    "sprite": "hie2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -18
+    ],
+    "grilla": [
+     14,
+     16
+    ],
+    "celda": 3,
+    "paleta": "animas",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.5
+    },
+    "decay": 5.55,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0.45,
+    "luz": {
+     "color": "#4fd2cc",
+     "radio": 229,
+     "altura": 23,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 41819
+   }
+  ],
+  "hie2_brasero|pie": [
+   {
+    "clase": "brasero",
+    "sprite": "hie2_brasero_sin_llama",
+    "boca": [
+     0,
+     -38
+    ],
+    "grilla": [
+     13,
+     12
+    ],
+    "celda": 3,
+    "paleta": "animas",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 2.8
+    },
+    "decay": 7.5,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0.45,
+    "luz": {
+     "color": "#4fd2cc",
+     "radio": 229,
+     "altura": 43,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 19368
+   }
+  ],
+  "hie_antorcha|brasero": [
+   {
+    "clase": "antorcha",
+    "sprite": "hie_antorcha_sin_llama",
+    "boca": [
+     0,
+     -15
+    ],
+    "grilla": [
+     15,
+     24
+    ],
+    "celda": 3,
+    "paleta": "animas",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.2
+    },
+    "decay": 3.42,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0.45,
+    "luz": {
+     "color": "#4fd2cc",
+     "radio": 177,
+     "altura": 22,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 41788
+   }
+  ],
+  "hie_antorcha|pie": [
+   {
+    "clase": "antorcha",
+    "sprite": "hie_antorcha_sin_llama",
+    "boca": [
+     -1,
+     -53
+    ],
+    "grilla": [
+     15,
+     22
+    ],
+    "celda": 3,
+    "paleta": "animas",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.2
+    },
+    "decay": 3.76,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0.45,
+    "luz": {
+     "color": "#4fd2cc",
+     "radio": 177,
+     "altura": 60,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 68714
+   }
+  ],
+  "hie_antorcha|poste": [
+   {
+    "clase": "antorcha",
+    "sprite": "hie_antorcha_sin_llama",
+    "boca": [
+     -1,
+     -53
+    ],
+    "grilla": [
+     15,
+     22
+    ],
+    "celda": 3,
+    "paleta": "animas",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.2
+    },
+    "decay": 3.76,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0.45,
+    "luz": {
+     "color": "#4fd2cc",
+     "radio": 177,
+     "altura": 60,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 11885
+   }
+  ],
+  "inf2_brasero|craneo": [
+   {
+    "clase": "brasero",
+    "sprite": "inf2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -25
+    ],
+    "grilla": [
+     15,
+     16
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.73
+    },
+    "decay": 5.55,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 250,
+     "altura": 32,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 72165
+   }
+  ],
+  "inf2_brasero|cuernos": [
+   {
+    "clase": "brasero",
+    "sprite": "inf2_brasero_sin_llama",
+    "boca": [
+     -2,
+     -32
+    ],
+    "grilla": [
+     14,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.5
+    },
+    "decay": 5.79,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 250,
+     "altura": 40,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 87276
+   }
+  ],
+  "inf2_brasero|jaula": [
+   {
+    "clase": "brasero",
+    "sprite": "inf2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -38
+    ],
+    "grilla": [
+     14,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.27
+    },
+    "decay": 5.79,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 250,
+     "altura": 44,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 91118
+   }
+  ],
+  "inf2_brasero|pilar": [
+   {
+    "clase": "brasero",
+    "sprite": "inf2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -42
+    ],
+    "grilla": [
+     18,
+     21
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 5.13
+    },
+    "decay": 4.25,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 49,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 92187
+   }
+  ],
+  "inf2_brasero|tripode": [
+   {
+    "clase": "brasero",
+    "sprite": "inf2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -35
+    ],
+    "grilla": [
+     14,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.5
+    },
+    "decay": 6.06,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 250,
+     "altura": 42,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 74130
+   }
+  ],
+  "inf2_caldero|lava": [
+   {
+    "clase": "caldero",
+    "sprite": "inf2_caldero_sin_llama",
+    "boca": [
+     -2,
+     -2
+    ],
+    "grilla": [
+     17,
+     16
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.75
+    },
+    "decay": 5.67,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.3,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 1,
+    "mezcla": "sumar",
+    "semilla": 80301
+   }
+  ],
+  "inf2_caldero|restos": [
+   {
+    "clase": "caldero",
+    "sprite": "inf2_caldero_sin_llama",
+    "boca": [
+     -2,
+     -2
+    ],
+    "grilla": [
+     14,
+     16
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.5
+    },
+    "decay": 5.67,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.3,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 1,
+    "mezcla": "sumar",
+    "semilla": 79967
+   }
+  ],
+  "inf2_caldero|sangre": [
+   {
+    "clase": "caldero",
+    "sprite": "inf2_caldero_sin_llama",
+    "boca": [
+     -2,
+     -2
+    ],
+    "grilla": [
+     17,
+     16
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.75
+    },
+    "decay": 5.67,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.3,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 1,
+    "mezcla": "sumar",
+    "semilla": 73665
+   }
+  ],
+  "inf2_columna_fuego|alta": [
+   {
+    "clase": "columna",
+    "sprite": "inf2_columna_fuego_sin_llama",
+    "boca": [
+     -1,
+     -9
+    ],
+    "grilla": [
+     33,
+     61
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.3
+    },
+    "decay": 2.04,
+    "viento": 0,
+    "rafagas": 0.25,
+    "turbulencia": 0.5,
+    "ruido": 0.4,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 36,
+     "intensidad": 0.9,
+     "mueve": 0.5,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 5,
+    "mezcla": "sumar",
+    "semilla": 81097
+   }
+  ],
+  "inf2_columna_fuego|doble": [
+   {
+    "clase": "columna",
+    "sprite": "inf2_columna_fuego_sin_llama",
+    "boca": [
+     0,
+     -5
+    ],
+    "grilla": [
+     29,
+     68
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.3
+    },
+    "decay": 1.93,
+    "viento": 0,
+    "rafagas": 0.25,
+    "turbulencia": 0.5,
+    "ruido": 0.4,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 36,
+     "intensidad": 0.9,
+     "mueve": 0.5,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 5,
+    "mezcla": "sumar",
+    "semilla": 63371
+   }
+  ],
+  "inf2_columna_fuego|verde": [
+   {
+    "clase": "columna",
+    "sprite": "inf2_columna_fuego_sin_llama",
+    "boca": [
+     -1,
+     -8
+    ],
+    "grilla": [
+     33,
+     61
+    ],
+    "celda": 3,
+    "paleta": "veneno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.3
+    },
+    "decay": 2.04,
+    "viento": 0,
+    "rafagas": 0.25,
+    "turbulencia": 0.5,
+    "ruido": 0.4,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#86d83e",
+     "radio": 260,
+     "altura": 36,
+     "intensidad": 0.9,
+     "mueve": 0.5,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 5,
+    "mezcla": "sumar",
+    "semilla": 36067
+   }
+  ],
+  "inf2_pira|hoguera": [
+   {
+    "clase": "pira",
+    "sprite": "inf2_pira_sin_llama",
+    "boca": [
+     0,
+     -12
+    ],
+    "grilla": [
+     24,
+     24
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 9.35,
+     "alto": 1.56
+    },
+    "decay": 4.2,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 24,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 99864
+   }
+  ],
+  "inf2_pira|monton": [
+   {
+    "clase": "pira",
+    "sprite": "inf2_pira_sin_llama",
+    "boca": [
+     -2,
+     -3
+    ],
+    "grilla": [
+     22,
+     24
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 8.5,
+     "alto": 1.6
+    },
+    "decay": 4.12,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 24,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 21784
+   }
+  ],
+  "inf2_pira|pira": [
+   {
+    "clase": "pira",
+    "sprite": "inf2_pira_sin_llama",
+    "boca": [
+     -1,
+     -27
+    ],
+    "grilla": [
+     27,
+     19
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 11.05,
+     "alto": 1.2
+    },
+    "decay": 5.16,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 24,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 50093
+   }
+  ],
+  "inf_brasero|cuernos": [
+   {
+    "clase": "brasero",
+    "sprite": "inf_brasero_sin_llama",
+    "boca": [
+     -1,
+     -37
+    ],
+    "grilla": [
+     20,
+     27
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 5.83
+    },
+    "decay": 3.39,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 50,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 1658
+   }
+  ],
+  "inf_brasero|jaula": [
+   {
+    "clase": "brasero",
+    "sprite": "inf_brasero_sin_llama",
+    "boca": [
+     0,
+     -37
+    ],
+    "grilla": [
+     15,
+     23
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.73
+    },
+    "decay": 3.94,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 50,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 72572
+   }
+  ],
+  "min_horno|encendido": [
+   {
+    "clase": "hogar",
+    "sprite": "min_horno_sin_llama",
+    "boca": [
+     -1,
+     6
+    ],
+    "grilla": [
+     15,
+     9
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4
+    },
+    "decay": 10.75,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 229,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.5,
+    "mezcla": "sumar",
+    "semilla": 48555
+   }
+  ],
+  "min_linternas_cuerda|caida": [
+   {
+    "clase": "farol",
+    "sprite": "min_linternas_cuerda_sin_llama",
+    "boca": [
+     -8,
+     -37
+    ],
+    "grilla": [
+     15,
+     14
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       11.5,
+       13
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 239,
+     "altura": 40,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": -8,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 48293
+   }
+  ],
+  "min_linternas_cuerda|caida_y": [
+   {
+    "clase": "farol",
+    "sprite": "min_linternas_cuerda_sin_llama",
+    "boca": [
+     8,
+     -37
+    ],
+    "grilla": [
+     14,
+     14
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       13
+      ],
+      [
+       11,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 239,
+     "altura": 40,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 8,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 55829
+   }
+  ],
+  "min_linternas_cuerda|tres": [
+   {
+    "clase": "farol",
+    "sprite": "min_linternas_cuerda_sin_llama",
+    "boca": [
+     0,
+     -32
+    ],
+    "grilla": [
+     23,
+     16
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ],
+      [
+       11.5,
+       13
+      ],
+      [
+       19.5,
+       15
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 239,
+     "altura": 42,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 94337
+   }
+  ],
+  "min_linternas_cuerda|tres_y": [
+   {
+    "clase": "farol",
+    "sprite": "min_linternas_cuerda_sin_llama",
+    "boca": [
+     0,
+     -32
+    ],
+    "grilla": [
+     23,
+     16
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       15
+      ],
+      [
+       11.5,
+       13
+      ],
+      [
+       19.5,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 239,
+     "altura": 42,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 84761
+   }
+  ],
+  "min_linterna|doble": [
+   {
+    "clase": "farol",
+    "sprite": "min_linterna_sin_llama",
+    "boca": [
+     0,
+     -28
+    ],
+    "grilla": [
+     15,
+     12
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ],
+      [
+       12,
+       11
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 208,
+     "altura": 36,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 88301
+   }
+  ],
+  "min_linterna|poste": [
+   {
+    "clase": "farol",
+    "sprite": "min_linterna_sin_llama",
+    "boca": [
+     9,
+     -28
+    ],
+    "grilla": [
+     6,
+     8
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 208,
+     "altura": 36,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 9,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 22134
+   }
+  ],
+  "min_linterna|roca": [
+   {
+    "clase": "farol",
+    "sprite": "min_linterna_sin_llama",
+    "boca": [
+     7,
+     -11
+    ],
+    "grilla": [
+     6,
+     8
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 208,
+     "altura": 22,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 7,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 18706
+   }
+  ],
+  "mon_antorcha|der": [
+   {
+    "clase": "antorcha",
+    "sprite": "mon_antorcha_sin_llama",
+    "boca": [
+     14,
+     -54
+    ],
+    "grilla": [
+     12,
+     18
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.15
+    },
+    "decay": 4.36,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 156,
+     "altura": 67,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": 14,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 12527
+   }
+  ],
+  "mon_antorcha|izq": [
+   {
+    "clase": "antorcha",
+    "sprite": "mon_antorcha_sin_llama",
+    "boca": [
+     -15,
+     -53
+    ],
+    "grilla": [
+     12,
+     16
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.15
+    },
+    "decay": 4.87,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 156,
+     "altura": 67,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -15,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 48074
+   }
+  ],
+  "mon_brasero|cuenco_grande": [
+   {
+    "clase": "brasero",
+    "sprite": "mon_brasero_sin_llama",
+    "boca": [
+     1,
+     -12
+    ],
+    "grilla": [
+     26,
+     27
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 8.4
+    },
+    "decay": 3.46,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 25,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 98753
+   }
+  ],
+  "mon_brasero|fuego_azul": [
+   {
+    "clase": "brasero",
+    "sprite": "mon_brasero_sin_llama",
+    "boca": [
+     0,
+     -32
+    ],
+    "grilla": [
+     16,
+     17
+    ],
+    "celda": 3,
+    "paleta": "gas",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.2
+    },
+    "decay": 5.14,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#5a8cff",
+     "radio": 217,
+     "altura": 40,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 70695
+   }
+  ],
+  "mon_brasero|jaula": [
+   {
+    "clase": "brasero",
+    "sprite": "mon_brasero_sin_llama",
+    "boca": [
+     -1,
+     -32
+    ],
+    "grilla": [
+     13,
+     17
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.03
+    },
+    "decay": 5.14,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 209,
+     "altura": 40,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 82333
+   }
+  ],
+  "mon_brasero|pedestal": [
+   {
+    "clase": "brasero",
+    "sprite": "mon_brasero_sin_llama",
+    "boca": [
+     1,
+     -40
+    ],
+    "grilla": [
+     18,
+     19
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.9
+    },
+    "decay": 4.79,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 225,
+     "altura": 48,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 11768
+   }
+  ],
+  "mon_brasero|tripode": [
+   {
+    "clase": "brasero",
+    "sprite": "mon_brasero_sin_llama",
+    "boca": [
+     0,
+     -32
+    ],
+    "grilla": [
+     16,
+     17
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.2
+    },
+    "decay": 5.14,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 217,
+     "altura": 40,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 64433
+   }
+  ],
+  "mue_caldero|agua": [
+   {
+    "clase": "caldero",
+    "sprite": "mue_caldero_sin_llama",
+    "boca": [
+     1,
+     2
+    ],
+    "grilla": [
+     16,
+     6
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.5
+    },
+    "decay": 23.75,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 117,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.3,
+     "dx": 1,
+     "sombra": true
+    },
+    "brasas": 1,
+    "mezcla": "sumar",
+    "semilla": 35097
+   }
+  ],
+  "mue_caldero|sangre": [
+   {
+    "clase": "caldero",
+    "sprite": "mue_caldero_sin_llama",
+    "boca": [
+     0,
+     1
+    ],
+    "grilla": [
+     16,
+     12
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.5
+    },
+    "decay": 7.28,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 117,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.3,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 1,
+    "mezcla": "sumar",
+    "semilla": 19561
+   }
+  ],
+  "mue_caldero|verde": [
+   {
+    "clase": "caldero",
+    "sprite": "mue_caldero_sin_llama",
+    "boca": [
+     1,
+     2
+    ],
+    "grilla": [
+     16,
+     6
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.5
+    },
+    "decay": 23.75,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 117,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.3,
+     "dx": 1,
+     "sombra": true
+    },
+    "brasas": 1,
+    "mezcla": "sumar",
+    "semilla": 20687
+   }
+  ],
+  "mue_candelabro|hierro": [
+   {
+    "clase": "candelabro",
+    "sprite": "mue_candelabro_sin_llama",
+    "boca": [
+     0,
+     -54
+    ],
+    "grilla": [
+     19,
+     11
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       10
+      ],
+      [
+       9,
+       8
+      ],
+      [
+       15.5,
+       10
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 55,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 46531
+   }
+  ],
+  "mue_candelabro|oro": [
+   {
+    "clase": "candelabro",
+    "sprite": "mue_candelabro_sin_llama",
+    "boca": [
+     0,
+     -54
+    ],
+    "grilla": [
+     19,
+     11
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       10
+      ],
+      [
+       9,
+       8
+      ],
+      [
+       15.5,
+       10
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 125,
+     "altura": 55,
+     "intensidad": 0.75,
+     "mueve": 0.15,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 23262
+   }
+  ],
+  "mue_fogon_y|con_olla": [
+   {
+    "clase": "hogar",
+    "sprite": "mue_fogon_y_sin_llama",
+    "boca": [
+     2,
+     2
+    ],
+    "grilla": [
+     16,
+     8
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.25
+    },
+    "decay": 14,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 156,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": 2,
+     "sombra": true
+    },
+    "brasas": 1.5,
+    "mezcla": "sumar",
+    "semilla": 40169
+   }
+  ],
+  "mue_fogon_y|encendido": [
+   {
+    "clase": "hogar",
+    "sprite": "mue_fogon_y_sin_llama",
+    "boca": [
+     3,
+     1
+    ],
+    "grilla": [
+     16,
+     10
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.25
+    },
+    "decay": 9.21,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 156,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": 3,
+     "sombra": true
+    },
+    "brasas": 1.5,
+    "mezcla": "sumar",
+    "semilla": 14997
+   }
+  ],
+  "mue_fogon|con_olla": [
+   {
+    "clase": "hogar",
+    "sprite": "mue_fogon_sin_llama",
+    "boca": [
+     -3,
+     2
+    ],
+    "grilla": [
+     16,
+     8
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.25
+    },
+    "decay": 14,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 156,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -3,
+     "sombra": true
+    },
+    "brasas": 1.5,
+    "mezcla": "sumar",
+    "semilla": 68861
+   }
+  ],
+  "mue_fogon|encendido": [
+   {
+    "clase": "hogar",
+    "sprite": "mue_fogon_sin_llama",
+    "boca": [
+     -4,
+     1
+    ],
+    "grilla": [
+     16,
+     10
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 4.25
+    },
+    "decay": 9.21,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 156,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -4,
+     "sombra": true
+    },
+    "brasas": 1.5,
+    "mezcla": "sumar",
+    "semilla": 3881
+   }
+  ],
+  "mue_velas|calavera": [
+   {
+    "clase": "vela",
+    "sprite": "mue_velas_sin_llama",
+    "boca": [
+     0,
+     -14
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 34785
+   }
+  ],
+  "mue_velas|derretidas": [
+   {
+    "clase": "vela",
+    "sprite": "mue_velas_sin_llama",
+    "boca": [
+     1,
+     -4
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": 1,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 89081
+   }
+  ],
+  "mue_velas|grupo": [
+   {
+    "clase": "vela",
+    "sprite": "mue_velas_sin_llama",
+    "boca": [
+     -5,
+     -6
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": -5,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 63655
+   }
+  ],
+  "mue_velas|una": [
+   {
+    "clase": "vela",
+    "sprite": "mue_velas_sin_llama",
+    "boca": [
+     0,
+     -12
+    ],
+    "grilla": [
+     6,
+     9
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       8
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 11.4,
+    "viento": 0,
+    "rafagas": 0.08,
+    "turbulencia": 0.3,
+    "ruido": 0.15,
+    "humo": 0.12,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 117,
+     "altura": 20,
+     "intensidad": 0.7,
+     "mueve": 0.15,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 8464
+   }
+  ],
+  "nie2_brasero|cuenco": [
+   {
+    "clase": "brasero",
+    "sprite": "nie2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -18
+    ],
+    "grilla": [
+     14,
+     13
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.27
+    },
+    "decay": 7.07,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 23,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 6057
+   }
+  ],
+  "nie2_brasero|jaula": [
+   {
+    "clase": "brasero",
+    "sprite": "nie2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -34
+    ],
+    "grilla": [
+     14,
+     14
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.27
+    },
+    "decay": 6.35,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 38,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 90951
+   }
+  ],
+  "nie2_brasero|poste": [
+   {
+    "clase": "brasero",
+    "sprite": "nie2_brasero_sin_llama",
+    "boca": [
+     0,
+     -48
+    ],
+    "grilla": [
+     13,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 2.8
+    },
+    "decay": 5.79,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 52,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 61773
+   }
+  ],
+  "nie2_brasero|tripode": [
+   {
+    "clase": "brasero",
+    "sprite": "nie2_brasero_sin_llama",
+    "boca": [
+     -1,
+     -38
+    ],
+    "grilla": [
+     13,
+     13
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.03
+    },
+    "decay": 6.69,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 42,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 95607
+   }
+  ],
+  "nie2_hoguera|asador": [
+   {
+    "clase": "hoguera",
+    "sprite": "nie2_hoguera_sin_llama",
+    "boca": [
+     -1,
+     -2
+    ],
+    "grilla": [
+     19,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 6.52,
+     "alto": 1
+    },
+    "decay": 6.71,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 25507
+   }
+  ],
+  "nie2_hoguera|brasas": [
+   {
+    "clase": "hoguera",
+    "sprite": "nie2_hoguera_sin_llama",
+    "boca": [
+     -1,
+     -3
+    ],
+    "grilla": [
+     12,
+     9
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 3,
+     "alto": 1
+    },
+    "decay": 11.95,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 177,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 77943
+   }
+  ],
+  "nie2_hoguera|caldero": [
+   {
+    "clase": "hoguera",
+    "sprite": "nie2_hoguera_sin_llama",
+    "boca": [
+     -2,
+     -2
+    ],
+    "grilla": [
+     16,
+     30
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 4.82,
+     "alto": 2.08
+    },
+    "decay": 3.53,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 43673
+   }
+  ],
+  "nie2_hoguera|piedras": [
+   {
+    "clase": "hoguera",
+    "sprite": "nie2_hoguera_sin_llama",
+    "boca": [
+     -1,
+     -2
+    ],
+    "grilla": [
+     17,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 5.67,
+     "alto": 1
+    },
+    "decay": 6.47,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 44549
+   }
+  ],
+  "nie2_hoguera|pira": [
+   {
+    "clase": "hoguera",
+    "sprite": "nie2_hoguera_sin_llama",
+    "boca": [
+     -6,
+     -4
+    ],
+    "grilla": [
+     16,
+     20
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 4.82,
+     "alto": 1.32
+    },
+    "decay": 4.98,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -6,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 77089
+   }
+  ],
+  "nie_hoguera|pira": [
+   {
+    "clase": "hoguera",
+    "sprite": "nie_hoguera_sin_llama",
+    "boca": [
+     -2,
+     2
+    ],
+    "grilla": [
+     26,
+     37
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 10.48,
+     "alto": 2.64
+    },
+    "decay": 2.99,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 29,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 23769
+   }
+  ],
+  "nie_hoguera|troncos": [
+   {
+    "clase": "hoguera",
+    "sprite": "nie_hoguera_sin_llama",
+    "boca": [
+     1,
+     -12
+    ],
+    "grilla": [
+     17,
+     19
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 5.38,
+     "alto": 1.28
+    },
+    "decay": 5.11,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 1,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 3375
+   }
+  ],
+  "par_farol|encendido": [
+   {
+    "clase": "farol",
+    "sprite": "par_farol_sin_llama",
+    "boca": [
+     14,
+     -53
+    ],
+    "grilla": [
+     6,
+     8
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 177,
+     "altura": 61,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 14,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 71256
+   }
+  ],
+  "par_fogata_bandidos|asador": [
+   {
+    "clase": "fogata",
+    "sprite": "par_fogata_bandidos_sin_llama",
+    "boca": [
+     0,
+     1
+    ],
+    "grilla": [
+     17,
+     17
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 5.33,
+     "alto": 1
+    },
+    "decay": 5.72,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 70438
+   }
+  ],
+  "par_fogata_bandidos|olla": [
+   {
+    "clase": "fogata",
+    "sprite": "par_fogata_bandidos_sin_llama",
+    "boca": [
+     -1,
+     2
+    ],
+    "grilla": [
+     16,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 4.8,
+     "alto": 1
+    },
+    "decay": 6.71,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 239,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 94822
+   }
+  ],
+  "par_hoguera|ardiendo": [
+   {
+    "clase": "hoguera",
+    "sprite": "par_hoguera_sin_llama",
+    "boca": [
+     -1,
+     -3
+    ],
+    "grilla": [
+     28,
+     23
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 11.33,
+     "alto": 1.56
+    },
+    "decay": 4.37,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 24,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 46464
+   }
+  ],
+  "par_hoguera|preparada": [
+   {
+    "clase": "hoguera",
+    "sprite": "par_hoguera_sin_llama",
+    "boca": [
+     14,
+     -17
+    ],
+    "grilla": [
+     11,
+     10
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 3,
+     "alto": 1
+    },
+    "decay": 11.11,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.4,
+    "humo": 0.6,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 146,
+     "altura": 34,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 14,
+     "sombra": true
+    },
+    "brasas": 4,
+    "mezcla": "sumar",
+    "semilla": 74678
+   }
+  ],
+  "par_rescoldos|brasas": [
+   {
+    "clase": "fogata",
+    "sprite": "par_rescoldos_sin_llama",
+    "boca": [
+     0,
+     -3
+    ],
+    "grilla": [
+     12,
+     12
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 3,
+     "alto": 1
+    },
+    "decay": 8.75,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 117,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 34011
+   }
+  ],
+  "pue_farol|doble": [
+   {
+    "clase": "farol",
+    "sprite": "pue_farol_sin_llama",
+    "boca": [
+     0,
+     -58
+    ],
+    "grilla": [
+     20,
+     15
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ],
+      [
+       17,
+       14
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 208,
+     "altura": 70,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 0,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 48262
+   }
+  ],
+  "pue_farol|encendido": [
+   {
+    "clase": "farol",
+    "sprite": "pue_farol_sin_llama",
+    "boca": [
+     14,
+     -58
+    ],
+    "grilla": [
+     6,
+     8
+    ],
+    "celda": 2,
+    "paleta": "vela",
+    "forma": {
+     "tipo": "puntos",
+     "en": [
+      [
+       3,
+       7
+      ]
+     ],
+     "ancho": 1
+    },
+    "decay": 12.56,
+    "viento": 0,
+    "rafagas": 0.05,
+    "turbulencia": 0.3,
+    "ruido": 0.1,
+    "humo": 0,
+    "hueco": 0,
+    "luz": {
+     "color": "#ffb25a",
+     "radio": 208,
+     "altura": 70,
+     "intensidad": 0.75,
+     "mueve": 0.2,
+     "dx": 14,
+     "sombra": false
+    },
+    "brasas": 0,
+    "mezcla": "sumar",
+    "semilla": 2925
+   }
+  ],
+  "pue_fogata|brasas": [
+   {
+    "clase": "fogata",
+    "sprite": "pue_fogata_sin_llama",
+    "boca": [
+     0,
+     -3
+    ],
+    "grilla": [
+     14,
+     11
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 3.73,
+     "alto": 1
+    },
+    "decay": 9.35,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 117,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 78502
+   }
+  ],
+  "pue_fogata|chica": [
+   {
+    "clase": "fogata",
+    "sprite": "pue_fogata_sin_llama",
+    "boca": [
+     0,
+     -2
+    ],
+    "grilla": [
+     12,
+     16
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 3,
+     "alto": 1
+    },
+    "decay": 6.17,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 131,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 54984
+   }
+  ],
+  "pue_fogata|grande": [
+   {
+    "clase": "fogata",
+    "sprite": "pue_fogata_sin_llama",
+    "boca": [
+     1,
+     -1
+    ],
+    "grilla": [
+     16,
+     47
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 4.8,
+     "alto": 2.88
+    },
+    "decay": 2.51,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 260,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 1,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 26599
+   }
+  ],
+  "pue_fogata|mediana": [
+   {
+    "clase": "fogata",
+    "sprite": "pue_fogata_sin_llama",
+    "boca": [
+     0,
+     -2
+    ],
+    "grilla": [
+     14,
+     18
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 4,
+     "alto": 1
+    },
+    "decay": 5.52,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 187,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 70711
+   }
+  ],
+  "sel2_fogata_tribal|asador": [
+   {
+    "clase": "fogata",
+    "sprite": "sel2_fogata_tribal_sin_llama",
+    "boca": [
+     -1,
+     1
+    ],
+    "grilla": [
+     17,
+     23
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 5.33,
+     "alto": 1.32
+    },
+    "decay": 4.29,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 250,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 85827
+   }
+  ],
+  "sel2_fogata_tribal|tambores": [
+   {
+    "clase": "fogata",
+    "sprite": "sel2_fogata_tribal_sin_llama",
+    "boca": [
+     0,
+     0
+    ],
+    "grilla": [
+     17,
+     23
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "pira",
+     "ancho": 5.33,
+     "alto": 1.32
+    },
+    "decay": 4.29,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.5,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 250,
+     "altura": 20,
+     "intensidad": 0.9,
+     "mueve": 0.45,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2.5,
+    "mezcla": "sumar",
+    "semilla": 32718
+   }
+  ],
+  "sel_antorcha|bambu": [
+   {
+    "clase": "antorcha",
+    "sprite": "sel_antorcha_sin_llama",
+    "boca": [
+     -1,
+     -60
+    ],
+    "grilla": [
+     13,
+     16
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.18
+    },
+    "decay": 5.07,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 177,
+     "altura": 68,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 61143
+   }
+  ],
+  "sel_antorcha|craneo": [
+   {
+    "clase": "antorcha",
+    "sprite": "sel_antorcha_sin_llama",
+    "boca": [
+     0,
+     -61
+    ],
+    "grilla": [
+     13,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.18
+    },
+    "decay": 5.3,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 177,
+     "altura": 70,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 24408
+   }
+  ],
+  "tem_brasero|cabeza": [
+   {
+    "clase": "brasero",
+    "sprite": "tem_brasero_sin_llama",
+    "boca": [
+     -1,
+     -32
+    ],
+    "grilla": [
+     16,
+     19
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.97
+    },
+    "decay": 4.64,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 187,
+     "altura": 41,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 32326
+   }
+  ],
+  "tem_brasero|cuenco": [
+   {
+    "clase": "brasero",
+    "sprite": "tem_brasero_sin_llama",
+    "boca": [
+     -1,
+     -32
+    ],
+    "grilla": [
+     16,
+     19
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.97
+    },
+    "decay": 4.64,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 187,
+     "altura": 41,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 35547
+   }
+  ],
+  "tum_antorcha|muro": [
+   {
+    "clase": "antorcha",
+    "sprite": "tum_antorcha_sin_llama",
+    "boca": [
+     -2,
+     -57
+    ],
+    "grilla": [
+     11,
+     11
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.13
+    },
+    "decay": 7.45,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 146,
+     "altura": 62,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": -2,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 8649
+   }
+  ],
+  "tum_antorcha|pie": [
+   {
+    "clase": "antorcha",
+    "sprite": "tum_antorcha_sin_llama",
+    "boca": [
+     0,
+     -60
+    ],
+    "grilla": [
+     11,
+     10
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "llama",
+     "ancho": 0.13
+    },
+    "decay": 8.03,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.4,
+    "ruido": 0.35,
+    "humo": 0.35,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 146,
+     "altura": 64,
+     "intensidad": 0.9,
+     "mueve": 0.35,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 1.2,
+    "mezcla": "sumar",
+    "semilla": 1050
+   }
+  ],
+  "tum_brasero|alto": [
+   {
+    "clase": "brasero",
+    "sprite": "tum_brasero_sin_llama",
+    "boca": [
+     0,
+     -44
+    ],
+    "grilla": [
+     13,
+     15
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 2.8
+    },
+    "decay": 6.06,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 177,
+     "altura": 52,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 18922
+   }
+  ],
+  "tum_brasero|chico": [
+   {
+    "clase": "brasero",
+    "sprite": "tum_brasero_sin_llama",
+    "boca": [
+     0,
+     -13
+    ],
+    "grilla": [
+     12,
+     13
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 2.33
+    },
+    "decay": 7.07,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 177,
+     "altura": 22,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": 0,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 44394
+   }
+  ],
+  "tum_brasero|piedra": [
+   {
+    "clase": "brasero",
+    "sprite": "tum_brasero_sin_llama",
+    "boca": [
+     -1,
+     -28
+    ],
+    "grilla": [
+     14,
+     16
+    ],
+    "celda": 3,
+    "paleta": "infierno",
+    "forma": {
+     "tipo": "boca",
+     "ancho": 3.27
+    },
+    "decay": 5.55,
+    "viento": 0,
+    "rafagas": 0.15,
+    "turbulencia": 0.45,
+    "ruido": 0.35,
+    "humo": 0.4,
+    "hueco": 0,
+    "luz": {
+     "color": "#ff6a24",
+     "radio": 177,
+     "altura": 36,
+     "intensidad": 0.9,
+     "mueve": 0.4,
+     "dx": -1,
+     "sombra": true
+    },
+    "brasas": 2,
+    "mezcla": "sumar",
+    "semilla": 55913
+   }
+  ]
+ },
+ "especiales": {
+  "quemado": {
+   "que": "estado \"quemado\" sobre monstruos y el héroe: la grilla pegada al cuerpo",
+   "celda": 3,
+   "paleta": "infierno",
+   "forma": "silueta",
+   "altura": 0.42,
+   "humo": 0.5,
+   "turbulencia": 0.5,
+   "ruido": 0.5,
+   "relleno": 0.12,
+   "alfa": 0.9,
+   "cada_cuadros": 4,
+   "margen_px": [
+    10,
+    26
+   ],
+   "luz": {
+    "radio": 120,
+    "altura": 40,
+    "intensidad": 0.7,
+    "mueve": 0.5,
+    "sombra": false
+   },
+   "brasas": 3,
+   "notas": "Grilla = caja del cuadro del sprite + margen_px (x a cada lado, y arriba) en celdas de 3. Forma: formaDesdeMascara(alfa del cuadro, celda 3, relleno 0.12) rehecha cada 4 cuadros de animación (no cada cuadro de pantalla). Al terminar el estado: apagar(f) y dejar de dibujarla cuando calorMedio(f).k llegue a 0. Con paleta sombra o veneno sirve para esos estados."
+  },
+  "cadaver": {
+   "que": "cadáveres que arden (muertos por fuego)",
+   "celda": 3,
+   "paleta": "infierno",
+   "forma": "silueta",
+   "altura": 0.5,
+   "humo": 0.8,
+   "turbulencia": 0.45,
+   "ruido": 0.55,
+   "relleno": 0.18,
+   "alfa": 0.95,
+   "dura_s": 5,
+   "apaga_s": 3.5,
+   "margen_px": [
+    8,
+    30
+   ],
+   "luz": {
+    "radio": 150,
+    "altura": 16,
+    "intensidad": 0.75,
+    "mueve": 0.5,
+    "sombra": true
+   },
+   "brasas": 2.5,
+   "notas": "Igual que quemado, con la silueta del cadáver en el piso (una sola vez). A los apaga_s se llama apagar(f); el humo sigue hasta dura_s."
+  },
+  "suelo_ardiente": {
+   "que": "charcos y suelo que arden (lo que dejan los poderes de fuego: cráter, meteoro, muro, suelo ardiente)",
+   "celda": 3,
+   "paleta": "infierno",
+   "forma": "circulo",
+   "altura": 0.38,
+   "humo": 0.3,
+   "turbulencia": 0.45,
+   "ruido": 0.6,
+   "relleno": 0.7,
+   "radio_px_por_casilla": 16,
+   "dura_s": 4,
+   "luz": {
+    "radio": 140,
+    "altura": 10,
+    "intensidad": 0.6,
+    "mueve": 0.45,
+    "sombra": false
+   },
+   "brasas": 2,
+   "notas": "Grilla de (2 * radio_px + 6 celdas) x (radio_px + 14 celdas); forma { tipo: \"circulo\", radio: radio_px / 3, relleno }. Un charco por área, no uno por casilla. Para el fuego frío del nigromante, paleta animas y hueco 0.5."
+  },
+  "ozmaren": {
+   "que": "el cuerpo de Ozmaren, el jefe de fuego (reemplaza las partículas de fuegoOzmaren)",
+   "celda": 3,
+   "paleta": "infierno",
+   "forma": "focos",
+   "altura": 0.75,
+   "humo": 0.55,
+   "turbulencia": 0.5,
+   "ruido": 0.45,
+   "focos": [
+    [
+     -0.19,
+     0.79,
+     10,
+     26,
+     1.4
+    ],
+    [
+     0.19,
+     0.79,
+     10,
+     26,
+     1.4
+    ],
+    [
+     -0.16,
+     0.47,
+     12,
+     20,
+     1
+    ],
+    [
+     0.16,
+     0.47,
+     12,
+     20,
+     1
+    ],
+    [
+     0,
+     0.72,
+     18,
+     30,
+     1.4
+    ],
+    [
+     0,
+     0.39,
+     10,
+     14,
+     0.9
+    ],
+    [
+     -0.21,
+     0.16,
+     8,
+     12,
+     0.6
+    ],
+    [
+     0.21,
+     0.16,
+     8,
+     12,
+     0.6
+    ]
+   ],
+   "furia": {
+    "avivar": 1.6,
+    "viento_arriba": 0,
+    "rafagas": 0.35
+   },
+   "luz": {
+    "radio": 260,
+    "altura": 280,
+    "intensidad": 1,
+    "mueve": 0.6,
+    "sombra": true
+   },
+   "brasas": 8,
+   "notas": "Una grilla por foco (8 en total, ~2900 celdas): forma { tipo: \"llama\", ancho: 0.5 }, el pie en el foco. Con furia (fase 2 o especial) avivar(f, 1.6, 0.4) en cada golpe y rafagas 0.35. Las luces de lucesOzmaren toman k de pulsoLuz de la grilla de cada cuerno y de la espalda (en lugar del Ruido), así las sombras tiemblan con las llamas. El ondulado de calor sigue igual."
+  },
+  "fuego_frio": {
+   "que": "el fuego frío de los actos de muerte y hielo: todos los fuegos de esos lugares con la paleta de ánimas",
+   "celda": 3,
+   "paleta": "animas",
+   "forma": "focos",
+   "altura": 1,
+   "humo": 0.45,
+   "hueco": 0.5,
+   "temas": [
+    "hielo",
+    "nieve",
+    "cripta",
+    "catacumbas",
+    "abismo",
+    "ahogada",
+    "cementerio"
+   ],
+   "actos": [
+    4,
+    7
+   ],
+   "paleta_cripta": "animas",
+   "paleta_corona": "corona_fria",
+   "luz": {
+    "radio": 1,
+    "altura": 1,
+    "intensidad": 0.85,
+    "mueve": 0.35,
+    "sombra": true
+   },
+   "brasas": 0.5,
+   "notas": "Regla de reemplazo: en las zonas de esos temas o actos, cada fuego de FUEGOS_DOOM se crea con paleta animas y hueco 0.5 (su luz pasa a PALETAS.animas.luz). El final de la corona fría usa corona_fria. luz.radio y luz.altura acá son factores (1 = el del objeto)."
+  },
+  "arma_encantada": {
+   "que": "armas encantadas por elemento: una tira de llama a lo largo de la hoja (reemplaza el trazo de armaViva en escena.ts)",
+   "celda": 2,
+   "paleta": {
+    "fuego": "infierno",
+    "frio": "animas",
+    "rayo": "gas",
+    "veneno": "veneno",
+    "sombra": "sombra",
+    "luz": "sagrado",
+    "sangre": "sangre"
+   },
+   "forma": "tira",
+   "altura": 0.32,
+   "humo": 0.1,
+   "turbulencia": 0.55,
+   "ruido": 0.5,
+   "margen_celdas": 3,
+   "hueco_frio": 0.4,
+   "luz": {
+    "radio": 1,
+    "altura": 1,
+    "intensidad": 1,
+    "mueve": 0.3,
+    "sombra": false
+   },
+   "brasas": 1.5,
+   "notas": "Con q.hoja = [x0, y0, x1, y1] (px desde el ancla del cuadro): grilla de celdas de 2 px que cubre la hoja + margen_celdas a cada lado y 12 celdas más arriba (la llama sube), esquina (gx, gy); forma { tipo: \"tira\", desde: [(x0 - gx) / 2, (y0 - gy) / 2], hasta: [(x1 - gx) / 2, (y1 - gy) / 2], grosor: 0.9 }. Una grilla por arma visible, rehecha solo si cambia la hoja (cada cuadro de animación). Frío: hueco 0.4. La luz de la mano (luzDeArma) toma k de pulsoLuz(f, 0.3)."
+  }
+ }
+}
