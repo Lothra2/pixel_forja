@@ -1,0 +1,17 @@
+{
+  "personas": {
+    "papa":   { "piel": "#e0a070", "pelo": "#241814", "peinado": "raya", "marcas": ["barba"], "camisa": "#d8202a", "short": "#ffffff", "medias": "#d8202a", "zapatos": "#181010", "talla": "grande" },
+    "mama":   { "piel": "#e8b088", "pelo": "#2a1810", "peinado": "largo", "camisa": "#7a3cc8", "short": "#ffffff", "medias": "#7a3cc8", "zapatos": "#181010" },
+    "sophie": { "piel": "#c88858", "pelo": "#141010", "peinado": "liso", "marcas": ["cintillo"], "acento": "#b8f040", "camisa": "#80c020", "short": "#ffffff", "medias": "#80c020", "zapatos": "#181010", "talla": "nino" },
+    "alana":  { "piel": "#d89868", "pelo": "#1c1410", "peinado": "colitas", "marcas": ["ligas"], "acento": "#ff70b0", "camisa": "#ff70b0", "short": "#ffffff", "medias": "#ff70b0", "zapatos": "#181010", "talla": "nino" },
+    "juandi": { "piel": "#e0a878", "pelo": "#6a3a1c", "peinado": "despeinado", "camisa": "#1450c8", "short": "#ffffff", "medias": "#1450c8", "zapatos": "#2050c0", "talla": "nino" },
+    "kun":    { "piel": "#f0b080", "pelo": "#141010", "peinado": "corto", "camisa": "#ffffff", "short": "#d02020", "medias": "#ffffff", "zapatos": "#181010", "malandro": true },
+    "dragon": { "piel": "#d89868", "pelo": "#6a2a10", "peinado": "puntas", "marcas": ["cuernos"], "acento": "#ffe060", "camisa": "#f07018", "short": "#282828", "medias": "#f07018", "zapatos": "#181010", "malandro": true },
+    "tiburon":{ "piel": "#f0c098", "pelo": "#141010", "peinado": "corto", "marcas": ["aleta"], "acento": "#7090c0", "camisa": "#1c3c90", "short": "#1c3c90", "medias": "#ffffff", "zapatos": "#181010" },
+    "buho":   { "piel": "#a87048", "pelo": "#3a2010", "peinado": "tazon", "marcas": ["plumas"], "acento": "#8a5a30", "camisa": "#f4f0e4", "short": "#b07830", "medias": "#f4f0e4", "zapatos": "#5a3018" },
+    "mapache":{ "piel": "#e0a070", "pelo": "#141010", "peinado": "despeinado", "marcas": ["antifaz"], "acento": "#606068", "camisa": "#f08020", "short": "#5a3018", "medias": "#4a4a50", "zapatos": "#181010", "malandro": true },
+    "portero":{ "piel": "#e0a070", "pelo": "#141010", "peinado": "corto", "camisa": "#30b838", "short": "#1d5a26", "medias": "#30b838", "zapatos": "#181010", "guantes": true }
+  },
+  "porteros": ["portero"],
+  "perros": { "thor": { "pelo": "#b06a2c", "pecho": "#f4ece0", "oreja": "#7a4418" } }
+}

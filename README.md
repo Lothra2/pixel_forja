@@ -10,6 +10,7 @@ de una foto. Sin IA y sin servidor: todo corre en tu equipo.
 - 75 animaciones humanas: básicas, las 33 de Fútbol Familia GG, portero, básquet, vóley, tenis,
   béisbol, natación, atletismo, artes marciales, skate, bici y RPG.
 - 10 animaciones de animal (boxer, perro, mapache, gato).
+- **Estilo Nekketsu (NES)**: cabezones de Kunio-kun y Nintendo World Cup en 32 px, desde una ficha o una descripción corta, con fútbol y pelea. Ver [docs/ESTILO_NEKKETSU.md](docs/ESTILO_NEKKETSU.md).
 - Vista lateral y 4 direcciones tipo RPG. Tamaños de 32, 48 y 64 px. Cuerpo chibi, juvenil o realista.
 - Modo busto para selfies y fotos: cara, barba, cejas, camisa y estampado. El resto del cuerpo va por defecto.
 - Taller RPG estilo Diablo: clases de héroe, armaduras, 13 armas, 12 habilidades, 13 enemigos, poderes de 8 elementos y 45 objetos con rarezas.

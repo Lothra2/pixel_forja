@@ -74,3 +74,4 @@ export * from './audio/ambience';
 export * from './world/flora';
 export * from './world/atmosphere';
 export * from './luchador';
+export * from './nes/index';
