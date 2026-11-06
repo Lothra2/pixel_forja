@@ -1,6 +1,7 @@
 import type { Plano3D } from './cine3d_toma';
 import { PLANOS_INTRO } from './cine3d_cuadros';
 import { PLANOS_ACTOS_A } from './cine3d_actos_a';
+import { PLANOS_ACTOS_B } from './cine3d_actos_b';
 
 /**
  * Las escenas 3D horneables de cada cinemática, por clave (intro, acto_1...): lo que hornean scripts/gotico-cine3d.ts y
@@ -11,6 +12,7 @@ import { PLANOS_ACTOS_A } from './cine3d_actos_a';
 export const PLANOS_CINE3D: Record<string, Plano3D[]> = {
   intro: PLANOS_INTRO,
   ...PLANOS_ACTOS_A,
+  ...PLANOS_ACTOS_B,
 };
 
 /** El plano 3D `id` de la clave (o un error que dice qué hay). */
