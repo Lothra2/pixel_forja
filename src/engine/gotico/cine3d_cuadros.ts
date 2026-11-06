@@ -4,7 +4,7 @@ import type { Lamina } from './cine';
 import { baseCamara, proyectar, type V3 } from './render';
 import { hexLin, escalar, type Capas, type Cartel, type Particula, type C3 } from './cine3d';
 import { armarValle, deCat, type Plano, type TipoFuego } from './cine3d_valle';
-import { armarCampanario, armarCripta, armarClaustro, armarPozo, TIEMPOS_I11, cajaCampanasI07, CAMPANAS_I02, CAMPANAS_I07, CAJAS_I02, type ArmadoFuego } from './cine3d_interior';
+import { armarCampanario, armarCripta, armarClaustro, armarPozo, TIEMPOS_I11, CAMPANAS_I02, CAJAS_I02, type ArmadoFuego } from './cine3d_interior';
 import type { Plano3D, Armado, Extras } from './cine3d_toma';
 
 /**
@@ -166,18 +166,19 @@ function fuegoClaustro(a: ArmadoFuego, t: number): Extras { return { ...fuegoAde
 const I07: Plano3D = {
   id: 'i07_claustro', paralaje: 0.9, particulas: 'ceniza',
   armar: (w, h) => { const k = `${w}|${h}`; let a = claustros.get(k); if (!a) { a = armarClaustro(w, h); claustros.set(k, a); } return a; },
-  revelado: { t: 0, exposicion: 1.5, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.45, umbral: 0.75 }, grado: gradoNoche },
+  revelado: { t: 0, exposicion: 1.85, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.4, umbral: 0.8 }, grado: gradoNoche },
   flickBase: 0.84, cuadros: NF, fps: FPS, extras: (a, _c, t) => fuegoClaustro(a as ArmadoFuego, t),
   // la brasa entera (fuego, humo y su luz alrededor) en una tira a media resolución
   zonas: (a) => zonasFuegos(a, 70, 2),
-  moviles: [{ id: 'campanas', cuadros: CAMPANAS_I07.cuadros, fps: CAMPANAS_I07.fps, escala: 2, armar: (w, h, k) => armarClaustro(w, h, { t: k / CAMPANAS_I07.fps }), caja: (a) => cajaCampanasI07(a.cam) }],
-  qa: [0.67, 2.0, 3.33, 4.67],
+  qa: [0, 1.5, 3, 4.5],
 };
+/** El fondo del pozo: negros negros (sin el azul que la noche les sube a las sombras). */
+const gradoNegro = (c: C3): C3 => c.map((v) => Math.max(0, v) ** 1.06) as C3;
 const pozos = new Map<string, Armado>();
 const I11: Plano3D = {
   id: 'i11_ojos', paralaje: 0.92,
   armar: (w, h) => { const k = `${w}|${h}`; let a = pozos.get(k); if (!a) { a = armarPozo(w, h); pozos.set(k, a); } return a; },
-  revelado: { t: 0, exposicion: 1.4, derrame: { k: 0.5, r: 4 }, bloom: { k: 0.5, umbral: 0.7 }, grado: gradoNoche },
+  revelado: { t: 0, exposicion: 1.4, derrame: { k: 0.3, r: 4 }, bloom: { k: 0.3, umbral: 0.85 }, grado: gradoNegro },
   // los ojos (canal 1) apagados en el fondo: llegan con su capa de tiempo
   flickBase: 0,
   variantes: [

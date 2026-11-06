@@ -96,8 +96,9 @@ export function hornear(pl: Plano3D, a: Armado, fondo: Capas, frente?: Capas, ma
       for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
         const i = y * tw + x, cob = 1 - c.cielo[i], j2 = i * 4;
         if (cob <= 0.002) continue;
-        for (let k = 0; k < 3; k++) r.data[j2 + k] = Math.round(col[i * 3 + k] * 255);
-        r.data[j2 + 3] = Math.round(Math.min(1, cob) * 255);
+        // en pasos de 2 (color) y de 4 (alfa): no se nota y el PNG de la tira pesa bastante menos
+        for (let k = 0; k < 3; k++) r.data[j2 + k] = Math.min(254, Math.round(col[i * 3 + k] * 127.5) * 2);
+        r.data[j2 + 3] = Math.min(255, Math.round(Math.min(1, cob) * 63.75) * 4);
       }
       return r;
     }) });
@@ -120,7 +121,7 @@ export function hornear(pl: Plano3D, a: Armado, fondo: Capas, frente?: Capas, ma
       const e = z.escala, x0 = Math.max(0, Math.floor(z.caja[0])), y0 = Math.max(0, Math.floor(z.caja[1])), x1 = Math.min(w - 1, Math.ceil(z.caja[2])), y1 = Math.min(h - 1, Math.ceil(z.caja[3]));
       if (x1 - x0 < 8 || y1 - y0 < 8) continue; // la zona cae fuera del cuadro
       const tw = Math.ceil((x1 - x0 + 1) / e), th = Math.ceil((y1 - y0 + 1) / e);
-      out.fuegos.push({ x: x0, y: y0, escala: e, fps, cuadros: difs.map((d) => {
+      const tira: TiraHorneada = { x: x0, y: y0, escala: e, fps, cuadros: difs.map((d) => {
         const r = createRaster(tw, th);
         for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) {
           const q = [0, 0, 0]; let k = 0;
@@ -134,7 +135,9 @@ export function hornear(pl: Plano3D, a: Armado, fondo: Capas, frente?: Capas, ma
           r.data[j + 3] = Math.round(m * 255);
         }
         return r;
-      }) });
+      }) };
+      // una zona donde no se ve nada (la llama queda detrás de algo) no va
+      if (tira.cuadros.some((r) => r.data.some((v, i) => i % 4 === 3 && v > 0))) out.fuegos.push(tira);
     }
   }
   if (mas.variantes?.length) {

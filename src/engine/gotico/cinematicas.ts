@@ -10,6 +10,7 @@ import { PINTORES_A } from './cine_planos_a';
 import { PINTORES_B } from './cine_planos_b';
 import { PINTORES_C } from './cine_planos_c';
 import { pintoresIntro3d, paqueteIntro3d } from './cine3d_paquete';
+import { alfaTiempo, type AnimTiempo } from './cine3d_toma';
 import { decodePng } from '../export/png';
 
 /**
@@ -194,7 +195,7 @@ export const GUION: Record<string, Plano[]> = {
       sonidos: [{ t: 1.71, efecto: 'campana', vol: 0.7 }, { t: 4.0, efecto: 'campana', vol: 0.75 }, { t: 6.29, efecto: 'campana', vol: 0.8 }],
       texto: ['Los monjes de Santa Oria tocaban las campanas al alba, y nadie preguntaba por qué la abadía se alzó sobre un pozo sellado.', 'The monks of Santa Oria rang the bells at dawn, and no one asked why the abbey was raised over a sealed well.'] },
     { id: 'i03_pozo', que: 'Bajo la abadía, la cripta del pozo sellado: losa de hierro con cadenas y el sello de cera.', dur: 7.5,
-      cam: acercar([640, 380], 1.1, [0, -10], [0, 6]), entrada: T('fundido', 1), salida: T('negro', 1.2),
+      cam: acercar([636, 318], 1.1, [0, -10], [0, 6]), entrada: T('fundido', 1), salida: T('negro', 1.2),
       texto: ['Nadie recordaba el voto de los primeros hermanos: no cantar nunca de noche.', 'No one remembered the vow of the first brothers: never sing at night.'] },
     { id: 'i04_cielo', que: 'La noche de la última cosecha: la carreta en el campo, la abadía lejos, y el cielo que se desgarra con luz roja.', dur: 6.5,
       cam: temblar(acercar([640, 250], 1.05, [0, 14], [0, -12]), 5, 3.4, 1.9), entrada: T('negro', 1.2), salida: T('fundido', 0.6),
@@ -207,8 +208,8 @@ export const GUION: Record<string, Plano[]> = {
       cam: temblar(acercar([770, 300], 1.08, [-14, -8], [10, 4]), 14, 2.4, 0), entrada: T('blanco', 0.6), salida: T('fundido', 0.8),
       sonidos: [{ t: 0, efecto: 'explosion', vol: 1 }, { t: 0.15, efecto: 'trueno', vol: 1 }],
       texto: ['Cayó en el claustro.', 'It fell into the cloister.'] },
-    { id: 'i07_claustro', que: 'En el claustro nevado, la brasa hundida en el piso arde; arriba, las campanas se mecen solas.', dur: 7,
-      cam: temblar(acercar([600, 430], 1.08, [0, 6], [0, -6]), 5, 0.9, 0), entrada: T('fundido', 0.8), salida: T('fundido', 1),
+    { id: 'i07_claustro', que: 'En el claustro nevado, la brasa caída humea entre las losas del jardín con su luz roja; detrás, en la torre, las campanas se mecen solas.', dur: 7,
+      cam: temblar(acercar([560, 480], 1.08, [0, 6], [0, -6]), 5, 0.9, 0), entrada: T('fundido', 0.8), salida: T('fundido', 1),
       sonidos: [{ t: 0.67, efecto: 'campana', vol: 0.85 }, { t: 3.33, efecto: 'campana', vol: 0.8 }, { t: 6.0, efecto: 'campana', vol: 0.7 }],
       texto: ['Y las campanas doblaron solas.', 'And the bells tolled on their own.'] },
     { id: 'i08_camposanto', que: 'Al amanecer gris, en el camposanto bajo la ceniza, los muertos se levantan secos y retorcidos.', dur: 8,
@@ -427,7 +428,10 @@ export function componerPlano(capas: CapaFinal[], p: Plano, o: { t?: number; val
   for (const [i, c] of capas.entries()) {
     if (c.soloSi && c.soloSi !== valor) continue;
     const img = c.img && c.anim?.tipo === 'cuadros' ? celdaTira(c, Math.floor(tt * Number(c.anim.fps ?? 12)) % Number(c.anim.cuadros)) : c.img ?? celda(c.hoja!, Math.floor(tt * Number(c.anim?.fps ?? 10) + i * 3) % hojasFx()[c.hoja!].cuadros);
-    dibujar(out, img, c.x, c.y, c.w, c.h, c.paralaje, cam, c.mezcla === 'sumar', c.alfa ?? 1);
+    // anim 'tiempo': el alfa sigue sus claves en el segundo del plano (relámpagos, ojos que se encienden)
+    const kt = c.anim?.tipo === 'tiempo' ? alfaTiempo(c.anim as unknown as AnimTiempo, tt) : 1;
+    if (kt <= 0) continue;
+    dibujar(out, img, c.x, c.y, c.w, c.h, c.paralaje, cam, c.mezcla === 'sumar', (c.alfa ?? 1) * kt);
   }
   const v = o.vineta ?? vinetaCine();
   for (let i = 0; i < out.w * out.h; i++) {
@@ -498,4 +502,10 @@ export const LEEME_CINE = `cinematicas/  las cinemáticas de cierre de cada acto
               "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0. El fuego (la hoja fx/fuego.png y
               las tiras de fuego detrás de vitrales, como catedral_fuego en acto_5/p4_ysmeral) es fuego de Doom
               horneado: anim "cuadros" con su hoja en grilla (columnas, cuadros, fps, w, h), se suma y empalma.
+              La intro (clave intro) sale de escenas 3D horneadas y empaquetadas en cinematicas/intro/pagina_N.png:
+              cada capa trae recorte [sx, sy, sw, sh] (de dónde sale en su página; con anim "cuadros" la celda k
+              está en sx + (k % columnas) * w, sy + floor(k / columnas) * h) y se dibuja en x, y, w, h de la capa
+              (las tiras van a media resolución: se agrandan). movil_N: normal con alfa (campanas, monjes), en
+              bucle. fuego_N: suma, en bucle. luz_N: suma con anim "tiempo" = { tipo: 'tiempo', claves: [[s, alfa],
+              ...] }: el alfa sigue las claves en el segundo del plano, lineal entre claves (relámpagos, ojos).
 `;

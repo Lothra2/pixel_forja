@@ -111,15 +111,16 @@ export function columna(x: number, y: number, z: number, alto: number, r: number
 }
 /** Cadena de eslabones de a a b que cuelga `comba` en el medio (eslabones alternados a 90 grados). */
 export function cadena(a: V3, b: V3, comba: number, eslabon = 2.6, mat = 'ci_hierro'): Pieza[] {
-  const L = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]), n = Math.max(2, Math.round(L / (eslabon * 1.5))), ps: Pieza[] = [];
+  const L = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]), n = Math.max(2, Math.round(L / (eslabon * 1.15))), ps: Pieza[] = [];
   const pt = (t: number): V3 => { const p = lerp3(a, b, t); return [p[0], p[1], p[2] - comba * 4 * t * (1 - t)]; };
   for (let i = 0; i < n; i++) {
     const p0 = pt(i / n), p1 = pt((i + 1) / n), c = lerp3(p0, p1, 0.5), e = norm([p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]]);
     const up: V3 = Math.abs(e[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1], s1 = norm([e[1] * up[2] - e[2] * up[1], e[2] * up[0] - e[0] * up[2], e[0] * up[1] - e[1] * up[0]]), s2: V3 = [e[1] * s1[2] - e[2] * s1[1], e[2] * s1[0] - e[0] * s1[2], e[0] * s1[1] - e[1] * s1[0]];
     const ancho = i % 2 ? s1 : s2, finito = i % 2 ? s2 : s1;
     // el eslabón: dos varillas y dos cabezas (se lee como anillo a la distancia)
-    for (const s of [-1, 1]) ps.push(palo(add(add(c, e, -eslabon * 0.6), ancho, s * eslabon * 0.38), add(add(c, e, eslabon * 0.6), ancho, s * eslabon * 0.38), eslabon * 0.17, { mat }));
-    ps.push(elipsoide(c[0], c[1], c[2], 0.1, 0.1, 0.1, { mat }));
+    // el eslabón: dos varillas y sus cabezas, que se meten en el anterior y el siguiente (se lee como anillo encadenado)
+    for (const s of [-1, 1]) ps.push(palo(add(add(c, e, -eslabon * 0.75), ancho, s * eslabon * 0.34), add(add(c, e, eslabon * 0.75), ancho, s * eslabon * 0.34), eslabon * 0.16, { mat }));
+    for (const s of [-1, 1]) ps.push(palo(add(add(c, e, s * eslabon * 0.78), ancho, -eslabon * 0.36), add(add(c, e, s * eslabon * 0.78), ancho, eslabon * 0.36), eslabon * 0.16, { mat }));
     void finito;
   }
   return ps;
@@ -153,7 +154,7 @@ export function monje(alto: number, manos: [V3, V3], atras = 0, s = 0): Pieza[] 
   // brazos con mangas que se abren hacia las manos
   for (const [i, sy] of [[0, -1], [1, 1]] as [number, number][]) {
     const hom = P(0, sy * 8, 47), mano = manos[i], codo: V3 = [(hom[0] + mano[0]) / 2 + 1.5 * k, (hom[1] + mano[1]) / 2 + sy * 3 * k, (hom[2] + mano[2]) / 2 - 3 * k];
-    cs.push(hueso(hom, codo, 3 * k, 3.3 * k, { mat: 'ci_habito' }), hueso(codo, add(mano, [-1.5 * k, 0, -2.5 * k]), 3.3 * k, 4.2 * k, { mat: 'ci_habito' }));
+    cs.push(hueso(hom, codo, 2.5 * k, 2.7 * k, { mat: 'ci_habito' }), hueso(codo, add(mano, [-1.5 * k, 0, -2.5 * k]), 2.7 * k, 3.4 * k, { mat: 'ci_habito' }));
   }
   const ps: Pieza[] = [masa(cs, { mat: 'ci_habito', suave: 2.4 * k })];
   for (const m of manos) ps.push(masa([bulto(m, [2.2 * k, 1.8 * k, 2.6 * k], { mat: 'ci_piel' })], { mat: 'ci_piel', suave: 0.6 }));
@@ -326,7 +327,7 @@ export function armarCampanario(w = 1408, h = 792, o: { t?: number; mover?: 'cam
     polvo.push({ p, r: 0.12 + az(i, 4) * 0.14, c: escalar(hexLin('#ffdcb8'), 0.35 + az(i, 5) * 0.9), a: 1, suma: true });
   }
   // el sol que pega en el piso junto a los arcos rebota hacia arriba: apenas despega el bronce de la pared
-  esc.luces.push({ p: [40, 150, 8], c: hexLin('#d8b090'), k: 0.5, r: 160, envuelve: 0.2 });
+  esc.luces.push({ p: [40, 150, 8], c: hexLin('#9aa4b8'), k: 0.12, r: 160, envuelve: 0.2 });
   const atm = atmCampanario(), C = CAMP_I02;
   return { esc, atm, cam: camaraBase(C.pos, C.obj, C.fov, w, h), polvo };
 }
@@ -509,7 +510,7 @@ const BRASA_I07: V3 = [-50, -10, 8];
 /** La torre de las campanas (detrás de la galería del norte) y sus dos campanas. */
 const TORRE_I07 = { x: 70, y: 330, ancho: 96, alto: 430, vano: 300 };
 const CAMPS_I07: { c: V3; R: number; fase: number }[] = [{ c: [52, 330, 358], R: 17, fase: 0 }, { c: [94, 330, 358], R: 13, fase: 2.4 }];
-const CAM_I07: { pos: V3; obj: V3; fov: number } = { pos: [-118, -268, 60], obj: [64, 170, 96], fov: 52 };
+const CAM_I07: { pos: V3; obj: V3; fov: number } = { pos: [-120, -304, 70], obj: [70, 170, 92], fov: 50 };
 
 /** Una panda del claustro (en coordenadas propias: la arcada corre a lo largo de x en y = 0, la galería hacia -y). */
 function panda(largo: number, s: number): Pieza[] {
@@ -536,8 +537,8 @@ function panda(largo: number, s: number): Pieza[] {
 function atmClaustro(): Atmosfera {
   // noche de ceniza: el cielo apenas rojo del lado de la iglesia que arde, todo lo demás azul de nieve
   const rojo = hexLin('#ff5020'), F = norm([0.25, 1, 0.35]);
-  const pars: [number, C3][] = [[0, hexLin('#241e24')], [0.08, hexLin('#1a1b26')], [0.3, hexLin('#0e111c')], [0.9, hexLin('#05060a')]];
-  const resplandor = (d: V3) => { const g = Math.max(0, dot3(d, F)); return 0.07 * Math.pow(g, 8) + 0.22 * Math.pow(g, 40); };
+  const pars: [number, C3][] = [[0, hexLin('#1e2030')], [0.08, hexLin('#161a28')], [0.3, hexLin('#0c0f1a')], [0.9, hexLin('#05060a')]];
+  const resplandor = (d: V3) => { const g = Math.max(0, dot3(d, F)); return 0.025 * Math.pow(g, 8) + 0.08 * Math.pow(g, 40); };
   const aire = (d: V3): C3 => { const e = Math.min(0.03, Math.max(0, d[2])), b = gradiente(pars, e), k = resplandor(norm([d[0], d[1], e])) * 0.4; return [b[0] + rojo[0] * k, b[1] + rojo[1] * k, b[2] + rojo[2] * k]; };
   const cielo = (d: V3): C3 => {
     const e = Math.asin(Math.max(-1, Math.min(1, d[2]))), b = gradiente(pars, Math.max(0, e)), rf = resplandor(d);
@@ -546,8 +547,8 @@ function atmClaustro(): Atmosfera {
     return c;
   };
   return {
-    sol: { dir: norm([0.3, 1, 0.55]), c: hexLin('#ff6a30'), k: 0.06, ancho: 0.08 }, cielo, aire,
-    ambCielo: escalar(hexLin('#4a5a88'), 0.14), ambSuelo: escalar(hexLin('#1c1c24'), 0.04),
+    sol: { dir: norm([0.3, 1, 0.55]), c: hexLin('#8a9cc8'), k: 0.05, ancho: 0.08 }, cielo, aire,
+    ambCielo: escalar(hexLin('#4a5a88'), 0.2), ambSuelo: escalar(hexLin('#1c1c24'), 0.05),
     niebla: { densidad: 1 / 4000, baja: 1 / 1600, z0: 0, H: 40, ruido: 0.6, escalaRuido: 0.006 },
     borde: { c: hexLin('#ff6a30'), k: 1.6 }, nieve: { albedo: [0.62, 0.66, 0.74], desde: 0.55 }, oclusion: 0.92, oclusionLargo: 160,
   };
@@ -579,9 +580,9 @@ export function armarClaustro(w = 1408, h = 792, o: { t?: number; mover?: boolea
   torre.push(poliedro([[-T.ancho / 2 - 4, -T.ancho / 2 - 4, T.alto], [T.ancho / 2 + 4, -T.ancho / 2 - 4, T.alto], [-T.ancho / 2 - 4, T.ancho / 2 + 4, T.alto], [T.ancho / 2 + 4, T.ancho / 2 + 4, T.alto], [0, 0, T.alto + 170]], { mat: 'abo_pizarra' in MATERIALES ? 'abo_pizarra' : 'abo_sillar' }));
   esc.poner(torre, { x: T.x, y: T.y, z: 0 }, { nieve: 0.6 });
   esc.ponerMundo([caja(T.x, T.y, T.vano + 50, T.ancho - 8, 10, 10, { mat: 'ci_viga' })], { nieve: 0 });
-  if (o.mover !== false) campanasTorre(esc, t);
+  if (o.mover) campanasTorre(esc, t);
   // los senderos de losas que cruzan el jardín (la brasa cayó donde se cruzan) y el brocal del medio
-  esc.ponerMundo([caja(0, 0, 0, g * 2, 46, 8, { mat: 'ci_losa' }), caja(0, 0, 0, 46, g * 2, 8, { mat: 'ci_losa' })], { nieve: 0.7 });
+  esc.ponerMundo([caja(0, 0, 0, g * 2, 46, 8, { mat: 'ci_losa' }), caja(0, 0, 0, 46, g * 2, 8, { mat: 'ci_losa' }), caja(0, -g + 34, 0, g * 2 - 8, 52, 8, { mat: 'ci_losa' })], { nieve: 0.7 });
   // el árbol muerto del jardín y matas secas que asoman de la nieve
   const arbol = objeto('nie2_arbol_muerto').armar('retorcido', 0, herr(7));
   esc.poner((Array.isArray(arbol) ? arbol : arbol.piezas), { x: -96, y: 92, z: 4, giro: 30, k: 1.6 }, { nieve: 0.8 });
@@ -596,9 +597,9 @@ export function armarClaustro(w = 1408, h = 792, o: { t?: number; mover?: boolea
   roca.push(cilindro(B[0], B[1], B[2] - 0.5, 30, 0.8, { mat: 'jf_lava_fria' }));
   esc.ponerMundo(roca, { nieve: 0 });
   esc.emision.va_brasa = { k: 3.4, canal: 1 };
-  esc.luces.push({ p: [B[0], B[1], B[2] + 22], c: hexLin('#ff4a18'), k: 7, r: 46, canal: 1, sombra: true, envuelve: 0.25, halo: 0.0003 });
-  for (const [dx, dy, an, al, s] of [[0, 0, 22, 44, 401], [-7, 5, 14, 30, 402], [8, -4, 12, 26, 403]] as [number, number, number, number, number][]) fuegos.push({ p: [B[0] + dx, B[1] + dy, B[2] + 4], ancho: an, alto: al, semilla: s, tipo: 'brasa' });
-  plumas.push({ base: [B[0], B[1], B[2] + 26], alto: 520, r0: 12, r1: 120, viento: [0.5, 0.6, 0], dens: 0.05, humo: [0.035, 0.03, 0.03], abajo: hexLin('#ff4a18'), kAbajo: 2.2, semilla: 404, sube: 22, escala: 1 / 26, sol: 0.1 });
+  esc.luces.push({ p: [B[0], B[1], B[2] + 22], c: hexLin('#ff4a18'), k: 5, r: 26, canal: 1, sombra: true, envuelve: 0.25, halo: 0.0002 });
+  for (const [dx, dy, an, al, s] of [[0, 0, 12, 22, 401], [-6, 4, 8, 15, 402], [7, -4, 7, 13, 403]] as [number, number, number, number, number][]) fuegos.push({ p: [B[0] + dx, B[1] + dy, B[2] + 4], ancho: an, alto: al, semilla: s, tipo: 'brasa' });
+  plumas.push({ base: [B[0], B[1], B[2] + 10], alto: 420, r0: 9, r1: 90, viento: [0.7, 0.9, 0], dens: 0.06, humo: [0.05, 0.05, 0.06], abajo: hexLin('#ff4a18'), kAbajo: 1.1, semilla: 404, sube: 22, escala: 1 / 26, sol: 0.1 });
   const atm = atmClaustro(), C = CAM_I07;
   return { esc, atm, cam: camaraBase(C.pos, C.obj, C.fov, w, h), plumas, fuegos };
 }
@@ -632,9 +633,9 @@ function atmPozo(relampago: boolean): Atmosfera {
     const e = Math.asin(Math.max(-1, Math.min(1, d[2]))), k = 2000 / Math.max(0.05, d[2]), n = fbm2((d[0] * k) / 900, (d[1] * k) / 900, 5, 181);
     if (!relampago) return escalar([0.004, 0.0045, 0.007], 0.6 + n);
     const u = (d[0] * k) / 600, v = (d[1] * k) / 600, eje = u * 0.6 + (fbm2(v * 1.5, 1, 4, 182) - 0.5) * 1.6, rayo = Math.exp(-Math.abs(eje) * 40) * suave(-2, 0.5, v);
-    return [frio[0] * (1.2 + n * 2.5) + rayo * 14, frio[1] * (1.2 + n * 2.5) + rayo * 14, frio[2] * (1.4 + n * 2.8) + rayo * 16].map((c) => c * suave(0.4, 1.2, e)) as C3;
+    return [frio[0] * (0.35 + n * 1.1) + rayo * 9, frio[1] * (0.35 + n * 1.1) + rayo * 9, frio[2] * (0.45 + n * 1.3) + rayo * 11].map((c) => c * suave(0.4, 1.2, e)) as C3;
   };
-  const aire: C3 = relampago ? [0.007, 0.009, 0.015] : [0.002, 0.0018, 0.0018];
+  const aire: C3 = relampago ? [0.007, 0.009, 0.015] : [0.0006, 0.0005, 0.0005];
   return {
     sol: { dir: L, c: frio, k: relampago ? 5.5 : 0, ancho: 0.12 }, cielo, aire: () => aire,
     ambCielo: relampago ? escalar(frio, 0.05) : [0.0015, 0.0015, 0.002], ambSuelo: [0.002, 0.0015, 0.0012],
@@ -668,12 +669,12 @@ export function armarPozo(w = 1408, h = 792, o: { relampago?: boolean } = {}): A
   // Ozmaren: enorme, de frente, con la lava apagada; los ojos van por el canal 1 (se encienden en su momento)
   const gz = esc.poner(ozmarenPiezas(), { x: OZ.x, y: OZ.y, z: -2, giro: -90, k: OZ.k }, { nieve: 0 });
   const ojos = esc.piezas.filter((p, i) => esc.grupoDe[i] === gz && p.mat === 'cu_ojo_brasa' && p.k === 'elip').map((p) => (p as { c: V3 }).c);
-  esc.emision.cu_lava = { k: 0.07 }; esc.emision.lava = { k: 0.05 }; esc.emision.jf_hierro_rojo = { k: 0.06 }; esc.emision.jf_brasa_honda = { k: 0.08 };
+  esc.emision.cu_lava = { k: 0.035 }; esc.emision.lava = { k: 0.03 }; esc.emision.jf_hierro_rojo = { k: 0.03 }; esc.emision.jf_brasa_honda = { k: 0.04 };
   esc.emision.cu_ojo_brasa = { k: 7, canal: 1 }; esc.emision.luz_vela = { k: 9, canal: 1 };
   // la luz de los ojos sobre la cara y los cuernos (canal 1: llega con los ojos)
   const ojo: V3 = ojos.length ? ojos.reduce((m, c) => [m[0] + c[0] / ojos.length, m[1] + c[1] / ojos.length, m[2] + c[2] / ojos.length], [0, 0, 0] as V3) : [OZ.x, OZ.y, 190 * OZ.k];
   ojo[1] -= 14;
   esc.luces.push({ p: ojo, c: hexLin('#ff5a18'), k: 1.6, r: 30, canal: 1, envuelve: 0.3, halo: 0.0007 });
-  const cam = camaraBase([50, -400, 26], [OZ.x, OZ.y, 300], 54, w, h);
+  const cam = camaraBase([36, -392, 10], [OZ.x, OZ.y, 320], 54, w, h);
   return { esc, atm: atmPozo(!!o.relampago), cam };
 }
