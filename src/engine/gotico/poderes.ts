@@ -18,6 +18,7 @@ import { createRaster, type Raster } from '../core/raster';
 import { rng, hashString } from '../core/rng';
 import { encodePng } from '../export/png';
 import { luzEfectosJson } from './luz_efectos';
+import { DEFS_DOOM, MEJORAS_DOOM, EFECTOS_DOOM } from './poderes_doom';
 
 // ---------------------------------------------------------------------------------------------------------------
 // tipos públicos
@@ -333,6 +334,20 @@ class Lienzo {
   cap3(a: V3, b: V3, ra: number, rb: number, c: C, al: number): void {
     const [xa, ya] = this.P(a), [xb, yb] = this.P(b);
     this.capsula(xa, ya, xb, yb, ra, rb, c, al);
+  }
+
+  /** imagen RGBA (alfa directa) con su esquina en (x0, y0): la luz suma color * alfa * k, la materia se compone encima */
+  imagen(x0: number, y0: number, w: number, h: number, rgba: ArrayLike<number>, luz: boolean, k = 1): void {
+    const bx = this.caja(x0, y0, x0 + w - 1, y0 + h - 1);
+    if (!bx) return;
+    for (let py = bx[1]; py <= bx[3]; py++)
+      for (let px = bx[0]; px <= bx[2]; px++) {
+        const s = ((py - y0) * w + (px - x0)) * 4, a = (rgba[s + 3] / 255) * k;
+        if (a <= 0.003) continue;
+        const c: C = [rgba[s] / 255, rgba[s + 1] / 255, rgba[s + 2] / 255], i = (py * LW + px) * 4;
+        if (luz) this.suma(i, c, a);
+        else this.sobre(i, c, Math.min(1, a));
+      }
   }
 
   /** pasa el búfer a RGBA (solo la parte sucia) */
@@ -895,6 +910,8 @@ interface Def {
   t: number;
   dir?: boolean;
   bucle?: boolean;
+  /** caja fija en el lienzo (si no, se mide): para cambiar el dibujo de un poder sin mover su celda ni su ancla */
+  caja?: { x0: number; y0: number; w: number; h: number };
   pinta: (c: Cx) => void;
 }
 
@@ -2698,7 +2715,11 @@ const DEFS: Def[] = [
     },
   },
 
+  // fuego de Doom (poderes_doom.ts): ids nuevos
+  ...DEFS_DOOM,
 ];
+// fuego de Doom en dos de siempre: mismo id, cuadros, celda y ancla (la caja fija es la que medían antes)
+for (const d of DEFS) { const m = MEJORAS_DOOM[d.id]; if (m) { d.pinta = m.pinta; d.caja = m.caja; } }
 
 // ---------------------------------------------------------------------------------------------------------------
 // pintar, medir, empaquetar
@@ -2737,7 +2758,7 @@ const MEDIDAS = new Map<string, { x0: number; y0: number; w: number; h: number }
 
 /** caja común de todos los cuadros (y direcciones) del efecto, en coordenadas del lienzo */
 function medida(d: Def, cuadros?: { img: Raster; ox: number; oy: number }[]): { x0: number; y0: number; w: number; h: number } {
-  const m = MEDIDAS.get(d.id);
+  const m = MEDIDAS.get(d.id) ?? d.caja;
   if (m) return m;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   const todos = cuadros ?? todosCrudos(d);
@@ -2837,6 +2858,9 @@ enVuelo, fogonazo al lanzar, impacto sugerido, sombra, prioridad). Ver luz_efect
 
 Ids nuevos (al lado de los de siempre, no reemplazan a nadie): virote, saeta_sagrada, saeta_veneno, impacto_rayo,
 impacto_veneno, impacto_sagrado, impacto_hueso, nova_sangre, maldicion_sombra, aura_furia.
+
+Fuego de Doom (el autómata de fuego_doom.ts horneado en los cuadros): ${EFECTOS_DOOM.join(', ')}.
+crater_ardiente ahora arde con fuego de Doom, con los mismos cuadros, celda y ancla de antes.
 `;
 
 /** Zip con una tira PNG por poder más poderes.json y LEEME.txt. */

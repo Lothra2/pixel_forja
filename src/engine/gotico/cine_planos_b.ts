@@ -8,6 +8,7 @@ import {
 import {
   CW, CH, CX, Toma, alumbrar, sombraVertical, granoOpaco, cielo, lomas, pintarConRuido, figura, figuraEsc, modelo, heroe, npc, barco, brillosAgua,
 } from './cine_toma';
+import { fuegoEnVentanas } from './cine_ventanas';
 
 /**
  * Pintores de los planos de los actos 4 a 6 (Hrimgard, la Herida, Ysmeral). Coordenadas de la capa de 1408 x 792.
@@ -402,7 +403,9 @@ function a5p4(t: Toma) {
   const Ca = t.capa('catedral', 1, 0.25), CaL = t.capa('catedral_luz', 2, 0.25, 'sumar', { anim: { tipo: 'latir', alfa: [0.55, 1], periodo_s: 2.6, notas: 'cada pico, un golpe de campana' } });
   const ca = catedralAhogada(Ca, 560, mar, 1.15, -0.06);
   for (let i = 0; i < CW * CH; i++) ca.ven.d[i] *= 0.55 + 0.45 * fbm((i % CW) / 5, Math.floor(i / CW) / 5, 2, 543);
-  pintar(Ca, ca.ven, [0.03, 0.09, 0.07], 1); brillo(CaL, ca.ven, [0.1, 0.36, 0.28], 0.45); brillo(CaL, desenfocada(ca.ven, 14), [0.1, 0.5, 0.38], 1);
+  pintar(Ca, ca.ven, [0.03, 0.09, 0.07], 1); brillo(CaL, ca.ven, [0.1, 0.36, 0.28], 0.12); brillo(CaL, desenfocada(ca.ven, 14), [0.1, 0.5, 0.38], 0.75);
+  // detrás de los vitrales arde fuego frío de ánimas (fuego de Doom horneado en una tira que empalma), no un cian plano
+  fuegoEnVentanas(t, 'catedral_fuego', 2.5, 0.25, ca.ven, { paleta: 'animas', semilla: 5401, hueco: 0.4, fondo: { c: [0.05, 0.26, 0.22], k: 0.22 }, alto_px: 46, k: 0.72 });
   // el agua que todavía le chorrea por los muros
   const ch = M(); for (let k = 0; k < 30; k++) chorreado(ch, 400 + k * 11, mar - 180 - (k % 5) * 30, 6, 160, 544 + k); for (let i = 0; i < CW * CH; i++) ch.d[i] *= ca.cuerpo.d[i]; pintar(Ca, ch, [0.15, 0.25, 0.24], 0.5);
   const ag = M(); for (let y = mar; y < CH; y++) for (let x = 0; x < CW; x++) ag.d[y * CW + x] = 1;

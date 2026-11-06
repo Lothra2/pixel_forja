@@ -5,6 +5,7 @@ import {
 } from './cine';
 import { llamas } from './siluetas';
 import { CW, CH, MX, MY, Toma } from './cine_toma';
+import { cuadrosHojaFuego } from './cine_fuego';
 import { PINTORES_A } from './cine_planos_a';
 import { PINTORES_B } from './cine_planos_b';
 import { PINTORES_C } from './cine_planos_c';
@@ -198,8 +199,16 @@ export function pintarPlano(clave: string, id: string): Toma {
 
 // ------------------------------------------------------------------ hojas de efectos
 export interface HojaFx { img: Raster; w: number; h: number; columnas: number; cuadros: number; fps: number; pivote: P2; notas: string }
-/** Fuego: 8 cuadros de 64 x 128 que se repiten (se suma). El pie de la llama está en (32, 120). */
+/**
+ * Fuego: 8 cuadros de 64 x 128 que se repiten (se suma). El pie de la llama está en (32, 120). Es fuego de Doom
+ * (cine_fuego.ts) con un resplandor que late con él: todos los planos que usan la hoja (fogatas, braseros, el farol de
+ * Vigdis) lo heredan sin cambiar nada.
+ */
 function hojaFuego(): Raster {
+  return grilla(cuadrosHojaFuego().map((L, f) => { halo(L, 32, 104, 30, [0.9, 0.35, 0.08], 0.42 + 0.08 * Math.sin((f / 8) * Math.PI * 2), 0.8, true); return aRaster(L); }), 8);
+}
+/** La hoja de antes (lenguas con máscaras), por si se quiere comparar. */
+export function hojaFuegoClasica(): Raster {
   const cuadros: Raster[] = [];
   for (let f = 0; f < 8; f++) {
     const L = lamina(64, 128), m = mascara(64, 128), n = mascara(64, 128);
@@ -304,6 +313,14 @@ function recorte(L: Lamina): { img: Lamina; x: number; y: number } | null {
 export function capasFinales(t: Toma): CapaFinal[] {
   const H = hojasFx(), out: CapaFinal[] = [];
   for (const c of [...t.capas].sort((a, b) => a.z - b.z)) {
+    if (c.cuadros) {
+      // tira de cuadros: una hoja en grilla (columnas que entren en 4096 px) con anim 'cuadros' a su fps
+      const cw = c.cuadros[0].w, ch = c.cuadros[0].h, n = c.cuadros.length, cols = Math.max(1, Math.min(n, Math.floor(4096 / cw))), filas = Math.ceil(n / cols);
+      const G = lamina(cw * cols, ch * filas);
+      c.cuadros.forEach((L, i) => { const ox = (i % cols) * cw, oy = Math.floor(i / cols) * ch; for (let y = 0; y < ch; y++) G.d.set(L.d.subarray(y * cw * 4, (y + 1) * cw * 4), ((oy + y) * G.w + ox) * 4); });
+      out.push({ id: c.id, img: G, x: c.x ?? 0, y: c.y ?? 0, w: cw, h: ch, paralaje: c.paralaje, mezcla: c.mezcla, soloSi: c.soloSi, anim: { tipo: 'cuadros', columnas: cols, cuadros: n, fps: c.fps ?? 12, w: cw, h: ch } });
+      continue;
+    }
     const r = c.opaca ? { img: c.L, x: 0, y: 0 } : recorte(c.L);
     if (r) out.push({ id: c.id, img: r.img, x: r.x, y: r.y, w: r.img.w, h: r.img.h, paralaje: c.paralaje, mezcla: c.mezcla, anim: c.anim, soloSi: c.soloSi, opaca: c.opaca });
     t.fx.filter((f) => f.despues_de === c.id).forEach((f, i) => {
@@ -345,6 +362,12 @@ function celda(n: NombreHoja, cuadro: number): Lamina {
   }
   return c;
 }
+/** El cuadro n de una capa que es una tira (hoja en grilla con anim 'cuadros'). */
+function celdaTira(c: CapaFinal, n: number): Lamina {
+  const a = c.anim as { columnas: number; w: number; h: number }, L = lamina(a.w, a.h), ox = (n % a.columnas) * a.w, oy = Math.floor(n / a.columnas) * a.h;
+  for (let y = 0; y < a.h; y++) L.d.set(c.img!.d.subarray(((oy + y) * c.img!.w + ox) * 4, ((oy + y) * c.img!.w + ox + a.w) * 4), y * a.w * 4);
+  return L;
+}
 /**
  * Un plano compuesto en la pantalla base (1280 x 720) en el segundo t, como lo dibuja el juego, con la viñeta y la
  * franja oscura de la narración (para juzgarlo). Con `valor` se elige la variante de una elección.
@@ -354,7 +377,7 @@ export function componerPlano(capas: CapaFinal[], p: Plano, o: { t?: number; val
   const valor = o.valor ?? (p.eleccion ? ELECCIONES[p.eleccion][0] : undefined);
   for (const [i, c] of capas.entries()) {
     if (c.soloSi && c.soloSi !== valor) continue;
-    const img = c.img ?? celda(c.hoja!, Math.floor(tt * Number(c.anim?.fps ?? 10) + i * 3) % hojasFx()[c.hoja!].cuadros);
+    const img = c.img && c.anim?.tipo === 'cuadros' ? celdaTira(c, Math.floor(tt * Number(c.anim.fps ?? 12)) % Number(c.anim.cuadros)) : c.img ?? celda(c.hoja!, Math.floor(tt * Number(c.anim?.fps ?? 10) + i * 3) % hojasFx()[c.hoja!].cuadros);
     dibujar(out, img, c.x, c.y, c.w, c.h, c.paralaje, cam, c.mezcla === 'sumar', c.alfa ?? 1);
   }
   const v = o.vineta ?? vinetaCine();
@@ -417,5 +440,7 @@ export const LEEME_CINE = `cinematicas/  las cinemáticas de cierre de cada acto
               capas (recortadas: x, y, w, h en la capa de 1408x792 cuya pantalla base va en 64, 36), paralaje, mezcla y
               animación; cámara, fundidos, narración (es, en) y partículas del juego. cinematicas/fx/ son hojas de
               sprites compartidas (fuego, goteo de sangre y de agua, humo, cuervos) que las capas usan con anim
-              "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0.
+              "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0. El fuego (la hoja fx/fuego.png y
+              las tiras de fuego detrás de vitrales, como catedral_fuego en acto_5/p4_ysmeral) es fuego de Doom
+              horneado: anim "cuadros" con su hoja en grilla (columnas, cuadros, fps, w, h), se suma y empalma.
 `;

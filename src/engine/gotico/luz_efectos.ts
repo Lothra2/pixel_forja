@@ -21,6 +21,8 @@
  * Todo es determinista. `luzEfectosJson()` da la copia para el juego (datos/luz_efectos.json, un test la mantiene igual).
  */
 
+import { curvaDoom } from './poderes_doom';
+
 export interface LuzEfecto {
   color: string;
   radio: number;
@@ -95,12 +97,13 @@ export const LUZ_EFECTO: Record<string, LuzEfecto> = {
   bola_fuego: proyectil(COL.fuego, 230, 1, 8, 'explosion_fuego', { parpadeo: 0.16, altura: 44 }),
   explosion_fuego: golpe({ color: COL.fuego, radio: 270, intensidad: 1, altura: 30, parpadeo: 0.08 }, 14, 0, 0.6),
   muro_llamas: { color: COL.fuego, radio: 150, intensidad: 0.75, curva: pulso(10, 0.82, 0.1, 2), altura: 30, parpadeo: 0.18, sombra: true, prioridad: 2 },
+  // crater_ardiente arde con fuego de Doom: su curva es el calor medio de la llama en cada cuadro
   meteoro: {
     color: COL.fuego, radio: 300, intensidad: 1, altura: 34, parpadeo: 0.1, sombra: true, prioridad: 0,
     // cae (la luz baja con la roca: 0.25 a 0.6), pega en el cuadro 8 y se apaga
     curva: [0.22, 0.26, 0.3, 0.35, 0.41, 0.48, 0.55, 0.62, 1, 0.92, 0.74, 0.56, 0.42, 0.3, 0.2, 0.12, 0.06, 0.02],
   },
-  crater_ardiente: { color: COL.brasa, radio: 160, intensidad: 0.6, curva: pulso(10, 0.8, 0.15, 1), altura: 10, parpadeo: 0.2, sombra: false, prioridad: 2 },
+  crater_ardiente: { color: COL.brasa, radio: 160, intensidad: 0.6, curva: curvaDoom('crater_ardiente'), altura: 10, parpadeo: 0.14, sombra: false, prioridad: 2 },
   aliento_infernal: { color: COL.fuego, radio: 230, intensidad: 0.9, curva: pulso(8, 0.86, 0.12, 2), altura: 40, parpadeo: 0.2, sombra: true, prioridad: 1 },
   // ---- hielo
   saeta_hielo: proyectil(COL.hielo, 160, 0.7, 6, 'estallido_esquirlas', { parpadeo: 0.05 }),
@@ -178,10 +181,22 @@ export const LUZ_EFECTO: Record<string, LuzEfecto> = {
   nova_sangre: golpe({ color: COL.sangre, radio: 240, intensidad: 0.8, altura: 20, parpadeo: 0.05, mezcla: 'normal' }, 14, 1, 0.7),
   maldicion_sombra: { color: COL.sombra, radio: 160, intensidad: 0.55, curva: campana(14, 0.2, 0.6), altura: 24, sombra: false, prioridad: 2, mezcla: 'normal' },
   aura_furia: { color: '#ff4a2a', radio: 150, intensidad: 0.55, curva: pulso(12, 0.8, 0.18, 2), altura: 24, parpadeo: 0.1, sombra: false, prioridad: 3 },
+  // ---- fuego de Doom (poderes_doom.ts): la curva es el calor medio de la llama en cada cuadro, así la luz y las
+  // sombras tiemblan con la llama horneada
+  muro_infierno: { color: COL.brasa, radio: 190, intensidad: 0.85, curva: curvaDoom('muro_infierno'), altura: 40, parpadeo: 0.1, sombra: true, prioridad: 2 },
+  cerco_llamas: { color: COL.brasa, radio: 230, intensidad: 0.8, curva: curvaDoom('cerco_llamas'), altura: 24, parpadeo: 0.1, sombra: true, prioridad: 2 },
+  suelo_ardiente: { color: COL.brasa, radio: 170, intensidad: 0.6, curva: curvaDoom('suelo_ardiente'), altura: 10, parpadeo: 0.12, sombra: false, prioridad: 2 },
+  lluvia_brasas: { color: COL.brasa, radio: 240, intensidad: 0.85, curva: curvaDoom('lluvia_brasas'), altura: 20, parpadeo: 0.1, sombra: true, prioridad: 1 },
+  pilar_infernal: { color: COL.fuego, radio: 300, intensidad: 1, curva: curvaDoom('pilar_infernal'), altura: 110, parpadeo: 0.06, sombra: true, prioridad: 0 },
+  llanto_animas: { color: '#4fd2cc', radio: 250, intensidad: 0.85, curva: curvaDoom('llanto_animas'), altura: 16, parpadeo: 0.08, sombra: true, prioridad: 0 },
+  llama_corona_fria: { color: '#cddcff', radio: 140, intensidad: 0.55, curva: curvaDoom('llama_corona_fria'), altura: 50, parpadeo: 0.05, sombra: false, prioridad: 3 },
 };
 
 /** Ids nuevos de esta tanda (no reemplazan a nadie: el juego los usa cuando los mapee). */
 export const EFECTOS_NUEVOS = ['virote', 'saeta_sagrada', 'saeta_veneno', 'impacto_rayo', 'impacto_veneno', 'impacto_sagrado', 'impacto_hueso', 'nova_sangre', 'maldicion_sombra', 'aura_furia'] as const;
+
+/** Ids nuevos con fuego de Doom (poderes_doom.ts). */
+export { EFECTOS_DOOM } from './poderes_doom';
 
 /** Color de la luz como [r, g, b] 0..255 (lo que usa `Luz.c` en el juego). */
 export function rgbLuz(id: string): [number, number, number] {
