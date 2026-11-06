@@ -69,6 +69,8 @@ export function dibujarClimaPfx(ctx: CanvasRenderingContext2D, j: Juego, W: numb
     const tw = 640, th = 360, alfa = ALFA[id] ?? 0.4;
     let dibujo = false;
     for (let ty = 0, fy = 0; ty < H; ty += th, fy++) for (let tx = 0, fx = 0; tx < W; tx += tw, fx++) {
+      // las hojas, en damero: la mitad de densidad (sueltas, no se nota el corte)
+      if (id === 'fx_hojas_caen' && (fx + fy) % 2) continue;
       const fase = id === 'fx_niebla' || id === 'fx_rayos_luz' ? 0 : (fx * 7 + fy * 3) * 0.37;
       if (dibujarPfx(ctx, id, t + fase, tx, ty, { tesela: true, alfa })) dibujo = true;
     }
