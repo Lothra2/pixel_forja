@@ -73,6 +73,7 @@ export function hornear(pl: Plano3D, a: Armado, fondo: Capas, frente?: Capas): H
     }
     for (const z of pl.zonas ? pl.zonas(a) : [{ caja: [0, 0, w - 1, h - 1] as [number, number, number, number], escala: 1 }]) {
       const e = z.escala, x0 = Math.max(0, Math.floor(z.caja[0])), y0 = Math.max(0, Math.floor(z.caja[1])), x1 = Math.min(w - 1, Math.ceil(z.caja[2])), y1 = Math.min(h - 1, Math.ceil(z.caja[3]));
+      if (x1 - x0 < 8 || y1 - y0 < 8) continue; // la zona cae fuera del cuadro
       const tw = Math.ceil((x1 - x0 + 1) / e), th = Math.ceil((y1 - y0 + 1) / e);
       out.fuegos.push({ x: x0, y: y0, escala: e, fps, cuadros: difs.map((d) => {
         const r = createRaster(tw, th);

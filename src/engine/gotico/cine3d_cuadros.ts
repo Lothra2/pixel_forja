@@ -22,6 +22,7 @@ export function tiraDoom(tipo: TipoFuego, semilla: number, nf = NF): Lamina[] {
   const [an, al, forma, altura, viento] = (tipo === 'techo' ? [34, 120, { tipo: 'llama', ancho: 0.5, afinar: 0.35 }, 0.6, 0.16]
     : tipo === 'puerta' ? [30, 54, { tipo: 'puerta', ojiva: true }, 0.92, 0.04]
       : tipo === 'ventana' ? [16, 36, { tipo: 'llama', ancho: 0.6, afinar: 0.4 }, 0.7, 0.1]
+        : tipo === 'hoguera' ? [30, 100, { tipo: 'pira', ancho: 24, alto: 7 }, 0.7, 0.12]
         : [12, 28, { tipo: 'llama', ancho: 0.55, afinar: 0.5 }, 0.75, 0.1]) as [number, number, D.Forma, number, number];
   const f = D.crearFuego({ ancho: an, alto: al, forma, paleta: 'infierno', semilla, decay: D.decayPara(altura, al), viento, rafagas: 0.25, turbulencia: 0.5, ruido: 0.45, humo: 0, margen: 2, brillo: 1.25, pegada: 0.6 });
   D.pasos(f, 80);
@@ -50,11 +51,11 @@ function vitrales(c: Capas): { x: number; y: number; cuadros: Lamina[] } | null 
 const latido = (t: number) => { const u = ((t * FPS) / NF) * Math.PI * 2; return 0.9 + 0.06 * Math.sin(u) + 0.04 * Math.sin(u * 3 + 1) + 0.03 * Math.sin(u * 5 + 2); };
 const az = (i: number, k: number) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
 /** Brasas que suben del incendio (suman), en bucle de NF cuadros. */
-function brasas(t: number): Particula[] {
+function brasas(t: number, centro?: V3, n = 260, abre = 260, k = 1): Particula[] {
   const ps: Particula[] = [], naranja = hexLin('#ff7a2a'), P = NF / FPS;
-  for (let i = 0; i < 260; i++) {
-    const base = deCat((az(i, 1) - 0.5) * 200, (az(i, 2) - 0.5) * 320, 240 + az(i, 3) * 100);
-    const vida = P * (1 + Math.floor(az(i, 4) * 3)), f = ((t + az(i, 5) * vida) % vida) / vida, sube = f * (420 + az(i, 6) * 520);
+  for (let i = 0; i < n; i++) {
+    const base: V3 = centro ? [centro[0] + (az(i, 1) - 0.5) * abre * 0.4, centro[1] + (az(i, 2) - 0.5) * abre * 0.4, centro[2] + 30 + az(i, 3) * 40] : deCat((az(i, 1) - 0.5) * 200, (az(i, 2) - 0.5) * 320, 240 + az(i, 3) * 100);
+    const vida = P * (1 + Math.floor(az(i, 4) * 3)), f = ((t + az(i, 5) * vida) % vida) / vida, sube = f * (420 + az(i, 6) * 520) * k;
     ps.push({ p: [base[0] + sube * 0.45 + Math.sin(f * 6.28 + i) * 8, base[1] + sube * 0.1, base[2] + sube], r: 0.6 + az(i, 7) * 0.9, c: escalar(naranja, 5 * Math.sin(f * Math.PI) * (0.3 + az(i, 8))), a: 1, suma: true, v: [24, 5, 70] });
   }
   return ps;
@@ -62,10 +63,12 @@ function brasas(t: number): Particula[] {
 type ArmadoValle = Armado & { fuegos: ReturnType<typeof armarValle>['fuegos'] };
 function fuegoValle(a: ArmadoValle, c: Capas, t: number): Extras {
   const fi = Math.round(t * FPS) % NF;
-  const carteles: Cartel[] = a.fuegos.map((f) => ({ p: f.p, ancho: f.ancho, alto: f.alto, lam: tiraDoom(f.tipo, f.semilla)[(fi + f.semilla * 5) % NF], k: f.tipo === 'antorcha' ? 2 : f.tipo === 'puerta' ? 2.4 : f.tipo === 'ventana' ? 1.8 : 2.1, fondo: f.tipo === 'antorcha' ? 6 : f.ancho }));
+  const carteles: Cartel[] = a.fuegos.map((f) => ({ p: f.p, ancho: f.ancho, alto: f.alto, lam: tiraDoom(f.tipo, f.semilla)[(fi + f.semilla * 5) % NF], k: f.tipo === 'antorcha' ? 2 : f.tipo === 'hoguera' ? 2.6 : f.tipo === 'puerta' ? 2.4 : f.tipo === 'ventana' ? 1.8 : 2.1, fondo: f.tipo === 'antorcha' ? 6 : f.ancho }));
   // la catedral arde (muchas lenguas): fuego detrás de los vitrales y brasas que suben
-  const arde = a.fuegos.length > 3, vt = arde ? vitrales(c) : null;
-  return { flick: latido(t), carteles, pantalla: vt ? [{ lam: vt.cuadros[fi], x: vt.x, y: vt.y, k: 3.2 }] : [], particulas: arde ? brasas(t) : [] };
+  const arde = a.fuegos.length > 3, vt = arde ? vitrales(c) : null, hog = a.fuegos.find((f) => f.tipo === 'hoguera');
+  const ps = arde && !hog ? brasas(t) : [];
+  if (hog) ps.push(...brasas(t, hog.p, 160, 40, 0.5));
+  return { flick: latido(t), carteles, pantalla: vt ? [{ lam: vt.cuadros[fi], x: vt.x, y: vt.y, k: 3.2 }] : [], particulas: ps };
 }
 /** Zonas que se mueven: la catedral si arde (con sus brasas) y cada fuego suelto con su luz alrededor; si se pisan, una sola. */
 function zonasValle(a: Armado) {
@@ -108,6 +111,6 @@ export const PLANOS_VALLE: Plano3D[] = [
   planoValle('i04_cielo', 'i04', { t: 0, exposicion: 1.7, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.45, umbral: 0.8 }, grado: gradoNoche }, 'nieve', false),
   planoValle('i05_brasa', 'i05', { t: 0, exposicion: 1.3, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.5, umbral: 0.75 }, grado: gradoNoche }, 'brasas', true),
   planoValle('i06_impacto', 'i06', REV_NOCHE, 'ceniza', true),
-  planoValle('i09_fuego', 'i09', { ...REV_NOCHE, exposicion: 1.1, bloom: { k: 0.25, umbral: 0.85 } }, 'ceniza', true),
-  planoValle('i10_tu', 'i10', { ...REV_NOCHE, exposicion: 1.35 }, 'brasas', true),
+  planoValle('i09_fuego', 'i09', { ...REV_NOCHE, exposicion: 1.15, bloom: { k: 0.3, umbral: 0.85 } }, 'ceniza', true),
+  planoValle('i10_tu', 'i10', { ...REV_NOCHE, exposicion: 1.25, derrame: { k: 0.6, r: 5 } }, 'brasas', true),
 ];
