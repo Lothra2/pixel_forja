@@ -805,6 +805,14 @@ function mazmorra(def: DefZona, semilla: number): Zona {
     marca();
     orden.push(c);
   }
+  // los jefes grandes pelean en una sala con aire: la del fondo crece (en bloques de 5 casillas) alrededor de su centro
+  const SALA_JEFE: Record<string, number> = { senor_demonio: 7, aun_saar: 7, dragon_oseo: 6, campana_ahoga: 6, madre_cienaga: 6, rey_escarcha: 6, abadesa: 5, caballero_abismo: 5, verdugo: 5, rey_sin_sombra: 5, gigante_helado: 5 };
+  const lado = def.jefe ? SALA_JEFE[def.jefe] : 0;
+  if (lado) {
+    const c = orden[orden.length - 1], cx = c[0] + c[2] / 2, cy = c[1] + c[3] / 2;
+    const w = Math.min(tw - 2, Math.max(c[2], lado)), h = Math.min(th - 2, Math.max(c[3], lado));
+    c[0] = Math.max(1, Math.min(tw - 1 - w, Math.round(cx - w / 2))); c[1] = Math.max(1, Math.min(th - 1 - h, Math.round(cy - h / 2))); c[2] = w; c[3] = h;
+  }
   const sala = new Uint8Array(tw * th);
   for (const [x, y, w, h] of orden) for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) { suelo[j * tw + i] = 1; sala[j * tw + i] = 1; }
   const manchas = ruido2(r, tw, th, 3);

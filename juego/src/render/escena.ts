@@ -1,7 +1,7 @@
 // Dibuja la zona: pisos, manchas, objetos y personajes por profundidad, poderes, partículas, luz, niebla y clima.
 import { nuevoCuadroSombras } from './luces';
 import { ctx, W, H } from '../nucleo/lienzo';
-import { esquivarHud, etiquetasMundo } from '../ui/hud_rects';
+import { esquivarHud, etiquetasMundo, hud } from '../ui/hud_rects';
 import { NPCS } from '../datos/npcs';
 import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
@@ -115,7 +115,7 @@ function armaViva(q: Cuadro, x: number, y: number, elem: string, t: number) {
   }
 }
 
-let camAlzada = 0;
+let camAlzada = 0, camJefe = 0;
 /** La puerta abierta de la catedral: un cono de luz roja que sale sobre el piso hacia +y y brasas y ceniza que salen y suben. */
 function puertaCatedral(j: Juego, dt: number, t: number) {
   for (const sa of j.zona.salidas) {
@@ -157,6 +157,20 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   }
   camAlzada += (alzar - camAlzada) * Math.min(1, dt * 2.5);
   cam.x = (h.x - h.y) * 16 + sx; cam.y = (h.x + h.y) * 8 + sy - camAlzada;
+  // cámara de jefe: entre el héroe y el jefe, con el jefe entero debajo de su barra y el héroe arriba del HUD
+  const jf = j.jefe, enPelea = !!jf && !jf.muerto && Math.hypot(jf.x - h.x, jf.y - h.y) < 16 && foco.k <= 0;
+  camJefe += ((enPelea ? 1 : 0) - camJefe) * Math.min(1, dt * 1.8);
+  if (camJefe > 0.002 && jf) {
+    const q0 = cuadrosMonstruo(jf.def.sprite, 'quieto', 's')[0], alto = (q0?.ay ?? 120) * (jf.escala ?? 1);
+    const bx = (jf.x - jf.y) * 16, by = (jf.x + jf.y) * 8, hx = (h.x - h.y) * 16, hy = (h.x + h.y) * 8, c0 = (H - 96) / 2;
+    const barra = hud.jefe ? hud.jefe[1] + hud.jefe[3] : 70;
+    // y de cámara: el jefe con los pies a (barra + alto + 16) como mínimo; el héroe nunca más abajo que H - 170
+    const maxJefe = by + c0 - (barra + alto + 16), minHeroe = hy + c0 - (H - 170);
+    const yMedio = (hy + by) / 2 - H * 0.08;
+    const ty = Math.max(minHeroe, Math.min(maxJefe, yMedio));
+    const k = camJefe * camJefe * (3 - 2 * camJefe);
+    cam.x += ((hx + bx) / 2 + sx - cam.x) * k; cam.y += (ty + sy - cam.y) * k;
+  }
   if (foco.k > 0) { const k = foco.k * foco.k * (3 - 2 * foco.k); cam.x += ((foco.x - foco.y) * 16 - (h.x - h.y) * 16) * k; cam.y += ((foco.x + foco.y) * 8 - 60 - (h.x + h.y) * 8 + camAlzada) * k; }
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   picks = [];
@@ -461,7 +475,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // zona de clic
   if (!e.muerto && e.tipo !== 'heroe') picks.push({ tipo: e.tipo === 'npc' ? 'npc' : 'monstruo', ref: e, x0: px - q.ax * esc + q.w * esc * 0.2, y0: py - q.ay * esc, x1: px - q.ax * esc + q.w * esc * 0.8, y1: py + 6, prof: e.x + e.y });
   // frase del jefe
-  if (e.tipo === 'monstruo' && m.habla) { ctx.font = 'italic 13px Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText(m.habla, px + 1, py - 95 * esc + 1); ctx.fillStyle = '#ff9060'; ctx.fillText(m.habla, px, py - 95 * esc); ctx.textAlign = 'left'; }
+  if (e.tipo === 'monstruo' && m.habla && m !== j.jefe) { ctx.font = 'italic 13px Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText(m.habla, px + 1, py - 95 * esc + 1); ctx.fillStyle = '#ff9060'; ctx.fillText(m.habla, px, py - 95 * esc); ctx.textAlign = 'left'; }
 }
 
 const PILAR: Record<string, string> = { magico: 'magico', raro: 'raro', conjunto: 'conjunto', unico: 'unico', legendario: 'legendario' };

@@ -371,7 +371,15 @@ export function dibujarArriba(j: Juego, encima: Monstruo | null) {
     const k = Math.round((j.jefe.vida / j.jefe.vidaMax) * 100);
     const c = cacheRaster(`jefe${j.jefe.id}_${k}_${IDI}`, () => barraJefe(TT(j.jefe!.nombre), k / 100));
     if (E.tactil) { const r = rectJefeTactil(c.width, c.height); ctx.drawImage(c, r[0], r[1], r[2], r[3]); hud.jefe = r; }
-    else ctx.drawImage(c, Math.round(W / 2 - c.width / 2), 8);
+    else { ctx.drawImage(c, Math.round(W / 2 - c.width / 2), 8); hud.jefe = [Math.round(W / 2 - c.width / 2), 8, c.width, c.height]; }
+    // lo que dice el jefe: debajo de su barra, con fondo oscuro (encima del cuerpo no se leía)
+    const habla = (j.jefe as any).habla as string | undefined;
+    if (habla) {
+      const [bx, by, bw, bh] = hud.jefe!, tam = E.tactil ? 13 : 14, lin = envolver(habla, Math.min(W - 40, Math.max(bw, 420)), tam).slice(0, 2);
+      const anchoC = Math.max(...lin.map((l) => ancho(l, tam))) + 28, alto = lin.length * tam * 1.35 + 12, x0 = bx + bw / 2 - anchoC / 2, y0 = by + bh + 6;
+      ctx.save(); ctx.fillStyle = 'rgba(8,5,4,0.78)'; ctx.fillRect(x0, y0, anchoC, alto); ctx.strokeStyle = 'rgba(160,90,50,0.6)'; ctx.strokeRect(x0 + 0.5, y0 + 0.5, anchoC - 1, alto - 1); ctx.restore();
+      lin.forEach((l, i) => texto(l, bx + bw / 2, y0 + 6 + tam + i * tam * 1.35 - 3, { alin: 'center', tam, color: '#ffb080' }));
+    }
   } else if (encima && !encima.muerto) {
     const m = encima, w = 220, x = W / 2 - w / 2, y = 10;
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(x, y, w, 30);
