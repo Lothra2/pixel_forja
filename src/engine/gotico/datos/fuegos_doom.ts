@@ -95,7 +95,9 @@ export const PRESETS: Record<ClaseFuego, Preset> = {
   caldero: P({ forma: 'boca', fuente: 0.75, alto: 0.6, humo: 0.22, mueve: 0.3, brasas: 1, brillo: 1.75 }),
   hogar: P({ forma: 'boca', fuente: 0.75, alto: 0.7, humo: 0.22, mueve: 0.35, brasas: 1.5, brillo: 1.75 }),
   columna: P({ forma: 'llama', fuente: 0.6, alto: 0.8, humo: 0.3, turbulencia: 0.4, ruido: 0.35, rafagas: 0.1, mueve: 0.5, brasas: 5, brillo: 1.9, afinar: 0.5 }),
-  vitral: P({ celda: 2, forma: 'mapa', fuente: 1, alto: 1, humo: 0, turbulencia: 0.5, ruido: 0.5, rafagas: 0.1, mueve: 0.35, brasas: 0, sombra: false, intensidad: 0.8, brillo: 1, pegada: 0 }),
+  // vitral: la luz tiñe de cerca y no blanquea la obra (con 260 px e intensidad 0.8 las tres piezas abrían un hueco en la
+  // oscuridad de toda la catedral y la piedra se veía de otro juego); el foco fuerte es la puerta
+  vitral: P({ celda: 2, forma: 'mapa', fuente: 1, alto: 1, humo: 0, turbulencia: 0.5, ruido: 0.5, rafagas: 0.1, mueve: 0.35, brasas: 0, sombra: false, intensidad: 0.45, brillo: 1, pegada: 0 }),
   puerta: P({ celda: 3, forma: 'puerta', fuente: 1, alto: 1, humo: 0.3, turbulencia: 0.45, ruido: 0.35, mueve: 0.4, brasas: 3, sombra: true, intensidad: 1, brillo: 1.3, pegada: 0.5 }),
 };
 
@@ -137,6 +139,8 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 const semillaDe = (s: string) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return (h >>> 0) % 100000; };
 
 /** El fuego de Doom de una variante medida. */
+/** Radio de la luz de los vitrales antes del ×1.3 del juego: 115 → 150 px. */
+const RADIO_VITRAL = 115;
 export function specFuego(clave: string, medida: MedidaFuego, celdaForzada?: number): FuegoMundoDoom[] {
   let m = medida;
   const [id] = clave.split('|');
@@ -155,7 +159,7 @@ export function specFuego(clave: string, medida: MedidaFuego, celdaForzada?: num
       forma: { tipo: 'mascara', archivo: `fuegos_doom/${clave.replace('|', '_')}.png`, caja: v.caja, relleno: 0.22 },
       // las llamas suben ~64 px: lo alto de un ventanal
       decay: r2(1 + (2 * (CALOR_MAX - 10)) / (64 / c)), viento: 0, rafagas: pr.rafagas, turbulencia: pr.turbulencia, ruido: pr.ruido, humo: 0, hueco: 0, brillo: pr.brillo, pegada: pr.pegada,
-      luz: luzBase('infierno', pr, 0), brasas: 0, mezcla: 'sumar', semilla: semillaDe(clave),
+      luz: luzBase('infierno', pr, 0, RADIO_VITRAL), brasas: 0, mezcla: 'sumar', semilla: semillaDe(clave),
     });
     if (m.puerta) {
       const pp = PRESETS.puerta, [px, py, pw, ph] = m.puerta, gw = Math.round(pw / pp.celda) + 2, gh = Math.round(ph / pp.celda);

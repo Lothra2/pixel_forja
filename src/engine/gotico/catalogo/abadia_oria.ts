@@ -59,6 +59,34 @@ function sillarIrregular(la: number, al: number) {
     return s;
   };
 }
+/**
+ * Humedad de la piedra a la intemperie (lo que la sienta en el camposanto): el agua que sube del piso por capilaridad
+ * (una franja oscura de borde irregular), manchas grandes de humedad que rompen los paños lisos, chorreados verticales
+ * de mugre que bajan con la lluvia y lunares de liquen. Devuelve un ajuste de brillo (negativo oscurece).
+ */
+function humedad(p: V3, n: V3) {
+  const x = p[0] + p[1] * 0.7;
+  // capilaridad: hasta 22-40 unidades, más alta en las esquinas metidas (el ruido lo varía)
+  const zc = 22 + ruido(x * 0.05, 4, 1) * 18, cap = Math.max(0, 1 - p[2] / zc);
+  let s = -cap * cap * 0.34 - (p[2] < 3 ? 0.08 : 0);
+  // manchas de humedad: ruido bajo que no sigue las hiladas
+  s += (ruido(p[0] * 0.022 + 3, p[1] * 0.022, p[2] * 0.018) - 0.5) * 0.3;
+  if (Math.abs(n[2]) < 0.7) {
+    // chorreados: vetas largas y finas (ruido estirado en z), más marcadas arriba de la franja húmeda
+    const u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0];
+    const v = ruido(u * 0.55, 11, p[2] * 0.012), w = ruido(u * 1.6, 5, p[2] * 0.03);
+    if (v > 0.6) s -= (v - 0.6) * 0.75 * (0.6 + w * 0.6);
+  } else s -= 0.05; // lo de arriba guarda el agua (cornisas, taludes): más oscuro
+  // liquen y erosión en lunares chicos
+  const lq = ruido(p[0] * 0.9, p[1] * 0.9, p[2] * 0.9);
+  if (lq > 0.76) s -= (lq - 0.76) * 0.9;
+  return s;
+}
+/** Sillería mojada: la hilada de siempre con las juntas más suaves (de lejos no se lee como ladrillo nuevo) y la humedad encima. */
+function sillarMojado(la: number, al: number) {
+  const base = sillarIrregular(la, al);
+  return (p: V3, n: V3) => { const s = base(p, n); return (s < -0.3 ? -0.2 + (s + 0.36) * 0.5 : s * 0.72) + humedad(p, n); };
+}
 /** Pizarra en hiladas: la sombra bajo cada hilada, juntas corridas, tejas de tono desparejo y alguna que falta. */
 function pizarras(paso = 2.8, ancho = 4.4) {
   return (p: V3, n: V3) => {
@@ -73,12 +101,18 @@ function pizarras(paso = 2.8, ancho = 4.4) {
     return s;
   };
 }
-M.abo_sillar = { rampa: ['#0d1014', '#161a21', '#20252e', '#2b313c', '#373e4b', '#444c5b', '#535c6c', '#646d7e', '#778194'], ruido: 0.22, escala: 0.2, patron: sillarIrregular(10, 5) };
-M.abo_sillar_grueso = { rampa: ['#0d1014', '#161a21', '#20252e', '#2b313c', '#373e4b', '#444c5b', '#535c6c', '#646d7e', '#778194'], ruido: 0.24, escala: 0.18, patron: sillarIrregular(13, 6.5) };
-M.abo_labra = { rampa: ['#0c0e12', '#151820', '#1f232c', '#2a2f3a', '#363c48', '#434a58', '#525a6a', '#636b7c'], ruido: 0.26, escala: 0.25, patron: (p) => -Math.max(0, 1 - p[2] / 16) * 0.18 + (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.15) > 0.7 ? -0.12 : 0) };
-M.abo_estatua = { rampa: ['#0d0f12', '#171a1f', '#22262d', '#2e333b', '#3b414b', '#4a515c', '#5b636e', '#6e7682'], ruido: 0.28, escala: 0.3, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.9) > 0.68 ? -0.14 : 0) };
-M.abo_pizarra = { rampa: ['#07080b', '#0d0f14', '#13161d', '#1a1e27', '#222733', '#2b313e', '#353c4b'], ruido: 0.18, escala: 0.25, patron: pizarras() };
-M.abo_plomo = { rampa: ['#0b0d10', '#13161b', '#1c2027', '#262b34', '#313742', '#3d4451', '#4b5361'], ruido: 0.2, escala: 0.2, brillo: 0.25, patron: (p, n) => { const u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0]; return (((u % 5) + 5) % 5 < 0.6 ? -0.25 : 0) + (ruido(p[0] * 0.2, p[1] * 0.2, p[2] * 0.05) - 0.5) * 0.25; } };
+/**
+ * La piedra de la catedral es la del camposanto: gris neutro que se va a verde oliva y a pardo en lo oscuro (lo mojado,
+ * el musgo y la mugre caen en esos tonos solos), con el mismo rango de valores que las lápidas y los mausoleos
+ * (medido contra `abo_lapidas`, `cem2_mausoleo_gotico`, `cem_mausoleo` y `cem2_capilla_ruinas`) y un brillo húmedo leve.
+ */
+const PIEDRA_MOJADA = ['#0e0f0e', '#1d201b', '#2c302a', '#3b4039', '#4b5048', '#5b6057', '#6b6f65', '#7c7f74', '#8e9085'];
+M.abo_sillar = { rampa: PIEDRA_MOJADA, ruido: 0.2, escala: 0.2, brillo: 0.12, patron: sillarMojado(10, 5) };
+M.abo_sillar_grueso = { rampa: PIEDRA_MOJADA, ruido: 0.22, escala: 0.18, brillo: 0.12, patron: sillarMojado(13, 6.5) };
+M.abo_labra = { rampa: ['#0f100f', '#1f221d', '#2e322c', '#3e423b', '#4e524a', '#5f635a', '#70746a', '#82857a'], ruido: 0.24, escala: 0.25, brillo: 0.1, patron: (p, n) => (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.15) > 0.7 ? -0.12 : 0) + humedad(p, n) * 0.8 };
+M.abo_estatua = { rampa: ['#100f0e', '#201f1c', '#302f2b', '#403f3a', '#51504a', '#62605a', '#73716a', '#85827a'], ruido: 0.28, escala: 0.3, patron: (p, n) => (ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.9) > 0.68 ? -0.14 : 0) + humedad(p, n) * 0.6 };
+M.abo_pizarra = { rampa: ['#0c0d0e', '#18191b', '#242629', '#303337', '#3d4045', '#4b4e53', '#5a5d62', '#6a6d71'], ruido: 0.18, escala: 0.25, patron: pizarras() };
+M.abo_plomo = { rampa: ['#0e0f10', '#1b1d1f', '#282b2d', '#35393b', '#43474a', '#52575a', '#62676a'], ruido: 0.2, escala: 0.2, brillo: 0.25, patron: (p, n) => { const u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0]; return (((u % 5) + 5) % 5 < 0.6 ? -0.25 : 0) + (ruido(p[0] * 0.2, p[1] * 0.2, p[2] * 0.05) - 0.5) * 0.25; } };
 M.abo_madera_quemada = { rampa: ['#090706', '#110c0a', '#1a130f', '#241a14', '#30231a', '#3d2d21'], ruido: 0.4, escala: 0.5, patron: (p) => (ruido(p[0] * 0.8, p[1] * 0.8, p[2] * 0.8) > 0.66 ? -0.2 : 0) };
 M.abo_madera = { rampa: ['#0e0b09', '#18130f', '#231c16', '#2f261d', '#3b3025', '#493b2e'], ruido: 0.3, escala: 0.35, patron: (p, n) => { const u = Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0]; return ((((u % 4) + 4) % 4) < 0.5 ? -0.25 : 0) + (ruido(u * 0.8, p[2] * 0.06, 2) - 0.5) * 0.3; } };
 M.abo_corteza = { rampa: ['#09090a', '#111113', '#1a1a1d', '#242427', '#2f2f33', '#3b3b40', '#48474d', '#56555b'], ruido: 0.45, escala: 0.35, patron: (p) => (ruido(p[0] * 0.75, p[1] * 0.75, p[2] * 0.05) - 0.5) * 0.55 - (ruido(p[0] * 2.2, p[1] * 2.2, p[2] * 0.3) > 0.72 ? 0.18 : 0) };
@@ -94,6 +128,16 @@ M.abo_llama = { rampa: ['#3a0404', '#6a0806', '#9a120a', '#c82414', '#e84a22', '
 M.abo_niebla = { rampa: ['#050608', '#08090c', '#0b0d11', '#0f1116', '#13161c', '#181c23', '#1e222b'], ruido: 0.55, escala: 0.07, emite: true };
 M.abo_lapida = { rampa: ['#0c0e10', '#15181b', '#1f2327', '#2a2f34', '#363c42', '#444a51', '#535a61', '#646b72'], ruido: 0.3, escala: 0.25, patron: (p) => -Math.max(0, 1 - p[2] / 10) * 0.2 + (ruido(p[0] * 0.25, p[1] * 0.25, p[2] * 0.6) - 0.5) * 0.24 + (ruido(p[0] * 1.6, p[1] * 1.6, p[2] * 1.6) > 0.74 ? -0.12 : 0) };
 M.abo_liquen = { rampa: ['#15170f', '#232619', '#323623', '#42462e', '#52573a'], ruido: 0.7, escala: 0.8 };
+/** Mugre que chorrea bajo alféizares y cornisas: casi negra, verdosa, con grano. */
+M.abo_mugre = { rampa: ['#060706', '#0b0d0a', '#11140f', '#171b14', '#1e231a', '#262b20'], ruido: 0.5, escala: 0.45, patron: (p) => (ruido(p[0] * 0.8, p[1] * 0.8, p[2] * 0.08) - 0.5) * 0.3 };
+/** Tierra empapada al pie de los muros: el amarre oscuro de la obra con el suelo (se lee como sombra de contacto). */
+M.abo_barro = { rampa: ['#060505', '#0c0a08', '#13100c', '#1a1610', '#221c15', '#2b241b'], ruido: 0.55, escala: 0.4, brillo: 0.35, patron: (p) => (ruido(p[0] * 0.3, p[1] * 0.3, 2) - 0.5) * 0.3 };
+/** Charco: agua negra quieta con el reflejo frío del cielo en el borde (el brillo hace el resto). */
+M.abo_charco = { rampa: ['#06080a', '#0c1014', '#131920', '#1b222b', '#252e38', '#323c48', '#414c58'], ruido: 0.1, escala: 0.12, brillo: 0.9, patron: (p) => (ruido(p[0] * 0.15, p[1] * 0.15, 1) - 0.5) * 0.2 + (Math.sin(p[0] * 0.9 + p[1] * 0.4) > 0.92 ? 0.08 : 0) };
+/** Losas del atrio: piedra de la catedral, gastada por los pies, con juntas llenas de tierra. */
+M.abo_losa = { rampa: ['#0b0c0b', '#151714', '#1f221d', '#292c26', '#33372f', '#3e4239', '#4a4e44', '#575a50', '#64675c'], ruido: 0.26, escala: 0.22, brillo: 0.15, patron: (p) => (ruido(p[0] * 0.05, p[1] * 0.05, 1) - 0.5) * 0.3 + (ruido(p[0] * 0.7, p[1] * 0.7, 2) > 0.72 ? -0.12 : 0) };
+/** Pasto mojado y maleza de las juntas (el mismo verde apagado del piso del camposanto). */
+M.abo_maleza = { rampa: ['#080a07', '#0f130c', '#161c11', '#1e2616', '#27301c', '#313b22'], ruido: 0.6, escala: 0.7 };
 
 // ================================================================== utilidades
 type Luz = { mat: string; tono: number };
@@ -144,6 +188,9 @@ function ventanal(c: G, x: number, w: number, z0: number, hr: number, Tm: number
   const arc = arcoOjiva(w + 4.2, hr, z0 - 1.4, 4);
   for (let i = 0; i < arc.length - 1; i++) s.palo([arc[i][0], 0.7, arc[i][1]], [arc[i + 1][0], 0.7, arc[i + 1][1]], 0.85, { mat: m, tono: 0.08 });
   for (const sx of [-1, 1]) s.palo([sx * (w / 2 + 2.1), 0.7, z0 + hr - 1.4], [sx * (w / 2 + 2.1), 0.7, z0 + hr - 4.5], 0.85, { mat: m, tono: 0.08 });
+  // el agua que junta el alféizar baja en vetas de mugre, y en el talud crece musgo
+  chorros(s, -w / 2 - 1, w / 2 + 1, z0 - 3.6, Math.min(z0 - 4, 12 + w * 1.1), 2 + Math.round(w / 5));
+  if (c.a.r() < 0.6) s.elip(rr(c.a, -w / 3, w / 3), 1.2, z0 - 1.2, 2 + c.a.r() * 2, 1.2, 0.7, { mat: 'abo_musgo', tono: (c.a.r() - 0.5) * 0.1 });
 }
 /** Rosetón calado: círculo hueco, vitral, rayos, anillo de lóbulos, cubo y moldura. Centro (x, z) en la cara. */
 function roseton(c: G, x: number, z: number, R: number, Tm: number, luz: Luz, m: string, rayos = 12, tapiado = false) {
@@ -160,7 +207,7 @@ function roseton(c: G, x: number, z: number, R: number, Tm: number, luz: Luz, m:
   for (let i = 0; i < 16; i++) { const t0 = (i / 16) * TAU, t1 = ((i + 1) / 16) * TAU; s.palo([Math.cos(t0) * (R + 1.6), 0.9, z + Math.sin(t0) * (R + 1.6)], [Math.cos(t1) * (R + 1.6), 0.9, z + Math.sin(t1) * (R + 1.6)], 1.1, { mat: m, tono: 0.08 }); }
 }
 /** Pináculo: fuste, gabletes en cruz, chapitel con frondas y el remate. */
-function pinaculo(g: G, x: number, y: number, z: number, w: number, h: number, m: string) {
+export function pinaculo(g: G, x: number, y: number, z: number, w: number, h: number, m: string) {
   const zf = z + h * 0.4;
   g.caja(x, y, z, w, w, h * 0.4, { mat: m });
   for (const gi of [0, 90]) g.sub(x, y, zf - 0.3, gi).prisma([[-w / 2 - 0.3, 0], [w / 2 + 0.3, 0], [0, w * 0.85]], -w / 2 - 0.5, w / 2 + 0.5, { mat: m, tono: 0.05 });
@@ -170,7 +217,7 @@ function pinaculo(g: G, x: number, y: number, z: number, w: number, h: number, m
   g.esf(x, y, zt + 0.6, Math.max(1, w * 0.16), { mat: m, tono: 0.1 });
 }
 /** Gárgola que asoma hacia +y del grupo: cuerpo de bestia agazapada, cabeza con las fauces abiertas y alas plegadas. */
-function gargola(g: G, k = 1, m = 'abo_estatua') {
+export function gargola(g: G, k = 1, m = 'abo_estatua') {
   const s = g.esc(k), a = g.a, cs: Comp[] = [];
   cs.push(s.hu([0, -2, 0.5], [0, 6.5, 1.6], 2.2, 1.8), s.bu([0, 9.2, 2.4], [2, 2.6, 1.9]), s.hu([0, 9.8, 0.8], [0, 12.4, 0.6], 1.2, 0.8));
   for (const sx of [-1, 1]) cs.push(s.hu([sx * 1.2, 8.6, 3.6], [sx * 1.9, 7.2, 6 + a.r()], 0.6, 0.3), s.hu([sx * 1.6, 5.5, 0.5], [sx * 2.2, 7.6, -1.6], 0.7, 0.5));
@@ -219,6 +266,8 @@ function hastial(c: G, hs: number, zE: number, zA: number, Tm: number, m: string
 function mensulas(c: G, x0: number, x1: number, z: number, m: string, paso = 5) {
   c.caja((x0 + x1) / 2, 1, z, x1 - x0, 2.6, 2.6, { mat: m, tono: 0.05 });
   for (let x = x0 + paso / 2; x < x1; x += paso) c.poli([[x - 1, 0, z], [x + 1, 0, z], [x - 1, 2.4, z], [x + 1, 2.4, z], [x - 0.8, 0, z - 3], [x + 0.8, 0, z - 3]], { mat: m, tono: 0.02 });
+  // bajo la cornisa: la mugre que chorrea por el muro
+  chorros(c, x0 + 1, x1 - 1, z - 2.4, 26, Math.round((x1 - x0) / 7));
 }
 /** Daño en una cara: grietas que bajan, piedras que faltan, sillares que asoman y aristas comidas. */
 function desgaste(c: G, x0: number, x1: number, z0: number, z1: number, m: string, n = 4) {
@@ -249,6 +298,90 @@ function base(c: G, x0: number, x1: number, alto: number, hie: number) {
   }
 }
 
+// ------------------------------------------------------------------ lo que la sienta en el camposanto
+/**
+ * Chorreaduras de mugre en una cara (+y afuera), de x0 a x1: vetas que bajan desde z (bajo un alféizar, una cornisa o
+ * un talud), se afinan y se tuercen un poco. Van pegadas a la cara (`y` es la profundidad de esa cara en el grupo).
+ */
+export function chorros(c: G, x0: number, x1: number, z: number, largo: number, n: number, y = 0) {
+  const a = c.a;
+  for (let i = 0; i < n; i++) {
+    const x = rr(a, x0, x1), L = largo * (0.35 + a.r() * 0.65), w0 = 0.9 + a.r() * 1.8, w1 = 0.3 + a.r() * 0.4, d = (a.r() - 0.5) * 1.4, zz = z - a.r() * 1.2;
+    c.poli([[x - w0 / 2, y + 0.04, zz], [x + w0 / 2, y + 0.04, zz], [x - w0 / 2, y + 0.34, zz], [x + w0 / 2, y + 0.34, zz],
+      [x + d - w1 / 2, y + 0.04, zz - L], [x + d + w1 / 2, y + 0.04, zz - L], [x + d - w1 / 2, y + 0.34, zz - L], [x + d + w1 / 2, y + 0.34, zz - L]], { mat: 'abo_mugre', tono: (a.r() - 0.5) * 0.12 });
+  }
+}
+/** Maleza: matas de pasto mojado y yuyos altos (más tupida que `matas`, del verde del piso del camposanto). */
+export function maleza(g: G, n: number, x0: number, x1: number, y0: number, y1: number) {
+  const a = g.a;
+  for (let i = 0; i < n; i++) {
+    const cx = rr(a, x0, x1), cy = rr(a, y0, y1), k = 2 + Math.floor(a.r() * 3), alto = a.r() < 0.2 ? 7 + a.r() * 5 : 3 + a.r() * 3.5;
+    for (let j = 0; j < k; j++) {
+      const t = a.r() * TAU, h = alto * (0.6 + a.r() * 0.5), m = a.r() < 0.55 ? 'abo_maleza' : a.r() < 0.6 ? 'pasto' : 'paja';
+      g.palo([cx + Math.cos(t) * 0.8, cy + Math.sin(t) * 0.8, -0.2], [cx + Math.cos(t) * (1.5 + a.r() * 2.5), cy + Math.sin(t) * (1.5 + a.r() * 2.5), h], 0.85, { mat: m, tono: m === 'paja' ? -0.25 : -0.05, r1: 0.15 });
+    }
+  }
+}
+/** Charco: agua negra en un bajo del piso, con un borde de barro. */
+export function charco(g: G, x: number, y: number, rx: number, ry: number, giro = 0) {
+  // dos o tres lóbulos (un charco no es un óvalo), el borde de barro y el agua que refleja el cielo frío
+  const a = g.a, lob: [number, number, number, number][] = [[0, 0, rx, ry]];
+  for (let i = 0, n = 1 + Math.floor(a.r() * 2); i < n; i++) { const t = a.r() * TAU; lob.push([Math.cos(t) * rx * 0.55, Math.sin(t) * ry * 0.55, rx * (0.45 + a.r() * 0.3), ry * (0.45 + a.r() * 0.3)]); }
+  const c = Math.cos(giro * GR), s = Math.sin(giro * GR);
+  for (const [dx, dy, ax, ay] of lob) g.elip(x + dx * c - dy * s, y + dx * s + dy * c, 0, ax + 1.6, ay + 1.3, 0.55, { mat: 'abo_barro', giro, tono: -0.05 });
+  for (const [dx, dy, ax, ay] of lob) g.elip(x + dx * c - dy * s, y + dx * s + dy * c, 0.18, ax, ay, 0.5, { mat: 'abo_charco', giro });
+}
+/**
+ * Zócalo de una cara (+y afuera) de x0 a x1: el basamento de sillares grandes que sobresale `sale` con su talud arriba
+ * (musgo en el talud), y delante el cimiento medio enterrado (sillares corridos, hundidos, alguno que falta) con barro
+ * oscuro al pie, que es lo que amarra el muro al suelo. `huecos` son tramos que no lleva (portadas, escaleras).
+ */
+function zocalo(c: G, x0: number, x1: number, o: { alto?: number; sale?: number; huecos?: [number, number][]; cimiento?: boolean } = {}) {
+  const a = c.a, H = o.alto ?? 10, S = o.sale ?? 3.5;
+  const libre = (xa: number, xb: number) => !(o.huecos ?? []).some(([h0, h1]) => xb > h0 && xa < h1);
+  for (let x = x0; x < x1 - 1;) {
+    const lw = Math.min(x1 - x, 7 + a.r() * 8), cx = x + lw / 2;
+    if (libre(x, x + lw)) {
+      const hh = H + (a.r() - 0.5) * 0.8, falta = a.r() < 0.08;
+      if (!falta) {
+        bloque(c, cx, S / 2 - 0.8, -0.8, lw - 0.4, S + 1.6, hh + 0.8, { mat: SG, b: 0.9, j: 0.8, tono: (a.r() - 0.5) * 0.1 - 0.13, giro: (a.r() - 0.5) * 1.2 });
+        // talud: la cara de arriba en pendiente hacia afuera, que tira el agua
+        c.poli([[x + 0.3, -0.6, hh], [x + lw - 0.3, -0.6, hh], [x + 0.3, -0.6, hh + 2.4], [x + lw - 0.3, -0.6, hh + 2.4], [x + 0.3, S + 0.5, hh - 0.1], [x + lw - 0.3, S + 0.5, hh - 0.1]], { mat: L, tono: 0.04 + (a.r() - 0.5) * 0.06 });
+        if (a.r() < 0.55) c.elip(cx + rr(a, -lw * 0.3, lw * 0.3), S * 0.45, hh + 1.1, 1.6 + a.r() * 2.4, 1.3 + a.r() * 0.8, 0.7, { mat: 'abo_musgo', tono: (a.r() - 0.5) * 0.1 });
+        if (a.r() < 0.5) chorros(c, x + 1, x + lw - 1, hh - 0.2, hh * 0.8, 1, S + 0.6);
+      } else cascotes(c, 3, lw * 0.4, 2, SG, cx, S + 3, 2.4);
+      // cimiento: sillares bajos delante, algo corridos o hundidos
+      if (o.cimiento !== false) for (let xx = x; xx < x + lw - 1;) {
+        const cw = Math.min(x + lw - xx, 4 + a.r() * 6);
+        if (a.r() > 0.16) bloque(c, xx + cw / 2 + (a.r() - 0.5), S + 1.9 + (a.r() - 0.5) * 0.8, -1.6 + (a.r() - 0.5) * 0.8, cw - 0.3, 3.2 + a.r() * 1.4, 2.6 + a.r() * 1.2, { mat: SG, b: 0.8, j: 1, tono: -0.07 + (a.r() - 0.5) * 0.08, giro: (a.r() - 0.5) * 5, incl: (a.r() - 0.5) * 8 });
+        xx += cw;
+      }
+      // barro al pie: la tierra empapada que oscurece justo contra la piedra (sombra de contacto)
+      c.elip(cx, S + 3.2, 0, lw * 0.62, 2.6 + a.r() * 1.6, 0.6, { mat: 'abo_barro', tono: (a.r() - 0.5) * 0.08 });
+    }
+    x += lw;
+  }
+}
+/**
+ * La franja de piso al pie de una cara, de x0 a x1 y de y0 a y1 (+y afuera): barro, charcos en los bajos, cascotes y
+ * sillares caídos, losas rotas que se abren hacia el pasto, maleza y musgo. `dens` escala la cantidad de cosas.
+ */
+function pie(c: G, x0: number, x1: number, y0: number, y1: number, dens = 1, o: { losas?: boolean; charcos?: number; libre?: (x: number, y: number) => boolean } = {}) {
+  const a = c.a, L = x1 - x0, ok = o.libre ?? (() => true);
+  const n = (k: number) => Math.max(1, Math.round((L / 40) * k * dens));
+  for (let i = 0; i < n(3); i++) { const x = rr(a, x0, x1), y = rr(a, y0, y0 + (y1 - y0) * 0.6); if (ok(x, y)) c.elip(x, y, 0, 6 + a.r() * 8, 3 + a.r() * 4, 0.7, { mat: a.r() < 0.6 ? 'abo_barro' : 'mu_tierra', giro: (a.r() - 0.5) * 30, tono: (a.r() - 0.5) * 0.1 }); }
+  for (let i = 0; i < (o.charcos ?? n(0.4)); i++) { const x = rr(a, x0 + 4, x1 - 4), y = rr(a, y0 + 2, y1 - 3); if (ok(x, y)) charco(c, x, y, 3 + a.r() * 5, 1.6 + a.r() * 2.4, (a.r() - 0.5) * 50); }
+  if (o.losas) for (let i = 0; i < n(3); i++) {
+    // losas sueltas que se abren: más juntas cerca del muro, más ralas, hundidas e inclinadas hacia afuera
+    const t = a.r(), x = rr(a, x0, x1), y = y0 + (y1 - y0) * t * t;
+    if (!ok(x, y)) continue;
+    bloque(c, x, y, -0.9 - t * 0.8, 6 + a.r() * 7, 5 + a.r() * 5, 1.6 + a.r() * 0.6, { mat: 'abo_losa', b: 0.7, j: 0.9, giro: (a.r() - 0.5) * 30, incl: (a.r() - 0.5) * (4 + t * 12), tono: (a.r() - 0.5) * 0.12 });
+  }
+  for (let i = 0; i < n(2); i++) { const x = rr(a, x0, x1), y = rr(a, y0, y1); if (ok(x, y)) cascotes(c, 3 + Math.floor(a.r() * 4), 4, 3, SG, x, y, 1.8 + a.r() * 1.6); }
+  for (let i = 0; i < n(0.5); i++) { const x = rr(a, x0 + 6, x1 - 6), y = rr(a, y0 + 3, y1 - 3); if (ok(x, y)) bloque(c, x, y, -0.8, 8 + a.r() * 5, 5 + a.r() * 2, 4.5 + a.r() * 2, { mat: SG, giro: a.r() * 90, incl: rr(a, -18, 18), b: 1.1, j: 1.3, tono: -0.04 }); }
+  for (let i = 0; i < n(4); i++) { const x = rr(a, x0, x1), y = rr(a, y0, y1); if (ok(x, y)) maleza(c, 1, x, x, y, y); }
+}
+
 // ================================================================== la catedral: medidas en coordenadas de toda la obra
 /**
  * Toda la catedral se arma en un solo marco (x a lo ancho, y a lo largo con la fachada en +y) y cada pieza dibuja lo
@@ -265,6 +398,12 @@ const ZL = 128;    // donde el tejado de la nave lateral toca el muro alto
 const YF = 118;    // frente del cuerpo central de la fachada
 const YT0 = 80, YT1 = 122; // las torres (fondo y frente)
 const XT = 53;     // centro de cada torre
+/**
+ * Alto de las agujas caladas de las torres. Eran 206: con la cámara del juego centrada en el héroe, la torre (667 px
+ * sobre el piso) no entraba nunca en pantalla. Con 150 la fachada queda en ~600 px y entra entera con el encuadre de la
+ * plaza (ver la nota para el juego); la proporción aguja/torre (0.47) sigue siendo gótica.
+ */
+const AGUJA = 150;
 const LT = 42;     // lado de la torre
 const YX0 = -72, YX1 = -120; // crucero (entre y0 e y1)
 const XB = 74;     // hastial del transepto
@@ -363,7 +502,7 @@ function portada(c: G, w: number, hr: number, n: number, sale: number, z0: numbe
 }
 
 /** Escalinata gastada: escalones de losas desparejas, alguna partida o que falta, con musgo en las juntas. */
-function escalinata(g: G, y0: number, n: number, ancho: number, prof: number, sube: number, m = SG) {
+function escalinata(g: G, y0: number, n: number, ancho: number, prof: number, sube: number, m = 'abo_losa') {
   const a = g.a;
   for (let i = 0; i < n; i++) {
     const y = y0 + (n - 1 - i) * prof + prof / 2, z = i * sube, w = ancho + (n - 1 - i) * 8;
@@ -453,18 +592,19 @@ function torre(g: G, x: number, sx: number, st: Estado) {
   });
   // balaustrada calada, pináculos de esquina y la aguja
   g.caja(x, y, ZT, LT + 4, LT + 4, 3, { mat: L, tono: 0.06 });
-  for (const [px, py] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) pinaculo(g, x + px * (h - 1.5), y + py * (h - 1.5), ZT + 3, 7, 58, SG);
+  for (const [px, py] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) pinaculo(g, x + px * (h - 1.5), y + py * (h - 1.5), ZT + 3, 7, 48, SG);
   for (const c of [cara(g, x, y + h + 2, 0), cara(g, x + h + 2, y, -90)]) {
     c.caja(0, -1, ZT + 3, LT - 6, 2, 7, { mat: L, tono: 0.04 });
     for (let i = 0; i < 5; i++) c.cil(-LT / 2 + 6 + i * 7.5, 2, ZT + 6.5, 2.2, 5, { mat: L, resta: true, eje: [0, -1, 0] });
   }
-  agujaCalada(g, x, y, ZT + 3, h - 2, 206, SG, sx > 0 && st.herida ? 30 : 0);
+  agujaCalada(g, x, y, ZT + 3, h - 2, AGUJA, SG, sx > 0 && st.herida ? 24 : 0);
   void a;
 }
 function fachada(g: G, st: Estado) {
   const a = g.a;
   suelo(g, -96, 96, YT1 + 4, YT1 + 18, 9);
-  g.caja(0, (YT0 + YT1) / 2, 0, 2 * (XT + LT / 2) + 10, YT1 - YT0 + 8, 9, { mat: SG, tono: -0.08 });
+  // el núcleo del basamento (lo que se ve lo pone el zócalo de cada cara)
+  g.caja(0, (YT0 + YT1) / 2, 0, 2 * (XT + LT / 2) + 6, YT1 - YT0 + 4, 5, { mat: SG, tono: -0.1 });
   // cuerpo central: muro hasta la galería, el hastial alto y el rosetón
   g.caja(0, (YT0 + 2 + YF) / 2, 0, 2 * XC + 2, YF - YT0 - 2, 266, { mat: S });
   const fc = cara(g, 0, YF, 0);
@@ -487,23 +627,50 @@ function fachada(g: G, st: Estado) {
   for (const sx of [-1, 1]) torre(g, sx * XT, sx, st);
   // escalinata, base sucia, sillares caídos
   escalinata(g, YF + 10, 4, 64, 3.6, 2.2);
+  // las portadas de las torres también tienen sus tres escalones (la puerta está a 9 del piso)
+  for (const sx of [-1, 1]) escalinata(g.sub(sx * XT, 0, 0), YT1 + 7, 3, 18, 3, 3);
+  // dados a los lados del pie de la escalinata: uno con su santo decapitado, el otro vacío y partido
+  for (const sx of [-1, 1]) {
+    const d = g.sub(sx * 49, YF + 10 + 11.5, 0, sx * 4);
+    bloque(d, 0, 0, -0.6, 9, 9, 3, { mat: SG, b: 1, j: 0.8, tono: -0.06 });
+    bloque(d, 0, 0, 2.4, 7.4, 7.4, 9, { mat: L, b: 0.8, j: 0.7 });
+    bloque(d, 0, 0, 11.4, 8.6, 8.6, 2, { mat: L, b: 0.7, j: 0.6, tono: 0.04, giro: sx * 6 });
+    if (sx < 0) { const zh = figuraVelada(d.sub(0, 0, 13.4, 70), 20, { mat: 'abo_estatua', pose: 'reza' }); d.poli([[-6, -6, 13.4 + zh * 0.6], [6, -6, 13.4 + zh * 0.75], [-6, 6, 13.4 + zh * 0.68], [6, 6, 13.4 + zh * 0.55], [-6, -6, 99], [6, -6, 99], [-6, 6, 99], [6, 6, 99]], { mat: L, resta: true }); }
+    else { d.caja(0, 0, 13.4, 9, 9, 6, { mat: L, resta: true, giro: 30, incl: 25 }); cascotes(g, 4, 5, 3, L, sx * 52, YF + 10 + 18, 2); }
+    musgo(d.sub(0, 4.5, 0), 3, -3, 3, 0.2, 1, 10, 'abo_musgo');
+  }
+  // zócalo de las torres (frente y el costado de afuera de la derecha) y la franja de piso que lo amarra
+  const hT = LT / 2, wP = (16 + 2 * 3.4 * 2 + 5) / 2 + 0.6;
+  for (const sx of [-1, 1]) zocalo(cara(g, sx * XT, YT1, 0), -hT - 4, hT + 4, { sale: 4, huecos: [[-wP, wP]] });
+  zocalo(cara(g, XT + hT, (YT0 + YT1) / 2, -90), -hT - 4, hT + 4, { sale: 4 });
+  const enEscalera = (x: number, y: number) => (Math.abs(x) < 47 && y < YF + 10 + 15) || (Math.abs(Math.abs(x) - XT) < 19 && y < YT1 + 17) || (Math.abs(Math.abs(x) - 49) < 7 && Math.abs(y - (YF + 21.5)) < 7);
+  pie(g, -100, 100, YT1 + 10, 151, 1.1, { charcos: 2, libre: (x, y) => !enEscalera(x, y) });
+  pie(cara(g, XT + hT + 8, (YT0 + YT1) / 2, -90), -hT - 6, hT + 8, 2, 18, 0.9, { charcos: 1 });
+  // losas del atrio al pie de la escalinata: la primera hilada, rota, que se abre hacia el piso del camposanto
+  for (let x = -50; x < 50;) {
+    const lw = 7 + a.r() * 7;
+    for (const [y, k] of [[YF + 10 + 17.2, 0], [YF + 10 + 22.8, 1]] as [number, number][]) {
+      if (a.r() < 0.12 + k * 0.3) { if (a.r() < 0.5) charco(g, x + lw / 2, y + 1, lw * 0.35, 2, a.r() * 30); else maleza(g, 2, x, x + lw, y - 2, y + 2); continue; }
+      bloque(g, x + lw / 2 + (a.r() - 0.5) * k * 2, y + (a.r() - 0.5) * 1.2, -1 - k * 0.5, lw - 0.6, 5.4 - k * 0.6, 1.4 + a.r() * 0.4, { mat: 'abo_losa', b: 0.6, j: 0.7 + k * 0.6, giro: (a.r() - 0.5) * (3 + k * 14), incl: (a.r() - 0.5) * (2 + k * 9), tono: (a.r() - 0.5) * 0.1 });
+      if (a.r() < 0.35) maleza(g, 1, x + lw, x + lw, y, y);
+    }
+    x += lw;
+  }
   // el abanico de luz que sale por la puerta: sobre cada escalón y en el piso de afuera, más ancho y más tenue a medida que se aleja
   if (st.lit) {
     for (let i = 0; i < 4; i++) {
       const y = YF + 10 + (3 - i) * 3.6 + 1.8, z = (i + 1) * 2.2 + 0.05, k = (3 - i) / 3;
       g.caja(0, y, z, 26 + k * 12, 3.2, 0.25, { mat: 'abo_brasa', tono: -0.05 - k * 0.25 + st.p * 0.25 });
     }
-    for (let j = 0; j < 3; j++) g.caja(0, YF + 10 + 14.4 + 3 + j * 6, 0.05, 40 + j * 14, 6, 0.2, { mat: 'abo_brasa', tono: -0.4 - j * 0.15 + st.p * 0.2 });
   }
   base(fc, -XC, XC, 60, 1);
   base(cara(g, XT, YT1 + 9, 0), -LT / 2 - 4, LT / 2 + 4, 90, 2);
   base(cara(g, XT + LT / 2 + 9, (YT0 + YT1) / 2, -90), -LT / 2, LT / 2, 120, 2);
   base(cara(g, -XT, YT1 + 9, 0), -LT / 2 - 4, LT / 2 + 4, 70, 1);
-  cascotes(g, 14, 30, 6, SG, 64, YT1 + 18, 3.4);
-  cascotes(g, 10, 18, 5, SG, -56, YT1 + 18, 3);
-  for (let i = 0; i < 4; i++) bloque(g, rr(a, -90, 96), YT1 + rr(a, 12, 22), -0.6, 9 + a.r() * 4, 6, 5 + a.r() * 2, { mat: SG, giro: a.r() * 90, incl: rr(a, -14, 14), b: 1.2, j: 1.4 });
+  cascotes(g, 14, 22, 5, SG, 82, YT1 + 20, 3.4);
+  cascotes(g, 10, 14, 5, SG, -82, YT1 + 20, 3);
+  for (const x of [-92, 88]) bloque(g, x + rr(a, -4, 4), YT1 + rr(a, 18, 24), -0.6, 9 + a.r() * 4, 6, 5 + a.r() * 2, { mat: SG, giro: a.r() * 90, incl: rr(a, -14, 14), b: 1.2, j: 1.4 });
   if (st.herida) { const p = g.sub(98, YT1 - 10, 3, 30, 84, 'x'); pinaculo(p, 0, 0, -20, 8, 44, SG); cascotes(g, 8, 10, 8, SG, 96, YT1 - 4, 2.6); }
-  matas(g, 14, 96, 10, 0, YT1 + 14);
   // la luz sale por la puerta: centro justo afuera del umbral y bajo, para teñir de rojo la escalinata, las jambas y el piso
   return { piezas: g.ps, resplandor: st.lit ? { c: [0, YF + 16, 22] as V3, r: (st.herida ? 120 : 100) + st.p * 34, color: st.p > 0.5 ? '#ff3a12' : '#d01c0a' } : undefined };
 }
@@ -517,7 +684,7 @@ const sobreTecho = (x: number) => zCum - (zCum - zEal) * (x / (XC + 3.5));
 function nave(g: G, st: Estado) {
   const a = g.a, y0 = 84, y1 = YX0;
   suelo(g, XE - 4, XE + 16, y1, 76, 10);
-  g.caja(0, (y0 + y1) / 2, 0, 2 * XL + 4, y0 - y1, 9, { mat: SG, tono: -0.08 });
+  g.caja(0, (y0 + y1) / 2, 0, 2 * XL + 4, y0 - y1, 5, { mat: SG, tono: -0.1 });
   for (const s of [-1, 1]) {
     g.caja(s * (XC - TM / 2), (y0 + y1) / 2, 0, TM, y0 - y1, HC, { mat: S });
     g.caja(s * (XL - TM / 2), (y0 + y1) / 2, 0, TM, y0 - y1, HL, { mat: S });
@@ -574,6 +741,10 @@ function nave(g: G, st: Estado) {
   for (let i = 1; i < 4; i++) { const p = mix(B, Ep, i * 0.22); g.cil(p[0], p[1], p[2], rk * (1 - i * 0.22) + 0.5, 1.4, { mat: 'abo_plomo', eje: ej, tono: 0.08 }); }
   g.palo(Ep, [Ep[0] + ej[0] / Lp * 9, Ep[1] + ej[1] / Lp * 9 + 2, Ep[2] + 5], 0.8, { mat: 'mu_hierro' });
   if (!st.herida) cascotes(g, 7, 6, 12, 'abo_pizarra', 14, -40, 2);
+  // zócalo del costado que se ve y la franja de piso que lo amarra (barro, charcos, cascotes, maleza)
+  const ladoN = cara(g, XL, (y0 + y1) / 2, -90), mitad = (y0 - y1) / 2;
+  zocalo(ladoN, -mitad, mitad - 4, { sale: 3.5 });
+  pie(cara(g, XE - 2, (y0 + y1) / 2, -90), -mitad, mitad - 6, 2, 30, 1.2, { charcos: 2 });
   // base sucia, hiedra, sillares caídos, pasto y dos cuervos en la cumbrera
   for (const y of [50, -6]) base(cara(g, XL, y, -90), -10, 10, 70, 1);
   base(cara(g, XE, PILAS[2], -90), -4, 4, 120, 1);
@@ -596,7 +767,7 @@ function cabecera(g: G, st: Estado) {
   suelo(g, XB + 2, XB + 18, YX1 - 4, YX0 + 4, 4);
   suelo(g, XE - 6, XE + 14, YAB - 50, YX1, 5);
   g.caja(0, (YX0 + YAB) / 2, 0, 2 * XL + 4, YX0 - YAB, 9, { mat: SG, tono: -0.08 });
-  g.caja(0, ya, 0, 2 * XB + 4, YX0 - YX1 + 4, 9, { mat: SG, tono: -0.08 });
+  g.caja(0, ya, 0, 2 * XB + 4, YX0 - YX1 + 4, 5, { mat: SG, tono: -0.1 });
   g.cil(0, YAB, 0, R2 + 6, 9, { mat: SG, tono: -0.08 });
   // crucero y transepto: muros, el hastial +x con su rosetón, estribos de esquina
   for (const s of [-1, 1]) for (const y of [YX0 - TM / 2, YX1 + TM / 2]) g.caja(s * (XC + XB) / 2, y, 0, XB - XC, TM, HC, { mat: S });
@@ -657,6 +828,20 @@ function cabecera(g: G, st: Estado) {
   for (let i = 1; i < 4; i++) g.cil(0, ya, zb + i * 15, rb * (1 - (i * 15) / 168) + 0.5, 1.4, { mat: 'abo_plomo', tono: 0.08 });
   g.poli([[-14, ya - 14, zb + Hb - 9], [14, ya - 14, zb + Hb + 2], [-14, ya + 14, zb + Hb - 2], [14, ya + 14, zb + Hb + 6], [-14, ya - 14, zb + 120], [14, ya - 14, zb + 120], [-14, ya + 14, zb + 120], [14, ya + 14, zb + 120]], { mat: 'abo_plomo', resta: true });
   for (let i = 0; i < 5; i++) { const t = a.r() * TAU, r = rk * 0.6; g.palo([Math.cos(t) * r, ya + Math.sin(t) * r, zb + Hb - 12], [Math.cos(t) * r * 1.3, ya + Math.sin(t) * r * 1.3, zb + Hb + 3 + a.r() * 9], 0.9, { mat: 'abo_madera_quemada' }); }
+  // zócalos: el hastial del transepto, su esquina que da a la nave, el talud de la girola y el de cada capilla que se ve
+  zocalo(tr, -(YX0 - YX1) / 2 - 2, (YX0 - YX1) / 2 + 2, { sale: 3.5 });
+  zocalo(trN(66), -8, 8, { sale: 3 });
+  g.cil(0, YAB, 9, R2 + 6, 2.6, { mat: L, r1: R2 + 1.5, tono: 0.06 });
+  for (const t of [-18, -54, -90, -126, -162]) {
+    if (Math.cos(t * GR) + Math.sin(t * GR) <= -0.9) continue;
+    const cx = Math.cos(t * GR) * RC, cy = YAB + Math.sin(t * GR) * RC;
+    g.cil(cx, cy, -0.5, 14.2, 9, { mat: SG, tono: -0.05 });
+    g.cil(cx, cy, 8.5, 14.2, 2.4, { mat: L, r1: 12.4, tono: 0.07 });
+    g.elip(cx + Math.cos(t * GR) * 15, cy + Math.sin(t * GR) * 15, 0, 9, 5, 0.6, { mat: 'abo_barro', giro: t + 90 });
+    if (a.r() < 0.6) g.elip(cx + Math.cos((t + 20) * GR) * 13, cy + Math.sin((t + 20) * GR) * 13, 10, 2.4, 2, 0.8, { mat: 'abo_musgo' });
+  }
+  pie(cara(g, XB + 2, ya, -90), -(YX0 - YX1) / 2 - 4, (YX0 - YX1) / 2 + 4, 6, 28, 1.1, { charcos: 2 });
+  pie(cara(g, XE - 4, (YAB - 50 + YX1) / 2, -90), -(YX1 - YAB + 50) / 2, (YX1 - YAB + 50) / 2, 6, 30, 0.9, { charcos: 2 });
   // base sucia, hiedra, sillares caídos y pasto
   base(tr, -22, 22, 140, 2);
   base(trN(66), -7, 7, 110, 1);
