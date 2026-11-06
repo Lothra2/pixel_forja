@@ -39,6 +39,8 @@ const R = Math.random, entre = (r: [number, number]) => r[0] + R() * (r[1] - r[0
 
 /** Reinicia la secuencia de entrada (negro, fondo, relámpago, título, botones). */
 export function reiniciarPortada() { t0 = -1; proxRayo = 1.4; rayo = -1; trueno = -1; }
+/** Segundos desde que se reinicia la portada hasta que el título termina de forjarse (para entrar con la música del menú). */
+export function durForjaTitulo() { const rv = man?.titulo?.[IDI ? 'en' : 'es']?.revelar?.['800']; return 2.2 + (rv ? rv.cuadros / rv.fps : 3); }
 
 /** Dibuja la portada. Devuelve el alfa de los botones (0 a 1) y dónde van, o null si todavía no está lista. */
 export function dibujarPortada(tReal: number): { botones: number; yBotones: number } | null {

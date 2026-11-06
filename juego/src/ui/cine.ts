@@ -6,12 +6,14 @@
 // Formato que lee (todo opcional salvo planos, dur y capas):
 //   cinematicas.capa = { w, h, margen_x, margen_y }           geometría por defecto de las capas, como el fondo de la portada
 //   cinematicas[clave] = { musica?, planos: Plano[] }          clave: acto_1 … acto_6, acto_7 y acto_7_<final>
-//   Plano = { dur, capas: Capa[], camara?, narracion?: {es, en}, fundido?: {entra, sale}, particulas?: 'ceniza'|'brasas'|'nieve'|'lluvia' }
+//   Plano = { dur, capas: Capa[], camara?, narracion?: {es, en}, fundido?: {entra, sale}, particulas?: 'ceniza'|'brasas'|'nieve'|'lluvia'|'polvo' }
 //   Capa  = { archivo, paralaje, mezcla?: 'normal'|'sumar', w?, h?, x?, y?, alfa?, anim?, si?, no? }
 //           si / no: marcas del héroe (vigdis_viva, vigdis_muerta, brasa_destruir, brasa_absorber, corona_auren…)
 //   anim  = { tipo: 'deriva', px_por_segundo, enrollar? } | { tipo: 'titilar' } | { tipo: 'latir', periodo_s }
 //         | { tipo: 'flotar', amplitud_px, periodo_s } | { tipo: 'cuadros', columnas, cuadros, fps, w, h }
-//         | { tipo: 'aparecer', desde_s, dur_s }
+//         | { tipo: 'aparecer', desde_s, dur_s } | { tipo: 'tiempo', claves: [t, alfa][] }
+//   Capa.recorte = [x, y, w, h]: la capa sale de un rectángulo de una página compartida (la intro 3D va en 3 páginas)
+//   Plano.sonidos = [{ t, efecto, vol? }]: efectos a su tiempo dentro del plano
 //   camara = { desde: {x, y, zoom}, hasta: {x, y, zoom}, curva?: 'suave'|'lineal', sacudida?: {t, dur, fuerza} }
 //           x e y en píxeles de capa (con paralaje 1 se mueven 1 a 1), zoom 1 es la pantalla base.
 import { ctx, W, H, E } from '../nucleo/lienzo';
@@ -71,15 +73,15 @@ interface P { x: number; y: number; vx: number; vy: number; s: number; a: number
 let parts: P[] = [], partsDe = '';
 function particulas(tipo: string, dt: number, k: number) {
   if (partsDe !== tipo) { partsDe = tipo; parts = []; }
-  const n = tipo === 'lluvia' ? 140 : tipo === 'nieve' ? 90 : 60;
+  const n = tipo === 'lluvia' ? 140 : tipo === 'nieve' ? 90 : tipo === 'polvo' ? 45 : 60;
   while (parts.length < n) parts.push(nuevaP(tipo, true));
   ctx.save(); ctx.globalCompositeOperation = tipo === 'brasas' ? 'lighter' : 'source-over';
   for (const p of parts) {
     p.x += p.vx * dt; p.y += p.vy * dt;
-    if (p.y < -20 || p.y > H + 20 || p.x < -20 || p.x > W + 20) Object.assign(p, nuevaP(tipo, false));
+    if (p.y < -20 || p.y > H + 20 || p.x < -20 || p.x > W + 20) Object.assign(p, nuevaP(tipo, tipo === 'polvo'));
     ctx.globalAlpha = p.a * k;
     if (tipo === 'lluvia') { ctx.strokeStyle = 'rgba(170,180,200,0.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 3, p.y + 14); ctx.stroke(); }
-    else { ctx.fillStyle = tipo === 'brasas' ? (p.s > 2 ? '#ffb050' : '#ff6020') : tipo === 'nieve' ? '#e8f0ff' : '#9a9088'; ctx.fillRect(p.x, p.y, p.s, p.s); }
+    else { ctx.fillStyle = tipo === 'brasas' ? (p.s > 2 ? '#ffb050' : '#ff6020') : tipo === 'nieve' ? '#e8f0ff' : tipo === 'polvo' ? '#d8c6a4' : '#9a9088'; ctx.fillRect(p.x, p.y, p.s, p.s); }
   }
   ctx.restore();
 }
@@ -87,10 +89,30 @@ function nuevaP(tipo: string, azar: boolean): P {
   const R = Math.random;
   if (tipo === 'lluvia') return { x: R() * W * 1.1, y: azar ? R() * H : -10, vx: -60, vy: 620 + R() * 200, s: 1, a: 0.5 };
   if (tipo === 'nieve') return { x: R() * W, y: azar ? R() * H : -10, vx: -10 + R() * 20, vy: 30 + R() * 40, s: 1 + R() * 2, a: 0.7 };
+  // polvo en el aire de la nave: flota lento en cualquier dirección
+  if (tipo === 'polvo') return { x: R() * W, y: R() * H, vx: -5 + R() * 10, vy: -3 + R() * 8, s: 1 + R() * 1.4, a: 0.18 + R() * 0.22 };
   if (tipo === 'brasas') return { x: R() * W, y: azar ? R() * H : H + 10, vx: -15 + R() * 30, vy: -(30 + R() * 60), s: 1 + R() * 2.5, a: 0.8 };
   return { x: R() * W, y: azar ? R() * H : -10, vx: -20 + R() * 15, vy: 15 + R() * 25, s: 1 + R() * 2, a: 0.5 };
 }
 
+/** Alfa por claves de tiempo [t, alfa], interpolado (relámpagos, los ojos de i11). */
+const alfaTiempo = (c: [number, number][] | undefined, t: number) => {
+  if (!c?.length) return 1; if (t <= c[0][0]) return c[0][1];
+  for (let i = 1; i < c.length; i++) if (t <= c[i][0]) { const [t0, a0] = c[i - 1], [t1, a1] = c[i]; return t1 > t0 ? a0 + ((a1 - a0) * (t - t0)) / (t1 - t0) : a1; }
+  return c[c.length - 1][1];
+};
+let sonPlano = -1, sonT = -1, sonClave = '';
+/**
+ * Memoria en iPhone: la intro va en páginas grandes (hasta 16 Mpx cada una). Una página que ya no usa ningún plano de
+ * aquí en adelante se suelta (se vuelve a pedir si se mira la intro otra vez).
+ */
+let liberadas = '';
+function liberarPaginas(c: any, i: number) {
+  const k = c.planos.length + ':' + i; if (liberadas === k) return; liberadas = k;
+  const quedan = new Set<string>();
+  for (let j = i; j < c.planos.length; j++) for (const q of c.planos[j].capas) quedan.add(q.archivo);
+  for (let j = 0; j < i; j++) for (const q of c.planos[j].capas) if (!quedan.has(q.archivo) && imgs.has(q.archivo)) { const im = imgs.get(q.archivo)!; im.src = ''; imgs.delete(q.archivo); }
+}
 const suave = (k: number) => k * k * (3 - 2 * k);
 const mezclar = (a: number, b: number, k: number) => a + (b - a) * k;
 let tAnt = 0;
@@ -121,6 +143,11 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   while (i < c.planos.length - 1 && t >= t0 + c.planos[i].dur) { t0 += c.planos[i].dur; i++; }
   const p = c.planos[i], tl = t - t0;
   if (tl >= p.dur && i === c.planos.length - 1) return true;
+  // los sonidos del plano a su tiempo (al volver atrás o cambiar de plano se rearman)
+  if (clave !== sonClave || i !== sonPlano || tl < sonT) { sonClave = clave; sonPlano = i; sonT = -1e-3; }
+  for (const s of p.sonidos ?? []) if (s.t > sonT && s.t <= tl) Sonido.efecto(s.efecto, { vol: s.vol ?? 1 });
+  sonT = tl;
+  liberarPaginas(c, i);
   const geo = { w: 1536, h: 800, margen_x: 128, margen_y: 40, ...(man?.cinematicas?.capa ?? {}) };
   const base = { w: geo.w - geo.margen_x * 2, h: geo.h - geo.margen_y * 2 };
   // cámara
@@ -130,7 +157,7 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   let sx = 0, sy = 0;
   const sac = cam.sacudida;
   if (sac && tl >= sac.t && tl < sac.t + sac.dur) { const f = sac.fuerza * (1 - (tl - sac.t) / sac.dur); sx = (Math.random() - 0.5) * f * 2; sy = (Math.random() - 0.5) * f * 2; }
-  if (sac && Math.abs(tl - sac.t) < dt * 1.5) Sonido.efecto('trueno' as any, { vol: 0.5 });
+  if (sac && !p.sonidos && Math.abs(tl - sac.t) < dt * 1.5) Sonido.efecto('trueno' as any, { vol: 0.5 });
   const esc = Math.max(W / base.w, H / base.h) * zoom;
   const ox = W / 2 - (base.w * esc) / 2 + sx, oy = H / 2 - (base.h * esc) / 2 + sy;
   // fundidos
@@ -139,7 +166,7 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   // un fundido de color (blanco o rojo) no oscurece las capas: las tapa con su color
   const colorEn = p.fundido?.color_entra, colorSa = p.fundido?.color_sale;
   const alfaPlano = Math.min(colorEn ? 1 : kEntra, colorSa ? 1 : kSale);
-  ctx.save();
+  ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   for (const capa of p.capas) {
     if ((capa.si && !marcas.has(capa.si)) || (capa.no && marcas.has(capa.no))) continue;
     const im = lista(capa.archivo); if (!im) continue;
@@ -151,13 +178,17 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
     if (an.tipo === 'latir') alfa *= a0 + (a1 - a0) * (0.5 + 0.5 * Math.sin((tl / (an.periodo_s ?? 2)) * 6.28));
     if (an.tipo === 'flotar') dy = Math.sin((tl / (an.periodo_s ?? 4)) * 6.28) * (an.amplitud_px ?? 6);
     if (an.tipo === 'aparecer') alfa *= Math.min(1, Math.max(0, (tl - (an.desde_s ?? 0)) / (an.dur_s ?? 1)));
+    if (an.tipo === 'tiempo') alfa *= alfaTiempo(an.claves, tl);
+    if (alfa <= 0) continue;
+    const rc = capa.recorte as [number, number, number, number] | undefined;
     const x = ox + ((capa.x ?? 0) - geo.margen_x - cx * capa.paralaje + dx) * esc, y = oy + ((capa.y ?? 0) - geo.margen_y - cy * capa.paralaje + dy) * esc;
     ctx.globalAlpha = alfa * alfaPlano; ctx.globalCompositeOperation = capa.mezcla === 'sumar' ? 'lighter' : 'source-over';
     if (an.tipo === 'cuadros') {
       // la celda de la hoja mide an.w x an.h; en pantalla se dibuja del tamaño de la capa
       const n = (Math.floor(tl * (an.fps ?? 12)) + (an.desfase ?? 0)) % an.cuadros, col = n % an.columnas, fila = Math.floor(n / an.columnas);
-      ctx.drawImage(im, col * an.w, fila * an.h, an.w, an.h, x, y, (capa.w ?? an.w) * esc, (capa.h ?? an.h) * esc);
-    } else {
+      ctx.drawImage(im, (rc ? rc[0] : 0) + col * an.w, (rc ? rc[1] : 0) + fila * an.h, an.w, an.h, x, y, (capa.w ?? an.w) * esc, (capa.h ?? an.h) * esc);
+    } else if (rc) { ctx.drawImage(im, rc[0], rc[1], rc[2], rc[3], x, y, cw * esc, ch * esc); }
+    else {
       ctx.drawImage(im, x, y, cw * esc, ch * esc);
       if (an.enrollar || an.tipo === 'deriva') ctx.drawImage(im, x - cw * esc, y, cw * esc, ch * esc);
     }

@@ -17,7 +17,7 @@ import { abrirTienda, cerrarPaneles, cambiarAgresivo, rectPanel, compacto } from
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
 import { vinetaSangre, dibujarPresentacion, dibujarCaida, DUR_PRESENTA } from './ui/horror';
-import { prepararPortada, esperarPortada, reiniciarPortada } from './ui/portada';
+import { prepararPortada, esperarPortada, reiniciarPortada, durForjaTitulo } from './ui/portada';
 import { miedoPaso } from './juego/miedo';
 import { dibujarMiedo } from './render/miedo';
 /** Presentación del jefe en curso (cámara lenta y nombre grande). */
@@ -485,7 +485,7 @@ function procesarEventos(jj: Juego) {
 
 // ------------------------------------------------------------------ bucle
 let ultimo = performance.now();
-let introT = 0;
+let introT = 0, musicaMenuEn = 0;
 (window as any).__introA = (s: number) => { introT = s; };
 (window as any).__aFinal = () => { estado = 'final'; finalT = 999; };
 (window as any).__cine = (clave: string, acto = 1, marcas: string[] = []) => { marcasCine(marcas); const antes = estado; cine = { clave, acto, t: 0, despues: () => { estado = antes; } }; precargarCine(clave, acto); estado = 'cine'; };
@@ -496,6 +496,8 @@ function cuadro(ahora: number) {
   marcarCuadro(ahora);
   const dt = Math.min(0.05, (ahora - ultimo) / 1000); ultimo = ahora;
   tiempo += dt; tEstado += dt;
+  // si sales del menú antes de que el título termine de forjarse, entra ya la música del menú
+  if (musicaMenuEn && estado !== 'menu') { musicaMenuEn = 0; if (estado !== 'intro' && estado !== 'juego') Sonido.musica('menu'); }
   try { paso(dt); } catch (e) { console.error(e); }
   finCuadro();
   requestAnimationFrame(cuadro);
@@ -560,11 +562,17 @@ function paso(dt: number) {
     case 'intro': {
       introT += dt;
       // la intro de la Forja (planos de cine.ts, clave 'intro') si llegó; si no, la de siempre. Al terminar o saltarla, el título forjado
-      const fin = hayCine('intro') ? dibujarCine('intro', 0, introT) : dibujarIntro(introT);
-      if (fin || (tEstado > 0.5 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) { E.clicIzq = false; estado = 'menu'; tEstado = 0; reiniciarPortada(); Sonido.musica('menu'); try { localStorage.setItem('marca.intro', '1'); } catch { /* */ } }
+      // la música de la intro sigue mientras se forja el título; la del menú entra cuando termina
+      const forja = hayCine('intro'), fin = forja ? dibujarCine('intro', 0, introT) : dibujarIntro(introT);
+      if (fin || (tEstado > 0.5 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) {
+        E.clicIzq = false; estado = 'menu'; tEstado = 0; reiniciarPortada();
+        if (!forja) Sonido.musica('menu'); else musicaMenuEn = tiempo + durForjaTitulo();
+        try { localStorage.setItem('marca.intro', '1'); } catch { /* */ }
+      }
       break;
     }
     case 'menu': {
+      if (musicaMenuEn && tiempo >= musicaMenuEn) { musicaMenuEn = 0; Sonido.musica('menu'); }
       const r = menuPrincipal(tiempo, heroes.length > 0);
       dibujarCursor('senalar');
       if (r === 'jugar') { estado = heroes.length ? 'seleccion' : 'crear'; selClase = null; tEstado = 0; }
