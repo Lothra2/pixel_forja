@@ -869,7 +869,8 @@ function mazmorra(def: DefZona, semilla: number): Zona {
   if (!z.entradas.arriba) z.entradas.arriba = [p0[0], p0[1] + 2];
   if (def.piedraViaje) { const o = ponerPiedra(k, p0[0], p0[1]); if (o) z.marcas.push({ tipo: 'viaje', cx: o.cx, cy: o.cy }); }
   colocarInteractivos(k, 2 + Math.floor(area / 3500), 1 + Math.floor(area / 7000), def.tema);
-  sembrar(k, Math.floor(area / 260), [p0]);
+  // ni la entrada ni la sala del jefe llevan grupos sembrados: la escolta del jefe llega por oleadas
+  sembrar(k, Math.floor(area / 260), def.jefe ? [p0, [pN[0], pN[1] + 2]] : [p0]);
   if (def.jefe) {
     z.spawns.push({ cx: pN[0], cy: pN[1] + 2, tipo: 'jefe', fuerza: 1 });
     // la sala del jefe: cosas que no deberían existir

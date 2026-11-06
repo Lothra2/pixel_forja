@@ -407,7 +407,8 @@ function poblar(z: Zona, d: DatosHeroe): Monstruo[] {
       m.estado = 'dormido';
       out.push(m);
       // escolta
-      for (let i = 0; i < (esActo ? 4 : 5); i++) { const q = libreCerca(z, s.cx + entre(-4, 4), s.cy + entre(-4, 4)); out.push(crearMonstruo(MONSTRUOS[elegir(pool)], nivel, q[0] + 0.5, q[1] + 0.5, 0, dif)); }
+      // la escolta ya no espera amontonada encima del jefe: llega por oleadas después de su presentación (ver oleadaJefe)
+      (m as any).oleada = { ids: Array.from({ length: esActo ? 4 : 5 }, () => elegir(pool)), cd: 1.5 };
       continue;
     }
     let id = R() < 0.55 ? pool[0] : elegir(pool);
@@ -614,6 +615,13 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   return total;
 }
 
+/** Acompañantes vivos alrededor de un jefe (sin contarlo a él). */
+function acompanantes(j: Juego, m: Monstruo) { return j.monstruos.filter((o) => o !== m && !o.muerto && !o.dueno && dist(o.x, o.y, m.x, m.y) < 10).length; }
+/** Un lugar libre a 3.5 a 6 casillas del jefe: los que llegan no se le montan encima. */
+function lejosDelJefe(j: Juego, m: Monstruo): [number, number] {
+  for (let i = 0; i < 10; i++) { const a = R() * Math.PI * 2, r = entre(3.5, 6); const q = libreCerca(j.zona, m.x + Math.cos(a) * r, m.y + Math.sin(a) * r); if (dist(q[0] + 0.5, q[1] + 0.5, m.x, m.y) >= 3) return q; }
+  return libreCerca(j.zona, m.x + 4, m.y + 4);
+}
 function morirMonstruo(j: Juego, m: Monstruo, g?: Golpe) {
   if (sangraHueso(m) && !m.dueno) sonar(j, 'hueso_cruje', m.x, m.y, 0.8);
   if (g?.arma && !m.dueno) efectoLegMuerte(j, m);
@@ -1662,15 +1670,25 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
     moverHacia(j, m, m.x + Math.cos(a) * 2, m.y + Math.sin(a) * 2, m.vel * lento, dt); m.acc = 'caminar';
     return;
   }
+  // la escolta del jefe llega por oleadas, con 4 acompañantes vivos como mucho y lejos de él (3 casillas libres)
+  const ol = (m as any).oleada as { ids: string[]; cd: number } | undefined;
+  if (ol?.ids.length && (m as any).presentado) {
+    ol.cd -= dt;
+    if (ol.cd <= 0) {
+      ol.cd = 6;
+      let libres = 4 - acompanantes(j, m);
+      while (libres-- > 0 && ol.ids.length) { const q = lejosDelJefe(j, m); const nm = crearMonstruo(MONSTRUOS[ol.ids.pop()!], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); nm.estado = 'perseguir'; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', nm.x, nm.y); }
+    }
+  }
   // invocar
   if (m.def.invoca && m.invocaCd > 0) m.invocaCd -= dt;
   if (m.def.invoca && m.invocaCd <= 0 && (m.def.ia === 'invocador' || m.def.jefe) && dh < 10) {
     // los jefes llamaban 3 cada 9 s hasta 14 alrededor: eso, y no el jefe, era lo que mataba (sobre todo al cuerpo a cuerpo)
     m.invocaCd = m.def.jefe ? 12 : 7;
-    const cuantos = j.monstruos.filter((o) => !o.muerto && !o.dueno && dist(o.x, o.y, m.x, m.y) < 8).length;
-    if (cuantos < (m.def.id === 'abadesa' ? 4 : m.def.jefe ? 8 : 9)) {
+    const cuantos = m.def.jefe ? acompanantes(j, m) : j.monstruos.filter((o) => !o.muerto && !o.dueno && dist(o.x, o.y, m.x, m.y) < 8).length;
+    if (cuantos < (m.def.jefe ? 4 : 9)) {
       m.acc = 'lanzar'; m.t = 0; m.dur = 0.7; m.golpeEn = 0.4; m.golpeo = true;
-      for (let k = 0; k < (m.def.id === 'abadesa' ? 1 : 2); k++) { const q = libreCerca(j.zona, m.x + entre(-2, 2), m.y + entre(-2, 2)); const nm = crearMonstruo(MONSTRUOS[m.def.invoca], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); if (m.def.jefe) nm.dano = [Math.min(nm.dano[0], Math.round(m.dano[0] * 0.5)), Math.min(nm.dano[1], Math.round(m.dano[1] * 0.5))]; nm.estado = 'perseguir'; nm.objetivo = h; nm.acc = 'morir'; nm.t = 0; (nm as any).surgiendo = 1; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', q[0] + 0.5, q[1] + 0.5, 0, 0.7); }
+      for (let k = 0; k < Math.min(m.def.id === 'abadesa' ? 1 : 2, m.def.jefe ? 4 - cuantos : 9); k++) { const q = m.def.jefe ? lejosDelJefe(j, m) : libreCerca(j.zona, m.x + entre(-2, 2), m.y + entre(-2, 2)); const nm = crearMonstruo(MONSTRUOS[m.def.invoca], m.nivel, q[0] + 0.5, q[1] + 0.5, 0, h.d.dificultad); if (m.def.jefe) nm.dano = [Math.min(nm.dano[0], Math.round(m.dano[0] * 0.5)), Math.min(nm.dano[1], Math.round(m.dano[1] * 0.5))]; nm.estado = 'perseguir'; nm.objetivo = h; nm.acc = 'morir'; nm.t = 0; (nm as any).surgiendo = 1; j.monstruos.push(nm); efecto(j, 'circulo_invocacion', q[0] + 0.5, q[1] + 0.5, 0, 0.7); }
       sonar(j, 'invocar', m.x, m.y);
       return;
     }

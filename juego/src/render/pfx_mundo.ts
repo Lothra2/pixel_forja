@@ -16,7 +16,7 @@ const ALFA: Record<string, number> = { fx_lluvia: 0.45, fx_nieve: 0.5, fx_ventis
 const ORDEN_CLIMA = ['fx_tormenta', 'fx_ventisca', 'fx_lluvia', 'fx_nieve', 'fx_niebla', 'fx_hojas_caen', 'fx_luciernagas', 'fx_rayos_luz', 'fx_nubes'];
 const EXCLUYE: Record<string, string> = { fx_lluvia: 'fx_tormenta', fx_nieve: 'fx_ventisca' };
 
-const CHICOS = new Set(['fx_sapo', 'fx_serpiente', 'fx_murcielago', 'fx_cuervo']);
+const CRIATURAS = new Set(['fx_sapo', 'fx_serpiente', 'fx_murcielago', 'fx_cuervo', 'fx_espectro', 'fx_calavera_voladora', 'fx_medusa', 'fx_ojo_flotante', 'fx_fuego_fatuo', 'fx_baba']);
 interface Planta { id: string; x: number; y: number; fase: number }
 let zonaId = '', clima: string[] = [], plantas: Planta[] = [], pantallaTodo: string[] = [];
 export const climaPfx = { activo: [] as string[] };
@@ -32,14 +32,17 @@ function armar(j: Juego) {
   // lo que vive en la zona: lugares fijos (semilla de la zona) en celdas libres
   const amb = es.filter((e) => e.capa !== 'pantalla' && e.bucle && !QUITAR_AMBIENTE.has(e.id) && e.uso?.some((u) => u.tipo === 'ambiente' && u.zonas?.includes(z.id))).map((e) => e.id);
   plantas = [];
+  // en las mazmorras no hay criaturas de ambiente (son de pelea); y nada de ambiente en la sala del jefe
+  const jefe = z.spawns.find((q) => q.tipo === 'jefe');
+  const usar = z.tipo === 'mazmorra' ? amb.filter((id) => !CRIATURAS.has(id)) : amb;
   let s = (z.semilla * 9301 + 49297) % 233280;
   const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
   const n = Math.min(60, Math.round((z.W * z.H) / 900));
-  for (let i = 0; i < n && amb.length; i++) {
+  for (let i = 0; i < n && usar.length; i++) {
     for (let k = 0; k < 12; k++) {
       const x = 2 + r() * (z.W - 4), y = 2 + r() * (z.H - 4);
-      if (!pasable(z, x, y)) continue;
-      plantas.push({ id: amb[i % amb.length], x, y, fase: r() * 10 });
+      if (!pasable(z, x, y) || (jefe && Math.hypot(jefe.cx - x, jefe.cy - y) < 16)) continue;
+      plantas.push({ id: usar[i % usar.length], x, y, fase: r() * 10 });
       break;
     }
   }
@@ -55,8 +58,8 @@ export function dibujarAmbiente(ctx: CanvasRenderingContext2D, j: Juego, aPant: 
     const [px, py] = aPant(p.x, p.y);
     if (px < -80 || px > W + 80 || py < -60 || py > H + 160) continue;
     if (++n > tope) break;
-    // los bichos chicos a escala 1 (del tamaño de un animal real junto al héroe)
-    dibujarPfx(ctx, p.id, t + p.fase, px, py, { escala: CHICOS.has(p.id) ? 0.5 : 1 });
+    // todo el ambiente a escala 1: el pixel no pasa del del mundo. El espectro, además, translúcido
+    dibujarPfx(ctx, p.id, t + p.fase, px, py, { escala: 0.5, alfa: p.id === 'fx_espectro' ? 0.6 : 1 });
   }
 }
 
