@@ -10,7 +10,7 @@ const RES = [[844, 390], [932, 430], [667, 375], [844, 340]];
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', (e) => errs.push(e.message));
     await p.addInitScript(() => { localStorage.setItem('marca.intro', '1'); sessionStorage.setItem('vertical-ok', '1'); });
     await p.goto(process.env.URL || 'http://127.0.0.1:5190/'); for (let i = 0; i < 60; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => window.__estado && window.__estado()) === 'menu') break; }
-    await p.evaluate(async () => { const d = window.__T.H.nuevoHeroe('berserker', 'X'); d.nivel = 12; d.misiones = { m1_hambre: 1 }; d.atajos = [null, null, null, null, null, null, null, null, null, null]; localStorage.setItem('marca.heroes', JSON.stringify([d])); });
+    await p.waitForFunction(() => window.__T && window.__T.H, null, { timeout: 60000 }); await p.evaluate(async () => { const d = window.__T.H.nuevoHeroe('berserker', 'X'); d.nivel = 12; d.misiones = { m1_hambre: 1 }; d.atajos = [null, null, null, null, null, null, null, null, null, null]; localStorage.setItem('marca.heroes', JSON.stringify([d])); });
     await p.reload(); for (let i = 0; i < 60; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => window.__estado && window.__estado()) === 'menu') break; }
     await p.waitForTimeout(4800);
     const L = await p.evaluate(() => { const c = document.getElementById('juego'); const r = c.getBoundingClientRect(); return { k: r.width / c.width, l: r.left, t: r.top, W: c.width, H: c.height }; });
