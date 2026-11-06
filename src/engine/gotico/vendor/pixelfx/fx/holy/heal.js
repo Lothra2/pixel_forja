@@ -31,7 +31,8 @@ export const act = {
 };
 
 const SY = ISO, NP = 8, PR = 16, LIFT0 = 0.16, LIFT1 = 0.74, TOPY = -43;
-const HEART = [".#.#.", "#####", ".###.", "..#.."];
+// Forja: una cruz chica de luz en vez de un corazón
+const HEART = ["..#..", "#####", "..#..", "..#.."];
 
 // a tiny heart of light: cream body, a white glint, a warm rim
 function heart(p, x, y, C, a) {

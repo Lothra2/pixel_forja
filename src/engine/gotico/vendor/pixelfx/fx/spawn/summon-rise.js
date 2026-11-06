@@ -357,7 +357,8 @@ export function create(o) {
     },
     draw(p) {
       const r = rise(t), off = BEAST.h * (1 - r), h = heat(t), fade = smooth(FADE + 0.1, FADE + 0.8, t);
-      if (r > 0) {
+      // Forja: con bruto: false no se pinta la bestia (el juego levanta su propio monstruo del agujero)
+      if (r > 0 && o.bruto !== false) {
         const W = BEAST.w, H = BEAST.h, x0 = -W / 2, oy = off - H, k = Math.min(1, h);
         const gone = (x, y) => fade > 0 && fade > 0.06 + 0.86 * (0.55 * (1 - y / H) + 0.45 * rand(x, y, 3));
         // a dark edge all round, so the bulk reads against the night

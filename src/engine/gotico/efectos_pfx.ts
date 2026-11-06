@@ -101,9 +101,10 @@ export interface CfgPfx {
   cuerpo?: {
     /**
      * borrar lo que depende del color del muñeco: 'silueta' solo adentro de la silueta, 'todo' también afuera;
-     * 'mascara' borra todo lo que cae sobre la silueta engordada 2 px (efectos que son el cuerpo mismo encendido)
+     * 'mascara' borra todo lo que cae sobre la silueta engordada 2 px (efectos que son el cuerpo mismo encendido);
+     * 'forma' borra en todos lados lo que sigue a la forma del cuerpo (estelas con su silueta, contornos)
      */
-    quitar?: 'silueta' | 'todo' | 'mascara';
+    quitar?: 'silueta' | 'todo' | 'mascara' | 'forma';
     /** rampa para los colores del muñeco (lo que sale del cuerpo y queda: astillas, ceniza) */
     rampa?: NombreRampa;
     /** exportar la curva de visibilidad del sprite (el efecto lo hace desaparecer o aparecer) */
@@ -112,6 +113,8 @@ export interface CfgPfx {
     tinte?: { color: string; fuerza: number; nota?: string };
   };
   gradacion?: Partial<Gradacion>;
+  /** multiplica el alfa de todo el efecto (espectros translúcidos) */
+  opacidad?: number;
   /** fracción de la energía máxima bajo la que se corta la cola de un efecto que pasa una vez (0 = no cortar) */
   cola?: number;
   /** máximo de segundos (los largos se cortan con un desvanecido) */
@@ -121,6 +124,12 @@ export interface CfgPfx {
   luz?: Partial<LuzEfecto>;
   /** el efecto se centra en el que lo lanza (novas, auras, cargas): el juego lo pone en sus pies */
   enLanzador?: boolean;
+  /**
+   * copias del efecto sobre el piso (desplazamientos x, y a 1x, de atrás hacia adelante) para que algo que pixelfx
+   * pinta como una franja de perfil (una nube que se arrastra por el piso) cubra un área 2:1; en los bucles cada
+   * copia va desfasada
+   */
+  relleno?: [number, number][];
   /** en qué direcciones va detrás del que lo lanza (tajos y alientos pegados al cuerpo) */
   detrasEn?: (typeof DIRS_PODER)[number][];
   uso: UsoPfx[];
@@ -224,8 +233,10 @@ const modulo = (cfg: CfgPfx): ModuloPfx => {
 };
 
 /** El muñeco para los efectos de cuerpo: la silueta de nuestro héroe a 1x con colores de una rampa. */
-function actorDe(cfg: CfgPfx, variante: 0 | 1): ActorPfx {
-  const s = siluetaHeroe();
+function actorDe(cfg: CfgPfx, variante: 0 | 1 | 2): ActorPfx {
+  const s0 = siluetaHeroe();
+  // la variante 2 (modo forma) adelgaza la silueta 2 px por lado: lo que siga a la forma del cuerpo sale distinto
+  const s = variante === 2 ? { ...s0, mask: s0.mask.map((v, i) => { const x = i % s0.w, y = (i / s0.w) | 0; return v && s0.mask[y * s0.w + Math.max(0, x - 2)] && s0.mask[y * s0.w + Math.min(s0.w - 1, x + 2)] ? 1 : 0; }) } : s0;
   const r = rampa(cfg.cuerpo?.rampa ?? 'piedra', 16).map(rgbHex);
   const pixels = new Uint32Array(s.w * s.h);
   for (let i = 0; i < s.w * s.h; i++) {
@@ -255,7 +266,7 @@ function tiempos(cfg: CfgPfx, meta: ModuloPfx['meta']): { ts: number[]; t: numbe
 }
 
 /** Pinta todos los cuadros a 1x en un lienzo con margen. Devuelve RGBA con alfa directa, más la luz medida. */
-function pintarCrudo(cfg: CfgPfx, variante: 0 | 1 = 0): Crudo {
+function pintarCrudo(cfg: CfgPfx, variante: 0 | 1 | 2 = 0): Crudo {
   const mod = modulo(cfg), meta = mod.meta;
   const [W, H] = meta.size, [OX, OY] = meta.origin;
   const pantalla = cfg.capa === 'pantalla';
@@ -312,8 +323,8 @@ function pintarCrudo(cfg: CfgPfx, variante: 0 | 1 = 0): Crudo {
 
 /** Borra la capa que teñía al muñeco: lo que cambia cuando cambian los colores del muñeco. */
 function quitarCuerpo(cfg: CfgPfx, a: Crudo): void {
-  const mascara = cfg.cuerpo?.quitar === 'mascara';
-  const b = mascara ? a : pintarCrudo(cfg, 1);
+  const mascara = cfg.cuerpo?.quitar === 'mascara', forma = cfg.cuerpo?.quitar === 'forma';
+  const b = mascara ? a : pintarCrudo(cfg, forma ? 2 : 1);
   const { w, h } = a.lam, s = siluetaHeroe();
   const dentro = new Uint8Array(w * h);
   const x0 = a.lam.ox - Math.floor(s.w / 2), y0 = a.lam.oy - s.h;
@@ -328,7 +339,7 @@ function quitarCuerpo(cfg: CfgPfx, a: Crudo): void {
           if (X >= 0 && Y >= 0 && X < w && Y < h) dentro[Y * w + X] = 1;
         }
     }
-  const todo = cfg.cuerpo?.quitar === 'todo';
+  const todo = cfg.cuerpo?.quitar === 'todo' || forma;
   for (let f = 0; f < a.n; f++) {
     const A = a.lam.cuadros[f], B = b.lam.cuadros[f];
     for (let i = 0; i < w * h; i++) {
@@ -337,6 +348,33 @@ function quitarCuerpo(cfg: CfgPfx, a: Crudo): void {
       const dif = Math.abs(A[j] - B[j]) + Math.abs(A[j + 1] - B[j + 1]) + Math.abs(A[j + 2] - B[j + 2]) + Math.abs(A[j + 3] - B[j + 3]);
       if (mascara ? dentro[i] && A[j + 3] > 0 : dif > 6 && (todo || dentro[i])) { A[j] = A[j + 1] = A[j + 2] = A[j + 3] = 0; }
     }
+  }
+}
+
+/** Compone copias desplazadas (y desfasadas si es bucle) del efecto: de una franja hace un área sobre el piso. */
+function rellenar(offs: [number, number][], c: Crudo): void {
+  const { w, h } = c.lam, n = c.n, orig = c.lam.cuadros.map((q) => q.slice());
+  const orden = [...offs.keys()].sort((a, b) => offs[a][1] - offs[b][1]);
+  for (let f = 0; f < n; f++) {
+    const o = new Uint8ClampedArray(w * h * 4);
+    orden.forEach((k, rango) => {
+      const [dx, dy] = offs[k], src = orig[c.bucle ? (f + Math.round((k * n) / offs.length)) % n : f];
+      // las copias de atrás, más apagadas; la línea de piso de cada copia (salvo la de adelante) casi no se ve
+      const delante = rango === orden.length - 1, mul = 0.55 + 0.45 * (rango / Math.max(1, orden.length - 1));
+      for (let y = 0; y < h; y++) {
+        const Y = y + dy;
+        if (Y < 0 || Y >= h) continue;
+        const linea = !delante && Math.abs(y - c.lam.oy) <= 2 ? 0.3 : 1;
+        for (let x = 0; x < w; x++) {
+          const X = x + dx, j = (y * w + x) * 4;
+          if (X < 0 || X >= w || !src[j + 3]) continue;
+          const i = (Y * w + X) * 4, a = (src[j + 3] / 255) * mul * linea, b = o[i + 3] / 255, oa = a + b * (1 - a);
+          for (let ch = 0; ch < 3; ch++) o[i + ch] = (src[j + ch] * a + o[i + ch] * b * (1 - a)) / Math.max(oa, 1e-6);
+          o[i + 3] = oa * 255;
+        }
+      }
+    });
+    c.lam.cuadros[f] = o;
   }
 }
 
@@ -551,8 +589,12 @@ function hacer(id: string): Hecho {
   const crudo = pintarCrudo(cfg, 0);
   if (cfg.cuerpo?.quitar) quitarCuerpo(cfg, crudo);
   const g: Gradacion = { ...GRADACION_BASE, blanco: nucleo(cfg.elemento), ...(VIOLETAS.includes(cfg.elemento) ? { violeta: 0 } : {}), ...(GRADACION_ELEMENTO[cfg.elemento] ?? {}), ...(cfg.gradacion ?? {}) };
-  for (const q of crudo.lam.cuadros) gradar(q, g);
+  for (const q of crudo.lam.cuadros) {
+    gradar(q, g);
+    if (cfg.opacidad !== undefined) for (let i = 3; i < q.length; i += 4) q[i] = Math.round(q[i] * cfg.opacidad);
+  }
   cortarCola(cfg, crudo);
+  if (cfg.relleno) rellenar(cfg.relleno, crudo);
   // recorte a 1x (la pantalla va entera: es el cuadro de 320 × 180)
   const pantalla = cfg.capa === 'pantalla';
   const [x0, y0, x1, y1] = caja([crudo.lam], 1);

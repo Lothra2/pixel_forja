@@ -35,10 +35,11 @@ export const act = {
 };
 
 const D = meta.duration;
+// Forja: calaveritas que giran en vez de signos de pregunta (cuencas y dientes huecos)
 const QS = [
-  [".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."],
-  [".####.", "##..##", "....##", "...##.", "..##..", "..##..", "......", "..##..", "..##.."],
-  [".#####.", "##...##", "##...##", ".....##", "....##.", "...##..", "...##..", ".......", "...##..", "...##.."],
+  [".###.", "#####", "#.#.#", "#####", ".#.#."],
+  [".####.", "######", "#..#.#", "######", ".####.", ".#.#.."],
+  [".#####.", "#######", "##.#.##", "#..#..#", "#######", ".#####.", ".#.#.#."],
 ].map((rows) => bitmap(rows));
 // three marks round the spiral: where they sit, when they pop, how big they get
 const MARKS = [
@@ -93,9 +94,10 @@ export function draw(p, t, o) {
     if (pop < 0.3 || (out > 0 && size === 0 && out > 0.6)) continue;
     const x = m.x + tilt, y = a.y + m.y + bob - age * 2;
     // it pops in with a burst of short rays and a flash
+    // Forja: sin los rayitos de historieta al aparecer, solo el destello
     if (age < 0.2) {
       const k = age / 0.2;
-      for (let j = 0; j < 8; j++) {
+      for (let j = 0; j < 0; j++) {
         const an = (j / 8) * TAU + 0.2, d0 = 4 + 7 * k, d1 = d0 + 3 * (1 - k);
         p.line(x + Math.cos(an) * d0, y + Math.sin(an) * d0, x + Math.cos(an) * d1, y + Math.sin(an) * d1, j % 2 ? M[2] : M[3], 1 - k);
       }

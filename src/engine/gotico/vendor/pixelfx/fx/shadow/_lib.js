@@ -5,7 +5,7 @@
 // Shared bits for the shadow effects (files starting with _ are helpers, not effects): the void palette,
 // light that black shapes cut, smoke lit from one side, violet flame, obsidian slivers, ink drops.
 
-import { hex, mix, ramp, clamp, noise, WHITE, GRAVITY } from "../../core/index.js";
+import { hex, mix, ramp, clamp, noise, WHITE, GRAVITY, ISO } from "../../core/index.js";
 
 /** Dark magic, dark to bright: void black, deep violet, a white-lilac edge. */
 export const VOID = ["#06040b", "#150c26", "#2a1150", "#461a84", "#6f2cc0", "#9d5cec", "#cfa6ff", "#f6eaff"];
@@ -328,7 +328,8 @@ export class Drops {
  */
 export function floorPool(p, C, rx, t, ripples) {
   if (rx < 1) return;
-  const ry = rx * 0.17 + 0.6;
+  // Forja: el charco negro se aplasta 2:1 como el piso isométrico (antes 0.17)
+  const ry = rx * ISO * 0.9 + 0.6;
   p.shade(-rx - 3, -ry - 2, rx + 3, ry + 2, (x, y) => {
     const dx = x / rx, dy = (y - 0.5) / ry, d = Math.sqrt(dx * dx + dy * dy);
     if (d > 1.18) return;
@@ -339,8 +340,8 @@ export function floorPool(p, C, rx, t, ripples) {
     }
     // ripples: ellipses on the slanted surface, kept about a pixel thick all the way round
     for (const r of ripples) {
-      const age = t - r.t0, rr = age * 46 * r.w + 1, ex = x - r.x, ey = (y - 0.5) / 0.17, e = Math.sqrt(ex * ex + ey * ey) || 1;
-      const g = Math.sqrt(ex * ex + (ey / 0.17) ** 2) / e;
+      const age = t - r.t0, rr = age * 46 * r.w + 1, ex = x - r.x, ey = (y - 0.5) / (ISO * 0.9), e = Math.sqrt(ex * ex + ey * ey) || 1;
+      const g = Math.sqrt(ex * ex + (ey / (ISO * 0.9)) ** 2) / e;
       if (Math.abs(e - rr) < 0.55 * g && age < r.life) return age < r.life * 0.5 ? C[4] : C[3];
     }
     if (dy < -0.55 && dy > -0.85 && noise(x * 0.25 + t * 1.3, 4) > 0.2) return noise(x * 0.6 - t * 2, 6) > 0.55 ? C[5] : C[2];

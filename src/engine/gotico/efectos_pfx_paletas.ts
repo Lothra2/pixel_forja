@@ -40,7 +40,7 @@ export const RAMPAS = {
   /** fuego de espíritu o fuego fatuo: verde de cripta, apagado */
   fatuo: ['#020605', '#05120e', '#0a2018', '#103426', '#184c36', '#246a48', '#3c8c5e', '#6cb282', '#b2dcb8'],
   /** fuego del infierno de la sombra: violeta casi negro con bordes de brasa morada */
-  infierno: ['#040106', '#0c030e', '#1a0618', '#2c0a26', '#441038', '#5e1a4c', '#7e2e62', '#a24e7e', '#c88aa8'],
+  infierno: ['#040106', '#0a030b', '#140616', '#200924', '#2e0e34', '#3e1646', '#52245a', '#6c3c72', '#8e6090'],
   noche: ['#020306', '#05070e', '#090d18', '#0f1524', '#161e32', '#202a42', '#2e3a56', '#425070', '#5e6e8e'],
 } as const satisfies Record<string, Rampa>;
 
@@ -95,6 +95,8 @@ export const GRADACION_ELEMENTO: Partial<Record<NombreRampa, Partial<Gradacion>>
   sangre: { sat: 0.68, brillo: 0.9 },
   carne: { sat: 0.7, brillo: 0.92 },
   veneno: { sat: 0.78 },
+  arcano: { brillo: 0.9, tope: 0.75 },
+  infierno: { sat: 0.75 },
 };
 
 /** Elementos violetas o azules por naturaleza: su violeta no se apaga. */

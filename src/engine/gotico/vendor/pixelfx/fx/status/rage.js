@@ -111,9 +111,9 @@ export function draw(p, t, o) {
   // the anger mark throbbing at the temple: big on the lub, smaller on the dub
   const big = pulse(t, LUB + 0.02, 0.05) > 0.35 || pulse(t, DUB + 0.02, 0.04) > 0.6;
   const mx = a.x + a.w * 0.86 + dx, my = a.y + 3 + dy;
-  icon(p, mx, my, 5, MARK[big ? 1 : 0], [C[0], C[3], C[4], C[5]]);
-  p.px(mx - (big ? 3 : 2), my - (big ? 3 : 2), C[6]);
-  p.glow(mx, my, 8, C[4], 0.25 + 0.4 * b);
+  // Forja: sin la marca de enojo de historieta en la sien; queda un latido de luz roja
+  void icon; void MARK;
+  p.glow(mx, my, 8, C[4], (0.25 + 0.4 * b) * (big ? 1 : 0.6));
   // steam jetting off the head in short bursts after each beat
   for (const [at, n, power] of [[LUB + 0.04, 7, 1], [DUB + 0.04, 4, 0.75]])
     for (const side of [-1, 1])
@@ -128,7 +128,8 @@ export function draw(p, t, o) {
         if (u < 0.3) p.dot(x, y, 0xffffffff, 1 - u / 0.3);
       }
   // jagged stress lines flashing out round the head on the beat
-  for (const [at, n, len] of [[LUB, 8, 7], [DUB, 6, 5]]) {
+  // Forja: sin las líneas de estrés de historieta
+  for (const [at, n, len] of []) {
     const age = since(t, at);
     if (age > 0.2) continue;
     const k = age / 0.2;

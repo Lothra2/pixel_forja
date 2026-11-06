@@ -96,8 +96,10 @@ export function draw(p, t, o) {
     }
     // it dims down the ramp as it gets old
     const old = u > 0.78 ? 1 : 0, R = old ? [C[0], C[1], C[2], C[3]] : [C[1], C[2], C[3], C[4]];
-    icon(p, z.x, z.y, 7, ZS[z.size], R, z.k);
-    if (!old) p.px(z.x - 2 - z.size, z.y - 2 - z.size * 0.8, C[5]);
+    // Forja: sin letras Z de historieta; sube un aliento pálido que se abre y se apaga
+    void ZS;
+    p.disc(z.x, z.y, 1.2 + z.size * 0.9, R[2], 0.35 * z.k);
+    p.dot(z.x - 1, z.y - 1, R[3], 0.6 * z.k);
     p.glow(z.x, z.y, 7 + z.size * 3, C[3], (old ? 0.12 : 0.26) * z.k);
   }
 }

@@ -50,11 +50,11 @@ export function create(o) {
   // little stars spun off the pop
   for (let i = 0; i < 7; i++) {
     const a = R.range(-Math.PI, 0.3), sp = R.range(70, 125);
-    ps.spawn(P.STAR, Math.cos(a) * 6, CY + Math.sin(a) * 6, Math.cos(a) * sp, Math.sin(a) * sp - 30, R.range(0.55, 0.95), R.pick([S[2], S[1], S[1], S[0]]), R.range(1.3, 2.4), R.range(0.02, 0.1));
+    ps.spawn(P.MOTE, Math.cos(a) * 6, CY + Math.sin(a) * 6, Math.cos(a) * sp, Math.sin(a) * sp - 30, R.range(0.55, 0.95), R.pick([S[2], S[1], S[1], S[0]]), R.range(1.3, 2.4), R.range(0.02, 0.1));
   }
   for (let i = 0; i < 10; i++) {
     const a = R.range(0, TAU), sp = R.range(40, 110);
-    ps.spawn(P.STAR, Math.cos(a) * 5, CY + Math.sin(a) * 5, Math.cos(a) * sp, Math.sin(a) * sp - 20, R.range(0.3, 0.6), R.pick([WHITE, S[1]]), 0.6, R.range(0, 0.08));
+    ps.spawn(P.MOTE, Math.cos(a) * 5, CY + Math.sin(a) * 5, Math.cos(a) * sp, Math.sin(a) * sp - 20, R.range(0.3, 0.6), R.pick([WHITE, S[1]]), 0.6, R.range(0, 0.08));
   }
   // the feet go too: a skid of dust along the floor
   for (let i = 0; i < 6; i++) {
@@ -95,7 +95,7 @@ export function create(o) {
         }
         if ((b.life -= dt) <= 0) {
           // each ball goes with a pip of light
-          if (b.r1 > 4) ps.spawn(P.STAR, b.x, b.y, 0, -8, 0.22, WHITE, 0.6);
+          if (b.r1 > 4) ps.spawn(P.MOTE, b.x, b.y, 0, -8, 0.22, WHITE, 0.6);
           balls.splice(i, 1);
           continue;
         }
@@ -127,7 +127,8 @@ export function create(o) {
       }
       const rk = (t - 0.03) / 0.2;
       if (rk > 0 && rk < 1) p.ring(0, CY, 8 + 18 * ease.outCubic(rk), Math.max(1, 2.5 * (1 - rk)), rk < 0.3 ? WHITE : C[4], 1.1 - rk);
-      for (const l of lines) {
+      // Forja: sin líneas de velocidad de historieta
+      for (const l of (void lines, [])) {
         const u = (t - l.d) / 0.2;
         if (u <= 0 || u >= 1) continue;
         const head = 8 + (l.r1 - 8) * ease.outExpo(clamp(u / 0.6)), tail = 8 + (l.r1 - 8) * ease.inCubic(u), ca = Math.cos(l.a), sa = Math.sin(l.a);
