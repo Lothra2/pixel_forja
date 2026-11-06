@@ -8,6 +8,11 @@ import { usosPfx } from '../juego/pfx_usos';
 
 const QUITAR_AMBIENTE = new Set(['fx_columna_regreso', 'fx_portal', 'fx_curacion', 'fx_explosion_barril', 'fx_dormido', 'fx_roca', 'fx_caida_carambano', 'fx_flor_curativa', 'fx_esporas', 'fx_manos_que_agarran', 'fx_tentaculos_sombra', 'fx_grieta_invocacion', 'fx_arco_chispas', 'fx_fuente', 'fx_sol_radiante', 'fx_fragmento_reliquia']);
 // del clima a pantalla: uno o dos por zona, los de más peso primero (cada uno son 5 a 7 Mpx)
+// sin cielo en el juego: nada de franjas de nubes ni auroras (la tormenta trae su franja de nubes; queda la lluvia)
+// la niebla y los rayos de luz son formas grandes que no se repiten bien en mosaico: queda la niebla de siempre
+const SIN_PANTALLA = new Set(['fx_aurora', 'fx_nubes', 'fx_tormenta', 'fx_niebla', 'fx_rayos_luz']);
+// alfa tope de cada clima a pantalla: que nunca tape al héroe ni a los monstruos
+const ALFA: Record<string, number> = { fx_lluvia: 0.45, fx_nieve: 0.5, fx_ventisca: 0.45, fx_niebla: 0.35, fx_hojas_caen: 0.35, fx_luciernagas: 0.5, fx_rayos_luz: 0.35 };
 const ORDEN_CLIMA = ['fx_tormenta', 'fx_ventisca', 'fx_lluvia', 'fx_nieve', 'fx_niebla', 'fx_hojas_caen', 'fx_luciernagas', 'fx_rayos_luz', 'fx_nubes'];
 const EXCLUYE: Record<string, string> = { fx_lluvia: 'fx_tormenta', fx_nieve: 'fx_ventisca' };
 
@@ -18,7 +23,7 @@ export const climaPfx = { activo: [] as string[] };
 function armar(j: Juego) {
   const z = j.zona; zonaId = z.id + ':' + z.semilla;
   const es = todosPfx();
-  const cl = es.filter((e) => e.capa === 'pantalla' && e.id !== 'fx_aurora' && e.uso?.some((u) => u.tipo === 'clima' && (u.zonas ? u.zonas.includes(z.id) : u.actos?.includes(z.acto) && z.tipo === 'exterior'))).map((e) => e.id);
+  const cl = es.filter((e) => e.capa === 'pantalla' && !SIN_PANTALLA.has(e.id) && e.uso?.some((u) => u.tipo === 'clima' && (u.zonas ? u.zonas.includes(z.id) : u.actos?.includes(z.acto) && z.tipo === 'exterior'))).map((e) => e.id);
   const orden = cl.sort((a, b) => ORDEN_CLIMA.indexOf(a) - ORDEN_CLIMA.indexOf(b)).filter((id) => !(EXCLUYE[id] && cl.includes(EXCLUYE[id])));
   clima = orden.slice(0, E.tactil ? 1 : 2);
   pantallaTodo = cl;
@@ -60,9 +65,15 @@ export function dibujarClimaPfx(ctx: CanvasRenderingContext2D, j: Juego, W: numb
   if (zonaId !== j.zona.id + ':' + j.zona.semilla) armar(j);
   for (const id of clima) {
     const e = efectoPfx(id); if (!e) continue;
-    const alfa = id === 'fx_nubes' ? 0.25 : id === 'fx_niebla' ? 0.7 : id === 'fx_hojas_caen' ? 0.55 : id === 'fx_luciernagas' ? 0.8 : 0.9;
-    if (dibujarPfx(ctx, id, t, 0, 0, { W, H, alfa })) {
-      if (id === 'fx_lluvia' || id === 'fx_tormenta') r.lluvia = true;
+    // en mosaico a escala 2, cada tesela con su propio tiempo para que no se note la repetición
+    const tw = 640, th = 360, alfa = ALFA[id] ?? 0.4;
+    let dibujo = false;
+    for (let ty = 0, fy = 0; ty < H; ty += th, fy++) for (let tx = 0, fx = 0; tx < W; tx += tw, fx++) {
+      const fase = id === 'fx_niebla' || id === 'fx_rayos_luz' ? 0 : (fx * 7 + fy * 3) * 0.37;
+      if (dibujarPfx(ctx, id, t + fase, tx, ty, { tesela: true, alfa })) dibujo = true;
+    }
+    if (dibujo) {
+      if (id === 'fx_lluvia') r.lluvia = true;
       if (id === 'fx_nieve' || id === 'fx_ventisca') r.nieve = true;
       if (id === 'fx_niebla') r.niebla = true;
     }

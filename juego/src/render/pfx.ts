@@ -96,7 +96,7 @@ export function dirPfx(vx: number, vy: number) {
  * Dibuja el efecto con su ancla en (x, y) de pantalla. `dir` 0..7. Devuelve false si todavía no está cargado o ya
  * terminó. Capa pantalla: estirado a cubrir (W, H) y la esquina en (0, 0).
  */
-export function dibujarPfx(ctx: CanvasRenderingContext2D, id: string, seg: number, x: number, y: number, o: { dir?: number; alfa?: number; escala?: number; W?: number; H?: number } = {}): boolean {
+export function dibujarPfx(ctx: CanvasRenderingContext2D, id: string, seg: number, x: number, y: number, o: { dir?: number; alfa?: number; escala?: number; W?: number; H?: number; tesela?: boolean } = {}): boolean {
   const e = efectoPfx(id); if (!e) return false;
   const n = cuadroPfx(e, seg); if (n < 0) return false;
   let d = e.direcciones[e.direccional ? (o.dir ?? 0) % e.direcciones.length : 0];
@@ -109,7 +109,10 @@ export function dibujarPfx(ctx: CanvasRenderingContext2D, id: string, seg: numbe
   ctx.imageSmoothingEnabled = false;
   if (o.alfa !== undefined) ctx.globalAlpha *= o.alfa;
   ctx.globalCompositeOperation = e.mezcla === 'aditiva' || e.mezcla === 'sumar' ? 'lighter' : 'source-over';
-  if (e.capa === 'pantalla' && o.W) {
+  if (e.capa === 'pantalla' && o.tesela) {
+    // clima en mosaico: el cuadro a escala 2 (el mismo pixel que el mundo) con la esquina en (x, y)
+    ctx.drawImage(bmp, c[1], c[2], c[3], c[4], Math.round(x), Math.round(y), c[3] * 2, c[4] * 2);
+  } else if (e.capa === 'pantalla' && o.W) {
     // a cubrir la pantalla manteniendo la proporción del cuadro
     const k = Math.max(o.W / c[3], (o.H ?? 0) / c[4]);
     ctx.drawImage(bmp, c[1], c[2], c[3], c[4], (o.W - c[3] * k) / 2, ((o.H ?? 0) - c[4] * k) / 2, c[3] * k, c[4] * k);
