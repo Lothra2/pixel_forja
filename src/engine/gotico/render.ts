@@ -328,6 +328,23 @@ export interface Escena {
   resplandor?: { c: V3; r: number; color: string };
   /** muestras por lado de cada pixel (1 a 3); si no está, la calidad global */
   ss?: number;
+  /** iluminación propia (los personajes traen la clave baja de clave_baja.ts); sin ella, la de siempre */
+  luz?: Iluminacion;
+}
+/**
+ * Cómo se ilumina una escena. Cada campo que falta queda como siempre (la luz de los objetos y los pisos no cambia).
+ * amb, dif, cielo y rebote pesan la luz de relleno, la principal, la del cielo y el rebote del piso; `especular`
+ * multiplica el brillo de los materiales y `especularMin` se lo quita a los que brillan menos (piel, tela, cuero);
+ * `expo` y `gamma` son la curva final (gamma > 1 hunde las sombras); `borde` es una luz de contraluz fina que
+ * recorta la silueta (y `contorno` aclara el pixel del filo que da hacia ella, para que se lea a 75 px); `sombra` tiñe lo oscuro hacia un color; `techo` comprime lo claro (los blancos quedan rotos).
+ */
+export interface Iluminacion {
+  amb?: number; dif?: number; cielo?: number; rebote?: number;
+  especular?: number; especularMin?: number;
+  expo?: number; gamma?: number;
+  borde?: { dir: V3; fuerza: number; color: string; ancho?: number; mezcla?: number; contorno?: number };
+  sombra?: { color: string; fuerza: number; hasta?: number };
+  techo?: { desde: number; k: number; color?: string; mezcla?: number };
 }
 export interface Render { img: Raster; ancla: [number, number] }
 export interface Ambiente { tinte?: [number, number, number]; luz?: number }
@@ -552,8 +569,14 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   const media = norm(add(LUZ, VISTA, -1));
   const rebote: V3 = norm([-LUZ[0], -LUZ[1], 0.15]);
   const resp = esc.resplandor ? { ...esc.resplandor, rgb: rgb(esc.resplandor.color) } : null;
-  // por sub-muestra: material, brillo, punto
-  const sm: { mat: string; s: number; p: V3 }[] = [];
+  const L = esc.luz, lAmb = L?.amb ?? 0.17, lDif = L?.dif ?? 0.64, lCielo = L?.cielo ?? 0.12, lReb = L?.rebote ?? 0.06;
+  const lEsp = L?.especular ?? 1, lEspMin = L?.especularMin ?? 0;
+  const borde = L?.borde ? { ...L.borde, d: norm(L.borde.dir), rgb: rgb(L.borde.color) } : null;
+  const sombraL = L?.sombra ? { ...L.sombra, rgb: rgb(L.sombra.color) } : null;
+  const techo = L?.techo ? { ...L.techo, rgb: rgb(L.techo.color ?? '#8a8070') } : null;
+  // por sub-muestra: material, brillo, punto y cuánto la toca la luz de borde
+  const sm: { mat: string; s: number; p: V3; b: number }[] = [];
+  const luzPropia = borde?.contorno ? new Uint8Array(W * H) : null;
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
     const cand = grilla[Math.floor(py / G) * gw + Math.floor(px / G)];
     const i = (py * W + px) * 4;
@@ -579,7 +602,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
       const p = add(o, VISTA, hit.t);
       const n = hit.n;
       const tono = (hit.tono ?? 0) + (hit.p.tono ?? 0);
-      let s: number;
+      let s: number, bb = 0;
       if (m.emite) {
         s = 0.8 + (fbm(p[0] * m.escala, p[1] * m.escala, p[2] * m.escala) - 0.5) * m.ruido + tono;
       } else {
@@ -587,16 +610,20 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
         const lz = dif > 0 ? luzDe(add(p, n, borrador ? 0.8 : 0.55), giro, 0.3 + 0.6 * (1 - dif)) : 0;
         const oc = borrador ? Math.max(0, 1 - Math.max(0, p[2]) / 10) * 0.5 : oclusion(alturas, p, n);
         const arriba = Math.max(0, n[2]);
-        s = 0.17 + 0.64 * dif * (0.22 + 0.78 * lz) + 0.12 * arriba + 0.06 * Math.max(0, dot(n, rebote));
-        if (m.brillo) s += m.brillo * Math.pow(Math.max(0, dot(n, media)), 12) * lz;
+        s = lAmb + lDif * dif * (0.22 + 0.78 * lz) + lCielo * arriba + lReb * Math.max(0, dot(n, rebote));
+        if (m.brillo && m.brillo >= lEspMin) s += m.brillo * lEsp * Math.pow(Math.max(0, dot(n, media)), 12) * lz;
         s += (fbm(p[0] * m.escala, p[1] * m.escala, p[2] * m.escala) - 0.5) * m.ruido;
         if (m.patron) s += m.patron(p, n);
         s += tono;
         s *= 1 - 0.42 * oc;
         s *= luzAmb;
+        if (L) {
+          if (s > 0) s = (L.expo ?? 1) * Math.pow(s, L.gamma ?? 1);
+          if (borde) { bb = Math.pow(1 - Math.max(0, -dot(n, VISTA)), borde.ancho ?? 3) * Math.max(0, dot(n, borde.d)); s += borde.fuerza * bb; }
+        }
         if (resp) { const dd = Math.hypot(p[0] - resp.c[0], p[1] - resp.c[1], p[2] - resp.c[2]); s += Math.max(0, 1 - dd / resp.r) * 0.25; }
       }
-      sm.push({ mat: matId, s, p });
+      sm.push({ mat: matId, s, p, b: bb });
     }
     if (sm.length * 2 < n2 || (n2 === 1 && !sm.length)) {
       if (pisos) { const a = Math.round((sombraPiso / n2) * 255); if (a > 6) { img.data[i] = 8; img.data[i + 1] = 6; img.data[i + 2] = 12; img.data[i + 3] = Math.min(200, a); } }
@@ -605,9 +632,9 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     // material mayoritario y brillo promedio de sus muestras
     let matId = sm[0].mat;
     if (sm.length > 1) { const cuenta = new Map<string, number>(); let best = 0; for (const q of sm) { const c = (cuenta.get(q.mat) ?? 0) + 1; cuenta.set(q.mat, c); if (c > best) { best = c; matId = q.mat; } } }
-    let s = 0, nn = 0, p: V3 = sm[0].p;
-    for (const q of sm) if (q.mat === matId) { s += q.s; if (!nn) p = q.p; nn++; }
-    s /= nn;
+    let s = 0, nn = 0, p: V3 = sm[0].p, bb = 0;
+    for (const q of sm) if (q.mat === matId) { s += q.s; bb += q.b; if (!nn) p = q.p; nn++; }
+    s /= nn; bb /= nn;
     if (!Number.isFinite(s)) s = 0.5;
     const m = MATERIALES[matId] ?? MATERIALES.piedra;
     const R = rampa(m, matId);
@@ -617,10 +644,39 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     const ca = R[k0], cb = R[Math.min(R.length - 1, k0 + 1)];
     let r = ca[0] + (cb[0] - ca[0]) * fr, g = ca[1] + (cb[1] - ca[1]) * fr, b = ca[2] + (cb[2] - ca[2]) * fr;
     if (resp && !m.emite) { const dd = Math.hypot(p[0] - resp.c[0], p[1] - resp.c[1], p[2] - resp.c[2]); const f = Math.max(0, 1 - dd / resp.r) * 0.35; r += (resp.rgb[0] - r) * f; g += (resp.rgb[1] - g) * f; b += (resp.rgb[2] - b) * f; }
-    if (!m.emite) { r *= tin[0]; g *= tin[1]; b *= tin[2]; }
+    if (L && !m.emite) {
+      // clave baja: lo claro se comprime (salvo los metales), lo oscuro cae a su color y el borde tiñe la silueta
+      if (techo && !((m.brillo ?? 0) >= lEspMin && lEspMin > 0)) {
+        const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        if (y > techo.desde) {
+          const k = (techo.desde + (y - techo.desde) * techo.k) / y, ty = 0.2126 * techo.rgb[0] + 0.7152 * techo.rgb[1] + 0.0722 * techo.rgb[2] || 1;
+          const f = Math.min(1, ((y - techo.desde) / Math.max(1, 255 - techo.desde)) * 2) * (techo.mezcla ?? 0.4), yy = y * k / ty;
+          r = r * k + (techo.rgb[0] * yy - r * k) * f; g = g * k + (techo.rgb[1] * yy - g * k) * f; b = b * k + (techo.rgb[2] * yy - b * k) * f;
+        }
+      }
+      if (sombraL) { const f = sombraL.fuerza * Math.max(0, 1 - Math.max(0, s) / (sombraL.hasta ?? 0.4)); r += (sombraL.rgb[0] - r) * f; g += (sombraL.rgb[1] - g) * f; b += (sombraL.rgb[2] - b) * f; }
+      if (borde && bb > 0) { const f = Math.min(1, bb * (borde.mezcla ?? 0.6)); r += (borde.rgb[0] - r) * f; g += (borde.rgb[1] - g) * f; b += (borde.rgb[2] - b) * f; }
+    }
+    if (!m.emite) { r *= tin[0]; g *= tin[1]; b *= tin[2]; } else if (luzPropia) luzPropia[py * W + px] = 1;
     img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = 255;
   }
+  if (borde && luzPropia) contornoBorde(img, luzPropia, borde.d, borde.rgb, borde.contorno!);
   return { img, ancla: [ax, ay] };
+}
+
+/** El filo de la silueta que da hacia la luz de borde: el pixel cuyo vecino de ese lado está vacío se aclara a su color. */
+function contornoBorde(img: Raster, luzPropia: Uint8Array, dir: V3, c: [number, number, number], k: number) {
+  const [dx, dy] = aPantalla(dir), l = Math.hypot(dx, dy) || 1, W = img.w, H = img.h, d = img.data;
+  const vec: [number, number, number][] = [];
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { if (!i && !j) continue; const w = (i * dx + j * dy) / l / Math.hypot(i, j); if (w > 0.3) vec.push([i, j, w]); }
+  const lleno = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] === 255;
+  const filo = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (!lleno(x, y) || luzPropia[y * W + x]) continue;
+    let f = 0; for (const [i, j, w] of vec) if (!lleno(x + i, y + j)) f = Math.max(f, w);
+    filo[y * W + x] = f;
+  }
+  for (let q = 0; q < W * H; q++) if (filo[q] > 0) { const o = q * 4, f = Math.min(1, filo[q] * k); for (let t = 0; t < 3; t++) d[o + t] += (Math.max(c[t], d[o + t]) - d[o + t]) * f; }
 }
 
 /** Gira piezas alrededor del eje vertical (grados): sirve para sacar la variante que corre a lo largo de y. */

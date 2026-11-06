@@ -31,7 +31,8 @@ export function heroeReferencia(): Render {
 export function siluetaHeroe(): Silueta {
   if (SIL) return SIL;
   const h = HEROES.find((x) => x.id === 'templario')!;
-  const r = pintarEscena({ ...personajeEscena(h.cuerpo, h.niveles[1], 's', 'quieto', 0), sinSombra: true });
+  // con la luz de siempre (no la clave baja de los sprites): el muñeco de los efectos sale de este brillo y los efectos ya horneados no cambian
+  const r = pintarEscena({ ...personajeEscena(h.cuerpo, h.niveles[1], 's', 'quieto', 0), sinSombra: true, luz: undefined });
   const { img, ancla } = r;
   // columnas y filas con cuerpo
   let x0 = img.w, x1 = -1, y0 = img.h, y1 = -1;

@@ -1,4 +1,5 @@
 import { rng } from '../core/rng';
+import { claveBaja } from './clave_baja';
 import { pintarEscena, medirEscena, calidad, girarPiezas, type Escena, type Pieza, type Render, type Ambiente, type V3, caja, cilindro, elipsoide, esfera, palo, poliedro } from './render';
 
 /**
@@ -51,7 +52,17 @@ export type { V3, Pieza };
 
 const cache = new Map<string, Render>();
 export const REGISTRO: ObjetoDef[] = [];
-export function registrar(...defs: ObjetoDef[]) { for (const d of defs) { if (!REGISTRO.some((x) => x.id === d.id)) REGISTRO.push(d); } }
+export function registrar(...defs: ObjetoDef[]) { for (const d of defs) { if (!REGISTRO.some((x) => x.id === d.id)) REGISTRO.push(conClaveBaja(d)); } }
+/**
+ * Personajes y monstruos (héroes, bestias, jefes, Thor) se pintan en clave baja (clave_baja.ts): su armado devuelve
+ * siempre una escena con su `luz`, así cualquiera que lo pinte (el catálogo, el horneado del juego) la recibe.
+ */
+function conClaveBaja(d: ObjetoDef): ObjetoDef {
+  if (d.tema !== 'personajes' && d.tema !== 'monstruos') return d;
+  const base = d.armar;
+  d.armar = (v, f, a) => { const r = base(v, f, a); const e: Escena = Array.isArray(r) ? { piezas: r } : r; return e.luz ? e : { ...e, luz: claveBaja(e.piezas) }; };
+  return d;
+}
 /** Las celdas que pisa una variante: la propia si la tiene; las variantes que corren a lo largo de y giran la huella. */
 export function huellaDe(d: ObjetoDef, v: string): [number, number] {
   if (d.huellaPor?.[v]) return d.huellaPor[v];
