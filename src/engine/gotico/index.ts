@@ -20,3 +20,5 @@ export { equipoDeInventario, tinte, type Puesto } from './apariencia';
 export { LUZ_EFECTO, EFECTOS_NUEVOS, luzEfectosJson, intensidadLuz, rgbLuz, type LuzEfecto } from './luz_efectos';
 export { PALETAS as PALETAS_GORE, SUPERFICIES as SUPERFICIES_GORE, GIBS as PEDAZOS_GORE, cuerpo as cadaverConPose, POSES as POSES_CADAVER, type Paleta as PaletaGore } from './catalogo/gore';
 export { LUCES_HORROR, veloSangre, VELO_NIVELES, type LuzHorror } from './catalogo/horror';
+// fuego de Doom (módulo sin imports que el juego copia y corre en vivo)
+export * as fuegoDoom from './fuego_doom';
