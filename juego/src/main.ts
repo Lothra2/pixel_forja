@@ -7,6 +7,7 @@ import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
 import { dibujarCine, precargarCine, claveCine, claveFinal, marcasCine } from './ui/cine';
+import { dibujarHudTactil } from './ui/hud_tactil';
 import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision, finalCompleto, decisionDe, decisionesDe } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
@@ -145,8 +146,8 @@ async function irAZona(id: string, entrada: string) {
   const frase = ENTRADA_ZONA[id];
   if (frase && !(j as any).vistas?.has(id)) { ((j as any).vistas ??= new Set()).add(id); msg(j, frase, '#c0a0a0'); }
   msg(j, ZONAS[id].nombre, '#e0c890');
-  if (z.tipo !== 'pueblo') pista('fuera', ['Clic izquierdo sobre un monstruo para pegarle. Clic derecho lanza tu poder. 1 a 4 toma pociones.', 'Left click a monster to strike it. Right click casts your power. 1 to 4 drinks potions.']);
-  if (z.tipo === 'mazmorra') pista('mazmorra', ['Está oscuro aquí abajo. Si te ves mal, B abre un portal al campamento.', 'It is dark down here. If things go badly, B opens a portal to camp.']);
+  if (z.tipo !== 'pueblo') pista('fuera', E.tactil ? ['Mueve al héroe con el pulgar izquierdo o tocando el suelo. Golpe pega al más cercano, el arco lanza tus poderes y abajo están tus pociones.', 'Move with your left thumb or by tapping the ground. Hit strikes the nearest foe, the arc casts your powers and your potions are below.'] : ['Clic izquierdo sobre un monstruo para pegarle. Clic derecho lanza tu poder. 1 a 4 toma pociones.', 'Left click a monster to strike it. Right click casts your power. 1 to 4 drinks potions.']);
+  if (z.tipo === 'mazmorra') pista('mazmorra', E.tactil ? ['Está oscuro aquí abajo. Si te ves mal, el menú tiene un portal al campamento.', 'It is dark down here. If things go badly, the menu has a portal to camp.'] : ['Está oscuro aquí abajo. Si te ves mal, B abre un portal al campamento.', 'It is dark down here. If things go badly, B opens a portal to camp.']);
 }
 function pista(id: string, txt: [string, string]) {
   if (!j) return;
@@ -255,7 +256,7 @@ function controlar(jj: Juego, dt: number) {
     if (E.clicIzq && !E.shift) colchon = null;
     if (E.clicIzq) {
       mantenerT = 0; mantenerMonstruo = false;
-      h.objetivo = null; (h as any).usarDer = false; h.recoger = null; h.hablar = null; h.usar = null; (h as any).salida = null; (h as any).portal = false;
+      h.objetivo = null; (h as any).usarDer = false; (h as any).usarId = null; h.recoger = null; h.hablar = null; h.usar = null; (h as any).salida = null; (h as any).portal = false;
       const p = pickEncima;
       // Shift + clic: atacar en el sitio hacia el cursor, sin caminar
       if (E.shift) { h.camino = null; h.destino = null; enSitio(jj, 'izq', mx, my, p?.tipo === 'monstruo' ? p.ref as Monstruo : null, true); }
@@ -287,13 +288,13 @@ function controlar(jj: Juego, dt: number) {
         const hbD = habilidadDe(h.d.der);
         const cuerpo = hbD.tipo === 'golpe' && !esDistancia(jj, hbD) && !(h.d.der === 'ataque' && h.c.distancia);
         if (obj && cuerpo && !E.shift) {
-          if (E.clicDer || !h.objetivo || h.objetivo.muerto) { h.objetivo = obj; (h as any).usarDer = true; h.recoger = null; h.hablar = null; h.usar = null; (h as any).salida = null; }
+          if (E.clicDer || !h.objetivo || h.objetivo.muerto) { h.objetivo = obj; (h as any).usarDer = true; (h as any).usarId = null; h.recoger = null; h.hablar = null; h.usar = null; (h as any).salida = null; }
         } else if (!(cuerpo && !E.shift && !E.clicDer && h.objetivo && (h as any).usarDer)) {
-          if (E.clicDer) { h.objetivo = null; (h as any).usarDer = false; h.camino = null; h.destino = null; }
+          if (E.clicDer) { h.objetivo = null; (h as any).usarDer = false; (h as any).usarId = null; h.camino = null; h.destino = null; }
           enSitio(jj, 'der', obj ? obj.x : mx, obj ? obj.y : my, obj, E.clicDer);
         }
       }
-    } else if (!h.objetivo) (h as any).usarDer = false;
+    } else if (!h.objetivo) { (h as any).usarDer = false; (h as any).usarId = null; }
   }
   // agresivo: si está quieto, sin orden ni camino, le pega solo al enemigo más cercano dentro de su alcance (sin perseguir)
   if ((h.d as any).agresivo && !h.objetivo && !h.camino && !h.destino && !h.recoger && !h.usar && !h.hablar && !(h as any).salida && h.acc !== 'atacar' && h.acc !== 'lanzar' && jj.zona.tipo !== 'pueblo' && !E.izq && !E.der) {
@@ -307,13 +308,22 @@ function controlar(jj: Juego, dt: number) {
     }
     if (best && !usarHabilidad(jj, h.d.izq, best.x, best.y, best)) usarHabilidad(jj, 'ataque', best.x, best.y, best);
   }
+  // táctil: un atajo del arco se usa sobre el enemigo más cercano (cuerpo a cuerpo: lo persigue y le pega con esa habilidad)
+  if ((ui as any).tactilHabId) {
+    const id = (ui as any).tactilHabId as string; (ui as any).tactilHabId = null;
+    let best: Monstruo | null = null, bd = 10;
+    for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado !== 'surgir') { const d = dist(m.x, m.y, h.x, h.y); if (d < bd) { bd = d; best = m; } }
+    const hb = habilidadDe(id);
+    if (best && hb.tipo === 'golpe') { h.objetivo = best; (h as any).usarId = id; }
+    else usarHabilidad(jj, id, best ? best.x : h.x + 3, best ? best.y : h.y + 3, best);
+  }
   // táctil: el botón usa la habilidad sobre el enemigo más cercano
   if ((ui as any).tactilHab) {
     const lado = (ui as any).tactilHab as 'izq' | 'der'; (ui as any).tactilHab = null;
     let best: Monstruo | null = null, bd = 10;
     for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado !== 'surgir') { const d = dist(m.x, m.y, h.x, h.y); if (d < bd) { bd = d; best = m; } }
     const hb = habilidadDe(h.d[lado]);
-    if (best && hb.tipo === 'golpe' && !(h.d[lado] === 'ataque' && h.c.distancia)) { h.objetivo = best; (h as any).usarDer = lado === 'der'; }
+    if (best && hb.tipo === 'golpe' && !(h.d[lado] === 'ataque' && h.c.distancia)) { h.objetivo = best; (h as any).usarDer = lado === 'der'; (h as any).usarId = null; }
     else usarHabilidad(jj, h.d[lado], best ? best.x : h.x + 3, best ? best.y : h.y + 3, best);
   }
   // perseguir y atacar
@@ -321,7 +331,7 @@ function controlar(jj: Juego, dt: number) {
     const m = h.objetivo;
     if (m.muerto || m.estado === 'surgir') { h.objetivo = null; }
     else {
-      const id = (h as any).usarDer ? h.d.der : h.d.izq;
+      const id = (h as any).usarId ?? ((h as any).usarDer ? h.d.der : h.d.izq);
       const hb = habilidadDe(id);
       const dd = dist(h.x, h.y, m.x, m.y);
       const lejos = esDistancia(jj, hb) || (id === 'ataque' && h.c.distancia);
@@ -332,7 +342,7 @@ function controlar(jj: Juego, dt: number) {
   }
   // llegar a cosas
   const llega = (x: number, y: number, r = 1.6) => dist(h.x, h.y, x, y) <= r;
-  if (h.recoger && llega(h.recoger.x, h.recoger.y, 1.3)) { recogerSuelo(jj, h.recoger); h.recoger = null; h.camino = null; pista('botin', ['Pulsa I para ver tu inventario. Clic derecho sobre un objeto para ponértelo.', 'Press I for your inventory. Right click an item to equip it.']); }
+  if (h.recoger && llega(h.recoger.x, h.recoger.y, 1.3)) { recogerSuelo(jj, h.recoger); h.recoger = null; h.camino = null; pista('botin', E.tactil ? ['Toca la bolsa, arriba a la derecha, para ver tu inventario. Toca dos veces un objeto para ponértelo.', 'Tap the bag, top right, to see your inventory. Double tap an item to equip it.'] : ['Pulsa I para ver tu inventario. Clic derecho sobre un objeto para ponértelo.', 'Press I for your inventory. Right click an item to equip it.']); }
   if (h.hablar && llega(h.hablar.x, h.hablar.y, 2)) { hablarCon(jj, h.hablar.npc); h.hablar = null; h.camino = null; }
   if (h.usar && llega(h.usar.cx + 0.5, h.usar.cy + 0.5, 2.2 + Math.max(h.usar.hw, h.usar.hh) / 2)) { usarObjeto(jj, h.usar); h.usar = null; h.camino = null; }
   // puertas selladas por la historia: la variante del objeto sigue a la misión y no se puede pasar antes
@@ -455,7 +465,7 @@ function procesarEventos(jj: Juego) {
     else if (e.tipo === 'jefe_muerto') { Sonido.musica(MUSICA_ACTO(jj.zona.acto, jj.zona.tipo) as any); msg(jj, ['El sello se rompe. Algo escapa hacia lo alto.', 'The seal breaks. Something escapes upward.'], '#ffb060'); guardar(); }
     else if (e.tipo === 'muerte') { Sonido.musica(null as any); tEstado = 0; }
     else if (e.tipo === 'spawn') { import('./juego/mundo').then((mm) => { const m = mm.crearMonstruo(MONSTRUOS[e.dato.id], nivelEnDificultad(jj.zona.nivel, jj.heroe.d.dificultad) + 1, e.dato.x, e.dato.y, 1, jj.heroe.d.dificultad); m.estado = 'perseguir'; m.objetivo = jj.heroe; m.acc = 'morir'; (m as any).surgiendo = 1.2; jj.monstruos.push(m); }); }
-    else if (e.tipo === 'nivel') { guardar(); pista('nivel', ['Subiste de nivel: pulsa C para tus atributos y T para tus habilidades.', 'Level up: press C for attributes and T for skills.']); }
+    else if (e.tipo === 'nivel') { guardar(); pista('nivel', E.tactil ? ['Subiste de nivel: el botón del personaje y el de la estrella parpadean cuando tienes puntos.', 'Level up: the character and star buttons blink when you have points.'] : ['Subiste de nivel: pulsa C para tus atributos y T para tus habilidades.', 'Level up: press C for attributes and T for skills.']); }
     else if (e.tipo === 'mision_hecha') {
       guardar(); const m = MISIONES.find((q) => q.id === e.dato);
       if (m?.cierraActo && m.acto < 7) entreActoPendiente = m.acto;
@@ -636,12 +646,12 @@ function paso(dt: number) {
       if (E.soltoIzq || !ui.mano) arrastre = null;
       const clicAntes = E.clicIzq, manoAntes = ui.mano;
       dibujarPaneles(jj, tiempo);
-      dibujarBarra(jj, tiempo);
+      if (E.tactil) dibujarHudTactil(jj, tiempo); else dibujarBarra(jj, tiempo);
       if (clicAntes && !manoAntes && ui.mano && E.izq && !E.soltoIzq) arrastre = { x: E.x, y: E.y };
       if (!jj.heroe.muerto) controlar(jj, dt); else { dibujarMuerte(); controlar(jj, dt); }
       dibujarTooltipObjeto(jj);
       if (pickEncima && !ui.sobreUI) etiquetaPick(jj, pickEncima);
-      if (progresoPintura < 1) texto(`${T('Forjando tu equipo', 'Forging your gear')} ${Math.round(progresoPintura * 100)}%`, 12, 20, { tam: 11, color: '#a08050' });
+      if (progresoPintura < 1) texto(`${T('Forjando tu equipo', 'Forging your gear')} ${Math.round(progresoPintura * 100)}%`, E.tactil ? W / 2 : 12, E.tactil ? H - 6 : 20, { tam: 11, color: '#a08050', alin: E.tactil ? 'center' : 'left' });
       // pintar al héroe nuevo si cambió el equipo
       const firma = firmaVisual(jj.heroe.d);
       if (firma !== (jj as any).firma) { (jj as any).firma = firma; pintarHeroe(jj.heroe.d.clase, cuerpoDe(jj.heroe.d.clase), equipoVisual(jj.heroe.d), firma, jj.heroe.dir); }

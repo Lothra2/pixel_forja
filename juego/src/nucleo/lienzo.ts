@@ -3,7 +3,18 @@ export const lienzo = document.getElementById('juego') as HTMLCanvasElement;
 export const ctx = lienzo.getContext('2d', { alpha: false })!;
 export let W = 960, H = 540, ESCALA = 1;
 
+/** Área segura del teléfono (notch, isla, barra de inicio) en puntos de pantalla, leída de env(safe-area-inset-*). */
+export const SEGURO = { l: 0, r: 0, t: 0, b: 0 };
+let divSeguro: HTMLDivElement | null = null;
+function leerSeguro() {
+  try {
+    if (!divSeguro) { divSeguro = document.createElement('div'); divSeguro.style.cssText = 'position:fixed;inset:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(divSeguro); }
+    const c = getComputedStyle(divSeguro);
+    SEGURO.l = parseFloat(c.paddingLeft) || 0; SEGURO.r = parseFloat(c.paddingRight) || 0; SEGURO.t = parseFloat(c.paddingTop) || 0; SEGURO.b = parseFloat(c.paddingBottom) || 0;
+  } catch { /* nada */ }
+}
 export function ajustar() {
+  leerSeguro();
   const ww = window.innerWidth, wh = window.innerHeight;
   // altura lógica cerca de 620 (como los juegos de 800x600): en pantallas grandes se agranda
   const k = Math.max(wh / 640, 0.78);

@@ -10,6 +10,7 @@ import { MISIONES, ZONAS, PUEBLO_DE, type Mision, type Premio } from '../mundo/a
 import { MONSTRUOS } from '../datos/monstruos';
 import { saludoDe, relatoDe, ofertaDe, entregaDe, activaDe, aceptar, textoHecho, eleccionDe, hist, avanceDe, decidir, finalCompleto, quienDa } from '../juego/historia';
 import { panelCodice } from './codice';
+import { miniTactil, rectJefeTactil, disposicion } from './hud_tactil';
 import { EPILOGOS } from '../mundo/decisiones';
 import { colorObj, crearObjeto, crearPocion, crearPergamino, engarzar, baseDe, textoStat, crearUnicoId, type Objeto } from '../juego/objetos';
 import { BASES } from '../datos/objetos_datos';
@@ -42,12 +43,21 @@ export function prepararHud() {
   if (!orbes) { orbes = {}; for (const t of ['vida', 'mana', 'veneno', 'helado'] as const) { orbes[t + '1'] = []; orbes[t + '0'] = []; for (let f = 0; f < 8; f++) { orbes[t + '1'].push(rasterACanvas(orbe(t, 0.985, f))); orbes[t + '0'].push(rasterACanvas(orbe(t, 0, f))); } } }
 }
 export function dibujarCursor(tipo: string) {
+  if (E.tactil && !ui.mano) return;
   if (ui.mano) { icono(ui.mano, E.x - 14, E.y - 14, ui.mano.w * 29, ui.mano.h * 29); if (cant(ui.mano) > 1) texto(String(cant(ui.mano)), E.x - 14 + ui.mano.w * 29 - 2, E.y - 14 + ui.mano.h * 29 - 3, { tam: 11, alin: 'right', color: '#fff' }); return; }
   const c = cursoresC?.[tipo] ?? cursoresC?.senalar;
   if (c) ctx.drawImage(c.c, Math.round(E.x - c.a[0]), Math.round(E.y - c.a[1]));
 }
 
 // ------------------------------------------------------------------ iconos de habilidad (propios)
+/** Un orbe de vida o maná del HUD dibujado a cualquier tamaño (lo usa el HUD táctil). */
+export function orbeHud(tipo: string, k: number, x: number, y: number, s: number, f: number) {
+  prepararHud(); if (!orbes) return;
+  const S = ladoOrbe();
+  ctx.drawImage(orbes[tipo + '0'][f], x, y, s, s);
+  const corte = S * (1 - Math.max(0, Math.min(1, k))) * 0.86 + S * 0.07;
+  ctx.save(); ctx.beginPath(); ctx.rect(x, y + corte * s / S, s, s - corte * s / S); ctx.clip(); ctx.drawImage(orbes[tipo + '1'][f], x, y, s, s); ctx.restore();
+}
 export function iconoHab(hb: Habilidad, x: number, y: number, s: number, apagado = false) {
   ctx.save();
   const g = ctx.createRadialGradient(x + s / 2, y + s / 2, 2, x + s / 2, y + s / 2, s * 0.7);
@@ -247,7 +257,7 @@ export function dibujarBarra(j: Juego, t: number) {
   ui.sobreUI = ui.sobreUI || E.y > by + 56 || dentro(bx, by, 130, BAR_H) || dentro(bx + 670, by, 130, BAR_H);
 }
 const TIPOS_POCION: TipoPocion[] = ['vida', 'mana', 'rejuv'];
-const COLOR_POCION: Record<TipoPocion, string> = { vida: '#d02828', mana: '#3050e0', rejuv: '#b040d0' };
+export const COLOR_POCION: Record<TipoPocion, string> = { vida: '#d02828', mana: '#3050e0', rejuv: '#b040d0' };
 const NOMBRE_POCION: Record<TipoPocion, [string, string]> = { vida: ['vida', 'life'], mana: ['maná', 'mana'], rejuv: ['rejuvenecer', 'rejuvenation'] };
 const lineaCantidad = (o: Objeto): [string, string][] => (o.tipo === 'pocion' && cant(o) > 1 ? [[`${T('Cantidad', 'Quantity')}: ${cant(o)}`, '#e0d0a0']] : []);
 const cinturonLleno = (j: Juego) => { Sonido.efecto('negado'); msg(j, ['Cinturón lleno.', 'Belt is full.'], '#ff8060'); };
@@ -274,7 +284,7 @@ function cinturonABolsa(j: Juego, i: number) {
   Sonido.efecto('click');
 }
 /** Indicador chico de la mecánica de clase, arriba de los atajos. */
-function recursoClase(j: Juego, x: number, y: number, w: number) {
+export function recursoClase(j: Juego, x: number, y: number, w: number) {
   const h = j.heroe, d = h.d, hh = 13, t = j.t;
   let ayuda: [string, string] = ['', ''];
   const fondo = () => { ctx.fillStyle = 'rgba(8,6,5,0.85)'; ctx.fillRect(x, y, w, hh); ctx.strokeStyle = '#4a3c28'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, hh - 1); };
@@ -360,7 +370,8 @@ export function dibujarArriba(j: Juego, encima: Monstruo | null) {
   if (j.jefe && !j.jefe.muerto) {
     const k = Math.round((j.jefe.vida / j.jefe.vidaMax) * 100);
     const c = cacheRaster(`jefe${j.jefe.id}_${k}_${IDI}`, () => barraJefe(TT(j.jefe!.nombre), k / 100));
-    ctx.drawImage(c, Math.round(W / 2 - c.width / 2), 8);
+    if (E.tactil) { const r = rectJefeTactil(c.width, c.height); ctx.drawImage(c, r[0], r[1], r[2], r[3]); hud.jefe = r; }
+    else ctx.drawImage(c, Math.round(W / 2 - c.width / 2), 8);
   } else if (encima && !encima.muerto) {
     const m = encima, w = 220, x = W / 2 - w / 2, y = 10;
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(x, y, w, 30);
@@ -372,15 +383,17 @@ export function dibujarArriba(j: Juego, encima: Monstruo | null) {
   }
   // mensajes
   // encima del botón agresivo, que vive justo sobre la barra a la izquierda
-  const ag = hud.agresivo, mx = ui.izq ? 334 : 14;
-  let y = ag && !ui.izq ? ag[1] - 12 : H - BAR_H - 30;
+  const ag = hud.agresivo, mx = E.tactil ? disposicion().m.l : ui.izq ? 334 : 14;
+  let y = E.tactil ? Math.min(H * 0.6, (hud.rastreo ? hud.rastreo[1] + hud.rastreo[3] : disposicion().orbes[1] + 120) + 16 + 18 * Math.max(0, j.mensajes.length - 1)) : ag && !ui.izq ? ag[1] - 12 : H - BAR_H - 30;
   const y0 = y;
   ctx.font = '14px Georgia, serif'; let anchoM = 0;
   for (let i = j.mensajes.length - 1; i >= 0; i--) {
     const m = j.mensajes[i];
     ctx.globalAlpha = Math.min(1, 7 - m.t);
-    texto(TT(m.txt), mx, y, { color: m.color, tam: 14 });
-    ctx.font = '14px Georgia, serif'; anchoM = Math.max(anchoM, ctx.measureText(TT(m.txt)).width);
+    // en táctil no pasan del minimapa ni de los botones de arriba
+    const maxM = E.tactil ? Math.max(120, disposicion().mini[0] - mx - 16) : undefined;
+    texto(TT(m.txt), mx, y, { color: m.color, tam: 14, max: maxM });
+    ctx.font = '14px Georgia, serif'; anchoM = Math.max(anchoM, Math.min(maxM ?? 1e9, ctx.measureText(TT(m.txt)).width));
     ctx.globalAlpha = 1; y -= 18;
   }
   if (j.mensajes.length) hud.mensajes = [mx, y + 4, anchoM, y0 - y + 2]; else delete hud.mensajes;
@@ -1147,7 +1160,7 @@ function panelViaje(j: Juego, x: number, y: number) {
     yy += 30;
   }
 }
-function objetivoTxt(m: Mision, d: DatosHeroe): string {
+export function objetivoTxt(m: Mision, d: DatosHeroe): string {
   const o = m.objetivo, z = TT(ZONAS[o.zona]?.nombre ?? ['?', '?']);
   const av = avanceDe(d, m);
   if (o.tipo === 'llegar') return `${T('Llega a', 'Reach')} ${z}`;
@@ -1187,11 +1200,12 @@ function panelMisiones(j: Juego, x: number, y: number) {
 function panelMenu(j: Juego, x: number, y: number) {
   marco(x, y, 320, 432); titulo(T('Menú', 'Menu'), x, y, 320);
   let yy = y + 80;
-  const op = (s: string, f: () => void) => { if (boton(s, x + 40, yy, 240, 32)) { E.clicIzq = false; f(); } yy += 39; };
+  const op = (s: string, f: () => void) => { if (boton(s, x + 40, yy, 240, 30)) { E.clicIzq = false; f(); } yy += 35; };
   op(T('Volver al juego', 'Return to game'), () => { ui.izq = null; });
   op(T('Opciones', 'Options'), () => j.eventos.push({ tipo: 'opciones' }));
   op(T('Misiones (Q)', 'Quests (Q)'), () => { ui.izq = 'misiones'; });
   op(T('Códice (J)', 'Codex (J)'), () => { ui.izq = 'codice'; });
+  if (j.zona.tipo !== 'pueblo') op(T('Portal al campamento (B)', 'Portal to camp (B)'), () => { ui.izq = null; abrirPortal(j); });
   op(T('Guardar y salir', 'Save and quit'), () => j.eventos.push({ tipo: 'salir' }));
   texto(T('Teclas: clic izq. caminar/atacar · clic der. habilidad · 1-4 pociones · 5-0 atajos · I inventario · C personaje · T habilidades · Q misiones · Tab mapa · Alt botín · R correr · Shift atacar sin moverse · B portal', 'Keys: left click walk/attack · right click skill · 1-4 potions · I inventory · C character · T skills · Q quests · Tab map · Alt loot · R run · Shift attack in place · B portal'), x + 18, y + 330, { tam: 1 });
   envolver(T('Clic izquierdo camina y ataca · clic derecho usa la habilidad · 1-4 pociones · I inventario · C personaje · T habilidades · Q misiones · J códice · Tab mapa · Alt muestra el botín · R correr o caminar · Shift ataca sin moverte · B portal al campamento', 'Left click walks and attacks · right click uses the skill · 1-4 potions · I inventory · C character · T skills · Q quests · J codex · Tab map · Alt shows loot · R run or walk · Shift attacks in place · B portal to camp'), 280, 11).forEach((l, i) => texto(l, x + 20, y + 290 + i * 14, { tam: 11, color: '#a09070' }));
@@ -1201,8 +1215,11 @@ function panelMenu(j: Juego, x: number, y: number) {
 export function dibujarMapa(j: Juego, grande: boolean) {
   const z = j.zona, h = j.heroe;
   // el grande llena la pantalla con la zona entera y se centra en ella (no en el héroe)
-  const esc = grande ? Math.min((W - 80) / ((z.W + z.H) * 0.5), (H - BAR_H - 70) / ((z.W + z.H) * 0.25)) : 1.4;
-  const cx = grande ? W / 2 : W - 90, cy = grande ? (H - BAR_H) / 2 + 10 : 80;
+  // en táctil el chico es redondo, debajo de los botones de arriba (y se puede esconder)
+  const mt = !grande && E.tactil ? miniTactil() : null;
+  if (!grande && E.tactil && (!mt || ui.izq || ui.der)) return;
+  const esc = grande ? Math.min((W - 80) / ((z.W + z.H) * 0.5), (H - BAR_H - 70) / ((z.W + z.H) * 0.25)) : mt ? (mt.r / 80) * 1.4 : 1.4;
+  const cx = grande ? W / 2 : mt ? mt.cx : W - 90, cy = grande ? (H - BAR_H) / 2 + 10 : mt ? mt.cy : 80;
   const ox = grande ? z.W / 2 : h.x, oy = grande ? z.H / 2 : h.y;
   const p = (x: number, y: number): [number, number] => [cx + (x - ox - (y - oy)) * esc * 0.5, cy + (x - ox + (y - oy)) * esc * 0.25];
   // etiquetas que no se encimen: si chocan con otra se corren hacia abajo, y si no hay lugar no se ponen
@@ -1213,7 +1230,8 @@ export function dibujarMapa(j: Juego, grande: boolean) {
       if (!puestas.some((q) => r[0] < q[0] + q[2] && r[0] + r[2] > q[0] && r[1] < q[1] + q[3] && r[1] + r[3] > q[1])) { puestas.push(r); texto(t, x, yy, { alin: 'center', tam, color }); return; } }
   };
   ctx.save();
-  if (!grande) { ctx.beginPath(); ctx.rect(W - 180, 0, 180, 160); ctx.clip(); ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(W - 180, 0, 180, 160); }
+  if (mt) { ctx.beginPath(); ctx.arc(mt.cx, mt.cy, mt.r, 0, Math.PI * 2); ctx.clip(); ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(mt.cx - mt.r, mt.cy - mt.r, mt.r * 2, mt.r * 2); }
+  else if (!grande) { ctx.beginPath(); ctx.rect(W - 180, 0, 180, 160); ctx.clip(); ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(W - 180, 0, 180, 160); }
   else { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, H - BAR_H + 56); }
   ctx.globalAlpha = grande ? 0.75 : 0.85;
   for (let by = 0; by < z.th; by++) for (let bx = 0; bx < z.tw; bx++) {
@@ -1237,7 +1255,8 @@ export function dibujarMapa(j: Juego, grande: boolean) {
   ctx.globalAlpha = 1;
   { const [hx, hy] = p(h.x, h.y); ctx.fillStyle = '#ff3030'; ctx.beginPath(); ctx.arc(hx, hy, grande ? 4 : 3, 0, Math.PI * 2); ctx.fill(); }
   ctx.restore();
-  if (!grande) { ctx.strokeStyle = '#5a4a30'; ctx.strokeRect(W - 180.5, -1, 181, 161); texto(TT(z.nombre), W - 90, 154, { alin: 'center', tam: 10, color: '#c0a060', max: 170 }); }
+  if (mt) { ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(mt.cx, mt.cy, mt.r, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
+  else if (!grande) { ctx.strokeStyle = '#5a4a30'; ctx.strokeRect(W - 180.5, -1, 181, 161); texto(TT(z.nombre), W - 90, 154, { alin: 'center', tam: 10, color: '#c0a060', max: 170 }); }
   else texto(TT(z.nombre), W / 2, 30, { alin: 'center', tam: 18, color: '#c0a060', fuente: TITULO });
 }
 const dist2 = (a: number, b: number, c: number, d: number) => (a - c) ** 2 + (b - d) ** 2;
