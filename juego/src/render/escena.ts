@@ -477,7 +477,8 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (!e.muerto && e.tipo === 'monstruo' && m.def.sprite === 'jefe_ozmaren') { ctx.save(); ctx.globalAlpha = 0.5; for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) dibujarTenido(ctx, q, px + ox, py + oy, '#ff5a20', 1, esc); ctx.restore(); }
   const cambio = e.tipo === 'heroe' ? performance.now() / 1000 - cambioVisible : 9;
   if (cambio < 0.45) ok = dibujarTenido(ctx, q, px, py, '#fff2d0', 0.7 * (1 - cambio / 0.45), esc);
-  else if (e.destello > 0) ok = dibujarTenido(ctx, q, px, py, '#ffffff', 0.55, esc);
+  // el destello del golpe: en los jefes grandes (más de 200 px) un blanco al 40 % que se apaga en ~80 ms, no un fogonazo
+  else if (e.destello > 0) ok = q.ay * esc > 200 ? (e.destello > 0.04 ? dibujarTenido(ctx, q, px, py, '#ffffff', 0.4 * Math.min(1, (e.destello - 0.04) / 0.08), esc) : dibujar(ctx, q, px, py, esc)) : dibujarTenido(ctx, q, px, py, '#ffffff', 0.55, esc);
   else if (tinteEst) ok = dibujarTenido(ctx, q, px, py, tinteEst.color, tinteEst.fuerza * (e.frio > 0 && !(e.congelado > 0) ? 0.6 : 1), esc);
   else if (e.tinte) ok = dibujarTenido(ctx, q, px, py, e.tinte, e.tipo === 'invocado' ? 0.35 : e.tipo === 'heroe' ? 0.22 : 0.3, esc);
   else if (e.muerto && e.tMuerto > 60) { ctx.globalAlpha = Math.max(0.25, 1 - (e.tMuerto - 60) / 400); ok = dibujar(ctx, q, px, py, esc); ctx.globalAlpha = 1; }
