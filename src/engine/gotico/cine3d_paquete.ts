@@ -1,5 +1,7 @@
 import { createRaster, type Raster } from '../core/raster';
-import { leerHorneado, type MetaHorneado } from './cine3d_toma';
+import { leerHorneado, tomaDeHorneado, type MetaHorneado } from './cine3d_toma';
+import type { Toma } from './cine_toma';
+import { decodePng } from '../export/png';
 
 /**
  * Empaquetado de la intro 3D para el juego (que está al borde de su límite de archivos): todas las capas horneadas de
@@ -46,4 +48,17 @@ export function paqueteIntro3d(ids: string[], decodificar: (b: Uint8Array) => Ra
   const { paginas, donde } = empaquetar(imgs);
   for (const { plano, c, i } of capas) { const [pg, x, y] = donde[i]; planos[plano].capas.push({ ...c, pagina: pg, recorte: [x, y, imgs[i].w, imgs[i].h] }); }
   return { paginas, planos };
+}
+
+/**
+ * Los pintores de la intro para el reproductor de control (cinematicas.ts): cada plano arma su toma con lo horneado. Un
+ * plano que todavía no tiene horneado sale negro, con una capa que lo avisa (`falta_horneado`).
+ */
+export function pintoresIntro3d(ids: string[]): Record<string, (t: Toma) => void> {
+  return Object.fromEntries(ids.map((id) => [`intro/${id}`, (t: Toma) => {
+    const h = leerHorneado(id, decodePng);
+    if (h) { tomaDeHorneado(t, h); return; }
+    const L = t.capa('falta_horneado', 0, 1, 'normal', { opaca: true, notas: `falta hornear ${id} (scripts/gotico-cine3d.ts)` });
+    for (let i = 3; i < L.d.length; i += 4) L.d[i] = 1;
+  }]));
 }
