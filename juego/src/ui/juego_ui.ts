@@ -1,6 +1,6 @@
 // La interfaz dentro del juego: barra de abajo con orbes, cinturón y habilidades; inventario, ficha, habilidades,
 // cofre, tiendas, diálogos, piedras de viaje, misiones, mapa y menú.
-import { ctx, W, H, E, pulso } from '../nucleo/lienzo';
+import { ctx, W, H, E, pulso, ESCALA } from '../nucleo/lienzo';
 import { barraInferior, orbe, zonasBarra, ladoOrbe, barraJefe, cursores, cartelMuerte, panelInventario, EQUIPO as EQUIPO_HUD, CELDA_INV, BOLSA as BOLSA_HUD, type ObjetoInv } from '../../../src/engine/gotico/hud';
 import { aLoot, arma3dDe } from './loot';
 import { texto, T, TT, IDI, marco, titulo, boton, dentro, icono, iconoThor, lineasObjeto, tooltip, cacheRaster, rasterACanvas, envolver, ancho, TITULO } from './comun';
@@ -382,6 +382,7 @@ export function dibujarArriba(j: Juego, encima: Monstruo | null) {
     if (m.mods.length && m.calidad >= 1) texto(m.mods.map((id) => ({ rapido: T('Veloz', 'Swift'), piel_piedra: T('Piel de piedra', 'Stoneskin'), ardiente: T('Ardiente', 'Fire Enchanted'), helado: T('Helado', 'Cold Enchanted'), electrico: T('Eléctrico', 'Lightning'), vampiro: T('Sediento', 'Thirsting'), maldito: T('Maldito', 'Cursed'), fuerte: T('Bruto', 'Brute'), espectral: T('Espectral', 'Spectral') } as any)[id]).join(', '), W / 2, y + 44, { alin: 'center', color: '#c8a050', tam: 11 });
   }
   // mensajes
+  if (E.tactil) { mensajesTactil(j); return; }
   // encima del botón agresivo, que vive justo sobre la barra a la izquierda
   const ag = hud.agresivo, mx = E.tactil ? disposicion().m.l : ui.izq ? 334 : 14;
   let y = E.tactil ? Math.min(H * 0.6, (hud.rastreo ? hud.rastreo[1] + hud.rastreo[3] : disposicion().orbes[1] + 120) + 16 + 18 * Math.max(0, j.mensajes.length - 1)) : ag && !ui.izq ? ag[1] - 12 : H - BAR_H - 30;
@@ -397,6 +398,21 @@ export function dibujarArriba(j: Juego, encima: Monstruo | null) {
     ctx.globalAlpha = 1; y -= 18;
   }
   if (j.mensajes.length) hud.mensajes = [mx, y + 4, anchoM, y0 - y + 2]; else delete hud.mensajes;
+}
+/** En táctil: los tres últimos, en letra de 11 pt o más, con salto de línea a 300 pt, debajo de la misión. */
+function mensajesTactil(j: Juego) {
+  const P = disposicion(), Lp = (pt: number) => pt / Math.max(0.1, ESCALA);
+  const mx = P.m.l, tam = Math.round(Lp(11)), lh = Math.round(tam * 1.3);
+  const anchoMax = Math.min(Lp(300), P.mini[0] - mx - Lp(12));
+  let y = (hud.rastreo ? hud.rastreo[1] + hud.rastreo[3] : P.orbes[1] + P.orbes[3] + Lp(22)) + Lp(8) + tam;
+  const y0 = y - tam; let anchoM = 0;
+  const ultimos = j.mensajes.slice(-3);
+  for (const m of ultimos) {
+    ctx.globalAlpha = Math.max(0, Math.min(1, 6 - m.t));
+    for (const l of envolver(TT(m.txt), anchoMax, tam).slice(0, 3)) { texto(l, mx, y, { color: m.color, tam }); anchoM = Math.max(anchoM, ancho(l, tam)); y += lh; }
+    ctx.globalAlpha = 1;
+  }
+  if (ultimos.length) hud.mensajes = [mx, y0, Math.min(anchoMax, anchoM), y - y0 - lh + tam + 4]; else delete hud.mensajes;
 }
 export function dibujarMuerte() {
   const c = cacheRaster('muerte' + IDI, () => cartelMuerte(IDI ? 'en' : 'es'));

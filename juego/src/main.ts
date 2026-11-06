@@ -7,7 +7,7 @@ import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
 import { dibujarCine, precargarCine, claveCine, claveFinal, marcasCine } from './ui/cine';
-import { dibujarHudTactil } from './ui/hud_tactil';
+import { dibujarHudTactil, consejoTactil } from './ui/hud_tactil';
 import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision, finalCompleto, decisionDe, decisionesDe } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
 import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
@@ -153,7 +153,7 @@ function pista(id: string, txt: [string, string]) {
   if (!j) return;
   const d = j.heroe.d as any; d.pistas ??= {};
   if (d.pistas[id]) return; d.pistas[id] = 1;
-  msg(j, txt, '#80d0ff');
+  if (E.tactil) consejoTactil(txt); else msg(j, txt, '#80d0ff');
 }
 
 async function empezarPartida(d: DatosHeroe) {

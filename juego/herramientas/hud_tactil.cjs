@@ -25,6 +25,7 @@ const RES = [[844, 390], [932, 430], [667, 375], [844, 340]];
     for (const t of info.toques) { const pw = t.r[2] * info.esc, ph = t.r[3] * info.esc; if (pw < 43.5 || ph < 43.5) fallas.push(`${w}x${h}: ${t.id} mide ${pw.toFixed(0)}x${ph.toFixed(0)} pt`); }
     const m50 = 50 / info.esc - 0.5;
     for (const k of ks) { const r = info.hud[k]; if (k === 'mensajes') continue; if (r[0] < m50 || r[0] + r[2] > info.W - m50) fallas.push(`${w}x${h}: ${k} dentro de 50 pt del borde (${r[0].toFixed(0)}..${(r[0] + r[2]).toFixed(0)} de ${info.W})`); }
+    { const a = info.hud.agresivo, bt = info.hud.botones; if (a && bt) { const aire = (a[1] - (bt[1] + bt[3])) * info.esc; if (aire < 8) fallas.push(`${w}x${h}: Calmo a ${aire.toFixed(1)} pt de los botones`); } }
     await p.screenshot({ path: `hudt_${w}x${h}.png` });
     // toques reales: poción, Golpe junto a un monstruo, Poder, y el joystick
     const centro = (r) => [r[0] + r[2] / 2, r[1] + r[3] / 2];

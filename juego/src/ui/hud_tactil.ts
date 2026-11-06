@@ -6,7 +6,7 @@
 //   Abajo a la izquierda: un joystick que aparece donde apoyas el pulgar.
 // Todo en tamaños de dedo (44 pt o más), lejos de los bordes laterales (notch e isla) y respetando el área segura.
 import { ctx, W, H, E, ESCALA, SEGURO } from '../nucleo/lienzo';
-import { texto, T, TT, dentro, icono } from './comun';
+import { texto, T, TT, dentro, icono, envolver as envolverT } from './comun';
 import { ui, alternar, iconoHab, orbeHud, recursoClase, objetivoTxt, COLOR_POCION, cambiarAgresivo } from './juego_ui';
 import { hud, type Rect } from './hud_rects';
 import { MISIONES } from '../mundo/actos';
@@ -22,6 +22,9 @@ const CLAVES = ['orbes', 'rastreo', 'botones', 'mini', 'golpe', 'poder', 'hab1',
 export const toques: { id: string; r: Rect }[] = [];
 let joy: { x0: number; y0: number; activo: boolean; repath: number } | null = null;
 let miniOculto = false;
+let cartel: { txt: [string, string]; t0: number } | null = null;
+/** Muestra un consejo en el cartel centrado (en táctil los consejos no van a la lista de mensajes). */
+export function consejoTactil(txt: [string, string]) { cartel = { txt, t0: performance.now() }; }
 
 /** Márgenes en píxeles del lienzo: 50 pt a los lados en horizontal (notch e isla) y el área segura arriba y abajo. */
 function margenes() {
@@ -41,8 +44,9 @@ export function disposicion() {
   const mini: Rect = [botones[0], botones[1] + B + L(8), R * 2, R * 2];
   const G = L(76), S = L(52), A = L(44);
   const gx = W - m.r - G / 2, gy = H - m.b - L(10) - G / 2;
-  // el arco: escalones alrededor de Golpe, con 6 pt o más entre cajas (no solo entre círculos)
-  const habs = ([[-72, 8], [-80, -58], [-24, -90], [10, -150]] as [number, number][]).map(([dx, dy]) => [gx + L(dx), gy + L(dy)] as [number, number]);
+  // el arco: un cuarto de círculo de 110 pt alrededor de Golpe (180°, 150°, 120° y 90°); entre vecinos quedan unos 57 pt
+  const rArco = L(110);
+  const habs = [180, 210, 240, 270].map((a) => { const r = (a * Math.PI) / 180; return [gx + Math.cos(r) * rArco, gy + Math.sin(r) * rArco] as [number, number]; });
   const agresivo: Rect = [W - m.r - A, habs[3][1] - S / 2 - L(10) - A, A, A];
   const P = L(44), cw = P * 4 + gap * 3;
   // en vertical la pantalla es angosta: el cinturón va a la izquierda para no chocar con el arco
@@ -53,8 +57,10 @@ export function disposicion() {
 
 const circ = (cx: number, cy: number, d: number): Rect => [cx - d / 2, cy - d / 2, d, d];
 function boton(id: string, r: Rect, dibujo: () => void, accion: () => void, redondo = false) {
-  hud[id] = r; toques.push({ id, r });
-  const enc = dentro(r[0], r[1], r[2], r[3]);
+  // los redondos se tocan en su círculo; para los encimados cuenta el cuadrado inscrito (las esquinas de la caja están vacías)
+  const cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2, ins = r[2] * 0.7071;
+  hud[id] = redondo ? [cx - ins / 2, cy - ins / 2, ins, ins] : r; toques.push({ id, r });
+  const enc = redondo ? Math.hypot(E.x - cx, E.y - cy) <= r[2] / 2 : dentro(r[0], r[1], r[2], r[3]);
   ctx.save(); ctx.globalAlpha = 0.82;
   ctx.fillStyle = enc && E.izq ? '#3a2a18' : '#14100c';
   ctx.beginPath(); if (redondo) ctx.arc(r[0] + r[2] / 2, r[1] + r[3] / 2, r[2] / 2, 0, Math.PI * 2); else ctx.rect(r[0], r[1], r[2], r[3]); ctx.fill();
@@ -130,17 +136,17 @@ export function dibujarHudTactil(j: Juego, t: number) {
   {
     const hbI = habilidadDe(d.izq);
     const rG = circ(P.gx, P.gy, P.G);
-    boton('golpe', rG, () => { iconoHab(hbI, P.gx - P.G * 0.3, P.gy - P.G * 0.3, P.G * 0.6); texto(T('Golpe', 'Hit'), P.gx, P.gy + P.G / 2 - L(4), { alin: 'center', tam: Math.round(L(10)), color: '#e8d8b0' }); }, () => { (ui as any).tactilHab = 'izq'; }, true);
+    boton('golpe', rG, () => { iconoHab(hbI, P.gx - P.G * 0.27, P.gy - P.G * 0.34, P.G * 0.54); texto(T('Golpe', 'Hit'), P.gx, P.gy + P.G * 0.36, { alin: 'center', tam: Math.round(L(10)), color: '#e8d8b0' }); }, () => { (ui as any).tactilHab = 'izq'; }, true);
     habsArco(j).forEach((id, i) => {
       const [cx, cy] = P.habs[i], r = circ(cx, cy, P.S), clave = i === 0 ? 'poder' : 'hab' + i;
       if (!id) { boton(clave, r, () => texto('+', cx, cy + L(7), { alin: 'center', tam: Math.round(L(22)), color: '#806a50' }), () => alternar('habs', 'der'), true); return; }
       const hb = habilidadDe(id), n = hb.id === 'ataque' ? 1 : nivelHab(d, hb.id, h.c), costo = hb.id === 'ataque' ? 0 : costoMana(j, hb);
       boton(clave, r, () => {
-        iconoHab(hb, cx - P.S * 0.32, cy - P.S * 0.32, P.S * 0.64, n <= 0);
+        iconoHab(hb, cx - P.S * 0.28, cy - P.S * 0.36, P.S * 0.56, n <= 0);
         const rc = h.recargas[hb.id] ?? 0;
         if (rc > 0) { ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, P.S / 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, rc / (hb.recarga ?? 1))); ctx.closePath(); ctx.fill(); ctx.restore(); }
         if (h.mana < costo) { ctx.save(); ctx.fillStyle = 'rgba(0,10,90,0.5)'; ctx.beginPath(); ctx.arc(cx, cy, P.S / 2, 0, Math.PI * 2); ctx.fill(); ctx.restore(); texto(String(Math.ceil(costo)), cx, cy + L(5), { alin: 'center', tam: Math.round(L(13)), color: '#a0b8ff' }); }
-        if (i === 0) texto(T('Poder', 'Skill'), cx, cy + P.S / 2 - L(3), { alin: 'center', tam: Math.round(L(9)), color: '#e8d8b0' });
+        if (i === 0) texto(T('Poder', 'Skill'), cx, cy + P.S * 0.36, { alin: 'center', tam: Math.round(L(8)), color: '#e8d8b0', max: P.S * 0.7 });
       }, () => { if (i === 0) (ui as any).tactilHab = 'der'; else (ui as any).tactilHabId = id; }, true);
     });
     // agresivo o calmo, con su nombre
@@ -171,6 +177,21 @@ export function dibujarHudTactil(j: Juego, t: number) {
     const x0 = xpPara(d.nivel), x1 = xpPara(d.nivel + 1), [xx, xy, xw, xh] = P.xp;
     ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(xx, xy, xw, xh); ctx.fillStyle = '#c0a040'; ctx.fillRect(xx, xy, xw * Math.max(0, Math.min(1, (d.xp - x0) / Math.max(1, x1 - x0))), xh);
     hud.xp = P.xp;
+  }
+
+  // ---------------- el consejo de la primera vez: un cartel centrado que se cierra al tocarlo o a los 6 s
+  if (cartel) {
+    const ts = (performance.now() - cartel.t0) / 1000;
+    if (ts > 6) cartel = null;
+    else {
+      const tam = Math.round(L(13)), w = Math.min(L(360), W - P.m.l - P.m.r), ls = TT(cartel.txt), lin = envolverT(ls, w - L(28), tam);
+      const hgt = Math.max(L(44), lin.length * tam * 1.35 + L(22)), x = W / 2 - w / 2, y = H * 0.3 - hgt / 2;
+      const a = Math.min(1, ts / 0.25, (6 - ts) / 0.5);
+      ctx.save(); ctx.globalAlpha = 0.88 * a; ctx.fillStyle = '#100c08'; ctx.fillRect(x, y, w, hgt); ctx.globalAlpha = a; ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, hgt);
+      lin.forEach((l, i) => texto(l, W / 2, y + L(14) + tam + i * tam * 1.35 - tam * 0.2, { alin: 'center', tam, color: '#e8dcc0' }));
+      ctx.restore();
+      if (dentro(x, y, w, hgt)) { ui.sobreUI = true; if (E.clicIzq) { E.clicIzq = false; cartel = null; } }
+    }
   }
 
   // ---------------- joystick: aparece donde apoyas el pulgar, abajo a la izquierda, fuera de los botones
