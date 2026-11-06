@@ -37,7 +37,11 @@ export const usosPfx = {
   hab: new Map<string, { proy?: string; area?: string }>(),
   mon: new Map<string, string>(),
   impacto: new Map<string, string>(),
+  /** Transiciones a pantalla completa pedidas por el juego (las dibuja render/pfx_mundo.ts). */
+  pantalla: [] as { id: string; t0: number }[],
 };
+/** Pide una transición a pantalla completa (corte al jefe, muerte, entrar a la catedral ahogada...). */
+export const transicionPfx = (id: string) => { usosPfx.pantalla.push({ id, t0: performance.now() / 1000 }); };
 /** Reparte los efectos de cada habilidad en proyectil (el que vuela) y área (lo que pasa donde cae o donde pega). */
 export function armarUsosPfx(efectos: { id: string; uso?: any[]; luz?: { enVuelo?: boolean }; direccional: boolean }[]) {
   const porHab = new Map<string, typeof efectos>();

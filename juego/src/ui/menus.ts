@@ -352,6 +352,8 @@ export function dibujarOpciones(t: number, fondo: boolean): 'volver' | null {
   if (boton(`${T('Idioma', 'Language')}: ${IDI ? 'English' : 'Español'}`, x + 30, y + 228, w - 60, 30, { tam: 13 })) { opciones.idioma = IDI ? 0 : 1; fijarIdioma(opciones.idioma); guardarOpciones(); E.clicIzq = false; }
   if (boton(T('Pantalla completa', 'Fullscreen'), x + 30, y + 268, w - 60, 30, { tam: 13 })) { E.clicIzq = false; try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch { /* nada */ } }
   if (boton(T('Volver', 'Back'), x + w / 2 - 80, y + h - 48, 160, 32)) { E.clicIzq = false; return 'volver'; }
+  // créditos de terceros (licencia MIT)
+  texto(T('Efectos: pixelfx (MIT) de Patch, Hugo Duprez y Hollow Crown', 'Effects: pixelfx (MIT) by Patch, Hugo Duprez and Hollow Crown'), W / 2, Math.min(H - 6, y + h + 16), { alin: 'center', tam: 10, color: '#7a6a50' });
   return null;
 }
 

@@ -17,6 +17,7 @@ import { calorOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
 import { prepararFuegos, vivosDe, tieneFuegoDoom, dibujarVivos } from './fuego_vivo';
 import { dibujarPfx, alfaCuerpo, efectoPfx, dirPfx } from './pfx';
 import { estadosPfx } from '../juego/pfx_usos';
+import { dibujarAmbiente, dibujarClimaPfx } from './pfx_mundo';
 import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde } from './fuego_especial';
 let dtCuadro = 1 / 60;
 const congelados = new WeakSet<object>();
@@ -188,6 +189,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
       q = meta.f[Math.min(meta.f.length - 1, i)];
     }
     const [px, py] = aPant(o.cx + 0.5, o.cy + 0.5);
+    // el cofre que se abre con pixelfx: el del catálogo se oculta mientras dura (el efecto trae su cofre)
+    if (o.dato?.abre !== undefined && j.t - o.dato.abre < 4.2 && efectoPfx('fx_cofre_abre') && j.efectos.some((e) => e.id === 'pfx:fx_cofre_abre' && e.x === o.cx + 0.5 && e.y === o.cy + 0.5)) continue;
     // fuego de Doom vivo: el gemelo sin llama y el fuego encima
     const vivos = vivosDe(o), gem = vivos?.[0].s.sprite ? objetoMeta(vivos[0].s.sprite, o.v) : null;
     if (vivos && gem?.f.length) q = gem.f[0];
@@ -295,6 +298,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   for (let i = chispas.length - 1; i >= 0; i--) { const c = chispas[i]; c.t -= dt; c.x += c.vx * dt; c.y += c.vy * dt; if (c.t <= 0) { chispas.splice(i, 1); continue; } ctx.globalAlpha = Math.min(1, c.t * 2); ctx.fillStyle = c.c; ctx.fillRect(c.x, c.y, 2, 2); }
   ctx.restore();
+  // lo que vive en la zona (pixelfx): antes de la luz, así la noche también lo oscurece
+  dibujarAmbiente(ctx, j, aPant, W, H, tiempo);
   // luz y oscuridad
   dibujarLuz(j, tiempo);
   puertaCatedral(j, dt, tiempo);
@@ -474,7 +479,9 @@ function dibujarBotinSuelo(s: any, px: number, py: number, t: number) {
   const o = s.o;
   // haz de luz debajo según la rareza (las runas y gemas también brillan)
   const pv = PILAR[o.rareza] ?? (o.tipo === 'runa' || o.tipo === 'gema' ? 'raro' : null);
-  if (pv) { const m = objetoMeta('botin_pilar', pv); if (m && m.f.length) { ctx.globalAlpha = Math.min(1, s.t * 2) * 0.9; dibujar(ctx, m.f[Math.floor((t * 25) / m.t) % m.f.length], px, py); ctx.globalAlpha = 1; } }
+  // únicos y legendarios: la columna de luz de pixelfx
+  if ((o.rareza === 'unico' || o.rareza === 'legendario') && dibujarPfx(ctx, 'fx_columna_botin', t, px, py, { alfa: Math.min(1, s.t * 2) })) { /* listo */ }
+  else if (pv) { const m = objetoMeta('botin_pilar', pv); if (m && m.f.length) { ctx.globalAlpha = Math.min(1, s.t * 2) * 0.9; dibujar(ctx, m.f[Math.floor((t * 25) / m.t) % m.f.length], px, py); ctx.globalAlpha = 1; } }
   else { ctx.globalAlpha = 0.5; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(px, py, 8, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
   if (o.tipo === 'gema') { const g = GEMAS.find((x) => o.base.startsWith(x)); if (g && anim('gema_suelo', g)) { ctx.restore(); return; } }
   const b = baseDe(o);
@@ -545,7 +552,9 @@ const gotas: { x: number; y: number; v: number }[] = [];
 const bancos: { x: number; y: number; r: number; v: number }[] = [];
 function clima(j: Juego, dt: number, t: number) {
   const z = j.zona;
-  if (z.niebla) {
+  // el clima de pixelfx de la zona; lo que ya dibuja no se repite con las partículas de siempre
+  const pf = dibujarClimaPfx(ctx, j, W, H, t);
+  if (z.niebla && !pf.niebla) {
     if (!bancos.length) for (let i = 0; i < 14; i++) bancos.push({ x: R() * W, y: R() * H, r: 80 + R() * 140, v: 6 + R() * 10 });
     ctx.save();
     for (const b of bancos) {
@@ -556,7 +565,7 @@ function clima(j: Juego, dt: number, t: number) {
     ctx.restore();
   }
   const tipo = z.lluvia ? 'lluvia' : z.nieve ? 'nieve' : z.ceniza ? 'ceniza' : null;
-  if (!tipo || z.tipo === 'mazmorra') return;
+  if (!tipo || z.tipo === 'mazmorra' || (tipo === 'lluvia' && pf.lluvia) || (tipo === 'nieve' && pf.nieve)) return;
   const n = tipo === 'lluvia' ? 160 : 110;
   while (gotas.length < n) gotas.push({ x: R() * W, y: R() * H, v: 0.6 + R() * 0.6 });
   ctx.save();

@@ -14,7 +14,7 @@ import { R, entre, elegir, clamp, dist, hashTxt } from '../nucleo/azar';
 import { Sonido } from '../audio/sonido';
 import { zancada } from '../../../src/engine/gotico/figura';
 import { manifiesto } from '../motor/assets';
-import { muertePfx, usosPfx } from './pfx_usos';
+import { muertePfx, usosPfx, transicionPfx } from './pfx_usos';
 
 /** Celdas que avanza un ciclo completo de caminar o correr (cuerpo de alto 1), según la pisada del motor. */
 export const ZANCADA = { caminar: zancada('caminar') / 16, correr: zancada('correr') / 16 };
@@ -138,6 +138,7 @@ function efectoLegMuerte(j: Juego, m: Monstruo) {
 function presentarJefe(j: Juego, m: Monstruo) {
   if (!(m.def.jefe || m.def.ia === 'jefe') || (m as any).presentado) return;
   (m as any).presentado = true;
+  transicionPfx('fx_trans_tajo');
   const vis: string[] = ((j.heroe.d as any).jefesVistos ??= []);
   if (!vis.includes(m.def.id)) { vis.push(m.def.id); j.eventos.push({ tipo: 'presentar', dato: m }); }
 }
@@ -281,6 +282,7 @@ export function crearJuego(d: DatosHeroe, idi: 0 | 1): Juego {
 
 /** Entra a una zona por una entrada (o a la piedra de viaje). */
 export function entrarZona(j: Juego, zid: string, entrada: string) {
+  if (zid === 'a6_catedral1' || zid === 'a7_cielo') transicionPfx('fx_trans_vidrio');
   durezaCiclo = 1 + 0.15 * cicloExtra(j.heroe.d);
   (j as any).gibs = []; (j as any).reventones = [];
   // guardar la zona actual
@@ -694,7 +696,7 @@ export function ganarXp(j: Juego, xp: number) {
 function morirHeroe(j: Juego) {
   const h = j.heroe;
   if (h.muerto) return;
-  h.muerto = true; h.acc = 'morir'; h.t = 0; h.vida = 0;
+  h.muerto = true; h.acc = 'morir'; h.t = 0; h.vida = 0; transicionPfx('fx_trans_quemar');
   h.d.muertes++;
   sonar(j, 'muerte_heroe');
   Sonido.latido(false);
@@ -1872,7 +1874,7 @@ export function beberPocion(j: Juego, o: Objeto) {
   const h = j.heroe; if (h.muerto) return;
   const v = valorPocion(o);
   // hasta el nivel 5 la poción cura en 2 s en vez de 4: al empezar se muere por llegar tarde, no por falta de pociones
-  if (o.pocion === 'vida') { const tc = h.d.nivel <= 5 ? 2 : 4; (h as any).curando = { t: tc, v: v / tc }; }
+  if (o.pocion === 'vida') { const tc = h.d.nivel <= 5 ? 2 : 4; (h as any).curando = { t: tc, v: v / tc }; efecto(j, 'pfx:fx_curacion', h.x, h.y, 0, 1, 0, 1.8); }
   else if (o.pocion === 'mana') { (h as any).cargando = { t: 3, v: v / 3 }; }
   else { h.vida = Math.min(h.vidaMax, h.vida + h.vidaMax * v / 100); h.mana = Math.min(h.c.manaMax, h.mana + h.c.manaMax * v / 100); }
   sonar(j, 'pocion');
@@ -1903,6 +1905,7 @@ export function curarEnTiempo(j: Juego, dt: number) {
   if (h.cargando) { h.mana = Math.min(h.c.manaMax, h.mana + h.cargando.v * dt); h.cargando.t -= dt; if (h.cargando.t <= 0) h.cargando = null; }
 }
 export function recogerSuelo(j: Juego, s: Suelo): boolean {
+  if (s.o && s.o.rareza !== 'normal') efecto(j, 'pfx:fx_recoger', s.x, s.y, 0, 1, 0, 0.9);
   const h = j.heroe;
   if (s.oro) { h.d.oro += s.oro; sonar(j, 'oro'); j.suelo.splice(j.suelo.indexOf(s), 1); return true; }
   if (s.o && recoger(h.d, s.o)) { sonar(j, 'objeto_cae', undefined, undefined, 0.5); j.suelo.splice(j.suelo.indexOf(s), 1); return true; }

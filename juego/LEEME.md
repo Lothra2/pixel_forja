@@ -71,6 +71,14 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - Poderes nuevos: el Cerco de llamas es un anillo de fuego y con 10 puntos se vuelve muro del infierno. El Sol negro suelta una lluvia de brasas, el Lamento del osario un llanto de ánimas y la Bomba ígnea deja el piso ardiendo. Ozmaren levanta un pilar de fuego al abrir el pecho y el Cetro de la Corona Fría envuelve al héroe en su llama.
   - Como mucho arden 12 fuegos a la vez en el teléfono y 24 en la computadora, los más cercanos. Los demás muestran su llama pintada.
   - La portada tiene fuego vivo en las ruinas y detrás de los vitrales de la catedral.
+- **Efectos de pixelfx.** 169 efectos animados en pixel art, adaptados por la Forja.
+  - Estados sobre el cuerpo con su color: congelado, lento por frío, envenenado, maldito, sangrando, aturdido y asustado.
+  - Muertes distintas según el monstruo y el golpe: el ánima que sube, el cuerpo helado que revienta, la magia que deshace, el ahogado que se vuelve agua, el saqueador que suelta su oro, las plumas de los alados y la explosión de los jefes.
+  - Los poderes de las 8 clases y las bolas de los monstruos lanzadores usan sus efectos.
+  - Clima por zona: tormenta, lluvia, nieve, niebla, hojas y luciérnagas. Cada zona tiene lo suyo: murciélagos, fuegos fatuos, goteras, burbujas, medusas, cuervos.
+  - Botín: el cofre que se abre, la columna de luz de los únicos y legendarios, el destello al recoger y la curación al beber. Cortes a pantalla completa al ver un jefe, al morir y al entrar a la catedral ahogada o al cielo.
+  - Se bajan en 4 paquetes cuando hacen falta, y en el teléfono nunca ocupan más de 60 Mpx de memoria.
+  - Créditos en Opciones: pixelfx, licencia MIT, de Patch, Hugo Duprez y Hollow Crown.
 - **La historia decide (actos 4 a 7).** La cadena principal tiene tres decisiones con consecuencias reales.
   - Acto 4, "La sangre tibia": Vigdis se ofrece para abrir el trono. Si la dejas ir, Hjaldur llega con un cuarto menos de vida, el fortín se queda sin curandera y en su lugar queda su tumba. Si la detienes, el rey llega entero y ella te sigue en los campamentos de los actos 5 a 7.
   - Acto 5: la Brasa, destruirla o absorberla.

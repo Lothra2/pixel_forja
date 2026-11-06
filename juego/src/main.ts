@@ -380,7 +380,7 @@ function usarObjeto(jj: Juego, o: ObjZ) {
   }
   if (o.tag === 'cofre') {
     if (o.v.startsWith('abiert') || o.v.startsWith('abriendo')) return;
-    o.v = o.v.endsWith('_y') ? 'abriendo_y' : 'abriendo'; o.tag = undefined; o.dato = { abre: jj.t };
+    o.v = o.v.endsWith('_y') ? 'abriendo_y' : 'abriendo'; o.tag = undefined; o.dato = { abre: jj.t }; jj.efectos.push({ id: 'pfx:fx_cofre_abre', x: o.cx + 0.5, y: o.cy + 0.5, t: 0, dir: 0, escala: 1, z: 0, dur: 4.2 } as any);
     Sonido.efecto('cofre');
     const bueno = /ornado|noble|sarcofago|gg/.test(o.id) ? 2 : 1;
     setTimeout(() => soltar(jj, o.cx + 0.5, o.cy + 1.2, botin(nivelEnDificultad(jj.zona.nivel, h.d.dificultad), bueno, h.c.hallazgo, h.c.oro_extra)), 450);
