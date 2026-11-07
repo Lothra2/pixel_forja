@@ -113,6 +113,7 @@ export const GUION: Record<string, Plano[]> = {
   acto_5: [
     { id: 'p1_ozmaren', que: 'En el Corazón de la Brasa, Ozmaren revienta en fuego: el pecho se abre y las alas arden.', dur: 6.5,
       cam: temblar(acercar([640, 320], 1.1), 12, 2.2), entrada: T('blanco', 0.3), salida: T('rojo', 0.8),
+      sonidos: [{ t: 0.1, efecto: 'explosion', vol: 1 }, { t: 0.6, efecto: 'rugido_jefe', vol: 0.9 }],
       texto: ['Ozmaren cayó. La sed que bajó a beber se quedó sin boca.', 'Ozmaren fell. The thirst that came down to drink was left without a mouth.'] },
     { id: 'p2_eleccion', que: 'Sobre la ceniza de Ozmaren, el héroe con la Brasa en el puño. Según la elección: se apaga y la Marca queda gris, o entra en él y lo enciende.', dur: 7.5, eleccion: 'brasa',
       cam: acercar([640, 380], 1.09), entrada: T('rojo', 0.8), salida: T('fundido', 1.2),
@@ -123,6 +124,7 @@ export const GUION: Record<string, Plano[]> = {
       } },
     { id: 'p3_mar', que: 'Muy al norte, de noche, el mar se parte en dos bajo un rayo; las agujas de una ciudad empiezan a salir del agua.', dur: 7,
       cam: temblar(acercar([640, 380], 1.08, [0, 6], [0, -8]), 5, 7, 0, 6), entrada: T('fundido', 1.2), salida: T('fundido', 1),
+      sonidos: [{ t: 0.5, efecto: 'trueno', vol: 0.9 }, { t: 3.7, efecto: 'trueno', vol: 0.7 }, { t: 6, efecto: 'trueno', vol: 0.5 }],
       texto: ['Esa noche, muy al norte, el mar se partió en dos.', 'That night, far to the north, the sea split in two.'] },
     { id: 'p4_ysmeral', que: 'Ysmeral, la Ciudad Ahogada, ya afuera del agua con sus campanas; el barco de Oyá varado en la costa.', dur: 7.5,
       cam: paneo(-40, 30, 0, -6, 1.04), entrada: T('fundido', 1), salida: T('negro', 1.6),
@@ -131,6 +133,7 @@ export const GUION: Record<string, Plano[]> = {
   acto_6: [
     { id: 'p1_campana', que: 'En el Campanario Hundido, la Campana que Ahoga se raja; el agua estalla y la sacerdotisa se suelta de las cadenas.', dur: 6.5,
       cam: temblar(acercar([640, 340], 1.09), 9, 1.8), entrada: T('blanco', 0.25), salida: T('fundido', 1),
+      sonidos: [{ t: 0.2, efecto: 'campana', vol: 1 }, { t: 0.5, efecto: 'explosion', vol: 0.6 }],
       texto: ['La Campana se rajó de arriba abajo, y la sacerdotisa que vivía adentro pudo, por fin, callar.', 'The Bell cracked from crown to lip, and the priestess who lived inside could, at last, fall silent.'] },
     { id: 'p2_marea', que: 'La marea vuelve de golpe sobre las calles de Ysmeral; los ahogados quedan en la playa. El barco flota.', dur: 7,
       cam: paneo(40, -30, -6, 6, 1.03), entrada: T('fundido', 1), salida: T('fundido', 1),
