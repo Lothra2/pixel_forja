@@ -3,20 +3,10 @@
  "frente": false,
  "fuegos": [
   {
-   "x": 735,
-   "y": 277,
-   "w": 69,
-   "h": 75,
-   "escala": 1,
-   "cuadros": 16,
-   "columnas": 16,
-   "fps": 12
-  },
-  {
-   "x": 747,
-   "y": 360,
-   "w": 78,
-   "h": 75,
+   "x": 666,
+   "y": 216,
+   "w": 77,
+   "h": 114,
    "escala": 1,
    "cuadros": 16,
    "columnas": 16,
