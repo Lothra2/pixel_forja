@@ -470,7 +470,7 @@ const BOCA_DIR = dirAz(BOCA.az, BOCA.el);
 function atmHerida(): Atmosfera {
   const rojo = hexLin('#ff4a18'), labio = hexLin('#140201'), pared = hexLin('#6a0c04'), magma = hexLin('#e8380c'), veta = hexLin('#ff6a1c');
   const pars: [number, C3][] = [[0, hexLin('#1e2030')], [0.06, hexLin('#161b2c')], [0.2, hexLin('#0e1428')], [0.5, hexLin('#070a18')], [0.9, hexLin('#03040a')]];
-  const aire = (d: V3): C3 => { const e = Math.min(0.03, Math.max(0, d[2])), g = Math.max(0, dot3(norm([d[0], d[1], 0]), norm([BOCA_DIR[0], BOCA_DIR[1], 0]))); return add(gradiente(pars, e), rojo, 0.1 * Math.pow(g, 10) + 0.03 * Math.pow(g, 2)); };
+  const aire = (d: V3): C3 => { const e = Math.min(0.03, Math.max(0, d[2])), g = Math.max(0, dot3(norm([d[0], d[1], 0]), norm([BOCA_DIR[0], BOCA_DIR[1], 0]))); return add(gradiente(pars, e), rojo, 0.035 * Math.pow(g, 10) + 0.008 * Math.pow(g, 2)); };
   const cielo = (d: V3): C3 => {
     const e = elev(d); if (e < 0.03) return aire(d);
     let c = gradiente(pars, e);
@@ -493,10 +493,10 @@ function atmHerida(): Atmosfera {
     return c;
   };
   return {
-    sol: { dir: norm([BOCA_DIR[0], BOCA_DIR[1], BOCA_DIR[2] + 0.05]), c: rojo, k: 0.28, ancho: 0.08 }, cielo, aire,
-    ambCielo: escalar(hexLin('#2c4070'), 0.55), ambSuelo: escalar(hexLin('#141820'), 0.12),
-    niebla: { densidad: 1 / 16000, baja: 1 / 5000, z0: 600, H: 500, ruido: 0.7, escalaRuido: 0.0004 },
-    borde: { c: hexLin('#ff6a30'), k: 0.7 }, nieve: { albedo: [0.4, 0.42, 0.5], desde: 0.6 }, oclusion: 0.85,
+    sol: { dir: norm([BOCA_DIR[0], BOCA_DIR[1], BOCA_DIR[2] + 0.05]), c: rojo, k: 0.9, ancho: 0.08 }, cielo, aire,
+    ambCielo: escalar(hexLin('#3a5490'), 0.45), ambSuelo: escalar(hexLin('#141820'), 0.1),
+    niebla: { densidad: 1 / 18000, baja: 1 / 2200, z0: 0, H: 900, ruido: 0.7, escalaRuido: 0.0003 },
+    borde: { c: hexLin('#ff6a30'), k: 1.6 }, nieve: { albedo: [0.4, 0.42, 0.5], desde: 0.6 }, oclusion: 0.85,
   };
 }
 /** Las cuatro brasas: dónde está cada una (lejos, hacia la boca) y hacia dónde va. */
@@ -520,19 +520,24 @@ function estelasHerida(t: number): Particula[] {
 function armarHerida(w: number, h: number): Armado {
   const esc = new EscenaCine(), frente: number[] = [];
   // la cresta donde está el ojo (primer plano oscuro), el valle hondo y los picos al sur
-  // los picos: conos quebrados en tres hileras (cerca oscuros, lejos en la bruma), con aristas de erosión
-  const PICOS: [number, number, number, number][] = [];
-  for (let i = 0; i < 34; i++) { const fila = i % 3, y = 3800 + fila * 4200 + az(i, 650) * 2200, x = (az(i, 651) - 0.5) * (9000 + fila * 9000); PICOS.push([x, y, 1300 + fila * 700 + az(i, 652) * 1500, 1300 + fila * 900 + az(i, 653) * 900]); }
+  // la sierra: cuatro cordilleras una detrás de otra (valles hondos entre ellas, donde se junta la niebla), cada una con
+  // cumbres de crestas quebradas (ruido de aristas) y laderas con canaletas
+  const CORD: [number, number, number, number][] = [[5200, 1100, 2900, 661], [9000, 1500, 3900, 662], [14500, 2200, 5200, 663], [23000, 3500, 6800, 664]];
+  const arista = (x: number, y: number, s: number) => { let v = 0, a = 0.55, f = 1; for (let o = 0; o < 5; o++) { v += (1 - Math.abs(2 * fbm2(x * f, y * f, 1, s + o) - 1)) ** 2 * a; a *= 0.5; f *= 2.1; } return v; };
   const picos = (x: number, y: number) => {
-    let h = suave(3000, 6000, y) * 300;
-    for (const [px, py, H, R] of PICOS) { const dx = x - px, dy = y - py; if (Math.abs(dx) > R * 1.6 || Math.abs(dy) > R * 1.6) continue; const ar = 1 - Math.abs(2 * fbm2(x / 260, y / 260, 3, 654) - 1), d = Math.hypot(dx, dy * 1.3) / R + ar * 0.18; h = Math.max(h, H * Math.pow(Math.max(0, 1 - d), 1.35)); }
-    return h + (fbm2(x / 900, y / 900, 3, 655) - 0.5) * 120 + suave(16000, 30000, y) * (fbm2(x / 5000, y / 5000, 4, 656) ** 2 * 3000);
+    let h = 0;
+    for (const [yc, ancho, H, sd] of CORD) {
+      const dy = (y - yc) / ancho; if (Math.abs(dy) > 2.2) continue;
+      const cumbres = 0.35 + 0.9 * fbm2(x / (ancho * 2.2), sd, 3, sd) ** 1.5, perfil = Math.exp(-dy * dy * 1.3);
+      h = Math.max(h, H * perfil * cumbres * (0.55 + 0.6 * arista(x / (ancho * 0.9), y / (ancho * 0.9), sd + 10)));
+    }
+    return h;
   };
-  const cresta = (x: number, y: number): number => 2000 * (1 - suave(-200, 1600, y)) + (fbm2(x / 300, y / 300, 4, 653) - 0.5) * 160 * (1 - suave(400, 1600, y)) - suave(600, 2600, y) * 600;
+  const cresta = (x: number, y: number): number => 2000 * (1 - suave(-200, 1600, y)) + (fbm2(x / 300, y / 300, 4, 653) - 0.5) * 160 * (1 - suave(400, 1600, y)) + (fbm2(x / 40, y / 40, 3, 657) - 0.5) * 30 - suave(600, 2600, y) * 600;
   const alto = (x: number, y: number) => Math.max(cresta(x, y), picos(x, y)) + (fbm2(x / 60, y / 60, 3, 654) - 0.5) * 8;
   esc.terreno = new Terreno({
-    alto, techo: 9000, grillas: [[-1500, -800, 1500, 1800, 6], [-14000, 1000, 16000, 20000, 40], [-60000, 5000, 60000, 60000, 300]],
-    superficie: (p, n) => { const roca = suave(0.38, 0.6, 1 - n[2] + (fbm2(p[0] / 80, p[1] / 80, 3, 655) - 0.5) * 0.4); const cerca = 1 - suave(300, 1400, p[1]); return { albedo: mezclar(mezclar([0.42, 0.45, 0.52], [0.03, 0.03, 0.032], roca), [0.03, 0.03, 0.035], cerca * 0.95), brillo: 0 }; },
+    alto, techo: 9000, grillas: [[-1500, -800, 1500, 1800, 6], [-14000, 1000, 16000, 20000, 20], [-60000, 5000, 60000, 60000, 120]],
+    superficie: (p, n) => { const roca = suave(0.45, 0.7, 1 - n[2] + (fbm2(p[0] / 120, p[1] / 120, 3, 655) - 0.5) * 0.5) * (1 - suave(3500, 6000, p[2]) * 0.4); const cerca = 1 - suave(1800, 2800, p[1]); return { albedo: mezclar(mezclar([0.55, 0.58, 0.66], [0.035, 0.034, 0.036], roca), [0.03, 0.03, 0.035], cerca * 0.95), brillo: 0.05 }; },
   });
   const ter = esc.terreno;
   // rocas y un árbol muerto sobre la cresta, en silueta (primer plano)
