@@ -496,15 +496,17 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // Ozmaren sobre su lava: un borde rojo brillante en la silueta (detrás del cuerpo) para que se despegue del piso
   if (!e.muerto && e.tipo === 'monstruo' && m.def.sprite === 'jefe_ozmaren') { ctx.save(); ctx.globalAlpha = 0.5; for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) dibujarTenido(ctx, q, px + ox, py + oy, '#ff5a20', 1, esc); ctx.restore(); }
   const cambio = e.tipo === 'heroe' ? performance.now() / 1000 - cambioVisible : 9;
-  if (cambio < 0.45) ok = dibujarTenido(ctx, q, px, py, '#fff2d0', 0.7 * (1 - cambio / 0.45), esc);
-  // el destello del golpe: en los jefes grandes (más de 200 px) un blanco al 40 % que se apaga en ~80 ms, no un fogonazo
-  else if (e.destello > 0) ok = q.ay * esc > 200 ? (e.destello > 0.04 ? dibujarTenido(ctx, q, px, py, '#ffffff', 0.4 * Math.min(1, (e.destello - 0.04) / 0.08), esc) : dibujar(ctx, q, px, py, esc)) : dibujarTenido(ctx, q, px, py, '#ffffff', 0.55, esc);
-  else if (tinteEst) ok = dibujarTenido(ctx, q, px, py, tinteEst.color, tinteEst.fuerza * (e.frio > 0 && !(e.congelado > 0) ? 0.6 : 1), esc);
+  // nunca una silueta en lugar del sprite: el brillo de equipo nuevo es un velo de 25 % que se apaga, y el destello del
+  // golpe un blanco de 30 % como mucho en los primeros 70 ms (destello arranca en 0.12 s), para todos los monstruos
+  if (cambio < 0.45) ok = dibujarTenido(ctx, q, px, py, '#fff2d0', 0.25 * (1 - cambio / 0.45), esc);
+  else if (e.destello > 0.05) ok = dibujarTenido(ctx, q, px, py, '#ffffff', 0.3 * Math.min(1, (e.destello - 0.05) / 0.07), esc);
+  // los estados tiñen sin tapar el sprite: como mucho 40 % (salvo petrificado, que es piedra)
+  else if (tinteEst) ok = dibujarTenido(ctx, q, px, py, tinteEst.color, Math.min(tinteEst.fuerza >= 0.8 ? tinteEst.fuerza : 0.4, tinteEst.fuerza) * (e.frio > 0 && !(e.congelado > 0) ? 0.6 : 1), esc);
   else if (e.tinte) ok = dibujarTenido(ctx, q, px, py, e.tinte, e.tipo === 'invocado' ? 0.35 : e.tipo === 'heroe' ? 0.22 : 0.3, esc);
   else if (e.muerto && e.tMuerto > 60) { ctx.globalAlpha = Math.max(0.25, 1 - (e.tMuerto - 60) / 400); ok = dibujar(ctx, q, px, py, esc); ctx.globalAlpha = 1; }
   else ok = dibujar(ctx, q, px, py, esc);
   if (alfaM < 1) ctx.globalAlpha = 1;
-  if (ok && !e.muerto) reflejos(ctx, e, q, px, py, esc);
+  if (ok && !e.muerto && !(window as any).__sinReflejos) reflejos(ctx, e, q, px, py, esc);
   if (ok && ests.length) { const k = Math.max(0.6, Math.min(3, (q.ay * esc) / 75)); for (const id of ests) dibujarPfx(ctx, id, tiempo + (e.id % 7) * 0.31, px, py, { escala: k }); }
   if (ok && !e.muerto && !(window as any).__sinFuego && e.tipo === 'monstruo' && m.def.sprite === 'jefe_ozmaren') {
     const furia = Math.min(1, (m.fase ?? 0) * 0.6 + (m.acc === 'lanzar' || (m.acc as string) === 'especial' ? 0.6 : 0));
@@ -615,7 +617,7 @@ function dibujarLuz(j: Juego, t: number) {
   const tinte = (x: number, y: number, r: number, c: string, a: number) => { bctx.globalAlpha = a; bctx.drawImage(sprTinte(c), x - r, y - r, r * 2, r * 2); bctx.globalAlpha = 1; };
   // clave baja: la antorcha del héroe ya no abre la oscuridad del todo (el misterio vuelve); en el pueblo casi no hay
   // oscuridad y en las mazmorras más negras se deja un poco más para que el héroe no se pierda. Su radio no cambia
-  const kHeroe = z.tipo === 'pueblo' ? 0.8 : z.oscuridad >= 0.9 ? 0.68 : 0.62;
+  const kHeroe = z.tipo === 'pueblo' ? 0.75 : z.oscuridad >= 0.9 ? 0.6 : 0.52;
   for (const l of luces) {
     const cy = l.y - Math.min(40, l.h * 0.45);
     hueco(l.x, cy, l.r, l.blanca ? kHeroe : Math.min(0.85, 0.5 + l.k * 0.4));

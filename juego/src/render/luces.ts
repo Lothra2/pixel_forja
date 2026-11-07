@@ -66,7 +66,10 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
   const [hx, hy] = aPant(h.x, h.y);
   const osc = (j as any).oscurece ?? 0;
   const rLuz = ((z.tipo === 'pueblo' ? 420 : 210) + h.c.radio_luz * 18 + Math.sin(t * 7) * 3) * (osc > 0 ? 0.55 + 0.45 * Math.max(0, 1 - Math.sin((osc / 3.5) * Math.PI)) : 1);
-  L.push({ x: hx, y: hy, h: 55, r: rLuz, c: [255, 210, 150], k: 1, de: h, blanca: true, sinSombra: true });
+  // la antorcha alumbra el camino, no el pecho: el centro va unos 20 px hacia donde mira el héroe
+  const DIR_PANT: Record<string, [number, number]> = { s: [0, 1], so: [-0.71, 0.71], o: [-1, 0], no: [-0.71, -0.71], n: [0, -1], ne: [0.71, -0.71], e: [1, 0], se: [0.71, 0.71] };
+  const [dvx, dvy] = DIR_PANT[h.dir] ?? [0, 0];
+  L.push({ x: hx + dvx * 20, y: hy + dvy * 14, h: 55, r: rLuz, c: [255, 210, 150], k: 1, de: h, blanca: true, sinSombra: true });
   if (h.c.vivo) {
     // arma elemental: la luz de su elemento en la mano (más grande cuanto mejor el arma), con sombra si alcanza
     const ENC: Record<string, string> = { fuego: 'fuego', frio: 'hielo', rayo: 'rayo', veneno: 'veneno', sombra: 'sombra', luz: 'sagrado', sangre: 'sangre' };
@@ -382,14 +385,16 @@ export function reflejos(ctx: CanvasRenderingContext2D, e: Ent, q: Cuadro, px: n
   if (!q.img) return;
   const inf = influencias(e, px, py).filter((i) => !i.l.blanca).slice(0, q.w * q.h * esc * esc > 50000 ? 1 : 2);
   for (const i of inf) {
-    const fuerza = Math.min(0.5, i.f * 0.6);
-    if (fuerza < 0.06) continue;
+    // solo un borde del lado de la luz, suave: al 50 % sobre toda la silueta la aplanaba (el héroe junto a la fogata se veía
+    // como una figura naranja plana, y los esqueletos de la cripta como fantasmas rojos)
+    const fuerza = Math.min(0.24, i.f * 0.3);
+    if (fuerza < 0.04) continue;
     // degradado en coordenadas del sprite: desde el lado de la luz hacia el otro
     const dx = i.d > 1 ? -i.gx / i.d : 0, dy = i.d > 1 ? -i.gy / i.d * 0.5 : 1;
     const mx = q.ax, my = q.ay * 0.55;
     const ext = Math.max(q.w, q.h) * 0.6;
     const g = tctx.createLinearGradient(mx + dx * ext, my + dy * ext - (i.l.h > 30 ? ext * 0.3 : 0), mx - dx * ext, my - dy * ext);
-    g.addColorStop(0, hex(i.l.c, 1)); g.addColorStop(0.35, hex(i.l.c, 0.35)); g.addColorStop(0.75, hex(i.l.c, 0));
+    g.addColorStop(0, hex(i.l.c, 1)); g.addColorStop(0.22, hex(i.l.c, 0.3)); g.addColorStop(0.45, hex(i.l.c, 0));
     if (!silueta(q, g)) return;
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fuerza;
     ctx.drawImage(tmp, 0, 0, q.w, q.h, px - q.ax * esc, py - q.ay * esc, q.w * esc, q.h * esc);
