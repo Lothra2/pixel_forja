@@ -488,15 +488,17 @@ export function persona(P: Arti, o: OpcPersona): Pieza[] {
     // el manto: pliegues gruesos de los hombros al ruedo por la espalda, fundidos en una tela con volumen
     const Mt = o.manto, n = Mt.n ?? 11, g = Mt.grueso ?? 1, mc: Comp[] = [];
     for (let k = 0; k < n; k++) {
-      const t = k / (n - 1), atras = Math.sin(Math.PI * t), sale = (k % 2 ? 1.6 : 0) * g;
+      // los pliegues alternan: uno sale (lomo, más grueso) y el de al lado se mete (valle): la tela se lee por sus surcos
+      const t = k / (n - 1), atras = Math.sin(Math.PI * t), lomo = k % 2 === 1, sale = (lomo ? 2.6 : -0.6) * g, kr = lomo ? 1.12 : 0.8;
       const top: V3 = add(lerp3(P.hom[0], P.hom[1], t), [-2.6 - atras * 3.2, 0, 1.5 + atras * 1.2]);
-      const bot = Mt.bajo(t), med = Mt.medio ? Mt.medio(t) : lerp3(top, bot, 0.45), medS = add(med, [-sale, 0, 0]);
-      mc.push(hueso(top, medS, 2.4 * g, 3.2 * g, { mat: Mt.mat }), hueso(medS, bot, 3.2 * g, 3.8 * g + sale * 0.4, { mat: Mt.mat }));
+      const bot = Mt.bajo(t), med = Mt.medio ? Mt.medio(t) : lerp3(top, bot, 0.45), fuera = norm([med[0] - lerp3(P.pel, P.pecho, 0.5)[0], med[1] - P.pel[1], 0.0001]);
+      const medS = add(med, fuera, sale), botS = add(bot, fuera, sale * 1.4);
+      mc.push(hueso(top, medS, 2.2 * g * kr, 2.9 * g * kr, { mat: Mt.mat }), hueso(medS, botS, 2.9 * g * kr, 3.6 * g * kr, { mat: Mt.mat }));
     }
     // el cuello alto y, si va, la capucha caída sobre la espalda
     mc.push(hueso(add(lerp3(P.hom[0], P.hom[1], 0.5), [-3, 0, 2]), add(cue, [-2.5, 0, 0]), 4.5 * g, 3.6 * g, { mat: Mt.mat }));
     if (Mt.capucha) mc.push(bulto(add(cab, [-1.2, 0, 0.8]), [5.4, 4.8, 5.6], { mat: Mt.mat, ejes: ejesDe(norm(sub(cab, cue))) }), hueso(add(cab, [-3, 0, 3]), add(cab, [-8, 0, -4]), 3.6, 1, { mat: Mt.mat }));
-    ps.push(masa(mc, { mat: Mt.mat, suave: 2.2 * g }));
+    ps.push(masa(mc, { mat: Mt.mat, suave: 1.3 * g }));
   }
   if (o.pelo) { const pc: Comp[] = [], raiz = add(cab, [-2.2, 0, 2]); for (const q of o.pelo.puntas) pc.push(hueso(raiz, lerp3(raiz, q, 0.5), 2.8 * (o.pelo.grueso ?? 1), 2 * (o.pelo.grueso ?? 1), { mat: o.pelo.mat }), hueso(lerp3(raiz, q, 0.5), q, 2 * (o.pelo.grueso ?? 1), 0.5, { mat: o.pelo.mat })); pc.push(bulto(add(cab, [-0.8, 0, 1.2]), [4.1, 3.6, 4], { mat: o.pelo.mat })); ps.push(masa(pc, { mat: o.pelo.mat, suave: 1.4 })); }
   if (o.placas) {
@@ -625,7 +627,7 @@ function charcos(esc: EscenaCine, c: V3, r: number, n: number, s: number, o: { h
   const ps: Pieza[] = [], mat = o.mat ?? 'a7_icor';
   for (let k = 0; k < n; k++) {
     const a = az(s, k) * TAU, d = Math.sqrt(az(s, k + 40)) * r, x = c[0] + Math.cos(a) * d, y = c[1] + Math.sin(a) * d;
-    const R = (k < 3 ? 14 : 3) + az(s, k + 80) * (k < 3 ? 16 : 7);
+    const R = (k < 3 ? 8 : 2.5) + az(s, k + 80) * (k < 3 ? 8 : 5);
     ps.push(elipsoide(x, y, c[2] + 0.05, R, R * (0.5 + az(s, k + 120) * 0.4), 0.45, { mat, giro: az(s, k + 160) * 180 }));
   }
   if (o.hacia) for (let k = 0; k < 9; k++) { const t = k / 8, p = lerp3(c, o.hacia, t); ps.push(elipsoide(p[0] + (az(s, k + 200) - 0.5) * 8, p[1], c[2] + 0.05, 3 + az(s, k + 210) * 3, 9, 0.4, { mat })); }
@@ -634,7 +636,7 @@ function charcos(esc: EscenaCine, c: V3, r: number, n: number, s: number, o: { h
 
 /** La Corona en la grada de abajo del trono vacío, de canto contra la de arriba, entre la sangre dorada del dios. */
 const CORONA_P2: V3 = [24, TRONO.y + 10 - GRADAS[0] + 12, PLAT.z + 10];
-const CAM_P2 = { pos: [-40, TRONO.y - 210, PLAT.z + 40] as V3, fov: 54, sx: 0.57, sy: 0.66, luna: dirAz(70, 24) };
+const CAM_P2 = { pos: [-56, TRONO.y - 270, PLAT.z + 62] as V3, fov: 44, sx: 0.58, sy: 0.64, luna: dirAz(70, 24) };
 function armarP2(w: number, h: number): Cielo {
   const { esc, atm, fuegos, plumas } = armarCielo('noche', { luna: CAM_P2.luna });
   const R = 9, c = CORONA_P2;
@@ -645,9 +647,11 @@ function armarP2(w: number, h: number): Cielo {
   esc.emision.a7_corona_ascua = { k: 3.5, canal: 1 };
   // la sangre: charcos en las gradas y en el piso de la plataforma, y el reguero que baja a la escalinata
   charcos(esc, [c[0] - 10, c[1] - 8, PLAT.z + 10], 46, 12, 31);
-  charcos(esc, [c[0] - 30, c[1] - 50, PLAT.z], 70, 16, 32, { hacia: [-10, PLAT.y0 + 4, PLAT.z] });
+  charcos(esc, [c[0] - 16, c[1] - 30, PLAT.z], 30, 10, 32, { hacia: [-10, PLAT.y0 + 4, PLAT.z] });
   charcos(esc, [8, TRONO.y - 20, PLAT.z + 20], 30, 6, 33);
   icor(esc, 19, 27, 120, 21, -10);
+  // el filo de contraluz encendía el piso al ras: acá, más fino
+  atm.borde = { ...atm.borde, k: 1.2 };
   const cam = camaraEncuadre(CAM_P2.pos, add(c, [0, 0, 10]), CAM_P2.fov, CAM_P2.sx, CAM_P2.sy, w, h);
   return { esc, atm, cam, fuegos, plumas };
 }
@@ -655,7 +659,7 @@ function armarP2(w: number, h: number): Cielo {
 // ================================================================== VIGILIA: la Corona a Auren, la Iglesia la encierra
 /** Auren de rodillas al pie de la escalinata (mira a -y, hacia el que le da la Corona); la cámara lo ve de perfil. */
 const AUREN = { x: 40, y: -310, giro: -90, k: 1.1 };
-const CAM_V1 = { pos: [200, -262, 30] as V3, mira: [36, -312, 36] as V3, fov: 34, sx: 0.42, sy: 0.54, luna: dirAz(176, 11) };
+const CAM_V1 = { pos: [290, -236, 46] as V3, mira: [26, -316, 30] as V3, fov: 30, sx: 0.4, sy: 0.56, luna: dirAz(172, 12) };
 /** Auren: de rodillas sobre la derecha, la Corona envuelta contra el pecho, la cabeza gacha y vuelta (no la mira). */
 function auren(): { ps: Pieza[]; bulto: V3 } {
   const P: Arti = {
@@ -666,7 +670,7 @@ function auren(): { ps: Pieza[]; bulto: V3 } {
   const ps = persona(P, {
     ropa: 'a7_manto_blanco', piel: 'a7_piel',
     manto: {
-      mat: 'a7_manto_blanco', n: 13, grueso: 1.15, capucha: true,
+      mat: 'a7_manto_blanco', n: 19, grueso: 1.05, capucha: true,
       bajo: (t) => { const a = (t - 0.5) * Math.PI * 1.25; return [-12 - Math.cos(a) * 20 + (az(Math.round(t * 12), 601) - 0.5) * 4, Math.sin(a) * 30, 1.4 + az(Math.round(t * 12), 602) * 1.2]; },
       medio: (t) => { const a = (t - 0.5) * Math.PI * 1.1; return [-8 - Math.cos(a) * 9, Math.sin(a) * 17, 17 - Math.abs(t - 0.5) * 6]; },
     },
@@ -766,7 +770,7 @@ function armarCripta(w: number, h: number, o: { cam: 'v2' | 'v3'; latido?: boole
   };
   for (const [x, y] of (o.cam === 'v3' ? [[-70, 96], [70, 96]] : [[-70, 30], [70, 30], [-70, 96], [70, 96]]) as [number, number][]) { esc.ponerMundo([cilindro(c[0] + x, c[1] + (y - 60), 0, 7, 3, { mat: 'a7_hierro' }), palo([c[0] + x, c[1] + (y - 60), 3], [c[0] + x, c[1] + (y - 60), 58], 1.3, { mat: 'a7_hierro' }), cilindro(c[0] + x, c[1] + (y - 60), 58, 4.5, 1.2, { mat: 'a7_hierro' })], { nieve: 0 }); ponerVela(c[0] + x, c[1] + (y - 60), 59.2, 12 + az(x + y, 3) * 6, 2.2, x + y + 500, 1.3); }
   // la última vela: sobre la losa del altar, frente a la reja (la de v3)
-  if (o.cam === 'v3') { esc.ponerMundo([cilindro(c[0] - 14, c[1] - 52, 46, 5, 1.2, { mat: 'a7_hierro' })], { nieve: 0 }); ponerVela(c[0] - 14, c[1] - 52, 47.2, 11, 2.6, 801, 0.55); }
+  if (o.cam === 'v3') { const x = c[0] - 34, y = c[1] - 46; esc.ponerMundo([cilindro(x, y, 0, 8, 3, { mat: 'a7_hierro' }), palo([x, y, 3], [x, y, 46], 1.3, { mat: 'a7_hierro' }), cilindro(x, y, 45, 5, 1.4, { mat: 'a7_hierro', r1: 6 })], { nieve: 0 }); ponerVela(x, y, 46.4, 11, 2.6, 801, 0.55); }
   else { ponerVela(c[0] + 14, c[1] - 26, 46, 7, 2, 801, 0.9); ponerVela(c[0] - 30, c[1] - 27, 46, 4, 1.8, 802, 0.7); }
   for (const [x, y, z] of [[CRI.lado + 2, -94, 40], [CRI.lado + 2, 47, 40], [-CRI.lado - 2, -47, 40], [-CRI.lado - 2, 94, 40], [-60, CRI.lado * 1.5 + 2, 40], [60, CRI.lado * 1.5 + 2, 40]] as V3[]) ponerVela(x, y, z + 2, 8 + az(x, y) * 8, 2.2, Math.round(x + y), 0.8, false);
   // los monjes: media luna detrás y a los lados del altar, y dos de espaldas en primer plano (siluetas contra las velas)
@@ -791,7 +795,7 @@ function armarCripta(w: number, h: number, o: { cam: 'v2' | 'v3'; latido?: boole
   esc.luces.push({ p: [-40, 200, 330], c: hexLin('#7d94c8'), k: 0.6, r: 260, envuelve: 0.1 });
   const cam = o.cam === 'v2'
     ? camaraEncuadre(CAM_V2.pos, CAM_V2.mira, CAM_V2.fov, CAM_V2.sx, CAM_V2.sy, w, h)
-    : camaraEncuadre([c[0] + 4, c[1] - 74, 66], add(r.frente, [0, 0, 0]), 30, 0.6, 0.47, w, h);
+    : camaraEncuadre([c[0] - 40, c[1] - 92, 62], add(r.frente, [4, 0, 0]), 32, 0.62, 0.46, w, h);
   return { esc, atm, cam, fuegos, plumas: [], sellos: r.sellos, latido: r.frente };
 }
 
@@ -913,9 +917,11 @@ function heroeSentado(o: { brasa?: boolean; fria?: boolean }): Pieza[] {
     ropa: 'a7_placa', piel: 'a7_piel', placas: 'a7_placa', brasa: o.brasa, corona: 4.4, coronaApagada: o.fria,
     manto: { mat: 'a7_tela_negra', n: 11, grueso: 1, bajo: (t) => { const a = (t - 0.5) * Math.PI * 1.2; return [-14 + Math.cos(a) * 3, Math.sin(a) * 14, -26]; }, medio: (t) => { const a = (t - 0.5) * Math.PI * 1.1; return [-12 - Math.cos(a) * 2, Math.sin(a) * 13, -4]; } },
   });
+  // la Marca apagada: donde ardía la Brasa queda una costra gris de ceniza
+  if (o.fria) ps.push(elipsoide(P.pecho[0] + 5.4, P.pecho[1], P.pecho[2] - 1, 1.5, 2.8, 3.4, { mat: 'cel_ceniza', tono: -0.1 }));
   return ps;
 }
-const CAM_R1 = { pos: [-60, 360, 372] as V3, fov: 40, sx: 0.56, sy: 0.44 };
+const CAM_R1 = { pos: [-60, 372, 366] as V3, fov: 40, sx: 0.56, sy: 0.44 };
 /** El trono con su rey: el héroe sentado, su Corona, su Brasa (o su Marca apagada) y la sangre que baja (o la escarcha). */
 function armarTrono(w: number, h: number, fria: boolean): Cielo {
   const { esc, atm, fuegos, plumas } = armarCielo(fria ? 'fria' : 'ceniza', { nieve: fria, luna: fria ? dirAz(100, 24) : dirAz(84, 30) });
@@ -938,7 +944,7 @@ function armarTrono(w: number, h: number, fria: boolean): Cielo {
     esc.emision.a7_corona_ascua = { k: 0 };
     esc.luces.push({ p: add(cabeza, [0, -30, 30]), c: hexLin('#9ab0d8'), k: 0.5, r: 60, envuelve: 0.2 });
   }
-  const C = CAM_R1, cam = camaraEncuadre(fria ? [40, 180, 300] : C.pos, [T.x, T.y, zs + 30], fria ? 40 : C.fov, fria ? 0.5 : C.sx, fria ? 0.46 : C.sy, w, h);
+  const C = CAM_R1, cam = camaraEncuadre(fria ? [26, 330, 352] : C.pos, [T.x, T.y, zs + 34], fria ? 36 : C.fov, fria ? 0.5 : C.sx, fria ? 0.5 : C.sy, w, h);
   return { esc, atm, cam, fuegos, plumas };
 }
 
@@ -1027,12 +1033,12 @@ function heroeDePie(): Pieza[] {
     manto: { mat: 'a7_tela_negra', n: 12, grueso: 1.1, bajo: (t) => [-12 - Math.sin(Math.PI * t) * 8 + t * 4, (t - 0.5) * 30 + 14, 3 + t * 8], medio: (t) => [-6 - Math.sin(Math.PI * t) * 4, (t - 0.5) * 22 + 6, 26] },
   });
 }
-const CAM_F2 = { pos: [-610, 120, 96] as V3, fov: 40, sx: 0.6, sy: 0.53 };
+const CAM_F2 = { pos: [-560, -170, 104] as V3, fov: 40, sx: 0.6, sy: 0.53 };
 function armarF2(w: number, h: number): Cielo {
   const { esc, atm, fuegos, plumas } = armarCielo('fria', { nieve: true, luna: dirAz(150, 18) });
   // el borde oeste de la isla: el héroe a un paso del vacío, mirando las islas frías
-  const p: V3 = [-850, -40, 0];
-  esc.poner(heroeDePie(), { x: p[0], y: p[1], z: 0, giro: 196, k: 1.1 }, { nieve: 0.5 });
+  const p: V3 = [-850, 60, 0];
+  esc.poner(heroeDePie(), { x: p[0], y: p[1], z: 0, giro: 128, k: 1.1 }, { nieve: 0.5 });
   const cam = camaraEncuadre(CAM_F2.pos, [p[0], p[1], 52], CAM_F2.fov, CAM_F2.sx, CAM_F2.sy, w, h);
   return { esc, atm, cam, fuegos, plumas };
 }
@@ -1054,7 +1060,7 @@ const P1: Plano3D = {
 };
 const P2: Plano3D = { id: 'p2_corona', paralaje: 0.9, particulas: 'ceniza', armar: enCache(armarP2), revelado: { ...REV_NOCHE, exposicion: 1.3 }, ...conFuego() };
 
-const V1: Plano3D = { id: 'v1_auren', paralaje: 0.9, particulas: 'ceniza', armar: enCache(armarV1), revelado: REV_NOCHE, flickBase: 1, ss: 4 };
+const V1: Plano3D = { id: 'v1_auren', paralaje: 0.9, particulas: 'ceniza', armar: enCache(armarV1), revelado: { ...REV_NOCHE, exposicion: 1.2 }, flickBase: 1, ss: 4 };
 const REV_CRIPTA: Plano3D['revelado'] = { t: 0, exposicion: 1.6, derrame: { k: 0.3, r: 3 }, bloom: { k: 0.45, umbral: 0.7 }, grado: gradoNoche };
 /** Lo que late detrás del hierro: despacio, como un corazón dormido (un golpe doble cada 2,6 s). */
 const LATIDO: [number, number][] = [[0, 0.15], [0.5, 1], [0.75, 0.35], [0.95, 0.7], [1.6, 0.15], [3.1, 0.15], [3.6, 1], [3.85, 0.35], [4.05, 0.7], [4.7, 0.15], [6.2, 0.15], [6.7, 1], [6.95, 0.35], [7, 0.4]];
@@ -1080,7 +1086,7 @@ const C3: Plano3D = { id: 'c3_alba', paralaje: 0.85, particulas: 'nieve', armar:
 const R1: Plano3D = { id: 'r1_trono', paralaje: 0.9, particulas: 'ceniza', armar: enCache((w, h) => armarTrono(w, h, false)), revelado: { ...REV_NOCHE, exposicion: 1.4 }, ...conFuego(), ss: 4 };
 const R2: Plano3D = { id: 'r2_mundo', paralaje: 0.85, particulas: 'ceniza', armar: enCache(armarR2), revelado: { ...REV_NOCHE, exposicion: 1.2 }, ...conFuego(VIENTO_R2), zonas: (a) => zonasFuegos(a as Cielo, 12, 2) };
 const F1: Plano3D = { id: 'f1_trono', paralaje: 0.9, particulas: 'nieve', armar: enCache((w, h) => armarTrono(w, h, true)), revelado: { ...REV_NOCHE, exposicion: 1.25, grado: gradoFrio }, ss: 4 };
-const F2: Plano3D = { id: 'f2_invierno', paralaje: 0.88, particulas: 'nieve', armar: enCache(armarF2), revelado: { ...REV_NOCHE, exposicion: 1.2, grado: gradoFrio } };
+const F2: Plano3D = { id: 'f2_invierno', paralaje: 0.88, particulas: 'nieve', armar: enCache(armarF2), revelado: { ...REV_NOCHE, exposicion: 1.05, grado: gradoFrio } };
 
 /** Las escenas 3D del acto 7 y sus finales, por clave (las suma cine3d_registro.ts). */
 export const PLANOS_ACTOS_C: Record<string, Plano3D[]> = {
