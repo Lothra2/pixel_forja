@@ -389,16 +389,16 @@ function gradoFrio(c: C3): C3 {
 export interface Cielo extends Armado { fuegos: Fuego[] }
 export interface Fuego { p: V3; ancho: number; alto: number; semilla: number; tipo: TipoFuegoC; k?: number }
 export type TipoFuegoC = 'corona' | 'vela' | 'brasa' | 'estela' | 'hoguera' | 'antorcha' | 'pecho';
-function armarCielo(modo: ModoCielo, o: { nieve?: boolean; sinTrono?: boolean; luna?: V3 } = {}): { esc: EscenaCine; atm: Atmosfera; fuegos: Fuego[]; plumas: Pluma[] } {
+function armarCielo(modo: ModoCielo, o: { nieve?: boolean; sinTrono?: boolean; luna?: V3; sinIslas?: number[] } = {}): { esc: EscenaCine; atm: Atmosfera; fuegos: Fuego[]; plumas: Pluma[] } {
   const esc = new EscenaCine();
   esc.terreno = terrenoNubes(-3000, { nieve: o.nieve });
   // la isla del trono: el piso en z = 0, del pie de la escalinata hacia atrás
   esc.ponerMundo(islaGrande(0, 220, 0, 980, 31, { hondo: 1900, ry: 0.92 }), { nieve: 1 });
   escalinata(esc, { rota: true });
   if (!o.sinTrono) trono(esc);
-  islasLejos(esc, { nieve: o.nieve ? 1 : 0.4 });
+  islasLejos(esc, { nieve: o.nieve ? 1 : 0.4, sin: o.sinIslas });
   // las estatuas de los que intentaron antes, de rodillas a los lados de la escalinata (piedra con grietas de oro)
-  for (const [x, y, g, v, s] of [[-210, -40, 20, 'rodillas', 51], [215, 60, 160, 'tendiendo', 52], [-230, 230, 10, 'encogido', 53], [-430, 140, 40, 'alzados', 54], [330, -200, 140, 'postrado', 55]] as [number, number, number, string, number][]) {
+  for (const [x, y, g, v, s] of [[-210, -40, 20, 'rodillas', 51], [215, 60, 160, 'tendiendo', 52], [-230, 230, 10, 'encogido', 53], [-300, 330, 40, 'alzados', 54], [330, -200, 140, 'postrado', 55]] as [number, number, number, string, number][]) {
     const z = y < ESC.y0 ? 0 : 0;
     esc.poner(piezasDe('cel_estatua_suplica', v, s), { x, y, z, giro: g, k: 1.5 }, { nieve: 1 });
   }
@@ -1037,7 +1037,8 @@ function heroeDePie(): Pieza[] {
 }
 const CAM_F2 = { pos: [-560, -170, 104] as V3, fov: 40, sx: 0.6, sy: 0.53 };
 function armarF2(w: number, h: number): Cielo {
-  const { esc, atm, fuegos, plumas } = armarCielo('fria', { nieve: true, luna: dirAz(150, 18) });
+  // (sin la isla chica de la estatua que suplica: en este cuadro parecía otro que mira)
+  const { esc, atm, fuegos, plumas } = armarCielo('fria', { nieve: true, luna: dirAz(150, 18), sinIslas: [6] });
   // el borde oeste de la isla: el héroe a un paso del vacío, mirando las islas frías
   const p: V3 = [-850, 60, 0];
   esc.poner(heroeDePie(), { x: p[0], y: p[1], z: 0, giro: 128, k: 1.1 }, { nieve: 0.5 });

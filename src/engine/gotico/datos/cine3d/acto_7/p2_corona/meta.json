@@ -3,10 +3,10 @@
  "frente": false,
  "fuegos": [
   {
-   "x": 737,
-   "y": 438,
-   "w": 114,
-   "h": 108,
+   "x": 733,
+   "y": 401,
+   "w": 144,
+   "h": 141,
    "escala": 1,
    "cuadros": 16,
    "columnas": 16,
