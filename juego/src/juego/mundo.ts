@@ -513,6 +513,8 @@ function sonar(j: Juego, id: string, x?: number, y?: number, vol = 1) {
 export interface Golpe { /** Golpe del arma del héroe (dispara los efectos de las legendarias del arsenal). */ arma?: boolean; min: number; max: number; elem: Elemento; precision?: number; critico?: number; robo?: number; aturdir?: number; empuje?: number; lento?: number; aplastar?: number; herida?: number; deHeroe: boolean; fuente?: Ent; extra?: Partial<Record<Elemento, number>>; sinFallo?: boolean }
 export function danar(j: Juego, v: Ent, g: Golpe): number {
   if (v.muerto) return 0;
+  // nada del héroe ni de sus aliados le pega a un aliado (Thor, invocados, escoltas)
+  if (g.deHeroe && (v as Monstruo).dueno) return 0;
   const h = j.heroe;
   // ¿pega?
   if (!g.sinFallo && g.elem === 'fisico') {

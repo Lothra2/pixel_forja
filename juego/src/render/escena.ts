@@ -501,7 +501,8 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // aura del héroe: la mitad de adelante, encima del cuerpo
   if (e.tipo === 'heroe' && !e.muerto) auraHeroe(j, px, py, tiempo, false);
   // zona de clic
-  if (!e.muerto && e.tipo !== 'heroe') picks.push({ tipo: e.tipo === 'npc' ? 'npc' : 'monstruo', ref: e, x0: px - q.ax * esc + q.w * esc * 0.2, y0: py - q.ay * esc, x1: px - q.ax * esc + q.w * esc * 0.8, y1: py + 6, prof: e.x + e.y });
+  // los aliados (Thor, invocados, escoltas) no se eligen con el clic: el clic los atraviesa
+  if (!e.muerto && e.tipo !== 'heroe' && !(e as any).dueno) picks.push({ tipo: e.tipo === 'npc' ? 'npc' : 'monstruo', ref: e, x0: px - q.ax * esc + q.w * esc * 0.2, y0: py - q.ay * esc, x1: px - q.ax * esc + q.w * esc * 0.8, y1: py + 6, prof: e.x + e.y });
   // frase del jefe
   if (e.tipo === 'monstruo' && m.habla && m !== j.jefe) { ctx.font = 'italic 13px Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#000'; ctx.fillText(m.habla, px + 1, py - 95 * esc + 1); ctx.fillStyle = '#ff9060'; ctx.fillText(m.habla, px, py - 95 * esc); ctx.textAlign = 'left'; }
 }
