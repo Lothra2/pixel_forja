@@ -594,266 +594,42 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/acto_1/p1_abadesa_fondo.webp",
+       "archivo": "cinematicas/acto_1/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.25,
+       "paralaje": 0.9,
        "mezcla": "normal"
       },
       {
-       "id": "pozo",
-       "archivo": "cinematicas/acto_1/p1_abadesa_pozo.webp",
-       "x": 212,
-       "y": 598,
-       "w": 946,
-       "h": 192,
-       "paralaje": 0.4,
-       "mezcla": "normal"
-      },
-      {
-       "id": "pozo_luz",
-       "archivo": "cinematicas/acto_1/p1_abadesa_pozo_luz.webp",
-       "x": 394,
-       "y": 0,
-       "w": 621,
-       "h": 792,
-       "paralaje": 0.4,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.75,
-         1
-        ],
-        "periodo_s": 1.8
-       }
-      },
-      {
-       "id": "abadesa",
-       "archivo": "cinematicas/acto_1/p1_abadesa_abadesa.webp",
-       "x": 493,
-       "y": 124,
-       "w": 422,
-       "h": 524,
-       "paralaje": 0.55,
-       "mezcla": "normal"
-      },
-      {
-       "id": "abadesa_luz",
-       "archivo": "cinematicas/acto_1/p1_abadesa_abadesa_luz.webp",
-       "x": 564,
-       "y": 10,
-       "w": 338,
-       "h": 576,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "hz": 6
-       }
-      },
-      {
-       "id": "rayos",
-       "archivo": "cinematicas/acto_1/p1_abadesa_rayos.webp",
-       "x": 0,
-       "y": 0,
-       "w": 1408,
-       "h": 792,
-       "paralaje": 0.45,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 1.8
-       }
-      },
-      {
-       "id": "frente",
-       "archivo": "cinematicas/acto_1/p1_abadesa_frente.webp",
-       "x": 13,
-       "y": 267,
-       "w": 1395,
-       "h": 525,
-       "paralaje": 1,
-       "mezcla": "normal"
-      },
-      {
-       "id": "fuego_frente_0_0",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1110,
-       "y": 430,
-       "w": 20,
-       "h": 41,
-       "paralaje": 1,
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_1/pagina_1.webp",
+       "recorte": [
+        1794,
+        1588,
+        1088,
+        119
+       ],
+       "x": 622,
+       "y": 260,
+       "w": 136,
+       "h": 238,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "fuego_frente_0_1",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1140,
-       "y": 430,
-       "w": 20,
-       "h": 41,
-       "paralaje": 1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "fuego_frente_0_2",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1170,
-       "y": 430,
-       "w": 20,
-       "h": 41,
-       "paralaje": 1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "fuego_frente_0_3",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1200,
-       "y": 430,
-       "w": 20,
-       "h": 41,
-       "paralaje": 1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.11
-       }
-      },
-      {
-       "id": "fuego_frente_0_4",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1230,
-       "y": 430,
-       "w": 20,
-       "h": 41,
-       "paralaje": 1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.48
-       }
-      },
-      {
-       "id": "goteo_sangre_frente_1_0",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 116,
-       "y": 783,
-       "w": 32,
-       "h": 128,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 12,
-        "w": 32,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "goteo_sangre_frente_1_1",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 193,
-       "y": 743,
-       "w": 29,
-       "h": 115,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 12,
-        "w": 32,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "goteo_sangre_frente_1_2",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 680,
-       "y": 552,
-       "w": 32,
-       "h": 128,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 12,
-        "w": 32,
-        "h": 128,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "velas_luz",
-       "archivo": "cinematicas/acto_1/p1_abadesa_velas_luz.webp",
-       "x": 1054,
-       "y": 392,
-       "w": 253,
-       "h": 133,
-       "paralaje": 1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.75,
-         1
-        ],
-        "hz": 8
+        "w": 68,
+        "h": 119
        }
       },
       {
@@ -874,7 +650,7 @@
        "zoom": 1
       },
       "hasta": {
-       "x": 0,
+       "x": -2,
        "y": -11,
        "zoom": 1.1
       },
@@ -894,7 +670,19 @@
       "sale": 1,
       "color_entra": "blanco"
      },
-     "particulas": "brasas"
+     "particulas": "brasas",
+     "sonidos": [
+      {
+       "t": 0.05,
+       "efecto": "explosion",
+       "vol": 0.9
+      },
+      {
+       "t": 0.3,
+       "efecto": "rugido_jefe",
+       "vol": 1
+      }
+     ]
     },
     {
      "id": "p2_campanas",
@@ -902,217 +690,43 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_1/p2_campanas_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_1/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.85,
        "mezcla": "normal"
       },
       {
-       "id": "estela",
-       "archivo": "cinematicas/acto_1/p2_campanas_estela.webp",
-       "x": 158,
-       "y": 82,
-       "w": 826,
-       "h": 353,
-       "paralaje": 0.1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.8,
-         1
-        ],
-        "periodo_s": 1.2
-       }
-      },
-      {
-       "id": "abadia",
-       "archivo": "cinematicas/acto_1/p2_campanas_abadia.webp",
-       "x": 0,
-       "y": 140,
-       "w": 1408,
-       "h": 652,
-       "paralaje": 0.3,
-       "mezcla": "normal"
-      },
-      {
-       "id": "abadia_luz",
-       "archivo": "cinematicas/acto_1/p2_campanas_abadia_luz.webp",
-       "x": 725,
-       "y": 216,
-       "w": 418,
-       "h": 487,
-       "paralaje": 0.3,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.55,
-         1
-        ],
-        "periodo_s": 2.2,
-        "notas": "cada pico es un golpe de campana"
-       }
-      },
-      {
-       "id": "cuervo_abadia_luz_0_0",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 678,
-       "y": 282,
-       "w": 45,
-       "h": 34,
-       "paralaje": 0.4,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "cuervo_abadia_luz_0_1",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 752,
-       "y": 246,
-       "w": 35,
-       "h": 26,
-       "paralaje": 0.4,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "cuervo_abadia_luz_0_2",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 624,
-       "y": 237,
-       "w": 32,
-       "h": 24,
-       "paralaje": 0.4,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "cuervo_abadia_luz_0_3",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 801,
-       "y": 314,
-       "w": 38,
-       "h": 29,
-       "paralaje": 0.4,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.11
-       }
-      },
-      {
-       "id": "cuervo_abadia_luz_0_4",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 546,
-       "y": 308,
-       "w": 29,
-       "h": 22,
-       "paralaje": 0.4,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.48
-       }
-      },
-      {
-       "id": "abadia_fuego",
-       "archivo": "cinematicas/acto_1/p2_campanas_abadia_fuego.webp",
-       "x": 862,
-       "y": 248,
-       "w": 272,
-       "h": 329,
-       "paralaje": 0.3,
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_1/pagina_1.webp",
+       "recorte": [
+        0,
+        1588,
+        1792,
+        174
+       ],
+       "x": 538,
+       "y": 34,
+       "w": 224,
+       "h": 348,
+       "paralaje": 0.85,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 272,
-        "h": 329
-       }
-      },
-      {
-       "id": "niebla",
-       "archivo": "cinematicas/acto_1/p2_campanas_niebla.webp",
-       "x": 0,
-       "y": 562,
-       "w": 1408,
-       "h": 157,
-       "paralaje": 0.5,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "deriva",
-        "px_por_segundo": 8,
-        "enrollar": true
-       }
-      },
-      {
-       "id": "frente",
-       "archivo": "cinematicas/acto_1/p2_campanas_frente.webp",
-       "x": 0,
-       "y": 0,
-       "w": 1408,
-       "h": 792,
-       "paralaje": 1,
-       "mezcla": "normal"
-      },
-      {
-       "id": "goteo_sangre_frente_0_0",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 1166,
-       "y": 550,
-       "w": 26,
-       "h": 102,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 12,
-        "w": 32,
-        "h": 128,
-        "desfase": 0
+        "w": 112,
+        "h": 174
        }
       },
       {
@@ -1147,7 +761,24 @@
       "entra": 1,
       "sale": 1
      },
-     "particulas": "lluvia"
+     "particulas": "ceniza",
+     "sonidos": [
+      {
+       "t": 0.8,
+       "efecto": "campana",
+       "vol": 0.85
+      },
+      {
+       "t": 3.1,
+       "efecto": "campana",
+       "vol": 0.75
+      },
+      {
+       "t": 5.4,
+       "efecto": "campana",
+       "vol": 0.6
+      }
+     ]
     },
     {
      "id": "p3_camino",
@@ -1155,148 +786,81 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_1/p3_camino_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_1/pagina_1.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.85,
        "mezcla": "normal"
-      },
-      {
-       "id": "brasa",
-       "archivo": "cinematicas/acto_1/p3_camino_brasa.webp",
-       "x": 460,
-       "y": 274,
-       "w": 138,
-       "h": 219,
-       "paralaje": 0.08,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "periodo_s": 1.4
-       }
-      },
-      {
-       "id": "lejos",
-       "archivo": "cinematicas/acto_1/p3_camino_lejos.webp",
-       "x": 0,
-       "y": 400,
-       "w": 1408,
-       "h": 392,
-       "paralaje": 0.2,
-       "mezcla": "normal"
-      },
-      {
-       "id": "cuervo_lejos_0_0",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 407,
-       "y": 350,
-       "w": 26,
-       "h": 19,
-       "paralaje": 0.2,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 9,
-        "w": 64,
-        "h": 48,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "cuervo_lejos_0_1",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 459,
-       "y": 321,
-       "w": 22,
-       "h": 17,
-       "paralaje": 0.2,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 9,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "cuervo_lejos_0_2",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 370,
-       "y": 332,
-       "w": 19,
-       "h": 14,
-       "paralaje": 0.2,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 9,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "medio",
-       "archivo": "cinematicas/acto_1/p3_camino_medio.webp",
-       "x": 0,
-       "y": 292,
-       "w": 1408,
-       "h": 500,
-       "paralaje": 0.5,
-       "mezcla": "normal"
-      },
-      {
-       "id": "heroe",
-       "archivo": "cinematicas/acto_1/p3_camino_heroe.webp",
-       "x": 690,
-       "y": 360,
-       "w": 367,
-       "h": 432,
-       "paralaje": 0.8,
-       "mezcla": "normal"
-      },
-      {
-       "id": "marca",
-       "archivo": "cinematicas/acto_1/p3_camino_marca.webp",
-       "x": 700,
-       "y": 559,
-       "w": 90,
-       "h": 90,
-       "paralaje": 0.8,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.4,
-         1
-        ],
-        "periodo_s": 1.6,
-        "notas": "la Marca: late como un corazón"
-       }
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_1/p3_camino_frente.webp",
+       "archivo": "cinematicas/acto_1/pagina_1.webp",
+       "recorte": [
+        1410,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 415,
+       "y": 0,
        "w": 1408,
-       "h": 377,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
+      },
+      {
+       "id": "luz_1",
+       "archivo": "cinematicas/acto_1/pagina_1.webp",
+       "recorte": [
+        2820,
+        794,
+        704,
+        283
+       ],
+       "x": 0,
+       "y": 226,
+       "w": 1408,
+       "h": 566,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "tiempo",
+        "claves": [
+         [
+          0,
+          0
+         ],
+         [
+          1.6,
+          0
+         ],
+         [
+          2,
+          0.6
+         ],
+         [
+          2.25,
+          0.35
+         ],
+         [
+          2.6,
+          0.9
+         ],
+         [
+          3.2,
+          1
+         ]
+        ]
+       }
       },
       {
        "id": "vineta",
@@ -1316,7 +880,7 @@
        "zoom": 1
       },
       "hasta": {
-       "x": 14,
+       "x": 5,
        "y": -4,
        "zoom": 1.07
       },
@@ -1330,7 +894,14 @@
       "entra": 1,
       "sale": 1.6
      },
-     "particulas": "ceniza"
+     "particulas": "ceniza",
+     "sonidos": [
+      {
+       "t": 2.1,
+       "efecto": "trueno",
+       "vol": 0.45
+      }
+     ]
     }
    ]
   },
@@ -1343,118 +914,18 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/acto_2/p1_rey_fondo.webp",
+       "archivo": "cinematicas/acto_2/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.25,
-       "mezcla": "normal"
-      },
-      {
-       "id": "sarcofagos",
-       "archivo": "cinematicas/acto_2/p1_rey_sarcofagos.webp",
-       "x": 42,
-       "y": 518,
-       "w": 1346,
-       "h": 264,
-       "paralaje": 0.4,
-       "mezcla": "normal"
-      },
-      {
-       "id": "haz",
-       "archivo": "cinematicas/acto_2/p1_rey_haz.webp",
-       "x": 474,
-       "y": 0,
-       "w": 325,
-       "h": 792,
-       "paralaje": 0.35,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.8,
-         1
-        ],
-        "periodo_s": 3.5
-       }
-      },
-      {
-       "id": "rey",
-       "archivo": "cinematicas/acto_2/p1_rey_rey.webp",
-       "x": 506,
-       "y": 307,
-       "w": 468,
-       "h": 481,
-       "paralaje": 0.6,
-       "mezcla": "normal"
-      },
-      {
-       "id": "rey_luz",
-       "archivo": "cinematicas/acto_2/p1_rey_rey_luz.webp",
-       "x": 617,
-       "y": 309,
-       "w": 261,
-       "h": 465,
-       "paralaje": 0.6,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "hz": 5
-       }
-      },
-      {
-       "id": "humo_rey_luz_0_0",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 598,
-       "y": 588,
-       "w": 205,
-       "h": 205,
-       "paralaje": 0.6,
-       "mezcla": "normal",
-       "alfa": 0.55,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "humo_rey_luz_0_1",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 707,
-       "y": 599,
-       "w": 166,
-       "h": 166,
-       "paralaje": 0.6,
-       "mezcla": "normal",
-       "alfa": 0.55,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "frente",
-       "archivo": "cinematicas/acto_2/p1_rey_frente.webp",
-       "x": 0,
-       "y": 671,
-       "w": 1311,
-       "h": 121,
-       "paralaje": 1,
+       "paralaje": 0.9,
        "mezcla": "normal"
       },
       {
@@ -1495,7 +966,14 @@
       "sale": 1,
       "color_entra": "blanco"
      },
-     "particulas": "ceniza"
+     "particulas": "polvo",
+     "sonidos": [
+      {
+       "t": 0.15,
+       "efecto": "rugido_jefe",
+       "vol": 0.8
+      }
+     ]
     },
     {
      "id": "p2_coloso",
@@ -1503,232 +981,84 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_2/p2_coloso_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_2/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.85,
        "mezcla": "normal"
-      },
-      {
-       "id": "estela",
-       "archivo": "cinematicas/acto_2/p2_coloso_estela.webp",
-       "x": 924,
-       "y": 84,
-       "w": 449,
-       "h": 131,
-       "paralaje": 0.1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.8,
-         1
-        ],
-        "periodo_s": 1.1
-       }
-      },
-      {
-       "id": "cuervo_estela_0_0",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 541,
-       "y": 284,
-       "w": 38,
-       "h": 29,
-       "paralaje": 0.15,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "cuervo_estela_0_1",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 624,
-       "y": 247,
-       "w": 32,
-       "h": 24,
-       "paralaje": 0.15,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "cuervo_estela_0_2",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 682,
-       "y": 306,
-       "w": 35,
-       "h": 26,
-       "paralaje": 0.15,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "cuervo_estela_0_3",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 1006,
-       "y": 268,
-       "w": 29,
-       "h": 22,
-       "paralaje": 0.15,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.11
-       }
-      },
-      {
-       "id": "coloso",
-       "archivo": "cinematicas/acto_2/p2_coloso_coloso.webp",
-       "x": 665,
-       "y": 164,
-       "w": 427,
-       "h": 431,
-       "paralaje": 0.3,
-       "mezcla": "normal"
-      },
-      {
-       "id": "coloso_luz",
-       "archivo": "cinematicas/acto_2/p2_coloso_coloso_luz.webp",
-       "x": 816,
-       "y": 150,
-       "w": 166,
-       "h": 457,
-       "paralaje": 0.3,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "hz": 4
-       }
-      },
-      {
-       "id": "dunas",
-       "archivo": "cinematicas/acto_2/p2_coloso_dunas.webp",
-       "x": 0,
-       "y": 326,
-       "w": 1408,
-       "h": 466,
-       "paralaje": 0.6,
-       "mezcla": "normal"
-      },
-      {
-       "id": "goteo_sangre_dunas_0_0",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 329,
-       "y": 508,
-       "w": 31,
-       "h": 124,
-       "paralaje": 0.6,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "goteo_sangre_dunas_1_0",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 553,
-       "y": 524,
-       "w": 23,
-       "h": 90,
-       "paralaje": 0.6,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "goteo_sangre_dunas_2_0",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 1114,
-       "y": 520,
-       "w": 28,
-       "h": 113,
-       "paralaje": 0.6,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "goteo_sangre_dunas_3_0",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 1260,
-       "y": 518,
-       "w": 36,
-       "h": 143,
-       "paralaje": 0.6,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0
-       }
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_2/p2_coloso_frente.webp",
+       "archivo": "cinematicas/acto_2/pagina_1.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 668,
+       "y": 0,
        "w": 1408,
-       "h": 124,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_2/pagina_1.webp",
+       "recorte": [
+        0,
+        2756,
+        1056,
+        154
+       ],
+       "x": 422,
+       "y": 115,
+       "w": 132,
+       "h": 308,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 66,
+        "h": 154
+       }
+      },
+      {
+       "id": "fuego_2",
+       "archivo": "cinematicas/acto_2/pagina_1.webp",
+       "recorte": [
+        1058,
+        2756,
+        1248,
+        122
+       ],
+       "x": 695,
+       "y": 214,
+       "w": 156,
+       "h": 244,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 78,
+        "h": 122
+       }
       },
       {
        "id": "vineta",
@@ -1762,7 +1092,19 @@
       "entra": 1,
       "sale": 1
      },
-     "particulas": "ceniza"
+     "particulas": "polvo",
+     "sonidos": [
+      {
+       "t": 0.5,
+       "efecto": "explosion",
+       "vol": 0.6
+      },
+      {
+       "t": 0.9,
+       "efecto": "trueno",
+       "vol": 0.5
+      }
+     ]
     },
     {
      "id": "p3_rio",
@@ -1770,156 +1112,84 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_2/p3_rio_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_2/pagina_1.webp",
+       "recorte": [
+        1410,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.85,
        "mezcla": "normal"
-      },
-      {
-       "id": "brillos",
-       "archivo": "cinematicas/acto_2/p3_rio_brillos.webp",
-       "x": 47,
-       "y": 472,
-       "w": 559,
-       "h": 320,
-       "paralaje": 0.2,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.5,
-         1
-        ],
-        "hz": 3
-       }
-      },
-      {
-       "id": "cantor",
-       "archivo": "cinematicas/acto_2/p3_rio_cantor.webp",
-       "x": 300,
-       "y": 378,
-       "w": 64,
-       "h": 154,
-       "paralaje": 0.3,
-       "mezcla": "normal"
-      },
-      {
-       "id": "cantor_luz",
-       "archivo": "cinematicas/acto_2/p3_rio_cantor_luz.webp",
-       "x": 222,
-       "y": 325,
-       "w": 217,
-       "h": 309,
-       "paralaje": 0.3,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.5,
-         1
-        ],
-        "periodo_s": 2.6,
-        "notas": "respira con el canto"
-       }
-      },
-      {
-       "id": "barco",
-       "archivo": "cinematicas/acto_2/p3_rio_barco.webp",
-       "x": 718,
-       "y": 231,
-       "w": 564,
-       "h": 470,
-       "paralaje": 0.55,
-       "mezcla": "normal"
-      },
-      {
-       "id": "barco_luz",
-       "archivo": "cinematicas/acto_2/p3_rio_barco_luz.webp",
-       "x": 703,
-       "y": 363,
-       "w": 505,
-       "h": 249,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "hz": 6
-       }
-      },
-      {
-       "id": "fuego_barco_luz_0_0",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 755,
-       "y": 493,
-       "w": 10,
-       "h": 20,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "fuego_barco_luz_0_1",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1145,
-       "y": 487,
-       "w": 10,
-       "h": 20,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "fuego_barco_luz_0_2",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 956,
-       "y": 409,
-       "w": 9,
-       "h": 18,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.74
-       }
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_2/p3_rio_frente.webp",
+       "archivo": "cinematicas/acto_2/pagina_1.webp",
+       "recorte": [
+        0,
+        1588,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 580,
+       "y": 0,
        "w": 1408,
-       "h": 212,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_2/pagina_1.webp",
+       "recorte": [
+        0,
+        2382,
+        3834,
+        372
+       ],
+       "x": 280,
+       "y": 420,
+       "w": 852,
+       "h": 372,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 9,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 426,
+        "h": 186
+       }
+      },
+      {
+       "id": "fuego_2",
+       "archivo": "cinematicas/acto_2/pagina_1.webp",
+       "recorte": [
+        2308,
+        2756,
+        1312,
+        82
+       ],
+       "x": 550,
+       "y": 393,
+       "w": 82,
+       "h": 82,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 82,
+        "h": 82
+       }
       },
       {
        "id": "vineta",
@@ -1952,7 +1222,8 @@
      "fundido": {
       "entra": 1,
       "sale": 1.6
-     }
+     },
+     "particulas": "polvo"
     }
    ]
   },
@@ -1965,113 +1236,29 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/acto_3/p1_madre_fondo.webp",
+       "archivo": "cinematicas/acto_3/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.25,
+       "paralaje": 0.9,
        "mezcla": "normal"
-      },
-      {
-       "id": "ampollas_luz",
-       "archivo": "cinematicas/acto_3/p1_madre_ampollas_luz.webp",
-       "x": 61,
-       "y": 62,
-       "w": 1221,
-       "h": 389,
-       "paralaje": 0.25,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.4,
-         1
-        ],
-        "periodo_s": 2.2
-       }
-      },
-      {
-       "id": "barro",
-       "archivo": "cinematicas/acto_3/p1_madre_barro.webp",
-       "x": 27,
-       "y": 544,
-       "w": 1379,
-       "h": 248,
-       "paralaje": 0.4,
-       "mezcla": "normal"
-      },
-      {
-       "id": "madre",
-       "archivo": "cinematicas/acto_3/p1_madre_madre.webp",
-       "x": 363,
-       "y": 344,
-       "w": 683,
-       "h": 448,
-       "paralaje": 0.55,
-       "mezcla": "normal"
-      },
-      {
-       "id": "madre_luz",
-       "archivo": "cinematicas/acto_3/p1_madre_madre_luz.webp",
-       "x": 602,
-       "y": 427,
-       "w": 212,
-       "h": 186,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 1.4
-       }
-      },
-      {
-       "id": "humo_madre_luz_0_0",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 389,
-       "y": 564,
-       "w": 230,
-       "h": 230,
-       "paralaje": 0.55,
-       "mezcla": "normal",
-       "alfa": 0.5,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "humo_madre_luz_0_1",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 828,
-       "y": 595,
-       "w": 192,
-       "h": 192,
-       "paralaje": 0.55,
-       "mezcla": "normal",
-       "alfa": 0.5,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0.37
-       }
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_3/p1_madre_frente.webp",
+       "archivo": "cinematicas/acto_3/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
@@ -2080,60 +1267,27 @@
        "mezcla": "normal"
       },
       {
-       "id": "goteo_sangre_frente_0_0",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 110,
-       "y": 505,
-       "w": 35,
-       "h": 141,
-       "paralaje": 1,
-       "mezcla": "normal",
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_3/pagina_1.webp",
+       "recorte": [
+        0,
+        2382,
+        3934,
+        348
+       ],
+       "x": 269,
+       "y": 153,
+       "w": 843,
+       "h": 522,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "goteo_sangre_frente_0_1",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 715,
-       "y": 568,
-       "w": 38,
-       "h": 154,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "goteo_sangre_frente_0_2",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 1284,
-       "y": 420,
-       "w": 32,
-       "h": 128,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0.74
+        "columnas": 14,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 281,
+        "h": 174
        }
       },
       {
@@ -2173,7 +1327,20 @@
       "entra": 0.25,
       "sale": 1,
       "color_entra": "blanco"
-     }
+     },
+     "particulas": "polvo",
+     "sonidos": [
+      {
+       "t": 0.1,
+       "efecto": "rugido_jefe",
+       "vol": 1
+      },
+      {
+       "t": 1.3,
+       "efecto": "explosion",
+       "vol": 0.5
+      }
+     ]
     },
     {
      "id": "p2_rio",
@@ -2181,105 +1348,30 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_3/p2_rio_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_3/pagina_1.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
-       "mezcla": "normal"
-      },
-      {
-       "id": "piramide",
-       "archivo": "cinematicas/acto_3/p2_rio_piramide.webp",
-       "x": 0,
-       "y": 152,
-       "w": 1408,
-       "h": 640,
-       "paralaje": 0.2,
-       "mezcla": "normal"
-      },
-      {
-       "id": "cuervo_piramide_0_0",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 684,
-       "y": 237,
-       "w": 32,
-       "h": 24,
-       "paralaje": 0.2,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "cuervo_piramide_0_1",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 747,
-       "y": 210,
-       "w": 26,
-       "h": 19,
-       "paralaje": 0.2,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "cuervo_piramide_0_2",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 806,
-       "y": 258,
-       "w": 29,
-       "h": 22,
-       "paralaje": 0.2,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "rio",
-       "archivo": "cinematicas/acto_3/p2_rio_rio.webp",
-       "x": 0,
-       "y": 518,
-       "w": 1408,
-       "h": 274,
-       "paralaje": 0.4,
-       "mezcla": "normal"
-      },
-      {
-       "id": "barco",
-       "archivo": "cinematicas/acto_3/p2_rio_barco.webp",
-       "x": 899,
-       "y": 313,
-       "w": 468,
-       "h": 275,
-       "paralaje": 0.5,
+       "paralaje": 0.85,
        "mezcla": "normal"
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_3/p2_rio_frente.webp",
+       "archivo": "cinematicas/acto_3/pagina_1.webp",
+       "recorte": [
+        1410,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
@@ -2318,7 +1410,8 @@
      "fundido": {
       "entra": 1,
       "sale": 1
-     }
+     },
+     "particulas": "polvo"
     },
     {
      "id": "p3_norte",
@@ -2326,60 +1419,34 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_3/p3_norte_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_3/pagina_1.webp",
+       "recorte": [
+        0,
+        1588,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.85,
        "mezcla": "normal"
-      },
-      {
-       "id": "muertos",
-       "archivo": "cinematicas/acto_3/p3_norte_muertos.webp",
-       "x": 0,
-       "y": 424,
-       "w": 1408,
-       "h": 213,
-       "paralaje": 0.3,
-       "mezcla": "normal"
-      },
-      {
-       "id": "rey",
-       "archivo": "cinematicas/acto_3/p3_norte_rey.webp",
-       "x": 346,
-       "y": 226,
-       "w": 420,
-       "h": 564,
-       "paralaje": 0.6,
-       "mezcla": "normal"
-      },
-      {
-       "id": "rey_luz",
-       "archivo": "cinematicas/acto_3/p3_norte_rey_luz.webp",
-       "x": 346,
-       "y": 299,
-       "w": 387,
-       "h": 280,
-       "paralaje": 0.6,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 2
-       }
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_3/p3_norte_frente.webp",
+       "archivo": "cinematicas/acto_3/pagina_1.webp",
+       "recorte": [
+        1410,
+        1588,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 666,
+       "y": 0,
        "w": 1408,
-       "h": 126,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
       },
@@ -2401,8 +1468,8 @@
        "zoom": 1
       },
       "hasta": {
-       "x": 5,
-       "y": -2,
+       "x": 24,
+       "y": 0,
        "zoom": 1.1
       },
       "curva": "suave"
@@ -2415,7 +1482,14 @@
       "entra": 1.2,
       "sale": 1.6
      },
-     "particulas": "nieve"
+     "particulas": "nieve",
+     "sonidos": [
+      {
+       "t": 0.6,
+       "efecto": "trueno",
+       "vol": 0.4
+      }
+     ]
     }
    ]
   },
@@ -2428,85 +1502,32 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/acto_4/p1_hjaldur_fondo.webp",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.25,
+       "paralaje": 0.88,
        "mezcla": "normal"
-      },
-      {
-       "id": "luz_alta",
-       "archivo": "cinematicas/acto_4/p1_hjaldur_luz_alta.webp",
-       "x": 456,
-       "y": 0,
-       "w": 492,
-       "h": 792,
-       "paralaje": 0.3,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "periodo_s": 4
-       }
-      },
-      {
-       "id": "rey",
-       "archivo": "cinematicas/acto_4/p1_hjaldur_rey.webp",
-       "x": 408,
-       "y": 390,
-       "w": 650,
-       "h": 402,
-       "paralaje": 0.6,
-       "mezcla": "normal"
-      },
-      {
-       "id": "rey_luz",
-       "archivo": "cinematicas/acto_4/p1_hjaldur_rey_luz.webp",
-       "x": 468,
-       "y": 390,
-       "w": 594,
-       "h": 402,
-       "paralaje": 0.6,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "hz": 5
-       }
-      },
-      {
-       "id": "goteo_sangre_rey_luz_0_0",
-       "archivo": "cinematicas/fx/goteo_sangre.webp",
-       "x": 689,
-       "y": 650,
-       "w": 38,
-       "h": 154,
-       "paralaje": 0.6,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0
-       }
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_4/p1_hjaldur_frente.webp",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
-       "w": 1402,
+       "w": 1408,
        "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
@@ -2557,212 +1578,122 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_4/p2_fortin_cielo.webp",
+       "id": "fondo_vigdis_muerta",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
-       "mezcla": "normal"
+       "paralaje": 0.85,
+       "mezcla": "normal",
+       "si": "vigdis_muerta"
       },
       {
-       "id": "fortin",
-       "archivo": "cinematicas/acto_4/p2_fortin_fortin.webp",
+       "id": "fondo_vigdis_viva",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        1410,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 269,
+       "y": 0,
        "w": 1408,
-       "h": 523,
-       "paralaje": 0.35,
-       "mezcla": "normal"
-      },
-      {
-       "id": "fortin_luz",
-       "archivo": "cinematicas/acto_4/p2_fortin_fortin_luz.webp",
-       "x": 319,
-       "y": 392,
-       "w": 782,
-       "h": 183,
-       "paralaje": 0.35,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.75,
-         1
-        ],
-        "hz": 4
-       }
-      },
-      {
-       "id": "humo_fortin_luz_0_0",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 623,
-       "y": 246,
-       "w": 154,
-       "h": 154,
-       "paralaje": 0.35,
+       "h": 792,
+       "paralaje": 0.85,
        "mezcla": "normal",
-       "alfa": 0.55,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0
-       }
+       "si": "vigdis_viva"
       },
       {
-       "id": "humo_fortin_luz_0_1",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 282,
-       "y": 337,
-       "w": 115,
-       "h": 115,
-       "paralaje": 0.35,
-       "mezcla": "normal",
-       "alfa": 0.55,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "humo_fortin_luz_0_2",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 1022,
-       "y": 327,
-       "w": 115,
-       "h": 115,
-       "paralaje": 0.35,
-       "mezcla": "normal",
-       "alfa": 0.55,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "nieve",
-       "archivo": "cinematicas/acto_4/p2_fortin_nieve.webp",
+       "id": "frente_vigdis_muerta",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        0,
+        1588,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 318,
+       "y": 0,
        "w": 1408,
-       "h": 474,
-       "paralaje": 0.7,
-       "mezcla": "normal"
-      },
-      {
-       "id": "vigdis",
-       "archivo": "cinematicas/acto_4/p2_fortin_vigdis.webp",
-       "x": 532,
-       "y": 414,
-       "w": 142,
-       "h": 334,
-       "paralaje": 0.7,
-       "mezcla": "normal",
-       "si": "vigdis_viva"
-      },
-      {
-       "id": "tumba",
-       "archivo": "cinematicas/acto_4/p2_fortin_tumba.webp",
-       "x": 476,
-       "y": 435,
-       "w": 240,
-       "h": 310,
-       "paralaje": 0.7,
+       "h": 792,
+       "paralaje": 1,
        "mezcla": "normal",
        "si": "vigdis_muerta"
       },
       {
-       "id": "vigdis_farol",
-       "archivo": "cinematicas/acto_4/p2_fortin_vigdis_farol.webp",
-       "x": 402,
-       "y": 440,
-       "w": 281,
-       "h": 282,
-       "paralaje": 0.7,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.75,
-         1
-        ],
-        "hz": 5
-       },
+       "id": "frente_vigdis_viva",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        1410,
+        1588,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal",
        "si": "vigdis_viva"
       },
       {
-       "id": "fuego_vigdis_farol_0_0",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 536,
-       "y": 567,
-       "w": 12,
-       "h": 23,
-       "paralaje": 0.7,
+       "id": "fuego_1_vigdis_muerta",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        2820,
+        2382,
+        1120,
+        75
+       ],
+       "x": 504,
+       "y": 540,
+       "w": 70,
+       "h": 75,
+       "paralaje": 0.85,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0
-       },
-       "si": "vigdis_viva"
-      },
-      {
-       "id": "tumba_farol",
-       "archivo": "cinematicas/acto_4/p2_fortin_tumba_farol.webp",
-       "x": 460,
-       "y": 316,
-       "w": 281,
-       "h": 281,
-       "paralaje": 0.7,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.75,
-         1
-        ],
-        "hz": 5
+        "w": 70,
+        "h": 75
        },
        "si": "vigdis_muerta"
       },
       {
-       "id": "fuego_tumba_farol_0_0",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 594,
-       "y": 444,
-       "w": 12,
-       "h": 23,
-       "paralaje": 0.7,
+       "id": "fuego_1_vigdis_viva",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        0,
+        3176,
+        1056,
+        71
+       ],
+       "x": 753,
+       "y": 437,
+       "w": 66,
+       "h": 71,
+       "paralaje": 0.85,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0
+        "w": 66,
+        "h": 71
        },
-       "si": "vigdis_muerta"
+       "si": "vigdis_viva"
       },
       {
        "id": "vineta",
@@ -2814,89 +1745,131 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_4/p3_herida_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        0,
+        2382,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.8,
        "mezcla": "normal"
       },
       {
-       "id": "brasas",
-       "archivo": "cinematicas/acto_4/p3_herida_brasas.webp",
-       "x": 157,
-       "y": 97,
-       "w": 1154,
-       "h": 384,
-       "paralaje": 0.1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.8,
-         1
-        ],
-        "hz": 3
-       }
-      },
-      {
-       "id": "herida_luz",
-       "archivo": "cinematicas/acto_4/p3_herida_herida_luz.webp",
-       "x": 387,
+       "id": "frente",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        1410,
+        2382,
+        1408,
+        792
+       ],
+       "x": 0,
        "y": 0,
-       "w": 747,
-       "h": 627,
-       "paralaje": 0.08,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        2164,
+        3176,
+        768,
+        35
+       ],
+       "x": 792,
+       "y": 325,
+       "w": 96,
+       "h": 70,
+       "paralaje": 0.8,
        "mezcla": "sumar",
        "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "periodo_s": 2.4,
-        "notas": "la boca respira"
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 48,
+        "h": 35
        }
       },
       {
-       "id": "picos",
-       "archivo": "cinematicas/acto_4/p3_herida_picos.webp",
-       "x": 0,
-       "y": 522,
-       "w": 1408,
-       "h": 270,
-       "paralaje": 0.3,
-       "mezcla": "normal"
-      },
-      {
-       "id": "heroe",
-       "archivo": "cinematicas/acto_4/p3_herida_heroe.webp",
-       "x": 0,
-       "y": 289,
-       "w": 1271,
-       "h": 503,
-       "paralaje": 0.75,
-       "mezcla": "normal"
-      },
-      {
-       "id": "marca",
-       "archivo": "cinematicas/acto_4/p3_herida_marca.webp",
-       "x": 414,
-       "y": 417,
-       "w": 79,
+       "id": "fuego_2",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        1058,
+        3176,
+        1104,
+        39
+       ],
+       "x": 346,
+       "y": 357,
+       "w": 138,
        "h": 78,
-       "paralaje": 0.75,
+       "paralaje": 0.8,
        "mezcla": "sumar",
        "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.4,
-         1
-        ],
-        "periodo_s": 0.9,
-        "notas": "la Marca late más rápido"
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 69,
+        "h": 39
+       }
+      },
+      {
+       "id": "fuego_3",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        2934,
+        3176,
+        896,
+        32
+       ],
+       "x": 881,
+       "y": 293,
+       "w": 112,
+       "h": 64,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 56,
+        "h": 32
+       }
+      },
+      {
+       "id": "fuego_4",
+       "archivo": "cinematicas/acto_4/pagina_1.webp",
+       "recorte": [
+        0,
+        3249,
+        544,
+        32
+       ],
+       "x": 648,
+       "y": 293,
+       "w": 68,
+       "h": 64,
+       "paralaje": 0.8,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 34,
+        "h": 32
        }
       },
       {
@@ -2944,191 +1917,42 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/acto_5/p1_ozmaren_fondo.webp",
+       "archivo": "cinematicas/acto_5/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.25,
+       "paralaje": 0.9,
        "mezcla": "normal"
       },
       {
-       "id": "lava_luz",
-       "archivo": "cinematicas/acto_5/p1_ozmaren_lava_luz.webp",
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_5/pagina_2.webp",
+       "recorte": [
+        0,
+        0,
+        3760,
+        528
+       ],
        "x": 0,
        "y": 0,
-       "w": 1408,
-       "h": 681,
-       "paralaje": 0.25,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.75,
-         1
-        ],
-        "hz": 3
-       }
-      },
-      {
-       "id": "ozmaren",
-       "archivo": "cinematicas/acto_5/p1_ozmaren_ozmaren.webp",
-       "x": 428,
-       "y": 195,
-       "w": 553,
-       "h": 597,
-       "paralaje": 0.55,
-       "mezcla": "normal"
-      },
-      {
-       "id": "ozmaren_luz",
-       "archivo": "cinematicas/acto_5/p1_ozmaren_ozmaren_luz.webp",
-       "x": 91,
-       "y": 0,
-       "w": 1232,
+       "w": 1410,
        "h": 792,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "hz": 7
-       }
-      },
-      {
-       "id": "fuego_ozmaren_luz_0_0",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 466,
-       "y": 586,
-       "w": 77,
-       "h": 154,
-       "paralaje": 0.55,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
         "columnas": 8,
-        "cuadros": 8,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "fuego_ozmaren_luz_0_1",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 889,
-       "y": 572,
-       "w": 90,
-       "h": 179,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "fuego_ozmaren_luz_0_2",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 632,
-       "y": 640,
-       "w": 64,
-       "h": 128,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "fuego_ozmaren_luz_0_3",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 151,
-       "y": 582,
-       "w": 58,
-       "h": 115,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.11
-       }
-      },
-      {
-       "id": "fuego_ozmaren_luz_0_4",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1211,
-       "y": 592,
-       "w": 58,
-       "h": 115,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.48
-       }
-      },
-      {
-       "id": "rayos",
-       "archivo": "cinematicas/acto_5/p1_ozmaren_rayos.webp",
-       "x": 0,
-       "y": 0,
-       "w": 1408,
-       "h": 792,
-       "paralaje": 0.5,
-       "mezcla": "sumar"
-      },
-      {
-       "id": "frente",
-       "archivo": "cinematicas/acto_5/p1_ozmaren_frente.webp",
-       "x": 0,
-       "y": 419,
-       "w": 1408,
-       "h": 373,
-       "paralaje": 1,
-       "mezcla": "normal"
-      },
-      {
-       "id": "frente_luz",
-       "archivo": "cinematicas/acto_5/p1_ozmaren_frente_luz.webp",
-       "x": 174,
-       "y": 732,
-       "w": 1069,
-       "h": 60,
-       "paralaje": 1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "periodo_s": 1.6
+        "w": 470,
+        "h": 264
        }
       },
       {
@@ -3170,7 +1994,19 @@
       "color_entra": "blanco",
       "color_sale": "rojo"
      },
-     "particulas": "brasas"
+     "particulas": "brasas",
+     "sonidos": [
+      {
+       "t": 0.1,
+       "efecto": "explosion",
+       "vol": 1
+      },
+      {
+       "t": 0.6,
+       "efecto": "rugido_jefe",
+       "vol": 0.9
+      }
+     ]
     },
     {
      "id": "p2_eleccion",
@@ -3178,124 +2014,95 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "fondo",
-       "archivo": "cinematicas/acto_5/p2_eleccion_fondo.webp",
+       "id": "fondo_brasa_absorber",
+       "archivo": "cinematicas/acto_5/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.25,
-       "mezcla": "normal"
-      },
-      {
-       "id": "ceniza_ozmaren",
-       "archivo": "cinematicas/acto_5/p2_eleccion_ceniza_ozmaren.webp",
-       "x": 0,
-       "y": 305,
-       "w": 1408,
-       "h": 434,
-       "paralaje": 0.4,
-       "mezcla": "normal"
-      },
-      {
-       "id": "heroe_gris",
-       "archivo": "cinematicas/acto_5/p2_eleccion_heroe_gris.webp",
-       "x": 832,
-       "y": 375,
-       "w": 207,
-       "h": 417,
-       "paralaje": 0.7,
-       "mezcla": "normal",
-       "si": "brasa_destruir"
-      },
-      {
-       "id": "heroe_fuego",
-       "archivo": "cinematicas/acto_5/p2_eleccion_heroe_fuego.webp",
-       "x": 832,
-       "y": 375,
-       "w": 207,
-       "h": 417,
-       "paralaje": 0.7,
+       "paralaje": 0.9,
        "mezcla": "normal",
        "si": "brasa_absorber"
       },
       {
-       "id": "brasa_apagada",
-       "archivo": "cinematicas/acto_5/p2_eleccion_brasa_apagada.webp",
-       "x": 815,
-       "y": 541,
-       "w": 111,
-       "h": 112,
-       "paralaje": 0.7,
+       "id": "fondo_brasa_destruir",
+       "archivo": "cinematicas/acto_5/pagina_1.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.9,
+       "mezcla": "normal",
+       "si": "brasa_destruir"
+      },
+      {
+       "id": "frente_brasa_absorber",
+       "archivo": "cinematicas/acto_5/pagina_1.webp",
+       "recorte": [
+        1410,
+        794,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "si": "brasa_absorber"
+      },
+      {
+       "id": "frente_brasa_destruir",
+       "archivo": "cinematicas/acto_5/pagina_1.webp",
+       "recorte": [
+        0,
+        1588,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
+       "mezcla": "normal",
+       "si": "brasa_destruir"
+      },
+      {
+       "id": "fuego_1_brasa_absorber",
+       "archivo": "cinematicas/acto_5/pagina_2.webp",
+       "recorte": [
+        0,
+        1270,
+        2336,
+        179
+       ],
+       "x": 750,
+       "y": 210,
+       "w": 146,
+       "h": 179,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.3,
-         0.6
-        ],
-        "periodo_s": 3
-       },
-       "si": "brasa_destruir"
-      },
-      {
-       "id": "humo_brasa_apagada_0_0",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 819,
-       "y": 501,
-       "w": 102,
-       "h": 102,
-       "paralaje": 0.7,
-       "mezcla": "normal",
-       "alfa": 0.6,
-       "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0
-       },
-       "si": "brasa_destruir"
-      },
-      {
-       "id": "humo_brasa_apagada_0_1",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 810,
-       "y": 420,
-       "w": 141,
-       "h": 141,
-       "paralaje": 0.7,
-       "mezcla": "normal",
-       "alfa": 0.6,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0.37
-       },
-       "si": "brasa_destruir"
-      },
-      {
-       "id": "brasa_viva",
-       "archivo": "cinematicas/acto_5/p2_eleccion_brasa_viva.webp",
-       "x": 713,
-       "y": 400,
-       "w": 445,
-       "h": 392,
-       "paralaje": 0.7,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 0.8
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 146,
+        "h": 179
        },
        "si": "brasa_absorber"
       },
@@ -3350,71 +2157,137 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_5/p3_mar_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_5/pagina_1.webp",
+       "recorte": [
+        1410,
+        1588,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.85,
        "mezcla": "normal"
-      },
-      {
-       "id": "relampago",
-       "archivo": "cinematicas/acto_5/p3_mar_relampago.webp",
-       "x": 273,
-       "y": 0,
-       "w": 863,
-       "h": 546,
-       "paralaje": 0.06,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0,
-         1
-        ],
-        "periodo_s": 3.1,
-        "notas": "un fogonazo por ciclo; acompaña la sacudida"
-       }
-      },
-      {
-       "id": "grieta",
-       "archivo": "cinematicas/acto_5/p3_mar_grieta.webp",
-       "x": 0,
-       "y": 17,
-       "w": 1408,
-       "h": 775,
-       "paralaje": 0.3,
-       "mezcla": "normal"
-      },
-      {
-       "id": "grieta_luz",
-       "archivo": "cinematicas/acto_5/p3_mar_grieta_luz.webp",
-       "x": 510,
-       "y": 323,
-       "w": 389,
-       "h": 385,
-       "paralaje": 0.3,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 2.2
-       }
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_5/p3_mar_frente.webp",
+       "archivo": "cinematicas/acto_5/pagina_1.webp",
+       "recorte": [
+        0,
+        2382,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 514,
+       "y": 0,
        "w": 1408,
-       "h": 278,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_5/pagina_2.webp",
+       "recorte": [
+        0,
+        928,
+        3760,
+        340
+       ],
+       "x": 0,
+       "y": 282,
+       "w": 1410,
+       "h": 510,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 8,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 470,
+        "h": 170
+       }
+      },
+      {
+       "id": "luz_1",
+       "archivo": "cinematicas/acto_5/pagina_2.webp",
+       "recorte": [
+        0,
+        530,
+        704,
+        396
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "tiempo",
+        "claves": [
+         [
+          0,
+          0
+         ],
+         [
+          0.42,
+          0
+         ],
+         [
+          0.48,
+          1
+         ],
+         [
+          0.56,
+          0.3
+         ],
+         [
+          0.63,
+          0.9
+         ],
+         [
+          0.95,
+          0
+         ],
+         [
+          3.6,
+          0
+         ],
+         [
+          3.66,
+          0.8
+         ],
+         [
+          3.74,
+          0.2
+         ],
+         [
+          3.8,
+          0.6
+         ],
+         [
+          4.1,
+          0
+         ],
+         [
+          5.9,
+          0
+         ],
+         [
+          5.95,
+          0.5
+         ],
+         [
+          6.2,
+          0
+         ]
+        ]
+       }
       },
       {
        "id": "vineta",
@@ -3453,7 +2326,24 @@
       "entra": 1.2,
       "sale": 1
      },
-     "particulas": "lluvia"
+     "particulas": "lluvia",
+     "sonidos": [
+      {
+       "t": 0.5,
+       "efecto": "trueno",
+       "vol": 0.9
+      },
+      {
+       "t": 3.7,
+       "efecto": "trueno",
+       "vol": 0.7
+      },
+      {
+       "t": 6,
+       "efecto": "trueno",
+       "vol": 0.5
+      }
+     ]
     },
     {
      "id": "p4_ysmeral",
@@ -3461,99 +2351,60 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_5/p4_ysmeral_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_5/pagina_1.webp",
+       "recorte": [
+        1410,
+        2382,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
-       "mezcla": "normal"
-      },
-      {
-       "id": "catedral",
-       "archivo": "cinematicas/acto_5/p4_ysmeral_catedral.webp",
-       "x": 0,
-       "y": 35,
-       "w": 1408,
-       "h": 757,
-       "paralaje": 0.25,
-       "mezcla": "normal"
-      },
-      {
-       "id": "catedral_luz",
-       "archivo": "cinematicas/acto_5/p4_ysmeral_catedral_luz.webp",
-       "x": 365,
-       "y": 155,
-       "w": 345,
-       "h": 303,
-       "paralaje": 0.25,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.55,
-         1
-        ],
-        "periodo_s": 2.6,
-        "notas": "cada pico, un golpe de campana"
-       }
-      },
-      {
-       "id": "catedral_fuego",
-       "archivo": "cinematicas/acto_5/p4_ysmeral_catedral_fuego.webp",
-       "x": 382,
-       "y": 169,
-       "w": 311,
-       "h": 272,
-       "paralaje": 0.25,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 12,
-        "w": 311,
-        "h": 272
-       }
-      },
-      {
-       "id": "brillos",
-       "archivo": "cinematicas/acto_5/p4_ysmeral_brillos.webp",
-       "x": 339,
-       "y": 502,
-       "w": 455,
-       "h": 290,
-       "paralaje": 0.25,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.5,
-         1
-        ],
-        "hz": 2
-       }
-      },
-      {
-       "id": "barco",
-       "archivo": "cinematicas/acto_5/p4_ysmeral_barco.webp",
-       "x": 813,
-       "y": 341,
-       "w": 595,
-       "h": 451,
-       "paralaje": 0.55,
+       "paralaje": 0.85,
        "mezcla": "normal"
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_5/p4_ysmeral_frente.webp",
+       "archivo": "cinematicas/acto_5/pagina_1.webp",
+       "recorte": [
+        0,
+        3176,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 596,
+       "y": 0,
        "w": 1408,
-       "h": 196,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_5/pagina_2.webp",
+       "recorte": [
+        0,
+        1451,
+        2944,
+        139
+       ],
+       "x": 510,
+       "y": 260,
+       "w": 368,
+       "h": 278,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 184,
+        "h": 139
+       }
       },
       {
        "id": "vineta",
@@ -3600,145 +2451,58 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/acto_6/p1_campana_fondo.webp",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.25,
+       "paralaje": 0.9,
        "mezcla": "normal"
-      },
-      {
-       "id": "campana",
-       "archivo": "cinematicas/acto_6/p1_campana_campana.webp",
-       "x": 201,
-       "y": 336,
-       "w": 1005,
-       "h": 456,
-       "paralaje": 0.55,
-       "mezcla": "normal"
-      },
-      {
-       "id": "campana_luz",
-       "archivo": "cinematicas/acto_6/p1_campana_campana_luz.webp",
-       "x": 201,
-       "y": 336,
-       "w": 1005,
-       "h": 456,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 1.2
-       }
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_6/p1_campana_frente.webp",
-       "x": 134,
-       "y": 233,
-       "w": 1227,
-       "h": 559,
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
       },
       {
-       "id": "goteo_agua_frente_0_0",
-       "archivo": "cinematicas/fx/goteo_agua.webp",
-       "x": 284,
-       "y": 36,
-       "w": 32,
-       "h": 128,
-       "paralaje": 1,
-       "mezcla": "normal",
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        0,
+        3176,
+        4095,
+        412
+       ],
+       "x": 275,
+       "y": 0,
+       "w": 819,
+       "h": 618,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "goteo_agua_frente_0_1",
-       "archivo": "cinematicas/fx/goteo_agua.webp",
-       "x": 507,
-       "y": 40,
-       "w": 26,
-       "h": 102,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "goteo_agua_frente_0_2",
-       "archivo": "cinematicas/fx/goteo_agua.webp",
-       "x": 884,
-       "y": 36,
-       "w": 32,
-       "h": 128,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "goteo_agua_frente_0_3",
-       "archivo": "cinematicas/fx/goteo_agua.webp",
-       "x": 1086,
-       "y": 40,
-       "w": 29,
-       "h": 115,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0.11
-       }
-      },
-      {
-       "id": "goteo_agua_frente_0_4",
-       "archivo": "cinematicas/fx/goteo_agua.webp",
-       "x": 658,
-       "y": 378,
-       "w": 32,
-       "h": 128,
-       "paralaje": 1,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 12,
-        "cuadros": 12,
-        "fps": 10,
-        "w": 32,
-        "h": 128,
-        "desfase": 0.48
+        "columnas": 15,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 273,
+        "h": 206
        }
       },
       {
@@ -3778,7 +2542,20 @@
       "entra": 0.25,
       "sale": 1,
       "color_entra": "blanco"
-     }
+     },
+     "particulas": "polvo",
+     "sonidos": [
+      {
+       "t": 0.2,
+       "efecto": "campana",
+       "vol": 1
+      },
+      {
+       "t": 0.5,
+       "efecto": "explosion",
+       "vol": 0.6
+      }
+     ]
     },
     {
      "id": "p2_marea",
@@ -3786,104 +2563,84 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_6/p2_marea_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.85,
        "mezcla": "normal"
-      },
-      {
-       "id": "ciudad",
-       "archivo": "cinematicas/acto_6/p2_marea_ciudad.webp",
-       "x": 0,
-       "y": 316,
-       "w": 1408,
-       "h": 476,
-       "paralaje": 0.3,
-       "mezcla": "normal"
-      },
-      {
-       "id": "ola",
-       "archivo": "cinematicas/acto_6/p2_marea_ola.webp",
-       "x": 0,
-       "y": 36,
-       "w": 985,
-       "h": 756,
-       "paralaje": 0.4,
-       "mezcla": "normal"
-      },
-      {
-       "id": "humo_ola_0_0",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 172,
-       "y": 20,
-       "w": 256,
-       "h": 256,
-       "paralaje": 0.4,
-       "mezcla": "normal",
-       "alfa": 0.3,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "humo_ola_0_1",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 445,
-       "y": 204,
-       "w": 230,
-       "h": 230,
-       "paralaje": 0.4,
-       "mezcla": "normal",
-       "alfa": 0.3,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "humo_ola_0_2",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 698,
-       "y": 408,
-       "w": 205,
-       "h": 205,
-       "paralaje": 0.4,
-       "mezcla": "normal",
-       "alfa": 0.3,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0.74
-       }
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_6/p2_marea_frente.webp",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        1410,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 644,
+       "y": 0,
        "w": 1408,
-       "h": 148,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        0,
+        3590,
+        3780,
+        210
+       ],
+       "x": 21,
+       "y": 194,
+       "w": 1260,
+       "h": 315,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 9,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 420,
+        "h": 105
+       }
+      },
+      {
+       "id": "fuego_2",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        0,
+        3802,
+        784,
+        52
+       ],
+       "x": 1147,
+       "y": 404,
+       "w": 49,
+       "h": 52,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 49,
+        "h": 52
+       }
       },
       {
        "id": "vineta",
@@ -3925,78 +2682,34 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_6/p3_vidrio_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        0,
+        1588,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
-       "mezcla": "normal"
-      },
-      {
-       "id": "grietas",
-       "archivo": "cinematicas/acto_6/p3_vidrio_grietas.webp",
-       "x": 395,
-       "y": 0,
-       "w": 605,
-       "h": 523,
-       "paralaje": 0.05,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "periodo_s": 3
-       }
-      },
-      {
-       "id": "escalera",
-       "archivo": "cinematicas/acto_6/p3_vidrio_escalera.webp",
-       "x": 582,
-       "y": 258,
-       "w": 244,
-       "h": 264,
-       "paralaje": 0.15,
-       "mezcla": "normal"
-      },
-      {
-       "id": "escalera_luz",
-       "archivo": "cinematicas/acto_6/p3_vidrio_escalera_luz.webp",
-       "x": 576,
-       "y": 174,
-       "w": 256,
-       "h": 357,
-       "paralaje": 0.15,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.8,
-         1
-        ],
-        "hz": 2
-       }
-      },
-      {
-       "id": "mar",
-       "archivo": "cinematicas/acto_6/p3_vidrio_mar.webp",
-       "x": 0,
-       "y": 383,
-       "w": 1408,
-       "h": 409,
-       "paralaje": 0.3,
+       "paralaje": 0.8,
        "mezcla": "normal"
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_6/p3_vidrio_frente.webp",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        1410,
+        1588,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 467,
+       "y": 0,
        "w": 1408,
-       "h": 325,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
       },
@@ -4032,7 +2745,7 @@
       "entra": 1,
       "sale": 1
      },
-     "particulas": "ceniza"
+     "particulas": "nieve"
     },
     {
      "id": "p4_aunsaar",
@@ -4040,90 +2753,36 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_6/p4_aunsaar_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        0,
+        2382,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.9,
        "mezcla": "normal"
       },
       {
-       "id": "grietas",
-       "archivo": "cinematicas/acto_6/p4_aunsaar_grietas.webp",
-       "x": 376,
+       "id": "frente",
+       "archivo": "cinematicas/acto_6/pagina_1.webp",
+       "recorte": [
+        1410,
+        2382,
+        1408,
+        792
+       ],
+       "x": 0,
        "y": 0,
-       "w": 575,
-       "h": 523,
-       "paralaje": 0.05,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 3.3
-       }
-      },
-      {
-       "id": "trono",
-       "archivo": "cinematicas/acto_6/p4_aunsaar_trono.webp",
-       "x": 435,
-       "y": 176,
-       "w": 471,
-       "h": 616,
-       "paralaje": 0.35,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
        "mezcla": "normal"
-      },
-      {
-       "id": "aunsaar",
-       "archivo": "cinematicas/acto_6/p4_aunsaar_aunsaar.webp",
-       "x": 456,
-       "y": 17,
-       "w": 501,
-       "h": 664,
-       "paralaje": 0.5,
-       "mezcla": "normal"
-      },
-      {
-       "id": "aunsaar_luz",
-       "archivo": "cinematicas/acto_6/p4_aunsaar_aunsaar_luz.webp",
-       "x": 456,
-       "y": 17,
-       "w": 501,
-       "h": 569,
-       "paralaje": 0.5,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.5,
-         1
-        ],
-        "periodo_s": 1.8,
-        "notas": "la boca del pecho respira"
-       }
-      },
-      {
-       "id": "boca_roja",
-       "archivo": "cinematicas/acto_6/p4_aunsaar_boca_roja.webp",
-       "x": 554,
-       "y": 102,
-       "w": 301,
-       "h": 420,
-       "paralaje": 0.5,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.5,
-         1
-        ],
-        "periodo_s": 1
-       },
-       "si": "brasa_absorber"
       },
       {
        "id": "vineta",
@@ -4179,107 +2838,68 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7/p1_cae_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.88,
        "mezcla": "normal"
       },
       {
-       "id": "grietas",
-       "archivo": "cinematicas/acto_7/p1_cae_grietas.webp",
-       "x": 417,
+       "id": "luz_1",
+       "archivo": "cinematicas/acto_7/pagina_1.webp",
+       "recorte": [
+        2820,
+        0,
+        481,
+        379
+       ],
+       "x": 162,
        "y": 0,
-       "w": 578,
-       "h": 523,
-       "paralaje": 0.05,
+       "w": 962,
+       "h": 758,
+       "paralaje": 0.88,
        "mezcla": "sumar",
        "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 3.2
-       }
-      },
-      {
-       "id": "trono",
-       "archivo": "cinematicas/acto_7/p1_cae_trono.webp",
-       "x": 452,
-       "y": 209,
-       "w": 442,
-       "h": 583,
-       "paralaje": 0.35,
-       "mezcla": "normal"
-      },
-      {
-       "id": "aunsaar",
-       "archivo": "cinematicas/acto_7/p1_cae_aunsaar.webp",
-       "x": 446,
-       "y": 85,
-       "w": 503,
-       "h": 604,
-       "paralaje": 0.5,
-       "mezcla": "normal"
-      },
-      {
-       "id": "aunsaar_luz",
-       "archivo": "cinematicas/acto_7/p1_cae_aunsaar_luz.webp",
-       "x": 0,
-       "y": 0,
-       "w": 1408,
-       "h": 706,
-       "paralaje": 0.5,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "hz": 6
-       }
-      },
-      {
-       "id": "rayos",
-       "archivo": "cinematicas/acto_7/p1_cae_rayos.webp",
-       "x": 0,
-       "y": 0,
-       "w": 1408,
-       "h": 792,
-       "paralaje": 0.45,
-       "mezcla": "sumar"
-      },
-      {
-       "id": "frente",
-       "archivo": "cinematicas/acto_7/p1_cae_frente.webp",
-       "x": 99,
-       "y": 478,
-       "w": 1214,
-       "h": 314,
-       "paralaje": 1,
-       "mezcla": "normal"
-      },
-      {
-       "id": "frente_luz",
-       "archivo": "cinematicas/acto_7/p1_cae_frente_luz.webp",
-       "x": 93,
-       "y": 625,
-       "w": 1222,
-       "h": 167,
-       "paralaje": 1,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 2
+        "tipo": "tiempo",
+        "claves": [
+         [
+          0,
+          1
+         ],
+         [
+          1.6,
+          1
+         ],
+         [
+          2.2,
+          0.55
+         ],
+         [
+          2.45,
+          0.8
+         ],
+         [
+          3.1,
+          0.3
+         ],
+         [
+          3.4,
+          0.45
+         ],
+         [
+          4.6,
+          0
+         ]
+        ]
        }
       },
       {
@@ -4321,7 +2941,7 @@
       "color_entra": "blanco",
       "color_sale": "blanco"
      },
-     "particulas": "brasas"
+     "particulas": "ceniza"
     },
     {
      "id": "p2_corona",
@@ -4329,70 +2949,43 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7/p2_corona_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.9,
        "mezcla": "normal"
       },
       {
-       "id": "grietas",
-       "archivo": "cinematicas/acto_7/p2_corona_grietas.webp",
-       "x": 384,
-       "y": 0,
-       "w": 665,
-       "h": 513,
-       "paralaje": 0.05,
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_7/pagina_1.webp",
+       "recorte": [
+        0,
+        794,
+        2880,
+        122
+       ],
+       "x": 612,
+       "y": 383,
+       "w": 180,
+       "h": 122,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 3.2
-       }
-      },
-      {
-       "id": "trono",
-       "archivo": "cinematicas/acto_7/p2_corona_trono.webp",
-       "x": 452,
-       "y": 209,
-       "w": 442,
-       "h": 583,
-       "paralaje": 0.35,
-       "mezcla": "normal"
-      },
-      {
-       "id": "escalones",
-       "archivo": "cinematicas/acto_7/p2_corona_escalones.webp",
-       "x": 53,
-       "y": 554,
-       "w": 1302,
-       "h": 238,
-       "paralaje": 0.7,
-       "mezcla": "normal"
-      },
-      {
-       "id": "corona_luz",
-       "archivo": "cinematicas/acto_7/p2_corona_corona_luz.webp",
-       "x": 284,
-       "y": 185,
-       "w": 841,
-       "h": 607,
-       "paralaje": 0.7,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 2.4,
-        "notas": "la Corona late tibia"
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 180,
+        "h": 122
        }
       },
       {
@@ -4440,70 +3033,20 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7_vigilia/v1_auren_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        0,
+        806,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.9,
        "mezcla": "normal"
-      },
-      {
-       "id": "grietas",
-       "archivo": "cinematicas/acto_7_vigilia/v1_auren_grietas.webp",
-       "x": 338,
-       "y": 0,
-       "w": 760,
-       "h": 523,
-       "paralaje": 0.05,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 3.2
-       }
-      },
-      {
-       "id": "escalera",
-       "archivo": "cinematicas/acto_7_vigilia/v1_auren_escalera.webp",
-       "x": 128,
-       "y": 358,
-       "w": 1152,
-       "h": 434,
-       "paralaje": 0.3,
-       "mezcla": "normal"
-      },
-      {
-       "id": "auren",
-       "archivo": "cinematicas/acto_7_vigilia/v1_auren_auren.webp",
-       "x": 532,
-       "y": 244,
-       "w": 333,
-       "h": 548,
-       "paralaje": 0.65,
-       "mezcla": "normal"
-      },
-      {
-       "id": "corona_luz",
-       "archivo": "cinematicas/acto_7_vigilia/v1_auren_corona_luz.webp",
-       "x": 578,
-       "y": 346,
-       "w": 301,
-       "h": 302,
-       "paralaje": 0.65,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.5,
-         0.9
-        ],
-        "periodo_s": 2.6
-       }
       },
       {
        "id": "vineta",
@@ -4546,183 +3089,154 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_fondo.webp",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        1410,
+        806,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.25,
+       "paralaje": 0.9,
        "mezcla": "normal"
       },
       {
-       "id": "relicario",
-       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_relicario.webp",
-       "x": 497,
-       "y": 486,
-       "w": 412,
-       "h": 289,
-       "paralaje": 0.5,
+       "id": "frente",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        0,
+        1600,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 1,
        "mezcla": "normal"
       },
       {
-       "id": "relicario_luz",
-       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_relicario_luz.webp",
-       "x": 545,
-       "y": 535,
-       "w": 319,
-       "h": 162,
-       "paralaje": 0.5,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.3,
-         1
-        ],
-        "periodo_s": 4,
-        "notas": "algo tibio late adentro, muy despacio"
-       }
-      },
-      {
-       "id": "monjes",
-       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_monjes.webp",
-       "x": 162,
-       "y": 449,
-       "w": 1089,
-       "h": 343,
-       "paralaje": 0.8,
-       "mezcla": "normal"
-      },
-      {
-       "id": "velas_luz",
-       "archivo": "cinematicas/acto_7_vigilia/v2_boveda_velas_luz.webp",
-       "x": 179,
-       "y": 477,
-       "w": 963,
-       "h": 294,
-       "paralaje": 0.8,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "hz": 7
-       }
-      },
-      {
-       "id": "fuego_velas_luz_0_0",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 283,
-       "y": 569,
-       "w": 14,
-       "h": 28,
-       "paralaje": 0.8,
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        1410,
+        2394,
+        1824,
+        127
+       ],
+       "x": 396,
+       "y": 260,
+       "w": 114,
+       "h": 127,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0
+        "w": 114,
+        "h": 127
        }
       },
       {
-       "id": "fuego_velas_luz_0_1",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 473,
-       "y": 576,
-       "w": 14,
-       "h": 28,
-       "paralaje": 0.8,
+       "id": "fuego_2",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        0,
+        3188,
+        880,
+        72
+       ],
+       "x": 1071,
+       "y": 291,
+       "w": 55,
+       "h": 72,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.37
+        "w": 55,
+        "h": 72
        }
       },
       {
-       "id": "fuego_velas_luz_0_2",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 846,
-       "y": 581,
-       "w": 14,
-       "h": 28,
-       "paralaje": 0.8,
+       "id": "fuego_3",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        2646,
+        3188,
+        736,
+        58
+       ],
+       "x": 943,
+       "y": 337,
+       "w": 46,
+       "h": 58,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.74
+        "w": 46,
+        "h": 58
        }
       },
       {
-       "id": "fuego_velas_luz_0_3",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1023,
-       "y": 576,
-       "w": 14,
-       "h": 28,
-       "paralaje": 0.8,
+       "id": "fuego_4",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        882,
+        3188,
+        896,
+        69
+       ],
+       "x": 604,
+       "y": 404,
+       "w": 56,
+       "h": 69,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.11
+        "w": 56,
+        "h": 69
        }
       },
       {
-       "id": "fuego_velas_luz_0_4",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 610,
-       "y": 631,
-       "w": 14,
-       "h": 28,
-       "paralaje": 0.8,
+       "id": "fuego_5",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        3384,
+        3188,
+        528,
+        37
+       ],
+       "x": 554,
+       "y": 465,
+       "w": 33,
+       "h": 37,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.48
-       }
-      },
-      {
-       "id": "fuego_velas_luz_0_5",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 830,
-       "y": 641,
-       "w": 14,
-       "h": 28,
-       "paralaje": 0.8,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.85
+        "w": 33,
+        "h": 37
        }
       },
       {
@@ -4757,7 +3271,7 @@
       "entra": 1,
       "sale": 1.2
      },
-     "particulas": "ceniza"
+     "particulas": "polvo"
     },
     {
      "id": "v3_vela",
@@ -4766,108 +3280,143 @@
      "capas": [
       {
        "id": "fondo",
-       "archivo": "cinematicas/acto_7_vigilia/v3_vela_fondo.webp",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        1410,
+        1600,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.25,
+       "paralaje": 0.92,
        "mezcla": "normal"
       },
       {
-       "id": "relicario",
-       "archivo": "cinematicas/acto_7_vigilia/v3_vela_relicario.webp",
-       "x": 394,
-       "y": 402,
-       "w": 619,
-       "h": 390,
-       "paralaje": 0.7,
-       "mezcla": "normal"
-      },
-      {
-       "id": "relicario_luz",
-       "archivo": "cinematicas/acto_7_vigilia/v3_vela_relicario_luz.webp",
-       "x": 436,
-       "y": 485,
-       "w": 537,
-       "h": 270,
-       "paralaje": 0.7,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.3,
-         1
-        ],
-        "periodo_s": 4,
-        "notas": "algo tibio late adentro, muy despacio"
-       }
-      },
-      {
-       "id": "vela",
-       "archivo": "cinematicas/acto_7_vigilia/v3_vela_vela.webp",
-       "x": 1023,
-       "y": 635,
-       "w": 31,
-       "h": 157,
-       "paralaje": 0.9,
-       "mezcla": "normal"
-      },
-      {
-       "id": "vela_luz",
-       "archivo": "cinematicas/acto_7_vigilia/v3_vela_vela_luz.webp",
-       "x": 800,
-       "y": 380,
-       "w": 481,
-       "h": 412,
-       "paralaje": 0.9,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "hz": 6
-       }
-      },
-      {
-       "id": "fuego_vela_luz_0_0",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1027,
-       "y": 592,
-       "w": 26,
-       "h": 51,
-       "paralaje": 0.9,
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        3948,
+        804
+       ],
+       "x": 298,
+       "y": 194,
+       "w": 329,
+       "h": 402,
+       "paralaje": 0.92,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 12,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0
+        "w": 329,
+        "h": 402
        }
       },
       {
-       "id": "humo_vela_luz_1_0",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 1002,
-       "y": 518,
-       "w": 77,
-       "h": 77,
-       "paralaje": 0.9,
-       "mezcla": "normal",
-       "alfa": 0.4,
+       "id": "fuego_2",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        1780,
+        3188,
+        864,
+        61
+       ],
+       "x": 201,
+       "y": 442,
+       "w": 54,
+       "h": 61,
+       "paralaje": 0.92,
+       "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 54,
+        "h": 61
+       }
+      },
+      {
+       "id": "luz_1",
+       "archivo": "cinematicas/acto_7_vigilia/pagina_1.webp",
+       "recorte": [
+        0,
+        2394,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
+       "paralaje": 0.92,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "tiempo",
+        "claves": [
+         [
+          0,
+          0.15
+         ],
+         [
+          0.5,
+          1
+         ],
+         [
+          0.75,
+          0.35
+         ],
+         [
+          0.95,
+          0.7
+         ],
+         [
+          1.6,
+          0.15
+         ],
+         [
+          3.1,
+          0.15
+         ],
+         [
+          3.6,
+          1
+         ],
+         [
+          3.85,
+          0.35
+         ],
+         [
+          4.05,
+          0.7
+         ],
+         [
+          4.7,
+          0.15
+         ],
+         [
+          6.2,
+          0.15
+         ],
+         [
+          6.7,
+          1
+         ],
+         [
+          6.95,
+          0.35
+         ],
+         [
+          7,
+          0.4
+         ]
+        ]
        }
       },
       {
@@ -4901,7 +3450,8 @@
      "fundido": {
       "entra": 1.2,
       "sale": 2.4
-     }
+     },
+     "particulas": "polvo"
     }
    ]
   },
@@ -4913,99 +3463,65 @@
      "dur": 7,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7_cielo/c1_mira_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_cielo/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.9,
        "mezcla": "normal"
       },
       {
-       "id": "grietas",
-       "archivo": "cinematicas/acto_7_cielo/c1_mira_grietas.webp",
-       "x": 290,
-       "y": 0,
-       "w": 674,
-       "h": 435,
-       "paralaje": 0.05,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 3.2
-       }
-      },
-      {
-       "id": "jaulas",
-       "archivo": "cinematicas/acto_7_cielo/c1_mira_jaulas.webp",
-       "x": 307,
-       "y": 5,
-       "w": 1004,
-       "h": 501,
-       "paralaje": 0.2,
-       "mezcla": "normal"
-      },
-      {
-       "id": "estrellas",
-       "archivo": "cinematicas/acto_7_cielo/c1_mira_estrellas.webp",
-       "x": 330,
-       "y": 93,
-       "w": 955,
-       "h": 391,
-       "paralaje": 0.2,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "hz": 2
-       }
-      },
-      {
-       "id": "mira",
-       "archivo": "cinematicas/acto_7_cielo/c1_mira_mira.webp",
-       "x": 0,
-       "y": 210,
-       "w": 1408,
-       "h": 582,
-       "paralaje": 0.65,
-       "mezcla": "normal"
-      },
-      {
-       "id": "corona_luz",
-       "archivo": "cinematicas/acto_7_cielo/c1_mira_corona_luz.webp",
-       "x": 102,
-       "y": 0,
-       "w": 1205,
-       "h": 668,
-       "paralaje": 0.65,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 0.7,
-        "notas": "la Corona se raja"
-       }
-      },
-      {
-       "id": "rayos",
-       "archivo": "cinematicas/acto_7_cielo/c1_mira_rayos.webp",
+       "id": "luz_1",
+       "archivo": "cinematicas/acto_7_cielo/pagina_1.webp",
+       "recorte": [
+        2820,
+        794,
+        704,
+        376
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
-       "h": 792,
-       "paralaje": 0.6,
-       "mezcla": "sumar"
+       "h": 752,
+       "paralaje": 0.9,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "tiempo",
+        "claves": [
+         [
+          0,
+          0
+         ],
+         [
+          2.4,
+          0.05
+         ],
+         [
+          3.6,
+          0.2
+         ],
+         [
+          4.6,
+          0.45
+         ],
+         [
+          5.6,
+          0.75
+         ],
+         [
+          6.4,
+          1
+         ]
+        ]
+       }
       },
       {
        "id": "vineta",
@@ -5040,7 +3556,7 @@
       "sale": 0.8,
       "color_sale": "blanco"
      },
-     "particulas": "brasas"
+     "particulas": "polvo"
     },
     {
      "id": "c2_dioses",
@@ -5048,107 +3564,91 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7_cielo/c2_dioses_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_cielo/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.86,
        "mezcla": "normal"
       },
       {
-       "id": "luz_blanca",
-       "archivo": "cinematicas/acto_7_cielo/c2_dioses_luz_blanca.webp",
-       "x": 69,
-       "y": 0,
-       "w": 1277,
-       "h": 792,
-       "paralaje": 0.05,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "periodo_s": 2
-       }
-      },
-      {
-       "id": "islas",
-       "archivo": "cinematicas/acto_7_cielo/c2_dioses_islas.webp",
-       "x": 173,
-       "y": 197,
-       "w": 1029,
-       "h": 500,
-       "paralaje": 0.25,
-       "mezcla": "normal"
-      },
-      {
-       "id": "dios",
-       "archivo": "cinematicas/acto_7_cielo/c2_dioses_dios.webp",
-       "x": 458,
-       "y": 419,
-       "w": 666,
-       "h": 373,
-       "paralaje": 0.5,
-       "mezcla": "normal"
-      },
-      {
-       "id": "dios_luz",
-       "archivo": "cinematicas/acto_7_cielo/c2_dioses_dios_luz.webp",
-       "x": 233,
-       "y": 88,
-       "w": 699,
-       "h": 675,
-       "paralaje": 0.5,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "hz": 5
-       }
-      },
-      {
-       "id": "fuego_dios_luz_0_0",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 502,
-       "y": 676,
-       "w": 77,
-       "h": 154,
-       "paralaje": 0.5,
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_7_cielo/pagina_1.webp",
+       "recorte": [
+        0,
+        1588,
+        3232,
+        156
+       ],
+       "x": 355,
+       "y": 24,
+       "w": 606,
+       "h": 468,
+       "paralaje": 0.86,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0
+        "w": 202,
+        "h": 156
        }
       },
       {
-       "id": "fuego_dios_luz_0_1",
-       "archivo": "cinematicas/fx/fuego.webp",
-       "x": 1029,
-       "y": 361,
-       "w": 64,
-       "h": 128,
-       "paralaje": 0.5,
+       "id": "fuego_2",
+       "archivo": "cinematicas/acto_7_cielo/pagina_1.webp",
+       "recorte": [
+        0,
+        1746,
+        1360,
+        74
+       ],
+       "x": 1070,
+       "y": 271,
+       "w": 255,
+       "h": 222,
+       "paralaje": 0.86,
        "mezcla": "sumar",
        "anim": {
         "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
+        "columnas": 16,
+        "cuadros": 16,
         "fps": 12,
-        "w": 64,
-        "h": 128,
-        "desfase": 0.37
+        "w": 85,
+        "h": 74
+       }
+      },
+      {
+       "id": "fuego_3",
+       "archivo": "cinematicas/acto_7_cielo/pagina_1.webp",
+       "recorte": [
+        3234,
+        1588,
+        288,
+        91
+       ],
+       "x": 0,
+       "y": 193,
+       "w": 54,
+       "h": 273,
+       "paralaje": 0.86,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 18,
+        "h": 91
        }
       },
       {
@@ -5197,80 +3697,34 @@
      "dur": 8,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7_cielo/c3_alba_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_cielo/pagina_1.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
-       "mezcla": "normal"
-      },
-      {
-       "id": "abadia",
-       "archivo": "cinematicas/acto_7_cielo/c3_alba_abadia.webp",
-       "x": 0,
-       "y": 286,
-       "w": 1408,
-       "h": 506,
-       "paralaje": 0.25,
-       "mezcla": "normal"
-      },
-      {
-       "id": "cuervo_abadia_0_0",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 606,
-       "y": 308,
-       "w": 29,
-       "h": 22,
-       "paralaje": 0.25,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "cuervo_abadia_0_1",
-       "archivo": "cinematicas/fx/cuervo.webp",
-       "x": 667,
-       "y": 290,
-       "w": 26,
-       "h": 19,
-       "paralaje": 0.25,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 10,
-        "w": 64,
-        "h": 48,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "paramo",
-       "archivo": "cinematicas/acto_7_cielo/c3_alba_paramo.webp",
-       "x": 0,
-       "y": 383,
-       "w": 1408,
-       "h": 409,
-       "paralaje": 0.55,
+       "paralaje": 0.85,
        "mezcla": "normal"
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_7_cielo/c3_alba_frente.webp",
-       "x": 862,
-       "y": 150,
-       "w": 546,
-       "h": 642,
+       "archivo": "cinematicas/acto_7_cielo/pagina_1.webp",
+       "recorte": [
+        1410,
+        794,
+        1408,
+        792
+       ],
+       "x": 0,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
       },
@@ -5305,7 +3759,8 @@
      "fundido": {
       "entra": 1.4,
       "sale": 3
-     }
+     },
+     "particulas": "nieve"
     }
    ]
   },
@@ -5317,81 +3772,44 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_rey_ceniza/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
+       "paralaje": 0.9,
        "mezcla": "normal"
       },
       {
-       "id": "grietas",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_grietas.webp",
-       "x": 406,
-       "y": 0,
-       "w": 596,
-       "h": 488,
-       "paralaje": 0.05,
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_7_rey_ceniza/pagina_1.webp",
+       "recorte": [
+        1682,
+        1588,
+        1232,
+        114
+       ],
+       "x": 666,
+       "y": 216,
+       "w": 77,
+       "h": 114,
+       "paralaje": 0.9,
        "mezcla": "sumar",
        "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 3.2
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 77,
+        "h": 114
        }
-      },
-      {
-       "id": "trono",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_trono.webp",
-       "x": 452,
-       "y": 209,
-       "w": 442,
-       "h": 583,
-       "paralaje": 0.35,
-       "mezcla": "normal"
-      },
-      {
-       "id": "heroe",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_heroe.webp",
-       "x": 606,
-       "y": 196,
-       "w": 217,
-       "h": 474,
-       "paralaje": 0.55,
-       "mezcla": "normal"
-      },
-      {
-       "id": "heroe_luz",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_heroe_luz.webp",
-       "x": 607,
-       "y": 122,
-       "w": 202,
-       "h": 341,
-       "paralaje": 0.55,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 1,
-        "notas": "la Brasa le late en el pecho"
-       }
-      },
-      {
-       "id": "frente",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r1_trono_frente.webp",
-       "x": 99,
-       "y": 509,
-       "w": 1210,
-       "h": 283,
-       "paralaje": 1,
-       "mezcla": "normal"
       },
       {
        "id": "vineta",
@@ -5426,7 +3844,7 @@
       "sale": 1,
       "color_sale": "rojo"
      },
-     "particulas": "brasas"
+     "particulas": "ceniza"
     },
     {
      "id": "r2_mundo",
@@ -5434,122 +3852,108 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_rey_ceniza/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
-       "mezcla": "normal"
-      },
-      {
-       "id": "pueblo",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_pueblo.webp",
-       "x": 0,
-       "y": 283,
-       "w": 1408,
-       "h": 509,
-       "paralaje": 0.3,
-       "mezcla": "normal"
-      },
-      {
-       "id": "hogueras",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_hogueras.webp",
-       "x": 9,
-       "y": 351,
-       "w": 1399,
-       "h": 423,
-       "paralaje": 0.3,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "titilar",
-        "alfa": [
-         0.7,
-         1
-        ],
-        "hz": 6
-       }
-      },
-      {
-       "id": "humo_hogueras_0_0",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 183,
-       "y": 396,
-       "w": 154,
-       "h": 154,
-       "paralaje": 0.3,
-       "mezcla": "normal",
-       "alfa": 0.5,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0
-       }
-      },
-      {
-       "id": "humo_hogueras_0_1",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 850,
-       "y": 413,
-       "w": 141,
-       "h": 141,
-       "paralaje": 0.3,
-       "mezcla": "normal",
-       "alfa": 0.5,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0.37
-       }
-      },
-      {
-       "id": "humo_hogueras_0_2",
-       "archivo": "cinematicas/fx/humo.webp",
-       "x": 1217,
-       "y": 379,
-       "w": 166,
-       "h": 166,
-       "paralaje": 0.3,
-       "mezcla": "normal",
-       "alfa": 0.5,
-       "anim": {
-        "tipo": "cuadros",
-        "columnas": 8,
-        "cuadros": 8,
-        "fps": 8,
-        "w": 128,
-        "h": 128,
-        "desfase": 0.74
-       }
-      },
-      {
-       "id": "gente",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_gente.webp",
-       "x": 0,
-       "y": 556,
-       "w": 1408,
-       "h": 236,
-       "paralaje": 0.7,
+       "paralaje": 0.85,
        "mezcla": "normal"
       },
       {
        "id": "frente",
-       "archivo": "cinematicas/acto_7_rey_ceniza/r2_mundo_frente.webp",
+       "archivo": "cinematicas/acto_7_rey_ceniza/pagina_1.webp",
+       "recorte": [
+        0,
+        794,
+        1408,
+        792
+       ],
        "x": 0,
-       "y": 46,
-       "w": 497,
-       "h": 746,
+       "y": 0,
+       "w": 1408,
+       "h": 792,
        "paralaje": 1,
        "mezcla": "normal"
+      },
+      {
+       "id": "fuego_1",
+       "archivo": "cinematicas/acto_7_rey_ceniza/pagina_1.webp",
+       "recorte": [
+        1410,
+        794,
+        2608,
+        160
+       ],
+       "x": 630,
+       "y": 212,
+       "w": 326,
+       "h": 320,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 163,
+        "h": 160
+       }
+      },
+      {
+       "id": "fuego_2",
+       "archivo": "cinematicas/acto_7_rey_ceniza/pagina_1.webp",
+       "recorte": [
+        0,
+        1588,
+        1680,
+        157
+       ],
+       "x": 120,
+       "y": 259,
+       "w": 210,
+       "h": 314,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 105,
+        "h": 157
+       }
+      },
+      {
+       "id": "fuego_3",
+       "archivo": "cinematicas/acto_7_rey_ceniza/pagina_1.webp",
+       "recorte": [
+        2916,
+        1588,
+        672,
+        39
+       ],
+       "x": 996,
+       "y": 303,
+       "w": 84,
+       "h": 78,
+       "paralaje": 0.85,
+       "mezcla": "sumar",
+       "anim": {
+        "tipo": "cuadros",
+        "columnas": 16,
+        "cuadros": 16,
+        "fps": 12,
+        "w": 42,
+        "h": 39
+       }
       },
       {
        "id": "vineta",
@@ -5584,7 +3988,7 @@
       "sale": 3,
       "color_entra": "rojo"
      },
-     "particulas": "brasas"
+     "particulas": "ceniza"
     }
    ]
   },
@@ -5596,80 +4000,19 @@
      "dur": 7.5,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_corona_fria/pagina_1.webp",
+       "recorte": [
+        0,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
-       "mezcla": "normal"
-      },
-      {
-       "id": "grietas",
-       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_grietas.webp",
-       "x": 337,
-       "y": 0,
-       "w": 708,
-       "h": 429,
-       "paralaje": 0.05,
-       "mezcla": "sumar",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.6,
-         1
-        ],
-        "periodo_s": 3.2
-       }
-      },
-      {
-       "id": "trono",
-       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_trono.webp",
-       "x": 449,
-       "y": 206,
-       "w": 448,
-       "h": 586,
-       "paralaje": 0.35,
-       "mezcla": "normal"
-      },
-      {
-       "id": "heroe",
-       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_heroe.webp",
-       "x": 603,
-       "y": 193,
-       "w": 223,
-       "h": 477,
-       "paralaje": 0.55,
-       "mezcla": "normal"
-      },
-      {
-       "id": "vaho",
-       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_vaho.webp",
-       "x": 701,
-       "y": 167,
-       "w": 97,
-       "h": 116,
-       "paralaje": 0.55,
-       "mezcla": "normal",
-       "anim": {
-        "tipo": "latir",
-        "alfa": [
-         0.2,
-         0.7
-        ],
-        "periodo_s": 3.2,
-        "notas": "respira despacio"
-       }
-      },
-      {
-       "id": "frente",
-       "archivo": "cinematicas/acto_7_corona_fria/f1_trono_frente.webp",
-       "x": 99,
-       "y": 556,
-       "w": 1210,
-       "h": 236,
-       "paralaje": 1,
+       "paralaje": 0.9,
        "mezcla": "normal"
       },
       {
@@ -5712,33 +4055,19 @@
      "dur": 8,
      "capas": [
       {
-       "id": "cielo",
-       "archivo": "cinematicas/acto_7_corona_fria/f2_invierno_cielo.webp",
+       "id": "fondo",
+       "archivo": "cinematicas/acto_7_corona_fria/pagina_1.webp",
+       "recorte": [
+        1410,
+        0,
+        1408,
+        792
+       ],
        "x": 0,
        "y": 0,
        "w": 1408,
        "h": 792,
-       "paralaje": 0.05,
-       "mezcla": "normal"
-      },
-      {
-       "id": "islas",
-       "archivo": "cinematicas/acto_7_corona_fria/f2_invierno_islas.webp",
-       "x": 191,
-       "y": 215,
-       "w": 1037,
-       "h": 324,
-       "paralaje": 0.25,
-       "mezcla": "normal"
-      },
-      {
-       "id": "borde",
-       "archivo": "cinematicas/acto_7_corona_fria/f2_invierno_borde.webp",
-       "x": 557,
-       "y": 420,
-       "w": 851,
-       "h": 372,
-       "paralaje": 0.7,
+       "paralaje": 0.88,
        "mezcla": "normal"
       },
       {
