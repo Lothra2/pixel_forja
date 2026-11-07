@@ -91,7 +91,7 @@ export const GUION: Record<string, Plano[]> = {
       cam: paneo(30, -30, 6, -6, 1.03), entrada: T('fundido', 1), salida: T('fundido', 1),
       texto: ['El río dejó de sangrar, aunque todavía sabe a hierro. Oyá desató las amarras sin mirar atrás.', 'The river stopped bleeding, though it still tastes of iron. Oya cast off without looking back.'] },
     { id: 'p3_norte', que: 'Al norte, en la ventisca, el rey de escarcha camina y los muertos de la montaña lo siguen.', dur: 7.5,
-      cam: acercar([860, 330], 1.1), entrada: T('fundido', 1.2), salida: T('negro', 1.6),
+      cam: acercar([900, 360], 1.1), entrada: T('fundido', 1.2), salida: T('negro', 1.6),
       sonidos: [{ t: 0.6, efecto: 'trueno', vol: 0.4 }],
       texto: ['En Hrimgard, un rey que juró no levantarse caminaba otra vez sobre la nieve. Detrás de él, en fila, sus muertos.', 'In Hrimgard, a king who swore never to rise was walking on the snow again. Behind him, in a long line, came his dead.'] },
   ],

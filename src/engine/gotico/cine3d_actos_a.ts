@@ -1,5 +1,5 @@
 import { objeto, herramientas as herr } from './objeto';
-import { hash3, caja, palo, poliedro, cilindro, elipsoide, esfera, bulto, masa, baseCamara, proyectar, type Pieza, type V3 } from './render';
+import { hash3, caja, palo, poliedro, cilindro, elipsoide, esfera, hueso, bulto, masa, baseCamara, proyectar, type Pieza, type V3 } from './render';
 import { personaje, type Cuerpo, type Equipo } from './cuerpo';
 import { MATERIALES } from './materiales';
 import { EscenaCine, Terreno, hexLin, mezclar, escalar, moverPiezas, giroEje, type Atmosfera, type C3, type Particula, type Pluma } from './cine3d';
@@ -169,20 +169,21 @@ MATERIALES.aa_carne = { rampa: ['#140202', '#2a0504', '#420a07', '#5e110b', '#7a
 MATERIALES.aa_losa = { rampa: ['#060606', '#0d0c0c', '#151413', '#1e1c1a', '#282522', '#33302c', '#3f3b36'], ruido: 0.3, escala: 0.08, brillo: 0.15, patron: (p) => { const j = Math.abs(((p[0] % 46) + 46) % 46 - 23) > 22 || Math.abs(((p[1] % 46) + 46) % 46 - 23) > 22; return j ? -0.3 : 0; } };
 /** El pozo: el centro de la boca y su radio. La brasa sale de la Abadesa a la altura del pecho. */
 const POZO_A1 = { r: 74, alto: 38 };
-const ABADESA_A1: V3 = [0, -58, POZO_A1.alto - 26];
+const ABADESA_A1: V3 = [0, -50, POZO_A1.alto - 36];
+/** El pecho de la Abadesa (donde revienta): lo calcula el armado con su pose. */
+let ABADESA_PECHO: V3 = [0, 0, 0];
 
 function armarAbadesa(w: number, h: number): ArmadoA {
   const esc = new EscenaCine(), fuegos: Fuego[] = [], plumas: Pluma[] = [], P = POZO_A1;
   // la sala: piso de losas, bóveda de cañón muy alta que se pierde en lo oscuro, filas de columnas que fugan hacia atrás
   esc.ponerMundo([caja(0, 200, -20, 1400, 1400, 20, { mat: 'aa_losa' })], { nieve: 0 });
-  esc.ponerMundo([caja(0, 200, 330, 1400, 1400, 300, { mat: 'abo_sillar' }), cilindro(-700, 200, 330, 260, 1400, { mat: 'abo_sillar', eje: [1, 0, 0], resta: true })], { nieve: 0 });
-  for (const x of [-210, 210]) for (let j = -1; j < 7; j++) {
-    const y = j * 120 + 40; if (Math.abs(x) < 220 && y < -60) continue;
-    esc.ponerMundo(columna(x, y, 0, 300, 15, 'abo_labra', (az(j, x) - 0.5) * 0.1), { nieve: 0 });
-    esc.poner(arcoMedio(52, 10, 26, 'abo_labra'), { x, y: y + 60, z: 300, giro: 90 });
+  // la bóveda de cañón a lo largo de la nave (arranca en 220), con sus arcos fajones sobre cada par de columnas
+  esc.ponerMundo([caja(0, 200, 200, 1400, 1600, 320, { mat: 'abo_sillar' }), cilindro(0, -700, 220, 214, 1700, { mat: 'abo_sillar', eje: [0, 1, 0], resta: true }), caja(0, 200, 200, 428, 1700, 20, { mat: 'abo_sillar', resta: true })], { nieve: 0 });
+  for (const x of [-214, 214]) for (let j = -2; j < 7; j++) {
+    const y = j * 120 + 40;
+    esc.ponerMundo(columna(x, y, 0, 220, 15, 'abo_labra', (az(j + 3, x) - 0.5) * 0.1), { nieve: 0 });
+    if (x < 0) esc.poner(arcoMedio(204, 12, 22, 'abo_labra', 13), { x: 0, y, z: 220, giro: 0 });
   }
-  // primer plano: una columna gruesa a la izquierda del ojo (enmarca en negro) y una cadena que cuelga
-  esc.frente.add(esc.ponerMundo(columna(92, -192, 0, 300, 17, 'abo_labra', -0.1), { nieve: 0 }));
   // muros del fondo y de los costados
   // (en el fondo, la boca de la escalera: un arco alto por donde baja la noche fría)
   esc.ponerMundo([caja(0, 860, -20, 1400, 40, 700, { mat: 'abo_sillar' }), caja(-60, 860, 0, 110, 120, 200, { mat: 'abo_sillar', resta: true }), cilindro(-60, 800, 200, 55, 120, { mat: 'abo_sillar', eje: [0, 1, 0], resta: true }),
@@ -207,12 +208,14 @@ function armarAbadesa(w: number, h: number): ArmadoA {
   for (let i = 0; i < 14; i++) { const a = (i / 14) * TAU + az(i, 40) * 0.3, r = P.r + 30 + az(i, 41) * 40, al = 4 + az(i, 42) * 12; esc.ponerMundo([cilindro(Math.cos(a) * r, Math.sin(a) * r, 0, 2.4, al, { mat: 'jf_cera_negra' }), cilindro(Math.cos(a) * r, Math.sin(a) * r, 0, 5, 0.6, { mat: 'jf_cera_negra', r1: 4 })], { nieve: 0 }); }
   // la Abadesa: se alza con los brazos abiertos, la cabeza atrás (el cuadro 2 de su muerte), tumbada hacia atrás sobre la boca
   // está en el borde de la boca que da al ojo, de frente, y se va de espaldas adentro del pozo
-  const GA = -80, ab = girar(jefe('abadesa', 'morir', 2), [0, 1, 0], -34, [0, 0, 40]);
+  const GA = -90, ab = girar(jefe('abadesa', 'morir', 2), [0, 1, 0], -52, [0, 0, 50]);
   esc.poner(ab, { x: ABADESA_A1[0], y: ABADESA_A1[1], z: ABADESA_A1[2], giro: GA, k: 1.15 }, { nieve: 0 });
   // el pecho reventado: la herida abierta (carne y costillas) de donde sale la brasa, en el mundo (el pecho quedó
   // mirando arriba y hacia el ojo)
   const giroA = (GA * Math.PI) / 180, fx = Math.cos(giroA), fy = Math.sin(giroA);
-  const pecho: V3 = [ABADESA_A1[0] + fx * 4, ABADESA_A1[1] + fy * 4 + 26, ABADESA_A1[2] + 92];
+  // el pecho quedó mirando arriba y hacia el ojo: (-14, 0, 71) del jefe inclinado, girado y a escala 1.15
+  ABADESA_PECHO = [ABADESA_A1[0], ABADESA_A1[1] + 14 * 1.15 - 3, ABADESA_A1[2] + 71 * 1.15 + 3];
+  const pecho: V3 = ABADESA_PECHO;
   const herida: Pieza[] = [masa([bulto(pecho, [7, 9, 6], { mat: 'aa_carne' }), bulto(add(pecho, [fx * 3, fy * 3, 4]), [4, 6, 4], { mat: 'aa_carne' })], { mat: 'aa_carne', suave: 2 }), esfera(pecho[0] + fx * 4, pecho[1] + fy * 4, pecho[2] + 2, 4.5, { mat: 'aa_brasa' })];
   for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU, d: V3 = norm([fx + Math.cos(a) * 0.9, fy + Math.sin(a) * 0.9, 0.8 + Math.sin(a) * 0.5]); herida.push(palo(add(pecho, d, 4), add(pecho, d, 12 + az(i, 51) * 5), 0.9, { mat: 'jf_costilla', r1: 0.4 })); }
   // la sangre que salta en abanico (gotas y chorros congelados en el instante) y la que ya mancha el brocal y el piso
@@ -224,27 +227,32 @@ function armarAbadesa(w: number, h: number): ArmadoA {
   esc.ponerMundo(herida, { nieve: 0 });
   for (const [x, y, s] of [[-40, -70, 71], [30, -86, 72], [-90, -20, 73], [70, -40, 74]] as [number, number, number][]) esc.poner(piezasDe('gore_salpicadura', variante0('gore_salpicadura'), s), { x, y, z: x * x + y * y < P.r * P.r ? P.alto + 1 : 0.2, giro: az(s, 1) * 360, k: 0.9 }, { nieve: 0 });
   // la brasa que le revienta el pecho: fuego de Doom que sale del pecho hacia arriba, su luz (la principal del cuadro) y su humo
-  fuegos.push({ p: add(pecho, [fx * 6, fy * 6, -6]), ancho: 22, alto: 150, semilla: 81, tipo: 'techo', k: 1.7 });
-  fuegos.push({ p: add(pecho, [fx * 8, fy * 8, -4]), ancho: 13, alto: 70, semilla: 82, tipo: 'techo', k: 1.9 });
+  fuegos.push({ p: add(pecho, [0, 0, -2]), ancho: 10, alto: 46, semilla: 81, tipo: 'techo', k: 2.2 });
   // la luz del pozo: sube del fondo (sombras largas hacia arriba: las columnas en la bóveda) y la del pecho, que late
-  esc.luces.push({ p: [0, 0, -30], c: hexLin('#ff4a14'), k: 14, r: 120, canal: 1, sombra: true, envuelve: 0.2, halo: 0.00002 });
-  // lo frío: la escalera del fondo, por donde baja la noche (un filo azul en las columnas y en la niebla de atrás)
-  esc.luces.push({ p: [-60, 1000, 230], c: hexLin('#6f8cc8'), k: 9, r: 260, sombra: true, envuelve: 0.1, halo: 0.00004 });
-  esc.luces.push({ p: add(pecho, [fx * 10, fy * 10, 30]), c: hexLin('#ff6a22'), k: 6, r: 50, canal: 1, sombra: true, envuelve: 0.3, halo: 0.0001 });
+  // la luz nace en el pozo: dos luces adentro de la boca (la pared de adentro y el brocal la recortan en un cono que
+  // sube: la Abadesa se recorta contra él y su resplandor en la bóveda); sin velo en el aire
+  esc.luces.push({ p: [0, 0, -40], c: hexLin('#ff4a14'), k: 34, r: 120, canal: 1, sombra: true, envuelve: 0.15 });
+  esc.luces.push({ p: [0, 10, 18], c: hexLin('#ff5a1a'), k: 3, r: 60, canal: 1, sombra: true, envuelve: 0.15 });
+  // lo frío: la escalera del fondo y un óculo en la clave de la bóveda (penumbra azul arriba)
+  esc.luces.push({ p: [-60, 1000, 200], c: hexLin('#6f8cc8'), k: 6, r: 240, sombra: true, envuelve: 0.1 });
+  esc.luces.push({ p: [0, 260, 400], c: hexLin('#7088c0'), k: 1.6, r: 320, sombra: true, envuelve: 0.2 });
+  esc.luces.push({ p: add(pecho, [0, -4, 10]), c: hexLin('#ff7a2a'), k: 0.8, r: 18, canal: 1, envuelve: 0.3 });
   esc.emision.aa_brasa = { k: 3.5, canal: 1 }; esc.emision.luz_vela = { k: 0 }; esc.emision.fuego = { k: 0 };
-  plumas.push({ base: add(pecho, [0, 0, 30]), alto: 520, r0: 10, r1: 140, viento: [0.2, 0.4, 0], dens: 0.05, humo: [0.03, 0.03, 0.034], abajo: hexLin('#ff4a14'), kAbajo: 0.7, decaeAbajo: 7, semilla: 83, sube: 26, escala: 1 / 26 });
-  plumas.push({ base: [0, 0, P.alto], alto: 420, r0: 50, r1: 160, viento: [0.1, 0.3, 0], dens: 0.02, humo: [0.03, 0.03, 0.034], abajo: hexLin('#ff3a10'), kAbajo: 0.8, decaeAbajo: 6, semilla: 84, sube: 14, escala: 1 / 40 });
+  // un humo ralo que sale de la boca y se enciende de abajo (marca el cono de luz, no lo tapa)
+  plumas.push({ base: [0, 0, P.alto], alto: 300, r0: 50, r1: 120, viento: [0.1, 0.3, 0], dens: 0.022, humo: [0.03, 0.03, 0.034], abajo: hexLin('#ff3a10'), kAbajo: 0.6, decaeAbajo: 5, semilla: 84, sube: 14, escala: 1 / 40 });
   // el aire: cripta fría (azul pizarra apenas), la niebla a ras del piso que el pozo enciende de abajo
   const aire: C3 = [0.004, 0.0048, 0.007];
   const atm: Atmosfera = {
     sol: { dir: [0, 0, 1], c: [0, 0, 0], k: 0 }, cielo: () => aire, aire: () => aire,
     ambCielo: [0.004, 0.005, 0.008], ambSuelo: [0.0015, 0.0012, 0.0012],
-    niebla: { densidad: 1 / 4200, baja: 1 / 260, z0: 0, H: 18, ruido: 0.8, escalaRuido: 0.012 },
-    borde: { c: hexLin('#ff6a30'), k: 1.6 }, oclusion: 0.9, oclusionLargo: 260,
+    niebla: { densidad: 1 / 6000, baja: 1 / 500, z0: 0, H: 14, ruido: 0.8, escalaRuido: 0.012 },
+    borde: { c: hexLin('#ff6a30'), k: 1.8 }, oclusion: 0.9, oclusionLargo: 260,
   };
   // la cámara baja, de costado, un poco abajo de la Abadesa: ella se recorta contra el humo encendido y la sala que fuga
-  const cam = camaraBase([230, -230, 36], [-40, 6, 104], 44, w, h);
-  return { esc, atm, cam, plumas, fuegos, brasas: (t) => chispas(t, pecho, 90, 30, 260, '#ff7a2a', 6, [0.1, 0.25, 0]) };
+  // la cámara más atrás y algo arriba, de tres cuartos: la boca del pozo con su brasa abajo, la Abadesa entera de
+  // espaldas al pozo y la bóveda arriba en penumbra
+  const cam = camaraBase([150, -360, 84], [-2, -20, 104], 38, w, h);
+  return { esc, atm, cam, plumas, fuegos, brasas: (t) => chispas(t, pecho, 40, 10, 110, '#ff8a3a', 4, [0, 0.3, 0]) };
 }
 const A1P1: Plano3D = {
   id: 'p1_abadesa', paralaje: 0.9, particulas: 'brasas', ss: 4, ao: 3,
@@ -718,6 +726,24 @@ const A3P1: Plano3D = {
 // ================================================================== ACTO 3 · p2: al alba, la pirámide en la niebla, el río con sus muertos y el barco
 /** El río (a lo largo de y, hacia la pirámide), el barco amarrado en esta orilla y el sol que sale detrás de la pirámide. */
 const PIRAMIDE: V3 = [-120, 1900, 0];
+/** Un ahogado tendido en el agua (mirando a +x, la espalda o el pecho arriba): torso, cadera, piernas, brazos abiertos y la cabeza de lado. */
+function ahogado(s: number, bocaAbajo: boolean): Pieza[] {
+  const t = 'cu_tela_parda', pi = 'cu_piel', r = (k: number) => (az(s, k) - 0.5);
+  const cs = [
+    bulto([0, 0, 0], [13, 9, 5], { mat: t }), bulto([-14, 0, -1], [9, 8.5, 4.5], { mat: t }),
+    // las piernas, una más abierta que la otra
+    hueso([-18, -4, -1], [-40, -8 + r(1) * 8, -3], 4.2, 3.2, { mat: t }), hueso([-40, -8 + r(1) * 8, -3], [-58, -10 + r(2) * 10, -4], 3.2, 2.4, { mat: t }),
+    hueso([-18, 4, -1], [-40, 10 + r(3) * 10, -2], 4.2, 3.2, { mat: t }), hueso([-40, 10 + r(3) * 10, -2], [-58, 14 + r(4) * 12, -4], 3.2, 2.4, { mat: t }),
+    // los brazos abiertos en cruz, flojos, uno más adelante
+    hueso([8, -8, 1], [12, -24, 0], 2.8, 2.4, { mat: t }), hueso([12, -24, 0], [20 + r(5) * 8, -38, -1], 2.4, 2, { mat: pi }),
+    hueso([8, 8, 1], [16, 22, 0], 2.8, 2.4, { mat: t }), hueso([16, 22, 0], [28 + r(6) * 8, 32, -1], 2.4, 2, { mat: pi }),
+  ];
+  const ps: Pieza[] = [masa(cs, { mat: t, suave: 2.2 })];
+  // la cabeza girada de lado (el perfil se lee), el pelo que flota
+  ps.push(masa([bulto([19, 0, bocaAbajo ? 1 : 2], [5.5, 4.6, 5], { mat: pi }), bulto([23, 0, bocaAbajo ? 0 : 3], [1.6, 1.4, 1.6], { mat: pi })], { mat: pi, suave: 1 }));
+  for (let k = 0; k < 6; k++) ps.push(palo([20, (k - 2.5) * 1.6, 2], [30 + r(10 + k) * 6, (k - 2.5) * 3.2, 0.2], 0.7, { mat: 'cu_pelo_negro', r1: 0.3 }));
+  return bocaAbajo ? ps : girar(ps, [1, 0, 0], 180, [0, 0, 0], [0, 0, 1]);
+}
 function armarRioAlba(w: number, h: number): ArmadoA {
   const esc = new EscenaCine();
   const cauce = (x: number, y: number) => Math.abs(x - 60 * Math.sin(y / 500) + 30) - 170 - y * 0.02;
@@ -744,12 +770,18 @@ function armarRioAlba(w: number, h: number): ArmadoA {
   }
   // el primer plano: raíces y helechos negros a la izquierda, contra el agua
   for (let i = 0; i < 6; i++) pon(piezasDe(i % 2 ? 'sel2_helecho' : 'sel2_raices', variante0(i % 2 ? 'sel2_helecho' : 'sel2_raices'), 900 + i), -230 + az(i, 901) * 80, -120 + i * 30, az(i, 902) * 360, 1.4, true);
-  // los muertos que el río arrastra: boca abajo, a medio hundir, en fila irregular con la corriente
-  for (let i = 0; i < 9; i++) {
-    const y = 20 + i * 110 + az(i, 911) * 60, x = 60 * Math.sin(y / 500) - 30 + (az(i, 912) - 0.5) * 240;
-    const cu: Cuerpo = { genero: az(i, 913) < 0.4 ? 'm' : 'h', alto: 0.95 + az(i, 914) * 0.1, ancho: 1, musculo: 0.3, piel: 'cu_piel', pelo: 'cu_pelo_negro', peinado: 'largo' };
-    pon(personaje(cu, { torso: { tipo: 'harapos', mat: 'cu_tela_parda' }, piernas: { tipo: 'pantalon', mat: 'cu_tela_parda' } }, 's', 'morir', 7), x, y, az(i, 915) * 360, 1.1, false, -7);
-  }
+  // los muertos que el río arrastra: pocos y cerca, boca abajo o de espaldas, los brazos abiertos y la cabeza de perfil
+  // (se recortan negros contra el agua que brilla); los de la orilla, enredados en las raíces
+  const muertos: [number, number, number, boolean, boolean][] = [[0, 75, 20, true, false], [90, 175, -40, false, false], [-25, 290, 60, true, false], [142, 30, 100, true, true]];
+  muertos.forEach(([x, y, giro, bocaAbajo, orilla], i) => {
+    const g = pon(ahogado(990 + i, bocaAbajo), x, y, giro, 1.45, false, -2.5);
+    void g;
+    if (orilla) for (let k = 0; k < 5; k++) {
+      // raíces que bajan de la orilla y lo sujetan: arcos de corteza por encima del cuerpo
+      const a = ((giro + 90) * Math.PI) / 180, l = (k - 2) * 12, ox = x + Math.cos(a) * l, oy = y + Math.sin(a) * l;
+      esc.ponerMundo([palo([ox + 60, oy + (az(k, 997) - 0.5) * 20, 16], [ox + 10, oy, 6 + az(k, 998) * 4], 2.2, { mat: 'corteza', r1: 1.4 }), palo([ox + 10, oy, 6 + az(k, 998) * 4], [ox - 18, oy + (az(k, 999) - 0.5) * 14, -6], 1.4, { mat: 'corteza', r1: 0.6 })], { nieve: 0 });
+    }
+  });
   // el barco de Oyá espera amarrado en esta orilla, a la derecha, con la vela recogida
   pon(piezasDe('des_falua', 'sin_vela', 921).filter((p) => p.mat !== 'agua'), 150, 150, 100, 1.6, false, -4);
   esc.ponerMundo([palo([210, 140, -6], [212, 142, 40], 2, { mat: 'madera_vieja' }), palo([212, 142, 30], [170, 148, 14], 0.5, { mat: 'cuerda' })], { nieve: 0 });
@@ -764,7 +796,7 @@ function armarRioAlba(w: number, h: number): ArmadoA {
     niebla: { densidad: 1 / 6500, baja: 1 / 900, z0: 0, H: 50, ruido: 0.6, escalaRuido: 0.0025 },
     borde: { c: hexLin('#ffc090'), k: 1.6 },
   });
-  const cam = camaraBase([-40, -260, 74], [-90, 900, 120], 42, w, h);
+  const cam = camaraBase([-40, -260, 74], [-80, 900, 60], 42, w, h);
   return { esc, atm, cam, fuegos: [] };
 }
 const A3P2: Plano3D = {
@@ -824,7 +856,7 @@ function armarNorte(w: number, h: number): Armado {
     niebla: { densidad: 1 / 4200, baja: 1 / 2600, z0: 0, H: 120, ruido: 0.85, escalaRuido: 0.004 },
     borde: { c: hexLin('#b0c8f0'), k: 1.4 }, nieve: { albedo: [0.5, 0.53, 0.6], desde: 0.55 },
   });
-  const z0 = ter.h(-560, 120) + 330, cam = camaraBase([-560, 120, z0], [-90, 290, ter.h(-90, 290) + 120], 46, w, h);
+  const z0 = ter.h(-560, 120) + 330, cam = camaraBase([-560, 120, z0], [-90, 290, ter.h(-90, 290) + 50], 46, w, h);
   return { esc, atm, cam, polvo };
 }
 const A3P3: Plano3D = {
