@@ -1,6 +1,6 @@
 import type { Raster } from '../core/raster';
 import { lamina, aRaster, vineta, grano, suave, type Lamina } from './cine';
-import { GUION, PINTORES, capasFinales, componerPlano } from './cinematicas';
+import { GUION, PINTORES_2D, capasFinales, componerPlano } from './cinematicas';
 import { Toma } from './cine_toma';
 
 /**
@@ -59,7 +59,8 @@ export function cartaActoLamina(n: number): Lamina {
   const p = GUION[clave].find((q) => q.id === id)!;
   const t = new Toma(n * 101);
   t.carta = true;
-  PINTORES[`${clave}/${id}`](t);
+  // del pintor 2D (en modo carta, sin lo que cuenta el final): el plano 3D del cierre muestra el final
+  PINTORES_2D[`${clave}/${id}`](t);
   const quieta = { desde: { x: 0, y: 0, zoom: 1 }, hasta: { x: 0, y: 0, zoom: 1 }, curva: 'lineal' as const };
   const L = componerPlano(capasFinales(t), { ...p, cam: quieta }, { t: 0, franja: false, vineta: lamina(W_CARTA, H_CARTA) });
   terminar(L, n * 13);

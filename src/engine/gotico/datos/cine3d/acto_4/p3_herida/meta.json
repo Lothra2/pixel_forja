@@ -1,0 +1,48 @@
+{
+ "fondo": true,
+ "frente": true,
+ "fuegos": [
+  {
+   "x": 792,
+   "y": 325,
+   "w": 48,
+   "h": 35,
+   "escala": 2,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 346,
+   "y": 357,
+   "w": 69,
+   "h": 39,
+   "escala": 2,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 881,
+   "y": 293,
+   "w": 56,
+   "h": 32,
+   "escala": 2,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  },
+  {
+   "x": 648,
+   "y": 293,
+   "w": 34,
+   "h": 32,
+   "escala": 2,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  }
+ ],
+ "particulas": "ceniza",
+ "paralaje": 0.8
+}

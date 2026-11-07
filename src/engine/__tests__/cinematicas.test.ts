@@ -52,7 +52,7 @@ describe('exportar una cinemática', () => {
       for (const c of p.capas) {
         expect(archivos.has(c.archivo), c.archivo).toBe(true);
         expect(['normal', 'sumar']).toContain(c.mezcla);
-        if (c.anim) expect(['deriva', 'titilar', 'latir', 'flotar', 'cuadros', 'aparecer']).toContain(c.anim.tipo);
+        if (c.anim) expect(['deriva', 'titilar', 'latir', 'flotar', 'cuadros', 'aparecer', 'tiempo']).toContain(c.anim.tipo);
       }
     }
     const si = planos[1].capas.map((c: any) => c.si).filter(Boolean);

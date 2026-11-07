@@ -1,0 +1,18 @@
+{
+ "fondo": true,
+ "frente": false,
+ "fuegos": [
+  {
+   "x": 612,
+   "y": 383,
+   "w": 180,
+   "h": 122,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  }
+ ],
+ "particulas": "ceniza",
+ "paralaje": 0.9
+}

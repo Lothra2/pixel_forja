@@ -14,7 +14,8 @@ import type { Particulas } from './cinematicas';
  * Lo que se mueve va en tiras que SUMAN, una por zona (la catedral que arde, una antorcha, una hoguera): la diferencia
  * exacta entre el cuadro con fuego (llamas de Doom, vitrales, brasas, el latido de su luz) y el cuadro quieto, ya
  * revelados, con el borde de la zona fundido a cero. La nieve y la ceniza son las partículas vivas del juego.
- * Lo horneado queda en datos/intro3d/<plano>/ (fondo.png, frente.png, fuego_N.png en grilla y meta.json).
+ * Lo horneado queda en datos/cine3d/<clave>/<plano>/ (fondo.png, frente.png, fuego_N.png en grilla y meta.json); un plano
+ * que cambia según una elección se hornea entero una vez por valor, en <plano>@<valor>/ (sus capas van con `si`).
  */
 
 export interface Extras { flick: number; carteles?: Cartel[]; pantalla?: { lam: Lamina; x: number; y: number; k?: number }[]; particulas?: Particula[] }
@@ -188,9 +189,27 @@ export function grilla(cs: Raster[]): { img: Raster; columnas: number } {
   cs.forEach((c, i) => { const ox = (i % columnas) * w, oy = Math.floor(i / columnas) * h; for (let y = 0; y < h; y++) img.data.set(c.data.subarray(y * w * 4, (y + 1) * w * 4), ((oy + y) * img.w + ox) * 4); });
   return { img, columnas };
 }
-type Fs = { readFileSync: (p: string) => Uint8Array; existsSync: (p: string) => boolean };
+type Fs = { readFileSync: (p: string) => Uint8Array; existsSync: (p: string) => boolean; readdirSync: (p: string) => string[] };
 const fs = (): Fs | null => ((globalThis as { process?: { getBuiltinModule?: (m: string) => unknown } }).process?.getBuiltinModule?.('node:fs') as Fs | undefined) ?? null;
-export const CARPETA_HORNEADO = new URL('./datos/intro3d/', import.meta.url);
+/** Lo horneado de todas las cinemáticas 3D: datos/cine3d/<clave>/<plano>/. */
+export const CARPETA_CINE3D = new URL('./datos/cine3d/', import.meta.url);
+/** La carpeta de lo horneado de una clave (intro, acto_1...). */
+export const carpetaCine3d = (clave: string) => new URL(`${clave}/`, CARPETA_CINE3D);
+/** La de la intro (la de siempre). */
+export const CARPETA_HORNEADO = carpetaCine3d('intro');
+/**
+ * Lo que hay horneado de un plano de una clave: el plano entero (<plano>/, sin valor) y, si cambia con una elección,
+ * cada valor horneado aparte (<plano>@<valor>/). Vacío si no hay nada (o en el navegador).
+ */
+export function horneadosDe(clave: string, id: string): { carpeta: string; valor?: string }[] {
+  const F = fs(); if (!F) return [];
+  const base = carpetaCine3d(clave);
+  if (!F.existsSync(base.pathname)) return [];
+  return F.readdirSync(base.pathname).filter((n) => (n === id || n.startsWith(id + '@')) && F.existsSync(new URL(`${n}/meta.json`, base).pathname)).sort()
+    .map((n) => (n === id ? { carpeta: n } : { carpeta: n, valor: n.slice(id.length + 1) }));
+}
+/** Si el plano tiene algo horneado en 3D. */
+export const hayHorneado = (clave: string, id: string) => horneadosDe(clave, id).length > 0;
 export interface LeidoHorneado { meta: MetaHorneado; fondo?: Raster; frente?: Raster; fuegos: Raster[]; moviles: Raster[]; luces: Raster[] }
 /** Lee lo horneado de un plano (null si no está, o si no hay sistema de archivos: en el navegador). */
 export function leerHorneado(id: string, decodificar: (b: Uint8Array) => Raster, base: URL = CARPETA_HORNEADO): LeidoHorneado | null {
@@ -210,19 +229,19 @@ export function cuadroTira(img: Raster, f: MetaTira, k: number, esc = 1): Raster
   return r;
 }
 /** Pone lo horneado en la toma: fondo opaco, frente con paralaje 1 y las tiras que suman encima de todo. */
-export function tomaDeHorneado(t: Toma, h: LeidoHorneado) {
-  const { meta } = h, esc = meta.escala ?? 1;
+export function tomaDeHorneado(t: Toma, h: LeidoHorneado, si?: string) {
+  const { meta } = h, esc = meta.escala ?? 1, sufijo = si ? `_${si}` : '', o = si ? { soloSi: si } : {};
   const poner = (L: Lamina, r: Raster) => {
     const s = aLamina(r);
     if (s.w === L.w && s.h === L.h) { L.d.set(s.d); return; }
     for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) { const sx = Math.min(s.w - 1, Math.floor((x * s.w) / L.w)), sy = Math.min(s.h - 1, Math.floor((y * s.h) / L.h)); L.d.set(s.d.subarray((sy * s.w + sx) * 4, (sy * s.w + sx) * 4 + 4), (y * L.w + x) * 4); }
   };
-  if (h.fondo) poner(t.capa('fondo', 0, meta.paralaje, 'normal', { opaca: true, notas: 'escena 3D (fondo)' }), h.fondo);
-  (meta.moviles ?? []).forEach((f, n) => t.tira(`movil_${n + 1}`, 1 + n / 100, meta.paralaje, 'normal', Array.from({ length: f.cuadros }, (_, k) => aLamina(cuadroTira(h.moviles[n], f, k, esc))), f.x / esc, f.y / esc, f.fps, { notas: 'lo que se mueve (campanas, sogas, monjes)' }));
-  if (h.frente) poner(t.capa('frente', 2, 1, 'normal', { notas: 'escena 3D (primer plano)' }), h.frente);
-  meta.fuegos.forEach((f, n) => t.tira(`fuego_${n + 1}`, 3 + n, meta.paralaje, 'sumar', Array.from({ length: f.cuadros }, (_, k) => aLamina(cuadroTira(h.fuegos[n], f, k, esc))), f.x / esc, f.y / esc, f.fps, { notas: 'fuego de Doom y su luz' }));
+  if (h.fondo) poner(t.capa('fondo' + sufijo, 0, meta.paralaje, 'normal', { opaca: true, notas: 'escena 3D (fondo)', ...o }), h.fondo);
+  (meta.moviles ?? []).forEach((f, n) => t.tira(`movil_${n + 1}${sufijo}`, 1 + n / 100, meta.paralaje, 'normal', Array.from({ length: f.cuadros }, (_, k) => aLamina(cuadroTira(h.moviles[n], f, k, esc))), f.x / esc, f.y / esc, f.fps, { notas: 'lo que se mueve (campanas, sogas, monjes)', ...o }));
+  if (h.frente) poner(t.capa('frente' + sufijo, 2, 1, 'normal', { notas: 'escena 3D (primer plano)', ...o }), h.frente);
+  meta.fuegos.forEach((f, n) => t.tira(`fuego_${n + 1}${sufijo}`, 3 + n, meta.paralaje, 'sumar', Array.from({ length: f.cuadros }, (_, k) => aLamina(cuadroTira(h.fuegos[n], f, k, esc))), f.x / esc, f.y / esc, f.fps, { notas: 'fuego de Doom y su luz', ...o }));
   (meta.luces ?? []).forEach((f, n) => {
-    const L = t.capa(`luz_${n + 1}`, 50 + n, meta.paralaje, 'sumar', { anim: f.anim as unknown as Record<string, unknown>, notas: 'luz que llega en su momento (relámpago, ojos)' }), r = cuadroTira(h.luces[n], f, 0, esc), s = aLamina(r), x0 = Math.round(f.x / esc), y0 = Math.round(f.y / esc);
+    const L = t.capa(`luz_${n + 1}${sufijo}`, 50 + n, meta.paralaje, 'sumar', { anim: f.anim as unknown as Record<string, unknown>, notas: 'luz que llega en su momento (relámpago, ojos)', ...o }), r = cuadroTira(h.luces[n], f, 0, esc), s = aLamina(r), x0 = Math.round(f.x / esc), y0 = Math.round(f.y / esc);
     for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) { const X = x + x0, Y = y + y0; if (X >= 0 && Y >= 0 && X < L.w && Y < L.h) L.d.set(s.d.subarray((y * s.w + x) * 4, (y * s.w + x) * 4 + 4), (Y * L.w + X) * 4); }
   });
   if (meta.particulas) t.particulas = meta.particulas;

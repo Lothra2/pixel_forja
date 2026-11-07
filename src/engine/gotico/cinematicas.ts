@@ -9,7 +9,7 @@ import { cuadrosHojaFuego } from './cine_fuego';
 import { PINTORES_A } from './cine_planos_a';
 import { PINTORES_B } from './cine_planos_b';
 import { PINTORES_C } from './cine_planos_c';
-import { pintoresIntro3d, paqueteIntro3d } from './cine3d_paquete';
+import { pintoresCine3d, paqueteCine3d } from './cine3d_paquete';
 import { alfaTiempo, type AnimTiempo } from './cine3d_toma';
 import { decodePng } from '../export/png';
 
@@ -57,21 +57,26 @@ const T = (tipo: Transicion['tipo'], s: number): Transicion => ({ tipo, s });
 export const GUION: Record<string, Plano[]> = {
   acto_1: [
     { id: 'p1_abadesa', que: 'En el Pozo de la Brasa, la Abadesa Ilvara cae sobre la boca del pozo; la brasa le revienta el pecho.', dur: 6.5,
-      cam: temblar(acercar([640, 300], 1.1, [0, 8], [0, -6]), 8, 1.4), entrada: T('blanco', 0.25), salida: T('fundido', 1),
+      cam: temblar(acercar([620, 300], 1.1, [0, 8], [0, -6]), 8, 1.4), entrada: T('blanco', 0.25), salida: T('fundido', 1),
+      sonidos: [{ t: 0.05, efecto: 'explosion', vol: 0.9 }, { t: 0.3, efecto: 'rugido_jefe', vol: 1 }],
       texto: ['La Abadesa cayó con el pecho abierto, cantando todavía. La brasa no cayó con ella.', 'The Abbess fell with her chest torn open, still singing. The ember did not fall with her.'] },
     { id: 'p2_campanas', que: 'Afuera, la brasa sube por el pozo y sale por el campanario de Santa Oria rumbo al sur; las campanas doblan.', dur: 7,
       cam: paneo(40, -40, 10, -12, 1.03), entrada: T('fundido', 1), salida: T('fundido', 1),
+      sonidos: [{ t: 0.8, efecto: 'campana', vol: 0.85 }, { t: 3.1, efecto: 'campana', vol: 0.75 }, { t: 5.4, efecto: 'campana', vol: 0.6 }],
       texto: ['Subió por el pozo como una chispa que se niega a morir, y en Santa Oria las campanas doblaron una última vez.', 'It rose up the well like a spark that refuses to die, and in Santa Oria the bells tolled one last time.'] },
     { id: 'p3_camino', que: 'El héroe en el cruce del páramo, junto a la horca; al sur cae una estrella roja. La Marca le late en el brazo.', dur: 7.5,
-      cam: acercar([700, 360], 1.07, [-20, 0], [10, -4]), entrada: T('fundido', 1), salida: T('negro', 1.6),
+      cam: acercar([560, 360], 1.07, [-20, 0], [10, -4]), entrada: T('fundido', 1), salida: T('negro', 1.6),
+      sonidos: [{ t: 2.1, efecto: 'trueno', vol: 0.45 }],
       texto: ['Tomó el camino del sur, hacia Sahrim, donde los reyes no mueren: solo duermen. En tu brazo, la Marca se calentó un poco más.', 'It took the southern road, toward Sahrim, where kings do not die: they only sleep. On your arm, the Mark grew a little warmer.'] },
   ],
   acto_2: [
     { id: 'p1_rey', que: 'En la Cámara del Rey, Khamer-Ul se deshace en arena bajo el haz de luz; la máscara de oro cae.', dur: 6.5,
       cam: temblar(acercar([640, 330], 1.09), 6, 1.2), entrada: T('blanco', 0.25), salida: T('fundido', 1),
+      sonidos: [{ t: 0.15, efecto: 'rugido_jefe', vol: 0.8 }],
       texto: ['Khamer-Ul volvió al polvo de donde lo habían sacado. Ni siquiera su sombra vino a despedirlo.', 'Khamer-Ul returned to the dust he was raised from. Not even his shadow came to say farewell.'] },
     { id: 'p2_coloso', que: 'En el desierto rojo, el coloso enterrado se raja; la brasa huye hacia el este sobre el camino de los empalados.', dur: 7,
       cam: paneo(-40, 40, 0, -8, 1.03), entrada: T('fundido', 1), salida: T('fundido', 1),
+      sonidos: [{ t: 0.5, efecto: 'explosion', vol: 0.6 }, { t: 0.9, efecto: 'trueno', vol: 0.5 }],
       texto: ['El segundo sello se quebró como un hueso seco. La brasa siguió el río hacia el este, donde la selva respira y el agua sangra.', 'The second seal cracked like a dry bone. The ember followed the river east, where the jungle breathes and the water bleeds.'] },
     { id: 'p3_rio', que: 'De noche, el barco de Oyá baja el río; detrás, una figura pálida camina sobre el agua, cantando.', dur: 7.5,
       cam: acercar([980, 380], 1.08, [-30, 0], [20, 0]), entrada: T('fundido', 1), salida: T('negro', 1.6),
@@ -80,12 +85,14 @@ export const GUION: Record<string, Plano[]> = {
   acto_3: [
     { id: 'p1_madre', que: 'En el Vientre del templo, la Madre Ciénaga se abre y se hunde en su barro; los huevos revientan.', dur: 6.5,
       cam: temblar(acercar([640, 360], 1.08, [0, -6], [0, 6]), 7, 1.6), entrada: T('blanco', 0.25), salida: T('fundido', 1),
+      sonidos: [{ t: 0.1, efecto: 'rugido_jefe', vol: 1 }, { t: 1.3, efecto: 'explosion', vol: 0.5 }],
       texto: ['La Madre se abrió como un fruto podrido. De su vientre ya no salió nada vivo.', 'The Mother split open like rotten fruit. Nothing living came out of her womb again.'] },
     { id: 'p2_rio', que: 'Al alba, la pirámide en la niebla; el río ya no es rojo pero arrastra a los muertos. El barco espera.', dur: 7,
       cam: paneo(30, -30, 6, -6, 1.03), entrada: T('fundido', 1), salida: T('fundido', 1),
       texto: ['El río dejó de sangrar, aunque todavía sabe a hierro. Oyá desató las amarras sin mirar atrás.', 'The river stopped bleeding, though it still tastes of iron. Oya cast off without looking back.'] },
     { id: 'p3_norte', que: 'Al norte, en la ventisca, el rey de escarcha camina y los muertos de la montaña lo siguen.', dur: 7.5,
-      cam: acercar([700, 340], 1.1), entrada: T('fundido', 1.2), salida: T('negro', 1.6),
+      cam: acercar([900, 360], 1.1), entrada: T('fundido', 1.2), salida: T('negro', 1.6),
+      sonidos: [{ t: 0.6, efecto: 'trueno', vol: 0.4 }],
       texto: ['En Hrimgard, un rey que juró no levantarse caminaba otra vez sobre la nieve. Detrás de él, en fila, sus muertos.', 'In Hrimgard, a king who swore never to rise was walking on the snow again. Behind him, in a long line, came his dead.'] },
   ],
   acto_4: [
@@ -106,6 +113,7 @@ export const GUION: Record<string, Plano[]> = {
   acto_5: [
     { id: 'p1_ozmaren', que: 'En el Corazón de la Brasa, Ozmaren revienta en fuego: el pecho se abre y las alas arden.', dur: 6.5,
       cam: temblar(acercar([640, 320], 1.1), 12, 2.2), entrada: T('blanco', 0.3), salida: T('rojo', 0.8),
+      sonidos: [{ t: 0.1, efecto: 'explosion', vol: 1 }, { t: 0.6, efecto: 'rugido_jefe', vol: 0.9 }],
       texto: ['Ozmaren cayó. La sed que bajó a beber se quedó sin boca.', 'Ozmaren fell. The thirst that came down to drink was left without a mouth.'] },
     { id: 'p2_eleccion', que: 'Sobre la ceniza de Ozmaren, el héroe con la Brasa en el puño. Según la elección: se apaga y la Marca queda gris, o entra en él y lo enciende.', dur: 7.5, eleccion: 'brasa',
       cam: acercar([640, 380], 1.09), entrada: T('rojo', 0.8), salida: T('fundido', 1.2),
@@ -116,6 +124,7 @@ export const GUION: Record<string, Plano[]> = {
       } },
     { id: 'p3_mar', que: 'Muy al norte, de noche, el mar se parte en dos bajo un rayo; las agujas de una ciudad empiezan a salir del agua.', dur: 7,
       cam: temblar(acercar([640, 380], 1.08, [0, 6], [0, -8]), 5, 7, 0, 6), entrada: T('fundido', 1.2), salida: T('fundido', 1),
+      sonidos: [{ t: 0.5, efecto: 'trueno', vol: 0.9 }, { t: 3.7, efecto: 'trueno', vol: 0.7 }, { t: 6, efecto: 'trueno', vol: 0.5 }],
       texto: ['Esa noche, muy al norte, el mar se partió en dos.', 'That night, far to the north, the sea split in two.'] },
     { id: 'p4_ysmeral', que: 'Ysmeral, la Ciudad Ahogada, ya afuera del agua con sus campanas; el barco de Oyá varado en la costa.', dur: 7.5,
       cam: paneo(-40, 30, 0, -6, 1.04), entrada: T('fundido', 1), salida: T('negro', 1.6),
@@ -124,6 +133,7 @@ export const GUION: Record<string, Plano[]> = {
   acto_6: [
     { id: 'p1_campana', que: 'En el Campanario Hundido, la Campana que Ahoga se raja; el agua estalla y la sacerdotisa se suelta de las cadenas.', dur: 6.5,
       cam: temblar(acercar([640, 340], 1.09), 9, 1.8), entrada: T('blanco', 0.25), salida: T('fundido', 1),
+      sonidos: [{ t: 0.2, efecto: 'campana', vol: 1 }, { t: 0.5, efecto: 'explosion', vol: 0.6 }],
       texto: ['La Campana se rajó de arriba abajo, y la sacerdotisa que vivía adentro pudo, por fin, callar.', 'The Bell cracked from crown to lip, and the priestess who lived inside could, at last, fall silent.'] },
     { id: 'p2_marea', que: 'La marea vuelve de golpe sobre las calles de Ysmeral; los ahogados quedan en la playa. El barco flota.', dur: 7,
       cam: paneo(40, -30, -6, 6, 1.03), entrada: T('fundido', 1), salida: T('fundido', 1),
@@ -231,7 +241,17 @@ export const GUION: Record<string, Plano[]> = {
 /** Banderas del juego para cada elección: una capa con `si` se dibuja solo con esa bandera encendida. */
 export const ELECCIONES: Record<string, string[]> = { vigdis: ['vigdis_viva', 'vigdis_muerta'], brasa: ['brasa_destruir', 'brasa_absorber'] };
 export const CLAVES_CINE = Object.keys(GUION);
-export const PINTORES: Record<string, (t: Toma) => void> = { ...PINTORES_A, ...PINTORES_B, ...PINTORES_C, ...pintoresIntro3d(GUION.intro.map((p) => p.id)) };
+/**
+ * Los pintores de cada plano: los 2D de siempre (cine_planos_a/b/c.ts) y, encima, los de lo horneado en 3D
+ * (datos/cine3d/<clave>/<plano>/): la intro siempre (negra si falta hornear) y en las demás claves cada plano que ya
+ * tenga horneado reemplaza a su pintor 2D.
+ */
+/** Los pintores 2D de siempre (las cartas de los actos salen de estos, en modo carta). */
+export const PINTORES_2D: Record<string, (t: Toma) => void> = { ...PINTORES_A, ...PINTORES_B, ...PINTORES_C };
+export const PINTORES: Record<string, (t: Toma) => void> = {
+  ...PINTORES_2D,
+  ...Object.assign({}, ...Object.entries(GUION).map(([clave, ps]) => pintoresCine3d(clave, ps.map((p) => p.id), { soloHorneados: clave !== 'intro' }))),
+};
 /** Música que pide cada cinemática (la intro arranca con la pista 'intro' en el segundo 0 y sigue en el título). */
 export const MUSICA_CINE: Record<string, string> = { intro: 'intro' };
 /** Sonidos del juego que pueden pedir los planos (`sonidos`). */
@@ -463,17 +483,19 @@ export function exportarCinematicas(o: OpcExportar): Record<string, unknown> {
   const vineta = vinetaCine();
   for (const clave of o.claves ?? CLAVES_CINE) {
     const planos: unknown[] = [];
-    // la intro: lo horneado en 3D, empaquetado en pocas páginas; cada capa con su recorte
-    const paquete = clave === 'intro' ? paqueteIntro3d(GUION.intro.map((p) => p.id), decodePng) : null;
-    paquete?.paginas.forEach((pg, i) => o.poner(`cinematicas/intro/pagina_${i + 1}.png`, pg));
+    // lo horneado en 3D (la intro y cada cierre ya rehecho), empaquetado en pocas páginas; cada capa con su recorte. Los
+    // planos con horneado NO exportan sus capas 2D viejas (las páginas las reemplazan); los que no, siguen en 2D.
+    const pq3 = paqueteCine3d(clave, GUION[clave].map((p) => p.id), decodePng), paquete = pq3.paginas.length || clave === 'intro' ? pq3 : null;
+    paquete?.paginas.forEach((pg, i) => o.poner(`cinematicas/${clave}/pagina_${i + 1}.png`, pg));
     GUION[clave].forEach((p, n) => {
       av(`cinemática ${clave} ${p.id}`);
-      const t = pintarPlano(clave, p.id), capas = capasFinales(t), pq = paquete?.planos[p.id];
+      const t = pintarPlano(clave, p.id), capas = capasFinales(t), pq = paquete?.planos[p.id], en3d = !!pq || clave === 'intro';
+      if (paquete && !en3d) av(`cinemática ${clave} ${p.id}: sin horneado 3D, va con sus capas 2D`);
       const archivoDe = (c: CapaFinal) => (c.hoja ? `cinematicas/fx/${c.hoja}.png` : `cinematicas/${clave}/${p.id}_${c.id}.png`);
-      if (!paquete) for (const c of capas) if (c.img) o.poner(archivoDe(c), aRaster(c.img, !!c.opaca));
+      if (!en3d) for (const c of capas) if (c.img) o.poner(archivoDe(c), aRaster(c.img, !!c.opaca));
       const json = (lista: CapaFinal[]) => [
-        ...(paquete
-          ? (pq?.capas ?? []).map((c) => ({ id: c.id, archivo: `cinematicas/intro/pagina_${c.pagina + 1}.png`, recorte: c.recorte, x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.anim ? { anim: c.anim } : {}) }))
+        ...(en3d
+          ? (pq?.capas ?? []).map((c) => ({ id: c.id, archivo: `cinematicas/${clave}/pagina_${c.pagina + 1}.png`, recorte: c.recorte, x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.anim ? { anim: c.anim } : {}), ...(c.si ? { si: c.si } : {}) }))
           : lista.map((c) => ({ id: c.id, archivo: archivoDe(c), x: c.x, y: c.y, w: c.w, h: c.h, paralaje: c.paralaje, mezcla: c.mezcla, ...(c.alfa !== undefined ? { alfa: c.alfa } : {}), ...(c.anim ? { anim: c.anim } : {}), ...(c.soloSi ? { si: c.soloSi } : {}) }))),
         { id: 'vineta', archivo: 'cinematicas/vineta.png', x: MX, y: MY, w: 1280, h: 720, paralaje: 0, mezcla: 'normal' },
       ];
@@ -502,10 +524,12 @@ export const LEEME_CINE = `cinematicas/  las cinemáticas de cierre de cada acto
               "cuadros". cinematicas/vineta.png va encima de todo con paralaje 0. El fuego (la hoja fx/fuego.png y
               las tiras de fuego detrás de vitrales, como catedral_fuego en acto_5/p4_ysmeral) es fuego de Doom
               horneado: anim "cuadros" con su hoja en grilla (columnas, cuadros, fps, w, h), se suma y empalma.
-              La intro (clave intro) sale de escenas 3D horneadas y empaquetadas en cinematicas/intro/pagina_N.png:
+              La intro y los cierres ya rehechos en 3D salen de escenas horneadas y empaquetadas en
+              cinematicas/<clave>/pagina_N.png (2 páginas por clave como mucho; la intro, 3):
               cada capa trae recorte [sx, sy, sw, sh] (de dónde sale en su página; con anim "cuadros" la celda k
               está en sx + (k % columnas) * w, sy + floor(k / columnas) * h) y se dibuja en x, y, w, h de la capa
               (las tiras van a media resolución: se agrandan). movil_N: normal con alfa (campanas, monjes), en
               bucle. fuego_N: suma, en bucle. luz_N: suma con anim "tiempo" = { tipo: 'tiempo', claves: [[s, alfa],
               ...] }: el alfa sigue las claves en el segundo del plano, lineal entre claves (relámpagos, ojos).
+              Una capa con "si" (vigdis_viva, brasa_absorber...) se dibuja solo con esa bandera encendida.
 `;

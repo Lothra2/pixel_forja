@@ -1,0 +1,48 @@
+{
+ "fondo": true,
+ "frente": true,
+ "fuegos": [],
+ "luces": [
+  {
+   "x": 0,
+   "y": 226,
+   "w": 704,
+   "h": 283,
+   "escala": 2,
+   "cuadros": 1,
+   "columnas": 1,
+   "fps": 12,
+   "anim": {
+    "tipo": "tiempo",
+    "claves": [
+     [
+      0,
+      0
+     ],
+     [
+      1.6,
+      0
+     ],
+     [
+      2,
+      0.6
+     ],
+     [
+      2.25,
+      0.35
+     ],
+     [
+      2.6,
+      0.9
+     ],
+     [
+      3.2,
+      1
+     ]
+    ]
+   }
+  }
+ ],
+ "particulas": "ceniza",
+ "paralaje": 0.85
+}
