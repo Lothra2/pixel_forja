@@ -311,19 +311,44 @@ function atmTrono(): Atmosfera {
  */
 const NIEVE: C3 = [0.5, 0.54, 0.62];
 type ValorVigdis = 'vigdis_viva' | 'vigdis_muerta';
-/** Torre redonda con su techo cónico de pizarra y almenas debajo (base en el origen). */
-function torre(r: number, alto: number, techo: number, s: number): Pieza[] {
-  const ps: Pieza[] = [cilindro(0, 0, -30, r, alto + 30, { mat: 'abo_sillar_grueso', r1: r * 0.94 }), cilindro(0, 0, alto, r * 1.08, 10, { mat: 'abo_labra' })];
-  for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU; ps.push(caja(Math.cos(a) * r * 1.02, Math.sin(a) * r * 1.02, alto + 10, 9, 7, 13, { mat: 'abo_sillar', giro: (a * 180) / Math.PI + 90 })); }
-  ps.push(cilindro(0, 0, alto + 16, r * 1.12, techo, { mat: 'abo_pizarra', r1: 0.5 }), palo([0, 0, alto + 16 + techo], [0, 0, alto + 30 + techo], 0.8, { mat: 'hierro' }));
-  // troneras: rendijas oscuras
-  for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + (i - 1) * 0.9 + (az(s, i) - 0.5) * 0.2; ps.push(caja(Math.cos(a) * r, Math.sin(a) * r, alto * (0.45 + i * 0.12), 3.5, 8, 16, { mat: 'negro', giro: (a * 180) / Math.PI + 90 })); }
+/** La piedra del fortín: hiladas marcadas (juntas hondas, sillares trabados), manchas de humedad que chorrean. */
+M.cb_sillar_fortin = { rampa: ['#0c0d10', '#181a1e', '#24272c', '#30343a', '#3d4148', '#4b5058', '#5a5f68', '#6a7079'], ruido: 0.3, escala: 0.15, brillo: 0.08, patron: (p, n) => {
+  const z = p[2] / 9, fila = Math.floor(z), u = (Math.abs(n[0]) > Math.abs(n[1]) ? p[1] : p[0]) / 15 + (fila % 2) * 0.5;
+  const junta = Math.min(z - fila, 1 - (z - fila)) < 0.08 || Math.min(u - Math.floor(u), 1 - (u - Math.floor(u))) < 0.04 ? -0.32 : 0;
+  const sillar = (hash3(Math.floor(u), fila, 461) - 0.5) * 0.16, chorro = fbm2(p[0] * 0.08 + p[1] * 0.08, p[2] * 0.012, 3, 462) > 0.62 ? -0.12 : 0;
+  return junta + sillar + chorro;
+} };
+M.cb_estandarte = { rampa: ['#100304', '#1c0507', '#2a080a', '#3a0c0e', '#4a1012'], ruido: 0.5, escala: 0.5 };
+/** Estandarte roto en su asta: jirones de tela que cuelgan y flamean (base del asta en el origen). */
+function estandarte(alto: number, s: number): Pieza[] {
+  const ps: Pieza[] = [palo([0, 0, 0], [0, 0, alto], 1.3, { mat: 'hierro', r1: 0.9 }), palo([0, 0, alto - 3], [24, 0, alto - 3], 0.8, { mat: 'hierro' })];
+  for (let k = 0; k < 6; k++) { const x0 = k * 4, x1 = x0 + 3.6, l = 26 + az(s * 5 + k, 470) * 40 * (k === 2 ? 0.3 : 1), fl = (az(s * 5 + k, 471) - 0.3) * 8; ps.push(poliedro([[x0, -0.4, alto - 3], [x1, 0.4, alto - 3], [x0 + fl * 0.6, -0.4 + fl * 0.3, alto - 3 - l * 0.6], [x1 + fl * 0.6, 0.4 + fl * 0.3, alto - 3 - l * 0.55], [x0 + fl + 1.5, fl * 0.5, alto - 3 - l]], { mat: 'cb_estandarte', tono: (az(k, 472) - 0.5) * 0.1 })); }
   return ps;
 }
-/** Tramo de muralla almenada a lo largo de x (base en z = 0, adarve arriba). */
+/** Torre redonda: talud, fajas de piedra, almenas gastadas, techo cónico de pizarra con su remate (base en el origen). */
+function torre(r: number, alto: number, techo: number, s: number, bandera = false): Pieza[] {
+  const ps: Pieza[] = [cilindro(0, 0, -30, r * 1.14, 60, { mat: 'cb_sillar_fortin', r1: r }), cilindro(0, 0, 28, r, alto - 28, { mat: 'cb_sillar_fortin', r1: r * 0.95 })];
+  for (const z of [alto * 0.42, alto * 0.78]) ps.push(cilindro(0, 0, z, r * 0.98 + 1.5, 3, { mat: 'abo_labra' }));
+  // el parapeto en voladizo sobre ménsulas, y las almenas gastadas (alguna rota o caída)
+  ps.push(cilindro(0, 0, alto, r * 1.1, 9, { mat: 'cb_sillar_fortin' }));
+  for (let i = 0; i < 16; i++) { const a = (i / 16) * TAU; ps.push(caja(Math.cos(a) * r * 1.0, Math.sin(a) * r * 1.0, alto - 9, 3, 7, 9, { mat: 'abo_labra', giro: (a * 180) / Math.PI })); }
+  for (let i = 0; i < 12; i++) { const a = (i / 12) * TAU + 0.13, rota = az(s * 12 + i, 473), alto2 = rota < 0.2 ? 4 : 11 + rota * 4; if (rota < 0.08) continue; ps.push(caja(Math.cos(a) * r * 1.06, Math.sin(a) * r * 1.06, alto + 9, 8 + az(i, 474) * 3, 6, alto2, { mat: 'cb_sillar_fortin', giro: (a * 180) / Math.PI + 90, incl: (az(s + i, 475) - 0.5) * 8 })); }
+  ps.push(cilindro(0, 0, alto + 16, r * 1.16, techo, { mat: 'abo_pizarra', r1: 0.5 }), cilindro(0, 0, alto + 14, r * 1.18, 3, { mat: 'abo_labra' }), palo([0, 0, alto + 16 + techo], [0, 0, alto + 32 + techo], 0.8, { mat: 'hierro' }));
+  // troneras: rendijas oscuras
+  for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + (i - 1) * 0.9 + (az(s, i) - 0.5) * 0.2; ps.push(caja(Math.cos(a) * r, Math.sin(a) * r, alto * (0.45 + i * 0.12), 3.5, 8, 16, { mat: 'negro', giro: (a * 180) / Math.PI + 90 })); }
+  if (bandera) ps.push(...estandarte(90, s).map((p) => moverPiezas([p], giroEje([0, 0, 1], -0.6), [0, 0, 0], [r * 0.85, -r * 0.85, alto + 9])[0]));
+  return ps;
+}
+/** Tramo de muralla a lo largo de x: talud, hiladas, ménsulas bajo el parapeto y almenas gastadas (base en z = 0). */
 function muralla(L: number, alto: number, s: number): Pieza[] {
-  const ps: Pieza[] = [caja(0, 0, -30, L, 22, alto + 30, { mat: 'abo_sillar', tono: (az(s, 1) - 0.5) * 0.08 }), caja(0, 0, alto, L + 1, 26, 4, { mat: 'abo_labra' })];
-  for (let x = -L / 2 + 8; x < L / 2 - 4; x += 19) ps.push(caja(x, -8, alto + 4, 10, 8, 13, { mat: 'abo_sillar', tono: (az(s, Math.round(x)) - 0.5) * 0.1 }));
+  const ps: Pieza[] = [poliedro([[-L / 2, -17, -30], [L / 2, -17, -30], [-L / 2, 11, -30], [L / 2, 11, -30], [-L / 2, -11, 30], [L / 2, -11, 30], [-L / 2, 11, 30], [L / 2, 11, 30]], { mat: 'cb_sillar_fortin' }),
+    caja(0, 0, 28, L, 22, alto - 28, { mat: 'cb_sillar_fortin', tono: (az(s, 1) - 0.5) * 0.06 }), caja(0, -2, alto, L + 1, 27, 5, { mat: 'cb_sillar_fortin' })];
+  for (let x = -L / 2 + 5; x < L / 2 - 3; x += 9) ps.push(caja(x, -12, alto - 7, 3, 5, 7, { mat: 'abo_labra' }));
+  for (let x = -L / 2 + 8, k = 0; x < L / 2 - 4; x += 19, k++) {
+    const g = az(s * 31 + k, 476); if (g < 0.1) continue;
+    const h = g < 0.25 ? 5 + g * 10 : 12 + g * 4, an = 9 + az(s * 31 + k, 477) * 3;
+    ps.push(caja(x + (az(k, 478) - 0.5) * 2, -10, alto + 5, an, 8, h, { mat: 'cb_sillar_fortin', incl: (az(s + k, 479) - 0.5) * 6, tono: (az(s, k) - 0.5) * 0.1 }));
+  }
   return ps;
 }
 /** El farol de Vigdis: jaula de hierro con su vidrio encendido y el aro de colgar (base en el origen). Devuelve la llama. */
@@ -338,10 +363,17 @@ function armarFortin(w: number, h: number, valor: ValorVigdis): ArmadoB {
   const esc = new EscenaCine(), fuegos: Fuego[] = [], frente: number[] = [];
   const loma = (x: number, y: number) => 70 * Math.exp(-((x / 900) ** 2 + ((y - 120) / 520) ** 2)) + (fbm2(x / 400, y / 400, 4, 401) - 0.5) * 40 + Math.max(0, y - 900) * 0.04;
   const camino = (x: number, y: number) => Math.abs(x + 20 + Math.sin(y / 260) * 60 - Math.min(0, y) * 0.06);
-  const alto = (x: number, y: number) => loma(x, y) + (fbm2(x / 30, y / 40, 3, 402) - 0.5) * 3 - (y < 0 ? 3 * (1 - suave(10, 40, camino(x, y))) : 0);
+  /** Las huellas que van y vienen de la puerta: pasos alternados a lo largo del camino (0..1, 1 en el hueco del pie). */
+  const huella = (x: number, y: number) => {
+    if (y > -10 || y < -700) return 0;
+    const cx = -20 - Math.sin(y / 260) * 60 + Math.min(0, y) * 0.06, k = Math.round(y / 13), lado = k % 2 ? 1 : -1, yc = k * 13, xc = cx + lado * 5 + (hash3(k, 3, 463) - 0.5) * 3;
+    const q = Math.hypot((x - xc) / 2.6, (y - yc) / 4.2), q2 = Math.hypot((x - xc - 14 * -lado) / 2.6, (y - yc - 6) / 4.2) * (hash3(k, 5, 464) < 0.6 ? 1 : 9);
+    return Math.max(1 - suave(0.7, 1.1, q), 1 - suave(0.7, 1.1, q2));
+  };
+  const alto = (x: number, y: number) => loma(x, y) + (fbm2(x / 30, y / 40, 3, 402) - 0.5) * 3 - (y < 0 ? 3 * (1 - suave(10, 40, camino(x, y))) : 0) - huella(x, y) * 2;
   esc.terreno = new Terreno({
     alto, techo: 900, grillas: [[-1600, -1400, 1600, 1600, 4], [-9000, -2000, 9000, 16000, 30]],
-    superficie: (p) => { const rv = fbm2(p[0] / 60, p[1] / 60, 3, 403), c = p[1] < 0 ? 1 - suave(8, 34, camino(p[0], p[1]) + (rv - 0.5) * 14) : 0; return { albedo: mezclar(mezclar(NIEVE, escalar(NIEVE, 0.86), rv), [0.2, 0.2, 0.22], c * 0.7), brillo: 0.06 }; },
+    superficie: (p) => { const rv = fbm2(p[0] / 60, p[1] / 60, 3, 403), c = p[1] < 0 ? 1 - suave(8, 34, camino(p[0], p[1]) + (rv - 0.5) * 14) : 0; return { albedo: mezclar(mezclar(mezclar(NIEVE, escalar(NIEVE, 0.86), rv), [0.3, 0.31, 0.34], c * 0.45), [0.12, 0.13, 0.16], huella(p[0], p[1]) * 0.8), brillo: 0.06 }; },
   });
   // montes lejanos: una sierra baja detrás del fortín (el alba se recorta en ella)
   const ter = esc.terreno, z0 = ter.h(0, 0);
@@ -351,7 +383,7 @@ function armarFortin(w: number, h: number, valor: ValorVigdis): ArmadoB {
   const Z = z0 - 4;
   for (const [x0, x1] of [[-430, -78], [78, 430]]) esc.poner(muralla(x1 - x0, 120, x0), { x: (x0 + x1) / 2, y: 0, z: Z });
   for (const sx of [-1, 1]) {
-    esc.poner(torre(46, 200, 120, 410 + sx), { x: sx * 82, y: 0, z: Z });
+    esc.poner(torre(46, 200, 120, 410 + sx, sx < 0), { x: sx * 82, y: 0, z: Z });
     esc.poner(torre(52, 160, 110, 412 + sx), { x: sx * 440, y: 20, z: Z - 6 });
     esc.poner(muralla(380, 110, 414 + sx), { x: sx * 440, y: 210, z: Z - 6, giro: 90 });
   }
@@ -360,7 +392,7 @@ function armarFortin(w: number, h: number, valor: ValorVigdis): ArmadoB {
   esc.poner([caja(0, 0, -20, 120, 30, 150, { mat: 'abo_sillar_grueso' }), ...huecoApuntado(64, 70, 18), ...arco.ps.map((p) => moverPiezas([p], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0, 0, 0], [0, -14, 70])[0])], { x: 0, y: 0, z: Z });
   esc.ponerMundo([caja(-22, 12, Z, 22, 4, 96, { mat: 'abo_madera', giro: -50 }), caja(0, 22, Z, 64, 4, 110, { mat: 'negro' })], { nieve: 0 });
   // la torre del homenaje detrás, más alta, con una ventana apenas encendida (alguien dejó una luz)
-  esc.poner(torre(60, 300, 150, 420), { x: -120, y: 260, z: Z + 10 });
+  esc.poner(torre(60, 300, 150, 420, true), { x: -120, y: 260, z: Z + 10 });
   esc.ponerMundo([caja(-120 + 2, 260 - 61, Z + 10 + 210, 8, 4, 14, { mat: 'casas_ventana_luz' })], { nieve: 0 });
   esc.emision.casas_ventana_luz = { k: 0.5 };
   // estacas y una cerca rota que bajan por la loma, y piedras
@@ -386,7 +418,8 @@ function armarFortin(w: number, h: number, valor: ValorVigdis): ArmadoB {
     esc.ponerMundo(fl.ps.map((p) => moverPiezas([p], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0, 0, 0], [ax - 12, ay, zp + 66])[0]), { nieve: 0 });
     const ll: V3 = [ax - 12, ay, zp + 66 + fl.llama[2]];
     fuegos.push({ p: ll, ancho: 4.2, alto: 8, semilla: 481, tipo: 'farol', k: 2.4 });
-    esc.luces.push({ p: [ll[0], ll[1] - 4, ll[2] + 4], c: hexLin('#ffa050'), k: 5, r: 26, canal: 1, sombra: true, envuelve: 0.4, halo: 0.006 });
+    esc.luces.push({ p: [ll[0], ll[1] - 4, ll[2] + 4], c: hexLin('#ffa050'), k: 5, r: 26, canal: 1, sombra: true, envuelve: 0.4, halo: 0.008 });
+    esc.luces.push({ p: [ll[0], ll[1] - 10, zp + 30], c: hexLin('#ff9a48'), k: 1.6, r: 70, canal: 1, envuelve: 0.2 });
   } else {
     // la tumba junto a la muralla, a la izquierda del portón: el túmulo de piedras con nieve, una cruz de madera y el farol encima
     const x = -150, y = -56, zp = ter.h(x, y) - 2;
@@ -397,7 +430,8 @@ function armarFortin(w: number, h: number, valor: ValorVigdis): ArmadoB {
     esc.ponerMundo(fl.ps.map((p) => moverPiezas([p], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0, 0, 0], [x + 6, y, zp + 11])[0]), { nieve: 0 });
     const ll: V3 = [x + 6, y, zp + 11 + fl.llama[2]];
     fuegos.push({ p: ll, ancho: 4.2, alto: 8, semilla: 482, tipo: 'farol', k: 2.4 });
-    esc.luces.push({ p: [ll[0], ll[1] - 4, ll[2] + 4], c: hexLin('#ffa050'), k: 5, r: 26, canal: 1, sombra: true, envuelve: 0.4, halo: 0.006 });
+    esc.luces.push({ p: [ll[0], ll[1] - 4, ll[2] + 4], c: hexLin('#ffa050'), k: 5, r: 26, canal: 1, sombra: true, envuelve: 0.4, halo: 0.008 });
+    esc.luces.push({ p: [ll[0], ll[1] - 12, zp + 26], c: hexLin('#ff9a48'), k: 1.6, r: 70, canal: 1, envuelve: 0.2 });
   }
   esc.emision.cb_vidrio_farol = { k: 3, canal: 1 };
   for (const g of frente) esc.frente.add(g);
@@ -422,7 +456,7 @@ function atmAlbaFria(): Atmosfera {
   };
   return {
     sol: { dir: L, c: hexLin('#d8c8d8'), k: 1.1, ancho: 0.03 }, cielo, aire,
-    ambCielo: escalar(hexLin('#4c6290'), 0.32), ambSuelo: escalar(hexLin('#2a2e3a'), 0.3),
+    ambCielo: escalar(hexLin('#4c6290'), 0.42), ambSuelo: escalar(hexLin('#2a2e3a'), 0.34),
     niebla: { densidad: 1 / 7000, baja: 1 / 4000, z0: 0, H: 60, ruido: 0.6, escalaRuido: 0.0015 },
     borde: { c: hexLin('#e8d0d8'), k: 1.8 }, nieve: { albedo: NIEVE, desde: 0.55 }, oclusion: 0.85,
   };
