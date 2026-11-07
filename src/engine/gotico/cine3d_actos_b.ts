@@ -567,7 +567,7 @@ function zonasHerida(a: Armado) {
 M.cb_ala_ardiendo = { rampa: ['#0a0201', '#1a0402', '#300804', '#501006', '#80200a', '#c04010', '#ff7a20'], ruido: 0.6, escala: 0.5, emite: true, patron: (p) => (Math.abs(fbm2(p[0] * 0.12, p[2] * 0.12 + p[1] * 0.05, 3, 761) - 0.5) < 0.05 ? 0.3 : -0.25) };
 const POZO_B = { r: 440, alto: 640 }, OZ_B = { x: 0, y: 150, k: 2.3 };
 /** El pozo (como en la intro): piso de roca con grietas de lava, la pared cilíndrica con peñascos y la boca arriba. */
-function pozo(esc: EscenaCine, lava = 0.9, brillo = 0.25, oscuroCerca = 0) {
+function pozo(esc: EscenaCine, lava = 0.9, brillo = 0.25, oscuroCerca = 0, piedras = 70) {
   const P = POZO_B, grieta = (x: number, y: number) => 1 - Math.abs(2 * fbm2(x / 90, y / 90, 3, 191) - 1);
   esc.terreno = new Terreno({
     alto: (x, y) => (fbm2(x / 50, y / 50, 4, 190) - 0.5) * 16 - Math.pow(grieta(x, y), 12) * 6 + suave(P.r - 60, P.r + 40, Math.hypot(x, y)) * 120,
@@ -575,7 +575,7 @@ function pozo(esc: EscenaCine, lava = 0.9, brillo = 0.25, oscuroCerca = 0) {
     superficie: (p) => { const g = Math.pow(grieta(p[0], p[1]), 14); return { albedo: escalar(mezclar([0.012, 0.011, 0.01], [0.25, 0.03, 0.01], g * 0.9), 1 - oscuroCerca * suave(-60, -260, p[1])), brillo }; },
   });
   esc.ponerMundo([caja(0, 0, -50, 1500, 1500, P.alto + 50, { mat: 'ci_roca' }), cilindro(0, 0, -60, P.r, P.alto + 80, { mat: 'ci_roca', r1: P.r * 0.55, resta: true })], { nieve: 0 });
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < piedras; i++) {
     const a = az(i, 200) * TAU, z = i < 22 ? P.alto - 30 + az(i, 201) * 50 : az(i, 201) * P.alto, R = 26 + az(i, 202) * 60, rr = P.r * (1 - 0.45 * (z + 60) / (P.alto + 80)) - R * 0.35, pts: V3[] = [];
     for (let j = 0; j < 10; j++) { const b = az(i * 10 + j, 203) * TAU, c = (az(i * 10 + j, 204) * 2 - 1) * R * 0.8; pts.push([Math.cos(a) * rr + Math.cos(b) * R * 0.7, Math.sin(a) * rr + Math.sin(b) * R * 0.7, z + c]); }
     esc.ponerMundo([poliedro(pts, { mat: 'ci_roca', tono: (az(i, 205) - 0.5) * 0.2 })], { nieve: 0 });
@@ -655,10 +655,10 @@ M.cb_marca_viva = { rampa: ['#c83a0c', '#f06018', '#ff8a2a', '#ffc070'], ruido: 
 M.cb_marca_gris = { rampa: ['#2a2a2c', '#3a3a3e', '#4a4a50', '#5c5c62'], ruido: 0.3, escala: 0.8, emite: true };
 function armarEleccion(w: number, h: number, valor: ValorBrasa): ArmadoB {
   const esc = new EscenaCine(), fuegos: Fuego[] = [], plumas: Pluma[] = [], frente: number[] = [];
-  pozo(esc, 0.35, 0.02, 0.85);
+  pozo(esc, 0.35, 0.02, 0.85, 22);
   // Ozmaren hecho ceniza, tendido detrás del héroe: el cuerpo gris con los cuernos negros y brasas que se mueren
   const oz = piezasDe('jefe_ozmaren_morir', 'se', 5, 7).filter((p) => p.mat !== 'fuego' && p.mat !== 'jf_humo');
-  esc.poner(conMat(oz, (m) => (m === 'jf_cuerno' || m === 'jf_garra' || m === 'jf_una_negra' ? m : m === 'cu_lava' || m === 'lava' ? 'ci_lava' : 'cb_ceniza')), { x: 40, y: 170, z: -6, giro: 160, k: 2.1 }, { nieve: 0 });
+  esc.poner(conMat(oz, (m) => (m === 'jf_cuerno' || m === 'jf_garra' || m === 'jf_una_negra' ? m : m === 'cu_lava' || m === 'lava' ? 'ci_lava' : 'cb_ceniza')), { x: -150, y: 260, z: -10, giro: 200, k: 1.7 }, { nieve: 0 });
   // montones de ceniza y la ceniza que cubre el piso alrededor
   const mont: ReturnType<typeof bulto>[] = [];
   for (let i = 0; i < 26; i++) { const a = az(i, 810) * Math.PI, r = 60 + az(i, 811) * 220; mont.push(bulto([Math.cos(a) * r + 20, Math.sin(a) * r * 0.8 + 120, -8], [40 + az(i, 812) * 60, 30 + az(i, 813) * 40, 10 + az(i, 814) * 16], { mat: 'cb_ceniza', giro: az(i, 815) * 180 })); }
@@ -683,10 +683,10 @@ function armarEleccion(w: number, h: number, valor: ValorBrasa): ArmadoB {
     // la Brasa apagada: un carbón gris entre los dedos que suelta un hilo de humo; la Marca gris
     esc.ponerMundo([esfera(puno[0], puno[1], puno[2] + 2.5, 3, { mat: 'cb_brasa_gris' }), palo(puno, codo, 0.6, { mat: 'cb_marca_gris' }), palo(codo, hombro, 0.5, { mat: 'cb_marca_gris' })], { nieve: 0 });
     esc.emision.cb_marca_gris = { k: 0.6 }; esc.emision.cb_brasa_gris = { k: 0.3 };
-    plumas.push({ base: add(puno, [0, 0, 5]), alto: 110, r0: 2, r1: 22, viento: [0.25, 0.1, 0], dens: 0.35, humo: [0.32, 0.33, 0.36], semilla: 822, sube: 14, escala: 1 / 8, sol: 1.2 });
+    plumas.push({ base: add(puno, [0, 0, 4]), alto: 70, r0: 1.5, r1: 16, viento: [0.6, 0.2, 0], dens: 0.22, humo: [0.3, 0.31, 0.34], semilla: 822, sube: 12, escala: 1 / 7, sol: 0.5 });
   }
   // la luz principal: fría, desde la boca del pozo, un poco detrás del héroe (le deja el filo en la capucha y los hombros)
-  const atm = atmPozoB({ sol: [0.12, 0.3, 1], c: hexLin('#a8c0ff'), k: 1.4, borde: hexLin('#c8d8ff'), kb: 2.6, aire: [0.008, 0.01, 0.016] });
+  const atm = atmPozoB({ sol: [0.12, 0.45, 1], c: hexLin('#a8c0ff'), k: 0.8, borde: hexLin('#c8d8ff'), kb: 3, aire: [0.008, 0.01, 0.016] });
   // lo que la boca deja caer sobre la ceniza de atrás: el héroe se recorta contra eso
   esc.luces.push({ p: [60, 300, 140], c: hexLin('#9fb8f0'), k: 3.2, r: 240, envuelve: 0.2 });
   for (const g of frente) esc.frente.add(g);
