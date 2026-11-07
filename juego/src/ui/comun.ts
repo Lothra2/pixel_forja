@@ -228,6 +228,8 @@ export function lineasObjeto(o: Objeto, h?: { nivel: number; fue: number; des: n
     return out;
   }
   if (o.dano) out.push([`${b?.dosManos ? T('Daño a dos manos', 'Two-hand damage') : T('Daño', 'Damage')}: ${o.dano[0]} ${T('a', 'to')} ${o.dano[1]}`, '#e8e0d0']);
+  // velocidad del arma: la base resta velocidad de ataque (0 normal, más es más lenta)
+  if (o.dano && b) { const v = (b as any).vel ?? 0; out.push([`${T('Velocidad', 'Speed')}: ${v <= -20 ? T('muy rápida', 'very fast') : v < 0 ? T('rápida', 'fast') : v === 0 ? T('normal', 'normal') : v <= 10 ? T('lenta', 'slow') : T('muy lenta', 'very slow')}`, '#e8e0d0']); }
   // afinidad con la clase del que mira
   if (h && b?.ranura === 'arma') {
     const af = afinidadDe(b, h.clase), cn = TT(CLASES.find((c) => c.id === h.clase)?.nombre ?? ['', '']);

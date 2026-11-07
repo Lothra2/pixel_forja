@@ -27,6 +27,8 @@ export const ui = {
   npc: null as string | null, dialogoTexto: null as string | null, tienda: [] as EnBolsa[], tiendaTipo: 'herrero' as 'herrero' | 'curandera' | 'vidente', pestana: 0,
   elegirLado: 'izq' as 'izq' | 'der', ramaHab: 0, cofre: [] as EnBolsa[], encima: null as any, sobreUI: false,
   confirmar: null as null | { txt: string; si: () => void },
+  /** Táctil: la ficha del objeto tocado en la tienda o la bolsa (comprar, equipar, mover... con botones aparte). */
+  ficha: null as null | { e: EnBolsa; tipo: 'tienda' | 'bolsa'; todos: EnBolsa[] },
 };
 export const COFRE_W = 10, COFRE_H = 8;
 import { hud } from './hud_rects';
@@ -680,7 +682,7 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
   if (tipo === 'bolsa') for (const b of lista) if (b.o.tipo === 'equipo' && !cumpleReq(j.heroe.d, j.heroe.c, b.o)) { ctx.fillStyle = 'rgba(200,20,20,0.32)'; ctx.fillRect(x + b.x * C + 1, y + b.y * C + 1, b.o.w * C - 2, b.o.h * C - 2); ctx.strokeStyle = 'rgba(255,60,60,0.7)'; ctx.strokeRect(x + b.x * C + 1.5, y + b.y * C + 1.5, b.o.w * C - 3, b.o.h * C - 3); }
   // pilas de pociones: el número en la esquina
   for (const b of lista) if (b.o.tipo === 'pocion' && cant(b.o) > 1) texto(String(cant(b.o)), x + (b.x + b.o.w) * C - 3, y + (b.y + b.o.h) * C - 4, { tam: 11, alin: 'right', color: '#ffffff' });
-  if (!dentro(x, y, cw * C, ch * C)) return;
+  if (ui.ficha || !dentro(x, y, cw * C, ch * C)) return;
   const cx = Math.floor((E.x - x) / C), cy = Math.floor((E.y - y) / C);
   const bajo = lista.find((b) => cx >= b.x && cx < b.x + b.o.w && cy >= b.y && cy < b.y + b.o.h);
   if (ui.mano) {
@@ -716,6 +718,8 @@ function rejillaObjetos(j: Juego, todos: EnBolsa[], x: number, y: number, cw: nu
   if (!bajo) return;
   ctx.strokeStyle = '#c0a060'; ctx.strokeRect(x + bajo.x * C + 0.5, y + bajo.y * C + 0.5, bajo.o.w * C, bajo.o.h * C);
   ui.encima = { o: bajo.o, x: x + (bajo.x + bajo.o.w / 2) * C, y: y + bajo.y * C, comparar: bajo.o.tipo === 'equipo', tienda: tipo === 'tienda', bolsa: tipo === 'bolsa' };
+  // táctil: tocar un objeto de la tienda o de la bolsa abre su ficha (no compra ni lo levanta de un toque)
+  if (E.clicIzq && E.tactil && (tipo === 'tienda' || tipo === 'bolsa')) { E.clicIzq = false; ui.ficha = { e: bajo, tipo, todos }; ui.encima = null; Sonido.efecto('click'); return; }
   if (E.clicIzq) {
     E.clicIzq = false;
     if (tipo === 'tienda') { comprar(j, bajo); return; }
@@ -765,26 +769,82 @@ export function dibujarTooltipObjeto(j: Juego) {
   else if (ui.izq === 'tienda') l.push([`${T('Clic derecho: vender por', 'Right click: sell for')} ${precioVenta(e.o)}`, '#e8c050']);
   else if (e.bolsa && e.o.tipo === 'equipo' && ui.izq !== 'cofre') l.push([T('Clic derecho o doble clic: equipar', 'Right click or double click: equip'), '#a09070']);
   else if (e.bolsa && e.o.tipo === 'pocion' && ui.izq !== 'cofre') l.push([T('Shift + clic: al cinturón', 'Shift + click: to belt'), '#a09070']);
-  let extra: [string, string][] | undefined;
-  if (e.comparar) {
-    const cas = casillaPara(j, e.o);
-    const actual = cas ? h.d.equipo[cas] : undefined;
-    if (!actual && cas && !Object.values(h.d.equipo).includes(e.o)) extra = [[T('Casilla vacía', 'Empty slot'), '#808080']];
-    if (actual && actual !== e.o) {
-      extra = [[T('Equipado:', 'Equipped:'), '#808080'], [TT(actual.nombre), colorObj(actual)]];
-      if (actual.dano && e.o.dano) { const d = (e.o.dano[0] + e.o.dano[1]) / 2 - (actual.dano[0] + actual.dano[1]) / 2; extra.push([`${T('Daño', 'Damage')} ${d >= 0 ? '+' : ''}${d.toFixed(1)}`, d >= 0 ? '#60ff60' : '#ff6060']); }
-      if (actual.def !== undefined && e.o.def !== undefined) { const d = e.o.def - actual.def; extra.push([`${T('Defensa', 'Defense')} ${d >= 0 ? '+' : ''}${d}`, d >= 0 ? '#60ff60' : '#ff6060']); }
-      // las propiedades que cambian (suma de cada stat: lo nuevo menos lo puesto)
-      const suma = (o: Objeto) => { const m = new Map<string, number>(); for (const [k, v] of o.stats) m.set(String(k), (m.get(String(k)) ?? 0) + v); return m; };
-      const a = suma(e.o), b2 = suma(actual);
-      for (const k of new Set([...a.keys(), ...b2.keys()])) {
-        const dv = (a.get(k) ?? 0) - (b2.get(k) ?? 0); if (!dv) continue;
-        extra.push([textoStat(k, dv, IDI), dv > 0 ? '#60ff60' : '#ff6060']);
-        if (extra.length > 14) break;
-      }
-    }
+  tooltip(l, e.x, e.y, e.comparar ? comparacion(j, e.o) : undefined);
+}
+/** Contra lo que llevas puesto en esa casilla: daño, defensa y cada propiedad, en verde si mejora y en rojo si empeora. */
+function comparacion(j: Juego, o: Objeto): [string, string][] | undefined {
+  const h = j.heroe;
+  const cas = casillaPara(j, o);
+  const actual = cas ? h.d.equipo[cas] : undefined;
+  if (!actual && cas && !Object.values(h.d.equipo).includes(o)) return [[T('Casilla vacía: todo suma', 'Empty slot: all gain'), '#60ff60']];
+  if (!actual || actual === o) return undefined;
+  const extra: [string, string][] = [[T('Contra lo equipado:', 'Against equipped:'), '#808080'], [TT(actual.nombre), colorObj(actual)]];
+  if (actual.dano && o.dano) { const d = (o.dano[0] + o.dano[1]) / 2 - (actual.dano[0] + actual.dano[1]) / 2; extra.push([`${T('Daño', 'Damage')} ${d >= 0 ? '+' : ''}${d.toFixed(1)}`, d >= 0 ? '#60ff60' : '#ff6060']); }
+  { const va = (baseDe(actual) as any)?.vel ?? 0, vo = (baseDe(o) as any)?.vel ?? 0; if (actual.dano && o.dano && va !== vo) extra.push([vo < va ? T('Más rápida', 'Faster') : T('Más lenta', 'Slower'), vo < va ? '#60ff60' : '#ff6060']); }
+  if (actual.def !== undefined && o.def !== undefined) { const d = o.def - actual.def; extra.push([`${T('Defensa', 'Defense')} ${d >= 0 ? '+' : ''}${d}`, d >= 0 ? '#60ff60' : '#ff6060']); }
+  // las propiedades que cambian (suma de cada stat: lo nuevo menos lo puesto)
+  const suma = (q: Objeto) => { const m = new Map<string, number>(); for (const [k, v] of q.stats) m.set(String(k), (m.get(String(k)) ?? 0) + v); return m; };
+  const a = suma(o), b2 = suma(actual);
+  for (const k of new Set([...a.keys(), ...b2.keys()])) {
+    const dv = (a.get(k) ?? 0) - (b2.get(k) ?? 0); if (!dv) continue;
+    extra.push([textoStat(k, dv, IDI), dv > 0 ? '#60ff60' : '#ff6060']);
+    if (extra.length > 14) break;
   }
-  tooltip(l, e.x, e.y, extra);
+  return extra;
+}
+
+// ---------------- ficha táctil del objeto (tienda y bolsa)
+interface BotonFicha { txt: string; r: [number, number, number, number]; acc: () => void; color?: string }
+function armarFicha(j: Juego) {
+  const f = ui.ficha!; const h = j.heroe, o = f.e.o;
+  const l: [string, string][] = [...lineasObjeto(o, { nivel: h.d.nivel, fue: h.c.fue, des: h.c.des, clase: h.d.clase, conjuntos: h.c.conjuntos }), ...lineaCantidad(o)];
+  if (f.tipo === 'tienda') { const p = ui.tiendaTipo === 'vidente' ? precioApuesta(o) : precioCompra(o); l.push([`${T('Precio', 'Price')}: ${p.toLocaleString()} ${T('de oro', 'gold')}`, h.d.oro >= p ? '#e8c050' : '#ff4040']); }
+  else if (ui.izq === 'tienda') l.push([`${T('Se vende por', 'Sells for')} ${precioVenta(o).toLocaleString()} ${T('de oro', 'gold')}`, '#e8c050']);
+  const cmp = o.tipo === 'equipo' ? comparacion(j, o) : undefined;
+  const todas = cmp ? [...l, ['', '#000'] as [string, string], ...cmp] : l;
+  const quitar = () => { const i = f.todos.indexOf(f.e); if (i >= 0) f.todos.splice(i, 1); };
+  const acc: { txt: string; fn: () => void; color?: string }[] = [];
+  if (f.tipo === 'tienda') acc.push({ txt: T('Comprar', 'Buy'), fn: () => comprar(j, f.e), color: '#e8c050' });
+  else {
+    if (o.tipo === 'equipo' && ui.izq !== 'tienda' && ui.izq !== 'cofre') acc.push({ txt: T('Equipar', 'Equip'), fn: () => { equiparRapido(j, f.e, f.todos); }, color: '#80e080' });
+    if (o.base === 'pergamino_portal') acc.push({ txt: T('Usar', 'Use'), fn: () => abrirPortal(j) });
+    if (o.base === 'pergamino_olvido') acc.push({ txt: T('Usar', 'Use'), fn: () => { quitar(); olvidar(j); } });
+    if (o.tipo === 'pocion') acc.push({ txt: T('Beber', 'Drink'), fn: () => { beberPocion(j, o); if (cant(o) > 1) o.cantidad = cant(o) - 1; else quitar(); } });
+    if (ui.izq === 'tienda') acc.push({ txt: T('Vender', 'Sell'), fn: () => { quitar(); ui.mano = o; venderMano(j); }, color: '#e8c050' });
+    acc.push({ txt: T('Mover', 'Move'), fn: () => { quitar(); ui.mano = o; levantadoDe(f.e); } });
+  }
+  acc.push({ txt: T('Cerrar', 'Close'), fn: () => { /* nada */ } });
+  let w = 0; for (const [s2] of todas) w = Math.max(w, ancho(s2, 14));
+  w = Math.min(W - 16, Math.max(w + 32, acc.length * 96 + 16));
+  const lh = 17, bh = 44, hh = todas.length * lh + 22 + bh + 12;
+  const x = Math.round(W / 2 - w / 2), y = Math.round(Math.max(8, Math.min(H - hh - 8, H / 2 - hh / 2)));
+  const bw = (w - 16 - (acc.length - 1) * 8) / acc.length;
+  const botones: BotonFicha[] = acc.map((a, i) => ({ txt: a.txt, r: [x + 8 + i * (bw + 8), y + hh - bh - 8, bw, bh], acc: a.fn, color: a.color }));
+  return { x, y, w, hh, todas, lh, botones, o };
+}
+(window as any).__ficha = () => (ui.ficha && (window as any).__juego ? armarFicha((window as any).__juego()).botones.map((q) => ({ txt: q.txt, r: q.r })) : null);
+/** Antes de los paneles: la ficha se queda con el toque (un botón, o fuera de la ficha la cierra). */
+export function entradaFicha(j: Juego) {
+  if (!ui.ficha) return;
+  if (!ui.ficha.todos.includes(ui.ficha.e) || (ui.ficha.tipo === 'tienda' && ui.izq !== 'tienda')) { ui.ficha = null; return; }
+  ui.sobreUI = true;
+  if (!E.clicIzq) return;
+  E.clicIzq = false;
+  const f = armarFicha(j);
+  const b = f.botones.find((q) => dentro(q.r[0], q.r[1], q.r[2], q.r[3]));
+  if (b) { Sonido.efecto('click'); ui.ficha = null; b.acc(); }
+  else if (!dentro(f.x, f.y, f.w, f.hh)) ui.ficha = null;
+}
+/** Después de los paneles: la ficha encima de todo. */
+export function dibujarFicha(j: Juego, t: number) {
+  if (!ui.ficha) return;
+  const f = armarFicha(j);
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(8,6,5,0.97)'; ctx.fillRect(f.x, f.y, f.w, f.hh); ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 2; ctx.strokeRect(f.x + 1, f.y + 1, f.w - 2, f.hh - 2);
+  f.todas.forEach(([s2, c], i) => texto(s2, f.x + f.w / 2, f.y + 24 + i * f.lh, { color: c, alin: 'center', tam: 14 }));
+  for (const b of f.botones) { boton(b.txt, b.r[0], b.r[1], b.r[2], b.r[3], { tam: 15, color: b.color }); }
+  ctx.restore();
+  void t;
 }
 
 // ---------------- ficha del personaje
@@ -1063,7 +1123,7 @@ function panelTienda(j: Juego, x: number, y: number, t: number) {
     if (boton(`${T('Reparar todo', 'Repair all')} (${costo})`, x + 150, y + 44 + 10 * CELDA_INV + 6, 156, 26, { tam: 12, activo: costo > 0 && h.d.oro >= costo })) { if (costo > 0 && h.d.oro >= costo) { h.d.oro -= costo; for (const o of Object.values(h.d.equipo)) if (o) o.durab = o.durabMax; Sonido.efecto('reparar'); recalc(j); } E.clicIzq = false; }
   }
   // cómo se usa la tienda, siempre a la vista
-  texto(ui.tiendaTipo === 'vidente' ? (E.tactil ? T('Toca un objeto: apostar por él', 'Tap an item: gamble for it') : T('Clic izquierdo: apostar por un objeto', 'Left click: gamble for an item')) : (E.tactil ? T('Toca un objeto: comprar', 'Tap an item: buy') : T('Clic izquierdo o derecho: comprar', 'Left or right click: buy')), x + 18, y + 44 + 10 * CELDA_INV + 44, { tam: 11, color: '#c0b090' });
+  texto(ui.tiendaTipo === 'vidente' ? (E.tactil ? T('Toca un objeto: apostar por él', 'Tap an item: gamble for it') : T('Clic izquierdo: apostar por un objeto', 'Left click: gamble for an item')) : (E.tactil ? T('Toca un objeto: ver su ficha y comprar', 'Tap an item: see it and buy') : T('Clic izquierdo o derecho: comprar', 'Left or right click: buy')), x + 18, y + 44 + 10 * CELDA_INV + 44, { tam: 11, color: '#c0b090' });
   texto(E.tactil ? T('Toca algo de tu bolsa y luego la tienda: vender', 'Tap something in your bag, then the shop: sell') : T('Clic derecho en tu bolsa: vender', 'Right click in your bag: sell'), x + 18, y + 44 + 10 * CELDA_INV + 58, { tam: 11, color: '#c0b090' });
   if (ui.mano && dentro(x, y, 320, 432)) texto(E.tactil ? T('Toca para vender', 'Tap to sell') : T('Clic para vender', 'Click to sell'), x + 160, y + 425, { alin: 'center', tam: 11, color: '#e8c050' });
   if (boton(T('Cerrar', 'Close'), x + 230, y + 395, 76, 26, { tam: 12 })) { ui.izq = null; ui.der = null; E.clicIzq = false; }

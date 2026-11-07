@@ -14,7 +14,7 @@ import { FANTASMAS, HERALDO, type FinalElegido } from './mundo/actos';
 import { cargarOpciones, opciones, guardarOpciones, dibujarIntro, menuPrincipal, dibujarSeleccion, dibujarCrear, dibujarOpciones, pantallaCarga } from './ui/menus';
 import { hud, etiquetasMundo } from './ui/hud_rects';
 import { abrirTienda, cerrarPaneles, cambiarAgresivo, rectPanel, compacto } from './ui/juego_ui';
-import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
+import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, entradaFicha, dibujarFicha, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
 import { vinetaSangre, dibujarPresentacion, dibujarCaida, DUR_PRESENTA } from './ui/horror';
 import { prepararPortada, esperarPortada, reiniciarPortada, durForjaTitulo, tituloFijo } from './ui/portada';
@@ -672,11 +672,13 @@ function paso(dt: number) {
       if (E.soltoIzq && arrastre && ui.mano && Math.hypot(E.x - arrastre.x, E.y - arrastre.y) > 10) { E.clicIzq = true; (ui as any).clicSoltar = true; }
       if (E.soltoIzq || !ui.mano) arrastre = null;
       const clicAntes = E.clicIzq, manoAntes = ui.mano;
+      entradaFicha(jj);
       dibujarPaneles(jj, tiempo);
       if (E.tactil) dibujarHudTactil(jj, tiempo); else dibujarBarra(jj, tiempo);
       if (clicAntes && !manoAntes && ui.mano && E.izq && !E.soltoIzq) arrastre = { x: E.x, y: E.y };
       if (!jj.heroe.muerto) controlar(jj, dt); else { dibujarMuerte(); controlar(jj, dt); }
       dibujarTooltipObjeto(jj);
+      dibujarFicha(jj, tiempo);
       if (pickEncima && !ui.sobreUI) etiquetaPick(jj, pickEncima);
       if (progresoPintura < 1) texto(`${T('Forjando tu equipo', 'Forging your gear')} ${Math.round(progresoPintura * 100)}%`, E.tactil ? W / 2 : 12, E.tactil ? H - 6 : 20, { tam: 11, color: '#a08050', alin: E.tactil ? 'center' : 'left' });
       // pintar al héroe nuevo si cambió el equipo
