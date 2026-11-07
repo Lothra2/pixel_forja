@@ -636,7 +636,7 @@ function charcos(esc: EscenaCine, c: V3, r: number, n: number, s: number, o: { h
 
 /** La Corona en la grada de abajo del trono vacío, de canto contra la de arriba, entre la sangre dorada del dios. */
 const CORONA_P2: V3 = [24, TRONO.y + 10 - GRADAS[0] + 12, PLAT.z + 10];
-const CAM_P2 = { pos: [-56, TRONO.y - 270, PLAT.z + 62] as V3, fov: 44, sx: 0.58, sy: 0.64, luna: dirAz(70, 24) };
+const CAM_P2 = { pos: [-34, TRONO.y - 196, PLAT.z + 46] as V3, fov: 46, sx: 0.58, sy: 0.64, luna: dirAz(70, 24) };
 function armarP2(w: number, h: number): Cielo {
   const { esc, atm, fuegos, plumas } = armarCielo('noche', { luna: CAM_P2.luna });
   const R = 9, c = CORONA_P2;
@@ -833,7 +833,7 @@ function armarC1(w: number, h: number): Cielo {
 }
 
 // ---------------------------------------------------------------- c2: el cielo se abre y caen los dioses
-const CAM_C2 = { pos: [260, -560, 30] as V3, mira: [-300, -4200, 1700] as V3, fov: 58, sx: 0.46, sy: 0.46 };
+const CAM_C2 = { pos: [260, -560, 30] as V3, mira: [-300, -4200, 2500] as V3, fov: 58, sx: 0.5, sy: 0.5 };
 function armarC2(w: number, h: number): Cielo {
   const { esc, fuegos, plumas } = armarCielo('abierta', { luna: dirAz(HERIDA.az, 24) });
   // la luz principal es la herida blanca del cielo: todo se recorta contra ella
@@ -859,6 +859,8 @@ function armarC2(w: number, h: number): Cielo {
   }
   // la jaula rota: barrotes de oro que caen sueltos, ladeados, cerca de la herida
   for (let i = 0; i < 9; i++) { const a = (HERIDA.az - 30 + az(i, 931) * 60) * Math.PI / 180, d = 3000 + az(i, 932) * 3000, z = 1800 + az(i, 933) * 2400, p: V3 = [Math.cos(a) * d, Math.sin(a) * d, z], dir = norm([az(i, 934) - 0.5, az(i, 935) - 0.5, 1.4]); esc.ponerMundo([palo(p, add(p, dir, 900 + az(i, 936) * 900), 9, { mat: 'cel_oro' })], { nieve: 0 }); }
+  // en primer plano, a contraluz de la herida: un ángel de piedra de la isla que mira cómo se cae su cielo
+  esc.poner(piezasDe('cel_estatua_angel', 'llorando', 941), { x: 140, y: -700, z: 0, giro: 250, k: 2.6 }, { nieve: 0 });
   const C = CAM_C2;
   return { esc, atm, cam: camaraEncuadre(C.pos, C.mira, C.fov, C.sx, C.sy, w, h), fuegos, plumas };
 }
@@ -891,13 +893,13 @@ function atmAlbaPalida(): Atmosfera {
   };
 }
 /** La horca vacía, en el lomo del camino, a contraluz; la cámara del alba de la intro un poco más baja y abierta. */
-const HORCA_C3 = { x: -150, y: -330, giro: 70, k: 1.5 };
+const HORCA_C3 = { x: -20, y: -380, giro: 70, k: 1.5 };
 const CAM_C3 = { pos: [40, -800, 70] as V3 };
 function armarC3(w: number, h: number): Cielo {
   const v = armarValle('i01', { w, h }), esc = v.esc, ter = esc.terreno!;
   const H = HORCA_C3, z = ter.h(H.x, H.y) - 2;
-  const g = esc.poner(piezasDe('pue_horca', 'vacia', 3), { x: H.x, y: H.y, z, giro: H.giro, k: H.k }, { nieve: 0.7 });
-  esc.frente.add(g);
+  // (va en el fondo: el pase del frente no tiene terreno que le tape los pies)
+  esc.poner(piezasDe('pue_horca', 'vacia', 3), { x: H.x, y: H.y, z, giro: H.giro, k: H.k }, { nieve: 0.7 });
   // la abadía en silencio: sin velas en los vitrales; el pueblo con poco humo
   esc.emision.abo_vitral = { k: 0.15, color: hexLin('#ff9a4a') };
   esc.emision.casas_ventana_luz = { k: 0.6 };
@@ -931,7 +933,7 @@ function armarTrono(w: number, h: number, fria: boolean): Cielo {
   if (!fria) {
     // la Brasa: su luz roja en el pecho (canal 1, late con el fuego) y la Corona que arde
     esc.emision.a7_brasa = { k: 5, canal: 1 };
-    esc.luces.push({ p: add(pecho, [0, -10, 0]), c: hexLin('#ff3a10'), k: 3.2, r: 22, canal: 1, sombra: true, envuelve: 0.3, halo: 0.001 });
+    esc.luces.push({ p: add(pecho, [0, -16, -2]), c: hexLin('#ff3a10'), k: 2.6, r: 13, canal: 1, sombra: true, envuelve: 0.3, halo: 0.0008 });
     esc.emision.a7_corona_ascua = { k: 4, canal: 1 };
     for (const [dx, dz, an, al, s] of [[-3, 2, 2.6, 7, 711], [2.5, 3, 2.4, 6, 712], [0, 4, 3, 9, 713]] as [number, number, number, number, number][]) fuegos.push({ p: add(cabeza, [dx, 0, dz]), ancho: an, alto: al, semilla: s, tipo: 'corona', k: 2.4 });
     fuegos.push({ p: add(pecho, [0, -7, -3]), ancho: 5, alto: 10, semilla: 714, tipo: 'pecho', k: 2 });
