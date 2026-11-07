@@ -77,7 +77,7 @@ export interface Proyectil {
 }
 export interface Area { /** Lo que se dibuja al caer (por omisión explosion_fuego; '' nada, el efecto ya trae su impacto). */ fxCaida?: string; escCaida?: number; x: number; y: number; radio: number; dano: [number, number]; elem: Elemento; t: number; dur: number; tick: number; prox: number; deHeroe: boolean; efecto: string; retraso: number; caida?: boolean }
 export interface Suelo { o: Objeto | null; oro: number; x: number; y: number; t: number; id: number }
-export interface Numero { x: number; y: number; z: number; txt: string; color: string; t: number; grande?: boolean }
+export interface Numero { x: number; y: number; z: number; txt: string; color: string; t: number; grande?: boolean; chico?: boolean }
 export interface Efecto { id: string; x: number; y: number; t: number; dir: number; escala: number; z?: number; seguir?: Ent; dur?: number }
 export interface Particula { x: number; y: number; z: number; vx: number; vy: number; vz: number; t: number; dur: number; color: string; tam: number; tipo: 'chispa' | 'humo' | 'sangre' | 'brasa' | 'nieve' | 'hoja' | 'pluma' | 'ceniza'; grav: number }
 export interface Mancha {
@@ -511,6 +511,20 @@ function sonar(j: Juego, id: string, x?: number, y?: number, vol = 1) {
 
 // ------------------------------------------------------------------ daño
 export interface Golpe { /** Golpe del arma del héroe (dispara los efectos de las legendarias del arsenal). */ arma?: boolean; min: number; max: number; elem: Elemento; precision?: number; critico?: number; robo?: number; aturdir?: number; empuje?: number; lento?: number; aplastar?: number; herida?: number; deHeroe: boolean; fuente?: Ent; extra?: Partial<Record<Elemento, number>>; sinFallo?: boolean }
+/**
+ * Probabilidad (%) de que un golpe del héroe conecte. Contra un monstruo de su nivel ronda el 90 %: la precisión contra la
+ * defensa mueve unos ±10 puntos y cada nivel que el monstruo te saca resta 2,5. Entre 60 y 97.
+ * (Antes era precisión/(precisión+defensa) × 2·nivel/(nivel+nivel del monstruo): en nivel 1 contra uno de nivel 3 daba 50 %.)
+ */
+export function aciertoHeroe(prec: number, def: number, nivelH: number, nivelM: number): number {
+  const r = prec / Math.max(1, prec + def);
+  return clamp(90 + (r - 0.5) * 40 - Math.max(0, nivelM - nivelH) * 2.5, 60, 97);
+}
+/** El "Falla": chico y gris, y como mucho uno cada 0.6 s por blanco (antes tapaba el combate). */
+function falla(j: Juego, v: Ent) {
+  const a = v as any; if (a.tFalla !== undefined && j.t - a.tFalla < 0.6) return; a.tFalla = j.t;
+  j.numeros.push({ x: v.x, y: v.y, z: 52 * (v.escala ?? 1), txt: j.idi ? 'miss' : 'falla', color: '#8a8a8a', t: 0, chico: true });
+}
 export function danar(j: Juego, v: Ent, g: Golpe): number {
   if (v.muerto) return 0;
   // nada del héroe ni de sus aliados le pega a un aliado (Thor, invocados, escoltas)
@@ -522,14 +536,13 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
       const mon = g.fuente as Monstruo | undefined;
       const ar = 20 + (mon?.nivel ?? 1) * 14;
       const p = clamp((ar / (ar + h.c.def)) * 2 * (mon?.nivel ?? 1) / ((mon?.nivel ?? 1) + h.d.nivel) * 100, 5, 95);
-      if (R() * 100 > p) { numero(j, v, 0, '#909090'); j.numeros[j.numeros.length - 1].txt = j.idi ? 'Miss' : 'Falla'; return 0; }
+      if (R() * 100 > p) { falla(j, v); return 0; }
       if (h.c.esquiva && R() * 100 < h.c.esquiva) { j.numeros.push({ x: v.x, y: v.y, z: 60, txt: j.idi ? 'Dodge' : 'Esquiva', color: '#a0ffa0', t: 0 }); return 0; }
       if (h.c.bloqueo && R() * 100 < h.c.bloqueo && h.acc !== 'atacar') { h.acc = 'herido'; h.t = 0; h.dur = 0.25; sonar(j, 'bloqueo', v.x, v.y); j.numeros.push({ x: v.x, y: v.y, z: 60, txt: j.idi ? 'Block' : 'Bloqueo', color: '#c0c0ff', t: 0 }); return 0; }
     } else if (g.deHeroe && g.precision !== undefined) {
       const m = v as Monstruo;
       const def = m.defensa * (1 + (m.maldicion ? -0.3 : 0));
-      const p = clamp((g.precision / (g.precision + def)) * 2 * h.d.nivel / (h.d.nivel + m.nivel) * 100, 5, 95);
-      if (R() * 100 > p) { j.numeros.push({ x: v.x, y: v.y, z: 60 * v.escala, txt: j.idi ? 'Miss' : 'Falla', color: '#808080', t: 0 }); return 0; }
+      if (R() * 100 > aciertoHeroe(g.precision, def, h.d.nivel, m.nivel)) { falla(j, v); return 0; }
     }
   }
   let total = 0;

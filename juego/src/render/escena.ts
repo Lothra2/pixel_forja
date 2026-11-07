@@ -370,7 +370,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     const [px, py] = aPant(n.x, n.y);
     const k = 1 - n.t / 1.1;
     ctx.globalAlpha = Math.max(0, Math.min(1, k * 1.6));
-    ctx.font = `bold ${n.grande ? 18 : 13}px Georgia, serif`;
+    ctx.font = n.chico ? 'italic 10px Georgia, serif' : `bold ${n.grande ? 18 : 13}px Georgia, serif`;
+    if (n.chico) ctx.globalAlpha *= 0.8;
     const yy = py - n.z - (n.grande ? Math.sin(Math.min(1, n.t * 5) * Math.PI) * 6 : 0);
     ctx.fillStyle = '#000'; ctx.fillText(n.txt, px + 1, yy + 1); ctx.fillStyle = n.color; ctx.fillText(n.txt, px, yy);
   }
