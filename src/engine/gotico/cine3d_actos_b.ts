@@ -572,11 +572,11 @@ function zonasHerida(a: Armado) {
 M.cb_ala_ardiendo = { rampa: ['#0a0201', '#1a0402', '#300804', '#501006', '#80200a', '#c04010', '#ff7a20'], ruido: 0.6, escala: 0.5, emite: true, patron: (p) => (Math.abs(fbm2(p[0] * 0.12, p[2] * 0.12 + p[1] * 0.05, 3, 761) - 0.5) < 0.05 ? 0.3 : -0.25) };
 const POZO_B = { r: 440, alto: 640 }, OZ_B = { x: 0, y: 150, k: 2.3 };
 /** El pozo (como en la intro): piso de roca con grietas de lava, la pared cilíndrica con peñascos y la boca arriba. */
-function pozo(esc: EscenaCine, lava = 0.9, brillo = 0.25, oscuroCerca = 0, piedras = 70) {
-  const P = POZO_B, grieta = (x: number, y: number) => 1 - Math.abs(2 * fbm2(x / 90, y / 90, 3, 191) - 1);
+function pozo(esc: EscenaCine, lava = 0.9, brillo = 0.25, oscuroCerca = 0, piedras = 70, radio = POZO_B.r) {
+  const P = { ...POZO_B, r: radio }, grieta = (x: number, y: number) => 1 - Math.abs(2 * fbm2(x / 90, y / 90, 3, 191) - 1);
   esc.terreno = new Terreno({
     alto: (x, y) => (fbm2(x / 50, y / 50, 4, 190) - 0.5) * 16 - Math.pow(grieta(x, y), 12) * 6 + suave(P.r - 60, P.r + 40, Math.hypot(x, y)) * 120,
-    techo: 200, grillas: [[-700, -700, 700, 700, 3]],
+    techo: 200, grillas: [[-radio - 260, -radio - 260, radio + 260, radio + 260, 3]],
     superficie: (p) => { const g = Math.pow(grieta(p[0], p[1]), 14); return { albedo: escalar(mezclar([0.012, 0.011, 0.01], [0.25, 0.03, 0.01], g * 0.9), 1 - oscuroCerca * suave(-60, -260, p[1])), brillo }; },
   });
   esc.ponerMundo([caja(0, 0, -50, 1500, 1500, P.alto + 50, { mat: 'ci_roca' }), cilindro(0, 0, -60, P.r, P.alto + 80, { mat: 'ci_roca', r1: P.r * 0.55, resta: true })], { nieve: 0 });
@@ -604,38 +604,50 @@ function atmPozoB(o: { sol: V3; c: C3; k: number; borde: C3; kb: number; aire: C
 }
 function armarOzmaren(w: number, h: number): ArmadoB {
   const esc = new EscenaCine(), fuegos: Fuego[] = [], plumas: Pluma[] = [];
-  pozo(esc, 2.2);
-  // Ozmaren con el pecho abierto, sin sus llamas de utilería (el fuego es de Doom): la lava de las grietas encendida
-  const oz = conMat(piezasDe('jefe_ozmaren_especial', 'se', 5, 4).filter((p) => p.mat !== 'fuego' && p.mat !== 'jf_humo'), (m) => (m === 'jf_membrana_fuego' ? 'cb_ala_ardiendo' : m));
+  pozo(esc, 2.2, 0.25, 0, 26, 640);
+  // Ozmaren con el pecho abierto, sin sus llamas de utilería (el fuego es de Doom): el cuerpo queda oscuro, solo las
+  // grietas apenas encendidas; se lee en silueta contra el humo encendido de atrás
+  // las alas abiertas: la membrana del modelo estirada hacia los costados y hacia arriba desde los hombros
+  const estirar = (p: Pieza): Pieza => {
+    if (p.k !== 'elip') return p;
+    const S: V3 = [1, 2.3, 1.9], c = p.c, q: V3 = [c[0], Math.sign(c[1]) * (60 + (Math.abs(c[1]) - 60) * S[1]), 170 + (c[2] - 170) * S[2]];
+    const ej = [p.ex, p.ey, p.ez].map((e) => [e[0] * S[0], e[1] * S[1], e[2] * S[2]] as V3), r: V3 = [p.r[0] * Math.hypot(...ej[0]), p.r[1] * Math.hypot(...ej[1]), p.r[2] * Math.hypot(...ej[2])];
+    return { ...p, c: q, ex: norm(ej[0]), ey: norm(ej[1]), ez: norm(ej[2]), r };
+  };
+  const oz = conMat(piezasDe('jefe_ozmaren_especial', 'se', 5, 4).filter((p) => p.mat !== 'fuego' && p.mat !== 'jf_humo'), (m) => (m === 'jf_membrana_fuego' ? 'cb_ala_ardiendo' : m)).map((p) => (p.mat === 'cb_ala_ardiendo' ? estirar(p) : p));
   const g = esc.poner(oz, { x: OZ_B.x, y: OZ_B.y, z: -2, giro: -90, k: OZ_B.k }, { nieve: 0 });
   const mias = esc.piezas.filter((_, i) => esc.grupoDe[i] === g);
-  esc.emision.cu_lava = { k: 1.6, canal: 1 }; esc.emision.lava = { k: 1.6, canal: 1 }; esc.emision.jf_hierro_rojo = { k: 0.8, canal: 1 }; esc.emision.jf_brasa_honda = { k: 2, canal: 1 };
-  esc.emision.cu_ojo_brasa = { k: 8, canal: 1 }; esc.emision.luz_vela = { k: 9, canal: 1 }; esc.emision.cb_ala_ardiendo = { k: 1.1, canal: 1 };
+  esc.emision.cu_lava = { k: 0.5, canal: 1 }; esc.emision.lava = { k: 0.6, canal: 1 }; esc.emision.jf_hierro_rojo = { k: 0.4, canal: 1 }; esc.emision.jf_brasa_honda = { k: 2.4, canal: 1 };
+  esc.emision.cu_ojo_brasa = { k: 8, canal: 1 }; esc.emision.luz_vela = { k: 9, canal: 1 }; esc.emision.cb_ala_ardiendo = { k: 0.06, canal: 1 };
   // el pecho: el centro de lo que brilla adentro (luz_vela, brasa honda), o el medio del torso
   const brillos = mias.filter((p) => p.mat === 'luz_vela' || p.mat === 'jf_brasa_honda').map(centro);
   const pecho: V3 = brillos.length ? brillos.reduce((m, c) => add(m, c, 1 / brillos.length), [0, 0, 0] as V3) : [OZ_B.x, OZ_B.y, 120 * OZ_B.k];
-  // la columna de fuego que revienta del pecho (hacia el ojo y arriba) y su luz, que tira sombras en la pared del pozo
-  // el pecho revienta hacia afuera (lenguas anchas y cortas) y detrás de él sube el fuego grande: su silueta contra eso
-  for (const [dx, dy, dz, an, al, sd] of [[0, -34, -70, 110, 120, 701], [-46, -26, -60, 70, 95, 702], [50, -26, -64, 74, 100, 703]] as [number, number, number, number, number, number][]) fuegos.push({ p: [pecho[0] + dx, pecho[1] + dy, pecho[2] + dz], ancho: an, alto: al, semilla: sd, tipo: 'chorro', k: 2.4 });
-  for (const [dx, an, al, sd] of [[0, 260, 900, 704], [-120, 160, 620, 705], [130, 170, 660, 706]] as [number, number, number, number][]) fuegos.push({ p: [pecho[0] + dx, pecho[1] + 120, pecho[2] - 120], ancho: an, alto: al, semilla: sd, tipo: 'techo', k: 2.2, fondo: 10 });
-  esc.luces.push({ p: [pecho[0], pecho[1] + 50, pecho[2] + 20], c: hexLin('#ff6a22'), k: 14, r: 160, canal: 1, sombra: true, envuelve: 0.2, halo: 0.00006 });
-  esc.luces.push({ p: [pecho[0], pecho[1] + 120, pecho[2] + 320], c: hexLin('#ff5a1a'), k: 7, r: 260, canal: 1, sombra: true, envuelve: 0.2 });
-  // las alas arden en el borde: lenguas de Doom sobre lo más alto de la membrana, de cada lado
-  // las alas arden: donde el modelo tiene sus llamas de las alas, lenguas de Doom un poco hacia el ojo (delante de la membrana)
-  const llamasAla = piezasDe('jefe_ozmaren_especial', 'se', 5, 4).filter((p) => p.mat === 'fuego').map(centro).filter((c) => Math.abs(c[1]) > 60 && c[2] > 150);
-  llamasAla.forEach((c, k) => { const w: V3 = [OZ_B.x + c[1] * OZ_B.k, OZ_B.y - c[0] * OZ_B.k - 70, c[2] * OZ_B.k - 30]; fuegos.push({ p: [w[0] * (1.1 + az(k, 709) * 0.25), w[1], w[2] - 20 + az(k, 708) * 60], ancho: 110 + az(k, 707) * 40, alto: 230 + az(k, 710) * 160, semilla: 711 + k, tipo: 'techo', k: 2.2, fondo: 120 }); });
-  for (const sx of [-1, 1]) esc.luces.push({ p: [OZ_B.x + sx * 280, OZ_B.y + 80, 420], c: hexLin('#ff5a1a'), k: 5, r: 160, canal: 1, sombra: true, envuelve: 0.2 });
-  // fuego que brota del piso alrededor de las pezuñas
-  for (let i = 0; i < 9; i++) { const a = (i / 9) * TAU + 0.4, r = 110 + az(i, 720) * 70; fuegos.push({ p: [OZ_B.x + Math.cos(a) * r, OZ_B.y + Math.sin(a) * r * 0.7, -2], ancho: 80, alto: 90 + az(i, 721) * 110, semilla: 722 + i, tipo: 'techo', k: 2 }); }
-  // el humo: sube del pecho y de las alas, encendido desde abajo
-  plumas.push({ base: [pecho[0], pecho[1], pecho[2] + 180], alto: 900, r0: 60, r1: 320, viento: [0.1, 0.05, 0], dens: 0.03, humo: [0.03, 0.025, 0.025], abajo: hexLin('#ff5a1a'), kAbajo: 2, semilla: 730, sube: 40, escala: 1 / 50, sol: 0.05 });
-  const atm = atmPozoB({ sol: [0.05, -0.4, 1], c: hexLin('#b8ccff'), k: 0.25, borde: hexLin('#ff6a30'), kb: 1.2, aire: [0.004, 0.0016, 0.0008] });
-  return { esc, atm, cam: camaraBase([20, -400, 30], [OZ_B.x, OZ_B.y, 330], 66, w, h), fuegos, plumas };
+  // el pecho revienta hacia el ojo: lenguas cortas y anchas que salen del costillar abierto
+  for (const [dx, dy, dz, an, al, sd] of [[0, -40, -60, 90, 110, 701], [-34, -30, -50, 56, 80, 702], [38, -30, -54, 60, 85, 703]] as [number, number, number, number, number, number][]) fuegos.push({ p: [pecho[0] + dx, pecho[1] + dy, pecho[2] + dz], ancho: an, alto: al, semilla: sd, tipo: 'chorro', k: 2.4 });
+  esc.luces.push({ p: [pecho[0], pecho[1] - 60, pecho[2]], c: hexLin('#ff6a22'), k: 2.5, r: 40, canal: 1, envuelve: 0.2, halo: 0.0001 });
+  // el borde de las alas arde: lenguas chicas a lo largo del borde de arriba de la membrana (lo más alto de cada lado)
+  for (const sx of [-1, 1]) {
+    const ala = mias.filter((p) => p.mat === 'cb_ala_ardiendo' && !p.resta).map(centro).filter((c) => (c[0] - OZ_B.x) * sx > 80).sort((a, b) => b[2] - a[2]);
+    const el: V3[] = [];
+    for (const c of ala) if (el.every((q) => Math.hypot(q[0] - c[0], q[2] - c[2]) > 30)) { el.push(c); if (el.length === 6) break; }
+    el.forEach((c, k) => fuegos.push({ p: [c[0], c[1] - 40, c[2] + 14], ancho: 50, alto: 100 + az(k, 710) * 70, semilla: 711 + k + (sx > 0 ? 5 : 0), tipo: 'techo', k: 2, fondo: 60 }));
+  }
+  // fuego que brota del piso entre las pezuñas
+  for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU + 0.4, r = 100 + az(i, 720) * 60; fuegos.push({ p: [OZ_B.x + Math.cos(a) * r, OZ_B.y + Math.sin(a) * r * 0.7, -2], ancho: 56, alto: 60 + az(i, 721) * 70, semilla: 722 + i, tipo: 'techo', k: 2 }); }
+  // el fondo claro: la pared de atrás con lava que chorrea y el humo grande que sube encendido desde abajo; contra eso,
+  // el contorno oscuro de los cuernos y las alas
+  for (let i = 0; i < 12; i++) { const a = Math.PI / 2 + (az(i, 740) - 0.5) * 1.6, x = Math.cos(a) * 600, y = Math.sin(a) * 600; esc.ponerMundo([elipsoide(x, y, 40 + az(i, 741) * 300, 4 + az(i, 742) * 4, 4, 60 + az(i, 743) * 160, { mat: 'ci_lava', giro: (a * 180) / Math.PI })], { nieve: 0 }); }
+  esc.emision.ci_lava = { k: 2.2, canal: 1 };
+  for (const [x, z, k] of [[-300, 520, 12], [300, 540, 12], [0, 640, 12], [-200, 160, 6], [200, 180, 6]] as [number, number, number][]) esc.luces.push({ p: [x, OZ_B.y + 330, z], c: hexLin('#ff5a1a'), k, r: 260, canal: 1, envuelve: 0.4, halo: 0.00004 });
+  plumas.push({ base: [OZ_B.x, OZ_B.y + 470, 0], alto: 1100, r0: 200, r1: 700, viento: [0.05, 0.02, 0], dens: 0.016, humo: [0.05, 0.035, 0.03], abajo: hexLin('#ff5a1a'), kAbajo: 1.5, decaeAbajo: 2.2, semilla: 730, sube: 40, escala: 1 / 90, sol: 0.05 });
+  plumas.push({ base: [pecho[0], pecho[1] + 260, pecho[2] + 260], alto: 700, r0: 80, r1: 300, viento: [0.1, 0.05, 0], dens: 0.018, humo: [0.05, 0.035, 0.03], abajo: hexLin('#ff6a22'), kAbajo: 1.4, decaeAbajo: 3, semilla: 731, sube: 50, escala: 1 / 50, sol: 0.05 });
+  const atm = atmPozoB({ sol: [0.05, -0.4, 1], c: hexLin('#b8ccff'), k: 0.2, borde: hexLin('#ff7a30'), kb: 1.6, aire: [0.006, 0.0022, 0.001] });
+  return { esc, atm, cam: camaraBase([20, -540, 40], [OZ_B.x, OZ_B.y, 300], 62, w, h), fuegos, plumas };
 }
 /** Brasas y chispas que salen disparadas del estallido (suman), en bucle. */
 function chispasOzmaren(t: number): Particula[] {
   const ps: Particula[] = [], P = NF / FPS, naranja = hexLin('#ff7a2a'), amarillo = hexLin('#ffc060'), c0: V3 = [OZ_B.x, OZ_B.y - 30, 260];
-  for (let i = 0; i < 220; i++) {
+  for (let i = 0; i < 110; i++) {
     const vida = P * (1 + Math.floor(az(i, 740) * 2)), f = ((t + az(i, 741) * vida) % vida) / vida, a = az(i, 742) * TAU, e = (az(i, 743) - 0.2) * 1.6, v = 160 + az(i, 744) * 520;
     const dir: V3 = [Math.cos(a) * Math.cos(e), Math.sin(a) * Math.cos(e) * 0.6 - 0.4, Math.sin(e) + 0.4], d = f * v * 1.6;
     ps.push({ p: [c0[0] + dir[0] * d, c0[1] + dir[1] * d, c0[2] + dir[2] * d - f * f * 120], r: 0.8 + az(i, 745) * 1.6, c: escalar(mezclar(amarillo, naranja, f), 7 * Math.sin(f * Math.PI) * (0.3 + az(i, 746))), a: 1, suma: true, v: escalar(dir, v) });
