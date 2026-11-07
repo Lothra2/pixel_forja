@@ -8,6 +8,7 @@ const hexRgb = (c: string): [number, number, number] => { const n = parseInt(c.r
 import { manifiesto, objetoMeta } from '../motor/assets';
 import type { Juego, Ent } from '../juego/mundo';
 import { R } from '../nucleo/azar';
+import { puntoSalida } from '../mundo/zona';
 import { auraEquipo } from '../juego/visual';
 import { lucesOzmaren, ALTO_OZMAREN } from './fuego';
 import { vivosDe } from './fuego_vivo';
@@ -237,6 +238,8 @@ export function recolectar(j: Juego, t: number, aPant: (x: number, y: number) =>
     const pz = (j as any).portalZona === z.id ? aPant(j.portal.x, j.portal.y) : z.tipo === 'pueblo' && z.entradas.portal ? aPant(z.entradas.portal[0] + 0.5, z.entradas.portal[1] - 1) : null;
     if (pz) L.push({ id: 'portal', x: pz[0], y: pz[1], h: 40, r: 160, c: [70, 130, 255], k: 0.8 });
   }
+  // cada salida con su luz propia, ámbar: tiñe el piso y se ve de lejos
+  j.zona.salidas.forEach((sa, i) => { const [sx, sy] = aPant(...puntoSalida(j.zona, sa)); if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200) return; L.push({ id: 'sal' + i, x: sx, y: sy, h: 34, r: 150 + Math.sin(t * 2.2 + sa.cx) * 12, c: [255, 180, 95], k: 0.6, sinSombra: true }); });
   // cerca de un jefe despierto las luces del mapa titubean y a ratos se apagan, como si algo les chupara el aire
   const jf = j.jefe && !j.jefe.muerto && j.jefe.estado === 'perseguir' ? j.jefe : null;
   if (jf) {

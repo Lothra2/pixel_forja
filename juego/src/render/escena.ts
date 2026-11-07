@@ -1,6 +1,7 @@
 // Dibuja la zona: pisos, manchas, objetos y personajes por profundidad, poderes, partículas, luz, niebla y clima.
 import { nuevoCuadroSombras } from './luces';
-import { ctx, W, H } from '../nucleo/lienzo';
+import { ctx, W, H, E } from '../nucleo/lienzo';
+import { puntoSalida } from '../mundo/zona';
 import { esquivarHud, etiquetasMundo, hud } from '../ui/hud_rects';
 import { NPCS } from '../datos/npcs';
 import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
@@ -263,7 +264,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     if (o.tag === 'pista' || o.tag === 'reliquia' || o.tag === 'altar' || o.tag === 'libro' || o.tag === 'cofre' || o.tag === 'santuario' || o.tag === 'pozo' || o.tag === 'baul' || o.tag === 'romper' || o.id === 'com_piedra_viaje') picks.push({ tipo: 'objeto', ref: o, x0: px - q.ax, y0: py - q.ay, x1: px - q.ax + q.w, y1: py - q.ay + q.h, prof });
   }
   // salidas (las puertas/escaleras ya están como objetos; aquí solo la zona de clic)
-  for (const s of z.salidas) { const [px, py] = aPant(s.cx + 0.5, s.cy + 0.5); picks.push({ tipo: 'salida', ref: s, x0: px - 40, y0: py - 60, x1: px + 40, y1: py + 20, prof: s.cx + s.cy - 2 }); }
+  // la zona de clic de una salida es chica y centrada: el umbral, no todo el borde (antes se robaba clics para caminar)
+  for (const s of z.salidas) { const [px, py] = aPant(...puntoSalida(z, s)); picks.push({ tipo: 'salida', ref: s, x0: px - 26, y0: py - 70, x1: px + 26, y1: py + 12, prof: s.cx + s.cy - 2 }); }
   // botín en el suelo
   for (const s of j.suelo) {
     if (!cerca(s.x, s.y)) continue;
@@ -376,27 +378,44 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     ctx.fillStyle = '#000'; ctx.fillText(n.txt, px + 1, yy + 1); ctx.fillStyle = n.color; ctx.fillText(n.txt, px, yy);
   }
   ctx.globalAlpha = 1; ctx.textAlign = 'left';
-  // salidas sin puerta: un rastro de luz en el piso con el nombre del lugar
+  // salidas: se leen de lejos. Sin puerta, un umbral de luz (dos pilares y un arco, aro en el piso y motas que suben);
+  // con puerta o escalera, el objeto es el marco y lleva solo el aro y las motas. La luz propia que tiñe el piso va en luces.ts.
+  // El nombre aparece a unas 6 casillas (con Alt, todos).
   etiquetasMundo.length = 0;
   for (const sa of z.salidas) {
-    if (sa.obj) continue;
-    // la etiqueta va sobre piso firme: un poco hacia adentro de la salida, no flotando en el vacío del borde
-    const adentro = z.entradas['salida_' + sa.destino] ?? [sa.cx, sa.cy];
-    const [px, py] = aPant((sa.cx + adentro[0]) / 2 + 0.5, (sa.cy + adentro[1]) / 2 + 0.5);
-    if (px < -100 || px > W + 100 || py < -60 || py > H + 60) continue;
+    const [px, py] = aPant(...puntoSalida(z, sa));
+    if (px < -120 || px > W + 120 || py < -140 || py > H + 80) continue;
+    const pulso = 0.5 + 0.5 * Math.sin(tiempo * 2.2 + sa.cx);
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const k = 0.25 + Math.sin(tiempo * 2.5) * 0.08;
-    const g = ctx.createRadialGradient(px, py, 4, px, py, 48); g.addColorStop(0, `rgba(255,190,90,${k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(px, py, 48, 24, 0, 0, Math.PI * 2); ctx.fill();
+    // aro en el piso
+    const g = ctx.createRadialGradient(px, py, 4, px, py, 40); g.addColorStop(0, `rgba(255,190,100,${0.22 + pulso * 0.08})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(px, py, 40, 20, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(255,200,120,${0.35 + pulso * 0.2})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, py, 30, 15, 0, 0, Math.PI * 2); ctx.stroke();
+    if (!sa.obj) {
+      // el umbral: dos pilares de luz y el arco que los une
+      for (const sx of [-22, 22]) {
+        const gp = ctx.createLinearGradient(0, py - 74, 0, py); gp.addColorStop(0, 'rgba(255,190,100,0)'); gp.addColorStop(0.35, `rgba(255,190,100,${0.28 + pulso * 0.1})`); gp.addColorStop(1, `rgba(255,210,140,${0.5 + pulso * 0.15})`);
+        ctx.fillStyle = gp; ctx.fillRect(px + sx - 2.5, py - 74 + Math.abs(sx) * 0.1, 5, 74 - Math.abs(sx) * 0.1);
+      }
+      ctx.strokeStyle = `rgba(255,205,130,${0.4 + pulso * 0.15})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px - 22, py - 60); ctx.quadraticCurveTo(px, py - 92, px + 22, py - 60); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,240,200,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // motas que suben
+    for (let i = 0; i < 7; i++) {
+      const f = (tiempo * 0.45 + i / 7 + sa.cy * 0.13) % 1, x = px + Math.sin(i * 2.3 + tiempo * 0.9) * 20, y = py - 4 - f * 78;
+      ctx.fillStyle = `rgba(255,215,150,${Math.sin(f * Math.PI) * 0.75})`; ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
+    }
     ctx.restore();
-    // el nombre siempre entero en pantalla, y en táctil fuera de la zona de los botones Golpe y Poder (abajo a la derecha)
-    ctx.font = '12px Georgia, serif'; ctx.textAlign = 'center';
+    // el nombre: de cerca, entero en pantalla y en táctil fuera de los botones de abajo a la derecha
+    const d = Math.hypot(j.heroe.x - sa.cx - 0.5, j.heroe.y - sa.cy - 0.5), kn = E.alt ? 1 : Math.max(0, Math.min(1, 6.5 - d));
+    if (kn <= 0) continue;
+    ctx.font = '13px Georgia, serif'; ctx.textAlign = 'center';
     const txt = '» ' + sa.nombre[opciones.idi] + ' «', tw2 = ctx.measureText(txt).width;
-    let lx = Math.max(tw2 / 2 + 6, Math.min(W - tw2 / 2 - 6, px)), ly = Math.max(16, Math.min(H - 130, py - 29));
-    // nunca encima de los botones del HUD (Golpe, Poder, agresivo, mensajes): sube hasta quedar libre
+    let lx = Math.max(tw2 / 2 + 6, Math.min(W - tw2 / 2 - 6, px)), ly = Math.max(16, Math.min(H - 130, py - (sa.obj ? 96 : 100)));
     ly = esquivarHud([lx - tw2 / 2, ly - 12, tw2, 16]) + 12;
     etiquetasMundo.push({ txt, r: [lx - tw2 / 2, ly - 12, tw2, 16] });
-    ctx.fillStyle = '#000'; ctx.fillText(txt, lx + 1, ly + 1); ctx.fillStyle = '#e8c070'; ctx.fillText(txt, lx, ly);
+    ctx.globalAlpha = kn; ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(lx - tw2 / 2 - 5, ly - 13, tw2 + 10, 18);
+    ctx.fillStyle = '#e8c070'; ctx.fillText(txt, lx, ly); ctx.globalAlpha = 1; ctx.textAlign = 'left';
   }
   // clima
   clima(j, dt, tiempo);

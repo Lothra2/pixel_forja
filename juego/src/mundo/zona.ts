@@ -1075,3 +1075,9 @@ function ambientarHorror(z: Zona, def: DefZona) {
   // y alguna pieza suelta en las zonas de combate (rara: no tiene que estar en todas partes)
   if (r() < 0.45) { const s = z.spawns[Math.floor(r() * z.spawns.length)]; if (s && s.tipo !== 'jefe') { const [id, vs] = lista[Math.floor(r() * lista.length)]; poner(id, vs[Math.floor(r() * vs.length)], s.cx, s.cy); } }
 }
+/** Dónde se dibuja y se pisa una salida: las del borde un poco hacia adentro (sobre piso firme), las de puerta en su casilla. */
+export function puntoSalida(z: Zona, sa: Salida): [number, number] {
+  if (sa.obj) return [sa.cx + 0.5, sa.cy + 0.5];
+  const adentro = z.entradas['salida_' + sa.destino] ?? [sa.cx, sa.cy];
+  return [(sa.cx + adentro[0]) / 2 + 0.5, (sa.cy + adentro[1]) / 2 + 0.5];
+}

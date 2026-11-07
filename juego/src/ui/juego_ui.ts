@@ -1273,7 +1273,15 @@ export function dibujarMapa(j: Juego, grande: boolean) {
     ctx.stroke();
     ctx.fillStyle = 'rgba(80,70,50,0.12)'; ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.lineTo(e, f); ctx.lineTo(g, hh); ctx.closePath(); ctx.fill();
   }
-  for (const s of z.salidas) { const [a, b] = p(s.cx, s.cy); if (!z.explorado[Math.floor(s.cy / 5) * z.tw + Math.floor(s.cx / 5)]) continue; ctx.fillStyle = '#ffd060'; ctx.fillRect(a - 2, b - 2, 5, 5); if (grande) etiqueta(TT(s.nombre), a, b - 6, '#ffd060', 11); }
+  // salidas: un arco ámbar con borde negro (se distingue de los puntos de monstruos y PNJ)
+  for (const s of z.salidas) {
+    const [a, b] = p(s.cx, s.cy); if (!z.explorado[Math.floor(s.cy / 5) * z.tw + Math.floor(s.cx / 5)]) continue;
+    const r = grande ? 6 : 4;
+    ctx.beginPath(); ctx.moveTo(a - r, b + r); ctx.lineTo(a - r, b - r * 0.2); ctx.arc(a, b - r * 0.2, r, Math.PI, 0); ctx.lineTo(a + r, b + r); ctx.closePath();
+    ctx.fillStyle = '#000'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.stroke(); ctx.fillStyle = '#ffc860'; ctx.fill();
+    ctx.fillStyle = '#3a2408'; ctx.fillRect(a - r * 0.4, b, r * 0.8, r);
+    if (grande) etiqueta(TT(s.nombre), a, b - r - 4, '#ffd060', 11);
+  }
   for (const m of z.marcas) if (m.tipo === 'viaje') { const [a, b] = p(m.cx, m.cy); if (z.explorado[Math.floor(m.cy / 5) * z.tw + Math.floor(m.cx / 5)]) { ctx.fillStyle = '#60a0ff'; ctx.fillRect(a - 3, b - 3, 6, 6); } }
   for (const m of j.monstruos) if (!m.muerto && (m.calidad >= 2 || m.dueno) && dist2(m.x, m.y, h.x, h.y) < 400) { const [a, b] = p(m.x, m.y); ctx.fillStyle = m.dueno ? '#40ff40' : '#ff4020'; ctx.fillRect(a - 1, b - 1, 3, 3); }
   for (const n of j.npcs) { const [a, b] = p(n.x, n.y); ctx.fillStyle = '#e0e0ff'; ctx.fillRect(a - 1, b - 1, 3, 3); if (grande) etiqueta(TT(NPCS[n.npc].nombre), a, b - 5, '#c0c0ff'); }

@@ -43,7 +43,7 @@ import { POBLACION, MONSTRUOS } from './datos/monstruos';
 import { GENTE } from './datos/npcs';
 import { CLASES } from './datos/clases';
 import { dist, R, elegir } from './nucleo/azar';
-import { pasable, lineaLibre, type ObjZ, type Salida } from './mundo/zona';
+import { pasable, lineaLibre, puntoSalida, type ObjZ, type Salida } from './mundo/zona';
 
 type Estado = 'carga' | 'intro' | 'menu' | 'seleccion' | 'crear' | 'opciones' | 'juego' | 'zona' | 'final' | 'entreacto' | 'revelacion' | 'ciclo' | 'cine';
 let finalT = 0;
@@ -267,7 +267,7 @@ function controlar(jj: Juego, dt: number) {
       else if (p?.tipo === 'salida') (h as any).salida = p.ref as Salida;
       else if (p?.tipo === 'portal') (h as any).portal = true;
       else caminarA(jj, mx, my);
-      if (h.recoger || h.usar || h.hablar || (h as any).salida || (h as any).portal) { const r = h.recoger ?? h.usar ?? h.hablar ?? (h as any).salida; if ((h as any).portal) { const pp = jj.zona.tipo === 'pueblo' ? jj.zona.entradas.portal : [jj.portal!.x, jj.portal!.y]; caminarA(jj, pp[0], pp[1]); } else caminarA(jj, (r.x ?? r.cx + 0.5), (r.y ?? r.cy + 0.5)); }
+      if (h.recoger || h.usar || h.hablar || (h as any).salida || (h as any).portal) { const r = h.recoger ?? h.usar ?? h.hablar ?? (h as any).salida; if ((h as any).portal) { const pp = jj.zona.tipo === 'pueblo' ? jj.zona.entradas.portal : [jj.portal!.x, jj.portal!.y]; caminarA(jj, pp[0], pp[1]); } else if ((h as any).salida) { const [sx, sy] = puntoSalida(jj.zona, (h as any).salida); caminarA(jj, sx, sy); } else caminarA(jj, (r.x ?? r.cx + 0.5), (r.y ?? r.cy + 0.5)); }
     } else if (E.izq && !h.objetivo && !h.recoger && !h.usar && !h.hablar && !(h as any).salida) {
       mantenerT += dt;
       const bajoCursor = pickEncima?.tipo === 'monstruo' ? pickEncima.ref as Monstruo : null;
@@ -351,7 +351,8 @@ function controlar(jj: Juego, dt: number) {
     const quiere = catedralForzada ?? (estadoMision(h.d, s.sello) === 0 ? 'sellada' : s.herida && estadoMision(h.d, s.herida) === 3 ? 'herida' : 'entera');
     for (const o of s.piezas ?? [s.obj]) { const v = objetoMeta(o.id, quiere) ? quiere : quiere === 'entera' && objetoMeta(o.id, 'abierta') ? 'abierta' : o.v; if (v !== o.v) o.v = v; }
   }
-  if ((h as any).salida && llega((h as any).salida.cx + 0.5, (h as any).salida.cy + 0.5, 2.5)) {
+  // a una salida elegida (clic o toque) se entra al llegar a su umbral; a una puerta, al llegar a ella
+  if ((h as any).salida && (() => { const s = (h as any).salida as Salida, [sx, sy] = puntoSalida(jj.zona, s); return llega(sx, sy, s.obj ? 2.5 : 1.2); })()) {
     const s = (h as any).salida as Salida; (h as any).salida = null;
     if (s.sello && estadoMision(h.d, s.sello) === 0) msg(jj, ['La puerta está sellada. Alguien en el Refugio sabrá qué hacer.', 'The door is sealed. Someone at the Refuge will know what to do.']);
     else zonaPendiente = { id: s.destino, entrada: s.entrada };
@@ -361,7 +362,8 @@ function controlar(jj: Juego, dt: number) {
     if (pp && llega(pp[0], pp[1], 2)) { (h as any).portal = false; if (jj.zona.tipo === 'pueblo' && jj.portal) { zonaPendiente = { id: (jj as any).portalZona, entrada: '__portal' }; } else zonaPendiente = { id: PUEBLO_DE[jj.zona.acto], entrada: 'portal' }; }
   }
   // salidas por caminar encima (bordes de exteriores)
-  if (!zonaPendiente && jj.zona.tipo !== 'mazmorra') for (const s of jj.zona.salidas) if (!s.obj && dist(h.x, h.y, s.cx + 0.5, s.cy + 0.5) < 1.6 && (h.camino || h.acc === 'correr' || h.acc === 'caminar')) { zonaPendiente = { id: s.destino, entrada: s.entrada }; break; }
+  // sin elegirla: solo si caminas hasta el borde mismo, por el centro del umbral (antes bastaba rozarla a 1.6 casillas)
+  if (!zonaPendiente && jj.zona.tipo !== 'mazmorra') for (const s of jj.zona.salidas) if (!s.obj && dist(h.x, h.y, s.cx + 0.5, s.cy + 0.5) < 0.85 && (h.camino || h.acc === 'correr' || h.acc === 'caminar')) { zonaPendiente = { id: s.destino, entrada: s.entrada }; break; }
 }
 function revivir(jj: Juego) {
   const h = jj.heroe;
