@@ -1020,103 +1020,141 @@ function espumaMarea(t: number): Particula[] {
 
 // ================================================================== ACTO 6 · p3: el cielo se rompe como un vidrio
 /**
- * Al norte, sobre el mar helado, el cielo se rompe alrededor de un punto como un vidrio golpeado: grietas radiales que
- * ondulan y se cortan solas, anillos partidos entre ellas, cada pedazo un poco hundido y torcido (refleja otro cielo,
- * con su canto de vidrio encendido del lado de la luz), el centro ya caído: detrás no hay cielo sino un vacío de oro
- * con una escalera que sube hacia la nada. La luz de oro que se cuela por las grietas es la única luz cálida.
+ * Al norte, sobre el mar helado, el CIELO de noche (sus nubes y sus estrellas) se fractura como un vidrio enorme: pocas
+ * grietas grandes, quebradas e irregulares, que salen de un hueco y se ramifican; de cada lado de una grieta la imagen
+ * del cielo queda corrida (refracción) y con otro brillo. El centro ya cayó: por el hueco, de bordes gruesos, se ve un
+ * vacío de oro con bruma y una escalera que sube hacia una luz cálida. Los pedazos que se desprendieron caen girando
+ * hacia el ojo con la imagen del cielo que llevaban, su canto grueso encendido por la luz de atrás, un reflejo que los
+ * cruza y la sombra que dejan en la bruma de oro.
  */
-const VIDRIO = { az: 92, el: 29, escala: 0.72 };
-const VD = dirAz(VIDRIO.az, VIDRIO.el), VX = norm([-VD[1], VD[0], 0]), VY: V3 = [VX[1] * VD[2] - VX[2] * VD[1], VX[2] * VD[0] - VX[0] * VD[2], VX[0] * VD[1] - VX[1] * VD[0]];
-/** Las grietas radiales: casi rectas, con quiebres (vidrio, no rayo); cada una con su largo. */
-const RADIALES = Array.from({ length: 14 }, (_, k) => ({ th: (k / 14) * TAU + (az(k, 1301) - 0.5) * 0.3, largo: 0.45 + az(k, 1302) * 0.9, q: [0, 1, 2, 3, 4].map((m) => (az(k * 5 + m, 1303) - 0.5) * 0.09) })).sort((a, b) => a.th - b.th);
-const angRadial = (g: (typeof RADIALES)[number], r: number) => { const x = Math.min(3.999, r * 4), i = Math.floor(x), f = x - i; return g.th + g.q[i] + (g.q[i + 1] - g.q[i]) * f; };
-const ANILLOS = [0.08, 0.16, 0.26, 0.4, 0.58, 0.8];
-/** El vacío de oro de detrás, con la escalera que sube hacia el centro (coordenadas del plano del vidrio). */
+const VIDRIO = { az: 92, el: 28, escala: 0.72 };
+const VD = dirAz(VIDRIO.az, VIDRIO.el), VX = norm([VD[1], -VD[0], 0]), VY: V3 = [VX[1] * VD[2] - VX[2] * VD[1], VX[2] * VD[0] - VX[0] * VD[2], VX[0] * VD[1] - VX[1] * VD[0]];
+type P2v = [number, number];
+/** De coordenadas del plano del vidrio a una dirección del cielo (y al revés). */
+const dirDeUV = (u: number, v: number): V3 => norm(add(add(VD, VX, u * VIDRIO.escala), VY, v * VIDRIO.escala));
+const dentroPol = (P: P2v[], x: number, y: number) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; };
+const distSeg = (x: number, y: number, a: P2v, b: P2v) => { const ex = b[0] - a[0], ey = b[1] - a[1], t = sat(((x - a[0]) * ex + (y - a[1]) * ey) / (ex * ex + ey * ey || 1)); return { d: Math.hypot(x - a[0] - ex * t, y - a[1] - ey * t), lado: Math.sign(ex * (y - a[1]) - ey * (x - a[0])) || 1, t }; };
+const distPol = (P: P2v[], x: number, y: number) => { let m = 1e9; for (let i = 0; i < P.length; i++) m = Math.min(m, distSeg(x, y, P[i], P[(i + 1) % P.length]).d); return m; };
+/** El hueco donde el cielo ya cayó: un polígono quebrado, más largo que ancho. */
+const HUECO_C: P2v = [0.02, 0.02];
+const HUECO: P2v[] = Array.from({ length: 17 }, (_, k) => { const a = (k / 17) * TAU + (az(k, 1301) - 0.5) * 0.25, r = (0.15 + az(k, 1302) * 0.1 + (k % 4 === 0 ? 0.09 : 0)) * (k % 2 ? 0.82 : 1); return [HUECO_C[0] + Math.cos(a) * r * 1.2, HUECO_C[1] + Math.sin(a) * r] as P2v; });
+/** Las grietas grandes: tramos rectos que tuercen a tirones desde un vértice del hueco, con ramas que se afinan. */
+interface Grieta { pts: P2v[]; ancho: number; empuje: P2v }
+const GRIETAS: Grieta[] = (() => {
+  const out: Grieta[] = [];
+  const tirar = (o: P2v, ang: number, largo: number, ancho: number, s: number, ramas: number, hondo = 0): void => {
+    const pts: P2v[] = [o]; let a = ang, p = o; const n = 3 + Math.floor(az(s, 1) * 3), paso = largo / n;
+    for (let i = 0; i < n; i++) { a += (az(s, i + 10) - 0.5) * 0.55; const l = paso * (0.6 + az(s, i + 20) * 0.8); p = [p[0] + Math.cos(a) * l, p[1] + Math.sin(a) * l]; pts.push(p); }
+    out.push({ pts, ancho, empuje: [Math.cos(ang + Math.PI / 2) * 0.012, Math.sin(ang + Math.PI / 2) * 0.012] });
+    for (let r = 0; r < ramas; r++) { const k = 1 + Math.floor(az(s, r + 30) * (pts.length - 2)), lado = az(s, r + 40) < 0.5 ? -1 : 1; tirar(pts[k], ang + lado * (0.5 + az(s, r + 50) * 0.6), largo * (0.25 + az(s, r + 60) * 0.3), ancho * 0.55, s * 7 + r + 3, r === 0 && hondo < 1 ? 1 : 0, hondo + 1); }
+  };
+  // seis grietas madre (no una telaraña pareja): largas hacia los lados y abajo, más cortas hacia arriba
+  for (const [k, ang, largo] of [[0, 0.15, 1.05], [4, 1.2, 0.6], [6, 1.9, 0.75], [8, 2.9, 1.1], [12, 4.1, 0.9], [14, 5.0, 0.85]] as [number, number, number][]) tirar(HUECO[k], ang, largo, 0.0075, 1310 + k * 13, 2);
+  return out;
+})();
+/** Los pedazos que se desprendieron: su forma (local), de dónde salieron (la imagen que llevan) y dónde están ahora. */
+interface Pedazo { pol: P2v[]; origen: P2v; c: P2v; esc: number; giro: number; canto: P2v; brillo: number }
+const PEDAZOS: Pedazo[] = Array.from({ length: 11 }, (_, k): Pedazo => {
+  const n = 4 + Math.floor(az(k, 1320) * 3), r = 0.04 + az(k, 1321) * 0.05, pol: P2v[] = [];
+  for (let i = 0; i < n; i++) { const a = (i / n) * TAU + (az(k * 9 + i, 1322) - 0.5) * 0.9, rr = r * (0.55 + az(k * 9 + i, 1323) * 0.7); pol.push([Math.cos(a) * rr, Math.sin(a) * rr * (0.5 + az(k, 1324) * 0.5)]); }
+  const ao = (k / 11) * TAU + az(k, 1325) * 0.5, origen: P2v = [HUECO_C[0] + Math.cos(ao) * 0.18, HUECO_C[1] + Math.sin(ao) * 0.15];
+  // caen hacia abajo y hacia el ojo: más grandes cuanto más cerca, girados, con el canto que se ve por el giro
+  const cae = 0.1 + az(k, 1326) * 0.7 + (k % 5 === 0 ? 0.25 : 0), esc = 1 + cae * cae * 4, giro = (az(k, 1327) - 0.5) * 3, gc = az(k, 1328) * TAU;
+  return { pol, origen, c: [origen[0] * (1 + cae * 2.2) + (az(k, 1329) - 0.5) * 0.2, origen[1] - cae * 0.9], esc, giro, canto: [Math.cos(gc) * 0.012 * esc, Math.sin(gc) * 0.012 * esc - 0.004 * esc], brillo: az(k, 1330) };
+}).sort((a, b) => b.esc - a.esc);
+/** El vacío de oro de detrás: bruma que se mueve, la escalera que sube hacia la luz cálida. */
 function detras(u: number, v: number): C3 {
-  const oro = hexLin('#ffb040'), hondo = hexLin('#5a2006'), r = Math.hypot(u, v + 0.04);
-  let c = mezclar(escalar(oro, 0.8), hondo, suave(0, 0.3, r));
-  // la escalera: escalones en perspectiva que suben angostándose hacia un punto de luz arriba del centro
-  const t = sat((v + 0.26) / 0.36);
-  if (v > -0.26 && v < 0.1) {
-    const ancho = 0.12 * (1 - t * 0.85), k = Math.pow(t, 0.65) * 22, f = k - Math.floor(k), x = u - Math.sin(t * 2.4) * 0.008;
-    if (Math.abs(x) < ancho) c = escalar(mezclar(hexLin('#ffe2a0'), hexLin('#8a4a0a'), suave(0.15, 0.5, f)), (f < 0.3 ? 2.2 : 0.7) * (1.5 - t * 0.7));
-    else if (Math.abs(x) < ancho * 1.18) c = escalar(c, 0.35);
+  const oro = hexLin('#ffb040'), hondo = hexLin('#4a1a06'), luz: P2v = [HUECO_C[0], HUECO_C[1] + 0.13], r = Math.hypot(u - luz[0], (v - luz[1]) * 1.3);
+  let c = mezclar(escalar(oro, 0.9), hondo, suave(0, 0.26, r));
+  const t = sat((v - (HUECO_C[1] - 0.2)) / 0.33);
+  if (t > 0 && t < 1) {
+    const ancho = 0.085 * (1 - t * 0.85), k = Math.pow(t, 0.65) * 20, f = k - Math.floor(k), x = u - HUECO_C[0] - Math.sin(t * 2.4) * 0.008;
+    if (Math.abs(x) < ancho) c = escalar(mezclar(hexLin('#ffe2a0'), hexLin('#7a3e08'), suave(0.15, 0.5, f)), (f < 0.3 ? 1.9 : 0.6) * (1.4 - t * 0.6));
+    else if (Math.abs(x) < ancho * 1.2) c = escalar(c, 0.4);
   }
-  return add(c, hexLin('#fff0c0'), 1.4 * Math.exp(-Math.hypot(u, v - 0.1) / 0.01));
-}
-/** El vidrio: en qué pedazo cae la dirección, a qué distancia de una grieta, si el pedazo ya cayó (hueco). */
-function vidrio(d: V3) {
-  const kd = dot3(d, VD); if (kd <= 0.05) return null;
-  const u = (dot3(d, VX) / kd) / VIDRIO.escala, v = (dot3(d, VY) / kd) / VIDRIO.escala, r = Math.hypot(u, v);
-  if (r > 1.05) return null;
-  const th = Math.atan2(v, u), n = RADIALES.length;
-  // el sector: entre qué dos radiales está; la distancia a las radiales que llegan hasta acá
-  let k = n - 1, dRad = 1e9;
-  for (let i = 0; i < n; i++) {
-    const a = angRadial(RADIALES[i], r), da = Math.atan2(Math.sin(th - a), Math.cos(th - a));
-    if (r < RADIALES[i].largo) dRad = Math.min(dRad, Math.abs(Math.sin(da)) * r);
-    const b = angRadial(RADIALES[(i + 1) % n], r), db = Math.atan2(Math.sin(th - b), Math.cos(th - b));
-    if (da >= 0 && db < 0) k = i;
-  }
-  // los anillos: cuerdas rectas entre las dos radiales del sector (un polígono, no un círculo); algunas faltan
-  const A = RADIALES[k], B = RADIALES[(k + 1) % n];
-  let jAn = ANILLOS.length, dAn = 1e9;
-  for (let j = 0; j < ANILLOS.length; j++) {
-    const ra = ANILLOS[j] * (0.85 + az(k * 9 + j, 1310) * 0.3), rb = ANILLOS[j] * (0.85 + az(((k + 1) % n) * 9 + j, 1310) * 0.3);
-    const aa = angRadial(A, ra), ab = angRadial(B, rb), P: [number, number] = [Math.cos(aa) * ra, Math.sin(aa) * ra], Q: [number, number] = [Math.cos(ab) * rb, Math.sin(ab) * rb];
-    const ex = Q[0] - P[0], ey = Q[1] - P[1], L = Math.hypot(ex, ey) || 1, nx = ey / L, ny = -ex / L, sd = (u - P[0]) * nx + (v - P[1]) * ny, sc = -(P[0] * nx + P[1] * ny);
-    const dentro = Math.sign(sd) === Math.sign(sc) || Math.abs(sd) < 1e-9;
-    if (dentro && jAn === ANILLOS.length) jAn = j;
-    if (az(k * 9 + j, 1311) < 0.22 + j * 0.06) continue;
-    dAn = Math.min(dAn, Math.abs(sd));
-  }
-  const celda = k * 10 + jAn, hueco = jAn <= 2 || (jAn === 3 && az(celda, 1342) < 0.35);
-  const dist = Math.min(dRad, dAn), ancho = 0.0009 + 0.0026 * (1 - r) ** 2;
-  // el pedazo hundido y torcido: cuanto más cerca del centro, más (la grieta se abre y deja ver el oro)
-  const hunde = (1 - suave(0.05, 0.95, r)) * (0.4 + az(celda, 1343) * 0.6), tilt: V3 = norm([(az(celda, 1344) - 0.5) * 0.9, (az(celda, 1345) - 0.5) * 0.9, 1]);
-  return { u, v, r, th, dist, ancho, hueco, celda, hunde, tilt, dAn, dRad };
+  // la bruma de oro delante de la escalera (más espesa abajo) y la luz cálida arriba
+  const bruma = fbm2(u * 9 + 3, v * 9, 4, 1340) * (0.4 + 0.6 * suave(0.2, -0.15, v - HUECO_C[1]));
+  c = mezclar(c, escalar(oro, 0.75), bruma * 0.5);
+  return add(c, hexLin('#fff0c8'), 1.6 * Math.exp(-Math.hypot(u - luz[0], v - luz[1]) / 0.02));
 }
 function atmVidrio(): Atmosfera {
-  const oro = hexLin('#ffb040');
-  const pars: [number, C3][] = [[0, hexLin('#1c2030')], [0.06, hexLin('#121828')], [0.2, hexLin('#0a0f1e')], [0.6, hexLin('#04060e')]];
-  const cieloNoche = (d: V3): C3 => {
+  const oro = hexLin('#ffb040'), luna = hexLin('#9fb4e0');
+  const pars: [number, C3][] = [[0, hexLin('#1e2434')], [0.06, hexLin('#141b2e')], [0.2, hexLin('#0b1124')], [0.6, hexLin('#050812')]];
+  /** El cielo de noche entero (lo que el vidrio tenía pintado): gradiente, estrellas, nubes con el borde de luna. */
+  const cieloNoche = (d: V3, kOro = 1): C3 => {
     const e = elev(d); let c = gradiente(pars, Math.max(0, e));
-    const hs = hash3(Math.floor(Math.atan2(d[1], d[0]) * 1100), Math.floor(e * 1100), 1350);
-    if (hs > 0.996) c = add(c, [0.8, 0.85, 1], (hs - 0.996) * 40);
-    for (const [sd, es, cu, al] of [[1351, 2400, 0.5, 3000]] as [number, number, number, number][]) { const nb = nubes(d, sd, es, cu, al, [-VD[0], -VD[1], 0]); if (nb.a > 0) c = mezclar(c, escalar(hexLin('#0e1220'), 1 - nb.espesor * 0.4), nb.a * 0.85); }
+    const hs = hash3(Math.floor(Math.atan2(d[1], d[0]) * 1300), Math.floor(e * 1300), 1350);
+    if (hs > 0.994) c = add(c, [0.8, 0.85, 1], (hs - 0.994) * 50 * (0.4 + 0.6 * hash3(Math.floor(e * 1300), 7, 1351)));
+    const cerca = Math.max(0, dot3(d, VD));
+    for (const [sd, es, cu, al] of [[1352, 2200, 0.47, 3000], [1356, 1300, 0.55, 1900]] as [number, number, number, number][]) {
+      const nb = nubes(d, sd, es, cu, al, [-0.3, 1, 0]); if (nb.a <= 0) continue;
+      const k = (0.15 + nb.luz) * 0.05, ko = Math.pow(cerca, 30) * 0.5 * kOro * (0.3 + nb.luz);
+      c = mezclar(c, add(add(escalar(hexLin('#121828'), 1 - nb.espesor * 0.4), luna, k), oro, ko), nb.a * 0.9);
+    }
     return c;
   };
   const cielo = (d: V3): C3 => {
     const e = elev(d); if (e < 0.02) return gradiente(pars, Math.max(0, e));
-    const g = vidrio(d), cerca = Math.max(0, dot3(d, VD));
-    if (!g) return add(cieloNoche(d), oro, 0.02 * Math.pow(cerca, 12));
-    if (g.hueco) {
-      // el borde del hueco: el canto del vidrio roto, encendido de oro
-      const canto = g.dist < g.ancho * 3 ? 1 - g.dist / (g.ancho * 3) : 0;
-      return add(detras(g.u, g.v), oro, canto * 1.2);
+    const kd = dot3(d, VD);
+    if (kd < 0.3) return cieloNoche(d);
+    const u = dot3(d, VX) / kd / VIDRIO.escala, v = dot3(d, VY) / kd / VIDRIO.escala;
+    // el fondo: el cielo partido (o el hueco), con sus grietas
+    let fondo: C3, enHueco = false;
+    if (dentroPol(HUECO, u, v)) { fondo = detras(u, v); enHueco = true; }
+    else {
+      // la imagen corrida de cada lado de cada grieta (más cerca del hueco, más corrida) y su brillo
+      let du = 0, dv = 0, kb = 0, dmin = 1e9, anchoMin = 0, ladoMin = 1;
+      for (const g of GRIETAS) {
+        let m = { d: 1e9, lado: 1, t: 0 }, iseg = 0;
+        for (let i = 0; i < g.pts.length - 1; i++) { const q = distSeg(u, v, g.pts[i], g.pts[i + 1]); if (q.d < m.d) { m = q; iseg = i; } }
+        const w = Math.exp(-m.d / 0.25) * (1 - suave(0.1, 1.2, Math.hypot(u, v)));
+        du += m.lado * g.empuje[0] * w; dv += m.lado * g.empuje[1] * w; kb += m.lado * 0.12 * w;
+        const ancho = g.ancho * (1 - (iseg + m.t) / g.pts.length * 0.75);
+        if (m.d < dmin) { dmin = m.d; anchoMin = ancho; ladoMin = m.lado; }
+      }
+      fondo = escalar(cieloNoche(dirDeUV(u + du, v + dv)), 1 + kb);
+      const cercaH = 1 - suave(0, 0.35, distPol(HUECO, u, v));
+      if (dmin < anchoMin * 3) {
+        const q = dmin / anchoMin;
+        // la grieta: el hueco oscuro, el oro que se cuela cerca del hueco, y el canto del lado que mira a la luz
+        if (q < 1) fondo = add(escalar(fondo, 0.08), oro, cercaH * cercaH * (1 - q) * 1.1);
+        else fondo = ladoMin > 0 ? add(fondo, mezclar(luna, oro, cercaH), ((3 - q) / 2) * (0.035 + 0.25 * cercaH)) : escalar(fondo, 0.55 + 0.45 * (q - 1) / 2);
+      }
+      // el borde grueso del hueco: el canto del vidrio partido, con su filo de oro
+      const dh = distPol(HUECO, u, v);
+      if (dh < 0.018) { const q = dh / 0.018; fondo = mezclar(add(escalar(hexLin('#1a1410'), 1), oro, 0.6 * (1 - q) ** 3), fondo, suave(0.4, 1, q)); }
     }
-    // el pedazo: el cielo de detrás corrido (refracción) y el reflejo del vacío de oro según hacia dónde quedó torcido
-    const corr = norm([d[0] + (VX[0] * g.tilt[0] + VY[0] * g.tilt[1]) * 0.05 * g.hunde, d[1] + (VX[1] * g.tilt[0] + VY[1] * g.tilt[1]) * 0.05 * g.hunde, d[2] + (VX[2] * g.tilt[0] + VY[2] * g.tilt[1]) * 0.05 * g.hunde]);
-    const refl = Math.pow(Math.max(0, -(g.tilt[0] * g.u + g.tilt[1] * g.v) / Math.max(0.05, g.r) * 0.9 + 0.1), 3) * (1 - suave(0.1, 1, g.r));
-    const fuera = suave(0.55, 1.0, g.r);
-    const ga = az(g.celda, 1355) * TAU, banda = Math.pow(Math.max(0, Math.sin((g.u * Math.cos(ga) + g.v * Math.sin(ga)) * 7 + az(g.celda, 1356) * 6)), 5), brilloPedazo = (Math.pow(az(g.celda, 1354), 3) * 0.05 + banda * 0.07) * (1 - fuera);
-    let c = add(escalar(cieloNoche(corr), 1 + (az(g.celda, 1352) - 0.5) * 0.7 * (1 - fuera)), oro, (refl * 0.05 + brilloPedazo + 0.004) * (1 - fuera));
-    // el canto del vidrio: una franja junto a cada grieta, del lado del pedazo, más ancha cuanto más hundido
-    const canto = g.ancho * (1.5 + g.hunde * 7);
-    if (g.dist < canto) {
-      const q = g.dist / canto, luz = (1 - suave(0.05, 0.85, g.r)) * (0.5 + 0.5 * fbm2(g.th * 6, g.r * 10, 2, 1353));
-      const plata = hexLin('#a8b8d8');
-      if (q < 0.3) c = mezclar(add(escalar(c, 0.3), plata, 0.05 * (1 - fuera)), escalar(oro, luz * 1.1), suave(0.25, 0.7, g.hunde) * (1 - q / 0.3));
-      else c = add(escalar(c, 0.55 + 0.45 * fuera), mezclar(plata, oro, luz), (luz * 0.14 + 0.03) * (1 - q));
+    // los pedazos que caen (los de más cerca encima) y la sombra que dejan en la bruma del hueco
+    for (const P of PEDAZOS) {
+      const co = Math.cos(-P.giro), si = Math.sin(-P.giro), loc = (x: number, y: number): P2v => { const a = (x - P.c[0]) / P.esc, b = (y - P.c[1]) / P.esc; return [a * co - b * si, a * si + b * co]; };
+      const [lu, lv] = loc(u, v);
+      if (dentroPol(P.pol, lu, lv)) {
+        // la cara: el cielo que llevaba (de donde salió), con un reflejo que la cruza según cómo gira
+        const img = cieloNoche(dirDeUV(P.origen[0] + lu, P.origen[1] + lv), 0);
+        const refl = Math.pow(Math.max(0, Math.sin((lu * Math.cos(P.brillo * 6) + lv * Math.sin(P.brillo * 6)) * 30 + P.brillo * 9)), 8);
+        const borde = 1 - suave(0, 0.012, distPol(P.pol, lu, lv));
+        return add(add(escalar(img, 0.8 + P.brillo * 0.5), mezclar(luna, oro, 0.5), refl * 0.12), mezclar(luna, oro, 0.4), borde * 0.06);
+      }
+      const [eu, ev] = loc(u - P.canto[0], v - P.canto[1]);
+      if (dentroPol(P.pol, eu, ev)) {
+        // el canto: vidrio grueso visto de lado, oscuro, con la luz de oro de atrás que lo atraviesa
+        const t = 0.5 + 0.5 * Math.sin((u + v) * 300 * P.esc);
+        return add(escalar(hexLin('#0c0a08'), 1), oro, 0.06 + 0.22 * t * (1 - P.brillo * 0.6));
+      }
+      if (enHueco) {
+        // la sombra: el pedazo tapa la luz del hueco y deja un rastro oscuro en la bruma, hacia afuera
+        const rx = P.c[0] - HUECO_C[0], ry = P.c[1] - HUECO_C[1], rl = Math.hypot(rx, ry) || 1;
+        for (const k of [0.04, 0.08]) { const [su, sv] = loc(u + (rx / rl) * k, v + (ry / rl) * k); if (dentroPol(P.pol, su, sv)) { fondo = escalar(fondo, 0.55); break; } }
+      }
     }
-    return add(c, oro, 0.02 * Math.pow(cerca, 10));
+    return add(fondo, oro, 0.03 * Math.pow(Math.max(0, kd), 14));
   };
   const aire = (d: V3): C3 => add(gradiente(pars, Math.max(0, Math.min(0.02, d[2]))), oro, 0.012 * Math.pow(Math.max(0, dot3(norm([d[0], d[1], 0]), norm([VD[0], VD[1], 0]))), 8));
   return {
-    sol: { dir: VD, c: oro, k: 0.08, ancho: 0.2 }, cielo, aire,
-    ambCielo: escalar(hexLin('#2c3c60'), 0.25), ambSuelo: escalar(hexLin('#10141c'), 0.12),
+    sol: { dir: VD, c: oro, k: 0.12, ancho: 0.2 }, cielo, aire,
+    ambCielo: escalar(hexLin('#2c3c60'), 0.2), ambSuelo: escalar(hexLin('#10141c'), 0.1),
     niebla: { densidad: 1 / 20000, baja: 1 / 4000, z0: 0, H: 80, ruido: 0.7, escalaRuido: 0.001 },
-    borde: { c: hexLin('#ffc060'), k: 0.15 }, nieve: { albedo: [0.4, 0.44, 0.52], desde: 0.6 }, oclusion: 0.85,
+    borde: { c: hexLin('#ffc060'), k: 0.25 }, nieve: { albedo: [0.4, 0.44, 0.52], desde: 0.6 }, oclusion: 0.85,
   };
 }
 function armarVidrio(w: number, h: number): Armado {
@@ -1126,7 +1164,7 @@ function armarVidrio(w: number, h: number): Armado {
   esc.terreno = new Terreno({
     alto: (x, y) => 4 * suave(0.1, 0.18, placa(x, y)) + suave(900, 1600, Math.abs(x) - y * 0.15) * (200 + fbm2(x / 300, y / 300, 4, 1361) * 500) + (fbm2(x / 40, y / 40, 2, 1362) - 0.5) * 2,
     techo: 900, grillas: [[-3000, -600, 3000, 6000, 6], [-20000, 3000, 20000, 40000, 50]],
-    superficie: (p) => { const k = suave(0.1, 0.18, placa(p[0], p[1])); return { albedo: mezclar([0.003, 0.004, 0.006], [0.09, 0.1, 0.13], k * (0.6 + 0.4 * fbm2(p[0] / 30, p[1] / 30, 2, 1363))), brillo: 0.8 - k * 0.6 }; },
+    superficie: (p) => { const k = suave(0.1, 0.18, placa(p[0], p[1])); return { albedo: mezclar([0.002, 0.003, 0.005], [0.045, 0.055, 0.08], k * (0.6 + 0.4 * fbm2(p[0] / 30, p[1] / 30, 2, 1363))), brillo: 0.8 - k * 0.6 }; },
   });
   const ter = esc.terreno;
   // peñascos con costra de hielo en primer plano (oscuros, enmarcan)
