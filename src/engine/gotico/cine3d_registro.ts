@@ -1,6 +1,7 @@
 import type { Plano3D } from './cine3d_toma';
 import { PLANOS_INTRO } from './cine3d_cuadros';
 import { PLANOS_ACTOS_A } from './cine3d_actos_a';
+import { PLANOS_ACTOS_C } from './cine3d_actos_c';
 import { PLANOS_ACTOS_B } from './cine3d_actos_b';
 
 /**
@@ -12,6 +13,7 @@ import { PLANOS_ACTOS_B } from './cine3d_actos_b';
 export const PLANOS_CINE3D: Record<string, Plano3D[]> = {
   intro: PLANOS_INTRO,
   ...PLANOS_ACTOS_A,
+  ...PLANOS_ACTOS_C,
   ...PLANOS_ACTOS_B,
 };
 
