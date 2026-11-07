@@ -1,13 +1,12 @@
 import { objeto, herramientas as herr } from './objeto';
-import { hash3, caja, palo, poliedro, cilindro, elipsoide, esfera, hueso, bulto, masa, baseCamara, proyectar, type Pieza, type V3, type Camara } from './render';
+import { hash3, caja, palo, poliedro, cilindro, elipsoide, esfera, bulto, masa, baseCamara, proyectar, type Pieza, type V3 } from './render';
 import { personaje, type Cuerpo, type Equipo } from './cuerpo';
 import { MATERIALES } from './materiales';
-import { EscenaCine, Terreno, hexLin, mezclar, escalar, moverPiezas, giroEje, type Atmosfera, type C3, type Capas, type Particula, type Pluma, type LuzPuntual } from './cine3d';
-import { camaraBase, columna, arcoMedio, cadena, vela, fbm2, dirAz, muertoSeco, type PoseMuerto } from './cine3d_interior';
+import { EscenaCine, Terreno, hexLin, mezclar, escalar, moverPiezas, giroEje, type Atmosfera, type C3, type Particula, type Pluma } from './cine3d';
+import { camaraBase, columna, arcoMedio, cadena, fbm2, dirAz, muertoSeco, type PoseMuerto } from './cine3d_interior';
 import { tiraDoom } from './cine3d_cuadros';
 import { armarValle, deCat, type TipoFuego } from './cine3d_valle';
 import type { Plano3D, Armado, Extras } from './cine3d_toma';
-import type { C3 as _C3 } from './cine3d';
 import './catalogo/jefes';
 import './catalogo/abadia_oria';
 import './catalogo/gore';
@@ -21,7 +20,6 @@ import './catalogo/selva2';
 import './catalogo/templo_selva';
 import './catalogo/hielo2';
 import './catalogo/tumba';
-import { HEROES } from './catalogo/personajes';
 
 /**
  * Los cierres de los actos 1, 2 y 3 en 3D, con el método de la intro (cine3d.ts): cada plano es una escena entera con
@@ -36,7 +34,6 @@ import { HEROES } from './catalogo/personajes';
  * Medidas del taller: una persona mide 61 (una unidad ~3 cm). z hacia arriba.
  */
 
-type _Sin = _C3;
 const TAU = Math.PI * 2;
 const sat = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const suave = (a: number, b: number, v: number) => { const t = sat((v - a) / (b - a)); return t * t * (3 - 2 * t); };
@@ -325,12 +322,9 @@ function manosDe(esc: EscenaCine, g: number): V3[] {
 const ESTRELLA_A1 = { az: 108, el: 6.5, largo: 7, inclina: -0.55 };
 function cieloEstrella(d: V3, e: number): C3 {
   const a = Math.atan2(d[1], d[0]) * (180 / Math.PI), E = e * (180 / Math.PI), S = ESTRELLA_A1;
-  const u = a - S.az, v = E - S.el, t = (-u * S.inclina + v) / (1 + S.inclina * S.inclina), q = Math.hypot(u - -S.inclina * t * 0 - (-t * S.inclina) * 0, 0);
-  void q;
+  const u = a - S.az, v = E - S.el;
   // la estela: de la estrella hacia arriba y a la derecha, se afina y se apaga
   const k = Math.max(0, Math.min(S.largo, (v - u * S.inclina) / Math.hypot(1, S.inclina)));
-  const px = u - (-S.inclina / Math.hypot(1, S.inclina)) * k * 0, py = v;
-  void px; void py;
   const dx = u + (k * S.inclina) / Math.hypot(1, S.inclina), dy = v - k / Math.hypot(1, S.inclina), dd = Math.hypot(dx, dy);
   const estela = Math.exp(-dd / (0.05 + 0.02 * k)) * (1 - k / S.largo) * 0.8, cabeza = Math.exp(-Math.hypot(u, v) / 0.12) * 6 + Math.exp(-Math.hypot(u, v) / 1.2) * 0.25;
   return escalar(hexLin('#ff3a14'), estela + cabeza);
@@ -845,5 +839,3 @@ export const PLANOS_ACTOS_A: Record<string, Plano3D[]> = {
   acto_2: [A2P1, A2P2, A2P3],
   acto_3: [A3P1, A3P2, A3P3],
 };
-void [palo, elipsoide, hueso, bulto, masa, personaje, Terreno, dirAz, vela, HEROES, sat];
-export type { Cuerpo, Equipo, LuzPuntual, Capas, Camara, _Sin };

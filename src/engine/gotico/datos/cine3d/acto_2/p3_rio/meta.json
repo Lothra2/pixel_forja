@@ -3,13 +3,13 @@
  "frente": true,
  "fuegos": [
   {
-   "x": 380,
-   "y": 430,
-   "w": 341,
-   "h": 166,
+   "x": 280,
+   "y": 420,
+   "w": 426,
+   "h": 186,
    "escala": 2,
    "cuadros": 16,
-   "columnas": 12,
+   "columnas": 9,
    "fps": 12
   },
   {
