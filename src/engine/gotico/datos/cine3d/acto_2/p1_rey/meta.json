@@ -1,0 +1,7 @@
+{
+ "fondo": true,
+ "frente": false,
+ "fuegos": [],
+ "particulas": "polvo",
+ "paralaje": 0.9
+}

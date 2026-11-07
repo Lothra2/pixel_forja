@@ -618,7 +618,7 @@ function armarRio(w: number, h: number): ArmadoA {
   const [px, py] = R.palida;
   const palida = personaje({ genero: 'm', alto: 1.05, ancho: 0.82, musculo: 0.1, piel: 'cu_piel', pelo: 'cu_pelo_negro', peinado: 'largo' }, { torso: { tipo: 'vestido', mat: 'cu_tela_blanca' }, piernas: { tipo: 'tunica_larga', mat: 'cu_tela_blanca' } }, 's', 'caminar', 2);
   pon(teñir(palida, 'aa_palida'), px, py, 180 - 45, 1, false, 0.5);
-  esc.emision.aa_palida = { k: 0.35 };
+  esc.emision.aa_palida = { k: 0.22 };
   esc.luces.push({ p: [px - 10, py - 20, 40], c: hexLin('#a8c8c0'), k: 0.12, r: 40, envuelve: 0.3, halo: 0.0006 });
   // la luna baja sobre la otra orilla, detrás del barco: el camino de luz en el agua pasa entre el barco y la figura
   const luna = norm([0.05, 1, 0.15]);
@@ -635,9 +635,11 @@ function armarRio(w: number, h: number): ArmadoA {
   // los destellos de la luna en el agua: puntos que se prenden y se apagan sobre el camino de luz
   const destellos = (t: number): Particula[] => {
     const ps: Particula[] = [], c = hexLin('#c8d4ff');
-    for (let i = 0; i < 160; i++) {
-      const u = az(i, 681), y = -120 + u * 560, x = 150 + (y + 330) * (luna[0] / luna[1]) + (az(i, 682) - 0.5) * (30 + u * 120), f = (t * 12 / NF + az(i, 683)) % 1;
-      ps.push({ p: [x, y, 0.3], r: 0.5 + az(i, 684) * 0.8, c: escalar(c, 2.5 * Math.max(0, Math.sin(f * TAU * 2)) ** 3), a: 1, suma: true });
+    for (let i = 0; i < 220; i++) {
+      // a lo largo del camino de la luna: más juntos en el medio, se apagan hacia los costados
+      const u = az(i, 681), y = -60 + u * 500, lat = (az(i, 682) + az(i, 685) - 1) * (12 + u * 70), x = 150 + (y + 330) * (luna[0] / luna[1]) + lat, f = (t * 12 / NF + az(i, 683)) % 1;
+      const borde = Math.exp(-((lat / (12 + u * 70)) ** 2) * 3);
+      ps.push({ p: [x, y, 0.3], r: 0.4 + az(i, 684) * 0.6, c: escalar(c, 1.8 * borde * Math.max(0, Math.sin(f * TAU * 2)) ** 3), a: 1, suma: true });
     }
     return ps;
   };
@@ -649,7 +651,7 @@ const A2P3: Plano3D = {
   revelado: { t: 0, exposicion: 1.3, derrame: { k: 0.5, r: 5 }, bloom: { k: 0.4, umbral: 0.8 }, grado: gradoNoche },
   flickBase: 0.9, cuadros: NF, fps: FPS, extras: (a, _c, t) => fuegoDe(a as ArmadoA, t),
   // una tira con el farol y su luz, y otra con los destellos del agua (a media resolución)
-  zonas: (a) => { const b = baseCamara(a.cam), q = proyectar(b, [RIO_A2.barco[0] + 70, RIO_A2.barco[1] - 6, 34]), z: { caja: [number, number, number, number]; escala: number }[] = [{ caja: [380, 430, 1060, 760], escala: 2 }]; if (q) z.push({ caja: [q[0] - 40, q[1] - 40, q[0] + 40, q[1] + 40], escala: 1 }); return z; },
+  zonas: (a) => { const b = baseCamara(a.cam), q = proyectar(b, [RIO_A2.barco[0] + 70, RIO_A2.barco[1] - 6, 34]), z: { caja: [number, number, number, number]; escala: number }[] = [{ caja: [280, 420, 1130, 791], escala: 2 }]; if (q) z.push({ caja: [q[0] - 40, q[1] - 40, q[0] + 40, q[1] + 40], escala: 1 }); return z; },
 };
 
 // ================================================================== ACTO 3 · p1: la Madre Ciénaga se abre y se hunde; los huevos revientan

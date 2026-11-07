@@ -1,0 +1,28 @@
+{
+ "fondo": true,
+ "frente": true,
+ "fuegos": [
+  {
+   "x": 380,
+   "y": 430,
+   "w": 341,
+   "h": 166,
+   "escala": 2,
+   "cuadros": 16,
+   "columnas": 12,
+   "fps": 12
+  },
+  {
+   "x": 550,
+   "y": 393,
+   "w": 82,
+   "h": 82,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  }
+ ],
+ "particulas": "polvo",
+ "paralaje": 0.85
+}
