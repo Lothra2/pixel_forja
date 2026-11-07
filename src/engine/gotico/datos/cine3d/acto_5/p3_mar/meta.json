@@ -1,7 +1,18 @@
 {
  "fondo": true,
  "frente": true,
- "fuegos": [],
+ "fuegos": [
+  {
+   "x": 0,
+   "y": 282,
+   "w": 470,
+   "h": 170,
+   "escala": 3,
+   "cuadros": 16,
+   "columnas": 8,
+   "fps": 12
+  }
+ ],
  "luces": [
   {
    "x": 0,
