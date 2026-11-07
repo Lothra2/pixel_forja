@@ -563,6 +563,8 @@ function zonasHerida(a: Armado) {
  * pecho abierto: ahora revienta. Las grietas de la obsidiana se encienden, del pecho sale una columna de fuego de Doom,
  * las alas arden en el borde, el humo sube encendido desde abajo y las brasas vuelan. La luz principal es su fuego.
  */
+/** La membrana de las alas que arde: carne oscura con venas y bordes al rojo (emite, late con el fuego). */
+M.cb_ala_ardiendo = { rampa: ['#0a0201', '#1a0402', '#300804', '#501006', '#80200a', '#c04010', '#ff7a20'], ruido: 0.6, escala: 0.5, emite: true, patron: (p) => (Math.abs(fbm2(p[0] * 0.12, p[2] * 0.12 + p[1] * 0.05, 3, 761) - 0.5) < 0.05 ? 0.3 : -0.25) };
 const POZO_B = { r: 440, alto: 640 }, OZ_B = { x: 0, y: 150, k: 2.3 };
 /** El pozo (como en la intro): piso de roca con grietas de lava, la pared cilíndrica con peñascos y la boca arriba. */
 function pozo(esc: EscenaCine, lava = 0.9, brillo = 0.25, oscuroCerca = 0) {
@@ -599,11 +601,11 @@ function armarOzmaren(w: number, h: number): ArmadoB {
   const esc = new EscenaCine(), fuegos: Fuego[] = [], plumas: Pluma[] = [];
   pozo(esc, 2.2);
   // Ozmaren con el pecho abierto, sin sus llamas de utilería (el fuego es de Doom): la lava de las grietas encendida
-  const oz = piezasDe('jefe_ozmaren_especial', 'se', 5, 4).filter((p) => p.mat !== 'fuego' && p.mat !== 'jf_humo');
+  const oz = conMat(piezasDe('jefe_ozmaren_especial', 'se', 5, 4).filter((p) => p.mat !== 'fuego' && p.mat !== 'jf_humo'), (m) => (m === 'jf_membrana_fuego' ? 'cb_ala_ardiendo' : m));
   const g = esc.poner(oz, { x: OZ_B.x, y: OZ_B.y, z: -2, giro: -90, k: OZ_B.k }, { nieve: 0 });
   const mias = esc.piezas.filter((_, i) => esc.grupoDe[i] === g);
   esc.emision.cu_lava = { k: 1.6, canal: 1 }; esc.emision.lava = { k: 1.6, canal: 1 }; esc.emision.jf_hierro_rojo = { k: 0.8, canal: 1 }; esc.emision.jf_brasa_honda = { k: 2, canal: 1 };
-  esc.emision.cu_ojo_brasa = { k: 8, canal: 1 }; esc.emision.luz_vela = { k: 9, canal: 1 };
+  esc.emision.cu_ojo_brasa = { k: 8, canal: 1 }; esc.emision.luz_vela = { k: 9, canal: 1 }; esc.emision.cb_ala_ardiendo = { k: 1.1, canal: 1 };
   // el pecho: el centro de lo que brilla adentro (luz_vela, brasa honda), o el medio del torso
   const brillos = mias.filter((p) => p.mat === 'luz_vela' || p.mat === 'jf_brasa_honda').map(centro);
   const pecho: V3 = brillos.length ? brillos.reduce((m, c) => add(m, c, 1 / brillos.length), [0, 0, 0] as V3) : [OZ_B.x, OZ_B.y, 120 * OZ_B.k];
@@ -614,14 +616,16 @@ function armarOzmaren(w: number, h: number): ArmadoB {
   esc.luces.push({ p: [pecho[0], pecho[1] + 50, pecho[2] + 20], c: hexLin('#ff6a22'), k: 14, r: 160, canal: 1, sombra: true, envuelve: 0.2, halo: 0.00006 });
   esc.luces.push({ p: [pecho[0], pecho[1] + 120, pecho[2] + 320], c: hexLin('#ff5a1a'), k: 7, r: 260, canal: 1, sombra: true, envuelve: 0.2 });
   // las alas arden en el borde: lenguas de Doom sobre lo más alto de la membrana, de cada lado
-  for (const sx of [-1, 1]) for (let k = 0; k < 5; k++) { const t = k / 4; fuegos.push({ p: [OZ_B.x + sx * (120 + t * 190), OZ_B.y + 10, 320 + Math.sin(t * Math.PI) * 90 - t * 40], ancho: 80 - t * 20, alto: 110 + az(k, 710) * 60, semilla: 711 + k + (sx > 0 ? 5 : 0), tipo: 'brasa', k: 2.2, fondo: 30 }); }
+  // las alas arden: donde el modelo tiene sus llamas de las alas, lenguas de Doom un poco hacia el ojo (delante de la membrana)
+  const llamasAla = piezasDe('jefe_ozmaren_especial', 'se', 5, 4).filter((p) => p.mat === 'fuego').map(centro).filter((c) => Math.abs(c[1]) > 60 && c[2] > 150);
+  llamasAla.forEach((c, k) => { const w: V3 = [OZ_B.x + c[1] * OZ_B.k, OZ_B.y - c[0] * OZ_B.k - 70, c[2] * OZ_B.k - 30]; fuegos.push({ p: [w[0] * (1.1 + az(k, 709) * 0.25), w[1], w[2] - 20 + az(k, 708) * 60], ancho: 110 + az(k, 707) * 40, alto: 230 + az(k, 710) * 160, semilla: 711 + k, tipo: 'techo', k: 2.2, fondo: 120 }); });
   for (const sx of [-1, 1]) esc.luces.push({ p: [OZ_B.x + sx * 280, OZ_B.y + 80, 420], c: hexLin('#ff5a1a'), k: 5, r: 160, canal: 1, sombra: true, envuelve: 0.2 });
   // fuego que brota del piso alrededor de las pezuñas
   for (let i = 0; i < 9; i++) { const a = (i / 9) * TAU + 0.4, r = 110 + az(i, 720) * 70; fuegos.push({ p: [OZ_B.x + Math.cos(a) * r, OZ_B.y + Math.sin(a) * r * 0.7, -2], ancho: 80, alto: 90 + az(i, 721) * 110, semilla: 722 + i, tipo: 'techo', k: 2 }); }
   // el humo: sube del pecho y de las alas, encendido desde abajo
   plumas.push({ base: [pecho[0], pecho[1], pecho[2] + 180], alto: 900, r0: 60, r1: 320, viento: [0.1, 0.05, 0], dens: 0.03, humo: [0.03, 0.025, 0.025], abajo: hexLin('#ff5a1a'), kAbajo: 2, semilla: 730, sube: 40, escala: 1 / 50, sol: 0.05 });
   const atm = atmPozoB({ sol: [0.05, -0.4, 1], c: hexLin('#b8ccff'), k: 0.25, borde: hexLin('#ff6a30'), kb: 1.2, aire: [0.004, 0.0016, 0.0008] });
-  return { esc, atm, cam: camaraBase([20, -400, 16], [OZ_B.x, OZ_B.y, 320], 60, w, h), fuegos, plumas };
+  return { esc, atm, cam: camaraBase([20, -400, 30], [OZ_B.x, OZ_B.y, 330], 66, w, h), fuegos, plumas };
 }
 /** Brasas y chispas que salen disparadas del estallido (suman), en bucle. */
 function chispasOzmaren(t: number): Particula[] {
@@ -646,9 +650,9 @@ function chispasOzmaren(t: number): Particula[] {
 type ValorBrasa = 'brasa_destruir' | 'brasa_absorber';
 M.cb_ceniza = { rampa: ['#060505', '#0c0a0a', '#141111', '#1c1818', '#252020', '#2e2828', '#383131'], ruido: 0.5, escala: 0.4, patron: (p) => (Math.abs(fbm2(p[0] * 0.08, p[1] * 0.08, 2, 801) - 0.5) < 0.03 ? -0.2 : 0) };
 M.cb_brasa_viva = { rampa: ['#ff6a1a', '#ff8a2a', '#ffb050', '#ffe0a0'], ruido: 0.2, escala: 0.6, emite: true };
-M.cb_brasa_gris = { rampa: ['#141212', '#1f1c1b', '#2b2726', '#383332', '#46403e'], ruido: 0.5, escala: 0.8, brillo: 0.1 };
+M.cb_brasa_gris = { rampa: ['#141212', '#1f1c1b', '#2b2726', '#383332', '#46403e'], ruido: 0.5, escala: 0.8, emite: true };
 M.cb_marca_viva = { rampa: ['#c83a0c', '#f06018', '#ff8a2a', '#ffc070'], ruido: 0.3, escala: 0.8, emite: true };
-M.cb_marca_gris = { rampa: ['#2a2a2c', '#3a3a3e', '#4a4a50', '#5c5c62'], ruido: 0.3, escala: 0.8 };
+M.cb_marca_gris = { rampa: ['#2a2a2c', '#3a3a3e', '#4a4a50', '#5c5c62'], ruido: 0.3, escala: 0.8, emite: true };
 function armarEleccion(w: number, h: number, valor: ValorBrasa): ArmadoB {
   const esc = new EscenaCine(), fuegos: Fuego[] = [], plumas: Pluma[] = [], frente: number[] = [];
   pozo(esc, 0.35, 0.02, 0.85);
@@ -678,12 +682,13 @@ function armarEleccion(w: number, h: number, valor: ValorBrasa): ArmadoB {
   } else {
     // la Brasa apagada: un carbón gris entre los dedos que suelta un hilo de humo; la Marca gris
     esc.ponerMundo([esfera(puno[0], puno[1], puno[2] + 2.5, 3, { mat: 'cb_brasa_gris' }), palo(puno, codo, 0.6, { mat: 'cb_marca_gris' }), palo(codo, hombro, 0.5, { mat: 'cb_marca_gris' })], { nieve: 0 });
-    plumas.push({ base: add(puno, [0, 0, 5]), alto: 90, r0: 1.5, r1: 18, viento: [0.25, 0.1, 0], dens: 0.18, humo: [0.2, 0.2, 0.22], semilla: 822, sube: 14, escala: 1 / 8, sol: 0.6 });
+    esc.emision.cb_marca_gris = { k: 0.6 }; esc.emision.cb_brasa_gris = { k: 0.3 };
+    plumas.push({ base: add(puno, [0, 0, 5]), alto: 110, r0: 2, r1: 22, viento: [0.25, 0.1, 0], dens: 0.35, humo: [0.32, 0.33, 0.36], semilla: 822, sube: 14, escala: 1 / 8, sol: 1.2 });
   }
   // la luz principal: fría, desde la boca del pozo, un poco detrás del héroe (le deja el filo en la capucha y los hombros)
   const atm = atmPozoB({ sol: [0.12, 0.3, 1], c: hexLin('#a8c0ff'), k: 1.4, borde: hexLin('#c8d8ff'), kb: 2.6, aire: [0.008, 0.01, 0.016] });
   // lo que la boca deja caer sobre la ceniza de atrás: el héroe se recorta contra eso
-  esc.luces.push({ p: [60, 330, 420], c: hexLin('#9fb8f0'), k: 2.8, r: 380, envuelve: 0.2 });
+  esc.luces.push({ p: [60, 300, 140], c: hexLin('#9fb8f0'), k: 3.2, r: 240, envuelve: 0.2 });
   for (const g of frente) esc.frente.add(g);
   return { esc, atm, cam: camaraBase(cam, [H.x + 10, H.y + 40, 66], 36, w, h), fuegos, plumas, polvo: polvoEnLuz([80, 200, 640], [0, 40, 40], 120, 0.12, 830, 220) };
 }
@@ -910,7 +915,7 @@ function armarCampana(w: number, h: number): ArmadoB {
   esc.terreno = new Terreno({
     alto: (x, y) => { const r = Math.hypot(x, y - CAMP_B.y); return 2 * Math.sin(r / 9 - 2) * Math.exp(-r / 260) + (fbm2(x / 40, y / 40, 3, 1101) - 0.5) * 1.6; },
     techo: 20, grillas: [[-700, -700, 700, 900, 3]],
-    superficie: (p) => ({ albedo: mezclar([0.006, 0.012, 0.013], [0.3, 0.36, 0.38], suave(0.62, 0.8, fbm2(p[0] / 14, p[1] / 14, 3, 1102)) * Math.exp(-Math.hypot(p[0], p[1] - CAMP_B.y) / 200)), brillo: 0.85 }),
+    superficie: (p) => ({ albedo: mezclar([0.006, 0.012, 0.013], [0.3, 0.36, 0.38], suave(0.62, 0.8, fbm2(p[0] / 14, p[1] / 14, 3, 1102)) * Math.exp(-Math.hypot(p[0], p[1] - CAMP_B.y) / 200)), brillo: 0.45 }),
   });
   const R = 580;
   esc.ponerMundo([cilindro(0, 120, -60, R + 80, 1200, { mat: 'cb_piedra_ahogada' }), cilindro(0, 120, -80, R, 1300, { mat: 'cb_piedra_ahogada', resta: true }),
@@ -954,7 +959,7 @@ function armarCampana(w: number, h: number): ArmadoB {
     niebla: { densidad: 1 / 2600, baja: 1 / 500, z0: 0, H: 60, ruido: 0.7, escalaRuido: 0.006 },
     borde: { c: hexLin('#c8dcff'), k: 2.6 }, oclusion: 0.9, oclusionLargo: 300,
   };
-  return { esc, atm, cam: camaraBase([-50, -400, 70], [0, CAMP_B.y, 150], 54, w, h), fuegos: [], plumas };
+  return { esc, atm, cam: camaraBase([-50, -420, 90], [0, CAMP_B.y, 110], 56, w, h), fuegos: [], plumas };
 }
 /** Gotas que saltan del estallido (no suman: agua que agarra la luz), en bucle. */
 function gotasCampana(t: number): Particula[] {
@@ -1029,11 +1034,11 @@ const ANILLOS = [0.08, 0.16, 0.26, 0.4, 0.58, 0.8];
 /** El vacío de oro de detrás, con la escalera que sube hacia el centro (coordenadas del plano del vidrio). */
 function detras(u: number, v: number): C3 {
   const oro = hexLin('#ffb040'), hondo = hexLin('#5a2006'), r = Math.hypot(u, v + 0.04);
-  let c = mezclar(escalar(oro, 1.0), hondo, suave(0, 0.26, r));
+  let c = mezclar(escalar(oro, 0.8), hondo, suave(0, 0.3, r));
   // la escalera: escalones en perspectiva que suben angostándose hacia un punto de luz arriba del centro
-  const t = sat((v + 0.2) / 0.3);
-  if (v > -0.2 && v < 0.1) {
-    const ancho = 0.09 * (1 - t * 0.85), k = Math.pow(t, 0.65) * 22, f = k - Math.floor(k), x = u - Math.sin(t * 2.4) * 0.008;
+  const t = sat((v + 0.26) / 0.36);
+  if (v > -0.26 && v < 0.1) {
+    const ancho = 0.12 * (1 - t * 0.85), k = Math.pow(t, 0.65) * 22, f = k - Math.floor(k), x = u - Math.sin(t * 2.4) * 0.008;
     if (Math.abs(x) < ancho) c = escalar(mezclar(hexLin('#ffe2a0'), hexLin('#8a4a0a'), suave(0.15, 0.5, f)), (f < 0.3 ? 2.2 : 0.7) * (1.5 - t * 0.7));
     else if (Math.abs(x) < ancho * 1.18) c = escalar(c, 0.35);
   }
@@ -1065,7 +1070,7 @@ function vidrio(d: V3) {
     if (az(k * 9 + j, 1311) < 0.22 + j * 0.06) continue;
     dAn = Math.min(dAn, Math.abs(sd));
   }
-  const celda = k * 10 + jAn, hueco = jAn <= 1 || (jAn === 2 && az(celda, 1341) < 0.6) || (jAn === 3 && az(celda, 1342) < 0.15);
+  const celda = k * 10 + jAn, hueco = jAn <= 2 || (jAn === 3 && az(celda, 1342) < 0.35);
   const dist = Math.min(dRad, dAn), ancho = 0.0009 + 0.0026 * (1 - r) ** 2;
   // el pedazo hundido y torcido: cuanto más cerca del centro, más (la grieta se abre y deja ver el oro)
   const hunde = (1 - suave(0.05, 0.95, r)) * (0.4 + az(celda, 1343) * 0.6), tilt: V3 = norm([(az(celda, 1344) - 0.5) * 0.9, (az(celda, 1345) - 0.5) * 0.9, 1]);
@@ -1094,8 +1099,8 @@ function atmVidrio(): Atmosfera {
     const corr = norm([d[0] + (VX[0] * g.tilt[0] + VY[0] * g.tilt[1]) * 0.05 * g.hunde, d[1] + (VX[1] * g.tilt[0] + VY[1] * g.tilt[1]) * 0.05 * g.hunde, d[2] + (VX[2] * g.tilt[0] + VY[2] * g.tilt[1]) * 0.05 * g.hunde]);
     const refl = Math.pow(Math.max(0, -(g.tilt[0] * g.u + g.tilt[1] * g.v) / Math.max(0.05, g.r) * 0.9 + 0.1), 3) * (1 - suave(0.1, 1, g.r));
     const fuera = suave(0.55, 1.0, g.r);
-    const brilloPedazo = Math.pow(az(g.celda, 1354), 4) * 0.1 * (1 - fuera);
-    let c = add(escalar(cieloNoche(corr), 1 + (az(g.celda, 1352) - 0.5) * 0.7 * (1 - fuera)), oro, (refl * 0.18 + brilloPedazo + 0.006) * (1 - fuera));
+    const ga = az(g.celda, 1355) * TAU, banda = Math.pow(Math.max(0, Math.sin((g.u * Math.cos(ga) + g.v * Math.sin(ga)) * 7 + az(g.celda, 1356) * 6)), 5), brilloPedazo = (Math.pow(az(g.celda, 1354), 3) * 0.05 + banda * 0.07) * (1 - fuera);
+    let c = add(escalar(cieloNoche(corr), 1 + (az(g.celda, 1352) - 0.5) * 0.7 * (1 - fuera)), oro, (refl * 0.05 + brilloPedazo + 0.004) * (1 - fuera));
     // el canto del vidrio: una franja junto a cada grieta, del lado del pedazo, más ancha cuanto más hundido
     const canto = g.ancho * (1.5 + g.hunde * 7);
     if (g.dist < canto) {
@@ -1111,7 +1116,7 @@ function atmVidrio(): Atmosfera {
     sol: { dir: VD, c: oro, k: 0.08, ancho: 0.2 }, cielo, aire,
     ambCielo: escalar(hexLin('#2c3c60'), 0.25), ambSuelo: escalar(hexLin('#10141c'), 0.12),
     niebla: { densidad: 1 / 20000, baja: 1 / 4000, z0: 0, H: 80, ruido: 0.7, escalaRuido: 0.001 },
-    borde: { c: hexLin('#ffc060'), k: 0.35 }, nieve: { albedo: [0.4, 0.44, 0.52], desde: 0.6 }, oclusion: 0.85,
+    borde: { c: hexLin('#ffc060'), k: 0.15 }, nieve: { albedo: [0.4, 0.44, 0.52], desde: 0.6 }, oclusion: 0.85,
   };
 }
 function armarVidrio(w: number, h: number): Armado {
@@ -1164,7 +1169,7 @@ function armarAunSaar(w: number, h: number): Armado {
   const L = norm([0.02, 1, 0.42]), blanco = hexLin('#e8ecf4');
   const atm: Atmosfera = {
     sol: { dir: L, c: blanco, k: 2.2, ancho: 0.05 },
-    cielo: (d) => { const gq = Math.max(0, dot3(d, L)), e = elev(d); let c = add(gradiente([[-0.3, hexLin('#0c0b0e')], [0, hexLin('#24221e')], [0.2, hexLin('#121116')], [0.6, hexLin('#060608')]], e), blanco, 0.1 * Math.pow(gq, 10) + 0.9 * Math.pow(gq, 160) + 2 * Math.pow(gq, 900)); const nb = nubes(d, 1430, 2000, 0.5, 2400, L); if (nb.a > 0) c = mezclar(c, add(escalar(hexLin('#24201c'), 1 - nb.espesor * 0.4), hexLin('#e8c890'), (0.2 + nb.luz) * Math.pow(gq, 6) * 0.8), nb.a * 0.85); return c; },
+    cielo: (d) => { const gq = Math.max(0, dot3(d, L)), e = elev(d); let c = add(gradiente([[-0.3, hexLin('#0c0b0e')], [0, hexLin('#24221e')], [0.2, hexLin('#121116')], [0.6, hexLin('#060608')]], e), blanco, 0.1 * Math.pow(gq, 10) + 0.9 * Math.pow(gq, 160) + 2 * Math.pow(gq, 900)); const nb = nubes(d, 1430, 2000, 0.5, 2400, L); if (nb.a > 0) c = mezclar(c, add(escalar(hexLin('#24201c'), 1 - nb.espesor * 0.4), hexLin('#c8bca8'), (0.2 + nb.luz) * Math.pow(gq, 6) * 0.4), nb.a * 0.85); return c; },
     aire: (d) => add(escalar(hexLin('#141218'), 0.5), blanco, 0.08 * Math.pow(Math.max(0, dot3(d, L)), 10)),
     ambCielo: escalar(hexLin('#4a4a5a'), 0.06), ambSuelo: escalar(hexLin('#1a1610'), 0.05),
     niebla: { densidad: 1 / 5000, baja: 1 / 1600, z0: -300, H: 200, ruido: 0.6, escalaRuido: 0.002 },
@@ -1206,7 +1211,7 @@ const P_OZMAREN: Plano3D = {
 const eleccion = (valor: ValorBrasa): Plano3D => ({
   id: `p2_eleccion@${valor}`, paralaje: 0.9, particulas: valor === 'brasa_absorber' ? 'brasas' : 'ceniza', ss: 4,
   armar: (w, h) => memo(`el|${valor}|${w}|${h}`, () => armarEleccion(w, h, valor)),
-  revelado: { t: 0, exposicion: 1.3, rayos: { k: 0.3, c: [0.8, 0.9, 1], umbral: 0.3 }, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.45, umbral: 0.75 }, grado: gradoNoche },
+  revelado: { t: 0, exposicion: 1.55, rayos: { k: 0.3, c: [0.8, 0.9, 1], umbral: 0.3 }, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.45, umbral: 0.75 }, grado: gradoNoche },
   ...(valor === 'brasa_absorber' ? { flickBase: 0.9, cuadros: NF, fps: FPS, extras: (a: Armado, c: Capas, t: number) => extrasFuego(a as ArmadoB, c, t), zonas: (a: Armado) => zonasDe(a, 40, 1) } : {}),
 });
 
