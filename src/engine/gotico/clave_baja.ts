@@ -17,8 +17,8 @@ import type { Iluminacion, Pieza, V3 } from './render';
 
 /** Contraluz: viene de atrás (lejos de la cámara) y a la derecha de la pantalla, un poco desde arriba. */
 const DIR_BORDE: V3 = [-0.35, -1, 0.55];
-export const BORDE_FRIO = '#6f86b4';
-export const BORDE_CALIDO = '#c0703a';
+export const BORDE_FRIO = '#47505e';
+export const BORDE_CALIDO = '#6e4630';
 
 const BASE: Iluminacion = {
   amb: 0.07, dif: 0.7, cielo: 0.05, rebote: 0.02,
@@ -27,8 +27,8 @@ const BASE: Iluminacion = {
   sombra: { color: '#05070d', fuerza: 0.45, hasta: 0.3 },
   techo: { desde: 80, k: 0.36, color: '#8c8170', mezcla: 0.45 },
 };
-export const CLAVE_BAJA_FRIA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.45, color: BORDE_FRIO, ancho: 2.2, mezcla: 0.7, contorno: 0.2 } };
-export const CLAVE_BAJA_CALIDA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.45, color: BORDE_CALIDO, ancho: 2.2, mezcla: 0.7, contorno: 0.2 } };
+export const CLAVE_BAJA_FRIA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.22, color: BORDE_FRIO, ancho: 1.6, mezcla: 0.45, contorno: 0 } };
+export const CLAVE_BAJA_CALIDA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.22, color: BORDE_CALIDO, ancho: 1.6, mezcla: 0.45, contorno: 0 } };
 
 const esCalido = (mat: string | undefined) => {
   const m = mat ? MATERIALES[mat] : undefined;
