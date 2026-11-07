@@ -808,7 +808,7 @@ function atmMar(rayo: boolean): Atmosfera {
   };
   const aire = (d: V3): C3 => { const g = Math.max(0, dot3(d, R)); return add(gradiente(pars, Math.max(0, Math.min(0.02, d[2]))), frio, rayo ? 0.02 + 0.15 * Math.pow(g, 6) : 0.002); };
   return {
-    sol: { dir: norm([R[0], R[1], R[2] + 0.3]), c: frio, k: rayo ? 1.5 : 0.03, ancho: 0.04 }, cielo, aire,
+    sol: { dir: norm([R[0], R[1], R[2] + 0.12]), c: frio, k: rayo ? 2.2 : 0.03, ancho: 0.04 }, cielo, aire,
     ambCielo: escalar(hexLin('#38507a'), rayo ? 0.1 : 0.05), ambSuelo: [0.004, 0.005, 0.007],
     niebla: { densidad: 1 / 14000, baja: 1 / 3000, z0: 0, H: 120, ruido: 0.7, escalaRuido: 0.001 },
     borde: { c: frio, k: rayo ? 2.4 : 0.6 }, oclusion: 0.85,
@@ -827,7 +827,7 @@ function armarMar(w: number, h: number, rayo = false): Armado {
       let alb: C3 = mezclar([0.008, 0.016, 0.018], [0.03, 0.06, 0.065], pared);
       alb = mezclar(alb, [0.42, 0.48, 0.5], sat(espuma) * 0.6);
       alb = mezclar(alb, mezclar([0.006, 0.008, 0.008], [0.03, 0.035, 0.03], fbm2(p[0] / 30, p[1] / 30, 3, 934)), fondo);
-      return { albedo: alb, brillo: fondo > 0.5 ? 0.35 * suave(0.45, 0.6, fbm2(p[0] / 80, p[1] / 80, 3, 935)) : 0.7 };
+      return { albedo: alb, brillo: fondo > 0.5 ? 0.6 * suave(0.4, 0.6, fbm2(p[0] / 80, p[1] / 80, 3, 935)) : 0.9 };
     },
   });
   // las agujas de la ciudad en el fondo del tajo, a lo largo del eje, más altas las de lejos (asoman sobre el agua)
@@ -1309,8 +1309,44 @@ const P_MAR: Plano3D = {
   armar: (w, h) => memo(`ma|${w}|${h}`, () => armarMar(w, h)),
   revelado: { t: 0, exposicion: 1.2, derrame: { k: 0.4, r: 4 }, bloom: { k: 0.45, umbral: 0.75 }, grado: gradoNoche },
   variantes: [{ id: 'rayo', armar: (w, h) => armarMar(w, h, true), anim: { tipo: 'tiempo', claves: TIEMPOS_P3 }, escala: 2 }],
+  flickBase: 1, cuadros: NF, fps: FPS, extras: (_a, _c, t) => ({ flick: 1, particulas: cascadasMar(t) }), zonas: zonasMar,
   qa: [0.5, 2.0, 3.7, 6.0],
 };
+
+/**
+ * El agua que se derrama por las paredes del tajo (en bucle de NF cuadros): chorros de espuma que caen de la cresta al
+ * fondo a lo largo de las dos paredes, la espuma que corre por el borde y el rocío que salta abajo.
+ */
+function cascadasMar(t: number): Particula[] {
+  const ps: Particula[] = [], P = NF / FPS, espuma: C3 = [0.42, 0.5, 0.56];
+  for (let c = 0; c < 70; c++) {
+    const lado = c % 2 ? 1 : -1, y = -300 + az(c, 1401) * 5200, eje = ejeTajo(y), ancho = 520 + y * 0.04, k = 0.6 + az(c, 1402) * 0.8;
+    for (let i = 0; i < 40; i++) {
+      // cada gota baja por la pared: de la cresta (d = 1.02) al fondo (d = 0.72), acelerando
+      const f = (t / P + az(c * 40 + i, 1403)) % 1, s2 = f * f, d = 1.02 - 0.3 * Math.pow(s2, 0.8), x = eje + lado * ancho * d, z = mar(x, y);
+      const xi = x - lado * (6 + s2 * 10), v: V3 = [-lado * 60, 0, -200 - 900 * f];
+      ps.push({ p: [xi, y + (az(c * 40 + i, 1404) - 0.5) * 36, z + 4], r: (2 + az(c * 40 + i, 1405) * 2.4) * (0.7 + 0.6 * f), c: escalar(espuma, 0.8 * k * (1 - f * 0.4)), a: 1, suma: true, v });
+    }
+    // el rocío abajo: se abre hacia el medio del tajo y se apaga
+    for (let i = 0; i < 6; i++) {
+      const f = (t / P + i / 6 + az(c, 1406)) % 1, d = 0.72 - f * 0.12, x = eje + lado * ancho * d, z = mar(x, y) + 10 + f * 40;
+      ps.push({ p: [x, y + (az(c * 6 + i, 1407) - 0.5) * 40, z], r: 6 + f * 10, c: escalar(espuma, 0.35 * (1 - f) * k), a: 1, suma: true, v: [-lado * 80, 0, 40] });
+    }
+  }
+  // la espuma que corre por la cresta, hacia el horizonte
+  for (let i = 0; i < 260; i++) {
+    const lado = i % 2 ? 1 : -1, f = (t / P + az(i, 1408)) % 1, y = -300 + ((az(i, 1409) * 5200 + f * 260) % 5200), eje = ejeTajo(y), ancho = 520 + y * 0.04, x = eje + lado * ancho * 1.06;
+    ps.push({ p: [x, y, mar(x, y) + 3], r: 2 + az(i, 1410) * 3, c: escalar(espuma, 0.6 * Math.sin(f * Math.PI)), a: 1, suma: true, v: [0, 200, -20] });
+  }
+  return ps;
+}
+/** La zona de las paredes del tajo (px de la capa): de la cresta al fondo, de cerca hasta lejos. */
+function zonasMar(a: Armado) {
+  const b = baseCamara(a.cam), q: [number, number, number][] = [];
+  for (const y of [-300, 300, 1000, 2500, 5000]) for (const lado of [-1, 1]) for (const dd of [1.08, 0.7]) { const x = ejeTajo(y) + lado * (520 + y * 0.04) * dd, pr = proyectar(b, [x, y, mar(x, y) + (dd > 1 ? 60 : 0)]); if (pr) q.push(pr); }
+  const x0 = Math.max(0, Math.min(...q.map((p) => p[0])) - 20), y0 = Math.max(0, Math.min(...q.map((p) => p[1])) - 30), x1 = Math.min(a.cam.w - 1, Math.max(...q.map((p) => p[0])) + 20), y1 = Math.min(a.cam.h - 1, Math.max(...q.map((p) => p[1])) + 20);
+  return [{ caja: [x0, y0, x1, y1] as [number, number, number, number], escala: 3 }];
+}
 
 const P_YSMERAL: Plano3D = {
   id: 'p4_ysmeral', paralaje: 0.85, particulas: 'lluvia',
