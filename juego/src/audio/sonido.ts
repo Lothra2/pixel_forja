@@ -2015,9 +2015,12 @@ function iniciar(): void {
       }
       if (combate.objetivo > 0) combate.salida?.gain.setTargetAtTime(combate.objetivo, ac.currentTime, 0.6);
     }
-    if (ac.state === 'suspended') {
+    // iOS deja el contexto en 'suspended' hasta un toque y en 'interrupted' al volver de segundo plano o de una llamada
+    if (ac.state !== 'running') {
       const pr = ac.resume();
       if (pr) pr.then(() => tick()).catch(() => { /* nada */ });
+      // el truco de siempre en iOS: un búfer mudo dentro del gesto termina de desbloquear la salida
+      try { const b = ac.createBuffer(1, 1, 22050), f = ac.createBufferSource(); f.buffer = b; f.connect(ac.destination); f.start(0); } catch { /* nada */ }
     }
     tick();
   } catch {
@@ -2025,8 +2028,16 @@ function iniciar(): void {
   }
 }
 
+if (typeof window !== 'undefined') (window as any).__audio = (pausar?: boolean) => { if (pausar && listo) void ac.suspend(); return listo ? ac.state : 'sin crear'; };
+/** Al volver de segundo plano el contexto queda suspendido o interrumpido: se reanuda solo (y, si iOS no deja, al próximo toque). */
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && listo && ac.state !== 'running') { try { ac.resume().then(() => tick()).catch(() => { /* nada */ }); } catch { /* nada */ } }
+});
+
 export const Sonido = {
   iniciar,
+  /** El audio todavía no suena: no hubo gesto o el navegador lo tiene suspendido. */
+  mudo(): boolean { return !listo || ac.state !== 'running'; },
 
   volumen(general: number, musica: number, efectos: number, horror = vols.horror): void {
     try {

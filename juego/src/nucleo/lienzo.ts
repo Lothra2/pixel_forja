@@ -82,7 +82,8 @@ export function instalarEntrada() {
     e.preventDefault();
   }, { passive: false });
   lienzo.addEventListener('touchmove', (e) => { const t = e.touches[0]; pos(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
-  lienzo.addEventListener('touchend', (e) => { if (!e.touches.length) { if (E.izq) E.soltoIzq = true; if (E.der) E.soltoDer = true; E.izq = E.der = false; } e.preventDefault(); }, { passive: false });
+  // en iOS el audio se desbloquea de verdad al levantar el dedo: el gesto también va aquí
+  lienzo.addEventListener('touchend', (e) => { gesto(); if (!e.touches.length) { if (E.izq) E.soltoIzq = true; if (E.der) E.soltoDer = true; E.izq = E.der = false; } e.preventDefault(); }, { passive: false });
   window.addEventListener('resize', ajustar);
 }
 export function finCuadro() { E.clicIzq = E.clicDer = E.soltoIzq = E.soltoDer = false; E.pulsadas.clear(); E.rueda = 0; }

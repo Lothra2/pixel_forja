@@ -4,7 +4,7 @@ import { cargarManifiesto, asegurar, atlasDe, clavesCon, manifiesto, objetoMeta,
 import * as Assets from './motor/assets';
 import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
-import { T, TT, texto, IDI, fijarIdioma, tooltip } from './ui/comun';
+import { T, TT, texto, IDI, fijarIdioma, tooltip, TITULO } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
 import { dibujarCine, precargarCine, claveCine, claveFinal, marcasCine, hayCine } from './ui/cine';
 import { dibujarHudTactil, consejoTactil } from './ui/hud_tactil';
@@ -17,7 +17,7 @@ import { abrirTienda, cerrarPaneles, cambiarAgresivo, rectPanel, compacto } from
 import { ui, dibujarBarra, dibujarPaneles, dibujarArriba, dibujarCursor, dibujarTooltipObjeto, dibujarMapa, dibujarMuerte, hablarCon, alternar, prepararHud, lugarEn, COFRE_W, COFRE_H } from './ui/juego_ui';
 import { dibujarMundo, picks, aMundo, aPant, foco, opciones as opcionesRender, type Pick } from './render/escena';
 import { vinetaSangre, dibujarPresentacion, dibujarCaida, DUR_PRESENTA } from './ui/horror';
-import { prepararPortada, esperarPortada, reiniciarPortada, durForjaTitulo } from './ui/portada';
+import { prepararPortada, esperarPortada, reiniciarPortada, durForjaTitulo, tituloFijo } from './ui/portada';
 import { miedoPaso } from './juego/miedo';
 import { dibujarMiedo } from './render/miedo';
 /** Presentación del jefe en curso (cámara lenta y nombre grande). */
@@ -485,7 +485,15 @@ function procesarEventos(jj: Juego) {
 
 // ------------------------------------------------------------------ bucle
 let ultimo = performance.now();
-let introT = 0, musicaMenuEn = 0;
+let introT = 0, musicaMenuEn = 0, introEspera = false;
+/** El cartel de antes de la intro cuando el audio todavía no se puede encender. */
+function cartelComenzar(t: number) {
+  ctx.save(); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  tituloFijo(W / 2, H * 0.42, Math.min(W * 0.55, (H * 0.5) / 0.6), Math.min(0.55, t / 1.5));
+  ctx.globalAlpha = Math.min(1, t / 1.2) * (0.55 + 0.35 * Math.sin(t * 2.6));
+  texto(E.tactil ? T('Toca para comenzar', 'Tap to begin') : T('Haz clic para comenzar', 'Click to begin'), W / 2, H * 0.78, { alin: 'center', tam: Math.max(16, Math.round(H / 28)), color: '#d8c49a', fuente: TITULO });
+  ctx.restore();
+}
 (window as any).__introA = (s: number) => { introT = s; };
 (window as any).__aFinal = () => { estado = 'final'; finalT = 999; };
 (window as any).__cine = (clave: string, acto = 1, marcas: string[] = []) => { marcasCine(marcas); const antes = estado; cine = { clave, acto, t: 0, despues: () => { estado = antes; } }; precargarCine(clave, acto); estado = 'cine'; };
@@ -560,6 +568,13 @@ function paso(dt: number) {
       break;
     }
     case 'intro': {
+      // la primera vez el navegador no deja sonar nada antes de un toque: cartel oscuro hasta que toques, y la intro
+      // empieza desde 0 con la música ya desbloqueada (si no, en iPad se ve muda)
+      if (introEspera) {
+        cartelComenzar(tEstado);
+        if (E.clicIzq || pulso(' ') || pulso('Enter') || pulso('Escape')) { E.clicIzq = false; introEspera = false; introT = 0; tEstado = 0; Sonido.iniciar(); Sonido.musica('intro'); }
+        break;
+      }
       introT += dt;
       // la intro de la Forja (planos de cine.ts, clave 'intro') si llegó; si no, la de siempre. Al terminar o saltarla, el título forjado
       // la música de la intro sigue mientras se forja el título; la del menú entra cuando termina
@@ -697,7 +712,7 @@ async function arrancar() {
   } catch (e) { console.error(e); cargaMsg = 'Error: ' + e; return; }
   prepararHud();
   let vista = false; try { vista = localStorage.getItem('marca.intro') === '1'; } catch { /* */ }
-  estado = vista ? 'menu' : 'intro'; tEstado = 0; introT = 0; if (!vista) precargarCine('intro', 0);
+  estado = vista ? 'menu' : 'intro'; tEstado = 0; introT = 0; if (!vista) { precargarCine('intro', 0); introEspera = Sonido.mudo(); }
   aplicarMusicaEstado();
   (window as any).__juego = () => j;
   (window as any).__estado = () => estado;
