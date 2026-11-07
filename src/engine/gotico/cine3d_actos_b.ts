@@ -1189,8 +1189,9 @@ function atmVidrio(): Atmosfera {
       const [eu, ev] = loc(u - P.canto[0], v - P.canto[1]);
       if (dentroPol(P.pol, eu, ev)) {
         // el canto: vidrio grueso visto de lado, oscuro, con la luz de oro de atrás que lo atraviesa
-        const t = 0.5 + 0.5 * Math.sin((u + v) * 300 * P.esc);
-        return add(escalar(hexLin('#0c0a08'), 1), oro, 0.06 + 0.22 * t * (1 - P.brillo * 0.6));
+        // la luz entra por el canto y se apaga hacia la cara: más clara del lado que da al hueco
+        const dc = sat(distPol(P.pol, lu, lv) / (Math.hypot(P.canto[0], P.canto[1]) / P.esc)), hacia = Math.max(0, -((u - HUECO_C[0]) * P.canto[0] + (v - HUECO_C[1]) * P.canto[1]) / (Math.hypot(u - HUECO_C[0], v - HUECO_C[1]) * Math.hypot(P.canto[0], P.canto[1]) || 1));
+        return add(escalar(hexLin('#0c0a08'), 1), oro, (0.05 + 0.2 * (1 - dc) * (0.4 + 0.6 * hacia)) * (1 - P.brillo * 0.4));
       }
       if (enHueco) {
         // la sombra: el pedazo tapa la luz del hueco y deja un rastro oscuro en la bruma, hacia afuera
