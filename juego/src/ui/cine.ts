@@ -108,7 +108,14 @@ const sonados: { clave: string; plano: string | number; t: number; efecto: strin
  * Memoria en iPhone: la intro va en páginas grandes (hasta 16 Mpx cada una). Una página que ya no usa ningún plano de
  * aquí en adelante se suelta (se vuelve a pedir si se mira la intro otra vez).
  */
-let liberadas = '';
+let liberadas = '', claveViva = '';
+/** Suelta las imágenes de cinemática que no son de esta clave (las páginas pesan hasta 16 Mpx cada una). Sin clave: todas. */
+function soltarOtras(c: any | null) {
+  const usa = new Set<string>(); if (c) for (const q of c.planos) for (const k of q.capas) usa.add(k.archivo);
+  for (const [ruta, im] of [...imgs]) if (ruta.startsWith('cinematicas/') && !ruta.endsWith('vineta.png') && !usa.has(ruta)) { im.src = ''; imgs.delete(ruta); }
+}
+/** Al salir de una cinemática (terminada o saltada): sus páginas se sueltan. */
+export function soltarCine() { soltarOtras(null); claveViva = ''; }
 function liberarPaginas(c: any, i: number) {
   const k = c.planos.length + ':' + i; if (liberadas === k) return; liberadas = k;
   const quedan = new Set<string>();
@@ -144,7 +151,9 @@ export function dibujarCine(clave: string, acto: number, t: number): boolean {
   let t0 = 0, i = 0;
   while (i < c.planos.length - 1 && t >= t0 + c.planos[i].dur) { t0 += c.planos[i].dur; i++; }
   const p = c.planos[i], tl = t - t0;
-  if (tl >= p.dur && i === c.planos.length - 1) return true;
+  // al cambiar de cinemática se sueltan las páginas de la anterior, y al terminar las de esta
+  if (claveViva !== clave) { claveViva = clave; liberadas = ''; soltarOtras(c); }
+  if (tl >= p.dur && i === c.planos.length - 1) { soltarOtras(null); claveViva = ''; return true; }
   // los sonidos del plano a su tiempo (al volver atrás o cambiar de plano se rearman)
   if (clave !== sonClave || i !== sonPlano || tl < sonT) { sonClave = clave; sonPlano = i; sonT = -1e-3; }
   for (const s of p.sonidos ?? []) if (s.t > sonT && s.t <= tl) { Sonido.efecto(s.efecto, { vol: s.vol ?? 1 }); sonados.push({ clave, plano: p.id ?? i, t: +tl.toFixed(3), efecto: s.efecto }); if (sonados.length > 60) sonados.shift(); }

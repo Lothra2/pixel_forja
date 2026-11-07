@@ -6,7 +6,7 @@ import { pintarHeroe, progresoPintura } from './motor/pintor';
 import { Sonido } from './audio/sonido';
 import { T, TT, texto, IDI, fijarIdioma, tooltip, TITULO } from './ui/comun';
 import { dibujarFinal, dibujarEntreacto, dibujarRevelacion, dibujarCiclo } from './ui/menus';
-import { dibujarCine, precargarCine, claveCine, claveFinal, marcasCine, hayCine } from './ui/cine';
+import { dibujarCine, precargarCine, claveCine, claveFinal, marcasCine, hayCine, soltarCine } from './ui/cine';
 import { dibujarHudTactil, consejoTactil } from './ui/hud_tactil';
 import { historiaEntrar, historiaPaso, leerLibro, hist, finalDe, reiniciarHistoria, estadoMision, usarObjetoMision, finalCompleto, decisionDe, decisionesDe } from './juego/historia';
 import { dibujarHistoria } from './ui/historia_ui';
@@ -552,7 +552,7 @@ function paso(dt: number) {
       if (!cine) { estado = 'juego'; break; }
       cine.t += dt;
       if (dibujarCine(cine.clave, cine.acto, cine.t) || (cine.t > 0.6 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) {
-        E.clicIzq = false; const c = cine; cine = null; estado = j ? 'juego' : 'menu'; tEstado = 0; c.despues();
+        E.clicIzq = false; const c = cine; cine = null; estado = j ? 'juego' : 'menu'; tEstado = 0; soltarCine(); c.despues();
       }
       break;
     }
@@ -582,7 +582,7 @@ function paso(dt: number) {
       // la música de la intro sigue mientras se forja el título; la del menú entra cuando termina
       const forja = hayCine('intro'), fin = forja ? dibujarCine('intro', 0, introT) : dibujarIntro(introT);
       if (fin || (tEstado > 0.5 && (E.clicIzq || pulso('Escape') || pulso(' ') || pulso('Enter')))) {
-        E.clicIzq = false; estado = 'menu'; tEstado = 0; reiniciarPortada();
+        E.clicIzq = false; estado = 'menu'; tEstado = 0; reiniciarPortada(); soltarCine();
         if (!forja) Sonido.musica('menu'); else musicaMenuEn = tiempo + durForjaTitulo();
         try { localStorage.setItem('marca.intro', '1'); } catch { /* */ }
       }
