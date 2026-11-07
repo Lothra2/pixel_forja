@@ -501,18 +501,18 @@ function atmHerida(): Atmosfera {
 }
 /** Las cuatro brasas: dónde está cada una (lejos, hacia la boca) y hacia dónde va. */
 const BRASAS_P3: { p: V3; r: number }[] = [
-  { p: [2600, 9000, 3100], r: 26 }, { p: [-900, 7400, 2650], r: 20 }, { p: [4800, 13000, 3900], r: 30 }, { p: [1300, 11800, 3500], r: 16 },
+  { p: [900, 3600, 2700], r: 22 }, { p: [-700, 3000, 2450], r: 16 }, { p: [1900, 5200, 3200], r: 26 }, { p: [300, 4600, 3050], r: 14 },
 ];
 /** La estela de cada brasa en el instante t (en bucle): la cabeza y chispas que se quedan atrás. */
 function estelasHerida(t: number): Particula[] {
   const out: Particula[] = [], P = NF / FPS, naranja = hexLin('#ff7a2a'), amarillo = hexLin('#ffd27a');
   BRASAS_P3.forEach((b, j) => {
     const meta = add(BOCA_DIR, [0, 0, 0], 1), v = norm([meta[0] * 1e5 - b.p[0], meta[1] * 1e5 - b.p[1], meta[2] * 1e5 - b.p[2]]), vel = 900;
-    out.push({ p: b.p, r: b.r * 0.8, c: escalar(amarillo, 9), a: 1, suma: true, v: escalar(v, vel * 0.3) });
-    for (let i = 0; i < 70; i++) {
-      const vida = ((t / P + az(i, 610 + j)) % 1), atras = (i / 70) * b.r * 34 + vida * b.r * 4, lado = (az(i, 620 + j) - 0.5) * b.r * (0.4 + i / 40);
+    out.push({ p: b.p, r: b.r * 0.9, c: escalar(amarillo, 12), a: 1, suma: true, v: escalar(v, vel * 0.3) });
+    for (let i = 0; i < 90; i++) {
+      const vida = ((t / P + az(i, 610 + j)) % 1), atras = (i / 90) * b.r * 40 + vida * b.r * 4, lado = (az(i, 620 + j) - 0.5) * b.r * (0.4 + i / 40);
       const q = add(add(b.p, v, -atras), [lado * 0.6, lado * 0.3, (az(i, 630 + j) - 0.5) * b.r * (0.3 + i / 50) - vida * b.r]);
-      out.push({ p: q, r: b.r * (0.35 - i * 0.003) * (0.6 + az(i, 640 + j) * 0.6), c: escalar(mezclar(amarillo, naranja, Math.min(1, i / 25)), 6 * (1 - i / 75) * Math.sin(Math.PI * (0.15 + 0.85 * (1 - vida)))), a: 1, suma: true, v: escalar(v, vel) });
+      out.push({ p: q, r: b.r * (0.35 - i * 0.003) * (0.6 + az(i, 640 + j) * 0.6), c: escalar(mezclar(amarillo, naranja, Math.min(1, i / 30)), 8 * (1 - i / 95) * Math.sin(Math.PI * (0.15 + 0.85 * (1 - vida)))), a: 1, suma: true, v: escalar(v, vel) });
     }
   });
   return out;
@@ -526,9 +526,9 @@ function armarHerida(w: number, h: number): Armado {
   const picos = (x: number, y: number) => {
     let h = suave(3000, 6000, y) * 300;
     for (const [px, py, H, R] of PICOS) { const dx = x - px, dy = y - py; if (Math.abs(dx) > R * 1.6 || Math.abs(dy) > R * 1.6) continue; const ar = 1 - Math.abs(2 * fbm2(x / 260, y / 260, 3, 654) - 1), d = Math.hypot(dx, dy * 1.3) / R + ar * 0.18; h = Math.max(h, H * Math.pow(Math.max(0, 1 - d), 1.35)); }
-    return h + (fbm2(x / 900, y / 900, 3, 655) - 0.5) * 120;
+    return h + (fbm2(x / 900, y / 900, 3, 655) - 0.5) * 120 + suave(16000, 30000, y) * (fbm2(x / 5000, y / 5000, 4, 656) ** 2 * 3000);
   };
-  const cresta = (x: number, y: number) => 2000 * (1 - suave(-200, 1600, y)) + (fbm2(x / 300, y / 300, 4, 653) - 0.5) * 160 * (1 - suave(400, 1600, y)) - suave(600, 2600, y) * 600;
+  const cresta = (x: number, y: number): number => 2000 * (1 - suave(-200, 1600, y)) + (fbm2(x / 300, y / 300, 4, 653) - 0.5) * 160 * (1 - suave(400, 1600, y)) - suave(600, 2600, y) * 600;
   const alto = (x: number, y: number) => Math.max(cresta(x, y), picos(x, y)) + (fbm2(x / 60, y / 60, 3, 654) - 0.5) * 8;
   esc.terreno = new Terreno({
     alto, techo: 9000, grillas: [[-1500, -800, 1500, 1800, 6], [-14000, 1000, 16000, 20000, 40], [-60000, 5000, 60000, 60000, 300]],
@@ -854,8 +854,8 @@ function terrenoPlaya(marea: number): Terreno {
     alto: (x, y) => Math.max(alto(x, y), agua(x, y)), techo: 200, grillas: [[-2000, -1500, 2000, 2200, 5], [-12000, -2000, 12000, 20000, 40]],
     superficie: (p) => {
       const mojado = suave(0.5, 0.75, fbm2(p[0] / 120, p[1] / 120, 3, 1032)), enAgua = p[2] <= agua(p[0], p[1]) + 0.5 ? 1 : 0;
-      if (enAgua) { const esp = marea * suave(0.7, 0.85, fbm2(p[0] / 60 + p[1] / 300, p[1] / 7, 3, 1034)) * (0.3 + 0.7 * fbm2(p[0] / 200, p[1] / 200, 2, 1035)); return { albedo: mezclar([0.004, 0.008, 0.01], [0.3, 0.34, 0.36], esp), brillo: 0.5 * (1 - esp) }; }
-      const cerca = suave(-200, -700, p[1]); return { albedo: escalar(mezclar([0.045, 0.043, 0.038], [0.012, 0.016, 0.016], mojado), 1 - cerca * 0.6), brillo: (0.04 + mojado * 0.22) * (1 - cerca) };
+      if (enAgua) { const esp = marea * suave(0.7, 0.85, fbm2(p[0] / 60 + p[1] / 300, p[1] / 7, 3, 1034)) * (0.3 + 0.7 * fbm2(p[0] / 200, p[1] / 200, 2, 1035)); return { albedo: mezclar([0.004, 0.008, 0.01], [0.3, 0.34, 0.36], esp), brillo: 0.5 * (1 - esp) * (1 - suave(-100, -600, p[1]) * 0.9) }; }
+      const cerca = suave(-200, -700, p[1]); return { albedo: escalar(mezclar([0.045, 0.043, 0.038], [0.012, 0.016, 0.016], mojado), 1 - cerca * 0.75), brillo: (0.04 + mojado * 0.22) * (1 - cerca) };
     },
   });
 }
@@ -874,10 +874,10 @@ function atmYsmeral(marea = 0): Atmosfera {
   };
   const aire = (d: V3): C3 => add(gradiente(pars, Math.max(0, Math.min(0.02, d[2]))), luna, 0.06 * Math.pow(Math.max(0, dot3(d, L)), 6));
   return {
-    sol: { dir: L, c: luna, k: 1.0, ancho: 0.03 }, cielo, aire,
+    sol: { dir: L, c: luna, k: 1.0 - marea * 0.4, ancho: 0.03 }, cielo, aire,
     ambCielo: escalar(hexLin('#3a5070'), 0.16), ambSuelo: escalar(hexLin('#141a20'), 0.12),
     niebla: { densidad: 1 / 12000, baja: 1 / (4200 - marea * 1800), z0: 0, H: 60, ruido: 0.7, escalaRuido: 0.002 },
-    borde: { c: hexLin('#c8dcff'), k: 2.2 }, oclusion: 0.85,
+    borde: { c: hexLin('#c8dcff'), k: 1.3 - marea * 0.6 }, oclusion: 0.85,
   };
 }
 function armarYsmeral(w: number, h: number): ArmadoB {
@@ -994,13 +994,14 @@ function armarMarea(w: number, h: number): ArmadoB {
   esc.luces.push({ p: add(pf, [0, -4, 8]), c: hexLin('#ffa050'), k: 4, r: 30, canal: 1, sombra: true, envuelve: 0.4, halo: 0.004 });
   // los ahogados tendidos en la loma de arena, y peces muertos
   const tendido = (ps: Pieza[]) => moverPiezas(ps, giroEje([1, 0, 0], -Math.PI / 2 + 0.06), [0, 0, 0], [0, 0, 6]);
-  for (const [x, y, gi, pose, sd] of [[-260, -520, 30, 'parado', 1], [-90, -600, -70, 'arrastra', 2], [140, -540, 110, 'parado', 3], [320, -640, 10, 'arrastra', 4], [-400, -660, -20, 'parado', 5]] as [number, number, number, PoseMuerto, number][]) {
+  for (const [x, y, gi, pose, sd] of [[-170, -660, 30, 'parado', 1], [-60, -600, -70, 'arrastra', 2], [110, -650, 110, 'parado', 3], [230, -560, 10, 'arrastra', 4], [-290, -580, -20, 'parado', 5]] as [number, number, number, PoseMuerto, number][]) {
     const ps = conMat(muertoSeco(pose, 1220 + sd, 62), (m) => (m.includes('piel') || m.includes('carne') || m === 'ci_piel' ? 'j2_piel_ahogada' : m));
     frente.push(esc.poner(pose === 'parado' ? tendido(ps) : ps, { x, y, z: ter.h(x, y) - 2, giro: gi }, { nieve: 0 }));
   }
-  for (const [x, y, sd] of [[20, -500, 1], [-180, -470, 2], [250, -480, 3]] as [number, number, number][]) frente.push(esc.poner(piezasDe('ahg_peces_muertos', objeto('ahg_peces_muertos').variantes[0], 1230 + sd), { x, y, z: ter.h(x, y) - 1, giro: az(sd, 1231) * 360, k: 1.2 }, { nieve: 0 }));
+  for (const [x, y, sd] of [[20, -690, 1], [-120, -700, 2], [170, -600, 3]] as [number, number, number][]) frente.push(esc.poner(piezasDe('ahg_peces_muertos', objeto('ahg_peces_muertos').variantes[0], 1230 + sd), { x, y, z: ter.h(x, y) - 1, giro: az(sd, 1231) * 360, k: 1.2 }, { nieve: 0 }));
   for (const g of frente) esc.frente.add(g);
-  return { esc, atm: atmYsmeral(1), cam: camaraBase([-40, -860, 70], [40, 400, 110], 42, w, h), fuegos, plumas };
+  const zc = ter.h(-40, -820) + 34;
+  return { esc, atm: atmYsmeral(1), cam: camaraBase([-40, -820, zc], [40, 400, 120], 46, w, h), fuegos, plumas };
 }
 /** Espuma que salta donde rompe la marea (no suma: agua que agarra la luz de la luna), en bucle. */
 function espumaMarea(t: number): Particula[] {
@@ -1065,7 +1066,7 @@ function vidrio(d: V3) {
     dAn = Math.min(dAn, Math.abs(sd));
   }
   const celda = k * 10 + jAn, hueco = jAn <= 1 || (jAn === 2 && az(celda, 1341) < 0.6) || (jAn === 3 && az(celda, 1342) < 0.15);
-  const dist = Math.min(dRad, dAn), ancho = 0.0016 + 0.0022 * (1 - r);
+  const dist = Math.min(dRad, dAn), ancho = 0.0009 + 0.0026 * (1 - r) ** 2;
   // el pedazo hundido y torcido: cuanto más cerca del centro, más (la grieta se abre y deja ver el oro)
   const hunde = (1 - suave(0.05, 0.95, r)) * (0.4 + az(celda, 1343) * 0.6), tilt: V3 = norm([(az(celda, 1344) - 0.5) * 0.9, (az(celda, 1345) - 0.5) * 0.9, 1]);
   return { u, v, r, th, dist, ancho, hueco, celda, hunde, tilt, dAn, dRad };
@@ -1093,7 +1094,8 @@ function atmVidrio(): Atmosfera {
     const corr = norm([d[0] + (VX[0] * g.tilt[0] + VY[0] * g.tilt[1]) * 0.05 * g.hunde, d[1] + (VX[1] * g.tilt[0] + VY[1] * g.tilt[1]) * 0.05 * g.hunde, d[2] + (VX[2] * g.tilt[0] + VY[2] * g.tilt[1]) * 0.05 * g.hunde]);
     const refl = Math.pow(Math.max(0, -(g.tilt[0] * g.u + g.tilt[1] * g.v) / Math.max(0.05, g.r) * 0.9 + 0.1), 3) * (1 - suave(0.1, 1, g.r));
     const fuera = suave(0.55, 1.0, g.r);
-    let c = add(escalar(cieloNoche(corr), 1 + (az(g.celda, 1352) - 0.5) * 0.5 * (1 - fuera)), oro, (refl * 0.45 + 0.01) * (1 - fuera));
+    const brilloPedazo = Math.pow(az(g.celda, 1354), 4) * 0.1 * (1 - fuera);
+    let c = add(escalar(cieloNoche(corr), 1 + (az(g.celda, 1352) - 0.5) * 0.7 * (1 - fuera)), oro, (refl * 0.18 + brilloPedazo + 0.006) * (1 - fuera));
     // el canto del vidrio: una franja junto a cada grieta, del lado del pedazo, más ancha cuanto más hundido
     const canto = g.ancho * (1.5 + g.hunde * 7);
     if (g.dist < canto) {
@@ -1119,7 +1121,7 @@ function armarVidrio(w: number, h: number): Armado {
   esc.terreno = new Terreno({
     alto: (x, y) => 4 * suave(0.1, 0.18, placa(x, y)) + suave(900, 1600, Math.abs(x) - y * 0.15) * (200 + fbm2(x / 300, y / 300, 4, 1361) * 500) + (fbm2(x / 40, y / 40, 2, 1362) - 0.5) * 2,
     techo: 900, grillas: [[-3000, -600, 3000, 6000, 6], [-20000, 3000, 20000, 40000, 50]],
-    superficie: (p) => { const k = suave(0.1, 0.18, placa(p[0], p[1])); return { albedo: mezclar([0.004, 0.005, 0.008], [0.16, 0.18, 0.22], k * (0.6 + 0.4 * fbm2(p[0] / 30, p[1] / 30, 2, 1363))), brillo: 0.8 - k * 0.6 }; },
+    superficie: (p) => { const k = suave(0.1, 0.18, placa(p[0], p[1])); return { albedo: mezclar([0.003, 0.004, 0.006], [0.09, 0.1, 0.13], k * (0.6 + 0.4 * fbm2(p[0] / 30, p[1] / 30, 2, 1363))), brillo: 0.8 - k * 0.6 }; },
   });
   const ter = esc.terreno;
   // peñascos con costra de hielo en primer plano (oscuros, enmarcan)
@@ -1162,8 +1164,8 @@ function armarAunSaar(w: number, h: number): Armado {
   const L = norm([0.02, 1, 0.42]), blanco = hexLin('#e8ecf4');
   const atm: Atmosfera = {
     sol: { dir: L, c: blanco, k: 2.2, ancho: 0.05 },
-    cielo: (d) => { const gq = Math.max(0, dot3(d, L)), e = elev(d); let c = add(gradiente([[-0.3, hexLin('#0c0b0e')], [0, hexLin('#24221e')], [0.2, hexLin('#121116')], [0.6, hexLin('#060608')]], e), blanco, 0.25 * Math.pow(gq, 8) + 2.2 * Math.pow(gq, 90)); const nb = nubes(d, 1430, 2000, 0.5, 2400, L); if (nb.a > 0) c = mezclar(c, add(escalar(hexLin('#24201c'), 1 - nb.espesor * 0.4), hexLin('#e8c890'), (0.2 + nb.luz) * Math.pow(gq, 4) * 1.2), nb.a * 0.8); return c; },
-    aire: (d) => add(escalar(hexLin('#141218'), 0.6), blanco, 0.2 * Math.pow(Math.max(0, dot3(d, L)), 8)),
+    cielo: (d) => { const gq = Math.max(0, dot3(d, L)), e = elev(d); let c = add(gradiente([[-0.3, hexLin('#0c0b0e')], [0, hexLin('#24221e')], [0.2, hexLin('#121116')], [0.6, hexLin('#060608')]], e), blanco, 0.1 * Math.pow(gq, 10) + 0.9 * Math.pow(gq, 160) + 2 * Math.pow(gq, 900)); const nb = nubes(d, 1430, 2000, 0.5, 2400, L); if (nb.a > 0) c = mezclar(c, add(escalar(hexLin('#24201c'), 1 - nb.espesor * 0.4), hexLin('#e8c890'), (0.2 + nb.luz) * Math.pow(gq, 6) * 0.8), nb.a * 0.85); return c; },
+    aire: (d) => add(escalar(hexLin('#141218'), 0.5), blanco, 0.08 * Math.pow(Math.max(0, dot3(d, L)), 10)),
     ambCielo: escalar(hexLin('#4a4a5a'), 0.06), ambSuelo: escalar(hexLin('#1a1610'), 0.05),
     niebla: { densidad: 1 / 5000, baja: 1 / 1600, z0: -300, H: 200, ruido: 0.6, escalaRuido: 0.002 },
     borde: { c: hexLin('#f0e8d8'), k: 3 }, oclusion: 0.9,
@@ -1219,7 +1221,7 @@ const P_MAR: Plano3D = {
 const P_YSMERAL: Plano3D = {
   id: 'p4_ysmeral', paralaje: 0.85, particulas: 'lluvia',
   armar: (w, h) => memo(`ys|${w}|${h}`, () => armarYsmeral(w, h)),
-  revelado: { t: 0, exposicion: 1.25, rayos: { k: 0.3, c: [0.8, 0.9, 1], umbral: 0.3 }, derrame: { k: 0.5, r: 5 }, bloom: { k: 0.4, umbral: 0.75 }, grado: gradoNoche },
+  revelado: { t: 0, exposicion: 1.15, rayos: { k: 0.1, c: [0.8, 0.9, 1], umbral: 0.7 }, derrame: { k: 0.5, r: 5 }, bloom: { k: 0.4, umbral: 0.75 }, grado: gradoNoche },
   flickBase: 1, cuadros: NF, fps: FPS, extras: (a, c, t) => extrasFuego(a as ArmadoB, c, t, { latir: false }),
   zonas: (a) => { const b = baseCamara(a.cam), q = [[-200, 300, 0], [200, 900, 400], [-200, 900, 400], [200, 300, 0]].map((p) => proyectar(b, p as V3)!).filter(Boolean); return [{ caja: [Math.min(...q.map((p) => p[0])) - 20, Math.min(...q.map((p) => p[1])) - 20, Math.max(...q.map((p) => p[0])) + 20, Math.max(...q.map((p) => p[1])) + 20], escala: 2 }]; },
 };
@@ -1235,7 +1237,7 @@ const P_CAMPANA: Plano3D = {
 const P_MAREA: Plano3D = {
   id: 'p2_marea', paralaje: 0.85, particulas: 'lluvia',
   armar: (w, h) => memo(`mr|${w}|${h}`, () => armarMarea(w, h)),
-  revelado: { t: 0, exposicion: 1.25, rayos: { k: 0.3, c: [0.8, 0.9, 1], umbral: 0.3 }, derrame: { k: 0.5, r: 5 }, bloom: { k: 0.4, umbral: 0.75 }, grado: gradoNoche },
+  revelado: { t: 0, exposicion: 1.15, rayos: { k: 0.1, c: [0.8, 0.9, 1], umbral: 0.7 }, derrame: { k: 0.5, r: 5 }, bloom: { k: 0.4, umbral: 0.75 }, grado: gradoNoche },
   flickBase: 0.9, cuadros: NF, fps: FPS, extras: (a, c, t) => extrasFuego(a as ArmadoB, c, t, { particulas: espumaMarea }),
   zonas: (a) => { const b = baseCamara(a.cam), q = [[-800, 300, 0], [800, 300, 0], [-800, 600, 420], [800, 600, 420]].map((p) => proyectar(b, p as V3)!).filter(Boolean); return [{ caja: [Math.min(...q.map((p) => p[0])) - 20, Math.min(...q.map((p) => p[1])) - 20, Math.max(...q.map((p) => p[0])) + 20, Math.max(...q.map((p) => p[1])) + 20], escala: 3 }, ...zonasDe(a, 20, 1)]; },
 };

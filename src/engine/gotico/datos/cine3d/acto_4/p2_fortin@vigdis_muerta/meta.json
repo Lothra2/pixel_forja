@@ -1,0 +1,18 @@
+{
+ "fondo": true,
+ "frente": true,
+ "fuegos": [
+  {
+   "x": 504,
+   "y": 540,
+   "w": 70,
+   "h": 75,
+   "escala": 1,
+   "cuadros": 16,
+   "columnas": 16,
+   "fps": 12
+  }
+ ],
+ "particulas": "nieve",
+ "paralaje": 0.85
+}
