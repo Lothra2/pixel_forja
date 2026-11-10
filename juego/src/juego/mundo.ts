@@ -601,7 +601,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   v.vida -= total;
   v.destello = 0.12;
   if (total > 0) {
-    if (g.parte === undefined || Math.round(total) >= 1) numero(j, v, total, v.tipo === 'heroe' ? '#ff4040' : crit || nucleo ? '#ffe040' : COLOR_ELEM[g.elem], crit || nucleo, g.parte !== undefined && g.parte < 2);
+    if (g.parte === undefined || Math.round(total) >= 1) numero(j, v, total, v.tipo === 'heroe' ? '#ff4040' : crit || nucleo ? '#ffe040' : COLOR_ELEM[g.elem], crit || nucleo, g.parte !== undefined && g.parte < 2 && v.vida > 0); // el golpe que mata se lee en tamaño normal (la vida ya viene descontada)
     if (g.robo && g.deHeroe) h.vida = Math.min(h.vidaMax, h.vida + total * g.robo / 100);
     if (g.deHeroe && h.c.robo_mana) h.mana = Math.min(h.c.manaMax, h.mana + total * h.c.robo_mana / 100);
   }
