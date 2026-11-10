@@ -15,7 +15,7 @@ import { Lienzo, texto } from '../src/engine/gotico/hud.ts';
 import { createRaster, blit, upscaleNearest, type Raster } from '../src/engine/core/raster.ts';
 import { encodePng } from '../src/engine/export/png.ts';
 import { encodeGif } from '../src/engine/export/gif.ts';
-import { nivelesQA, SUJETOS_HEROES, SUJETOS_MONSTRUOS } from './qa-heroes.ts';
+import { nivelesQA, SUJETOS_HEROES, SUJETOS_MONSTRUOS, sujetoMonstruo } from './qa-heroes.ts';
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
 const SALIDA = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'hojas_heroes';
@@ -57,7 +57,9 @@ mkdirSync(SALIDA, { recursive: true });
 // --tira <acción>: solo una tira por clase con esa acción en las direcciones pedidas (filas), a ×2
 // (--monstruos: los monstruos humanoides de la QA en vez de los héroes; los cuadros son los de los monstruos)
 const TIRA = arg('--tira') as Accion | undefined;
-if (TIRA) for (const h of process.argv.includes('--monstruos') ? SUJETOS_MONSTRUOS : SUJETOS_HEROES) {
+const { MONSTRUOS } = await import('../src/engine/gotico/catalogo/personajes.ts');
+const todosMonstruos = [...SUJETOS_MONSTRUOS, ...MONSTRUOS.filter((m) => !SUJETOS_MONSTRUOS.some((x) => x.id === m.id)).map(sujetoMonstruo)];
+if (TIRA) for (const h of process.argv.includes('--monstruos') ? todosMonstruos : SUJETOS_HEROES) {
   if (arg('--clase') && h.id !== arg('--clase')) continue;
   const a = { cuadros: cuadrosDe(TIRA, h.cuerpo.presentacion) }, [nombreNivel, eq] = h.niveles[Math.min(NIVEL, h.niveles.length - 1)];
   // los cuerpos grandes (ogro, trol, gigante) van en celdas más grandes, a la misma escala

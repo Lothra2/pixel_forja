@@ -52,10 +52,12 @@ const EXTRA_JUEGO: { id: string; cuerpo: Cuerpo; equipo: Equipo; magia?: boolean
   { id: 'cazacabezas', cuerpo: { piel: 'cu_piel_morena', ojos: 'cu_ojo_brasa', musculo: 0.7, alto: 0.9, peinado: 'cresta', pelo: 'cu_pelo_rojo' },
     equipo: { piernas: { tipo: 'taparrabo', mat: 'cu_pelaje' }, cabeza: { tipo: 'mascara', mat: 'cu_hueso' }, hombros: { tipo: 'huesos', mat: 'cu_hueso' }, arma: { tipo: 'lanza', mat: 'cu_hueso', mango: 'madera_vieja' } } },
 ];
+/** Un monstruo humanoide (de los catálogos o del juego) como sujeto de la QA, con las acciones que se le hornean y correr. */
+export const sujetoMonstruo = (m: { id: string; cuerpo: Cuerpo; equipo: Equipo; magia?: boolean }): Sujeto => ({ id: m.id, cuerpo: m.cuerpo, niveles: [['', m.equipo]], acciones: ['quieto', 'caminar', 'correr', 'atacar', ...(m.magia ? ['lanzar' as const] : []), 'herido', 'morir'] });
 export const IDS_MONSTRUOS_QA = ['ogro', 'trol_pantano', 'gigante_helado', 'necrofago', 'diablillo', 'chacal', 'cazacabezas'];
 export const SUJETOS_MONSTRUOS: Sujeto[] = IDS_MONSTRUOS_QA.map((id) => {
   const m = MONSTRUOS.find((x) => x.id === id) ?? EXTRA_JUEGO.find((x) => x.id === id)!;
-  return { id, cuerpo: m.cuerpo, niveles: [['', m.equipo]], acciones: ['quieto', 'caminar', 'correr', 'atacar', ...(m.magia ? ['lanzar' as const] : []), 'herido', 'morir'] };
+  return sujetoMonstruo({ ...m, id });
 });
 
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -251,7 +253,15 @@ const nor3 = (a: V3): V3 => { const l = len(a) || 1; return [a[0] / l, a[1] / l,
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const t0 = Date.now();
-  const MON = process.argv.includes('--monstruos'), sujetos = MON ? SUJETOS_MONSTRUOS : SUJETOS_HEROES;
+  // --monstruos: todos los humanoides que salen de figura.ts (personajes.ts, monstruos67.ts y los del juego: con
+  // --juego <ruta de juego/src/datos/hornear_extra.ts> todos sus MONSTRUOS_EXTRA; si no, la copia de chacal y cazacabezas)
+  const MON = process.argv.includes('--monstruos');
+  let sujetos = SUJETOS_HEROES;
+  if (MON) {
+    const { MONSTRUOS67 } = await import('../src/engine/gotico/catalogo/monstruos67.ts');
+    const ruta = arg('--juego'), extra = ruta ? (await import(ruta)).MONSTRUOS_EXTRA : EXTRA_JUEGO;
+    sujetos = [...MONSTRUOS, ...extra, ...MONSTRUOS67].map(sujetoMonstruo);
+  }
   const { cuadros, fallas } = qaHeroes({ clase: SOLO_CLASE, accion: SOLO_ACC, sujetos });
   const andar = angulosAndar({ clase: SOLO_CLASE, sujetos });
   fallas.push(...andar.fallas);
@@ -259,7 +269,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   fallas.push(...cuerpo.fallas);
   const por = new Map<string, number>();
   for (const x of fallas) { const k = `${x.chequeo} · ${x.clase} · ${x.acc}`; por.set(k, (por.get(k) ?? 0) + 1); }
-  console.log(`QA de héroes: ${cuadros} cuadros (clases × 4 niveles × 8 direcciones × cada cuadro de cada acción) en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  console.log(`QA de ${MON ? `${sujetos.length} monstruos humanoides` : "héroes"}: ${cuadros} cuadros (${MON ? "8 direcciones" : "clases × 4 niveles × 8 direcciones"} × cada cuadro de cada acción) en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   const chequeos = ['agarre', 'arma-cabeza', 'arma-cuerpo', 'mano-cara', 'antebrazo-cara', 'mano-pecho', 'cabo-ingle', 'pie bajo el piso', 'rodilla al revés', 'articulación bajo el piso', 'mano bajo el piso'];
   for (const c of chequeos) console.log(`  ${c.padEnd(26)} ${fallas.filter((x) => x.chequeo.startsWith(c)).length} fallas`);
   console.log(`  ${'arma-andar'.padEnd(26)} ${andar.fallas.length} fallas (variación caminar ≤ ${LIMITE_ANDAR.caminar}°, correr ≤ ${LIMITE_ANDAR.correr}°, salto ≤ ${LIMITE_ANDAR.salto}°)`);
@@ -273,6 +283,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (const f of cuerpo.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} ${f.acc.padEnd(9)} ${(f.codo ? f.codo[0] + '°–' + f.codo[1] + '°' : '(sin brazo libre)').padEnd(17)} ${String(f.mano ?? '-').padEnd(13)} ${String(f.pelvis).padEnd(8)} ${f.rodilla}`);
   console.log(`TOTAL: ${fallas.length} fallas`);
   for (const [k, n] of [...por].sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(5)}  ${k}`);
+  if (MON) {
+    console.log('  fallas por monstruo:');
+    for (const sj of sujetos) console.log(`    ${sj.id.padEnd(22)} ${fallas.filter((x) => x.clase === sj.id).length}`);
+  }
   for (const x of fallas.slice(0, DETALLE)) console.log('   ', JSON.stringify(x));
   process.exit(fallas.length ? 1 : 0);
 }

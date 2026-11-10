@@ -210,15 +210,15 @@ export function zancada(acc: 'caminar' | 'correr', alto = 1, estilo?: Presentaci
 }
 
 /** Tipo de arma para la pose (lo que cambia cómo se agarra y cómo se mueve). */
-/** 'asta': la lanza a dos manos; ataca de estocada y en todo lo demás va como 'dos'. */
-export type ArmaPose = 'una' | 'dos' | 'arco' | 'baculo' | 'garras' | 'nada' | 'ballesta' | 'asta';
+/** 'asta': la lanza a dos manos, ataca de estocada; 'segur': la guadaña de un monstruo, siega de lado. En todo lo demás van como 'dos'. */
+export type ArmaPose = 'una' | 'dos' | 'arco' | 'baculo' | 'garras' | 'nada' | 'ballesta' | 'asta' | 'segur';
 
 /** Lo que lleva la mano izquierda cuando la derecha empuña sola: un escudo o un objeto (orbe, libro, antorcha). */
 export type ManoPose = 'escudo' | 'objeto';
 
 export function pose(acc: Accion, f: number, arma: ArmaPose = 'una', estilo?: Presentacion, mano?: ManoPose, porte?: Porte): Pose {
   const p: Pose = { torso: 4, giroTorso: 0, cabeza: 0, bajar: 0, avanza: 0, hombroD: [8, 10, 18], hombroI: [6, 10, 16], caderaD: [2, 4], caderaI: [-2, 4], caida: 0 };
-  if (arma === 'asta' && acc !== 'atacar') arma = 'dos';
+  if ((arma === 'asta' || arma === 'segur') && acc !== 'atacar') arma = 'dos';
   // el tiempo de la acción (0..1): cada clase de héroe tiene sus cuadros (ANIM_HEROE); los monstruos, los de CUADROS
   const n = cuadrosDe(acc, estilo), u = f / n;
   // morir va por tablas de 8 cuadros: si una clase tuviera otros, se reparte en esas 8 poses
@@ -228,7 +228,7 @@ export function pose(acc: Accion, f: number, arma: ArmaPose = 'una', estilo?: Pr
   else if (acc === 'quieto') quieto(p, u, arma, estilo);
   else if (acc === 'caminar' || acc === 'correr') marcha(p, u, acc === 'correr', arma, estilo, porte);
   else if (acc === 'presentar') presentar(p, u, arma, estilo ?? 'guardia', mano);
-  else if (acc === 'atacar') { if (porte === 'bruto' && (arma === 'una' || arma === 'dos')) atacarBruto(p, u, arma); else if (porte === 'bestia' && (arma === 'garras' || arma === 'nada')) atacarBestia(p, u); else atacar(p, u, arma, estilo, mano); }
+  else if (acc === 'atacar') { if (porte === 'bruto' && (arma === 'una' || arma === 'dos')) atacarBruto(p, u, arma); else if (!estilo && (arma === 'garras' || arma === 'nada')) atacarBestia(p, u); else if (arma === 'segur') atacarGuadana(p, llevar(u, 0.5, 7 / 12)); else atacar(p, u, arma, estilo, mano); }
   else if (acc === 'lanzar') lanzar(p, u, arma, estilo, mano);
   else if (acc === 'herido') herido(p, u, arma, estilo);
   else morir(p, f8, arma, estilo);
@@ -516,6 +516,11 @@ function portarArma(p: Pose, u: number, correr: boolean, arma: ArmaPose, estilo?
     p.armaD = correr ? [118 + 2 * sw, 8] : [126 + 1.5 * sw, 10];
     p.codoD = codo; delete p.munecaD;
     return true;
+  }
+  if (arma === 'garras' && !estilo) {
+    // las garras apuntan adelante y abajo, firmes: el puño no gira con cada paso
+    p.armaD = correr ? [112 + 2 * sw, 0] : [118 + 2 * sw, 0];
+    return false;
   }
   if (arma === 'ballesta') {
     // la ballesta cruzada adelante, la culata en la cadera derecha y la izquierda en el fuste: no se balancea
@@ -1138,7 +1143,7 @@ function lanzarComun(p: Pose, u: number, arma: ArmaPose) {
   ];
   // lo que hace la mano del arma mientras la otra conjura
   const der: Vals[] = arma === 'baculo'
-    ? [{ manoD: [6, 8, 34], vara: [4, 3] }, { manoD: [4, 8, 40], vara: [-10, 5] }, { manoD: [3, 8, 44], vara: [-16, 6] }, { manoD: [12, 6, 44], vara: [42, 0] }, { manoD: [13, 6, 44.5], vara: [46, 0] }, {}, { manoD: [9, 7, 38], vara: [18, 2] }, { manoD: [7, 8, 35], vara: [6, 3] }]
+    ? [{ manoD: [6, 8, 34], vara: [4, 3] }, { manoD: [4, 8, 40], vara: [-10, 5] }, { manoD: [3, 8, 44], vara: [-16, 6] }, { manoD: [12, 7, 44], vara: [42, -16] }, { manoD: [13, 7, 44.5], vara: [46, -16] }, {}, { manoD: [9, 7.5, 38], vara: [18, -6] }, { manoD: [7, 8, 35], vara: [6, 3] }]
     : arma === 'una'
       ? [{ manoD: [6, 9, 28], armaD: [120, 15] }, { manoD: [5, 9, 40], armaD: [20, 5] }, { manoD: [4, 8, 46], armaD: [-8, 0] }, { manoD: [7, 7, 53], armaD: [6, 0] }, { manoD: [7, 7, 54], armaD: [4, 0] }, {}, { manoD: [7, 8.5, 38], armaD: [70, 10] }, { manoD: [6, 9, 30], armaD: [110, 14] }]
       : arma === 'dos' || arma === 'ballesta'
