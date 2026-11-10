@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ANIM_HEROE, CLASES_HEROE, CUADROS, cuadrosDe, manifiestoAnimacion, zancada, ESTILO_CLASE, pose } from '../gotico/figura';
-import { qaHeroes, angulosAndar, cuerpoAndar, SUJETOS_MONSTRUOS } from '../../../scripts/qa-heroes';
+import { qaHeroes, angulosAndar, cuerpoAndar, entradaAccion, telaAndar, SUJETOS_MONSTRUOS } from '../../../scripts/qa-heroes';
 
 describe('animación de los héroes: cuadros por clase', () => {
   it('el manifiesto que lee el juego está al día con el código (npx tsx scripts/animacion-heroes.ts)', () => {
@@ -44,6 +44,16 @@ describe('animación de los héroes: cuadros por clase', () => {
     expect(filas.length).toBe(64);
     expect(fallas.slice(0, 5)).toEqual([]);
   });
+  it('el ataque y el conjuro salen del reposo y vuelven a él (arma ≤ 20°, manos ≤ 0,08 del alto)', () => {
+    const { filas, fallas } = entradaAccion();
+    expect(filas.length).toBe(64);
+    expect(fallas.slice(0, 5)).toEqual([]);
+  });
+  it('la tela al andar no se infla detrás, no salta de un cuadro a otro ni tiene huecos (4 direcciones)', () => {
+    const { filas, fallas } = telaAndar({ dirs: ['e', 'se', 'ne', 'so'] });
+    expect(filas.length).toBeGreaterThan(10);
+    expect(fallas.slice(0, 5)).toEqual([]);
+  }, 300000);
   it('los monstruos humanoides revisados (brutos, bestias, chacal y cazacabezas) pasan la QA completa', () => {
     const sujetos = SUJETOS_MONSTRUOS;
     expect(qaHeroes({ sujetos }).fallas.slice(0, 5)).toEqual([]);

@@ -12,9 +12,9 @@
  *   npx tsx scripts/qa-heroes.ts [--clase berserker] [--accion atacar] [--detalle 40]
  */
 import { HEROES, MONSTRUOS } from '../src/engine/gotico/catalogo/personajes.ts';
-import { geometriaQA, dentroElip, armaduraDeLinea, type Cuerpo, type Equipo, type GeoQA } from '../src/engine/gotico/cuerpo.ts';
+import { geometriaQA, dentroElip, telaQA, armaduraDeLinea, type Cuerpo, type Equipo, type GeoQA } from '../src/engine/gotico/cuerpo.ts';
 import { DIRS, cuadrosDe, type Accion } from '../src/engine/gotico/figura.ts';
-import { aPantalla, type V3 } from '../src/engine/gotico/render.ts';
+import { aPantalla, pintarEscena, type V3 } from '../src/engine/gotico/render.ts';
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
 const SOLO_CLASE = arg('--clase'), SOLO_ACC = arg('--accion'), DETALLE = +(arg('--detalle') ?? 30);
@@ -249,6 +249,104 @@ export function cuerpoAndar(o: { clase?: string; sujetos?: Sujeto[] } = {}): { f
   }
   return { filas, fallas };
 }
+/**
+ * Entrar y salir del ataque y del conjuro: el primer cuadro y el último tienen que salir del reposo medio (quieto): el
+ * arma a 20° como mucho en pantalla y cada mano a 0,08 del alto como mucho.
+ */
+export const LIMITE_ENTRADA = { angulo: 20, mano: 0.08 };
+export interface FilaEntrada { clase: string; nivel: string; acc: string; angulo: number; mano: number }
+export function entradaAccion(o: { clase?: string; sujetos?: Sujeto[] } = {}): { filas: FilaEntrada[]; fallas: Falla[] } {
+  const filas: FilaEntrada[] = [], fallas: Falla[] = [];
+  const angulo = (g: GeoQA) => { if (!g.arma) return NaN; const [ax, ay] = aPantalla(g.arma.a), [bx, by] = aPantalla(g.arma.b); return Math.hypot(bx - ax, by - ay) < len(sub(g.arma.b, g.arma.a)) / 3 ? NaN : (Math.atan2(by - ay, bx - ax) * 180) / Math.PI; };
+  for (const h of o.sujetos ?? SUJETOS_HEROES) {
+    if (o.clase && h.id !== o.clase) continue;
+    const alto = 61 * (h.cuerpo.alto ?? 1);
+    for (const [nivel, eq] of h.niveles) for (const acc of ['atacar', 'lanzar'] as const) {
+      if (!h.acciones.includes(acc)) continue;
+      let peorA = 0, peorM = 0;
+      for (const dir of DIRS) {
+        const nq = cuadrosDe('quieto', h.cuerpo.presentacion), qs = Array.from({ length: nq }, (_, f) => geometriaQA(h.cuerpo, eq, dir, 'quieto', f));
+        const angs = qs.map(angulo).filter((a) => !Number.isNaN(a));
+        const media = angs.length ? (Math.atan2(angs.reduce((t, a) => t + Math.sin((a * Math.PI) / 180), 0), angs.reduce((t, a) => t + Math.cos((a * Math.PI) / 180), 0)) * 180) / Math.PI : NaN;
+        const manos = [0, 1].map((i) => qs.reduce<V3>((t, g) => [t[0] + g.e.brazos[i].mano[0] / nq, t[1] + g.e.brazos[i].mano[1] / nq, t[2] + g.e.brazos[i].mano[2] / nq], [0, 0, 0]));
+        const n = cuadrosDe(acc, h.cuerpo.presentacion);
+        for (const f of [0, n - 1]) {
+          const g = geometriaQA(h.cuerpo, eq, dir, acc, f), a = angulo(g);
+          const da = Number.isNaN(a) || Number.isNaN(media) ? 0 : Math.abs(envolver(a - media));
+          const dm = Math.max(...[0, 1].map((i) => len(sub(g.e.brazos[i].mano, manos[i])))) / alto;
+          peorA = Math.max(peorA, da); peorM = Math.max(peorM, dm);
+          const base = { clase: h.id, nivel, dir, acc, f };
+          if (da > LIMITE_ENTRADA.angulo) fallas.push({ ...base, chequeo: 'entrada/salida (arma)', valor: da });
+          if (dm > LIMITE_ENTRADA.mano) fallas.push({ ...base, chequeo: 'entrada/salida (manos)', valor: dm });
+        }
+      }
+      filas.push({ clase: h.id, nivel, acc, angulo: Math.round(peorA * 10) / 10, mano: Math.round(peorM * 1000) / 1000 });
+    }
+  }
+  return { filas, fallas };
+}
+/**
+ * La tela al andar (faldón, túnica, hábito, vestido): se pinta sola en cada cuadro de caminar y correr, en las 8
+ * direcciones, y se mide su silueta: cuánto se extiende detrás de la pelvis en pantalla (≤ 0,30 del alto), cuánto
+ * cambia su área de un cuadro al siguiente (≤ 25 %, el ciclo cierra) y si tiene huecos adentro (ninguno: una pierna la atraviesa).
+ */
+export const LIMITE_TELA = { atras: 0.3, area: 0.25, huecos: 0 };
+export interface FilaTela { clase: string; nivel: string; acc: string; atras: number; area: number; rango: number; huecos: number }
+export function telaAndar(o: { clase?: string; sujetos?: Sujeto[]; dirs?: string[] } = {}): { filas: FilaTela[]; fallas: Falla[] } {
+  const filas: FilaTela[] = [], fallas: Falla[] = [];
+  const W = 200, H = 200, AX = 100, AY = 150;
+  for (const h of o.sujetos ?? SUJETOS_HEROES) {
+    if (o.clase && h.id !== o.clase) continue;
+    const S = h.cuerpo.alto ?? 1, altoPx = 61 * S * Math.sqrt(1.5);
+    for (const [nivel, eq] of h.niveles) {
+      const tela = eq.torso && ['tunica', 'harapos', 'vestido'].includes(eq.torso.tipo) || eq.piernas && ['taparrabo', 'faldon', 'tunica_larga'].includes(eq.piernas.tipo);
+      if (!tela) continue;
+      for (const acc of ['caminar', 'correr'] as const) {
+        if (!h.acciones.includes(acc)) continue;
+        let peorAtras = 0, peorArea = 0, peorRango = 0, huecosT = 0;
+        for (const dir of (o.dirs ?? DIRS) as typeof DIRS) {
+          const n = cuadrosDe(acc, h.cuerpo.presentacion), areas: number[] = [];
+          for (let f = 0; f < n; f++) {
+            const t = telaQA(h.cuerpo, eq, dir, acc, f);
+            const r = pintarEscena({ piezas: t.piezas, sinSombra: true }, {}, { w: W, h: H, ax: AX, ay: AY });
+            const m = new Uint8Array(W * H); let area = 0;
+            for (let i = 0; i < W * H; i++) if (r.img.data[i * 4 + 3] > 0) { m[i] = 1; area++; }
+            areas.push(area);
+            // detrás de la pelvis: la dirección "atrás" del cuerpo en pantalla
+            // (se mide a lo ancho de la pantalla, en las direcciones en que "atrás" se ve de costado: de frente o de
+            // espaldas, lo de atrás queda tapado o es lo que cuelga, no un bulto detrás)
+            const [px] = aPantalla(t.pelvis), [bx, by] = aPantalla([-t.e.F[0], -t.e.F[1], 0]);
+            let atras = 0;
+            if (Math.abs(bx) >= 0.7 * Math.hypot(bx, by)) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m[y * W + x]) atras = Math.max(atras, (x - AX - px) * Math.sign(bx));
+            atras /= altoPx;
+            // huecos: lo vacío que no se alcanza desde el borde
+            const vis = new Uint8Array(W * H), pila: number[] = [];
+            for (let x = 0; x < W; x++) { pila.push(x, (H - 1) * W + x); } for (let y = 0; y < H; y++) { pila.push(y * W, y * W + W - 1); }
+            while (pila.length) { const i = pila.pop()!; if (vis[i] || m[i]) continue; vis[i] = 1; const x = i % W, y = (i / W) | 0; if (x > 0) pila.push(i - 1); if (x < W - 1) pila.push(i + 1); if (y > 0) pila.push(i - W); if (y < H - 1) pila.push(i + W); }
+            // (cuenta cada hueco de 3 pixeles o más: una grieta de 1 o 2 pixeles en el borde de la malla es ruido del
+            // pintado y el cuerpo de atrás la tapa; un hueco de verdad, donde la pierna atraviesa la tela, es más grande)
+            let huecos = 0;
+            for (let i = 0; i < W * H; i++) if (!m[i] && !vis[i]) {
+              let n = 0; const q = [i]; vis[i] = 1;
+              while (q.length) { const j = q.pop()!; n++; const x = j % W, y = (j / W) | 0; for (const k of [x > 0 ? j - 1 : -1, x < W - 1 ? j + 1 : -1, y > 0 ? j - W : -1, y < H - 1 ? j + W : -1]) if (k >= 0 && !m[k] && !vis[k]) { vis[k] = 1; q.push(k); } }
+              if (n >= 3) huecos += n;
+            }
+            const base = { clase: h.id, nivel, dir, acc, f };
+            if (atras > LIMITE_TELA.atras) fallas.push({ ...base, chequeo: 'tela (atrás)', valor: atras });
+            if (huecos > LIMITE_TELA.huecos) fallas.push({ ...base, chequeo: 'tela (hueco)', valor: huecos });
+            peorAtras = Math.max(peorAtras, atras); huecosT += huecos;
+          }
+          // de un cuadro al siguiente (el ciclo cierra): la tela no aparece ni se desinfla de golpe
+          const var_ = Math.max(...areas.map((x, i) => Math.abs(areas[(i + 1) % areas.length] - x) / Math.max(1, x, areas[(i + 1) % areas.length])));
+          if (var_ > LIMITE_TELA.area) fallas.push({ clase: h.id, nivel, dir, acc, f: -1, chequeo: 'tela (área)', valor: var_ });
+          peorArea = Math.max(peorArea, var_); peorRango = Math.max(peorRango, (Math.max(...areas) - Math.min(...areas)) / Math.max(1, Math.max(...areas)));
+        }
+        filas.push({ clase: h.id, nivel, acc, atras: Math.round(peorAtras * 1000) / 1000, area: Math.round(peorArea * 1000) / 1000, rango: Math.round(peorRango * 1000) / 1000, huecos: huecosT });
+      }
+    }
+  }
+  return { filas, fallas };
+}
 const nor3 = (a: V3): V3 => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -267,6 +365,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   fallas.push(...andar.fallas);
   const cuerpo = cuerpoAndar({ clase: SOLO_CLASE, sujetos });
   fallas.push(...cuerpo.fallas);
+  const entrada = MON ? { filas: [], fallas: [] } : entradaAccion({ clase: SOLO_CLASE, sujetos });
+  fallas.push(...entrada.fallas);
+  const tela = telaAndar({ clase: SOLO_CLASE, sujetos });
+  fallas.push(...tela.fallas);
   const por = new Map<string, number>();
   for (const x of fallas) { const k = `${x.chequeo} · ${x.clase} · ${x.acc}`; por.set(k, (por.get(k) ?? 0) + 1); }
   console.log(`QA de ${MON ? `${sujetos.length} monstruos humanoides` : "héroes"}: ${cuadros} cuadros (${MON ? "8 direcciones" : "clases × 4 niveles × 8 direcciones"} × cada cuadro de cada acción) en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
@@ -281,6 +383,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(`  ${'brazo libre y carrera'.padEnd(26)} ${cuerpo.fallas.length} fallas (codo libre: correr 70°–100°, caminar 10°–35°; mano libre ≤ 0,35 del alto delante del pecho; al correr pelvis ≤ 6 % del alto y rodilla ≥ 0,22 del alto)`);
   console.log('    clase       nivel     acción    codo libre   mano adelante  pelvis   rodilla mín.   (fracciones del alto)');
   for (const f of cuerpo.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} ${f.acc.padEnd(9)} ${(f.codo ? f.codo[0] + '°–' + f.codo[1] + '°' : '(sin brazo libre)').padEnd(17)} ${String(f.mano ?? '-').padEnd(13)} ${String(f.pelvis).padEnd(8)} ${f.rodilla}`);
+  if (!MON) {
+    console.log(`  ${'entrada/salida'.padEnd(26)} ${entrada.fallas.length} fallas (atacar y lanzar, cuadros 0 y último contra el reposo medio: arma ≤ ${LIMITE_ENTRADA.angulo}°, manos ≤ ${LIMITE_ENTRADA.mano} del alto)`);
+    for (const f of entrada.filas) if (f.nivel === 'veterano') console.log(`    ${f.clase.padEnd(11)} ${f.acc.padEnd(7)} arma ${String(f.angulo).padStart(5)}°  manos ${f.mano}`);
+  }
+  console.log(`  ${'tela al andar'.padEnd(26)} ${tela.fallas.length} fallas (detrás de la pelvis ≤ ${LIMITE_TELA.atras} del alto, área ≤ ${LIMITE_TELA.area * 100} % entre cuadros, sin huecos)`);
+  for (const f of tela.filas) console.log(`    ${f.clase.padEnd(20)} ${f.nivel.padEnd(9)} ${f.acc.padEnd(8)} atrás ${String(f.atras).padEnd(6)} área ${String(f.area).padEnd(6)} (rango del ciclo ${String(f.rango).padEnd(5)}) huecos ${f.huecos}`);
   console.log(`TOTAL: ${fallas.length} fallas`);
   for (const [k, n] of [...por].sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(5)}  ${k}`);
   if (MON) {

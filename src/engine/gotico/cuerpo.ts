@@ -267,12 +267,18 @@ type IzqTipo = NonNullable<Equipo['izq']>['tipo'];
 /** Radios del hueso del pie (talón y punta) en unidades de A: el pie se apoya con la planta a ras del piso. */
 const PIE_TALON = 1.6, PIE_PUNTA = 1.25;
 
-export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo): Esqueleto {
+export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo, crudo = false): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   // (las astas y el gran báculo nuevos van con la pose de vara aunque sean a dos manos: la izquierda baja por el asta)
   // (las armas de asta largas a dos manos, la lanza y el gran báculo van con la pose a dos manos: arco grande y agarre doble)
   const tipo = arma === 'ballesta' ? 'ballesta' : arma === 'lanza' || arma === 'alabarda' ? 'asta' : arma === 'guadana' && !cu.presentacion ? 'segur' : dos(arma) ? 'dos' : asta(arma) ? 'baculo' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' || arma === 'cestus' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
-  const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo), porteDe(cu));
+  let P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo), porteDe(cu));
+  // los héroes entran al ataque y al conjuro desde su reposo y vuelven a él: el primer cuadro es el reposo y el último
+  // también (los dos de al lado van a mitad de camino), así no saltan de postura al empezar ni al terminar
+  if (!crudo && cu.presentacion && (acc === 'atacar' || acc === 'lanzar')) {
+    const w = pesoReposo(f / cuadrosDe(acc, cu.presentacion));
+    if (w > 0) P = reposar(cu, dir, acc, f, arma, izqTipo, P, w);
+  }
   const th = rad(RUMBO[dir]);
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
   const W: Fn = (fw, rt, up) => [F[0] * fw + R[0] * rt, F[1] * fw + R[1] * rt, up];
@@ -458,6 +464,61 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
 }
 
 const dot3 = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+/** Cuánto pesa el reposo en el cuadro u de un ataque o un conjuro: 1 en el primero y en el último, nada en el medio. */
+function pesoReposo(u: number): number {
+  const ss = (x: number) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+  const d = 2 / 12;
+  return u < d ? 1 - ss(u / d) : u > 1 - 3 / 12 ? ss((u - (1 - 3 / 12)) / d) : 0;
+}
+/** El reposo de mitad de respiración (quieto, cuadro 2 de 8) como pose: de ahí salen y ahí vuelven el ataque y el conjuro. */
+const REPOSO_CUADRO = 2;
+/**
+ * Mezcla la pose de la acción con la del reposo (w = 1: el reposo). Lo del cuerpo se interpola; las manos y el arma se
+ * llevan a donde están de verdad en los dos esqueletos (puntos del cuerpo y dirección del arma), así se mezclan bien
+ * aunque una pose las ponga por ángulos y la otra por cinemática inversa.
+ */
+function reposar(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma, izqTipo: IzqTipo | undefined, P: Pose, w: number): Pose {
+  const e0 = esqueleto(cu, dir, 'quieto', REPOSO_CUADRO, arma, izqTipo, true), P0 = e0.pose!;
+  if (w >= 0.999) return { ...P0, flecha: P0.flecha, tensa: P0.tensa };
+  const eA = esqueleto(cu, dir, acc, f, arma, izqTipo, true);
+  const S = eA.S, A = eA.A, F = eA.F, R = eA.R;
+  const L = (a: number, b: number) => a + (b - a) * w;
+  const out: Pose = { ...P };
+  const num = ['torso', 'giroTorso', 'cabeza', 'bajar', 'avanza', 'ladeo', 'giroCadera', 'ladeoCadera', 'lateral', 'giroCabeza', 'ladeoCabeza', 'respira'] as const;
+  for (const k of num) (out as unknown as Record<string, number>)[k] = L((P as unknown as Record<string, number>)[k] ?? 0, (P0 as unknown as Record<string, number>)[k] ?? 0);
+  const par = ['hombros', 'pasos', 'abre', 'alza', 'puntillas', 'pieGiro', 'capa', 'pelo'] as const;
+  for (const k of par) { const a = (P[k] ?? [0, 0]) as number[], b = (P0[k] ?? [0, 0]) as number[]; (out as unknown as Record<string, number[]>)[k] = [L(a[0], b[0]), L(a[1], b[1])]; }
+  // si los pies cambian de lugar, el que se mueve se levanta (no se arrastra por el piso)
+  const dp = [Math.abs((P.pasos?.[0] ?? 0) - (P0.pasos?.[0] ?? 0)), Math.abs((P.pasos?.[1] ?? 0) - (P0.pasos?.[1] ?? 0))];
+  out.alza = [(out.alza?.[0] ?? 0) + Math.min(1.2, dp[0] * 0.4) * Math.sin(Math.PI * w), (out.alza?.[1] ?? 0) + Math.min(1.2, dp[1] * 0.4) * Math.sin(Math.PI * w)];
+  out.plantado = true;
+  // del mundo al marco del cuerpo (adelante, derecha, arriba) en unidades de la pose
+  const cuerpo = (q: V3): [number, number, number] => [dot3(q, F) / S, dot3(q, R) / A, q[2] / S];
+  const dirCuerpo = (v: V3): V3 => [dot3(v, F), dot3(v, R), v[2]];
+  const mezV = (a: [number, number, number], b: [number, number, number]): [number, number, number] => [L(a[0], b[0]), L(a[1], b[1]), L(a[2], b[2])];
+  const polo = (b: { hom: V3; codo: V3; mano: V3 }): [number, number, number] => { const c = dirCuerpo(nor(sub(b.codo, mez(b.hom, b.mano, 0.5)))); return [c[0], c[1], c[2]]; };
+  const [dA, iA] = eA.brazos, [d0, i0] = e0.brazos;
+  // a mitad de camino la mano del arma se abre un poco hacia afuera: el arma pasa por el costado, lejos de la cabeza
+  out.manoD = mezV(cuerpo(dA.mano), cuerpo(d0.mano)); out.manoD[1] += 2.5 * Math.sin(Math.PI * w); out.codoD = mezV(polo(dA), polo(d0));
+  // el arma: la dirección mezclada, en grados (desde arriba hacia adelante, giro a la derecha)
+  const W0 = (c: V3): V3 => [F[0] * c[0] + R[0] * c[1], F[1] * c[0] + R[1] * c[1], c[2]];
+  const ang = (v: V3): [number, number] => { const c = dirCuerpo(nor(v)); return [(Math.acos(Math.max(-1, Math.min(1, c[2]))) * 180) / Math.PI, (Math.atan2(c[1], c[0]) * 180) / Math.PI]; };
+  // (la dirección se mezcla como vector: de atrás del hombro a adelante pasa por arriba, nunca por dentro del cuerpo)
+  const ea = dirCuerpo(dA.eje), e0v = dirCuerpo(d0.eje);
+  out.armaD = ang(W0(nor([L(ea[0], e0v[0]), L(ea[1], e0v[1]), L(ea[2], e0v[2])]))); delete out.munecaD; out.pisoArma = 0;
+  if (eA.vara && e0.vara) {
+    const va = dirCuerpo(eA.vara), v0 = dirCuerpo(e0.vara), v = nor([L(va[0], v0[0]), L(va[1], v0[1]), L(va[2], v0[2])]);
+    out.vara = [(Math.asin(Math.max(-1, Math.min(1, v[0]))) * 180) / Math.PI, (Math.asin(Math.max(-1, Math.min(1, v[1]))) * 180) / Math.PI]; delete out.varaPie;
+  }
+  // la izquierda: libre en los dos, se mezcla; si una de las dos poses la cierra en el mango, se abre o se cierra de a poco
+  const pegaA = P.pegaI ?? (P.agarreI ? 1 : 0), pega0 = P0.pegaI ?? (P0.agarreI ? 1 : 0);
+  out.manoI = pegaA >= 0.5 && pega0 < 0.5 ? cuerpo(i0.mano) : pega0 >= 0.5 && pegaA < 0.5 ? cuerpo(iA.mano) : mezV(cuerpo(iA.mano), cuerpo(i0.mano));
+  out.codoI = mezV(polo(iA), polo(i0));
+  out.pegaI = L(pegaA, pega0);
+  if (out.pegaI > 0 && !out.agarreI) out.agarreI = P0.agarreI;
+  if (w > 0.5) { out.flecha = P0.flecha; out.tensa = P0.tensa; }
+  return out;
+}
 /**
  * Eje del arma en el puño: el antebrazo girado hacia el pulgar. Una espada con el brazo colgando apunta adelante y un
  * poco abajo; en el tajo sigue al brazo. Las garras siguen el antebrazo; la lanza va casi horizontal. La muñeca suma
@@ -1294,10 +1355,18 @@ function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Ac
   const larga = largo >= 20;
   // un tubo de tela por la pierna: si el ruedo baja de la rodilla pasa por ella (con la rodilla doblada adelante, el
   // tubo recto de la cadera al ruedo la dejaba asomar por delante de la tela)
+  // al andar la tela pesa: el ruedo no se abre más que lo justo (si no, cada pierna inflaba un saco detrás)
+  const anda = acc === 'caminar' || acc === 'correr', vueloR = anda ? Math.min(vuelo, 1.2) : vuelo;
   const tubo = (cad: V3, rod: V3, ruedo: V3): Comp[] => {
-    const r0 = 4.0 * A, r1 = 3.6 * A * vuelo;
+    const r0 = (anda && larga ? 4.5 : 4.0) * A, r1 = 3.6 * A * vueloR;
     if (!larga || ruedo[2] >= rod[2] + 1.5 * S) return [hueso(cad, ruedo, r0, r1, { mat })];
     const l1 = len(sub(rod, cad)), l2 = len(sub(ruedo, rod)), rk = r0 + (r1 - r0) * (l1 / Math.max(0.01, l1 + l2));
+    if (anda) {
+      // al andar la rodilla empuja la tela pero no la estira hasta su punta: el codo de la tela queda un poco atrás de la
+      // rodilla y algo más ancho, así la cubre sin que cada paso infle un bulto
+      const rodT = mez([cad[0], cad[1], rod[2]], rod, 0.55), rk2 = rk + len(sub(rod, rodT)) * 0.6;
+      return [hueso(cad, rodT, r0, rk2, { mat }), hueso(rodT, ruedo, rk2, r1, { mat })];
+    }
     return [hueso(cad, rod, r0, rk, { mat }), hueso(rod, ruedo, rk, r1, { mat })];
   };
   const ruedos: V3[] = [];
@@ -1305,23 +1374,45 @@ function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Ac
     // la tela baja por cada pierna hasta el largo y se abre en el ruedo
     const t = Math.min(1, (z0 - z1) / Math.max(1, z0 - p.tob[2]));
     const bajo = mez(p.cad, p.tob, Math.min(1, t));
-    const ruedo: V3 = [bajo[0], bajo[1], Math.max(z1, bajo[2])];
+    let ruedo: V3 = [bajo[0], bajo[1], Math.max(z1, bajo[2])];
+    if (anda) {
+      // la tela sigue a la pierna con retraso y cae por su peso: el ruedo va a mitad de camino entre la pierna y la
+      // caída a plomo bajo la cadera, y nunca sube más que la rodilla (la pierna que patea atrás sale por debajo)
+      const plomo = Pv(0.4 * S, p.s * 2.8 * A, z1), sigue = larga ? 0.22 : 0.55;
+      ruedo = mez(plomo, ruedo, sigue);
+      ruedo[2] = Math.max(z1, Math.min(ruedo[2], p.rod[2] - 2 * S));
+    }
     ruedos.push(ruedo);
     cs.push(...tubo(p.cad, p.rod, ruedo));
+    // la pierna que se levanta adentro de una túnica larga la arrastra: la tela envuelve la canilla, ceñida y un poco
+    // atrasada (no se infla), así la pierna no la atraviesa
+    // (aparece de a poco a medida que el pie sube: la tela no salta de un cuadro a otro)
+    const sube = Math.max(0, Math.min(1, (p.tob[2] - z1 - 0.5 * S) / (3 * S)));
+    if (anda && larga && sube > 0) {
+      const fin = mez(p.tob, Pv(0.4 * S, p.s * 2.8 * A, z1), 0.3 + 0.4 * (1 - sube));
+      cs.push(hueso(p.rod, fin, (1.4 + 1.5 * sube) * A, (1.2 + 1.3 * sube) * A, { mat }));
+    }
   }
   // la tela entre las piernas: travesaños de un tubo al otro, más finos que los tubos, que cierran el hueco sin inflar
   // el ruedo (si no, al dar el paso o al abrir las piernas asomaban los muslos desnudos por la abertura de la túnica)
+  // los faldones cortos y los taparrabos al andar: una tira de tela cierra el hueco entre las dos piernas
+  if (!larga && anda && ruedos.length === 2) {
+    const [p0, p1] = e.piernas;
+    for (const t of [0.45, 0.8]) cs.push(hueso(mez(p0.cad, ruedos[0], t), mez(p1.cad, ruedos[1], t), 1.8 * A, 1.8 * A, { mat }));
+  }
   if (larga && ruedos.length === 2) {
     const [p0, p1] = e.piernas;
-    const sobre = (p: Pierna, ruedo: V3, t: number): V3 => (ruedo[2] >= p.rod[2] + 1.5 * S ? mez(p.cad, ruedo, t) : t < 0.5 ? mez(p.cad, p.rod, t * 2) : mez(p.rod, ruedo, t * 2 - 1));
+    const sobre = (p: Pierna, ruedo: V3, t: number): V3 => (anda || ruedo[2] >= p.rod[2] + 1.5 * S ? mez(p.cad, ruedo, t) : t < 0.5 ? mez(p.cad, p.rod, t * 2) : mez(p.rod, ruedo, t * 2 - 1));
     for (const t of [0.3, 0.55, 0.78, 1]) {
-      const r = (2.0 + 1.4 * t) * A * Math.sqrt(vuelo);
+      const r = (2.0 + 1.4 * t) * A * Math.sqrt(vueloR);
       cs.push(hueso(sobre(p0, ruedos[0], t), sobre(p1, ruedos[1], t), r, r, { mat }));
     }
   }
   // la tela de atrás se arrastra con la inercia del cuerpo (capa de la pose) o se mece al caminar
-  const tela = e.pose?.capa, vaiven = tela ? (tela[0] - 0.8) * 0.6 : acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.5 : 0, lado = tela ? tela[1] * 0.6 : 0;
-  cs.push(hueso(Pv(-1 * S, 0, z0 - 3 * S), e.W(-2.2 * S - vaiven, lado * S, z1 + 1.5 * S), 3.8 * A, 4.2 * A * vuelo, { mat }));
+  const tela = e.pose?.capa, vaiven0 = tela ? (tela[0] - 0.8) * 0.6 : acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.5 : 0, lado = tela ? tela[1] * 0.6 : 0;
+  // al andar la tela de atrás apenas se arrastra (cae por su peso): no crece detrás de la cadera
+  const vaiven = anda ? Math.max(-0.5, Math.min(0.7, vaiven0 * 0.3)) : vaiven0;
+  cs.push(hueso(Pv(-1 * S, 0, z0 - 3 * S), (anda ? Pv : e.W)((anda ? -1.4 : -2.2) * S - vaiven, lado * S, z1 + 1.5 * S), 3.8 * A, 4.2 * A * vueloR, { mat }));
   return masa(cs, { mat, suave: 3.2 });
 }
 
@@ -2203,4 +2294,15 @@ export function geometriaQA(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: nu
 export function dentroElip(el: ElipQA, q: V3, extra = 0): number {
   const d = sub(q, el.c);
   return Math.hypot(dot3(d, el.ejes[0]) / (el.r[0] + extra), dot3(d, el.ejes[1]) / (el.r[1] + extra), dot3(d, el.ejes[2]) / (el.r[2] + extra));
+}
+/** Solo la tela que cuelga de la cintura (faldón, túnica, hábito, vestido) de un cuadro, para medir su silueta en la QA. */
+export function telaQA(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): { piezas: Pieza[]; pelvis: V3; e: Esqueleto } {
+  const e = esqueleto(cu, dir, acc, f, eq.arma?.tipo ?? 'nada', eq.izq?.tipo);
+  const ps: Pieza[] = [], pz = eq.piernas, to = eq.torso;
+  if (pz?.tipo === 'taparrabo') ps.push(faldon(e, pz.mat, 9, 1.05, acc, f));
+  else if (pz?.tipo === 'faldon') ps.push(faldon(e, pz.mat, 15, 1.25, acc, f));
+  else if (pz?.tipo === 'tunica_larga') ps.push(faldon(e, pz.mat, 30, 1.5, acc, f));
+  if (to?.tipo === 'tunica' || to?.tipo === 'harapos') ps.push(faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f));
+  if (to?.tipo === 'vestido') ps.push(faldon(e, to.mat, 29, 1.7, acc, f));
+  return { piezas: ps, pelvis: (e.Pv ?? e.W)(0, 0, e.zc), e };
 }

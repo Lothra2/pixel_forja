@@ -64,21 +64,23 @@ if (TIRA) for (const h of process.argv.includes('--monstruos') ? todosMonstruos 
   const a = { cuadros: cuadrosDe(TIRA, h.cuerpo.presentacion) }, [nombreNivel, eq] = h.niveles[Math.min(NIVEL, h.niveles.length - 1)];
   // los cuerpos grandes (ogro, trol, gigante) van en celdas más grandes, a la misma escala
   const k = Math.max(1, h.cuerpo.alto ?? 1), cw = Math.round(CW * k), ch = Math.round(CH * k);
-  const t = createRaster(IZQ + a.cuadros * cw, ARR + DIRS_HOJA.length * ch);
+  // --con-quieto: el reposo (quieto, cuadro 2 de 8: mitad de la respiración) pegado delante, para ver la entrada
+  const conQ = process.argv.includes('--con-quieto') ? 1 : 0;
+  const t = createRaster(IZQ + (a.cuadros + conQ) * cw, ARR + DIRS_HOJA.length * ch);
   pintar(t, 0, 0, t.w, t.h, [24, 21, 19, 255]);
   texto(Lienzo.de(t), 4, 4, `${h.id}${nombreNivel ? ` (${nombreNivel})` : ''} · ${TIRA}`, [230, 210, 170]);
   DIRS_HOJA.forEach((dir, fi) => {
     const y0 = ARR + fi * ch;
     texto(Lienzo.de(t), 4, y0 + 44, dir, [230, 210, 170]);
-    for (let f = 0; f < a.cuadros; f++) {
-      const x0 = IZQ + f * cw;
-      pintar(t, x0 + 1, y0 + 1, cw - 2, ch - 2, FONDO);
+    for (let c = 0; c < a.cuadros + conQ; c++) {
+      const x0 = IZQ + c * cw, f = c - conQ, q = f < 0;
+      pintar(t, x0 + 1, y0 + 1, cw - 2, ch - 2, q ? [52, 46, 40, 255] : FONDO);
       pintar(t, x0 + Math.round(AX * k) - 6, y0 + Math.round(AY * k), 13, 1, [90, 80, 70, 255]);
-      blit(t, cuadro(h.cuerpo, eq, dir, TIRA, f, k), x0, y0);
-      texto(Lienzo.de(t), x0 + 4, y0 + 4, String(f), [120, 110, 100], { sombra: null });
+      blit(t, cuadro(h.cuerpo, eq, dir, q ? 'quieto' : TIRA, q ? 2 : f, k), x0, y0);
+      texto(Lienzo.de(t), x0 + 4, y0 + 4, q ? 'quieto' : String(f), [120, 110, 100], { sombra: null });
     }
   });
-  writeFileSync(join(SALIDA, `${h.id}${nombreNivel ? '_' + nombreNivel : ''}_${TIRA}_${DIRS_HOJA.join('-')}.png`), encodePng(upscaleNearest(t, 2)));
+  writeFileSync(join(SALIDA, `${h.id}${nombreNivel ? '_' + nombreNivel : ''}_${conQ ? 'quieto+' : ''}${TIRA}_${DIRS_HOJA.join('-')}.png`), encodePng(upscaleNearest(t, 2)));
   console.log('tira', h.id, nombreNivel, TIRA);
 }
 if (!TIRA) for (const h of HEROES) {
