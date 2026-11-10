@@ -601,7 +601,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   v.vida -= total;
   v.destello = 0.12;
   if (total > 0) {
-    numero(j, v, total, v.tipo === 'heroe' ? '#ff4040' : crit || nucleo ? '#ffe040' : COLOR_ELEM[g.elem], crit || nucleo, g.parte !== undefined && g.parte < 2);
+    if (g.parte === undefined || Math.round(total) >= 1) numero(j, v, total, v.tipo === 'heroe' ? '#ff4040' : crit || nucleo ? '#ffe040' : COLOR_ELEM[g.elem], crit || nucleo, g.parte !== undefined && g.parte < 2);
     if (g.robo && g.deHeroe) h.vida = Math.min(h.vidaMax, h.vida + total * g.robo / 100);
     if (g.deHeroe && h.c.robo_mana) h.mana = Math.min(h.c.manaMax, h.mana + total * h.c.robo_mana / 100);
   }
@@ -1088,6 +1088,18 @@ const esJefe = (e: Ent) => !!(e as Monstruo).def?.jefe;
 /** Lo que pasa en el cuadro del golpe. */
 /** Daño de cada golpe de un combo de tres: 30 %, 30 % y 40 %. */
 const REPARTO_COMBO = [0.3, 0.3, 0.4];
+/** Reparte un daño entero entre los golpes del combo por resto mayor: la suma es exacta y, con 3 o más, cada golpe hace al menos 1. Con menos de 3, todo va en el último. */
+export function repartirCombo(T: number): number[] {
+  const n = REPARTO_COMBO.length;
+  if (T < n) return REPARTO_COMBO.map((_, i) => (i === n - 1 ? T : 0));
+  const ideal = REPARTO_COMBO.map((f) => f * T), sh = ideal.map(Math.floor);
+  let falta = T - sh.reduce((a, b) => a + b, 0);
+  const orden = ideal.map((v, i) => [v - Math.floor(v), i] as [number, number]).sort((a, b) => b[0] - a[0] || b[1] - a[1]);
+  for (let k = 0; falta > 0; k = (k + 1) % n, falta--) sh[orden[k][1]]++;
+  // nadie en 0: el que más tiene le pasa uno
+  for (let i = 0; i < n; i++) if (sh[i] < 1) { const d = sh.indexOf(Math.max(...sh)); sh[d]--; sh[i]++; }
+  return sh;
+}
 function resolverHabilidad(j: Juego, parte?: number, cb?: { remate: boolean }) {
   const h = j.heroe;
   const id = h.habActual, hb = habilidadDe(id), basico = id === 'ataque';
@@ -1110,13 +1122,25 @@ function resolverHabilidad(j: Juego, parte?: number, cb?: { remate: boolean }) {
       let remate: boolean;
       if (parte === undefined) remate = h.d.clase === 'monje' && pasoCombo(j, hb);
       else { if (parte === 0 && cb) cb.remate = h.d.clase === 'monje' && pasoCombo(j, hb); remate = !!cb?.remate; }
-      const frac = parte === undefined ? 1 : REPARTO_COMBO[parte] ?? 1;
       const kRem = remate ? 1.5 + bono(h, 'combo_pct') / 100 : 1;
       const kFur = hb.id === 'ejecucion' ? 1 + h.furia / 100 : 1;
       let total = 0;
       for (let k = 0; k < golpes; k++) {
-        const g = golpeArma(j, mult * kRem * kFur * frac, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? [dh[0] * frac, dh[1] * frac] : undefined);
-        if (parte !== undefined) g.parte = parte;
+        let g: Golpe;
+        if (parte === undefined || !cb) g = golpeArma(j, mult * kRem * kFur, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? dh : undefined);
+        else {
+          // combo: el golpe entero se tira una sola vez (daño y crítico) en el primero y se reparte exacto entre los tres
+          const c3 = cb as any;
+          if (parte === 0 || !c3.g) {
+            const g0 = golpeArma(j, mult * kRem * kFur, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? dh : undefined);
+            c3.g = g0; c3.T = Math.max(1, Math.round(entre(g0.min, g0.max))); c3.sh = repartirCombo(c3.T); c3.crit = R() * 100 < (g0.critico ?? 0);
+          }
+          const sh: number = c3.sh[parte] ?? 0;
+          // con menos de 3 de daño todo va en el último: los anteriores son solo el impacto, sin número
+          if (sh <= 0) { sonar(j, 'golpe_carne', obj.x, obj.y, 0.4, 1.15); obj.sacud = { dx: (obj.x - h.x) || 1, dy: obj.y - h.y, t: j.t, k: 0.5 }; { const l = Math.hypot(obj.sacud.dx, obj.sacud.dy) || 1; obj.sacud.dx /= l; obj.sacud.dy /= l; } continue; }
+          const ex: Partial<Record<Elemento, number>> = {}; for (const [e, v] of Object.entries(c3.g.extra ?? {})) if (v) ex[e as Elemento] = (v as number) * (sh / c3.T);
+          g = { ...c3.g, min: sh, max: sh, critico: c3.crit ? 100 : 0, extra: ex, parte };
+        }
         if (prec) g.precision! += prec;
         if (hb.bonos?.aturdir) g.aturdir = 100;
         if (hb.bonos?.empuje) g.empuje = 1;
