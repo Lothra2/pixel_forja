@@ -19,3 +19,5 @@ export const zancadaClase = (clase: string, acc: 'caminar' | 'correr'): number |
 export const zancadaCorrerMonstruo = (sprite: string): number | undefined => (CORRER_MON as Record<string, number>)[sprite];
 /** Todas las acciones del héroe con sus cuadros, para pintarlo en vivo. */
 export const accionesClase = (clase: string): [string, number][] => Object.entries(CLASES[clase]?.acciones ?? {}).map(([a, v]) => [a, v.cuadros]);
+/** Los cuadros en que pega un combo (el monje: tres golpes en su ataque), como fracciones de la acción. Sin combo, nada. */
+export const golpesClase = (clase: string, acc: string): number[] | undefined => { const a = CLASES[clase]?.acciones[acc]; return a?.golpes?.length ? a.golpes.map((c) => c / a.cuadros) : undefined; };

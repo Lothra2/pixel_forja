@@ -180,6 +180,8 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - Impacto: cuando el golpe conecta de cerca, el mundo se detiene unas centésimas (65 ms el berserker, 28 ms el monje) y la cámara cede hacia donde pegó. A distancia pasa solo al matar o con un crítico, y más suave.
   - El que muere sale despedido lejos del golpe, más lejos con las clases pesadas. Los jefes no.
   - Quien dispara o lanza un hechizo recula al soltarlo. Los pasos suenan según el peso.
+- **Animaciones por clase de la Forja.** `src/engine/gotico/animacion_heroes.json` dice cuántos cuadros tiene cada acción de cada clase (12 al atacar, lanzar, caminar y correr, 8 quieto, 6 herido), en qué cuadro cae el impacto y cuánto avanza la zancada. El juego lo lee en `juego/src/juego/anim.ts`: el golpe cae en el cuadro de impacto de la clase, y el pintor en vivo y el horneado usan esos cuadros.
+  - El monje pega tres veces en su ataque (cuadros 2, 5 y 8): el daño se reparte 30, 30 y 40 %, cada golpe con su tirada, su número y su sonido. Los efectos de arma y el remate van con el último. Prueba: `juego/herramientas/combo_monje.cjs`.
 - **Enemigos con cuerpo.** Cada monstruo saca su perfil de su tamaño y su carácter: los grandes y los brutos cargan lento y pesan, los chicos son nerviosos. Al descubrirte se vuelven hacia ti un instante antes de echarse encima, cada uno a su tiempo. De lejos corren si su animación lo tiene. Dormidos, miran alrededor.
   - Prueba: `juego/herramientas/clases.cjs <clase> [vista]`.
 

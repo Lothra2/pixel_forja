@@ -23,7 +23,7 @@ export const ALTO_CLASE: Record<string, number> = { berserker: 1.03, cazadora: 1
 export type Dir = 's' | 'so' | 'o' | 'no' | 'n' | 'ne' | 'e' | 'se';
 export type Accion = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'lanzar' | 'herido' | 'morir';
 import { SENSACION, sensacionDe } from './sensacion';
-import { golpeEnClase, zancadaClase } from './anim';
+import { golpeEnClase, zancadaClase, golpesClase } from './anim';
 export const DIRS: Dir[] = ['s', 'so', 'o', 'no', 'n', 'ne', 'e', 'se'];
 /** Rumbo en el piso: 0° = se (x+), 45° = s, 90° = so ... */
 export function dirDe(dx: number, dy: number): Dir {
@@ -83,7 +83,7 @@ export interface Proyectil {
 }
 export interface Area { /** Lo que se dibuja al caer (por omisión explosion_fuego; '' nada, el efecto ya trae su impacto). */ fxCaida?: string; escCaida?: number; x: number; y: number; radio: number; dano: [number, number]; elem: Elemento; t: number; dur: number; tick: number; prox: number; deHeroe: boolean; efecto: string; retraso: number; caida?: boolean }
 export interface Suelo { o: Objeto | null; oro: number; x: number; y: number; t: number; id: number }
-export interface Numero { x: number; y: number; z: number; txt: string; color: string; t: number; grande?: boolean; chico?: boolean }
+export interface Numero { x: number; y: number; z: number; txt: string; color: string; t: number; grande?: boolean; chico?: boolean; /** Golpe menor de un combo: número un poco más chico. */ menor?: boolean }
 export interface Efecto { id: string; x: number; y: number; t: number; dir: number; escala: number; z?: number; seguir?: Ent; dur?: number }
 export interface Particula { x: number; y: number; z: number; vx: number; vy: number; vz: number; t: number; dur: number; color: string; tam: number; tipo: 'chispa' | 'humo' | 'sangre' | 'brasa' | 'nieve' | 'hoja' | 'pluma' | 'ceniza'; grav: number }
 export interface Mancha {
@@ -467,7 +467,7 @@ function aplicarMods(m: Monstruo) {
 export const vivos = (j: Juego) => j.monstruos.filter((m) => !m.muerto);
 const enemigosDe = (j: Juego, deHeroe: boolean): Ent[] => (deHeroe ? j.monstruos.filter((m) => !m.muerto && !m.dueno && m.estado !== 'surgir') : [j.heroe, ...j.monstruos.filter((m) => m.dueno && !m.muerto)]);
 export function msg(j: Juego, txt: [string, string], color = '#e0d0a0') { j.mensajes.push({ txt, t: 0, color }); if (j.mensajes.length > 6) j.mensajes.shift(); }
-function numero(j: Juego, e: Ent, v: number, color: string, grande = false) { j.numeros.push({ x: e.x, y: e.y, z: 60 * e.escala, txt: String(Math.round(v)), color, t: 0, grande }); }
+function numero(j: Juego, e: Ent, v: number, color: string, grande = false, menor = false) { j.numeros.push({ x: e.x + (menor ? (R() - 0.5) * 0.5 : 0), y: e.y, z: 60 * e.escala, txt: String(Math.round(v)), color, t: 0, grande, menor }); }
 export function efecto(j: Juego, id: string, x: number, y: number, dir = 0, escala = 1, z = 0, dur?: number) { j.efectos.push({ id, x, y, t: 0, dir, escala, z, dur }); }
 export function particulas(j: Juego, x: number, y: number, n: number, tipo: Particula['tipo'], color: string, fuerza = 1, z = 30) {
   if (j.particulas.length > 900) return;
@@ -512,15 +512,15 @@ function gastarCargas(h: Heroe, e?: Elemento): Elemento[] {
 }
 const mios = (j: Juego, id?: string) => j.monstruos.filter((m) => m.dueno && !m.muerto && (!id || m.invocaId === id));
 
-function sonar(j: Juego, id: string, x?: number, y?: number, vol = 1) {
+function sonar(j: Juego, id: string, x?: number, y?: number, vol = 1, tono?: number) {
   const h = j.heroe;
   let pan = 0, d = 0;
   if (x !== undefined && y !== undefined) { pan = clamp(((x - y) - (h.x - h.y)) / 14, -1, 1); d = clamp(dist(x, y, h.x, h.y) / 22, 0, 1); }
-  Sonido.efecto(id, { pan, dist: d, vol });
+  Sonido.efecto(id, { pan, dist: d, vol, tono });
 }
 
 // ------------------------------------------------------------------ daño
-export interface Golpe { /** Golpe del arma del héroe (dispara los efectos de las legendarias del arsenal). */ arma?: boolean; min: number; max: number; elem: Elemento; precision?: number; critico?: number; robo?: number; aturdir?: number; empuje?: number; lento?: number; aplastar?: number; herida?: number; deHeroe: boolean; fuente?: Ent; extra?: Partial<Record<Elemento, number>>; sinFallo?: boolean }
+export interface Golpe { /** Golpe del arma del héroe (dispara los efectos de las legendarias del arsenal). */ arma?: boolean; min: number; max: number; elem: Elemento; precision?: number; critico?: number; robo?: number; aturdir?: number; empuje?: number; lento?: number; aplastar?: number; herida?: number; deHeroe: boolean; fuente?: Ent; extra?: Partial<Record<Elemento, number>>; sinFallo?: boolean; /** Golpe de un combo (0, 1 o 2): los dos primeros pegan más suave en pantalla y no disparan efectos de arma. */ parte?: number }
 /**
  * Probabilidad (%) de que un golpe del héroe conecte. Contra un monstruo de su nivel ronda el 90 %: la precisión contra la
  * defensa mueve unos ±10 puntos y cada nivel que el monstruo te saca resta 2,5. Entre 60 y 97.
@@ -601,7 +601,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   v.vida -= total;
   v.destello = 0.12;
   if (total > 0) {
-    numero(j, v, total, v.tipo === 'heroe' ? '#ff4040' : crit || nucleo ? '#ffe040' : COLOR_ELEM[g.elem], crit || nucleo);
+    numero(j, v, total, v.tipo === 'heroe' ? '#ff4040' : crit || nucleo ? '#ffe040' : COLOR_ELEM[g.elem], crit || nucleo, g.parte !== undefined && g.parte < 2);
     if (g.robo && g.deHeroe) h.vida = Math.min(h.vidaMax, h.vida + total * g.robo / 100);
     if (g.deHeroe && h.c.robo_mana) h.mana = Math.min(h.c.manaMax, h.mana + total * h.c.robo_mana / 100);
   }
@@ -627,7 +627,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     if (h.vida <= 0) morirHeroe(j);
   } else {
     const m = v as Monstruo;
-    sonar(j, g.elem !== 'fisico' ? SONIDO_ELEM[g.elem] : m.def.sonido === 'hueso' ? 'golpe_hueso' : m.def.sonido === 'metal' ? 'golpe_metal' : 'golpe_carne', v.x, v.y, 0.8);
+    sonar(j, g.elem !== 'fisico' ? SONIDO_ELEM[g.elem] : m.def.sonido === 'hueso' ? 'golpe_hueso' : m.def.sonido === 'metal' ? 'golpe_metal' : 'golpe_carne', v.x, v.y, g.parte !== undefined && g.parte < 2 ? 0.65 : 0.8, g.parte === undefined ? undefined : g.parte === 2 ? 0.82 : 1.12);
     // gore: la carne chapotea, y un crítico desgarra
     if (total > 0 && (g.elem === 'fisico' || g.elem === 'sangre') && !sangraHueso(m) && m.def.sonido !== 'metal') {
       if (crit) sonar(j, 'desgarro', v.x, v.y, 0.75);
@@ -636,14 +636,14 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     if (m.estado === 'dormido' || m.estado === 'deambular') { m.estado = 'perseguir'; m.objetivo = g.fuente ?? j.heroe; }
     if (total > m.vidaMax * 0.12 && m.acc !== 'atacar' && m.acc !== 'lanzar' && m.calidad < 3) { m.acc = 'herido'; m.t = 0; m.dur = 0.3; }
     if (crit || total > m.vidaMax * 0.3) j.sacudida = Math.max(j.sacudida, 0.1);
-    if (g.arma && total > 0) efectoLegGolpe(j, m, total, crit);
+    if (g.arma && total > 0 && (g.parte === undefined || g.parte === 2)) efectoLegGolpe(j, m, total, crit);
     if (m.vida <= 0 && (m as any).huye) m.vida = 1; // historia: el heraldo no muere antes de su acto, huye
     // el golpe del héroe se siente según su clase: pausa de impacto y empujón de cámara cuando pega de cerca con el arma,
     // y el que muere sale despedido lejos del golpe (los jefes no)
     if (g.deHeroe && g.fuente === h && total > 0) {
       const S = SENSACION[h.d.clase], dxm = m.x - h.x, dym = m.y - h.y, dm = Math.hypot(dxm, dym) || 1, mata = m.vida <= 0;
       if (S && g.arma && dm < 3.4) {
-        const f = (crit ? 1.5 : 1) * (mata ? 1.35 : 1);
+        const f = (crit ? 1.5 : 1) * (mata ? 1.35 : 1) * (g.parte !== undefined && g.parte < 2 ? 0.5 : 1);
         j.congela = Math.max(j.congela ?? 0, Math.min(0.12, S.pausa * f));
         const ux = dxm / dm, uy = dym / dm;
         j.patada = { dx: (ux - uy) * 0.71, dy: (ux + uy) * 0.35, k: S.patada * f, t: performance.now() };
@@ -915,6 +915,9 @@ export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj:
   h.dur = anim === 'atacar' ? durAtaque(h) : durLanzar(h);
   // el golpe cae en el cuadro de impacto de la animación de la clase
   h.golpeEn = h.dur * golpeEnClase(h.d.clase, anim);
+  // combo de la clase (el monje pega tres veces en su ataque): solo en golpes directos cuerpo a cuerpo de un impacto
+  const gs = melee && anim === 'atacar' && !hb.explota && (Math.round(val(hb.n, basico ? 1 : Math.max(1, nivelHab(h.d, id, h.c)))) || 1) === 1 ? golpesClase(h.d.clase, anim) : undefined;
+  (h as any).combo3 = gs ? { i: 0, t: gs.map((f) => f * h.dur), remate: false } : null;
   h.habActual = id;
   (h as any).tx = tx; (h as any).ty = ty; (h as any).tobj = obj;
   h.camino = null; h.destino = null;
@@ -1083,7 +1086,9 @@ const enRadio = (j: Juego, x: number, y: number, r: number) => enemigosDe(j, tru
 const esJefe = (e: Ent) => !!(e as Monstruo).def?.jefe;
 
 /** Lo que pasa en el cuadro del golpe. */
-function resolverHabilidad(j: Juego) {
+/** Daño de cada golpe de un combo de tres: 30 %, 30 % y 40 %. */
+const REPARTO_COMBO = [0.3, 0.3, 0.4];
+function resolverHabilidad(j: Juego, parte?: number, cb?: { remate: boolean }) {
   const h = j.heroe;
   const id = h.habActual, hb = habilidadDe(id), basico = id === 'ataque';
   const n = basico ? 1 : Math.max(1, nivelHab(h.d, id, h.c));
@@ -1101,12 +1106,17 @@ function resolverHabilidad(j: Juego) {
     case 'golpe': {
       if (basico && h.c.distancia) { const g = golpeArma(j, 1); disparar(j, h, tx, ty, g, h.c.tipoArma === 'ballesta' ? 'virote' : 'flecha', 16, { perfora: R() * 100 < h.c.perforar }); break; }
       if (!obj || obj.muerto) break;
-      const remate = h.d.clase === 'monje' && pasoCombo(j, hb);
+      // en un combo, el paso del monje se cuenta una vez (en el primer golpe) y vale para los tres
+      let remate: boolean;
+      if (parte === undefined) remate = h.d.clase === 'monje' && pasoCombo(j, hb);
+      else { if (parte === 0 && cb) cb.remate = h.d.clase === 'monje' && pasoCombo(j, hb); remate = !!cb?.remate; }
+      const frac = parte === undefined ? 1 : REPARTO_COMBO[parte] ?? 1;
       const kRem = remate ? 1.5 + bono(h, 'combo_pct') / 100 : 1;
       const kFur = hb.id === 'ejecucion' ? 1 + h.furia / 100 : 1;
       let total = 0;
       for (let k = 0; k < golpes; k++) {
-        const g = golpeArma(j, mult * kRem * kFur, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? dh : undefined);
+        const g = golpeArma(j, mult * kRem * kFur * frac, hb.elem !== 'fisico' ? hb.elem : undefined, hb.dano ? [dh[0] * frac, dh[1] * frac] : undefined);
+        if (parte !== undefined) g.parte = parte;
         if (prec) g.precision! += prec;
         if (hb.bonos?.aturdir) g.aturdir = 100;
         if (hb.bonos?.empuje) g.empuje = 1;
@@ -1119,9 +1129,11 @@ function resolverHabilidad(j: Juego) {
       }
       if (hb.bonos?.robo_golpe && total > 0) h.vida = Math.min(h.vidaMax, h.vida + total * val(hb.bonos.robo_golpe, n) / 100);
       if (hb.id === 'corte_sello' && total > 0) { h.buffs.aura_avivada = { t: val(hb.duracion, n), bonos: { potencia_aura: val(hb.bonos?.potencia_aura, n) }, hab: 'corte_sello' }; recalc(j); }
-      if (!basico && hb.efecto) efecto(j, efectoDe(hb.efecto, hb.elem, hb), obj.x, obj.y, efectoDir);
+      // en un combo, el efecto y el remate van una sola vez: con el último golpe, o con el que mata
+      const fin = parte === undefined || parte >= REPARTO_COMBO.length - 1 || obj.muerto;
+      if (fin && !basico && hb.efecto) efecto(j, efectoDe(hb.efecto, hb.elem, hb), obj.x, obj.y, efectoDir);
       if (hb.explota) { j.areas.push({ x: obj.x, y: obj.y, radio: hb.explota, dano: [dh[0] * kRem, dh[1] * kRem], elem: hb.elem, t: 0, dur: 0.1, tick: 1, prox: 0, deHeroe: true, efecto: '', retraso: 0 }); efecto(j, hb.elem === 'luz' ? 'castigo' : hb.elem === 'rayo' ? 'trueno' : hb.elem === 'fisico' ? 'onda_aterrizaje' : 'explosion_fuego', obj.x, obj.y, 0, hb.explota / 2); }
-      if (remate) rematar(j, obj.x, obj.y, hb, mult);
+      if (remate && fin) { rematar(j, obj.x, obj.y, hb, mult); if (cb) cb.remate = false; }
       break;
     }
     case 'proyectil': {
@@ -1694,7 +1706,9 @@ function actualizarHeroe(j: Juego, dt: number) {
   }
   // acción en curso
   if (h.acc === 'atacar' || h.acc === 'lanzar' || h.acc === 'herido') {
-    if ((h.acc === 'atacar' || h.acc === 'lanzar') && !h.golpeo && h.t >= h.golpeEn) { h.golpeo = true; resolverHabilidad(j); }
+    const cb = (h as any).combo3 as { i: number; t: number[]; remate: boolean } | null;
+    if (cb && h.acc === 'atacar') { while (cb.i < cb.t.length && h.t >= cb.t[cb.i]) { resolverHabilidad(j, cb.i, cb); cb.i++; } if (cb.i >= cb.t.length) h.golpeo = true; }
+    else if ((h.acc === 'atacar' || h.acc === 'lanzar') && !h.golpeo && h.t >= h.golpeEn) { h.golpeo = true; resolverHabilidad(j); }
     if (h.t >= h.dur) { h.acc = 'quieto'; h.t = 0; }
     return;
   }

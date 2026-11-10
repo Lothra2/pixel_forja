@@ -92,7 +92,10 @@ const fr = (acc: string, t: number, dur: number, e?: Ent, accPies?: string, nRea
   if (acc === 'correr') return Math.floor(t * 14) % n;
   if (acc === 'morir') return Math.min(n - 1, Math.floor(t * 14));
   // atacar y lanzar: la carga y la salida van al ritmo de cada cuerpo, con el cuadro de impacto justo en el golpe
-  if (e && (acc === 'atacar' || acc === 'lanzar') && e.golpeEn > 0 && dur > 0) { const an = e.tipo === 'heroe' ? animClase((e as any).d?.clase, acc) : undefined; return cuadroAtaque(Math.min(1, t / dur), Math.min(0.9, e.golpeEn / dur), n, sensacionDe(e).curva, an?.impacto !== undefined ? Math.round((an.impacto / an.cuadros) * n) : undefined); }
+  if (e && (acc === 'atacar' || acc === 'lanzar') && e.golpeEn > 0 && dur > 0) { const an = e.tipo === 'heroe' ? animClase((e as any).d?.clase, acc) : undefined;
+    // un combo (el monje) lleva sus golpes en cuadros fijos: la animación corre pareja para que cada uno caiga en el suyo
+    if (an?.golpes?.length && (e as any).combo3) return Math.min(n - 1, Math.floor((t / dur) * n));
+    return cuadroAtaque(Math.min(1, t / dur), Math.min(0.9, e.golpeEn / dur), n, sensacionDe(e).curva, an?.impacto !== undefined ? Math.round((an.impacto / an.cuadros) * n) : undefined); }
   return Math.min(n - 1, Math.floor((t / Math.max(0.05, dur)) * n));
 };
 
@@ -396,7 +399,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     const [px, py] = aPant(n.x, n.y);
     const k = 1 - n.t / 1.1;
     ctx.globalAlpha = Math.max(0, Math.min(1, k * 1.6));
-    ctx.font = n.chico ? 'italic 10px Georgia, serif' : `bold ${n.grande ? 18 : 13}px Georgia, serif`;
+    ctx.font = n.chico ? 'italic 10px Georgia, serif' : `bold ${n.grande ? 18 : n.menor ? 11 : 13}px Georgia, serif`;
     if (n.chico) ctx.globalAlpha *= 0.8;
     const yy = py - n.z - (n.grande ? Math.sin(Math.min(1, n.t * 5) * Math.PI) * 6 : 0);
     ctx.fillStyle = '#000'; ctx.fillText(n.txt, px + 1, yy + 1); ctx.fillStyle = n.color; ctx.fillText(n.txt, px, yy);
