@@ -1144,6 +1144,11 @@ function herido(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
   if (arma === 'ballesta') { p.hombroD = vec<AngBrazo>([[40, 14, 60, 0], [48, 18, 70, 0], [34, 10, 55, 0], [30, 8, 50, 0], [30, 8, 50, 0]]); }
   if (arma === 'baculo') p.vara = vec<[number, number]>([[-14, 8], [-20, 10], [-4, 4], [3, 3], [3, 3]]);
   if (arma === 'arco') { p.hombroI = vec<AngBrazo>([[40, 30, 30, 0], [48, 36, 40, 0], [36, 20, 24, 0], [34, 14, 18, 0], [30, 14, 16, 0]]); p.tensa = false; }
+  // el berserker no suelta la postura del hacha: baja y atrás junto a la cadera, el golpe apenas la sacude
+  if (estilo === 'rugido' && (arma === 'dos' || arma === 'una')) {
+    p.manoD = vec<[number, number, number]>([[0, 10.5, 32], [-1, 11, 33], [1, 10.5, 31.5], [2, 10, 31], [2, 10, 31]]);
+    p.armaD = vec<[number, number]>([[136, 184], [132, 186], [140, 183], [142, 182], [142, 182]]); p.codoD = [-0.6, 0.55, -0.6]; p.pegaI = 0;
+  }
 }
 
 // ------------------------------------------------------------------ el ataque y el conjuro de cada clase (12 cuadros)
@@ -1154,33 +1159,30 @@ const c12 = (i: number) => i / 12;
  */
 function atacarBerserker(p: Pose, u: number, dosM: boolean) {
   plantar(p, [-3.5, 4], [2.4, 2], [28, 10]);
+  // arranca y termina con el hacha baja y atrás junto a la cadera (como en reposo y al andar): de ahí la sube por
+  // detrás del hombro, sin saltos de postura al entrar ni al salir del ataque
+  const cl: Clave[] = [
+    K(0, { bajar: 3, torso: 12, ladeo: 0, giroTorso: 8, giroCadera: 4, lateral: 0, avanza: 0, manoD: [2, 10, 31], armaD: [142, 182], cabeza: -2, giroCabeza: -8, pasos: [-3.5, 4], alza: [0, 0], respira: 0.4, hombros: [0.8, 0.8], pegaI: 0 }),
+    K(c12(1.2), { bajar: 3.6, torso: 14, giroTorso: 14, giroCadera: 6, manoD: [2, 11, 38], armaD: [100, 170], respira: 0.2, pegaI: 0.4 }),
+    K(c12(3), { bajar: 3, torso: 2, ladeo: 3, giroTorso: 26, giroCadera: 10, lateral: 0.8, avanza: -0.4, manoD: [3, 10, 49], armaD: [-30, -14], cabeza: -4, giroCabeza: -20, respira: 0.8, hombros: [1.2, 1], pegaI: 1 }),
+    K(c12(5), { bajar: 3.2, torso: -8, ladeo: 5, giroTorso: 36, giroCadera: 14, lateral: 1.2, avanza: -0.8, manoD: [0, 10, 52], armaD: [-70, -18], cabeza: -6, giroCabeza: -30, alza: [0, 0.8], respira: 1, hombros: [1.5, 1] }, true),
+    K(c12(6), { bajar: 3.6, torso: 4, ladeo: 2, giroTorso: 20, giroCadera: -8, lateral: 0.4, avanza: 0.6, manoD: [7, 7, 56], armaD: [-10, -8], cabeza: -6, giroCabeza: -14, pasos: [-3.5, 6], alza: [0, 1.6], respira: 0.6 }),
+    K(c12(7), { bajar: 6.5, torso: 28, ladeo: -3, giroTorso: -12, giroCadera: -16, lateral: -1.2, avanza: 2.8, manoD: [16, 1.5, 25], armaD: [130, -2], cabeza: 12, giroCabeza: 10, pasos: [-3.5, 7], alza: [0, 0], respira: 0.1, hombros: [0, 0] }, true),
+    K(c12(8), { bajar: 7, torso: 33, ladeo: -5, giroTorso: -24, giroCadera: -18, avanza: 3.2, manoD: [18, 1, 25], armaD: [150, -18], cabeza: 14, giroCabeza: 18 }),
+    K(c12(9), { bajar: 6.6, torso: 31, giroTorso: -26, manoD: [17.5, 0.5, 25.5], armaD: [152, -20], pegaI: 1 }, true),
+    // se endereza arrastrando el hacha por el costado derecho hasta la cadera
+    K(c12(10.5), { bajar: 4.4, torso: 20, ladeo: -1, giroTorso: -2, giroCadera: -4, lateral: -0.3, avanza: 1.4, manoD: [10, 9, 28], armaD: [150, 120], cabeza: 4, giroCabeza: 0, pasos: [-3.5, 5], alza: [0, 0.6], respira: 0.3, hombros: [0.6, 0.6], pegaI: 0.3 }),
+  ];
   if (dosM) {
-    p.agarreI = 6; p.pegaI = 1;
-    actuar(p, [
-      K(0, { bajar: 3, torso: 12, ladeo: 0, giroTorso: 8, giroCadera: 4, lateral: 0, avanza: 0, manoD: [11, 4, 36], armaD: [40, -24], cabeza: -2, giroCabeza: -8, pasos: [-3.5, 4], alza: [0, 0], respira: 0.4, hombros: [0.8, 0.8] }),
-      K(c12(1), { bajar: 3.6, torso: 14, manoD: [10, 5, 34], armaD: [55, -24], respira: 0.2 }),
-      K(c12(3), { bajar: 3, torso: 2, ladeo: 3, giroTorso: 26, giroCadera: 10, lateral: 0.8, avanza: -0.4, manoD: [4, 9.5, 49], armaD: [-30, -14], cabeza: -4, giroCabeza: -20, respira: 0.8, hombros: [1.2, 1] }),
-      K(c12(5), { bajar: 3.2, torso: -8, ladeo: 5, giroTorso: 36, giroCadera: 14, lateral: 1.2, avanza: -0.8, manoD: [0, 10, 52], armaD: [-70, -18], cabeza: -6, giroCabeza: -30, alza: [0, 0.8], respira: 1, hombros: [1.5, 1] }, true),
-      K(c12(6), { bajar: 3.6, torso: 4, ladeo: 2, giroTorso: 20, giroCadera: -8, lateral: 0.4, avanza: 0.6, manoD: [7, 7, 56], armaD: [-10, -8], cabeza: -6, giroCabeza: -14, pasos: [-3.5, 6], alza: [0, 1.6], respira: 0.6 }),
-      K(c12(7), { bajar: 6.5, torso: 28, ladeo: -3, giroTorso: -12, giroCadera: -16, lateral: -1.2, avanza: 2.8, manoD: [16, 1.5, 25], armaD: [130, -2], cabeza: 12, giroCabeza: 10, pasos: [-3.5, 7], alza: [0, 0], respira: 0.1, hombros: [0, 0] }, true),
-      K(c12(8), { bajar: 7, torso: 33, ladeo: -5, giroTorso: -24, giroCadera: -18, avanza: 3.2, manoD: [18, 1, 25], armaD: [150, -18], cabeza: 14, giroCabeza: 18 }),
-      K(c12(9), { bajar: 6.6, torso: 31, giroTorso: -26, manoD: [17.5, 0.5, 25.5], armaD: [152, -20] }, true),
-      K(c12(10.5), { bajar: 4.4, torso: 18, ladeo: -1, giroTorso: -4, giroCadera: -4, lateral: -0.3, avanza: 1.4, manoD: [12, 3, 30], armaD: [95, -18], cabeza: 4, giroCabeza: 0, pasos: [-3.5, 5], alza: [0, 0.6], respira: 0.3, hombros: [0.6, 0.6] }),
-    ], u, { lagCab: 0.04, lagArma: 0.025, capa: 1.1, pelo: 0.4 });
+    p.agarreI = 6;
+    actuar(p, cl, u, { lagCab: 0.04, lagArma: 0.025, capa: 1.1, pelo: 0.4 });
+    p.pegaI = clamp(p.pegaI ?? 1, 0, 1);
     return;
   }
-  // el hacha de una mano: la recoge alta detrás de la cabeza (el codo arriba) y la baja en diagonal con el torso
-  actuar(p, [
-    K(0, { bajar: 3, torso: 12, ladeo: 0, giroTorso: 8, giroCadera: 4, lateral: 0, avanza: 0, hombroD: [28, 20, 50, 0], munecaD: 0, hombroI: [30, 18, 50, 12], cabeza: -2, giroCabeza: -8, pasos: [-3.5, 4], alza: [0, 0], respira: 0.4 }),
-    K(c12(1), { bajar: 3.6, torso: 14, hombroD: [20, 22, 60, 0], munecaD: 5, respira: 0.2 }),
-    K(c12(3), { bajar: 3, torso: 2, ladeo: 3, giroTorso: 24, giroCadera: 10, lateral: 0.8, avanza: -0.4, hombroD: [110, 36, 90, -12], munecaD: -25, hombroI: [50, 20, 40, 10], cabeza: -4, giroCabeza: -20, respira: 0.8 }),
-    K(c12(5), { bajar: 3.2, torso: -8, ladeo: 5, giroTorso: 34, giroCadera: 14, lateral: 1.2, avanza: -0.8, hombroD: [160, 38, 95, -18], munecaD: -45, hombroI: [62, 24, 30, 10], cabeza: -6, giroCabeza: -30, alza: [0, 0.8], respira: 1 }, true),
-    K(c12(6), { bajar: 3.6, torso: 4, ladeo: 2, giroTorso: 16, giroCadera: -8, lateral: 0.4, avanza: 0.6, hombroD: [150, 28, 50, 0], munecaD: -20, hombroI: [40, 22, 45, 15], pasos: [-3.5, 6], alza: [0, 1.6], cabeza: -4, giroCabeza: -12 }),
-    K(c12(7), { bajar: 6.2, torso: 26, ladeo: -4, giroTorso: -20, giroCadera: -16, lateral: -1.2, avanza: 2.6, hombroD: [75, 6, 6, 25], munecaD: 20, hombroI: [4, 22, 65, 30], cabeza: 10, giroCabeza: 16, pasos: [-3.5, 7], alza: [0, 0], respira: 0.1 }, true),
-    K(c12(8), { bajar: 6.8, torso: 31, ladeo: -5, giroTorso: -30, giroCadera: -18, avanza: 3, hombroD: [36, -8, 14, 38], munecaD: 14, hombroI: [0, 24, 70, 30], cabeza: 13, giroCabeza: 22 }),
-    K(c12(9), { bajar: 6.4, torso: 29, giroTorso: -31, hombroD: [32, -9, 16, 38] }, true),
-    K(c12(10.5), { bajar: 4.4, torso: 18, ladeo: -1, giroTorso: -6, giroCadera: -4, lateral: -0.3, avanza: 1.4, hombroD: [22, 14, 40, 10], munecaD: 4, hombroI: [18, 18, 52, 15], cabeza: 4, giroCabeza: 0, pasos: [-3.5, 5], alza: [0, 0.6], respira: 0.3 }),
-  ], u, { lagCab: 0.04, lagArma: 0.03, capa: 1.1, pelo: 0.4 });
+  // el hacha de una mano: el mismo camino con un solo puño; el brazo izquierdo abre para equilibrar y acompaña la descarga
+  const izq: AngBrazo[] = [[10, 16, 22, 10], [20, 18, 30, 10], [50, 20, 40, 10], [62, 24, 30, 10], [40, 22, 45, 15], [4, 22, 65, 30], [0, 24, 70, 30], [0, 24, 70, 30], [18, 18, 40, 12]];
+  actuar(p, cl.map((c, i) => { const v = { ...c.v, hombroI: izq[i] }; delete v.pegaI; return { ...c, v }; }), u, { lagCab: 0.04, lagArma: 0.03, capa: 1.1, pelo: 0.4 });
+  p.pegaI = 0;
 }
 /** Templario: desde la guardia (la espada adelante a la altura del pecho, el escudo al frente), un tajo corto y firme con un medio paso, y vuelve a la guardia. */
 function atacarTemplario(p: Pose, u: number, mano?: ManoPose) {
@@ -1343,8 +1345,8 @@ function lanzarBerserker(p: Pose, u: number, arma: ArmaPose) {
     K(c12(8), { torso: -11, cabeza: -29, manoI: [5.5, -17.2, 47.5] }, true),
     K(c12(10), { bajar: 3.6, torso: 14, cabeza: -4, giroCabeza: -4, respira: 0.2, hombros: [1.2, 1.2], manoI: [9, -9, 30], codoI: [-0.4, -1, -0.3] }),
   ], u, { lagCab: 0.04, capa: 1, pelo: 0.6 });
-  if (arma === 'dos') { p.manoD = [5, 8.5, 40]; p.armaD = [50, 172]; p.pegaI = 0; }
-  else if (arma === 'una') { const k = clamp((p.hombros?.[0] ?? 1.2) - 1.2, 0, 1.6) / 1.6; p.manoD = [lerp(10, 7, k), lerp(9, 13, k), lerp(31, 48, k)]; p.armaD = [lerp(120, 20, k), lerp(5, 40, k)]; }
+  // el hacha sigue baja y atrás junto a la cadera, como en reposo: el grito es del cuerpo, no del arma
+  if (arma === 'dos' || arma === 'una') { const k = clamp((p.hombros?.[0] ?? 1.2) - 1.2, 0, 1.6) / 1.6; p.manoD = [lerp(2, 0, k), lerp(10, 11, k), lerp(31, 33, k)]; p.armaD = [arma === 'dos' ? 142 : 152, 182]; p.codoD = [-0.6, 0.55, -0.6]; p.pegaI = 0; }
 }
 
 // ------------------------------------------------------------------ morir: con peso; cada cuerpo cae a su manera
