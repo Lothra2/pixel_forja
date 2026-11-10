@@ -28,8 +28,8 @@ const FONDO: [number, number, number, number] = [38, 34, 31, 255];
 const pintar = (r: Raster, x: number, y: number, w: number, h: number, c: [number, number, number, number]) => {
   for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (i >= 0 && j >= 0 && i < r.w && j < r.h) r.data.set(c, (j * r.w + i) * 4);
 };
-function cuadro(cu: (typeof HEROES)[number]['cuerpo'], eq: Parameters<typeof personajeEscena>[1], dir: Dir, acc: Accion, f: number): Raster {
-  const r = pintarEscena({ ...personajeEscena(cu, eq, dir, acc, f), sinSombra: true }, {}, { w: CW, h: CH, ax: AX, ay: AY });
+function cuadro(cu: (typeof HEROES)[number]['cuerpo'], eq: Parameters<typeof personajeEscena>[1], dir: Dir, acc: Accion, f: number, k = 1): Raster {
+  const r = pintarEscena({ ...personajeEscena(cu, eq, dir, acc, f), sinSombra: true }, {}, { w: Math.round(CW * k), h: Math.round(CH * k), ax: Math.round(AX * k), ay: Math.round(AY * k) });
   return r.img;
 }
 
@@ -60,17 +60,19 @@ const TIRA = arg('--tira') as Accion | undefined;
 if (TIRA) for (const h of process.argv.includes('--monstruos') ? SUJETOS_MONSTRUOS : SUJETOS_HEROES) {
   if (arg('--clase') && h.id !== arg('--clase')) continue;
   const a = { cuadros: cuadrosDe(TIRA, h.cuerpo.presentacion) }, [nombreNivel, eq] = h.niveles[Math.min(NIVEL, h.niveles.length - 1)];
-  const t = createRaster(IZQ + a.cuadros * CW, ARR + DIRS_HOJA.length * CH);
+  // los cuerpos grandes (ogro, trol, gigante) van en celdas más grandes, a la misma escala
+  const k = Math.max(1, h.cuerpo.alto ?? 1), cw = Math.round(CW * k), ch = Math.round(CH * k);
+  const t = createRaster(IZQ + a.cuadros * cw, ARR + DIRS_HOJA.length * ch);
   pintar(t, 0, 0, t.w, t.h, [24, 21, 19, 255]);
   texto(Lienzo.de(t), 4, 4, `${h.id}${nombreNivel ? ` (${nombreNivel})` : ''} · ${TIRA}`, [230, 210, 170]);
   DIRS_HOJA.forEach((dir, fi) => {
-    const y0 = ARR + fi * CH;
+    const y0 = ARR + fi * ch;
     texto(Lienzo.de(t), 4, y0 + 44, dir, [230, 210, 170]);
     for (let f = 0; f < a.cuadros; f++) {
-      const x0 = IZQ + f * CW;
-      pintar(t, x0 + 1, y0 + 1, CW - 2, CH - 2, FONDO);
-      pintar(t, x0 + AX - 6, y0 + AY, 13, 1, [90, 80, 70, 255]);
-      blit(t, cuadro(h.cuerpo, eq, dir, TIRA, f), x0, y0);
+      const x0 = IZQ + f * cw;
+      pintar(t, x0 + 1, y0 + 1, cw - 2, ch - 2, FONDO);
+      pintar(t, x0 + Math.round(AX * k) - 6, y0 + Math.round(AY * k), 13, 1, [90, 80, 70, 255]);
+      blit(t, cuadro(h.cuerpo, eq, dir, TIRA, f, k), x0, y0);
       texto(Lienzo.de(t), x0 + 4, y0 + 4, String(f), [120, 110, 100], { sombra: null });
     }
   });
