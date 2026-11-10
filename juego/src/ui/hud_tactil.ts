@@ -7,10 +7,11 @@
 // Todo en tamaños de dedo (44 pt o más), lejos de los bordes laterales (notch e isla) y respetando el área segura.
 import { ctx, W, H, E, ESCALA, SEGURO } from '../nucleo/lienzo';
 import { texto, T, TT, dentro, icono, envolver as envolverT } from './comun';
-import { ui, alternar, iconoHab, orbeHud, recursoClase, objetivoTxt, COLOR_POCION, cambiarAgresivo } from './juego_ui';
+import { ui, alternar, glifoHab, orbeHud, recursoClase, objetivoTxt, COLOR_POCION, cambiarAgresivo } from './juego_ui';
 import { hud, type Rect } from './hud_rects';
 import { MISIONES } from '../mundo/actos';
 import { habilidadDe, costoMana, usarPocion, caminarA, type Juego } from '../juego/mundo';
+import type { Habilidad } from '../datos/clases';
 import { cant, nivelHab, tiposCinturon, xpPara } from '../juego/heroe';
 import { aPant, aMundo } from '../render/escena';
 import { Sonido } from '../audio/sonido';
@@ -56,17 +57,59 @@ export function disposicion() {
 }
 
 const circ = (cx: number, cy: number, d: number): Rect => [cx - d / 2, cy - d / 2, d, d];
-function boton(id: string, r: Rect, dibujo: () => void, accion: () => void, redondo = false) {
+/**
+ * Un botón de combate: medallón redondo de bronce con el color de la habilidad adentro y su glifo. Todo es círculo: aro
+ * oscuro, aro de bronce con brillo arriba, sombra interior y, si lleva nombre, una banda curva abajo. Sin habilidad es un
+ * hueco vacío, más apagado, con una cruz fina.
+ */
+function medallon(cx: number, cy: number, d: number, o: { hb?: Habilidad; apagado?: boolean; etiqueta?: string; apretado?: boolean } = {}) {
+  const r = d / 2, aro = Math.max(3, d * 0.065);
+  ctx.save();
+  // sombra que lo despega del mundo
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(cx, cy + d * 0.035, r + 1, 0, Math.PI * 2); ctx.fill();
+  // aro: borde oscuro y bronce con la luz arriba
+  ctx.fillStyle = '#0c0906'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  const gb = ctx.createLinearGradient(0, cy - r, 0, cy + r);
+  if (o.hb) { gb.addColorStop(0, o.apretado ? '#ffe9b0' : '#e2c486'); gb.addColorStop(0.45, '#a8854c'); gb.addColorStop(1, '#5a4326'); }
+  else { gb.addColorStop(0, '#6e5c40'); gb.addColorStop(1, '#3a2e1e'); }
+  ctx.fillStyle = gb; ctx.beginPath(); ctx.arc(cx, cy, r - 1.5, 0, Math.PI * 2); ctx.fill();
+  // el interior
+  const ri = r - 1.5 - aro;
+  ctx.fillStyle = '#0c0906'; ctx.beginPath(); ctx.arc(cx, cy, ri + 1.2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI * 2); ctx.clip();
+  if (o.hb) {
+    const gy = o.etiqueta ? cy - d * 0.07 : cy, gs = ri * 2 * (o.etiqueta ? 0.86 : 1);
+    const gf = ctx.createRadialGradient(cx, gy, 2, cx, cy, ri * 1.25); gf.addColorStop(0, o.apagado ? '#303030' : o.hb.color); gf.addColorStop(1, '#0a0806'); ctx.fillStyle = gf; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2);
+    glifoHab(o.hb, cx, gy, gs, !!o.apagado);
+    // sombra interior arriba y brillo tenue: volumen de vidrio engastado
+    const gi = ctx.createRadialGradient(cx, cy, ri * 0.55, cx, cy, ri); gi.addColorStop(0, 'rgba(0,0,0,0)'); gi.addColorStop(1, 'rgba(0,0,0,0.55)'); ctx.fillStyle = gi; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2);
+    const gl = ctx.createLinearGradient(0, cy - ri, 0, cy); gl.addColorStop(0, 'rgba(255,240,210,0.16)'); gl.addColorStop(1, 'rgba(255,240,210,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(cx, cy - ri * 0.45, ri * 0.8, ri * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+    if (o.etiqueta) {
+      // banda curva abajo con el nombre
+      const by = cy + ri * 0.44; ctx.fillStyle = 'rgba(8,6,4,0.82)'; ctx.fillRect(cx - ri, by, ri * 2, ri);
+      ctx.strokeStyle = 'rgba(200,160,96,0.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx - ri, by + 0.5); ctx.lineTo(cx + ri, by + 0.5); ctx.stroke();
+      texto(o.etiqueta, cx, by + ri * 0.33, { alin: 'center', tam: Math.max(8, Math.round(d * 0.115)), color: '#ecdcb4', max: ri * 1.35 });
+    }
+    if (o.apretado) { ctx.fillStyle = 'rgba(255,230,170,0.16)'; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2); }
+  } else {
+    const gv = ctx.createRadialGradient(cx, cy, 2, cx, cy, ri); gv.addColorStop(0, '#1c1610'); gv.addColorStop(1, '#0a0806'); ctx.fillStyle = gv; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2);
+    ctx.strokeStyle = o.apretado ? '#c8a868' : '#6a5a40'; ctx.lineWidth = Math.max(1.5, d * 0.03); ctx.lineCap = 'round'; const q = ri * 0.3;
+    ctx.beginPath(); ctx.moveTo(cx - q, cy); ctx.lineTo(cx + q, cy); ctx.moveTo(cx, cy - q); ctx.lineTo(cx, cy + q); ctx.stroke();
+  }
+  ctx.restore();
+}
+function boton(id: string, r: Rect, dibujo: (apretado: boolean) => void, accion: () => void, redondo = false, sinFondo = false) {
   // los redondos se tocan en su círculo; para los encimados cuenta el cuadrado inscrito (las esquinas de la caja están vacías)
   const cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2, ins = r[2] * 0.7071;
   hud[id] = redondo ? [cx - ins / 2, cy - ins / 2, ins, ins] : r; toques.push({ id, r });
   const enc = redondo ? Math.hypot(E.x - cx, E.y - cy) <= r[2] / 2 : dentro(r[0], r[1], r[2], r[3]);
+  if (sinFondo) { dibujo(enc && E.izq); if (enc) { ui.sobreUI = true; if (E.clicIzq) { E.clicIzq = false; accion(); } } return; }
   ctx.save(); ctx.globalAlpha = 0.82;
   ctx.fillStyle = enc && E.izq ? '#3a2a18' : '#14100c';
   ctx.beginPath(); if (redondo) ctx.arc(r[0] + r[2] / 2, r[1] + r[3] / 2, r[2] / 2, 0, Math.PI * 2); else ctx.rect(r[0], r[1], r[2], r[3]); ctx.fill();
   ctx.globalAlpha = 1; ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.stroke();
   ctx.restore();
-  dibujo();
+  dibujo(enc && E.izq);
   if (enc) { ui.sobreUI = true; if (E.clicIzq) { E.clicIzq = false; accion(); } }
 }
 /** Iconos simples de los botones de arriba. */
@@ -136,32 +179,23 @@ export function dibujarHudTactil(j: Juego, t: number) {
   {
     const hbI = habilidadDe(d.izq);
     const rG = circ(P.gx, P.gy, P.G);
-    boton('golpe', rG, () => { iconoHab(hbI, P.gx - P.G * 0.27, P.gy - P.G * 0.34, P.G * 0.54); texto(T('Golpe', 'Hit'), P.gx, P.gy + P.G * 0.36, { alin: 'center', tam: Math.round(L(10)), color: '#e8d8b0' }); }, () => { (ui as any).tactilHab = 'izq'; }, true);
+    boton('golpe', rG, (ap) => medallon(P.gx, P.gy, P.G, { hb: hbI, etiqueta: T('Golpe', 'Hit'), apretado: ap }), () => { (ui as any).tactilHab = 'izq'; }, true, true);
     habsArco(j).forEach((id, i) => {
       const [cx, cy] = P.habs[i], r = circ(cx, cy, P.S), clave = i === 0 ? 'poder' : 'hab' + i;
-      if (!id) { boton(clave, r, () => texto('+', cx, cy + L(7), { alin: 'center', tam: Math.round(L(22)), color: '#806a50' }), () => alternar('habs', 'der'), true); return; }
+      if (!id) { boton(clave, r, (ap) => medallon(cx, cy, P.S, { apretado: ap }), () => alternar('habs', 'der'), true, true); return; }
       const hb = habilidadDe(id), n = hb.id === 'ataque' ? 1 : nivelHab(d, hb.id, h.c), costo = hb.id === 'ataque' ? 0 : costoMana(j, hb);
-      boton(clave, r, () => {
+      boton(clave, r, (ap) => {
         // el ícono llena el círculo (recortado a él) para que el botón se vea del mismo tamaño que los demás
-        ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, P.S / 2 - 2, 0, Math.PI * 2); ctx.clip(); iconoHab(hb, cx - P.S * 0.42, cy - P.S * 0.46, P.S * 0.84, n <= 0); ctx.restore();
-        ctx.save(); ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, P.S / 2, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+        medallon(cx, cy, P.S, { hb, apagado: n <= 0, etiqueta: i === 0 ? T('Poder', 'Skill') : undefined, apretado: ap });
         const rc = h.recargas[hb.id] ?? 0;
-        if (rc > 0) { ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, P.S / 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, rc / (hb.recarga ?? 1))); ctx.closePath(); ctx.fill(); ctx.restore(); }
-        if (h.mana < costo) { ctx.save(); ctx.fillStyle = 'rgba(0,10,90,0.5)'; ctx.beginPath(); ctx.arc(cx, cy, P.S / 2, 0, Math.PI * 2); ctx.fill(); ctx.restore(); texto(String(Math.ceil(costo)), cx, cy + L(5), { alin: 'center', tam: Math.round(L(13)), color: '#a0b8ff' }); }
-        if (i === 0) texto(T('Poder', 'Skill'), cx, cy + P.S * 0.38, { alin: 'center', tam: Math.round(L(8)), color: '#fff2d0', max: P.S * 0.7 });
-      }, () => { if (i === 0) (ui as any).tactilHab = 'der'; else (ui as any).tactilHabId = id; }, true);
+        if (rc > 0) { ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, P.S / 2 - 1.5 - Math.max(3, P.S * 0.065), -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, rc / (hb.recarga ?? 1))); ctx.closePath(); ctx.fill(); ctx.restore(); }
+        if (h.mana < costo) { ctx.save(); ctx.fillStyle = 'rgba(0,10,90,0.5)'; ctx.beginPath(); ctx.arc(cx, cy, P.S / 2 - 1.5 - Math.max(3, P.S * 0.065), 0, Math.PI * 2); ctx.fill(); ctx.restore(); texto(String(Math.ceil(costo)), cx, cy + L(5), { alin: 'center', tam: Math.round(L(13)), color: '#a0b8ff' }); }
+      }, () => { if (i === 0) (ui as any).tactilHab = 'der'; else (ui as any).tactilHabId = id; }, true, true);
     });
     // agresivo o calmo, con su nombre
     const ag = !!(d as any).agresivo, r = P.agresivo;
-    boton('agresivo', r, () => {
-      const cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2, s = r[2];
-      ctx.save();
-      const iy = cy - s * 0.1;
-      if (ag) { ctx.strokeStyle = '#ff4030'; ctx.lineWidth = Math.max(3, s * 0.08); ctx.beginPath(); ctx.moveTo(cx - s * 0.2, iy + s * 0.2); ctx.lineTo(cx + s * 0.18, iy - s * 0.18); ctx.stroke(); }
-      else { ctx.fillStyle = '#9a9aa4'; ctx.beginPath(); ctx.moveTo(cx - s * 0.17, iy - s * 0.19); ctx.lineTo(cx + s * 0.17, iy - s * 0.19); ctx.lineTo(cx + s * 0.14, iy + s * 0.04); ctx.lineTo(cx, iy + s * 0.21); ctx.lineTo(cx - s * 0.14, iy + s * 0.04); ctx.closePath(); ctx.fill(); }
-      ctx.restore();
-      texto(ag ? T('Agresivo', 'Aggressive') : T('Calmo', 'Calm'), cx, r[1] + r[3] - L(3), { alin: 'center', tam: Math.round(L(8)), color: ag ? '#ff8060' : '#c0c0c8', max: r[2] - L(4) });
-    }, () => cambiarAgresivo(j));
+    // el mismo medallón que los demás: espada sobre rojo si ataca solo, escudo sobre acero si espera tu orden
+    boton('agresivo', r, (ap) => medallon(r[0] + r[2] / 2, r[1] + r[3] / 2, r[2], { hb: { color: ag ? '#a02818' : '#3c4654', glifo: ag ? 'espada' : 'escudo' } as Habilidad, etiqueta: ag ? T('Agresivo', 'Aggressive') : T('Calmo', 'Calm'), apretado: ap }), () => cambiarAgresivo(j), true, true);
   }
 
   // ---------------- abajo al centro: cinturón y experiencia

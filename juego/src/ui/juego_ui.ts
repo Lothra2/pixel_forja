@@ -60,13 +60,20 @@ export function orbeHud(tipo: string, k: number, x: number, y: number, s: number
   const corte = S * (1 - Math.max(0, Math.min(1, k))) * 0.86 + S * 0.07;
   ctx.save(); ctx.beginPath(); ctx.rect(x, y + corte * s / S, s, s - corte * s / S); ctx.clip(); ctx.drawImage(orbes[tipo + '1'][f], x, y, s, s); ctx.restore();
 }
-export function iconoHab(hb: Habilidad, x: number, y: number, s: number, apagado = false) {
+/** Solo el glifo de la habilidad, centrado en (cx, cy), sin fondo ni marco. */
+export const glifoHab = (hb: Habilidad, cx: number, cy: number, s: number, apagado = false) => iconoHab(hb, cx - s / 2, cy - s / 2, s, apagado, true, true);
+export function iconoHab(hb: Habilidad, x: number, y: number, s: number, apagado = false, redondo = false, soloGlifo = false) {
   ctx.save();
   const g = ctx.createRadialGradient(x + s / 2, y + s / 2, 2, x + s / 2, y + s / 2, s * 0.7);
   g.addColorStop(0, apagado ? '#303030' : hb.color); g.addColorStop(1, '#0a0806');
-  ctx.fillStyle = g; ctx.fillRect(x, y, s, s);
-  ctx.strokeStyle = '#000'; ctx.strokeRect(x + 0.5, y + 0.5, s - 1, s - 1);
-  ctx.strokeStyle = apagado ? '#3a3a3a' : '#a08850'; ctx.strokeRect(x + 1.5, y + 1.5, s - 3, s - 3);
+  // redondo (botones táctiles): solo el fondo de color en círculo y el glifo, sin el marco cuadrado
+  if (soloGlifo) { /* sin fondo */ }
+  else if (redondo) { ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x + s / 2, y + s / 2, s / 2, 0, Math.PI * 2); ctx.fill(); }
+  else {
+    ctx.fillStyle = g; ctx.fillRect(x, y, s, s);
+    ctx.strokeStyle = '#000'; ctx.strokeRect(x + 0.5, y + 0.5, s - 1, s - 1);
+    ctx.strokeStyle = apagado ? '#3a3a3a' : '#a08850'; ctx.strokeRect(x + 1.5, y + 1.5, s - 3, s - 3);
+  }
   ctx.translate(x + s / 2, y + s / 2); const k = s / 48; ctx.scale(k, k);
   ctx.strokeStyle = apagado ? '#606060' : '#fff6e0'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 3; ctx.lineCap = 'round';
   const L = (pts: number[]) => { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]); ctx.stroke(); };
