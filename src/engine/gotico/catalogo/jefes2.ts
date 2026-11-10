@@ -137,6 +137,14 @@ function aro(c: V3, r: number, n: V3, mat: string, tono: number, grueso: number,
 type Acc = 'quieto' | 'caminar' | 'atacar' | 'lanzar' | 'herido' | 'morir' | 'especial';
 const ACCIONES: Acc[] = ['quieto', 'caminar', 'atacar', 'lanzar', 'herido', 'morir', 'especial'];
 const CUADROS: Record<Acc, number> = { quieto: 4, caminar: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8, especial: 8 };
+/** Cuánto dobla el golpe en cada cuadro de 'herido': impacto, máximo, vuelta y un poco pasado adelante (como jefes.ts). */
+const GOLPE = [0.8, 1, 0.42, -0.1];
+/**
+ * Línea de tiempo de 'atacar': estos ataques se armaron con el contacto en el cuadro 5 (el 4 era medio barrido), pero el
+ * juego muestra el cuadro 4 en el instante del golpe. Se leen las poses en estos tiempos para que el 4 sea el contacto,
+ * el arma quede arriba en 2 y 3 (y subiendo en 1) y la salida pesada vaya de 5 a 7.
+ */
+const TIEMPO_ATAQUE = [0, 1.5, 2.5, 3, 5, 5.6, 6.3, 7];
 const NOMBRES: Record<Acc, [string, string]> = { quieto: ['quieto', 'idle'], caminar: ['camina', 'walk'], atacar: ['ataca', 'attack'], lanzar: ['lanza', 'cast'], herido: ['recibe golpe', 'get hit'], morir: ['muere', 'death'], especial: ['especial', 'special'] };
 const RUMBO: Record<Dir, number> = { se: 0, s: 45, so: 90, o: 135, no: 180, n: 225, ne: 270, e: 315 };
 interface Res { piezas: Pieza[]; resplandor?: Escena['resplandor']; sinSombra?: boolean }
@@ -153,7 +161,7 @@ function jefe(id: string, nombre: [string, string], alto: number, huella: number
       id: `jefe_${id}_${acc}`, nombre: [`${nombre[0]} · ${es}`, `${nombre[1]} · ${en}`], tema: 'monstruos',
       variantes: [...DIRS], cuadros: CUADROS[acc], t: acc === 'quieto' ? 6 : 3, huella: [huella, huella], bloquea: true,
       armar: (v, f) => {
-        const r = armar(acc, f), g = RUMBO[v as Dir], c = Math.cos(rad(g)), s = Math.sin(rad(g));
+        const r = armar(acc, acc === 'atacar' ? TIEMPO_ATAQUE[f] : f), g = RUMBO[v as Dir], c = Math.cos(rad(g)), s = Math.sin(rad(g));
         const res = r.resplandor ? { ...r.resplandor, c: [r.resplandor.c[0] * c - r.resplandor.c[1] * s, r.resplandor.c[0] * s + r.resplandor.c[1] * c, r.resplandor.c[2]] as V3 } : undefined;
         return { piezas: girarPiezas(r.piezas, g), resplandor: res, sinSombra: r.sinSombra };
       },
@@ -198,7 +206,7 @@ function campanaAhoga(acc: Acc, f: number): Res {
     for (const [i, s] of [[0, -1], [1, 1]] as [number, number][]) mano[i] = [K([14, 22, 28, 32, 34, 54, 44, 14], f), s * K([40, 30, 18, 11, 9, 12, 26, 40], f), K([10, 36, 54, 62, 64, 58, 32, 10], f)];
     tp = K([6, 2, -2, -4, -4, 16, 12, 6], f); cab = K([12, 6, 2, 0, 0, 16, 14, 12], f);
   } else if (acc === 'herido') {
-    const k = [0.6, 1, 0.7, 0.3][f % 4];
+    const k = GOLPE[f % 4];
     tilt = -10 * k; tp = 6 - 16 * k; cab = 12 - 26 * k; cabR = 8 * k; glow = 0.5 + k * 0.6; labio = 0.15 + k * 0.7;
     for (const [i, s] of [[0, -1], [1, 1]] as [number, number][]) mano[i] = [14 - 12 * k, s * (40 + 12 * k), 10 + 22 * k];
     if (k > 0.5) ondas.push(k * 0.35);
@@ -456,7 +464,7 @@ function aunSaar(acc: Acc, f: number): Res {
     const cOrb: V3 = [K([90, 92, 96, 100, 104, 150, 200, 90], f), 0, 160];
     manos.forEach((m, i) => { const a = (i / 6) * TAU + w * 0.5, k = K([0, 0.4, 0.8, 1, 1, 0.7, 0.3, 0], f); const p: V3 = add([cOrb[0] - 8, 0, cOrb[2]], [0, Math.cos(a) * 34, Math.sin(a) * 34]); m[0] = mez(MANOS0[i][0], p, k); m[1] = nor(mez(MANOS0[i][1], nor(sub(cOrb, p)), k)); m[2] = lerp(m[2], 1, k); });
   } else if (acc === 'herido') {
-    const k = [0.6, 1, 0.7, 0.3][f % 4];
+    const k = GOLPE[f % 4];
     tp = 4 - 14 * k; cab = 6 - 20 * k; px = -8 * k; pz = 4 * k; boca = 0.3 + 0.6 * k; brillo = 0.4 + 0.8 * k;
     manos.forEach((m, i) => { m[0] = add(m[0], esc(nor([m[0][0], m[0][1], 0]), 18 * k)); m[2] = 1; void i; });
   } else if (acc === 'morir') {
