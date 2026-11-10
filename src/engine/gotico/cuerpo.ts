@@ -124,6 +124,16 @@ export interface Cuerpo {
   heridas?: boolean;
   garras?: boolean;
   flota?: boolean;
+  /** Cómo se mueve un monstruo (si falta, sale del cuerpo: los grandes son brutos; los encorvados con garras y los chicos, bestias). */
+  porte?: import('./figura').Porte;
+}
+/** El porte de un monstruo humanoide: el que pide el cuerpo o el que sale de su tamaño y su forma. Los héroes no tienen. */
+export function porteDe(cu: Cuerpo): import('./figura').Porte | undefined {
+  if (cu.presentacion) return undefined;
+  if (cu.porte) return cu.porte;
+  if ((cu.alto ?? 1) >= 1.5) return 'bruto';
+  if ((cu.alto ?? 1) <= 0.75 || ((cu.joroba ?? 0) >= 0.6 && cu.garras)) return 'bestia';
+  return undefined;
 }
 export type Pieza_ = Pieza;
 /**
@@ -261,8 +271,8 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   // (las astas y el gran báculo nuevos van con la pose de vara aunque sean a dos manos: la izquierda baja por el asta)
   // (las armas de asta largas a dos manos, la lanza y el gran báculo van con la pose a dos manos: arco grande y agarre doble)
-  const tipo = arma === 'ballesta' ? 'ballesta' : dos(arma) || arma === 'lanza' ? 'dos' : asta(arma) ? 'baculo' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' || arma === 'cestus' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
-  const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo));
+  const tipo = arma === 'ballesta' ? 'ballesta' : arma === 'lanza' || arma === 'alabarda' ? 'asta' : dos(arma) ? 'dos' : asta(arma) ? 'baculo' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' || arma === 'cestus' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
+  const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo), porteDe(cu));
   const th = rad(RUMBO[dir]);
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
   const W: Fn = (fw, rt, up) => [F[0] * fw + R[0] * rt, F[1] * fw + R[1] * rt, up];
@@ -283,13 +293,16 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   const extension = ([hz, rod]: [number, number]) => 14.5 * Math.cos(rad(hz)) + 14 * Math.cos(rad(hz - rod));
   let zc = P.suelo ? (Math.max(extension(P.caderaD), extension(P.caderaI)) + 2.4 + (P.vuelo ?? 0)) * S : (31 - P.bajar) * S;
   const zc0 = zc;
+  // la carrera fija la altura de la cadera (un rebote corto y poco hondo): los pies quedan donde los pone el paso y las
+  // rodillas se resuelven solas; si una pierna no llega, la cadera baja lo justo
+  if (P.suelo && P.zCadera !== undefined) zc = P.zCadera * S;
   // ---- pelvis: corrimiento (el peso pasa a una pierna), giro y ladeo; los pies quedan donde están
   const adel = plant ? P.avanza * S : 0, lat = (P.lateral ?? 0) * S, gC = rad(P.giroCadera ?? 0), lC = rad(P.ladeoCadera ?? 0);
   const pvL = (fw: number, rt: number, up: number): V3 => {
     const dz = up - zc, f2 = fw * Math.cos(gC) - rt * Math.sin(gC), r2 = fw * Math.sin(gC) + rt * Math.cos(gC);
     return [f2 + adel, r2 * Math.cos(lC) - dz * Math.sin(lC) + lat, zc + r2 * Math.sin(lC) + dz * Math.cos(lC)];
   };
-  const mueve = plant || !!(adel || lat || gC || lC || P.abre);
+  const mueve = plant || P.zCadera !== undefined || !!(adel || lat || gC || lC || P.abre);
   // ---- tobillos: donde los ponen los ángulos (o plantados en el piso)
   const piso = 2.4 * S;
   const lados: [number, [number, number], number][] = [[1, P.caderaD, 0], [-1, P.caderaI, 1]];
@@ -2170,7 +2183,8 @@ export function geometriaQA(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: nu
     const pesada = tipo === 'hacha' || tipo === 'hacha_doble' || tipo === 'martillo' || tipo === 'maza' || tipo === 'maza_estrella' || tipo === 'guadana' || tipo === 'alabarda';
     const [fa, fb] = filoDe(e, tipo, der);
     arma = { a: en(-cb), b: en(L), r: 0.9 * S, cabeza: [fa, fb], rCabeza: pesada ? 3.2 * S : 1.4 * S };
-    mango = [en(-cb), pesada ? fa : en(1)];
+    const largoMango = pesada || tipo === 'lanza' || tipo === 'tridente' || tipo === 'lanza_dragon' || tipo === 'jabalina';
+    mango = [en(-cb), largoMango ? fa : en(1)];
     if (cb >= 3) cabo = en(-cb);
   }
   return {

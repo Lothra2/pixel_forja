@@ -10,12 +10,12 @@ import { join } from 'node:path';
 import { HEROES } from '../src/engine/gotico/catalogo/personajes.ts';
 import { personajeEscena } from '../src/engine/gotico/cuerpo.ts';
 import { pintarEscena } from '../src/engine/gotico/render.ts';
-import { ANIM_HEROE, CLASE_ESTILO, type Accion, type Dir } from '../src/engine/gotico/figura.ts';
+import { ANIM_HEROE, CLASE_ESTILO, cuadrosDe, type Accion, type Dir } from '../src/engine/gotico/figura.ts';
 import { Lienzo, texto } from '../src/engine/gotico/hud.ts';
 import { createRaster, blit, upscaleNearest, type Raster } from '../src/engine/core/raster.ts';
 import { encodePng } from '../src/engine/export/png.ts';
 import { encodeGif } from '../src/engine/export/gif.ts';
-import { nivelesQA } from './qa-heroes.ts';
+import { nivelesQA, SUJETOS_HEROES, SUJETOS_MONSTRUOS } from './qa-heroes.ts';
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
 const SALIDA = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'hojas_heroes';
@@ -55,13 +55,14 @@ function cuantizar(frs: Raster[]): Raster[] {
 
 mkdirSync(SALIDA, { recursive: true });
 // --tira <acción>: solo una tira por clase con esa acción en las direcciones pedidas (filas), a ×2
+// (--monstruos: los monstruos humanoides de la QA en vez de los héroes; los cuadros son los de los monstruos)
 const TIRA = arg('--tira') as Accion | undefined;
-if (TIRA) for (const h of HEROES) {
+if (TIRA) for (const h of process.argv.includes('--monstruos') ? SUJETOS_MONSTRUOS : SUJETOS_HEROES) {
   if (arg('--clase') && h.id !== arg('--clase')) continue;
-  const a = ANIM_HEROE[CLASE_ESTILO[h.cuerpo.presentacion!]][TIRA], [nombreNivel, eq] = nivelesQA(h)[NIVEL];
+  const a = { cuadros: cuadrosDe(TIRA, h.cuerpo.presentacion) }, [nombreNivel, eq] = h.niveles[Math.min(NIVEL, h.niveles.length - 1)];
   const t = createRaster(IZQ + a.cuadros * CW, ARR + DIRS_HOJA.length * CH);
   pintar(t, 0, 0, t.w, t.h, [24, 21, 19, 255]);
-  texto(Lienzo.de(t), 4, 4, `${h.nombre[0]} (${nombreNivel}) · ${TIRA}`, [230, 210, 170]);
+  texto(Lienzo.de(t), 4, 4, `${h.id}${nombreNivel ? ` (${nombreNivel})` : ''} · ${TIRA}`, [230, 210, 170]);
   DIRS_HOJA.forEach((dir, fi) => {
     const y0 = ARR + fi * CH;
     texto(Lienzo.de(t), 4, y0 + 44, dir, [230, 210, 170]);
@@ -73,7 +74,7 @@ if (TIRA) for (const h of HEROES) {
       texto(Lienzo.de(t), x0 + 4, y0 + 4, String(f), [120, 110, 100], { sombra: null });
     }
   });
-  writeFileSync(join(SALIDA, `${h.id}_${nombreNivel}_${TIRA}_${DIRS_HOJA.join('-')}.png`), encodePng(upscaleNearest(t, 2)));
+  writeFileSync(join(SALIDA, `${h.id}${nombreNivel ? '_' + nombreNivel : ''}_${TIRA}_${DIRS_HOJA.join('-')}.png`), encodePng(upscaleNearest(t, 2)));
   console.log('tira', h.id, nombreNivel, TIRA);
 }
 if (!TIRA) for (const h of HEROES) {

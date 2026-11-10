@@ -11,8 +11,8 @@
  * Sale con código 1 si hay alguna falla.
  *   npx tsx scripts/qa-heroes.ts [--clase berserker] [--accion atacar] [--detalle 40]
  */
-import { HEROES } from '../src/engine/gotico/catalogo/personajes.ts';
-import { geometriaQA, dentroElip, armaduraDeLinea, type Equipo, type GeoQA } from '../src/engine/gotico/cuerpo.ts';
+import { HEROES, MONSTRUOS } from '../src/engine/gotico/catalogo/personajes.ts';
+import { geometriaQA, dentroElip, armaduraDeLinea, type Cuerpo, type Equipo, type GeoQA } from '../src/engine/gotico/cuerpo.ts';
 import { DIRS, cuadrosDe, type Accion } from '../src/engine/gotico/figura.ts';
 import { aPantalla, type V3 } from '../src/engine/gotico/render.ts';
 
@@ -37,6 +37,26 @@ export function nivelesQA(h: (typeof HEROES)[number]): [string, Equipo][] {
   if (ep.izq === null) delete epico.izq; else if (ep.izq) epico.izq = ep.izq;
   return [['novato', h.niveles[0]], ['veterano', h.niveles[1]], ['leyenda', ley], ['epico', epico]];
 }
+
+/** Lo que se mide: un cuerpo con sus niveles de equipo y sus acciones. */
+export interface Sujeto { id: string; cuerpo: Cuerpo; niveles: [string, Equipo][]; acciones: Accion[] }
+export const SUJETOS_HEROES: Sujeto[] = HEROES.map((h) => ({ id: h.id, cuerpo: h.cuerpo, niveles: nivelesQA(h), acciones: ACCIONES_QA }));
+/**
+ * Los monstruos humanoides que salen de figura.ts y que el juego pide revisar: los brutos que pegan con maza o martillo
+ * (ogro, trol, gigante) y los que van a correr (necrófago, diablillo, sacerdote chacal y cazacabezas). Los dos últimos
+ * viven en el juego (juego/src/datos/hornear_extra.ts, MONSTRUOS_EXTRA): acá va una copia de su cuerpo y su equipo.
+ */
+const EXTRA_JUEGO: { id: string; cuerpo: Cuerpo; equipo: Equipo; magia?: boolean }[] = [
+  { id: 'chacal', magia: true, cuerpo: { piel: 'cu_pelaje', ojos: 'cu_ojo_brasa', orejas: 'puntiagudas', cabeza: 1.1, musculo: 0.4, peinado: 'calvo', pelo: 'cu_pelaje', cola: 'cu_pelaje' },
+    equipo: { torso: { tipo: 'sin_mangas', mat: 'cu_tela_blanca' }, piernas: { tipo: 'faldon', mat: 'cu_tela_blanca', mat2: 'cu_oro' }, hombros: { tipo: 'placas', mat: 'cu_oro' }, arma: { tipo: 'cetro', mango: 'cu_oro', gema: 'fuego_verde' } } },
+  { id: 'cazacabezas', cuerpo: { piel: 'cu_piel_morena', ojos: 'cu_ojo_brasa', musculo: 0.7, alto: 0.9, peinado: 'cresta', pelo: 'cu_pelo_rojo' },
+    equipo: { piernas: { tipo: 'taparrabo', mat: 'cu_pelaje' }, cabeza: { tipo: 'mascara', mat: 'cu_hueso' }, hombros: { tipo: 'huesos', mat: 'cu_hueso' }, arma: { tipo: 'lanza', mat: 'cu_hueso', mango: 'madera_vieja' } } },
+];
+export const IDS_MONSTRUOS_QA = ['ogro', 'trol_pantano', 'gigante_helado', 'necrofago', 'diablillo', 'chacal', 'cazacabezas'];
+export const SUJETOS_MONSTRUOS: Sujeto[] = IDS_MONSTRUOS_QA.map((id) => {
+  const m = MONSTRUOS.find((x) => x.id === id) ?? EXTRA_JUEGO.find((x) => x.id === id)!;
+  return { id, cuerpo: m.cuerpo, niveles: [['', m.equipo]], acciones: ['quieto', 'caminar', 'correr', 'atacar', ...(m.magia ? ['lanzar' as const] : []), 'herido', 'morir'] };
+});
 
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -112,14 +132,14 @@ export function medirCuadro(g: GeoQA, base: Omit<Falla, 'chequeo' | 'valor'>): F
   return out;
 }
 
-export function qaHeroes(o: { clase?: string; accion?: string; dirs?: string[]; niveles?: string[] } = {}) {
+export function qaHeroes(o: { clase?: string; accion?: string; dirs?: string[]; niveles?: string[]; sujetos?: Sujeto[] } = {}) {
   const fallas: Falla[] = [];
   let cuadros = 0;
-  for (const h of HEROES) {
+  for (const h of o.sujetos ?? SUJETOS_HEROES) {
     if (o.clase && h.id !== o.clase) continue;
-    for (const [nivel, eq] of nivelesQA(h)) {
+    for (const [nivel, eq] of h.niveles) {
       if (o.niveles && !o.niveles.includes(nivel)) continue;
-      for (const acc of ACCIONES_QA) {
+      for (const acc of h.acciones) {
         if (o.accion && acc !== o.accion) continue;
         const n = cuadrosDe(acc, h.cuerpo.presentacion);
         for (const dir of DIRS) {
@@ -144,11 +164,11 @@ export function qaHeroes(o: { clase?: string; accion?: string; dirs?: string[]; 
 export const LIMITE_ANDAR = { caminar: 10, correr: 15, salto: 20 };
 export interface AnguloAndar { clase: string; nivel: string; dir: string; arma: string; caminar: number; correr: number; salto: number; angulos: Record<'caminar' | 'correr', number[]> }
 const envolver = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
-export function angulosAndar(o: { clase?: string } = {}): { filas: AnguloAndar[]; fallas: Falla[] } {
+export function angulosAndar(o: { clase?: string; sujetos?: Sujeto[] } = {}): { filas: AnguloAndar[]; fallas: Falla[] } {
   const filas: AnguloAndar[] = [], fallas: Falla[] = [];
-  for (const h of HEROES) {
+  for (const h of o.sujetos ?? SUJETOS_HEROES) {
     if (o.clase && h.id !== o.clase) continue;
-    for (const [nivel, eq] of nivelesQA(h)) {
+    for (const [nivel, eq] of h.niveles) {
       const tipo = eq.arma?.tipo ?? 'nada';
       if (tipo === 'nada' || tipo === 'puno' || tipo === 'frasco') continue;
       for (const dir of DIRS) {
@@ -181,11 +201,62 @@ export function angulosAndar(o: { clase?: string } = {}): { filas: AnguloAndar[]
   return { filas, fallas };
 }
 
+/**
+ * El cuerpo al andar: el brazo libre (el que no lleva arma, escudo ni objeto) va con el codo doblado entre 70° y 100° al
+ * correr y entre 10° y 35° al caminar, y la mano libre no se adelanta al pecho más de 0,35 del alto; al correr la pelvis
+ * varía como mucho 6 % del alto en el ciclo y ninguna rodilla baja de 0,22 del alto sobre el piso.
+ */
+export const LIMITE_CUERPO = { codoCorrer: [70, 100], codoCaminar: [10, 35], manoAdelante: 0.35, pelvis: 0.06, rodilla: 0.22 };
+export interface FilaCuerpo { clase: string; nivel: string; acc: string; codo: [number, number] | null; mano: number | null; pelvis: number; rodilla: number }
+export function cuerpoAndar(o: { clase?: string; sujetos?: Sujeto[] } = {}): { filas: FilaCuerpo[]; fallas: Falla[] } {
+  const filas: FilaCuerpo[] = [], fallas: Falla[] = [];
+  for (const h of o.sujetos ?? SUJETOS_HEROES) {
+    if (o.clase && h.id !== o.clase) continue;
+    for (const [nivel, eq] of h.niveles) {
+      const tipo = eq.arma?.tipo ?? 'nada', arco = tipo === 'arco' || tipo === 'arco_largo' || tipo === 'arco_corto';
+      for (const acc of ['caminar', 'correr'] as const) {
+        const n = cuadrosDe(acc, h.cuerpo.presentacion), alto = 61 * (h.cuerpo.alto ?? 1);
+        let cmin = 999, cmax = -999, mmax = -999, zmin = 999, zmax = -999, rmin = 999, hayLibre = false;
+        for (const dir of DIRS) for (let f = 0; f < n; f++) {
+          const g = geometriaQA(h.cuerpo, eq, dir, acc, f), { e } = g, P = e.pose!;
+          const libres = e.brazos.filter((b) => b.s < 0
+            ? !P.manoI && g.pega < 0.5 && !arco && tipo !== 'ballesta' && !(eq.izq && !g.dosManos)
+            : !P.manoD && arco);
+          for (const b of libres) {
+            hayLibre = true;
+            const c = (Math.acos(Math.max(-1, Math.min(1, dot(nor3(sub(b.codo, b.hom)), nor3(sub(b.mun, b.codo)))))) * 180) / Math.PI;
+            cmin = Math.min(cmin, c); cmax = Math.max(cmax, c);
+            const ad = dot(sub(b.mano, g.pecho.c), e.F); mmax = Math.max(mmax, ad);
+            const [lo, hi] = acc === 'correr' ? LIMITE_CUERPO.codoCorrer : LIMITE_CUERPO.codoCaminar;
+            const base = { clase: h.id, nivel, dir, acc, f };
+            if (c < lo - 0.5 || c > hi + 0.5) fallas.push({ ...base, chequeo: 'brazo libre (codo)', valor: c });
+            if (ad > LIMITE_CUERPO.manoAdelante * alto) fallas.push({ ...base, chequeo: 'brazo libre (mano adelante)', valor: ad / alto });
+          }
+          zmin = Math.min(zmin, e.zc); zmax = Math.max(zmax, e.zc);
+          for (const pn of e.piernas) rmin = Math.min(rmin, pn.rod[2]);
+        }
+        const pel = (zmax - zmin) / alto, rod = rmin / alto;
+        if (acc === 'correr') {
+          const base = { clase: h.id, nivel, dir: '*', acc, f: -1 };
+          if (pel > LIMITE_CUERPO.pelvis + 1e-4) fallas.push({ ...base, chequeo: 'correr (pelvis)', valor: pel });
+          if (rod < LIMITE_CUERPO.rodilla - 1e-4) fallas.push({ ...base, chequeo: 'correr (rodilla)', valor: rod });
+        }
+        filas.push({ clase: h.id, nivel, acc, codo: hayLibre ? [Math.round(cmin), Math.round(cmax)] : null, mano: hayLibre ? Math.round((mmax / alto) * 100) / 100 : null, pelvis: Math.round(pel * 1000) / 1000, rodilla: Math.round(rod * 1000) / 1000 });
+      }
+    }
+  }
+  return { filas, fallas };
+}
+const nor3 = (a: V3): V3 => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const t0 = Date.now();
-  const { cuadros, fallas } = qaHeroes({ clase: SOLO_CLASE, accion: SOLO_ACC });
-  const andar = angulosAndar({ clase: SOLO_CLASE });
+  const MON = process.argv.includes('--monstruos'), sujetos = MON ? SUJETOS_MONSTRUOS : SUJETOS_HEROES;
+  const { cuadros, fallas } = qaHeroes({ clase: SOLO_CLASE, accion: SOLO_ACC, sujetos });
+  const andar = angulosAndar({ clase: SOLO_CLASE, sujetos });
   fallas.push(...andar.fallas);
+  const cuerpo = cuerpoAndar({ clase: SOLO_CLASE, sujetos });
+  fallas.push(...cuerpo.fallas);
   const por = new Map<string, number>();
   for (const x of fallas) { const k = `${x.chequeo} · ${x.clase} · ${x.acc}`; por.set(k, (por.get(k) ?? 0) + 1); }
   console.log(`QA de héroes: ${cuadros} cuadros (clases × 4 niveles × 8 direcciones × cada cuadro de cada acción) en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
@@ -197,6 +268,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const peor = new Map<string, AnguloAndar>();
   for (const f of andar.filas) { const k = f.clase + '|' + f.nivel, p = peor.get(k); peor.set(k, p ? { ...p, caminar: Math.max(p.caminar, f.caminar), correr: Math.max(p.correr, f.correr), salto: Math.max(p.salto, f.salto) } : f); }
   for (const f of peor.values()) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} ${f.arma.padEnd(13)} ${String(f.caminar).padStart(8)}°  ${String(f.correr).padStart(9)}°  ${String(f.salto).padStart(5)}°`);
+  console.log(`  ${'brazo libre y carrera'.padEnd(26)} ${cuerpo.fallas.length} fallas (codo libre: correr 70°–100°, caminar 10°–35°; mano libre ≤ 0,35 del alto delante del pecho; al correr pelvis ≤ 6 % del alto y rodilla ≥ 0,22 del alto)`);
+  console.log('    clase       nivel     acción    codo libre   mano adelante  pelvis   rodilla mín.   (fracciones del alto)');
+  for (const f of cuerpo.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} ${f.acc.padEnd(9)} ${(f.codo ? f.codo[0] + '°–' + f.codo[1] + '°' : '(sin brazo libre)').padEnd(17)} ${String(f.mano ?? '-').padEnd(13)} ${String(f.pelvis).padEnd(8)} ${f.rodilla}`);
   console.log(`TOTAL: ${fallas.length} fallas`);
   for (const [k, n] of [...por].sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(5)}  ${k}`);
   for (const x of fallas.slice(0, DETALLE)) console.log('   ', JSON.stringify(x));

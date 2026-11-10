@@ -14,7 +14,7 @@
       "estilo": "rugido",
       "zancada": {
         "caminar": 50.2144,
-        "correr": 71.0227
+        "correr": 52.2294
       },
       "acciones": {
         "quieto": {
@@ -69,7 +69,7 @@
       "estilo": "guardia",
       "zancada": {
         "caminar": 42.3952,
-        "correr": 63.7923
+        "correr": 46.7624
       },
       "acciones": {
         "quieto": {
@@ -124,7 +124,7 @@
       "estilo": "conjuro",
       "zancada": {
         "caminar": 41.6638,
-        "correr": 63.7923
+        "correr": 46.7624
       },
       "acciones": {
         "quieto": {
@@ -179,7 +179,7 @@
       "estilo": "apunta",
       "zancada": {
         "caminar": 46.0022,
-        "correr": 69.8342
+        "correr": 51.3234
       },
       "acciones": {
         "quieto": {
@@ -234,7 +234,7 @@
       "estilo": "invoca",
       "zancada": {
         "caminar": 39.4511,
-        "correr": 62.5648
+        "correr": 45.8443
       },
       "acciones": {
         "quieto": {
@@ -289,7 +289,7 @@
       "estilo": "kata",
       "zancada": {
         "caminar": 45.2876,
-        "correr": 68.639
+        "correr": 50.4153
       },
       "acciones": {
         "quieto": {
@@ -349,7 +349,7 @@
       "estilo": "naturaleza",
       "zancada": {
         "caminar": 45.2876,
-        "correr": 66.2285
+        "correr": 48.5928
       },
       "acciones": {
         "quieto": {
@@ -404,7 +404,7 @@
       "estilo": "frasco",
       "zancada": {
         "caminar": 43.848,
-        "correr": 67.437
+        "correr": 49.505
       },
       "acciones": {
         "quieto": {

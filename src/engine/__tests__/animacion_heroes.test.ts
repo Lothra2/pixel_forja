@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ANIM_HEROE, CLASES_HEROE, CUADROS, cuadrosDe, manifiestoAnimacion, zancada, ESTILO_CLASE, pose } from '../gotico/figura';
-import { qaHeroes, angulosAndar } from '../../../scripts/qa-heroes';
+import { qaHeroes, angulosAndar, cuerpoAndar, SUJETOS_MONSTRUOS } from '../../../scripts/qa-heroes';
 
 describe('animación de los héroes: cuadros por clase', () => {
   it('el manifiesto que lee el juego está al día con el código (npx tsx scripts/animacion-heroes.ts)', () => {
@@ -38,5 +38,16 @@ describe('animación de los héroes: cuadros por clase', () => {
     const { filas, fallas } = angulosAndar();
     expect(filas.length).toBeGreaterThan(200);
     expect(fallas.slice(0, 5)).toEqual([]);
+  });
+  it('el brazo libre bombea con el codo doblado (correr 70°–100°, caminar 10°–35°) y al correr la cadera no se hunde (≤ 6 % del alto, rodillas ≥ 0,22 del alto)', () => {
+    const { filas, fallas } = cuerpoAndar();
+    expect(filas.length).toBe(64);
+    expect(fallas.slice(0, 5)).toEqual([]);
+  });
+  it('los monstruos humanoides revisados (brutos, bestias, chacal y cazacabezas) pasan la QA completa', () => {
+    const sujetos = SUJETOS_MONSTRUOS;
+    expect(qaHeroes({ sujetos }).fallas.slice(0, 5)).toEqual([]);
+    expect(angulosAndar({ sujetos }).fallas.slice(0, 5)).toEqual([]);
+    expect(cuerpoAndar({ sujetos }).fallas.slice(0, 5)).toEqual([]);
   });
 });
