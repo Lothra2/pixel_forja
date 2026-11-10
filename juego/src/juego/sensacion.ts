@@ -58,8 +58,9 @@ export function sensacionDe(e: Ent): Sensacion {
  * siempre justo en `g` (igual que antes), pero la carga y la salida ya no van a ritmo parejo: lo pesado se recoge despacio
  * y descarga de un latigazo, lo rápido va seco, lo canalizado alza, sostiene y suelta.
  */
-export function cuadroAtaque(u: number, g: number, n: number, curva: Curva): number {
-  const I = Math.max(1, Math.round(n * 0.5));
+export function cuadroAtaque(u: number, g: number, n: number, curva: Curva, impacto?: number): number {
+  // el cuadro de impacto lo dice la animación de la clase; sin dato, la mitad (los monstruos: 4 de 8)
+  const I = Math.max(1, Math.min(n - 1, impacto ?? Math.round(n * 0.5)));
   if (u < g) {
     const x = Math.max(0, u / Math.max(0.01, g));
     const k = curva === 'pesado' ? x ** 1.9 : curva === 'seco' ? x ** 1.4 : curva === 'rapido' ? x : curva === 'fluido' ? x * x * (3 - 2 * x) : 1 - (1 - x) ** 2.2;

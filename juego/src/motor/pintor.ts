@@ -1,8 +1,12 @@
 // Pinta en vivo (con Web Workers) los cuadros del héroe cuando cambia el equipo, y los guarda en IndexedDB.
 import type { Cuadro } from './assets';
 import Obrero from './pintor.worker.ts?worker&inline';
+import { accionesClase } from '../juego/anim';
 
-const ACCS: [string, number][] = [['quieto', 4], ['caminar', 8], ['correr', 8], ['atacar', 8], ['lanzar', 8], ['herido', 4], ['morir', 8]];
+/** Sin datos de la clase: los cuadros de siempre. Cada clase trae los suyos (ver juego/anim.ts). */
+const ACCS_BASE: [string, number][] = [['quieto', 4], ['caminar', 8], ['correr', 8], ['atacar', 8], ['lanzar', 8], ['herido', 4], ['morir', 8]];
+/** Versión de la caché de cuadros pintados: sube cuando cambian las animaciones de la Forja. */
+const VER = 'v8';
 const DIRS = ['s', 'so', 'o', 'no', 'n', 'ne', 'e', 'se'];
 let vivos: Map<string, Cuadro[]> | null = null;
 /** Lo nuevo que ya está listo: cada animación se cambia cuando está pintada en las 8 direcciones (antes se mezclaban). */
@@ -57,13 +61,14 @@ export async function pintarHeroe(clase: string, cuerpo: any, equipo: any, firma
   for (const o of obreros) o.terminate();
   obreros = [];
   if (firma === 'base') { vivos = null; nuevosVivos = null; accListas.clear(); progresoPintura = 1; cambioVisible = performance.now() / 1000; return; }
-  const clave = 'v7|' + clase + '|' + firma;
+  const ACCS = accionesClase(clase).length ? accionesClase(clase) : ACCS_BASE;
+  const clave = VER + '|' + clase + '|' + firma;
   const cache = await leer(clave);
   if (yo !== trabajo) return;
   const aMapa = (c: Record<string, any[]>) => { const m = new Map<string, Cuadro[]>(); for (const [k, fs] of Object.entries(c)) m.set(k, fs.map(aCuadro)); return m; };
   if (cache) { vivos = aMapa(cache); firmaVivos = firma; nuevosVivos = null; accListas.clear(); progresoPintura = 1; cambioVisible = performance.now() / 1000; recordar(clase, clave); return; }
   // sin nada pintado todavía (partida recién abierta): mostrar el último héroe completo de esta clase en vez del horneado
-  if (!vivos) { const ult = ultima(clase); const c2 = ult ? await leer(ult) : null; if (yo !== trabajo) return; if (c2) { vivos = aMapa(c2); firmaVivos = ult!.slice(('v7|' + clase + '|').length); } }
+  if (!vivos) { const ult = ultima(clase); const c2 = ult && ult.startsWith(VER + '|') ? await leer(ult) : null; if (yo !== trabajo) return; if (c2) { vivos = aMapa(c2); firmaVivos = ult!.slice((VER + '|' + clase + '|').length); } }
   // si el equipo cambia varias veces seguidas, esperar a que se quede quieto antes de pintar
   await new Promise((r) => setTimeout(r, 350));
   if (yo !== trabajo) return;

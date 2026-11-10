@@ -14,7 +14,7 @@ const { REGISTRO, huellaDe } = await import(join(raiz, 'objeto.ts'));
 const { PISOS } = await import(join(raiz, 'pisos.ts'));
 const { fuenteDe } = await import(join(raiz, 'mapa.ts'));
 const { HEROES, MONSTRUOS } = await import(join(raiz, 'catalogo/personajes.ts'));
-const { CUADROS, DIRS } = await import(join(raiz, 'figura.ts'));
+const { CUADROS, DIRS, cuadrosDe } = await import(join(raiz, 'figura.ts'));
 const extras = await import('../src/datos/hornear_extra.ts');
 const { NPCS } = await import('../src/datos/npcs.ts');
 
@@ -30,15 +30,17 @@ interface Job { id_job: number; grupo: string; clave: string; tipo: string; [k: 
 const jobs: Job[] = [];
 let nid = 0;
 const ACCS = ['quieto', 'caminar', 'correr', 'atacar', 'lanzar', 'herido', 'morir'];
+const CORREN = new Set(['necrofago', 'diablillo', 'chacal', 'cazacabezas']);
 if (GRUPOS.includes('h')) for (const h of HEROES) {
   if (SOLO && !SOLO.includes(h.id)) continue;
-  for (const acc of ACCS) for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'h', clave: `${h.id}/${acc}/${dir}`, tipo: 'personaje', cuerpo: h.cuerpo, equipo: extras.equipoInicial(h.id, h.niveles[0]), dir, acc, cuadros: CUADROS[acc] });
+  for (const acc of ACCS) for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'h', clave: `${h.id}/${acc}/${dir}`, tipo: 'personaje', cuerpo: h.cuerpo, equipo: extras.equipoInicial(h.id, h.niveles[0]), dir, acc, cuadros: cuadrosDe(acc, h.cuerpo.presentacion) });
 }
 if (GRUPOS.includes('m')) for (const m of [...MONSTRUOS, ...extras.MONSTRUOS_EXTRA]) {
   if (SOLO && !SOLO.includes(m.id)) continue;
   for (const acc of ACCS) {
     if (acc === 'lanzar' && !m.magia) continue;
-    if (acc === 'correr') continue;
+    // correr solo para los humanoides con carrera propia (los demás caminan más rápido con la misma pisada)
+    if (acc === 'correr' && !CORREN.has(m.id)) continue;
     for (const dir of DIRS) jobs.push({ id_job: nid++, grupo: 'm', clave: `${m.id}/${acc}/${dir}`, tipo: 'personaje', cuerpo: m.cuerpo, equipo: m.equipo, dir, acc, cuadros: CUADROS[acc] });
   }
 }

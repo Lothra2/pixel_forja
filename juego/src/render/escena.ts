@@ -9,6 +9,7 @@ import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibuja
 import type { Juego, Ent, Monstruo, Efecto, Mancha } from '../juego/mundo';
 import { CUADROS, DIRS, DIR_VEC, ZANCADA, ALTO_CLASE } from '../juego/mundo';
 import { sensacionDe, cuadroAtaque } from '../juego/sensacion';
+import { animClase, zancadaClase, zancadaCorrerMonstruo } from '../juego/anim';
 import ZANCADA_MONSTRUO from '../../../src/engine/gotico/datos/zancada_monstruos.json';
 import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
@@ -67,18 +68,23 @@ export const opciones = { mostrarObjetos: false, idi: 0 as 0 | 1 };
 function zancadaDe(e: Ent, acc: string): number {
   const base = acc === 'correr' ? ZANCADA.correr : ZANCADA.caminar;
   const za = manifiesto().za as Record<string, number> | undefined;
-  if (e.tipo === 'heroe') return base * (za?.[(e as any).d?.clase] ?? ALTO_CLASE[(e as any).d?.clase] ?? 1);
+  // el héroe: la zancada de su clase (cada estilo pisa distinto) por su alto
+  if (e.tipo === 'heroe') { const cl = (e as any).d?.clase; return (zancadaClase(cl, acc === 'correr' ? 'correr' : 'caminar') ?? base) * (za?.[cl] ?? ALTO_CLASE[cl] ?? 1); }
   const m = e as Monstruo;
   // Thor trota a la cintura del héroe: su zancada es más corta que la de un humanoide de su alto
   if (m.def?.sprite?.startsWith('thor')) return base * 0.55;
   // tabla de la Forja: casillas por ciclo de caminar a escala 1, medidas en el sprite (sin pies: el ritmo de aleteo)
+  // los que galopan o aletean al correr traen su propio ritmo
+  const zc = acc === 'correr' ? zancadaCorrerMonstruo(m.def?.sprite) : undefined;
+  if (zc) return zc * (m.escala ?? 1);
   const zm = (ZANCADA_MONSTRUO as Record<string, number>)[m.def?.sprite];
   if (zm) return zm * (base / ZANCADA.caminar) * (m.escala ?? 1);
   const alto = za?.[m.def?.sprite];
   return base * (alto ?? 0.9) * (m.escala ?? 1);
 }
-const fr = (acc: string, t: number, dur: number, e?: Ent, accPies?: string) => {
-  const n = CUADROS[acc as keyof typeof CUADROS] ?? 8;
+const fr = (acc: string, t: number, dur: number, e?: Ent, accPies?: string, nReal?: number) => {
+  // los cuadros que de verdad tiene la animación (los héroes traen 12 al atacar y correr, los monstruos 8)
+  const n = nReal || (CUADROS[acc as keyof typeof CUADROS] ?? 8);
   if (e && (acc === 'caminar' || acc === 'correr')) return Math.floor(((e.recorrido ?? 0) / zancadaDe(e, accPies ?? acc)) * n) % n;
   // cada cuerpo respira a su ritmo: un grupo quieto ya no se mueve como un solo muñeco
   if (acc === 'quieto') return Math.floor((t + (e ? (e.id % 9) * 0.29 : 0)) * (e ? 5.4 + (e.id % 4) * 0.4 : 6)) % n;
@@ -86,7 +92,7 @@ const fr = (acc: string, t: number, dur: number, e?: Ent, accPies?: string) => {
   if (acc === 'correr') return Math.floor(t * 14) % n;
   if (acc === 'morir') return Math.min(n - 1, Math.floor(t * 14));
   // atacar y lanzar: la carga y la salida van al ritmo de cada cuerpo, con el cuadro de impacto justo en el golpe
-  if (e && (acc === 'atacar' || acc === 'lanzar') && e.golpeEn > 0 && dur > 0) return cuadroAtaque(Math.min(1, t / dur), Math.min(0.9, e.golpeEn / dur), n, sensacionDe(e).curva);
+  if (e && (acc === 'atacar' || acc === 'lanzar') && e.golpeEn > 0 && dur > 0) { const an = e.tipo === 'heroe' ? animClase((e as any).d?.clase, acc) : undefined; return cuadroAtaque(Math.min(1, t / dur), Math.min(0.9, e.golpeEn / dur), n, sensacionDe(e).curva, an?.impacto !== undefined ? Math.round((an.impacto / an.cuadros) * n) : undefined); }
   return Math.min(n - 1, Math.floor((t / Math.max(0.05, dur)) * n));
 };
 
@@ -513,7 +519,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   let i: number;
   if (e.tipo === 'monstruo' && (m as any).surgiendo > 0) i = Math.max(0, fs.length - 1 - Math.floor((1.2 - (m as any).surgiendo) * 7));
   else if ((e as any).estado === 'surgir') return;
-  else i = fr(acc, e.t, e.dur, e, acc === 'correr' && e.tipo !== 'heroe' && !cuadrosMonstruo(m.def.sprite, 'correr', e.dir).length ? 'caminar' : acc);
+  else i = fr(acc, e.t, e.dur, e, acc === 'correr' && e.tipo !== 'heroe' && !cuadrosMonstruo(m.def.sprite, 'correr', e.dir).length ? 'caminar' : acc, fs.length);
   if (e.tipo === 'monstruo' && m.estado === 'surgir') return;
   const q = fs[Math.min(fs.length - 1, i)];
   const esc = e.escala;

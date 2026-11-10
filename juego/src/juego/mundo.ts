@@ -23,6 +23,7 @@ export const ALTO_CLASE: Record<string, number> = { berserker: 1.03, cazadora: 1
 export type Dir = 's' | 'so' | 'o' | 'no' | 'n' | 'ne' | 'e' | 'se';
 export type Accion = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'lanzar' | 'herido' | 'morir';
 import { SENSACION, sensacionDe } from './sensacion';
+import { golpeEnClase, zancadaClase } from './anim';
 export const DIRS: Dir[] = ['s', 'so', 'o', 'no', 'n', 'ne', 'e', 'se'];
 /** Rumbo en el piso: 0° = se (x+), 45° = s, 90° = so ... */
 export function dirDe(dx: number, dy: number): Dir {
@@ -912,7 +913,8 @@ export function usarHabilidad(j: Juego, id: string, tx: number, ty: number, obj:
   const anim = basico ? 'atacar' : hb.anim;
   h.acc = anim; h.t = 0; h.golpeo = false;
   h.dur = anim === 'atacar' ? durAtaque(h) : durLanzar(h);
-  h.golpeEn = h.dur * 0.55;
+  // el golpe cae en el cuadro de impacto de la animación de la clase
+  h.golpeEn = h.dur * golpeEnClase(h.d.clase, anim);
   h.habActual = id;
   (h as any).tx = tx; (h as any).ty = ty; (h as any).tobj = obj;
   h.camino = null; h.destino = null;
@@ -1703,7 +1705,7 @@ function actualizarHeroe(j: Juego, dt: number) {
     if (moverHacia(j, h, tx, ty, vel, dt, h.camino.length === 1)) h.camino.shift();
     if (h.acc !== (h.correr ? 'correr' : 'caminar')) { h.acc = h.correr ? 'correr' : 'caminar'; }
     // un paso por cada pie que apoya: media zancada
-    const medio = (h.correr ? ZANCADA.correr : ZANCADA.caminar) * (ALTO_CLASE[h.d.clase] ?? 1) / 2;
+    const medio = (zancadaClase(h.d.clase, h.correr ? 'correr' : 'caminar') ?? (h.correr ? ZANCADA.correr : ZANCADA.caminar)) * (ALTO_CLASE[h.d.clase] ?? 1) / 2;
     const pie = Math.floor((h.recorrido ?? 0) / medio);
     if (pie !== h.pasoT) { h.pasoT = pie; sonar(j, 'paso', h.x, h.y, (h.correr ? 0.4 : 0.3) * (SENSACION[h.d.clase]?.paso ?? 1)); }
     if (!h.camino.length) h.camino = null;
