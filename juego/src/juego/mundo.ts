@@ -22,6 +22,7 @@ export const ALTO_CLASE: Record<string, number> = { berserker: 1.03, cazadora: 1
 
 export type Dir = 's' | 'so' | 'o' | 'no' | 'n' | 'ne' | 'e' | 'se';
 export type Accion = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'lanzar' | 'herido' | 'morir';
+import { SENSACION, sensacionDe } from './sensacion';
 export const DIRS: Dir[] = ['s', 'so', 'o', 'no', 'n', 'ne', 'e', 'se'];
 /** Rumbo en el piso: 0° = se (x+), 45° = s, 90° = so ... */
 export function dirDe(dx: number, dy: number): Dir {
@@ -54,7 +55,7 @@ export interface Ent {
   /** Movimiento natural: impulso de arranque (0.4 a 1), último momento en que caminó y espera entre sectores de giro. */
   impulso?: number; tMov?: number; giroT?: number;
   /** Retroceso visual al recibir un golpe: dirección en el mundo y cuándo fue. */
-  sacud?: { dx: number; dy: number; t: number };
+  sacud?: { dx: number; dy: number; t: number; k?: number; lanz?: number };
 }
 export interface Monstruo extends Ent {
   tipo: 'monstruo' | 'invocado';
@@ -252,6 +253,10 @@ export interface Juego {
   portal: Portal | null;
   t: number;
   sacudida: number;
+  /** Pausa de impacto: segundos de mundo casi detenido cuando un golpe conecta. */
+  congela?: number;
+  /** Empujón de la cámara en la dirección de un golpe (px en pantalla, con reloj real). */
+  patada?: { dx: number; dy: number; k: number; t: number };
   mensajes: { txt: [string, string]; t: number; color: string }[];
   jefe: Monstruo | null;
   tirado: Set<string>;
@@ -591,7 +596,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   // la armadura de Thor: cada tramo le quita daño
   if ((v as any).invocaId === 'thor') total *= 1 - Math.min(45, ((v as any).tramoThor ?? 0) * 8) / 100;
   // el golpe se siente en el cuerpo: un retroceso corto (solo visual) lejos de quien pega
-  if (total > 0 && g.fuente && g.fuente !== v) { const sx = v.x - g.fuente.x, sy = v.y - g.fuente.y, sl = Math.hypot(sx, sy) || 1; v.sacud = { dx: sx / sl, dy: sy / sl, t: j.t }; }
+  if (total > 0 && g.fuente && g.fuente !== v) { const sx = v.x - g.fuente.x, sy = v.y - g.fuente.y, sl = Math.hypot(sx, sy) || 1; v.sacud = { dx: sx / sl, dy: sy / sl, t: j.t, k: Math.max(0.5, Math.min(1.8, sensacionDe(g.fuente).peso / sensacionDe(v).peso)) }; }
   v.vida -= total;
   v.destello = 0.12;
   if (total > 0) {
@@ -608,6 +613,7 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   else if (g.elem === 'fisico' || g.elem === 'sangre') particulas(j, v.x, v.y, total > v.vidaMax * 0.2 ? 10 : 5, 'sangre', (v as Monstruo).def?.sonido === 'hueso' ? '#d8d0b8' : '#8a0c0c', 1, 34 * v.escala);
   if (v.tipo === 'heroe') {
     j.sacudida = Math.max(j.sacudida, total > h.vidaMax * 0.15 ? 0.35 : 0.12);
+    if (total > h.vidaMax * 0.1) j.congela = Math.max(j.congela ?? 0, 0.045);
     if (total > h.vidaMax * 0.08 && h.acc !== 'atacar' && h.acc !== 'lanzar') { h.acc = 'herido'; h.t = 0; h.dur = 0.3 / (1 + h.c.vel_recuperar / 100); }
     sonar(j, total > h.vidaMax * 0.1 ? 'dolor_heroe' : 'golpe_carne');
     if (R() < 0.06) desgastar(j, elegir(['cabeza', 'torso', 'izq', 'manos', 'pies', 'cinturon']));
@@ -631,6 +637,27 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
     if (crit || total > m.vidaMax * 0.3) j.sacudida = Math.max(j.sacudida, 0.1);
     if (g.arma && total > 0) efectoLegGolpe(j, m, total, crit);
     if (m.vida <= 0 && (m as any).huye) m.vida = 1; // historia: el heraldo no muere antes de su acto, huye
+    // el golpe del héroe se siente según su clase: pausa de impacto y empujón de cámara cuando pega de cerca con el arma,
+    // y el que muere sale despedido lejos del golpe (los jefes no)
+    if (g.deHeroe && g.fuente === h && total > 0) {
+      const S = SENSACION[h.d.clase], dxm = m.x - h.x, dym = m.y - h.y, dm = Math.hypot(dxm, dym) || 1, mata = m.vida <= 0;
+      if (S && g.arma && dm < 3.4) {
+        const f = (crit ? 1.5 : 1) * (mata ? 1.35 : 1);
+        j.congela = Math.max(j.congela ?? 0, Math.min(0.12, S.pausa * f));
+        const ux = dxm / dm, uy = dym / dm;
+        j.patada = { dx: (ux - uy) * 0.71, dy: (ux + uy) * 0.35, k: S.patada * f, t: performance.now() };
+      }
+      // a distancia (flechas, frascos, hechizos): la pantalla responde solo cuando el disparo mata o es crítico, y más suave
+      else if (S && (mata || crit)) {
+        j.congela = Math.max(j.congela ?? 0, S.pausa * 0.6);
+        const ux = dxm / dm, uy = dym / dm; j.patada = { dx: (ux - uy) * 0.71, dy: (ux + uy) * 0.35, k: S.patada * 0.7, t: performance.now() };
+      }
+      if (S && mata && !m.def.jefe && m.calidad < 3) {
+        const d = S.empuje * (crit ? 1.4 : 1) / Math.max(0.8, sensacionDe(m).peso); let hecho = 0;
+        for (let q = 0; q < 5; q++) { const nx = m.x + (dxm / dm) * d / 5, ny = m.y + (dym / dm) * d / 5; if (!pasable(j.zona, nx, ny)) break; m.x = nx; m.y = ny; hecho += d / 5; }
+        m.sacud = { dx: dxm / dm, dy: dym / dm, t: j.t, lanz: hecho };
+      }
+    }
     // exceso de daño: si el golpe que lo mata pasa de la mitad de su vida, revienta (los jefes no)
     if (m.vida <= 0 && !m.dueno && m.calidad < 3 && !m.def.jefe && total > m.vidaMax * 0.5 && !sangraHueso(m)) reventar(j, m);
     if (m.vida <= 0) morirMonstruo(j, m, g);
@@ -1426,6 +1453,8 @@ function masCercano(j: Juego, x: number, y: number, r: number, salvo: Set<number
 // ------------------------------------------------------------------ actualización
 export function actualizar(j: Juego, dt: number) {
   { const fs: any[] = (j as any).fogonazos; if (fs?.length) { for (const f of fs) f.t += dt; (j as any).fogonazos = fs.filter((f) => f.t < f.dur); } }
+  // pausa de impacto: el mundo casi se detiene unas centésimas cuando un golpe conecta
+  if ((j.congela ?? 0) > 0) { j.congela = Math.max(0, j.congela! - dt); dt *= 0.06; }
   j.t += dt;
   const h = j.heroe;
   actualizarHeroe(j, dt);
@@ -1558,14 +1587,14 @@ function actualizarMecanicas(j: Juego, dt: number) {
  * al sector vecino solo se cambia si el rumbo lo pasa por más de 10° (sin vaivén en los zigzags del camino).
  */
 const PASO_GIRO = 0.045;
-export function girarHacia(e: Ent, dx: number, dy: number, dt: number): number {
+export function girarHacia(e: Ent, dx: number, dy: number, dt: number, paso = PASO_GIRO): number {
   if (!dx && !dy) return 0;
   const tengo = DIRS.indexOf(e.dir), quiere = DIRS.indexOf(dirDe(dx, dy));
   const dif = ((quiere - tengo + 12) % 8) - 4;
   e.giroT = Math.max(0, (e.giroT ?? 0) - dt);
   if (!dif) return 0;
   if (Math.abs(dif) === 1) { const [cx, cy] = DIR_VEC[e.dir] ?? [0, 1]; if (Math.abs(Math.atan2(cx * dy - cy * dx, cx * dx + cy * dy)) <= Math.PI / 8 + 0.18) return 0; }
-  if (e.giroT <= 0) { e.dir = DIRS[(tengo + (dif < 0 ? -1 : 1) + 8) % 8]; e.giroT = PASO_GIRO; return Math.abs(dif) - 1; }
+  if (e.giroT <= 0) { e.dir = DIRS[(tengo + (dif < 0 ? -1 : 1) + 8) % 8]; e.giroT = paso; return Math.abs(dif) - 1; }
   return Math.abs(dif);
 }
 /**
@@ -1576,8 +1605,9 @@ function moverHacia(j: Juego, e: Ent, tx: number, ty: number, vel: number, dt: n
   const dx = tx - e.x, dy = ty - e.y, l = Math.hypot(dx, dy);
   if (l < 0.05) return true;
   if (j.t - (e.tMov ?? -9) > 0.12) e.impulso = 0.4;
-  e.impulso = Math.min(1, (e.impulso ?? 0.4) + (dt / 0.16) * 0.6); e.tMov = j.t;
-  const falta = girarHacia(e, dx, dy, dt);
+  const S = sensacionDe(e);
+  e.impulso = Math.min(1, (e.impulso ?? 0.4) + (dt / S.arranque) * 0.6); e.tMov = j.t;
+  const falta = girarHacia(e, dx, dy, dt, S.giro);
   let k = e.impulso * (falta >= 2 ? 0.5 : falta === 1 ? 0.8 : 1);
   if (ultimo && l < 0.5) k *= Math.max(0.45, l / 0.5);
   const paso = Math.min(l, vel * k * dt);
@@ -1675,7 +1705,7 @@ function actualizarHeroe(j: Juego, dt: number) {
     // un paso por cada pie que apoya: media zancada
     const medio = (h.correr ? ZANCADA.correr : ZANCADA.caminar) * (ALTO_CLASE[h.d.clase] ?? 1) / 2;
     const pie = Math.floor((h.recorrido ?? 0) / medio);
-    if (pie !== h.pasoT) { h.pasoT = pie; sonar(j, 'paso', h.x, h.y, h.correr ? 0.4 : 0.3); }
+    if (pie !== h.pasoT) { h.pasoT = pie; sonar(j, 'paso', h.x, h.y, (h.correr ? 0.4 : 0.3) * (SENSACION[h.d.clase]?.paso ?? 1)); }
     if (!h.camino.length) h.camino = null;
   } else if (h.acc === 'caminar' || h.acc === 'correr') h.acc = 'quieto';
 }
@@ -1741,20 +1771,20 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
     // los jefes despiertan por cercanía a su sala, aunque un muro los tape (si no, quedan quietos hasta verte)
     const esJefe = !!(m.def.jefe || m.def.ia === 'jefe');
     if (!h.muerto && ((esJefe && dh < 7 + (m.escala ?? 1) * 2) || (dh < vista && (dh < 3 || lineaLibre(j.zona, m.x, m.y, h.x, h.y))))) {
-      m.estado = 'perseguir'; m.objetivo = h;
-      if (m.calidad >= 3 || m.def.jefe || m.def.ia === 'jefe') { j.jefe = m;
+      m.estado = 'perseguir'; m.objetivo = h; (m as any).alerta = entre(0.12, 0.35);
+      if (m.calidad >= 3 || m.def.jefe || m.def.ia === 'jefe') { j.jefe = m; (m as any).alerta = 0;
         // la primera vez que ves a un jefe de verdad: su presentación con el nombre grande y cámara lenta
         presentarJefe(j, m);
         if (!(m as any).hablo) { (m as any).hablo = true; const fr = FRASE_JEFE[m.def.id]; if (fr) { msg(j, fr, '#ff6040'); m.habla = fr[j.idi]; (m as any).hablaT = 4; } sonar(j, 'rugido_jefe'); Sonido.musica('jefe'); } }
       else if (R() < 0.3) sonar(j, m.def.sonido === 'hueso' ? 'golpe_hueso' : 'grunido', m.x, m.y, 0.6);
       // el grupo despierta junto
       // el grupo despierta junto, pero no entero: los más cercanos sí, los demás a veces (llegan después cuando te vean)
-      for (const o of j.monstruos) if (!o.muerto && !o.dueno && o.estado !== 'perseguir' && o.estado !== 'surgir') { const d2 = dist(o.x, o.y, m.x, m.y); if (d2 < 2.5 || (d2 < 5 && R() < 0.4)) { o.estado = 'perseguir'; o.objetivo = h; } }
+      for (const o of j.monstruos) if (!o.muerto && !o.dueno && o.estado !== 'perseguir' && o.estado !== 'surgir') { const d2 = dist(o.x, o.y, m.x, m.y); if (d2 < 2.5 || (d2 < 5 && R() < 0.4)) { o.estado = 'perseguir'; o.objetivo = h; (o as any).alerta = entre(0.25, 0.7); } }
     } else {
       // deambular cerca de su lugar
       if (m.pensar <= 0) { m.pensar = entre(2, 5); m.estado = R() < 0.5 ? 'deambular' : 'dormido'; (m as any).dest = [m.ox + entre(-3, 3), m.oy + entre(-3, 3)]; }
       if (m.estado === 'deambular' && (m as any).dest) { if (moverHacia(j, m, (m as any).dest[0], (m as any).dest[1], m.vel * 0.4, dt, true)) { m.estado = 'dormido'; m.acc = 'quieto'; } else m.acc = 'caminar'; }
-      else m.acc = 'quieto';
+      else { m.acc = 'quieto'; if (R() < dt * 0.22) m.dir = DIRS[(DIRS.indexOf(m.dir) + (R() < 0.5 ? 1 : 7)) % 8]; }
       return;
     }
   }
@@ -1838,6 +1868,8 @@ function efectoProy(p: string) { return p === 'fuego' ? 'saeta_fuego' : p === 'h
 
 function pelear(j: Juego, m: Monstruo, obj: Ent, dt: number, lento: number) {
   const d = dist(m.x, m.y, obj.x, obj.y);
+  // el sobresalto: al descubrirte se vuelve hacia ti un instante antes de echarse encima (cada uno a su tiempo)
+  if ((m as any).alerta > 0) { (m as any).alerta -= dt; girarHacia(m, obj.x - m.x, obj.y - m.y, dt, sensacionDe(m).giro); if (m.acc === 'caminar' || m.acc === 'correr') m.acc = 'quieto'; return; }
   const distancia = m.def.ia === 'distancia' || m.def.ia === 'mago' || m.def.ia === 'invocador' || (m.def.jefe && m.def.proyectil && R() < 0.4);
   const alcance = m.radio + obj.radio + 0.75 + (m.def.area ? 0.4 : 0);
   if (distancia && m.def.rango) {
@@ -1855,13 +1887,15 @@ function avanzar(j: Juego, m: Monstruo, obj: Ent, dt: number, lento: number) {
   const ang = (m.id * 2.39996) % (Math.PI * 2);
   const off = dist(m.x, m.y, obj.x, obj.y) < 3 ? 0.9 : 0;
   const tx = obj.x + Math.cos(ang) * off, ty = obj.y + Math.sin(ang) * off;
+  // de lejos se lanza a la carrera (si su animación la tiene; si no, camina igual)
+  const lejos = m.vel >= 2.6 && dist(m.x, m.y, obj.x, obj.y) > 3.5;
   if (m.camino && m.camino.length) {
     const [cx, cy] = m.camino[0];
     if (moverHacia(j, m, cx, cy, m.vel * lento, dt)) m.camino.shift();
-    m.acc = m.vel > 3 && m.def.ia !== 'bruto' ? 'caminar' : 'caminar';
+    m.acc = lejos ? 'correr' : 'caminar';
     if (m.pensar <= 0.05) m.camino = null;
   } else if (lineaLibre(j.zona, m.x, m.y, tx, ty)) {
-    moverHacia(j, m, tx, ty, m.vel * lento, dt); m.acc = 'caminar';
+    moverHacia(j, m, tx, ty, m.vel * lento, dt); m.acc = lejos ? 'correr' : 'caminar';
   } else if (m.pensar <= 0.1) {
     m.camino = buscarCamino(j.zona, m.x, m.y, tx, ty, 900);
   }

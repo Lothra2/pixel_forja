@@ -8,6 +8,7 @@ import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto, Mancha } from '../juego/mundo';
 import { CUADROS, DIRS, DIR_VEC, ZANCADA, ALTO_CLASE } from '../juego/mundo';
+import { sensacionDe, cuadroAtaque } from '../juego/sensacion';
 import ZANCADA_MONSTRUO from '../../../src/engine/gotico/datos/zancada_monstruos.json';
 import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
@@ -84,6 +85,8 @@ const fr = (acc: string, t: number, dur: number, e?: Ent, accPies?: string) => {
   if (acc === 'caminar') return Math.floor(t * 11) % n;
   if (acc === 'correr') return Math.floor(t * 14) % n;
   if (acc === 'morir') return Math.min(n - 1, Math.floor(t * 14));
+  // atacar y lanzar: la carga y la salida van al ritmo de cada cuerpo, con el cuadro de impacto justo en el golpe
+  if (e && (acc === 'atacar' || acc === 'lanzar') && e.golpeEn > 0 && dur > 0) return cuadroAtaque(Math.min(1, t / dur), Math.min(0.9, e.golpeEn / dur), n, sensacionDe(e).curva);
   return Math.min(n - 1, Math.floor((t / Math.max(0.05, dur)) * n));
 };
 
@@ -171,6 +174,8 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     camS.mx += (mx - camS.mx) * km; camS.my += (my - camS.my) * km;
     camS.x += (hx + camS.mx - camS.x) * ks; camS.y += (hy + camS.my - camS.y) * ks;
     cam.x = camS.x + sx; cam.y = camS.y + sy - camAlzada;
+    // el empujón del golpe: la cámara cede un instante hacia donde pegó el héroe
+    const pt = j.patada; if (pt) { const ed = (performance.now() - pt.t) / 140; if (ed < 1) { const q = (1 - ed) ** 2 * pt.k; cam.x += pt.dx * q; cam.y += pt.dy * q; } }
   }
   // plano de llegada a la catedral: la primera vez que el héroe entra al camposanto o se acerca a la puerta, 3.5 s con la
   // fachada entera (el foco de siempre, sin zoom); se suelta antes si el héroe camina más de 2 casillas
@@ -473,17 +478,24 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // reventado por exceso de daño: no queda cuerpo (los gibs de la Forja irán en su lugar)
   if (e.muerto && (e as any).reventado) return;
   let [px, py] = aPant(e.x, e.y);
+  // peso en el combate, solo en pantalla, a la medida de cada cuerpo (ver juego/sensacion.ts)
   if (!e.muerto) {
-    // peso en el combate, solo en pantalla: el cuerpo se recoge antes de pegar y se va encima con el golpe, y al recibir
-    // uno retrocede un instante lejos de quien le pegó
-    const grande = Math.min(1.8, e.escala ?? 1);
-    if (e.acc === 'atacar' && e.dur > 0 && !(e as any).aDist && !(e.tipo === 'heroe' && j.heroe.c.distancia)) {
-      const u = Math.min(1, e.t / e.dur), g = Math.max(0.05, e.golpeEn / e.dur);
-      const k = u < g * 0.5 ? -0.35 * Math.sin((u / (g * 0.5)) * Math.PI) : u < g ? Math.sin(((u - g * 0.5) / (g * 0.5)) * Math.PI / 2) : Math.max(0, 1 - (u - g) / Math.max(0.05, (1 - g) * 0.7));
-      const [vx, vy] = DIR_VEC[e.dir] ?? [0, 0]; px += (vx - vy) * 0.71 * 5 * k * grande; py += (vx + vy) * 0.71 * 2.5 * k * grande;
+    const S = sensacionDe(e), [vx, vy] = DIR_VEC[e.dir] ?? [0, 0];
+    const u = e.dur > 0 ? Math.min(1, e.t / e.dur) : 0, g = e.dur > 0 ? Math.max(0.05, Math.min(0.9, e.golpeEn / e.dur)) : 0.5;
+    const lejos = !!(e as any).aDist || (e.tipo === 'heroe' && j.heroe.c.distancia) || e.acc === 'lanzar';
+    let k = 0;
+    if ((e.acc === 'atacar' || e.acc === 'lanzar') && e.dur > 0) {
+      // cuerpo a cuerpo: se recoge antes de pegar y se va encima con el golpe. A distancia o lanzando: recula al soltar
+      if (!lejos) k = (u < g * 0.55 ? -0.4 * Math.sin((u / (g * 0.55)) * Math.PI) : u < g ? Math.sin(((u - g * 0.55) / (g * 0.45)) * Math.PI / 2) : Math.max(0, 1 - (u - g) / Math.max(0.05, (1 - g) * 0.7))) * S.embestida;
+      else if (u >= g) k = -S.retroceso * Math.max(0, 1 - (u - g) / Math.max(0.05, (1 - g) * 0.6)) ** 2;
     }
+    if (k) { px += (vx - vy) * 0.71 * k; py += (vx + vy) * 0.71 * k * 0.5; }
     const sc = e.sacud;
-    if (sc) { const ed = j.t - sc.t; if (ed >= 0 && ed < 0.2) { const k = (1 - ed / 0.2) ** 2 * ((e as Monstruo).calidad >= 3 ? 2 : 4.5); px += (sc.dx - sc.dy) * 0.71 * k; py += (sc.dx + sc.dy) * 0.71 * k * 0.5; } }
+    if (sc) { const ed = j.t - sc.t; if (ed >= 0 && ed < 0.2) { const q = (1 - ed / 0.2) ** 2 * ((e as Monstruo).calidad >= 3 ? 2 : 4.5) * (sc.k ?? 1); px += (sc.dx - sc.dy) * 0.71 * q; py += (sc.dx + sc.dy) * 0.71 * q * 0.5; } }
+  } else if (e.sacud?.lanz) {
+    // el que murió de un golpe sale despedido: ya está donde cayó, pero se lo ve llegar desde donde estaba
+    const sc = e.sacud, ed = j.t - sc.t;
+    if (ed >= 0 && ed < 0.3) { const q = (1 - ed / 0.3) ** 2 * sc.lanz!; px -= (sc.dx - sc.dy) * 16 * q; py -= (sc.dx + sc.dy) * 8 * q; }
   }
   let fs: Cuadro[];
   let acc = e.acc;

@@ -174,6 +174,14 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - La palanca táctil es analógica y al soltarla el héroe da un último medio paso.
   - Cada monstruo camina a su propio ritmo, 6 % arriba o abajo, y respira desfasado de los demás. Los PNJ te siguen con la mirada y vuelven a su postura cuando te alejas.
   - Pruebas: `juego/herramientas/movimiento.cjs`, `palanca.cjs` y `pelea.cjs`.
+- **Cada clase se mueve y pega a su manera.** La tabla está en `juego/src/juego/sensacion.ts`. No cambia daño, alcance ni el momento del golpe:
+  - Peso: el berserker y el templario arrancan y giran más lento, el monje y la cazadora casi al instante.
+  - Ritmo del ataque: los mismos 8 cuadros se reparten distinto. El berserker carga largo y descarga de un latigazo, el templario pega firme, el monje y la cazadora van secos, el druida y el alquimista fluyen, y la arcanista y el nigromante alzan el hechizo, lo sostienen y lo sueltan. El cuadro de impacto cae siempre en el golpe.
+  - Impacto: cuando el golpe conecta de cerca, el mundo se detiene unas centésimas (65 ms el berserker, 28 ms el monje) y la cámara cede hacia donde pegó. A distancia pasa solo al matar o con un crítico, y más suave.
+  - El que muere sale despedido lejos del golpe, más lejos con las clases pesadas. Los jefes no.
+  - Quien dispara o lanza un hechizo recula al soltarlo. Los pasos suenan según el peso.
+- **Enemigos con cuerpo.** Cada monstruo saca su perfil de su tamaño y su carácter: los grandes y los brutos cargan lento y pesan, los chicos son nerviosos. Al descubrirte se vuelven hacia ti un instante antes de echarse encima, cada uno a su tiempo. De lejos corren si su animación lo tiene. Dormidos, miran alrededor.
+  - Prueba: `juego/herramientas/clases.cjs <clase> [vista]`.
 
 ## Qué falta o se puede mejorar
 
