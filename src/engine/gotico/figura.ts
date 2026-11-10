@@ -1340,7 +1340,8 @@ function atacarGuadana(p: Pose, u: number) {
     K(c12(5), { torso: 0, giroTorso: 34, manoD: [4, 12, 47], armaD: [42, 120], cabeza: -6, respira: 1 }, true),
     K(c12(7), { bajar: 4.5, torso: 16, ladeo: -2, giroTorso: -22, giroCadera: -14, lateral: -0.8, avanza: 1.6, manoD: [17, -2, 35], armaD: [95, -55], cabeza: 6, giroCabeza: 14, respira: 0.1 }, true),
     K(c12(8.5), { torso: 15, giroTorso: -32, manoD: [13, -6, 36], armaD: [100, -100] }),
-    K(c12(10.5), { bajar: 3, torso: 11, ladeo: 0, giroTorso: -2, giroCadera: 0, lateral: 0, avanza: 0.4, manoD: [11, 6, 36], armaD: [45, -35], cabeza: 2, giroCabeza: -4 }),
+    // vuelve por delante y sube por la derecha hacia el hombro (de ahí al reposo)
+    K(c12(10.5), { bajar: 3, torso: 11, ladeo: 0, giroTorso: -2, giroCadera: 0, lateral: 0, avanza: 0.4, manoD: [9, 10.5, 42], armaD: [35, 70], cabeza: 2, giroCabeza: -4 }),
   ], u, { lagCab: 0.05, lagArma: 0.03, capa: 0.8, tela: 1.2 });
 }
 /** Alquimista: sube la ballesta con un respingo, apunta, dispara (la ballesta salta arriba y el cuerpo recula) y baja a recargar mirando el virote. */
