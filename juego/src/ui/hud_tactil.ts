@@ -203,7 +203,8 @@ export function dibujarHudTactil(j: Juego, t: number) {
   {
     const zona = (x: number, y: number) => x < W * 0.42 && y > H * 0.38 && !Object.values(hud).some((r) => dentro(r[0], r[1], r[2], r[3]) && x >= r[0] && x <= r[0] + r[2]);
     if (E.clicIzq && !ui.sobreUI && zona(E.x, E.y)) joy = { x0: E.x, y0: E.y, activo: false, repath: 0 };
-    if (joy && !E.izq) { if (joy.activo) h.camino = null; joy = null; }
+    // al soltar no se clava: da el último medio paso frenando
+    if (joy && !E.izq) { if (joy.activo && h.camino?.length) { const [cx, cy] = h.camino[0], l = Math.hypot(cx - h.x, cy - h.y) || 1, q = Math.min(0.45, l); h.camino = [[h.x + ((cx - h.x) / l) * q, h.y + ((cy - h.y) / l) * q]]; } joy = null; }
     if (joy) {
       const dx = E.x - joy.x0, dy = E.y - joy.y0, dd = Math.hypot(dx, dy), rad = L(48);
       if (!joy.activo && dd > L(14)) { joy.activo = true; h.objetivo = null; }
@@ -212,8 +213,9 @@ export function dibujarHudTactil(j: Juego, t: number) {
         joy.repath -= 1 / 60;
         if (joy.repath <= 0 && dd > L(8)) {
           joy.repath = 0.12;
-          // ocho direcciones en pantalla, llevadas al mundo desde donde está el héroe
-          const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+          // la dirección en pantalla, llevada al mundo desde donde está el héroe
+          // la palanca es analógica: el héroe va hacia donde apuntas, no solo en ocho rumbos
+          const a = Math.atan2(dy, dx);
           const [hx, hy] = aPant(h.x, h.y);
           const [wx, wy] = aMundo(hx + Math.cos(a) * 140, hy + Math.sin(a) * 140);
           caminarA(j, wx, wy);

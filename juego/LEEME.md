@@ -166,6 +166,15 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
 - **70 armas legendarias** en 8 escalones (nivel 6 a 90), todas armas vivas. Cada jefe suelta la suya. Hay 7 conjuntos más el Legado GG de la familia (Rick, Steph, Sophie, Alana y Thor). Lo que no puedes usar todavía sale en rojo con "Requiere nivel X".
 - **Nivel 100 y tres dificultades.** Normal, Pesadilla (monstruos hasta ~80, resistencias -40) e Infierno (hasta 100, resistencias -100). La siguiente se abre al terminar el acto 7.
 
+- **Movimiento con peso.** Los cuerpos ya no arrancan ni frenan en seco:
+  - El héroe y los monstruos arrancan al 40 % y llegan a su velocidad en 0,16 s. Al final del camino frenan en la última media casilla.
+  - Los giros pasan por los sectores intermedios, uno cada 45 ms, y el cuerpo afloja mientras se da vuelta.
+  - La cámara sigue al héroe con un resorte corto y se adelanta unos 30 px hacia donde camina. Al cambiar de zona corta en seco.
+  - En el combate, quien pega se recoge y se va encima con el golpe, y quien recibe retrocede un instante. Es solo visual: no cambia alcances ni daño.
+  - La palanca táctil es analógica y al soltarla el héroe da un último medio paso.
+  - Cada monstruo camina a su propio ritmo, 6 % arriba o abajo, y respira desfasado de los demás. Los PNJ te siguen con la mirada y vuelven a su postura cuando te alejas.
+  - Pruebas: `juego/herramientas/movimiento.cjs`, `palanca.cjs` y `pelea.cjs`.
+
 ## Qué falta o se puede mejorar
 
 - Las bestias del motor ya están en los actos: lobos, jabalíes, arañas, escorpiones, gárgolas, murciélagos, gólems, perros de la Herida, demonios alados, la Madre del Pozo, la Boca de Arena y Varnhul, el dragón de huesos. La primera vez que entras a una zona nueva tarda unos segundos en cargar sus dibujos.

@@ -7,7 +7,7 @@ import { NPCS } from '../datos/npcs';
 import { LUZ_EFECTO } from '../../../src/engine/gotico/luz_efectos';
 import { cuadrosPiso, cuadrosHeroe, cuadrosMonstruo, objetoMeta, dibujar, dibujarTenido, manifiesto, type Cuadro } from '../motor/assets';
 import type { Juego, Ent, Monstruo, Efecto, Mancha } from '../juego/mundo';
-import { CUADROS, DIRS, ZANCADA, ALTO_CLASE } from '../juego/mundo';
+import { CUADROS, DIRS, DIR_VEC, ZANCADA, ALTO_CLASE } from '../juego/mundo';
 import ZANCADA_MONSTRUO from '../../../src/engine/gotico/datos/zancada_monstruos.json';
 import { baseDe } from '../juego/objetos';
 import { icono } from '../ui/comun';
@@ -45,6 +45,7 @@ import { recolectar, sombras, reflejos, luces, destello, destelloColor } from '.
 export const cam = { x: 0, y: 0 };
 /** Hacia dónde mira la cámara además del héroe (presentación de un jefe): k de 0 a 1. */
 export const foco = { x: 0, y: 0, k: 0 };
+const camS = { x: 0, y: 0, mx: 0, my: 0 }; let camZona = '';
 export const aPant = (x: number, y: number): [number, number] => [(x - y) * 16 - cam.x + W / 2, (x + y) * 8 - cam.y + (H - 96) / 2];
 export const aMundo = (sx: number, sy: number): [number, number] => {
   const X = sx - W / 2 + cam.x, Y = sy - (H - 96) / 2 + cam.y;
@@ -78,7 +79,8 @@ function zancadaDe(e: Ent, acc: string): number {
 const fr = (acc: string, t: number, dur: number, e?: Ent, accPies?: string) => {
   const n = CUADROS[acc as keyof typeof CUADROS] ?? 8;
   if (e && (acc === 'caminar' || acc === 'correr')) return Math.floor(((e.recorrido ?? 0) / zancadaDe(e, accPies ?? acc)) * n) % n;
-  if (acc === 'quieto') return Math.floor(t * 6) % n;
+  // cada cuerpo respira a su ritmo: un grupo quieto ya no se mueve como un solo muñeco
+  if (acc === 'quieto') return Math.floor((t + (e ? (e.id % 9) * 0.29 : 0)) * (e ? 5.4 + (e.id % 4) * 0.4 : 6)) % n;
   if (acc === 'caminar') return Math.floor(t * 11) % n;
   if (acc === 'correr') return Math.floor(t * 14) % n;
   if (acc === 'morir') return Math.min(n - 1, Math.floor(t * 14));
@@ -158,7 +160,18 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     if (dy > -2 && dy < 26 && dx < 16) alzar = Math.max(alzar, 240 * Math.min(1, (26 - dy) / 14) * Math.min(1, (16 - dx) / 6));
   }
   camAlzada += (alzar - camAlzada) * Math.min(1, dt * 2.5);
-  cam.x = (h.x - h.y) * 16 + sx; cam.y = (h.x + h.y) * 8 + sy - camAlzada;
+  // la cámara sigue al héroe con un resorte corto y se adelanta un poco hacia donde camina (antes iba clavada a él: cada
+  // arranque y cada giro sacudían toda la pantalla). Al cambiar de zona o teletransportarse, corta en seco
+  {
+    const hx = (h.x - h.y) * 16, hy = (h.x + h.y) * 8, anda = !h.muerto && (h.acc === 'caminar' || h.acc === 'correr');
+    const [vx, vy] = DIR_VEC[h.dir] ?? [0, 0], mx = anda ? (vx - vy) * 0.71 * 30 : 0, my = anda ? (vx + vy) * 0.71 * 15 : 0;
+    const clave = z.id + ':' + z.semilla;
+    if (clave !== camZona || Math.hypot(hx - camS.x, hy - camS.y) > 150) { camZona = clave; camS.x = hx; camS.y = hy; camS.mx = 0; camS.my = 0; }
+    const km = Math.min(1, dt * 2.4), ks = 1 - Math.exp(-dt * 11);
+    camS.mx += (mx - camS.mx) * km; camS.my += (my - camS.my) * km;
+    camS.x += (hx + camS.mx - camS.x) * ks; camS.y += (hy + camS.my - camS.y) * ks;
+    cam.x = camS.x + sx; cam.y = camS.y + sy - camAlzada;
+  }
   // plano de llegada a la catedral: la primera vez que el héroe entra al camposanto o se acerca a la puerta, 3.5 s con la
   // fachada entera (el foco de siempre, sin zoom); se suelta antes si el héroe camina más de 2 casillas
   planoLlegada(j, dt);
@@ -176,7 +189,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     const k = camJefe * camJefe * (3 - 2 * camJefe);
     cam.x += ((hx + bx) / 2 + sx - cam.x) * k; cam.y += (ty + sy - cam.y) * k;
   }
-  if (foco.k > 0) { const k = foco.k * foco.k * (3 - 2 * foco.k); cam.x += ((foco.x - foco.y) * 16 - (h.x - h.y) * 16) * k; cam.y += ((foco.x + foco.y) * 8 - 60 - (h.x + h.y) * 8 + camAlzada) * k; }
+  if (foco.k > 0) { const k = foco.k * foco.k * (3 - 2 * foco.k); cam.x += ((foco.x - foco.y) * 16 - camS.x) * k; cam.y += ((foco.x + foco.y) * 8 - 60 - camS.y + camAlzada) * k; }
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   picks = [];
   prepararFuegos(j, dt, aPant, W, H); seguirSuelo(j, dt); dtCuadro = dt;
@@ -459,7 +472,19 @@ function pajaro(x: number, y: number, t: number) {
 function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // reventado por exceso de daño: no queda cuerpo (los gibs de la Forja irán en su lugar)
   if (e.muerto && (e as any).reventado) return;
-  const [px, py] = aPant(e.x, e.y);
+  let [px, py] = aPant(e.x, e.y);
+  if (!e.muerto) {
+    // peso en el combate, solo en pantalla: el cuerpo se recoge antes de pegar y se va encima con el golpe, y al recibir
+    // uno retrocede un instante lejos de quien le pegó
+    const grande = Math.min(1.8, e.escala ?? 1);
+    if (e.acc === 'atacar' && e.dur > 0 && !(e as any).aDist && !(e.tipo === 'heroe' && j.heroe.c.distancia)) {
+      const u = Math.min(1, e.t / e.dur), g = Math.max(0.05, e.golpeEn / e.dur);
+      const k = u < g * 0.5 ? -0.35 * Math.sin((u / (g * 0.5)) * Math.PI) : u < g ? Math.sin(((u - g * 0.5) / (g * 0.5)) * Math.PI / 2) : Math.max(0, 1 - (u - g) / Math.max(0.05, (1 - g) * 0.7));
+      const [vx, vy] = DIR_VEC[e.dir] ?? [0, 0]; px += (vx - vy) * 0.71 * 5 * k * grande; py += (vx + vy) * 0.71 * 2.5 * k * grande;
+    }
+    const sc = e.sacud;
+    if (sc) { const ed = j.t - sc.t; if (ed >= 0 && ed < 0.2) { const k = (1 - ed / 0.2) ** 2 * ((e as Monstruo).calidad >= 3 ? 2 : 4.5); px += (sc.dx - sc.dy) * 0.71 * k; py += (sc.dx + sc.dy) * 0.71 * k * 0.5; } }
+  }
   let fs: Cuadro[];
   let acc = e.acc;
   const m = e as Monstruo;

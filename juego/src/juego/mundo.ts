@@ -51,6 +51,10 @@ export interface Ent {
   maldicion?: { amplificar: number; debilitar: number; lento: number; t: number; res: number; sifon?: number; condena?: boolean };
   destello: number;
   escala: number; tinte?: string;
+  /** Movimiento natural: impulso de arranque (0.4 a 1), último momento en que caminó y espera entre sectores de giro. */
+  impulso?: number; tMov?: number; giroT?: number;
+  /** Retroceso visual al recibir un golpe: dirección en el mundo y cuándo fue. */
+  sacud?: { dx: number; dy: number; t: number };
 }
 export interface Monstruo extends Ent {
   tipo: 'monstruo' | 'invocado';
@@ -372,7 +376,7 @@ export function crearMonstruo(def: DefMonstruo, nivel: number, x: number, y: num
   const suave = dif === 0 && nivel < 14 ? 0.75 + 0.25 * clamp((nivel - 8) / 6, 0, 1) : 1;
   const md = durezaCiclo * [1, 1.5, 1.8, 0.7, 0.7][calidad] * ([1, 1.15, 1.3][dif] ?? 1) * suave;
   const m: Monstruo = {
-    ...(nueva({ tipo: 'monstruo', x, y, vel: def.vel, radio: 0.42 * (def.huella ?? 1), escala: def.escala ?? 1, tinte: def.tinte }) as Ent), tipo: 'monstruo',
+    ...(nueva({ tipo: 'monstruo', x, y, vel: def.vel * (def.jefe ? 1 : 0.94 + R() * 0.12), radio: 0.42 * (def.huella ?? 1), escala: def.escala ?? 1, tinte: def.tinte }) as Ent), tipo: 'monstruo',
     def, nivel, dano: [Math.round(s.dano[0] * md), Math.round(s.dano[1] * md)], defensa: s.defensa, res: { ...(def.res ?? {}) }, calidad, nombre: def.nombre, mods: [],
     objetivo: null, estado: def.surge ? 'surgir' : 'dormido', cd: entre(0.5, 1.5), pensar: R(), camino: null, ox: x, oy: y, xp: Math.round(s.xp * [1, 3, 5, 10, 1][calidad] * ([1, 1.4, 1.8][dif] ?? 1)), invocaCd: entre(3, 6), fase: 0,
   };
@@ -586,6 +590,8 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   if (v.tipo === 'heroe' && total > 0) ganarFuria(j, 3);
   // la armadura de Thor: cada tramo le quita daño
   if ((v as any).invocaId === 'thor') total *= 1 - Math.min(45, ((v as any).tramoThor ?? 0) * 8) / 100;
+  // el golpe se siente en el cuerpo: un retroceso corto (solo visual) lejos de quien pega
+  if (total > 0 && g.fuente && g.fuente !== v) { const sx = v.x - g.fuente.x, sy = v.y - g.fuente.y, sl = Math.hypot(sx, sy) || 1; v.sacud = { dx: sx / sl, dy: sy / sl, t: j.t }; }
   v.vida -= total;
   v.destello = 0.12;
   if (total > 0) {
@@ -1449,7 +1455,12 @@ export function actualizar(j: Juego, dt: number) {
     const o = m as any; if (o.rx === undefined) { o.rx = m.x; o.ry = m.y; continue; }
     if (dist(m.x, m.y, o.rx, o.ry) > 0.8) { ponerMancha(j, { x: m.x + (R() - 0.5) * 0.3, y: m.y + (R() - 0.5) * 0.3, r: 0.12 + R() * 0.12, color: colorSangre(m), t: 0, tipo: 'sangre', forma: 'rastro', ang: Math.atan2(m.y - o.ry, m.x - o.rx), sem: Math.floor(R() * 8), pal: paletaDe(m) }); o.rx = m.x; o.ry = m.y; }
   }
-  for (const n of j.npcs) { n.t += dt; if (dist(n.x, n.y, h.x, h.y) < 5) n.dir = dirDe(h.x - n.x, h.y - n.y); }
+  // los PNJ te siguen con la mirada cuando te acercas (giran por sectores, sin saltos) y vuelven a lo suyo cuando te vas
+  for (const n of j.npcs) {
+    n.t += dt; const o = n as any; o.dir0 ??= n.dir;
+    if (dist(n.x, n.y, h.x, h.y) < 5) { o.tCerca = j.t; girarHacia(n, h.x - n.x, h.y - n.y, dt * 0.45); }
+    else if (j.t - (o.tCerca ?? -9) > 2.5 && n.dir !== o.dir0) { const [vx, vy] = DIR_VEC[o.dir0] ?? [0, 1]; girarHacia(n, vx, vy, dt * 0.3); }
+  }
   actualizarProyectiles(j, dt);
   actualizarAreas(j, dt);
   // cuervos
@@ -1542,14 +1553,35 @@ function actualizarMecanicas(j: Juego, dt: number) {
   if ((lobo || oso) && R() < dt * 3) particulas(j, h.x + entre(-0.3, 0.3), h.y + entre(-0.3, 0.3), 1, 'ceniza', oso ? '#a07040' : '#a0b0c8', 0.3, 40);
 }
 
-function moverHacia(j: Juego, e: Ent, tx: number, ty: number, vel: number, dt: number): boolean {
+/**
+ * Girar como un cuerpo y no como una veleta: se pasa por los sectores intermedios (uno cada 45 ms, el primero al instante) y
+ * al sector vecino solo se cambia si el rumbo lo pasa por más de 10° (sin vaivén en los zigzags del camino).
+ */
+const PASO_GIRO = 0.045;
+export function girarHacia(e: Ent, dx: number, dy: number, dt: number): number {
+  if (!dx && !dy) return 0;
+  const tengo = DIRS.indexOf(e.dir), quiere = DIRS.indexOf(dirDe(dx, dy));
+  const dif = ((quiere - tengo + 12) % 8) - 4;
+  e.giroT = Math.max(0, (e.giroT ?? 0) - dt);
+  if (!dif) return 0;
+  if (Math.abs(dif) === 1) { const [cx, cy] = DIR_VEC[e.dir] ?? [0, 1]; if (Math.abs(Math.atan2(cx * dy - cy * dx, cx * dx + cy * dy)) <= Math.PI / 8 + 0.18) return 0; }
+  if (e.giroT <= 0) { e.dir = DIRS[(tengo + (dif < 0 ? -1 : 1) + 8) % 8]; e.giroT = PASO_GIRO; return Math.abs(dif) - 1; }
+  return Math.abs(dif);
+}
+/**
+ * Un paso hacia (tx, ty). El cuerpo tiene peso: arranca al 40 % y llega a su velocidad en ~0.16 s, afloja mientras se da
+ * vuelta y, si es el final del camino (`ultimo`), frena en la última media casilla en vez de clavarse.
+ */
+function moverHacia(j: Juego, e: Ent, tx: number, ty: number, vel: number, dt: number, ultimo = false): boolean {
   const dx = tx - e.x, dy = ty - e.y, l = Math.hypot(dx, dy);
   if (l < 0.05) return true;
-  const paso = Math.min(l, vel * dt);
+  if (j.t - (e.tMov ?? -9) > 0.12) e.impulso = 0.4;
+  e.impulso = Math.min(1, (e.impulso ?? 0.4) + (dt / 0.16) * 0.6); e.tMov = j.t;
+  const falta = girarHacia(e, dx, dy, dt);
+  let k = e.impulso * (falta >= 2 ? 0.5 : falta === 1 ? 0.8 : 1);
+  if (ultimo && l < 0.5) k *= Math.max(0.45, l / 0.5);
+  const paso = Math.min(l, vel * k * dt);
   const nx = e.x + (dx / l) * paso, ny = e.y + (dy / l) * paso;
-  // los monstruos no cambian de dirección por cada zigzag del camino: solo si el rumbo pasa el sector vecino por más de 10°
-  if (e.tipo === 'heroe') e.dir = dirDe(dx, dy);
-  else { const [cx, cy] = DIR_VEC[e.dir] ?? [0, 1]; const dif = Math.abs(Math.atan2(cx * dy - cy * dx, cx * dx + cy * dy)); if (dif > (Math.PI / 8) + 0.18) e.dir = dirDe(dx, dy); }
   const x0 = e.x, y0 = e.y;
   if (pasable(j.zona, nx, ny)) { e.x = nx; e.y = ny; }
   else if (pasable(j.zona, nx, e.y)) e.x = nx;
@@ -1638,7 +1670,7 @@ function actualizarHeroe(j: Juego, dt: number) {
   const vel = (h.correr ? 5.4 : 3.4) * (1 + h.c.vel_mover / 100) * (h.frio > 0 ? 0.6 : 1);
   if (h.camino && h.camino.length) {
     const [tx, ty] = h.camino[0];
-    if (moverHacia(j, h, tx, ty, vel, dt)) h.camino.shift();
+    if (moverHacia(j, h, tx, ty, vel, dt, h.camino.length === 1)) h.camino.shift();
     if (h.acc !== (h.correr ? 'correr' : 'caminar')) { h.acc = h.correr ? 'correr' : 'caminar'; }
     // un paso por cada pie que apoya: media zancada
     const medio = (h.correr ? ZANCADA.correr : ZANCADA.caminar) * (ALTO_CLASE[h.d.clase] ?? 1) / 2;
@@ -1721,7 +1753,7 @@ function actualizarMonstruo2(j: Juego, m: Monstruo, dt: number) {
     } else {
       // deambular cerca de su lugar
       if (m.pensar <= 0) { m.pensar = entre(2, 5); m.estado = R() < 0.5 ? 'deambular' : 'dormido'; (m as any).dest = [m.ox + entre(-3, 3), m.oy + entre(-3, 3)]; }
-      if (m.estado === 'deambular' && (m as any).dest) { if (moverHacia(j, m, (m as any).dest[0], (m as any).dest[1], m.vel * 0.4, dt)) { m.estado = 'dormido'; m.acc = 'quieto'; } else m.acc = 'caminar'; }
+      if (m.estado === 'deambular' && (m as any).dest) { if (moverHacia(j, m, (m as any).dest[0], (m as any).dest[1], m.vel * 0.4, dt, true)) { m.estado = 'dormido'; m.acc = 'quieto'; } else m.acc = 'caminar'; }
       else m.acc = 'quieto';
       return;
     }
