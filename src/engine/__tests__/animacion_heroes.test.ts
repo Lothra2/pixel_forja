@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ANIM_HEROE, CLASES_HEROE, CUADROS, cuadrosDe, manifiestoAnimacion, zancada, ESTILO_CLASE, pose } from '../gotico/figura';
-import { qaHeroes } from '../../../scripts/qa-heroes';
+import { qaHeroes, angulosAndar } from '../../../scripts/qa-heroes';
 
 describe('animación de los héroes: cuadros por clase', () => {
   it('el manifiesto que lee el juego está al día con el código (npx tsx scripts/animacion-heroes.ts)', () => {
@@ -32,6 +32,11 @@ describe('animación de los héroes: cuadros por clase', () => {
   it('QA numérica: 0 fallas en todos los cuadros de las 8 clases, 4 niveles y 8 direcciones', () => {
     const { cuadros, fallas } = qaHeroes();
     expect(cuadros).toBeGreaterThan(20000);
+    expect(fallas.slice(0, 5)).toEqual([]);
+  });
+  it('el arma no baila al andar: varía ≤ 10° al caminar y ≤ 15° al correr en pantalla, y no salta más de 20° de caminar a correr', () => {
+    const { filas, fallas } = angulosAndar();
+    expect(filas.length).toBeGreaterThan(200);
     expect(fallas.slice(0, 5)).toEqual([]);
   });
 });

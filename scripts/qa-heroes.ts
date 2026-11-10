@@ -135,14 +135,68 @@ export function qaHeroes(o: { clase?: string; accion?: string; dirs?: string[]; 
   return { cuadros, fallas };
 }
 
+/**
+ * El arma al andar: ángulo del arma en el plano de la pantalla en cada cuadro de caminar y de correr, en las 8
+ * direcciones y los 4 niveles. Falla si dentro del ciclo varía más de 10° al caminar o 15° al correr, o si la postura
+ * media salta más de 20° de caminar a correr. (Los cuadros en que el arma apunta a la cámara, con menos de un tercio de
+ * su largo visible en pantalla, no se miden: ahí el ángulo no se ve.) Las manos vacías y los puños no cuentan.
+ */
+export const LIMITE_ANDAR = { caminar: 10, correr: 15, salto: 20 };
+export interface AnguloAndar { clase: string; nivel: string; dir: string; arma: string; caminar: number; correr: number; salto: number; angulos: Record<'caminar' | 'correr', number[]> }
+const envolver = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
+export function angulosAndar(o: { clase?: string } = {}): { filas: AnguloAndar[]; fallas: Falla[] } {
+  const filas: AnguloAndar[] = [], fallas: Falla[] = [];
+  for (const h of HEROES) {
+    if (o.clase && h.id !== o.clase) continue;
+    for (const [nivel, eq] of nivelesQA(h)) {
+      const tipo = eq.arma?.tipo ?? 'nada';
+      if (tipo === 'nada' || tipo === 'puno' || tipo === 'frasco') continue;
+      for (const dir of DIRS) {
+        const res: Partial<Record<'caminar' | 'correr', { visible: boolean; media: number; rango: number; angulos: number[] }>> = {};
+        for (const acc of ['caminar', 'correr'] as const) {
+          const n = cuadrosDe(acc, h.cuerpo.presentacion), angs: number[] = [];
+          for (let f = 0; f < n; f++) {
+            const g = geometriaQA(h.cuerpo, eq, dir, acc, f);
+            if (!g.arma) continue;
+            const [ax, ay] = aPantalla(g.arma.a), [bx, by] = aPantalla(g.arma.b);
+            const l2 = Math.hypot(bx - ax, by - ay), l3 = len(sub(g.arma.b, g.arma.a));
+            angs.push(l2 < l3 / 3 ? NaN : (Math.atan2(by - ay, bx - ax) * 180) / Math.PI);
+          }
+          const ok = angs.filter((x) => !Number.isNaN(x));
+          const media = ok.length ? (Math.atan2(ok.reduce((t, a) => t + Math.sin((a * Math.PI) / 180), 0), ok.reduce((t, a) => t + Math.cos((a * Math.PI) / 180), 0)) * 180) / Math.PI : 0;
+          const dev = ok.map((a) => envolver(a - media));
+          res[acc] = { visible: ok.length > 0, media, rango: dev.length ? Math.max(...dev) - Math.min(...dev) : 0, angulos: angs.map((a) => Math.round(a)) };
+        }
+        // si en una de las dos el arma apunta a la cámara todo el ciclo, no hay ángulo que comparar
+        const salto = res.correr!.visible && res.caminar!.visible ? Math.abs(envolver(res.correr!.media - res.caminar!.media)) : 0;
+        const fila: AnguloAndar = { clase: h.id, nivel, dir, arma: tipo, caminar: +res.caminar!.rango.toFixed(1), correr: +res.correr!.rango.toFixed(1), salto: +salto.toFixed(1), angulos: { caminar: res.caminar!.angulos, correr: res.correr!.angulos } };
+        filas.push(fila);
+        const base = { clase: h.id, nivel, dir, f: -1 };
+        if (fila.caminar > LIMITE_ANDAR.caminar) fallas.push({ ...base, acc: 'caminar', chequeo: 'arma-andar (variación)', valor: fila.caminar });
+        if (fila.correr > LIMITE_ANDAR.correr) fallas.push({ ...base, acc: 'correr', chequeo: 'arma-andar (variación)', valor: fila.correr });
+        if (fila.salto > LIMITE_ANDAR.salto) fallas.push({ ...base, acc: 'caminar→correr', chequeo: 'arma-andar (salto)', valor: fila.salto });
+      }
+    }
+  }
+  return { filas, fallas };
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const t0 = Date.now();
   const { cuadros, fallas } = qaHeroes({ clase: SOLO_CLASE, accion: SOLO_ACC });
+  const andar = angulosAndar({ clase: SOLO_CLASE });
+  fallas.push(...andar.fallas);
   const por = new Map<string, number>();
   for (const x of fallas) { const k = `${x.chequeo} · ${x.clase} · ${x.acc}`; por.set(k, (por.get(k) ?? 0) + 1); }
   console.log(`QA de héroes: ${cuadros} cuadros (clases × 4 niveles × 8 direcciones × cada cuadro de cada acción) en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   const chequeos = ['agarre', 'arma-cabeza', 'arma-cuerpo', 'mano-cara', 'antebrazo-cara', 'mano-pecho', 'cabo-ingle', 'pie bajo el piso', 'rodilla al revés', 'articulación bajo el piso', 'mano bajo el piso'];
   for (const c of chequeos) console.log(`  ${c.padEnd(26)} ${fallas.filter((x) => x.chequeo.startsWith(c)).length} fallas`);
+  console.log(`  ${'arma-andar'.padEnd(26)} ${andar.fallas.length} fallas (variación caminar ≤ ${LIMITE_ANDAR.caminar}°, correr ≤ ${LIMITE_ANDAR.correr}°, salto ≤ ${LIMITE_ANDAR.salto}°)`);
+  console.log('  ángulo del arma en pantalla (peor de las 8 direcciones), por clase y nivel:');
+  console.log('    clase       nivel     arma          var.caminar  var.correr  salto');
+  const peor = new Map<string, AnguloAndar>();
+  for (const f of andar.filas) { const k = f.clase + '|' + f.nivel, p = peor.get(k); peor.set(k, p ? { ...p, caminar: Math.max(p.caminar, f.caminar), correr: Math.max(p.correr, f.correr), salto: Math.max(p.salto, f.salto) } : f); }
+  for (const f of peor.values()) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} ${f.arma.padEnd(13)} ${String(f.caminar).padStart(8)}°  ${String(f.correr).padStart(9)}°  ${String(f.salto).padStart(5)}°`);
   console.log(`TOTAL: ${fallas.length} fallas`);
   for (const [k, n] of [...por].sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(5)}  ${k}`);
   for (const x of fallas.slice(0, DETALLE)) console.log('   ', JSON.stringify(x));

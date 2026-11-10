@@ -240,8 +240,8 @@ function brazoEscudo(p: Pose, acc: Accion, u: number, mano: ManoPose) {
   delete p.manoI; delete p.codoI;
   const gi = mano === 'escudo' ? 24 : 14, br = Math.sin(u * TAU), resp = p.respira ?? 0;
   if (acc === 'quieto') p.hombroI = [20 + resp * 1.5, 14, 72 + resp * 2, gi];
-  else if (acc === 'caminar') p.hombroI = [20 + br * 2.5, 14, 74 - br * 2, gi];
-  else if (acc === 'correr') p.hombroI = [24 + br * 3.5, 16, 76 - br * 3, gi];
+  else if (acc === 'caminar') p.hombroI = [20 + br * 1, 14, 74 - br * 0.8, gi];
+  else if (acc === 'correr') p.hombroI = [24 + br * 1.2, 15, 78 - br * 1, gi];
   else if (acc === 'atacar') p.hombroI = [24 + p.giroTorso * 0.25, 16, 74 - p.giroTorso * 0.2, gi];
   else if (acc === 'herido') p.hombroI = [16 - p.torso * 0.4, 18 + (p.ladeo ?? 0), 72, gi - 4];
 }
@@ -368,8 +368,10 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
       p.bajar = 3.4 - 0.9 * j; p.torso = 13 - 3 * j; p.cabeza = -8 + 3.5 * j; p.respira = 0.1 + 0.9 * j;
       p.hombros = [1.2 + 1.5 * j, 1.1 + 1.5 * j];
       p.pasos = [-2.6, 3]; p.abre = [2.6, 2.4]; p.lateral = 0.3 + 0.25 * j; p.ladeoCadera = 1.5; p.ladeo = -1 - 0.6 * j;
-      if (arma !== 'dos') { p.hombroD = [10 + 4 * j, 16, 22 + 6 * j, 6]; p.hombroI = [8 + 3 * j, 16, 20 + 6 * j, 10]; }
-      else { p.manoD = [6.5, 8.5, 38.6 + 0.8 * j]; p.hombroI = [8 + 3 * j, 16, 20 + 6 * j, 10]; }
+      // el hacha baja y atrás junto a la cadera, como al andar (no cambia de postura al arrancar)
+      p.hombroI = [8 + 3 * j, 16, 20 + 6 * j, 10];
+      if (arma === 'una' || arma === 'dos') { p.manoD = [1.5, 10, 30.2 + 0.8 * j]; p.armaD = [arma === 'dos' ? 142 : 152, 182]; p.codoD = [-0.6, 0.55, -0.6]; p.pegaI = 0; }
+      else p.hombroD = [10 + 4 * j, 16, 22 + 6 * j, 6];
       p.capa = [0.9 + 0.4 * j, 0.2 * k2]; p.pelo = [0.5 * j, 0.3 * k2];
       break;
     }
@@ -379,7 +381,7 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
       p.torso = 1.5 - 1 * k; p.bajar = 1.4 - 0.4 * k; p.lateral = 0.3 + 0.1 * k; p.ladeo = -0.6 - 0.3 * k; p.ladeoCadera = 1.2;
       p.pasos = [-2.4, 2.6]; p.abre = [1.4, 1.2]; p.pieGiro = [18, 8]; p.giroCadera = -2; p.giroTorso = 4 + k;
       p.cabeza = -1 - 1.5 * k; p.giroCabeza = -6 + 7 * k2;
-      if (arma === 'una') { p.hombroD = [24 + 2 * k, 14, 36 + 4 * k, 8]; p.munecaD = -6 + 2 * k2; }
+      if (arma === 'una') { p.manoD = [3.5, 9.5, 31 + 0.6 * k]; p.armaD = [124 + 2 * k2, 10]; p.codoD = [-0.6, 0.55, -0.6]; }
       break;
     }
     case 'conjuro': {
@@ -458,7 +460,10 @@ function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose, estilo?: Pr
   if (estilo) andarDeClase(p, u, correr, estilo, { sD, sI, cD, cI, g, peso, rebote });
   // el arma de una mano cuelga adelante y abajo del puño: la muñeca compensa el vaivén del brazo (sin esto la hoja se
   // ponía horizontal al frente cuando el brazo iba adelante y caía de golpe en el cuadro siguiente)
-  if (arma === 'una' && !correr) p.munecaD = -(p.hombroD[0] - 4) * 0.8 - 14;
+  if (arma === 'una' && !correr && !estilo) p.munecaD = -(p.hombroD[0] - 4) * 0.8 - 14;
+  // los héroes llevan el arma firme: el brazo del arma no bombea (codo recogido, muñeca firme), el arma oscila pocos
+  // grados en todo el ciclo y al correr va como al caminar, apenas más recogida; el brazo libre es el que bombea
+  if (estilo && portarArma(p, u, correr, arma, estilo)) return;
   // a dos manos: al hombro, como en quieto (el puño delante del pecho, la cabeza del arma atrás); la izquierda bracea
   if (arma === 'dos') {
     const zh = 40 - (estilo === 'rugido' ? 2.4 : 0), fw = estilo === 'rugido' ? 7 : 5;
@@ -469,6 +474,44 @@ function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose, estilo?: Pr
   if (arma === 'arco') { p.hombroI = [sI * (correr ? 0.35 : 0.3) + 2, 14, (correr ? 34 : 14) + Math.max(0, cI) * 0.3, 0]; p.tensa = false; }
   // la vara al costado y apenas atrás: el remate queda afuera de la silueta de la cabeza en todas las direcciones
   if (arma === 'baculo') { p.hombroD = [6 + sD * 0.3, 22, 55, 0]; p.vara = [-3 + sD * 0.15, 9]; }
+}
+
+/**
+ * Cómo lleva el arma un héroe al caminar y al correr (devuelve true si se ocupó). El berserker la lleva baja y atrás, a
+ * la altura de la cadera, con la cabeza del arma atrás y abajo (se siente el peso); las demás armas de una mano cuelgan
+ * adelante y abajo junto al muslo; el arco queda quieto en la izquierda, la vara casi vertical al costado.
+ */
+function portarArma(p: Pose, u: number, correr: boolean, arma: ArmaPose, estilo: Presentacion): boolean {
+  const sw = Math.sin((u - 0.1) * TAU), codo: [number, number, number] = [-0.6, 0.55, -0.6];
+  if (estilo === 'rugido' && (arma === 'una' || arma === 'dos')) {
+    // el peso del hacha: el puño en la cadera, el hacha atrás y abajo, el brazo casi estirado; el otro brazo bombea
+    p.manoD = correr ? [-1 + 0.6 * sw, 10.5, 31.5] : [0.5 + 0.8 * sw, 10, 30.5];
+    p.armaD = arma === 'dos' ? [(correr ? 132 : 140) + 3 * sw, 182] : [(correr ? 140 : 150) + 3 * sw, 182];
+    p.codoD = codo; p.pegaI = 0; delete p.munecaD;
+    return true;
+  }
+  if (arma === 'una') {
+    p.manoD = correr ? [5 + 0.6 * sw, 10, 35] : [3 + 0.8 * sw, 9.5, 31];
+    p.armaD = correr ? [118 + 2 * sw, 8] : [126 + 1.5 * sw, 10];
+    p.codoD = codo; delete p.munecaD;
+    return true;
+  }
+  if (arma === 'ballesta') {
+    // la ballesta cruzada adelante, la culata en la cadera derecha y la izquierda en el fuste: no se balancea
+    p.manoD = correr ? [10, 8.5, 38 + 0.4 * sw] : [9, 8.5, 36 + 0.3 * sw]; p.armaD = correr ? [96 + 1.5 * sw, 4] : [102 + 1.5 * sw, 4];
+    p.codoD = codo; delete p.munecaD;
+    return true;
+  }
+  if (arma === 'arco') {
+    // el arco quieto en la izquierda, vertical y bajo; la derecha bracea libre
+    p.hombroI = correr ? [6 + sw * 2, 14, 34, 0] : [4 + sw * 1.5, 14, 16, 0]; p.tensa = false;
+    return true;
+  }
+  if (arma === 'baculo') {
+    p.manoD = correr ? [8 + 0.8 * sw, 10, 37] : [6 + 1 * sw, 10, 36]; p.vara = correr ? [8 + 3 * sw, 8] : [2 + 2.5 * sw, 9];
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -777,13 +820,17 @@ function monje(p: Pose, acc: Accion, u: number, f: number, arma: ArmaPose) {
     if (!correr) {
       // erguido y sereno: las manos juntas delante del vientre, el torso apenas gira
       p.torso = 2; p.giroTorso *= 0.5; p.giroCabeza = -p.giroTorso * 0.9; p.respira = 0.4;
+      // la guardia baja y suelta, los puños adelante (la misma que al correr, más abajo): no bracean
       const b = Math.sin((u - 0.1) * 2 * TAU) * 0.3;
-      p.manoD = [8, 1.3, 32.5 + b]; p.manoI = [8, -1.3, 32.5 + b]; p.codoD = [-0.3, 1, -0.6]; p.codoI = [-0.3, -1, -0.6];
+      p.manoD = [9, 5, 35 + b]; p.manoI = [11, -4, 36 + b]; p.codoD = [-0.4, 0.8, -1]; p.codoI = [-0.4, -0.8, -1];
+      // las garras del puño apuntan adelante, firmes (no giran con el antebrazo a cada paso)
+      p.armaD = [84 + b, -4];
     } else {
       // guardia suelta: puños compactos que bombean cerca del cuerpo, los codos atrás
       p.torso = 11;
-      const [d, i] = [p.hombroD, p.hombroI];
-      p.hombroD = [d[0] * 0.8 + 2, 12, d[2] + 14, 22]; p.hombroI = [i[0] * 0.8 + 2, 12, i[2] + 14, 22];
+      const sw = Math.sin((u - 0.1) * TAU);
+      p.manoD = [10 + 0.4 * sw, 5, 38 + 0.4 * Math.abs(sw)]; p.manoI = [12 - 0.4 * sw, -4, 39 + 0.4 * Math.abs(sw)];
+      p.giroTorso *= 0.4; p.giroCabeza = -p.giroTorso * 0.9; p.armaD = [80 + sw, -4]; p.codoD = [-0.4, 0.8, -1]; p.codoI = [-0.4, -0.8, -1];
     }
   } else if (acc === 'atacar') {
     // combo casi sin recogida: directo de izquierda (cuadro 2), cruzado de derecha (5, el golpe que cuenta) y patada frontal
@@ -851,14 +898,10 @@ function druida(p: Pose, acc: Accion, u: number, f: number, arma: ArmaPose) {
     const correr = acc === 'correr';
     marcha(p, u, correr, 'baculo', 'naturaleza');
     p.torso = correr ? 18 : 10; p.cabeza = correr ? -12 : -7;
-    if (correr) { p.manoD = [10, 9, 35]; p.vara = [42, 3]; return; }
-    // la vara se planta con el talón izquierdo (u = 0.5) y queda quieta en el piso mientras el cuerpo pasa sobre ella
-    // (en el marco del cuerpo retrocede a la misma velocidad con que avanza el personaje); después vuela adelante
-    const zan = zancada('caminar', 1, 'naturaleza'), q = mod1(u - 0.5), delante = 12.5, recorre = zan * 0.5;
-    if (q < 0.5) p.varaPie = [delante - recorre * (q / 0.5), 11.5, 0.5];
-    else { const s2 = (q - 0.5) / 0.5, e = 0.5 - 0.5 * Math.cos(Math.PI * s2); p.varaPie = [lerp(delante - recorre, delante, e), 11.5, 0.5 + 3.2 * Math.sin(Math.PI * s2)]; }
-    p.manoD = [6 + 3 * Math.cos(TAU * q), 9.5, 37 + 0.8 * Math.sin(TAU * q)];
-    delete p.vara;
+    // la vara firme en la mano, casi vertical al costado y un poco adelante (al correr apenas más inclinada): el arma no
+    // baila con el paso
+    const sw = Math.sin((u - 0.1) * TAU);
+    p.manoD = correr ? [10 + 0.8 * sw, 10, 36] : [8 + 1 * sw, 10.5, 37]; p.vara = correr ? [20 + 3 * sw, 6] : [10 + 2.5 * sw, 9];
   } else if (acc === 'atacar') {
     // golpe de vara a dos manos, amplio y redondo: la vara dibuja un círculo (atrás y abajo, arriba por el costado, por
     // encima y adelante) y pega en el cuadro 7 con un paso; el cuerpo sigue el arco y vuelve despacio
