@@ -6,7 +6,7 @@
 //   Abajo a la izquierda: un joystick que aparece donde apoyas el pulgar.
 // Todo en tamaños de dedo (44 pt o más), lejos de los bordes laterales (notch e isla) y respetando el área segura.
 import { ctx, W, H, E, ESCALA, SEGURO } from '../nucleo/lienzo';
-import { texto, T, TT, dentro, icono, envolver as envolverT } from './comun';
+import { texto, T, TT, dentro, icono, envolver as envolverT, TITULO } from './comun';
 import { ui, alternar, glifoHab, orbeHud, recursoClase, objetivoTxt, COLOR_POCION, cambiarAgresivo } from './juego_ui';
 import { hud, type Rect } from './hud_rects';
 import { MISIONES } from '../mundo/actos';
@@ -57,45 +57,96 @@ export function disposicion() {
 }
 
 const circ = (cx: number, cy: number, d: number): Rect => [cx - d / 2, cy - d / 2, d, d];
+// ------------------------------------------------------------------ medallones de combate
+/** El arma de cada clase para el botón Golpe (el ataque básico no tiene glifo propio) y el color de su vidrio. */
+const ARMA_CLASE: Record<string, [string, string]> = {
+  berserker: ['hacha', '#8a2a16'], templario: ['espada', '#8a6a24'], monje: ['puno', '#a06a1c'], cazadora: ['arco', '#3c6a2c'],
+  druida: ['garra', '#3a6a3a'], nigromante: ['hueso', '#4a3a78'], arcanista: ['orbe', '#2c4c9a'], alquimista: ['frasco', '#2c7a6a'],
+};
+const aclarar = (hex: string, k: number) => { const n = parseInt(hex.slice(1), 16), f = (v: number) => Math.round(v + (255 - v) * k); return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`; };
+const oscurecer = (hex: string, k: number) => { const n = parseInt(hex.slice(1), 16), f = (v: number) => Math.round(v * (1 - k)); return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`; };
+/** Cuándo quedó lista cada habilidad (para el destello al terminar la recarga). */
+const listaDesde = new Map<string, number>(), enRecarga = new Set<string>();
+interface Med { id?: string; hb?: Habilidad; apagado?: boolean; etiqueta?: string; apretado?: boolean; principal?: boolean; recarga?: number; segundos?: number; falta?: number }
 /**
- * Un botón de combate: medallón redondo de bronce con el color de la habilidad adentro y su glifo. Todo es círculo: aro
- * oscuro, aro de bronce con brillo arriba, sombra interior y, si lleva nombre, una banda curva abajo. Sin habilidad es un
- * hueco vacío, más apagado, con una cruz fina.
+ * Un botón de combate como pieza de orfebrería: aro de bronce labrado (muescas, y remaches en el principal), ranura
+ * oscura, vidrio engastado del color de la habilidad con su brillo arriba, y el glifo con resplandor. La recarga se lee
+ * en el aro (un arco que se va llenando) y sobre el vidrio oscurecido van los segundos. Al quedar lista, un destello.
+ * Sin habilidad es un engaste vacío. Todo es círculo: nada de cuadros adentro.
  */
-function medallon(cx: number, cy: number, d: number, o: { hb?: Habilidad; apagado?: boolean; etiqueta?: string; apretado?: boolean } = {}) {
-  const r = d / 2, aro = Math.max(3, d * 0.065);
+function medallon(cx: number, cy: number, d: number, o: Med = {}) {
+  const ahora = performance.now();
   ctx.save();
+  if (o.apretado) { ctx.translate(cx, cy); ctx.scale(0.94, 0.94); ctx.translate(-cx, -cy); }
+  const r = d / 2, aro = Math.max(4, d * (o.principal ? 0.085 : 0.075)), ri = r - 1 - aro - 1.5;
   // sombra que lo despega del mundo
-  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(cx, cy + d * 0.035, r + 1, 0, Math.PI * 2); ctx.fill();
-  // aro: borde oscuro y bronce con la luz arriba
-  ctx.fillStyle = '#0c0906'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-  const gb = ctx.createLinearGradient(0, cy - r, 0, cy + r);
-  if (o.hb) { gb.addColorStop(0, o.apretado ? '#ffe9b0' : '#e2c486'); gb.addColorStop(0.45, '#a8854c'); gb.addColorStop(1, '#5a4326'); }
-  else { gb.addColorStop(0, '#6e5c40'); gb.addColorStop(1, '#3a2e1e'); }
-  ctx.fillStyle = gb; ctx.beginPath(); ctx.arc(cx, cy, r - 1.5, 0, Math.PI * 2); ctx.fill();
-  // el interior
-  const ri = r - 1.5 - aro;
-  ctx.fillStyle = '#0c0906'; ctx.beginPath(); ctx.arc(cx, cy, ri + 1.2, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI * 2); ctx.clip();
-  if (o.hb) {
-    const gy = o.etiqueta ? cy - d * 0.07 : cy, gs = ri * 2 * (o.etiqueta ? 0.86 : 1);
-    const gf = ctx.createRadialGradient(cx, gy, 2, cx, cy, ri * 1.25); gf.addColorStop(0, o.apagado ? '#303030' : o.hb.color); gf.addColorStop(1, '#0a0806'); ctx.fillStyle = gf; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2);
-    glifoHab(o.hb, cx, gy, gs, !!o.apagado);
-    // sombra interior arriba y brillo tenue: volumen de vidrio engastado
-    const gi = ctx.createRadialGradient(cx, cy, ri * 0.55, cx, cy, ri); gi.addColorStop(0, 'rgba(0,0,0,0)'); gi.addColorStop(1, 'rgba(0,0,0,0.55)'); ctx.fillStyle = gi; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2);
-    const gl = ctx.createLinearGradient(0, cy - ri, 0, cy); gl.addColorStop(0, 'rgba(255,240,210,0.16)'); gl.addColorStop(1, 'rgba(255,240,210,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(cx, cy - ri * 0.45, ri * 0.8, ri * 0.5, 0, 0, Math.PI * 2); ctx.fill();
-    if (o.etiqueta) {
-      // banda curva abajo con el nombre
-      const by = cy + ri * 0.44; ctx.fillStyle = 'rgba(8,6,4,0.82)'; ctx.fillRect(cx - ri, by, ri * 2, ri);
-      ctx.strokeStyle = 'rgba(200,160,96,0.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx - ri, by + 0.5); ctx.lineTo(cx + ri, by + 0.5); ctx.stroke();
-      texto(o.etiqueta, cx, by + ri * 0.33, { alin: 'center', tam: Math.max(8, Math.round(d * 0.115)), color: '#ecdcb4', max: ri * 1.35 });
-    }
-    if (o.apretado) { ctx.fillStyle = 'rgba(255,230,170,0.16)'; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2); }
-  } else {
-    const gv = ctx.createRadialGradient(cx, cy, 2, cx, cy, ri); gv.addColorStop(0, '#1c1610'); gv.addColorStop(1, '#0a0806'); ctx.fillStyle = gv; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2);
-    ctx.strokeStyle = o.apretado ? '#c8a868' : '#6a5a40'; ctx.lineWidth = Math.max(1.5, d * 0.03); ctx.lineCap = 'round'; const q = ri * 0.3;
+  { const g = ctx.createRadialGradient(cx, cy + d * 0.05, r * 0.7, cx, cy + d * 0.05, r * 1.22); g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy + d * 0.05, r * 1.22, 0, Math.PI * 2); ctx.fill(); }
+  if (!o.hb) {
+    // engaste vacío: aro fino, vidrio apagado y una cruz
+    ctx.fillStyle = 'rgba(10,8,6,0.55)'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 0.35; ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.arc(cx, cy, r - aro, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.globalAlpha = o.apretado ? 0.9 : 0.5; ctx.strokeStyle = '#c8a868'; ctx.lineWidth = Math.max(1.5, d * 0.028); ctx.lineCap = 'round'; const q = r * 0.2;
     ctx.beginPath(); ctx.moveTo(cx - q, cy); ctx.lineTo(cx + q, cy); ctx.moveTo(cx, cy - q); ctx.lineTo(cx, cy + q); ctx.stroke();
+    ctx.restore(); return;
   }
+  const col = o.apagado ? '#3a3a3e' : o.hb.color;
+  // aro de bronce: luz arriba, sombra abajo
+  ctx.fillStyle = '#0a0705'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  { const g = ctx.createLinearGradient(cx - r * 0.4, cy - r, cx + r * 0.4, cy + r); g.addColorStop(0, o.apretado ? '#fff0c4' : '#f0d49a'); g.addColorStop(0.3, '#c09a5a'); g.addColorStop(0.62, '#7a5a30'); g.addColorStop(1, '#3e2c16'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, Math.PI * 2); ctx.fill(); }
+  // muescas labradas en el aro y remaches en los cuatro puntos del principal
+  ctx.strokeStyle = 'rgba(30,18,6,0.55)'; ctx.lineWidth = 1;
+  const nm = o.principal ? 32 : 20;
+  ctx.beginPath(); for (let q = 0; q < nm; q++) { const a = (q / nm) * Math.PI * 2 + 0.1, c = Math.cos(a), sn = Math.sin(a); ctx.moveTo(cx + c * (r - 2.2), cy + sn * (r - 2.2)); ctx.lineTo(cx + c * (r - aro + 0.6), cy + sn * (r - aro + 0.6)); } ctx.stroke();
+  if (o.principal) for (let q = 0; q < 4; q++) { const a = q * Math.PI / 2 + Math.PI / 4, x = cx + Math.cos(a) * (r - 1 - aro / 2), y = cy + Math.sin(a) * (r - 1 - aro / 2), rr = aro * 0.36; ctx.fillStyle = '#2a1a0a'; ctx.beginPath(); ctx.arc(x, y + 0.6, rr + 0.8, 0, Math.PI * 2); ctx.fill(); const g = ctx.createRadialGradient(x - rr * 0.3, y - rr * 0.4, 0, x, y, rr); g.addColorStop(0, '#fff4d0'); g.addColorStop(1, '#a8823e'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill(); }
+  // filo exterior (lo que define el tamaño del botón) y ranura donde asienta el vidrio
+  ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#080604'; ctx.beginPath(); ctx.arc(cx, cy, ri + 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,236,190,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, ri + 1.9, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
+  // recarga en el aro: lo que ya se cargó, en claro, desde arriba y en sentido horario
+  const rec = Math.max(0, Math.min(1, o.recarga ?? 0));
+  if (rec > 0) { ctx.strokeStyle = 'rgba(8,6,4,0.72)'; ctx.lineWidth = aro - 1; ctx.beginPath(); ctx.arc(cx, cy, r - 1 - aro / 2, -Math.PI / 2 + (1 - rec) * Math.PI * 2, -Math.PI / 2 + Math.PI * 2); ctx.stroke(); }
+  // el vidrio
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI * 2); ctx.clip();
+  { const g = ctx.createRadialGradient(cx - ri * 0.25, cy - ri * 0.3, ri * 0.05, cx, cy, ri * 1.05); g.addColorStop(0, aclarar(col, 0.22)); g.addColorStop(0.45, col); g.addColorStop(0.85, oscurecer(col, 0.6)); g.addColorStop(1, oscurecer(col, 0.82)); ctx.fillStyle = g; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2); }
+  // el glifo: sombra abajo y resplandor del color de la habilidad
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 0; ctx.shadowOffsetY = Math.max(1, d * 0.025); ctx.globalAlpha = 0.55; glifoHab(o.hb, cx, cy, ri * 1.9, true); ctx.restore();
+  ctx.save(); if (!o.apagado) { ctx.shadowColor = aclarar(col, 0.55); ctx.shadowBlur = d * 0.16; } glifoHab(o.hb, cx, cy, ri * 1.9, !!o.apagado); ctx.restore();
+  // volumen: sombra interior en el borde y brillo de vidrio arriba
+  { const g = ctx.createRadialGradient(cx, cy, ri * 0.62, cx, cy, ri); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.6)'); ctx.fillStyle = g; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2); }
+  { const g = ctx.createLinearGradient(0, cy - ri, 0, cy - ri * 0.1); g.addColorStop(0, 'rgba(255,246,224,0.3)'); g.addColorStop(1, 'rgba(255,246,224,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx, cy - ri * 0.52, ri * 0.74, ri * 0.42, 0, 0, Math.PI * 2); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(255,240,210,0.18)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, ri - 1.5, Math.PI * 0.2, Math.PI * 0.8); ctx.stroke();
+  // estados sobre el vidrio
+  if (rec > 0) { ctx.fillStyle = 'rgba(4,3,2,0.66)'; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2); }
+  if (o.falta) { ctx.fillStyle = 'rgba(6,14,70,0.6)'; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2); }
+  if (o.apretado) { ctx.fillStyle = 'rgba(255,232,180,0.2)'; ctx.fillRect(cx - ri, cy - ri, ri * 2, ri * 2); }
+  ctx.restore();
+  if (rec > 0 && o.segundos !== undefined) texto(o.segundos >= 9.5 ? String(Math.round(o.segundos)) : o.segundos.toFixed(1), cx, cy + d * 0.09, { alin: 'center', tam: Math.round(d * 0.3), color: '#f4e6c0', fuente: TITULO });
+  else if (o.falta) texto(String(Math.ceil(o.falta)), cx, cy + d * 0.09, { alin: 'center', tam: Math.round(d * 0.28), color: '#a8c0ff', fuente: TITULO });
+  // destello al quedar lista
+  if (o.id) {
+    if (rec > 0) enRecarga.add(o.id); else if (enRecarga.delete(o.id)) listaDesde.set(o.id, ahora);
+    const e = (ahora - (listaDesde.get(o.id) ?? -1e9)) / 420;
+    if (e < 1) { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(255,226,160,${(1 - e) * 0.9})`; ctx.lineWidth = 2 + (1 - e) * 3; ctx.beginPath(); ctx.arc(cx, cy, r + e * d * 0.22, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = `rgba(255,236,190,${(1 - e) * 0.35})`; ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
+  }
+  // el nombre: una plaquita que monta sobre el borde de abajo
+  if (o.etiqueta) {
+    const tam = Math.max(8, Math.round(d * (o.principal ? 0.13 : 0.15))); ctx.font = `${tam}px ${TITULO}`;
+    const tw = Math.min(d * 0.95, ctx.measureText(o.etiqueta).width + tam * 1.1), th = tam + 5, x = cx - tw / 2, y = cy + r - th * 0.62, rr = th / 2;
+    ctx.beginPath(); ctx.moveTo(x + rr, y); ctx.lineTo(x + tw - rr, y); ctx.arc(x + tw - rr, y + rr, rr, -Math.PI / 2, Math.PI / 2); ctx.lineTo(x + rr, y + th); ctx.arc(x + rr, y + rr, rr, Math.PI / 2, Math.PI * 1.5); ctx.closePath();
+    ctx.fillStyle = 'rgba(10,7,5,0.94)'; ctx.fill(); ctx.strokeStyle = 'rgba(200,164,100,0.85)'; ctx.lineWidth = 1; ctx.stroke();
+    texto(o.etiqueta, cx, y + th - 4, { alin: 'center', tam, color: '#f0dfb4', fuente: TITULO, max: tw - 6 });
+  }
+  ctx.restore();
+}
+/** El riel que une el arco de habilidades con Golpe: una banda tenue con dos filos, para que lean como una sola pieza. */
+function rielArco(gx: number, gy: number, radio: number, ancho: number, rG: number) {
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(6,4,3,0.42)'; ctx.lineWidth = ancho; ctx.beginPath(); ctx.arc(gx, gy, radio, Math.PI, Math.PI * 1.5); ctx.stroke();
+  ctx.lineCap = 'butt'; ctx.strokeStyle = 'rgba(200,164,100,0.22)'; ctx.lineWidth = 1;
+  for (const q of [-ancho / 2, ancho / 2]) { ctx.beginPath(); ctx.arc(gx, gy, radio + q, Math.PI * 1.02, Math.PI * 1.48); ctx.stroke(); }
+  // halo de Golpe
+  ctx.strokeStyle = 'rgba(200,164,100,0.2)'; ctx.beginPath(); ctx.arc(gx, gy, rG + 5, 0, Math.PI * 2); ctx.stroke();
   ctx.restore();
 }
 function boton(id: string, r: Rect, dibujo: (apretado: boolean) => void, accion: () => void, redondo = false, sinFondo = false) {
@@ -177,24 +228,22 @@ export function dibujarHudTactil(j: Juego, t: number) {
 
   // ---------------- abajo a la derecha: Golpe, el arco de habilidades y el interruptor
   {
-    const hbI = habilidadDe(d.izq);
+    const hbI = habilidadDe(d.izq), arma = ARMA_CLASE[d.clase];
+    // el ataque básico lleva el arma y el color de la clase
+    const hbG = hbI.id === 'ataque' && arma ? ({ ...hbI, glifo: arma[0], color: arma[1] } as Habilidad) : hbI;
     const rG = circ(P.gx, P.gy, P.G);
-    boton('golpe', rG, (ap) => medallon(P.gx, P.gy, P.G, { hb: hbI, etiqueta: T('Golpe', 'Hit'), apretado: ap }), () => { (ui as any).tactilHab = 'izq'; }, true, true);
+    rielArco(P.gx, P.gy, Math.hypot(P.habs[0][0] - P.gx, P.habs[0][1] - P.gy), P.S * 0.56, P.G / 2);
+    boton('golpe', rG, (ap) => medallon(P.gx, P.gy, P.G, { id: 'golpe', hb: hbG, etiqueta: T('Golpe', 'Hit'), apretado: ap, principal: true }), () => { (ui as any).tactilHab = 'izq'; }, true, true);
     habsArco(j).forEach((id, i) => {
       const [cx, cy] = P.habs[i], r = circ(cx, cy, P.S), clave = i === 0 ? 'poder' : 'hab' + i;
       if (!id) { boton(clave, r, (ap) => medallon(cx, cy, P.S, { apretado: ap }), () => alternar('habs', 'der'), true, true); return; }
       const hb = habilidadDe(id), n = hb.id === 'ataque' ? 1 : nivelHab(d, hb.id, h.c), costo = hb.id === 'ataque' ? 0 : costoMana(j, hb);
-      boton(clave, r, (ap) => {
-        // el ícono llena el círculo (recortado a él) para que el botón se vea del mismo tamaño que los demás
-        medallon(cx, cy, P.S, { hb, apagado: n <= 0, etiqueta: i === 0 ? T('Poder', 'Skill') : undefined, apretado: ap });
-        const rc = h.recargas[hb.id] ?? 0;
-        if (rc > 0) { ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, P.S / 2 - 1.5 - Math.max(3, P.S * 0.065), -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, rc / (hb.recarga ?? 1))); ctx.closePath(); ctx.fill(); ctx.restore(); }
-        if (h.mana < costo) { ctx.save(); ctx.fillStyle = 'rgba(0,10,90,0.5)'; ctx.beginPath(); ctx.arc(cx, cy, P.S / 2 - 1.5 - Math.max(3, P.S * 0.065), 0, Math.PI * 2); ctx.fill(); ctx.restore(); texto(String(Math.ceil(costo)), cx, cy + L(5), { alin: 'center', tam: Math.round(L(13)), color: '#a0b8ff' }); }
-      }, () => { if (i === 0) (ui as any).tactilHab = 'der'; else (ui as any).tactilHabId = id; }, true, true);
+      const rc = h.recargas[hb.id] ?? 0;
+      boton(clave, r, (ap) => medallon(cx, cy, P.S, { id: clave + hb.id, hb, apagado: n <= 0, etiqueta: i === 0 ? T('Poder', 'Skill') : undefined, apretado: ap, recarga: rc > 0 ? rc / (hb.recarga ?? 1) : 0, segundos: rc, falta: rc <= 0 && h.mana < costo ? costo : 0 }),
+        () => { if (i === 0) (ui as any).tactilHab = 'der'; else (ui as any).tactilHabId = id; }, true, true);
     });
-    // agresivo o calmo, con su nombre
+    // agresivo o calmo: el mismo medallón, espada sobre rojo si ataca solo, escudo sobre acero si espera tu orden
     const ag = !!(d as any).agresivo, r = P.agresivo;
-    // el mismo medallón que los demás: espada sobre rojo si ataca solo, escudo sobre acero si espera tu orden
     boton('agresivo', r, (ap) => medallon(r[0] + r[2] / 2, r[1] + r[3] / 2, r[2], { hb: { color: ag ? '#a02818' : '#3c4654', glifo: ag ? 'espada' : 'escudo' } as Habilidad, etiqueta: ag ? T('Agresivo', 'Aggressive') : T('Calmo', 'Calm'), apretado: ap }), () => cambiarAgresivo(j), true, true);
   }
 
@@ -255,9 +304,17 @@ export function dibujarHudTactil(j: Juego, t: number) {
           caminarA(j, wx, wy);
         }
         const k = Math.min(1, dd / rad), kx = joy.x0 + (dx / (dd || 1)) * rad * k, ky = joy.y0 + (dy / (dd || 1)) * rad * k;
-        ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(joy.x0, joy.y0, rad, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 0.8; ctx.strokeStyle = '#a08050'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.fillStyle = '#5a4630'; ctx.beginPath(); ctx.arc(kx, ky, L(22), 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+        // la palanca habla el mismo idioma: base de vidrio oscuro con filo de bronce y cuatro marcas, y un pomo de bronce
+        ctx.save();
+        { const g = ctx.createRadialGradient(joy.x0, joy.y0, rad * 0.2, joy.x0, joy.y0, rad); g.addColorStop(0, 'rgba(0,0,0,0.18)'); g.addColorStop(1, 'rgba(0,0,0,0.46)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(joy.x0, joy.y0, rad, 0, Math.PI * 2); ctx.fill(); }
+        ctx.strokeStyle = 'rgba(160,128,80,0.75)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(joy.x0, joy.y0, rad, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(200,164,100,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(joy.x0, joy.y0, rad * 0.62, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = 'rgba(220,186,120,0.6)'; for (let q = 0; q < 4; q++) { const a = q * Math.PI / 2; ctx.beginPath(); ctx.arc(joy.x0 + Math.cos(a) * rad * 0.82, joy.y0 + Math.sin(a) * rad * 0.82, 1.8, 0, Math.PI * 2); ctx.fill(); }
+        const pr = L(21);
+        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.arc(kx, ky + 2, pr + 1, 0, Math.PI * 2); ctx.fill();
+        { const g = ctx.createLinearGradient(kx - pr * 0.4, ky - pr, kx + pr * 0.4, ky + pr); g.addColorStop(0, '#f0d49a'); g.addColorStop(0.4, '#b08a4e'); g.addColorStop(1, '#3e2c16'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(kx, ky, pr, 0, Math.PI * 2); ctx.fill(); }
+        { const g = ctx.createRadialGradient(kx - pr * 0.2, ky - pr * 0.25, 1, kx, ky, pr * 0.74); g.addColorStop(0, '#4a3a26'); g.addColorStop(1, '#120d08'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(kx, ky, pr * 0.74, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
       }
     }
   }
