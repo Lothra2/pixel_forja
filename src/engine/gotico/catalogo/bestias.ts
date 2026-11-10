@@ -100,11 +100,12 @@ function ik(a: V3, t: V3, l1: number, l2: number, doblez: V3): [V3, V3] {
   return [add(add(a, dn, l1 * ca), pp, l1 * sa), add(a, dn, Lc)];
 }
 /** Pie en un ciclo de marcha: en apoyo va de adelante hacia atrás por el piso, en vuelo sube y vuelve adelante. */
-function paso(fase: number, largo: number, alto: number, apoyo = 0.55): { x: number; z: number; vuelo: number } {
+function paso(fase: number, largo: number, alto: number, apoyo = 0.55, despegue = 1): { x: number; z: number; vuelo: number } {
   const p = ((fase % 1) + 1) % 1;
   if (p < apoyo) return { x: largo / 2 - largo * (p / apoyo), z: 0, vuelo: 0 };
   const u = (p - apoyo) / (1 - apoyo);
-  return { x: -largo / 2 + largo * suave(u), z: alto * Math.sin(Math.PI * u), vuelo: Math.sin(Math.PI * u) };
+  // con despegue < 1 el pie sube enseguida al soltar el piso (al galopar no se arrastra hacia adelante)
+  return { x: -largo / 2 + largo * suave(u), z: alto * Math.sin(Math.PI * u) ** despegue, vuelo: Math.sin(Math.PI * u) };
 }
 /** Grietas que brillan sobre la superficie de un elipsoide (en el marco `t`): polilíneas quebradas. */
 function grietas(t: Tr, c: V3, r: V3, n: number, semilla: number, mat: string, o: { lado?: number; arriba?: number; grueso?: number; largo?: number } = {}): Pieza[] {
@@ -129,19 +130,26 @@ function grietas(t: Tr, c: V3, r: V3, n: number, semilla: number, mat: string, o
 const pua = (a: V3, b: V3, r: number, mat = 'cu_hueso', tono = 0) => palo(a, b, r, { mat, r1: r * 0.12, tono });
 
 // ------------------------------------------------------------------ registro
-type Acc = 'quieto' | 'caminar' | 'atacar' | 'morir' | 'especial';
-const CUADROS: Record<Acc, number> = { quieto: 4, caminar: 8, atacar: 8, morir: 8, especial: 8 };
-const NOMBRES: Record<Acc, [string, string]> = { quieto: ['quieto', 'idle'], caminar: ['camina', 'walk'], atacar: ['ataca', 'attack'], morir: ['muere', 'death'], especial: ['especial', 'special'] };
+type Acc = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'herido' | 'morir' | 'especial';
+/**
+ * Cuadros por acción. Los mismos que el juego espera (mundo.ts): correr 8 como caminar, herido 4, y el ataque de 8 con
+ * el impacto en el índice 4 (sensacion.ts pone ese cuadro justo en el golpe, a 0,55 de la acción). Si cambia algo acá,
+ * va como dato en datos/animacion_monstruos.json, no como convención.
+ */
+const CUADROS: Record<Acc, number> = { quieto: 4, caminar: 8, correr: 8, atacar: 8, herido: 4, morir: 8, especial: 8 };
+const NOMBRES: Record<Acc, [string, string]> = { quieto: ['quieto', 'idle'], caminar: ['camina', 'walk'], correr: ['corre', 'run'], atacar: ['ataca', 'attack'], herido: ['recibe golpe', 'get hit'], morir: ['muere', 'death'], especial: ['especial', 'special'] };
 type Armado = (d: Dir, acc: Acc, f: number) => Pieza[] | Escena;
 export const BESTIAS: { id: string; nombre: [string, string]; huella: [number, number]; jefe: boolean }[] = [];
+/** Las bestias que el juego lanza a la carrera de lejos (vel de 3 o más): galopan o baten más rápido en 'correr'. */
+export const BESTIAS_QUE_CORREN = ['lobo_sombrio', 'jabali_demonio', 'perro_infernal', 'murcielago_gigante'];
 function bestia(id: string, nombre: [string, string], huella: [number, number], armar: Armado, especial?: [string, string]) {
   BESTIAS.push({ id, nombre, huella, jefe: !!especial });
-  const acciones: Acc[] = ['quieto', 'caminar', 'atacar', 'morir', ...(especial ? ['especial' as Acc] : [])];
+  const acciones: Acc[] = ['quieto', 'caminar', ...(BESTIAS_QUE_CORREN.includes(id) ? ['correr' as Acc] : []), 'atacar', 'herido', 'morir', ...(especial ? ['especial' as Acc] : [])];
   for (const acc of acciones) {
     const [es, en] = acc === 'especial' && especial ? especial : NOMBRES[acc];
     registrar({
       id: `mon_${id}_${acc}`, nombre: [`${nombre[0]} · ${es}`, `${nombre[1]} · ${en}`], tema: 'monstruos',
-      variantes: [...DIRS], cuadros: CUADROS[acc], t: acc === 'quieto' ? 6 : 3, huella, bloquea: true,
+      variantes: [...DIRS], cuadros: CUADROS[acc], t: acc === 'quieto' ? 6 : acc === 'correr' ? 2 : 3, huella, bloquea: true,
       armar: (v, f) => armar(v as Dir, acc, f),
     });
   }
@@ -158,18 +166,36 @@ interface Cuad {
   /** Lo propio de cada especie (cuernos, púas, grietas, colmillos, melena). */
   deco: (c: CtxCuad) => Pieza[];
 }
-interface CtxCuad { q: Cuad; W: Tr; cuerpo: Tr; cab: Tr; mand: Tr; S: number; g: number; acc: Acc; f: number; muerte: number; abre: number; comps: Comp[]; resplandor?: Escena['resplandor'] }
+interface CtxCuad { q: Cuad; W: Tr; cuerpo: Tr; /** El marco de la grupa (sigue a la columna cuando se arquea al galopar). */ grupa: Tr; /** El marco del lomo en `x` (adelante del medio, el del cuerpo; atrás, el de la grupa). */ lomo: (x: number) => Tr; cab: Tr; mand: Tr; S: number; g: number; acc: Acc; f: number; muerte: number; abre: number; comps: Comp[]; resplandor?: Escena['resplandor'] }
 
 /** Pose del tronco y de la cabeza de un cuadrúpedo para una acción y un cuadro. */
 function poseCuad(q: Cuad, acc: Acc, f: number) {
   const S = q.S, ph = f / CUADROS[acc];
-  const p = { av: 0, z: 0, lado: 0, pitch: 0, roll: 0, yaw: 0, cab: 6, cabYaw: 0, mand: 4, cola: 0, colaAlza: 0, flojo: 0, adel: [0, 0], alza: [0, 0], atrasX: 0, muerte: 0 };
+  const p = { av: 0, z: 0, lado: 0, pitch: 0, roll: 0, yaw: 0, flex: 0, cab: 6, cabYaw: 0, mand: 4, cola: 0, colaAlza: 0, flojo: 0, adel: [0, 0], alza: [0, 0], atrasX: 0, muerte: 0 };
   if (acc === 'quieto') {
     const b = Math.sin(ph * TAU);
     p.z = b * 0.35 * S; p.pitch = -b * 0.6; p.cab = 6 + b * 2.5; p.cabYaw = Math.sin(ph * TAU + 1) * 3; p.mand = 7 + b * 4; p.cola = Math.sin(ph * TAU) * 0.6;
   } else if (acc === 'caminar') {
     p.z = -Math.cos(ph * TAU * 2) * 0.55 * S - 0.3 * S; p.pitch = Math.sin(ph * TAU * 2) * 1.6; p.roll = Math.sin(ph * TAU) * 2; p.yaw = Math.sin(ph * TAU) * 2.5;
     p.cab = 8 - Math.sin(ph * TAU * 2) * 3; p.cabYaw = -Math.sin(ph * TAU) * 4; p.mand = 8; p.cola = Math.sin(ph * TAU) * 1.2;
+  } else if (acc === 'correr') {
+    // galope (ver GALOPE): el cuerpo cae en cada apoyo y sube en la suspensión recogida; cabecea con el peso que pasa
+    // de las patas de atrás a las de adelante, y la columna se arquea al recoger las patas y se estira al empujar
+    const gordo = q.cabeza === 'jabali';
+    p.z = K([-0.2, -1.5, -1.2, -1.0, -1.6, -0.7, 0.5, 0.9], f) * S * (gordo ? 0.75 : 1);
+    p.pitch = K([-5, -3, 1, 4, 6, 2, -3, -5], f) * (gordo ? 0.7 : 1);
+    p.flex = K([5, 2, -3, -6, -4, -1, 3, 6], f) * (gordo ? 0.5 : 1);
+    p.roll = Math.sin(ph * TAU) * 1.5; p.yaw = Math.sin(ph * TAU) * 1.2;
+    // la cabeza estirada adelante y casi quieta: compensa el cabeceo del cuerpo
+    p.cab = (gordo ? 16 : 10) - p.pitch * 0.8 + K([0, 2, 1, -1, -2, 0, 1, 0], f); p.cabYaw = -Math.sin(ph * TAU) * 2;
+    p.mand = gordo ? 8 : K([16, 18, 14, 12, 16, 18, 14, 13], f); p.cola = 0.45; p.colaAlza = gordo ? 0.9 : 0.55;
+  } else if (acc === 'herido') {
+    // el golpe lo echa para atrás: se sienta sobre las patas traseras, la cabeza salta arriba y afuera con un gañido,
+    // la cola se mete entre las patas, y vuelve a pararse
+    p.av = K([-2.4, -3.6, -2, -0.6], f) * S; p.z = K([-0.9, -1.9, -1.1, -0.3], f) * S; p.pitch = K([-8, -12, -5, -1], f);
+    p.roll = K([4, 6, 2, 0.5], f); p.flex = K([3, 6, 2, 0], f); p.yaw = K([-3, -5, -2, 0], f);
+    p.cab = K([-16, -26, -8, 3], f); p.cabYaw = K([12, 16, 7, 1], f); p.mand = K([34, 26, 14, 8], f);
+    p.cola = K([0.3, 0.2, 0.1, 0], f); p.colaAlza = K([-0.4, -0.6, -0.3, 0], f);
   } else if (acc === 'atacar') {
     if (q.ataque === 'mordida') {
       // se agacha, salta, muerde en lo alto del salto, cae y vuelve
@@ -195,6 +221,17 @@ function poseCuad(q: Cuad, acc: Acc, f: number) {
 
 /** Trote al caminar: cada pata retrocede PASO_CUAD × S × pata apoyada durante APOYO_CUAD del ciclo (pares en diagonal). */
 const PASO_CUAD = 14, APOYO_CUAD = 0.56;
+/**
+ * Galope rotatorio al correr (como el de un lobo o un perro): pisan la trasera izquierda, la trasera derecha, la
+ * delantera derecha y la delantera izquierda, y después las cuatro quedan en el aire dos cuadros (suspensión recogida:
+ * las traseras adelante bajo la panza, las delanteras plegadas atrás; cuadros 6 y 7). Cada pata apoya `apoyo` del ciclo y en ese tramo
+ * retrocede parejo `zancada × apoyo`, así el pie no patina. La zancada del galope es la de caminar por `ritmo`: 1,46,
+ * la misma proporción entre correr y caminar de los humanoides, que es lo que el juego usa si no lee el dato propio
+ * (datos/zancada_monstruos.json, `correr`).
+ */
+const GALOPE = { apoyo: 0.33, ritmo: 1.46, ti: 0, td: 0.08, dd: 0.32, di: 0.4 };
+/** Si se pide (pruebas), cada pata anota dónde pisa: el pie que manda la marcha y la mano o pezuña que alcanzó la IK. */
+let anotarPatas: { pie: V3; pz: V3; del: boolean; s: number; raiz: V3; rod: V3; tob: V3; adel: V3 }[] | null = null;
 function cuadrupedo(q: Cuad, d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const S = q.S, g = q.gordo, pt = q.pata;
   const W = mundo(d);
@@ -202,6 +239,10 @@ function cuadrupedo(q: Cuad, d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const zc = (8 + 13 * pt) * S;
   const cuerpo = cmp(W, T([P.av, P.lado, zc + P.z], Rz(P.yaw), Ry(P.pitch), Rx(P.roll)));
   const B = (x: number, y: number, z: number): V3 => [x * S, y * S, z * S];
+  // la grupa gira sobre el medio del lomo: con flex > 0 la columna se arquea (la cola baja), con flex < 0 se estira
+  const piv = B(-3, 0, 1);
+  const grupa = P.flex ? cmp(cmp(cuerpo, T(piv, Ry(-P.flex))), T(esc(piv, -1))) : cuerpo;
+  const lomo = (x: number) => (x < -3 ? grupa : cuerpo);
   const comps: Comp[] = [];
   const piel = { mat: q.piel }, vientre = { mat: q.vientre ?? q.piel };
   // ---- tronco: pecho hondo, costillar, cintura recogida, grupa, escápulas, cruz y muslos
@@ -209,12 +250,12 @@ function cuadrupedo(q: Cuad, d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   comps.push(bT(cuerpo, B(9, 0, jab ? 0 : -1), B(10.5, 7.6 * g, (jab ? 10.5 : 9.6) * g), vientre));
   comps.push(bT(cuerpo, B(0, 0, 0.6), B(12.5, 8 * g, 8.2 * g), piel));
   comps.push(bT(cuerpo, B(-8, 0, 1.6), B(7.5, 5.8 * g, (jab ? 7.5 : 6) * g), piel));
-  comps.push(bT(cuerpo, B(-14, 0, 1.4), B(7.6, 7 * g, 7 * g), piel));
+  comps.push(bT(grupa, B(-14, 0, 1.4), B(7.6, 7 * g, 7 * g), piel));
   comps.push(bT(cuerpo, B(10, 0, 6.5), B(8, 4.2 * g, jab ? 6 : 3.4), piel));
   for (const s of [1, -1]) {
     comps.push(bG(cuerpo, B(12, s * 4.8 * g, 3.2), B(6.6, 2.7 * g, 4.6), [Ry(-28)], piel));
     comps.push(bG(cuerpo, B(11.6, s * 5.6 * g, -5), B(4.6, 3 * g, 6.6), [Ry(10)], piel));
-    comps.push(bG(cuerpo, B(-14.5, s * 5.2 * g, -3.2), B(7.6, 3.6 * g, 9), [Ry(18)], piel));
+    comps.push(bG(grupa, B(-14.5, s * 5.2 * g, -3.2), B(7.6, 3.6 * g, 9), [Ry(18)], piel));
   }
   // ---- cuello y cabeza
   const nuca = B(jab ? 18 : 20.5, 0, jab ? 5 : 10);
@@ -241,10 +282,11 @@ function cuadrupedo(q: Cuad, d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const piezas: Pieza[] = [];
   const pasoL = PASO_CUAD * S * pt, alzaL = 6 * S;
   for (const del of [true, false]) for (const s of [1, -1]) {
-    const raiz = ap(cuerpo, del ? B(12.5, s * 5.6 * g, -3) : B(-13.6, s * 5 * g, -1.5));
+    const raiz = del ? ap(cuerpo, B(12.5, s * 5.6 * g, -3)) : ap(grupa, B(-13.6, s * 5 * g, -1.5));
     const l1 = (del ? 10 : 10.8) * S * pt, l2 = (del ? 10.5 : 11.6) * S * pt, l3 = (del ? 3.6 : 7) * S * pt;
-    const fase = acc === 'caminar' ? f / 8 + (del ? 0 : 0.5) + (s > 0 ? 0.5 : 0) : 0;
-    const st = acc === 'caminar' ? paso(fase, pasoL, alzaL, APOYO_CUAD) : { x: 0, z: 0, vuelo: 0 };
+    let st = { x: 0, z: 0, vuelo: 0 };
+    if (acc === 'caminar') st = paso(f / 8 + (del ? 0 : 0.5) + (s > 0 ? 0.5 : 0), pasoL, alzaL, APOYO_CUAD);
+    else if (acc === 'correr') st = paso(f / 8 - (del ? (s > 0 ? GALOPE.dd : GALOPE.di) : (s > 0 ? GALOPE.td : GALOPE.ti)), pasoL * (GALOPE.ritmo * GALOPE.apoyo / APOYO_CUAD), (del ? 8 : 7) * S, GALOPE.apoyo, 0.5);
     let pie: V3 = [(del ? 14.5 : -14.5) * S * (0.6 + 0.4 * pt) + st.x + (del ? P.adel[0] : P.atrasX), s * 5.8 * g * S, st.z + (del ? P.alza[0] : 0)];
     let vuelo = st.vuelo + (del && P.alza[0] > 0 ? 0.8 : 0);
     if (P.flojo > 0) {
@@ -260,6 +302,7 @@ function cuadrupedo(q: Cuad, d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     tob[2] = Math.max(tob[2], 1.5 * S);
     const [rod, tob2] = ik(raiz, tob, l1, l2, del ? atrasW : adelW);
     const pz = add(tob2, sub(pieW, tob), Math.min(1.2, l3 / Math.max(0.1, len(sub(pieW, tob)))));
+    anotarPatas?.push({ pie: pieW, pz, del, s, raiz, rod, tob: tob2, adel: adelW });
     const rM = q.cabeza === 'jabali' ? 1.15 : 1;
     comps.push(hueso(raiz, rod, (del ? 3.5 : 4) * S * rM * g, (del ? 2.5 : 2.7) * S * rM, piel));
     const baja: Comp[] = [
@@ -272,18 +315,18 @@ function cuadrupedo(q: Cuad, d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     if (!jab && q.cabeza !== 'lobo') for (const k of [-1, 0, 1]) piezas.push(pua(add(add(pz, adelW, 2.4 * S), cruz(adelW, [0, 0, 1]), k * 0.8 * S), add(add(add(pz, adelW, 3.6 * S), cruz(adelW, [0, 0, 1]), k * 0.9 * S), [0, 0, -1 * S]), 0.45 * S, 'be_cuerno'));
   }
   // ---- cola
-  const cb = ap(cuerpo, B(-20, 0, 3));
+  const cb = ap(grupa, B(-20, 0, 3));
   const cq: Comp[] = [];
   let prev = cb;
   const nC = 4;
   for (let i = 1; i <= nC; i++) {
     const t = i / nC, onda = Math.sin(f / CUADROS[acc] * TAU - t * 2.2) * q.cola * 3 * t;
-    const pp = ap(cuerpo, B(-20 - t * 13 * q.cola, onda * (acc === 'morir' ? 0.3 : 1), 3 + (P.colaAlza * 9 - 6) * t - (acc === 'morir' ? 3 * t : 0) + (q.cabeza === 'lobo' ? -3 * t : 0)));
+    const pp = ap(grupa, B(-20 - t * 13 * q.cola, onda * (acc === 'morir' ? 0.3 : 1), 3 + (P.colaAlza * 9 - 6) * t - (acc === 'morir' ? 3 * t : 0) + (q.cabeza === 'lobo' ? -3 * t : 0)));
     cq.push(hueso(prev, pp, (q.colaGruesa ?? 1.6) * S * (1.1 - t * 0.6), (q.colaGruesa ?? 1.6) * S * (1.1 - t * 0.75), piel));
     prev = pp;
   }
   piezas.push(masa(cq, { mat: q.piel, suave: 1.2 * S }));
-  const ctx: CtxCuad = { q, W, cuerpo, cab, mand, S, g, acc, f, muerte: P.muerte, abre: P.mand, comps };
+  const ctx: CtxCuad = { q, W, cuerpo, grupa, lomo, cab, mand, S, g, acc, f, muerte: P.muerte, abre: P.mand, comps };
   const extra = q.deco(ctx);
   piezas.unshift(masa(comps, { mat: q.piel, suave: 2.2 * S }));
   return { piezas: [...piezas, ...extra], resplandor: ctx.resplandor };
@@ -321,10 +364,10 @@ const PERRO: Cuad = {
     }
     // cresta de púas por el lomo
     const lomo: [number, number, number][] = [[17, 9.5, 2.6], [12.5, 10.4, 3.4], [7, 9.5, 3.8], [1.5, 9.4, 3.4], [-4, 8.8, 3], [-9.5, 8.6, 2.8], [-15, 9.3, 2.6], [-20, 8, 2]];
-    for (const [x, z, h] of lomo) ps.push(pua(ap(cuerpo, [x * S, 0, (z - 1.5) * S]), ap(cuerpo, [(x - 2.6) * S, 0, (z + h) * S]), 1.25 * S, 'be_cuerno'));
+    for (const [x, z, h] of lomo) ps.push(pua(ap(c.lomo(x), [x * S, 0, (z - 1.5) * S]), ap(c.lomo(x), [(x - 2.6) * S, 0, (z + h) * S]), 1.25 * S, 'be_cuerno'));
     // grietas de lava en el costillar, la grupa, las escápulas y el cuello
     ps.push(...grietas(cuerpo, [0, 0, 0.6 * S], [12.5 * S, 8 * S, 8.2 * S], 6, 3, lava, { largo: 5 }));
-    ps.push(...grietas(cuerpo, [-14 * S, 0, 1.4 * S], [7.6 * S, 7 * S, 7 * S], 4, 5, lava));
+    ps.push(...grietas(c.grupa, [-14 * S, 0, 1.4 * S], [7.6 * S, 7 * S, 7 * S], 4, 5, lava));
     ps.push(...grietas(cuerpo, [9 * S, 0, -1 * S], [10.5 * S, 7.6 * S, 9.6 * S], 4, 9, lava, { arriba: -0.4 }));
     if (c.muerte < 0.85 && c.abre > 15) c.resplandor = { c: ap(c.mand, [7 * S, 0, 1.5 * S]), r: 9 * S, color: '#ff6a20' };
     return ps;
@@ -346,7 +389,7 @@ const LOBO: Cuad = {
       const base: V3 = [x, Math.sin(a) * 6.5 * S, (4 + Math.cos(a) * 5.5) * S], punta = add(base, [-4.5 * S, Math.sin(a) * 2.6 * S, (Math.cos(a) * 2.4 - 0.6) * S]);
       pel.push(hT(cuerpo, base, punta, 2.2 * S, 0.35 * S, { mat: 'be_lobo', k: 1 }));
     }
-    for (let i = 0; i < 6; i++) { const x = (6 - i * 4.5) * S; pel.push(hT(cuerpo, [x, 0, 7.4 * S], [x - 4 * S, 0, 9.4 * S], 1.8 * S, 0.3 * S, { mat: 'be_lobo', k: 0.8 })); }
+    for (let i = 0; i < 6; i++) { const x = (6 - i * 4.5) * S; pel.push(hT(c.lomo(x / S), [x, 0, 7.4 * S], [x - 4 * S, 0, 9.4 * S], 1.8 * S, 0.3 * S, { mat: 'be_lobo', k: 0.8 })); }
     ps.push(masa(pel, { mat: 'be_lobo', suave: 1.4 * S }));
     return ps;
   },
@@ -354,7 +397,7 @@ const LOBO: Cuad = {
 const JABALI: Cuad = {
   S: 1.08, pata: 0.92, gordo: 1.18, piel: 'be_jabali', hocico: 'be_hocico', ojos: 'cu_ojo_brasa', cabeza: 'jabali', cola: 0.45, colaGruesa: 1.1, ataque: 'embestida',
   deco: (c) => {
-    const { cuerpo, cab, mand, S } = c;
+    const { cab, mand, S } = c;
     const ps: Pieza[] = [];
     ps.push(masa([hT(mand, [0, 0, 0], [11 * S, 0, -0.4 * S], 3 * S, 2 * S, { mat: 'be_jabali' })], { mat: 'be_jabali', suave: 1 }));
     // colmillos que salen de la mandíbula y se curvan hacia arriba y atrás
@@ -368,11 +411,12 @@ const JABALI: Cuad = {
     const lomo: [number, number, number][] = [[14, 12, 6], [9, 13.2, 9], [3.5, 12.4, 8], [-2, 10.6, 6.5], [-7.5, 9.6, 5], [-13, 9.6, 4], [-18, 8.6, 3]];
     lomo.forEach(([x, z, h], i) => {
       const inc = (hr(i + 40) - 0.5) * 2.4;
-      ps.push(pua(ap(cuerpo, [x * S, 0, (z - 2.5) * S]), ap(cuerpo, [(x - h * 0.45) * S, inc * S, (z + h) * S]), 1.6 * S, 'be_hueso_viejo'));
-      for (const s of [1, -1]) if (i < 5) ps.push(pua(ap(cuerpo, [(x - 1) * S, s * 3.2 * S, (z - 3) * S]), ap(cuerpo, [(x - 1 - h * 0.3) * S, s * 5.8 * S, (z + h * 0.45) * S]), 1 * S, 'be_hueso_viejo', -0.05));
+      const L = c.lomo(x);
+      ps.push(pua(ap(L, [x * S, 0, (z - 2.5) * S]), ap(L, [(x - h * 0.45) * S, inc * S, (z + h) * S]), 1.6 * S, 'be_hueso_viejo'));
+      for (const s of [1, -1]) if (i < 5) ps.push(pua(ap(L, [(x - 1) * S, s * 3.2 * S, (z - 3) * S]), ap(L, [(x - 1 - h * 0.3) * S, s * 5.8 * S, (z + h * 0.45) * S]), 1 * S, 'be_hueso_viejo', -0.05));
     });
     const crin: Comp[] = [];
-    for (let i = 0; i < 7; i++) { const x = (16 - i * 4) * S; crin.push(hT(cuerpo, [x, 0, (10.5 - i * 0.4) * S], [x - 3.5 * S, 0, (13 - i * 0.6) * S], 1.6 * S, 0.3 * S, { mat: 'be_jabali', tono: -0.06, k: 0.8 })); }
+    for (let i = 0; i < 7; i++) { const x = (16 - i * 4) * S; crin.push(hT(c.lomo(x / S), [x, 0, (10.5 - i * 0.4) * S], [x - 3.5 * S, 0, (13 - i * 0.6) * S], 1.6 * S, 0.3 * S, { mat: 'be_jabali', tono: -0.06, k: 0.8 })); }
     crin.push(hT(cab, [-1 * S, 0, 5 * S], [-5 * S, 0, 8 * S], 1.6 * S, 0.4 * S, { mat: 'be_jabali', tono: -0.06 }));
     ps.push(masa(crin, { mat: 'be_jabali', suave: 1.2 }));
     return ps;
@@ -437,6 +481,11 @@ function arana(q: Arana, d: Dir, acc: Acc, f: number, crias = true): Pieza[] | E
     // se alza con las patas delanteras arriba, cae hacia adelante y clava los quelíceros
     av = K([0, -2, -4, -4, 7, 9, 4, 1], f); z = K([0, 2, 5, 6, 0, -2, -1, 0], f); pitch = K([0, -10, -22, -26, 10, 15, 6, 1], f);
     alzaDel = K([0, 10, 22, 26, 5, 0, 0, 0], f); adelDel = K([0, 2, 4, 6, 12, 10, 4, 0], f); quel = K([4, 14, 30, 34, 26, -6, 0, 4], f); abd = K([0, -4, -8, -8, 6, 8, 3, 0], f);
+  } else if (acc === 'herido') {
+    // el golpe la echa atrás: el cuerpo salta, las patas de adelante se recogen arriba, abre los quelíceros y el
+    // abdomen da un tirón; se vuelve a agazapar
+    av = K([-3, -4.5, -2, -0.5], f); z = K([2.5, 1, -1.5, -0.3], f); pitch = K([-14, -8, 3, 1], f); roll = K([5, -4, 2, 0], f);
+    alzaDel = K([12, 8, 3, 0], f); quel = K([30, 20, 10, 5], f); abd = K([-8, 5, 3, 0], f); rizo = K([0.15, 0.25, 0.1, 0], f);
   } else if (acc === 'morir') {
     z = K([0, 3, 1, -4, -9, -12, -13, -13], f); pitch = K([0, -12, -6, 2, 5, 4, 3, 3], f); roll = K([0, 4, -2, -6, -9, -10, -10, -10], f);
     rizo = K([0, 0.15, 0.35, 0.6, 0.82, 0.95, 1, 1], f); quel = K([4, 30, 20, 10, 6, 4, 4, 4], f); abd = K([0, -6, -4, 2, 5, 6, 6, 6], f); muerte = K([0, 0, 0.1, 0.3, 0.6, 0.85, 1, 1], f);
@@ -496,7 +545,7 @@ function arana(q: Arana, d: Dir, acc: Acc, f: number, crias = true): Pieza[] | E
     const grupo = (i % 2 === 0) === (s < 0) ? 0 : 0.5;
     const del = i === 0;
     patas.push({
-      cadera: [(21 - i * 4.6) * S, s * (7.5 + (i === 0 || i === 3 ? 0 : 1.6)) * S, -1 * S], reposo: [14 * S + Math.cos(a) * R * 0.95 + av * S * (del ? 0 : 0.4), s * Math.sin(a) * R, 0],
+      cadera: [(21 - i * 4.6) * S, s * (7.5 + (i === 0 || i === 3 ? 0 : 1.6)) * S, -1 * S], reposo: [14 * S + Math.cos(a) * R * 0.95 + (acc === 'herido' ? 0 : av) * S * (del ? 0 : 0.4), s * Math.sin(a) * R, 0],
       l1: 27 * S * largos[i], l2: 38 * S * largos[i], fase: grupo + i * 0.04, r: 2.3 * S,
       alzaExtra: del ? [adelDel * S, 0, alzaDel * S] : i === 1 ? [adelDel * 0.4 * S, 0, alzaDel * 0.3 * S] : undefined,
     });
@@ -550,6 +599,10 @@ function escorpion(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     // las pinzas atrapan (0-3) y la cola descarga el aguijón por encima del cuerpo (3-5)
     av = K([0, 1, 2, 2, 4, 5, 2, 0], f); pitch = K([0, 2, 4, 2, 6, 8, 3, 0], f); pinza = K([0.3, 0.9, 1, 0.05, 0, 0.1, 0.3, 0.3], f);
     brazo = K([0, 14, 22, 8, 4, 2, 0, 0], f); cola = K([0, -10, -16, -20, 10, 14, 6, 0], f); colaAlza = K([0, -8, -14, -18, 30, 42, 16, 0], f);
+  } else if (acc === 'herido') {
+    // retrocede de un tirón con las pinzas arriba para cubrirse, la cola da un latigazo y se vuelve a armar
+    av = K([-2.5, -3.5, -1.8, -0.5], f); z = K([1.5, 0.5, -0.8, -0.2], f); pitch = K([-8, -5, 2, 0.5], f); roll = K([4, -3, 1, 0], f);
+    pinza = K([1, 0.9, 0.5, 0.35], f); brazo = K([18, 24, 10, 3], f); cola = K([10, -8, 4, 0], f); colaAlza = K([8, 12, 4, 1], f); rizo = K([0.1, 0.18, 0.06, 0], f);
   } else if (acc === 'morir') {
     z = K([0, 2, 0, -3, -6, -7.5, -8, -8], f); roll = K([0, 6, -4, -12, -20, -24, -25, -25], f); pitch = K([0, -6, -2, 3, 4, 4, 4, 4], f); rizo = K([0, 0.2, 0.4, 0.65, 0.85, 1, 1, 1], f);
     pinza = K([0.3, 1, 0.8, 0.5, 0.4, 0.4, 0.4, 0.4], f); brazo = K([0, 20, 10, -5, -15, -20, -20, -20], f); cola = K([0, -10, 6, 0, 0, 0, 0, 0], f); colaAlza = K([0, 8, 4, 0, 0, 0, 0, 0], f); muerte = K([0, 0, 0.1, 0.3, 0.6, 0.85, 1, 1], f);
@@ -617,7 +670,7 @@ function escorpion(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const pAng = [62, 88, 112, 136];
   for (const s of [1, -1]) for (let i = 0; i < 4; i++) {
     const a = rad(pAng[i]), R = 25 * S;
-    patas.push({ cadera: [(9 - i * 4.6) * S, s * 7 * S, -1.5 * S], reposo: [(4 - i * 2) * S + Math.cos(a) * R + av * S * 0.3, s * Math.sin(a) * R, 0], l1: 11 * S, l2: 15 * S, fase: ((i % 2 === 0) === (s < 0) ? 0 : 0.5) + i * 0.04, r: 1.6 * S });
+    patas.push({ cadera: [(9 - i * 4.6) * S, s * 7 * S, -1.5 * S], reposo: [(4 - i * 2) * S + Math.cos(a) * R + (acc === 'herido' ? 0 : av) * S * 0.3, s * Math.sin(a) * R, 0], l1: 11 * S, l2: 15 * S, fase: ((i % 2 === 0) === (s < 0) ? 0 : 0.5) + i * 0.04, r: 1.6 * S });
   }
   ps.push(...patasArac(W, cuerpo, patas, { paso: PASO_ESCORPION * S, alza: 5 * S, mat: 'be_ambar', junta: 'be_quitina_parda', caminar: acc === 'caminar', ph, rizo }));
   return acc === 'atacar' && f >= 3 && f <= 5 ? { piezas: ps, resplandor: { c: punta, r: 10 * S, color: '#90ff50' } } : ps;
@@ -639,6 +692,9 @@ function gusano(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   if (acc === 'atacar') {
     // se echa atrás (carga), se lanza hacia adelante y abajo con la boca abierta, y vuelve
     inclina = K([0, -10, -20, -24, 18, 30, 14, 4], f); curva = K([78, 70, 58, 52, 120, 138, 104, 84], f); boca = K([0.15, 0.4, 0.75, 0.9, 1, 0.35, 0.2, 0.15], f); lado = 4;
+  } else if (acc === 'herido') {
+    // se echa atrás con la boca abierta en un rugido, la columna se le encoge y vuelve
+    inclina = K([-14, -20, -8, -2], f); curva = K([66, 58, 72, 77], f); boca = K([0.8, 1, 0.5, 0.25], f); lado = K([14, 18, 12, 9], f);
   } else if (acc === 'morir') {
     inclina = K([0, -12, 10, -6, 0, 0, 0, 0], f); curva = K([78, 50, 100, 70, 60, 50, 40, 40], f); boca = K([0.15, 1, 0.7, 0.9, 0.6, 0.4, 0.3, 0.3], f); lado = K([9, 22, 26, 14, 8, 4, 2, 2], f);
     base = K([-40, -40, -45, -70, -115, -165, -215, -250], f); polvo = K([0, 0, 0.3, 0.6, 0.8, 0.9, 0.7, 0.4], f); muerte = K([0, 0, 0.2, 0.5, 0.8, 1, 1, 1], f);
@@ -761,12 +817,18 @@ function golem(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     }
     py = Math.sin(ph * TAU) * 4.5; tr = -Math.sin(ph * TAU) * 4; ty = Math.sin(ph * TAU) * 7; pz = -Math.abs(Math.sin(ph * TAU + 1.09)) * 3; tp = 4; // (bípedo: dos rebotes por ciclo, al pisar cada pie)
   } else if (acc === 'atacar') {
-    // sube los dos puños sobre la cabeza y los descarga contra el suelo
-    const mx = [6, 8, -2, -6, 36, 40, 24, 8], mz = [30, 72, 122, 128, 14, 9, 20, 28], my = [31, 26, 18, 16, 13, 14, 24, 30];
+    // anticipación larga y legible: se agacha y junta los puños (0), los sube (1), los tiene sobre la cabeza con el
+    // cuerpo echado atrás (2 y 3, el 3 un poco más tenso), los descarga contra el suelo en el cuadro del impacto (4,
+    // el que el juego pone en el golpe), se hunde con el rebote (5) y se levanta despacio, todavía doblado (6 y 7)
+    const mx = [12, 4, -4, -7, 36, 40, 32, 18], mz = [22, 84, 124, 130, 12, 8, 13, 22], my = [24, 22, 17, 15, 13, 14, 18, 26];
     for (const s of [1, -1]) mano[s > 0 ? 0 : 1] = [K(mx, f), s * K(my, f), K(mz, f)];
-    tp = K([2, -6, -16, -18, 26, 32, 14, 4], f); pz = K([0, 1, 2, 2, -6, -8, -4, -1], f); px = K([0, -1, -3, -3, 3, 4, 2, 0], f); cab = K([0, -8, -14, -14, 10, 14, 6, 0], f);
-    pie[0] = [K([2, 2, 2, 2, 8, 8, 5, 2], f), 14, 0];
-    golpe = K([0, 0, 0, 0, 0.6, 1, 0.6, 0.2], f);
+    tp = K([10, -6, -16, -19, 28, 33, 26, 14], f); pz = K([-3, 1, 2.5, 3, -6, -9, -7, -3], f); px = K([1, -1, -3, -3.5, 3, 4, 3, 1], f); cab = K([6, -8, -14, -16, 10, 14, 10, 4], f);
+    pie[0] = [K([4, 4, 4, 4, 9, 9, 8, 5], f), 14, 0];
+    golpe = K([0, 0, 0, 0, 1, 0.8, 0.45, 0.15], f);
+  } else if (acc === 'herido') {
+    // la mole se echa atrás: el pecho se abre, la cabeza va atrás, los brazos se despegan y vuelve a cerrarse
+    tp = K([-10, -16, -6, 1], f); px = K([-3.5, -5, -2.5, -0.5], f); pz = K([-1, -2.5, -1.2, 0], f); cab = K([-16, -26, -8, 0], f); tr = K([4, 6, 2, 0], f); ty = K([-6, -9, -3, -1], f);
+    for (const [i, s] of [[0, 1], [1, -1]] as [number, number][]) mano[i] = [K([2, 0, 4, 6], f), s * K([34, 37, 33, 31], f), K([36, 40, 33, 30], f)];
   } else if (acc === 'morir') {
     // se tambalea, cae de rodillas y se desmorona: cada roca cae por su cuenta
     tp = K([2, -12, 10, 18, 18, 18, 18, 18], f); pz = K([0, 0, -12, -16, -16, -16, -16, -16], f); cab = K([0, -20, 15, 20, 20, 20, 20, 20], f);
@@ -932,6 +994,11 @@ function gargola(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     abre = K([0.3, 0.8, 1, 0.9, 0.7, 0.5, 0.35, 0.3], f); bate = K([20, 50, 62, -10, -30, -10, 10, 20], f); lag = K([0, -10, -16, 14, 20, 8, 0, 0], f); vuela = K([0, 0.4, 0.8, 1, 0.7, 0.3, 0, 0], f);
     cab = K([-20, -30, -34, -10, 0, -6, -14, -20], f); mand = K([4, 10, 20, 28, 30, 10, 6, 4], f);
     manoD = [K([17, 10, 6, 34, 40, 34, 24, 17], f), 12, K([0, 18, 26, 16, 6, 2, 0, 0], f)]; manoI = [K([17, 12, 8, 30, 38, 32, 22, 17], f), -12, K([0, 16, 24, 18, 8, 2, 0, 0], f)];
+  } else if (acc === 'herido') {
+    // el golpe la endereza hacia atrás sobre las patas, que no se mueven del piso: abre las alas de golpe, la cabeza va
+    // arriba con la boca abierta y vuelve a agazaparse
+    av = K([-3, -4.5, -2, -0.5], f); z = K([1, 1.5, 0.5, 0.2], f); pitch = K([16, 10, 24, 29], f); cab = K([-40, -46, -30, -22], f);
+    abre = K([0.9, 0.75, 0.5, 0.35], f); bate = K([55, 45, 30, 22], f); mand = K([26, 20, 10, 5], f);
   } else if (acc === 'morir') {
     z = K([0, 4, 2, -2, -5, -7, -8, -8], f); pitch = K([30, 0, 20, 45, 60, 70, 74, 74], f); roll = K([0, 0, -10, -30, -55, -75, -85, -85], f); cab = K([-20, -45, -10, 10, 20, 25, 25, 25], f);
     abre = K([0.3, 0.9, 0.7, 0.5, 0.35, 0.25, 0.2, 0.2], f); bate = K([20, 50, 20, 0, -10, -20, -25, -25], f); mand = K([4, 30, 20, 12, 10, 10, 10, 10], f); caida = K([0, 0, 0.2, 0.5, 0.8, 1, 1, 1], f); muerte = K([0, 0, 0.2, 0.4, 0.7, 1, 1, 1], f);
@@ -965,7 +1032,8 @@ function gargola(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   const piernas: V3[][] = [];
   for (const s of [1, -1]) {
     const cad = ap(pel, [0, s * 5.5, 0]);
-    let pie: V3 = ap(W, [4 + av, s * 7.5, 0]);
+    // al recibir el golpe el cuerpo recula pero los pies quedan donde estaban
+    let pie: V3 = ap(W, [4 + (acc === 'herido' ? 0 : av), s * 7.5, 0]);
     if (vuela > 0) pie = mez(pie, ap(pel, [-4, s * 7, -11]), vuela);
     if (caida > 0) pie = mez(pie, ap(pel, [6, s * 8, -12]), caida);
     pie[2] = Math.max(pie[2], 1.2);
@@ -1012,7 +1080,17 @@ function murcielago(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   let z = 28, av = 0, pitch = 10, roll = 0, abre = 1, bate = 0, lag = 0, mand = 6, muerte = 0;
   if (acc === 'quieto') { bate = Math.cos(ph * TAU) * 50 + 5; lag = -Math.sin(ph * TAU) * 22; z = 30 + Math.sin(ph * TAU) * 2.5; }
   else if (acc === 'caminar') { bate = Math.cos(ph * TAU * 2) * 55 + 5; lag = -Math.sin(ph * TAU * 2) * 24; z = 30 + Math.sin(ph * TAU * 2) * 3; pitch = 22; }
-  else if (acc === 'atacar') {
+  else if (acc === 'correr') {
+    // se lanza: tres aletazos por ciclo en vez de dos, más hondos, el cuerpo tendido adelante y bajo, las alas un poco
+    // plegadas al subir; el cuerpo sube con cada golpe de ala (va un cuarto de aletazo detrás del ala)
+    const w = ph * TAU * 3;
+    bate = Math.cos(w) * 64 + 2; lag = -Math.sin(w) * 30; z = 26 + Math.sin(w - 1.2) * 3.5; pitch = 34; av = 2; abre = 0.86 + 0.14 * Math.cos(w); mand = 12;
+  } else if (acc === 'herido') {
+    // el golpe lo tira para atrás y para arriba: se le abren las alas de golpe, echa la cabeza atrás chillando, da
+    // media vuelta en el aire y se recompone con un aletazo
+    z = K([32, 34, 31.5, 30], f); av = K([-3, -5.5, -3.5, -1], f); pitch = K([-24, -34, -8, 6], f); roll = K([16, 26, 10, 2], f);
+    bate = K([78, 52, -24, 40], f); lag = K([-14, 6, 22, 4], f); abre = K([1, 0.8, 0.9, 1], f); mand = K([34, 28, 14, 7], f);
+  } else if (acc === 'atacar') {
     // recoge las alas y se tira en picada a morder, después remonta
     z = K([30, 33, 30, 20, 14, 18, 24, 29], f); av = K([0, -3, -1, 8, 15, 12, 6, 1], f); pitch = K([10, -10, 20, 45, 30, 0, -5, 5], f);
     abre = K([1, 1, 0.65, 0.5, 0.7, 1, 1, 1], f); bate = K([30, 60, 40, -20, -40, 40, 60, 10], f); lag = K([0, -10, 15, 25, 10, -20, -10, 0], f); mand = K([6, 10, 25, 40, 5, 4, 6, 6], f);
@@ -1072,6 +1150,11 @@ function demonio(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     tp = K([8, 18, 22, -10, -16, -14, -6, 4], f); pz = K([0, -6, -9, 2, 3, 3, 1, 0], f); cab = K([0, 14, 18, -24, -32, -30, -18, -4], f); mand = K([6, 4, 4, 40, 46, 44, 30, 10], f);
     abre = K([0.45, 0.3, 0.25, 1, 1, 1, 0.85, 0.55], f); bate = K([18, 0, -6, 52, 58, 54, 40, 22], f); lag = K([0, 0, 0, -20, -8, 0, 4, 0], f);
     for (const [i, s] of [[0, 1], [1, -1]] as [number, number][]) mano[i] = [K([18, 24, 26, 10, 4, 4, 10, 16], f), s * K([34, 22, 20, 64, 72, 70, 56, 38], f), K([62, 70, 72, 118, 126, 124, 104, 70], f)];
+  } else if (acc === 'herido') {
+    // se echa atrás con el pecho abierto: la cabeza atrás rugiendo, los brazos se abren, las alas se despliegan, y vuelve
+    tp = K([-6, -12, 0, 6], f); px = K([-5, -8, -4, -1], f); pz = K([-2, -4, -2, -0.5], f); ty = K([-8, -12, -5, -1], f);
+    cab = K([-24, -32, -12, -2], f); mand = K([30, 38, 20, 8], f); abre = K([0.85, 1, 0.7, 0.5], f); bate = K([40, 52, 30, 20], f);
+    for (const [i, s] of [[0, 1], [1, -1]] as [number, number][]) mano[i] = [K([8, 4, 12, 17], f), s * K([40, 44, 38, 34], f), K([72, 80, 68, 62], f)];
   } else if (acc === 'morir') {
     // trastabilla atrás, cae de rodillas y se desploma hacia adelante con las alas sobre el cuerpo
     tp = K([8, -14, 10, 30, 55, 74, 82, 82], f); pz = K([0, 2, -14, -30, -42, -50, -52, -52], f); px = K([0, -6, -6, -2, 6, 12, 14, 14], f); cab = K([0, -30, 0, 15, 18, 10, 6, 6], f); mand = K([6, 40, 30, 20, 16, 14, 14, 14], f);
@@ -1195,6 +1278,10 @@ function dragon(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     // aliento de ectoplasma: alza la cabeza, toma aire y escupe un chorro que barre el suelo
     cuello = K([0, -20, -28, 10, 16, 16, 12, 2], f); cabP = K([0, -22, -30, 14, 20, 22, 16, 2], f); mand = K([8, 20, 30, 58, 62, 62, 50, 12], f); pitch = K([-3, -12, -16, 0, 2, 2, 0, -3], f);
     abre = K([0.55, 0.95, 1, 0.9, 0.8, 0.8, 0.7, 0.55], f); bate = K([22, 50, 60, 10, 20, 15, 18, 22], f); aliento = K([0, 0, 0.1, 0.55, 1, 1, 0.6, 0], f); lag = K([0, -10, -16, 20, 10, 0, 0, 0], f);
+  } else if (acc === 'herido') {
+    // el cuello se le va atrás en un bramido y el cuerpo recula sobre las patas, las alas se abren
+    av = K([-6, -9, -4, -1], f); z = K([1, 2, 0.5, 0], f); pitch = K([-8, -12, -6, -4], f); cuello = K([-20, -28, -10, -2], f); cabP = K([-16, -24, -8, -1], f);
+    mand = K([40, 48, 24, 10], f); abre = K([0.8, 0.95, 0.7, 0.58], f); bate = K([40, 50, 30, 24], f);
   } else if (acc === 'morir') {
     // las patas ceden, el cuerpo cae de costado, el cuello y la cola se desploman y los ojos se apagan
     z = K([0, 2, -8, -18, -26, -30, -31, -31], f); roll = K([0, 0, -8, -25, -48, -62, -66, -66], f); pitch = K([-3, -10, 2, 6, 6, 4, 3, 3], f); cuello = K([0, -18, 10, 30, 42, 48, 50, 50], f); cabP = K([0, -15, 10, 20, 26, 28, 28, 28], f);
@@ -1236,7 +1323,7 @@ function dragon(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
     const raiz = ap(cuerpo, del ? [22, s * 16, -6] : [-32, s * 14, -4]);
     const fase = ph * (acc === 'caminar' ? 1 : 0) + (del ? (s < 0 ? fases.dI : fases.dD) : (s < 0 ? fases.tI : fases.tD));
     const st = acc === 'caminar' ? paso(fase, 40, 13, 0.62) : { x: 0, z: 0, vuelo: 0 };
-    let pie: V3 = ap(W, [(del ? 30 : -30) + st.x + av * (del ? 0.6 : 0.2), s * 24, st.z]);
+    let pie: V3 = ap(W, [(del ? 30 : -30) + st.x + (acc === 'herido' ? 0 : av) * (del ? 0.6 : 0.2), s * 24, st.z]);
     if (flojo > 0) pie = mez(pie, ap(cuerpo, del ? [34, s * 30, -40] : [-22, s * 30, -40]), flojo);
     pie[2] = Math.max(pie[2], 2);
     const tob = add(pie, mv(cuerpo.m, del ? [-3 + st.vuelo * 4, 0, 10] : [-9, 0, 15]));
@@ -1305,6 +1392,7 @@ function cangrejo(d: Dir, acc: Acc, f: number): Pieza[] | Escena {
   let z = 0, roll = 0, pitch = 0, lado = 0, pinza = 0.3, brazo = 0, rizo = 0, muerte = 0;
   if (acc === 'quieto') { const b = Math.sin(ph * TAU); z = b * 0.4; pinza = 0.3 + b * 0.25; brazo = b * 4; }
   else if (acc === 'caminar') { z = -Math.abs(Math.cos(ph * TAU)) * 0.6; roll = Math.sin(ph * TAU * 2) * 3; lado = Math.sin(ph * TAU) * 1.2; }
+  else if (acc === 'herido') { z = K([1.5, 0.5, -1, -0.2], f); pitch = K([-6, -9, -3, 0], f); roll = K([5, -4, 2, 0], f); pinza = K([1, 0.95, 0.6, 0.35], f); brazo = K([20, 26, 12, 3], f); rizo = K([0.1, 0.16, 0.05, 0], f); }
   else if (acc === 'atacar') { pinza = K([0.3, 0.9, 1, 1, 0, 0, 0.2, 0.3], f); brazo = K([0, 18, 30, 34, -6, -10, -2, 0], f); pitch = K([0, -4, -8, -8, 6, 8, 3, 0], f); }
   else if (acc === 'morir') { z = K([0, 2, 0, -2, -4, -5, -5.5, -5.5], f); roll = K([0, 10, 40, 90, 140, 170, 180, 180], f); rizo = K([0, 0.2, 0.4, 0.6, 0.8, 1, 1, 1], f); pinza = 0.6; brazo = K([0, 20, 10, 0, -10, -20, -20, -20], f); muerte = K([0, 0, 0.2, 0.5, 0.8, 1, 1, 1], f); }
   const zb = 13 + (acc === 'morir' ? K([0, 3, 4, 3, 1, 0, 0, 0], f) : 0);
@@ -1356,4 +1444,33 @@ export const ZANCADA_BESTIA: Record<string, number> = {
   arana_cueva: (PASO_ARANA * CUEVA.S) / APOYO_ARAC,
   cangrejo_cripta: PASO_CANGREJO / APOYO_ARAC,
   escorpion_gigante: (PASO_ESCORPION * S_ESCORPION) / APOYO_ARAC,
+  // bípedos y el dragón: el paso y la parte que apoya de su `paso()` al caminar
+  golem_de_piedra: 30 / 0.6,
+  demonio_alado: 44 / 0.58,
+  dragon_oseo: 40 / 0.62,
 };
+/**
+ * Zancada de correr (8 cuadros por ciclo, a escala 1, unidades del mundo) de las bestias que tienen 'correr': lo que
+ * retrocede la pata apoyada en el galope dividido por la parte del ciclo que apoya, que es la de caminar por
+ * `GALOPE.ritmo`. El murciélago no pisa: da tres aletazos por ciclo y su valor es el de caminar, así a la misma
+ * velocidad bate más rápido (seis aletazos por segundo a su vel de 4,8 en vez de cuatro).
+ */
+export const ZANCADA_CORRER_BESTIA: Record<string, number> = {
+  lobo_sombrio: ZANCADA_BESTIA.lobo_sombrio * GALOPE.ritmo,
+  jabali_demonio: ZANCADA_BESTIA.jabali_demonio * GALOPE.ritmo,
+  perro_infernal: ZANCADA_BESTIA.perro_infernal * GALOPE.ritmo,
+};
+
+const CUAD: Record<string, Cuad> = { lobo_sombrio: LOBO, jabali_demonio: JABALI, perro_infernal: PERRO };
+/**
+ * Para las pruebas de pisada: dónde queda cada pata de un cuadrúpedo en un cuadro, en el mundo. `pie` es el punto que
+ * manda la marcha (apoyado, en el piso) y `pz` la mano o pezuña que alcanzó la IK (si no llega, se separan); `raiz`,
+ * `rod` y `tob` son el hombro o la cadera, el codo o la rodilla y el tobillo, y `adel` el adelante del cuerpo.
+ */
+export function patasCuadrupedo(id: string, d: Dir, acc: string, f: number): { pie: V3; pz: V3; del: boolean; s: number; raiz: V3; rod: V3; tob: V3; adel: V3 }[] {
+  anotarPatas = [];
+  cuadrupedo(CUAD[id], d, acc as Acc, f);
+  const r = anotarPatas;
+  anotarPatas = null;
+  return r;
+}
