@@ -2,7 +2,7 @@ import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, 
 import { claveBaja } from './clave_baja';
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
-import { pose, CUADROS, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
+import { pose, CUADROS, cuadrosDe, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
 import { formaForjada, adornosNivel, anchoVivo, marcoIcono, tramosVivos, palaClara, type MarcoArma, type NivelForja, type OpcForja } from './forja_armas';
 
@@ -124,6 +124,16 @@ export interface Cuerpo {
   heridas?: boolean;
   garras?: boolean;
   flota?: boolean;
+  /** Cómo se mueve un monstruo (si falta, sale del cuerpo: los grandes son brutos; los encorvados con garras y los chicos, bestias). */
+  porte?: import('./figura').Porte;
+}
+/** El porte de un monstruo humanoide: el que pide el cuerpo o el que sale de su tamaño y su forma. Los héroes no tienen. */
+export function porteDe(cu: Cuerpo): import('./figura').Porte | undefined {
+  if (cu.presentacion) return undefined;
+  if (cu.porte) return cu.porte;
+  if ((cu.alto ?? 1) >= 1.5) return 'bruto';
+  if ((cu.alto ?? 1) <= 0.75 || ((cu.joroba ?? 0) >= 0.6 && cu.garras)) return 'bestia';
+  return undefined;
 }
 export type Pieza_ = Pieza;
 /**
@@ -261,8 +271,8 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   // (las astas y el gran báculo nuevos van con la pose de vara aunque sean a dos manos: la izquierda baja por el asta)
   // (las armas de asta largas a dos manos, la lanza y el gran báculo van con la pose a dos manos: arco grande y agarre doble)
-  const tipo = arma === 'ballesta' ? 'ballesta' : dos(arma) || arma === 'lanza' ? 'dos' : asta(arma) ? 'baculo' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' || arma === 'cestus' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
-  const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo));
+  const tipo = arma === 'ballesta' ? 'ballesta' : arma === 'lanza' || arma === 'alabarda' ? 'asta' : arma === 'guadana' && !cu.presentacion ? 'segur' : dos(arma) ? 'dos' : asta(arma) ? 'baculo' : esArco(arma) ? 'arco' : arma === 'baculo' || arma === 'cetro' ? 'baculo' : arma === 'garras' || arma === 'puno' || arma === 'katar' || arma === 'cestus' ? 'garras' : arma === 'nada' ? 'nada' : 'una';
+  const P = pose(acc, f, tipo, cu.presentacion, manoDe(arma, izqTipo), porteDe(cu));
   const th = rad(RUMBO[dir]);
   const F: V3 = [Math.cos(th), Math.sin(th), 0], R: V3 = [Math.sin(th), -Math.cos(th), 0];
   const W: Fn = (fw, rt, up) => [F[0] * fw + R[0] * rt, F[1] * fw + R[1] * rt, up];
@@ -283,13 +293,16 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   const extension = ([hz, rod]: [number, number]) => 14.5 * Math.cos(rad(hz)) + 14 * Math.cos(rad(hz - rod));
   let zc = P.suelo ? (Math.max(extension(P.caderaD), extension(P.caderaI)) + 2.4 + (P.vuelo ?? 0)) * S : (31 - P.bajar) * S;
   const zc0 = zc;
+  // la carrera fija la altura de la cadera (un rebote corto y poco hondo): los pies quedan donde los pone el paso y las
+  // rodillas se resuelven solas; si una pierna no llega, la cadera baja lo justo
+  if (P.suelo && P.zCadera !== undefined) zc = P.zCadera * S;
   // ---- pelvis: corrimiento (el peso pasa a una pierna), giro y ladeo; los pies quedan donde están
   const adel = plant ? P.avanza * S : 0, lat = (P.lateral ?? 0) * S, gC = rad(P.giroCadera ?? 0), lC = rad(P.ladeoCadera ?? 0);
   const pvL = (fw: number, rt: number, up: number): V3 => {
     const dz = up - zc, f2 = fw * Math.cos(gC) - rt * Math.sin(gC), r2 = fw * Math.sin(gC) + rt * Math.cos(gC);
     return [f2 + adel, r2 * Math.cos(lC) - dz * Math.sin(lC) + lat, zc + r2 * Math.sin(lC) + dz * Math.cos(lC)];
   };
-  const mueve = plant || !!(adel || lat || gC || lC || P.abre);
+  const mueve = plant || P.zCadera !== undefined || !!(adel || lat || gC || lC || P.abre);
   // ---- tobillos: donde los ponen los ángulos (o plantados en el piso)
   const piso = 2.4 * S;
   const lados: [number, [number, number], number][] = [[1, P.caderaD, 0], [-1, P.caderaI, 1]];
@@ -584,6 +597,8 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   const tipoArma = eq.arma?.tipo ?? 'nada';
   const e = esqueleto(cu, dir, acc, f, tipoArma, eq.izq?.tipo);
   const { S, A, T, cab, ejesCab, F, R } = e;
+  // el cuadro llevado a un ciclo de 8 (los vaivenes de colas, jirones y adornos cierran el ciclo con cualquier cantidad de cuadros)
+  const f8 = (f * 8) / cuadrosDe(acc, cu.presentacion);
   const H = (cu.cabeza ?? 1) * S, cz = e.cz;
   const ps: Pieza[] = [];
   const todo: Parte[] = ['pelvis', 'abdomen', 'pecho', 'hombros', 'cuello', 'brazo', 'antebrazo', 'mano', 'muslo', 'pantorrilla', 'pie', 'cabeza'];
@@ -620,7 +635,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     ps.push(palo(base, medio, 0.4 * S, { mat: 'cu_hueso', r1: 0.3 * S }), palo(medio, punta, 0.3 * S, { mat: 'cu_hueso', r1: 0.05 }));
   }
   if (cu.flota) for (let k = 0; k < 7; k++) {
-    const u = ((f + k * 1.3) % 8) / 8, an = k * 0.9 + u * 2;
+    const u = ((f8 + k * 1.3) % 8) / 8, an = k * 0.9 + u * 2;
     ps.push(elipsoide(...e.W(Math.cos(an) * 3 * A - u * 3 * S, Math.sin(an) * 3 * A, Math.max(1, e.zc - 14 * S - u * 6 * S)), 1.2 * S * (1 - u * 0.6), 1.2 * S * (1 - u * 0.6), 2.2 * S, { mat: 'cu_ectoplasma' }));
   }
   // ojos (un poco hundidos bajo las cejas) y boca
@@ -822,14 +837,14 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   if (eq.cabeza) ps.push(...tocado(e, cu, eq.cabeza));
   // ---- cola y alas
   if (cu.cola) {
-    const ondea = Math.sin((f / 8) * Math.PI * 2) * 2;
+    const ondea = Math.sin((f8 / 8) * Math.PI * 2) * 2;
     const Pv = e.Pv ?? e.W;
     const a = Pv(-3.5 * A, 0, e.zc), b = Pv(-9 * S, ondea, e.zc - 8 * S), c = Pv(-15 * S, -ondea, e.zc - 14 * S), d = Pv(-20 * S, ondea * 1.4, 2 * S);
     ps.push(masa([hueso(a, b, 1.8 * A, 1.3 * A, { mat: cu.cola }), hueso(b, c, 1.3 * A, 0.8 * A, { mat: cu.cola }), hueso(c, d, 0.8 * A, 0.3 * A, { mat: cu.cola })], { mat: cu.cola, suave: 1.2 }));
   }
   if (cu.alas) ps.push(...alas(e, cu.alas, acc, f));
   // ---- las formas de las líneas épicas sobre cada pieza (escamas, crestas, filigrana, lava, alas, percebes...)
-  ps.push(...adornos(e, cu, eq, f));
+  ps.push(...adornos(e, cu, eq, f8));
   // ---- armas y mano izquierda
   if (eq.arma && eq.arma.tipo !== 'nada' && eq.arma.tipo !== 'puno' && nivelArma(eq.arma)) {
     // el arsenal elemental: forma forjada del nivel y capa del elemento (el cesto va en los dos puños si la izquierda está libre)
@@ -1215,7 +1230,7 @@ function efectos(cu: Cuerpo, eq: Equipo, e: Esqueleto, dir: Dir, f: number): Pie
 
 /** El druida arranca raíces del piso: crecen retorcidas desde el suelo siguiendo a la mano que sube y se retraen. */
 function raices(e: Esqueleto, f: number): Pieza[] {
-  const u = f / CUADROS.lanzar, S = e.S, m = e.brazos[1].mano;
+  const u = f / cuadrosDe('lanzar', 'naturaleza'), S = e.S, m = e.brazos[1].mano;
   const crece = Math.min(1, Math.max(0, (u - 0.2) / 0.3)) * (u < 0.8 ? 1 : Math.max(0, 1 - (u - 0.8) / 0.2));
   if (crece <= 0) return [];
   const cs: Comp[] = [];
@@ -2127,4 +2142,65 @@ function armaForjadaEn(e0: Esqueleto, b: Brazo, a: { tipo: TipoArma; mat?: strin
     ps.push(...capa);
   }
   return ps;
+}
+
+// ------------------------------------------------------------------ geometría para la QA de los cuadros
+/** Una elipsoide del cuerpo (centro, ejes y radios) para medir si algo la atraviesa. */
+export interface ElipQA { c: V3; ejes: [V3, V3, V3]; r: V3 }
+/** Lo que mide la QA numérica en un cuadro: dónde están el mango, el cabo, la cabeza, la cara, la ingle y los pies. */
+export interface GeoQA {
+  e: Esqueleto;
+  /** El arma de la derecha (o el arco de la izquierda): del extremo de atrás a la punta, con su grosor; cabeza: el tramo pesado. */
+  arma?: { a: V3; b: V3; r: number; cabeza?: [V3, V3]; rCabeza?: number };
+  /** El mango por donde la izquierda tiene que cerrar (a dos manos) y cuánto lo agarra la pose (0 suelta, 1 cerrada). */
+  mango?: [V3, V3]; pega: number; dosManos: boolean;
+  /** El extremo de atrás del mango (el regatón) cuando sobresale del puño. */
+  cabo?: V3;
+  /** Cráneo y mandíbula (la cara es la mitad de adelante). */
+  craneo: ElipQA; mandibula: ElipQA;
+  /** Pecho y vientre (para que las manos y el arma no los atraviesen) e ingle. */
+  pecho: ElipQA; vientre: ElipQA; ingle: V3;
+  piso: { talon: number; punta: number };
+}
+export function geometriaQA(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): GeoQA {
+  const tipo = eq.arma?.tipo ?? 'nada';
+  const e = esqueleto(cu, dir, acc, f, tipo, eq.izq?.tipo);
+  const { S, A, cab, ejesCab, T, ejesT } = e, H = (cu.cabeza ?? 1) * S, der = e.brazos[0], P = e.pose;
+  const en = (k: number) => add(der.mano, der.eje, k * S);
+  let arma: GeoQA['arma'], mango: [V3, V3] | undefined, cabo: V3 | undefined;
+  if (esVara(tipo)) {
+    const [pie, tope, up] = varaDe(e, der.mano, tipo === 'cetro' ? 0.45 : tipo === 'gran_baculo' ? 1.06 : 1);
+    arma = { a: pie, b: add(tope, up, 4 * S), r: 0.9 * S, cabeza: [tope, add(tope, up, 5 * S)], rCabeza: 2.4 * S };
+    mango = [pie, tope];
+  } else if (esArco(tipo)) {
+    const c = e.brazos[1].mano, k = tipo === 'arco_largo' ? 17 : tipo === 'arco_corto' ? 11 : 14;
+    const up = nor(sub(T(0, 0, e.zc + 10), T(0, 0, e.zc))), fw = e.ejesT[0];
+    arma = { a: add(add(c, up, -k * S), fw, 1.5 * S), b: add(add(c, up, k * S), fw, 1.5 * S), r: 0.7 * S };
+  } else if (tipo === 'ballesta') {
+    arma = { a: en(-4), b: en(11), r: 1.2 * S };
+  } else if (tipo !== 'nada' && tipo !== 'puno' && tipo !== 'frasco') {
+    const L = LARGO_ARMA[tipo] ?? 9, cb = CABO_MANGO[tipo] ?? 1.5;
+    const pesada = tipo === 'hacha' || tipo === 'hacha_doble' || tipo === 'martillo' || tipo === 'maza' || tipo === 'maza_estrella' || tipo === 'guadana' || tipo === 'alabarda';
+    const [fa, fb] = filoDe(e, tipo, der);
+    arma = { a: en(-cb), b: en(L), r: 0.9 * S, cabeza: [fa, fb], rCabeza: pesada ? 3.2 * S : 1.4 * S };
+    const largoMango = pesada || tipo === 'lanza' || tipo === 'tridente' || tipo === 'lanza_dragon' || tipo === 'jabalina';
+    mango = [en(-cb), largoMango ? fa : en(1)];
+    if (cb >= 3) cabo = en(-cb);
+  }
+  return {
+    e, arma, mango, cabo,
+    pega: P?.pegaI ?? (dos(tipo) || tipo === 'lanza' ? 1 : 0),
+    dosManos: dos(tipo) || tipo === 'lanza',
+    craneo: { c: cab(-0.2 * H, 0, e.cz + 0.9 * H), ejes: ejesCab, r: [4.0 * H, 3.55 * H, 4.3 * H] },
+    mandibula: { c: cab(1.5 * H, 0, e.cz - 2.0 * H), ejes: ejesCab, r: [2.9 * H, 2.85 * H, 2.4 * H] },
+    pecho: { c: T(0.2 * S, 0, e.zc + 12.3 * S), ejes: ejesT, r: [4.0 * A, 5.7 * A, 5.4 * S] },
+    vientre: { c: T(0.5 * S, 0, e.zc + 6.2 * S), ejes: ejesT, r: [3.4 * A, 4.4 * A, 4.6 * S] },
+    ingle: (e.Pv ?? e.W)(1.2 * S, 0, e.zc - 3.2 * S),
+    piso: { talon: PIE_TALON * A, punta: PIE_PUNTA * A },
+  };
+}
+/** Distancia normalizada de q a una elipsoide inflada en `extra` (menos de 1: adentro). */
+export function dentroElip(el: ElipQA, q: V3, extra = 0): number {
+  const d = sub(q, el.c);
+  return Math.hypot(dot3(d, el.ejes[0]) / (el.r[0] + extra), dot3(d, el.ejes[1]) / (el.r[1] + extra), dot3(d, el.ejes[2]) / (el.r[2] + extra));
 }

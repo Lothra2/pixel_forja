@@ -1,0 +1,256 @@
+{
+ "lobo_sombrio": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "correr": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "jabali_demonio": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "correr": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "perro_infernal": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "correr": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "arana_reina": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "arana_cueva": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "escorpion_gigante": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "gusano_de_arena": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "golem_de_piedra": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "gargola": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "murcielago_gigante": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "correr": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "demonio_alado": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "dragon_oseo": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "cangrejo_cripta": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "cangrejo_relicario": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "mano_dorada": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "herido": 4,
+   "morir": 8
+  },
+  "impacto": 4
+ },
+ "jefe_ozmaren": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "lanzar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "jefe_abadesa": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "lanzar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "jefe_rey_sin_sombra": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "lanzar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "jefe_madre_cienaga": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "lanzar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "jefe_rey_escarcha": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "lanzar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "jefe_verdugo": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "lanzar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "jefe_campana_ahoga": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "lanzar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ },
+ "jefe_aun_saar": {
+  "acciones": {
+   "quieto": 4,
+   "caminar": 8,
+   "atacar": 8,
+   "lanzar": 8,
+   "herido": 4,
+   "morir": 8,
+   "especial": 8
+  },
+  "impacto": 4
+ }
+}

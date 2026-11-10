@@ -339,6 +339,17 @@ function ala(a: Ala): { piezas: Pieza[]; borde: V3[]; muneca: V3 } {
 type Acc = 'quieto' | 'caminar' | 'atacar' | 'lanzar' | 'herido' | 'morir' | 'especial';
 const ACCIONES: Acc[] = ['quieto', 'caminar', 'atacar', 'lanzar', 'herido', 'morir', 'especial'];
 const CUADROS: Record<Acc, number> = { quieto: 4, caminar: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8, especial: 8 };
+/**
+ * Cuánto lo dobla el golpe en cada cuadro de 'herido': el impacto (0), el máximo (1), la vuelta (2) y un poco pasado
+ * adelante antes de volver a la guardia (3). Cuatro cuadros distintos, no un vaivén de dos poses casi iguales.
+ */
+const GOLPE = [0.8, 1, 0.42, -0.1];
+/**
+ * Línea de tiempo de 'atacar': estos ataques se armaron con el contacto en el cuadro 5 (el 4 era medio barrido), pero el
+ * juego muestra el cuadro 4 en el instante del golpe. Se leen las poses en estos tiempos para que el 4 sea el contacto,
+ * el arma quede arriba en 2 y 3 (y subiendo en 1) y la salida pesada vaya de 5 a 7. El verdugo ya está armado así.
+ */
+const TIEMPO_ATAQUE = [0, 1.5, 2.5, 3, 5, 5.6, 6.3, 7];
 const NOMBRES: Record<Acc, [string, string]> = { quieto: ['quieto', 'idle'], caminar: ['camina', 'walk'], atacar: ['ataca', 'attack'], lanzar: ['lanza', 'cast'], herido: ['recibe golpe', 'get hit'], morir: ['muere', 'death'], especial: ['especial', 'special'] };
 const RUMBO: Record<Dir, number> = { se: 0, s: 45, so: 90, o: 135, no: 180, n: 225, ne: 270, e: 315 };
 /** Lo que arma cada jefe en su marco local (mirando a +x). */
@@ -381,7 +392,7 @@ function jefe(id: string, nombre: [string, string], alto: number, huella: number
       id: `jefe_${id}_${acc}`, nombre: [`${nombre[0]} · ${es}`, `${nombre[1]} · ${en}`], tema: 'monstruos',
       variantes: [...DIRS], cuadros: CUADROS[acc], t: acc === 'quieto' ? 6 : 3, huella: [huella, huella], bloquea: true,
       armar: (v, f) => {
-        const r = armar(acc, f), g = RUMBO[v as Dir], c = Math.cos(rad(g)), s = Math.sin(rad(g));
+        const r = armar(acc, acc === 'atacar' && id !== 'verdugo' ? TIEMPO_ATAQUE[f] : f), g = RUMBO[v as Dir], c = Math.cos(rad(g)), s = Math.sin(rad(g));
         if (acc === 'morir') {
           // tendido: el tronco no se mete en el piso (se alza todo el cuerpo, salvo lo que ya está pintado en el piso)
           let lo = Infinity;
@@ -441,7 +452,7 @@ function ozmaren(acc: Acc, f: number): Res {
     garra[0] = [K([22, 16, 10, 12, 32, 32, 26, 22], f), -66, K([76, 84, 90, 88, 82, 78, 76, 76], f)];
     alaBate = K([12, 18, 26, 24, 4, 2, 8, 12], f); alaAbre = K([0.55, 0.6, 0.7, 0.7, 0.65, 0.6, 0.55, 0.55], f);
   } else if (acc === 'herido') {
-    const k = [0.6, 1, 0.7, 0.3][f % 4];
+    const k = GOLPE[f % 4];
     tp = 12 - 22 * k; cab = 4 - 26 * k; px = -6 * k; pz = -3 * k; ty = 10 * k; mand = 0.3 + 0.7 * k; alaBate = 12 + 18 * k; alaAbre = 0.55 + 0.25 * k; latido = 1;
     garra[0] = [22 - 10 * k, -68 - 8 * k, 76 + 34 * k]; garra[1] = [18 - 8 * k, 68 + 8 * k, 78 + 30 * k];
   } else if (acc === 'morir') {
@@ -768,8 +779,8 @@ function abadesa(acc: Acc, f: number): Res {
     mano[1] = [K([12, 18, 24, 28, 32, 34, 28, 14], f), K([14, 12, 10, 8, 6, 6, 10, 14], f), K([42, 52, 60, 64, 66, 64, 56, 44], f)];
     tp = K([6, 2, 0, 2, 10, 14, 10, 6], f); cab = K([8, 4, 2, 2, 8, 10, 8, 8], f); incienso = K([0, -10, -20, -20, 30, 40, 20, 0], f);
   } else if (acc === 'herido') {
-    const k = [0.6, 1, 0.7, 0.3][f % 4];
-    tp = 6 - 20 * k; cab = 8 - 22 * k; cabR = 10 + 20 * k; px = -5 * k; zf = 11 + 3 * k; incienso = 50 * k;
+    const k = GOLPE[f % 4], k0 = Math.max(0, k);
+    tp = 6 - 20 * k; cab = 8 - 22 * k; cabR = 10 + 20 * k; px = -5 * k; zf = 11 + 3 * k; incienso = 50 * k0;
     mano[0] = [10 - 8 * k, -18 - 6 * k, 44 + 14 * k]; mano[1] = [12 - 8 * k, 18 + 6 * k, 42 + 16 * k];
   } else if (acc === 'morir') {
     // se alza con los brazos abiertos, las velas se apagan, la máscara se raja y el hábito se desploma vacío
@@ -1061,8 +1072,8 @@ function reySinSombra(acc: Acc, f: number): Res {
     p.mano = [[K([5, 6, 7, 8, 8, 8, 7, 5], f), -9, K([26, 34, 40, 42, 42, 40, 34, 26], f)], [K([6, 10, 14, 16, 17, 16, 12, 6], f), K([9, 7, 5, 4, 4, 4, 6, 9], f), K([24, 30, 34, 36, 36, 35, 30, 24], f)]];
     p.tp = K([10, 6, 2, 0, 4, 6, 8, 10], f); p.cab = K([4, 0, -4, -4, 0, 2, 4, 4], f);
   } else if (acc === 'herido') {
-    const k = [0.6, 1, 0.7, 0.3][f % 4];
-    p.tp = 10 - 18 * k; p.cab = 4 - 18 * k; p.px = -2 * k; p.ty = 8 * k; p.mano = [[5 - 5 * k, -10 - 2 * k, 26 + 5 * k], [6 - 6 * k, 10 + 3 * k, 24 + 6 * k]]; polvo = k;
+    const k = GOLPE[f % 4], k0 = Math.max(0, k);
+    p.tp = 10 - 18 * k; p.cab = 4 - 18 * k; p.px = -2 * k; p.ty = 8 * k; p.mano = [[5 - 5 * k, -10 - 2 * k, 26 + 5 * k], [6 - 6 * k, 10 + 3 * k, 24 + 6 * k]]; polvo = k0;
   } else if (acc === 'morir') {
     // se arquea, alza los brazos y se deshace en arena: el cuerpo se hunde en el montón y la máscara queda encima
     polvo = K([0, 0.3, 0.6, 0.8, 1, 1, 0.8, 0.5], f); llamaV = K([1, 1.4, 0.8, 0.4, 0.1, 0, 0, 0], f);
@@ -1316,7 +1327,7 @@ function madreCienaga(acc: Acc, f: number): Res {
     // echa la cabeza atrás y escupe una bola de veneno
     escupe = K([0, 0, 0, 0.3, 0.6, 1, 1.6, 2.2], f); boca = K([0.25, 0.6, 0.9, 1, 1, 0.7, 0.4, 0.3], f); cab = K([6, -10, -20, -6, 20, 24, 14, 6], f); tp = K([18, 12, 8, 14, 30, 30, 24, 18], f); hincha = K([0.1, 0.25, 0.35, 0.3, 0.1, 0.05, 0.05, 0.1], f);
   } else if (acc === 'herido') {
-    const k = [0.6, 1, 0.7, 0.3][f % 4]; tp = 18 - 18 * k; cab = 6 - 20 * k; boca = 0.25 + 0.6 * k; sacude = k; px = -4 * k;
+    const k = GOLPE[f % 4], k0 = Math.max(0, k); tp = 18 - 18 * k; cab = 6 - 20 * k; boca = 0.25 + 0.6 * k; sacude = k0; px = -4 * k;
   } else if (acc === 'morir') {
     // chilla, se desinfla, las enredaderas caen y se hunde en el barro
     muerte = K([0, 0.1, 0.25, 0.45, 0.65, 0.8, 0.92, 1], f); boca = K([0.3, 1, 1, 0.8, 0.6, 0.5, 0.45, 0.45], f); cab = K([6, -24, -20, 10, 26, 34, 38, 40], f); tp = K([18, 4, 8, 24, 36, 44, 48, 50], f);
@@ -1482,8 +1493,8 @@ function reyEscarcha(acc: Acc, f: number): Res {
     p.mano = [[8, -5, K([20, 18, 17, 17, 17, 17, 18, 20], f)], [K([7, 10, 13, 16, 18, 18, 14, 8], f), K([4, 7, 8, 7, 6, 6, 6, 4], f), K([29, 32, 33, 32, 31, 31, 30, 29], f)]];
     p.tp = K([8, 4, 2, 6, 12, 14, 10, 8], f); p.ty = K([0, 8, 10, 6, -8, -10, -4, 0], f);
   } else if (acc === 'herido') {
-    const k = [0.6, 1, 0.7, 0.3][f % 4];
-    p.tp = 8 - 16 * k; p.cab = 2 - 18 * k; p.px = -1.6 * k; p.ty = 10 * k; p.mano = [[8 - 3 * k, -5, 20 + 6 * k], [7 - 3 * k, 5, 29 + 6 * k]]; rompe = 0.15 * k;
+    const k = GOLPE[f % 4], k0 = Math.max(0, k);
+    p.tp = 8 - 16 * k; p.cab = 2 - 18 * k; p.px = -1.6 * k; p.ty = 10 * k; p.mano = [[8 - 3 * k, -5, 20 + 6 * k], [7 - 3 * k, 5, 29 + 6 * k]]; rompe = 0.15 * k0;
   } else if (acc === 'morir') {
     // trastabilla, se le quiebra la armadura y cae de espaldas como un árbol; el hielo de los ojos se apaga
     p.pz = K([0.4, 1.5, 2.5, 2, 1, 0.5, 0.4, 0.4], f); p.tp = K([8, -12, -6, -4, -2, 0, 0, 0], f); p.cab = K([2, -24, -16, -10, -6, -4, -6, -8], f); p.px = K([0, -1, -2, -2, -2, -2, -2, -2], f);
@@ -1701,19 +1712,25 @@ function verdugo(acc: Acc, f: number): Res {
     p.pie[0][1] = -5.6; p.pie[1][1] = 5.6;
   } else if (acc === 'atacar') {
     // la cuchilla sube por encima del hombro y baja en diagonal con todo el peso
-    p.ty = K([0, 12, 24, 28, -10, -22, -12, 0], f); p.tp = K([10, 2, -8, -10, 20, 30, 22, 12], f); p.pz = K([0.5, 0, 0, 0, 2, 3.5, 2.5, 1], f); p.px = K([0, -1, -2, -2, 2, 4, 2, 0], f);
-    p.mano[0] = [K([4, 0, -4, -5, 14, 18, 12, 5], f), K([-11, -12, -10, -8, -4, 2, -6, -11], f), K([22, 36, 48, 52, 32, 14, 16, 22], f)];
-    p.mano[1] = [K([4, 6, 8, 8, 4, 2, 4, 4], f), K([11, 12, 13, 13, 12, 12, 12, 11], f), K([22, 26, 28, 28, 24, 22, 22, 22], f)];
-    p.cab = K([6, 2, -4, -6, 10, 16, 12, 6], f); golpe = K([0, 0, 0, 0, 0.5, 1, 0.6, 0.2], f);
-    p.pie[1] = [K([1, 1, 2, 2, 7, 8, 5, 1], f), 4.4, 0];
+    // anticipación legible: baja la cuchilla y recoge el peso (0), la sube por encima del hombro (1) y la tiene arriba,
+    // con el cuerpo torcido atrás (2 y 3, el 3 más tenso); en el cuadro 4, el que el juego pone en el golpe, la hoja ya
+    // está abajo con todo el peso y el pie de adelante plantado; después se queda doblado sobre ella y la levanta
+    // despacio (5 a 7: el juego sostiene el 7 casi dos tercios de la salida)
+    p.ty = K([4, 14, 24, 28, -14, -22, -16, -6], f); p.tp = K([12, 4, -6, -10, 26, 30, 26, 18], f); p.pz = K([1, 0.5, 0, 0, 3, 3.5, 3, 2], f); p.px = K([-0.5, -1, -2, -2.5, 3, 4, 3, 1.5], f);
+    p.mano[0] = [K([4, 0, -4, -5, 16, 18, 15, 9], f), K([-12, -12, -10, -8, -2, 2, -2, -8], f), K([26, 42, 52, 56, 14, 10, 12, 18], f)];
+    p.mano[1] = [K([5, 6, 8, 8, 4, 2, 3, 4], f), K([11, 12, 13, 13, 12, 12, 12, 11], f), K([23, 26, 28, 28, 23, 22, 22, 22], f)];
+    p.cab = K([4, 0, -4, -6, 14, 16, 13, 8], f); golpe = K([0, 0, 0, 0, 1, 0.8, 0.5, 0.2], f);
+    p.pie[1] = [K([2, 1, 2, 2, 8, 8, 7, 4], f), 4.4, 0];
   } else if (acc === 'lanzar') {
     // arroja el garfio con la izquierda: la cadena sale recta y vuelve
     tiro = K([0, 0, 0, 0.4, 1, 1, 0.6, 0.2], f);
     p.mano[1] = [K([4, -2, -6, 6, 16, 16, 12, 6], f), K([11, 14, 16, 12, 8, 8, 10, 11], f), K([22, 32, 40, 34, 28, 27, 25, 23], f)];
     p.ty = K([0, -14, -24, -6, 18, 22, 12, 0], f); p.tp = K([10, 6, 2, 10, 18, 18, 14, 10], f);
   } else if (acc === 'herido') {
-    const k = [0.6, 1, 0.7, 0.3][f % 4];
-    p.tp = 10 - 18 * k; p.cab = 6 - 22 * k; p.px = -2 * k; p.ty = -8 * k; p.mano = [[4 - 4 * k, -13 - 2 * k, 22 + 6 * k], [4 - 4 * k, 13 + 2 * k, 22 + 6 * k]];
+    // el golpe lo dobla hacia atrás: el pecho se abre y la cabeza va atrás (1 es el máximo, la cabeza llega un cuadro
+    // tarde), la mole recula sobre los pies que no se mueven, los brazos se despegan, y vuelve pasándose un poco adelante
+    p.tp = K([-4, -9, 4, 12], f); p.cab = K([-12, -22, -6, 8], f); p.px = K([-2.5, -3.5, -1.5, 0.2], f); p.ty = K([-10, -14, -5, 1], f); p.pz = K([0.6, 1.4, 0.9, 0.3], f);
+    p.mano = [[K([0, -3, 2, 6], f), K([-14, -16, -14, -12.5], f), K([28, 32, 26, 22], f)], [K([0, -2, 3, 6], f), K([14, 16, 14, 12], f), K([26, 30, 24, 21], f)]];
   } else if (acc === 'morir') {
     // se tambalea, cae de rodillas y se desploma de bruces sobre un charco de sangre
     p.pz = K([0.5, 2, 9, 12, 16, 20, 22, 22], f); p.tp = K([10, -6, 8, 18, 40, 62, 74, 76], f); p.cab = K([6, -20, 10, 20, 10, -10, -24, -26], f); p.px = K([0, -1, 0, 2, 6, 10, 12, 12], f);

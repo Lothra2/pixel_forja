@@ -1,6 +1,6 @@
 import { registrar } from '../objeto';
 import { pintarEscena } from '../render';
-import { DIRS, CUADROS, type Accion } from '../figura';
+import { DIRS, CUADROS, ANIM_HEROE, CLASE_ESTILO, type Accion } from '../figura';
 import { personajeEscena, type Cuerpo, type Equipo } from '../cuerpo';
 
 /**
@@ -136,7 +136,8 @@ for (const h of HEROES) NIVELES.forEach(([n, [es, en]], i) => {
     if (acc === 'lanzar' && !h.magia) continue;
     registrar({
       id: `per_${h.id}${n ? '_' + n : ''}_${acc}`, nombre: [`${h.nombre[0]} ${es} · ${aes}`, `${h.nombre[1]} ${en} · ${aen}`], tema: 'personajes',
-      variantes: [...DIRS], cuadros: CUADROS[acc], t: acc === 'quieto' ? 6 : acc === 'correr' ? 2 : 3, huella: [1, 1], bloquea: true,
+      // cuadros y ritmo de su clase (figura.ts, ANIM_HEROE): el mismo manifiesto que lee el juego
+      variantes: [...DIRS], cuadros: ANIM_HEROE[CLASE_ESTILO[h.cuerpo.presentacion!]][acc].cuadros, t: ANIM_HEROE[CLASE_ESTILO[h.cuerpo.presentacion!]][acc].t, huella: [1, 1], bloquea: true,
       armar: (v, f) => personajeEscena(h.cuerpo, h.niveles[i], v as (typeof DIRS)[number], acc, f),
     });
   }

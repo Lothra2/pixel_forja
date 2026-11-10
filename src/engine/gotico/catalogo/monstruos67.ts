@@ -1014,8 +1014,10 @@ function cangrejo(d: Dir, acc: AccB, f: number): Res {
     av = K([0, -2, -4, -4, 7, 9, 4, 1], f); pitch = K([0, -5, -10, -12, 8, 11, 4, 0], f); z = K([0, 1, 3, 3, -1, -2, -1, 0], f);
     alzaD = K([0, 20, 42, 50, -12, -18, -6, 0], f); abreD = K([0.3, 0.8, 1, 1, 0.1, 0, 0.2, 0.3], f); alzaI = K([0, 6, 10, 10, 0, -4, 0, 0], f); llama = K([1, 1, 1.1, 1.1, 0.7, 0.8, 1, 1], f);
   } else if (acc === 'herido') {
-    const k = [0.6, 1, 0.6, 0.2][f % 4];
-    av = -4 * k; pitch = -10 * k; roll = 6 * k; alzaD = 18 * k; alzaI = 14 * k; abreD = 0.9; abreI = 0.9; llama = 1 - 0.5 * k;
+    // el golpe lo echa atrás y lo ladea: sube la pinza grande abierta para cubrirse, la chica llega un cuadro tarde, la
+    // vela se achica con el sacudón y vuelve a la guardia (cuatro cuadros distintos; las patas no se mueven del piso)
+    av = K([-3.2, -4.6, -2, 0.4], f); z = K([1.5, 0.5, -1, 0], f); pitch = K([-8, -12, -4, 1], f); roll = K([7, 3, -2, 0], f);
+    alzaD = K([22, 16, 6, 0], f); alzaI = K([10, 16, 8, 1], f); abreD = K([1, 0.8, 0.5, 0.3], f); abreI = K([0.7, 1, 0.6, 0.3], f); llama = K([0.5, 0.6, 0.85, 1], f);
   } else if (acc === 'morir') {
     z = K([0, 2, 0, -4, -8, -10, -11, -11], f); pitch = K([0, -10, -4, 2, 4, 4, 4, 4], f); roll = K([0, 6, -4, -8, -10, -12, -12, -12], f);
     rizo = K([0, 0.15, 0.35, 0.6, 0.82, 0.95, 1, 1], f); alzaD = K([0, 30, 10, -10, -20, -24, -24, -24], f); abreD = K([0.3, 1, 0.8, 0.5, 0.4, 0.4, 0.4, 0.4], f); alzaI = alzaD * 0.8;
@@ -1041,7 +1043,7 @@ function cangrejo(d: Dir, acc: AccB, f: number): Res {
   const angs = [58, 86, 112, 138], patas: PataC[] = [];
   for (const s of [1, -1]) for (let i = 0; i < 4; i++) {
     const a = rad(angs[i]), R = 37;
-    patas.push({ cadera: [8 - i * 5, s * 13, -2], reposo: [4 + Math.cos(a) * R + av * 0.4, s * Math.sin(a) * R, 0], l1: 18, l2: 24, fase: ((i % 2 === 0) === (s < 0) ? 0 : 0.5) + i * 0.04, r: 2.2 });
+    patas.push({ cadera: [8 - i * 5, s * 13, -2], reposo: [4 + Math.cos(a) * R + (acc === 'herido' ? 0 : av) * 0.4, s * Math.sin(a) * R, 0], l1: 18, l2: 24, fase: ((i % 2 === 0) === (s < 0) ? 0 : 0.5) + i * 0.04, r: 2.2 });
   }
   ps.push(...patasCangrejo(W, cuerpo, patas, acc === 'caminar', ph, rizo));
   // ---- el relicario sobre el lomo (al morir se vuelca de costado) y la vela encendida arriba
