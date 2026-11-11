@@ -1,5 +1,5 @@
 import {
-  ArbolCajas, baseCamara, rayoCamara, proyectar, hueso, bulto, masa, ruido, fbm as fbm3, hash3,
+  ArbolCajas, baseCamara, rayoCamara, proyectar, hueso, marcoHueso, bulto, masa, ruido, fbm as fbm3, hash3,
   type Pieza, type V3, type Camara, type BaseCamara, type Comp, type GolpeEscena,
 } from './render';
 import { MATERIALES, type Material } from './materiales';
@@ -50,8 +50,9 @@ export function moverPiezas(ps: Pieza[], R: [V3, V3, V3], piv: V3 = [0, 0, 0], t
     if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => { const m = Rv(n); return [m, d + dot(m, T0)] as [V3, number]; }), pts: p.pts.map(P) };
     if (p.k === 'cono') return { ...p, o: P(p.o), ex: Rv(p.ex), ey: Rv(p.ey), ez: Rv(p.ez) };
     if (p.k === 'elip') return { ...p, c: P(p.c), ex: Rv(p.ex), ey: Rv(p.ey), ez: Rv(p.ez) };
-    const comps = p.comps.map((q): Comp => (q.f === 'hueso'
-      ? hueso(P(q.a), P(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k })
+    // el hueso lleva su marco girado (el grano gira con él)
+    const comps = p.comps.map((q, i): Comp => (q.f === 'hueso'
+      ? hueso(P(q.a), P(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k, rx: Rv(marcoHueso(p, i)[0]) })
       : bulto(P(q.c), q.r, { ejes: [Rv(q.ex), Rv(q.ey), Rv(q.ez)], mat: q.mat, tono: q.tono, k: q.k })));
     return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave });
   });
@@ -74,8 +75,8 @@ export function colocarPiezas(ps: Pieza[], c: Colocar): Pieza[] {
     if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => { const m = R(n); return [m, d * k + dot(m, t)] as [V3, number]; }), pts: p.pts.map(P) };
     if (p.k === 'cono') return { ...p, o: P(p.o), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez), h: p.h * k, r0: p.r0 * k, r1: p.r1 * k };
     if (p.k === 'elip') return { ...p, c: P(p.c), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez), r: [p.r[0] * k, p.r[1] * k, p.r[2] * k] };
-    const comps = p.comps.map((q): Comp => (q.f === 'hueso'
-      ? hueso(P(q.a), P(q.b), q.r0 * k, q.r1 * k, { mat: q.mat, tono: q.tono, k: q.k !== undefined ? q.k * k : undefined })
+    const comps = p.comps.map((q, i): Comp => (q.f === 'hueso'
+      ? hueso(P(q.a), P(q.b), q.r0 * k, q.r1 * k, { mat: q.mat, tono: q.tono, k: q.k !== undefined ? q.k * k : undefined, rx: R(marcoHueso(p, i)[0]) })
       : bulto(P(q.c), [q.r[0] * k, q.r[1] * k, q.r[2] * k], { ejes: [R(q.ex), R(q.ey), R(q.ez)], mat: q.mat, tono: q.tono, k: q.k !== undefined ? q.k * k : undefined })));
     return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave * k });
   });

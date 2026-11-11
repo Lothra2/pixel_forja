@@ -1036,8 +1036,19 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   if (e.pose?.objetoI === 'frasco') ps.push(...frasco(e, acc === 'presentar' ? f / CUADROS.presentar : 0));
   if (acc === 'presentar' && cu.presentacion) ps.push(...efectos(cu, eq, e, dir, f));
   if (acc === 'lanzar' && cu.presentacion === 'naturaleza') ps.push(...raices(e, f));
-  void R; void F;
+  marcarHuesos(ps, R, F);
   return ps;
+}
+/**
+ * El marco del grano de cada hueso del cuerpo: hacia el lateral del cuerpo, que gira con el personaje y no con el mundo,
+ * así un muslo o un brazo que pasa por la vertical al andar no da vuelta su textura. Un hueso que va de costado mira
+ * al frente (con una mezcla suave, sin salto).
+ */
+function marcarHuesos(ps: Pieza[], R: V3, F: V3): void {
+  for (const p of ps) if (p.k === 'masa') for (const c of p.comps) if (c.f === 'hueso' && !c.rx) {
+    const lat = Math.abs(dot3(nor(sub(c.b, c.a)), R)), w = Math.min(1, Math.max(0, (lat - 0.75) / 0.2));
+    c.rx = nor(add(R, F, (w * w * (3 - 2 * w)) * 3));
+  }
 }
 
 /** El acento de una línea épica (ribetes, remaches, puños): bronce, cuerno, filigrana, hueso, oro o percebe; oro si no hay línea. */
