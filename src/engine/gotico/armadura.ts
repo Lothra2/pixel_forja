@@ -130,6 +130,37 @@ export function casco(e: Esqueleto, cu: Cuerpo, c: NonNullable<Equipo['cabeza']>
     }
     case 'capucha':
       return capucha(e, cu, m, orn);
+    case 'diadema': case 'aro': case 'corona': {
+      // aro forjado: banda facetada con los cantos oscuros, una montura en punta con la gema al frente; la corona con
+      // cinco puntas que suben (la del medio más alta)
+      const alto = c.tipo === 'corona' ? 1.2 : 0.8, up0 = 2.2;
+      ps.push(poliedro([...anillo(P, -0.3, 4.55, 4.5, 4.3, up0, 12), ...anillo(P, -0.3, 4.6, 4.55, 4.35, up0 + alto, 12)], { mat: m }));
+      for (const u of [up0 - 0.05, up0 + alto + 0.05]) ps.push(poliedro([...anillo(P, -0.3, 4.65, 4.6, 4.42, u - 0.22, 12), ...anillo(P, -0.3, 4.65, 4.6, 4.42, u + 0.22, 12)], { mat: m, tono: oscuro * 0.6 }));
+      ps.push(poliedro([P(4.75, 0.9, up0 - 0.2), P(4.75, -0.9, up0 - 0.2), P(4.9, 0, up0 - 0.9), P(4.8, 0, up0 + alto + (c.tipo === 'aro' ? 0.9 : 1.6)), P(4.4, 0.7, up0 + alto), P(4.4, -0.7, up0 + alto)], { mat: m, tono: claro * 0.5 }));
+      ps.push(esfera(...P(5.0, 0, up0 + alto * 0.5 + 0.1), 0.75 * H, { mat: orn ?? (c.tipo === 'aro' ? 'cu_ojo_verde' : 'magia') }));
+      if (c.tipo === 'corona') for (const g of [-70, -35, 35, 70, 180]) {
+        const a = (g * Math.PI) / 180, x = -0.3 + Math.cos(a) * 4.45, y = Math.sin(a) * 4.25, h0 = up0 + alto, alta = Math.abs(g) === 35 ? 2.4 : 1.8;
+        ps.push(poliedro([P(x + Math.sin(a) * 0.55, y - Math.cos(a) * 0.55, h0), P(x - Math.sin(a) * 0.55, y + Math.cos(a) * 0.55, h0), P(x * 0.97, y * 0.97, h0 + alta), P(x * 0.93, y * 0.93, h0)], { mat: m, tono: claro * 0.4 }));
+      }
+      return ps;
+    }
+    case 'gorro': {
+      // gorro de cuero de ala vuelta: copa facetada, el ala doblada hacia arriba con la costura oscura y una hebilla
+      ps.push(poliedro([...anillo(P, -0.4, 4.5, 4.6, 4.3, 0.8, 10), ...anillo(P, -0.5, 4.2, 4.3, 4.0, 3.6, 10), ...anillo(P, -0.7, 2.6, 2.8, 2.5, 5.6, 8)], { mat: m }));
+      ps.push(poliedro([...anillo(P, -0.4, 5.6, 5.4, 5.2, 0.6, 12), ...anillo(P, -0.4, 5.1, 5.0, 4.8, 2.0, 12), ...anillo(P, -0.4, 4.6, 4.6, 4.4, 0.6, 12)], { mat: orn ?? m, tono: -0.05 }));
+      ps.push(poliedro([...anillo(P, -0.4, 5.65, 5.45, 5.25, 0.45, 12), ...anillo(P, -0.4, 5.65, 5.45, 5.25, 0.95, 12)], { mat: orn ?? m, tono: oscuro }));
+      ps.push(caja(...P(5.0, 2.2, 1.0), 0.5 * H, 1.2 * H, 1.2 * H, { mat: 'cu_oro', giro: angH(e) }));
+      return ps;
+    }
+    case 'mascara': {
+      // media máscara de placa con respirador: cubre nariz y boca, un hocico facetado con las ranuras oscuras y dos
+      // correas que van atrás; los ojos quedan libres
+      ps.push(poliedro([P(3.6, 3.4, -0.3), P(3.6, -3.4, -0.3), P(4.6, 2.2, 0.2), P(4.6, -2.2, 0.2), P(5.8, 0, -0.6), P(6.6, 0, -2.0), P(5.6, 1.6, -3.2), P(5.6, -1.6, -3.2), P(3.8, 3.0, -3.4), P(3.8, -3.0, -3.4), P(4.6, 0, -4.4)], { mat: m }));
+      for (const u of [-1.4, -2.2]) ps.push(caja(...P(6.1 - (u + 1.4) * -0.4, 0, u), 0.7 * H, 2.4 * H, 0.35 * H, { mat: 'cu_tela_negra', giro: angH(e) }));
+      ps.push(poliedro([P(5.85, 0.25, -0.5), P(5.85, -0.25, -0.5), P(6.7, 0.25, -2.0), P(6.7, -0.25, -2.0), P(5.6, 0, -0.2), P(6.9, 0, -2.0)], { mat: m, tono: claro }));
+      for (const s2 of [1, -1]) ps.push(poliedro(tramo(P, [3.4, s2 * 3.5, -1.0], [-2.8, s2 * 4.0, 0.2], 0.45, 0.45, 4), { mat: 'cu_cuero_negro' }));
+      return ps;
+    }
     case 'calavera': {
       // la calavera de un gran muerto puesta como yelmo, sobre una capucha: el cráneo facetado con la frente y las
       // cuencas oscuras sobre la frente del que la lleva, los colmillos sobre los ojos y dos cuernos que van atrás
@@ -161,8 +192,8 @@ function astas(e: Esqueleto, cu: Cuerpo, m: string): Pieza[] {
   ps.push(poliedro([...anillo(P, -0.3, 4.6, 4.7, 4.4, 0.0, 10), ...anillo(P, -0.4, 4.4, 4.5, 4.2, 2.6, 10), ...anillo(P, -0.6, 2.8, 3.0, 2.7, 4.9, 8)], { mat: m }));
   ps.push(poliedro([...anillo(P, -0.3, 4.85, 4.95, 4.65, -0.5, 10), ...anillo(P, -0.3, 4.85, 4.95, 4.65, 0.45, 10)], { mat: m, tono: oscuro * 0.7 }));
   for (const s of [1, -1]) {
-    const q = (f: number, r: number, u: number): [number, number, number] => [f, s * r, u];
-    const tr = (a: [number, number, number], b: [number, number, number], w0: number, w1: number) => ps.push(poliedro(tramo(P, a, b, w0, w1, 5), { mat: 'cu_hueso', tono: 0.04 }));
+    const k = 1.35, q = (f: number, r: number, u: number): [number, number, number] => [f * k, s * (3.4 + (r - 3.4) * k), 3.4 + (u - 3.4) * k];
+    const tr = (a: [number, number, number], b: [number, number, number], w0: number, w1: number) => ps.push(poliedro(tramo(P, a, b, w0 * 1.2, w1 * 1.2, 5), { mat: 'cu_hueso', tono: 0.04 }));
     tr(q(-0.4, 3.4, 3.4), q(-0.9, 5.0, 6.4), 0.75, 0.55);
     tr(q(-0.9, 5.0, 6.4), q(-1.6, 5.4, 9.6), 0.55, 0.3);
     tr(q(-1.6, 5.4, 9.6), q(-1.9, 5.0, 11.4), 0.3, 0.06);
@@ -410,5 +441,30 @@ export function tabardoFaldon(arriba: V3, abajo: V3, lado: V3, fuera: V3, ancho:
     ps.push(poliedro([a, b, sube(a), sube(b), en(a, 0, -0.75), en(b, 0, -0.75), en(sube(a), 0, -0.75), en(sube(b), 0, -0.75)], { mat: borde ?? mat, tono: borde ? 0 : -0.35 }));
   }
   if (borde) ps.push(poliedro([en(arriba, -0.6, 0.65), en(arriba, 0.6, 0.65), en(abajo, -0.6, 0.6), en(abajo, 0.6, 0.6), en(arriba, -0.6, 0.2), en(arriba, 0.6, 0.2), en(abajo, -0.6, 0.15), en(abajo, 0.6, 0.15)], { mat: borde }));
+  return ps;
+}
+
+// ------------------------------------------------------------------ jubón de cuero
+/**
+ * El jubón de cuero: el ruedo y el cuello de cuero más oscuro (la costura del borde) y, si `correa`, la correa del
+ * carcaj cruzada del hombro derecho a la cadera izquierda con su hebilla. Cálido y mate.
+ */
+export function jubon(e: Esqueleto, cu: Cuerpo, to: NonNullable<Equipo['torso']>, correa: boolean): Pieza[] {
+  const { S, A, T, zc } = e;
+  const PT: Fn = (fw, rt, up) => T(fw * A, rt * A, zc + up * S);
+  const g = (cu.grasa ?? 0) * 1.5, m = to.mat, ps: Pieza[] = [];
+  const borde = m === 'cu_cuero_negro' ? 'cu_cuero' : 'cu_cuero_negro';
+  // el ruedo (sobre la cadera) y la sisa del cuello, de cuero del otro tono
+  ps.push(poliedro([...anillo(PT, 0.3, 4.55 + g, 4.3 + g, 5.05 + g, 3.4, 12), ...anillo(PT, 0.3, 4.6 + g, 4.35 + g, 5.1 + g, 4.3, 12)], { mat: borde, tono: -0.1 }));
+  if (correa) {
+    // correa cruzada (por delante y por detrás) con hebilla de metal sobre el pecho
+    const r = (u: number, y: number, k: number, d = 0): V3 => PT(k * (Math.sqrt(Math.max(0.05, 1 - (y / (6.4 + g)) ** 2)) * (u > 11 ? 5.0 : 4.4) + g + 0.35 - d), y, u);
+    const tira: [number, number][] = [[16.4, 4.4], [12.0, 1.4], [7.6, -2.0], [3.6, -4.8]];
+    for (const k of [1, -1]) for (let i = 0; i < tira.length - 1; i++) {
+      const [[u0, y0], [u1, y1]] = [tira[i], tira[i + 1]];
+      ps.push(poliedro([r(u0, y0 - 0.85, k), r(u0, y0 + 0.85, k), r(u1, y1 - 0.85, k), r(u1, y1 + 0.85, k), r(u0, y0 - 0.85, k, 0.4), r(u0, y0 + 0.85, k, 0.4), r(u1, y1 - 0.85, k, 0.4), r(u1, y1 + 0.85, k, 0.4)], { mat: borde, tono: 0.04 }));
+    }
+    ps.push(caja(...r(10.6, 0.3, 1), 0.6, 1.5 * A, 1.4 * S, { mat: 'cu_placa', giro: (Math.atan2(e.ejesT[0][1], e.ejesT[0][0]) * 180) / Math.PI }));
+  }
   return ps;
 }

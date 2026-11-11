@@ -38,7 +38,7 @@ export const HEROES: Heroe[] = [
     id: 'arcanista', nombre: ['Arcanista', 'Arcanist'], descripcion: ['Hechicera del fuego, el hielo y el rayo.', 'Sorceress of fire, frost and lightning.'], magia: true,
     cuerpo: { presentacion: 'conjuro', genero: 'm', ancho: 0.9, musculo: 0.15, piel: 'cu_piel_clara', pelo: 'cu_pelo_rojo', peinado: 'largo' },
     niveles: [
-      { torso: { tipo: 'vestido', mat: 'cu_tela_parda' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, cinturon: { mat: 'cu_cuero' }, arma: { tipo: 'varita', mango: madera } },
+      { torso: { tipo: 'vestido', mat: 'cu_tela_parda' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, cinturon: { mat: 'cu_cuero' }, cabeza: { tipo: 'capucha', mat: 'cu_tela_parda' }, arma: { tipo: 'varita', mango: madera } },
       { torso: { tipo: 'vestido', mat: 'cu_tela_morada' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, cinturon: { mat: 'cu_oro', hebilla: 'magia' }, cabeza: { tipo: 'diadema', mat: 'cu_oro' }, arma: { tipo: 'baculo', mango: lisa } },
       { torso: { tipo: 'vestido', mat: 'cu_tela_azul' }, pies: { tipo: 'botas_altas', mat: 'cu_cuero_negro' }, manos: { tipo: 'guantes', mat: 'cu_tela_negra' }, hombros: { tipo: 'placas', mat: 'cu_oro' }, cinturon: { mat: 'cu_oro', hebilla: 'cu_ojo_hielo' }, cabeza: { tipo: 'corona', mat: 'cu_oro', mat2: 'cu_ojo_hielo' }, capa: { mat: 'cu_tela_negra' }, arma: { tipo: 'baculo', mango: 'cu_placa_oscura', gema: 'cu_ojo_hielo', encanto: 'hielo' }, izq: { tipo: 'orbe', mat: 'magia' } },
     ],
@@ -74,7 +74,7 @@ export const HEROES: Heroe[] = [
     id: 'druida', nombre: ['Druida', 'Druid'], descripcion: ['Guardián del bosque: lobos, raíces y tormentas.', 'Forest warden: wolves, roots and storms.'], magia: true,
     cuerpo: { presentacion: 'naturaleza', genero: 'h', ancho: 1.08, musculo: 0.5, piel: 'cu_piel', pelo: 'cu_pelo_castano', peinado: 'largo', barba: 'larga' },
     niveles: [
-      { torso: { tipo: 'tunica', mat: 'cu_tela_verde' }, piernas: { tipo: 'pantalon', mat: 'cu_cuero' }, pies: { tipo: 'sandalias', mat: 'cu_cuero' }, cinturon: { mat: 'cuerda' }, arma: { tipo: 'baculo', mango: madera, gema: 'fuego_verde' } },
+      { torso: { tipo: 'tunica', mat: 'cu_tela_verde', ribete: 'cu_tela_parda' }, cabeza: { tipo: 'capucha', mat: 'cu_tela_verde' }, piernas: { tipo: 'pantalon', mat: 'cu_cuero' }, pies: { tipo: 'sandalias', mat: 'cu_cuero' }, cinturon: { mat: 'cuerda' }, arma: { tipo: 'baculo', mango: madera, gema: 'fuego_verde' } },
       { torso: { tipo: 'cuero', mat: 'cu_cuero' }, piernas: { tipo: 'faldon', mat: 'cu_pelaje', mat2: 'cu_cuero' }, pies: { tipo: 'botas', mat: 'cu_cuero' }, hombros: { tipo: 'pieles', mat: 'cu_pelaje' }, capa: { mat: 'cu_pelaje' }, cinturon: { mat: 'cu_cuero' }, cabeza: { tipo: 'cuernos', mat: 'cu_cuero' }, arma: { tipo: 'baculo', mango: 'corteza', gema: 'fuego_verde' } },
       { torso: { tipo: 'cuero_tachonado', mat: 'cu_cuero_negro' }, piernas: { tipo: 'faldon', mat: 'cu_pelaje_gris', mat2: 'cu_cuero_negro' }, pies: { tipo: 'botas_altas', mat: 'cu_cuero' }, manos: { tipo: 'guantes', mat: 'cu_cuero' }, hombros: { tipo: 'pieles', mat: 'cu_pelaje_gris' }, capa: { mat: 'cu_tela_verde' }, cinturon: { mat: 'cu_cuero_negro', hebilla: 'cu_oro' }, cabeza: { tipo: 'corona', mat: 'cu_oro', mat2: 'fuego_verde' }, arma: { tipo: 'baculo', mango: 'corteza', gema: 'fuego_verde', encanto: 'veneno' } },
     ],

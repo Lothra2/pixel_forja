@@ -2,7 +2,7 @@ import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, 
 import { claveBaja } from './clave_baja';
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
-import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado, tunica as tunicaForjada, colgantes, tabardoFaldon } from './armadura';
+import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado, tunica as tunicaForjada, colgantes, tabardoFaldon, jubon } from './armadura';
 import { pose, CUADROS, cuadrosDe, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
 import { formaForjada, adornosNivel, anchoVivo, marcoIcono, tramosVivos, palaClara, type MarcoArma, type NivelForja, type OpcForja } from './forja_armas';
@@ -794,6 +794,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     if (to.tipo === 'cuero_tachonado') for (let i = 0; i < 4; i++) for (const s of [1, -1, 0]) ps.push(esfera(...T(3.9 * A + 0.6, s * 2.6 * A, e.zc + (5 + i * 3) * S), 0.5, { mat: 'cu_placa' }));
     if (to.tipo === 'malla' && cu.presentacion && !to.linea) ps.push(...mallaForjada(e, cu, to));
     if (to.tipo === 'tunica' && cu.presentacion) ps.push(...tunicaForjada(e, cu, to));
+    if ((to.tipo === 'cuero' || to.tipo === 'cuero_tachonado') && cu.presentacion && !to.linea) ps.push(...jubon(e, cu, to, cu.presentacion === 'apunta'));
     if (to.tipo === 'placas') {
       // peto curvo, espaldar, faldares y el borde dorado
       // los héroes llevan la coraza forjada por láminas (armadura.ts); las líneas épicas y los monstruos, la de siempre
