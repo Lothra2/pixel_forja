@@ -253,8 +253,10 @@ export function peto(e: Esqueleto, cu: Cuerpo, to: NonNullable<Equipo['torso']>,
   const ps: Pieza[] = [];
   const pad = 1.25;
   // sección del torso a cada altura: radio adelante, atrás y ancho (sobre el cuerpo, con el acolchado de debajo)
+  // (en una mujer el peto marca el pecho y ciñe la cintura, sin caricatura; la cadera vuelve a abrir)
+  const mj = cu.genero === 'm' ? 1 : 0;
   const sec = (u: number): [number, number, number, number] => {
-    const t: [number, number, number, number][] = [[17.2, 2.7, 3.1, 4.4], [15.2, 4.4, 3.9, 6.0 + mu], [12.2, 4.6 + g, 4.1, 5.9 + mu], [9.4, 4.0 + g, 3.8, 5.0], [7.0, 3.7 + g, 3.5, 4.6], [4.6, 3.8 + g, 3.6, 4.8], [2.4, 4.0 + g, 3.8, 5.1]];
+    const t: [number, number, number, number][] = [[17.2, 2.7, 3.1, 4.4 - 0.3 * mj], [15.2, 4.4 + 0.2 * mj, 3.9, 6.0 + mu - 0.6 * mj], [12.2, 4.6 + g + 0.35 * mj, 4.1, 5.9 + mu - 0.7 * mj], [9.4, 4.0 + g - 0.3 * mj, 3.8 - 0.2 * mj, 5.0 - 0.8 * mj], [7.0, 3.7 + g - 0.4 * mj, 3.5 - 0.3 * mj, 4.6 - 0.9 * mj], [4.6, 3.8 + g - 0.2 * mj, 3.6, 4.8 - 0.3 * mj], [2.4, 4.0 + g, 3.8, 5.1 + 0.2 * mj]];
     for (let i = 0; i < t.length - 1; i++) if (u <= t[i][0] && u >= t[i + 1][0]) { const k = (t[i][0] - u) / (t[i][0] - t[i + 1][0]); return [u, ...[1, 2, 3].map((j) => t[i][j] + (t[i + 1][j] - t[i][j]) * k)] as [number, number, number, number]; }
     return u > t[0][0] ? t[0] : t[t.length - 1];
   };
@@ -455,7 +457,8 @@ export function jubon(e: Esqueleto, cu: Cuerpo, to: NonNullable<Equipo['torso']>
   const g = (cu.grasa ?? 0) * 1.5, m = to.mat, ps: Pieza[] = [];
   const borde = m === 'cu_cuero_negro' ? 'cu_cuero' : 'cu_cuero_negro';
   // el ruedo (sobre la cadera) y la sisa del cuello, de cuero del otro tono
-  ps.push(poliedro([...anillo(PT, 0.3, 4.55 + g, 4.3 + g, 5.05 + g, 3.4, 12), ...anillo(PT, 0.3, 4.6 + g, 4.35 + g, 5.1 + g, 4.3, 12)], { mat: borde, tono: -0.1 }));
+  const mj = cu.genero === 'm' ? 0.55 : 0;
+  ps.push(poliedro([...anillo(PT, 0.3, 4.55 + g - mj, 4.3 + g - mj, 5.05 + g - mj, 3.4, 12), ...anillo(PT, 0.3, 4.6 + g - mj, 4.35 + g - mj, 5.1 + g - mj, 4.3, 12)], { mat: borde, tono: -0.1 }));
   if (correa) {
     // correa cruzada (por delante y por detrás) con hebilla de metal sobre el pecho
     const r = (u: number, y: number, k: number, d = 0): V3 => PT(k * (Math.sqrt(Math.max(0.05, 1 - (y / (6.4 + g)) ** 2)) * (u > 11 ? 5.0 : 4.4) + g + 0.35 - d), y, u);
