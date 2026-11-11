@@ -408,6 +408,19 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   for (const b of brazos) b.eje = ejeAgarre(b.d2, F, arma, b.s, b.s > 0 ? P.munecaD ?? 0 : 0);
   const der = brazos[0], izq = brazos[1];
   const dirW = (v: V3): V3 => { const o = Wc(0, 0, 10), q = Wc(v[0], v[1], 10 + v[2]); return nor(sub(q, o)); };
+  if (P.armaRel && !P.armaD) {
+    // el arma sujeta al antebrazo: [ángulo desde el antebrazo, giro alrededor de él]. La referencia del giro es el lado
+    // hacia el que dobla el codo (con un poco del frente del torso: con el brazo estirado no se pierde), así el arma
+    // acompaña al brazo en todo el recorrido, sin saltos, y sigue al torso cuando gira o se inclina
+    const tF = nor(sub(T(1, 0, hombroZ), T(0, 0, hombroZ)));
+    const base: V3 = add([-der.d1[0], -der.d1[1], -der.d1[2]], tF, 0.45), d2 = der.d2;
+    let ref = sub(base, [d2[0] * dot3(base, d2), d2[1] * dot3(base, d2), d2[2] * dot3(base, d2)]);
+    if (len(ref) < 1e-3) ref = [0, 0, 1];
+    ref = nor(ref);
+    const fuera = cruz(d2, ref), a = rad(P.armaRel[0]), g = rad(P.armaRel[1]);
+    const lado: V3 = [ref[0] * Math.cos(g) + fuera[0] * Math.sin(g), ref[1] * Math.cos(g) + fuera[1] * Math.sin(g), ref[2] * Math.cos(g) + fuera[2] * Math.sin(g)];
+    der.eje = nor(add([d2[0] * Math.cos(a), d2[1] * Math.cos(a), d2[2] * Math.cos(a)], lado, Math.sin(a)));
+  }
   if (P.armaD) {
     // el arma apunta a donde la pose dice; si la cabeza del arma busca el piso, se ajusta al largo del arma
     let [pa, ya] = P.armaD;
@@ -1575,8 +1588,7 @@ function arma(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string
   const dd = b.eje, m = b.mano;
   const en = (k: number): V3 => add(m, dd, k);
   // vector de canto de la hoja: perpendicular al mango y al frente del cuerpo
-  let canto = nor(cruz(dd, F)); if (!isFinite(canto[0]) || len(cruz(dd, F)) < 0.2) canto = nor(cruz(dd, [0, 0, 1]));
-  const plano = nor(cruz(canto, dd));
+  const [canto, plano] = marcoArma(dd, F, b.s > 0 ? b.d2 : undefined);
   const hoja = (k0: number, k1: number, ancho: number, grueso: number, punta = 0.15, curva = 0): Pieza => {
     const a = en(k0), z = add(en(k1), canto, curva);
     return poliedro([add(a, canto, ancho), add(a, canto, -ancho), add(a, plano, grueso), add(a, plano, -grueso),
@@ -1729,8 +1741,11 @@ function marcoArco(e: Esqueleto, c: V3, m: V3): { tira: boolean; tiro: V3; arrib
 }
 
 /** El marco de una hoja en el puño: el canto (ancho de la hoja) y el plano (hacia donde mira su cara). */
-function marcoArma(dd: V3, F: V3): [V3, V3] {
-  let canto = nor(cruz(dd, F)); if (!isFinite(canto[0]) || len(cruz(dd, F)) < 0.2) canto = nor(cruz(dd, [0, 0, 1]));
+function marcoArma(dd: V3, F: V3, d2?: V3): [V3, V3] {
+  // el filo mira al frente del cuerpo y hacia donde apunta el antebrazo (los nudillos): con el arma apuntando justo al
+  // frente el antebrazo decide y la hoja no se da vuelta de un cuadro al otro
+  const ref: V3 = d2 ? add(F, d2, 0.6) : F;
+  let canto = nor(cruz(dd, ref)); if (!isFinite(canto[0]) || len(cruz(dd, ref)) < 0.2) canto = nor(cruz(dd, [0, 0, 1]));
   return [canto, nor(cruz(canto, dd))];
 }
 interface Ctrl { p: V3; an: number; gr: number; w: V3 }
@@ -1764,7 +1779,7 @@ function cadenaHuesos(pts: V3[], r0: number, r1: number, mat: string, tono?: num
 function armaEpica(e: Esqueleto, tipo: TipoArma, b: Brazo, mat: string, mango: string, gema?: string): Pieza[] {
   const { S, F } = e;
   const dd = b.eje, m = b.mano, ps: Pieza[] = [];
-  const [canto, plano] = marcoArma(dd, F);
+  const [canto, plano] = marcoArma(dd, F, b.s > 0 ? b.d2 : undefined);
   /** Punto en unidades de S: k a lo largo del arma, c hacia el canto, p hacia la cara. */
   const P = (k: number, c = 0, p = 0): V3 => add(add(add(m, dd, k * S), canto, c * S), plano, p * S);
   /** Hoja recta o curva por puntos [k, corrimiento de canto, ancho, grueso]. */
@@ -1966,7 +1981,7 @@ function filoDe(e: Esqueleto, tipo: TipoArma, b: Brazo): [V3, V3] {
     case 'lanza_dragon': return [en(31), en(41)];
     case 'gran_baculo': { const [, t, up] = varaDe(e, b.mano, 1.06); return [add(t, up, 3 * S), add(t, up, 7.6 * S)]; }
     case 'hoz': {
-      const [, plano] = marcoArma(b.eje, e.F), C = add(en(5.6), plano, 4.4 * S);
+      const [, plano] = marcoArma(b.eje, e.F, b.s > 0 ? b.d2 : undefined), C = add(en(5.6), plano, 4.4 * S);
       const arcoP = (g: number, R: number): V3 => add(add(C, plano, -Math.cos(rad(g)) * R * S), b.eje, Math.sin(rad(g)) * R * S);
       return [arcoP(50, 4.25), arcoP(185, 3.85)];
     }
