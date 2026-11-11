@@ -3,6 +3,7 @@ import { claveBaja } from './clave_baja';
 import * as superficie from './superficie';
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
+import { rasgos, mechones, hebras, type MarcoCab } from './rostro';
 import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado, tunica as tunicaForjada, colgantes, tabardoFaldon, jubon } from './armadura';
 import { pose, CUADROS, cuadrosDe, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
@@ -106,6 +107,8 @@ for (const k of Object.keys(M)) if (k.startsWith('cu_tela_') && !M[k].patron) M[
 M.cu_malla = { ...M.cu_malla, ruido: 0.06, patron: superficie.malla };
 // lo del cuerpo lleva la textura pegada a la pieza (no se desliza al caminar)
 for (const k of Object.keys(M)) if (k.startsWith('cu_')) M[k] = { ...M[k], local: true };
+// las hebras del pelo y la barba (rostro.ts)
+for (const k of Object.keys(M)) if (k.startsWith('cu_pelo_')) { const pb = M[k].patron; M[k] = { ...M[k], patron: (p, n) => (pb ? pb(p, n) : 0) + hebras(p) }; }
 
 // ------------------------------------------------------------------ tipos
 export interface Cuerpo {
@@ -736,7 +739,10 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   }
   // ojos (un poco hundidos bajo las cejas) y boca
   const ojo = cu.ojos ?? 'cu_ojo', brilla = MATERIALES[ojo]?.emite;
-  for (const s of [1, -1]) ps.push(elipsoide(...cab(3.35 * H, s * 1.45 * H, cz + 0.25 * H), (brilla ? 0.7 : 0.5) * H, 0.75 * H, (brilla ? 0.55 : 0.5) * H, { mat: ojo }));
+  // el héroe lleva la cara con luz y sombra (rostro.ts); los ojos que brillan siguen siendo bolas de luz
+  const marcoCab: MarcoCab = { cab, ejes: ejesCab, cz, H };
+  if (cu.presentacion && !cu.oseo) ps.push(...rasgos(marcoCab, { piel: cu.piel, pelo: cu.peinado === 'calvo' ? undefined : cu.pelo, mujer: cu.genero === 'm', barba: !!cu.barba && cu.barba !== 'bigote', ojo, brilla: !!brilla }));
+  if (!cu.presentacion || brilla) for (const s of [1, -1]) ps.push(elipsoide(...cab(3.35 * H, s * 1.45 * H, cz + 0.25 * H), (brilla ? 0.7 : 0.5) * H, 0.75 * H, (brilla ? 0.55 : 0.5) * H, { mat: ojo }));
   // ---- piernas y pies
   const pz = eq.piernas, pi = eq.pies;
   if (pz) {
@@ -976,7 +982,8 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       else if (cu.peinado === 'cresta') pc.push(hueso(cab(2.2 * H, 0, cz + 4.6 * H), cab(-4.2 * H, 0, cz + 2 * H), 1.2 * H, 0.9 * H), bulto(cab(-1 * H, 0, cz + 4.8 * H), [3.8 * H, 0.9 * H, 1.8 * H], { ejes: ejesCab }));
       else {
         pc.push(bC(-0.7, 0, 1.35, [4.25, 3.9, 4.35]));
-        pc.push(bC(1.4, 0, 3.3, [2.8, 3.5, 1.4], 1.4)); // flequillo arriba de la frente
+        // flequillo arriba de la frente (en el héroe más alto y atrás: no tira sombra sobre los ojos; los mechones caen)
+        pc.push(cu.presentacion ? bC(1.0, 0, 3.75, [2.6, 3.4, 1.2], 1.4) : bC(1.4, 0, 3.3, [2.8, 3.5, 1.4], 1.4));
         for (const s of [1, -1]) pc.push(bC(0.2, s * 3.0, 0.4, [2.6, 1.0, 2.6], 1.2)); // patillas
       }
       // el pelo largo cuelga del cráneo y sus puntas se arrastran con la inercia (pelo de la pose)
@@ -985,13 +992,16 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       if (cu.peinado === 'largo' || cu.peinado === 'melena') {
         const ancho = cu.peinado === 'melena' ? 1.3 : 1;
         pc.push(hueso(cab(-2.6 * H, 0, cz + 1 * H), Tp(-4.4 * S, 0, e.hombroZ - (cu.peinado === 'melena' ? 4 : 8) * S), 3.6 * H * ancho, 2.6 * H * ancho));
-        for (const s of [1, -1]) pc.push(hueso(cab(-0.6 * H, s * 3.4 * H, cz), Tp(-1.5 * S, s * 4.2 * A, e.hombroZ - 2.5 * S, 0.5), 1.8 * H * ancho, 1.4 * H * ancho));
+        // los mechones de los costados (en el héroe, detrás de la oreja: no le tapan la cara)
+        if (cu.presentacion) for (const s of [1, -1]) pc.push(hueso(cab(-1.5 * H, s * 3.3 * H, cz + 0.4 * H), Tp(-2.8 * S, s * 4.0 * A, e.hombroZ - 2.5 * S, 0.5), 1.5 * H * ancho, 1.2 * H * ancho));
+        else for (const s of [1, -1]) pc.push(hueso(cab(-0.6 * H, s * 3.4 * H, cz), Tp(-1.5 * S, s * 4.2 * A, e.hombroZ - 2.5 * S, 0.5), 1.8 * H * ancho, 1.4 * H * ancho));
       }
       if (cu.peinado === 'cola') { const a = cab(-3.4 * H, 0, cz + 1.6 * H), b = Tp(-5.6 * S, 0, e.hombroZ - 2 * S, 0.5), c = Tp(-6 * S, 0, e.hombroZ - 11 * S, 1.6); pc.push(hueso(a, b, 1.6 * H, 1.3 * H), hueso(b, c, 1.3 * H, 0.5 * H)); }
       if (cu.peinado === 'trenzas') for (const s of [1, -1]) for (let i = 0; i < 4; i++) pc.push(bulto(mez(cab(-1.2 * H, s * 3.4 * H, cz - 1 * H), Tp(0.5 * S, s * 4.4 * A, e.hombroZ - 8 * S), i / 3.5), [1.2 * H, 1.1 * H, 1.5 * H], { k: 0.5 }));
       if (cu.peinado === 'mono') pc.push(bulto(cab(-2.8 * H, 0, cz + 3.6 * H), [2.3 * H, 2.3 * H, 2.1 * H]));
     }
     if (pc.length) ps.push(masa(pc.map((c) => ({ ...c, mat: cu.pelo })), { mat: cu.pelo, suave: 1.4 }));
+    if (cu.presentacion && !tapaPelo && cu.peinado !== 'rapado' && cu.peinado !== 'cresta') ps.push(...mechones({ cab, ejes: ejesCab, cz, H }, cu.pelo, cu.genero === 'm'));
   }
   if (cu.barba) {
     const bm = cu.pelo ?? 'cu_pelo_negro';
@@ -1004,6 +1014,12 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       if (cu.barba === 'larga' || cu.barba === 'trenzada') bc.push(hueso(cab(3.0 * H, 0, cz - 3.6 * H), cab(3.9 * H, 0, cz - 9.5 * H), 2.1 * H, cu.barba === 'trenzada' ? 0.7 * H : 1.1 * H));
     }
     ps.push(masa(bc.map((c) => ({ ...c, mat: bm })), { mat: bm, suave: 1.2 }));
+    // el borde de la barba: puntas desparejas abajo (una masa con borde, no una cuña lisa) y el lomo de arriba con luz
+    if (cu.presentacion && cu.barba !== 'bigote') {
+      for (const [rt, fw, z, l] of [[1.7, 2.4, -3.5, 1.3], [-1.7, 2.4, -3.5, 1.3], [0.8, 3.2, -4.3, 1.1], [-0.9, 3.1, -4.3, 1.4]] as const)
+        ps.push(palo(cab(fw * H, rt * H, cz + z * H), cab((fw + 0.3) * H, rt * 1.1 * H, cz + (z - l) * H), 0.6 * H, { mat: bm, tono: 0.04, r1: 0.15 * H }));
+      for (const s of [1, -1]) ps.push(palo(cab(3.4 * H, s * 1.0 * H, cz - 1.75 * H), cab(2.9 * H, s * 2.4 * H, cz - 1.95 * H), 0.45 * H, { mat: bm, tono: 0.12 }));
+    }
   }
   // ---- cuernos
   if (cu.cuernos) for (const s of [1, -1]) {
