@@ -42,8 +42,8 @@ M.cu_pelo_blanco = { rampa: ['#2e2c2a', '#4a4744', '#67635f', '#86817b', '#a49e9
 M.cu_malla = { rampa: ['#0f1012', '#1d1f22', '#2e3135', '#41454a', '#565b61', '#6d737a', '#868c93', '#a3a9af'], ruido: 0.2, escala: 1.3, brillo: 0.2, patron: (p) => { const a = Math.sin(p[0] * 2.6 + p[1] * 2.6) * Math.sin(p[2] * 3.2 + (p[0] - p[1]) * 1.3); return a > 0.35 ? 0.1 : a < -0.55 ? -0.2 : 0; } };
 M.cu_cuero = { rampa: ['#170b05', '#2a140a', '#3f1f0f', '#552c16', '#6b3a1d', '#814926', '#975930', '#ac6a3b'], ruido: 0.16, escala: 0.8, brillo: 0.06 };
 M.cu_cuero_negro = { rampa: ['#070606', '#0f0d0c', '#191513', '#241f1c', '#302925', '#3d3530', '#4b423c'], ruido: 0.18, escala: 0.8, brillo: 0.12 };
-M.cu_placa = { rampa: ['#0a0b0e', '#14171c', '#20242b', '#2d323a', '#3c434d', '#4f5864', '#66717e', '#838e9b', '#a8b2bd', '#d3dae2'], ruido: 0.015, escala: 0.6, brillo: 0.8, trama: 0.25 };
-M.cu_placa_oscura = { rampa: ['#060608', '#0e0f12', '#17191d', '#21242a', '#2d3138', '#3b4048', '#4e545d', '#68707a', '#8f97a1'], ruido: 0.02, escala: 0.6, brillo: 0.75, trama: 0.25 };
+M.cu_placa = { rampa: ['#0a0b0e', '#14171c', '#20242b', '#2d323a', '#3c434d', '#4f5864', '#66717e', '#838e9b', '#a8b2bd', '#d3dae2'], ruido: 0.015, escala: 0.6, brillo: 0.8, trama: 0.6 };
+M.cu_placa_oscura = { rampa: ['#060608', '#0e0f12', '#17191d', '#21242a', '#2d3138', '#3b4048', '#4e545d', '#68707a', '#8f97a1'], ruido: 0.02, escala: 0.6, brillo: 0.75, trama: 0.6 };
 M.cu_oro = { rampa: ['#1c1004', '#36210a', '#553711', '#77501a', '#996b25', '#b98733', '#d4a548', '#e8c46a', '#f6e2a0'], ruido: 0.03, escala: 0.6, brillo: 0.75, trama: 0.35 };
 M.cu_tela_blanca = { rampa: ['#24221f', '#3b3833', '#56524b', '#726d64', '#8e887e', '#a9a398', '#c2bcb1'], ruido: 0.12, escala: 1.2 };
 M.cu_tela_roja = { rampa: ['#1a0505', '#2e0909', '#460f0e', '#5f1614', '#781f1b', '#902a24', '#a5372f'], ruido: 0.12, escala: 1.2 };

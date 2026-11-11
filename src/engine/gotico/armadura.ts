@@ -1,5 +1,6 @@
 import { caja, esfera, elipsoide, masa, hueso, bulto, poliedro, type Pieza, type V3, type Comp } from './render';
 import type { Cuerpo, Equipo, Esqueleto } from './cuerpo';
+import { MATERIALES } from './materiales';
 
 /**
  * Armadura gótica forjada a mano, para leerse a escala de juego (el héroe mide ~75 px): cascos con silueta propia por
@@ -100,7 +101,8 @@ export function casco(e: Esqueleto, cu: Cuerpo, c: NonNullable<Equipo['cabeza']>
       ps.push(poliedro([P(-6.9, 0, -3.25), P(-6.3, 3.4, -2.85), P(-6.3, -3.4, -2.85), P(-7.15, 0, -4.15), P(-6.55, 3.45, -3.75), P(-6.55, -3.45, -3.75)], { mat: m, tono: oscuro }));
       // visera: la mitad de abajo del frente, más adelante; la vista oscura y la arista de arriba
       ps.push(poliedro([...arco(P, -0.3, 5.15, 5, 4.75, -1.8, -75, 75, 6), ...arco(P, -0.3, 5.15, 5, 4.75, 0.3, -75, 75, 6), P(5.75, 0, -0.8)], { mat: m, tono: claro * 0.6 }));
-      ps.push(caja(...P(5.05, 0, 0.75), 1.4 * H, 6.6 * H, 0.75 * H, { mat: 'cu_tela_negra', giro: angH(e) }));
+      // la vista: oscura, o con el brillo de los ojos si el que la lleva los tiene encendidos (los muertos)
+      ps.push(caja(...P(5.05, 0, 0.75), 1.4 * H, 6.6 * H, 0.75 * H, { mat: vistaDe(cu), giro: angH(e) }));
       ps.push(poliedro([P(4.6, 0.32, 2.6), P(4.6, -0.32, 2.6), P(1.0, 0.32, 5.4), P(1.0, -0.32, 5.4), P(-3.6, 0.32, 4.6), P(-3.6, -0.32, 4.6), P(1.2, 0, 6.0), P(-1.5, 0, 5.9)], { mat: m, tono: claro }));
       // pivotes de la visera
       for (const s of [1, -1]) ps.push(esfera(...P(1.6, s * 4.95, 0.3), 0.6 * H, { mat: orn ?? 'cu_placa_oscura' }));
@@ -114,7 +116,7 @@ export function casco(e: Esqueleto, cu: Cuerpo, c: NonNullable<Equipo['cabeza']>
       // visera en pico
       ps.push(poliedro([...arco(P, -0.3, 5.0, 5, 4.7, -3.6, -80, 80, 6), ...arco(P, -0.3, 5.05, 5, 4.75, 2.0, -80, 80, 6), P(7.6, 0, -0.6), P(6.4, 0, 1.4), P(6.2, 0, -2.6)], { mat: m, tono: claro * 0.5 }));
       // las dos vistas (una por ojo, en diagonal hacia el pico) y los agujeros de respiro
-      for (const s of [1, -1]) ps.push(poliedro([P(5.6, s * 0.7, 0.9), P(5.3, s * 2.9, 1.2), P(5.5, s * 0.7, 0.4), P(5.2, s * 2.9, 0.7), P(6.1, s * 0.7, 0.7), P(5.6, s * 2.9, 1.0)], { mat: 'cu_tela_negra' }));
+      for (const s of [1, -1]) ps.push(poliedro([P(5.6, s * 0.7, 0.9), P(5.3, s * 2.9, 1.2), P(5.5, s * 0.7, 0.4), P(5.2, s * 2.9, 0.7), P(6.1, s * 0.7, 0.7), P(5.6, s * 2.9, 1.0)], { mat: vistaDe(cu) }));
       for (const [fw, rt, up] of [[6.4, 0.9, -1.4], [6.4, -0.9, -1.4], [6.0, 1.7, -2.0], [6.0, -1.7, -2.0]]) ps.push(caja(...P(fw, rt, up), 0.6 * H, 0.42 * H, 0.42 * H, { mat: 'cu_tela_negra', giro: angH(e) }));
       // arista de la calota
       ps.push(poliedro([P(4.3, 0.3, 3.2), P(4.3, -0.3, 3.2), P(0.6, 0.3, 6.2), P(0.6, -0.3, 6.2), P(-4.2, 0.3, 4.4), P(-4.2, -0.3, 4.4), P(-1.0, 0, 7.15)], { mat: m, tono: claro }));
@@ -202,6 +204,8 @@ function astas(e: Esqueleto, cu: Cuerpo, m: string): Pieza[] {
   }
   return ps;
 }
+/** La vista de un yelmo: negra, o del material de los ojos si brillan (un muerto que mira por la ranura). */
+const vistaDe = (cu: Cuerpo) => (cu.ojos && MATERIALES[cu.ojos]?.emite ? cu.ojos : 'cu_tela_negra');
 const angH = (e: Esqueleto) => (Math.atan2(e.ejesCab[0][1], e.ejesCab[0][0]) * 180) / Math.PI;
 
 /**

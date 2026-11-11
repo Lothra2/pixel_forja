@@ -12,18 +12,18 @@ import { ruido, type V3 } from './render';
 const frac = (x: number) => x - Math.floor(x);
 
 export function metal(p: V3): number {
-  const mancha = (ruido(p[0] * 0.22 + 11, p[1] * 0.22, p[2] * 0.22) - 0.5) * 0.18;
-  const golpe = (ruido(p[0] * 0.9, p[1] * 0.9 + 5, p[2] * 0.9) - 0.5) * 0.06;
+  const mancha = (ruido(p[0] * 0.22 + 11, p[1] * 0.22, p[2] * 0.22) - 0.5) * 0.26;
+  const golpe = (ruido(p[0] * 0.9, p[1] * 0.9 + 5, p[2] * 0.9) - 0.5) * 0.1;
   const s = Math.abs(Math.sin((p[0] * 0.8 - p[1] * 0.5 + p[2] * 1.7) * 1.9 + ruido(p[0] * 0.2, p[1] * 0.2, p[2] * 0.2) * 6));
   return mancha + golpe + (s > 0.993 ? 0.12 : 0);
 }
 export function cuero(p: V3): number {
-  const tono = (ruido(p[0] * 0.5 + 3, p[1] * 0.5, p[2] * 0.5) - 0.5) * 0.18;
+  const tono = (ruido(p[0] * 0.5 + 3, p[1] * 0.5, p[2] * 0.5) - 0.5) * 0.24;
   const veta = Math.abs(Math.sin((p[0] + p[1] + p[2] * 0.3) * 3.1 + ruido(p[0] * 0.3, p[1] * 0.3, p[2] * 0.3) * 5));
   return tono + (veta > 0.986 ? -0.11 : 0);
 }
 export function tela(p: V3): number {
-  const hilo = (ruido((p[0] + p[1]) * 2.2, 0.5, p[2] * 0.15) - 0.5) * 0.14;
+  const hilo = (ruido((p[0] + p[1]) * 2.2, 0.5, p[2] * 0.15) - 0.5) * 0.18;
   const trama = (Math.floor(p[2] * 2.4) + Math.floor((p[0] - p[1]) * 2.4)) & 1 ? 0.025 : -0.025;
   return hilo + trama;
 }

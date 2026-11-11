@@ -710,7 +710,8 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
 }
 
 /**
- * Sin sal: un pixel claro (luminancia > 200) sin ningún vecino claro es un brillo suelto (purpurina); baja hasta el
+ * Sin sal: un pixel claro (luminancia > 140: el juego mezcla el sprite consigo mismo en 'screen' y ese gris ya llega
+ * a 200) sin ningún vecino claro es un brillo suelto (purpurina); baja hasta el
  * vecino más claro, así cada reflejo es una línea o un grupo. Lo que emite (chispas, gemas, fuego) no se toca.
  */
 function sinSal(img: Raster, luzPropia: Uint8Array) {
@@ -718,10 +719,10 @@ function sinSal(img: Raster, luzPropia: Uint8Array) {
   const bajar: [number, number][] = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const q = (y * W + x) * 4;
-    if (d[q + 3] !== 255 || luzPropia[y * W + x] || lum(q) <= 200) continue;
+    if (d[q + 3] !== 255 || luzPropia[y * W + x] || lum(q) <= 140) continue;
     let mx = 0;
     for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { if ((!i && !j) || x + i < 0 || y + j < 0 || x + i >= W || y + j >= H) continue; const r = ((y + j) * W + x + i) * 4; if (d[r + 3] === 255) mx = Math.max(mx, lum(r)); }
-    if (mx <= 200) bajar.push([q, Math.max(mx, 150) / lum(q)]);
+    if (mx <= 140) bajar.push([q, Math.max(mx, 115) / lum(q)]);
   }
   for (const [q, k] of bajar) for (let t = 0; t < 3; t++) d[q + t] *= k;
 }
