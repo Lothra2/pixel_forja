@@ -268,6 +268,13 @@ type IzqTipo = NonNullable<Equipo['izq']>['tipo'];
 /** Radios del hueso del pie (talón y punta) en unidades de A: el pie se apoya con la planta a ras del piso. */
 const PIE_TALON = 1.6, PIE_PUNTA = 1.25;
 
+/**
+ * Escala de la cabeza. Los héroes van con proporción heroica (unas 7 cabezas y cuarto de alto, como en los ARPG clásicos):
+ * con la cabeza de siempre medían 6,3 cabezas y se veían cabezones, de muñeco.
+ */
+const CABEZA_HEROE = +((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CABEZA_HEROE ?? 0.86);
+const escCab = (cu: Cuerpo) => cu.cabeza ?? (cu.presentacion ? CABEZA_HEROE : 1);
+
 export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo, crudo = false): Esqueleto {
   const S = cu.alto ?? 1, A = (cu.ancho ?? 1) * S;
   // (las astas y el gran báculo nuevos van con la pose de vara aunque sean a dos manos: la izquierda baja por el asta)
@@ -342,7 +349,7 @@ export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: Ti
   const T: Fn = (fw, rt, up) => Wc(...Tl(fw, rt, up));
   const Pv: Fn = (fw, rt, up) => Wc(...pvL(fw, rt, up));
   const hombroZ = zc + 16.5 * S;
-  const cz = hombroZ + 7.6 * S - (cu.joroba ?? 0) * 2 * S;
+  const cz = hombroZ + (3.2 + 4.4 * escCab(cu)) * S - (cu.joroba ?? 0) * 2 * S;
   const cabeza = rad(P.cabeza - (cu.joroba ?? 0) * 25), gCab = rad(P.giroCabeza ?? 0), lCab = rad(P.ladeoCabeza ?? 0);
   // la cabeza gira sobre el cuello, se ladea y cabecea; todo sobre el torso
   const cab: Fn = (fw, rt, up) => {
@@ -636,7 +643,7 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: st
     }
   }
   if (tiene('cabeza') || tiene('craneo')) {
-    const H = (cu.cabeza ?? 1) * S, cz = e.cz;
+    const H = escCab(cu) * S, cz = e.cz;
     const bC = (fw: number, rt: number, up: number, r: V3, m = mat, k?: number) => bulto(cab(fw * H, rt * H, cz + up * H), [r[0] * H + inf, r[1] * H + inf, r[2] * H + inf], { ejes: ejesCab, mat: m, k });
     cs.push(bC(-0.2, 0, 0.9, [4.0, 3.55, 4.3]));
     if (tiene('cabeza')) {
@@ -674,7 +681,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   const { S, A, T, cab, ejesCab, F, R } = e;
   // el cuadro llevado a un ciclo de 8 (los vaivenes de colas, jirones y adornos cierran el ciclo con cualquier cantidad de cuadros)
   const f8 = (f * 8) / cuadrosDe(acc, cu.presentacion);
-  const H = (cu.cabeza ?? 1) * S, cz = e.cz;
+  const H = escCab(cu) * S, cz = e.cz;
   const ps: Pieza[] = [];
   const todo: Parte[] = ['pelvis', 'abdomen', 'pecho', 'hombros', 'cuello', 'brazo', 'antebrazo', 'mano', 'muslo', 'pantorrilla', 'pie', 'cabeza'];
   // carne (o huesos)
@@ -1036,7 +1043,7 @@ function ejes3(d: V3, n: V3): [V3, V3, V3] {
  */
 function adornos(e: Esqueleto, cu: Cuerpo, eq: Equipo, f: number): Pieza[] {
   const { S, A, T, cab } = e;
-  const H = (cu.cabeza ?? 1) * S, cz = e.cz, zc = e.zc, hz = e.hombroZ, F = e.F;
+  const H = escCab(cu) * S, cz = e.cz, zc = e.zc, hz = e.hombroZ, F = e.F;
   const ps: Pieza[] = [];
   const [fwd, , upT] = e.ejesT;
   const Z: V3 = [0, 0, 1];
@@ -1407,7 +1414,7 @@ function raices(e: Esqueleto, f: number): Pieza[] {
 /** Esqueleto de huesos: cráneo con cuencas, mandíbula, columna, costillar en arcos, pelvis y huesos largos. */
 function huesos(e: Esqueleto, cu: Cuerpo): Pieza[] {
   const { S, A, T, cab, ejesCab } = e;
-  const H = (cu.cabeza ?? 1) * S, cz = e.cz, m = cu.piel;
+  const H = escCab(cu) * S, cz = e.cz, m = cu.piel;
   const cs: Comp[] = [];
   // columna y pelvis
   for (let i = 0; i < 7; i++) cs.push(bulto(T(-1.2 * S, 0, e.zc + (1 + i * 2.6) * S), [1.1 * S, 1.2 * S, 1.0 * S], { mat: m, k: 0.6 }));
@@ -1612,7 +1619,7 @@ function alas(e: Esqueleto, mat: string, acc: Accion, f: number): Pieza[] {
 /** Cascos y tocados. */
 function tocado(e: Esqueleto, cu: Cuerpo, c: NonNullable<Equipo['cabeza']>): Pieza[] {
   const { S, cab, ejesCab } = e;
-  const H = (cu.cabeza ?? 1) * S, cz = e.cz;
+  const H = escCab(cu) * S, cz = e.cz;
   const ps: Pieza[] = [];
   const bC = (fw: number, rt: number, up: number, r: V3, mat = c.mat, k?: number) => bulto(cab(fw * H, rt * H, cz + up * H), [r[0] * H, r[1] * H, r[2] * H], { ejes: ejesCab, mat, k });
   const ga = angulo(ejesCab[0]);
@@ -2369,7 +2376,7 @@ export interface GeoQA {
 export function geometriaQA(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): GeoQA {
   const tipo = eq.arma?.tipo ?? 'nada';
   const e = esqueleto(cu, dir, acc, f, tipo, eq.izq?.tipo);
-  const { S, A, cab, ejesCab, T, ejesT } = e, H = (cu.cabeza ?? 1) * S, der = e.brazos[0], P = e.pose;
+  const { S, A, cab, ejesCab, T, ejesT } = e, H = escCab(cu) * S, der = e.brazos[0], P = e.pose;
   const en = (k: number) => add(der.mano, der.eje, k * S);
   let arma: GeoQA['arma'], mango: [V3, V3] | undefined, cabo: V3 | undefined;
   if (esVara(tipo)) {
