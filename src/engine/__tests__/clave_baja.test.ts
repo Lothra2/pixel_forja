@@ -3,7 +3,7 @@ import { pintarEscena } from '../gotico/render';
 import { personajeEscena } from '../gotico/cuerpo';
 import { CLAVE_BAJA_CALIDA, CLAVE_BAJA_FRIA } from '../gotico/clave_baja';
 import { objeto } from '../gotico/objeto';
-import { HEROES } from '../gotico/catalogo/personajes';
+import { HEROES, MONSTRUOS } from '../gotico/catalogo/personajes';
 import '../gotico/catalogo/bestias';
 
 const lum = (d: Uint8ClampedArray, i: number) => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
@@ -33,8 +33,9 @@ describe('clave baja de los personajes', () => {
     const e = personajeEscena(t.cuerpo, t.niveles[0], 'so', 'quieto', 0);
     const baja = pintarEscena({ ...e, sinSombra: true, ss: 1 }), antes = pintarEscena({ ...e, sinSombra: true, ss: 1, luz: undefined });
     expect(mediana(baja.img)).toBeLessThan(mediana(antes.img) * 0.8);
-    const brasa = { ...t.cuerpo, ojos: 'cu_ojo_brasa' };
-    const ojos = pintarEscena({ ...personajeEscena(brasa, t.niveles[0], 's', 'quieto', 0), sinSombra: true, ss: 1 });
+    // los ojos que brillan: el necrófago (sin casco), que los muestra de frente
+    const nec = MONSTRUOS.find((m) => m.id === 'necrofago')!;
+    const ojos = pintarEscena({ ...personajeEscena(nec.cuerpo, nec.equipo, 's', 'quieto', 0), sinSombra: true, ss: 1 });
     let max = 0;
     for (let i = 0; i < ojos.img.data.length; i += 4) if (ojos.img.data[i + 3] === 255) max = Math.max(max, lum(ojos.img.data, i));
     expect(max).toBeGreaterThan(150);

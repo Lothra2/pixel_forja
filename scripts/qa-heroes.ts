@@ -87,6 +87,16 @@ export function medirCuadro(g: GeoQA, base: Omit<Falla, 'chequeo' | 'valor'>): F
     }
     if (g.arma.cabeza && g.arma.rCabeza) for (let i = 0; i <= 10; i++) { const q = mez(g.arma.cabeza[0], g.arma.cabeza[1], i / 10); peor = Math.min(peor, dentroElip(g.craneo, q, g.arma.rCabeza), dentroElip(g.mandibula, q, g.arma.rCabeza)); }
     if (peor < 1) falla('arma-cabeza', peor);
+    // contra el casco de verdad: calota, cuernos, cresta y visera (cada pieza facetada por sus planos)
+    if (g.casco?.length) {
+      let dentro = -9;
+      for (let i = 0; i <= 40; i++) {
+        const q = mez(a, b, i / 40);
+        if (len(sub(q, der.mano)) < 2 * S || len(sub(q, izq.mano)) < 2 * S) continue;
+        for (const planos of g.casco) { if (planos.length < 4) continue; let mx = -Infinity; for (const [n, d] of planos) mx = Math.max(mx, n[0] * q[0] + n[1] * q[1] + n[2] * q[2] - d); dentro = Math.max(dentro, -(mx - r * 0.6)); }
+      }
+      if (dentro > 0.05) falla('arma-casco', dentro);
+    }
     // ni el pecho ni el vientre (fuera de lo que queda dentro de las manos)
     if (!cae) {
       let cuerpo = 9;
@@ -397,7 +407,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const por = new Map<string, number>();
   for (const x of fallas) { const k = `${x.chequeo} · ${x.clase} · ${x.acc}`; por.set(k, (por.get(k) ?? 0) + 1); }
   console.log(`QA de ${MON ? `${sujetos.length} monstruos humanoides` : "héroes"}: ${cuadros} cuadros (${MON ? "8 direcciones" : "clases × 4 niveles × 8 direcciones"} × cada cuadro de cada acción) en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
-  const chequeos = ['agarre', 'arma-cabeza', 'arma-cuerpo', 'mano-cara', 'antebrazo-cara', 'mano-pecho', 'cabo-ingle', 'pie bajo el piso', 'rodilla al revés', 'articulación bajo el piso', 'mano bajo el piso'];
+  const chequeos = ['agarre', 'arma-cabeza', 'arma-casco', 'arma-cuerpo', 'mano-cara', 'antebrazo-cara', 'mano-pecho', 'cabo-ingle', 'pie bajo el piso', 'rodilla al revés', 'articulación bajo el piso', 'mano bajo el piso'];
   for (const c of chequeos) console.log(`  ${c.padEnd(26)} ${fallas.filter((x) => x.chequeo.startsWith(c)).length} fallas`);
   console.log(`  ${'arma-andar'.padEnd(26)} ${andar.fallas.length} fallas (paso por cuadro: caminar ≤ ${LIMITE_ANDAR.caminar}°, correr ≤ ${LIMITE_ANDAR.correr}°, salto ≤ ${LIMITE_ANDAR.salto}°)`);
   console.log('  ángulo del arma en pantalla (peor de las 8 direcciones), por clase y nivel:');

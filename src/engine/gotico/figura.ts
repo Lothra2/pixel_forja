@@ -1046,7 +1046,7 @@ function druida(p: Pose, acc: Accion, u: number, f: number, arma: ArmaPose) {
     p.ladeo = tab([4, 2, 0, 0, 4, 8, 6, 6]); p.giroTorso = tab([10, 6, 2, 0, 0, 2, 4, 4]);
     p.avanza = tab([-1, -0.3, 0, 0, 0, 0, 0, 0]); p.respira = tab([0.9, 0.5, 0.2, 0.5, 0.2, 0, 0, 0]);
     // al irse al piso la vara se le escapa adelante (si no, quedaba tendida bajo la cabeza)
-    p.varaPie = tab<[number, number, number]>([[10, 9, 0.5], [10, 9, 0.5], [10, 9, 0.5], [10, 9, 0.5], [14, 9.5, 0.5], [20, 10, 0.5], [24, 10, 0.5], [24, 10, 0.5]]);
+    p.varaPie = tab<[number, number, number]>([[10, 9, 0.5], [10, 9, 0.5], [10, 9, 0.5], [10, 9, 0.5], [14, 11, 0.5], [20, 13, 0.5], [24, 14, 0.5], [24, 14, 0.5]]);
     p.manoD = tab<[number, number, number]>([[7, 8.5, 40], [8, 8.5, 32], [8, 8, 26], [7, 8, 22], [7, 8, 22], [7, 8, 22], [7, 8, 22], [7, 8, 22]]);
     p.manoI = tab<[number, number, number]>([[6, -7, 32], [8, -6, 24], [7, -6, 18], [6, -5, 16], [6, -5, 16], [6, -6, 14], [6, -7, 12], [6, -7, 12]]);
     p.capa = [tab([2, 0.5, -0.5, -1, -1, -0.5, 0, 0]), 0]; p.pelo = [tab([1.4, -0.4, -0.8, -1.2, -1, -0.5, 0, 0]), 0];
@@ -1319,9 +1319,9 @@ function atacarBerserker(p: Pose, u: number, dosM: boolean) {
   const cl: Clave[] = [
     K(0, { bajar: 3, torso: 12, ladeo: 0, giroTorso: 8, giroCadera: 4, lateral: 0, avanza: 0, manoD: dosM ? [13, 9, 39] : [4, 10, 29], armaD: dosM ? [57, 168] : [128, 14], cabeza: -2, giroCabeza: -8, pasos: [-3.5, 4], alza: [0, 0], respira: 0.4, hombros: [0.8, 0.8], pegaI: 0 }),
     K(c12(1.2), { bajar: 3.6, torso: 14, giroTorso: 14, giroCadera: 6, manoD: dosM ? [8, 10, 44] : [5, 11, 38], armaD: dosM ? [24, 168] : [62, 24], respira: 0.2, pegaI: 0.4 }),
-    K(c12(3), { bajar: 3, torso: 2, ladeo: 3, giroTorso: 26, giroCadera: 10, lateral: 0.8, avanza: -0.4, manoD: [3, 10, 49], armaD: [-30, -14], cabeza: -4, giroCabeza: -20, respira: 0.8, hombros: [1.2, 1], pegaI: 1 }),
-    K(c12(5), { bajar: 3.2, torso: -8, ladeo: 5, giroTorso: 36, giroCadera: 14, lateral: 1.2, avanza: -0.8, manoD: [0, 10, 52], armaD: [-70, -18], cabeza: -6, giroCabeza: -30, alza: [0, 0.8], respira: 1, hombros: [1.5, 1] }, true),
-    K(c12(6), { bajar: 3.6, torso: 4, ladeo: 2, giroTorso: 20, giroCadera: -8, lateral: 0.4, avanza: 0.6, manoD: [7, 7, 56], armaD: [-10, -8], cabeza: -6, giroCabeza: -14, pasos: [-3.5, 6], alza: [0, 1.6], respira: 0.6 }),
+    K(c12(3), { bajar: 3, torso: 2, ladeo: 3, giroTorso: 26, giroCadera: 10, lateral: 0.8, avanza: -0.4, manoD: [3, 11.2, 49], armaD: [-30, -14], cabeza: -4, giroCabeza: -20, respira: 0.8, hombros: [1.2, 1], pegaI: 1 }),
+    K(c12(5), { bajar: 3.2, torso: -8, ladeo: 5, giroTorso: 36, giroCadera: 14, lateral: 1.2, avanza: -0.8, manoD: [0, 11.2, 52], armaD: [-70, -18], cabeza: -6, giroCabeza: -30, alza: [0, 0.8], respira: 1, hombros: [1.5, 1] }, true),
+    K(c12(6), { bajar: 3.6, torso: 4, ladeo: 2, giroTorso: 20, giroCadera: -8, lateral: 0.4, avanza: 0.6, manoD: [7.5, 10, 56], armaD: [-8, -2], cabeza: -6, giroCabeza: -14, pasos: [-3.5, 6], alza: [0, 1.6], respira: 0.6 }),
     K(c12(7), { bajar: 6.5, torso: 28, ladeo: -3, giroTorso: -12, giroCadera: -16, lateral: -1.2, avanza: 2.8, manoD: [16, 1.5, 25], armaD: [130, -2], cabeza: 12, giroCabeza: 10, pasos: [-3.5, 7], alza: [0, 0], respira: 0.1, hombros: [0, 0] }, true),
     K(c12(8), { bajar: 7, torso: 33, ladeo: -5, giroTorso: -24, giroCadera: -18, avanza: 3.2, manoD: [18, 1, 25], armaD: [150, -18], cabeza: 14, giroCabeza: 18 }),
     K(c12(9), { bajar: 6.6, torso: 31, giroTorso: -26, manoD: [17.5, 0.5, 25.5], armaD: [152, -20], pegaI: 1 }, true),
