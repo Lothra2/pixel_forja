@@ -50,6 +50,9 @@ M.cu_tela_roja = { rampa: ['#1a0505', '#2e0909', '#460f0e', '#5f1614', '#781f1b'
 M.cu_tela_azul = { rampa: ['#070b17', '#0d1528', '#14203b', '#1d2c4f', '#283b64', '#354b78', '#445d8b'], ruido: 0.12, escala: 1.2 };
 M.cu_tela_verde = { rampa: ['#080e08', '#0f1a0f', '#172818', '#203722', '#2a462c', '#365637', '#436644'], ruido: 0.12, escala: 1.2 };
 M.cu_tela_morada = { rampa: ['#0f0814', '#1b0f24', '#291736', '#382049', '#482b5c', '#59386f', '#6b4782'], ruido: 0.12, escala: 1.2 };
+// el negro del nigromante: frío y con un tope más alto que el negro llano, para que en penumbra se lean los pliegues
+// y el volumen del cuerpo bajo la tela (si no, un vacío negro)
+M.cu_tela_luto = { rampa: ['#070609', '#0d0c11', '#15131a', '#1e1b24', '#28242f', '#322d3b', '#3e3848', '#4b4456'], ruido: 0.12, escala: 1.2 };
 M.cu_tela_negra = { rampa: ['#060607', '#0c0c0e', '#141417', '#1d1d21', '#27272c', '#323238', '#3e3e45'], ruido: 0.12, escala: 1.2 };
 M.cu_tela_parda = { rampa: ['#120d08', '#20180f', '#302417', '#413120', '#533f2a', '#654e35', '#785e41'], ruido: 0.14, escala: 1.2 };
 M.cu_pelaje = { rampa: ['#100b07', '#1d150d', '#2c2015', '#3c2c1d', '#4d3926', '#5f4830', '#72583c', '#86694a'], ruido: 0.6, escala: 1.6, patron: (p) => (ruido(p[0] * 3, p[1] * 3, p[2] * 1.2) - 0.5) * 0.3 };
@@ -804,7 +807,9 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     const largo = to.tipo === 'camisa' || to.tipo === 'tunica' || to.tipo === 'malla' || to.tipo === 'harapos' ? (['antebrazo'] as Parte[]) : [];
     // (en las mujeres el jubón y la coraza van ceñidos: menos inflado, siguen cintura y cadera)
     const ceñido = cu.genero === 'm' && (to.tipo === 'cuero' || to.tipo === 'cuero_tachonado' || to.tipo === 'placas' || to.tipo === 'malla');
-    const inf = ceñido ? 0.42 : to.tipo === 'camisa' || to.tipo === 'sin_mangas' || to.tipo === 'vestido' ? 0.55 : to.tipo === 'malla' ? 0.85 : to.tipo === 'placas' ? 0.7 : 1;
+    // (la túnica de un cuerpo enjuto cae sobre los huesos: holgada pero sin hinchar hombros ni mangas)
+    const enjuto = (to.tipo === 'tunica' || to.tipo === 'harapos') && (cu.musculo ?? 0.5) < 0.25;
+    const inf = ceñido ? 0.42 : to.tipo === 'camisa' || to.tipo === 'sin_mangas' || to.tipo === 'vestido' ? 0.55 : to.tipo === 'malla' ? 0.85 : to.tipo === 'placas' ? 0.7 : enjuto ? 0.7 : 1;
     const base: Parte[] = ['pelvis', 'abdomen', 'pecho', 'hombros', ...mangas, ...largo];
     const matBase = to.tipo === 'placas' ? to.mat2 ?? 'cu_malla' : to.mat;
     // el cuero claro va un tono más oscuro que la piel morena, para que el jubón no se lea como torso desnudo
