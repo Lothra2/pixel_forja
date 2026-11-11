@@ -184,6 +184,15 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - El monje pega tres veces en su ataque (cuadros 2, 5 y 8): el daño se reparte 30, 30 y 40 %, cada golpe con su tirada, su número y su sonido. Los efectos de arma y el remate van con el último. Prueba: `juego/herramientas/combo_monje.cjs`.
 - **Enemigos con cuerpo.** Cada monstruo saca su perfil de su tamaño y su carácter: los grandes y los brutos cargan lento y pesan, los chicos son nerviosos. Al descubrirte se vuelven hacia ti un instante antes de echarse encima, cada uno a su tiempo. De lejos corren si su animación lo tiene. Dormidos, miran alrededor.
   - Prueba: `juego/herramientas/clases.cjs <clase> [vista]`.
+- **Animación rehecha cuadro a cuadro (motor).** Revisión de las 8 clases y los monstruos humanoides mirando cada cuadro a plena luz.
+  - Los brazos estaban cruzados: cada brazo iba con la pierna de su mismo lado. Ahora cada brazo va con la pierna contraria, como camina y corre una persona.
+  - El arma ya no va clavada al cuerpo. Va sujeta al antebrazo (`armaRel` en la pose), bracea con el paso menos que el brazo libre porque pesa, y la cabeza del arma se atrasa un poco en la muñeca. Sigue al torso cuando gira o se inclina.
+  - Berserker: el hacha a dos manos va al hombro y rebota con cada pisada. El hacha de una mano cuelga al costado al caminar y sube con el brazo al correr. El ataque sale de esa postura.
+  - Templario, nigromante y enemigos con espada, maza o daga: guardia baja que acompaña el brazo. Vara, arco y ballesta acompañan la mano. El brazo del escudo y el del orbe acompañan el paso.
+  - Monje: brazos sueltos al caminar y codos recogidos que bombean al correr. Antes llevaba los puños fijos adelante.
+  - El filo de hachas y espadas ya no se da vuelta de un cuadro al otro cuando el arma apunta al frente.
+  - La QA del motor (`scripts/qa-heroes.ts`) mide el giro real del arma entre cuadros seguidos en vez de exigir que no se mueva. Da 0 fallas en héroes y monstruos.
+  - Herramientas: `npx tsx scripts/revisar-anim.ts <carpeta> --clase berserker --accs caminar,correr --dirs so,o` saca tiras a plena luz. `npx tsx scripts/qa-rapida.ts berserker 1` mide una clase en segundos.
 
 ## Qué falta o se puede mejorar
 
