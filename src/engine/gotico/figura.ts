@@ -255,7 +255,7 @@ function brazoEscudo(p: Pose, acc: Accion, u: number, mano: ManoPose) {
   delete p.manoI; delete p.codoI;
   // el brazo acompaña el paso (adelante cuando la pierna derecha va atrás), corto: el escudo pesa y el objeto se cuida;
   // el antebrazo llega un poco después y todo sube y baja con cada pisada
-  const gi = mano === 'escudo' ? 24 : 14, br = Math.cos((u - 0.56) * TAU), br2 = Math.cos((u - 0.64) * TAU), pis = Math.sin((u - 0.1) * 2 * TAU), resp = p.respira ?? 0;
+  const gi = mano === 'escudo' ? 24 : 14, br = Math.cos((u - 0.06) * TAU), br2 = Math.cos((u - 0.14) * TAU), pis = Math.sin((u - 0.1) * 2 * TAU), resp = p.respira ?? 0;
   const ob = mano === 'objeto';
   if (acc === 'quieto') p.hombroI = ob ? [12 + resp * 1.5, 14, 62 + resp * 3, gi] : [20 + resp * 1.5, 14, 72 + resp * 2, gi];
   else if (acc === 'caminar') p.hombroI = ob ? [12 + br * 6, 14, 62 + br2 * 4 + pis, gi] : [20 + br * 4, 14, 74 + br2 * 3 + pis, gi];
@@ -462,8 +462,10 @@ function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose, estilo?: Pr
   // brazos: cada uno con la pierna contraria, atrasados; el antebrazo llega más tarde todavía y el codo nunca queda recto
   const lim = (v: number) => clamp(v, -38, 40);
   const vaiv = (q: number) => -pm(q)[0] * (correr ? 1.4 : 0.8) / amp;
-  const sD = lim(vaiv(u + 0.5 - 0.05)), sI = lim(vaiv(u - 0.05));
-  const cD = lim(vaiv(u + 0.5 - 0.11)), cI = lim(vaiv(u - 0.11));
+  // (vaiv(q) es el muslo derecho cambiado de signo: el brazo derecho va adelante cuando la pierna derecha va atrás.
+  // Antes estaban cruzados y cada brazo iba con la pierna de su mismo lado, como en la ambladura.)
+  const sD = lim(vaiv(u - 0.05)), sI = lim(vaiv(u + 0.5 - 0.05));
+  const cD = lim(vaiv(u - 0.11)), cI = lim(vaiv(u + 0.5 - 0.11));
   // el brazo libre bombea con el codo doblado: al correr entre 76° y 94° (la mano va del pecho, adelante a la altura del
   // esternón, a la cadera, atrás; nunca estirada al frente), al caminar suelto entre 18° y 32°
   const x = (v: number) => clamp(v / 40, -1, 1);
@@ -486,6 +488,9 @@ function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose, estilo?: Pr
   p.capa = [(correr ? 4.4 : 2.6) + rebote * (correr ? 0.9 : 0.7), -peso(u - 0.14) * (correr ? 0.9 : 1.3)];
   p.pelo = [(correr ? 2.2 : 0.6) + rebote * 0.5, -peso(u - 0.16) * 0.8];
   const g = dif(u);
+  // el vaivén del brazo que lleva un arma: el mismo compás que el brazo libre pero redondo (el arma pesa: no da el
+  // latigazo de la pierna cuando pasa al frente). +1 = el brazo derecho adelante (la pierna derecha atrás)
+  const suave = (q: number) => -Math.cos((q - 0.02) * TAU);
   // el andar de cada clase: el mismo ciclo de piernas (los pies no patinan) con otro cuerpo encima
   if (estilo) andarDeClase(p, u, correr, estilo, { sD, sI, cD, cI, g, peso, rebote });
   if (porte === 'bestia') andarDeBestia(p, u, correr, arma);
@@ -494,7 +499,7 @@ function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose, estilo?: Pr
   if (arma === 'una' && !correr && !estilo) p.munecaD = -(p.hombroD[0] - 4) * 0.8 - 14;
   // los héroes llevan el arma firme: el brazo del arma no bombea (codo recogido, muñeca firme), el arma oscila pocos
   // grados en todo el ciclo y al correr va como al caminar, apenas más recogida; el brazo libre es el que bombea
-  if (portarArma(p, u, correr, arma, estilo, (lag, izq) => vaiv(u + (izq ? 0 : 0.5) - lag) / (correr ? 28 : 20))) return;
+  if (portarArma(p, u, correr, arma, estilo, (lag, izq) => suave(u + (izq ? 0.5 : 0) - lag))) return;
   // a dos manos: al hombro, como en quieto (el puño delante del pecho, la cabeza del arma atrás); la izquierda bracea
   if (arma === 'dos') {
     const zh = 40 - (estilo === 'rugido' ? 2.4 : 0), fw = estilo === 'rugido' ? 7 : 5;
@@ -568,7 +573,7 @@ function porteBerserker(p: Pose, m: number, b0: number, b1: number, b2: number, 
 function porteUna(p: Pose, m: number, b0: number, b1: number, b2: number, pis: number, estilo?: Presentacion) {
   delete p.manoD; delete p.codoD; delete p.armaD; delete p.munecaD;
   const k = estilo === 'guardia' ? 0.7 : estilo === 'invoca' ? 0.6 : 1;
-  if (m === 2) { p.hombroD = [-6 + 15 * k * b0, 12, 56 + 8 * k * b1, 6]; p.armaRel = [58 - 9 * k * (b2 - b0) + 2 * pis, 12]; }
+  if (m === 2) { p.hombroD = [-6 + 15 * k * b0, 12, 56 + 8 * k * b1, 6]; p.armaRel = [44 - 9 * k * (b2 - b0) + 2 * pis, 12]; }
   else if (m === 1) { p.hombroD = [-4 + 11 * k * b0, 11, 28 + 6 * k * b1, 6]; p.armaRel = [40 - 7 * k * (b2 - b0) + 1.2 * pis, 10]; }
   else { p.hombroD = [-2 + 2 * b0, 11, 26 + 4 * b0, 6]; p.armaRel = [40 + 2.5 * b1, 10]; }
 }
@@ -594,7 +599,8 @@ const PORTE_HOMBRO: number[] = (globalThis as { process?: { env: Record<string, 
  * presa, los brazos sueltos adelante con las garras abiertas; las garras apuntan adelante y abajo, firmes.
  */
 function andarDeBestia(p: Pose, u: number, correr: boolean, arma: ArmaPose) {
-  const x = Math.sin((u - 0.1) * TAU);
+  // (el brazo derecho adelante cuando la pierna derecha va atrás)
+  const x = -Math.cos((u - 0.08) * TAU);
   p.torso += correr ? 20 : 13; p.cabeza -= correr ? 22 : 15; p.hombros = [0.9, 0.9];
   p.giroTorso *= 1.3; p.giroCabeza = -p.giroTorso * 0.9;
   if (correr) { p.hombroD = [30 + 18 * x, 18, 84 + 8 * x, 8]; p.hombroI = [30 - 18 * x, 18, 84 - 8 * x, 8]; }
@@ -908,14 +914,14 @@ function monje(p: Pose, acc: Accion, u: number, f: number, arma: ArmaPose) {
     const correr = acc === 'correr';
     marcha(p, u, correr, 'nada', 'kata');
     // el braceo sale de la marcha (cada brazo con la pierna contraria); el monje lo lleva compacto, de peleador: los
-    // codos doblados y los puños cerca del cuerpo, que van y vienen cortos. Las garras siguen al antebrazo.
+    // brazos sueltos al caminar y los codos recogidos al correr, con los puños que van y vienen cortos. Las garras siguen al antebrazo.
     const [aD, , cD] = p.hombroD, [aI, , cI] = p.hombroI;
     if (!correr) {
       p.torso = 3; p.giroTorso *= 0.7; p.giroCabeza = -p.giroTorso * 0.9; p.respira = 0.4;
-      p.hombroD = [(aD - 4) * 0.55 - 2, 9, 62 + (cD - 25) * 0.9, 18]; p.hombroI = [(aI - 4) * 0.55 - 2, 9, 66 + (cI - 25) * 0.9, 18];
+      p.hombroD = [(aD - 4) * 0.7, 9, 29 + (cD - 25) * 0.8, 14]; p.hombroI = [(aI - 4) * 0.7, 9, 29 + (cI - 25) * 0.8, 14];
     } else {
       p.torso = 12; p.giroTorso *= 0.8; p.giroCabeza = -p.giroTorso * 0.9;
-      p.hombroD = [(aD - 4) * 0.8 - 2, 10, 98 + (cD - 85) * 0.9, 20]; p.hombroI = [(aI - 4) * 0.8 - 2, 10, 98 + (cI - 85) * 0.9, 20];
+      p.hombroD = [(aD - 4) * 0.8 - 2, 10, 91 + (cD - 85) * 0.9, 20]; p.hombroI = [(aI - 4) * 0.8 - 2, 10, 91 + (cI - 85) * 0.9, 20];
     }
   } else if (acc === 'atacar') {
     // combo casi sin recogida: directo de izquierda (cuadro 2), cruzado de derecha (5, el golpe que cuenta) y patada frontal
@@ -983,10 +989,12 @@ function druida(p: Pose, acc: Accion, u: number, f: number, arma: ArmaPose) {
     const correr = acc === 'correr';
     marcha(p, u, correr, 'baculo', 'naturaleza');
     p.torso = correr ? 18 : 10; p.cabeza = correr ? -12 : -7;
-    // la vara firme en la mano, casi vertical al costado y un poco adelante (al correr apenas más inclinada): el arma no
-    // baila con el paso
-    const sw = Math.sin((u - 0.1) * TAU);
-    p.manoD = correr ? [10 + 0.8 * sw, 10, 36] : [8 + 1 * sw, 10.5, 37]; p.vara = correr ? [20 + 3 * sw, 6] : [10 + 2.5 * sw, 9];
+    // la vara acompaña la mano (el porte de la marcha), un poco más inclinada adelante por el torso agachado
+    // (la mano va a un punto, como antes, pero ya no clavada: va y viene con el paso y la izquierda alcanza el asta del
+    // báculo grande)
+    const b = -Math.cos((u - 0.07) * TAU), b1 = -Math.cos((u - 0.14) * TAU), pis = Math.sin((u - 0.1) * 2 * TAU);
+    p.manoD = correr ? [10 + 2.4 * b, 10, 36 + 0.6 * pis] : [8 + 2 * b, 10.5, 37 + 0.4 * pis];
+    p.vara = correr ? [20 + 5 * b1 + 1.5 * pis, 6] : [10 + 4 * b1 + pis, 9];
   } else if (acc === 'atacar') {
     // golpe de vara a dos manos, amplio y redondo: la vara dibuja un círculo (atrás y abajo, arriba por el costado, por
     // encima y adelante) y pega en el cuadro 7 con un paso; el cuerpo sigue el arco y vuelve despacio

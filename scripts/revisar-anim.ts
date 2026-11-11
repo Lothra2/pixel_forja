@@ -11,7 +11,9 @@ import { cuadrosDe, type Accion, type Dir } from '../src/engine/gotico/figura.ts
 import { Lienzo, texto } from '../src/engine/gotico/hud.ts';
 import { createRaster, blit, upscaleNearest, type Raster } from '../src/engine/core/raster.ts';
 import { encodePng } from '../src/engine/export/png.ts';
-import { SUJETOS_HEROES, SUJETOS_MONSTRUOS } from './qa-heroes.ts';
+import { SUJETOS_HEROES, SUJETOS_MONSTRUOS, sujetoMonstruo } from './qa-heroes.ts';
+import { MONSTRUOS } from '../src/engine/gotico/catalogo/personajes.ts';
+const TODOS = [...SUJETOS_MONSTRUOS, ...MONSTRUOS.filter((m) => !SUJETOS_MONSTRUOS.some((x) => x.id === m.id)).map(sujetoMonstruo)];
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
 const SALIDA = process.argv[2];
@@ -24,7 +26,7 @@ mkdirSync(SALIDA, { recursive: true });
 const pintar = (r: Raster, x: number, y: number, w: number, h: number, c: [number, number, number, number]) => {
   for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (i >= 0 && j >= 0 && i < r.w && j < r.h) r.data.set(c, (j * r.w + i) * 4);
 };
-for (const h of process.argv.includes('--monstruos') ? SUJETOS_MONSTRUOS : SUJETOS_HEROES) {
+for (const h of process.argv.includes('--monstruos') ? TODOS : SUJETOS_HEROES) {
   if (arg('--clase') && !arg('--clase')!.split(',').includes(h.id)) continue;
   const [nn, eq] = h.niveles[Math.min(NIVEL, h.niveles.length - 1)];
   for (const acc of ACCS) {

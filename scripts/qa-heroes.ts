@@ -158,11 +158,10 @@ export function qaHeroes(o: { clase?: string; accion?: string; dirs?: string[]; 
 }
 
 /**
- * El arma al andar: ángulo del arma en el plano de la pantalla en cada cuadro de caminar y de correr, en las 8
+ * El arma al andar: el giro del arma (en el espacio) en cada cuadro de caminar y de correr, en las 8
  * direcciones y los 4 niveles. El arma va sujeta al brazo y bracea con él (a pedido: clavada al cuerpo se veía como un
  * muñeco), así que no se mide cuánto varía en el ciclo sino que no salte: falla si entre dos cuadros seguidos gira más de
- * 16° al caminar o 22° al correr, o si la postura media salta más de 45° de caminar a correr. (Los cuadros en que el arma
- * apunta a la cámara, con menos de un tercio de su largo visible en pantalla, no se miden: ahí el ángulo no se ve.)
+ * 16° al caminar o 22° al correr, o si la postura media salta más de 45° de caminar a correr.
  */
 export const LIMITE_ANDAR = { caminar: 16, correr: 22, salto: 45 };
 export interface AnguloAndar { clase: string; nivel: string; dir: string; arma: string; caminar: number; correr: number; salto: number; angulos: Record<'caminar' | 'correr', number[]> }
@@ -175,25 +174,31 @@ export function angulosAndar(o: { clase?: string; sujetos?: Sujeto[] } = {}): { 
       const tipo = eq.arma?.tipo ?? 'nada';
       if (tipo === 'nada' || tipo === 'puno' || tipo === 'frasco') continue;
       for (const dir of DIRS) {
-        const res: Partial<Record<'caminar' | 'correr', { visible: boolean; media: number; rango: number; angulos: number[] }>> = {};
+        const res: Partial<Record<'caminar' | 'correr', { visible: boolean; media: V3; rango: number; angulos: number[] }>> = {};
         for (const acc of ['caminar', 'correr'] as const) {
-          const n = cuadrosDe(acc, h.cuerpo.presentacion), angs: number[] = [];
+          const n = cuadrosDe(acc, h.cuerpo.presentacion), angs: number[] = [], ejes: V3[] = [];
           for (let f = 0; f < n; f++) {
             const g = geometriaQA(h.cuerpo, eq, dir, acc, f);
             if (!g.arma) continue;
             const [ax, ay] = aPantalla(g.arma.a), [bx, by] = aPantalla(g.arma.b);
-            const l2 = Math.hypot(bx - ax, by - ay), l3 = len(sub(g.arma.b, g.arma.a));
-            angs.push(l2 < l3 / 3 ? NaN : (Math.atan2(by - ay, bx - ax) * 180) / Math.PI);
+            angs.push((Math.atan2(by - ay, bx - ax) * 180) / Math.PI);
+            const d = sub(g.arma.b, g.arma.a), l = len(d) || 1; ejes.push([d[0] / l, d[1] / l, d[2] / l]);
           }
-          const ok = angs.filter((x) => !Number.isNaN(x));
-          const media = ok.length ? (Math.atan2(ok.reduce((t, a) => t + Math.sin((a * Math.PI) / 180), 0), ok.reduce((t, a) => t + Math.cos((a * Math.PI) / 180), 0)) * 180) / Math.PI : 0;
-          // el paso más grande entre dos cuadros seguidos (el ciclo cierra): el arma acompaña el braceo, pero sin saltos
+          // se mide el giro real del arma (en el espacio, no en la pantalla: cuando apunta a la cámara el ángulo en
+          // pantalla salta aunque el arma casi no se mueva). El paso más grande entre dos cuadros seguidos (el ciclo
+          // cierra): el arma acompaña el braceo, pero sin saltos
+          const entre = (a: V3, b: V3) => (Math.acos(Math.max(-1, Math.min(1, dot(a, b)))) * 180) / Math.PI;
           let paso = 0;
-          for (let i = 0; i < angs.length; i++) { const x = angs[i], y = angs[(i + 1) % angs.length]; if (!Number.isNaN(x) && !Number.isNaN(y)) paso = Math.max(paso, Math.abs(envolver(y - x))); }
-          res[acc] = { visible: ok.length > 0, media, rango: paso, angulos: angs.map((a) => Math.round(a)) };
+          for (let i = 0; i < ejes.length; i++) paso = Math.max(paso, entre(ejes[i], ejes[(i + 1) % ejes.length]));
+          const m = ejes.reduce((t, e) => [t[0] + e[0], t[1] + e[1], t[2] + e[2]] as V3, [0, 0, 0] as V3), lm = len(m) || 1;
+          // (el límite es por cuadro de un ciclo de 12: con menos cuadros cada uno abarca más tiempo)
+          paso *= n / 12;
+          res[acc] = { visible: ejes.length > 0, media: [m[0] / lm, m[1] / lm, m[2] / lm], rango: paso, angulos: angs.map((a) => Math.round(a)) };
         }
         // si en una de las dos el arma apunta a la cámara todo el ciclo, no hay ángulo que comparar
-        const salto = res.correr!.visible && res.caminar!.visible ? Math.abs(envolver(res.correr!.media - res.caminar!.media)) : 0;
+        // (las garras y el katar son el puño: siguen al antebrazo, que al correr se recoge; ahí no hay porte que comparar)
+        const esPuno = tipo === 'garras' || tipo === 'katar' || tipo === 'cestus';
+        const salto = !esPuno && res.correr!.visible && res.caminar!.visible ? (Math.acos(Math.max(-1, Math.min(1, dot(res.correr!.media, res.caminar!.media)))) * 180) / Math.PI : 0;
         const fila: AnguloAndar = { clase: h.id, nivel, dir, arma: tipo, caminar: +res.caminar!.rango.toFixed(1), correr: +res.correr!.rango.toFixed(1), salto: +salto.toFixed(1), angulos: { caminar: res.caminar!.angulos, correr: res.correr!.angulos } };
         filas.push(fila);
         const base = { clase: h.id, nivel, dir, f: -1 };
