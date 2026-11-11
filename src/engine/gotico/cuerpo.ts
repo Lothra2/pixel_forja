@@ -792,13 +792,13 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     if (to.tipo === 'tunica' || to.tipo === 'harapos') ps.push(...faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f, cu.presentacion && pz?.tipo !== 'tunica_larga' ? to.ribete : undefined));
     if (to.tipo === 'vestido') ps.push(...faldon(e, to.mat, 29, 1.7, acc, f));
     if (to.tipo === 'cuero_tachonado') for (let i = 0; i < 4; i++) for (const s of [1, -1, 0]) ps.push(esfera(...T(3.9 * A + 0.6, s * 2.6 * A, e.zc + (5 + i * 3) * S), 0.5, { mat: 'cu_placa' }));
-    if (to.tipo === 'malla' && cu.presentacion && !to.linea) ps.push(...mallaForjada(e, cu, to));
-    if (to.tipo === 'tunica' && cu.presentacion) ps.push(...tunicaForjada(e, cu, to));
-    if ((to.tipo === 'cuero' || to.tipo === 'cuero_tachonado') && cu.presentacion && !to.linea) ps.push(...jubon(e, cu, to, cu.presentacion === 'apunta'));
+    if (to.tipo === 'malla' && !to.linea) ps.push(...mallaForjada(e, cu, to));
+    if (to.tipo === 'tunica') ps.push(...tunicaForjada(e, cu, to));
+    if ((to.tipo === 'cuero' || to.tipo === 'cuero_tachonado') && !to.linea) ps.push(...jubon(e, cu, to, cu.presentacion === 'apunta'));
     if (to.tipo === 'placas') {
       // peto curvo, espaldar, faldares y el borde dorado
       // los héroes llevan la coraza forjada por láminas (armadura.ts); las líneas épicas y los monstruos, la de siempre
-      if (cu.presentacion && !to.linea) ps.push(...petoForjado(e, cu, to, to.adorno));
+      if (!to.linea) ps.push(...petoForjado(e, cu, to, to.adorno));
       else {
         const peto = partes(e, cu, ['abdomen', 'pecho'], 1.5, to.mat);
         ps.push(masa(peto, { mat: to.mat, suave: 2.4 }));
@@ -847,20 +847,11 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       }
       adel = Math.min(adel, 16 * S);
       const abajo = add(add(arriba, [0, 0, -caeZ]), fH, adel), haciaFuera = nor(cruz(nor(sub(abajo, arriba)), lado));
-      const hoja = (a: V3, b: V3, ancho: number, grueso: number, mat: string) => {
-        const pts: V3[] = [];
-        for (const q of [a, b]) for (const sy of [-1, 1]) for (const sn of [-1, 1]) pts.push(add(add(q, lado, sy * ancho / 2), haciaFuera, sn * grueso / 2));
-        return poliedro(pts, { mat });
-      };
-      // los héroes: el faldón con caída, pliegues y ruedo (armadura.ts)
-      if (cu.presentacion) ps.push(...tabardoFaldon(arriba, abajo, lado, haciaFuera, 5.4 * A, tb.mat, tb.borde));
-      else {
-        ps.push(hoja(arriba, abajo, 5.4 * A, 0.8, tb.mat));
-        if (tb.borde) ps.push(hoja(add(arriba, haciaFuera, 0.2), add(abajo, haciaFuera, 0.2), 1.2 * A, 0.5, tb.borde));
-      }
+      // el faldón con caída, pliegues y ruedo (armadura.ts)
+      ps.push(...tabardoFaldon(arriba, abajo, lado, haciaFuera, 5.4 * A, tb.mat, tb.borde));
     }
   }
-  if (eq.cinturon && cu.presentacion && !eq.cinturon.linea) { ps.push(...cintoForjado(e, cu, eq.cinturon)); if (eq.torso?.tipo === 'tunica' && eq.cinturon.hebilla) ps.push(...colgantes(e, cu, eq.cinturon)); }
+  if (eq.cinturon && !eq.cinturon.linea) { ps.push(...cintoForjado(e, cu, eq.cinturon)); if (eq.torso?.tipo === 'tunica' && eq.cinturon.hebilla) ps.push(...colgantes(e, cu, eq.cinturon)); }
   else if (eq.cinturon) {
     ps.push(cilindro(...(e.Pv ?? e.W)(0, 0, e.zc + 1.6 * S), (4.6 + (cu.grasa ?? 0) * 1.5) * A, 2.2 * S, { mat: eq.cinturon.mat, r1: (4.8 + (cu.grasa ?? 0) * 1.5) * A }));
     const Pv = e.Pv ?? e.W;
@@ -1626,7 +1617,8 @@ function tocado(e: Esqueleto, cu: Cuerpo, c: NonNullable<Equipo['cabeza']>): Pie
   const bC = (fw: number, rt: number, up: number, r: V3, mat = c.mat, k?: number) => bulto(cab(fw * H, rt * H, cz + up * H), [r[0] * H, r[1] * H, r[2] * H], { ejes: ejesCab, mat, k });
   const ga = angulo(ejesCab[0]);
   // los héroes llevan los cascos y capuchas forjados (armadura.ts)
-  if (cu.presentacion && !c.linea) { const nuevo = cascoForjado(e, cu, c); if (nuevo) return nuevo; }
+  // (las máscaras de los monstruos son su cara: el sin rostro, el carcelero; esas siguen como siempre)
+  if (!c.linea && !(c.tipo === 'mascara' && !cu.presentacion)) { const nuevo = cascoForjado(e, cu, c); if (nuevo) return nuevo; }
   switch (c.tipo) {
     case 'capucha': {
       ps.push(masa([bC(-0.8, 0, 1.0, [5.0, 4.6, 5.3]), bC(-2.4, 0, -2.2, [4.4, 4.8, 3.6]), bC(1.4, 0, 3.6, [3.2, 4.0, 1.8], c.mat, 1.5), hueso(cab(-3 * H, 0, cz - 3 * H), e.T(-4.5 * S, 0, e.hombroZ - 1 * S), 4 * H, 4.6 * H, { mat: c.mat })], { mat: c.mat, suave: 1.8 }));
@@ -2399,7 +2391,7 @@ export function geometriaQA(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: nu
     mango = [en(-cb), largoMango ? fa : en(1)];
     if (cb >= 3) cabo = en(-cb);
   }
-  const piezasCasco = cu.presentacion && eq.cabeza && !eq.cabeza.linea ? cascoForjado(e, cu, eq.cabeza) : undefined;
+  const piezasCasco = eq.cabeza && !eq.cabeza.linea && !(eq.cabeza.tipo === 'mascara' && !cu.presentacion) ? cascoForjado(e, cu, eq.cabeza) : undefined;
   const casco = piezasCasco?.flatMap((p) => (p.k === 'conv' ? [p.planos] : []));
   return {
     e, arma, mango, cabo, casco,
