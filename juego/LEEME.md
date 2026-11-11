@@ -193,6 +193,7 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - El filo de hachas y espadas ya no se da vuelta de un cuadro al otro cuando el arma apunta al frente.
   - La QA del motor (`scripts/qa-heroes.ts`) mide el giro real del arma entre cuadros seguidos en vez de exigir que no se mueva. Da 0 fallas en héroes y monstruos.
   - Herramientas: `npx tsx scripts/revisar-anim.ts <carpeta> --clase berserker --accs caminar,correr --dirs so,o` saca tiras a plena luz. `npx tsx scripts/qa-rapida.ts berserker 1` mide una clase en segundos.
+- **Modo agresivo que defiende a los suyos.** Si a Thor, a una invocación o al héroe le están pegando a 4 casillas o menos, el héroe cuerpo a cuerpo va y responde. No sale a buscar pelea: solo va contra quien ya está peleando con los suyos. Antes se quedaba quieto mirando. Los brutos de golpe en área (ogro, verdugo, gólem) ya no pegan desde más lejos que el golpe del héroe. Prueba: `juego/herramientas/bruto_agresivo.cjs <clase>`.
 
 ## Qué falta o se puede mejorar
 

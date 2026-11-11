@@ -307,6 +307,18 @@ function controlar(jj: Juego, dt: number) {
       bd = d; best = m;
     }
     if (best && !usarHabilidad(jj, h.d.izq, best.x, best.y, best)) usarHabilidad(jj, 'ataque', best.x, best.y, best);
+    // nadie al alcance, pero a un aliado (Thor, una invocación) o a él mismo le están pegando a pocos pasos: va a
+    // defenderlo. No sale a buscar pelea: solo responde a quien ya está peleando con los suyos, a 4 casillas o menos
+    if (!best && !lejos) {
+      for (const m of jj.monstruos) {
+        const o = (m as any).objetivo as (Monstruo & { dueno?: unknown }) | null;
+        if (m.muerto || m.dueno || m.estado === 'surgir' || (m as any).surgiendo > 0 || !o || ((o as unknown) !== h && !o.dueno) || o.muerto) continue;
+        const d = dist(m.x, m.y, h.x, h.y); if (d > 4 || d >= bd) continue;
+        if (dist(m.x, m.y, o.x, o.y) > m.radio + (o.radio ?? 0.4) + 1.3) continue;
+        bd = d; best = m;
+      }
+      if (best) h.objetivo = best;
+    }
   }
   // táctil: un atajo del arco se usa sobre el enemigo más cercano (cuerpo a cuerpo: lo persigue y le pega con esa habilidad)
   if ((ui as any).tactilHabId) {
