@@ -1,4 +1,4 @@
-import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, type Comp, type Pieza, type V3, type Iluminacion } from './render';
+import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, distMasa, type Comp, type Pieza, type V3, type Iluminacion } from './render';
 import { claveBaja } from './clave_baja';
 import * as superficie from './superficie';
 import { MATERIALES } from './materiales';
@@ -809,7 +809,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     const matBase = to.tipo === 'placas' ? to.mat2 ?? 'cu_malla' : to.mat;
     // el cuero claro va un tono más oscuro que la piel morena, para que el jubón no se lea como torso desnudo
     ps.push(masa(partes(e, cu, base, inf, matBase, { mangaCorta: to.tipo === 'cuero' || to.tipo === 'cuero_tachonado' }), { mat: matBase, suave: ceñido ? 1.0 : 1.6, tono: matBase === 'cu_cuero' ? -0.12 : undefined }));
-    if (to.tipo === 'tunica' || to.tipo === 'harapos') ps.push(...faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f, cu.presentacion && pz?.tipo !== 'tunica_larga' ? to.ribete : undefined));
+    if (to.tipo === 'tunica' || to.tipo === 'harapos') ps.push(...faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f, cu.presentacion && pz?.tipo !== 'tunica_larga' ? to.ribete : undefined, pz?.tipo !== 'tunica_larga'));
     if (to.tipo === 'vestido') ps.push(...faldon(e, to.mat, 29, 1.7, acc, f));
     if (to.tipo === 'cuero_tachonado') for (let i = 0; i < 4; i++) for (const s of [1, -1, 0]) ps.push(esfera(...T(3.9 * A + 0.6, s * 2.6 * A, e.zc + (5 + i * 3) * S), 0.5, { mat: 'cu_placa' }));
     if (to.tipo === 'malla' && !to.linea) ps.push(...mallaForjada(e, cu, to));
@@ -1473,29 +1473,89 @@ function huesos(e: Esqueleto, cu: Cuerpo): Pieza[] {
 const angulo = (v: V3) => (Math.atan2(v[1], v[0]) * 180) / Math.PI;
 const inclinacion = (up: V3, fw: V3) => (Math.asin(Math.max(-1, Math.min(1, -(up[0] * fw[0] + up[1] * fw[1]) / Math.hypot(fw[0], fw[1])))) * 180) / Math.PI;
 
+/**
+ * La tela de una falda con sus pliegues: el mismo material con lomos y valles que bajan a lo largo de cada tubo de tela
+ * (en el marco del tubo: el pliegue gira y se mueve con la pierna). Nacen juntos en el cinto y se ahondan hacia el
+ * ruedo; el lomo agarra un poco de luz y el valle se hunde en sombra. Va en el material y no en piezas: una pieza
+ * por pliegue costaba un cuarto del cuadro.
+ */
+function plegada(mat: string, abajo = false): string {
+  // `abajo`: el tramo de la rodilla al ruedo, con el pliegue ya hondo desde arriba
+  const id = `${mat}_plegada${abajo ? '_abajo' : ''}`;
+  if (!M[id]) {
+    const b = M[mat] ?? M.cu_tela_negra, pb = b.patron;
+    M[id] = { ...b, local: true, patron: (p, n) => (pb ? pb(p, n) : 0) + pliegueTela(p, abajo ? 8 : 0) };
+  }
+  return id;
+}
+/** Lomos y valles alrededor del eje del tubo (z baja del cinto al ruedo); seis por vuelta, con una ondulación. */
+function pliegueTela(p: V3, z0: number): number {
+  const a = Math.atan2(p[1], p[0]), z = p[2] + z0, fondo = Math.min(1, Math.max(0, z - 1) / 7);
+  const c = Math.cos(a * 6 + Math.sin(z * 0.17) * 0.7);
+  return fondo * (c > 0.55 ? 0.13 : c < -0.1 ? -0.34 * Math.min(1, (-c - 0.1) * 2.2) : 0);
+}
+/**
+ * El ruedo de una falda con peso: un dobladillo grueso alrededor del borde de abajo (luz arriba, sombra abajo), del
+ * color del ribete si lo hay, apoyado sobre la superficie de la falda en cada cuadro (sigue a las piernas).
+ */
+function ruedoFalda(e: Esqueleto, falda: Pieza, mat: string, z1: number, ribete?: string): Pieza[] {
+  const { S, A } = e, Pv = e.Pv ?? e.W;
+  // el borde de la tela en el ángulo `a` (radianes alrededor del eje de la cadera, 0 al frente) y la altura z
+  const borde = (a: number, z: number): V3 | null => {
+    const c = Math.cos(a), s = Math.sin(a), en = (r: number) => Pv(r * c, r * s, z);
+    let r = 13 * A;
+    if (distMasa(falda, en(r)) < 0) return null;
+    for (; r > 0; r -= 0.5 * A) if (distMasa(falda, en(r)) < 0) break;
+    if (r <= 0) return null;
+    let lo = r, hi = r + 0.5 * A;
+    for (let k = 0; k < 6; k++) { const m = (lo + hi) / 2; if (distMasa(falda, en(m)) < 0) lo = m; else hi = m; }
+    return en(lo);
+  };
+  const fuera = (q: V3) => { const d = sub(q, Pv(0, 0, q[2])); d[2] = 0; return nor(d); };
+  // el borde de abajo en 12 ángulos (la altura más baja donde todavía hay tela), unido en un dobladillo de conos
+  const N = 12, ruedo: (V3 | null)[] = [], ps: Pieza[] = [];
+  for (let k = 0; k < N; k++) {
+    const a = (k / N) * Math.PI * 2;
+    let q: V3 | null = null;
+    for (let z = z1 - 0.4 * S; z < z1 + 9 * S && !q; z += 0.5 * S) q = borde(a, z);
+    ruedo.push(q ? add(add(q, [0, 0, 0.55 * S]), fuera(q), -0.25 * A) : null);
+  }
+  for (let k = 0; k < N; k++) {
+    const p = ruedo[k], q = ruedo[(k + 1) % N];
+    if (!p || !q || len(sub(p, q)) > 7 * A) continue;
+    // un poco más largo que el tramo: las juntas del dobladillo no dejan muesca
+    const d = nor(sub(q, p));
+    ps.push(palo(add(p, d, -0.25 * S), add(q, d, 0.25 * S), 0.62 * S, { mat: ribete ?? mat, tono: ribete ? 0.2 : -0.12 }));
+  }
+  return ps;
+}
+
 /** Falda, túnica o faldón: una campana de masa que baja de la cintura y sigue las piernas al caminar. */
-function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Accion, f: number, ribete?: string): Pieza[] {
+// `conPliegues`: no para la sobretúnica corta sobre una túnica larga (la tapa casi toda: ni pliegues ni ruedo)
+function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Accion, f: number, ribete?: string, conPliegues = true): Pieza[] {
   const { S, A } = e;
   const cs: Comp[] = [];
   const z0 = e.zc + 2.5 * S, z1 = Math.max(1.2 * S, e.zc + 2.5 * S - largo * S), Pv = e.Pv ?? e.W;
-  cs.push(hueso(Pv(0, 0, z0), Pv(0.2 * S, 0, (z0 + z1) / 2), 4.6 * A, 4.4 * A * vuelo, { mat }));
+  const pl0 = largo >= 12 && conPliegues;
+  cs.push(hueso(Pv(0, 0, z0), Pv(0.2 * S, 0, (z0 + z1) / 2), 4.6 * A, 4.4 * A * vuelo, { mat: pl0 ? plegada(mat) : mat }));
   // las túnicas largas y los vestidos (sin calzas debajo) cierran la tela; los faldones cortos van sobre calzas
   const larga = largo >= 20;
   // un tubo de tela por la pierna: si el ruedo baja de la rodilla pasa por ella (con la rodilla doblada adelante, el
   // tubo recto de la cadera al ruedo la dejaba asomar por delante de la tela)
   // al andar la tela pesa: el ruedo no se abre más que lo justo (si no, cada pierna inflaba un saco detrás)
   const anda = acc === 'caminar' || acc === 'correr', vueloR = anda ? Math.min(vuelo, 1.2) : vuelo;
+  const pl = largo >= 12 && conPliegues, mp = pl ? plegada(mat) : mat, mp2 = pl ? plegada(mat, true) : mat;
   const tubo = (cad: V3, rod: V3, ruedo: V3): Comp[] => {
     const r0 = (anda && larga ? 4.5 : 4.0) * A, r1 = 3.6 * A * vueloR;
-    if (!larga || ruedo[2] >= rod[2] + 1.5 * S) return [hueso(cad, ruedo, r0, r1, { mat })];
+    if (!larga || ruedo[2] >= rod[2] + 1.5 * S) return [hueso(cad, ruedo, r0, r1, { mat: mp })];
     const l1 = len(sub(rod, cad)), l2 = len(sub(ruedo, rod)), rk = r0 + (r1 - r0) * (l1 / Math.max(0.01, l1 + l2));
     if (anda) {
       // al andar la rodilla empuja la tela pero no la estira hasta su punta: el codo de la tela queda un poco atrás de la
       // rodilla y algo más ancho, así la cubre sin que cada paso infle un bulto
       const rodT = mez([cad[0], cad[1], rod[2]], rod, 0.55), rk2 = rk + len(sub(rod, rodT)) * 0.6;
-      return [hueso(cad, rodT, r0, rk2, { mat }), hueso(rodT, ruedo, rk2, r1, { mat })];
+      return [hueso(cad, rodT, r0, rk2, { mat: mp }), hueso(rodT, ruedo, rk2, r1, { mat: mp2 })];
     }
-    return [hueso(cad, rod, r0, rk, { mat }), hueso(rod, ruedo, rk, r1, { mat })];
+    return [hueso(cad, rod, r0, rk, { mat: mp }), hueso(rod, ruedo, rk, r1, { mat: mp2 })];
   };
   const ruedos: V3[] = [];
   for (const p of e.piernas) {
@@ -1540,17 +1600,9 @@ function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Ac
   const tela = e.pose?.capa, vaiven0 = tela ? (tela[0] - 0.8) * 0.6 : acc === 'caminar' ? Math.sin((f / 8) * Math.PI * 2) * 1.5 : 0, lado = tela ? tela[1] * 0.6 : 0;
   // al andar la tela de atrás apenas se arrastra (cae por su peso): no crece detrás de la cadera
   const vaiven = anda ? Math.max(-0.5, Math.min(0.7, vaiven0 * 0.3)) : vaiven0;
-  cs.push(hueso(Pv(-1 * S, 0, z0 - 3 * S), (anda ? Pv : e.W)((anda ? -1.4 : -2.2) * S - vaiven, lado * S, z1 + 1.5 * S), 3.8 * A, 4.2 * A * vueloR, { mat }));
-  const out: Pieza[] = [masa(cs, { mat, suave: 3.2 })];
-  if (ribete) {
-    // el ribete del ruedo: un borde de otro valor alrededor del ruedo de cada pierna
-    const rr = 3.6 * A * vueloR + 0.35, bs: Comp[] = [];
-    for (const q of ruedos) {
-      const pts = Array.from({ length: 8 }, (_, k) => { const a = (k / 8) * Math.PI * 2; return add(add(q, e.F, Math.cos(a) * rr), e.R, Math.sin(a) * rr * 0.95); }).map((v) => [v[0], v[1], v[2] + 0.6 * S] as V3);
-      for (let k = 0; k < 8; k++) bs.push(hueso(pts[k], pts[(k + 1) % 8], 0.6 * S, 0.6 * S, { mat: ribete }));
-    }
-    out.push(masa(bs, { mat: ribete, suave: 0.3 * S, tono: 0.25 }));
-  }
+  cs.push(hueso(Pv(-1 * S, 0, z0 - 3 * S), (anda ? Pv : e.W)((anda ? -1.4 : -2.2) * S - vaiven, lado * S, z1 + 1.5 * S), 3.8 * A, 4.2 * A * vueloR, { mat: pl ? plegada(mat) : mat }));
+  const lisa = masa(cs, { mat, suave: 3.2 });  // (los tubos de las piernas llevan la tela plegada)
+  const out: Pieza[] = [lisa, ...(largo >= 12 && conPliegues ? ruedoFalda(e, lisa, mat, z1, ribete) : [])];
   return out;
 }
 
@@ -1573,12 +1625,17 @@ function capa(e: Esqueleto, mat: string, largo: number, acc: Accion, f: number, 
   }
   const holgura = (cs: Comp[]) => {
     let m = Infinity;
-    for (const [q, r] of piernaPts) for (const c of cs) if (c.f === 'bulto') m = Math.min(m, dElip(c, q) - r);
+    for (const [q, r] of piernaPts) for (const c of cs) m = Math.min(m, (c.f === 'bulto' ? dElip(c, q) : dSeg(c.a, c.b, q) - c.r0) - r);
     return m;
   };
   let ondea = ondea0, cs = capaCon(e, largo, mat, ondea, tela);
   if (acc !== 'morir' && !e.caida) for (let i = 0; i < 14 && holgura(cs) < (acc === 'correr' ? 1.5 * A : 0.4); i++) cs = capaCon(e, largo, mat, (ondea += 0.6), tela);
   return masa(cs, { mat, suave: 1.1 });
+}
+/** Distancia de q al segmento a-b. */
+function dSeg(a: V3, b: V3, q: V3): number {
+  const ab = sub(b, a), t = Math.max(0, Math.min(1, dot3(sub(q, a), ab) / Math.max(1e-9, dot3(ab, ab))));
+  return len(sub(q, add(a, ab, t)));
 }
 /** Distancia aproximada de q a la superficie de un bulto (la de la masa, sin la unión suave). */
 function dElip(c: Extract<Comp, { f: 'bulto' }>, q: V3): number {
@@ -1594,7 +1651,9 @@ function capaCon(e: Esqueleto, largo: number, mat: string, ondea: number, tela?:
   const N = 7, cs: Comp[] = [];
   const fila = (t: number, k: number): V3 => {
     // k de -1 (derecha) a 1 (izquierda); t de 0 (hombros) a 1 (ruedo)
-    const pliegue = (Math.abs(Math.round(k * 3)) % 2 ? 0.9 : -0.4) * Math.min(1, t * 2);
+    // los pliegues nacen en los hombros (de donde cuelga la capa) y se ahondan hacia abajo; entre dos franjas la
+    // profundidad pasa suave (el dobladillo la recorre de lado a lado)
+    const pliegue = (0.25 - 0.65 * Math.cos(Math.PI * k * 3)) * Math.min(1, 0.15 + t * 2.2);
     if (t <= 0.25) return T(-3.8 * A - pliegue * 0.3 - t * 4, k * (4.4 + t * 2) * A, zTop - t * (zTop - e.zc - 6 * S) * 4);
     const u = (t - 0.25) / 0.75;
     const z = e.zc + 6 * S + (zBot - e.zc - 6 * S) * u;
@@ -1609,6 +1668,13 @@ function capaCon(e: Esqueleto, largo: number, mat: string, ondea: number, tela?:
       const ex = nor(sub(pts[i + 1], pts[i])), lado = nor(sub(T(0, 1, e.zc), T(0, 0, e.zc))), ez = nor(cruz(ex, lado)), ey = cruz(ez, ex);
       cs.push(bulto(mez(pts[i], pts[i + 1], 0.5), [L * 0.6, 1.25 * A, 0.6], { ejes: [ex, ey, ez], mat }));
     }
+  }
+  // el ruedo: un dobladillo continuo de lado a lado; la tela pesa abajo y no se peina en flecos
+  let antes: V3 | null = null;
+  for (let j = 0; j <= 12; j++) {
+    const q = fila(0.97, -1 + j / 6);
+    if (antes) cs.push(hueso(antes, q, 0.75 * A, 0.75 * A, { mat, k: 0.5 }));
+    antes = q;
   }
   return cs;
 }

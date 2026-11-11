@@ -168,6 +168,8 @@ function dMasa(m: Masa, p: V3, sub?: Int16Array, nsub = 0): [number, number] {
   }
   return [d, mejor];
 }
+/** Distancia con signo de un punto a una masa (negativa adentro): para apoyar pliegues y ruedos sobre su superficie. */
+export function distMasa(p: Pieza, q: V3): number { return p.k === 'masa' ? dMasa(p, q)[0] : Infinity; }
 const SUB = new Int16Array(512);
 function normalMasa(m: Masa, p: V3, sub?: Int16Array, ns = 0): V3 {
   const e = 0.04;
