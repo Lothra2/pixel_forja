@@ -560,7 +560,9 @@ type Parte = 'pelvis' | 'abdomen' | 'pecho' | 'hombros' | 'cuello' | 'brazo' | '
 function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: string, extra: { mangaCorta?: boolean; hasta?: number; liso?: boolean } = {}): Comp[] {
   const { S, A, T, cab, ejesT, ejesCab } = e;
   const inf = grosor;
-  const mu = cu.musculo ?? 0.4, gr = cu.grasa ?? 0, mujer = cu.genero === 'm';
+  // (la mujer: cintura marcada, cadera más ancha que la cintura y hombros y brazos finos; el músculo le abulta la mitad.
+  // Con el mismo trapecio y deltoides del hombre la cazadora se leía como un hombre fornido)
+  const gr = cu.grasa ?? 0, mujer = cu.genero === 'm', mu = (cu.musculo ?? 0.4) * (mujer ? 0.5 : 1), fino = mujer ? 0.86 : 1;
   // la anatomía (abdominales, pectorales separados) solo se marca en la piel desnuda: como capa de ropa, o como carne
   // tapada por una prenda (`liso`), el torso es la superficie lisa de la prenda
   const desnudo = grosor < 0.2 && !extra.liso;
@@ -571,16 +573,16 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: st
   const zc = e.zc, hz = e.hombroZ;
   if (tiene('pelvis')) {
     const Pv = e.Pv ?? e.W, ejesP = ejesDe(Pv, [0, 0, zc]);
-    cs.push(bulto(Pv(0, 0, zc + 0.6 * S), [3.7 * A + inf, (mujer ? 5.6 : 4.9) * A + inf, 4.1 * S + inf], { ejes: ejesP, mat }));
+    cs.push(bulto(Pv(0, 0, zc + 0.6 * S), [3.7 * A + inf, (mujer ? 5.5 : 4.9) * A + inf, 4.1 * S + inf], { ejes: ejesP, mat }));
     for (const s of [1, -1]) cs.push(bulto(Pv(-2.3 * A, s * 2.4 * A, zc - 0.8 * S), [2.6 * A + inf, 2.7 * A + inf, 3.2 * S + inf], { ejes: ejesP, mat }));
   }
   if (tiene('abdomen')) {
-    cs.push(bT(0.5 * S + gr * 1.5, 0, zc + 6.2 * S, [3.4 * A + gr * 2.2, (mujer ? 4.0 : 4.4) * A + gr * 1.2, 4.6 * S]));
+    cs.push(bT(0.5 * S + gr * 1.5, 0, zc + 6.2 * S, [(mujer ? 3.0 : 3.4) * A + gr * 2.2, (mujer ? 3.45 : 4.4) * A + gr * 1.2, 4.6 * S]));
     if (mu > 0.55 && desnudo) for (let i = 0; i < 3; i++) for (const s of [1, -1]) cs.push(bT(3.1 * A, s * 1.25 * A, zc + (4.2 + i * 2.5) * S, [0.9 * A, 1.3 * A, 1.15 * S], 1.2));
   }
   if (tiene('pecho')) {
     const rs = e.pose?.respira ?? 0;
-    cs.push(bT((0.2 + rs * 0.35) * S, 0, zc + (12.3 + rs * 0.3) * S, [(4.0 + rs * 0.45) * A + gr, (mujer ? 4.9 : 5.7 + mu * 0.6 + rs * 0.3) * A, (5.4 + rs * 0.25) * S]));
+    cs.push(bT((0.2 + rs * 0.35) * S, 0, zc + (12.3 + rs * 0.3) * S, [(4.0 + rs * 0.45) * A + gr, (mujer ? 4.6 : 5.7 + mu * 0.6 + rs * 0.3) * A, (5.4 + rs * 0.25) * S]));
     if (mujer) {
       // busto discreto: dos formas bajas y anchas que se funden en una sola bajo la prenda (nunca dos esferas)
       for (const s of [1, -1]) cs.push(bT(2.75 * A, s * 1.85 * A, zc + 12.6 * S, [1.65 * A, 1.95 * A, 1.7 * S], desnudo ? 1.6 : 2.0));
@@ -598,19 +600,19 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: st
     const b = e.brazos.find((x) => x.s === s)!;
     const sube = (e.pose?.hombros?.[s > 0 ? 0 : 1] ?? 0) * S;
     cs.push(hueso(T(-0.6 * S, s * 1.4 * A, hz + 3 * S + sube * 0.3), T(-0.2 * S, s * 5.4 * A, hz + 0.8 * S + sube), (1.7 + mu * 0.6) * A + inf, (1.4 + mu * 0.3) * A + inf, o));
-    cs.push(bulto(add(b.hom, b.d1, 1.4 * S), [(3.0 + mu * 0.6) * A + inf, (2.5 + mu * 0.5) * A + inf, (2.5 + mu * 0.5) * A + inf], { eje: b.d1, mat }));
+    cs.push(bulto(add(b.hom, b.d1, 1.4 * S), [(3.0 + mu * 0.6) * fino * A + inf, (2.5 + mu * 0.5) * fino * A + inf, (2.5 + mu * 0.5) * fino * A + inf], { eje: b.d1, mat }));
   }
   if (tiene('cuello')) cs.push(hueso(T(-0.3 * S, 0, hz + 0.4 * S), cab(0.2 * S, 0, e.cz - 2.6 * S), (1.9 + mu * 0.5) * S + inf, (1.7 + mu * 0.2) * S + inf, o));
   for (const b of e.brazos) {
     if (tiene('brazo')) {
       const fin = extra.mangaCorta ? mez(b.hom, b.codo, 0.55) : b.codo;
-      cs.push(hueso(b.hom, fin, 2.3 * A + inf, (extra.mangaCorta ? 2.1 : 1.75) * A + inf, o));
+      cs.push(hueso(b.hom, fin, 2.3 * fino * A + inf, (extra.mangaCorta ? 2.1 : 1.75) * fino * A + inf, o));
       if (mu > 0.2) cs.push(bulto(add(mez(b.hom, b.codo, 0.5), nor(cruz(b.d1, cruz([0, 0, 1], b.d1))), 0), [(3.4 + mu) * S + inf * 0.5, (1.4 + mu * 0.9) * A + inf, (1.4 + mu * 0.9) * A + inf], { eje: b.d1, mat }));
     }
     if (tiene('antebrazo')) {
       const fin = extra.hasta !== undefined ? mez(b.codo, b.mun, extra.hasta) : b.mun;
       const ini = extra.hasta !== undefined && extra.hasta < 0 ? b.codo : b.codo;
-      cs.push(hueso(ini, fin, 1.85 * A + inf, 1.25 * A + inf, o));
+      cs.push(hueso(ini, fin, 1.85 * fino * A + inf, 1.2 * fino * A + inf, o));
       cs.push(bulto(mez(b.codo, b.mun, 0.28), [3.1 * S + inf * 0.5, (1.5 + mu * 0.5) * A + inf, (1.4 + mu * 0.4) * A + inf], { eje: b.d2, mat }));
     }
     if (tiene('mano')) {
@@ -895,6 +897,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     const ade = e.ejesT[0], Zl: V3 = [0, 0, 1];
     /** La lámina `i` (0 = la de arriba): ancho (adelante-atrás), largo (cuesta abajo) y grueso; `borde` es el material del canto de abajo. */
     const lamina = (i: number, mat: string, an: number, la: number, gr: number, tono: number, borde?: string) => {
+      if (cu.genero === 'm') { an *= 0.84; la *= 0.9; } // hombrera más chica en el hombro fino de la mujer
       const n = nor(add(mulv(Zl, 1 - 0.3 * i), fuera, 0.55 + 0.45 * i));
       const ej = ejes3(ade, n), cae: V3 = ej[1][2] > 0 ? mulv(ej[1], -1) : ej[1];
       const cen = add(add(add(c, fuera, (0.7 + 1.0 * i) * A), b.d1, (i * 1.75 - 0.3) * S), Zl, 0.25 * S);
