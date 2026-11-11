@@ -723,9 +723,24 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     else if (pz.tipo === 'grebas') {
       ps.push(masa(partes(e, cu, ['pelvis', 'muslo'], 0.45, pz.mat2 ?? 'cu_malla'), { mat: pz.mat2 ?? 'cu_malla', suave: 1.6 }));
       ps.push(masa(partes(e, cu, ['pantorrilla'], 1.1, pz.mat), { mat: pz.mat, suave: 0.8 }));
-      // quijote: tubo de placa que encierra el muslo de cuero con su cuádriceps, y rodillera que tapa la rodilla de
-      // cuero también a la escala del juego (si no, el cuero asoma en manchas)
-      for (const p of e.piernas) ps.push(masa([bulto(p.rod, [2.6 * A + 0.4, 2.6 * A + 0.4, 2.0 * A + 1.2], { eje: sub(p.rod, p.cad), mat: pz.mat })], { mat: pz.mat }), masa([hueso(mez(p.cad, p.rod, 0.15), mez(p.cad, p.rod, 0.85), 3.7 * A + 1.0 * S, 2.9 * A + 1.0 * S, { mat: pz.mat })], { mat: pz.mat }));
+      // quijote: tubo de placa que encierra el muslo de cuero con su cuádriceps, con el canto de abajo marcado; rodillera
+      // en punta (copa con quilla, una lámina arriba y otra abajo y la aleta de afuera) en vez de una bola; greba con el
+      // borde de arriba acampanado y la arista de la canilla. A escala de juego la pierna se lee por piezas
+      const Pq = e.Pv ?? e.W, fwP = nor(sub(Pq(1, 0, e.zc), Pq(0, 0, e.zc)));
+      for (const p of e.piernas) {
+        const dm = nor(sub(p.rod, p.cad)), dc = nor(sub(p.tob, p.rod)), eje = nor(add(dm, dc));
+        let fr = sub(fwP, mulv(eje, dot3(fwP, eje))); if (len(fr) < 0.2) fr = [0, 0, 1]; fr = nor(fr);
+        const lado = nor(cruz(eje, fr)), ej: [V3, V3, V3] = [lado, fr, cruz(lado, fr)], m = pz.mat;
+        ps.push(masa([hueso(mez(p.cad, p.rod, 0.15), mez(p.cad, p.rod, 0.82), 3.7 * A + 1.0 * S, 2.9 * A + 1.0 * S, { mat: m })], { mat: m }));
+        ps.push(masa([hueso(mez(p.cad, p.rod, 0.76), mez(p.cad, p.rod, 0.84), 3.15 * A + 1.0 * S, 3.1 * A + 1.0 * S, { mat: m, tono: -0.16 })], { mat: m, tono: -0.16 }));
+        ps.push(masa([bulto(add(p.rod, fr, 0.9 * A), [2.5 * A + 0.5, 1.9 * A + 0.6, 2.2 * A + 1.0], { ejes: ej, mat: m, tono: 0.08 }),
+          hueso(add(p.rod, fr, 2.2 * A + 0.5), add(p.rod, fr, 3.5 * A + 0.9), 1.0 * S, 0.2 * S, { mat: m, tono: 0.12 })], { mat: m, suave: 0.35 * S, tono: 0.08 }));
+        ps.push(masa([bulto(add(add(p.rod, dm, -2.3 * S), fr, 0.8 * A), [2.7 * A + 0.5, 1.9 * A + 0.5, 1.0 * S], { ejes: ej, mat: m, tono: -0.08 })], { mat: m, suave: 0.15 * S, tono: -0.08 }));
+        ps.push(masa([bulto(add(add(p.rod, dc, 2.3 * S), fr, 0.7 * A), [2.6 * A + 0.5, 1.8 * A + 0.5, 1.0 * S], { ejes: ej, mat: m, tono: -0.08 })], { mat: m, suave: 0.15 * S, tono: -0.08 }));
+        ps.push(masa([bulto(add(p.rod, lado, p.s * (2.5 * A + 0.5)), [0.6 * S, 1.8 * A, 1.9 * S], { ejes: ej, mat: m, tono: 0.12 })], { mat: m, suave: 0.15 * S, tono: 0.12 }));
+        ps.push(masa([hueso(mez(p.rod, p.tob, 0.2), mez(p.rod, p.tob, 0.27), 2.75 * A + 1.25, 2.6 * A + 1.2, { mat: m, tono: -0.16 })], { mat: m, tono: -0.16 }));
+        ps.push(masa([hueso(add(mez(p.rod, p.tob, 0.3), fr, 2.2 * A + 0.9), add(mez(p.rod, p.tob, 0.88), fr, 1.6 * A + 0.8), 0.6 * S, 0.4 * S, { mat: m, tono: 0.14 })], { mat: m, tono: 0.14 }));
+      }
     } else if (pz.tipo === 'taparrabo') {
       ps.push(masa(partes(e, cu, ['pelvis'], 0.5, pz.mat), { mat: pz.mat }));
       ps.push(faldon(e, pz.mat, 9, 1.05, acc, f));
@@ -746,8 +761,22 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     else {
       const alto = pi.tipo === 'botas_altas' || pi.tipo === 'sabatones' ? 0.3 : pi.tipo === 'vendas' ? 0.55 : 0.55;
       ps.push(masa(partes(e, cu, ['pantorrilla', 'pie'], pi.tipo === 'sabatones' ? 1.2 : 0.8, pi.mat, { hasta: 1 }).filter((c) => c.f === 'hueso' ? true : true).map((c) => c), { mat: pi.mat, suave: 1.2 }));
-      // la caña corta: tapa solo desde `alto` del largo de la pantorrilla hacia abajo (se recorta con la carne de arriba)
       void alto;
+      for (const p of e.piernas) {
+        const dc = nor(sub(p.tob, p.rod)), ex = nor(sub(p.punta, p.talon));
+        if (pi.tipo === 'sabatones') {
+          // escarpe de láminas: tres placas que cruzan el empeine, la punta afilada y el tobillo marcado
+          const ey = nor(cruz([0, 0, 1], ex)), ez = cruz(ex, ey);
+          for (let k = 0; k < 3; k++) ps.push(masa([bulto(add(mez(p.tob, p.punta, 0.3 + k * 0.26), ez, (1.0 - k * 0.3) * A), [1.0 * S, (2.1 - k * 0.15) * A + 1.0, (1.5 - k * 0.2) * A + 0.8], { ejes: [ex, ey, ez], mat: pi.mat, tono: k % 2 ? -0.12 : 0.08 })], { mat: pi.mat, suave: 0.12 * S, tono: k % 2 ? -0.12 : 0.08 }));
+          ps.push(masa([hueso(add(p.punta, [0, 0, 0.3 * A]), add(add(p.punta, ex, 1.9 * S), [0, 0, -0.2 * A]), 1.3 * A + 0.6, 0.25 * S, { mat: pi.mat, tono: 0.05 })], { mat: pi.mat, tono: 0.05 }));
+          ps.push(masa([hueso(add(p.tob, dc, -1.2 * S), add(p.tob, dc, -0.5 * S), 2.25 * A + 1.3, 2.2 * A + 1.3, { mat: pi.mat, tono: -0.16 })], { mat: pi.mat, tono: -0.16 }));
+        } else if (pi.tipo !== 'vendas') {
+          // bota: el puño vuelto arriba de la caña, la correa del tobillo y la suela oscura con su taco
+          const arriba = pi.tipo === 'botas_altas' ? 0.16 : 0.42;
+          ps.push(masa([hueso(mez(p.rod, p.tob, arriba), mez(p.rod, p.tob, arriba + 0.1), 2.65 * A + 1.0, 2.5 * A + 0.95, { mat: pi.mat, tono: -0.15 })], { mat: pi.mat, tono: -0.15 }));
+          ps.push(masa([hueso(add(p.tob, dc, -0.9 * S), add(p.tob, dc, -0.3 * S), 2.1 * A + 0.95, 2.1 * A + 0.95, { mat: pi.mat, tono: -0.2 })], { mat: pi.mat, tono: -0.2 }));
+        }
+      }
     }
   }
   // ---- torso
@@ -842,11 +871,28 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       ps.push(cilindro(...add(b.mun, b.d2, -0.6 * S), 2.25 * A, 0.7 * S, { mat: mn.linea ? acentoDe(mn.linea) : mn.mat === 'cu_oro' ? 'cu_placa' : 'cu_oro', r1: 2.3 * A, eje: b.d2 }));
     }
   }
-  // ---- hombreras
+  // ---- hombreras: láminas solapadas que bajan por el brazo y se abren hacia afuera, cada una con su borde (nada de
+  // bolas: a escala de juego se tienen que leer las capas y el canto de cada placa)
   if (eq.hombros) for (const b of e.brazos) {
     const h = eq.hombros, c = add(b.hom, [0, 0, 1.4 * S]);
     const fuera = nor(sub(b.hom, T(0, 0, e.hombroZ)));
-    if (h.tipo === 'placas') { ps.push(masa([bulto(add(c, fuera, 0.8), [4.4 * A, 4.0 * A, 3.0 * S], { mat: h.mat }), bulto(add(c, fuera, 1.6), [3.6 * A, 3.4 * A, 2.0 * S], { mat: h.mat, tono: 0.05 })], { mat: h.mat, suave: 0.8 })); ps.push(elipsoide(...add(add(c, fuera, 3.6 * A), [0, 0, -0.6]), 0.5, 0.5, 0.5, { mat: acentoDe(h.linea) })); }
+    const ade = e.ejesT[0], Zl: V3 = [0, 0, 1];
+    /** La lámina `i` (0 = la de arriba): ancho (adelante-atrás), largo (cuesta abajo) y grueso; `borde` es el material del canto de abajo. */
+    const lamina = (i: number, mat: string, an: number, la: number, gr: number, tono: number, borde?: string) => {
+      const n = nor(add(mulv(Zl, 1 - 0.3 * i), fuera, 0.55 + 0.45 * i));
+      const ej = ejes3(ade, n), cae: V3 = ej[1][2] > 0 ? mulv(ej[1], -1) : ej[1];
+      const cen = add(add(add(c, fuera, (0.7 + 1.0 * i) * A), b.d1, (i * 1.75 - 0.3) * S), Zl, 0.25 * S);
+      ps.push(masa([bulto(cen, [an * A, la * S, gr * S], { ejes: ej, mat, tono })], { mat, suave: 0.2 * S }));
+      const bm = borde ?? mat;
+      ps.push(masa([bulto(add(add(cen, cae, la * 0.86 * S), n, -0.12 * S), [an * 1.03 * A, 0.5 * S, gr * 1.12 * S], { ejes: ej, mat: bm, tono: borde ? 0 : tono - 0.16 })], { mat: bm, suave: 0.12 * S }));
+    };
+    if (h.tipo === 'placas') {
+      const ac = acentoDe(h.linea);
+      lamina(2, h.mat, 3.3, 1.9, 0.75, -0.08, ac); lamina(1, h.mat, 3.9, 2.1, 0.8, -0.02); lamina(0, h.mat, 4.3, 2.4, 0.85, 0.06);
+      // el guardacuello: una pestaña que sube del borde de adentro, y el remache
+      ps.push(masa([bulto(add(add(c, fuera, -0.7 * A), Zl, 1.9 * S), [2.7 * A, 1.9 * S, 0.42 * S], { ejes: ejes3(ade, add(fuera, Zl, -0.25)), mat: h.mat, tono: -0.05 })], { mat: h.mat, suave: 0.15 * S }));
+      ps.push(elipsoide(...add(add(c, fuera, 1.5 * A), Zl, 1.9 * S), 0.5, 0.5, 0.5, { mat: ac }));
+    }
     else if (h.tipo === 'puas') {
       // hombrera de placa lisa con una lámina debajo y un remache (no una bola con púas en abanico, que de lejos se lee
       // como una mano abierta junto a la cara) y un solo cuerno de metal oscuro, grueso y curvo, que barre hacia atrás y
@@ -858,8 +904,27 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       const a = add(lam(2.2, 0.6), atras, 0.8 * S), d1 = nor(add(add(fuera, atras, 0.45), Zh, 0.12)), d2 = nor(add(add(fuera, atras, 1.2), Zh, 0.02)), m = add(a, d1, 3.6 * S);
       ps.push(masa(cadenaHuesos([a, m, add(m, d2, 4.0 * S)], 1.45 * A, 0.12 * S, h.mat, -0.16), { mat: h.mat, suave: 0.3 }));
     }
-    else if (h.tipo === 'huesos') { ps.push(masa([bulto(add(c, fuera, 0.6), [3.8 * A, 3.4 * A, 2.6 * S], { mat: 'cu_hueso' })], { mat: 'cu_hueso' })); ps.push(palo(add(c, fuera, 2), add(add(c, fuera, 4), [0, 0, 5]), 0.9, { mat: 'cu_hueso', r1: 0.2 })); }
-    else ps.push(masa([bulto(add(c, fuera, 0.5), [4.4 * A, 4.2 * A, 2.8 * S], { mat: h.mat }), bulto(add(c, fuera, -0.5), [3.6 * A, 3.6 * A, 3.2 * S], { mat: h.mat })], { mat: h.mat, suave: 2.6 }));
+    else if (h.tipo === 'huesos') {
+      // dos placas de hueso y un colmillo que sube hacia afuera
+      lamina(1, 'cu_hueso', 3.4, 2.0, 0.8, -0.1); lamina(0, 'cu_hueso', 3.9, 2.3, 0.9, 0.02);
+      ps.push(palo(add(c, fuera, 2), add(add(c, fuera, 4), [0, 0, 5]), 0.9, { mat: 'cu_hueso', r1: 0.2 }));
+    }
+    else if (h.tipo === 'pieles') {
+      // la piel echada al hombro: un lomo y mechones que caen desparejos por delante, por fuera y por detrás
+      const cs: Comp[] = [bulto(add(c, fuera, 0.4 * A), [3.7 * A, 3.3 * A, 2.2 * S], { mat: h.mat })];
+      for (let k = 0; k < 7; k++) {
+        const a = rad(-78 + k * 26), sn = Math.sin(a), cn = Math.cos(a);
+        const ini = add(add(add(c, ade, sn * 2.5 * A), fuera, (0.3 + cn * 1.3) * A), Zl, (0.3 + cn * 0.5) * S);
+        const dir = nor(add(add(mulv(fuera, 0.35 + cn * 0.55), ade, sn * 0.75), Zl, -0.85));
+        cs.push(hueso(ini, add(ini, dir, (3.3 + (k % 2) * 1.3 + (k === 3 ? 0.8 : 0)) * S), 1.45 * S, 0.22 * S, { mat: h.mat, tono: k % 2 ? -0.1 : 0.06 }));
+      }
+      ps.push(masa(cs, { mat: h.mat, suave: 0.55 * S }));
+    }
+    else {
+      // cuero: dos láminas gruesas con el canto oscuro y la correa que la sujeta
+      lamina(1, h.mat, 3.5, 2.1, 0.9, -0.1); lamina(0, h.mat, 4.1, 2.5, 0.95, 0.03);
+      ps.push(elipsoide(...add(add(c, fuera, 1.2 * A), Zl, 2.0 * S), 0.45, 0.45, 0.45, { mat: 'hierro' }));
+    }
   }
   // ---- capa: lámina de bultos planos que cuelga de los hombros y se mece al caminar
   if (eq.capa) ps.push(capa(e, eq.capa.mat, eq.capa.largo ?? 1, acc, f, pi ? (pi.tipo === 'sabatones' ? 1.2 : pi.tipo === 'sandalias' ? 0 : 0.8) : 0));
