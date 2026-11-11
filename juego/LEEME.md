@@ -194,6 +194,13 @@ habilidades, monstruos, objetos, lugares, música y arte (pintado por el motor g
   - La QA del motor (`scripts/qa-heroes.ts`) mide el giro real del arma entre cuadros seguidos en vez de exigir que no se mueva. Da 0 fallas en héroes y monstruos.
   - Herramientas: `npx tsx scripts/revisar-anim.ts <carpeta> --clase berserker --accs caminar,correr --dirs so,o` saca tiras a plena luz. `npx tsx scripts/qa-rapida.ts berserker 1` mide una clase en segundos.
 - **Modo agresivo que defiende a los suyos.** Si a Thor, a una invocación o al héroe le están pegando a 4 casillas o menos, el héroe cuerpo a cuerpo va y responde. No sale a buscar pelea: solo va contra quien ya está peleando con los suyos. Antes se quedaba quieto mirando. Los brutos de golpe en área (ogro, verdugo, gólem) ya no pegan desde más lejos que el golpe del héroe. Prueba: `juego/herramientas/bruto_agresivo.cjs <clase>`.
+- **Personajes rehechos (menos geométricos, más ARPG gótico).** Trabajo conjunto del juego y la Forja.
+  - Proporción heroica: la cabeza de los héroes va al 86 %. Antes medían 6,3 cabezas de alto y se veían de muñeco.
+  - Reposo erguido, con el pecho arriba y los brazos cerca del cuerpo. Las mujeres tienen cintura, cadera y hombros finos.
+  - Hombreras por láminas solapadas con filo y junta, en vez de elipsoides. Piernas de armadura por piezas: quijote, rodillera en punta, greba con arista. Botas con puño y correa, escarpes de láminas, puños y correas en guantes y brazales.
+  - De la Forja: cascos, capuchas, corazas, cotas, jubones y cintos forjados, grano por material pegado a la pieza (metal golpeado, cuero con vetas, tela con trama, malla en anillas), brillo solo en los filos del metal, túnicas, capas y tabardos con pliegues y ruedo con peso, rostro y pelo con hebras.
+  - Vestuario nuevo de monje, cazadora, arcanista y alquimista, con paleta apagada. El cuero en general va menos saturado.
+  - Realce en el juego (`render/escena.ts`, `REALCE`): cada sprite se mezcla sobre sí mismo en modo screen, porque venía pintado en luz baja y encima caía la oscuridad de la zona. Héroe 1, aliados y monstruos 0,65, la mitad en el pueblo. `window.__sinRealce = true` lo apaga para comparar. Prueba: `juego/herramientas/realce_tres.cjs <clase> <nivel>`.
 
 ## Qué falta o se puede mejorar
 
