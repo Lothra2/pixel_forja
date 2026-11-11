@@ -4,6 +4,7 @@ import * as superficie from './superficie';
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
 import { rasgos, mechones, hebras, type MarcoCab } from './rostro';
+import { prendas, type Prenda } from './vestuario';
 import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado, tunica as tunicaForjada, colgantes, tabardoFaldon, jubon } from './armadura';
 import { pose, CUADROS, cuadrosDe, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
@@ -41,7 +42,8 @@ M.cu_pelo_rubio = { rampa: ['#261a0b', '#433014', '#64491f', '#86642d', '#a5803d
 M.cu_pelo_rojo = { rampa: ['#1a0704', '#300e07', '#4a160b', '#651f10', '#812a16', '#9c381e', '#b34a29'], ruido: 0.35, escala: 1.4, patron: (p) => (ruido(p[0] * 2.5, p[1] * 2.5, p[2] * 0.4) - 0.5) * 0.25 };
 M.cu_pelo_blanco = { rampa: ['#2e2c2a', '#4a4744', '#67635f', '#86817b', '#a49e97', '#c0bab3', '#d8d3cc'], ruido: 0.3, escala: 1.4, patron: (p) => (ruido(p[0] * 2.5, p[1] * 2.5, p[2] * 0.4) - 0.5) * 0.22 };
 M.cu_malla = { rampa: ['#0f1012', '#1d1f22', '#2e3135', '#41454a', '#565b61', '#6d737a', '#868c93', '#a3a9af'], ruido: 0.2, escala: 1.3, brillo: 0.2, patron: (p) => { const a = Math.sin(p[0] * 2.6 + p[1] * 2.6) * Math.sin(p[2] * 3.2 + (p[0] - p[1]) * 1.3); return a > 0.35 ? 0.1 : a < -0.55 ? -0.2 : 0; } };
-M.cu_cuero = { rampa: ['#170b05', '#2a140a', '#3f1f0f', '#552c16', '#6b3a1d', '#814926', '#975930', '#ac6a3b'], ruido: 0.16, escala: 0.8, brillo: 0.06 };
+// (el cuero claro, con la saturación bajada: en superficies grandes no se lee naranja)
+M.cu_cuero = { rampa: ['#170e09', '#2a1911', '#3f261a', '#553524', '#6b452e', '#81553a', '#976747', '#ac7954'], ruido: 0.16, escala: 0.8, brillo: 0.06 };
 M.cu_cuero_negro = { rampa: ['#070606', '#0f0d0c', '#191513', '#241f1c', '#302925', '#3d3530', '#4b423c'], ruido: 0.18, escala: 0.8, brillo: 0.12 };
 M.cu_placa = { rampa: ['#0a0b0e', '#14171c', '#20242b', '#2d323a', '#3c434d', '#4f5864', '#66717e', '#838e9b', '#a8b2bd', '#d3dae2'], ruido: 0.015, escala: 0.6, brillo: 0.8, trama: 0.6 };
 M.cu_placa_oscura = { rampa: ['#060608', '#0e0f12', '#17191d', '#21242a', '#2d3138', '#3b4048', '#4e545d', '#68707a', '#8f97a1'], ruido: 0.02, escala: 0.6, brillo: 0.75, trama: 0.6 };
@@ -100,9 +102,28 @@ M.cu_percebe = { rampa: ['#171513', '#2b2824', '#433f38', '#5e5850', '#7a736a', 
 M.cu_alga = { rampa: ['#040905', '#09130a', '#0f1f10', '#172c16', '#1f3a1d', '#294924', '#33582c', '#40683a'], ruido: 0.3, escala: 1.2, brillo: 0.25 };
 M.cu_concha = { rampa: ['#28181a', '#45292a', '#663e3c', '#875650', '#a66f66', '#c08a7e', '#d6a796', '#e8c6b6', '#f6e2d6'], ruido: 0.05, escala: 0.6, brillo: 0.35, patron: (p) => (Math.sin((p[0] - p[1]) * 3.2) > 0.55 ? -0.08 : 0.02) };
 
+// vestuario de ARPG gótico: tonos tierra y fríos apagados (el color fuerte queda para un acento chico)
+M.cu_tela_ocre = { rampa: ['#0f0c08', '#221b13', '#352a1e', '#473a2a', '#5a4a36', '#6d5a43', '#806a50'], ruido: 0.14, escala: 1.2 };
+M.cu_tela_azafran = { rampa: ['#170f06', '#33210f', '#4e3419', '#6a4824', '#855c30', '#a1703d', '#bd854b'], ruido: 0.12, escala: 1.2 };
+M.cu_tela_ceniza = { rampa: ['#121110', '#252321', '#383532', '#4b4744', '#5e5955', '#716c66', '#857e77'], ruido: 0.14, escala: 1.2 };
+M.cu_tela_musgo = { rampa: ['#0c0d09', '#181b13', '#25291d', '#323726', '#3e4530', '#4b533a', '#586144'], ruido: 0.12, escala: 1.2 };
+M.cu_tela_vino = { rampa: ['#0d0607', '#1c0e10', '#2b1619', '#391f22', '#48282c', '#573136', '#663b40'], ruido: 0.12, escala: 1.2 };
+M.cu_tela_indigo = { rampa: ['#09090d', '#14141c', '#1f1f2c', '#2b2b3c', '#36374c', '#43445b', '#4f506b'], ruido: 0.12, escala: 1.2 };
+M.cu_tela_ciruela = { rampa: ['#0d090d', '#1c151c', '#2c212c', '#3c2e3c', '#4b3a4c', '#5b475b', '#6b546b'], ruido: 0.12, escala: 1.2 };
+M.cu_tela_pizarra = { rampa: ['#0d0e0f', '#1a1c1f', '#282b30', '#363a40', '#434850', '#515760', '#5e6570'], ruido: 0.12, escala: 1.2 };
+// lino crudo (no blanco), cuero oscuro trabajado y cuero teñido
+M.cu_lino = { rampa: ['#171512', '#2b2822', '#403c33', '#554f45', '#6a6355', '#807768', '#948b79'], ruido: 0.14, escala: 1.2 };
+M.cu_cuero_oscuro = { rampa: ['#0a0706', '#18110d', '#251b16', '#33261f', '#413128', '#4e3c32', '#5c473c'], ruido: 0.1, escala: 0.8 };
+M.cu_cuero_tenido = { rampa: ['#0a0606', '#170e0e', '#241617', '#301f20', '#3d2829', '#4a3133', '#573b3d'], ruido: 0.1, escala: 0.8 };
+// metales viejos: latón y plata con la pátina (sin el amarillo del oro)
+M.cu_laton_viejo = { rampa: ['#0f0d08', '#262014', '#3d3422', '#544830', '#6b5d40', '#827151', '#998763', '#b09d77', '#c7b38b'], ruido: 0.05, escala: 0.6, brillo: 0.6, trama: 0.35 };
+M.cu_plata_vieja = { rampa: ['#111212', '#272829', '#3d3f40', '#525658', '#686d6f', '#7e8486', '#949b9d', '#aab1b5', '#c0c8cc'], ruido: 0.05, escala: 0.6, brillo: 0.65, trama: 0.35 };
+M.cu_vidrio = { rampa: ['#070a08', '#19241b', '#2c3e2f', '#3e5842', '#507255', '#628c69'], ruido: 0.02, escala: 1, brillo: 0.5 };
+
 // superficie por material (superficie.ts): metal golpeado, cuero rayado, tela con hilos, malla en anillas regulares
-for (const k of ['cu_placa', 'cu_placa_oscura', 'cu_oro']) if (M[k]) M[k] = { ...M[k], patron: superficie.metal };
-for (const k of ['cu_cuero', 'cu_cuero_negro']) if (M[k]) M[k] = { ...M[k], patron: superficie.cuero };
+for (const k of ['cu_placa', 'cu_placa_oscura', 'cu_oro', 'cu_laton_viejo', 'cu_plata_vieja']) if (M[k]) M[k] = { ...M[k], patron: superficie.metal };
+for (const k of ['cu_cuero', 'cu_cuero_negro', 'cu_cuero_oscuro', 'cu_cuero_tenido']) if (M[k]) M[k] = { ...M[k], patron: superficie.cuero };
+M.cu_lino = { ...M.cu_lino, patron: superficie.tela };
 for (const k of Object.keys(M)) if (k.startsWith('cu_tela_') && !M[k].patron) M[k] = { ...M[k], patron: superficie.tela };
 M.cu_malla = { ...M.cu_malla, ruido: 0.06, patron: superficie.malla };
 // lo del cuerpo lleva la textura pegada a la pieza (no se desliza al caminar)
@@ -161,7 +182,7 @@ export type Pieza_ = Pieza;
 export type LineaCuerpo = 'escamas' | 'draconica' | 'elfica' | 'demoniaca' | 'celestial' | 'ahogada';
 export const LINEAS_CUERPO: LineaCuerpo[] = ['escamas', 'draconica', 'elfica', 'demoniaca', 'celestial', 'ahogada'];
 export interface Equipo {
-  torso?: { tipo: 'camisa' | 'sin_mangas' | 'tunica' | 'cuero' | 'cuero_tachonado' | 'malla' | 'placas' | 'harapos' | 'vestido'; mat: string; mat2?: string; linea?: LineaCuerpo; /** metal de los ribetes y remaches de la coraza (leyenda) */ adorno?: string; /** ribete de la abertura, el cuello y el ruedo (túnicas) */ ribete?: string };
+  torso?: { tipo: 'camisa' | 'sin_mangas' | 'tunica' | 'cuero' | 'cuero_tachonado' | 'malla' | 'placas' | 'harapos' | 'vestido'; mat: string; mat2?: string; linea?: LineaCuerpo; /** metal de los ribetes y remaches de la coraza (leyenda) */ adorno?: string; /** ribete de la abertura, el cuello y el ruedo (túnicas) */ ribete?: string; /** 'corta': la túnica deja el antebrazo libre (vendas a la vista) */ manga?: 'corta' };
   piernas?: { tipo: 'pantalon' | 'calzas' | 'faldon' | 'tunica_larga' | 'grebas' | 'taparrabo'; mat: string; mat2?: string; linea?: LineaCuerpo };
   pies?: { tipo: 'botas' | 'botas_altas' | 'sandalias' | 'sabatones' | 'vendas'; mat: string; linea?: LineaCuerpo };
   manos?: { tipo: 'guantes' | 'guanteletes' | 'vendas' | 'brazales'; mat: string; linea?: LineaCuerpo };
@@ -173,6 +194,8 @@ export interface Equipo {
   izq?: { tipo: 'escudo_redondo' | 'escudo_cometa' | 'escudo_torre' | 'rodela' | 'escudo_calavera' | 'orbe' | 'libro' | 'antorcha' | 'arma'; mat?: string; mat2?: string; arma?: TipoArma };
   /** Tabardo o faldón con color de la orden. */
   tabardo?: { mat: string; borde?: string };
+  /** Lo que dice el oficio, encima de la ropa (vestuario.ts): faja, rosario, estola, libro, delantal, carcaj... */
+  prendas?: Prenda[];
 }
 /** Materiales de cada línea épica: la placa, lo de abajo (cota, cuero o tela), el acento (ribetes y remaches) y lo que la distingue. */
 export const MAT_LINEA: Record<LineaCuerpo, { placa: string; base: string; acento: string; extra: string }> = {
@@ -745,6 +768,8 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   if (!cu.presentacion || brilla) for (const s of [1, -1]) ps.push(elipsoide(...cab(3.35 * H, s * 1.45 * H, cz + 0.25 * H), (brilla ? 0.7 : 0.5) * H, 0.75 * H, (brilla ? 0.55 : 0.5) * H, { mat: ojo }));
   // ---- piernas y pies
   const pz = eq.piernas, pi = eq.pies;
+  // (la falda larga, para que lo que cuelga del cinto quede por fuera de la tela)
+  let masaFalda: Pieza | undefined;
   if (pz) {
     if (pz.tipo === 'pantalon' || pz.tipo === 'calzas') ps.push(masa(partes(e, cu, ['pelvis', 'muslo', 'pantorrilla'], pz.tipo === 'calzas' ? 0.35 : 0.65, pz.mat), { mat: pz.mat, suave: 1.6 }));
     else if (pz.tipo === 'grebas') {
@@ -774,7 +799,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     } else if (pz.tipo === 'faldon') {
       ps.push(masa(partes(e, cu, ['pelvis', 'muslo', 'pantorrilla'], 0.5, pz.mat2 ?? 'cu_tela_parda'), { mat: pz.mat2 ?? 'cu_tela_parda', suave: 1.6 }));
       ps.push(...faldon(e, pz.mat, 15, 1.25, acc, f));
-    } else if (pz.tipo === 'tunica_larga') ps.push(...faldon(e, pz.mat, 30, 1.5, acc, f, cu.presentacion ? eq.torso?.ribete : undefined));
+    } else if (pz.tipo === 'tunica_larga') { const fl = faldon(e, pz.mat, 30, 1.5, acc, f, cu.presentacion ? eq.torso?.ribete : undefined); masaFalda = fl[0]; ps.push(...fl); }
   }
   if (pi) {
     if (pi.tipo === 'sandalias') for (const p of e.piernas) {
@@ -808,9 +833,10 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   }
   // ---- torso
   const to = eq.torso;
+  let masaTorso: Pieza | undefined;
   if (to) {
     const mangas = to.tipo === 'sin_mangas' || to.tipo === 'vestido' ? [] : (['brazo'] as Parte[]);
-    const largo = to.tipo === 'camisa' || to.tipo === 'tunica' || to.tipo === 'malla' || to.tipo === 'harapos' ? (['antebrazo'] as Parte[]) : [];
+    const largo = (to.tipo === 'camisa' || to.tipo === 'tunica' || to.tipo === 'malla' || to.tipo === 'harapos') && to.manga !== 'corta' ? (['antebrazo'] as Parte[]) : [];
     // (en las mujeres el jubón y la coraza van ceñidos: menos inflado, siguen cintura y cadera)
     const ceñido = cu.genero === 'm' && (to.tipo === 'cuero' || to.tipo === 'cuero_tachonado' || to.tipo === 'placas' || to.tipo === 'malla');
     // (la túnica de un cuerpo enjuto cae sobre los huesos: holgada pero sin hinchar hombros ni mangas)
@@ -819,12 +845,14 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     const base: Parte[] = ['pelvis', 'abdomen', 'pecho', 'hombros', ...mangas, ...largo];
     const matBase = to.tipo === 'placas' ? to.mat2 ?? 'cu_malla' : to.mat;
     // el cuero claro va un tono más oscuro que la piel morena, para que el jubón no se lea como torso desnudo
-    ps.push(masa(partes(e, cu, base, inf, matBase, { mangaCorta: to.tipo === 'cuero' || to.tipo === 'cuero_tachonado' }), { mat: matBase, suave: ceñido ? 1.0 : 1.6, tono: matBase === 'cu_cuero' ? -0.12 : undefined }));
+    masaTorso = masa(partes(e, cu, base, inf, matBase, { mangaCorta: to.tipo === 'cuero' || to.tipo === 'cuero_tachonado' }), { mat: matBase, suave: ceñido ? 1.0 : 1.6, tono: matBase === 'cu_cuero' ? -0.12 : undefined });
+    ps.push(masaTorso);
     if (to.tipo === 'tunica' || to.tipo === 'harapos') ps.push(...faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f, cu.presentacion && pz?.tipo !== 'tunica_larga' ? to.ribete : undefined, pz?.tipo !== 'tunica_larga'));
-    if (to.tipo === 'vestido') ps.push(...faldon(e, to.mat, 29, 1.7, acc, f));
+    if (to.tipo === 'vestido') { const fl = faldon(e, to.mat, 29, 1.7, acc, f); masaFalda = fl[0]; ps.push(...fl); }
     if (to.tipo === 'cuero_tachonado') for (let i = 0; i < 4; i++) for (const s of [1, -1, 0]) ps.push(esfera(...T(3.9 * A + 0.6, s * 2.6 * A, e.zc + (5 + i * 3) * S), 0.5, { mat: 'cu_placa' }));
     if (to.tipo === 'malla' && !to.linea) ps.push(...mallaForjada(e, cu, to));
-    if (to.tipo === 'tunica') ps.push(...tunicaForjada(e, cu, to));
+    // (la túnica cruzada lleva su solapa en el vestuario: sin la abertura recta ni los pliegues de la túnica oscura)
+    if (to.tipo === 'tunica' && !eq.prendas?.some((p) => p.tipo === 'cruce')) ps.push(...tunicaForjada(e, cu, to));
     if ((to.tipo === 'cuero' || to.tipo === 'cuero_tachonado') && !to.linea) ps.push(...jubon(e, cu, to, cu.presentacion === 'apunta'));
     if (to.tipo === 'placas') {
       // peto curvo, espaldar, faldares y el borde dorado
@@ -969,6 +997,8 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       ps.push(elipsoide(...add(add(c, fuera, 1.2 * A), Zl, 2.0 * S), 0.45, 0.45, 0.45, { mat: 'hierro' }));
     }
   }
+  // ---- el vestuario del oficio (vestuario.ts), apoyado sobre el torso
+  if (eq.prendas?.length) ps.push(...prendas({ e, cu, eq, torso: masaTorso, falda: masaFalda, H, partes: (que, grosor, mat) => partes(e, cu, que, grosor, mat) }, eq.prendas));
   // ---- capa: lámina de bultos planos que cuelga de los hombros y se mece al caminar
   if (eq.capa) ps.push(capa(e, eq.capa.mat, eq.capa.largo ?? 1, acc, f, pi ? (pi.tipo === 'sabatones' ? 1.2 : pi.tipo === 'sandalias' ? 0 : 0.8) : 0));
   // ---- pelo y barba
