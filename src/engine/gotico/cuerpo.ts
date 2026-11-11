@@ -900,8 +900,10 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       const ej = ejes3(ade, n), cae: V3 = ej[1][2] > 0 ? mulv(ej[1], -1) : ej[1];
       const cen = add(add(add(c, fuera, (0.7 + 1.0 * i) * A), b.d1, (i * 1.75 - 0.3) * S), Zl, 0.25 * S);
       ps.push(masa([bulto(cen, [an * A, la * S, gr * S], { ejes: ej, mat, tono })], { mat, suave: 0.2 * S }));
+      // el filo: un canto fino y claro en la arista de arriba de la lámina (en penumbra es lo que la lee como metal forjado)
+      if (gr < 0.9) ps.push(masa([bulto(add(add(cen, cae, -la * 0.72 * S), n, 0.2 * S), [an * 0.9 * A, 0.34 * S, gr * 0.7 * S], { ejes: ej, mat, tono: tono + 0.24 })], { mat, suave: 0.1 * S, tono: tono + 0.24 }));
       const bm = borde ?? mat;
-      ps.push(masa([bulto(add(add(cen, cae, la * 0.86 * S), n, -0.12 * S), [an * 1.03 * A, 0.5 * S, gr * 1.12 * S], { ejes: ej, mat: bm, tono: borde ? 0 : tono - 0.16 })], { mat: bm, suave: 0.12 * S }));
+      ps.push(masa([bulto(add(add(cen, cae, la * 0.86 * S), n, -0.12 * S), [an * 1.03 * A, 0.5 * S, gr * 1.12 * S], { ejes: ej, mat: bm, tono: borde ? 0 : tono - 0.22 })], { mat: bm, suave: 0.12 * S, tono: borde ? 0 : tono - 0.22 }));
     };
     if (h.tipo === 'placas') {
       const ac = acentoDe(h.linea);
