@@ -38,7 +38,7 @@ interface Cono extends Base { k: 'cono'; o: V3; ex: V3; ey: V3; ez: V3; h: numbe
 interface Elip extends Base { k: 'elip'; c: V3; ex: V3; ey: V3; ez: V3; r: V3 }
 /** Componente de una masa: hueso (cono redondeado entre a y b) o bulto (elipsoide orientado). */
 export type Comp =
-  | { f: 'hueso'; a: V3; b: V3; r0: number; r1: number; mat?: string; tono?: number; k?: number; sc: V3; sr: number; pre: number[] }
+  | { f: 'hueso'; a: V3; b: V3; r0: number; r1: number; mat?: string; tono?: number; k?: number; sc: V3; sr: number; pre: number[]; rx?: V3 }
   | { f: 'bulto'; c: V3; ex: V3; ey: V3; ez: V3; r: V3; mat?: string; tono?: number; k?: number; sc: V3; sr: number };
 /** Masa orgánica: componentes que se funden con unión suave (cuerpos, músculos, troncos, raíces). */
 interface Masa extends Base { k: 'masa'; comps: Comp[]; suave: number; esf: [number, number, number, number] }
@@ -101,7 +101,8 @@ export const esfera = (x: number, y: number, z: number, r: number, o: Opc) => el
 /** Opciones de un componente de masa: material propio, tono y suavidad propia de la unión. */
 export interface OpcComp { mat?: string; tono?: number; k?: number }
 /** Hueso de una masa: cono redondeado de `a` (radio r0) a `b` (radio r1). */
-export function hueso(a: V3, b: V3, r0: number, r1 = r0, o: OpcComp = {}): Comp {
+/** `rx`: hacia dónde mira el hueso alrededor de su eje (el marco de su grano); gira con la pieza, no con el mundo. */
+export function hueso(a: V3, b: V3, r0: number, r1 = r0, o: OpcComp & { rx?: V3 } = {}): Comp {
   const sc: V3 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
   const bx = b[0] - a[0], by = b[1] - a[1], bz = b[2] - a[2], l2 = bx * bx + by * by + bz * bz, rr = r0 - r1;
   return { f: 'hueso', a, b, r0, r1, ...o, sc, sr: Math.sqrt(l2) / 2 + Math.max(r0, r1), pre: [bx, by, bz, l2, rr, l2 - rr * rr, l2 > 1e-9 ? 1 / l2 : 0] };
@@ -167,6 +168,8 @@ function dMasa(m: Masa, p: V3, sub?: Int16Array, nsub = 0): [number, number] {
   }
   return [d, mejor];
 }
+/** Distancia con signo de un punto a una masa (negativa adentro): para apoyar pliegues y ruedos sobre su superficie. */
+export function distMasa(p: Pieza, q: V3): number { return p.k === 'masa' ? dMasa(p, q)[0] : Infinity; }
 const SUB = new Int16Array(512);
 function normalMasa(m: Masa, p: V3, sub?: Int16Array, ns = 0): V3 {
   const e = 0.04;
@@ -182,7 +185,7 @@ const toLocal = (v: V3, ex: V3, ey: V3, ez: V3): V3 => [dot(v, ex), dot(v, ey), 
  * El punto en el marco de la pieza que golpeó (y del componente, en una masa): la textura de los materiales `local` se
  * pega a la pieza y no se desliza cuando la pieza se mueve entre cuadros.
  */
-function enPieza(g: { p: Pieza; ci?: number }, q: V3): V3 {
+export function enPieza(g: { p: Pieza; ci?: number }, q: V3): V3 {
   const p = g.p;
   if (p.k === 'elip') return toLocal(add(q, p.c, -1), p.ex, p.ey, p.ez);
   if (p.k === 'cono') return toLocal(add(q, p.o, -1), p.ex, p.ey, p.ez);
@@ -196,9 +199,28 @@ function enPieza(g: { p: Pieza; ci?: number }, q: V3): V3 {
   const c = p.comps[g.ci ?? 0];
   if (!c) return q;
   if (c.f === 'bulto') return toLocal(add(q, c.c, -1), c.ex, c.ey, c.ez);
-  const ez = norm(add(c.b, c.a, -1)); let ex = cross(ez, [0, 0, 1]); if (Math.hypot(...ex) < 1e-3) ex = cross(ez, [1, 0, 0]);
-  ex = norm(ex); const ey = cross(ez, ex);
+  const [ex, ey, ez] = marcoHueso(p, g.ci ?? 0);
   return toLocal(add(q, c.a, -1), ex, ey, ez);
+}
+/**
+ * Marco del componente hueso `ci` de una masa. El giro sobre su eje sale de la propia pieza, nunca del mundo: primero
+ * su `rx` (lo pone quien arma el cuerpo, y lo llevan los giros), si no, el centro de un componente vecino. Con la
+ * vertical del mundo el marco se daría vuelta cada vez que el hueso pasa por la vertical y el grano saltaría.
+ */
+export function marcoHueso(p: Pieza, ci: number): [V3, V3, V3] {
+  const c = (p as Masa).comps[ci] as Extract<Comp, { f: 'hueso' }>;
+  const ez = norm(add(c.b, c.a, -1));
+  const perp = (r: V3): V3 => add(r, ez, -dot(r, ez));
+  let ex: V3 = c.rx ? perp(c.rx) : [0, 0, 0];
+  if (Math.hypot(...ex) < 1e-3) for (const k of [ci + 1, ci - 1, ci + 2, ci - 2]) {
+    const v = (p as Masa).comps[k]; if (!v) continue;
+    const pr = perp(add(v.sc, c.sc, -1));
+    if (Math.hypot(...pr) > 1e-3) { ex = pr; break; }
+  }
+  // último recurso (un hueso suelto sin rx): el mundo
+  if (Math.hypot(...ex) < 1e-3) { ex = cross(ez, [0, 0, 1]); if (Math.hypot(...ex) < 1e-3) ex = cross(ez, [1, 0, 0]); }
+  ex = norm(ex);
+  return [ex, cross(ez, ex), ez];
 }
 const toWorld = (v: V3, ex: V3, ey: V3, ez: V3): V3 => [ex[0] * v[0] + ey[0] * v[1] + ez[0] * v[2], ex[1] * v[0] + ey[1] * v[1] + ez[1] * v[2], ex[2] * v[0] + ey[2] * v[1] + ez[2] * v[2]];
 
@@ -750,7 +772,7 @@ export function girarPiezas(ps: Pieza[], grados: number): Pieza[] {
     if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => [R(n), d] as [V3, number]), pts: p.pts.map(R) };
     if (p.k === 'cono') return { ...p, o: R(p.o), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
     if (p.k === 'elip') return { ...p, c: R(p.c), ex: R(p.ex), ey: R(p.ey), ez: R(p.ez) };
-    const comps = p.comps.map((q): Comp => (q.f === 'hueso' ? hueso(R(q.a), R(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k }) : { ...q, c: R(q.c), sc: R(q.sc), ex: R(q.ex), ey: R(q.ey), ez: R(q.ez) }));
+    const comps = p.comps.map((q, i): Comp => (q.f === 'hueso' ? hueso(R(q.a), R(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k, rx: R(marcoHueso(p, i)[0]) }) : { ...q, c: R(q.c), sc: R(q.sc), ex: R(q.ex), ey: R(q.ey), ez: R(q.ez) }));
     return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave });
   });
 }

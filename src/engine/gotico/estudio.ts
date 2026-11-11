@@ -1,6 +1,6 @@
 import { rng } from '../core/rng';
 import { objeto, herramientas } from './objeto';
-import { pintarEscena, hueso, bulto, masa, type Pieza, type Escena, type V3 } from './render';
+import { pintarEscena, hueso, marcoHueso, bulto, masa, type Pieza, type Escena, type V3 } from './render';
 import { personajeEscena, type Cuerpo, type Equipo } from './cuerpo';
 import type { Dir, Accion } from './figura';
 import {
@@ -24,8 +24,8 @@ export function escalarPiezas(ps: Pieza[], k: number): Pieza[] {
     if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, d]) => [n, d * k] as [V3, number]), pts: p.pts.map((q) => ev(q, k)) };
     if (p.k === 'cono') return { ...p, o: ev(p.o, k), h: p.h * k, r0: p.r0 * k, r1: p.r1 * k };
     if (p.k === 'elip') return { ...p, c: ev(p.c, k), r: ev(p.r, k) };
-    const comps = p.comps.map((q) => (q.f === 'hueso'
-      ? hueso(ev(q.a, k), ev(q.b, k), q.r0 * k, q.r1 * k, { mat: q.mat, tono: q.tono, k: q.k !== undefined ? q.k * k : undefined })
+    const comps = p.comps.map((q, i) => (q.f === 'hueso'
+      ? hueso(ev(q.a, k), ev(q.b, k), q.r0 * k, q.r1 * k, { mat: q.mat, tono: q.tono, k: q.k !== undefined ? q.k * k : undefined, rx: marcoHueso(p, i)[0] })
       : bulto(ev(q.c, k), ev(q.r, k), { ejes: [q.ex, q.ey, q.ez], mat: q.mat, tono: q.tono, k: q.k !== undefined ? q.k * k : undefined })));
     return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave * k });
   });

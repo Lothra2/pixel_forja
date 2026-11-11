@@ -14,14 +14,14 @@ import { MATERIALES } from './materiales';
 
 type Fn = (fw: number, rt: number, up: number) => V3;
 /** Un anillo de puntos en un marco (adelante, derecha, arriba): radio adelante y atrás distintos, ancho a los costados. */
-function anillo(P: Fn, cx: number, rF: number, rB: number, ry: number, up: number, n = 10, fase = 0.5): V3[] {
+export function anillo(P: Fn, cx: number, rF: number, rB: number, ry: number, up: number, n = 10, fase = 0.5): V3[] {
   return Array.from({ length: n }, (_, k) => {
     const a = ((k + fase) / n) * Math.PI * 2, c = Math.cos(a);
     return P(cx + c * (c >= 0 ? rF : rB), Math.sin(a) * ry, up);
   });
 }
 /** Un arco de anillo (de a0 a a1 en grados, 0 = adelante, + a la derecha). */
-function arco(P: Fn, cx: number, rF: number, rB: number, ry: number, up: number, a0: number, a1: number, n = 6): V3[] {
+export function arco(P: Fn, cx: number, rF: number, rB: number, ry: number, up: number, a0: number, a1: number, n = 6): V3[] {
   return Array.from({ length: n + 1 }, (_, k) => {
     const a = ((a0 + ((a1 - a0) * k) / n) * Math.PI) / 180, c = Math.cos(a);
     return P(cx + c * (c >= 0 ? rF : rB), Math.sin(a) * ry, up);
@@ -31,7 +31,7 @@ function arco(P: Fn, cx: number, rF: number, rB: number, ry: number, up: number,
  * Un tramo facetado (cuerno, púa, asta) de `a` a `b` en el marco P, con anillos perpendiculares al eje (así las caras
  * del costado son planas y el tramo tiene volumen de verdad), de radio w0 a w1, con n lados.
  */
-function tramo(P: Fn, a: [number, number, number], b: [number, number, number], w0: number, w1: number, n = 6, fase = 0): V3[] {
+export function tramo(P: Fn, a: [number, number, number], b: [number, number, number], w0: number, w1: number, n = 6, fase = 0): V3[] {
   const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(d[0], d[1], d[2]) || 1, dn = d.map((x) => x / l);
   let u = [dn[1], -dn[0], 0]; if (Math.hypot(u[0], u[1]) < 0.2) u = [0, dn[2], -dn[1]];
   const lu = Math.hypot(u[0], u[1], u[2]); u = u.map((x) => x / lu);
@@ -45,7 +45,7 @@ function tramo(P: Fn, a: [number, number, number], b: [number, number, number], 
 }
 /** Junta oscura entre láminas (1 px real a escala de juego) y filo de brillo en aristas y cantos de arriba. */
 const oscuro = -0.55, claro = 0.38, JUNTA = 0.95;
-const esMetal = (m?: string) => !!m && /placa|oro|hierro|acero|bronce|plata|malla/.test(m);
+const esMetal = (m?: string) => !!m && /placa|oro|hierro|acero|bronce|plata|malla|laton/.test(m);
 
 // ------------------------------------------------------------------ cascos y capuchas
 /**

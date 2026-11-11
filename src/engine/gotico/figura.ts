@@ -423,8 +423,9 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
       break;
     }
     case 'invoca': {
-      // encorvado y quieto como una estatua; respira lento y la mano libre, en garra, sube un poco con el aire
-      p.torso += 9; p.cabeza -= 6; p.hombros = [0.9 + 0.4 * k, 1.2 + 0.4 * k]; p.bajar += 1;
+      // alto y enjuto, apenas inclinado, quieto como una estatua (sin encoger los hombros: encogido se leía macizo);
+      // respira lento y la mano libre, en garra, sube un poco con el aire
+      p.torso += 5; p.cabeza -= 3; p.hombros = [0.35 + 0.3 * k, 0.55 + 0.3 * k]; p.bajar += 0.4;
       if (arma !== 'dos' && arma !== 'baculo') p.hombroI = [22 + 3 * k, 12, 58 + 6 * k, 20];
       break;
     }

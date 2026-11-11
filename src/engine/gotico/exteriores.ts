@@ -118,7 +118,7 @@ function trasladar(p: Pieza, d: V): Pieza {
   if (p.k === 'conv') return { ...p, planos: p.planos.map(([n, k]) => [n, k + n[0] * d[0] + n[1] * d[1] + n[2] * d[2]] as [V, number]), pts: p.pts.map(T) };
   if (p.k === 'cono') return { ...p, o: T(p.o) };
   if (p.k === 'elip') return { ...p, c: T(p.c) };
-  const comps = p.comps.map((q): Comp => (q.f === 'hueso' ? hueso(T(q.a), T(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k }) : { ...q, c: T(q.c), sc: T(q.sc) }));
+  const comps = p.comps.map((q): Comp => (q.f === 'hueso' ? hueso(T(q.a), T(q.b), q.r0, q.r1, { mat: q.mat, tono: q.tono, k: q.k, rx: q.rx }) : { ...q, c: T(q.c), sc: T(q.sc) }));
   return masa(comps, { mat: p.mat, tono: p.tono, suave: p.suave });
 }
 /** Las piezas giradas `giro` grados alrededor de la vertical y corridas a `d`. */
