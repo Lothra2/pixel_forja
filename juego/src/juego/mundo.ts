@@ -1911,7 +1911,9 @@ function pelear(j: Juego, m: Monstruo, obj: Ent, dt: number, lento: number) {
   // el sobresalto: al descubrirte se vuelve hacia ti un instante antes de echarse encima (cada uno a su tiempo)
   if ((m as any).alerta > 0) { (m as any).alerta -= dt; girarHacia(m, obj.x - m.x, obj.y - m.y, dt, sensacionDe(m).giro); if (m.acc === 'caminar' || m.acc === 'correr') m.acc = 'quieto'; return; }
   const distancia = m.def.ia === 'distancia' || m.def.ia === 'mago' || m.def.ia === 'invocador' || (m.def.jefe && m.def.proyectil && R() < 0.4);
-  const alcance = m.radio + obj.radio + 0.75 + (m.def.area ? 0.4 : 0);
+  // (los de golpe en área llegan un poco más lejos, pero nunca más que el golpe del héroe (1,4 + radio del monstruo):
+  // con 0,4 de más un ogro pegaba desde 2,39 y el héroe en modo agresivo, que alcanza 2,24, no le respondía nunca)
+  const alcance = m.radio + obj.radio + 0.75 + (m.def.area ? 0.2 : 0);
   if (distancia && m.def.rango) {
     const ver = lineaLibre(j.zona, m.x, m.y, obj.x, obj.y);
     if (d < m.def.rango && ver && m.cd <= 0) { iniciarAtaque(j, m, obj, true); return; }
