@@ -101,6 +101,8 @@ for (const k of ['cu_placa', 'cu_placa_oscura', 'cu_oro']) if (M[k]) M[k] = { ..
 for (const k of ['cu_cuero', 'cu_cuero_negro']) if (M[k]) M[k] = { ...M[k], patron: superficie.cuero };
 for (const k of Object.keys(M)) if (k.startsWith('cu_tela_') && !M[k].patron) M[k] = { ...M[k], patron: superficie.tela };
 M.cu_malla = { ...M.cu_malla, ruido: 0.06, patron: superficie.malla };
+// lo del cuerpo lleva la textura pegada a la pieza (no se desliza al caminar)
+for (const k of Object.keys(M)) if (k.startsWith('cu_')) M[k] = { ...M[k], local: true };
 
 // ------------------------------------------------------------------ tipos
 export interface Cuerpo {

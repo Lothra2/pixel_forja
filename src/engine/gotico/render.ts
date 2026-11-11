@@ -176,8 +176,30 @@ function normalMasa(m: Masa, p: V3, sub?: Int16Array, ns = 0): V3 {
 }
 
 // ------------------------------------------------------------------ intersección (cada pieza es convexa: entrada y salida)
-export interface Tramo { t0: number; t1: number; n0: V3; n1: V3; p: Pieza; i: number; mat?: string; tono?: number }
+export interface Tramo { t0: number; t1: number; n0: V3; n1: V3; p: Pieza; i: number; mat?: string; tono?: number; ci?: number }
 const toLocal = (v: V3, ex: V3, ey: V3, ez: V3): V3 => [dot(v, ex), dot(v, ey), dot(v, ez)];
+/**
+ * El punto en el marco de la pieza que golpeó (y del componente, en una masa): la textura de los materiales `local` se
+ * pega a la pieza y no se desliza cuando la pieza se mueve entre cuadros.
+ */
+function enPieza(g: { p: Pieza; ci?: number }, q: V3): V3 {
+  const p = g.p;
+  if (p.k === 'elip') return toLocal(add(q, p.c, -1), p.ex, p.ey, p.ez);
+  if (p.k === 'cono') return toLocal(add(q, p.o, -1), p.ex, p.ey, p.ez);
+  if (p.k === 'conv') {
+    const a = p.pts[0], b = p.pts[1], c = p.pts[2] ?? p.pts[0];
+    const ex = norm(add(b, a, -1)), ez0 = cross(ex, add(c, a, -1));
+    if (Math.hypot(...ez0) < 1e-6) return add(q, a, -1);
+    const ez = norm(ez0), ey = cross(ez, ex);
+    return toLocal(add(q, a, -1), ex, ey, ez);
+  }
+  const c = p.comps[g.ci ?? 0];
+  if (!c) return q;
+  if (c.f === 'bulto') return toLocal(add(q, c.c, -1), c.ex, c.ey, c.ez);
+  const ez = norm(add(c.b, c.a, -1)); let ex = cross(ez, [0, 0, 1]); if (Math.hypot(...ex) < 1e-3) ex = cross(ez, [1, 0, 0]);
+  ex = norm(ex); const ey = cross(ez, ex);
+  return toLocal(add(q, c.a, -1), ex, ey, ez);
+}
 const toWorld = (v: V3, ex: V3, ey: V3, ez: V3): V3 => [ex[0] * v[0] + ey[0] * v[1] + ez[0] * v[2], ex[1] * v[0] + ey[1] * v[1] + ez[1] * v[2], ex[2] * v[0] + ey[2] * v[1] + ez[2] * v[2]];
 
 export function tramo(p: Pieza, o: V3, d: V3, tdesde = -Infinity, thasta = Infinity): Tramo | null {
@@ -198,7 +220,7 @@ export function tramo(p: Pieza, o: V3, d: V3, tdesde = -Infinity, thasta = Infin
     for (let n = 0; n < 160 && t < tfin; n++) {
       const pt: V3 = [o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t];
       const [dd, ci] = dMasa(p, pt, SUB, ns);
-      if (dd < 0.02) { const c = p.comps[ci]; const nn = normalMasa(p, pt, SUB, ns); return { t0: t, t1: tb, n0: nn, n1: [-nn[0], -nn[1], -nn[2]], p, i: 0, mat: c.mat, tono: c.tono }; }
+      if (dd < 0.02) { const c = p.comps[ci]; const nn = normalMasa(p, pt, SUB, ns); return { t0: t, t1: tb, n0: nn, n1: [-nn[0], -nn[1], -nn[2]], p, i: 0, mat: c.mat, tono: c.tono, ci }; }
       t += Math.max(dd * 0.9, 0.01);
     }
     return null;
@@ -263,7 +285,7 @@ export function esferaDe(p: Pieza): [number, number, number, number] {
   e = [c[0], c[1], c[2], r + 0.01]; envolvente.set(p, e); return e;
 }
 export function numerar(ps: Pieza[]) { ps.forEach((p, i) => orden.set(p, i)); }
-interface Golpe { t: number; n: V3; p: Pieza; mat?: string; tono?: number }
+interface Golpe { t: number; n: V3; p: Pieza; mat?: string; tono?: number; ci?: number }
 function impacto(ps: Pieza[], o: V3, d: V3, tmin = 0): Golpe | null {
   const pos: Tramo[] = [], neg: Tramo[] = [];
   let masas: [number, Masa][] | null = null;
@@ -294,7 +316,7 @@ function impacto(ps: Pieza[], o: V3, d: V3, tmin = 0): Golpe | null {
       const r = tramo(m, o, d, Math.max(tmin, entra), mejor ? mejor.t : Infinity);
       if (!r || r.t0 < tmin) continue;
       const i = orden.get(m) ?? 0;
-      if ((!mejor || r.t0 < mejor.t) && !dentroNeg(r.t0, i)) mejor = { t: r.t0, n: r.n0, p: m, mat: r.mat, tono: r.tono };
+      if ((!mejor || r.t0 < mejor.t) && !dentroNeg(r.t0, i)) mejor = { t: r.t0, n: r.n0, p: m, mat: r.mat, tono: r.tono, ci: r.ci };
     }
   }
   return mejor;
@@ -582,7 +604,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   const techo = L?.techo ? { ...L.techo, rgb: rgb(L.techo.color ?? '#8a8070') } : null;
   // por sub-muestra: material, brillo, punto y cuánto la toca la luz de borde
   const sm: { mat: string; s: number; p: V3; b: number }[] = [];
-  const luzPropia = borde?.contorno ? new Uint8Array(W * H) : null;
+  const luzPropia = borde?.contorno || L?.metal ? new Uint8Array(W * H) : null;
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
     const cand = grilla[Math.floor(py / G) * gw + Math.floor(px / G)];
     const i = (py * W + px) * 4;
@@ -617,13 +639,25 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
         const oc = borrador ? Math.max(0, 1 - Math.max(0, p[2]) / 10) * 0.5 : oclusion(alturas, p, n);
         const arriba = Math.max(0, n[2]);
         s = lAmb + lDif * dif * (0.22 + 0.78 * lz) + lCielo * arriba + lReb * Math.max(0, dot(n, rebote));
-        if (m.brillo && m.brillo >= lEspMin) s += m.brillo * lEsp * Math.pow(Math.max(0, dot(n, media)), 12) * lz;
+        // el grano (ruido y patrón del material) modula el difuso, no el brillo: en lo oscuro casi no se ve y nunca
+        // levanta un pixel suelto hasta el blanco; los materiales `local` llevan el grano pegado a su pieza
+        const pl = m.local ? enPieza(hit, p) : p;
+        const grano = (fbm(pl[0] * m.escala, pl[1] * m.escala, pl[2] * m.escala) - 0.5) * m.ruido + (m.patron ? m.patron(pl, n) : 0);
+        s += grano * (m.local ? 0.35 + 0.65 * Math.min(1, s * 1.6) : 1);
+        const metalBaja = !!(lMetal && m.brillo && m.brillo >= lMetal.brillo);
+        // canto: lo que se ve de refilón (el filo de una lámina, el borde de la silueta)
+        const canto = Math.min(1, (1 - Math.abs(dot(n, VISTA))) * 2.2);
+        if (m.brillo && m.brillo >= lEspMin && !metalBaja) s += m.brillo * lEsp * Math.pow(Math.max(0, dot(n, media)), 12) * lz;
         if (lMetal && m.brillo) {
-          if (m.brillo >= lMetal.brillo) s += lMetal.esp * m.brillo * Math.pow(Math.max(0, dot(n, media)), lMetal.exp) * (0.35 + 0.65 * lz) + (lMetal.piso ?? 0) * m.brillo * (0.5 + 0.5 * dif);
+          // metal en penumbra: un brillo ancho y suave en la cara de la lámina y el fuerte solo en filos y cantos
+          if (metalBaja) {
+            const h = Math.max(0, dot(n, media));
+            s += lMetal.esp * m.brillo * (0.16 * Math.pow(h, 4) + Math.pow(h, lMetal.exp) * canto) * (0.35 + 0.65 * lz) + (lMetal.piso ?? 0) * m.brillo * (0.5 + 0.5 * dif);
+          }
           if (m.brillo >= lMetal.filo && borde) s += lMetal.borde * Math.min(1, m.brillo * 1.6) * Math.pow(1 - Math.max(0, -dot(n, VISTA)), lMetal.ancho) * Math.max(0, dot(n, borde.d) + 0.3);
+          // tope: el metal no se quema; al blanco solo llega en el filo
+          if (metalBaja) s = Math.min(s, 0.56 + 0.22 * canto * canto);
         }
-        s += (fbm(p[0] * m.escala, p[1] * m.escala, p[2] * m.escala) - 0.5) * m.ruido;
-        if (m.patron) s += m.patron(p, n);
         s += tono;
         s *= 1 - 0.42 * oc;
         s *= luzAmb;
@@ -670,8 +704,26 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     if (!m.emite) { r *= tin[0]; g *= tin[1]; b *= tin[2]; } else if (luzPropia) luzPropia[py * W + px] = 1;
     img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = 255;
   }
-  if (borde && luzPropia) contornoBorde(img, luzPropia, borde.d, borde.rgb, borde.contorno!);
+  if (borde?.contorno && luzPropia) contornoBorde(img, luzPropia, borde.d, borde.rgb, borde.contorno);
+  if (lMetal && luzPropia) sinSal(img, luzPropia);
   return { img, ancla: [ax, ay] };
+}
+
+/**
+ * Sin sal: un pixel claro (luminancia > 200) sin ningún vecino claro es un brillo suelto (purpurina); baja hasta el
+ * vecino más claro, así cada reflejo es una línea o un grupo. Lo que emite (chispas, gemas, fuego) no se toca.
+ */
+function sinSal(img: Raster, luzPropia: Uint8Array) {
+  const W = img.w, H = img.h, d = img.data, lum = (q: number) => 0.2126 * d[q] + 0.7152 * d[q + 1] + 0.0722 * d[q + 2];
+  const bajar: [number, number][] = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const q = (y * W + x) * 4;
+    if (d[q + 3] !== 255 || luzPropia[y * W + x] || lum(q) <= 200) continue;
+    let mx = 0;
+    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { if ((!i && !j) || x + i < 0 || y + j < 0 || x + i >= W || y + j >= H) continue; const r = ((y + j) * W + x + i) * 4; if (d[r + 3] === 255) mx = Math.max(mx, lum(r)); }
+    if (mx <= 200) bajar.push([q, Math.max(mx, 150) / lum(q)]);
+  }
+  for (const [q, k] of bajar) for (let t = 0; t < 3; t++) d[q + t] *= k;
 }
 
 /** El filo de la silueta que da hacia la luz de borde: el pixel cuyo vecino de ese lado está vacío se aclara a su color. */

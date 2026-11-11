@@ -15,6 +15,8 @@ export interface Material {
   patron?: (p: V3, n: V3) => number;
   /** Cuánto se trama la rampa (1 = la trama de siempre; las placas lisas van con poca, para que no parezcan malla). */
   trama?: number;
+  /** La textura va en el marco de la pieza (personajes que se mueven): el grano no se desliza entre cuadros. */
+  local?: boolean;
 }
 
 const junta = (v: number, paso: number, grosor = 1) => { const m = ((v % paso) + paso) % paso; return m < grosor ? 1 : 0; };
