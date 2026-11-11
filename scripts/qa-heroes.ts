@@ -245,6 +245,23 @@ export function cuerpoAndar(o: { clase?: string; sujetos?: Sujeto[] } = {}): { f
           zmin = Math.min(zmin, e.zc); zmax = Math.max(zmax, e.zc);
           for (const pn of e.piernas) rmin = Math.min(rmin, pn.rod[2]);
         }
+        // contrafase: cada mano va adelante cuando el pie de su mismo lado va atrás (correlación del avance < −0,5).
+        // Se mide con el brazo que bracea por ángulos (libre o con arma); así no vuelve la ambladura
+        {
+          const serie: Record<number, [number[], number[]]> = { 0: [[], []], 1: [[], []] };
+          for (let f = 0; f < n; f++) {
+            const g = geometriaQA(h.cuerpo, eq, 'e', acc, f), { e } = g, P = e.pose!;
+            e.brazos.forEach((b, i) => { if (i === 0 ? P.manoD : P.manoI || g.pega > 0.5) return; serie[i][0].push(dot(sub(b.mano, b.hom), e.F)); serie[i][1].push(dot(sub(e.piernas[i].tob, e.piernas[i].cad), e.F)); });
+          }
+          for (const i of [0, 1]) {
+            const [x, y] = serie[i]; if (x.length < n) continue;
+            const mx = x.reduce((t, v) => t + v, 0) / n, my = y.reduce((t, v) => t + v, 0) / n;
+            const sx = Math.sqrt(x.reduce((t, v) => t + (v - mx) ** 2, 0)), sy = Math.sqrt(y.reduce((t, v) => t + (v - my) ** 2, 0));
+            if (sx < 1.5 * n ** 0.5 * (h.cuerpo.alto ?? 1)) continue; // el brazo casi no se mueve (escudo, arma al hombro): no hay braceo que medir
+            const r = x.reduce((t, v, k) => t + (v - mx) * (y[k] - my), 0) / (sx * sy || 1);
+            if (r > -0.5) fallas.push({ clase: h.id, nivel, dir: i ? 'izq' : 'der', acc, f: -1, chequeo: 'braceo (contrafase)', valor: Math.round(r * 100) / 100 });
+          }
+        }
         const pel = (zmax - zmin) / alto, rod = rmin / alto;
         if (acc === 'correr') {
           const base = { clase: h.id, nivel, dir: '*', acc, f: -1 };
