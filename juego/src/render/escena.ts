@@ -483,8 +483,8 @@ function pajaro(x: number, y: number, t: number) {
   ctx.strokeStyle = '#0a0a0e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 7, y - a); ctx.lineTo(x, y); ctx.lineTo(x + 7, y - a); ctx.stroke();
 }
 
-/** Cuánto se suma cada sprite sobre sí mismo (0 = como viene horneado; 1 = el doble de luz). */
-const REALCE = { heroe: 0.95, aliado: 0.6, monstruo: 0.6 };
+/** Cuánto se mezcla cada sprite sobre sí mismo en modo 'screen' (0 = como viene horneado). Levanta sombras y medios sin quemar los claros. */
+const REALCE = { heroe: 1, aliado: 0.65, monstruo: 0.65 };
 function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // reventado por exceso de daño: no queda cuerpo (los gibs de la Forja irán en su lugar)
   if (e.muerto && (e as any).reventado) return;
@@ -560,7 +560,7 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   if (ok && !e.muerto && alfaM >= 1 && !(window as any).__sinRealce) {
     const k = (window as any).__realce ?? (e.tipo === 'heroe' ? REALCE.heroe : (e as any).dueno || e.tipo === 'npc' ? REALCE.aliado : REALCE.monstruo);
     // (en el pueblo hay luz de sobra: la mitad)
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = k * (j.zona.tipo === 'pueblo' ? 0.5 : 1); dibujar(ctx, q, px, py, esc); ctx.restore();
+    ctx.save(); ctx.globalCompositeOperation = (window as any).__realceModo ?? 'screen'; ctx.globalAlpha = k * (j.zona.tipo === 'pueblo' ? 0.5 : 1); dibujar(ctx, q, px, py, esc); ctx.restore();
   }
   if (alfaM < 1) ctx.globalAlpha = 1;
   if (ok && !e.muerto && !(window as any).__sinReflejos) reflejos(ctx, e, q, px, py, esc);
