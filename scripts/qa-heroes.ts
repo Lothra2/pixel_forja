@@ -158,12 +158,12 @@ export function qaHeroes(o: { clase?: string; accion?: string; dirs?: string[]; 
 }
 
 /**
- * El arma al andar: ángulo del arma en el plano de la pantalla en cada cuadro de caminar y de correr, en las 8
- * direcciones y los 4 niveles. Falla si dentro del ciclo varía más de 10° al caminar o 15° al correr, o si la postura
- * media salta más de 20° de caminar a correr. (Los cuadros en que el arma apunta a la cámara, con menos de un tercio de
- * su largo visible en pantalla, no se miden: ahí el ángulo no se ve.) Las manos vacías y los puños no cuentan.
+ * El arma al andar: el giro del arma (en el espacio) en cada cuadro de caminar y de correr, en las 8
+ * direcciones y los 4 niveles. El arma va sujeta al brazo y bracea con él (a pedido: clavada al cuerpo se veía como un
+ * muñeco), así que no se mide cuánto varía en el ciclo sino que no salte: falla si entre dos cuadros seguidos gira más de
+ * 16° al caminar o 22° al correr, o si la postura media salta más de 45° de caminar a correr.
  */
-export const LIMITE_ANDAR = { caminar: 10, correr: 15, salto: 20 };
+export const LIMITE_ANDAR = { caminar: 16, correr: 22, salto: 45 };
 export interface AnguloAndar { clase: string; nivel: string; dir: string; arma: string; caminar: number; correr: number; salto: number; angulos: Record<'caminar' | 'correr', number[]> }
 const envolver = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
 export function angulosAndar(o: { clase?: string; sujetos?: Sujeto[] } = {}): { filas: AnguloAndar[]; fallas: Falla[] } {
@@ -174,28 +174,36 @@ export function angulosAndar(o: { clase?: string; sujetos?: Sujeto[] } = {}): { 
       const tipo = eq.arma?.tipo ?? 'nada';
       if (tipo === 'nada' || tipo === 'puno' || tipo === 'frasco') continue;
       for (const dir of DIRS) {
-        const res: Partial<Record<'caminar' | 'correr', { visible: boolean; media: number; rango: number; angulos: number[] }>> = {};
+        const res: Partial<Record<'caminar' | 'correr', { visible: boolean; media: V3; rango: number; angulos: number[] }>> = {};
         for (const acc of ['caminar', 'correr'] as const) {
-          const n = cuadrosDe(acc, h.cuerpo.presentacion), angs: number[] = [];
+          const n = cuadrosDe(acc, h.cuerpo.presentacion), angs: number[] = [], ejes: V3[] = [];
           for (let f = 0; f < n; f++) {
             const g = geometriaQA(h.cuerpo, eq, dir, acc, f);
             if (!g.arma) continue;
             const [ax, ay] = aPantalla(g.arma.a), [bx, by] = aPantalla(g.arma.b);
-            const l2 = Math.hypot(bx - ax, by - ay), l3 = len(sub(g.arma.b, g.arma.a));
-            angs.push(l2 < l3 / 3 ? NaN : (Math.atan2(by - ay, bx - ax) * 180) / Math.PI);
+            angs.push((Math.atan2(by - ay, bx - ax) * 180) / Math.PI);
+            const d = sub(g.arma.b, g.arma.a), l = len(d) || 1; ejes.push([d[0] / l, d[1] / l, d[2] / l]);
           }
-          const ok = angs.filter((x) => !Number.isNaN(x));
-          const media = ok.length ? (Math.atan2(ok.reduce((t, a) => t + Math.sin((a * Math.PI) / 180), 0), ok.reduce((t, a) => t + Math.cos((a * Math.PI) / 180), 0)) * 180) / Math.PI : 0;
-          const dev = ok.map((a) => envolver(a - media));
-          res[acc] = { visible: ok.length > 0, media, rango: dev.length ? Math.max(...dev) - Math.min(...dev) : 0, angulos: angs.map((a) => Math.round(a)) };
+          // se mide el giro real del arma (en el espacio, no en la pantalla: cuando apunta a la cámara el ángulo en
+          // pantalla salta aunque el arma casi no se mueva). El paso más grande entre dos cuadros seguidos (el ciclo
+          // cierra): el arma acompaña el braceo, pero sin saltos
+          const entre = (a: V3, b: V3) => (Math.acos(Math.max(-1, Math.min(1, dot(a, b)))) * 180) / Math.PI;
+          let paso = 0;
+          for (let i = 0; i < ejes.length; i++) paso = Math.max(paso, entre(ejes[i], ejes[(i + 1) % ejes.length]));
+          const m = ejes.reduce((t, e) => [t[0] + e[0], t[1] + e[1], t[2] + e[2]] as V3, [0, 0, 0] as V3), lm = len(m) || 1;
+          // (el límite es por cuadro de un ciclo de 12: con menos cuadros cada uno abarca más tiempo)
+          paso *= n / 12;
+          res[acc] = { visible: ejes.length > 0, media: [m[0] / lm, m[1] / lm, m[2] / lm], rango: paso, angulos: angs.map((a) => Math.round(a)) };
         }
         // si en una de las dos el arma apunta a la cámara todo el ciclo, no hay ángulo que comparar
-        const salto = res.correr!.visible && res.caminar!.visible ? Math.abs(envolver(res.correr!.media - res.caminar!.media)) : 0;
+        // (las garras y el katar son el puño: siguen al antebrazo, que al correr se recoge; ahí no hay porte que comparar)
+        const esPuno = tipo === 'garras' || tipo === 'katar' || tipo === 'cestus';
+        const salto = !esPuno && res.correr!.visible && res.caminar!.visible ? (Math.acos(Math.max(-1, Math.min(1, dot(res.correr!.media, res.caminar!.media)))) * 180) / Math.PI : 0;
         const fila: AnguloAndar = { clase: h.id, nivel, dir, arma: tipo, caminar: +res.caminar!.rango.toFixed(1), correr: +res.correr!.rango.toFixed(1), salto: +salto.toFixed(1), angulos: { caminar: res.caminar!.angulos, correr: res.correr!.angulos } };
         filas.push(fila);
         const base = { clase: h.id, nivel, dir, f: -1 };
-        if (fila.caminar > LIMITE_ANDAR.caminar) fallas.push({ ...base, acc: 'caminar', chequeo: 'arma-andar (variación)', valor: fila.caminar });
-        if (fila.correr > LIMITE_ANDAR.correr) fallas.push({ ...base, acc: 'correr', chequeo: 'arma-andar (variación)', valor: fila.correr });
+        if (fila.caminar > LIMITE_ANDAR.caminar) fallas.push({ ...base, acc: 'caminar', chequeo: 'arma-andar (paso)', valor: fila.caminar });
+        if (fila.correr > LIMITE_ANDAR.correr) fallas.push({ ...base, acc: 'correr', chequeo: 'arma-andar (paso)', valor: fila.correr });
         if (fila.salto > LIMITE_ANDAR.salto) fallas.push({ ...base, acc: 'caminar→correr', chequeo: 'arma-andar (salto)', valor: fila.salto });
       }
     }
@@ -236,6 +244,23 @@ export function cuerpoAndar(o: { clase?: string; sujetos?: Sujeto[] } = {}): { f
           }
           zmin = Math.min(zmin, e.zc); zmax = Math.max(zmax, e.zc);
           for (const pn of e.piernas) rmin = Math.min(rmin, pn.rod[2]);
+        }
+        // contrafase: cada mano va adelante cuando el pie de su mismo lado va atrás (correlación del avance < −0,5).
+        // Se mide con el brazo que bracea por ángulos (libre o con arma); así no vuelve la ambladura
+        {
+          const serie: Record<number, [number[], number[]]> = { 0: [[], []], 1: [[], []] };
+          for (let f = 0; f < n; f++) {
+            const g = geometriaQA(h.cuerpo, eq, 'e', acc, f), { e } = g, P = e.pose!;
+            e.brazos.forEach((b, i) => { if (i === 0 ? P.manoD : P.manoI || g.pega > 0.5) return; serie[i][0].push(dot(sub(b.mano, b.hom), e.F)); serie[i][1].push(dot(sub(e.piernas[i].tob, e.piernas[i].cad), e.F)); });
+          }
+          for (const i of [0, 1]) {
+            const [x, y] = serie[i]; if (x.length < n) continue;
+            const mx = x.reduce((t, v) => t + v, 0) / n, my = y.reduce((t, v) => t + v, 0) / n;
+            const sx = Math.sqrt(x.reduce((t, v) => t + (v - mx) ** 2, 0)), sy = Math.sqrt(y.reduce((t, v) => t + (v - my) ** 2, 0));
+            if (sx < 1.5 * n ** 0.5 * (h.cuerpo.alto ?? 1)) continue; // el brazo casi no se mueve (escudo, arma al hombro): no hay braceo que medir
+            const r = x.reduce((t, v, k) => t + (v - mx) * (y[k] - my), 0) / (sx * sy || 1);
+            if (r > -0.5) fallas.push({ clase: h.id, nivel, dir: i ? 'izq' : 'der', acc, f: -1, chequeo: 'braceo (contrafase)', valor: Math.round(r * 100) / 100 });
+          }
         }
         const pel = (zmax - zmin) / alto, rod = rmin / alto;
         if (acc === 'correr') {
@@ -374,7 +399,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(`QA de ${MON ? `${sujetos.length} monstruos humanoides` : "héroes"}: ${cuadros} cuadros (${MON ? "8 direcciones" : "clases × 4 niveles × 8 direcciones"} × cada cuadro de cada acción) en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   const chequeos = ['agarre', 'arma-cabeza', 'arma-cuerpo', 'mano-cara', 'antebrazo-cara', 'mano-pecho', 'cabo-ingle', 'pie bajo el piso', 'rodilla al revés', 'articulación bajo el piso', 'mano bajo el piso'];
   for (const c of chequeos) console.log(`  ${c.padEnd(26)} ${fallas.filter((x) => x.chequeo.startsWith(c)).length} fallas`);
-  console.log(`  ${'arma-andar'.padEnd(26)} ${andar.fallas.length} fallas (variación caminar ≤ ${LIMITE_ANDAR.caminar}°, correr ≤ ${LIMITE_ANDAR.correr}°, salto ≤ ${LIMITE_ANDAR.salto}°)`);
+  console.log(`  ${'arma-andar'.padEnd(26)} ${andar.fallas.length} fallas (paso por cuadro: caminar ≤ ${LIMITE_ANDAR.caminar}°, correr ≤ ${LIMITE_ANDAR.correr}°, salto ≤ ${LIMITE_ANDAR.salto}°)`);
   console.log('  ángulo del arma en pantalla (peor de las 8 direcciones), por clase y nivel:');
   console.log('    clase       nivel     arma          var.caminar  var.correr  salto');
   const peor = new Map<string, AnguloAndar>();
