@@ -1,0 +1,313 @@
+import { caja, esfera, elipsoide, masa, hueso, bulto, poliedro, type Pieza, type V3, type Comp } from './render';
+import type { Cuerpo, Equipo, Esqueleto } from './cuerpo';
+
+/**
+ * Armadura gótica forjada a mano, para leerse a escala de juego (el héroe mide ~75 px): cascos con silueta propia por
+ * clase (casco de gajos con nasal y cuernos forjados, celada de cola larga, yelmo de visera en pico), capuchas de tela
+ * con caída, pliegue y borde, petos de láminas solapadas con borde oscuro, arista y remaches, gorjal y faldar, la cota de
+ * malla con cuello y ruedo dentado, y cintos de cuero con hebilla, tachas y punta colgando.
+ *
+ * Todo es facetado (poliedros convexos por anillos): las caras agarran la luz y los cantos dan el quiebre; nada de bolas
+ * ni tubos lisos. Lo que no se ve a 75 px no se pone. Los hombros, brazales, codales, rodilleras y grebas no van acá.
+ */
+
+type Fn = (fw: number, rt: number, up: number) => V3;
+/** Un anillo de puntos en un marco (adelante, derecha, arriba): radio adelante y atrás distintos, ancho a los costados. */
+function anillo(P: Fn, cx: number, rF: number, rB: number, ry: number, up: number, n = 10, fase = 0.5): V3[] {
+  return Array.from({ length: n }, (_, k) => {
+    const a = ((k + fase) / n) * Math.PI * 2, c = Math.cos(a);
+    return P(cx + c * (c >= 0 ? rF : rB), Math.sin(a) * ry, up);
+  });
+}
+/** Un arco de anillo (de a0 a a1 en grados, 0 = adelante, + a la derecha). */
+function arco(P: Fn, cx: number, rF: number, rB: number, ry: number, up: number, a0: number, a1: number, n = 6): V3[] {
+  return Array.from({ length: n + 1 }, (_, k) => {
+    const a = ((a0 + ((a1 - a0) * k) / n) * Math.PI) / 180, c = Math.cos(a);
+    return P(cx + c * (c >= 0 ? rF : rB), Math.sin(a) * ry, up);
+  });
+}
+/**
+ * Un tramo facetado (cuerno, púa, asta) de `a` a `b` en el marco P, con anillos perpendiculares al eje (así las caras
+ * del costado son planas y el tramo tiene volumen de verdad), de radio w0 a w1, con n lados.
+ */
+function tramo(P: Fn, a: [number, number, number], b: [number, number, number], w0: number, w1: number, n = 6, fase = 0): V3[] {
+  const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(d[0], d[1], d[2]) || 1, dn = d.map((x) => x / l);
+  let u = [dn[1], -dn[0], 0]; if (Math.hypot(u[0], u[1]) < 0.2) u = [0, dn[2], -dn[1]];
+  const lu = Math.hypot(u[0], u[1], u[2]); u = u.map((x) => x / lu);
+  const v = [dn[1] * u[2] - dn[2] * u[1], dn[2] * u[0] - dn[0] * u[2], dn[0] * u[1] - dn[1] * u[0]];
+  const pts: V3[] = [];
+  for (const [c, w] of [[a, w0], [b, w1]] as const) for (let k = 0; k < n; k++) {
+    const t = ((k + fase) / n) * Math.PI * 2, x = Math.cos(t) * w, y = Math.sin(t) * w;
+    pts.push(P(c[0] + u[0] * x + v[0] * y, c[1] + u[1] * x + v[1] * y, c[2] + u[2] * x + v[2] * y));
+  }
+  return pts;
+}
+const oscuro = -0.32, claro = 0.18;
+const esMetal = (m?: string) => !!m && /placa|oro|hierro|acero|bronce|plata|malla/.test(m);
+
+// ------------------------------------------------------------------ cascos y capuchas
+/**
+ * La pieza de cabeza nueva, si es de las que rehízo la armadura (capucha, casco, yelmo, cuernos, calavera); si no,
+ * undefined y cuerpo.ts sigue con la de siempre.
+ */
+export function casco(e: Esqueleto, cu: Cuerpo, c: NonNullable<Equipo['cabeza']>): Pieza[] | undefined {
+  const { S, cab } = e;
+  const H = (cu.cabeza ?? 1) * S, cz = e.cz;
+  const P: Fn = (fw, rt, up) => cab(fw * H, rt * H, cz + up * H);
+  const ps: Pieza[] = [];
+  const m = c.mat, orn = c.mat2;
+  switch (c.tipo) {
+    case 'cuernos': {
+      // casco de gajos cónico con nasal, banda de frente remachada y cuernos forjados por tramos
+      const oro = m === 'cu_oro';
+      const casq = oro ? 'cu_oro' : m, filo = oro ? 'cu_placa_oscura' : m;
+      ps.push(poliedro([...anillo(P, -0.2, 4.75, 4.6, 4.45, -0.2, 8), ...anillo(P, -0.3, 4.55, 4.5, 4.25, 2.3, 8), ...anillo(P, -0.5, 3.0, 3.2, 2.9, 4.7, 8), P(-0.9, 0, 6.9)], { mat: casq }));
+      // gajos: costillas que suben del aro a la punta (agarran la luz)
+      for (const g of [0, 60, -60, 120, -120, 180]) {
+        const a = (g * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
+        const q = (r: number, up: number, d = 0): V3 => P(-0.3 + ca * r, sa * r * 0.95 + d, up);
+        ps.push(poliedro([q(4.95, 0.1, 0.35), q(4.95, 0.1, -0.35), q(4.75, 2.3, 0.3), q(4.75, 2.3, -0.3), q(3.25, 4.7, 0.2), q(3.25, 4.7, -0.2), P(-0.9, 0, 7.0)], { mat: filo, tono: claro }));
+      }
+      // banda de la frente, más oscura, con remaches
+      ps.push(poliedro([...anillo(P, -0.2, 5.0, 4.85, 4.7, -0.7, 10), ...anillo(P, -0.2, 5.0, 4.85, 4.7, 0.5, 10)], { mat: filo, tono: oscuro * 0.6 }));
+      for (const g of [-50, -20, 20, 50]) { const a = (g * Math.PI) / 180; ps.push(esfera(...P(-0.2 + Math.cos(a) * 5.15, Math.sin(a) * 4.85, -0.1), 0.5 * H, { mat: oro ? 'cu_placa_oscura' : 'cu_oro' })); }
+      // nasal
+      ps.push(poliedro([P(5.0, 0.6, -0.4), P(5.0, -0.6, -0.4), P(5.4, 0, -0.2), P(4.75, 0.4, -3.4), P(4.75, -0.4, -3.4), P(5.05, 0, -3.6)], { mat: filo, tono: claro * 0.5 }));
+      // cuernos: tramos facetados que se afinan, salen a los costados, se curvan adelante y suben; anillos forjados oscuros
+      const grande = oro ? 1.25 : 1;
+      for (const s of [1, -1]) {
+        const ruta: [number, number, number, number][] = [[-0.2, 4.2, 1.6, 2.0], [0.7, 6.6, 2.2, 1.7], [1.7, 8.7, 3.6, 1.35], [2.3, 9.7, 5.6, 1.0], [2.2, 9.6, 7.7, 0.6], [1.6, 8.9, 9.2, 0.15]];
+        const q = (i: number): [number, number, number] => [ruta[i][0] * grande, s * ruta[i][1] * grande, ruta[i][2] * (0.92 + 0.08 * grande)];
+        for (let i = 0; i < ruta.length - 1; i++) {
+          ps.push(poliedro(tramo(P, q(i), q(i + 1), ruta[i][3] * grande, ruta[i + 1][3] * grande, 6, 0.5), { mat: 'cu_hueso', tono: i % 2 ? -0.06 : 0.04 }));
+          // anillos forjados que ciñen el cuerno
+          if (i < 2) { const c = q(i + 1), dd = q(i + 2); const m0: [number, number, number] = [c[0] - (dd[0] - c[0]) * 0.12, c[1] - (dd[1] - c[1]) * 0.12, c[2] - (dd[2] - c[2]) * 0.12]; ps.push(poliedro(tramo(P, m0, c, ruta[i + 1][3] * grande * 1.18, ruta[i + 1][3] * grande * 1.18, 6, 0.5), { mat: oro ? 'cu_oro' : filo, tono: oro ? 0 : -0.1 })); }
+        }
+        // carrilleras en la leyenda: placa que cae sobre la mejilla, con el borde en pico
+        if (oro) ps.push(poliedro([P(1.0, s * 4.75, 0), P(2.6, s * 4.35, 0), P(0.8, s * 4.95, -2.4), P(2.8, s * 4.4, -3.9), P(1.6, s * 4.6, -4.6), P(1.4, s * 4.35, -1)], { mat: 'cu_placa_oscura', tono: claro * 0.5 }));
+      }
+      // la cota de malla que cae sobre la nuca
+      ps.push(poliedro([...arco(P, -0.2, 4.6, 4.7, 4.5, -0.4, 100, 260, 6), ...arco(P, -0.6, 4.8, 5.2, 4.8, -4.2, 100, 260, 6)], { mat: 'cu_malla', tono: -0.05 }));
+      return ps;
+    }
+    case 'casco': {
+      // celada: calota redonda con arista, visera con la vista (la ranura de los ojos) y la cola larga que protege la nuca
+      ps.push(poliedro([...anillo(P, -0.3, 4.8, 4.8, 4.55, -0.6, 10), ...anillo(P, -0.4, 4.95, 4.9, 4.7, 1.6, 10), ...anillo(P, -0.5, 4.0, 4.1, 3.8, 4.2, 10), ...anillo(P, -0.6, 2.0, 2.1, 1.9, 5.5, 8)], { mat: m }));
+      // cola: se abre hacia atrás y abajo en un faldón de acero, con el borde quebrado
+      ps.push(poliedro([...arco(P, -0.4, 4.8, 4.8, 4.6, 0.4, 110, 250, 6), P(-6.9, 0, -3.2), P(-6.3, 3.4, -2.8), P(-6.3, -3.4, -2.8), P(-5.2, 4.3, -2.2), P(-5.2, -4.3, -2.2)], { mat: m, tono: -0.04 }));
+      ps.push(poliedro([P(-6.9, 0, -3.25), P(-6.3, 3.4, -2.85), P(-6.3, -3.4, -2.85), P(-7.05, 0, -3.75), P(-6.45, 3.45, -3.35), P(-6.45, -3.45, -3.35)], { mat: m, tono: oscuro }));
+      // visera: la mitad de abajo del frente, más adelante; la vista oscura y la arista de arriba
+      ps.push(poliedro([...arco(P, -0.3, 5.15, 5, 4.75, -1.8, -75, 75, 6), ...arco(P, -0.3, 5.15, 5, 4.75, 0.3, -75, 75, 6), P(5.75, 0, -0.8)], { mat: m, tono: claro * 0.6 }));
+      ps.push(caja(...P(5.05, 0, 0.75), 1.4 * H, 6.6 * H, 0.75 * H, { mat: 'cu_tela_negra', giro: angH(e) }));
+      ps.push(poliedro([P(4.6, 0.32, 2.6), P(4.6, -0.32, 2.6), P(1.0, 0.32, 5.4), P(1.0, -0.32, 5.4), P(-3.6, 0.32, 4.6), P(-3.6, -0.32, 4.6), P(1.2, 0, 6.0), P(-1.5, 0, 5.9)], { mat: m, tono: claro }));
+      // pivotes de la visera
+      for (const s of [1, -1]) ps.push(esfera(...P(1.6, s * 4.95, 0.3), 0.6 * H, { mat: orn ?? 'cu_placa_oscura' }));
+      return ps;
+    }
+    case 'yelmo': case 'gran_yelmo': {
+      if (c.tipo === 'gran_yelmo') return undefined;
+      // yelmo de visera en pico (bacinete): calota alta con arista, visera que avanza en pico con dos vistas y agujeros
+      // de respiro, gorjal de láminas y, en la leyenda, cresta y ribetes dorados
+      ps.push(poliedro([...anillo(P, -0.4, 4.7, 4.8, 4.5, -1.4, 10), ...anillo(P, -0.5, 4.9, 4.9, 4.65, 1.8, 10), ...anillo(P, -0.8, 3.6, 3.9, 3.4, 4.8, 10), P(-1.0, 0, 7.0)], { mat: m }));
+      // visera en pico
+      ps.push(poliedro([...arco(P, -0.3, 5.0, 5, 4.7, -3.6, -80, 80, 6), ...arco(P, -0.3, 5.05, 5, 4.75, 2.0, -80, 80, 6), P(7.6, 0, -0.6), P(6.4, 0, 1.4), P(6.2, 0, -2.6)], { mat: m, tono: claro * 0.5 }));
+      // las dos vistas (una por ojo, en diagonal hacia el pico) y los agujeros de respiro
+      for (const s of [1, -1]) ps.push(poliedro([P(5.6, s * 0.7, 0.9), P(5.3, s * 2.9, 1.2), P(5.5, s * 0.7, 0.4), P(5.2, s * 2.9, 0.7), P(6.1, s * 0.7, 0.7), P(5.6, s * 2.9, 1.0)], { mat: 'cu_tela_negra' }));
+      for (const [fw, rt, up] of [[6.4, 0.9, -1.4], [6.4, -0.9, -1.4], [6.0, 1.7, -2.0], [6.0, -1.7, -2.0]]) ps.push(caja(...P(fw, rt, up), 0.6 * H, 0.42 * H, 0.42 * H, { mat: 'cu_tela_negra', giro: angH(e) }));
+      // arista de la calota
+      ps.push(poliedro([P(4.3, 0.3, 3.2), P(4.3, -0.3, 3.2), P(0.6, 0.3, 6.2), P(0.6, -0.3, 6.2), P(-4.2, 0.3, 4.4), P(-4.2, -0.3, 4.4), P(-1.0, 0, 7.15)], { mat: m, tono: claro }));
+      // gorjal de dos láminas bajo el yelmo
+      for (const [u0, u1, r] of [[-3.6, -4.6, 4.9], [-4.4, -5.5, 5.4]] as const) ps.push(poliedro([...anillo(P, -0.4, r, r, r * 0.95, u0, 10), ...anillo(P, -0.4, r + 0.3, r + 0.3, (r + 0.3) * 0.95, u1, 10)], { mat: m, tono: u0 < -4 ? -0.08 : 0 }));
+      if (orn) {
+        // leyenda: cresta en hoja con el frente en punta, ribete del borde de la visera y del gorjal
+        ps.push(poliedro([P(3.6, 0.35, 4.4), P(3.6, -0.35, 4.4), P(6.2, 0, 7.8), P(0.5, 0.35, 7.0), P(0.5, -0.35, 7.0), P(-3.4, 0.3, 6.6), P(-3.4, -0.3, 6.6), P(-5.4, 0, 5.2), P(-1.0, 0, 9.4), P(2.6, 0, 9.0)], { mat: orn }));
+        ps.push(poliedro([...arco(P, -0.3, 5.2, 5, 4.9, 1.9, -82, 82, 6), ...arco(P, -0.3, 5.2, 5, 4.9, 2.5, -82, 82, 6)], { mat: orn }));
+        ps.push(poliedro([...anillo(P, -0.4, 5.75, 5.75, 5.45, -5.4, 10), ...anillo(P, -0.4, 5.8, 5.8, 5.5, -5.9, 10)], { mat: orn }));
+      }
+      return ps;
+    }
+    case 'capucha':
+      return capucha(e, cu, m, orn);
+    case 'calavera': {
+      // la calavera de un gran muerto puesta como yelmo, sobre una capucha: el cráneo facetado con la frente y las
+      // cuencas oscuras sobre la frente del que la lleva, los colmillos sobre los ojos y dos cuernos que van atrás
+      ps.push(...capucha(e, cu, 'cu_tela_negra', undefined, 0.5));
+      const h = 'cu_hueso';
+      ps.push(poliedro([...anillo(P, -0.2, 4.9, 4.7, 4.5, 1.2, 10), ...anillo(P, -0.4, 4.4, 4.5, 4.1, 3.9, 10), ...anillo(P, -0.8, 2.6, 2.8, 2.4, 6.1, 8)], { mat: h }));
+      // frente y cejas en quiebre
+      ps.push(poliedro([P(5.6, 0, 2.6), P(5.1, 2.6, 2.4), P(5.1, -2.6, 2.4), P(4.4, 3.6, 3.4), P(4.4, -3.6, 3.4), P(4.6, 0, 4.4), P(4.2, 2.2, 1.2), P(4.2, -2.2, 1.2)], { mat: h, tono: claro * 0.6 }));
+      for (const s of [1, -1]) ps.push(elipsoide(...P(5.15, s * 1.6, 1.55), 0.8 * H, 1.15 * H, 0.95 * H, { mat: 'cu_tela_negra' }));
+      // pómulos y la quijada de arriba con los dientes, sobre los ojos del que la lleva
+      ps.push(poliedro([P(4.9, 3.4, 1.0), P(4.9, -3.4, 1.0), P(5.4, 1.6, 0.4), P(5.4, -1.6, 0.4), P(5.0, 2.6, -0.2), P(5.0, -2.6, -0.2), P(4.2, 3.6, 0.0), P(4.2, -3.6, 0.0)], { mat: h, tono: -0.05 }));
+      for (let k = -2; k <= 2; k++) ps.push(poliedro([P(5.35, k * 0.75 + 0.3, 0.35), P(5.35, k * 0.75 - 0.3, 0.35), P(5.25, k * 0.75, -0.7 - (Math.abs(k) === 1 ? 0.5 : 0))], { mat: h, tono: claro * 0.5 }));
+      for (const s of [1, -1]) {
+        const ruta: [number, number, number, number][] = [[-0.5, 3.6, 4.4, 1.0], [-2.6, 4.8, 5.4, 0.8], [-5.0, 5.0, 4.8, 0.55], [-6.6, 4.4, 3.0, 0.3], [-7.2, 3.8, 1.2, 0.06]];
+        for (let i = 0; i < ruta.length - 1; i++) {
+          const q = (j: number): [number, number, number] => [ruta[j][0], s * ruta[j][1], ruta[j][2]];
+          ps.push(poliedro(tramo(P, q(i), q(i + 1), ruta[i][3], ruta[i + 1][3], 5), { mat: 'cu_placa_oscura', tono: i % 2 ? 0.05 : -0.05 }));
+        }
+      }
+      return ps;
+    }
+  }
+  return undefined;
+}
+const angH = (e: Esqueleto) => (Math.atan2(e.ejesCab[0][1], e.ejesCab[0][0]) * 180) / Math.PI;
+
+/**
+ * Capucha de tela: la cáscara sobre la cabeza con el pico que cae atrás, el borde grueso y doblado alrededor de la
+ * cara, la esclavina que cae sobre los hombros con tres pliegues, y la cara en sombra adentro.
+ */
+function capucha(e: Esqueleto, cu: Cuerpo, mat: string, borde?: string, sombra = 1): Pieza[] {
+  const { S, cab, T } = e;
+  const H = (cu.cabeza ?? 1) * S, cz = e.cz;
+  const P: Fn = (fw, rt, up) => cab(fw * H, rt * H, cz + up * H);
+  const cs: Comp[] = [
+    bulto(P(-0.9, 0, 1.4), [5.0 * H, 4.75 * H, 5.1 * H], { ejes: e.ejesCab, mat }),
+    // el pico de la capucha cae atrás, casi hasta la nuca
+    hueso(P(-2.6, 0, 4.2), P(-5.6, 0, 3.0), 2.6 * H, 1.0 * H, { mat }),
+    hueso(P(-5.6, 0, 3.0), P(-6.6, 0, 0.2), 1.0 * H, 0.35 * H, { mat }),
+    // la esclavina: cae del cuello sobre los hombros y la espalda
+    hueso(P(-2.0, 0, -2.6), T(-2.4 * S, 0, e.hombroZ - 1.2 * S), 4.4 * H, 5.4 * S, { mat }),
+  ];
+  for (const s of [1, -1]) {
+    // los costados bajan de las sienes al pecho, en dos pliegues
+    cs.push(hueso(P(0.4, s * 4.4, 0.2), T(2.2 * S, s * 4.6 * S, e.hombroZ - 2.6 * S), 1.7 * H, 2.2 * S, { mat }));
+    cs.push(hueso(P(-1.6, s * 4.2, -1.8), T(-0.6 * S, s * 6.4 * S, e.hombroZ - 1.6 * S), 1.6 * H, 2.0 * S, { mat }));
+  }
+  const ps: Pieza[] = [masa(cs, { mat, suave: 1.4 * S })];
+  // el borde doblado alrededor de la cara: un anillo grueso de tramos, un tono más oscuro (o del color del ribete)
+  const bc: Comp[] = [];
+  const pts = Array.from({ length: 9 }, (_, k) => { const a = -Math.PI * 0.62 + (k / 8) * Math.PI * 1.24; return P(3.6 - Math.abs(Math.sin(a)) * 0.6, Math.sin(a) * 4.0, 0.9 + Math.cos(a) * 4.6 - 0.4); });
+  for (let k = 0; k < pts.length - 1; k++) bc.push(hueso(pts[k], pts[k + 1], 0.95 * H, 0.95 * H, { mat: borde ?? mat }));
+  ps.push(masa(bc, { mat: borde ?? mat, suave: 0.4 * S, tono: borde ? 0 : -0.14 }));
+  // un pliegue en la coronilla que baja hacia el pico
+  ps.push(masa([hueso(P(2.6, 0.9, 5.3), P(-3.2, 1.3, 5.2), 0.7 * H, 0.5 * H, { mat })], { mat, tono: 0.08 }));
+  // la cara en sombra dentro de la capucha
+  if (sombra > 0) ps.push(elipsoide(...P(3.25, 0, -0.1), 0.7 * H, 3.3 * H, 3.8 * H, { mat: 'cu_tela_negra', giro: angH(e), tono: -0.2 * sombra }));
+  return ps;
+}
+
+// ------------------------------------------------------------------ peto de placas
+/**
+ * Coraza gótica por láminas: el peto (con arista al medio) y el espaldar en una pieza facetada; tres láminas solapadas
+ * que bajan al vientre, cada una apenas más afuera que la de arriba y con el canto oscuro; el gorjal de dos láminas; los
+ * remaches; el faldar de dos escarcelas por lado colgando de la cintura. `adorno` (leyenda): ribetes y remaches de ese
+ * metal, el canto de abajo en pico y la arista dorada.
+ */
+export function peto(e: Esqueleto, cu: Cuerpo, to: NonNullable<Equipo['torso']>, adorno?: string): Pieza[] {
+  const { S, A, T, zc } = e;
+  const g = (cu.grasa ?? 0) * 1.5, mu = (cu.musculo ?? 0.5) * 0.6, m = to.mat;
+  const PT: Fn = (fw, rt, up) => T(fw * A, rt * A, zc + up * S);
+  const Pv = e.Pv ?? e.W, PP: Fn = (fw, rt, up) => Pv(fw * A, rt * A, zc + up * S);
+  const ps: Pieza[] = [];
+  const pad = 1.25;
+  // sección del torso a cada altura: radio adelante, atrás y ancho (sobre el cuerpo, con el acolchado de debajo)
+  const sec = (u: number): [number, number, number, number] => {
+    const t: [number, number, number, number][] = [[17.2, 2.7, 3.1, 4.4], [15.2, 4.4, 3.9, 6.0 + mu], [12.2, 4.6 + g, 4.1, 5.9 + mu], [9.4, 4.0 + g, 3.8, 5.0], [7.0, 3.7 + g, 3.5, 4.6], [4.6, 3.8 + g, 3.6, 4.8], [2.4, 4.0 + g, 3.8, 5.1]];
+    for (let i = 0; i < t.length - 1; i++) if (u <= t[i][0] && u >= t[i + 1][0]) { const k = (t[i][0] - u) / (t[i][0] - t[i + 1][0]); return [u, ...[1, 2, 3].map((j) => t[i][j] + (t[i + 1][j] - t[i][j]) * k)] as [number, number, number, number]; }
+    return u > t[0][0] ? t[0] : t[t.length - 1];
+  };
+  const ring = (u: number, extra = 0, n = 12, P: Fn = PT) => { const [, rF, rB, ry] = sec(u); return anillo(P, 0.2, rF + pad + extra, rB + pad + extra, ry + pad + extra, u, n); };
+  // peto y espaldar: una sola pieza facetada con la arista al frente
+  const quilla = (u: number, k: number) => { const [, rF] = sec(u); return PT(0.2 + rF + pad + k, 0, u); };
+  ps.push(poliedro([...ring(16.8, -0.1, 10), ...ring(14.6), ...ring(12.0), ...ring(9.6, -0.1), quilla(14.0, 0.9), quilla(12.0, 1.0), quilla(10.0, 0.7)], { mat: m }));
+  // canto de abajo del peto: oscuro, apenas afuera (la línea que separa el peto de las láminas); en la leyenda en pico
+  const cantoPeto = adorno ? [...ring(9.75, 0.22), ...ring(9.25, 0.22), quilla(8.4, 0.5)] : [...ring(9.75, 0.22), ...ring(9.25, 0.22)];
+  ps.push(poliedro(cantoPeto, { mat: adorno ?? m, tono: adorno ? 0 : oscuro }));
+  // las láminas del vientre: cada una arranca un poco más afuera que donde terminó la de arriba (se solapan)
+  const laminas: [number, number][] = [[9.3, 7.0], [7.2, 4.9], [5.1, 2.8]];
+  laminas.forEach(([u0, u1], i) => {
+    const sale = 0.12 + i * 0.12;
+    ps.push(poliedro([...ring(u0, sale), ...ring(u1, sale + 0.18)], { mat: m, tono: i % 2 ? -0.05 : 0.02 }));
+    ps.push(poliedro([...ring(u1 + 0.35, sale + 0.4), ...ring(u1 - 0.05, sale + 0.4)], { mat: adorno && i === 2 ? adorno : m, tono: adorno && i === 2 ? 0 : oscuro }));
+    // remaches a los costados del frente
+    for (const s of [1, -1]) { const [, rF, , ry] = sec((u0 + u1) / 2); const a = 0.55; ps.push(esfera(...PT(0.2 + Math.cos(a) * (rF + pad + sale + 0.35), s * Math.sin(a) * (ry + pad + sale + 0.2), (u0 + u1) / 2), 0.55 * S, { mat: adorno ?? m, tono: adorno ? 0 : claro * 1.5 })); }
+  });
+  // remaches del peto a la altura del pecho y ribete del borde de arriba
+  for (const s of [1, -1]) { const [, rF, , ry] = sec(14.6); ps.push(esfera(...PT(0.2 + Math.cos(0.7) * (rF + pad + 0.3), s * Math.sin(0.7) * (ry + pad + 0.2), 15.4), 0.6 * S, { mat: adorno ?? m, tono: adorno ? 0 : claro * 1.5 })); }
+  if (adorno) {
+    ps.push(poliedro([...arco(PT, 0.2, sec(16.6)[1] + pad + 0.25, 0, sec(16.6)[3] + pad + 0.25, 16.6, -80, 80, 6), ...arco(PT, 0.2, sec(16.0)[1] + pad + 0.3, 0, sec(16.0)[3] + pad + 0.3, 16.0, -80, 80, 6)], { mat: adorno }));
+    ps.push(poliedro([quilla(14.2, 1.05), quilla(14.2, 0.7), quilla(9.9, 0.85), quilla(9.9, 0.5), PT(sec(14.2)[1] + pad + 0.9, 0.35, 14.2), PT(sec(9.9)[1] + pad + 0.6, -0.35, 9.9)], { mat: adorno }));
+  }
+  // gorjal: dos láminas alrededor del cuello, la de abajo más ancha
+  for (const [u0, u1, r0, r1, t] of [[16.4, 17.6, 3.9, 3.3, 0], [17.4, 18.5, 3.4, 2.9, 0.06]] as const) {
+    ps.push(poliedro([...anillo(PT, -0.1, r0 + 0.4, r0, r0 * 1.12, u0, 10), ...anillo(PT, -0.1, r1 + 0.3, r1, r1 * 1.1, u1, 10)], { mat: m, tono: t }));
+  }
+  ps.push(poliedro([...anillo(PT, -0.1, 3.75, 3.45, 3.95, 17.55, 10), ...anillo(PT, -0.1, 3.75, 3.45, 3.95, 17.25, 10)], { mat: adorno ?? m, tono: adorno ? 0 : oscuro }));
+  // faldar: dos escarcelas por lado colgando de la cintura sobre los muslos, la de abajo asoma; canto oscuro (o en pico)
+  for (const s of [1, -1]) for (const [k, z0, z1] of [[0, 2.2, -2.2], [1, -1.6, -5.0]] as const) {
+    const w0 = 1.2 + k * 0.1, w1 = 3.7 + k * 0.2, fw = 4.5 + k * 0.35;
+    const a: V3 = PP(fw - 0.2, s * w0, z0), b: V3 = PP(fw - 0.2, s * (w0 + 3.0), z0), c: V3 = PP(fw + 0.5, s * w0, z1), d: V3 = PP(fw + 0.4, s * w1, z1);
+    const pico: V3[] = adorno ? [PP(fw + 0.6, s * (w0 + w1) / 2, z1 - 1.0)] : [];
+    const placa = [a, b, c, d, ...pico];
+    const grueso = (q: V3): V3 => PP(0, 0, 0).map((o, j) => q[j] - (PP(1, 0, 0)[j] - o) * 0.5) as V3;
+    ps.push(poliedro([...placa, ...placa.map(grueso)], { mat: m, tono: k ? -0.06 : 0.03 }));
+    ps.push(poliedro([c, d, ...pico, PP(fw + 0.55, s * w0, z1 + 0.45), PP(fw + 0.45, s * w1, z1 + 0.45), ...[c, d, ...pico].map(grueso)], { mat: adorno ?? m, tono: adorno ? 0 : oscuro }));
+    ps.push(esfera(...PP(fw + 0.2, s * (w0 + 1.4), z0 - 0.7), 0.5 * S, { mat: adorno ?? m, tono: adorno ? 0 : claro * 1.5 }));
+  }
+  return ps;
+}
+
+// ------------------------------------------------------------------ cota de malla
+/** La cota de malla: cuello de malla grueso y el ruedo dentado que cae sobre los muslos (la cota misma la pinta cuerpo.ts). */
+export function malla(e: Esqueleto, cu: Cuerpo, to: NonNullable<Equipo['torso']>): Pieza[] {
+  const { S, A, T, zc } = e;
+  const PT: Fn = (fw, rt, up) => T(fw * A, rt * A, zc + up * S);
+  const Pv = e.Pv ?? e.W, PP: Fn = (fw, rt, up) => Pv(fw * A, rt * A, zc + up * S);
+  const m = to.mat, ps: Pieza[] = [];
+  const g = (cu.grasa ?? 0) * 1.5;
+  // cuello: un rollo de malla alrededor de la base del cuello
+  ps.push(poliedro([...anillo(PT, -0.3, 4.1, 3.7, 4.4, 16.2, 10), ...anillo(PT, -0.3, 3.6, 3.3, 3.8, 18.0, 10), ...anillo(PT, -0.3, 4.3, 3.9, 4.6, 17.0, 10)], { mat: m, tono: -0.08 }));
+  // ruedo dentado: puntas de malla alrededor de la cadera
+  const n = 12;
+  for (let k = 0; k < n; k++) {
+    const a0 = (k / n) * Math.PI * 2, a1 = ((k + 1) / n) * Math.PI * 2, am = (a0 + a1) / 2;
+    const r = (a: number) => [Math.cos(a) * (4.7 + g), Math.sin(a) * (5.4 + g * 0.5)];
+    const [x0, y0] = r(a0), [x1, y1] = r(a1), [xm, ym] = r(am);
+    ps.push(poliedro([PP(x0, y0, -1.2), PP(x1, y1, -1.2), PP(xm * 1.04, ym * 1.04, -3.4 - (k % 2) * 0.8), PP(x0 * 0.88, y0 * 0.88, -1.2), PP(x1 * 0.88, y1 * 0.88, -1.2)], { mat: m, tono: k % 2 ? -0.1 : 0 }));
+  }
+  return ps;
+}
+
+// ------------------------------------------------------------------ cinto
+/**
+ * Cinto de cuero facetado con el canto oscuro arriba y abajo. Con hebilla de metal: marco de hebilla con su pasador, la
+ * punta del cinto colgando, tachas y una bolsa al costado; con hebilla de oro o de gema (leyenda): una placa en rombo
+ * con la gema. Sin hebilla: un nudo con dos puntas.
+ */
+export function cinto(e: Esqueleto, cu: Cuerpo, ci: NonNullable<Equipo['cinturon']>): Pieza[] {
+  const { S, A, zc } = e;
+  const Pv = e.Pv ?? e.W, PP: Fn = (fw, rt, up) => Pv(fw * A, rt * A, zc + up * S);
+  const g = (cu.grasa ?? 0) * 1.5, m = ci.mat, hb = ci.hebilla, ps: Pieza[] = [];
+  const rF = 4.75 + g, rB = 4.6 + g, ry = 5.15 + g * 0.6;
+  ps.push(poliedro([...anillo(PP, 0, rF, rB, ry, 0.5, 12), ...anillo(PP, 0, rF + 0.1, rB + 0.1, ry + 0.1, 2.9, 12)], { mat: m }));
+  for (const u of [0.45, 2.7]) ps.push(poliedro([...anillo(PP, 0, rF + 0.18, rB + 0.18, ry + 0.18, u, 12), ...anillo(PP, 0, rF + 0.18, rB + 0.18, ry + 0.18, u + 0.3, 12)], { mat: m, tono: oscuro }));
+  const giro = angPv(e);
+  if (!hb) {
+    // nudo y dos puntas colgando
+    ps.push(poliedro([PP(rF + 0.4, 0.9, 2.4), PP(rF + 0.4, -0.9, 2.4), PP(rF + 0.4, 0.9, 0.8), PP(rF + 0.4, -0.9, 0.8), PP(rF + 1.2, 0, 1.6), PP(rF, 0, 1.6)], { mat: m, tono: 0.06 }));
+    for (const [y, l] of [[0.5, 4.2], [-0.7, 3.2]]) ps.push(caja(...PP(rF + 0.5, y, 1 - l), 0.5, 1.0 * A, l * S, { mat: m, giro, tono: -0.04 }));
+    return ps;
+  }
+  const rica = /oro|ojo|magia|hueso|lava|gema/.test(hb) && hb !== 'cu_placa';
+  const metal = esMetal(hb) ? hb : 'cu_placa';
+  if (rica) {
+    // placa en rombo con la gema (o el hueso) al medio y un ribete
+    const q = (fw: number, y: number, u: number) => PP(rF + fw, y, u);
+    ps.push(poliedro([q(0.3, 0, 4.0), q(0.3, 2.4, 1.7), q(0.3, 0, -0.6), q(0.3, -2.4, 1.7), q(0.9, 0, 3.2), q(0.9, 1.7, 1.7), q(0.9, 0, 0.2), q(0.9, -1.7, 1.7)], { mat: hb === 'cu_hueso' ? 'cu_hueso' : 'cu_oro' }));
+    ps.push(esfera(...q(1.15, 0, 1.7), 0.95 * S, { mat: hb === 'cu_oro' ? 'cu_lava' : hb }));
+  } else {
+    // marco de hebilla con su pasador y la punta del cinto que sale y cuelga
+    const q = (fw: number, y: number, u: number) => PP(rF + fw, y, u);
+    for (const [y0, y1, u0, u1] of [[1.3, 1.3, 0.1, 3.3], [-1.3, -1.3, 0.1, 3.3], [-1.3, 1.3, 3.3, 3.3], [-1.3, 1.3, 0.1, 0.1]]) ps.push(poliedro([q(0.25, y0, u0), q(0.25, y1, u1), q(0.85, y0, u0), q(0.85, y1, u1), q(0.55, y0 + (y0 === y1 ? 0.35 : 0), u0 + (u0 === u1 ? 0.35 : 0)), q(0.55, y1 + (y0 === y1 ? 0.35 : 0), u1 + (u0 === u1 ? 0.35 : 0))], { mat: metal, tono: claro * 0.5 }));
+    ps.push(caja(...q(0.7, 0, 0.3), 0.4, 0.4, 2.8 * S, { mat: metal, giro }));
+    ps.push(caja(...PP(rF + 0.45, -2.2, -3.4), 0.5, 1.1 * A, 4.4 * S, { mat: m, giro, tono: -0.06 }));
+  }
+  // tachas alrededor y una bolsa al costado derecho
+  for (const a of [-1.2, -0.7, 0.7, 1.2, 2.2, -2.2]) ps.push(esfera(...PP(Math.cos(a) * (rF + 0.25), Math.sin(a) * (ry + 0.25), 1.7), 0.45 * S, { mat: metal, tono: claro }));
+  ps.push(poliedro([PP(1.4, ry + 0.3, 1.4), PP(-1.6, ry + 0.3, 1.4), PP(1.3, ry + 1.6, 0.8), PP(-1.5, ry + 1.6, 0.8), PP(1.2, ry + 1.7, -2.6), PP(-1.4, ry + 1.7, -2.6), PP(1.2, ry + 0.4, -2.8), PP(-1.4, ry + 0.4, -2.8)], { mat: m, tono: 0.05 }));
+  ps.push(poliedro([PP(1.45, ry + 0.25, 1.6), PP(-1.65, ry + 0.25, 1.6), PP(1.4, ry + 1.75, 0.9), PP(-1.6, ry + 1.75, 0.9), PP(1.4, ry + 1.85, -0.2), PP(-1.6, ry + 1.85, -0.2)], { mat: m, tono: oscuro * 0.7 }));
+  return ps;
+}
+const angPv = (e: Esqueleto) => { const Pv = e.Pv ?? e.W, a = Pv(1, 0, e.zc), b = Pv(0, 0, e.zc); return (Math.atan2(a[1] - b[1], a[0] - b[0]) * 180) / Math.PI; };

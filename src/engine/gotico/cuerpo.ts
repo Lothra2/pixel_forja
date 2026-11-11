@@ -2,6 +2,7 @@ import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, 
 import { claveBaja } from './clave_baja';
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
+import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado } from './armadura';
 import { pose, CUADROS, cuadrosDe, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
 import { formaForjada, adornosNivel, anchoVivo, marcoIcono, tramosVivos, palaClara, type MarcoArma, type NivelForja, type OpcForja } from './forja_armas';
@@ -145,7 +146,7 @@ export type Pieza_ = Pieza;
 export type LineaCuerpo = 'escamas' | 'draconica' | 'elfica' | 'demoniaca' | 'celestial' | 'ahogada';
 export const LINEAS_CUERPO: LineaCuerpo[] = ['escamas', 'draconica', 'elfica', 'demoniaca', 'celestial', 'ahogada'];
 export interface Equipo {
-  torso?: { tipo: 'camisa' | 'sin_mangas' | 'tunica' | 'cuero' | 'cuero_tachonado' | 'malla' | 'placas' | 'harapos' | 'vestido'; mat: string; mat2?: string; linea?: LineaCuerpo };
+  torso?: { tipo: 'camisa' | 'sin_mangas' | 'tunica' | 'cuero' | 'cuero_tachonado' | 'malla' | 'placas' | 'harapos' | 'vestido'; mat: string; mat2?: string; linea?: LineaCuerpo; /** metal de los ribetes y remaches de la coraza (leyenda) */ adorno?: string };
   piernas?: { tipo: 'pantalon' | 'calzas' | 'faldon' | 'tunica_larga' | 'grebas' | 'taparrabo'; mat: string; mat2?: string; linea?: LineaCuerpo };
   pies?: { tipo: 'botas' | 'botas_altas' | 'sandalias' | 'sabatones' | 'vendas'; mat: string; linea?: LineaCuerpo };
   manos?: { tipo: 'guantes' | 'guanteletes' | 'vendas' | 'brazales'; mat: string; linea?: LineaCuerpo };
@@ -762,12 +763,17 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     if (to.tipo === 'tunica' || to.tipo === 'harapos') ps.push(faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f));
     if (to.tipo === 'vestido') ps.push(faldon(e, to.mat, 29, 1.7, acc, f));
     if (to.tipo === 'cuero_tachonado') for (let i = 0; i < 4; i++) for (const s of [1, -1, 0]) ps.push(esfera(...T(3.9 * A + 0.6, s * 2.6 * A, e.zc + (5 + i * 3) * S), 0.5, { mat: 'cu_placa' }));
+    if (to.tipo === 'malla' && cu.presentacion && !to.linea) ps.push(...mallaForjada(e, cu, to));
     if (to.tipo === 'placas') {
       // peto curvo, espaldar, faldares y el borde dorado
-      const peto = partes(e, cu, ['abdomen', 'pecho'], 1.5, to.mat);
-      ps.push(masa(peto, { mat: to.mat, suave: 2.4 }));
-      for (let i = 0; i < 3; i++) ps.push(cilindro(...(e.Pv ?? e.W)(0, 0, e.zc - 2 * S - i * 2.6 * S), (5.6 + i * 0.35) * A, 2.4 * S, { mat: to.mat, r1: (5.3 + i * 0.35) * A, tono: -i * 0.03 }));
-      ps.push(elipsoide(...T(4.9 * A, 0, e.zc + 15.2 * S), 0.6, 4.4 * A, 0.7, { mat: acentoDe(to.linea), giro: 0 }));
+      // los héroes llevan la coraza forjada por láminas (armadura.ts); las líneas épicas y los monstruos, la de siempre
+      if (cu.presentacion && !to.linea) ps.push(...petoForjado(e, cu, to, to.adorno));
+      else {
+        const peto = partes(e, cu, ['abdomen', 'pecho'], 1.5, to.mat);
+        ps.push(masa(peto, { mat: to.mat, suave: 2.4 }));
+        for (let i = 0; i < 3; i++) ps.push(cilindro(...(e.Pv ?? e.W)(0, 0, e.zc - 2 * S - i * 2.6 * S), (5.6 + i * 0.35) * A, 2.4 * S, { mat: to.mat, r1: (5.3 + i * 0.35) * A, tono: -i * 0.03 }));
+        ps.push(elipsoide(...T(4.9 * A, 0, e.zc + 15.2 * S), 0.6, 4.4 * A, 0.7, { mat: acentoDe(to.linea), giro: 0 }));
+      }
       // brazos de placa: brazal superior, codera con aleta y remache, para que el brazo lea como armadura y no como maniquí
       for (const b of e.brazos) {
         const lado = nor(cruz(b.d1, [0, 0, 1]));
@@ -819,7 +825,8 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       if (tb.borde) ps.push(hoja(add(arriba, haciaFuera, 0.2), add(abajo, haciaFuera, 0.2), 1.2 * A, 0.5, tb.borde));
     }
   }
-  if (eq.cinturon) {
+  if (eq.cinturon && cu.presentacion && !eq.cinturon.linea) ps.push(...cintoForjado(e, cu, eq.cinturon));
+  else if (eq.cinturon) {
     ps.push(cilindro(...(e.Pv ?? e.W)(0, 0, e.zc + 1.6 * S), (4.6 + (cu.grasa ?? 0) * 1.5) * A, 2.2 * S, { mat: eq.cinturon.mat, r1: (4.8 + (cu.grasa ?? 0) * 1.5) * A }));
     const Pv = e.Pv ?? e.W;
     ps.push(caja(...Pv(4.7 * A, 0, e.zc + 1.4 * S), 0.9, 2.4 * S, 2.6 * S, { mat: eq.cinturon.hebilla ?? 'cu_oro', giro: angulo(sub(Pv(1, 0, e.zc), Pv(0, 0, e.zc))) }));
@@ -1523,6 +1530,8 @@ function tocado(e: Esqueleto, cu: Cuerpo, c: NonNullable<Equipo['cabeza']>): Pie
   const ps: Pieza[] = [];
   const bC = (fw: number, rt: number, up: number, r: V3, mat = c.mat, k?: number) => bulto(cab(fw * H, rt * H, cz + up * H), [r[0] * H, r[1] * H, r[2] * H], { ejes: ejesCab, mat, k });
   const ga = angulo(ejesCab[0]);
+  // los héroes llevan los cascos y capuchas forjados (armadura.ts)
+  if (cu.presentacion && !c.linea) { const nuevo = cascoForjado(e, cu, c); if (nuevo) return nuevo; }
   switch (c.tipo) {
     case 'capucha': {
       ps.push(masa([bC(-0.8, 0, 1.0, [5.0, 4.6, 5.3]), bC(-2.4, 0, -2.2, [4.4, 4.8, 3.6]), bC(1.4, 0, 3.6, [3.2, 4.0, 1.8], c.mat, 1.5), hueso(cab(-3 * H, 0, cz - 3 * H), e.T(-4.5 * S, 0, e.hombroZ - 1 * S), 4 * H, 4.6 * H, { mat: c.mat })], { mat: c.mat, suave: 1.8 }));
