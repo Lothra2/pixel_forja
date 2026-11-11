@@ -121,7 +121,7 @@ function prenda(c: CtxVestuario, p: Prenda): Pieza[] {
       const rA = R[Math.round(((-0.75 + Math.PI * 2) / (Math.PI * 2)) * N - 0.5) % N];
       // el nudo a la izquierda del frente y dos puntas que caen (una más larga), un poco abiertas
       const a = -0.75, n = PP((rA + 0.8) * Math.cos(a), (rA + 0.8) * Math.sin(a), 1.0);
-      ps.push(masa([hueso(PP(rA * Math.cos(a), rA * Math.sin(a), 1.0), n, 1.3 * S, 1.0 * S, { mat: p.mat, tono: 0.05 })], { mat: p.mat, suave: 0.3 * S, tono: 0.05 }));
+      ps.push(palo(PP(rA * Math.cos(a), rA * Math.sin(a), 1.0), n, 1.3 * S, { mat: p.mat, tono: 0.05, r1: 1.0 * S }));
       for (const [da, l] of [[-0.12, 6.5], [0.14, 5.0]] as const) {
         const b0 = PP((rA + 0.6) * Math.cos(a + da), (rA + 0.6) * Math.sin(a + da), 0.2);
         const b1 = add(add(b0, [0, 0, -l * S]), fH, 0.6 * S);
@@ -145,11 +145,11 @@ function prenda(c: CtxVestuario, p: Prenda): Pieza[] {
     }
     case 'rosario': {
       // las cuentas: un lazo del cuello que baja hasta el pecho, apoyado sobre el torso, y una cuenta grande abajo
-      const N = 15;
+      const N = 9;
       for (let i = 0; i <= N; i++) {
         const t = i / N, a = Math.PI * t, rt = Math.cos(a) * 2.9 * A, up = e.hombroZ + 0.4 * S - Math.sin(a) * (e.hombroZ - zc - 9.5 * S);
         const q = apoyar(c.torso, T(-1 * A, rt, up), fT, 0.42 * S);
-        ps.push(esfera(...q, 0.5 * S, { mat: p.mat, tono: i % 2 ? -0.06 : 0.06 }));
+        ps.push(esfera(...q, 0.62 * S, { mat: p.mat, tono: i % 2 ? -0.06 : 0.06 }));
       }
       const fin = apoyar(c.torso, T(-1 * A, 0, zc + 8.0 * S), fT, 0.7 * S);
       ps.push(esfera(...fin, 0.85 * S, { mat: p.mat2 ?? p.mat, tono: 0.1 }));
@@ -254,19 +254,20 @@ function prenda(c: CtxVestuario, p: Prenda): Pieza[] {
         if (b.s <= 0) continue;
         const a = mez(b.codo, b.mun, 0.28), z = mez(b.codo, b.mun, 0.9);
         ps.push(masa([hueso(a, z, 2.15 * A + 0.35, 1.8 * A + 0.35, { mat: p.mat })], { mat: p.mat }));
-        for (const t of [0.42, 0.72]) ps.push(masa([hueso(mez(b.codo, b.mun, t - 0.03), mez(b.codo, b.mun, t + 0.03), 2.1 * A + 0.55, 2.0 * A + 0.55, { mat: p.mat2 ?? 'cu_cuero_negro' })], { mat: p.mat2 ?? 'cu_cuero_negro' }));
+        for (const t of [0.42, 0.72]) ps.push(palo(mez(b.codo, b.mun, t - 0.03), mez(b.codo, b.mun, t + 0.03), 2.1 * A + 0.55, { mat: p.mat2 ?? 'cu_cuero_negro', r1: 2.0 * A + 0.55 }));
       }
       break;
     }
     case 'mangas': {
       // mangas largas de otra tela y el puño marcado (más ancho y de otro valor)
       ps.push(masa(c.partes(['brazo', 'antebrazo'], 0.5, p.mat), { mat: p.mat, suave: 1.2 }));
-      for (const b of e.brazos) ps.push(masa([hueso(mez(b.codo, b.mun, 0.8), mez(b.codo, b.mun, 0.97), 1.85 * A + 0.75, 1.95 * A + 0.8, { mat: p.mat2 ?? p.mat, tono: p.mat2 ? 0 : -0.2 })], { mat: p.mat2 ?? p.mat, tono: p.mat2 ? 0 : -0.2 }));
+      // (los anillos son conos y no masas: se cortan con el rayo de una vez)
+      for (const b of e.brazos) ps.push(palo(mez(b.codo, b.mun, 0.8), mez(b.codo, b.mun, 0.97), 1.85 * A + 0.75, { mat: p.mat2 ?? p.mat, tono: p.mat2 ? 0 : -0.2, r1: 1.95 * A + 0.8 }));
       break;
     }
     case 'ataduras': {
       // el pantalón ancho atado arriba del tobillo: dos vueltas de cinta
-      for (const pi of e.piernas) for (const t of [0.7, 0.8]) ps.push(masa([hueso(mez(pi.rod, pi.tob, t - 0.035), mez(pi.rod, pi.tob, t + 0.035), 2.0 * A + 0.85, 1.95 * A + 0.85, { mat: p.mat, tono: t > 0.75 ? -0.08 : 0.04 })], { mat: p.mat }));
+      for (const pi of e.piernas) for (const t of [0.7, 0.8]) ps.push(palo(mez(pi.rod, pi.tob, t - 0.035), mez(pi.rod, pi.tob, t + 0.035), 2.0 * A + 0.85, { mat: p.mat, tono: t > 0.75 ? -0.08 : 0.04, r1: 1.95 * A + 0.85 }));
       break;
     }
     case 'gafas': {
