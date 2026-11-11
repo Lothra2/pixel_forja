@@ -483,6 +483,8 @@ function pajaro(x: number, y: number, t: number) {
   ctx.strokeStyle = '#0a0a0e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 7, y - a); ctx.lineTo(x, y); ctx.lineTo(x + 7, y - a); ctx.stroke();
 }
 
+/** Cuánto se suma cada sprite sobre sí mismo (0 = como viene horneado; 1 = el doble de luz). */
+const REALCE = { heroe: 0.95, aliado: 0.6, monstruo: 0.6 };
 function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // reventado por exceso de daño: no queda cuerpo (los gibs de la Forja irán en su lugar)
   if (e.muerto && (e as any).reventado) return;
@@ -551,6 +553,15 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   else if (e.tinte) ok = dibujarTenido(ctx, q, px, py, e.tinte, e.tipo === 'invocado' ? 0.35 : e.tipo === 'heroe' ? 0.22 : 0.3, esc);
   else if (e.muerto && e.tMuerto > 60) { ctx.globalAlpha = Math.max(0.25, 1 - (e.tMuerto - 60) / 400); ok = dibujar(ctx, q, px, py, esc); ctx.globalAlpha = 1; }
   else ok = dibujar(ctx, q, px, py, esc);
+  // realce del personaje: el sprite viene pintado en clave baja y encima cae la oscuridad de la zona, así que el cuerpo
+  // quedaba como una mancha parda al lado de un piso bien iluminado. Se suma el sprite sobre sí mismo (en su lugar del
+  // orden de dibujo: lo que lo tapa lo sigue tapando): sube la luz y el contraste, los cantos de metal saltan y lo oscuro
+  // sigue oscuro. El héroe más que los demás: es el que se mira todo el tiempo
+  if (ok && !e.muerto && alfaM >= 1 && !(window as any).__sinRealce) {
+    const k = (window as any).__realce ?? (e.tipo === 'heroe' ? REALCE.heroe : (e as any).dueno || e.tipo === 'npc' ? REALCE.aliado : REALCE.monstruo);
+    // (en el pueblo hay luz de sobra: la mitad)
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = k * (j.zona.tipo === 'pueblo' ? 0.5 : 1); dibujar(ctx, q, px, py, esc); ctx.restore();
+  }
   if (alfaM < 1) ctx.globalAlpha = 1;
   if (ok && !e.muerto && !(window as any).__sinReflejos) reflejos(ctx, e, q, px, py, esc);
   if (ok && ests.length) { const k = Math.max(0.6, Math.min(3, (q.ay * esc) / 75)); for (const id of ests) dibujarPfx(ctx, id, tiempo + (e.id % 7) * 0.31, px, py, { escala: k }); }
