@@ -2,7 +2,7 @@ import { caja, cilindro, elipsoide, esfera, palo, poliedro, masa, hueso, bulto, 
 import { claveBaja } from './clave_baja';
 import { MATERIALES } from './materiales';
 import { ruido } from './render';
-import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado } from './armadura';
+import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado, tunica as tunicaForjada, colgantes, tabardoFaldon } from './armadura';
 import { pose, CUADROS, cuadrosDe, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
 import { formaForjada, adornosNivel, anchoVivo, marcoIcono, tramosVivos, palaClara, type MarcoArma, type NivelForja, type OpcForja } from './forja_armas';
@@ -38,12 +38,12 @@ M.cu_pelo_castano = { rampa: ['#110906', '#22130b', '#351e11', '#4a2b18', '#5f3a
 M.cu_pelo_rubio = { rampa: ['#261a0b', '#433014', '#64491f', '#86642d', '#a5803d', '#c09c52', '#d6b86e'], ruido: 0.35, escala: 1.4, patron: (p) => (ruido(p[0] * 2.5, p[1] * 2.5, p[2] * 0.4) - 0.5) * 0.25 };
 M.cu_pelo_rojo = { rampa: ['#1a0704', '#300e07', '#4a160b', '#651f10', '#812a16', '#9c381e', '#b34a29'], ruido: 0.35, escala: 1.4, patron: (p) => (ruido(p[0] * 2.5, p[1] * 2.5, p[2] * 0.4) - 0.5) * 0.25 };
 M.cu_pelo_blanco = { rampa: ['#2e2c2a', '#4a4744', '#67635f', '#86817b', '#a49e97', '#c0bab3', '#d8d3cc'], ruido: 0.3, escala: 1.4, patron: (p) => (ruido(p[0] * 2.5, p[1] * 2.5, p[2] * 0.4) - 0.5) * 0.22 };
-M.cu_malla = { rampa: ['#0f1012', '#1d1f22', '#2e3135', '#41454a', '#565b61', '#6d737a', '#868c93', '#a3a9af'], ruido: 0.1, escala: 1, brillo: 0.35, patron: (p) => { const a = Math.sin(p[0] * 2.6 + p[1] * 2.6) * Math.sin(p[2] * 3.2 + (p[0] - p[1]) * 1.3); return a > 0.35 ? 0.1 : a < -0.55 ? -0.2 : 0; } };
-M.cu_cuero = { rampa: ['#120a06', '#21130b', '#331e11', '#462a18', '#5a3820', '#6e472a', '#835735', '#986842'], ruido: 0.2, escala: 0.8, brillo: 0.08 };
+M.cu_malla = { rampa: ['#0f1012', '#1d1f22', '#2e3135', '#41454a', '#565b61', '#6d737a', '#868c93', '#a3a9af'], ruido: 0.2, escala: 1.3, brillo: 0.2, patron: (p) => { const a = Math.sin(p[0] * 2.6 + p[1] * 2.6) * Math.sin(p[2] * 3.2 + (p[0] - p[1]) * 1.3); return a > 0.35 ? 0.1 : a < -0.55 ? -0.2 : 0; } };
+M.cu_cuero = { rampa: ['#140a05', '#24130a', '#371e10', '#4b2a16', '#60381e', '#754727', '#8a5631', '#9f673c'], ruido: 0.16, escala: 0.8, brillo: 0.06 };
 M.cu_cuero_negro = { rampa: ['#070606', '#0f0d0c', '#191513', '#241f1c', '#302925', '#3d3530', '#4b423c'], ruido: 0.18, escala: 0.8, brillo: 0.12 };
-M.cu_placa = { rampa: ['#0c0d10', '#181b20', '#262a31', '#363c45', '#48505b', '#5d6773', '#75808d', '#909ba7', '#b3bcc6', '#d7dde3'], ruido: 0.05, escala: 0.6, brillo: 0.6 };
-M.cu_placa_oscura = { rampa: ['#08080a', '#111216', '#1b1d22', '#262930', '#33373f', '#42474f', '#545a63', '#6c727b', '#8d939b'], ruido: 0.06, escala: 0.6, brillo: 0.55 };
-M.cu_oro = { rampa: ['#1c1004', '#36210a', '#553711', '#77501a', '#996b25', '#b98733', '#d4a548', '#e8c46a', '#f6e2a0'], ruido: 0.04, escala: 0.6, brillo: 0.7 };
+M.cu_placa = { rampa: ['#0a0b0e', '#14171c', '#20242b', '#2d323a', '#3c434d', '#4f5864', '#66717e', '#838e9b', '#a8b2bd', '#d3dae2'], ruido: 0.015, escala: 0.6, brillo: 0.8, trama: 0.25 };
+M.cu_placa_oscura = { rampa: ['#060608', '#0e0f12', '#17191d', '#21242a', '#2d3138', '#3b4048', '#4e545d', '#68707a', '#8f97a1'], ruido: 0.02, escala: 0.6, brillo: 0.75, trama: 0.25 };
+M.cu_oro = { rampa: ['#1c1004', '#36210a', '#553711', '#77501a', '#996b25', '#b98733', '#d4a548', '#e8c46a', '#f6e2a0'], ruido: 0.03, escala: 0.6, brillo: 0.75, trama: 0.35 };
 M.cu_tela_blanca = { rampa: ['#24221f', '#3b3833', '#56524b', '#726d64', '#8e887e', '#a9a398', '#c2bcb1'], ruido: 0.12, escala: 1.2 };
 M.cu_tela_roja = { rampa: ['#1a0505', '#2e0909', '#460f0e', '#5f1614', '#781f1b', '#902a24', '#a5372f'], ruido: 0.12, escala: 1.2 };
 M.cu_tela_azul = { rampa: ['#070b17', '#0d1528', '#14203b', '#1d2c4f', '#283b64', '#354b78', '#445d8b'], ruido: 0.12, escala: 1.2 };
@@ -53,7 +53,7 @@ M.cu_tela_negra = { rampa: ['#060607', '#0c0c0e', '#141417', '#1d1d21', '#27272c
 M.cu_tela_parda = { rampa: ['#120d08', '#20180f', '#302417', '#413120', '#533f2a', '#654e35', '#785e41'], ruido: 0.14, escala: 1.2 };
 M.cu_pelaje = { rampa: ['#100b07', '#1d150d', '#2c2015', '#3c2c1d', '#4d3926', '#5f4830', '#72583c', '#86694a'], ruido: 0.6, escala: 1.6, patron: (p) => (ruido(p[0] * 3, p[1] * 3, p[2] * 1.2) - 0.5) * 0.3 };
 M.cu_pelaje_gris = { rampa: ['#0f0f0f', '#1c1c1c', '#2b2b2a', '#3c3b39', '#4e4c49', '#615e5a', '#75716c', '#8a857f'], ruido: 0.6, escala: 1.6, patron: (p) => (ruido(p[0] * 3, p[1] * 3, p[2] * 1.2) - 0.5) * 0.3 };
-M.cu_hueso = { rampa: ['#1b1712', '#2f291f', '#47402f', '#615741', '#7c7055', '#978a6c', '#b0a385', '#c7bb9f', '#d9cfb6'], ruido: 0.18, escala: 0.9 };
+M.cu_hueso = { rampa: ['#1b1712', '#2f291f', '#47402f', '#615741', '#7c7055', '#978a6c', '#b0a385', '#c7bb9f', '#d9cfb6'], ruido: 0.18, escala: 0.9, brillo: 0.22 };
 M.cu_quitina = { rampa: ['#070608', '#100d11', '#1b161c', '#272029', '#342b37', '#433746', '#544657'], ruido: 0.12, escala: 0.7, brillo: 0.5 };
 M.cu_escama = { rampa: ['#0a0c08', '#141810', '#1f2518', '#2b3321', '#38422b', '#465236', '#556342'], ruido: 0.15, escala: 0.6, brillo: 0.25, patron: (p) => { const a = Math.sin(p[0] * 1.9 + Math.sin(p[2] * 1.7) * 2) * Math.sin(p[2] * 1.9); return a > 0.6 ? -0.18 : 0; } };
 M.cu_roca = { rampa: ['#0e0c0b', '#1c1916', '#2b2621', '#3b342d', '#4c443a', '#5e5448', '#706557', '#837767'], ruido: 0.45, escala: 0.35 };
@@ -146,7 +146,7 @@ export type Pieza_ = Pieza;
 export type LineaCuerpo = 'escamas' | 'draconica' | 'elfica' | 'demoniaca' | 'celestial' | 'ahogada';
 export const LINEAS_CUERPO: LineaCuerpo[] = ['escamas', 'draconica', 'elfica', 'demoniaca', 'celestial', 'ahogada'];
 export interface Equipo {
-  torso?: { tipo: 'camisa' | 'sin_mangas' | 'tunica' | 'cuero' | 'cuero_tachonado' | 'malla' | 'placas' | 'harapos' | 'vestido'; mat: string; mat2?: string; linea?: LineaCuerpo; /** metal de los ribetes y remaches de la coraza (leyenda) */ adorno?: string };
+  torso?: { tipo: 'camisa' | 'sin_mangas' | 'tunica' | 'cuero' | 'cuero_tachonado' | 'malla' | 'placas' | 'harapos' | 'vestido'; mat: string; mat2?: string; linea?: LineaCuerpo; /** metal de los ribetes y remaches de la coraza (leyenda) */ adorno?: string; /** ribete de la abertura, el cuello y el ruedo (túnicas) */ ribete?: string };
   piernas?: { tipo: 'pantalon' | 'calzas' | 'faldon' | 'tunica_larga' | 'grebas' | 'taparrabo'; mat: string; mat2?: string; linea?: LineaCuerpo };
   pies?: { tipo: 'botas' | 'botas_altas' | 'sandalias' | 'sabatones' | 'vendas'; mat: string; linea?: LineaCuerpo };
   manos?: { tipo: 'guantes' | 'guanteletes' | 'vendas' | 'brazales'; mat: string; linea?: LineaCuerpo };
@@ -743,11 +743,11 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       }
     } else if (pz.tipo === 'taparrabo') {
       ps.push(masa(partes(e, cu, ['pelvis'], 0.5, pz.mat), { mat: pz.mat }));
-      ps.push(faldon(e, pz.mat, 9, 1.05, acc, f));
+      ps.push(...faldon(e, pz.mat, 9, 1.05, acc, f));
     } else if (pz.tipo === 'faldon') {
       ps.push(masa(partes(e, cu, ['pelvis', 'muslo', 'pantorrilla'], 0.5, pz.mat2 ?? 'cu_tela_parda'), { mat: pz.mat2 ?? 'cu_tela_parda', suave: 1.6 }));
-      ps.push(faldon(e, pz.mat, 15, 1.25, acc, f));
-    } else if (pz.tipo === 'tunica_larga') ps.push(faldon(e, pz.mat, 30, 1.5, acc, f));
+      ps.push(...faldon(e, pz.mat, 15, 1.25, acc, f));
+    } else if (pz.tipo === 'tunica_larga') ps.push(...faldon(e, pz.mat, 30, 1.5, acc, f, cu.presentacion ? eq.torso?.ribete : undefined));
   }
   if (pi) {
     if (pi.tipo === 'sandalias') for (const p of e.piernas) {
@@ -789,10 +789,11 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
     const matBase = to.tipo === 'placas' ? to.mat2 ?? 'cu_malla' : to.mat;
     // el cuero claro va un tono más oscuro que la piel morena, para que el jubón no se lea como torso desnudo
     ps.push(masa(partes(e, cu, base, inf, matBase, { mangaCorta: to.tipo === 'cuero' || to.tipo === 'cuero_tachonado' }), { mat: matBase, suave: 1.6, tono: matBase === 'cu_cuero' ? -0.12 : undefined }));
-    if (to.tipo === 'tunica' || to.tipo === 'harapos') ps.push(faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f));
-    if (to.tipo === 'vestido') ps.push(faldon(e, to.mat, 29, 1.7, acc, f));
+    if (to.tipo === 'tunica' || to.tipo === 'harapos') ps.push(...faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f, cu.presentacion && pz?.tipo !== 'tunica_larga' ? to.ribete : undefined));
+    if (to.tipo === 'vestido') ps.push(...faldon(e, to.mat, 29, 1.7, acc, f));
     if (to.tipo === 'cuero_tachonado') for (let i = 0; i < 4; i++) for (const s of [1, -1, 0]) ps.push(esfera(...T(3.9 * A + 0.6, s * 2.6 * A, e.zc + (5 + i * 3) * S), 0.5, { mat: 'cu_placa' }));
     if (to.tipo === 'malla' && cu.presentacion && !to.linea) ps.push(...mallaForjada(e, cu, to));
+    if (to.tipo === 'tunica' && cu.presentacion) ps.push(...tunicaForjada(e, cu, to));
     if (to.tipo === 'placas') {
       // peto curvo, espaldar, faldares y el borde dorado
       // los héroes llevan la coraza forjada por láminas (armadura.ts); las líneas épicas y los monstruos, la de siempre
@@ -850,11 +851,15 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
         for (const q of [a, b]) for (const sy of [-1, 1]) for (const sn of [-1, 1]) pts.push(add(add(q, lado, sy * ancho / 2), haciaFuera, sn * grueso / 2));
         return poliedro(pts, { mat });
       };
-      ps.push(hoja(arriba, abajo, 5.4 * A, 0.8, tb.mat));
-      if (tb.borde) ps.push(hoja(add(arriba, haciaFuera, 0.2), add(abajo, haciaFuera, 0.2), 1.2 * A, 0.5, tb.borde));
+      // los héroes: el faldón con caída, pliegues y ruedo (armadura.ts)
+      if (cu.presentacion) ps.push(...tabardoFaldon(arriba, abajo, lado, haciaFuera, 5.4 * A, tb.mat, tb.borde));
+      else {
+        ps.push(hoja(arriba, abajo, 5.4 * A, 0.8, tb.mat));
+        if (tb.borde) ps.push(hoja(add(arriba, haciaFuera, 0.2), add(abajo, haciaFuera, 0.2), 1.2 * A, 0.5, tb.borde));
+      }
     }
   }
-  if (eq.cinturon && cu.presentacion && !eq.cinturon.linea) ps.push(...cintoForjado(e, cu, eq.cinturon));
+  if (eq.cinturon && cu.presentacion && !eq.cinturon.linea) { ps.push(...cintoForjado(e, cu, eq.cinturon)); if (eq.torso?.tipo === 'tunica' && eq.cinturon.hebilla) ps.push(...colgantes(e, cu, eq.cinturon)); }
   else if (eq.cinturon) {
     ps.push(cilindro(...(e.Pv ?? e.W)(0, 0, e.zc + 1.6 * S), (4.6 + (cu.grasa ?? 0) * 1.5) * A, 2.2 * S, { mat: eq.cinturon.mat, r1: (4.8 + (cu.grasa ?? 0) * 1.5) * A }));
     const Pv = e.Pv ?? e.W;
@@ -1443,7 +1448,7 @@ const angulo = (v: V3) => (Math.atan2(v[1], v[0]) * 180) / Math.PI;
 const inclinacion = (up: V3, fw: V3) => (Math.asin(Math.max(-1, Math.min(1, -(up[0] * fw[0] + up[1] * fw[1]) / Math.hypot(fw[0], fw[1])))) * 180) / Math.PI;
 
 /** Falda, túnica o faldón: una campana de masa que baja de la cintura y sigue las piernas al caminar. */
-function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Accion, f: number): Pieza {
+function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Accion, f: number, ribete?: string): Pieza[] {
   const { S, A } = e;
   const cs: Comp[] = [];
   const z0 = e.zc + 2.5 * S, z1 = Math.max(1.2 * S, e.zc + 2.5 * S - largo * S), Pv = e.Pv ?? e.W;
@@ -1510,7 +1515,17 @@ function faldon(e: Esqueleto, mat: string, largo: number, vuelo: number, acc: Ac
   // al andar la tela de atrás apenas se arrastra (cae por su peso): no crece detrás de la cadera
   const vaiven = anda ? Math.max(-0.5, Math.min(0.7, vaiven0 * 0.3)) : vaiven0;
   cs.push(hueso(Pv(-1 * S, 0, z0 - 3 * S), (anda ? Pv : e.W)((anda ? -1.4 : -2.2) * S - vaiven, lado * S, z1 + 1.5 * S), 3.8 * A, 4.2 * A * vueloR, { mat }));
-  return masa(cs, { mat, suave: 3.2 });
+  const out: Pieza[] = [masa(cs, { mat, suave: 3.2 })];
+  if (ribete) {
+    // el ribete del ruedo: un borde de otro valor alrededor del ruedo de cada pierna
+    const rr = 3.6 * A * vueloR + 0.35, bs: Comp[] = [];
+    for (const q of ruedos) {
+      const pts = Array.from({ length: 8 }, (_, k) => { const a = (k / 8) * Math.PI * 2; return add(add(q, e.F, Math.cos(a) * rr), e.R, Math.sin(a) * rr * 0.95); }).map((v) => [v[0], v[1], v[2] + 0.6 * S] as V3);
+      for (let k = 0; k < 8; k++) bs.push(hueso(pts[k], pts[(k + 1) % 8], 0.6 * S, 0.6 * S, { mat: ribete }));
+    }
+    out.push(masa(bs, { mat: ribete, suave: 0.3 * S, tono: 0.25 }));
+  }
+  return out;
 }
 
 /**
@@ -2350,6 +2365,8 @@ export interface GeoQA {
   cabo?: V3;
   /** Cráneo y mandíbula (la cara es la mitad de adelante). */
   craneo: ElipQA; mandibula: ElipQA;
+  /** El casco forjado de verdad (sus piezas facetadas: calota, cuernos, cresta, visera), por planos, si lo hay. */
+  casco?: [V3, number][][];
   /** Pecho y vientre (para que las manos y el arma no los atraviesen) e ingle. */
   pecho: ElipQA; vientre: ElipQA; ingle: V3;
   piso: { talon: number; punta: number };
@@ -2379,8 +2396,10 @@ export function geometriaQA(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: nu
     mango = [en(-cb), largoMango ? fa : en(1)];
     if (cb >= 3) cabo = en(-cb);
   }
+  const piezasCasco = cu.presentacion && eq.cabeza && !eq.cabeza.linea ? cascoForjado(e, cu, eq.cabeza) : undefined;
+  const casco = piezasCasco?.flatMap((p) => (p.k === 'conv' ? [p.planos] : []));
   return {
-    e, arma, mango, cabo,
+    e, arma, mango, cabo, casco,
     pega: P?.pegaI ?? (dos(tipo) || tipo === 'lanza' ? 1 : 0),
     dosManos: dos(tipo) || tipo === 'lanza',
     craneo: { c: cab(-0.2 * H, 0, e.cz + 0.9 * H), ejes: ejesCab, r: [4.0 * H, 3.55 * H, 4.3 * H] },
@@ -2400,10 +2419,10 @@ export function dentroElip(el: ElipQA, q: V3, extra = 0): number {
 export function telaQA(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): { piezas: Pieza[]; pelvis: V3; e: Esqueleto } {
   const e = esqueleto(cu, dir, acc, f, eq.arma?.tipo ?? 'nada', eq.izq?.tipo);
   const ps: Pieza[] = [], pz = eq.piernas, to = eq.torso;
-  if (pz?.tipo === 'taparrabo') ps.push(faldon(e, pz.mat, 9, 1.05, acc, f));
-  else if (pz?.tipo === 'faldon') ps.push(faldon(e, pz.mat, 15, 1.25, acc, f));
-  else if (pz?.tipo === 'tunica_larga') ps.push(faldon(e, pz.mat, 30, 1.5, acc, f));
-  if (to?.tipo === 'tunica' || to?.tipo === 'harapos') ps.push(faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f));
-  if (to?.tipo === 'vestido') ps.push(faldon(e, to.mat, 29, 1.7, acc, f));
+  if (pz?.tipo === 'taparrabo') ps.push(...faldon(e, pz.mat, 9, 1.05, acc, f));
+  else if (pz?.tipo === 'faldon') ps.push(...faldon(e, pz.mat, 15, 1.25, acc, f));
+  else if (pz?.tipo === 'tunica_larga') ps.push(...faldon(e, pz.mat, 30, 1.5, acc, f));
+  if (to?.tipo === 'tunica' || to?.tipo === 'harapos') ps.push(...faldon(e, to.mat, to.tipo === 'harapos' ? 13 : 12, 1.2, acc, f));
+  if (to?.tipo === 'vestido') ps.push(...faldon(e, to.mat, 29, 1.7, acc, f));
   return { piezas: ps, pelvis: (e.Pv ?? e.W)(0, 0, e.zc), e };
 }

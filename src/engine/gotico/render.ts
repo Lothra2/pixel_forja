@@ -345,6 +345,12 @@ export interface Iluminacion {
   borde?: { dir: V3; fuerza: number; color: string; ancho?: number; mezcla?: number; contorno?: number };
   sombra?: { color: string; fuerza: number; hasta?: number };
   techo?: { desde: number; k: number; color?: string; mezcla?: number };
+  /**
+   * El metal en penumbra (clave baja de los personajes): los materiales con brillo desde `filo` reciben un hilo de
+   * contraluz en los cantos (de la luz de borde), y los que brillan desde `brillo` además un destello estrecho (exponente
+   * `exp`) aunque el relleno siga oscuro. Lo demás (piel, tela, cuero) no se toca.
+   */
+  metal?: { brillo: number; esp: number; exp: number; filo: number; borde: number; ancho: number; piso?: number };
 }
 export interface Render { img: Raster; ancla: [number, number] }
 export interface Ambiente { tinte?: [number, number, number]; luz?: number }
@@ -570,7 +576,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   const rebote: V3 = norm([-LUZ[0], -LUZ[1], 0.15]);
   const resp = esc.resplandor ? { ...esc.resplandor, rgb: rgb(esc.resplandor.color) } : null;
   const L = esc.luz, lAmb = L?.amb ?? 0.17, lDif = L?.dif ?? 0.64, lCielo = L?.cielo ?? 0.12, lReb = L?.rebote ?? 0.06;
-  const lEsp = L?.especular ?? 1, lEspMin = L?.especularMin ?? 0;
+  const lEsp = L?.especular ?? 1, lEspMin = L?.especularMin ?? 0, lMetal = L?.metal;
   const borde = L?.borde ? { ...L.borde, d: norm(L.borde.dir), rgb: rgb(L.borde.color) } : null;
   const sombraL = L?.sombra ? { ...L.sombra, rgb: rgb(L.sombra.color) } : null;
   const techo = L?.techo ? { ...L.techo, rgb: rgb(L.techo.color ?? '#8a8070') } : null;
@@ -612,6 +618,10 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
         const arriba = Math.max(0, n[2]);
         s = lAmb + lDif * dif * (0.22 + 0.78 * lz) + lCielo * arriba + lReb * Math.max(0, dot(n, rebote));
         if (m.brillo && m.brillo >= lEspMin) s += m.brillo * lEsp * Math.pow(Math.max(0, dot(n, media)), 12) * lz;
+        if (lMetal && m.brillo) {
+          if (m.brillo >= lMetal.brillo) s += lMetal.esp * m.brillo * Math.pow(Math.max(0, dot(n, media)), lMetal.exp) * (0.35 + 0.65 * lz) + (lMetal.piso ?? 0) * m.brillo * (0.5 + 0.5 * dif);
+          if (m.brillo >= lMetal.filo && borde) s += lMetal.borde * Math.min(1, m.brillo * 1.6) * Math.pow(1 - Math.max(0, -dot(n, VISTA)), lMetal.ancho) * Math.max(0, dot(n, borde.d) + 0.3);
+        }
         s += (fbm(p[0] * m.escala, p[1] * m.escala, p[2] * m.escala) - 0.5) * m.ruido;
         if (m.patron) s += m.patron(p, n);
         s += tono;
@@ -639,7 +649,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     const m = MATERIALES[matId] ?? MATERIALES.piedra;
     const R = rampa(m, matId);
     // la rampa con 3 tonos intermedios entre cada par de colores (paleta de 256 de la época) y trama suave
-    const SUB = 3, pos = Math.max(0, Math.min(0.999, s)) * (R.length - 1) * SUB + (trama(px, py) - 0.5) * 0.9;
+    const SUB = 3, pos = Math.max(0, Math.min(0.999, s)) * (R.length - 1) * SUB + (trama(px, py) - 0.5) * 0.9 * (m.trama ?? 1);
     const kk = Math.max(0, Math.min((R.length - 1) * SUB, Math.round(pos))), k0 = Math.floor(kk / SUB), fr = (kk - k0 * SUB) / SUB;
     const ca = R[k0], cb = R[Math.min(R.length - 1, k0 + 1)];
     let r = ca[0] + (cb[0] - ca[0]) * fr, g = ca[1] + (cb[1] - ca[1]) * fr, b = ca[2] + (cb[2] - ca[2]) * fr;

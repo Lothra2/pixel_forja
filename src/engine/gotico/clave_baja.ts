@@ -26,6 +26,9 @@ const BASE: Iluminacion = {
   expo: 0.88, gamma: 1.2,
   sombra: { color: '#05070d', fuerza: 0.45, hasta: 0.3 },
   techo: { desde: 80, k: 0.36, color: '#8c8170', mezcla: 0.45 },
+  // el metal responde aunque el resto quede en penumbra: placa y oro destellan en sus facetas y todo lo que tiene algo
+  // de brillo (malla, hueso pulido) agarra un hilo de contraluz en los cantos
+  metal: { brillo: 0.6, esp: 2.2, exp: 14, filo: 0.18, borde: 0.9, ancho: 1.3, piso: 0.16 },
 };
 export const CLAVE_BAJA_FRIA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.22, color: BORDE_FRIO, ancho: 1.6, mezcla: 0.45, contorno: 0 } };
 export const CLAVE_BAJA_CALIDA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.22, color: BORDE_CALIDO, ancho: 1.6, mezcla: 0.45, contorno: 0 } };
