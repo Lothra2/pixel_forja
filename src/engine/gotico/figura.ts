@@ -363,7 +363,10 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
   p.bajar = 1 - 0.5 * k; p.torso = 4 - 1.5 * k; p.respira = k; p.hombros = [0.8 * k, 0.7 * k];
   p.lateral = 0.75 + 0.15 * k; p.ladeoCadera = 2.4 + 0.3 * k; p.ladeo = -1.4 - 0.5 * k; p.giroCadera = -5; p.giroTorso = 3 + k;
   p.cabeza = 1.5 - 2 * k; p.giroCabeza = -4 + 3 * k2; p.ladeoCabeza = 2 - 1.2 * k;
-  p.hombroD = [12 + 3 * k, 12, 24 + 5 * k, 8]; p.hombroI = [9 - 2 * k, 11, 18 + 4 * k, 12];
+  // (los brazos caen cerca del cuerpo y el pecho va arriba: con los brazos abiertos y el torso echado adelante el reposo
+  // se leía encorvado, de gorila)
+  p.torso = 2 - 1.5 * k; p.cabeza = -1 - 2 * k;
+  p.hombroD = [8 + 3 * k, 7, 20 + 5 * k, 8]; p.hombroI = [6 - 2 * k, 7, 16 + 4 * k, 10];
   p.munecaD = 3 * k2;
   p.capa = [0.7 + 0.2 * k, 0.3 * k2]; p.pelo = [0.2 * k, 0.2 * k2];
   // a dos manos: el arma descansa al hombro; el puño derecho delante del pecho, cerca del regatón, el mango apoya
@@ -415,7 +418,7 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
     }
     case 'apunta': {
       // liviana y atenta: el peso en la pierna de atrás, un poco agazapada, la cabeza que escucha a los costados
-      p.bajar = 1.8 - 0.4 * k; p.giroTorso = 9 + k; p.giroCabeza = -10 + 9 * Math.sin(u * TAU + 0.6); p.cabeza = 1 - 1.5 * k;
+      p.bajar = 1.2 - 0.4 * k; p.torso = 1 - 1.2 * k; p.giroTorso = 9 + k; p.giroCabeza = -10 + 9 * Math.sin(u * TAU + 0.6); p.cabeza = 1 - 1.5 * k;
       p.lateral = 0.9 + 0.15 * k; p.ladeoCadera = 2.8;
       break;
     }
