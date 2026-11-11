@@ -864,6 +864,18 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
       ps.push(cilindro(...add(b.mun, b.d2, -0.6 * S), 2.25 * A, 0.7 * S, { mat: mn.linea ? acentoDe(mn.linea) : mn.mat === 'cu_oro' ? 'cu_placa' : 'cu_oro', r1: 2.3 * A, eje: b.d2 }));
     }
   }
+  // el borde de cada prenda de mano: puño vuelto del guante, correas y canto acampanado del brazal, codal del guantelete
+  // (sin esto el antebrazo es un tubo liso del color de la prenda)
+  if (eq.manos && eq.manos.tipo !== 'vendas') for (const b of e.brazos) {
+    const mn = eq.manos, m = mn.mat;
+    const anillo = (t: number, r: number, an: number, tono: number, mat = m) => ps.push(masa([hueso(mez(b.codo, b.mun, t), mez(b.codo, b.mun, t + an), r, r * 0.97, { mat, tono })], { mat, tono }));
+    if (mn.tipo === 'guantes') anillo(0.5, 1.75 * A + 0.55, 0.12, -0.18);
+    else if (mn.tipo === 'brazales') { anillo(0.12, 2.0 * A + 0.6, 0.1, -0.16); anillo(0.45, 1.75 * A + 0.55, 0.07, -0.2, 'cu_cuero_negro'); anillo(0.75, 1.6 * A + 0.55, 0.07, -0.2, 'cu_cuero_negro'); }
+    else if (eq.torso?.tipo !== 'placas') {
+      const lado = nor(cruz(b.d1, [0, 0, 1]));
+      ps.push(masa([bulto(b.codo, [2.1 * A, 2.1 * A, 1.9 * S], { eje: b.d1, mat: m, tono: 0.06 }), bulto(add(add(b.codo, lado, b.s * 1.2 * A), b.d1, -0.4 * S), [0.7 * A, 1.9 * A, 1.6 * S], { eje: b.d1, mat: m, tono: 0.1 })], { mat: m, suave: 0.5 }));
+    }
+  }
   // ---- hombreras: láminas solapadas que bajan por el brazo y se abren hacia afuera, cada una con su borde (nada de
   // bolas: a escala de juego se tienen que leer las capas y el canto de cada placa)
   if (eq.hombros) for (const b of e.brazos) {
