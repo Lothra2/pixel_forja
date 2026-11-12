@@ -268,7 +268,10 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
     // fuego de Doom vivo: el gemelo sin llama y el fuego encima
     const vivos = vivosDe(o), gem = vivos?.[0].s.sprite ? objetoMeta(vivos[0].s.sprite, o.v) : null;
     if (vivos && gem?.f.length) q = gem.f[0];
-    const prof = meta.plano ? -1e6 + o.cx + o.cy : o.cx + o.cy + (o.hw + o.hh) / 2 - 1;
+    // (un objeto grande que se pisa por dentro, como el círculo de piedras o una fosa, se ordena por su borde de atrás: por
+    // su centro, el que entraba quedaba dibujado detrás de la losa entera)
+    // (el río es agua: va como suelo y nunca tapa a nadie)
+    const prof = meta.plano || o.id === 'par_arroyo' || o.id === 'inf2_rio_lava' ? -1e6 + o.cx + o.cy : pisable(j.zona, o) ? o.cx + o.cy - (o.hw + o.hh) / 2 + 1 : o.cx + o.cy + (o.hw + o.hh) / 2 - 1;
     const alto = q.ay;
     items.push({ prof, draw: () => {
       // transparencia si tapa al héroe
@@ -318,7 +321,7 @@ export function dibujarMundo(j: Juego, dt: number, tiempo: number) {
   for (const e of ents) {
     if (!cerca(e.x, e.y)) continue;
     const muerto = e.muerto;
-    items.push({ prof: muerto ? e.x + e.y - 0.6 : e.x + e.y, draw: () => dibujarEnt(j, e, tiempo) });
+    items.push({ prof: (muerto ? e.x + e.y - 0.6 : e.x + e.y) + (sobrePuente(j, e) > 0 ? 4 : 0), draw: () => dibujarEnt(j, e, tiempo) });
   }
   // visiones
   for (const v of j.visiones) {
@@ -485,10 +488,30 @@ function pajaro(x: number, y: number, t: number) {
 
 /** Cuánto se mezcla cada sprite sobre sí mismo en modo 'screen' (0 = como viene horneado). Levanta sombras y medios sin quemar los claros. */
 const REALCE = { heroe: 1, aliado: 0.65, monstruo: 0.65 };
+/** Si un objeto grande (12 casillas o más) se puede pisar por dentro en al menos un tercio de su huella. */
+function pisable(z: Juego['zona'], o: { cx: number; cy: number; hw: number; hh: number; _pis?: boolean }): boolean {
+  if (o._pis !== undefined) return o._pis;
+  let libres = 0, total = 0;
+  if (o.hw * o.hh >= 12) for (let y = Math.floor(o.cy - (o.hh - 1) / 2); y <= o.cy + (o.hh - 1) / 2; y++) for (let x = Math.floor(o.cx - (o.hw - 1) / 2); x <= o.cx + (o.hw - 1) / 2; x++) { total++; if (x >= 0 && y >= 0 && x < z.W && y < z.H && !z.bloq[y * z.W + x]) libres++; }
+  return (o._pis = total > 0 && libres / total > 0.33);
+}
+/**
+ * Cuánto sube (px) el que va por el tablero de un puente: el arco del puente de la Forja (104 unidades de largo en unas
+ * 6 casillas, 4 de alto en los estribos y 21 en la clave). Sin esto el héroe cruzaba a ras del agua, metido en la piedra.
+ */
+function sobrePuente(j: Juego, e: Ent): number {
+  for (const p of j.zona.puentes ?? []) {
+    if (Math.abs(e.y - p.cy) > 1.6 || Math.abs(e.x - p.cx) > 3.2) continue;
+    const u = Math.min(1, Math.abs((e.x - p.cx) * 17.3) / 52);
+    return (4 + 17 * Math.cos((u * Math.PI) / 2)) * 1.2;
+  }
+  return 0;
+}
 function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   // reventado por exceso de daño: no queda cuerpo (los gibs de la Forja irán en su lugar)
   if (e.muerto && (e as any).reventado) return;
   let [px, py] = aPant(e.x, e.y);
+  py -= sobrePuente(j, e);
   // peso en el combate, solo en pantalla, a la medida de cada cuerpo (ver juego/sensacion.ts)
   if (!e.muerto) {
     const S = sensacionDe(e), [vx, vy] = DIR_VEC[e.dir] ?? [0, 0];

@@ -10,6 +10,8 @@ export interface Salida { cx: number; cy: number; destino: string; entrada: stri
 export interface Spawn { cx: number; cy: number; tipo: 'grupo' | 'jefe' | 'unico' | 'campeon'; fuerza: number }
 export interface Zona {
   id: string;
+  /** Puentes sobre el río (centro del tablero, que corre en x): el juego sube al que pasa por encima. */
+  puentes?: { cx: number; cy: number }[];
   nombre: [string, string];
   acto: number;
   nivel: number;
@@ -689,7 +691,15 @@ function rioDeLava(k: Constructor, r: () => number, arroyo = false) {
     if (!arroyo) k.piso('lava_grietas', tx, ty);
     if (!codo && cruzaCamino(tx, ty)) {
       if (arroyo && r() < 0.35) { k.poner(rio, x0 + 2, y0 + 2, 'vado_y', true); return; }
-      if (puente) { k.poner(puente, x0 + 2, y0 + 2, arroyo ? (r() < 0.7 ? 'x' : 'musgoso') : r() < 0.7 ? 'piedra' : 'hueso', true); bloquear(tx, ty, 0); return; }
+      if (puente) {
+        k.poner(puente, x0 + 2, y0 + 2, arroyo ? (r() < 0.7 ? 'x' : 'musgoso') : r() < 0.7 ? 'piedra' : 'hueso', true);
+        // solo se pasa por el tablero: el agua a los lados del puente bloquea (antes la baldosa entera quedaba libre y el
+        // héroe cruzaba por el agua, dibujado detrás del puente). El juego sube al que va por el tablero (ver escena.ts)
+        bloquear(tx, ty, 1);
+        for (let y = y0 + 1; y <= y0 + 3; y++) for (let x = x0; x < x0 + 5; x++) z.bloq[y * z.W + x] = 0;
+        (z.puentes ??= []).push({ cx: x0 + 2.5, cy: y0 + 2.5 });
+        return;
+      }
     }
     const v = codo ?? (arroyo ? (r() < 0.6 ? 'recto_y' : r() < 0.5 ? 'piedras_y' : 'juncal_y') : r() < 0.6 ? 'recto_y' : r() < 0.5 ? 'ancho_y' : 'meandro_y');
     k.poner(rio, x0 + 2, y0 + 2, v, true);
