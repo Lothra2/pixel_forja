@@ -1,7 +1,7 @@
 // Crear héroe: cada clase se presenta en grande con su pose, su luz y su ficha (rol, dificultad, atributos y ramas).
 import { ctx, W, H, E, pulso } from '../nucleo/lienzo';
 import { texto, T, TT, boton, marco, dentro, envolver, TITULO } from './comun';
-import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, objetoMeta, dibujar, type Cuadro } from '../motor/assets';
+import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, type Cuadro } from '../motor/assets';
 import { CLASES, HABILIDADES, type Habilidad } from '../datos/clases';
 import { iconoHab } from './juego_ui';
 import { sombraSuelta } from '../render/luces';
@@ -133,11 +133,19 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   sombraSuelta(ctx, q, cx, cy, escQ, cx - 60, cy + 40, 140, 0.25 * k);
   ctx.globalAlpha = k;
   particulas(f, cx, cy, dt, t, 'atras');
-  if (q) dibujar(ctx, q, cx - (1 - k) * 40, cy, escQ);
+  if (q) {
+    // luz de retrato: contraluz fría que recorta la silueta desde atrás a la izquierda (una copia teñida corrida un par de
+    // píxeles por detrás del cuerpo), el canto cálido del lado de la fogata, el héroe y un pulso cálido muy leve con el fuego
+    const hx = cx - (1 - k) * 40, pul = 0.75 + 0.25 * Math.sin(t * 7.3) * Math.sin(t * 3.1 + 1);
+    ctx.globalAlpha = 0.22 * k; dibujarTenido(ctx, q, hx - 2, cy - 1, '#7f9fd8', 1, escQ);
+    ctx.globalAlpha = 0.18 * k; dibujarTenido(ctx, q, hx + 2, cy, '#ff9a48', 1, escQ);
+    ctx.globalAlpha = k; dibujar(ctx, q, hx, cy, escQ);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.05 * k * pul; dibujarTenido(ctx, q, hx, cy, '#ff8a3a', 0.9, escQ); ctx.restore();
+  }
   ctx.globalAlpha = 1;
   // luz: oscuridad alrededor, el fuego y el color de la clase
   ctx.save();
-  const g = ctx.createRadialGradient(cx, cy - 100, 60, cx, cy - 100, Math.max(W, H) * 0.7); g.addColorStop(0, 'rgba(0,0,0,0.1)'); g.addColorStop(0.35, 'rgba(0,0,0,0.55)'); g.addColorStop(0.8, 'rgba(0,0,0,0.97)'); g.addColorStop(1, 'rgba(0,0,0,1)');
+  const g = ctx.createRadialGradient(cx, cy - 100, 60, cx, cy - 100, Math.max(W, H) * 0.7); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.35, 'rgba(0,0,0,0.45)'); g.addColorStop(0.8, 'rgba(0,0,0,0.97)'); g.addColorStop(1, 'rgba(0,0,0,1)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter';
   const g2 = ctx.createRadialGradient(fx, fy - 20, 0, fx, fy - 20, 240 + Math.sin(t * 8) * 8); g2.addColorStop(0, 'rgba(255,120,40,0.3)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
