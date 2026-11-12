@@ -132,7 +132,7 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   if (sl.length && ms) {
     const n = Math.floor((t - tCambio) * ms.fps), ent = ms.entrada;
     q = sl[n < ent ? n : ent + ((n - ent) % (sl.length - ent))];
-    escQ = Math.min(1.25, (H * 0.5) / 156) * (2 / ms.escala) * 0.5 * 2;
+    escQ = 1; // la Forja lo hornea al tamaño final (unos 195 px): a ×1 exacto los píxeles quedan parejos
   }
   if (!q) { const fs = cuadrosHeroe(c.id, 'quieto', 'so'); q = fs[Math.floor(t * 6) % Math.max(1, fs.length)]; escQ = esc * 2.3; }
   // sombra larga desde la fogata y otra corta desde la luz de la clase
