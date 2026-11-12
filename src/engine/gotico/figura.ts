@@ -1,3 +1,4 @@
+import { seleccion } from './seleccion';
 import { caja, cilindro, elipsoide, esfera, palo, poliedro, type Pieza, type V3 } from './render';
 
 /**
@@ -19,11 +20,14 @@ export const NOMBRE_DIR: Record<Dir, [string, string]> = {
   n: ['Norte (de espalda)', 'North (back)'], ne: ['Noreste', 'Northeast'], e: ['Este', 'East'], se: ['Sureste', 'Southeast'],
 };
 
-export type Accion = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'lanzar' | 'herido' | 'morir' | 'presentar';
+/** 'seleccion': la presentación cinematográfica del menú de inicio (seleccion.ts): entrada con el gesto de la clase y reposo en bucle. */
+export type Accion = 'quieto' | 'caminar' | 'correr' | 'atacar' | 'lanzar' | 'herido' | 'morir' | 'presentar' | 'seleccion';
 /** Cómo se presenta cada héroe en la pantalla de selección. */
 export type Presentacion = 'rugido' | 'guardia' | 'conjuro' | 'apunta' | 'invoca' | 'kata' | 'naturaleza' | 'frasco';
 /** Cuadros por acción de los monstruos humanoides (y de todo cuerpo sin clase de héroe). Los héroes van por ANIM_HEROE. */
-export const CUADROS: Record<Accion, number> = { quieto: 4, caminar: 8, correr: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8, presentar: 16 };
+/** La presentación del menú: 48 cuadros a 12 por segundo; los 12 primeros son la entrada y los 36 que siguen el bucle. */
+export const SEL_CUADROS = 48, SEL_ENTRADA = 12, SEL_FPS = 12;
+export const CUADROS: Record<Accion, number> = { quieto: 4, caminar: 8, correr: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8, presentar: 16, seleccion: SEL_CUADROS };
 
 // ------------------------------------------------------------------ cuadros de los héroes, por clase
 export type ClaseHeroe = 'berserker' | 'templario' | 'arcanista' | 'cazadora' | 'nigromante' | 'monje' | 'druida' | 'alquimista';
@@ -43,8 +47,8 @@ export interface AnimAccion {
   golpes?: number[];
 }
 /** Lo que cambia por clase respecto de la base (los héroes: quieto 8, caminar, correr, atacar y lanzar 12, herido 6, morir 8). */
-const BASE_HEROE: Record<Accion, number> = { quieto: 8, caminar: 12, correr: 12, atacar: 12, lanzar: 12, herido: 6, morir: 8, presentar: 16 };
-const T_BASE: Record<Accion, number> = { quieto: 5, caminar: 2, correr: 1.5, atacar: 2, lanzar: 2, herido: 2, morir: 3, presentar: 3 };
+const BASE_HEROE: Record<Accion, number> = { quieto: 8, caminar: 12, correr: 12, atacar: 12, lanzar: 12, herido: 6, morir: 8, presentar: 16, seleccion: SEL_CUADROS };
+const T_BASE: Record<Accion, number> = { quieto: 5, caminar: 2, correr: 1.5, atacar: 2, lanzar: 2, herido: 2, morir: 3, presentar: 3, seleccion: 2 };
 /**
  * Ritmo e impacto de cada clase: el berserker respira pesado y carga largo; el templario pega corto desde la guardia; el
  * monje encadena tres golpes casi sin recogida; la cazadora suelta la flecha a mitad de la acción; el druida describe un
@@ -228,6 +232,7 @@ export function pose(acc: Accion, f: number, arma: ArmaPose = 'una', estilo?: Pr
   const n = cuadrosDe(acc, estilo), u = f / n;
   // morir va por tablas de 8 cuadros: si una clase tuviera otros, se reparte en esas 8 poses
   const f8 = acc === 'morir' ? (f * 8) / n : f;
+  if (acc === 'seleccion') { seleccion(p, f, arma, estilo, mano); return p; }
   if (estilo === 'kata' && acc !== 'presentar' && acc !== 'lanzar') monje(p, acc, u, f8, arma);
   else if (estilo === 'naturaleza' && acc !== 'presentar') druida(p, acc, u, f8, arma);
   else if (acc === 'quieto') quieto(p, u, arma, estilo);
@@ -264,9 +269,9 @@ function brazoEscudo(p: Pose, acc: Accion, u: number, mano: ManoPose) {
   else if (acc === 'herido') p.hombroI = [16 - p.torso * 0.4, 18 + (p.ladeo ?? 0), 72, gi - 4];
 }
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const TAU = Math.PI * 2;
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-const mod1 = (v: number) => ((v % 1) + 1) % 1;
+export const TAU = Math.PI * 2;
+export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+export const mod1 = (v: number) => ((v % 1) + 1) % 1;
 const grados = (r: number) => (r * 180) / Math.PI;
 const rad = (g: number) => (g * Math.PI) / 180;
 
@@ -277,11 +282,11 @@ const rad = (g: number) => (g * Math.PI) / 180;
  * y con entrada y salida suaves. Una clave `plano` es un extremo: llega frenando y sale acelerando (anticipación,
  * contacto, pose sostenida). El ciclo cierra: la última clave empalma con la primera sin salto.
  */
-type Valor = number | number[];
-type Vals = { [K in keyof Pose]?: Pose[K] extends number | undefined ? number : Pose[K] extends number[] | undefined ? number[] : never };
-interface Clave { t: number; v: Vals; plano?: boolean }
-const K = (t: number, v: Vals, plano = false): Clave => ({ t, v, plano });
-function animar(cl: Clave[], u: number): Record<string, Valor> {
+export type Valor = number | number[];
+export type Vals = { [K in keyof Pose]?: Pose[K] extends number | undefined ? number : Pose[K] extends number[] | undefined ? number[] : never };
+export interface Clave { t: number; v: Vals; plano?: boolean }
+export const K = (t: number, v: Vals, plano = false): Clave => ({ t, v, plano });
+export function animar(cl: Clave[], u: number): Record<string, Valor> {
   const n = cl.length;
   const campos = new Set<string>();
   for (const c of cl) for (const k of Object.keys(c.v)) campos.add(k);
@@ -317,7 +322,7 @@ const ARMA = ['armaD', 'munecaD', 'vara'] as const;
  * Aplica las claves con acción superpuesta: la cabeza llega un poco tarde (lagCab), el arma se arrastra (lagArma) y la
  * capa y el pelo siguen la inercia del pecho (si el pecho baja de golpe, la tela se levanta; si gira, la tela se queda).
  */
-function actuar(p: Pose, cl: Clave[], u: number, o: { lagCab?: number; lagArma?: number; capa?: number; pelo?: number; tela?: number } = {}) {
+export function actuar(p: Pose, cl: Clave[], u: number, o: { lagCab?: number; lagArma?: number; capa?: number; pelo?: number; tela?: number } = {}) {
   Object.assign(p, animar(cl, u));
   const c = animar(cl, u - (o.lagCab ?? 0.03));
   for (const k of CAB) if (c[k] !== undefined) (p as unknown as Record<string, Valor>)[k] = c[k];
@@ -338,14 +343,14 @@ function actuar(p: Pose, cl: Clave[], u: number, o: { lagCab?: number; lagArma?:
   p.pelo = [(o.pelo ?? 0) + pe[0], pe[1]];
 }
 /** Pies plantados en el piso: adelante/atrás, separación al costado y punta afuera. */
-function plantar(p: Pose, pasos: [number, number], abre: [number, number], pieGiro: [number, number] = [10, 10]) {
+export function plantar(p: Pose, pasos: [number, number], abre: [number, number], pieGiro: [number, number] = [10, 10]) {
   p.plantado = true; p.pasos = pasos; p.abre = abre; p.pieGiro = pieGiro;
   // para quien dibuje con ángulos (figura): el muslo que pone el pie ahí
   const ang = (x: number): [number, number] => [grados(Math.asin(clamp(x / 27, -1, 1))), 6];
   p.caderaD = ang(pasos[0]); p.caderaI = ang(pasos[1]);
 }
 /** La cabeza mira a un punto del cuerpo (adelante, derecha, alto): giro y cabeceo sobre el torso, mezclado con `k`. */
-function mirar(p: Pose, q: [number, number, number], k = 1) {
+export function mirar(p: Pose, q: [number, number, number], k = 1) {
   const t = (p.torso * Math.PI) / 180, zc = 31 - p.bajar;
   const cf = (p.avanza ?? 0) + Math.sin(t) * 22, cz = zc + Math.cos(t) * 22, cr = p.lateral ?? 0;
   const dx = q[0] - cf, dy = q[1] - cr, dz = q[2] - cz;
@@ -355,7 +360,7 @@ function mirar(p: Pose, q: [number, number, number], k = 1) {
 }
 
 // ------------------------------------------------------------------ quieto: respira, pasa el peso, mira
-function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
+export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
   // 4 cuadros: inspira (0 → 1) y espira; la cabeza y el arma van un cuarto de ciclo atrasados
   const k = 0.5 - 0.5 * Math.cos(u * TAU), k2 = Math.sin(u * TAU);
   plantar(p, [-1.4, 2.2], [0.7, 1.5], [12, 18]);
@@ -440,7 +445,7 @@ function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion) {
   }
 }
 /** Jadeo: inspira rápido (el primer tercio del ciclo) y suelta el aire despacio. */
-function jadeo(u: number) { u = mod1(u); return u < 0.3 ? Math.sin((Math.PI / 2) * (u / 0.3)) : 0.5 + 0.5 * Math.cos((Math.PI * (u - 0.3)) / 0.7); }
+export function jadeo(u: number) { u = mod1(u); return u < 0.3 ? Math.sin((Math.PI / 2) * (u / 0.3)) : 0.5 + 0.5 * Math.cos((Math.PI * (u - 0.3)) / 0.7); }
 
 // ------------------------------------------------------------------ caminar y correr
 function marcha(p: Pose, u: number, correr: boolean, arma: ArmaPose, estilo?: Presentacion, porte?: Porte) {
@@ -1822,7 +1827,7 @@ export interface ManifiestoAnimacion {
     estilo: Presentacion;
     /** Lo que avanza el cuerpo (alto 1) en un ciclo completo de caminar y de correr: velocidad = zancada × alto / duración del ciclo. */
     zancada: { caminar: number; correr: number };
-    acciones: Record<Exclude<Accion, 'presentar'>, AnimAccion & { fps: number; duracion: number; golpeEn?: number }>;
+    acciones: Record<Exclude<Accion, 'presentar' | 'seleccion'>, AnimAccion & { fps: number; duracion: number; golpeEn?: number }>;
   }>;
 }
 /**
@@ -1833,13 +1838,13 @@ export interface ManifiestoAnimacion {
  */
 export function manifiestoAnimacion(): ManifiestoAnimacion {
   const r4 = (x: number) => Math.round(x * 1e4) / 1e4;
-  const { presentar: _p, ...monstruos } = CUADROS; void _p;
+  const { presentar: _p, seleccion: _s, ...monstruos } = CUADROS; void _p; void _s;
   return {
     version: 1,
     monstruos: monstruos as Record<Accion, number>,
     clases: Object.fromEntries(CLASES_HEROE.map((c) => {
       const estilo = ESTILO_CLASE[c];
-      const acciones = Object.fromEntries((Object.keys(ANIM_HEROE[c]) as Accion[]).filter((a) => a !== 'presentar').map((a) => {
+      const acciones = Object.fromEntries((Object.keys(ANIM_HEROE[c]) as Accion[]).filter((a) => a !== 'presentar' && a !== 'seleccion').map((a) => {
         const x = ANIM_HEROE[c][a];
         const o: AnimAccion & { fps: number; duracion: number; golpeEn?: number } = { ...x, fps: r4(25 / x.t), duracion: r4((x.cuadros * x.t) / 25) };
         if (x.impacto !== undefined) o.golpeEn = r4(x.impacto / x.cuadros);

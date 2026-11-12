@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ANIM_HEROE, CLASES_HEROE, CUADROS, cuadrosDe, manifiestoAnimacion, zancada, ESTILO_CLASE, pose } from '../gotico/figura';
-import { qaHeroes, angulosAndar, cuerpoAndar, entradaAccion, telaAndar, SUJETOS_MONSTRUOS } from '../../../scripts/qa-heroes';
+import { qaHeroes, angulosAndar, cuerpoAndar, entradaAccion, telaAndar, costuraSeleccion, SUJETOS_MONSTRUOS } from '../../../scripts/qa-heroes';
 
 describe('animación de los héroes: cuadros por clase', () => {
   it('el manifiesto que lee el juego está al día con el código (npx tsx scripts/animacion-heroes.ts)', () => {
@@ -10,7 +10,7 @@ describe('animación de los héroes: cuadros por clase', () => {
     expect(json).toEqual(JSON.parse(JSON.stringify(manifiestoAnimacion())));
   });
   it('los héroes atacan, lanzan, corren y caminan en 12 cuadros y respiran en 8; los monstruos siguen como siempre', () => {
-    expect(CUADROS).toEqual({ quieto: 4, caminar: 8, correr: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8, presentar: 16 });
+    expect(CUADROS).toEqual({ quieto: 4, caminar: 8, correr: 8, atacar: 8, lanzar: 8, herido: 4, morir: 8, presentar: 16, seleccion: 48 });
     for (const c of CLASES_HEROE) {
       const a = ANIM_HEROE[c], e = ESTILO_CLASE[c];
       expect([a.atacar.cuadros, a.lanzar.cuadros, a.correr.cuadros, a.caminar.cuadros, a.quieto.cuadros]).toEqual([12, 12, 12, 12, 8]);
@@ -59,5 +59,9 @@ describe('animación de los héroes: cuadros por clase', () => {
     expect(qaHeroes({ sujetos }).fallas.slice(0, 5)).toEqual([]);
     expect(angulosAndar({ sujetos }).fallas.slice(0, 5)).toEqual([]);
     expect(cuerpoAndar({ sujetos }).fallas.slice(0, 5)).toEqual([]);
+  });
+  it('la presentación de la selección empalma: el bucle no salta del 47 al 12 y la entrada sale del bucle y vuelve', () => {
+    const { fallas } = costuraSeleccion();
+    expect(fallas).toEqual([]);
   });
 });

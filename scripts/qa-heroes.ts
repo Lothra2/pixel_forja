@@ -12,13 +12,13 @@
  *   npx tsx scripts/qa-heroes.ts [--clase berserker] [--accion atacar] [--detalle 40]
  */
 import { HEROES, MONSTRUOS } from '../src/engine/gotico/catalogo/personajes.ts';
-import { geometriaQA, dentroElip, telaQA, armaduraDeLinea, type Cuerpo, type Equipo, type GeoQA } from '../src/engine/gotico/cuerpo.ts';
-import { DIRS, cuadrosDe, type Accion } from '../src/engine/gotico/figura.ts';
+import { geometriaQA, dentroElip, telaQA, armaduraDeLinea, esqueleto, type Cuerpo, type Equipo, type GeoQA } from '../src/engine/gotico/cuerpo.ts';
+import { DIRS, cuadrosDe, SEL_CUADROS, SEL_ENTRADA, type Accion } from '../src/engine/gotico/figura.ts';
 import { aPantalla, pintarEscena, type V3 } from '../src/engine/gotico/render.ts';
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
 const SOLO_CLASE = arg('--clase'), SOLO_ACC = arg('--accion'), DETALLE = +(arg('--detalle') ?? 30);
-export const ACCIONES_QA: Accion[] = ['quieto', 'caminar', 'correr', 'atacar', 'lanzar', 'herido', 'morir', 'presentar'];
+export const ACCIONES_QA: Accion[] = ['quieto', 'caminar', 'correr', 'atacar', 'lanzar', 'herido', 'morir', 'presentar', 'seleccion'];
 
 /** El cuarto nivel: la leyenda con la armadura de una línea épica y un arma del arsenal nuevo de su clase. */
 const EPICO: Record<string, { linea: Parameters<typeof armaduraDeLinea>[0]; arma: NonNullable<Equipo['arma']>; izq?: Equipo['izq'] | null }> = {
@@ -382,6 +382,43 @@ export function telaAndar(o: { clase?: string; sujetos?: Sujeto[]; dirs?: string
   }
   return { filas, fallas };
 }
+/**
+ * La costura de la selección: el bucle (cuadros 12 a 47) no salta al volver del 47 al 12, y la entrada sale del bucle y
+ * vuelve a él (el 0 igual al 12, el 11 al 12 como dos vecinos). Se mide cuánto se mueven las articulaciones, las manos,
+ * la cabeza y la punta del arma (en unidades del mundo, alto 1) entre cuadros: el salto del 47 al 12 y del 11 al 12 no
+ * pasa de LIMITE_COSTURA veces el mayor paso entre vecinos del bucle (con un piso de 0,6 unidades).
+ */
+export const LIMITE_COSTURA = 1.3;
+export interface FilaCostura { clase: string; nivel: string; paso: number; costura: number; entrada: number; inicio: number }
+export function costuraSeleccion(o: { clase?: string; sujetos?: Sujeto[] } = {}): { filas: FilaCostura[]; fallas: Falla[] } {
+  const filas: FilaCostura[] = [], fallas: Falla[] = [];
+  for (const h of o.sujetos ?? SUJETOS_HEROES) {
+    if (o.clase && h.id !== o.clase) continue;
+    if (!h.acciones.includes('seleccion')) continue;
+    for (const [nivel, eq] of h.niveles) {
+      const pts = (f: number): V3[] => {
+        const e = esqueleto(h.cuerpo, 'so', 'seleccion', f, eq.arma?.tipo ?? 'nada', eq.izq?.tipo);
+        const q: V3[] = [e.cab(0, 0, e.cz)];
+        for (const b of e.brazos) q.push(b.codo, b.mano, [b.mano[0] + b.eje[0] * 20, b.mano[1] + b.eje[1] * 20, b.mano[2] + b.eje[2] * 20]);
+        for (const p of e.piernas) q.push(p.rod, p.tob);
+        return q;
+      };
+      const d = (a: V3[], b: V3[]) => Math.max(...a.map((x, i) => len([x[0] - b[i][0], x[1] - b[i][1], x[2] - b[i][2]])));
+      const P = Array.from({ length: SEL_CUADROS }, (_, f) => pts(f));
+      // (el paso de referencia es el del bucle: la entrada es un gesto rápido y su llegada al bucle tiene que ser suave)
+      let paso = 0;
+      for (let f = SEL_ENTRADA; f < SEL_CUADROS - 1; f++) paso = Math.max(paso, d(P[f], P[f + 1]));
+      const costura = d(P[SEL_CUADROS - 1], P[SEL_ENTRADA]), entrada = d(P[SEL_ENTRADA - 1], P[SEL_ENTRADA]), inicio = d(P[0], P[SEL_ENTRADA]);
+      const r2 = (x: number) => Math.round(x * 100) / 100;
+      filas.push({ clase: h.id, nivel, paso: r2(paso), costura: r2(costura), entrada: r2(entrada), inicio: r2(inicio) });
+      const lim = Math.max(0.6, paso * LIMITE_COSTURA);
+      if (costura > lim) fallas.push({ chequeo: 'costura del bucle', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f: SEL_CUADROS - 1, valor: costura } as Falla);
+      if (entrada > lim) fallas.push({ chequeo: 'costura de la entrada', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f: SEL_ENTRADA - 1, valor: entrada } as Falla);
+      if (inicio > 0.6) fallas.push({ chequeo: 'inicio de la entrada', clase: h.id, nivel, acc: 'seleccion', dir: 'so', f: 0, valor: inicio } as Falla);
+    }
+  }
+  return { filas, fallas };
+}
 const nor3 = (a: V3): V3 => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -404,6 +441,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   fallas.push(...entrada.fallas);
   const tela = telaAndar({ clase: SOLO_CLASE, sujetos });
   fallas.push(...tela.fallas);
+  const costura = MON ? { filas: [], fallas: [] } : costuraSeleccion({ clase: SOLO_CLASE, sujetos });
+  fallas.push(...costura.fallas);
   const por = new Map<string, number>();
   for (const x of fallas) { const k = `${x.chequeo} · ${x.clase} · ${x.acc}`; por.set(k, (por.get(k) ?? 0) + 1); }
   console.log(`QA de ${MON ? `${sujetos.length} monstruos humanoides` : "héroes"}: ${cuadros} cuadros (${MON ? "8 direcciones" : "clases × 4 niveles × 8 direcciones"} × cada cuadro de cada acción) en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
@@ -424,6 +463,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   console.log(`  ${'tela al andar'.padEnd(26)} ${tela.fallas.length} fallas (detrás de la pelvis ≤ ${LIMITE_TELA.atras} del alto, área ≤ ${LIMITE_TELA.area * 100} % entre cuadros, sin huecos)`);
   for (const f of tela.filas) console.log(`    ${f.clase.padEnd(20)} ${f.nivel.padEnd(9)} ${f.acc.padEnd(8)} atrás ${String(f.atras).padEnd(6)} área ${String(f.area).padEnd(6)} (rango del ciclo ${String(f.rango).padEnd(5)}) huecos ${f.huecos}`);
+  if (!MON) {
+    console.log(`  ${'costura de la selección'.padEnd(26)} ${costura.fallas.length} fallas (el salto 47→12 y 11→12 ≤ ${LIMITE_COSTURA} × el mayor paso entre vecinos; el 0 igual al 12)`);
+    for (const f of costura.filas) console.log(`    ${f.clase.padEnd(11)} ${f.nivel.padEnd(9)} paso ${String(f.paso).padEnd(6)} costura ${String(f.costura).padEnd(6)} entrada ${String(f.entrada).padEnd(6)} inicio ${f.inicio}`);
+  }
   console.log(`TOTAL: ${fallas.length} fallas`);
   for (const [k, n] of [...por].sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(5)}  ${k}`);
   if (MON) {
