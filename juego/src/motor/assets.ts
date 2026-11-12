@@ -102,7 +102,7 @@ export async function asegurar(nombres: Iterable<string>, progreso?: (h: number,
   await Promise.all(ns.map((n) => cargarAtlas(n).then(() => progreso?.(++h, ns.length))));
 }
 
-function lista(grupo: 'h' | 'm' | 'p' | 'i' | 'r', clave: string): Cuadro[] {
+function lista(grupo: 'h' | 'm' | 'p' | 'i' | 'r' | 'sel', clave: string): Cuadro[] {
   const k = grupo + ':' + clave;
   let c = cuadros.get(k);
   if (!c) { const raw = (man as any)?.[grupo]?.[clave]; c = raw ? raw.map(aCuadro) : []; cuadros.set(k, c!); }
@@ -113,6 +113,9 @@ export const cuadrosMonstruo = (id: string, acc: string, dir: string) => lista('
 export const cuadrosPiso = (id: string, v: number) => lista('p', `${id}|${v}`);
 /** Retrato grande de la clase en su pose de presentación (nivel 0 novato, 2 leyenda). */
 export const cuadrosRetrato = (id: string, nivel: number) => lista('r', `${id}/${nivel}`);
+/** Presentación de la selección de personaje (grupo 'sel' de la Forja): 48 cuadros, los 12 primeros son la entrada. */
+export const cuadrosSel = (id: string, nivel: number) => lista('sel', `${id}/${nivel}`);
+export const metaSel = (): { cuadros: number; entrada: number; fps: number; escala: number } | null => (man as any)?.selm ?? null;
 export const cuadrosIcono = (id: string) => lista('i', id);
 export function objetoMeta(id: string, v: string): ObjMeta | null {
   const k = `${id}|${v}`;

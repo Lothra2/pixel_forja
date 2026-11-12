@@ -1,7 +1,7 @@
 // Crear héroe: cada clase se presenta en grande con su pose, su luz y su ficha (rol, dificultad, atributos y ramas).
 import { ctx, W, H, E, pulso } from '../nucleo/lienzo';
 import { texto, T, TT, boton, marco, dentro, envolver, TITULO } from './comun';
-import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, objetoMeta, dibujar, dibujarTenido, type Cuadro } from '../motor/assets';
+import { cuadrosHeroe, cuadrosPiso, cuadrosRetrato, cuadrosSel, metaSel, objetoMeta, dibujar, dibujarTenido, type Cuadro } from '../motor/assets';
 import { CLASES, HABILIDADES, type Habilidad } from '../datos/clases';
 import { iconoHab } from './juego_ui';
 import { sombraSuelta } from '../render/luces';
@@ -127,6 +127,13 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   const esc = Math.min(1.3, (H * 0.56) / 240);
   let q: Cuadro | undefined = ret.length ? ret[Math.floor((t - tCambio) * (ret.length > 8 ? 12 : 8)) % ret.length] : undefined;
   let escQ = esc;
+  // la presentación de la Forja (grupo 'sel', al doble): la entrada al elegir la clase y después el reposo en bucle
+  const sl = cuadrosSel(c.id, vista), ms = metaSel();
+  if (sl.length && ms) {
+    const n = Math.floor((t - tCambio) * ms.fps), ent = ms.entrada;
+    q = sl[n < ent ? n : ent + ((n - ent) % (sl.length - ent))];
+    escQ = Math.min(1.25, (H * 0.5) / 156) * (2 / ms.escala) * 0.5 * 2;
+  }
   if (!q) { const fs = cuadrosHeroe(c.id, 'quieto', 'so'); q = fs[Math.floor(t * 6) % Math.max(1, fs.length)]; escQ = esc * 2.3; }
   // sombra larga desde la fogata y otra corta desde la luz de la clase
   sombraSuelta(ctx, q, cx, cy, escQ, fx, fy, 70, 0.55 * k);
