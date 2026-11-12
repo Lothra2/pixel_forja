@@ -1564,6 +1564,7 @@ export function actualizar(j: Juego, dt: number) {
   for (const p of j.particulas) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.vz -= p.grav * dt; if (p.z < 0) { p.z = 0; p.vx *= 0.5; p.vy *= 0.5; p.vz = 0; if (p.tipo === 'sangre' && R() < 0.06) ponerMancha(j, { x: p.x, y: p.y, r: 0.12 + R() * 0.18, color: p.color, t: 0, tipo: 'sangre', forma: 'gota', sem: Math.floor(R() * 8) }); } }
   j.particulas = j.particulas.filter((p) => p.t < p.dur);
   for (const s of j.suelo) s.t += dt;
+  recogerSolo(j);
   for (const m of j.mensajes) m.t += dt;
   j.mensajes = j.mensajes.filter((m) => m.t < 7);
   j.sacudida = Math.max(0, j.sacudida - dt * 2);
@@ -2113,13 +2114,31 @@ export function curarEnTiempo(j: Juego, dt: number) {
   if (h.curando) { h.vida = Math.min(h.vidaMax, h.vida + h.curando.v * dt); h.curando.t -= dt; if (h.curando.t <= 0) h.curando = null; }
   if (h.cargando) { h.mana = Math.min(h.c.manaMax, h.mana + h.cargando.v * dt); h.cargando.t -= dt; if (h.cargando.t <= 0) h.cargando = null; }
 }
-export function recogerSuelo(j: Juego, s: Suelo): boolean {
+/**
+ * Recolección automática: el oro, las pociones, las gemas, las runas y los pergaminos se juntan solos cuando el héroe
+ * pasa cerca (el oro desde más lejos); el equipo mágico o mejor, al pasarle por encima. El equipo común (blanco) se
+ * deja en el piso: es lo que menos vale y llenaría la bolsa. Cada cosa espera medio segundo después de caer para que se
+ * vea caer. Si la bolsa está llena lo dice una sola vez por objeto.
+ */
+function recogerSolo(j: Juego) {
+  const h = j.heroe;
+  if (h.muerto || j.zona.tipo === 'pueblo' && !j.suelo.length) return;
+  for (let i = j.suelo.length - 1; i >= 0; i--) {
+    const s = j.suelo[i]; if (!s || s.t < 0.5) continue;
+    const consumible = !!s.o && s.o.tipo !== 'equipo';
+    const radio = s.oro ? 2.6 : consumible ? 2.0 : s.o && s.o.rareza !== 'normal' ? 1.15 : 0;
+    if (!radio || dist(s.x, s.y, h.x, h.y) > radio) continue;
+    if (s.o && !s.oro && (s as any).sinLugar) continue;
+    if (!recogerSuelo(j, s, true)) (s as any).sinLugar = true;
+  }
+}
+export function recogerSuelo(j: Juego, s: Suelo, solo = false): boolean {
   if (s.o && s.o.rareza !== 'normal') efecto(j, 'pfx:fx_recoger', s.x, s.y, 0, 1, 0, 0.9);
   const h = j.heroe;
   if (s.oro) { h.d.oro += s.oro; sonar(j, 'oro'); j.suelo.splice(j.suelo.indexOf(s), 1); return true; }
   if (s.o && recoger(h.d, s.o)) { sonar(j, 'objeto_cae', undefined, undefined, 0.5); j.suelo.splice(j.suelo.indexOf(s), 1); return true; }
   msg(j, ['No tengo lugar.', 'I have no room.'], '#ff8080');
-  sonar(j, 'negado');
+  if (!solo) sonar(j, 'negado');
   return false;
 }
 export function abrirPortal(j: Juego): boolean {

@@ -31,14 +31,20 @@ function aCuadro(f: any): Cuadro {
 }
 
 // ---------------- IndexedDB (si no hay, se pinta igual)
+// (con tiempo límite: dentro de un iframe en Safari de iPad la base puede no contestar nunca, ni éxito ni error, y el
+// pintor se quedaba esperando para siempre: el equipo nuevo jamás se veía en el héroe)
+let dbMuerta = false;
 function db(): Promise<IDBDatabase | null> {
+  if (dbMuerta) return Promise.resolve(null);
   return new Promise((ok) => {
-    try { const r = indexedDB.open('marca_ceniza', 1); r.onupgradeneeded = () => r.result.createObjectStore('sprites'); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); } catch { ok(null); }
+    const t = setTimeout(() => { dbMuerta = true; ok(null); }, 1200);
+    const fin = (v: IDBDatabase | null) => { clearTimeout(t); if (!v) dbMuerta = true; ok(v); };
+    try { const r = indexedDB.open('marca_ceniza', 1); r.onupgradeneeded = () => r.result.createObjectStore('sprites'); r.onsuccess = () => fin(r.result); r.onerror = () => fin(null); r.onblocked = () => fin(null); } catch { fin(null); }
   });
 }
 async function leer(k: string): Promise<any | null> {
   const d = await db(); if (!d) return null;
-  return new Promise((ok) => { try { const t = d.transaction('sprites').objectStore('sprites').get(k); t.onsuccess = () => ok(t.result ?? null); t.onerror = () => ok(null); } catch { ok(null); } });
+  return new Promise((ok) => { const tt = setTimeout(() => ok(null), 1500); const fin = (v: any) => { clearTimeout(tt); ok(v); }; try { const t = d.transaction('sprites').objectStore('sprites').get(k); t.onsuccess = () => fin(t.result ?? null); t.onerror = () => fin(null); } catch { fin(null); } });
 }
 async function escribir(k: string, v: any) {
   const d = await db(); if (!d) return;

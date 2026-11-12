@@ -35,8 +35,8 @@ function empezarCine(acto: number, despues: () => void, clave = claveCine(acto))
   cine = { clave, acto, t: 0, despues }; estado = 'cine'; ui.izq = ui.der = null; E.clicIzq = false;
   Sonido.musica('intro');
 }
-import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
-import { nuevoHeroe, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad, volverAEmpezar } from './juego/heroe';
+import { crearJuego, entrarZona, actualizar, usarHabilidad, habilidadDe, DIR_VEC, caminarA, usarPocion, curarEnTiempo, recogerSuelo, abrirPortal, recalc, soltar, efecto, msg, particulas, olvidarZonas, esDistancia, tramoThor, type Juego, type Monstruo, type Npc, type Suelo } from './juego/mundo';
+import { nuevoHeroe, nivelHab, firmaVisual, equipoVisual, cuerpoDe, type DatosHeroe, type EnBolsa, nivelEnDificultad, volverAEmpezar } from './juego/heroe';
 import { botin, colorObj, crearObjeto } from './juego/objetos';
 import { ZONAS, PUEBLO_DE, MUSICA_ACTO, ENTRADA_ZONA, MISIONES, POBL_ZONA } from './mundo/actos';
 import { POBLACION, MONSTRUOS } from './datos/monstruos';
@@ -320,24 +320,23 @@ function controlar(jj: Juego, dt: number) {
       if (best) h.objetivo = best;
     }
   }
-  // táctil: un atajo del arco se usa sobre el enemigo más cercano (cuerpo a cuerpo: lo persigue y le pega con esa habilidad)
-  if ((ui as any).tactilHabId) {
-    const id = (ui as any).tactilHabId as string; (ui as any).tactilHabId = null;
-    let best: Monstruo | null = null, bd = 10;
-    for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado !== 'surgir') { const d = dist(m.x, m.y, h.x, h.y); if (d < bd) { bd = d; best = m; } }
+  // táctil: un botón de habilidad (Golpe, Poder o un atajo del arco) sobre el enemigo más cercano. Cuerpo a cuerpo lo
+  // persigue y le pega; si no hay nadie cerca, la habilidad sale igual hacia donde mira (antes no pasaba nada y el botón
+  // parecía roto). Si no se puede usar, lo dice
+  const tactil = (id: string, der: boolean, porId: boolean) => {
     const hb = habilidadDe(id);
-    if (best && hb.tipo === 'golpe') { h.objetivo = best; (h as any).usarId = id; }
-    else usarHabilidad(jj, id, best ? best.x : h.x + 3, best ? best.y : h.y + 3, best);
-  }
-  // táctil: el botón usa la habilidad sobre el enemigo más cercano
-  if ((ui as any).tactilHab) {
-    const lado = (ui as any).tactilHab as 'izq' | 'der'; (ui as any).tactilHab = null;
+    if (jj.zona.tipo === 'pueblo' && hb.tipo !== 'aura' && hb.tipo !== 'pasiva') { msg(jj, ['Aquí no peleo: es tierra de paz.', 'No fighting here: this is safe ground.'], '#c0b090'); return; }
+    if (id !== 'ataque' && nivelHab(h.d, id, h.c) <= 0) { msg(jj, ['Todavía no aprendí ese poder. Abre Habilidades (H).', 'I have not learned that skill yet. Open Skills (H).'], '#c0b090'); return; }
     let best: Monstruo | null = null, bd = 10;
     for (const m of jj.monstruos) if (!m.muerto && !m.dueno && m.estado !== 'surgir') { const d = dist(m.x, m.y, h.x, h.y); if (d < bd) { bd = d; best = m; } }
-    const hb = habilidadDe(h.d[lado]);
-    if (best && hb.tipo === 'golpe' && !(h.d[lado] === 'ataque' && h.c.distancia)) { h.objetivo = best; (h as any).usarDer = lado === 'der'; (h as any).usarId = null; }
-    else usarHabilidad(jj, h.d[lado], best ? best.x : h.x + 3, best ? best.y : h.y + 3, best);
-  }
+    const melee = hb.tipo === 'golpe' && !(id === 'ataque' && h.c.distancia);
+    if (best && melee) { h.objetivo = best; (h as any).usarDer = der; (h as any).usarId = porId ? id : null; return; }
+    const [vx, vy] = DIR_VEC[h.dir] ?? [0.7, 0.7];
+    const tx = best ? best.x : h.x + vx * 3, ty = best ? best.y : h.y + vy * 3;
+    usarHabilidad(jj, id, tx, ty, best, !best && melee);
+  };
+  if ((ui as any).tactilHabId) { const id = (ui as any).tactilHabId as string; (ui as any).tactilHabId = null; tactil(id, false, true); }
+  if ((ui as any).tactilHab) { const lado = (ui as any).tactilHab as 'izq' | 'der'; (ui as any).tactilHab = null; tactil(h.d[lado], lado === 'der', false); }
   // perseguir y atacar
   if (h.objetivo) {
     const m = h.objetivo;

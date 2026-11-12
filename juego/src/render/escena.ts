@@ -500,7 +500,9 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
       if (!lejos) k = (u < g * 0.55 ? -0.4 * Math.sin((u / (g * 0.55)) * Math.PI) : u < g ? Math.sin(((u - g * 0.55) / (g * 0.45)) * Math.PI / 2) : Math.max(0, 1 - (u - g) / Math.max(0.05, (1 - g) * 0.7))) * S.embestida;
       else if (u >= g) k = -S.retroceso * Math.max(0, 1 - (u - g) / Math.max(0.05, (1 - g) * 0.6)) ** 2;
     }
-    if (k) { px += (vx - vy) * 0.71 * k; py += (vx + vy) * 0.71 * k * 0.5; }
+    // (el corrimiento del sprite entero hacía patinar los pies: la animación del motor ya lleva el paso, el peso y la
+    // recogida del golpe con los pies plantados. Solo queda el retroceso al disparar, que es corto y del cuerpo entero)
+    if (k && lejos) { px += (vx - vy) * 0.71 * k; py += (vx + vy) * 0.71 * k * 0.5; }
     const sc = e.sacud;
     if (sc) { const ed = j.t - sc.t; if (ed >= 0 && ed < 0.2) { const q = (1 - ed / 0.2) ** 2 * ((e as Monstruo).calidad >= 3 ? 2 : 4.5) * (sc.k ?? 1); px += (sc.dx - sc.dy) * 0.71 * q; py += (sc.dx + sc.dy) * 0.71 * q * 0.5; } }
   } else if (e.sacud?.lanz) {
