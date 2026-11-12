@@ -27,6 +27,7 @@ const add = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2]
 /** Hacia dónde mira la cámara (del ojo a la escena) y de dónde viene la luz. */
 export const VISTA: V3 = norm([-1, -1, -1 / KZ]);
 export const LUZ: V3 = norm([-0.45, 0.3, 0.85]);
+const LUZ0 = LUZ;
 
 /** Pantalla relativa al ancla (el origen del mundo en el piso). */
 export const aPantalla = (p: V3): [number, number] => [p[0] - p[1], (p[0] + p[1]) / 2 - p[2] * KZ];
@@ -395,6 +396,12 @@ export interface Iluminacion {
    * `exp`) aunque el relleno siga oscuro. Lo demás (piel, tela, cuero) no se toca.
    */
   metal?: { brillo: number; esp: number; exp: number; filo: number; borde: number; ancho: number; piso?: number };
+  /**
+   * Luces de retrato (la selección de personaje): la principal con su dirección propia (en vez de LUZ, también para las
+   * sombras) y su color, y un relleno bajo de otro color. Lo que tiñen va en proporción a cuánto alumbran cada pixel.
+   */
+  principal?: { dir: V3; color: string; tinte?: number };
+  relleno?: { dir: V3; color: string; fuerza: number; tinte?: number };
 }
 export interface Render { img: Raster; ancla: [number, number] }
 export interface Ambiente { tinte?: [number, number, number]; luz?: number }
@@ -438,7 +445,7 @@ export function medirEscena(esc: Escena): { x0: number; y0: number; x1: number; 
  * tira un rayo por texel desde el lado de la luz y se guarda la profundidad del primer golpe. La consulta busca
  * bloqueadores alrededor y abre la penumbra según la distancia (la sombra es dura al pie y se ablanda lejos).
  */
-interface MapaSombra { U: V3; W: V3; u0: number; w0: number; ts: number; nu: number; nw: number; prof: Float32Array; bloq: Float32Array; bu: number; bw: number }
+interface MapaSombra { l: V3; U: V3; W: V3; u0: number; w0: number; ts: number; nu: number; nw: number; prof: Float32Array; bloq: Float32Array; bu: number; bw: number }
 const UPZ: V3 = [0, 0, 1];
 const DISCO: [number, number][] = Array.from({ length: 16 }, (_, i) => { const r = Math.sqrt((i + 0.5) / 16), a = i * 2.39996; return [Math.cos(a) * r, Math.sin(a) * r]; });
 function rejillaDe(ps: Pieza[], proy: (c: V3) => [number, number], u0: number, w0: number, paso: number, nu: number, nw: number): Pieza[][] {
@@ -450,7 +457,7 @@ function rejillaDe(ps: Pieza[], proy: (c: V3) => [number, number], u0: number, w
   }
   return g;
 }
-function mapaSombra(sol: Pieza[]): MapaSombra | null {
+function mapaSombra(sol: Pieza[], LUZ: V3 = LUZ0): MapaSombra | null {
   const solidas = sol.filter((p) => !p.resta);
   if (!solidas.length) return null;
   const U = norm(cross(UPZ, LUZ)), W = cross(LUZ, U);
@@ -470,14 +477,14 @@ function mapaSombra(sol: Pieza[]): MapaSombra | null {
     const h = impacto(cand, o, menosL);
     if (h) prof[j * nu + i] = top - h.t;
   }
-  return { U, W, u0, w0, ts, nu, nw, prof, ...maxDilatado(prof, nu, nw, Math.ceil(4.6 / ts / 8)) };
+  return { l: LUZ, U, W, u0, w0, ts, nu, nw, prof, ...maxDilatado(prof, nu, nw, Math.ceil(4.6 / ts / 8)) };
 }
 /**
  * Para el rayo de sombra del borrador: las piezas agrupadas por dónde caen vistas desde la luz. Un rayo hacia la luz
  * se proyecta en un solo punto de ese plano, así que solo pueden taparlo las piezas de su casillero (el resultado es
  * el mismo que probar todas, pero sin recorrer la escena entera en cada pixel).
  */
-function rejillaLuz(sol: Pieza[]): (q: V3) => Pieza[] {
+function rejillaLuz(sol: Pieza[], LUZ: V3 = LUZ0): (q: V3) => Pieza[] {
   const U = norm(cross(UPZ, LUZ)), W = cross(LUZ, U);
   let u0 = Infinity, u1 = -Infinity, w0 = Infinity, w1 = -Infinity;
   for (const p of sol) { const e = esferaDe(p), c: V3 = [e[0], e[1], e[2]]; const cu = dot(c, U), cw = dot(c, W); u0 = Math.min(u0, cu - e[3]); u1 = Math.max(u1, cu + e[3]); w0 = Math.min(w0, cw - e[3]); w1 = Math.max(w1, cw + e[3]); }
@@ -504,7 +511,7 @@ function maxDilatado(v: Float32Array, nu: number, nw: number, rad: number): { bl
 /** Cuánta luz directa le llega a `q` (0 en sombra, 1 a pleno sol). `giro` rota el disco de muestras por pixel. */
 function luzEn(m: MapaSombra | null, q: V3, giro: number, sesgo = 0.35): number {
   if (!m) return 1;
-  const u = (dot(q, m.U) - m.u0) / m.ts, w = (dot(q, m.W) - m.w0) / m.ts, d = dot(q, LUZ);
+  const u = (dot(q, m.U) - m.u0) / m.ts, w = (dot(q, m.W) - m.w0) / m.ts, d = dot(q, m.l);
   {
     const bi = Math.floor(u / 8), bj = Math.floor(w / 8);
     if (bi < 0 || bj < 0 || bi >= m.bu || bj >= m.bw) return 1;
@@ -607,9 +614,11 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   });
   const sol = ps.filter((p) => !MATERIALES[p.mat]?.emite && !(p.k === 'masa' && p.comps.every((c) => MATERIALES[c.mat ?? p.mat]?.emite)));
   const borrador = (esc.ss ?? CALIDAD) === 0;
-  const sombras = borrador ? null : mapaSombra(sol);
+  // la luz principal: la de siempre o la del retrato (con su dirección, también para las sombras)
+  const LUZ = esc.luz?.principal ? norm(esc.luz.principal.dir) : LUZ0;
+  const sombras = borrador ? null : mapaSombra(sol, LUZ);
   const alturas = borrador ? null : mapaAlturas(sol);
-  const haciaLuz = borrador ? rejillaLuz(sol) : null;
+  const haciaLuz = borrador ? rejillaLuz(sol, LUZ) : null;
   /** En borrador la luz es de un solo rayo (sombra dura) y no hay oclusión. */
   const luzDe = (q: V3, giro: number, sesgo: number) => (borrador ? (impacto(haciaLuz!(q), q, LUZ) ? 0 : 1) : luzEn(sombras, q, giro, sesgo));
   const z0 = zmax + 40;
@@ -624,8 +633,11 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
   const borde = L?.borde ? { ...L.borde, d: norm(L.borde.dir), rgb: rgb(L.borde.color) } : null;
   const sombraL = L?.sombra ? { ...L.sombra, rgb: rgb(L.sombra.color) } : null;
   const techo = L?.techo ? { ...L.techo, rgb: rgb(L.techo.color ?? '#8a8070') } : null;
-  // por sub-muestra: material, brillo, punto y cuánto la toca la luz de borde
-  const sm: { mat: string; s: number; p: V3; b: number }[] = [];
+  const prin = L?.principal ? { rgb: rgb(L.principal.color), k: L.principal.tinte ?? 0.8 } : null;
+  const rell = L?.relleno ? { ...L.relleno, d: norm(L.relleno.dir), rgb: rgb(L.relleno.color), k: L.relleno.tinte ?? 0.8 } : null;
+  // por sub-muestra: material, brillo, punto, cuánto la toca la luz de borde y qué parte del brillo es de la principal
+  // y del relleno (para teñir con sus colores)
+  const sm: { mat: string; s: number; p: V3; b: number; cp: number; cr: number }[] = [];
   const luzPropia = borde?.contorno || L?.metal ? new Uint8Array(W * H) : null;
   for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
     const cand = grilla[Math.floor(py / G) * gw + Math.floor(px / G)];
@@ -652,7 +664,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
       const p = add(o, VISTA, hit.t);
       const n = hit.n;
       const tono = (hit.tono ?? 0) + (hit.p.tono ?? 0);
-      let s: number, bb = 0;
+      let s: number, bb = 0, cp = 0, cr = 0;
       if (m.emite) {
         s = 0.8 + (fbm(p[0] * m.escala, p[1] * m.escala, p[2] * m.escala) - 0.5) * m.ruido + tono;
       } else {
@@ -661,6 +673,10 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
         const oc = borrador ? Math.max(0, 1 - Math.max(0, p[2]) / 10) * 0.5 : oclusion(alturas, p, n);
         const arriba = Math.max(0, n[2]);
         s = lAmb + lDif * dif * (0.22 + 0.78 * lz) + lCielo * arriba + lReb * Math.max(0, dot(n, rebote));
+        if (prin || rell) {
+          const sp = lDif * dif * (0.22 + 0.78 * lz), sr = rell ? rell.fuerza * Math.max(0, dot(n, rell.d)) : 0;
+          s += sr; cp = sp / Math.max(1e-3, s); cr = sr / Math.max(1e-3, s);
+        }
         // el grano (ruido y patrón del material) modula el difuso, no el brillo: en lo oscuro casi no se ve y nunca
         // levanta un pixel suelto hasta el blanco; los materiales `local` llevan el grano pegado a su pieza
         const pl = m.local ? enPieza(hit, p) : p;
@@ -689,7 +705,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
         }
         if (resp) { const dd = Math.hypot(p[0] - resp.c[0], p[1] - resp.c[1], p[2] - resp.c[2]); s += Math.max(0, 1 - dd / resp.r) * 0.25; }
       }
-      sm.push({ mat: matId, s, p, b: bb });
+      sm.push({ mat: matId, s, p, b: bb, cp, cr });
     }
     if (sm.length * 2 < n2 || (n2 === 1 && !sm.length)) {
       if (pisos) { const a = Math.round((sombraPiso / n2) * 255); if (a > 6) { img.data[i] = 8; img.data[i + 1] = 6; img.data[i + 2] = 12; img.data[i + 3] = Math.min(200, a); } }
@@ -698,9 +714,9 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
     // material mayoritario y brillo promedio de sus muestras
     let matId = sm[0].mat;
     if (sm.length > 1) { const cuenta = new Map<string, number>(); let best = 0; for (const q of sm) { const c = (cuenta.get(q.mat) ?? 0) + 1; cuenta.set(q.mat, c); if (c > best) { best = c; matId = q.mat; } } }
-    let s = 0, nn = 0, p: V3 = sm[0].p, bb = 0;
-    for (const q of sm) if (q.mat === matId) { s += q.s; bb += q.b; if (!nn) p = q.p; nn++; }
-    s /= nn; bb /= nn;
+    let s = 0, nn = 0, p: V3 = sm[0].p, bb = 0, cp = 0, cr = 0;
+    for (const q of sm) if (q.mat === matId) { s += q.s; bb += q.b; cp += q.cp; cr += q.cr; if (!nn) p = q.p; nn++; }
+    s /= nn; bb /= nn; cp /= nn; cr /= nn;
     if (!Number.isFinite(s)) s = 0.5;
     const m = MATERIALES[matId] ?? MATERIALES.piedra;
     const R = rampa(m, matId);
@@ -721,6 +737,12 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
         }
       }
       if (sombraL) { const f = sombraL.fuerza * Math.max(0, 1 - Math.max(0, s) / (sombraL.hasta ?? 0.4)); r += (sombraL.rgb[0] - r) * f; g += (sombraL.rgb[1] - g) * f; b += (sombraL.rgb[2] - b) * f; }
+      // retrato: la principal y el relleno tiñen lo que alumbran (sin cambiar la luminancia)
+      for (const [lz, k] of [[prin, cp], [rell, cr]] as const) {
+        if (!lz || k <= 0) continue;
+        const ly = (0.2126 * lz.rgb[0] + 0.7152 * lz.rgb[1] + 0.0722 * lz.rgb[2]) || 1, f = Math.min(1, k * lz.k);
+        r *= 1 + (lz.rgb[0] / ly - 1) * f; g *= 1 + (lz.rgb[1] / ly - 1) * f; b *= 1 + (lz.rgb[2] / ly - 1) * f;
+      }
       if (borde && bb > 0) { const f = Math.min(1, bb * (borde.mezcla ?? 0.6)); r += (borde.rgb[0] - r) * f; g += (borde.rgb[1] - g) * f; b += (borde.rgb[2] - b) * f; }
     }
     if (!m.emite) { r *= tin[0]; g *= tin[1]; b *= tin[2]; } else if (luzPropia) luzPropia[py * W + px] = 1;
