@@ -43,6 +43,11 @@ export interface ObjetoDef {
   /** Para los pisos y lo que va pegado al piso: sin sombra. */
   plano?: boolean;
   armar: (v: string, f: number, a: Arma) => Pieza[] | Escena;
+  /**
+   * Pintor propio por pixel (agua, suelos, portales): si está, `pintarObjeto` lo usa en lugar de pintar las piezas de
+   * `armar` (que queda para las cinemáticas, el mapa y la luz). Todos los cuadros salen del mismo tamaño y ancla.
+   */
+  pintar?: (v: string, f: number, seed: number) => Render;
 }
 
 /** Herramientas que recibe cada armado: las piezas y un azar con semilla. */
@@ -80,6 +85,7 @@ export function pintarObjeto(id: string, v?: string, f = 0, seed = 1, amb?: Ambi
   const k = `${id}|${vv}|${f}|${seed}|${amb ? JSON.stringify(amb) : ''}|${q}`;
   let r = cache.get(k);
   if (r) return r;
+  if (d.pintar) { r = d.pintar(vv, f, seed); cache.set(k, r); return r; }
   const escena = (ff: number): Escena => { const a = d.armar(vv, ff, herramientas(seed)); return Array.isArray(a) ? { piezas: a, sinSombra: d.plano } : { sinSombra: d.plano, ...a }; };
   const n = d.cuadros ?? 1;
   if (n > 1) {
@@ -101,7 +107,7 @@ export const limpiarCache = () => cache.clear();
 export function pintarCuadro(id: string, v?: string, f = 0, seed = 1, amb?: Ambiente): Render {
   const d = objeto(id);
   const vv = v ?? d.variantes[0];
-  if ((d.cuadros ?? 1) === 1) return pintarObjeto(id, vv, 0, seed, amb);
+  if ((d.cuadros ?? 1) === 1 || d.pintar) return pintarObjeto(id, vv, d.pintar ? f : 0, seed, amb);
   const k = `cuadro|${id}|${vv}|${f}|${seed}|${amb ? JSON.stringify(amb) : ''}|${calidad()}`;
   let r = cache.get(k);
   if (!r) { const a = d.armar(vv, f, herramientas(seed)); r = pintarEscena(Array.isArray(a) ? { piezas: a, sinSombra: d.plano } : { sinSombra: d.plano, ...a }, amb); cache.set(k, r); }

@@ -1,4 +1,5 @@
-import { registrar, conVarianteY, esCodo, codoArco, TEMAS, type Arma, type Pieza, type Tema } from '../objeto';
+import { pintarArroyo, aguaConPiezas, estiloArroyo, CUADROS_AGUA } from '../agua';
+import { registrar, conVarianteY, esCodo, codoArco, herramientas, TEMAS, type Arma, type Pieza, type Tema } from '../objeto';
 import { MATERIALES } from '../materiales';
 import { ruido, hueso, bulto, masa, type Comp, type Escena } from '../render';
 import {
@@ -41,6 +42,11 @@ M.par_paja_podrida = { rampa: ['#110d08', '#1d170e', '#2a2114', '#382c1a', '#463
 M.par_lona = { rampa: ['#14110d', '#211c16', '#2f281f', '#3e3529', '#4d4233', '#5d503e', '#6d5e4a'], ruido: 0.3, escala: 0.2, patron: (p) => (ruido(p[0] * 0.12, p[1] * 0.12, p[2] * 0.12) > 0.66 ? -0.2 : 0) + (ruido(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5) > 0.82 ? 0.1 : 0) };
 M.par_piel_bestia = { rampa: ['#0f0b08', '#1c150f', '#2a1f16', '#392a1e', '#493627', '#5a4331', '#6b513c'], ruido: 0.55, escala: 1.4 };
 M.par_hongo_luz = { rampa: ['#103028', '#18483a', '#22644e', '#2f8062', '#46a07a', '#6cc49a'], ruido: 0.3, escala: 0.5, emite: true };
+M.par_sillar_mojado = {
+  rampa: ['#08090a', '#101213', '#181b1c', '#212526', '#2b3031', '#363c3c', '#434949'], ruido: 0.3, escala: 0.22, brillo: 0.55,
+  patron: (p) => (ruido(p[0] * 0.08, p[1] * 0.08, p[2] * 0.08) - 0.5) * 0.25 - Math.max(0, 1 - p[2] / 2.2) * 0.12,
+};
+M.par_alga = { rampa: ['#070a06', '#0d130b', '#141c10', '#1c2615', '#25311b'], ruido: 0.5, escala: 0.8, brillo: 0.4 };
 M.par_runa_roja = { rampa: ['#3a0606', '#6a0c0a', '#9a1a12', '#c8321e', '#ea5a34'], ruido: 0.3, escala: 0.3, emite: true };
 
 const reg = (...ds: Parameters<typeof registrar>) => registrar(...ds);
@@ -677,8 +683,10 @@ function juncos(a: Arma, ps: Pieza[], x: number, y: number, n: number, alto: num
   }
 }
 reg({
-  id: 'par_arroyo', nombre: ['Arroyo', 'Brook'], tema: PAR, variantes: ['recto', 'piedras', 'vado', 'juncal', 'codo_n', 'codo_e', 'codo_s', 'codo_o'], cuadros: 6, t: 3, huella: [5, 2],
-  huellaPor: { codo_n: [5, 5], codo_e: [5, 5], codo_s: [5, 5], codo_o: [5, 5] }, bloquea: true,
+  id: 'par_arroyo', nombre: ['Arroyo', 'Brook'], tema: PAR, variantes: ['recto', 'piedras', 'vado', 'juncal', 'codo_n', 'codo_e', 'codo_s', 'codo_o'], cuadros: CUADROS_AGUA, t: 3, huella: [5, 2],
+  huellaPor: { codo_n: [5, 5], codo_e: [5, 5], codo_s: [5, 5], codo_o: [5, 5] }, bloquea: true, plano: true,
+  // el agua se pinta por pixel (agua.ts); las piezas de abajo quedan para las cinemáticas y el mapa
+  pintar: (v, f) => pintarArroyo(v, f),
   armar: (v, f, a) => {
     const ps: Pieza[] = [];
     if (esCodo(v)) {
@@ -698,39 +706,104 @@ reg({
 });
 conVarianteY('par_arroyo');
 
+/**
+ * Juncos y eneas de la orilla, aparte del agua: el agua va como suelo y lo alto tiene que ordenarse en profundidad con
+ * el héroe. Se ponen sobre el borde del barro (a 16–22 unidades del centro del cauce). Se mecen con el viento.
+ */
 reg({
-  id: 'par_puente', nombre: ['Puente de piedra', 'Stone bridge'], tema: PAR, variantes: ['x', 'roto', 'musgoso'], cuadros: 6, t: 3, huella: [6, 4], bloquea: true,
+  id: 'par_juncos_orilla', nombre: ['Juncos de la orilla', 'Bank reeds'], tema: PAR, variantes: ['mata', 'hilera', 'seca', 'eneas'], cuadros: 6, t: 4,
+  huella: [1, 1], huellaPor: { hilera: [3, 1] }, bloquea: false,
   armar: (v, f, a) => {
-    const ps: Pieza[] = [];
+    const ps: Pieza[] = [], fase = (f / 6) * PI2;
+    const largo = v === 'hilera' ? 34 : 9, n = v === 'hilera' ? 26 : v === 'eneas' ? 12 : 14, seca = v === 'seca';
+    // matas de barro al pie
+    for (let i = 0; i < (v === 'hilera' ? 5 : 2); i++) ps.push(a.elipsoide(az(a, largo / 2), az(a, 2.5), 0, 3 + a.r() * 2.5, 2.4 + a.r() * 1.5, 1.2, { mat: 'par_turba', giro: a.r() * 180 }));
+    for (let i = 0; i < n; i++) {
+      const bx = az(a, largo / 2), by = az(a, 3), alto = (seca ? 9 : 13) + a.r() * (seca ? 7 : 10), ph = a.r() * 0.9;
+      // el viento empuja hacia +x+y; la punta se mece más que el medio
+      const mec = (u: number) => Math.sin(fase + ph + bx * 0.08) * 1.6 * u * u;
+      const lx = az(a, 3), ly = az(a, 3), quebrado = seca && a.r() < 0.4;
+      const mid: V = [bx + lx * 0.5 + mec(0.5), by + ly * 0.5 + mec(0.5) * 0.6, alto * 0.55];
+      const tip: V = quebrado ? [mid[0] + 4 + az(a, 2), mid[1] + az(a, 3), alto * 0.35] : [bx + lx + mec(1), by + ly + mec(1) * 0.6, alto];
+      const mat = seca ? 'ext_pasto_seco' : a.r() < 0.25 ? 'ext_pasto_seco' : 'ext_pasto';
+      ps.push(a.palo([bx, by, -0.5], mid, 0.55, { mat, r1: 0.4, tono: az(a, 0.12) }));
+      ps.push(a.palo(mid, tip, 0.4, { mat, r1: 0.18, tono: az(a, 0.12) }));
+      // eneas: la espiga parda cerca de la punta
+      if ((v === 'eneas' && a.r() < 0.75) || (v !== 'seca' && a.r() < 0.12)) {
+        const u = 0.82, e: V = [mid[0] + (tip[0] - mid[0]) * u, mid[1] + (tip[1] - mid[1]) * u, mid[2] + (tip[2] - mid[2]) * u];
+        ps.push(a.cilindro(e[0], e[1], e[2] - 3, 1.05, 4.2, { mat: 'ext_pelo_caballo', r1: 0.85, tono: -0.12 }));
+      }
+    }
+    return ps;
+  },
+});
+conVarianteY('par_juncos_orilla');
+
+/**
+ * Piezas del puente de piedra (a lo largo de x). Con `conAgua` lleva su arroyo de piezas debajo (cinemáticas, mapa);
+ * sin ella va sobre el agua pintada por pixel: entonces la base de los estribos que pisa el agua va mojada, con una
+ * línea de algas, y no lleva turba debajo.
+ */
+function piezasPuente(v: string, f: number, a: Arma, conAgua: boolean): Pieza[] {
+  const ps: Pieza[] = [];
+  if (conAgua) {
     sueloP(a, ps, 56, 40, { matas: 8, piedras: 2 });
     // el arroyo corre a lo largo de y por debajo
     ps.push(...girarY(() => { const q: Pieza[] = []; cauce(a, q, 92, 24, f, 6, { curva: 3, piedras: 3, juncos: 3 }); return q; }));
-    const W = 22, n = 16, L = 104, Rarc = 17;
-    const top = (x: number) => 4 + 17 * Math.cos(Math.min(1, Math.abs(x) / (L / 2)) * Math.PI / 2);
-    const bajo = (x: number) => (Math.abs(x) < Rarc ? Math.sqrt(Rarc * Rarc - x * x) * 0.95 : 0);
-    const roto = v === 'roto' ? [-4, 6] : null;
-    for (let i = 0; i < n; i++) {
-      const x0 = -L / 2 + (i / n) * L, x1 = x0 + L / n;
-      if (roto && x1 > roto[0] && x0 < roto[1]) continue;
-      const pts: V[] = [];
-      for (const x of [x0, x1]) for (const y of [-W / 2, W / 2]) pts.push([x, y, bajo(x) - (x0 < -L / 2 + 1 || x1 > L / 2 - 1 ? 1 : 0)], [x, y, top(x)]);
-      ps.push(a.poliedro(pts, { mat: 'par_bloques', tono: az(a, 0.04) }));
-      // pretiles: sillares a los costados (faltan algunos)
-      for (const y of [-W / 2 + 1.5, W / 2 - 1.5]) if (a.r() > 0.15 && Math.abs(x0) < L / 2 - 8) sillar(a, ps, (x0 + x1) / 2, y, top((x0 + x1) / 2) - 0.5, x1 - x0 - 0.3, 3, 4.5 + a.r(), 0, 'par_sillar', { jit: 0.5, incl: grad(Math.atan2(top(x1) - top(x0), x1 - x0)) });
+  }
+  const W = 22, n = 16, L = 104, Rarc = 17;
+  const top = (x: number) => 4 + 17 * Math.cos(Math.min(1, Math.abs(x) / (L / 2)) * Math.PI / 2);
+  const bajo = (x: number) => (Math.abs(x) < Rarc ? Math.sqrt(Rarc * Rarc - x * x) * 0.95 : 0);
+  const roto = v === 'roto' ? [-4, 6] : null;
+  // hasta dónde llega el agua (medio ancho del cauce bajo el puente, con su ensanche) y el alto de lo mojado
+  const agua = 24, MOJ = 5.5;
+  for (let i = 0; i < n; i++) {
+    const x0 = -L / 2 + (i / n) * L, x1 = x0 + L / n;
+    if (roto && x1 > roto[0] && x0 < roto[1]) continue;
+    const pts: V[] = [], seco: V[] = [], moj: V[] = [];
+    const mojado = !conAgua && Math.min(Math.abs(x0), Math.abs(x1)) < agua + 4;
+    for (const x of [x0, x1]) for (const y of [-W / 2, W / 2]) {
+      const b = bajo(x) - (x0 < -L / 2 + 1 || x1 > L / 2 - 1 ? 1 : 0), t = top(x);
+      pts.push([x, y, b], [x, y, t]);
+      if (mojado) { const m = Math.min(t, Math.max(b, 0) + MOJ); moj.push([x, y, b], [x, y, m]); seco.push([x, y, m], [x, y, t]); }
     }
-    // dovelas del arco por las dos caras
-    for (const y of [-W / 2 - 0.4, W / 2 + 0.4]) for (let k = 0; k < 9; k++) {
-      const t0 = Math.PI - (k / 9) * Math.PI, t1 = Math.PI - ((k + 1) / 9) * Math.PI, xm = Math.cos((t0 + t1) / 2) * Rarc;
-      if (roto && xm > roto[0] - 2 && xm < roto[1] + 2) continue;
-      const pts: V[] = [];
-      for (const t of [t0, t1]) for (const r of [Rarc, Rarc + 5]) for (const dy of [-1, 1]) pts.push([Math.cos(t) * r, y + dy * 0.7, Math.sin(t) * r * 0.95]);
-      ps.push(a.poliedro(pts, { mat: 'par_sillar', tono: az(a, 0.08) - 0.04 }));
-    }
-    // musgo bajo el arco y en el tajamar
-    for (let i = 0; i < 6; i++) { const x = az(a, 40); ps.push(a.elipsoide(x, (a.r() < 0.5 ? -1 : 1) * (W / 2 + 0.3), Math.max(1, bajo(x) + 1 + a.r() * 4), 4 + a.r() * 3, 1, 2.5, { mat: 'ext_musgo' })); }
-    if (roto) cascotes(a, ps, 10, 1, 0, 12, 14);
-    if (v === 'musgoso') for (let i = 0; i < 10; i++) { const x = az(a, 46); ps.push(a.elipsoide(x, az(a, W * 0.4), top(x) + 0.6, 5 + a.r() * 5, 4 + a.r() * 3, 1.4, { mat: 'ext_musgo', giro: a.r() * 180 })); if (i < 4) mata(a, ps, x, (a.r() < 0.5 ? -1 : 1) * (W / 2 - 1), 5, 8, 'ext_pasto', top(x)); }
-    return ps;
+    if (mojado) {
+      ps.push(a.poliedro(moj, { mat: 'par_sillar_mojado', tono: az(a, 0.04) }));
+      ps.push(a.poliedro(seco, { mat: 'par_bloques', tono: az(a, 0.04) }));
+    } else ps.push(a.poliedro(pts, { mat: 'par_bloques', tono: az(a, 0.04) }));
+    // pretiles: sillares a los costados (faltan algunos)
+    for (const y of [-W / 2 + 1.5, W / 2 - 1.5]) if (a.r() > 0.15 && Math.abs(x0) < L / 2 - 8) sillar(a, ps, (x0 + x1) / 2, y, top((x0 + x1) / 2) - 0.5, x1 - x0 - 0.3, 3, 4.5 + a.r(), 0, 'par_sillar', { jit: 0.5, incl: grad(Math.atan2(top(x1) - top(x0), x1 - x0)) });
+  }
+  // dovelas del arco por las dos caras
+  for (const y of [-W / 2 - 0.4, W / 2 + 0.4]) for (let k = 0; k < 9; k++) {
+    const t0 = Math.PI - (k / 9) * Math.PI, t1 = Math.PI - ((k + 1) / 9) * Math.PI, xm = Math.cos((t0 + t1) / 2) * Rarc;
+    if (roto && xm > roto[0] - 2 && xm < roto[1] + 2) continue;
+    const pts: V[] = [];
+    for (const t of [t0, t1]) for (const r of [Rarc, Rarc + 5]) for (const dy of [-1, 1]) pts.push([Math.cos(t) * r, y + dy * 0.7, Math.sin(t) * r * 0.95]);
+    const zm = Math.sin((t0 + t1) / 2) * Rarc * 0.95;
+    ps.push(a.poliedro(pts, { mat: !conAgua && zm < MOJ ? 'par_sillar_mojado' : 'par_sillar', tono: az(a, 0.08) - 0.04 }));
+  }
+  // musgo bajo el arco y en el tajamar
+  for (let i = 0; i < 6; i++) { const x = az(a, 40); ps.push(a.elipsoide(x, (a.r() < 0.5 ? -1 : 1) * (W / 2 + 0.3), Math.max(1, bajo(x) + 1 + a.r() * 4), 4 + a.r() * 3, 1, 2.5, { mat: 'ext_musgo' })); }
+  // sobre el agua: algas en la línea del agua al pie de los estribos (las dos caras y la boca del arco)
+  if (!conAgua) for (const sx of [-1, 1]) for (let i = 0; i < 5; i++) {
+    const x = sx * (Rarc + 0.6 + i * 1.3), y = (a.r() < 0.5 ? -1 : 1) * (W / 2 + 0.2);
+    ps.push(a.elipsoide(x, y, 0.9 + a.r() * 0.6, 1.6 + a.r(), 0.8, 0.9 + a.r() * 0.5, { mat: 'par_alga' }));
+    if (i < 3) ps.push(a.elipsoide(sx * (Rarc - 0.4 - a.r()), az(a, W * 0.4), 1 + a.r() * 0.8, 0.8, 2 + a.r() * 2, 0.9, { mat: 'par_alga' }));
+  }
+  if (roto) cascotes(a, ps, 10, 1, 0, 12, 14);
+  if (v === 'musgoso') for (let i = 0; i < 10; i++) { const x = az(a, 46); ps.push(a.elipsoide(x, az(a, W * 0.4), top(x) + 0.6, 5 + a.r() * 5, 4 + a.r() * 3, 1.4, { mat: 'ext_musgo', giro: a.r() * 180 })); if (i < 4) mata(a, ps, x, (a.r() < 0.5 ? -1 : 1) * (W / 2 - 1), 5, 8, 'ext_pasto', top(x)); }
+  return ps;
+}
+reg({
+  id: 'par_puente', nombre: ['Puente de piedra', 'Stone bridge'], tema: PAR, variantes: ['x', 'roto', 'musgoso'], cuadros: CUADROS_AGUA, t: 3, huella: [6, 4], bloquea: true,
+  armar: (v, f, a) => piezasPuente(v, f, a, true),
+  // el agua del arroyo pasa por debajo (agua.ts): refleja el arco y moja la base de los estribos
+  pintar: (v, f, seed) => {
+    const ejeY = v.endsWith('_y'), base = ejeY ? v.slice(0, -2) : v;
+    let ps = piezasPuente(base, 0, herramientas(seed), false);
+    if (ejeY) ps = mover(ps, [0, 0, 0], 90);
+    return aguaConPiezas(`par_puente|${v}|${seed}`, estiloArroyo(ejeY ? 'puente' : 'puente_y'), ps, f, '#2c2d2a');
   },
 });
 conVarianteY('par_puente');
