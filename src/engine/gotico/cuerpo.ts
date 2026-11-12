@@ -6,7 +6,7 @@ import { ruido } from './render';
 import { rasgos, mechones, hebras, type MarcoCab } from './rostro';
 import { prendas, type Prenda } from './vestuario';
 import { casco as cascoForjado, peto as petoForjado, malla as mallaForjada, cinto as cintoForjado, tunica as tunicaForjada, colgantes, tabardoFaldon, jubon } from './armadura';
-import { pose, CUADROS, cuadrosDe, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
+import { pose, CUADROS, cuadrosDe, SEL_CUADROS, SEL_ENTRADA, type Dir, type Accion, type Pose, type AngBrazo, type ManoPose } from './figura';
 import { capaElemental, LUZ_ELEMENTO_ARMA } from './elementos_arma';
 import { formaForjada, adornosNivel, anchoVivo, marcoIcono, tramosVivos, palaClara, type MarcoArma, type NivelForja, type OpcForja } from './forja_armas';
 
@@ -703,8 +703,10 @@ function partes(e: Esqueleto, cu: Cuerpo, que: Parte[], grosor: number, mat?: st
 
 // ------------------------------------------------------------------ el personaje completo
 /** El personaje como escena: si su arma está encantada, la luz del encantamiento tiñe lo que tiene cerca. */
-export function personajeEscena(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string }; luz: Iluminacion } {
-  const piezas = personaje(cu, eq, dir, acc, f);
+/** Opciones del pintado: `detalle` 2 cuando el héroe se pinta al doble (la selección): la cara lleva más rasgos. */
+export interface OpcPersonaje { detalle?: number }
+export function personajeEscena(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number, o: OpcPersonaje = {}): { piezas: Pieza[]; resplandor?: { c: V3; r: number; color: string }; luz: Iluminacion } {
+  const piezas = personaje(cu, eq, dir, acc, f, o);
   // clave baja (clave_baja.ts): viaja con la escena, así el horneado del juego la recibe sin cambiar su llamada
   const luz = claveBaja(piezas);
   const en = eq.arma?.encanto;
@@ -715,12 +717,13 @@ export function personajeEscena(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f
   return { piezas, luz, resplandor: { c: mez(a, b, 0.5), r: 15 * e.S, color: ENCANTOS.find((x) => x[0] === en)![3] } };
 }
 
-export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number): Pieza[] {
+export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: number, o: OpcPersonaje = {}): Pieza[] {
   const tipoArma = eq.arma?.tipo ?? 'nada';
   const e = esqueleto(cu, dir, acc, f, tipoArma, eq.izq?.tipo);
   const { S, A, T, cab, ejesCab, F, R } = e;
   // el cuadro llevado a un ciclo de 8 (los vaivenes de colas, jirones y adornos cierran el ciclo con cualquier cantidad de cuadros)
-  const f8 = (f * 8) / cuadrosDe(acc, cu.presentacion);
+  // (en la selección el ciclo de 8 cuenta desde el bucle, que empalma el último cuadro con el de la entrada)
+  const f8 = acc === 'seleccion' ? ((((f - SEL_ENTRADA) * 8) / (SEL_CUADROS - SEL_ENTRADA)) % 8 + 8) % 8 : (f * 8) / cuadrosDe(acc, cu.presentacion);
   const H = escCab(cu) * S, cz = e.cz;
   const ps: Pieza[] = [];
   const todo: Parte[] = ['pelvis', 'abdomen', 'pecho', 'hombros', 'cuello', 'brazo', 'antebrazo', 'mano', 'muslo', 'pantorrilla', 'pie', 'cabeza'];
@@ -764,7 +767,7 @@ export function personaje(cu: Cuerpo, eq: Equipo, dir: Dir, acc: Accion, f: numb
   const ojo = cu.ojos ?? 'cu_ojo', brilla = MATERIALES[ojo]?.emite;
   // el héroe lleva la cara con luz y sombra (rostro.ts); los ojos que brillan siguen siendo bolas de luz
   const marcoCab: MarcoCab = { cab, ejes: ejesCab, cz, H };
-  if (cu.presentacion && !cu.oseo) ps.push(...rasgos(marcoCab, { piel: cu.piel, pelo: cu.peinado === 'calvo' ? undefined : cu.pelo, mujer: cu.genero === 'm', barba: !!cu.barba && cu.barba !== 'bigote', ojo, brilla: !!brilla }));
+  if (cu.presentacion && !cu.oseo) ps.push(...rasgos(marcoCab, { piel: cu.piel, pelo: cu.peinado === 'calvo' ? undefined : cu.pelo, mujer: cu.genero === 'm', barba: !!cu.barba && cu.barba !== 'bigote', ojo, brilla: !!brilla, detalle: o.detalle ?? 1 }));
   if (!cu.presentacion || brilla) for (const s of [1, -1]) ps.push(elipsoide(...cab(3.35 * H, s * 1.45 * H, cz + 0.25 * H), (brilla ? 0.7 : 0.5) * H, 0.75 * H, (brilla ? 0.55 : 0.5) * H, { mat: ojo }));
   // ---- piernas y pies
   const pz = eq.piernas, pi = eq.pies;

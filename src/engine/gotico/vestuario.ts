@@ -250,8 +250,10 @@ function prenda(c: CtxVestuario, p: Prenda): Pieza[] {
     }
     case 'brazal_arco': {
       // el brazal del brazo del arco (el que empuña): una vaina de cuero del codo a la muñeca, con dos cordones
+      // (el arco va en la izquierda: el brazal también; con otra arma, en el brazo que empuña)
+      const lado = /arco/.test(c.eq.arma?.tipo ?? '') ? -1 : 1;
       for (const b of e.brazos) {
-        if (b.s <= 0) continue;
+        if (b.s * lado <= 0) continue;
         const a = mez(b.codo, b.mun, 0.28), z = mez(b.codo, b.mun, 0.9);
         ps.push(masa([hueso(a, z, 2.15 * A + 0.35, 1.8 * A + 0.35, { mat: p.mat })], { mat: p.mat }));
         for (const t of [0.42, 0.72]) ps.push(palo(mez(b.codo, b.mun, t - 0.03), mez(b.codo, b.mun, t + 0.03), 2.1 * A + 0.55, { mat: p.mat2 ?? 'cu_cuero_negro', r1: 2.0 * A + 0.55 }));

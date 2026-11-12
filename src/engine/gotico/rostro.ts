@@ -22,7 +22,7 @@ function elipCab(m: MarcoCab, fw: number, rt: number, up: number, r: V3, mat: st
 const P = (m: MarcoCab, fw: number, rt: number, up: number): V3 => m.cab(fw * m.H, rt * m.H, m.cz + up * m.H);
 
 /** Cuencas, cejas, nariz, pómulos y boca sobre la cabeza del juego. */
-export function rasgos(m: MarcoCab, o: { piel: string; pelo?: string; mujer: boolean; barba: boolean; ojo: string; brilla: boolean }): Pieza[] {
+export function rasgos(m: MarcoCab, o: { piel: string; pelo?: string; mujer: boolean; barba: boolean; ojo: string; brilla: boolean; detalle?: number }): Pieza[] {
   const ps: Pieza[] = [];
   for (const s of [1, -1]) {
     // la cuenca: piel en sombra, hundida bajo el arco de las cejas (el ojo vive adentro)
@@ -40,6 +40,30 @@ export function rasgos(m: MarcoCab, o: { piel: string; pelo?: string; mujer: boo
   ps.push(elipCab(m, 4.35, 0, -1.75, [0.4, 0.7, 0.25], o.piel, -0.5));
   // la boca: una sombra corta (con barba la tapa el bigote)
   if (!o.barba) ps.push(palo(P(m, 4.3, 0.8, -2.3), P(m, 4.3, -0.8, -2.3), 0.2 * m.H, { mat: o.piel, tono: o.mujer ? -0.3 : -0.45 }));
+  if ((o.detalle ?? 1) >= 2) ps.push(...rasgosGrandes(m, o));
+  return ps;
+}
+
+/**
+ * Lo que entra cuando la cabeza mide ~16 px (el héroe pintado al doble, la selección): el blanco del ojo con el iris,
+ * las aletas de la nariz en sombra, el labio de abajo con luz y las comisuras, el hueco bajo el pómulo y el mentón.
+ */
+function rasgosGrandes(m: MarcoCab, o: { piel: string; mujer: boolean; barba: boolean; ojo: string; brilla: boolean }): Pieza[] {
+  const ps: Pieza[] = [];
+  for (const s of [1, -1]) {
+    if (!o.brilla) {
+      ps.push(elipCab(m, 3.86, s * 1.42, 0.3, [0.2, 0.52, 0.22], 'cu_hueso', -0.28));
+      ps.push(elipCab(m, 3.97, s * 1.32, 0.3, [0.18, 0.24, 0.22], o.ojo));
+    }
+    // la aleta de la nariz y el hueco bajo el pómulo, en sombra
+    ps.push(elipCab(m, 4.55, s * 0.5, -1.45, [0.22, 0.25, 0.2], o.piel, -0.55));
+    ps.push(elipCab(m, 3.25, s * 2.25, -1.35, [0.5, 0.45, 0.55], o.piel, -0.22));
+    if (!o.barba) ps.push(elipCab(m, 4.15, s * 0.95, -2.35, [0.18, 0.2, 0.2], o.piel, -0.5));
+  }
+  if (!o.barba) {
+    ps.push(palo(P(m, 4.32, 0.55, -2.62), P(m, 4.32, -0.55, -2.62), 0.2 * m.H, { mat: o.piel, tono: o.mujer ? 0.18 : 0.12 }));
+    ps.push(elipCab(m, 3.95, 0, -3.15, [0.45, 0.7, 0.35], o.piel, 0.12));
+  }
   return ps;
 }
 
