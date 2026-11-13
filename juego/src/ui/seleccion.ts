@@ -41,7 +41,7 @@ function particulas(f: Ficha, cx: number, cy: number, dt: number, t: number, pas
 function emitir(f: Ficha, cx: number, cy: number, dt: number, t: number) {
   const c = `rgb(${f.luz[0]},${f.luz[1]},${f.luz[2]})`;
   const n = f.part === 'viento' ? 1 : f.part === 'burbujas' ? 1 : 2;
-  for (let i = 0; i < n; i++) if (R() < 0.6 && parts.length < 160) {
+  for (let i = 0; i < n; i++) if (R() < (f.part === 'burbujas' ? 0.08 : 0.6) && parts.length < 160) {
     const x = cx + (R() - 0.5) * 260, y = cy - R() * 260;
     switch (f.part) {
       case 'brasas': parts.push({ x, y: cy + 10, vx: (R() - 0.5) * 20, vy: -40 - R() * 60, t: 0, d: 2 + R() * 2, c: R() < 0.5 ? '#ff8030' : '#ffd060', s: 2 }); break;
@@ -53,7 +53,7 @@ function emitir(f: Ficha, cx: number, cy: number, dt: number, t: number) {
       case 'viento': parts.push({ x: cx - 200, y: cy - 10 - R() * 140, vx: 180 + R() * 80, vy: -6 - R() * 10, t: 0, d: 2.2, c: '#d8b888', s: 1 }); break;
       case 'luciernagas': parts.push({ x, y, vx: (R() - 0.5) * 16, vy: (R() - 0.5) * 16, t: 0, d: 3 + R() * 2, c: '#d0ff80', s: 2 }); break;
       // vapores del frasco: volutas tenues que suben desde la mano y se abren (antes aros de colores como de dibujo animado)
-      case 'burbujas': parts.push({ x: cx + 30 + (R() - 0.5) * 30, y: cy - 70 - R() * 20, vx: (R() - 0.5) * 10, vy: -14 - R() * 12, t: 0, d: 3.2, c: R() < 0.5 ? '#9a70c0' : '#70b080', s: 4 }); break;
+      case 'burbujas': parts.push({ x: cx + 30 + (R() - 0.5) * 30, y: cy - 70 - R() * 20, vx: (R() - 0.5) * 10, vy: -14 - R() * 12, t: 0, d: 2.6, c: R() < 0.5 ? '#9a70c0' : '#70b080', s: 2 }); break;
     }
   }
   // avanzar: las chispas orbitan alrededor del cuerpo; el resto queda delante o detrás al azar desde que nace
@@ -67,15 +67,15 @@ function emitir(f: Ficha, cx: number, cy: number, dt: number, t: number) {
   }
 }
 function dibujarParts(f: Ficha, t: number, atras: boolean) {
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  ctx.save(); ctx.globalCompositeOperation = f.part === 'burbujas' ? 'source-over' : 'lighter';
   for (const p of parts) {
     if (!!p.atras !== atras) continue;
     const x = p.ang !== undefined ? p.vx : p.x, y = p.ang !== undefined ? p.y + Math.sin(p.ang) * 22 : p.y;
     const k = Math.sin((p.t / p.d) * Math.PI) * (atras ? 0.75 : 1);
-    ctx.globalAlpha = f.part === 'bruma' ? k * 0.07 : f.part === 'luciernagas' ? k * (0.5 + 0.5 * Math.sin(t * 9 + p.x)) : k * 0.85;
+    ctx.globalAlpha = f.part === 'bruma' ? k * 0.028 : f.part === 'luciernagas' ? k * (0.5 + 0.5 * Math.sin(t * 9 + p.x)) : k * 0.85;
     ctx.fillStyle = p.c;
     if (f.part === 'viento') { ctx.globalAlpha *= 0.35; ctx.fillRect(x, y + Math.sin(x * 0.03) * 3, 14, 1); }
-    else if (f.part === 'bruma' || f.part === 'burbujas') { if (f.part === 'burbujas') ctx.globalAlpha *= 0.18; ctx.beginPath(); ctx.arc(x, y, p.s * (1 + (p.t / p.d) * (f.part === 'burbujas' ? 3 : 1)), 0, Math.PI * 2); ctx.fill(); }
+    else if (f.part === 'bruma' || f.part === 'burbujas') { if (f.part === 'burbujas') ctx.globalAlpha *= 0.12; ctx.beginPath(); ctx.arc(x, y, p.s * (1 + (p.t / p.d) * (f.part === 'burbujas' ? 3 : 1)), 0, Math.PI * 2); ctx.fill(); }
     else ctx.fillRect(x, y, p.s, p.s);
   }
   ctx.restore();
@@ -121,9 +121,25 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
   // piso de piedra con la fogata detrás
   const piso = cuadrosPiso('lajas', 0)[0] ?? cuadrosPiso('tierra', 1)[0];
   for (let i = -4; i <= 4; i++) for (let k = -4; k <= 4; k++) { const px = cx + (i - k) * 80, py = cy + (i + k) * 40; if (piso && px > -100 && px < W + 100) { ctx.globalAlpha = 0.6; dibujar(ctx, piso, px, py); ctx.globalAlpha = 1; } }
-  const fx = cx + 150, fy = cy - 40;
+  // la fogata delante a la derecha del héroe, en el hueco antes de la ficha: es la que explica la luz del sprite
+  const fx = angosto ? cx + 90 : cx + 110, fy = cy + 10;
+  // las lajas con la mitad del contraste y el piso a oscuras salvo el pozo del héroe y la fogata
+  ctx.fillStyle = 'rgba(22,20,18,0.5)'; ctx.fillRect(0, 0, W, H);
+  {
+    const mx = (cx + fx) / 2, my = (cy + fy) / 2;
+    const gp = ctx.createRadialGradient(mx, my, 70, mx, my, 300);
+    gp.addColorStop(0, 'rgba(0,0,0,0)'); gp.addColorStop(0.55, 'rgba(0,0,0,0.78)'); gp.addColorStop(0.85, 'rgba(0,0,0,0.96)'); gp.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = gp; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const parpa = 1 + Math.sin(t * 8.3) * 0.04 + Math.sin(t * 13.1) * 0.03;
+    ctx.translate(fx, fy); ctx.scale(1, 0.5); // el pozo cae en el piso, achatado como el suelo isométrico
+    const gf = ctx.createRadialGradient(0, 0, 0, 0, 0, 220 * parpa);
+    gf.addColorStop(0, 'rgba(255,140,50,0.34)'); gf.addColorStop(0.35, 'rgba(200,90,30,0.16)'); gf.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gf; ctx.fillRect(-260, -260, 520, 520);
+    ctx.restore();
+  }
   const fog = objetoMeta('camp_fogata', 'grande');
-  if (fog) dibujar(ctx, fog.f[Math.floor(t * 25 / fog.t) % fog.f.length], fx, fy, 1.4);
+  const dibFogata = () => { if (fog) dibujar(ctx, fog.f[Math.floor(t * 25 / fog.t) % fog.f.length], fx, fy, 2); };
   // el héroe en grande, con su pose de presentación
   const k = Math.min(1, (t - tCambio) * 3);
   const vista = nivelVista;
@@ -155,12 +171,13 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
     if (!conSel) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.05 * k * pul; dibujarTenido(ctx, q, hx, cy, '#ff8a3a', 0.9, escQ); ctx.restore(); }
   }
   ctx.globalAlpha = 1;
+  dibFogata();
   // luz: oscuridad alrededor, el fuego y el color de la clase
   ctx.save();
   const g = ctx.createRadialGradient(cx, cy - 100, 60, cx, cy - 100, Math.max(W, H) * 0.7); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.35, 'rgba(0,0,0,0.45)'); g.addColorStop(0.8, 'rgba(0,0,0,0.97)'); g.addColorStop(1, 'rgba(0,0,0,1)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter';
-  const g2 = ctx.createRadialGradient(fx, fy - 20, 0, fx, fy - 20, 240 + Math.sin(t * 8) * 8); g2.addColorStop(0, 'rgba(255,120,40,0.3)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+  const g2 = ctx.createRadialGradient(fx, fy - 30, 0, fx, fy - 30, 170 + Math.sin(t * 8) * 6); g2.addColorStop(0, 'rgba(255,120,40,0.22)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
   const g3 = ctx.createRadialGradient(cx, cy - 120, 0, cx, cy - 120, 260); g3.addColorStop(0, `rgba(${lc},${0.08 * k})`); g3.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g3; ctx.fillRect(0, 0, W, H);
   ctx.restore();
   particulas(f, cx, cy, dt, t, 'adelante');
