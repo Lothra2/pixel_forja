@@ -40,7 +40,7 @@ function particulas(f: Ficha, cx: number, cy: number, dt: number, t: number, pas
 }
 function emitir(f: Ficha, cx: number, cy: number, dt: number, t: number) {
   const c = `rgb(${f.luz[0]},${f.luz[1]},${f.luz[2]})`;
-  const n = f.part === 'viento' ? 3 : 2;
+  const n = f.part === 'viento' ? 1 : f.part === 'burbujas' ? 1 : 2;
   for (let i = 0; i < n; i++) if (R() < 0.6 && parts.length < 160) {
     const x = cx + (R() - 0.5) * 260, y = cy - R() * 260;
     switch (f.part) {
@@ -48,10 +48,12 @@ function emitir(f: Ficha, cx: number, cy: number, dt: number, t: number) {
       case 'motas': parts.push({ x, y, vx: 0, vy: -8 - R() * 10, t: 0, d: 2 + R() * 2, c: '#fff0c0', s: 2 }); break;
       case 'chispas': { const a = R() * Math.PI * 2; parts.push({ x: cx, y: cy - 60 - R() * 100, vx: 0, vy: -6, t: 0, d: 1.2 + R(), c: R() < 0.3 ? '#ffffff' : c, s: 2, ang: a }); break; }
       case 'hojas': parts.push({ x: cx + (R() - 0.5) * 400, y: cy - 300, vx: 15 + R() * 20, vy: 30 + R() * 20, t: 0, d: 6, c: R() < 0.5 ? '#6a7a30' : '#9a7030', s: 3 }); break;
-      case 'bruma': parts.push({ x, y: cy - R() * 30, vx: (R() - 0.5) * 12, vy: -6, t: 0, d: 3 + R() * 2, c: '#50c080', s: 14 }); break;
-      case 'viento': parts.push({ x: cx - 220, y: cy - R() * 220, vx: 260 + R() * 120, vy: -10, t: 0, d: 1.6, c: '#ffe0b0', s: 1 }); break;
+      case 'bruma': parts.push({ x, y: cy - R() * 30, vx: (R() - 0.5) * 12, vy: -6, t: 0, d: 3 + R() * 2, c: '#2e7058', s: 14 }); break;
+      // el viento: hebras de polvo finas y tenues que cruzan bajas, con una curva leve (antes rayas blancas como lluvia)
+      case 'viento': parts.push({ x: cx - 200, y: cy - 10 - R() * 140, vx: 180 + R() * 80, vy: -6 - R() * 10, t: 0, d: 2.2, c: '#d8b888', s: 1 }); break;
       case 'luciernagas': parts.push({ x, y, vx: (R() - 0.5) * 16, vy: (R() - 0.5) * 16, t: 0, d: 3 + R() * 2, c: '#d0ff80', s: 2 }); break;
-      case 'burbujas': parts.push({ x: cx + (R() - 0.5) * 160, y: cy, vx: (R() - 0.5) * 8, vy: -20 - R() * 30, t: 0, d: 3, c: R() < 0.5 ? '#c080ff' : '#80ff90', s: 3 }); break;
+      // vapores del frasco: volutas tenues que suben desde la mano y se abren (antes aros de colores como de dibujo animado)
+      case 'burbujas': parts.push({ x: cx + 30 + (R() - 0.5) * 30, y: cy - 70 - R() * 20, vx: (R() - 0.5) * 10, vy: -14 - R() * 12, t: 0, d: 3.2, c: R() < 0.5 ? '#9a70c0' : '#70b080', s: 4 }); break;
     }
   }
   // avanzar: las chispas orbitan alrededor del cuerpo; el resto queda delante o detrás al azar desde que nace
@@ -70,10 +72,10 @@ function dibujarParts(f: Ficha, t: number, atras: boolean) {
     if (!!p.atras !== atras) continue;
     const x = p.ang !== undefined ? p.vx : p.x, y = p.ang !== undefined ? p.y + Math.sin(p.ang) * 22 : p.y;
     const k = Math.sin((p.t / p.d) * Math.PI) * (atras ? 0.75 : 1);
-    ctx.globalAlpha = f.part === 'bruma' ? k * 0.12 : f.part === 'luciernagas' ? k * (0.5 + 0.5 * Math.sin(t * 9 + p.x)) : k * 0.85;
+    ctx.globalAlpha = f.part === 'bruma' ? k * 0.07 : f.part === 'luciernagas' ? k * (0.5 + 0.5 * Math.sin(t * 9 + p.x)) : k * 0.85;
     ctx.fillStyle = p.c;
-    if (f.part === 'viento') { ctx.fillRect(x, y, 26, 1); }
-    else if (f.part === 'bruma' || f.part === 'burbujas') { ctx.beginPath(); ctx.arc(x, y, p.s * (f.part === 'bruma' ? 1 + p.t / p.d : 1), 0, Math.PI * 2); f.part === 'burbujas' ? (ctx.strokeStyle = p.c, ctx.stroke()) : ctx.fill(); }
+    if (f.part === 'viento') { ctx.globalAlpha *= 0.35; ctx.fillRect(x, y + Math.sin(x * 0.03) * 3, 14, 1); }
+    else if (f.part === 'bruma' || f.part === 'burbujas') { if (f.part === 'burbujas') ctx.globalAlpha *= 0.18; ctx.beginPath(); ctx.arc(x, y, p.s * (1 + (p.t / p.d) * (f.part === 'burbujas' ? 3 : 1)), 0, Math.PI * 2); ctx.fill(); }
     else ctx.fillRect(x, y, p.s, p.s);
   }
   ctx.restore();
@@ -146,10 +148,11 @@ export function dibujarCrear(t: number, sel: number | null): { accion: 'crear' |
     // luz de retrato: contraluz fría que recorta la silueta desde atrás a la izquierda (una copia teñida corrida un par de
     // píxeles por detrás del cuerpo), el canto cálido del lado de la fogata, el héroe y un pulso cálido muy leve con el fuego
     const hx = cx - (1 - k) * 40, pul = 0.75 + 0.25 * Math.sin(t * 7.3) * Math.sin(t * 3.1 + 1);
-    ctx.globalAlpha = 0.22 * k; dibujarTenido(ctx, q, hx - 2, cy - 1, '#7f9fd8', 1, escQ);
-    ctx.globalAlpha = 0.18 * k; dibujarTenido(ctx, q, hx + 2, cy, '#ff9a48', 1, escQ);
+    const conSel = escQ === 1 && sl.length > 0 && !!ms && USAR_SEL; // la presentación de la Forja ya trae su contraluz y su luz de fogata
+    if (!conSel) { ctx.globalAlpha = 0.22 * k; dibujarTenido(ctx, q, hx - 2, cy - 1, '#7f9fd8', 1, escQ); }
+    if (!conSel) { ctx.globalAlpha = 0.18 * k; dibujarTenido(ctx, q, hx + 2, cy, '#ff9a48', 1, escQ); }
     ctx.globalAlpha = k; dibujar(ctx, q, hx, cy, escQ);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.05 * k * pul; dibujarTenido(ctx, q, hx, cy, '#ff8a3a', 0.9, escQ); ctx.restore();
+    if (!conSel) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.05 * k * pul; dibujarTenido(ctx, q, hx, cy, '#ff8a3a', 0.9, escQ); ctx.restore(); }
   }
   ctx.globalAlpha = 1;
   // luz: oscuridad alrededor, el fuego y el color de la clase
