@@ -585,6 +585,8 @@ export function danar(j: Juego, v: Ent, g: Golpe): number {
   for (const [e, v2] of Object.entries(g.extra ?? {})) if (v2) partes.push([e as Elemento, v2 * entre(0.7, 1.3)]);
   let crit = false;
   if (g.critico && R() * 100 < g.critico) crit = true;
+  // la marca que la habilidad deja sobre cada alcanzado (una por enemigo cada medio segundo)
+  if (g.deHeroe && v !== j.heroe) { const bl = usosPfx.hab.get(j.heroe.habActual)?.blanco; if (bl && ((v as any).tBlanco ?? -9) < j.t - 0.5) { (v as any).tBlanco = j.t; efecto(j, 'pfx:' + bl, v.x, v.y, 0, 0.9, 0, 0.7); } }
   // el golpe crítico del héroe se ve: el destello de pixelfx en el punto del golpe y chispas blancas
   if (crit && g.deHeroe) { efecto(j, 'pfx:fx_critico', v.x, v.y, 0, 0.9); particulas(j, v.x, v.y, 8, 'chispa', '#fff4c0', 1.6, 34); }
   for (let [e, d] of partes) {

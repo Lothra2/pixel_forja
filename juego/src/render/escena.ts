@@ -20,7 +20,7 @@ import { auraEquipo } from '../juego/visual';
 import { calorOzmaren, fuegoMundo, dibujarFuegosMundo } from './fuego';
 import { prepararFuegos, vivosDe, tieneFuegoDoom, dibujarVivos } from './fuego_vivo';
 import { dibujarPfx, alfaCuerpo, efectoPfx, dirPfx } from './pfx';
-import { estadosPfx } from '../juego/pfx_usos';
+import { estadosPfx, usosPfx } from '../juego/pfx_usos';
 import { dibujarAmbiente, dibujarClimaPfx } from './pfx_mundo';
 import { cuerpoArde, armaArde, seguirSuelo, dibujarSuelo, ozmarenArde, cometa, llamaViva } from './fuego_especial';
 let dtCuadro = 1 / 60;
@@ -611,6 +611,11 @@ function dibujarEnt(j: Juego, e: Ent, tiempo: number) {
   let ok: boolean;
   // estados de pixelfx: el primero tiñe el cuerpo, todos van en bucle encima
   const ests = e.muerto ? [] : estadosPfx(e as any);
+  // los buffs y el aura del héroe se ven mientras duran: el efecto de lanzador de su habilidad, si es de bucle
+  if (e.tipo === 'heroe' && !e.muerto) {
+    const hh = j.heroe;
+    for (const id of [...Object.keys(hh.buffs), hh.d.aura ?? '']) { const lz = id && usosPfx.hab.get(id)?.lanzador; if (lz && efectoPfx(lz)?.bucle && !ests.includes(lz) && ests.length < 4) ests.push(lz); }
+  }
   const tinteEst = ests.map((id) => efectoPfx(id)?.cuerpo?.tinte).find(Boolean);
   const pm = (e as any).pfxMuerte as { id: string; t0: number } | undefined;
   const alfaM = e.muerto && pm ? alfaCuerpo(pm.id, j.t - pm.t0) : 1;
