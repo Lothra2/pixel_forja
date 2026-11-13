@@ -312,7 +312,7 @@ const PIE_TALON = 1.6, PIE_PUNTA = 1.25;
  * Escala de la cabeza. Los héroes van con proporción heroica (unas 7 cabezas y cuarto de alto, como en los ARPG clásicos):
  * con la cabeza de siempre medían 6,3 cabezas y se veían cabezones, de muñeco.
  */
-const CABEZA_HEROE = +((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CABEZA_HEROE ?? 0.86);
+const CABEZA_HEROE = +((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CABEZA_HEROE ?? 1.05);
 const escCab = (cu: Cuerpo) => cu.cabeza ?? (cu.presentacion ? CABEZA_HEROE : 1);
 
 export function esqueleto(cu: Cuerpo, dir: Dir, acc: Accion, f: number, arma: TipoArma = 'nada', izqTipo?: IzqTipo, crudo = false, ajusteMano?: number, ajusteRodilla?: number): Esqueleto {

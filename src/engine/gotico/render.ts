@@ -424,7 +424,7 @@ export interface Iluminacion {
   /** Saturación final de todo lo que no emite (1 = igual). */
   satura?: number;
   /** La piel (materiales cu_piel*): su sombra tira a este color (sangre bajo la piel) y su color se satura `satura`. */
-  piel?: { sombra: string; satura: number };
+  piel?: { sombra: string; satura: number; /** luz de más para la piel (la cara se lee aunque mire hacia abajo) */ luz?: number };
 }
 export interface Render { img: Raster; ancla: [number, number] }
 export interface Ambiente { tinte?: [number, number, number]; luz?: number }
@@ -732,6 +732,7 @@ export function pintarEscena(esc: Escena, amb: Ambiente = {}, fijo?: { w: number
           if (metalBaja) s = Math.min(s, (lMetal.tope ?? 0.56) + 0.22 * canto * canto);
         }
         if (!(prin && lMetal && m.brillo && m.brillo >= lMetal.brillo)) s += tono;
+        if (pielL?.luz && matId.startsWith('cu_piel')) s += pielL.luz;
         s *= 1 - 0.42 * oc;
         s *= luzAmb;
         if (prin || rell) { const tot = Math.max(1e-3, s); cp = sp / tot; cr = sr / tot; }

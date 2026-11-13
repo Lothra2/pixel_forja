@@ -370,7 +370,7 @@ export function quieto(p: Pose, u: number, arma: ArmaPose, estilo?: Presentacion
   p.cabeza = 1.5 - 2 * k; p.giroCabeza = -4 + 3 * k2; p.ladeoCabeza = 2 - 1.2 * k;
   // (los brazos caen cerca del cuerpo y el pecho va arriba: con los brazos abiertos y el torso echado adelante el reposo
   // se leía encorvado, de gorila)
-  p.torso = 2 - 1.5 * k; p.cabeza = -1 - 2 * k;
+  p.torso = 2 - 1.5 * k; p.cabeza = -4.5 - 2 * k; // (la cabeza un poco levantada hacia la cámara: desde arriba, a nivel se ve solo pelo)
   p.hombroD = [8 + 3 * k, 7, 20 + 5 * k, 8]; p.hombroI = [6 - 2 * k, 7, 16 + 4 * k, 10];
   p.munecaD = 3 * k2;
   p.capa = [0.7 + 0.2 * k, 0.3 * k2]; p.pelo = [0.2 * k, 0.2 * k2];

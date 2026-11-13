@@ -69,7 +69,7 @@ function berserker(p: Pose, arma: ArmaPose): Guion {
   plantar(p, [-3.2, 3.4], [2.8, 2.4], [24, 14]);
   // el mango descansa SOBRE el hombro derecho: el puño delante del pecho, la cabeza del hacha atrás y arriba (como
   // camina en el juego, un poco más apoyada); la izquierda en la cadera
-  const hombro: Vals = { hombroD: [10, 8, 118, 0], armaRel: [128, 28] };
+  const hombro: Vals = { hombroD: [10, 15, 118, 0], armaRel: [128, 36] }; // (más abierto: con la cabeza a 1,05 el mango rozaba el casco)
   const libre: Vals = { manoI: [0.2, -8.4, 30.5], codoI: [-0.7, -1, 0.1], pegaI: 0, agarreI: -7 };
   void arma;
   const bucle: Clave[] = [
@@ -88,7 +88,7 @@ function berserker(p: Pose, arma: ArmaPose): Guion {
     // se hunde y junta fuerza
     K(0.16, { bajar: 4.2, torso: 13, cabeza: 3, hombros: [0.4, 0.4], respira: 0, hombroD: [22, 12, 118, 0], armaRel: [126, 30], hombroI: [14, 16, 40, 10], pegaI: 0.2 }, true),
     // alza el hacha bien arriba, por encima de la cabeza (el brazo no cruza delante de la cara), el pecho inflado
-    K(0.36, { bajar: 0.4, torso: -7, cabeza: -18, respira: 1, hombros: [2.8, 2.6], hombroD: [80, 55, 45, 0], armaRel: [120, 40], hombroI: [24, 26, 50, 10], pegaI: 1 }),
+    K(0.36, { bajar: 0.4, torso: -7, cabeza: -9, respira: 1, hombros: [2.8, 2.6], hombroD: [80, 64, 45, 0], armaRel: [100, 40], hombroI: [24, 26, 50, 10], pegaI: 1 }),
     // la descarga adelante contra el piso (el contacto, sostenido)
     K(0.54, { bajar: 5.2, torso: 22, giroTorso: -8, cabeza: -6, respira: 0.3, hombros: [0.6, 0.6], hombroD: [56, -14, 34, 0], armaRel: [30, 6], hombroI: [34, 30, 50, 10], agarreI: -3, pegaI: 0 }, true),
     K(0.62, { bajar: 5.0, torso: 21, giroTorso: -8, hombroD: [55, -14, 36, 0], armaRel: [32, 6], agarreI: -3 }, true),
@@ -240,8 +240,8 @@ function druida(p: Pose): Guion {
   ];
   const entrada: Clave[] = [
     K(0.22, { bajar: 0.6, torso: 2, varaPie: [9, 19, 9], manoD: [5, 15, 50], cabeza: -14, respira: 1 }, true),
-    K(0.42, { bajar: 3.2, torso: 14, varaPie: [13, 12.5, 0.5], manoD: [8, 10, 39], cabeza: -2, respira: 0.2 }, true),
-    K(0.6, { bajar: 2.6, torso: 11 }),
+    K(0.42, { bajar: 3.2, torso: 9, varaPie: [13, 12.5, 0.5], manoD: [8, 10, 39], cabeza: -2, respira: 0.2 }, true),
+    K(0.6, { bajar: 2.6, torso: 8 }),
   ];
   return {
     bucle, entrada, o: { lagCab: 0.04, capa: 1, tela: 1.4 },

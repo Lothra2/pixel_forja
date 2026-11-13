@@ -36,6 +36,8 @@ const BASE: Iluminacion = {
   ao: { radio: 3, fuerza: 0.45 },
   linea: { k: 0.62, kLuz: 0.2, dentro: 0.4, salto: 2.5 },
   satura: 1.18,
+  // la piel agarra un poco de luz propia y su sombra tira a rojo oscuro: la cara se lee aunque el héroe mire al piso
+  piel: { sombra: '#3a1a18', satura: 1.06, luz: 0.07 },
 };
 export const CLAVE_BAJA_FRIA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.22, color: BORDE_FRIO, ancho: 1.6, mezcla: 0.45, contorno: 0 } };
 export const CLAVE_BAJA_CALIDA: Iluminacion = { ...BASE, borde: { dir: DIR_BORDE, fuerza: 0.22, color: BORDE_CALIDO, ancho: 1.6, mezcla: 0.45, contorno: 0 } };
